@@ -1,0 +1,581 @@
+package mempool
+
+import (
+	"fmt"
+
+	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
+
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/cache"
+	"github.com/zeromicro/go-zero/core/stores/sqlc"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
+	"gorm.io/gorm"
+)
+
+var (
+	cacheZecreyMempoolIdPrefix     = "cache:zecrey:mempool:id:"
+	cacheZecreyMempoolTxHashPrefix = "cache:zecrey:mempool:txHash:"
+)
+
+type (
+	MempoolModel interface {
+		CreateMempoolTxTable() error
+		DropMempoolTxTable() error
+		GetAllMempoolTxsList() (mempoolTxs []*MempoolTx, err error)
+		GetMempoolTxsListForCommitter() (mempoolTxs []*MempoolTx, err error)
+		GetMempoolTxsList(limit int64, offset int64) (mempoolTxs []*MempoolTx, err error)
+		GetMempoolTxsListByAccountIndex(accountIndex int64, limit int64, offset int64) (mempoolTxs []*MempoolTx, err error)
+		GetMempoolTxsListByAccountIndexAndTxType(accountIndex int64, txType uint8, limit int64, offset int64) (mempoolTxs []*MempoolTx, err error)
+		GetMempoolTxsListByAccountIndexAndTxTypeArray(accountIndex int64, txTypeArray []uint8, limit int64, offset int64) (mempoolTxs []*MempoolTx, err error)
+		GetMempoolTxsTotalCount() (count int64, err error)
+		GetMempoolTxsTotalCountByAccountIndex(accountIndex int64) (count int64, err error)
+		GetMempoolTxsTotalCountByAccountIndexAndTxType(accountIndex int64, txType uint8) (count int64, err error)
+		GetMempoolTxsTotalCountByAccountIndexAndTxTypeArray(accountIndex int64, txTypeArray []uint8) (count int64, err error)
+		GetMempoolTxsTotalCountByPublicKey(pk string) (count int64, err error)
+		GetMempoolTxByTxHash(hash string) (mempoolTxs *MempoolTx, err error)
+		GetMempoolTxsByBlockHeight(l2BlockHeight int64) (rowsAffected int64, mempoolTxs []*MempoolTx, err error)
+		CreateBatchedMempoolTxs(mempoolTxs []*MempoolTx) error
+		DeleteMempoolTxs(txIds []*int64) error
+
+		GetL1MempoolTx(chainId int64, assetId int64) (mempoolTxs []*MempoolTx, err error)
+	}
+
+	defaultMempoolModel struct {
+		sqlc.CachedConn
+		table string
+		DB    *gorm.DB
+	}
+
+	MempoolTx struct {
+		gorm.Model
+		TxHash         string `gorm:"uniqueIndex"`
+		TxType         int64
+		GasFee         int64
+		GasFeeAssetId  int64
+		AssetAId       int64
+		AssetBId       int64
+		TxAmount       int64
+		NativeAddress  string
+		MempoolDetails []*MempoolTxDetail `gorm:"foreignkey:TxId"`
+		ChainId        int64
+		TxInfo         string
+		ExtraInfo      string
+		Memo           string
+		L2BlockHeight  int64
+		Status         int `gorm:"index"` // 0: pending tx; 1: committed tx; 2: verified tx;
+	}
+)
+
+func NewMempoolModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) MempoolModel {
+	return &defaultMempoolModel{
+		CachedConn: sqlc.NewConn(conn, c),
+		table:      MempoolTableName,
+		DB:         db,
+	}
+}
+
+func (*MempoolTx) TableName() string {
+	return MempoolTableName
+}
+
+/*
+	Func: CreateMempoolTxTable
+	Params:
+	Return: err error
+	Description: create MempoolTx table
+*/
+func (m *defaultMempoolModel) CreateMempoolTxTable() error {
+	return m.DB.AutoMigrate(MempoolTx{})
+}
+
+/*
+	Func: DropMempoolTxTable
+	Params:
+	Return: err error
+	Description: drop MempoolTx table
+*/
+func (m *defaultMempoolModel) DropMempoolTxTable() error {
+	return m.DB.Migrator().DropTable(m.table)
+}
+
+/*
+	Func: GetAllMempoolTxsList
+	Params:
+	Return: []*MempoolTx, err error
+	Description: used for Init globalMap
+*/
+
+func (m *defaultMempoolModel) GetAllMempoolTxsList() (mempoolTxs []*MempoolTx, err error) {
+	var mempoolForeignKeyColumn = `MempoolDetails`
+	dbTx := m.DB.Table(m.table).Order("created_at, id").Find(&mempoolTxs)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempool.GetMempoolTxsList] %s", dbTx.Error)
+		return nil, dbTx.Error
+	}
+	// TODO: cache operation
+	for _, mempoolTx := range mempoolTxs {
+		err := m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+		if err != nil {
+			logx.Errorf("[mempool.GetMempoolTxsList] Get Associate MempoolDetails Error")
+			return nil, err
+		}
+	}
+	return mempoolTxs, nil
+}
+
+/*
+	Func: GetMempoolTxsList
+	Params: limit int, offset int
+	Return: []*MempoolTx, err error
+	Description: used for /api/v1/tx/getMempoolTxsList
+*/
+func (m *defaultMempoolModel) GetMempoolTxsList(limit int64, offset int64) (mempoolTxs []*MempoolTx, err error) {
+	var mempoolForeignKeyColumn = `MempoolDetails`
+	dbTx := m.DB.Table(m.table).Where("status = ?", PendingTxStatus).Limit(int(limit)).Offset(int(offset)).Order("created_at desc, id desc").Find(&mempoolTxs)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempool.GetMempoolTxsList] %s", dbTx.Error)
+		return nil, dbTx.Error
+	}
+	// TODO: cache operation
+	for _, mempoolTx := range mempoolTxs {
+		err := m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+		if err != nil {
+			logx.Errorf("[mempool.GetMempoolTxsList] Get Associate MempoolDetails Error")
+			return nil, err
+		}
+	}
+	return mempoolTxs, nil
+}
+
+func (m *defaultMempoolModel) GetMempoolTxsByBlockHeight(l2BlockHeight int64) (rowsAffected int64, mempoolTxs []*MempoolTx, err error) {
+	var mempoolForeignKeyColumn = `MempoolDetails`
+	dbTx := m.DB.Table(m.table).Where("l2_block_height = ?", l2BlockHeight).Find(&mempoolTxs)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempool.GetMempoolTxsByBlockHeight] %s", dbTx.Error)
+		return 0, nil, dbTx.Error
+	}
+	// TODO: cache operation
+	for _, mempoolTx := range mempoolTxs {
+		err := m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+		if err != nil {
+			logx.Errorf("[mempool.GetMempoolTxsByBlockHeight] Get Associate MempoolDetails Error")
+			return 0, nil, err
+		}
+	}
+	return dbTx.RowsAffected, mempoolTxs, nil
+}
+
+/*
+	Func: GetMempoolTxsListForCommitter
+	Return: []*MempoolTx, err error
+	Description: query unhandled mempool txs
+*/
+
+func (m *defaultMempoolModel) GetMempoolTxsListForCommitter() (mempoolTxs []*MempoolTx, err error) {
+	var mempoolForeignKeyColumn = `MempoolDetails`
+	dbTx := m.DB.Table(m.table).Where("status = ?", PendingTxStatus).Order("created_at, id").Find(&mempoolTxs)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempool.GetMempoolTxsList] %s", dbTx.Error)
+		return nil, dbTx.Error
+	}
+	// TODO: cache operation
+	for _, mempoolTx := range mempoolTxs {
+		err := m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+		if err != nil {
+			logx.Errorf("[mempool.GetMempoolTxsList] Get Associate MempoolDetails Error")
+			return nil, err
+		}
+	}
+	return mempoolTxs, nil
+}
+
+/*
+	Func: GetMempoolTxsListByAccountIndex
+	Params: accountIndex int64, limit int, offset int
+	Return: []*MempoolTx, err error
+	Description: used for /api/v1/tx/getMempoolTxsListByAccountIndex
+*/
+
+func (m *defaultMempoolModel) GetMempoolTxsListByAccountIndex(accountIndex int64, limit int64, offset int64) (mempoolTxs []*MempoolTx, err error) {
+	var (
+		mempoolDetailTable      = `mempool_tx_detail`
+		mempoolIds              []int64
+		mempoolForeignKeyColumn = `MempoolDetails`
+	)
+	var mempoolTxDetails []*MempoolTxDetail
+	dbTx := m.DB.Table(mempoolDetailTable).Select("tx_id").Where("account_index = ?", accountIndex).Find(&mempoolTxDetails).Group("tx_id").Find(&mempoolIds)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndex] %s", dbTx.Error)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Info("[mempool.GetMempoolTxsListByAccountIndex] No rows in mempool list")
+		return nil, ErrNotFound
+	}
+
+	dbTx = m.DB.Table(m.table).Where("status = ?", PendingTxStatus).Order("created_at desc").Offset(int(offset)).Limit(int(limit)).Find(&mempoolTxs, mempoolIds)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndex] %s", dbTx.Error)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Info("[mempool.GetMempoolTxsListByAccountIndex] No rows in mempool with Pending Status")
+		return nil, ErrNotFound
+	}
+	// TODO: cache operation
+	for _, mempoolTx := range mempoolTxs {
+		err := m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+		if err != nil {
+			logx.Errorf("[mempool.GetMempoolTxsListByAccountIndex] Get Associate MempoolDetails Error")
+			return nil, err
+		}
+	}
+	return mempoolTxs, nil
+}
+
+/*
+	Func: GetMempoolTxsListByAccountIndexAndTxType
+	Params: accountIndex int64, txType uint8, limit int64, offset int64
+	Return: []*MempoolTx, err error
+	Description:
+*/
+
+func (m *defaultMempoolModel) GetMempoolTxsListByAccountIndexAndTxType(accountIndex int64, txType uint8, limit int64, offset int64) (mempoolTxs []*MempoolTx, err error) {
+	var (
+		mempoolDetailTable      = `mempool_tx_detail`
+		mempoolIds              []int64
+		mempoolForeignKeyColumn = `MempoolDetails`
+	)
+	var mempoolTxDetails []*MempoolTxDetail
+	dbTx := m.DB.Table(mempoolDetailTable).Select("tx_id").Where("account_index = ?", accountIndex).Find(&mempoolTxDetails).Group("tx_id").Find(&mempoolIds)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndexAndTxType] %s", dbTx.Error)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndexAndTxType] Get MempoolIds Error")
+		return nil, ErrNotFound
+	}
+	dbTx = m.DB.Table(m.table).Where("status = ? and tx_type = ?", PendingTxStatus, txType).Order("created_at desc").Offset(int(offset)).Limit(int(limit)).Find(&mempoolTxs, mempoolIds)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndexAndTxType] %s", dbTx.Error)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndexAndTxType] Get MempoolTxs Error")
+		return nil, ErrNotFound
+	}
+	// TODO: cache operation
+	for _, mempoolTx := range mempoolTxs {
+		err := m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+		if err != nil {
+			logx.Errorf("[mempool.GetMempoolTxsListByAccountIndexAndTxType] Get Associate MempoolDetails Error")
+			return nil, err
+		}
+	}
+	return mempoolTxs, nil
+}
+
+func (m *defaultMempoolModel) GetMempoolTxsListByAccountIndexAndTxTypeArray(accountIndex int64, txTypeArray []uint8, limit int64, offset int64) (mempoolTxs []*MempoolTx, err error) {
+	var (
+		mempoolDetailTable      = `mempool_tx_detail`
+		mempoolIds              []int64
+		mempoolForeignKeyColumn = `MempoolDetails`
+	)
+	var mempoolTxDetails []*MempoolTxDetail
+	dbTx := m.DB.Table(mempoolDetailTable).Select("tx_id").Where("account_index = ?", accountIndex).Find(&mempoolTxDetails).Group("tx_id").Find(&mempoolIds)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndexAndTxType] %s", dbTx.Error)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndexAndTxType] Get MempoolIds Error")
+		return nil, ErrNotFound
+	}
+	dbTx = m.DB.Table(m.table).Where("status = ? and tx_type in (?)", PendingTxStatus, txTypeArray).Order("created_at desc").Offset(int(offset)).Limit(int(limit)).Find(&mempoolTxs, mempoolIds)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndexAndTxType] %s", dbTx.Error)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndexAndTxType] Get MempoolTxs Error")
+		return nil, ErrNotFound
+	}
+	// TODO: cache operation
+	for _, mempoolTx := range mempoolTxs {
+		err := m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+		if err != nil {
+			logx.Errorf("[mempool.GetMempoolTxsListByAccountIndexAndTxType] Get Associate MempoolDetails Error")
+			return nil, err
+		}
+	}
+	return mempoolTxs, nil
+}
+
+/*
+	Func: GetMempoolTxsTotalCount
+	Params:
+	Return: count int64, err error
+	Description: used for counting total transactions in mempool for explorer dashboard
+*/
+func (m *defaultMempoolModel) GetMempoolTxsTotalCount() (count int64, err error) {
+	dbTx := m.DB.Table(m.table).Where("status = ? and deleted_at is NULL", PendingTxStatus).Count(&count)
+	if dbTx.Error != nil {
+		logx.Errorf("[tx.GetTxsTotalCount] %s", dbTx.Error)
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	return count, nil
+}
+
+/*
+	Func: GetMempoolTxsTotalCountByAccountIndex
+	Params: accountIndex int64
+	Return: count int64, err error
+	Description: used for counting total transactions in mempool for explorer dashboard
+*/
+func (m *defaultMempoolModel) GetMempoolTxsTotalCountByAccountIndex(accountIndex int64) (count int64, err error) {
+	var (
+		mempoolDetailTable = `mempool_tx_detail`
+		mempoolIds         []int64
+	)
+	var mempoolTxDetails []*MempoolTxDetail
+	dbTx := m.DB.Table(mempoolDetailTable).Select("tx_id").Where("account_index = ?", accountIndex).Find(&mempoolTxDetails).Group("tx_id").Find(&mempoolIds)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempool.GetMempoolTxsTotalCountByAccountIndex] %s", dbTx.Error)
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	dbTx = m.DB.Table(m.table).Where("status = ? and id in (?) and deleted_at is NULL", PendingTxStatus, mempoolIds).Count(&count)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempool.GetMempoolTxsTotalCountByAccountIndex] %s", dbTx.Error)
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Infof("[mempool.GetMempoolTxsTotalCountByAccountIndex] no txs of account index %d in mempool", accountIndex)
+		return 0, nil
+	}
+	return count, nil
+}
+
+/*
+	Func: GetMempoolTxsTotalCountByAccountIndexAndTxType
+	Params: accountIndex int64, txType uint8
+	Return: count int64, err error
+	Description: used for counting total transactions in mempool for explorer dashboard
+*/
+func (m *defaultMempoolModel) GetMempoolTxsTotalCountByAccountIndexAndTxType(accountIndex int64, txType uint8) (count int64, err error) {
+	var (
+		mempoolDetailTable = `mempool_tx_detail`
+		mempoolIds         []int64
+	)
+	var mempoolTxDetails []*MempoolTxDetail
+	dbTx := m.DB.Table(mempoolDetailTable).Select("tx_id").Where("account_index = ?", accountIndex).Find(&mempoolTxDetails).Group("tx_id").Find(&mempoolIds)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempool.GetMempoolTxsTotalCountByAccountIndexAndTxType] %s", dbTx.Error)
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	dbTx = m.DB.Table(m.table).Where("status = ? and id in (?) and deleted_at is NULL  and tx_type = ?", PendingTxStatus, mempoolIds, txType).Count(&count)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempool.GetMempoolTxsTotalCountByAccountIndexAndTxType] %s", dbTx.Error)
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Infof("[mempool.GetMempoolTxsTotalCountByAccountIndexAndTxType] no txs of account index %d and tx type = %d in mempool", accountIndex, txType)
+		return 0, nil
+	}
+	return count, nil
+}
+
+/*
+	Func: GetMempoolTxsTotalCountByAccountIndexAndTxTypeArray
+	Params: accountIndex int64, txTypeArray []uint8
+	Return: count int64, err error
+	Description: used for counting total transactions in mempool for explorer dashboard
+*/
+func (m *defaultMempoolModel) GetMempoolTxsTotalCountByAccountIndexAndTxTypeArray(accountIndex int64, txTypeArray []uint8) (count int64, err error) {
+	var (
+		mempoolDetailTable = `mempool_tx_detail`
+		mempoolIds         []int64
+	)
+	var mempoolTxDetails []*MempoolTxDetail
+	dbTx := m.DB.Table(mempoolDetailTable).Select("tx_id").Where("account_index = ?", accountIndex).Find(&mempoolTxDetails).Group("tx_id").Find(&mempoolIds)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempool.GetMempoolTxsTotalCountByAccountIndexAndTxType] %s", dbTx.Error)
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	dbTx = m.DB.Table(m.table).Where("status = ? and id in (?) and deleted_at is NULL  and tx_type in (?)", PendingTxStatus, mempoolIds, txTypeArray).Count(&count)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempool.GetMempoolTxsTotalCountByAccountIndexAndTxType] %s", dbTx.Error)
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Infof("[mempool.GetMempoolTxsTotalCountByAccountIndexAndTxType] no txs of account index %d and tx type = %v in mempool", accountIndex, txTypeArray)
+		return 0, nil
+	}
+	return count, nil
+}
+
+/*
+	Func: GetMempoolTxsTotalCountByPublicKey
+	Params: pk string
+	Return: count int64, err error
+	Description: used for counting total transactions in mempool for explorer dashboard
+*/
+func (m *defaultMempoolModel) GetMempoolTxsTotalCountByPublicKey(pk string) (count int64, err error) {
+	var (
+		accountTable       = `account`
+		accountIndex       int64
+		mempoolDetailTable = `mempool_tx_detail`
+		mempoolIds         []int64
+	)
+	dbTx := m.DB.Table(accountTable).Select("account_index").Where("public_key = ?", pk).Find(&accountIndex)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempool.GetMempoolTxsListByPublicKey] %s", dbTx.Error)
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	var mempoolTxDetails []*MempoolTxDetail
+	dbTx = m.DB.Table(mempoolDetailTable).Select("tx_id").Where("account_index = ?", accountIndex).Find(&mempoolTxDetails).Group("tx_id").Find(&mempoolIds)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempool.GetMempoolTxsListByPublicKey] %s", dbTx.Error)
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	dbTx = m.DB.Table(m.table).Where("status = ? and id in (?) and deleted_at is NULL", PendingTxStatus, mempoolIds).Count(&count)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempool.GetMempoolTxsListByPublicKey] %s", dbTx.Error)
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Infof("[mempool.GetMempoolTxsListByPublicKey] no txs of account index %d in mempool", accountIndex)
+		return 0, nil
+	}
+	return count, nil
+}
+
+/*
+	Func: GetMempoolTxByTxHash
+	Params: hash string
+	Return: mempoolTxs *MempoolTx, err error
+	Description: used for get  transactions in mempool by tx hash
+*/
+func (m *defaultMempoolModel) GetMempoolTxByTxHash(hash string) (mempoolTx *MempoolTx, err error) {
+	var mempoolForeignKeyColumn = `MempoolDetails`
+	dbTx := m.DB.Table(m.table).Where("status = ? and tx_hash = ?", PendingTxStatus, hash).Find(&mempoolTx)
+	if dbTx.Error != nil {
+		if dbTx.Error == ErrNotFound {
+			return mempoolTx, dbTx.Error
+		} else {
+			err := fmt.Sprintf("[mempool.GetMempoolTxByTxHash] %s", dbTx.Error)
+			logx.Errorf(err)
+			return nil, dbTx.Error
+		}
+	} else if dbTx.RowsAffected == 0 {
+		err := fmt.Sprintf("[mempool.GetMempoolTxByTxHash] %s", ErrNotFound)
+		logx.Info(err)
+		return nil, ErrNotFound
+	}
+	err = m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+	if err != nil {
+		logx.Errorf("[mempool.GetMempoolTxByTxHash] Get Associate MempoolDetails Error")
+		return nil, err
+	}
+	return mempoolTx, nil
+}
+
+/*
+	Func: CreateBatchedMempoolTxs
+	Params: []*MempoolTx
+	Return: error
+	Description: Insert MempoolTxs when sendTx request.
+*/
+
+func (m *defaultMempoolModel) CreateBatchedMempoolTxs(mempoolTxs []*MempoolTx) error {
+	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
+		dbTx := tx.Table(m.table).Create(mempoolTxs)
+		if dbTx.Error != nil {
+			logx.Errorf("[mempool.CreateMempoolTxs] %s", dbTx.Error)
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			logx.Errorf("[mempool.CreateMempoolTxs] Create Invalid Mempool Tx")
+			return ErrInvalidMempoolTx
+		}
+		return nil
+	})
+}
+
+/*
+	Func: DeleteMempoolTxs
+	Params: TxId []*int64
+	Return: error
+	Description: Delete MempoolTxs when Committer pack new layer2 block.
+*/
+func (m *defaultMempoolModel) DeleteMempoolTxs(txIds []*int64) error {
+	//var mempoolDetailTable = `mempool_tx_detail`
+	// TODO: clean cache operation
+	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
+		for _, txId := range txIds {
+			var mempoolTx *MempoolTx
+			dbTx := tx.Table(m.table).Where("id = ?", txId).Delete(&mempoolTx)
+			if dbTx.Error != nil {
+				logx.Errorf("[mempool.DeleteMempoolTxs] %s", dbTx.Error)
+				return dbTx.Error
+			}
+			if dbTx.RowsAffected == 0 {
+				logx.Errorf("[mempool.DeleteMempoolTxs] Delete Invalid Mempool Tx")
+				return ErrInvalidMempoolTx
+			}
+
+			//var mempoolTxDetail *MempoolTxDetail
+			//dbTx = m.DB.Table(mempoolDetailTable).Where("tx_id = ?", txId).Delete(&mempoolTxDetail)
+			//if dbTx.Error != nil {
+			//	logx.Errorf("[mempool.DeleteMempoolTxs] %s", dbTx.Error)
+			//	return dbTx.Error
+			//}
+			//if dbTx.RowsAffected == 0 {
+			//	logx.Errorf("[mempool.DeleteMempoolTxs] Delete Invalid Mempool TxDtail")
+			//	return ErrInvalidMempoolTxDetail
+			//}
+		}
+		return nil
+	})
+}
+
+/*
+	Func: GetMempoolTxIdsListByL2BlockHeight
+	Params: blockHeight
+	Return: []*MempoolTx, err error
+	Description: used for verifier get txIds from Mempool and deleting the transaction in mempool table after
+*/
+func (m *defaultMempoolModel) GetMempoolTxsListByL2BlockHeight(blockHeight int64) (mempoolTxs []*MempoolTx, err error) {
+	dbTx := m.DB.Table(m.table).Where("status = ? and l2_block_height <= ?", HandledTxStatus, blockHeight).Find(&mempoolTxs)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempool.GetMempoolTxsListByL2BlockHeight] %s", dbTx.Error)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Errorf("[mempool.GetMempoolTxsListByL2BlockHeight] Get MempoolTxs Error")
+		return nil, ErrNotFound
+	}
+
+	return mempoolTxs, nil
+}
+
+/*
+	Func: GetL1MempoolTx
+	Params:
+	Return: []*MempoolTx, err error
+	Description: used for l1Amount globalmap to compute latest l1 amount
+*/
+func (m *defaultMempoolModel) GetL1MempoolTx(chainId int64, assetId int64) (mempoolTxs []*MempoolTx, err error) {
+	dbTx := m.DB.Table(m.table).Where("status = ? and chain_id = ? and asset_a_id = ? and (tx_type = ? or tx_type = ? or tx_type = ?)",
+		PendingTxStatus, chainId, assetId, commonTx.TxTypeDeposit, commonTx.TxTypeLock, commonTx.TxTypeWithdraw).Find(&mempoolTxs)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempool.GetL1MempoolTx] %s", dbTx.Error)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Errorf("[mempool.GetL1MempoolTx] Get MempoolTxs Error")
+		return nil, ErrNotFound
+	}
+
+	return mempoolTxs, nil
+}
