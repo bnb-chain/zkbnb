@@ -37,7 +37,7 @@ type (
 
 	L2NftCollection struct {
 		gorm.Model
-		NftId        int64
+		AccountIndex int64
 		Name         string
 		Introduction string
 	}
