@@ -19,8 +19,8 @@ package logic
 import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/zecrey-labs/zecrey-core/common/general/model/l2BlockEventMonitor"
 	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/l1BlockMonitor"
+	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/l2BlockEventMonitor"
 	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/l2TxEventMonitor"
 	"github.com/zecrey-labs/zecrey-eth-rpc/_rpc"
 	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
@@ -56,7 +56,6 @@ const (
 	EventTypeNewPriorityRequest = 0
 	EventTypeCommittedBlock     = l2BlockEventMonitor.CommittedBlockEventType
 	EventTypeVerifiedBlock      = l2BlockEventMonitor.VerifiedBlockEventType
-	EventTypeExecutedBlock      = l2BlockEventMonitor.ExecutedBlockEventType
 	EventTypeRevertedBlock      = l2BlockEventMonitor.RevertedBlockEventType
 	// status
 	PendingStatusL2BlockEventMonitor = l2BlockEventMonitor.PendingStatus
