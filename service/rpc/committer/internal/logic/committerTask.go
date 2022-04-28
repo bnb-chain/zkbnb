@@ -92,6 +92,9 @@ func CommitterTask(
 			assetsHistoryMap          = make(map[string]*AccountAssetHistory)
 			liquidityAssetsHistoryMap = make(map[string]*AccountLiquidityHistory)
 			nftAssetsHistoryMap       = make(map[int64]*L2NftHistory)
+			accountsHistoryMap        = make(map[int64]*AccountHistory)
+			pendingUpdateAccountIndex = make(map[int64]bool)
+			pendingNewAccountIndex    = make(map[int64]bool)
 
 			// block txs
 			txs []*Tx
@@ -121,13 +124,67 @@ func CommitterTask(
 			// get mempool tx
 			mempoolTx := mempoolTxs[i*MaxTxsAmountPerBlock+j]
 			pendingMempoolTxs = append(pendingMempoolTxs, mempoolTx)
+			// handle tx pub data
 			pendingPriorityOperation, pendingOnchainOperationsHash, pendingPubdata, err = handleTxPubdata(mempoolTx, pendingOnchainOperationsHash)
 			if err != nil {
 				logx.Errorf("[CommitterTask] unable to handle l1 tx: %s", err.Error())
 				return err
 			}
+			// compute new priority operations
 			priorityOperations += pendingPriorityOperation
+			// add pub data from tx
 			pubdata = append(pubdata, pendingPubdata...)
+
+			// get related account info
+			if accountsHistoryMap[mempoolTx.AccountIndex] == nil {
+				accountHistoryInfo, err := ctx.AccountHistoryModel.GetLatestAccountInfoByAccountIndex(mempoolTx.AccountIndex)
+				if err != nil {
+					if err == ErrNotFound {
+						accountInfo, err := ctx.AccountModel.GetAccountByAccountIndex(mempoolTx.AccountIndex)
+						// if we cannot get any info from account table, return error
+						if err != nil {
+							logx.Errorf("[CommitterTask] unable to get account info: %s", err.Error())
+							return err
+						}
+						// set new account history
+						accountsHistoryMap[mempoolTx.AccountIndex] = &AccountHistory{
+							AccountIndex:    accountInfo.AccountIndex,
+							AccountName:     accountInfo.AccountName,
+							AccountNameHash: accountInfo.AccountNameHash,
+							PublicKey:       accountInfo.PublicKey,
+							L1Address:       accountInfo.L1Address,
+							Nonce:           accountInfo.Nonce,
+							Status:          account.AccountHistoryStatusConfirmed,
+							L2BlockHeight:   currentBlockHeight,
+						}
+					} else {
+						logx.Errorf("[CommitterTask] cannot get related account info from history table: %s", err.Error())
+						return err
+					}
+				} else {
+					// it means that just make the register, haven't confirmed by committer, need up
+					if accountHistoryInfo.Status == account.AccountHistoryStatusPending {
+						if mempoolTx.TxType != TxTypeRegisterZns {
+							logx.Errorf("[CommitterTask] first transaction should be registerZNS")
+							return errors.New("[CommitterTask] first transaction should be registerZNS")
+						}
+						accountHistoryInfo.Status = account.AccountHistoryStatusConfirmed
+						accountHistoryInfo.L2BlockHeight = currentBlockHeight
+						pendingUpdateAccountIndex[mempoolTx.AccountIndex] = true
+					}
+					accountsHistoryMap[mempoolTx.AccountIndex] = accountHistoryInfo
+				}
+			}
+
+			// check if we need to update nonce(create new account history)
+			if mempoolTx.Nonce != -1 {
+				// update nonce first
+				accountsHistoryMap[mempoolTx.AccountIndex].Nonce = mempoolTx.Nonce
+				// check for update or create
+				if !pendingUpdateAccountIndex[mempoolTx.AccountIndex] {
+					pendingNewAccountIndex[mempoolTx.AccountIndex] = true
+				}
+			}
 
 			// check mempool tx details are correct
 			var (
@@ -578,8 +635,8 @@ func CommitterTask(
 			pendingNewAssetsHistory          []*AccountAssetHistory
 			pendingNewLiquidityAssetsHistory []*AccountLiquidityHistory
 			pendingNewNftAssetsHistory       []*L2NftHistory
-			// TODO create new accounts
-			//pendingUpdatedAccountHistory     []*AccountHistory
+			pendingNewAccountHistory         []*AccountHistory
+			pendingUpdatedAccountHistory     []*AccountHistory
 		)
 		for _, assetHistory := range assetsHistoryMap {
 			pendingNewAssetsHistory = append(pendingNewAssetsHistory, assetHistory)
@@ -589,6 +646,18 @@ func CommitterTask(
 		}
 		for _, nftAssetHistory := range nftAssetsHistoryMap {
 			pendingNewNftAssetsHistory = append(pendingNewNftAssetsHistory, nftAssetHistory)
+		}
+		for accountIndex, flag := range pendingNewAccountIndex {
+			if !flag {
+				continue
+			}
+			pendingNewAccountHistory = append(pendingNewAccountHistory, accountsHistoryMap[accountIndex])
+		}
+		for accountIndex, flag := range pendingUpdateAccountIndex {
+			if !flag {
+				continue
+			}
+			pendingUpdatedAccountHistory = append(pendingUpdatedAccountHistory, accountsHistoryMap[accountIndex])
 		}
 
 		// compute block commitment
@@ -617,26 +686,17 @@ func CommitterTask(
 			Txs:                          txs,
 			BlockStatus:                  block.StatusPending,
 		}
-		log.Println(oBlock)
-		// handle account history
-		// TODO
-		//for rAccountIndex := range registerAccounts {
-		//	nAccount := registerAccounts[rAccountIndex]
-		//	nAccount.Status = account.AccountHistoryConfirmed
-		//	nAccount.BlockHeight = currentBlockHeight
-		//	pendingUpdatedAccountHistory = append(pendingUpdatedAccountHistory, nAccount)
-		//}
 
-		// TODO create block for committer
-		// create block, history, update mempool txs, create new l1 amount infos
-		//err = ctx.BlockModel.CreateBlockForCommitter(
-		//	oBlock, pendingMempoolTxs,
-		//	pendingL1AmountInfos,
-		//	pendingNewAssetsHistory, pendingNewLockedAssetsHistory, pendingNewLiquidityAssetsHistory, pendingUpdatedAccountHistory)
-		//if err != nil {
-		//	logx.Errorf("[CommitterTask] unable to create block for committer: %s", err.Error())
-		//	return err
-		//}
+		// create block for committer
+		//create block, history, update mempool txs, create new l1 amount infos
+		err = ctx.BlockModel.CreateBlockForCommitter(
+			oBlock, pendingMempoolTxs,
+			pendingNewAssetsHistory, pendingNewLiquidityAssetsHistory,
+			pendingNewAccountHistory, pendingUpdatedAccountHistory)
+		if err != nil {
+			logx.Errorf("[CommitterTask] unable to create block for committer: %s", err.Error())
+			return err
+		}
 
 		// TODO reset global map
 		//_, err = ctx.GlobalRPC.ResetGlobalMap(context.Background(), &globalRPCProto.ReqResetGlobalMap{})
