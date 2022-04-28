@@ -4,6 +4,12 @@ import (
 	"flag"
 	"fmt"
 	"github.com/robfig/cron/v3"
+	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/tree"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/committer/committerProto"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/committer/internal/config"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/committer/internal/logic"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/committer/internal/server"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/committer/internal/svc"
 	"github.com/zeromicro/go-zero/core/logx"
 	"time"
 
@@ -26,10 +32,10 @@ func main() {
 	ctx := svc.NewServiceContext(c)
 	srv := server.NewCommitterServer(ctx)
 
-
 	var (
-		accountTree *tree.Tree
+		accountTree       *tree.Tree
 		accountStateTrees []*tree.AccountStateTree
+		nftTree           *tree.Tree
 	)
 	// get latest account
 	h, err := ctx.BlockModel.GetCurrentBlockHeight()
@@ -40,8 +46,16 @@ func main() {
 	accountTree, accountStateTrees, err = tree.InitAccountTree(
 		ctx.AccountHistoryModel,
 		ctx.AccountAssetHistoryModel,
-		ctx.LockAssetHistoryModel,
 		ctx.LiquidityAssetHistoryModel,
+		h,
+	)
+	if err != nil {
+		logx.Error("[committer] => InitMerkleTree error:", err)
+		return
+	}
+	// init nft tree
+	nftTree, err = tree.InitNftTree(
+		ctx.L2NftHistoryModel,
 		h,
 	)
 	if err != nil {
@@ -64,6 +78,7 @@ func main() {
 			ctx,
 			lastCommitTimeStamp,
 			accountTree,
+			nftTree,
 			accountStateTrees,
 		)
 		if err != nil {
@@ -78,13 +93,21 @@ func main() {
 			accountTree, accountStateTrees, err = tree.InitAccountTree(
 				ctx.AccountHistoryModel,
 				ctx.AccountAssetHistoryModel,
-				ctx.LockAssetHistoryModel,
 				ctx.LiquidityAssetHistoryModel,
 				cbh,
 			)
 			if err != nil {
 				logx.Error("[committer] => Re-Init MerkleTree error:", err)
 				panic("merkle tree re-init error")
+			}
+			// init nft tree
+			nftTree, err = tree.InitNftTree(
+				ctx.L2NftHistoryModel,
+				cbh,
+			)
+			if err != nil {
+				logx.Error("[committer] => InitMerkleTree error:", err)
+				return
 			}
 		}
 		logx.Info("========================= end committer task =========================")
