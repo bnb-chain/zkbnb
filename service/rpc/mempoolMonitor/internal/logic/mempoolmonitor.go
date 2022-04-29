@@ -111,7 +111,7 @@ func MonitorMempool(
 				return err
 			}
 			// create new account history
-			pendingNewAccountHistory = append(pendingNewAccountHistory, &account.AccountHistory{
+			accountHistory := &account.AccountHistory{
 				AccountIndex:    nextAccountIndex,
 				AccountName:     txInfo.AccountName,
 				AccountNameHash: nameHash,
@@ -120,7 +120,31 @@ func MonitorMempool(
 				Nonce:           -1,
 				Status:          account.AccountHistoryStatusPending,
 				L2BlockHeight:   -1,
-			})
+			}
+			pendingNewAccountHistory = append(pendingNewAccountHistory, accountHistory)
+			// create mempool tx
+			// serialize tx info
+			txInfoBytes, err := json.Marshal(txInfo)
+			if err != nil {
+				logx.Errorf("[MonitorMempool] unable to serialize tx info : %s", err.Error())
+				return err
+			}
+			mempoolTx := &mempool.MempoolTx{
+				TxHash:        RandomTxHash(),
+				TxType:        int64(txInfo.TxType),
+				GasFee:        0,
+				GasFeeAssetId: 0,
+				AssetAId:      -1,
+				AssetBId:      -1,
+				TxAmount:      "0",
+				NativeAddress: tx.SenderAddress,
+				TxInfo:        string(txInfoBytes),
+				AccountIndex:  accountHistory.AccountIndex,
+				Nonce:         -1,
+				L2BlockHeight: -1,
+				Status:        mempool.PendingTxStatus,
+			}
+			pendingNewMempoolTxs = append(pendingNewMempoolTxs, mempoolTx)
 			break
 		case TxTypeDeposit:
 			// create mempool tx
@@ -441,7 +465,7 @@ func MonitorMempool(
 	logx.Infof("mempoolTxs: %v, finalL2TxEvents: %v, nextAccountIndex: %v", len(pendingNewMempoolTxs),
 		len(txs), nextAccountIndex)
 
-	err = ctx.L2TxEventMonitorModel.CreateMempoolAndActiveAccount(pendingNewMempoolTxs, txs)
+	err = ctx.L2TxEventMonitorModel.CreateMempoolAndActiveAccount(pendingNewAccountHistory, pendingNewMempoolTxs, txs)
 	if err != nil {
 		logx.Errorf("[MonitorMempool] unable to create mempool txs and update l2 tx event monitors, error: %s",
 			err.Error())
