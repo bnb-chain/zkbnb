@@ -20,10 +20,10 @@ package tree
 import (
 	"github.com/zecrey-labs/zecrey-core/common/general/model/nft"
 	"github.com/zecrey-labs/zecrey-core/common/general/model/sysconfig"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/account"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/asset"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/assetHistory"
 	"github.com/zecrey-labs/zecrey-crypto/accumulators/merkleTree"
+	"github.com/zecrey-labs/zecrey-legend/common/model/account"
+	"github.com/zecrey-labs/zecrey-legend/common/model/asset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/assetHistory"
 )
 
 type (

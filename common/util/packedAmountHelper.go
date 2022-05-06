@@ -63,6 +63,21 @@ func ToPackedAmount(amount *big.Int) (res int64, err error) {
 	return packedAmount, nil
 }
 
+func CleanPackedAmount(amount *big.Int) (nAmount *big.Int, err error) {
+	if amount.Cmp(ZeroBigInt) < 0 || amount.Cmp(PackedAmountMaxAmount) > 0 {
+		logx.Errorf("[ToPackedAmount] invalid amount")
+		return nil, errors.New("[ToPackedAmount] invalid amount")
+	}
+	oAmount := new(big.Int).Set(amount)
+	exponent := int64(0)
+	for oAmount.Cmp(PackedAmountMaxMantissa) > 0 {
+		oAmount = ffmath.Div(oAmount, big.NewInt(10))
+		exponent++
+	}
+	nAmount = ffmath.Multiply(oAmount, new(big.Int).Exp(big.NewInt(10), big.NewInt(exponent), nil))
+	return nAmount, nil
+}
+
 /*
 	ToPackedFee: convert big int to 16 bit, 5 bits for 10^x, 11 bits for a * 10^x
 */
@@ -89,4 +104,19 @@ func ToPackedFee(amount *big.Int) (res uint16, err error) {
 		return 0, err
 	}
 	return uint16(packedFee), nil
+}
+
+func CleanPackedFee(amount *big.Int) (nAmount *big.Int, err error) {
+	if amount.Cmp(ZeroBigInt) < 0 || amount.Cmp(PackedFeeMaxAmount) > 0 {
+		logx.Errorf("[ToPackedFee] invalid amount")
+		return nil, errors.New("[ToPackedFee] invalid amount")
+	}
+	oAmount := new(big.Int).Set(amount)
+	exponent := int64(0)
+	for oAmount.Cmp(PackedFeeMaxMantissa) > 0 {
+		oAmount = ffmath.Div(oAmount, big.NewInt(10))
+		exponent++
+	}
+	nAmount = ffmath.Multiply(oAmount, new(big.Int).Exp(big.NewInt(10), big.NewInt(exponent), nil))
+	return nAmount, nil
 }

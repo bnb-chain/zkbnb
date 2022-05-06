@@ -46,14 +46,13 @@ type (
 		gorm.Model
 		TxHash        string `gorm:"uniqueIndex"`
 		TxType        int64
-		GasFee        int64
+		GasFee        string
 		GasFeeAssetId int64
 		TxStatus      int64
 		AssetAId      int64
 		AssetBId      int64
-		TxAmount      int64
+		TxAmount      string
 		NativeAddress string
-		ChainId       int64
 		TxInfo        string
 		ExtraInfo     string
 		Memo          string

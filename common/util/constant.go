@@ -18,8 +18,8 @@
 package util
 
 import (
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/commonAsset"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/commonTx"
+	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
+	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 )
 
 type (

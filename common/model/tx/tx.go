@@ -66,7 +66,7 @@ type (
 		gorm.Model
 		TxHash        string `gorm:"uniqueIndex"`
 		TxType        int64
-		GasFee        int64
+		GasFee        string
 		GasFeeAssetId int64
 		TxStatus      int64
 		BlockHeight   int64 `gorm:"index"`

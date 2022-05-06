@@ -3,7 +3,7 @@ package price
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/l2asset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
 	"io/ioutil"
 	"net/http"
 

@@ -21,10 +21,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/account"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/assetHistory"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/mempool"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/tx"
+	"github.com/zecrey-labs/zecrey-legend/common/model/account"
+	"github.com/zecrey-labs/zecrey-legend/common/model/assetHistory"
+	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zeromicro/go-zero/core/stores/builder"
 	"strconv"
 	"strings"
@@ -721,7 +721,6 @@ type BlockStatusInfo struct {
 	BlockStatus int64
 	CommittedAt int64
 	VerifiedAt  int64
-	ExecutedAt  int64
 }
 
 func (m *defaultBlockModel) GetBlockStatusCacheByBlockHeight(blockHeight int64) (blockStatusInfo *BlockStatusInfo, err error) {

@@ -19,9 +19,7 @@ package util
 
 import (
 	"encoding/json"
-	"errors"
-	"github.com/zeromicro/go-zero/core/logx"
-	"math/big"
+	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 )
 
 type NftInfo struct {
@@ -29,7 +27,7 @@ type NftInfo struct {
 	CreatorAccountIndex int64
 	OwnerAccountIndex   int64
 	AssetId             int64
-	AssetAmount         *big.Int
+	AssetAmount         string
 	NftContentHash      string
 	NftL1TokenId        string
 	NftL1Address        string
@@ -51,19 +49,18 @@ func ParseNftInfo(infoStr string) (info *NftInfo, err error) {
 func EmptyNftInfo(nftIndex int64) (info *NftInfo) {
 	return &NftInfo{
 		NftIndex:            nftIndex,
-		CreatorAccountIndex: -1,
-		OwnerAccountIndex:   -1,
-		AssetId:             -1,
-		AssetAmount:         big.NewInt(0),
-		// TODO zero hash
-		NftContentHash: "0",
-		NftL1TokenId:   "0",
-		NftL1Address:   "0",
+		CreatorAccountIndex: commonConstant.NilAccountIndex,
+		OwnerAccountIndex:   commonConstant.NilAccountIndex,
+		AssetId:             commonConstant.NilAssetId,
+		AssetAmount:         commonConstant.NilAssetAmountStr,
+		NftContentHash:      commonConstant.NilNftContentHash,
+		NftL1TokenId:        commonConstant.NilL1TokenId,
+		NftL1Address:        commonConstant.NilL1Address,
 	}
 }
 
 func IsEmptyNftInfo(info *NftInfo) bool {
-	if info.NftIndex != -1 || info.AssetId != -1 || info.AssetAmount.Cmp(big.NewInt(0)) != 0 ||
+	if info.NftIndex != -1 || info.AssetId != -1 || info.AssetAmount == "0" ||
 		info.NftContentHash != "" || info.NftL1TokenId != "0" || info.NftL1Address != "" {
 		return false
 	}
@@ -80,17 +77,12 @@ func ConstructNftInfo(
 	NftL1TokenId string,
 	NftL1Address string,
 ) (nftInfo *NftInfo, err error) {
-	assetAmount, isValid := new(big.Int).SetString(AssetAmount, Base)
-	if !isValid {
-		logx.Errorf("[ConstructNftInfo] invalid big int")
-		return nil, errors.New("[ConstructNftInfo] invalid big int")
-	}
 	return &NftInfo{
 		NftIndex:            NftIndex,
 		CreatorAccountIndex: CreatorAccountIndex,
 		OwnerAccountIndex:   OwnerAccountIndex,
 		AssetId:             AssetId,
-		AssetAmount:         assetAmount,
+		AssetAmount:         AssetAmount,
 		NftContentHash:      NftContentHash,
 		NftL1TokenId:        NftL1TokenId,
 		NftL1Address:        NftL1Address,

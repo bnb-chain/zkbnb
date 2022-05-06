@@ -20,7 +20,7 @@ package util
 import (
 	"errors"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/commonTx"
+	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 

@@ -20,8 +20,8 @@ package l2TxEventMonitor
 import (
 	"errors"
 	"fmt"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/account"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/common/model/account"
+	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"

@@ -20,8 +20,8 @@ package l1BlockMonitor
 import (
 	"errors"
 	"fmt"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/l2BlockEventMonitor"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/l2TxEventMonitor"
+	"github.com/zecrey-labs/zecrey-legend/common/model/l2BlockEventMonitor"
+	"github.com/zecrey-labs/zecrey-legend/common/model/l2TxEventMonitor"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"

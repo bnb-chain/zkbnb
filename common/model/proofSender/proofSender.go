@@ -18,7 +18,7 @@ package proofSender
 
 import (
 	"errors"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/block"
+	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 )
