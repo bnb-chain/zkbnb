@@ -1,0 +1,478 @@
+syntax = "proto3";
+
+package globalRPCProto;
+
+option go_package = "./globalRPCProto";
+
+/*
+	Proto Name: getLatestAccountLockAsset
+	Description: get latest lock info from LockDelta
+*/
+message ReqGetLatestAccountLockAsset{
+  uint64 AccountIndex = 1;
+  uint64 AssetId = 2;
+  uint64 ChainId = 3;
+}
+
+message ResultGetLatestAccountLockAsset{
+  // primary key
+  uint64 LockAssetId = 1;
+  // account index
+  uint32 AccountIndex = 2;
+  // left asset id
+  uint32 AssetId = 3;
+  // asset name
+  string AssetName = 4;
+  // chain id
+  uint32 ChainId = 5;
+  // value
+  uint64 LockedAmount = 6;
+}
+
+message RespGetLatestAccountLockAsset{
+  int64 Status = 1;
+  string Msg = 2;
+  string Err = 3;
+  ResultGetLatestAccountLockAsset Result = 4;
+}
+
+/*
+	Proto Name: getLatestAccountLockInfoByAccountIndex
+	Description: get latest lock info from LockDelta by account index
+*/
+message ReqGetLatestAccountLockInfoByAccountIndex{
+  uint64 AccountIndex = 1;
+}
+
+message ResultGetLatestAccountLockInfoByAccountIndex{
+  // primary key
+  uint64 LockAssetId = 1;
+  // account index
+  uint32 AccountIndex = 2;
+  // left asset id
+  uint32 AssetId = 3;
+  // asset name
+  string AssetName = 4;
+  // chain id
+  uint32 ChainId = 5;
+  // value
+  uint64 LockedAmount = 6;
+}
+
+message RespGetLatestAccountLockInfoByAccountIndex{
+  int64 Status = 1;
+  string Msg = 2;
+  string Err = 3;
+  repeated ResultGetLatestAccountLockInfoByAccountIndex Result = 4;
+}
+
+/*
+	Proto Name: getLatestAccountLp
+	Description: get latest account lp from LPDelta
+*/
+message ReqGetLatestAccountLp{
+  uint64 AccountIndex = 1;
+  uint64 PairIndex = 2;
+}
+
+message ResultGetLatestAccountLp{
+  // primary key
+  uint64 LiquidityId = 1;
+  // account index
+  uint32 AccountIndex = 2;
+  // left asset id
+  uint32 AssetAId = 3;
+  // asset a name
+  string AssetAName = 4;
+  // right asset id
+  uint32 AssetBId = 5;
+  // asset b name
+  string AssetBName = 6;
+  // pair index
+  uint32 PairIndex = 7;
+  // LP token encryption
+  string LpEnc = 8;
+}
+
+message RespGetLatestAccountLp{
+  int64 Status = 1;
+  string Msg = 2;
+  string Err = 3;
+  ResultGetLatestAccountLp Result = 4;
+}
+
+/*
+	Proto Name: getLatestAccountInfoByAccountIndex
+	Description: get latest account assets list info from BalanceDelta
+*/
+message ReqGetLatestAccountInfoByAccountIndex{
+  uint64 AccountIndex = 1;
+}
+
+message AssetResult{
+  uint32 AssetId = 1;
+  string BalanceEnc = 2;
+}
+
+message ResultGetLatestAccountInfoByAccountIndex{
+  uint32 AccountIndex = 1;
+  string AccountName = 2;
+  string AccountPk = 3;
+  repeated AssetResult AssetResultAssets = 4;
+}
+
+message RespGetLatestAccountInfoByAccountIndex{
+  int64 Status = 1;
+  string Msg = 2;
+  string Err = 3;
+  ResultGetLatestAccountInfoByAccountIndex Result = 4;
+}
+
+/*
+	Proto Name: getLatestAccountAssetInfo
+	Description: get latest account assets list info from BalanceDelta
+*/
+message ReqGetLatestAccountAssetInfo{
+  uint64 AccountIndex = 1;
+  uint64 AssetId = 2;
+}
+
+message ResultGetLatestAccountAssetInfo{
+  uint32 AccountIndex = 1;
+  string AccountName = 2;
+  string AccountPk = 3;
+  AssetResult AssetResultAssets = 4;
+}
+
+message RespGetLatestAccountAssetInfo{
+  int64 Status = 1;
+  string Msg = 2;
+  string Err = 3;
+  ResultGetLatestAccountAssetInfo Result = 4;
+}
+
+
+/*
+	Proto Name: getLatestPoolInfo
+	Description: get latest pool assetA/B info from LiquidityDelta
+ */
+message ReqGetLatestPoolInfo{
+  uint64 PairIndex = 1;
+}
+
+message ResultGetLatestPoolInfo{
+  // primary key
+  uint64 LiquidityId = 1;
+  // account index
+  uint32 AccountIndex = 2;
+  // left asset id
+  uint32 AssetAId = 3;
+  // asset a name
+  string AssetAName = 4;
+  // left asset Amount
+  uint64 AssetAAmount = 5;
+  // right asset id
+  uint32 AssetBId = 6;
+  // asset b name
+  string AssetBName = 7;
+  // left asset Amount
+  uint64 AssetBAmount = 8;
+  // pair index
+  uint32 PairIndex = 9;
+  // LP token encryption
+  string LpEnc = 10;
+}
+
+message RespGetLatestPoolInfo{
+  int64 Status = 1;
+  string Msg = 2;
+  string Err = 3;
+  ResultGetLatestPoolInfo Result = 4;
+}
+
+
+/*
+	Proto Name: getLatestTxsListByAccountIndex
+	Description: get latest transaction list including mempool transaction by account index
+ */
+
+message ReqGetLatestTxsListByAccountIndex{
+  uint64 AccountIndex = 1;
+  uint64 limit = 2;
+}
+
+message TxDetail{
+  int64 AssetId = 1;
+  int64 AssetType = 2;
+  int64 AccountIndex = 3;
+  string AccountName = 4;
+  string AccountBalanceEnc = 5;
+  string AccountDeltaEnc = 6;
+}
+
+message ResultGetLatestTxsListByAccountIndex{
+  string TxHash = 1;
+  int64 TxType = 2;
+  int64 TxStatus = 3;
+  int64 TxAssetAId = 4;
+  int64 TxAssetBId = 5;
+  repeated TxDetail TxDetails = 6;
+  int64 TxAmount = 7;
+  string NativeAddress = 8;
+  int64 GasFeeAssetId = 9;
+  int64 GasFee = 10;
+  int64 BlockStatus = 11;
+  int64 BlockHeight = 12;
+  int64 BlockId = 13;
+  int64 ChainId = 14;
+  string Memo = 15;
+  int64 CreateAt = 16;
+}
+
+message RespGetLatestTxsListByAccountIndex{
+  int64 Status = 1;
+  string Msg = 2;
+  string Err = 3;
+  repeated ResultGetLatestTxsListByAccountIndex Result = 4;
+}
+
+/*
+	Proto Name: getLatestTxsListByAccountIndexAndTxType
+	Description: get latest transaction list including mempool transaction by account index and tx type
+ */
+
+message ReqGetLatestTxsListByAccountIndexAndTxType{
+  uint64 AccountIndex = 1;
+  uint64 TxType = 2;
+  uint64 Limit = 3;
+  uint64 Offset = 4;
+}
+
+message TransactionInfo{
+  string TxHash = 1;
+  int64 TxType = 2;
+  int64 TxStatus = 3;
+  int64 TxAssetAId = 4;
+  int64 TxAssetBId = 5;
+  repeated TxDetail TxDetails = 6;
+  int64 TxAmount = 7;
+  string NativeAddress = 8;
+  int64 GasFeeAssetId = 9;
+  int64 GasFee = 10;
+  int64 BlockStatus = 11;
+  int64 BlockHeight = 12;
+  int64 BlockId = 13;
+  int64 ChainId = 14;
+  string Memo = 15;
+  int64 CreateAt = 16;
+}
+
+message ResultGetLatestTxsListByAccountIndexAndTxType{
+  uint64 Limit = 1;
+  uint64 Offset = 2;
+  uint64 Total = 3;
+  repeated TransactionInfo TxsList = 4;
+}
+
+message RespGetLatestTxsListByAccountIndexAndTxType{
+  int64 Status = 1;
+  string Msg = 2;
+  string Err = 3;
+  ResultGetLatestTxsListByAccountIndexAndTxType Result = 4;
+}
+
+// SendTx
+message ReqSendTx{
+  uint64 TxType = 1;
+  string TxInfo = 2;
+}
+
+message ResultSendTx{
+  string TxId = 1;
+}
+
+message RespSendTx{
+  int64 Status = 1;
+  string Msg = 2;
+  string Err = 3;
+  ResultSendTx Result = 4;
+}
+
+// GetSwapAmount
+message ReqGetSwapAmount{
+  uint32 PairIndex = 1;
+  uint32 AssetId = 2;
+  uint64 AssetAmount = 3;
+  bool IsFrom = 4;
+}
+
+message ResultGetSwapAmount{
+  uint32 PairIndex = 1;
+  uint64 ResAssetAmount = 2;
+  uint32 ResAssetId = 3;
+}
+
+message RespGetSwapAmount{
+  int64 Status = 1;
+  string Msg = 2;
+  string Err = 3;
+  ResultGetSwapAmount Result = 4;
+}
+
+// GetAvailablePairsList
+/*
+message ReqGetAvailablePairsList{
+
+}
+
+message ResultGetAvailablePairsList{
+  uint32 PairIndex = 1;
+  uint32 AssetAId = 2;
+  string AssetAName = 3;
+  uint32 AssetBId = 4;
+  string AssetBName = 5;
+}
+
+message RespGetAvailablePairsList{
+  int64 Status = 1;
+  string Msg = 2;
+  string Err = 3;
+  ResultGetAvailablePairsList Result = 4;
+}
+
+ */
+
+// GetLpValue
+message ReqGetLpValue{
+  uint32 PairIndex = 1;
+  uint64 LPAmount = 2;
+}
+
+message ResultGetLpValue{
+  uint32 AssetAId = 1;
+  string AssetAName = 2;
+  uint64 AssetAAmount = 3;
+  uint32 AssetBId = 4;
+  string AssetBName = 5;
+  uint64 AssetBAmount = 6;
+}
+
+message RespGetLpValue{
+  int64 Status = 1;
+  string Msg = 2;
+  string Err = 3;
+  ResultGetLpValue Result = 4;
+}
+
+// GetPairRatio
+message ReqGetPairRatio{
+  uint32 PairIndex = 1;
+}
+
+message ResultGetPairRatio{
+  float  PairRatio = 1;
+  uint32 AssetAId = 2;
+  uint64 AssetAAmount = 3;
+  uint32 AssetBId = 4;
+  uint64 AssetBAmount = 5;
+  uint64 TotalLpAmount = 6;
+}
+
+message RespGetPairRatio{
+  int64 Status = 1;
+  string Msg = 2;
+  string Err = 3;
+  ResultGetPairRatio Result = 4;
+}
+
+// globalmap
+
+message ReqResetGlobalMap{
+
+}
+
+message RespResetGlobalMap{
+  int64 Status = 1;
+  string Msg = 2;
+  string Err = 3;
+}
+
+// getLatestL1AmountList
+message ReqGetLatestL1AmountList{
+
+}
+
+message ResultGetLatestL1AmountList{
+  int64 ChainId = 1;
+  int64 AssetId = 2;
+  int64 TotalAmount = 3;
+}
+
+message RespGetLatestL1AmountList{
+  int64 Status = 1;
+  string Msg = 2;
+  string Err = 3;
+  repeated ResultGetLatestL1AmountList Result = 4;
+}
+
+// getLatestL1AmountListByAssetId
+message ReqGetLatestL1AmountListByAssetId{
+  int64 AssetId = 1;
+}
+
+message ResultGetLatestL1AmountListByAssetId{
+  int64 ChainId = 1;
+  int64 AssetId = 2;
+  int64 TotalAmount = 3;
+}
+
+message RespGetLatestL1AmountListByAssetId{
+  int64 Status = 1;
+  string Msg = 2;
+  string Err = 3;
+  repeated ResultGetLatestL1AmountListByAssetId Result = 4;
+}
+
+// getLatestL1Amount
+message ReqGetLatestL1Amount{
+  int64 ChainId = 1;
+  int64 AssetId = 2;
+}
+
+message ResultGetLatestL1Amount{
+  int64 TotalAmount = 1;
+}
+
+message RespGetLatestL1Amount{
+  int64 Status = 1;
+  string Msg = 2;
+  string Err = 3;
+  ResultGetLatestL1Amount Result = 4;
+}
+
+
+service globalRPC {
+  rpc getLatestPoolInfo(ReqGetLatestPoolInfo) returns(RespGetLatestPoolInfo);
+  rpc getLatestAccountAssetInfo(ReqGetLatestAccountAssetInfo) returns(RespGetLatestAccountAssetInfo);
+  rpc getLatestAccountInfoByAccountIndex(ReqGetLatestAccountInfoByAccountIndex) returns (RespGetLatestAccountInfoByAccountIndex);
+  rpc getLatestAccountLockAsset(ReqGetLatestAccountLockAsset) returns (RespGetLatestAccountLockAsset);
+  rpc getLatestAccountLockInfoByAccountIndex(ReqGetLatestAccountLockInfoByAccountIndex) returns (RespGetLatestAccountLockInfoByAccountIndex);
+  rpc getLatestAccountLp(ReqGetLatestAccountLp) returns (RespGetLatestAccountLp);
+  rpc getLatestTxsListByAccountIndex(ReqGetLatestTxsListByAccountIndex) returns(RespGetLatestTxsListByAccountIndex);
+  rpc getLatestTxsListByAccountIndexAndTxType(ReqGetLatestTxsListByAccountIndexAndTxType) returns(RespGetLatestTxsListByAccountIndexAndTxType);
+  rpc sendTx(ReqSendTx) returns(RespSendTx);
+
+  // pair
+  //rpc getAvailablePairsList(ReqGetAvailablePairsList) returns (RespGetAvailablePairsList);
+  rpc getLpValue(ReqGetLpValue) returns (RespGetLpValue);
+  rpc getPairRatio(ReqGetPairRatio) returns (RespGetPairRatio);
+  rpc getSwapAmount(ReqGetSwapAmount) returns (RespGetSwapAmount);
+
+  // globalmap
+  rpc resetGlobalMap(ReqResetGlobalMap) returns (RespResetGlobalMap);
+
+  // l1Amount
+  rpc getLatestL1Amount(ReqGetLatestL1Amount) returns (RespGetLatestL1Amount);
+  rpc getLatestL1AmountList(ReqGetLatestL1AmountList) returns (RespGetLatestL1AmountList);
+  rpc getLatestL1AmountListByAssetId(ReqGetLatestL1AmountListByAssetId) returns (RespGetLatestL1AmountListByAssetId);
+}

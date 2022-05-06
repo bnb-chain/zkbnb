@@ -1,0 +1,22 @@
+Name: global.rpc
+ListenOn: 127.0.0.1:8080
+
+Etcd:
+  Hosts:
+    - 127.0.0.1:2379
+  Key: global.rpc
+
+Postgres:
+  DataSource: host=127.0.0.1 user=postgres password=ZecreyProtocolDB@123 dbname=zecrey port=5432 sslmode=disable
+
+CacheRedis:
+  - Host: 127.0.0.1:6379
+    Pass: myredis
+    Type: node
+  
+LogConf:
+  ServiceName: global.rpc
+  Mode: console
+  Path: ./log/globalrpc
+  StackCooldownMillis: 500
+  
