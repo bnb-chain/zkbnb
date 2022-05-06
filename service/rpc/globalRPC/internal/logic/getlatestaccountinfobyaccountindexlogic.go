@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
+	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/logic/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 	"reflect"
 
@@ -54,7 +54,11 @@ func (l *GetLatestAccountInfoByAccountIndexLogic) GetLatestAccountInfoByAccountI
 	}
 
 	// in.AccountIndex
-	accountInfo, err := globalmapHandler.GetLatestAccountInfo(l.svcCtx, int64(in.AccountIndex))
+	accountInfo, err := globalmapHandler.GetLatestAccountInfo(
+		l.svcCtx.AccountHistoryModel,
+		l.svcCtx.MempoolModel,
+		l.svcCtx.RedisConnection,
+		int64(in.AccountIndex))
 	if err != nil {
 		errInfo := fmt.Sprintf("[logic.GetLatestAccountInfoByAccountIndex] => [AccountModel.GetAccountByAccountIndex] :%s. Invalid AccountIndex: %v ", err.Error(), in.AccountIndex)
 		logx.Error(errInfo)
@@ -77,7 +81,12 @@ func (l *GetLatestAccountInfoByAccountIndexLogic) GetLatestAccountInfoByAccountI
 
 	for _, v := range l2AssetsList {
 
-		accountSingleAssetA, err := globalmapHandler.GetLatestAsset(l.svcCtx, accountInfo.AccountIndex, v.AssetId)
+		accountSingleAssetA, err := globalmapHandler.GetLatestAsset(
+			l.svcCtx.AssetModel,
+			l.svcCtx.AssetHistoryModel,
+			l.svcCtx.MempoolDetailModel,
+			l.svcCtx.RedisConnection,
+			accountInfo.AccountIndex, v.AssetId)
 		if err != nil {
 			errInfo := fmt.Sprintf("[logic.GetLatestAccountInfoByAccountIndex] => [GetLatestSingleAccountAsset] :%s. Invalid AccountIndex/AssetId: %v/%v ",
 				err.Error(), uint32(accountInfo.AccountIndex), uint32(v.AssetId))

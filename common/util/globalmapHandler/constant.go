@@ -14,13 +14,21 @@
  * limitations under the License.
  */
 
-package sendtxHandler
+package globalmapHandler
 
-import (
-	"errors"
-)
+const (
+	LpPrefix            = "LP::"
+	LockPrefix          = "Lock::"
+	PoolLiquidityPrefix = "PoolLiquidity::"
+	AccountAssetPrefix  = "AccountAsset::"
 
-var (
-	ErrLockedAccount = errors.New("[mempool state] err: account is doing operations, please wait and try again")
-	ErrInvalidParams = errors.New("[mempool state] err: invalid params")
+	L1AmountPrefix = "L1Amount::"
+
+	LockNumber = 50
+
+	LockExpiryTime = 10 // seconds
+	RetryInterval  = 500
+	MaxRetryTimes  = 3
+
+	BalanceExpiryTime = 30 // seconds
 )

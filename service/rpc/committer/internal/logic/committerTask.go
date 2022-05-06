@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/asset"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
@@ -174,9 +175,13 @@ func CommitterTask(
 					accountsHistoryMap[mempoolTx.AccountIndex] = accountHistoryInfo
 				}
 			}
-
 			// check if we need to update nonce(create new account history)
 			if mempoolTx.Nonce != -1 {
+				// check nonce, the latest nonce should be previous nonce + 1
+				if mempoolTx.Nonce != accountsHistoryMap[mempoolTx.AccountIndex].Nonce+1 {
+					logx.Errorf("[CommitterTask] invalid nonce")
+					return errors.New("[CommitterTask] invalid nonce")
+				}
 				// update nonce first
 				accountsHistoryMap[mempoolTx.AccountIndex].Nonce = mempoolTx.Nonce
 				// check for update or create
@@ -231,11 +236,6 @@ func CommitterTask(
 					}
 					// update assetInfo history
 					assetInfo := assetsHistoryMap[key]
-					// special design for deposit
-					if mempoolTx.TxType == TxTypeDeposit {
-						// set balance enc
-						mempoolTxDetail.Balance = assetInfo.Balance
-					}
 					// check balance
 					if !accountAssetExist[mempoolTxDetail.AccountIndex][mempoolTxDetail.AssetId] {
 						accountAssetExist[mempoolTxDetail.AccountIndex][mempoolTxDetail.AssetId] = true
@@ -538,11 +538,11 @@ func CommitterTask(
 											CreatorAccountIndex: emptyNftInfo.CreatorAccountIndex,
 											OwnerAccountIndex:   emptyNftInfo.OwnerAccountIndex,
 											AssetId:             emptyNftInfo.AssetId,
-											AssetAmount:         emptyNftInfo.AssetAmount.String(),
+											AssetAmount:         emptyNftInfo.AssetAmount,
 											NftContentHash:      emptyNftInfo.NftContentHash,
 											NftL1TokenId:        emptyNftInfo.NftL1TokenId,
 											NftL1Address:        emptyNftInfo.NftL1Address,
-											CollectionId:        -1,
+											CollectionId:        commonConstant.NilCollectionId,
 											L2BlockHeight:       currentBlockHeight,
 										}
 									} else {
@@ -590,7 +590,7 @@ func CommitterTask(
 						CreatorAccountIndex: newNftInfo.CreatorAccountIndex,
 						OwnerAccountIndex:   newNftInfo.OwnerAccountIndex,
 						AssetId:             newNftInfo.AssetId,
-						AssetAmount:         newNftInfo.AssetAmount.String(),
+						AssetAmount:         newNftInfo.AssetAmount,
 						NftContentHash:      newNftInfo.NftContentHash,
 						NftL1TokenId:        newNftInfo.NftL1TokenId,
 						NftL1Address:        newNftInfo.NftL1Address,

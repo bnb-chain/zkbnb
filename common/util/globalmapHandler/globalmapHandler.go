@@ -22,9 +22,9 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
+	"strconv"
 )
 
 func ResetGlobalMap(connection *redis.Redis, redisLockMap map[string]*redis.RedisLock) (err error) {
@@ -44,7 +44,7 @@ func ResetGlobalMap(connection *redis.Redis, redisLockMap map[string]*redis.Redi
 	Description: Update Global Map by new transaction.
 				LockedAssetType globalMap must be initialized before UpdateGlobalMap otherwise it will throw panic.
 */
-func UpdateGlobalMap(svcCtx *svc.ServiceContext, nTx *mempool.MempoolTx, redisLockMap map[string]*redis.RedisLock) (err error) {
+func UpdateGlobalMap(redisConnection *redis.Redis, nTx *mempool.MempoolTx, redisLockMap map[string]*redis.RedisLock) (err error) {
 	for _, detail := range nTx.MempoolDetails {
 		var (
 			key      string
@@ -55,7 +55,7 @@ func UpdateGlobalMap(svcCtx *svc.ServiceContext, nTx *mempool.MempoolTx, redisLo
 			key = util.GetAccountAssetUniqueKey(detail.AccountIndex, detail.AssetId)
 			nBalance, err = util.ComputeNewBalance(detail.AssetType, detail.Balance, detail.BalanceDelta)
 			if err != nil {
-				err = ResetGlobalMap(svcCtx.RedisConnection, redisLockMap)
+				err = ResetGlobalMap(redisConnection, redisLockMap)
 				if err == nil {
 					ReleaseLock(redisLockMap)
 				}
@@ -68,7 +68,7 @@ func UpdateGlobalMap(svcCtx *svc.ServiceContext, nTx *mempool.MempoolTx, redisLo
 			key = util.GetPoolLiquidityUniqueKey(detail.AccountIndex, detail.AssetId)
 			nBalance, err = util.ComputeNewBalance(detail.AssetType, detail.Balance, detail.BalanceDelta)
 			if err != nil {
-				err = ResetGlobalMap(svcCtx.RedisConnection, redisLockMap)
+				err = ResetGlobalMap(redisConnection, redisLockMap)
 				if err == nil {
 					ReleaseLock(redisLockMap)
 				}
@@ -81,7 +81,7 @@ func UpdateGlobalMap(svcCtx *svc.ServiceContext, nTx *mempool.MempoolTx, redisLo
 			key = util.GetAccountLPUniqueKey(detail.AccountIndex, detail.AssetId)
 			nBalance, err = util.ComputeNewBalance(detail.AssetType, detail.Balance, detail.BalanceDelta)
 			if err != nil {
-				err = ResetGlobalMap(svcCtx.RedisConnection, redisLockMap)
+				err = ResetGlobalMap(redisConnection, redisLockMap)
 				if err == nil {
 					ReleaseLock(redisLockMap)
 				}
@@ -94,7 +94,7 @@ func UpdateGlobalMap(svcCtx *svc.ServiceContext, nTx *mempool.MempoolTx, redisLo
 			key = util.GetAccountNftUniqueKey(detail.AccountIndex, detail.AssetId)
 			nBalance, err = util.ComputeNewBalance(detail.AssetType, detail.Balance, detail.BalanceDelta)
 			if err != nil {
-				err = ResetGlobalMap(svcCtx.RedisConnection, redisLockMap)
+				err = ResetGlobalMap(redisConnection, redisLockMap)
 				if err == nil {
 					ReleaseLock(redisLockMap)
 				}
@@ -104,7 +104,7 @@ func UpdateGlobalMap(svcCtx *svc.ServiceContext, nTx *mempool.MempoolTx, redisLo
 			}
 			break
 		}
-		HandleGlobalMapUpdate(svcCtx.RedisConnection, key, nBalance)
+		HandleGlobalMapUpdate(redisConnection, nTx, key, nBalance)
 	}
 
 	ReleaseLock(redisLockMap)
@@ -117,8 +117,15 @@ func UpdateGlobalMap(svcCtx *svc.ServiceContext, nTx *mempool.MempoolTx, redisLo
 	Return:
 	Description: Update Global Map by key / new value
 */
-func HandleGlobalMapUpdate(connection *redis.Redis, key string, nBalance string) {
-	err := connection.Setex(key, nBalance, BalanceExpiryTime)
+func HandleGlobalMapUpdate(connection *redis.Redis, nTx *mempool.MempoolTx, key string, nBalance string) {
+	// update nonce
+	accountKey := util.GetAccountKey(nTx.AccountIndex)
+	err := connection.Setex(accountKey, strconv.FormatInt(nTx.Nonce+1, 10), BalanceExpiryTime)
+	if err != nil {
+		connection.Del(accountKey)
+	}
+	// update balance
+	err = connection.Setex(key, nBalance, BalanceExpiryTime)
 	if err != nil {
 		connection.Del(key)
 	}

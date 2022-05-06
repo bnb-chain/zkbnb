@@ -28,4 +28,5 @@ var (
 	NilL1TokenId      = "-1"
 	NilL1Address      = "0"
 	NilAccountIndex   = int64(-1)
+	NilCollectionId   = int64(-1)
 )

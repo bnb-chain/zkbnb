@@ -23,22 +23,26 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/asset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/assetHistory"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/redis"
 	"strconv"
 )
 
-func GetLatestAccountInfo(
-	svcCtx *svc.ServiceContext,
+func GetLatestAccountInfoByLock(
+	accountHistoryModel account.AccountHistoryModel,
+	mempoolModel mempool.MempoolModel,
+	redisConnection *redis.Redis,
 	accountIndex int64,
+	redisLockMap map[string]*redis.RedisLock,
 ) (
 	accountInfo *account.Account,
 	err error,
 ) {
 	// get account info by account index
-	accountHistory, err := svcCtx.AccountHistoryModel.GetAccountByAccountIndex(accountIndex)
+	accountHistory, err := accountHistoryModel.GetAccountByAccountIndex(accountIndex)
 	if err != nil {
 		errInfo := fmt.Sprintf("[GetLatestAccountInfoByLock] %s. invalid accountIndex %v",
 			err.Error(), accountIndex)
@@ -56,10 +60,21 @@ func GetLatestAccountInfo(
 	}
 	// get latest nonce
 	key := util.GetAccountKey(accountIndex)
+	lockKey := util.GetLockKey(key)
+	// get lock
+	redisLock := GetRedisLockByKey(redisConnection, lockKey)
+	// try acquire lock
+	err = TryAcquireLock(redisLock)
+	if err != nil {
+		logx.Errorf("[GetLatestAccountInfoByLock] unable to acquire lock: %s", err.Error())
+		return nil, err
+	}
 	// get nonce from redis first
-	nonceStr, err := svcCtx.RedisConnection.Get(key)
+	nonceStr, err := redisConnection.Get(key)
 	if err != nil {
 		logx.Errorf("[GetLatestAccountInfoByLock] unable to get from redis: %s", err.Error())
+		// release lock
+		redisLock.Release()
 		return nil, err
 	}
 	if nonceStr != "" {
@@ -68,43 +83,34 @@ func GetLatestAccountInfo(
 			logx.Errorf("[GetLatestAccountInfoByLock] unable to parse int: %s", err.Error())
 			return nil, err
 		}
-		// update redis
-		svcCtx.RedisConnection.Expire(key, BalanceExpiryTime)
 	} else {
-		lockKey := util.GetLockKey(key)
-		// get lock
-		redisLock := GetRedisLockByKey(svcCtx.RedisConnection, lockKey)
-		// try acquire lock
-		err = TryAcquireLock(redisLock)
 		// get latest nonce from mempool
-		l2MempoolTx, err := svcCtx.MempoolModel.GetLatestL2MempoolTxByAccountIndex(accountIndex)
+		l2MempoolTx, err := mempoolModel.GetLatestL2MempoolTxByAccountIndex(accountIndex)
 		if err != nil {
 			if err != mempool.ErrNotFound {
 				logx.Errorf("[GetLatestAccountInfoByLock] unable to get latest mempool tx: %s", err.Error())
 				return nil, err
 			} else {
-				// release lock
-				if err == nil {
-					redisLock.Release()
-				}
+				redisLockMap[lockKey] = redisLock
 				return accountInfo, nil
 			}
 		}
-		accountInfo.Nonce = l2MempoolTx.Nonce
-		// update redis
-		if err == nil {
-			svcCtx.RedisConnection.Setex(key, strconv.FormatInt(accountInfo.Nonce, 10), BalanceExpiryTime)
-			redisLock.Release()
-		}
+		accountInfo.Nonce = l2MempoolTx.Nonce + 1
 	}
 
+	// append it into redisLockMap for later release
+	redisLockMap[lockKey] = redisLock
 	return accountInfo, nil
 }
 
-func GetLatestAsset(
-	svcCtx *svc.ServiceContext,
+func GetLatestAssetByLock(
+	assetModel asset.AccountAssetModel,
+	assetHistoryModel assetHistory.AccountAssetHistoryModel,
+	mempoolTxDetailModel mempool.MempoolTxDetailModel,
+	redisConnection *redis.Redis,
 	accountIndex int64,
 	assetId int64,
+	redisLockMap map[string]*redis.RedisLock,
 ) (assetInfo *asset.AccountAsset, err error) {
 	// get asset info
 	assetInfo = &asset.AccountAsset{
@@ -115,43 +121,45 @@ func GetLatestAsset(
 	// get latest account info by accountIndex and assetId
 	key := util.GetAccountAssetUniqueKey(accountIndex, assetId)
 	lockKey := util.GetLockKey(key)
+	// get lock
+	redisLock := GetRedisLockByKey(redisConnection, lockKey)
+	// lock
+	err = TryAcquireLock(redisLock)
+	if err != nil {
+		logx.Errorf("[GetLatestAssetByLock] unable to acquire lock: %s", err.Error())
+		return nil, err
+	}
 	// get data from redis
-	latestBalance, err := svcCtx.RedisConnection.Get(key)
+	latestBalance, err := redisConnection.Get(key)
 	if err != nil {
 		logx.Errorf("[GetLatestAssetByLock] unable to get balance from redis: %s", err.Error())
+		// release lock
+		redisLock.Release()
 		return nil, err
 	}
 	if latestBalance != "" {
 		assetInfo.Balance = latestBalance
 	} else {
-		// get lock
-		redisLock := GetRedisLockByKey(svcCtx.RedisConnection, lockKey)
-		// lock
-		tryLockErr := TryAcquireLock(redisLock)
 		// get accountAssetInfo by accountIndex and assetId
-		resAccountSingleAsset, err := svcCtx.AssetHistoryModel.GetSingleAccountAssetHistory(accountIndex, assetId)
+		resAccountSingleAsset, err := assetHistoryModel.GetSingleAccountAssetHistory(accountIndex, assetId)
 		if err != nil {
 			if err != asset.ErrNotFound {
 				errInfo := fmt.Sprintf("[GetLatestAssetByLock] %s. Invalid accountIndex/assetId %v/%v",
 					err.Error(), accountIndex, assetId)
 				logx.Error(errInfo)
 				// release lock
-				if tryLockErr == nil {
-					redisLock.Release()
-				}
+				redisLock.Release()
 				return nil, errors.New(errInfo)
 			} else {
 				// get data from asset table
-				accountAssetInfo, err := svcCtx.AssetModel.GetSingleAccountAsset(accountIndex, assetId)
+				accountAssetInfo, err := assetModel.GetSingleAccountAsset(accountIndex, assetId)
 				if err != nil {
 					if err != asset.ErrNotFound {
 						errInfo := fmt.Sprintf("[GetLatestAssetByLock] %s. Invalid accountIndex/assetId %v/%v",
 							err.Error(), accountIndex, assetId)
 						logx.Error(errInfo)
 						// release lock
-						if tryLockErr == nil {
-							redisLock.Release()
-						}
+						redisLock.Release()
 						return nil, err
 					}
 				}
@@ -161,7 +169,7 @@ func GetLatestAsset(
 			assetInfo.Balance = resAccountSingleAsset.Balance
 		}
 		// fetch latest generalAssetType transaction
-		mempoolDetail, err := svcCtx.MempoolDetailModel.GetLatestAccountAssetMempoolDetail(
+		mempoolDetail, err := mempoolTxDetailModel.GetLatestAccountAssetMempoolDetail(
 			accountIndex,
 			assetId,
 			commonAsset.GeneralAssetType,
@@ -185,10 +193,7 @@ func GetLatestAsset(
 			}
 			assetInfo.Balance = latestBalance
 		}
-		if tryLockErr == nil {
-			svcCtx.RedisConnection.Setex(key, assetInfo.Balance, BalanceExpiryTime)
-			redisLock.Release()
-		}
+		redisLockMap[lockKey] = redisLock
 	}
 
 	return assetInfo, err
