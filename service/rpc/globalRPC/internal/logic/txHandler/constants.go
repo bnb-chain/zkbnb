@@ -21,19 +21,6 @@ import (
 )
 
 const (
-	TxTypeNoOp = iota
-	TxTypeDeposit
-	TxTypeLock
-	TxTypeUnLock
-	TxTypeTransfer
-	TxTypeSwap
-	TxTypeAddLiquidity
-	TxTypeRemoveLiquidity
-	TxTypeWithdraw
-	TxTypeForceExit
-)
-
-const (
 	_ = iota
 	TxPending
 	TxSuccess

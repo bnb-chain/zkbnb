@@ -18,23 +18,10 @@ package logic
 
 type AccountSingleAsset struct {
 	AccountId    uint
-	AssetId      uint32
-	AccountIndex uint32
-	AccountName  string
-	BalanceEnc   string
-	PublicKey    string
-}
-
-type AccountSingleLockedAsset struct {
-	// account info
-	AccountId    uint
 	AccountIndex uint32
 	AccountName  string
 	PublicKey    string
-	// locked asset info
-	ChainId      uint8
-	AssetName    string
-	LockAssetId  uint32
+	Nonce        int64
 	AssetId      uint32
-	LockedAmount uint64
+	Balance      string
 }

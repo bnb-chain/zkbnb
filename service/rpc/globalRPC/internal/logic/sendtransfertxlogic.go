@@ -13,25 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package logic
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/zecrey-labs/zecrey/common/commonAsset"
+	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
+	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
+	"github.com/zecrey-labs/zecrey-legend/common/model/account"
+	"github.com/zecrey-labs/zecrey-legend/common/model/asset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
+	"github.com/zecrey-labs/zecrey-legend/common/sysconfigName"
+	"github.com/zecrey-labs/zecrey-legend/common/util"
+	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/logic/globalmapHandler"
+	"github.com/zeromicro/go-zero/core/stores/redis"
 	"reflect"
+	"strconv"
 
-	"github.com/zecrey-labs/zecrey/common/commonAccount"
-	"github.com/zecrey-labs/zecrey/common/utils"
-
-	"github.com/zecrey-labs/zecrey/common/commonTx"
-	"github.com/zecrey-labs/zecrey/common/model/mempool"
-	"github.com/zecrey-labs/zecrey/common/model/tx"
-	"github.com/zecrey-labs/zecrey/common/zcrypto/cryptoUtils"
-	"github.com/zecrey-labs/zecrey/common/zcrypto/zecreyProofs"
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/internal/logic/globalmapHandler"
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/internal/logic/txHandler"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -46,97 +48,110 @@ func (l *SendTxLogic) sendTransferTx(rawTxInfo string) (txId string, err error) 
 	/*
 		Check Params
 	*/
-	err = utils.CheckRequestParam(utils.TypeAssetId, reflect.ValueOf(txInfo.AssetId))
+	err = util.CheckRequestParam(util.TypeAssetId, reflect.ValueOf(txInfo.AssetId))
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendTransferTx] err: invalid assetId %v", txInfo.AssetId)
 		return "", l.HandleCreateTransferFailTx(txInfo, errors.New(errInfo))
 	}
-
-	var (
-		accountMap = make(map[uint32]bool)
-	)
-	for _, accountIndex := range txInfo.AccountsIndex {
-		err = utils.CheckRequestParam(utils.TypeAccountIndex, reflect.ValueOf(accountIndex))
-		if err != nil {
-			errInfo := fmt.Sprintf("[sendTransferTx] err: invalid accountIndex %v", txInfo.AccountsIndex)
-			return "", l.HandleCreateTransferFailTx(txInfo, errors.New(errInfo))
-		}
-		if accountMap[accountIndex] == true {
-			errInfo := fmt.Sprintf("[sendTransferTx] err: duplicated accountIndex %v", txInfo.AccountsIndex)
-			return "", l.HandleCreateTransferFailTx(txInfo, errors.New(errInfo))
-		} else {
-			accountMap[accountIndex] = true
-		}
-	}
-
-	err = utils.CheckRequestParam(utils.TypeGasFee, reflect.ValueOf(txInfo.GasFee))
+	// check param: from account index
+	err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.FromAccountIndex))
 	if err != nil {
-		errInfo := fmt.Sprintf("[sendTransferTx] err: invalid gas fee %v", txInfo.GasFee)
+		errInfo := fmt.Sprintf("[sendTransferTx] err: invalid accountIndex %v", txInfo.FromAccountIndex)
 		return "", l.HandleCreateTransferFailTx(txInfo, errors.New(errInfo))
 	}
+	// check param: to account index
+	err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.ToAccountIndex))
+	if err != nil {
+		errInfo := fmt.Sprintf("[sendTransferTx] err: invalid accountIndex %v", txInfo.ToAccountIndex)
+		return "", l.HandleCreateTransferFailTx(txInfo, errors.New(errInfo))
+	}
+	// check gas account index
+	gasAccountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
+	if err != nil {
+		logx.Errorf("[sendTransferTx] unable to get sysconfig by name: %s", err.Error())
+		return "", l.HandleCreateTransferFailTx(txInfo, err)
+	}
+	gasAccountIndex, err := strconv.ParseInt(gasAccountIndexConfig.Value, 10, 64)
+	if gasAccountIndex != txInfo.GasAccountIndex {
+		logx.Errorf("[sendTransferTx] invalid gas account index")
+		return "", l.HandleCreateTransferFailTx(txInfo, errors.New("[sendTransferTx] invalid gas account index"))
+	}
 
 	var (
-		accountAssetInfoList   []*zecreyProofs.AccountAssetInfo
-		gasAssetInfo           *zecreyProofs.AccountAssetInfo
-		accountSingleAssetList []*AccountSingleAsset
-		_                      *AccountSingleAsset
+		accountInfoMap = make(map[int64]*account.Account)
+		assetInfoMap   = make(map[int64]map[int64]*asset.AccountAsset)
+		redisLockMap   = make(map[string]*redis.RedisLock)
 	)
-	/*
-		Construct accountAssetInfoList & accountSingleAssetList
-	*/
-	for _, accountIndex := range txInfo.AccountsIndex {
-		// get accountInfo by accountIndex
-		accountInfo, err := GetLatestSingleAccountAsset(l.svcCtx, accountIndex, txInfo.AssetId)
-		if err != nil {
-			return "", l.HandleCreateTransferFailTx(txInfo, err)
-		}
-
-		nAccountInfo, err := zecreyProofs.ConstructAccountAssetInfo(
-			accountInfo.AccountId,
-			int64(accountInfo.AccountIndex),
-			accountInfo.AccountName,
-			accountInfo.PublicKey,
-			int64(accountInfo.AssetId),
-			accountInfo.BalanceEnc,
-		)
-		if err != nil {
-			return "", l.HandleCreateTransferFailTx(txInfo, err)
-		}
-		accountAssetInfoList = append(accountAssetInfoList, nAccountInfo)
-		accountSingleAssetList = append(accountSingleAssetList, accountInfo)
+	// init asset info map
+	assetInfoMap[txInfo.FromAccountIndex] = make(map[int64]*asset.AccountAsset)
+	if assetInfoMap[txInfo.ToAccountIndex] != nil {
+		assetInfoMap[txInfo.ToAccountIndex] = make(map[int64]*asset.AccountAsset)
 	}
-	gasAccountAsset, err := GetLatestSingleAccountAsset(l.svcCtx, commonAccount.GasAccountIndex, txInfo.AssetId)
+	if assetInfoMap[txInfo.GasAccountIndex] != nil {
+		assetInfoMap[txInfo.GasAccountIndex] = make(map[int64]*asset.AccountAsset)
+	}
+	// get account info by from index
+	accountInfoMap[txInfo.FromAccountIndex], err = globalmapHandler.GetLatestAccountInfoByLock(l.svcCtx, txInfo.FromAccountIndex, redisLockMap)
+	if err != nil {
+		logx.Errorf("[sendTransferTx] unable to get account info: %s", err.Error())
+		return "", l.HandleCreateTransferFailTx(txInfo, err)
+	}
+	// get account info by to index
+	if accountInfoMap[txInfo.ToAccountIndex] == nil {
+		accountInfoMap[txInfo.ToAccountIndex], err = globalmapHandler.GetLatestAccountInfoByLock(l.svcCtx, txInfo.ToAccountIndex, redisLockMap)
+		if err != nil {
+			logx.Errorf("[sendTransferTx] unable to get account info: %s", err.Error())
+			return "", l.HandleCreateTransferFailTx(txInfo, err)
+		}
+	}
+	// get account info by gas index
+	if accountInfoMap[txInfo.GasAccountIndex] == nil {
+		// get account info by gas index
+		accountInfoMap[txInfo.GasAccountIndex], err = globalmapHandler.GetLatestAccountInfoByLock(l.svcCtx, txInfo.GasAccountIndex, redisLockMap)
+		if err != nil {
+			logx.Errorf("[sendTransferTx] unable to get account info: %s", err.Error())
+			return "", l.HandleCreateTransferFailTx(txInfo, err)
+		}
+	}
+	// get from account asset a info
+	assetInfoMap[txInfo.FromAccountIndex][txInfo.AssetId], err = globalmapHandler.GetLatestAssetByLock(l.svcCtx,
+		txInfo.FromAccountIndex, txInfo.AssetId, redisLockMap)
 	if err != nil {
 		return "", l.HandleCreateTransferFailTx(txInfo, err)
 	}
-	gasAssetInfo, err = zecreyProofs.ConstructAccountAssetInfo(
-		gasAccountAsset.AccountId,
-		int64(gasAccountAsset.AccountIndex),
-		gasAccountAsset.AccountName,
-		gasAccountAsset.PublicKey,
-		int64(gasAccountAsset.AssetId),
-		gasAccountAsset.BalanceEnc,
-	)
-	if err != nil {
-		return "", l.HandleCreateTransferFailTx(txInfo, err)
+	// get from account asset gas info
+	if assetInfoMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId] == nil {
+		assetInfoMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId], err = globalmapHandler.GetLatestAssetByLock(l.svcCtx,
+			txInfo.FromAccountIndex, txInfo.GasFeeAssetId, redisLockMap)
+		if err != nil {
+			return "", l.HandleCreateTransferFailTx(txInfo, err)
+		}
 	}
-
+	// get to account asset a info
+	if assetInfoMap[txInfo.ToAccountIndex][txInfo.AssetId] == nil {
+		assetInfoMap[txInfo.ToAccountIndex][txInfo.AssetId], err = globalmapHandler.GetLatestAssetByLock(l.svcCtx,
+			txInfo.ToAccountIndex, txInfo.AssetId, redisLockMap)
+		if err != nil {
+			return "", l.HandleCreateTransferFailTx(txInfo, err)
+		}
+	}
+	// get gas account asset gas info
+	if assetInfoMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId] == nil {
+		assetInfoMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId], err = globalmapHandler.GetLatestAssetByLock(l.svcCtx,
+			txInfo.GasAccountIndex, txInfo.GasFeeAssetId, redisLockMap)
+		if err != nil {
+			return "", l.HandleCreateTransferFailTx(txInfo, err)
+		}
+	}
 	var (
 		txDetails []*mempool.MempoolTxDetail
 	)
-	/*
-		Get txDetails
-	*/
-
-	res, err := json.Marshal(accountAssetInfoList)
-	logx.Info("accountAssetInfoList:", string(res))
-	res, err = json.Marshal(gasAssetInfo)
-	logx.Info("gasAssetInfo:", string(res))
-	res, err = json.Marshal(txInfo)
-	logx.Info("txInfo:", string(res))
-
 	// verify transfer tx
-	txDetails, err = zecreyProofs.VerifyTransferTx(accountAssetInfoList, gasAssetInfo, txInfo)
+	txDetails, err = txVerification.VerifyTransferTxInfo(
+		accountInfoMap,
+		assetInfoMap,
+		txInfo,
+	)
 	if err != nil {
 		return "", l.HandleCreateTransferFailTx(txInfo, err)
 	}
@@ -145,24 +160,11 @@ func (l *SendTxLogic) sendTransferTx(rawTxInfo string) (txId string, err error) 
 		Check tx details
 	*/
 
-	// check txDetails length
-	if len(txDetails) != zecreyProofs.TransferTxDetailsCount {
-		errInfo := fmt.Sprintf("[sendtxlogic.sendTransferTx] txDetails count error, len(txDetails) = %v", len(txDetails))
-		return "", l.HandleCreateTransferFailTx(txInfo, errors.New(errInfo))
-	}
-	// check accountIndex && assetId in txDetail
-	for _, v := range txDetails {
-		if !(uint32(v.AssetId) == txInfo.AssetId) {
-			errInfo := fmt.Sprintf("[sendtxlogic.sendTransferTx] txDetail error, txDetail = %v", v)
-			return "", l.HandleCreateTransferFailTx(txInfo, errors.New(errInfo))
-		}
-	}
-
 	/*
 		Create Mempool Transaction
 	*/
 	// write into mempool
-	txId, err = l.CreateTxMempoolForTranferTx(txDetails, txInfo, txHandler.TxTypeTransfer)
+	txId, err = l.CreateTxMempoolForTranferTx(commonTx.TxTypeTransfer, txDetails, txInfo, redisLockMap)
 	if err != nil {
 		return "", l.HandleCreateTransferFailTx(txInfo, err)
 	}
@@ -182,12 +184,9 @@ func (l *SendTxLogic) HandleCreateTransferFailTx(txInfo *commonTx.TransferTxInfo
 }
 
 func (l *SendTxLogic) CreateFailTransferTx(info *commonTx.TransferTxInfo, extraInfo string) error {
-	txHash := cryptoUtils.GetRandomUUID()
-	txType := int64(txHandler.TxTypeTransfer)
-	txFee := info.GasFee
+	txHash := util.RandomUUID()
 	txFeeAssetId := info.AssetId
 	assetId := info.AssetId
-	txAmount := int64(0)
 	nativeAddress := "0x00"
 	txInfo, err := json.Marshal(info)
 	if err != nil {
@@ -200,21 +199,19 @@ func (l *SendTxLogic) CreateFailTransferTx(info *commonTx.TransferTxInfo, extraI
 		// transaction id, is primary key
 		TxHash: txHash,
 		// transaction type
-		TxType: txType,
+		TxType: commonTx.TxTypeTransfer,
 		// tx fee
-		GasFee: int64(txFee),
+		GasFee: info.GasFeeAssetAmount.String(),
 		// tx fee l1asset id
-		GasFeeAssetId: int64(txFeeAssetId),
+		GasFeeAssetId: txFeeAssetId,
 		// tx status, 1 - success(default), 2 - failure
-		TxStatus: txHandler.TxFail,
+		TxStatus: tx.StatusFail,
 		// l1asset id
-		AssetAId: int64(assetId),
+		AssetAId: assetId,
 		// AssetBId
-		AssetBId: commonAsset.NilAssetId,
-		// ChainId
-		ChainId: commonTx.L2TxChainId,
+		AssetBId: commonConstant.NilAssetId,
 		// tx amount
-		TxAmount: int64(txAmount),
+		TxAmount: info.AssetAmount.String(),
 		// layer1 address
 		NativeAddress: nativeAddress,
 		// tx proof
@@ -234,14 +231,18 @@ func (l *SendTxLogic) CreateFailTransferTx(info *commonTx.TransferTxInfo, extraI
 	return nil
 }
 
-func (l *SendTxLogic) CreateTxMempoolForTranferTx(nMempoolTxDetails []*mempool.MempoolTxDetail, txInfo *commonTx.TransferTxInfo, txType uint8) (resTxId string, err error) {
-
+func (l *SendTxLogic) CreateTxMempoolForTranferTx(
+	txType uint8,
+	nMempoolTxDetails []*mempool.MempoolTxDetail,
+	txInfo *commonTx.TransferTxInfo,
+	redisLockMap map[string]*redis.RedisLock,
+) (resTxId string, err error) {
 	var (
 		nMempoolTx *mempool.MempoolTx
 		bTxInfo    []byte
 	)
 	// generate tx id by random UUID
-	resTxId = cryptoUtils.GetRandomUUID()
+	resTxId = util.RandomUUID()
 	// Marshal txInfo
 	bTxInfo, err = json.Marshal(txInfo)
 	if err != nil {
@@ -253,18 +254,15 @@ func (l *SendTxLogic) CreateTxMempoolForTranferTx(nMempoolTxDetails []*mempool.M
 	nMempoolTx = &mempool.MempoolTx{
 		TxHash:         resTxId,
 		TxType:         int64(txType),
-		GasFee:         int64(txInfo.GasFee),
-		GasFeeAssetId:  int64(txInfo.AssetId),
-		AssetAId:       int64(txInfo.AssetId),
-		AssetBId:       commonAsset.NilAssetId,
-		TxAmount:       0,
-		NativeAddress:  "",
+		GasFee:         txInfo.GasFeeAssetAmount.String(),
+		GasFeeAssetId:  txInfo.GasFeeAssetId,
+		AssetAId:       txInfo.AssetId,
+		AssetBId:       commonConstant.NilAssetId,
+		TxAmount:       txInfo.AssetAmount.String(),
 		MempoolDetails: nMempoolTxDetails,
-		ChainId:        commonTx.L2TxChainId,
 		TxInfo:         string(bTxInfo),
-		ExtraInfo:      "",
 		Memo:           txInfo.Memo,
-		L2BlockHeight:  0,
+		L2BlockHeight:  commonConstant.NilBlockHeight,
 		Status:         0,
 	}
 
@@ -276,7 +274,8 @@ func (l *SendTxLogic) CreateTxMempoolForTranferTx(nMempoolTxDetails []*mempool.M
 		return "", errors.New(errInfo)
 	}
 	// update mempool state
-	go globalmapHandler.UpdateGlobalMap(nMempoolTx)
+	// TODO should make it as transaction for inserting into mempool
+	go globalmapHandler.UpdateGlobalMap(l.svcCtx, nMempoolTx, redisLockMap)
 
 	return resTxId, nil
 }

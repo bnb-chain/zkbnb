@@ -57,8 +57,8 @@ func GetLatestAccountInfoByLock(
 		Nonce:           accountHistory.Nonce,
 	}
 	// get latest nonce
-	key := AccountPrefix + strconv.FormatInt(accountIndex, 10)
-	lockKey := key + LockKeySuffix
+	key := util.GetAccountKey(accountIndex)
+	lockKey := util.GetLockKey(key)
 	// get lock
 	redisLock := GetRedisLockByKey(svcCtx.RedisConnection, lockKey)
 	// try acquire lock
@@ -93,7 +93,7 @@ func GetLatestAccountInfoByLock(
 				return accountInfo, nil
 			}
 		}
-		accountInfo.Nonce = l2MempoolTx.Nonce
+		accountInfo.Nonce = l2MempoolTx.Nonce + 1
 	}
 
 	// append it into redisLockMap for later release
@@ -114,8 +114,8 @@ func GetLatestAssetByLock(
 		Balance:      "0",
 	}
 	// get latest account info by accountIndex and assetId
-	key := util.GetAccountAssetGlobalKey(uint32(accountIndex), uint32(assetId))
-	lockKey := key + LockKeySuffix
+	key := util.GetAccountAssetUniqueKey(accountIndex, assetId)
+	lockKey := util.GetLockKey(key)
 	// get lock
 	redisLock := GetRedisLockByKey(svcCtx.RedisConnection, lockKey)
 	// lock

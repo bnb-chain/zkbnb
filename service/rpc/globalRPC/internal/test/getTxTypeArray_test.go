@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/internal/logic"
 	"github.com/stretchr/testify/assert"
 )
 

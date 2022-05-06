@@ -2,11 +2,8 @@ package logic
 
 import (
 	"context"
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/internal/logic/globalmapHandler"
-
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/globalRPCProto"
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/internal/svc"
-
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -39,6 +36,6 @@ func packResetGlobalMap(
 
 //  reset globalmap
 func (l *ResetGlobalMapLogic) ResetGlobalMap(in *globalRPCProto.ReqResetGlobalMap) (resp *globalRPCProto.RespResetGlobalMap, err error) {
-	globalmapHandler.ResetGlobalMap()
+	//globalmapHandler.ResetGlobalMap()
 	return packResetGlobalMap(SuccessStatus, SuccessMsg, ""), nil
 }

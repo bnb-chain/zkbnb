@@ -19,9 +19,6 @@ package test
 import (
 	"context"
 	"github.com/stretchr/testify/assert"
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/globalRPCProto"
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/internal/server"
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/internal/svc"
 	"github.com/zeromicro/go-zero/core/logx"
 	"testing"
 )

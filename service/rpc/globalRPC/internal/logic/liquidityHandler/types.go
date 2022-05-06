@@ -16,8 +16,7 @@
 
 package liquidityHandler
 
-type LiquidityPairInfo struct {
-}
+import "math/big"
 
 type LiquidityAccountInfo struct {
 	AccountIndex uint32
@@ -26,8 +25,8 @@ type LiquidityAccountInfo struct {
 	AssetBId     uint32
 	AssetBName   string
 	PairIndex    uint32
-	AssetAAmount int64
-	AssetBAmount int64
-	LpEnc        string
+	AssetAAmount *big.Int
+	AssetBAmount *big.Int
+	LpAmount     *big.Int
 	CreatedAt    int64
 }

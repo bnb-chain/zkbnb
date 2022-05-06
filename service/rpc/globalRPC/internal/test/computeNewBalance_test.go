@@ -18,8 +18,6 @@ package test
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/zecrey-labs/zecrey/common/commonAsset"
-	"github.com/zecrey-labs/zecrey/common/utils"
 	"github.com/zeromicro/go-zero/core/logx"
 	"testing"
 )

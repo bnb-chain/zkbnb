@@ -17,7 +17,6 @@
 package test
 
 import (
-	"github.com/zecrey-labs/zecrey/common/utils"
 	"github.com/zeromicro/go-zero/core/logx"
 	"testing"
 )

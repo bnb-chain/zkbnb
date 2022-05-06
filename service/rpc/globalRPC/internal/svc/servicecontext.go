@@ -1,16 +1,16 @@
 package svc
 
 import (
-	"github.com/zecrey-labs/zecrey/common/model/account"
-	"github.com/zecrey-labs/zecrey/common/model/asset"
-	"github.com/zecrey-labs/zecrey/common/model/block"
-	"github.com/zecrey-labs/zecrey/common/model/l1amount"
-	"github.com/zecrey-labs/zecrey/common/model/l1asset"
-	"github.com/zecrey-labs/zecrey/common/model/l2asset"
-	"github.com/zecrey-labs/zecrey/common/model/liquidityPair"
-	"github.com/zecrey-labs/zecrey/common/model/mempool"
-	"github.com/zecrey-labs/zecrey/common/model/tx"
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/internal/config"
+	"github.com/zecrey-labs/zecrey-core/common/general/model/liquidityPair"
+	"github.com/zecrey-labs/zecrey-core/common/general/model/sysconfig"
+	"github.com/zecrey-labs/zecrey-legend/common/model/account"
+	"github.com/zecrey-labs/zecrey-legend/common/model/asset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/assetHistory"
+	"github.com/zecrey-labs/zecrey-legend/common/model/block"
+	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/config"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -24,20 +24,20 @@ type ServiceContext struct {
 	MempoolDetailModel  mempool.MempoolTxDetailModel
 	AccountModel        account.AccountModel
 	AccountHistoryModel account.AccountHistoryModel
-	KeyPairModel        account.KeyPairModel
 	AssetModel          asset.AccountAssetModel
+	AssetHistoryModel   assetHistory.AccountAssetHistoryModel
 	LiquidityAssetModel asset.AccountLiquidityModel
-	LockAssetModel      asset.AccountAssetLockModel
 	TxModel             tx.TxModel
 	TxDetailModel       tx.TxDetailModel
 	FailTxModel         tx.FailTxModel
 	LiquidityPairModel  liquidityPair.LiquidityPairModel
 	BlockModel          block.BlockModel
 
-	L1AssetModel l1asset.L1AssetInfoModel
 	L2AssetModel l2asset.L2AssetInfoModel
 
-	L1AmountModel l1amount.L1AmountModel
+	SysConfigModel sysconfig.SysconfigModel
+
+	RedisConnection *redis.Redis
 
 	DbEngine *gorm.DB
 }
@@ -62,17 +62,16 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		MempoolDetailModel:  mempool.NewMempoolDetailModel(conn, c.CacheRedis, gormPointer),
 		AccountModel:        account.NewAccountModel(conn, c.CacheRedis, gormPointer),
 		AccountHistoryModel: account.NewAccountHistoryModel(conn, c.CacheRedis, gormPointer),
-		KeyPairModel:        account.NewKeyPairModel(conn, c.CacheRedis, gormPointer),
+		AssetModel:          asset.NewAccountAssetModel(conn, c.CacheRedis, gormPointer),
+		AssetHistoryModel:   assetHistory.NewAccountAssetHistoryModel(conn, c.CacheRedis, gormPointer),
+		LiquidityAssetModel: asset.NewAccountLiquidityModel(conn, c.CacheRedis, gormPointer),
 		TxModel:             tx.NewTxModel(conn, c.CacheRedis, gormPointer, redisConn),
 		TxDetailModel:       tx.NewTxDetailModel(conn, c.CacheRedis, gormPointer),
 		FailTxModel:         tx.NewFailTxModel(conn, c.CacheRedis, gormPointer),
-		LiquidityAssetModel: asset.NewAccountLiquidityModel(conn, c.CacheRedis, gormPointer),
-		AssetModel:          asset.NewAccountAssetModel(conn, c.CacheRedis, gormPointer),
-		LockAssetModel:      asset.NewAccountAssetLockModel(conn, c.CacheRedis, gormPointer),
 		LiquidityPairModel:  liquidityPair.NewLiquidityPairModel(conn, c.CacheRedis, gormPointer),
-		L1AssetModel:        l1asset.NewL1AssetInfoModel(conn, c.CacheRedis, gormPointer),
-		L2AssetModel:        l2asset.NewL2AssetInfoModel(conn, c.CacheRedis, gormPointer),
 		BlockModel:          block.NewBlockModel(conn, c.CacheRedis, gormPointer, redisConn),
-		L1AmountModel:       l1amount.NewL1AmountModel(conn, c.CacheRedis, gormPointer),
+		L2AssetModel:        l2asset.NewL2AssetInfoModel(conn, c.CacheRedis, gormPointer),
+		SysConfigModel:      sysconfig.NewSysconfigModel(conn, c.CacheRedis, gormPointer),
+		RedisConnection:     redisConn,
 	}
 }

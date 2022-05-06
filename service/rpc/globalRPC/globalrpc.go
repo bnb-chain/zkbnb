@@ -3,12 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/config"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/server"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 	"github.com/zeromicro/go-zero/core/logx"
-
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/globalRPCProto"
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/internal/config"
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/internal/server"
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/internal/svc"
 
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/zrpc"

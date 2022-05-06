@@ -6,9 +6,9 @@ package server
 import (
 	"context"
 
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/globalRPCProto"
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/internal/logic"
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/internal/svc"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/logic"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 )
 
 type GlobalRPCServer struct {
@@ -35,16 +35,6 @@ func (s *GlobalRPCServer) GetLatestAccountAssetInfo(ctx context.Context, in *glo
 func (s *GlobalRPCServer) GetLatestAccountInfoByAccountIndex(ctx context.Context, in *globalRPCProto.ReqGetLatestAccountInfoByAccountIndex) (*globalRPCProto.RespGetLatestAccountInfoByAccountIndex, error) {
 	l := logic.NewGetLatestAccountInfoByAccountIndexLogic(ctx, s.svcCtx)
 	return l.GetLatestAccountInfoByAccountIndex(in)
-}
-
-func (s *GlobalRPCServer) GetLatestAccountLockAsset(ctx context.Context, in *globalRPCProto.ReqGetLatestAccountLockAsset) (*globalRPCProto.RespGetLatestAccountLockAsset, error) {
-	l := logic.NewGetLatestAccountLockAssetLogic(ctx, s.svcCtx)
-	return l.GetLatestAccountLockAsset(in)
-}
-
-func (s *GlobalRPCServer) GetLatestAccountLockInfoByAccountIndex(ctx context.Context, in *globalRPCProto.ReqGetLatestAccountLockInfoByAccountIndex) (*globalRPCProto.RespGetLatestAccountLockInfoByAccountIndex, error) {
-	l := logic.NewGetLatestAccountLockInfoByAccountIndexLogic(ctx, s.svcCtx)
-	return l.GetLatestAccountLockInfoByAccountIndex(in)
 }
 
 func (s *GlobalRPCServer) GetLatestAccountLp(ctx context.Context, in *globalRPCProto.ReqGetLatestAccountLp) (*globalRPCProto.RespGetLatestAccountLp, error) {
@@ -87,20 +77,4 @@ func (s *GlobalRPCServer) GetSwapAmount(ctx context.Context, in *globalRPCProto.
 func (s *GlobalRPCServer) ResetGlobalMap(ctx context.Context, in *globalRPCProto.ReqResetGlobalMap) (*globalRPCProto.RespResetGlobalMap, error) {
 	l := logic.NewResetGlobalMapLogic(ctx, s.svcCtx)
 	return l.ResetGlobalMap(in)
-}
-
-//  l1Amount
-func (s *GlobalRPCServer) GetLatestL1Amount(ctx context.Context, in *globalRPCProto.ReqGetLatestL1Amount) (*globalRPCProto.RespGetLatestL1Amount, error) {
-	l := logic.NewGetLatestL1AmountLogic(ctx, s.svcCtx)
-	return l.GetLatestL1Amount(in)
-}
-
-func (s *GlobalRPCServer) GetLatestL1AmountList(ctx context.Context, in *globalRPCProto.ReqGetLatestL1AmountList) (*globalRPCProto.RespGetLatestL1AmountList, error) {
-	l := logic.NewGetLatestL1AmountListLogic(ctx, s.svcCtx)
-	return l.GetLatestL1AmountList(in)
-}
-
-func (s *GlobalRPCServer) GetLatestL1AmountListByAssetId(ctx context.Context, in *globalRPCProto.ReqGetLatestL1AmountListByAssetId) (*globalRPCProto.RespGetLatestL1AmountListByAssetId, error) {
-	l := logic.NewGetLatestL1AmountListByAssetIdLogic(ctx, s.svcCtx)
-	return l.GetLatestL1AmountListByAssetId(in)
 }

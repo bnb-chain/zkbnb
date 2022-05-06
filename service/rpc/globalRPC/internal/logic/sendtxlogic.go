@@ -18,10 +18,11 @@ package logic
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/globalRPCProto"
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/internal/logic/txHandler"
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/internal/svc"
+	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -60,20 +61,7 @@ func (l *SendTxLogic) SendTx(in *globalRPCProto.ReqSendTx) (resp *globalRPCProto
 		resultResp *globalRPCProto.ResultSendTx
 	)
 	switch in.TxType {
-	case txHandler.TxTypeUnLock:
-		txId, err = l.sendUnlockTx(in.TxInfo)
-
-		resultResp = &globalRPCProto.ResultSendTx{
-			TxId: txId,
-		}
-
-		if err != nil {
-			errInfo := fmt.Sprintf("[sendtxlogic.sendUnlockTx] %s", err.Error())
-			logx.Error(errInfo)
-			return packSendTxResp(FailStatus, FailMsg, errInfo, resultResp), err
-		}
-		break
-	case txHandler.TxTypeTransfer:
+	case commonTx.TxTypeTransfer:
 		txId, err = l.sendTransferTx(in.TxInfo)
 
 		resultResp = &globalRPCProto.ResultSendTx{
@@ -86,55 +74,27 @@ func (l *SendTxLogic) SendTx(in *globalRPCProto.ReqSendTx) (resp *globalRPCProto
 			return packSendTxResp(FailStatus, FailMsg, errInfo, resultResp), err
 		}
 		break
-	case txHandler.TxTypeSwap:
-		txId, err = l.sendSwapTx(in.TxInfo)
-
-		resultResp = &globalRPCProto.ResultSendTx{
-			TxId: txId,
-		}
-
-		if err != nil {
-			errInfo := fmt.Sprintf("[sendtxlogic.sendSwapTx] %s", err.Error())
-			logx.Error(errInfo)
-			return packSendTxResp(FailStatus, FailMsg, errInfo, resultResp), err
-		}
+	case commonTx.TxTypeSwap:
 		break
-	case txHandler.TxTypeAddLiquidity:
-		txId, err = l.sendAddLiquidityTx(in.TxInfo)
-		resultResp = &globalRPCProto.ResultSendTx{
-			TxId: txId,
-		}
-
-		if err != nil {
-			errInfo := fmt.Sprintf("[sendtxlogic.sendAddLiquidityTx] %s", err.Error())
-			logx.Error(errInfo)
-			return packSendTxResp(FailStatus, FailMsg, errInfo, resultResp), err
-		}
+	case commonTx.TxTypeAddLiquidity:
 		break
-	case txHandler.TxTypeRemoveLiquidity:
-		txId, err = l.sendRemoveLiquidityTx(in.TxInfo)
-		resultResp = &globalRPCProto.ResultSendTx{
-			TxId: txId,
-		}
-
-		if err != nil {
-			errInfo := fmt.Sprintf("[sendtxlogic.sendRemoveLiquidityTx] %s", err.Error())
-			logx.Error(errInfo)
-			return packSendTxResp(FailStatus, FailMsg, errInfo, resultResp), err
-		}
+	case commonTx.TxTypeRemoveLiquidity:
 		break
-	case txHandler.TxTypeWithdraw:
-		txId, err = l.sendWithdrawTx(in.TxInfo)
-		resultResp = &globalRPCProto.ResultSendTx{
-			TxId: txId,
-		}
-
-		if err != nil {
-			errInfo := fmt.Sprintf("[sendtxlogic.sendWithdrawTx] %s", err.Error())
-			logx.Error(errInfo)
-			return packSendTxResp(FailStatus, FailMsg, errInfo, resultResp), err
-		}
+	case commonTx.TxTypeWithdraw:
 		break
+	case commonTx.TxTypeMintNft:
+		break
+	case commonTx.TxTypeTransferNft:
+		break
+	case commonTx.TxTypeSetNftPrice:
+		break
+	case commonTx.TxTypeBuyNft:
+		break
+	case commonTx.TxTypeWithdrawNft:
+		break
+	default:
+		errInfo := "[sendtxlogic] invalid tx type"
+		return packSendTxResp(FailStatus, FailMsg, errInfo, resultResp), errors.New(errInfo)
 	}
 	return packSendTxResp(SuccessStatus, SuccessMsg, "", resultResp), nil
 }

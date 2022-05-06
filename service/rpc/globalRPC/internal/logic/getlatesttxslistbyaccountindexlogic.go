@@ -4,16 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	blockModel "github.com/zecrey-labs/zecrey/common/model/block"
+	"github.com/zecrey-labs/zecrey-legend/common/model/block"
+	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
+	"github.com/zecrey-labs/zecrey-legend/common/util"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 	"reflect"
-
-	"github.com/zecrey-labs/zecrey/common/commonAccount"
-	"github.com/zecrey-labs/zecrey/common/commonAsset"
-	"github.com/zecrey-labs/zecrey/common/model/mempool"
-	"github.com/zecrey-labs/zecrey/common/model/tx"
-	"github.com/zecrey-labs/zecrey/common/utils"
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/globalRPCProto"
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/internal/svc"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -56,14 +53,14 @@ func (l *GetLatestTxsListByAccountIndexLogic) GetLatestTxsListByAccountIndex(in 
 		txs             []*tx.Tx
 	)
 
-	err := utils.CheckRequestParam(utils.TypeAccountIndex, reflect.ValueOf(in.AccountIndex))
+	err := util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(in.AccountIndex))
 	if err != nil {
 		errInfo := fmt.Sprintf("[logic.GetLatestTxsListByAccountIndex] %s", err)
 		logx.Error(errInfo)
 		return packGetLatestTxsListByAccountIndex(FailStatus, FailMsg, errInfo, respResult), nil
 	}
 
-	err = utils.CheckRequestParam(utils.TypeLimit, reflect.ValueOf(in.Limit))
+	err = util.CheckRequestParam(util.TypeLimit, reflect.ValueOf(in.Limit))
 	if err != nil {
 		errInfo := fmt.Sprintf("[logic.GetLatestTxsListByAccountIndex] %s", err)
 		logx.Error(errInfo)
@@ -93,14 +90,6 @@ func (l *GetLatestTxsListByAccountIndexLogic) GetLatestTxsListByAccountIndex(in 
 		}
 	}
 
-	poolAccount, err := l.svcCtx.AccountHistoryModel.GetAccountByAccountIndex(commonAccount.PoolAccountIndex)
-	if err != nil {
-		errInfo := fmt.Sprintf("[logic.GetLatestTxsListByAccountIndex] => [AccountModel.GetAccountByAccountIndex] err: %s",
-			err.Error())
-		logx.Error(errInfo)
-		return packGetLatestTxsListByAccountIndex(FailStatus, FailMsg, errInfo, respResult), errors.New(errInfo)
-	}
-
 	for _, v := range mempoolTxs {
 
 		var (
@@ -108,43 +97,14 @@ func (l *GetLatestTxsListByAccountIndexLogic) GetLatestTxsListByAccountIndex(in 
 		)
 
 		for _, w := range v.MempoolDetails {
-			if w.AssetType == commonAsset.LiquidityAssetType && w.AccountIndex == commonAccount.PoolAccountIndex {
-
-				poolDetails, err := utils.SplitPoolTx(utils.PoolTxDetail{
-					AssetId:      w.AssetId,
-					AssetType:    w.AssetType,
-					AccountIndex: w.AccountIndex,
-					AccountName:  w.AccountName,
-					PublicKey:    poolAccount.PublicKey,
-					BalanceEnc:   w.BalanceEnc,
-					BalanceDelta: w.BalanceDelta,
-				})
-				if err != nil {
-					errInfo := fmt.Sprintf("[logic.GetLatestTxsListByAccountIndex]<=>[utils.SplitPoolTx] %s", err.Error())
-					logx.Error(errInfo)
-					return packGetLatestTxsListByAccountIndex(FailStatus, "fail", errInfo, respResult), nil
-				}
-
-				for _, poolDetail := range poolDetails {
-					nTxDetails = append(nTxDetails, &globalRPCProto.TxDetail{
-						AssetId:           w.AssetId,
-						AssetType:         w.AssetType,
-						AccountIndex:      w.AccountIndex,
-						AccountName:       w.AccountName,
-						AccountBalanceEnc: poolDetail.BalanceEnc,
-						AccountDeltaEnc:   poolDetail.BalanceDelta,
-					})
-				}
-			} else {
-				nTxDetails = append(nTxDetails, &globalRPCProto.TxDetail{
-					AssetId:           w.AssetId,
-					AssetType:         w.AssetType,
-					AccountIndex:      w.AccountIndex,
-					AccountName:       w.AccountName,
-					AccountBalanceEnc: w.BalanceEnc,
-					AccountDeltaEnc:   w.BalanceDelta,
-				})
-			}
+			nTxDetails = append(nTxDetails, &globalRPCProto.TxDetail{
+				AssetId:           w.AssetId,
+				AssetType:         w.AssetType,
+				AccountIndex:      w.AccountIndex,
+				AccountName:       w.AccountName,
+				AccountBalanceEnc: w.Balance,
+				AccountDeltaEnc:   w.BalanceDelta,
+			})
 		}
 		respResult = append(respResult, &globalRPCProto.ResultGetLatestTxsListByAccountIndex{
 			TxHash:        v.TxHash,
@@ -160,7 +120,6 @@ func (l *GetLatestTxsListByAccountIndexLogic) GetLatestTxsListByAccountIndex(in 
 			BlockStatus:   0,
 			BlockHeight:   0,
 			BlockId:       0,
-			ChainId:       v.ChainId,
 			Memo:          v.Memo,
 			CreateAt:      v.CreatedAt.Unix(),
 		})
@@ -171,43 +130,14 @@ func (l *GetLatestTxsListByAccountIndexLogic) GetLatestTxsListByAccountIndex(in 
 			nTxDetails []*globalRPCProto.TxDetail
 		)
 		for _, w := range v.TxDetails {
-			if w.AssetType == commonAsset.LiquidityAssetType && w.AccountIndex == commonAccount.PoolAccountIndex {
-
-				poolDetails, err := utils.SplitPoolTx(utils.PoolTxDetail{
-					AssetId:      w.AssetId,
-					AssetType:    w.AssetType,
-					AccountIndex: w.AccountIndex,
-					AccountName:  w.AccountName,
-					PublicKey:    poolAccount.PublicKey,
-					BalanceEnc:   w.BalanceEnc,
-					BalanceDelta: w.BalanceDelta,
-				})
-				if err != nil {
-					errInfo := fmt.Sprintf("[logic.GetLatestTxsListByAccountIndex]<=>[utils.SplitPoolTx] %s", err.Error())
-					logx.Error(errInfo)
-					return packGetLatestTxsListByAccountIndex(FailStatus, "fail", errInfo, respResult), nil
-				}
-
-				for _, poolDetail := range poolDetails {
-					nTxDetails = append(nTxDetails, &globalRPCProto.TxDetail{
-						AssetId:           w.AssetId,
-						AssetType:         w.AssetType,
-						AccountIndex:      w.AccountIndex,
-						AccountName:       w.AccountName,
-						AccountBalanceEnc: poolDetail.BalanceEnc,
-						AccountDeltaEnc:   poolDetail.BalanceDelta,
-					})
-				}
-			} else {
-				nTxDetails = append(nTxDetails, &globalRPCProto.TxDetail{
-					AssetId:           w.AssetId,
-					AssetType:         w.AssetType,
-					AccountIndex:      w.AccountIndex,
-					AccountName:       w.AccountName,
-					AccountBalanceEnc: w.BalanceEnc,
-					AccountDeltaEnc:   w.BalanceDelta,
-				})
-			}
+			nTxDetails = append(nTxDetails, &globalRPCProto.TxDetail{
+				AssetId:           w.AssetId,
+				AssetType:         w.AssetType,
+				AccountIndex:      w.AccountIndex,
+				AccountName:       w.AccountName,
+				AccountBalanceEnc: w.Balance,
+				AccountDeltaEnc:   w.BalanceDelta,
+			})
 		}
 
 		var blockStatus int
@@ -217,17 +147,16 @@ func (l *GetLatestTxsListByAccountIndexLogic) GetLatestTxsListByAccountIndex(in 
 			blockStatus = int(blockStatusInfo.BlockStatus)
 		} else {
 			// Not In Cache
-			block, err := l.svcCtx.BlockModel.GetBlockByBlockHeight(v.BlockHeight)
+			oBlock, err := l.svcCtx.BlockModel.GetBlockByBlockHeight(v.BlockHeight)
 			if err != nil {
 				errInfo := fmt.Sprintf("[logic.GetLatestTxsListByAccountIndex]<=>[BlockModel.GetBlockByBlockHeight] %s", err.Error())
 				logx.Error(errInfo)
 				return packGetLatestTxsListByAccountIndex(FailStatus, "fail", errInfo, respResult), nil
 			}
-			blockStatusInfo = &blockModel.BlockStatusInfo{
-				BlockStatus: block.BlockStatus,
-				CommittedAt: block.CommittedAt,
-				VerifiedAt:  block.VerifiedAt,
-				ExecutedAt:  block.ExecutedAt,
+			blockStatusInfo = &block.BlockStatusInfo{
+				BlockStatus: oBlock.BlockStatus,
+				CommittedAt: oBlock.CommittedAt,
+				VerifiedAt:  oBlock.VerifiedAt,
 			}
 
 			err = l.svcCtx.BlockModel.UpdateBlockStatusCacheByBlockHeight(v.BlockHeight, blockStatusInfo)
@@ -237,7 +166,7 @@ func (l *GetLatestTxsListByAccountIndexLogic) GetLatestTxsListByAccountIndex(in 
 				return packGetLatestTxsListByAccountIndex(FailStatus, "fail", errInfo, respResult), nil
 			}
 
-			blockStatus = int(block.BlockStatus)
+			blockStatus = int(oBlock.BlockStatus)
 		}
 
 		respResult = append(respResult, &globalRPCProto.ResultGetLatestTxsListByAccountIndex{
@@ -255,7 +184,6 @@ func (l *GetLatestTxsListByAccountIndexLogic) GetLatestTxsListByAccountIndex(in 
 			BlockHeight:   v.BlockHeight,
 			BlockId:       v.BlockId,
 			Memo:          v.Memo,
-			ChainId:       v.ChainId,
 			CreateAt:      v.CreatedAt.Unix(),
 		})
 	}

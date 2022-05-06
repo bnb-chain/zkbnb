@@ -18,13 +18,13 @@ package test
 
 import (
 	"context"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/server"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/globalRPCProto"
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/internal/server"
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/internal/svc"
 )
 
 func TestSentTx(t *testing.T) {

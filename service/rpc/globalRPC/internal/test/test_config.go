@@ -19,7 +19,7 @@ package test
 import (
 	"flag"
 	"fmt"
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/internal/config"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/config"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 )

@@ -31,10 +31,6 @@ const (
 
 	LockNumber = 50
 
-	AccountPrefix = "AccountIndex::"
-
-	LockKeySuffix = "ByLock"
-
 	LockExpiryTime = 10 // seconds
 	RetryInterval  = 500
 	MaxRetryTimes  = 3
