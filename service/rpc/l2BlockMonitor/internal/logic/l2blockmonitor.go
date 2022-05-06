@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/zecrey-labs/zecrey-core/common/general/model/nft"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/proofSender"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-zero/utils"
 	"github.com/zecrey-labs/zecrey-eth-rpc/_rpc"
+	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
+	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
 	"sort"
 	"time"
@@ -194,7 +194,7 @@ func MonitorL2BlockEvents(
 			// get pending assets
 			for _, pendingUpdateAssetHistory := range pendingUpdateAssetsHistory {
 				var pendingUpdateAsset *AccountAsset
-				key := utils.GetAccountAssetGlobalKey(uint32(pendingUpdateAssetHistory.AccountIndex), uint32(pendingUpdateAssetHistory.AssetId))
+				key := util.GetAccountAssetUniqueKey(pendingUpdateAssetHistory.AccountIndex, pendingUpdateAssetHistory.AssetId)
 				if pendingUpdateAssetsMap[key] == nil && pendingNewAssetsMap[key] == nil {
 					pendingUpdateAsset, err = accountAssetModel.GetSingleAccountAsset(
 						pendingUpdateAssetHistory.AccountIndex, pendingUpdateAssetHistory.AssetId)
@@ -232,9 +232,9 @@ func MonitorL2BlockEvents(
 			// pendingUpdateLiquidityAssets, pendingNewLiquidityAssets
 			for _, pendingUpdateLiquidityAssetHistory := range pendingUpdateLiquidityAssetsHistory {
 				var pendingUpdateLiquidityAsset *AccountLiquidity
-				key := utils.GetAccountLPGlobalKey(
-					uint32(pendingUpdateLiquidityAssetHistory.AccountIndex),
-					uint32(pendingUpdateLiquidityAssetHistory.PairIndex),
+				key := util.GetAccountLPUniqueKey(
+					pendingUpdateLiquidityAssetHistory.AccountIndex,
+					pendingUpdateLiquidityAssetHistory.PairIndex,
 				)
 				// pendingUpdateLiquidityAssetsMap, pendingNewLiquidityAssetsMap
 				if pendingUpdateLiquidityAssetsMap[key] == nil && pendingNewLiquidityAssetsMap[key] == nil {

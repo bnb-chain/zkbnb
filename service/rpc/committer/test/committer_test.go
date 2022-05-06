@@ -18,7 +18,7 @@ package test
 
 import (
 	"flag"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/tree"
+	"github.com/zecrey-labs/zecrey-legend/common/tree"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/committer/internal/config"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/committer/internal/logic"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/committer/internal/svc"

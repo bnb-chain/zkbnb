@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/robfig/cron/v3"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/tree"
+	"github.com/zecrey-labs/zecrey-legend/common/tree"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/committer/committerProto"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/committer/internal/config"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/committer/internal/logic"

@@ -22,10 +22,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/l1BlockMonitor"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/util"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-zero/model/l2TxEventMonitor"
 	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
+	"github.com/zecrey-labs/zecrey-legend/common/model/l1BlockMonitor"
+	"github.com/zecrey-labs/zecrey-legend/common/model/l2TxEventMonitor"
+	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
@@ -38,7 +38,6 @@ import (
 */
 func MonitorBlocks(
 	cli *ProviderClient,
-	nativeChainId *big.Int,
 	startHeight int64, pendingBlocksCount uint64, maxHandledBlocksCount int64,
 	zecreyContract string,
 	l1BlockMonitorModel L1BlockMonitorModel,

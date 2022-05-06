@@ -22,14 +22,14 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/commonAsset"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/account"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/asset"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/l2TxEventMonitor"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/l2asset"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/mempool"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/util"
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
+	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/account"
+	"github.com/zecrey-labs/zecrey-legend/common/model/asset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/l2TxEventMonitor"
+	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/mempoolMonitor/internal/svc"
 	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
@@ -132,7 +132,7 @@ func MonitorMempool(
 			mempoolTx := &mempool.MempoolTx{
 				TxHash:        RandomTxHash(),
 				TxType:        int64(txInfo.TxType),
-				GasFee:        0,
+				GasFee:        "0",
 				GasFeeAssetId: 0,
 				AssetAId:      -1,
 				AssetBId:      -1,
@@ -153,30 +153,10 @@ func MonitorMempool(
 				logx.Errorf("[MonitorMempool] unable to parse deposit pub data: %s", err.Error())
 				return err
 			}
-			var (
-				accountInfo *account.Account
-			)
-			accountHistoryInfo, err := accountHistoryModel.GetAccountByAccountNameHash(txInfo.AccountNameHash)
+			accountInfo, err := GetAccountInfoByAccountNameHash(txInfo.AccountNameHash, accountModel, accountHistoryModel)
 			if err != nil {
-				if err == ErrNotFound {
-					accountInfo, err = accountModel.GetAccountByAccountNameHash(txInfo.AccountNameHash)
-					if err != nil {
-						logx.Errorf("[MonitorMempool] unable to get account by account name hash: %s", err.Error())
-						return err
-					}
-				} else {
-					logx.Errorf("[MonitorMempool] unable to get account history by account name hash: %s", err.Error())
-					return err
-				}
-			} else {
-				accountInfo = &account.Account{
-					AccountIndex:    accountHistoryInfo.AccountIndex,
-					AccountName:     accountHistoryInfo.AccountName,
-					PublicKey:       accountHistoryInfo.PublicKey,
-					AccountNameHash: accountHistoryInfo.AccountNameHash,
-					L1Address:       accountHistoryInfo.L1Address,
-					Nonce:           accountHistoryInfo.Nonce,
-				}
+				logx.Errorf("[MonitorMempool] unable to get account info: %s", err.Error())
+				return err
 			}
 			txInfo.AccountIndex = uint32(accountInfo.AccountIndex)
 			var (
@@ -198,7 +178,7 @@ func MonitorMempool(
 			mempoolTx := &mempool.MempoolTx{
 				TxHash:         RandomTxHash(),
 				TxType:         int64(txInfo.TxType),
-				GasFee:         0,
+				GasFee:         "0",
 				GasFeeAssetId:  0,
 				AssetAId:       int64(txInfo.AssetId),
 				AssetBId:       -1,
@@ -220,30 +200,10 @@ func MonitorMempool(
 				logx.Errorf("[MonitorMempool] unable to parse deposit nft pub data: %s", err.Error())
 				return err
 			}
-			var (
-				accountInfo *account.Account
-			)
-			accountHistoryInfo, err := accountHistoryModel.GetAccountByAccountNameHash(txInfo.AccountNameHash)
+			accountInfo, err := GetAccountInfoByAccountNameHash(txInfo.AccountNameHash, accountModel, accountHistoryModel)
 			if err != nil {
-				if err == ErrNotFound {
-					accountInfo, err = accountModel.GetAccountByAccountNameHash(txInfo.AccountNameHash)
-					if err != nil {
-						logx.Errorf("[MonitorMempool] unable to get account by account name hash: %s", err.Error())
-						return err
-					}
-				} else {
-					logx.Errorf("[MonitorMempool] unable to get account history by account name hash: %s", err.Error())
-					return err
-				}
-			} else {
-				accountInfo = &account.Account{
-					AccountIndex:    accountHistoryInfo.AccountIndex,
-					AccountName:     accountHistoryInfo.AccountName,
-					PublicKey:       accountHistoryInfo.PublicKey,
-					AccountNameHash: accountHistoryInfo.AccountNameHash,
-					L1Address:       accountHistoryInfo.L1Address,
-					Nonce:           accountHistoryInfo.Nonce,
-				}
+				logx.Errorf("[MonitorMempool] unable to get account info: %s", err.Error())
+				return err
 			}
 			// complete tx info
 			txInfo.AccountIndex = uint32(accountInfo.AccountIndex)
@@ -285,7 +245,7 @@ func MonitorMempool(
 			mempoolTx := &mempool.MempoolTx{
 				TxHash:         RandomTxHash(),
 				TxType:         int64(txInfo.TxType),
-				GasFee:         0,
+				GasFee:         "0",
 				GasFeeAssetId:  0,
 				AssetAId:       -1,
 				AssetBId:       -1,
@@ -307,30 +267,10 @@ func MonitorMempool(
 				logx.Errorf("[MonitorMempool] unable to parse deposit pub data: %s", err.Error())
 				return err
 			}
-			var (
-				accountInfo *account.Account
-			)
-			accountHistoryInfo, err := accountHistoryModel.GetAccountByAccountNameHash(txInfo.AccountNameHash)
+			accountInfo, err := GetAccountInfoByAccountNameHash(txInfo.AccountNameHash, accountModel, accountHistoryModel)
 			if err != nil {
-				if err == ErrNotFound {
-					accountInfo, err = accountModel.GetAccountByAccountNameHash(txInfo.AccountNameHash)
-					if err != nil {
-						logx.Errorf("[MonitorMempool] unable to get account by account name hash: %s", err.Error())
-						return err
-					}
-				} else {
-					logx.Errorf("[MonitorMempool] unable to get account history by account name hash: %s", err.Error())
-					return err
-				}
-			} else {
-				accountInfo = &account.Account{
-					AccountIndex:    accountHistoryInfo.AccountIndex,
-					AccountName:     accountHistoryInfo.AccountName,
-					PublicKey:       accountHistoryInfo.PublicKey,
-					AccountNameHash: accountHistoryInfo.AccountNameHash,
-					L1Address:       accountHistoryInfo.L1Address,
-					Nonce:           accountHistoryInfo.Nonce,
-				}
+				logx.Errorf("[MonitorMempool] unable to get account info: %s", err.Error())
+				return err
 			}
 			// complete tx info
 			txInfo.AccountIndex = uint32(accountInfo.AccountIndex)
@@ -355,7 +295,7 @@ func MonitorMempool(
 			mempoolTx := &mempool.MempoolTx{
 				TxHash:         RandomTxHash(),
 				TxType:         int64(txInfo.TxType),
-				GasFee:         0,
+				GasFee:         "0",
 				GasFeeAssetId:  0,
 				AssetAId:       int64(txInfo.AssetId),
 				AssetBId:       -1,
@@ -377,30 +317,10 @@ func MonitorMempool(
 				logx.Errorf("[MonitorMempool] unable to parse deposit nft pub data: %s", err.Error())
 				return err
 			}
-			var (
-				accountInfo *account.Account
-			)
-			accountHistoryInfo, err := accountHistoryModel.GetAccountByAccountNameHash(txInfo.AccountNameHash)
+			accountInfo, err := GetAccountInfoByAccountNameHash(txInfo.AccountNameHash, accountModel, accountHistoryModel)
 			if err != nil {
-				if err == ErrNotFound {
-					accountInfo, err = accountModel.GetAccountByAccountNameHash(txInfo.AccountNameHash)
-					if err != nil {
-						logx.Errorf("[MonitorMempool] unable to get account by account name hash: %s", err.Error())
-						return err
-					}
-				} else {
-					logx.Errorf("[MonitorMempool] unable to get account history by account name hash: %s", err.Error())
-					return err
-				}
-			} else {
-				accountInfo = &account.Account{
-					AccountIndex:    accountHistoryInfo.AccountIndex,
-					AccountName:     accountHistoryInfo.AccountName,
-					PublicKey:       accountHistoryInfo.PublicKey,
-					AccountNameHash: accountHistoryInfo.AccountNameHash,
-					L1Address:       accountHistoryInfo.L1Address,
-					Nonce:           accountHistoryInfo.Nonce,
-				}
+				logx.Errorf("[MonitorMempool] unable to get account info: %s", err.Error())
+				return err
 			}
 			// complete tx info
 			txInfo.AccountIndex = uint32(accountInfo.AccountIndex)
@@ -439,7 +359,7 @@ func MonitorMempool(
 			mempoolTx := &mempool.MempoolTx{
 				TxHash:         RandomTxHash(),
 				TxType:         int64(txInfo.TxType),
-				GasFee:         0,
+				GasFee:         "0",
 				GasFeeAssetId:  0,
 				AssetAId:       -1,
 				AssetBId:       -1,
@@ -470,25 +390,6 @@ func MonitorMempool(
 		logx.Errorf("[MonitorMempool] unable to create mempool txs and update l2 tx event monitors, error: %s",
 			err.Error())
 		return err
-	} else {
-		// TODO globalRpc
-		//resRpc, err := ctx.GlobalRPC.ResetGlobalMap(nContext, &globalrpc.ReqResetGlobalMap{})
-		//if err != nil {
-		//	errInfo := fmt.Sprintf("[MonitorMempool]<=>[GlobalRPC.ResetGlobalMap] err is not nil: %s",
-		//		err.Error())
-		//	logx.Errorf(errInfo)
-		//	return errors.New(errInfo)
-		//} else if resRpc == nil {
-		//	errInfo := fmt.Sprintf("[MonitorMempool]<=>[GlobalRPC.ResetGlobalMap] resRpc is nil")
-		//	logx.Errorf(errInfo)
-		//	return errors.New(errInfo)
-		//} else if resRpc.Status != 0 {
-		//	errInfo := fmt.Sprintf("[MonitorMempool]<=>[GlobalRPC.ResetGlobalMap] resRpc failed, %s", resRpc.Err)
-		//	logx.Errorf(errInfo)
-		//	return errors.New(errInfo)
-		//} else {
-		//	logx.Info("[GlobalRPC.ResetGlobalMap] Successful")
-		//}
 	}
 	return nil
 }

@@ -1,11 +1,11 @@
 package svc
 
 import (
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/account"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/asset"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/l2TxEventMonitor"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/l2asset"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/common/model/account"
+	"github.com/zecrey-labs/zecrey-legend/common/model/asset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/l2TxEventMonitor"
+	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/mempoolMonitor/internal/config"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"

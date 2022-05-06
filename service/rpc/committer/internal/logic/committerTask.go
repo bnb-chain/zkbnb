@@ -21,12 +21,11 @@ import (
 	"fmt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/account"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/asset"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/block"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/tree"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/util"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-zero/utils"
+	"github.com/zecrey-labs/zecrey-legend/common/model/account"
+	"github.com/zecrey-labs/zecrey-legend/common/model/asset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/block"
+	"github.com/zecrey-labs/zecrey-legend/common/tree"
+	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/committer/internal/svc"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
@@ -197,7 +196,7 @@ func CommitterTask(
 				// check balance
 				switch mempoolTxDetail.AssetType {
 				case GeneralAssetType:
-					key := util.GetAccountAssetGlobalKey(uint32(mempoolTxDetail.AccountIndex), uint32(mempoolTxDetail.AssetId))
+					key := util.GetAccountAssetUniqueKey(mempoolTxDetail.AccountIndex, mempoolTxDetail.AssetId)
 					// query for related assetInfo
 					// in order to get the latest asset info
 					if assetsHistoryMap[key] == nil {
@@ -298,8 +297,8 @@ func CommitterTask(
 
 					break
 				case LiquidityAssetType:
-					key := util.GetPoolLiquidityGlobalKey(
-						uint32(mempoolTxDetail.AccountIndex), uint32(mempoolTxDetail.AssetId))
+					key := util.GetPoolLiquidityUniqueKey(
+						mempoolTxDetail.AccountIndex, mempoolTxDetail.AssetId)
 					// query for related assetInfo
 					if liquidityAssetsHistoryMap[key] == nil {
 						var liquidityAsset *AccountLiquidity
@@ -355,7 +354,7 @@ func CommitterTask(
 						return errors.New("[CommitterTask] not equal pair info")
 					}
 					// compute new balance
-					nBalance, err := utils.ComputeNewBalance(
+					nBalance, err := util.ComputeNewBalance(
 						LiquidityAssetType, mempoolTxDetail.Balance, mempoolTxDetail.BalanceDelta)
 					if err != nil {
 						logx.Error("[CommitterTask] unable to compute new balance: %s", err.Error())
@@ -419,8 +418,8 @@ func CommitterTask(
 
 					break
 				case LiquidityLpAssetType:
-					key := util.GetAccountLPGlobalKey(
-						uint32(mempoolTxDetail.AccountIndex), uint32(mempoolTxDetail.AssetId))
+					key := util.GetAccountLPUniqueKey(
+						mempoolTxDetail.AccountIndex, mempoolTxDetail.AssetId)
 					// query for related assetInfo
 					if liquidityAssetsHistoryMap[key] == nil {
 						var liquidityAsset *AccountLiquidity
@@ -465,7 +464,7 @@ func CommitterTask(
 						return errors.New("[CommitterTask] invalid lp amount")
 					}
 					// compute new balance
-					nBalance, err := utils.ComputeNewBalance(
+					nBalance, err := util.ComputeNewBalance(
 						LiquidityLpAssetType, mempoolTxDetail.Balance, mempoolTxDetail.BalanceDelta)
 					if err != nil {
 						logx.Error("[CommitterTask] unable to compute new balance: %s", err.Error())
@@ -574,7 +573,7 @@ func CommitterTask(
 						return errors.New("[CommitterTask] invalid nft info")
 					}
 					// compute new balance
-					nBalance, err := utils.ComputeNewBalance(
+					nBalance, err := util.ComputeNewBalance(
 						NftAssetType, mempoolTxDetail.Balance, mempoolTxDetail.BalanceDelta)
 					if err != nil {
 						logx.Error("[CommitterTask] unable to compute new balance: %s", err.Error())

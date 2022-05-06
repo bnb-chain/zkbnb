@@ -17,9 +17,9 @@
 package logic
 
 import (
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/commonAsset"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/commonTx"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/l2TxEventMonitor"
+	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
+	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
+	"github.com/zecrey-labs/zecrey-legend/common/model/l2TxEventMonitor"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 

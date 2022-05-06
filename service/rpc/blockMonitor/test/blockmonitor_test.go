@@ -17,7 +17,6 @@
 package test
 
 import (
-	"context"
 	"flag"
 	"github.com/zecrey-labs/zecrey-eth-rpc/_rpc"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/blockMonitor/internal/config"
@@ -67,15 +66,10 @@ func TestBlockMonitor(t *testing.T) {
 		panic(err)
 	}
 
-	nativeChainId, err := cli.ChainID(context.Background())
-	if err != nil {
-		panic(err)
-	}
-
 	logx.Info("========================= start monitor blocks =========================")
 	err = logic.MonitorBlocks(
-		cli, nativeChainId,
-		c.ChainConfig.StartL1BlockHeight, c.ChainConfig.L2ChainId, c.ChainConfig.PendingBlocksCount, c.ChainConfig.MaxHandledBlocksCount,
+		cli,
+		c.ChainConfig.StartL1BlockHeight, c.ChainConfig.PendingBlocksCount, c.ChainConfig.MaxHandledBlocksCount,
 		ZecreyRollupAddress.Value,
 		ctx.L1BlockMonitor,
 	)

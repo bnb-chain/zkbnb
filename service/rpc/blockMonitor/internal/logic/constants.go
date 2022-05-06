@@ -19,11 +19,11 @@ package logic
 import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/l1BlockMonitor"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/l2BlockEventMonitor"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/l2TxEventMonitor"
 	"github.com/zecrey-labs/zecrey-eth-rpc/_rpc"
 	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
+	"github.com/zecrey-labs/zecrey-legend/common/model/l1BlockMonitor"
+	"github.com/zecrey-labs/zecrey-legend/common/model/l2BlockEventMonitor"
+	"github.com/zecrey-labs/zecrey-legend/common/model/l2TxEventMonitor"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"strings"
 )

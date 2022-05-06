@@ -3,14 +3,13 @@ package svc
 import (
 	"github.com/zecrey-labs/zecrey-core/common/general/model/nft"
 	"github.com/zecrey-labs/zecrey-core/common/general/model/sysconfig"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/account"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/asset"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/assetHistory"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/block"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/l2asset"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/mempool"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/tx"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-zero/model/l1asset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/account"
+	"github.com/zecrey-labs/zecrey-legend/common/model/asset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/assetHistory"
+	"github.com/zecrey-labs/zecrey-legend/common/model/block"
+	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/committer/internal/config"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
@@ -38,7 +37,6 @@ type ServiceContext struct {
 	BlockModel         block.BlockModel
 	MempoolDetailModel mempool.MempoolTxDetailModel
 	MempoolModel       mempool.MempoolModel
-	L1AssetInfoModel   l1asset.L1AssetInfoModel
 	L2AssetInfoModel   l2asset.L2AssetInfoModel
 
 	SysConfigModel sysconfig.SysconfigModel
@@ -74,7 +72,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		BlockModel:                 block.NewBlockModel(conn, c.CacheRedis, gormPointer, redisConn),
 		MempoolDetailModel:         mempool.NewMempoolDetailModel(conn, c.CacheRedis, gormPointer),
 		MempoolModel:               mempool.NewMempoolModel(conn, c.CacheRedis, gormPointer),
-		L1AssetInfoModel:           l1asset.NewL1AssetInfoModel(conn, c.CacheRedis, gormPointer),
 		L2AssetInfoModel:           l2asset.NewL2AssetInfoModel(conn, c.CacheRedis, gormPointer),
 		SysConfigModel:             sysconfig.NewSysconfigModel(conn, c.CacheRedis, gormPointer),
 	}

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	blockmonitor "github.com/zecrey-labs/zecrey-legend/service/rpc/blockMonitor/blockMonitor"
@@ -58,11 +57,6 @@ func main() {
 		panic(err)
 	}
 
-	nativeChainId, err := cli.ChainID(context.Background())
-	if err != nil {
-		panic(err)
-	}
-
 	// new cron
 	cronjob := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DiscardLogger),
@@ -71,8 +65,8 @@ func main() {
 	_, err = cronjob.AddFunc("@every 10s", func() {
 		logx.Info("========================= start monitor blocks =========================")
 		err := logic.MonitorBlocks(
-			cli, nativeChainId,
-			c.ChainConfig.StartL1BlockHeight, c.ChainConfig.L2ChainId, c.ChainConfig.PendingBlocksCount, c.ChainConfig.MaxHandledBlocksCount,
+			cli,
+			c.ChainConfig.StartL1BlockHeight, c.ChainConfig.PendingBlocksCount, c.ChainConfig.MaxHandledBlocksCount,
 			ZecreyRollupAddress.Value,
 			ctx.L1BlockMonitor,
 		)

@@ -4,7 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/zecrey-labs/zecrey-core/common/zecrey-legend/model/l2TxEventMonitor"
+	"github.com/zecrey-labs/zecrey-legend/common/model/l2TxEventMonitor"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/mempoolMonitor/internal/config"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/mempoolMonitor/internal/logic"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/mempoolMonitor/internal/server"
