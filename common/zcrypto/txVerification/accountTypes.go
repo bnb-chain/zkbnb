@@ -159,17 +159,12 @@ func ConstructNftInfo(
 	NftL1TokenId string,
 	NftL1Address string,
 ) (accountInfo *NftInfo, err error) {
-	assetAmount, isValid := new(big.Int).SetString(AssetAmount, Base)
-	if !isValid {
-		log.Println("[ConstructNftInfo] invalid asset amount")
-		return nil, errors.New("[ConstructNftInfo] invalid asset amount")
-	}
 	accountInfo = &NftInfo{
 		NftIndex:            NftIndex,
 		CreatorAccountIndex: CreatorAccountIndex,
 		OwnerAccountIndex:   OwnerAccountIndex,
 		AssetId:             AssetId,
-		AssetAmount:         assetAmount,
+		AssetAmount:         AssetAmount,
 		NftContentHash:      NftContentHash,
 		NftL1TokenId:        NftL1TokenId,
 		NftL1Address:        NftL1Address,
