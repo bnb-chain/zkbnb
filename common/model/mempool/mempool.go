@@ -51,6 +51,7 @@ type (
 		CreateBatchedMempoolTxs(mempoolTxs []*MempoolTx) error
 		DeleteMempoolTxs(txIds []*int64) error
 
+		GetMempoolTxsByAccountIndex(accountIndex int64) (mempoolTxs []*MempoolTx, err error)
 		GetLatestL2MempoolTxByAccountIndex(accountIndex int64) (mempoolTx *MempoolTx, err error)
 	}
 
@@ -563,7 +564,7 @@ func (m *defaultMempoolModel) DeleteMempoolTxs(txIds []*int64) error {
 	Description: used for verifier get txIds from Mempool and deleting the transaction in mempool table after
 */
 func (m *defaultMempoolModel) GetMempoolTxsListByL2BlockHeight(blockHeight int64) (mempoolTxs []*MempoolTx, err error) {
-	dbTx := m.DB.Table(m.table).Where("status = ? and l2_block_height <= ?", HandledTxStatus, blockHeight).Find(&mempoolTxs)
+	dbTx := m.DB.Table(m.table).Where("status = ? and l2_block_height <= ?", SuccessTxStatus, blockHeight).Find(&mempoolTxs)
 	if dbTx.Error != nil {
 		logx.Errorf("[mempool.GetMempoolTxsListByL2BlockHeight] %s", dbTx.Error)
 		return nil, dbTx.Error
@@ -577,7 +578,7 @@ func (m *defaultMempoolModel) GetMempoolTxsListByL2BlockHeight(blockHeight int64
 
 func (m *defaultMempoolModel) GetLatestL2MempoolTxByAccountIndex(accountIndex int64) (mempoolTx *MempoolTx, err error) {
 	dbTx := m.DB.Table(m.table).Where("account_index = ? and nonce != -1", accountIndex).
-		Order("created_at desc, id desc").First(&mempoolTx)
+		Order("created_at desc, id desc").Find(&mempoolTx)
 	if dbTx.Error != nil {
 		logx.Errorf("[GetLatestL2MempoolTxByAccountIndex] %s", dbTx.Error)
 		return nil, dbTx.Error
@@ -587,4 +588,18 @@ func (m *defaultMempoolModel) GetLatestL2MempoolTxByAccountIndex(accountIndex in
 	}
 
 	return mempoolTx, nil
+}
+
+func (m *defaultMempoolModel) GetMempoolTxsByAccountIndex(accountIndex int64) (mempoolTxs []*MempoolTx, err error) {
+	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex).
+		Order("created_at, id").Find(&mempoolTxs)
+	if dbTx.Error != nil {
+		logx.Errorf("[GetLatestL2MempoolTxByAccountIndex] %s", dbTx.Error)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Errorf("[GetLatestL2MempoolTxByAccountIndex] Get MempoolTxs Error")
+		return nil, ErrNotFound
+	}
+
+	return mempoolTxs, nil
 }

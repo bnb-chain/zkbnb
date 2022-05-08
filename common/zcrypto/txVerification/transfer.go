@@ -22,8 +22,7 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-crypto/wasm/zecrey-legend/legendTxTypes"
-	"github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/common/model/asset"
+	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
 )
@@ -43,20 +42,16 @@ import (
 			- AssetGas
 */
 func VerifyTransferTxInfo(
-	accountInfoMap map[int64]*account.Account,
-	assetInfoMap map[int64]map[int64]*asset.AccountAsset,
+	accountInfoMap map[int64]*commonAsset.FormatAccountInfo,
 	txInfo *TransferTxInfo,
 ) (txDetails []*MempoolTxDetail, err error) {
 	// verify params
-	if accountInfoMap[txInfo.FromAccountIndex] == nil ||
-		accountInfoMap[txInfo.ToAccountIndex] == nil ||
+	if accountInfoMap[txInfo.ToAccountIndex] == nil ||
 		accountInfoMap[txInfo.GasAccountIndex] == nil ||
-		assetInfoMap[txInfo.FromAccountIndex] == nil ||
-		assetInfoMap[txInfo.FromAccountIndex][txInfo.AssetId] == nil ||
-		assetInfoMap[txInfo.ToAccountIndex] == nil ||
-		assetInfoMap[txInfo.ToAccountIndex][txInfo.AssetId] == nil ||
-		assetInfoMap[txInfo.GasAccountIndex] == nil ||
-		assetInfoMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId] == nil ||
+		accountInfoMap[txInfo.FromAccountIndex] == nil ||
+		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.AssetId] == "" ||
+		accountInfoMap[txInfo.ToAccountIndex].AssetInfo == nil ||
+		accountInfoMap[txInfo.GasAccountIndex].AssetInfo == nil ||
 		txInfo.AssetAmount.Cmp(ZeroBigInt) < 0 ||
 		txInfo.GasFeeAssetAmount.Cmp(ZeroBigInt) < 0 {
 		return nil, errors.New("[VerifyTransferTxInfo] invalid params")
@@ -65,13 +60,6 @@ func VerifyTransferTxInfo(
 	if txInfo.Nonce != accountInfoMap[txInfo.FromAccountIndex].Nonce {
 		logx.Errorf("[VerifyTransferTxInfo] invalid nonce")
 		return nil, errors.New("[VerifyTransferTxInfo] invalid nonce")
-	}
-	// check asset assetABalance
-	if txInfo.AssetId != assetInfoMap[txInfo.FromAccountIndex][txInfo.AssetId].AssetId ||
-		txInfo.FromAccountIndex != accountInfoMap[txInfo.FromAccountIndex].AccountIndex ||
-		txInfo.GasFeeAssetId != assetInfoMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId].AssetId {
-		logx.Errorf("[VerifyTransferTxInfo] invalid params")
-		return nil, errors.New("[VerifyTransferTxInfo] invalid params")
 	}
 	// init delta map
 	var (
@@ -107,7 +95,7 @@ func VerifyTransferTxInfo(
 	}
 	// check if from account has enough assetABalance
 	// asset A
-	assetABalance, isValid := new(big.Int).SetString(assetInfoMap[txInfo.FromAccountIndex][txInfo.AssetId].Balance, 10)
+	assetABalance, isValid := new(big.Int).SetString(accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.AssetId], 10)
 	if !isValid {
 		logx.Errorf("[VerifyTransferTxInfo] invalid assetABalance")
 		return nil, errors.New("[VerifyTransferTxInfo] invalid assetABalance")
@@ -117,7 +105,7 @@ func VerifyTransferTxInfo(
 		return nil, errors.New("[VerifyTransferTxInfo] you don't have enough assetABalance")
 	}
 	// asset Gas
-	assetGasBalance, isValid := new(big.Int).SetString(assetInfoMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId].Balance, 10)
+	assetGasBalance, isValid := new(big.Int).SetString(accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId], 10)
 	if !isValid {
 		logx.Errorf("[VerifyTransferTxInfo] invalid assetGasBalance")
 		return nil, errors.New("[VerifyTransferTxInfo] invalid assetGasBalance")
@@ -154,7 +142,6 @@ func VerifyTransferTxInfo(
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
 		AccountName:  accountInfoMap[txInfo.FromAccountIndex].AccountName,
-		Balance:      assetInfoMap[txInfo.FromAccountIndex][txInfo.AssetId].Balance,
 		BalanceDelta: assetDeltaMap[txInfo.FromAccountIndex][txInfo.AssetId].String(),
 	})
 	// from account asset gas
@@ -163,7 +150,6 @@ func VerifyTransferTxInfo(
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
 		AccountName:  accountInfoMap[txInfo.FromAccountIndex].AccountName,
-		Balance:      assetInfoMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId].Balance,
 		BalanceDelta: assetDeltaMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId].String(),
 	})
 	// to account asset a
@@ -172,7 +158,6 @@ func VerifyTransferTxInfo(
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.ToAccountIndex,
 		AccountName:  accountInfoMap[txInfo.ToAccountIndex].AccountName,
-		Balance:      assetInfoMap[txInfo.ToAccountIndex][txInfo.AssetId].Balance,
 		BalanceDelta: assetDeltaMap[txInfo.ToAccountIndex][txInfo.AssetId].String(),
 	})
 	// gas account asset gas
@@ -181,7 +166,6 @@ func VerifyTransferTxInfo(
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.GasAccountIndex,
 		AccountName:  accountInfoMap[txInfo.GasAccountIndex].AccountName,
-		Balance:      assetInfoMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId].Balance,
 		BalanceDelta: assetDeltaMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId].String(),
 	})
 	return txDetails, nil

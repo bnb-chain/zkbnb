@@ -17,12 +17,22 @@
 
 package commonConstant
 
+import (
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/zecrey-labs/zecrey-legend/common/tree"
+)
+
 const (
 	NilAssetId     = -1
 	NilBlockHeight = -1
+	NilNonce       = -1
+	EmptyAsset     = "{}"
+	EmptyLiquidity = "{}"
 )
 
 var (
+	NilHash           = tree.NilHash
+	NilHashStr        = common.Bytes2Hex(tree.NilHash)
 	NilAssetAmountStr = "0"
 	NilNftContentHash = "0"
 	NilL1TokenId      = "-1"

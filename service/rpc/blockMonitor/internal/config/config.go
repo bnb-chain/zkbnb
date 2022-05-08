@@ -13,7 +13,6 @@ type Config struct {
 	}
 	CacheRedis  cache.CacheConf
 	ChainConfig struct {
-		L2ChainId                       uint8
 		NetworkRPCSysConfigName         string
 		ZecreyContractAddrSysConfigName string
 		StartL1BlockHeight              int64

@@ -21,8 +21,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/zecrey-labs/zecrey-core/common/general/model/nft"
 	"github.com/zecrey-labs/zecrey-eth-rpc/_rpc"
+	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
-	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
 	"sort"
 	"time"
@@ -35,8 +35,10 @@ func MonitorL2BlockEvents(
 	bscCli *_rpc.ProviderClient,
 	bscPendingBlocksCount uint64,
 	mempoolModel MempoolModel,
-	accountAssetModel AccountAssetModel, accountLiquidityModel AccountLiquidityModel, nftModel L2NftModel,
-	accountAssetHistoryModel AccountAssetHistoryModel, accountLiquidityHistoryModel AccountLiquidityHistoryModel, nftHistoryModel L2NftHistoryModel,
+	accountModel AccountModel,
+	accountHistoryModel AccountHistoryModel,
+	nftModel L2NftModel,
+	nftHistoryModel L2NftHistoryModel,
 	blockModel BlockModel,
 	l1TxSenderModel L1TxSenderModel,
 ) (err error) {
@@ -177,112 +179,42 @@ func MonitorL2BlockEvents(
 
 	// handle executed blocks
 	var (
-		pendingUpdateAssetsMap, pendingNewAssetsMap                   = make(map[string]*AccountAsset), make(map[string]*AccountAsset)
-		pendingUpdateLiquidityAssetsMap, pendingNewLiquidityAssetsMap = make(map[string]*AccountLiquidity), make(map[string]*AccountLiquidity)
-		pendingUpdateNftAssetsMap, pendingNewNftAssetsMap             = make(map[int64]*nft.L2Nft), make(map[int64]*nft.L2Nft)
-		pendingUpdateMempoolTxs                                       []*MempoolTx
+		pendingUpdateAccountsMap                          = make(map[int64]*account.Account)
+		pendingUpdateNftAssetsMap, pendingNewNftAssetsMap = make(map[int64]*nft.L2Nft), make(map[int64]*nft.L2Nft)
+		pendingUpdateMempoolTxs                           []*MempoolTx
 	)
 	for _, pendingUpdateBlock := range pendingUpdateBlocks {
 		if pendingUpdateBlock.BlockStatus == BlockVerifiedStatus {
-			// get related account asset from account asset history table
-			_, pendingUpdateAssetsHistory, err := accountAssetHistoryModel.GetAccountAssetsByBlockHeight(pendingUpdateBlock.BlockHeight)
+			pendingUpdateAccountHistories, err := accountHistoryModel.GetAccountsByBlockHeight(pendingUpdateBlock.BlockHeight)
 			if err != nil {
-				errInfo := fmt.Sprintf("[MonitorL2BlockEvents] unable to get related account assets by height: %s", err.Error())
-				logx.Error(errInfo)
+				logx.Errorf("[MonitorL2BlockEvents] unable to get related account info by height: %s", err.Error())
 				return err
 			}
-			// get pending assets
-			for _, pendingUpdateAssetHistory := range pendingUpdateAssetsHistory {
-				var pendingUpdateAsset *AccountAsset
-				key := util.GetAccountAssetUniqueKey(pendingUpdateAssetHistory.AccountIndex, pendingUpdateAssetHistory.AssetId)
-				if pendingUpdateAssetsMap[key] == nil && pendingNewAssetsMap[key] == nil {
-					pendingUpdateAsset, err = accountAssetModel.GetSingleAccountAsset(
-						pendingUpdateAssetHistory.AccountIndex, pendingUpdateAssetHistory.AssetId)
-					if err == ErrNotFound {
-						pendingNewAsset := &AccountAsset{
-							AccountIndex: pendingUpdateAssetHistory.AccountIndex,
-							AssetId:      pendingUpdateAssetHistory.AssetId,
-							Balance:      pendingUpdateAssetHistory.Balance,
-						}
-						pendingNewAssetsMap[key] = pendingNewAsset
-						continue
-					} else if err != nil {
-						errInfo := fmt.Sprintf("[MonitorL2BlockEvents] unable to get related account asset: %s", err.Error())
-						logx.Error(errInfo)
+			for _, pendingUpdateAccountHistory := range pendingUpdateAccountHistories {
+				// get account info by index
+				if pendingUpdateAccountsMap[pendingUpdateAccountHistory.AccountIndex] == nil {
+					pendingUpdateAccountsMap[pendingUpdateAccountHistory.AccountIndex], err = accountModel.GetAccountByAccountIndex(pendingUpdateAccountHistory.AccountIndex)
+					if err != nil {
+						logx.Errorf("[MonitorL2BlockEvents] invalid account index: %s", err.Error())
 						return err
 					}
-					pendingUpdateAssetsMap[key] = pendingUpdateAsset
-				} else {
-					if pendingUpdateAssetsMap[key] == nil {
-						pendingUpdateAsset = pendingNewAssetsMap[key]
-					} else {
-						pendingUpdateAsset = pendingUpdateAssetsMap[key]
-					}
 				}
-				pendingUpdateAsset.Balance = pendingUpdateAssetHistory.Balance
+				pendingUpdateAccountsMap[pendingUpdateAccountHistory.AccountIndex].Nonce = pendingUpdateAccountHistory.Nonce
+				pendingUpdateAccountsMap[pendingUpdateAccountHistory.AccountIndex].AssetInfo = pendingUpdateAccountHistory.AssetInfo
+				pendingUpdateAccountsMap[pendingUpdateAccountHistory.AccountIndex].AssetRoot = pendingUpdateAccountHistory.AssetRoot
+				pendingUpdateAccountsMap[pendingUpdateAccountHistory.AccountIndex].LiquidityInfo = pendingUpdateAccountHistory.LiquidityInfo
+				pendingUpdateAccountsMap[pendingUpdateAccountHistory.AccountIndex].LiquidityRoot = pendingUpdateAccountHistory.LiquidityRoot
 			}
-			// get related account liquidity from account liquidity history table
-			_, pendingUpdateLiquidityAssetsHistory, err := accountLiquidityHistoryModel.GetLiquidityAssetsByBlockHeight(pendingUpdateBlock.BlockHeight)
-			if err != nil {
-				errInfo := fmt.Sprintf("[MonitorL2BlockEvents] unable to get related account liquidity assets by height: %s", err.Error())
-				logx.Error(errInfo)
-				return err
-			}
-			// get pending liquidity assets
-			// pendingUpdateLiquidityAssets, pendingNewLiquidityAssets
-			for _, pendingUpdateLiquidityAssetHistory := range pendingUpdateLiquidityAssetsHistory {
-				var pendingUpdateLiquidityAsset *AccountLiquidity
-				key := util.GetAccountLPUniqueKey(
-					pendingUpdateLiquidityAssetHistory.AccountIndex,
-					pendingUpdateLiquidityAssetHistory.PairIndex,
-				)
-				// pendingUpdateLiquidityAssetsMap, pendingNewLiquidityAssetsMap
-				if pendingUpdateLiquidityAssetsMap[key] == nil && pendingNewLiquidityAssetsMap[key] == nil {
-					pendingUpdateLiquidityAsset, err = accountLiquidityModel.GetLiquidityByAccountIndexAndPairIndex(
-						uint32(pendingUpdateLiquidityAssetHistory.AccountIndex),
-						uint32(pendingUpdateLiquidityAssetHistory.PairIndex),
-					)
-					if err == ErrNotFound {
-						pendingNewLiquidityAsset := &AccountLiquidity{
-							AccountIndex: pendingUpdateLiquidityAssetHistory.AccountIndex,
-							PairIndex:    pendingUpdateLiquidityAssetHistory.PairIndex,
-							AssetAId:     pendingUpdateLiquidityAssetHistory.AssetAId,
-							AssetA:       pendingUpdateLiquidityAssetHistory.AssetA,
-							AssetBId:     pendingUpdateLiquidityAssetHistory.AssetBId,
-							AssetB:       pendingUpdateLiquidityAssetHistory.AssetB,
-							LpAmount:     pendingUpdateLiquidityAssetHistory.LpAmount,
-						}
-						pendingNewLiquidityAssetsMap[key] = pendingNewLiquidityAsset
-						continue
-					} else if err != nil {
-						errInfo := fmt.Sprintf("[MonitorL2BlockEvents] unable to get related account asset: %s", err.Error())
-						logx.Error(errInfo)
-						return err
-					}
-					pendingUpdateLiquidityAssetsMap[key] = pendingUpdateLiquidityAsset
-				} else {
-					if pendingUpdateLiquidityAssetsMap[key] == nil {
-						pendingUpdateLiquidityAsset = pendingNewLiquidityAssetsMap[key]
-					} else {
-						pendingUpdateLiquidityAsset = pendingUpdateLiquidityAssetsMap[key]
-					}
-				}
-				pendingUpdateLiquidityAsset.AssetA = pendingUpdateLiquidityAssetHistory.AssetA
-				pendingUpdateLiquidityAsset.AssetB = pendingUpdateLiquidityAssetHistory.AssetB
-				pendingUpdateLiquidityAsset.LpAmount = pendingUpdateLiquidityAssetHistory.LpAmount
-			}
-			// get related account liquidity from account liquidity history table
+			// get related account nft from account nft history table
 			_, pendingUpdateNftAssetsHistory, err := nftHistoryModel.GetNftAssetsByBlockHeight(pendingUpdateBlock.BlockHeight)
 			if err != nil {
 				errInfo := fmt.Sprintf("[MonitorL2BlockEvents] unable to get related account liquidity assets by height: %s", err.Error())
 				logx.Error(errInfo)
 				return err
 			}
-			// get pending liquidity assets
-			// pendingUpdateLiquidityAssets, pendingNewLiquidityAssets
+			// get pending nft assets
 			for _, pendingUpdateNftAssetHistory := range pendingUpdateNftAssetsHistory {
 				var pendingUpdateNftAsset *nft.L2Nft
-				// pendingUpdateLiquidityAssetsMap, pendingNewLiquidityAssetsMap
 				if pendingUpdateNftAssetsMap[pendingUpdateNftAssetHistory.NftIndex] == nil && pendingNewNftAssetsMap[pendingUpdateNftAssetHistory.NftIndex] == nil {
 					pendingUpdateNftAsset, err = nftModel.GetNftAsset(pendingUpdateNftAssetHistory.NftIndex)
 					if err == ErrNotFound {
@@ -344,21 +276,11 @@ func MonitorL2BlockEvents(
 		}
 	}
 	var (
-		pendingUpdateAssets, pendingNewAssets                   []*AccountAsset
-		pendingUpdateLiquidityAssets, pendingNewLiquidityAssets []*AccountLiquidity
-		pendingUpdateNftAssets, pendingNewNftAssets             []*nft.L2Nft
+		pendingUpdateAccounts                       []*account.Account
+		pendingUpdateNftAssets, pendingNewNftAssets []*nft.L2Nft
 	)
-	for _, pendingUpdateAsset := range pendingUpdateAssetsMap {
-		pendingUpdateAssets = append(pendingUpdateAssets, pendingUpdateAsset)
-	}
-	for _, pendingNewAsset := range pendingNewAssetsMap {
-		pendingNewAssets = append(pendingNewAssets, pendingNewAsset)
-	}
-	for _, pendingUpdateLiquidityAsset := range pendingUpdateLiquidityAssetsMap {
-		pendingUpdateLiquidityAssets = append(pendingUpdateLiquidityAssets, pendingUpdateLiquidityAsset)
-	}
-	for _, pendingNewLiquidityAsset := range pendingNewLiquidityAssetsMap {
-		pendingNewLiquidityAssets = append(pendingNewLiquidityAssets, pendingNewLiquidityAsset)
+	for _, pendingUpdateAccount := range pendingUpdateAccountsMap {
+		pendingUpdateAccounts = append(pendingUpdateAccounts, pendingUpdateAccount)
 	}
 	for _, pendingUpdateNftAsset := range pendingUpdateNftAssetsMap {
 		pendingUpdateNftAssets = append(pendingUpdateNftAssets, pendingUpdateNftAsset)
@@ -372,18 +294,14 @@ func MonitorL2BlockEvents(
 	err = l1TxSenderModel.UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 		pendingUpdateBlocks,
 		pendingUpdateSenders,
-		pendingUpdateAssets, pendingNewAssets,
-		pendingUpdateLiquidityAssets, pendingNewLiquidityAssets,
+		pendingUpdateAccounts,
 		pendingUpdateNftAssets, pendingNewNftAssets,
 		pendingUpdateMempoolTxs,
 		pendingUpdateProofSenderStatus,
 	)
 	logx.Info("[MonitorL2BlockEvents] update blocks count: %v", len(pendingUpdateBlocks))
 	logx.Info("[MonitorL2BlockEvents] update senders count: %v", len(pendingUpdateSenders))
-	logx.Info("[MonitorL2BlockEvents] update assets count: %v", len(pendingUpdateAssets))
-	logx.Info("[MonitorL2BlockEvents] new assets count: %v", len(pendingNewAssets))
-	logx.Info("[MonitorL2BlockEvents] update liquidity assets count: %v", len(pendingUpdateLiquidityAssets))
-	logx.Info("[MonitorL2BlockEvents] new liquidity assets count: %v", len(pendingNewLiquidityAssets))
+	logx.Info("[MonitorL2BlockEvents] update accounts count: %v", len(pendingUpdateAccounts))
 	logx.Info("[MonitorL2BlockEvents] update nft assets count: %v", len(pendingUpdateNftAssets))
 	logx.Info("[MonitorL2BlockEvents] new nft assets count: %v", len(pendingNewNftAssets))
 	logx.Info("[MonitorL2BlockEvents] update mempool txs count: %v", len(pendingUpdateMempoolTxs))

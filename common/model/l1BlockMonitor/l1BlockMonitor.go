@@ -186,12 +186,13 @@ func (m *defaultL1BlockMonitorModel) GetL1BlockMonitors() (blockInfos []*L1Block
 	Description: get latest l1 block monitor info
 */
 func (m *defaultL1BlockMonitorModel) GetLatestL1BlockMonitor() (blockInfo *L1BlockMonitor, err error) {
-	dbTx := m.DB.Table(m.table).Order("l1_block_height desc").First(&blockInfo)
+	dbTx := m.DB.Table(m.table).Order("l1_block_height desc").Find(&blockInfo)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[l1BlockMonitor.GetLatestL1BlockMonitor] %s", dbTx.Error)
 		logx.Error(err)
 		return nil, dbTx.Error
-	} else if dbTx.RowsAffected == 0 {
+	}
+	if dbTx.RowsAffected == 0 {
 		err := fmt.Sprintf("[l1BlockMonitor.GetLatestL1BlockMonitor] %s", ErrNotFound)
 		logx.Error(err)
 		return nil, ErrNotFound

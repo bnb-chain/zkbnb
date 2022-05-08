@@ -22,7 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/zecrey-labs/zecrey-core/common/general/model/nft"
-	"github.com/zecrey-labs/zecrey-legend/common/model/asset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
@@ -49,8 +49,7 @@ type (
 		UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 			pendingUpdateBlocks []*block.Block,
 			pendingUpdateSenders []*L1TxSender,
-			pendingUpdateAssets []*asset.AccountAsset, pendingNewAssets []*asset.AccountAsset,
-			pendingUpdateLiquidityAssets []*asset.AccountLiquidity, pendingNewLiquidityAssets []*asset.AccountLiquidity,
+			pendingUpdateAccounts []*account.Account,
 			pendingUpdateNftAssets []*nft.L2Nft, pendingNewNftAssets []*nft.L2Nft,
 			pendingUpdateMempoolTxs []*mempool.MempoolTx,
 			pendingUpdateProofSenderStatus map[int64]int,
@@ -246,8 +245,7 @@ func (m *defaultL1TxSenderModel) DeleteL1TxSender(sender *L1TxSender) error {
 func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 	pendingUpdateBlocks []*block.Block,
 	pendingUpdateSenders []*L1TxSender,
-	pendingUpdateAssets []*asset.AccountAsset, pendingNewAssets []*asset.AccountAsset,
-	pendingUpdateLiquidityAssets []*asset.AccountLiquidity, pendingNewLiquidityAssets []*asset.AccountLiquidity,
+	pendingUpdateAccounts []*account.Account,
 	pendingUpdateNftAssets []*nft.L2Nft, pendingNewNftAssets []*nft.L2Nft,
 	pendingUpdateMempoolTxs []*mempool.MempoolTx,
 	pendingUpdateProofSenderStatus map[int64]int,
@@ -299,62 +297,20 @@ func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 				return errors.New("Invalid sender:  " + string(senderInfo))
 			}
 		}
-		// create assets
-		if len(pendingNewAssets) != 0 {
-			dbTx := tx.Table(asset.GeneralAssetTable).CreateInBatches(pendingNewAssets, len(pendingNewAssets))
-			if dbTx.Error != nil {
-				errInfo := fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] unable to create assets: %s", err.Error())
-				logx.Error(errInfo)
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected != int64(len(pendingNewAssets)) {
-				logx.Error("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] invalid assets")
-				return errors.New("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] invalid assets")
-			}
-		}
-		// update assets
-		for _, pendingUpdateAsset := range pendingUpdateAssets {
-			dbTx := tx.Table(asset.GeneralAssetTable).Where("id = ?", pendingUpdateAsset.ID).
+		// update accounts
+		for _, pendingUpdateAccount := range pendingUpdateAccounts {
+			dbTx := tx.Table(account.AccountTableName).Where("id = ?", pendingUpdateAccount.ID).
 				Select("*").
-				Updates(&pendingUpdateAsset)
+				Updates(&pendingUpdateAccount)
 			if dbTx.Error != nil {
 				errInfo := fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] unable to update asset: %s", err.Error())
 				logx.Error(errInfo)
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
-				errInfo := fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] unable to update asset: %s", pendingUpdateAsset.ID)
+				errInfo := fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] unable to update asset: %s", pendingUpdateAccount.ID)
 				logx.Error(errInfo)
 				return errors.New("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] unable to update related asset")
-			}
-		}
-		// create liquidity assets
-		if len(pendingNewLiquidityAssets) != 0 {
-			dbTx := tx.Table(asset.LiquidityAssetTable).CreateInBatches(pendingNewLiquidityAssets, len(pendingNewLiquidityAssets))
-			if dbTx.Error != nil {
-				errInfo := fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] unable to create liquidity assets: %s", err.Error())
-				logx.Error(errInfo)
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected != int64(len(pendingNewLiquidityAssets)) {
-				logx.Error("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] invalid liquidity assets")
-				return errors.New("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] invalid liquidity assets")
-			}
-		}
-		// update liquidity assets
-		for _, pendingUpdateLiquidityAsset := range pendingUpdateLiquidityAssets {
-			dbTx := tx.Table(asset.LiquidityAssetTable).Where("id = ?", pendingUpdateLiquidityAsset.ID).
-				Select("*").
-				Updates(&pendingUpdateLiquidityAsset)
-			if dbTx.Error != nil {
-				errInfo := fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] unable to update liquidity asset: %s", err.Error())
-				logx.Error(errInfo)
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				errInfo := fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] unable to update liquidity asset: %s", pendingUpdateLiquidityAsset.ID)
-				logx.Error(errInfo)
-				return errors.New("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] unable to update related liquidity asset")
 			}
 		}
 		// create liquidity assets

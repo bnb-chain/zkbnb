@@ -33,7 +33,9 @@ type (
 		DropAccountHistoryTable() error
 		IfAccountNameExist(name string) (bool, error)
 		IfAccountExistsByAccountIndex(accountIndex int64) (bool, error)
+		GetAccountsByBlockHeight(blockHeight int64) (accounts []*AccountHistory, err error)
 		GetAccountByAccountIndex(accountIndex int64) (account *AccountHistory, err error)
+		GetLatestAccountNonceByAccountIndex(accountIndex int64) (nonce int64, err error)
 		GetAccountByPk(pk string) (account *AccountHistory, err error)
 		GetAccountByAccountName(accountName string) (account *AccountHistory, err error)
 		GetAccountByAccountNameHash(accountNameHash string) (account *AccountHistory, err error)
@@ -52,14 +54,14 @@ type (
 
 	AccountHistory struct {
 		gorm.Model
-		AccountIndex    int64  `gorm:"index"`
-		AccountName     string `gorm:"index"`
-		AccountNameHash string `gorm:"index"`
-		PublicKey       string `gorm:"index"`
-		L1Address       string
-		Nonce           int64
-		Status          int
-		L2BlockHeight   int64
+		AccountIndex  int64 `gorm:"index"`
+		Nonce         int64
+		AssetInfo     string
+		AssetRoot     string
+		LiquidityInfo string
+		LiquidityRoot string
+		Status        int
+		L2BlockHeight int64
 	}
 )
 
@@ -151,7 +153,7 @@ func (m *defaultAccountHistoryModel) IfAccountExistsByAccountIndex(accountIndex 
 */
 
 func (m *defaultAccountHistoryModel) GetAccountByAccountIndex(accountIndex int64) (account *AccountHistory, err error) {
-	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex).Find(&account)
+	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex).Order("l2_block_height desc").Find(&account)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[accountHistory.GetAccountByAccountIndex] %s", dbTx.Error)
 		logx.Error(err)
@@ -162,6 +164,21 @@ func (m *defaultAccountHistoryModel) GetAccountByAccountIndex(accountIndex int64
 		return nil, ErrNotFound
 	}
 	return account, nil
+}
+
+func (m *defaultAccountHistoryModel) GetLatestAccountNonceByAccountIndex(accountIndex int64) (nonce int64, err error) {
+	var account *AccountHistory
+	dbTx := m.DB.Table(m.table).Where("account_index = ? and nonce != -1", accountIndex).Order("l2_block_height desc").Find(&account)
+	if dbTx.Error != nil {
+		err := fmt.Sprintf("[accountHistory.GetAccountByAccountIndex] %s", dbTx.Error)
+		logx.Error(err)
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		err := fmt.Sprintf("[accountHistory.GetAccountByAccountIndex] %s", ErrNotFound)
+		logx.Error(err)
+		return 0, ErrNotFound
+	}
+	return account.Nonce, nil
 }
 
 /*
@@ -289,8 +306,8 @@ func (m *defaultAccountHistoryModel) GetValidAccounts(height int64) (rowsAffecte
 
 	dbTx := m.DB.Table(m.table).
 		Raw("SELECT a.* FROM account_history a WHERE NOT EXISTS"+
-			"(SELECT * FROM account_history WHERE account_index = a.account_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height) "+
-			"AND l2_block_height <= ? ORDER BY account_index", height, height).
+			"(SELECT * FROM account_history WHERE account_index = a.account_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height AND l2_block_height != -1) "+
+			"AND l2_block_height <= ? AND l2_block_height != -1 ORDER BY account_index", height, height).
 		Find(&accounts)
 	if dbTx.Error != nil {
 		logx.Errorf("[GetValidAccounts] unable to get related accounts: %s", dbTx.Error.Error())
@@ -301,7 +318,7 @@ func (m *defaultAccountHistoryModel) GetValidAccounts(height int64) (rowsAffecte
 }
 
 func (m *defaultAccountHistoryModel) GetLatestAccountInfoByAccountIndex(accountIndex int64) (account *AccountHistory, err error) {
-	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex).Order("l2_block_height desc").First(&accountIndex)
+	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex).Order("l2_block_height desc").Find(&account)
 	if dbTx.Error != nil {
 		logx.Errorf("[GetLatestAccountInfoByAccountIndex] unable to get related account: %s", dbTx.Error.Error())
 		return nil, dbTx.Error
@@ -323,4 +340,18 @@ func (m *defaultAccountHistoryModel) GetAccountByAccountNameHash(accountNameHash
 		return nil, ErrNotFound
 	}
 	return account, nil
+}
+
+func (m *defaultAccountHistoryModel) GetAccountsByBlockHeight(blockHeight int64) (accounts []*AccountHistory, err error) {
+	dbTx := m.DB.Table(m.table).Where("l2_block_height = ?", blockHeight).Find(&accounts)
+	if dbTx.Error != nil {
+		errInfo := fmt.Sprintf("[accountHistory.GetAccountByAccountName] %s", dbTx.Error)
+		logx.Error(errInfo)
+		return nil, errors.New(errInfo)
+	} else if dbTx.RowsAffected == 0 {
+		errInfo := fmt.Sprintf("[accountHistory.GetAccountByAccountName] %s", ErrNotFound)
+		logx.Info(errInfo)
+		return nil, ErrNotFound
+	}
+	return accounts, nil
 }

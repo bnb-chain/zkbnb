@@ -22,8 +22,7 @@ import (
 	"github.com/zecrey-labs/zecrey-core/common/general/model/nft"
 	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
 	"github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey/basic"
-	"github.com/zecrey-labs/zecrey-legend/common/model/asset"
-	"github.com/zecrey-labs/zecrey-legend/common/model/assetHistory"
+	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l1TxSender"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2BlockEventMonitor"
@@ -33,21 +32,17 @@ import (
 )
 
 type (
-	MempoolModel                 = mempool.MempoolModel
-	AccountAssetModel            = asset.AccountAssetModel
-	AccountLiquidityModel        = asset.AccountLiquidityModel
-	L2NftModel                   = nft.L2NftModel
-	AccountAsset                 = asset.AccountAsset
-	AccountLiquidity             = asset.AccountLiquidity
-	AccountLiquidityHistoryModel = assetHistory.AccountLiquidityHistoryModel
-	AccountAssetHistoryModel     = assetHistory.AccountAssetHistoryModel
-	L2NftHistoryModel            = nft.L2NftHistoryModel
-	BlockModel                   = block.BlockModel
-	Block                        = block.Block
-	L2BlockEventMonitorModel     = l2BlockEventMonitor.L2BlockEventMonitorModel
-	L2BlockEventMonitor          = l2BlockEventMonitor.L2BlockEventMonitor
-	L1TxSenderModel              = l1TxSender.L1TxSenderModel
-	L1TxSender                   = l1TxSender.L1TxSender
+	MempoolModel             = mempool.MempoolModel
+	AccountModel             = account.AccountModel
+	AccountHistoryModel      = account.AccountHistoryModel
+	L2NftModel               = nft.L2NftModel
+	L2NftHistoryModel        = nft.L2NftHistoryModel
+	BlockModel               = block.BlockModel
+	Block                    = block.Block
+	L2BlockEventMonitorModel = l2BlockEventMonitor.L2BlockEventMonitorModel
+	L2BlockEventMonitor      = l2BlockEventMonitor.L2BlockEventMonitor
+	L1TxSenderModel          = l1TxSender.L1TxSenderModel
+	L1TxSender               = l1TxSender.L1TxSender
 
 	ZecreyLegendBlockCommit       = zecreyLegend.ZecreyLegendBlockCommit
 	ZecreyLegendBlockVerification = zecreyLegend.ZecreyLegendBlockVerification

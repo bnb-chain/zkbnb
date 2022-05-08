@@ -17,17 +17,15 @@
 package logic
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
+	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/common/model/asset"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2TxEventMonitor"
-	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/mempoolMonitor/internal/svc"
@@ -36,28 +34,22 @@ import (
 )
 
 func MonitorMempool(
-	l2TxEventMonitorModel l2TxEventMonitor.L2TxEventMonitorModel,
-	l2assetInfoModel l2asset.L2AssetInfoModel,
-	accountModel account.AccountModel,
-	accountHistoryModel account.AccountHistoryModel,
-	accountAssetModel asset.AccountAssetModel,
 	ctx *svc.ServiceContext,
-	nContext context.Context,
 ) error {
-	// get tx from l2txEventMonitor
-	txs, err := l2TxEventMonitorModel.GetL2TxEventMonitorsByStatus(PendingStatus)
+	// get oTx from l2txEventMonitor
+	txs, err := ctx.L2TxEventMonitorModel.GetL2TxEventMonitorsByStatus(PendingStatus)
 	if err != nil {
 		if err == l2TxEventMonitor.ErrNotFound {
-			logx.Info("[MonitorMempool] no l2 tx event monitors")
+			logx.Info("[MonitorMempool] no l2 oTx event monitors")
 			return err
 		} else {
-			logx.Error("[MonitorMempool] unable to get l2 tx event monitors")
+			logx.Error("[MonitorMempool] unable to get l2 oTx event monitors")
 			return err
 		}
 	}
 	// initialize mempool txs
 
-	nextAccountIndex, err := accountHistoryModel.GetLatestAccountIndex()
+	nextAccountIndex, err := ctx.AccountHistoryModel.GetLatestAccountIndex()
 	if err != nil {
 		if err == account.ErrNotFound {
 			nextAccountIndex = -1
@@ -69,94 +61,118 @@ func MonitorMempool(
 	}
 
 	var (
+		pendingNewAccount        []*account.Account
 		pendingNewAccountHistory []*account.AccountHistory
 		pendingNewMempoolTxs     []*mempool.MempoolTx
+		newAccountInfoMap        = make(map[string]*account.Account)
+		relatedAccountIndex      = make(map[int64]bool)
 	)
 	// get last handled request id
-	currentRequestId, err := l2TxEventMonitorModel.GetLastHandledRequestId()
+	currentRequestId, err := ctx.L2TxEventMonitorModel.GetLastHandledRequestId()
 	if err != nil {
 		logx.Errorf("[MonitorMempool] unable to get last handled request id: %s", err.Error())
 		return err
 	}
-	for _, tx := range txs {
-		// set tx as handled
-		tx.Status = l2TxEventMonitor.HandledStatus
+	for _, oTx := range txs {
+		// set oTx as handled
+		oTx.Status = l2TxEventMonitor.HandledStatus
 		// request id must be in order
-		if tx.RequestId != currentRequestId+1 {
+		if oTx.RequestId != currentRequestId+1 {
 			logx.Errorf("[MonitorMempool] invalid request id")
 			return errors.New("[MonitorMempool] invalid request id")
 		}
 		currentRequestId++
 
-		// handle tx based on tx type
-		switch tx.TxType {
+		// handle oTx based on oTx type
+		switch oTx.TxType {
 		case TxTypeRegisterZns:
-			// parse tx info
-			txInfo, err := util.ParseRegisterZnsPubData(common.FromHex(tx.Pubdata))
+			// parse oTx info
+			txInfo, err := util.ParseRegisterZnsPubData(common.FromHex(oTx.Pubdata))
 			if err != nil {
 				logx.Errorf("[MonitorMempool] unable to parse registerZNS pub data: %s", err.Error())
 				return err
 			}
 			// check if the account name has been registered
-			_, err = accountHistoryModel.GetAccountByAccountName(txInfo.AccountName)
+			_, err = ctx.AccountHistoryModel.GetAccountByAccountName(txInfo.AccountName)
 			if err != ErrNotFound {
 				logx.Errorf("[MonitorMempool] account name has been registered")
 				return errors.New("[MonitorMempool] account name has been registered")
 			}
 			// set correct account index
 			nextAccountIndex++
-			nameHash, err := util.AccountNameHash(txInfo.AccountName)
-			if err != nil {
-				logx.Errorf("[MonitorMempool] unable to compute account name hash: %s", err.Error())
-				return err
-			}
-			// create new account history
-			accountHistory := &account.AccountHistory{
+			// create new account and account history
+			accountInfo := &account.Account{
 				AccountIndex:    nextAccountIndex,
 				AccountName:     txInfo.AccountName,
-				AccountNameHash: nameHash,
 				PublicKey:       txInfo.PubKey,
-				L1Address:       tx.SenderAddress,
-				Nonce:           -1,
-				Status:          account.AccountHistoryStatusPending,
-				L2BlockHeight:   -1,
+				AccountNameHash: txInfo.AccountNameHash,
+				L1Address:       oTx.SenderAddress,
+				Nonce:           commonConstant.NilNonce,
+				AssetInfo:       commonConstant.EmptyAsset,
+				AssetRoot:       commonConstant.NilHashStr,
+				LiquidityInfo:   commonConstant.EmptyLiquidity,
+				LiquidityRoot:   commonConstant.NilHashStr,
 			}
+			accountHistory := &account.AccountHistory{
+				AccountIndex:  nextAccountIndex,
+				Nonce:         commonConstant.NilNonce,
+				AssetInfo:     commonConstant.EmptyAsset,
+				AssetRoot:     commonConstant.NilHashStr,
+				LiquidityInfo: commonConstant.EmptyLiquidity,
+				LiquidityRoot: commonConstant.NilHashStr,
+				Status:        account.AccountHistoryStatusPending,
+				L2BlockHeight: commonConstant.NilBlockHeight,
+			}
+			pendingNewAccount = append(pendingNewAccount, accountInfo)
 			pendingNewAccountHistory = append(pendingNewAccountHistory, accountHistory)
-			// create mempool tx
-			// serialize tx info
+			newAccountInfoMap[txInfo.AccountNameHash] = accountInfo
+			// create mempool oTx
+			// serialize oTx info
 			txInfoBytes, err := json.Marshal(txInfo)
 			if err != nil {
-				logx.Errorf("[MonitorMempool] unable to serialize tx info : %s", err.Error())
+				logx.Errorf("[MonitorMempool] unable to serialize oTx info : %s", err.Error())
 				return err
 			}
 			mempoolTx := &mempool.MempoolTx{
 				TxHash:        RandomTxHash(),
 				TxType:        int64(txInfo.TxType),
-				GasFee:        "0",
-				GasFeeAssetId: 0,
-				AssetAId:      -1,
-				AssetBId:      -1,
-				TxAmount:      "0",
-				NativeAddress: tx.SenderAddress,
+				GasFee:        commonConstant.NilAssetAmountStr,
+				GasFeeAssetId: commonConstant.NilAssetId,
+				AssetAId:      commonConstant.NilAssetId,
+				AssetBId:      commonConstant.NilAssetId,
+				TxAmount:      commonConstant.NilAssetAmountStr,
+				NativeAddress: oTx.SenderAddress,
 				TxInfo:        string(txInfoBytes),
 				AccountIndex:  accountHistory.AccountIndex,
-				Nonce:         -1,
-				L2BlockHeight: -1,
+				Nonce:         commonConstant.NilNonce,
+				L2BlockHeight: commonConstant.NilBlockHeight,
 				Status:        mempool.PendingTxStatus,
 			}
 			pendingNewMempoolTxs = append(pendingNewMempoolTxs, mempoolTx)
 			break
 		case TxTypeDeposit:
-			// create mempool tx
-			txInfo, err := util.ParseDepositPubData(common.FromHex(tx.Pubdata))
+			var accountInfo *account.Account
+			// create mempool oTx
+			txInfo, err := util.ParseDepositPubData(common.FromHex(oTx.Pubdata))
 			if err != nil {
 				logx.Errorf("[MonitorMempool] unable to parse deposit pub data: %s", err.Error())
 				return err
 			}
-			accountInfo, err := GetAccountInfoByAccountNameHash(txInfo.AccountNameHash, accountModel, accountHistoryModel)
-			if err != nil {
-				logx.Errorf("[MonitorMempool] unable to get account info: %s", err.Error())
-				return err
+			if newAccountInfoMap[txInfo.AccountNameHash] != nil {
+				accountInfo = &account.Account{
+					AccountIndex:    newAccountInfoMap[txInfo.AccountNameHash].AccountIndex,
+					AccountName:     newAccountInfoMap[txInfo.AccountNameHash].AccountName,
+					PublicKey:       newAccountInfoMap[txInfo.AccountNameHash].PublicKey,
+					AccountNameHash: newAccountInfoMap[txInfo.AccountNameHash].AccountNameHash,
+					L1Address:       newAccountInfoMap[txInfo.AccountNameHash].L1Address,
+					Nonce:           newAccountInfoMap[txInfo.AccountNameHash].Nonce,
+				}
+			} else {
+				accountInfo, err = GetAccountInfoByAccountNameHash(txInfo.AccountNameHash, ctx.AccountModel)
+				if err != nil {
+					logx.Errorf("[MonitorMempool] unable to get account info: %s", err.Error())
+					return err
+				}
 			}
 			txInfo.AccountIndex = uint32(accountInfo.AccountIndex)
 			var (
@@ -169,43 +185,46 @@ func MonitorMempool(
 				AccountName:  accountInfo.AccountName,
 				BalanceDelta: txInfo.AssetAmount.String(),
 			})
-			// serialize tx info
+			// serialize oTx info
 			txInfoBytes, err := json.Marshal(txInfo)
 			if err != nil {
-				logx.Errorf("[MonitorMempool] unable to serialize tx info : %s", err.Error())
+				logx.Errorf("[MonitorMempool] unable to serialize oTx info : %s", err.Error())
 				return err
 			}
 			mempoolTx := &mempool.MempoolTx{
 				TxHash:         RandomTxHash(),
 				TxType:         int64(txInfo.TxType),
-				GasFee:         "0",
-				GasFeeAssetId:  0,
+				GasFee:         commonConstant.NilAssetAmountStr,
+				GasFeeAssetId:  commonConstant.NilAssetId,
 				AssetAId:       int64(txInfo.AssetId),
-				AssetBId:       -1,
+				AssetBId:       commonConstant.NilAssetId,
 				TxAmount:       txInfo.AssetAmount.String(),
-				NativeAddress:  tx.SenderAddress,
+				NativeAddress:  oTx.SenderAddress,
 				MempoolDetails: mempoolTxDetails,
 				TxInfo:         string(txInfoBytes),
 				AccountIndex:   accountInfo.AccountIndex,
-				Nonce:          -1,
-				L2BlockHeight:  -1,
+				Nonce:          commonConstant.NilNonce,
+				L2BlockHeight:  commonConstant.NilBlockHeight,
 				Status:         mempool.PendingTxStatus,
 			}
 			pendingNewMempoolTxs = append(pendingNewMempoolTxs, mempoolTx)
+			if relatedAccountIndex[accountInfo.AccountIndex] == false {
+				relatedAccountIndex[accountInfo.AccountIndex] = true
+			}
 			break
 		case TxTypeDepositNft:
-			// create mempool tx
-			txInfo, err := util.ParseDepositNftPubData(common.FromHex(tx.Pubdata))
+			// create mempool oTx
+			txInfo, err := util.ParseDepositNftPubData(common.FromHex(oTx.Pubdata))
 			if err != nil {
 				logx.Errorf("[MonitorMempool] unable to parse deposit nft pub data: %s", err.Error())
 				return err
 			}
-			accountInfo, err := GetAccountInfoByAccountNameHash(txInfo.AccountNameHash, accountModel, accountHistoryModel)
+			accountInfo, err := GetAccountInfoByAccountNameHash(txInfo.AccountNameHash, ctx.AccountModel)
 			if err != nil {
 				logx.Errorf("[MonitorMempool] unable to get account info: %s", err.Error())
 				return err
 			}
-			// complete tx info
+			// complete oTx info
 			txInfo.AccountIndex = uint32(accountInfo.AccountIndex)
 			// TODO nft index
 			txInfo.NftIndex = uint64(0)
@@ -218,8 +237,8 @@ func MonitorMempool(
 				int64(txInfo.NftIndex),
 				accountInfo.AccountIndex,
 				accountInfo.AccountIndex,
-				-1,
-				"0",
+				commonConstant.NilAssetId,
+				commonConstant.NilAssetAmountStr,
 				common.Bytes2Hex(txInfo.NftContentHash),
 				txInfo.NftL1TokenId.String(),
 				txInfo.NftL1Address,
@@ -233,49 +252,50 @@ func MonitorMempool(
 				AssetType:    commonAsset.GeneralAssetType,
 				AccountIndex: int64(txInfo.AccountIndex),
 				AccountName:  accountInfo.AccountName,
-				Balance:      util.EmptyNftInfo(int64(txInfo.NftIndex)).String(),
 				BalanceDelta: delta.String(),
 			})
-			// serialize tx info
+			// serialize oTx info
 			txInfoBytes, err := json.Marshal(txInfo)
 			if err != nil {
-				logx.Errorf("[MonitorMempool] unable to serialize tx info : %s", err.Error())
+				logx.Errorf("[MonitorMempool] unable to serialize oTx info : %s", err.Error())
 				return err
 			}
 			mempoolTx := &mempool.MempoolTx{
 				TxHash:         RandomTxHash(),
 				TxType:         int64(txInfo.TxType),
-				GasFee:         "0",
-				GasFeeAssetId:  0,
-				AssetAId:       -1,
-				AssetBId:       -1,
-				TxAmount:       "0",
-				NativeAddress:  tx.SenderAddress,
+				GasFee:         commonConstant.NilAssetAmountStr,
+				GasFeeAssetId:  commonConstant.NilAssetId,
+				AssetAId:       commonConstant.NilAssetId,
+				AssetBId:       commonConstant.NilAssetId,
+				TxAmount:       commonConstant.NilAssetAmountStr,
+				NativeAddress:  oTx.SenderAddress,
 				MempoolDetails: mempoolTxDetails,
 				TxInfo:         string(txInfoBytes),
 				AccountIndex:   accountInfo.AccountIndex,
-				Nonce:          -1,
-				L2BlockHeight:  -1,
+				Nonce:          commonConstant.NilNonce,
+				L2BlockHeight:  commonConstant.NilBlockHeight,
 				Status:         mempool.PendingTxStatus,
 			}
 			pendingNewMempoolTxs = append(pendingNewMempoolTxs, mempoolTx)
+			if relatedAccountIndex[accountInfo.AccountIndex] == false {
+				relatedAccountIndex[accountInfo.AccountIndex] = true
+			}
 			break
 		case TxTypeFullExit:
-			// create mempool tx
-			txInfo, err := util.ParseFullExitPubData(common.FromHex(tx.Pubdata))
+			// create mempool oTx
+			txInfo, err := util.ParseFullExitPubData(common.FromHex(oTx.Pubdata))
 			if err != nil {
 				logx.Errorf("[MonitorMempool] unable to parse deposit pub data: %s", err.Error())
 				return err
 			}
-			accountInfo, err := GetAccountInfoByAccountNameHash(txInfo.AccountNameHash, accountModel, accountHistoryModel)
+			accountInfo, err := GetAccountInfoByAccountNameHash(txInfo.AccountNameHash, ctx.AccountModel)
 			if err != nil {
 				logx.Errorf("[MonitorMempool] unable to get account info: %s", err.Error())
 				return err
 			}
-			// complete tx info
+			// complete oTx info
 			txInfo.AccountIndex = uint32(accountInfo.AccountIndex)
 			// TODO get remaining asset amount
-			txInfo.AssetAmount = big.NewInt(0)
 			var (
 				mempoolTxDetails []*mempool.MempoolTxDetail
 			)
@@ -286,43 +306,46 @@ func MonitorMempool(
 				AccountName:  accountInfo.AccountName,
 				BalanceDelta: ffmath.Neg(txInfo.AssetAmount).String(),
 			})
-			// serialize tx info
+			// serialize oTx info
 			txInfoBytes, err := json.Marshal(txInfo)
 			if err != nil {
-				logx.Errorf("[MonitorMempool] unable to serialize tx info : %s", err.Error())
+				logx.Errorf("[MonitorMempool] unable to serialize oTx info : %s", err.Error())
 				return err
 			}
 			mempoolTx := &mempool.MempoolTx{
 				TxHash:         RandomTxHash(),
 				TxType:         int64(txInfo.TxType),
-				GasFee:         "0",
-				GasFeeAssetId:  0,
+				GasFee:         commonConstant.NilAssetAmountStr,
+				GasFeeAssetId:  commonConstant.NilAssetId,
 				AssetAId:       int64(txInfo.AssetId),
-				AssetBId:       -1,
+				AssetBId:       commonConstant.NilAssetId,
 				TxAmount:       txInfo.AssetAmount.String(),
-				NativeAddress:  tx.SenderAddress,
+				NativeAddress:  oTx.SenderAddress,
 				MempoolDetails: mempoolTxDetails,
 				TxInfo:         string(txInfoBytes),
 				AccountIndex:   accountInfo.AccountIndex,
-				Nonce:          -1,
-				L2BlockHeight:  -1,
+				Nonce:          commonConstant.NilNonce,
+				L2BlockHeight:  commonConstant.NilBlockHeight,
 				Status:         mempool.PendingTxStatus,
 			}
 			pendingNewMempoolTxs = append(pendingNewMempoolTxs, mempoolTx)
+			if relatedAccountIndex[accountInfo.AccountIndex] == false {
+				relatedAccountIndex[accountInfo.AccountIndex] = true
+			}
 			break
 		case TxTypeFullExitNft:
-			// create mempool tx
-			txInfo, err := util.ParseFullExitNftPubData(common.FromHex(tx.Pubdata))
+			// create mempool oTx
+			txInfo, err := util.ParseFullExitNftPubData(common.FromHex(oTx.Pubdata))
 			if err != nil {
 				logx.Errorf("[MonitorMempool] unable to parse deposit nft pub data: %s", err.Error())
 				return err
 			}
-			accountInfo, err := GetAccountInfoByAccountNameHash(txInfo.AccountNameHash, accountModel, accountHistoryModel)
+			accountInfo, err := GetAccountInfoByAccountNameHash(txInfo.AccountNameHash, ctx.AccountModel)
 			if err != nil {
 				logx.Errorf("[MonitorMempool] unable to get account info: %s", err.Error())
 				return err
 			}
-			// complete tx info
+			// complete oTx info
 			txInfo.AccountIndex = uint32(accountInfo.AccountIndex)
 			// TODO get nft info
 			txInfo.NftContentHash = []byte("")
@@ -333,8 +356,6 @@ func MonitorMempool(
 			var (
 				mempoolTxDetails []*mempool.MempoolTxDetail
 			)
-			// TODO get old nft info
-			oldNftInfo := util.EmptyNftInfo(int64(txInfo.NftIndex))
 			newNftInfo := util.EmptyNftInfo(
 				int64(txInfo.NftIndex),
 			)
@@ -347,47 +368,56 @@ func MonitorMempool(
 				AssetType:    commonAsset.GeneralAssetType,
 				AccountIndex: int64(txInfo.AccountIndex),
 				AccountName:  accountInfo.AccountName,
-				Balance:      oldNftInfo.String(),
 				BalanceDelta: newNftInfo.String(),
 			})
-			// serialize tx info
+			// serialize oTx info
 			txInfoBytes, err := json.Marshal(txInfo)
 			if err != nil {
-				logx.Errorf("[MonitorMempool] unable to serialize tx info : %s", err.Error())
+				logx.Errorf("[MonitorMempool] unable to serialize oTx info : %s", err.Error())
 				return err
 			}
 			mempoolTx := &mempool.MempoolTx{
 				TxHash:         RandomTxHash(),
 				TxType:         int64(txInfo.TxType),
-				GasFee:         "0",
-				GasFeeAssetId:  0,
-				AssetAId:       -1,
-				AssetBId:       -1,
-				TxAmount:       "0",
-				NativeAddress:  tx.SenderAddress,
+				GasFee:         commonConstant.NilAssetAmountStr,
+				GasFeeAssetId:  commonConstant.NilAssetId,
+				AssetAId:       commonConstant.NilAssetId,
+				AssetBId:       commonConstant.NilAssetId,
+				TxAmount:       commonConstant.NilAssetAmountStr,
+				NativeAddress:  oTx.SenderAddress,
 				MempoolDetails: mempoolTxDetails,
 				TxInfo:         string(txInfoBytes),
 				AccountIndex:   accountInfo.AccountIndex,
-				Nonce:          -1,
-				L2BlockHeight:  -1,
+				Nonce:          commonConstant.NilNonce,
+				L2BlockHeight:  commonConstant.NilBlockHeight,
 				Status:         mempool.PendingTxStatus,
 			}
 			pendingNewMempoolTxs = append(pendingNewMempoolTxs, mempoolTx)
+			if relatedAccountIndex[accountInfo.AccountIndex] == false {
+				relatedAccountIndex[accountInfo.AccountIndex] = true
+			}
 			break
 		default:
-			logx.Errorf("[MonitorMempool] invalid tx type")
-			return errors.New("[MonitorMempool] invalid tx type")
+			logx.Errorf("[MonitorMempool] invalid oTx type")
+			return errors.New("[MonitorMempool] invalid oTx type")
 		}
 	}
-	// transaction: active accounts not in account table & update l2 tx event & create mempool txs
+	// transaction: active accounts not in account table & update l2 oTx event & create mempool txs
 
 	logx.Info("====================call CreateMempoolAndActiveAccount=======================")
 	logx.Infof("mempoolTxs: %v, finalL2TxEvents: %v, nextAccountIndex: %v", len(pendingNewMempoolTxs),
 		len(txs), nextAccountIndex)
 
-	err = ctx.L2TxEventMonitorModel.CreateMempoolAndActiveAccount(pendingNewAccountHistory, pendingNewMempoolTxs, txs)
+	// clean cache
+	var pendingDeletedKeys []string
+	for index, _ := range relatedAccountIndex {
+		pendingDeletedKeys = append(pendingDeletedKeys, util.GetAccountKey(index))
+	}
+	_, _ = ctx.RedisConnection.Del(pendingDeletedKeys...)
+	// update db
+	err = ctx.L2TxEventMonitorModel.CreateMempoolAndActiveAccount(pendingNewAccount, pendingNewAccountHistory, pendingNewMempoolTxs, txs)
 	if err != nil {
-		logx.Errorf("[MonitorMempool] unable to create mempool txs and update l2 tx event monitors, error: %s",
+		logx.Errorf("[MonitorMempool] unable to create mempool txs and update l2 oTx event monitors, error: %s",
 			err.Error())
 		return err
 	}

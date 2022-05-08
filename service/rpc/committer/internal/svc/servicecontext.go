@@ -1,6 +1,7 @@
 package svc
 
 import (
+	"github.com/zecrey-labs/zecrey-core/common/general/model/liquidityPair"
 	"github.com/zecrey-labs/zecrey-core/common/general/model/nft"
 	"github.com/zecrey-labs/zecrey-core/common/general/model/sysconfig"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
@@ -30,6 +31,8 @@ type ServiceContext struct {
 
 	AccountAssetHistoryModel   assetHistory.AccountAssetHistoryModel
 	LiquidityAssetHistoryModel assetHistory.AccountLiquidityHistoryModel
+
+	LiquidityPairModel liquidityPair.LiquidityPairModel
 	L2NftHistoryModel          nft.L2NftHistoryModel
 
 	TxDetailModel      tx.TxDetailModel
@@ -66,6 +69,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		L2NftModel:                 nft.NewL2NftModel(conn, c.CacheRedis, gormPointer),
 		AccountAssetHistoryModel:   assetHistory.NewAccountAssetHistoryModel(conn, c.CacheRedis, gormPointer),
 		LiquidityAssetHistoryModel: assetHistory.NewAccountLiquidityHistoryModel(conn, c.CacheRedis, gormPointer),
+		LiquidityPairModel:         liquidityPair.NewLiquidityPairModel(conn, c.CacheRedis, gormPointer),
 		L2NftHistoryModel:          nft.NewL2NftHistoryModel(conn, c.CacheRedis, gormPointer),
 		TxDetailModel:              tx.NewTxDetailModel(conn, c.CacheRedis, gormPointer),
 		TxModel:                    tx.NewTxModel(conn, c.CacheRedis, gormPointer, redisConn),

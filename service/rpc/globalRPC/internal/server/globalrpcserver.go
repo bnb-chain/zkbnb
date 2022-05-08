@@ -22,11 +22,6 @@ func NewGlobalRPCServer(svcCtx *svc.ServiceContext) *GlobalRPCServer {
 	}
 }
 
-func (s *GlobalRPCServer) GetLatestPoolInfo(ctx context.Context, in *globalRPCProto.ReqGetLatestPoolInfo) (*globalRPCProto.RespGetLatestPoolInfo, error) {
-	l := logic.NewGetLatestPoolInfoLogic(ctx, s.svcCtx)
-	return l.GetLatestPoolInfo(in)
-}
-
 func (s *GlobalRPCServer) GetLatestAccountAssetInfo(ctx context.Context, in *globalRPCProto.ReqGetLatestAccountAssetInfo) (*globalRPCProto.RespGetLatestAccountAssetInfo, error) {
 	l := logic.NewGetLatestAccountAssetInfoLogic(ctx, s.svcCtx)
 	return l.GetLatestAccountAssetInfo(in)
@@ -37,40 +32,14 @@ func (s *GlobalRPCServer) GetLatestAccountInfoByAccountIndex(ctx context.Context
 	return l.GetLatestAccountInfoByAccountIndex(in)
 }
 
-func (s *GlobalRPCServer) GetLatestAccountLp(ctx context.Context, in *globalRPCProto.ReqGetLatestAccountLp) (*globalRPCProto.RespGetLatestAccountLp, error) {
-	l := logic.NewGetLatestAccountLpLogic(ctx, s.svcCtx)
-	return l.GetLatestAccountLp(in)
-}
-
 func (s *GlobalRPCServer) GetLatestTxsListByAccountIndex(ctx context.Context, in *globalRPCProto.ReqGetLatestTxsListByAccountIndex) (*globalRPCProto.RespGetLatestTxsListByAccountIndex, error) {
 	l := logic.NewGetLatestTxsListByAccountIndexLogic(ctx, s.svcCtx)
 	return l.GetLatestTxsListByAccountIndex(in)
 }
 
-func (s *GlobalRPCServer) GetLatestTxsListByAccountIndexAndTxType(ctx context.Context, in *globalRPCProto.ReqGetLatestTxsListByAccountIndexAndTxType) (*globalRPCProto.RespGetLatestTxsListByAccountIndexAndTxType, error) {
-	l := logic.NewGetLatestTxsListByAccountIndexAndTxTypeLogic(ctx, s.svcCtx)
-	return l.GetLatestTxsListByAccountIndexAndTxType(in)
-}
-
 func (s *GlobalRPCServer) SendTx(ctx context.Context, in *globalRPCProto.ReqSendTx) (*globalRPCProto.RespSendTx, error) {
 	l := logic.NewSendTxLogic(ctx, s.svcCtx)
 	return l.SendTx(in)
-}
-
-//  pair
-func (s *GlobalRPCServer) GetLpValue(ctx context.Context, in *globalRPCProto.ReqGetLpValue) (*globalRPCProto.RespGetLpValue, error) {
-	l := logic.NewGetLpValueLogic(ctx, s.svcCtx)
-	return l.GetLpValue(in)
-}
-
-func (s *GlobalRPCServer) GetPairRatio(ctx context.Context, in *globalRPCProto.ReqGetPairRatio) (*globalRPCProto.RespGetPairRatio, error) {
-	l := logic.NewGetPairRatioLogic(ctx, s.svcCtx)
-	return l.GetPairRatio(in)
-}
-
-func (s *GlobalRPCServer) GetSwapAmount(ctx context.Context, in *globalRPCProto.ReqGetSwapAmount) (*globalRPCProto.RespGetSwapAmount, error) {
-	l := logic.NewGetSwapAmountLogic(ctx, s.svcCtx)
-	return l.GetSwapAmount(in)
 }
 
 //  globalmap

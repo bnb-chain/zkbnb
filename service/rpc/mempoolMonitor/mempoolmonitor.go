@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2TxEventMonitor"
@@ -21,7 +20,7 @@ import (
 )
 
 var configFile = flag.String("f",
-	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey\\service\\rpc\\mempoolMonitor\\etc\\mempoolMonitor.yaml", "the config file")
+	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\rpc\\mempoolMonitor\\etc\\mempoolmonitor.yaml", "the config file")
 
 func main() {
 	flag.Parse()
@@ -39,11 +38,7 @@ func main() {
 	_, err := cronjob.AddFunc("@every 15s", func() {
 		logx.Info("===== start monitor mempool txs")
 		err := logic.MonitorMempool(
-			ctx.L2TxEventMonitorModel, ctx.L2assetInfoModel,
-			ctx.AccountModel, ctx.AccountHistoryModel,
-			ctx.AccountAssetModel,
-			// todo fix ctx param
-			ctx, context.Background(),
+			ctx,
 		)
 		if err != nil {
 			if err == l2TxEventMonitor.ErrNotFound {

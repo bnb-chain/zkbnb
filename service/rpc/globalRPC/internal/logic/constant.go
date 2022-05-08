@@ -31,5 +31,4 @@ const (
 	LiquidityType      = 2
 	L2SwapType         = 3
 	WithdrawAssetsType = 4
-	EncryptAssetsType  = 5
 )

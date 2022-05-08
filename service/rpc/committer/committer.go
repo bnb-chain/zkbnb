@@ -21,7 +21,7 @@ import (
 )
 
 var configFile = flag.String("f",
-	"/Users/gavin/Desktop/zecrey-v2/service/rpc/committer/etc/committer.yaml", "the config file")
+	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\rpc\\committer\\etc\\committer.yaml", "the config file")
 
 func main() {
 	flag.Parse()

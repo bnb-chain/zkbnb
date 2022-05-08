@@ -16,6 +16,25 @@
 
 package globalmapHandler
 
+import (
+	"github.com/zecrey-labs/zecrey-core/common/general/model/liquidityPair"
+	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/account"
+	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"github.com/zeromicro/go-zero/core/stores/redis"
+)
+
+type (
+	AccountModel         = account.AccountModel
+	AccountHistoryModel  = account.AccountHistoryModel
+	MempoolTxDetailModel = mempool.MempoolTxDetailModel
+	LiquidityPairModel   = liquidityPair.LiquidityPairModel
+	Redis                = redis.Redis
+	RedisLock            = redis.RedisLock
+
+	FormatAccountInfo = commonAsset.FormatAccountInfo
+)
+
 const (
 	LpPrefix            = "LP::"
 	LockPrefix          = "Lock::"
@@ -30,5 +49,6 @@ const (
 	RetryInterval  = 500
 	MaxRetryTimes  = 3
 
-	BalanceExpiryTime = 30 // seconds
+	AccountExpiryTime      = 30 // seconds
+	BasicAccountExpiryTime = 30 // seconds
 )

@@ -47,6 +47,7 @@ var (
 func CheckRequestParam(dataType uint8, v reflect.Value) error {
 	var (
 		dataUint   uint64
+		dataInt    int64
 		dataString string
 		dataBool   bool
 	)
@@ -55,7 +56,7 @@ func CheckRequestParam(dataType uint8, v reflect.Value) error {
 		return ErrReflectInvalid
 	case reflect.Int, reflect.Int8, reflect.Int16,
 		reflect.Int32, reflect.Int64:
-		return ErrReflectIntInvalid
+		dataInt = v.Int()
 	case reflect.Uint, reflect.Uint8, reflect.Uint16,
 		reflect.Uint32, reflect.Uint64, reflect.Uintptr:
 		dataUint = v.Uint()
@@ -74,7 +75,7 @@ func CheckRequestParam(dataType uint8, v reflect.Value) error {
 		}
 		break
 	case TypeAssetId:
-		if dataUint > maxAssetId {
+		if dataInt > maxAssetId {
 			return ErrAssetIdInvalid
 		}
 		break

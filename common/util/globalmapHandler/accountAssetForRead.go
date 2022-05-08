@@ -18,184 +18,265 @@
 package globalmapHandler
 
 import (
+	"encoding/json"
 	"errors"
-	"fmt"
+	"github.com/zecrey-labs/zecrey-core/common/general/model/liquidityPair"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/common/model/asset"
-	"github.com/zecrey-labs/zecrey-legend/common/model/assetHistory"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
-	"strconv"
 )
 
 func GetLatestAccountInfo(
-	accountHistoryModel account.AccountHistoryModel,
-	mempoolModel mempool.MempoolModel,
-	redisConnection *redis.Redis,
+	accountModel AccountModel,
+	accountHistoryModel AccountHistoryModel,
+	mempoolTxDetailModel MempoolTxDetailModel,
+	liquidityPairModel LiquidityPairModel,
+	redisConnection *Redis,
 	accountIndex int64,
 ) (
-	accountInfo *account.Account,
+	accountInfo *FormatAccountInfo,
 	err error,
 ) {
-	// get account info by account index
-	accountHistory, err := accountHistoryModel.GetAccountByAccountIndex(accountIndex)
-	if err != nil {
-		errInfo := fmt.Sprintf("[GetLatestAccountInfoByLock] %s. invalid accountIndex %v",
-			err.Error(), accountIndex)
-		logx.Error(errInfo)
-		return nil, errors.New(errInfo)
-	}
-	// convert into Account
-	accountInfo = &account.Account{
-		AccountIndex:    accountHistory.AccountIndex,
-		AccountName:     accountHistory.AccountName,
-		PublicKey:       accountHistory.PublicKey,
-		AccountNameHash: accountHistory.AccountNameHash,
-		L1Address:       accountHistory.L1Address,
-		Nonce:           accountHistory.Nonce,
-	}
-	// get latest nonce
 	key := util.GetAccountKey(accountIndex)
-	// get nonce from redis first
-	nonceStr, err := redisConnection.Get(key)
+	accountInfoStr, err := redisConnection.Get(key)
 	if err != nil {
-		logx.Errorf("[GetLatestAccountInfoByLock] unable to get from redis: %s", err.Error())
+		logx.Errorf("[GetLatestAccountInfo] unable to get data from redis: %s", err.Error())
 		return nil, err
 	}
-	if nonceStr != "" {
-		accountInfo.Nonce, err = strconv.ParseInt(nonceStr, 10, 64)
+	if accountInfoStr == "" {
+		// get data from db
+		oAccountInfo, err := accountModel.GetAccountByAccountIndex(accountIndex)
 		if err != nil {
-			logx.Errorf("[GetLatestAccountInfoByLock] unable to parse int: %s", err.Error())
+			logx.Errorf("[GetLatestAccountInfo] unable to get account by account index: %s", err.Error())
 			return nil, err
 		}
-		// update redis
-		redisConnection.Expire(key, BalanceExpiryTime)
-	} else {
-		lockKey := util.GetLockKey(key)
-		// get lock
-		redisLock := GetRedisLockByKey(redisConnection, lockKey)
-		// try acquire lock
-		err = TryAcquireLock(redisLock)
-		// get latest nonce from mempool
-		l2MempoolTx, err := mempoolModel.GetLatestL2MempoolTxByAccountIndex(accountIndex)
+		// get latest info from account history
+		accountHistoryInfo, err := accountHistoryModel.GetLatestAccountInfoByAccountIndex(accountIndex)
 		if err != nil {
-			if err != mempool.ErrNotFound {
-				logx.Errorf("[GetLatestAccountInfoByLock] unable to get latest mempool tx: %s", err.Error())
+			if err != account.ErrNotFound {
+				logx.Errorf("[GetLatestAccountInfo] unable to get account info by account index from history table: %s", err.Error())
 				return nil, err
-			} else {
-				// release lock
-				if err == nil {
-					redisLock.Release()
+			}
+		} else {
+			oAccountInfo.AssetInfo = accountHistoryInfo.AssetInfo
+			oAccountInfo.AssetRoot = accountHistoryInfo.AssetRoot
+			oAccountInfo.LiquidityInfo = accountHistoryInfo.LiquidityInfo
+			oAccountInfo.LiquidityRoot = accountHistoryInfo.LiquidityRoot
+			// get latest nonce
+			latestNonce, err := accountHistoryModel.GetLatestAccountNonceByAccountIndex(accountIndex)
+			if err != nil {
+				if err != account.ErrNotFound {
+					logx.Errorf("[GetLatestAccountInfo] unable to get latest nonce: %s", err.Error())
+					return nil, err
 				}
-				return accountInfo, nil
+			} else {
+				oAccountInfo.Nonce = latestNonce
 			}
 		}
-		accountInfo.Nonce = l2MempoolTx.Nonce
-		// update redis
-		if err == nil {
-			redisConnection.Setex(key, strconv.FormatInt(accountInfo.Nonce, 10), BalanceExpiryTime)
-			redisLock.Release()
+		// convert to format account info
+		accountInfo, err = commonAsset.ToFormatAccountInfo(oAccountInfo)
+		if err != nil {
+			logx.Errorf("[GetLatestAccountInfo] unable to convert to format account info: %s", err.Error())
+			return nil, err
 		}
+		// update asset by mempool tx
+		mempoolTxDetails, err := mempoolTxDetailModel.GetAccountMempoolDetails(accountIndex)
+		if err != nil {
+			if err != mempool.ErrNotFound {
+				logx.Errorf("[GetLatestAccountInfo] unable to get mempool txs by account index: %s", err.Error())
+				return nil, err
+			}
+		}
+		var (
+			liquidityPairMap = make(map[int64]*liquidityPair.LiquidityPair)
+		)
+		for _, mempoolTxDetail := range mempoolTxDetails {
+			switch mempoolTxDetail.AssetType {
+			case commonAsset.GeneralAssetType:
+				// TODO maybe less than 0
+				if accountInfo.AssetInfo[mempoolTxDetail.AssetId] == "" {
+					accountInfo.AssetInfo[mempoolTxDetail.AssetId] = util.ZeroBigInt.String()
+				}
+				accountInfo.AssetInfo[mempoolTxDetail.AssetId], err = util.ComputeNewBalance(
+					commonAsset.GeneralAssetType,
+					accountInfo.AssetInfo[mempoolTxDetail.AssetId],
+					mempoolTxDetail.BalanceDelta,
+				)
+				if err != nil {
+					logx.Errorf("[GetLatestAccountInfo] unable to compute new balance: %s", err.Error())
+					return nil, err
+				}
+				break
+			case commonAsset.LiquidityAssetType:
+				if accountInfo.LiquidityInfo[mempoolTxDetail.AssetId] == nil {
+					// get pair info from liquidityPair
+					if liquidityPairMap[mempoolTxDetail.AssetId] == nil {
+						liquidityPairMap[mempoolTxDetail.AssetId], err = liquidityPairModel.GetLiquidityPairByIndex(mempoolTxDetail.AssetId)
+						if err != nil {
+							logx.Errorf("[GetLatestAccountInfo] cannot get liquidity pair by index: %s", err.Error())
+							return nil, err
+						}
+					}
+					accountInfo.LiquidityInfo[mempoolTxDetail.AssetId] = &commonAsset.Liquidity{
+						PairIndex: mempoolTxDetail.AssetId,
+						AssetAId:  liquidityPairMap[mempoolTxDetail.AssetId].AssetAId,
+						AssetA:    util.ZeroBigInt.String(),
+						AssetBId:  liquidityPairMap[mempoolTxDetail.AssetId].AssetBId,
+						AssetB:    util.ZeroBigInt.String(),
+						LpAmount:  util.ZeroBigInt.String(),
+					}
+				}
+				poolInfo, err := util.ConstructPoolInfo(
+					accountInfo.LiquidityInfo[mempoolTxDetail.AssetId].AssetA,
+					accountInfo.LiquidityInfo[mempoolTxDetail.AssetId].AssetB,
+				)
+				if err != nil {
+					logx.Errorf("[GetLatestAccountInfo] unable to construct pool info: %s", err.Error())
+					return nil, err
+				}
+				// compute new balance
+				nBalance, err := util.ComputeNewBalance(
+					commonAsset.LiquidityAssetType, poolInfo.String(), mempoolTxDetail.BalanceDelta)
+				if err != nil {
+					logx.Error("[CommitterTask] unable to compute new balance: %s", err.Error())
+					return nil, err
+				}
+				newPoolInfo, err := util.ParsePoolInfo(nBalance)
+				if err != nil {
+					logx.Errorf("[CommitterTask] unable to parse pair info: %s", err.Error())
+					return nil, err
+				}
+				accountInfo.LiquidityInfo[mempoolTxDetail.AssetId].AssetA =
+					newPoolInfo.AssetAAmount.String()
+				accountInfo.LiquidityInfo[mempoolTxDetail.AssetId].AssetB =
+					newPoolInfo.AssetBAmount.String()
+				break
+			case commonAsset.LiquidityLpAssetType:
+				if accountInfo.LiquidityInfo[mempoolTxDetail.AssetId] == nil {
+					// get pair info from liquidityPair
+					if liquidityPairMap[mempoolTxDetail.AssetId] == nil {
+						liquidityPairMap[mempoolTxDetail.AssetId], err = liquidityPairModel.GetLiquidityPairByIndex(mempoolTxDetail.AssetId)
+						if err != nil {
+							logx.Errorf("[GetLatestAccountInfo] cannot get liquidity pair by index: %s", err.Error())
+							return nil, err
+						}
+					}
+					accountInfo.LiquidityInfo[mempoolTxDetail.AssetId] = &commonAsset.Liquidity{
+						PairIndex: mempoolTxDetail.AssetId,
+						AssetAId:  liquidityPairMap[mempoolTxDetail.AssetId].AssetAId,
+						AssetA:    util.ZeroBigInt.String(),
+						AssetBId:  liquidityPairMap[mempoolTxDetail.AssetId].AssetBId,
+						AssetB:    util.ZeroBigInt.String(),
+						LpAmount:  util.ZeroBigInt.String(),
+					}
+				}
+				// compute new balance
+				nBalance, err := util.ComputeNewBalance(
+					commonAsset.LiquidityLpAssetType, accountInfo.LiquidityInfo[mempoolTxDetail.AssetId].LpAmount, mempoolTxDetail.BalanceDelta)
+				if err != nil {
+					logx.Error("[CommitterTask] unable to compute new balance: %s", err.Error())
+					return nil, err
+				}
+				accountInfo.LiquidityInfo[mempoolTxDetail.AssetId].LpAmount = nBalance
+				break
+			case commonAsset.NftAssetType:
+				break
+			default:
+				logx.Errorf("[GetLatestAccountInfo] invalid asset type")
+				return nil, errors.New("[GetLatestAccountInfo] invalid asset type")
+			}
+		}
+		// write into cache
+		lockKey := util.GetLockKey(key)
+		redisLock := redis.NewRedisLock(redisConnection, lockKey)
+		redisLock.SetExpire(5)
+		isAcquired, err := redisLock.Acquire()
+		if err != nil {
+			logx.Errorf("[GetLatestAccountInfo] unable to acquire lock: %s", err.Error())
+			return nil, err
+		}
+		if !isAcquired {
+			logx.Errorf("[GetLatestAccountInfo] the lock has been used")
+			return nil, errors.New("[GetLatestAccountInfo] the lock has been used")
+		}
+		info, err := commonAsset.FromFormatAccountInfo(accountInfo)
+		if err != nil {
+			logx.Errorf("[GetLatestAccountInfo] unable to convert format account info to account info: %s", err.Error())
+			return nil, err
+		}
+		infoBytes, err := json.Marshal(info)
+		if err != nil {
+			logx.Errorf("[GetLatestAccountInfo] unable to marshal: %s", err.Error())
+			return nil, err
+		}
+		_ = redisConnection.Setex(key, string(infoBytes), AccountExpiryTime)
+	} else {
+		var oAccountInfo *account.Account
+		err := json.Unmarshal([]byte(accountInfoStr), &oAccountInfo)
+		if err != nil {
+			logx.Errorf("[GetLatestAccountInfo] unable to unmarshal account info: %s", err.Error())
+			return nil, err
+		}
+		accountInfo, err = commonAsset.ToFormatAccountInfo(oAccountInfo)
+		if err != nil {
+			logx.Errorf("[GetLatestAccountInfo] unable convert to format account info: %s", err.Error())
+			return nil, err
+		}
+		// update cache
+		_ = redisConnection.Expire(key, AccountExpiryTime)
 	}
-
 	return accountInfo, nil
 }
 
-func GetLatestAsset(
-	assetModel asset.AccountAssetModel,
-	assetHistoryModel assetHistory.AccountAssetHistoryModel,
-	mempoolTxDetailModel mempool.MempoolTxDetailModel,
-	redisConnection *redis.Redis,
+func GetBasicAccountInfo(
+	accountModel AccountModel,
+	redisConnection *Redis,
 	accountIndex int64,
-	assetId int64,
-) (assetInfo *asset.AccountAsset, err error) {
-	// get asset info
-	assetInfo = &asset.AccountAsset{
-		AccountIndex: accountIndex,
-		AssetId:      assetId,
-		Balance:      "0",
-	}
-	// get latest account info by accountIndex and assetId
-	key := util.GetAccountAssetUniqueKey(accountIndex, assetId)
-	lockKey := util.GetLockKey(key)
-	// get data from redis
-	latestBalance, err := redisConnection.Get(key)
+) (
+	accountInfo *FormatAccountInfo,
+	err error,
+) {
+	key := util.GetBasicAccountKey(accountIndex)
+	basicAccountInfoStr, err := redisConnection.Get(key)
 	if err != nil {
-		logx.Errorf("[GetLatestAssetByLock] unable to get balance from redis: %s", err.Error())
+		logx.Errorf("[GetBasicAccountInfo] unable to get account info: %s", err.Error())
 		return nil, err
 	}
-	if latestBalance != "" {
-		assetInfo.Balance = latestBalance
+	if basicAccountInfoStr == "" {
+		oAccountInfo, err := accountModel.GetAccountByAccountIndex(accountIndex)
+		if err != nil {
+			logx.Errorf("[GetBasicAccountInfo] unable to get account by account index: %s", err.Error())
+			return nil, err
+		}
+		accountInfo, err = commonAsset.ToFormatAccountInfo(oAccountInfo)
+		if err != nil {
+			logx.Errorf("[GetBasicAccountInfo] unable to get basic account info: %s", err.Error())
+			return nil, err
+		}
+		// update cache
+		oAccountInfoBytes, err := json.Marshal(oAccountInfo)
+		if err != nil {
+			logx.Errorf("[GetBasicAccountInfo] unable to marshal account info: %s", err.Error())
+			return nil, err
+		}
+		_ = redisConnection.Setex(key, string(oAccountInfoBytes), BasicAccountExpiryTime)
 	} else {
-		// get lock
-		redisLock := GetRedisLockByKey(redisConnection, lockKey)
-		// lock
-		tryLockErr := TryAcquireLock(redisLock)
-		// get accountAssetInfo by accountIndex and assetId
-		resAccountSingleAsset, err := assetHistoryModel.GetSingleAccountAssetHistory(accountIndex, assetId)
+		var oAccountInfo *account.Account
+		err = json.Unmarshal([]byte(basicAccountInfoStr), &oAccountInfo)
 		if err != nil {
-			if err != asset.ErrNotFound {
-				errInfo := fmt.Sprintf("[GetLatestAssetByLock] %s. Invalid accountIndex/assetId %v/%v",
-					err.Error(), accountIndex, assetId)
-				logx.Error(errInfo)
-				// release lock
-				if tryLockErr == nil {
-					redisLock.Release()
-				}
-				return nil, errors.New(errInfo)
-			} else {
-				// get data from asset table
-				accountAssetInfo, err := assetModel.GetSingleAccountAsset(accountIndex, assetId)
-				if err != nil {
-					if err != asset.ErrNotFound {
-						errInfo := fmt.Sprintf("[GetLatestAssetByLock] %s. Invalid accountIndex/assetId %v/%v",
-							err.Error(), accountIndex, assetId)
-						logx.Error(errInfo)
-						// release lock
-						if tryLockErr == nil {
-							redisLock.Release()
-						}
-						return nil, err
-					}
-				}
-				assetInfo.Balance = accountAssetInfo.Balance
-			}
-		} else {
-			assetInfo.Balance = resAccountSingleAsset.Balance
+			logx.Errorf("[GetBasicAccountInfo] unable to parse account info: %s", err.Error())
+			return nil, err
 		}
-		// fetch latest generalAssetType transaction
-		mempoolDetail, err := mempoolTxDetailModel.GetLatestAccountAssetMempoolDetail(
-			accountIndex,
-			assetId,
-			commonAsset.GeneralAssetType,
-		)
+		accountInfo, err = commonAsset.ToFormatAccountInfo(oAccountInfo)
 		if err != nil {
-			if err != mempool.ErrNotFound {
-				errInfo := fmt.Sprintf("[GetLatestAssetByLock] %s",
-					err.Error())
-				logx.Error(errInfo)
-				// release lock
-				redisLock.Release()
-				return nil, errors.New(errInfo)
-			}
-		} else {
-			latestBalance, err = util.ComputeNewBalance(commonAsset.GeneralAssetType, mempoolDetail.Balance, mempoolDetail.BalanceDelta)
-			if err != nil {
-				logx.Errorf("[GetLatestAssetByLock] cannot compute new balance: %s", err.Error())
-				// release lock
-				redisLock.Release()
-				return nil, err
-			}
-			assetInfo.Balance = latestBalance
+			logx.Errorf("[GetBasicAccountInfo] unable to get basic account info: %s", err.Error())
+			return nil, err
 		}
-		if tryLockErr == nil {
-			redisConnection.Setex(key, assetInfo.Balance, BalanceExpiryTime)
-			redisLock.Release()
-		}
+		// update cache
+		_ = redisConnection.Expire(key, BasicAccountExpiryTime)
 	}
-
-	return assetInfo, err
+	return accountInfo, nil
 }
