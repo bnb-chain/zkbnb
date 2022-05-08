@@ -35,7 +35,8 @@ func TestAccountNameHash(t *testing.T) {
 }
 
 func TestPubKey(t *testing.T) {
-	seed := "d892d866c5d0569e39e23c7bd46d63373d95197483e1a9af491e7098913a39ac"
+	// sher
+	seed := "28c5f19f166ad68f350f656104280a744305edac23b5bcbd2d975f2d12721964"
 	sk, err := curve.GenerateEddsaPrivateKey(seed)
 	if err != nil {
 		t.Fatal(err)

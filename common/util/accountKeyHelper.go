@@ -20,12 +20,17 @@ package util
 import "strconv"
 
 const (
-	AccountPrefix = "AccountIndex::"
-	LockKeySuffix = "ByLock"
+	AccountPrefix      = "AccountIndex::"
+	BasicAccountPrefix = "BasicAccount::"
+	LockKeySuffix      = "ByLock"
 )
 
 func GetAccountKey(accountIndex int64) string {
 	return AccountPrefix + strconv.FormatInt(accountIndex, 10)
+}
+
+func GetBasicAccountKey(accountIndex int64) string {
+	return BasicAccountPrefix + strconv.FormatInt(accountIndex, 10)
 }
 
 func GetLockKey(key string) string {

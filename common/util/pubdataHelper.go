@@ -49,6 +49,8 @@ func ConvertTxToRegisterZNSPubData(oTx *mempool.MempoolTx) (pubData []byte, err 
 	buf.WriteByte(uint8(oTx.TxType))
 	nameBytes := AccountNameToBytes32(txInfo.AccountName)
 	buf.Write(nameBytes[:])
+	nameHashBytes := common.FromHex(txInfo.AccountNameHash)
+	buf.Write(nameHashBytes[:])
 	pkBytes, err := PubKeyStrToBytes32(txInfo.PubKey)
 	if err != nil {
 		logx.Errorf("[ConvertTxToRegisterZNSPubData] unable to convert pk to bytes32: %s", err.Error())
@@ -459,7 +461,7 @@ func ConvertTxToBuyNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err error
 	}
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(oTx.TxType))
-	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
+	buf.Write(Uint32ToBytes(uint32(txInfo.BuyerAccountIndex)))
 	buf.Write(Uint32ToBytes(uint32(txInfo.OwnerAccountIndex)))
 	buf.Write(Uint16ToBytes(uint16(txInfo.AssetId)))
 	packedAssetAmountBytes, err := AmountToPackedAmountBytes(txInfo.AssetAmount)

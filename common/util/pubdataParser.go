@@ -39,11 +39,13 @@ func ParseRegisterZnsPubData(pubdata []byte) (tx *RegisterZnsTxInfo, err error) 
 	offset := 0
 	offset, txType := ReadUint8(pubdata, offset)
 	offset, accountName := ReadBytes32(pubdata, offset)
+	offset, accountNameHash := ReadBytes32(pubdata, offset)
 	offset, pubKey := ReadBytes32(pubdata, offset)
 	tx = &RegisterZnsTxInfo{
-		TxType:      txType,
-		AccountName: CleanAccountName(SerializeAccountName(accountName)),
-		PubKey:      common.Bytes2Hex(pubKey),
+		TxType:          txType,
+		AccountName:     CleanAccountName(SerializeAccountName(accountName)),
+		AccountNameHash: common.Bytes2Hex(accountNameHash),
+		PubKey:          common.Bytes2Hex(pubKey),
 	}
 	return tx, nil
 }
