@@ -38,9 +38,10 @@ type (
 )
 
 type RegisterZnsTxInfo struct {
-	TxType      uint8
-	AccountName string
-	PubKey      string
+	TxType          uint8
+	AccountName     string
+	AccountNameHash string
+	PubKey          string
 }
 
 func ParseRegisterZnsTxInfo(txInfoStr string) (txInfo *RegisterZnsTxInfo, err error) {
