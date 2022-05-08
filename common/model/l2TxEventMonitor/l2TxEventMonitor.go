@@ -39,6 +39,7 @@ type (
 		GetL2TxEventMonitorsBySenderAddress(senderAddr string) (txs []*L2TxEventMonitor, err error)
 		GetL2TxEventMonitorsByTxType(txType uint8) (txs []*L2TxEventMonitor, err error)
 		CreateMempoolAndActiveAccount(
+			pendingNewAccount []*account.Account,
 			pendingNewAccountHistory []*account.AccountHistory,
 			pendingNewMempoolTxs []*mempool.MempoolTx,
 			pendingUpdateL2Events []*L2TxEventMonitor) (err error)
@@ -222,18 +223,28 @@ func (m *defaultL2TxEventMonitorModel) GetL2TxEventMonitorsByTxType(txType uint8
 }
 
 func (m *defaultL2TxEventMonitorModel) CreateMempoolAndActiveAccount(
+	pendingNewAccount []*account.Account,
 	pendingNewAccountHistory []*account.AccountHistory,
 	pendingNewMempoolTxs []*mempool.MempoolTx,
 	pendingUpdateL2Events []*L2TxEventMonitor,
 ) (err error) {
 	err = m.DB.Transaction(
 		func(tx *gorm.DB) error { //transact
-			dbTx := tx.Table(account.AccountHistoryTableName).CreateInBatches(pendingNewAccountHistory, len(pendingNewAccountHistory))
+			dbTx := tx.Table(account.AccountTableName).CreateInBatches(pendingNewAccount, len(pendingNewAccount))
+			if dbTx.Error != nil {
+				logx.Errorf("[CreateMempoolAndActiveAccount] unable to create pending new account: %s", err.Error())
+				return dbTx.Error
+			}
+			if dbTx.RowsAffected != int64(len(pendingNewAccount)) {
+				logx.Errorf("[CreateMempoolAndActiveAccount] invalid new account")
+				return errors.New("[CreateMempoolAndActiveAccount] invalid new account")
+			}
+			dbTx = tx.Table(account.AccountHistoryTableName).CreateInBatches(pendingNewAccountHistory, len(pendingNewAccountHistory))
 			if dbTx.Error != nil {
 				logx.Errorf("[CreateMempoolAndActiveAccount] unable to create pending new account history: %s", err.Error())
 				return dbTx.Error
 			}
-			if dbTx.RowsAffected != int64(len(pendingNewMempoolTxs)) {
+			if dbTx.RowsAffected != int64(len(pendingNewAccountHistory)) {
 				logx.Errorf("[CreateMempoolAndActiveAccount] invalid new account history")
 				return errors.New("[CreateMempoolAndActiveAccount] invalid new account history")
 			}
@@ -264,13 +275,13 @@ func (m *defaultL2TxEventMonitorModel) CreateMempoolAndActiveAccount(
 
 func (m *defaultL2TxEventMonitorModel) GetLastHandledRequestId() (requestId int64, err error) {
 	var event *L2TxEventMonitor
-	dbTx := m.DB.Table(m.table).Where("status = ?", HandledStatus).Order("request_id desc").First(&event)
+	dbTx := m.DB.Table(m.table).Where("status = ?", HandledStatus).Order("request_id desc").Find(&event)
 	if dbTx.Error != nil {
 		logx.Errorf("[GetLastHandledRequestId] unable to get last handled request id: %s", err.Error())
 		return -1, dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
-		return 0, nil
+		return -1, nil
 	}
 	return event.RequestId, nil
 }

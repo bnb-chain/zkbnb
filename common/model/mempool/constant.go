@@ -35,5 +35,6 @@ var (
 
 const (
 	PendingTxStatus = iota
-	HandledTxStatus
+	SuccessTxStatus
+	FailTxStatus
 )

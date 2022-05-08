@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/common/model/assetHistory"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zeromicro/go-zero/core/stores/builder"
@@ -82,7 +81,6 @@ type (
 		CreateBlockForCommitter(
 			oBlock *Block,
 			pendingMempoolTxs []*mempool.MempoolTx,
-			pendingNewAssetsHistory []*assetHistory.AccountAssetHistory, pendingNewLiquidityHistory []*assetHistory.AccountLiquidityHistory,
 			pendingNewAccountHistory, pendingUpdatedAccountHistory []*account.AccountHistory) (err error)
 	}
 
@@ -749,7 +747,6 @@ func (m *defaultBlockModel) GetBlockStatusCacheByBlockHeight(blockHeight int64) 
 func (m *defaultBlockModel) CreateBlockForCommitter(
 	oBlock *Block,
 	pendingMempoolTxs []*mempool.MempoolTx,
-	pendingNewAssetsHistory []*assetHistory.AccountAssetHistory, pendingNewLiquidityHistory []*assetHistory.AccountLiquidityHistory,
 	pendingNewAccountHistory, pendingUpdatedAccountHistory []*account.AccountHistory,
 ) (err error) {
 	err = m.DB.Transaction(func(tx *gorm.DB) error { // transact
@@ -779,27 +776,6 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 			if dbTx.RowsAffected == 0 {
 				logx.Errorf("[CreateBlockForCommitter] no new mempoolTx")
 				return errors.New("[CreateBlockForCommitter] no new mempoolTx")
-			}
-		}
-		// create new assets history
-		if len(pendingNewAssetsHistory) != 0 {
-			dbTx = tx.Table(assetHistory.GeneralAssetHistoryTable).CreateInBatches(pendingNewAssetsHistory, len(pendingNewAssetsHistory))
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected != int64(len(pendingNewAssetsHistory)) {
-				logx.Errorf("[CreateBlockForCommitter] unable to create new assets")
-				return errors.New("[CreateBlockForCommitter] unable to create new assets")
-			}
-		}
-		if len(pendingNewLiquidityHistory) != 0 {
-			dbTx = tx.Table(assetHistory.LiquidityAssetHistoryTable).CreateInBatches(pendingNewLiquidityHistory, len(pendingNewLiquidityHistory))
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected != int64(len(pendingNewLiquidityHistory)) {
-				logx.Errorf("[CreateBlockForCommitter] unable to create new liquidity assets")
-				return errors.New("[CreateBlockForCommitter] unable to create new liquidity assets")
 			}
 		}
 		// create new account history

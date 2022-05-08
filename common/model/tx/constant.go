@@ -25,7 +25,7 @@ import (
 
 const (
 	TxDetailTableName = `tx_detail`
-	TxTableName       = `txVerification`
+	TxTableName       = `tx`
 )
 
 const (
