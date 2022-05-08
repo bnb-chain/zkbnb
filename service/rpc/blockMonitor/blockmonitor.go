@@ -19,7 +19,7 @@ import (
 )
 
 var configFile = flag.String("f",
-	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey\\service\\rpc\\blockMonitor\\etc\\local.yaml", "the config file")
+	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\rpc\\blockMonitor\\etc\\local.yaml", "the config file")
 
 func main() {
 	flag.Parse()
@@ -45,11 +45,10 @@ func main() {
 		panic(err)
 	}
 
-	logx.Infof("[blockMonitor] ChainName: %s, ZecreyRollupAddress: %s, NetworkRpc: %s, L2ChainId: %v",
+	logx.Infof("[blockMonitor] ChainName: %s, ZecreyRollupAddress: %s, NetworkRpc: %s",
 		c.ChainConfig.ZecreyContractAddrSysConfigName,
 		ZecreyRollupAddress.Value,
-		NetworkRpc.Value,
-		c.ChainConfig.L2ChainId)
+		NetworkRpc.Value)
 
 	// load client
 	cli, err := _rpc.NewClient(NetworkRpc.Value)

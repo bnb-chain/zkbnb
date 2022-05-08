@@ -6,8 +6,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/common/model/asset"
-	"github.com/zecrey-labs/zecrey-legend/common/model/assetHistory"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
@@ -31,12 +29,8 @@ type (
 	MempoolTx       = mempool.MempoolTx
 	MempoolTxDetail = mempool.MempoolTxDetail
 	// assets
-	AccountAsset     = asset.AccountAsset
-	AccountLiquidity = asset.AccountLiquidity
 	L2Nft            = nft.L2Nft
 	// assets history
-	AccountAssetHistory     = assetHistory.AccountAssetHistory
-	AccountLiquidityHistory = assetHistory.AccountLiquidityHistory
 	L2NftHistory            = nft.L2NftHistory
 	// account history
 	Account        = account.Account
@@ -48,11 +42,7 @@ type (
 	L2AssetInfoModel = l2asset.L2AssetInfoModel
 	L2AssetInfo      = l2asset.L2AssetInfo
 
-	AccountAssetModel            = asset.AccountAssetModel
-	AccountLiquidityModel        = asset.AccountLiquidityModel
 	L2NftModel                   = nft.L2NftModel
-	AccountAssetHistoryModel     = assetHistory.AccountAssetHistoryModel
-	AccountLiquidityHistoryModel = assetHistory.AccountLiquidityHistoryModel
 	L2NftHistoryModel            = nft.L2NftHistoryModel
 
 	PoolInfo = util.PoolInfo
@@ -62,7 +52,7 @@ const (
 	// tx status
 	TxStatusPending = tx.StatusPending
 	// mempool status
-	MempoolTxHandledTxStatus = mempool.HandledTxStatus
+	MempoolTxHandledTxStatus = mempool.SuccessTxStatus
 	// block status
 	BlockStatusPending = block.StatusPending
 	// asset type

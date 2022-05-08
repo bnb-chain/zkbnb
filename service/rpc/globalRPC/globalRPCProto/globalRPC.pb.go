@@ -1641,11 +1641,11 @@ func (x *ResultGetLatestTxsListByAccountIndex) GetTxDetails() []*TxDetail {
 	return nil
 }
 
-func (x *ResultGetLatestTxsListByAccountIndex) GetTxAmount() int64 {
+func (x *ResultGetLatestTxsListByAccountIndex) GetTxAmount() string {
 	if x != nil {
 		return x.TxAmount
 	}
-	return 0
+	return ""
 }
 
 func (x *ResultGetLatestTxsListByAccountIndex) GetNativeAddress() string {
@@ -1662,11 +1662,11 @@ func (x *ResultGetLatestTxsListByAccountIndex) GetGasFeeAssetId() int64 {
 	return 0
 }
 
-func (x *ResultGetLatestTxsListByAccountIndex) GetGasFee() int64 {
+func (x *ResultGetLatestTxsListByAccountIndex) GetGasFee() string {
 	if x != nil {
 		return x.GasFee
 	}
-	return 0
+	return ""
 }
 
 func (x *ResultGetLatestTxsListByAccountIndex) GetBlockStatus() int64 {
@@ -1686,13 +1686,6 @@ func (x *ResultGetLatestTxsListByAccountIndex) GetBlockHeight() int64 {
 func (x *ResultGetLatestTxsListByAccountIndex) GetBlockId() int64 {
 	if x != nil {
 		return x.BlockId
-	}
-	return 0
-}
-
-func (x *ResultGetLatestTxsListByAccountIndex) GetChainId() int64 {
-	if x != nil {
-		return x.ChainId
 	}
 	return 0
 }

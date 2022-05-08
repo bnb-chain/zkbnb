@@ -102,7 +102,6 @@ func (l *GetLatestTxsListByAccountIndexLogic) GetLatestTxsListByAccountIndex(in 
 				AssetType:         w.AssetType,
 				AccountIndex:      w.AccountIndex,
 				AccountName:       w.AccountName,
-				AccountBalanceEnc: w.Balance,
 				AccountDeltaEnc:   w.BalanceDelta,
 			})
 		}

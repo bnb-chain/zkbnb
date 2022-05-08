@@ -1,12 +1,12 @@
-Name: blockMonitorAvalanche.rpc
+Name: blockMonitorBSC.rpc
 ListenOn: 127.0.0.1:18003
 Etcd:
   Hosts:
     - 127.0.0.1:2379
-  Key: blockMonitorAvalanche.rpc
+  Key: blockMonitorBSC.rpc
 
 Postgres:
-  DataSource: host=127.0.0.1 user=postgres password=ZecreyProtocolDB@123 dbname=zecrey port=5432 sslmode=disable
+  DataSource: host=127.0.0.1 user=postgres password=ZecreyProtocolDB@123 dbname=zecreyLegend port=5432 sslmode=disable
 
 CacheRedis:
   - Host: 127.0.0.1:6379
@@ -14,10 +14,9 @@ CacheRedis:
     Type: node
 
 ChainConfig:
-  L2ChainId: 3
   NetworkRPCSysConfigName: "Local_Test_Network_RPC"
-  ZecreyContractAddrSysConfigName: "Zecrey_Contract_Local"
-  StartL1BlockHeight: 0
+  ZecreyContractAddrSysConfigName: "ZecreyLegendContract"
+  StartL1BlockHeight: 800
   PendingBlocksCount: 0
   MaxHandledBlocksCount: 10000
 

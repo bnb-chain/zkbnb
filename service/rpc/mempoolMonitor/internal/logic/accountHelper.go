@@ -22,28 +22,14 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-func GetAccountInfoByAccountNameHash(accountNameHash string, accountModel account.AccountModel, accountHistoryModel account.AccountHistoryModel) (accountInfo *account.Account, err error) {
-	accountHistoryInfo, err := accountHistoryModel.GetAccountByAccountNameHash(accountNameHash)
+func GetAccountInfoByAccountNameHash(
+	accountNameHash string,
+	accountModel account.AccountModel,
+) (accountInfo *account.Account, err error) {
+	accountInfo, err = accountModel.GetAccountByAccountNameHash(accountNameHash)
 	if err != nil {
-		if err == ErrNotFound {
-			accountInfo, err = accountModel.GetAccountByAccountNameHash(accountNameHash)
-			if err != nil {
-				logx.Errorf("[MonitorMempool] unable to get account by account name hash: %s", err.Error())
-				return nil, err
-			}
-		} else {
-			logx.Errorf("[MonitorMempool] unable to get account history by account name hash: %s", err.Error())
-			return nil, err
-		}
-	} else {
-		accountInfo = &account.Account{
-			AccountIndex:    accountHistoryInfo.AccountIndex,
-			AccountName:     accountHistoryInfo.AccountName,
-			PublicKey:       accountHistoryInfo.PublicKey,
-			AccountNameHash: accountHistoryInfo.AccountNameHash,
-			L1Address:       accountHistoryInfo.L1Address,
-			Nonce:           accountHistoryInfo.Nonce,
-		}
+		logx.Errorf("[MonitorMempool] unable to get account by account name hash: %s", err.Error())
+		return nil, err
 	}
 	return accountInfo, nil
 }

@@ -55,8 +55,10 @@ func (l *GetLatestAccountInfoByAccountIndexLogic) GetLatestAccountInfoByAccountI
 
 	// in.AccountIndex
 	accountInfo, err := globalmapHandler.GetLatestAccountInfo(
+		l.svcCtx.AccountModel,
 		l.svcCtx.AccountHistoryModel,
-		l.svcCtx.MempoolModel,
+		l.svcCtx.MempoolDetailModel,
+		l.svcCtx.LiquidityPairModel,
 		l.svcCtx.RedisConnection,
 		int64(in.AccountIndex))
 	if err != nil {
@@ -80,25 +82,14 @@ func (l *GetLatestAccountInfoByAccountIndexLogic) GetLatestAccountInfoByAccountI
 	}
 
 	for _, v := range l2AssetsList {
-
-		accountSingleAssetA, err := globalmapHandler.GetLatestAsset(
-			l.svcCtx.AssetModel,
-			l.svcCtx.AssetHistoryModel,
-			l.svcCtx.MempoolDetailModel,
-			l.svcCtx.RedisConnection,
-			accountInfo.AccountIndex, v.AssetId)
-		if err != nil {
-			errInfo := fmt.Sprintf("[logic.GetLatestAccountInfoByAccountIndex] => [GetLatestSingleAccountAsset] :%s. Invalid AccountIndex/AssetId: %v/%v ",
-				err.Error(), uint32(accountInfo.AccountIndex), uint32(v.AssetId))
-			return packGetLatestAccountInfoByAccountIndexResp(FailStatus, FailMsg, errInfo, respResult), nil
+		if accountInfo.AssetInfo[v.AssetId] == "" {
+			accountInfo.AssetInfo[v.AssetId] = util.ZeroBigInt.String()
 		}
-
 		respResult.AssetResultAssets = append(respResult.AssetResultAssets,
 			&globalRPCProto.AssetResult{
 				AssetId: uint32(v.AssetId),
-				Balance: accountSingleAssetA.Balance,
+				Balance: accountInfo.AssetInfo[v.AssetId],
 			})
-
 	}
 
 	return packGetLatestAccountInfoByAccountIndexResp(SuccessStatus, SuccessMsg, "", respResult), nil

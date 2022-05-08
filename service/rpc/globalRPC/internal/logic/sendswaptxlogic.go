@@ -17,26 +17,23 @@
 package logic
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
+	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
+	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
+	"github.com/zecrey-labs/zecrey-legend/common/sysconfigName"
+	"github.com/zecrey-labs/zecrey-legend/common/util"
+	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
+	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/logic/txHandler"
+	"math/big"
 	"reflect"
+	"strconv"
 
-	"github.com/zecrey-labs/zecrey/common/commonAccount"
-	"github.com/zecrey-labs/zecrey/common/commonTx"
-	"github.com/zecrey-labs/zecrey/common/model/account"
-	"github.com/zecrey-labs/zecrey/common/model/asset"
-	"github.com/zecrey-labs/zecrey/common/model/liquidityPair"
-	"github.com/zecrey-labs/zecrey/common/model/mempool"
-	"github.com/zecrey-labs/zecrey/common/model/tx"
-	"github.com/zecrey-labs/zecrey/common/utils"
-	"github.com/zecrey-labs/zecrey/common/zcrypto/cryptoUtils"
-	"github.com/zecrey-labs/zecrey/common/zcrypto/zecreyProofs"
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/internal/logic/globalmapHandler"
-	"github.com/zecrey-labs/zecrey/service/rpc/globalRPC/internal/logic/txHandler"
 	"github.com/zeromicro/go-zero/core/logx"
-	"go.etcd.io/etcd/client/v3/concurrency"
 )
 
 func (l *SendTxLogic) sendSwapTx(rawTxInfo string) (txId string, err error) {
@@ -50,317 +47,163 @@ func (l *SendTxLogic) sendSwapTx(rawTxInfo string) (txId string, err error) {
 	/*
 		Check Params
 	*/
-	err = utils.CheckRequestParam(utils.TypeAssetId, reflect.ValueOf(txInfo.AssetAId))
+	err = util.CheckRequestParam(util.TypeAssetId, reflect.ValueOf(txInfo.AssetAId))
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendSwapTx] err: invalid assetAId %v", txInfo.AssetAId)
 		return "", l.HandleCreateSwapFailTx(txInfo, errors.New(errInfo))
 	}
 
-	err = utils.CheckRequestParam(utils.TypeAssetId, reflect.ValueOf(txInfo.AssetBId))
+	err = util.CheckRequestParam(util.TypeAssetId, reflect.ValueOf(txInfo.AssetBId))
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendSwapTx] err: invalid assetBId %v", txInfo.AssetBId)
 		return "", l.HandleCreateSwapFailTx(txInfo, errors.New(errInfo))
 	}
 
-	err = utils.CheckRequestParam(utils.TypeGasFee, reflect.ValueOf(txInfo.GasFee))
+	// get pool index
+	poolSysconfigInfo, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.PoolAccountIndex)
 	if err != nil {
-		errInfo := fmt.Sprintf("[sendSwapTx] err: invalid gas fee %v", txInfo.GasFee)
-		return "", l.HandleCreateSwapFailTx(txInfo, errors.New(errInfo))
+		logx.Errorf("[sendSwapTx] unable to get sys config by name: %s", err.Error())
+		return "", err
+	}
+	poolAccountIndex, err := strconv.ParseInt(poolSysconfigInfo.Value, 10, 64)
+	if err != nil {
+		logx.Errorf("[sendSwapTx] unable to parse pool account index: %s", err.Error())
+		return "", err
 	}
 
-	/*
-		 PairIndex     uint32
-			AccountIndex  uint32
-			AssetAId      uint32
-			AssetBId      uint32
-			GasFeeAssetId uint32
-			GasFee        uint64
-			FeeRate       uint32
-			TreasuryRate  uint32
-			B_A_Delta     uint64
-			MinB_B_Delta  uint64
-			Proof         string
-	*/
-
-	var (
-		fromAccountIndex = txInfo.AccountIndex
-		fromAssetId      = txInfo.AssetAId
-		toAssetId        = txInfo.AssetBId
-		fromAmount       = txInfo.B_A_Delta
-		minToAmount      = txInfo.MinB_B_Delta
-		feeRate          = txInfo.FeeRate
-		// gasFee           = txInfo.GasFee
-		gasFeeAssetId = txInfo.GasFeeAssetId
-		// treasuryRate     = txInfo.TreasuryRate
-
-		toDelta uint64
-	)
-	/*
-		accountAssetAInfo,
-		accountAssetBInfo,
-		poolAccountInfo,
-		accountAssetGasInfo,
-		gasAccountInfo,
-		treasuryAccountInfo,
-	*/
-
-	// todo:p1 checker
-	// delta
-
-	var (
-		pairInfo         *liquidityPair.LiquidityPair
-		poolAccountInfo  *account.AccountHistory
-		poolLiquidity    *asset.AccountLiquidity
-		poolAssetAAmount uint64
-		poolAssetBAmount uint64
-	)
-
-	pairInfo, poolAccountInfo, poolLiquidity,
-		poolAssetAAmount, poolAssetBAmount, err = GetLatestPoolInfo(l.svcCtx, txInfo.PairIndex)
-
-	if err != nil {
-		errInfo := fmt.Sprintf("[sendSwapTx] %s", err.Error())
-		return "", errors.New(errInfo)
+	if txInfo.ToAccountIndex != poolAccountIndex {
+		return "", errors.New("[sendSwapTx] invalid pool index")
 	}
 
-	// todo:p1 check if feeRate is valid
-	/*
-		if uint32(pairInfo.FeeRate) != feeRate{
-			errInfo := fmt.Sprintf("[logic.sendSwapTx] => Invalid feeRate: %v", feeRate)
-			logx.Error(errInfo)
-			return "", errors.New(errInfo)
-		}
+	// init account info map
+	var (
+		accountInfoMap = make(map[int64]*commonAsset.FormatAccountInfo)
+	)
 
-	*/
+	accountInfoMap[poolAccountIndex], err = globalmapHandler.GetLatestAccountInfo(
+		l.svcCtx.AccountModel,
+		l.svcCtx.AccountHistoryModel,
+		l.svcCtx.MempoolDetailModel,
+		l.svcCtx.LiquidityPairModel,
+		l.svcCtx.RedisConnection,
+		poolAccountIndex,
+	)
+	if err != nil {
+		logx.Errorf("[sendSwapTx] unable to get latest account info: %s", err.Error())
+		return "", err
+	}
+
+	// add pool info into tx info
+	if accountInfoMap[poolAccountIndex].LiquidityInfo[txInfo.PairIndex] == nil ||
+		accountInfoMap[poolAccountIndex].LiquidityInfo[txInfo.PairIndex].AssetA == "" ||
+		accountInfoMap[poolAccountIndex].LiquidityInfo[txInfo.PairIndex].AssetA == util.ZeroBigInt.String() ||
+		accountInfoMap[poolAccountIndex].LiquidityInfo[txInfo.PairIndex].AssetB == "" ||
+		accountInfoMap[poolAccountIndex].LiquidityInfo[txInfo.PairIndex].AssetB == util.ZeroBigInt.String() {
+		logx.Errorf("[sendSwapTx] invalid params")
+		return "", errors.New("[sendSwapTx] invalid params")
+	}
 
 	// compute delta
-	if uint32(pairInfo.AssetAId) == fromAssetId && uint32(pairInfo.AssetBId) == toAssetId {
-		toDelta, _, err = utils.ComputeDelta(
-			poolAssetAAmount,
-			poolAssetBAmount,
-			uint32(pairInfo.AssetAId),
-			uint32(pairInfo.AssetBId),
-			fromAssetId,
+	var (
+		toDelta *big.Int
+	)
+	poolABalance, isValid := new(big.Int).SetString(accountInfoMap[poolAccountIndex].LiquidityInfo[txInfo.PairIndex].AssetA, 10)
+	if !isValid {
+		logx.Errorf("[sendSwapTx] unable to parse amount")
+		return "", errors.New("[sendSwapTx] unable to parse amount")
+	}
+	poolBBalance, isValid := new(big.Int).SetString(accountInfoMap[poolAccountIndex].LiquidityInfo[txInfo.PairIndex].AssetA, 10)
+	if !isValid {
+		logx.Errorf("[sendSwapTx] unable to parse amount")
+		return "", errors.New("[sendSwapTx] unable to parse amount")
+	}
+	if accountInfoMap[poolAccountIndex].LiquidityInfo[txInfo.PairIndex].AssetAId == txInfo.AssetAId &&
+		accountInfoMap[poolAccountIndex].LiquidityInfo[txInfo.PairIndex].AssetBId == txInfo.AssetBId {
+		toDelta, _, err = util.ComputeDelta(
+			poolABalance,
+			poolBBalance,
+			accountInfoMap[poolAccountIndex].LiquidityInfo[txInfo.PairIndex].AssetAId,
+			accountInfoMap[poolAccountIndex].LiquidityInfo[txInfo.PairIndex].AssetBId,
+			txInfo.AssetAId,
 			true,
-			fromAmount,
-			int64(feeRate))
-	} else if uint32(pairInfo.AssetAId) == toAssetId && uint32(pairInfo.AssetBId) == fromAssetId {
-		toDelta, _, err = utils.ComputeDelta(
-			poolAssetAAmount,
-			poolAssetBAmount,
-			uint32(pairInfo.AssetAId),
-			uint32(pairInfo.AssetBId),
-			fromAssetId,
+			txInfo.AssetAAmount,
+			txInfo.FeeRate)
+		txInfo.PoolAAmount = poolABalance
+		txInfo.PoolBAmount = poolBBalance
+	} else if accountInfoMap[poolAccountIndex].LiquidityInfo[txInfo.PairIndex].AssetAId == txInfo.AssetBId &&
+		accountInfoMap[poolAccountIndex].LiquidityInfo[txInfo.PairIndex].AssetBId == txInfo.AssetAId {
+		toDelta, _, err = util.ComputeDelta(
+			poolABalance,
+			poolBBalance,
+			accountInfoMap[poolAccountIndex].LiquidityInfo[txInfo.PairIndex].AssetAId,
+			accountInfoMap[poolAccountIndex].LiquidityInfo[txInfo.PairIndex].AssetBId,
+			txInfo.AssetAId,
 			true,
-			fromAmount,
-			int64(feeRate))
+			txInfo.AssetAAmount,
+			txInfo.FeeRate)
+
+		txInfo.PoolAAmount = poolBBalance
+		txInfo.PoolBAmount = poolABalance
 	} else {
 		err = errors.New("invalid pair assetIds")
 	}
 
 	if err != nil {
-		errInfo := fmt.Sprintf("[logic.sendSwapTx] => [utils.ComputeDelta]: %s. invalid AssetId: %v/%v/%v",
-			err.Error(), txInfo.AssetAId, uint32(pairInfo.AssetAId), uint32(pairInfo.AssetBId))
+		errInfo := fmt.Sprintf("[logic.sendSwapTx] => [util.ComputeDelta]: %s. invalid AssetId: %v/%v/%v",
+			err.Error(), txInfo.AssetAId,
+			uint32(accountInfoMap[poolAccountIndex].LiquidityInfo[txInfo.PairIndex].AssetAId),
+			uint32(accountInfoMap[poolAccountIndex].LiquidityInfo[txInfo.PairIndex].AssetBId))
 		logx.Error(errInfo)
 		return "", errors.New(errInfo)
 	}
 
 	// check if toDelta is over minToAmount
-	if minToAmount > toDelta {
-		errInfo := fmt.Sprintf("[logic.sendSwapTx] => minToAmount is bigger than toDelta: %v/%v",
-			minToAmount, toDelta)
+	if toDelta.Cmp(txInfo.AssetBMinAmount) < 0 {
+		errInfo := fmt.Sprintf("[logic.sendSwapTx] => minToAmount is bigger than toDelta: %s/%s",
+			txInfo.AssetBMinAmount.String(), toDelta.String())
 		logx.Error(errInfo)
 		return "", errors.New(errInfo)
 	}
 
-	var (
-		accountAssetAInfo   *zecreyProofs.AccountAssetInfo
-		accountAssetBInfo   *zecreyProofs.AccountAssetInfo
-		poolLiquidityInfo   *zecreyProofs.AccountLiquidityInfo
-		accountAssetGasInfo *zecreyProofs.AccountAssetInfo
-		gasAssetInfo        *zecreyProofs.AccountAssetInfo
-		treasuryAccountInfo *zecreyProofs.AccountAssetInfo
-	)
+	// complete tx info
+	txInfo.AssetBAmountDelta = toDelta
 
-	/*
-		accountAssetAInfo,
-		accountAssetBInfo,
-		poolAccountInfo,
-		accountAssetGasInfo,
-		gasAccountInfo,
-		treasuryAccountInfo,
-	*/
-
-	// accountAssetAInfo
-
-	ctx := context.Background()
-	lockArray := make([]*concurrency.Mutex, 0)
-
-	globalKey := globalmapHandler.GetAccountAssetGlobalKey(uint32(fromAccountIndex), fromAssetId)
-	keyLock := PrefixLock + globalKey
-	lockFromAsset := concurrency.NewMutex(globalmapHandler.GlobalEtcd.S, keyLock)
-	if err := lockFromAsset.TryLock(ctx); err != nil {
-		for _, lock := range lockArray {
-			lock.Unlock(ctx)
+	// get latest account info for from account index
+	if accountInfoMap[txInfo.FromAccountIndex] == nil {
+		accountInfoMap[txInfo.FromAccountIndex], err = globalmapHandler.GetLatestAccountInfo(
+			l.svcCtx.AccountModel,
+			l.svcCtx.AccountHistoryModel,
+			l.svcCtx.MempoolDetailModel,
+			l.svcCtx.LiquidityPairModel,
+			l.svcCtx.RedisConnection,
+			txInfo.FromAccountIndex,
+		)
+		if err != nil {
+			logx.Errorf("[sendSwapTx] unable to get latest account info: %s", err.Error())
+			return "", err
 		}
-		return "", err
 	}
-	lockArray = append([]*concurrency.Mutex{lockFromAsset}, lockArray...)
-
-	accountSingleAssetA, err := GetLatestSingleAccountAsset(l.svcCtx, fromAccountIndex, fromAssetId)
-	if err != nil {
-		return "", l.HandleCreateSwapFailTx(txInfo, err)
-	}
-	accountAssetAInfo, err = zecreyProofs.ConstructAccountAssetInfo(
-		accountSingleAssetA.AccountId,
-		int64(accountSingleAssetA.AccountIndex),
-		accountSingleAssetA.AccountName,
-		accountSingleAssetA.PublicKey,
-		int64(accountSingleAssetA.AssetId),
-		accountSingleAssetA.BalanceEnc,
-	)
-	if err != nil {
-		for _, lock := range lockArray {
-			lock.Unlock(ctx)
+	if accountInfoMap[txInfo.TreasuryAccountIndex] == nil {
+		accountInfoMap[txInfo.TreasuryAccountIndex], err = globalmapHandler.GetBasicAccountInfo(
+			l.svcCtx.AccountModel,
+			l.svcCtx.RedisConnection,
+			txInfo.TreasuryAccountIndex,
+		)
+		if err != nil {
+			logx.Errorf("[sendSwapTx] unable to get latest account info: %s", err.Error())
+			return "", err
 		}
-		return "", l.HandleCreateSwapFailTx(txInfo, err)
 	}
-
-	// accountAssetBInfo
-
-	globalKey = globalmapHandler.GetAccountAssetGlobalKey(uint32(fromAccountIndex), toAssetId)
-	keyLock = PrefixLock + globalKey
-	lockToAsset := concurrency.NewMutex(globalmapHandler.GlobalEtcd.S, keyLock)
-	if err := lockToAsset.TryLock(ctx); err != nil {
-		for _, lock := range lockArray {
-			lock.Unlock(ctx)
+	if accountInfoMap[txInfo.GasAccountIndex] == nil {
+		accountInfoMap[txInfo.GasAccountIndex], err = globalmapHandler.GetBasicAccountInfo(
+			l.svcCtx.AccountModel,
+			l.svcCtx.RedisConnection,
+			txInfo.TreasuryAccountIndex,
+		)
+		if err != nil {
+			logx.Errorf("[sendSwapTx] unable to get latest account info: %s", err.Error())
+			return "", err
 		}
-		return "", err
-	}
-	lockArray = append([]*concurrency.Mutex{lockToAsset}, lockArray...)
-
-	accountSingleAssetB, err := GetLatestSingleAccountAsset(l.svcCtx, fromAccountIndex, toAssetId)
-	if err != nil {
-		for _, lock := range lockArray {
-			lock.Unlock(ctx)
-		}
-		return "", l.HandleCreateSwapFailTx(txInfo, err)
-	}
-	accountAssetBInfo, err = zecreyProofs.ConstructAccountAssetInfo(
-		accountSingleAssetB.AccountId,
-		int64(accountSingleAssetB.AccountIndex),
-		accountSingleAssetB.AccountName,
-		accountSingleAssetB.PublicKey,
-		int64(accountSingleAssetB.AssetId),
-		accountSingleAssetB.BalanceEnc,
-	)
-	if err != nil {
-		for _, lock := range lockArray {
-			lock.Unlock(ctx)
-		}
-		return "", l.HandleCreateSwapFailTx(txInfo, err)
-	}
-
-	// poolAccountInfo
-	poolLiquidityInfo, err = zecreyProofs.ConstructAccountLiquidityInfo(
-		// account info
-		poolAccountInfo.ID,
-		poolAccountInfo.AccountIndex,
-		poolAccountInfo.AccountName,
-		poolAccountInfo.PublicKey,
-
-		// liquidity info
-		pairInfo.PairIndex,
-		pairInfo.AssetAId,
-		pairInfo.AssetBId,
-		int64(poolAssetAAmount),
-		poolLiquidity.AssetAR,
-		int64(poolAssetBAmount),
-		poolLiquidity.AssetBR,
-		pairInfo.FeeRate,
-		pairInfo.TreasuryRate,
-		poolLiquidity.LpEnc,
-	)
-	if err != nil {
-		for _, lock := range lockArray {
-			lock.Unlock(ctx)
-		}
-		return "", l.HandleCreateSwapFailTx(txInfo, err)
-	}
-
-	globalKey = globalmapHandler.GetAccountAssetGlobalKey(uint32(fromAccountIndex), gasFeeAssetId)
-	keyLock = PrefixLock + globalKey
-	lockAssetGasFee := concurrency.NewMutex(globalmapHandler.GlobalEtcd.S, keyLock)
-	if err := lockAssetGasFee.TryLock(ctx); err != nil {
-		for _, lock := range lockArray {
-			lock.Unlock(ctx)
-		}
-		return "", err
-	}
-	lockArray = append([]*concurrency.Mutex{lockAssetGasFee}, lockArray...)
-
-	// accountAssetGasInfo
-	accountSingleAssetGas, err := GetLatestSingleAccountAsset(l.svcCtx, fromAccountIndex, gasFeeAssetId)
-	if err != nil {
-		for _, lock := range lockArray {
-			lock.Unlock(ctx)
-		}
-		return "", l.HandleCreateSwapFailTx(txInfo, err)
-
-	}
-
-	accountAssetGasInfo, err = zecreyProofs.ConstructAccountAssetInfo(
-		accountSingleAssetGas.AccountId,
-		int64(accountSingleAssetGas.AccountIndex),
-		accountSingleAssetGas.AccountName,
-		accountSingleAssetGas.PublicKey,
-		int64(accountSingleAssetGas.AssetId),
-		accountSingleAssetGas.BalanceEnc,
-	)
-
-	// gasAccountInfo
-	gasAccountSingleAssetGas, err := GetLatestSingleAccountAsset(l.svcCtx, commonAccount.GasAccountIndex, gasFeeAssetId)
-	if err != nil {
-		for _, lock := range lockArray {
-			lock.Unlock(ctx)
-		}
-		return "", l.HandleCreateSwapFailTx(txInfo, err)
-	}
-	gasAssetInfo, err = zecreyProofs.ConstructAccountAssetInfo(
-		gasAccountSingleAssetGas.AccountId,
-		int64(gasAccountSingleAssetGas.AccountIndex),
-		gasAccountSingleAssetGas.AccountName,
-		gasAccountSingleAssetGas.PublicKey,
-		int64(gasAccountSingleAssetGas.AssetId),
-		gasAccountSingleAssetGas.BalanceEnc,
-	)
-
-	if err != nil {
-		return "", l.HandleCreateSwapFailTx(txInfo, err)
-	}
-
-	// treasuryAccountInfo
-	treasuryAccountSingleAssetA, err := GetLatestSingleAccountAsset(l.svcCtx, commonAccount.TreasuryAccountIndex, fromAssetId)
-	if err != nil {
-		for _, lock := range lockArray {
-			lock.Unlock(ctx)
-		}
-		return "", l.HandleCreateSwapFailTx(txInfo, err)
-	}
-	treasuryAccountInfo, err = zecreyProofs.ConstructAccountAssetInfo(
-		treasuryAccountSingleAssetA.AccountId,
-		int64(treasuryAccountSingleAssetA.AccountIndex),
-		treasuryAccountSingleAssetA.AccountName,
-		treasuryAccountSingleAssetA.PublicKey,
-		int64(treasuryAccountSingleAssetA.AssetId),
-		treasuryAccountSingleAssetA.BalanceEnc,
-	)
-
-	if err != nil {
-		for _, lock := range lockArray {
-			lock.Unlock(ctx)
-		}
-		return "", l.HandleCreateSwapFailTx(txInfo, err)
 	}
 
 	var (
@@ -371,49 +214,17 @@ func (l *SendTxLogic) sendSwapTx(rawTxInfo string) (txId string, err error) {
 	*/
 
 	// verify swap tx
-	txDetails, err = zecreyProofs.VerifySwapTx(
-		toDelta,
-		accountAssetAInfo,
-		accountAssetBInfo,
-		poolLiquidityInfo,
-		accountAssetGasInfo,
-		gasAssetInfo,
-		treasuryAccountInfo,
+	txDetails, err = txVerification.VerifySwapTxInfo(
+		accountInfoMap,
 		txInfo)
-	if err != nil {
-		for _, lock := range lockArray {
-			lock.Unlock(ctx)
-		}
-		return "", l.HandleCreateSwapFailTx(txInfo, err)
-	}
-
-	/*
-		Check tx details
-	*/
-
-	// check txDetails length
-	if len(txDetails) != zecreyProofs.SwapTxDetailsCount {
-		errInfo := fmt.Sprintf("[sendtxlogic.sendSwapTx] txDetails count error, len(txDetails) = %v", len(txDetails))
-		for _, lock := range lockArray {
-			lock.Unlock(ctx)
-		}
-		return "", l.HandleCreateSwapFailTx(txInfo, errors.New(errInfo))
-	}
 
 	/*
 		Create Mempool Transaction
 	*/
 	// write into mempool
-	txId, err = l.CreateTxMempoolForSwapTx(txDetails, txInfo, txHandler.TxTypeSwap)
+	txId, err = l.CreateTxMempoolForSwapTx(commonTx.TxTypeSwap, txDetails, txInfo)
 	if err != nil {
-		for _, lock := range lockArray {
-			lock.Unlock(ctx)
-		}
 		return "", l.HandleCreateSwapFailTx(txInfo, err)
-	}
-
-	for _, lock := range lockArray {
-		lock.Unlock(ctx)
 	}
 
 	return txId, nil
@@ -432,13 +243,10 @@ func (l *SendTxLogic) HandleCreateSwapFailTx(txInfo *commonTx.SwapTxInfo, err er
 }
 
 func (l *SendTxLogic) CreateFailSwapTx(info *commonTx.SwapTxInfo, extraInfo string) error {
-	txHash := cryptoUtils.GetRandomUUID()
-	txType := int64(txHandler.TxTypeSwap)
-	txFee := info.GasFee
+	txHash := util.RandomUUID()
 	txFeeAssetId := info.GasFeeAssetId
 	assetAId := info.AssetAId
 	assetBId := info.AssetBId
-	txAmount := int64(0)
 	nativeAddress := "0x00"
 	txInfo, err := json.Marshal(info)
 	if err != nil {
@@ -451,9 +259,9 @@ func (l *SendTxLogic) CreateFailSwapTx(info *commonTx.SwapTxInfo, extraInfo stri
 		// transaction id, is primary key
 		TxHash: txHash,
 		// transaction type
-		TxType: txType,
+		TxType: commonTx.TxTypeSwap,
 		// tx fee
-		GasFee: int64(txFee),
+		GasFee: info.GasFeeAssetAmount.String(),
 		// tx fee l1asset id
 		GasFeeAssetId: int64(txFeeAssetId),
 		// tx status, 1 - success(default), 2 - failure
@@ -463,7 +271,7 @@ func (l *SendTxLogic) CreateFailSwapTx(info *commonTx.SwapTxInfo, extraInfo stri
 		// l1asset id
 		AssetBId: int64(assetBId),
 		// tx amount
-		TxAmount: int64(txAmount),
+		TxAmount: util.ZeroBigInt.String(),
 		// layer1 address
 		NativeAddress: nativeAddress,
 		// tx proof
@@ -481,14 +289,14 @@ func (l *SendTxLogic) CreateFailSwapTx(info *commonTx.SwapTxInfo, extraInfo stri
 	return nil
 }
 
-func (l *SendTxLogic) CreateTxMempoolForSwapTx(nMempoolTxDetails []*mempool.MempoolTxDetail, txInfo *commonTx.SwapTxInfo, txType uint8) (resTxId string, err error) {
+func (l *SendTxLogic) CreateTxMempoolForSwapTx(txType uint8, nMempoolTxDetails []*mempool.MempoolTxDetail, txInfo *commonTx.SwapTxInfo) (resTxId string, err error) {
 
 	var (
 		nMempoolTx *mempool.MempoolTx
 		bTxInfo    []byte
 	)
 	// generate tx id by random UUID
-	resTxId = cryptoUtils.GetRandomUUID()
+	resTxId = util.RandomUUID()
 	// Marshal txInfo
 	bTxInfo, err = json.Marshal(txInfo)
 	if err != nil {
@@ -500,32 +308,36 @@ func (l *SendTxLogic) CreateTxMempoolForSwapTx(nMempoolTxDetails []*mempool.Memp
 	nMempoolTx = &mempool.MempoolTx{
 		TxHash:         resTxId,
 		TxType:         int64(txType),
-		GasFee:         int64(txInfo.GasFee),
-		GasFeeAssetId:  int64(txInfo.GasFeeAssetId),
-		AssetAId:       int64(txInfo.AssetAId),
-		AssetBId:       int64(txInfo.AssetBId),
-		TxAmount:       0,
+		GasFee:         txInfo.GasFeeAssetAmount.String(),
+		GasFeeAssetId:  txInfo.GasFeeAssetId,
+		AssetAId:       txInfo.AssetAId,
+		AssetBId:       txInfo.AssetBId,
+		TxAmount:       txInfo.AssetAAmount.String(),
 		MempoolDetails: nMempoolTxDetails,
-		ChainId:        commonTx.L2TxChainId,
 		TxInfo:         string(bTxInfo),
 		ExtraInfo:      "",
 		Memo:           "",
-		L2BlockHeight:  0,
-		Status:         0,
+		AccountIndex:   txInfo.FromAccountIndex,
+		Nonce:          txInfo.Nonce,
+		Status:         mempool.PendingTxStatus,
 	}
 
+	// delete cache
+	var keys []string
+	for _, mempoolTxDetail := range nMempoolTxDetails {
+		keys = append(keys, util.GetAccountKey(mempoolTxDetail.AccountIndex))
+	}
+	_, err = l.svcCtx.RedisConnection.Del(keys...)
+	if err != nil {
+		logx.Errorf("[CreateTxMempoolForTranferTx] error with redis: %s", err.Error())
+		return "", err
+	}
 	// write into mempool
 	err = l.svcCtx.MempoolModel.CreateBatchedMempoolTxs([]*mempool.MempoolTx{nMempoolTx})
 	if err != nil {
-		errInfo := fmt.Sprintf("[sendtxlogic.CreateTxMempoolForSwapTx] %s", err.Error())
+		errInfo := fmt.Sprintf("[sendtxlogic.CreateTxMempoolForTranferTx] %s", err.Error())
 		logx.Error(errInfo)
 		return "", errors.New(errInfo)
-	}
-	// update mempool state
-	err = globalmapHandler.UpdateGlobalMap(nMempoolTx)
-	if err != nil {
-		logx.Error(err)
-		return "", err
 	}
 
 	return resTxId, nil
