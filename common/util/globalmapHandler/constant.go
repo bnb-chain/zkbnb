@@ -25,12 +25,12 @@ import (
 )
 
 type (
-	AccountModel         = account.AccountModel
-	AccountHistoryModel  = account.AccountHistoryModel
-	MempoolTxDetailModel = mempool.MempoolTxDetailModel
-	LiquidityPairModel   = liquidityPair.LiquidityPairModel
-	Redis                = redis.Redis
-	RedisLock            = redis.RedisLock
+	AccountModel        = account.AccountModel
+	AccountHistoryModel = account.AccountHistoryModel
+	MempoolModel        = mempool.MempoolModel
+	LiquidityPairModel  = liquidityPair.LiquidityPairModel
+	Redis               = redis.Redis
+	RedisLock           = redis.RedisLock
 
 	FormatAccountInfo = commonAsset.FormatAccountInfo
 )

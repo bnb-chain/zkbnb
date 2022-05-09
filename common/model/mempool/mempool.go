@@ -65,8 +65,8 @@ type (
 		gorm.Model
 		TxHash         string `gorm:"uniqueIndex"`
 		TxType         int64
-		GasFee         string
 		GasFeeAssetId  int64
+		GasFee         string
 		AssetAId       int64
 		AssetBId       int64
 		TxAmount       string
@@ -600,6 +600,13 @@ func (m *defaultMempoolModel) GetMempoolTxsByAccountIndex(accountIndex int64) (m
 		logx.Errorf("[GetLatestL2MempoolTxByAccountIndex] Get MempoolTxs Error")
 		return nil, ErrNotFound
 	}
-
+	var mempoolForeignKeyColumn = `MempoolDetails`
+	for _, mempoolTx := range mempoolTxs {
+		err = m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+		if err != nil {
+			logx.Errorf("[mempool.GetMempoolTxByTxHash] Get Associate MempoolDetails Error")
+			return nil, err
+		}
+	}
 	return mempoolTxs, nil
 }

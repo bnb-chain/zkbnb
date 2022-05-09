@@ -32,7 +32,7 @@ import (
 func GetLatestAccountInfo(
 	accountModel AccountModel,
 	accountHistoryModel AccountHistoryModel,
-	mempoolTxDetailModel MempoolTxDetailModel,
+	mempoolTxModel MempoolModel,
 	liquidityPairModel LiquidityPairModel,
 	redisConnection *Redis,
 	accountIndex int64,
@@ -83,7 +83,7 @@ func GetLatestAccountInfo(
 			return nil, err
 		}
 		// update asset by mempool tx
-		mempoolTxDetails, err := mempoolTxDetailModel.GetAccountMempoolDetails(accountIndex)
+		mempoolTxs, err := mempoolTxModel.GetMempoolTxsByAccountIndex(accountIndex)
 		if err != nil {
 			if err != mempool.ErrNotFound {
 				logx.Errorf("[GetLatestAccountInfo] unable to get mempool txs by account index: %s", err.Error())
@@ -93,100 +93,105 @@ func GetLatestAccountInfo(
 		var (
 			liquidityPairMap = make(map[int64]*liquidityPair.LiquidityPair)
 		)
-		for _, mempoolTxDetail := range mempoolTxDetails {
-			switch mempoolTxDetail.AssetType {
-			case commonAsset.GeneralAssetType:
-				// TODO maybe less than 0
-				if accountInfo.AssetInfo[mempoolTxDetail.AssetId] == "" {
-					accountInfo.AssetInfo[mempoolTxDetail.AssetId] = util.ZeroBigInt.String()
-				}
-				accountInfo.AssetInfo[mempoolTxDetail.AssetId], err = util.ComputeNewBalance(
-					commonAsset.GeneralAssetType,
-					accountInfo.AssetInfo[mempoolTxDetail.AssetId],
-					mempoolTxDetail.BalanceDelta,
-				)
-				if err != nil {
-					logx.Errorf("[GetLatestAccountInfo] unable to compute new balance: %s", err.Error())
-					return nil, err
-				}
-				break
-			case commonAsset.LiquidityAssetType:
-				if accountInfo.LiquidityInfo[mempoolTxDetail.AssetId] == nil {
-					// get pair info from liquidityPair
-					if liquidityPairMap[mempoolTxDetail.AssetId] == nil {
-						liquidityPairMap[mempoolTxDetail.AssetId], err = liquidityPairModel.GetLiquidityPairByIndex(mempoolTxDetail.AssetId)
-						if err != nil {
-							logx.Errorf("[GetLatestAccountInfo] cannot get liquidity pair by index: %s", err.Error())
-							return nil, err
+		for _, mempoolTx := range mempoolTxs {
+			if mempoolTx.Nonce != -1 {
+				accountInfo.Nonce = mempoolTx.Nonce
+			}
+			for _, mempoolTxDetail := range mempoolTx.MempoolDetails {
+				switch mempoolTxDetail.AssetType {
+				case commonAsset.GeneralAssetType:
+					// TODO maybe less than 0
+					if accountInfo.AssetInfo[mempoolTxDetail.AssetId] == "" {
+						accountInfo.AssetInfo[mempoolTxDetail.AssetId] = util.ZeroBigInt.String()
+					}
+					accountInfo.AssetInfo[mempoolTxDetail.AssetId], err = util.ComputeNewBalance(
+						commonAsset.GeneralAssetType,
+						accountInfo.AssetInfo[mempoolTxDetail.AssetId],
+						mempoolTxDetail.BalanceDelta,
+					)
+					if err != nil {
+						logx.Errorf("[GetLatestAccountInfo] unable to compute new balance: %s", err.Error())
+						return nil, err
+					}
+					break
+				case commonAsset.LiquidityAssetType:
+					if accountInfo.LiquidityInfo[mempoolTxDetail.AssetId] == nil {
+						// get pair info from liquidityPair
+						if liquidityPairMap[mempoolTxDetail.AssetId] == nil {
+							liquidityPairMap[mempoolTxDetail.AssetId], err = liquidityPairModel.GetLiquidityPairByIndex(mempoolTxDetail.AssetId)
+							if err != nil {
+								logx.Errorf("[GetLatestAccountInfo] cannot get liquidity pair by index: %s", err.Error())
+								return nil, err
+							}
+						}
+						accountInfo.LiquidityInfo[mempoolTxDetail.AssetId] = &commonAsset.Liquidity{
+							PairIndex: mempoolTxDetail.AssetId,
+							AssetAId:  liquidityPairMap[mempoolTxDetail.AssetId].AssetAId,
+							AssetA:    util.ZeroBigInt.String(),
+							AssetBId:  liquidityPairMap[mempoolTxDetail.AssetId].AssetBId,
+							AssetB:    util.ZeroBigInt.String(),
+							LpAmount:  util.ZeroBigInt.String(),
 						}
 					}
-					accountInfo.LiquidityInfo[mempoolTxDetail.AssetId] = &commonAsset.Liquidity{
-						PairIndex: mempoolTxDetail.AssetId,
-						AssetAId:  liquidityPairMap[mempoolTxDetail.AssetId].AssetAId,
-						AssetA:    util.ZeroBigInt.String(),
-						AssetBId:  liquidityPairMap[mempoolTxDetail.AssetId].AssetBId,
-						AssetB:    util.ZeroBigInt.String(),
-						LpAmount:  util.ZeroBigInt.String(),
+					poolInfo, err := util.ConstructPoolInfo(
+						accountInfo.LiquidityInfo[mempoolTxDetail.AssetId].AssetA,
+						accountInfo.LiquidityInfo[mempoolTxDetail.AssetId].AssetB,
+					)
+					if err != nil {
+						logx.Errorf("[GetLatestAccountInfo] unable to construct pool info: %s", err.Error())
+						return nil, err
 					}
-				}
-				poolInfo, err := util.ConstructPoolInfo(
-					accountInfo.LiquidityInfo[mempoolTxDetail.AssetId].AssetA,
-					accountInfo.LiquidityInfo[mempoolTxDetail.AssetId].AssetB,
-				)
-				if err != nil {
-					logx.Errorf("[GetLatestAccountInfo] unable to construct pool info: %s", err.Error())
-					return nil, err
-				}
-				// compute new balance
-				nBalance, err := util.ComputeNewBalance(
-					commonAsset.LiquidityAssetType, poolInfo.String(), mempoolTxDetail.BalanceDelta)
-				if err != nil {
-					logx.Error("[CommitterTask] unable to compute new balance: %s", err.Error())
-					return nil, err
-				}
-				newPoolInfo, err := util.ParsePoolInfo(nBalance)
-				if err != nil {
-					logx.Errorf("[CommitterTask] unable to parse pair info: %s", err.Error())
-					return nil, err
-				}
-				accountInfo.LiquidityInfo[mempoolTxDetail.AssetId].AssetA =
-					newPoolInfo.AssetAAmount.String()
-				accountInfo.LiquidityInfo[mempoolTxDetail.AssetId].AssetB =
-					newPoolInfo.AssetBAmount.String()
-				break
-			case commonAsset.LiquidityLpAssetType:
-				if accountInfo.LiquidityInfo[mempoolTxDetail.AssetId] == nil {
-					// get pair info from liquidityPair
-					if liquidityPairMap[mempoolTxDetail.AssetId] == nil {
-						liquidityPairMap[mempoolTxDetail.AssetId], err = liquidityPairModel.GetLiquidityPairByIndex(mempoolTxDetail.AssetId)
-						if err != nil {
-							logx.Errorf("[GetLatestAccountInfo] cannot get liquidity pair by index: %s", err.Error())
-							return nil, err
+					// compute new balance
+					nBalance, err := util.ComputeNewBalance(
+						commonAsset.LiquidityAssetType, poolInfo.String(), mempoolTxDetail.BalanceDelta)
+					if err != nil {
+						logx.Error("[CommitterTask] unable to compute new balance: %s", err.Error())
+						return nil, err
+					}
+					newPoolInfo, err := util.ParsePoolInfo(nBalance)
+					if err != nil {
+						logx.Errorf("[CommitterTask] unable to parse pair info: %s", err.Error())
+						return nil, err
+					}
+					accountInfo.LiquidityInfo[mempoolTxDetail.AssetId].AssetA =
+						newPoolInfo.AssetAAmount.String()
+					accountInfo.LiquidityInfo[mempoolTxDetail.AssetId].AssetB =
+						newPoolInfo.AssetBAmount.String()
+					break
+				case commonAsset.LiquidityLpAssetType:
+					if accountInfo.LiquidityInfo[mempoolTxDetail.AssetId] == nil {
+						// get pair info from liquidityPair
+						if liquidityPairMap[mempoolTxDetail.AssetId] == nil {
+							liquidityPairMap[mempoolTxDetail.AssetId], err = liquidityPairModel.GetLiquidityPairByIndex(mempoolTxDetail.AssetId)
+							if err != nil {
+								logx.Errorf("[GetLatestAccountInfo] cannot get liquidity pair by index: %s", err.Error())
+								return nil, err
+							}
+						}
+						accountInfo.LiquidityInfo[mempoolTxDetail.AssetId] = &commonAsset.Liquidity{
+							PairIndex: mempoolTxDetail.AssetId,
+							AssetAId:  liquidityPairMap[mempoolTxDetail.AssetId].AssetAId,
+							AssetA:    util.ZeroBigInt.String(),
+							AssetBId:  liquidityPairMap[mempoolTxDetail.AssetId].AssetBId,
+							AssetB:    util.ZeroBigInt.String(),
+							LpAmount:  util.ZeroBigInt.String(),
 						}
 					}
-					accountInfo.LiquidityInfo[mempoolTxDetail.AssetId] = &commonAsset.Liquidity{
-						PairIndex: mempoolTxDetail.AssetId,
-						AssetAId:  liquidityPairMap[mempoolTxDetail.AssetId].AssetAId,
-						AssetA:    util.ZeroBigInt.String(),
-						AssetBId:  liquidityPairMap[mempoolTxDetail.AssetId].AssetBId,
-						AssetB:    util.ZeroBigInt.String(),
-						LpAmount:  util.ZeroBigInt.String(),
+					// compute new balance
+					nBalance, err := util.ComputeNewBalance(
+						commonAsset.LiquidityLpAssetType, accountInfo.LiquidityInfo[mempoolTxDetail.AssetId].LpAmount, mempoolTxDetail.BalanceDelta)
+					if err != nil {
+						logx.Error("[CommitterTask] unable to compute new balance: %s", err.Error())
+						return nil, err
 					}
+					accountInfo.LiquidityInfo[mempoolTxDetail.AssetId].LpAmount = nBalance
+					break
+				case commonAsset.NftAssetType:
+					break
+				default:
+					logx.Errorf("[GetLatestAccountInfo] invalid asset type")
+					return nil, errors.New("[GetLatestAccountInfo] invalid asset type")
 				}
-				// compute new balance
-				nBalance, err := util.ComputeNewBalance(
-					commonAsset.LiquidityLpAssetType, accountInfo.LiquidityInfo[mempoolTxDetail.AssetId].LpAmount, mempoolTxDetail.BalanceDelta)
-				if err != nil {
-					logx.Error("[CommitterTask] unable to compute new balance: %s", err.Error())
-					return nil, err
-				}
-				accountInfo.LiquidityInfo[mempoolTxDetail.AssetId].LpAmount = nBalance
-				break
-			case commonAsset.NftAssetType:
-				break
-			default:
-				logx.Errorf("[GetLatestAccountInfo] invalid asset type")
-				return nil, errors.New("[GetLatestAccountInfo] invalid asset type")
 			}
 		}
 		// write into cache

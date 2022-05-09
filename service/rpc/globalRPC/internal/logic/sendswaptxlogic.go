@@ -92,7 +92,7 @@ func (l *SendTxLogic) sendSwapTx(rawTxInfo string) (txId string, err error) {
 	accountInfoMap[poolAccountIndex], err = globalmapHandler.GetLatestAccountInfo(
 		l.svcCtx.AccountModel,
 		l.svcCtx.AccountHistoryModel,
-		l.svcCtx.MempoolDetailModel,
+		l.svcCtx.MempoolModel,
 		l.svcCtx.LiquidityPairModel,
 		l.svcCtx.RedisConnection,
 		poolAccountIndex,
@@ -182,7 +182,7 @@ func (l *SendTxLogic) sendSwapTx(rawTxInfo string) (txId string, err error) {
 		accountInfoMap[txInfo.FromAccountIndex], err = globalmapHandler.GetLatestAccountInfo(
 			l.svcCtx.AccountModel,
 			l.svcCtx.AccountHistoryModel,
-			l.svcCtx.MempoolDetailModel,
+			l.svcCtx.MempoolModel,
 			l.svcCtx.LiquidityPairModel,
 			l.svcCtx.RedisConnection,
 			txInfo.FromAccountIndex,
