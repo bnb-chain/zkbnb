@@ -22,8 +22,8 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-crypto/wasm/zecrey-legend/legendTxTypes"
-	"github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/common/model/asset"
+	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
+	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
 	"log"
 	"math/big"
@@ -41,18 +41,16 @@ import (
 			- AssetGas
 */
 func VerifyWithdrawTxInfo(
-	accountInfoMap map[int64]*account.Account,
-	assetInfoMap map[int64]map[int64]*asset.AccountAsset,
+	accountInfoMap map[int64]*commonAsset.FormatAccountInfo,
 	txInfo *WithdrawTxInfo,
 ) (txDetails []*MempoolTxDetail, err error) {
 	// verify params
 	if accountInfoMap[txInfo.FromAccountIndex] == nil ||
 		accountInfoMap[txInfo.GasAccountIndex] == nil ||
-		assetInfoMap[txInfo.FromAccountIndex] == nil ||
-		assetInfoMap[txInfo.FromAccountIndex][txInfo.AssetId] == nil ||
-		assetInfoMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId] == nil ||
-		assetInfoMap[txInfo.GasAccountIndex] == nil ||
-		assetInfoMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId] == nil ||
+		accountInfoMap[txInfo.FromAccountIndex].AssetInfo == nil ||
+		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.AssetId] == "" ||
+		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.AssetId] == util.ZeroBigInt.String() ||
+		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId] == "" ||
 		txInfo.AssetAmount.Cmp(ZeroBigInt) < 0 ||
 		txInfo.GasFeeAssetAmount.Cmp(ZeroBigInt) < 0 {
 		logx.Errorf("[VerifyTransferNftTxInfo] invalid params")
@@ -92,7 +90,24 @@ func VerifyWithdrawTxInfo(
 		)
 	}
 	// check balance
-
+	assetABalance, isValid := new(big.Int).SetString(accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.AssetId], 10)
+	if !isValid {
+		logx.Errorf("[VerifyWithdrawTxInfo] unable to parse balance")
+		return nil, errors.New("[VerifyWithdrawTxInfo] unable to parse balance")
+	}
+	assetGasBalance, isValid := new(big.Int).SetString(accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId], 10)
+	if !isValid {
+		logx.Errorf("[VerifyWithdrawTxInfo] unable to parse balance")
+		return nil, errors.New("[VerifyWithdrawTxInfo] unable to parse balance")
+	}
+	if assetABalance.Cmp(assetDeltaMap[txInfo.FromAccountIndex][txInfo.AssetId]) < 0 {
+		logx.Errorf("[VerifyWithdrawTxInfo] you don't have enough balance of asset A")
+		return nil, errors.New("[VerifyWithdrawTxInfo] you don't have enough balance of asset A")
+	}
+	if assetGasBalance.Cmp(assetDeltaMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId]) < 0 {
+		logx.Errorf("[VerifyWithdrawTxInfo] you don't have enough balance of asset Gas")
+		return nil, errors.New("[VerifyWithdrawTxInfo] you don't have enough balance of asset Gas")
+	}
 	// compute hash
 	hFunc := mimc.NewMiMC()
 	msgHash := legendTxTypes.ComputeWithdrawMsgHash(txInfo, hFunc)
@@ -102,7 +117,7 @@ func VerifyWithdrawTxInfo(
 	if err != nil {
 		return nil, err
 	}
-	isValid, err := pk.Verify(txInfo.Sig, msgHash, hFunc)
+	isValid, err = pk.Verify(txInfo.Sig, msgHash, hFunc)
 	if err != nil {
 		log.Println("[VerifyWithdrawTxInfo] unable to verify signature:", err)
 		return nil, err
@@ -118,7 +133,6 @@ func VerifyWithdrawTxInfo(
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
 		AccountName:  accountInfoMap[txInfo.FromAccountIndex].AccountName,
-		Balance:      assetInfoMap[txInfo.FromAccountIndex][txInfo.AssetId].Balance,
 		BalanceDelta: assetDeltaMap[txInfo.FromAccountIndex][txInfo.AssetId].String(),
 	})
 	// from account asset gas
@@ -127,7 +141,6 @@ func VerifyWithdrawTxInfo(
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
 		AccountName:  accountInfoMap[txInfo.FromAccountIndex].AccountName,
-		Balance:      assetInfoMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId].Balance,
 		BalanceDelta: assetDeltaMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId].String(),
 	})
 	// gas account asset gas
@@ -136,7 +149,6 @@ func VerifyWithdrawTxInfo(
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.GasAccountIndex,
 		AccountName:  accountInfoMap[txInfo.GasAccountIndex].AccountName,
-		Balance:      assetInfoMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId].Balance,
 		BalanceDelta: assetDeltaMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId].String(),
 	})
 	return txDetails, nil
