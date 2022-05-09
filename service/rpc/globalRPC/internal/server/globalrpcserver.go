@@ -41,9 +41,3 @@ func (s *GlobalRPCServer) SendTx(ctx context.Context, in *globalRPCProto.ReqSend
 	l := logic.NewSendTxLogic(ctx, s.svcCtx)
 	return l.SendTx(in)
 }
-
-//  globalmap
-func (s *GlobalRPCServer) ResetGlobalMap(ctx context.Context, in *globalRPCProto.ReqResetGlobalMap) (*globalRPCProto.RespResetGlobalMap, error) {
-	l := logic.NewResetGlobalMapLogic(ctx, s.svcCtx)
-	return l.ResetGlobalMap(in)
-}

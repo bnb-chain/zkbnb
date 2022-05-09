@@ -4,8 +4,6 @@ import (
 	"github.com/zecrey-labs/zecrey-core/common/general/model/liquidityPair"
 	"github.com/zecrey-labs/zecrey-core/common/general/model/sysconfig"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/common/model/asset"
-	"github.com/zecrey-labs/zecrey-legend/common/model/assetHistory"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
@@ -24,9 +22,6 @@ type ServiceContext struct {
 	MempoolDetailModel  mempool.MempoolTxDetailModel
 	AccountModel        account.AccountModel
 	AccountHistoryModel account.AccountHistoryModel
-	AssetModel          asset.AccountAssetModel
-	AssetHistoryModel   assetHistory.AccountAssetHistoryModel
-	LiquidityAssetModel asset.AccountLiquidityModel
 	TxModel             tx.TxModel
 	TxDetailModel       tx.TxDetailModel
 	FailTxModel         tx.FailTxModel
@@ -62,9 +57,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		MempoolDetailModel:  mempool.NewMempoolDetailModel(conn, c.CacheRedis, gormPointer),
 		AccountModel:        account.NewAccountModel(conn, c.CacheRedis, gormPointer),
 		AccountHistoryModel: account.NewAccountHistoryModel(conn, c.CacheRedis, gormPointer),
-		AssetModel:          asset.NewAccountAssetModel(conn, c.CacheRedis, gormPointer),
-		AssetHistoryModel:   assetHistory.NewAccountAssetHistoryModel(conn, c.CacheRedis, gormPointer),
-		LiquidityAssetModel: asset.NewAccountLiquidityModel(conn, c.CacheRedis, gormPointer),
 		TxModel:             tx.NewTxModel(conn, c.CacheRedis, gormPointer, redisConn),
 		TxDetailModel:       tx.NewTxDetailModel(conn, c.CacheRedis, gormPointer),
 		FailTxModel:         tx.NewFailTxModel(conn, c.CacheRedis, gormPointer),
