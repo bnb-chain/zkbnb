@@ -44,9 +44,8 @@ func main() {
 	}
 	// init accountTree and accountStateTrees
 	accountTree, accountStateTrees, err = tree.InitAccountTree(
+		ctx.AccountModel,
 		ctx.AccountHistoryModel,
-		ctx.AccountAssetHistoryModel,
-		ctx.LiquidityAssetHistoryModel,
 		h,
 	)
 	if err != nil {
@@ -91,9 +90,8 @@ func main() {
 			}
 
 			accountTree, accountStateTrees, err = tree.InitAccountTree(
+				ctx.AccountModel,
 				ctx.AccountHistoryModel,
-				ctx.AccountAssetHistoryModel,
-				ctx.LiquidityAssetHistoryModel,
 				cbh,
 			)
 			if err != nil {

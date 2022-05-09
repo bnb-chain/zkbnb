@@ -22,8 +22,6 @@ import (
 	"github.com/zecrey-labs/zecrey-core/common/general/model/nft"
 	"github.com/zecrey-labs/zecrey-core/common/general/model/sysconfig"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/common/model/asset"
-	"github.com/zecrey-labs/zecrey-legend/common/model/assetHistory"
 	"github.com/zecrey-labs/zecrey-legend/common/model/basic"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l1BlockMonitor"
@@ -56,12 +54,6 @@ var (
 	// account
 	accountModel        = account.NewAccountModel(basic.Connection, basic.CacheConf, basic.DB)
 	accountHistoryModel = account.NewAccountHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
-	// account assets
-	accountAssetModel          = asset.NewAccountAssetModel(basic.Connection, basic.CacheConf, basic.DB)
-	accountAssetLiquidityModel = asset.NewAccountLiquidityModel(basic.Connection, basic.CacheConf, basic.DB)
-	// account assets history
-	accountAssetHistoryModel          = assetHistory.NewAccountAssetHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
-	accountAssetLiquidityHistoryModel = assetHistory.NewAccountLiquidityHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
 	// liquidity pair
 	liquidityPairModel = liquidityPair.NewLiquidityPairModel(basic.Connection, basic.CacheConf, basic.DB)
 	// l2 asset
@@ -98,10 +90,6 @@ func TestDropTables(t *testing.T) {
 	//priceModel.
 	accountModel.DropAccountTable()
 	accountHistoryModel.DropAccountHistoryTable()
-	accountAssetModel.DropAccountAssetTable()
-	accountAssetLiquidityModel.DropAccountLiquidityTable()
-	accountAssetHistoryModel.DropAccountAssetHistoryTable()
-	accountAssetLiquidityHistoryModel.DropAccountLiquidityHistoryTable()
 	liquidityPairModel.DropLiquidityPairTable()
 	l2AssetInfoModel.DropL2AssetInfoTable()
 	mempoolDetailModel.DropMempoolDetailTable()
@@ -129,10 +117,6 @@ func TestDataInitialize(t *testing.T) {
 	//priceModel.
 	accountModel.CreateAccountTable()
 	accountHistoryModel.CreateAccountHistoryTable()
-	accountAssetModel.CreateAccountAssetTable()
-	accountAssetLiquidityModel.CreateAccountLiquidityTable()
-	accountAssetHistoryModel.CreateAccountAssetHistoryTable()
-	accountAssetLiquidityHistoryModel.CreateAccountLiquidityHistoryTable()
 	liquidityPairModel.CreateLiquidityPairTable()
 	l2AssetInfoModel.CreateL2AssetInfoTable()
 	mempoolDetailModel.CreateMempoolDetailTable()

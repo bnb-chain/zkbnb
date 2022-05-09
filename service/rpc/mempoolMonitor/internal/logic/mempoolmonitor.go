@@ -93,7 +93,7 @@ func MonitorMempool(
 				return err
 			}
 			// check if the account name has been registered
-			_, err = ctx.AccountHistoryModel.GetAccountByAccountName(txInfo.AccountName)
+			_, err = ctx.AccountModel.GetAccountByAccountName(txInfo.AccountName)
 			if err != ErrNotFound {
 				logx.Errorf("[MonitorMempool] account name has been registered")
 				return errors.New("[MonitorMempool] account name has been registered")
@@ -112,6 +112,7 @@ func MonitorMempool(
 				AssetRoot:       commonConstant.NilHashStr,
 				LiquidityInfo:   commonConstant.EmptyLiquidity,
 				LiquidityRoot:   commonConstant.NilHashStr,
+				Status:          account.AccountStatusPending,
 			}
 			accountHistory := &account.AccountHistory{
 				AccountIndex:  nextAccountIndex,
@@ -405,7 +406,9 @@ func MonitorMempool(
 	// transaction: active accounts not in account table & update l2 oTx event & create mempool txs
 
 	logx.Info("====================call CreateMempoolAndActiveAccount=======================")
-	logx.Infof("mempoolTxs: %v, finalL2TxEvents: %v, nextAccountIndex: %v", len(pendingNewMempoolTxs),
+	logx.Infof("accounts: %v, accountHistories: %v, mempoolTxs: %v, finalL2TxEvents: %v, nextAccountIndex: %v",
+		len(pendingNewAccount), len(pendingNewAccountHistory),
+		len(pendingNewMempoolTxs),
 		len(txs), nextAccountIndex)
 
 	// clean cache

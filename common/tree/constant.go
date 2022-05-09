@@ -22,23 +22,16 @@ import (
 	"github.com/zecrey-labs/zecrey-core/common/general/model/sysconfig"
 	"github.com/zecrey-labs/zecrey-crypto/accumulators/merkleTree"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/common/model/asset"
-	"github.com/zecrey-labs/zecrey-legend/common/model/assetHistory"
 )
 
 type (
-	SysconfigModel               = sysconfig.SysconfigModel
-	AccountHistoryModel          = account.AccountHistoryModel
-	AccountAssetModel            = asset.AccountAssetModel
-	AccountLiquidityModel        = asset.AccountLiquidityModel
-	AccountAssetHistoryModel     = assetHistory.AccountAssetHistoryModel
-	AccountLiquidityHistoryModel = assetHistory.AccountLiquidityHistoryModel
-	L2NftHistoryModel     = nft.L2NftHistoryModel
+	SysconfigModel      = sysconfig.SysconfigModel
+	AccountModel        = account.AccountModel
+	AccountHistoryModel = account.AccountHistoryModel
+	L2NftHistoryModel   = nft.L2NftHistoryModel
 
-	AccountHistory          = account.AccountHistory
-	AccountAssetHistory     = assetHistory.AccountAssetHistory
-	AccountLiquidityHistory = assetHistory.AccountLiquidityHistory
-	AccountL2NftHistory     = nft.L2NftHistory
+	AccountHistory      = account.AccountHistory
+	AccountL2NftHistory = nft.L2NftHistory
 
 	Tree = merkleTree.Tree
 	Node = merkleTree.Node

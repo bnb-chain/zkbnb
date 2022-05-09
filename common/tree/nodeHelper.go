@@ -22,24 +22,31 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-func AssetToNode(accountAsset *AccountAssetHistory) (node *Node, err error) {
-	hashVal, err := ComputeAccountAssetLeafHash(accountAsset.AssetId, accountAsset.Balance)
+func AssetToNode(assetId int64, balance string) (node *Node, err error) {
+	hashVal, err := ComputeAccountAssetLeafHash(assetId, balance)
 	if err != nil {
-		logx.Errorf("[AccountHistoryToNode] unable to compute asset leaf hash: %s", err.Error())
+		logx.Errorf("[AccountToNode] unable to compute asset leaf hash: %s", err.Error())
 		return nil, err
 	}
 	node = merkleTree.CreateLeafNode(hashVal)
 	return node, nil
 }
 
-func LiquidityAssetToNode(accountLiquidityAsset *AccountLiquidityHistory) (node *Node, err error) {
+func LiquidityAssetToNode(
+	pairIndex int64,
+	assetAId int64,
+	assetA string,
+	assetBId int64,
+	assetB string,
+	lpAmount string,
+) (node *Node, err error) {
 	hashVal, err := ComputeAccountLiquidityAssetLeafHash(
-		accountLiquidityAsset.PairIndex,
-		accountLiquidityAsset.AssetAId, accountLiquidityAsset.AssetA,
-		accountLiquidityAsset.AssetBId, accountLiquidityAsset.AssetB,
-		accountLiquidityAsset.LpAmount)
+		pairIndex,
+		assetAId, assetA,
+		assetBId, assetB,
+		lpAmount)
 	if err != nil {
-		logx.Errorf("[AccountHistoryToNode] unable to compute liquidity asset leaf hash: %s", err.Error())
+		logx.Errorf("[AccountToNode] unable to compute liquidity asset leaf hash: %s", err.Error())
 		return nil, err
 	}
 	node = merkleTree.CreateLeafNode(hashVal)
@@ -59,12 +66,17 @@ func NftAssetToNode(accountNftAsset *AccountL2NftHistory) (node *Node, err error
 	return node, nil
 }
 
-func AccountHistoryToNode(accountInfo *AccountHistory, assetRoot, liquidityAssetRoot []byte) (node *Node, err error) {
+func AccountToNode(
+	accountIndex int64,
+	accountNameHash string,
+	publicKey string,
+	nonce int64,
+	assetRoot, liquidityAssetRoot []byte) (node *Node, err error) {
 	hashVal, err := ComputeAccountLeafHash(
-		accountInfo.AccountIndex, accountInfo.AccountName, accountInfo.PublicKey, accountInfo.Nonce,
+		accountIndex, accountNameHash, publicKey, nonce,
 		assetRoot, liquidityAssetRoot)
 	if err != nil {
-		logx.Errorf("[AccountHistoryToNode] unable to compute account leaf hash: %s", err.Error())
+		logx.Errorf("[AccountToNode] unable to compute account leaf hash: %s", err.Error())
 		return nil, err
 	}
 	node = merkleTree.CreateLeafNode(hashVal)

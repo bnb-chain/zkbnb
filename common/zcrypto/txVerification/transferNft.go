@@ -23,9 +23,8 @@ import (
 	"github.com/zecrey-labs/zecrey-core/common/general/model/nft"
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-crypto/wasm/zecrey-legend/legendTxTypes"
+	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
-	"github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/common/model/asset"
 	"github.com/zeromicro/go-zero/core/logx"
 	"log"
 	"math/big"
@@ -47,8 +46,7 @@ import (
 			- AssetGas
 */
 func VerifyTransferNftTxInfo(
-	accountInfoMap map[int64]*account.Account,
-	assetInfoMap map[int64]map[int64]*asset.AccountAsset,
+	accountInfoMap map[int64]*commonAsset.FormatAccountInfo,
 	nftInfoMap map[int64]*nft.L2Nft,
 	txInfo *TransferNftTxInfo,
 ) (txDetails []*MempoolTxDetail, err error) {
@@ -56,10 +54,8 @@ func VerifyTransferNftTxInfo(
 	if accountInfoMap[txInfo.FromAccountIndex] == nil ||
 		accountInfoMap[txInfo.ToAccountIndex] == nil ||
 		accountInfoMap[txInfo.GasAccountIndex] == nil ||
-		assetInfoMap[txInfo.FromAccountIndex] == nil ||
-		assetInfoMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId] == nil ||
-		assetInfoMap[txInfo.GasAccountIndex] == nil ||
-		assetInfoMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId] == nil ||
+		accountInfoMap[txInfo.FromAccountIndex].AssetInfo == nil ||
+		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId] == "" ||
 		nftInfoMap[txInfo.NftIndex] == nil ||
 		nftInfoMap[txInfo.NftIndex].OwnerAccountIndex != txInfo.FromAccountIndex ||
 		nftInfoMap[txInfo.NftIndex].NftIndex != txInfo.NftIndex ||
@@ -106,7 +102,7 @@ func VerifyTransferNftTxInfo(
 		)
 	}
 	// check balance
-	assetGasBalance, isValid := new(big.Int).SetString(assetInfoMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId].Balance, 10)
+	assetGasBalance, isValid := new(big.Int).SetString(accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId], 10)
 	if !isValid {
 		logx.Errorf("[VerifyMintNftTxInfo] unable to parse balance")
 		return nil, errors.New("[VerifyMintNftTxInfo] unable to parse balance")
@@ -140,26 +136,14 @@ func VerifyTransferNftTxInfo(
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
 		AccountName:  accountInfoMap[txInfo.FromAccountIndex].AccountName,
-		Balance:      assetInfoMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId].Balance,
 		BalanceDelta: assetDeltaMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId].String(),
 	})
 	// to account nft delta
-	oldNftInfo := &NftInfo{
-		NftIndex:            nftInfoMap[txInfo.NftIndex].NftIndex,
-		CreatorAccountIndex: nftInfoMap[txInfo.NftIndex].CreatorAccountIndex,
-		OwnerAccountIndex:   nftInfoMap[txInfo.NftIndex].OwnerAccountIndex,
-		AssetId:             nftInfoMap[txInfo.NftIndex].AssetId,
-		AssetAmount:         nftInfoMap[txInfo.NftIndex].AssetAmount,
-		NftContentHash:      nftInfoMap[txInfo.NftIndex].NftContentHash,
-		NftL1TokenId:        nftInfoMap[txInfo.NftIndex].NftL1TokenId,
-		NftL1Address:        nftInfoMap[txInfo.NftIndex].NftL1Address,
-	}
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.NftIndex,
 		AssetType:    NftAssetType,
 		AccountIndex: txInfo.ToAccountIndex,
 		AccountName:  accountInfoMap[txInfo.ToAccountIndex].AccountName,
-		Balance:      oldNftInfo.String(),
 		BalanceDelta: newNftInfo.String(),
 	})
 	// gas account asset gas
@@ -168,7 +152,6 @@ func VerifyTransferNftTxInfo(
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.GasAccountIndex,
 		AccountName:  accountInfoMap[txInfo.GasAccountIndex].AccountName,
-		Balance:      assetInfoMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId].Balance,
 		BalanceDelta: assetDeltaMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId].String(),
 	})
 	return txDetails, nil

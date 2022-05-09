@@ -178,6 +178,7 @@ func CommitterTask(
 						}
 						accountHistoryInfo.Status = account.AccountHistoryStatusConfirmed
 						accountHistoryInfo.L2BlockHeight = currentBlockHeight
+						accountsMap[mempoolTx.AccountIndex].Status = account.AccountStatusConfirmed
 						pendingUpdateAccountIndex[mempoolTx.AccountIndex] = true
 						// update account tree
 						if int64(len(accountStateTrees)) != accountHistoryInfo.AccountIndex {
@@ -303,7 +304,8 @@ func CommitterTask(
 						continue
 					}
 					accountsHistoryMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId] = nBalance
-
+					accountsHistoryMap[mempoolTxDetail.AccountIndex].L2BlockHeight = currentBlockHeight
+					pendingNewAccountIndex[mempoolTxDetail.AccountIndex] = true
 					// update account state tree
 					nAssetLeaf, err := tree.ComputeAccountAssetLeafHash(
 						mempoolTxDetail.AssetId,
@@ -385,6 +387,8 @@ func CommitterTask(
 						newPoolInfo.AssetAAmount.String()
 					accountsHistoryMap[mempoolTxDetail.AccountIndex].LiquidityInfo[mempoolTxDetail.AssetId].AssetB =
 						newPoolInfo.AssetBAmount.String()
+					accountsHistoryMap[mempoolTxDetail.AccountIndex].L2BlockHeight = currentBlockHeight
+					pendingNewAccountIndex[mempoolTxDetail.AccountIndex] = true
 
 					// update account state tree
 					nLiquidityAssetLeaf, err := tree.ComputeAccountLiquidityAssetLeafHash(
@@ -451,6 +455,8 @@ func CommitterTask(
 						return err
 					}
 					accountsHistoryMap[mempoolTxDetail.AccountIndex].LiquidityInfo[mempoolTxDetail.AssetId].LpAmount = nBalance
+					accountsHistoryMap[mempoolTxDetail.AccountIndex].L2BlockHeight = currentBlockHeight
+					pendingNewAccountIndex[mempoolTxDetail.AccountIndex] = true
 
 					// update account state tree
 					nLiquidityAssetLeaf, err := tree.ComputeAccountLiquidityAssetLeafHash(
@@ -611,6 +617,7 @@ func CommitterTask(
 		var (
 			pendingNewNftAssetsHistory   []*L2NftHistory
 			pendingNewAccountHistory     []*AccountHistory
+			pendingUpdateAccounts        []*Account
 			pendingUpdatedAccountHistory []*AccountHistory
 		)
 		for _, nftAssetHistory := range nftAssetsHistoryMap {
@@ -625,7 +632,17 @@ func CommitterTask(
 				logx.Errorf("[CommitterTask] unable to ")
 				return err
 			}
-			pendingNewAccountHistory = append(pendingNewAccountHistory, accountHistoryInfo)
+			newAccountHistoryInfo := &account.AccountHistory{
+				AccountIndex:  accountHistoryInfo.AccountIndex,
+				Nonce:         accountHistoryInfo.Nonce,
+				AssetInfo:     accountHistoryInfo.AssetInfo,
+				AssetRoot:     accountHistoryInfo.AssetRoot,
+				LiquidityInfo: accountHistoryInfo.LiquidityInfo,
+				LiquidityRoot: accountHistoryInfo.LiquidityRoot,
+				Status:        accountHistoryInfo.Status,
+				L2BlockHeight: accountHistoryInfo.L2BlockHeight,
+			}
+			pendingNewAccountHistory = append(pendingNewAccountHistory, newAccountHistoryInfo)
 		}
 		for accountIndex, flag := range pendingUpdateAccountIndex {
 			if !flag {
@@ -637,6 +654,7 @@ func CommitterTask(
 				return err
 			}
 			pendingUpdatedAccountHistory = append(pendingUpdatedAccountHistory, accountHistoryInfo)
+			pendingUpdateAccounts = append(pendingUpdateAccounts, accountsMap[accountIndex])
 		}
 
 		// compute block commitment
@@ -666,6 +684,7 @@ func CommitterTask(
 		//create block, history, update mempool txs, create new l1 amount infos
 		err = ctx.BlockModel.CreateBlockForCommitter(
 			oBlock, pendingMempoolTxs,
+			pendingUpdateAccounts,
 			pendingNewAccountHistory, pendingUpdatedAccountHistory)
 		if err != nil {
 			logx.Errorf("[CommitterTask] unable to create block for committer: %s", err.Error())

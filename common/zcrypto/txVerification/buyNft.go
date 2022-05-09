@@ -23,9 +23,8 @@ import (
 	"github.com/zecrey-labs/zecrey-core/common/general/model/nft"
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-crypto/wasm/zecrey-legend/legendTxTypes"
+	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
-	"github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/common/model/asset"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
 	"log"
@@ -54,8 +53,7 @@ import (
 			- AssetGas
 */
 func VerifyBuyNftTxInfo(
-	accountInfoMap map[int64]*account.Account,
-	assetInfoMap map[int64]map[int64]*asset.AccountAsset,
+	accountInfoMap map[int64]*commonAsset.FormatAccountInfo,
 	nftInfoMap map[int64]*nft.L2Nft,
 	txInfo *BuyNftTxInfo,
 ) (txDetails []*MempoolTxDetail, err error) {
@@ -65,17 +63,10 @@ func VerifyBuyNftTxInfo(
 		accountInfoMap[txInfo.CreatorAccountIndex] == nil ||
 		accountInfoMap[txInfo.TreasuryAccountIndex] == nil ||
 		accountInfoMap[txInfo.GasAccountIndex] == nil ||
-		assetInfoMap[txInfo.BuyerAccountIndex] == nil ||
-		assetInfoMap[txInfo.BuyerAccountIndex][txInfo.AssetId] == nil ||
-		assetInfoMap[txInfo.BuyerAccountIndex][txInfo.GasFeeAssetId] == nil ||
-		assetInfoMap[txInfo.OwnerAccountIndex] == nil ||
-		assetInfoMap[txInfo.OwnerAccountIndex][txInfo.AssetId] == nil ||
-		assetInfoMap[txInfo.CreatorAccountIndex] == nil ||
-		assetInfoMap[txInfo.CreatorAccountIndex][txInfo.AssetId] == nil ||
-		assetInfoMap[txInfo.TreasuryAccountIndex] == nil ||
-		assetInfoMap[txInfo.TreasuryAccountIndex][txInfo.AssetId] == nil ||
-		assetInfoMap[txInfo.GasAccountIndex] == nil ||
-		assetInfoMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId] == nil ||
+		accountInfoMap[txInfo.BuyerAccountIndex].AssetInfo == nil ||
+		accountInfoMap[txInfo.BuyerAccountIndex].AssetInfo[txInfo.AssetId] == "" ||
+		accountInfoMap[txInfo.BuyerAccountIndex].AssetInfo[txInfo.AssetId] == util.ZeroBigInt.String() ||
+		accountInfoMap[txInfo.BuyerAccountIndex].AssetInfo[txInfo.GasFeeAssetId] == "" ||
 		nftInfoMap[txInfo.OwnerAccountIndex] == nil ||
 		nftInfoMap[txInfo.NftIndex].OwnerAccountIndex != txInfo.OwnerAccountIndex ||
 		nftInfoMap[txInfo.NftIndex].CreatorAccountIndex != txInfo.CreatorAccountIndex ||
@@ -177,12 +168,12 @@ func VerifyBuyNftTxInfo(
 		)
 	}
 	// check balance
-	assetABalance, isValid := new(big.Int).SetString(assetInfoMap[txInfo.BuyerAccountIndex][txInfo.AssetId].Balance, 10)
+	assetABalance, isValid := new(big.Int).SetString(accountInfoMap[txInfo.BuyerAccountIndex].AssetInfo[txInfo.AssetId], 10)
 	if !isValid {
 		logx.Errorf("[VerifySwapTxInfo] unable to parse balance")
 		return nil, errors.New("[VerifySwapTxInfo] unable to parse balance")
 	}
-	assetGasBalance, isValid := new(big.Int).SetString(assetInfoMap[txInfo.BuyerAccountIndex][txInfo.GasFeeAssetId].Balance, 10)
+	assetGasBalance, isValid := new(big.Int).SetString(accountInfoMap[txInfo.BuyerAccountIndex].AssetInfo[txInfo.GasFeeAssetId], 10)
 	if !isValid {
 		logx.Errorf("[VerifySwapTxInfo] unable to parse balance")
 		return nil, errors.New("[VerifySwapTxInfo] unable to parse balance")
@@ -220,7 +211,6 @@ func VerifyBuyNftTxInfo(
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.BuyerAccountIndex,
 		AccountName:  accountInfoMap[txInfo.BuyerAccountIndex].AccountName,
-		Balance:      assetInfoMap[txInfo.BuyerAccountIndex][txInfo.AssetId].Balance,
 		BalanceDelta: assetDeltaMap[txInfo.BuyerAccountIndex][txInfo.AssetId].String(),
 	})
 	// buyer account asset gas
@@ -229,26 +219,14 @@ func VerifyBuyNftTxInfo(
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.BuyerAccountIndex,
 		AccountName:  accountInfoMap[txInfo.BuyerAccountIndex].AccountName,
-		Balance:      assetInfoMap[txInfo.BuyerAccountIndex][txInfo.GasFeeAssetId].Balance,
 		BalanceDelta: assetDeltaMap[txInfo.BuyerAccountIndex][txInfo.GasFeeAssetId].String(),
 	})
 	// buyer account nft delta
-	oldNftInfo := &NftInfo{
-		NftIndex:            nftInfoMap[txInfo.NftIndex].NftIndex,
-		CreatorAccountIndex: nftInfoMap[txInfo.NftIndex].CreatorAccountIndex,
-		OwnerAccountIndex:   nftInfoMap[txInfo.NftIndex].OwnerAccountIndex,
-		AssetId:             nftInfoMap[txInfo.NftIndex].AssetId,
-		AssetAmount:         nftInfoMap[txInfo.NftIndex].AssetAmount,
-		NftContentHash:      nftInfoMap[txInfo.NftIndex].NftContentHash,
-		NftL1TokenId:        nftInfoMap[txInfo.NftIndex].NftL1TokenId,
-		NftL1Address:        nftInfoMap[txInfo.NftIndex].NftL1Address,
-	}
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.NftIndex,
 		AssetType:    NftAssetType,
 		AccountIndex: txInfo.BuyerAccountIndex,
 		AccountName:  accountInfoMap[txInfo.BuyerAccountIndex].AccountName,
-		Balance:      oldNftInfo.String(),
 		BalanceDelta: newNftInfo.String(),
 	})
 	// creator account asset A
@@ -257,7 +235,6 @@ func VerifyBuyNftTxInfo(
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.CreatorAccountIndex,
 		AccountName:  accountInfoMap[txInfo.CreatorAccountIndex].AccountName,
-		Balance:      assetInfoMap[txInfo.CreatorAccountIndex][txInfo.AssetId].Balance,
 		BalanceDelta: assetDeltaMap[txInfo.CreatorAccountIndex][txInfo.AssetId].String(),
 	})
 	// treasury account asset A
@@ -266,7 +243,6 @@ func VerifyBuyNftTxInfo(
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.TreasuryAccountIndex,
 		AccountName:  accountInfoMap[txInfo.TreasuryAccountIndex].AccountName,
-		Balance:      assetInfoMap[txInfo.TreasuryAccountIndex][txInfo.AssetId].Balance,
 		BalanceDelta: assetDeltaMap[txInfo.TreasuryAccountIndex][txInfo.AssetId].String(),
 	})
 	// owner account asset A
@@ -275,7 +251,6 @@ func VerifyBuyNftTxInfo(
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.OwnerAccountIndex,
 		AccountName:  accountInfoMap[txInfo.OwnerAccountIndex].AccountName,
-		Balance:      assetInfoMap[txInfo.OwnerAccountIndex][txInfo.AssetId].Balance,
 		BalanceDelta: assetDeltaMap[txInfo.OwnerAccountIndex][txInfo.AssetId].String(),
 	})
 	// gas account asset Gas
@@ -284,7 +259,6 @@ func VerifyBuyNftTxInfo(
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.GasAccountIndex,
 		AccountName:  accountInfoMap[txInfo.GasAccountIndex].AccountName,
-		Balance:      assetInfoMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId].Balance,
 		BalanceDelta: assetDeltaMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId].String(),
 	})
 	return txDetails, nil

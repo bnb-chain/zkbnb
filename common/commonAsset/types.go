@@ -115,6 +115,7 @@ type FormatAccountHistoryInfo struct {
 	LiquidityInfo map[int64]*Liquidity
 	LiquidityRoot string
 	L2BlockHeight int64
+	Status        int
 }
 
 func FromFormatAccountHistoryInfo(formatAccountInfo *FormatAccountHistoryInfo) (accountInfo *account.AccountHistory, err error) {
@@ -136,6 +137,7 @@ func FromFormatAccountHistoryInfo(formatAccountInfo *FormatAccountHistoryInfo) (
 		AssetRoot:     formatAccountInfo.AssetRoot,
 		LiquidityInfo: string(liquidityInfoBytes),
 		LiquidityRoot: formatAccountInfo.LiquidityRoot,
+		Status:        formatAccountInfo.Status,
 		L2BlockHeight: formatAccountInfo.L2BlockHeight,
 	}
 	return accountInfo, nil
@@ -163,6 +165,7 @@ func ToFormatAccountHistoryInfo(accountInfo *account.AccountHistory) (formatAcco
 		LiquidityInfo: liquidityInfo,
 		LiquidityRoot: accountInfo.LiquidityRoot,
 		L2BlockHeight: accountInfo.L2BlockHeight,
+		Status:        accountInfo.Status,
 	}
 	return formatAccountInfo, nil
 }

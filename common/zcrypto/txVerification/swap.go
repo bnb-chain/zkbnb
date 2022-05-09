@@ -62,6 +62,12 @@ func VerifySwapTxInfo(
 		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.AssetAId] == util.ZeroBigInt.String() ||
 		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId] == "" ||
 		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId] == util.ZeroBigInt.String() ||
+		accountInfoMap[txInfo.ToAccountIndex].LiquidityInfo == nil ||
+		accountInfoMap[txInfo.ToAccountIndex].LiquidityInfo[txInfo.PairIndex] == nil ||
+		!((accountInfoMap[txInfo.ToAccountIndex].LiquidityInfo[txInfo.PairIndex].AssetAId == txInfo.AssetAId &&
+			accountInfoMap[txInfo.ToAccountIndex].LiquidityInfo[txInfo.PairIndex].AssetBId == txInfo.AssetBId) ||
+			(accountInfoMap[txInfo.ToAccountIndex].LiquidityInfo[txInfo.PairIndex].AssetBId == txInfo.AssetAId &&
+				accountInfoMap[txInfo.ToAccountIndex].LiquidityInfo[txInfo.PairIndex].AssetAId == txInfo.AssetBId)) ||
 		txInfo.AssetAAmount.Cmp(ZeroBigInt) < 0 ||
 		txInfo.AssetBMinAmount.Cmp(ZeroBigInt) < 0 ||
 		txInfo.GasFeeAssetAmount.Cmp(ZeroBigInt) < 0 {

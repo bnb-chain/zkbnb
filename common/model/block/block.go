@@ -81,6 +81,7 @@ type (
 		CreateBlockForCommitter(
 			oBlock *Block,
 			pendingMempoolTxs []*mempool.MempoolTx,
+			pendingUpdateAccounts []*account.Account,
 			pendingNewAccountHistory, pendingUpdatedAccountHistory []*account.AccountHistory) (err error)
 	}
 
@@ -747,6 +748,7 @@ func (m *defaultBlockModel) GetBlockStatusCacheByBlockHeight(blockHeight int64) 
 func (m *defaultBlockModel) CreateBlockForCommitter(
 	oBlock *Block,
 	pendingMempoolTxs []*mempool.MempoolTx,
+	pendingUpdateAccounts []*account.Account,
 	pendingNewAccountHistory, pendingUpdatedAccountHistory []*account.AccountHistory,
 ) (err error) {
 	err = m.DB.Transaction(func(tx *gorm.DB) error { // transact
@@ -776,6 +778,20 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 			if dbTx.RowsAffected == 0 {
 				logx.Errorf("[CreateBlockForCommitter] no new mempoolTx")
 				return errors.New("[CreateBlockForCommitter] no new mempoolTx")
+			}
+		}
+		// update account
+		for _, pendignUpdateAccount := range pendingUpdateAccounts {
+			dbTx := tx.Table(account.AccountTableName).Where("id = ?", pendignUpdateAccount.ID).
+				Select("*").
+				Updates(&pendignUpdateAccount)
+			if dbTx.Error != nil {
+				logx.Errorf("[CreateBlockForCommitter] unable to update account: %s", dbTx.Error.Error())
+				return dbTx.Error
+			}
+			if dbTx.RowsAffected == 0 {
+				logx.Errorf("[CreateBlockForCommitter] no new account")
+				return errors.New("[CreateBlockForCommitter] no new account")
 			}
 		}
 		// create new account history
