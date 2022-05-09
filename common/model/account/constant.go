@@ -28,6 +28,11 @@ const (
 )
 
 const (
+	AccountStatusPending = iota
+	AccountStatusConfirmed
+)
+
+const (
 	AccountHistoryStatusPending = iota
 	AccountHistoryStatusConfirmed
 )

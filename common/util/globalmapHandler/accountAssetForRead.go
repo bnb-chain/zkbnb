@@ -202,6 +202,8 @@ func GetLatestAccountInfo(
 			logx.Errorf("[GetLatestAccountInfo] the lock has been used")
 			return nil, errors.New("[GetLatestAccountInfo] the lock has been used")
 		}
+		// latest nonce
+		accountInfo.Nonce = accountInfo.Nonce + 1
 		info, err := commonAsset.FromFormatAccountInfo(accountInfo)
 		if err != nil {
 			logx.Errorf("[GetLatestAccountInfo] unable to convert format account info to account info: %s", err.Error())

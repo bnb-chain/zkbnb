@@ -55,6 +55,7 @@ type (
 		GetAccountsTotalCount() (count int64, err error)
 		GetAllAccounts() (accounts []*Account, err error)
 		GetLatestAccountIndex() (accountIndex int64, err error)
+		GetConfirmedAccounts() (accounts []*Account, err error)
 	}
 
 	defaultAccountModel struct {
@@ -72,11 +73,12 @@ type (
 		L1Address       string
 		Nonce           int64
 		// map[int64]string
-		AssetInfo       string
-		AssetRoot       string
+		AssetInfo string
+		AssetRoot string
 		// map[int64]*Liquidity
-		LiquidityInfo   string
-		LiquidityRoot   string
+		LiquidityInfo string
+		LiquidityRoot string
+		Status        int
 	}
 )
 
@@ -311,4 +313,18 @@ func (m *defaultAccountModel) GetAccountByAccountNameHash(accountNameHash string
 		return nil, ErrNotFound
 	}
 	return account, nil
+}
+
+func (m *defaultAccountModel) GetConfirmedAccounts() (accounts []*Account, err error) {
+	dbTx := m.DB.Table(m.table).Where("status = ?", AccountStatusConfirmed).Order("account_index").Find(&accounts)
+	if dbTx.Error != nil {
+		err := fmt.Sprintf("[account.GetConfirmedAccounts] %s", dbTx.Error)
+		logx.Error(err)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		err := fmt.Sprintf("[account.GetConfirmedAccounts] %s", ErrNotFound)
+		logx.Info(err)
+		return nil, ErrNotFound
+	}
+	return accounts, nil
 }
