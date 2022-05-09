@@ -26,13 +26,13 @@ import (
 )
 
 func ComputeAccountLeafHash(
-	accountIndex int64, accountName string, pk string, nonce int64,
+	accountIndex int64, accountNameHash string, pk string, nonce int64,
 	assetRoot, liquidityAssetRoot []byte,
 ) (hashVal []byte, err error) {
 	hFunc := mimc.NewMiMC()
 	var buf bytes.Buffer
 	util.WriteInt64IntoBuf(&buf, accountIndex)
-	util.WriteAccountNameIntoBuf(&buf, accountName)
+	buf.Write(common.FromHex(accountNameHash))
 	err = util.WritePkIntoBuf(&buf, pk)
 	util.WriteInt64IntoBuf(&buf, nonce)
 	if err != nil {
