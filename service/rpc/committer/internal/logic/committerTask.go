@@ -235,6 +235,7 @@ func CommitterTask(
 			var (
 				accountAssetExist = make(map[int64]map[int64]bool)
 				txDetails         []*tx.TxDetail
+				accountBalanceMap = make(map[int64]map[int64]string)
 			)
 			for _, mempoolTxDetail := range mempoolTx.MempoolDetails {
 				if accountAssetExist[mempoolTxDetail.AccountIndex] == nil {
@@ -246,6 +247,9 @@ func CommitterTask(
 						logx.Errorf("[CommitterTask] get account by account index: %s", err.Error())
 						return err
 					}
+				}
+				if accountBalanceMap[mempoolTxDetail.AccountIndex] == nil {
+					accountBalanceMap[mempoolTxDetail.AccountIndex] = make(map[int64]string)
 				}
 				if accountsHistoryMap[mempoolTxDetail.AccountIndex] == nil {
 					accountHistoryInfo, err := ctx.AccountHistoryModel.GetLatestAccountInfoByAccountIndex(mempoolTxDetail.AccountIndex)
@@ -283,7 +287,12 @@ func CommitterTask(
 						accountsHistoryMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId] = ZeroBigIntString
 					}
 					// get latest account asset info
-					baseBalance = accountsHistoryMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId]
+					if accountBalanceMap[mempoolTxDetail.AccountIndex][mempoolTxDetail.AssetId] == "" {
+						baseBalance = accountsHistoryMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId]
+						accountBalanceMap[mempoolTxDetail.AccountIndex][mempoolTxDetail.AssetId] = baseBalance
+					} else {
+						baseBalance = accountBalanceMap[mempoolTxDetail.AccountIndex][mempoolTxDetail.AssetId]
+					}
 					// compute new balance
 					nBalance, err := util.ComputeNewBalance(GeneralAssetType, baseBalance, mempoolTxDetail.BalanceDelta)
 					if err != nil {

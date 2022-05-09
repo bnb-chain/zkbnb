@@ -89,10 +89,43 @@ func (l *SendTxLogic) SendTx(in *globalRPCProto.ReqSendTx) (resp *globalRPCProto
 		}
 		break
 	case commonTx.TxTypeAddLiquidity:
+		txId, err = l.sendAddLiquidityTx(in.TxInfo)
+
+		resultResp = &globalRPCProto.ResultSendTx{
+			TxId: txId,
+		}
+
+		if err != nil {
+			errInfo := fmt.Sprintf("[sendtxlogic.sendTransferTx] %s", err.Error())
+			logx.Error(errInfo)
+			return packSendTxResp(FailStatus, FailMsg, errInfo, resultResp), err
+		}
 		break
 	case commonTx.TxTypeRemoveLiquidity:
+		txId, err = l.sendRemoveLiquidityTx(in.TxInfo)
+
+		resultResp = &globalRPCProto.ResultSendTx{
+			TxId: txId,
+		}
+
+		if err != nil {
+			errInfo := fmt.Sprintf("[sendtxlogic.sendTransferTx] %s", err.Error())
+			logx.Error(errInfo)
+			return packSendTxResp(FailStatus, FailMsg, errInfo, resultResp), err
+		}
 		break
 	case commonTx.TxTypeWithdraw:
+		txId, err = l.sendWithdrawTx(in.TxInfo)
+
+		resultResp = &globalRPCProto.ResultSendTx{
+			TxId: txId,
+		}
+
+		if err != nil {
+			errInfo := fmt.Sprintf("[sendtxlogic.sendTransferTx] %s", err.Error())
+			logx.Error(errInfo)
+			return packSendTxResp(FailStatus, FailMsg, errInfo, resultResp), err
+		}
 		break
 	case commonTx.TxTypeMintNft:
 		break

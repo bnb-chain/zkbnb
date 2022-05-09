@@ -57,7 +57,7 @@ func (l *GetLatestAccountInfoByAccountIndexLogic) GetLatestAccountInfoByAccountI
 	accountInfo, err := globalmapHandler.GetLatestAccountInfo(
 		l.svcCtx.AccountModel,
 		l.svcCtx.AccountHistoryModel,
-		l.svcCtx.MempoolDetailModel,
+		l.svcCtx.MempoolModel,
 		l.svcCtx.LiquidityPairModel,
 		l.svcCtx.RedisConnection,
 		int64(in.AccountIndex))

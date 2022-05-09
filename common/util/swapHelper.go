@@ -24,6 +24,20 @@ import (
 	"math/big"
 )
 
+func ComputeLpAmount(
+	assetAAmount *big.Int,
+	assetBAmount *big.Int,
+) (lpAmount *big.Int, err error) {
+	lpSquare := ffmath.Multiply(assetAAmount, assetBAmount)
+	lpFloat := ffmath.FloatSqrt(ffmath.IntToFloat(lpSquare))
+	lpAmount, err = CleanPackedAmount(ffmath.FloatToInt(lpFloat))
+	if err != nil {
+		logx.Errorf("[ComputeLpAmount] unable to compute lp amount: %s", err.Error())
+		return nil, err
+	}
+	return lpAmount, nil
+}
+
 func ComputeLpPortion(
 	PairATotal *big.Int,
 	PairBTotal *big.Int,
