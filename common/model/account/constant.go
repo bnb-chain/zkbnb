@@ -39,7 +39,6 @@ const (
 
 var (
 	ErrNotFound               = sqlx.ErrNotFound
-	ErrInvalidKeyPair         = errors.New("[ErrInvalidKeyPair] invalid key pair")
 	ErrDuplicatedAccountName  = errors.New("duplicated account name, fatal error")
 	ErrDuplicatedAccountIndex = errors.New("duplicated account index, fatal error")
 )
