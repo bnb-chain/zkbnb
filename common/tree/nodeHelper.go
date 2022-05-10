@@ -22,8 +22,8 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-func AssetToNode(assetId int64, balance string) (node *Node, err error) {
-	hashVal, err := ComputeAccountAssetLeafHash(assetId, balance)
+func AssetToNode(balance string, lpAmount string) (node *Node, err error) {
+	hashVal, err := ComputeAccountAssetLeafHash(balance, lpAmount)
 	if err != nil {
 		logx.Errorf("[AccountToNode] unable to compute asset leaf hash: %s", err.Error())
 		return nil, err
@@ -33,18 +33,15 @@ func AssetToNode(assetId int64, balance string) (node *Node, err error) {
 }
 
 func LiquidityAssetToNode(
-	pairIndex int64,
 	assetAId int64,
 	assetA string,
 	assetBId int64,
 	assetB string,
-	lpAmount string,
 ) (node *Node, err error) {
-	hashVal, err := ComputeAccountLiquidityAssetLeafHash(
-		pairIndex,
+	hashVal, err := ComputeLiquidityAssetLeafHash(
 		assetAId, assetA,
 		assetBId, assetB,
-		lpAmount)
+	)
 	if err != nil {
 		logx.Errorf("[AccountToNode] unable to compute liquidity asset leaf hash: %s", err.Error())
 		return nil, err
@@ -55,7 +52,7 @@ func LiquidityAssetToNode(
 
 func NftAssetToNode(accountNftAsset *AccountL2NftHistory) (node *Node, err error) {
 	hashVal, err := ComputeNftAssetLeafHash(
-		accountNftAsset.NftIndex, accountNftAsset.CreatorAccountIndex, accountNftAsset.NftContentHash,
+		accountNftAsset.CreatorAccountIndex, accountNftAsset.NftContentHash,
 		accountNftAsset.AssetId, accountNftAsset.AssetAmount, accountNftAsset.NftL1Address, accountNftAsset.NftL1TokenId,
 	)
 	if err != nil {
@@ -67,14 +64,13 @@ func NftAssetToNode(accountNftAsset *AccountL2NftHistory) (node *Node, err error
 }
 
 func AccountToNode(
-	accountIndex int64,
 	accountNameHash string,
 	publicKey string,
 	nonce int64,
-	assetRoot, liquidityAssetRoot []byte) (node *Node, err error) {
+	assetRoot []byte) (node *Node, err error) {
 	hashVal, err := ComputeAccountLeafHash(
-		accountIndex, accountNameHash, publicKey, nonce,
-		assetRoot, liquidityAssetRoot)
+		accountNameHash, publicKey, nonce,
+		assetRoot)
 	if err != nil {
 		logx.Errorf("[AccountToNode] unable to compute account leaf hash: %s", err.Error())
 		return nil, err

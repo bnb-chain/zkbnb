@@ -27,15 +27,17 @@ import (
 )
 
 type (
-	AccountLiquidityHistoryModel interface {
+	LiquidityHistoryModel interface {
 		CreateLiquidityHistoryTable() error
 		DropLiquidityHistoryTable() error
 		CreateLiquidityHistory(liquidity *LiquidityHistory) error
 		CreateLiquidityHistoryInBatches(entities []*LiquidityHistory) error
 		GetAccountLiquidityHistoryByPairIndex(pairIndex int64) (entities []*LiquidityHistory, err error)
+		GetLatestLiquidityByBlockHeight(blockHeight int64) (entities []*LiquidityHistory, err error)
+		GetLatestLiquidityByPairIndex(pairIndex int64) (entity *LiquidityHistory, err error)
 	}
 
-	defaultAccountLiquidityHistoryModel struct {
+	defaultLiquidityHistoryModel struct {
 		sqlc.CachedConn
 		table string
 		DB    *gorm.DB
@@ -45,15 +47,15 @@ type (
 		gorm.Model
 		PairIndex     int64
 		AssetAId      int64
-		AssetA        int64
+		AssetA        string
 		AssetBId      int64
-		AssetB        int64
+		AssetB        string
 		L2BlockHeight int64
 	}
 )
 
-func NewAccountLiquidityHistoryModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) AccountLiquidityHistoryModel {
-	return &defaultAccountLiquidityHistoryModel{
+func NewLiquidityHistoryModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) LiquidityHistoryModel {
+	return &defaultLiquidityHistoryModel{
 		CachedConn: sqlc.NewConn(conn, c),
 		table:      LiquidityHistoryTable,
 		DB:         db,
@@ -70,7 +72,7 @@ func (*LiquidityHistory) TableName() string {
 	Return: err error
 	Description: create account liquidity table
 */
-func (m *defaultAccountLiquidityHistoryModel) CreateLiquidityHistoryTable() error {
+func (m *defaultLiquidityHistoryModel) CreateLiquidityHistoryTable() error {
 	return m.DB.AutoMigrate(LiquidityHistory{})
 }
 
@@ -80,7 +82,7 @@ func (m *defaultAccountLiquidityHistoryModel) CreateLiquidityHistoryTable() erro
 	Return: err error
 	Description: drop account liquidity table
 */
-func (m *defaultAccountLiquidityHistoryModel) DropLiquidityHistoryTable() error {
+func (m *defaultLiquidityHistoryModel) DropLiquidityHistoryTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
@@ -90,7 +92,7 @@ func (m *defaultAccountLiquidityHistoryModel) DropLiquidityHistoryTable() error 
 	Return: err error
 	Description: create account liquidity entity
 */
-func (m *defaultAccountLiquidityHistoryModel) CreateLiquidityHistory(liquidity *LiquidityHistory) error {
+func (m *defaultLiquidityHistoryModel) CreateLiquidityHistory(liquidity *LiquidityHistory) error {
 	dbTx := m.DB.Table(m.table).Create(liquidity)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[liquidity.CreateLiquidityHistory] %s", dbTx.Error)
@@ -111,7 +113,7 @@ func (m *defaultAccountLiquidityHistoryModel) CreateLiquidityHistory(liquidity *
 	Return: err error
 	Description: create account liquidity entities
 */
-func (m *defaultAccountLiquidityHistoryModel) CreateLiquidityHistoryInBatches(entities []*LiquidityHistory) error {
+func (m *defaultLiquidityHistoryModel) CreateLiquidityHistoryInBatches(entities []*LiquidityHistory) error {
 	dbTx := m.DB.Table(m.table).CreateInBatches(entities, len(entities))
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[liquidity.CreateLiquidityHistoryInBatches] %s", dbTx.Error)
@@ -132,7 +134,7 @@ func (m *defaultAccountLiquidityHistoryModel) CreateLiquidityHistoryInBatches(en
 	Return: entities []*LiquidityHistory, err error
 	Description: get account liquidity entities by account index
 */
-func (m *defaultAccountLiquidityHistoryModel) GetAccountLiquidityHistoryByPairIndex(pairIndex int64) (entities []*LiquidityHistory, err error) {
+func (m *defaultLiquidityHistoryModel) GetAccountLiquidityHistoryByPairIndex(pairIndex int64) (entities []*LiquidityHistory, err error) {
 	dbTx := m.DB.Table(m.table).Where("pair_index = ?", pairIndex).Find(&entities)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[liquidity.GetAccountLiquidityHistoryByPairIndex] %s", dbTx.Error)
@@ -144,4 +146,30 @@ func (m *defaultAccountLiquidityHistoryModel) GetAccountLiquidityHistoryByPairIn
 		return nil, ErrNotFound
 	}
 	return entities, nil
+}
+
+func (m *defaultLiquidityHistoryModel) GetLatestLiquidityByBlockHeight(blockHeight int64) (entities []*LiquidityHistory, err error) {
+	dbTx := m.DB.Table(m.table).
+		Raw("SELECT a.* FROM liquidity_history a WHERE NOT EXISTS"+
+			"(SELECT * FROM liquidity_history WHERE account_index = a.account_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height) "+
+			"AND l2_block_height <= ? ORDER BY account_index", blockHeight, blockHeight).
+		Find(&entities)
+	if dbTx.Error != nil {
+		logx.Errorf("[GetValidAccounts] unable to get related accounts: %s", dbTx.Error.Error())
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return nil, ErrNotFound
+	}
+	return entities, nil
+}
+
+func (m *defaultLiquidityHistoryModel) GetLatestLiquidityByPairIndex(pairIndex int64) (entity *LiquidityHistory, err error) {
+	dbTx := m.DB.Table(m.table).Where("pair_index = ?", pairIndex).Order("l2_block_height desc").Find(&entity)
+	if dbTx.Error != nil {
+		logx.Errorf("[GetLatestLiquidityByPairIndex] unable to get related liquidity: %s", dbTx.Error.Error())
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return nil, ErrNotFound
+	}
+	return entity, nil
 }

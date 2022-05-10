@@ -28,6 +28,7 @@ const (
 	NilNonce       = -1
 	EmptyAsset     = "{}"
 	EmptyLiquidity = "{}"
+	NilAccountName   = ""
 )
 
 var (

@@ -49,7 +49,8 @@ func VerifyWithdrawNftTxInfo(
 	if accountInfoMap[txInfo.AccountIndex] == nil ||
 		accountInfoMap[txInfo.GasAccountIndex] == nil ||
 		accountInfoMap[txInfo.AccountIndex].AssetInfo == nil ||
-		accountInfoMap[txInfo.AccountIndex].AssetInfo[txInfo.GasFeeAssetId] == "" ||
+		accountInfoMap[txInfo.AccountIndex].AssetInfo[txInfo.GasFeeAssetId] == nil ||
+		accountInfoMap[txInfo.AccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance == "" ||
 		nftInfoMap[txInfo.AccountIndex] == nil ||
 		nftInfoMap[txInfo.NftIndex].OwnerAccountIndex != txInfo.AccountIndex ||
 		nftInfoMap[txInfo.NftIndex].NftIndex != txInfo.NftIndex ||
@@ -86,7 +87,7 @@ func VerifyWithdrawNftTxInfo(
 		)
 	}
 	// check balance
-	assetGasBalance, isValid := new(big.Int).SetString(accountInfoMap[txInfo.AccountIndex].AssetInfo[txInfo.GasFeeAssetId], 10)
+	assetGasBalance, isValid := new(big.Int).SetString(accountInfoMap[txInfo.AccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance, 10)
 	if !isValid {
 		logx.Errorf("[VerifyMintNftTxInfo] unable to parse balance")
 		return nil, errors.New("[VerifyMintNftTxInfo] unable to parse balance")
@@ -120,7 +121,7 @@ func VerifyWithdrawNftTxInfo(
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.AccountIndex,
 		AccountName:  accountInfoMap[txInfo.AccountIndex].AccountName,
-		BalanceDelta: assetDeltaMap[txInfo.AccountIndex][txInfo.GasFeeAssetId].String(),
+		BalanceDelta: ffmath.Neg(txInfo.GasFeeAssetAmount).String(),
 	})
 	// from account nft delta
 	txDetails = append(txDetails, &MempoolTxDetail{
@@ -136,7 +137,7 @@ func VerifyWithdrawNftTxInfo(
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.GasAccountIndex,
 		AccountName:  accountInfoMap[txInfo.GasAccountIndex].AccountName,
-		BalanceDelta: assetDeltaMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId].String(),
+		BalanceDelta: txInfo.GasFeeAssetAmount.String(),
 	})
 	return txDetails, nil
 }
