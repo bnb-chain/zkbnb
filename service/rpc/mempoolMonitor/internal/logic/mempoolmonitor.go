@@ -110,8 +110,6 @@ func MonitorMempool(
 				Nonce:           commonConstant.NilNonce,
 				AssetInfo:       commonConstant.EmptyAsset,
 				AssetRoot:       commonConstant.NilHashStr,
-				LiquidityInfo:   commonConstant.EmptyLiquidity,
-				LiquidityRoot:   commonConstant.NilHashStr,
 				Status:          account.AccountStatusPending,
 			}
 			accountHistory := &account.AccountHistory{
@@ -119,8 +117,6 @@ func MonitorMempool(
 				Nonce:         commonConstant.NilNonce,
 				AssetInfo:     commonConstant.EmptyAsset,
 				AssetRoot:     commonConstant.NilHashStr,
-				LiquidityInfo: commonConstant.EmptyLiquidity,
-				LiquidityRoot: commonConstant.NilHashStr,
 				Status:        account.AccountHistoryStatusPending,
 				L2BlockHeight: commonConstant.NilBlockHeight,
 			}
