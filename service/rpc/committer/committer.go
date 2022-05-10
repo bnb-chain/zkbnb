@@ -35,6 +35,7 @@ func main() {
 	var (
 		accountTree       *tree.Tree
 		accountStateTrees []*tree.AccountStateTree
+		liquidityTree     *tree.Tree
 		nftTree           *tree.Tree
 	)
 	// get latest account
@@ -62,6 +63,16 @@ func main() {
 		return
 	}
 
+	// init liquidity tree
+	liquidityTree, err = tree.InitLiquidityTree(
+		ctx.LiquidityHistoryModel,
+		h,
+	)
+	if err != nil {
+		logx.Error("[committer] => InitMerkleTree error:", err)
+		return
+	}
+
 	/*
 		First read the account generalAsset liquidityAsset lockAsset information from the database,
 		and then read from the verifier table which layer2 height the information in the database belongs to
@@ -77,6 +88,7 @@ func main() {
 			ctx,
 			lastCommitTimeStamp,
 			accountTree,
+			liquidityTree,
 			nftTree,
 			accountStateTrees,
 		)
