@@ -20,25 +20,11 @@ package account
 import (
 	"fmt"
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/builder"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
-	"github.com/zeromicro/go-zero/core/stringx"
 	"gorm.io/gorm"
 	"strings"
-)
-
-var (
-	accountFieldNames          = builder.RawFieldNames(&Account{})
-	accountRows                = strings.Join(accountFieldNames, ",")
-	accountRowsExpectAutoSet   = strings.Join(stringx.Remove(accountFieldNames, "`id`", "`create_time`", "`update_time`"), ",")
-	accountRowsWithPlaceHolder = strings.Join(stringx.Remove(accountFieldNames, "`id`", "`create_time`", "`update_time`"), "=?,") + "=?"
-
-	cacheAccountIdPrefix           = "cache::account:id:"
-	cacheAccountAccountIndexPrefix = "cache::account:accountIndex:"
-	cacheAccountAccountNamePrefix  = "cache::account:accountName:"
-	cacheAccountPublicKeyPrefix    = "cache::account:publicKey:"
 )
 
 type (
@@ -75,10 +61,7 @@ type (
 		// map[int64]string
 		AssetInfo string
 		AssetRoot string
-		// map[int64]*Liquidity
-		LiquidityInfo string
-		LiquidityRoot string
-		Status        int
+		Status    int
 	}
 )
 

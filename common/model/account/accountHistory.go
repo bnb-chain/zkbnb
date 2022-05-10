@@ -58,8 +58,6 @@ type (
 		Nonce         int64
 		AssetInfo     string
 		AssetRoot     string
-		LiquidityInfo string
-		LiquidityRoot string
 		Status        int
 		L2BlockHeight int64
 	}
