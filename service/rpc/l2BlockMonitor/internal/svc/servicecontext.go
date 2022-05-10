@@ -3,8 +3,6 @@ package svc
 import (
 	"github.com/zecrey-labs/zecrey-core/common/general/model/nft"
 	"github.com/zecrey-labs/zecrey-core/common/general/model/sysconfig"
-	"github.com/zecrey-labs/zecrey-legend/common/model/asset"
-	"github.com/zecrey-labs/zecrey-legend/common/model/assetHistory"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l1TxSender"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2BlockEventMonitor"
@@ -18,18 +16,14 @@ import (
 )
 
 type ServiceContext struct {
-	Config                       config.Config
-	Mempool                      mempool.MempoolModel
-	Block                        block.BlockModel
-	L2BlockEventMonitor          l2BlockEventMonitor.L2BlockEventMonitorModel
-	L1TxSender                   l1TxSender.L1TxSenderModel
-	SysConfig                    sysconfig.SysconfigModel
-	AccountAssetModel            asset.AccountAssetModel
-	AccountLiquidityModel        asset.AccountLiquidityModel
-	NftModel                     nft.L2NftModel
-	AccountAssetHistoryModel     assetHistory.AccountAssetHistoryModel
-	AccountLiquidityHistoryModel assetHistory.AccountLiquidityHistoryModel
-	NftHistoryModel              nft.L2NftHistoryModel
+	Config              config.Config
+	Mempool             mempool.MempoolModel
+	Block               block.BlockModel
+	L2BlockEventMonitor l2BlockEventMonitor.L2BlockEventMonitorModel
+	L1TxSender          l1TxSender.L1TxSenderModel
+	SysConfig           sysconfig.SysconfigModel
+	NftModel            nft.L2NftModel
+	NftHistoryModel     nft.L2NftHistoryModel
 }
 
 func WithRedis(redisType string, redisPass string) redis.Option {
@@ -47,15 +41,11 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	conn := sqlx.NewSqlConn("postgres", c.Postgres.DataSource)
 	redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
 	return &ServiceContext{
-		Config:                       c,
-		Mempool:                      mempool.NewMempoolModel(conn, c.CacheRedis, gormPointer),
-		Block:                        block.NewBlockModel(conn, c.CacheRedis, gormPointer, redisConn),
-		L2BlockEventMonitor:          l2BlockEventMonitor.NewL2BlockEventMonitorModel(conn, c.CacheRedis, gormPointer),
-		L1TxSender:                   l1TxSender.NewL1TxSenderModel(conn, c.CacheRedis, gormPointer),
-		SysConfig:                    sysconfig.NewSysconfigModel(conn, c.CacheRedis, gormPointer),
-		AccountAssetModel:            asset.NewAccountAssetModel(conn, c.CacheRedis, gormPointer),
-		AccountLiquidityModel:        asset.NewAccountLiquidityModel(conn, c.CacheRedis, gormPointer),
-		AccountAssetHistoryModel:     assetHistory.NewAccountAssetHistoryModel(conn, c.CacheRedis, gormPointer),
-		AccountLiquidityHistoryModel: assetHistory.NewAccountLiquidityHistoryModel(conn, c.CacheRedis, gormPointer),
+		Config:              c,
+		Mempool:             mempool.NewMempoolModel(conn, c.CacheRedis, gormPointer),
+		Block:               block.NewBlockModel(conn, c.CacheRedis, gormPointer, redisConn),
+		L2BlockEventMonitor: l2BlockEventMonitor.NewL2BlockEventMonitorModel(conn, c.CacheRedis, gormPointer),
+		L1TxSender:          l1TxSender.NewL1TxSenderModel(conn, c.CacheRedis, gormPointer),
+		SysConfig:           sysconfig.NewSysconfigModel(conn, c.CacheRedis, gormPointer),
 	}
 }
