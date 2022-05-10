@@ -104,21 +104,33 @@ func GetLatestAccountInfo(
 			logx.Errorf("[GetLatestAccountInfo] unable to get account mempool details: %s", err.Error())
 			return nil, err
 		}
+		var (
+			isHandledAsset = make(map[int64]map[int64]map[int64]bool)
+		)
 		for _, mempoolTxDetail := range mempoolTxDetails {
+			if isHandledAsset[mempoolTxDetail.TxId] == nil {
+				isHandledAsset[mempoolTxDetail.TxId] = make(map[int64]map[int64]bool)
+			}
+			if isHandledAsset[mempoolTxDetail.TxId][mempoolTxDetail.AccountIndex] == nil {
+				isHandledAsset[mempoolTxDetail.TxId][mempoolTxDetail.AccountIndex] = make(map[int64]bool)
+			}
 			switch mempoolTxDetail.AssetType {
 			case commonAsset.GeneralAssetType:
 				// TODO maybe less than 0
 				if accountInfo.AssetInfo[mempoolTxDetail.AssetId] == "" {
 					accountInfo.AssetInfo[mempoolTxDetail.AssetId] = util.ZeroBigInt.String()
 				}
-				accountInfo.AssetInfo[mempoolTxDetail.AssetId], err = util.ComputeNewBalance(
-					commonAsset.GeneralAssetType,
-					accountInfo.AssetInfo[mempoolTxDetail.AssetId],
-					mempoolTxDetail.BalanceDelta,
-				)
-				if err != nil {
-					logx.Errorf("[GetLatestAccountInfo] unable to compute new balance: %s", err.Error())
-					return nil, err
+				if !isHandledAsset[mempoolTxDetail.TxId][mempoolTxDetail.AccountIndex][mempoolTxDetail.AssetId] {
+					accountInfo.AssetInfo[mempoolTxDetail.AssetId], err = util.ComputeNewBalance(
+						commonAsset.GeneralAssetType,
+						accountInfo.AssetInfo[mempoolTxDetail.AssetId],
+						mempoolTxDetail.BalanceDelta,
+					)
+					if err != nil {
+						logx.Errorf("[GetLatestAccountInfo] unable to compute new balance: %s", err.Error())
+						return nil, err
+					}
+					isHandledAsset[mempoolTxDetail.TxId][mempoolTxDetail.AccountIndex][mempoolTxDetail.AssetId] = true
 				}
 				break
 			case commonAsset.LiquidityAssetType:
