@@ -1,0 +1,146 @@
+/*
+ * Copyright © 2021 Zecrey Protocol
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+package liquidity
+
+import (
+	"fmt"
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/cache"
+	"github.com/zeromicro/go-zero/core/stores/sqlc"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
+	"gorm.io/gorm"
+)
+
+type (
+	AccountLiquidityModel interface {
+		CreateLiquidityTable() error
+		DropLiquidityTable() error
+		CreateLiquidity(liquidity *Liquidity) error
+		CreateLiquidityInBatches(entities []*Liquidity) error
+		GetAccountLiquidityByPairIndex(pairIndex int64) (entities []*Liquidity, err error)
+	}
+
+	defaultAccountLiquidityModel struct {
+		sqlc.CachedConn
+		table string
+		DB    *gorm.DB
+	}
+
+	Liquidity struct {
+		gorm.Model
+		PairIndex int64
+		AssetAId  int64
+		AssetA    int64
+		AssetBId  int64
+		AssetB    int64
+	}
+)
+
+func NewAccountLiquidityModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) AccountLiquidityModel {
+	return &defaultAccountLiquidityModel{
+		CachedConn: sqlc.NewConn(conn, c),
+		table:      LiquidityTable,
+		DB:         db,
+	}
+}
+
+func (*Liquidity) TableName() string {
+	return LiquidityTable
+}
+
+/*
+	Func: CreateAccountLiquidityTable
+	Params:
+	Return: err error
+	Description: create account liquidity table
+*/
+func (m *defaultAccountLiquidityModel) CreateLiquidityTable() error {
+	return m.DB.AutoMigrate(Liquidity{})
+}
+
+/*
+	Func: DropAccountLiquidityTable
+	Params:
+	Return: err error
+	Description: drop account liquidity table
+*/
+func (m *defaultAccountLiquidityModel) DropLiquidityTable() error {
+	return m.DB.Migrator().DropTable(m.table)
+}
+
+/*
+	Func: CreateAccountLiquidity
+	Params: liquidity *Liquidity
+	Return: err error
+	Description: create account liquidity entity
+*/
+func (m *defaultAccountLiquidityModel) CreateLiquidity(liquidity *Liquidity) error {
+	dbTx := m.DB.Table(m.table).Create(liquidity)
+	if dbTx.Error != nil {
+		err := fmt.Sprintf("[liquidity.CreateLiquidity] %s", dbTx.Error)
+		logx.Error(err)
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		err := fmt.Sprintf("[liquidity.CreateLiquidity] %s", ErrInvalidAccountLiquidityInput)
+		logx.Error(err)
+		return ErrInvalidAccountLiquidityInput
+	}
+	return nil
+}
+
+/*
+	Func: CreateAccountLiquidityInBatches
+	Params: entities []*Liquidity
+	Return: err error
+	Description: create account liquidity entities
+*/
+func (m *defaultAccountLiquidityModel) CreateLiquidityInBatches(entities []*Liquidity) error {
+	dbTx := m.DB.Table(m.table).CreateInBatches(entities, len(entities))
+	if dbTx.Error != nil {
+		err := fmt.Sprintf("[liquidity.CreateLiquidityInBatches] %s", dbTx.Error)
+		logx.Error(err)
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		err := fmt.Sprintf("[liquidity.CreateLiquidityInBatches] %s", ErrInvalidAccountLiquidityInput)
+		logx.Error(err)
+		return ErrInvalidAccountLiquidityInput
+	}
+	return nil
+}
+
+/*
+	Func: GetAccountLiquidityByPairIndex
+	Params: pairIndex int64
+	Return: entities []*Liquidity, err error
+	Description: get account liquidity entities by account index
+*/
+func (m *defaultAccountLiquidityModel) GetAccountLiquidityByPairIndex(pairIndex int64) (entities []*Liquidity, err error) {
+	dbTx := m.DB.Table(m.table).Where("pair_index = ?", pairIndex).Find(&entities)
+	if dbTx.Error != nil {
+		err := fmt.Sprintf("[liquidity.GetAccountLiquidityByPairIndex] %s", dbTx.Error)
+		logx.Error(err)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		err := fmt.Sprintf("[liquidity.GetAccountLiquidityByPairIndex] %s", ErrNotFound)
+		logx.Error(err)
+		return nil, ErrNotFound
+	}
+	return entities, nil
+}
