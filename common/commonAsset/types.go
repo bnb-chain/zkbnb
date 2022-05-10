@@ -23,13 +23,9 @@ import (
 	"gorm.io/gorm"
 )
 
-type Liquidity struct {
-	PairIndex int64
-	AssetAId  int64
-	AssetA    string
-	AssetBId  int64
-	AssetB    string
-	LpAmount  string
+type FormatAsset struct {
+	Balance  string
+	LpAmount string
 }
 
 type FormatAccountInfo struct {
@@ -40,20 +36,13 @@ type FormatAccountInfo struct {
 	AccountNameHash string
 	L1Address       string
 	Nonce           int64
-	// map[int64]string
-	AssetInfo map[int64]string
+	// map[int64]*FormatAsset
+	AssetInfo map[int64]*FormatAsset
 	AssetRoot string
-	// map[int64]*Liquidity
-	LiquidityInfo map[int64]*Liquidity
-	LiquidityRoot string
 }
 
 func FromFormatAccountInfo(formatAccountInfo *FormatAccountInfo) (accountInfo *account.Account, err error) {
 	assetInfoBytes, err := json.Marshal(formatAccountInfo.AssetInfo)
-	if err != nil {
-		return nil, err
-	}
-	liquidityInfoBytes, err := json.Marshal(formatAccountInfo.LiquidityInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -69,22 +58,15 @@ func FromFormatAccountInfo(formatAccountInfo *FormatAccountInfo) (accountInfo *a
 		Nonce:           formatAccountInfo.Nonce,
 		AssetInfo:       string(assetInfoBytes),
 		AssetRoot:       formatAccountInfo.AssetRoot,
-		LiquidityInfo:   string(liquidityInfoBytes),
-		LiquidityRoot:   formatAccountInfo.LiquidityRoot,
 	}
 	return accountInfo, nil
 }
 
 func ToFormatAccountInfo(accountInfo *account.Account) (formatAccountInfo *FormatAccountInfo, err error) {
 	var (
-		assetInfo     map[int64]string
-		liquidityInfo map[int64]*Liquidity
+		assetInfo map[int64]*FormatAsset
 	)
 	err = json.Unmarshal([]byte(accountInfo.AssetInfo), &assetInfo)
-	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal([]byte(accountInfo.LiquidityInfo), &liquidityInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -98,8 +80,6 @@ func ToFormatAccountInfo(accountInfo *account.Account) (formatAccountInfo *Forma
 		Nonce:           accountInfo.Nonce,
 		AssetInfo:       assetInfo,
 		AssetRoot:       accountInfo.AssetRoot,
-		LiquidityInfo:   liquidityInfo,
-		LiquidityRoot:   accountInfo.LiquidityRoot,
 	}
 	return formatAccountInfo, nil
 }
@@ -108,22 +88,16 @@ type FormatAccountHistoryInfo struct {
 	AccountId    uint
 	AccountIndex int64
 	Nonce        int64
-	// map[int64]string
-	AssetInfo map[int64]string
+	// map[int64]*FormatAsset
+	AssetInfo map[int64]*FormatAsset
 	AssetRoot string
 	// map[int64]*Liquidity
-	LiquidityInfo map[int64]*Liquidity
-	LiquidityRoot string
 	L2BlockHeight int64
 	Status        int
 }
 
 func FromFormatAccountHistoryInfo(formatAccountInfo *FormatAccountHistoryInfo) (accountInfo *account.AccountHistory, err error) {
 	assetInfoBytes, err := json.Marshal(formatAccountInfo.AssetInfo)
-	if err != nil {
-		return nil, err
-	}
-	liquidityInfoBytes, err := json.Marshal(formatAccountInfo.LiquidityInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -135,8 +109,6 @@ func FromFormatAccountHistoryInfo(formatAccountInfo *FormatAccountHistoryInfo) (
 		Nonce:         formatAccountInfo.Nonce,
 		AssetInfo:     string(assetInfoBytes),
 		AssetRoot:     formatAccountInfo.AssetRoot,
-		LiquidityInfo: string(liquidityInfoBytes),
-		LiquidityRoot: formatAccountInfo.LiquidityRoot,
 		Status:        formatAccountInfo.Status,
 		L2BlockHeight: formatAccountInfo.L2BlockHeight,
 	}
@@ -145,14 +117,9 @@ func FromFormatAccountHistoryInfo(formatAccountInfo *FormatAccountHistoryInfo) (
 
 func ToFormatAccountHistoryInfo(accountInfo *account.AccountHistory) (formatAccountInfo *FormatAccountHistoryInfo, err error) {
 	var (
-		assetInfo     map[int64]string
-		liquidityInfo map[int64]*Liquidity
+		assetInfo map[int64]*FormatAsset
 	)
 	err = json.Unmarshal([]byte(accountInfo.AssetInfo), &assetInfo)
-	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal([]byte(accountInfo.LiquidityInfo), &liquidityInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -162,8 +129,6 @@ func ToFormatAccountHistoryInfo(accountInfo *account.AccountHistory) (formatAcco
 		Nonce:         accountInfo.Nonce,
 		AssetInfo:     assetInfo,
 		AssetRoot:     accountInfo.AssetRoot,
-		LiquidityInfo: liquidityInfo,
-		LiquidityRoot: accountInfo.LiquidityRoot,
 		L2BlockHeight: accountInfo.L2BlockHeight,
 		Status:        accountInfo.Status,
 	}

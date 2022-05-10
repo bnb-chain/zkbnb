@@ -58,7 +58,7 @@ type (
 		AccountNameHash string `gorm:"uniqueIndex"`
 		L1Address       string
 		Nonce           int64
-		// map[int64]string
+		// map[int64]Asset
 		AssetInfo string
 		AssetRoot string
 		Status    int
