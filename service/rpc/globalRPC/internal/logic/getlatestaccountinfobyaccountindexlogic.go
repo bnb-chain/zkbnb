@@ -3,6 +3,7 @@ package logic
 import (
 	"context"
 	"fmt"
+	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
@@ -58,7 +59,7 @@ func (l *GetLatestAccountInfoByAccountIndexLogic) GetLatestAccountInfoByAccountI
 		l.svcCtx.AccountModel,
 		l.svcCtx.AccountHistoryModel,
 		l.svcCtx.MempoolModel,
-		l.svcCtx.LiquidityPairModel,
+		l.svcCtx.MempoolDetailModel,
 		l.svcCtx.RedisConnection,
 		int64(in.AccountIndex))
 	if err != nil {
@@ -82,13 +83,16 @@ func (l *GetLatestAccountInfoByAccountIndexLogic) GetLatestAccountInfoByAccountI
 	}
 
 	for _, v := range l2AssetsList {
-		if accountInfo.AssetInfo[v.AssetId] == "" {
-			accountInfo.AssetInfo[v.AssetId] = util.ZeroBigInt.String()
+		if accountInfo.AssetInfo[v.AssetId] == nil {
+			accountInfo.AssetInfo[v.AssetId] = &commonAsset.FormatAsset{
+				Balance:  util.ZeroBigInt.String(),
+				LpAmount: util.ZeroBigInt.String(),
+			}
 		}
 		respResult.AssetResultAssets = append(respResult.AssetResultAssets,
 			&globalRPCProto.AssetResult{
 				AssetId: uint32(v.AssetId),
-				Balance: accountInfo.AssetInfo[v.AssetId],
+				Balance: accountInfo.AssetInfo[v.AssetId].Balance,
 			})
 	}
 

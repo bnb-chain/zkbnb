@@ -85,7 +85,7 @@ func (l *SendTxLogic) sendTransferTx(rawTxInfo string) (txId string, err error) 
 		l.svcCtx.AccountModel,
 		l.svcCtx.AccountHistoryModel,
 		l.svcCtx.MempoolModel,
-		l.svcCtx.LiquidityPairModel,
+		l.svcCtx.MempoolDetailModel,
 		l.svcCtx.RedisConnection,
 		txInfo.FromAccountIndex,
 	)

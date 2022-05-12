@@ -20,10 +20,20 @@ package util
 import "strconv"
 
 const (
-	AccountPrefix      = "AccountIndex::"
-	BasicAccountPrefix = "BasicAccount::"
-	LockKeySuffix      = "ByLock"
+	AccountPrefix        = "AccountIndex::"
+	LiquidityReadPrefix  = "LiquidityRead::"
+	LiquidityWritePrefix = "LiquidityWrite::"
+	BasicAccountPrefix   = "BasicAccount::"
+	LockKeySuffix        = "ByLock"
 )
+
+func GetLiquidityKeyForRead(pairIndex int64) string {
+	return LiquidityReadPrefix + strconv.FormatInt(pairIndex, 10)
+}
+
+func GetLiquidityKeyForWrite(pairIndex int64) string {
+	return LiquidityWritePrefix + strconv.FormatInt(pairIndex, 10)
+}
 
 func GetAccountKey(accountIndex int64) string {
 	return AccountPrefix + strconv.FormatInt(accountIndex, 10)

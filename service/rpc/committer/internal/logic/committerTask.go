@@ -344,7 +344,7 @@ func CommitterTask(
 								logx.Errorf("[liquidityHistoryMap] unable to get latest liquidity by pair index: %s", err.Error())
 								return err
 							} else {
-								liquidityInfo, err := ctx.LiquidityModel.GetAccountLiquidityByPairIndex(mempoolTxDetail.AssetId)
+								liquidityInfo, err := ctx.LiquidityModel.GetLiquidityByPairIndex(mempoolTxDetail.AssetId)
 								if err != nil {
 									if err != ErrNotFound {
 										logx.Errorf("[liquidityHistoryMap] unable to get liquidity info: %s", err.Error())

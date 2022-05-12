@@ -20,18 +20,21 @@ import (
 	"github.com/zecrey-labs/zecrey-core/common/general/model/liquidityPair"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
+	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 )
 
 type (
-	AccountModel         = account.AccountModel
-	AccountHistoryModel  = account.AccountHistoryModel
-	MempoolModel         = mempool.MempoolModel
-	MempoolTxDetailModel = mempool.MempoolTxDetailModel
-	LiquidityPairModel   = liquidityPair.LiquidityPairModel
-	Redis                = redis.Redis
-	RedisLock            = redis.RedisLock
+	AccountModel          = account.AccountModel
+	AccountHistoryModel   = account.AccountHistoryModel
+	MempoolModel          = mempool.MempoolModel
+	MempoolTxDetailModel  = mempool.MempoolTxDetailModel
+	LiquidityPairModel    = liquidityPair.LiquidityPairModel
+	LiquidityModel        = liquidity.LiquidityModel
+	LiquidityHistoryModel = liquidity.LiquidityHistoryModel
+	Redis                 = redis.Redis
+	RedisLock             = redis.RedisLock
 
 	FormatAccountInfo = commonAsset.FormatAccountInfo
 )
@@ -51,5 +54,6 @@ const (
 	MaxRetryTimes  = 3
 
 	AccountExpiryTime      = 30 // seconds
+	LiquidityExpiryTime      = 30 // seconds
 	BasicAccountExpiryTime = 30 // seconds
 )

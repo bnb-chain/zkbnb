@@ -164,7 +164,6 @@ func ConvertTxToSwapPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) 
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(oTx.TxType))
 	buf.Write(Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
-	buf.Write(Uint32ToBytes(uint32(txInfo.ToAccountIndex)))
 	buf.Write(Uint16ToBytes(uint16(txInfo.PairIndex)))
 	buf.Write(Uint16ToBytes(uint16(txInfo.AssetAId)))
 	buf.Write(Uint16ToBytes(uint16(txInfo.AssetBId)))
@@ -226,7 +225,6 @@ func ConvertTxToAddLiquidityPubData(oTx *mempool.MempoolTx) (pubData []byte, err
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(oTx.TxType))
 	buf.Write(Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
-	buf.Write(Uint32ToBytes(uint32(txInfo.ToAccountIndex)))
 	buf.Write(Uint16ToBytes(uint16(txInfo.PairIndex)))
 	buf.Write(Uint16ToBytes(uint16(txInfo.AssetAId)))
 	buf.Write(Uint16ToBytes(uint16(txInfo.AssetBId)))
@@ -282,7 +280,6 @@ func ConvertTxToRemoveLiquidityPubData(oTx *mempool.MempoolTx) (pubData []byte, 
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(oTx.TxType))
 	buf.Write(Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
-	buf.Write(Uint32ToBytes(uint32(txInfo.ToAccountIndex)))
 	buf.Write(Uint16ToBytes(uint16(txInfo.PairIndex)))
 	buf.Write(Uint16ToBytes(uint16(txInfo.AssetAId)))
 	buf.Write(Uint16ToBytes(uint16(txInfo.AssetBId)))

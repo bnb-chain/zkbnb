@@ -32,7 +32,7 @@ type (
 		DropLiquidityTable() error
 		CreateLiquidity(liquidity *Liquidity) error
 		CreateLiquidityInBatches(entities []*Liquidity) error
-		GetAccountLiquidityByPairIndex(pairIndex int64) (entity *Liquidity, err error)
+		GetLiquidityByPairIndex(pairIndex int64) (entity *Liquidity, err error)
 	}
 
 	defaultLiquidityModel struct {
@@ -131,14 +131,14 @@ func (m *defaultLiquidityModel) CreateLiquidityInBatches(entities []*Liquidity) 
 	Return: entities []*Liquidity, err error
 	Description: get account liquidity entities by account index
 */
-func (m *defaultLiquidityModel) GetAccountLiquidityByPairIndex(pairIndex int64) (entity *Liquidity, err error) {
+func (m *defaultLiquidityModel) GetLiquidityByPairIndex(pairIndex int64) (entity *Liquidity, err error) {
 	dbTx := m.DB.Table(m.table).Where("pair_index = ?", pairIndex).Find(&entity)
 	if dbTx.Error != nil {
-		err := fmt.Sprintf("[liquidity.GetAccountLiquidityByPairIndex] %s", dbTx.Error)
+		err := fmt.Sprintf("[liquidity.GetLiquidityByPairIndex] %s", dbTx.Error)
 		logx.Error(err)
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[liquidity.GetAccountLiquidityByPairIndex] %s", ErrNotFound)
+		err := fmt.Sprintf("[liquidity.GetLiquidityByPairIndex] %s", ErrNotFound)
 		logx.Error(err)
 		return nil, ErrNotFound
 	}

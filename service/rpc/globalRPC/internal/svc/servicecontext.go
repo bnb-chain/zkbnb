@@ -6,6 +6,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/config"
@@ -17,16 +18,18 @@ import (
 )
 
 type ServiceContext struct {
-	Config              config.Config
-	MempoolModel        mempool.MempoolModel
-	MempoolDetailModel  mempool.MempoolTxDetailModel
-	AccountModel        account.AccountModel
-	AccountHistoryModel account.AccountHistoryModel
-	TxModel             tx.TxModel
-	TxDetailModel       tx.TxDetailModel
-	FailTxModel         tx.FailTxModel
-	LiquidityPairModel  liquidityPair.LiquidityPairModel
-	BlockModel          block.BlockModel
+	Config                config.Config
+	MempoolModel          mempool.MempoolModel
+	MempoolDetailModel    mempool.MempoolTxDetailModel
+	AccountModel          account.AccountModel
+	AccountHistoryModel   account.AccountHistoryModel
+	TxModel               tx.TxModel
+	TxDetailModel         tx.TxDetailModel
+	FailTxModel           tx.FailTxModel
+	LiquidityPairModel    liquidityPair.LiquidityPairModel
+	LiquidityModel        liquidity.LiquidityModel
+	LiquidityHistoryModel liquidity.LiquidityHistoryModel
+	BlockModel            block.BlockModel
 
 	L2AssetModel l2asset.L2AssetInfoModel
 
@@ -52,18 +55,20 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	conn := sqlx.NewSqlConn("postgres", c.Postgres.DataSource)
 	redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
 	return &ServiceContext{
-		Config:              c,
-		MempoolModel:        mempool.NewMempoolModel(conn, c.CacheRedis, gormPointer),
-		MempoolDetailModel:  mempool.NewMempoolDetailModel(conn, c.CacheRedis, gormPointer),
-		AccountModel:        account.NewAccountModel(conn, c.CacheRedis, gormPointer),
-		AccountHistoryModel: account.NewAccountHistoryModel(conn, c.CacheRedis, gormPointer),
-		TxModel:             tx.NewTxModel(conn, c.CacheRedis, gormPointer, redisConn),
-		TxDetailModel:       tx.NewTxDetailModel(conn, c.CacheRedis, gormPointer),
-		FailTxModel:         tx.NewFailTxModel(conn, c.CacheRedis, gormPointer),
-		LiquidityPairModel:  liquidityPair.NewLiquidityPairModel(conn, c.CacheRedis, gormPointer),
-		BlockModel:          block.NewBlockModel(conn, c.CacheRedis, gormPointer, redisConn),
-		L2AssetModel:        l2asset.NewL2AssetInfoModel(conn, c.CacheRedis, gormPointer),
-		SysConfigModel:      sysconfig.NewSysconfigModel(conn, c.CacheRedis, gormPointer),
-		RedisConnection:     redisConn,
+		Config:                c,
+		MempoolModel:          mempool.NewMempoolModel(conn, c.CacheRedis, gormPointer),
+		MempoolDetailModel:    mempool.NewMempoolDetailModel(conn, c.CacheRedis, gormPointer),
+		AccountModel:          account.NewAccountModel(conn, c.CacheRedis, gormPointer),
+		AccountHistoryModel:   account.NewAccountHistoryModel(conn, c.CacheRedis, gormPointer),
+		TxModel:               tx.NewTxModel(conn, c.CacheRedis, gormPointer, redisConn),
+		TxDetailModel:         tx.NewTxDetailModel(conn, c.CacheRedis, gormPointer),
+		FailTxModel:           tx.NewFailTxModel(conn, c.CacheRedis, gormPointer),
+		LiquidityPairModel:    liquidityPair.NewLiquidityPairModel(conn, c.CacheRedis, gormPointer),
+		LiquidityModel:        liquidity.NewLiquidityModel(conn, c.CacheRedis, gormPointer),
+		LiquidityHistoryModel: liquidity.NewLiquidityHistoryModel(conn, c.CacheRedis, gormPointer),
+		BlockModel:            block.NewBlockModel(conn, c.CacheRedis, gormPointer, redisConn),
+		L2AssetModel:          l2asset.NewL2AssetInfoModel(conn, c.CacheRedis, gormPointer),
+		SysConfigModel:        sysconfig.NewSysconfigModel(conn, c.CacheRedis, gormPointer),
+		RedisConnection:       redisConn,
 	}
 }
