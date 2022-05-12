@@ -49,9 +49,10 @@ func VerifyTransferTxInfo(
 	if accountInfoMap[txInfo.ToAccountIndex] == nil ||
 		accountInfoMap[txInfo.GasAccountIndex] == nil ||
 		accountInfoMap[txInfo.FromAccountIndex] == nil ||
-		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.AssetId] == "" ||
-		accountInfoMap[txInfo.ToAccountIndex].AssetInfo == nil ||
-		accountInfoMap[txInfo.GasAccountIndex].AssetInfo == nil ||
+		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.AssetId] == nil ||
+		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.AssetId].Balance == "" ||
+		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId] == nil ||
+		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance == "" ||
 		txInfo.AssetAmount.Cmp(ZeroBigInt) < 0 ||
 		txInfo.GasFeeAssetAmount.Cmp(ZeroBigInt) < 0 {
 		return nil, errors.New("[VerifyTransferTxInfo] invalid params")
@@ -65,13 +66,6 @@ func VerifyTransferTxInfo(
 	var (
 		assetDeltaMap = make(map[int64]map[int64]*big.Int)
 	)
-	assetDeltaMap[txInfo.FromAccountIndex] = make(map[int64]*big.Int)
-	if assetDeltaMap[txInfo.ToAccountIndex] == nil {
-		assetDeltaMap[txInfo.ToAccountIndex] = make(map[int64]*big.Int)
-	}
-	if assetDeltaMap[txInfo.GasAccountIndex] == nil {
-		assetDeltaMap[txInfo.GasAccountIndex] = make(map[int64]*big.Int)
-	}
 	// compute deltas
 	// from account asset A
 	assetDeltaMap[txInfo.FromAccountIndex][txInfo.AssetId] = ffmath.Neg(txInfo.AssetAmount)
@@ -95,7 +89,7 @@ func VerifyTransferTxInfo(
 	}
 	// check if from account has enough assetABalance
 	// asset A
-	assetABalance, isValid := new(big.Int).SetString(accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.AssetId], 10)
+	assetABalance, isValid := new(big.Int).SetString(accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.AssetId].Balance, 10)
 	if !isValid {
 		logx.Errorf("[VerifyTransferTxInfo] invalid assetABalance")
 		return nil, errors.New("[VerifyTransferTxInfo] invalid assetABalance")
@@ -105,7 +99,7 @@ func VerifyTransferTxInfo(
 		return nil, errors.New("[VerifyTransferTxInfo] you don't have enough assetABalance")
 	}
 	// asset Gas
-	assetGasBalance, isValid := new(big.Int).SetString(accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId], 10)
+	assetGasBalance, isValid := new(big.Int).SetString(accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance, 10)
 	if !isValid {
 		logx.Errorf("[VerifyTransferTxInfo] invalid assetGasBalance")
 		return nil, errors.New("[VerifyTransferTxInfo] invalid assetGasBalance")
@@ -142,7 +136,7 @@ func VerifyTransferTxInfo(
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
 		AccountName:  accountInfoMap[txInfo.FromAccountIndex].AccountName,
-		BalanceDelta: assetDeltaMap[txInfo.FromAccountIndex][txInfo.AssetId].String(),
+		BalanceDelta: ffmath.Neg(txInfo.AssetAmount).String(),
 	})
 	// from account asset gas
 	txDetails = append(txDetails, &MempoolTxDetail{
@@ -150,7 +144,7 @@ func VerifyTransferTxInfo(
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
 		AccountName:  accountInfoMap[txInfo.FromAccountIndex].AccountName,
-		BalanceDelta: assetDeltaMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId].String(),
+		BalanceDelta: ffmath.Neg(txInfo.GasFeeAssetAmount).String(),
 	})
 	// to account asset a
 	txDetails = append(txDetails, &MempoolTxDetail{
@@ -158,7 +152,7 @@ func VerifyTransferTxInfo(
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.ToAccountIndex,
 		AccountName:  accountInfoMap[txInfo.ToAccountIndex].AccountName,
-		BalanceDelta: assetDeltaMap[txInfo.ToAccountIndex][txInfo.AssetId].String(),
+		BalanceDelta: txInfo.AssetAmount.String(),
 	})
 	// gas account asset gas
 	txDetails = append(txDetails, &MempoolTxDetail{
@@ -166,7 +160,7 @@ func VerifyTransferTxInfo(
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.GasAccountIndex,
 		AccountName:  accountInfoMap[txInfo.GasAccountIndex].AccountName,
-		BalanceDelta: assetDeltaMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId].String(),
+		BalanceDelta: txInfo.GasFeeAssetAmount.String(),
 	})
 	return txDetails, nil
 }

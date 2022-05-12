@@ -27,15 +27,15 @@ import (
 )
 
 type (
-	AccountLiquidityModel interface {
+	LiquidityModel interface {
 		CreateLiquidityTable() error
 		DropLiquidityTable() error
 		CreateLiquidity(liquidity *Liquidity) error
 		CreateLiquidityInBatches(entities []*Liquidity) error
-		GetAccountLiquidityByPairIndex(pairIndex int64) (entities []*Liquidity, err error)
+		GetAccountLiquidityByPairIndex(pairIndex int64) (entity *Liquidity, err error)
 	}
 
-	defaultAccountLiquidityModel struct {
+	defaultLiquidityModel struct {
 		sqlc.CachedConn
 		table string
 		DB    *gorm.DB
@@ -45,14 +45,14 @@ type (
 		gorm.Model
 		PairIndex int64
 		AssetAId  int64
-		AssetA    int64
+		AssetA    string
 		AssetBId  int64
-		AssetB    int64
+		AssetB    string
 	}
 )
 
-func NewAccountLiquidityModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) AccountLiquidityModel {
-	return &defaultAccountLiquidityModel{
+func NewLiquidityModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) LiquidityModel {
+	return &defaultLiquidityModel{
 		CachedConn: sqlc.NewConn(conn, c),
 		table:      LiquidityTable,
 		DB:         db,
@@ -69,7 +69,7 @@ func (*Liquidity) TableName() string {
 	Return: err error
 	Description: create account liquidity table
 */
-func (m *defaultAccountLiquidityModel) CreateLiquidityTable() error {
+func (m *defaultLiquidityModel) CreateLiquidityTable() error {
 	return m.DB.AutoMigrate(Liquidity{})
 }
 
@@ -79,7 +79,7 @@ func (m *defaultAccountLiquidityModel) CreateLiquidityTable() error {
 	Return: err error
 	Description: drop account liquidity table
 */
-func (m *defaultAccountLiquidityModel) DropLiquidityTable() error {
+func (m *defaultLiquidityModel) DropLiquidityTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
@@ -89,7 +89,7 @@ func (m *defaultAccountLiquidityModel) DropLiquidityTable() error {
 	Return: err error
 	Description: create account liquidity entity
 */
-func (m *defaultAccountLiquidityModel) CreateLiquidity(liquidity *Liquidity) error {
+func (m *defaultLiquidityModel) CreateLiquidity(liquidity *Liquidity) error {
 	dbTx := m.DB.Table(m.table).Create(liquidity)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[liquidity.CreateLiquidity] %s", dbTx.Error)
@@ -110,7 +110,7 @@ func (m *defaultAccountLiquidityModel) CreateLiquidity(liquidity *Liquidity) err
 	Return: err error
 	Description: create account liquidity entities
 */
-func (m *defaultAccountLiquidityModel) CreateLiquidityInBatches(entities []*Liquidity) error {
+func (m *defaultLiquidityModel) CreateLiquidityInBatches(entities []*Liquidity) error {
 	dbTx := m.DB.Table(m.table).CreateInBatches(entities, len(entities))
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[liquidity.CreateLiquidityInBatches] %s", dbTx.Error)
@@ -131,8 +131,8 @@ func (m *defaultAccountLiquidityModel) CreateLiquidityInBatches(entities []*Liqu
 	Return: entities []*Liquidity, err error
 	Description: get account liquidity entities by account index
 */
-func (m *defaultAccountLiquidityModel) GetAccountLiquidityByPairIndex(pairIndex int64) (entities []*Liquidity, err error) {
-	dbTx := m.DB.Table(m.table).Where("pair_index = ?", pairIndex).Find(&entities)
+func (m *defaultLiquidityModel) GetAccountLiquidityByPairIndex(pairIndex int64) (entity *Liquidity, err error) {
+	dbTx := m.DB.Table(m.table).Where("pair_index = ?", pairIndex).Find(&entity)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[liquidity.GetAccountLiquidityByPairIndex] %s", dbTx.Error)
 		logx.Error(err)
@@ -142,5 +142,5 @@ func (m *defaultAccountLiquidityModel) GetAccountLiquidityByPairIndex(pairIndex 
 		logx.Error(err)
 		return nil, ErrNotFound
 	}
-	return entities, nil
+	return entity, nil
 }

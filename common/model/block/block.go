@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
+	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zeromicro/go-zero/core/stores/builder"
@@ -82,6 +83,7 @@ type (
 			oBlock *Block,
 			pendingMempoolTxs []*mempool.MempoolTx,
 			pendingUpdateAccounts []*account.Account,
+			pendingNewLiquidityHistory []*liquidity.LiquidityHistory,
 			pendingNewAccountHistory, pendingUpdatedAccountHistory []*account.AccountHistory) (err error)
 	}
 
@@ -749,6 +751,7 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 	oBlock *Block,
 	pendingMempoolTxs []*mempool.MempoolTx,
 	pendingUpdateAccounts []*account.Account,
+	pendingNewLiquidityHistory []*liquidity.LiquidityHistory,
 	pendingNewAccountHistory, pendingUpdatedAccountHistory []*account.AccountHistory,
 ) (err error) {
 	err = m.DB.Transaction(func(tx *gorm.DB) error { // transact
@@ -792,6 +795,17 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 			if dbTx.RowsAffected == 0 {
 				logx.Errorf("[CreateBlockForCommitter] no new account")
 				return errors.New("[CreateBlockForCommitter] no new account")
+			}
+		}
+		// create new liquidity history
+		if len(pendingNewLiquidityHistory) != 0 {
+			dbTx = tx.Table(liquidity.LiquidityHistoryTable).CreateInBatches(pendingNewLiquidityHistory, len(pendingNewLiquidityHistory))
+			if dbTx.Error != nil {
+				return dbTx.Error
+			}
+			if dbTx.RowsAffected != int64(len(pendingNewLiquidityHistory)) {
+				logx.Errorf("[CreateBlockForCommitter] unable to create new liquidity history")
+				return errors.New("[CreateBlockForCommitter] unable to create new liquidity history")
 			}
 		}
 		// create new account history

@@ -33,7 +33,7 @@ func InitAccountTree(
 	accountHistoryModel AccountHistoryModel,
 	blockHeight int64,
 ) (
-	accountTree *Tree, accountStateTrees []*AccountStateTree, err error,
+	accountTree *Tree, accountAssetTrees []*Tree, err error,
 ) {
 	// get all confirmed accounts
 	accounts, err := accountModel.GetConfirmedAccounts()
@@ -66,14 +66,11 @@ func InitAccountTree(
 		accountInfoMap[accountHistory.AccountIndex].Nonce = accountHistory.Nonce
 		accountInfoMap[accountHistory.AccountIndex].AssetInfo = accountHistory.AssetInfo
 		accountInfoMap[accountHistory.AccountIndex].AssetRoot = accountHistory.AssetRoot
-		accountInfoMap[accountHistory.AccountIndex].LiquidityInfo = accountHistory.LiquidityInfo
-		accountInfoMap[accountHistory.AccountIndex].LiquidityRoot = accountHistory.LiquidityRoot
 	}
 	// get related account info
 	var (
-		assetsMap          = make([]map[int64]*Node, len(accounts))
-		liquidityAssetsMap = make([]map[int64]*Node, len(accounts))
-		accountsNodes      = make([]*Node, len(accounts))
+		assetsMap     = make([]map[int64]*Node, len(accounts))
+		accountsNodes = make([]*Node, len(accounts))
 	)
 	for accountIndex := int64(0); accountIndex < int64(len(accounts)); accountIndex++ {
 		if accountInfoMap[accountIndex] == nil {
@@ -88,72 +85,39 @@ func InitAccountTree(
 		}
 		assetsMap[accountIndex] = make(map[int64]*Node)
 		// create account assets node
-		for assetId, balance := range accountInfo.AssetInfo {
+		for assetId, assetInfo := range accountInfo.AssetInfo {
 			assetsMap[accountIndex][assetId], err = AssetToNode(
-				assetId,
-				balance,
+				assetInfo.Balance,
+				assetInfo.LpAmount,
 			)
 			if err != nil {
 				logx.Errorf("[InitAccountTree] unable to convert asset to node: %s", err.Error())
 				return nil, nil, err
 			}
 		}
-		// create account liquidity assets node
-		liquidityAssetsMap[accountIndex] = make(map[int64]*Node)
-		for pairIndex, liquidity := range accountInfo.LiquidityInfo {
-			liquidityAssetsMap[accountIndex][pairIndex], err = LiquidityAssetToNode(
-				pairIndex,
-				liquidity.AssetAId,
-				liquidity.AssetA,
-				liquidity.AssetBId,
-				liquidity.AssetB,
-				liquidity.LpAmount,
-			)
-			if err != nil {
-				logx.Errorf("[InitAccountTree] unable to convert liquidity asset to node: %s", err.Error())
-				return nil, nil, err
-			}
-		}
 	}
 	// init account state trees
-	accountStateTrees = make([]*AccountStateTree, len(accounts))
+	accountAssetTrees = make([]*Tree, len(accounts))
 	for index := int64(0); index < int64(len(accounts)); index++ {
-		accountStateTrees[index] = new(AccountStateTree)
 		// create account assets tree
 		if assetsMap[index] == nil {
-			accountStateTrees[index].AssetTree, err = merkleTree.NewEmptyTree(AssetTreeHeight, NilHash, zmimc.Hmimc)
+			accountAssetTrees[index], err = merkleTree.NewEmptyTree(AssetTreeHeight, NilHash, zmimc.Hmimc)
 			if err != nil {
 				logx.Errorf("[InitAccountTree] unable to create new tree by assets: %s", err.Error())
 				return nil, nil, err
 			}
 		} else {
-			accountStateTrees[index].AssetTree, err = merkleTree.NewTreeByMap(assetsMap[index], AssetTreeHeight, NilHash, zmimc.Hmimc)
-			if err != nil {
-				logx.Errorf("[InitAccountTree] unable to create new tree by assets: %s", err.Error())
-				return nil, nil, err
-			}
-		}
-		// create account liquidity assets tree
-		if liquidityAssetsMap[index] == nil {
-			accountStateTrees[index].LiquidityTree, err = merkleTree.NewEmptyTree(LiquidityTreeHeight, NilHash, zmimc.Hmimc)
-			if err != nil {
-				logx.Errorf("[InitAccountTree] unable to create new tree by assets: %s", err.Error())
-				return nil, nil, err
-			}
-		} else {
-			accountStateTrees[index].LiquidityTree, err = merkleTree.NewTreeByMap(liquidityAssetsMap[index], LiquidityTreeHeight, NilHash, zmimc.Hmimc)
+			accountAssetTrees[index], err = merkleTree.NewTreeByMap(assetsMap[index], AssetTreeHeight, NilHash, zmimc.Hmimc)
 			if err != nil {
 				logx.Errorf("[InitAccountTree] unable to create new tree by assets: %s", err.Error())
 				return nil, nil, err
 			}
 		}
 		accountsNodes[index], err = AccountToNode(
-			accountInfoMap[index].AccountIndex,
 			accountInfoMap[index].AccountNameHash,
 			accountInfoMap[index].PublicKey,
 			accountInfoMap[index].Nonce,
-			accountStateTrees[index].AssetTree.RootNode.Value,
-			accountStateTrees[index].LiquidityTree.RootNode.Value,
+			accountAssetTrees[index].RootNode.Value,
 		)
 		if err != nil {
 			logx.Errorf("[InitAccountTree] unable to convert account to node: %s", err.Error())
@@ -165,5 +129,5 @@ func InitAccountTree(
 		logx.Errorf("[InitAccountTree] unable to create new account tree: %s", err.Error())
 		return nil, nil, err
 	}
-	return accountTree, accountStateTrees, nil
+	return accountTree, accountAssetTrees, nil
 }

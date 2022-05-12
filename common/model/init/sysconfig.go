@@ -10,10 +10,10 @@ const (
 	BSC_Test_Network_RPC   = "https://data-seed-prebsc-1-s1.binance.org:8545/"
 	Local_Test_Network_RPC = "http://127.0.0.1:8545/"
 
-	ZecreyLegendContractAddr    = "0xD27624F18D423b990A7859A3d72916A3DD783EEE"
-	GovernanceContractAddr      = "0xc72610F6c9296377AFbb4A58D51b0B079775a9C3"
-	AssetGovernanceContractAddr = "0x24EF26Fb0c08c1c4f30ec736E14F9d53204f4de3"
-	VerifierContractAddr        = "0xc26F98e338c8dE447fF6aC519C70560a4057B5CC"
+	ZecreyLegendContractAddr    = "0x700A9288d64e9994eF29CA09BE857A6d831850B4"
+	GovernanceContractAddr      = "0x21c8ec99655bCaF34E09c1EdC25E0b12838A0620"
+	AssetGovernanceContractAddr = "0x963753634DEa4fBC85DB8Ea0dA08eF3ae2b30dcF"
+	VerifierContractAddr        = "0x37dC1a2aA1C21668b10d2447C62c7A0A24d18C69"
 )
 
 func initSysConfig() []*sysconfig.Sysconfig {
@@ -31,20 +31,14 @@ func initSysConfig() []*sysconfig.Sysconfig {
 			Comment:   "max number of asset id",
 		},
 		{
-			Name:      sysconfigName.PoolAccountIndex,
-			Value:     "0",
-			ValueType: "int",
-			Comment:   "pool index",
-		},
-		{
 			Name:      sysconfigName.TreasuryAccountIndex,
-			Value:     "1",
+			Value:     "0",
 			ValueType: "int",
 			Comment:   "treasury index",
 		},
 		{
 			Name:      sysconfigName.GasAccountIndex,
-			Value:     "2",
+			Value:     "1",
 			ValueType: "int",
 			Comment:   "gas index",
 		},

@@ -20,25 +20,8 @@ package tree
 import (
 	"github.com/zecrey-labs/zecrey-crypto/accumulators/merkleTree"
 	"github.com/zecrey-labs/zecrey-crypto/hash/bn254/zmimc"
-	"log"
 )
 
-type AccountStateTree struct {
-	AssetTree     *Tree
-	LiquidityTree *Tree
-}
-
-func NewEmptyAccountStateTree() (accountStateTree *AccountStateTree, err error) {
-	accountStateTree = new(AccountStateTree)
-	accountStateTree.AssetTree, err = merkleTree.NewEmptyTree(AssetTreeHeight, NilHash, zmimc.Hmimc)
-	if err != nil {
-		log.Println("[NewEmptyAccountStateTree] unable to create empty tree")
-		return nil, err
-	}
-	accountStateTree.LiquidityTree, err = merkleTree.NewEmptyTree(LiquidityTreeHeight, NilHash, zmimc.Hmimc)
-	if err != nil {
-		log.Println("[NewEmptyAccountStateTree] unable to create empty tree")
-		return nil, err
-	}
-	return accountStateTree, nil
+func NewEmptyAccountAssetTree() (tree *Tree, err error) {
+	return merkleTree.NewEmptyTree(AssetTreeHeight, NilHash, zmimc.Hmimc)
 }

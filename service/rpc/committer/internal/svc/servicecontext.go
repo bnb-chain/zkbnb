@@ -7,6 +7,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/committer/internal/config"
@@ -25,8 +26,10 @@ type ServiceContext struct {
 
 	L2NftModel nft.L2NftModel
 
-	LiquidityPairModel liquidityPair.LiquidityPairModel
-	L2NftHistoryModel  nft.L2NftHistoryModel
+	LiquidityPairModel    liquidityPair.LiquidityPairModel
+	LiquidityModel        liquidity.LiquidityModel
+	LiquidityHistoryModel liquidity.LiquidityHistoryModel
+	L2NftHistoryModel     nft.L2NftHistoryModel
 
 	TxDetailModel      tx.TxDetailModel
 	TxModel            tx.TxModel
@@ -54,19 +57,21 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
 
 	return &ServiceContext{
-		Config:              c,
-		AccountModel:        account.NewAccountModel(conn, c.CacheRedis, gormPointer),
-		AccountHistoryModel: account.NewAccountHistoryModel(conn, c.CacheRedis, gormPointer),
-		L2NftModel:          nft.NewL2NftModel(conn, c.CacheRedis, gormPointer),
-		LiquidityPairModel:  liquidityPair.NewLiquidityPairModel(conn, c.CacheRedis, gormPointer),
-		L2NftHistoryModel:   nft.NewL2NftHistoryModel(conn, c.CacheRedis, gormPointer),
-		TxDetailModel:       tx.NewTxDetailModel(conn, c.CacheRedis, gormPointer),
-		TxModel:             tx.NewTxModel(conn, c.CacheRedis, gormPointer, redisConn),
-		BlockModel:          block.NewBlockModel(conn, c.CacheRedis, gormPointer, redisConn),
-		MempoolDetailModel:  mempool.NewMempoolDetailModel(conn, c.CacheRedis, gormPointer),
-		MempoolModel:        mempool.NewMempoolModel(conn, c.CacheRedis, gormPointer),
-		L2AssetInfoModel:    l2asset.NewL2AssetInfoModel(conn, c.CacheRedis, gormPointer),
-		SysConfigModel:      sysconfig.NewSysconfigModel(conn, c.CacheRedis, gormPointer),
+		Config:                c,
+		AccountModel:          account.NewAccountModel(conn, c.CacheRedis, gormPointer),
+		AccountHistoryModel:   account.NewAccountHistoryModel(conn, c.CacheRedis, gormPointer),
+		L2NftModel:            nft.NewL2NftModel(conn, c.CacheRedis, gormPointer),
+		LiquidityPairModel:    liquidityPair.NewLiquidityPairModel(conn, c.CacheRedis, gormPointer),
+		LiquidityModel:        liquidity.NewLiquidityModel(conn, c.CacheRedis, gormPointer),
+		LiquidityHistoryModel: liquidity.NewLiquidityHistoryModel(conn, c.CacheRedis, gormPointer),
+		L2NftHistoryModel:     nft.NewL2NftHistoryModel(conn, c.CacheRedis, gormPointer),
+		TxDetailModel:         tx.NewTxDetailModel(conn, c.CacheRedis, gormPointer),
+		TxModel:               tx.NewTxModel(conn, c.CacheRedis, gormPointer, redisConn),
+		BlockModel:            block.NewBlockModel(conn, c.CacheRedis, gormPointer, redisConn),
+		MempoolDetailModel:    mempool.NewMempoolDetailModel(conn, c.CacheRedis, gormPointer),
+		MempoolModel:          mempool.NewMempoolModel(conn, c.CacheRedis, gormPointer),
+		L2AssetInfoModel:      l2asset.NewL2AssetInfoModel(conn, c.CacheRedis, gormPointer),
+		SysConfigModel:        sysconfig.NewSysconfigModel(conn, c.CacheRedis, gormPointer),
 	}
 }
 
