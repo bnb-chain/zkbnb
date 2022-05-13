@@ -83,7 +83,7 @@ func (l *SendTxLogic) sendWithdrawTx(rawTxInfo string) (txId string, err error) 
 		l.svcCtx.AccountModel,
 		l.svcCtx.AccountHistoryModel,
 		l.svcCtx.MempoolModel,
-		l.svcCtx.LiquidityPairModel,
+		l.svcCtx.MempoolDetailModel,
 		l.svcCtx.RedisConnection,
 		txInfo.FromAccountIndex,
 	)
@@ -128,7 +128,7 @@ func (l *SendTxLogic) sendWithdrawTx(rawTxInfo string) (txId string, err error) 
 		return "", l.HandleCreateFailWithdrawTx(txInfo, err)
 	}
 	txId, mempoolTx := ConstructMempoolTx(
-		commonTx.TxTypeTransfer,
+		commonTx.TxTypeWithdraw,
 		txInfo.GasFeeAssetId,
 		txInfo.GasFeeAssetAmount.String(),
 		txInfo.AssetId,

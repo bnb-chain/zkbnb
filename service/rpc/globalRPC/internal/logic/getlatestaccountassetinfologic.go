@@ -64,7 +64,7 @@ func (l *GetLatestAccountAssetInfoLogic) GetLatestAccountAssetInfo(in *globalRPC
 		l.svcCtx.AccountModel,
 		l.svcCtx.AccountHistoryModel,
 		l.svcCtx.MempoolModel,
-		l.svcCtx.LiquidityPairModel,
+		l.svcCtx.MempoolDetailModel,
 		l.svcCtx.RedisConnection,
 		int64(in.AccountIndex))
 	if err != nil {
@@ -80,7 +80,7 @@ func (l *GetLatestAccountAssetInfoLogic) GetLatestAccountAssetInfo(in *globalRPC
 		Nonce:        accountInfo.Nonce,
 		AssetResultAssets: &globalRPCProto.AssetResult{
 			AssetId: uint32(in.AssetId),
-			Balance: accountInfo.AssetInfo[int64(in.AssetId)],
+			Balance: accountInfo.AssetInfo[int64(in.AssetId)].Balance,
 		},
 	}
 

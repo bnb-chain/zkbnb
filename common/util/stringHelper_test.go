@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	curve "github.com/zecrey-labs/zecrey-crypto/ecc/ztwistededwards/tebn254"
+	"github.com/zecrey-labs/zecrey-legend/common/model/basic"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"testing"
 	"time"
@@ -100,6 +101,15 @@ func updateColors(colors map[string]*Color) {
 	colors["0"] = &Color{
 		2,
 	}
+}
+
+func TestRedisOperations(t *testing.T) {
+	redisConn := redis.New(basic.CacheConf[0].Host, WithRedis(basic.CacheConf[0].Type, basic.CacheConf[0].Pass))
+	delInt, err := redisConn.Del("1")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(delInt)
 }
 
 func TestArray(t *testing.T) {
