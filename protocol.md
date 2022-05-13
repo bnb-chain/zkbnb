@@ -1,3 +1,5 @@
+
+
 # ZecreyLegend Layer-2 Design
 
 ## Table of contents
@@ -148,6 +150,7 @@ type LiquidityNode struct {
     AssetA        string
     AssetBId      int64
     AssetB        string
+    LpAmount      string
 }
 ```
 
@@ -161,6 +164,7 @@ func ComputeLiquidityAssetLeafHash(
 	assetA string,
 	assetBId int64,
 	assetB string,
+    lpAmount string,
 ) (hashVal []byte, err error) {
 	hFunc := mimc.NewMiMC()
 	var buf bytes.Buffer
@@ -172,6 +176,11 @@ func ComputeLiquidityAssetLeafHash(
 	}
 	util.WriteInt64IntoBuf(&buf, assetBId)
 	err = util.WriteStringBigIntIntoBuf(&buf, assetB)
+	if err != nil {
+		logx.Errorf("[ComputeLiquidityAssetLeafHash] unable to write big int to buf: %s", err.Error())
+		return nil, err
+	}
+    err = util.WriteStringBigIntIntoBuf(&buf, lpAmount)
 	if err != nil {
 		logx.Errorf("[ComputeLiquidityAssetLeafHash] unable to write big int to buf: %s", err.Error())
 		return nil, err
@@ -195,6 +204,7 @@ type NftNode struct {
     NftContentHash      string
     NftL1TokenId        string
     NftL1Address        string
+    CreatorTreasuryRate int64
 }
 ```
 
@@ -208,6 +218,7 @@ func ComputeNftAssetLeafHash(
 	assetAmount string,
 	nftL1Address string,
 	nftL1TokenId string,
+    creatorTreasuryRate int64,
 ) (hashVal []byte, err error) {
 	hFunc := mimc.NewMiMC()
 	var buf bytes.Buffer
@@ -229,6 +240,7 @@ func ComputeNftAssetLeafHash(
 		logx.Errorf("[ComputeNftAssetLeafHash] unable to write big int to buf: %s", err.Error())
 		return nil, err
 	}
+    util.WriteInt64IntoBuf(&buf, creatorTreasuryRate)
 	hFunc.Write(buf.Bytes())
 	hashVal = hFunc.Sum(nil)
 	return hashVal, nil
@@ -307,13 +319,14 @@ This is a layer-1 transaction and a user needs to call this method first to regi
 
 ##### Size
 
-97 byte
+101 byte
 
 ##### Structure
 
 | Name            | Size(byte) | Comment                        |
 | --------------- | ---------- | ------------------------------ |
 | TxType          | 1          | transaction type               |
+| AccountIndex    | 4          | unique account index           |
 | AccountName     | 32         | account name                   |
 | AccountNameHash | 32         | hash value of the account name |
 | PubKey          | 32         | layer-2 account's public key   |
@@ -434,22 +447,24 @@ This is a layer-1 transaction and is used for depositing nfts into the layer-2 a
 
 ##### Structure
 
-| Name           | Size(byte) | Comment               |
-| -------------- | ---------- | --------------------- |
-| TxType         | 1          | transaction type      |
-| AccountIndex   | 4          | account index         |
-| NftIndex       | 5          | unique index of a nft |
-| NftContentHash | 32         | nft content hash      |
-| NftL1Address   | 20         | nft layer-1 address   |
-| NftL1TokenId   | 32         | nft layer-1 token id  |
+| Name                | Size(byte) | Comment               |
+| ------------------- | ---------- | --------------------- |
+| TxType              | 1          | transaction type      |
+| AccountIndex        | 4          | account index         |
+| NftIndex            | 5          | unique index of a nft |
+| NftContentHash      | 32         | nft content hash      |
+| NftL1Address        | 20         | nft layer-1 address   |
+| NftL1TokenId        | 32         | nft layer-1 token id  |
+| CreatorTreasuryRate | 2          | creator treasury rate |
 
 #### User transaction
 
-| Name            | Size(byte) | Comment                      |
-| --------------- | ---------- | ---------------------------- |
-| AccountNameHash | 32         | account name hash            |
-| AssetAddress    | 20         | nft contract layer-1 address |
-| NftTokenId      | 32         | nft layer-1 token id         |
+| Name                | Size(byte) | Comment                      |
+| ------------------- | ---------- | ---------------------------- |
+| AccountNameHash     | 32         | account name hash            |
+| AssetAddress        | 20         | nft contract layer-1 address |
+| NftTokenId          | 32         | nft layer-1 token id         |
+| CreatorTreasuryRate | 2          | creator treasury rate        |
 
 #### Circuit
 
@@ -876,16 +891,17 @@ This is a layer-2 transaction and is used for minting nfts in the layer-2 networ
 
 ##### Structure
 
-| Name               | Size(byte) | Comment                |
-| ------------------ | ---------- | ---------------------- |
-| TxType             | 1          | transaction type       |
-| FromAccountIndex   | 4          | from account index     |
-| ToAccountIndex     | 4          | receiver account index |
-| NftIndex           | 5          | unique nft index       |
-| NftContentHash     | 32         | nft content hash       |
-| GasFeeAccountIndex | 4          | gas fee account index  |
-| GasFeeAssetId      | 2          | gas fee asset id       |
-| GasFeeAssetAmount  | 2          | packed fee amount      |
+| Name                | Size(byte) | Comment                |
+| ------------------- | ---------- | ---------------------- |
+| TxType              | 1          | transaction type       |
+| FromAccountIndex    | 4          | from account index     |
+| ToAccountIndex      | 4          | receiver account index |
+| NftIndex            | 5          | unique nft index       |
+| NftContentHash      | 32         | nft content hash       |
+| GasFeeAccountIndex  | 4          | gas fee account index  |
+| GasFeeAssetId       | 2          | gas fee asset id       |
+| GasFeeAssetAmount   | 2          | packed fee amount      |
+| CreatorTreasuryRate | 2          | creator treasury rate  |
 
 #### User transaction
 
@@ -1243,7 +1259,15 @@ This is a layer-1 transaction and is used for full exit assets from the layer-2 
 
 #### Circuit
 
-// TODO
+```go
+func VerifyFullExitTx(api API, flag Variable, tx FullExitTxConstraints, accountsBefore [NbAccountsPerTx]AccountConstraints) {
+	// verify params
+	IsVariableEqual(api, flag, tx.AccountNameHash, accountsBefore[0].AccountNameHash)
+	IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[0].AccountIndex)
+	IsVariableEqual(api, flag, tx.AssetId, accountsBefore[0].AssetsInfo[0].AssetId)
+	IsVariableEqual(api, flag, tx.AssetAmount, accountsBefore[0].AssetsInfo[0].Balance)
+}
+```
 
 ### FullExitNft
 
@@ -1277,7 +1301,21 @@ This is a layer-1 transaction and is used for full exit nfts from the layer-2 to
 
 #### Circuit
 
-// TODO
+```go
+func VerifyFullExitNftTx(api API, flag Variable, tx FullExitNftTxConstraints, accountsBefore [NbAccountsPerTx]AccountConstraints, nftBefore NftConstraints) {
+	// verify params
+	IsVariableEqual(api, flag, tx.AccountNameHash, accountsBefore[0].AccountNameHash)
+	IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[0].AccountIndex)
+	IsVariableEqual(api, flag, tx.NftIndex, nftBefore.NftIndex)
+	isOwner := api.And(api.IsZero(api.Sub(tx.AccountIndex, nftBefore.OwnerAccountIndex)), flag)
+	IsVariableEqual(api, isOwner, tx.NftContentHash, nftBefore.NftContentHash)
+	IsVariableEqual(api, isOwner, tx.NftL1Address, nftBefore.NftL1Address)
+	IsVariableEqual(api, isOwner, tx.NftL1TokenId, nftBefore.NftL1TokenId)
+	tx.NftContentHash = api.Select(isOwner, tx.NftContentHash, 0)
+	tx.NftL1Address = api.Select(isOwner, tx.NftL1Address, 0)
+	tx.NftL1TokenId = api.Select(isOwner, tx.NftL1TokenId, 0)
+}
+```
 
 ## Smart contracts API
 
