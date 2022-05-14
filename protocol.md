@@ -1023,7 +1023,7 @@ This is a layer-2 transaction and is used for setting nft price in the layer-2 n
 
 ##### Size
 
-36 byte
+25 byte
 
 ##### Structure
 
@@ -1033,7 +1033,7 @@ This is a layer-2 transaction and is used for setting nft price in the layer-2 n
 | FromAccountIndex   | 4          | from account index    |
 | NftIndex           | 5          | unique nft index      |
 | AssetId            | 2          | asset index           |
-| AssetAmount        | 16         | state amount          |
+| AssetAmount        | 5          | packed amount         |
 | GasFeeAccountIndex | 4          | gas fee account index |
 | GasFeeAssetId      | 2          | gas fee asset id      |
 | GasFeeAssetAmount  | 2          | packed fee amount     |
@@ -1084,7 +1084,7 @@ This is a layer-2 transaction and is used for buying nfts in the layer-2 network
 
 ##### Size
 
-48 byte
+37 byte
 
 ##### Structure
 
@@ -1095,7 +1095,7 @@ This is a layer-2 transaction and is used for buying nfts in the layer-2 network
 | OwnerAccountIndex       | 4          | owner account index    |
 | NftIndex                | 5          | unique nft index       |
 | AssetId                 | 2          | asset index            |
-| AssetAmount             | 16         | state amount           |
+| AssetAmount             | 5          | packed amount          |
 | GasFeeAccountIndex      | 4          | gas fee account index  |
 | GasFeeAssetId           | 2          | gas fee asset id       |
 | GasFeeAssetAmount       | 2          | packed fee amount      |
@@ -1166,7 +1166,7 @@ This is a layer-2 transaction and is used for withdrawing nft from the layer-2 t
 
 ##### Size
 
-120 byte
+102 byte
 
 ##### Structure
 
@@ -1178,8 +1178,6 @@ This is a layer-2 transaction and is used for withdrawing nft from the layer-2 t
 | NftContentHash     | 32         | nft content hash      |
 | NftL1Address       | 20         | nft layer-1 address   |
 | NftL1TokenId       | 32         | nft layer-1 token id  |
-| AssetId            | 2          | asset index           |
-| AssetAmount        | 16         | state amount          |
 | GasFeeAccountIndex | 4          | gas fee account index |
 | GasFeeAssetId      | 2          | gas fee asset id      |
 | GasFeeAssetAmount  | 2          | packed fee amount     |
