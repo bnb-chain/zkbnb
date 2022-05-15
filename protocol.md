@@ -1166,7 +1166,7 @@ This is a layer-2 transaction and is used for withdrawing nft from the layer-2 t
 
 ##### Size
 
-102 byte
+142 byte
 
 ##### Structure
 
@@ -1178,6 +1178,8 @@ This is a layer-2 transaction and is used for withdrawing nft from the layer-2 t
 | NftContentHash     | 32         | nft content hash      |
 | NftL1Address       | 20         | nft layer-1 address   |
 | NftL1TokenId       | 32         | nft layer-1 token id  |
+| ToAddress          | 20         | receiver address      |
+| ProxyAddress       | 20         | factory address       |
 | GasFeeAccountIndex | 4          | gas fee account index |
 | GasFeeAssetId      | 2          | gas fee asset id      |
 | GasFeeAssetAmount  | 2          | packed fee amount     |
