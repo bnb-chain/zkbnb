@@ -1,14 +1,14 @@
 package svc
 
 import (
-	"github.com/zecrey-labs/zecrey-core/common/general/model/liquidityPair"
-	"github.com/zecrey-labs/zecrey-core/common/general/model/nft"
-	"github.com/zecrey-labs/zecrey-core/common/general/model/sysconfig"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
+	"github.com/zecrey-labs/zecrey-legend/common/model/liquidityPair"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
+	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/committer/internal/config"
 	"github.com/zeromicro/go-zero/core/logx"

@@ -18,9 +18,6 @@
 package init
 
 import (
-	"github.com/zecrey-labs/zecrey-core/common/general/model/liquidityPair"
-	"github.com/zecrey-labs/zecrey-core/common/general/model/nft"
-	"github.com/zecrey-labs/zecrey-core/common/general/model/sysconfig"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/basic"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
@@ -30,8 +27,11 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2BlockEventMonitor"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2TxEventMonitor"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/liquidityPair"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
+	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"log"
@@ -67,7 +67,7 @@ var (
 	txModel       = tx.NewTxModel(basic.Connection, basic.CacheConf, basic.DB, redisConn)
 	// block
 	blockModel = block.NewBlockModel(basic.Connection, basic.CacheConf, basic.DB, redisConn)
-	// block for prover
+	// block for proverUtil
 	proofSenderModel = proofSender.NewProofSenderModel(basic.DB)
 	// monitor
 	l1BlockMonitorModel      = l1BlockMonitor.NewL1BlockMonitorModel(basic.Connection, basic.CacheConf, basic.DB)

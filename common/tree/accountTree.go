@@ -42,7 +42,7 @@ func InitAccountTree(
 			logx.Errorf("[InitAccountTree] unable to get accounts: %s", err.Error())
 			return nil, nil, err
 		} else {
-			accountTree, err = merkleTree.NewEmptyTree(AccountTreeHeight, NilHash, zmimc.Hmimc)
+			accountTree, err = NewEmptyAccountTree()
 			if err != nil {
 				log.Println("[InitAccountTree] unable to create empty tree:", err)
 				return nil, nil, err
@@ -101,13 +101,13 @@ func InitAccountTree(
 	for index := int64(0); index < int64(len(accounts)); index++ {
 		// create account assets tree
 		if assetsMap[index] == nil {
-			accountAssetTrees[index], err = merkleTree.NewEmptyTree(AssetTreeHeight, NilHash, zmimc.Hmimc)
+			accountAssetTrees[index], err = NewEmptyAccountAssetTree()
 			if err != nil {
 				logx.Errorf("[InitAccountTree] unable to create new tree by assets: %s", err.Error())
 				return nil, nil, err
 			}
 		} else {
-			accountAssetTrees[index], err = merkleTree.NewTreeByMap(assetsMap[index], AssetTreeHeight, NilHash, zmimc.Hmimc)
+			accountAssetTrees[index], err = merkleTree.NewTreeByMap(assetsMap[index], AssetTreeHeight, NilAccountAssetNodeHash, zmimc.Hmimc)
 			if err != nil {
 				logx.Errorf("[InitAccountTree] unable to create new tree by assets: %s", err.Error())
 				return nil, nil, err
@@ -124,7 +124,7 @@ func InitAccountTree(
 			return nil, nil, err
 		}
 	}
-	accountTree, err = merkleTree.NewTree(accountsNodes, AccountTreeHeight, NilHash, zmimc.Hmimc)
+	accountTree, err = merkleTree.NewTree(accountsNodes, AccountTreeHeight, NilAccountNodeHash, zmimc.Hmimc)
 	if err != nil {
 		logx.Errorf("[InitAccountTree] unable to create new account tree: %s", err.Error())
 		return nil, nil, err

@@ -1,7 +1,7 @@
 package init
 
 import (
-	"github.com/zecrey-labs/zecrey-core/common/general/model/sysconfig"
+	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
 	"github.com/zecrey-labs/zecrey-legend/common/sysconfigName"
 )
 

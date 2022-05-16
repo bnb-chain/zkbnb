@@ -18,10 +18,69 @@
 package tree
 
 import (
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/zecrey-labs/zecrey-crypto/accumulators/merkleTree"
 	"github.com/zecrey-labs/zecrey-crypto/hash/bn254/zmimc"
+	"math/big"
 )
 
 func NewEmptyAccountAssetTree() (tree *Tree, err error) {
-	return merkleTree.NewEmptyTree(AssetTreeHeight, NilHash, zmimc.Hmimc)
+	return merkleTree.NewEmptyTree(AssetTreeHeight, NilAccountAssetNodeHash, zmimc.Hmimc)
+}
+
+func NewEmptyAccountTree() (tree *Tree, err error) {
+	return merkleTree.NewEmptyTree(AccountTreeHeight, NilAccountNodeHash, zmimc.Hmimc)
+}
+
+func NewEmptyLiquidityTree() (tree *Tree, err error) {
+	return merkleTree.NewEmptyTree(LiquidityTreeHeight, NilLiquidityNodeHash, zmimc.Hmimc)
+}
+
+func NewEmptyNftTree() (tree *Tree, err error) {
+	return merkleTree.NewEmptyTree(NftTreeHeight, NilNftNodeHash, zmimc.Hmimc)
+}
+
+func EmptyAccountNodeHash() []byte {
+	hFunc := mimc.NewMiMC()
+	zero := big.NewInt(0).FillBytes(make([]byte, 32))
+	hFunc.Write(zero)
+	hFunc.Write(zero)
+	hFunc.Write(zero)
+	hFunc.Write(zero)
+	// asset root
+	hFunc.Write(NilAccountAssetRoot)
+	return hFunc.Sum(nil)
+}
+
+func EmptyAccountAssetNodeHash() []byte {
+	hFunc := mimc.NewMiMC()
+	zero := big.NewInt(0).FillBytes(make([]byte, 32))
+	hFunc.Write(zero)
+	hFunc.Write(zero)
+	return hFunc.Sum(nil)
+}
+
+func EmptyLiquidityNodeHash() []byte {
+	hFunc := mimc.NewMiMC()
+	zero := big.NewInt(0).FillBytes(make([]byte, 32))
+	hFunc.Write(zero)
+	hFunc.Write(zero)
+	hFunc.Write(zero)
+	hFunc.Write(zero)
+	hFunc.Write(zero)
+	return hFunc.Sum(nil)
+}
+
+func EmptyNftNodeHash() []byte {
+	hFunc := mimc.NewMiMC()
+	zero := big.NewInt(0).FillBytes(make([]byte, 32))
+	hFunc.Write(zero)
+	hFunc.Write(zero)
+	hFunc.Write(zero)
+	hFunc.Write(zero)
+	hFunc.Write(zero)
+	hFunc.Write(zero)
+	hFunc.Write(zero)
+	hFunc.Write(zero)
+	return hFunc.Sum(nil)
 }

@@ -38,7 +38,7 @@ func InitNftTree(
 	}
 	// empty tree
 	if len(nftAssets) == 0 {
-		nftTree, err = merkleTree.NewEmptyTree(NftTreeHeight, NilHash, zmimc.Hmimc)
+		nftTree, err = NewEmptyNftTree()
 		if err != nil {
 			log.Println("[InitNftTree] unable to create empty tree:", err)
 			return nil, err
@@ -56,7 +56,7 @@ func InitNftTree(
 		}
 		nftAssetsMap[nftIndex] = node
 	}
-	nftTree, err = merkleTree.NewTreeByMap(nftAssetsMap, NftTreeHeight, NilHash, zmimc.Hmimc)
+	nftTree, err = merkleTree.NewTreeByMap(nftAssetsMap, NftTreeHeight, NilNftNodeHash, zmimc.Hmimc)
 	if err != nil {
 		logx.Errorf("[InitNftTree] unable to create new tree by map")
 		return nil, err

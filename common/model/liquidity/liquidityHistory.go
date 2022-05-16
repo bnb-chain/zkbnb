@@ -50,6 +50,7 @@ type (
 		AssetA        string
 		AssetBId      int64
 		AssetB        string
+		LpAmount      string
 		L2BlockHeight int64
 	}
 )

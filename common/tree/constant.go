@@ -18,11 +18,12 @@
 package tree
 
 import (
-	"github.com/zecrey-labs/zecrey-core/common/general/model/nft"
-	"github.com/zecrey-labs/zecrey-core/common/general/model/sysconfig"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/zecrey-labs/zecrey-crypto/accumulators/merkleTree"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
+	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
+	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
 )
 
 type (
@@ -47,5 +48,22 @@ const (
 )
 
 var (
-	NilHash = merkleTree.NilHash
+	NilHash                                                                           = merkleTree.NilHash
+	NilAccountAssetRoot                                                               []byte
+	NilAccountAssetNodeHash, NilAccountNodeHash, NilLiquidityNodeHash, NilNftNodeHash []byte
 )
+
+func init() {
+	NilAccountAssetNodeHash = EmptyAccountAssetNodeHash()
+	NilAccountNodeHash = EmptyAccountNodeHash()
+	NilLiquidityNodeHash = EmptyLiquidityNodeHash()
+	NilNftNodeHash = EmptyNftNodeHash()
+	NilAccountAssetRoot = NilAccountNodeHash
+	hFunc := mimc.NewMiMC()
+	for i := 0; i < AssetTreeHeight; i++ {
+		hFunc.Reset()
+		hFunc.Write(NilAccountAssetRoot)
+		hFunc.Write(NilAccountAssetRoot)
+		NilAccountAssetRoot = hFunc.Sum(nil)
+	}
+}

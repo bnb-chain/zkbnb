@@ -36,7 +36,8 @@ const (
 	LiquidityLpAssetType = commonAsset.LiquidityLpAssetType
 	NftAssetType         = commonAsset.NftAssetType
 
-	Base = 10
+	Base        = 10
+	AddressSize = 20
 
 	FeeRateBase = 10000
 
