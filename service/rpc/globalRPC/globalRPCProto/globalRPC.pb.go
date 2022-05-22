@@ -1217,13 +1217,13 @@ type ResultGetLatestPoolInfo struct {
 	// asset a name
 	AssetAName string `protobuf:"bytes,4,opt,name=AssetAName,proto3" json:"AssetAName,omitempty"`
 	// left asset Amount
-	AssetAAmount uint64 `protobuf:"varint,5,opt,name=AssetAAmount,proto3" json:"AssetAAmount,omitempty"`
+	AssetAAmount uint64 `protobuf:"varint,5,opt,name=AssetA,proto3" json:"AssetA,omitempty"`
 	// right asset id
 	AssetBId uint32 `protobuf:"varint,6,opt,name=AssetBId,proto3" json:"AssetBId,omitempty"`
 	// asset b name
 	AssetBName string `protobuf:"bytes,7,opt,name=AssetBName,proto3" json:"AssetBName,omitempty"`
 	// left asset Amount
-	AssetBAmount uint64 `protobuf:"varint,8,opt,name=AssetBAmount,proto3" json:"AssetBAmount,omitempty"`
+	AssetBAmount uint64 `protobuf:"varint,8,opt,name=AssetB,proto3" json:"AssetB,omitempty"`
 	// pair index
 	PairIndex uint32 `protobuf:"varint,9,opt,name=PairIndex,proto3" json:"PairIndex,omitempty"`
 	// LP token encryption
@@ -2598,10 +2598,10 @@ type ResultGetLpValue struct {
 
 	AssetAId     uint32 `protobuf:"varint,1,opt,name=AssetAId,proto3" json:"AssetAId,omitempty"`
 	AssetAName   string `protobuf:"bytes,2,opt,name=AssetAName,proto3" json:"AssetAName,omitempty"`
-	AssetAAmount uint64 `protobuf:"varint,3,opt,name=AssetAAmount,proto3" json:"AssetAAmount,omitempty"`
+	AssetAAmount uint64 `protobuf:"varint,3,opt,name=AssetA,proto3" json:"AssetA,omitempty"`
 	AssetBId     uint32 `protobuf:"varint,4,opt,name=AssetBId,proto3" json:"AssetBId,omitempty"`
 	AssetBName   string `protobuf:"bytes,5,opt,name=AssetBName,proto3" json:"AssetBName,omitempty"`
-	AssetBAmount uint64 `protobuf:"varint,6,opt,name=AssetBAmount,proto3" json:"AssetBAmount,omitempty"`
+	AssetBAmount uint64 `protobuf:"varint,6,opt,name=AssetB,proto3" json:"AssetB,omitempty"`
 }
 
 func (x *ResultGetLpValue) Reset() {
@@ -2804,9 +2804,9 @@ type ResultGetPairRatio struct {
 
 	PairRatio     float32 `protobuf:"fixed32,1,opt,name=PairRatio,proto3" json:"PairRatio,omitempty"`
 	AssetAId      uint32  `protobuf:"varint,2,opt,name=AssetAId,proto3" json:"AssetAId,omitempty"`
-	AssetAAmount  uint64  `protobuf:"varint,3,opt,name=AssetAAmount,proto3" json:"AssetAAmount,omitempty"`
+	AssetAAmount  uint64  `protobuf:"varint,3,opt,name=AssetA,proto3" json:"AssetA,omitempty"`
 	AssetBId      uint32  `protobuf:"varint,4,opt,name=AssetBId,proto3" json:"AssetBId,omitempty"`
-	AssetBAmount  uint64  `protobuf:"varint,5,opt,name=AssetBAmount,proto3" json:"AssetBAmount,omitempty"`
+	AssetBAmount  uint64  `protobuf:"varint,5,opt,name=AssetB,proto3" json:"AssetB,omitempty"`
 	TotalLpAmount uint64  `protobuf:"varint,6,opt,name=TotalLpAmount,proto3" json:"TotalLpAmount,omitempty"`
 }
 
