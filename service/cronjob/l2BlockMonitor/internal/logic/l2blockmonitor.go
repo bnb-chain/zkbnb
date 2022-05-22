@@ -19,9 +19,9 @@ package logic
 import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/zecrey-labs/zecrey-core/common/general/model/nft"
 	"github.com/zecrey-labs/zecrey-eth-rpc/_rpc"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
+	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
 	"github.com/zeromicro/go-zero/core/logx"
 	"sort"
@@ -225,7 +225,6 @@ func MonitorL2BlockEvents(
 							NftContentHash:      pendingUpdateNftAsset.NftContentHash,
 							NftL1TokenId:        pendingUpdateNftAsset.NftL1TokenId,
 							NftL1Address:        pendingUpdateNftAsset.NftL1Address,
-							Amount:              pendingUpdateNftAsset.Amount,
 							CollectionId:        pendingUpdateNftAsset.CollectionId,
 							Status:              pendingUpdateNftAsset.Status,
 						}
@@ -254,7 +253,6 @@ func MonitorL2BlockEvents(
 					NftContentHash:      pendingUpdateNftAssetHistory.NftContentHash,
 					NftL1TokenId:        pendingUpdateNftAssetHistory.NftL1TokenId,
 					NftL1Address:        pendingUpdateNftAssetHistory.NftL1Address,
-					Amount:              pendingUpdateNftAssetHistory.Amount,
 					CollectionId:        pendingUpdateNftAssetHistory.CollectionId,
 					Status:              pendingUpdateNftAssetHistory.Status,
 				}

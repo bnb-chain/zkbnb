@@ -20,6 +20,7 @@ package tree
 import (
 	"github.com/zecrey-labs/zecrey-crypto/accumulators/merkleTree"
 	"github.com/zecrey-labs/zecrey-crypto/hash/bn254/zmimc"
+	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zeromicro/go-zero/core/logx"
 	"log"
 )
@@ -33,12 +34,21 @@ func InitLiquidityTree(
 ) {
 	liquidityAssets, err := liquidityHistoryModel.GetLatestLiquidityByBlockHeight(blockHeight)
 	if err != nil {
-		logx.Errorf("[InitNftTree] unable to get latest nft assets: %s", err.Error())
-		return nil, err
+		if err != liquidity.ErrNotFound {
+			logx.Errorf("[InitNftTree] unable to get latest nft assets: %s", err.Error())
+			return nil, err
+		} else {
+			liquidityTree, err = NewEmptyLiquidityTree()
+			if err != nil {
+				log.Println("[InitNftTree] unable to create empty tree:", err)
+				return nil, err
+			}
+			return liquidityTree, nil
+		}
 	}
 	// empty tree
 	if len(liquidityAssets) == 0 {
-		liquidityTree, err = merkleTree.NewEmptyTree(LiquidityTreeHeight, NilHash, zmimc.Hmimc)
+		liquidityTree, err = NewEmptyLiquidityTree()
 		if err != nil {
 			log.Println("[InitNftTree] unable to create empty tree:", err)
 			return nil, err
@@ -49,14 +59,18 @@ func InitLiquidityTree(
 	liquidityAssetsMap := make(map[int64]*Node)
 	for _, liquidityAsset := range liquidityAssets {
 		pairIndex := liquidityAsset.PairIndex
-		node, err := LiquidityAssetToNode(liquidityAsset.AssetAId, liquidityAsset.AssetA, liquidityAsset.AssetBId, liquidityAsset.AssetB)
+		node, err := LiquidityAssetToNode(
+			liquidityAsset.AssetAId, liquidityAsset.AssetA,
+			liquidityAsset.AssetBId, liquidityAsset.AssetB,
+			liquidityAsset.LpAmount, liquidityAsset.KLast,
+			liquidityAsset.FeeRate, liquidityAsset.TreasuryAccountIndex, liquidityAsset.TreasuryRate)
 		if err != nil {
 			logx.Errorf("[InitNftTree] unable to convert nft asset to node: %s", err.Error())
 			return nil, err
 		}
 		liquidityAssetsMap[pairIndex] = node
 	}
-	liquidityTree, err = merkleTree.NewTreeByMap(liquidityAssetsMap, LiquidityTreeHeight, NilHash, zmimc.Hmimc)
+	liquidityTree, err = merkleTree.NewTreeByMap(liquidityAssetsMap, LiquidityTreeHeight, NilLiquidityNodeHash, zmimc.Hmimc)
 	if err != nil {
 		logx.Errorf("[InitNftTree] unable to create new tree by map")
 		return nil, err

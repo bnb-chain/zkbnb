@@ -79,11 +79,10 @@ func (l *SendTxLogic) sendTransferTx(rawTxInfo string) (txId string, err error) 
 	}
 
 	var (
-		accountInfoMap = make(map[int64]*commonAsset.FormatAccountInfo)
+		accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
 	)
 	accountInfoMap[txInfo.FromAccountIndex], err = globalmapHandler.GetLatestAccountInfo(
 		l.svcCtx.AccountModel,
-		l.svcCtx.AccountHistoryModel,
 		l.svcCtx.MempoolModel,
 		l.svcCtx.MempoolDetailModel,
 		l.svcCtx.RedisConnection,

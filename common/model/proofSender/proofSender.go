@@ -173,7 +173,7 @@ func (m *defaultProofSenderModel) GetProofsByBlockRange(start int64, end int64, 
 	Func: GetStartProofBlockNumber
 	Params:
 	Return: err error
-	Description: get latest proof block number, it used to support prover hub to handle crypto blocks, the result will determine the start range.
+	Description: get latest proof block number, it used to support proverUtil hub to handle crypto blocks, the result will determine the start range.
 */
 
 func (m *defaultProofSenderModel) GetProofStartBlockNumber() (num int64, err error) {

@@ -30,6 +30,7 @@ const (
 const (
 	AccountStatusPending = iota
 	AccountStatusConfirmed
+	AccountStatusVerified
 )
 
 const (

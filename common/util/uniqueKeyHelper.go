@@ -22,6 +22,7 @@ import "strconv"
 const (
 	AccountPrefix        = "AccountIndex::"
 	LiquidityReadPrefix  = "LiquidityRead::"
+	NftReadPrefix        = "NftRead::"
 	LiquidityWritePrefix = "LiquidityWrite::"
 	BasicAccountPrefix   = "BasicAccount::"
 	LockKeySuffix        = "ByLock"
@@ -29,6 +30,10 @@ const (
 
 func GetLiquidityKeyForRead(pairIndex int64) string {
 	return LiquidityReadPrefix + strconv.FormatInt(pairIndex, 10)
+}
+
+func GetNftKeyForRead(nftIndex int64) string {
+	return NftReadPrefix + strconv.FormatInt(nftIndex, 10)
 }
 
 func GetLiquidityKeyForWrite(pairIndex int64) string {

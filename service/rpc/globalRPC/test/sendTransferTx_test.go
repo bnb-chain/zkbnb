@@ -69,18 +69,18 @@ func constructSendTransferTxInfo() string {
 		panic(err)
 	}
 	txInfo := &commonTx.TransferTxInfo{
-		FromAccountIndex:  3,
-		ToAccountIndex:    4,
+		FromAccountIndex:  2,
+		ToAccountIndex:    3,
 		ToAccountName:     "gavin.legend",
 		AssetId:           0,
-		AssetAmount:       big.NewInt(10),
-		GasAccountIndex:   2,
-		GasFeeAssetId:     0,
-		GasFeeAssetAmount: big.NewInt(5),
+		AssetAmount:       big.NewInt(100000),
+		GasAccountIndex:   1,
+		GasFeeAssetId:     1,
+		GasFeeAssetAmount: big.NewInt(500),
 		Memo:              "transfer",
 		CallData:          "",
 		CallDataHash:      tree.NilHash,
-		Nonce:             0,
+		Nonce:             1,
 		Sig:               nil,
 	}
 	hFunc := mimc.NewMiMC()

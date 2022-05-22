@@ -28,11 +28,13 @@ const (
 	PendingStatus = l2TxEventMonitor.PendingStatus
 	HandledStatus = l2TxEventMonitor.HandledStatus
 	// tx type
-	TxTypeRegisterZns = commonTx.TxTypeRegisterZns
-	TxTypeDeposit     = commonTx.TxTypeDeposit
-	TxTypeDepositNft  = commonTx.TxTypeDepositNft
-	TxTypeFullExit    = commonTx.TxTypeFullExit
-	TxTypeFullExitNft = commonTx.TxTypeFullExitNft
+	TxTypeRegisterZns    = commonTx.TxTypeRegisterZns
+	TxTypeCreatePair     = commonTx.TxTypeCreatePair
+	TxTypeUpdatePairRate = commonTx.TxTypeUpdatePairRate
+	TxTypeDeposit        = commonTx.TxTypeDeposit
+	TxTypeDepositNft     = commonTx.TxTypeDepositNft
+	TxTypeFullExit       = commonTx.TxTypeFullExit
+	TxTypeFullExitNft    = commonTx.TxTypeFullExitNft
 
 	GeneralAssetType = commonAsset.GeneralAssetType
 	NftAssetType     = commonAsset.NftAssetType
@@ -47,5 +49,6 @@ const (
 )
 
 var (
-	ErrNotFound = sqlx.ErrNotFound
+	ErrNotFound      = sqlx.ErrNotFound
+	ZeroBigIntString = "0"
 )

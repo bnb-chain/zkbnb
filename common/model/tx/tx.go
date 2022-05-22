@@ -64,24 +64,25 @@ type (
 
 	Tx struct {
 		gorm.Model
-		TxHash        string `gorm:"uniqueIndex"`
-		TxType        int64
-		GasFee        string
-		GasFeeAssetId int64
-		TxStatus      int64
-		BlockHeight   int64 `gorm:"index"`
-		BlockId       int64 `gorm:"index"`
-		AccountRoot   string
-		AssetAId      int64
-		AssetBId      int64
-		TxAmount      string
-		NativeAddress string
-		TxInfo        string
-		TxDetails     []*TxDetail `gorm:"foreignkey:TxId"`
-		ExtraInfo     string
-		Memo          string
-		AccountIndex  int64
-		Nonce         int64
+		TxHash          string `gorm:"uniqueIndex"`
+		TxType          int64
+		GasFee          string
+		GasFeeAssetId   int64
+		TxStatus        int64
+		BlockHeight     int64 `gorm:"index"`
+		BlockId         int64 `gorm:"index"`
+		AccountRoot     string
+		AssetAId        int64
+		AssetBId        int64
+		TxAmount        string
+		NativeAddress   string
+		TxInfo          string
+		TxDetails       []*TxDetail `gorm:"foreignkey:TxId"`
+		ExtraInfo       string
+		Memo            string
+		AccountIndex    int64
+		Nonce           int64
+		ExpiredAt       int64
 	}
 )
 

@@ -20,6 +20,8 @@ package commonTx
 const (
 	TxTypeEmpty = iota
 	TxTypeRegisterZns
+	TxTypeCreatePair
+	TxTypeUpdatePairRate
 	TxTypeDeposit
 	TxTypeDepositNft
 	TxTypeTransfer
@@ -27,10 +29,11 @@ const (
 	TxTypeAddLiquidity
 	TxTypeRemoveLiquidity
 	TxTypeWithdraw
+	TxTypeCreateCollection
 	TxTypeMintNft
 	TxTypeTransferNft
-	TxTypeSetNftPrice
-	TxTypeBuyNft
+	TxTypeAtomicMatch
+	TxTypeCancelOffer
 	TxTypeWithdrawNft
 	TxTypeFullExit
 	TxTypeFullExitNft

@@ -34,6 +34,8 @@ type (
 		IfAccountNameExist(name string) (bool, error)
 		IfAccountExistsByAccountIndex(accountIndex int64) (bool, error)
 		GetAccountByAccountIndex(accountIndex int64) (account *Account, err error)
+		GetVerifiedAccountByAccountIndex(accountIndex int64) (account *Account, err error)
+		GetConfirmedAccountByAccountIndex(accountIndex int64) (account *Account, err error)
 		GetAccountByPk(pk string) (account *Account, err error)
 		GetAccountByAccountName(accountName string) (account *Account, err error)
 		GetAccountByAccountNameHash(accountNameHash string) (account *Account, err error)
@@ -58,7 +60,8 @@ type (
 		AccountNameHash string `gorm:"uniqueIndex"`
 		L1Address       string
 		Nonce           int64
-		// map[int64]Asset
+		CollectionNonce int64
+		// map[int64]*AccountAsset
 		AssetInfo string
 		AssetRoot string
 		Status    int
@@ -155,6 +158,20 @@ func (m *defaultAccountModel) IfAccountExistsByAccountIndex(accountIndex int64) 
 
 func (m *defaultAccountModel) GetAccountByAccountIndex(accountIndex int64) (account *Account, err error) {
 	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex).Find(&account)
+	if dbTx.Error != nil {
+		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", dbTx.Error)
+		logx.Error(err)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", ErrNotFound)
+		logx.Error(err)
+		return nil, ErrNotFound
+	}
+	return account, nil
+}
+
+func (m *defaultAccountModel) GetVerifiedAccountByAccountIndex(accountIndex int64) (account *Account, err error) {
+	dbTx := m.DB.Table(m.table).Where("account_index = ? and status = ?", accountIndex, AccountStatusVerified).Find(&account)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", dbTx.Error)
 		logx.Error(err)
@@ -310,4 +327,18 @@ func (m *defaultAccountModel) GetConfirmedAccounts() (accounts []*Account, err e
 		return nil, ErrNotFound
 	}
 	return accounts, nil
+}
+
+func (m *defaultAccountModel) GetConfirmedAccountByAccountIndex(accountIndex int64) (account *Account, err error) {
+	dbTx := m.DB.Table(m.table).Where("account_index = ? and status = ?", accountIndex, AccountStatusConfirmed).Find(&account)
+	if dbTx.Error != nil {
+		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", dbTx.Error)
+		logx.Error(err)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", ErrNotFound)
+		logx.Error(err)
+		return nil, ErrNotFound
+	}
+	return account, nil
 }

@@ -1,6 +1,8 @@
 package logic
 
-import "github.com/zecrey-labs/zecrey-legend/common/model/tx"
+import (
+	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
+)
 
 func Min(x, y int) int {
 	if x < y {
@@ -30,20 +32,4 @@ func ConvertMempoolTxToTx(mempoolTx *MempoolTx, txDetails []*tx.TxDetail, accoun
 		Nonce:         mempoolTx.Nonce,
 	}
 	return tx
-}
-
-func NftAssetToNftAssetHistory(asset *L2Nft, l2BlockHeight int64) (assetHistory *L2NftHistory) {
-	return &L2NftHistory{
-		NftIndex:            asset.NftIndex,
-		CreatorAccountIndex: asset.CreatorAccountIndex,
-		OwnerAccountIndex:   asset.OwnerAccountIndex,
-		AssetId:             asset.AssetId,
-		AssetAmount:         asset.AssetAmount,
-		NftContentHash:      asset.NftContentHash,
-		NftL1TokenId:        asset.NftL1TokenId,
-		NftL1Address:        asset.NftL1Address,
-		CollectionId:        asset.CollectionId,
-		Status:              asset.Status,
-		L2BlockHeight:       l2BlockHeight,
-	}
 }

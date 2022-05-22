@@ -21,23 +21,27 @@ import (
 	"bytes"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/zecrey-labs/zecrey-core/common/general/util"
+	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
 func ComputeAccountLeafHash(
-	accountNameHash string, pk string, nonce int64,
+	accountNameHash string,
+	pk string,
+	nonce int64,
+	collectionNonce int64,
 	assetRoot []byte,
 ) (hashVal []byte, err error) {
 	hFunc := mimc.NewMiMC()
 	var buf bytes.Buffer
 	buf.Write(common.FromHex(accountNameHash))
 	err = util.WritePkIntoBuf(&buf, pk)
-	util.WriteInt64IntoBuf(&buf, nonce)
 	if err != nil {
 		logx.Errorf("[ComputeAccountAssetLeafHash] unable to write pk into buf: %s", err.Error())
 		return nil, err
 	}
+	util.WriteInt64IntoBuf(&buf, nonce)
+	util.WriteInt64IntoBuf(&buf, collectionNonce)
 	buf.Write(assetRoot)
 	hFunc.Reset()
 	hFunc.Write(buf.Bytes())
@@ -48,6 +52,7 @@ func ComputeAccountLeafHash(
 func ComputeAccountAssetLeafHash(
 	balance string,
 	lpAmount string,
+	offerCanceledOrFinalized string,
 ) (hashVal []byte, err error) {
 	hFunc := mimc.NewMiMC()
 	var buf bytes.Buffer
@@ -61,6 +66,11 @@ func ComputeAccountAssetLeafHash(
 		logx.Errorf("[ComputeAccountAssetLeafHash] invalid balance: %s", err.Error())
 		return nil, err
 	}
+	err = util.WriteStringBigIntIntoBuf(&buf, offerCanceledOrFinalized)
+	if err != nil {
+		logx.Errorf("[ComputeAccountAssetLeafHash] invalid balance: %s", err.Error())
+		return nil, err
+	}
 	hFunc.Write(buf.Bytes())
 	return hFunc.Sum(nil), nil
 }
@@ -70,6 +80,11 @@ func ComputeLiquidityAssetLeafHash(
 	assetA string,
 	assetBId int64,
 	assetB string,
+	lpAmount string,
+	kLast string,
+	feeRate int64,
+	treasuryAccountIndex int64,
+	treasuryRate int64,
 ) (hashVal []byte, err error) {
 	hFunc := mimc.NewMiMC()
 	var buf bytes.Buffer
@@ -85,29 +100,37 @@ func ComputeLiquidityAssetLeafHash(
 		logx.Errorf("[ComputeLiquidityAssetLeafHash] unable to write big int to buf: %s", err.Error())
 		return nil, err
 	}
+	err = util.WriteStringBigIntIntoBuf(&buf, lpAmount)
+	if err != nil {
+		logx.Errorf("[ComputeLiquidityAssetLeafHash] unable to write big int to buf: %s", err.Error())
+		return nil, err
+	}
+	err = util.WriteStringBigIntIntoBuf(&buf, kLast)
+	if err != nil {
+		logx.Errorf("[ComputeLiquidityAssetLeafHash] unable to write big int to buf: %s", err.Error())
+		return nil, err
+	}
+	util.WriteInt64IntoBuf(&buf, feeRate)
+	util.WriteInt64IntoBuf(&buf, treasuryAccountIndex)
+	util.WriteInt64IntoBuf(&buf, treasuryRate)
 	hFunc.Write(buf.Bytes())
 	hashVal = hFunc.Sum(nil)
 	return hashVal, nil
 }
 
 func ComputeNftAssetLeafHash(
-	creatorIndex int64,
+	creatorAccountIndex int64,
+	ownerAccountIndex int64,
 	nftContentHash string,
-	assetId int64,
-	assetAmount string,
 	nftL1Address string,
 	nftL1TokenId string,
+	creatorTreasuryRate int64,
 ) (hashVal []byte, err error) {
 	hFunc := mimc.NewMiMC()
 	var buf bytes.Buffer
-	util.WriteInt64IntoBuf(&buf, creatorIndex)
+	util.WriteInt64IntoBuf(&buf, creatorAccountIndex)
+	util.WriteInt64IntoBuf(&buf, ownerAccountIndex)
 	buf.Write(common.FromHex(nftContentHash))
-	util.WriteInt64IntoBuf(&buf, assetId)
-	err = util.WriteStringBigIntIntoBuf(&buf, assetAmount)
-	if err != nil {
-		logx.Errorf("[ComputeNftAssetLeafHash] unable to write big int to buf: %s", err.Error())
-		return nil, err
-	}
 	err = util.WriteAddressIntoBuf(&buf, nftL1Address)
 	if err != nil {
 		logx.Errorf("[ComputeNftAssetLeafHash] unable to write address to buf: %s", err.Error())
@@ -118,7 +141,20 @@ func ComputeNftAssetLeafHash(
 		logx.Errorf("[ComputeNftAssetLeafHash] unable to write big int to buf: %s", err.Error())
 		return nil, err
 	}
+	util.WriteInt64IntoBuf(&buf, creatorTreasuryRate)
 	hFunc.Write(buf.Bytes())
 	hashVal = hFunc.Sum(nil)
 	return hashVal, nil
+}
+
+func ComputeStateRootHash(
+	accountRoot []byte,
+	liquidityRoot []byte,
+	nftRoot []byte,
+) []byte {
+	hFunc := mimc.NewMiMC()
+	hFunc.Write(accountRoot)
+	hFunc.Write(liquidityRoot)
+	hFunc.Write(nftRoot)
+	return hFunc.Sum(nil)
 }

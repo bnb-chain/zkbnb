@@ -18,47 +18,18 @@
 package commonAsset
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/zecrey-labs/zecrey-crypto/ffmath"
+	"math/big"
 	"testing"
 )
 
-func TestSerialize(t *testing.T) {
-	lpInfo := make(map[int64]*Liquidity)
-	lpInfo[1] = &Liquidity{
-		PairIndex: 5,
-		AssetAId:  0,
-		AssetA:    "",
-		AssetBId:  0,
-		AssetB:    "",
-		LpAmount:  "",
-	}
-	lpInfo[2] = &Liquidity{
-		PairIndex: 1,
-		AssetAId:  1,
-		AssetA:    "",
-		AssetBId:  0,
-		AssetB:    "",
-		LpAmount:  "",
-	}
-	lpInfoBytes, err := json.Marshal(lpInfo)
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println(string(lpInfoBytes))
-	var nLpInfo map[int64]*Liquidity
-	err = json.Unmarshal(lpInfoBytes, &nLpInfo)
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println(nLpInfo[1].PairIndex)
-	fmt.Println(nLpInfo[2].AssetAId)
-}
+func TestFromFormatAccountInfo(t *testing.T) {
+	a := big.NewInt(9)
+	b := big.NewInt(128)
+	c := ffmath.Div(a, b)
+	fmt.Println(c.String())
 
-func TestDeserializeAccountInfo(t *testing.T) {
-	var nLpInfo map[int64]*Liquidity
-	err := json.Unmarshal([]byte("{}"), &nLpInfo)
-	if err != nil {
-		t.Fatal(err)
-	}
+	d := big.NewInt(2)
+	fmt.Println(new(big.Int).SetBit(d, 0, 1).String())
 }

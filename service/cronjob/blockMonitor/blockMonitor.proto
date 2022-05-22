@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package blockMonitor;
 
-option go_package = "./blockmonitor";
+option go_package = "./blockMonitor";
 
 message Request {
   string ping = 1;

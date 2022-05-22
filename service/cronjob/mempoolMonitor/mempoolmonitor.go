@@ -19,7 +19,7 @@ import (
 )
 
 var configFile = flag.String("f",
-	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\rpc\\mempoolMonitor\\etc\\mempoolmonitor.yaml", "the config file")
+	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\cronjob\\mempoolMonitor\\etc\\mempoolmonitor.yaml", "the config file")
 
 func main() {
 	flag.Parse()

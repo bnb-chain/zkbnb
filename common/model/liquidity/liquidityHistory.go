@@ -45,12 +45,17 @@ type (
 
 	LiquidityHistory struct {
 		gorm.Model
-		PairIndex     int64
-		AssetAId      int64
-		AssetA        string
-		AssetBId      int64
-		AssetB        string
-		L2BlockHeight int64
+		PairIndex            int64
+		AssetAId             int64
+		AssetA               string
+		AssetBId             int64
+		AssetB               string
+		LpAmount             string
+		KLast                string
+		FeeRate              int64
+		TreasuryAccountIndex int64
+		TreasuryRate         int64
+		L2BlockHeight        int64
 	}
 )
 
@@ -151,8 +156,8 @@ func (m *defaultLiquidityHistoryModel) GetAccountLiquidityHistoryByPairIndex(pai
 func (m *defaultLiquidityHistoryModel) GetLatestLiquidityByBlockHeight(blockHeight int64) (entities []*LiquidityHistory, err error) {
 	dbTx := m.DB.Table(m.table).
 		Raw("SELECT a.* FROM liquidity_history a WHERE NOT EXISTS"+
-			"(SELECT * FROM liquidity_history WHERE account_index = a.account_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height) "+
-			"AND l2_block_height <= ? ORDER BY account_index", blockHeight, blockHeight).
+			"(SELECT * FROM liquidity_history WHERE pair_index = a.pair_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height) "+
+			"AND l2_block_height <= ? ORDER BY pair_index", blockHeight, blockHeight).
 		Find(&entities)
 	if dbTx.Error != nil {
 		logx.Errorf("[GetValidAccounts] unable to get related accounts: %s", dbTx.Error.Error())

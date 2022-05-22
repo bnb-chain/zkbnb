@@ -84,7 +84,7 @@ func (l *GetLatestAccountInfoByAccountIndexLogic) GetLatestAccountInfoByAccountI
 
 	for _, v := range l2AssetsList {
 		if accountInfo.AssetInfo[v.AssetId] == nil {
-			accountInfo.AssetInfo[v.AssetId] = &commonAsset.FormatAsset{
+			accountInfo.AssetInfo[v.AssetId] = &commonAsset.AccountAsset{
 				Balance:  util.ZeroBigInt.String(),
 				LpAmount: util.ZeroBigInt.String(),
 			}

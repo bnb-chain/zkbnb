@@ -1,8 +1,8 @@
 package svc
 
 import (
-	"github.com/zecrey-labs/zecrey-core/common/general/model/sysconfig"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l1BlockMonitor"
+	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/blockMonitor/internal/config"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"

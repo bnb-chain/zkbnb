@@ -24,6 +24,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zeromicro/go-zero/core/stores/builder"
 	"strconv"
@@ -83,8 +84,13 @@ type (
 			oBlock *Block,
 			pendingMempoolTxs []*mempool.MempoolTx,
 			pendingUpdateAccounts []*account.Account,
+			pendingNewAccountHistory []*account.AccountHistory,
+			pendingUpdateLiquidity []*liquidity.Liquidity,
 			pendingNewLiquidityHistory []*liquidity.LiquidityHistory,
-			pendingNewAccountHistory, pendingUpdatedAccountHistory []*account.AccountHistory) (err error)
+			pendingNewNft []*nft.L2Nft,
+			pendingUpdateNft []*nft.L2Nft,
+			pendingNewNftHistory []*nft.L2NftHistory,
+		) (err error)
 	}
 
 	defaultBlockModel struct {
@@ -751,8 +757,12 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 	oBlock *Block,
 	pendingMempoolTxs []*mempool.MempoolTx,
 	pendingUpdateAccounts []*account.Account,
-	pendingNewLiquidityHistory []*liquidity.LiquidityHistory,
-	pendingNewAccountHistory, pendingUpdatedAccountHistory []*account.AccountHistory,
+	pendingNewAccountHistorys []*account.AccountHistory,
+	pendingUpdateLiquiditys []*liquidity.Liquidity,
+	pendingNewLiquidityHistorys []*liquidity.LiquidityHistory,
+	pendingNewNfts []*nft.L2Nft,
+	pendingUpdateNfts []*nft.L2Nft,
+	pendingNewNftHistorys []*nft.L2NftHistory,
 ) (err error) {
 	err = m.DB.Transaction(func(tx *gorm.DB) error { // transact
 		dbTx := tx.Table(m.table).Create(oBlock)
@@ -785,7 +795,7 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 		}
 		// update account
 		for _, pendignUpdateAccount := range pendingUpdateAccounts {
-			dbTx := tx.Table(account.AccountTableName).Where("id = ?", pendignUpdateAccount.ID).
+			dbTx = tx.Table(account.AccountTableName).Where("id = ?", pendignUpdateAccount.ID).
 				Select("*").
 				Updates(&pendignUpdateAccount)
 			if dbTx.Error != nil {
@@ -797,39 +807,76 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 				return errors.New("[CreateBlockForCommitter] no new account")
 			}
 		}
-		// create new liquidity history
-		if len(pendingNewLiquidityHistory) != 0 {
-			dbTx = tx.Table(liquidity.LiquidityHistoryTable).CreateInBatches(pendingNewLiquidityHistory, len(pendingNewLiquidityHistory))
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected != int64(len(pendingNewLiquidityHistory)) {
-				logx.Errorf("[CreateBlockForCommitter] unable to create new liquidity history")
-				return errors.New("[CreateBlockForCommitter] unable to create new liquidity history")
-			}
-		}
 		// create new account history
-		if len(pendingNewAccountHistory) != 0 {
-			dbTx = tx.Table(account.AccountHistoryTableName).CreateInBatches(pendingNewAccountHistory, len(pendingNewAccountHistory))
+		if len(pendingNewAccountHistorys) != 0 {
+			dbTx = tx.Table(account.AccountHistoryTableName).CreateInBatches(pendingNewAccountHistorys, len(pendingNewAccountHistorys))
 			if dbTx.Error != nil {
 				return dbTx.Error
 			}
-			if dbTx.RowsAffected != int64(len(pendingNewAccountHistory)) {
+			if dbTx.RowsAffected != int64(len(pendingNewAccountHistorys)) {
 				logx.Errorf("[CreateBlockForCommitter] unable to create new account history")
 				return errors.New("[CreateBlockForCommitter] unable to create new account history")
 			}
 		}
-		// update new account history
-		for _, accountInfo := range pendingUpdatedAccountHistory {
-			dbTx = tx.Table(account.AccountHistoryTableName).Where("id = ?", accountInfo.ID).
-				Select("*").Updates(&accountInfo)
+		// update liquidity
+		for _, entity := range pendingUpdateLiquiditys {
+			dbTx = tx.Table(liquidity.LiquidityTable).Where("id = ?", entity.ID).
+				Select("*").
+				Updates(&entity)
 			if dbTx.Error != nil {
-				logx.Errorf("[CreateBlockForCommitter] unable to update account info: %s", dbTx.Error.Error())
+				logx.Errorf("[CreateBlockForCommitter] unable to update liquidity: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
-				logx.Errorf("[CreateBlockForCommitter] no new account info")
-				return errors.New("[CreateBlockForCommitter] no new account info")
+				logx.Errorf("[CreateBlockForCommitter] no new liquidity")
+				return errors.New("[CreateBlockForCommitter] no new liquidity")
+			}
+		}
+		// create new liquidity history
+		if len(pendingNewLiquidityHistorys) != 0 {
+			dbTx = tx.Table(liquidity.LiquidityHistoryTable).CreateInBatches(pendingNewLiquidityHistorys, len(pendingNewLiquidityHistorys))
+			if dbTx.Error != nil {
+				return dbTx.Error
+			}
+			if dbTx.RowsAffected != int64(len(pendingNewLiquidityHistorys)) {
+				logx.Errorf("[CreateBlockForCommitter] unable to create new liquidity history")
+				return errors.New("[CreateBlockForCommitter] unable to create new liquidity history")
+			}
+		}
+		// new nft
+		if len(pendingNewNfts) != 0 {
+			dbTx = tx.Table(nft.L2NftTableName).CreateInBatches(pendingNewNfts, len(pendingNewNfts))
+			if dbTx.Error != nil {
+				return dbTx.Error
+			}
+			if dbTx.RowsAffected != int64(len(pendingNewNfts)) {
+				logx.Errorf("[CreateBlockForCommitter] unable to create new nft")
+				return errors.New("[CreateBlockForCommitter] unable to create new nft")
+			}
+		}
+		// update nft
+		for _, entity := range pendingUpdateNfts {
+			dbTx = tx.Table(nft.L2NftTableName).Where("id = ?", entity.ID).
+				Select("*").
+				Updates(&entity)
+			if dbTx.Error != nil {
+				logx.Errorf("[CreateBlockForCommitter] unable to update nft: %s", dbTx.Error.Error())
+				return dbTx.Error
+			}
+			if dbTx.RowsAffected == 0 {
+				logx.Errorf("[CreateBlockForCommitter] no new nft")
+				return errors.New("[CreateBlockForCommitter] no new nft")
+			}
+		}
+		// new nft history
+		if len(pendingNewNftHistorys) != 0 {
+			dbTx = tx.Table(nft.L2NftHistoryTableName).CreateInBatches(pendingNewNftHistorys, len(pendingNewNftHistorys))
+			if dbTx.Error != nil {
+				return dbTx.Error
+			}
+			if dbTx.RowsAffected != int64(len(pendingNewNftHistorys)) {
+				logx.Errorf("[CreateBlockForCommitter] unable to create new nft history")
+				return errors.New("[CreateBlockForCommitter] unable to create new nft history")
 			}
 		}
 		return nil

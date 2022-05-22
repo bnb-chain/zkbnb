@@ -15,7 +15,7 @@
  *
  */
 
-package util
+package commonAsset
 
 import (
 	"encoding/json"
@@ -26,11 +26,11 @@ type NftInfo struct {
 	NftIndex            int64
 	CreatorAccountIndex int64
 	OwnerAccountIndex   int64
-	AssetId             int64
-	AssetAmount         string
 	NftContentHash      string
 	NftL1TokenId        string
 	NftL1Address        string
+	CreatorTreasuryRate int64
+	CollectionId        int64
 }
 
 func (info *NftInfo) String() string {
@@ -51,40 +51,32 @@ func EmptyNftInfo(nftIndex int64) (info *NftInfo) {
 		NftIndex:            nftIndex,
 		CreatorAccountIndex: commonConstant.NilAccountIndex,
 		OwnerAccountIndex:   commonConstant.NilAccountIndex,
-		AssetId:             commonConstant.NilAssetId,
-		AssetAmount:         commonConstant.NilAssetAmountStr,
 		NftContentHash:      commonConstant.NilNftContentHash,
 		NftL1TokenId:        commonConstant.NilL1TokenId,
 		NftL1Address:        commonConstant.NilL1Address,
+		CreatorTreasuryRate: 0,
+		CollectionId:        0,
 	}
-}
-
-func IsEmptyNftInfo(info *NftInfo) bool {
-	if info.NftIndex != -1 || info.AssetId != -1 || info.AssetAmount == "0" ||
-		info.NftContentHash != "" || info.NftL1TokenId != "0" || info.NftL1Address != "" {
-		return false
-	}
-	return true
 }
 
 func ConstructNftInfo(
 	NftIndex int64,
 	CreatorAccountIndex int64,
 	OwnerAccountIndex int64,
-	AssetId int64,
-	AssetAmount string,
 	NftContentHash string,
 	NftL1TokenId string,
 	NftL1Address string,
-) (nftInfo *NftInfo, err error) {
+	creatorTreasuryRate int64,
+	collectionId int64,
+) (nftInfo *NftInfo) {
 	return &NftInfo{
 		NftIndex:            NftIndex,
 		CreatorAccountIndex: CreatorAccountIndex,
 		OwnerAccountIndex:   OwnerAccountIndex,
-		AssetId:             AssetId,
-		AssetAmount:         AssetAmount,
 		NftContentHash:      NftContentHash,
 		NftL1TokenId:        NftL1TokenId,
 		NftL1Address:        NftL1Address,
-	}, nil
+		CreatorTreasuryRate: creatorTreasuryRate,
+		CollectionId:        collectionId,
+	}
 }

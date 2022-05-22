@@ -23,7 +23,6 @@ import (
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
-	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/common/sysconfigName"
@@ -73,13 +72,13 @@ func (l *SendTxLogic) sendSwapTx(rawTxInfo string) (txId string, err error) {
 
 	var (
 		redisLock      *redis.RedisLock
-		liquidityInfo  *liquidity.Liquidity
-		accountInfoMap = make(map[int64]*commonAsset.FormatAccountInfo)
+		liquidityInfo  *commonAsset.LiquidityInfo
+		accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
 	)
 
 	redisLock, liquidityInfo, err = globalmapHandler.GetLatestLiquidityInfoForWrite(
 		l.svcCtx.LiquidityModel,
-		l.svcCtx.LiquidityHistoryModel,
+		l.svcCtx.MempoolDetailModel,
 		l.svcCtx.RedisConnection,
 		txInfo.PairIndex,
 	)
@@ -90,10 +89,10 @@ func (l *SendTxLogic) sendSwapTx(rawTxInfo string) (txId string, err error) {
 	defer redisLock.Release()
 
 	// check params
-	if liquidityInfo.AssetA == "" ||
-		liquidityInfo.AssetA == util.ZeroBigInt.String() ||
-		liquidityInfo.AssetB == "" ||
-		liquidityInfo.AssetB == util.ZeroBigInt.String() {
+	if liquidityInfo.AssetA == nil ||
+		liquidityInfo.AssetA.Cmp(big.NewInt(0)) == 0 ||
+		liquidityInfo.AssetB == nil ||
+		liquidityInfo.AssetB.Cmp(big.NewInt(0)) == 0 {
 		logx.Errorf("[sendSwapTx] invalid params")
 		return "", errors.New("[sendSwapTx] invalid params")
 	}
@@ -102,43 +101,35 @@ func (l *SendTxLogic) sendSwapTx(rawTxInfo string) (txId string, err error) {
 	var (
 		toDelta *big.Int
 	)
-	poolABalance, isValid := new(big.Int).SetString(liquidityInfo.AssetA, 10)
-	if !isValid {
-		logx.Errorf("[sendSwapTx] unable to parse amount")
-		return "", errors.New("[sendSwapTx] unable to parse amount")
-	}
-	poolBBalance, isValid := new(big.Int).SetString(liquidityInfo.AssetB, 10)
-	if !isValid {
-		logx.Errorf("[sendSwapTx] unable to parse amount")
-		return "", errors.New("[sendSwapTx] unable to parse amount")
-	}
 	if liquidityInfo.AssetAId == txInfo.AssetAId &&
 		liquidityInfo.AssetBId == txInfo.AssetBId {
 		toDelta, _, err = util.ComputeDelta(
-			poolABalance,
-			poolBBalance,
+			liquidityInfo.AssetA,
+			liquidityInfo.AssetB,
 			liquidityInfo.AssetAId,
 			liquidityInfo.AssetBId,
 			txInfo.AssetAId,
 			true,
 			txInfo.AssetAAmount,
-			txInfo.FeeRate)
-		txInfo.PoolAAmount = poolABalance
-		txInfo.PoolBAmount = poolBBalance
+			liquidityInfo.FeeRate,
+		)
+		txInfo.PoolAAmount = liquidityInfo.AssetA
+		txInfo.PoolBAmount = liquidityInfo.AssetB
 	} else if liquidityInfo.AssetAId == txInfo.AssetBId &&
 		liquidityInfo.AssetBId == txInfo.AssetAId {
 		toDelta, _, err = util.ComputeDelta(
-			poolABalance,
-			poolBBalance,
+			liquidityInfo.AssetA,
+			liquidityInfo.AssetB,
 			liquidityInfo.AssetAId,
 			liquidityInfo.AssetBId,
 			txInfo.AssetAId,
-			true,
+			false,
 			txInfo.AssetAAmount,
-			txInfo.FeeRate)
+			liquidityInfo.FeeRate,
+		)
 
-		txInfo.PoolAAmount = poolBBalance
-		txInfo.PoolBAmount = poolABalance
+		txInfo.PoolAAmount = liquidityInfo.AssetB
+		txInfo.PoolBAmount = liquidityInfo.AssetA
 	} else {
 		err = errors.New("invalid pair assetIds")
 	}
@@ -167,22 +158,10 @@ func (l *SendTxLogic) sendSwapTx(rawTxInfo string) (txId string, err error) {
 	if accountInfoMap[txInfo.FromAccountIndex] == nil {
 		accountInfoMap[txInfo.FromAccountIndex], err = globalmapHandler.GetLatestAccountInfo(
 			l.svcCtx.AccountModel,
-			l.svcCtx.AccountHistoryModel,
 			l.svcCtx.MempoolModel,
 			l.svcCtx.MempoolDetailModel,
 			l.svcCtx.RedisConnection,
 			txInfo.FromAccountIndex,
-		)
-		if err != nil {
-			logx.Errorf("[sendSwapTx] unable to get latest account info: %s", err.Error())
-			return "", err
-		}
-	}
-	if accountInfoMap[txInfo.TreasuryAccountIndex] == nil {
-		accountInfoMap[txInfo.TreasuryAccountIndex], err = globalmapHandler.GetBasicAccountInfo(
-			l.svcCtx.AccountModel,
-			l.svcCtx.RedisConnection,
-			txInfo.TreasuryAccountIndex,
 		)
 		if err != nil {
 			logx.Errorf("[sendSwapTx] unable to get latest account info: %s", err.Error())
@@ -252,23 +231,13 @@ func (l *SendTxLogic) sendSwapTx(rawTxInfo string) (txId string, err error) {
 	// get latest liquidity info
 	for _, txDetail := range txDetails {
 		if txDetail.AssetType == commonAsset.LiquidityAssetType {
-			poolDelta, err := util.ParsePoolInfo(txDetail.BalanceDelta)
+			poolDelta, err := commonAsset.ParseLiquidityInfo(txDetail.BalanceDelta)
 			if err != nil {
 				logx.Errorf("[sendSwapTx] unable to parse pool info: %s", err.Error())
 				return txId, nil
 			}
-			poolA, isValid := new(big.Int).SetString(liquidityInfo.AssetA, 10)
-			if !isValid {
-				logx.Errorf("[sendSwapTx] unable to parse big int: %s", err.Error())
-				return txId, nil
-			}
-			poolB, isValid := new(big.Int).SetString(liquidityInfo.AssetB, 10)
-			if !isValid {
-				logx.Errorf("[sendSwapTx] unable to parse big int: %s", err.Error())
-				return txId, nil
-			}
-			liquidityInfo.AssetA = ffmath.Add(poolA, poolDelta.AssetAAmount).String()
-			liquidityInfo.AssetB = ffmath.Add(poolB, poolDelta.AssetBAmount).String()
+			liquidityInfo.AssetA = ffmath.Add(liquidityInfo.AssetA, poolDelta.AssetA)
+			liquidityInfo.AssetB = ffmath.Add(liquidityInfo.AssetB, poolDelta.AssetB)
 		}
 	}
 	liquidityInfoBytes, err := json.Marshal(liquidityInfo)

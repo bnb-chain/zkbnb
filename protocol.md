@@ -113,6 +113,7 @@ func ComputeAccountLeafHash(
 type AssetNode struct {
 	Balance  string
 	LpAmount string
+    OfferCanceledOrFinalized string // uint128
 }
 ```
 
@@ -122,6 +123,7 @@ Leaf hash computation:
 func ComputeAccountAssetLeafHash(
 	balance string,
 	lpAmount string,
+    offerCanceledOrFinalized string,
 ) (hashVal []byte, err error) {
 	hFunc := mimc.NewMiMC()
 	var buf bytes.Buffer
@@ -131,6 +133,11 @@ func ComputeAccountAssetLeafHash(
 		return nil, err
 	}
 	err = util.WriteStringBigIntIntoBuf(&buf, lpAmount)
+	if err != nil {
+		logx.Errorf("[ComputeAccountAssetLeafHash] invalid balance: %s", err.Error())
+		return nil, err
+	}
+    err = util.WriteStringBigIntIntoBuf(&buf, offerCanceledOrFinalized)
 	if err != nil {
 		logx.Errorf("[ComputeAccountAssetLeafHash] invalid balance: %s", err.Error())
 		return nil, err
@@ -151,6 +158,10 @@ type LiquidityNode struct {
     AssetBId      int64
     AssetB        string
     LpAmount      string
+    FeeRate       int64
+    TreasuryAccountIndex int64
+    TreasuryRate   int64
+    KLast         string
 }
 ```
 
@@ -165,6 +176,9 @@ func ComputeLiquidityAssetLeafHash(
 	assetBId int64,
 	assetB string,
     lpAmount string,
+    feeRate int64,
+    treasuryAccountIndex int64,
+    treasuryRate int64,
 ) (hashVal []byte, err error) {
 	hFunc := mimc.NewMiMC()
 	var buf bytes.Buffer
@@ -185,6 +199,9 @@ func ComputeLiquidityAssetLeafHash(
 		logx.Errorf("[ComputeLiquidityAssetLeafHash] unable to write big int to buf: %s", err.Error())
 		return nil, err
 	}
+    util.WriteInt64IntoBuf(&buf, feeRate)
+    util.WriteInt64IntoBuf(&buf, treasuryAccountIndex)
+    util.WriteInt64IntoBuf(&buf, treasuryRate)
 	hFunc.Write(buf.Bytes())
 	hashVal = hFunc.Sum(nil)
 	return hashVal, nil
@@ -199,8 +216,6 @@ func ComputeLiquidityAssetLeafHash(
 type NftNode struct {
     CreatorAccountIndex int64
     OwnerAccountIndex   int64
-    AssetId             int64
-    AssetAmount         string
     NftContentHash      string
     NftL1TokenId        string
     NftL1Address        string
@@ -214,8 +229,6 @@ Leaf hash computation:
 func ComputeNftAssetLeafHash(
 	creatorIndex int64,
 	nftContentHash string,
-	assetId int64,
-	assetAmount string,
 	nftL1Address string,
 	nftL1TokenId string,
     creatorTreasuryRate int64,
@@ -224,12 +237,6 @@ func ComputeNftAssetLeafHash(
 	var buf bytes.Buffer
 	util.WriteInt64IntoBuf(&buf, creatorIndex)
 	buf.Write(common.FromHex(nftContentHash))
-	util.WriteInt64IntoBuf(&buf, assetId)
-	err = util.WriteStringBigIntIntoBuf(&buf, assetAmount)
-	if err != nil {
-		logx.Errorf("[ComputeNftAssetLeafHash] unable to write big int to buf: %s", err.Error())
-		return nil, err
-	}
 	err = util.WriteAddressIntoBuf(&buf, nftL1Address)
 	if err != nil {
 		logx.Errorf("[ComputeNftAssetLeafHash] unable to write address to buf: %s", err.Error())
@@ -361,11 +368,14 @@ This is a layer-1 transaction and is used for creating a trading pair for L2.
 
 ##### Structure
 
-| Name     | Size(byte) | Comment            |
-| -------- | ---------- | ------------------ |
-| TxType   | 1          | transaction type   |
-| AssetAId | 2          | unique asset index |
-| AssetBId | 2          | unique asset index |
+| Name                 | Size(byte) | Comment                       |
+| -------------------- | ---------- | ----------------------------- |
+| TxType               | 1          | transaction type              |
+| AssetAId             | 2          | unique asset index            |
+| AssetBId             | 2          | unique asset index            |
+| FeeRate              | 2          | fee rate                      |
+| TreasuryAccountIndex | 4          | unique treasury account index |
+| TreasuryRate         | 2          | treasury rate                 |
 
 #### User transaction
 
@@ -443,7 +453,7 @@ This is a layer-1 transaction and is used for depositing nfts into the layer-2 a
 
 ##### Size
 
-94 byte
+96 byte
 
 ##### Structure
 
@@ -565,18 +575,16 @@ This is a layer-2 transaction and is used for making a swap for assets in the la
 
 ##### Structure
 
-| Name                 | Size(byte) | Comment                |
-| -------------------- | ---------- | ---------------------- |
-| TxType               | 1          | transaction type       |
-| FromAccountIndex     | 4          | from account index     |
-| PairIndex            | 2          | unique pair index      |
-| AssetAAmount         | 5          | packed asset amount    |
-| AssetBAmount         | 5          | packed asset amount    |
-| TreasuryAccountIndex | 4          | treasury account index |
-| TreasuryFeeAmount    | 2          | packed fee amount      |
-| GasFeeAccountIndex   | 4          | gas fee account index  |
-| GasFeeAssetId        | 2          | gas fee asset id       |
-| GasFeeAssetAmount    | 2          | packed fee amount      |
+| Name               | Size(byte) | Comment               |
+| ------------------ | ---------- | --------------------- |
+| TxType             | 1          | transaction type      |
+| FromAccountIndex   | 4          | from account index    |
+| PairIndex          | 2          | unique pair index     |
+| AssetAAmount       | 5          | packed asset amount   |
+| AssetBAmount       | 5          | packed asset amount   |
+| GasFeeAccountIndex | 4          | gas fee account index |
+| GasFeeAssetId      | 2          | gas fee asset id      |
+| GasFeeAssetAmount  | 2          | packed fee amount     |
 
 #### User transaction
 
@@ -592,9 +600,6 @@ type SwapTxInfo struct {
 	PoolAAmount            *big.Int
 	PoolBAmount            *big.Int
 	FeeRate                int64 // 0.3 * 10000
-	TreasuryAccountIndex   int64
-	TreasuryRate           int64
-	TreasuryFeeAmountDelta *big.Int
 	GasAccountIndex        int64
 	GasFeeAssetId          int64
 	GasFeeAssetAmount      *big.Int
@@ -610,8 +615,7 @@ func VerifySwapTx(api API, flag Variable, tx SwapTxConstraints, accountsBefore [
 	// verify params
 	// account index
 	IsVariableEqual(api, flag, tx.FromAccountIndex, accountsBefore[0].AccountIndex)
-	IsVariableEqual(api, flag, tx.TreasuryAccountIndex, accountsBefore[1].AccountIndex)
-	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[2].AccountIndex)
+	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[1].AccountIndex)
 	// pair index
 	IsVariableEqual(api, flag, tx.PairIndex, liquidityBefore.PairIndex)
 	// asset id
@@ -672,21 +676,23 @@ This is a layer-2 transaction and is used for adding liquidity for a trading pai
 
 ##### Size
 
-30 byte
+36 byte
 
 ##### Structure
 
-| Name               | Size(byte) | Comment               |
-| ------------------ | ---------- | --------------------- |
-| TxType             | 1          | transaction type      |
-| FromAccountIndex   | 4          | from account index    |
-| PairIndex          | 2          | unique pair index     |
-| AssetAAmount       | 5          | packed asset amount   |
-| AssetBAmount       | 5          | packed asset amount   |
-| LpAmount           | 5          | packed asset amount   |
-| GasFeeAccountIndex | 4          | gas fee account index |
-| GasFeeAssetId      | 2          | gas fee asset id      |
-| GasFeeAssetAmount  | 2          | packed fee amount     |
+| Name                 | Size(byte) | Comment                |
+| -------------------- | ---------- | ---------------------- |
+| TxType               | 1          | transaction type       |
+| FromAccountIndex     | 4          | from account index     |
+| PairIndex            | 2          | unique pair index      |
+| AssetAAmount         | 5          | packed asset amount    |
+| AssetBAmount         | 5          | packed asset amount    |
+| LpAmount             | 5          | packed asset amount    |
+| TreasuryAccountIndex | 4          | treasury account index |
+| TreasuryRate         | 2          | treasury rate          |
+| GasFeeAccountIndex   | 4          | gas fee account index  |
+| GasFeeAssetId        | 2          | gas fee asset id       |
+| GasFeeAssetAmount    | 2          | packed fee amount      |
 
 #### User transaction
 
@@ -751,21 +757,23 @@ This is a layer-2 transaction and is used for removing liquidity for a trading p
 
 ##### Size
 
-30 byte
+36 byte
 
 ##### Structure
 
-| Name               | Size(byte) | Comment               |
-| ------------------ | ---------- | --------------------- |
-| TxType             | 1          | transaction type      |
-| FromAccountIndex   | 4          | from account index    |
-| PairIndex          | 2          | unique pair index     |
-| AssetAAmount       | 5          | packed asset amount   |
-| AssetBAmount       | 5          | packed asset amount   |
-| LpAmount           | 5          | packed asset amount   |
-| GasFeeAccountIndex | 4          | gas fee account index |
-| GasFeeAssetId      | 2          | gas fee asset id      |
-| GasFeeAssetAmount  | 2          | packed fee amount     |
+| Name                  | Size(byte) | Comment                |
+| --------------------- | ---------- | ---------------------- |
+| TxType                | 1          | transaction type       |
+| FromAccountIndex      | 4          | from account index     |
+| PairIndex             | 2          | unique pair index      |
+| AssetAAmount          | 5          | packed asset amount    |
+| AssetBAmount          | 5          | packed asset amount    |
+| LpAmount              | 5          | packed asset amount    |
+| TreasuryAcccountIndex | 4          | treasury account index |
+| TreasuryRate          | 2          | treasury rate          |
+| GasFeeAccountIndex    | 4          | gas fee account index  |
+| GasFeeAssetId         | 2          | gas fee asset id       |
+| GasFeeAssetAmount     | 2          | packed fee amount      |
 
 #### User transaction
 
@@ -1013,11 +1021,11 @@ func VerifyTransferNftTx(
 }
 ```
 
-### SetNftPrice
+### AtomicMatch
 
 #### Description
 
-This is a layer-2 transaction and is used for setting nft price in the layer-2 network.
+This is a layer-2 transaction that will be used for buying or selling Nft in the layer-2 network.
 
 #### Onchain operation
 
@@ -1027,13 +1035,25 @@ This is a layer-2 transaction and is used for setting nft price in the layer-2 n
 
 ##### Structure
 
+`Offer`:
+
+| Name         | Size(byte) | Comment                                                      |
+| ------------ | ---------- | ------------------------------------------------------------ |
+| Type         | 1          | transaction type, 0 indicates this is a  `BuyNftOffer` , 1 indicate this is a  `SellNftOffer` |
+| OfferId      | 3          | used to identify the oﬀer                                    |
+| AccountIndex | 4          | who want to buy/sell nft                                     |
+| AssetId      | 2          | the asset id which buyer/seller want to use pay for nft      |
+| AssetAmount  | 5          | the asset amount                                             |
+| ListedAt     | 8          | timestamp when the order is signed                           |
+| ExpiredAt    | 8          | timestamp after which the order is invalid                   |
+| Sig          |            | signature generated by buyer/seller_account_index's private key |
+
+`AtomicMatch`:
+
 | Name               | Size(byte) | Comment               |
 | ------------------ | ---------- | --------------------- |
 | TxType             | 1          | transaction type      |
-| FromAccountIndex   | 4          | from account index    |
-| NftIndex           | 5          | unique nft index      |
-| AssetId            | 2          | asset index           |
-| AssetAmount        | 5          | packed amount         |
+| AccountIndex       | 4          | account index         |
 | GasFeeAccountIndex | 4          | gas fee account index |
 | GasFeeAssetId      | 2          | gas fee asset id      |
 | GasFeeAssetAmount  | 2          | packed fee amount     |
@@ -1074,11 +1094,11 @@ func VerifySetNftPriceTx(api API, flag Variable, tx SetNftPriceTxConstraints, ac
 }
 ```
 
-### BuyNft
+### CancelOffer
 
 #### Description
 
-This is a layer-2 transaction and is used for buying nfts in the layer-2 network.
+This is a layer-2 transaction and is used for canceling nft offer.
 
 #### Onchain operation
 
@@ -1088,20 +1108,14 @@ This is a layer-2 transaction and is used for buying nfts in the layer-2 network
 
 ##### Structure
 
-| Name                    | Size(byte) | Comment                |
-| ----------------------- | ---------- | ---------------------- |
-| TxType                  | 1          | transaction type       |
-| BuyerAccountIndex       | 4          | buyer account index    |
-| OwnerAccountIndex       | 4          | owner account index    |
-| NftIndex                | 5          | unique nft index       |
-| AssetId                 | 2          | asset index            |
-| AssetAmount             | 5          | packed amount          |
-| GasFeeAccountIndex      | 4          | gas fee account index  |
-| GasFeeAssetId           | 2          | gas fee asset id       |
-| GasFeeAssetAmount       | 2          | packed fee amount      |
-| TreasuryFeeAccountIndex | 4          | treasury account index |
-| TreasuryFeeAmount       | 2          | packed fee             |
-| CreatorFeeAmount        | 2          | packed fee             |
+| Name               | Size(byte) | Comment               |
+| ------------------ | ---------- | --------------------- |
+| TxType             | 1          | transaction type      |
+| AccountIndex       | 4          | account index         |
+| OfferId            | 3          | nft offer id          |
+| GasFeeAccountIndex | 4          | gas fee account index |
+| GasFeeAssetId      | 2          | gas fee asset id      |
+| GasFeeAssetAmount  | 2          | packed fee amount     |
 
 #### User transaction
 

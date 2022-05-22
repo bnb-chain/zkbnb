@@ -1,14 +1,13 @@
 package svc
 
 import (
-	"github.com/zecrey-labs/zecrey-core/common/general/model/liquidityPair"
-	"github.com/zecrey-labs/zecrey-core/common/general/model/nft"
-	"github.com/zecrey-labs/zecrey-core/common/general/model/sysconfig"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
+	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/committer/internal/config"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -25,8 +24,6 @@ type ServiceContext struct {
 	AccountHistoryModel account.AccountHistoryModel
 
 	L2NftModel nft.L2NftModel
-
-	LiquidityPairModel    liquidityPair.LiquidityPairModel
 	LiquidityModel        liquidity.LiquidityModel
 	LiquidityHistoryModel liquidity.LiquidityHistoryModel
 	L2NftHistoryModel     nft.L2NftHistoryModel
@@ -61,7 +58,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		AccountModel:          account.NewAccountModel(conn, c.CacheRedis, gormPointer),
 		AccountHistoryModel:   account.NewAccountHistoryModel(conn, c.CacheRedis, gormPointer),
 		L2NftModel:            nft.NewL2NftModel(conn, c.CacheRedis, gormPointer),
-		LiquidityPairModel:    liquidityPair.NewLiquidityPairModel(conn, c.CacheRedis, gormPointer),
 		LiquidityModel:        liquidity.NewLiquidityModel(conn, c.CacheRedis, gormPointer),
 		LiquidityHistoryModel: liquidity.NewLiquidityHistoryModel(conn, c.CacheRedis, gormPointer),
 		L2NftHistoryModel:     nft.NewL2NftHistoryModel(conn, c.CacheRedis, gormPointer),

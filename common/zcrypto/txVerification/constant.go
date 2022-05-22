@@ -22,39 +22,43 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
-	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"math/big"
 )
 
 type (
-	TransferTxInfo        = commonTx.TransferTxInfo
-	SwapTxInfo            = commonTx.SwapTxInfo
-	AddLiquidityTxInfo    = commonTx.AddLiquidityTxInfo
-	RemoveLiquidityTxInfo = commonTx.RemoveLiquidityTxInfo
-	WithdrawTxInfo        = commonTx.WithdrawTxInfo
-	MintNftTxInfo         = commonTx.MintNftTxInfo
-	TransferNftTxInfo     = commonTx.TransferNftTxInfo
-	SetNftPriceTxInfo     = commonTx.SetNftPriceTxInfo
-	BuyNftTxInfo          = commonTx.BuyNftTxInfo
-	WithdrawNftTxInfo     = commonTx.WithdrawNftTxInfo
+	TransferTxInfo         = commonTx.TransferTxInfo
+	SwapTxInfo             = commonTx.SwapTxInfo
+	AddLiquidityTxInfo     = commonTx.AddLiquidityTxInfo
+	RemoveLiquidityTxInfo  = commonTx.RemoveLiquidityTxInfo
+	WithdrawTxInfo         = commonTx.WithdrawTxInfo
+	CreateCollectionTxInfo = commonTx.CreateCollectionTxInfo
+	MintNftTxInfo          = commonTx.MintNftTxInfo
+	TransferNftTxInfo      = commonTx.TransferNftTxInfo
+	OfferTxInfo            = commonTx.OfferTxInfo
+	AtomicMatchTxInfo      = commonTx.AtomicMatchTxInfo
+	CancelOfferTxInfo      = commonTx.CancelOfferTxInfo
+	WithdrawNftTxInfo      = commonTx.WithdrawNftTxInfo
 
 	PublicKey = eddsa.PublicKey
 
 	MempoolTxDetail = mempool.MempoolTxDetail
 
-	PoolInfo = util.PoolInfo
-	NftInfo  = util.NftInfo
+	AccountInfo   = commonAsset.AccountInfo
+	LiquidityInfo = commonAsset.LiquidityInfo
+	NftInfo       = commonAsset.NftInfo
 )
 
 const (
 	Base = 10
 
+	OfferPerAsset = 128
+
 	TenThousand = 10000
 
-	GeneralAssetType     = commonAsset.GeneralAssetType
-	LiquidityAssetType   = commonAsset.LiquidityAssetType
-	LiquidityLpAssetType = commonAsset.LiquidityLpAssetType
-	NftAssetType         = commonAsset.NftAssetType
+	GeneralAssetType         = commonAsset.GeneralAssetType
+	LiquidityAssetType       = commonAsset.LiquidityAssetType
+	NftAssetType             = commonAsset.NftAssetType
+	CollectionNonceAssetType = commonAsset.CollectionNonceAssetType
 )
 
 var (

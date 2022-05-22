@@ -19,7 +19,6 @@ package logic
 import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/zecrey-labs/zecrey-core/common/general/model/nft"
 	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
 	"github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey/basic"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
@@ -27,6 +26,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/l1TxSender"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2BlockEventMonitor"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"strings"
 )

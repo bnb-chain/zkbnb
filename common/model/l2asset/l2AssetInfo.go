@@ -41,7 +41,7 @@ type (
 		GetL2AssetsCount() (latestHeight int64, err error)
 		GetL2AssetsList() (res []*L2AssetInfo, err error)
 		GetL2AssetsListWithoutL1AssetsInfo() (res []*L2AssetInfo, err error)
-		GetSimpleL2AssetInfoByAssetId(assetId uint32) (res *L2AssetInfo, err error)
+		GetSimpleL2AssetInfoByAssetId(assetId int64) (res *L2AssetInfo, err error)
 		GetAssetIdCount() (res int64, err error)
 		GetL2AssetInfoBySymbol(symbol string) (res *L2AssetInfo, err error)
 	}
@@ -200,12 +200,12 @@ func (m *defaultL2AssetInfoModel) GetL2AssetsCount() (latestHeight int64, err er
 
 /*
 	Func: GetSimpleL2AssetInfoByAssetId
-	Params: assetId uint32
+	Params: assetId int64
 	Return: L2AssetInfo, error
 	Description: get layer-2 asset info by assetId
 */
-func (m *defaultL2AssetInfoModel) GetSimpleL2AssetInfoByAssetId(assetId uint32) (res *L2AssetInfo, err error) {
-	dbTx := m.DB.Table(m.table).Where("l2_asset_id = ?", assetId).Find(&res)
+func (m *defaultL2AssetInfoModel) GetSimpleL2AssetInfoByAssetId(assetId int64) (res *L2AssetInfo, err error) {
+	dbTx := m.DB.Table(m.table).Where("asset_id = ?", assetId).Find(&res)
 	if dbTx.Error != nil {
 		errInfo := fmt.Sprintf("[l2asset.GetL2AssetInfoByAssetId] %s", dbTx.Error)
 		logx.Error(errInfo)
