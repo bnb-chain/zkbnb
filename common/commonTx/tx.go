@@ -25,20 +25,23 @@ import (
 )
 
 type (
-	TransferTxInfo        = legendTxTypes.TransferTxInfo
-	SwapTxInfo            = legendTxTypes.SwapTxInfo
-	AddLiquidityTxInfo    = legendTxTypes.AddLiquidityTxInfo
-	RemoveLiquidityTxInfo = legendTxTypes.RemoveLiquidityTxInfo
-	WithdrawTxInfo        = legendTxTypes.WithdrawTxInfo
-	MintNftTxInfo         = legendTxTypes.MintNftTxInfo
-	TransferNftTxInfo     = legendTxTypes.TransferNftTxInfo
-	SetNftPriceTxInfo     = legendTxTypes.SetNftPriceTxInfo
-	BuyNftTxInfo          = legendTxTypes.BuyNftTxInfo
-	WithdrawNftTxInfo     = legendTxTypes.WithdrawNftTxInfo
+	TransferTxInfo         = legendTxTypes.TransferTxInfo
+	SwapTxInfo             = legendTxTypes.SwapTxInfo
+	AddLiquidityTxInfo     = legendTxTypes.AddLiquidityTxInfo
+	RemoveLiquidityTxInfo  = legendTxTypes.RemoveLiquidityTxInfo
+	WithdrawTxInfo         = legendTxTypes.WithdrawTxInfo
+	CreateCollectionTxInfo = legendTxTypes.CreateCollectionTxInfo
+	MintNftTxInfo          = legendTxTypes.MintNftTxInfo
+	TransferNftTxInfo      = legendTxTypes.TransferNftTxInfo
+	OfferTxInfo            = legendTxTypes.OfferTxInfo
+	AtomicMatchTxInfo      = legendTxTypes.AtomicMatchTxInfo
+	CancelOfferTxInfo      = legendTxTypes.CancelOfferTxInfo
+	WithdrawNftTxInfo      = legendTxTypes.WithdrawNftTxInfo
 )
 
 type RegisterZnsTxInfo struct {
 	TxType          uint8
+	AccountIndex    int64
 	AccountName     string
 	AccountNameHash string
 	PubKey          string
@@ -48,6 +51,42 @@ func ParseRegisterZnsTxInfo(txInfoStr string) (txInfo *RegisterZnsTxInfo, err er
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
 		logx.Errorf("[ParseRegisterZnsTxInfo] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	return txInfo, nil
+}
+
+type CreatePairTxInfo struct {
+	TxType               uint8
+	PairIndex            int64
+	AssetAId             int64
+	AssetBId             int64
+	FeeRate              int64
+	TreasuryAccountIndex int64
+	TreasuryRate         int64
+}
+
+func ParseCreatePairTxInfo(txInfoStr string) (txInfo *CreatePairTxInfo, err error) {
+	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
+	if err != nil {
+		logx.Errorf("[ParseCreatePairTxInfo] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	return txInfo, nil
+}
+
+type UpdatePairRateTxInfo struct {
+	TxType               uint8
+	PairIndex            int64
+	FeeRate              int64
+	TreasuryAccountIndex int64
+	TreasuryRate         int64
+}
+
+func ParseUpdatePairRateTxInfo(txInfoStr string) (txInfo *UpdatePairRateTxInfo, err error) {
+	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
+	if err != nil {
+		logx.Errorf("[ParseUpdatePairRateTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil
@@ -71,15 +110,14 @@ func ParseDepositTxInfo(txInfoStr string) (txInfo *DepositTxInfo, err error) {
 }
 
 type DepositNftTxInfo struct {
-	TxType          uint8
-	AccountIndex    uint32
-	AccountNameHash string
-	NftType         uint8
-	NftIndex        uint64
-	NftContentHash  []byte
-	NftL1Address    string
-	NftL1TokenId    *big.Int
-	Amount          uint32
+	TxType              uint8
+	AccountIndex        uint32
+	AccountNameHash     string
+	NftIndex            uint64
+	NftContentHash      []byte
+	NftL1Address        string
+	NftL1TokenId        *big.Int
+	CreatorTreasuryRate int64
 }
 
 func ParseDepositNftTxInfo(txInfoStr string) (txInfo *DepositNftTxInfo, err error) {
@@ -112,14 +150,11 @@ type FullExitNftTxInfo struct {
 	TxType          uint8
 	AccountIndex    uint32
 	AccountNameHash string
-	NftL1Address    string
-	ToAddress       string
-	ProxyAddress    string
-	NftType         uint8
-	NftL1TokenId    *big.Int
-	Amount          uint32
+	NftIndex        int64
 	NftContentHash  []byte
-	NftIndex        uint64
+	NftL1Address    string
+	NftL1TokenId    *big.Int
+	ToAddress       string
 }
 
 func ParseFullExitNftTxInfo(txInfoStr string) (txInfo *FullExitNftTxInfo, err error) {
@@ -186,7 +221,7 @@ func ParseTransferNftTxInfo(txInfoStr string) (txInfo *TransferNftTxInfo, err er
 	return txInfo, nil
 }
 
-func ParseSetNftPriceTxInfo(txInfoStr string) (txInfo *SetNftPriceTxInfo, err error) {
+func ParseSetNftPriceTxInfo(txInfoStr string) (txInfo *AtomicMatchTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
 		logx.Errorf("[ParseSetNftPriceTxInfo] unable to parse tx info: %s", err.Error())
@@ -195,7 +230,7 @@ func ParseSetNftPriceTxInfo(txInfoStr string) (txInfo *SetNftPriceTxInfo, err er
 	return txInfo, nil
 }
 
-func ParseBuyNftTxInfo(txInfoStr string) (txInfo *BuyNftTxInfo, err error) {
+func ParseBuyNftTxInfo(txInfoStr string) (txInfo *CancelOfferTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
 		logx.Errorf("[ParseBuyNftTxInfo] unable to parse tx info: %s", err.Error())

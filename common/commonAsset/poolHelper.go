@@ -15,68 +15,84 @@
  *
  */
 
-package util
+package commonAsset
 
 import (
 	"encoding/json"
-	"github.com/zecrey-labs/zecrey-crypto/ffmath"
+	"errors"
 	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
 )
 
-type PoolInfo struct {
-	AssetAAmount *big.Int
-	AssetBAmount *big.Int
+type LiquidityInfo struct {
+	PairIndex            int64
+	AssetAId             int64
+	AssetA               *big.Int
+	AssetBId             int64
+	AssetB               *big.Int
+	LpAmount             *big.Int
+	KLast                *big.Int
+	FeeRate              int64
+	TreasuryAccountIndex int64
+	TreasuryRate         int64
 }
 
-func ConstructPoolInfo(a, b string) (info *PoolInfo, err error) {
-	aInt, isValid := new(big.Int).SetString(a, Base)
-	if !isValid {
-		logx.Errorf("[ConstructPoolInfo] invalid big int")
-		return nil, err
-	}
-	bInt, isValid := new(big.Int).SetString(b, Base)
-	if !isValid {
-		logx.Errorf("[ConstructPoolInfo] invalid big int")
-		return nil, err
-	}
-	return &PoolInfo{
-		AssetAAmount: aInt,
-		AssetBAmount: bInt,
-	}, nil
-}
-
-func (info *PoolInfo) String() string {
+func (info *LiquidityInfo) String() string {
 	infoBytes, _ := json.Marshal(info)
 	return string(infoBytes)
 }
 
-func ParsePoolInfo(infoStr string) (info *PoolInfo, err error) {
+func ConstructLiquidityInfo(
+	pairIndex int64,
+	assetAId int64,
+	assetAAmount string,
+	assetBId int64,
+	assetBAmount string,
+	lpAmount string,
+	kLast string,
+	feeRate int64,
+	treasuryAccountIndex int64,
+	treasuryRate int64,
+) (info *LiquidityInfo, err error) {
+	assetA, isValid := new(big.Int).SetString(assetAAmount, 10)
+	if !isValid {
+		logx.Errorf("[ConstructLiquidityInfo] invalid big int")
+		return nil, errors.New("[ConstructLiquidityInfo] invalid bit int")
+	}
+	assetB, isValid := new(big.Int).SetString(assetBAmount, 10)
+	if !isValid {
+		logx.Errorf("[ConstructLiquidityInfo] invalid big int")
+		return nil, errors.New("[ConstructLiquidityInfo] invalid bit int")
+	}
+	lp, isValid := new(big.Int).SetString(lpAmount, 10)
+	if !isValid {
+		logx.Errorf("[ConstructLiquidityInfo] invalid big int")
+		return nil, errors.New("[ConstructLiquidityInfo] invalid bit int")
+	}
+	kLastInt, isValid := new(big.Int).SetString(kLast, 10)
+	if !isValid {
+		logx.Errorf("[ConstructLiquidityInfo] invalid big int")
+		return nil, errors.New("[ConstructLiquidityInfo] invalid bit int")
+	}
+	info = &LiquidityInfo{
+		PairIndex:            pairIndex,
+		AssetAId:             assetAId,
+		AssetA:               assetA,
+		AssetBId:             assetBId,
+		AssetB:               assetB,
+		LpAmount:             lp,
+		KLast:                kLastInt,
+		FeeRate:              feeRate,
+		TreasuryAccountIndex: treasuryAccountIndex,
+		TreasuryRate:         treasuryRate,
+	}
+	return info, nil
+}
+
+func ParseLiquidityInfo(infoStr string) (info *LiquidityInfo, err error) {
 	err = json.Unmarshal([]byte(infoStr), &info)
 	if err != nil {
 		return nil, err
 	}
 	return info, nil
-}
-
-func IsEqualPoolInfo(a, b *PoolInfo) bool {
-	return a.String() == b.String()
-}
-
-func AddPoolInfoString(a, b string) (info string, err error) {
-	aInfo, err := ParsePoolInfo(a)
-	if err != nil {
-		logx.Errorf("[AddPoolInfoString] unable to parse pool info: %s", err.Error())
-		return "", err
-	}
-	bInfo, err := ParsePoolInfo(b)
-	if err != nil {
-		logx.Errorf("[AddPoolInfoString] unable to parse pool info: %s", err.Error())
-		return "", err
-	}
-	updatedInfo := &PoolInfo{
-		AssetAAmount: ffmath.Add(aInfo.AssetAAmount, bInfo.AssetAAmount),
-		AssetBAmount: ffmath.Add(aInfo.AssetBAmount, bInfo.AssetBAmount),
-	}
-	return updatedInfo.String(), nil
 }

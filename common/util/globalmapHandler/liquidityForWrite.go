@@ -19,19 +19,21 @@ package globalmapHandler
 
 import (
 	"encoding/json"
+	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
+	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
 func GetLatestLiquidityInfoForWrite(
 	liquidityModel LiquidityModel,
-	liquidityHistoryModel LiquidityHistoryModel,
+	mempoolTxDetailModel MempoolTxDetailModel,
 	redisConnection *Redis,
 	pairIndex int64,
 ) (
 	redisLock *RedisLock,
-	liquidityInfo *liquidity.Liquidity,
+	liquidityInfo *LiquidityInfo,
 	err error,
 ) {
 	key := util.GetLiquidityKeyForWrite(pairIndex)
@@ -47,35 +49,55 @@ func GetLatestLiquidityInfoForWrite(
 		logx.Errorf("[GetLatestLiquidityInfoForWrite] unable to get data from redis: %s", err.Error())
 		return nil, nil, err
 	}
+	var (
+		dbLiquidityInfo *liquidity.Liquidity
+	)
 	if liquidityInfoStr == "" {
-		// get latest info from history
-		liquidityHistory, err := liquidityHistoryModel.GetLatestLiquidityByPairIndex(pairIndex)
+		// get latest info from liquidity table
+		dbLiquidityInfo, err = liquidityModel.GetLiquidityByPairIndex(pairIndex)
 		if err != nil {
-			if err != liquidity.ErrNotFound {
-				logx.Errorf("[GetLatestLiquidityInfoForWrite] unable to get latest liquidity by pair index: %s", err.Error())
+			logx.Errorf("[GetLatestLiquidityInfoForRead] unable to get latest liquidity by pair index: %s", err.Error())
+			return nil, nil, err
+		}
+		txDetails, err := mempoolTxDetailModel.GetMempoolTxDetailsByAssetIdAndAssetType(pairIndex, commonAsset.LiquidityAssetType)
+		if err != nil {
+			if err != mempool.ErrNotFound {
+				logx.Errorf("[GetLatestAccountInfo] unable to get mempool txs by account index: %s", err.Error())
 				return nil, nil, err
-			} else {
-				// get liquidity info from liquidity
-				liquidityInfo, err = liquidityModel.GetLiquidityByPairIndex(pairIndex)
-				if err != nil {
-					logx.Errorf("[GetLatestLiquidityInfoForWrite] unable to get liquidity info: %s", err.Error())
-					return nil, nil, err
-				}
 			}
-		} else {
-			liquidityInfo = &liquidity.Liquidity{
-				PairIndex: liquidityHistory.PairIndex,
-				AssetAId:  liquidityHistory.AssetAId,
-				AssetA:    liquidityHistory.AssetA,
-				AssetBId:  liquidityHistory.AssetBId,
-				AssetB:    liquidityHistory.AssetB,
+		}
+		liquidityInfo, err = commonAsset.ConstructLiquidityInfo(
+			pairIndex,
+			dbLiquidityInfo.AssetAId,
+			dbLiquidityInfo.AssetA,
+			dbLiquidityInfo.AssetBId,
+			dbLiquidityInfo.AssetB,
+			dbLiquidityInfo.LpAmount,
+			dbLiquidityInfo.KLast,
+			dbLiquidityInfo.FeeRate,
+			dbLiquidityInfo.TreasuryAccountIndex,
+			dbLiquidityInfo.TreasuryRate,
+		)
+		if err != nil {
+			logx.Errorf("[GetLatestAccountInfo] unable to construct pool info: %s", err.Error())
+			return nil, nil, err
+		}
+		for _, txDetail := range txDetails {
+			nBalance, err := commonAsset.ComputeNewBalance(commonAsset.LiquidityAssetType, liquidityInfo.String(), txDetail.BalanceDelta)
+			if err != nil {
+				logx.Errorf("[GetLatestAccountInfo] unable to compute new balance: %s", err.Error())
+				return nil, nil, err
+			}
+			liquidityInfo, err = commonAsset.ParseLiquidityInfo(nBalance)
+			if err != nil {
+				logx.Errorf("[GetLatestAccountInfo] unable to parse pool info: %s", err.Error())
+				return nil, nil, err
 			}
 		}
 	} else {
-		var liquidityInfo *liquidity.Liquidity
-		err := json.Unmarshal([]byte(liquidityInfoStr), &liquidityInfo)
+		err = json.Unmarshal([]byte(liquidityInfoStr), &liquidityInfo)
 		if err != nil {
-			logx.Errorf("[GetLatestLiquidityInfoForWrite] unable to unmarshal account info: %s", err.Error())
+			logx.Errorf("[GetLatestLiquidityInfoForWrite] unable to unmarshal liquidity info: %s", err.Error())
 			return nil, nil, err
 		}
 	}

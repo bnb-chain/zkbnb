@@ -23,8 +23,6 @@ import (
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-crypto/wasm/zecrey-legend/legendTxTypes"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
-	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
-	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
 	"log"
 	"math/big"
@@ -41,8 +39,8 @@ import (
 			- AssetGas
 */
 func VerifyWithdrawNftTxInfo(
-	accountInfoMap map[int64]*commonAsset.FormatAccountInfo,
-	nftInfoMap map[int64]*nft.L2Nft,
+	accountInfoMap map[int64]*AccountInfo,
+	nftInfo *NftInfo,
 	txInfo *WithdrawNftTxInfo,
 ) (txDetails []*MempoolTxDetail, err error) {
 	// verify params
@@ -50,11 +48,10 @@ func VerifyWithdrawNftTxInfo(
 		accountInfoMap[txInfo.GasAccountIndex] == nil ||
 		accountInfoMap[txInfo.AccountIndex].AssetInfo == nil ||
 		accountInfoMap[txInfo.AccountIndex].AssetInfo[txInfo.GasFeeAssetId] == nil ||
-		accountInfoMap[txInfo.AccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance == "" ||
-		nftInfoMap[txInfo.AccountIndex] == nil ||
-		nftInfoMap[txInfo.NftIndex].OwnerAccountIndex != txInfo.AccountIndex ||
-		nftInfoMap[txInfo.NftIndex].NftIndex != txInfo.NftIndex ||
-		nftInfoMap[txInfo.NftIndex].NftContentHash != txInfo.NftContentHash {
+		nftInfo == nil ||
+		nftInfo.OwnerAccountIndex != txInfo.AccountIndex ||
+		nftInfo.NftIndex != txInfo.NftIndex ||
+		nftInfo.NftContentHash != txInfo.NftContentHash {
 		logx.Errorf("[VerifySetNftPriceTxInfo] invalid params")
 		return nil, errors.New("[VerifySetNftPriceTxInfo] invalid params")
 	}
@@ -76,7 +73,7 @@ func VerifyWithdrawNftTxInfo(
 	// from account asset Gas
 	assetDeltaMap[txInfo.AccountIndex][txInfo.GasFeeAssetId] = ffmath.Neg(txInfo.GasFeeAssetAmount)
 	// to account nft info
-	newNftInfo = util.EmptyNftInfo(txInfo.NftIndex)
+	newNftInfo = commonAsset.EmptyNftInfo(txInfo.NftIndex)
 	// gas account asset Gas
 	if assetDeltaMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId] == nil {
 		assetDeltaMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId] = txInfo.GasFeeAssetAmount
@@ -87,12 +84,7 @@ func VerifyWithdrawNftTxInfo(
 		)
 	}
 	// check balance
-	assetGasBalance, isValid := new(big.Int).SetString(accountInfoMap[txInfo.AccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance, 10)
-	if !isValid {
-		logx.Errorf("[VerifyMintNftTxInfo] unable to parse balance")
-		return nil, errors.New("[VerifyMintNftTxInfo] unable to parse balance")
-	}
-	if assetGasBalance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
+	if accountInfoMap[txInfo.AccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
 		logx.Errorf("[VerifyMintNftTxInfo] you don't have enough balance of asset Gas")
 		return nil, errors.New("[VerifyMintNftTxInfo] you don't have enough balance of asset Gas")
 	}
@@ -105,7 +97,7 @@ func VerifyWithdrawNftTxInfo(
 	if err != nil {
 		return nil, err
 	}
-	isValid, err = pk.Verify(txInfo.Sig, msgHash, hFunc)
+	isValid, err := pk.Verify(txInfo.Sig, msgHash, hFunc)
 	if err != nil {
 		log.Println("[VerifyWithdrawNftTxInfo] unable to verify signature:", err)
 		return nil, err
@@ -116,28 +108,36 @@ func VerifyWithdrawNftTxInfo(
 	}
 	// compute tx details
 	// from account asset gas
+	order := int64(0)
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.AccountIndex,
 		AccountName:  accountInfoMap[txInfo.AccountIndex].AccountName,
-		BalanceDelta: ffmath.Neg(txInfo.GasFeeAssetAmount).String(),
+		BalanceDelta: commonAsset.ConstructAccountAsset(
+			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), ZeroBigInt, ZeroBigInt).String(),
+		Order: order,
 	})
 	// from account nft delta
+	order++
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.NftIndex,
 		AssetType:    NftAssetType,
 		AccountIndex: txInfo.AccountIndex,
 		AccountName:  accountInfoMap[txInfo.AccountIndex].AccountName,
 		BalanceDelta: newNftInfo.String(),
+		Order:        order,
 	})
 	// gas account asset gas
+	order++
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.GasAccountIndex,
 		AccountName:  accountInfoMap[txInfo.GasAccountIndex].AccountName,
-		BalanceDelta: txInfo.GasFeeAssetAmount.String(),
+		BalanceDelta: commonAsset.ConstructAccountAsset(
+			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, ZeroBigInt, ZeroBigInt).String(),
+		Order: order,
 	})
 	return txDetails, nil
 }

@@ -24,8 +24,6 @@ import (
 	"github.com/zecrey-labs/zecrey-crypto/wasm/zecrey-legend/legendTxTypes"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
-	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
-	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
 	"log"
 	"math/big"
@@ -39,19 +37,17 @@ import (
 			- AssetA
 			- AssetB
 			- AssetGas
-		- Liquidity:
 			- LpAmount
-	- ToAccount
-		- Liquidity
-			- AssetA
-			- AssetB
+	- TreasuryAccount
+		- Assets:
+			- LpAmount
 	- GasAccount
 		- Assets:
 			- AssetGas
 */
 func VerifyRemoveLiquidityTxInfo(
-	accountInfoMap map[int64]*commonAsset.FormatAccountInfo,
-	liquidityInfo *liquidity.Liquidity,
+	accountInfoMap map[int64]*AccountInfo,
+	liquidityInfo *LiquidityInfo,
 	txInfo *RemoveLiquidityTxInfo,
 ) (txDetails []*MempoolTxDetail, err error) {
 	// verify params
@@ -59,15 +55,11 @@ func VerifyRemoveLiquidityTxInfo(
 		accountInfoMap[txInfo.GasAccountIndex] == nil ||
 		accountInfoMap[txInfo.GasAccountIndex].AssetInfo == nil ||
 		accountInfoMap[txInfo.GasAccountIndex].AssetInfo[txInfo.GasFeeAssetId] == nil ||
-		accountInfoMap[txInfo.GasAccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance == "" ||
 		liquidityInfo == nil ||
-		!((liquidityInfo.AssetAId == txInfo.AssetAId &&
+		!(liquidityInfo.AssetAId == txInfo.AssetAId &&
 			liquidityInfo.AssetBId == txInfo.AssetBId) ||
-			(liquidityInfo.AssetBId == txInfo.AssetAId &&
-				liquidityInfo.AssetAId == txInfo.AssetBId)) ||
 		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.PairIndex] == nil ||
-		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.PairIndex].LpAmount == "" ||
-		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.PairIndex].LpAmount == util.ZeroBigInt.String() ||
+		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.PairIndex].LpAmount.Cmp(ZeroBigInt) <= 0 ||
 		txInfo.AssetAMinAmount.Cmp(ZeroBigInt) < 0 ||
 		txInfo.AssetBMinAmount.Cmp(ZeroBigInt) < 0 ||
 		txInfo.LpAmount.Cmp(ZeroBigInt) < 0 ||
@@ -82,9 +74,10 @@ func VerifyRemoveLiquidityTxInfo(
 	}
 	// add tx info
 	var (
-		assetDeltaMap         = make(map[int64]map[int64]*big.Int)
-		lpDeltaForFromAccount *big.Int
-		poolDeltaForToAccount *PoolInfo
+		assetDeltaMap             = make(map[int64]map[int64]*big.Int)
+		lpDeltaForFromAccount     *big.Int
+		lpDeltaForTreausryAccount *big.Int
+		poolDeltaForToAccount     *LiquidityInfo
 	)
 	// init delta map
 	assetDeltaMap[txInfo.FromAccountIndex] = make(map[int64]*big.Int)
@@ -109,20 +102,28 @@ func VerifyRemoveLiquidityTxInfo(
 	// pool account pool info
 	poolAssetADelta := ffmath.Neg(txInfo.AssetAAmountDelta)
 	poolAssetBDelta := ffmath.Neg(txInfo.AssetBAmountDelta)
-	if txInfo.AssetAId == liquidityInfo.AssetAId {
-		poolDeltaForToAccount = &PoolInfo{
-			AssetAAmount: poolAssetADelta,
-			AssetBAmount: poolAssetBDelta,
-		}
-	} else if txInfo.AssetAId == liquidityInfo.AssetBId {
-		poolDeltaForToAccount = &PoolInfo{
-			AssetAAmount: poolAssetBDelta,
-			AssetBAmount: poolAssetADelta,
-		}
-	} else {
-		log.Println("[VerifyRemoveLiquidityTxInfo] invalid pool")
-		return nil, errors.New("[VerifyRemoveLiquidityTxInfo] invalid pool")
+	finalPoolA := ffmath.Add(liquidityInfo.AssetA, poolAssetADelta)
+	finalPoolB := ffmath.Add(liquidityInfo.AssetB, poolAssetBDelta)
+	poolDeltaForToAccount = &LiquidityInfo{
+		PairIndex:            txInfo.PairIndex,
+		AssetAId:             txInfo.AssetAId,
+		AssetA:               poolAssetADelta,
+		AssetBId:             txInfo.AssetBId,
+		AssetB:               poolAssetBDelta,
+		LpAmount:             lpDeltaForFromAccount,
+		KLast:                ffmath.Multiply(finalPoolA, finalPoolB),
+		FeeRate:              liquidityInfo.FeeRate,
+		TreasuryAccountIndex: liquidityInfo.TreasuryAccountIndex,
+		TreasuryRate:         liquidityInfo.TreasuryRate,
 	}
+	// treasury account
+	lpDeltaForTreausryAccount = commonAsset.ComputeSLp(
+		liquidityInfo.AssetA,
+		liquidityInfo.AssetB,
+		liquidityInfo.KLast,
+		liquidityInfo.FeeRate,
+		liquidityInfo.TreasuryRate,
+	)
 	// gas account asset Gas
 	if assetDeltaMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId] == nil {
 		assetDeltaMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId] = txInfo.GasFeeAssetAmount
@@ -134,12 +135,7 @@ func VerifyRemoveLiquidityTxInfo(
 	}
 	// check balance
 	// check lp amount
-	lpBalance, isValid := new(big.Int).SetString(accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.PairIndex].LpAmount, 10)
-	if !isValid {
-		logx.Errorf("[VerifyRemoveLiquidityTxInfo] unable to parse balance")
-		return nil, errors.New("[VerifyRemoveLiquidityTxInfo] unable to parse balance")
-	}
-	if lpBalance.Cmp(txInfo.LpAmount) < 0 {
+	if accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.PairIndex].LpAmount.Cmp(txInfo.LpAmount) < 0 {
 		logx.Errorf("[VerifyRemoveLiquidityTxInfo] invalid lp amount")
 		return nil, errors.New("[VerifyRemoveLiquidityTxInfo] invalid lp amount")
 	}
@@ -152,7 +148,7 @@ func VerifyRemoveLiquidityTxInfo(
 	if err != nil {
 		return nil, err
 	}
-	isValid, err = pk.Verify(txInfo.Sig, msgHash, hFunc)
+	isValid, err := pk.Verify(txInfo.Sig, msgHash, hFunc)
 	if err != nil {
 		log.Println("[VerifyRemoveLiquidityTxInfo] unable to verify signature:", err)
 		return nil, err
@@ -163,52 +159,81 @@ func VerifyRemoveLiquidityTxInfo(
 	}
 	// compute tx details
 	// from account asset A
+	order := int64(0)
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.AssetAId,
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
 		AccountName:  accountInfoMap[txInfo.FromAccountIndex].AccountName,
-		BalanceDelta: txInfo.AssetAAmountDelta.String(),
+		BalanceDelta: commonAsset.ConstructAccountAsset(
+			txInfo.AssetAId, txInfo.AssetAAmountDelta, ZeroBigInt, ZeroBigInt).String(),
+		Order: order,
 	})
 	// from account asset B
+	order++
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.AssetBId,
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
 		AccountName:  accountInfoMap[txInfo.FromAccountIndex].AccountName,
-		BalanceDelta: txInfo.AssetBAmountDelta.String(),
+		BalanceDelta: commonAsset.ConstructAccountAsset(
+			txInfo.AssetBId, txInfo.AssetBAmountDelta, ZeroBigInt, ZeroBigInt).String(),
+		Order: order,
 	})
 	// from account asset Gas
+	order++
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
 		AccountName:  accountInfoMap[txInfo.FromAccountIndex].AccountName,
-		BalanceDelta: ffmath.Neg(txInfo.GasFeeAssetAmount).String(),
+		BalanceDelta: commonAsset.ConstructAccountAsset(
+			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), ZeroBigInt, ZeroBigInt).String(),
+		Order: order,
 	})
 	// from account lp
+	order++
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.PairIndex,
-		AssetType:    LiquidityLpAssetType,
+		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
 		AccountName:  accountInfoMap[txInfo.FromAccountIndex].AccountName,
-		BalanceDelta: lpDeltaForFromAccount.String(),
+		BalanceDelta: commonAsset.ConstructAccountAsset(
+			txInfo.PairIndex, ZeroBigInt, lpDeltaForFromAccount, ZeroBigInt).String(),
+		Order: order,
+	})
+	// treasury account
+	order++
+	txDetails = append(txDetails, &MempoolTxDetail{
+		AssetId:      txInfo.PairIndex,
+		AssetType:    GeneralAssetType,
+		AccountIndex: liquidityInfo.TreasuryAccountIndex,
+		AccountName:  accountInfoMap[liquidityInfo.TreasuryAccountIndex].AccountName,
+		BalanceDelta: commonAsset.ConstructAccountAsset(
+			txInfo.PairIndex, ZeroBigInt, lpDeltaForTreausryAccount, ZeroBigInt,
+		).String(),
+		Order: order,
 	})
 	// pool account pool info
+	order++
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.PairIndex,
 		AssetType:    LiquidityAssetType,
 		AccountIndex: commonConstant.NilAccountIndex,
 		AccountName:  commonConstant.NilAccountName,
 		BalanceDelta: poolDeltaForToAccount.String(),
+		Order:        order,
 	})
 	// gas account asset Gas
+	order++
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    GeneralAssetType,
 		AccountIndex: txInfo.GasAccountIndex,
 		AccountName:  accountInfoMap[txInfo.GasAccountIndex].AccountName,
-		BalanceDelta: txInfo.GasFeeAssetAmount.String(),
+		BalanceDelta: commonAsset.ConstructAccountAsset(
+			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, ZeroBigInt, ZeroBigInt).String(),
+		Order: order,
 	})
 	return txDetails, nil
 }

@@ -26,17 +26,17 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
+	"strconv"
 )
 
 func GetLatestAccountInfo(
 	accountModel AccountModel,
-	accountHistoryModel AccountHistoryModel,
 	mempoolTxModel MempoolModel,
 	mempoolTxDetailModel MempoolTxDetailModel,
 	redisConnection *Redis,
 	accountIndex int64,
 ) (
-	accountInfo *FormatAccountInfo,
+	accountInfo *AccountInfo,
 	err error,
 ) {
 	key := util.GetAccountKey(accountIndex)
@@ -51,27 +51,6 @@ func GetLatestAccountInfo(
 		if err != nil {
 			logx.Errorf("[GetLatestAccountInfo] unable to get account by account index: %s", err.Error())
 			return nil, err
-		}
-		// get latest info from account history
-		accountHistoryInfo, err := accountHistoryModel.GetLatestAccountInfoByAccountIndex(accountIndex)
-		if err != nil {
-			if err != account.ErrNotFound {
-				logx.Errorf("[GetLatestAccountInfo] unable to get account info by account index from history table: %s", err.Error())
-				return nil, err
-			}
-		} else {
-			oAccountInfo.AssetInfo = accountHistoryInfo.AssetInfo
-			oAccountInfo.AssetRoot = accountHistoryInfo.AssetRoot
-			// get latest nonce
-			latestNonce, err := accountHistoryModel.GetLatestAccountNonceByAccountIndex(accountIndex)
-			if err != nil {
-				if err != account.ErrNotFound {
-					logx.Errorf("[GetLatestAccountInfo] unable to get latest nonce: %s", err.Error())
-					return nil, err
-				}
-			} else {
-				oAccountInfo.Nonce = latestNonce
-			}
 		}
 		// convert to format account info
 		accountInfo, err = commonAsset.ToFormatAccountInfo(oAccountInfo)
@@ -102,16 +81,21 @@ func GetLatestAccountInfo(
 			case commonAsset.GeneralAssetType:
 				// TODO maybe less than 0
 				if accountInfo.AssetInfo[mempoolTxDetail.AssetId] == nil {
-					accountInfo.AssetInfo[mempoolTxDetail.AssetId] = &commonAsset.FormatAsset{
-						Balance:  util.ZeroBigInt.String(),
-						LpAmount: util.ZeroBigInt.String(),
+					accountInfo.AssetInfo[mempoolTxDetail.AssetId] = &commonAsset.AccountAsset{
+						Balance:  util.ZeroBigInt,
+						LpAmount: util.ZeroBigInt,
 					}
 				}
-				accountInfo.AssetInfo[mempoolTxDetail.AssetId].Balance, err = util.ComputeNewBalance(
+				nBalance, err := commonAsset.ComputeNewBalance(
 					commonAsset.GeneralAssetType,
-					accountInfo.AssetInfo[mempoolTxDetail.AssetId].Balance,
+					accountInfo.AssetInfo[mempoolTxDetail.AssetId].String(),
 					mempoolTxDetail.BalanceDelta,
 				)
+				if err != nil {
+					logx.Errorf("[GetLatestAccountInfo] unable to compute new balance: %s", err.Error())
+					return nil, err
+				}
+				accountInfo.AssetInfo[mempoolTxDetail.AssetId], err = commonAsset.ParseAccountAsset(nBalance)
 				if err != nil {
 					logx.Errorf("[GetLatestAccountInfo] unable to compute new balance: %s", err.Error())
 					return nil, err
@@ -119,23 +103,14 @@ func GetLatestAccountInfo(
 				break
 			case commonAsset.LiquidityAssetType:
 				break
-			case commonAsset.LiquidityLpAssetType:
-				if accountInfo.AssetInfo[mempoolTxDetail.AssetId] == nil {
-					accountInfo.AssetInfo[mempoolTxDetail.AssetId] = &commonAsset.FormatAsset{
-						Balance:  util.ZeroBigInt.String(),
-						LpAmount: util.ZeroBigInt.String(),
-					}
-				}
-				// compute new balance
-				nBalance, err := util.ComputeNewBalance(
-					commonAsset.LiquidityLpAssetType, accountInfo.AssetInfo[mempoolTxDetail.AssetId].LpAmount, mempoolTxDetail.BalanceDelta)
+			case commonAsset.NftAssetType:
+				break
+			case commonAsset.CollectionNonceAssetType:
+				accountInfo.CollectionNonce, err = strconv.ParseInt(mempoolTxDetail.BalanceDelta, 10, 64)
 				if err != nil {
-					logx.Error("[CommitterTask] unable to compute new balance: %s", err.Error())
+					logx.Errorf("[GetLatestAccountInfo] unable to parse int: %s", err.Error())
 					return nil, err
 				}
-				accountInfo.AssetInfo[mempoolTxDetail.AssetId].LpAmount = nBalance
-				break
-			case commonAsset.NftAssetType:
 				break
 			default:
 				logx.Errorf("[GetLatestAccountInfo] invalid asset type")
@@ -157,6 +132,7 @@ func GetLatestAccountInfo(
 		}
 		// latest nonce
 		accountInfo.Nonce = accountInfo.Nonce + 1
+		accountInfo.CollectionNonce = accountInfo.CollectionNonce + 1
 		info, err := commonAsset.FromFormatAccountInfo(accountInfo)
 		if err != nil {
 			logx.Errorf("[GetLatestAccountInfo] unable to convert format account info to account info: %s", err.Error())
@@ -180,8 +156,6 @@ func GetLatestAccountInfo(
 			logx.Errorf("[GetLatestAccountInfo] unable convert to format account info: %s", err.Error())
 			return nil, err
 		}
-		// update cache
-		_ = redisConnection.Expire(key, AccountExpiryTime)
 	}
 	return accountInfo, nil
 }
@@ -191,7 +165,7 @@ func GetBasicAccountInfo(
 	redisConnection *Redis,
 	accountIndex int64,
 ) (
-	accountInfo *FormatAccountInfo,
+	accountInfo *AccountInfo,
 	err error,
 ) {
 	key := util.GetBasicAccountKey(accountIndex)
@@ -230,8 +204,6 @@ func GetBasicAccountInfo(
 			logx.Errorf("[GetBasicAccountInfo] unable to get basic account info: %s", err.Error())
 			return nil, err
 		}
-		// update cache
-		_ = redisConnection.Expire(key, BasicAccountExpiryTime)
 	}
 	return accountInfo, nil
 }

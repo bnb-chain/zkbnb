@@ -43,11 +43,16 @@ type (
 
 	Liquidity struct {
 		gorm.Model
-		PairIndex int64
-		AssetAId  int64
-		AssetA    string
-		AssetBId  int64
-		AssetB    string
+		PairIndex            int64
+		AssetAId             int64
+		AssetA               string
+		AssetBId             int64
+		AssetB               string
+		LpAmount             string
+		KLast                string
+		FeeRate              int64
+		TreasuryAccountIndex int64
+		TreasuryRate         int64
 	}
 )
 

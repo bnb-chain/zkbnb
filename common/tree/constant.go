@@ -31,10 +31,10 @@ type (
 	AccountModel          = account.AccountModel
 	AccountHistoryModel   = account.AccountHistoryModel
 	L2NftHistoryModel     = nft.L2NftHistoryModel
+	LiquidityModel        = liquidity.LiquidityModel
 	LiquidityHistoryModel = liquidity.LiquidityHistoryModel
-
-	AccountHistory      = account.AccountHistory
-	AccountL2NftHistory = nft.L2NftHistory
+	AccountHistory        = account.AccountHistory
+	AccountL2NftHistory   = nft.L2NftHistory
 
 	Tree = merkleTree.Tree
 	Node = merkleTree.Node
@@ -49,13 +49,14 @@ const (
 
 var (
 	NilHash                                                                           = merkleTree.NilHash
-	NilAccountAssetRoot                                                               []byte
+	NilAccountAssetRoot, NilAccountRoot                                               []byte
 	NilAccountAssetNodeHash, NilAccountNodeHash, NilLiquidityNodeHash, NilNftNodeHash []byte
 )
 
 func init() {
 	NilAccountAssetNodeHash = EmptyAccountAssetNodeHash()
 	NilAccountNodeHash = EmptyAccountNodeHash()
+	NilAccountRoot = NilAccountNodeHash
 	NilLiquidityNodeHash = EmptyLiquidityNodeHash()
 	NilNftNodeHash = EmptyNftNodeHash()
 	NilAccountAssetRoot = NilAccountNodeHash
@@ -65,5 +66,11 @@ func init() {
 		hFunc.Write(NilAccountAssetRoot)
 		hFunc.Write(NilAccountAssetRoot)
 		NilAccountAssetRoot = hFunc.Sum(nil)
+	}
+	for i := 0; i < AccountTreeHeight; i++ {
+		hFunc.Reset()
+		hFunc.Write(NilAccountNodeHash)
+		hFunc.Write(NilAccountNodeHash)
+		NilAccountRoot = hFunc.Sum(nil)
 	}
 }

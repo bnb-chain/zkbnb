@@ -25,6 +25,8 @@ const (
 	L2NftCollectionTableName      = `l2_nft_collection`
 	L2NftExchangeTableName        = `l2_nft_exchange`
 	L2NftExchangeHistoryTableName = `l2_nft_exchange_history`
+
+	OfferTableName = `offer`
 )
 
 var (

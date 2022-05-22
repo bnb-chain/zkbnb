@@ -22,8 +22,8 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-func AssetToNode(balance string, lpAmount string) (node *Node, err error) {
-	hashVal, err := ComputeAccountAssetLeafHash(balance, lpAmount)
+func AssetToNode(balance string, lpAmount string, offerCanceledOrFinalized string) (node *Node, err error) {
+	hashVal, err := ComputeAccountAssetLeafHash(balance, lpAmount, offerCanceledOrFinalized)
 	if err != nil {
 		logx.Errorf("[AccountToNode] unable to compute asset leaf hash: %s", err.Error())
 		return nil, err
@@ -38,11 +38,19 @@ func LiquidityAssetToNode(
 	assetBId int64,
 	assetB string,
 	lpAmount string,
+	kLast string,
+	feeRate int64,
+	treasuryAccountIndex int64,
+	treasuryFeeRate int64,
 ) (node *Node, err error) {
 	hashVal, err := ComputeLiquidityAssetLeafHash(
 		assetAId, assetA,
 		assetBId, assetB,
 		lpAmount,
+		kLast,
+		feeRate,
+		treasuryAccountIndex,
+		treasuryFeeRate,
 	)
 	if err != nil {
 		logx.Errorf("[AccountToNode] unable to compute liquidity asset leaf hash: %s", err.Error())
@@ -54,8 +62,9 @@ func LiquidityAssetToNode(
 
 func NftAssetToNode(nftAsset *AccountL2NftHistory) (node *Node, err error) {
 	hashVal, err := ComputeNftAssetLeafHash(
-		nftAsset.CreatorAccountIndex, nftAsset.NftContentHash,
-		nftAsset.AssetId, nftAsset.AssetAmount, nftAsset.NftL1Address, nftAsset.NftL1TokenId,
+		nftAsset.CreatorAccountIndex, nftAsset.OwnerAccountIndex,
+		nftAsset.NftContentHash,
+		nftAsset.NftL1Address, nftAsset.NftL1TokenId,
 		nftAsset.CreatorTreasuryRate,
 	)
 	if err != nil {
@@ -70,9 +79,14 @@ func AccountToNode(
 	accountNameHash string,
 	publicKey string,
 	nonce int64,
-	assetRoot []byte) (node *Node, err error) {
+	collectionNonce int64,
+	assetRoot []byte,
+) (node *Node, err error) {
 	hashVal, err := ComputeAccountLeafHash(
-		accountNameHash, publicKey, nonce,
+		accountNameHash,
+		publicKey,
+		nonce,
+		collectionNonce,
 		assetRoot)
 	if err != nil {
 		logx.Errorf("[AccountToNode] unable to compute account leaf hash: %s", err.Error())

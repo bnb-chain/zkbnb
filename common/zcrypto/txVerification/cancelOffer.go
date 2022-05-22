@@ -28,63 +28,43 @@ import (
 	"math/big"
 )
 
-/*
-	VerifyTransferNftTx:
-	accounts order is:
-	- FromAccount
-		- Assets
-			- AssetGas
-	- GasAccount
-		- Assets
-			- AssetGas
-*/
-func VerifyTransferNftTxInfo(
+func VerifyCancelOfferTxInfo(
 	accountInfoMap map[int64]*AccountInfo,
-	nftInfo *NftInfo,
-	txInfo *TransferNftTxInfo,
+	txInfo *CancelOfferTxInfo,
 ) (txDetails []*MempoolTxDetail, err error) {
 	// verify params
-	if accountInfoMap[txInfo.FromAccountIndex] == nil ||
-		accountInfoMap[txInfo.ToAccountIndex] == nil ||
+	if accountInfoMap[txInfo.AccountIndex] == nil ||
+		accountInfoMap[txInfo.AccountIndex].AssetInfo == nil ||
+		accountInfoMap[txInfo.AccountIndex].AssetInfo[txInfo.GasFeeAssetId] == nil ||
 		accountInfoMap[txInfo.GasAccountIndex] == nil ||
-		accountInfoMap[txInfo.FromAccountIndex].AssetInfo == nil ||
-		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId] == nil ||
-		nftInfo == nil ||
-		nftInfo.OwnerAccountIndex != txInfo.FromAccountIndex ||
-		nftInfo.NftIndex != txInfo.NftIndex ||
-		nftInfo.NftContentHash != txInfo.NftContentHash ||
 		txInfo.GasFeeAssetAmount.Cmp(ZeroBigInt) < 0 {
-		logx.Errorf("[VerifyTransferNftTxInfo] invalid params")
-		return nil, errors.New("[VerifyTransferNftTxInfo] invalid params")
+		logx.Errorf("[VerifyCancelOfferTxInfo] invalid params")
+		return nil, errors.New("[VerifyCancelOfferTxInfo] invalid params")
+	}
+	if accountInfoMap[txInfo.AccountIndex].AssetInfo[txInfo.OfferId/OfferPerAsset] == nil {
+		accountInfoMap[txInfo.AccountIndex].AssetInfo[txInfo.OfferId/OfferPerAsset] = &commonAsset.AccountAsset{
+			AssetId:                  txInfo.OfferId / OfferPerAsset,
+			Balance:                  ZeroBigInt,
+			LpAmount:                 ZeroBigInt,
+			OfferCanceledOrFinalized: ZeroBigInt,
+		}
 	}
 	// verify nonce
-	if txInfo.Nonce != accountInfoMap[txInfo.FromAccountIndex].Nonce {
-		log.Println("[VerifyTransferNftTxInfo] invalid nonce")
-		return nil, errors.New("[VerifyTransferNftTxInfo] invalid nonce")
+	if txInfo.Nonce != accountInfoMap[txInfo.AccountIndex].Nonce {
+		log.Println("[VerifyCancelOfferTxInfo] invalid nonce")
+		return nil, errors.New("[VerifyCancelOfferTxInfo] invalid nonce")
 	}
 	// set tx info
 	var (
 		assetDeltaMap = make(map[int64]map[int64]*big.Int)
-		newNftInfo    *NftInfo
 	)
 	// init delta map
-	assetDeltaMap[txInfo.FromAccountIndex] = make(map[int64]*big.Int)
+	assetDeltaMap[txInfo.AccountIndex] = make(map[int64]*big.Int)
 	if assetDeltaMap[txInfo.GasAccountIndex] == nil {
 		assetDeltaMap[txInfo.GasAccountIndex] = make(map[int64]*big.Int)
 	}
 	// from account asset Gas
-	assetDeltaMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId] = ffmath.Neg(txInfo.GasFeeAssetAmount)
-	// to account nft info
-	newNftInfo = &NftInfo{
-		NftIndex:            nftInfo.NftIndex,
-		CreatorAccountIndex: nftInfo.CreatorAccountIndex,
-		OwnerAccountIndex:   txInfo.ToAccountIndex,
-		NftContentHash:      nftInfo.NftContentHash,
-		NftL1TokenId:        nftInfo.NftL1TokenId,
-		NftL1Address:        nftInfo.NftL1Address,
-		CreatorTreasuryRate: nftInfo.CreatorTreasuryRate,
-		CollectionId:        nftInfo.CollectionId,
-	}
+	assetDeltaMap[txInfo.AccountIndex][txInfo.GasFeeAssetId] = ffmath.Neg(txInfo.GasFeeAssetAmount)
 	// gas account asset Gas
 	if assetDeltaMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId] == nil {
 		assetDeltaMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId] = txInfo.GasFeeAssetAmount
@@ -95,27 +75,28 @@ func VerifyTransferNftTxInfo(
 		)
 	}
 	// check balance
-	if accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
-		logx.Errorf("[VerifyMintNftTxInfo] you don't have enough balance of asset Gas")
-		return nil, errors.New("[VerifyMintNftTxInfo] you don't have enough balance of asset Gas")
+	if accountInfoMap[txInfo.AccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(
+		assetDeltaMap[txInfo.AccountIndex][txInfo.GasFeeAssetId]) < 0 {
+		logx.Errorf("[VerifyCancelOfferTxInfo] you don't have enough balance of asset Gas")
+		return nil, errors.New("[VerifyCancelOfferTxInfo] you don't have enough balance of asset Gas")
 	}
 	// compute hash
 	hFunc := mimc.NewMiMC()
-	msgHash := legendTxTypes.ComputeTransferNftMsgHash(txInfo, hFunc)
+	msgHash := legendTxTypes.ComputeCancelOfferMsgHash(txInfo, hFunc)
 	// verify signature
 	hFunc.Reset()
-	pk, err := ParsePkStr(accountInfoMap[txInfo.FromAccountIndex].PublicKey)
+	pk, err := ParsePkStr(accountInfoMap[txInfo.AccountIndex].PublicKey)
 	if err != nil {
 		return nil, err
 	}
 	isValid, err := pk.Verify(txInfo.Sig, msgHash, hFunc)
 	if err != nil {
-		log.Println("[VerifyTransferNftTxInfo] unable to verify signature:", err)
+		log.Println("[VerifyCancelOfferTxInfo] unable to verify signature:", err)
 		return nil, err
 	}
 	if !isValid {
-		log.Println("[VerifyTransferNftTxInfo] invalid signature")
-		return nil, errors.New("[VerifyTransferNftTxInfo] invalid signature")
+		log.Println("[VerifyCancelOfferTxInfo] invalid signature")
+		return nil, errors.New("[VerifyCancelOfferTxInfo] invalid signature")
 	}
 	// compute tx details
 	// from account asset gas
@@ -123,21 +104,27 @@ func VerifyTransferNftTxInfo(
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    GeneralAssetType,
-		AccountIndex: txInfo.FromAccountIndex,
-		AccountName:  accountInfoMap[txInfo.FromAccountIndex].AccountName,
+		AccountIndex: txInfo.AccountIndex,
+		AccountName:  accountInfoMap[txInfo.AccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), ZeroBigInt, ZeroBigInt).String(),
 		Order: order,
 	})
-	// to account nft delta
+	// from account offer id
+	offerAssetId := txInfo.OfferId / OfferPerAsset
+	offerIndex := txInfo.OfferId % OfferPerAsset
+	oOffer := accountInfoMap[txInfo.AccountIndex].AssetInfo[offerAssetId].OfferCanceledOrFinalized
+	nOffer := new(big.Int).SetBit(oOffer, int(offerIndex), 1)
 	order++
 	txDetails = append(txDetails, &MempoolTxDetail{
-		AssetId:      txInfo.NftIndex,
-		AssetType:    NftAssetType,
-		AccountIndex: txInfo.ToAccountIndex,
-		AccountName:  accountInfoMap[txInfo.ToAccountIndex].AccountName,
-		BalanceDelta: newNftInfo.String(),
-		Order:        order,
+		AssetId:      offerAssetId,
+		AssetType:    GeneralAssetType,
+		AccountIndex: txInfo.AccountIndex,
+		AccountName:  accountInfoMap[txInfo.AccountIndex].AccountName,
+		BalanceDelta: commonAsset.ConstructAccountAsset(
+			offerAssetId, ZeroBigInt, ZeroBigInt, nOffer,
+		).String(),
+		Order: order,
 	})
 	// gas account asset gas
 	order++

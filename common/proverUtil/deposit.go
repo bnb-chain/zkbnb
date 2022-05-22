@@ -20,7 +20,7 @@ package proverUtil
 func ConstructDepositCryptoTx(
 	oTx *Tx,
 	accountTree *Tree,
-	accountAssetsTree []*Tree,
+	accountAssetsTree *[]*Tree,
 	liquidityTree *Tree,
 	nftTree *Tree,
 ) (cryptoTx *CryptoTx, err error) {

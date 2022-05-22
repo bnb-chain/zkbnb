@@ -77,6 +77,7 @@ type (
 		Memo           string
 		AccountIndex   int64
 		Nonce          int64
+		ExpiredAt      int64
 		L2BlockHeight  int64
 		Status         int `gorm:"index"` // 0: pending txVerification; 1: committed txVerification; 2: verified txVerification;
 	}

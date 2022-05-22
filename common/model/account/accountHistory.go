@@ -54,12 +54,12 @@ type (
 
 	AccountHistory struct {
 		gorm.Model
-		AccountIndex  int64 `gorm:"index"`
-		Nonce         int64
-		AssetInfo     string
-		AssetRoot     string
-		Status        int
-		L2BlockHeight int64
+		AccountIndex    int64 `gorm:"index"`
+		Nonce           int64
+		CollectionNonce int64
+		AssetInfo       string
+		AssetRoot       string
+		L2BlockHeight   int64
 	}
 )
 

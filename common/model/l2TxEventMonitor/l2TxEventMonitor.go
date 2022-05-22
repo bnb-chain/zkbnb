@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
+	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
@@ -40,8 +41,8 @@ type (
 		GetL2TxEventMonitorsByTxType(txType uint8) (txs []*L2TxEventMonitor, err error)
 		CreateMempoolAndActiveAccount(
 			pendingNewAccount []*account.Account,
-			pendingNewAccountHistory []*account.AccountHistory,
 			pendingNewMempoolTxs []*mempool.MempoolTx,
+			pendingNewLiquidityInfos []*liquidity.Liquidity,
 			pendingUpdateL2Events []*L2TxEventMonitor) (err error)
 		GetLastHandledRequestId() (requestId int64, err error)
 	}
@@ -224,8 +225,8 @@ func (m *defaultL2TxEventMonitorModel) GetL2TxEventMonitorsByTxType(txType uint8
 
 func (m *defaultL2TxEventMonitorModel) CreateMempoolAndActiveAccount(
 	pendingNewAccount []*account.Account,
-	pendingNewAccountHistory []*account.AccountHistory,
 	pendingNewMempoolTxs []*mempool.MempoolTx,
+	pendingNewLiquidityInfos []*liquidity.Liquidity,
 	pendingUpdateL2Events []*L2TxEventMonitor,
 ) (err error) {
 	err = m.DB.Transaction(
@@ -239,15 +240,6 @@ func (m *defaultL2TxEventMonitorModel) CreateMempoolAndActiveAccount(
 				logx.Errorf("[CreateMempoolAndActiveAccount] invalid new account")
 				return errors.New("[CreateMempoolAndActiveAccount] invalid new account")
 			}
-			dbTx = tx.Table(account.AccountHistoryTableName).CreateInBatches(pendingNewAccountHistory, len(pendingNewAccountHistory))
-			if dbTx.Error != nil {
-				logx.Errorf("[CreateMempoolAndActiveAccount] unable to create pending new account history: %s", err.Error())
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected != int64(len(pendingNewAccountHistory)) {
-				logx.Errorf("[CreateMempoolAndActiveAccount] invalid new account history")
-				return errors.New("[CreateMempoolAndActiveAccount] invalid new account history")
-			}
 			dbTx = tx.Table(mempool.MempoolTableName).CreateInBatches(pendingNewMempoolTxs, len(pendingNewMempoolTxs))
 			if dbTx.Error != nil {
 				logx.Errorf("[CreateMempoolAndActiveAccount] unable to create pending new mempool txs: %s", err.Error())
@@ -256,6 +248,17 @@ func (m *defaultL2TxEventMonitorModel) CreateMempoolAndActiveAccount(
 			if dbTx.RowsAffected != int64(len(pendingNewMempoolTxs)) {
 				logx.Errorf("[CreateMempoolAndActiveAccount] invalid new mempool txs")
 				return errors.New("[CreateMempoolAndActiveAccount] invalid new mempool txs")
+			}
+			if len(pendingNewLiquidityInfos) != 0 {
+				dbTx = tx.Table(liquidity.LiquidityTable).CreateInBatches(pendingNewLiquidityInfos, len(pendingNewLiquidityInfos))
+				if dbTx.Error != nil {
+					logx.Errorf("[CreateMempoolAndActiveAccount] unable to create pending new liquidity infos: %s", err.Error())
+					return dbTx.Error
+				}
+				if dbTx.RowsAffected != int64(len(pendingNewLiquidityInfos)) {
+					logx.Errorf("[CreateMempoolAndActiveAccount] invalid new liquidity infos")
+					return errors.New("[CreateMempoolAndActiveAccount] invalid new liquidity infos")
+				}
 			}
 			for _, pendingUpdateL2Event := range pendingUpdateL2Events {
 				dbTx = tx.Table(m.table).Where("id = ?", pendingUpdateL2Event.ID).Select("*").Updates(&pendingUpdateL2Event)

@@ -18,6 +18,7 @@
 package init
 
 import (
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/basic"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
@@ -27,12 +28,13 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2BlockEventMonitor"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2TxEventMonitor"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
-	"github.com/zecrey-labs/zecrey-legend/common/model/liquidityPair"
+	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
 	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
+	"github.com/zecrey-labs/zecrey-legend/common/tree"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"log"
 	"testing"
@@ -54,8 +56,6 @@ var (
 	// account
 	accountModel        = account.NewAccountModel(basic.Connection, basic.CacheConf, basic.DB)
 	accountHistoryModel = account.NewAccountHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
-	// liquidity pair
-	liquidityPairModel = liquidityPair.NewLiquidityPairModel(basic.Connection, basic.CacheConf, basic.DB)
 	// l2 asset
 	l2AssetInfoModel = l2asset.NewL2AssetInfoModel(basic.Connection, basic.CacheConf, basic.DB)
 	// mempool
@@ -77,8 +77,12 @@ var (
 	l1TxSenderModel = l1TxSender.NewL1TxSenderModel(basic.Connection, basic.CacheConf, basic.DB)
 	// l1 amount
 	l1AmountModel = l1amount.NewL1AmountModel(basic.Connection, basic.CacheConf, basic.DB)
+	// liquidity
+	liquidityModel        = liquidity.NewLiquidityModel(basic.Connection, basic.CacheConf, basic.DB)
+	liquidityHistoryModel = liquidity.NewLiquidityHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
 	// nft
 	nftModel                = nft.NewL2NftModel(basic.Connection, basic.CacheConf, basic.DB)
+	offerModel              = nft.NewOfferModel(basic.Connection, basic.CacheConf, basic.DB)
 	nftHistoryModel         = nft.NewL2NftHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
 	nftExchangeModel        = nft.NewL2NftExchangeModel(basic.Connection, basic.CacheConf, basic.DB)
 	nftExchangeHistoryModel = nft.NewL2NftExchangeHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
@@ -90,7 +94,6 @@ func TestDropTables(t *testing.T) {
 	//priceModel.
 	accountModel.DropAccountTable()
 	accountHistoryModel.DropAccountHistoryTable()
-	liquidityPairModel.DropLiquidityPairTable()
 	l2AssetInfoModel.DropL2AssetInfoTable()
 	mempoolDetailModel.DropMempoolDetailTable()
 	mempoolModel.DropMempoolTxTable()
@@ -104,7 +107,10 @@ func TestDropTables(t *testing.T) {
 	l2BlockEventMonitorModel.DropL2BlockEventMonitorTable()
 	l1TxSenderModel.DropL1TxSenderTable()
 	l1AmountModel.DropL1AmountTable()
+	liquidityModel.DropLiquidityTable()
+	liquidityHistoryModel.DropLiquidityHistoryTable()
 	nftModel.DropL2NftTable()
+	offerModel.DropOfferTable()
 	nftHistoryModel.DropL2NftHistoryTable()
 	nftExchangeModel.DropL2NftExchangeTable()
 	nftExchangeHistoryModel.DropL2NftExchangeHistoryTable()
@@ -117,7 +123,6 @@ func TestDataInitialize(t *testing.T) {
 	//priceModel.
 	accountModel.CreateAccountTable()
 	accountHistoryModel.CreateAccountHistoryTable()
-	liquidityPairModel.CreateLiquidityPairTable()
 	l2AssetInfoModel.CreateL2AssetInfoTable()
 	mempoolDetailModel.CreateMempoolDetailTable()
 	mempoolModel.CreateMempoolTxTable()
@@ -131,7 +136,10 @@ func TestDataInitialize(t *testing.T) {
 	l2BlockEventMonitorModel.CreateL2BlockEventMonitorTable()
 	l1TxSenderModel.CreateL1TxSenderTable()
 	l1AmountModel.CreateL1AmountTable()
+	liquidityModel.CreateLiquidityTable()
+	liquidityHistoryModel.CreateLiquidityHistoryTable()
 	nftModel.CreateL2NftTable()
+	offerModel.CreateOfferTable()
 	nftHistoryModel.CreateL2NftHistoryTable()
 	nftExchangeModel.CreateL2NftExchangeTable()
 	nftExchangeHistoryModel.CreateL2NftExchangeHistoryTable()
@@ -143,12 +151,6 @@ func TestDataInitialize(t *testing.T) {
 		t.Fatal(err)
 	}
 	log.Println("l2 assets info rows affected:", rowsAffected)
-	// init liquidity pair
-	rowsAffected, err = liquidityPairModel.CreateLiquidityPairsInBatches(initLiquidityPair())
-	if err != nil {
-		t.Fatal(err)
-	}
-	log.Println("liquidity pairs rows affected:", rowsAffected)
 	// sys config
 	rowsAffected, err = sysconfigModel.CreateSysconfigInBatches(initSysConfig())
 	if err != nil {
@@ -159,7 +161,7 @@ func TestDataInitialize(t *testing.T) {
 	err = blockModel.CreateGenesisBlock(&block.Block{
 		BlockCommitment:              "0000000000000000000000000000000000000000000000000000000000000000",
 		BlockHeight:                  0,
-		AccountRoot:                  "01ef55cdf3b9b0d65e6fb6317f79627534d971fd96c811281af618c0028d5e7a",
+		AccountRoot:                  common.Bytes2Hex(tree.NilAccountRoot),
 		PriorityOperations:           0,
 		PendingOnchainOperationsHash: "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
 		CommittedTxHash:              "",

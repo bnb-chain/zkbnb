@@ -20,16 +20,40 @@ package proverUtil
 import (
 	"github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/block"
 	"github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/std"
+	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/account"
+	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
+	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/common/tree"
 )
 
 type (
-	Tx   = tx.Tx
-	Tree = tree.Tree
+	Tx       = tx.Tx
+	TxDetail = tx.TxDetail
+	Tree     = tree.Tree
+
+	Account      = account.Account
+	AccountAsset = commonAsset.AccountAsset
+
+	PoolInfo = commonAsset.LiquidityInfo
+	NftInfo  = commonAsset.NftInfo
+
+	AccountModel        = account.AccountModel
+	AccountHistoryModel = account.AccountHistoryModel
+
+	LiquidityModel        = liquidity.LiquidityModel
+	LiquidityHistoryModel = liquidity.LiquidityHistoryModel
+
+	NftModel        = nft.L2NftModel
+	NftHistoryModel = nft.L2NftHistoryModel
 
 	CryptoTx = block.Tx
 
+	CryptoAccount           = std.Account
+	CryptoAccountAsset      = std.AccountAsset
+	CryptoLiquidity         = std.Liquidity
+	CryptoNft               = std.Nft
 	CryptoRegisterZnsTx     = std.RegisterZnsTx
 	CryptoCreatePairTx      = std.CreatePairTx
 	CryptoDepositTx         = std.DepositTx
@@ -46,4 +70,13 @@ type (
 	CryptoWithdrawNftTx     = std.WithdrawNftTx
 	CryptoFullExitTx        = std.FullExitTx
 	CryptoFullExitNftTx     = std.FullExitNftTx
+)
+
+const (
+	NbAccountAssetsPerAccount = block.NbAccountAssetsPerAccount
+	NbAccountsPerTx           = block.NbAccountsPerTx
+	AssetMerkleLevels         = block.AssetMerkleLevels
+	LiquidityMerkleLevels     = block.LiquidityMerkleLevels
+	NftMerkleLevels           = block.NftMerkleLevels
+	AccountMerkleLevels       = block.AccountMerkleLevels
 )

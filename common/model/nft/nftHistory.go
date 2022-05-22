@@ -52,8 +52,6 @@ type (
 		NftContentHash      string
 		NftL1Address        string
 		NftL1TokenId        string
-		AssetId             int64
-		AssetAmount         string
 		CreatorTreasuryRate int64
 		CollectionId        int64
 		Status              int

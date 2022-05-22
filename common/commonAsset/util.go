@@ -15,36 +15,24 @@
  *
  */
 
-package util
+package commonAsset
 
 import (
-	"bytes"
-	"fmt"
+	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"math/big"
-	"strconv"
-	"testing"
 )
 
-func TestToPackedAmount(t *testing.T) {
-	amount, err := ToPackedAmount(big.NewInt(1111111111123))
-	if err != nil {
-		t.Fatal(err)
+func ComputeSLp(
+	poolA, poolB *big.Int, kLast *big.Int, feeRate, treasuryRate int64,
+) *big.Int {
+	kCurrent := ffmath.Multiply(poolA, poolB)
+	if kCurrent.Cmp(ZeroBigInt) == 0 {
+		return ZeroBigInt
 	}
-	fmt.Println(amount)
-}
-
-func TestToPackedFee(t *testing.T) {
-	amount, _ := new(big.Int).SetString("100000000000000", 10)
-	fee, err := ToPackedFee(amount)
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println(fee)
-}
-
-func TestAccountNameToBytes32(t *testing.T) {
-	var buf bytes.Buffer
-	buf.Write([]byte{2})
-	fmt.Println(strconv.FormatInt(2, 2))
-	fmt.Println(new(big.Int).SetBytes(buf.Bytes()).Bits())
+	kCurrent.Sqrt(kCurrent)
+	kLast.Sqrt(kLast)
+	l := ffmath.Multiply(ffmath.Sub(kCurrent, kLast), big.NewInt(RateBase))
+	r := ffmath.Multiply(ffmath.Sub(ffmath.Multiply(big.NewInt(RateBase), ffmath.Div(big.NewInt(feeRate), big.NewInt(treasuryRate))), big.NewInt(RateBase)), kCurrent)
+	r = ffmath.Add(r, ffmath.Multiply(big.NewInt(RateBase), kLast))
+	return ffmath.Div(l, r)
 }

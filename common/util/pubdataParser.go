@@ -50,6 +50,52 @@ func ParseRegisterZnsPubData(pubdata []byte) (tx *RegisterZnsTxInfo, err error) 
 	return tx, nil
 }
 
+func ParseCreatePairPubData(pubdata []byte) (tx *CreatePairTxInfo, err error) {
+	if len(pubdata) != CreatePairPubdataSize {
+		logx.Errorf("[ParseCreatePairPubData] invalid size")
+		return nil, errors.New("[ParseCreatePairPubData] invalid size")
+	}
+	offset := 0
+	offset, txType := ReadUint8(pubdata, offset)
+	offset, pairIndex := ReadUint16(pubdata, offset)
+	offset, assetAId := ReadUint16(pubdata, offset)
+	offset, assetBId := ReadUint16(pubdata, offset)
+	offset, feeRate := ReadUint16(pubdata, offset)
+	offset, treasuryAccountIndex := ReadUint32(pubdata, offset)
+	offset, treasuryRate := ReadUint16(pubdata, offset)
+	tx = &CreatePairTxInfo{
+		TxType:               txType,
+		PairIndex:            int64(pairIndex),
+		AssetAId:             int64(assetAId),
+		AssetBId:             int64(assetBId),
+		FeeRate:              int64(feeRate),
+		TreasuryAccountIndex: int64(treasuryAccountIndex),
+		TreasuryRate:         int64(treasuryRate),
+	}
+	return tx, nil
+}
+
+func ParseUpdatePairRatePubData(pubdata []byte) (tx *UpdatePairRateTxInfo, err error) {
+	if len(pubdata) != UpdatePairRatePubdataSize {
+		logx.Errorf("[ParseUpdatePairRatePubData] invalid size")
+		return nil, errors.New("[ParseUpdatePairRatePubData] invalid size")
+	}
+	offset := 0
+	offset, txType := ReadUint8(pubdata, offset)
+	offset, pairIndex := ReadUint16(pubdata, offset)
+	offset, feeRate := ReadUint16(pubdata, offset)
+	offset, treasuryAccountIndex := ReadUint32(pubdata, offset)
+	offset, treasuryRate := ReadUint16(pubdata, offset)
+	tx = &UpdatePairRateTxInfo{
+		TxType:               txType,
+		PairIndex:            int64(pairIndex),
+		FeeRate:              int64(feeRate),
+		TreasuryAccountIndex: int64(treasuryAccountIndex),
+		TreasuryRate:         int64(treasuryRate),
+	}
+	return tx, nil
+}
+
 func ParseDepositPubData(pubdata []byte) (tx *DepositTxInfo, err error) {
 	/*
 		struct Deposit {
@@ -82,17 +128,14 @@ func ParseDepositPubData(pubdata []byte) (tx *DepositTxInfo, err error) {
 
 func ParseDepositNftPubData(pubdata []byte) (tx *DepositNftTxInfo, err error) {
 	/*
-		type DepositNftTxInfo struct {
-			TxType          uint8
-			AccountIndex    uint32
-			AccountNameHash string
-			NftType         uint8
-			NftIndex        int64
-			NftContentHash  []byte
-			NftL1Address    string
-			NftL1TokenId    *big.Int
-			Amount          uint32
-		}
+			struct DepositNft {
+		        uint8 txType;
+		        uint32 accountIndex;
+		        bytes32 accountNameHash;
+		        address tokenAddress;
+		        uint256 nftTokenId;
+		        uint16 creatorTreasuryRate;
+		    }
 	*/
 	if len(pubdata) != DepositNftPubdataSize {
 		logx.Errorf("[ParseDepositNftPubData] invalid size")
@@ -102,22 +145,20 @@ func ParseDepositNftPubData(pubdata []byte) (tx *DepositNftTxInfo, err error) {
 	offset, txType := ReadUint8(pubdata, offset)
 	offset, accountIndex := ReadUint32(pubdata, offset)
 	offset, accountNameHash := ReadBytes32(pubdata, offset)
-	offset, nftType := ReadUint8(pubdata, offset)
 	offset, nftIndex := ReadUint64(pubdata, offset)
-	offset, nftContentHash := ReadBytes32(pubdata, offset)
 	offset, nftL1Address := ReadAddress(pubdata, offset)
 	offset, nftL1TokenId := ReadUint256(pubdata, offset)
-	offset, amount := ReadUint32(pubdata, offset)
+	offset, creatorTreasuryRate := ReadUint16(pubdata, offset)
 	tx = &DepositNftTxInfo{
 		TxType:          txType,
 		AccountIndex:    accountIndex,
 		AccountNameHash: common.Bytes2Hex(accountNameHash),
-		NftType:         nftType,
 		NftIndex:        nftIndex,
-		NftContentHash:  nftContentHash,
-		NftL1Address:    nftL1Address,
-		NftL1TokenId:    nftL1TokenId,
-		Amount:          amount,
+		// TODO
+		NftContentHash:      []byte{},
+		NftL1Address:        nftL1Address,
+		NftL1TokenId:        nftL1TokenId,
+		CreatorTreasuryRate: int64(creatorTreasuryRate),
 	}
 	return tx, nil
 }
@@ -177,26 +218,20 @@ func ParseFullExitNftPubData(pubdata []byte) (tx *commonTx.FullExitNftTxInfo, er
 	offset, txType := ReadUint8(pubdata, offset)
 	offset, accountIndex := ReadUint32(pubdata, offset)
 	offset, accountNameHash := ReadBytes32(pubdata, offset)
-	offset, nftType := ReadUint8(pubdata, offset)
 	offset, nftIndex := ReadUint40(pubdata, offset)
 	offset, nftContentHash := ReadBytes32(pubdata, offset)
 	offset, nftL1Address := ReadAddress(pubdata, offset)
 	offset, nftL1TokenId := ReadUint256(pubdata, offset)
-	offset, amount := ReadUint32(pubdata, offset)
 	offset, toAddress := ReadAddress(pubdata, offset)
-	offset, proxyAddress := ReadAddress(pubdata, offset)
 	tx = &FullExitNftTxInfo{
 		TxType:          txType,
 		AccountIndex:    accountIndex,
 		AccountNameHash: common.Bytes2Hex(accountNameHash),
 		NftL1Address:    nftL1Address,
 		ToAddress:       toAddress,
-		ProxyAddress:    proxyAddress,
-		NftType:         nftType,
 		NftL1TokenId:    nftL1TokenId,
-		Amount:          amount,
 		NftContentHash:  nftContentHash,
-		NftIndex:        nftIndex,
+		NftIndex:        int64(nftIndex),
 	}
 	return tx, nil
 }

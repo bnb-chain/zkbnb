@@ -40,6 +40,8 @@ type (
 		GetAccountMempoolDetails(accountIndex int64) (mempoolTxDetails []*MempoolTxDetail, err error)
 		GetAccountAssetMempoolDetails(accountIndex int64, assetId int64, assetType int64) (mempoolTxDetails []*MempoolTxDetail, err error)
 		GetLatestAccountAssetMempoolDetail(accountIndex int64, assetId int64, assetType int64) (mempoolTxDetail *MempoolTxDetail, err error)
+		GetMempoolTxDetailsByAssetType(assetType int) (mempoolTxDetails []*MempoolTxDetail, err error)
+		GetMempoolTxDetailsByAssetIdAndAssetType(assetId int64, assetType int) (mempoolTxDetails []*MempoolTxDetail, err error)
 	}
 
 	defaultMempoolDetailModel struct {
@@ -56,6 +58,7 @@ type (
 		AccountIndex int64 `gorm:"index"`
 		AccountName  string
 		BalanceDelta string
+		Order        int64
 	}
 
 	LatestTimeMempoolDetails struct {
@@ -179,6 +182,38 @@ func (m *defaultMempoolDetailModel) GetLatestAccountAssetMempoolDetail(
 func (m *defaultMempoolDetailModel) GetAccountMempoolDetails(accountIndex int64) (mempoolTxDetails []*MempoolTxDetail, err error) {
 	var dbTx *gorm.DB
 	dbTx = m.DB.Table(m.table).Where("account_index = ?", accountIndex).
+		Order("created_at").Find(&mempoolTxDetails)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempoolDetail.GetAccountMempoolDetails] %s", dbTx.Error)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Errorf("[mempoolDetail.GetAccountMempoolDetails] no related mempool tx details")
+		return nil, ErrNotFound
+	}
+	return mempoolTxDetails, nil
+}
+
+func (m *defaultMempoolDetailModel) GetMempoolTxDetailsByAssetType(assetType int) (mempoolTxDetails []*MempoolTxDetail, err error) {
+	var dbTx *gorm.DB
+	dbTx = m.DB.Table(m.table).Where("asset_type = ?", assetType).
+		Order("created_at").Find(&mempoolTxDetails)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempoolDetail.GetAccountMempoolDetails] %s", dbTx.Error)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Errorf("[mempoolDetail.GetAccountMempoolDetails] no related mempool tx details")
+		return nil, ErrNotFound
+	}
+	return mempoolTxDetails, nil
+}
+
+func (m *defaultMempoolDetailModel) GetMempoolTxDetailsByAssetIdAndAssetType(
+	assetId int64,
+	assetType int,
+) (
+	mempoolTxDetails []*MempoolTxDetail, err error) {
+	var dbTx *gorm.DB
+	dbTx = m.DB.Table(m.table).Where("asset_id = ? AND asset_type = ?", assetId, assetType).
 		Order("created_at").Find(&mempoolTxDetails)
 	if dbTx.Error != nil {
 		logx.Errorf("[mempoolDetail.GetAccountMempoolDetails] %s", dbTx.Error)

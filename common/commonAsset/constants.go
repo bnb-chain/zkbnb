@@ -16,10 +16,21 @@
 
 package commonAsset
 
+import "math/big"
+
 const (
 	// asset type
-	GeneralAssetType     = 1
-	LiquidityAssetType   = 2
-	LiquidityLpAssetType = 3
-	NftAssetType         = 4
+	GeneralAssetType         = 1
+	LiquidityAssetType       = 2
+	NftAssetType             = 3
+	CollectionNonceAssetType = 4
+
+	RateBase = 10000
+
+	BuyOfferType  = 0
+	SellOfferType = 1
+)
+
+var (
+	ZeroBigInt = big.NewInt(0)
 )

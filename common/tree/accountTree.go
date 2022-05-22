@@ -22,6 +22,7 @@ import (
 	"github.com/zecrey-labs/zecrey-crypto/accumulators/merkleTree"
 	"github.com/zecrey-labs/zecrey-crypto/hash/bn254/zmimc"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
+	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zeromicro/go-zero/core/logx"
 	"log"
@@ -63,7 +64,12 @@ func InitAccountTree(
 		return nil, nil, err
 	}
 	for _, accountHistory := range accountHistories {
-		accountInfoMap[accountHistory.AccountIndex].Nonce = accountHistory.Nonce
+		if accountHistory.Nonce != commonConstant.NilNonce {
+			accountInfoMap[accountHistory.AccountIndex].Nonce = accountHistory.Nonce
+		}
+		if accountHistory.CollectionNonce != commonConstant.NilNonce {
+			accountInfoMap[accountHistory.AccountIndex].CollectionNonce = accountHistory.CollectionNonce
+		}
 		accountInfoMap[accountHistory.AccountIndex].AssetInfo = accountHistory.AssetInfo
 		accountInfoMap[accountHistory.AccountIndex].AssetRoot = accountHistory.AssetRoot
 	}
@@ -87,8 +93,9 @@ func InitAccountTree(
 		// create account assets node
 		for assetId, assetInfo := range accountInfo.AssetInfo {
 			assetsMap[accountIndex][assetId], err = AssetToNode(
-				assetInfo.Balance,
-				assetInfo.LpAmount,
+				assetInfo.Balance.String(),
+				assetInfo.LpAmount.String(),
+				assetInfo.OfferCanceledOrFinalized.String(),
 			)
 			if err != nil {
 				logx.Errorf("[InitAccountTree] unable to convert asset to node: %s", err.Error())
@@ -117,6 +124,7 @@ func InitAccountTree(
 			accountInfoMap[index].AccountNameHash,
 			accountInfoMap[index].PublicKey,
 			accountInfoMap[index].Nonce,
+			accountInfoMap[index].CollectionNonce,
 			accountAssetTrees[index].RootNode.Value,
 		)
 		if err != nil {

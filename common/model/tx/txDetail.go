@@ -44,13 +44,16 @@ type (
 
 	TxDetail struct {
 		gorm.Model
-		TxId         int64 `gorm:"index"`
-		AssetId      int64
-		AssetType    int64
-		AccountIndex int64 `gorm:"index"`
-		AccountName  string
-		Balance      string
-		BalanceDelta string
+		TxId            int64 `gorm:"index"`
+		AssetId         int64
+		AssetType       int64
+		AccountIndex    int64 `gorm:"index"`
+		AccountName     string
+		Balance         string
+		BalanceDelta    string
+		Order           int64
+		Nonce           int64
+		CollectionNonce int64
 	}
 )
 
