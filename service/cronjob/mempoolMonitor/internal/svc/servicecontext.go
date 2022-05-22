@@ -4,7 +4,9 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2TxEventMonitor"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/mempoolMonitor/internal/config"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
@@ -20,6 +22,8 @@ type ServiceContext struct {
 	AccountModel          account.AccountModel
 	AccountHistoryModel   account.AccountHistoryModel
 	MempoolModel          mempool.MempoolModel
+	LiquidityModel        liquidity.LiquidityModel
+	NftModel              nft.L2NftModel
 	MempoolTxDetailModel  mempool.MempoolTxDetailModel
 	RedisConnection       *redis.Redis
 	DbEngine              *gorm.DB
@@ -46,6 +50,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		AccountModel:          account.NewAccountModel(conn, c.CacheRedis, gormPointer),
 		AccountHistoryModel:   account.NewAccountHistoryModel(conn, c.CacheRedis, gormPointer),
 		MempoolModel:          mempool.NewMempoolModel(conn, c.CacheRedis, gormPointer),
+		LiquidityModel:        liquidity.NewLiquidityModel(conn, c.CacheRedis, gormPointer),
+		NftModel:              nft.NewL2NftModel(conn, c.CacheRedis, gormPointer),
 		MempoolTxDetailModel:  mempool.NewMempoolDetailModel(conn, c.CacheRedis, gormPointer),
 		RedisConnection:       redisConn,
 	}

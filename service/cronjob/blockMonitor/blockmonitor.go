@@ -17,7 +17,7 @@ import (
 )
 
 var configFile = flag.String("f",
-	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\rpc\\blockMonitor\\etc\\local.yaml", "the config file")
+	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\cronjob\\blockMonitor\\etc\\local.yaml", "the config file")
 
 func main() {
 	flag.Parse()
@@ -78,7 +78,7 @@ func main() {
 	cronjob.Start()
 
 	s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {
-		blockmonitor.RegisterBlockMonitorServer(grpcServer, srv)
+		blockMonitor.RegisterBlockMonitorServer(grpcServer, srv)
 	})
 	defer s.Stop()
 
