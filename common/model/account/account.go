@@ -52,6 +52,9 @@ type (
 		DB    *gorm.DB
 	}
 
+	/*
+		always keep the latest data of committer
+	*/
 	Account struct {
 		gorm.Model
 		AccountIndex    int64  `gorm:"uniqueIndex"`
@@ -64,6 +67,7 @@ type (
 		// map[int64]*AccountAsset
 		AssetInfo string
 		AssetRoot string
+		// 0 - registered, not committer 1 - committer
 		Status    int
 	}
 )

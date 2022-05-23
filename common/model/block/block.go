@@ -102,6 +102,7 @@ type (
 
 	Block struct {
 		gorm.Model
+		// pubdata
 		BlockCommitment              string
 		BlockHeight                  int64
 		AccountRoot                  string

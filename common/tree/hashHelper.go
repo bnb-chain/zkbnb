@@ -125,6 +125,7 @@ func ComputeNftAssetLeafHash(
 	nftL1Address string,
 	nftL1TokenId string,
 	creatorTreasuryRate int64,
+	collectionId int64,
 ) (hashVal []byte, err error) {
 	hFunc := mimc.NewMiMC()
 	var buf bytes.Buffer
@@ -142,6 +143,7 @@ func ComputeNftAssetLeafHash(
 		return nil, err
 	}
 	util.WriteInt64IntoBuf(&buf, creatorTreasuryRate)
+	util.WriteInt64IntoBuf(&buf, collectionId)
 	hFunc.Write(buf.Bytes())
 	hashVal = hFunc.Sum(nil)
 	return hashVal, nil

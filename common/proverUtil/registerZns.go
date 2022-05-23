@@ -18,12 +18,11 @@
 package proverUtil
 
 import (
-	"encoding/hex"
 	"errors"
 	"github.com/ethereum/go-ethereum/common"
-	curve "github.com/zecrey-labs/zecrey-crypto/ecc/ztwistededwards/tebn254"
 	"github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/std"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
+	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -56,6 +55,7 @@ func ConstructRegisterZnsCryptoTx(
 	}
 	cryptoTx, err = ConstructWitnessInfo(
 		oTx,
+		accountModel,
 		accountTree,
 		accountAssetsTree,
 		liquidityTree,
@@ -69,6 +69,7 @@ func ConstructRegisterZnsCryptoTx(
 		logx.Errorf("[ConstructRegisterZnsCryptoTx] unable to construct witness info: %s", err.Error())
 		return nil, err
 	}
+	cryptoTx.TxType = uint8(oTx.TxType)
 	cryptoTx.RegisterZnsTxInfo = cryptoTxInfo
 	cryptoTx.Nonce = oTx.Nonce
 	cryptoTx.Signature = std.EmptySignature()
@@ -78,12 +79,7 @@ func ConstructRegisterZnsCryptoTx(
 func ToCryptoRegisterZnsTx(txInfo *commonTx.RegisterZnsTxInfo) (info *CryptoRegisterZnsTx, err error) {
 	accountName := make([]byte, 32)
 	copy(accountName[:], txInfo.AccountName)
-	pubKeyBytes, err := hex.DecodeString(txInfo.PubKey)
-	if err != nil {
-		logx.Errorf("[ToCryptoRegisterZnsTx] unable to decode string:%s", err.Error())
-		return nil, err
-	}
-	pk, err := curve.FromBytes(pubKeyBytes)
+	pk, err := util.ParsePubKey(txInfo.PubKey)
 	if err != nil {
 		logx.Errorf("[ToCryptoRegisterZnsTx] unable to parse pub key:%s", err.Error())
 		return nil, err
@@ -92,7 +88,7 @@ func ToCryptoRegisterZnsTx(txInfo *commonTx.RegisterZnsTxInfo) (info *CryptoRegi
 		AccountIndex:    txInfo.AccountIndex,
 		AccountName:     accountName,
 		AccountNameHash: common.FromHex(txInfo.AccountNameHash),
+		PubKey:          pk,
 	}
-	info.PubKey.A.Set(pk)
 	return info, nil
 }
