@@ -26,7 +26,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/tree"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
-	"log"
 	"math/big"
 )
 
@@ -67,9 +66,6 @@ func ConstructWitnessInfo(
 		return nil, err
 	}
 	stateRootBefore := tree.ComputeStateRootHash(AccountRootBefore, LiquidityRootBefore, NftRootBefore)
-	log.Println(new(big.Int).SetBytes(accountTree.RootNode.Value).String())
-	log.Println(new(big.Int).SetBytes(liquidityTree.RootNode.Value).String())
-	log.Println(new(big.Int).SetBytes(nftTree.RootNode.Value).String())
 	stateRootAfter := tree.ComputeStateRootHash(accountTree.RootNode.Value, liquidityTree.RootNode.Value, nftTree.RootNode.Value)
 	cryptoTx = &CryptoTx{
 		AccountRootBefore:               AccountRootBefore,

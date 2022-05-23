@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
-	"github.com/zecrey-labs/zecrey-crypto/ecc/ztwistededwards/tebn254"
 	"github.com/zecrey-labs/zecrey-crypto/elgamal/twistededwards/tebn254/twistedElgamal"
 	"github.com/zecrey-labs/zecrey-crypto/zecrey/twistededwards/tebn254/zecrey"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -81,12 +80,12 @@ func WriteInt64IntoBuf(buf *bytes.Buffer, a int64) {
 }
 
 func WritePkIntoBuf(buf *bytes.Buffer, pkStr string) (err error) {
-	p, err := tebn254.FromString(pkStr)
+	pk, err := ParsePubKey(pkStr)
 	if err != nil {
-		logx.Errorf("[WriteEncIntoBuf] unable to parse point str: %s", err.Error())
+		logx.Errorf("[WriteEncIntoBuf] unable to parse pk: %s", err.Error())
 		return err
 	}
-	writePointIntoBuf(buf, p)
+	writePointIntoBuf(buf, &pk.A)
 	return nil
 }
 
