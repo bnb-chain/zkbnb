@@ -25,7 +25,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zeromicro/go-zero/core/logx"
-	"log"
 )
 
 // TODO optimize, bad performance
@@ -36,27 +35,9 @@ func InitAccountTree(
 ) (
 	accountTree *Tree, accountAssetTrees []*Tree, err error,
 ) {
-	// get all confirmed accounts
-	accounts, err := accountModel.GetConfirmedAccounts()
-	if err != nil {
-		if err != account.ErrNotFound {
-			logx.Errorf("[InitAccountTree] unable to get accounts: %s", err.Error())
-			return nil, nil, err
-		} else {
-			accountTree, err = NewEmptyAccountTree()
-			if err != nil {
-				log.Println("[InitAccountTree] unable to create empty tree:", err)
-				return nil, nil, err
-			}
-			return accountTree, nil, nil
-		}
-	}
 	var (
 		accountInfoMap = make(map[int64]*account.Account)
 	)
-	for _, accountInfo := range accounts {
-		accountInfoMap[accountInfo.AccountIndex] = accountInfo
-	}
 	// get all accountHistories
 	_, accountHistories, err := accountHistoryModel.GetValidAccounts(blockHeight)
 	if err != nil {
@@ -64,6 +45,23 @@ func InitAccountTree(
 		return nil, nil, err
 	}
 	for _, accountHistory := range accountHistories {
+		if accountInfoMap[accountHistory.AccountIndex] == nil {
+			accountInfo, err := accountModel.GetAccountByAccountIndex(accountHistory.AccountIndex)
+			if err != nil {
+				logx.Errorf("[InitAccountTree] unable to get account by account index: %s", err.Error())
+				return nil, nil, err
+			}
+			accountInfoMap[accountHistory.AccountIndex] = &account.Account{
+				AccountIndex:    accountInfo.AccountIndex,
+				AccountName:     accountInfo.AccountName,
+				PublicKey:       accountInfo.PublicKey,
+				AccountNameHash: accountInfo.AccountNameHash,
+				L1Address:       accountInfo.L1Address,
+				Nonce:           0,
+				CollectionNonce: 0,
+				Status:          account.AccountStatusConfirmed,
+			}
+		}
 		if accountHistory.Nonce != commonConstant.NilNonce {
 			accountInfoMap[accountHistory.AccountIndex].Nonce = accountHistory.Nonce
 		}
@@ -73,12 +71,20 @@ func InitAccountTree(
 		accountInfoMap[accountHistory.AccountIndex].AssetInfo = accountHistory.AssetInfo
 		accountInfoMap[accountHistory.AccountIndex].AssetRoot = accountHistory.AssetRoot
 	}
+	if len(accountHistories) == 0 {
+		accountTree, err = NewEmptyAccountTree()
+		if err != nil {
+			logx.Errorf("[InitAccountTree] unable to create empty account tree: %s", err.Error())
+			return nil, nil, err
+		}
+		return accountTree, accountAssetTrees, nil
+	}
 	// get related account info
 	var (
-		assetsMap     = make([]map[int64]*Node, len(accounts))
-		accountsNodes = make([]*Node, len(accounts))
+		assetsMap     = make([]map[int64]*Node, len(accountHistories))
+		accountsNodes = make([]*Node, len(accountHistories))
 	)
-	for accountIndex := int64(0); accountIndex < int64(len(accounts)); accountIndex++ {
+	for accountIndex := int64(0); accountIndex < int64(len(accountHistories)); accountIndex++ {
 		if accountInfoMap[accountIndex] == nil {
 			logx.Errorf("[InitAccountTree] invalid account index")
 			return nil, nil, errors.New("[InitAccountTree] invalid account index")
@@ -89,7 +95,9 @@ func InitAccountTree(
 			logx.Errorf("[InitAccountTree] unable to convert to format account info: %s", err.Error())
 			return nil, nil, err
 		}
-		assetsMap[accountIndex] = make(map[int64]*Node)
+		if oAccountInfo.AssetInfo != commonConstant.NilAssetInfo {
+			assetsMap[accountIndex] = make(map[int64]*Node)
+		}
 		// create account assets node
 		for assetId, assetInfo := range accountInfo.AssetInfo {
 			assetsMap[accountIndex][assetId], err = AssetToNode(
@@ -104,8 +112,8 @@ func InitAccountTree(
 		}
 	}
 	// init account state trees
-	accountAssetTrees = make([]*Tree, len(accounts))
-	for index := int64(0); index < int64(len(accounts)); index++ {
+	accountAssetTrees = make([]*Tree, len(accountHistories))
+	for index := int64(0); index < int64(len(accountHistories)); index++ {
 		// create account assets tree
 		if assetsMap[index] == nil {
 			accountAssetTrees[index], err = NewEmptyAccountAssetTree()

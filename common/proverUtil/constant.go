@@ -56,6 +56,7 @@ type (
 	CryptoNft               = std.Nft
 	CryptoRegisterZnsTx     = std.RegisterZnsTx
 	CryptoCreatePairTx      = std.CreatePairTx
+	CryptoUpdatePairRateTx  = std.UpdatePairRateTx
 	CryptoDepositTx         = std.DepositTx
 	CryptoDepositNftTx      = std.DepositNftTx
 	CryptoTransferTx        = std.TransferTx
@@ -65,8 +66,8 @@ type (
 	CryptoWithdrawTx        = std.WithdrawTx
 	CryptoMintNftTx         = std.MintNftTx
 	CryptoTransferNftTx     = std.TransferNftTx
-	CryptoSetNftPriceTx     = std.SetNftPriceTx
-	CryptoBuyNftTx          = std.BuyNftTx
+	CryptoAtomicMatchTx     = std.AtomicMatchTx
+	CryptoCancelOfferTx     = std.CancelOfferTx
 	CryptoWithdrawNftTx     = std.WithdrawNftTx
 	CryptoFullExitTx        = std.FullExitTx
 	CryptoFullExitNftTx     = std.FullExitNftTx
@@ -79,4 +80,9 @@ const (
 	LiquidityMerkleLevels     = block.LiquidityMerkleLevels
 	NftMerkleLevels           = block.NftMerkleLevels
 	AccountMerkleLevels       = block.AccountMerkleLevels
+
+	LastAccountIndex   = 4294967295
+	LastAccountAssetId = 65535
+	LastPairIndex      = 65535
+	LastNftIndex       = 1099511627775
 )

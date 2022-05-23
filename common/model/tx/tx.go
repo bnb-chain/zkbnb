@@ -64,25 +64,25 @@ type (
 
 	Tx struct {
 		gorm.Model
-		TxHash          string `gorm:"uniqueIndex"`
-		TxType          int64
-		GasFee          string
-		GasFeeAssetId   int64
-		TxStatus        int64
-		BlockHeight     int64 `gorm:"index"`
-		BlockId         int64 `gorm:"index"`
-		AccountRoot     string
-		AssetAId        int64
-		AssetBId        int64
-		TxAmount        string
-		NativeAddress   string
-		TxInfo          string
-		TxDetails       []*TxDetail `gorm:"foreignkey:TxId"`
-		ExtraInfo       string
-		Memo            string
-		AccountIndex    int64
-		Nonce           int64
-		ExpiredAt       int64
+		TxHash        string `gorm:"uniqueIndex"`
+		TxType        int64
+		GasFee        string
+		GasFeeAssetId int64
+		TxStatus      int64
+		BlockHeight   int64 `gorm:"index"`
+		BlockId       int64 `gorm:"index"`
+		AccountRoot   string
+		AssetAId      int64
+		AssetBId      int64
+		TxAmount      string
+		NativeAddress string
+		TxInfo        string
+		TxDetails     []*TxDetail `gorm:"foreignkey:TxId"`
+		ExtraInfo     string
+		Memo          string
+		AccountIndex  int64
+		Nonce         int64
+		ExpiredAt     int64
 	}
 )
 
@@ -599,55 +599,19 @@ func (m *defaultTxModel) GetTxsTotalCountByBlockHeight(blockHeight int64) (count
 func (m *defaultTxModel) GetTxByTxHash(txHash string) (tx *Tx, err error) {
 	var txForeignKeyColumn = `TxDetails`
 
-	key := fmt.Sprintf("%s%v", cacheZecreyTxTxHashPrefix, txHash)
-	val, err := m.RedisConn.Get(key)
-
-	if err != nil {
-		errInfo := fmt.Sprintf("[txVerification.GetTxByTxHash] Get Redis Error: %s, key:%s", err.Error(), key)
-		logx.Errorf(errInfo)
-		return nil, err
-
-	} else if val == "" {
-
-		dbTx := m.DB.Table(m.table).Where("tx_hash = ?", txHash).Find(&tx)
-		if dbTx.Error != nil {
-			logx.Error("[txVerification.GetTxByTxHash] %s", dbTx.Error)
-			return nil, dbTx.Error
-		} else if dbTx.RowsAffected == 0 {
-			logx.Error("[txVerification.GetTxByTxHash] No such Tx with txHash: %s", txHash)
-			return nil, ErrNotFound
-		}
-		err = m.DB.Model(&tx).Association(txForeignKeyColumn).Find(&tx.TxDetails)
-		if err != nil {
-			logx.Error("[txVerification.GetTxByTxHash] Get Associate TxDetails Error")
-			return nil, err
-		}
-
-		// json string
-		jsonString, err := json.Marshal(tx)
-		if err != nil {
-			logx.Errorf("[txVerification.GetTxByTxHash] json.Marshal Error: %s, value: %v", tx)
-			return nil, err
-		}
-
-		err = m.RedisConn.Setex(key, string(jsonString), 60*10+rand.Intn(180))
-		if err != nil {
-			logx.Errorf("[txVerification.GetTxByTxHash] redis set error: %s", err.Error())
-			return nil, err
-		}
-	} else {
-		// json string unmarshal
-		var (
-			nTx *Tx
-		)
-		err = json.Unmarshal([]byte(val), &nTx)
-		if err != nil {
-			logx.Errorf("[txVerification.GetTxByTxHash] json.Unmarshal error: %s, value : %s", err.Error(), val)
-			return nil, err
-		}
-		tx = nTx
+	dbTx := m.DB.Table(m.table).Where("tx_hash = ?", txHash).Find(&tx)
+	if dbTx.Error != nil {
+		logx.Error("[txVerification.GetTxByTxHash] %s", dbTx.Error)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Error("[txVerification.GetTxByTxHash] No such Tx with txHash: %s", txHash)
+		return nil, ErrNotFound
 	}
-
+	err = m.DB.Model(&tx).Association(txForeignKeyColumn).Find(&tx.TxDetails)
+	if err != nil {
+		logx.Error("[txVerification.GetTxByTxHash] Get Associate TxDetails Error")
+		return nil, err
+	}
 	return tx, nil
 }
 

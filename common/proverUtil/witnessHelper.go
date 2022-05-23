@@ -22,6 +22,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/std"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
+	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/tree"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -30,6 +31,7 @@ import (
 
 func ConstructWitnessInfo(
 	oTx *Tx,
+	accountModel AccountModel,
 	accountTree *Tree,
 	accountAssetTrees *[]*Tree,
 	liquidityTree *Tree,
@@ -44,7 +46,7 @@ func ConstructWitnessInfo(
 ) {
 	// construct account witness
 	AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err :=
-		ConstructAccountWitness(oTx, accountTree, accountAssetTrees, accountKeys, proverAccountMap)
+		ConstructAccountWitness(oTx, accountModel, accountTree, accountAssetTrees, accountKeys, proverAccountMap)
 	if err != nil {
 		logx.Errorf("[ConstructWitnessInfo] unable to construct account witness: %s", err.Error())
 		return nil, err
@@ -84,6 +86,7 @@ func ConstructWitnessInfo(
 
 func ConstructAccountWitness(
 	oTx *Tx,
+	accountModel AccountModel,
 	accountTree *Tree,
 	accountAssetTrees *[]*Tree,
 	accountKeys []int64,
@@ -99,7 +102,9 @@ func ConstructAccountWitness(
 	err error,
 ) {
 	AccountRootBefore = accountTree.RootNode.Value
-	accountCount := 0
+	var (
+		accountCount = 0
+	)
 	for _, accountKey := range accountKeys {
 		var (
 			cryptoAccount = new(CryptoAccount)
@@ -125,7 +130,26 @@ func ConstructAccountWitness(
 				return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
 			}
 			*accountAssetTrees = append(*accountAssetTrees, emptyAccountAssetTree)
-			cryptoAccount = std.EmptyAccount(accountKey)
+			cryptoAccount = std.EmptyAccount(accountKey, tree.NilAccountAssetRoot)
+			// update account info
+			accountInfo, err := accountModel.GetConfirmedAccountByAccountIndex(accountKey)
+			if err != nil {
+				logx.Errorf("[ConstructAccountWitness] unable to get confirmed account by account index: %s", err.Error())
+				return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+			}
+			proverAccountMap[accountKey] = new(ProverAccountInfo)
+			proverAccountMap[accountKey].AccountInfo = &Account{
+				AccountIndex:    accountInfo.AccountIndex,
+				AccountName:     accountInfo.AccountName,
+				PublicKey:       accountInfo.PublicKey,
+				AccountNameHash: accountInfo.AccountNameHash,
+				L1Address:       accountInfo.L1Address,
+				Nonce:           0,
+				CollectionNonce: 0,
+				AssetInfo:       commonConstant.NilAssetInfo,
+				AssetRoot:       common.Bytes2Hex(tree.NilAccountAssetRoot),
+				Status:          accountInfo.Status,
+			}
 		} else {
 			proverAccountInfo := proverAccountMap[accountKey]
 			pk, err := util.ParsePubKey(proverAccountInfo.AccountInfo.PublicKey)
@@ -138,6 +162,7 @@ func ConstructAccountWitness(
 				AccountNameHash: common.FromHex(proverAccountInfo.AccountInfo.AccountNameHash),
 				AccountPk:       pk,
 				Nonce:           proverAccountInfo.AccountInfo.Nonce,
+				CollectionNonce: proverAccountInfo.AccountInfo.CollectionNonce,
 				AssetRoot:       (*accountAssetTrees)[accountKey].RootNode.Value,
 			}
 			for i, accountAsset := range proverAccountInfo.AccountAssets {
@@ -148,9 +173,10 @@ func ConstructAccountWitness(
 				}
 				// set crypto account asset
 				cryptoAccount.AssetsInfo[assetCount] = &CryptoAccountAsset{
-					AssetId:  accountAsset.AssetId,
-					Balance:  accountAsset.Balance,
-					LpAmount: accountAsset.LpAmount,
+					AssetId:                  accountAsset.AssetId,
+					Balance:                  accountAsset.Balance,
+					LpAmount:                 accountAsset.LpAmount,
+					OfferCanceledOrFinalized: accountAsset.OfferCanceledOrFinalized,
 				}
 				// set merkle proof
 				MerkleProofsAccountAssetsBefore[accountCount][assetCount], err = SetFixedAccountAssetArray(assetMerkleProof)
@@ -162,7 +188,8 @@ func ConstructAccountWitness(
 				nBalance, err := commonAsset.ComputeNewBalance(
 					proverAccountInfo.AssetsRelatedTxDetails[i].AssetType,
 					proverAccountInfo.AssetsRelatedTxDetails[i].Balance,
-					proverAccountInfo.AssetsRelatedTxDetails[i].BalanceDelta)
+					proverAccountInfo.AssetsRelatedTxDetails[i].BalanceDelta,
+				)
 				if err != nil {
 					logx.Errorf("[ConstructAccountWitness] unable to compute new balance: %s", err.Error())
 					return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
@@ -172,7 +199,7 @@ func ConstructAccountWitness(
 					logx.Errorf("[ConstructAccountWitness] unable to parse account asset: %s", err.Error())
 					return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
 				}
-				nAssetHash, err := tree.ComputeAccountAssetLeafHash(nAsset.Balance.String(), nAsset.LpAmount.String())
+				nAssetHash, err := tree.ComputeAccountAssetLeafHash(nAsset.Balance.String(), nAsset.LpAmount.String(), nAsset.OfferCanceledOrFinalized.String())
 				if err != nil {
 					logx.Errorf("[ConstructAccountWitness] unable to compute account asset leaf hash: %s", err.Error())
 					return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
@@ -187,8 +214,8 @@ func ConstructAccountWitness(
 		}
 		// padding empty account asset
 		for assetCount < NbAccountAssetsPerAccount {
-			cryptoAccount.AssetsInfo[assetCount] = std.EmptyAccountAsset(0)
-			assetMerkleProof, _, err := (*accountAssetTrees)[accountKey].BuildMerkleProofs(0)
+			cryptoAccount.AssetsInfo[assetCount] = std.EmptyAccountAsset(LastAccountAssetId)
+			assetMerkleProof, _, err := (*accountAssetTrees)[accountKey].BuildMerkleProofs(LastAccountAssetId)
 			if err != nil {
 				logx.Errorf("[ConstructAccountWitness] unable to build merkle proofs: %s", err.Error())
 				return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
@@ -215,6 +242,8 @@ func ConstructAccountWitness(
 			proverAccountMap[accountKey].AccountInfo.AccountNameHash,
 			proverAccountMap[accountKey].AccountInfo.PublicKey,
 			nonce,
+			// TODO
+			cryptoAccount.CollectionNonce,
 			(*accountAssetTrees)[accountKey].RootNode.Value,
 		)
 		if err != nil {
@@ -232,10 +261,15 @@ func ConstructAccountWitness(
 		accountCount++
 	}
 	// padding empty account
+	emptyAssetTree, err := tree.NewEmptyAccountAssetTree()
+	if err != nil {
+		logx.Errorf("[ConstructAccountWitness] unable to new empty account asset tree: %s", err.Error())
+		return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+	}
 	for accountCount < NbAccountsPerTx {
-		AccountsInfoBefore[accountCount] = std.EmptyAccount(0)
+		AccountsInfoBefore[accountCount] = std.EmptyAccount(LastAccountIndex, tree.NilAccountAssetRoot)
 		// get account before
-		accountMerkleProofs, _, err := accountTree.BuildMerkleProofs(0)
+		accountMerkleProofs, _, err := accountTree.BuildMerkleProofs(LastAccountIndex)
 		if err != nil {
 			logx.Errorf("[ConstructAccountWitness] unable to build merkle proofs: %s", err.Error())
 			return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
@@ -246,7 +280,20 @@ func ConstructAccountWitness(
 			logx.Errorf("[ConstructAccountWitness] unable to set fixed merkle proof: %s", err.Error())
 			return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
 		}
+		for i := 0; i < NbAccountAssetsPerAccount; i++ {
+			assetMerkleProof, _, err := emptyAssetTree.BuildMerkleProofs(0)
+			if err != nil {
+				logx.Errorf("[ConstructAccountWitness] unable to build merkle proofs: %s", err.Error())
+				return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+			}
+			MerkleProofsAccountAssetsBefore[accountCount][i], err = SetFixedAccountAssetArray(assetMerkleProof)
+			if err != nil {
+				logx.Errorf("[ConstructAccountWitness] unable to set fixed merkle proof: %s", err.Error())
+				return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+			}
+		}
 		accountCount++
+
 	}
 	return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, nil
 }
@@ -264,6 +311,20 @@ func ConstructLiquidityWitness(
 	err error,
 ) {
 	LiquidityRootBefore = liquidityTree.RootNode.Value
+	if proverLiquidityInfo == nil {
+		liquidityMerkleProofs, _, err := liquidityTree.BuildMerkleProofs(LastPairIndex)
+		if err != nil {
+			logx.Errorf("[ConstructLiquidityWitness] unable to build merkle proofs: %s", err.Error())
+			return LiquidityRootBefore, LiquidityBefore, MerkleProofsLiquidityBefore, err
+		}
+		MerkleProofsLiquidityBefore, err = SetFixedLiquidityArray(liquidityMerkleProofs)
+		if err != nil {
+			logx.Errorf("[ConstructLiquidityWitness] unable to set fixed liquidity array: %s", err.Error())
+			return LiquidityRootBefore, LiquidityBefore, MerkleProofsLiquidityBefore, err
+		}
+		LiquidityBefore = std.EmptyLiquidity(LastPairIndex)
+		return LiquidityRootBefore, LiquidityBefore, MerkleProofsLiquidityBefore, nil
+	}
 	liquidityMerkleProofs, _, err := liquidityTree.BuildMerkleProofs(proverLiquidityInfo.LiquidityInfo.PairIndex)
 	if err != nil {
 		logx.Errorf("[ConstructLiquidityWitness] unable to build merkle proofs: %s", err.Error())
@@ -275,12 +336,16 @@ func ConstructLiquidityWitness(
 		return LiquidityRootBefore, LiquidityBefore, MerkleProofsLiquidityBefore, err
 	}
 	LiquidityBefore = &CryptoLiquidity{
-		PairIndex: proverLiquidityInfo.LiquidityInfo.PairIndex,
-		AssetAId:  proverLiquidityInfo.LiquidityInfo.AssetAId,
-		AssetA:    proverLiquidityInfo.LiquidityInfo.AssetA,
-		AssetBId:  proverLiquidityInfo.LiquidityInfo.AssetBId,
-		AssetB:    proverLiquidityInfo.LiquidityInfo.AssetB,
-		LpAmount:  proverLiquidityInfo.LiquidityInfo.LpAmount,
+		PairIndex:            proverLiquidityInfo.LiquidityInfo.PairIndex,
+		AssetAId:             proverLiquidityInfo.LiquidityInfo.AssetAId,
+		AssetA:               proverLiquidityInfo.LiquidityInfo.AssetA,
+		AssetBId:             proverLiquidityInfo.LiquidityInfo.AssetBId,
+		AssetB:               proverLiquidityInfo.LiquidityInfo.AssetB,
+		LpAmount:             proverLiquidityInfo.LiquidityInfo.LpAmount,
+		KLast:                proverLiquidityInfo.LiquidityInfo.KLast,
+		FeeRate:              proverLiquidityInfo.LiquidityInfo.FeeRate,
+		TreasuryAccountIndex: proverLiquidityInfo.LiquidityInfo.TreasuryAccountIndex,
+		TreasuryRate:         proverLiquidityInfo.LiquidityInfo.TreasuryRate,
 	}
 	// update liquidity tree
 	nBalance, err := commonAsset.ComputeNewBalance(
@@ -303,6 +368,10 @@ func ConstructLiquidityWitness(
 		nPoolInfo.AssetBId,
 		nPoolInfo.AssetB.String(),
 		nPoolInfo.LpAmount.String(),
+		nPoolInfo.KLast.String(),
+		nPoolInfo.FeeRate,
+		nPoolInfo.TreasuryAccountIndex,
+		nPoolInfo.TreasuryRate,
 	)
 	if err != nil {
 		logx.Errorf("[ConstructLiquidityWitness] unable to compute liquidity node hash: %s", err.Error())
@@ -329,6 +398,20 @@ func ConstructNftWitness(
 	err error,
 ) {
 	NftRootBefore = nftTree.RootNode.Value
+	if proverNftInfo == nil {
+		liquidityMerkleProofs, _, err := nftTree.BuildMerkleProofs(LastNftIndex)
+		if err != nil {
+			logx.Errorf("[ConstructLiquidityWitness] unable to build merkle proofs: %s", err.Error())
+			return NftRootBefore, NftBefore, MerkleProofsNftBefore, err
+		}
+		MerkleProofsNftBefore, err = SetFixedNftArray(liquidityMerkleProofs)
+		if err != nil {
+			logx.Errorf("[ConstructLiquidityWitness] unable to set fixed nft array: %s", err.Error())
+			return NftRootBefore, NftBefore, MerkleProofsNftBefore, err
+		}
+		NftBefore = std.EmptyNft(LastNftIndex)
+		return NftRootBefore, NftBefore, MerkleProofsNftBefore, nil
+	}
 	nftMerkleProofs, _, err := nftTree.BuildMerkleProofs(proverNftInfo.NftInfo.NftIndex)
 	if err != nil {
 		logx.Errorf("[ConstructNftWitness] unable to build merkle proofs: %s", err.Error())
@@ -338,11 +421,6 @@ func ConstructNftWitness(
 	if err != nil {
 		logx.Errorf("[ConstructNftWitness] unable to set fixed liquidity array: %s", err.Error())
 		return NftRootBefore, NftBefore, MerkleProofsNftBefore, err
-	}
-	assetAmount, isValid := new(big.Int).SetString(proverNftInfo.NftInfo.AssetAmount, 10)
-	if !isValid {
-		logx.Errorf("[ConstructNftWitness] unable to parse big int")
-		return NftRootBefore, NftBefore, MerkleProofsNftBefore, errors.New("[ConstructNftWitness] unable to parse big int")
 	}
 	nftL1TokenId, isValid := new(big.Int).SetString(proverNftInfo.NftInfo.NftL1TokenId, 10)
 	if !isValid {
@@ -354,11 +432,10 @@ func ConstructNftWitness(
 		NftContentHash:      common.FromHex(proverNftInfo.NftInfo.NftContentHash),
 		CreatorAccountIndex: proverNftInfo.NftInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   proverNftInfo.NftInfo.OwnerAccountIndex,
-		AssetId:             proverNftInfo.NftInfo.AssetId,
-		AssetAmount:         assetAmount,
-		NftL1Address:        proverNftInfo.NftInfo.NftL1Address,
+		NftL1Address:        new(big.Int).SetBytes(common.FromHex(proverNftInfo.NftInfo.NftL1Address)),
 		NftL1TokenId:        nftL1TokenId,
 		CreatorTreasuryRate: proverNftInfo.NftInfo.CreatorTreasuryRate,
+		CollectionId:        proverNftInfo.NftInfo.CollectionId,
 	}
 	// update liquidity tree
 	nBalance, err := commonAsset.ComputeNewBalance(
@@ -379,11 +456,10 @@ func ConstructNftWitness(
 		nNftInfo.CreatorAccountIndex,
 		nNftInfo.OwnerAccountIndex,
 		nNftInfo.NftContentHash,
-		nNftInfo.AssetId,
-		nNftInfo.AssetAmount,
 		nNftInfo.NftL1Address,
 		nNftInfo.NftL1TokenId,
 		nNftInfo.CreatorTreasuryRate,
+		nNftInfo.CollectionId,
 	)
 	if err != nil {
 		logx.Errorf("[ConstructNftWitness] unable to compute liquidity node hash: %s", err.Error())

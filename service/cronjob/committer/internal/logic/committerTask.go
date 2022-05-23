@@ -417,6 +417,7 @@ func CommitterTask(
 						nftAsset.NftContentHash,
 						nftAsset.NftL1Address, nftAsset.NftL1TokenId,
 						nftAsset.CreatorTreasuryRate,
+						nftAsset.CollectionId,
 					)
 					if err != nil {
 						logx.Errorf("[CommitterTask] unable to compute new nft asset leaf: %s", err)
