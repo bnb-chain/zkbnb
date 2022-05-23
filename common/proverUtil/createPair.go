@@ -19,13 +19,12 @@ package proverUtil
 
 import (
 	"errors"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/std"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-func ConstructDepositCryptoTx(
+func ConstructCreatePairCryptoTx(
 	oTx *Tx,
 	accountTree *Tree,
 	accountAssetsTree *[]*Tree,
@@ -33,27 +32,27 @@ func ConstructDepositCryptoTx(
 	nftTree *Tree,
 	accountModel AccountModel,
 ) (cryptoTx *CryptoTx, err error) {
-	if oTx.TxType != commonTx.TxTypeDeposit {
+	if oTx.TxType != commonTx.TxTypeCreatePair {
 		logx.Errorf("[ConstructCreatePairCryptoTx] invalid tx type")
 		return nil, errors.New("[ConstructCreatePairCryptoTx] invalid tx type")
 	}
 	if oTx == nil || accountTree == nil || accountAssetsTree == nil || liquidityTree == nil || nftTree == nil {
-		logx.Errorf("[ConstructDepositCryptoTx] invalid params")
-		return nil, errors.New("[ConstructDepositCryptoTx] invalid params")
+		logx.Errorf("[ConstructCreatePairCryptoTx] invalid params")
+		return nil, errors.New("[ConstructCreatePairCryptoTx] invalid params")
 	}
-	txInfo, err := commonTx.ParseDepositTxInfo(oTx.TxInfo)
+	txInfo, err := commonTx.ParseCreatePairTxInfo(oTx.TxInfo)
 	if err != nil {
-		logx.Errorf("[ConstructDepositCryptoTx] unable to parse register zns tx info:%s", err.Error())
+		logx.Errorf("[ConstructCreatePairCryptoTx] unable to parse register zns tx info:%s", err.Error())
 		return nil, err
 	}
-	cryptoTxInfo, err := ToCryptoDepositTx(txInfo)
+	cryptoTxInfo, err := ToCryptoCreatePairTx(txInfo)
 	if err != nil {
-		logx.Errorf("[ConstructDepositCryptoTx] unable to convert to crypto register zns tx: %s", err.Error())
+		logx.Errorf("[ConstructCreatePairCryptoTx] unable to convert to crypto register zns tx: %s", err.Error())
 		return nil, err
 	}
 	accountKeys, proverAccountMap, proverLiquidityInfo, proverNftInfo, err := ConstructProverInfo(oTx, accountModel)
 	if err != nil {
-		logx.Errorf("[ConstructDepositCryptoTx] unable to construct prover info: %s", err.Error())
+		logx.Errorf("[ConstructCreatePairCryptoTx] unable to construct prover info: %s", err.Error())
 		return nil, err
 	}
 	cryptoTx, err = ConstructWitnessInfo(
@@ -69,22 +68,24 @@ func ConstructDepositCryptoTx(
 		proverNftInfo,
 	)
 	if err != nil {
-		logx.Errorf("[ConstructDepositCryptoTx] unable to construct witness info: %s", err.Error())
+		logx.Errorf("[ConstructCreatePairCryptoTx] unable to construct witness info: %s", err.Error())
 		return nil, err
 	}
 	cryptoTx.TxType = uint8(oTx.TxType)
-	cryptoTx.DepositTxInfo = cryptoTxInfo
+	cryptoTx.CreatePairTxInfo = cryptoTxInfo
 	cryptoTx.Nonce = oTx.Nonce
 	cryptoTx.Signature = std.EmptySignature()
 	return cryptoTx, nil
 }
 
-func ToCryptoDepositTx(txInfo *commonTx.DepositTxInfo) (info *CryptoDepositTx, err error) {
-	info = &CryptoDepositTx{
-		AccountIndex:    int64(txInfo.AccountIndex),
-		AccountNameHash: common.FromHex(txInfo.AccountNameHash),
-		AssetId:         int64(txInfo.AssetId),
-		AssetAmount:     txInfo.AssetAmount,
+func ToCryptoCreatePairTx(txInfo *commonTx.CreatePairTxInfo) (info *CryptoCreatePairTx, err error) {
+	info = &CryptoCreatePairTx{
+		PairIndex:            txInfo.PairIndex,
+		AssetAId:             txInfo.AssetAId,
+		AssetBId:             txInfo.AssetBId,
+		FeeRate:              txInfo.FeeRate,
+		TreasuryAccountIndex: txInfo.TreasuryAccountIndex,
+		TreasuryRate:         txInfo.TreasuryRate,
 	}
 	return info, nil
 }

@@ -290,21 +290,28 @@ func CommitterTask(
 							return err
 						}
 					}
-					poolInfo, err := commonAsset.ConstructLiquidityInfo(
-						liquidityMap[mempoolTxDetail.AssetId].PairIndex,
-						liquidityMap[mempoolTxDetail.AssetId].AssetAId,
-						liquidityMap[mempoolTxDetail.AssetId].AssetA,
-						liquidityMap[mempoolTxDetail.AssetId].AssetBId,
-						liquidityMap[mempoolTxDetail.AssetId].AssetB,
-						liquidityMap[mempoolTxDetail.AssetId].LpAmount,
-						liquidityMap[mempoolTxDetail.AssetId].KLast,
-						liquidityMap[mempoolTxDetail.AssetId].FeeRate,
-						liquidityMap[mempoolTxDetail.AssetId].TreasuryAccountIndex,
-						liquidityMap[mempoolTxDetail.AssetId].TreasuryRate,
+					var (
+						poolInfo *commonAsset.LiquidityInfo
 					)
-					if err != nil {
-						logx.Errorf("[CommitterTask] unable to construct pool info: %s", err.Error())
-						return err
+					if mempoolTx.TxType == TxTypeCreatePair {
+						poolInfo = commonAsset.EmptyLiquidityInfo(mempoolTxDetail.AssetId)
+					} else {
+						poolInfo, err = commonAsset.ConstructLiquidityInfo(
+							liquidityMap[mempoolTxDetail.AssetId].PairIndex,
+							liquidityMap[mempoolTxDetail.AssetId].AssetAId,
+							liquidityMap[mempoolTxDetail.AssetId].AssetA,
+							liquidityMap[mempoolTxDetail.AssetId].AssetBId,
+							liquidityMap[mempoolTxDetail.AssetId].AssetB,
+							liquidityMap[mempoolTxDetail.AssetId].LpAmount,
+							liquidityMap[mempoolTxDetail.AssetId].KLast,
+							liquidityMap[mempoolTxDetail.AssetId].FeeRate,
+							liquidityMap[mempoolTxDetail.AssetId].TreasuryAccountIndex,
+							liquidityMap[mempoolTxDetail.AssetId].TreasuryRate,
+						)
+						if err != nil {
+							logx.Errorf("[CommitterTask] unable to construct pool info: %s", err.Error())
+							return err
+						}
 					}
 					baseBalance = poolInfo.String()
 					// compute new balance
@@ -323,9 +330,9 @@ func CommitterTask(
 					liquidityMap[mempoolTxDetail.AssetId] = &Liquidity{
 						Model:                liquidityMap[mempoolTxDetail.AssetId].Model,
 						PairIndex:            nPoolInfo.PairIndex,
-						AssetAId:             nPoolInfo.AssetAId,
+						AssetAId:             liquidityMap[mempoolTxDetail.AssetId].AssetAId,
 						AssetA:               nPoolInfo.AssetA.String(),
-						AssetBId:             nPoolInfo.AssetBId,
+						AssetBId:             liquidityMap[mempoolTxDetail.AssetId].AssetBId,
 						AssetB:               nPoolInfo.AssetB.String(),
 						LpAmount:             nPoolInfo.LpAmount.String(),
 						KLast:                nPoolInfo.KLast.String(),
@@ -553,8 +560,9 @@ func CommitterTask(
 				AssetBId:             liquidityMap[pairIndex].AssetBId,
 				AssetB:               liquidityMap[pairIndex].AssetB,
 				LpAmount:             liquidityMap[pairIndex].LpAmount,
-				TreasuryAccountIndex: liquidityMap[pairIndex].TreasuryAccountIndex,
+				KLast:                liquidityMap[pairIndex].KLast,
 				FeeRate:              liquidityMap[pairIndex].FeeRate,
+				TreasuryAccountIndex: liquidityMap[pairIndex].TreasuryAccountIndex,
 				TreasuryRate:         liquidityMap[pairIndex].TreasuryRate,
 				L2BlockHeight:        currentBlockHeight,
 			})
