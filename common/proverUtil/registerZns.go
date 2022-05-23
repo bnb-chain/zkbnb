@@ -34,6 +34,10 @@ func ConstructRegisterZnsCryptoTx(
 	nftTree *Tree,
 	accountModel AccountModel,
 ) (cryptoTx *CryptoTx, err error) {
+	if oTx.TxType != commonTx.TxTypeRegisterZns {
+		logx.Errorf("[ConstructCreatePairCryptoTx] invalid tx type")
+		return nil, errors.New("[ConstructCreatePairCryptoTx] invalid tx type")
+	}
 	if oTx == nil || accountTree == nil || accountAssetsTree == nil || liquidityTree == nil || nftTree == nil {
 		logx.Errorf("[ConstructRegisterZnsCryptoTx] invalid params")
 		return nil, errors.New("[ConstructRegisterZnsCryptoTx] invalid params")

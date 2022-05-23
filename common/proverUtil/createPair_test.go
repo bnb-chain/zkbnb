@@ -30,7 +30,7 @@ import (
 	"testing"
 )
 
-func TestConstructRegisterZnsCryptoTxFirst(t *testing.T) {
+func TestConstructCreatePairCryptoTxFirst(t *testing.T) {
 	redisConn := redis.New(basic.CacheConf[0].Host, WithRedis(basic.CacheConf[0].Type, basic.CacheConf[0].Pass))
 	txModel := tx.NewTxModel(basic.Connection, basic.CacheConf, basic.DB, redisConn)
 	accountModel := account.NewAccountModel(basic.Connection, basic.CacheConf, basic.DB)
@@ -39,11 +39,11 @@ func TestConstructRegisterZnsCryptoTxFirst(t *testing.T) {
 	liquidityHistoryModel := liquidity.NewLiquidityHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
 	//nftModel := nft.NewL2NftModel(basic.Connection, basic.CacheConf, basic.DB)
 	nftHistoryModel := nft.NewL2NftHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
-	txInfo, err := txModel.GetTxByTxHash("e5d5e321-da46-11ec-8abf-7cb27d9ca483")
+	txInfo, err := txModel.GetTxByTxHash("9cad9ddc-da90-11ec-b8ff-7cb27d9ca483")
 	if err != nil {
 		t.Fatal(err)
 	}
-	blockHeight := int64(0)
+	blockHeight := int64(8)
 	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, accountHistoryModel, blockHeight)
 	if err != nil {
 		t.Fatal(err)
@@ -56,7 +56,7 @@ func TestConstructRegisterZnsCryptoTxFirst(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cryptoTx, err := ConstructRegisterZnsCryptoTx(
+	cryptoTx, err := ConstructCreatePairCryptoTx(
 		txInfo,
 		accountTree, &accountAssetTrees,
 		liquidityTree,
@@ -73,45 +73,3 @@ func TestConstructRegisterZnsCryptoTxFirst(t *testing.T) {
 	fmt.Println(string(txBytes))
 }
 
-func TestConstructRegisterZnsCryptoTxNotFirst(t *testing.T) {
-	redisConn := redis.New(basic.CacheConf[0].Host, WithRedis(basic.CacheConf[0].Type, basic.CacheConf[0].Pass))
-	txModel := tx.NewTxModel(basic.Connection, basic.CacheConf, basic.DB, redisConn)
-	accountModel := account.NewAccountModel(basic.Connection, basic.CacheConf, basic.DB)
-	accountHistoryModel := account.NewAccountHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
-	//liquidityModel := liquidity.NewLiquidityModel(basic.Connection, basic.CacheConf, basic.DB)
-	liquidityHistoryModel := liquidity.NewLiquidityHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
-	//nftModel := nft.NewL2NftModel(basic.Connection, basic.CacheConf, basic.DB)
-	nftHistoryModel := nft.NewL2NftHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
-	txInfo, err := txModel.GetTxByTxHash("e5d6dd7c-da46-11ec-8abf-7cb27d9ca483")
-	if err != nil {
-		t.Fatal(err)
-	}
-	blockHeight := int64(1)
-	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, accountHistoryModel, blockHeight)
-	if err != nil {
-		t.Fatal(err)
-	}
-	liquidityTree, err := tree.InitLiquidityTree(liquidityHistoryModel, blockHeight)
-	if err != nil {
-		t.Fatal(err)
-	}
-	nftTree, err := tree.InitNftTree(nftHistoryModel, blockHeight)
-	if err != nil {
-		t.Fatal(err)
-	}
-	cryptoTx, err := ConstructRegisterZnsCryptoTx(
-		txInfo,
-		accountTree, &accountAssetTrees,
-		liquidityTree,
-		nftTree,
-		accountModel,
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	txBytes, err := json.Marshal(cryptoTx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println(string(txBytes))
-}
