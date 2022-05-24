@@ -212,6 +212,7 @@ func (l *SendTxLogic) sendSwapTx(rawTxInfo string) (txId string, err error) {
 		"",
 		txInfo.FromAccountIndex,
 		txInfo.Nonce,
+		txInfo.ExpiredAt,
 		txDetails,
 	)
 	// delete key

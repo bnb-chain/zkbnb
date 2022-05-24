@@ -20,11 +20,12 @@ package util
 import (
 	"errors"
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
+	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
 )
 
-func ComputeLpAmount(
+func ComputeEmptyLpAmount(
 	assetAAmount *big.Int,
 	assetBAmount *big.Int,
 ) (lpAmount *big.Int, err error) {
@@ -32,10 +33,21 @@ func ComputeLpAmount(
 	lpFloat := ffmath.FloatSqrt(ffmath.IntToFloat(lpSquare))
 	lpAmount, err = CleanPackedAmount(ffmath.FloatToInt(lpFloat))
 	if err != nil {
-		logx.Errorf("[ComputeLpAmount] unable to compute lp amount: %s", err.Error())
+		logx.Errorf("[ComputeEmptyLpAmount] unable to compute lp amount: %s", err.Error())
 		return nil, err
 	}
 	return lpAmount, nil
+}
+
+func ComputeLpAmount(
+	liquidityInfo *commonAsset.LiquidityInfo,
+	assetAAmount *big.Int,
+) (lpAmount *big.Int) {
+	// lp = assetAAmount / poolA * LpAmount
+	sLp := commonAsset.ComputeSLp(liquidityInfo.AssetA, liquidityInfo.AssetB, liquidityInfo.KLast, liquidityInfo.FeeRate, liquidityInfo.TreasuryRate)
+	poolLpAmount := ffmath.Sub(liquidityInfo.LpAmount, sLp)
+	lpAmount = ffmath.Div(ffmath.Multiply(assetAAmount, poolLpAmount), liquidityInfo.AssetA)
+	return lpAmount
 }
 
 func ComputeLpPortion(

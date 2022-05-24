@@ -137,6 +137,7 @@ func (l *SendTxLogic) sendWithdrawTx(rawTxInfo string) (txId string, err error) 
 		"",
 		txInfo.FromAccountIndex,
 		txInfo.Nonce,
+		txInfo.ExpiredAt,
 		txDetails,
 	)
 	err = CreateMempoolTx(mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)

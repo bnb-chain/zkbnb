@@ -155,6 +155,7 @@ func (l *SendTxLogic) sendTransferTx(rawTxInfo string) (txId string, err error) 
 		txInfo.Memo,
 		txInfo.FromAccountIndex,
 		txInfo.Nonce,
+		txInfo.ExpiredAt,
 		txDetails,
 	)
 	err = CreateMempoolTx(mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)

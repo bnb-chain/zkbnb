@@ -178,6 +178,7 @@ func (l *SendTxLogic) sendRemoveLiquidityTx(rawTxInfo string) (txId string, err 
 		"",
 		txInfo.FromAccountIndex,
 		txInfo.Nonce,
+		txInfo.ExpiredAt,
 		txDetails,
 	)
 	// delete key

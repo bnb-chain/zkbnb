@@ -93,9 +93,7 @@ func (l *SendTxLogic) sendAddLiquidityTx(rawTxInfo string) (txId string, err err
 
 	// check params
 	if liquidityInfo.AssetA == nil ||
-		liquidityInfo.AssetA.Cmp(big.NewInt(0)) == 0 ||
-		liquidityInfo.AssetB == nil ||
-		liquidityInfo.AssetB.Cmp(big.NewInt(0)) == 0 {
+		liquidityInfo.AssetB == nil {
 		logx.Errorf("[sendAddLiquidityTx] invalid params")
 		return "", errors.New("[sendAddLiquidityTx] invalid params")
 	}
@@ -103,10 +101,14 @@ func (l *SendTxLogic) sendAddLiquidityTx(rawTxInfo string) (txId string, err err
 	var (
 		lpAmount *big.Int
 	)
-	lpAmount, err = util.ComputeLpAmount(txInfo.AssetAAmount, txInfo.AssetBAmount)
-	if err != nil {
-		logx.Errorf("[sendAddLiquidityTx] unable to compute lp amount: %s", err.Error())
-		return "", err
+	if liquidityInfo.AssetA.Cmp(big.NewInt(0)) == 0 {
+		lpAmount, err = util.ComputeEmptyLpAmount(txInfo.AssetAAmount, txInfo.AssetBAmount)
+		if err != nil {
+			logx.Errorf("[sendAddLiquidityTx] unable to compute lp amount: %s", err.Error())
+			return "", err
+		}
+	} else {
+		lpAmount = util.ComputeLpAmount(liquidityInfo, txInfo.AssetAAmount)
 	}
 	// add into tx info
 	txInfo.LpAmount = lpAmount
@@ -115,10 +117,6 @@ func (l *SendTxLogic) sendAddLiquidityTx(rawTxInfo string) (txId string, err err
 		liquidityInfo.AssetBId == txInfo.AssetBId {
 		txInfo.PoolAAmount = liquidityInfo.AssetA
 		txInfo.PoolBAmount = liquidityInfo.AssetB
-	} else if liquidityInfo.AssetAId == txInfo.AssetBId &&
-		liquidityInfo.AssetBId == txInfo.AssetAId {
-		txInfo.PoolAAmount = liquidityInfo.AssetB
-		txInfo.PoolBAmount = liquidityInfo.AssetA
 	} else {
 		logx.Errorf("[sendAddLiquidityTx] invalid pair index")
 		return "", errors.New("[sendAddLiquidityTx] invalid pair index")
@@ -143,6 +141,17 @@ func (l *SendTxLogic) sendAddLiquidityTx(rawTxInfo string) (txId string, err err
 			l.svcCtx.AccountModel,
 			l.svcCtx.RedisConnection,
 			txInfo.GasAccountIndex,
+		)
+		if err != nil {
+			logx.Errorf("[sendAddLiquidityTx] unable to get latest account info: %s", err.Error())
+			return "", err
+		}
+	}
+	if accountInfoMap[liquidityInfo.TreasuryAccountIndex] == nil {
+		accountInfoMap[liquidityInfo.TreasuryAccountIndex], err = globalmapHandler.GetBasicAccountInfo(
+			l.svcCtx.AccountModel,
+			l.svcCtx.RedisConnection,
+			liquidityInfo.TreasuryAccountIndex,
 		)
 		if err != nil {
 			logx.Errorf("[sendAddLiquidityTx] unable to get latest account info: %s", err.Error())
@@ -183,6 +192,7 @@ func (l *SendTxLogic) sendAddLiquidityTx(rawTxInfo string) (txId string, err err
 		"",
 		txInfo.FromAccountIndex,
 		txInfo.Nonce,
+		txInfo.ExpiredAt,
 		txDetails,
 	)
 	// delete key
