@@ -141,7 +141,11 @@ func VerifyRemoveLiquidityTxInfo(
 	}
 	// compute hash
 	hFunc := mimc.NewMiMC()
-	msgHash := legendTxTypes.ComputeRemoveLiquidityMsgHash(txInfo, hFunc)
+	msgHash, err := legendTxTypes.ComputeRemoveLiquidityMsgHash(txInfo, hFunc)
+	if err != nil {
+		logx.Errorf("[VerifyRemoveLiquidityTxInfo] unable to compute hash: %s", err.Error())
+		return nil, err
+	}
 	// verify signature
 	hFunc.Reset()
 	pk, err := ParsePkStr(accountInfoMap[txInfo.FromAccountIndex].PublicKey)

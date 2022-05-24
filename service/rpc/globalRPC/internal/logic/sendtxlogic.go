@@ -127,15 +127,19 @@ func (l *SendTxLogic) SendTx(in *globalRPCProto.ReqSendTx) (resp *globalRPCProto
 			return packSendTxResp(FailStatus, FailMsg, errInfo, resultResp), err
 		}
 		break
+	case commonTx.TxTypeCreateCollection:
+		break
 	case commonTx.TxTypeMintNft:
 		break
 	case commonTx.TxTypeTransferNft:
 		break
-	case commonTx.TxTypeSetNftPrice:
+	case commonTx.TxTypeAtomicMatch:
 		break
-	case commonTx.TxTypeBuyNft:
+	case commonTx.TxTypeCancelOffer:
 		break
 	case commonTx.TxTypeWithdrawNft:
+		break
+	case commonTx.TxTypeOffer:
 		break
 	default:
 		errInfo := "[sendtxlogic] invalid tx type"

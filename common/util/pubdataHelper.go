@@ -139,9 +139,11 @@ func ConvertTxToTransferPubData(oTx *mempool.MempoolTx) (pubData []byte, err err
 		return nil, err
 	}
 	buf.Write(packedFeeBytes)
+	a := new(big.Int).SetBytes(buf.Bytes()).FillBytes(make([]byte, 32))
+	buf.Reset()
+	buf.Write(a)
 	buf.Write(txInfo.CallDataHash)
 	pubData = buf.Bytes()
-	pubData = new(big.Int).SetBytes(pubData).FillBytes(make([]byte, 32))
 	return pubData, nil
 }
 
@@ -514,7 +516,6 @@ func ConvertTxToWithdrawNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err 
 	buf.Write(AddressStrToBytes(txInfo.NftL1Address))
 	buf.Write(Uint256ToBytes(txInfo.NftL1TokenId))
 	buf.Write(AddressStrToBytes(txInfo.ToAddress))
-	buf.Write(AddressStrToBytes(txInfo.ProxyAddress))
 	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
 	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
 	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)

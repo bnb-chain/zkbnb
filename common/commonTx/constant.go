@@ -37,4 +37,5 @@ const (
 	TxTypeWithdrawNft
 	TxTypeFullExit
 	TxTypeFullExitNft
+	TxTypeOffer
 )

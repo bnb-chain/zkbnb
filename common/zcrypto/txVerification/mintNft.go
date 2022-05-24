@@ -88,7 +88,11 @@ func VerifyMintNftTxInfo(
 	}
 	// compute hash
 	hFunc := mimc.NewMiMC()
-	msgHash := legendTxTypes.ComputeMintNftMsgHash(txInfo, hFunc)
+	msgHash, err := legendTxTypes.ComputeMintNftMsgHash(txInfo, hFunc)
+	if err != nil {
+		logx.Errorf("[VerifyMintNftTxInfo] unable to compute hash: %s", err.Error())
+		return nil, err
+	}
 	// verify signature
 	hFunc.Reset()
 	pk, err := ParsePkStr(accountInfoMap[txInfo.CreatorAccountIndex].PublicKey)

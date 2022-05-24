@@ -80,7 +80,11 @@ func VerifyCollectionTxInfo(
 	}
 	// compute hash
 	hFunc := mimc.NewMiMC()
-	msgHash := legendTxTypes.ComputeCreateCollectionMsgHash(txInfo, hFunc)
+	msgHash, err := legendTxTypes.ComputeCreateCollectionMsgHash(txInfo, hFunc)
+	if err != nil {
+		logx.Errorf("[VerifyCollectionTxInfo] unable to compute hash: %s", err.Error())
+		return nil, err
+	}
 	// verify signature
 	hFunc.Reset()
 	pk, err := ParsePkStr(accountInfoMap[txInfo.AccountIndex].PublicKey)

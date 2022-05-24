@@ -29,7 +29,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/logic/txHandler"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"math/big"
 	"strconv"
@@ -252,7 +251,7 @@ func (l *SendTxLogic) CreateFailRemoveLiquidityTx(info *commonTx.RemoveLiquidity
 		// tx fee l1asset id
 		GasFeeAssetId: txFeeAssetId,
 		// tx status, 1 - success(default), 2 - failure
-		TxStatus: txHandler.TxFail,
+		TxStatus: TxFail,
 		// AssetAId
 		AssetAId: assetAId,
 		// l1asset id

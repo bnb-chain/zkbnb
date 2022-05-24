@@ -99,7 +99,11 @@ func VerifyWithdrawTxInfo(
 	}
 	// compute hash
 	hFunc := mimc.NewMiMC()
-	msgHash := legendTxTypes.ComputeWithdrawMsgHash(txInfo, hFunc)
+	msgHash, err := legendTxTypes.ComputeWithdrawMsgHash(txInfo, hFunc)
+	if err != nil {
+		logx.Errorf("[VerifyWithdrawTxInfo] unable to compute hash: %s", err.Error())
+		return nil, err
+	}
 	// verify signature
 	hFunc.Reset()
 	pk, err := ParsePkStr(accountInfoMap[txInfo.FromAccountIndex].PublicKey)

@@ -85,10 +85,6 @@ func VerifySwapTxInfo(
 	if assetDeltaMap[txInfo.GasAccountIndex] == nil {
 		assetDeltaMap[txInfo.GasAccountIndex] = make(map[int64]*big.Int)
 	}
-	if txInfo.AssetAAmount.Cmp(assetDeltaMap[txInfo.FromAccountIndex][txInfo.AssetAId]) < 0 {
-		log.Println("[VerifySwapTxInfo] invalid treasury amount")
-		return nil, errors.New("[VerifySwapTxInfo] invalid treasury amount")
-	}
 	// from account asset A
 	assetDeltaMap[txInfo.FromAccountIndex][txInfo.AssetAId] = ffmath.Neg(txInfo.AssetAAmount)
 	// from account asset B
@@ -101,6 +97,10 @@ func VerifySwapTxInfo(
 			assetDeltaMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId],
 			txInfo.GasFeeAssetAmount,
 		)
+	}
+	if txInfo.AssetAAmount.Cmp(assetDeltaMap[txInfo.FromAccountIndex][txInfo.AssetAId]) < 0 {
+		log.Println("[VerifySwapTxInfo] invalid treasury amount")
+		return nil, errors.New("[VerifySwapTxInfo] invalid treasury amount")
 	}
 	// to account pool
 	poolAssetADelta := txInfo.AssetAAmount
@@ -153,7 +153,11 @@ func VerifySwapTxInfo(
 	}
 	// compute hash
 	hFunc := mimc.NewMiMC()
-	msgHash := legendTxTypes.ComputeSwapMsgHash(txInfo, hFunc)
+	msgHash, err := legendTxTypes.ComputeSwapMsgHash(txInfo, hFunc)
+	if err != nil {
+		logx.Errorf("[VerifySwapTxInfo] unable to compute hash: %s", err.Error())
+		return nil, err
+	}
 	// verify signature
 	hFunc.Reset()
 	pk, err := ParsePkStr(accountInfoMap[txInfo.FromAccountIndex].PublicKey)

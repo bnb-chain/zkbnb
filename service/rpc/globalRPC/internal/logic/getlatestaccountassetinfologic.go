@@ -62,11 +62,11 @@ func (l *GetLatestAccountAssetInfoLogic) GetLatestAccountAssetInfo(in *globalRPC
 
 	accountInfo, err := globalmapHandler.GetLatestAccountInfo(
 		l.svcCtx.AccountModel,
-		l.svcCtx.AccountHistoryModel,
 		l.svcCtx.MempoolModel,
 		l.svcCtx.MempoolDetailModel,
 		l.svcCtx.RedisConnection,
-		int64(in.AccountIndex))
+		int64(in.AccountIndex),
+	)
 	if err != nil {
 		errInfo := fmt.Sprintf("[logic.GetLatestAccountAssetInfo] => [AccountModel.GetAccountByAccountIndex] :%s. Invalid AccountIndex: %v ", err.Error(), in.AccountIndex)
 		logx.Error(errInfo)
@@ -80,7 +80,7 @@ func (l *GetLatestAccountAssetInfoLogic) GetLatestAccountAssetInfo(in *globalRPC
 		Nonce:        accountInfo.Nonce,
 		AssetResultAssets: &globalRPCProto.AssetResult{
 			AssetId: uint32(in.AssetId),
-			Balance: accountInfo.AssetInfo[int64(in.AssetId)].Balance,
+			Balance: accountInfo.AssetInfo[int64(in.AssetId)].Balance.String(),
 		},
 	}
 

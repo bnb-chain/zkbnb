@@ -31,7 +31,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/logic/txHandler"
 	"reflect"
 	"strconv"
 
@@ -181,7 +180,7 @@ func (l *SendTxLogic) CreateFailWithdrawTx(info *commonTx.WithdrawTxInfo, extraI
 		// tx fee l1asset id
 		GasFeeAssetId: int64(txFeeAssetId),
 		// tx status, 1 - success(default), 2 - failure
-		TxStatus: txHandler.TxFail,
+		TxStatus: TxFail,
 		// l1asset id
 		AssetAId: int64(assetId),
 		// tx amount
