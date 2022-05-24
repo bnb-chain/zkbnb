@@ -65,14 +65,14 @@ func constructSendWithdrawTxInfo() string {
 		panic(err)
 	}
 	txInfo := &commonTx.WithdrawTxInfo{
-		FromAccountIndex:  3,
+		FromAccountIndex:  2,
 		AssetId:           0,
-		AssetAmount:       big.NewInt(10000),
-		GasAccountIndex:   2,
-		GasFeeAssetId:     0,
-		GasFeeAssetAmount: big.NewInt(50),
+		AssetAmount:       big.NewInt(10000000),
+		GasAccountIndex:   1,
+		GasFeeAssetId:     1,
+		GasFeeAssetAmount: big.NewInt(5000),
 		ToAddress:         "0x99AC8881834797ebC32f185ee27c2e96842e1a47",
-		Nonce:             1,
+		Nonce:             2,
 		Sig:               nil,
 	}
 	hFunc := mimc.NewMiMC()
