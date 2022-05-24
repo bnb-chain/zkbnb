@@ -98,5 +98,5 @@ func FeeToPackedFeeBytes(a *big.Int) (res []byte, err error) {
 		logx.Errorf("[FeeToPackedFeeBytes] invalid fee amount: %s", err.Error())
 		return nil, err
 	}
-	return Uint16ToBytes(packedFee), nil
+	return Uint16ToBytes(uint16(packedFee)), nil
 }

@@ -178,6 +178,7 @@ func ConstructAccountWitness(
 					LpAmount:                 accountAsset.LpAmount,
 					OfferCanceledOrFinalized: accountAsset.OfferCanceledOrFinalized,
 				}
+
 				// set merkle proof
 				MerkleProofsAccountAssetsBefore[accountCount][assetCount], err = SetFixedAccountAssetArray(assetMerkleProof)
 				if err != nil {

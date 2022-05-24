@@ -30,6 +30,7 @@ func ConvertMempoolTxToTx(mempoolTx *MempoolTx, txDetails []*tx.TxDetail, accoun
 		Memo:          mempoolTx.Memo,
 		AccountIndex:  mempoolTx.AccountIndex,
 		Nonce:         mempoolTx.Nonce,
+		ExpiredAt:     mempoolTx.ExpiredAt,
 	}
 	return tx
 }
