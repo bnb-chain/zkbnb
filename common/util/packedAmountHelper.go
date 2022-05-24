@@ -19,7 +19,6 @@ package util
 
 import (
 	"errors"
-	"fmt"
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
@@ -61,9 +60,6 @@ func ToPackedAmount(amount *big.Int) (res int64, err error) {
 		logx.Errorf("[ToPackedAmount] unable to convert to packed amount: %s", err.Error())
 		return -1, err
 	}
-	fmt.Println(exponentBits)
-	fmt.Println(mantissaBits)
-	fmt.Println(strconv.FormatInt(packedAmount, 2))
 	return packedAmount, nil
 }
 

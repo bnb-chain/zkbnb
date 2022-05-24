@@ -76,7 +76,7 @@ func constructSendTransferTxInfo() string {
 		AssetAmount:       big.NewInt(100000),
 		GasAccountIndex:   1,
 		GasFeeAssetId:     1,
-		GasFeeAssetAmount: big.NewInt(500),
+		GasFeeAssetAmount: big.NewInt(5000),
 		Memo:              "transfer",
 		CallData:          "",
 		CallDataHash:      tree.NilHash,
@@ -88,7 +88,10 @@ func constructSendTransferTxInfo() string {
 	callDataHash := hFunc.Sum(nil)
 	txInfo.CallDataHash = callDataHash
 	hFunc.Reset()
-	msgHash := legendTxTypes.ComputeTransferMsgHash(txInfo, hFunc)
+	msgHash, err := legendTxTypes.ComputeTransferMsgHash(txInfo, hFunc)
+	if err != nil {
+		panic(err)
+	}
 	hFunc.Reset()
 	signature, err := key.Sign(msgHash, hFunc)
 	if err != nil {

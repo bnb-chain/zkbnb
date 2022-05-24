@@ -168,7 +168,11 @@ func VerifyAddLiquidityTxInfo(
 	}
 	// compute hash
 	hFunc := mimc.NewMiMC()
-	msgHash := legendTxTypes.ComputeAddLiquidityMsgHash(txInfo, hFunc)
+	msgHash, err := legendTxTypes.ComputeAddLiquidityMsgHash(txInfo, hFunc)
+	if err != nil {
+		logx.Errorf("[VerifyAddLiquidityTxInfo] unable to compute hash: %s", err.Error())
+		return nil, err
+	}
 	// verify signature
 	hFunc.Reset()
 	pk, err := ParsePkStr(accountInfoMap[txInfo.FromAccountIndex].PublicKey)

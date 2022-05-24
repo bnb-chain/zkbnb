@@ -218,7 +218,7 @@ func CommitterTask(
 							logx.Errorf("[CommitterTask] get account by account index: %s", err.Error())
 							return err
 						}
-						accountMap[mempoolTx.AccountIndex], err = commonAsset.ToFormatAccountInfo(accountInfo)
+						accountMap[mempoolTxDetail.AccountIndex], err = commonAsset.ToFormatAccountInfo(accountInfo)
 						if err != nil {
 							logx.Errorf("[CommitterTask] unable to format account info: %s", err.Error())
 							return err
@@ -231,6 +231,9 @@ func CommitterTask(
 				// check balance
 				switch mempoolTxDetail.AssetType {
 				case GeneralAssetType:
+					if accountMap[mempoolTxDetail.AccountIndex].AssetInfo == nil {
+						accountMap[mempoolTxDetail.AccountIndex].AssetInfo = make(map[int64]*commonAsset.AccountAsset)
+					}
 					if accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId] == nil {
 						accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId] = &commonAsset.AccountAsset{
 							AssetId:                  mempoolTxDetail.AssetId,

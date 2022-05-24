@@ -76,7 +76,10 @@ func constructSendWithdrawTxInfo() string {
 		Sig:               nil,
 	}
 	hFunc := mimc.NewMiMC()
-	msgHash := legendTxTypes.ComputeWithdrawMsgHash(txInfo, hFunc)
+	msgHash, err := legendTxTypes.ComputeWithdrawMsgHash(txInfo, hFunc)
+	if err != nil {
+		panic(err)
+	}
 	hFunc.Reset()
 	signature, err := key.Sign(msgHash, hFunc)
 	if err != nil {

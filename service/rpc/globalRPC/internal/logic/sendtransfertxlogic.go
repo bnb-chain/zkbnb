@@ -103,6 +103,10 @@ func (l *SendTxLogic) sendTransferTx(rawTxInfo string) (txId string, err error) 
 			return "", l.HandleCreateFailTransferTx(txInfo, err)
 		}
 	}
+	if accountInfoMap[txInfo.ToAccountIndex].AccountName != txInfo.ToAccountName {
+		logx.Errorf("[sendTransferTx] invalid account name")
+		return "", l.HandleCreateFailTransferTx(txInfo, errors.New("[sendTransferTx] invalid account name"))
+	}
 	// get account info by gas index
 	if accountInfoMap[txInfo.GasAccountIndex] == nil {
 		// get account info by gas index

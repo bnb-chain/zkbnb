@@ -101,7 +101,11 @@ func VerifyTransferNftTxInfo(
 	}
 	// compute hash
 	hFunc := mimc.NewMiMC()
-	msgHash := legendTxTypes.ComputeTransferNftMsgHash(txInfo, hFunc)
+	msgHash, err := legendTxTypes.ComputeTransferNftMsgHash(txInfo, hFunc)
+	if err != nil {
+		logx.Errorf("[VerifyMintNftTxInfo] unable to compute hash: %s", err.Error())
+		return nil, err
+	}
 	// verify signature
 	hFunc.Reset()
 	pk, err := ParsePkStr(accountInfoMap[txInfo.FromAccountIndex].PublicKey)

@@ -66,6 +66,13 @@ func VerifyTransferTxInfo(
 	var (
 		assetDeltaMap = make(map[int64]map[int64]*big.Int)
 	)
+	assetDeltaMap[txInfo.FromAccountIndex] = make(map[int64]*big.Int)
+	if assetDeltaMap[txInfo.ToAccountIndex] == nil {
+		assetDeltaMap[txInfo.ToAccountIndex] = make(map[int64]*big.Int)
+	}
+	if assetDeltaMap[txInfo.GasAccountIndex] == nil {
+		assetDeltaMap[txInfo.GasAccountIndex] = make(map[int64]*big.Int)
+	}
 	// compute deltas
 	// from account asset A
 	assetDeltaMap[txInfo.FromAccountIndex][txInfo.AssetId] = ffmath.Neg(txInfo.AssetAmount)
@@ -74,18 +81,6 @@ func VerifyTransferTxInfo(
 		assetDeltaMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId] = ffmath.Sub(assetDeltaMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId], txInfo.GasFeeAssetAmount)
 	} else {
 		assetDeltaMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId] = ffmath.Neg(txInfo.GasFeeAssetAmount)
-	}
-	// to account asset A
-	if assetDeltaMap[txInfo.ToAccountIndex][txInfo.AssetId] != nil {
-		assetDeltaMap[txInfo.ToAccountIndex][txInfo.AssetId] = ffmath.Add(assetDeltaMap[txInfo.ToAccountIndex][txInfo.AssetId], txInfo.AssetAmount)
-	} else {
-		assetDeltaMap[txInfo.ToAccountIndex][txInfo.AssetId] = txInfo.AssetAmount
-	}
-	// gas account asset gas
-	if assetDeltaMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId] != nil {
-		assetDeltaMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId] = ffmath.Add(assetDeltaMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId], txInfo.GasFeeAssetAmount)
-	} else {
-		assetDeltaMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId] = txInfo.GasFeeAssetAmount
 	}
 	// check if from account has enough assetABalance
 	// asset A
@@ -105,7 +100,11 @@ func VerifyTransferTxInfo(
 	hFunc.Write([]byte(txInfo.CallData))
 	callDataHash := hFunc.Sum(nil)
 	txInfo.CallDataHash = callDataHash
-	msgHash := legendTxTypes.ComputeTransferMsgHash(txInfo, hFunc)
+	msgHash, err := legendTxTypes.ComputeTransferMsgHash(txInfo, hFunc)
+	if err != nil {
+		logx.Errorf("[VerifyTransferTxInfo] unable to compute hash: %s", err.Error())
+		return nil, err
+	}
 	// verify signature
 	hFunc.Reset()
 	pk, err := ParsePkStr(accountInfoMap[txInfo.FromAccountIndex].PublicKey)

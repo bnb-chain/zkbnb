@@ -82,7 +82,11 @@ func VerifyCancelOfferTxInfo(
 	}
 	// compute hash
 	hFunc := mimc.NewMiMC()
-	msgHash := legendTxTypes.ComputeCancelOfferMsgHash(txInfo, hFunc)
+	msgHash, err := legendTxTypes.ComputeCancelOfferMsgHash(txInfo, hFunc)
+	if err != nil {
+		logx.Errorf("[VerifyCancelOfferTxInfo] unable to compute hash: %s", err.Error())
+		return nil, err
+	}
 	// verify signature
 	hFunc.Reset()
 	pk, err := ParsePkStr(accountInfoMap[txInfo.AccountIndex].PublicKey)
