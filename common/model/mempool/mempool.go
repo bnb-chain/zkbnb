@@ -20,6 +20,7 @@ package mempool
 import (
 	"fmt"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
+	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
@@ -50,7 +51,9 @@ type (
 		GetMempoolTxByTxHash(hash string) (mempoolTxs *MempoolTx, err error)
 		GetMempoolTxsByBlockHeight(l2BlockHeight int64) (rowsAffected int64, mempoolTxs []*MempoolTx, err error)
 		GetPendingLiquidityTxs() (mempoolTxs []*MempoolTx, err error)
+		GetPendingNftTxs() (mempoolTxs []*MempoolTx, err error)
 		CreateBatchedMempoolTxs(mempoolTxs []*MempoolTx) error
+		CreateMempoolTxAndL2Nft(mempoolTx *MempoolTx, nftInfo *nft.L2Nft) error
 		DeleteMempoolTxs(txIds []*int64) error
 
 		GetMempoolTxsByAccountIndex(accountIndex int64) (mempoolTxs []*MempoolTx, err error)
@@ -69,6 +72,7 @@ type (
 		TxType         int64
 		GasFeeAssetId  int64
 		GasFee         string
+		NftIndex       int64
 		PairIndex      int64
 		AssetId        int64
 		TxAmount       string
@@ -589,19 +593,26 @@ func (m *defaultMempoolModel) GetLatestL2MempoolTxByAccountIndex(accountIndex in
 		logx.Errorf("[GetLatestL2MempoolTxByAccountIndex] Get MempoolTxs Error")
 		return nil, ErrNotFound
 	}
-
 	return mempoolTx, nil
 }
 
 func (m *defaultMempoolModel) GetMempoolTxsByAccountIndex(accountIndex int64) (mempoolTxs []*MempoolTx, err error) {
+	var mempoolForeignKeyColumn = `MempoolDetails`
 	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex).
 		Order("created_at, id").Find(&mempoolTxs)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetLatestL2MempoolTxByAccountIndex] %s", dbTx.Error)
+		logx.Errorf("[GetMempoolTxsByAccountIndex] %s", dbTx.Error)
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		logx.Errorf("[GetLatestL2MempoolTxByAccountIndex] Get MempoolTxs Error")
+		logx.Errorf("[GetMempoolTxsByAccountIndex] Get MempoolTxs Error")
 		return nil, ErrNotFound
+	}
+	for _, mempoolTx := range mempoolTxs {
+		err = m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+		if err != nil {
+			logx.Errorf("[GetMempoolTxsByAccountIndex] Get Associate MempoolDetails Error")
+			return nil, err
+		}
 	}
 	return mempoolTxs, nil
 }
@@ -627,4 +638,51 @@ func (m *defaultMempoolModel) GetPendingLiquidityTxs() (mempoolTxs []*MempoolTx,
 		}
 	}
 	return mempoolTxs, nil
+}
+
+func (m *defaultMempoolModel) GetPendingNftTxs() (mempoolTxs []*MempoolTx, err error) {
+	var mempoolForeignKeyColumn = `MempoolDetails`
+	dbTx := m.DB.Table(m.table).Where("status = ? and nft_index != ?", PendingTxStatus, commonConstant.NilTxNftIndex).
+		Find(&mempoolTxs)
+	if dbTx.Error != nil {
+		errInfo := fmt.Sprintf("[mempool.GetMempoolTxByTxHash] %s", dbTx.Error)
+		logx.Errorf(errInfo)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		err := fmt.Sprintf("[mempool.GetMempoolTxByTxHash] %s", ErrNotFound)
+		logx.Info(err)
+		return nil, ErrNotFound
+	}
+	for _, mempoolTx := range mempoolTxs {
+		err = m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+		if err != nil {
+			logx.Errorf("[mempool.GetMempoolTxByTxHash] Get Associate MempoolDetails Error")
+			return nil, err
+		}
+	}
+	return mempoolTxs, nil
+}
+
+func (m *defaultMempoolModel) CreateMempoolTxAndL2Nft(mempoolTx *MempoolTx, nftInfo *nft.L2Nft) error {
+	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
+		dbTx := tx.Table(m.table).Create(mempoolTx)
+		if dbTx.Error != nil {
+			logx.Errorf("[mempool.CreateMempoolTxAndL2Nft] %s", dbTx.Error)
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			logx.Errorf("[mempool.CreateMempoolTxAndL2Nft] Create Invalid Mempool Tx")
+			return ErrInvalidMempoolTx
+		}
+		dbTx = tx.Table(nft.L2NftTableName).Create(nftInfo)
+		if dbTx.Error != nil {
+			logx.Errorf("[mempool.CreateMempoolTxAndL2Nft] %s", dbTx.Error)
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			logx.Errorf("[mempool.CreateMempoolTxAndL2Nft] Create Invalid nft info")
+			return ErrInvalidMempoolTx
+		}
+		return nil
+	})
 }

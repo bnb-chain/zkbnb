@@ -79,7 +79,6 @@ func (l *SendTxLogic) sendCreateCollectionTx(rawTxInfo string) (txId string, err
 	accountInfoMap[txInfo.AccountIndex], err = globalmapHandler.GetLatestAccountInfo(
 		l.svcCtx.AccountModel,
 		l.svcCtx.MempoolModel,
-		l.svcCtx.MempoolDetailModel,
 		l.svcCtx.RedisConnection,
 		txInfo.AccountIndex,
 	)
@@ -127,6 +126,7 @@ func (l *SendTxLogic) sendCreateCollectionTx(rawTxInfo string) (txId string, err
 		commonTx.TxTypeCreateCollection,
 		txInfo.GasFeeAssetId,
 		txInfo.GasFeeAssetAmount.String(),
+		commonConstant.NilTxNftIndex,
 		commonConstant.NilPairIndex,
 		commonConstant.NilAssetId,
 		accountInfoMap[txInfo.AccountIndex].AccountName,

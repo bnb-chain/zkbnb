@@ -23,6 +23,7 @@ import (
 	"errors"
 	"github.com/zecrey-labs/zecrey-crypto/elgamal/twistededwards/tebn254/twistedElgamal"
 	"github.com/zecrey-labs/zecrey-crypto/zecrey/twistededwards/tebn254/zecrey"
+	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zeromicro/go-zero/core/logx"
 	"log"
 	"math/big"
@@ -51,6 +52,10 @@ func WriteAccountNameIntoBuf(buf *bytes.Buffer, accountName string) {
 }
 
 func WriteAddressIntoBuf(buf *bytes.Buffer, address string) (err error) {
+	if address == commonConstant.NilL1Address {
+		buf.Write(new(big.Int).FillBytes(make([]byte, 32)))
+		return nil
+	}
 	addrBytes, err := DecodeAddress(address)
 	if err != nil {
 		log.Println("[WriteAddressIntoBuf] invalid addr:", err)

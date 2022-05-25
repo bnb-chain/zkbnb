@@ -42,7 +42,7 @@ func ConstructProverInfo(
 	)
 	// init prover account map
 	proverAccountMap = make(map[int64]*ProverAccountInfo)
-	if oTx.AccountIndex != commonConstant.NilAccountIndex {
+	if oTx.AccountIndex != commonConstant.NilTxAccountIndex {
 		// get account info
 		if proverAccountMap[oTx.AccountIndex] == nil {
 			accountInfo, err := accountModel.GetConfirmedAccountByAccountIndex(oTx.AccountIndex)

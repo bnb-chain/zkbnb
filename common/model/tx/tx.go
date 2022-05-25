@@ -72,6 +72,7 @@ type (
 		BlockHeight   int64 `gorm:"index"`
 		BlockId       int64 `gorm:"index"`
 		AccountRoot   string
+		NftIndex      int64
 		PairIndex     int64
 		AssetId       int64
 		TxAmount      string

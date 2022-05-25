@@ -84,7 +84,6 @@ func (l *SendTxLogic) sendTransferTx(rawTxInfo string) (txId string, err error) 
 	accountInfoMap[txInfo.FromAccountIndex], err = globalmapHandler.GetLatestAccountInfo(
 		l.svcCtx.AccountModel,
 		l.svcCtx.MempoolModel,
-		l.svcCtx.MempoolDetailModel,
 		l.svcCtx.RedisConnection,
 		txInfo.FromAccountIndex,
 	)
@@ -147,6 +146,7 @@ func (l *SendTxLogic) sendTransferTx(rawTxInfo string) (txId string, err error) 
 		commonTx.TxTypeTransfer,
 		txInfo.GasFeeAssetId,
 		txInfo.GasFeeAssetAmount.String(),
+		commonConstant.NilTxNftIndex,
 		commonConstant.NilPairIndex,
 		txInfo.AssetId,
 		txInfo.AssetAmount.String(),

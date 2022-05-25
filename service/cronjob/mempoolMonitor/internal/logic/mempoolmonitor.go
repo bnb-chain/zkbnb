@@ -31,6 +31,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zecrey-labs/zecrey-legend/common/tree"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
+	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/mempoolMonitor/internal/svc"
 	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
@@ -67,6 +68,7 @@ func MonitorMempool(
 		pendingNewAccounts       []*account.Account
 		pendingNewMempoolTxs     []*mempool.MempoolTx
 		pendingNewLiquidityInfos []*liquidity.Liquidity
+		pendingNewNfts           []*nft.L2Nft
 		newAccountInfoMap        = make(map[string]*account.Account)
 		newLiquidityInfoMap      = make(map[int64]*liquidity.Liquidity)
 		relatedAccountIndex      = make(map[int64]bool)
@@ -131,6 +133,7 @@ func MonitorMempool(
 				TxType:        int64(txInfo.TxType),
 				GasFeeAssetId: commonConstant.NilAssetId,
 				GasFee:        commonConstant.NilAssetAmountStr,
+				NftIndex:      commonConstant.NilTxNftIndex,
 				PairIndex:     commonConstant.NilPairIndex,
 				AssetId:       commonConstant.NilAssetId,
 				TxAmount:      commonConstant.NilAssetAmountStr,
@@ -182,7 +185,7 @@ func MonitorMempool(
 			txDetail := &mempool.MempoolTxDetail{
 				AssetId:      txInfo.PairIndex,
 				AssetType:    commonAsset.LiquidityAssetType,
-				AccountIndex: commonConstant.NilAccountIndex,
+				AccountIndex: commonConstant.NilTxAccountIndex,
 				AccountName:  commonConstant.NilAccountName,
 				BalanceDelta: poolInfo.String(),
 				Order:        0,
@@ -197,13 +200,14 @@ func MonitorMempool(
 				TxType:         int64(txInfo.TxType),
 				GasFeeAssetId:  commonConstant.NilAssetId,
 				GasFee:         commonConstant.NilAssetAmountStr,
+				NftIndex:       commonConstant.NilTxNftIndex,
 				PairIndex:      txInfo.PairIndex,
 				AssetId:        commonConstant.NilAssetId,
 				TxAmount:       commonConstant.NilAssetAmountStr,
 				NativeAddress:  commonConstant.NilL1Address,
 				MempoolDetails: []*mempool.MempoolTxDetail{txDetail},
 				TxInfo:         string(txInfoBytes),
-				AccountIndex:   commonConstant.NilAccountIndex,
+				AccountIndex:   commonConstant.NilTxAccountIndex,
 				Nonce:          commonConstant.NilNonce,
 				ExpiredAt:      commonConstant.NilExpiredAt,
 				L2BlockHeight:  commonConstant.NilBlockHeight,
@@ -251,7 +255,7 @@ func MonitorMempool(
 			txDetail := &mempool.MempoolTxDetail{
 				AssetId:      txInfo.PairIndex,
 				AssetType:    commonAsset.LiquidityAssetType,
-				AccountIndex: commonConstant.NilAccountIndex,
+				AccountIndex: commonConstant.NilTxAccountIndex,
 				AccountName:  commonConstant.NilAccountName,
 				BalanceDelta: poolInfo.String(),
 				Order:        0,
@@ -266,13 +270,14 @@ func MonitorMempool(
 				TxType:         int64(txInfo.TxType),
 				GasFeeAssetId:  commonConstant.NilAssetId,
 				GasFee:         commonConstant.NilAssetAmountStr,
+				NftIndex:       commonConstant.NilTxNftIndex,
 				PairIndex:      liquidityInfo.PairIndex,
 				AssetId:        commonConstant.NilAssetId,
 				TxAmount:       commonConstant.NilAssetAmountStr,
 				NativeAddress:  commonConstant.NilL1Address,
 				MempoolDetails: []*mempool.MempoolTxDetail{txDetail},
 				TxInfo:         string(txInfoBytes),
-				AccountIndex:   commonConstant.NilAccountIndex,
+				AccountIndex:   commonConstant.NilTxAccountIndex,
 				Nonce:          commonConstant.NilNonce,
 				ExpiredAt:      commonConstant.NilExpiredAt,
 				L2BlockHeight:  commonConstant.NilBlockHeight,
@@ -326,6 +331,7 @@ func MonitorMempool(
 				TxType:         int64(txInfo.TxType),
 				GasFeeAssetId:  commonConstant.NilAssetId,
 				GasFee:         commonConstant.NilAssetAmountStr,
+				NftIndex:       commonConstant.NilTxNftIndex,
 				PairIndex:      commonConstant.NilPairIndex,
 				AssetId:        int64(txInfo.AssetId),
 				TxAmount:       txInfo.AssetAmount.String(),
@@ -360,17 +366,21 @@ func MonitorMempool(
 					return err
 				}
 			}
-
 			// complete oTx info
 			txInfo.AccountIndex = uint32(accountInfo.AccountIndex)
-			// TODO nft index
-			txInfo.NftIndex = uint64(0)
+			redisLock, nftIndex, err := globalmapHandler.GetLatestNftIndexForWrite(ctx.NftModel, ctx.RedisConnection)
+			if err != nil {
+				logx.Errorf("[MonitorMempool] unable to get latest nft index: %s", err.Error())
+				return err
+			}
+			defer redisLock.Release()
+			txInfo.NftIndex = uint64(nftIndex)
 			// TODO get nft content hash
 			txInfo.NftContentHash = []byte(RandomTxHash())
 			var (
 				mempoolTxDetails []*mempool.MempoolTxDetail
 			)
-			delta := commonAsset.ConstructNftInfo(
+			nftInfo := commonAsset.ConstructNftInfo(
 				int64(txInfo.NftIndex),
 				accountInfo.AccountIndex,
 				accountInfo.AccountIndex,
@@ -389,7 +399,7 @@ func MonitorMempool(
 				AssetType:    commonAsset.NftAssetType,
 				AccountIndex: int64(txInfo.AccountIndex),
 				AccountName:  accountInfo.AccountName,
-				BalanceDelta: delta.String(),
+				BalanceDelta: nftInfo.String(),
 			})
 			// serialize oTx info
 			txInfoBytes, err := json.Marshal(txInfo)
@@ -402,6 +412,7 @@ func MonitorMempool(
 				TxType:         int64(txInfo.TxType),
 				GasFee:         commonConstant.NilAssetAmountStr,
 				GasFeeAssetId:  commonConstant.NilAssetId,
+				NftIndex:       nftIndex,
 				PairIndex:      commonConstant.NilPairIndex,
 				AssetId:        commonConstant.NilAssetId,
 				TxAmount:       commonConstant.NilAssetAmountStr,
@@ -417,6 +428,17 @@ func MonitorMempool(
 			if !relatedAccountIndex[accountInfo.AccountIndex] {
 				relatedAccountIndex[accountInfo.AccountIndex] = true
 			}
+			// put into new nfts
+			pendingNewNfts = append(pendingNewNfts, &nft.L2Nft{
+				NftIndex:            nftInfo.NftIndex,
+				CreatorAccountIndex: nftInfo.CreatorAccountIndex,
+				OwnerAccountIndex:   nftInfo.OwnerAccountIndex,
+				NftContentHash:      nftInfo.NftContentHash,
+				NftL1Address:        nftInfo.NftL1Address,
+				NftL1TokenId:        nftInfo.NftL1TokenId,
+				CreatorTreasuryRate: nftInfo.CreatorTreasuryRate,
+				CollectionId:        nftInfo.CollectionId,
+			})
 			break
 		case TxTypeFullExit:
 			// create mempool oTx
@@ -474,6 +496,7 @@ func MonitorMempool(
 				TxType:         int64(txInfo.TxType),
 				GasFee:         commonConstant.NilAssetAmountStr,
 				GasFeeAssetId:  commonConstant.NilAssetId,
+				NftIndex:       commonConstant.NilTxNftIndex,
 				PairIndex:      commonConstant.NilPairIndex,
 				AssetId:        int64(txInfo.AssetId),
 				TxAmount:       txInfo.AssetAmount.String(),
@@ -523,7 +546,6 @@ func MonitorMempool(
 						NftL1TokenId:        emptyNftInfo.NftL1TokenId,
 						CreatorTreasuryRate: emptyNftInfo.CreatorTreasuryRate,
 						CollectionId:        emptyNftInfo.CollectionId,
-						Status:              0,
 					}
 				} else {
 					logx.Errorf("[MonitorMempool] unable to latest nft info: %s", err.Error())
@@ -541,7 +563,6 @@ func MonitorMempool(
 						NftL1TokenId:        emptyNftInfo.NftL1TokenId,
 						CreatorTreasuryRate: emptyNftInfo.CreatorTreasuryRate,
 						CollectionId:        emptyNftInfo.CollectionId,
-						Status:              0,
 					}
 				}
 			}
@@ -584,6 +605,7 @@ func MonitorMempool(
 				TxType:         int64(txInfo.TxType),
 				GasFee:         commonConstant.NilAssetAmountStr,
 				GasFeeAssetId:  commonConstant.NilAssetId,
+				NftIndex:       txInfo.NftIndex,
 				PairIndex:      commonConstant.NilPairIndex,
 				AssetId:        commonConstant.NilAssetId,
 				TxAmount:       commonConstant.NilAssetAmountStr,
@@ -624,6 +646,7 @@ func MonitorMempool(
 		pendingNewAccounts,
 		pendingNewMempoolTxs,
 		pendingNewLiquidityInfos,
+		pendingNewNfts,
 		txs,
 	)
 	if err != nil {

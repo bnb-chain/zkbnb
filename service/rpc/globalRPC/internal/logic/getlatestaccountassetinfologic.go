@@ -63,7 +63,6 @@ func (l *GetLatestAccountAssetInfoLogic) GetLatestAccountAssetInfo(in *globalRPC
 	accountInfo, err := globalmapHandler.GetLatestAccountInfo(
 		l.svcCtx.AccountModel,
 		l.svcCtx.MempoolModel,
-		l.svcCtx.MempoolDetailModel,
 		l.svcCtx.RedisConnection,
 		int64(in.AccountIndex),
 	)

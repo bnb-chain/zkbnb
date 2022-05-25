@@ -21,8 +21,11 @@ import (
 	"bytes"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
+	curve "github.com/zecrey-labs/zecrey-crypto/ecc/ztwistededwards/tebn254"
+	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
+	"math/big"
 )
 
 func ComputeAccountLeafHash(
@@ -131,7 +134,7 @@ func ComputeNftAssetLeafHash(
 	var buf bytes.Buffer
 	util.WriteInt64IntoBuf(&buf, creatorAccountIndex)
 	util.WriteInt64IntoBuf(&buf, ownerAccountIndex)
-	buf.Write(common.FromHex(nftContentHash))
+	buf.Write(ffmath.Mod(new(big.Int).SetBytes(common.FromHex(nftContentHash)), curve.Modulus).FillBytes(make([]byte, 32)))
 	err = util.WriteAddressIntoBuf(&buf, nftL1Address)
 	if err != nil {
 		logx.Errorf("[ComputeNftAssetLeafHash] unable to write address to buf: %s", err.Error())

@@ -23,6 +23,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
@@ -43,6 +44,7 @@ type (
 			pendingNewAccount []*account.Account,
 			pendingNewMempoolTxs []*mempool.MempoolTx,
 			pendingNewLiquidityInfos []*liquidity.Liquidity,
+			pendingNewNfts []*nft.L2Nft,
 			pendingUpdateL2Events []*L2TxEventMonitor) (err error)
 		GetLastHandledRequestId() (requestId int64, err error)
 	}
@@ -227,6 +229,7 @@ func (m *defaultL2TxEventMonitorModel) CreateMempoolAndActiveAccount(
 	pendingNewAccount []*account.Account,
 	pendingNewMempoolTxs []*mempool.MempoolTx,
 	pendingNewLiquidityInfos []*liquidity.Liquidity,
+	pendingNewNfts []*nft.L2Nft,
 	pendingUpdateL2Events []*L2TxEventMonitor,
 ) (err error) {
 	err = m.DB.Transaction(
@@ -258,6 +261,17 @@ func (m *defaultL2TxEventMonitorModel) CreateMempoolAndActiveAccount(
 				if dbTx.RowsAffected != int64(len(pendingNewLiquidityInfos)) {
 					logx.Errorf("[CreateMempoolAndActiveAccount] invalid new liquidity infos")
 					return errors.New("[CreateMempoolAndActiveAccount] invalid new liquidity infos")
+				}
+			}
+			if len(pendingNewNfts) != 0 {
+				dbTx = tx.Table(nft.L2NftTableName).CreateInBatches(pendingNewNfts, len(pendingNewNfts))
+				if dbTx.Error != nil {
+					logx.Errorf("[CreateMempoolAndActiveAccount] unable to create pending new nft infos: %s", err.Error())
+					return dbTx.Error
+				}
+				if dbTx.RowsAffected != int64(len(pendingNewNfts)) {
+					logx.Errorf("[CreateMempoolAndActiveAccount] invalid new nft infos")
+					return errors.New("[CreateMempoolAndActiveAccount] invalid new nft infos")
 				}
 			}
 			for _, pendingUpdateL2Event := range pendingUpdateL2Events {

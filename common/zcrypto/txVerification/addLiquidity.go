@@ -238,7 +238,7 @@ func VerifyAddLiquidityTxInfo(
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.PairIndex,
 		AssetType:    LiquidityAssetType,
-		AccountIndex: commonConstant.NilAccountIndex,
+		AccountIndex: commonConstant.NilTxAccountIndex,
 		AccountName:  commonConstant.NilAccountName,
 		BalanceDelta: poolDeltaForToAccount.String(),
 		Order:        order,

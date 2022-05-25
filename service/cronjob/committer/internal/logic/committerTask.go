@@ -22,9 +22,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
+	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/common/tree"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
@@ -99,8 +101,9 @@ func CommitterTask(
 			pendingUpdateAccountIndexMap   = make(map[int64]bool)
 			pendingUpdateLiquidityIndexMap = make(map[int64]bool)
 
-			pendingUpdateNftIndexMap = make(map[int64]bool)
-			pendingNewNftIndexMap    = make(map[int64]bool)
+			pendingUpdateNftIndexMap     = make(map[int64]bool)
+			pendingNewNftIndexMap        = make(map[int64]bool)
+			pendingNewNftWithdrawHistory []*nft.L2NftWithdrawHistory
 
 			// block txs
 			txs []*Tx
@@ -129,7 +132,7 @@ func CommitterTask(
 			var (
 				pendingPriorityOperation int64
 				pendingPubdata           []byte
-				newCollectionNonce       = int64(-1)
+				newCollectionNonce       = commonConstant.NilCollectionId
 			)
 			// get mempool tx
 			mempoolTx := mempoolTxs[i*MaxTxsAmountPerBlock+j]
@@ -145,7 +148,7 @@ func CommitterTask(
 			pubdata = append(pubdata, pendingPubdata...)
 
 			// get related account info
-			if mempoolTx.AccountIndex != commonConstant.NilAccountIndex {
+			if mempoolTx.AccountIndex != commonConstant.NilTxAccountIndex {
 				if accountMap[mempoolTx.AccountIndex] == nil {
 					accountInfo, err := ctx.AccountModel.GetAccountByAccountIndex(mempoolTx.AccountIndex)
 					if err != nil {
@@ -210,7 +213,7 @@ func CommitterTask(
 				txDetails []*tx.TxDetail
 			)
 			for _, mempoolTxDetail := range mempoolTx.MempoolDetails {
-				if mempoolTxDetail.AccountIndex != commonConstant.NilAccountIndex {
+				if mempoolTxDetail.AccountIndex != commonConstant.NilTxAccountIndex {
 					pendingUpdateAccountIndexMap[mempoolTxDetail.AccountIndex] = true
 					if accountMap[mempoolTxDetail.AccountIndex] == nil {
 						accountInfo, err := ctx.AccountModel.GetAccountByAccountIndex(mempoolTxDetail.AccountIndex)
@@ -372,46 +375,47 @@ func CommitterTask(
 					if nftMap[mempoolTxDetail.AssetId] == nil {
 						nftMap[mempoolTxDetail.AssetId], err = ctx.L2NftModel.GetNftAsset(mempoolTxDetail.AssetId)
 						if err != nil {
-							if err != ErrNotFound {
-								logx.Errorf("[CommitterTask] unable to get nft asset: %s", err.Error())
-								return err
-							} else {
-								// if not, we need to create a new one
-								pendingNewNftIndexMap[mempoolTxDetail.AssetId] = true
-							}
-						} else {
-							// else, we need to update the nft info
-							pendingUpdateNftIndexMap[mempoolTxDetail.AssetId] = true
+							logx.Errorf("[CommitterTask] unable to get nft asset: %s", err.Error())
+							return err
 						}
 					}
-					baseBalance = commonAsset.ConstructNftInfo(
-						nftMap[mempoolTxDetail.AssetId].NftIndex,
-						nftMap[mempoolTxDetail.AssetId].CreatorAccountIndex,
-						nftMap[mempoolTxDetail.AssetId].OwnerAccountIndex,
-						nftMap[mempoolTxDetail.AssetId].NftContentHash,
-						nftMap[mempoolTxDetail.AssetId].NftL1TokenId,
-						nftMap[mempoolTxDetail.AssetId].NftL1Address,
-						nftMap[mempoolTxDetail.AssetId].CreatorTreasuryRate,
-						nftMap[mempoolTxDetail.AssetId].CollectionId,
-					).String()
+					// check special type
+					if mempoolTx.TxType == commonTx.TxTypeDepositNft || mempoolTx.TxType == commonTx.TxTypeMintNft {
+						pendingNewNftIndexMap[mempoolTxDetail.AssetId] = true
+						baseBalance = commonAsset.EmptyNftInfo(nftMap[mempoolTxDetail.AssetId].NftIndex).String()
+					} else {
+						pendingUpdateNftIndexMap[mempoolTxDetail.AssetId] = true
+						// before nft info
+						baseBalance = commonAsset.ConstructNftInfo(
+							nftMap[mempoolTxDetail.AssetId].NftIndex,
+							nftMap[mempoolTxDetail.AssetId].CreatorAccountIndex,
+							nftMap[mempoolTxDetail.AssetId].OwnerAccountIndex,
+							nftMap[mempoolTxDetail.AssetId].NftContentHash,
+							nftMap[mempoolTxDetail.AssetId].NftL1TokenId,
+							nftMap[mempoolTxDetail.AssetId].NftL1Address,
+							nftMap[mempoolTxDetail.AssetId].CreatorTreasuryRate,
+							nftMap[mempoolTxDetail.AssetId].CollectionId,
+						).String()
+					}
+					if mempoolTx.TxType == commonTx.TxTypeWithdrawNft || mempoolTx.TxType == commonTx.TxTypeFullExitNft {
+						pendingNewNftWithdrawHistory = append(pendingNewNftWithdrawHistory, &nft.L2NftWithdrawHistory{
+							NftIndex:            nftMap[mempoolTxDetail.AssetId].NftIndex,
+							CreatorAccountIndex: nftMap[mempoolTxDetail.AssetId].CreatorAccountIndex,
+							OwnerAccountIndex:   nftMap[mempoolTxDetail.AssetId].OwnerAccountIndex,
+							NftContentHash:      nftMap[mempoolTxDetail.AssetId].NftContentHash,
+							NftL1Address:        nftMap[mempoolTxDetail.AssetId].NftL1Address,
+							NftL1TokenId:        nftMap[mempoolTxDetail.AssetId].NftL1TokenId,
+							CreatorTreasuryRate: nftMap[mempoolTxDetail.AssetId].CreatorTreasuryRate,
+							CollectionId:        nftMap[mempoolTxDetail.AssetId].CollectionId,
+						})
+					}
+					// delta nft info
 					nftInfo, err := commonAsset.ParseNftInfo(mempoolTxDetail.BalanceDelta)
 					if err != nil {
 						logx.Errorf("[CommitterTask] unable to parse nft info: %s", err.Error())
 						return err
 					}
-					if pendingNewNftIndexMap[mempoolTxDetail.AssetId] {
-						nftMap[mempoolTxDetail.AssetId] = &L2Nft{
-							NftIndex:            nftInfo.NftIndex,
-							CreatorAccountIndex: nftInfo.CreatorAccountIndex,
-							OwnerAccountIndex:   nftInfo.OwnerAccountIndex,
-							NftContentHash:      nftInfo.NftContentHash,
-							NftL1Address:        nftInfo.NftL1Address,
-							NftL1TokenId:        nftInfo.NftL1TokenId,
-							CreatorTreasuryRate: nftInfo.CreatorTreasuryRate,
-							CollectionId:        nftInfo.CollectionId,
-							Status:              0,
-						}
-					} else if pendingUpdateNftIndexMap[mempoolTxDetail.AssetId] {
+					if pendingUpdateNftIndexMap[mempoolTxDetail.AssetId] {
 						// update nft info
 						nftMap[mempoolTxDetail.AssetId] = &L2Nft{
 							Model:               nftMap[mempoolTxDetail.AssetId].Model,
@@ -423,11 +427,7 @@ func CommitterTask(
 							NftL1TokenId:        nftInfo.NftL1TokenId,
 							CreatorTreasuryRate: nftInfo.CreatorTreasuryRate,
 							CollectionId:        nftInfo.CollectionId,
-							Status:              0,
 						}
-					} else {
-						logx.Errorf("[CommitterTask] invalid operation")
-						return errors.New("[CommitterTask] invalid operation")
 					}
 					// get nft asset
 					nftAsset := nftMap[mempoolTxDetail.AssetId]
@@ -468,7 +468,7 @@ func CommitterTask(
 				var (
 					nonce, collectionNonce int64
 				)
-				if mempoolTxDetail.AccountIndex != commonConstant.NilAccountIndex {
+				if mempoolTxDetail.AccountIndex != commonConstant.NilTxAccountIndex {
 					nonce = accountMap[mempoolTxDetail.AccountIndex].Nonce
 					collectionNonce = accountMap[mempoolTxDetail.AccountIndex].CollectionNonce
 				}
@@ -538,7 +538,6 @@ func CommitterTask(
 			pendingNewAccountHistory   []*AccountHistory
 			pendingUpdateLiquidity     []*Liquidity
 			pendingNewLiquidityHistory []*LiquidityHistory
-			pendingNewNft              []*L2Nft
 			pendingUpdateNft           []*L2Nft
 			pendingNewNftHistory       []*L2NftHistory
 		)
@@ -585,7 +584,6 @@ func CommitterTask(
 			if !flag {
 				continue
 			}
-			pendingNewNft = append(pendingNewNft, nftMap[nftIndex])
 			pendingNewNftHistory = append(pendingNewNftHistory, &L2NftHistory{
 				NftIndex:            nftMap[nftIndex].NftIndex,
 				CreatorAccountIndex: nftMap[nftIndex].CreatorAccountIndex,
@@ -595,7 +593,6 @@ func CommitterTask(
 				NftL1TokenId:        nftMap[nftIndex].NftL1TokenId,
 				CreatorTreasuryRate: nftMap[nftIndex].CreatorTreasuryRate,
 				CollectionId:        nftMap[nftIndex].CollectionId,
-				Status:              nftMap[nftIndex].Status,
 				L2BlockHeight:       currentBlockHeight,
 			})
 		}
@@ -634,9 +631,9 @@ func CommitterTask(
 			pendingNewAccountHistory,
 			pendingUpdateLiquidity,
 			pendingNewLiquidityHistory,
-			pendingNewNft,
 			pendingUpdateNft,
 			pendingNewNftHistory,
+			pendingNewNftWithdrawHistory,
 		)
 		if err != nil {
 			logx.Errorf("[CommitterTask] unable to create block for committer: %s", err.Error())

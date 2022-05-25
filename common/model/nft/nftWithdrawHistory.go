@@ -26,19 +26,18 @@ import (
 )
 
 type (
-	L2NftModel interface {
-		CreateL2NftTable() error
-		DropL2NftTable() error
-		GetNftAsset(nftIndex int64) (nftAsset *L2Nft, err error)
-		GetLatestNftIndex() (nftIndex int64, err error)
+	L2NftWithdrawHistoryModel interface {
+		CreateL2NftWithdrawHistoryTable() error
+		DropL2NftWithdrawHistoryTable() error
+		GetNftAsset(nftIndex int64) (nftAsset *L2NftWithdrawHistory, err error)
 	}
-	defaultL2NftModel struct {
+	defaultL2NftWithdrawHistoryModel struct {
 		sqlc.CachedConn
 		table string
 		DB    *gorm.DB
 	}
 
-	L2Nft struct {
+	L2NftWithdrawHistory struct {
 		gorm.Model
 		NftIndex            int64 `gorm:"uniqueIndex"`
 		CreatorAccountIndex int64
@@ -51,39 +50,39 @@ type (
 	}
 )
 
-func NewL2NftModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) L2NftModel {
-	return &defaultL2NftModel{
+func NewL2NftWithdrawHistoryModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) L2NftWithdrawHistoryModel {
+	return &defaultL2NftWithdrawHistoryModel{
 		CachedConn: sqlc.NewConn(conn, c),
-		table:      L2NftTableName,
+		table:      L2NftWithdrawHistoryTableName,
 		DB:         db,
 	}
 }
 
-func (*L2Nft) TableName() string {
-	return L2NftTableName
+func (*L2NftWithdrawHistory) TableName() string {
+	return L2NftWithdrawHistoryTableName
 }
 
 /*
-	Func: CreateL2NftTable
+	Func: CreateL2NftWithdrawHistoryTable
 	Params:
 	Return: err error
 	Description: create account l2 nft table
 */
-func (m *defaultL2NftModel) CreateL2NftTable() error {
-	return m.DB.AutoMigrate(L2Nft{})
+func (m *defaultL2NftWithdrawHistoryModel) CreateL2NftWithdrawHistoryTable() error {
+	return m.DB.AutoMigrate(L2NftWithdrawHistory{})
 }
 
 /*
-	Func: DropL2NftTable
+	Func: DropL2NftWithdrawHistoryTable
 	Params:
 	Return: err error
 	Description: drop account l2 nft table
 */
-func (m *defaultL2NftModel) DropL2NftTable() error {
+func (m *defaultL2NftWithdrawHistoryModel) DropL2NftWithdrawHistoryTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-func (m *defaultL2NftModel) GetNftAsset(nftIndex int64) (nftAsset *L2Nft, err error) {
+func (m *defaultL2NftWithdrawHistoryModel) GetNftAsset(nftIndex int64) (nftAsset *L2NftWithdrawHistory, err error) {
 	dbTx := m.DB.Table(m.table).Where("nft_index = ?", nftIndex).Find(&nftAsset)
 	if dbTx.Error != nil {
 		logx.Errorf("[GetNftAsset] unable to get nft asset: %s", err.Error())
@@ -93,16 +92,4 @@ func (m *defaultL2NftModel) GetNftAsset(nftIndex int64) (nftAsset *L2Nft, err er
 		return nil, ErrNotFound
 	}
 	return nftAsset, nil
-}
-
-func (m *defaultL2NftModel) GetLatestNftIndex() (nftIndex int64, err error) {
-	var nftInfo *L2Nft
-	dbTx := m.DB.Table(m.table).Order("nft_index desc").Find(&nftInfo)
-	if dbTx.Error != nil {
-		logx.Errorf("[GetLatestNftIndex] unable to get latest nft info: %s", err.Error())
-		return -1, dbTx.Error
-	} else if dbTx.RowsAffected == 0 {
-		return -1, nil
-	}
-	return nftInfo.NftIndex, nil
 }

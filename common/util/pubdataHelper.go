@@ -353,7 +353,7 @@ func ConvertTxToMintNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err erro
 		return nil, err
 	}
 	buf.Write(packedFeeBytes)
-	buf.Write(Uint16ToBytes(uint16(txInfo.CreatorFeeRate)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
 	a := buf.Bytes()
 	buf.Reset()
 	buf.Write(new(big.Int).SetBytes(a).FillBytes(make([]byte, 32)))

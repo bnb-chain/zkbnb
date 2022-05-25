@@ -68,8 +68,8 @@ func VerifyMintNftTxInfo(
 		NftContentHash:      txInfo.NftContentHash,
 		NftL1TokenId:        commonConstant.NilL1TokenId,
 		NftL1Address:        commonConstant.NilL1Address,
-		CreatorTreasuryRate: txInfo.CreatorFeeRate,
-		CollectionId:        txInfo.CollectionId,
+		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
+		CollectionId:        txInfo.NftCollectionId,
 	}
 	// gas account asset Gas
 	if assetDeltaMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId] == nil {

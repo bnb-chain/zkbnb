@@ -318,7 +318,7 @@ func VerifyAtomicMatchTxInfo(
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      nftInfo.NftIndex,
 		AssetType:    NftAssetType,
-		AccountIndex: commonConstant.NilAccountIndex,
+		AccountIndex: commonConstant.NilTxAccountIndex,
 		AccountName:  commonConstant.NilAccountName,
 		BalanceDelta: newNftInfo.String(),
 		Order:        order,

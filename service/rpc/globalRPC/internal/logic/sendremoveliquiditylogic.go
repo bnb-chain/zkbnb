@@ -85,7 +85,9 @@ func (l *SendTxLogic) sendRemoveLiquidityTx(rawTxInfo string) (txId string, err 
 	if liquidityInfo.AssetA == nil ||
 		liquidityInfo.AssetA.Cmp(big.NewInt(0)) == 0 ||
 		liquidityInfo.AssetB == nil ||
-		liquidityInfo.AssetB.Cmp(big.NewInt(0)) == 0 {
+		liquidityInfo.AssetB.Cmp(big.NewInt(0)) == 0 ||
+		liquidityInfo.LpAmount == nil ||
+		liquidityInfo.LpAmount.Cmp(big.NewInt(0)) == 0 {
 		logx.Errorf("[sendRemoveLiquidityTx] invalid params")
 		return "", errors.New("[sendRemoveLiquidityTx] invalid params")
 	}
@@ -126,7 +128,6 @@ func (l *SendTxLogic) sendRemoveLiquidityTx(rawTxInfo string) (txId string, err 
 		accountInfoMap[txInfo.FromAccountIndex], err = globalmapHandler.GetLatestAccountInfo(
 			l.svcCtx.AccountModel,
 			l.svcCtx.MempoolModel,
-			l.svcCtx.MempoolDetailModel,
 			l.svcCtx.RedisConnection,
 			txInfo.FromAccountIndex,
 		)
@@ -182,6 +183,7 @@ func (l *SendTxLogic) sendRemoveLiquidityTx(rawTxInfo string) (txId string, err 
 		commonTx.TxTypeRemoveLiquidity,
 		txInfo.GasFeeAssetId,
 		txInfo.GasFeeAssetAmount.String(),
+		commonConstant.NilTxNftIndex,
 		txInfo.PairIndex,
 		commonConstant.NilAssetId,
 		txInfo.LpAmount.String(),

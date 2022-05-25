@@ -20,6 +20,7 @@ func ConvertMempoolTxToTx(mempoolTx *MempoolTx, txDetails []*tx.TxDetail, accoun
 		TxStatus:      TxStatusPending,
 		BlockHeight:   currentBlockHeight,
 		AccountRoot:   accountRoot,
+		NftIndex:      mempoolTx.NftIndex,
 		PairIndex:     mempoolTx.PairIndex,
 		AssetId:       mempoolTx.AssetId,
 		TxAmount:      mempoolTx.TxAmount,

@@ -20,15 +20,17 @@ package commonConstant
 import "math/big"
 
 const (
-	NilPairIndex    = -1
-	NilAssetId      = 0
-	NilBlockHeight  = -1
-	NilNonce        = 0
-	NilAssetInfo    = "{}"
-	NilAccountName  = ""
-	NilExpiredAt    = 0
-	NilAccountIndex = int64(-1)
-	NilCollectionId = int64(0)
+	NilPairIndex      = -1
+	NilAssetId        = 0
+	NilBlockHeight    = -1
+	NilNonce          = 0
+	NilAssetInfo      = "{}"
+	NilAccountName    = ""
+	NilExpiredAt      = 0
+	NilCollectionId   = int64(0)
+	NilAccountIndex   = int64(0)
+	NilTxNftIndex     = int64(-1)
+	NilTxAccountIndex = int64(-1)
 )
 
 var (
