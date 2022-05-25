@@ -25,7 +25,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-func ConstructAddLiquidityCryptoTx(
+func ConstructRemoveLiquidityCryptoTx(
 	oTx *Tx,
 	accountTree *Tree,
 	accountAssetsTree *[]*Tree,
@@ -33,27 +33,27 @@ func ConstructAddLiquidityCryptoTx(
 	nftTree *Tree,
 	accountModel AccountModel,
 ) (cryptoTx *CryptoTx, err error) {
-	if oTx.TxType != commonTx.TxTypeAddLiquidity {
-		logx.Errorf("[ConstructAddLiquidityCryptoTx] invalid tx type")
-		return nil, errors.New("[ConstructAddLiquidityCryptoTx] invalid tx type")
+	if oTx.TxType != commonTx.TxTypeRemoveLiquidity {
+		logx.Errorf("[ConstructRemoveLiquidityCryptoTx] invalid tx type")
+		return nil, errors.New("[ConstructRemoveLiquidityCryptoTx] invalid tx type")
 	}
 	if oTx == nil || accountTree == nil || accountAssetsTree == nil || liquidityTree == nil || nftTree == nil {
-		logx.Errorf("[ConstructAddLiquidityCryptoTx] invalid params")
-		return nil, errors.New("[ConstructAddLiquidityCryptoTx] invalid params")
+		logx.Errorf("[ConstructRemoveLiquidityCryptoTx] invalid params")
+		return nil, errors.New("[ConstructRemoveLiquidityCryptoTx] invalid params")
 	}
-	txInfo, err := commonTx.ParseAddLiquidityTxInfo(oTx.TxInfo)
+	txInfo, err := commonTx.ParseRemoveLiquidityTxInfo(oTx.TxInfo)
 	if err != nil {
-		logx.Errorf("[ConstructAddLiquidityCryptoTx] unable to parse register zns tx info:%s", err.Error())
+		logx.Errorf("[ConstructRemoveLiquidityCryptoTx] unable to parse register zns tx info:%s", err.Error())
 		return nil, err
 	}
-	cryptoTxInfo, err := ToCryptoAddLiquidityTx(txInfo)
+	cryptoTxInfo, err := ToCryptoRemoveLiquidityTx(txInfo)
 	if err != nil {
-		logx.Errorf("[ConstructAddLiquidityCryptoTx] unable to convert to crypto register zns tx: %s", err.Error())
+		logx.Errorf("[ConstructRemoveLiquidityCryptoTx] unable to convert to crypto register zns tx: %s", err.Error())
 		return nil, err
 	}
 	accountKeys, proverAccountMap, proverLiquidityInfo, proverNftInfo, err := ConstructProverInfo(oTx, accountModel)
 	if err != nil {
-		logx.Errorf("[ConstructAddLiquidityCryptoTx] unable to construct prover info: %s", err.Error())
+		logx.Errorf("[ConstructRemoveLiquidityCryptoTx] unable to construct prover info: %s", err.Error())
 		return nil, err
 	}
 	cryptoTx, err = ConstructWitnessInfo(
@@ -69,51 +69,63 @@ func ConstructAddLiquidityCryptoTx(
 		proverNftInfo,
 	)
 	if err != nil {
-		logx.Errorf("[ConstructAddLiquidityCryptoTx] unable to construct witness info: %s", err.Error())
+		logx.Errorf("[ConstructRemoveLiquidityCryptoTx] unable to construct witness info: %s", err.Error())
 		return nil, err
 	}
 	cryptoTx.TxType = uint8(oTx.TxType)
-	cryptoTx.AddLiquidityTxInfo = cryptoTxInfo
+	cryptoTx.RemoveLiquidityTxInfo = cryptoTxInfo
 	cryptoTx.Nonce = oTx.Nonce
 	cryptoTx.ExpiredAt = txInfo.ExpiredAt
 	cryptoTx.Signature = new(eddsa.Signature)
 	_, err = cryptoTx.Signature.SetBytes(txInfo.Sig)
 	if err != nil {
-		logx.Errorf("[ConstructAddLiquidityCryptoTx] invalid sig bytes: %s", err.Error())
+		logx.Errorf("[ConstructRemoveLiquidityCryptoTx] invalid sig bytes: %s", err.Error())
 		return nil, err
 	}
 	return cryptoTx, nil
 }
 
-func ToCryptoAddLiquidityTx(txInfo *commonTx.AddLiquidityTxInfo) (info *CryptoAddLiquidityTx, err error) {
-	packedAAmount, err := util.ToPackedAmount(txInfo.AssetAAmount)
+func ToCryptoRemoveLiquidityTx(txInfo *commonTx.RemoveLiquidityTxInfo) (info *CryptoRemoveLiquidityTx, err error) {
+	packedAMinAmount, err := util.ToPackedAmount(txInfo.AssetAMinAmount)
 	if err != nil {
-		logx.Errorf("[ToCryptoAddLiquidityTx] unable to convert to packed amount: %s", err.Error())
+		logx.Errorf("[ToCryptoRemoveLiquidityTx] unable to convert to packed amount: %s", err.Error())
 		return nil, err
 	}
-	packedBAmount, err := util.ToPackedAmount(txInfo.AssetBAmount)
+	packedBMinAmount, err := util.ToPackedAmount(txInfo.AssetBMinAmount)
 	if err != nil {
-		logx.Errorf("[ToCryptoAddLiquidityTx] unable to convert to packed amount: %s", err.Error())
+		logx.Errorf("[ToCryptoRemoveLiquidityTx] unable to convert to packed amount: %s", err.Error())
+		return nil, err
+	}
+	packedAAmount, err := util.ToPackedAmount(txInfo.AssetAAmountDelta)
+	if err != nil {
+		logx.Errorf("[ToCryptoRemoveLiquidityTx] unable to convert to packed amount: %s", err.Error())
+		return nil, err
+	}
+	packedBAmount, err := util.ToPackedAmount(txInfo.AssetBAmountDelta)
+	if err != nil {
+		logx.Errorf("[ToCryptoRemoveLiquidityTx] unable to convert to packed amount: %s", err.Error())
 		return nil, err
 	}
 	packedLpAmount, err := util.ToPackedAmount(txInfo.LpAmount)
 	if err != nil {
-		logx.Errorf("[ToCryptoAddLiquidityTx] unable to convert to packed amount: %s", err.Error())
+		logx.Errorf("[ToCryptoRemoveLiquidityTx] unable to convert to packed amount: %s", err.Error())
 		return nil, err
 	}
 	packedFee, err := util.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
-		logx.Errorf("[ToCryptoAddLiquidityTx] unable to convert to packed fee: %s", err.Error())
+		logx.Errorf("[ToCryptoRemoveLiquidityTx] unable to convert to packed fee: %s", err.Error())
 		return nil, err
 	}
-	info = &CryptoAddLiquidityTx{
+	info = &CryptoRemoveLiquidityTx{
 		FromAccountIndex:  txInfo.FromAccountIndex,
 		PairIndex:         txInfo.PairIndex,
 		AssetAId:          txInfo.AssetAId,
-		AssetAAmount:      packedAAmount,
+		AssetAMinAmount:   packedAMinAmount,
 		AssetBId:          txInfo.AssetBId,
-		AssetBAmount:      packedBAmount,
+		AssetBMinAmount:   packedBMinAmount,
 		LpAmount:          packedLpAmount,
+		AssetAAmountDelta: packedAAmount,
+		AssetBAmountDelta: packedBAmount,
 		GasAccountIndex:   txInfo.GasAccountIndex,
 		GasFeeAssetId:     txInfo.GasFeeAssetId,
 		GasFeeAssetAmount: packedFee,

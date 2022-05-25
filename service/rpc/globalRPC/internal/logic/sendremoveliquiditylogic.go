@@ -93,10 +93,10 @@ func (l *SendTxLogic) sendRemoveLiquidityTx(rawTxInfo string) (txId string, err 
 	var (
 		assetAAmount, assetBAmount *big.Int
 	)
-	assetAAmount, assetBAmount, err = util.ComputeLpPortion(
-		liquidityInfo.AssetA,
-		liquidityInfo.AssetA,
-		txInfo.LpAmount)
+	assetAAmount, assetBAmount = util.ComputeRemoveLiquidityAmount(
+		liquidityInfo,
+		txInfo.LpAmount,
+	)
 	if err != nil {
 		logx.Errorf("[sendRemoveLiquidityTx] unable to compute lp portion: %s", err.Error())
 		return "", err
@@ -140,6 +140,17 @@ func (l *SendTxLogic) sendRemoveLiquidityTx(rawTxInfo string) (txId string, err 
 			l.svcCtx.AccountModel,
 			l.svcCtx.RedisConnection,
 			txInfo.GasAccountIndex,
+		)
+		if err != nil {
+			logx.Errorf("[sendRemoveLiquidityTx] unable to get latest account info: %s", err.Error())
+			return "", err
+		}
+	}
+	if accountInfoMap[liquidityInfo.TreasuryAccountIndex] == nil {
+		accountInfoMap[liquidityInfo.TreasuryAccountIndex], err = globalmapHandler.GetBasicAccountInfo(
+			l.svcCtx.AccountModel,
+			l.svcCtx.RedisConnection,
+			liquidityInfo.TreasuryAccountIndex,
 		)
 		if err != nil {
 			logx.Errorf("[sendRemoveLiquidityTx] unable to get latest account info: %s", err.Error())

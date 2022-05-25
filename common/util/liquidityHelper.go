@@ -50,35 +50,23 @@ func ComputeLpAmount(
 	return lpAmount
 }
 
-func ComputeLpPortion(
-	PairATotal *big.Int,
-	PairBTotal *big.Int,
-	LpAmount *big.Int,
-) (
-	PairAAmount *big.Int, PairBAmount *big.Int, err error,
-) {
-	var (
-		lpTotal   *big.Int
-		lpPortion *big.Float
+func ComputeRemoveLiquidityAmount(
+	liquidityInfo *commonAsset.LiquidityInfo,
+	lpAmount *big.Int,
+) (assetAAmount, assetBAmount *big.Int) {
+	sLp := commonAsset.ComputeSLp(
+		liquidityInfo.AssetA,
+		liquidityInfo.AssetB,
+		liquidityInfo.KLast,
+		liquidityInfo.FeeRate,
+		liquidityInfo.TreasuryRate,
 	)
-
-	lpTotal = ffmath.Multiply(PairATotal, PairBTotal)
-	//lpTotal = math.Sqrt(float64(PairATotal) * float64(PairBTotal))
-	if lpTotal.Cmp(ZeroBigInt) == 0 {
-		return big.NewInt(0), big.NewInt(0), nil
-	}
-	lpPortion = ffmath.FloatDivByInt(LpAmount, lpTotal)
-	PairAAmount, err = CleanPackedAmount(ffmath.FloatToInt(ffmath.FloatMul(lpPortion, ffmath.IntToFloat(PairATotal))))
-	if err != nil {
-		logx.Errorf("[ComputeLpPortion] unable to compute clean packed amount: %s", err.Error())
-		return nil, nil, err
-	}
-	PairBAmount, err = CleanPackedAmount(ffmath.FloatToInt(ffmath.FloatMul(lpPortion, ffmath.IntToFloat(PairBTotal))))
-	if err != nil {
-		logx.Errorf("[ComputeLpPortion] unable to compute clean packed amount: %s", err.Error())
-		return nil, nil, err
-	}
-	return PairAAmount, PairBAmount, nil
+	poolLp := ffmath.Sub(liquidityInfo.LpAmount, sLp)
+	assetAAmount = ffmath.Multiply(lpAmount, liquidityInfo.AssetA)
+	assetAAmount = ffmath.Div(assetAAmount, poolLp)
+	assetBAmount = ffmath.Multiply(lpAmount, liquidityInfo.AssetB)
+	assetBAmount = ffmath.Div(assetBAmount, poolLp)
+	return assetAAmount, assetBAmount
 }
 
 /*

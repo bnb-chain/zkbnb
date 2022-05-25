@@ -18,6 +18,7 @@
 package txVerification
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
@@ -52,18 +53,19 @@ func VerifyRemoveLiquidityTxInfo(
 ) (txDetails []*MempoolTxDetail, err error) {
 	// verify params
 	if accountInfoMap[txInfo.FromAccountIndex] == nil ||
+		accountInfoMap[liquidityInfo.TreasuryAccountIndex] == nil ||
 		accountInfoMap[txInfo.GasAccountIndex] == nil ||
-		accountInfoMap[txInfo.GasAccountIndex].AssetInfo == nil ||
-		accountInfoMap[txInfo.GasAccountIndex].AssetInfo[txInfo.GasFeeAssetId] == nil ||
 		liquidityInfo == nil ||
-		!(liquidityInfo.AssetAId == txInfo.AssetAId &&
-			liquidityInfo.AssetBId == txInfo.AssetBId) ||
+		liquidityInfo.AssetAId != txInfo.AssetAId ||
+		liquidityInfo.AssetBId != txInfo.AssetBId ||
 		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.PairIndex] == nil ||
 		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.PairIndex].LpAmount.Cmp(ZeroBigInt) <= 0 ||
 		txInfo.AssetAMinAmount.Cmp(ZeroBigInt) < 0 ||
 		txInfo.AssetBMinAmount.Cmp(ZeroBigInt) < 0 ||
 		txInfo.LpAmount.Cmp(ZeroBigInt) < 0 ||
 		txInfo.GasFeeAssetAmount.Cmp(ZeroBigInt) < 0 {
+		infoBytes, _ := json.Marshal(accountInfoMap)
+		log.Println(string(infoBytes))
 		logx.Errorf("[VerifyRemoveLiquidityTxInfo] invalid params")
 		return nil, errors.New("[VerifyRemoveLiquidityTxInfo] invalid params")
 	}

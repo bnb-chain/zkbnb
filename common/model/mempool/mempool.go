@@ -608,7 +608,7 @@ func (m *defaultMempoolModel) GetMempoolTxsByAccountIndex(accountIndex int64) (m
 
 func (m *defaultMempoolModel) GetPendingLiquidityTxs() (mempoolTxs []*MempoolTx, err error) {
 	var mempoolForeignKeyColumn = `MempoolDetails`
-	dbTx := m.DB.Table(m.table).Where("status = ? and pair_index = ?", PendingTxStatus, commonConstant.NilPairIndex).
+	dbTx := m.DB.Table(m.table).Where("status = ? and pair_index != ?", PendingTxStatus, commonConstant.NilPairIndex).
 		Find(&mempoolTxs)
 	if dbTx.Error != nil {
 		errInfo := fmt.Sprintf("[mempool.GetMempoolTxByTxHash] %s", dbTx.Error)
