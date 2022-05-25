@@ -164,6 +164,9 @@ func ConstructProverInfo(
 				accountInfo.Nonce = txDetail.Nonce
 				accountInfo.CollectionNonce = txDetail.CollectionNonce
 				proverAccountMap[txDetail.AccountIndex].AccountInfo = accountInfo
+			} else {
+				proverAccountMap[txDetail.AccountIndex].AccountInfo.Nonce = txDetail.Nonce
+				proverAccountMap[txDetail.AccountIndex].AccountInfo.CollectionNonce = txDetail.CollectionNonce
 			}
 			break
 		default:

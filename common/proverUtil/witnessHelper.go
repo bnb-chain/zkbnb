@@ -23,6 +23,7 @@ import (
 	"github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/std"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
+	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/tree"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -144,8 +145,8 @@ func ConstructAccountWitness(
 				PublicKey:       accountInfo.PublicKey,
 				AccountNameHash: accountInfo.AccountNameHash,
 				L1Address:       accountInfo.L1Address,
-				Nonce:           0,
-				CollectionNonce: 0,
+				Nonce:           commonConstant.NilNonce,
+				CollectionNonce: commonConstant.NilCollectionId,
 				AssetInfo:       commonConstant.NilAssetInfo,
 				AssetRoot:       common.Bytes2Hex(tree.NilAccountAssetRoot),
 				Status:          accountInfo.Status,
@@ -236,15 +237,18 @@ func ConstructAccountWitness(
 		}
 		// update account merkle tree
 		nonce := cryptoAccount.Nonce
-		if oTx.AccountIndex == accountKey && oTx.Nonce != -1 {
+		collectionNonce := cryptoAccount.CollectionNonce
+		if oTx.AccountIndex == accountKey && oTx.Nonce != commonConstant.NilNonce {
 			nonce = oTx.Nonce
+		}
+		if oTx.AccountIndex == accountKey && oTx.TxType == commonTx.TxTypeCreateCollection {
+			collectionNonce++
 		}
 		nAccountHash, err := tree.ComputeAccountLeafHash(
 			proverAccountMap[accountKey].AccountInfo.AccountNameHash,
 			proverAccountMap[accountKey].AccountInfo.PublicKey,
 			nonce,
-			// TODO
-			cryptoAccount.CollectionNonce,
+			collectionNonce,
 			(*accountAssetTrees)[accountKey].RootNode.Value,
 		)
 		if err != nil {

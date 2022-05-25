@@ -384,6 +384,16 @@ func CommitterTask(
 							pendingUpdateNftIndexMap[mempoolTxDetail.AssetId] = true
 						}
 					}
+					baseBalance = commonAsset.ConstructNftInfo(
+						nftMap[mempoolTxDetail.AssetId].NftIndex,
+						nftMap[mempoolTxDetail.AssetId].CreatorAccountIndex,
+						nftMap[mempoolTxDetail.AssetId].OwnerAccountIndex,
+						nftMap[mempoolTxDetail.AssetId].NftContentHash,
+						nftMap[mempoolTxDetail.AssetId].NftL1TokenId,
+						nftMap[mempoolTxDetail.AssetId].NftL1Address,
+						nftMap[mempoolTxDetail.AssetId].CreatorTreasuryRate,
+						nftMap[mempoolTxDetail.AssetId].CollectionId,
+					).String()
 					nftInfo, err := commonAsset.ParseNftInfo(mempoolTxDetail.BalanceDelta)
 					if err != nil {
 						logx.Errorf("[CommitterTask] unable to parse nft info: %s", err.Error())
@@ -440,6 +450,7 @@ func CommitterTask(
 					}
 					break
 				case CollectionNonceAssetType:
+					baseBalance = strconv.FormatInt(accountMap[mempoolTxDetail.AccountIndex].CollectionNonce, 10)
 					newCollectionNonce, err = strconv.ParseInt(mempoolTxDetail.BalanceDelta, 10, 64)
 					if err != nil {
 						logx.Errorf("[CommitterTask] unable to parse int: %s", err.Error())
@@ -483,7 +494,7 @@ func CommitterTask(
 				// update nonce
 				accountMap[mempoolTx.AccountIndex].Nonce = mempoolTx.Nonce
 			}
-			if newCollectionNonce != -1 {
+			if newCollectionNonce != commonConstant.NilCollectionId {
 				accountMap[mempoolTx.AccountIndex].CollectionNonce = newCollectionNonce
 			}
 			// update account tree

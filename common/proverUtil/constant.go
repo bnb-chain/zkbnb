@@ -50,27 +50,28 @@ type (
 
 	CryptoTx = block.Tx
 
-	CryptoAccount           = std.Account
-	CryptoAccountAsset      = std.AccountAsset
-	CryptoLiquidity         = std.Liquidity
-	CryptoNft               = std.Nft
-	CryptoRegisterZnsTx     = std.RegisterZnsTx
-	CryptoCreatePairTx      = std.CreatePairTx
-	CryptoUpdatePairRateTx  = std.UpdatePairRateTx
-	CryptoDepositTx         = std.DepositTx
-	CryptoDepositNftTx      = std.DepositNftTx
-	CryptoTransferTx        = std.TransferTx
-	CryptoSwapTx            = std.SwapTx
-	CryptoAddLiquidityTx    = std.AddLiquidityTx
-	CryptoRemoveLiquidityTx = std.RemoveLiquidityTx
-	CryptoWithdrawTx        = std.WithdrawTx
-	CryptoMintNftTx         = std.MintNftTx
-	CryptoTransferNftTx     = std.TransferNftTx
-	CryptoAtomicMatchTx     = std.AtomicMatchTx
-	CryptoCancelOfferTx     = std.CancelOfferTx
-	CryptoWithdrawNftTx     = std.WithdrawNftTx
-	CryptoFullExitTx        = std.FullExitTx
-	CryptoFullExitNftTx     = std.FullExitNftTx
+	CryptoAccount            = std.Account
+	CryptoAccountAsset       = std.AccountAsset
+	CryptoLiquidity          = std.Liquidity
+	CryptoNft                = std.Nft
+	CryptoRegisterZnsTx      = std.RegisterZnsTx
+	CryptoCreatePairTx       = std.CreatePairTx
+	CryptoUpdatePairRateTx   = std.UpdatePairRateTx
+	CryptoDepositTx          = std.DepositTx
+	CryptoDepositNftTx       = std.DepositNftTx
+	CryptoTransferTx         = std.TransferTx
+	CryptoSwapTx             = std.SwapTx
+	CryptoAddLiquidityTx     = std.AddLiquidityTx
+	CryptoRemoveLiquidityTx  = std.RemoveLiquidityTx
+	CryptoWithdrawTx         = std.WithdrawTx
+	CryptoCreateCollectionTx = std.CreateCollectionTx
+	CryptoMintNftTx          = std.MintNftTx
+	CryptoTransferNftTx      = std.TransferNftTx
+	CryptoAtomicMatchTx      = std.AtomicMatchTx
+	CryptoCancelOfferTx      = std.CancelOfferTx
+	CryptoWithdrawNftTx      = std.WithdrawNftTx
+	CryptoFullExitTx         = std.FullExitTx
+	CryptoFullExitNftTx      = std.FullExitNftTx
 )
 
 const (

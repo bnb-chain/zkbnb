@@ -30,7 +30,7 @@ import (
 	"strconv"
 )
 
-func VerifyCollectionTxInfo(
+func VerifyCreateCollectionTxInfo(
 	accountInfoMap map[int64]*AccountInfo,
 	txInfo *CreateCollectionTxInfo,
 ) (txDetails []*MempoolTxDetail, err error) {
