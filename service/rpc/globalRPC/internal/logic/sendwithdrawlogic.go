@@ -129,14 +129,15 @@ func (l *SendTxLogic) sendWithdrawTx(rawTxInfo string) (txId string, err error) 
 		commonTx.TxTypeWithdraw,
 		txInfo.GasFeeAssetId,
 		txInfo.GasFeeAssetAmount.String(),
+		commonConstant.NilPairIndex,
 		txInfo.AssetId,
-		commonConstant.NilAssetId,
 		txInfo.AssetAmount.String(),
 		txInfo.ToAddress,
 		string(txInfoBytes),
 		"",
 		txInfo.FromAccountIndex,
 		txInfo.Nonce,
+		txInfo.ExpiredAt,
 		txDetails,
 	)
 	err = CreateMempoolTx(mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)

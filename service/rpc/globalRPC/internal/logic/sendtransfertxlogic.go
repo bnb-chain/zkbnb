@@ -147,14 +147,15 @@ func (l *SendTxLogic) sendTransferTx(rawTxInfo string) (txId string, err error) 
 		commonTx.TxTypeTransfer,
 		txInfo.GasFeeAssetId,
 		txInfo.GasFeeAssetAmount.String(),
+		commonConstant.NilPairIndex,
 		txInfo.AssetId,
-		commonConstant.NilAssetId,
 		txInfo.AssetAmount.String(),
 		"",
 		string(txInfoBytes),
 		txInfo.Memo,
 		txInfo.FromAccountIndex,
 		txInfo.Nonce,
+		txInfo.ExpiredAt,
 		txDetails,
 	)
 	err = CreateMempoolTx(mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)

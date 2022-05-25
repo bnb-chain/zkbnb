@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
+	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
@@ -77,7 +78,7 @@ func (l *SendTxLogic) sendSwapTx(rawTxInfo string) (txId string, err error) {
 
 	redisLock, liquidityInfo, err = globalmapHandler.GetLatestLiquidityInfoForWrite(
 		l.svcCtx.LiquidityModel,
-		l.svcCtx.MempoolDetailModel,
+		l.svcCtx.MempoolModel,
 		l.svcCtx.RedisConnection,
 		txInfo.PairIndex,
 	)
@@ -121,8 +122,8 @@ func (l *SendTxLogic) sendSwapTx(rawTxInfo string) (txId string, err error) {
 			liquidityInfo.AssetB,
 			liquidityInfo.AssetAId,
 			liquidityInfo.AssetBId,
-			txInfo.AssetAId,
-			false,
+			txInfo.AssetBId,
+			true,
 			txInfo.AssetAAmount,
 			liquidityInfo.FeeRate,
 		)
@@ -204,19 +205,26 @@ func (l *SendTxLogic) sendSwapTx(rawTxInfo string) (txId string, err error) {
 		commonTx.TxTypeSwap,
 		txInfo.GasFeeAssetId,
 		txInfo.GasFeeAssetAmount.String(),
-		txInfo.AssetAId,
-		txInfo.AssetBId,
+		txInfo.PairIndex,
+		commonConstant.NilAssetId,
 		txInfo.AssetAAmount.String(),
 		"",
 		string(txInfoBytes),
 		"",
 		txInfo.FromAccountIndex,
 		txInfo.Nonce,
+		txInfo.ExpiredAt,
 		txDetails,
 	)
 	// delete key
 	key := util.GetLiquidityKeyForWrite(txInfo.PairIndex)
+	key2 := util.GetLiquidityKeyForRead(txInfo.PairIndex)
 	_, err = l.svcCtx.RedisConnection.Del(key)
+	if err != nil {
+		logx.Errorf("[sendSwapTx] unable to delete key from redis: %s", err.Error())
+		return "", l.HandleCreateFailSwapTx(txInfo, err)
+	}
+	_, err = l.svcCtx.RedisConnection.Del(key2)
 	if err != nil {
 		logx.Errorf("[sendSwapTx] unable to delete key from redis: %s", err.Error())
 		return "", l.HandleCreateFailSwapTx(txInfo, err)

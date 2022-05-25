@@ -72,8 +72,8 @@ type (
 		BlockHeight   int64 `gorm:"index"`
 		BlockId       int64 `gorm:"index"`
 		AccountRoot   string
-		AssetAId      int64
-		AssetBId      int64
+		PairIndex     int64
+		AssetId       int64
 		TxAmount      string
 		NativeAddress string
 		TxInfo        string

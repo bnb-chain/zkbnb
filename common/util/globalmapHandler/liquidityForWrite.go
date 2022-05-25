@@ -28,7 +28,7 @@ import (
 
 func GetLatestLiquidityInfoForWrite(
 	liquidityModel LiquidityModel,
-	mempoolTxDetailModel MempoolTxDetailModel,
+	mempoolTxModel MempoolModel,
 	redisConnection *Redis,
 	pairIndex int64,
 ) (
@@ -59,7 +59,8 @@ func GetLatestLiquidityInfoForWrite(
 			logx.Errorf("[GetLatestLiquidityInfoForRead] unable to get latest liquidity by pair index: %s", err.Error())
 			return nil, nil, err
 		}
-		txDetails, err := mempoolTxDetailModel.GetMempoolTxDetailsByAssetIdAndAssetType(pairIndex, commonAsset.LiquidityAssetType)
+
+		mempoolTxs, err := mempoolTxModel.GetPendingLiquidityTxs()
 		if err != nil {
 			if err != mempool.ErrNotFound {
 				logx.Errorf("[GetLatestAccountInfo] unable to get mempool txs by account index: %s", err.Error())
@@ -82,16 +83,21 @@ func GetLatestLiquidityInfoForWrite(
 			logx.Errorf("[GetLatestAccountInfo] unable to construct pool info: %s", err.Error())
 			return nil, nil, err
 		}
-		for _, txDetail := range txDetails {
-			nBalance, err := commonAsset.ComputeNewBalance(commonAsset.LiquidityAssetType, liquidityInfo.String(), txDetail.BalanceDelta)
-			if err != nil {
-				logx.Errorf("[GetLatestAccountInfo] unable to compute new balance: %s", err.Error())
-				return nil, nil, err
-			}
-			liquidityInfo, err = commonAsset.ParseLiquidityInfo(nBalance)
-			if err != nil {
-				logx.Errorf("[GetLatestAccountInfo] unable to parse pool info: %s", err.Error())
-				return nil, nil, err
+		for _, mempoolTx := range mempoolTxs {
+			for _, txDetail := range mempoolTx.MempoolDetails {
+				if txDetail.AssetType != commonAsset.LiquidityAssetType {
+					continue
+				}
+				nBalance, err := commonAsset.ComputeNewBalance(commonAsset.LiquidityAssetType, liquidityInfo.String(), txDetail.BalanceDelta)
+				if err != nil {
+					logx.Errorf("[GetLatestAccountInfo] unable to compute new balance: %s", err.Error())
+					return nil, nil, err
+				}
+				liquidityInfo, err = commonAsset.ParseLiquidityInfo(nBalance)
+				if err != nil {
+					logx.Errorf("[GetLatestAccountInfo] unable to parse pool info: %s", err.Error())
+					return nil, nil, err
+				}
 			}
 		}
 	} else {

@@ -62,8 +62,8 @@ func VerifyAddLiquidityTxInfo(
 		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.AssetBId].Balance.Cmp(ZeroBigInt) <= 0 ||
 		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId] == nil ||
 		liquidityInfo == nil ||
-		!(liquidityInfo.AssetAId == txInfo.AssetAId &&
-			liquidityInfo.AssetBId == txInfo.AssetBId) ||
+		liquidityInfo.AssetAId != txInfo.AssetAId ||
+		liquidityInfo.AssetBId != txInfo.AssetBId ||
 		txInfo.AssetAAmount.Cmp(ZeroBigInt) < 0 ||
 		txInfo.AssetBAmount.Cmp(ZeroBigInt) < 0 ||
 		txInfo.LpAmount.Cmp(ZeroBigInt) < 0 ||

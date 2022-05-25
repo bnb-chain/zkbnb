@@ -48,13 +48,15 @@ func ConstructMempoolTx(
 	txType int64,
 	gasFeeAssetId int64,
 	gasFeeAssetAmount string,
-	assetAId, assetBId int64,
+	pairIndex int64,
+	assetId int64,
 	txAmount string,
 	toAddress string,
 	txInfo string,
 	memo string,
 	accountIndex int64,
 	nonce int64,
+	expiredAt int64,
 	txDetails []*mempool.MempoolTxDetail,
 ) (txId string, mempoolTx *mempool.MempoolTx) {
 	txId = util.RandomUUID()
@@ -63,8 +65,8 @@ func ConstructMempoolTx(
 		TxType:         txType,
 		GasFeeAssetId:  gasFeeAssetId,
 		GasFee:         gasFeeAssetAmount,
-		AssetAId:       assetAId,
-		AssetBId:       assetBId,
+		PairIndex:      pairIndex,
+		AssetId:        assetId,
 		TxAmount:       txAmount,
 		NativeAddress:  toAddress,
 		MempoolDetails: txDetails,
@@ -73,6 +75,7 @@ func ConstructMempoolTx(
 		Memo:           memo,
 		AccountIndex:   accountIndex,
 		Nonce:          nonce,
+		ExpiredAt:      expiredAt,
 		L2BlockHeight:  commonConstant.NilBlockHeight,
 		Status:         mempool.PendingTxStatus,
 	}
@@ -101,5 +104,3 @@ func CreateMempoolTx(
 	}
 	return nil
 }
-
-
