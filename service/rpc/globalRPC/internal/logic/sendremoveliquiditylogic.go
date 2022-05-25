@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
+	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
@@ -70,7 +71,7 @@ func (l *SendTxLogic) sendRemoveLiquidityTx(rawTxInfo string) (txId string, err 
 
 	redisLock, liquidityInfo, err = globalmapHandler.GetLatestLiquidityInfoForWrite(
 		l.svcCtx.LiquidityModel,
-		l.svcCtx.MempoolDetailModel,
+		l.svcCtx.MempoolModel,
 		l.svcCtx.RedisConnection,
 		txInfo.PairIndex,
 	)
@@ -170,8 +171,8 @@ func (l *SendTxLogic) sendRemoveLiquidityTx(rawTxInfo string) (txId string, err 
 		commonTx.TxTypeRemoveLiquidity,
 		txInfo.GasFeeAssetId,
 		txInfo.GasFeeAssetAmount.String(),
-		txInfo.AssetAId,
-		txInfo.AssetBId,
+		txInfo.PairIndex,
+		commonConstant.NilAssetId,
 		txInfo.LpAmount.String(),
 		"",
 		string(txInfoBytes),

@@ -9,7 +9,6 @@ import (
 	curve "github.com/zecrey-labs/zecrey-crypto/ecc/ztwistededwards/tebn254"
 	"github.com/zecrey-labs/zecrey-crypto/wasm/zecrey-legend/legendTxTypes"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
-	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/config"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/server"
@@ -23,7 +22,7 @@ import (
 )
 
 // /Users/gavin/Desktop/zecrey-v2
-func TestSendAddLiquidityTx(t *testing.T) {
+func TestSendSwapTx(t *testing.T) {
 	flag.Parse()
 
 	var c config.Config
@@ -40,11 +39,11 @@ func TestSendAddLiquidityTx(t *testing.T) {
 	*/
 
 	srv := server.NewGlobalRPCServer(ctx)
-	txInfo := constructSendAddLiquidityTxInfo()
+	txInfo := constructSendSwapTxInfo()
 	resp, err := srv.SendTx(
 		context.Background(),
 		&globalRPCProto.ReqSendTx{
-			TxType: commonTx.TxTypeAddLiquidity,
+			TxType: commonTx.TxTypeSwap,
 			TxInfo: txInfo,
 		},
 	)
@@ -59,38 +58,35 @@ func TestSendAddLiquidityTx(t *testing.T) {
 	fmt.Printf("Starting rpc server at %s...\n", c.ListenOn)
 }
 
-func constructSendAddLiquidityTxInfo() string {
+func constructSendSwapTxInfo() string {
 	// from sher.legend to gavin.legend
 	seed := "28e1a3762ff9944e9a4ad79477b756ef0aff3d2af76f0f40a0c3ec6ca76cf24b"
 	key, err := curve.GenerateEddsaPrivateKey(seed)
 	if err != nil {
 		panic(err)
 	}
-	assetAAmount := big.NewInt(100000)
-	assetBAmount := big.NewInt(100000)
-	lpAmount, err := util.ComputeEmptyLpAmount(assetAAmount, assetBAmount)
-	if err != nil {
-		panic(err)
-	}
+	assetAAmount := big.NewInt(100)
+	assetBAmount := big.NewInt(98)
 	expiredAt := time.Now().Add(time.Hour * 2).UnixMilli()
-	txInfo := &commonTx.AddLiquidityTxInfo{
+	txInfo := &commonTx.SwapTxInfo{
 		FromAccountIndex:  2,
 		PairIndex:         0,
-		AssetAId:          0,
+		AssetAId:          2,
 		AssetAAmount:      assetAAmount,
-		AssetBId:          2,
-		AssetBAmount:      assetBAmount,
-		LpAmount:          lpAmount,
+		AssetBId:          0,
+		AssetBMinAmount:   assetBAmount,
+		AssetBAmountDelta: nil,
 		PoolAAmount:       nil,
 		PoolBAmount:       nil,
 		GasAccountIndex:   1,
-		GasFeeAssetId:     1,
+		GasFeeAssetId:     0,
 		GasFeeAssetAmount: big.NewInt(5000),
 		ExpiredAt:         expiredAt,
-		Nonce:             3,
+		Nonce:             4,
+		Sig:               nil,
 	}
 	hFunc := mimc.NewMiMC()
-	msgHash, err := legendTxTypes.ComputeAddLiquidityMsgHash(txInfo, hFunc)
+	msgHash, err := legendTxTypes.ComputeSwapMsgHash(txInfo, hFunc)
 	if err != nil {
 		panic(err)
 	}
