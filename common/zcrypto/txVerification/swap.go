@@ -120,12 +120,16 @@ func VerifySwapTxInfo(
 		}
 	} else if txInfo.AssetAId == liquidityInfo.AssetBId {
 		poolDeltaForToAccount = &LiquidityInfo{
-			PairIndex: txInfo.PairIndex,
-			AssetAId:  txInfo.AssetBId,
-			AssetA:    poolAssetBDelta,
-			AssetBId:  txInfo.AssetAId,
-			AssetB:    poolAssetADelta,
-			LpAmount:  ZeroBigInt,
+			PairIndex:            txInfo.PairIndex,
+			AssetAId:             txInfo.AssetBId,
+			AssetA:               poolAssetBDelta,
+			AssetBId:             txInfo.AssetAId,
+			AssetB:               poolAssetADelta,
+			LpAmount:             ZeroBigInt,
+			KLast:                ZeroBigInt,
+			FeeRate:              liquidityInfo.FeeRate,
+			TreasuryAccountIndex: liquidityInfo.TreasuryAccountIndex,
+			TreasuryRate:         liquidityInfo.TreasuryRate,
 		}
 	} else {
 		log.Println("[VerifySwapTxInfo] invalid pool")

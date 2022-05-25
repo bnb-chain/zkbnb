@@ -19,6 +19,7 @@ package mempool
 
 import (
 	"fmt"
+	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
@@ -48,6 +49,7 @@ type (
 		GetMempoolTxsTotalCountByPublicKey(pk string) (count int64, err error)
 		GetMempoolTxByTxHash(hash string) (mempoolTxs *MempoolTx, err error)
 		GetMempoolTxsByBlockHeight(l2BlockHeight int64) (rowsAffected int64, mempoolTxs []*MempoolTx, err error)
+		GetPendingLiquidityTxs() (mempoolTxs []*MempoolTx, err error)
 		CreateBatchedMempoolTxs(mempoolTxs []*MempoolTx) error
 		DeleteMempoolTxs(txIds []*int64) error
 
@@ -67,8 +69,8 @@ type (
 		TxType         int64
 		GasFeeAssetId  int64
 		GasFee         string
-		AssetAId       int64
-		AssetBId       int64
+		PairIndex      int64
+		AssetId        int64
 		TxAmount       string
 		NativeAddress  string
 		MempoolDetails []*MempoolTxDetail `gorm:"foreignkey:TxId"`
@@ -600,6 +602,29 @@ func (m *defaultMempoolModel) GetMempoolTxsByAccountIndex(accountIndex int64) (m
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[GetLatestL2MempoolTxByAccountIndex] Get MempoolTxs Error")
 		return nil, ErrNotFound
+	}
+	return mempoolTxs, nil
+}
+
+func (m *defaultMempoolModel) GetPendingLiquidityTxs() (mempoolTxs []*MempoolTx, err error) {
+	var mempoolForeignKeyColumn = `MempoolDetails`
+	dbTx := m.DB.Table(m.table).Where("status = ? and pair_index = ?", PendingTxStatus, commonConstant.NilPairIndex).
+		Find(&mempoolTxs)
+	if dbTx.Error != nil {
+		errInfo := fmt.Sprintf("[mempool.GetMempoolTxByTxHash] %s", dbTx.Error)
+		logx.Errorf(errInfo)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		err := fmt.Sprintf("[mempool.GetMempoolTxByTxHash] %s", ErrNotFound)
+		logx.Info(err)
+		return nil, ErrNotFound
+	}
+	for _, mempoolTx := range mempoolTxs {
+		err = m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+		if err != nil {
+			logx.Errorf("[mempool.GetMempoolTxByTxHash] Get Associate MempoolDetails Error")
+			return nil, err
+		}
 	}
 	return mempoolTxs, nil
 }

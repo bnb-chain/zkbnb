@@ -15,26 +15,24 @@
  *
  */
 
-package commonConstant
+package util
 
-import "math/big"
-
-const (
-	NilPairIndex    = -1
-	NilAssetId      = 0
-	NilBlockHeight  = -1
-	NilNonce        = 0
-	NilAssetInfo    = "{}"
-	NilAccountName  = ""
-	NilExpiredAt    = 0
-	NilAccountIndex = int64(-1)
-	NilCollectionId = int64(0)
+import (
+	"fmt"
+	"math/big"
+	"testing"
 )
 
-var (
-	NilAssetAmountStr           = "0"
-	NilNftContentHash           = "0"
-	NilL1TokenId                = "0"
-	NilL1Address                = "0"
-	NilOfferCanceledOrFinalized = big.NewInt(0)
-)
+func TestComputeDeltaY(t *testing.T) {
+	poolA := big.NewInt(100000)
+	poolB := big.NewInt(100000)
+	deltaY, _, err := ComputeDelta(
+		poolA, poolB,
+		0, 2, 0, true, big.NewInt(100),
+		30,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(deltaY.String())
+}
