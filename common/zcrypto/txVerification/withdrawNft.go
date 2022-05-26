@@ -23,21 +23,12 @@ import (
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-crypto/wasm/zecrey-legend/legendTxTypes"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
+	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zeromicro/go-zero/core/logx"
 	"log"
 	"math/big"
 )
 
-/*
-	VerifyWithdrawNftTx:
-	accounts order is:
-	- FromAccount
-		- Assets:
-			- AssetGas
-	- GasAccount
-		- Assets:
-			- AssetGas
-*/
 func VerifyWithdrawNftTxInfo(
 	accountInfoMap map[int64]*AccountInfo,
 	nftInfo *NftInfo,
@@ -113,6 +104,7 @@ func VerifyWithdrawNftTxInfo(
 	// compute tx details
 	// from account asset gas
 	order := int64(0)
+	accountOrder := int64(0)
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    GeneralAssetType,
@@ -120,20 +112,23 @@ func VerifyWithdrawNftTxInfo(
 		AccountName:  accountInfoMap[txInfo.AccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	// from account nft delta
 	order++
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.NftIndex,
 		AssetType:    NftAssetType,
-		AccountIndex: txInfo.AccountIndex,
-		AccountName:  accountInfoMap[txInfo.AccountIndex].AccountName,
+		AccountIndex: commonConstant.NilTxAccountIndex,
+		AccountName:  commonConstant.NilAccountName,
 		BalanceDelta: newNftInfo.String(),
 		Order:        order,
+		AccountOrder: commonConstant.NilAccountOrder,
 	})
 	// gas account asset gas
 	order++
+	accountOrder++
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    GeneralAssetType,
@@ -141,7 +136,8 @@ func VerifyWithdrawNftTxInfo(
 		AccountName:  accountInfoMap[txInfo.GasAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	return txDetails, nil
 }

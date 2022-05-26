@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"sort"
 	"strconv"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -72,6 +73,7 @@ type (
 		BlockHeight   int64 `gorm:"index"`
 		BlockId       int64 `gorm:"index"`
 		AccountRoot   string
+		NftIndex      int64
 		PairIndex     int64
 		AssetId       int64
 		TxAmount      string
@@ -612,6 +614,11 @@ func (m *defaultTxModel) GetTxByTxHash(txHash string) (tx *Tx, err error) {
 		logx.Error("[txVerification.GetTxByTxHash] Get Associate TxDetails Error")
 		return nil, err
 	}
+	// re-order tx details
+	sort.SliceStable(tx.TxDetails, func(i, j int) bool {
+		return tx.TxDetails[i].Order < tx.TxDetails[j].Order
+	})
+
 	return tx, nil
 }
 

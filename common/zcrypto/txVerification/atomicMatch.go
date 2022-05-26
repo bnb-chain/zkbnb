@@ -49,7 +49,7 @@ func VerifyAtomicMatchTxInfo(
 		txInfo.SellOffer.Type != commonAsset.SellOfferType ||
 		txInfo.BuyOffer.NftIndex != txInfo.SellOffer.NftIndex ||
 		txInfo.BuyOffer.AssetId != txInfo.SellOffer.AssetId ||
-		txInfo.BuyOffer.AssetAmount != txInfo.SellOffer.AssetAmount ||
+		txInfo.BuyOffer.AssetAmount.String() != txInfo.SellOffer.AssetAmount.String() ||
 		txInfo.BuyOffer.ExpiredAt < now ||
 		txInfo.SellOffer.ExpiredAt < now ||
 		txInfo.BuyOffer.NftIndex != nftInfo.NftIndex ||
@@ -143,7 +143,7 @@ func VerifyAtomicMatchTxInfo(
 	// compute hash
 	hFunc := mimc.NewMiMC()
 	// buyer sig
-	msgHash := legendTxTypes.ComputeOfferMsgHash(txInfo.BuyOffer, hFunc)
+	msgHash, err := legendTxTypes.ComputeOfferMsgHash(txInfo.BuyOffer, hFunc)
 	if err != nil {
 		logx.Errorf("[VerifyAtomicMatchTxInfo] unable to compute buyer offer msg hash:%s", err.Error())
 		return nil, err
@@ -165,7 +165,7 @@ func VerifyAtomicMatchTxInfo(
 	}
 	hFunc.Reset()
 	// seller sig
-	msgHash = legendTxTypes.ComputeOfferMsgHash(txInfo.SellOffer, hFunc)
+	msgHash, err = legendTxTypes.ComputeOfferMsgHash(txInfo.SellOffer, hFunc)
 	if err != nil {
 		logx.Errorf("[VerifyAtomicMatchTxInfo] unable to compute seller offer msg hash:%s", err.Error())
 		return nil, err
@@ -210,6 +210,7 @@ func VerifyAtomicMatchTxInfo(
 	// compute tx details
 	// from account asset gas
 	order := int64(0)
+	accountOrder := int64(0)
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    GeneralAssetType,
@@ -217,10 +218,12 @@ func VerifyAtomicMatchTxInfo(
 		AccountName:  accountInfoMap[txInfo.AccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	// buyer asset A
 	order++
+	accountOrder++
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.BuyOffer.AssetId,
 		AssetType:    GeneralAssetType,
@@ -229,7 +232,8 @@ func VerifyAtomicMatchTxInfo(
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.BuyOffer.AssetId, ffmath.Neg(txInfo.BuyOffer.AssetAmount), ZeroBigInt, ZeroBigInt,
 		).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	// buyer offer
 	buyerOfferIndex := txInfo.BuyOffer.OfferId % OfferPerAsset
@@ -244,7 +248,8 @@ func VerifyAtomicMatchTxInfo(
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			buyerOfferAssetId, ZeroBigInt, ZeroBigInt, nBuyerOffer,
 		).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	// seller asset A
 	// treasury fee
@@ -266,6 +271,7 @@ func VerifyAtomicMatchTxInfo(
 	// seller amount
 	sellerDeltaAmount := ffmath.Sub(txInfo.SellOffer.AssetAmount, ffmath.Add(treasuryFee, creatorFee))
 	order++
+	accountOrder++
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.SellOffer.AssetId,
 		AssetType:    GeneralAssetType,
@@ -274,7 +280,8 @@ func VerifyAtomicMatchTxInfo(
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.SellOffer.AssetId, sellerDeltaAmount, ZeroBigInt, ZeroBigInt,
 		).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	// seller offer
 	sellerOfferIndex := txInfo.SellOffer.OfferId % OfferPerAsset
@@ -289,19 +296,22 @@ func VerifyAtomicMatchTxInfo(
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			sellerOfferAssetId, ZeroBigInt, ZeroBigInt, nSellerOffer,
 		).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	// creator fee
 	order++
+	accountOrder++
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.BuyOffer.AssetId,
 		AssetType:    GeneralAssetType,
 		AccountIndex: nftInfo.CreatorAccountIndex,
 		AccountName:  accountInfoMap[nftInfo.CreatorAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
-			txInfo.BuyOffer.AssetId, creatorFee, ZeroBigInt, nSellerOffer,
+			txInfo.BuyOffer.AssetId, creatorFee, ZeroBigInt, ZeroBigInt,
 		).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	// nft info
 	newNftInfo := &NftInfo{
@@ -318,13 +328,15 @@ func VerifyAtomicMatchTxInfo(
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      nftInfo.NftIndex,
 		AssetType:    NftAssetType,
-		AccountIndex: commonConstant.NilAccountIndex,
+		AccountIndex: commonConstant.NilTxAccountIndex,
 		AccountName:  commonConstant.NilAccountName,
 		BalanceDelta: newNftInfo.String(),
 		Order:        order,
+		AccountOrder: commonConstant.NilAccountOrder,
 	})
 	// gas account asset A - treasury fee
 	order++
+	accountOrder++
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.BuyOffer.AssetId,
 		AssetType:    GeneralAssetType,
@@ -332,7 +344,8 @@ func VerifyAtomicMatchTxInfo(
 		AccountName:  accountInfoMap[txInfo.GasAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.BuyOffer.AssetId, treasuryFee, ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	// gas account asset gas
 	order++
@@ -343,7 +356,8 @@ func VerifyAtomicMatchTxInfo(
 		AccountName:  accountInfoMap[txInfo.GasAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	return txDetails, nil
 }

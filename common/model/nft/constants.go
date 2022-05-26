@@ -25,8 +25,11 @@ const (
 	L2NftCollectionTableName      = `l2_nft_collection`
 	L2NftExchangeTableName        = `l2_nft_exchange`
 	L2NftExchangeHistoryTableName = `l2_nft_exchange_history`
+	L2NftWithdrawHistoryTableName = `l2_nft_withdraw_history`
 
 	OfferTableName = `offer`
+
+	StatusAlreadyWithdraw = 1
 )
 
 var (

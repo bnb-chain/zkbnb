@@ -23,6 +23,7 @@ import (
 	"github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/std"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
+	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/tree"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -37,7 +38,7 @@ func ConstructWitnessInfo(
 	liquidityTree *Tree,
 	nftTree *Tree,
 	accountKeys []int64,
-	proverAccountMap map[int64]*ProverAccountInfo,
+	proverAccounts []*ProverAccountInfo,
 	proverLiquidityInfo *ProverLiquidityInfo,
 	proverNftInfo *ProverNftInfo,
 ) (
@@ -46,7 +47,7 @@ func ConstructWitnessInfo(
 ) {
 	// construct account witness
 	AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err :=
-		ConstructAccountWitness(oTx, accountModel, accountTree, accountAssetTrees, accountKeys, proverAccountMap)
+		ConstructAccountWitness(oTx, accountModel, accountTree, accountAssetTrees, accountKeys, proverAccounts)
 	if err != nil {
 		logx.Errorf("[ConstructWitnessInfo] unable to construct account witness: %s", err.Error())
 		return nil, err
@@ -90,7 +91,7 @@ func ConstructAccountWitness(
 	accountTree *Tree,
 	accountAssetTrees *[]*Tree,
 	accountKeys []int64,
-	proverAccountMap map[int64]*ProverAccountInfo,
+	proverAccounts []*ProverAccountInfo,
 ) (
 	AccountRootBefore []byte,
 	// account before info, size is 5
@@ -118,7 +119,7 @@ func ConstructAccountWitness(
 			return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
 		}
 		// it means this is a registerZNS tx
-		if proverAccountMap[accountKey] == nil {
+		if proverAccounts == nil {
 			if accountKey != int64(len(*accountAssetTrees)) {
 				logx.Errorf("[ConstructAccountWitness] invalid key")
 				return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore,
@@ -137,21 +138,22 @@ func ConstructAccountWitness(
 				logx.Errorf("[ConstructAccountWitness] unable to get confirmed account by account index: %s", err.Error())
 				return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
 			}
-			proverAccountMap[accountKey] = new(ProverAccountInfo)
-			proverAccountMap[accountKey].AccountInfo = &Account{
-				AccountIndex:    accountInfo.AccountIndex,
-				AccountName:     accountInfo.AccountName,
-				PublicKey:       accountInfo.PublicKey,
-				AccountNameHash: accountInfo.AccountNameHash,
-				L1Address:       accountInfo.L1Address,
-				Nonce:           0,
-				CollectionNonce: 0,
-				AssetInfo:       commonConstant.NilAssetInfo,
-				AssetRoot:       common.Bytes2Hex(tree.NilAccountAssetRoot),
-				Status:          accountInfo.Status,
-			}
+			proverAccounts = append(proverAccounts, &ProverAccountInfo{
+				AccountInfo: &Account{
+					AccountIndex:    accountInfo.AccountIndex,
+					AccountName:     accountInfo.AccountName,
+					PublicKey:       accountInfo.PublicKey,
+					AccountNameHash: accountInfo.AccountNameHash,
+					L1Address:       accountInfo.L1Address,
+					Nonce:           commonConstant.NilNonce,
+					CollectionNonce: commonConstant.NilCollectionId,
+					AssetInfo:       commonConstant.NilAssetInfo,
+					AssetRoot:       common.Bytes2Hex(tree.NilAccountAssetRoot),
+					Status:          accountInfo.Status,
+				},
+			})
 		} else {
-			proverAccountInfo := proverAccountMap[accountKey]
+			proverAccountInfo := proverAccounts[accountCount]
 			pk, err := util.ParsePubKey(proverAccountInfo.AccountInfo.PublicKey)
 			if err != nil {
 				logx.Errorf("[ConstructAccountWitness] unable to parse pub key: %s", err.Error())
@@ -236,15 +238,18 @@ func ConstructAccountWitness(
 		}
 		// update account merkle tree
 		nonce := cryptoAccount.Nonce
-		if oTx.AccountIndex == accountKey && oTx.Nonce != -1 {
+		collectionNonce := cryptoAccount.CollectionNonce
+		if oTx.AccountIndex == accountKey && oTx.Nonce != commonConstant.NilNonce {
 			nonce = oTx.Nonce
 		}
+		if oTx.AccountIndex == accountKey && oTx.TxType == commonTx.TxTypeCreateCollection {
+			collectionNonce++
+		}
 		nAccountHash, err := tree.ComputeAccountLeafHash(
-			proverAccountMap[accountKey].AccountInfo.AccountNameHash,
-			proverAccountMap[accountKey].AccountInfo.PublicKey,
+			proverAccounts[accountCount].AccountInfo.AccountNameHash,
+			proverAccounts[accountCount].AccountInfo.PublicKey,
 			nonce,
-			// TODO
-			cryptoAccount.CollectionNonce,
+			collectionNonce,
 			(*accountAssetTrees)[accountKey].RootNode.Value,
 		)
 		if err != nil {
@@ -462,6 +467,7 @@ func ConstructNftWitness(
 		nNftInfo.CreatorTreasuryRate,
 		nNftInfo.CollectionId,
 	)
+
 	if err != nil {
 		logx.Errorf("[ConstructNftWitness] unable to compute liquidity node hash: %s", err.Error())
 		return NftRootBefore, NftBefore, MerkleProofsNftBefore, err

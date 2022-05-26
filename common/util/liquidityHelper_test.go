@@ -19,6 +19,7 @@ package util
 
 import (
 	"fmt"
+	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"math/big"
 	"testing"
 )
@@ -35,4 +36,25 @@ func TestComputeDeltaY(t *testing.T) {
 		t.Fatal(err)
 	}
 	fmt.Println(deltaY.String())
+}
+
+func TestComputeRemoveLiquidityAmount(t *testing.T) {
+	liquidityInfo := &commonAsset.LiquidityInfo{
+		PairIndex:            0,
+		AssetAId:             0,
+		AssetA:               big.NewInt(99901),
+		AssetBId:             2,
+		AssetB:               big.NewInt(100100),
+		LpAmount:             big.NewInt(100000),
+		KLast:                big.NewInt(10000000000),
+		FeeRate:              30,
+		TreasuryAccountIndex: 0,
+		TreasuryRate:         5,
+	}
+	aAmount, bAmount := ComputeRemoveLiquidityAmount(
+		liquidityInfo,
+		big.NewInt(100),
+	)
+	fmt.Println(aAmount.String())
+	fmt.Println(bAmount.String())
 }

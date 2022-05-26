@@ -6,6 +6,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/config"
@@ -28,6 +29,9 @@ type ServiceContext struct {
 	LiquidityModel        liquidity.LiquidityModel
 	LiquidityHistoryModel liquidity.LiquidityHistoryModel
 	BlockModel            block.BlockModel
+
+	NftModel   nft.L2NftModel
+	OfferModel nft.OfferModel
 
 	L2AssetModel l2asset.L2AssetInfoModel
 
@@ -64,6 +68,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		LiquidityModel:        liquidity.NewLiquidityModel(conn, c.CacheRedis, gormPointer),
 		LiquidityHistoryModel: liquidity.NewLiquidityHistoryModel(conn, c.CacheRedis, gormPointer),
 		BlockModel:            block.NewBlockModel(conn, c.CacheRedis, gormPointer, redisConn),
+		NftModel:              nft.NewL2NftModel(conn, c.CacheRedis, gormPointer),
+		OfferModel:            nft.NewOfferModel(conn, c.CacheRedis, gormPointer),
 		L2AssetModel:          l2asset.NewL2AssetInfoModel(conn, c.CacheRedis, gormPointer),
 		SysConfigModel:        sysconfig.NewSysconfigModel(conn, c.CacheRedis, gormPointer),
 		RedisConnection:       redisConn,
