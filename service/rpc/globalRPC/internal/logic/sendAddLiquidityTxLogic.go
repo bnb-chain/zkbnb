@@ -33,6 +33,7 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"math/big"
 	"strconv"
+	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -62,16 +63,23 @@ func (l *SendTxLogic) sendAddLiquidityTx(rawTxInfo string) (txId string, err err
 	// check gas account index
 	gasAccountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
 	if err != nil {
-		logx.Errorf("[sendTransferTx] unable to get sysconfig by name: %s", err.Error())
+		logx.Errorf("[sendAddLiquidityTx] unable to get sysconfig by name: %s", err.Error())
 		return "", l.HandleCreateFailAddLiquidityTx(txInfo, err)
 	}
 	gasAccountIndex, err := strconv.ParseInt(gasAccountIndexConfig.Value, 10, 64)
 	if err != nil {
-		return "", l.HandleCreateFailAddLiquidityTx(txInfo, errors.New("[sendTransferTx] unable to parse big int"))
+		return "", l.HandleCreateFailAddLiquidityTx(txInfo, errors.New("[sendAddLiquidityTx] unable to parse big int"))
 	}
 	if gasAccountIndex != txInfo.GasAccountIndex {
-		logx.Errorf("[sendTransferTx] invalid gas account index")
-		return "", l.HandleCreateFailAddLiquidityTx(txInfo, errors.New("[sendTransferTx] invalid gas account index"))
+		logx.Errorf("[sendAddLiquidityTx] invalid gas account index")
+		return "", l.HandleCreateFailAddLiquidityTx(txInfo, errors.New("[sendAddLiquidityTx] invalid gas account index"))
+	}
+
+	// check expired at
+	now := time.Now().UnixMilli()
+	if txInfo.ExpiredAt < now {
+		logx.Errorf("[sendWithdrawTx] invalid time stamp")
+		return "", l.HandleCreateFailAddLiquidityTx(txInfo, errors.New("[sendWithdrawTx] invalid time stamp"))
 	}
 
 	var (

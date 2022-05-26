@@ -51,7 +51,7 @@ func ConstructCreateCollectionCryptoTx(
 		logx.Errorf("[ConstructCreateCollectionCryptoTx] unable to convert to crypto register zns tx: %s", err.Error())
 		return nil, err
 	}
-	accountKeys, proverAccountMap, proverLiquidityInfo, proverNftInfo, err := ConstructProverInfo(oTx, accountModel)
+	accountKeys, proverAccounts, proverLiquidityInfo, proverNftInfo, err := ConstructProverInfo(oTx, accountModel)
 	if err != nil {
 		logx.Errorf("[ConstructCreateCollectionCryptoTx] unable to construct prover info: %s", err.Error())
 		return nil, err
@@ -64,7 +64,7 @@ func ConstructCreateCollectionCryptoTx(
 		liquidityTree,
 		nftTree,
 		accountKeys,
-		proverAccountMap,
+		proverAccounts,
 		proverLiquidityInfo,
 		proverNftInfo,
 	)

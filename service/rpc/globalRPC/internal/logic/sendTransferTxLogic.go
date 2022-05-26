@@ -31,6 +31,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
 	"reflect"
 	"strconv"
+	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -78,6 +79,13 @@ func (l *SendTxLogic) sendTransferTx(rawTxInfo string) (txId string, err error) 
 		return "", l.HandleCreateFailTransferTx(txInfo, errors.New("[sendTransferTx] invalid gas account index"))
 	}
 
+	// check expired at
+	now := time.Now().UnixMilli()
+	if txInfo.ExpiredAt < now {
+		logx.Errorf("[sendTransferTx] invalid time stamp")
+		return "", l.HandleCreateFailTransferTx(txInfo, errors.New("[sendTransferTx] invalid time stamp"))
+	}
+
 	var (
 		accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
 	)
@@ -102,7 +110,7 @@ func (l *SendTxLogic) sendTransferTx(rawTxInfo string) (txId string, err error) 
 			return "", l.HandleCreateFailTransferTx(txInfo, err)
 		}
 	}
-	if accountInfoMap[txInfo.ToAccountIndex].AccountName != txInfo.ToAccountName {
+	if accountInfoMap[txInfo.ToAccountIndex].AccountNameHash != txInfo.ToAccountNameHash {
 		logx.Errorf("[sendTransferTx] invalid account name")
 		return "", l.HandleCreateFailTransferTx(txInfo, errors.New("[sendTransferTx] invalid account name"))
 	}

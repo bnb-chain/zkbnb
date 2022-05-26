@@ -26,6 +26,7 @@ const (
 	NilNonce          = 0
 	NilAssetInfo      = "{}"
 	NilAccountName    = ""
+	NilAccountOrder   = -1
 	NilExpiredAt      = 0
 	NilCollectionId   = int64(0)
 	NilAccountIndex   = int64(0)

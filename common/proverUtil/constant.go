@@ -67,6 +67,7 @@ type (
 	CryptoCreateCollectionTx = std.CreateCollectionTx
 	CryptoMintNftTx          = std.MintNftTx
 	CryptoTransferNftTx      = std.TransferNftTx
+	CryptoOfferTx            = std.OfferTx
 	CryptoAtomicMatchTx      = std.AtomicMatchTx
 	CryptoCancelOfferTx      = std.CancelOfferTx
 	CryptoWithdrawNftTx      = std.WithdrawNftTx

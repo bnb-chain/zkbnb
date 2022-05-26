@@ -384,6 +384,7 @@ func CommitterTask(
 						pendingNewNftIndexMap[mempoolTxDetail.AssetId] = true
 						baseBalance = commonAsset.EmptyNftInfo(nftMap[mempoolTxDetail.AssetId].NftIndex).String()
 					} else {
+						pendingNewNftIndexMap[mempoolTxDetail.AssetId] = true
 						pendingUpdateNftIndexMap[mempoolTxDetail.AssetId] = true
 						// before nft info
 						baseBalance = commonAsset.ConstructNftInfo(
@@ -481,6 +482,7 @@ func CommitterTask(
 					BalanceDelta:    mempoolTxDetail.BalanceDelta,
 					Order:           mempoolTxDetail.Order,
 					Nonce:           nonce,
+					AccountOrder:    mempoolTxDetail.AccountOrder,
 					CollectionNonce: collectionNonce,
 				})
 			}

@@ -33,6 +33,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
 	"reflect"
 	"strconv"
+	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -63,16 +64,23 @@ func (l *SendTxLogic) sendWithdrawTx(rawTxInfo string) (txId string, err error) 
 	// check gas account index
 	gasAccountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
 	if err != nil {
-		logx.Errorf("[sendTransferTx] unable to get sysconfig by name: %s", err.Error())
+		logx.Errorf("[sendWithdrawTx] unable to get sysconfig by name: %s", err.Error())
 		return "", l.HandleCreateFailWithdrawTx(txInfo, err)
 	}
 	gasAccountIndex, err := strconv.ParseInt(gasAccountIndexConfig.Value, 10, 64)
 	if err != nil {
-		return "", l.HandleCreateFailWithdrawTx(txInfo, errors.New("[sendTransferTx] unable to parse big int"))
+		return "", l.HandleCreateFailWithdrawTx(txInfo, errors.New("[sendWithdrawTx] unable to parse big int"))
 	}
 	if gasAccountIndex != txInfo.GasAccountIndex {
-		logx.Errorf("[sendTransferTx] invalid gas account index")
-		return "", l.HandleCreateFailWithdrawTx(txInfo, errors.New("[sendTransferTx] invalid gas account index"))
+		logx.Errorf("[sendWithdrawTx] invalid gas account index")
+		return "", l.HandleCreateFailWithdrawTx(txInfo, errors.New("[sendWithdrawTx] invalid gas account index"))
+	}
+
+	// check expired at
+	now := time.Now().UnixMilli()
+	if txInfo.ExpiredAt < now {
+		logx.Errorf("[sendWithdrawTx] invalid time stamp")
+		return "", l.HandleCreateFailWithdrawTx(txInfo, errors.New("[sendWithdrawTx] invalid time stamp"))
 	}
 
 	var (
@@ -85,7 +93,7 @@ func (l *SendTxLogic) sendWithdrawTx(rawTxInfo string) (txId string, err error) 
 		txInfo.FromAccountIndex,
 	)
 	if err != nil {
-		logx.Errorf("[sendTransferTx] unable to get account info: %s", err.Error())
+		logx.Errorf("[sendWithdrawTx] unable to get account info: %s", err.Error())
 		return "", l.HandleCreateFailWithdrawTx(txInfo, err)
 	}
 	// get account info by gas index
@@ -96,7 +104,7 @@ func (l *SendTxLogic) sendWithdrawTx(rawTxInfo string) (txId string, err error) 
 			l.svcCtx.RedisConnection,
 			txInfo.GasAccountIndex)
 		if err != nil {
-			logx.Errorf("[sendTransferTx] unable to get account info: %s", err.Error())
+			logx.Errorf("[sendWithdrawTx] unable to get account info: %s", err.Error())
 			return "", l.HandleCreateFailWithdrawTx(txInfo, err)
 		}
 	}

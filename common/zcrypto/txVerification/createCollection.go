@@ -103,6 +103,7 @@ func VerifyCreateCollectionTxInfo(
 	// compute tx details
 	// from account collection nonce
 	order := int64(0)
+	accountOrder := int64(0)
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      commonConstant.NilAssetId,
 		AssetType:    CollectionNonceAssetType,
@@ -110,6 +111,7 @@ func VerifyCreateCollectionTxInfo(
 		AccountName:  accountInfoMap[txInfo.AccountIndex].AccountName,
 		BalanceDelta: strconv.FormatInt(txInfo.CollectionId, 10),
 		Order:        order,
+		AccountOrder: commonConstant.NilAccountOrder,
 	})
 	// from account asset gas
 	order++
@@ -120,10 +122,12 @@ func VerifyCreateCollectionTxInfo(
 		AccountName:  accountInfoMap[txInfo.AccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	// gas account asset gas
 	order++
+	accountOrder++
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    GeneralAssetType,
@@ -131,7 +135,8 @@ func VerifyCreateCollectionTxInfo(
 		AccountName:  accountInfoMap[txInfo.GasAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	return txDetails, nil
 }

@@ -24,6 +24,7 @@ const (
 	LiquidityReadPrefix  = "LiquidityRead::"
 	NftReadPrefix        = "NftRead::"
 	NftIndexWritePrefix  = "NftIndexWrite::"
+	OfferIdWritePrefix   = "OfferIdWrite::"
 	LiquidityWritePrefix = "LiquidityWrite::"
 	BasicAccountPrefix   = "BasicAccount::"
 	LockKeySuffix        = "ByLock"
@@ -39,6 +40,10 @@ func GetNftKeyForRead(nftIndex int64) string {
 
 func GetNftIndexKeyForWrite() string {
 	return NftIndexWritePrefix
+}
+
+func GetOfferIdKeyForWrite(accountIndex int64) string {
+	return OfferIdWritePrefix + strconv.FormatInt(accountIndex, 10)
 }
 
 func GetLiquidityKeyForWrite(pairIndex int64) string {

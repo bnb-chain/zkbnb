@@ -26,7 +26,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-func ConstructMintNftCryptoTx(
+func ConstructTransferNftCryptoTx(
 	oTx *Tx,
 	accountTree *Tree,
 	accountAssetsTree *[]*Tree,
@@ -34,27 +34,27 @@ func ConstructMintNftCryptoTx(
 	nftTree *Tree,
 	accountModel AccountModel,
 ) (cryptoTx *CryptoTx, err error) {
-	if oTx.TxType != commonTx.TxTypeMintNft {
-		logx.Errorf("[ConstructMintNftCryptoTx] invalid tx type")
-		return nil, errors.New("[ConstructMintNftCryptoTx] invalid tx type")
+	if oTx.TxType != commonTx.TxTypeTransferNft {
+		logx.Errorf("[ConstructTransferNftCryptoTx] invalid tx type")
+		return nil, errors.New("[ConstructTransferNftCryptoTx] invalid tx type")
 	}
 	if oTx == nil || accountTree == nil || accountAssetsTree == nil || liquidityTree == nil || nftTree == nil {
-		logx.Errorf("[ConstructMintNftCryptoTx] invalid params")
-		return nil, errors.New("[ConstructMintNftCryptoTx] invalid params")
+		logx.Errorf("[ConstructTransferNftCryptoTx] invalid params")
+		return nil, errors.New("[ConstructTransferNftCryptoTx] invalid params")
 	}
-	txInfo, err := commonTx.ParseMintNftTxInfo(oTx.TxInfo)
+	txInfo, err := commonTx.ParseTransferNftTxInfo(oTx.TxInfo)
 	if err != nil {
-		logx.Errorf("[ConstructMintNftCryptoTx] unable to parse register zns tx info:%s", err.Error())
+		logx.Errorf("[ConstructTransferNftCryptoTx] unable to parse register zns tx info:%s", err.Error())
 		return nil, err
 	}
-	cryptoTxInfo, err := ToCryptoMintNftTx(txInfo)
+	cryptoTxInfo, err := ToCryptoTransferNftTx(txInfo)
 	if err != nil {
-		logx.Errorf("[ConstructMintNftCryptoTx] unable to convert to crypto register zns tx: %s", err.Error())
+		logx.Errorf("[ConstructTransferNftCryptoTx] unable to convert to crypto register zns tx: %s", err.Error())
 		return nil, err
 	}
 	accountKeys, proverAccounts, proverLiquidityInfo, proverNftInfo, err := ConstructProverInfo(oTx, accountModel)
 	if err != nil {
-		logx.Errorf("[ConstructMintNftCryptoTx] unable to construct prover info: %s", err.Error())
+		logx.Errorf("[ConstructTransferNftCryptoTx] unable to construct prover info: %s", err.Error())
 		return nil, err
 	}
 	cryptoTx, err = ConstructWitnessInfo(
@@ -70,40 +70,37 @@ func ConstructMintNftCryptoTx(
 		proverNftInfo,
 	)
 	if err != nil {
-		logx.Errorf("[ConstructMintNftCryptoTx] unable to construct witness info: %s", err.Error())
+		logx.Errorf("[ConstructTransferNftCryptoTx] unable to construct witness info: %s", err.Error())
 		return nil, err
 	}
 	cryptoTx.TxType = uint8(oTx.TxType)
-	cryptoTx.MintNftTxInfo = cryptoTxInfo
+	cryptoTx.TransferNftTxInfo = cryptoTxInfo
 	cryptoTx.Nonce = oTx.Nonce
 	cryptoTx.ExpiredAt = txInfo.ExpiredAt
 	cryptoTx.Signature = new(eddsa.Signature)
 	_, err = cryptoTx.Signature.SetBytes(txInfo.Sig)
 	if err != nil {
-		logx.Errorf("[ConstructMintNftCryptoTx] invalid sig bytes: %s", err.Error())
+		logx.Errorf("[ConstructTransferNftCryptoTx] invalid sig bytes: %s", err.Error())
 		return nil, err
 	}
 	return cryptoTx, nil
 }
 
-func ToCryptoMintNftTx(txInfo *commonTx.MintNftTxInfo) (info *CryptoMintNftTx, err error) {
+func ToCryptoTransferNftTx(txInfo *commonTx.TransferNftTxInfo) (info *CryptoTransferNftTx, err error) {
 	packedFee, err := util.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
 		logx.Errorf("[ToCryptoSwapTx] unable to convert to packed fee: %s", err.Error())
 		return nil, err
 	}
-	info = &CryptoMintNftTx{
-		CreatorAccountIndex: txInfo.CreatorAccountIndex,
-		ToAccountIndex:      txInfo.ToAccountIndex,
-		ToAccountNameHash:   common.FromHex(txInfo.ToAccountNameHash),
-		NftIndex:            txInfo.NftIndex,
-		NftContentHash:      common.FromHex(txInfo.NftContentHash),
-		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
-		GasAccountIndex:     txInfo.GasAccountIndex,
-		GasFeeAssetId:       txInfo.GasFeeAssetId,
-		GasFeeAssetAmount:   packedFee,
-		CollectionId:        txInfo.NftCollectionId,
-		ExpiredAt:           txInfo.ExpiredAt,
+	info = &CryptoTransferNftTx{
+		FromAccountIndex:  txInfo.FromAccountIndex,
+		ToAccountIndex:    txInfo.ToAccountIndex,
+		ToAccountNameHash: common.FromHex(txInfo.ToAccountNameHash),
+		NftIndex:          txInfo.NftIndex,
+		GasAccountIndex:   txInfo.GasAccountIndex,
+		GasFeeAssetId:     txInfo.GasFeeAssetId,
+		GasFeeAssetAmount: packedFee,
+		CallDataHash:      txInfo.CallDataHash,
 	}
 	return info, nil
 }

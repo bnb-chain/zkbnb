@@ -20,7 +20,6 @@ package proverUtil
 import (
 	"errors"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
-	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -30,58 +29,60 @@ func ConstructProverInfo(
 	accountModel AccountModel,
 ) (
 	accountKeys []int64,
-	proverAccountMap map[int64]*ProverAccountInfo,
+	proverAccounts []*ProverAccountInfo,
 	proverLiquidityInfo *ProverLiquidityInfo,
 	proverNftInfo *ProverNftInfo,
 	err error,
 ) {
 	var (
 		// init account asset map, because if we have the same asset detail, the before will be the after of the last one
-		accountAssetMap = make(map[int64]map[int64]*AccountAsset)
-		isKeyExist      = make(map[int64]bool)
+		accountAssetMap  = make(map[int64]map[int64]*AccountAsset)
+		accountMap       = make(map[int64]*Account)
+		lastAccountOrder = int64(-2)
+		accountCount     = -1
 	)
 	// init prover account map
-	proverAccountMap = make(map[int64]*ProverAccountInfo)
-	if oTx.AccountIndex != commonConstant.NilTxAccountIndex {
-		// get account info
-		if proverAccountMap[oTx.AccountIndex] == nil {
-			accountInfo, err := accountModel.GetConfirmedAccountByAccountIndex(oTx.AccountIndex)
-			if err != nil {
-				logx.Errorf("[ConstructProverInfo] unable to get valid account by index: %s", err.Error())
-				return nil, nil, nil, nil, err
-			}
-			// if tx type == registerZNS, it means that the account should be empty
-			if oTx.TxType != commonTx.TxTypeRegisterZns {
-				proverAccountMap[oTx.AccountIndex] = new(ProverAccountInfo)
-				// get current nonce
-				if oTx.Nonce != commonConstant.NilNonce {
-					accountInfo.Nonce = oTx.Nonce - 1
-				}
-				proverAccountMap[oTx.AccountIndex].AccountInfo = accountInfo
-			}
-		}
-		// set account key
+	if oTx.TxType == commonTx.TxTypeRegisterZns {
 		accountKeys = append(accountKeys, oTx.AccountIndex)
-		isKeyExist[oTx.AccountIndex] = true
 	}
 	for _, txDetail := range oTx.TxDetails {
 		switch txDetail.AssetType {
 		case commonAsset.GeneralAssetType:
-			if !isKeyExist[txDetail.AccountIndex] {
-				accountKeys = append(accountKeys, txDetail.AccountIndex)
-				isKeyExist[txDetail.AccountIndex] = true
-			}
 			// get account info
-			if proverAccountMap[txDetail.AccountIndex] == nil {
+			if accountMap[txDetail.AccountIndex] == nil {
 				accountInfo, err := accountModel.GetConfirmedAccountByAccountIndex(txDetail.AccountIndex)
 				if err != nil {
 					logx.Errorf("[ConstructProverInfo] unable to get valid account by index: %s", err.Error())
 					return nil, nil, nil, nil, err
 				}
-				proverAccountMap[txDetail.AccountIndex] = new(ProverAccountInfo)
 				// get current nonce
 				accountInfo.Nonce = txDetail.Nonce
-				proverAccountMap[txDetail.AccountIndex].AccountInfo = accountInfo
+				accountMap[txDetail.AccountIndex] = accountInfo
+			} else {
+				if lastAccountOrder != txDetail.AccountOrder {
+					if oTx.AccountIndex == txDetail.AccountIndex {
+						accountMap[txDetail.AccountIndex].Nonce = oTx.Nonce
+					}
+				}
+			}
+			if lastAccountOrder != txDetail.AccountOrder {
+				accountKeys = append(accountKeys, txDetail.AccountIndex)
+				lastAccountOrder = txDetail.AccountOrder
+				proverAccounts = append(proverAccounts, &ProverAccountInfo{
+					AccountInfo: &Account{
+						AccountIndex:    accountMap[txDetail.AccountIndex].AccountIndex,
+						AccountName:     accountMap[txDetail.AccountIndex].AccountName,
+						PublicKey:       accountMap[txDetail.AccountIndex].PublicKey,
+						AccountNameHash: accountMap[txDetail.AccountIndex].AccountNameHash,
+						L1Address:       accountMap[txDetail.AccountIndex].L1Address,
+						Nonce:           accountMap[txDetail.AccountIndex].Nonce,
+						CollectionNonce: accountMap[txDetail.AccountIndex].CollectionNonce,
+						AssetInfo:       accountMap[txDetail.AccountIndex].AssetInfo,
+						AssetRoot:       accountMap[txDetail.AccountIndex].AssetRoot,
+						Status:          accountMap[txDetail.AccountIndex].Status,
+					},
+				})
+				accountCount++
 			}
 			if accountAssetMap[txDetail.AccountIndex] == nil {
 				accountAssetMap[txDetail.AccountIndex] = make(map[int64]*AccountAsset)
@@ -93,14 +94,14 @@ func ConstructProverInfo(
 					logx.Errorf("[ConstructProverInfo] unable to parse account asset:%s", err.Error())
 					return nil, nil, nil, nil, err
 				}
-				proverAccountMap[txDetail.AccountIndex].AccountAssets = append(
-					proverAccountMap[txDetail.AccountIndex].AccountAssets,
+				proverAccounts[accountCount].AccountAssets = append(
+					proverAccounts[accountCount].AccountAssets,
 					oAsset,
 				)
 			} else {
 				// set account before info
-				proverAccountMap[txDetail.AccountIndex].AccountAssets = append(
-					proverAccountMap[txDetail.AccountIndex].AccountAssets,
+				proverAccounts[accountCount].AccountAssets = append(
+					proverAccounts[accountCount].AccountAssets,
 					&AccountAsset{
 						AssetId:                  accountAssetMap[txDetail.AccountIndex][txDetail.AssetId].AssetId,
 						Balance:                  accountAssetMap[txDetail.AccountIndex][txDetail.AssetId].Balance,
@@ -110,8 +111,8 @@ func ConstructProverInfo(
 				)
 			}
 			// set tx detail
-			proverAccountMap[txDetail.AccountIndex].AssetsRelatedTxDetails = append(
-				proverAccountMap[txDetail.AccountIndex].AssetsRelatedTxDetails,
+			proverAccounts[accountCount].AssetsRelatedTxDetails = append(
+				proverAccounts[accountCount].AssetsRelatedTxDetails,
 				txDetail,
 			)
 			// update asset info
@@ -148,25 +149,20 @@ func ConstructProverInfo(
 			proverNftInfo.NftInfo = nftInfo
 			break
 		case commonAsset.CollectionNonceAssetType:
-			if !isKeyExist[txDetail.AccountIndex] {
-				accountKeys = append(accountKeys, txDetail.AccountIndex)
-				isKeyExist[txDetail.AccountIndex] = true
-			}
 			// get account info
-			if proverAccountMap[txDetail.AccountIndex] == nil {
+			if accountMap[txDetail.AccountIndex] == nil {
 				accountInfo, err := accountModel.GetConfirmedAccountByAccountIndex(txDetail.AccountIndex)
 				if err != nil {
 					logx.Errorf("[ConstructProverInfo] unable to get valid account by index: %s", err.Error())
 					return nil, nil, nil, nil, err
 				}
-				proverAccountMap[txDetail.AccountIndex] = new(ProverAccountInfo)
 				// get current nonce
 				accountInfo.Nonce = txDetail.Nonce
 				accountInfo.CollectionNonce = txDetail.CollectionNonce
-				proverAccountMap[txDetail.AccountIndex].AccountInfo = accountInfo
+				accountMap[txDetail.AccountIndex] = accountInfo
 			} else {
-				proverAccountMap[txDetail.AccountIndex].AccountInfo.Nonce = txDetail.Nonce
-				proverAccountMap[txDetail.AccountIndex].AccountInfo.CollectionNonce = txDetail.CollectionNonce
+				accountMap[txDetail.AccountIndex].Nonce = txDetail.Nonce
+				accountMap[txDetail.AccountIndex].CollectionNonce = txDetail.CollectionNonce
 			}
 			break
 		default:
@@ -175,5 +171,5 @@ func ConstructProverInfo(
 				errors.New("[ConstructProverInfo] invalid asset type")
 		}
 	}
-	return accountKeys, proverAccountMap, proverLiquidityInfo, proverNftInfo, nil
+	return accountKeys, proverAccounts, proverLiquidityInfo, proverNftInfo, nil
 }

@@ -189,6 +189,7 @@ func MonitorMempool(
 				AccountName:  commonConstant.NilAccountName,
 				BalanceDelta: poolInfo.String(),
 				Order:        0,
+				AccountOrder: commonConstant.NilAccountOrder,
 			}
 			txInfoBytes, err := json.Marshal(txInfo)
 			if err != nil {
@@ -259,6 +260,7 @@ func MonitorMempool(
 				AccountName:  commonConstant.NilAccountName,
 				BalanceDelta: poolInfo.String(),
 				Order:        0,
+				AccountOrder: commonConstant.NilAccountOrder,
 			}
 			txInfoBytes, err := json.Marshal(txInfo)
 			if err != nil {
@@ -319,6 +321,7 @@ func MonitorMempool(
 				AccountName:  accountInfo.AccountName,
 				BalanceDelta: balanceDelta.String(),
 				Order:        0,
+				AccountOrder: 0,
 			})
 			// serialize oTx info
 			txInfoBytes, err := json.Marshal(txInfo)
@@ -400,6 +403,7 @@ func MonitorMempool(
 				AccountIndex: int64(txInfo.AccountIndex),
 				AccountName:  accountInfo.AccountName,
 				BalanceDelta: nftInfo.String(),
+				AccountOrder: commonConstant.NilAccountOrder,
 			})
 			// serialize oTx info
 			txInfoBytes, err := json.Marshal(txInfo)
@@ -484,6 +488,8 @@ func MonitorMempool(
 				AccountIndex: int64(txInfo.AccountIndex),
 				AccountName:  accountInfo.AccountName,
 				BalanceDelta: balanceDelta.String(),
+				Order:        0,
+				AccountOrder: 0,
 			})
 			// serialize oTx info
 			txInfoBytes, err := json.Marshal(txInfo)
@@ -593,6 +599,8 @@ func MonitorMempool(
 				AccountIndex: int64(txInfo.AccountIndex),
 				AccountName:  accountInfo.AccountName,
 				BalanceDelta: newNftInfo.String(),
+				Order:        0,
+				AccountOrder: commonConstant.NilAccountOrder,
 			})
 			// serialize oTx info
 			txInfoBytes, err := json.Marshal(txInfo)

@@ -111,6 +111,7 @@ func VerifyMintNftTxInfo(
 	// compute tx details
 	// from account asset gas
 	order := int64(0)
+	accountOrder := int64(0)
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    GeneralAssetType,
@@ -118,9 +119,10 @@ func VerifyMintNftTxInfo(
 		AccountName:  accountInfoMap[txInfo.CreatorAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
-	// to account nft info
+	// nft info
 	order++
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.NftIndex,
@@ -129,9 +131,11 @@ func VerifyMintNftTxInfo(
 		AccountName:  accountInfoMap[txInfo.ToAccountIndex].AccountName,
 		BalanceDelta: newNftInfo.String(),
 		Order:        order,
+		AccountOrder: commonConstant.NilAccountOrder,
 	})
 	// gas account asset gas
 	order++
+	accountOrder++
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    GeneralAssetType,
@@ -139,7 +143,8 @@ func VerifyMintNftTxInfo(
 		AccountName:  accountInfoMap[txInfo.GasAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	return txDetails, nil
 }

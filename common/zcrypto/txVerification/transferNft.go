@@ -45,14 +45,12 @@ func VerifyTransferNftTxInfo(
 ) (txDetails []*MempoolTxDetail, err error) {
 	// verify params
 	if accountInfoMap[txInfo.FromAccountIndex] == nil ||
-		accountInfoMap[txInfo.ToAccountIndex] == nil ||
 		accountInfoMap[txInfo.GasAccountIndex] == nil ||
 		accountInfoMap[txInfo.FromAccountIndex].AssetInfo == nil ||
 		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId] == nil ||
 		nftInfo == nil ||
 		nftInfo.OwnerAccountIndex != txInfo.FromAccountIndex ||
 		nftInfo.NftIndex != txInfo.NftIndex ||
-		nftInfo.NftContentHash != txInfo.NftContentHash ||
 		txInfo.GasFeeAssetAmount.Cmp(ZeroBigInt) < 0 {
 		logx.Errorf("[VerifyTransferNftTxInfo] invalid params")
 		return nil, errors.New("[VerifyTransferNftTxInfo] invalid params")

@@ -16,6 +16,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
 	"testing"
+	"time"
 
 	"github.com/zeromicro/go-zero/core/conf"
 )
@@ -64,6 +65,7 @@ func constructSendWithdrawTxInfo() string {
 	if err != nil {
 		panic(err)
 	}
+	expiredAt := time.Now().Add(time.Hour * 2).UnixMilli()
 	txInfo := &commonTx.WithdrawTxInfo{
 		FromAccountIndex:  2,
 		AssetId:           0,
@@ -73,6 +75,7 @@ func constructSendWithdrawTxInfo() string {
 		GasFeeAssetAmount: big.NewInt(5000),
 		ToAddress:         "0x99AC8881834797ebC32f185ee27c2e96842e1a47",
 		Nonce:             2,
+		ExpiredAt:         expiredAt,
 		Sig:               nil,
 	}
 	hFunc := mimc.NewMiMC()

@@ -9,7 +9,6 @@ import (
 	curve "github.com/zecrey-labs/zecrey-crypto/ecc/ztwistededwards/tebn254"
 	"github.com/zecrey-labs/zecrey-crypto/wasm/zecrey-legend/legendTxTypes"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
-	"github.com/zecrey-labs/zecrey-legend/common/tree"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/config"
@@ -23,11 +22,8 @@ import (
 	"github.com/zeromicro/go-zero/core/conf"
 )
 
-var configFile = flag.String("f",
-	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\rpc\\globalRPC\\etc\\globalrpc.yaml", "the config file")
-
 // /Users/gavin/Desktop/zecrey-v2
-func TestSendTransferTx(t *testing.T) {
+func TestSendTransferNftTx(t *testing.T) {
 	flag.Parse()
 
 	var c config.Config
@@ -44,11 +40,11 @@ func TestSendTransferTx(t *testing.T) {
 	*/
 
 	srv := server.NewGlobalRPCServer(ctx)
-	txInfo := constructSendTransferTxInfo()
+	txInfo := constructSendTransferNftTxInfo()
 	resp, err := srv.SendTx(
 		context.Background(),
 		&globalRPCProto.ReqSendTx{
-			TxType: commonTx.TxTypeTransfer,
+			TxType: commonTx.TxTypeTransferNft,
 			TxInfo: txInfo,
 		},
 	)
@@ -63,32 +59,31 @@ func TestSendTransferTx(t *testing.T) {
 	fmt.Printf("Starting rpc server at %s...\n", c.ListenOn)
 }
 
-func constructSendTransferTxInfo() string {
+func constructSendTransferNftTxInfo() string {
 	// from sher.legend to gavin.legend
-	seed := "28e1a3762ff9944e9a4ad79477b756ef0aff3d2af76f0f40a0c3ec6ca76cf24b"
+	//seed := "28e1a3762ff9944e9a4ad79477b756ef0aff3d2af76f0f40a0c3ec6ca76cf24b"
+	seed := "17673b9a9fdec6dc90c7cc1eb1c939134dfb659d2f08edbe071e5c45f343d008"
 	key, err := curve.GenerateEddsaPrivateKey(seed)
 	if err != nil {
 		panic(err)
 	}
-	nameHash, err := util.AccountNameHash("gavin.legend")
+	nameHash, err := util.AccountNameHash("sher.legend")
 	if err != nil {
 		panic(err)
 	}
 	expiredAt := time.Now().Add(time.Hour * 2).UnixMilli()
-	txInfo := &commonTx.TransferTxInfo{
-		FromAccountIndex:  2,
-		ToAccountIndex:    3,
+	txInfo := &commonTx.TransferNftTxInfo{
+		FromAccountIndex:  3,
+		ToAccountIndex:    2,
 		ToAccountNameHash: nameHash,
-		AssetId:           0,
-		AssetAmount:       big.NewInt(100000),
+		NftIndex:          0,
 		GasAccountIndex:   1,
-		GasFeeAssetId:     1,
+		GasFeeAssetId:     0,
 		GasFeeAssetAmount: big.NewInt(5000),
-		Memo:              "transfer",
 		CallData:          "",
-		CallDataHash:      tree.NilHash,
-		Nonce:             1,
+		CallDataHash:      nil,
 		ExpiredAt:         expiredAt,
+		Nonce:             1,
 		Sig:               nil,
 	}
 	hFunc := mimc.NewMiMC()
@@ -96,7 +91,7 @@ func constructSendTransferTxInfo() string {
 	callDataHash := hFunc.Sum(nil)
 	txInfo.CallDataHash = callDataHash
 	hFunc.Reset()
-	msgHash, err := legendTxTypes.ComputeTransferMsgHash(txInfo, hFunc)
+	msgHash, err := legendTxTypes.ComputeTransferNftMsgHash(txInfo, hFunc)
 	if err != nil {
 		panic(err)
 	}

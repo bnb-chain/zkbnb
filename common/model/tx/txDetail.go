@@ -52,6 +52,7 @@ type (
 		Balance         string
 		BalanceDelta    string
 		Order           int64
+		AccountOrder    int64
 		Nonce           int64
 		CollectionNonce int64
 	}

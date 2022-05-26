@@ -59,6 +59,7 @@ type (
 		AccountName  string
 		BalanceDelta string
 		Order        int64
+		AccountOrder int64
 	}
 
 	LatestTimeMempoolDetails struct {

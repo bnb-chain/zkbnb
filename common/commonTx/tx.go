@@ -230,19 +230,28 @@ func ParseTransferNftTxInfo(txInfoStr string) (txInfo *TransferNftTxInfo, err er
 	return txInfo, nil
 }
 
-func ParseSetNftPriceTxInfo(txInfoStr string) (txInfo *AtomicMatchTxInfo, err error) {
+func ParseOfferTxInfo(txInfoStr string) (txInfo *OfferTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
-		logx.Errorf("[ParseSetNftPriceTxInfo] unable to parse tx info: %s", err.Error())
+		logx.Errorf("[ParseOfferTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil
 }
 
-func ParseBuyNftTxInfo(txInfoStr string) (txInfo *CancelOfferTxInfo, err error) {
+func ParseAtomicMatchTxInfo(txInfoStr string) (txInfo *AtomicMatchTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
-		logx.Errorf("[ParseBuyNftTxInfo] unable to parse tx info: %s", err.Error())
+		logx.Errorf("[ParseAtomicMatchTxInfo] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	return txInfo, nil
+}
+
+func ParseCancelOfferTxInfo(txInfoStr string) (txInfo *CancelOfferTxInfo, err error) {
+	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
+	if err != nil {
+		logx.Errorf("[ParseCancelOfferTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil

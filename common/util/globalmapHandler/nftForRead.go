@@ -70,12 +70,11 @@ func GetLatestNftInfoForRead(
 			dbNftInfo.CreatorTreasuryRate,
 			dbNftInfo.CollectionId,
 		)
-		if err != nil {
-			logx.Errorf("[GetLatestAccountInfo] unable to construct nft info: %s", err.Error())
-			return nil, err
-		}
 		for _, mempoolTx := range mempoolTxs {
 			for _, txDetail := range mempoolTx.MempoolDetails {
+				if txDetail.AssetType != commonAsset.NftAssetType {
+					continue
+				}
 				nBalance, err := commonAsset.ComputeNewBalance(commonAsset.NftAssetType, nftInfo.String(), txDetail.BalanceDelta)
 				if err != nil {
 					logx.Errorf("[GetLatestAccountInfo] unable to compute new balance: %s", err.Error())

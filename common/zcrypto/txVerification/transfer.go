@@ -27,20 +27,6 @@ import (
 	"math/big"
 )
 
-/*
-	VerifyTransferTx:
-	accounts order is:
-	- FromAccount
-		- Assets
-			- AssetA
-			- AssetGas
-	- ToAccount
-		- Assets
-			- AssetA
-	- GasAccount
-		- Assets
-			- AssetGas
-*/
 func VerifyTransferTxInfo(
 	accountInfoMap map[int64]*AccountInfo,
 	txInfo *TransferTxInfo,
@@ -123,6 +109,7 @@ func VerifyTransferTxInfo(
 	// compute tx details
 	// from account asset A
 	order := int64(0)
+	accountOrder := int64(0)
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.AssetId,
 		AssetType:    GeneralAssetType,
@@ -130,7 +117,8 @@ func VerifyTransferTxInfo(
 		AccountName:  accountInfoMap[txInfo.FromAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.AssetId, ffmath.Neg(txInfo.AssetAmount), ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	order++
 	// from account asset gas
@@ -141,10 +129,12 @@ func VerifyTransferTxInfo(
 		AccountName:  accountInfoMap[txInfo.FromAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	// to account asset a
 	order++
+	accountOrder++
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.AssetId,
 		AssetType:    GeneralAssetType,
@@ -152,10 +142,12 @@ func VerifyTransferTxInfo(
 		AccountName:  accountInfoMap[txInfo.ToAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.AssetId, txInfo.AssetAmount, ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	// gas account asset gas
 	order++
+	accountOrder++
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    GeneralAssetType,
@@ -163,7 +155,8 @@ func VerifyTransferTxInfo(
 		AccountName:  accountInfoMap[txInfo.GasAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	return txDetails, nil
 }

@@ -31,6 +31,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
 	"reflect"
 	"strconv"
+	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -71,6 +72,13 @@ func (l *SendTxLogic) sendCreateCollectionTx(rawTxInfo string) (txId string, err
 	if gasAccountIndex != txInfo.GasAccountIndex {
 		logx.Errorf("[sendCreateCollectionTx] invalid gas account index")
 		return "", l.HandleCreateFailCreateCollectionTx(txInfo, errors.New("[sendCreateCollectionTx] invalid gas account index"))
+	}
+
+	// check expired at
+	now := time.Now().UnixMilli()
+	if txInfo.ExpiredAt < now {
+		logx.Errorf("[sendCreateCollectionTx] invalid time stamp")
+		return "", l.HandleCreateFailCreateCollectionTx(txInfo, errors.New("[sendCreateCollectionTx] invalid time stamp"))
 	}
 
 	var (

@@ -29,18 +29,6 @@ import (
 	"math/big"
 )
 
-/*
-	VerifySwapTx:
-	accounts order is:
-	- FromAccount
-		- Assets:
-			- AssetA
-			- AssetB
-			- AssetGas
-	- GasAccount
-		- Assets:
-			- AssetGas
-*/
 func VerifySwapTxInfo(
 	accountInfoMap map[int64]*AccountInfo,
 	liquidityInfo *LiquidityInfo,
@@ -180,6 +168,7 @@ func VerifySwapTxInfo(
 	// compute tx details
 	// from account asset A
 	order := int64(0)
+	accountOrder := int64(0)
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.AssetAId,
 		AssetType:    GeneralAssetType,
@@ -187,7 +176,8 @@ func VerifySwapTxInfo(
 		AccountName:  accountInfoMap[txInfo.FromAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.AssetAId, ffmath.Neg(txInfo.AssetAAmount), ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	// from account asset B
 	order++
@@ -198,7 +188,8 @@ func VerifySwapTxInfo(
 		AccountName:  accountInfoMap[txInfo.FromAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.AssetBId, txInfo.AssetBAmountDelta, ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	// from account asset Gas
 	order++
@@ -209,7 +200,8 @@ func VerifySwapTxInfo(
 		AccountName:  accountInfoMap[txInfo.FromAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	// pool info
 	order++
@@ -220,9 +212,11 @@ func VerifySwapTxInfo(
 		AccountName:  commonConstant.NilAccountName,
 		BalanceDelta: poolDeltaForToAccount.String(),
 		Order:        order,
+		AccountOrder: commonConstant.NilAccountOrder,
 	})
 	// gas account asset Gas
 	order++
+	accountOrder++
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    GeneralAssetType,
@@ -230,7 +224,8 @@ func VerifySwapTxInfo(
 		AccountName:  accountInfoMap[txInfo.GasAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	return txDetails, nil
 }

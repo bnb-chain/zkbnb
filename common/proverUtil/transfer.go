@@ -20,6 +20,7 @@ package proverUtil
 import (
 	"errors"
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -51,7 +52,7 @@ func ConstructTransferCryptoTx(
 		logx.Errorf("[ConstructTransferCryptoTx] unable to convert to crypto register zns tx: %s", err.Error())
 		return nil, err
 	}
-	accountKeys, proverAccountMap, proverLiquidityInfo, proverNftInfo, err := ConstructProverInfo(oTx, accountModel)
+	accountKeys, proverAccounts, proverLiquidityInfo, proverNftInfo, err := ConstructProverInfo(oTx, accountModel)
 	if err != nil {
 		logx.Errorf("[ConstructTransferCryptoTx] unable to construct prover info: %s", err.Error())
 		return nil, err
@@ -64,7 +65,7 @@ func ConstructTransferCryptoTx(
 		liquidityTree,
 		nftTree,
 		accountKeys,
-		proverAccountMap,
+		proverAccounts,
 		proverLiquidityInfo,
 		proverNftInfo,
 	)
@@ -99,6 +100,7 @@ func ToCryptoTransferTx(txInfo *commonTx.TransferTxInfo) (info *CryptoTransferTx
 	info = &CryptoTransferTx{
 		FromAccountIndex:  txInfo.FromAccountIndex,
 		ToAccountIndex:    txInfo.ToAccountIndex,
+		ToAccountNameHash: common.FromHex(txInfo.ToAccountNameHash),
 		AssetId:           txInfo.AssetId,
 		AssetAmount:       packedAmount,
 		GasAccountIndex:   txInfo.GasAccountIndex,

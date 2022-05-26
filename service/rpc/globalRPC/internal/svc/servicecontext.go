@@ -30,7 +30,8 @@ type ServiceContext struct {
 	LiquidityHistoryModel liquidity.LiquidityHistoryModel
 	BlockModel            block.BlockModel
 
-	NftModel nft.L2NftModel
+	NftModel   nft.L2NftModel
+	OfferModel nft.OfferModel
 
 	L2AssetModel l2asset.L2AssetInfoModel
 
@@ -68,6 +69,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		LiquidityHistoryModel: liquidity.NewLiquidityHistoryModel(conn, c.CacheRedis, gormPointer),
 		BlockModel:            block.NewBlockModel(conn, c.CacheRedis, gormPointer, redisConn),
 		NftModel:              nft.NewL2NftModel(conn, c.CacheRedis, gormPointer),
+		OfferModel:            nft.NewOfferModel(conn, c.CacheRedis, gormPointer),
 		L2AssetModel:          l2asset.NewL2AssetInfoModel(conn, c.CacheRedis, gormPointer),
 		SysConfigModel:        sysconfig.NewSysconfigModel(conn, c.CacheRedis, gormPointer),
 		RedisConnection:       redisConn,

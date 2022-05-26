@@ -34,6 +34,7 @@ import (
 	"math/big"
 	"reflect"
 	"strconv"
+	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -68,6 +69,13 @@ func (l *SendTxLogic) sendSwapTx(rawTxInfo string) (txId string, err error) {
 	if gasAccountIndex != txInfo.GasAccountIndex {
 		logx.Errorf("[sendSwapTx] invalid gas account index")
 		return "", l.HandleCreateFailSwapTx(txInfo, errors.New("[sendSwapTx] invalid gas account index"))
+	}
+
+	// check expired at
+	now := time.Now().UnixMilli()
+	if txInfo.ExpiredAt < now {
+		logx.Errorf("[sendSwapTx] invalid time stamp")
+		return "", l.HandleCreateFailSwapTx(txInfo, errors.New("[sendSwapTx] invalid time stamp"))
 	}
 
 	var (

@@ -33,6 +33,7 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"reflect"
 	"strconv"
+	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -93,6 +94,13 @@ func (l *SendTxLogic) sendMintNftTx(rawTxInfo string) (txId string, err error) {
 	if gasAccountIndex != txInfo.GasAccountIndex {
 		logx.Errorf("[sendMintNftTx] invalid gas account index")
 		return "", l.HandleCreateFailMintNftTx(txInfo, errors.New("[sendMintNftTx] invalid gas account index"))
+	}
+
+	// check expired at
+	now := time.Now().UnixMilli()
+	if txInfo.ExpiredAt < now {
+		logx.Errorf("[sendMintNftTx] invalid time stamp")
+		return "", l.HandleCreateFailMintNftTx(txInfo, errors.New("[sendMintNftTx] invalid time stamp"))
 	}
 
 	var (

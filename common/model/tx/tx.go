@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"sort"
 	"strconv"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -613,6 +614,11 @@ func (m *defaultTxModel) GetTxByTxHash(txHash string) (tx *Tx, err error) {
 		logx.Error("[txVerification.GetTxByTxHash] Get Associate TxDetails Error")
 		return nil, err
 	}
+	// re-order tx details
+	sort.SliceStable(tx.TxDetails, func(i, j int) bool {
+		return tx.TxDetails[i].Order < tx.TxDetails[j].Order
+	})
+
 	return tx, nil
 }
 
