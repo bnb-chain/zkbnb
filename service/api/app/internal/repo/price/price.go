@@ -25,9 +25,9 @@ type price struct {
 	Return: price float64, err error
 	Description: get currency price cache by currency symbol
 */
-func (m *price) GetCurrencyPrice(latestQuoteSymbol string) (price float64, err error) {
+func (m *price) GetCurrencyPrice(l2Symbol string) (price float64, err error) {
 	// quote.Quote["USD"].Price
-	key := fmt.Sprintf("%s%v", cachePriceSymbolPrefix, latestQuoteSymbol)
+	key := fmt.Sprintf("%s%v", cachePriceSymbolPrefix, l2Symbol)
 	result, err := m.cache.Get(key, price)
 	if err != nil {
 		errInfo := fmt.Sprintf("[PriceModel.GetCurrencyPrice.Getcache] %s %s", key, err)
@@ -79,21 +79,22 @@ func getQuotesLatest(l2Symbol string) (quotesLatest []QuoteLatest, err error) {
 	if err != nil {
 		return nil, ErrIoutilReadAll.RefineError(err.Error())
 	}
+	// TODO: currencyPrice's interface{} looks like not necessary, body could Unmarshal to a fixed type struct
 	currencyPrice := &currencyPrice{}
 	err = json.Unmarshal(body, &currencyPrice)
 	if err != nil {
 		return nil, ErrJsonUnmarshal.RefineError(err.Error() + string(body))
 	}
-	ifcs, ok := currencyPrice.data.(interface{})
+	ifcs, ok := currencyPrice.Data.(interface{})
 	if !ok {
 		return nil, ErrTypeAssertion
 	}
 	for _, coinObj := range ifcs.(map[string]interface{}) {
-		quoteLatest := QuoteLatest{}
 		b, err := json.Marshal(coinObj)
 		if err != nil {
 			return nil, ErrJsonMarshal
 		}
+		quoteLatest := QuoteLatest{}
 		err = json.Unmarshal(b, quoteLatest)
 		if err != nil {
 			return nil, ErrJsonUnmarshal

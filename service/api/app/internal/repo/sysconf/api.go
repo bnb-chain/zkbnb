@@ -1,4 +1,4 @@
-package price
+package sysconf
 
 import (
 	"context"
@@ -13,23 +13,26 @@ import (
 	"gorm.io/gorm"
 )
 
-type Price interface {
-	GetCurrencyPrice(l2Symbol string) (price float64, err error)
+type Sysconf interface {
+	GetSysconfigByName(name string) (info *SysconfInfo, err error)
+	CreateSysconfig(config *SysconfInfo) error
+	CreateSysconfigInBatches(configs []*SysconfInfo) (rowsAffected int64, err error)
+	UpdateSysconfig(config *SysconfInfo) error
 }
 
-var singletonValue *price
+var singletonValue *sysconf
 var once sync.Once
 
-func New(c config.Config) Price {
+func New(c config.Config) Sysconf {
 	once.Do(func() {
 		conn := sqlx.NewSqlConn("postgres", c.Postgres.DataSource)
 		gormPointer, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
 		if err != nil {
 			logx.Errorf("gorm connect db error, err = %s", err.Error())
 		}
-		singletonValue = &price{
+		singletonValue = &sysconf{
 			cachedConn: sqlc.NewConn(conn, c.CacheRedis),
-			table:      `price`,
+			table:      `sys_config`,
 			db:         gormPointer,
 			cache:      multcache.NewGoCache(context.Background(), 100, 10),
 		}

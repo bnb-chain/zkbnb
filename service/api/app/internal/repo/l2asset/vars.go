@@ -13,11 +13,5 @@ var (
 )
 
 var (
-	ErrNewHttpRequest = zerror.New(40000, "http.NewRequest err")
-	ErrHttpClientDo   = zerror.New(40001, "http.Client.Do err")
-	ErrIoutilReadAll  = zerror.New(40002, "ioutil.ReadAll err")
-	ErrJsonUnmarshal  = zerror.New(40003, "json.Unmarshal err")
-	ErrJsonMarshal    = zerror.New(40004, "json.Marshal err")
-	ErrTypeAssertion  = zerror.New(40005, "type assertion err")
-	ErrSetCache       = zerror.New(40006, "set cache err")
+	ErrNotExistInSql = zerror.New(40000, "not exist in sql")
 )

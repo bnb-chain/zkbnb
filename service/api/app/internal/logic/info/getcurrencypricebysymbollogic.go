@@ -32,7 +32,7 @@ func NewGetCurrencyPriceBySymbolLogic(ctx context.Context, svcCtx *svc.ServiceCo
 func (l *GetCurrencyPriceBySymbolLogic) GetCurrencyPriceBySymbol(req *types.ReqGetCurrencyPriceBySymbol) (resp *types.RespGetCurrencyPriceBySymbol, err error) {
 	resp.Price, err = l.price.GetCurrencyPrice(req.Symbol)
 	if err != nil {
-		logx.Error("[GetAssets] err:%v", err)
+		logx.Error("[GetCurrencyPrice] err:%v", err)
 		return nil, err
 	}
 	l2Asset, err := l.l2asset.GetL2AssetInfoBySymbol(req.Symbol)
