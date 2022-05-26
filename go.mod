@@ -8,18 +8,12 @@ require (
 )
 
 require (
-	github.com/consensys/gnark-crypto v0.7.0
-	github.com/eko/gocache/v2 v2.3.1 // indirect
-	github.com/ethereum/go-ethereum v1.10.17
-	github.com/go-redis/redis/v8 v8.11.5 // indirect
-	github.com/google/uuid v1.3.0
-	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
-	github.com/robfig/cron/v3 v3.0.1
-	github.com/zecrey-labs/zecrey-crypto v0.0.36
-	github.com/zecrey-labs/zecrey-eth-rpc v0.0.12
-	github.com/zeromicro/go-zero/tools/goctl v1.3.5 // indirect
-	google.golang.org/grpc v1.46.0
-	google.golang.org/protobuf v1.28.0
+	github.com/eko/gocache/v2 v2.3.1
+	github.com/go-redis/redis/v8 v8.11.5
+	github.com/golang-jwt/jwt/v4 v4.3.0 // indirect
+	github.com/patrickmn/go-cache v2.1.0+incompatible
+	github.com/zeromicro/go-zero/tools/goctl v1.3.5
+	golang.org/x/crypto v0.0.0-20220321153916-2c7772ba3064 // indirect
 	gorm.io/driver/postgres v1.3.6
 )
 
