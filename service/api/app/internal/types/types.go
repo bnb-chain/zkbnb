@@ -5,7 +5,8 @@ type ReqGetStatus struct {
 }
 
 type RespGetStatus struct {
-	Status int `json:"status"`
+	Status int 			`json:"status"`
+	NetworkId int       `json:"network_id"`
 }
 
 type Asset struct {
