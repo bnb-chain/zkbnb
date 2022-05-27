@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package mempoolMonitor;
+
+option go_package = "./mempoolmonitor";
+
+message Request {
+  string ping = 1;
+}
+
+message Response {
+  string pong = 1;
+}
+
+service MempoolMonitor {
+  rpc Ping(Request) returns(Response);
+}
