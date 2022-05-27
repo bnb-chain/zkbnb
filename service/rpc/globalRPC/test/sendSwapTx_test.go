@@ -76,8 +76,6 @@ func constructSendSwapTxInfo() string {
 		AssetBId:          0,
 		AssetBMinAmount:   assetBAmount,
 		AssetBAmountDelta: nil,
-		PoolAAmount:       nil,
-		PoolBAmount:       nil,
 		GasAccountIndex:   1,
 		GasFeeAssetId:     0,
 		GasFeeAssetAmount: big.NewInt(5000),
