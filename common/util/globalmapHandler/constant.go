@@ -20,7 +20,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
-	"github.com/zecrey-labs/zecrey-legend/common/model/liquidityPair"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zeromicro/go-zero/core/stores/redis"
@@ -31,7 +30,6 @@ type (
 	AccountHistoryModel   = account.AccountHistoryModel
 	MempoolModel          = mempool.MempoolModel
 	MempoolTxDetailModel  = mempool.MempoolTxDetailModel
-	LiquidityPairModel    = liquidityPair.LiquidityPairModel
 	LiquidityModel        = liquidity.LiquidityModel
 	LiquidityHistoryModel = liquidity.LiquidityHistoryModel
 	NftModel              = nft.L2NftModel
