@@ -197,7 +197,13 @@ func (l *SendTxLogic) sendAddLiquidityTx(rawTxInfo string) (txId string, err err
 	)
 	// delete key
 	key := util.GetLiquidityKeyForWrite(txInfo.PairIndex)
+	key2 := util.GetLiquidityKeyForRead(txInfo.PairIndex)
 	_, err = l.svcCtx.RedisConnection.Del(key)
+	if err != nil {
+		logx.Errorf("[sendAddLiquidityTx] unable to delete key from redis: %s", err.Error())
+		return "", l.HandleCreateFailAddLiquidityTx(txInfo, err)
+	}
+	_, err = l.svcCtx.RedisConnection.Del(key2)
 	if err != nil {
 		logx.Errorf("[sendAddLiquidityTx] unable to delete key from redis: %s", err.Error())
 		return "", l.HandleCreateFailAddLiquidityTx(txInfo, err)
