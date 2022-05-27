@@ -7,6 +7,7 @@ var (
 	ErrNotFound               = sqlx.ErrNotFound
 	ErrInvalidMempoolTx       = errors.New("[ErrInvalidMempoolTx] invalid mempool tx")
 	ErrInvalidMempoolTxDetail = errors.New("[ErrInvalidMempoolTxDetail] invalid mempool txDtail")
+	MempoolTableName          = `mempool_tx`
 )
 
 const (
