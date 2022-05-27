@@ -16,6 +16,7 @@ import (
 type L2asset interface {
 	GetL2AssetsList() (res []*L2AssetInfo, err error)
 	GetL2AssetInfoBySymbol(symbol string) (res *L2AssetInfo, err error)
+	GetL2AssetInfoByAssetId(assetId uint32) (res *L2AssetInfo, err error)
 
 	// CreateL2AssetInfoTable() error
 	// DropL2AssetInfoTable() error
@@ -24,7 +25,6 @@ type L2asset interface {
 	// GetL2AssetsCount() (latestHeight int64, err error)
 	// GetL2AssetsListWithoutL1AssetsInfo() (res []*L2AssetInfo, err error)
 	// GetL2AssetIdByChainIdAndAssetId(chainId uint8, assetId uint32) (l2AssetId int64, err error)
-	// GetL2AssetInfoByAssetId(assetId uint32) (res *L2AssetInfo, err error)
 	// GetSimpleL2AssetInfoByAssetId(assetId uint32) (res *L2AssetInfo, err error)
 	// GetAssetIdCount() (res int64, err error)
 }

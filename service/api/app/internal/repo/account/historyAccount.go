@@ -43,7 +43,7 @@ type historyAccount struct {
 */
 func (m *historyAccount) GetAccountsList(limit int, offset int64) (accounts []*AccountHistoryInfo, err error) {
 	cacheKeyAccountsList := fmt.Sprintf("cache:AccountsHistoryList_%v_%v", limit, offset)
-	result, err := m.cache.Get(cacheKeyAccountsList, accounts,
+	result, err := m.cache.GetWithSet(cacheKeyAccountsList, accounts,
 		multcache.SqlBatchQuery, m.db, m.table, limit, offset, "account_index desc")
 	if err != nil {
 		return nil, err
@@ -63,7 +63,7 @@ func (m *historyAccount) GetAccountsList(limit int, offset int64) (accounts []*A
 */
 func (m *historyAccount) GetAccountsTotalCount() (count int64, err error) {
 	cacheKeyAccountsTotalCount := "cache:AccountsTotalCount"
-	result, err := m.cache.Get(cacheKeyAccountsTotalCount, count,
+	result, err := m.cache.GetWithSet(cacheKeyAccountsTotalCount, count,
 		multcache.SqlQueryCount, m.db, m.table,
 		"deleted_at is NULL")
 	if err != nil {

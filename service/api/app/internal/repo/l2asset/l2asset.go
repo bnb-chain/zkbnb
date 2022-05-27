@@ -1,10 +1,7 @@
 package l2asset
 
 import (
-	"fmt"
-
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
-	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"gorm.io/gorm"
 )
@@ -34,7 +31,7 @@ func (m *l2asset) GetL2AssetsList() (res []*L2AssetInfo, err error) {
 		return nil, dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
-		return nil, ErrNotFound
+		return nil, ErrNotExistInSql
 	}
 	for _, asset := range res {
 		err := m.db.Model(&asset).Association("L1AssetsInfo").Find(&asset.L1AssetsInfo)
@@ -54,14 +51,32 @@ func (m *l2asset) GetL2AssetsList() (res []*L2AssetInfo, err error) {
 func (m *l2asset) GetL2AssetInfoBySymbol(symbol string) (res *L2AssetInfo, err error) {
 	dbTx := m.db.Table(m.table).Where("l2_symbol = ?", symbol).Find(&res)
 	if dbTx.Error != nil {
-		errInfo := fmt.Sprintf("[GetL2AssetInfoBySymbol] err:%s", dbTx.Error)
-		logx.Error(errInfo)
 		return nil, dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
-		errInfo := fmt.Sprintf("[GetL2AssetInfoBySymbol] err:%s", ErrNotFound)
-		logx.Error(errInfo)
-		return nil, ErrNotFound
+		return nil, ErrNotExistInSql
+	}
+	return res, nil
+}
+
+/*
+	Func: GetL2AssetInfoByAssetId
+	Params: assetId uint32
+	Return: L2AssetInfo, error
+	Description: get layer-2 asset info by assetId
+*/
+func (m *l2asset) GetL2AssetInfoByAssetId(assetId uint32) (res *L2AssetInfo, err error) {
+	var L2AssetInfoForeignKeyColumn = "L1AssetsInfo"
+	dbTx := m.db.Table(m.table).Where("l2_asset_id = ?", assetId).Find(&res)
+	if dbTx.Error != nil {
+		return nil, dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		return nil, ErrNotExistInSql
+	}
+	err = m.db.Model(&res).Association(L2AssetInfoForeignKeyColumn).Find(&res.L1AssetsInfo)
+	if err != nil {
+		return nil, err
 	}
 	return res, nil
 }
@@ -205,34 +220,6 @@ func (m *l2asset) GetL2AssetInfoBySymbol(symbol string) (res *L2AssetInfo, err e
 // 		return 0, ErrNotFound
 // 	}
 // 	return l2Asset.L2AssetId, nil
-// }
-
-// /*
-// 	Func: GetL2AssetInfoByAssetId
-// 	Params: assetId uint32
-// 	Return: L2AssetInfo, error
-// 	Description: get layer-2 asset info by assetId
-// */
-// func (m *defaultL2AssetInfoModel) GetL2AssetInfoByAssetId(assetId uint32) (res *L2AssetInfo, err error) {
-// 	var L2AssetInfoForeignKeyColumn = "L1AssetsInfo"
-// 	dbTx := m.DB.Table(m.table).Where("l2_asset_id = ?", assetId).Find(&res)
-// 	if dbTx.Error != nil {
-// 		errInfo := fmt.Sprintf("[l2asset.GetL2AssetInfoByAssetId] %s", dbTx.Error)
-// 		logx.Error(errInfo)
-// 		return nil, dbTx.Error
-// 	}
-// 	if dbTx.RowsAffected == 0 {
-// 		errInfo := fmt.Sprintf("[l2asset.GetL2AssetInfoByAssetId] %s", ErrNotFound)
-// 		logx.Error(errInfo)
-// 		return nil, ErrNotFound
-// 	}
-// 	err = m.DB.Model(&res).Association(L2AssetInfoForeignKeyColumn).Find(&res.L1AssetsInfo)
-// 	if err != nil {
-// 		errInfo := fmt.Sprintf("[l2asset.GetL2AssetInfoByAssetId] %s", err)
-// 		logx.Error(errInfo)
-// 		return nil, err
-// 	}
-// 	return res, nil
 // }
 
 // /*

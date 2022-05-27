@@ -51,6 +51,6 @@ type QuoteLatest struct {
 }
 
 type currencyPrice struct {
-	status status      `json:"status"`
-	data   interface{} `json:"data"`
+	Status status      `json:"status"`
+	Data   interface{} `json:"data"`
 }

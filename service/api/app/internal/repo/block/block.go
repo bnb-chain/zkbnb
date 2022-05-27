@@ -47,7 +47,7 @@ type block struct {
 	Description:  For API /api/v1/info/getLayer2BasicInfo
 */
 func (m *block) GetExecutedBlocksCount() (count int64, err error) {
-	result, err := m.cache.Get(cacheBlockExecutedCountPrefix, count,
+	result, err := m.cache.GetWithSet(cacheBlockExecutedCountPrefix, count,
 		multcache.SqlQueryCount, m.db, m.table,
 		"block_status = ? and deleted_at is NULL", StatusExecuted)
 	if err != nil {
@@ -67,7 +67,7 @@ func (m *block) GetExecutedBlocksCount() (count int64, err error) {
 	Description:  For API /api/v1/info/getLayer2BasicInfo
 */
 func (m *block) GetCommitedBlocksCount() (count int64, err error) {
-	result, err := m.cache.Get(cacheBlockCommittedCountPrefix, count,
+	result, err := m.cache.GetWithSet(cacheBlockCommittedCountPrefix, count,
 		multcache.SqlQueryCount, m.db, m.table,
 		"block_status >= ? and deleted_at is NULL", StatusCommitted)
 	if err != nil {

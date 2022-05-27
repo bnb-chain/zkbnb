@@ -31,7 +31,7 @@ type tx struct {
 	Description: used for counting total transactions for explorer dashboard
 */
 func (m *tx) GetTxsTotalCount() (count int64, err error) {
-	result, err := m.cache.Get(cacheZecreyTxTxCountPrefix, count,
+	result, err := m.cache.GetWithSet(cacheZecreyTxTxCountPrefix, count,
 		multcache.SqlQueryCount, m.db, m.table,
 		"deleted_at is NULL")
 	if err != nil {

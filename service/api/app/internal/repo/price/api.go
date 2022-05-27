@@ -14,7 +14,7 @@ import (
 )
 
 type Price interface {
-	GetCurrencyPrice(latestQuoteSymbol string) (price float64, err error)
+	GetCurrencyPrice(l2Symbol string) (price float64, err error)
 }
 
 var singletonValue *price

@@ -9,6 +9,9 @@ import (
 const (
 	maxAccountNameLength          = 30
 	maxAccountNameLengthOmitSpace = 20
+
+	minAssetId = 0
+	maxAssetId = 1 << 32
 )
 
 func CheckAccountName(accountName string) bool {
@@ -18,6 +21,10 @@ func CheckAccountName(accountName string) bool {
 func CheckFormatAccountName(accountName string) bool {
 	return len(accountName) > maxAccountNameLengthOmitSpace
 }
+
+// func CheckeAssetId(assetId uint16) bool {
+// 	return assetId > maxAssetId
+// }
 
 func FormatSting(name string) string {
 	name = strings.ToLower(name)

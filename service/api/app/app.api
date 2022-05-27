@@ -11,6 +11,7 @@ type (
 	ReqGetStatus  struct{}
 	RespGetStatus {
 		Status int `json:"status"`
+		NetworkId int        `json:"network_id"`
 	}
 )
 
@@ -168,7 +169,6 @@ type (
 		L2AssetSymbol   string `json:"l2_asset_symbol"`
 	}
 	RespGetAssetsList {
-		NetworkId int        `json:"network_id"`
 		L1Assets  []*L1Asset `json:"l1_assets"`
 		L2Assets  []*L2Asset `json:"l2_assets"`
 	}
