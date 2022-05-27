@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	table "github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/config"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -14,10 +15,10 @@ import (
 )
 
 type Sysconf interface {
-	GetSysconfigByName(name string) (info *SysconfInfo, err error)
-	CreateSysconfig(config *SysconfInfo) error
-	CreateSysconfigInBatches(configs []*SysconfInfo) (rowsAffected int64, err error)
-	UpdateSysconfig(config *SysconfInfo) error
+	GetSysconfigByName(name string) (info *table.Sysconfig, err error)
+	CreateSysconfig(config *table.Sysconfig) error
+	CreateSysconfigInBatches(configs []*table.Sysconfig) (rowsAffected int64, err error)
+	UpdateSysconfig(config *table.Sysconfig) error
 }
 
 var singletonValue *sysconf

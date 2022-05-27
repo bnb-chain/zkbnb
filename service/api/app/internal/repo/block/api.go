@@ -4,7 +4,9 @@ import (
 	"context"
 	"sync"
 
+	table "github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
+
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/config"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
@@ -17,7 +19,7 @@ import (
 type Block interface {
 	GetCommitedBlocksCount() (count int64, err error)
 	GetExecutedBlocksCount() (count int64, err error)
-	GetBlockByBlockHeight(blockHeight int64) (block *BlockInfo, err error)
+	GetBlockByBlockHeight(blockHeight int64) (block *table.Block, err error)
 }
 
 var singletonValue *block

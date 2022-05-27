@@ -16,7 +16,6 @@ var (
 )
 
 type tx struct {
-	sqlc.CachedConn
 	table      string
 	db         *gorm.DB
 	cachedConn sqlc.CachedConn

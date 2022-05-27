@@ -20,18 +20,17 @@ import (
 	"fmt"
 	"log"
 
+	table "github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"github.com/zeromicro/go-zero/core/stores/redis"
-	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"gorm.io/gorm"
 )
 
 type historyAccount struct {
-	cachedConn sqlc.CachedConn
-	table      string
-	db         *gorm.DB
-	redisConn  *redis.Redis
-	cache      multcache.MultCache
+	table     string
+	db        *gorm.DB
+	redisConn *redis.Redis
+	cache     multcache.MultCache
 }
 
 /*
@@ -41,14 +40,14 @@ type historyAccount struct {
 	Description:  For API /api/v1/info/getAccountsList
 
 */
-func (m *historyAccount) GetAccountsList(limit int, offset int64) (accounts []*AccountHistoryInfo, err error) {
+func (m *historyAccount) GetAccountsList(limit int, offset int64) (accounts []*table.AccountHistory, err error) {
 	cacheKeyAccountsList := fmt.Sprintf("cache:AccountsHistoryList_%v_%v", limit, offset)
 	result, err := m.cache.GetWithSet(cacheKeyAccountsList, accounts,
 		multcache.SqlBatchQuery, m.db, m.table, limit, offset, "account_index desc")
 	if err != nil {
 		return nil, err
 	}
-	accounts, ok := result.([]*AccountHistoryInfo)
+	accounts, ok := result.([]*table.AccountHistory)
 	if !ok {
 		log.Fatal("Error type!")
 	}
@@ -83,7 +82,7 @@ func (m *historyAccount) GetAccountsTotalCount() (count int64, err error) {
 	Description: get account info by account name
 */
 
-func (m *historyAccount) GetAccountByAccountName(accountName string) (account *AccountHistoryInfo, err error) {
+func (m *historyAccount) GetAccountByAccountName(accountName string) (account *table.AccountHistory, err error) {
 	dbTx := m.db.Table(m.table).Where("account_name = ?", accountName).Find(&account)
 	if dbTx.Error != nil {
 		return nil, dbTx.Error
@@ -100,7 +99,7 @@ func (m *historyAccount) GetAccountByAccountName(accountName string) (account *A
 	Description: get account info by index
 */
 
-func (m *historyAccount) GetAccountByAccountIndex(accountIndex int64) (account *AccountHistoryInfo, err error) {
+func (m *historyAccount) GetAccountByAccountIndex(accountIndex int64) (account *table.AccountHistory, err error) {
 	// dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex).Find(&account)
 	// if dbTx.Error != nil {
 	// 	err := fmt.Sprintf("[accountHistory.GetAccountByAccountIndex] %s", dbTx.Error)
