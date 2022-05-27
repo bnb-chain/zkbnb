@@ -36,6 +36,7 @@ func VerifyWithdrawNftTxInfo(
 ) (txDetails []*MempoolTxDetail, err error) {
 	// verify params
 	if accountInfoMap[txInfo.AccountIndex] == nil ||
+		accountInfoMap[txInfo.CreatorAccountIndex] == nil ||
 		accountInfoMap[txInfo.GasAccountIndex] == nil ||
 		accountInfoMap[txInfo.AccountIndex].AssetInfo == nil ||
 		accountInfoMap[txInfo.AccountIndex].AssetInfo[txInfo.GasFeeAssetId] == nil ||
@@ -115,7 +116,7 @@ func VerifyWithdrawNftTxInfo(
 		Order:        order,
 		AccountOrder: accountOrder,
 	})
-	// from account nft delta
+	// nft delta
 	order++
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.NftIndex,
@@ -125,6 +126,19 @@ func VerifyWithdrawNftTxInfo(
 		BalanceDelta: newNftInfo.String(),
 		Order:        order,
 		AccountOrder: commonConstant.NilAccountOrder,
+	})
+	// creator account zero delta
+	order++
+	accountOrder++
+	txDetails = append(txDetails, &MempoolTxDetail{
+		AssetId:      txInfo.GasFeeAssetId,
+		AssetType:    GeneralAssetType,
+		AccountIndex: txInfo.CreatorAccountIndex,
+		AccountName:  accountInfoMap[txInfo.CreatorAccountIndex].AccountName,
+		BalanceDelta: commonAsset.ConstructAccountAsset(
+			txInfo.GasFeeAssetId, big.NewInt(0), big.NewInt(0), big.NewInt(0)).String(),
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	// gas account asset gas
 	order++

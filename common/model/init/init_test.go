@@ -87,6 +87,7 @@ var (
 	nftExchangeModel        = nft.NewL2NftExchangeModel(basic.Connection, basic.CacheConf, basic.DB)
 	nftExchangeHistoryModel = nft.NewL2NftExchangeHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
 	nftCollectionModel      = nft.NewL2NftCollectionModel(basic.Connection, basic.CacheConf, basic.DB)
+	nftWithdrawHistoryModel = nft.NewL2NftWithdrawHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
 )
 
 func TestDropTables(t *testing.T) {
@@ -115,6 +116,7 @@ func TestDropTables(t *testing.T) {
 	nftExchangeModel.DropL2NftExchangeTable()
 	nftExchangeHistoryModel.DropL2NftExchangeHistoryTable()
 	nftCollectionModel.DropL2NftCollectionTable()
+	nftWithdrawHistoryModel.DropL2NftWithdrawHistoryTable()
 }
 
 func TestDataInitialize(t *testing.T) {
@@ -144,6 +146,7 @@ func TestDataInitialize(t *testing.T) {
 	nftExchangeModel.CreateL2NftExchangeTable()
 	nftExchangeHistoryModel.CreateL2NftExchangeHistoryTable()
 	nftCollectionModel.CreateL2NftCollectionTable()
+	nftWithdrawHistoryModel.CreateL2NftWithdrawHistoryTable()
 
 	// init l1 asset info
 	rowsAffected, err := l2AssetInfoModel.CreateL2AssetsInfoInBatches(initAssetsInfo())
