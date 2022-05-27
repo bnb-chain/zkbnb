@@ -57,6 +57,6 @@ const (
 
 	AccountExpiryTime      = 30 // seconds
 	LiquidityExpiryTime    = 30 // seconds
-	NftExpiryTime    = 30 // seconds
+	NftExpiryTime          = 30 // seconds
 	BasicAccountExpiryTime = 30 // seconds
 )

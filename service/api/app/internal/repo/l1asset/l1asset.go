@@ -21,19 +21,6 @@ type l1asset struct {
 	cache      multcache.MultCache
 }
 
-type L1AssetInfo struct {
-	gorm.Model
-	ChainId           int64 `gorm:"index"`
-	AssetId           int64 `gorm:"index"`
-	L2AssetPk         int64 `gorm:"index"`
-	AssetName         string
-	AssetSymbol       string
-	AssetAddress      string
-	Decimals          int64
-	LockedAssetAmount int64
-	WithdrawFeeRate   int64
-}
-
 /*
 	Func: GetAssets
 	Params:

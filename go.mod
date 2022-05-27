@@ -3,7 +3,7 @@ module github.com/zecrey-labs/zecrey-legend
 go 1.16
 
 require (
-	github.com/zeromicro/go-zero v1.3.2
+	github.com/zeromicro/go-zero v1.3.3
 	gorm.io/gorm v1.23.4
 )
 
@@ -14,9 +14,10 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/zecrey-labs/zecrey-crypto v0.0.36
 	github.com/zecrey-labs/zecrey-eth-rpc v0.0.12
-	google.golang.org/grpc v1.44.0
-	google.golang.org/protobuf v1.27.1
-	gorm.io/driver/postgres v1.3.4
+	github.com/zeromicro/go-zero/tools/goctl v1.3.5 // indirect
+	google.golang.org/grpc v1.46.0
+	google.golang.org/protobuf v1.28.0
+	gorm.io/driver/postgres v1.3.6
 )
 
 replace github.com/zecrey-labs/zecrey-crypto => ../zecrey-crypto

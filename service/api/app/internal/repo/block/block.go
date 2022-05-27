@@ -4,6 +4,7 @@ import (
 	"log"
 	"strings"
 
+	table "github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/tx"
 
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
@@ -86,20 +87,13 @@ func (m *block) GetCommitedBlocksCount() (count int64, err error) {
 	Return: err error
 	Description:  For API /api/v1/block/getBlockByBlockHeight
 */
-func (m *block) GetBlockByBlockHeight(blockHeight int64) (block *BlockInfo, err error) {
-	var (
-		blockForeignKeyColumn = `BlockDetails`
-		txForeignKeyColumn    = `Txs`
-	)
+func (m *block) GetBlockByBlockHeight(blockHeight int64) (block *table.Block, err error) {
+	txForeignKeyColumn := `Txs`
 	dbTx := m.db.Table(m.table).Where("block_height = ?", blockHeight).Find(&block)
 	if dbTx.Error != nil {
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		return nil, ErrNotFound
-	}
-	err = m.db.Model(&block).Association(blockForeignKeyColumn).Find(&block.BlockDetails)
-	if err != nil {
-		return nil, err
 	}
 	err = m.db.Model(&block).Association(txForeignKeyColumn).Find(&block.Txs)
 	if err != nil {
