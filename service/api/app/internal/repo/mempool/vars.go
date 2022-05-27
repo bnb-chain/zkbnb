@@ -1,12 +1,14 @@
 package mempool
 
-import "github.com/zeromicro/go-zero/core/stores/sqlx"
-import "errors"
+import (
+	"github.com/zecrey-labs/zecrey-legend/pkg/zerror"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
+)
 
 var (
 	ErrNotFound               = sqlx.ErrNotFound
-	ErrInvalidMempoolTx       = errors.New("[ErrInvalidMempoolTx] invalid mempool tx")
-	ErrInvalidMempoolTxDetail = errors.New("[ErrInvalidMempoolTxDetail] invalid mempool txDtail")
+	ErrInvalidMempoolTx       = zerror.New(30000, "[ErrInvalidMempoolTx] invalid mempool tx")
+	ErrInvalidMempoolTxDetail = zerror.New(30001, "[ErrInvalidMempoolTxDetail] invalid mempool txDtail")
 	MempoolTableName          = `mempool_tx`
 )
 
