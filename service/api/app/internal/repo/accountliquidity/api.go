@@ -1,4 +1,4 @@
-package account
+package accountliquidity
 
 import (
 	"context"
@@ -14,21 +14,22 @@ import (
 	"gorm.io/gorm"
 )
 
-type HistoryAccount interface {
-	GetAccountByAccountName(accountName string) (account *AccountHistoryInfo, err error)
-	GetAccountByAccountIndex(accountIndex int64) (account *AccountHistoryInfo, err error)
-
-	GetAccountsList(limit int, offset int64) (accounts []*AccountHistoryInfo, err error)
-	GetAccountsTotalCount() (count int64, err error)
+type AccountLiquidity interface {
+	CreateAccountLiquidity(liquidity *AccountLiquidityInfo) error
+	CreateAccountLiquidityInBatches(entities []*AccountLiquidityInfo) error
+	GetAccountLiquidityByAccountIndex(accountIndex uint32) (entities []*AccountLiquidityInfo, err error)
+	GetLiquidityByAccountIndexAndPairIndex(accountIndex uint32, pairIndex uint32) (accountLiquidity *AccountLiquidityInfo, err error)
+	UpdateAccountLiquidity(liquidity *AccountLiquidityInfo) (bool, error)
+	UpdateAccountLiquidityInBatches(entities []*AccountLiquidityInfo) error
+	GetAllLiquidityAssets() (accountLiquidity []*AccountLiquidityInfo, err error)
 }
 
-var singletonValue *historyAccount
+var singletonValue *accountLiquidity
 var once sync.Once
 var c config.Config
 
-func New(c config.Config) HistoryAccount {
+func New(c config.Config) AccountLiquidity {
 	once.Do(func() {
-
 		conn := sqlx.NewSqlConn("postgres", c.Postgres.DataSource)
 		gormPointer, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
 		if err != nil {
@@ -38,9 +39,9 @@ func New(c config.Config) HistoryAccount {
 			p.Type = c.CacheRedis[0].Type
 			p.Pass = c.CacheRedis[0].Pass
 		})
-		singletonValue = &historyAccount{
+		singletonValue = &accountLiquidity{
 			cachedConn: sqlc.NewConn(conn, c.CacheRedis),
-			table:      `tx`,
+			table:      `account_liquidity`,
 			db:         gormPointer,
 			redisConn:  redisConn,
 			cache:      multcache.NewGoCache(context.Background(), 100, 10),

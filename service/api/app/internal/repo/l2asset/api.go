@@ -4,7 +4,9 @@ import (
 	"context"
 	"sync"
 
+	table "github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
+
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/config"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
@@ -14,19 +16,9 @@ import (
 )
 
 type L2asset interface {
-	GetL2AssetsList() (res []*L2AssetInfo, err error)
-	GetL2AssetInfoBySymbol(symbol string) (res *L2AssetInfo, err error)
-	GetL2AssetInfoByAssetId(assetId uint32) (res *L2AssetInfo, err error)
-
-	// CreateL2AssetInfoTable() error
-	// DropL2AssetInfoTable() error
-	// CreateL2AssetInfo(l2AssetInfo *L2AssetInfo) (bool, error)
-	// CreateL2AssetsInfoInBatches(l2AssetsInfo []*L2AssetInfo) (rowsAffected int64, err error)
-	// GetL2AssetsCount() (latestHeight int64, err error)
-	// GetL2AssetsListWithoutL1AssetsInfo() (res []*L2AssetInfo, err error)
-	// GetL2AssetIdByChainIdAndAssetId(chainId uint8, assetId uint32) (l2AssetId int64, err error)
-	// GetSimpleL2AssetInfoByAssetId(assetId uint32) (res *L2AssetInfo, err error)
-	// GetAssetIdCount() (res int64, err error)
+	GetL2AssetsList() (res []*table.L2AssetInfo, err error)
+	GetL2AssetInfoBySymbol(symbol string) (res *table.L2AssetInfo, err error)
+	GetL2AssetInfoByAssetId(assetId uint32) (res *table.L2AssetInfo, err error)
 }
 
 var singletonValue *l2asset
