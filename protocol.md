@@ -95,13 +95,13 @@ func ComputeAccountLeafHash(
 	hFunc := mimc.NewMiMC()
 	var buf bytes.Buffer
 	buf.Write(common.FromHex(accountNameHash))
-	err = util.WritePkIntoBuf(&buf, pk)
+	err = util.PaddingPkIntoBuf(&buf, pk)
 	if err != nil {
 		logx.Errorf("[ComputeAccountAssetLeafHash] unable to write pk into buf: %s", err.Error())
 		return nil, err
 	}
-	util.WriteInt64IntoBuf(&buf, nonce)
-	util.WriteInt64IntoBuf(&buf, collectionNonce)
+	util.PaddingInt64IntoBuf(&buf, nonce)
+	util.PaddingInt64IntoBuf(&buf, collectionNonce)
 	buf.Write(assetRoot)
 	hFunc.Reset()
 	hFunc.Write(buf.Bytes())
@@ -132,17 +132,17 @@ func ComputeAccountAssetLeafHash(
 ) (hashVal []byte, err error) {
 	hFunc := mimc.NewMiMC()
 	var buf bytes.Buffer
-	err = util.WriteStringBigIntIntoBuf(&buf, balance)
+	err = util.PaddingStringBigIntIntoBuf(&buf, balance)
 	if err != nil {
 		logx.Errorf("[ComputeAccountAssetLeafHash] invalid balance: %s", err.Error())
 		return nil, err
 	}
-	err = util.WriteStringBigIntIntoBuf(&buf, lpAmount)
+	err = util.PaddingStringBigIntIntoBuf(&buf, lpAmount)
 	if err != nil {
 		logx.Errorf("[ComputeAccountAssetLeafHash] invalid balance: %s", err.Error())
 		return nil, err
 	}
-	err = util.WriteStringBigIntIntoBuf(&buf, offerCanceledOrFinalized)
+	err = util.PaddingStringBigIntIntoBuf(&buf, offerCanceledOrFinalized)
 	if err != nil {
 		logx.Errorf("[ComputeAccountAssetLeafHash] invalid balance: %s", err.Error())
 		return nil, err
@@ -188,31 +188,31 @@ func ComputeLiquidityAssetLeafHash(
 ) (hashVal []byte, err error) {
 	hFunc := mimc.NewMiMC()
 	var buf bytes.Buffer
-	util.WriteInt64IntoBuf(&buf, assetAId)
-	err = util.WriteStringBigIntIntoBuf(&buf, assetA)
+	util.PaddingInt64IntoBuf(&buf, assetAId)
+	err = util.PaddingStringBigIntIntoBuf(&buf, assetA)
 	if err != nil {
 		logx.Errorf("[ComputeLiquidityAssetLeafHash] unable to write big int to buf: %s", err.Error())
 		return nil, err
 	}
-	util.WriteInt64IntoBuf(&buf, assetBId)
-	err = util.WriteStringBigIntIntoBuf(&buf, assetB)
+	util.PaddingInt64IntoBuf(&buf, assetBId)
+	err = util.PaddingStringBigIntIntoBuf(&buf, assetB)
 	if err != nil {
 		logx.Errorf("[ComputeLiquidityAssetLeafHash] unable to write big int to buf: %s", err.Error())
 		return nil, err
 	}
-	err = util.WriteStringBigIntIntoBuf(&buf, lpAmount)
+	err = util.PaddingStringBigIntIntoBuf(&buf, lpAmount)
 	if err != nil {
 		logx.Errorf("[ComputeLiquidityAssetLeafHash] unable to write big int to buf: %s", err.Error())
 		return nil, err
 	}
-	err = util.WriteStringBigIntIntoBuf(&buf, kLast)
+	err = util.PaddingStringBigIntIntoBuf(&buf, kLast)
 	if err != nil {
 		logx.Errorf("[ComputeLiquidityAssetLeafHash] unable to write big int to buf: %s", err.Error())
 		return nil, err
 	}
-	util.WriteInt64IntoBuf(&buf, feeRate)
-	util.WriteInt64IntoBuf(&buf, treasuryAccountIndex)
-	util.WriteInt64IntoBuf(&buf, treasuryRate)
+	util.PaddingInt64IntoBuf(&buf, feeRate)
+	util.PaddingInt64IntoBuf(&buf, treasuryAccountIndex)
+	util.PaddingInt64IntoBuf(&buf, treasuryRate)
 	hFunc.Write(buf.Bytes())
 	hashVal = hFunc.Sum(nil)
 	return hashVal, nil
@@ -249,21 +249,21 @@ func ComputeNftAssetLeafHash(
 ) (hashVal []byte, err error) {
 	hFunc := mimc.NewMiMC()
 	var buf bytes.Buffer
-	util.WriteInt64IntoBuf(&buf, creatorAccountIndex)
-	util.WriteInt64IntoBuf(&buf, ownerAccountIndex)
-	buf.Write(common.FromHex(nftContentHash))
-	err = util.WriteAddressIntoBuf(&buf, nftL1Address)
+	util.PaddingInt64IntoBuf(&buf, creatorAccountIndex)
+	util.PaddingInt64IntoBuf(&buf, ownerAccountIndex)
+	buf.Write(ffmath.Mod(new(big.Int).SetBytes(common.FromHex(nftContentHash)), curve.Modulus).FillBytes(make([]byte, 32)))
+	err = util.PaddingAddressIntoBuf(&buf, nftL1Address)
 	if err != nil {
 		logx.Errorf("[ComputeNftAssetLeafHash] unable to write address to buf: %s", err.Error())
 		return nil, err
 	}
-	err = util.WriteStringBigIntIntoBuf(&buf, nftL1TokenId)
+	err = util.PaddingStringBigIntIntoBuf(&buf, nftL1TokenId)
 	if err != nil {
 		logx.Errorf("[ComputeNftAssetLeafHash] unable to write big int to buf: %s", err.Error())
 		return nil, err
 	}
-	util.WriteInt64IntoBuf(&buf, creatorTreasuryRate)
-	util.WriteInt64IntoBuf(&buf, collectionId)
+	util.PaddingInt64IntoBuf(&buf, creatorTreasuryRate)
+	util.PaddingInt64IntoBuf(&buf, collectionId)
 	hFunc.Write(buf.Bytes())
 	hashVal = hFunc.Sum(nil)
 	return hashVal, nil
@@ -275,6 +275,20 @@ func ComputeNftAssetLeafHash(
 `StateRoot` is the final root that shows the final layer-2 state and will be stored on L1. It is computed by the root of `AccountTree`, `LiquidityTree` and `NftTree`. The computation of `StateRoot` works as follows:
 
 `StateRoot = MiMC(AccountRoot || LiquidityRoot || NftRoot)`
+
+```go
+func ComputeStateRootHash(
+	accountRoot []byte,
+	liquidityRoot []byte,
+	nftRoot []byte,
+) []byte {
+	hFunc := mimc.NewMiMC()
+	hFunc.Write(accountRoot)
+	hFunc.Write(liquidityRoot)
+	hFunc.Write(nftRoot)
+	return hFunc.Sum(nil)
+}
+```
 
 ## ZecreyLegend Transactions
 
@@ -567,12 +581,11 @@ This is a layer-1 transaction and is used for depositing nfts into the layer-2 a
 
 #### User transaction
 
-| Name                | Size(byte) | Comment                      |
-| ------------------- | ---------- | ---------------------------- |
-| AccountNameHash     | 32         | account name hash            |
-| AssetAddress        | 20         | nft contract layer-1 address |
-| NftTokenId          | 32         | nft layer-1 token id         |
-| CreatorTreasuryRate | 2          | creator treasury rate        |
+| Name            | Size(byte) | Comment                      |
+| --------------- | ---------- | ---------------------------- |
+| AccountNameHash | 32         | account name hash            |
+| AssetAddress    | 20         | nft contract layer-1 address |
+| NftTokenId      | 32         | nft layer-1 token id         |
 
 #### Circuit
 
@@ -660,11 +673,15 @@ func VerifyTransferTx(
 	// account index
 	IsVariableEqual(api, flag, tx.FromAccountIndex, accountsBefore[0].AccountIndex)
 	IsVariableEqual(api, flag, tx.ToAccountIndex, accountsBefore[1].AccountIndex)
+	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[2].AccountIndex)
+	// account name hash
+	IsVariableEqual(api, flag, tx.ToAccountNameHash, accountsBefore[1].AccountNameHash)
 	// asset id
 	IsVariableEqual(api, flag, tx.AssetId, accountsBefore[0].AssetsInfo[0].AssetId)
 	IsVariableEqual(api, flag, tx.AssetId, accountsBefore[1].AssetsInfo[0].AssetId)
 	// gas asset id
 	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[0].AssetsInfo[1].AssetId)
+	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[2].AssetsInfo[0].AssetId)
 	// should have enough balance
 	tx.AssetAmount = UnpackAmount(api, tx.AssetAmount)
 	tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
@@ -712,8 +729,6 @@ type SwapTxInfo struct {
 	AssetBId          int64
 	AssetBMinAmount   *big.Int
 	AssetBAmountDelta *big.Int
-	PoolAAmount       *big.Int
-	PoolBAmount       *big.Int
 	GasAccountIndex   int64
 	GasFeeAssetId     int64
 	GasFeeAssetAmount *big.Int
@@ -736,13 +751,12 @@ func VerifySwapTx(
 	// verify params
 	// account index
 	IsVariableEqual(api, flag, tx.FromAccountIndex, accountsBefore[0].AccountIndex)
-	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[2].AccountIndex)
+	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[1].AccountIndex)
 	// pair index
 	IsVariableEqual(api, flag, tx.PairIndex, liquidityBefore.PairIndex)
 	// asset id
 	IsVariableEqual(api, flag, tx.AssetAId, accountsBefore[0].AssetsInfo[0].AssetId)
 	IsVariableEqual(api, flag, tx.AssetBId, accountsBefore[0].AssetsInfo[1].AssetId)
-	IsVariableEqual(api, flag, tx.AssetAId, accountsBefore[1].AssetsInfo[0].AssetId)
 	isSameAsset := api.IsZero(
 		api.And(
 			api.IsZero(api.Sub(tx.AssetAId, liquidityBefore.AssetAId)),
@@ -764,7 +778,7 @@ func VerifySwapTx(
 		1,
 	)
 	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[0].AssetsInfo[2].AssetId)
-	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[2].AssetsInfo[0].AssetId)
+	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[1].AssetsInfo[0].AssetId)
 	// should have enough assets
 	tx.AssetAAmount = UnpackAmount(api, tx.AssetAAmount)
 	tx.AssetBMinAmount = UnpackAmount(api, tx.AssetBMinAmount)
@@ -785,13 +799,13 @@ func VerifySwapTx(
 	assetAAmount := api.Select(isSameAsset, tx.AssetAAmount, tx.AssetBAmountDelta)
 	assetBAmount := api.Select(isSameAsset, tx.AssetBAmountDelta, tx.AssetAAmount)
 	// verify AMM
-	r := api.Mul(api.Mul(tx.PoolAAmount, tx.PoolBAmount), RateBase)
+	r := api.Mul(api.Mul(liquidityBefore.AssetA, liquidityBefore.AssetB), RateBase)
 	l := api.Mul(
 		api.Sub(
-			api.Mul(RateBase, api.Add(assetAAmount, tx.PoolAAmount)),
+			api.Mul(RateBase, api.Add(assetAAmount, liquidityBefore.AssetA)),
 			api.Mul(liquidityBefore.FeeRate, assetAAmount),
 		),
-		assetBAmount,
+		api.Add(assetBAmount, liquidityBefore.AssetB),
 	)
 	IsVariableLessOrEqual(api, flag, r, l)
 }
@@ -838,8 +852,6 @@ type AddLiquidityTxInfo struct {
 	AssetBId          int64
 	AssetBAmount      *big.Int
 	LpAmount          *big.Int
-	PoolAAmount       *big.Int
-	PoolBAmount       *big.Int
 	GasAccountIndex   int64
 	GasFeeAssetId     int64
 	GasFeeAssetAmount *big.Int
@@ -862,7 +874,7 @@ func VerifyAddLiquidityTx(
 	// check params
 	// account index
 	IsVariableEqual(api, flag, tx.FromAccountIndex, accountsBefore[0].AccountIndex)
-	IsVariableEqual(api, flag, tx.TreasuryAccountIndex, accountsBefore[1].AccountIndex)
+	IsVariableEqual(api, flag, liquidityBefore.TreasuryAccountIndex, accountsBefore[1].AccountIndex)
 	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[2].AccountIndex)
 	// asset id
 	IsVariableEqual(api, flag, tx.AssetAId, accountsBefore[0].AssetsInfo[0].AssetId)
@@ -885,68 +897,23 @@ func VerifyAddLiquidityTx(
 	IsVariableEqual(api, flag, tx.PoolAAmount, liquidityBefore.AssetA)
 	IsVariableEqual(api, flag, tx.PoolBAmount, liquidityBefore.AssetB)
 	// TODO verify ratio
-	deltaXVar := std.Max(api, tx.AssetAAmount, tx.AssetBAmount)
-	deltaYVar := std.Min(api, tx.AssetAAmount, tx.AssetBAmount)
-	poolXVar := std.Max(api, tx.PoolAAmount, tx.PoolBAmount)
-	poolYVar := std.Min(api, tx.PoolAAmount, tx.PoolBAmount)
-	deltaX, _ := api.Compiler().ConstantValue(deltaXVar)
-	if deltaX == nil {
-		deltaX = big.NewInt(0)
-	}
-	deltaY, _ := api.Compiler().ConstantValue(deltaYVar)
-	if deltaY == nil {
-		deltaY = big.NewInt(0)
-	}
-	poolX, _ := api.Compiler().ConstantValue(poolXVar)
-	if poolX == nil {
-		poolX = big.NewInt(0)
-	}
-	poolY, _ := api.Compiler().ConstantValue(poolYVar)
-	if poolY == nil {
-		poolY = big.NewInt(0)
-	}
-	var (
-		l, r *big.Int
-	)
-	if deltaY.Cmp(big.NewInt(0)) == 0 {
-		l = big.NewInt(0)
+	l := api.Mul(liquidityBefore.AssetA, tx.AssetAAmount)
+	r := api.Mul(liquidityBefore.AssetB, tx.AssetBAmount)
+	maxDelta := std.Max(api, liquidityBefore.AssetA, liquidityBefore.AssetB)
+	l = std.Max(api, l, r)
+	r = std.Min(api, l, r)
+	lrDelta := api.Sub(l, r)
+	IsVariableLessOrEqual(api, flag, lrDelta, maxDelta)
+	// TODO verify lp amount
+	zeroFlag := api.Compiler().IsBoolean(api.Add(liquidityBefore.AssetA, 1))
+	if zeroFlag {
+		// lpAmount = \sqrt{x * y}
+		lpAmountSquare := api.Mul(tx.AssetAAmount, tx.AssetBAmount)
+		IsVariableEqual(api, flag, api.Mul(tx.LpAmount, tx.LpAmount), lpAmountSquare)
 	} else {
-		l = ffmath.Div(deltaX, deltaY)
+		// lpAmount = \Delta{x} / x * poolLp
+		IsVariableEqual(api, flag, api.Mul(tx.LpAmount, liquidityBefore.AssetA), api.Mul(tx.AssetAAmount, liquidityBefore.LpAmount))
 	}
-	if poolY.Cmp(big.NewInt(0)) == 0 {
-		r = big.NewInt(0)
-	} else {
-		r = ffmath.Div(poolX, poolY)
-	}
-	var (
-		ratio Variable
-	)
-	if r.Cmp(big.NewInt(0)) == 0 {
-		ratio = 1
-	} else if l.String() == r.String() {
-		ratio = 1
-	} else {
-		ratio = 0
-	}
-	IsVariableEqual(api, flag, ratio, 1)
-	// compute real lp
-	sLp := ComputeSLp(api, flag, tx.PoolAAmount, tx.PoolBAmount, liquidityBefore.KLast, liquidityBefore.FeeRate, tx.TreasuryRate)
-	poolLp := api.Sub(liquidityBefore.LpAmount, sLp)
-	l, _ = api.Compiler().ConstantValue(api.Mul(poolLp, tx.AssetAAmount))
-	if l == nil {
-		l = big.NewInt(0)
-	}
-	r, _ = api.Compiler().ConstantValue(tx.PoolAAmount)
-	if r == nil {
-		r = big.NewInt(0)
-	}
-	var lpAmountCheck *big.Int
-	if r.Cmp(big.NewInt(0)) == 0 {
-		lpAmountCheck = big.NewInt(0)
-	} else {
-		lpAmountCheck = ffmath.Div(l, r)
-	}
-	IsVariableEqual(api, flag, tx.LpAmount, lpAmountCheck)
 }
 ```
 
@@ -993,8 +960,6 @@ type RemoveLiquidityTxInfo struct {
 	LpAmount          *big.Int
 	AssetAAmountDelta *big.Int
 	AssetBAmountDelta *big.Int
-	PoolAAmount       *big.Int
-	PoolBAmount       *big.Int
 	GasAccountIndex   int64
 	GasFeeAssetId     int64
 	GasFeeAssetAmount *big.Int
@@ -1017,16 +982,17 @@ func VerifyRemoveLiquidityTx(
 	// verify params
 	// account index
 	IsVariableEqual(api, flag, tx.FromAccountIndex, accountsBefore[0].AccountIndex)
-	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[1].AccountIndex)
+	IsVariableEqual(api, flag, liquidityBefore.TreasuryAccountIndex, accountsBefore[1].AccountIndex)
+	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[2].AccountIndex)
 	// asset id
 	IsVariableEqual(api, flag, tx.AssetAId, accountsBefore[0].AssetsInfo[0].AssetId)
 	IsVariableEqual(api, flag, tx.AssetBId, accountsBefore[0].AssetsInfo[1].AssetId)
-	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[0].AssetsInfo[3].AssetId)
+	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[0].AssetsInfo[2].AssetId)
 	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[2].AssetsInfo[0].AssetId)
 	IsVariableEqual(api, flag, tx.AssetAId, liquidityBefore.AssetAId)
 	IsVariableEqual(api, flag, tx.AssetBId, liquidityBefore.AssetBId)
 	// should have enough lp
-	IsVariableLessOrEqual(api, flag, tx.LpAmount, accountsBefore[0].AssetsInfo[2].LpAmount)
+	IsVariableLessOrEqual(api, flag, tx.LpAmount, accountsBefore[0].AssetsInfo[3].LpAmount)
 	// enough balance
 	tx.AssetAMinAmount = UnpackAmount(api, tx.AssetAMinAmount)
 	tx.AssetAAmountDelta = UnpackAmount(api, tx.AssetAAmountDelta)
@@ -1038,34 +1004,8 @@ func VerifyRemoveLiquidityTx(
 	// TODO verify LP
 	sLp := ComputeSLp(api, flag, liquidityBefore.AssetA, liquidityBefore.AssetB, liquidityBefore.KLast, liquidityBefore.FeeRate, liquidityBefore.TreasuryRate)
 	poolLpVar := api.Sub(liquidityBefore.LpAmount, sLp)
-	assetA, _ := api.Compiler().ConstantValue(liquidityBefore.AssetA)
-	if assetA == nil {
-		assetA = big.NewInt(0)
-	}
-	assetB, _ := api.Compiler().ConstantValue(liquidityBefore.AssetB)
-	if assetB == nil {
-		assetB = big.NewInt(0)
-	}
-	lpAmount, _ := api.Compiler().ConstantValue(tx.LpAmount)
-	if lpAmount == nil {
-		lpAmount = big.NewInt(0)
-	}
-	poolLp, _ := api.Compiler().ConstantValue(poolLpVar)
-	if poolLp == nil {
-		poolLp = big.NewInt(0)
-	}
-	var (
-		assetADelta, assetBDelta *big.Int
-	)
-	if poolLp.Cmp(big.NewInt(0)) == 0 {
-		assetADelta = big.NewInt(0)
-		assetBDelta = big.NewInt(0)
-	} else {
-		assetADelta = ffmath.Div(ffmath.Multiply(lpAmount, assetA), poolLp)
-		assetBDelta = ffmath.Div(ffmath.Multiply(lpAmount, assetB), poolLp)
-	}
-	IsVariableEqual(api, flag, tx.AssetAAmountDelta, assetADelta)
-	IsVariableEqual(api, flag, tx.AssetBAmountDelta, assetBDelta)
+	IsVariableLessOrEqual(api, flag, api.Mul(tx.AssetAAmountDelta, poolLpVar), api.Mul(tx.LpAmount, liquidityBefore.AssetA))
+	IsVariableLessOrEqual(api, flag, api.Mul(tx.AssetBAmountDelta, poolLpVar), api.Mul(tx.LpAmount, liquidityBefore.AssetB))
 	IsVariableLessOrEqual(api, flag, tx.AssetAMinAmount, tx.AssetAAmountDelta)
 	IsVariableLessOrEqual(api, flag, tx.AssetBMinAmount, tx.AssetBAmountDelta)
 }
@@ -1203,7 +1143,7 @@ func VerifyCreateCollectionTx(
 	IsVariableEqual(api, flag, tx.CollectionId, api.Add(accountsBefore[0].CollectionNonce, 1))
 	// should have enough assets
 	tx.GasFeeAssetAmount = UnpackAmount(api, tx.GasFeeAssetAmount)
-	IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[0].AssetsInfo[1].Balance)
+	IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[0].AssetsInfo[0].Balance)
 }
 ```
 
@@ -1242,15 +1182,11 @@ This is a layer-2 transaction and is used for minting nfts in the layer-2 networ
 type MintNftTxInfo struct {
 	CreatorAccountIndex int64
 	ToAccountIndex      int64
-	ToAccountName       string
-	CollectionId        int64
+	ToAccountNameHash   string
 	NftIndex            int64
 	NftContentHash      string
-	NftName             string
-	NftIntroduction     string
-	NftAttributes       string
 	NftCollectionId     int64
-	CreatorFeeRate      int64
+	CreatorTreasuryRate int64
 	GasAccountIndex     int64
 	GasFeeAssetId       int64
 	GasFeeAssetAmount   *big.Int
@@ -1275,11 +1211,15 @@ func VerifyMintNftTx(
 	CheckEmptyNftNode(api, flag, nftBefore)
 	// account index
 	IsVariableEqual(api, flag, tx.CreatorAccountIndex, accountsBefore[0].AccountIndex)
-	IsVariableEqual(api, flag, tx.ToAccountIndex, accountsBefore[1].AccountIndex)
-	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[2].AccountIndex)
+	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[1].AccountIndex)
+	// account name hash
+	IsVariableEqual(api, flag, tx.ToAccountNameHash, accountsBefore[1].AccountNameHash)
+	// content hash
+	isZero := api.IsZero(tx.NftContentHash)
+	IsVariableEqual(api, flag, isZero, 0)
 	// gas asset id
 	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[0].AssetsInfo[0].AssetId)
-	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[2].AssetsInfo[0].AssetId)
+	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[1].AssetsInfo[0].AssetId)
 	// should have enough balance
 	tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
 	IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[0].AssetsInfo[0].Balance)
@@ -1319,9 +1259,8 @@ This is a layer-2 transaction and is used for transfering nfts to others in the 
 type TransferNftTxInfo struct {
 	FromAccountIndex  int64
 	ToAccountIndex    int64
-	ToAccountName     string
+	ToAccountNameHash string
 	NftIndex          int64
-	NftContentHash    string
 	GasAccountIndex   int64
 	GasFeeAssetId     int64
 	GasFeeAssetAmount *big.Int
@@ -1432,6 +1371,7 @@ type AtomicMatchTxInfo struct {
 	GasFeeAssetId     int64
 	GasFeeAssetAmount *big.Int
 	Nonce             int64
+	ExpiredAt         int64
 	Sig               []byte
 }
 ```
@@ -1458,6 +1398,7 @@ func VerifyAtomicMatchTx(
 	IsVariableEqual(api, flag, tx.SellOffer.AssetId, accountsBefore[2].AssetsInfo[0].AssetId)
 	IsVariableEqual(api, flag, tx.SellOffer.AssetId, accountsBefore[3].AssetsInfo[0].AssetId)
 	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[4].AccountIndex)
+	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[0].AssetsInfo[0].AssetId)
 	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[4].AssetsInfo[1].AssetId)
 	IsVariableLessOrEqual(api, flag, blockCreatedAt, tx.BuyOffer.ExpiredAt)
 	IsVariableLessOrEqual(api, flag, blockCreatedAt, tx.SellOffer.ExpiredAt)
@@ -1490,25 +1431,31 @@ func VerifyAtomicMatchTx(
 	// gas
 	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[4].AccountIndex)
 	// verify buy offer id
-	buyOfferId, _ := api.Compiler().ConstantValue(tx.BuyOffer.OfferId)
-	if buyOfferId == nil {
-		buyOfferId = big.NewInt(0)
+	buyOfferIdBits := api.ToBinary(tx.BuyOffer.OfferId, 24)
+	buyAssetId := api.FromBinary(buyOfferIdBits[7:]...)
+	buyOfferIndex := api.Sub(tx.BuyOffer.OfferId, api.Mul(buyAssetId, OfferSizePerAsset))
+	buyOfferIndexBits := api.ToBinary(accountsBefore[1].AssetsInfo[1].OfferCanceledOrFinalized, OfferSizePerAsset)
+	for i := 0; i < OfferSizePerAsset; i++ {
+		isZero := api.IsZero(api.Sub(buyOfferIndex, i))
+		isCheckVar := api.And(isZero, flag)
+		isCheck := api.Compiler().IsBoolean(isCheckVar)
+		if isCheck {
+			IsVariableEqual(api, 1, buyOfferIndexBits[i], 0)
+		}
 	}
-	buyAssetId := new(big.Int).Div(buyOfferId, big.NewInt(128))
-	IsVariableEqual(api, flag, buyAssetId, accountsBefore[1].AssetsInfo[0].AssetId)
-	buyOfferIndex := new(big.Int).Sub(buyOfferId, buyAssetId)
-	buyOfferIndexBits := api.ToBinary(accountsBefore[1].AssetsInfo[0].OfferCanceledOrFinalized, 128)
-	IsVariableEqual(api, flag, buyOfferIndexBits[buyOfferIndex.Int64()], 0)
 	// verify sell offer id
-	sellOfferId, _ := api.Compiler().ConstantValue(tx.SellOffer.OfferId)
-	if sellOfferId == nil {
-		sellOfferId = big.NewInt(0)
+	sellOfferIdBits := api.ToBinary(tx.SellOffer.OfferId, 24)
+	sellAssetId := api.FromBinary(sellOfferIdBits[7:]...)
+	sellOfferIndex := api.Sub(tx.SellOffer.OfferId, api.Mul(sellAssetId, OfferSizePerAsset))
+	sellOfferIndexBits := api.ToBinary(accountsBefore[2].AssetsInfo[1].OfferCanceledOrFinalized, OfferSizePerAsset)
+	for i := 0; i < OfferSizePerAsset; i++ {
+		isZero := api.IsZero(api.Sub(sellOfferIndex, i))
+		isCheckVar := api.And(isZero, flag)
+		isCheck := api.Compiler().IsBoolean(isCheckVar)
+		if isCheck {
+			IsVariableEqual(api, 1, sellOfferIndexBits[i], 0)
+		}
 	}
-	sellAssetId := new(big.Int).Div(sellOfferId, big.NewInt(128))
-	IsVariableEqual(api, flag, sellAssetId, accountsBefore[2].AssetsInfo[0].AssetId)
-	sellOfferIndex := new(big.Int).Sub(sellOfferId, sellAssetId)
-	sellOfferIndexBits := api.ToBinary(accountsBefore[2].AssetsInfo[0].OfferCanceledOrFinalized, 128)
-	IsVariableEqual(api, flag, sellOfferIndexBits[sellOfferIndex.Int64()], 0)
 	// buyer should have enough balance
 	tx.BuyOffer.AssetAmount = UnpackAmount(api, tx.BuyOffer.AssetAmount)
 	IsVariableLessOrEqual(api, flag, tx.BuyOffer.AssetAmount, accountsBefore[1].AssetsInfo[0].Balance)
@@ -1572,13 +1519,11 @@ func VerifyCancelOfferTx(
 	// verify params
 	IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[0].AccountIndex)
 	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[1].AccountIndex)
+	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[0].AssetsInfo[0].AssetId)
 	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[1].AssetsInfo[0].AssetId)
-	offerId, _ := api.Compiler().ConstantValue(tx.OfferId)
-	if offerId == nil {
-		offerId = big.NewInt(0)
-	}
-	assetId := new(big.Int).Div(offerId, big.NewInt(128))
-	IsVariableEqual(api, flag, assetId, accountsBefore[0].AssetsInfo[0].AssetId)
+	offerIdBits := api.ToBinary(tx.OfferId, 24)
+	assetId := api.FromBinary(offerIdBits[7:]...)
+	IsVariableEqual(api, flag, assetId, accountsBefore[0].AssetsInfo[1].AssetId)
 	// should have enough balance
 	tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
 	IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[0].AssetsInfo[1].Balance)
@@ -1597,41 +1542,45 @@ This is a layer-2 transaction and is used for withdrawing nft from the layer-2 t
 
 | Chunks | Significant bytes |
 | ------ | ----------------- |
-| 4      | 122               |
+| 6      | 158               |
 
 ##### Structure
 
-| Name               | Size(byte) | Comment               |
-| ------------------ | ---------- | --------------------- |
-| TxType             | 1          | transaction type      |
-| AccountIndex       | 4          | account index         |
-| NftIndex           | 5          | unique nft index      |
-| NftL1Address       | 20         | nft layer-1 address   |
-| ToAddress          | 20         | receiver address      |
-| GasFeeAccountIndex | 4          | gas fee account index |
-| GasFeeAssetId      | 2          | gas fee asset id      |
-| GasFeeAssetAmount  | 2          | packed fee amount     |
-| NftContentHash     | 32         | nft content hash      |
-| NftL1TokenId       | 32         | nft layer-1 token id  |
+| Name                   | Size(byte) | Comment                   |
+| ---------------------- | ---------- | ------------------------- |
+| TxType                 | 1          | transaction type          |
+| AccountIndex           | 4          | account index             |
+| CreatorAccountIndex    | 4          | creator account index     |
+| CreatorTreasuryRate    | 2          | creator treasury rate     |
+| NftIndex               | 5          | unique nft index          |
+| NftL1Address           | 20         | nft layer-1 address       |
+| ToAddress              | 20         | receiver address          |
+| GasFeeAccountIndex     | 4          | gas fee account index     |
+| GasFeeAssetId          | 2          | gas fee asset id          |
+| GasFeeAssetAmount      | 2          | packed fee amount         |
+| NftContentHash         | 32         | nft content hash          |
+| NftL1TokenId           | 32         | nft layer-1 token id      |
+| CreatorAccountNameHash | 32         | creator account name hash |
 
 #### User transaction
 
 ```go
 type WithdrawNftTxInfo struct {
-	AccountIndex int64
-	NftType           uint8
-	NftIndex          int64
-	NftContentHash    string
-	NftL1Address      string
-	NftL1TokenId      *big.Int
-	Amount            int64
-	ToAddress         string
-	GasAccountIndex   int64
-	GasFeeAssetId     int64
-	GasFeeAssetAmount *big.Int
-	ExpiredAt         int64
-	Nonce             int64
-	Sig               []byte
+	AccountIndex           int64
+	CreatorAccountIndex    int64
+	CreatorAccountNameHash string
+	CreatorTreasuryRate    int64
+	NftIndex               int64
+	NftContentHash         string
+	NftL1Address           string
+	NftL1TokenId           *big.Int
+	ToAddress              string
+	GasAccountIndex        int64
+	GasFeeAssetId          int64
+	GasFeeAssetAmount      *big.Int
+	ExpiredAt              int64
+	Nonce                  int64
+	Sig                    []byte
 }
 ```
 
@@ -1650,13 +1599,21 @@ func VerifyWithdrawNftTx(
 	// verify params
 	// account index
 	IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[0].AccountIndex)
-	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[1].AccountIndex)
+	IsVariableEqual(api, flag, tx.CreatorAccountIndex, accountsBefore[1].AccountIndex)
+	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[2].AccountIndex)
+	// account name hash
+	IsVariableEqual(api, flag, tx.CreatorAccountNameHash, accountsBefore[1].AccountNameHash)
 	// asset id
 	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[0].AssetsInfo[0].AssetId)
-	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[1].AssetsInfo[0].AssetId)
+	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[2].AssetsInfo[0].AssetId)
 	// nft info
 	IsVariableEqual(api, flag, tx.NftIndex, nftBefore.NftIndex)
+	IsVariableEqual(api, flag, tx.CreatorAccountIndex, nftBefore.CreatorAccountIndex)
+	IsVariableEqual(api, flag, tx.CreatorTreasuryRate, nftBefore.CreatorTreasuryRate)
 	IsVariableEqual(api, flag, tx.AccountIndex, nftBefore.OwnerAccountIndex)
+	IsVariableEqual(api, flag, tx.NftContentHash, nftBefore.NftContentHash)
+	IsVariableEqual(api, flag, tx.NftL1TokenId, nftBefore.NftL1TokenId)
+	IsVariableEqual(api, flag, tx.NftL1Address, nftBefore.NftL1Address)
 	// have enough assets
 	tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
 	IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[0].AssetsInfo[0].Balance)
@@ -1724,18 +1681,21 @@ This is a layer-1 transaction and is used for full exit nfts from the layer-2 to
 
 | Chunks | Significant bytes |
 | ------ | ----------------- |
-| 3      | 94                |
+| 4      | 132               |
 
 ##### Structure
 
-| Name           | Size(byte) | Comment              |
-| -------------- | ---------- | -------------------- |
-| TxType         | 1          | transaction type     |
-| AccountIndex   | 4          | from account index   |
-| NftIndex       | 5          | unique nft index     |
-| NftL1Address   | 20         | nft layer-1 address  |
-| NftContentHash | 32         | nft content hash     |
-| NftL1TokenId   | 32         | nft layer-1 token id |
+| Name                   | Size(byte) | Comment                   |
+| ---------------------- | ---------- | ------------------------- |
+| TxType                 | 1          | transaction type          |
+| AccountIndex           | 4          | from account index        |
+| CreatorAccountIndex    | 2          | creator account index     |
+| CreatorAccountNameHash | 32         | creator account name hash |
+| CreatorTreasuryRate    | 2          | creator treasury rate     |
+| NftIndex               | 5          | unique nft index          |
+| NftL1Address           | 20         | nft layer-1 address       |
+| NftContentHash         | 32         | nft content hash          |
+| NftL1TokenId           | 32         | nft layer-1 token id      |
 
 #### User transaction
 
@@ -1758,6 +1718,10 @@ func VerifyFullExitNftTx(
 	IsVariableEqual(api, flag, tx.AccountNameHash, accountsBefore[0].AccountNameHash)
 	IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[0].AccountIndex)
 	IsVariableEqual(api, flag, tx.NftIndex, nftBefore.NftIndex)
+	IsVariableEqual(api, flag, tx.CreatorAccountIndex, accountsBefore[1].AccountIndex)
+	IsVariableEqual(api, flag, tx.CreatorAccountNameHash, accountsBefore[1].AccountNameHash)
+	IsVariableEqual(api, flag, tx.CreatorAccountIndex, nftBefore.CreatorAccountIndex)
+	IsVariableEqual(api, flag, tx.CreatorTreasuryRate, nftBefore.CreatorTreasuryRate)
 	isOwner := api.And(api.IsZero(api.Sub(tx.AccountIndex, nftBefore.OwnerAccountIndex)), flag)
 	IsVariableEqual(api, isOwner, tx.NftContentHash, nftBefore.NftContentHash)
 	IsVariableEqual(api, isOwner, tx.NftL1Address, nftBefore.NftL1Address)
