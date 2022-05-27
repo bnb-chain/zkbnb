@@ -121,8 +121,6 @@ func (l *SendTxLogic) sendSwapTx(rawTxInfo string) (txId string, err error) {
 			txInfo.AssetAAmount,
 			liquidityInfo.FeeRate,
 		)
-		txInfo.PoolAAmount = liquidityInfo.AssetA
-		txInfo.PoolBAmount = liquidityInfo.AssetB
 	} else if liquidityInfo.AssetAId == txInfo.AssetBId &&
 		liquidityInfo.AssetBId == txInfo.AssetAId {
 		toDelta, _, err = util.ComputeDelta(
@@ -135,9 +133,6 @@ func (l *SendTxLogic) sendSwapTx(rawTxInfo string) (txId string, err error) {
 			txInfo.AssetAAmount,
 			liquidityInfo.FeeRate,
 		)
-
-		txInfo.PoolAAmount = liquidityInfo.AssetB
-		txInfo.PoolBAmount = liquidityInfo.AssetA
 	} else {
 		err = errors.New("invalid pair assetIds")
 	}

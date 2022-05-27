@@ -114,8 +114,6 @@ func ToCryptoSwapTx(txInfo *commonTx.SwapTxInfo) (info *CryptoSwapTx, err error)
 		AssetBId:          txInfo.AssetBId,
 		AssetBMinAmount:   packedBMinAmount,
 		AssetBAmountDelta: packedBAmount,
-		PoolAAmount:       txInfo.PoolAAmount,
-		PoolBAmount:       txInfo.PoolBAmount,
 		GasAccountIndex:   txInfo.GasAccountIndex,
 		GasFeeAssetId:     txInfo.GasFeeAssetId,
 		GasFeeAssetAmount: packedFee,

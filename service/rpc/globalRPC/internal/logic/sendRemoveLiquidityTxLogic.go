@@ -122,15 +122,6 @@ func (l *SendTxLogic) sendRemoveLiquidityTx(rawTxInfo string) (txId string, err 
 	txInfo.AssetAAmountDelta = assetAAmount
 	txInfo.AssetBAmountDelta = assetBAmount
 
-	if liquidityInfo.AssetAId == txInfo.AssetAId &&
-		liquidityInfo.AssetBId == txInfo.AssetBId {
-		txInfo.PoolAAmount = liquidityInfo.AssetA
-		txInfo.PoolBAmount = liquidityInfo.AssetB
-	} else {
-		logx.Errorf("[sendRemoveLiquidityTx] invalid pair index")
-		return "", errors.New("[sendRemoveLiquidityTx] invalid pair index")
-	}
-
 	// get latest account info for from account index
 	if accountInfoMap[txInfo.FromAccountIndex] == nil {
 		accountInfoMap[txInfo.FromAccountIndex], err = globalmapHandler.GetLatestAccountInfo(

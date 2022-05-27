@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
-	"github.com/zecrey-labs/zecrey-crypto/elgamal/twistededwards/tebn254/twistedElgamal"
 	"github.com/zecrey-labs/zecrey-crypto/zecrey/twistededwards/tebn254/zecrey"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -36,11 +35,11 @@ func SetFixed32Bytes(buf []byte) [32]byte {
 	return res
 }
 
-func WriteStringBigIntIntoBuf(buf *bytes.Buffer, aStr string) error {
+func PaddingStringBigIntIntoBuf(buf *bytes.Buffer, aStr string) error {
 	a, isValid := new(big.Int).SetString(aStr, 10)
 	if !isValid {
-		logx.Errorf("[WriteStringBigIntIntoBuf] invalid string")
-		return errors.New("[WriteStringBigIntIntoBuf] invalid string")
+		logx.Errorf("[PaddingStringBigIntIntoBuf] invalid string")
+		return errors.New("[PaddingStringBigIntIntoBuf] invalid string")
 	}
 	buf.Write(a.FillBytes(make([]byte, zecrey.PointSize)))
 	return nil
@@ -51,14 +50,14 @@ func WriteAccountNameIntoBuf(buf *bytes.Buffer, accountName string) {
 	buf.Write(new(big.Int).SetBytes(infoBytes[:]).FillBytes(make([]byte, zecrey.PointSize)))
 }
 
-func WriteAddressIntoBuf(buf *bytes.Buffer, address string) (err error) {
+func PaddingAddressIntoBuf(buf *bytes.Buffer, address string) (err error) {
 	if address == commonConstant.NilL1Address {
 		buf.Write(new(big.Int).FillBytes(make([]byte, 32)))
 		return nil
 	}
 	addrBytes, err := DecodeAddress(address)
 	if err != nil {
-		log.Println("[WriteAddressIntoBuf] invalid addr:", err)
+		log.Println("[PaddingAddressIntoBuf] invalid addr:", err)
 		return err
 	}
 	buf.Write(new(big.Int).SetBytes(addrBytes).FillBytes(make([]byte, zecrey.PointSize)))
@@ -80,11 +79,11 @@ func DecodeAddress(addr string) ([]byte, error) {
 	return addrBytes, nil
 }
 
-func WriteInt64IntoBuf(buf *bytes.Buffer, a int64) {
+func PaddingInt64IntoBuf(buf *bytes.Buffer, a int64) {
 	buf.Write(new(big.Int).SetInt64(a).FillBytes(make([]byte, zecrey.PointSize)))
 }
 
-func WritePkIntoBuf(buf *bytes.Buffer, pkStr string) (err error) {
+func PaddingPkIntoBuf(buf *bytes.Buffer, pkStr string) (err error) {
 	pk, err := ParsePubKey(pkStr)
 	if err != nil {
 		logx.Errorf("[WriteEncIntoBuf] unable to parse pk: %s", err.Error())
@@ -97,15 +96,4 @@ func WritePkIntoBuf(buf *bytes.Buffer, pkStr string) (err error) {
 func writePointIntoBuf(buf *bytes.Buffer, p *zecrey.Point) {
 	buf.Write(p.X.Marshal())
 	buf.Write(p.Y.Marshal())
-}
-
-func WriteEncIntoBuf(buf *bytes.Buffer, encStr string) error {
-	enc, err := twistedElgamal.FromString(encStr)
-	if err != nil {
-		logx.Errorf("[WriteEncIntoBuf] unable to parse enc str: %s", err.Error())
-		return err
-	}
-	writePointIntoBuf(buf, enc.CL)
-	writePointIntoBuf(buf, enc.CR)
-	return nil
 }

@@ -81,8 +81,6 @@ func constructSendAddLiquidityTxInfo() string {
 		AssetBId:          2,
 		AssetBAmount:      assetBAmount,
 		LpAmount:          lpAmount,
-		PoolAAmount:       nil,
-		PoolBAmount:       nil,
 		GasAccountIndex:   1,
 		GasFeeAssetId:     1,
 		GasFeeAssetAmount: big.NewInt(5000),

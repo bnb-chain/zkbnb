@@ -79,8 +79,6 @@ func constructSendRemoveLiquidityTxInfo() string {
 		LpAmount:          lpAmount,
 		AssetAAmountDelta: nil,
 		AssetBAmountDelta: nil,
-		PoolAAmount:       nil,
-		PoolBAmount:       nil,
 		GasAccountIndex:   1,
 		GasFeeAssetId:     1,
 		GasFeeAssetAmount: big.NewInt(5000),
