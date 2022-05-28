@@ -43,7 +43,7 @@ type RegisterZnsTxInfo struct {
 	TxType          uint8
 	AccountIndex    int64
 	AccountName     string
-	AccountNameHash string
+	AccountNameHash []byte
 	PubKey          string
 }
 
@@ -94,9 +94,9 @@ func ParseUpdatePairRateTxInfo(txInfoStr string) (txInfo *UpdatePairRateTxInfo, 
 
 type DepositTxInfo struct {
 	TxType          uint8
-	AccountIndex    uint32
-	AccountNameHash string
-	AssetId         uint16
+	AccountIndex    int64
+	AccountNameHash []byte
+	AssetId         int64
 	AssetAmount     *big.Int
 }
 
@@ -111,9 +111,9 @@ func ParseDepositTxInfo(txInfoStr string) (txInfo *DepositTxInfo, err error) {
 
 type DepositNftTxInfo struct {
 	TxType              uint8
-	AccountIndex        uint32
-	AccountNameHash     string
-	NftIndex            uint64
+	AccountIndex        int64
+	AccountNameHash     []byte
+	NftIndex            int64
 	NftContentHash      []byte
 	NftL1Address        string
 	NftL1TokenId        *big.Int
@@ -131,9 +131,9 @@ func ParseDepositNftTxInfo(txInfoStr string) (txInfo *DepositNftTxInfo, err erro
 
 type FullExitTxInfo struct {
 	TxType          uint8
-	AccountIndex    uint32
-	AccountNameHash string
-	AssetId         uint16
+	AccountIndex    int64
+	AccountNameHash []byte
+	AssetId         int64
 	AssetAmount     *big.Int
 }
 
@@ -147,14 +147,18 @@ func ParseFullExitTxInfo(txInfoStr string) (txInfo *FullExitTxInfo, err error) {
 }
 
 type FullExitNftTxInfo struct {
-	TxType          uint8
-	AccountIndex    uint32
-	AccountNameHash string
-	NftIndex        int64
-	NftContentHash  []byte
-	NftL1Address    string
-	NftL1TokenId    *big.Int
-	ToAddress       string
+	TxType                 uint8
+	AccountIndex           int64
+	AccountNameHash        []byte
+	CreatorAccountIndex    int64
+	CreatorAccountNameHash []byte
+	CreatorTreasuryRate    int64
+	NftIndex               int64
+	NftContentHash         []byte
+	NftL1Address           string
+	NftL1TokenId           *big.Int
+	CollectionId           int64
+	ToAddress              string
 }
 
 func ParseFullExitNftTxInfo(txInfoStr string) (txInfo *FullExitNftTxInfo, err error) {

@@ -25,17 +25,9 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zeromicro/go-zero/core/logx"
-	"math/big"
 )
 
 func ConvertTxToRegisterZNSPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
-	/*
-		struct RegisterZNS {
-			uint8 txType;
-			bytes32 accountName;
-			bytes32 pubKey;
-		}
-	*/
 	if oTx.TxType != commonTx.TxTypeRegisterZns {
 		logx.Errorf("[ConvertTxToRegisterZNSPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToRegisterZNSPubData] invalid tx type")
@@ -48,34 +40,66 @@ func ConvertTxToRegisterZNSPubData(oTx *mempool.MempoolTx) (pubData []byte, err 
 	}
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(oTx.TxType))
-	buf.Write(new(big.Int).SetInt64(txInfo.AccountIndex).FillBytes(make([]byte, 4)))
-	a := buf.Bytes()
+	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
+	chunk := PaddingBufToChunkSize(buf.Bytes())
 	buf.Reset()
-	buf.Write(new(big.Int).SetBytes(a).FillBytes(make([]byte, 32)))
-	nameBytes := AccountNameToBytes32(txInfo.AccountName)
-	buf.Write(nameBytes[:])
-	nameHashBytes := common.FromHex(txInfo.AccountNameHash)
-	buf.Write(nameHashBytes[:])
+	buf.Write(chunk)
+	buf.Write(AccountNameToBytes32(txInfo.AccountName))
+	buf.Write(txInfo.AccountNameHash)
 	pk, err := ParsePubKey(txInfo.PubKey)
 	if err != nil {
 		logx.Errorf("[ConvertTxToRegisterZNSPubData] unable to parse pub key: %s", err.Error())
 		return nil, err
 	}
+	// because we can get Y from X, so we only need to store X is enough
 	buf.Write(pk.A.X.Marshal())
 
 	return buf.Bytes(), nil
 }
 
+func ConvertTxToCreatePairPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+	if oTx.TxType != commonTx.TxTypeCreatePair {
+		logx.Errorf("[ConvertTxToCreatePairPubData] invalid tx type")
+		return nil, errors.New("[ConvertTxToCreatePairPubData] invalid tx type")
+	}
+	// parse tx
+	txInfo, err := commonTx.ParseCreatePairTxInfo(oTx.TxInfo)
+	if err != nil {
+		logx.Errorf("[ConvertTxToCreatePairPubData] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	var buf bytes.Buffer
+	buf.WriteByte(uint8(oTx.TxType))
+	buf.Write(Uint16ToBytes(uint16(txInfo.PairIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.AssetAId)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.AssetBId)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.FeeRate)))
+	buf.Write(Uint32ToBytes(uint32(txInfo.TreasuryAccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.TreasuryRate)))
+	return PaddingBufToChunkSize(buf.Bytes()), nil
+}
+
+func ConvertTxToUpdatePairRatePubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+	if oTx.TxType != commonTx.TxTypeUpdatePairRate {
+		logx.Errorf("[ConvertTxToUpdatePairRatePubData] invalid tx type")
+		return nil, errors.New("[ConvertTxToUpdatePairRatePubData] invalid tx type")
+	}
+	// parse tx
+	txInfo, err := commonTx.ParseUpdatePairRateTxInfo(oTx.TxInfo)
+	if err != nil {
+		logx.Errorf("[ConvertTxToUpdatePairRatePubData] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	var buf bytes.Buffer
+	buf.WriteByte(uint8(oTx.TxType))
+	buf.Write(Uint16ToBytes(uint16(txInfo.PairIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.FeeRate)))
+	buf.Write(Uint32ToBytes(uint32(txInfo.TreasuryAccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.TreasuryRate)))
+	return PaddingBufToChunkSize(buf.Bytes()), nil
+}
+
 func ConvertTxToDepositPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
-	/*
-		struct Deposit {
-			uint8 txType;
-			uint32 accountIndex;
-			bytes32 accountNameHash;
-			uint16 assetId;
-			uint128 amount;
-		}
-	*/
 	if oTx.TxType != commonTx.TxTypeDeposit {
 		logx.Errorf("[ConvertTxToDepositPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToDepositPubData] invalid tx type")
@@ -88,28 +112,46 @@ func ConvertTxToDepositPubData(oTx *mempool.MempoolTx) (pubData []byte, err erro
 	}
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(oTx.TxType))
-	buf.Write(new(big.Int).SetInt64(int64(txInfo.AccountIndex)).FillBytes(make([]byte, 4)))
-	buf.Write(new(big.Int).SetInt64(int64(txInfo.AssetId)).FillBytes(make([]byte, 2)))
-	buf.Write(txInfo.AssetAmount.FillBytes(make([]byte, 16)))
-	a := new(big.Int).SetBytes(buf.Bytes())
+	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.AssetId)))
+	buf.Write(Uint128ToBytes(txInfo.AssetAmount))
+	chunk1 := PaddingBufToChunkSize(buf.Bytes())
 	buf.Reset()
-	buf.Write(a.FillBytes(make([]byte, 32)))
-	buf.Write(common.FromHex(txInfo.AccountNameHash))
+	buf.Write(chunk1)
+	buf.Write(txInfo.AccountNameHash)
+	return buf.Bytes(), nil
+}
+
+func ConvertTxToDepositNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+	if oTx.TxType != commonTx.TxTypeDepositNft {
+		logx.Errorf("[ConvertTxToDepositNftPubData] invalid tx type")
+		return nil, errors.New("[ConvertTxToDepositNftPubData] invalid tx type")
+	}
+	// parse tx
+	txInfo, err := commonTx.ParseDepositNftTxInfo(oTx.TxInfo)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositNftPubData] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	var buf bytes.Buffer
+	buf.WriteByte(uint8(oTx.TxType))
+	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
+	buf.Write(Uint40ToBytes(txInfo.NftIndex))
+	buf.Write(AddressStrToBytes(txInfo.NftL1Address))
+	chunk1 := buf.Bytes()
+	buf.Reset()
+	buf.Write(Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
+	chunk2 := buf.Bytes()
+	buf.Reset()
+	buf.Write(chunk1)
+	buf.Write(chunk2)
+	buf.Write(txInfo.NftContentHash)
+	buf.Write(Uint256ToBytes(txInfo.NftL1TokenId))
+	buf.Write(txInfo.AccountNameHash)
 	return buf.Bytes(), nil
 }
 
 func ConvertTxToTransferPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
-	/*
-		txType 1byte
-		fromAccountIndex 4byte
-		toAccountIndex 4byte
-		assetId 2byte
-		assetAmount 5byte
-		gasFeeAccountIndex 4byte
-		gasFeeAssetId 2byte
-		gasFeeAssetAmount 2byte
-		callDataHash 32byte
-	*/
 	if oTx.TxType != commonTx.TxTypeTransfer {
 		logx.Errorf("[ConvertTxToTransferPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToTransferPubData] invalid tx type")
@@ -139,30 +181,15 @@ func ConvertTxToTransferPubData(oTx *mempool.MempoolTx) (pubData []byte, err err
 		return nil, err
 	}
 	buf.Write(packedFeeBytes)
-	a := new(big.Int).SetBytes(buf.Bytes()).FillBytes(make([]byte, 32))
+	chunk := PaddingBufToChunkSize(buf.Bytes())
 	buf.Reset()
-	buf.Write(a)
+	buf.Write(chunk)
 	buf.Write(txInfo.CallDataHash)
 	pubData = buf.Bytes()
 	return pubData, nil
 }
 
 func ConvertTxToSwapPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
-	/*
-		txType 1byte
-		fromAccountIndex 4byte
-		toAccountIndex 4byte
-		pairIndex 2byte
-		assetAId 2byte
-		assetBId 2byte
-		assetAAmount 5byte
-		assetBAmount 5byte
-		treasuryAccountIndex 4byte
-		treasuryFeeAmount 2byte
-		gasFeeAccountIndex 4byte
-		gasFeeAssetId 2byte
-		gasFeeAssetAmount 2byte
-	*/
 	if oTx.TxType != commonTx.TxTypeSwap {
 		logx.Errorf("[ConvertTxToSwapPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToSwapPubData] invalid tx type")
@@ -197,26 +224,11 @@ func ConvertTxToSwapPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) 
 		return nil, err
 	}
 	buf.Write(packedFeeBytes)
-	pubData = buf.Bytes()
-	pubData = new(big.Int).SetBytes(pubData).FillBytes(make([]byte, 32))
+	pubData = PaddingBufToChunkSize(buf.Bytes())
 	return pubData, nil
 }
 
 func ConvertTxToAddLiquidityPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
-	/*
-		txType 1byte
-		fromAccountIndex 4byte
-		toAccountIndex 4byte
-		pairIndex 2byte
-		assetAId 2byte
-		assetBId 2byte
-		assetAAmount 5byte
-		assetBAmount 5byte
-		lpAmount 5byte
-		gasFeeAccountIndex 4byte
-		gasFeeAssetId 2byte
-		gasFeeAssetAmount 2byte
-	*/
 	if oTx.TxType != commonTx.TxTypeAddLiquidity {
 		logx.Errorf("[ConvertTxToAddLiquidityPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToAddLiquidityPubData] invalid tx type")
@@ -243,7 +255,27 @@ func ConvertTxToAddLiquidityPubData(oTx *mempool.MempoolTx) (pubData []byte, err
 		return nil, err
 	}
 	buf.Write(packedAssetBAmountBytes)
-	buf.Write(Uint40ToBytes(txInfo.LpAmount.Int64()))
+	LpAmountBytes, err := AmountToPackedAmountBytes(txInfo.LpAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(packedAssetBAmountBytes)
+	buf.Write(LpAmountBytes)
+	KLastBytes, err := AmountToPackedAmountBytes(txInfo.KLast)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(KLastBytes)
+	chunk1 := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	treasuryAmountBytes, err := AmountToPackedAmountBytes(txInfo.TreasuryAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(treasuryAmountBytes)
 	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
 	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
 	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
@@ -252,26 +284,14 @@ func ConvertTxToAddLiquidityPubData(oTx *mempool.MempoolTx) (pubData []byte, err
 		return nil, err
 	}
 	buf.Write(packedFeeBytes)
-	pubData = buf.Bytes()
-	pubData = new(big.Int).SetBytes(pubData).FillBytes(make([]byte, 32))
+	chunk2 := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(chunk1)
+	buf.Write(chunk2)
 	return buf.Bytes(), nil
 }
 
 func ConvertTxToRemoveLiquidityPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
-	/*
-		txType 1byte
-		fromAccountIndex 4byte
-		toAccountIndex 4byte
-		pairIndex 2byte
-		assetAId 2byte
-		assetBId 2byte
-		assetAAmount 5byte
-		assetBAmount 5byte
-		lpAmount 5byte
-		gasFeeAccountIndex 4byte
-		gasFeeAssetId 2byte
-		gasFeeAssetAmount 2byte
-	*/
 	if oTx.TxType != commonTx.TxTypeRemoveLiquidity {
 		logx.Errorf("[ConvertTxToRemoveLiquidityPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToRemoveLiquidityPubData] invalid tx type")
@@ -286,24 +306,39 @@ func ConvertTxToRemoveLiquidityPubData(oTx *mempool.MempoolTx) (pubData []byte, 
 	buf.WriteByte(uint8(oTx.TxType))
 	buf.Write(Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
 	buf.Write(Uint16ToBytes(uint16(txInfo.PairIndex)))
-	packedAssetAAmountDeltaBytes, err := AmountToPackedAmountBytes(txInfo.AssetAAmountDelta)
+	packedAssetAAmountBytes, err := AmountToPackedAmountBytes(txInfo.AssetAAmountDelta)
 	if err != nil {
 		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
 		return nil, err
 	}
-	buf.Write(packedAssetAAmountDeltaBytes)
-	packedAssetBAmountDeltaBytes, err := AmountToPackedAmountBytes(txInfo.AssetBAmountDelta)
+	buf.Write(packedAssetAAmountBytes)
+	packedAssetBAmountBytes, err := AmountToPackedAmountBytes(txInfo.AssetBAmountDelta)
 	if err != nil {
 		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
 		return nil, err
 	}
-	buf.Write(packedAssetBAmountDeltaBytes)
-	packedLpAmountBytes, err := AmountToPackedAmountBytes(txInfo.LpAmount)
+	buf.Write(packedAssetBAmountBytes)
+	LpAmountBytes, err := AmountToPackedAmountBytes(txInfo.LpAmount)
 	if err != nil {
 		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
 		return nil, err
 	}
-	buf.Write(packedLpAmountBytes)
+	buf.Write(packedAssetBAmountBytes)
+	buf.Write(LpAmountBytes)
+	KLastBytes, err := AmountToPackedAmountBytes(txInfo.KLast)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(KLastBytes)
+	chunk1 := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	treasuryAmountBytes, err := AmountToPackedAmountBytes(txInfo.TreasuryAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(treasuryAmountBytes)
 	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
 	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
 	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
@@ -312,24 +347,75 @@ func ConvertTxToRemoveLiquidityPubData(oTx *mempool.MempoolTx) (pubData []byte, 
 		return nil, err
 	}
 	buf.Write(packedFeeBytes)
-	pubData = buf.Bytes()
-	pubData = new(big.Int).SetBytes(pubData).FillBytes(make([]byte, 32))
+	chunk2 := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(chunk1)
+	buf.Write(chunk2)
 	return buf.Bytes(), nil
 }
 
+func ConvertTxToWithdrawPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+	if oTx.TxType != commonTx.TxTypeWithdraw {
+		logx.Errorf("[ConvertTxToWithdrawPubData] invalid tx type")
+		return nil, errors.New("[ConvertTxToWithdrawPubData] invalid tx type")
+	}
+	// parse tx
+	txInfo, err := commonTx.ParseWithdrawTxInfo(oTx.TxInfo)
+	if err != nil {
+		logx.Errorf("[ConvertTxToWithdrawPubData] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	var buf bytes.Buffer
+	buf.WriteByte(uint8(oTx.TxType))
+	buf.Write(Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
+	buf.Write(AddressStrToBytes(txInfo.ToAddress))
+	buf.Write(Uint16ToBytes(uint16(txInfo.AssetId)))
+	chunk1 := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(Uint128ToBytes(txInfo.AssetAmount))
+	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
+	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed fee amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(packedFeeBytes)
+	chunk2 := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(chunk1)
+	buf.Write(chunk2)
+	return buf.Bytes(), nil
+}
+
+func ConvertTxToCreateCollectionPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+	if oTx.TxType != commonTx.TxTypeCreateCollection {
+		logx.Errorf("[ConvertTxToCreateCollectionPubData] invalid tx type")
+		return nil, errors.New("[ConvertTxToCreateCollectionPubData] invalid tx type")
+	}
+	// parse tx
+	txInfo, err := commonTx.ParseCreateCollectionTxInfo(oTx.TxInfo)
+	if err != nil {
+		logx.Errorf("[ConvertTxToCreateCollectionPubData] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	var buf bytes.Buffer
+	buf.WriteByte(uint8(oTx.TxType))
+	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.CollectionId)))
+	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
+	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed fee amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(packedFeeBytes)
+	pubData = PaddingBufToChunkSize(buf.Bytes())
+	return pubData, nil
+}
+
 func ConvertTxToMintNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
-	/*
-		txType 1byte
-		fromAccountIndex 4byte
-		toAccountIndex 4byte
-		nftAssetId 4byte
-		nftIndex 8byte
-		nftContentHash 32byte
-		creatorFeeRate 2byte
-		gasFeeAccountIndex 4byte
-		gasFeeAssetId 2byte
-		gasFeeAssetAmount 2byte
-	*/
 	if oTx.TxType != commonTx.TxTypeMintNft {
 		logx.Errorf("[ConvertTxToMintNftPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToMintNftPubData] invalid tx type")
@@ -354,25 +440,15 @@ func ConvertTxToMintNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err erro
 	}
 	buf.Write(packedFeeBytes)
 	buf.Write(Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
-	a := buf.Bytes()
+	buf.Write(Uint16ToBytes(uint16(txInfo.NftCollectionId)))
+	chunk := PaddingBufToChunkSize(buf.Bytes())
 	buf.Reset()
-	buf.Write(new(big.Int).SetBytes(a).FillBytes(make([]byte, 32)))
+	buf.Write(chunk)
 	buf.Write(common.FromHex(txInfo.NftContentHash))
 	return buf.Bytes(), nil
 }
 
 func ConvertTxToTransferNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
-	/*
-		txType 1byte
-		fromAccountIndex 4byte
-		toAccountIndex 4byte
-		nftAssetId 4byte
-		nftIndex 8byte
-		nftContentHash 32byte
-		gasFeeAccountIndex 4byte
-		gasFeeAssetId 2byte
-		gasFeeAssetAmount 2byte
-	*/
 	if oTx.TxType != commonTx.TxTypeTransferNft {
 		logx.Errorf("[ConvertTxToMintNftPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToMintNftPubData] invalid tx type")
@@ -396,75 +472,52 @@ func ConvertTxToTransferNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err 
 		return nil, err
 	}
 	buf.Write(packedFeeBytes)
-	a := buf.Bytes()
+	chunk := PaddingBufToChunkSize(buf.Bytes())
 	buf.Reset()
-	buf.Write(new(big.Int).SetBytes(a).FillBytes(make([]byte, 32)))
+	buf.Write(chunk)
 	buf.Write(txInfo.CallDataHash)
 	return buf.Bytes(), nil
 }
 
-func ConvertTxToDepositNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
-	/*
-		struct DepositNFT {
-			uint8 txType;
-			uint32 accountIndex;
-			bytes32 accountNameHash;
-			uint8 nftType;
-			int64 nftIndex;
-			address nftL1Address;
-			uint256 nftTokenId;
-			uint32 amount;
-		}
-	*/
-	if oTx.TxType != commonTx.TxTypeDepositNft {
-		logx.Errorf("[ConvertTxToDepositNftPubData] invalid tx type")
-		return nil, errors.New("[ConvertTxToDepositNftPubData] invalid tx type")
+func ConvertTxToAtomicMatchPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+	if oTx.TxType != commonTx.TxTypeAtomicMatch {
+		logx.Errorf("[ConvertTxToAtomicMatchPubData] invalid tx type")
+		return nil, errors.New("[ConvertTxToAtomicMatchPubData] invalid tx type")
 	}
 	// parse tx
-	txInfo, err := commonTx.ParseDepositNftTxInfo(oTx.TxInfo)
+	txInfo, err := commonTx.ParseAtomicMatchTxInfo(oTx.TxInfo)
 	if err != nil {
-		logx.Errorf("[ConvertTxToDepositNftPubData] unable to parse tx info: %s", err.Error())
+		logx.Errorf("[ConvertTxToAtomicMatchPubData] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(oTx.TxType))
-	buf.Write(Uint32ToBytes(txInfo.AccountIndex))
-	buf.Write(common.FromHex(txInfo.AccountNameHash))
-	buf.Write(Uint40ToBytes(int64(txInfo.NftIndex)))
-	buf.Write(AddressStrToBytes(txInfo.NftL1Address))
-	buf.Write(Uint256ToBytes(txInfo.NftL1TokenId))
-	return buf.Bytes(), nil
-}
-
-func ConvertTxToWithdrawPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
-	/*
-		struct Withdraw {
-			uint8 txType;
-			uint32 accountIndex;
-			address toAddress;
-			uint16 assetId;
-			uint128 assetAmount;
-			uint32 gasFeeAccountIndex;
-			uint16 gasFeeAssetId;
-			uint16 gasFeeAssetAmount;
-		}
-	*/
-	if oTx.TxType != commonTx.TxTypeWithdraw {
-		logx.Errorf("[ConvertTxToDepositNftPubData] invalid tx type")
-		return nil, errors.New("[ConvertTxToDepositNftPubData] invalid tx type")
-	}
-	// parse tx
-	txInfo, err := commonTx.ParseWithdrawTxInfo(oTx.TxInfo)
+	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
+	buf.Write(Uint32ToBytes(uint32(txInfo.BuyOffer.AccountIndex)))
+	buf.Write(Uint24ToBytes(txInfo.BuyOffer.OfferId))
+	buf.Write(Uint32ToBytes(uint32(txInfo.SellOffer.AccountIndex)))
+	buf.Write(Uint24ToBytes(txInfo.SellOffer.OfferId))
+	buf.Write(Uint16ToBytes(uint16(txInfo.SellOffer.AssetId)))
+	chunk1 := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	packedAmountBytes, err := AmountToPackedAmountBytes(txInfo.BuyOffer.AssetAmount)
 	if err != nil {
-		logx.Errorf("[ConvertTxToDepositNftPubData] unable to parse tx info: %s", err.Error())
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
 		return nil, err
 	}
-	var buf bytes.Buffer
-	buf.WriteByte(uint8(oTx.TxType))
-	buf.Write(Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
-	buf.Write(AddressStrToBytes(txInfo.ToAddress))
-	buf.Write(Uint16ToBytes(uint16(txInfo.AssetId)))
-	buf.Write(Uint128ToBytes(txInfo.AssetAmount))
+	buf.Write(packedAmountBytes)
+	creatorAmountBytes, err := AmountToPackedAmountBytes(txInfo.CreatorAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(creatorAmountBytes)
+	treasuryAmountBytes, err := AmountToPackedAmountBytes(txInfo.TreasuryAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(treasuryAmountBytes)
 	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
 	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
 	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
@@ -473,29 +526,40 @@ func ConvertTxToWithdrawPubData(oTx *mempool.MempoolTx) (pubData []byte, err err
 		return nil, err
 	}
 	buf.Write(packedFeeBytes)
+	chunk2 := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(chunk1)
+	buf.Write(chunk2)
 	return buf.Bytes(), nil
 }
 
+func ConvertTxToCancelOfferPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+	if oTx.TxType != commonTx.TxTypeCancelOffer {
+		logx.Errorf("[ConvertTxToCancelOfferPubData] invalid tx type")
+		return nil, errors.New("[ConvertTxToCancelOfferPubData] invalid tx type")
+	}
+	// parse tx
+	txInfo, err := commonTx.ParseCancelOfferTxInfo(oTx.TxInfo)
+	if err != nil {
+		logx.Errorf("[ConvertTxToCancelOfferPubData] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	var buf bytes.Buffer
+	buf.WriteByte(uint8(oTx.TxType))
+	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
+	buf.Write(Uint24ToBytes(txInfo.OfferId))
+	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
+	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed fee amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(packedFeeBytes)
+	return PaddingBufToChunkSize(buf.Bytes()), nil
+}
+
 func ConvertTxToWithdrawNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
-	/*
-		// Withdraw Nft pubdata
-		struct WithdrawNFT {
-			uint8 txType;
-			uint32 accountIndex;
-			bytes32 accountNameHash;
-			uint8 nftType;
-			uint40 nftIndex;
-			bytes32 nftContentHash;
-			address nftL1Address;
-			uint256 nftL1TokenId;
-			uint32 amount;
-			address toAddress;
-			address proxyAddress;
-			uint32 gasFeeAccountIndex;
-			uint16 gasFeeAssetId;
-			uint16 gasFeeAssetAmount;
-		}
-	*/
 	if oTx.TxType != commonTx.TxTypeWithdrawNft {
 		logx.Errorf("[ConvertTxToWithdrawNftPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToWithdrawNftPubData] invalid tx type")
@@ -509,10 +573,14 @@ func ConvertTxToWithdrawNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err 
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(oTx.TxType))
 	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
+	buf.Write(Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
 	buf.Write(Uint40ToBytes(txInfo.NftIndex))
-	buf.Write(common.FromHex(txInfo.NftContentHash))
+	chunk1 := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
 	buf.Write(AddressStrToBytes(txInfo.NftL1Address))
-	buf.Write(Uint256ToBytes(txInfo.NftL1TokenId))
+	chunk2 := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
 	buf.Write(AddressStrToBytes(txInfo.ToAddress))
 	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
 	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
@@ -522,20 +590,18 @@ func ConvertTxToWithdrawNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err 
 		return nil, err
 	}
 	buf.Write(packedFeeBytes)
+	chunk3 := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(chunk1)
+	buf.Write(chunk2)
+	buf.Write(chunk3)
+	buf.Write(txInfo.NftContentHash)
+	buf.Write(Uint256ToBytes(txInfo.NftL1TokenId))
+	buf.Write(txInfo.CreatorAccountNameHash)
 	return buf.Bytes(), nil
 }
 
 func ConvertTxToFullExitPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
-	/*
-		// full exit pubdata
-		struct FullExit {
-			uint8 txType;
-			uint32 accountIndex;
-			bytes32 accountNameHash;
-			uint16 assetId;
-			uint128 assetAmount;
-		}
-	*/
 	if oTx.TxType != commonTx.TxTypeFullExit {
 		logx.Errorf("[ConvertTxToFullExitPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToFullExitPubData] invalid tx type")
@@ -549,29 +615,16 @@ func ConvertTxToFullExitPubData(oTx *mempool.MempoolTx) (pubData []byte, err err
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(oTx.TxType))
 	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
-	buf.Write(common.FromHex(txInfo.AccountNameHash))
-	buf.Write(Uint16ToBytes(txInfo.AssetId))
+	buf.Write(Uint16ToBytes(uint16(txInfo.AssetId)))
 	buf.Write(Uint128ToBytes(txInfo.AssetAmount))
+	chunk := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(chunk)
+	buf.Write(txInfo.AccountNameHash)
 	return buf.Bytes(), nil
 }
 
 func ConvertTxToFullExitNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
-	/*
-		// full exit nft pubdata
-		struct FullExitNFT {
-			uint8 txType;
-			uint32 accountIndex;
-			bytes32 accountNameHash;
-			uint8 nftType;
-			uint40 nftIndex;
-			bytes32 nftContentHash;
-			address nftL1Address;
-			uint256 nftL1TokenId;
-			uint32 amount;
-			address toAddress;
-			address proxyAddress;
-		}
-	*/
 	if oTx.TxType != commonTx.TxTypeFullExitNft {
 		logx.Errorf("[ConvertTxToFullExitNftPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToFullExitNftPubData] invalid tx type")
@@ -584,13 +637,22 @@ func ConvertTxToFullExitNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err 
 	}
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(oTx.TxType))
-	buf.Write(Uint32ToBytes(txInfo.AccountIndex))
-	buf.Write(common.FromHex(txInfo.AccountNameHash))
-	buf.Write(Uint40ToBytes(int64(txInfo.NftIndex)))
-	buf.Write(txInfo.NftContentHash)
+	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
+	buf.Write(Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
+	buf.Write(Uint40ToBytes(txInfo.NftIndex))
+	buf.Write(Uint16ToBytes(uint16(txInfo.CollectionId)))
+	chunk1 := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
 	buf.Write(AddressStrToBytes(txInfo.NftL1Address))
+	chunk2 := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(chunk1)
+	buf.Write(chunk2)
+	buf.Write(txInfo.AccountNameHash)
+	buf.Write(txInfo.CreatorAccountNameHash)
+	buf.Write(txInfo.NftContentHash)
 	buf.Write(Uint256ToBytes(txInfo.NftL1TokenId))
-	buf.Write(AddressStrToBytes(txInfo.ToAddress))
 	return buf.Bytes(), nil
 }
 

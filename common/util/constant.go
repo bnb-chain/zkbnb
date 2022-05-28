@@ -51,6 +51,7 @@ const (
 )
 
 const (
+	CHUNK_BYTES_SIZE           = 32
 	TXTYPE_BYTES_SIZE          = 1
 	NFTTYPE_BYTES_SIZE         = 1
 	ADDRESS_BYTES_SIZE         = 20

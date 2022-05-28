@@ -30,9 +30,13 @@ const (
 	AccountNameSuffix = ".legend"
 )
 
-func AccountNameToBytes32(accountName string) [32]byte {
+func PaddingBufToChunkSize(buf []byte) []byte {
+	return new(big.Int).SetBytes(buf).FillBytes(make([]byte, 32))
+}
+
+func AccountNameToBytes32(accountName string) []byte {
 	realName := strings.Split(accountName, AccountNameSuffix)[0]
-	var buf [32]byte
+	buf := make([]byte, 32)
 	copy(buf[:], realName)
 	return buf
 }
@@ -57,6 +61,10 @@ func AddressStrToBytes(addr string) []byte {
 
 func Uint16ToBytes(a uint16) []byte {
 	return new(big.Int).SetUint64(uint64(a)).FillBytes(make([]byte, 2))
+}
+
+func Uint24ToBytes(a int64) []byte {
+	return new(big.Int).SetInt64(a).FillBytes(make([]byte, 3))
 }
 
 func Uint32ToBytes(a uint32) []byte {
