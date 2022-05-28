@@ -374,6 +374,38 @@ This is a layer-1 transaction and a user needs to call this method first to regi
 | AccountNameHash | 32         | hash value of the account name |
 | PubKey          | 32         | layer-2 account's public key   |
 
+```go
+func ConvertTxToRegisterZNSPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+	if oTx.TxType != commonTx.TxTypeRegisterZns {
+		logx.Errorf("[ConvertTxToRegisterZNSPubData] invalid tx type")
+		return nil, errors.New("[ConvertTxToRegisterZNSPubData] invalid tx type")
+	}
+	// parse tx
+	txInfo, err := commonTx.ParseRegisterZnsTxInfo(oTx.TxInfo)
+	if err != nil {
+		logx.Errorf("[ConvertTxToRegisterZNSPubData] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	var buf bytes.Buffer
+	buf.WriteByte(uint8(oTx.TxType))
+	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
+	chunk := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(chunk)
+	buf.Write(AccountNameToBytes32(txInfo.AccountName))
+	buf.Write(common.FromHex(txInfo.AccountNameHash))
+	pk, err := ParsePubKey(txInfo.PubKey)
+	if err != nil {
+		logx.Errorf("[ConvertTxToRegisterZNSPubData] unable to parse pub key: %s", err.Error())
+		return nil, err
+	}
+	// because we can get Y from X, so we only need to store X is enough
+	buf.Write(pk.A.X.Marshal())
+
+	return buf.Bytes(), nil
+}
+```
+
 #### User transaction
 
 | Name        | Size(byte) | Comment                      |
@@ -422,6 +454,30 @@ This is a layer-1 transaction and is used for creating a trading pair for L2.
 | TreasuryAccountIndex | 4          | unique treasury account index |
 | TreasuryRate         | 2          | treasury rate                 |
 
+```go
+func ConvertTxToCreatePairPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+	if oTx.TxType != commonTx.TxTypeCreatePair {
+		logx.Errorf("[ConvertTxToCreatePairPubData] invalid tx type")
+		return nil, errors.New("[ConvertTxToCreatePairPubData] invalid tx type")
+	}
+	// parse tx
+	txInfo, err := commonTx.ParseCreatePairTxInfo(oTx.TxInfo)
+	if err != nil {
+		logx.Errorf("[ConvertTxToCreatePairPubData] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	var buf bytes.Buffer
+	buf.WriteByte(uint8(oTx.TxType))
+	buf.Write(Uint16ToBytes(uint16(txInfo.PairIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.AssetAId)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.AssetBId)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.FeeRate)))
+	buf.Write(Uint32ToBytes(uint32(txInfo.TreasuryAccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.TreasuryRate)))
+	return PaddingBufToChunkSize(buf.Bytes()), nil
+}
+```
+
 #### User transaction
 
 | Name          | Size(byte) | Comment                 |
@@ -468,6 +524,28 @@ This is a layer-1 transaction and is used for updating a trading pair for L2.
 | FeeRate              | 2          | fee rate                      |
 | TreasuryAccountIndex | 4          | unique treasury account index |
 | TreasuryRate         | 2          | treasury rate                 |
+
+```go
+func ConvertTxToUpdatePairRatePubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+	if oTx.TxType != commonTx.TxTypeUpdatePairRate {
+		logx.Errorf("[ConvertTxToUpdatePairRatePubData] invalid tx type")
+		return nil, errors.New("[ConvertTxToUpdatePairRatePubData] invalid tx type")
+	}
+	// parse tx
+	txInfo, err := commonTx.ParseUpdatePairRateTxInfo(oTx.TxInfo)
+	if err != nil {
+		logx.Errorf("[ConvertTxToUpdatePairRatePubData] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	var buf bytes.Buffer
+	buf.WriteByte(uint8(oTx.TxType))
+	buf.Write(Uint16ToBytes(uint16(txInfo.PairIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.FeeRate)))
+	buf.Write(Uint32ToBytes(uint32(txInfo.TreasuryAccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.TreasuryRate)))
+	return PaddingBufToChunkSize(buf.Bytes()), nil
+}
+```
 
 #### User transaction
 
@@ -518,6 +596,31 @@ This is a layer-1 transaction and is used for depositing assets into the layer-2
 | AssetId         | 2          | asset index       |
 | AssetAmount     | 16         | state amount      |
 | AccountNameHash | 32         | account name hash |
+
+```go
+func ConvertTxToDepositPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+	if oTx.TxType != commonTx.TxTypeDeposit {
+		logx.Errorf("[ConvertTxToDepositPubData] invalid tx type")
+		return nil, errors.New("[ConvertTxToDepositPubData] invalid tx type")
+	}
+	// parse tx
+	txInfo, err := commonTx.ParseDepositTxInfo(oTx.TxInfo)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	var buf bytes.Buffer
+	buf.WriteByte(uint8(oTx.TxType))
+	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.AssetId)))
+	buf.Write(Uint128ToBytes(txInfo.AssetAmount))
+	chunk1 := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(chunk1)
+	buf.Write(common.FromHex(txInfo.AccountNameHash))
+	return buf.Bytes(), nil
+}
+```
 
 #### User transaction
 
@@ -579,6 +682,37 @@ This is a layer-1 transaction and is used for depositing nfts into the layer-2 a
 | NftL1TokenId        | 32         | nft layer-1 token id  |
 | AccountNameHash     | 32         | account name hash     |
 
+```go
+func ConvertTxToDepositNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+	if oTx.TxType != commonTx.TxTypeDepositNft {
+		logx.Errorf("[ConvertTxToDepositNftPubData] invalid tx type")
+		return nil, errors.New("[ConvertTxToDepositNftPubData] invalid tx type")
+	}
+	// parse tx
+	txInfo, err := commonTx.ParseDepositNftTxInfo(oTx.TxInfo)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositNftPubData] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	var buf bytes.Buffer
+	buf.WriteByte(uint8(oTx.TxType))
+	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
+	buf.Write(Uint40ToBytes(txInfo.NftIndex))
+	buf.Write(AddressStrToBytes(txInfo.NftL1Address))
+	chunk1 := buf.Bytes()
+	buf.Reset()
+	buf.Write(Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
+	chunk2 := buf.Bytes()
+	buf.Reset()
+	buf.Write(chunk1)
+	buf.Write(chunk2)
+	buf.Write(txInfo.NftContentHash)
+	buf.Write(Uint256ToBytes(txInfo.NftL1TokenId))
+	buf.Write(common.FromHex(txInfo.AccountNameHash))
+	return buf.Bytes(), nil
+}
+```
+
 #### User transaction
 
 | Name            | Size(byte) | Comment                      |
@@ -636,6 +770,46 @@ This is a layer-2 transaction and is used for transfering assets in the layer-2 
 | GasFeeAssetId      | 2          | gas fee asset id       |
 | GasFeeAssetAmount  | 2          | packed fee amount      |
 | CallDataHash       | 32         | call data hash         |
+
+```go
+func ConvertTxToTransferPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+	if oTx.TxType != commonTx.TxTypeTransfer {
+		logx.Errorf("[ConvertTxToTransferPubData] invalid tx type")
+		return nil, errors.New("[ConvertTxToTransferPubData] invalid tx type")
+	}
+	// parse tx
+	txInfo, err := commonTx.ParseTransferTxInfo(oTx.TxInfo)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	var buf bytes.Buffer
+	buf.WriteByte(uint8(oTx.TxType))
+	buf.Write(Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
+	buf.Write(Uint32ToBytes(uint32(txInfo.ToAccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.AssetId)))
+	packedAmountBytes, err := AmountToPackedAmountBytes(txInfo.AssetAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(packedAmountBytes)
+	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
+	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed fee amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(packedFeeBytes)
+	chunk := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(chunk)
+	buf.Write(txInfo.CallDataHash)
+	pubData = buf.Bytes()
+	return pubData, nil
+}
+```
 
 #### User transaction
 
@@ -717,6 +891,47 @@ This is a layer-2 transaction and is used for making a swap for assets in the la
 | GasFeeAccountIndex | 4          | gas fee account index |
 | GasFeeAssetId      | 2          | gas fee asset id      |
 | GasFeeAssetAmount  | 2          | packed fee amount     |
+
+```go
+func ConvertTxToSwapPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+	if oTx.TxType != commonTx.TxTypeSwap {
+		logx.Errorf("[ConvertTxToSwapPubData] invalid tx type")
+		return nil, errors.New("[ConvertTxToSwapPubData] invalid tx type")
+	}
+	// parse tx
+	txInfo, err := commonTx.ParseSwapTxInfo(oTx.TxInfo)
+	if err != nil {
+		logx.Errorf("[ConvertTxToSwapPubData] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	var buf bytes.Buffer
+	buf.WriteByte(uint8(oTx.TxType))
+	buf.Write(Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.PairIndex)))
+	packedAssetAAmountBytes, err := AmountToPackedAmountBytes(txInfo.AssetAAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(packedAssetAAmountBytes)
+	packedAssetBAmountDeltaBytes, err := AmountToPackedAmountBytes(txInfo.AssetBAmountDelta)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(packedAssetBAmountDeltaBytes)
+	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
+	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed fee amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(packedFeeBytes)
+	pubData = PaddingBufToChunkSize(buf.Bytes())
+	return pubData, nil
+}
+```
 
 #### User transaction
 
@@ -840,6 +1055,71 @@ This is a layer-2 transaction and is used for adding liquidity for a trading pai
 | GasFeeAccountIndex | 4          | gas fee account index  |
 | GasFeeAssetId      | 2          | gas fee asset id       |
 | GasFeeAssetAmount  | 2          | packed fee amount      |
+
+```go
+func ConvertTxToAddLiquidityPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+	if oTx.TxType != commonTx.TxTypeAddLiquidity {
+		logx.Errorf("[ConvertTxToAddLiquidityPubData] invalid tx type")
+		return nil, errors.New("[ConvertTxToAddLiquidityPubData] invalid tx type")
+	}
+	// parse tx
+	txInfo, err := commonTx.ParseAddLiquidityTxInfo(oTx.TxInfo)
+	if err != nil {
+		logx.Errorf("[ConvertTxToAddLiquidityPubData] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	var buf bytes.Buffer
+	buf.WriteByte(uint8(oTx.TxType))
+	buf.Write(Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.PairIndex)))
+	packedAssetAAmountBytes, err := AmountToPackedAmountBytes(txInfo.AssetAAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(packedAssetAAmountBytes)
+	packedAssetBAmountBytes, err := AmountToPackedAmountBytes(txInfo.AssetBAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(packedAssetBAmountBytes)
+	LpAmountBytes, err := AmountToPackedAmountBytes(txInfo.LpAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(packedAssetBAmountBytes)
+	buf.Write(LpAmountBytes)
+	KLastBytes, err := AmountToPackedAmountBytes(txInfo.KLast)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(KLastBytes)
+	chunk1 := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	treasuryAmountBytes, err := AmountToPackedAmountBytes(txInfo.TreasuryAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(treasuryAmountBytes)
+	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
+	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed fee amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(packedFeeBytes)
+	chunk2 := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(chunk1)
+	buf.Write(chunk2)
+	return buf.Bytes(), nil
+}
+```
 
 #### User transaction
 
@@ -1038,6 +1318,42 @@ This is a layer-2 transaction and is used for withdrawing assets from the layer-
 | GasFeeAssetId      | 2          | gas fee asset id         |
 | GasFeeAssetAmount  | 2          | packed fee amount        |
 
+```go
+func ConvertTxToWithdrawPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+	if oTx.TxType != commonTx.TxTypeWithdraw {
+		logx.Errorf("[ConvertTxToWithdrawPubData] invalid tx type")
+		return nil, errors.New("[ConvertTxToWithdrawPubData] invalid tx type")
+	}
+	// parse tx
+	txInfo, err := commonTx.ParseWithdrawTxInfo(oTx.TxInfo)
+	if err != nil {
+		logx.Errorf("[ConvertTxToWithdrawPubData] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	var buf bytes.Buffer
+	buf.WriteByte(uint8(oTx.TxType))
+	buf.Write(Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
+	buf.Write(AddressStrToBytes(txInfo.ToAddress))
+	buf.Write(Uint16ToBytes(uint16(txInfo.AssetId)))
+	chunk1 := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(Uint128ToBytes(txInfo.AssetAmount))
+	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
+	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed fee amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(packedFeeBytes)
+	chunk2 := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(chunk1)
+	buf.Write(chunk2)
+	return buf.Bytes(), nil
+}
+```
+
 #### User transaction
 
 ```go
@@ -1105,6 +1421,35 @@ This is a layer-2 transaction and is used for creating a new collection
 | GasFeeAssetId     | 2          | asset id          |
 | GasFeeAssetAmount | 2          | packed fee amount |
 
+```go
+func ConvertTxToCreateCollectionPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+	if oTx.TxType != commonTx.TxTypeCreateCollection {
+		logx.Errorf("[ConvertTxToCreateCollectionPubData] invalid tx type")
+		return nil, errors.New("[ConvertTxToCreateCollectionPubData] invalid tx type")
+	}
+	// parse tx
+	txInfo, err := commonTx.ParseCreateCollectionTxInfo(oTx.TxInfo)
+	if err != nil {
+		logx.Errorf("[ConvertTxToCreateCollectionPubData] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	var buf bytes.Buffer
+	buf.WriteByte(uint8(oTx.TxType))
+	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.CollectionId)))
+	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
+	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed fee amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(packedFeeBytes)
+	pubData = PaddingBufToChunkSize(buf.Bytes())
+	return pubData, nil
+}
+```
+
 #### User transaction
 
 ```go
@@ -1166,7 +1511,7 @@ This is a layer-2 transaction and is used for minting nfts in the layer-2 networ
 | Name                | Size(byte) | Comment                |
 | ------------------- | ---------- | ---------------------- |
 | TxType              | 1          | transaction type       |
-| FromAccountIndex    | 4          | from account index     |
+| CraetorAccountIndex | 4          | creator account index  |
 | ToAccountIndex      | 4          | receiver account index |
 | NftIndex            | 5          | unique nft index       |
 | GasFeeAccountIndex  | 4          | gas fee account index  |
@@ -1175,6 +1520,41 @@ This is a layer-2 transaction and is used for minting nfts in the layer-2 networ
 | CreatorTreasuryRate | 2          | creator treasury rate  |
 | CollectionId        | 2          | collection index       |
 | NftContentHash      | 32         | nft content hash       |
+
+```go
+func ConvertTxToMintNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+	if oTx.TxType != commonTx.TxTypeMintNft {
+		logx.Errorf("[ConvertTxToMintNftPubData] invalid tx type")
+		return nil, errors.New("[ConvertTxToMintNftPubData] invalid tx type")
+	}
+	// parse tx
+	txInfo, err := commonTx.ParseMintNftTxInfo(oTx.TxInfo)
+	if err != nil {
+		logx.Errorf("[ConvertTxToMintNftPubData] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	var buf bytes.Buffer
+	buf.WriteByte(uint8(oTx.TxType))
+	buf.Write(Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
+	buf.Write(Uint32ToBytes(uint32(txInfo.ToAccountIndex)))
+	buf.Write(Uint64ToBytes(uint64(txInfo.NftIndex)))
+	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
+	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed fee amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(packedFeeBytes)
+	buf.Write(Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.NftCollectionId)))
+	chunk := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(chunk)
+	buf.Write(common.FromHex(txInfo.NftContentHash))
+	return buf.Bytes(), nil
+}
+```
 
 #### User transaction
 
@@ -1252,6 +1632,39 @@ This is a layer-2 transaction and is used for transfering nfts to others in the 
 | GasFeeAssetId      | 2          | gas fee asset id       |
 | GasFeeAssetAmount  | 2          | packed fee amount      |
 | CallDataHash       | 32         | call data hash         |
+
+```go
+func ConvertTxToTransferNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+	if oTx.TxType != commonTx.TxTypeTransferNft {
+		logx.Errorf("[ConvertTxToMintNftPubData] invalid tx type")
+		return nil, errors.New("[ConvertTxToMintNftPubData] invalid tx type")
+	}
+	// parse tx
+	txInfo, err := commonTx.ParseTransferNftTxInfo(oTx.TxInfo)
+	if err != nil {
+		logx.Errorf("[ConvertTxToMintNftPubData] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	var buf bytes.Buffer
+	buf.WriteByte(uint8(oTx.TxType))
+	buf.Write(Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
+	buf.Write(Uint32ToBytes(uint32(txInfo.ToAccountIndex)))
+	buf.Write(Uint64ToBytes(uint64(txInfo.NftIndex)))
+	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
+	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed fee amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(packedFeeBytes)
+	chunk := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(chunk)
+	buf.Write(txInfo.CallDataHash)
+	return buf.Bytes(), nil
+}
+```
 
 #### User transaction
 
@@ -1346,6 +1759,62 @@ This is a layer-2 transaction that will be used for buying or selling Nft in the
 | GasFeeAccountIndex    | 4          | gas fee account index      |
 | GasFeeAssetId         | 2          | gas fee asset id           |
 | GasFeeAssetAmount     | 2          | packed fee amount          |
+
+```go
+func ConvertTxToAtomicMatchPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+	if oTx.TxType != commonTx.TxTypeAtomicMatch {
+		logx.Errorf("[ConvertTxToAtomicMatchPubData] invalid tx type")
+		return nil, errors.New("[ConvertTxToAtomicMatchPubData] invalid tx type")
+	}
+	// parse tx
+	txInfo, err := commonTx.ParseAtomicMatchTxInfo(oTx.TxInfo)
+	if err != nil {
+		logx.Errorf("[ConvertTxToAtomicMatchPubData] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	var buf bytes.Buffer
+	buf.WriteByte(uint8(oTx.TxType))
+	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
+	buf.Write(Uint32ToBytes(uint32(txInfo.BuyOffer.AccountIndex)))
+	buf.Write(Uint24ToBytes(txInfo.BuyOffer.OfferId))
+	buf.Write(Uint32ToBytes(uint32(txInfo.SellOffer.AccountIndex)))
+	buf.Write(Uint24ToBytes(txInfo.SellOffer.OfferId))
+	buf.Write(Uint16ToBytes(uint16(txInfo.SellOffer.AssetId)))
+	chunk1 := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	packedAmountBytes, err := AmountToPackedAmountBytes(txInfo.BuyOffer.AssetAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(packedAmountBytes)
+	creatorAmountBytes, err := AmountToPackedAmountBytes(txInfo.CreatorAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(creatorAmountBytes)
+	treasuryAmountBytes, err := AmountToPackedAmountBytes(txInfo.TreasuryAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(treasuryAmountBytes)
+	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
+	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed fee amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(packedFeeBytes)
+	chunk2 := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(chunk1)
+	buf.Write(chunk2)
+	return buf.Bytes(), nil
+}
+```
 
 #### User transaction
 
@@ -1491,6 +1960,34 @@ This is a layer-2 transaction and is used for canceling nft offer.
 | GasFeeAssetId      | 2          | gas fee asset id      |
 | GasFeeAssetAmount  | 2          | packed fee amount     |
 
+```go
+func ConvertTxToCancelOfferPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+	if oTx.TxType != commonTx.TxTypeCancelOffer {
+		logx.Errorf("[ConvertTxToCancelOfferPubData] invalid tx type")
+		return nil, errors.New("[ConvertTxToCancelOfferPubData] invalid tx type")
+	}
+	// parse tx
+	txInfo, err := commonTx.ParseCancelOfferTxInfo(oTx.TxInfo)
+	if err != nil {
+		logx.Errorf("[ConvertTxToCancelOfferPubData] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	var buf bytes.Buffer
+	buf.WriteByte(uint8(oTx.TxType))
+	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
+	buf.Write(Uint24ToBytes(txInfo.OfferId))
+	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
+	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed fee amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(packedFeeBytes)
+	return PaddingBufToChunkSize(buf.Bytes()), nil
+}
+```
+
 #### User transaction
 
 ```go
@@ -1561,6 +2058,50 @@ This is a layer-2 transaction and is used for withdrawing nft from the layer-2 t
 | NftContentHash         | 32         | nft content hash          |
 | NftL1TokenId           | 32         | nft layer-1 token id      |
 | CreatorAccountNameHash | 32         | creator account name hash |
+
+```go
+func ConvertTxToWithdrawNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+	if oTx.TxType != commonTx.TxTypeWithdrawNft {
+		logx.Errorf("[ConvertTxToWithdrawNftPubData] invalid tx type")
+		return nil, errors.New("[ConvertTxToWithdrawNftPubData] invalid tx type")
+	}
+	// parse tx
+	txInfo, err := commonTx.ParseWithdrawNftTxInfo(oTx.TxInfo)
+	if err != nil {
+		logx.Errorf("[ConvertTxToWithdrawNftPubData] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	var buf bytes.Buffer
+	buf.WriteByte(uint8(oTx.TxType))
+	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
+	buf.Write(Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
+	buf.Write(Uint40ToBytes(txInfo.NftIndex))
+	chunk1 := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(AddressStrToBytes(txInfo.NftL1Address))
+	chunk2 := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(AddressStrToBytes(txInfo.ToAddress))
+	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
+	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
+	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed fee amount: %s", err.Error())
+		return nil, err
+	}
+	buf.Write(packedFeeBytes)
+	chunk3 := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(chunk1)
+	buf.Write(chunk2)
+	buf.Write(chunk3)
+	buf.Write(txInfo.NftContentHash)
+	buf.Write(Uint256ToBytes(txInfo.NftL1TokenId))
+	buf.Write(txInfo.CreatorAccountNameHash)
+	return buf.Bytes(), nil
+}
+```
 
 #### User transaction
 
@@ -1640,9 +2181,34 @@ This is a layer-1 transaction and is used for full exit assets from the layer-2 
 | --------------- | ---------- | ------------------ |
 | TxType          | 1          | transaction type   |
 | AccountIndex    | 4          | from account index |
-| AccountNameHash | 32         | account name hash  |
 | AssetId         | 2          | asset index        |
 | AssetAmount     | 16         | state amount       |
+| AccountNameHash | 32         | account name hash  |
+
+```go
+func ConvertTxToFullExitPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+	if oTx.TxType != commonTx.TxTypeFullExit {
+		logx.Errorf("[ConvertTxToFullExitPubData] invalid tx type")
+		return nil, errors.New("[ConvertTxToFullExitPubData] invalid tx type")
+	}
+	// parse tx
+	txInfo, err := commonTx.ParseFullExitTxInfo(oTx.TxInfo)
+	if err != nil {
+		logx.Errorf("[ConvertTxToFullExitPubData] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	var buf bytes.Buffer
+	buf.WriteByte(uint8(oTx.TxType))
+	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.AssetId)))
+	buf.Write(Uint128ToBytes(txInfo.AssetAmount))
+	chunk := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(chunk)
+	buf.Write(common.FromHex(txInfo.AccountNameHash))
+	return buf.Bytes(), nil
+}
+```
 
 #### User transaction
 
@@ -1681,7 +2247,7 @@ This is a layer-1 transaction and is used for full exit nfts from the layer-2 to
 
 | Chunks | Significant bytes |
 | ------ | ----------------- |
-| 4      | 132               |
+| 6      | 164               |
 
 ##### Structure
 
@@ -1690,12 +2256,48 @@ This is a layer-1 transaction and is used for full exit nfts from the layer-2 to
 | TxType                 | 1          | transaction type          |
 | AccountIndex           | 4          | from account index        |
 | CreatorAccountIndex    | 2          | creator account index     |
-| CreatorAccountNameHash | 32         | creator account name hash |
 | CreatorTreasuryRate    | 2          | creator treasury rate     |
 | NftIndex               | 5          | unique nft index          |
+| CollectionId           | 2          | collection id             |
 | NftL1Address           | 20         | nft layer-1 address       |
+| AccountNameHash        | 32         | account name hash         |
+| CreatorAccountNameHash | 32         | creator account name hash |
 | NftContentHash         | 32         | nft content hash          |
 | NftL1TokenId           | 32         | nft layer-1 token id      |
+
+```go
+func ConvertTxToFullExitNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+	if oTx.TxType != commonTx.TxTypeFullExitNft {
+		logx.Errorf("[ConvertTxToFullExitNftPubData] invalid tx type")
+		return nil, errors.New("[ConvertTxToFullExitNftPubData] invalid tx type")
+	}
+	// parse tx
+	txInfo, err := commonTx.ParseFullExitNftTxInfo(oTx.TxInfo)
+	if err != nil {
+		logx.Errorf("[ConvertTxToFullExitNftPubData] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	var buf bytes.Buffer
+	buf.WriteByte(uint8(oTx.TxType))
+	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
+	buf.Write(Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
+	buf.Write(Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
+	buf.Write(Uint40ToBytes(txInfo.NftIndex))
+	buf.Write(Uint16ToBytes(uint16(txInfo.CollectionId)))
+	chunk1 := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(AddressStrToBytes(txInfo.NftL1Address))
+	chunk2 := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(chunk1)
+	buf.Write(chunk2)
+	buf.Write(txInfo.AccountNameHash)
+	buf.Write(txInfo.CreatorAccountNameHash)
+	buf.Write(txInfo.NftContentHash)
+	buf.Write(Uint256ToBytes(txInfo.NftL1TokenId))
+	return buf.Bytes(), nil
+}
+```
 
 #### User transaction
 

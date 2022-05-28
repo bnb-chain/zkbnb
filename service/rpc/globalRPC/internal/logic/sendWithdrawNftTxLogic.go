@@ -128,6 +128,7 @@ func (l *SendTxLogic) sendWithdrawNftTx(rawTxInfo string) (txId string, err erro
 	txInfo.NftContentHash = nftInfo.NftContentHash
 	txInfo.NftL1Address = nftInfo.NftL1Address
 	txInfo.NftL1TokenId, _ = new(big.Int).SetString(nftInfo.NftL1TokenId, 10)
+	txInfo.CollectionId = nftInfo.CollectionId
 
 	// check expired at
 	now := time.Now().UnixMilli()

@@ -19,23 +19,12 @@ package util
 
 import (
 	"fmt"
-	"math/big"
+	"github.com/ethereum/go-ethereum/common"
 	"testing"
 )
 
-func TestToPackedAmount(t *testing.T) {
-	amount, err := ToPackedAmount(big.NewInt(1111111111123))
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println(amount)
-}
-
-func TestToPackedFee(t *testing.T) {
-	amount, _ := new(big.Int).SetString("100000000000000", 10)
-	fee, err := ToPackedFee(amount)
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println(fee)
+func TestAccountNameToBytes32(t *testing.T) {
+	accountName := "sher"
+	info := AccountNameToBytes32(accountName)
+	fmt.Println(common.Bytes2Hex(info[:]))
 }
