@@ -665,10 +665,21 @@ func handleTxPubdata(mempoolTx *MempoolTx, oldPendingOnchainOperationsHash []byt
 		}
 		priorityOperation++
 		break
-	// TODO
 	case TxTypeCreatePair:
+		pubData, err = util.ConvertTxToCreatePairPubData(mempoolTx)
+		if err != nil {
+			logx.Errorf("[handleTxPubdata] unable to convert tx to create pair pub data")
+			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
+		}
+		priorityOperation++
 		break
 	case TxTypeUpdatePairRate:
+		pubData, err = util.ConvertTxToUpdatePairRatePubData(mempoolTx)
+		if err != nil {
+			logx.Errorf("[handleTxPubdata] unable to convert tx to update pair rate pub data")
+			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
+		}
+		priorityOperation++
 		break
 	case TxTypeDeposit:
 		pubData, err = util.ConvertTxToDepositPubData(mempoolTx)
@@ -714,8 +725,12 @@ func handleTxPubdata(mempoolTx *MempoolTx, oldPendingOnchainOperationsHash []byt
 			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
 		}
 		break
-		// TODO
 	case TxTypeCreateCollection:
+		pubData, err = util.ConvertTxToCreateCollectionPubData(mempoolTx)
+		if err != nil {
+			logx.Errorf("[handleTxPubdata] unable to convert tx to create collection pub data")
+			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
+		}
 		break
 	case TxTypeMintNft:
 		pubData, err = util.ConvertTxToMintNftPubData(mempoolTx)
@@ -724,14 +739,26 @@ func handleTxPubdata(mempoolTx *MempoolTx, oldPendingOnchainOperationsHash []byt
 			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
 		}
 		break
-		// TODO
 	case TxTypeTransferNft:
+		pubData, err = util.ConvertTxToTransferNftPubData(mempoolTx)
+		if err != nil {
+			logx.Errorf("[handleTxPubdata] unable to convert tx to transfer nft pub data")
+			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
+		}
 		break
 	case TxTypeAtomicMatch:
-		//  TODO
+		pubData, err = util.ConvertTxToAtomicMatchPubData(mempoolTx)
+		if err != nil {
+			logx.Errorf("[handleTxPubdata] unable to convert tx to atomic match pub data")
+			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
+		}
 		break
 	case TxTypeCancelOffer:
-		// TODO
+		pubData, err = util.ConvertTxToCancelOfferPubData(mempoolTx)
+		if err != nil {
+			logx.Errorf("[handleTxPubdata] unable to convert tx to cancel offer pub data")
+			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
+		}
 		break
 	case TxTypeWithdraw:
 		pubData, err = util.ConvertTxToWithdrawPubData(mempoolTx)

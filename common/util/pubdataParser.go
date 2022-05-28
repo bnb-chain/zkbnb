@@ -29,6 +29,7 @@ func ParseRegisterZnsPubData(pubdata []byte) (tx *RegisterZnsTxInfo, err error) 
 		struct RegisterZNS {
 			uint8 txType;
 			bytes32 accountName;
+			bytes32 accountNameHash;
 			bytes32 pubKey;
 		}
 	*/
@@ -44,7 +45,7 @@ func ParseRegisterZnsPubData(pubdata []byte) (tx *RegisterZnsTxInfo, err error) 
 	tx = &RegisterZnsTxInfo{
 		TxType:          txType,
 		AccountName:     CleanAccountName(SerializeAccountName(accountName)),
-		AccountNameHash: common.Bytes2Hex(accountNameHash),
+		AccountNameHash: accountNameHash,
 		PubKey:          common.Bytes2Hex(pubKey),
 	}
 	return tx, nil
@@ -118,14 +119,15 @@ func ParseDepositPubData(pubdata []byte) (tx *DepositTxInfo, err error) {
 	offset, amount := ReadUint128(pubdata, offset)
 	tx = &DepositTxInfo{
 		TxType:          txType,
-		AccountIndex:    accountIndex,
-		AccountNameHash: common.Bytes2Hex(accountNameHash),
-		AssetId:         assetId,
+		AccountIndex:    int64(accountIndex),
+		AccountNameHash: accountNameHash,
+		AssetId:         int64(assetId),
 		AssetAmount:     amount,
 	}
 	return tx, nil
 }
 
+// TODO
 func ParseDepositNftPubData(pubdata []byte) (tx *DepositNftTxInfo, err error) {
 	/*
 			struct DepositNft {
@@ -151,9 +153,9 @@ func ParseDepositNftPubData(pubdata []byte) (tx *DepositNftTxInfo, err error) {
 	offset, creatorTreasuryRate := ReadUint16(pubdata, offset)
 	tx = &DepositNftTxInfo{
 		TxType:          txType,
-		AccountIndex:    accountIndex,
-		AccountNameHash: common.Bytes2Hex(accountNameHash),
-		NftIndex:        nftIndex,
+		AccountIndex:    int64(accountIndex),
+		AccountNameHash: accountNameHash,
+		NftIndex:        int64(nftIndex),
 		// TODO
 		NftContentHash:      []byte{},
 		NftL1Address:        nftL1Address,
@@ -186,14 +188,15 @@ func ParseFullExitPubData(pubdata []byte) (tx *FullExitTxInfo, err error) {
 	offset, assetAmount := ReadUint128(pubdata, offset)
 	tx = &FullExitTxInfo{
 		TxType:          txType,
-		AccountIndex:    accountIndex,
-		AccountNameHash: common.Bytes2Hex(accountNameHash),
-		AssetId:         assetId,
+		AccountIndex:    int64(accountIndex),
+		AccountNameHash: accountNameHash,
+		AssetId:         int64(assetId),
 		AssetAmount:     assetAmount,
 	}
 	return tx, nil
 }
 
+// TODO
 func ParseFullExitNftPubData(pubdata []byte) (tx *commonTx.FullExitNftTxInfo, err error) {
 	/*
 		struct FullExitNFT {
@@ -225,8 +228,8 @@ func ParseFullExitNftPubData(pubdata []byte) (tx *commonTx.FullExitNftTxInfo, er
 	offset, toAddress := ReadAddress(pubdata, offset)
 	tx = &FullExitNftTxInfo{
 		TxType:          txType,
-		AccountIndex:    accountIndex,
-		AccountNameHash: common.Bytes2Hex(accountNameHash),
+		AccountIndex:    int64(accountIndex),
+		AccountNameHash: accountNameHash,
 		NftL1Address:    nftL1Address,
 		ToAddress:       toAddress,
 		NftL1TokenId:    nftL1TokenId,

@@ -1132,6 +1132,8 @@ type AddLiquidityTxInfo struct {
 	AssetBId          int64
 	AssetBAmount      *big.Int
 	LpAmount          *big.Int
+	KLast             *big.Int
+	TreasuryAmount    *big.Int
 	GasAccountIndex   int64
 	GasFeeAssetId     int64
 	GasFeeAssetAmount *big.Int
@@ -1240,6 +1242,8 @@ type RemoveLiquidityTxInfo struct {
 	LpAmount          *big.Int
 	AssetAAmountDelta *big.Int
 	AssetBAmountDelta *big.Int
+	KLast             *big.Int
+	TreasuryAmount    *big.Int
 	GasAccountIndex   int64
 	GasFeeAssetId     int64
 	GasFeeAssetAmount *big.Int
@@ -1839,6 +1843,8 @@ type AtomicMatchTxInfo struct {
 	GasAccountIndex   int64
 	GasFeeAssetId     int64
 	GasFeeAssetAmount *big.Int
+	CreatorAmount     *big.Int
+	TreasuryAmount    *big.Int
 	Nonce             int64
 	ExpiredAt         int64
 	Sig               []byte
@@ -2109,12 +2115,13 @@ func ConvertTxToWithdrawNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err 
 type WithdrawNftTxInfo struct {
 	AccountIndex           int64
 	CreatorAccountIndex    int64
-	CreatorAccountNameHash string
+	CreatorAccountNameHash []byte
 	CreatorTreasuryRate    int64
 	NftIndex               int64
-	NftContentHash         string
+	NftContentHash         []byte
 	NftL1Address           string
 	NftL1TokenId           *big.Int
+	CollectionId           int64
 	ToAddress              string
 	GasAccountIndex        int64
 	GasFeeAssetId          int64
