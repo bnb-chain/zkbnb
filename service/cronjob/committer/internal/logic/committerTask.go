@@ -21,6 +21,7 @@ import (
 	"errors"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
@@ -255,7 +256,7 @@ func CommitterTask(
 					if mempoolTx.TxType == TxTypeFullExit {
 						balanceDelta := &commonAsset.AccountAsset{
 							AssetId:                  accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId].AssetId,
-							Balance:                  accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId].Balance,
+							Balance:                  ffmath.Neg(accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId].Balance),
 							LpAmount:                 big.NewInt(0),
 							OfferCanceledOrFinalized: big.NewInt(0),
 						}
