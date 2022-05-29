@@ -402,6 +402,23 @@ func MonitorMempool(
 				logx.Errorf("[MonitorMempool] unable to construct nft info: %s", err.Error())
 				return err
 			}
+			// user info
+			accountOrder := int64(0)
+			emptyDeltaAsset := &commonAsset.AccountAsset{
+				AssetId:                  0,
+				Balance:                  big.NewInt(0),
+				LpAmount:                 big.NewInt(0),
+				OfferCanceledOrFinalized: big.NewInt(0),
+			}
+			mempoolTxDetails = append(mempoolTxDetails, &mempool.MempoolTxDetail{
+				AssetId:      0,
+				AssetType:    commonAsset.GeneralAssetType,
+				AccountIndex: txInfo.AccountIndex,
+				AccountName:  accountInfo.AccountName,
+				BalanceDelta: emptyDeltaAsset.String(),
+				AccountOrder: accountOrder,
+			})
+			// nft info
 			mempoolTxDetails = append(mempoolTxDetails, &mempool.MempoolTxDetail{
 				AssetId:      txInfo.NftIndex,
 				AssetType:    commonAsset.NftAssetType,
@@ -614,16 +631,36 @@ func MonitorMempool(
 			var (
 				mempoolTxDetails []*mempool.MempoolTxDetail
 			)
+			// empty account delta
+			emptyAssetDelta := &commonAsset.AccountAsset{
+				AssetId:                  0,
+				Balance:                  big.NewInt(0),
+				LpAmount:                 big.NewInt(0),
+				OfferCanceledOrFinalized: big.NewInt(0),
+			}
+			accountOrder := int64(0)
+			order := int64(0)
+			mempoolTxDetails = append(mempoolTxDetails, &mempool.MempoolTxDetail{
+				AssetId:      0,
+				AssetType:    commonAsset.GeneralAssetType,
+				AccountIndex: txInfo.AccountIndex,
+				AccountName:  accountInfo.AccountName,
+				BalanceDelta: emptyAssetDelta.String(),
+				Order:        order,
+				AccountOrder: accountOrder,
+			})
+			// nft info
 			newNftInfo := commonAsset.EmptyNftInfo(
 				txInfo.NftIndex,
 			)
+			order++
 			mempoolTxDetails = append(mempoolTxDetails, &mempool.MempoolTxDetail{
 				AssetId:      txInfo.NftIndex,
 				AssetType:    commonAsset.NftAssetType,
 				AccountIndex: txInfo.AccountIndex,
 				AccountName:  accountInfo.AccountName,
 				BalanceDelta: newNftInfo.String(),
-				Order:        0,
+				Order:        order,
 				AccountOrder: commonConstant.NilAccountOrder,
 			})
 			// serialize oTx info
