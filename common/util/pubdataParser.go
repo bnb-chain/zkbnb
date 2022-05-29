@@ -39,11 +39,13 @@ func ParseRegisterZnsPubData(pubdata []byte) (tx *RegisterZnsTxInfo, err error) 
 	}
 	offset := 0
 	offset, txType := ReadUint8(pubdata, offset)
+	offset, accountIndex := ReadUint32(pubdata, offset)
 	offset, accountName := ReadBytes32(pubdata, offset)
 	offset, accountNameHash := ReadBytes32(pubdata, offset)
 	offset, pubKey := ReadBytes32(pubdata, offset)
 	tx = &RegisterZnsTxInfo{
 		TxType:          txType,
+		AccountIndex:    int64(accountIndex),
 		AccountName:     CleanAccountName(SerializeAccountName(accountName)),
 		AccountNameHash: accountNameHash,
 		PubKey:          common.Bytes2Hex(pubKey),
@@ -135,7 +137,7 @@ func ParseDepositNftPubData(pubdata []byte) (tx *DepositNftTxInfo, err error) {
 	offset := 0
 	offset, txType := ReadUint8(pubdata, offset)
 	offset, accountIndex := ReadUint32(pubdata, offset)
-	offset, nftIndex := ReadUint64(pubdata, offset)
+	offset, nftIndex := ReadUint40(pubdata, offset)
 	offset, nftL1Address := ReadAddress(pubdata, offset)
 	offset, creatorAccountIndex := ReadUint32(pubdata, offset)
 	offset, creatorTreasuryRate := ReadUint16(pubdata, offset)
@@ -159,16 +161,6 @@ func ParseDepositNftPubData(pubdata []byte) (tx *DepositNftTxInfo, err error) {
 }
 
 func ParseFullExitPubData(pubdata []byte) (tx *FullExitTxInfo, err error) {
-	/*
-		// full exit pubdata
-		struct FullExit {
-			uint8 txType;
-			uint32 accountIndex;
-			bytes32 accountNameHash;
-			uint16 assetId;
-			uint128 assetAmount;
-		}
-	*/
 	if len(pubdata) != FullExitPubDataSize {
 		logx.Errorf("[ParseFullExitPubData] invalid size")
 		return nil, errors.New("[ParseFullExitPubData] invalid size")
@@ -176,9 +168,9 @@ func ParseFullExitPubData(pubdata []byte) (tx *FullExitTxInfo, err error) {
 	offset := 0
 	offset, txType := ReadUint8(pubdata, offset)
 	offset, accountIndex := ReadUint32(pubdata, offset)
-	offset, accountNameHash := ReadBytes32(pubdata, offset)
 	offset, assetId := ReadUint16(pubdata, offset)
 	offset, assetAmount := ReadUint128(pubdata, offset)
+	offset, accountNameHash := ReadBytes32(pubdata, offset)
 	tx = &FullExitTxInfo{
 		TxType:          txType,
 		AccountIndex:    int64(accountIndex),
