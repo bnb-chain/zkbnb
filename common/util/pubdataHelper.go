@@ -576,6 +576,7 @@ func ConvertTxToWithdrawNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err 
 	buf.Write(Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
 	buf.Write(Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
 	buf.Write(Uint40ToBytes(txInfo.NftIndex))
+	buf.Write(Uint16ToBytes(uint16(txInfo.CollectionId)))
 	chunk1 := PaddingBufToChunkSize(buf.Bytes())
 	buf.Reset()
 	buf.Write(AddressStrToBytes(txInfo.NftL1Address))

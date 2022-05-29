@@ -17,6 +17,7 @@
 package logic
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
@@ -35,6 +36,7 @@ import (
 	"gorm.io/gorm"
 	"log"
 	"math"
+	"math/big"
 	"strconv"
 	"time"
 )
@@ -247,11 +249,42 @@ func CommitterTask(
 					}
 					// get latest account asset info
 					baseBalance = accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId].String()
-					// compute new balance
-					nBalance, err := commonAsset.ComputeNewBalance(GeneralAssetType, baseBalance, mempoolTxDetail.BalanceDelta)
-					if err != nil {
-						logx.Error("[CommitterTask] unable to compute new balance: %s", err.Error())
-						return err
+					var (
+						nBalance string
+					)
+					if mempoolTx.TxType == TxTypeFullExit {
+						balanceDelta := &commonAsset.AccountAsset{
+							AssetId:                  accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId].AssetId,
+							Balance:                  accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId].Balance,
+							LpAmount:                 big.NewInt(0),
+							OfferCanceledOrFinalized: big.NewInt(0),
+						}
+						// compute new balance
+						nBalance, err = commonAsset.ComputeNewBalance(GeneralAssetType, baseBalance, balanceDelta.String())
+						if err != nil {
+							logx.Error("[CommitterTask] unable to compute new balance: %s", err.Error())
+							return err
+						}
+						mempoolTxDetail.BalanceDelta = balanceDelta.String()
+						txInfo, err := commonTx.ParseFullExitTxInfo(mempoolTx.TxInfo)
+						if err != nil {
+							logx.Errorf("[CommitterTask] unable to parse full exit tx info: %s", err.Error())
+							return err
+						}
+						txInfo.AssetAmount = accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId].Balance
+						infoBytes, err := json.Marshal(txInfo)
+						if err != nil {
+							logx.Errorf("[CommitterTask] unable to marshal tx: %s", err.Error())
+							return err
+						}
+						mempoolTx.TxInfo = string(infoBytes)
+					} else {
+						// compute new balance
+						nBalance, err = commonAsset.ComputeNewBalance(GeneralAssetType, baseBalance, mempoolTxDetail.BalanceDelta)
+						if err != nil {
+							logx.Error("[CommitterTask] unable to compute new balance: %s", err.Error())
+							return err
+						}
 					}
 					nAccountAsset, err := commonAsset.ParseAccountAsset(nBalance)
 					if err != nil {

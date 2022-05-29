@@ -112,12 +112,14 @@ func ParseDepositTxInfo(txInfoStr string) (txInfo *DepositTxInfo, err error) {
 type DepositNftTxInfo struct {
 	TxType              uint8
 	AccountIndex        int64
-	AccountNameHash     []byte
 	NftIndex            int64
-	NftContentHash      []byte
 	NftL1Address        string
-	NftL1TokenId        *big.Int
+	CreatorAccountIndex int64
 	CreatorTreasuryRate int64
+	NftContentHash      []byte
+	NftL1TokenId        *big.Int
+	AccountNameHash     []byte
+	CollectionId        int64
 }
 
 func ParseDepositNftTxInfo(txInfoStr string) (txInfo *DepositNftTxInfo, err error) {
@@ -149,16 +151,15 @@ func ParseFullExitTxInfo(txInfoStr string) (txInfo *FullExitTxInfo, err error) {
 type FullExitNftTxInfo struct {
 	TxType                 uint8
 	AccountIndex           int64
-	AccountNameHash        []byte
 	CreatorAccountIndex    int64
-	CreatorAccountNameHash []byte
 	CreatorTreasuryRate    int64
 	NftIndex               int64
-	NftContentHash         []byte
-	NftL1Address           string
-	NftL1TokenId           *big.Int
 	CollectionId           int64
-	ToAddress              string
+	NftL1Address           string
+	AccountNameHash        []byte
+	CreatorAccountNameHash []byte
+	NftContentHash         []byte
+	NftL1TokenId           *big.Int
 }
 
 func ParseFullExitNftTxInfo(txInfoStr string) (txInfo *FullExitNftTxInfo, err error) {
