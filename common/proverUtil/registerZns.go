@@ -19,7 +19,6 @@ package proverUtil
 
 import (
 	"errors"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/std"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
@@ -91,7 +90,7 @@ func ToCryptoRegisterZnsTx(txInfo *commonTx.RegisterZnsTxInfo) (info *CryptoRegi
 	info = &CryptoRegisterZnsTx{
 		AccountIndex:    txInfo.AccountIndex,
 		AccountName:     accountName,
-		AccountNameHash: common.FromHex(txInfo.AccountNameHash),
+		AccountNameHash: txInfo.AccountNameHash,
 		PubKey:          pk,
 	}
 	return info, nil

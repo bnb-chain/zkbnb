@@ -24,7 +24,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-func ConstructDepositCryptoTx(
+func ConstructDepositNftCryptoTx(
 	oTx *Tx,
 	accountTree *Tree,
 	accountAssetsTree *[]*Tree,
@@ -32,27 +32,27 @@ func ConstructDepositCryptoTx(
 	nftTree *Tree,
 	accountModel AccountModel,
 ) (cryptoTx *CryptoTx, err error) {
-	if oTx.TxType != commonTx.TxTypeDeposit {
+	if oTx.TxType != commonTx.TxTypeDepositNft {
 		logx.Errorf("[ConstructCreatePairCryptoTx] invalid tx type")
 		return nil, errors.New("[ConstructCreatePairCryptoTx] invalid tx type")
 	}
 	if oTx == nil || accountTree == nil || accountAssetsTree == nil || liquidityTree == nil || nftTree == nil {
-		logx.Errorf("[ConstructDepositCryptoTx] invalid params")
-		return nil, errors.New("[ConstructDepositCryptoTx] invalid params")
+		logx.Errorf("[ConstructDepositNftCryptoTx] invalid params")
+		return nil, errors.New("[ConstructDepositNftCryptoTx] invalid params")
 	}
-	txInfo, err := commonTx.ParseDepositTxInfo(oTx.TxInfo)
+	txInfo, err := commonTx.ParseDepositNftTxInfo(oTx.TxInfo)
 	if err != nil {
-		logx.Errorf("[ConstructDepositCryptoTx] unable to parse register zns tx info:%s", err.Error())
+		logx.Errorf("[ConstructDepositNftCryptoTx] unable to parse register zns tx info:%s", err.Error())
 		return nil, err
 	}
-	cryptoTxInfo, err := ToCryptoDepositTx(txInfo)
+	cryptoTxInfo, err := ToCryptoDepositNftTx(txInfo)
 	if err != nil {
-		logx.Errorf("[ConstructDepositCryptoTx] unable to convert to crypto register zns tx: %s", err.Error())
+		logx.Errorf("[ConstructDepositNftCryptoTx] unable to convert to crypto register zns tx: %s", err.Error())
 		return nil, err
 	}
 	accountKeys, proverAccounts, proverLiquidityInfo, proverNftInfo, err := ConstructProverInfo(oTx, accountModel)
 	if err != nil {
-		logx.Errorf("[ConstructDepositCryptoTx] unable to construct prover info: %s", err.Error())
+		logx.Errorf("[ConstructDepositNftCryptoTx] unable to construct prover info: %s", err.Error())
 		return nil, err
 	}
 	cryptoTx, err = ConstructWitnessInfo(
@@ -68,22 +68,27 @@ func ConstructDepositCryptoTx(
 		proverNftInfo,
 	)
 	if err != nil {
-		logx.Errorf("[ConstructDepositCryptoTx] unable to construct witness info: %s", err.Error())
+		logx.Errorf("[ConstructDepositNftCryptoTx] unable to construct witness info: %s", err.Error())
 		return nil, err
 	}
 	cryptoTx.TxType = uint8(oTx.TxType)
-	cryptoTx.DepositTxInfo = cryptoTxInfo
+	cryptoTx.DepositNftTxInfo = cryptoTxInfo
 	cryptoTx.Nonce = oTx.Nonce
 	cryptoTx.Signature = std.EmptySignature()
 	return cryptoTx, nil
 }
 
-func ToCryptoDepositTx(txInfo *commonTx.DepositTxInfo) (info *CryptoDepositTx, err error) {
-	info = &CryptoDepositTx{
-		AccountIndex:    int64(txInfo.AccountIndex),
-		AccountNameHash: txInfo.AccountNameHash,
-		AssetId:         int64(txInfo.AssetId),
-		AssetAmount:     txInfo.AssetAmount,
+func ToCryptoDepositNftTx(txInfo *commonTx.DepositNftTxInfo) (info *CryptoDepositNftTx, err error) {
+	info = &CryptoDepositNftTx{
+		AccountIndex:        txInfo.AccountIndex,
+		NftIndex:            txInfo.NftIndex,
+		NftL1Address:        txInfo.NftL1Address,
+		AccountNameHash:     txInfo.AccountNameHash,
+		NftContentHash:      txInfo.NftContentHash,
+		NftL1TokenId:        txInfo.NftL1TokenId,
+		CreatorAccountIndex: txInfo.CreatorAccountIndex,
+		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
+		CollectionId:        txInfo.CollectionId,
 	}
 	return info, nil
 }

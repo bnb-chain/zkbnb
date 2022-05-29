@@ -20,7 +20,6 @@ package proverUtil
 import (
 	"errors"
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -95,10 +94,10 @@ func ToCryptoWithdrawNftTx(txInfo *commonTx.WithdrawNftTxInfo) (info *CryptoWith
 	info = &CryptoWithdrawNftTx{
 		AccountIndex:           txInfo.AccountIndex,
 		CreatorAccountIndex:    txInfo.CreatorAccountIndex,
-		CreatorAccountNameHash: common.FromHex(txInfo.CreatorAccountNameHash),
+		CreatorAccountNameHash: txInfo.CreatorAccountNameHash,
 		CreatorTreasuryRate:    txInfo.CreatorTreasuryRate,
 		NftIndex:               txInfo.NftIndex,
-		NftContentHash:         common.FromHex(txInfo.NftContentHash),
+		NftContentHash:         txInfo.NftContentHash,
 		NftL1Address:           txInfo.NftL1Address,
 		NftL1TokenId:           txInfo.NftL1TokenId,
 		ToAddress:              txInfo.ToAddress,
