@@ -2045,7 +2045,7 @@ This is a layer-2 transaction and is used for withdrawing nft from the layer-2 t
 
 | Chunks | Significant bytes |
 | ------ | ----------------- |
-| 6      | 158               |
+| 6      | 162               |
 
 ##### Structure
 
@@ -2056,6 +2056,7 @@ This is a layer-2 transaction and is used for withdrawing nft from the layer-2 t
 | CreatorAccountIndex    | 4          | creator account index     |
 | CreatorTreasuryRate    | 2          | creator treasury rate     |
 | NftIndex               | 5          | unique nft index          |
+| CollectionId           | 2          | collection id             |
 | NftL1Address           | 20         | nft layer-1 address       |
 | ToAddress              | 20         | receiver address          |
 | GasFeeAccountIndex     | 4          | gas fee account index     |
@@ -2083,6 +2084,7 @@ func ConvertTxToWithdrawNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err 
 	buf.Write(Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
 	buf.Write(Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
 	buf.Write(Uint40ToBytes(txInfo.NftIndex))
+	buf.Write(Uint16ToBytes(uint16(txInfo.CollectionId)))
 	chunk1 := PaddingBufToChunkSize(buf.Bytes())
 	buf.Reset()
 	buf.Write(AddressStrToBytes(txInfo.NftL1Address))
