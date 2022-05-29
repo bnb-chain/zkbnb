@@ -69,6 +69,7 @@ func MonitorMempool(
 		pendingNewLiquidityInfos []*liquidity.Liquidity
 		pendingNewNfts           []*nft.L2Nft
 		newAccountInfoMap        = make(map[string]*account.Account)
+		newNftInfoMap            = make(map[int64]*commonAsset.NftInfo)
 		newLiquidityInfoMap      = make(map[int64]*liquidity.Liquidity)
 		relatedAccountIndex      = make(map[int64]bool)
 	)
@@ -395,6 +396,7 @@ func MonitorMempool(
 				txInfo.CreatorTreasuryRate,
 				txInfo.CollectionId,
 			)
+			newNftInfoMap[nftInfo.NftIndex] = nftInfo
 			var (
 				mempoolTxDetails []*mempool.MempoolTxDetail
 			)
@@ -563,44 +565,58 @@ func MonitorMempool(
 			var (
 				nftAsset *nft.L2Nft
 			)
-			nftAsset, err = ctx.NftModel.GetNftAsset(txInfo.NftIndex)
-			if err != nil {
-				if err == ErrNotFound {
-					emptyNftInfo := commonAsset.EmptyNftInfo(txInfo.NftIndex)
-					nftAsset = &nft.L2Nft{
-						NftIndex:            emptyNftInfo.NftIndex,
-						CreatorAccountIndex: emptyNftInfo.CreatorAccountIndex,
-						OwnerAccountIndex:   emptyNftInfo.OwnerAccountIndex,
-						NftContentHash:      emptyNftInfo.NftContentHash,
-						NftL1Address:        emptyNftInfo.NftL1Address,
-						NftL1TokenId:        emptyNftInfo.NftL1TokenId,
-						CreatorTreasuryRate: emptyNftInfo.CreatorTreasuryRate,
-						CollectionId:        emptyNftInfo.CollectionId,
+			if newNftInfoMap[txInfo.NftIndex] == nil {
+				nftAsset, err = ctx.NftModel.GetNftAsset(txInfo.NftIndex)
+				if err != nil {
+					if err == ErrNotFound {
+						emptyNftInfo := commonAsset.EmptyNftInfo(txInfo.NftIndex)
+						nftAsset = &nft.L2Nft{
+							NftIndex:            emptyNftInfo.NftIndex,
+							CreatorAccountIndex: emptyNftInfo.CreatorAccountIndex,
+							OwnerAccountIndex:   emptyNftInfo.OwnerAccountIndex,
+							NftContentHash:      emptyNftInfo.NftContentHash,
+							NftL1Address:        emptyNftInfo.NftL1Address,
+							NftL1TokenId:        emptyNftInfo.NftL1TokenId,
+							CreatorTreasuryRate: emptyNftInfo.CreatorTreasuryRate,
+							CollectionId:        emptyNftInfo.CollectionId,
+						}
+					} else {
+						logx.Errorf("[MonitorMempool] unable to latest nft info: %s", err.Error())
+						return err
 					}
 				} else {
-					logx.Errorf("[MonitorMempool] unable to latest nft info: %s", err.Error())
-					return err
-				}
-			} else {
-				if nftAsset.OwnerAccountIndex != accountInfo.AccountIndex {
-					emptyNftInfo := commonAsset.EmptyNftInfo(txInfo.NftIndex)
-					nftAsset = &nft.L2Nft{
-						NftIndex:            emptyNftInfo.NftIndex,
-						CreatorAccountIndex: emptyNftInfo.CreatorAccountIndex,
-						OwnerAccountIndex:   emptyNftInfo.OwnerAccountIndex,
-						NftContentHash:      emptyNftInfo.NftContentHash,
-						NftL1Address:        emptyNftInfo.NftL1Address,
-						NftL1TokenId:        emptyNftInfo.NftL1TokenId,
-						CreatorTreasuryRate: emptyNftInfo.CreatorTreasuryRate,
-						CollectionId:        emptyNftInfo.CollectionId,
+					if nftAsset.OwnerAccountIndex != accountInfo.AccountIndex {
+						emptyNftInfo := commonAsset.EmptyNftInfo(txInfo.NftIndex)
+						nftAsset = &nft.L2Nft{
+							NftIndex:            emptyNftInfo.NftIndex,
+							CreatorAccountIndex: emptyNftInfo.CreatorAccountIndex,
+							OwnerAccountIndex:   emptyNftInfo.OwnerAccountIndex,
+							NftContentHash:      emptyNftInfo.NftContentHash,
+							NftL1Address:        emptyNftInfo.NftL1Address,
+							NftL1TokenId:        emptyNftInfo.NftL1TokenId,
+							CreatorTreasuryRate: emptyNftInfo.CreatorTreasuryRate,
+							CollectionId:        emptyNftInfo.CollectionId,
+						}
 					}
 				}
+			} else {
+				nftAsset = &nft.L2Nft{
+					NftIndex:            newNftInfoMap[txInfo.NftIndex].NftIndex,
+					CreatorAccountIndex: newNftInfoMap[txInfo.NftIndex].CreatorAccountIndex,
+					OwnerAccountIndex:   newNftInfoMap[txInfo.NftIndex].OwnerAccountIndex,
+					NftContentHash:      newNftInfoMap[txInfo.NftIndex].NftContentHash,
+					NftL1Address:        newNftInfoMap[txInfo.NftIndex].NftL1Address,
+					NftL1TokenId:        newNftInfoMap[txInfo.NftIndex].NftL1TokenId,
+					CreatorTreasuryRate: newNftInfoMap[txInfo.NftIndex].CreatorTreasuryRate,
+					CollectionId:        newNftInfoMap[txInfo.NftIndex].CollectionId,
+				}
 			}
+
 			var (
 				creatorAccountNameHash []byte
 			)
-			if nftAsset.CreatorAccountIndex == nftAsset.OwnerAccountIndex && nftAsset.CreatorAccountIndex == 0 {
-				creatorAccountNameHash = []byte{}
+			if txInfo.CreatorAccountIndex == 0 && txInfo.CreatorTreasuryRate == 0 {
+				creatorAccountNameHash = []byte{0}
 			} else {
 				creatorAccountInfo, err := ctx.AccountModel.GetAccountByAccountIndex(nftAsset.CreatorAccountIndex)
 				if err != nil {
