@@ -53,6 +53,7 @@ type (
 		GetTxsTotalCountByAccountIndexAndTxTypeArray(accountIndex int64, txTypeArray []uint8) (count int64, err error)
 		GetTxsTotalCountByBlockHeight(blockHeight int64) (count int64, err error)
 		GetTxByTxHash(txHash string) (tx *Tx, err error)
+		GetTxByTxId(id uint) (tx *Tx, err error)
 		GetTxsListGreaterThanBlockHeight(blockHeight int64) (txs []*Tx, err error)
 	}
 
@@ -612,6 +613,30 @@ func (m *defaultTxModel) GetTxByTxHash(txHash string) (tx *Tx, err error) {
 	err = m.DB.Model(&tx).Association(txForeignKeyColumn).Find(&tx.TxDetails)
 	if err != nil {
 		logx.Error("[txVerification.GetTxByTxHash] Get Associate TxDetails Error")
+		return nil, err
+	}
+	// re-order tx details
+	sort.SliceStable(tx.TxDetails, func(i, j int) bool {
+		return tx.TxDetails[i].Order < tx.TxDetails[j].Order
+	})
+
+	return tx, nil
+}
+
+func (m *defaultTxModel) GetTxByTxId(id uint) (tx *Tx, err error) {
+	var txForeignKeyColumn = `TxDetails`
+
+	dbTx := m.DB.Table(m.table).Where("id = ?", id).Find(&tx)
+	if dbTx.Error != nil {
+		logx.Error("[txVerification.GetTxByTxId] %s", dbTx.Error)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Error("[txVerification.GetTxByTxId] No such Tx with tx id: %s", id)
+		return nil, ErrNotFound
+	}
+	err = m.DB.Model(&tx).Association(txForeignKeyColumn).Find(&tx.TxDetails)
+	if err != nil {
+		logx.Error("[txVerification.GetTxByTxId] Get Associate TxDetails Error")
 		return nil, err
 	}
 	// re-order tx details

@@ -21,7 +21,6 @@ import (
 	"github.com/zeromicro/go-zero/core/conf"
 )
 
-// /Users/gavin/Desktop/zecrey-v2
 func TestSendCancelOfferTx(t *testing.T) {
 	flag.Parse()
 
@@ -70,7 +69,7 @@ func constructSendCancelOfferTxInfo() string {
 		AccountIndex:      2,
 		OfferId:           1,
 		GasAccountIndex:   1,
-		GasFeeAssetId:     1,
+		GasFeeAssetId:     2,
 		GasFeeAssetAmount: big.NewInt(5000),
 		ExpiredAt:         expiredAt,
 		Nonce:             9,

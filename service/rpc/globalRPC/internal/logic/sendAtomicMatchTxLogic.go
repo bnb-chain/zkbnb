@@ -24,11 +24,13 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/common/sysconfigName"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
+	"github.com/zeromicro/go-zero/core/stores/redis"
 	"reflect"
 	"strconv"
 	"time"
@@ -160,6 +162,10 @@ func (l *SendTxLogic) sendAtomicMatchTx(rawTxInfo string) (txId string, err erro
 			return "", l.HandleCreateFailAtomicMatchTx(txInfo, err)
 		}
 	}
+	if nftInfo.OwnerAccountIndex != txInfo.SellOffer.AccountIndex {
+		logx.Errorf("[sendAtomicMatchTx] you're not owner")
+		return "", l.HandleCreateFailAtomicMatchTx(txInfo, errors.New("[sendAtomicMatchTx] you're not owner"))
+	}
 	var (
 		txDetails []*mempool.MempoolTxDetail
 	)
@@ -180,6 +186,13 @@ func (l *SendTxLogic) sendAtomicMatchTx(rawTxInfo string) (txId string, err erro
 	/*
 		Create Mempool Transaction
 	*/
+	// delete key
+	key := util.GetNftKeyForRead(txInfo.BuyOffer.NftIndex)
+	_, err = l.svcCtx.RedisConnection.Del(key)
+	if err != nil {
+		logx.Errorf("[sendAtomicMatchTx] unable to delete key from redis: %s", err.Error())
+		return "", l.HandleCreateFailAtomicMatchTx(txInfo, err)
+	}
 	// write into mempool
 	txInfoBytes, err := json.Marshal(txInfo)
 	if err != nil {
@@ -201,10 +214,34 @@ func (l *SendTxLogic) sendAtomicMatchTx(rawTxInfo string) (txId string, err erro
 		txInfo.ExpiredAt,
 		txDetails,
 	)
-	err = CreateMempoolTx(mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)
+	nftExchange := &nft.L2NftExchange{
+		BuyerAccountIndex: txInfo.BuyOffer.AccountIndex,
+		OwnerAccountIndex: txInfo.SellOffer.AccountIndex,
+		NftIndex:          txInfo.BuyOffer.NftIndex,
+		AssetId:           txInfo.BuyOffer.AssetId,
+		AssetAmount:       txInfo.BuyOffer.AssetAmount.String(),
+	}
+	err = CreateMempoolTxForAtomicMatch(nftExchange, mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)
 	if err != nil {
 		return "", l.HandleCreateFailAtomicMatchTx(txInfo, err)
 	}
+	// update redis
+	var formatNftInfo *commonAsset.NftInfo
+	for _, txDetail := range mempoolTx.MempoolDetails {
+		if txDetail.AssetType == commonAsset.NftAssetType {
+			formatNftInfo, err = commonAsset.ParseNftInfo(txDetail.BalanceDelta)
+			if err != nil {
+				logx.Errorf("[sendMintNftTx] unable to parse nft info: %s", err.Error())
+				return txId, nil
+			}
+		}
+	}
+	nftInfoBytes, err := json.Marshal(formatNftInfo)
+	if err != nil {
+		logx.Errorf("[sendMintNftTx] unable to marshal: %s", err.Error())
+		return txId, nil
+	}
+	_ = l.svcCtx.RedisConnection.Setex(key, string(nftInfoBytes), globalmapHandler.NftExpiryTime)
 	return txId, nil
 }
 
@@ -260,6 +297,31 @@ func (l *SendTxLogic) CreateFailAtomicMatchTx(info *commonTx.AtomicMatchTxInfo, 
 	err = l.svcCtx.FailTxModel.CreateFailTx(failTx)
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendtxlogic.CreateFailAtomicMatchTx] %s", err.Error())
+		logx.Error(errInfo)
+		return errors.New(errInfo)
+	}
+	return nil
+}
+
+func CreateMempoolTxForAtomicMatch(
+	nftExchange *nft.L2NftExchange,
+	nMempoolTx *mempool.MempoolTx,
+	redisConnection *redis.Redis,
+	mempoolModel mempool.MempoolModel,
+) (err error) {
+	var keys []string
+	for _, mempoolTxDetail := range nMempoolTx.MempoolDetails {
+		keys = append(keys, util.GetAccountKey(mempoolTxDetail.AccountIndex))
+	}
+	_, err = redisConnection.Del(keys...)
+	if err != nil {
+		logx.Errorf("[CreateMempoolTx] error with redis: %s", err.Error())
+		return err
+	}
+	// write into mempool
+	err = mempoolModel.CreateMempoolTxAndL2NftExchange(nMempoolTx, nftExchange)
+	if err != nil {
+		errInfo := fmt.Sprintf("[CreateMempoolTx] %s", err.Error())
 		logx.Error(errInfo)
 		return errors.New(errInfo)
 	}

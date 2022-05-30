@@ -59,7 +59,7 @@ func GetLatestAccountInfo(
 			return nil, err
 		}
 		// compute latest nonce
-		mempoolTxs, err := mempoolTxModel.GetMempoolTxsByAccountIndex(accountIndex)
+		mempoolTxs, err := mempoolTxModel.GetPendingMempoolTxsByAccountIndex(accountIndex)
 		if err != nil {
 			if err != mempool.ErrNotFound {
 				logx.Errorf("[GetLatestAccountInfo] unable to get mempool txs by account index: %s", err.Error())

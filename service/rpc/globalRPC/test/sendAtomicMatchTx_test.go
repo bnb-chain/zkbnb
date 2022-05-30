@@ -22,7 +22,6 @@ import (
 	"github.com/zeromicro/go-zero/core/conf"
 )
 
-// /Users/gavin/Desktop/zecrey-v2
 func TestSendAtomicMatchTx(t *testing.T) {
 	flag.Parse()
 
@@ -77,7 +76,7 @@ func constructSendAtomicMatchTxInfo() string {
 		Type:         commonAsset.BuyOfferType,
 		OfferId:      0,
 		AccountIndex: 3,
-		NftIndex:     0,
+		NftIndex:     1,
 		AssetId:      0,
 		AssetAmount:  big.NewInt(10000),
 		ListedAt:     listedAt,
@@ -100,7 +99,7 @@ func constructSendAtomicMatchTxInfo() string {
 		Type:         commonAsset.SellOfferType,
 		OfferId:      0,
 		AccountIndex: 2,
-		NftIndex:     0,
+		NftIndex:     1,
 		AssetId:      0,
 		AssetAmount:  big.NewInt(10000),
 		ListedAt:     listedAt,

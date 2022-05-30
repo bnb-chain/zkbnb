@@ -21,7 +21,6 @@ import (
 	"github.com/zeromicro/go-zero/core/conf"
 )
 
-// /Users/gavin/Desktop/zecrey-v2
 func TestSendWithdrawTx(t *testing.T) {
 	flag.Parse()
 
@@ -71,7 +70,7 @@ func constructSendWithdrawTxInfo() string {
 		AssetId:           0,
 		AssetAmount:       big.NewInt(10000000),
 		GasAccountIndex:   1,
-		GasFeeAssetId:     1,
+		GasFeeAssetId:     2,
 		GasFeeAssetAmount: big.NewInt(5000),
 		ToAddress:         "0x99AC8881834797ebC32f185ee27c2e96842e1a47",
 		Nonce:             2,

@@ -41,7 +41,7 @@ type (
 		OwnerAccountIndex int64
 		NftIndex          int64
 		AssetId           int64
-		AssetAmount       int64
+		AssetAmount       string
 	}
 )
 

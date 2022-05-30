@@ -22,7 +22,6 @@ import (
 	"github.com/zeromicro/go-zero/core/conf"
 )
 
-// /Users/gavin/Desktop/zecrey-v2
 func TestSendTransferNftTx(t *testing.T) {
 	flag.Parse()
 
@@ -76,7 +75,7 @@ func constructSendTransferNftTxInfo() string {
 		FromAccountIndex:  3,
 		ToAccountIndex:    2,
 		ToAccountNameHash: nameHash,
-		NftIndex:          0,
+		NftIndex:          1,
 		GasAccountIndex:   1,
 		GasFeeAssetId:     0,
 		GasFeeAssetAmount: big.NewInt(5000),

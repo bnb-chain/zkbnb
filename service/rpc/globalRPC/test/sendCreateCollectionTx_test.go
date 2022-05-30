@@ -21,7 +21,6 @@ import (
 	"github.com/zeromicro/go-zero/core/conf"
 )
 
-// /Users/gavin/Desktop/zecrey-v2
 func TestSendCreateCollectionTx(t *testing.T) {
 	flag.Parse()
 
@@ -72,7 +71,7 @@ func constructSendCreateCollectionTxInfo() string {
 		Name:              "Zecrey Collection",
 		Introduction:      "Wonderful zecrey!",
 		GasAccountIndex:   1,
-		GasFeeAssetId:     1,
+		GasFeeAssetId:     2,
 		GasFeeAssetAmount: big.NewInt(5000),
 		ExpiredAt:         expiredAt,
 		Nonce:             6,

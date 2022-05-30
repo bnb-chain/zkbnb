@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
@@ -121,7 +120,6 @@ func (l *SendTxLogic) sendAddLiquidityTx(rawTxInfo string) (txId string, err err
 	}
 	// add into tx info
 	txInfo.LpAmount = lpAmount
-
 	// get latest account info for from account index
 	if accountInfoMap[txInfo.FromAccountIndex] == nil {
 		accountInfoMap[txInfo.FromAccountIndex], err = globalmapHandler.GetLatestAccountInfo(
@@ -217,13 +215,16 @@ func (l *SendTxLogic) sendAddLiquidityTx(rawTxInfo string) (txId string, err err
 	// get latest liquidity info
 	for _, txDetail := range txDetails {
 		if txDetail.AssetType == commonAsset.LiquidityAssetType {
-			poolDelta, err := commonAsset.ParseLiquidityInfo(txDetail.BalanceDelta)
+			nBalance, err := commonAsset.ComputeNewBalance(commonAsset.LiquidityAssetType, liquidityInfo.String(), txDetail.BalanceDelta)
 			if err != nil {
-				logx.Errorf("[sendAddLiquidityTx] unable to parse pool info: %s", err.Error())
+				logx.Errorf("[sendAddLiquidityTx] unable to compute new balance: %s", err.Error())
 				return txId, nil
 			}
-			liquidityInfo.AssetA = ffmath.Add(liquidityInfo.AssetA, poolDelta.AssetA)
-			liquidityInfo.AssetB = ffmath.Add(liquidityInfo.AssetB, poolDelta.AssetB)
+			liquidityInfo, err = commonAsset.ParseLiquidityInfo(nBalance)
+			if err != nil {
+				logx.Errorf("[sendAddLiquidityTx] unable to parse liquidity info: %s", err.Error())
+				return txId, nil
+			}
 		}
 	}
 	liquidityInfoBytes, err := json.Marshal(liquidityInfo)

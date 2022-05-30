@@ -21,7 +21,6 @@ import (
 	"github.com/zeromicro/go-zero/core/conf"
 )
 
-// /Users/gavin/Desktop/zecrey-v2
 func TestSendWithdrawNftTx(t *testing.T) {
 	flag.Parse()
 
@@ -69,7 +68,7 @@ func constructSendWithdrawNftTxInfo() string {
 	expiredAt := time.Now().Add(time.Hour * 2).UnixMilli()
 	txInfo := &commonTx.WithdrawNftTxInfo{
 		AccountIndex:      3,
-		NftIndex:          0,
+		NftIndex:          1,
 		ToAddress:         "0xd5Aa3B56a2E2139DB315CdFE3b34149c8ed09171",
 		GasAccountIndex:   1,
 		GasFeeAssetId:     0,

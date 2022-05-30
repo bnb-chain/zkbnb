@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"github.com/ethereum/go-ethereum/common"
 	curve "github.com/zecrey-labs/zecrey-crypto/ecc/ztwistededwards/tebn254"
 	"github.com/zecrey-labs/zecrey-crypto/wasm/zecrey-legend/legendTxTypes"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
@@ -22,7 +23,6 @@ import (
 	"github.com/zeromicro/go-zero/core/conf"
 )
 
-// /Users/gavin/Desktop/zecrey-v2
 func TestSendMintNftTx(t *testing.T) {
 	flag.Parse()
 
@@ -70,23 +70,25 @@ func constructSendMintNftTxInfo() string {
 	if err != nil {
 		panic(err)
 	}
-	contentHash := util.RandomUUID()
+	hFunc := mimc.NewMiMC()
+	hFunc.Write([]byte(util.RandomUUID()))
+	contentHash := hFunc.Sum(nil)
 	expiredAt := time.Now().Add(time.Hour * 2).UnixMilli()
 	txInfo := &commonTx.MintNftTxInfo{
 		CreatorAccountIndex: 2,
 		ToAccountIndex:      3,
 		ToAccountNameHash:   nameHash,
-		NftContentHash:      contentHash,
+		NftContentHash:      common.Bytes2Hex(contentHash),
 		NftCollectionId:     1,
 		CreatorTreasuryRate: 0,
 		GasAccountIndex:     1,
-		GasFeeAssetId:       1,
+		GasFeeAssetId:       2,
 		GasFeeAssetAmount:   big.NewInt(5000),
 		ExpiredAt:           expiredAt,
 		Nonce:               7,
 		Sig:                 nil,
 	}
-	hFunc := mimc.NewMiMC()
+	hFunc.Reset()
 	msgHash, err := legendTxTypes.ComputeMintNftMsgHash(txInfo, hFunc)
 	if err != nil {
 		panic(err)
