@@ -19,7 +19,7 @@ type Mempool interface {
 	GetMempoolTxsTotalCount() (count int64, err error)
 	//GetMempoolTxsListByAccountIndex(accountIndex int64, limit int64, offset int64) (mempoolTx []*types.Tx, err error)
 	//GetMempoolTxsTotalCountByPublicKey(pk string) (mempoolTx []*types.Tx, err error)
-	//GetMempoolTxByTxHash(hash string) (mempoolTxs *types.Tx, err error)
+	GetMempoolTxByTxHash(hash string) (mempoolTxs *mempoolModel.MempoolTx, err error)
 }
 
 var singletonValue *mempool

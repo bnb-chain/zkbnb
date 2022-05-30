@@ -60,3 +60,27 @@ func (m *mempool) GetMempoolTxsTotalCount() (count int64, err error) {
 	}
 	return ct.(int64), nil
 }
+
+func (m *mempool) GetMempoolTxByTxHash(hash string) (mempoolTx *mempoolModel.MempoolTx, err error) {
+	var mempoolForeignKeyColumn = `MempoolDetails`
+	dbTx := m.db.Table(m.table).Where("status = ? and tx_hash = ?", PendingTxStatus, hash).Find(&mempoolTx)
+	if dbTx.Error != nil {
+		if dbTx.Error == ErrNotFound {
+			return mempoolTx, dbTx.Error
+		} else {
+			err := fmt.Sprintf("[mempool.GetMempoolTxByTxHash] %s", dbTx.Error)
+			logx.Errorf(err)
+			return nil, dbTx.Error
+		}
+	} else if dbTx.RowsAffected == 0 {
+		err := fmt.Sprintf("[mempool.GetMempoolTxByTxHash] %s", ErrNotFound)
+		logx.Info(err)
+		return nil, ErrNotFound
+	}
+	err = m.db.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+	if err != nil {
+		logx.Errorf("[mempool.GetMempoolTxByTxHash] Get Associate MempoolDetails Error")
+		return nil, err
+	}
+	return mempoolTx, nil
+}
