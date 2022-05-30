@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"context"
-	"fmt"
 	blockModel "github.com/zecrey-labs/zecrey-legend/common/model/block"
 
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/block"
@@ -48,9 +47,8 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (resp *types.R
 
 	txMemppol, err := l.mempool.GetMempoolTxByTxHash(req.TxHash)
 	if err != nil {
-		err := fmt.Sprintf("[mempool.GetMempoolTxByTxHash] %s", err)
-		logx.Info(err)
-		return nil, nil
+		logx.Error("[mempool.GetMempoolTxByTxHash]:%v", err)
+		return nil, err
 	}
 	txDetails := make([]*types.TxDetail, 0)
 	for _, w := range txMemppol.MempoolDetails {

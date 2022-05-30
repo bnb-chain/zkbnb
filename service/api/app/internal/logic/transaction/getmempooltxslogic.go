@@ -31,14 +31,14 @@ func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (resp *t
 	mempoolTxs, err := l.mempool.GetMempoolTxs(int64(req.Limit), int64(req.Offset))
 	if err != nil {
 		logx.Error("[GetMempoolTxs] err:%v", err)
-		return &types.RespGetMempoolTxs{}, nil
+		return &types.RespGetMempoolTxs{}, err
 	}
 
 	// Todo: why not do total=len(mempoolTxs)
 	total, err := l.mempool.GetMempoolTxsTotalCount()
 	if err != nil {
 		logx.Error("[GetMempoolTxs] err:%v", err)
-		return &types.RespGetMempoolTxs{}, nil
+		return &types.RespGetMempoolTxs{}, err
 	}
 
 	data := make([]*types.Tx, 0)
@@ -65,7 +65,7 @@ func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (resp *t
 		txAmount, err := strconv.Atoi(mempoolTx.TxAmount)
 		if err != nil {
 			logx.Error("[GetMempoolTxs] err:%v", err)
-			return &types.RespGetMempoolTxs{}, nil
+			return &types.RespGetMempoolTxs{}, err
 		}
 		// Todo: why is the field in db string?
 		gasFee, err := strconv.Atoi(mempoolTx.GasFee)
