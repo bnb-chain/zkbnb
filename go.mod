@@ -10,6 +10,7 @@ require (
 require (
 	github.com/consensys/gnark-crypto v0.7.0
 	github.com/ethereum/go-ethereum v1.10.17
+	github.com/go-redis/redis/v8 v8.11.4 // indirect
 	github.com/google/uuid v1.3.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/zecrey-labs/zecrey-crypto v0.0.36

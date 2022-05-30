@@ -14,19 +14,21 @@
  * limitations under the License.
  */
 
-package account
+package accounthistory
 
 import (
+	"errors"
 	"fmt"
 	"log"
 
 	table "github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"gorm.io/gorm"
 )
 
-type historyAccount struct {
+type accountHistory struct {
 	table     string
 	db        *gorm.DB
 	redisConn *redis.Redis
@@ -40,7 +42,7 @@ type historyAccount struct {
 	Description:  For API /api/v1/info/getAccountsList
 
 */
-func (m *historyAccount) GetAccountsList(limit int, offset int64) (accounts []*table.AccountHistory, err error) {
+func (m *accountHistory) GetAccountsList(limit int, offset int64) (accounts []*table.AccountHistory, err error) {
 	cacheKeyAccountsList := fmt.Sprintf("cache:AccountsHistoryList_%v_%v", limit, offset)
 	result, err := m.cache.GetWithSet(cacheKeyAccountsList, accounts,
 		multcache.SqlBatchQuery, m.db, m.table, limit, offset, "account_index desc")
@@ -60,7 +62,7 @@ func (m *historyAccount) GetAccountsList(limit int, offset int64) (accounts []*t
 	Return: count int64, err error
 	Description: used for counting total accounts for explorer dashboard
 */
-func (m *historyAccount) GetAccountsTotalCount() (count int64, err error) {
+func (m *accountHistory) GetAccountsTotalCount() (count int64, err error) {
 	cacheKeyAccountsTotalCount := "cache:AccountsTotalCount"
 	result, err := m.cache.GetWithSet(cacheKeyAccountsTotalCount, count,
 		multcache.SqlQueryCount, m.db, m.table,
@@ -82,7 +84,7 @@ func (m *historyAccount) GetAccountsTotalCount() (count int64, err error) {
 	Description: get account info by account name
 */
 
-func (m *historyAccount) GetAccountByAccountName(accountName string) (account *table.AccountHistory, err error) {
+func (m *accountHistory) GetAccountByAccountName(accountName string) (account *table.AccountHistory, err error) {
 	dbTx := m.db.Table(m.table).Where("account_name = ?", accountName).Find(&account)
 	if dbTx.Error != nil {
 		return nil, dbTx.Error
@@ -99,16 +101,57 @@ func (m *historyAccount) GetAccountByAccountName(accountName string) (account *t
 	Description: get account info by index
 */
 
-func (m *historyAccount) GetAccountByAccountIndex(accountIndex int64) (account *table.AccountHistory, err error) {
+func (m *accountHistory) GetAccountByAccountIndex(accountIndex int64) (account *table.AccountHistory, err error) {
 	// dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex).Find(&account)
 	// if dbTx.Error != nil {
 	// 	err := fmt.Sprintf("[accountHistory.GetAccountByAccountIndex] %s", dbTx.Error)
 	// 	logx.Error(err)
 	// 	return nil, dbTx.Error
 	// } else if dbTx.RowsAffected == 0 {
-	// 	err := fmt.Sprintf("[accountHistory.GetAccountByAccountIndex] %s", ErrNotFound)
+	// 	err := fmt.Sprintf("[accountHistory.GetAccountByAccountIndex] %s", ErrNotExistInSql)
 	// 	logx.Error(err)
-	// 	return nil, ErrNotFound
+	// 	return nil, ErrNotExistInSql
 	// }
 	return nil, nil
+}
+
+/*
+	Func: GetAccountByPk
+	Params: pk string
+	Return: account Account, err error
+	Description: get account info by public key
+*/
+
+func (m *accountHistory) GetAccountByPk(pk string) (account *table.AccountHistory, err error) {
+	dbTx := m.db.Table(m.table).Where("public_key = ?", pk).Find(&account)
+	if dbTx.Error != nil {
+		errInfo := fmt.Sprintf("[accountHistory.GetAccountByPk] %s", dbTx.Error)
+		logx.Error(errInfo)
+		return nil, errors.New(errInfo)
+	} else if dbTx.RowsAffected == 0 {
+		err := fmt.Sprintf("[accountHistory.GetAccountByPk] %s", ErrNotExistInSql)
+		logx.Error(err)
+		return nil, ErrNotExistInSql
+	}
+	return account, nil
+}
+
+/*
+	Func:  GetAccountAssetByIndex
+	Params: accountIndex int64
+	Return: accountAssets []*AccountAsset, err error
+	Description: get account's asset info by accountIndex. This func is used for Account related api
+*/
+func (m *accountHistory) GetAccountAssetsByIndex(accountIndex int64) (accountAssets []*table.AccountHistory, err error) {
+	dbTx := m.db.Table(m.table).Where("account_index = ?", accountIndex).Find(&accountAssets)
+	if dbTx.Error != nil {
+		err := fmt.Sprintf("[asset.GetAccountAssetsByIndex] %s", dbTx.Error)
+		logx.Error(err)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		err := fmt.Sprintf("[asset.GetAccountAssetsByIndex] %s", ErrNotExistInSql)
+		logx.Error(err)
+		return nil, ErrNotExistInSql
+	}
+	return accountAssets, nil
 }
