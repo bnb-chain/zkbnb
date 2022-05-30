@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	blockModel "github.com/zecrey-labs/zecrey-legend/common/model/block"
+
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/block"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/mempool"
+	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/tx"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -18,6 +20,7 @@ type GetTxByHashLogic struct {
 	svcCtx  *svc.ServiceContext
 	mempool mempool.Mempool
 	block   block.Block
+	tx      tx.Tx
 }
 
 func NewGetTxByHashLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTxByHashLogic {
@@ -27,6 +30,7 @@ func NewGetTxByHashLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTx
 		svcCtx:  svcCtx,
 		mempool: mempool.New(svcCtx.Config),
 		block:   block.New(svcCtx.Config),
+		tx:      tx.New(svcCtx.Config),
 	}
 }
 
@@ -57,9 +61,7 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (resp *types.R
 			AssetType:    int(w.AssetType),
 			AccountIndex: int32(w.AccountIndex),
 			AccountName:  w.AccountName,
-			// #Todo: add balance， but from where?
-			AccountBalance: "0",
-			AccountDelta:   w.BalanceDelta,
+			AccountDelta: w.BalanceDelta,
 		})
 	}
 	block, err := l.block.GetBlockByBlockHeight(txMemppol.L2BlockHeight)
@@ -68,7 +70,7 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (resp *types.R
 		CommittedAt: block.CommittedAt,
 		VerifiedAt:  block.VerifiedAt,
 	}
-	// Todo: update blockstatus to cache, but not sure if the whole block shall be inserted
+	// Todo: update blockstatus to cache, but not sure if the whole block shall be inserted. which kind of tx? mempoolTx or tx?
 	//err = l.svcCtx.BlockModel.UpdateBlockStatusCacheByBlockHeight(tx.BlockHeight, blockStatusInfo)
 	//if err != nil {
 	//	errInfo := fmt.Sprintf("[appService.tx.GetTxByHash]<=>[BlockModel.UpdateBlockStatusCacheByBlockHeight] %s", err.Error())
@@ -87,20 +89,18 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (resp *types.R
 		BlockStatus:   int(blockStatusInfo.BlockStatus),
 
 		// Todo: where is this field come from
-		BlockId: 0,
+		// db index
+		BlockId: int(block.ID),
 
 		AssetAId:      int(txMemppol.AssetAId),
 		AssetBId:      int(txMemppol.AssetBId),
 		TxAmount:      txAmount,
 		TxDetails:     txDetails,
 		NativeAddress: txMemppol.NativeAddress,
-
-		//Todo: remove all chain ID
-		ChainId: 0,
-
-		CreatedAt: txMemppol.CreatedAt.UnixNano() / 1e6,
-		Memo:      txMemppol.Memo,
+		CreatedAt:     txMemppol.CreatedAt.UnixNano() / 1e6,
+		Memo:          txMemppol.Memo,
 
 		// Todo: where is executedAt field from?
+		// -> gavin
 	}, blockStatusInfo.CommittedAt, blockStatusInfo.VerifiedAt, 0), nil
 }

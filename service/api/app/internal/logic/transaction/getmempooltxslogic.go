@@ -70,13 +70,12 @@ func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (resp *t
 				txDetails = append(txDetails, &types.TxDetail{
 					//Todo: verify if accountBalance is still needed, since its no longer a field of table TxDetail
 					//Todo: int64 or int?
-					//Todo: need balance or not?
-					AssetId:        int(txDetail.AssetId),
-					AssetType:      int(txDetail.AssetType),
-					AccountIndex:   int32(txDetail.AccountIndex),
-					AccountName:    txDetail.AccountName,
-					AccountBalance: strconv.Itoa(0), //txDetail.AccountBalance,
-					AccountDelta:   txDetail.BalanceDelta,
+					//Todo: need balance or not?  no need
+					AssetId:      int(txDetail.AssetId),
+					AssetType:    int(txDetail.AssetType),
+					AccountIndex: int32(txDetail.AccountIndex),
+					AccountName:  txDetail.AccountName,
+					AccountDelta: txDetail.BalanceDelta,
 				})
 			}
 		}
