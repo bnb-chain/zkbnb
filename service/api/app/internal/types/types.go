@@ -170,9 +170,13 @@ type RespGetL1AmountByAssetid struct {
 type ReqGetL1AmountList struct {
 }
 
-type RespGetL1AmountList struct {
+type AmountInfo struct {
 	AssetId     int   `json:"asset_id"`
 	TotalAmount int64 `json:"total_amount"`
+}
+
+type RespGetL1AmountList struct {
+	Amounts []*AmountInfo `json:"amounts"`
 }
 
 type ReqGetSwapAmount struct {

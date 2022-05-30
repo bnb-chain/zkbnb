@@ -12,6 +12,15 @@ const (
 
 	minAssetId = 0
 	maxAssetId = 1 << 32
+
+	minAccountIndex = 0
+	maxAccountIndex = 1 << 32
+
+	minPublicKeyLength = 20
+	maxPublicKeyLength = 50 //TODO
+
+	minPairIndex = 0
+	maxPairIndex = 1 << 32
 )
 
 func CheckAccountName(accountName string) bool {
@@ -22,10 +31,27 @@ func CheckFormatAccountName(accountName string) bool {
 	return len(accountName) > maxAccountNameLengthOmitSpace
 }
 
-// func CheckeAssetId(assetId uint16) bool {
-// 	return assetId > maxAssetId
-// }
+func CheckAccountPK(accountPK string) bool {
+	return len(accountPK) > maxPublicKeyLength
+}
 
+func CheckAssetId(assetId uint16) bool {
+	return assetId > maxAssetId
+}
+
+func CheckAccountIndex(accountIndex uint32) bool {
+	return accountIndex > maxAccountIndex
+}
+
+func CheckPairIndex(pairIndex uint32) {
+	return pairIndex > maxAccountIndex
+}
+
+func CheckLPAmount(LPAmount uint32) {
+	return LPAmount > maxLPAmount
+}
+
+// Format AccountName and
 func FormatSting(name string) string {
 	name = strings.ToLower(name)
 	name = strings.Replace(name, "\n", "", -1)

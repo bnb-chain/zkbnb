@@ -233,9 +233,12 @@ type (
 // GetL1AmountList
 type (
 	ReqGetL1AmountList  struct{}
-	RespGetL1AmountList {
+	AmountInfo struct{
 		AssetId     int   `json:"asset_id"`
 		TotalAmount int64 `json:"total_amount"`
+	}
+	RespGetL1AmountList {
+		Amounts []*AmountInfo `json:"amounts"`
 	}
 )
 
