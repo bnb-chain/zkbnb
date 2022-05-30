@@ -23,6 +23,7 @@ type GlobalRPC interface {
 	GetLatestL1Amount(assetId uint16) (totalAmount int64, err error)
 	GetLatestL1AmountList() (amounts []*types.AmountInfo, err error)
 	GetSwapAmount(pairIndex, assetId uint16, assetAmount uint64, isFrom bool) (assetAmount uint64, pairIndex, assetId uint16)
+	GetLatestTxsListByAccountIndexAndTxType(accountIndex uint64, txType uint64, limit uint64, offset uint64) ([]*mempool.MempoolTx, error)
 }
 
 var singletonValue *globalRPC

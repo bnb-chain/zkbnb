@@ -18,13 +18,14 @@ package globalrpc
 
 import (
 	"context"
-
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalrpc"
 	"github.com/zeromicro/go-zero/core/stores/redis"
+	"gorm.io/gorm"
+	"strconv"
 )
 
 type globalRPC struct {
@@ -54,4 +55,48 @@ func (m *globalRPC) GetSwapAmount(pairIndex, assetId uint16, assetAmount uint64,
 		IsFrom:      isFrom,
 	})
 	return resRpc.Result.ResAssetAmount, uint16(resRpc.Result.PairIndex), uint16(resRpc.Result.ResAssetId)
+}
+func (m *globalRPC) GetLatestTxsListByAccountIndexAndTxType(accountIndex uint64, txType uint64, limit uint64, offset uint64) ([]*mempool.MempoolTx, error) {
+	resRpc, _ := m.globalRPC.GetLatestTxsListByAccountIndexAndTxType(m.ctx, &globalrpc.ReqGetLatestTxsListByAccountIndexAndTxType{
+		AccountIndex: accountIndex,
+		TxType:       txType,
+		Offset:       offset,
+		Limit:        limit,
+	})
+	res := make([]*mempool.MempoolTx, 0)
+	for _, each := range resRpc.Result.GetTxsList() {
+		singleTxDetail := make([]*mempool.MempoolTxDetail, 0)
+		for _, eachDetail := range each.TxDetails {
+			singleTxDetail = append(singleTxDetail, &mempool.MempoolTxDetail{
+				AssetId:      eachDetail.AssetId,
+				AssetType:    eachDetail.AssetType,
+				AccountIndex: eachDetail.AccountIndex,
+				AccountName:  eachDetail.AccountName,
+				//todo: eliminate all Enc s
+				BalanceDelta: eachDetail.AccountBalanceEnc,
+			})
+		}
+
+		res = append(res, &mempool.MempoolTx{
+			Model:          gorm.Model{},
+			TxHash:         each.TxHash,
+			TxType:         each.TxType,
+			GasFeeAssetId:  each.GasFeeAssetId,
+			GasFee:         strconv.FormatInt(each.GasFee, 10),
+			AssetAId:       each.TxAssetAId,
+			AssetBId:       each.TxAssetBId,
+			TxAmount:       strconv.FormatInt(each.TxAmount, 10),
+			NativeAddress:  each.NativeAddress,
+			MempoolDetails: singleTxDetail,
+			TxInfo:         "",
+			ExtraInfo:      "",
+			Memo:           each.Memo,
+			AccountIndex:   0,
+			Nonce:          0,
+			ExpiredAt:      0,
+			L2BlockHeight:  each.BlockHeight,
+			Status:         int(each.TxStatus),
+		})
+	}
+	return res, nil
 }
