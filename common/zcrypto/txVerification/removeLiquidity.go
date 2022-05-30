@@ -62,7 +62,7 @@ func VerifyRemoveLiquidityTxInfo(
 	var (
 		assetDeltaMap             = make(map[int64]map[int64]*big.Int)
 		lpDeltaForFromAccount     *big.Int
-		lpDeltaForTreausryAccount *big.Int
+		lpDeltaForTreasuryAccount *big.Int
 		poolDeltaForToAccount     *LiquidityInfo
 	)
 	// init delta map
@@ -103,13 +103,16 @@ func VerifyRemoveLiquidityTxInfo(
 		TreasuryRate:         liquidityInfo.TreasuryRate,
 	}
 	// treasury account
-	lpDeltaForTreausryAccount = commonAsset.ComputeSLp(
+	lpDeltaForTreasuryAccount = commonAsset.ComputeSLp(
 		liquidityInfo.AssetA,
 		liquidityInfo.AssetB,
 		liquidityInfo.KLast,
 		liquidityInfo.FeeRate,
 		liquidityInfo.TreasuryRate,
 	)
+	// set tx info
+	txInfo.KLast = ffmath.Multiply(finalPoolA, finalPoolB)
+	txInfo.TreasuryAmount = lpDeltaForTreasuryAccount
 	// gas account asset Gas
 	if assetDeltaMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId] == nil {
 		assetDeltaMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId] = txInfo.GasFeeAssetAmount
@@ -206,7 +209,7 @@ func VerifyRemoveLiquidityTxInfo(
 		AccountIndex: liquidityInfo.TreasuryAccountIndex,
 		AccountName:  accountInfoMap[liquidityInfo.TreasuryAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
-			txInfo.PairIndex, ZeroBigInt, lpDeltaForTreausryAccount, ZeroBigInt,
+			txInfo.PairIndex, ZeroBigInt, lpDeltaForTreasuryAccount, ZeroBigInt,
 		).String(),
 		Order:        order,
 		AccountOrder: accountOrder,

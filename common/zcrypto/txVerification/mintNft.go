@@ -122,6 +122,19 @@ func VerifyMintNftTxInfo(
 		Order:        order,
 		AccountOrder: accountOrder,
 	})
+	// to account empty delta
+	order++
+	accountOrder++
+	txDetails = append(txDetails, &MempoolTxDetail{
+		AssetId:      txInfo.GasFeeAssetId,
+		AssetType:    GeneralAssetType,
+		AccountIndex: txInfo.ToAccountIndex,
+		AccountName:  accountInfoMap[txInfo.ToAccountIndex].AccountName,
+		BalanceDelta: commonAsset.ConstructAccountAsset(
+			txInfo.GasFeeAssetId, ZeroBigInt, ZeroBigInt, ZeroBigInt).String(),
+		Order:        order,
+		AccountOrder: accountOrder,
+	})
 	// nft info
 	order++
 	txDetails = append(txDetails, &MempoolTxDetail{

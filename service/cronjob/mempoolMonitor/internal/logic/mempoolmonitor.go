@@ -34,6 +34,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/mempoolMonitor/internal/svc"
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/redis"
 	"math/big"
 )
 
@@ -363,14 +364,14 @@ func MonitorMempool(
 				return err
 			}
 			accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
-			if newAccountInfoMap[accountNameHash] == nil {
+			if newAccountInfoMap[accountNameHash] != nil {
+				accountInfo = newAccountInfoMap[accountNameHash]
+			} else {
 				accountInfo, err = GetAccountInfoByAccountNameHash(accountNameHash, ctx.AccountModel)
 				if err != nil {
 					logx.Errorf("[MonitorMempool] unable to get account info: %s", err.Error())
 					return err
 				}
-			} else {
-				accountInfo = newAccountInfoMap[accountNameHash]
 			}
 			// complete oTx info
 			txInfo.AccountIndex = accountInfo.AccountIndex
@@ -470,33 +471,110 @@ func MonitorMempool(
 			break
 		case TxTypeFullExit:
 			// create mempool oTx
-			var accountInfo *account.Account
+			var (
+				accountInfo *commonAsset.AccountInfo
+				redisLock   *redis.RedisLock
+			)
 			txInfo, err := util.ParseFullExitPubData(common.FromHex(oTx.Pubdata))
 			if err != nil {
 				logx.Errorf("[MonitorMempool] unable to parse deposit pub data: %s", err.Error())
 				return err
 			}
 			accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
-			if newAccountInfoMap[accountNameHash] == nil {
+			if newAccountInfoMap[accountNameHash] != nil {
+				accountInfo, err = commonAsset.ToFormatAccountInfo(newAccountInfoMap[accountNameHash])
+				if err != nil {
+					logx.Errorf("[MonitorMempool] unable convert to format account info: %s", err.Error())
+					return err
+				}
+				for _, mempoolTx := range pendingNewMempoolTxs {
+					if mempoolTx.AccountIndex != accountInfo.AccountIndex {
+						continue
+					}
+					for _, txDetail := range mempoolTx.MempoolDetails {
+						if txDetail.AccountIndex != accountInfo.AccountIndex || txDetail.AssetId != txInfo.AssetId {
+							continue
+						}
+						if txDetail.AssetType == GeneralAssetType {
+							if accountInfo.AssetInfo[txDetail.AssetId] == nil {
+								accountInfo.AssetInfo[txDetail.AssetId] = &commonAsset.AccountAsset{
+									AssetId:                  txDetail.AssetId,
+									Balance:                  big.NewInt(0),
+									LpAmount:                 big.NewInt(0),
+									OfferCanceledOrFinalized: big.NewInt(0),
+								}
+							}
+							nBalance, err := commonAsset.ComputeNewBalance(GeneralAssetType, accountInfo.AssetInfo[txDetail.AssetId].String(), txDetail.BalanceDelta)
+							if err != nil {
+								logx.Errorf("[MonitorMempool] unable to compute new balance: %s", err.Error())
+								return err
+							}
+							accountInfo.AssetInfo[txDetail.AssetId], err = commonAsset.ParseAccountAsset(nBalance)
+							if err != nil {
+								logx.Errorf("[MonitorMempool] unable to parse account asset : %s", err.Error())
+								return err
+							}
+						}
+					}
+				}
+			} else {
 				newAccountInfoMap[accountNameHash], err = GetAccountInfoByAccountNameHash(accountNameHash, ctx.AccountModel)
 				if err != nil {
 					logx.Errorf("[MonitorMempool] unable to get account info: %s", err.Error())
 					return err
 				}
-			} else {
-				accountInfo = newAccountInfoMap[accountNameHash]
+				accountInfo, err = commonAsset.ToFormatAccountInfo(newAccountInfoMap[accountNameHash])
+				if err != nil {
+					logx.Errorf("[MonitorMempool] unable convert to format account info: %s", err.Error())
+					return err
+				}
+				key := util.GetAccountKey(accountInfo.AccountIndex)
+				lockKey := util.GetLockKey(key)
+				redisLock = redis.NewRedisLock(ctx.RedisConnection, lockKey)
+				redisLock.SetExpire(5)
+				isAcquired, err := redisLock.Acquire()
+				if err != nil {
+					logx.Errorf("[MonitorMempool] unable to acquire the lock: %s", err.Error())
+					return err
+				}
+				if !isAcquired {
+					logx.Errorf("[MonitorMempool] unable to acquire the lock")
+					return errors.New("[MonitorMempool] unable to acquire the lock")
+				}
+				mempoolTxs, err := ctx.MempoolModel.GetPendingMempoolTxsByAccountIndex(accountInfo.AccountIndex)
+				if err != nil {
+					if err != ErrNotFound {
+						logx.Errorf("[MonitorMempool] unable to get pending mempool txs: %s", err.Error())
+						return err
+					}
+				}
+				for _, mempoolTx := range mempoolTxs {
+					for _, txDetail := range mempoolTx.MempoolDetails {
+						if txDetail.AccountIndex != accountInfo.AccountIndex || txDetail.AssetId != txInfo.AssetId {
+							continue
+						}
+						if txDetail.AssetType == GeneralAssetType {
+							nBalance, err := commonAsset.ComputeNewBalance(GeneralAssetType, accountInfo.AssetInfo[txDetail.AssetId].String(), txDetail.BalanceDelta)
+							if err != nil {
+								logx.Errorf("[MonitorMempool] unable to compute new balance: %s", err.Error())
+								return err
+							}
+							accountInfo.AssetInfo[txDetail.AssetId], err = commonAsset.ParseAccountAsset(nBalance)
+							if err != nil {
+								logx.Errorf("[MonitorMempool] unable to parse account asset : %s", err.Error())
+								return err
+							}
+						}
+					}
+				}
+				redisLock.Release()
 			}
 			// complete oTx info
 			txInfo.AccountIndex = accountInfo.AccountIndex
-			formatAccountInfo, err := commonAsset.ToFormatAccountInfo(accountInfo)
-			if err != nil {
-				logx.Errorf("[MonitorMempool] unable to format account info: %s", err.Error())
-				return err
-			}
-			if formatAccountInfo.AssetInfo[txInfo.AssetId] == nil {
+			if accountInfo.AssetInfo[txInfo.AssetId] == nil {
 				txInfo.AssetAmount = big.NewInt(0)
 			} else {
-				txInfo.AssetAmount = formatAccountInfo.AssetInfo[txInfo.AssetId].Balance
+				txInfo.AssetAmount = accountInfo.AssetInfo[txInfo.AssetId].Balance
 			}
 			// do delta at committer
 			var (

@@ -125,6 +125,9 @@ func VerifyAddLiquidityTxInfo(
 		TreasuryAccountIndex: liquidityInfo.TreasuryAccountIndex,
 		TreasuryRate:         liquidityInfo.TreasuryRate,
 	}
+	// set tx info
+	txInfo.KLast = ffmath.Multiply(finalPoolA, finalPoolB)
+	txInfo.TreasuryAmount = lpDeltaForTreasuryAccount
 	// gas account asset Gas
 	if assetDeltaMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId] == nil {
 		assetDeltaMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId] = txInfo.GasFeeAssetAmount

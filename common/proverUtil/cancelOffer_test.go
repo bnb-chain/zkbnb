@@ -39,11 +39,11 @@ func TestConstructCancelOfferCryptoTxFirst(t *testing.T) {
 	liquidityHistoryModel := liquidity.NewLiquidityHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
 	//nftModel := nft.NewL2NftModel(basic.Connection, basic.CacheConf, basic.DB)
 	nftHistoryModel := nft.NewL2NftHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
-	txInfo, err := txModel.GetTxByTxHash("88647b97-9a67-48b6-80a1-26f01074368c")
+	txInfo, err := txModel.GetTxByTxId(25)
 	if err != nil {
 		t.Fatal(err)
 	}
-	blockHeight := int64(21)
+	blockHeight := int64(24)
 	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, accountHistoryModel, blockHeight)
 	if err != nil {
 		t.Fatal(err)

@@ -104,6 +104,7 @@ func ToCryptoWithdrawNftTx(txInfo *commonTx.WithdrawNftTxInfo) (info *CryptoWith
 		GasAccountIndex:        txInfo.GasAccountIndex,
 		GasFeeAssetId:          txInfo.GasFeeAssetId,
 		GasFeeAssetAmount:      packedFee,
+		CollectionId:           txInfo.CollectionId,
 	}
 	return info, nil
 }

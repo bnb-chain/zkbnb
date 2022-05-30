@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
@@ -123,9 +124,9 @@ func (l *SendTxLogic) sendWithdrawNftTx(rawTxInfo string) (txId string, err erro
 	}
 
 	txInfo.CreatorAccountIndex = nftInfo.CreatorAccountIndex
-	txInfo.CreatorAccountNameHash = accountInfoMap[nftInfo.CreatorAccountIndex].AccountNameHash
+	txInfo.CreatorAccountNameHash = common.FromHex(accountInfoMap[nftInfo.CreatorAccountIndex].AccountNameHash)
 	txInfo.CreatorTreasuryRate = nftInfo.CreatorTreasuryRate
-	txInfo.NftContentHash = nftInfo.NftContentHash
+	txInfo.NftContentHash = common.FromHex(nftInfo.NftContentHash)
 	txInfo.NftL1Address = nftInfo.NftL1Address
 	txInfo.NftL1TokenId, _ = new(big.Int).SetString(nftInfo.NftL1TokenId, 10)
 	txInfo.CollectionId = nftInfo.CollectionId
@@ -157,6 +158,13 @@ func (l *SendTxLogic) sendWithdrawNftTx(rawTxInfo string) (txId string, err erro
 	/*
 		Create Mempool Transaction
 	*/
+	// delete key
+	key := util.GetNftKeyForRead(txInfo.NftIndex)
+	_, err = l.svcCtx.RedisConnection.Del(key)
+	if err != nil {
+		logx.Errorf("[sendWithdrawNftTx] unable to delete key from redis: %s", err.Error())
+		return "", l.HandleCreateFailWithdrawNftTx(txInfo, err)
+	}
 	// write into mempool
 	txInfoBytes, err := json.Marshal(txInfo)
 	if err != nil {
@@ -182,6 +190,24 @@ func (l *SendTxLogic) sendWithdrawNftTx(rawTxInfo string) (txId string, err erro
 	if err != nil {
 		return "", l.HandleCreateFailWithdrawNftTx(txInfo, err)
 	}
+	// update redis
+	var formatNftInfo *commonAsset.NftInfo
+	for _, txDetail := range mempoolTx.MempoolDetails {
+		if txDetail.AssetType == commonAsset.NftAssetType {
+			formatNftInfo, err = commonAsset.ParseNftInfo(txDetail.BalanceDelta)
+			if err != nil {
+				logx.Errorf("[sendWithdrawNftTx] unable to parse nft info: %s", err.Error())
+				return txId, nil
+			}
+		}
+	}
+	nftInfoBytes, err := json.Marshal(formatNftInfo)
+	if err != nil {
+		logx.Errorf("[sendWithdrawNftTx] unable to marshal: %s", err.Error())
+		return txId, nil
+	}
+	_ = l.svcCtx.RedisConnection.Setex(key, string(nftInfoBytes), globalmapHandler.NftExpiryTime)
+
 	return txId, nil
 }
 

@@ -10,10 +10,10 @@ const (
 	BSC_Test_Network_RPC   = "https://data-seed-prebsc-1-s1.binance.org:8545/"
 	Local_Test_Network_RPC = "http://127.0.0.1:8545/"
 
-	ZecreyLegendContractAddr    = "0xAcD9aB1cc020355b77645E1d1720fc10010c90C5"
-	GovernanceContractAddr      = "0x913212DFDB753FF9DE45049C5760Fcb3692BacA8"
-	AssetGovernanceContractAddr = "0xfDf51BD194Df159af7A2baCf83162C1b5cA2518B"
-	VerifierContractAddr        = "0xec2b57956678259c2Eb88DE044A3CB09bDad9737"
+	ZecreyLegendContractAddr    = "0x0C17367D14760D2a54A3D140c9F2f1c2EdB81E7D"
+	GovernanceContractAddr      = "0x4B7635b2A882F94cB4E50CDc073bA8630f1759A6"
+	AssetGovernanceContractAddr = "0x3C4237AbEf419C7C76efAd854b7166F49C77F516"
+	VerifierContractAddr        = "0x4EFCfA18c2cdf4661C028Df55F4911c7F82F253d"
 )
 
 func initSysConfig() []*sysconfig.Sysconfig {

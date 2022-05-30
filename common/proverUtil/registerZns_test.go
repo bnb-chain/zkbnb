@@ -39,7 +39,7 @@ func TestConstructRegisterZnsCryptoTxFirst(t *testing.T) {
 	liquidityHistoryModel := liquidity.NewLiquidityHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
 	//nftModel := nft.NewL2NftModel(basic.Connection, basic.CacheConf, basic.DB)
 	nftHistoryModel := nft.NewL2NftHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
-	txInfo, err := txModel.GetTxByTxHash("e5d5e321-da46-11ec-8abf-7cb27d9ca483")
+	txInfo, err := txModel.GetTxByTxId(1)
 	if err != nil {
 		t.Fatal(err)
 	}

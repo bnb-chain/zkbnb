@@ -21,7 +21,6 @@ import (
 	"github.com/zeromicro/go-zero/core/conf"
 )
 
-// /Users/gavin/Desktop/zecrey-v2
 func TestSendSwapTx(t *testing.T) {
 	flag.Parse()
 

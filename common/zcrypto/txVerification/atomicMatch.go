@@ -268,6 +268,9 @@ func VerifyAtomicMatchTxInfo(
 		logx.Errorf("[VerifyAtomicMatchTxInfo] unable to compute treasury fee: %s", err.Error())
 		return nil, err
 	}
+	// set tx info
+	txInfo.CreatorAmount = creatorFee
+	txInfo.TreasuryAmount = treasuryFee
 	// seller amount
 	sellerDeltaAmount := ffmath.Sub(txInfo.SellOffer.AssetAmount, ffmath.Add(treasuryFee, creatorFee))
 	order++

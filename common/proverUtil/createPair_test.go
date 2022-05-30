@@ -39,7 +39,7 @@ func TestConstructCreatePairCryptoTxFirst(t *testing.T) {
 	liquidityHistoryModel := liquidity.NewLiquidityHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
 	//nftModel := nft.NewL2NftModel(basic.Connection, basic.CacheConf, basic.DB)
 	nftHistoryModel := nft.NewL2NftHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
-	txInfo, err := txModel.GetTxByTxHash("9cad9ddc-da90-11ec-b8ff-7cb27d9ca483")
+	txInfo, err := txModel.GetTxByTxId(9)
 	if err != nil {
 		t.Fatal(err)
 	}

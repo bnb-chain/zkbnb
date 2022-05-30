@@ -39,11 +39,11 @@ func TestConstructWithdrawCryptoTxFirst(t *testing.T) {
 	liquidityHistoryModel := liquidity.NewLiquidityHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
 	//nftModel := nft.NewL2NftModel(basic.Connection, basic.CacheConf, basic.DB)
 	nftHistoryModel := nft.NewL2NftHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
-	txInfo, err := txModel.GetTxByTxHash("fe7c26ac-fb5d-44be-99a4-b7e0eed6900a")
+	txInfo, err := txModel.GetTxByTxId(17)
 	if err != nil {
 		t.Fatal(err)
 	}
-	blockHeight := int64(13)
+	blockHeight := int64(16)
 	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, accountHistoryModel, blockHeight)
 	if err != nil {
 		t.Fatal(err)

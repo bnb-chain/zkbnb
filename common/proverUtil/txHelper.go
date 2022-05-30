@@ -76,7 +76,7 @@ func ConstructProverInfo(
 						AccountNameHash: accountMap[txDetail.AccountIndex].AccountNameHash,
 						L1Address:       accountMap[txDetail.AccountIndex].L1Address,
 						Nonce:           accountMap[txDetail.AccountIndex].Nonce,
-						CollectionNonce: accountMap[txDetail.AccountIndex].CollectionNonce,
+						CollectionNonce: txDetail.CollectionNonce,
 						AssetInfo:       accountMap[txDetail.AccountIndex].AssetInfo,
 						AssetRoot:       accountMap[txDetail.AccountIndex].AssetRoot,
 						Status:          accountMap[txDetail.AccountIndex].Status,

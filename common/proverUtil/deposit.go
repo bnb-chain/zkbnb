@@ -80,9 +80,9 @@ func ConstructDepositCryptoTx(
 
 func ToCryptoDepositTx(txInfo *commonTx.DepositTxInfo) (info *CryptoDepositTx, err error) {
 	info = &CryptoDepositTx{
-		AccountIndex:    int64(txInfo.AccountIndex),
+		AccountIndex:    txInfo.AccountIndex,
 		AccountNameHash: txInfo.AccountNameHash,
-		AssetId:         int64(txInfo.AssetId),
+		AssetId:         txInfo.AssetId,
 		AssetAmount:     txInfo.AssetAmount,
 	}
 	return info, nil

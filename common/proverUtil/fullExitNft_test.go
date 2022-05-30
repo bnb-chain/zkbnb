@@ -39,7 +39,7 @@ func TestConstructFullExitNftNftCryptoTxFirst(t *testing.T) {
 	liquidityHistoryModel := liquidity.NewLiquidityHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
 	//nftModel := nft.NewL2NftModel(basic.Connection, basic.CacheConf, basic.DB)
 	nftHistoryModel := nft.NewL2NftHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
-	txInfo, err := txModel.GetTxByTxHash("ed1059de-df30-11ec-8e90-7cb27d9ca483")
+	txInfo, err := txModel.GetTxByTxId(15)
 	if err != nil {
 		t.Fatal(err)
 	}

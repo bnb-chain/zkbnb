@@ -39,11 +39,11 @@ func TestConstructAtomicMatchCryptoTxFirst(t *testing.T) {
 	liquidityHistoryModel := liquidity.NewLiquidityHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
 	//nftModel := nft.NewL2NftModel(basic.Connection, basic.CacheConf, basic.DB)
 	nftHistoryModel := nft.NewL2NftHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
-	txInfo, err := txModel.GetTxByTxHash("7ecf771e-eb15-4167-a159-7336e0dddde8")
+	txInfo, err := txModel.GetTxByTxId(24)
 	if err != nil {
 		t.Fatal(err)
 	}
-	blockHeight := int64(20)
+	blockHeight := int64(23)
 	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, accountHistoryModel, blockHeight)
 	if err != nil {
 		t.Fatal(err)

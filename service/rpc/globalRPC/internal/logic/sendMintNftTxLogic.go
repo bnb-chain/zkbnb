@@ -154,6 +154,8 @@ func (l *SendTxLogic) sendMintNftTx(rawTxInfo string) (txId string, err error) {
 	var (
 		txDetails []*mempool.MempoolTxDetail
 	)
+	// set tx info
+	txInfo.NftIndex = nftIndex
 	// verify transfer tx
 	txDetails, err = txVerification.VerifyMintNftTxInfo(
 		accountInfoMap,
@@ -175,12 +177,18 @@ func (l *SendTxLogic) sendMintNftTx(rawTxInfo string) (txId string, err error) {
 		NftIndex:            nftIndex,
 		CreatorAccountIndex: txInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   txInfo.ToAccountIndex,
-		// TODO nft content hash
 		NftContentHash:      txInfo.NftContentHash,
 		NftL1Address:        commonConstant.NilL1Address,
 		NftL1TokenId:        commonConstant.NilL1TokenId,
 		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
 		CollectionId:        txInfo.NftCollectionId,
+	}
+	// delete key
+	key := util.GetNftKeyForRead(nftIndex)
+	_, err = l.svcCtx.RedisConnection.Del(key)
+	if err != nil {
+		logx.Errorf("[sendMintNftTx] unable to delete key from redis: %s", err.Error())
+		return "", l.HandleCreateFailMintNftTx(txInfo, err)
 	}
 	// write into mempool
 	txInfoBytes, err := json.Marshal(txInfo)
@@ -207,6 +215,23 @@ func (l *SendTxLogic) sendMintNftTx(rawTxInfo string) (txId string, err error) {
 	if err != nil {
 		return "", l.HandleCreateFailMintNftTx(txInfo, err)
 	}
+	// update redis
+	var formatNftInfo *commonAsset.NftInfo
+	for _, txDetail := range mempoolTx.MempoolDetails {
+		if txDetail.AssetType == commonAsset.NftAssetType {
+			formatNftInfo, err = commonAsset.ParseNftInfo(txDetail.BalanceDelta)
+			if err != nil {
+				logx.Errorf("[sendMintNftTx] unable to parse nft info: %s", err.Error())
+				return txId, nil
+			}
+		}
+	}
+	nftInfoBytes, err := json.Marshal(formatNftInfo)
+	if err != nil {
+		logx.Errorf("[sendMintNftTx] unable to marshal: %s", err.Error())
+		return txId, nil
+	}
+	_ = l.svcCtx.RedisConnection.Setex(key, string(nftInfoBytes), globalmapHandler.NftExpiryTime)
 	return txId, nil
 }
 

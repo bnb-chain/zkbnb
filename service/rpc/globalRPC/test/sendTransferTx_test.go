@@ -26,7 +26,6 @@ import (
 var configFile = flag.String("f",
 	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\rpc\\globalRPC\\etc\\globalrpc.yaml", "the config file")
 
-// /Users/gavin/Desktop/zecrey-v2
 func TestSendTransferTx(t *testing.T) {
 	flag.Parse()
 
@@ -82,7 +81,7 @@ func constructSendTransferTxInfo() string {
 		AssetId:           0,
 		AssetAmount:       big.NewInt(100000),
 		GasAccountIndex:   1,
-		GasFeeAssetId:     1,
+		GasFeeAssetId:     2,
 		GasFeeAssetAmount: big.NewInt(5000),
 		Memo:              "transfer",
 		CallData:          "",

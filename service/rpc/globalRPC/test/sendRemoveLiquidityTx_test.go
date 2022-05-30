@@ -21,7 +21,6 @@ import (
 	"github.com/zeromicro/go-zero/core/conf"
 )
 
-// /Users/gavin/Desktop/zecrey-v2
 func TestSendRemoveLiquidityTx(t *testing.T) {
 	flag.Parse()
 
@@ -80,7 +79,7 @@ func constructSendRemoveLiquidityTxInfo() string {
 		AssetAAmountDelta: nil,
 		AssetBAmountDelta: nil,
 		GasAccountIndex:   1,
-		GasFeeAssetId:     1,
+		GasFeeAssetId:     2,
 		GasFeeAssetAmount: big.NewInt(5000),
 		ExpiredAt:         expiredAt,
 		Nonce:             5,

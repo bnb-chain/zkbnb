@@ -18,8 +18,10 @@
 package txVerification
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-crypto/wasm/zecrey-legend/legendTxTypes"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
@@ -43,7 +45,10 @@ func VerifyWithdrawNftTxInfo(
 		nftInfo == nil ||
 		nftInfo.OwnerAccountIndex != txInfo.AccountIndex ||
 		nftInfo.NftIndex != txInfo.NftIndex ||
-		nftInfo.NftContentHash != txInfo.NftContentHash {
+		nftInfo.NftContentHash != common.Bytes2Hex(txInfo.NftContentHash) {
+		infoBytes, _ := json.Marshal(nftInfo)
+		log.Println(string(infoBytes))
+		log.Println(common.Bytes2Hex(txInfo.NftContentHash))
 		logx.Errorf("[VerifySetNftPriceTxInfo] invalid params")
 		return nil, errors.New("[VerifySetNftPriceTxInfo] invalid params")
 	}

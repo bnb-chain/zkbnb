@@ -54,9 +54,10 @@ type (
 		GetPendingNftTxs() (mempoolTxs []*MempoolTx, err error)
 		CreateBatchedMempoolTxs(mempoolTxs []*MempoolTx) error
 		CreateMempoolTxAndL2Nft(mempoolTx *MempoolTx, nftInfo *nft.L2Nft) error
+		CreateMempoolTxAndL2NftExchange(mempoolTx *MempoolTx, nftExchange *nft.L2NftExchange) error
 		DeleteMempoolTxs(txIds []*int64) error
 
-		GetMempoolTxsByAccountIndex(accountIndex int64) (mempoolTxs []*MempoolTx, err error)
+		GetPendingMempoolTxsByAccountIndex(accountIndex int64) (mempoolTxs []*MempoolTx, err error)
 		GetLatestL2MempoolTxByAccountIndex(accountIndex int64) (mempoolTx *MempoolTx, err error)
 	}
 
@@ -596,21 +597,21 @@ func (m *defaultMempoolModel) GetLatestL2MempoolTxByAccountIndex(accountIndex in
 	return mempoolTx, nil
 }
 
-func (m *defaultMempoolModel) GetMempoolTxsByAccountIndex(accountIndex int64) (mempoolTxs []*MempoolTx, err error) {
+func (m *defaultMempoolModel) GetPendingMempoolTxsByAccountIndex(accountIndex int64) (mempoolTxs []*MempoolTx, err error) {
 	var mempoolForeignKeyColumn = `MempoolDetails`
-	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex).
+	dbTx := m.DB.Table(m.table).Where("status = ? AND account_index = ?", PendingTxStatus, accountIndex).
 		Order("created_at, id").Find(&mempoolTxs)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetMempoolTxsByAccountIndex] %s", dbTx.Error)
+		logx.Errorf("[GetPendingMempoolTxsByAccountIndex] %s", dbTx.Error)
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		logx.Errorf("[GetMempoolTxsByAccountIndex] Get MempoolTxs Error")
+		logx.Errorf("[GetPendingMempoolTxsByAccountIndex] Get MempoolTxs Error")
 		return nil, ErrNotFound
 	}
 	for _, mempoolTx := range mempoolTxs {
 		err = m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
 		if err != nil {
-			logx.Errorf("[GetMempoolTxsByAccountIndex] Get Associate MempoolDetails Error")
+			logx.Errorf("[GetPendingMempoolTxsByAccountIndex] Get Associate MempoolDetails Error")
 			return nil, err
 		}
 	}
@@ -681,6 +682,30 @@ func (m *defaultMempoolModel) CreateMempoolTxAndL2Nft(mempoolTx *MempoolTx, nftI
 		}
 		if dbTx.RowsAffected == 0 {
 			logx.Errorf("[mempool.CreateMempoolTxAndL2Nft] Create Invalid nft info")
+			return ErrInvalidMempoolTx
+		}
+		return nil
+	})
+}
+
+func (m *defaultMempoolModel) CreateMempoolTxAndL2NftExchange(mempoolTx *MempoolTx, nftExchange *nft.L2NftExchange) error {
+	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
+		dbTx := tx.Table(m.table).Create(mempoolTx)
+		if dbTx.Error != nil {
+			logx.Errorf("[mempool.CreateMempoolTxAndL2NftExchange] %s", dbTx.Error)
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			logx.Errorf("[mempool.CreateMempoolTxAndL2NftExchange] Create Invalid Mempool Tx")
+			return ErrInvalidMempoolTx
+		}
+		dbTx = tx.Table(nft.L2NftExchangeTableName).Create(nftExchange)
+		if dbTx.Error != nil {
+			logx.Errorf("[mempool.CreateMempoolTxAndL2NftExchange] %s", dbTx.Error)
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			logx.Errorf("[mempool.CreateMempoolTxAndL2NftExchange] Create Invalid nft info")
 			return ErrInvalidMempoolTx
 		}
 		return nil
