@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/accounthistory"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/mempool"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
@@ -17,14 +16,14 @@ type GetMempoolTxsLogic struct {
 	ctx     context.Context
 	svcCtx  *svc.ServiceContext
 	mempool mempool.Mempool
-	account account.HistoryAccount
 }
 
 func NewGetMempoolTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetMempoolTxsLogic {
 	return &GetMempoolTxsLogic{
-		Logger: logx.WithContext(ctx),
-		ctx:    ctx,
-		svcCtx: svcCtx,
+		Logger:  logx.WithContext(ctx),
+		ctx:     ctx,
+		svcCtx:  svcCtx,
+		mempool: mempool.New(svcCtx.Config),
 	}
 }
 func packGetMempoolTxsResp(
