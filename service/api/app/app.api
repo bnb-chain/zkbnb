@@ -10,8 +10,8 @@ info(
 type (
 	ReqGetStatus  struct{}
 	RespGetStatus {
-		Status int `json:"status"`
-		NetworkId int        `json:"network_id"`
+		Status    int `json:"status"`
+		NetworkId int `json:"network_id"`
 	}
 )
 
@@ -169,8 +169,8 @@ type (
 		L2AssetSymbol   string `json:"l2_asset_symbol"`
 	}
 	RespGetAssetsList {
-		L1Assets  []*L1Asset `json:"l1_assets"`
-		L2Assets  []*L2Asset `json:"l2_assets"`
+		L1Assets []*L1Asset `json:"l1_assets"`
+		L2Assets []*L2Asset `json:"l2_assets"`
 	}
 )
 
@@ -348,12 +348,11 @@ service appService-api{
 
 /* ======================= transaction =======================*/
 type TxDetail {
-	AssetId        int    `json:"assetId"`
-	AssetType      int    `json:"assetType"`
-	AccountIndex   int32  `json:"accountIndex"`
-	AccountName    string `json:"accountName"`
-	AccountBalance string `json:"accountBalance"`
-	AccountDelta   string `json:"accountDelta"`
+	AssetId      int    `json:"assetId"`
+	AssetType    int    `json:"assetType"`
+	AccountIndex int32  `json:"accountIndex"`
+	AccountName  string `json:"accountName"`
+	AccountDelta string `json:"accountDelta"`
 }
 
 type Tx {
@@ -370,7 +369,6 @@ type Tx {
 	TxAmount      int         `json:"tx_amount"`
 	TxDetails     []*TxDetail `json:"tx_detail"`
 	NativeAddress string      `json:"native_address"`
-	ChainId       int         `json:"chain_id"`
 	CreatedAt     int64       `json:"created_at"`
 	Memo          string      `json:"memo"`
 }

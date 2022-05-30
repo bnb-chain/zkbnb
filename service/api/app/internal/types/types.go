@@ -5,8 +5,8 @@ type ReqGetStatus struct {
 }
 
 type RespGetStatus struct {
-	Status int 			`json:"status"`
-	NetworkId int       `json:"network_id"`
+	Status    int `json:"status"`
+	NetworkId int `json:"network_id"`
 }
 
 type Asset struct {
@@ -114,9 +114,8 @@ type L2Asset struct {
 }
 
 type RespGetAssetsList struct {
-	NetworkId int        `json:"network_id"`
-	L1Assets  []*L1Asset `json:"l1_assets"`
-	L2Assets  []*L2Asset `json:"l2_assets"`
+	L1Assets []*L1Asset `json:"l1_assets"`
+	L2Assets []*L2Asset `json:"l2_assets"`
 }
 
 type ReqGetCurrencyPriceBySymbol struct {
@@ -233,12 +232,11 @@ type RespGetPairInfo struct {
 }
 
 type TxDetail struct {
-	AssetId        int    `json:"assetId"`
-	AssetType      int    `json:"assetType"`
-	AccountIndex   int32  `json:"accountIndex"`
-	AccountName    string `json:"accountName"`
-	AccountBalance string `json:"accountBalance"`
-	AccountDelta   string `json:"accountDelta"`
+	AssetId      int    `json:"assetId"`
+	AssetType    int    `json:"assetType"`
+	AccountIndex int32  `json:"accountIndex"`
+	AccountName  string `json:"accountName"`
+	AccountDelta string `json:"accountDelta"`
 }
 
 type Tx struct {
@@ -255,7 +253,6 @@ type Tx struct {
 	TxAmount      int         `json:"tx_amount"`
 	TxDetails     []*TxDetail `json:"tx_detail"`
 	NativeAddress string      `json:"native_address"`
-	ChainId       int         `json:"chain_id"`
 	CreatedAt     int64       `json:"created_at"`
 	Memo          string      `json:"memo"`
 }
