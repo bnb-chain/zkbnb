@@ -38,24 +38,19 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: account.GetAccountStatusByAccountNameHandler(serverCtx),
 			},
 			{
-				Method:  http.MethodGet,
-				Path:    "/api/v1/account/isAccountNameRegistered",
-				Handler: account.IsAccountNameRegisteredHandler(serverCtx),
-			},
-			{
 				Method:  http.MethodPost,
-				Path:    "/api/v1/account/getAccountInfoByPubKey",
-				Handler: account.GetAccountInfoByPubKeyHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodPost,
-				Path:    "/api/v1/account/getAccountInfoByAssetIdAndPubKey",
-				Handler: account.GetAccountInfoByAssetIdAndPubKeyHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodGet,
 				Path:    "/api/v1/account/getAccountInfoByAccountName",
 				Handler: account.GetAccountInfoByAccountNameHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/v1/account/getBalanceByAssetIdAndAccountName",
+				Handler: account.GetBalanceByAssetIdAndAccountNameHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/account/getAssetsByAccountName",
+				Handler: account.GetAssetsByAccountNameHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,

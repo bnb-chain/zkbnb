@@ -1,4 +1,4 @@
-package accountliquidity
+package liquidity
 
 import "github.com/zecrey-labs/zecrey-legend/pkg/zerror"
 

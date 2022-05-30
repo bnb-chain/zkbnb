@@ -27,32 +27,18 @@ func NewGetAssetsListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 }
 
 func (l *GetAssetsListLogic) GetAssetsList(req *types.ReqGetAssetsList) (resp *types.RespGetAssetsList, err error) {
-	// l1AssetsInfo, err := l.l2asset.GetL2AssetsList()
-	// if err != nil {
-	// 	logx.Error("[GetL2AssetsList] err:%v", err)
-	// 	return nil, err
-	// }
-	// resp.L1Assets = make([]*types.L1Asset, 0)
-	// for _, l1Asset := range l1AssetsInfo {
-	// 	resp.L1Assets = append(resp.L1Assets, &types.L1Asset{
-	// 		L1AssetId:       uint16(l1Asset.AssetId),
-	// 		L1AssetAddr:     l1Asset.AssetAddress,
-	// 		L1AssetDecimals: uint8(l1Asset.Decimals),
-	// 		L1AssetSymbol:   l1Asset.AssetSymbol,
-	// 	})
-	// }
-	l2AssetsInfo, err := l.l2asset.GetL2AssetsList()
+	assets, err := l.l2asset.GetL2AssetsList()
 	if err != nil {
-		logx.Error("[GetAssets] err:%v", err)
+		logx.Error("[GetL2AssetsList] err:%v", err)
 		return nil, err
 	}
-	resp.L2Assets = make([]*types.L2Asset, 0)
-	for _, l2AssetInfo := range l2AssetsInfo {
-		resp.L2Assets = append(resp.L2Assets, &types.L2Asset{
-			L2AssetId:       uint16(l2AssetInfo.AssetId),
-			L2AssetName:     l2AssetInfo.AssetName,
-			L2AssetDecimals: uint8(l2AssetInfo.Decimals),
-			L2AssetSymbol:   l2AssetInfo.AssetSymbol,
+	resp.Assets = make([]*types.AssetInfo, 0)
+	for _, asset := range assets {
+		resp.Assets = append(resp.Assets, &types.AssetInfo{
+			AssetId:       uint32(asset.AssetId),
+			AssetName:     asset.AssetName,
+			AssetDecimals: uint32(asset.Decimals),
+			AssetSymbol:   asset.AssetSymbol,
 		})
 	}
 	return resp, nil

@@ -6,10 +6,11 @@ import (
 
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/logic/errcode"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/accountliquidity"
+	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/globalrpc"
+	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/mempool"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalrpc"
 	"github.com/zecrey-labs/zecrey-legend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -20,6 +21,8 @@ type GetAccountLiquidityPairsLogic struct {
 	ctx              context.Context
 	svcCtx           *svc.ServiceContext
 	accountliquidity accountliquidity.AccountLiquidity
+	globalRPC        globalrpc.GlobalRPC
+	liquidity        liquidity.Liquidity
 }
 
 func NewGetAccountLiquidityPairsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAccountLiquidityPairsLogic {
@@ -28,25 +31,21 @@ func NewGetAccountLiquidityPairsLogic(ctx context.Context, svcCtx *svc.ServiceCo
 		ctx:              ctx,
 		svcCtx:           svcCtx,
 		accountliquidity: accountliquidity.New(svcCtx.Config),
+		globalRPC:        globalrpc.New(svcCtx.Config, ctx),
+		liquidity:        liquidity.New(svcCtx.Config),
 	}
 }
 
-func (l *GetAccountLiquidityPairsLogic) GetAccountLiquidityPairs(req *types.ReqGetAccountLiquidityPairs) (resp *types.RespGetAccountLiquidityPairs, err error) {
-	// todo: add your logic here and delete this line
+func (l *GetAccountLiquidityPairsLogic) GetLiquidityPairs(req *types.ReqGetAccountLiquidityPairs) (resp *types.RespGetAccountLiquidityPairs, err error) {
 	if utils.CheckAccountIndex(req.AccountIndex) {
 		logx.Error("[CheckAccountIndex] param:%v", req.AccountIndex)
 		return nil, errcode.ErrInvalidParam
 	}
-	/////
-	entities, err := l.accountliquidity.GetAccountLiquidityByAccountIndex(uint32(req.AccountIndex))
+	// AccountIndex or pairIndex？
+	entities, err := l.liquidity.GetLiquidityByPairIndex(liquidity(req.AccountIndex))
 	if err != nil {
-		if err == asset.ErrNotFound {
-			return packGetAccountLiquidityPairs(types.SuccessStatus, types.SuccessMsg, "", respResult), nil
-		} else {
-			errInfo := fmt.Sprintf("[appService.account.GetAccountLiquidityPairs]<=>[LiquidityModel.GetAccountLiquidityByAccountIndex] %s", err.Error())
-			logx.Errorf(errInfo)
-			return packGetAccountLiquidityPairs(types.FailStatus, types.FailMsg, errInfo, respResult), nil
-		}
+		logx.Error("[GetLiquidityByPairIndex] err:%v", err)
+		return nil, err
 	}
 	// get created_at
 	mempoolDetails, err := l.svcCtx.MempoolDetailModel.GetLatestMempoolDetailUnscopedGroupByAssetIdAndChainId(

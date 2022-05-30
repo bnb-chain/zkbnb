@@ -9,16 +9,16 @@ import (
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-func GetAccountInfoByAssetIdAndPubKeyHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func GetBalanceByAssetIdAndAccountNameHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.ReqGetAccountInfoByAssetIdAndPubKey
+		var req types.ReqGetBlanceByAssetIdAndAccountName
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.Error(w, err)
 			return
 		}
 
-		l := account.NewGetAccountInfoByAssetIdAndPubKeyLogic(r.Context(), svcCtx)
-		resp, err := l.GetAccountInfoByAssetIdAndPubKey(&req)
+		l := account.NewGetBalanceByAssetIdAndAccountNameLogic(r.Context(), svcCtx)
+		resp, err := l.GetBalanceByAssetIdAndAccountName(&req)
 		if err != nil {
 			httpx.Error(w, err)
 		} else {

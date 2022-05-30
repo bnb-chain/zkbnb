@@ -22,7 +22,7 @@ func NewGetL1AmountListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *G
 		Logger:    logx.WithContext(ctx),
 		ctx:       ctx,
 		svcCtx:    svcCtx,
-		globalRPC: globalrpc.New(svcCtx.Config),
+		globalRPC: globalrpc.New(svcCtx.Config, ctx),
 	}
 }
 

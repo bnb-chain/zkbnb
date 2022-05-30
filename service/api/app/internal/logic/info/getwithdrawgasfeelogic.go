@@ -30,6 +30,7 @@ func NewGetWithdrawGasFeeLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 	}
 }
 
+// todo GetWithdrawGasFee
 func (l *GetWithdrawGasFeeLogic) GetWithdrawGasFee(req *types.ReqGetWithdrawGasFee) (resp *types.RespGetWithdrawGasFee, err error) {
 	l2Asset, err := l.l2asset.GetL2AssetInfoByAssetId(uint32(req.AssetId))
 	if err != nil {

@@ -29,7 +29,6 @@ func NewGetSwapAmountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 }
 
 func (l *GetSwapAmountLogic) GetSwapAmount(req *types.ReqGetSwapAmount) (resp *types.RespGetSwapAmount, err error) {
-	// todo: add your logic here and delete this line
 	if utils.CheckPairIndex(req.PairIndex) {
 		logx.Error("[CheckPairIndex] param:%v", req.PairIndex)
 		return nil, errcode.ErrInvalidParam
@@ -42,7 +41,7 @@ func (l *GetSwapAmountLogic) GetSwapAmount(req *types.ReqGetSwapAmount) (resp *t
 		logx.Error("[CheckAssetId] param:%v", req.AssetId)
 		return nil, errcode.ErrInvalidParam
 	}
-	resp.PairIndex,resp.ResAssetAmount,resp.ResAssetId, err := l.globalRPC.GetSwapAmount(req.PairIndex,req.AssetId,req.AssetAmount ,req.IsFrom)
+	resp.PairIndex, resp.ResAssetAmount, resp.ResAssetId, err = l.globalRPC.GetSwapAmount(req.PairIndex, req.AssetId, req.AssetAmount, req.IsFrom)
 	if err != nil {
 		logx.Error("[GetSwapAmount] err:%v", err)
 		return nil, err

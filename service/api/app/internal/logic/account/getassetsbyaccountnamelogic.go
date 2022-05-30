@@ -13,23 +13,23 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-type GetAccountStatusByPubKeyLogic struct {
+type GetAssetsByAccountNameLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
 }
 
-func NewGetAccountStatusByPubKeyLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAccountStatusByPubKeyLogic {
-	return &GetAccountStatusByPubKeyLogic{
+func NewGetAssetsByAccountNameLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAssetsByAccountNameLogic {
+	return &GetAssetsByAccountNameLogic{
 		Logger: logx.WithContext(ctx),
 		ctx:    ctx,
 		svcCtx: svcCtx,
 	}
 }
 
-func (l *GetAccountStatusByPubKeyLogic) GetAccountStatusByPubKey(req *types.ReqGetAccountStatusByPubKey) (resp *types.RespGetAccountStatusByPubKey, err error) {
-	if utils.CheckAccountPK(req.AccountPk) {
-		logx.Error("[CheckAccountPK] param:%v", req.AccountPk)
+func (l *GetAssetsByAccountNameLogic) GetAssetsByAccountName(req *types.ReqGetAssetsByAccountName) (resp *types.RespGetAssetsByAccountName, err error) {
+	if utils.CheckAccountName(req.AccountName) {
+		logx.Error("[CheckAccountName] param:%v", req.AccountName)
 		return nil, errcode.ErrInvalidParam
 	}
 	account, err := l.account.GetAccountByAccountName(req.AccountName)
@@ -37,7 +37,6 @@ func (l *GetAccountStatusByPubKeyLogic) GetAccountStatusByPubKey(req *types.ReqG
 		logx.Error("[GetAccountByAccountName] err:%v", err)
 		return nil, err
 	}
-
 	// TODO: get latestAssets from globalRPC
 	expire_time := 0
 	if account.Status == 2 {

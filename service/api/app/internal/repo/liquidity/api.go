@@ -1,11 +1,13 @@
-package accountliquidity
+package liquidity
 
 import (
 	"context"
 	"sync"
 
+	table "github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/config"
+
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
@@ -14,21 +16,18 @@ import (
 	"gorm.io/gorm"
 )
 
-type AccountLiquidity interface {
-	CreateAccountLiquidity(liquidity *AccountLiquidityInfo) error
-	CreateAccountLiquidityInBatches(entities []*AccountLiquidityInfo) error
-	GetAccountLiquidityByAccountIndex(accountIndex uint32) (entities []*AccountLiquidityInfo, err error)
-	GetLiquidityByAccountIndexAndPairIndex(accountIndex uint32, pairIndex uint32) (accountLiquidity *AccountLiquidityInfo, err error)
-	UpdateAccountLiquidity(liquidity *AccountLiquidityInfo) (bool, error)
-	UpdateAccountLiquidityInBatches(entities []*AccountLiquidityInfo) error
-	GetAllLiquidityAssets() (accountLiquidity []*AccountLiquidityInfo, err error)
+type Liquidity interface {
+	CreateLiquidity(liquidity *table.Liquidity) error
+	CreateLiquidityInBatches(entities []*table.Liquidity) error
+	GetLiquidityByPairIndex(pairIndex int64) (entity *table.Liquidity, err error)
+	GetAllLiquidityAssets() (entity []*table.Liquidity, err error)
 }
 
-var singletonValue *accountLiquidity
+var singletonValue *liquidity
 var once sync.Once
 var c config.Config
 
-func New(c config.Config) AccountLiquidity {
+func New(c config.Config) Liquidity {
 	once.Do(func() {
 		conn := sqlx.NewSqlConn("postgres", c.Postgres.DataSource)
 		gormPointer, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
@@ -39,7 +38,7 @@ func New(c config.Config) AccountLiquidity {
 			p.Type = c.CacheRedis[0].Type
 			p.Pass = c.CacheRedis[0].Pass
 		})
-		singletonValue = &accountLiquidity{
+		singletonValue = &liquidity{
 			cachedConn: sqlc.NewConn(conn, c.CacheRedis),
 			table:      `account_liquidity`,
 			db:         gormPointer,

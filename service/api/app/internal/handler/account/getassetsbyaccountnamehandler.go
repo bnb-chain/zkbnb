@@ -9,16 +9,16 @@ import (
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-func IsAccountNameRegisteredHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func GetAssetsByAccountNameHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.ReqIsAccountNameRegistered
+		var req types.ReqGetAssetsByAccountName
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.Error(w, err)
 			return
 		}
 
-		l := account.NewIsAccountNameRegisteredLogic(r.Context(), svcCtx)
-		resp, err := l.IsAccountNameRegistered(&req)
+		l := account.NewGetAssetsByAccountNameLogic(r.Context(), svcCtx)
+		resp, err := l.GetAssetsByAccountName(&req)
 		if err != nil {
 			httpx.Error(w, err)
 		} else {

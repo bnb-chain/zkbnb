@@ -34,6 +34,7 @@ func NewGetGasFeeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetGasF
 	}
 }
 
+// GetGasFee 需求文档
 func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (resp *types.RespGetGasFee, err error) {
 	l2Asset, err := l.l2asset.GetL2AssetInfoByAssetId(uint32(req.AssetId))
 	if err != nil {

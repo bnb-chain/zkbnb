@@ -29,7 +29,6 @@ func NewGetLPValueLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetLPV
 }
 
 func (l *GetLPValueLogic) GetLPValue(req *types.ReqGetLPValue) (resp *types.RespGetLPValue, err error) {
-	// todo: add your logic here and delete this line
 	if utils.CheckPairIndex(req.PairIndex) {
 		logx.Error("[CheckPairIndex] param:%v", req.PairIndex)
 		return nil, errcode.ErrInvalidParam

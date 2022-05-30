@@ -20,9 +20,11 @@ import (
 
 type GlobalRPC interface {
 	GetLatestAccountInfo(accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error)
-	GetLatestL1Amount(assetId uint16) (totalAmount int64, err error)
+	GetLatestL1Amount(assetId uint32) (totalAmount int64, err error)
 	GetLatestL1AmountList() (amounts []*types.AmountInfo, err error)
 	GetSwapAmount(pairIndex, assetId uint16, assetAmount uint64, isFrom bool) (assetAmount uint64, pairIndex, assetId uint16)
+	GetLatestAccountInfoByAccountIndex(accountIndex int64) (accountPk string, assetsAccount []*types.Asset, err error)
+	GetPairInfo()
 }
 
 var singletonValue *globalRPC

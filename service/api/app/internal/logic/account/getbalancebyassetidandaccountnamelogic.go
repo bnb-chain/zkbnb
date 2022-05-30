@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/logic/errcode"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/account"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/globalrpc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
 	"github.com/zecrey-labs/zecrey-legend/utils"
@@ -15,26 +13,21 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-type GetAccountStatusByAccountNameLogic struct {
+type GetBalanceByAssetIdAndAccountNameLogic struct {
 	logx.Logger
-	ctx       context.Context
-	svcCtx    *svc.ServiceContext
-	globalRPC globalrpc.GlobalRPC
-
-	account account.AccountModel
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
 }
 
-func NewGetAccountStatusByAccountNameLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAccountStatusByAccountNameLogic {
-	return &GetAccountStatusByAccountNameLogic{
-		Logger:    logx.WithContext(ctx),
-		ctx:       ctx,
-		svcCtx:    svcCtx,
-		account:   account.New(svcCtx.Config),
-		globalRPC: globalrpc.New(svcCtx.Config, ctx),
+func NewGetBalanceByAssetIdAndAccountNameLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetBalanceByAssetIdAndAccountNameLogic {
+	return &GetBalanceByAssetIdAndAccountNameLogic{
+		Logger: logx.WithContext(ctx),
+		ctx:    ctx,
+		svcCtx: svcCtx,
 	}
 }
 
-func (l *GetAccountStatusByAccountNameLogic) GetAccountStatusByAccountName(req *types.ReqGetAccountStatusByAccountName) (resp *types.RespGetAccountStatusByAccountName, err error) {
+func (l *GetBalanceByAssetIdAndAccountNameLogic) GetBalanceByAssetIdAndAccountName(req *types.ReqGetBlanceByAssetIdAndAccountName) (resp *types.RespGetBlanceInfoByAssetIdAndAccountName, err error) {
 	if utils.CheckAccountName(req.AccountName) {
 		logx.Error("[CheckAccountIndex] param:%v", req.AccountName)
 		return nil, errcode.ErrInvalidParam
@@ -44,7 +37,7 @@ func (l *GetAccountStatusByAccountNameLogic) GetAccountStatusByAccountName(req *
 		logx.Error("[GetAccountByAccountName] err:%v", err)
 		return nil, err
 	}
-	// get status in globalrpc
+	// TODO: get latestAssets from globalRPC
 	expire_time := 0
 	if account.Status == 2 {
 		accountRegister, err := l.svcCtx.AccountRegisterModel.GetAccountRegisterInfoByName(req.AccountName)
