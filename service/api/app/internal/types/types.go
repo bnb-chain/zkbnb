@@ -324,8 +324,6 @@ type ReqGetMempoolTxs struct {
 }
 
 type RespGetMempoolTxs struct {
-	Offset     uint16 `json:"offset"`
-	Limit      uint16 `json:"limit"`
 	Total      uint32 `json:"total"`
 	MempoolTxs []*Tx  `json:"mempool_txs"`
 }

@@ -48,11 +48,9 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (resp *types.R
 
 	txMemppol, err := l.mempool.GetMempoolTxByTxHash(req.TxHash)
 	if err != nil {
-		if err != mempool.ErrNotFound {
-			errInfo := fmt.Sprintf("[appService.transaction.GetTxByHash]<=>[MempoolModel.GetMempoolTxByTxHash] %s", err.Error())
-			logx.Error(errInfo)
-			return packGetTxByHashResp(types.Tx{}, 0, 0, 0), nil
-		}
+		err := fmt.Sprintf("[mempool.GetMempoolTxByTxHash] %s", err)
+		logx.Info(err)
+		return nil, nil
 	}
 	txDetails := make([]*types.TxDetail, 0)
 	for _, w := range txMemppol.MempoolDetails {
@@ -87,11 +85,7 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (resp *types.R
 		TxStatus:      txMemppol.Status,
 		BlockHeight:   int(txMemppol.L2BlockHeight),
 		BlockStatus:   int(blockStatusInfo.BlockStatus),
-
-		// Todo: where is this field come from
-		// db index
-		BlockId: int(block.ID),
-
+		BlockId:       int(block.ID),
 		AssetAId:      int(txMemppol.AssetAId),
 		AssetBId:      int(txMemppol.AssetBId),
 		TxAmount:      txAmount,

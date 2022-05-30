@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"context"
-	"fmt"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/mempool"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
@@ -26,37 +25,20 @@ func NewGetMempoolTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 		mempool: mempool.New(svcCtx.Config),
 	}
 }
-func packGetMempoolTxsResp(
-	offset uint16,
-	limit uint16,
-	total uint32,
-	mempoolTxs []*types.Tx,
-) (res *types.RespGetMempoolTxs) {
-	res = &types.RespGetMempoolTxs{
-		Offset:     offset,
-		Limit:      limit,
-		Total:      total,
-		MempoolTxs: mempoolTxs,
-	}
-	return res
-}
 func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (resp *types.RespGetMempoolTxs, err error) {
 	//	err := utils.CheckRequestParam(utils.TypeLimit, reflect.ValueOf(req.Limit))
 	//	err = utils.CheckRequestParam(utils.TypeLimit, reflect.ValueOf(req.Limit))
 	mempoolTxs, err := l.mempool.GetMempoolTxs(int64(req.Limit), int64(req.Offset))
-	logx.Info(req.Limit, req.Offset)
 	if err != nil {
-		errInfo := fmt.Sprintf("[appService.transaction.GetMempoolTxsList]<=>[MempoolModel.GetMempoolTxsList] %s", err.Error())
-		logx.Error(errInfo)
-		return packGetMempoolTxsResp(req.Offset, req.Limit, 0, nil), nil
+		logx.Error("[GetMempoolTxs] err:%v", err)
+		return &types.RespGetMempoolTxs{}, nil
 	}
 
 	// Todo: why not do total=len(mempoolTxs)
 	total, err := l.mempool.GetMempoolTxsTotalCount()
 	if err != nil {
-		errInfo := fmt.Sprintf("[appService.transaction.GetMempoolTxsList]<=>[MempoolModel.GetMempoolTxsTotalCount] %s", err.Error())
-		logx.Error(errInfo)
-		return packGetMempoolTxsResp(req.Offset, req.Limit, 0, nil), nil
+		logx.Error("[GetMempoolTxs] err:%v", err)
+		return &types.RespGetMempoolTxs{}, nil
 	}
 
 	data := make([]*types.Tx, 0)
@@ -82,9 +64,8 @@ func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (resp *t
 		//Todo: int64 or int?
 		txAmount, err := strconv.Atoi(mempoolTx.TxAmount)
 		if err != nil {
-			errInfo := fmt.Sprintf("[appService.transaction.GetMempoolTxsList]<=>[MempoolModel.GetMempoolTxsTotalCount] %s", err.Error())
-			logx.Error(errInfo)
-			return packGetMempoolTxsResp(req.Offset, req.Limit, 0, nil), nil
+			logx.Error("[GetMempoolTxs] err:%v", err)
+			return &types.RespGetMempoolTxs{}, nil
 		}
 		// Todo: why is the field in db string?
 		gasFee, err := strconv.Atoi(mempoolTx.GasFee)
@@ -104,8 +85,6 @@ func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (resp *t
 		})
 	}
 	resp = &types.RespGetMempoolTxs{
-		Offset:     req.Offset,
-		Limit:      req.Limit,
 		Total:      uint32(total),
 		MempoolTxs: data,
 	}
