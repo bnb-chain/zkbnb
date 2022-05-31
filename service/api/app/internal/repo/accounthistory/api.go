@@ -1,4 +1,4 @@
-package account
+package accounthistory
 
 import (
 	"context"
@@ -13,19 +13,21 @@ import (
 	"gorm.io/gorm"
 )
 
-type HistoryAccount interface {
+type AccountHistory interface {
 	GetAccountByAccountName(accountName string) (account *table.AccountHistory, err error)
 	GetAccountByAccountIndex(accountIndex int64) (account *table.AccountHistory, err error)
 
 	GetAccountsList(limit int, offset int64) (accounts []*table.AccountHistory, err error)
 	GetAccountsTotalCount() (count int64, err error)
+	GetAccountByPk(pk string) (account *table.AccountHistory, err error)
+	GetAccountAssetsByIndex(accountIndex int64) (accountAssets []*table.AccountHistory, err error)
 }
 
-var singletonValue *historyAccount
+var singletonValue *accountHistory
 var once sync.Once
 var c config.Config
 
-func New(c config.Config) HistoryAccount {
+func New(c config.Config) AccountHistory {
 	once.Do(func() {
 		gormPointer, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
 		if err != nil {
@@ -35,7 +37,7 @@ func New(c config.Config) HistoryAccount {
 			p.Type = c.CacheRedis[0].Type
 			p.Pass = c.CacheRedis[0].Pass
 		})
-		singletonValue = &historyAccount{
+		singletonValue = &accountHistory{
 			table:     `tx`,
 			db:        gormPointer,
 			redisConn: redisConn,

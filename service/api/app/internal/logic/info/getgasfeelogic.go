@@ -34,13 +34,14 @@ func NewGetGasFeeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetGasF
 	}
 }
 
+// GetGasFee 需求文档
 func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (resp *types.RespGetGasFee, err error) {
 	l2Asset, err := l.l2asset.GetL2AssetInfoByAssetId(uint32(req.AssetId))
 	if err != nil {
 		logx.Error("[GetL2AssetInfoByAssetId] err:%v", err)
 		return nil, err
 	}
-	price, err := l.price.GetCurrencyPrice(l2Asset.L2Symbol)
+	price, err := l.price.GetCurrencyPrice(l2Asset.AssetSymbol)
 	if err != nil {
 		logx.Error("[GetCurrencyPrice] err:%v", err)
 		return nil, err
@@ -63,8 +64,8 @@ func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (resp *types.RespGet
 	}
 	// TODO: integer overflow
 	resp.GasFee = ethPrice * sysGasFeeInt * math.Pow(10, -5) / price
-	minNum := math.Pow(10, -float64(l2Asset.L2Decimals))
-	resp.GasFee = truncate(resp.GasFee, l2Asset.L2Decimals)
+	minNum := math.Pow(10, -float64(l2Asset.Decimals))
+	resp.GasFee = truncate(resp.GasFee, l2Asset.Decimals)
 	if resp.GasFee < minNum {
 		resp.GasFee = minNum
 	}

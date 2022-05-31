@@ -1,19 +1,14 @@
-package account
+package accounthistory
 
-const (
-	Fail = iota
-	NoRegisteredNoActive
-	RegisteredNoActive
-	Active
+import (
+	"github.com/zecrey-labs/zecrey-legend/pkg/zerror"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
-const (
-	AccountTableName         = `account`
-	AccountRegisterTableName = `account_register`
-	AccountHistoryTableName  = `account_history`
+var (
+	ErrNotFound = sqlx.ErrNotFound
 )
 
-const (
-	AccountHistoryPending = iota
-	AccountHistoryConfirmed
+var (
+	ErrNotExistInSql = zerror.New(40000, "not exist in sql")
 )

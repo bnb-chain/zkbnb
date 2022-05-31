@@ -30,8 +30,8 @@ func NewGetWithdrawGasFeeLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 	}
 }
 
+// todo GetWithdrawGasFee
 func (l *GetWithdrawGasFeeLogic) GetWithdrawGasFee(req *types.ReqGetWithdrawGasFee) (resp *types.RespGetWithdrawGasFee, err error) {
-	// todo: add your logic here and delete this line
 	l2Asset, err := l.l2asset.GetL2AssetInfoByAssetId(uint32(req.AssetId))
 	if err != nil {
 		logx.Error("[GetL2AssetInfoByAssetId] err:%v", err)
@@ -42,19 +42,20 @@ func (l *GetWithdrawGasFeeLogic) GetWithdrawGasFee(req *types.ReqGetWithdrawGasF
 		logx.Error("[GetL2AssetInfoByAssetId] err:%v", err)
 		return nil, err
 	}
-	price, err := l.price.GetCurrencyPrice(l2Asset.L2Symbol)
+	price, err := l.price.GetCurrencyPrice(l2Asset.AssetSymbol)
 	if err != nil {
-		logx.Error("[GetCurrencyPrice] L2Symbol:%v, err:%v", l2Asset.L2Symbol, err)
+		logx.Error("[GetCurrencyPrice] L2Symbol:%v, err:%v", l2Asset.AssetSymbol, err)
 		return nil, err
 	}
-	withdrawPrice, err := l.price.GetCurrencyPrice(withdrawL2Asset.L2Symbol)
+	withdrawPrice, err := l.price.GetCurrencyPrice(withdrawL2Asset.AssetSymbol)
 	if err != nil {
-		logx.Error("[GetCurrencyPrice] L2Symbol:%v, err:%v", withdrawL2Asset.L2Symbol, err)
+		logx.Error("[GetCurrencyPrice] L2Symbol:%v, err:%v", withdrawL2Asset.AssetSymbol, err)
 		return nil, err
 	}
-	resp.WithdrawGasFee = price * float64(req.WithdrawAmount) * math.Pow(10, -float64(l2Asset.L2Decimals)) * 0.001 / withdrawPrice
-	minNum := math.Pow(10, -float64(l2Asset.L2Decimals))
-	resp.WithdrawGasFee = truncate(resp.WithdrawGasFee, l2Asset.L2Decimals)
+	// TODO: integer overflow
+	resp.WithdrawGasFee = price * float64(req.WithdrawAmount) * math.Pow(10, -float64(l2Asset.Decimals)) * 0.001 / withdrawPrice
+	minNum := math.Pow(10, -float64(l2Asset.Decimals))
+	resp.WithdrawGasFee = truncate(resp.WithdrawGasFee, l2Asset.Decimals)
 	if resp.WithdrawGasFee < minNum {
 		resp.WithdrawGasFee = minNum
 	}
