@@ -3,7 +3,7 @@ package account
 import (
 	"context"
 
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/account"
+	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/accounthistory"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/l2asset"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
@@ -29,5 +29,5 @@ func NewGetAccountInfoByAccountNameLogic(ctx context.Context, svcCtx *svc.Servic
 }
 
 func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *types.ReqGetAccountInfoByAccountName) (resp *types.RespGetAccountInfoByAccountName, err error) {
-
+	return resp, err
 }
