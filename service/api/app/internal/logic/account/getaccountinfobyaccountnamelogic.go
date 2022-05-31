@@ -53,15 +53,18 @@ func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *type
 		logx.Error("[GetAccountByAccountName] accountName:%v, err:%v", accountName, err)
 		return nil, err
 	}
-	accountPk, assetsAccount, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(account.AccountIndex)
+	assets, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(uint32(account.AccountIndex))
 	if err != nil {
-		logx.Error("[getLatestAccountInfoByAccountIndex] err:%v", err)
+		logx.Error("[GetLatestAccountInfoByAccountIndex] err:%v", err)
 		return nil, err
 	}
-	resp = &types.RespGetAccountInfoByAccountName{
-		AccountIndex:  uint32(account.AccountIndex),
-		AccountPk:     accountPk,
-		AssetsAccount: assetsAccount,
+	for _, asset := range assets {
+		resp.AssetsAccount = append(resp.AssetsAccount, &types.Asset{
+			AssetId: asset.AssetId,
+			Balance: asset.Balance,
+		})
 	}
+	resp.AccountIndex = uint32(account.AccountIndex)
+	resp.AccountPk = account.PublicKey
 	return resp, nil
 }

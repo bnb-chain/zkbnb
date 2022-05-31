@@ -134,36 +134,15 @@ type RespGetWithdrawGasFee struct {
 	WithdrawGasFee float64 `json:"withdraw_gas_fee"`
 }
 
-type ReqGetL1AmountByAssetid struct {
-	AssetId uint32 `form:"asset_id"`
-}
-
-type RespGetL1AmountByAssetid struct {
-	TotalAmount int64 `json:"total_amount"`
-}
-
-type ReqGetL1AmountList struct {
-}
-
-type AmountInfo struct {
-	AssetId     int   `json:"asset_id"`
-	TotalAmount int64 `json:"total_amount"`
-}
-
-type RespGetL1AmountList struct {
-	Amounts []*AmountInfo `json:"amounts"`
-}
-
 type ReqGetSwapAmount struct {
 	PairIndex   uint32 `form:"pair_index"`
 	AssetId     uint32 `form:"asset_id"`
-	AssetAmount uint64 `form:"asset_amount"`
+	AssetAmount string `form:"asset_amount"`
 	IsFrom      bool   `form:"is_from"`
 }
 
 type RespGetSwapAmount struct {
-	PairIndex      uint32 `json:"pair_index"` //
-	ResAssetAmount uint64 `json:"res_asset_amount"`
+	ResAssetAmount string `json:"res_asset_amount"`
 	ResAssetId     uint32 `json:"res_asset_id"`
 }
 
@@ -186,16 +165,16 @@ type RespGetAvailablePairs struct {
 
 type ReqGetLPValue struct {
 	PairIndex uint32 `form:"pair_index"`
-	LpAmount  uint64 `form:"lp_amount"`
+	LpAmount  string `form:"lp_amount"`
 }
 
 type RespGetLPValue struct {
 	AssetAId     uint32 `json:"asset_a_id"`
 	AssetAName   string `json:"asset_a_name"`
-	AssetAAmount uint64 `json:"asset_a_amount"`
-	AssetBid     uint32 `json:"asset_b_id"`
+	AssetAAmount string `json:"asset_a_amount"`
+	AssetBId     uint32 `json:"asset_b_id"`
 	AssetBName   string `json:"asset_b_name"`
-	AssetBAmount uint64 `json:"asset_b_amount"`
+	AssetBAmount string `json:"asset_b_amount"`
 }
 
 type ReqGetPairInfo struct {
@@ -203,12 +182,11 @@ type ReqGetPairInfo struct {
 }
 
 type RespGetPairInfo struct {
-	AssetRatio    float64 `json:"asset_ratio"`
 	AssetAId      uint32  `json:"asset_a_id"`
-	AssetAAmount  uint64  `json:"asset_a_amount"`
+	AssetAAmount  string  `json:"asset_a_amount"`
 	AssetBId      uint32  `json:"asset_b_id"`
-	AssetBAmount  uint64  `json:"asset_b_amount"`
-	TotalLpAmount uint64  `json:"total_lp_amount"`
+	AssetBAmount  string  `json:"asset_b_amount"`
+	TotalLpAmount string  `json:"total_lp_amount"`
 }
 
 type TxDetail struct {

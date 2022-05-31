@@ -3,6 +3,7 @@
 package utils
 
 import (
+	"math"
 	"strings"
 )
 
@@ -11,16 +12,19 @@ const (
 	maxAccountNameLengthOmitSpace = 20
 
 	minAssetId = 0
-	maxAssetId = 1 << 32
+	maxAssetId = math.MaxUint32
 
 	minAccountIndex = 0
-	maxAccountIndex = 1 << 32
+	maxAccountIndex = math.MaxUint32
 
 	minPublicKeyLength = 20
-	maxPublicKeyLength = 50 //TODO
+	maxPublicKeyLength = 50
 
 	minPairIndex = 0
-	maxPairIndex = 1 << 32
+	maxPairIndex = math.MaxUint32
+
+	minLPAmount = 0
+	maxLPAmount = math.MaxUint32
 )
 
 func CheckAccountName(accountName string) bool {
@@ -35,7 +39,7 @@ func CheckAccountPK(accountPK string) bool {
 	return len(accountPK) > maxPublicKeyLength
 }
 
-func CheckAssetId(assetId uint16) bool {
+func CheckAssetId(assetId uint32) bool {
 	return assetId > maxAssetId
 }
 
@@ -43,11 +47,11 @@ func CheckAccountIndex(accountIndex uint32) bool {
 	return accountIndex > maxAccountIndex
 }
 
-func CheckPairIndex(pairIndex uint32) {
+func CheckPairIndex(pairIndex uint32) bool {
 	return pairIndex > maxAccountIndex
 }
 
-func CheckLPAmount(LPAmount uint32) {
+func CheckLPAmount(LPAmount uint32) bool {
 	return LPAmount > maxLPAmount
 }
 

@@ -23,6 +23,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalrpc"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 )
@@ -46,12 +47,32 @@ func (m *globalRPC) GetLatestAccountInfo(accountIndex int64) (accountInfo *commo
 	return accountInfo, nil
 }
 
-func (m *globalRPC) GetSwapAmount(pairIndex, assetId uint16, assetAmount uint64, isFrom bool) (uint64, uint16, uint16) {
-	resRpc, _ := m.globalRPC.GetSwapAmount(m.ctx, &globalrpc.ReqGetSwapAmount{
+func (m *globalRPC) GetSwapAmount(pairIndex, assetId uint64, assetAmount string, isFrom bool) (string, uint32, error) {
+	resRpc, err := m.globalRPC.GetSwapAmount(m.ctx, &globalrpc.ReqGetSwapAmount{
 		PairIndex:   uint32(pairIndex),
 		AssetId:     uint32(assetId),
 		AssetAmount: assetAmount,
 		IsFrom:      isFrom,
 	})
-	return resRpc.Result.ResAssetAmount, uint16(resRpc.Result.PairIndex), uint16(resRpc.Result.ResAssetId)
+	return resRpc.SwapAssetAmount, resRpc.SwapAssetId, err
+}
+
+func (m *globalRPC) GetLatestAccountInfoByAccountIndex(accountIndex uint32) ([]*globalrpc.AssetResult, error) {
+	res, err := m.globalRPC.GetLatestAssetsListByAccountIndex(m.ctx, &globalrpc.ReqGetLatestAssetsListByAccountIndex{
+		AccountIndex: accountIndex,
+	})
+	return res.ResultAssetsList, err
+}
+
+func (m *globalRPC) GetLpValue(pairIndex uint32, lpAmount string) (*globalRPCProto.RespGetLpValue, error) {
+	return m.globalRPC.GetLpValue(m.ctx, &globalrpc.ReqGetLpValue{
+		PairIndex: pairIndex,
+		LPAmount:  lpAmount,
+	})
+}
+
+func (m *globalRPC) GetPairInfo(pairIndex uint32) (*globalRPCProto.RespGetLatestPairInfo, error) {
+	return m.globalRPC.GetLatestPairInfo(m.ctx, &globalrpc.ReqGetLatestPairInfo{
+		PairIndex: pairIndex,
+	})
 }

@@ -196,7 +196,7 @@ service globalRPC {
   rpc getLatestAssetInfoByAccountIndexAndAssetId(ReqGetLatestAssetInfoByAccountIndexAndAssetId) returns (RespGetLatestAssetInfoByAccountIndexAndAssetId);
   // Liquidity
   rpc getLatestPairInfo(ReqGetLatestPairInfo) returns (RespGetLatestPairInfo);
-  rpc getSwapAmount(ReqGetSwapAmount) returns (ReqGetSwapAmount);
+  rpc getSwapAmount(ReqGetSwapAmount) returns (RespGetSwapAmount);
   rpc getLpValue(ReqGetLpValue) returns (RespGetLpValue);
   // Transaction
   rpc getLatestTxsListByAccountIndex(ReqGetLatestTxsListByAccountIndex) returns (RespGetLatestTxsListByAccountIndex);

@@ -9,6 +9,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/config"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalrpc"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
@@ -22,9 +23,10 @@ type GlobalRPC interface {
 	GetLatestAccountInfo(accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error)
 	GetLatestL1Amount(assetId uint32) (totalAmount int64, err error)
 	GetLatestL1AmountList() (amounts []*types.AmountInfo, err error)
-	GetSwapAmount(pairIndex, assetId uint16, assetAmount uint64, isFrom bool) (assetAmount uint64, pairIndex, assetId uint16)
-	GetLatestAccountInfoByAccountIndex(accountIndex int64) (accountPk string, assetsAccount []*types.Asset, err error)
-	GetPairInfo()
+	GetLatestAccountInfoByAccountIndex(accountIndex uint32) ([]*globalrpc.AssetResult, error)
+	GetLpValue(pairIndex uint32, lpAmount string) (*globalRPCProto.RespGetLpValue, error)
+	GetPairInfo(pairIndex uint32) (*globalRPCProto.RespGetLatestPairInfo, error)
+	GetSwapAmount(pairIndex, assetId uint64, assetAmount string, isFrom bool) (string, uint32, error)
 }
 
 var singletonValue *globalRPC

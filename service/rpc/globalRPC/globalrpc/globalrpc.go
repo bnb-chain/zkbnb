@@ -42,7 +42,7 @@ type (
 		GetLatestAssetInfoByAccountIndexAndAssetId(ctx context.Context, in *ReqGetLatestAssetInfoByAccountIndexAndAssetId, opts ...grpc.CallOption) (*RespGetLatestAssetInfoByAccountIndexAndAssetId, error)
 		//  Liquidity
 		GetLatestPairInfo(ctx context.Context, in *ReqGetLatestPairInfo, opts ...grpc.CallOption) (*RespGetLatestPairInfo, error)
-		GetSwapAmount(ctx context.Context, in *ReqGetSwapAmount, opts ...grpc.CallOption) (*ReqGetSwapAmount, error)
+		GetSwapAmount(ctx context.Context, in *ReqGetSwapAmount, opts ...grpc.CallOption) (*RespGetSwapAmount, error)
 		GetLpValue(ctx context.Context, in *ReqGetLpValue, opts ...grpc.CallOption) (*RespGetLpValue, error)
 		//  Transaction
 		GetLatestTxsListByAccountIndex(ctx context.Context, in *ReqGetLatestTxsListByAccountIndex, opts ...grpc.CallOption) (*RespGetLatestTxsListByAccountIndex, error)
@@ -83,7 +83,7 @@ func (m *defaultGlobalRPC) GetLatestPairInfo(ctx context.Context, in *ReqGetLate
 	return client.GetLatestPairInfo(ctx, in, opts...)
 }
 
-func (m *defaultGlobalRPC) GetSwapAmount(ctx context.Context, in *ReqGetSwapAmount, opts ...grpc.CallOption) (*ReqGetSwapAmount, error) {
+func (m *defaultGlobalRPC) GetSwapAmount(ctx context.Context, in *ReqGetSwapAmount, opts ...grpc.CallOption) (*RespGetSwapAmount, error) {
 	client := globalRPCProto.NewGlobalRPCClient(m.cli.Conn())
 	return client.GetSwapAmount(ctx, in, opts...)
 }

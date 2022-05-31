@@ -24,7 +24,7 @@ type GlobalRPCClient interface {
 	GetLatestAssetInfoByAccountIndexAndAssetId(ctx context.Context, in *ReqGetLatestAssetInfoByAccountIndexAndAssetId, opts ...grpc.CallOption) (*RespGetLatestAssetInfoByAccountIndexAndAssetId, error)
 	// Liquidity
 	GetLatestPairInfo(ctx context.Context, in *ReqGetLatestPairInfo, opts ...grpc.CallOption) (*RespGetLatestPairInfo, error)
-	GetSwapAmount(ctx context.Context, in *ReqGetSwapAmount, opts ...grpc.CallOption) (*ReqGetSwapAmount, error)
+	GetSwapAmount(ctx context.Context, in *ReqGetSwapAmount, opts ...grpc.CallOption) (*RespGetSwapAmount, error)
 	GetLpValue(ctx context.Context, in *ReqGetLpValue, opts ...grpc.CallOption) (*RespGetLpValue, error)
 	// Transaction
 	GetLatestTxsListByAccountIndex(ctx context.Context, in *ReqGetLatestTxsListByAccountIndex, opts ...grpc.CallOption) (*RespGetLatestTxsListByAccountIndex, error)
@@ -76,8 +76,8 @@ func (c *globalRPCClient) GetLatestPairInfo(ctx context.Context, in *ReqGetLates
 	return out, nil
 }
 
-func (c *globalRPCClient) GetSwapAmount(ctx context.Context, in *ReqGetSwapAmount, opts ...grpc.CallOption) (*ReqGetSwapAmount, error) {
-	out := new(ReqGetSwapAmount)
+func (c *globalRPCClient) GetSwapAmount(ctx context.Context, in *ReqGetSwapAmount, opts ...grpc.CallOption) (*RespGetSwapAmount, error) {
+	out := new(RespGetSwapAmount)
 	err := c.cc.Invoke(ctx, "/globalRPCProto.globalRPC/getSwapAmount", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -131,7 +131,7 @@ type GlobalRPCServer interface {
 	GetLatestAssetInfoByAccountIndexAndAssetId(context.Context, *ReqGetLatestAssetInfoByAccountIndexAndAssetId) (*RespGetLatestAssetInfoByAccountIndexAndAssetId, error)
 	// Liquidity
 	GetLatestPairInfo(context.Context, *ReqGetLatestPairInfo) (*RespGetLatestPairInfo, error)
-	GetSwapAmount(context.Context, *ReqGetSwapAmount) (*ReqGetSwapAmount, error)
+	GetSwapAmount(context.Context, *ReqGetSwapAmount) (*RespGetSwapAmount, error)
 	GetLpValue(context.Context, *ReqGetLpValue) (*RespGetLpValue, error)
 	// Transaction
 	GetLatestTxsListByAccountIndex(context.Context, *ReqGetLatestTxsListByAccountIndex) (*RespGetLatestTxsListByAccountIndex, error)
@@ -156,7 +156,7 @@ func (UnimplementedGlobalRPCServer) GetLatestAssetInfoByAccountIndexAndAssetId(c
 func (UnimplementedGlobalRPCServer) GetLatestPairInfo(context.Context, *ReqGetLatestPairInfo) (*RespGetLatestPairInfo, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLatestPairInfo not implemented")
 }
-func (UnimplementedGlobalRPCServer) GetSwapAmount(context.Context, *ReqGetSwapAmount) (*ReqGetSwapAmount, error) {
+func (UnimplementedGlobalRPCServer) GetSwapAmount(context.Context, *ReqGetSwapAmount) (*RespGetSwapAmount, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSwapAmount not implemented")
 }
 func (UnimplementedGlobalRPCServer) GetLpValue(context.Context, *ReqGetLpValue) (*RespGetLpValue, error) {
