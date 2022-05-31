@@ -20,8 +20,9 @@ func ConvertMempoolTxToTx(mempoolTx *MempoolTx, txDetails []*tx.TxDetail, accoun
 		TxStatus:      TxStatusPending,
 		BlockHeight:   currentBlockHeight,
 		AccountRoot:   accountRoot,
-		AssetAId:      mempoolTx.AssetAId,
-		AssetBId:      mempoolTx.AssetBId,
+		NftIndex:      mempoolTx.NftIndex,
+		PairIndex:     mempoolTx.PairIndex,
+		AssetId:       mempoolTx.AssetId,
 		TxAmount:      mempoolTx.TxAmount,
 		NativeAddress: mempoolTx.NativeAddress,
 		TxInfo:        mempoolTx.TxInfo,
@@ -30,6 +31,7 @@ func ConvertMempoolTxToTx(mempoolTx *MempoolTx, txDetails []*tx.TxDetail, accoun
 		Memo:          mempoolTx.Memo,
 		AccountIndex:  mempoolTx.AccountIndex,
 		Nonce:         mempoolTx.Nonce,
+		ExpiredAt:     mempoolTx.ExpiredAt,
 	}
 	return tx
 }

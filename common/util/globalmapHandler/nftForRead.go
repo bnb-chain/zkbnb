@@ -30,7 +30,7 @@ import (
 
 func GetLatestNftInfoForRead(
 	nftModel NftModel,
-	mempoolTxDetailModel MempoolTxDetailModel,
+	mempoolTxModel MempoolModel,
 	redisConnection *Redis,
 	nftIndex int64,
 ) (
@@ -53,7 +53,7 @@ func GetLatestNftInfoForRead(
 			logx.Errorf("[GetLatestNftInfoForRead] unable to get latest nft by nft index: %s", err.Error())
 			return nil, err
 		}
-		txDetails, err := mempoolTxDetailModel.GetMempoolTxDetailsByAssetType(commonAsset.NftAssetType)
+		mempoolTxs, err := mempoolTxModel.GetPendingNftTxs()
 		if err != nil {
 			if err != mempool.ErrNotFound {
 				logx.Errorf("[GetLatestAccountInfo] unable to get mempool txs by account index: %s", err.Error())
@@ -70,20 +70,21 @@ func GetLatestNftInfoForRead(
 			dbNftInfo.CreatorTreasuryRate,
 			dbNftInfo.CollectionId,
 		)
-		if err != nil {
-			logx.Errorf("[GetLatestAccountInfo] unable to construct nft info: %s", err.Error())
-			return nil, err
-		}
-		for _, txDetail := range txDetails {
-			nBalance, err := commonAsset.ComputeNewBalance(commonAsset.NftAssetType, nftInfo.String(), txDetail.BalanceDelta)
-			if err != nil {
-				logx.Errorf("[GetLatestAccountInfo] unable to compute new balance: %s", err.Error())
-				return nil, err
-			}
-			nftInfo, err = commonAsset.ParseNftInfo(nBalance)
-			if err != nil {
-				logx.Errorf("[GetLatestAccountInfo] unable to parse nft info: %s", err.Error())
-				return nil, err
+		for _, mempoolTx := range mempoolTxs {
+			for _, txDetail := range mempoolTx.MempoolDetails {
+				if txDetail.AssetType != commonAsset.NftAssetType {
+					continue
+				}
+				nBalance, err := commonAsset.ComputeNewBalance(commonAsset.NftAssetType, nftInfo.String(), txDetail.BalanceDelta)
+				if err != nil {
+					logx.Errorf("[GetLatestAccountInfo] unable to compute new balance: %s", err.Error())
+					return nil, err
+				}
+				nftInfo, err = commonAsset.ParseNftInfo(nBalance)
+				if err != nil {
+					logx.Errorf("[GetLatestAccountInfo] unable to parse nft info: %s", err.Error())
+					return nil, err
+				}
 			}
 		}
 		// write into cache

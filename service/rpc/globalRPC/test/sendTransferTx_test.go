@@ -10,6 +10,7 @@ import (
 	"github.com/zecrey-labs/zecrey-crypto/wasm/zecrey-legend/legendTxTypes"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/tree"
+	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/config"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/server"
@@ -17,6 +18,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
 	"testing"
+	"time"
 
 	"github.com/zeromicro/go-zero/core/conf"
 )
@@ -24,7 +26,6 @@ import (
 var configFile = flag.String("f",
 	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\rpc\\globalRPC\\etc\\globalrpc.yaml", "the config file")
 
-// /Users/gavin/Desktop/zecrey-v2
 func TestSendTransferTx(t *testing.T) {
 	flag.Parse()
 
@@ -68,19 +69,25 @@ func constructSendTransferTxInfo() string {
 	if err != nil {
 		panic(err)
 	}
+	nameHash, err := util.AccountNameHash("gavin.legend")
+	if err != nil {
+		panic(err)
+	}
+	expiredAt := time.Now().Add(time.Hour * 2).UnixMilli()
 	txInfo := &commonTx.TransferTxInfo{
 		FromAccountIndex:  2,
 		ToAccountIndex:    3,
-		ToAccountName:     "gavin.legend",
+		ToAccountNameHash: nameHash,
 		AssetId:           0,
 		AssetAmount:       big.NewInt(100000),
 		GasAccountIndex:   1,
-		GasFeeAssetId:     1,
-		GasFeeAssetAmount: big.NewInt(500),
+		GasFeeAssetId:     2,
+		GasFeeAssetAmount: big.NewInt(5000),
 		Memo:              "transfer",
 		CallData:          "",
 		CallDataHash:      tree.NilHash,
 		Nonce:             1,
+		ExpiredAt:         expiredAt,
 		Sig:               nil,
 	}
 	hFunc := mimc.NewMiMC()
@@ -88,7 +95,10 @@ func constructSendTransferTxInfo() string {
 	callDataHash := hFunc.Sum(nil)
 	txInfo.CallDataHash = callDataHash
 	hFunc.Reset()
-	msgHash := legendTxTypes.ComputeTransferMsgHash(txInfo, hFunc)
+	msgHash, err := legendTxTypes.ComputeTransferMsgHash(txInfo, hFunc)
+	if err != nil {
+		panic(err)
+	}
 	hFunc.Reset()
 	signature, err := key.Sign(msgHash, hFunc)
 	if err != nil {

@@ -16,11 +16,11 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
 	"testing"
+	"time"
 
 	"github.com/zeromicro/go-zero/core/conf"
 )
 
-// /Users/gavin/Desktop/zecrey-v2
 func TestSendWithdrawTx(t *testing.T) {
 	flag.Parse()
 
@@ -64,19 +64,24 @@ func constructSendWithdrawTxInfo() string {
 	if err != nil {
 		panic(err)
 	}
+	expiredAt := time.Now().Add(time.Hour * 2).UnixMilli()
 	txInfo := &commonTx.WithdrawTxInfo{
-		FromAccountIndex:  3,
+		FromAccountIndex:  2,
 		AssetId:           0,
-		AssetAmount:       big.NewInt(10000),
-		GasAccountIndex:   2,
-		GasFeeAssetId:     0,
-		GasFeeAssetAmount: big.NewInt(50),
+		AssetAmount:       big.NewInt(10000000),
+		GasAccountIndex:   1,
+		GasFeeAssetId:     2,
+		GasFeeAssetAmount: big.NewInt(5000),
 		ToAddress:         "0x99AC8881834797ebC32f185ee27c2e96842e1a47",
-		Nonce:             1,
+		Nonce:             2,
+		ExpiredAt:         expiredAt,
 		Sig:               nil,
 	}
 	hFunc := mimc.NewMiMC()
-	msgHash := legendTxTypes.ComputeWithdrawMsgHash(txInfo, hFunc)
+	msgHash, err := legendTxTypes.ComputeWithdrawMsgHash(txInfo, hFunc)
+	if err != nil {
+		panic(err)
+	}
 	hFunc.Reset()
 	signature, err := key.Sign(msgHash, hFunc)
 	if err != nil {

@@ -18,6 +18,8 @@
 package nft
 
 import (
+	"errors"
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -28,6 +30,8 @@ type (
 	OfferModel interface {
 		CreateOfferTable() error
 		DropOfferTable() error
+		GetLatestOfferId(accountIndex int64) (offerId int64, err error)
+		CreateOffer(offer *Offer) (err error)
 	}
 	defaultOfferModel struct {
 		sqlc.CachedConn
@@ -47,6 +51,7 @@ type (
 		ExpiredAt    int64
 		TreasuryRate int64
 		Sig          string
+		Status       int
 	}
 )
 
@@ -80,4 +85,28 @@ func (m *defaultOfferModel) CreateOfferTable() error {
 */
 func (m *defaultOfferModel) DropOfferTable() error {
 	return m.DB.Migrator().DropTable(m.table)
+}
+
+func (m *defaultOfferModel) GetLatestOfferId(accountIndex int64) (offerId int64, err error) {
+	var offer *Offer
+	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex).Order("offer_id desc").Find(&offer)
+	if dbTx.Error != nil {
+		logx.Errorf("[GetLatestOfferId] unable to get latest offer info: %s", err.Error())
+		return -1, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return -1, nil
+	}
+	return offer.OfferId, nil
+}
+
+func (m *defaultOfferModel) CreateOffer(offer *Offer) (err error) {
+	dbTx := m.DB.Table(m.table).Create(offer)
+	if dbTx.Error != nil {
+		logx.Errorf("[CreateOffer] unable to create offer: %s", dbTx.Error)
+		return dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Errorf("[CreateOffer] invalid offer info")
+		return errors.New("[CreateOffer] invalid offer info")
+	}
+	return nil
 }

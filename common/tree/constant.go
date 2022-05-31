@@ -55,11 +55,7 @@ var (
 
 func init() {
 	NilAccountAssetNodeHash = EmptyAccountAssetNodeHash()
-	NilAccountNodeHash = EmptyAccountNodeHash()
-	NilAccountRoot = NilAccountNodeHash
-	NilLiquidityNodeHash = EmptyLiquidityNodeHash()
-	NilNftNodeHash = EmptyNftNodeHash()
-	NilAccountAssetRoot = NilAccountNodeHash
+	NilAccountAssetRoot = NilAccountAssetNodeHash
 	hFunc := mimc.NewMiMC()
 	for i := 0; i < AssetTreeHeight; i++ {
 		hFunc.Reset()
@@ -67,10 +63,14 @@ func init() {
 		hFunc.Write(NilAccountAssetRoot)
 		NilAccountAssetRoot = hFunc.Sum(nil)
 	}
+	NilAccountNodeHash = EmptyAccountNodeHash()
+	NilAccountRoot = NilAccountNodeHash
+	NilLiquidityNodeHash = EmptyLiquidityNodeHash()
+	NilNftNodeHash = EmptyNftNodeHash()
 	for i := 0; i < AccountTreeHeight; i++ {
 		hFunc.Reset()
-		hFunc.Write(NilAccountNodeHash)
-		hFunc.Write(NilAccountNodeHash)
+		hFunc.Write(NilAccountRoot)
+		hFunc.Write(NilAccountRoot)
 		NilAccountRoot = hFunc.Sum(nil)
 	}
 }

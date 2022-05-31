@@ -30,6 +30,7 @@ type (
 		CreateL2NftTable() error
 		DropL2NftTable() error
 		GetNftAsset(nftIndex int64) (nftAsset *L2Nft, err error)
+		GetLatestNftIndex() (nftIndex int64, err error)
 	}
 	defaultL2NftModel struct {
 		sqlc.CachedConn
@@ -47,7 +48,6 @@ type (
 		NftL1TokenId        string
 		CreatorTreasuryRate int64
 		CollectionId        int64
-		Status              int
 	}
 )
 
@@ -93,4 +93,16 @@ func (m *defaultL2NftModel) GetNftAsset(nftIndex int64) (nftAsset *L2Nft, err er
 		return nil, ErrNotFound
 	}
 	return nftAsset, nil
+}
+
+func (m *defaultL2NftModel) GetLatestNftIndex() (nftIndex int64, err error) {
+	var nftInfo *L2Nft
+	dbTx := m.DB.Table(m.table).Order("nft_index desc").Find(&nftInfo)
+	if dbTx.Error != nil {
+		logx.Errorf("[GetLatestNftIndex] unable to get latest nft info: %s", err.Error())
+		return -1, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return -1, nil
+	}
+	return nftInfo.NftIndex, nil
 }

@@ -87,9 +87,9 @@ type (
 			pendingNewAccountHistory []*account.AccountHistory,
 			pendingUpdateLiquidity []*liquidity.Liquidity,
 			pendingNewLiquidityHistory []*liquidity.LiquidityHistory,
-			pendingNewNft []*nft.L2Nft,
 			pendingUpdateNft []*nft.L2Nft,
 			pendingNewNftHistory []*nft.L2NftHistory,
+			pendingNewNftWithdrawHistory []*nft.L2NftWithdrawHistory,
 		) (err error)
 	}
 
@@ -102,6 +102,7 @@ type (
 
 	Block struct {
 		gorm.Model
+		// pubdata
 		BlockCommitment              string
 		BlockHeight                  int64
 		AccountRoot                  string
@@ -760,9 +761,9 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 	pendingNewAccountHistorys []*account.AccountHistory,
 	pendingUpdateLiquiditys []*liquidity.Liquidity,
 	pendingNewLiquidityHistorys []*liquidity.LiquidityHistory,
-	pendingNewNfts []*nft.L2Nft,
 	pendingUpdateNfts []*nft.L2Nft,
 	pendingNewNftHistorys []*nft.L2NftHistory,
+	pendingNewNftWithdrawHistory []*nft.L2NftWithdrawHistory,
 ) (err error) {
 	err = m.DB.Transaction(func(tx *gorm.DB) error { // transact
 		dbTx := tx.Table(m.table).Create(oBlock)
@@ -844,14 +845,14 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 			}
 		}
 		// new nft
-		if len(pendingNewNfts) != 0 {
-			dbTx = tx.Table(nft.L2NftTableName).CreateInBatches(pendingNewNfts, len(pendingNewNfts))
+		if len(pendingNewNftWithdrawHistory) != 0 {
+			dbTx = tx.Table(nft.L2NftWithdrawHistoryTableName).CreateInBatches(pendingNewNftWithdrawHistory, len(pendingNewNftWithdrawHistory))
 			if dbTx.Error != nil {
 				return dbTx.Error
 			}
-			if dbTx.RowsAffected != int64(len(pendingNewNfts)) {
-				logx.Errorf("[CreateBlockForCommitter] unable to create new nft")
-				return errors.New("[CreateBlockForCommitter] unable to create new nft")
+			if dbTx.RowsAffected != int64(len(pendingNewNftWithdrawHistory)) {
+				logx.Errorf("[CreateBlockForCommitter] unable to create new nft withdraw ")
+				return errors.New("[CreateBlockForCommitter] unable to create new nft withdraw")
 			}
 		}
 		// update nft
