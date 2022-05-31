@@ -82,7 +82,11 @@ func VerifyCancelOfferTxInfo(
 	}
 	// compute hash
 	hFunc := mimc.NewMiMC()
-	msgHash := legendTxTypes.ComputeCancelOfferMsgHash(txInfo, hFunc)
+	msgHash, err := legendTxTypes.ComputeCancelOfferMsgHash(txInfo, hFunc)
+	if err != nil {
+		logx.Errorf("[VerifyCancelOfferTxInfo] unable to compute hash: %s", err.Error())
+		return nil, err
+	}
 	// verify signature
 	hFunc.Reset()
 	pk, err := ParsePkStr(accountInfoMap[txInfo.AccountIndex].PublicKey)
@@ -101,6 +105,7 @@ func VerifyCancelOfferTxInfo(
 	// compute tx details
 	// from account asset gas
 	order := int64(0)
+	accountOrder := int64(0)
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    GeneralAssetType,
@@ -108,7 +113,8 @@ func VerifyCancelOfferTxInfo(
 		AccountName:  accountInfoMap[txInfo.AccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	// from account offer id
 	offerAssetId := txInfo.OfferId / OfferPerAsset
@@ -124,10 +130,12 @@ func VerifyCancelOfferTxInfo(
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			offerAssetId, ZeroBigInt, ZeroBigInt, nOffer,
 		).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	// gas account asset gas
 	order++
+	accountOrder++
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    GeneralAssetType,
@@ -135,7 +143,8 @@ func VerifyCancelOfferTxInfo(
 		AccountName:  accountInfoMap[txInfo.GasAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	return txDetails, nil
 }

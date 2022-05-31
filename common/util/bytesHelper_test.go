@@ -12,16 +12,19 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package logic
+package util
 
-type AccountSingleAsset struct {
-	AccountId    uint
-	AccountIndex uint32
-	AccountName  string
-	PublicKey    string
-	Nonce        int64
-	AssetId      uint32
-	Balance      string
+import (
+	"fmt"
+	"github.com/ethereum/go-ethereum/common"
+	"testing"
+)
+
+func TestAccountNameToBytes32(t *testing.T) {
+	accountName := "sher"
+	info := AccountNameToBytes32(accountName)
+	fmt.Println(common.Bytes2Hex(info[:]))
 }

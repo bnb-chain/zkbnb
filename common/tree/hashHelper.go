@@ -21,8 +21,11 @@ import (
 	"bytes"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
+	curve "github.com/zecrey-labs/zecrey-crypto/ecc/ztwistededwards/tebn254"
+	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
+	"math/big"
 )
 
 func ComputeAccountLeafHash(
@@ -35,13 +38,13 @@ func ComputeAccountLeafHash(
 	hFunc := mimc.NewMiMC()
 	var buf bytes.Buffer
 	buf.Write(common.FromHex(accountNameHash))
-	err = util.WritePkIntoBuf(&buf, pk)
+	err = util.PaddingPkIntoBuf(&buf, pk)
 	if err != nil {
 		logx.Errorf("[ComputeAccountAssetLeafHash] unable to write pk into buf: %s", err.Error())
 		return nil, err
 	}
-	util.WriteInt64IntoBuf(&buf, nonce)
-	util.WriteInt64IntoBuf(&buf, collectionNonce)
+	util.PaddingInt64IntoBuf(&buf, nonce)
+	util.PaddingInt64IntoBuf(&buf, collectionNonce)
 	buf.Write(assetRoot)
 	hFunc.Reset()
 	hFunc.Write(buf.Bytes())
@@ -56,17 +59,17 @@ func ComputeAccountAssetLeafHash(
 ) (hashVal []byte, err error) {
 	hFunc := mimc.NewMiMC()
 	var buf bytes.Buffer
-	err = util.WriteStringBigIntIntoBuf(&buf, balance)
+	err = util.PaddingStringBigIntIntoBuf(&buf, balance)
 	if err != nil {
 		logx.Errorf("[ComputeAccountAssetLeafHash] invalid balance: %s", err.Error())
 		return nil, err
 	}
-	err = util.WriteStringBigIntIntoBuf(&buf, lpAmount)
+	err = util.PaddingStringBigIntIntoBuf(&buf, lpAmount)
 	if err != nil {
 		logx.Errorf("[ComputeAccountAssetLeafHash] invalid balance: %s", err.Error())
 		return nil, err
 	}
-	err = util.WriteStringBigIntIntoBuf(&buf, offerCanceledOrFinalized)
+	err = util.PaddingStringBigIntIntoBuf(&buf, offerCanceledOrFinalized)
 	if err != nil {
 		logx.Errorf("[ComputeAccountAssetLeafHash] invalid balance: %s", err.Error())
 		return nil, err
@@ -88,31 +91,31 @@ func ComputeLiquidityAssetLeafHash(
 ) (hashVal []byte, err error) {
 	hFunc := mimc.NewMiMC()
 	var buf bytes.Buffer
-	util.WriteInt64IntoBuf(&buf, assetAId)
-	err = util.WriteStringBigIntIntoBuf(&buf, assetA)
+	util.PaddingInt64IntoBuf(&buf, assetAId)
+	err = util.PaddingStringBigIntIntoBuf(&buf, assetA)
 	if err != nil {
 		logx.Errorf("[ComputeLiquidityAssetLeafHash] unable to write big int to buf: %s", err.Error())
 		return nil, err
 	}
-	util.WriteInt64IntoBuf(&buf, assetBId)
-	err = util.WriteStringBigIntIntoBuf(&buf, assetB)
+	util.PaddingInt64IntoBuf(&buf, assetBId)
+	err = util.PaddingStringBigIntIntoBuf(&buf, assetB)
 	if err != nil {
 		logx.Errorf("[ComputeLiquidityAssetLeafHash] unable to write big int to buf: %s", err.Error())
 		return nil, err
 	}
-	err = util.WriteStringBigIntIntoBuf(&buf, lpAmount)
+	err = util.PaddingStringBigIntIntoBuf(&buf, lpAmount)
 	if err != nil {
 		logx.Errorf("[ComputeLiquidityAssetLeafHash] unable to write big int to buf: %s", err.Error())
 		return nil, err
 	}
-	err = util.WriteStringBigIntIntoBuf(&buf, kLast)
+	err = util.PaddingStringBigIntIntoBuf(&buf, kLast)
 	if err != nil {
 		logx.Errorf("[ComputeLiquidityAssetLeafHash] unable to write big int to buf: %s", err.Error())
 		return nil, err
 	}
-	util.WriteInt64IntoBuf(&buf, feeRate)
-	util.WriteInt64IntoBuf(&buf, treasuryAccountIndex)
-	util.WriteInt64IntoBuf(&buf, treasuryRate)
+	util.PaddingInt64IntoBuf(&buf, feeRate)
+	util.PaddingInt64IntoBuf(&buf, treasuryAccountIndex)
+	util.PaddingInt64IntoBuf(&buf, treasuryRate)
 	hFunc.Write(buf.Bytes())
 	hashVal = hFunc.Sum(nil)
 	return hashVal, nil
@@ -125,23 +128,25 @@ func ComputeNftAssetLeafHash(
 	nftL1Address string,
 	nftL1TokenId string,
 	creatorTreasuryRate int64,
+	collectionId int64,
 ) (hashVal []byte, err error) {
 	hFunc := mimc.NewMiMC()
 	var buf bytes.Buffer
-	util.WriteInt64IntoBuf(&buf, creatorAccountIndex)
-	util.WriteInt64IntoBuf(&buf, ownerAccountIndex)
-	buf.Write(common.FromHex(nftContentHash))
-	err = util.WriteAddressIntoBuf(&buf, nftL1Address)
+	util.PaddingInt64IntoBuf(&buf, creatorAccountIndex)
+	util.PaddingInt64IntoBuf(&buf, ownerAccountIndex)
+	buf.Write(ffmath.Mod(new(big.Int).SetBytes(common.FromHex(nftContentHash)), curve.Modulus).FillBytes(make([]byte, 32)))
+	err = util.PaddingAddressIntoBuf(&buf, nftL1Address)
 	if err != nil {
 		logx.Errorf("[ComputeNftAssetLeafHash] unable to write address to buf: %s", err.Error())
 		return nil, err
 	}
-	err = util.WriteStringBigIntIntoBuf(&buf, nftL1TokenId)
+	err = util.PaddingStringBigIntIntoBuf(&buf, nftL1TokenId)
 	if err != nil {
 		logx.Errorf("[ComputeNftAssetLeafHash] unable to write big int to buf: %s", err.Error())
 		return nil, err
 	}
-	util.WriteInt64IntoBuf(&buf, creatorTreasuryRate)
+	util.PaddingInt64IntoBuf(&buf, creatorTreasuryRate)
+	util.PaddingInt64IntoBuf(&buf, collectionId)
 	hFunc.Write(buf.Bytes())
 	hashVal = hFunc.Sum(nil)
 	return hashVal, nil

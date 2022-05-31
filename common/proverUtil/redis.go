@@ -12,22 +12,16 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package txHandler
+package proverUtil
 
-import (
-	"errors"
-)
+import "github.com/zeromicro/go-zero/core/stores/redis"
 
-const (
-	_ = iota
-	TxPending
-	TxSuccess
-	TxFail
-)
-
-var (
-	ErrLockedAccount = errors.New("[mempool state] err: account is doing operations, please wait and try again")
-	ErrInvalidParams = errors.New("[mempool state] err: invalid params")
-)
+func WithRedis(redisType string, redisPass string) redis.Option {
+	return func(p *redis.Redis) {
+		p.Type = redisType
+		p.Pass = redisPass
+	}
+}

@@ -59,6 +59,8 @@ func ComputeNewBalance(assetType int64, balance string, balanceDelta string) (ne
 			logx.Errorf("[ComputeNewBalance] unable to parse liquidity info: %s", err.Error())
 			return "", err
 		}
+		liquidityInfo.AssetAId = deltaLiquidity.AssetAId
+		liquidityInfo.AssetBId = deltaLiquidity.AssetBId
 		liquidityInfo.AssetA = ffmath.Add(liquidityInfo.AssetA, deltaLiquidity.AssetA)
 		liquidityInfo.AssetB = ffmath.Add(liquidityInfo.AssetB, deltaLiquidity.AssetB)
 		liquidityInfo.LpAmount = ffmath.Add(liquidityInfo.LpAmount, deltaLiquidity.LpAmount)

@@ -62,10 +62,13 @@ func LiquidityAssetToNode(
 
 func NftAssetToNode(nftAsset *AccountL2NftHistory) (node *Node, err error) {
 	hashVal, err := ComputeNftAssetLeafHash(
-		nftAsset.CreatorAccountIndex, nftAsset.OwnerAccountIndex,
+		nftAsset.CreatorAccountIndex,
+		nftAsset.OwnerAccountIndex,
 		nftAsset.NftContentHash,
-		nftAsset.NftL1Address, nftAsset.NftL1TokenId,
+		nftAsset.NftL1Address,
+		nftAsset.NftL1TokenId,
 		nftAsset.CreatorTreasuryRate,
+		nftAsset.CollectionId,
 	)
 	if err != nil {
 		logx.Errorf("[NftAssetToNode] unable to compute nft asset leaf hash: %s", err.Error())

@@ -42,6 +42,21 @@ func (info *LiquidityInfo) String() string {
 	return string(infoBytes)
 }
 
+func EmptyLiquidityInfo(pairIndex int64) (info *LiquidityInfo) {
+	return &LiquidityInfo{
+		PairIndex:            pairIndex,
+		AssetAId:             0,
+		AssetA:               ZeroBigInt,
+		AssetBId:             0,
+		AssetB:               ZeroBigInt,
+		LpAmount:             ZeroBigInt,
+		KLast:                ZeroBigInt,
+		FeeRate:              0,
+		TreasuryAccountIndex: 0,
+		TreasuryRate:         0,
+	}
+}
+
 func ConstructLiquidityInfo(
 	pairIndex int64,
 	assetAId int64,

@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
+	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
@@ -32,7 +33,6 @@ import (
 func GetLatestAccountInfo(
 	accountModel AccountModel,
 	mempoolTxModel MempoolModel,
-	mempoolTxDetailModel MempoolTxDetailModel,
 	redisConnection *Redis,
 	accountIndex int64,
 ) (
@@ -59,7 +59,7 @@ func GetLatestAccountInfo(
 			return nil, err
 		}
 		// compute latest nonce
-		mempoolTxs, err := mempoolTxModel.GetMempoolTxsByAccountIndex(accountIndex)
+		mempoolTxs, err := mempoolTxModel.GetPendingMempoolTxsByAccountIndex(accountIndex)
 		if err != nil {
 			if err != mempool.ErrNotFound {
 				logx.Errorf("[GetLatestAccountInfo] unable to get mempool txs by account index: %s", err.Error())
@@ -67,54 +67,49 @@ func GetLatestAccountInfo(
 			}
 		}
 		for _, mempoolTx := range mempoolTxs {
-			if mempoolTx.Nonce != -1 {
+			if mempoolTx.Nonce != commonConstant.NilNonce {
 				accountInfo.Nonce = mempoolTx.Nonce
 			}
-		}
-		mempoolTxDetails, err := mempoolTxDetailModel.GetAccountMempoolDetails(accountIndex)
-		if err != nil {
-			logx.Errorf("[GetLatestAccountInfo] unable to get account mempool details: %s", err.Error())
-			return nil, err
-		}
-		for _, mempoolTxDetail := range mempoolTxDetails {
-			switch mempoolTxDetail.AssetType {
-			case commonAsset.GeneralAssetType:
-				// TODO maybe less than 0
-				if accountInfo.AssetInfo[mempoolTxDetail.AssetId] == nil {
-					accountInfo.AssetInfo[mempoolTxDetail.AssetId] = &commonAsset.AccountAsset{
-						Balance:  util.ZeroBigInt,
-						LpAmount: util.ZeroBigInt,
+			for _, mempoolTxDetail := range mempoolTx.MempoolDetails {
+				switch mempoolTxDetail.AssetType {
+				case commonAsset.GeneralAssetType:
+					// TODO maybe less than 0
+					if accountInfo.AssetInfo[mempoolTxDetail.AssetId] == nil {
+						accountInfo.AssetInfo[mempoolTxDetail.AssetId] = &commonAsset.AccountAsset{
+							Balance:  util.ZeroBigInt,
+							LpAmount: util.ZeroBigInt,
+						}
 					}
+					nBalance, err := commonAsset.ComputeNewBalance(
+						commonAsset.GeneralAssetType,
+						accountInfo.AssetInfo[mempoolTxDetail.AssetId].String(),
+						mempoolTxDetail.BalanceDelta,
+					)
+					if err != nil {
+						logx.Errorf("[GetLatestAccountInfo] unable to compute new balance: %s", err.Error())
+						return nil, err
+					}
+					accountInfo.AssetInfo[mempoolTxDetail.AssetId], err = commonAsset.ParseAccountAsset(nBalance)
+					if err != nil {
+						logx.Errorf("[GetLatestAccountInfo] unable to compute new balance: %s", err.Error())
+						return nil, err
+					}
+					break
+				case commonAsset.LiquidityAssetType:
+					break
+				case commonAsset.NftAssetType:
+					break
+				case commonAsset.CollectionNonceAssetType:
+					accountInfo.CollectionNonce, err = strconv.ParseInt(mempoolTxDetail.BalanceDelta, 10, 64)
+					if err != nil {
+						logx.Errorf("[GetLatestAccountInfo] unable to parse int: %s", err.Error())
+						return nil, err
+					}
+					break
+				default:
+					logx.Errorf("[GetLatestAccountInfo] invalid asset type")
+					return nil, errors.New("[GetLatestAccountInfo] invalid asset type")
 				}
-				nBalance, err := commonAsset.ComputeNewBalance(
-					commonAsset.GeneralAssetType,
-					accountInfo.AssetInfo[mempoolTxDetail.AssetId].String(),
-					mempoolTxDetail.BalanceDelta,
-				)
-				if err != nil {
-					logx.Errorf("[GetLatestAccountInfo] unable to compute new balance: %s", err.Error())
-					return nil, err
-				}
-				accountInfo.AssetInfo[mempoolTxDetail.AssetId], err = commonAsset.ParseAccountAsset(nBalance)
-				if err != nil {
-					logx.Errorf("[GetLatestAccountInfo] unable to compute new balance: %s", err.Error())
-					return nil, err
-				}
-				break
-			case commonAsset.LiquidityAssetType:
-				break
-			case commonAsset.NftAssetType:
-				break
-			case commonAsset.CollectionNonceAssetType:
-				accountInfo.CollectionNonce, err = strconv.ParseInt(mempoolTxDetail.BalanceDelta, 10, 64)
-				if err != nil {
-					logx.Errorf("[GetLatestAccountInfo] unable to parse int: %s", err.Error())
-					return nil, err
-				}
-				break
-			default:
-				logx.Errorf("[GetLatestAccountInfo] invalid asset type")
-				return nil, errors.New("[GetLatestAccountInfo] invalid asset type")
 			}
 		}
 		// write into cache

@@ -21,9 +21,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
+	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2TxEventMonitor"
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
@@ -31,8 +31,10 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zecrey-labs/zecrey-legend/common/tree"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
+	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/mempoolMonitor/internal/svc"
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/redis"
 	"math/big"
 )
 
@@ -51,7 +53,6 @@ func MonitorMempool(
 		}
 	}
 	// initialize mempool txs
-
 	nextAccountIndex, err := ctx.AccountModel.GetLatestAccountIndex()
 	if err != nil {
 		if err == account.ErrNotFound {
@@ -67,7 +68,9 @@ func MonitorMempool(
 		pendingNewAccounts       []*account.Account
 		pendingNewMempoolTxs     []*mempool.MempoolTx
 		pendingNewLiquidityInfos []*liquidity.Liquidity
+		pendingNewNfts           []*nft.L2Nft
 		newAccountInfoMap        = make(map[string]*account.Account)
+		newNftInfoMap            = make(map[int64]*commonAsset.NftInfo)
 		newLiquidityInfoMap      = make(map[int64]*liquidity.Liquidity)
 		relatedAccountIndex      = make(map[int64]bool)
 	)
@@ -109,7 +112,7 @@ func MonitorMempool(
 				AccountIndex:    nextAccountIndex,
 				AccountName:     txInfo.AccountName,
 				PublicKey:       txInfo.PubKey,
-				AccountNameHash: txInfo.AccountNameHash,
+				AccountNameHash: common.Bytes2Hex(txInfo.AccountNameHash),
 				L1Address:       oTx.SenderAddress,
 				Nonce:           commonConstant.NilNonce,
 				CollectionNonce: commonConstant.NilNonce,
@@ -118,7 +121,8 @@ func MonitorMempool(
 				Status:          account.AccountStatusPending,
 			}
 			pendingNewAccounts = append(pendingNewAccounts, accountInfo)
-			newAccountInfoMap[txInfo.AccountNameHash] = accountInfo
+			accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
+			newAccountInfoMap[accountNameHash] = accountInfo
 			// create mempool oTx
 			// serialize oTx info
 			txInfoBytes, err := json.Marshal(txInfo)
@@ -131,8 +135,9 @@ func MonitorMempool(
 				TxType:        int64(txInfo.TxType),
 				GasFeeAssetId: commonConstant.NilAssetId,
 				GasFee:        commonConstant.NilAssetAmountStr,
-				AssetAId:      commonConstant.NilAssetId,
-				AssetBId:      commonConstant.NilAssetId,
+				NftIndex:      commonConstant.NilTxNftIndex,
+				PairIndex:     commonConstant.NilPairIndex,
+				AssetId:       commonConstant.NilAssetId,
 				TxAmount:      commonConstant.NilAssetAmountStr,
 				NativeAddress: oTx.SenderAddress,
 				TxInfo:        string(txInfoBytes),
@@ -182,10 +187,11 @@ func MonitorMempool(
 			txDetail := &mempool.MempoolTxDetail{
 				AssetId:      txInfo.PairIndex,
 				AssetType:    commonAsset.LiquidityAssetType,
-				AccountIndex: commonConstant.NilAccountIndex,
+				AccountIndex: commonConstant.NilTxAccountIndex,
 				AccountName:  commonConstant.NilAccountName,
 				BalanceDelta: poolInfo.String(),
 				Order:        0,
+				AccountOrder: commonConstant.NilAccountOrder,
 			}
 			txInfoBytes, err := json.Marshal(txInfo)
 			if err != nil {
@@ -197,13 +203,14 @@ func MonitorMempool(
 				TxType:         int64(txInfo.TxType),
 				GasFeeAssetId:  commonConstant.NilAssetId,
 				GasFee:         commonConstant.NilAssetAmountStr,
-				AssetAId:       txInfo.AssetAId,
-				AssetBId:       txInfo.AssetBId,
+				NftIndex:       commonConstant.NilTxNftIndex,
+				PairIndex:      txInfo.PairIndex,
+				AssetId:        commonConstant.NilAssetId,
 				TxAmount:       commonConstant.NilAssetAmountStr,
 				NativeAddress:  commonConstant.NilL1Address,
 				MempoolDetails: []*mempool.MempoolTxDetail{txDetail},
 				TxInfo:         string(txInfoBytes),
-				AccountIndex:   commonConstant.NilAccountIndex,
+				AccountIndex:   commonConstant.NilTxAccountIndex,
 				Nonce:          commonConstant.NilNonce,
 				ExpiredAt:      commonConstant.NilExpiredAt,
 				L2BlockHeight:  commonConstant.NilBlockHeight,
@@ -251,10 +258,11 @@ func MonitorMempool(
 			txDetail := &mempool.MempoolTxDetail{
 				AssetId:      txInfo.PairIndex,
 				AssetType:    commonAsset.LiquidityAssetType,
-				AccountIndex: commonConstant.NilAccountIndex,
+				AccountIndex: commonConstant.NilTxAccountIndex,
 				AccountName:  commonConstant.NilAccountName,
 				BalanceDelta: poolInfo.String(),
 				Order:        0,
+				AccountOrder: commonConstant.NilAccountOrder,
 			}
 			txInfoBytes, err := json.Marshal(txInfo)
 			if err != nil {
@@ -266,13 +274,14 @@ func MonitorMempool(
 				TxType:         int64(txInfo.TxType),
 				GasFeeAssetId:  commonConstant.NilAssetId,
 				GasFee:         commonConstant.NilAssetAmountStr,
-				AssetAId:       liquidityInfo.AssetAId,
-				AssetBId:       liquidityInfo.AssetBId,
+				NftIndex:       commonConstant.NilTxNftIndex,
+				PairIndex:      liquidityInfo.PairIndex,
+				AssetId:        commonConstant.NilAssetId,
 				TxAmount:       commonConstant.NilAssetAmountStr,
 				NativeAddress:  commonConstant.NilL1Address,
 				MempoolDetails: []*mempool.MempoolTxDetail{txDetail},
 				TxInfo:         string(txInfoBytes),
-				AccountIndex:   commonConstant.NilAccountIndex,
+				AccountIndex:   commonConstant.NilTxAccountIndex,
 				Nonce:          commonConstant.NilNonce,
 				ExpiredAt:      commonConstant.NilExpiredAt,
 				L2BlockHeight:  commonConstant.NilBlockHeight,
@@ -288,32 +297,34 @@ func MonitorMempool(
 				logx.Errorf("[MonitorMempool] unable to parse deposit pub data: %s", err.Error())
 				return err
 			}
-			if newAccountInfoMap[txInfo.AccountNameHash] != nil {
-				accountInfo = newAccountInfoMap[txInfo.AccountNameHash]
+			accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
+			if newAccountInfoMap[accountNameHash] != nil {
+				accountInfo = newAccountInfoMap[accountNameHash]
 			} else {
-				accountInfo, err = GetAccountInfoByAccountNameHash(txInfo.AccountNameHash, ctx.AccountModel)
+				accountInfo, err = GetAccountInfoByAccountNameHash(accountNameHash, ctx.AccountModel)
 				if err != nil {
 					logx.Errorf("[MonitorMempool] unable to get account info: %s", err.Error())
 					return err
 				}
 			}
-			txInfo.AccountIndex = uint32(accountInfo.AccountIndex)
+			txInfo.AccountIndex = accountInfo.AccountIndex
 			var (
 				mempoolTxDetails []*mempool.MempoolTxDetail
 			)
 			balanceDelta := &commonAsset.AccountAsset{
-				AssetId:                  int64(txInfo.AssetId),
+				AssetId:                  txInfo.AssetId,
 				Balance:                  txInfo.AssetAmount,
 				LpAmount:                 big.NewInt(0),
 				OfferCanceledOrFinalized: big.NewInt(0),
 			}
 			mempoolTxDetails = append(mempoolTxDetails, &mempool.MempoolTxDetail{
-				AssetId:      int64(txInfo.AssetId),
+				AssetId:      txInfo.AssetId,
 				AssetType:    commonAsset.GeneralAssetType,
-				AccountIndex: int64(txInfo.AccountIndex),
+				AccountIndex: txInfo.AccountIndex,
 				AccountName:  accountInfo.AccountName,
 				BalanceDelta: balanceDelta.String(),
 				Order:        0,
+				AccountOrder: 0,
 			})
 			// serialize oTx info
 			txInfoBytes, err := json.Marshal(txInfo)
@@ -326,8 +337,9 @@ func MonitorMempool(
 				TxType:         int64(txInfo.TxType),
 				GasFeeAssetId:  commonConstant.NilAssetId,
 				GasFee:         commonConstant.NilAssetAmountStr,
-				AssetAId:       int64(txInfo.AssetId),
-				AssetBId:       commonConstant.NilAssetId,
+				NftIndex:       commonConstant.NilTxNftIndex,
+				PairIndex:      commonConstant.NilPairIndex,
+				AssetId:        int64(txInfo.AssetId),
 				TxAmount:       txInfo.AssetAmount.String(),
 				NativeAddress:  oTx.SenderAddress,
 				MempoolDetails: mempoolTxDetails,
@@ -351,45 +363,72 @@ func MonitorMempool(
 				logx.Errorf("[MonitorMempool] unable to parse deposit nft pub data: %s", err.Error())
 				return err
 			}
-			if newAccountInfoMap[txInfo.AccountNameHash] == nil {
-				accountInfo = newAccountInfoMap[txInfo.AccountNameHash]
+			accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
+			if newAccountInfoMap[accountNameHash] != nil {
+				accountInfo = newAccountInfoMap[accountNameHash]
 			} else {
-				accountInfo, err = GetAccountInfoByAccountNameHash(txInfo.AccountNameHash, ctx.AccountModel)
+				accountInfo, err = GetAccountInfoByAccountNameHash(accountNameHash, ctx.AccountModel)
 				if err != nil {
 					logx.Errorf("[MonitorMempool] unable to get account info: %s", err.Error())
 					return err
 				}
 			}
-
 			// complete oTx info
-			txInfo.AccountIndex = uint32(accountInfo.AccountIndex)
-			// TODO nft index
-			txInfo.NftIndex = uint64(0)
-			// TODO get nft content hash
-			txInfo.NftContentHash = []byte(RandomTxHash())
+			txInfo.AccountIndex = accountInfo.AccountIndex
+			redisLock, nftIndex, err := globalmapHandler.GetLatestNftIndexForWrite(ctx.NftModel, ctx.RedisConnection)
+			if err != nil {
+				logx.Errorf("[MonitorMempool] unable to get latest nft index: %s", err.Error())
+				return err
+			}
+			defer redisLock.Release()
 			var (
-				mempoolTxDetails []*mempool.MempoolTxDetail
+				nftInfo *commonAsset.NftInfo
 			)
-			delta := commonAsset.ConstructNftInfo(
-				int64(txInfo.NftIndex),
-				accountInfo.AccountIndex,
+			if txInfo.NftIndex == 0 && txInfo.CreatorAccountIndex == 0 && txInfo.CreatorTreasuryRate == 0 {
+				txInfo.NftIndex = nftIndex
+			}
+			nftInfo = commonAsset.ConstructNftInfo(
+				txInfo.NftIndex,
+				txInfo.CreatorAccountIndex,
 				accountInfo.AccountIndex,
 				common.Bytes2Hex(txInfo.NftContentHash),
 				txInfo.NftL1TokenId.String(),
 				txInfo.NftL1Address,
 				txInfo.CreatorTreasuryRate,
-				commonConstant.NilCollectionId,
+				txInfo.CollectionId,
+			)
+			newNftInfoMap[nftInfo.NftIndex] = nftInfo
+			var (
+				mempoolTxDetails []*mempool.MempoolTxDetail
 			)
 			if err != nil {
 				logx.Errorf("[MonitorMempool] unable to construct nft info: %s", err.Error())
 				return err
 			}
+			// user info
+			accountOrder := int64(0)
+			emptyDeltaAsset := &commonAsset.AccountAsset{
+				AssetId:                  0,
+				Balance:                  big.NewInt(0),
+				LpAmount:                 big.NewInt(0),
+				OfferCanceledOrFinalized: big.NewInt(0),
+			}
 			mempoolTxDetails = append(mempoolTxDetails, &mempool.MempoolTxDetail{
-				AssetId:      int64(txInfo.NftIndex),
-				AssetType:    commonAsset.NftAssetType,
-				AccountIndex: int64(txInfo.AccountIndex),
+				AssetId:      0,
+				AssetType:    commonAsset.GeneralAssetType,
+				AccountIndex: txInfo.AccountIndex,
 				AccountName:  accountInfo.AccountName,
-				BalanceDelta: delta.String(),
+				BalanceDelta: emptyDeltaAsset.String(),
+				AccountOrder: accountOrder,
+			})
+			// nft info
+			mempoolTxDetails = append(mempoolTxDetails, &mempool.MempoolTxDetail{
+				AssetId:      txInfo.NftIndex,
+				AssetType:    commonAsset.NftAssetType,
+				AccountIndex: txInfo.AccountIndex,
+				AccountName:  accountInfo.AccountName,
+				BalanceDelta: nftInfo.String(),
+				AccountOrder: commonConstant.NilAccountOrder,
 			})
 			// serialize oTx info
 			txInfoBytes, err := json.Marshal(txInfo)
@@ -402,8 +441,9 @@ func MonitorMempool(
 				TxType:         int64(txInfo.TxType),
 				GasFee:         commonConstant.NilAssetAmountStr,
 				GasFeeAssetId:  commonConstant.NilAssetId,
-				AssetAId:       commonConstant.NilAssetId,
-				AssetBId:       commonConstant.NilAssetId,
+				NftIndex:       nftIndex,
+				PairIndex:      commonConstant.NilPairIndex,
+				AssetId:        commonConstant.NilAssetId,
 				TxAmount:       commonConstant.NilAssetAmountStr,
 				NativeAddress:  oTx.SenderAddress,
 				MempoolDetails: mempoolTxDetails,
@@ -417,51 +457,142 @@ func MonitorMempool(
 			if !relatedAccountIndex[accountInfo.AccountIndex] {
 				relatedAccountIndex[accountInfo.AccountIndex] = true
 			}
+			// put into new nfts
+			pendingNewNfts = append(pendingNewNfts, &nft.L2Nft{
+				NftIndex:            nftInfo.NftIndex,
+				CreatorAccountIndex: nftInfo.CreatorAccountIndex,
+				OwnerAccountIndex:   nftInfo.OwnerAccountIndex,
+				NftContentHash:      nftInfo.NftContentHash,
+				NftL1Address:        nftInfo.NftL1Address,
+				NftL1TokenId:        nftInfo.NftL1TokenId,
+				CreatorTreasuryRate: nftInfo.CreatorTreasuryRate,
+				CollectionId:        nftInfo.CollectionId,
+			})
 			break
 		case TxTypeFullExit:
 			// create mempool oTx
-			var accountInfo *account.Account
+			var (
+				accountInfo *commonAsset.AccountInfo
+				redisLock   *redis.RedisLock
+			)
 			txInfo, err := util.ParseFullExitPubData(common.FromHex(oTx.Pubdata))
 			if err != nil {
 				logx.Errorf("[MonitorMempool] unable to parse deposit pub data: %s", err.Error())
 				return err
 			}
-			if newAccountInfoMap[txInfo.AccountNameHash] == nil {
-				accountInfo = newAccountInfoMap[txInfo.AccountNameHash]
+			accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
+			if newAccountInfoMap[accountNameHash] != nil {
+				accountInfo, err = commonAsset.ToFormatAccountInfo(newAccountInfoMap[accountNameHash])
+				if err != nil {
+					logx.Errorf("[MonitorMempool] unable convert to format account info: %s", err.Error())
+					return err
+				}
+				for _, mempoolTx := range pendingNewMempoolTxs {
+					if mempoolTx.AccountIndex != accountInfo.AccountIndex {
+						continue
+					}
+					for _, txDetail := range mempoolTx.MempoolDetails {
+						if txDetail.AccountIndex != accountInfo.AccountIndex || txDetail.AssetId != txInfo.AssetId {
+							continue
+						}
+						if txDetail.AssetType == GeneralAssetType {
+							if accountInfo.AssetInfo[txDetail.AssetId] == nil {
+								accountInfo.AssetInfo[txDetail.AssetId] = &commonAsset.AccountAsset{
+									AssetId:                  txDetail.AssetId,
+									Balance:                  big.NewInt(0),
+									LpAmount:                 big.NewInt(0),
+									OfferCanceledOrFinalized: big.NewInt(0),
+								}
+							}
+							nBalance, err := commonAsset.ComputeNewBalance(GeneralAssetType, accountInfo.AssetInfo[txDetail.AssetId].String(), txDetail.BalanceDelta)
+							if err != nil {
+								logx.Errorf("[MonitorMempool] unable to compute new balance: %s", err.Error())
+								return err
+							}
+							accountInfo.AssetInfo[txDetail.AssetId], err = commonAsset.ParseAccountAsset(nBalance)
+							if err != nil {
+								logx.Errorf("[MonitorMempool] unable to parse account asset : %s", err.Error())
+								return err
+							}
+						}
+					}
+				}
 			} else {
-				accountInfo, err = GetAccountInfoByAccountNameHash(txInfo.AccountNameHash, ctx.AccountModel)
+				newAccountInfoMap[accountNameHash], err = GetAccountInfoByAccountNameHash(accountNameHash, ctx.AccountModel)
 				if err != nil {
 					logx.Errorf("[MonitorMempool] unable to get account info: %s", err.Error())
 					return err
 				}
+				accountInfo, err = commonAsset.ToFormatAccountInfo(newAccountInfoMap[accountNameHash])
+				if err != nil {
+					logx.Errorf("[MonitorMempool] unable convert to format account info: %s", err.Error())
+					return err
+				}
+				key := util.GetAccountKey(accountInfo.AccountIndex)
+				lockKey := util.GetLockKey(key)
+				redisLock = redis.NewRedisLock(ctx.RedisConnection, lockKey)
+				redisLock.SetExpire(5)
+				isAcquired, err := redisLock.Acquire()
+				if err != nil {
+					logx.Errorf("[MonitorMempool] unable to acquire the lock: %s", err.Error())
+					return err
+				}
+				if !isAcquired {
+					logx.Errorf("[MonitorMempool] unable to acquire the lock")
+					return errors.New("[MonitorMempool] unable to acquire the lock")
+				}
+				mempoolTxs, err := ctx.MempoolModel.GetPendingMempoolTxsByAccountIndex(accountInfo.AccountIndex)
+				if err != nil {
+					if err != ErrNotFound {
+						logx.Errorf("[MonitorMempool] unable to get pending mempool txs: %s", err.Error())
+						return err
+					}
+				}
+				for _, mempoolTx := range mempoolTxs {
+					for _, txDetail := range mempoolTx.MempoolDetails {
+						if txDetail.AccountIndex != accountInfo.AccountIndex || txDetail.AssetId != txInfo.AssetId {
+							continue
+						}
+						if txDetail.AssetType == GeneralAssetType {
+							nBalance, err := commonAsset.ComputeNewBalance(GeneralAssetType, accountInfo.AssetInfo[txDetail.AssetId].String(), txDetail.BalanceDelta)
+							if err != nil {
+								logx.Errorf("[MonitorMempool] unable to compute new balance: %s", err.Error())
+								return err
+							}
+							accountInfo.AssetInfo[txDetail.AssetId], err = commonAsset.ParseAccountAsset(nBalance)
+							if err != nil {
+								logx.Errorf("[MonitorMempool] unable to parse account asset : %s", err.Error())
+								return err
+							}
+						}
+					}
+				}
+				redisLock.Release()
 			}
 			// complete oTx info
-			txInfo.AccountIndex = uint32(accountInfo.AccountIndex)
-			formatAccountInfo, err := commonAsset.ToFormatAccountInfo(accountInfo)
-			if err != nil {
-				logx.Errorf("[MonitorMempool] unable to format account info: %s", err.Error())
-				return err
-			}
-			if formatAccountInfo.AssetInfo[int64(txInfo.AssetId)] == nil {
+			txInfo.AccountIndex = accountInfo.AccountIndex
+			if accountInfo.AssetInfo[txInfo.AssetId] == nil {
 				txInfo.AssetAmount = big.NewInt(0)
 			} else {
-				txInfo.AssetAmount = formatAccountInfo.AssetInfo[int64(txInfo.AssetId)].Balance
+				txInfo.AssetAmount = accountInfo.AssetInfo[txInfo.AssetId].Balance
 			}
-			// TODO get remaining asset amount
+			// do delta at committer
 			var (
 				mempoolTxDetails []*mempool.MempoolTxDetail
 			)
 			balanceDelta := &commonAsset.AccountAsset{
-				AssetId:  int64(txInfo.AssetId),
-				Balance:  ffmath.Neg(txInfo.AssetAmount),
+				AssetId:  txInfo.AssetId,
+				Balance:  big.NewInt(0),
 				LpAmount: big.NewInt(0),
 			}
 			mempoolTxDetails = append(mempoolTxDetails, &mempool.MempoolTxDetail{
-				AssetId:      int64(txInfo.AssetId),
+				AssetId:      txInfo.AssetId,
 				AssetType:    commonAsset.GeneralAssetType,
-				AccountIndex: int64(txInfo.AccountIndex),
+				AccountIndex: txInfo.AccountIndex,
 				AccountName:  accountInfo.AccountName,
 				BalanceDelta: balanceDelta.String(),
+				Order:        0,
+				AccountOrder: 0,
 			})
 			// serialize oTx info
 			txInfoBytes, err := json.Marshal(txInfo)
@@ -474,8 +605,9 @@ func MonitorMempool(
 				TxType:         int64(txInfo.TxType),
 				GasFee:         commonConstant.NilAssetAmountStr,
 				GasFeeAssetId:  commonConstant.NilAssetId,
-				AssetAId:       int64(txInfo.AssetId),
-				AssetBId:       commonConstant.NilAssetId,
+				NftIndex:       commonConstant.NilTxNftIndex,
+				PairIndex:      commonConstant.NilPairIndex,
+				AssetId:        txInfo.AssetId,
 				TxAmount:       txInfo.AssetAmount.String(),
 				NativeAddress:  oTx.SenderAddress,
 				MempoolDetails: mempoolTxDetails,
@@ -498,80 +630,132 @@ func MonitorMempool(
 				logx.Errorf("[MonitorMempool] unable to parse deposit nft pub data: %s", err.Error())
 				return err
 			}
-			if newAccountInfoMap[txInfo.AccountNameHash] == nil {
-				accountInfo = newAccountInfoMap[txInfo.AccountNameHash]
-			} else {
-				accountInfo, err = GetAccountInfoByAccountNameHash(txInfo.AccountNameHash, ctx.AccountModel)
+			accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
+			if newAccountInfoMap[accountNameHash] == nil {
+				accountInfo, err = GetAccountInfoByAccountNameHash(accountNameHash, ctx.AccountModel)
 				if err != nil {
 					logx.Errorf("[MonitorMempool] unable to get account info: %s", err.Error())
 					return err
 				}
+			} else {
+				accountInfo = newAccountInfoMap[accountNameHash]
 			}
 			var (
 				nftAsset *nft.L2Nft
 			)
-			nftAsset, err = ctx.NftModel.GetNftAsset(int64(txInfo.NftIndex))
-			if err != nil {
-				if err == ErrNotFound {
-					emptyNftInfo := commonAsset.EmptyNftInfo(int64(txInfo.NftIndex))
-					nftAsset = &nft.L2Nft{
-						NftIndex:            emptyNftInfo.NftIndex,
-						CreatorAccountIndex: emptyNftInfo.CreatorAccountIndex,
-						OwnerAccountIndex:   emptyNftInfo.OwnerAccountIndex,
-						NftContentHash:      emptyNftInfo.NftContentHash,
-						NftL1Address:        emptyNftInfo.NftL1Address,
-						NftL1TokenId:        emptyNftInfo.NftL1TokenId,
-						CreatorTreasuryRate: emptyNftInfo.CreatorTreasuryRate,
-						CollectionId:        emptyNftInfo.CollectionId,
-						Status:              0,
+			if newNftInfoMap[txInfo.NftIndex] == nil {
+				nftAsset, err = ctx.NftModel.GetNftAsset(txInfo.NftIndex)
+				if err != nil {
+					if err == ErrNotFound {
+						emptyNftInfo := commonAsset.EmptyNftInfo(txInfo.NftIndex)
+						nftAsset = &nft.L2Nft{
+							NftIndex:            emptyNftInfo.NftIndex,
+							CreatorAccountIndex: emptyNftInfo.CreatorAccountIndex,
+							OwnerAccountIndex:   emptyNftInfo.OwnerAccountIndex,
+							NftContentHash:      emptyNftInfo.NftContentHash,
+							NftL1Address:        emptyNftInfo.NftL1Address,
+							NftL1TokenId:        emptyNftInfo.NftL1TokenId,
+							CreatorTreasuryRate: emptyNftInfo.CreatorTreasuryRate,
+							CollectionId:        emptyNftInfo.CollectionId,
+						}
+					} else {
+						logx.Errorf("[MonitorMempool] unable to latest nft info: %s", err.Error())
+						return err
 					}
 				} else {
-					logx.Errorf("[MonitorMempool] unable to latest nft info: %s", err.Error())
-					return err
-				}
-			} else {
-				if nftAsset.OwnerAccountIndex != accountInfo.AccountIndex {
-					emptyNftInfo := commonAsset.EmptyNftInfo(int64(txInfo.NftIndex))
-					nftAsset = &nft.L2Nft{
-						NftIndex:            emptyNftInfo.NftIndex,
-						CreatorAccountIndex: emptyNftInfo.CreatorAccountIndex,
-						OwnerAccountIndex:   emptyNftInfo.OwnerAccountIndex,
-						NftContentHash:      emptyNftInfo.NftContentHash,
-						NftL1Address:        emptyNftInfo.NftL1Address,
-						NftL1TokenId:        emptyNftInfo.NftL1TokenId,
-						CreatorTreasuryRate: emptyNftInfo.CreatorTreasuryRate,
-						CollectionId:        emptyNftInfo.CollectionId,
-						Status:              0,
+					if nftAsset.OwnerAccountIndex != accountInfo.AccountIndex {
+						emptyNftInfo := commonAsset.EmptyNftInfo(txInfo.NftIndex)
+						nftAsset = &nft.L2Nft{
+							NftIndex:            emptyNftInfo.NftIndex,
+							CreatorAccountIndex: emptyNftInfo.CreatorAccountIndex,
+							OwnerAccountIndex:   emptyNftInfo.OwnerAccountIndex,
+							NftContentHash:      emptyNftInfo.NftContentHash,
+							NftL1Address:        emptyNftInfo.NftL1Address,
+							NftL1TokenId:        emptyNftInfo.NftL1TokenId,
+							CreatorTreasuryRate: emptyNftInfo.CreatorTreasuryRate,
+							CollectionId:        emptyNftInfo.CollectionId,
+						}
 					}
 				}
+			} else {
+				nftAsset = &nft.L2Nft{
+					NftIndex:            newNftInfoMap[txInfo.NftIndex].NftIndex,
+					CreatorAccountIndex: newNftInfoMap[txInfo.NftIndex].CreatorAccountIndex,
+					OwnerAccountIndex:   newNftInfoMap[txInfo.NftIndex].OwnerAccountIndex,
+					NftContentHash:      newNftInfoMap[txInfo.NftIndex].NftContentHash,
+					NftL1Address:        newNftInfoMap[txInfo.NftIndex].NftL1Address,
+					NftL1TokenId:        newNftInfoMap[txInfo.NftIndex].NftL1TokenId,
+					CreatorTreasuryRate: newNftInfoMap[txInfo.NftIndex].CreatorTreasuryRate,
+					CollectionId:        newNftInfoMap[txInfo.NftIndex].CollectionId,
+				}
+			}
+
+			var (
+				creatorAccountNameHash []byte
+			)
+			if txInfo.CreatorAccountIndex == 0 && txInfo.CreatorTreasuryRate == 0 {
+				creatorAccountNameHash = []byte{0}
+			} else {
+				creatorAccountInfo, err := ctx.AccountModel.GetAccountByAccountIndex(nftAsset.CreatorAccountIndex)
+				if err != nil {
+					logx.Errorf("[MonitorMempool] unable to get account info: %s", err.Error())
+					return err
+				}
+				creatorAccountNameHash = common.FromHex(creatorAccountInfo.AccountNameHash)
 			}
 			// complete oTx info
-			txInfo.AccountIndex = uint32(accountInfo.AccountIndex)
-			// TODO get nft info
 			nftL1TokenId, isValid := new(big.Int).SetString(nftAsset.NftL1TokenId, Base)
 			if !isValid {
 				logx.Errorf("[MonitorMempool] unable to parse big int")
 				return errors.New("[MonitorMempool] unable to parse big int")
 			}
-			txInfo.NftContentHash = common.FromHex(nftAsset.NftContentHash)
-			txInfo.NftL1TokenId = nftL1TokenId
-			txInfo.NftL1Address = nftAsset.NftL1Address
+			txInfo = &commonTx.FullExitNftTxInfo{
+				TxType:                 txInfo.TxType,
+				AccountIndex:           accountInfo.AccountIndex,
+				CreatorAccountIndex:    nftAsset.CreatorAccountIndex,
+				CreatorTreasuryRate:    nftAsset.CreatorTreasuryRate,
+				NftIndex:               txInfo.NftIndex,
+				CollectionId:           nftAsset.CollectionId,
+				NftL1Address:           nftAsset.NftL1Address,
+				AccountNameHash:        txInfo.AccountNameHash,
+				CreatorAccountNameHash: creatorAccountNameHash,
+				NftContentHash:         common.FromHex(nftAsset.NftContentHash),
+				NftL1TokenId:           nftL1TokenId,
+			}
 			var (
 				mempoolTxDetails []*mempool.MempoolTxDetail
 			)
+			// empty account delta
+			emptyAssetDelta := &commonAsset.AccountAsset{
+				AssetId:                  0,
+				Balance:                  big.NewInt(0),
+				LpAmount:                 big.NewInt(0),
+				OfferCanceledOrFinalized: big.NewInt(0),
+			}
+			accountOrder := int64(0)
+			order := int64(0)
+			mempoolTxDetails = append(mempoolTxDetails, &mempool.MempoolTxDetail{
+				AssetId:      0,
+				AssetType:    commonAsset.GeneralAssetType,
+				AccountIndex: txInfo.AccountIndex,
+				AccountName:  accountInfo.AccountName,
+				BalanceDelta: emptyAssetDelta.String(),
+				Order:        order,
+				AccountOrder: accountOrder,
+			})
+			// nft info
 			newNftInfo := commonAsset.EmptyNftInfo(
 				txInfo.NftIndex,
 			)
-			if err != nil {
-				logx.Errorf("[MonitorMempool] unable to construct nft info: %s", err.Error())
-				return err
-			}
+			order++
 			mempoolTxDetails = append(mempoolTxDetails, &mempool.MempoolTxDetail{
 				AssetId:      txInfo.NftIndex,
 				AssetType:    commonAsset.NftAssetType,
-				AccountIndex: int64(txInfo.AccountIndex),
+				AccountIndex: txInfo.AccountIndex,
 				AccountName:  accountInfo.AccountName,
 				BalanceDelta: newNftInfo.String(),
+				Order:        order,
+				AccountOrder: commonConstant.NilAccountOrder,
 			})
 			// serialize oTx info
 			txInfoBytes, err := json.Marshal(txInfo)
@@ -584,8 +768,9 @@ func MonitorMempool(
 				TxType:         int64(txInfo.TxType),
 				GasFee:         commonConstant.NilAssetAmountStr,
 				GasFeeAssetId:  commonConstant.NilAssetId,
-				AssetAId:       commonConstant.NilAssetId,
-				AssetBId:       commonConstant.NilAssetId,
+				NftIndex:       txInfo.NftIndex,
+				PairIndex:      commonConstant.NilPairIndex,
+				AssetId:        commonConstant.NilAssetId,
 				TxAmount:       commonConstant.NilAssetAmountStr,
 				NativeAddress:  oTx.SenderAddress,
 				MempoolDetails: mempoolTxDetails,
@@ -624,6 +809,7 @@ func MonitorMempool(
 		pendingNewAccounts,
 		pendingNewMempoolTxs,
 		pendingNewLiquidityInfos,
+		pendingNewNfts,
 		txs,
 	)
 	if err != nil {

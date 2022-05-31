@@ -19,7 +19,6 @@ package util
 
 import (
 	"errors"
-	"fmt"
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
@@ -61,9 +60,6 @@ func ToPackedAmount(amount *big.Int) (res int64, err error) {
 		logx.Errorf("[ToPackedAmount] unable to convert to packed amount: %s", err.Error())
 		return -1, err
 	}
-	fmt.Println(exponentBits)
-	fmt.Println(mantissaBits)
-	fmt.Println(strconv.FormatInt(packedAmount, 2))
 	return packedAmount, nil
 }
 
@@ -85,7 +81,7 @@ func CleanPackedAmount(amount *big.Int) (nAmount *big.Int, err error) {
 /*
 	ToPackedFee: convert big int to 16 bit, 5 bits for 10^x, 11 bits for a * 10^x
 */
-func ToPackedFee(amount *big.Int) (res uint16, err error) {
+func ToPackedFee(amount *big.Int) (res int64, err error) {
 	if amount.Cmp(ZeroBigInt) < 0 || amount.Cmp(PackedFeeMaxAmount) > 0 {
 		logx.Errorf("[ToPackedFee] invalid amount")
 		return 0, errors.New("[ToPackedFee] invalid amount")
@@ -107,7 +103,7 @@ func ToPackedFee(amount *big.Int) (res uint16, err error) {
 		logx.Errorf("[ToPackedFee] unable to convert to packed fee: %s", err.Error())
 		return 0, err
 	}
-	return uint16(packedFee), nil
+	return packedFee, nil
 }
 
 func CleanPackedFee(amount *big.Int) (nAmount *big.Int, err error) {

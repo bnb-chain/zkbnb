@@ -18,12 +18,10 @@
 package proverUtil
 
 import (
-	"encoding/hex"
 	"errors"
-	"github.com/ethereum/go-ethereum/common"
-	curve "github.com/zecrey-labs/zecrey-crypto/ecc/ztwistededwards/tebn254"
 	"github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/std"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
+	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -35,6 +33,10 @@ func ConstructRegisterZnsCryptoTx(
 	nftTree *Tree,
 	accountModel AccountModel,
 ) (cryptoTx *CryptoTx, err error) {
+	if oTx.TxType != commonTx.TxTypeRegisterZns {
+		logx.Errorf("[ConstructCreatePairCryptoTx] invalid tx type")
+		return nil, errors.New("[ConstructCreatePairCryptoTx] invalid tx type")
+	}
 	if oTx == nil || accountTree == nil || accountAssetsTree == nil || liquidityTree == nil || nftTree == nil {
 		logx.Errorf("[ConstructRegisterZnsCryptoTx] invalid params")
 		return nil, errors.New("[ConstructRegisterZnsCryptoTx] invalid params")
@@ -49,19 +51,20 @@ func ConstructRegisterZnsCryptoTx(
 		logx.Errorf("[ConstructRegisterZnsCryptoTx] unable to convert to crypto register zns tx: %s", err.Error())
 		return nil, err
 	}
-	accountKeys, proverAccountMap, proverLiquidityInfo, proverNftInfo, err := ConstructProverInfo(oTx, accountModel)
+	accountKeys, proverAccounts, proverLiquidityInfo, proverNftInfo, err := ConstructProverInfo(oTx, accountModel)
 	if err != nil {
 		logx.Errorf("[ConstructRegisterZnsCryptoTx] unable to construct prover info: %s", err.Error())
 		return nil, err
 	}
 	cryptoTx, err = ConstructWitnessInfo(
 		oTx,
+		accountModel,
 		accountTree,
 		accountAssetsTree,
 		liquidityTree,
 		nftTree,
 		accountKeys,
-		proverAccountMap,
+		proverAccounts,
 		proverLiquidityInfo,
 		proverNftInfo,
 	)
@@ -69,6 +72,7 @@ func ConstructRegisterZnsCryptoTx(
 		logx.Errorf("[ConstructRegisterZnsCryptoTx] unable to construct witness info: %s", err.Error())
 		return nil, err
 	}
+	cryptoTx.TxType = uint8(oTx.TxType)
 	cryptoTx.RegisterZnsTxInfo = cryptoTxInfo
 	cryptoTx.Nonce = oTx.Nonce
 	cryptoTx.Signature = std.EmptySignature()
@@ -78,12 +82,7 @@ func ConstructRegisterZnsCryptoTx(
 func ToCryptoRegisterZnsTx(txInfo *commonTx.RegisterZnsTxInfo) (info *CryptoRegisterZnsTx, err error) {
 	accountName := make([]byte, 32)
 	copy(accountName[:], txInfo.AccountName)
-	pubKeyBytes, err := hex.DecodeString(txInfo.PubKey)
-	if err != nil {
-		logx.Errorf("[ToCryptoRegisterZnsTx] unable to decode string:%s", err.Error())
-		return nil, err
-	}
-	pk, err := curve.FromBytes(pubKeyBytes)
+	pk, err := util.ParsePubKey(txInfo.PubKey)
 	if err != nil {
 		logx.Errorf("[ToCryptoRegisterZnsTx] unable to parse pub key:%s", err.Error())
 		return nil, err
@@ -91,8 +90,8 @@ func ToCryptoRegisterZnsTx(txInfo *commonTx.RegisterZnsTxInfo) (info *CryptoRegi
 	info = &CryptoRegisterZnsTx{
 		AccountIndex:    txInfo.AccountIndex,
 		AccountName:     accountName,
-		AccountNameHash: common.FromHex(txInfo.AccountNameHash),
+		AccountNameHash: txInfo.AccountNameHash,
+		PubKey:          pk,
 	}
-	info.PubKey.A.Set(pk)
 	return info, nil
 }

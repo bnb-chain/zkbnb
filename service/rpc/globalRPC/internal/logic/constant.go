@@ -27,6 +27,13 @@ const (
 )
 
 const (
+	_ = iota
+	TxPending
+	TxSuccess
+	TxFail
+)
+
+const (
 	L2TransferType     = 1
 	LiquidityType      = 2
 	L2SwapType         = 3
