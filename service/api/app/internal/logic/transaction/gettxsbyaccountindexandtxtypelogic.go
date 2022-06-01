@@ -37,13 +37,6 @@ func NewGetTxsByAccountIndexAndTxTypeLogic(ctx context.Context, svcCtx *svc.Serv
 		mempool:   mempool.New(svcCtx.Config),
 	}
 }
-func packGetTxsListByAccountIndexAndTxTypeResp(total uint32, txs []*types.Tx) (res *types.RespGetTxsByAccountIndexAndTxType) {
-	res = &types.RespGetTxsByAccountIndexAndTxType{
-		Total: total,
-		Txs:   txs,
-	}
-	return res
-}
 
 func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *types.ReqGetTxsByAccountIndexAndTxType) (resp *types.RespGetTxsByAccountIndexAndTxType, err error) {
 
@@ -54,22 +47,22 @@ func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *
 	account, err := l.account.GetAccountByPk(req.Pk)
 	if err != nil {
 		logx.Error("[GetTxsListByAccountIndexAndTxType] err:%v", err)
-		return packGetTxsListByAccountIndexAndTxTypeResp(0, nil), err
+		return &types.RespGetTxsByAccountIndexAndTxType{}, err
 	}
 	txCount, err := l.tx.GetTxsTotalCountByAccountIndex(account.AccountIndex)
 	if err != nil {
 		logx.Error("[GetTxsListByAccountIndexAndTxType] err:%v", err)
-		return packGetTxsListByAccountIndexAndTxTypeResp(0, nil), err
+		return &types.RespGetTxsByAccountIndexAndTxType{}, err
 	}
 	mempoolTxCount, err := l.mempool.GetMempoolTxsTotalCountByAccountIndex(account.AccountIndex)
 	if err != nil {
 		logx.Error("[GetTxsListByAccountIndexAndTxType] err:%v", err)
-		return packGetTxsListByAccountIndexAndTxTypeResp(0, nil), err
+		return &types.RespGetTxsByAccountIndexAndTxType{}, err
 	}
 	mempoolTxs, err := l.globalRpc.GetLatestTxsListByAccountIndexAndTxType(uint64(account.AccountIndex), uint64(req.TxType), uint64(req.Limit), uint64(req.Offset))
 	if err != nil {
 		logx.Error("[GetTxsListByAccountIndexAndTxType] err:%v", err)
-		return packGetTxsListByAccountIndexAndTxTypeResp(0, nil), err
+		return &types.RespGetTxsByAccountIndexAndTxType{}, err
 	}
 
 	results := make([]*types.Tx, 0)
@@ -111,5 +104,5 @@ func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *
 		})
 	}
 
-	return packGetTxsListByAccountIndexAndTxTypeResp(uint32(txCount+mempoolTxCount), results), nil
+	return &types.RespGetTxsByAccountIndexAndTxType{Total: uint32(txCount + mempoolTxCount), Txs: results}, nil
 }
