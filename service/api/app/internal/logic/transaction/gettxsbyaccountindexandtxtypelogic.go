@@ -46,7 +46,6 @@ func packGetTxsListByAccountIndexAndTxTypeResp(total uint32, txs []*types.Tx) (r
 }
 
 func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *types.ReqGetTxsByAccountIndexAndTxType) (resp *types.RespGetTxsByAccountIndexAndTxType, err error) {
-	var respResult = types.RespGetTxsByAccountIndexAndTxType{Txs: []*types.Tx{}}
 
 	//err = utils.CheckRequestParam(utils.TypeAccountIndex, reflect.ValueOf(req.AccountIndex))
 	//err = utils.CheckRequestParam(utils.TypeTxType, reflect.ValueOf(req.TxType))
@@ -94,15 +93,16 @@ func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *
 		}
 		results = append(results, &types.Tx{
 			TxHash:        tx.TxHash,
-			TxType:        uint8(tx.TxType),
-			GasFeeAssetId: uint16(tx.GasFeeAssetId),
+			TxType:        uint32(tx.TxType),
+			GasFeeAssetId: uint32(tx.GasFeeAssetId),
 			GasFee:        gasFee,
 			TxStatus:      tx.Status,
 			BlockHeight:   int(tx.L2BlockHeight),
 			BlockStatus:   int(blockInfo.BlockStatus),
 			BlockId:       int(blockInfo.ID),
-			AssetAId:      int(tx.AssetAId),
-			AssetBId:      int(tx.AssetBId),
+			//Todo: still need AssetAId, AssetBId?
+			AssetAId:      int(tx.AssetId),
+			AssetBId:      int(tx.AssetId),
 			TxAmount:      txAmount,
 			TxDetails:     txDetails,
 			NativeAddress: tx.NativeAddress,

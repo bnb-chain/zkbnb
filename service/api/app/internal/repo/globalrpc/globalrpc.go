@@ -26,7 +26,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalrpc"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"gorm.io/gorm"
-	"strconv"
 )
 
 type globalRPC struct {
@@ -41,7 +40,7 @@ type globalRPC struct {
 
 func (m *globalRPC) GetLatestAccountInfo(accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error) {
 	accountInfo, err = globalmapHandler.GetLatestAccountInfo(m.AccountModel,
-		m.MempoolModel, m.MempoolDetailModel, m.RedisConnection, accountIndex)
+		m.MempoolModel, m.RedisConnection, accountIndex)
 	if err != nil {
 		return nil, err
 	}
@@ -79,34 +78,32 @@ func (m *globalRPC) GetPairInfo(pairIndex uint32) (*globalRPCProto.RespGetLatest
 }
 func (m *globalRPC) GetLatestTxsListByAccountIndexAndTxType(accountIndex uint64, txType uint64, limit uint64, offset uint64) ([]*mempool.MempoolTx, error) {
 	resRpc, _ := m.globalRPC.GetLatestTxsListByAccountIndexAndTxType(m.ctx, &globalrpc.ReqGetLatestTxsListByAccountIndexAndTxType{
-		AccountIndex: accountIndex,
-		TxType:       txType,
-		Offset:       offset,
-		Limit:        limit,
+		AccountIndex: uint32(accountIndex),
+		TxType:       uint32(txType),
+		Offset:       uint32(offset),
+		Limit:        uint32(limit),
 	})
 	res := make([]*mempool.MempoolTx, 0)
-	for _, each := range resRpc.Result.GetTxsList() {
+	for _, each := range resRpc.GetTxsList() {
 		singleTxDetail := make([]*mempool.MempoolTxDetail, 0)
 		for _, eachDetail := range each.TxDetails {
 			singleTxDetail = append(singleTxDetail, &mempool.MempoolTxDetail{
-				AssetId:      eachDetail.AssetId,
-				AssetType:    eachDetail.AssetType,
-				AccountIndex: eachDetail.AccountIndex,
+				AssetId:      int64(eachDetail.AssetId),
+				AssetType:    int64(eachDetail.AssetType),
+				AccountIndex: int64(eachDetail.AccountIndex),
 				AccountName:  eachDetail.AccountName,
-				//todo: eliminate all Enc s
-				BalanceDelta: eachDetail.AccountBalanceEnc,
+				BalanceDelta: eachDetail.BalanceDelta,
 			})
 		}
 
 		res = append(res, &mempool.MempoolTx{
 			Model:          gorm.Model{},
 			TxHash:         each.TxHash,
-			TxType:         each.TxType,
-			GasFeeAssetId:  each.GasFeeAssetId,
-			GasFee:         strconv.FormatInt(each.GasFee, 10),
-			AssetAId:       each.TxAssetAId,
-			AssetBId:       each.TxAssetBId,
-			TxAmount:       strconv.FormatInt(each.TxAmount, 10),
+			TxType:         int64(each.TxType),
+			GasFeeAssetId:  int64(each.GasFeeAssetId),
+			GasFee:         each.GasFee,
+			AssetId:        int64(each.AssetId),
+			TxAmount:       each.TxAmount,
 			NativeAddress:  each.NativeAddress,
 			MempoolDetails: singleTxDetail,
 			TxInfo:         "",
@@ -115,9 +112,43 @@ func (m *globalRPC) GetLatestTxsListByAccountIndexAndTxType(accountIndex uint64,
 			AccountIndex:   0,
 			Nonce:          0,
 			ExpiredAt:      0,
-			L2BlockHeight:  each.BlockHeight,
-			Status:         int(each.TxStatus),
+			L2BlockHeight:  int64(each.BlockHeight),
+			Status:         int(each.Status),
 		})
 	}
 	return res, nil
+}
+
+func (m *globalRPC) GetLatestTxsListByAccountIndex(accountIndex uint32, limit uint32) ([]*mempool.MempoolTx, uint32, error) {
+	resRpc, err := m.globalRPC.GetLatestTxsListByAccountIndex(m.ctx, &globalrpc.ReqGetLatestTxsListByAccountIndex{
+		AccountIndex: accountIndex,
+		Limit:        limit,
+	})
+
+	txls := make([]*mempool.MempoolTx, 0)
+	for _, each := range resRpc.GetTxsList() {
+		txls = append(txls, &mempool.MempoolTx{
+			Model:          gorm.Model{},
+			TxHash:         each.TxHash,
+			TxType:         int64(each.TxType),
+			GasFeeAssetId:  int64(each.GasFeeAssetId),
+			GasFee:         each.GasFee,
+			NftIndex:       int64(each.NftIndex),
+			PairIndex:      int64(each.PairIndex),
+			AssetId:        int64(each.AssetId),
+			TxAmount:       each.TxAmount,
+			NativeAddress:  each.NativeAddress,
+			MempoolDetails: nil,
+			TxInfo:         "",
+			ExtraInfo:      "",
+			Memo:           each.Memo,
+			AccountIndex:   int64(each.AccountIndex),
+			Nonce:          int64(each.Nonce),
+			ExpiredAt:      0,
+			L2BlockHeight:  int64(each.BlockHeight),
+			Status:         int(each.Status),
+		})
+	}
+
+	return txls, resRpc.GetTotal(), err
 }
