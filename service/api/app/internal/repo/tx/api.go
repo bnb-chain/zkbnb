@@ -14,6 +14,7 @@ import (
 
 type Tx interface {
 	GetTxsTotalCount() (count int64, err error)
+	GetTxsTotalCountByAccountIndex(accountIndex int64) (count int64, err error)
 }
 
 var singletonValue *tx
