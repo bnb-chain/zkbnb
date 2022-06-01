@@ -161,7 +161,7 @@ func TestDataInitialize(t *testing.T) {
 	err = blockModel.CreateGenesisBlock(&block.Block{
 		BlockCommitment:              "0000000000000000000000000000000000000000000000000000000000000000",
 		BlockHeight:                  0,
-		AccountRoot:                  common.Bytes2Hex(tree.NilAccountRoot),
+		StateRoot:                    common.Bytes2Hex(tree.NilAccountRoot),
 		PriorityOperations:           0,
 		PendingOnchainOperationsHash: "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
 		CommittedTxHash:              "",

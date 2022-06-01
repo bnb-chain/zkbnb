@@ -19,7 +19,7 @@ func ConvertMempoolTxToTx(mempoolTx *MempoolTx, txDetails []*tx.TxDetail, accoun
 		GasFeeAssetId: mempoolTx.GasFeeAssetId,
 		TxStatus:      TxStatusPending,
 		BlockHeight:   currentBlockHeight,
-		AccountRoot:   accountRoot,
+		StateRoot:     accountRoot,
 		NftIndex:      mempoolTx.NftIndex,
 		PairIndex:     mempoolTx.PairIndex,
 		AssetId:       mempoolTx.AssetId,

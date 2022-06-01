@@ -53,7 +53,8 @@ func ConvertTxToRegisterZNSPubData(oTx *mempool.MempoolTx) (pubData []byte, err 
 	}
 	// because we can get Y from X, so we only need to store X is enough
 	buf.Write(pk.A.X.Marshal())
-
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
 	return buf.Bytes(), nil
 }
 
@@ -76,7 +77,15 @@ func ConvertTxToCreatePairPubData(oTx *mempool.MempoolTx) (pubData []byte, err e
 	buf.Write(Uint16ToBytes(uint16(txInfo.FeeRate)))
 	buf.Write(Uint32ToBytes(uint32(txInfo.TreasuryAccountIndex)))
 	buf.Write(Uint16ToBytes(uint16(txInfo.TreasuryRate)))
-	return PaddingBufToChunkSize(buf.Bytes()), nil
+	chunk := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(chunk)
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	return buf.Bytes(), nil
 }
 
 func ConvertTxToUpdatePairRatePubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
@@ -96,7 +105,15 @@ func ConvertTxToUpdatePairRatePubData(oTx *mempool.MempoolTx) (pubData []byte, e
 	buf.Write(Uint16ToBytes(uint16(txInfo.FeeRate)))
 	buf.Write(Uint32ToBytes(uint32(txInfo.TreasuryAccountIndex)))
 	buf.Write(Uint16ToBytes(uint16(txInfo.TreasuryRate)))
-	return PaddingBufToChunkSize(buf.Bytes()), nil
+	chunk := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(chunk)
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	return buf.Bytes(), nil
 }
 
 func ConvertTxToDepositPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
@@ -119,6 +136,10 @@ func ConvertTxToDepositPubData(oTx *mempool.MempoolTx) (pubData []byte, err erro
 	buf.Reset()
 	buf.Write(chunk1)
 	buf.Write(txInfo.AccountNameHash)
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
 	return buf.Bytes(), nil
 }
 
@@ -150,6 +171,7 @@ func ConvertTxToDepositNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err e
 	buf.Write(txInfo.NftContentHash)
 	buf.Write(Uint256ToBytes(txInfo.NftL1TokenId))
 	buf.Write(txInfo.AccountNameHash)
+	buf.Write(PaddingBufToChunkSize([]byte{}))
 	return buf.Bytes(), nil
 }
 
@@ -187,6 +209,10 @@ func ConvertTxToTransferPubData(oTx *mempool.MempoolTx) (pubData []byte, err err
 	buf.Reset()
 	buf.Write(chunk)
 	buf.Write(txInfo.CallDataHash)
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
 	pubData = buf.Bytes()
 	return pubData, nil
 }
@@ -226,8 +252,15 @@ func ConvertTxToSwapPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) 
 		return nil, err
 	}
 	buf.Write(packedFeeBytes)
-	pubData = PaddingBufToChunkSize(buf.Bytes())
-	return pubData, nil
+	chunk := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(chunk)
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	return buf.Bytes(), nil
 }
 
 func ConvertTxToAddLiquidityPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
@@ -290,6 +323,10 @@ func ConvertTxToAddLiquidityPubData(oTx *mempool.MempoolTx) (pubData []byte, err
 	buf.Reset()
 	buf.Write(chunk1)
 	buf.Write(chunk2)
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
 	return buf.Bytes(), nil
 }
 
@@ -353,6 +390,10 @@ func ConvertTxToRemoveLiquidityPubData(oTx *mempool.MempoolTx) (pubData []byte, 
 	buf.Reset()
 	buf.Write(chunk1)
 	buf.Write(chunk2)
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
 	return buf.Bytes(), nil
 }
 
@@ -387,6 +428,10 @@ func ConvertTxToWithdrawPubData(oTx *mempool.MempoolTx) (pubData []byte, err err
 	buf.Reset()
 	buf.Write(chunk1)
 	buf.Write(chunk2)
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
 	return buf.Bytes(), nil
 }
 
@@ -413,8 +458,15 @@ func ConvertTxToCreateCollectionPubData(oTx *mempool.MempoolTx) (pubData []byte,
 		return nil, err
 	}
 	buf.Write(packedFeeBytes)
-	pubData = PaddingBufToChunkSize(buf.Bytes())
-	return pubData, nil
+	chunk := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(chunk)
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	return buf.Bytes(), nil
 }
 
 func ConvertTxToMintNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
@@ -447,6 +499,10 @@ func ConvertTxToMintNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err erro
 	buf.Reset()
 	buf.Write(chunk)
 	buf.Write(common.FromHex(txInfo.NftContentHash))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
 	return buf.Bytes(), nil
 }
 
@@ -478,6 +534,10 @@ func ConvertTxToTransferNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err 
 	buf.Reset()
 	buf.Write(chunk)
 	buf.Write(txInfo.CallDataHash)
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
 	return buf.Bytes(), nil
 }
 
@@ -532,6 +592,10 @@ func ConvertTxToAtomicMatchPubData(oTx *mempool.MempoolTx) (pubData []byte, err 
 	buf.Reset()
 	buf.Write(chunk1)
 	buf.Write(chunk2)
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
 	return buf.Bytes(), nil
 }
 
@@ -558,7 +622,15 @@ func ConvertTxToCancelOfferPubData(oTx *mempool.MempoolTx) (pubData []byte, err 
 		return nil, err
 	}
 	buf.Write(packedFeeBytes)
-	return PaddingBufToChunkSize(buf.Bytes()), nil
+	chunk := PaddingBufToChunkSize(buf.Bytes())
+	buf.Reset()
+	buf.Write(chunk)
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	return buf.Bytes(), nil
 }
 
 func ConvertTxToWithdrawNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
@@ -624,6 +696,10 @@ func ConvertTxToFullExitPubData(oTx *mempool.MempoolTx) (pubData []byte, err err
 	buf.Reset()
 	buf.Write(chunk)
 	buf.Write(txInfo.AccountNameHash)
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
+	buf.Write(PaddingBufToChunkSize([]byte{}))
 	return buf.Bytes(), nil
 }
 
