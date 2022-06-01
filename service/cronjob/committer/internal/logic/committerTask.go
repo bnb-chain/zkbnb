@@ -652,7 +652,7 @@ func CommitterTask(
 			},
 			BlockCommitment:              commitment,
 			BlockHeight:                  currentBlockHeight,
-			AccountRoot:                  finalStateRoot,
+			StateRoot:                    finalStateRoot,
 			PriorityOperations:           priorityOperations,
 			PendingOnchainOperationsHash: common.Bytes2Hex(pendingOnchainOperationsHash),
 			Txs:                          txs,

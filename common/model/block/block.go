@@ -105,7 +105,7 @@ type (
 		// pubdata
 		BlockCommitment              string
 		BlockHeight                  int64
-		AccountRoot                  string
+		StateRoot                    string
 		PriorityOperations           int64
 		PendingOnchainOperationsHash string
 		CommittedTxHash              string
