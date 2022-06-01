@@ -28,17 +28,6 @@ import (
 	"math/big"
 )
 
-/*
-	VerifyWithdrawTx:
-	accounts order is:
-	- FromAccount
-		- Assets:
-			- AssetA
-			- AssetGas
-	- GasAccount
-		- Assets:
-			- AssetGas
-*/
 func VerifyWithdrawTxInfo(
 	accountInfoMap map[int64]*AccountInfo,
 	txInfo *WithdrawTxInfo,
@@ -99,7 +88,11 @@ func VerifyWithdrawTxInfo(
 	}
 	// compute hash
 	hFunc := mimc.NewMiMC()
-	msgHash := legendTxTypes.ComputeWithdrawMsgHash(txInfo, hFunc)
+	msgHash, err := legendTxTypes.ComputeWithdrawMsgHash(txInfo, hFunc)
+	if err != nil {
+		logx.Errorf("[VerifyWithdrawTxInfo] unable to compute hash: %s", err.Error())
+		return nil, err
+	}
 	// verify signature
 	hFunc.Reset()
 	pk, err := ParsePkStr(accountInfoMap[txInfo.FromAccountIndex].PublicKey)
@@ -118,6 +111,7 @@ func VerifyWithdrawTxInfo(
 	// compute tx details
 	// from account asset A
 	order := int64(0)
+	accountOrder := int64(0)
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.AssetId,
 		AssetType:    GeneralAssetType,
@@ -125,7 +119,8 @@ func VerifyWithdrawTxInfo(
 		AccountName:  accountInfoMap[txInfo.FromAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.AssetId, ffmath.Neg(txInfo.AssetAmount), ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	// from account asset gas
 	order++
@@ -136,10 +131,12 @@ func VerifyWithdrawTxInfo(
 		AccountName:  accountInfoMap[txInfo.FromAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	// gas account asset gas
 	order++
+	accountOrder++
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    GeneralAssetType,
@@ -147,7 +144,8 @@ func VerifyWithdrawTxInfo(
 		AccountName:  accountInfoMap[txInfo.GasAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	return txDetails, nil
 }

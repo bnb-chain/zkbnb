@@ -22,19 +22,47 @@ func NewGlobalRPCServer(svcCtx *svc.ServiceContext) *GlobalRPCServer {
 	}
 }
 
-func (s *GlobalRPCServer) GetLatestAccountAssetInfo(ctx context.Context, in *globalRPCProto.ReqGetLatestAccountAssetInfo) (*globalRPCProto.RespGetLatestAccountAssetInfo, error) {
-	l := logic.NewGetLatestAccountAssetInfoLogic(ctx, s.svcCtx)
-	return l.GetLatestAccountAssetInfo(in)
+//  Asset
+func (s *GlobalRPCServer) GetLatestAccountLp(ctx context.Context, in *globalRPCProto.ReqGetLatestAccountLp) (*globalRPCProto.RespGetLatestAccountLp, error) {
+	l := logic.NewGetLatestAccountLpLogic(ctx, s.svcCtx)
+	return l.GetLatestAccountLp(in)
 }
 
-func (s *GlobalRPCServer) GetLatestAccountInfoByAccountIndex(ctx context.Context, in *globalRPCProto.ReqGetLatestAccountInfoByAccountIndex) (*globalRPCProto.RespGetLatestAccountInfoByAccountIndex, error) {
-	l := logic.NewGetLatestAccountInfoByAccountIndexLogic(ctx, s.svcCtx)
-	return l.GetLatestAccountInfoByAccountIndex(in)
+func (s *GlobalRPCServer) GetLatestAssetsListByAccountIndex(ctx context.Context, in *globalRPCProto.ReqGetLatestAssetsListByAccountIndex) (*globalRPCProto.RespGetLatestAssetsListByAccountIndex, error) {
+	l := logic.NewGetLatestAssetsListByAccountIndexLogic(ctx, s.svcCtx)
+	return l.GetLatestAssetsListByAccountIndex(in)
 }
 
+func (s *GlobalRPCServer) GetLatestAssetInfoByAccountIndexAndAssetId(ctx context.Context, in *globalRPCProto.ReqGetLatestAssetInfoByAccountIndexAndAssetId) (*globalRPCProto.RespGetLatestAssetInfoByAccountIndexAndAssetId, error) {
+	l := logic.NewGetLatestAssetInfoByAccountIndexAndAssetIdLogic(ctx, s.svcCtx)
+	return l.GetLatestAssetInfoByAccountIndexAndAssetId(in)
+}
+
+//  Liquidity
+func (s *GlobalRPCServer) GetLatestPairInfo(ctx context.Context, in *globalRPCProto.ReqGetLatestPairInfo) (*globalRPCProto.RespGetLatestPairInfo, error) {
+	l := logic.NewGetLatestPairInfoLogic(ctx, s.svcCtx)
+	return l.GetLatestPairInfo(in)
+}
+
+func (s *GlobalRPCServer) GetSwapAmount(ctx context.Context, in *globalRPCProto.ReqGetSwapAmount) (*globalRPCProto.RespGetSwapAmount, error) {
+	l := logic.NewGetSwapAmountLogic(ctx, s.svcCtx)
+	return l.GetSwapAmount(in)
+}
+
+func (s *GlobalRPCServer) GetLpValue(ctx context.Context, in *globalRPCProto.ReqGetLpValue) (*globalRPCProto.RespGetLpValue, error) {
+	l := logic.NewGetLpValueLogic(ctx, s.svcCtx)
+	return l.GetLpValue(in)
+}
+
+//  Transaction
 func (s *GlobalRPCServer) GetLatestTxsListByAccountIndex(ctx context.Context, in *globalRPCProto.ReqGetLatestTxsListByAccountIndex) (*globalRPCProto.RespGetLatestTxsListByAccountIndex, error) {
 	l := logic.NewGetLatestTxsListByAccountIndexLogic(ctx, s.svcCtx)
 	return l.GetLatestTxsListByAccountIndex(in)
+}
+
+func (s *GlobalRPCServer) GetLatestTxsListByAccountIndexAndTxType(ctx context.Context, in *globalRPCProto.ReqGetLatestTxsListByAccountIndexAndTxType) (*globalRPCProto.RespGetLatestTxsListByAccountIndexAndTxType, error) {
+	l := logic.NewGetLatestTxsListByAccountIndexAndTxTypeLogic(ctx, s.svcCtx)
+	return l.GetLatestTxsListByAccountIndexAndTxType(in)
 }
 
 func (s *GlobalRPCServer) SendTx(ctx context.Context, in *globalRPCProto.ReqSendTx) (*globalRPCProto.RespSendTx, error) {

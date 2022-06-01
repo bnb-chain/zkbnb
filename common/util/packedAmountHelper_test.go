@@ -18,10 +18,8 @@
 package util
 
 import (
-	"bytes"
 	"fmt"
 	"math/big"
-	"strconv"
 	"testing"
 )
 
@@ -40,11 +38,4 @@ func TestToPackedFee(t *testing.T) {
 		t.Fatal(err)
 	}
 	fmt.Println(fee)
-}
-
-func TestAccountNameToBytes32(t *testing.T) {
-	var buf bytes.Buffer
-	buf.Write([]byte{2})
-	fmt.Println(strconv.FormatInt(2, 2))
-	fmt.Println(new(big.Int).SetBytes(buf.Bytes()).Bits())
 }

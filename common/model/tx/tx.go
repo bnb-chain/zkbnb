@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"sort"
 	"strconv"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -52,6 +53,7 @@ type (
 		GetTxsTotalCountByAccountIndexAndTxTypeArray(accountIndex int64, txTypeArray []uint8) (count int64, err error)
 		GetTxsTotalCountByBlockHeight(blockHeight int64) (count int64, err error)
 		GetTxByTxHash(txHash string) (tx *Tx, err error)
+		GetTxByTxId(id uint) (tx *Tx, err error)
 		GetTxsListGreaterThanBlockHeight(blockHeight int64) (txs []*Tx, err error)
 	}
 
@@ -64,25 +66,26 @@ type (
 
 	Tx struct {
 		gorm.Model
-		TxHash          string `gorm:"uniqueIndex"`
-		TxType          int64
-		GasFee          string
-		GasFeeAssetId   int64
-		TxStatus        int64
-		BlockHeight     int64 `gorm:"index"`
-		BlockId         int64 `gorm:"index"`
-		AccountRoot     string
-		AssetAId        int64
-		AssetBId        int64
-		TxAmount        string
-		NativeAddress   string
-		TxInfo          string
-		TxDetails       []*TxDetail `gorm:"foreignkey:TxId"`
-		ExtraInfo       string
-		Memo            string
-		AccountIndex    int64
-		Nonce           int64
-		ExpiredAt       int64
+		TxHash        string `gorm:"uniqueIndex"`
+		TxType        int64
+		GasFee        string
+		GasFeeAssetId int64
+		TxStatus      int64
+		BlockHeight   int64 `gorm:"index"`
+		BlockId       int64 `gorm:"index"`
+		StateRoot     string
+		NftIndex      int64
+		PairIndex     int64
+		AssetId       int64
+		TxAmount      string
+		NativeAddress string
+		TxInfo        string
+		TxDetails     []*TxDetail `gorm:"foreignkey:TxId"`
+		ExtraInfo     string
+		Memo          string
+		AccountIndex  int64
+		Nonce         int64
+		ExpiredAt     int64
 	}
 )
 
@@ -599,54 +602,47 @@ func (m *defaultTxModel) GetTxsTotalCountByBlockHeight(blockHeight int64) (count
 func (m *defaultTxModel) GetTxByTxHash(txHash string) (tx *Tx, err error) {
 	var txForeignKeyColumn = `TxDetails`
 
-	key := fmt.Sprintf("%s%v", cacheZecreyTxTxHashPrefix, txHash)
-	val, err := m.RedisConn.Get(key)
-
-	if err != nil {
-		errInfo := fmt.Sprintf("[txVerification.GetTxByTxHash] Get Redis Error: %s, key:%s", err.Error(), key)
-		logx.Errorf(errInfo)
-		return nil, err
-
-	} else if val == "" {
-
-		dbTx := m.DB.Table(m.table).Where("tx_hash = ?", txHash).Find(&tx)
-		if dbTx.Error != nil {
-			logx.Error("[txVerification.GetTxByTxHash] %s", dbTx.Error)
-			return nil, dbTx.Error
-		} else if dbTx.RowsAffected == 0 {
-			logx.Error("[txVerification.GetTxByTxHash] No such Tx with txHash: %s", txHash)
-			return nil, ErrNotFound
-		}
-		err = m.DB.Model(&tx).Association(txForeignKeyColumn).Find(&tx.TxDetails)
-		if err != nil {
-			logx.Error("[txVerification.GetTxByTxHash] Get Associate TxDetails Error")
-			return nil, err
-		}
-
-		// json string
-		jsonString, err := json.Marshal(tx)
-		if err != nil {
-			logx.Errorf("[txVerification.GetTxByTxHash] json.Marshal Error: %s, value: %v", tx)
-			return nil, err
-		}
-
-		err = m.RedisConn.Setex(key, string(jsonString), 60*10+rand.Intn(180))
-		if err != nil {
-			logx.Errorf("[txVerification.GetTxByTxHash] redis set error: %s", err.Error())
-			return nil, err
-		}
-	} else {
-		// json string unmarshal
-		var (
-			nTx *Tx
-		)
-		err = json.Unmarshal([]byte(val), &nTx)
-		if err != nil {
-			logx.Errorf("[txVerification.GetTxByTxHash] json.Unmarshal error: %s, value : %s", err.Error(), val)
-			return nil, err
-		}
-		tx = nTx
+	dbTx := m.DB.Table(m.table).Where("tx_hash = ?", txHash).Find(&tx)
+	if dbTx.Error != nil {
+		logx.Error("[txVerification.GetTxByTxHash] %s", dbTx.Error)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Error("[txVerification.GetTxByTxHash] No such Tx with txHash: %s", txHash)
+		return nil, ErrNotFound
 	}
+	err = m.DB.Model(&tx).Association(txForeignKeyColumn).Find(&tx.TxDetails)
+	if err != nil {
+		logx.Error("[txVerification.GetTxByTxHash] Get Associate TxDetails Error")
+		return nil, err
+	}
+	// re-order tx details
+	sort.SliceStable(tx.TxDetails, func(i, j int) bool {
+		return tx.TxDetails[i].Order < tx.TxDetails[j].Order
+	})
+
+	return tx, nil
+}
+
+func (m *defaultTxModel) GetTxByTxId(id uint) (tx *Tx, err error) {
+	var txForeignKeyColumn = `TxDetails`
+
+	dbTx := m.DB.Table(m.table).Where("id = ?", id).Find(&tx)
+	if dbTx.Error != nil {
+		logx.Error("[txVerification.GetTxByTxId] %s", dbTx.Error)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Error("[txVerification.GetTxByTxId] No such Tx with tx id: %s", id)
+		return nil, ErrNotFound
+	}
+	err = m.DB.Model(&tx).Association(txForeignKeyColumn).Find(&tx.TxDetails)
+	if err != nil {
+		logx.Error("[txVerification.GetTxByTxId] Get Associate TxDetails Error")
+		return nil, err
+	}
+	// re-order tx details
+	sort.SliceStable(tx.TxDetails, func(i, j int) bool {
+		return tx.TxDetails[i].Order < tx.TxDetails[j].Order
+	})
 
 	return tx, nil
 }

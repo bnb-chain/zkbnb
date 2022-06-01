@@ -43,6 +43,14 @@ func NewEmptyNftTree() (tree *Tree, err error) {
 func EmptyAccountNodeHash() []byte {
 	hFunc := mimc.NewMiMC()
 	zero := big.NewInt(0).FillBytes(make([]byte, 32))
+	/*
+		AccountNameHash
+		PubKey
+		Nonce
+		CollectionNonce
+		AssetRoot
+	*/
+	hFunc.Write(zero)
 	hFunc.Write(zero)
 	hFunc.Write(zero)
 	hFunc.Write(zero)
@@ -55,6 +63,12 @@ func EmptyAccountNodeHash() []byte {
 func EmptyAccountAssetNodeHash() []byte {
 	hFunc := mimc.NewMiMC()
 	zero := big.NewInt(0).FillBytes(make([]byte, 32))
+	/*
+		balance
+		lpAmount
+		offerCanceledOrFinalized
+	*/
+	hFunc.Write(zero)
 	hFunc.Write(zero)
 	hFunc.Write(zero)
 	return hFunc.Sum(nil)
@@ -63,6 +77,21 @@ func EmptyAccountAssetNodeHash() []byte {
 func EmptyLiquidityNodeHash() []byte {
 	hFunc := mimc.NewMiMC()
 	zero := big.NewInt(0).FillBytes(make([]byte, 32))
+	/*
+		assetAId
+		assetA
+		assetBId
+		assetB
+		lpAmount
+		kLast
+		feeRate
+		treasuryAccountIndex
+		treasuryRate
+	*/
+	hFunc.Write(zero)
+	hFunc.Write(zero)
+	hFunc.Write(zero)
+	hFunc.Write(zero)
 	hFunc.Write(zero)
 	hFunc.Write(zero)
 	hFunc.Write(zero)
@@ -74,7 +103,15 @@ func EmptyLiquidityNodeHash() []byte {
 func EmptyNftNodeHash() []byte {
 	hFunc := mimc.NewMiMC()
 	zero := big.NewInt(0).FillBytes(make([]byte, 32))
-	hFunc.Write(zero)
+	/*
+		creatorAccountIndex
+		ownerAccountIndex
+		nftContentHash
+		nftL1Address
+		nftL1TokenId
+		creatorTreasuryRate
+		collectionId
+	*/
 	hFunc.Write(zero)
 	hFunc.Write(zero)
 	hFunc.Write(zero)

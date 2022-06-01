@@ -18,26 +18,19 @@
 package txVerification
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-crypto/wasm/zecrey-legend/legendTxTypes"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
+	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zeromicro/go-zero/core/logx"
 	"log"
 	"math/big"
 )
 
-/*
-	VerifyWithdrawNftTx:
-	accounts order is:
-	- FromAccount
-		- Assets:
-			- AssetGas
-	- GasAccount
-		- Assets:
-			- AssetGas
-*/
 func VerifyWithdrawNftTxInfo(
 	accountInfoMap map[int64]*AccountInfo,
 	nftInfo *NftInfo,
@@ -45,13 +38,17 @@ func VerifyWithdrawNftTxInfo(
 ) (txDetails []*MempoolTxDetail, err error) {
 	// verify params
 	if accountInfoMap[txInfo.AccountIndex] == nil ||
+		accountInfoMap[txInfo.CreatorAccountIndex] == nil ||
 		accountInfoMap[txInfo.GasAccountIndex] == nil ||
 		accountInfoMap[txInfo.AccountIndex].AssetInfo == nil ||
 		accountInfoMap[txInfo.AccountIndex].AssetInfo[txInfo.GasFeeAssetId] == nil ||
 		nftInfo == nil ||
 		nftInfo.OwnerAccountIndex != txInfo.AccountIndex ||
 		nftInfo.NftIndex != txInfo.NftIndex ||
-		nftInfo.NftContentHash != txInfo.NftContentHash {
+		nftInfo.NftContentHash != common.Bytes2Hex(txInfo.NftContentHash) {
+		infoBytes, _ := json.Marshal(nftInfo)
+		log.Println(string(infoBytes))
+		log.Println(common.Bytes2Hex(txInfo.NftContentHash))
 		logx.Errorf("[VerifySetNftPriceTxInfo] invalid params")
 		return nil, errors.New("[VerifySetNftPriceTxInfo] invalid params")
 	}
@@ -90,7 +87,11 @@ func VerifyWithdrawNftTxInfo(
 	}
 	// compute hash
 	hFunc := mimc.NewMiMC()
-	msgHash := legendTxTypes.ComputeWithdrawNftMsgHash(txInfo, hFunc)
+	msgHash, err := legendTxTypes.ComputeWithdrawNftMsgHash(txInfo, hFunc)
+	if err != nil {
+		logx.Errorf("[VerifyWithdrawNftTxInfo] unable to compute hash: %s", err.Error())
+		return nil, err
+	}
 	// verify signature
 	hFunc.Reset()
 	pk, err := ParsePkStr(accountInfoMap[txInfo.AccountIndex].PublicKey)
@@ -109,6 +110,7 @@ func VerifyWithdrawNftTxInfo(
 	// compute tx details
 	// from account asset gas
 	order := int64(0)
+	accountOrder := int64(0)
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    GeneralAssetType,
@@ -116,20 +118,36 @@ func VerifyWithdrawNftTxInfo(
 		AccountName:  accountInfoMap[txInfo.AccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
-	// from account nft delta
+	// nft delta
 	order++
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.NftIndex,
 		AssetType:    NftAssetType,
-		AccountIndex: txInfo.AccountIndex,
-		AccountName:  accountInfoMap[txInfo.AccountIndex].AccountName,
+		AccountIndex: commonConstant.NilTxAccountIndex,
+		AccountName:  commonConstant.NilAccountName,
 		BalanceDelta: newNftInfo.String(),
 		Order:        order,
+		AccountOrder: commonConstant.NilAccountOrder,
+	})
+	// creator account zero delta
+	order++
+	accountOrder++
+	txDetails = append(txDetails, &MempoolTxDetail{
+		AssetId:      txInfo.GasFeeAssetId,
+		AssetType:    GeneralAssetType,
+		AccountIndex: txInfo.CreatorAccountIndex,
+		AccountName:  accountInfoMap[txInfo.CreatorAccountIndex].AccountName,
+		BalanceDelta: commonAsset.ConstructAccountAsset(
+			txInfo.GasFeeAssetId, big.NewInt(0), big.NewInt(0), big.NewInt(0)).String(),
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	// gas account asset gas
 	order++
+	accountOrder++
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    GeneralAssetType,
@@ -137,7 +155,8 @@ func VerifyWithdrawNftTxInfo(
 		AccountName:  accountInfoMap[txInfo.GasAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	return txDetails, nil
 }

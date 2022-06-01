@@ -24,32 +24,25 @@ func NewGetLPValueLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetLPV
 		Logger:    logx.WithContext(ctx),
 		ctx:       ctx,
 		svcCtx:    svcCtx,
-		globalRPC: globalrpc.New(svcCtx.Config),
+		globalRPC: globalrpc.New(svcCtx.Config, ctx),
 	}
 }
 
 func (l *GetLPValueLogic) GetLPValue(req *types.ReqGetLPValue) (resp *types.RespGetLPValue, err error) {
-	// todo: add your logic here and delete this line
 	if utils.CheckPairIndex(req.PairIndex) {
 		logx.Error("[CheckPairIndex] param:%v", req.PairIndex)
 		return nil, errcode.ErrInvalidParam
 	}
-	if utils.CheckLPAmount(req.LpAmount) {
-		logx.Error("[CheckLPAmount] param:%v", req.LpAmount)
-		return nil, errcode.ErrInvalidParam
-	}
-
-	resRpc, err := l.globalRPC.GetLpValue(req.PairIndex, req.LpAmount)
+	lpValue, err := l.globalRPC.GetLpValue(req.PairIndex, req.LpAmount)
 	if err != nil {
 		logx.Error("[GetLpValue] err:%v", err)
 		return nil, err
 	}
-	resp.AssetAId
-	resp.AssetAName
-	resp.AssetAAmount
-	resp.AssetBid
-	resp.AssetBName
-	resp.AssetBAmount
-
+	resp = &types.RespGetLPValue{
+		AssetAId:     lpValue.AssetAId,
+		AssetAAmount: lpValue.AssetAAmount,
+		AssetBId:     lpValue.AssetBId,
+		AssetBAmount: lpValue.AssetBAmount,
+	}
 	return resp, nil
 }

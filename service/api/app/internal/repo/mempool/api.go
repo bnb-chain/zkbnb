@@ -2,6 +2,8 @@ package mempool
 
 import (
 	"context"
+	"sync"
+
 	mempoolModel "github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/config"
@@ -11,7 +13,6 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"sync"
 )
 
 type Mempool interface {

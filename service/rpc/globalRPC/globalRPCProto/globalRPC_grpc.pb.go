@@ -18,26 +18,18 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type GlobalRPCClient interface {
-	GetLatestPoolInfo(ctx context.Context, in *ReqGetLatestPoolInfo, opts ...grpc.CallOption) (*RespGetLatestPoolInfo, error)
-	GetLatestAccountAssetInfo(ctx context.Context, in *ReqGetLatestAccountAssetInfo, opts ...grpc.CallOption) (*RespGetLatestAccountAssetInfo, error)
-	GetLatestAccountInfoByAccountIndex(ctx context.Context, in *ReqGetLatestAccountInfoByAccountIndex, opts ...grpc.CallOption) (*RespGetLatestAccountInfoByAccountIndex, error)
-	GetLatestAccountLockAsset(ctx context.Context, in *ReqGetLatestAccountLockAsset, opts ...grpc.CallOption) (*RespGetLatestAccountLockAsset, error)
-	GetLatestAccountLockInfoByAccountIndex(ctx context.Context, in *ReqGetLatestAccountLockInfoByAccountIndex, opts ...grpc.CallOption) (*RespGetLatestAccountLockInfoByAccountIndex, error)
+	// Asset
 	GetLatestAccountLp(ctx context.Context, in *ReqGetLatestAccountLp, opts ...grpc.CallOption) (*RespGetLatestAccountLp, error)
+	GetLatestAssetsListByAccountIndex(ctx context.Context, in *ReqGetLatestAssetsListByAccountIndex, opts ...grpc.CallOption) (*RespGetLatestAssetsListByAccountIndex, error)
+	GetLatestAssetInfoByAccountIndexAndAssetId(ctx context.Context, in *ReqGetLatestAssetInfoByAccountIndexAndAssetId, opts ...grpc.CallOption) (*RespGetLatestAssetInfoByAccountIndexAndAssetId, error)
+	// Liquidity
+	GetLatestPairInfo(ctx context.Context, in *ReqGetLatestPairInfo, opts ...grpc.CallOption) (*RespGetLatestPairInfo, error)
+	GetSwapAmount(ctx context.Context, in *ReqGetSwapAmount, opts ...grpc.CallOption) (*RespGetSwapAmount, error)
+	GetLpValue(ctx context.Context, in *ReqGetLpValue, opts ...grpc.CallOption) (*RespGetLpValue, error)
+	// Transaction
 	GetLatestTxsListByAccountIndex(ctx context.Context, in *ReqGetLatestTxsListByAccountIndex, opts ...grpc.CallOption) (*RespGetLatestTxsListByAccountIndex, error)
 	GetLatestTxsListByAccountIndexAndTxType(ctx context.Context, in *ReqGetLatestTxsListByAccountIndexAndTxType, opts ...grpc.CallOption) (*RespGetLatestTxsListByAccountIndexAndTxType, error)
 	SendTx(ctx context.Context, in *ReqSendTx, opts ...grpc.CallOption) (*RespSendTx, error)
-	// pair
-	//rpc getAvailablePairsList(ReqGetAvailablePairsList) returns (RespGetAvailablePairsList);
-	GetLpValue(ctx context.Context, in *ReqGetLpValue, opts ...grpc.CallOption) (*RespGetLpValue, error)
-	GetPairRatio(ctx context.Context, in *ReqGetPairRatio, opts ...grpc.CallOption) (*RespGetPairRatio, error)
-	GetSwapAmount(ctx context.Context, in *ReqGetSwapAmount, opts ...grpc.CallOption) (*RespGetSwapAmount, error)
-	// globalmap
-	ResetGlobalMap(ctx context.Context, in *ReqResetGlobalMap, opts ...grpc.CallOption) (*RespResetGlobalMap, error)
-	// l1Amount
-	GetLatestL1Amount(ctx context.Context, in *ReqGetLatestL1Amount, opts ...grpc.CallOption) (*RespGetLatestL1Amount, error)
-	GetLatestL1AmountList(ctx context.Context, in *ReqGetLatestL1AmountList, opts ...grpc.CallOption) (*RespGetLatestL1AmountList, error)
-	GetLatestL1AmountListByAssetId(ctx context.Context, in *ReqGetLatestL1AmountListByAssetId, opts ...grpc.CallOption) (*RespGetLatestL1AmountListByAssetId, error)
 }
 
 type globalRPCClient struct {
@@ -48,54 +40,54 @@ func NewGlobalRPCClient(cc grpc.ClientConnInterface) GlobalRPCClient {
 	return &globalRPCClient{cc}
 }
 
-func (c *globalRPCClient) GetLatestPoolInfo(ctx context.Context, in *ReqGetLatestPoolInfo, opts ...grpc.CallOption) (*RespGetLatestPoolInfo, error) {
-	out := new(RespGetLatestPoolInfo)
-	err := c.cc.Invoke(ctx, "/globalRPCProto.globalRPC/getLatestPoolInfo", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *globalRPCClient) GetLatestAccountAssetInfo(ctx context.Context, in *ReqGetLatestAccountAssetInfo, opts ...grpc.CallOption) (*RespGetLatestAccountAssetInfo, error) {
-	out := new(RespGetLatestAccountAssetInfo)
-	err := c.cc.Invoke(ctx, "/globalRPCProto.globalRPC/getLatestAccountAssetInfo", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *globalRPCClient) GetLatestAccountInfoByAccountIndex(ctx context.Context, in *ReqGetLatestAccountInfoByAccountIndex, opts ...grpc.CallOption) (*RespGetLatestAccountInfoByAccountIndex, error) {
-	out := new(RespGetLatestAccountInfoByAccountIndex)
-	err := c.cc.Invoke(ctx, "/globalRPCProto.globalRPC/getLatestAccountInfoByAccountIndex", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *globalRPCClient) GetLatestAccountLockAsset(ctx context.Context, in *ReqGetLatestAccountLockAsset, opts ...grpc.CallOption) (*RespGetLatestAccountLockAsset, error) {
-	out := new(RespGetLatestAccountLockAsset)
-	err := c.cc.Invoke(ctx, "/globalRPCProto.globalRPC/getLatestAccountLockAsset", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *globalRPCClient) GetLatestAccountLockInfoByAccountIndex(ctx context.Context, in *ReqGetLatestAccountLockInfoByAccountIndex, opts ...grpc.CallOption) (*RespGetLatestAccountLockInfoByAccountIndex, error) {
-	out := new(RespGetLatestAccountLockInfoByAccountIndex)
-	err := c.cc.Invoke(ctx, "/globalRPCProto.globalRPC/getLatestAccountLockInfoByAccountIndex", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *globalRPCClient) GetLatestAccountLp(ctx context.Context, in *ReqGetLatestAccountLp, opts ...grpc.CallOption) (*RespGetLatestAccountLp, error) {
 	out := new(RespGetLatestAccountLp)
 	err := c.cc.Invoke(ctx, "/globalRPCProto.globalRPC/getLatestAccountLp", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *globalRPCClient) GetLatestAssetsListByAccountIndex(ctx context.Context, in *ReqGetLatestAssetsListByAccountIndex, opts ...grpc.CallOption) (*RespGetLatestAssetsListByAccountIndex, error) {
+	out := new(RespGetLatestAssetsListByAccountIndex)
+	err := c.cc.Invoke(ctx, "/globalRPCProto.globalRPC/getLatestAssetsListByAccountIndex", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *globalRPCClient) GetLatestAssetInfoByAccountIndexAndAssetId(ctx context.Context, in *ReqGetLatestAssetInfoByAccountIndexAndAssetId, opts ...grpc.CallOption) (*RespGetLatestAssetInfoByAccountIndexAndAssetId, error) {
+	out := new(RespGetLatestAssetInfoByAccountIndexAndAssetId)
+	err := c.cc.Invoke(ctx, "/globalRPCProto.globalRPC/getLatestAssetInfoByAccountIndexAndAssetId", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *globalRPCClient) GetLatestPairInfo(ctx context.Context, in *ReqGetLatestPairInfo, opts ...grpc.CallOption) (*RespGetLatestPairInfo, error) {
+	out := new(RespGetLatestPairInfo)
+	err := c.cc.Invoke(ctx, "/globalRPCProto.globalRPC/getLatestPairInfo", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *globalRPCClient) GetSwapAmount(ctx context.Context, in *ReqGetSwapAmount, opts ...grpc.CallOption) (*RespGetSwapAmount, error) {
+	out := new(RespGetSwapAmount)
+	err := c.cc.Invoke(ctx, "/globalRPCProto.globalRPC/getSwapAmount", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *globalRPCClient) GetLpValue(ctx context.Context, in *ReqGetLpValue, opts ...grpc.CallOption) (*RespGetLpValue, error) {
+	out := new(RespGetLpValue)
+	err := c.cc.Invoke(ctx, "/globalRPCProto.globalRPC/getLpValue", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -129,93 +121,22 @@ func (c *globalRPCClient) SendTx(ctx context.Context, in *ReqSendTx, opts ...grp
 	return out, nil
 }
 
-func (c *globalRPCClient) GetLpValue(ctx context.Context, in *ReqGetLpValue, opts ...grpc.CallOption) (*RespGetLpValue, error) {
-	out := new(RespGetLpValue)
-	err := c.cc.Invoke(ctx, "/globalRPCProto.globalRPC/getLpValue", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *globalRPCClient) GetPairRatio(ctx context.Context, in *ReqGetPairRatio, opts ...grpc.CallOption) (*RespGetPairRatio, error) {
-	out := new(RespGetPairRatio)
-	err := c.cc.Invoke(ctx, "/globalRPCProto.globalRPC/getPairRatio", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *globalRPCClient) GetSwapAmount(ctx context.Context, in *ReqGetSwapAmount, opts ...grpc.CallOption) (*RespGetSwapAmount, error) {
-	out := new(RespGetSwapAmount)
-	err := c.cc.Invoke(ctx, "/globalRPCProto.globalRPC/getSwapAmount", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *globalRPCClient) ResetGlobalMap(ctx context.Context, in *ReqResetGlobalMap, opts ...grpc.CallOption) (*RespResetGlobalMap, error) {
-	out := new(RespResetGlobalMap)
-	err := c.cc.Invoke(ctx, "/globalRPCProto.globalRPC/resetGlobalMap", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *globalRPCClient) GetLatestL1Amount(ctx context.Context, in *ReqGetLatestL1Amount, opts ...grpc.CallOption) (*RespGetLatestL1Amount, error) {
-	out := new(RespGetLatestL1Amount)
-	err := c.cc.Invoke(ctx, "/globalRPCProto.globalRPC/getLatestL1Amount", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *globalRPCClient) GetLatestL1AmountList(ctx context.Context, in *ReqGetLatestL1AmountList, opts ...grpc.CallOption) (*RespGetLatestL1AmountList, error) {
-	out := new(RespGetLatestL1AmountList)
-	err := c.cc.Invoke(ctx, "/globalRPCProto.globalRPC/getLatestL1AmountList", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *globalRPCClient) GetLatestL1AmountListByAssetId(ctx context.Context, in *ReqGetLatestL1AmountListByAssetId, opts ...grpc.CallOption) (*RespGetLatestL1AmountListByAssetId, error) {
-	out := new(RespGetLatestL1AmountListByAssetId)
-	err := c.cc.Invoke(ctx, "/globalRPCProto.globalRPC/getLatestL1AmountListByAssetId", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // GlobalRPCServer is the server API for GlobalRPC service.
 // All implementations must embed UnimplementedGlobalRPCServer
 // for forward compatibility
 type GlobalRPCServer interface {
-	GetLatestPoolInfo(context.Context, *ReqGetLatestPoolInfo) (*RespGetLatestPoolInfo, error)
-	GetLatestAccountAssetInfo(context.Context, *ReqGetLatestAccountAssetInfo) (*RespGetLatestAccountAssetInfo, error)
-	GetLatestAccountInfoByAccountIndex(context.Context, *ReqGetLatestAccountInfoByAccountIndex) (*RespGetLatestAccountInfoByAccountIndex, error)
-	GetLatestAccountLockAsset(context.Context, *ReqGetLatestAccountLockAsset) (*RespGetLatestAccountLockAsset, error)
-	GetLatestAccountLockInfoByAccountIndex(context.Context, *ReqGetLatestAccountLockInfoByAccountIndex) (*RespGetLatestAccountLockInfoByAccountIndex, error)
+	// Asset
 	GetLatestAccountLp(context.Context, *ReqGetLatestAccountLp) (*RespGetLatestAccountLp, error)
+	GetLatestAssetsListByAccountIndex(context.Context, *ReqGetLatestAssetsListByAccountIndex) (*RespGetLatestAssetsListByAccountIndex, error)
+	GetLatestAssetInfoByAccountIndexAndAssetId(context.Context, *ReqGetLatestAssetInfoByAccountIndexAndAssetId) (*RespGetLatestAssetInfoByAccountIndexAndAssetId, error)
+	// Liquidity
+	GetLatestPairInfo(context.Context, *ReqGetLatestPairInfo) (*RespGetLatestPairInfo, error)
+	GetSwapAmount(context.Context, *ReqGetSwapAmount) (*RespGetSwapAmount, error)
+	GetLpValue(context.Context, *ReqGetLpValue) (*RespGetLpValue, error)
+	// Transaction
 	GetLatestTxsListByAccountIndex(context.Context, *ReqGetLatestTxsListByAccountIndex) (*RespGetLatestTxsListByAccountIndex, error)
 	GetLatestTxsListByAccountIndexAndTxType(context.Context, *ReqGetLatestTxsListByAccountIndexAndTxType) (*RespGetLatestTxsListByAccountIndexAndTxType, error)
 	SendTx(context.Context, *ReqSendTx) (*RespSendTx, error)
-	// pair
-	//rpc getAvailablePairsList(ReqGetAvailablePairsList) returns (RespGetAvailablePairsList);
-	GetLpValue(context.Context, *ReqGetLpValue) (*RespGetLpValue, error)
-	GetPairRatio(context.Context, *ReqGetPairRatio) (*RespGetPairRatio, error)
-	GetSwapAmount(context.Context, *ReqGetSwapAmount) (*RespGetSwapAmount, error)
-	// globalmap
-	ResetGlobalMap(context.Context, *ReqResetGlobalMap) (*RespResetGlobalMap, error)
-	// l1Amount
-	GetLatestL1Amount(context.Context, *ReqGetLatestL1Amount) (*RespGetLatestL1Amount, error)
-	GetLatestL1AmountList(context.Context, *ReqGetLatestL1AmountList) (*RespGetLatestL1AmountList, error)
-	GetLatestL1AmountListByAssetId(context.Context, *ReqGetLatestL1AmountListByAssetId) (*RespGetLatestL1AmountListByAssetId, error)
 	mustEmbedUnimplementedGlobalRPCServer()
 }
 
@@ -223,23 +144,23 @@ type GlobalRPCServer interface {
 type UnimplementedGlobalRPCServer struct {
 }
 
-func (UnimplementedGlobalRPCServer) GetLatestPoolInfo(context.Context, *ReqGetLatestPoolInfo) (*RespGetLatestPoolInfo, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetLatestPoolInfo not implemented")
-}
-func (UnimplementedGlobalRPCServer) GetLatestAccountAssetInfo(context.Context, *ReqGetLatestAccountAssetInfo) (*RespGetLatestAccountAssetInfo, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetLatestAccountAssetInfo not implemented")
-}
-func (UnimplementedGlobalRPCServer) GetLatestAccountInfoByAccountIndex(context.Context, *ReqGetLatestAccountInfoByAccountIndex) (*RespGetLatestAccountInfoByAccountIndex, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetLatestAccountInfoByAccountIndex not implemented")
-}
-func (UnimplementedGlobalRPCServer) GetLatestAccountLockAsset(context.Context, *ReqGetLatestAccountLockAsset) (*RespGetLatestAccountLockAsset, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetLatestAccountLockAsset not implemented")
-}
-func (UnimplementedGlobalRPCServer) GetLatestAccountLockInfoByAccountIndex(context.Context, *ReqGetLatestAccountLockInfoByAccountIndex) (*RespGetLatestAccountLockInfoByAccountIndex, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetLatestAccountLockInfoByAccountIndex not implemented")
-}
 func (UnimplementedGlobalRPCServer) GetLatestAccountLp(context.Context, *ReqGetLatestAccountLp) (*RespGetLatestAccountLp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLatestAccountLp not implemented")
+}
+func (UnimplementedGlobalRPCServer) GetLatestAssetsListByAccountIndex(context.Context, *ReqGetLatestAssetsListByAccountIndex) (*RespGetLatestAssetsListByAccountIndex, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLatestAssetsListByAccountIndex not implemented")
+}
+func (UnimplementedGlobalRPCServer) GetLatestAssetInfoByAccountIndexAndAssetId(context.Context, *ReqGetLatestAssetInfoByAccountIndexAndAssetId) (*RespGetLatestAssetInfoByAccountIndexAndAssetId, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLatestAssetInfoByAccountIndexAndAssetId not implemented")
+}
+func (UnimplementedGlobalRPCServer) GetLatestPairInfo(context.Context, *ReqGetLatestPairInfo) (*RespGetLatestPairInfo, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLatestPairInfo not implemented")
+}
+func (UnimplementedGlobalRPCServer) GetSwapAmount(context.Context, *ReqGetSwapAmount) (*RespGetSwapAmount, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSwapAmount not implemented")
+}
+func (UnimplementedGlobalRPCServer) GetLpValue(context.Context, *ReqGetLpValue) (*RespGetLpValue, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLpValue not implemented")
 }
 func (UnimplementedGlobalRPCServer) GetLatestTxsListByAccountIndex(context.Context, *ReqGetLatestTxsListByAccountIndex) (*RespGetLatestTxsListByAccountIndex, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLatestTxsListByAccountIndex not implemented")
@@ -249,27 +170,6 @@ func (UnimplementedGlobalRPCServer) GetLatestTxsListByAccountIndexAndTxType(cont
 }
 func (UnimplementedGlobalRPCServer) SendTx(context.Context, *ReqSendTx) (*RespSendTx, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendTx not implemented")
-}
-func (UnimplementedGlobalRPCServer) GetLpValue(context.Context, *ReqGetLpValue) (*RespGetLpValue, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetLpValue not implemented")
-}
-func (UnimplementedGlobalRPCServer) GetPairRatio(context.Context, *ReqGetPairRatio) (*RespGetPairRatio, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetPairRatio not implemented")
-}
-func (UnimplementedGlobalRPCServer) GetSwapAmount(context.Context, *ReqGetSwapAmount) (*RespGetSwapAmount, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetSwapAmount not implemented")
-}
-func (UnimplementedGlobalRPCServer) ResetGlobalMap(context.Context, *ReqResetGlobalMap) (*RespResetGlobalMap, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ResetGlobalMap not implemented")
-}
-func (UnimplementedGlobalRPCServer) GetLatestL1Amount(context.Context, *ReqGetLatestL1Amount) (*RespGetLatestL1Amount, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetLatestL1Amount not implemented")
-}
-func (UnimplementedGlobalRPCServer) GetLatestL1AmountList(context.Context, *ReqGetLatestL1AmountList) (*RespGetLatestL1AmountList, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetLatestL1AmountList not implemented")
-}
-func (UnimplementedGlobalRPCServer) GetLatestL1AmountListByAssetId(context.Context, *ReqGetLatestL1AmountListByAssetId) (*RespGetLatestL1AmountListByAssetId, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetLatestL1AmountListByAssetId not implemented")
 }
 func (UnimplementedGlobalRPCServer) mustEmbedUnimplementedGlobalRPCServer() {}
 
@@ -282,96 +182,6 @@ type UnsafeGlobalRPCServer interface {
 
 func RegisterGlobalRPCServer(s grpc.ServiceRegistrar, srv GlobalRPCServer) {
 	s.RegisterService(&GlobalRPC_ServiceDesc, srv)
-}
-
-func _GlobalRPC_GetLatestPoolInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReqGetLatestPoolInfo)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GlobalRPCServer).GetLatestPoolInfo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/globalRPCProto.globalRPC/getLatestPoolInfo",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GlobalRPCServer).GetLatestPoolInfo(ctx, req.(*ReqGetLatestPoolInfo))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _GlobalRPC_GetLatestAccountAssetInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReqGetLatestAccountAssetInfo)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GlobalRPCServer).GetLatestAccountAssetInfo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/globalRPCProto.globalRPC/getLatestAccountAssetInfo",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GlobalRPCServer).GetLatestAccountAssetInfo(ctx, req.(*ReqGetLatestAccountAssetInfo))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _GlobalRPC_GetLatestAccountInfoByAccountIndex_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReqGetLatestAccountInfoByAccountIndex)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GlobalRPCServer).GetLatestAccountInfoByAccountIndex(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/globalRPCProto.globalRPC/getLatestAccountInfoByAccountIndex",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GlobalRPCServer).GetLatestAccountInfoByAccountIndex(ctx, req.(*ReqGetLatestAccountInfoByAccountIndex))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _GlobalRPC_GetLatestAccountLockAsset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReqGetLatestAccountLockAsset)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GlobalRPCServer).GetLatestAccountLockAsset(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/globalRPCProto.globalRPC/getLatestAccountLockAsset",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GlobalRPCServer).GetLatestAccountLockAsset(ctx, req.(*ReqGetLatestAccountLockAsset))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _GlobalRPC_GetLatestAccountLockInfoByAccountIndex_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReqGetLatestAccountLockInfoByAccountIndex)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GlobalRPCServer).GetLatestAccountLockInfoByAccountIndex(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/globalRPCProto.globalRPC/getLatestAccountLockInfoByAccountIndex",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GlobalRPCServer).GetLatestAccountLockInfoByAccountIndex(ctx, req.(*ReqGetLatestAccountLockInfoByAccountIndex))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _GlobalRPC_GetLatestAccountLp_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -388,6 +198,96 @@ func _GlobalRPC_GetLatestAccountLp_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(GlobalRPCServer).GetLatestAccountLp(ctx, req.(*ReqGetLatestAccountLp))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GlobalRPC_GetLatestAssetsListByAccountIndex_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReqGetLatestAssetsListByAccountIndex)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GlobalRPCServer).GetLatestAssetsListByAccountIndex(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/globalRPCProto.globalRPC/getLatestAssetsListByAccountIndex",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GlobalRPCServer).GetLatestAssetsListByAccountIndex(ctx, req.(*ReqGetLatestAssetsListByAccountIndex))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GlobalRPC_GetLatestAssetInfoByAccountIndexAndAssetId_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReqGetLatestAssetInfoByAccountIndexAndAssetId)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GlobalRPCServer).GetLatestAssetInfoByAccountIndexAndAssetId(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/globalRPCProto.globalRPC/getLatestAssetInfoByAccountIndexAndAssetId",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GlobalRPCServer).GetLatestAssetInfoByAccountIndexAndAssetId(ctx, req.(*ReqGetLatestAssetInfoByAccountIndexAndAssetId))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GlobalRPC_GetLatestPairInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReqGetLatestPairInfo)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GlobalRPCServer).GetLatestPairInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/globalRPCProto.globalRPC/getLatestPairInfo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GlobalRPCServer).GetLatestPairInfo(ctx, req.(*ReqGetLatestPairInfo))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GlobalRPC_GetSwapAmount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReqGetSwapAmount)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GlobalRPCServer).GetSwapAmount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/globalRPCProto.globalRPC/getSwapAmount",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GlobalRPCServer).GetSwapAmount(ctx, req.(*ReqGetSwapAmount))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GlobalRPC_GetLpValue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReqGetLpValue)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GlobalRPCServer).GetLpValue(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/globalRPCProto.globalRPC/getLpValue",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GlobalRPCServer).GetLpValue(ctx, req.(*ReqGetLpValue))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -446,132 +346,6 @@ func _GlobalRPC_SendTx_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GlobalRPC_GetLpValue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReqGetLpValue)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GlobalRPCServer).GetLpValue(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/globalRPCProto.globalRPC/getLpValue",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GlobalRPCServer).GetLpValue(ctx, req.(*ReqGetLpValue))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _GlobalRPC_GetPairRatio_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReqGetPairRatio)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GlobalRPCServer).GetPairRatio(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/globalRPCProto.globalRPC/getPairRatio",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GlobalRPCServer).GetPairRatio(ctx, req.(*ReqGetPairRatio))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _GlobalRPC_GetSwapAmount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReqGetSwapAmount)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GlobalRPCServer).GetSwapAmount(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/globalRPCProto.globalRPC/getSwapAmount",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GlobalRPCServer).GetSwapAmount(ctx, req.(*ReqGetSwapAmount))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _GlobalRPC_ResetGlobalMap_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReqResetGlobalMap)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GlobalRPCServer).ResetGlobalMap(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/globalRPCProto.globalRPC/resetGlobalMap",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GlobalRPCServer).ResetGlobalMap(ctx, req.(*ReqResetGlobalMap))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _GlobalRPC_GetLatestL1Amount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReqGetLatestL1Amount)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GlobalRPCServer).GetLatestL1Amount(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/globalRPCProto.globalRPC/getLatestL1Amount",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GlobalRPCServer).GetLatestL1Amount(ctx, req.(*ReqGetLatestL1Amount))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _GlobalRPC_GetLatestL1AmountList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReqGetLatestL1AmountList)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GlobalRPCServer).GetLatestL1AmountList(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/globalRPCProto.globalRPC/getLatestL1AmountList",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GlobalRPCServer).GetLatestL1AmountList(ctx, req.(*ReqGetLatestL1AmountList))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _GlobalRPC_GetLatestL1AmountListByAssetId_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReqGetLatestL1AmountListByAssetId)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GlobalRPCServer).GetLatestL1AmountListByAssetId(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/globalRPCProto.globalRPC/getLatestL1AmountListByAssetId",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GlobalRPCServer).GetLatestL1AmountListByAssetId(ctx, req.(*ReqGetLatestL1AmountListByAssetId))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // GlobalRPC_ServiceDesc is the grpc.ServiceDesc for GlobalRPC service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -580,28 +354,28 @@ var GlobalRPC_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*GlobalRPCServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "getLatestPoolInfo",
-			Handler:    _GlobalRPC_GetLatestPoolInfo_Handler,
-		},
-		{
-			MethodName: "getLatestAccountAssetInfo",
-			Handler:    _GlobalRPC_GetLatestAccountAssetInfo_Handler,
-		},
-		{
-			MethodName: "getLatestAccountInfoByAccountIndex",
-			Handler:    _GlobalRPC_GetLatestAccountInfoByAccountIndex_Handler,
-		},
-		{
-			MethodName: "getLatestAccountLockAsset",
-			Handler:    _GlobalRPC_GetLatestAccountLockAsset_Handler,
-		},
-		{
-			MethodName: "getLatestAccountLockInfoByAccountIndex",
-			Handler:    _GlobalRPC_GetLatestAccountLockInfoByAccountIndex_Handler,
-		},
-		{
 			MethodName: "getLatestAccountLp",
 			Handler:    _GlobalRPC_GetLatestAccountLp_Handler,
+		},
+		{
+			MethodName: "getLatestAssetsListByAccountIndex",
+			Handler:    _GlobalRPC_GetLatestAssetsListByAccountIndex_Handler,
+		},
+		{
+			MethodName: "getLatestAssetInfoByAccountIndexAndAssetId",
+			Handler:    _GlobalRPC_GetLatestAssetInfoByAccountIndexAndAssetId_Handler,
+		},
+		{
+			MethodName: "getLatestPairInfo",
+			Handler:    _GlobalRPC_GetLatestPairInfo_Handler,
+		},
+		{
+			MethodName: "getSwapAmount",
+			Handler:    _GlobalRPC_GetSwapAmount_Handler,
+		},
+		{
+			MethodName: "getLpValue",
+			Handler:    _GlobalRPC_GetLpValue_Handler,
 		},
 		{
 			MethodName: "getLatestTxsListByAccountIndex",
@@ -614,34 +388,6 @@ var GlobalRPC_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "sendTx",
 			Handler:    _GlobalRPC_SendTx_Handler,
-		},
-		{
-			MethodName: "getLpValue",
-			Handler:    _GlobalRPC_GetLpValue_Handler,
-		},
-		{
-			MethodName: "getPairRatio",
-			Handler:    _GlobalRPC_GetPairRatio_Handler,
-		},
-		{
-			MethodName: "getSwapAmount",
-			Handler:    _GlobalRPC_GetSwapAmount_Handler,
-		},
-		{
-			MethodName: "resetGlobalMap",
-			Handler:    _GlobalRPC_ResetGlobalMap_Handler,
-		},
-		{
-			MethodName: "getLatestL1Amount",
-			Handler:    _GlobalRPC_GetLatestL1Amount_Handler,
-		},
-		{
-			MethodName: "getLatestL1AmountList",
-			Handler:    _GlobalRPC_GetLatestL1AmountList_Handler,
-		},
-		{
-			MethodName: "getLatestL1AmountListByAssetId",
-			Handler:    _GlobalRPC_GetLatestL1AmountListByAssetId_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

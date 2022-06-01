@@ -35,12 +35,12 @@ func InitLiquidityTree(
 	liquidityAssets, err := liquidityHistoryModel.GetLatestLiquidityByBlockHeight(blockHeight)
 	if err != nil {
 		if err != liquidity.ErrNotFound {
-			logx.Errorf("[InitNftTree] unable to get latest nft assets: %s", err.Error())
+			logx.Errorf("[InitLiquidityTree] unable to get latest nft assets: %s", err.Error())
 			return nil, err
 		} else {
 			liquidityTree, err = NewEmptyLiquidityTree()
 			if err != nil {
-				log.Println("[InitNftTree] unable to create empty tree:", err)
+				log.Println("[InitLiquidityTree] unable to create empty tree:", err)
 				return nil, err
 			}
 			return liquidityTree, nil
@@ -50,7 +50,7 @@ func InitLiquidityTree(
 	if len(liquidityAssets) == 0 {
 		liquidityTree, err = NewEmptyLiquidityTree()
 		if err != nil {
-			log.Println("[InitNftTree] unable to create empty tree:", err)
+			log.Println("[InitLiquidityTree] unable to create empty tree:", err)
 			return nil, err
 		}
 		return liquidityTree, nil
@@ -65,14 +65,14 @@ func InitLiquidityTree(
 			liquidityAsset.LpAmount, liquidityAsset.KLast,
 			liquidityAsset.FeeRate, liquidityAsset.TreasuryAccountIndex, liquidityAsset.TreasuryRate)
 		if err != nil {
-			logx.Errorf("[InitNftTree] unable to convert nft asset to node: %s", err.Error())
+			logx.Errorf("[InitLiquidityTree] unable to convert liquidity asset to node: %s", err.Error())
 			return nil, err
 		}
 		liquidityAssetsMap[pairIndex] = node
 	}
 	liquidityTree, err = merkleTree.NewTreeByMap(liquidityAssetsMap, LiquidityTreeHeight, NilLiquidityNodeHash, zmimc.Hmimc)
 	if err != nil {
-		logx.Errorf("[InitNftTree] unable to create new tree by map")
+		logx.Errorf("[InitLiquidityTree] unable to create new tree by map")
 		return nil, err
 	}
 	return liquidityTree, nil

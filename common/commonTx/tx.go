@@ -43,7 +43,7 @@ type RegisterZnsTxInfo struct {
 	TxType          uint8
 	AccountIndex    int64
 	AccountName     string
-	AccountNameHash string
+	AccountNameHash []byte
 	PubKey          string
 }
 
@@ -94,9 +94,9 @@ func ParseUpdatePairRateTxInfo(txInfoStr string) (txInfo *UpdatePairRateTxInfo, 
 
 type DepositTxInfo struct {
 	TxType          uint8
-	AccountIndex    uint32
-	AccountNameHash string
-	AssetId         uint16
+	AccountIndex    int64
+	AccountNameHash []byte
+	AssetId         int64
 	AssetAmount     *big.Int
 }
 
@@ -111,13 +111,15 @@ func ParseDepositTxInfo(txInfoStr string) (txInfo *DepositTxInfo, err error) {
 
 type DepositNftTxInfo struct {
 	TxType              uint8
-	AccountIndex        uint32
-	AccountNameHash     string
-	NftIndex            uint64
-	NftContentHash      []byte
+	AccountIndex        int64
+	NftIndex            int64
 	NftL1Address        string
-	NftL1TokenId        *big.Int
+	CreatorAccountIndex int64
 	CreatorTreasuryRate int64
+	NftContentHash      []byte
+	NftL1TokenId        *big.Int
+	AccountNameHash     []byte
+	CollectionId        int64
 }
 
 func ParseDepositNftTxInfo(txInfoStr string) (txInfo *DepositNftTxInfo, err error) {
@@ -131,9 +133,9 @@ func ParseDepositNftTxInfo(txInfoStr string) (txInfo *DepositNftTxInfo, err erro
 
 type FullExitTxInfo struct {
 	TxType          uint8
-	AccountIndex    uint32
-	AccountNameHash string
-	AssetId         uint16
+	AccountIndex    int64
+	AccountNameHash []byte
+	AssetId         int64
 	AssetAmount     *big.Int
 }
 
@@ -147,20 +149,32 @@ func ParseFullExitTxInfo(txInfoStr string) (txInfo *FullExitTxInfo, err error) {
 }
 
 type FullExitNftTxInfo struct {
-	TxType          uint8
-	AccountIndex    uint32
-	AccountNameHash string
-	NftIndex        int64
-	NftContentHash  []byte
-	NftL1Address    string
-	NftL1TokenId    *big.Int
-	ToAddress       string
+	TxType                 uint8
+	AccountIndex           int64
+	CreatorAccountIndex    int64
+	CreatorTreasuryRate    int64
+	NftIndex               int64
+	CollectionId           int64
+	NftL1Address           string
+	AccountNameHash        []byte
+	CreatorAccountNameHash []byte
+	NftContentHash         []byte
+	NftL1TokenId           *big.Int
 }
 
 func ParseFullExitNftTxInfo(txInfoStr string) (txInfo *FullExitNftTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
 		logx.Errorf("[ParseFullExitNftTxInfo] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	return txInfo, nil
+}
+
+func ParseCreateCollectionTxInfo(txInfoStr string) (txInfo *CreateCollectionTxInfo, err error) {
+	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
+	if err != nil {
+		logx.Errorf("[ParseCreateCollectionTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil
@@ -197,7 +211,7 @@ func ParseAddLiquidityTxInfo(txInfoStr string) (txInfo *AddLiquidityTxInfo, err 
 func ParseRemoveLiquidityTxInfo(txInfoStr string) (txInfo *RemoveLiquidityTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
-		logx.Errorf("[ParseAddLiquidityTxInfo] unable to parse tx info: %s", err.Error())
+		logx.Errorf("[ParseRemoveLiquidityTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil
@@ -206,7 +220,7 @@ func ParseRemoveLiquidityTxInfo(txInfoStr string) (txInfo *RemoveLiquidityTxInfo
 func ParseMintNftTxInfo(txInfoStr string) (txInfo *MintNftTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
-		logx.Errorf("[ParseAddLiquidityTxInfo] unable to parse tx info: %s", err.Error())
+		logx.Errorf("[ParseMintNftTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil
@@ -221,19 +235,28 @@ func ParseTransferNftTxInfo(txInfoStr string) (txInfo *TransferNftTxInfo, err er
 	return txInfo, nil
 }
 
-func ParseSetNftPriceTxInfo(txInfoStr string) (txInfo *AtomicMatchTxInfo, err error) {
+func ParseOfferTxInfo(txInfoStr string) (txInfo *OfferTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
-		logx.Errorf("[ParseSetNftPriceTxInfo] unable to parse tx info: %s", err.Error())
+		logx.Errorf("[ParseOfferTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil
 }
 
-func ParseBuyNftTxInfo(txInfoStr string) (txInfo *CancelOfferTxInfo, err error) {
+func ParseAtomicMatchTxInfo(txInfoStr string) (txInfo *AtomicMatchTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
-		logx.Errorf("[ParseBuyNftTxInfo] unable to parse tx info: %s", err.Error())
+		logx.Errorf("[ParseAtomicMatchTxInfo] unable to parse tx info: %s", err.Error())
+		return nil, err
+	}
+	return txInfo, nil
+}
+
+func ParseCancelOfferTxInfo(txInfoStr string) (txInfo *CancelOfferTxInfo, err error) {
+	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
+	if err != nil {
+		logx.Errorf("[ParseCancelOfferTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil
@@ -251,7 +274,7 @@ func ParseWithdrawTxInfo(txInfoStr string) (txInfo *WithdrawTxInfo, err error) {
 func ParseWithdrawNftTxInfo(txInfoStr string) (txInfo *WithdrawNftTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
-		logx.Errorf("[ParseWithdrawTxInfo] unable to parse tx info: %s", err.Error())
+		logx.Errorf("[ParseWithdrawNftTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil

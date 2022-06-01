@@ -1,0 +1,89 @@
+/*
+ * Copyright © 2021 Zecrey Protocol
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+package proverUtil
+
+import (
+	"errors"
+	"github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/std"
+	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
+	"github.com/zeromicro/go-zero/core/logx"
+)
+
+func ConstructFullExitCryptoTx(
+	oTx *Tx,
+	accountTree *Tree,
+	accountAssetsTree *[]*Tree,
+	liquidityTree *Tree,
+	nftTree *Tree,
+	accountModel AccountModel,
+) (cryptoTx *CryptoTx, err error) {
+	if oTx.TxType != commonTx.TxTypeFullExit {
+		logx.Errorf("[ConstructFullExitCryptoTx] invalid tx type")
+		return nil, errors.New("[ConstructFullExitCryptoTx] invalid tx type")
+	}
+	if oTx == nil || accountTree == nil || accountAssetsTree == nil || liquidityTree == nil || nftTree == nil {
+		logx.Errorf("[ConstructFullExitCryptoTx] invalid params")
+		return nil, errors.New("[ConstructFullExitCryptoTx] invalid params")
+	}
+	txInfo, err := commonTx.ParseFullExitTxInfo(oTx.TxInfo)
+	if err != nil {
+		logx.Errorf("[ConstructFullExitCryptoTx] unable to parse register zns tx info:%s", err.Error())
+		return nil, err
+	}
+	cryptoTxInfo, err := ToCryptoFullExitTx(txInfo)
+	if err != nil {
+		logx.Errorf("[ConstructFullExitCryptoTx] unable to convert to crypto register zns tx: %s", err.Error())
+		return nil, err
+	}
+	accountKeys, proverAccounts, proverLiquidityInfo, proverNftInfo, err := ConstructProverInfo(oTx, accountModel)
+	if err != nil {
+		logx.Errorf("[ConstructFullExitCryptoTx] unable to construct prover info: %s", err.Error())
+		return nil, err
+	}
+	cryptoTx, err = ConstructWitnessInfo(
+		oTx,
+		accountModel,
+		accountTree,
+		accountAssetsTree,
+		liquidityTree,
+		nftTree,
+		accountKeys,
+		proverAccounts,
+		proverLiquidityInfo,
+		proverNftInfo,
+	)
+	if err != nil {
+		logx.Errorf("[ConstructFullExitCryptoTx] unable to construct witness info: %s", err.Error())
+		return nil, err
+	}
+	cryptoTx.TxType = uint8(oTx.TxType)
+	cryptoTx.FullExitTxInfo = cryptoTxInfo
+	cryptoTx.Nonce = oTx.Nonce
+	cryptoTx.Signature = std.EmptySignature()
+	return cryptoTx, nil
+}
+
+func ToCryptoFullExitTx(txInfo *commonTx.FullExitTxInfo) (info *CryptoFullExitTx, err error) {
+	info = &CryptoFullExitTx{
+		AccountIndex:    txInfo.AccountIndex,
+		AssetId:         txInfo.AssetId,
+		AssetAmount:     txInfo.AssetAmount,
+		AccountNameHash: txInfo.AccountNameHash,
+	}
+	return info, nil
+}

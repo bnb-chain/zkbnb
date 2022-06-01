@@ -48,9 +48,19 @@ func VerifyOfferTxInfo(
 			return errors.New("[VerifyMintNftTxInfo] you don't have enough balance")
 		}
 	}
+	if txInfo.Type == commonAsset.SellOfferType {
+		if nftInfo.OwnerAccountIndex != txInfo.AccountIndex {
+			logx.Errorf("[VerifyMintNftTxInfo] invalid account index")
+			return errors.New("[VerifyMintNftTxInfo] invalid account index")
+		}
+	}
 	// verify sig
 	hFunc := mimc.NewMiMC()
-	msgHash := legendTxTypes.ComputeOfferMsgHash(txInfo, hFunc)
+	msgHash, err := legendTxTypes.ComputeOfferMsgHash(txInfo, hFunc)
+	if err != nil {
+		logx.Errorf("[VerifyCancelOfferTxInfo] unable to compute offer msg hash: %s", err.Error())
+		return err
+	}
 	// verify signature
 	hFunc.Reset()
 	pk, err := ParsePkStr(accountInfoMap[txInfo.AccountIndex].PublicKey)

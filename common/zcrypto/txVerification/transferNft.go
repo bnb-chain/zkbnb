@@ -23,6 +23,7 @@ import (
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-crypto/wasm/zecrey-legend/legendTxTypes"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
+	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zeromicro/go-zero/core/logx"
 	"log"
 	"math/big"
@@ -45,14 +46,12 @@ func VerifyTransferNftTxInfo(
 ) (txDetails []*MempoolTxDetail, err error) {
 	// verify params
 	if accountInfoMap[txInfo.FromAccountIndex] == nil ||
-		accountInfoMap[txInfo.ToAccountIndex] == nil ||
 		accountInfoMap[txInfo.GasAccountIndex] == nil ||
 		accountInfoMap[txInfo.FromAccountIndex].AssetInfo == nil ||
 		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId] == nil ||
 		nftInfo == nil ||
 		nftInfo.OwnerAccountIndex != txInfo.FromAccountIndex ||
 		nftInfo.NftIndex != txInfo.NftIndex ||
-		nftInfo.NftContentHash != txInfo.NftContentHash ||
 		txInfo.GasFeeAssetAmount.Cmp(ZeroBigInt) < 0 {
 		logx.Errorf("[VerifyTransferNftTxInfo] invalid params")
 		return nil, errors.New("[VerifyTransferNftTxInfo] invalid params")
@@ -101,7 +100,11 @@ func VerifyTransferNftTxInfo(
 	}
 	// compute hash
 	hFunc := mimc.NewMiMC()
-	msgHash := legendTxTypes.ComputeTransferNftMsgHash(txInfo, hFunc)
+	msgHash, err := legendTxTypes.ComputeTransferNftMsgHash(txInfo, hFunc)
+	if err != nil {
+		logx.Errorf("[VerifyMintNftTxInfo] unable to compute hash: %s", err.Error())
+		return nil, err
+	}
 	// verify signature
 	hFunc.Reset()
 	pk, err := ParsePkStr(accountInfoMap[txInfo.FromAccountIndex].PublicKey)
@@ -120,6 +123,7 @@ func VerifyTransferNftTxInfo(
 	// compute tx details
 	// from account asset gas
 	order := int64(0)
+	accountOrder := int64(0)
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    GeneralAssetType,
@@ -127,7 +131,21 @@ func VerifyTransferNftTxInfo(
 		AccountName:  accountInfoMap[txInfo.FromAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
+	})
+	// to account empty delta
+	order++
+	accountOrder++
+	txDetails = append(txDetails, &MempoolTxDetail{
+		AssetId:      txInfo.GasFeeAssetId,
+		AssetType:    GeneralAssetType,
+		AccountIndex: txInfo.ToAccountIndex,
+		AccountName:  accountInfoMap[txInfo.ToAccountIndex].AccountName,
+		BalanceDelta: commonAsset.ConstructAccountAsset(
+			txInfo.GasFeeAssetId, ZeroBigInt, ZeroBigInt, ZeroBigInt).String(),
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	// to account nft delta
 	order++
@@ -138,9 +156,11 @@ func VerifyTransferNftTxInfo(
 		AccountName:  accountInfoMap[txInfo.ToAccountIndex].AccountName,
 		BalanceDelta: newNftInfo.String(),
 		Order:        order,
+		AccountOrder: commonConstant.NilAccountOrder,
 	})
 	// gas account asset gas
 	order++
+	accountOrder++
 	txDetails = append(txDetails, &MempoolTxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    GeneralAssetType,
@@ -148,7 +168,8 @@ func VerifyTransferNftTxInfo(
 		AccountName:  accountInfoMap[txInfo.GasAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, ZeroBigInt, ZeroBigInt).String(),
-		Order: order,
+		Order:        order,
+		AccountOrder: accountOrder,
 	})
 	return txDetails, nil
 }
