@@ -83,7 +83,7 @@ func (m *globalRPC) GetLatestTxsListByAccountIndexAndTxType(accountIndex uint64,
 		Offset:       uint32(offset),
 		Limit:        uint32(limit),
 	})
-	res := make([]*mempool.MempoolTx, 0)
+	txs := make([]*mempool.MempoolTx, 0)
 	for _, each := range resRpc.GetTxsList() {
 		singleTxDetail := make([]*mempool.MempoolTxDetail, 0)
 		for _, eachDetail := range each.TxDetails {
@@ -96,7 +96,7 @@ func (m *globalRPC) GetLatestTxsListByAccountIndexAndTxType(accountIndex uint64,
 			})
 		}
 
-		res = append(res, &mempool.MempoolTx{
+		txs = append(txs, &mempool.MempoolTx{
 			Model:          gorm.Model{},
 			TxHash:         each.TxHash,
 			TxType:         int64(each.TxType),
@@ -116,7 +116,7 @@ func (m *globalRPC) GetLatestTxsListByAccountIndexAndTxType(accountIndex uint64,
 			Status:         int(each.Status),
 		})
 	}
-	return res, nil
+	return txs, nil
 }
 
 func (m *globalRPC) GetLatestTxsListByAccountIndex(accountIndex uint32, limit uint32) ([]*mempool.MempoolTx, uint32, error) {
