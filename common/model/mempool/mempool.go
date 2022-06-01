@@ -37,6 +37,7 @@ type (
 	MempoolModel interface {
 		CreateMempoolTxTable() error
 		DropMempoolTxTable() error
+		GetMempoolTxByTxId(id uint) (mempoolTx *MempoolTx, err error)
 		GetAllMempoolTxsList() (mempoolTxs []*MempoolTx, err error)
 		GetMempoolTxsListForCommitter() (mempoolTxs []*MempoolTx, err error)
 		GetMempoolTxsList(limit int64, offset int64) (mempoolTxs []*MempoolTx, err error)
@@ -713,4 +714,25 @@ func (m *defaultMempoolModel) CreateMempoolTxAndL2NftExchange(mempoolTx *Mempool
 		}
 		return nil
 	})
+}
+
+func (m *defaultMempoolModel) GetMempoolTxByTxId(id uint) (mempoolTx *MempoolTx, err error) {
+	var mempoolForeignKeyColumn = `MempoolDetails`
+	dbTx := m.DB.Table(m.table).Where("id = ?", id).
+		Find(&mempoolTx)
+	if dbTx.Error != nil {
+		errInfo := fmt.Sprintf("[mempool.GetMempoolTxByTxId] %s", dbTx.Error)
+		logx.Errorf(errInfo)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		err := fmt.Sprintf("[mempool.GetMempoolTxByTxId] %s", ErrNotFound)
+		logx.Info(err)
+		return nil, ErrNotFound
+	}
+	err = m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+	if err != nil {
+		logx.Errorf("[mempool.GetMempoolTxByTxHash] Get Associate MempoolDetails Error")
+		return nil, err
+	}
+	return mempoolTx, nil
 }

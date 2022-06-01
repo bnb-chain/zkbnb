@@ -23,6 +23,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
+	"strings"
 )
 
 func ConstructRegisterZnsCryptoTx(
@@ -81,7 +82,9 @@ func ConstructRegisterZnsCryptoTx(
 
 func ToCryptoRegisterZnsTx(txInfo *commonTx.RegisterZnsTxInfo) (info *CryptoRegisterZnsTx, err error) {
 	accountName := make([]byte, 32)
-	copy(accountName[:], txInfo.AccountName)
+	AccountNameSuffix := ".legend"
+	realName := strings.Split(txInfo.AccountName, AccountNameSuffix)[0]
+	copy(accountName[:], realName)
 	pk, err := util.ParsePubKey(txInfo.PubKey)
 	if err != nil {
 		logx.Errorf("[ToCryptoRegisterZnsTx] unable to parse pub key:%s", err.Error())
