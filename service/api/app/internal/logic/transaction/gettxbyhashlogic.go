@@ -77,15 +77,16 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (resp *types.R
 	txAmount, _ := strconv.Atoi(txMemppol.TxAmount)
 	return packGetTxByHashResp(types.Tx{
 		TxHash:        txMemppol.TxHash,
-		TxType:        uint8(txMemppol.TxType),
+		TxType:        uint32(txMemppol.TxType),
 		GasFee:        int64(gasFee),
-		GasFeeAssetId: uint16(txMemppol.GasFeeAssetId),
+		GasFeeAssetId: uint32(txMemppol.GasFeeAssetId),
 		TxStatus:      txMemppol.Status,
 		BlockHeight:   int(txMemppol.L2BlockHeight),
 		BlockStatus:   int(blockStatusInfo.BlockStatus),
 		BlockId:       int(block.ID),
-		AssetAId:      int(txMemppol.AssetAId),
-		AssetBId:      int(txMemppol.AssetBId),
+		//Todo: globalRPC won't return data with 2 asset ids, where are these fields from
+		AssetAId:      int(txMemppol.AssetId),
+		AssetBId:      int(txMemppol.AssetId),
 		TxAmount:      txAmount,
 		TxDetails:     txDetails,
 		NativeAddress: txMemppol.NativeAddress,

@@ -1,10 +1,7 @@
 package tx
 
 import (
-	"encoding/json"
-	mempoolModel "github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
-	"github.com/zecrey-labs/zecrey-legend/pkg/zerror"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"gorm.io/gorm"
@@ -43,16 +40,6 @@ func (m *tx) GetTxsTotalCount() (count int64, err error) {
 		log.Fatal("Error type!")
 	}
 	return count, nil
-}
-
-func (m *tx) UpdateTxCache(tx *mempoolModel.MempoolTx) error {
-	key := cacheZecreyTxTxHashPrefix + tx.TxHash
-	txJson, err := json.Marshal(*tx)
-	if err != nil {
-		return zerror.New(30002, "Serializing tx error!")
-	}
-	m.cache.Set(key, txJson)
-	return nil
 }
 
 func (m *tx) GetTxsTotalCountByAccountIndex(accountIndex int64) (count int64, err error) {
