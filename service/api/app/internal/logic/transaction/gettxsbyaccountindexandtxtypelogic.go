@@ -46,22 +46,22 @@ func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *
 
 	account, err := l.account.GetAccountByPk(req.Pk)
 	if err != nil {
-		logx.Error("[GetTxsListByAccountIndexAndTxType] err:%v", err)
+		logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
 		return &types.RespGetTxsByAccountIndexAndTxType{}, err
 	}
 	txCount, err := l.tx.GetTxsTotalCountByAccountIndex(account.AccountIndex)
 	if err != nil {
-		logx.Error("[GetTxsListByAccountIndexAndTxType] err:%v", err)
+		logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
 		return &types.RespGetTxsByAccountIndexAndTxType{}, err
 	}
 	mempoolTxCount, err := l.mempool.GetMempoolTxsTotalCountByAccountIndex(account.AccountIndex)
 	if err != nil {
-		logx.Error("[GetTxsListByAccountIndexAndTxType] err:%v", err)
+		logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
 		return &types.RespGetTxsByAccountIndexAndTxType{}, err
 	}
 	mempoolTxs, err := l.globalRpc.GetLatestTxsListByAccountIndexAndTxType(uint64(account.AccountIndex), uint64(req.TxType), uint64(req.Limit), uint64(req.Offset))
 	if err != nil {
-		logx.Error("[GetTxsListByAccountIndexAndTxType] err:%v", err)
+		logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
 		return &types.RespGetTxsByAccountIndexAndTxType{}, err
 	}
 
@@ -81,7 +81,7 @@ func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *
 		gasFee, _ := strconv.ParseInt(tx.GasFee, 10, 64)
 		blockInfo, err := l.block.GetBlockByBlockHeight(tx.L2BlockHeight)
 		if err != nil {
-			logx.Error("[GetTxsListByAccountIndexAndTxType] err:%v", err)
+			logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
 			return nil, err
 		}
 		results = append(results, &types.Tx{

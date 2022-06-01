@@ -45,25 +45,25 @@ func (l *GetTxsByAccountNameLogic) GetTxsByAccountName(req *types.ReqGetTxsByAcc
 
 	account, err := l.account.GetAccountByAccountName(req.AccountName)
 	if err != nil {
-		logx.Error("[transaction.GetTxsListByAccountName] err:%v", err)
+		logx.Error("[transaction.GetTxsByAccountName] err:%v", err)
 		return &types.RespGetTxsByAccountName{}, err
 	}
 	//ReqGetLatestTxsListByAccountIndex
 	txList, _, err := l.globalRpc.GetLatestTxsListByAccountIndex(uint32(account.AccountIndex), req.Limit)
 	if err != nil {
-		logx.Error("[transaction.GetTxsListByAccountName] err:%v", err)
+		logx.Error("[transaction.GetTxsByAccountName] err:%v", err)
 		return &types.RespGetTxsByAccountName{}, err
 	}
 
 	txCount, err := l.tx.GetTxsTotalCountByAccountIndex(account.AccountIndex)
 	if err != nil {
-		logx.Error("[transaction.GetTxsListByAccountName] err:%v", err)
+		logx.Error("[transaction.GetTxsByAccountName] err:%v", err)
 		return &types.RespGetTxsByAccountName{}, err
 	}
 
 	mempoolTxCount, err := l.mempool.GetMempoolTxsTotalCountByAccountIndex(account.AccountIndex)
 	if err != nil {
-		logx.Error("[transaction.GetTxsListByAccountName] err:%v", err)
+		logx.Error("[transaction.GetTxsByAccountName] err:%v", err)
 		return &types.RespGetTxsByAccountName{}, err
 	}
 
@@ -83,7 +83,7 @@ func (l *GetTxsByAccountNameLogic) GetTxsByAccountName(req *types.ReqGetTxsByAcc
 		txAmount, _ := strconv.ParseInt(tx.TxAmount, 10, 64)
 		blockInfo, err := l.block.GetBlockByBlockHeight(tx.L2BlockHeight)
 		if err != nil {
-			logx.Error("[transaction.GetTxsListByAccountName] err:%v", err)
+			logx.Error("[transaction.GetTxsByAccountName] err:%v", err)
 			return &types.RespGetTxsByAccountName{}, err
 		}
 		results = append(results, &types.Tx{
