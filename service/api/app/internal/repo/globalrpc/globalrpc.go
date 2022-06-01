@@ -152,3 +152,11 @@ func (m *globalRPC) GetLatestTxsListByAccountIndex(accountIndex uint32, limit ui
 
 	return txls, resRpc.GetTotal(), err
 }
+
+func (m *globalRPC) SendTx(txType uint32, txInfo string) (string, error) {
+	rpcRsp, err := m.globalRPC.SendTx(m.ctx, &globalrpc.ReqSendTx{
+		TxType: txType,
+		TxInfo: txInfo,
+	})
+	return rpcRsp.GetTxId(), err
+}
