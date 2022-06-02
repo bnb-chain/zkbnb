@@ -88,9 +88,9 @@ type (
 	}
 )
 
-// getAccountLiquidityPairs
+// GetAccountLiquidityPairsByAccountIndex
 type (
-	ReqGetAccountLiquidityPairs {
+	ReqGetAccountLiquidityPairsByAccountIndex {
 		AccountIndex uint32 `form:"account_index"`
 	}
 	AccountLiquidityPairs {
@@ -102,7 +102,7 @@ type (
 		LpAmountEnc string `json:"lp_amount_enc"`
 		CreatedAt   int64  `json:"created_at"`
 	}
-	RespGetAccountLiquidityPairs {
+	RespGetAccountLiquidityPairsByAccountIndex {
 		Pairs []*AccountLiquidityPairs `json:"pairs"`
 	}
 )
@@ -127,8 +127,8 @@ service appService-api{
 	@handler GetAssetsByAccountName
 	get /api/v1/account/getAssetsByAccountName (ReqGetAssetsByAccountName) returns (RespGetAssetsByAccountName)
 	
-	@handler GetAccountLiquidityPairs
-	get /api/v1/account/getAccountLiquidityPairs (ReqGetAccountLiquidityPairs) returns (RespGetAccountLiquidityPairs)
+	@handler GetAccountLiquidityPairsByAccountIndex
+	get /api/v1/account/getAccountLiquidityPairsByAccountIndex (ReqGetAccountLiquidityPairsByAccountIndex) returns (RespGetAccountLiquidityPairsByAccountIndex)
 }
 
 /* ========================= Info =========================*/

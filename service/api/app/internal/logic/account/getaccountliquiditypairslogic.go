@@ -14,7 +14,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-type GetAccountLiquidityPairsLogic struct {
+type GetAccountLiquidityPairsByAccountIndexLogic struct {
 	logx.Logger
 	ctx       context.Context
 	svcCtx    *svc.ServiceContext
@@ -23,8 +23,8 @@ type GetAccountLiquidityPairsLogic struct {
 	mempool   mempool.Mempool
 }
 
-func NewGetAccountLiquidityPairsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAccountLiquidityPairsLogic {
-	return &GetAccountLiquidityPairsLogic{
+func NewGetAccountLiquidityPairsByAccountIndexLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAccountLiquidityPairsByAccountIndexLogic {
+	return &GetAccountLiquidityPairsByAccountIndexLogic{
 		Logger:    logx.WithContext(ctx),
 		ctx:       ctx,
 		svcCtx:    svcCtx,
@@ -34,41 +34,26 @@ func NewGetAccountLiquidityPairsLogic(ctx context.Context, svcCtx *svc.ServiceCo
 	}
 }
 
-func (l *GetAccountLiquidityPairsLogic) GetLiquidityPairs(req *types.ReqGetAccountLiquidityPairs) (resp *types.RespGetAccountLiquidityPairs, err error) {
+// TODO: check this func's logic
+func (l *GetAccountLiquidityPairsByAccountIndexLogic) GetAccountLiquidityPairsByAccountIndex(req *types.ReqGetAccountLiquidityPairsByAccountIndex) (resp *types.RespGetAccountLiquidityPairsByAccountIndex, err error) {
 	if utils.CheckAccountIndex(req.AccountIndex) {
 		logx.Error("[CheckAccountIndex] param:%v", req.AccountIndex)
 		return nil, errcode.ErrInvalidParam
 	}
-	// AccountIndex or pairIndex？
-	// entities, err := l.liquidity.GetLiquidityByPairIndex(int64(req.AccountIndex))
-	// if err != nil {
-	// 	logx.Error("[GetLiquidityByPairIndex] err:%v", err)
-	// 	return nil, err
-	// }
-	// get created_at
-	// mempoolDetails, err := l.mempool.GetLatestMempoolDetailUnscopedGroupByAssetIdAndChainId(
-	// 	int64(req.AccountIndex), commonAsset.LiquidityLpAssetType)
-	// for _, entity := range entities {
-	// 	resRpc, err := l.globalRPC.GetLatestAccountLp(l.ctx, &globalrpc.ReqGetLatestAccountLp{
-	// 		PairIndex:    uint64(entity.PairIndex),
-	// 		AccountIndex: uint64(entity.AccountIndex),
-	// 	})
-	// 	result := resRpc.Result
-	// 	temp := &types.ResultGetAccountLiquidityPairs{
-	// 		PairIndex:   uint16(result.PairIndex),
-	// 		AssetAId:    uint16(result.AssetAId),
-	// 		AssetAName:  result.AssetAName,
-	// 		AssetBId:    uint16(result.AssetBId),
-	// 		AssetBName:  result.AssetBName,
-	// 		LpAmountEnc: result.LpEnc,
-	// 		CreatedAt:   entity.Model.CreatedAt.UnixMilli(),
-	// 	}
-	// 	for _, mempoolDetail := range mempoolDetails {
-	// 		if mempoolDetail.AssetId == entity.PairIndex {
-	// 			temp.CreatedAt = mempoolDetail.Max.UnixMilli()
-	// 			break
-	// 		}
-	// 	}
-	// }
+	entitie, err := l.liquidity.GetLiquidityByPairIndex(int64(req.AccountIndex))
+	if err != nil {
+		logx.Error("[GetLiquidityByPairIndex] err:%v", err)
+		return nil, err
+	}
+	pair := &types.AccountLiquidityPairs{
+		PairIndex:   uint32(entitie.PairIndex),
+		AssetAId:    uint32(entitie.AssetAId),
+		AssetAName:  entitie.AssetA,
+		AssetBId:    uint32(entitie.AssetBId),
+		AssetBName:  entitie.AssetB,
+		LpAmountEnc: entitie.LpAmount,
+		// CreatedAt  : entitie.
+	}
+	resp.Pairs = append(resp.Pairs, pair)
 	return resp, nil
 }

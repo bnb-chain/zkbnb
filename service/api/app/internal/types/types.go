@@ -61,7 +61,7 @@ type RespGetAssetsByAccountName struct {
 	Assets []*Asset `json:"assets"`
 }
 
-type ReqGetAccountLiquidityPairs struct {
+type ReqGetAccountLiquidityPairsByAccountIndex struct {
 	AccountIndex uint32 `form:"account_index"`
 }
 
@@ -75,7 +75,7 @@ type AccountLiquidityPairs struct {
 	CreatedAt   int64  `json:"created_at"`
 }
 
-type RespGetAccountLiquidityPairs struct {
+type RespGetAccountLiquidityPairsByAccountIndex struct {
 	Pairs []*AccountLiquidityPairs `json:"pairs"`
 }
 

@@ -54,8 +54,8 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/account/getAccountLiquidityPairs",
-				Handler: account.GetAccountLiquidityPairsHandler(serverCtx),
+				Path:    "/api/v1/account/getAccountLiquidityPairsByAccountIndex",
+				Handler: account.GetAccountLiquidityPairsByAccountIndexHandler(serverCtx),
 			},
 		},
 	)

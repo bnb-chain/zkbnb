@@ -43,3 +43,7 @@ func (m *liquidity) GetLiquidityByPairIndex(pairIndex int64) (entity *table.Liqu
 	}
 	return entity, nil
 }
+
+func (m *liquidity) GetAllLiquidityAssets() (entity []*table.Liquidity, err error) {
+	return entity, nil
+}
