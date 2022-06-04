@@ -12,12 +12,10 @@ type Config struct {
 	CacheRedis  cache.CacheConf
 	LogConf     logx.LogConf
 	ChainConfig struct {
-		L2ChainId                       int64
 		NetworkRPCSysConfigName         string
 		ZecreyContractAddrSysConfigName string
 		MaxWaitingTime                  int64
 		MaxBlockCount                   int
-		MainChainIdSysConfigName        string
 		Sk                              string
 		GasLimit                        uint64
 		L1ChainId                       string

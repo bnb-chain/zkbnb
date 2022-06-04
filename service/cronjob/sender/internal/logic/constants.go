@@ -17,10 +17,10 @@
 package logic
 
 import (
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/zecrey-labs/zecrey-eth-rpc/_rpc"
 	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
+	"github.com/zecrey-labs/zecrey-legend/common/model/blockForCommit"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l1TxSender"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
@@ -30,19 +30,21 @@ import (
 )
 
 type (
-	Tx              = tx.Tx
-	TxDetail        = tx.TxDetail
-	Block           = block.Block
-	L1TxSenderModel = l1TxSender.L1TxSenderModel
-	L1TxSender      = l1TxSender.L1TxSender
-	BlockModel      = block.BlockModel
+	Tx                  = tx.Tx
+	TxDetail            = tx.TxDetail
+	Block               = block.Block
+	BlockForCommit      = blockForCommit.BlockForCommit
+	L1TxSenderModel     = l1TxSender.L1TxSenderModel
+	L1TxSender          = l1TxSender.L1TxSender
+	BlockModel          = block.BlockModel
+	BlockForCommitModel = blockForCommit.BlockForCommitModel
 
 	ProviderClient = _rpc.ProviderClient
 	AuthClient     = _rpc.AuthClient
-	Zecrey         = zecreyLegend.ZecreyLegend
+	ZecreyLegend   = zecreyLegend.ZecreyLegend
 
-	ZecreyCommitBlockInfo = zecreyLegend.ZecreyLegendCommitBlockInfo
-	StorageBlockHeader    = zecreyLegend.StorageBlockHeader
+	ZecreyLegendCommitBlockInfo = zecreyLegend.OldZecreyLegendCommitBlockInfo
+	StorageStoredBlockInfo      = zecreyLegend.StorageStoredBlockInfo
 
 	L2AssetInfoModel = l2asset.L2AssetInfoModel
 
@@ -50,42 +52,25 @@ type (
 )
 
 const (
-	StatusPending   = block.StatusPending
-	StatusCommitted = block.StatusCommitted
-	StatusVerified  = block.StatusVerified
+	StatusPending             = block.StatusPending
+	StatusCommitted           = block.StatusCommitted
+	StatusVerifiedAndExecuted = block.StatusVerifiedAndExecuted
 
-	PendingStatus = l1TxSender.PendingStatus
-	CommitTxType  = l1TxSender.CommitTxType
-	VerifyTxType  = l1TxSender.VerifyTxType
-
-	OnChainOpsTreeLevel = 6
-)
-
-const (
-	MainChain = iota
-	StandAlone
+	PendingStatus          = l1TxSender.PendingStatus
+	CommitTxType           = l1TxSender.CommitTxType
+	VerifyAndExecuteTxType = l1TxSender.VerifyAndExecuteTxType
 )
 
 var (
-	AddressType, _ = abi.NewType("address", "", nil)
-	Bytes32Type, _ = abi.NewType("bytes32", "", nil)
-	Uint8Type, _   = abi.NewType("uint8", "", nil)
-	Uint16Type, _  = abi.NewType("uint16", "", nil)
-	Uint32Type, _  = abi.NewType("uint32", "", nil)
-	Uint128Type, _ = abi.NewType("uint128", "", nil)
-
 	ErrNotFound = sqlx.ErrNotFound
 )
 
 type SenderParam struct {
-	Cli            *ProviderClient
-	AuthCli        *AuthClient
-	ZecreyInstance *Zecrey
-	ChainId        int64
-	Mode           int64
-	MaxWaitingTime int64
-	MaxBlockCount  int
-	MainChainId    int64
-	GasPrice       *big.Int
-	GasLimit       uint64
+	Cli                  *ProviderClient
+	AuthCli              *AuthClient
+	ZecreyLegendInstance *ZecreyLegend
+	MaxWaitingTime       int64
+	MaxBlocksCount       int
+	GasPrice             *big.Int
+	GasLimit             uint64
 }

@@ -2,6 +2,7 @@ package svc
 
 import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
+	"github.com/zecrey-labs/zecrey-legend/common/model/blockForCommit"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l1TxSender"
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
 	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
@@ -17,6 +18,7 @@ type ServiceContext struct {
 	Config config.Config
 
 	BlockModel          block.BlockModel
+	BlockForCommitModel blockForCommit.BlockForCommitModel
 	L1TxSenderModel     l1TxSender.L1TxSenderModel
 	SysConfigModel      sysconfig.SysconfigModel
 	ProofSenderModel    proofSender.ProofSenderModel
@@ -37,10 +39,11 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	conn := sqlx.NewSqlConn("postgres", c.Postgres.DataSource)
 	redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
 	return &ServiceContext{
-		Config: c,
-		BlockModel:       block.NewBlockModel(conn, c.CacheRedis, gormPointer, redisConn),
-		L1TxSenderModel:  l1TxSender.NewL1TxSenderModel(conn, c.CacheRedis, gormPointer),
-		SysConfigModel:   sysconfig.NewSysconfigModel(conn, c.CacheRedis, gormPointer),
-		ProofSenderModel: proofSender.NewProofSenderModel(gormPointer),
+		Config:              c,
+		BlockModel:          block.NewBlockModel(conn, c.CacheRedis, gormPointer, redisConn),
+		BlockForCommitModel: blockForCommit.NewBlockForCommitModel(conn, c.CacheRedis, gormPointer),
+		L1TxSenderModel:     l1TxSender.NewL1TxSenderModel(conn, c.CacheRedis, gormPointer),
+		SysConfigModel:      sysconfig.NewSysconfigModel(conn, c.CacheRedis, gormPointer),
+		ProofSenderModel:    proofSender.NewProofSenderModel(gormPointer),
 	}
 }

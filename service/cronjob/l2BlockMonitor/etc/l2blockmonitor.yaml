@@ -6,7 +6,7 @@ Etcd:
   Key: l2blockmonitor.rpc
 
 Postgres:
-  DataSource: host=34.124.218.4 user=postgres password=ZecreyDB123!!DB dbname=zecrey port=5432 sslmode=disable
+  DataSource: host=127.0.0.1 user=postgres password=ZecreyProtocolDB@123 dbname=zecreyLegend port=5432 sslmode=disable
 
 CacheRedis:
   - Host: 34.124.218.4:6379
@@ -14,5 +14,5 @@ CacheRedis:
     Type: node
 
 ChainConfig:
-  BSCNetworkRPCSysConfigName: "BSC_Test_Network_RPC"
+  BSCNetworkRPCSysConfigName: "Local_Test_Network_RPC"
   BSCPendingBlocksCount: 0

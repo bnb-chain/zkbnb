@@ -116,6 +116,7 @@ func CommitterTask(
 			pubData []byte
 			// onchain tx info
 			priorityOperations           int64
+			pubDataOffset                []uint32
 			pendingOnchainOperationsHash []byte
 			pendingMempoolTxs            []*MempoolTx
 		)
@@ -134,21 +135,23 @@ func CommitterTask(
 			}
 			var (
 				pendingPriorityOperation int64
-				pendingPubData           []byte
 				newCollectionNonce       = commonConstant.NilCollectionId
 			)
 			// get mempool tx
 			mempoolTx := mempoolTxs[i*MaxTxsAmountPerBlock+j]
 			// handle tx pub data
-			pendingPriorityOperation, pendingOnchainOperationsHash, pendingPubData, err = handleTxPubData(mempoolTx, pendingOnchainOperationsHash)
+			pendingPriorityOperation, pendingOnchainOperationsHash, pubData, pubDataOffset, err = handleTxPubData(
+				mempoolTx,
+				pubData,
+				pendingOnchainOperationsHash,
+				pubDataOffset,
+			)
 			if err != nil {
 				logx.Errorf("[CommitterTask] unable to handle l1 tx: %s", err.Error())
 				return err
 			}
 			// compute new priority operations
 			priorityOperations += pendingPriorityOperation
-			// add pub data from tx
-			pubData = append(pubData, pendingPubData...)
 
 			// get related account info
 			if mempoolTx.AccountIndex != commonConstant.NilTxAccountIndex {
@@ -638,8 +641,15 @@ func CommitterTask(
 			}
 			pendingUpdateNft = append(pendingUpdateNft, nftMap[nftIndex])
 		}
-		// TODO commitment
-		commitment := util.CreateBlockCommitment(lastBlock.BlockHeight, currentBlockHeight, pubData)
+		// create commitment
+		commitment := util.CreateBlockCommitment(
+			currentBlockHeight,
+			createdAt,
+			common.FromHex(lastBlock.StateRoot),
+			common.FromHex(finalStateRoot),
+			pubData,
+			int64(len(pubDataOffset)),
+		)
 		// construct block
 		createAtTime := time.UnixMilli(createdAt)
 		if len(txs) == 0 {
@@ -658,11 +668,25 @@ func CommitterTask(
 			Txs:                          txs,
 			BlockStatus:                  block.StatusPending,
 		}
+		offsetBytes, err := json.Marshal(pubDataOffset)
+		if err != nil {
+			logx.Errorf("[CommitterTask] unable to marshal pub data: %s", err.Error())
+			return err
+		}
+		oBlockForCommit := &BlockForCommit{
+			BlockHeight:       currentBlockHeight,
+			StateRoot:         finalStateRoot,
+			PublicData:        common.Bytes2Hex(pubData),
+			Timestamp:         createdAt,
+			PublicDataOffsets: string(offsetBytes),
+		}
 
 		// create block for committer
 		// create block, history, update mempool txs, create new l1 amount infos
 		err = ctx.BlockModel.CreateBlockForCommitter(
-			oBlock, pendingMempoolTxs,
+			oBlock,
+			oBlockForCommit,
+			pendingMempoolTxs,
 			pendingUpdateAccounts,
 			pendingNewAccountHistory,
 			pendingUpdateLiquidity,
@@ -682,140 +706,156 @@ func CommitterTask(
 /**
 handleTxPubData: handle different layer-1 txs
 */
-func handleTxPubData(mempoolTx *MempoolTx, oldPendingOnchainOperationsHash []byte) (
+func handleTxPubData(
+	mempoolTx *MempoolTx,
+	oldPubData []byte,
+	oldPendingOnchainOperationsHash []byte,
+	oldPubDataOffset []uint32,
+) (
 	priorityOperation int64,
 	newPendingOnchainOperationsHash []byte,
-	pubData []byte,
+	newPubData []byte,
+	newPubDataOffset []uint32,
 	err error,
 ) {
 	priorityOperation = 0
 	newPendingOnchainOperationsHash = oldPendingOnchainOperationsHash
+	newPubDataOffset = oldPubDataOffset
+	var pubData []byte
 	switch mempoolTx.TxType {
 	case TxTypeRegisterZns:
 		pubData, err = util.ConvertTxToRegisterZNSPubData(mempoolTx)
 		if err != nil {
 			logx.Errorf("[handleTxPubData] unable to convert tx to registerZNS pub data")
-			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
+			return priorityOperation, nil, nil, nil, err
 		}
+		newPubDataOffset = append(newPubDataOffset, uint32(len(oldPubData)))
 		priorityOperation++
 		break
 	case TxTypeCreatePair:
 		pubData, err = util.ConvertTxToCreatePairPubData(mempoolTx)
 		if err != nil {
 			logx.Errorf("[handleTxPubData] unable to convert tx to create pair pub data")
-			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
+			return priorityOperation, nil, nil, nil, err
 		}
+		newPubDataOffset = append(newPubDataOffset, uint32(len(oldPubData)))
 		priorityOperation++
 		break
 	case TxTypeUpdatePairRate:
 		pubData, err = util.ConvertTxToUpdatePairRatePubData(mempoolTx)
 		if err != nil {
 			logx.Errorf("[handleTxPubData] unable to convert tx to update pair rate pub data")
-			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
+			return priorityOperation, nil, nil, nil, err
 		}
+		newPubDataOffset = append(newPubDataOffset, uint32(len(oldPubData)))
 		priorityOperation++
 		break
 	case TxTypeDeposit:
 		pubData, err = util.ConvertTxToDepositPubData(mempoolTx)
 		if err != nil {
 			logx.Errorf("[handleTxPubData] unable to convert tx to deposit pub data")
-			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
+			return priorityOperation, nil, nil, nil, err
 		}
+		newPubDataOffset = append(newPubDataOffset, uint32(len(oldPubData)))
 		priorityOperation++
 		break
 	case TxTypeDepositNft:
 		pubData, err = util.ConvertTxToDepositNftPubData(mempoolTx)
 		if err != nil {
 			logx.Errorf("[handleTxPubData] unable to convert tx to deposit nft pub data")
-			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
+			return priorityOperation, nil, nil, nil, err
 		}
+		newPubDataOffset = append(newPubDataOffset, uint32(len(oldPubData)))
 		priorityOperation++
 		break
 	case TxTypeTransfer:
 		pubData, err = util.ConvertTxToTransferPubData(mempoolTx)
 		if err != nil {
 			logx.Errorf("[handleTxPubData] unable to convert tx to transfer pub data")
-			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
+			return priorityOperation, nil, nil, nil, err
 		}
 		break
 	case TxTypeSwap:
 		pubData, err = util.ConvertTxToSwapPubData(mempoolTx)
 		if err != nil {
 			logx.Errorf("[handleTxPubData] unable to convert tx to swap pub data")
-			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
+			return priorityOperation, nil, nil, nil, err
 		}
 		break
 	case TxTypeAddLiquidity:
 		pubData, err = util.ConvertTxToAddLiquidityPubData(mempoolTx)
 		if err != nil {
 			logx.Errorf("[handleTxPubData] unable to convert tx to add liquidity pub data")
-			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
+			return priorityOperation, nil, nil, nil, err
 		}
 		break
 	case TxTypeRemoveLiquidity:
 		pubData, err = util.ConvertTxToRemoveLiquidityPubData(mempoolTx)
 		if err != nil {
 			logx.Errorf("[handleTxPubData] unable to convert tx to remove liquidity pub data")
-			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
+			return priorityOperation, nil, nil, nil, err
 		}
 		break
 	case TxTypeCreateCollection:
 		pubData, err = util.ConvertTxToCreateCollectionPubData(mempoolTx)
 		if err != nil {
 			logx.Errorf("[handleTxPubData] unable to convert tx to create collection pub data")
-			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
+			return priorityOperation, nil, nil, nil, err
 		}
 		break
 	case TxTypeMintNft:
 		pubData, err = util.ConvertTxToMintNftPubData(mempoolTx)
 		if err != nil {
 			logx.Errorf("[handleTxPubData] unable to convert tx to mint nft pub data")
-			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
+			return priorityOperation, nil, nil, nil, err
 		}
 		break
 	case TxTypeTransferNft:
 		pubData, err = util.ConvertTxToTransferNftPubData(mempoolTx)
 		if err != nil {
 			logx.Errorf("[handleTxPubData] unable to convert tx to transfer nft pub data")
-			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
+			return priorityOperation, nil, nil, nil, err
 		}
 		break
 	case TxTypeAtomicMatch:
 		pubData, err = util.ConvertTxToAtomicMatchPubData(mempoolTx)
 		if err != nil {
 			logx.Errorf("[handleTxPubData] unable to convert tx to atomic match pub data")
-			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
+			return priorityOperation, nil, nil, nil, err
 		}
 		break
 	case TxTypeCancelOffer:
 		pubData, err = util.ConvertTxToCancelOfferPubData(mempoolTx)
 		if err != nil {
 			logx.Errorf("[handleTxPubData] unable to convert tx to cancel offer pub data")
-			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
+			return priorityOperation, nil, nil, nil, err
 		}
 		break
 	case TxTypeWithdraw:
 		pubData, err = util.ConvertTxToWithdrawPubData(mempoolTx)
 		if err != nil {
 			logx.Errorf("[handleTxPubData] unable to convert tx to withdraw pub data")
-			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
+			return priorityOperation, nil, nil, nil, err
 		}
+		newPubDataOffset = append(newPubDataOffset, uint32(len(oldPubData)))
 		newPendingOnchainOperationsHash = util.ConcatKeccakHash(oldPendingOnchainOperationsHash, pubData)
 		break
 	case TxTypeWithdrawNft:
 		pubData, err = util.ConvertTxToWithdrawNftPubData(mempoolTx)
 		if err != nil {
 			logx.Errorf("[handleTxPubData] unable to convert tx to withdraw nft pub data")
-			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
+			return priorityOperation, nil, nil, nil, err
 		}
+		newPubDataOffset = append(newPubDataOffset, uint32(len(oldPubData)))
 		newPendingOnchainOperationsHash = util.ConcatKeccakHash(oldPendingOnchainOperationsHash, pubData)
 		break
 	case TxTypeFullExit:
 		pubData, err = util.ConvertTxToFullExitPubData(mempoolTx)
 		if err != nil {
 			logx.Errorf("[handleTxPubData] unable to convert tx to full exit pub data")
-			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
+			return priorityOperation, nil, nil, nil, err
 		}
+		newPubDataOffset = append(newPubDataOffset, uint32(len(oldPubData)))
 		priorityOperation++
 		newPendingOnchainOperationsHash = util.ConcatKeccakHash(oldPendingOnchainOperationsHash, pubData)
 		break
@@ -823,14 +863,16 @@ func handleTxPubData(mempoolTx *MempoolTx, oldPendingOnchainOperationsHash []byt
 		pubData, err = util.ConvertTxToFullExitNftPubData(mempoolTx)
 		if err != nil {
 			logx.Errorf("[handleTxPubData] unable to convert tx to full exit nft pub data")
-			return priorityOperation, newPendingOnchainOperationsHash, pubData, err
+			return priorityOperation, nil, nil, nil, err
 		}
+		newPubDataOffset = append(newPubDataOffset, uint32(len(oldPubData)))
 		priorityOperation++
 		newPendingOnchainOperationsHash = util.ConcatKeccakHash(oldPendingOnchainOperationsHash, pubData)
 		break
 	default:
 		logx.Errorf("[handleTxPubData] invalid tx type")
-		return priorityOperation, newPendingOnchainOperationsHash, nil, errors.New("[handleTxPubData] invalid tx type")
+		return priorityOperation, nil, nil, nil, errors.New("[handleTxPubData] invalid tx type")
 	}
-	return priorityOperation, newPendingOnchainOperationsHash, nil, nil
+	newPubData = append(oldPubData, pubData...)
+	return priorityOperation, newPendingOnchainOperationsHash, newPubData, newPubDataOffset, nil
 }
