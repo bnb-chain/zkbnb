@@ -73,7 +73,7 @@ type (
 		TxStatus      int64
 		BlockHeight   int64 `gorm:"index"`
 		BlockId       int64 `gorm:"index"`
-		AccountRoot   string
+		StateRoot     string
 		NftIndex      int64
 		PairIndex     int64
 		AssetId       int64

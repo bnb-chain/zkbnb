@@ -15,23 +15,28 @@
  *
  */
 
-package l1TxSender
+package util
 
-import "github.com/zeromicro/go-zero/core/stores/sqlx"
+import (
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/zecrey-labs/zecrey-legend/common/model/basic"
+	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"log"
+	"testing"
+)
 
 var (
-	ErrNotFound = sqlx.ErrNotFound
+	mempoolModel = mempool.NewMempoolModel(basic.Connection, basic.CacheConf, basic.DB)
 )
 
-const (
-	TableName = "l1_tx_sender"
-
-	// status
-	PendingStatus = 1
-	HandledStatus = 2
-
-	// txVerification type
-	CommitTxType           = 1
-	VerifyAndExecuteTxType = 2
-	RevertTxType           = 3
-)
+func TestConvertTxToRegisterZNSPubData(t *testing.T) {
+	txInfo, err := mempoolModel.GetMempoolTxByTxId(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pubData, err := ConvertTxToRegisterZNSPubData(txInfo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	log.Println(common.Bytes2Hex(pubData))
+}

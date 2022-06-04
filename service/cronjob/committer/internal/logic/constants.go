@@ -5,6 +5,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
+	"github.com/zecrey-labs/zecrey-legend/common/model/blockForCommit"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
@@ -24,7 +25,8 @@ type (
 	Tx       = tx.Tx
 	TxDetail = tx.TxDetail
 	// block
-	Block = block.Block
+	Block          = block.Block
+	BlockForCommit = blockForCommit.BlockForCommit
 	// mempool
 	MempoolTx       = mempool.MempoolTx
 	MempoolTxDetail = mempool.MempoolTxDetail

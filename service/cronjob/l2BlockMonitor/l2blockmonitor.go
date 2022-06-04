@@ -17,7 +17,7 @@ import (
 )
 
 var configFile = flag.String("f",
-	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey\\service\\rpc\\l2BlockMonitor\\etc\\l2blockmonitor.yaml", "the config file")
+	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\cronjob\\l2BlockMonitor\\etc\\l2blockmonitor.yaml", "the config file")
 
 func main() {
 	flag.Parse()
@@ -51,8 +51,10 @@ func main() {
 			bscCli,
 			c.ChainConfig.BSCPendingBlocksCount,
 			ctx.Mempool,
-			ctx.AccountAssetModel, ctx.AccountLiquidityModel, ctx.NftModel,
-			ctx.AccountAssetHistoryModel, ctx.AccountLiquidityHistoryModel, ctx.NftHistoryModel,
+			ctx.AccountModel,
+			ctx.AccountHistoryModel,
+			ctx.NftModel,
+			ctx.NftHistoryModel,
 			ctx.Block,
 			ctx.L1TxSender,
 		)

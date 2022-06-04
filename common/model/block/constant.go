@@ -27,7 +27,7 @@ const (
 	_ = iota
 	StatusPending
 	StatusCommitted
-	StatusVerified
+	StatusVerifiedAndExecuted
 )
 
 var (

@@ -41,7 +41,9 @@ type (
 		CreateL1TxSender(tx *L1TxSender) (bool, error)
 		CreateL1TxSendersInBatches(txs []*L1TxSender) (rowsAffected int64, err error)
 		GetL1TxSenders() (txs []*L1TxSender, err error)
+		GetLatestHandledBlock(txType int64) (txSender *L1TxSender, err error)
 		GetLatestL1TxSender() (blockInfo *L1TxSender, err error)
+		GetLatestPendingBlock(txType int64) (txSender *L1TxSender, err error)
 		GetL1TxSendersByTxStatus(txStatus int) (txs []*L1TxSender, err error)
 		GetL1TxSendersByTxTypeAndStatus(txType uint8, txStatus int) (rowsAffected int64, txs []*L1TxSender, err error)
 		GetL1TxSendersByTxHashAndTxType(txHash string, txType uint8) (rowsAffected int64, txs []*L1TxSender, err error)
@@ -403,4 +405,26 @@ func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 		}
 	}
 	return err
+}
+
+func (m *defaultL1TxSenderModel) GetLatestHandledBlock(txType int64) (txSender *L1TxSender, err error) {
+	dbTx := m.DB.Table(m.table).Where("tx_type = ? AND tx_status = ?", txType, HandledStatus).Find(&txSender)
+	if dbTx.Error != nil {
+		logx.Errorf("[GetLatestHandledBlock] unable to get latest handled block: %s", err.Error())
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return nil, ErrNotFound
+	}
+	return txSender, nil
+}
+
+func (m *defaultL1TxSenderModel) GetLatestPendingBlock(txType int64) (txSender *L1TxSender, err error) {
+	dbTx := m.DB.Table(m.table).Where("tx_type = ? AND tx_status = ?", txType, PendingStatus).Find(&txSender)
+	if dbTx.Error != nil {
+		logx.Errorf("[GetLatestHandledBlock] unable to get latest pending block: %s", err.Error())
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return nil, ErrNotFound
+	}
+	return txSender, nil
 }

@@ -30,8 +30,14 @@ const (
 	AccountNameSuffix = ".legend"
 )
 
-func PaddingBufToChunkSize(buf []byte) []byte {
+func PrefixPaddingBufToChunkSize(buf []byte) []byte {
 	return new(big.Int).SetBytes(buf).FillBytes(make([]byte, 32))
+}
+
+func SuffixPaddingBufToChunkSize(buf []byte) []byte {
+	res := make([]byte, 32)
+	copy(res[:], buf[:])
+	return res
 }
 
 func AccountNameToBytes32(accountName string) []byte {
