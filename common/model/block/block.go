@@ -74,6 +74,7 @@ type (
 		GetNotVerifiedOrExecutedBlocks() (blocks []*Block, err error)
 		GetCommitedBlocksCount() (count int64, err error)
 		GetVerifiedBlocksCount() (count int64, err error)
+		GetBlocksForProverBetween(start, end int64) (blocks []*Block, err error)
 		CreateBlock(block *Block) error
 		CreateGenesisBlock(block *Block) error
 		UpdateBlock(block *Block) error
@@ -105,17 +106,18 @@ type (
 	Block struct {
 		gorm.Model
 		// pubdata
-		BlockCommitment              string
-		BlockHeight                  int64
-		StateRoot                    string
-		PriorityOperations           int64
-		PendingOnchainOperationsHash string
-		CommittedTxHash              string
-		CommittedAt                  int64
-		VerifiedTxHash               string
-		VerifiedAt                   int64
-		Txs                          []*tx.Tx `gorm:"foreignkey:BlockId"`
-		BlockStatus                  int64
+		BlockCommitment                 string
+		BlockHeight                     int64
+		StateRoot                       string
+		PriorityOperations              int64
+		PendingOnChainOperationsHash    string
+		PendingOnChainOperationsPubData string
+		CommittedTxHash                 string
+		CommittedAt                     int64
+		VerifiedTxHash                  string
+		VerifiedAt                      int64
+		Txs                             []*tx.Tx `gorm:"foreignkey:BlockId"`
+		BlockStatus                     int64
 	}
 )
 
@@ -902,4 +904,17 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 		return nil
 	})
 	return err
+}
+
+func (m *defaultBlockModel) GetBlocksForProverBetween(start, end int64) (blocks []*Block, err error) {
+	dbTx := m.DB.Table(m.table).Where("status = ? AND block_height >= ? AND block_height <= ?", StatusCommitted, start, end).
+		Order("block_height").
+		Find(&blocks)
+	if dbTx.Error != nil {
+		logx.Errorf("[GetBlocksForProverBetween] unable to get block between: %s", err.Error())
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return nil, ErrNotFound
+	}
+	return blocks, nil
 }

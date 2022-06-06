@@ -19,7 +19,6 @@ package logic
 import (
 	"errors"
 	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
-	"log"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -68,7 +67,7 @@ func SendCommittedBlocks(
 		if err == ErrNotFound {
 			// get blocks from block table
 			var blocks []*BlockForCommit
-			blocks, err = blockForCommitModel.GetBlockForCommitBetween(0, int64(maxBlockCount))
+			blocks, err = blockForCommitModel.GetBlockForCommitBetween(1, int64(maxBlockCount))
 			if err != nil {
 				logx.Errorf("[SendCommittedBlocks] unable to blocks: %s", err.Error())
 				return err
@@ -130,7 +129,7 @@ func SendCommittedBlocks(
 			// get blocks higher than last handled blocks
 			var blocks []*BlockForCommit
 			// commit new blocks
-			blocks, err = blockForCommitModel.GetBlockForCommitBetween(lastHandledBlock.L2BlockHeight, lastHandledBlock.L2BlockHeight+int64(maxBlockCount))
+			blocks, err = blockForCommitModel.GetBlockForCommitBetween(lastHandledBlock.L2BlockHeight+1, lastHandledBlock.L2BlockHeight+int64(maxBlockCount))
 			if err != nil {
 				logx.Errorf("[SendCommittedBlocks] unable to get sender new blocks: %s", err.Error())
 				return err
@@ -190,7 +189,7 @@ func SendCommittedBlocks(
 			return err
 		}
 		for _, pendingCommittedBlock := range pendingCommitBlocks {
-			log.Println(pendingCommittedBlock.BlockNumber)
+			logx.Info("[SendCommittedBlocks] commit blocks: %v", pendingCommittedBlock.BlockNumber)
 		}
 		// update l1 tx sender table records
 		newSender := &L1TxSender{
