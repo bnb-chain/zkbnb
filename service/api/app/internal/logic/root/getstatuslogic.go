@@ -24,7 +24,8 @@ func NewGetStatusLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetStat
 }
 
 func (l *GetStatusLogic) GetStatus(req *types.ReqGetStatus) (resp *types.RespGetStatus, err error) {
-	// todo: add your logic here and delete this line
-
-	return
+	return &types.RespGetStatus{
+		Status:    200,
+		NetworkId: 0,
+	}, nil
 }
