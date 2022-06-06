@@ -44,6 +44,7 @@ type (
 	ZecreyLegend   = zecreyLegend.ZecreyLegend
 
 	ZecreyLegendCommitBlockInfo = zecreyLegend.OldZecreyLegendCommitBlockInfo
+	ZecreyLegendVerifyBlockInfo = zecreyLegend.OldZecreyLegendVerifyAndExecuteBlockInfo
 	StorageStoredBlockInfo      = zecreyLegend.StorageStoredBlockInfo
 
 	L2AssetInfoModel = l2asset.L2AssetInfoModel

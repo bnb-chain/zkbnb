@@ -168,7 +168,7 @@ func TestDataInitialize(t *testing.T) {
 		BlockHeight:                  0,
 		StateRoot:                    common.Bytes2Hex(tree.NilStateRoot),
 		PriorityOperations:           0,
-		PendingOnchainOperationsHash: "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+		PendingOnChainOperationsHash: "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
 		CommittedTxHash:              "",
 		CommittedAt:                  0,
 		VerifiedTxHash:               "",
