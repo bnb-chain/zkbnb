@@ -38,7 +38,7 @@ func (m *mempool) GetMempoolTxs(offset int64, limit int64) (mempoolTx []*mempool
 	whereCondition := sql.Named("status", PendingTxStatus)
 	order := "created_at desc, id desc"
 	key := cacheMempoolTxListPrefix + fmt.Sprintf("_%v_%v", offset, limit)
-	_, err = m.cache.GetWithSet(key, mempoolTx, multcache.SqlBatchQueryWithWhere, m.db, m.table, where, whereCondition, limit, offset, order)
+	_, err = m.cache.GetWithSet(key, mempoolTx, multcache.SqlBatchQueryWithWhere, m.db, m.table, where, whereCondition, int(limit), int(offset), order)
 	if err != nil {
 		logx.Errorf("[mempool.GetMempoolTxs] %s", err)
 		return nil, err
