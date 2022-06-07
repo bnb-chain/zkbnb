@@ -64,7 +64,7 @@ const (
 
 	// l1 tx sender tx type
 	CommitTxType = l1TxSender.CommitTxType
-	VerifyTxType = l1TxSender.VerifyTxType
+	VerifyTxType = l1TxSender.VerifyAndExecuteTxType
 	RevertTxType = l1TxSender.RevertTxType
 	// status
 	L1TxPendingStatus = l1TxSender.HandledStatus
@@ -73,7 +73,7 @@ const (
 	// block status
 	BlockPendingStatus   = block.StatusPending
 	BlockCommittedStatus = block.StatusCommitted
-	BlockVerifiedStatus  = block.StatusVerified
+	BlockVerifiedStatus  = block.StatusVerifiedAndExecuted
 
 	L1TxSenderPendingStatus = l1TxSender.PendingStatus
 	L1TxSenderHandledStatus = l1TxSender.HandledStatus

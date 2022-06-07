@@ -29,6 +29,7 @@ type (
 		DropProofSenderTable() error
 		CreateProof(row *ProofSender) error
 		GetProofsByBlockRange(start int64, end int64, status int, maxBlocksCount int) (proofs []*ProofSender, err error)
+		GetProofsBetween(start int64, end int64) (proofs []*ProofSender, err error)
 		GetProofStartBlockNumber() (num int64, err error)
 	}
 
@@ -41,7 +42,7 @@ type (
 		gorm.Model
 		ProofInfo   string
 		BlockNumber int64 `gorm:"index"`
-		AccountRoot []byte
+		StateRoot   []byte
 		Commitment  []byte
 		Timestamp   int64
 		Status      int64
@@ -167,6 +168,16 @@ func (m *defaultProofSenderModel) GetProofsByBlockRange(start int64, end int64, 
 	}
 
 	return proofs, err
+}
+
+func (m *defaultProofSenderModel) GetProofsBetween(start int64, end int64) (proofs []*ProofSender, err error) {
+	dbTx := m.DB.Table(m.table).Where("block_number >= ? AND block_number <= ?", start, end).Order("block_number").Find(&proofs)
+	if dbTx.Error != nil {
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return nil, ErrNotFound
+	}
+	return proofs, nil
 }
 
 /*

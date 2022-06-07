@@ -20,6 +20,7 @@ package proverUtil
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/basic"
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
@@ -27,6 +28,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/common/tree"
 	"github.com/zeromicro/go-zero/core/stores/redis"
+	"log"
 	"testing"
 )
 
@@ -56,6 +58,8 @@ func TestConstructRegisterZnsCryptoTxFirst(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	stateRoot := tree.ComputeStateRootHash(accountTree.RootNode.Value, liquidityTree.RootNode.Value, nftTree.RootNode.Value)
+	log.Println(common.Bytes2Hex(stateRoot))
 	cryptoTx, err := ConstructRegisterZnsCryptoTx(
 		txInfo,
 		accountTree, &accountAssetTrees,

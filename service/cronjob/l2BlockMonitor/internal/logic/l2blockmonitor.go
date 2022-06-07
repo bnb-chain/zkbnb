@@ -51,9 +51,7 @@ func MonitorL2BlockEvents(
 	// scan each event
 	var (
 		// pending update blocks
-		relatedBlocks = make(map[int64]*Block)
-		// pending update things
-		pendingUpdateBlocksMap         = make(map[int64]*Block)
+		relatedBlocks                  = make(map[int64]*Block)
 		pendingUpdateSenders           []*L1TxSender
 		pendingUpdateProofSenderStatus = make(map[int64]int)
 	)
@@ -168,7 +166,7 @@ func MonitorL2BlockEvents(
 	var (
 		pendingUpdateBlocks []*Block
 	)
-	for _, pendingUpdateBlock := range pendingUpdateBlocksMap {
+	for _, pendingUpdateBlock := range relatedBlocks {
 		pendingUpdateBlocks = append(pendingUpdateBlocks, pendingUpdateBlock)
 	}
 	// sort for blocks
@@ -220,13 +218,10 @@ func MonitorL2BlockEvents(
 							NftIndex:            pendingUpdateNftAsset.NftIndex,
 							CreatorAccountIndex: pendingUpdateNftAsset.CreatorAccountIndex,
 							OwnerAccountIndex:   pendingUpdateNftAsset.OwnerAccountIndex,
-							AssetId:             pendingUpdateNftAsset.AssetId,
-							AssetAmount:         pendingUpdateNftAsset.AssetAmount,
 							NftContentHash:      pendingUpdateNftAsset.NftContentHash,
 							NftL1TokenId:        pendingUpdateNftAsset.NftL1TokenId,
 							NftL1Address:        pendingUpdateNftAsset.NftL1Address,
 							CollectionId:        pendingUpdateNftAsset.CollectionId,
-							Status:              pendingUpdateNftAsset.Status,
 						}
 						pendingNewNftAssetsMap[pendingUpdateNftAssetHistory.NftIndex] = pendingNewNftAsset
 						continue
@@ -248,13 +243,10 @@ func MonitorL2BlockEvents(
 					NftIndex:            pendingUpdateNftAsset.NftIndex,
 					CreatorAccountIndex: pendingUpdateNftAssetHistory.CreatorAccountIndex,
 					OwnerAccountIndex:   pendingUpdateNftAssetHistory.OwnerAccountIndex,
-					AssetId:             pendingUpdateNftAssetHistory.AssetId,
-					AssetAmount:         pendingUpdateNftAssetHistory.AssetAmount,
 					NftContentHash:      pendingUpdateNftAssetHistory.NftContentHash,
 					NftL1TokenId:        pendingUpdateNftAssetHistory.NftL1TokenId,
 					NftL1Address:        pendingUpdateNftAssetHistory.NftL1Address,
 					CollectionId:        pendingUpdateNftAssetHistory.CollectionId,
-					Status:              pendingUpdateNftAssetHistory.Status,
 				}
 			}
 			// delete related mempool txs

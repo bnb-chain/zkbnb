@@ -49,7 +49,7 @@ const (
 
 var (
 	NilHash                                                                           = merkleTree.NilHash
-	NilAccountAssetRoot, NilAccountRoot                                               []byte
+	NilAccountAssetRoot, NilStateRoot, NilAccountRoot, NilLiquidityRoot, NilNftRoot   []byte
 	NilAccountAssetNodeHash, NilAccountNodeHash, NilLiquidityNodeHash, NilNftNodeHash []byte
 )
 
@@ -73,4 +73,24 @@ func init() {
 		hFunc.Write(NilAccountRoot)
 		NilAccountRoot = hFunc.Sum(nil)
 	}
+	NilLiquidityRoot = NilLiquidityNodeHash
+	for i := 0; i < LiquidityTreeHeight; i++ {
+		hFunc.Reset()
+		hFunc.Write(NilLiquidityRoot)
+		hFunc.Write(NilLiquidityRoot)
+		NilLiquidityRoot = hFunc.Sum(nil)
+	}
+	NilNftRoot = NilNftNodeHash
+	for i := 0; i < NftTreeHeight; i++ {
+		hFunc.Reset()
+		hFunc.Write(NilNftRoot)
+		hFunc.Write(NilNftRoot)
+		NilNftRoot = hFunc.Sum(nil)
+	}
+	// nil state root
+	hFunc.Reset()
+	hFunc.Write(NilAccountRoot)
+	hFunc.Write(NilLiquidityRoot)
+	hFunc.Write(NilNftRoot)
+	NilStateRoot = hFunc.Sum(nil)
 }

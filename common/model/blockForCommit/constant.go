@@ -15,23 +15,16 @@
  *
  */
 
-package l1TxSender
+package blockForCommit
 
-import "github.com/zeromicro/go-zero/core/stores/sqlx"
+import (
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
+)
 
 var (
 	ErrNotFound = sqlx.ErrNotFound
 )
 
 const (
-	TableName = "l1_tx_sender"
-
-	// status
-	PendingStatus = 1
-	HandledStatus = 2
-
-	// txVerification type
-	CommitTxType           = 1
-	VerifyAndExecuteTxType = 2
-	RevertTxType           = 3
+	BlockForCommitTableName = `block_for_commit`
 )

@@ -7,13 +7,13 @@ import (
 
 const (
 	// network rpc
-	BSC_Test_Network_RPC   = "https://data-seed-prebsc-1-s1.binance.org:8545/"
+	BSC_Test_Network_RPC   = "http://tf-dex-preview-validator-nlb-6fd109ac8b9d390a.elb.ap-northeast-1.amazonaws.com:8545"
 	Local_Test_Network_RPC = "http://127.0.0.1:8545/"
 
-	ZecreyLegendContractAddr    = "0x0C17367D14760D2a54A3D140c9F2f1c2EdB81E7D"
-	GovernanceContractAddr      = "0x4B7635b2A882F94cB4E50CDc073bA8630f1759A6"
-	AssetGovernanceContractAddr = "0x3C4237AbEf419C7C76efAd854b7166F49C77F516"
-	VerifierContractAddr        = "0x4EFCfA18c2cdf4661C028Df55F4911c7F82F253d"
+	ZecreyLegendContractAddr    = "0x3Ad0Da185EBdA8D982719275de1B594551F4B014"
+	GovernanceContractAddr      = "0xbEac1B11D9267113499E0Ef38B2B43949767A219"
+	AssetGovernanceContractAddr = "0x0f4362Ec42b2bd0AE8329fC8B20D674c65bFB886"
+	VerifierContractAddr        = "0xD1aaF91B838c868c7264eCc7542211e7Db8aCaDE"
 )
 
 func initSysConfig() []*sysconfig.Sysconfig {
