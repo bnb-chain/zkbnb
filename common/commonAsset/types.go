@@ -19,10 +19,11 @@ package commonAsset
 
 import (
 	"encoding/json"
+	"math/big"
+
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
-	"math/big"
 )
 
 type AccountAsset struct {
@@ -65,7 +66,7 @@ type AccountInfo struct {
 	Nonce           int64
 	CollectionNonce int64
 	// map[int64]*AccountAsset
-	AssetInfo map[int64]*AccountAsset
+	AssetInfo map[int64]*AccountAsset // key: assetID, value: balance
 	AssetRoot string
 	Status    int
 }
