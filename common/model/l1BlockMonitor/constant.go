@@ -25,4 +25,7 @@ var (
 
 const (
 	TableName = "l1_block_monitor"
+
+	MonitorTypeBlock      = 0
+	MonitorTypeGovernance = 1
 )

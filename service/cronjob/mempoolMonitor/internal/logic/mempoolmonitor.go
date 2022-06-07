@@ -107,6 +107,7 @@ func MonitorMempool(
 			}
 			// set correct account index
 			nextAccountIndex++
+			txInfo.AccountIndex = nextAccountIndex
 			// create new account and account history
 			accountInfo := &account.Account{
 				AccountIndex:    nextAccountIndex,

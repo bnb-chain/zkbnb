@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
+	"github.com/zecrey-labs/zecrey-legend/common/model/blockForCommit"
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
@@ -73,6 +74,7 @@ type (
 		GetNotVerifiedOrExecutedBlocks() (blocks []*Block, err error)
 		GetCommitedBlocksCount() (count int64, err error)
 		GetVerifiedBlocksCount() (count int64, err error)
+		GetBlocksForProverBetween(start, end int64) (blocks []*Block, err error)
 		CreateBlock(block *Block) error
 		CreateGenesisBlock(block *Block) error
 		UpdateBlock(block *Block) error
@@ -82,14 +84,15 @@ type (
 		GetBlockStatusCacheByBlockHeight(blockHeight int64) (blockStatusInfo *BlockStatusInfo, err error)
 		CreateBlockForCommitter(
 			oBlock *Block,
+			oBlockForCommit *blockForCommit.BlockForCommit,
 			pendingMempoolTxs []*mempool.MempoolTx,
 			pendingUpdateAccounts []*account.Account,
-			pendingNewAccountHistory []*account.AccountHistory,
+			pendingNewAccountHistories []*account.AccountHistory,
 			pendingUpdateLiquidity []*liquidity.Liquidity,
-			pendingNewLiquidityHistory []*liquidity.LiquidityHistory,
+			pendingNewLiquidityHistories []*liquidity.LiquidityHistory,
 			pendingUpdateNft []*nft.L2Nft,
-			pendingNewNftHistory []*nft.L2NftHistory,
-			pendingNewNftWithdrawHistory []*nft.L2NftWithdrawHistory,
+			pendingNewNftHistories []*nft.L2NftHistory,
+			pendingNewNftWithdrawHistories []*nft.L2NftWithdrawHistory,
 		) (err error)
 	}
 
@@ -103,17 +106,18 @@ type (
 	Block struct {
 		gorm.Model
 		// pubdata
-		BlockCommitment              string
-		BlockHeight                  int64
-		StateRoot                    string
-		PriorityOperations           int64
-		PendingOnchainOperationsHash string
-		CommittedTxHash              string
-		CommittedAt                  int64
-		VerifiedTxHash               string
-		VerifiedAt                   int64
-		Txs                          []*tx.Tx `gorm:"foreignkey:BlockId"`
-		BlockStatus                  int64
+		BlockCommitment                 string
+		BlockHeight                     int64
+		StateRoot                       string
+		PriorityOperations              int64
+		PendingOnChainOperationsHash    string
+		PendingOnChainOperationsPubData string
+		CommittedTxHash                 string
+		CommittedAt                     int64
+		VerifiedTxHash                  string
+		VerifiedAt                      int64
+		Txs                             []*tx.Tx `gorm:"foreignkey:BlockId"`
+		BlockStatus                     int64
 	}
 )
 
@@ -415,7 +419,7 @@ func (m *defaultBlockModel) GetNotVerifiedOrExecutedBlocks() (blocks []*Block, e
 	var (
 		txForeignKeyColumn = `Txs`
 	)
-	dbTx := m.DB.Table(m.table).Where("block_status < ?", StatusVerified).Find(&blocks)
+	dbTx := m.DB.Table(m.table).Where("block_status < ?", StatusVerifiedAndExecuted).Find(&blocks)
 	if dbTx.Error != nil {
 		logx.Error("[block.GetBlockByBlockHeight] %s", dbTx.Error)
 		return nil, dbTx.Error
@@ -575,7 +579,7 @@ func (m *defaultBlockModel) GetVerifiedBlocksCount() (count int64, err error) {
 		return 0, err
 
 	} else if val == "" {
-		dbTx := m.DB.Table(m.table).Where("block_status = ? and deleted_at is NULL", StatusVerified).Count(&count)
+		dbTx := m.DB.Table(m.table).Where("block_status = ? and deleted_at is NULL", StatusVerifiedAndExecuted).Count(&count)
 
 		if dbTx.Error != nil {
 			if dbTx.Error == ErrNotFound {
@@ -756,16 +760,18 @@ func (m *defaultBlockModel) GetBlockStatusCacheByBlockHeight(blockHeight int64) 
 
 func (m *defaultBlockModel) CreateBlockForCommitter(
 	oBlock *Block,
+	oBlockForCommit *blockForCommit.BlockForCommit,
 	pendingMempoolTxs []*mempool.MempoolTx,
 	pendingUpdateAccounts []*account.Account,
-	pendingNewAccountHistorys []*account.AccountHistory,
+	pendingNewAccountHistories []*account.AccountHistory,
 	pendingUpdateLiquiditys []*liquidity.Liquidity,
-	pendingNewLiquidityHistorys []*liquidity.LiquidityHistory,
+	pendingNewLiquidityHistories []*liquidity.LiquidityHistory,
 	pendingUpdateNfts []*nft.L2Nft,
-	pendingNewNftHistorys []*nft.L2NftHistory,
+	pendingNewNftHistories []*nft.L2NftHistory,
 	pendingNewNftWithdrawHistory []*nft.L2NftWithdrawHistory,
 ) (err error) {
 	err = m.DB.Transaction(func(tx *gorm.DB) error { // transact
+		// create block
 		dbTx := tx.Table(m.table).Create(oBlock)
 		if dbTx.Error != nil {
 			logx.Errorf("[CreateBlockForCommitter] unable to create block: %s", err.Error())
@@ -779,6 +785,21 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 			}
 			logx.Errorf("[CreateBlockForCommitter] invalid block info: %s", string(blockInfo))
 			return errors.New("[CreateBlockForCommitter] invalid block info")
+		}
+		// create block for commit
+		dbTx = tx.Table(blockForCommit.BlockForCommitTableName).Create(oBlockForCommit)
+		if dbTx.Error != nil {
+			logx.Errorf("[CreateBlockForCommitter] unable to create block for commit: %s", err.Error())
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			blockInfo, err := json.Marshal(oBlockForCommit)
+			if err != nil {
+				logx.Errorf("[CreateBlockForCommitter] unable to marshal block for commit")
+				return err
+			}
+			logx.Errorf("[CreateBlockForCommitter] invalid block for commit info: %s", string(blockInfo))
+			return errors.New("[CreateBlockForCommitter] invalid block for commit info")
 		}
 		// update mempool
 		for _, mempoolTx := range pendingMempoolTxs {
@@ -809,12 +830,12 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 			}
 		}
 		// create new account history
-		if len(pendingNewAccountHistorys) != 0 {
-			dbTx = tx.Table(account.AccountHistoryTableName).CreateInBatches(pendingNewAccountHistorys, len(pendingNewAccountHistorys))
+		if len(pendingNewAccountHistories) != 0 {
+			dbTx = tx.Table(account.AccountHistoryTableName).CreateInBatches(pendingNewAccountHistories, len(pendingNewAccountHistories))
 			if dbTx.Error != nil {
 				return dbTx.Error
 			}
-			if dbTx.RowsAffected != int64(len(pendingNewAccountHistorys)) {
+			if dbTx.RowsAffected != int64(len(pendingNewAccountHistories)) {
 				logx.Errorf("[CreateBlockForCommitter] unable to create new account history")
 				return errors.New("[CreateBlockForCommitter] unable to create new account history")
 			}
@@ -834,12 +855,12 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 			}
 		}
 		// create new liquidity history
-		if len(pendingNewLiquidityHistorys) != 0 {
-			dbTx = tx.Table(liquidity.LiquidityHistoryTable).CreateInBatches(pendingNewLiquidityHistorys, len(pendingNewLiquidityHistorys))
+		if len(pendingNewLiquidityHistories) != 0 {
+			dbTx = tx.Table(liquidity.LiquidityHistoryTable).CreateInBatches(pendingNewLiquidityHistories, len(pendingNewLiquidityHistories))
 			if dbTx.Error != nil {
 				return dbTx.Error
 			}
-			if dbTx.RowsAffected != int64(len(pendingNewLiquidityHistorys)) {
+			if dbTx.RowsAffected != int64(len(pendingNewLiquidityHistories)) {
 				logx.Errorf("[CreateBlockForCommitter] unable to create new liquidity history")
 				return errors.New("[CreateBlockForCommitter] unable to create new liquidity history")
 			}
@@ -870,12 +891,12 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 			}
 		}
 		// new nft history
-		if len(pendingNewNftHistorys) != 0 {
-			dbTx = tx.Table(nft.L2NftHistoryTableName).CreateInBatches(pendingNewNftHistorys, len(pendingNewNftHistorys))
+		if len(pendingNewNftHistories) != 0 {
+			dbTx = tx.Table(nft.L2NftHistoryTableName).CreateInBatches(pendingNewNftHistories, len(pendingNewNftHistories))
 			if dbTx.Error != nil {
 				return dbTx.Error
 			}
-			if dbTx.RowsAffected != int64(len(pendingNewNftHistorys)) {
+			if dbTx.RowsAffected != int64(len(pendingNewNftHistories)) {
 				logx.Errorf("[CreateBlockForCommitter] unable to create new nft history")
 				return errors.New("[CreateBlockForCommitter] unable to create new nft history")
 			}
@@ -883,4 +904,17 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 		return nil
 	})
 	return err
+}
+
+func (m *defaultBlockModel) GetBlocksForProverBetween(start, end int64) (blocks []*Block, err error) {
+	dbTx := m.DB.Table(m.table).Where("status = ? AND block_height >= ? AND block_height <= ?", StatusCommitted, start, end).
+		Order("block_height").
+		Find(&blocks)
+	if dbTx.Error != nil {
+		logx.Errorf("[GetBlocksForProverBetween] unable to get block between: %s", err.Error())
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return nil, ErrNotFound
+	}
+	return blocks, nil
 }

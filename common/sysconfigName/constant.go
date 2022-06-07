@@ -27,5 +27,7 @@ const (
 	ZecreyLegendContract    = "ZecreyLegendContract"
 	GovernanceContract      = "GovernanceContract"
 	AssetGovernanceContract = "AssetGovernanceContract"
+	Validators              = "Validators"
 	VerifierContract        = "VerifierContract"
+	Governor                = "Governor"
 )

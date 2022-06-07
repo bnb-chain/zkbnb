@@ -31,7 +31,7 @@ const (
 	HandledStatus = 2
 
 	// txVerification type
-	CommitTxType  = 1
-	VerifyTxType  = 2
-	RevertTxType  = 3
+	CommitTxType           = 1
+	VerifyAndExecuteTxType = 2
+	RevertTxType           = 3
 )
