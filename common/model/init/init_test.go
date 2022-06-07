@@ -22,6 +22,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/basic"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
+	"github.com/zecrey-labs/zecrey-legend/common/model/blockForCommit"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l1BlockMonitor"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l1TxSender"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l1amount"
@@ -67,6 +68,8 @@ var (
 	txModel       = tx.NewTxModel(basic.Connection, basic.CacheConf, basic.DB, redisConn)
 	// block
 	blockModel = block.NewBlockModel(basic.Connection, basic.CacheConf, basic.DB, redisConn)
+	// block for commit
+	blockForCommitModel = blockForCommit.NewBlockForCommitModel(basic.Connection, basic.CacheConf, basic.DB)
 	// block for proverUtil
 	proofSenderModel = proofSender.NewProofSenderModel(basic.DB)
 	// monitor
@@ -101,6 +104,7 @@ func TestDropTables(t *testing.T) {
 	txDetailModel.DropTxDetailTable()
 	txModel.DropTxTable()
 	blockModel.DropBlockTable()
+	blockForCommitModel.DropBlockForCommitTable()
 	proofSenderModel.DropProofSenderTable()
 	l1BlockMonitorModel.DropL1BlockMonitorTable()
 	l2TxEventMonitorModel.DropL2TxEventMonitorTable()
@@ -130,6 +134,7 @@ func TestDataInitialize(t *testing.T) {
 	txDetailModel.CreateTxDetailTable()
 	txModel.CreateTxTable()
 	blockModel.CreateBlockTable()
+	blockForCommitModel.CreateBlockForCommitTable()
 	proofSenderModel.CreateProofSenderTable()
 	l1BlockMonitorModel.CreateL1BlockMonitorTable()
 	l2TxEventMonitorModel.CreateL2TxEventMonitorTable()
@@ -161,14 +166,14 @@ func TestDataInitialize(t *testing.T) {
 	err = blockModel.CreateGenesisBlock(&block.Block{
 		BlockCommitment:              "0000000000000000000000000000000000000000000000000000000000000000",
 		BlockHeight:                  0,
-		StateRoot:                    common.Bytes2Hex(tree.NilAccountRoot),
+		StateRoot:                    common.Bytes2Hex(tree.NilStateRoot),
 		PriorityOperations:           0,
-		PendingOnchainOperationsHash: "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+		PendingOnChainOperationsHash: "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
 		CommittedTxHash:              "",
 		CommittedAt:                  0,
 		VerifiedTxHash:               "",
 		VerifiedAt:                   0,
-		BlockStatus:                  block.StatusVerified,
+		BlockStatus:                  block.StatusVerifiedAndExecuted,
 	})
 	if err != nil {
 		t.Fatal(err)

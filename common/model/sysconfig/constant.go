@@ -27,6 +27,8 @@ var (
 	ErrNotFound         = sqlx.ErrNotFound
 	ErrInvalidSysconfig = errors.New("[ErrInvalidSysconfig] invalid system config")
 
+	TableName = `sys_config`
+
 	NameColumn      = "name"
 	ValueColumn     = "value"
 	ValueTypeColumn = "value_type"

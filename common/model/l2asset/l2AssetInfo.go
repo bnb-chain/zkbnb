@@ -42,6 +42,7 @@ type (
 		GetL2AssetsList() (res []*L2AssetInfo, err error)
 		GetL2AssetsListWithoutL1AssetsInfo() (res []*L2AssetInfo, err error)
 		GetSimpleL2AssetInfoByAssetId(assetId int64) (res *L2AssetInfo, err error)
+		GetL2AssetByAddress(address string) (info *L2AssetInfo, err error)
 		GetAssetIdCount() (res int64, err error)
 		GetL2AssetInfoBySymbol(symbol string) (res *L2AssetInfo, err error)
 	}
@@ -54,11 +55,12 @@ type (
 
 	L2AssetInfo struct {
 		gorm.Model
-		AssetId     int64 `gorm:"uniqueIndex"`
-		AssetName   string
-		AssetSymbol string
-		Decimals    int64
-		Status      int
+		AssetId      int64 `gorm:"uniqueIndex"`
+		AssetAddress string
+		AssetName    string
+		AssetSymbol  string
+		Decimals     int64
+		Status       int
 	}
 )
 
@@ -256,4 +258,14 @@ func (m *defaultL2AssetInfoModel) GetL2AssetInfoBySymbol(symbol string) (res *L2
 		return nil, ErrNotFound
 	}
 	return res, nil
+}
+
+func (m *defaultL2AssetInfoModel) GetL2AssetByAddress(address string) (info *L2AssetInfo, err error) {
+	dbTx := m.DB.Table(m.table).Where("asset_address = ?", address).Find(&info)
+	if dbTx.Error != nil {
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return nil, ErrNotFound
+	}
+	return info, nil
 }

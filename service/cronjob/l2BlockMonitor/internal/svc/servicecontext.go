@@ -1,6 +1,7 @@
 package svc
 
 import (
+	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l1TxSender"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2BlockEventMonitor"
@@ -16,12 +17,14 @@ import (
 )
 
 type ServiceContext struct {
-	Config  config.Config
-	Mempool mempool.MempoolModel
+	Config              config.Config
+	Mempool             mempool.MempoolModel
 	Block               block.BlockModel
 	L2BlockEventMonitor l2BlockEventMonitor.L2BlockEventMonitorModel
 	L1TxSender          l1TxSender.L1TxSenderModel
 	SysConfig           sysconfig.SysconfigModel
+	AccountModel        account.AccountModel
+	AccountHistoryModel account.AccountHistoryModel
 	NftModel            nft.L2NftModel
 	NftHistoryModel     nft.L2NftHistoryModel
 }
@@ -47,5 +50,9 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		L2BlockEventMonitor: l2BlockEventMonitor.NewL2BlockEventMonitorModel(conn, c.CacheRedis, gormPointer),
 		L1TxSender:          l1TxSender.NewL1TxSenderModel(conn, c.CacheRedis, gormPointer),
 		SysConfig:           sysconfig.NewSysconfigModel(conn, c.CacheRedis, gormPointer),
+		AccountModel:        account.NewAccountModel(conn, c.CacheRedis, gormPointer),
+		AccountHistoryModel: account.NewAccountHistoryModel(conn, c.CacheRedis, gormPointer),
+		NftModel:            nft.NewL2NftModel(conn, c.CacheRedis, gormPointer),
+		NftHistoryModel:     nft.NewL2NftHistoryModel(conn, c.CacheRedis, gormPointer),
 	}
 }

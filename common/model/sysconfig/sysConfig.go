@@ -60,13 +60,13 @@ type (
 func NewSysconfigModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) SysconfigModel {
 	return &defaultSysconfigModel{
 		CachedConn: sqlc.NewConn(conn, c),
-		table:      `sys_config`,
+		table:      TableName,
 		DB:         db,
 	}
 }
 
 func (*Sysconfig) TableName() string {
-	return `sys_config`
+	return TableName
 }
 
 /*
