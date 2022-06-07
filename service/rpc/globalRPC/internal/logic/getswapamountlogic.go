@@ -23,8 +23,8 @@ func NewGetSwapAmountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 	}
 }
 
-func (l *GetSwapAmountLogic) GetSwapAmount(in *globalRPCProto.ReqGetSwapAmount) (*globalRPCProto.ReqGetSwapAmount, error) {
+func (l *GetSwapAmountLogic) GetSwapAmount(in *globalRPCProto.ReqGetSwapAmount) (*globalRPCProto.RespGetSwapAmount, error) {
 	// todo: add your logic here and delete this line
 
-	return &globalRPCProto.ReqGetSwapAmount{}, nil
+	return &globalRPCProto.RespGetSwapAmount{}, nil
 }

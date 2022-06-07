@@ -21,6 +21,7 @@ require (
 	google.golang.org/grpc v1.46.0
 	google.golang.org/protobuf v1.28.0
 	gorm.io/driver/postgres v1.3.6
+	k8s.io/client-go v0.24.1 // indirect
 )
 
 replace github.com/zecrey-labs/zecrey-crypto => ../zecrey-crypto

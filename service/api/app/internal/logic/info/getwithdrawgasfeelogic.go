@@ -30,16 +30,15 @@ func NewGetWithdrawGasFeeLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 	}
 }
 
-// todo GetWithdrawGasFee
 func (l *GetWithdrawGasFeeLogic) GetWithdrawGasFee(req *types.ReqGetWithdrawGasFee) (resp *types.RespGetWithdrawGasFee, err error) {
-	l2Asset, err := l.l2asset.GetL2AssetInfoByAssetId(uint32(req.AssetId))
+	l2Asset, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(uint32(req.AssetId))
 	if err != nil {
-		logx.Error("[GetL2AssetInfoByAssetId] err:%v", err)
+		logx.Error("[GetSimpleL2AssetInfoByAssetId] err:%v", err)
 		return nil, err
 	}
-	withdrawL2Asset, err := l.l2asset.GetL2AssetInfoByAssetId(uint32(req.WithdrawAssetId))
+	withdrawL2Asset, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(uint32(req.WithdrawAssetId))
 	if err != nil {
-		logx.Error("[GetL2AssetInfoByAssetId] err:%v", err)
+		logx.Error("[GetSimpleL2AssetInfoByAssetId] err:%v", err)
 		return nil, err
 	}
 	price, err := l.price.GetCurrencyPrice(l2Asset.AssetSymbol)

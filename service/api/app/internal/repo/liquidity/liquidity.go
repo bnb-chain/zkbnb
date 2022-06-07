@@ -25,48 +25,6 @@ type liquidity struct {
 }
 
 /*
-	Func: CreateAccountLiquidity
-	Params: liquidity *Liquidity
-	Return: err error
-	Description: create account liquidity entity
-*/
-func (m *liquidity) CreateLiquidity(liquidity *table.Liquidity) error {
-	dbTx := m.db.Table(m.table).Create(liquidity)
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[liquidity.CreateLiquidity] %s", dbTx.Error)
-		logx.Error(err)
-		return dbTx.Error
-	}
-	if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[liquidity.CreateLiquidity] %s", ErrIllegalParam)
-		logx.Error(err)
-		return ErrIllegalParam
-	}
-	return nil
-}
-
-/*
-	Func: CreateAccountLiquidityInBatches
-	Params: entities []*Liquidity
-	Return: err error
-	Description: create account liquidity entities
-*/
-func (m *liquidity) CreateLiquidityInBatches(entities []*table.Liquidity) error {
-	dbTx := m.db.Table(m.table).CreateInBatches(entities, len(entities))
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[liquidity.CreateLiquidityInBatches] %s", dbTx.Error)
-		logx.Error(err)
-		return dbTx.Error
-	}
-	if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[liquidity.CreateLiquidityInBatches] %s", ErrIllegalParam)
-		logx.Error(err)
-		return ErrIllegalParam
-	}
-	return nil
-}
-
-/*
 	Func: GetAccountLiquidityByPairIndex
 	Params: pairIndex int64
 	Return: entities []*Liquidity, err error
@@ -83,5 +41,9 @@ func (m *liquidity) GetLiquidityByPairIndex(pairIndex int64) (entity *table.Liqu
 		logx.Error(err)
 		return nil, ErrNotExistInSql
 	}
+	return entity, nil
+}
+
+func (m *liquidity) GetAllLiquidityAssets() (entity []*table.Liquidity, err error) {
 	return entity, nil
 }

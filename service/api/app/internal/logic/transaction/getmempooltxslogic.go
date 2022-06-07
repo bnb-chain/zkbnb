@@ -71,14 +71,14 @@ func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (resp *t
 		gasFee, err := strconv.Atoi(mempoolTx.GasFee)
 		data = append(data, &types.Tx{
 			TxHash:        mempoolTx.TxHash,
-			TxType:        uint8(mempoolTx.TxType),
-			AssetAId:      int(mempoolTx.AssetAId),
-			AssetBId:      int(mempoolTx.AssetBId),
+			TxType:        uint32(mempoolTx.TxType),
+			AssetAId:      int(mempoolTx.AssetId),
+			AssetBId:      int(mempoolTx.AssetId),
 			TxDetails:     txDetails,
 			TxAmount:      txAmount,
 			NativeAddress: mempoolTx.NativeAddress,
 			TxStatus:      1, //pending
-			GasFeeAssetId: uint16(mempoolTx.GasFeeAssetId),
+			GasFeeAssetId: uint32(mempoolTx.GasFeeAssetId),
 			GasFee:        int64(gasFee),
 			CreatedAt:     mempoolTx.CreatedAt.Unix(),
 			Memo:          mempoolTx.Memo,

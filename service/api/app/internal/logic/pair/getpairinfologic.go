@@ -33,10 +33,17 @@ func (l *GetPairInfoLogic) GetPairInfo(req *types.ReqGetPairInfo) (resp *types.R
 		logx.Error("[CheckPairIndex] param:%v", req.PairIndex)
 		return nil, errcode.ErrInvalidParam
 	}
-	resRpc, err := l.globalRPC.GetPairInfo(req.PairIndex)
+	pair, err := l.globalRPC.GetPairInfo(req.PairIndex)
 	if err != nil {
 		logx.Error("[GetPairRatio] err:%v", err)
 		return nil, err
+	}
+	resp = &types.RespGetPairInfo{
+		AssetAId:      pair.AssetAId,
+		AssetAAmount:  pair.AssetAAmount,
+		AssetBId:      pair.AssetBId,
+		AssetBAmount:  pair.AssetBAmount,
+		TotalLpAmount: pair.LpAmount,
 	}
 	return resp, nil
 }

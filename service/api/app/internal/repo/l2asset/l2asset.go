@@ -33,13 +33,7 @@ func (m *l2asset) GetL2AssetsList() (res []*table.L2AssetInfo, err error) {
 		return nil, dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
-		return nil, ErrNotExistInSql
-	}
-	for _, asset := range res {
-		err := m.db.Model(&asset).Association("L1AssetsInfo").Find(&asset.L1AssetsInfo)
-		if err != nil {
-			return nil, err
-		}
+		return nil, ErrNotFound
 	}
 	return res, nil
 }
@@ -62,23 +56,18 @@ func (m *l2asset) GetL2AssetInfoBySymbol(symbol string) (res *table.L2AssetInfo,
 }
 
 /*
-	Func: GetL2AssetInfoByAssetId
+	Func: GetSimpleL2AssetInfoByAssetId
 	Params: assetId uint32
 	Return: L2AssetInfo, error
 	Description: get layer-2 asset info by assetId
 */
-func (m *l2asset) GetL2AssetInfoByAssetId(assetId uint32) (res *table.L2AssetInfo, err error) {
-	var L2AssetInfoForeignKeyColumn = "L1AssetsInfo"
-	dbTx := m.db.Table(m.table).Where("l2_asset_id = ?", assetId).Find(&res)
+func (m *l2asset) GetSimpleL2AssetInfoByAssetId(assetId uint32) (res *table.L2AssetInfo, err error) {
+	dbTx := m.db.Table(m.table).Where("asset_id = ?", assetId).Find(&res)
 	if dbTx.Error != nil {
 		return nil, dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
-		return nil, ErrNotExistInSql
-	}
-	err = m.db.Model(&res).Association(L2AssetInfoForeignKeyColumn).Find(&res.L1AssetsInfo)
-	if err != nil {
-		return nil, err
+		return nil, ErrNotFound
 	}
 	return res, nil
 }

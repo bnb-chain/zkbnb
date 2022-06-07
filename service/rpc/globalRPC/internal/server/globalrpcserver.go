@@ -44,7 +44,7 @@ func (s *GlobalRPCServer) GetLatestPairInfo(ctx context.Context, in *globalRPCPr
 	return l.GetLatestPairInfo(in)
 }
 
-func (s *GlobalRPCServer) GetSwapAmount(ctx context.Context, in *globalRPCProto.ReqGetSwapAmount) (*globalRPCProto.ReqGetSwapAmount, error) {
+func (s *GlobalRPCServer) GetSwapAmount(ctx context.Context, in *globalRPCProto.ReqGetSwapAmount) (*globalRPCProto.RespGetSwapAmount, error) {
 	l := logic.NewGetSwapAmountLogic(ctx, s.svcCtx)
 	return l.GetSwapAmount(in)
 }

@@ -88,9 +88,9 @@ type (
 	}
 )
 
-// getAccountLiquidityPairs
+// GetAccountLiquidityPairsByAccountIndex
 type (
-	ReqGetAccountLiquidityPairs {
+	ReqGetAccountLiquidityPairsByAccountIndex {
 		AccountIndex uint32 `form:"account_index"`
 	}
 	AccountLiquidityPairs {
@@ -102,7 +102,7 @@ type (
 		LpAmountEnc string `json:"lp_amount_enc"`
 		CreatedAt   int64  `json:"created_at"`
 	}
-	RespGetAccountLiquidityPairs {
+	RespGetAccountLiquidityPairsByAccountIndex {
 		Pairs []*AccountLiquidityPairs `json:"pairs"`
 	}
 )
@@ -127,8 +127,8 @@ service appService-api{
 	@handler GetAssetsByAccountName
 	get /api/v1/account/getAssetsByAccountName (ReqGetAssetsByAccountName) returns (RespGetAssetsByAccountName)
 	
-	@handler GetAccountLiquidityPairs
-	get /api/v1/account/getAccountLiquidityPairs (ReqGetAccountLiquidityPairs) returns (RespGetAccountLiquidityPairs)
+	@handler GetAccountLiquidityPairsByAccountIndex
+	get /api/v1/account/getAccountLiquidityPairsByAccountIndex (ReqGetAccountLiquidityPairsByAccountIndex) returns (RespGetAccountLiquidityPairsByAccountIndex)
 }
 
 /* ========================= Info =========================*/
@@ -194,28 +194,6 @@ type (
 	}
 )
 
-// GetL1AmountByAssetid
-type (
-	ReqGetL1AmountByAssetid {
-		AssetId uint32 `form:"asset_id"`
-	}
-	RespGetL1AmountByAssetid {
-		TotalAmount int64 `json:"total_amount"`
-	}
-)
-
-// GetL1AmountList
-type (
-	ReqGetL1AmountList struct{}
-	AmountInfo         {
-		AssetId     int   `json:"asset_id"`
-		TotalAmount int64 `json:"total_amount"`
-	}
-	RespGetL1AmountList {
-		Amounts []*AmountInfo `json:"amounts"`
-	}
-)
-
 @server(
 	group: info
 )
@@ -234,12 +212,6 @@ service appService-api{
 	
 	@handler GetWithdrawGasFee
 	get /api/v1/info/getWithdrawGasFee  (ReqGetWithdrawGasFee) returns (RespGetWithdrawGasFee)
-	
-	@handler GetL1AmountByAssetid
-	get /api/v1/info/getL1AmountByAssetid  (ReqGetL1AmountByAssetid) returns (RespGetL1AmountByAssetid)
-	
-	@handler GetL1AmountList
-	get /api/v1/info/getL1AmountList  (ReqGetL1AmountList) returns (RespGetL1AmountList)
 }
 
 /* =========================== Pair ==========================*/
@@ -248,12 +220,11 @@ type (
 	ReqGetSwapAmount {
 		PairIndex   uint32 `form:"pair_index"`
 		AssetId     uint32 `form:"asset_id"`
-		AssetAmount uint64 `form:"asset_amount"`
+		AssetAmount string `form:"asset_amount"`
 		IsFrom      bool   `form:"is_from"`
 	}
 	RespGetSwapAmount {
-		PairIndex      uint32 `json:"pair_index"` //
-		ResAssetAmount uint64 `json:"res_asset_amount"`
+		ResAssetAmount string `json:"res_asset_amount"`
 		ResAssetId     uint32 `json:"res_asset_id"`
 	}
 )
@@ -279,15 +250,15 @@ type (
 type (
 	ReqGetLPValue {
 		PairIndex uint32 `form:"pair_index"`
-		LpAmount  uint64 `form:"lp_amount"`
+		LpAmount  string `form:"lp_amount"`
 	}
 	RespGetLPValue {
 		AssetAId     uint32 `json:"asset_a_id"`
 		AssetAName   string `json:"asset_a_name"`
-		AssetAAmount uint64 `json:"asset_a_amount"`
+		AssetAAmount string `json:"asset_a_amount"`
 		AssetBid     uint32 `json:"asset_b_id"`
 		AssetBName   string `json:"asset_b_name"`
-		AssetBAmount uint64 `json:"asset_b_amount"`
+		AssetBAmount string `json:"asset_b_amount"`
 	}
 )
 
@@ -297,12 +268,11 @@ type (
 		PairIndex uint32 `form:"pair_index"`
 	}
 	RespGetPairInfo {
-		AssetRatio    float64 `json:"asset_ratio"`
 		AssetAId      uint32  `json:"asset_a_id"`
-		AssetAAmount  uint64  `json:"asset_a_amount"`
+		AssetAAmount  string  `json:"asset_a_amount"`
 		AssetBId      uint32  `json:"asset_b_id"`
-		AssetBAmount  uint64  `json:"asset_b_amount"`
-		TotalLpAmount uint64  `json:"total_lp_amount"`
+		AssetBAmount  string  `json:"asset_b_amount"`
+		TotalLpAmount string  `json:"total_lp_amount"`
 	}
 )
 

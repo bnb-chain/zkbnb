@@ -44,7 +44,6 @@ type account struct {
 func (m *account) IfAccountNameExist(name string) (bool, error) {
 	var res int64
 	dbTx := m.db.Table(m.table).Where("account_name = ? and deleted_at is NULL", strings.ToLower(name)).Count(&res)
-
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[account.IfAccountNameExist] %s", dbTx.Error)
 		logx.Error(err)

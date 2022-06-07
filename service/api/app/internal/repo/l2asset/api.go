@@ -18,7 +18,7 @@ import (
 type L2asset interface {
 	GetL2AssetsList() (res []*table.L2AssetInfo, err error)
 	GetL2AssetInfoBySymbol(symbol string) (res *table.L2AssetInfo, err error)
-	GetL2AssetInfoByAssetId(assetId uint32) (res *table.L2AssetInfo, err error)
+	GetSimpleL2AssetInfoByAssetId(assetId uint32) (res *table.L2AssetInfo, err error)
 }
 
 var singletonValue *l2asset

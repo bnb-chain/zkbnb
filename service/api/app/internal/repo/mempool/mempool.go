@@ -3,6 +3,7 @@ package mempool
 import (
 	"database/sql"
 	"fmt"
+
 	mempoolModel "github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -37,7 +38,7 @@ func (m *mempool) GetMempoolTxs(offset int64, limit int64) (mempoolTx []*mempool
 	whereCondition := sql.Named("status", PendingTxStatus)
 	order := "created_at desc, id desc"
 	key := cacheMempoolTxListPrefix + fmt.Sprintf("_%v_%v", offset, limit)
-	_, err = m.cache.GetWithSet(key, mempoolTx, multcache.SqlBatchQueryWithWhere, m.db, m.table, where, whereCondition, limit, offset, order)
+	_, err = m.cache.GetWithSet(key, mempoolTx, multcache.SqlBatchQueryWithWhere, m.db, m.table, where, whereCondition, int(limit), int(offset), order)
 	if err != nil {
 		logx.Errorf("[mempool.GetMempoolTxs] %s", err)
 		return nil, err
@@ -64,23 +65,31 @@ func (m *mempool) GetMempoolTxsTotalCount() (count int64, err error) {
 func (m *mempool) GetMempoolTxByTxHash(hash string) (mempoolTx *mempoolModel.MempoolTx, err error) {
 	var mempoolForeignKeyColumn = `MempoolDetails`
 	dbTx := m.db.Table(m.table).Where("status = ? and tx_hash = ?", PendingTxStatus, hash).Find(&mempoolTx)
-	if dbTx.Error != nil {
-		if dbTx.Error == ErrNotFound {
-			return mempoolTx, dbTx.Error
-		} else {
-			err := fmt.Sprintf("[mempool.GetMempoolTxByTxHash] %s", dbTx.Error)
-			logx.Errorf(err)
-			return nil, dbTx.Error
-		}
-	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[mempool.GetMempoolTxByTxHash] %s", ErrNotFound)
-		logx.Info(err)
-		return nil, ErrNotFound
-	}
 	err = m.db.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
 	if err != nil {
 		logx.Errorf("[mempool.GetMempoolTxByTxHash] Get Associate MempoolDetails Error")
 		return nil, err
 	}
-	return mempoolTx, nil
+	return mempoolTx, dbTx.Error
+}
+
+func (m *mempool) GetMempoolTxsTotalCountByAccountIndex(accountIndex int64) (count int64, err error) {
+	var (
+		mempoolDetailTable = `mempool_tx_detail`
+		mempoolIds         []int64
+	)
+	var mempoolTxDetails []*mempoolModel.MempoolTxDetail
+	dbTx := m.db.Table(mempoolDetailTable).Select("tx_id").Where("account_index = ?", accountIndex).Find(&mempoolTxDetails).Group("tx_id").Find(&mempoolIds)
+	if dbTx.Error != nil {
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	dbTx = m.db.Table(m.table).Where("status = ? and id in (?) and deleted_at is NULL", PendingTxStatus, mempoolIds).Count(&count)
+	if dbTx.Error != nil {
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	return count, nil
 }

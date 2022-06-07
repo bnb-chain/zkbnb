@@ -17,15 +17,12 @@ import (
 )
 
 type Liquidity interface {
-	CreateLiquidity(liquidity *table.Liquidity) error
-	CreateLiquidityInBatches(entities []*table.Liquidity) error
 	GetLiquidityByPairIndex(pairIndex int64) (entity *table.Liquidity, err error)
 	GetAllLiquidityAssets() (entity []*table.Liquidity, err error)
 }
 
 var singletonValue *liquidity
 var once sync.Once
-var c config.Config
 
 func New(c config.Config) Liquidity {
 	once.Do(func() {
