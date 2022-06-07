@@ -25,6 +25,9 @@ import (
 
 const (
 	L2AssetInfoTableName = `l2_asset_info`
+
+	StatusActive   = 0
+	StatusInactive = 1
 )
 
 var (

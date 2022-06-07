@@ -12,20 +12,25 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
-package l1BlockMonitor
+package logic
 
-import "github.com/zeromicro/go-zero/core/stores/sqlx"
+import "math/big"
 
-var (
-	ErrNotFound = sqlx.ErrNotFound
-)
+type L1EventInfo struct {
+	// deposit / lock / committed / verified / reverted
+	EventType uint8
+	// tx hash
+	TxHash string
+}
 
-const (
-	TableName = "l1_block_monitor"
-
-	MonitorTypeBlock      = 0
-	MonitorTypeGovernance = 1
-)
+type ChainConfig struct {
+	L2ChainId                uint8
+	NativeChainId            *big.Int
+	NetworkRPC               string
+	ZecreyLegendContractAddr string
+	GovernanceContractAddr   string
+	StartL1BlockHeight       int64
+	PendingBlocksCount       uint64
+}

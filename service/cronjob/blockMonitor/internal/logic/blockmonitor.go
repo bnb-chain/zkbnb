@@ -44,13 +44,13 @@ func MonitorBlocks(
 ) (err error) {
 
 	// get latest handled l1 block from database by chain id
-	latestHandledBlock, err := l1BlockMonitorModel.GetLatestL1BlockMonitor()
+	latestHandledBlock, err := l1BlockMonitorModel.GetLatestL1BlockMonitorByBlock()
 	var handledHeight int64
 	if err != nil {
 		if err == ErrNotFound {
 			handledHeight = startHeight
 		} else {
-			logx.Errorf("[l1BlockMonitorModel.GetLatestL1BlockMonitor]: %s", err.Error())
+			logx.Errorf("[l1BlockMonitorModel.GetLatestL1BlockMonitorByBlock]: %s", err.Error())
 			return err
 		}
 	} else {
@@ -246,6 +246,7 @@ func MonitorBlocks(
 	l1BlockMonitorInfo := &l1BlockMonitor.L1BlockMonitor{
 		L1BlockHeight: int64(safeHeight),
 		BlockInfo:     string(eventInfosBytes),
+		MonitorType:   l1BlockMonitor.MonitorTypeBlock,
 	}
 	// write into database, need to use transaction
 	err = l1BlockMonitorModel.CreateMonitorsInfo(l1BlockMonitorInfo, l2TxEventMonitors, l2BlockEventMonitors)
