@@ -16,6 +16,7 @@ type Tx interface {
 	GetTxsTotalCount() (count int64, err error)
 	GetTxsTotalCountByAccountIndex(accountIndex int64) (count int64, err error)
 	GetTxsTotalCountByAccountIndexAndTxTypeArray(accountIndex int64, txTypeArray []uint8) (count int64, err error)
+	GetTxsListByAccountIndexAndTxTypeArray(accountIndex int64, txTypeArray []uint8, limit int, offset int) (txs []*Tx, err error)
 }
 
 var singletonValue *tx

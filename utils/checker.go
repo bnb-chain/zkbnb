@@ -35,6 +35,8 @@ const (
 	minOffset = 0
 	maxOffset = (1 << 64) - 1 //TODO
 
+	minLPAmount = 0
+	maxLPAmount = (1 << 64) - 1
 )
 
 func CheckAccountName(accountName string) bool {
@@ -75,6 +77,10 @@ func CheckTypeLimit(limit uint32) bool {
 
 func CheckTypeOffset(offset uint32) bool {
 	return offset > maxOffset
+}
+
+func CheckLPAmount(lPAmount uint32) bool {
+	return lPAmount > maxLPAmount
 }
 
 // Format AccountName and

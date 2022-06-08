@@ -75,3 +75,37 @@ func (m *tx) GetTxsTotalCountByAccountIndexAndTxTypeArray(accountIndex int64, tx
 	}
 	return count, nil
 }
+
+/*
+	Func: GetTxsListByAccountIndexAndTxTypeArray
+	Params: accountIndex int64, txTypeArray []uint8, limit int, offset int
+	Return: txVerification []*Tx, err error
+	Description: used for getTxsListByAccountIndex API, return all txVerification related to accountIndex and txTypeArray.
+				Because there are many accountIndex in
+				 sorted by created_time
+				 Associate With TxDetail Table
+*/
+
+func (m *tx) GetTxsListByAccountIndexAndTxTypeArray(accountIndex int64, txTypeArray []uint8, limit int, offset int) (txs []*Tx, err error) {
+	var (
+		txDetailTable = `tx_detail`
+		txIds         []int64
+	)
+	dbTx := m.db.Table(txDetailTable).Select("tx_id").Where("account_index = ? and deleted_at is NULL", accountIndex).Group("tx_id").Find(&txIds)
+	if dbTx.Error != nil {
+		logx.Error("[txVerification.GetTxsListByAccountIndexAndTxTypeArray] %s", dbTx.Error)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Info("[info.GetTxsListByAccountIndexAndTxTypeArray] Get TxIds Error")
+		return nil, ErrNotExistInSql
+	}
+	dbTx = m.db.Table(m.table).Order("created_at desc").Where("tx_type in (?)", txTypeArray).Offset(offset).Limit(limit).Find(&txs, txIds)
+	if dbTx.Error != nil {
+		logx.Error("[txVerification.GetTxsListByAccountIndexAndTxTypeArray] %s", dbTx.Error)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Error("[GetTxsListByAccountIndexAndTxTypeArray] Get Txs Error")
+		return nil, ErrNotExistInSql
+	}
+	return txs, nil
+}
