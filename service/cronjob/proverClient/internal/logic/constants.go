@@ -14,21 +14,12 @@
  * limitations under the License.
  */
 
-package proofSender
+package logic
 
-import "errors"
-
-const (
-	TableName = "proof_sender"
+import (
+	cryptoBlock "github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/block"
 )
 
-var (
-	ErrInvalidProof = errors.New("Invalid Proof")
-	ErrNotFound     = errors.New("Not found error")
-)
-
-const (
-	NotSent = iota
-	NotConfirmed
-	Confirmed
+type (
+	CryptoBlock = cryptoBlock.Block
 )

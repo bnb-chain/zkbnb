@@ -41,11 +41,11 @@ func TestConstructRegisterZnsCryptoTxFirst(t *testing.T) {
 	liquidityHistoryModel := liquidity.NewLiquidityHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
 	//nftModel := nft.NewL2NftModel(basic.Connection, basic.CacheConf, basic.DB)
 	nftHistoryModel := nft.NewL2NftHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
-	txInfo, err := txModel.GetTxByTxId(1)
+	txInfo, err := txModel.GetTxByTxId(3)
 	if err != nil {
 		t.Fatal(err)
 	}
-	blockHeight := int64(0)
+	blockHeight := int64(2)
 	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, accountHistoryModel, blockHeight)
 	if err != nil {
 		t.Fatal(err)
@@ -58,8 +58,6 @@ func TestConstructRegisterZnsCryptoTxFirst(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	stateRoot := tree.ComputeStateRootHash(accountTree.RootNode.Value, liquidityTree.RootNode.Value, nftTree.RootNode.Value)
-	log.Println(common.Bytes2Hex(stateRoot))
 	cryptoTx, err := ConstructRegisterZnsCryptoTx(
 		txInfo,
 		accountTree, &accountAssetTrees,
@@ -70,6 +68,8 @@ func TestConstructRegisterZnsCryptoTxFirst(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	log.Println(common.Bytes2Hex(tree.NilAccountNodeHash))
+	log.Println(common.Bytes2Hex(cryptoTx.MerkleProofsAccountBefore[0][0]))
 	txBytes, err := json.Marshal(cryptoTx)
 	if err != nil {
 		t.Fatal(err)

@@ -86,8 +86,8 @@ func CommitterTask(
 		accountMap   = make(map[int64]*FormatAccountInfo)
 		liquidityMap = make(map[int64]*Liquidity)
 		nftMap       = make(map[int64]*L2Nft)
+		oldStateRoot = lastBlock.StateRoot
 	)
-
 	for i := 0; i < blocksSize; i++ {
 		// Check time stamp
 		var now = time.Now()
@@ -141,13 +141,14 @@ func CommitterTask(
 			// get mempool tx
 			mempoolTx := mempoolTxs[i*MaxTxsAmountPerBlock+j]
 			// handle tx pub data
-			pendingPriorityOperation, pendingOnChainOperationsPubData, pendingOnChainOperationsHash, pubData, pubDataOffset, err = handleTxPubData(
-				mempoolTx,
-				pubData,
-				pendingOnChainOperationsPubData,
-				pendingOnChainOperationsHash,
-				pubDataOffset,
-			)
+			pendingPriorityOperation, pendingOnChainOperationsPubData, pendingOnChainOperationsHash, pubData, pubDataOffset, err =
+				handleTxPubData(
+					mempoolTx,
+					pubData,
+					pendingOnChainOperationsPubData,
+					pendingOnChainOperationsHash,
+					pubDataOffset,
+				)
 			if err != nil {
 				logx.Errorf("[CommitterTask] unable to handle l1 tx: %s", err.Error())
 				return err
@@ -190,7 +191,7 @@ func CommitterTask(
 					}
 					accountAssetTrees = append(accountAssetTrees, emptyAssetTree)
 					nAccountLeafHash, err := tree.ComputeAccountLeafHash(
-						accountMap[mempoolTx.AccountIndex].AccountName,
+						accountMap[mempoolTx.AccountIndex].AccountNameHash,
 						accountMap[mempoolTx.AccountIndex].PublicKey,
 						accountMap[mempoolTx.AccountIndex].Nonce,
 						accountMap[mempoolTx.AccountIndex].CollectionNonce,
@@ -541,7 +542,7 @@ func CommitterTask(
 			// update account tree
 			for accountIndex, _ := range pendingUpdateAccountIndexMap {
 				nAccountLeafHash, err := tree.ComputeAccountLeafHash(
-					accountMap[accountIndex].AccountName,
+					accountMap[accountIndex].AccountNameHash,
 					accountMap[accountIndex].PublicKey,
 					accountMap[accountIndex].Nonce,
 					accountMap[accountIndex].CollectionNonce,
@@ -647,34 +648,38 @@ func CommitterTask(
 		commitment := util.CreateBlockCommitment(
 			currentBlockHeight,
 			createdAt,
-			common.FromHex(lastBlock.StateRoot),
+			common.FromHex(oldStateRoot),
 			common.FromHex(finalStateRoot),
 			pubData,
 			int64(len(pubDataOffset)),
 		)
+		// update old state root
+		oldStateRoot = finalStateRoot
 		// construct block
 		createAtTime := time.UnixMilli(createdAt)
 		if len(txs) == 0 {
 			logx.Errorf("[CommitterTask] error with txs size")
 			return errors.New("[CommitterTask] error with txs size")
 		}
-		onChainOperationsPubDataBytes, err := json.Marshal(pendingOnChainOperationsPubData)
-		if err != nil {
-			logx.Errorf("[CommitterTask] unable to marshal on chain operations pub data: %s", err.Error())
-			return err
-		}
 		oBlock := &Block{
 			Model: gorm.Model{
 				CreatedAt: createAtTime,
 			},
-			BlockCommitment:                 commitment,
-			BlockHeight:                     currentBlockHeight,
-			StateRoot:                       finalStateRoot,
-			PriorityOperations:              priorityOperations,
-			PendingOnChainOperationsHash:    common.Bytes2Hex(pendingOnChainOperationsHash),
-			PendingOnChainOperationsPubData: string(onChainOperationsPubDataBytes),
-			Txs:                             txs,
-			BlockStatus:                     block.StatusPending,
+			BlockCommitment:              commitment,
+			BlockHeight:                  currentBlockHeight,
+			StateRoot:                    finalStateRoot,
+			PriorityOperations:           priorityOperations,
+			PendingOnChainOperationsHash: common.Bytes2Hex(pendingOnChainOperationsHash),
+			Txs:                          txs,
+			BlockStatus:                  block.StatusPending,
+		}
+		if pendingOnChainOperationsPubData != nil {
+			onChainOperationsPubDataBytes, err := json.Marshal(pendingOnChainOperationsPubData)
+			if err != nil {
+				logx.Errorf("[CommitterTask] unable to marshal on chain operations pub data: %s", err.Error())
+				return err
+			}
+			oBlock.PendingOnChainOperationsPubData = string(onChainOperationsPubDataBytes)
 		}
 		offsetBytes, err := json.Marshal(pubDataOffset)
 		if err != nil {
