@@ -8,6 +8,7 @@ require (
 )
 
 require (
+	github.com/consensys/gnark v0.7.0
 	github.com/consensys/gnark-crypto v0.7.0
 	github.com/eko/gocache/v2 v2.3.1
 	github.com/ethereum/go-ethereum v1.10.17

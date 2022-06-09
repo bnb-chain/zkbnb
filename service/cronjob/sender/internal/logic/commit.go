@@ -19,6 +19,7 @@ package logic
 import (
 	"errors"
 	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
+	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -146,7 +147,7 @@ func SendCommittedBlocks(
 				return err
 			}
 			// construct last stored block header
-			lastStoredBlockInfo = ConstructStoredBlockHeader(lastHandledBlockInfo)
+			lastStoredBlockInfo = util.ConstructStoredBlockInfo(lastHandledBlockInfo)
 		} else {
 			isSuccess, err := cli.WaitingTransactionStatus(pendingSender.L1TxHash)
 			// if err != nil, means we cannot get this tx by hash
