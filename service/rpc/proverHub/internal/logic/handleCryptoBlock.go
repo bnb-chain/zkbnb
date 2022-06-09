@@ -17,9 +17,7 @@
 package logic
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	cryptoBlock "github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/block"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
@@ -207,8 +205,10 @@ func HandleCryptoBlock(
 				logx.Errorf("[prover] unable to convert block to crypto block")
 				return err
 			}
-			infoBytes, _ := json.Marshal(blockInfo)
-			fmt.Println(string(infoBytes))
+			//if blockInfo.BlockNumber > 23 {
+			//	infoBytes, _ := json.Marshal(blockInfo)
+			//	fmt.Println(string(infoBytes))
+			//}
 			var nCryptoBlockInfo = &CryptoBlockInfo{
 				BlockInfo: blockInfo,
 				Status:    PUBLISHED,

@@ -76,8 +76,10 @@ func GetLatestAccountInfo(
 					// TODO maybe less than 0
 					if accountInfo.AssetInfo[mempoolTxDetail.AssetId] == nil {
 						accountInfo.AssetInfo[mempoolTxDetail.AssetId] = &commonAsset.AccountAsset{
-							Balance:  util.ZeroBigInt,
-							LpAmount: util.ZeroBigInt,
+							AssetId:                  mempoolTxDetail.AssetId,
+							Balance:                  util.ZeroBigInt,
+							LpAmount:                 util.ZeroBigInt,
+							OfferCanceledOrFinalized: util.ZeroBigInt,
 						}
 					}
 					nBalance, err := commonAsset.ComputeNewBalance(

@@ -72,7 +72,7 @@ func GetLatestNftInfoForRead(
 		)
 		for _, mempoolTx := range mempoolTxs {
 			for _, txDetail := range mempoolTx.MempoolDetails {
-				if txDetail.AssetType != commonAsset.NftAssetType {
+				if txDetail.AssetType != commonAsset.NftAssetType || txDetail.AssetId != nftInfo.NftIndex {
 					continue
 				}
 				nBalance, err := commonAsset.ComputeNewBalance(commonAsset.NftAssetType, nftInfo.String(), txDetail.BalanceDelta)

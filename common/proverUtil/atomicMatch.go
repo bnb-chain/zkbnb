@@ -96,6 +96,16 @@ func ToCryptoAtomicMatchTx(txInfo *commonTx.AtomicMatchTxInfo) (info *CryptoAtom
 		logx.Errorf("[ToCryptoSwapTx] unable to convert to packed amount: %s", err.Error())
 		return nil, err
 	}
+	packedCreatorAmount, err := util.ToPackedAmount(txInfo.CreatorAmount)
+	if err != nil {
+		logx.Errorf("[ToCryptoSwapTx] unable to convert to packed amount: %s", err.Error())
+		return nil, err
+	}
+	packedTreasuryAmount, err := util.ToPackedAmount(txInfo.TreasuryAmount)
+	if err != nil {
+		logx.Errorf("[ToCryptoSwapTx] unable to convert to packed amount: %s", err.Error())
+		return nil, err
+	}
 	buySig := new(eddsa.Signature)
 	_, err = buySig.SetBytes(txInfo.BuyOffer.Sig)
 	if err != nil {
@@ -132,6 +142,8 @@ func ToCryptoAtomicMatchTx(txInfo *commonTx.AtomicMatchTxInfo) (info *CryptoAtom
 			TreasuryRate: txInfo.SellOffer.TreasuryRate,
 			Sig:          sellSig,
 		},
+		CreatorAmount:     packedCreatorAmount,
+		TreasuryAmount:    packedTreasuryAmount,
 		GasAccountIndex:   txInfo.GasAccountIndex,
 		GasFeeAssetId:     txInfo.GasFeeAssetId,
 		GasFeeAssetAmount: packedFee,
