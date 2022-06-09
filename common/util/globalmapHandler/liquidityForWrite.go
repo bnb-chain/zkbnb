@@ -85,7 +85,7 @@ func GetLatestLiquidityInfoForWrite(
 		}
 		for _, mempoolTx := range mempoolTxs {
 			for _, txDetail := range mempoolTx.MempoolDetails {
-				if txDetail.AssetType != commonAsset.LiquidityAssetType {
+				if txDetail.AssetType != commonAsset.LiquidityAssetType || liquidityInfo.PairIndex != txDetail.AssetId {
 					continue
 				}
 				nBalance, err := commonAsset.ComputeNewBalance(commonAsset.LiquidityAssetType, liquidityInfo.String(), txDetail.BalanceDelta)

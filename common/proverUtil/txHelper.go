@@ -160,6 +160,25 @@ func ConstructProverInfo(
 				accountInfo.Nonce = txDetail.Nonce
 				accountInfo.CollectionNonce = txDetail.CollectionNonce
 				accountMap[txDetail.AccountIndex] = accountInfo
+				if lastAccountOrder != txDetail.AccountOrder {
+					accountKeys = append(accountKeys, txDetail.AccountIndex)
+					lastAccountOrder = txDetail.AccountOrder
+					proverAccounts = append(proverAccounts, &ProverAccountInfo{
+						AccountInfo: &Account{
+							AccountIndex:    accountMap[txDetail.AccountIndex].AccountIndex,
+							AccountName:     accountMap[txDetail.AccountIndex].AccountName,
+							PublicKey:       accountMap[txDetail.AccountIndex].PublicKey,
+							AccountNameHash: accountMap[txDetail.AccountIndex].AccountNameHash,
+							L1Address:       accountMap[txDetail.AccountIndex].L1Address,
+							Nonce:           accountMap[txDetail.AccountIndex].Nonce,
+							CollectionNonce: txDetail.CollectionNonce,
+							AssetInfo:       accountMap[txDetail.AccountIndex].AssetInfo,
+							AssetRoot:       accountMap[txDetail.AccountIndex].AssetRoot,
+							Status:          accountMap[txDetail.AccountIndex].Status,
+						},
+					})
+					accountCount++
+				}
 			} else {
 				accountMap[txDetail.AccountIndex].Nonce = txDetail.Nonce
 				accountMap[txDetail.AccountIndex].CollectionNonce = txDetail.CollectionNonce
