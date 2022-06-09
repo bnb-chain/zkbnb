@@ -1,0 +1,41 @@
+syntax = "proto3";
+package proverHub;
+
+option go_package = "./proverHubProto";
+
+// getUnprovedBlock
+message ReqGetUnprovedBlock{
+  int64 mode = 1;
+}
+
+message ResultGetUnprovedBlock{
+  string blockInfo = 1;
+}
+
+message RespGetUnprovedBlock{
+  int64 Status = 1;
+  string Msg = 2;
+  string Err = 3;
+  ResultGetUnprovedBlock Result = 4;
+}
+
+// submitUnprovedBlock
+message ReqSubmitProof{
+  string proof = 1;
+  string blockInfo = 2;
+}
+
+message ResultSubmitProof{
+}
+
+message RespSubmitProof{
+  int64 Status = 1;
+  string Msg = 2;
+  string Err = 3;
+  ResultSubmitProof Result = 4;
+}
+
+service proverHubRPC {
+  rpc getUnprovedBlock(ReqGetUnprovedBlock) returns (RespGetUnprovedBlock);
+  rpc submitProof(ReqSubmitProof) returns (RespSubmitProof);
+}
