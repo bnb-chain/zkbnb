@@ -344,6 +344,7 @@ func MonitorGovernanceContract(
 	l1BlockMonitorInfo := &l1BlockMonitor.L1BlockMonitor{
 		L1BlockHeight: int64(safeHeight),
 		BlockInfo:     string(eventInfosBytes),
+		MonitorType:   l1BlockMonitor.MonitorTypeGovernance,
 	}
 	var (
 		l2AssetInfos                []*L2AssetInfo
@@ -363,6 +364,12 @@ func MonitorGovernanceContract(
 	for _, pendingUpdateSysconfigInfo := range pendingUpdateSysconfigInfoMap {
 		pendingUpdateSysconfigInfos = append(pendingUpdateSysconfigInfos, pendingUpdateSysconfigInfo)
 	}
+
+	logx.Infof("[MonitorGovernanceContract] l1 block info height: %v, l2 asset info size: %v, pending update l2 asset info size: %v",
+		l1BlockMonitorInfo.L1BlockHeight,
+		len(l2AssetInfos),
+		len(pendingUpdateL2AssetInfos),
+	)
 	// write into database, need to use transaction
 	err = l1BlockMonitorModel.CreateGovernanceMonitorInfo(
 		l1BlockMonitorInfo,

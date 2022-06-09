@@ -745,12 +745,12 @@ func CreateBlockCommitment(
 	onChainOpsCount int64,
 ) string {
 	var buf bytes.Buffer
-	buf.Write(Int64ToBytes(currentBlockHeight))
-	buf.Write(Int64ToBytes(createdAt))
+	PaddingInt64IntoBuf(&buf, currentBlockHeight)
+	PaddingInt64IntoBuf(&buf, createdAt)
 	buf.Write(oldStateRoot)
 	buf.Write(newStateRoot)
 	buf.Write(pubData)
-	buf.Write(Int64ToBytes(onChainOpsCount))
+	PaddingInt64IntoBuf(&buf, onChainOpsCount)
 	hFunc := mimc.NewMiMC()
 	hFunc.Write(buf.Bytes())
 	commitment := hFunc.Sum(nil)

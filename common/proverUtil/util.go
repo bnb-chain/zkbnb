@@ -19,7 +19,12 @@ package proverUtil
 
 import (
 	"errors"
+	"github.com/ethereum/go-ethereum/common"
+	cryptoBlock "github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/block"
+	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
+	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zeromicro/go-zero/core/logx"
+	"log"
 )
 
 func SetFixedAccountArray(proof [][]byte) (res [AccountMerkleLevels][]byte, err error) {
@@ -56,4 +61,296 @@ func SetFixedNftArray(proof [][]byte) (res [NftMerkleLevels][]byte, err error) {
 	}
 	copy(res[:], proof[:])
 	return res, nil
+}
+
+func ConstructCryptoTx(
+	oTx *Tx,
+	accountTree *Tree,
+	assetTrees *[]*Tree,
+	liquidityTree *Tree,
+	nftTree *Tree,
+	accountModel AccountModel,
+) (cryptoTx *CryptoTx, err error) {
+	switch oTx.TxType {
+	case commonTx.TxTypeEmpty:
+		cryptoTx = cryptoBlock.EmptyTx()
+		break
+	case commonTx.TxTypeRegisterZns:
+		cryptoTx, err = ConstructRegisterZnsCryptoTx(
+			oTx,
+			accountTree,
+			assetTrees,
+			liquidityTree,
+			nftTree,
+			accountModel,
+		)
+		if err != nil {
+			log.Println("[ConstructProverBlocks] unable to construct registerZNS crypto tx:", err)
+			return nil, err
+		}
+		break
+	case commonTx.TxTypeCreatePair:
+		cryptoTx, err = ConstructCreatePairCryptoTx(
+			oTx,
+			accountTree,
+			assetTrees,
+			liquidityTree,
+			nftTree,
+			accountModel,
+		)
+		if err != nil {
+			log.Println("[ConstructProverBlocks] unable to construct create pair crypto tx:", err)
+			return nil, err
+		}
+		break
+	case commonTx.TxTypeUpdatePairRate:
+		cryptoTx, err = ConstructUpdatePairRateCryptoTx(
+			oTx,
+			accountTree,
+			assetTrees,
+			liquidityTree,
+			nftTree,
+			accountModel,
+		)
+		if err != nil {
+			log.Println("[ConstructProverBlocks] unable to construct update pair crypto tx:", err)
+			return nil, err
+		}
+		break
+	case commonTx.TxTypeDeposit:
+		cryptoTx, err = ConstructDepositCryptoTx(
+			oTx,
+			accountTree,
+			assetTrees,
+			liquidityTree,
+			nftTree,
+			accountModel,
+		)
+		if err != nil {
+			log.Println("[ConstructProverBlocks] unable to construct deposit crypto tx:", err)
+			return nil, err
+		}
+		break
+	case commonTx.TxTypeDepositNft:
+		cryptoTx, err = ConstructDepositNftCryptoTx(
+			oTx,
+			accountTree,
+			assetTrees,
+			liquidityTree,
+			nftTree,
+			accountModel,
+		)
+		if err != nil {
+			log.Println("[ConstructProverBlocks] unable to construct deposit nft crypto tx:", err)
+			return nil, err
+		}
+		break
+	case commonTx.TxTypeTransfer:
+		cryptoTx, err = ConstructTransferCryptoTx(
+			oTx,
+			accountTree,
+			assetTrees,
+			liquidityTree,
+			nftTree,
+			accountModel,
+		)
+		if err != nil {
+			log.Println("[ConstructProverBlocks] unable to construct transfer crypto tx:", err)
+			return nil, err
+		}
+		break
+	case commonTx.TxTypeSwap:
+		cryptoTx, err = ConstructSwapCryptoTx(
+			oTx,
+			accountTree,
+			assetTrees,
+			liquidityTree,
+			nftTree,
+			accountModel,
+		)
+		if err != nil {
+			log.Println("[ConstructProverBlocks] unable to construct swap crypto tx:", err)
+			return nil, err
+		}
+		break
+	case commonTx.TxTypeAddLiquidity:
+		cryptoTx, err = ConstructAddLiquidityCryptoTx(
+			oTx,
+			accountTree,
+			assetTrees,
+			liquidityTree,
+			nftTree,
+			accountModel,
+		)
+		if err != nil {
+			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
+			return nil, err
+		}
+		break
+	case commonTx.TxTypeRemoveLiquidity:
+		cryptoTx, err = ConstructRemoveLiquidityCryptoTx(
+			oTx,
+			accountTree,
+			assetTrees,
+			liquidityTree,
+			nftTree,
+			accountModel,
+		)
+		if err != nil {
+			log.Println("[ConstructProverBlocks] unable to construct remove liquidity crypto tx:", err)
+			return nil, err
+		}
+		break
+	case commonTx.TxTypeWithdraw:
+		cryptoTx, err = ConstructWithdrawCryptoTx(
+			oTx,
+			accountTree,
+			assetTrees,
+			liquidityTree,
+			nftTree,
+			accountModel,
+		)
+		if err != nil {
+			log.Println("[ConstructProverBlocks] unable to construct withdraw crypto tx:", err)
+			return nil, err
+		}
+		break
+	case commonTx.TxTypeCreateCollection:
+		cryptoTx, err = ConstructCreateCollectionCryptoTx(
+			oTx,
+			accountTree,
+			assetTrees,
+			liquidityTree,
+			nftTree,
+			accountModel,
+		)
+		if err != nil {
+			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
+			return nil, err
+		}
+		break
+	case commonTx.TxTypeMintNft:
+		cryptoTx, err = ConstructMintNftCryptoTx(
+			oTx,
+			accountTree,
+			assetTrees,
+			liquidityTree,
+			nftTree,
+			accountModel,
+		)
+		if err != nil {
+			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
+			return nil, err
+		}
+		break
+	case commonTx.TxTypeTransferNft:
+		cryptoTx, err = ConstructTransferNftCryptoTx(
+			oTx,
+			accountTree,
+			assetTrees,
+			liquidityTree,
+			nftTree,
+			accountModel,
+		)
+		if err != nil {
+			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
+			return nil, err
+		}
+		break
+	case commonTx.TxTypeAtomicMatch:
+		cryptoTx, err = ConstructAtomicMatchCryptoTx(
+			oTx,
+			accountTree,
+			assetTrees,
+			liquidityTree,
+			nftTree,
+			accountModel,
+		)
+		if err != nil {
+			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
+			return nil, err
+		}
+		break
+	case commonTx.TxTypeCancelOffer:
+		cryptoTx, err = ConstructCancelOfferCryptoTx(
+			oTx,
+			accountTree,
+			assetTrees,
+			liquidityTree,
+			nftTree,
+			accountModel,
+		)
+		if err != nil {
+			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
+			return nil, err
+		}
+		break
+	case commonTx.TxTypeWithdrawNft:
+		cryptoTx, err = ConstructWithdrawNftCryptoTx(
+			oTx,
+			accountTree,
+			assetTrees,
+			liquidityTree,
+			nftTree,
+			accountModel,
+		)
+		if err != nil {
+			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
+			return nil, err
+		}
+		break
+	case commonTx.TxTypeFullExit:
+		cryptoTx, err = ConstructFullExitCryptoTx(
+			oTx,
+			accountTree,
+			assetTrees,
+			liquidityTree,
+			nftTree,
+			accountModel,
+		)
+		if err != nil {
+			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
+			return nil, err
+		}
+		break
+	case commonTx.TxTypeFullExitNft:
+		cryptoTx, err = ConstructFullExitNftCryptoTx(
+			oTx,
+			accountTree,
+			assetTrees,
+			liquidityTree,
+			nftTree,
+			accountModel,
+		)
+		if err != nil {
+			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
+			return nil, err
+		}
+		break
+	default:
+		return nil, errors.New("tx type error")
+	}
+	return cryptoTx, nil
+}
+
+func BlockToCryptoBlock(
+	oBlock *block.Block,
+	oldStateRoot, newStateRoot []byte,
+	cryptoTxs []*cryptoBlock.Tx,
+) (cBlock *cryptoBlock.Block, err error) {
+	cBlock = &cryptoBlock.Block{
+		BlockNumber:     oBlock.BlockHeight,
+		CreatedAt:       oBlock.CreatedAt.UnixMilli(),
+		OldStateRoot:    oldStateRoot,
+		NewStateRoot:    newStateRoot,
+		BlockCommitment: common.FromHex(oBlock.BlockCommitment),
+	}
+	if len(cBlock.Txs) != len(cryptoTxs) {
+		logx.Errorf("[BlockToCryptoBlock] invalid size")
+		return nil, errors.New("[BlockToCryptoBlock] invalid size")
+	}
+	for i := 0; i < len(cBlock.Txs); i++ {
+		cBlock.Txs[i] = cryptoTxs[i]
+	}
+	return cBlock, nil
 }

@@ -17,8 +17,6 @@
 package proofSender
 
 import (
-	"errors"
-	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 )
@@ -28,9 +26,10 @@ type (
 		CreateProofSenderTable() error
 		DropProofSenderTable() error
 		CreateProof(row *ProofSender) error
-		GetProofsByBlockRange(start int64, end int64, status int, maxBlocksCount int) (proofs []*ProofSender, err error)
-		GetProofsBetween(start int64, end int64) (proofs []*ProofSender, err error)
+		GetProofsByBlockRange(start int64, end int64, maxProofsCount int) (proofs []*ProofSender, err error)
 		GetProofStartBlockNumber() (num int64, err error)
+		GetLatestConfirmedProof() (p *ProofSender, err error)
+		GetProofByBlockNumber(num int64) (p *ProofSender, err error)
 	}
 
 	defaultProofSenderModel struct {
@@ -42,9 +41,6 @@ type (
 		gorm.Model
 		ProofInfo   string
 		BlockNumber int64 `gorm:"index"`
-		StateRoot   []byte
-		Commitment  []byte
-		Timestamp   int64
 		Status      int64
 	}
 )
@@ -106,85 +102,35 @@ func (m *defaultProofSenderModel) CreateProof(row *ProofSender) error {
 	Func: GetProof
 	Params:
 	Return: err error
-	Description: insert proof and block info in proofSender Table
+	Description: getProofsByBlockRange
 */
 
-func (m *defaultProofSenderModel) GetProofsByBlockRange(start int64, end int64, status int, maxBlocksCount int) (proofs []*ProofSender, err error) {
+func (m *defaultProofSenderModel) GetProofsByBlockRange(start int64, end int64, maxProofsCount int) (proofs []*ProofSender, err error) {
 
-	var blocks []*block.Block
+	dbTx := m.DB.Debug().Table(m.table).Where("block_number >= ? AND block_number < ? AND status = ?",
+		start,
+		end,
+		NotSent).
+		Order("block_number").
+		Limit(maxProofsCount).
+		Find(&proofs)
 
-	if end != -1 {
-		dbTx := m.DB.Table(block.BlockTableName).Where("block_status = ? AND block_height >= ? AND block_height <= ?", status, start, end).
-			Order("block_height").
-			Limit(maxBlocksCount).
-			Find(&blocks)
-		if dbTx.Error != nil {
-			logx.Error("[proofSender.GetProofsByBlockRange] %s", dbTx.Error)
-			return proofs, dbTx.Error
-		} else if dbTx.RowsAffected == 0 {
-			logx.Errorf("[proofSender.GetProofsByBlockRange] not found")
-			return proofs, ErrNotFound
-		}
-	} else {
-		dbTx := m.DB.Table(block.BlockTableName).Where("block_height >= ? AND block_status = ?", start, status).
-			Order("block_height").
-			Limit(maxBlocksCount).
-			Find(&blocks)
-		if dbTx.Error != nil {
-			logx.Error("[proofSender.GetProofsByBlockRange] %s", dbTx.Error)
-			return proofs, dbTx.Error
-		} else if dbTx.RowsAffected == 0 {
-			logx.Errorf("[proofSender.GetProofsByBlockRange] not found")
-			return proofs, ErrNotFound
-		}
-	}
-	/*
-		needs to check:
-		1. if start from "start height"
-		2. if is it continuous
-		3. if there is corresponding proofs
-	*/
-	var (
-		proofStart  = blocks[0].BlockHeight
-		proofEnd    = blocks[len(blocks)-1].BlockHeight
-		proofLength = int64(len(blocks))
-	)
-	logx.Infof("proofStart/start/proofEnd/proofLength : %d/%d/%d/%d", proofStart, start, proofEnd, proofLength)
-	if (proofStart == start) && (proofEnd-proofStart+1 == proofLength) {
-		dbTx := m.DB.Debug().Table(m.table).Where("block_number >= ? AND block_number <= ? AND status = ?",
-			proofStart,
-			proofEnd,
-			Pending).
-			Order("block_number").
-			Limit(int(proofLength)).
-			Find(&proofs)
-		if dbTx.Error != nil {
-			logx.Error("[proofSender.GetProofsByBlockRange] %s", dbTx.Error)
-			return proofs, dbTx.Error
-		} else if dbTx.RowsAffected != proofLength {
-			logx.Errorf("[proofSender.GetProofsByBlockRange] proof length cannot correspond to blocks")
-			return proofs, errors.New("[proofSender.GetProofsByBlockRange] proof length cannot correspond to blocks")
-		}
+	if dbTx.Error != nil {
+		logx.Error("[proofSender.GetProofsByBlockRange] %s", dbTx.Error)
+		return proofs, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Errorf("[proofSender.GetProofsByBlockRange] error not found")
+		return proofs, ErrNotFound
 	}
 
 	return proofs, err
-}
-
-func (m *defaultProofSenderModel) GetProofsBetween(start int64, end int64) (proofs []*ProofSender, err error) {
-	dbTx := m.DB.Table(m.table).Where("block_number >= ? AND block_number <= ?", start, end).Order("block_number").Find(&proofs)
-	if dbTx.Error != nil {
-		return nil, dbTx.Error
-	} else if dbTx.RowsAffected == 0 {
-		return nil, ErrNotFound
-	}
-	return proofs, nil
 }
 
 /*
 	Func: GetStartProofBlockNumber
 	Params:
 	Return: err error
-	Description: get latest proof block number, it used to support proverUtil hub to handle crypto blocks, the result will determine the start range.
+	Description: Get the latest proof block number. It is used to support the prover hub to handle crypto blocks; the result will determine the start range.
 */
 
 func (m *defaultProofSenderModel) GetProofStartBlockNumber() (num int64, err error) {
@@ -198,5 +144,47 @@ func (m *defaultProofSenderModel) GetProofStartBlockNumber() (num int64, err err
 		return num, ErrNotFound
 	} else {
 		return row.BlockNumber, nil
+	}
+}
+
+/*
+	Func: GetLatestSentProof
+	Params:
+	Return: p *ProofSender, err error
+	Description: get latest sent proof block number,
+		it used to support prover hub to init merkle tree.
+*/
+func (m *defaultProofSenderModel) GetLatestConfirmedProof() (p *ProofSender, err error) {
+	var row *ProofSender
+	dbTx := m.DB.Table(m.table).Where("status >= ?", NotConfirmed).Order("block_number desc").Limit(1).Find(&row)
+	if dbTx.Error != nil {
+		logx.Error("[proofSender.GetLatestSentProof] %s", dbTx.Error)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Errorf("[proofSender.GetLatestSentProof] not found")
+		return nil, ErrNotFound
+	} else {
+		return row, nil
+	}
+}
+
+/*
+	Func: GetProofByBlockNumber
+	Params:
+	Return: p *ProofSender, err error
+	Description: get certain blockNumber proof
+		it used to support prover hub to init unproved block.
+*/
+func (m *defaultProofSenderModel) GetProofByBlockNumber(num int64) (p *ProofSender, err error) {
+	var row *ProofSender
+	dbTx := m.DB.Table(m.table).Where("block_number = ?", num).Find(&row)
+	if dbTx.Error != nil {
+		logx.Error("[proofSender.GetProofByBlockNumber] %s", dbTx.Error)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Errorf("[proofSender.GetProofByBlockNumber] not found")
+		return nil, ErrNotFound
+	} else {
+		return row, nil
 	}
 }
