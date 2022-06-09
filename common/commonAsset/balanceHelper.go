@@ -42,6 +42,9 @@ func ComputeNewBalance(assetType int64, balance string, balanceDelta string) (ne
 		}
 		assetInfo.Balance = ffmath.Add(assetInfo.Balance, assetDelta.Balance)
 		assetInfo.LpAmount = ffmath.Add(assetInfo.LpAmount, assetDelta.LpAmount)
+		if assetDelta.OfferCanceledOrFinalized == nil {
+			assetDelta.OfferCanceledOrFinalized = ZeroBigInt
+		}
 		if assetDelta.OfferCanceledOrFinalized.Cmp(commonConstant.NilOfferCanceledOrFinalized) != 0 {
 			assetInfo.OfferCanceledOrFinalized = assetDelta.OfferCanceledOrFinalized
 		}

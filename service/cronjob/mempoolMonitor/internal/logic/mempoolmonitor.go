@@ -582,9 +582,10 @@ func MonitorMempool(
 				mempoolTxDetails []*mempool.MempoolTxDetail
 			)
 			balanceDelta := &commonAsset.AccountAsset{
-				AssetId:  txInfo.AssetId,
-				Balance:  big.NewInt(0),
-				LpAmount: big.NewInt(0),
+				AssetId:                  txInfo.AssetId,
+				Balance:                  big.NewInt(0),
+				LpAmount:                 big.NewInt(0),
+				OfferCanceledOrFinalized: big.NewInt(0),
 			}
 			mempoolTxDetails = append(mempoolTxDetails, &mempool.MempoolTxDetail{
 				AssetId:      txInfo.AssetId,

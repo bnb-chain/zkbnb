@@ -121,10 +121,12 @@ func (l *SendTxLogic) sendAtomicMatchTx(rawTxInfo string) (txId string, err erro
 	}
 	// get account info by to index
 	if accountInfoMap[txInfo.BuyOffer.AccountIndex] == nil {
-		accountInfoMap[txInfo.BuyOffer.AccountIndex], err = globalmapHandler.GetBasicAccountInfo(
+		accountInfoMap[txInfo.BuyOffer.AccountIndex], err = globalmapHandler.GetLatestAccountInfo(
 			l.svcCtx.AccountModel,
+			l.svcCtx.MempoolModel,
 			l.svcCtx.RedisConnection,
-			txInfo.BuyOffer.AccountIndex)
+			txInfo.BuyOffer.AccountIndex,
+		)
 		if err != nil {
 			logx.Errorf("[sendAtomicMatchTx] unable to get account info: %s", err.Error())
 			return "", l.HandleCreateFailAtomicMatchTx(txInfo, err)

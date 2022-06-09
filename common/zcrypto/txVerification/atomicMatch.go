@@ -18,6 +18,7 @@
 package txVerification
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
@@ -58,6 +59,8 @@ func VerifyAtomicMatchTxInfo(
 		accountInfoMap[txInfo.BuyOffer.AccountIndex].AssetInfo[txInfo.BuyOffer.AssetId] == nil ||
 		accountInfoMap[txInfo.BuyOffer.AccountIndex].AssetInfo[txInfo.BuyOffer.AssetId].Balance.Cmp(ZeroBigInt) <= 0 ||
 		txInfo.GasFeeAssetAmount.Cmp(ZeroBigInt) < 0 {
+		infoBytes, _ := json.Marshal(accountInfoMap)
+		log.Println(string(infoBytes))
 		logx.Errorf("[VerifyAtomicMatchTxInfo] invalid params")
 		return nil, errors.New("[VerifyAtomicMatchTxInfo] invalid params")
 	}

@@ -101,6 +101,11 @@ func ToCryptoAddLiquidityTx(txInfo *commonTx.AddLiquidityTxInfo) (info *CryptoAd
 		logx.Errorf("[ToCryptoAddLiquidityTx] unable to convert to packed amount: %s", err.Error())
 		return nil, err
 	}
+	packedKLast, err := util.ToPackedAmount(txInfo.KLast)
+	if err != nil {
+		logx.Errorf("[ToCryptoAddLiquidityTx] unable to convert to packed amount: %s", err.Error())
+		return nil, err
+	}
 	packedFee, err := util.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
 		logx.Errorf("[ToCryptoAddLiquidityTx] unable to convert to packed fee: %s", err.Error())
@@ -114,6 +119,7 @@ func ToCryptoAddLiquidityTx(txInfo *commonTx.AddLiquidityTxInfo) (info *CryptoAd
 		AssetBId:          txInfo.AssetBId,
 		AssetBAmount:      packedBAmount,
 		LpAmount:          packedLpAmount,
+		KLast:             packedKLast,
 		GasAccountIndex:   txInfo.GasAccountIndex,
 		GasFeeAssetId:     txInfo.GasFeeAssetId,
 		GasFeeAssetAmount: packedFee,

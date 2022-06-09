@@ -111,7 +111,7 @@ func VerifyCreateCollectionTxInfo(
 		AccountName:  accountInfoMap[txInfo.AccountIndex].AccountName,
 		BalanceDelta: strconv.FormatInt(txInfo.CollectionId, 10),
 		Order:        order,
-		AccountOrder: commonConstant.NilAccountOrder,
+		AccountOrder: accountOrder,
 	})
 	// from account asset gas
 	order++
