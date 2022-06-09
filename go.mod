@@ -16,8 +16,11 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/robfig/cron/v3 v3.0.1
-	github.com/zecrey-labs/zecrey-crypto v0.0.36
-	github.com/zecrey-labs/zecrey-eth-rpc v0.0.12
+	github.com/zecrey-labs/zecrey-crypto v0.0.3-legend
+	github.com/zecrey-labs/zecrey-eth-rpc v0.0.14
+	google.golang.org/grpc v1.44.0
+	google.golang.org/protobuf v1.27.1
+	gorm.io/driver/postgres v1.3.4
 	github.com/zeromicro/go-zero/tools/goctl v1.3.5
 	google.golang.org/grpc v1.46.0
 	google.golang.org/protobuf v1.28.0
@@ -25,6 +28,6 @@ require (
 	k8s.io/client-go v0.24.1 // indirect
 )
 
-replace github.com/zecrey-labs/zecrey-crypto => ../zecrey-crypto
-
-replace github.com/zecrey-labs/zecrey-eth-rpc => ../zecrey-eth-rpc
+//replace github.com/zecrey-labs/zecrey-crypto => ../zecrey-crypto
+//
+//replace github.com/zecrey-labs/zecrey-eth-rpc => ../zecrey-eth-rpc
