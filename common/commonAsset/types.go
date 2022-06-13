@@ -66,7 +66,7 @@ type AccountInfo struct {
 	Nonce           int64
 	CollectionNonce int64
 	// map[int64]*AccountAsset
-	AssetInfo map[int64]*AccountAsset // key: assetID, value: balance
+	AssetInfo map[int64]*AccountAsset // key: index, value: balance
 	AssetRoot string
 	Status    int
 }

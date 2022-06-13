@@ -63,8 +63,8 @@ func CheckPairIndex(pairIndex uint32) bool {
 	return pairIndex > maxAccountIndex
 }
 
-func CheckLPAmount(LPAmount uint32) bool {
-	return LPAmount > maxLPAmount
+func CheckAmount(amount string) bool {
+	return true
 }
 
 func CheckTxType(txType uint32) bool {
