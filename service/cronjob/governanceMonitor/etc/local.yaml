@@ -17,7 +17,7 @@ ChainConfig:
   NetworkRPCSysConfigName: "BscTestNetworkRpc"
   #  NetworkRPCSysConfigName: "Local_Test_Network_RPC"
   GovernanceContractAddrSysConfigName: "GovernanceContract"
-  StartL1BlockHeight: 220000
+  StartL1BlockHeight: 520000
   #  StartL1BlockHeight: 0
   PendingBlocksCount: 0
   MaxHandledBlocksCount: 100000
