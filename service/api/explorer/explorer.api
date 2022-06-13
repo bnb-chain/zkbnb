@@ -1,0 +1,315 @@
+syntax = "v2"
+
+info(
+	author: "Wenki"
+	date:   "2021-11-17"
+	desc:   "Explorer API"
+)
+
+/* ========================= root =========================*/
+
+/* root path */
+type (
+	ReqGetStatus  struct{}
+	RespGetStatus {
+		Status    uint32 `json:"status"`
+		NetworkId uint32 `json:"network_id"`
+	}
+)
+
+@server(
+	group: root
+)
+service explorer-api{
+	@handler GetStatus
+	get /  (ReqGetStatus) returns (RespGetStatus)
+}
+
+/* ========================= Info =========================*/
+
+// GetLayer2BasicInfo
+type (
+	ReqGetLayer2BasicInfo  struct{}
+	RespGetLayer2BasicInfo {
+		BlockCommitted         int64    `json:"block_committed"`
+		BlockExecuted          int64    `json:"block_executed"`
+		TotalTransactionsCount int64    `json:"total_transactions_count"`
+		ContractAddresses      []string `json:"contract_addresses"`
+	}
+)
+
+// GetAssetsList
+type (
+	ReqGetAssetsList struct{}
+	Asset            {
+		AssetId       int64  `json:"asset_id"`
+		AssetAddr     string `json:"asset_addr"`
+		AssetDecimals int64  `json:"asset_decimals"`
+		AssetSymbol   string `json:"asset_symbol"`
+	}
+	RespGetAssetsList {
+		Assets []*Asset `json:"assets"`
+	}
+)
+
+// Search
+type (
+	ReqSearch {
+		Info string `form:"info"`
+	}
+	RespSearch {
+		DataType int32 `json:"data_type"`
+	}
+)
+
+// GetAccounts
+type (
+	ReqGetAccounts {
+		Offset uint16 `form:"offset"`
+		Limit  uint16 `form:"limit"`
+	}
+	Accounts {
+		AccountIndex uint32 `json:"account_index"`
+		AccountName  string `json:"account_name"`
+		PublicKey    string `json:"public_key"`
+	}
+	RespGetAccounts {
+		Total    uint32      `json:"total"`
+		Accounts []*Accounts `json:"accounts"`
+	}
+)
+
+@server(
+	group: info
+)
+service explorer-api{
+	@handler GetLayer2BasicInfo
+	get /api/v1/info/getLayer2BasicInfo  (ReqGetLayer2BasicInfo) returns (RespGetLayer2BasicInfo)
+	
+	@handler GetAssetsList
+	get /api/v1/info/getAssetsList  (ReqGetAssetsList) returns (RespGetAssetsList)
+	
+	@handler Search
+	get /api/v1/info/search  (ReqSearch) returns (RespSearch)
+	
+	@handler GetAccounts
+	get /api/v1/info/getAccounts  (ReqGetAccounts) returns (RespGetAccounts)
+}
+
+/* ========================= Block =========================*/
+
+type (
+	TxHash {
+		TxHash    string `json:"tx_hash"`
+		CreatedAt int64  `json:"created_at"`
+	}
+	Block {
+		BlockHeight     int32     `json:"block_height"`
+		BlockStatus     int32     `json:"block_status"`
+		NewAccountRoot  string    `json:"new_account_root"`
+		CommittedAt     int64     `json:"committed_at"`
+		VerifiedAt      int64     `json:"verified_at"`
+		ExecutedAt      int64     `json:"executed_at"`
+		CommittedTxHash []*TxHash `json:"committed_tx_hash"`
+		VerifiedTxHash  []*TxHash `json:"verified_tx_hash"`
+		ExecutedTxHash  []*TxHash `json:"executed_tx_hash"`
+		BlockCommitment string    `json:"block_commitment"`
+		TxCount         int64     `json:"tx_count"`
+		Txs             []string  `json:"txs"`
+	}
+)
+
+// GetBlocks
+type (
+	ReqGetBlocks {
+		Offset uint16 `form:"offset"`
+		Limit  uint16 `form:"limit"`
+	}
+	RespGetBlocks {
+		Total  uint32   `json:"total"`
+		Blocks []*Block `json:"blocks"`
+	}
+)
+
+// GetBlockByCommitment
+type (
+	ReqGetBlockByCommitment {
+		BlockCommitment string `form:"block_commitment"`
+	}
+	RespGetBlockByCommitment {
+		Blocks []*Block `json:"blocks"`
+	}
+)
+
+// GetBlockByBlockHeight
+type (
+	ReqGetBlockByBlockHeight {
+		BlockHeight uint64 `form:"block_height"`
+	}
+	RespGetBlockByBlockHeight {
+		Block Block `json:"block"`
+	}
+)
+
+@server(
+	group: block
+)
+service explorer-api{
+	@handler GetBlocks
+	get /api/v1/block/getBlocks  (ReqGetBlocks) returns (RespGetBlocks)
+	
+	@handler GetBlockByCommitment
+	get /api/v1/block/getBlockByCommitment  (ReqGetBlockByCommitment) returns (RespGetBlockByCommitment)
+	
+	@handler GetBlockByBlockHeight
+	get /api/v1/block/getBlockByBlockHeight  (ReqGetBlockByBlockHeight) returns (RespGetBlockByBlockHeight)
+}
+
+/* ========================= Transaction =========================*/
+
+type (
+	Tx {
+		TxHash         string      `json:"tx_hash"`
+		TxType         int32       `json:"tx_type"`
+		GasFee         int32       `json:"gas_fee"`
+		GasFeeAssetId  int32       `json:"gas_fee_asset_id"`
+		TxStatus       int32       `json:"tx_status"`
+		BlockHeight    int64       `json:"block_height"`
+		BlockStatus    int32       `json:"block_status"`
+		BlockId        int32       `json:"block_id"`
+		AssetAId       int32       `json:"asseta_id"`
+		AssetBId       int32       `json:"assetb_id"`
+		TxAmount       int64       `json:"tx_amount"`
+		TxParticipants []string    `json:"tx_participants"`
+		NativeAddress  string      `json:"native_address"`
+		CreatedAt      int64       `json:"created_at"`
+		TxAssetAId     int32       `json:"tx_asseta_id"`
+		TxAssetBId     int32       `json:"tx_assetb_id"`
+		TxDetails      []*TxDetail `json:"tx_detail"`
+		CommittedAt    int64       `json:"committed_at"`
+		VerifiedAt     int64       `json:"verified_at"`
+		ExecutedAt     int64       `json:"executed_at"`
+		Memo           string      `json:"memo"`
+	}
+	TxDetail {
+		AssetId        int    `json:"asset_id"`
+		AssetType      int    `json:"asset_type"`
+		AccountIndex   int32  `json:"account_index"`
+		AccountName    string `json:"account_name"`
+		AccountBalance string `json:"account_balance"`
+		AccountDelta   string `json:"account_delta"`
+	}
+)
+
+// GetTxsListByBlockHeight
+type (
+	ReqGetTxsListByBlockHeight {
+		BlockHeight uint64 `form:"block_height"`
+		Limit       uint16 `form:"limit"`
+		Offset      uint16 `form:"offset"`
+	}
+	RespGetTxsListByBlockHeight {
+		Total uint32 `json:"total"`
+		Txs   []*Tx  `json:"txs"`
+	}
+)
+
+// GetTxByHash
+type (
+	ReqGetTxByHash {
+		TxHash string `form:"tx_hash"`
+	}
+	RespGetTxByHash {
+		Txs Tx `json:"result"`
+	}
+)
+
+// getTxsListByAccountIndex
+type (
+	ReqGetTxsListByAccountIndex {
+		AccountIndex uint32 `form:"account_index"`
+		Offset       uint16 `form:"offset"`
+		Limit        uint16 `form:"limit"`
+	}
+	RespGetTxsListByAccountIndex {
+		Total uint32 `json:"total"`
+		Txs   []*Tx  `json:"txs"`
+	}
+)
+
+// getMempoolTxsList
+type (
+	ReqGetMempoolTxsList {
+		Offset uint16 `form:"offset"`
+		Limit  uint16 `form:"limit"`
+	}
+	RespGetMempoolTxsList {
+		Total uint32 `json:"total"`
+		Txs   []*Tx  `json:"txs"`
+	}
+)
+
+// getMempoolTxsListByPublicKey
+type (
+	ReqGetMempoolTxsListByPublicKey {
+		AccountPk string `form:"account_pk"`
+		Offset    uint16 `form:"offset"`
+		Limit     uint16 `form:"limit"`
+	}
+	RespGetMempoolTxsListByPublicKey {
+		Total uint32 `json:"total"`
+		Txs   []*Tx  `json:"data"`
+	}
+)
+
+@server(
+	group: transaction
+)
+service explorer-api{
+	@handler GetTxsListByBlockHeight
+	get /api/v1/tx/getTxsListByBlockHeight  (ReqGetTxsListByBlockHeight) returns (RespGetTxsListByBlockHeight)
+	
+	@handler GetTxByHash
+	get /api/v1/tx/getTxByHash  (ReqGetTxByHash) returns (RespGetTxByHash)
+	
+	@handler GetTxsListByAccountIndex
+	get /api/v1/tx/getTxsListByAccountIndex  (ReqGetTxsListByAccountIndex) returns (RespGetTxsListByAccountIndex)
+	
+	@handler GetMempoolTxsList
+	get /api/v1/tx/getMempoolTxsList  (ReqGetMempoolTxsList) returns (RespGetMempoolTxsList)
+	
+	@handler GetMempoolTxsListByPublicKey
+	get /api/v1/tx/getMempoolTxsListByPublicKey  (ReqGetMempoolTxsListByPublicKey) returns (RespGetMempoolTxsListByPublicKey)
+}
+
+/* ========================= Account =========================*/
+
+type AssetInfo {
+	AssetId uint32 `json:"assetId"`
+	Balance string `json:"balance"`
+}
+
+type AccountInfo {
+	AccountIndex uint32       `json:"account_index"`
+	AccountName  string       `json:"account_name"`
+	AccountPk    string       `json:"account_pk"`
+	Assets       []*AssetInfo `json:"assets"`
+}
+
+// GetAccountInfoByAccountName
+type (
+	ReqGetAccountInfoByAccountName {
+		AccountName string `form:"account_name"`
+	}
+	RespGetAccountInfoByAccountName {
+		Account AccountInfo `json:"account"`
+	}
+)
+
+@server(
+	group: account
+)
+service explorer-api{
+	@handler GetAccountInfoByAccountName
+	get /api/v1/account/getAccountInfoByAccountName  (ReqGetAccountInfoByAccountName) returns (RespGetAccountInfoByAccountName)
+}

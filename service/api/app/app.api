@@ -1,0 +1,429 @@
+syntax = "v1"
+
+info(
+	author: "Gavin Gao, Tao Zhu, Wenki Wu"
+	date:   "2022-5-1"
+	desc:   "App API"
+)
+
+/* ========================= root =========================*/
+
+/* root path */
+type (
+	ReqGetStatus  struct{}
+	RespGetStatus {
+		Status    uint32 `json:"status"`
+		NetworkId uint32 `json:"network_id"`
+	}
+)
+
+@server(
+	group: root
+)
+service appService-api{
+	@handler GetStatus
+	get /  (ReqGetStatus) returns (RespGetStatus)
+}
+
+/* ========================= Account =========================*/
+// GetAccountStatusByPubKey
+type (
+	ReqGetAccountStatusByPubKey {
+		AccountPk string `form:"account_pk"`
+	}
+	RespGetAccountStatusByPubKey {
+		AccountStatus uint32 `json:"account_status"`
+		AccountName   string `json:"account_name"`
+		AccountIndex  uint32 `json:"account_index"`
+	}
+)
+
+// GetAccountStatusByAccountName
+type (
+	ReqGetAccountStatusByAccountName {
+		AccountName string `form:"account_name"`
+	}
+	RespGetAccountStatusByAccountName {
+		AccountStatus uint32 `json:"account_status"`
+		AccountIndex  uint32 `json:"account_index"`
+		AccountPk     string `form:"account_pk"`
+	}
+)
+
+type Asset {
+	AssetId uint32 `json:"asset_id"`
+	Balance string `json:"balance"`
+}
+
+// GetAccountInfoByAccountName
+type (
+	ReqGetAccountInfoByAccountName {
+		AccountName string `json:"account_name"`
+	}
+	RespGetAccountInfoByAccountName {
+		AccountIndex  uint32   `json:"account_index"`
+		AccountPk     string   `json:"account_pk"`
+		AssetsAccount []*Asset `json:"assets"`
+	}
+)
+
+// GetBalanceByAssetIdAndAccountName
+type (
+	ReqGetBlanceByAssetIdAndAccountName {
+		AssetId     uint32 `form:"asset_id"`
+		AccountName string `json:"account_name"`
+	}
+	RespGetBlanceInfoByAssetIdAndAccountName {
+		Balance string `json:"balance_enc"`
+	}
+)
+
+// GetAssetsByAccountName
+type (
+	ReqGetAssetsByAccountName {
+		AccountName string `form:"account_name"`
+	}
+	RespGetAssetsByAccountName {
+		Assets []*Asset `json:"assets"`
+	}
+)
+
+// GetAccountLiquidityPairsByAccountIndex
+type (
+	ReqGetAccountLiquidityPairsByAccountIndex {
+		AccountIndex uint32 `form:"account_index"`
+	}
+	AccountLiquidityPairs {
+		PairIndex   uint32 `json:"pair_index"`
+		AssetAId    uint32 `json:"asset_a_id"`
+		AssetAName  string `json:"asset_a_name"`
+		AssetBId    uint32 `json:"asset_b_id"`
+		AssetBName  string `json:"asset_b_name"`
+		LpAmountEnc string `json:"lp_amount_enc"`
+		CreatedAt   int64  `json:"created_at"`
+	}
+	RespGetAccountLiquidityPairsByAccountIndex {
+		Pairs []*AccountLiquidityPairs `json:"pairs"`
+	}
+)
+
+@server(
+	group: account
+)
+
+service appService-api{
+	@handler GetAccountStatusByPubKey
+	post /api/v1/account/getAccountStatusByPubKey (ReqGetAccountStatusByPubKey) returns (RespGetAccountStatusByPubKey)
+	
+	@handler GetAccountStatusByAccountName
+	get /api/v1/account/getAccountStatusByAccountName (ReqGetAccountStatusByAccountName) returns (RespGetAccountStatusByAccountName)
+	
+	@handler GetAccountInfoByAccountName
+	post /api/v1/account/getAccountInfoByAccountName  (ReqGetAccountInfoByAccountName) returns (RespGetAccountInfoByAccountName)
+	
+	@handler GetBalanceByAssetIdAndAccountName
+	post /api/v1/account/getBalanceByAssetIdAndAccountName    (ReqGetBlanceByAssetIdAndAccountName) returns (RespGetBlanceInfoByAssetIdAndAccountName)
+	
+	@handler GetAssetsByAccountName
+	get /api/v1/account/getAssetsByAccountName (ReqGetAssetsByAccountName) returns (RespGetAssetsByAccountName)
+	
+	@handler GetAccountLiquidityPairsByAccountIndex
+	get /api/v1/account/getAccountLiquidityPairsByAccountIndex (ReqGetAccountLiquidityPairsByAccountIndex) returns (RespGetAccountLiquidityPairsByAccountIndex)
+}
+
+/* ========================= Info =========================*/
+
+// GetAssetsList
+type (
+	ReqGetAssetsList struct{}
+	AssetInfo        {
+		AssetId       uint32 `json:"asset_id"`
+		AssetName     string `json:"asset_name"`
+		AssetDecimals uint32 `json:"asset_decimals"`
+		AssetSymbol   string `json:"asset_symbol"`
+		AssetAddress  string `json:"asset_address"`
+	}
+	RespGetAssetsList {
+		Assets []*AssetInfo `json:"assets"`
+	}
+)
+
+// GetCurrencyPriceBySymbol
+type (
+	ReqGetCurrencyPriceBySymbol {
+		Symbol string `form:"symbol"`
+	}
+	RespGetCurrencyPriceBySymbol {
+		AssetId int     `json:"assetId"`
+		Price   float64 `json:"price"`
+	}
+)
+
+// GetCurrencyPrices
+type (
+	ReqGetCurrencyPrices struct{}
+	DataCurrencyPrices   {
+		Pair    string  `json:"pair"`
+		AssetId int     `json:"assetId"`
+		Price   float64 `json:"price"`
+	}
+	RespGetCurrencyPrices {
+		Data []*DataCurrencyPrices `json:"data"`
+	}
+)
+
+// GetGasFee
+type (
+	ReqGetGasFee {
+		AssetId uint32 `form:"asset_id"`
+	}
+	RespGetGasFee {
+		GasFee float64 `json:"gas_fee"`
+	}
+)
+
+// GetWithdrawGasFee
+type (
+	ReqGetWithdrawGasFee {
+		AssetId         uint32 `form:"asset_id"`
+		WithdrawAssetId uint32 `form:"withdraw_asset_id"`
+		WithdrawAmount  uint64 `form:"withdraw_amount"`
+	}
+	RespGetWithdrawGasFee {
+		WithdrawGasFee float64 `json:"withdraw_gas_fee"`
+	}
+)
+
+@server(
+	group: info
+)
+service appService-api{
+	@handler GetAssetsList
+	get /api/v1/info/getAssetsList  (ReqGetAssetsList) returns (RespGetAssetsList)
+	
+	@handler GetCurrencyPriceBySymbol
+	get /api/v1/info/getCurrencyPriceBySymbol  (ReqGetCurrencyPriceBySymbol) returns (RespGetCurrencyPriceBySymbol)
+	
+	@handler GetCurrencyPrices
+	get /api/v1/info/getCurrencyPrices  (ReqGetCurrencyPrices) returns (RespGetCurrencyPrices)
+	
+	@handler GetGasFee
+	get /api/v1/info/getGasFee  (ReqGetGasFee) returns (RespGetGasFee)
+	
+	@handler GetWithdrawGasFee
+	get /api/v1/info/getWithdrawGasFee  (ReqGetWithdrawGasFee) returns (RespGetWithdrawGasFee)
+}
+
+/* =========================== Pair ==========================*/
+// getSwapAmount
+type (
+	ReqGetSwapAmount {
+		PairIndex   uint32 `form:"pair_index"`
+		AssetId     uint32 `form:"asset_id"`
+		AssetAmount string `form:"asset_amount"`
+		IsFrom      bool   `form:"is_from"`
+	}
+	RespGetSwapAmount {
+		ResAssetAmount string `json:"res_asset_amount"`
+		ResAssetId     uint32 `json:"res_asset_id"`
+	}
+)
+
+// getAvailablePairs
+type (
+	ReqGetAvailablePairs struct{}
+	Pair                 {
+		PairIndex    uint32 `json:"pair_index"`
+		AssetAId     uint32 `json:"asset_a_id"`
+		AssetAName   string `json:"asset_a_name"`
+		AssetBId     uint32 `json:"asset_b_id"`
+		AssetBName   string `json:"asset_b_name"`
+		FeeRate      int64  `json:"fee_Rate"`
+		TreasuryRate int64  `json:"treasury_rate"`
+	}
+	RespGetAvailablePairs {
+		Pairs []*Pair `json:"result"`
+	}
+)
+
+// GetLPValue
+type (
+	ReqGetLPValue {
+		PairIndex uint32 `form:"pair_index"`
+		LpAmount  string `form:"lp_amount"`
+	}
+	RespGetLPValue {
+		AssetAId     uint32 `json:"asset_a_id"`
+		AssetAName   string `json:"asset_a_name"`
+		AssetAAmount string `json:"asset_a_amount"`
+		AssetBid     uint32 `json:"asset_b_id"`
+		AssetBName   string `json:"asset_b_name"`
+		AssetBAmount string `json:"asset_b_amount"`
+	}
+)
+
+// getPairInfo
+type (
+	ReqGetPairInfo {
+		PairIndex uint32 `form:"pair_index"`
+	}
+	RespGetPairInfo {
+		AssetAId      uint32  `json:"asset_a_id"`
+		AssetAAmount  string  `json:"asset_a_amount"`
+		AssetBId      uint32  `json:"asset_b_id"`
+		AssetBAmount  string  `json:"asset_b_amount"`
+		TotalLpAmount string  `json:"total_lp_amount"`
+	}
+)
+
+@server(
+	group:pair
+)
+service appService-api{
+	@handler GetSwapAmount
+	get /api/v1/pair/getSwapAmount (ReqGetSwapAmount) returns (RespGetSwapAmount)
+	
+	@handler GetAvailablePairs
+	get /api/v1/pair/getAvailablePairs (ReqGetAvailablePairs) returns   (RespGetAvailablePairs)
+	
+	@handler GetLPValue
+	get /api/v1/pair/getLPValue (ReqGetLPValue) returns (RespGetLPValue)
+	
+	@handler GetPairInfo
+	get /api/v1/pair/getPairInfo (ReqGetPairInfo) returns   (RespGetPairInfo)
+}
+
+/* ======================= transaction =======================*/
+type TxDetail {
+	AssetId        int    `json:"assetId"`
+	AssetType      int    `json:"assetType"`
+	AccountIndex   int32  `json:"accountIndex"`
+	AccountName    string `json:"accountName"`
+	AccountBalance string `json:"accountBalance"`
+	AccountDelta   string `json:"accountDelta"`
+}
+
+type Tx {
+	TxHash        string      `json:"tx_hash"`
+	TxType        uint32      `json:"tx_type,range=[1:64]"`
+	GasFee        int64       `json:"gas_fee"`
+	GasFeeAssetId uint32      `json:"gas_fee_asset_id"`
+	TxStatus      int         `json:"tx_status,options=0|1|2"`
+	BlockHeight   int         `json:"block_height"`
+	BlockStatus   int         `json:"block_status"`
+	BlockId       int         `json:"block_id"`
+	AssetAId      int         `json:"asset_a_id"`
+	AssetBId      int         `json:"asset_b_id"`
+	TxAmount      int         `json:"tx_amount"`
+	TxDetails     []*TxDetail `json:"tx_detail"`
+	NativeAddress string      `json:"native_address"`
+	ChainId       int         `json:"chain_id"`
+	CreatedAt     int64       `json:"created_at"`
+	Memo          string      `json:"memo"`
+}
+
+type TxAccount {
+	AccountIndex   int    `json:"account_index"`
+	AccountName    string `json:"account_name"`
+	AccountBalance string `json:"account_balance"`
+	AccountDelta   string `json:"account_delta"`
+}
+
+// getTxsByAccountIndexAndTxType
+type (
+	ReqGetTxsByAccountIndexAndTxType {
+		Pk     string `form:"account_index"`
+		TxType uint32 `form:"tx_type"`
+		Offset uint32 `form:"offset"`
+		Limit  uint32 `form:"limit"`
+	}
+	RespGetTxsByAccountIndexAndTxType {
+		Total uint32 `json:"total"`
+		Txs   []*Tx  `json:"txs"`
+	}
+)
+
+// GetTxsByAccountName
+type (
+	ReqGetTxsByAccountName {
+		AccountName string `form:"account_name"`
+		Offset      uint32 `form:"offset"`
+		Limit       uint32 `form:"limit"`
+	}
+	RespGetTxsByAccountName {
+		Total uint32 `json:"total"`
+		Txs   []*Tx  `json:"txs"`
+	}
+)
+
+// getTxsByPubKey
+type (
+	ReqGetTxsByPubKey {
+		Pk     string `form:"pk"`
+		Offset uint32 `form:"offset"`
+		Limit  uint32 `form:"limit"`
+	}
+	RespGetTxsByPubKey {
+		Total uint32 `json:"total"`
+		Txs   []*Tx  `json:"txs"`
+	}
+)
+
+// GetTxByHash
+type (
+	ReqGetTxByHash {
+		TxHash string `form:"tx_hash"`
+	}
+	RespGetTxByHash {
+		Tx          Tx    `json:"result"`
+		CommittedAt int64 `json:"committed_at"`
+		VerifiedAt  int64 `json:"verified_at"`
+		ExecutedAt  int64 `json:"executed_at"`
+	}
+)
+
+// sendTx
+type (
+	ReqSendTx {
+		TxType uint32 `form:"tx_type"`
+		TxInfo string `form:"tx_info"`
+	}
+	RespSendTx {
+		TxId string `json:"tx_id"`
+	}
+)
+
+// GetMempoolTxs
+type (
+	ReqGetMempoolTxs {
+		Offset uint32 `form:"offset"`
+		Limit  uint32 `form:"limit"`
+	}
+	RespGetMempoolTxs {
+		Total      uint32 `json:"total"`
+		MempoolTxs []*Tx  `json:"mempool_txs"`
+	}
+)
+
+@server(
+	group: transaction
+)
+service appService-api{
+	@handler GetTxsByAccountIndexAndTxType
+	get /api/v1/tx/getTxsByAccountIndexAndTxType   (ReqGetTxsByAccountIndexAndTxType) returns (RespGetTxsByAccountIndexAndTxType)
+	
+	@handler GetTxsByAccountName
+	get /api/v1/tx/getTxsByAccountName (ReqGetTxsByAccountName) returns (RespGetTxsByAccountName)
+	
+	@handler GetTxsByPubKey
+	post /api/v1/tx/getTxsByPubKey  (ReqGetTxsByPubKey) returns (RespGetTxsByPubKey)
+	
+	@handler GetTxByHash
+	get /api/v1/tx/getTxByHash (ReqGetTxByHash) returns (RespGetTxByHash)
+	
+	@handler SendTx
+	post /api/v1/tx/sendTx  (ReqSendTx) returns (RespSendTx)
+	
+	@handler GetMempoolTxs
+	get /api/v1/tx/getMempoolTxs (ReqGetMempoolTxs) returns (RespGetMempoolTxs)
+}
