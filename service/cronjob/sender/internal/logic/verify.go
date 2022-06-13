@@ -176,13 +176,16 @@ func SendVerifiedAndExecutedBlocks(
 				return errors.New("[SendVerifiedAndExecutedBlocks] we haven't generated related proofs, please wait")
 			}
 			for _, proofSender := range proofSenders {
-				var proofInfo []*big.Int
+				var proofInfo *util.FormattedProof
 				err = json.Unmarshal([]byte(proofSender.ProofInfo), &proofInfo)
 				if err != nil {
 					logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to unmarshal proof info: %s", err.Error())
 					return err
 				}
-				proofs = append(proofs, proofInfo...)
+				proofs = append(proofs, proofInfo.A[:]...)
+				proofs = append(proofs, proofInfo.B[0][0], proofInfo.B[0][1])
+				proofs = append(proofs, proofInfo.B[1][0], proofInfo.B[1][1])
+				proofs = append(proofs, proofInfo.C[:]...)
 			}
 		} else {
 			isSuccess, err := cli.WaitingTransactionStatus(pendingSender.L1TxHash)
