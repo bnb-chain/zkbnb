@@ -57,10 +57,12 @@ func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*BlockForCommit) (commit
 func ConvertBlocksToVerifyAndExecuteBlockInfos(oBlocks []*Block) (verifyAndExecuteBlocks []ZecreyLegendVerifyBlockInfo, err error) {
 	for _, oBlock := range oBlocks {
 		var pendingOnChainOpsPubData [][]byte
-		err = json.Unmarshal([]byte(oBlock.PendingOnChainOperationsPubData), &pendingOnChainOpsPubData)
-		if err != nil {
-			logx.Errorf("[ConvertBlocksToVerifyAndExecuteBlockInfos] unable to unmarshal pending pub data: %s", err.Error())
-			return nil, err
+		if oBlock.PendingOnChainOperationsPubData != "" {
+			err = json.Unmarshal([]byte(oBlock.PendingOnChainOperationsPubData), &pendingOnChainOpsPubData)
+			if err != nil {
+				logx.Errorf("[ConvertBlocksToVerifyAndExecuteBlockInfos] unable to unmarshal pending pub data: %s", err.Error())
+				return nil, err
+			}
 		}
 		verifyAndExecuteBlock := ZecreyLegendVerifyBlockInfo{
 			BlockHeader:              util.ConstructStoredBlockInfo(oBlock),

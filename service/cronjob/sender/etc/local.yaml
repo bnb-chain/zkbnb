@@ -14,13 +14,13 @@ CacheRedis:
     Type: node
 
 ChainConfig:
-  NetworkRPCSysConfigName: "BscTestNetworkRpc"
-  #  NetworkRPCSysConfigName: "Local_Test_Network_RPC"
+  #  NetworkRPCSysConfigName: "BscTestNetworkRpc"
+  NetworkRPCSysConfigName: "Local_Test_Network_RPC"
   ZecreyContractAddrSysConfigName: "ZecreyLegendContract"
   MaxWaitingTime: 120
   MaxBlockCount: 1
-  Sk: "107f9d2a50ce2d8337e0c5220574e9fcf2bf60002da5acf07718f4d531ea3faa"
-  #  Sk: "53083ce384b7cb81370800973d79c0412261310ba5c9c0cd35d7c6ec7926d0a0"
+  #  Sk: "107f9d2a50ce2d8337e0c5220574e9fcf2bf60002da5acf07718f4d531ea3faa"
+  Sk: "08e504b8a5fd5bbc41e953f6e9cbe3371661c0010767c09315ace07e5a1e938e"
   GasLimit: 5000000
   L1ChainId: "48"
 
