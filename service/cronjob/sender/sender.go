@@ -104,10 +104,10 @@ func main() {
 		logx.Info("========================= end sender committer task =========================")
 
 		logx.Info("========================= start sender verifier task =========================")
-		//err = logic.SendVerifiedAndExecutedBlocks(param, ctx.L1TxSenderModel, ctx.ProofSenderModel)
-		//if err != nil {
-		//	logx.Info("[sender.SendCommittedBlocks main] unable to run:", err)
-		//}
+		err = logic.SendVerifiedAndExecutedBlocks(param, ctx.L1TxSenderModel, ctx.BlockModel, ctx.ProofSenderModel)
+		if err != nil {
+			logx.Info("[sender.SendCommittedBlocks main] unable to run:", err)
+		}
 		logx.Info("========================= end sender verifier task =========================")
 
 	})

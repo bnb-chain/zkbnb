@@ -21,10 +21,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
-	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -51,8 +49,6 @@ type (
 		UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 			pendingUpdateBlocks []*block.Block,
 			pendingUpdateSenders []*L1TxSender,
-			pendingUpdateAccounts []*account.Account,
-			pendingUpdateNftAssets []*nft.L2Nft, pendingNewNftAssets []*nft.L2Nft,
 			pendingUpdateMempoolTxs []*mempool.MempoolTx,
 			pendingUpdateProofSenderStatus map[int64]int,
 		) (err error)
@@ -247,8 +243,6 @@ func (m *defaultL1TxSenderModel) DeleteL1TxSender(sender *L1TxSender) error {
 func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 	pendingUpdateBlocks []*block.Block,
 	pendingUpdateSenders []*L1TxSender,
-	pendingUpdateAccounts []*account.Account,
-	pendingUpdateNftAssets []*nft.L2Nft, pendingNewNftAssets []*nft.L2Nft,
 	pendingUpdateMempoolTxs []*mempool.MempoolTx,
 	pendingUpdateProofSenderStatus map[int64]int,
 ) (err error) {
@@ -297,51 +291,6 @@ func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 				}
 				logx.Error("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] %s" + "Invalid sender:  " + string(senderInfo))
 				return errors.New("Invalid sender:  " + string(senderInfo))
-			}
-		}
-		// update accounts
-		for _, pendingUpdateAccount := range pendingUpdateAccounts {
-			dbTx := tx.Table(account.AccountTableName).Where("id = ?", pendingUpdateAccount.ID).
-				Select("*").
-				Updates(&pendingUpdateAccount)
-			if dbTx.Error != nil {
-				errInfo := fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] unable to update asset: %s", err.Error())
-				logx.Error(errInfo)
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				errInfo := fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] unable to update asset: %s", pendingUpdateAccount.ID)
-				logx.Error(errInfo)
-				return errors.New("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] unable to update related asset")
-			}
-		}
-		// create liquidity assets
-		if len(pendingNewNftAssets) != 0 {
-			dbTx := tx.Table(nft.L2NftTableName).CreateInBatches(pendingNewNftAssets, len(pendingNewNftAssets))
-			if dbTx.Error != nil {
-				errInfo := fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] unable to create nft assets: %s", err.Error())
-				logx.Error(errInfo)
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected != int64(len(pendingNewNftAssets)) {
-				logx.Error("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] invalid nft assets")
-				return errors.New("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] invalid nft assets")
-			}
-		}
-		// update liquidity assets
-		for _, pendingUpdateNftAsset := range pendingUpdateNftAssets {
-			dbTx := tx.Table(nft.L2NftTableName).Where("id = ?", pendingUpdateNftAsset.ID).
-				Select("*").
-				Updates(&pendingUpdateNftAsset)
-			if dbTx.Error != nil {
-				errInfo := fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] unable to update nft asset: %s", err.Error())
-				logx.Error(errInfo)
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				errInfo := fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] unable to update nft asset: %s", pendingUpdateNftAsset.ID)
-				logx.Error(errInfo)
-				return errors.New("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] unable to update related nft asset")
 			}
 		}
 		// delete mempool txs
@@ -393,22 +342,11 @@ func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 		}
 		return nil
 	})
-	if err == nil {
-		for _, pendingUpdateBlock := range pendingUpdateBlocks {
-			key := fmt.Sprintf("%s%v", block.CacheBlockStatusPrefix, pendingUpdateBlock.BlockHeight)
-			err := m.DelCache(key)
-			if err != nil {
-				errInfo := fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Delete Cache Error %s", err)
-				logx.Error(errInfo)
-				// return err
-			}
-		}
-	}
 	return err
 }
 
 func (m *defaultL1TxSenderModel) GetLatestHandledBlock(txType int64) (txSender *L1TxSender, err error) {
-	dbTx := m.DB.Table(m.table).Where("tx_type = ? AND tx_status = ?", txType, HandledStatus).Find(&txSender)
+	dbTx := m.DB.Table(m.table).Where("tx_type = ? AND tx_status = ?", txType, HandledStatus).Order("l2_block_height desc").Find(&txSender)
 	if dbTx.Error != nil {
 		logx.Errorf("[GetLatestHandledBlock] unable to get latest handled block: %s", err.Error())
 		return nil, dbTx.Error

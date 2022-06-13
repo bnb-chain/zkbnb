@@ -907,7 +907,7 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 }
 
 func (m *defaultBlockModel) GetBlocksForProverBetween(start, end int64) (blocks []*Block, err error) {
-	dbTx := m.DB.Table(m.table).Where("status = ? AND block_height >= ? AND block_height <= ?", StatusCommitted, start, end).
+	dbTx := m.DB.Table(m.table).Where("block_status = ? AND block_height >= ? AND block_height <= ?", StatusCommitted, start, end).
 		Order("block_height").
 		Find(&blocks)
 	if dbTx.Error != nil {
