@@ -82,7 +82,7 @@ func SendVerifiedAndExecutedBlocks(
 				return err
 			}
 			// get proofs
-			proofSenders, err := proofSenderModel.GetProofsBetween(1, end)
+			proofSenders, err := proofSenderModel.GetProofsByBlockRange(1, end, maxBlockCount)
 			if err != nil {
 				logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get proofs: %s", err.Error())
 				return err
@@ -162,7 +162,7 @@ func SendVerifiedAndExecutedBlocks(
 			}
 			end := blocks[len(blocks)-1].BlockHeight
 			// get proofs
-			proofSenders, err := proofSenderModel.GetProofsBetween(lastHandledBlock.L2BlockHeight+1, end)
+			proofSenders, err := proofSenderModel.GetProofsByBlockRange(lastHandledBlock.L2BlockHeight+1, end, maxBlockCount)
 			if err != nil {
 				logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get proofs: %s", err.Error())
 				return err

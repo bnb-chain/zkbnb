@@ -22,13 +22,9 @@ import (
 	"errors"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
-	curve "github.com/zecrey-labs/zecrey-crypto/ecc/ztwistededwards/tebn254"
-	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zeromicro/go-zero/core/logx"
-	"log"
-	"math/big"
 )
 
 func ConvertTxToRegisterZNSPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
@@ -756,19 +752,6 @@ func CreateBlockCommitment(
 	PaddingInt64IntoBuf(&buf, onChainOpsCount)
 	hFunc := mimc.NewMiMC()
 	hFunc.Write(buf.Bytes())
-	if currentBlockHeight >= 24 {
-		log.Println(currentBlockHeight)
-		log.Println(createdAt)
-		log.Println(new(big.Int).SetBytes(oldStateRoot))
-		log.Println(new(big.Int).SetBytes(newStateRoot))
-		log.Println(ffmath.Mod(new(big.Int).SetBytes(pubData[32*0:32*1]), curve.Modulus).String())
-		log.Println(ffmath.Mod(new(big.Int).SetBytes(pubData[32*1:32*2]), curve.Modulus).String())
-		log.Println(ffmath.Mod(new(big.Int).SetBytes(pubData[32*2:32*3]), curve.Modulus).String())
-		log.Println(ffmath.Mod(new(big.Int).SetBytes(pubData[32*3:32*4]), curve.Modulus).String())
-		log.Println(ffmath.Mod(new(big.Int).SetBytes(pubData[32*4:32*5]), curve.Modulus).String())
-		log.Println(ffmath.Mod(new(big.Int).SetBytes(pubData[32*5:32*6]), curve.Modulus).String())
-		log.Println(onChainOpsCount)
-	}
 	commitment := hFunc.Sum(nil)
 	return common.Bytes2Hex(commitment)
 }
