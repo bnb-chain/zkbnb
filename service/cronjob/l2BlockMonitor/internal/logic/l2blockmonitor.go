@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/zecrey-labs/zecrey-eth-rpc/_rpc"
+	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
 	"github.com/zeromicro/go-zero/core/logx"
 	"sort"
@@ -119,6 +120,7 @@ func MonitorL2BlockEvents(
 				}
 				relatedBlocks[blockHeight].CommittedTxHash = receipt.TxHash.Hex()
 				relatedBlocks[blockHeight].CommittedAt = timeAt
+				relatedBlocks[blockHeight].BlockStatus = block.StatusCommitted
 				break
 			case ZecreyLogBlockVerificationSigHash.Hex():
 				// parse event info
@@ -146,6 +148,7 @@ func MonitorL2BlockEvents(
 				// update block status
 				relatedBlocks[blockHeight].VerifiedTxHash = receipt.TxHash.Hex()
 				relatedBlocks[blockHeight].VerifiedAt = timeAt
+				relatedBlocks[blockHeight].BlockStatus = block.StatusVerifiedAndExecuted
 				break
 			case ZecreyLogBlocksRevertSigHash.Hex():
 				// TODO revert

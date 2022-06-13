@@ -342,22 +342,11 @@ func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 		}
 		return nil
 	})
-	if err == nil {
-		for _, pendingUpdateBlock := range pendingUpdateBlocks {
-			key := fmt.Sprintf("%s%v", block.CacheBlockStatusPrefix, pendingUpdateBlock.BlockHeight)
-			err := m.DelCache(key)
-			if err != nil {
-				errInfo := fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Delete Cache Error %s", err)
-				logx.Error(errInfo)
-				// return err
-			}
-		}
-	}
 	return err
 }
 
 func (m *defaultL1TxSenderModel) GetLatestHandledBlock(txType int64) (txSender *L1TxSender, err error) {
-	dbTx := m.DB.Table(m.table).Where("tx_type = ? AND tx_status = ?", txType, HandledStatus).Find(&txSender)
+	dbTx := m.DB.Table(m.table).Where("tx_type = ? AND tx_status = ?", txType, HandledStatus).Order("l2_block_height desc").Find(&txSender)
 	if dbTx.Error != nil {
 		logx.Errorf("[GetLatestHandledBlock] unable to get latest handled block: %s", err.Error())
 		return nil, dbTx.Error
