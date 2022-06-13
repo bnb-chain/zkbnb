@@ -20,8 +20,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/zecrey-labs/zecrey-eth-rpc/_rpc"
-	"github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
+	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
 	"github.com/zeromicro/go-zero/core/logx"
 	"sort"
@@ -121,6 +120,7 @@ func MonitorL2BlockEvents(
 				}
 				relatedBlocks[blockHeight].CommittedTxHash = receipt.TxHash.Hex()
 				relatedBlocks[blockHeight].CommittedAt = timeAt
+				relatedBlocks[blockHeight].BlockStatus = block.StatusCommitted
 				break
 			case ZecreyLogBlockVerificationSigHash.Hex():
 				// parse event info
@@ -143,11 +143,12 @@ func MonitorL2BlockEvents(
 				// check block height
 				if blockHeight == pendingSender.L2BlockHeight {
 					isValidSender = true
-					pendingUpdateProofSenderStatus[blockHeight] = proofSender.ConfirmedOnChain
+					pendingUpdateProofSenderStatus[blockHeight] = proofSender.Confirmed
 				}
 				// update block status
 				relatedBlocks[blockHeight].VerifiedTxHash = receipt.TxHash.Hex()
 				relatedBlocks[blockHeight].VerifiedAt = timeAt
+				relatedBlocks[blockHeight].BlockStatus = block.StatusVerifiedAndExecuted
 				break
 			case ZecreyLogBlocksRevertSigHash.Hex():
 				// TODO revert
@@ -177,78 +178,10 @@ func MonitorL2BlockEvents(
 
 	// handle executed blocks
 	var (
-		pendingUpdateAccountsMap                          = make(map[int64]*account.Account)
-		pendingUpdateNftAssetsMap, pendingNewNftAssetsMap = make(map[int64]*nft.L2Nft), make(map[int64]*nft.L2Nft)
-		pendingUpdateMempoolTxs                           []*MempoolTx
+		pendingUpdateMempoolTxs []*MempoolTx
 	)
 	for _, pendingUpdateBlock := range pendingUpdateBlocks {
 		if pendingUpdateBlock.BlockStatus == BlockVerifiedStatus {
-			pendingUpdateAccountHistories, err := accountHistoryModel.GetAccountsByBlockHeight(pendingUpdateBlock.BlockHeight)
-			if err != nil {
-				logx.Errorf("[MonitorL2BlockEvents] unable to get related account info by height: %s", err.Error())
-				return err
-			}
-			for _, pendingUpdateAccountHistory := range pendingUpdateAccountHistories {
-				// get account info by index
-				if pendingUpdateAccountsMap[pendingUpdateAccountHistory.AccountIndex] == nil {
-					pendingUpdateAccountsMap[pendingUpdateAccountHistory.AccountIndex], err = accountModel.GetAccountByAccountIndex(pendingUpdateAccountHistory.AccountIndex)
-					if err != nil {
-						logx.Errorf("[MonitorL2BlockEvents] invalid account index: %s", err.Error())
-						return err
-					}
-				}
-				pendingUpdateAccountsMap[pendingUpdateAccountHistory.AccountIndex].Nonce = pendingUpdateAccountHistory.Nonce
-				pendingUpdateAccountsMap[pendingUpdateAccountHistory.AccountIndex].AssetInfo = pendingUpdateAccountHistory.AssetInfo
-				pendingUpdateAccountsMap[pendingUpdateAccountHistory.AccountIndex].AssetRoot = pendingUpdateAccountHistory.AssetRoot
-			}
-			// get related account nft from account nft history table
-			_, pendingUpdateNftAssetsHistory, err := nftHistoryModel.GetNftAssetsByBlockHeight(pendingUpdateBlock.BlockHeight)
-			if err != nil {
-				errInfo := fmt.Sprintf("[MonitorL2BlockEvents] unable to get related account liquidity assets by height: %s", err.Error())
-				logx.Error(errInfo)
-				return err
-			}
-			// get pending nft assets
-			for _, pendingUpdateNftAssetHistory := range pendingUpdateNftAssetsHistory {
-				var pendingUpdateNftAsset *nft.L2Nft
-				if pendingUpdateNftAssetsMap[pendingUpdateNftAssetHistory.NftIndex] == nil && pendingNewNftAssetsMap[pendingUpdateNftAssetHistory.NftIndex] == nil {
-					pendingUpdateNftAsset, err = nftModel.GetNftAsset(pendingUpdateNftAssetHistory.NftIndex)
-					if err == ErrNotFound {
-						pendingNewNftAsset := &nft.L2Nft{
-							NftIndex:            pendingUpdateNftAsset.NftIndex,
-							CreatorAccountIndex: pendingUpdateNftAsset.CreatorAccountIndex,
-							OwnerAccountIndex:   pendingUpdateNftAsset.OwnerAccountIndex,
-							NftContentHash:      pendingUpdateNftAsset.NftContentHash,
-							NftL1TokenId:        pendingUpdateNftAsset.NftL1TokenId,
-							NftL1Address:        pendingUpdateNftAsset.NftL1Address,
-							CollectionId:        pendingUpdateNftAsset.CollectionId,
-						}
-						pendingNewNftAssetsMap[pendingUpdateNftAssetHistory.NftIndex] = pendingNewNftAsset
-						continue
-					} else if err != nil {
-						errInfo := fmt.Sprintf("[MonitorL2BlockEvents] unable to get related account asset: %s", err.Error())
-						logx.Error(errInfo)
-						return err
-					}
-					pendingUpdateNftAssetsMap[pendingUpdateNftAssetHistory.NftIndex] = pendingUpdateNftAsset
-				} else {
-					if pendingUpdateNftAssetsMap[pendingUpdateNftAssetHistory.NftIndex] == nil {
-						pendingUpdateNftAsset = pendingNewNftAssetsMap[pendingUpdateNftAssetHistory.NftIndex]
-					} else {
-						pendingUpdateNftAsset = pendingUpdateNftAssetsMap[pendingUpdateNftAssetHistory.NftIndex]
-					}
-				}
-				pendingUpdateNftAsset = &nft.L2Nft{
-					Model:               pendingUpdateNftAsset.Model,
-					NftIndex:            pendingUpdateNftAsset.NftIndex,
-					CreatorAccountIndex: pendingUpdateNftAssetHistory.CreatorAccountIndex,
-					OwnerAccountIndex:   pendingUpdateNftAssetHistory.OwnerAccountIndex,
-					NftContentHash:      pendingUpdateNftAssetHistory.NftContentHash,
-					NftL1TokenId:        pendingUpdateNftAssetHistory.NftL1TokenId,
-					NftL1Address:        pendingUpdateNftAssetHistory.NftL1Address,
-					CollectionId:        pendingUpdateNftAssetHistory.CollectionId,
-				}
-			}
 			// delete related mempool txs
 			rowsAffected, pendingDeleteMempoolTxs, err := mempoolModel.GetMempoolTxsByBlockHeight(pendingUpdateBlock.BlockHeight)
 			if err != nil {
@@ -263,35 +196,17 @@ func MonitorL2BlockEvents(
 			pendingUpdateMempoolTxs = append(pendingUpdateMempoolTxs, pendingDeleteMempoolTxs...)
 		}
 	}
-	var (
-		pendingUpdateAccounts                       []*account.Account
-		pendingUpdateNftAssets, pendingNewNftAssets []*nft.L2Nft
-	)
-	for _, pendingUpdateAccount := range pendingUpdateAccountsMap {
-		pendingUpdateAccounts = append(pendingUpdateAccounts, pendingUpdateAccount)
-	}
-	for _, pendingUpdateNftAsset := range pendingUpdateNftAssetsMap {
-		pendingUpdateNftAssets = append(pendingUpdateNftAssets, pendingUpdateNftAsset)
-	}
-	for _, pendingNewNftAsset := range pendingNewNftAssetsMap {
-		pendingNewNftAssets = append(pendingNewNftAssets, pendingNewNftAsset)
-	}
 	// update blocks, blockDetails, updateEvents, sender
 	// update assets, locked assets, liquidity
 	// delete mempool txs
 	err = l1TxSenderModel.UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 		pendingUpdateBlocks,
 		pendingUpdateSenders,
-		pendingUpdateAccounts,
-		pendingUpdateNftAssets, pendingNewNftAssets,
 		pendingUpdateMempoolTxs,
 		pendingUpdateProofSenderStatus,
 	)
 	logx.Info("[MonitorL2BlockEvents] update blocks count: %v", len(pendingUpdateBlocks))
 	logx.Info("[MonitorL2BlockEvents] update senders count: %v", len(pendingUpdateSenders))
-	logx.Info("[MonitorL2BlockEvents] update accounts count: %v", len(pendingUpdateAccounts))
-	logx.Info("[MonitorL2BlockEvents] update nft assets count: %v", len(pendingUpdateNftAssets))
-	logx.Info("[MonitorL2BlockEvents] new nft assets count: %v", len(pendingNewNftAssets))
 	logx.Info("[MonitorL2BlockEvents] update mempool txs count: %v", len(pendingUpdateMempoolTxs))
 	if err != nil {
 		logx.Errorf("[MonitorL2BlockEvents] unable to update everything: %s", err.Error())

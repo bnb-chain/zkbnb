@@ -107,7 +107,7 @@ func (m *defaultProofSenderModel) CreateProof(row *ProofSender) error {
 
 func (m *defaultProofSenderModel) GetProofsByBlockRange(start int64, end int64, maxProofsCount int) (proofs []*ProofSender, err error) {
 
-	dbTx := m.DB.Debug().Table(m.table).Where("block_number >= ? AND block_number < ? AND status = ?",
+	dbTx := m.DB.Debug().Table(m.table).Where("block_number >= ? AND block_number <= ? AND status = ?",
 		start,
 		end,
 		NotSent).
