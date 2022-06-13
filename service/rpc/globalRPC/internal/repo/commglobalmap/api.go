@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
+	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	commGlobalmapHandler "github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/config"
@@ -13,6 +14,14 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
+
+type GlobalAssetInfo struct {
+	AccountIndex   int64
+	AssetId        int64
+	AssetType      int64
+	ChainId        int64
+	BaseBalanceEnc string
+}
 
 type Commglobalmap interface {
 	GetLatestAccountInfo(accountIndex int64) (accountInfo *commGlobalmapHandler.AccountInfo, err error)
@@ -38,9 +47,11 @@ func New(c config.Config) Commglobalmap {
 		}
 		redisConn := redis.New(c.CacheRedis[0].Host, withRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
 		singletonValue = &commglobalmap{
-			AccountModel:    account.NewAccountModel(conn, c.CacheRedis, gormPointer),
-			MempoolModel:    mempool.NewMempoolModel(conn, c.CacheRedis, gormPointer),
-			RedisConnection: redisConn,
+			mempoolTxDetailModel: mempool.NewMempoolDetailModel(conn, c.CacheRedis, gormPointer),
+			mempoolModel:         mempool.NewMempoolModel(conn, c.CacheRedis, gormPointer),
+			AccountModel:         account.NewAccountModel(conn, c.CacheRedis, gormPointer),
+			liquidityModel:       liquidity.NewLiquidityModel(conn, c.CacheRedis, gormPointer),
+			redisConnection:      redisConn,
 		}
 	})
 	return singletonValue

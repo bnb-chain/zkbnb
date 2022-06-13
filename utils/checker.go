@@ -33,10 +33,7 @@ const (
 	maxLimit = 50
 
 	minOffset = 0
-	maxOffset = (1 << 64) - 1 //TODO
-
-	minLPAmount = 0
-	maxLPAmount = (1 << 64) - 1
+	maxOffset = math.MaxUint32
 )
 
 func CheckAccountName(accountName string) bool {

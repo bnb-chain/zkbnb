@@ -6,8 +6,8 @@ import (
 
 	table "github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/config"
 
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/config"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"

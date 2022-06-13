@@ -133,7 +133,7 @@ func (m *mempool) GetMempoolTxsTotalCountByAccountIndexAndTxTypeArray(accountInd
 	return count, nil
 }
 
-func (m *mempool) GetMempoolTxsListByAccountIndexAndTxTypeArray(accountIndex int64, txTypeArray []uint8, limit int64, offset int64) (mempoolTxs []*MempoolTx, err error) {
+func (m *mempool) GetMempoolTxsListByAccountIndexAndTxTypeArray(accountIndex int64, txTypeArray []uint8, limit int64, offset int64) (mempoolTxs []*table.MempoolTx, err error) {
 	var (
 		mempoolDetailTable      = `mempool_tx_detail`
 		mempoolIds              []int64
@@ -161,6 +161,41 @@ func (m *mempool) GetMempoolTxsListByAccountIndexAndTxTypeArray(accountIndex int
 		err := m.db.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
 		if err != nil {
 			logx.Errorf("[mempool.GetMempoolTxsListByAccountIndexAndTxType] Get Associate MempoolDetails Error")
+			return nil, err
+		}
+	}
+	return mempoolTxs, nil
+}
+
+func (m *mempool) GetMempoolTxsListByAccountIndex(accountIndex int64, limit int64, offset int64) (mempoolTxs []*table.MempoolTx, err error) {
+	var (
+		mempoolDetailTable      = `mempool_tx_detail`
+		mempoolIds              []int64
+		mempoolForeignKeyColumn = `MempoolDetails`
+	)
+	var mempoolTxDetails []*table.MempoolTxDetail
+	dbTx := m.db.Table(mempoolDetailTable).Select("tx_id").Where("account_index = ?", accountIndex).Find(&mempoolTxDetails).Group("tx_id").Find(&mempoolIds)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndex] %s", dbTx.Error)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Info("[mempool.GetMempoolTxsListByAccountIndex] No rows in mempool list")
+		return nil, ErrNotFound
+	}
+
+	dbTx = m.db.Table(m.table).Where("status = ?", PendingTxStatus).Order("created_at desc").Offset(int(offset)).Limit(int(limit)).Find(&mempoolTxs, mempoolIds)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndex] %s", dbTx.Error)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Info("[mempool.GetMempoolTxsListByAccountIndex] No rows in mempool with Pending Status")
+		return nil, ErrNotFound
+	}
+	// TODO: cache operation
+	for _, mempoolTx := range mempoolTxs {
+		err := m.db.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+		if err != nil {
+			logx.Errorf("[mempool.GetMempoolTxsListByAccountIndex] Get Associate MempoolDetails Error")
 			return nil, err
 		}
 	}
