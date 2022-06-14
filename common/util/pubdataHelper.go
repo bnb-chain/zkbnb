@@ -20,6 +20,7 @@ package util
 import (
 	"bytes"
 	"errors"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
@@ -750,9 +751,9 @@ func CreateBlockCommitment(
 	buf.Write(pubData)
 	PaddingInt64IntoBuf(&buf, onChainOpsCount)
 	// TODO Keccak256
-	//hFunc := mimc.NewMiMC()
-	//hFunc.Write(buf.Bytes())
-	//commitment := hFunc.Sum(nil)
-	commitment := KeccakHash(buf.Bytes())
+	hFunc := mimc.NewMiMC()
+	hFunc.Write(buf.Bytes())
+	commitment := hFunc.Sum(nil)
+	//commitment := KeccakHash(buf.Bytes())
 	return common.Bytes2Hex(commitment)
 }
