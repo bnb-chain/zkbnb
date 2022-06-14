@@ -2,6 +2,7 @@ package block
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/types"
@@ -24,7 +25,52 @@ func NewGetBlockByBlockHeightLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 func (l *GetBlockByBlockHeightLogic) GetBlockByBlockHeight(req *types.ReqGetBlockByBlockHeight) (resp *types.RespGetBlockByBlockHeight, err error) {
-	// todo: add your logic here and delete this line
+	// query basic block info
+	block, err := l.svcCtx.Block.GetBlockByBlockHeight(int64(req.BlockHeight))
+	if err != nil {
+		err = fmt.Errorf("[explorer.block.GetBlockByBlockHeight]<=>%s", err.Error())
+		l.Error(err)
+		return
+	}
 
-	return
+	resp.Block = types.Block{
+		BlockHeight:    int32(block.BlockHeight),
+		BlockStatus:    int32(block.BlockStatus),
+		NewAccountRoot: block.StateRoot,
+		CommittedAt:    block.CommittedAt,
+		VerifiedAt:     block.VerifiedAt,
+		// ExecutedAt: block.,
+		BlockCommitment: block.BlockCommitment,
+		TxCount:         int64(len(block.Txs)),
+	}
+
+	for _, tx := range block.Txs {
+		resp.Block.Txs = append(resp.Block.Txs, tx.TxHash)
+	}
+
+	block.BlockCommitment
+
+	for _, tx := range block.Txs {
+		tx.TxStatus
+		resp.Block.CommittedTxHash = append(resp.Block.CommittedTxHash, &types.TxHash{
+			TxHash:    tx.TxHash,
+			CreatedAt: tx.CreatedAt.Unix(),
+		})
+
+		resp.Block.VerifiedTxHash = append(resp.Block.VerifiedTxHash, &types.TxHash{
+			TxHash:    tx.TxHash,
+			CreatedAt: tx.CreatedAt.Unix(),
+		})
+
+		verifiedTxHash = append(verifiedTxHash, &types.VerifiedTxHash{
+			ChainId:   int32(blockDetail.ChainId),
+			TxHash:    blockDetail.VerifiedTxHash,
+			CreatedAt: blockDetail.VerifiedAt,
+		})
+		executedTxHash = append(executedTxHash, &types.ExecutedTxHash{
+			ChainId:   int32(blockDetail.ChainId),
+			TxHash:    blockDetail.ExecutedTxHash,
+			CreatedAt: blockDetail.ExecutedAt,
+		})
+	}
 }

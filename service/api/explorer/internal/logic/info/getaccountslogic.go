@@ -25,38 +25,28 @@ func NewGetAccountsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAc
 }
 
 func (l *GetAccountsLogic) GetAccounts(req *types.ReqGetAccounts) (resp *types.RespGetAccounts, err error) {
-	accounts, err := l.svcCtx.AccountHistoryModel.GetAccountsList(int(req.Limit), int64(req.Offset))
-	if err != nil {
-		errInfo := fmt.Sprintf("[explorer.info.GetAccountsList]<=>[AccountModel.GetAccountsList] %s", err.Error())
-		logx.Error(errInfo)
-		return packGetAccountsListResp(logic.FailStatus, "fail", errInfo, respResult), nil
+	accounts, e := l.svcCtx.Account.GetAccountsList(int(req.Limit), int64(req.Offset))
+	if e != nil {
+		err = fmt.Errorf("[explorer.info.GetAccountsList]%s", e.Error())
+		l.Error(err)
+		return
 	}
 
-	total, err := l.svcCtx.AccountHistoryModel.GetAccountsTotalCount()
-	if err != nil {
-		errInfo := fmt.Sprintf("[explorer.info.GetAccountsList]<=>[AccountModel.GetAccountsTotalCount] %s", err.Error())
-		logx.Error(errInfo)
-		return packGetAccountsListResp(logic.FailStatus, "fail", errInfo, respResult), nil
+	total, e := l.svcCtx.Account.GetAccountsTotalCount()
+	if e != nil {
+		err = fmt.Errorf("[explorer.info.GetAccountsList]%s", e.Error())
+		l.Error(err)
+		return
 	}
+	resp.Total = uint32(total)
 
-	dataAccountsList := make([]*types.DataAccountsList, 0)
-	for _, account := range accounts {
-		dataAccountsList = append(dataAccountsList, &types.DataAccountsList{
-			AccountIndex: uint32(account.AccountIndex),
-			AccountName:  account.AccountName,
-			PublicKey:    account.PublicKey,
+	for _, a := range accounts {
+		resp.Accounts = append(resp.Accounts, &types.Accounts{
+			AccountIndex: uint32(a.AccountIndex),
+			AccountName:  a.AccountName,
+			PublicKey:    a.PublicKey,
 		})
 	}
-	resp := &types.RespGetAccountsList{
-		Status: logic.SuccessStatus,
-		Msg:    "success",
-		Err:    "",
-		Result: types.ResultGetAccountsList{
-			Limit:  req.Limit,
-			Offset: req.Offset,
-			Total:  uint32(total),
-			Data:   dataAccountsList,
-		},
-	}
-	return resp, nil
+
+	return
 }

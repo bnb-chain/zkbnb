@@ -2,6 +2,7 @@ package block
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/types"
@@ -24,7 +25,17 @@ func NewGetBlockByCommitmentLogic(ctx context.Context, svcCtx *svc.ServiceContex
 }
 
 func (l *GetBlockByCommitmentLogic) GetBlockByCommitment(req *types.ReqGetBlockByCommitment) (resp *types.RespGetBlockByCommitment, err error) {
-	// todo: add your logic here and delete this line
+	// query basic block info
+	block, err := l.svcCtx.Block.GetBlockByCommitment(req.BlockCommitment)
+	if err != nil {
+		err = fmt.Errorf("[explorer.block.GetBlockByCommitment]<=>%s", err.Error())
+		l.Error(err)
+		return
+	}
 
+	txs := make([]string, 0)
+	for _, tx := range block.Txs {
+		txs = append(txs, tx.TxHash)
+	}
 	return
 }

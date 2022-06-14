@@ -20,6 +20,7 @@ type Block interface {
 	GetCommitedBlocksCount() (count int64, err error)
 	GetExecutedBlocksCount() (count int64, err error)
 	GetBlockByBlockHeight(blockHeight int64) (block *table.Block, err error)
+	GetBlockByCommitment(BlockCommitment string) (block *table.Block, err error)
 }
 
 var singletonValue *block
@@ -42,6 +43,7 @@ func New(c config.Config) Block {
 			db:         gormPointer,
 			redisConn:  redisConn,
 			cache:      multcache.NewGoCache(context.Background(), 100, 10),
+			blockModel: table.NewBlockModel(conn, c.CacheRedis, gormPointer, redisConn),
 		}
 	})
 	return singletonValue

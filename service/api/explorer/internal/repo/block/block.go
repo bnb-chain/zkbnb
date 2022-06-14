@@ -38,6 +38,7 @@ type block struct {
 	db         *gorm.DB
 	redisConn  *redis.Redis
 	cache      multcache.MultCache
+	blockModel table.BlockModel
 }
 
 /*
@@ -99,4 +100,8 @@ func (m *block) GetBlockByBlockHeight(blockHeight int64) (block *table.Block, er
 		return nil, fmt.Errorf("[GetBlockByBlockHeight]: %v", err)
 	}
 	return block, nil
+}
+
+func (m *block) GetBlockByCommitment(blockCommitment string) (block *table.Block, err error) {
+	return m.blockModel.GetBlockByCommitment(blockCommitment)
 }

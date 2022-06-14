@@ -1,11 +1,15 @@
 package tx
 
 import (
+	"fmt"
+	"log"
+	"sort"
+
+	table "github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"gorm.io/gorm"
-	"log"
 )
 
 var (
@@ -48,4 +52,28 @@ func (m *tx) GetTxsTotalCountByAccountIndex(accountIndex int64) (count int64, er
 	)
 	dbTx := m.db.Table(txDetailTable).Select("tx_id").Where("account_index = ? and deleted_at is NULL", accountIndex).Group("tx_id").Count(&count)
 	return count, dbTx.Error
+}
+
+func (m *tx) GetTxByTxHash(txHash string) (tx *table.Tx, err error) {
+	var txForeignKeyColumn = `TxDetails`
+
+	dbTx := m.db.Table(m.table).Where("tx_hash = ?", txHash).Find(&tx)
+	if dbTx.Error != nil {
+		err = fmt.Errorf("[txVerification.GetTxByTxHash] %s", dbTx.Error)
+		return nil, err
+	} else if dbTx.RowsAffected == 0 {
+		err = fmt.Errorf("[txVerification.GetTxByTxHash] No such Tx with txHash: %s", txHash)
+		return nil, err
+	}
+	err = m.db.Model(&tx).Association(txForeignKeyColumn).Find(&tx.TxDetails)
+	if err != nil {
+		err = fmt.Errorf("[txVerification.GetTxByTxHash] Get Associate TxDetails Error")
+		return nil, err
+	}
+	// re-order tx details
+	sort.SliceStable(tx.TxDetails, func(i, j int) bool {
+		return tx.TxDetails[i].Order < tx.TxDetails[j].Order
+	})
+
+	return tx, nil
 }
