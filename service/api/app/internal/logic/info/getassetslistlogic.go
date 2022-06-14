@@ -26,13 +26,14 @@ func NewGetAssetsListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 	}
 }
 
-func (l *GetAssetsListLogic) GetAssetsList(req *types.ReqGetAssetsList) (resp *types.RespGetAssetsList, err error) {
+func (l *GetAssetsListLogic) GetAssetsList(req *types.ReqGetAssetsList) (*types.RespGetAssetsList, error) {
 	assets, err := l.l2asset.GetL2AssetsList()
 	if err != nil {
 		logx.Error("[GetL2AssetsList] err:%v", err)
 		return nil, err
 	}
-	resp.Assets = make([]*types.AssetInfo, 0)
+	resp := &types.RespGetAssetsList{}
+	resp.Assets = []*types.AssetInfo{}
 	for _, asset := range assets {
 		resp.Assets = append(resp.Assets, &types.AssetInfo{
 			AssetId:       uint32(asset.AssetId),

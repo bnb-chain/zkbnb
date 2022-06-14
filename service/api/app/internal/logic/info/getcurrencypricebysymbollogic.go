@@ -29,17 +29,19 @@ func NewGetCurrencyPriceBySymbolLogic(ctx context.Context, svcCtx *svc.ServiceCo
 	}
 }
 
-func (l *GetCurrencyPriceBySymbolLogic) GetCurrencyPriceBySymbol(req *types.ReqGetCurrencyPriceBySymbol) (resp *types.RespGetCurrencyPriceBySymbol, err error) {
-	resp.Price, err = l.price.GetCurrencyPrice(req.Symbol)
+func (l *GetCurrencyPriceBySymbolLogic) GetCurrencyPriceBySymbol(req *types.ReqGetCurrencyPriceBySymbol) (*types.RespGetCurrencyPriceBySymbol, error) {
+	_price, err := l.price.GetCurrencyPrice(req.Symbol)
 	if err != nil {
 		logx.Error("[GetCurrencyPrice] err:%v", err)
 		return nil, err
 	}
+	resp := &types.RespGetCurrencyPriceBySymbol{Price: _price}
 	l2Asset, err := l.l2asset.GetL2AssetInfoBySymbol(req.Symbol)
 	if err != nil {
 		logx.Error("[GetL2AssetInfoBySymbol] err:%v", err)
 		return nil, err
 	}
 	resp.AssetId = int(l2Asset.ID)
+	logx.Info("[GetL2AssetInfoBySymbol]", "Symbol:", req.Symbol, "response:", resp)
 	return resp, nil
 }

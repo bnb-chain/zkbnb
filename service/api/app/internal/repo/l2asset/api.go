@@ -33,7 +33,7 @@ func New(c config.Config) L2asset {
 		}
 		singletonValue = &l2asset{
 			cachedConn: sqlc.NewConn(conn, c.CacheRedis),
-			table:      `l1_asset_info`,
+			table:      `l2_asset_info`,
 			db:         gormPointer,
 			cache:      multcache.NewGoCache(context.Background(), 100, 10),
 		}

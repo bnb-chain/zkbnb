@@ -25,20 +25,27 @@ type price struct {
 	Return: price float64, err error
 	Description: get currency price cache by currency symbol
 */
-func (m *price) GetCurrencyPrice(l2Symbol string) (price float64, err error) {
+func (m *price) GetCurrencyPrice(l2Symbol string) (float64, error) {
 	// quote.Quote["USD"].Price
+	err := UpdateCurrencyPriceBySymbol(l2Symbol, m.cache)
+	if err != nil {
+		errInfo := fmt.Sprintf("[PriceModel.GetCurrencyPrice.UpdateCurrencyPriceBySymbol] %s", err)
+		logx.Error(errInfo)
+		return 0, err
+	}
 	key := fmt.Sprintf("%s%v", cachePriceSymbolPrefix, l2Symbol)
-	result, err := m.cache.Get(key, price)
+	var returnObj interface{}
+	_, err = m.cache.Get(key, &returnObj)
 	if err != nil {
 		errInfo := fmt.Sprintf("[PriceModel.GetCurrencyPrice.Getcache] %s %s", key, err)
 		logx.Error(errInfo)
 		return 0, err
 	}
-	price, ok := result.(float64)
+	_price, ok := returnObj.(float64)
 	if !ok {
-		return price, ErrTypeAssertion
+		return _price, ErrTypeAssertion
 	}
-	return price, nil
+	return _price, nil
 }
 
 /*
@@ -54,6 +61,7 @@ func UpdateCurrencyPriceBySymbol(l2Symbol string, cache multcache.MultCache) err
 	}
 	for _, latestQuote := range latestQuotes {
 		key := fmt.Sprintf("%s%s", cachePriceSymbolPrefix, latestQuote.Symbol)
+		fmt.Println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX======>", key, "   ", latestQuote.Quote["USD"].Price)
 		if err := cache.Set(key, latestQuote.Quote["USD"].Price); err != nil {
 			return ErrSetCache.RefineError(err.Error())
 		}
@@ -94,12 +102,12 @@ func getQuotesLatest(l2Symbol string) (quotesLatest []QuoteLatest, err error) {
 		if err != nil {
 			return nil, ErrJsonMarshal
 		}
-		quoteLatest := QuoteLatest{}
+		quoteLatest := &QuoteLatest{}
 		err = json.Unmarshal(b, quoteLatest)
 		if err != nil {
 			return nil, ErrJsonUnmarshal
 		}
-		quotesLatest = append(quotesLatest, quoteLatest)
+		quotesLatest = append(quotesLatest, *quoteLatest)
 	}
 	return quotesLatest, nil
 }
