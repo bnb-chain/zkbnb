@@ -3,7 +3,7 @@ package price
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
+	asset "github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 	"io/ioutil"
 	"net/http"
 
@@ -117,10 +117,9 @@ func (m *defaultPriceModel) UpdateCurrencyPrice() error {
 	myClient := &http.Client{}
 
 	var (
-		l2AssetTable = "l2_asset_info"
-		l2AssetInfos []*l2asset.L2AssetInfo
+		l2AssetInfos []*asset.AssetInfo
 	)
-	dbTx := m.DB.Table(l2AssetTable).Find(&l2AssetInfos)
+	dbTx := m.DB.Table(asset.AssetInfoTableName).Find(&l2AssetInfos)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[price.GetL2AssetsList] %s", dbTx.Error)
 		logx.Error(err)

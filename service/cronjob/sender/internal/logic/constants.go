@@ -19,10 +19,10 @@ package logic
 import (
 	"github.com/zecrey-labs/zecrey-eth-rpc/_rpc"
 	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
+	"github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/common/model/blockForCommit"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l1TxSender"
-	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -47,7 +47,7 @@ type (
 	ZecreyLegendVerifyBlockInfo = zecreyLegend.OldZecreyLegendVerifyAndExecuteBlockInfo
 	StorageStoredBlockInfo      = zecreyLegend.StorageStoredBlockInfo
 
-	L2AssetInfoModel = l2asset.L2AssetInfoModel
+	L2AssetInfoModel = assetInfo.AssetInfoModel
 
 	ProofSenderModel = proofSender.ProofSenderModel
 )

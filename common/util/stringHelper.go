@@ -20,6 +20,7 @@ package util
 import (
 	"bytes"
 	"errors"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 	"hash"
 	"strings"
@@ -58,32 +59,32 @@ func MiMCHash(hFunc hash.Hash, buf []byte) []byte {
 	return hFunc.Sum(nil)
 }
 
-//func AccountNameHash(accountName string) (res string, err error) {
-//	words := strings.Split(accountName, ".")
-//	if len(words) != 2 {
-//		return "", errors.New("[AccountNameHash] invalid account name")
-//	}
-//	hFunc := mimc.NewMiMC()
-//	buf := make([]byte, 32)
-//	label := MiMCHash(hFunc, []byte(words[0]))
-//	res = common.Bytes2Hex(
-//		MiMCHash(hFunc, append(
-//			MiMCHash(hFunc, append(buf,
-//				MiMCHash(hFunc, []byte(words[1]))...)), label...)))
-//	return res, nil
-//}
-
 func AccountNameHash(accountName string) (res string, err error) {
-	// TODO Keccak256
 	words := strings.Split(accountName, ".")
 	if len(words) != 2 {
 		return "", errors.New("[AccountNameHash] invalid account name")
 	}
+	hFunc := mimc.NewMiMC()
 	buf := make([]byte, 32)
-	label := KeccakHash([]byte(words[0]))
+	label := MiMCHash(hFunc, []byte(words[0]))
 	res = common.Bytes2Hex(
-		KeccakHash(append(
-			KeccakHash(append(buf,
-				KeccakHash([]byte(words[1]))...)), label...)))
+		MiMCHash(hFunc, append(
+			MiMCHash(hFunc, append(buf,
+				MiMCHash(hFunc, []byte(words[1]))...)), label...)))
 	return res, nil
 }
+
+//func AccountNameHash(accountName string) (res string, err error) {
+//	// TODO Keccak256
+//	words := strings.Split(accountName, ".")
+//	if len(words) != 2 {
+//		return "", errors.New("[AccountNameHash] invalid account name")
+//	}
+//	buf := make([]byte, 32)
+//	label := KeccakHash([]byte(words[0]))
+//	res = common.Bytes2Hex(
+//		KeccakHash(append(
+//			KeccakHash(append(buf,
+//				KeccakHash([]byte(words[1]))...)), label...)))
+//	return res, nil
+//}

@@ -65,7 +65,7 @@ func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (resp *types.RespGet
 	// TODO: integer overflow
 	resp.GasFee = ethPrice * sysGasFeeInt * math.Pow(10, -5) / price
 	minNum := math.Pow(10, -float64(l2Asset.Decimals))
-	resp.GasFee = truncate(resp.GasFee, l2Asset.Decimals)
+	resp.GasFee = truncate(resp.GasFee, int64(l2Asset.Decimals))
 	if resp.GasFee < minNum {
 		resp.GasFee = minNum
 	}
