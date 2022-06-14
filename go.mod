@@ -16,7 +16,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/robfig/cron/v3 v3.0.1
-	github.com/zecrey-labs/zecrey-crypto v0.0.4-legend
+	github.com/zecrey-labs/zecrey-crypto v0.0.5-legend
 	github.com/zecrey-labs/zecrey-eth-rpc v0.0.14
 	google.golang.org/grpc v1.46.0
 	google.golang.org/protobuf v1.28.0

@@ -15,7 +15,7 @@
  *
  */
 
-package asset
+package assetInfo
 
 import (
 	"fmt"

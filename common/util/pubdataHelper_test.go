@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
+	curve "github.com/zecrey-labs/zecrey-crypto/ecc/ztwistededwards/tebn254"
 	"github.com/zecrey-labs/zecrey-legend/common/model/basic"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"log"
@@ -102,4 +103,12 @@ func TestPubData2(t *testing.T) {
 	hFunc.Write(buf.Bytes())
 	hashVal := hFunc.Sum(nil)
 	fmt.Println(common.Bytes2Hex(hashVal))
+}
+
+func TestMiMCHash(t *testing.T) {
+	hFunc := mimc.NewMiMC()
+	hFunc.Write(new(big.Int).SetInt64(123123123).FillBytes(make([]byte, 32)))
+	a := hFunc.Sum(nil)
+	fmt.Println(new(big.Int).SetBytes(a).String())
+	fmt.Println(common.Bytes2Hex(curve.Modulus.Bytes()))
 }
