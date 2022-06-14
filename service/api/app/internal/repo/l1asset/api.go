@@ -2,6 +2,7 @@ package l1asset
 
 import (
 	"context"
+	"github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 	"sync"
 
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
@@ -15,7 +16,7 @@ import (
 )
 
 type L1asset interface {
-	GetAssets() (assets []*L1AssetInfo, err error)
+	GetAssets() (assets []*assetInfo.AssetInfo, err error)
 }
 
 var singletonValue *l1asset

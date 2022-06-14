@@ -2,6 +2,7 @@ package l1asset
 
 import (
 	"fmt"
+	"github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -27,7 +28,7 @@ type l1asset struct {
 	Return: assets []*L1AssetInfo, err error
 	Description:
 */
-func (m *l1asset) GetAssets() (assets []*L1AssetInfo, err error) {
+func (m *l1asset) GetAssets() (assets []*assetInfo.AssetInfo, err error) {
 	// TODO: select all data in table?
 	dbTx := m.db.Table(m.table).Find(&assets)
 	if dbTx.Error != nil {
