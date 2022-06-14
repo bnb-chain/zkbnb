@@ -1,7 +1,7 @@
 package l2asset
 
 import (
-	table "github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
+	table "github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"

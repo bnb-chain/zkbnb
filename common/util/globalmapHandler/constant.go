@@ -47,7 +47,6 @@ const (
 	PoolLiquidityPrefix = "PoolLiquidity::"
 	AccountAssetPrefix  = "AccountAsset::"
 
-	L1AmountPrefix = "L1Amount::"
 
 	LockNumber = 50
 
