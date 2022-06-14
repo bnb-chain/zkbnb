@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	table "github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
+	table "github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/config"
 
@@ -16,9 +16,9 @@ import (
 )
 
 type L2asset interface {
-	GetL2AssetsList() (res []*table.L2AssetInfo, err error)
-	GetL2AssetInfoBySymbol(symbol string) (res *table.L2AssetInfo, err error)
-	GetSimpleL2AssetInfoByAssetId(assetId uint32) (res *table.L2AssetInfo, err error)
+	GetL2AssetsList() (res []*table.AssetInfo, err error)
+	GetL2AssetInfoBySymbol(symbol string) (res *table.AssetInfo, err error)
+	GetSimpleL2AssetInfoByAssetId(assetId uint32) (res *table.AssetInfo, err error)
 }
 
 var singletonValue *l2asset

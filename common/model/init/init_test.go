@@ -20,15 +20,14 @@ package init
 import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
+	asset "github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 	"github.com/zecrey-labs/zecrey-legend/common/model/basic"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/common/model/blockForCommit"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l1BlockMonitor"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l1TxSender"
-	"github.com/zecrey-labs/zecrey-legend/common/model/l1amount"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2BlockEventMonitor"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2TxEventMonitor"
-	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
@@ -58,7 +57,7 @@ var (
 	accountModel        = account.NewAccountModel(basic.Connection, basic.CacheConf, basic.DB)
 	accountHistoryModel = account.NewAccountHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
 	// l2 asset
-	l2AssetInfoModel = l2asset.NewL2AssetInfoModel(basic.Connection, basic.CacheConf, basic.DB)
+	assetInfoModel = asset.NewAssetInfoModel(basic.Connection, basic.CacheConf, basic.DB)
 	// mempool
 	mempoolDetailModel = mempool.NewMempoolDetailModel(basic.Connection, basic.CacheConf, basic.DB)
 	mempoolModel       = mempool.NewMempoolModel(basic.Connection, basic.CacheConf, basic.DB)
@@ -78,8 +77,7 @@ var (
 	l2BlockEventMonitorModel = l2BlockEventMonitor.NewL2BlockEventMonitorModel(basic.Connection, basic.CacheConf, basic.DB)
 	// sender
 	l1TxSenderModel = l1TxSender.NewL1TxSenderModel(basic.Connection, basic.CacheConf, basic.DB)
-	// l1 amount
-	l1AmountModel = l1amount.NewL1AmountModel(basic.Connection, basic.CacheConf, basic.DB)
+
 	// liquidity
 	liquidityModel        = liquidity.NewLiquidityModel(basic.Connection, basic.CacheConf, basic.DB)
 	liquidityHistoryModel = liquidity.NewLiquidityHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
@@ -97,7 +95,7 @@ func TestDropTables(t *testing.T) {
 	//priceModel.
 	accountModel.DropAccountTable()
 	accountHistoryModel.DropAccountHistoryTable()
-	l2AssetInfoModel.DropL2AssetInfoTable()
+	assetInfoModel.DropAssetInfoTable()
 	mempoolDetailModel.DropMempoolDetailTable()
 	mempoolModel.DropMempoolTxTable()
 	failTxModel.DropFailTxTable()
@@ -110,7 +108,6 @@ func TestDropTables(t *testing.T) {
 	l2TxEventMonitorModel.DropL2TxEventMonitorTable()
 	l2BlockEventMonitorModel.DropL2BlockEventMonitorTable()
 	l1TxSenderModel.DropL1TxSenderTable()
-	l1AmountModel.DropL1AmountTable()
 	liquidityModel.DropLiquidityTable()
 	liquidityHistoryModel.DropLiquidityHistoryTable()
 	nftModel.DropL2NftTable()
@@ -127,7 +124,7 @@ func TestDataInitialize(t *testing.T) {
 	//priceModel.
 	accountModel.CreateAccountTable()
 	accountHistoryModel.CreateAccountHistoryTable()
-	l2AssetInfoModel.CreateL2AssetInfoTable()
+	assetInfoModel.CreateAssetInfoTable()
 	mempoolDetailModel.CreateMempoolDetailTable()
 	mempoolModel.CreateMempoolTxTable()
 	failTxModel.CreateFailTxTable()
@@ -140,7 +137,6 @@ func TestDataInitialize(t *testing.T) {
 	l2TxEventMonitorModel.CreateL2TxEventMonitorTable()
 	l2BlockEventMonitorModel.CreateL2BlockEventMonitorTable()
 	l1TxSenderModel.CreateL1TxSenderTable()
-	l1AmountModel.CreateL1AmountTable()
 	liquidityModel.CreateLiquidityTable()
 	liquidityHistoryModel.CreateLiquidityHistoryTable()
 	nftModel.CreateL2NftTable()
@@ -151,7 +147,7 @@ func TestDataInitialize(t *testing.T) {
 	nftWithdrawHistoryModel.CreateL2NftWithdrawHistoryTable()
 
 	// init l1 asset info
-	rowsAffected, err := l2AssetInfoModel.CreateL2AssetsInfoInBatches(initAssetsInfo())
+	rowsAffected, err := assetInfoModel.CreateAssetsInfoInBatches(initAssetsInfo())
 	if err != nil {
 		t.Fatal(err)
 	}

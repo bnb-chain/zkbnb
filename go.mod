@@ -18,7 +18,6 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/zecrey-labs/zecrey-crypto v0.0.4-legend
 	github.com/zecrey-labs/zecrey-eth-rpc v0.0.14
-	github.com/zeromicro/go-zero/tools/goctl v1.3.5
 	google.golang.org/grpc v1.46.0
 	google.golang.org/protobuf v1.28.0
 	gorm.io/driver/postgres v1.3.6

@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	table "github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
+	table "github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/config"
