@@ -37,7 +37,7 @@ func New(c config.Config) Liquidity {
 		})
 		singletonValue = &liquidity{
 			cachedConn: sqlc.NewConn(conn, c.CacheRedis),
-			table:      `account_liquidity`,
+			table:      `liquidity`,
 			db:         gormPointer,
 			redisConn:  redisConn,
 			cache:      multcache.NewGoCache(context.Background(), 100, 10),

@@ -41,7 +41,7 @@ func (l *GetLPValueLogic) GetLPValue(req *types.ReqGetLPValue) (resp *types.Resp
 	resp = &types.RespGetLPValue{
 		AssetAId:     lpValue.AssetAId,
 		AssetAAmount: lpValue.AssetAAmount,
-		AssetBId:     lpValue.AssetBId,
+		AssetBid:     lpValue.AssetBId,
 		AssetBAmount: lpValue.AssetBAmount,
 	}
 	return resp, nil

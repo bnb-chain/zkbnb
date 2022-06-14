@@ -34,15 +34,14 @@ func NewGetAccountLiquidityPairsByAccountIndexLogic(ctx context.Context, svcCtx 
 	}
 }
 
-// TODO: check this func's logic
 func (l *GetAccountLiquidityPairsByAccountIndexLogic) GetAccountLiquidityPairsByAccountIndex(req *types.ReqGetAccountLiquidityPairsByAccountIndex) (resp *types.RespGetAccountLiquidityPairsByAccountIndex, err error) {
 	if utils.CheckAccountIndex(req.AccountIndex) {
-		logx.Error("[CheckAccountIndex] param:%v", req.AccountIndex)
+		logx.Errorf("[CheckAccountIndex] param:%v", req.AccountIndex)
 		return nil, errcode.ErrInvalidParam
 	}
 	entitie, err := l.liquidity.GetLiquidityByPairIndex(int64(req.AccountIndex))
 	if err != nil {
-		logx.Error("[GetLiquidityByPairIndex] err:%v", err)
+		logx.Errorf("[GetLiquidityByPairIndex] err:%v", err)
 		return nil, err
 	}
 	pair := &types.AccountLiquidityPairs{

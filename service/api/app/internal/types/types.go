@@ -172,7 +172,7 @@ type RespGetLPValue struct {
 	AssetAId     uint32 `json:"asset_a_id"`
 	AssetAName   string `json:"asset_a_name"`
 	AssetAAmount string `json:"asset_a_amount"`
-	AssetBId     uint32 `json:"asset_b_id"`
+	AssetBid     uint32 `json:"asset_b_id"`
 	AssetBName   string `json:"asset_b_name"`
 	AssetBAmount string `json:"asset_b_amount"`
 }
@@ -182,11 +182,11 @@ type ReqGetPairInfo struct {
 }
 
 type RespGetPairInfo struct {
-	AssetAId      uint32  `json:"asset_a_id"`
-	AssetAAmount  string  `json:"asset_a_amount"`
-	AssetBId      uint32  `json:"asset_b_id"`
-	AssetBAmount  string  `json:"asset_b_amount"`
-	TotalLpAmount string  `json:"total_lp_amount"`
+	AssetAId      uint32 `json:"asset_a_id"`
+	AssetAAmount  string `json:"asset_a_amount"`
+	AssetBId      uint32 `json:"asset_b_id"`
+	AssetBAmount  string `json:"asset_b_amount"`
+	TotalLpAmount string `json:"total_lp_amount"`
 }
 
 type TxDetail struct {

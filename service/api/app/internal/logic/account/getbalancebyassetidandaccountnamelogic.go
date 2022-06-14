@@ -52,5 +52,4 @@ func (l *GetBalanceByAssetIdAndAccountNameLogic) GetBalanceByAssetIdAndAccountNa
 		}
 	}
 	return resp, nil
-
 }

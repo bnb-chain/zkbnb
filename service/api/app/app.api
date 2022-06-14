@@ -268,11 +268,11 @@ type (
 		PairIndex uint32 `form:"pair_index"`
 	}
 	RespGetPairInfo {
-		AssetAId      uint32  `json:"asset_a_id"`
-		AssetAAmount  string  `json:"asset_a_amount"`
-		AssetBId      uint32  `json:"asset_b_id"`
-		AssetBAmount  string  `json:"asset_b_amount"`
-		TotalLpAmount string  `json:"total_lp_amount"`
+		AssetAId      uint32 `json:"asset_a_id"`
+		AssetAAmount  string `json:"asset_a_amount"`
+		AssetBId      uint32 `json:"asset_b_id"`
+		AssetBAmount  string `json:"asset_b_amount"`
+		TotalLpAmount string `json:"total_lp_amount"`
 	}
 )
 

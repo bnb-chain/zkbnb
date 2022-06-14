@@ -18,6 +18,9 @@
 package init
 
 import (
+	"log"
+	"testing"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	asset "github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
@@ -36,8 +39,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/common/tree"
 	"github.com/zeromicro/go-zero/core/stores/redis"
-	"log"
-	"testing"
 )
 
 func WithRedis(redisType string, redisPass string) redis.Option {
@@ -54,6 +55,7 @@ var (
 	// price
 	//priceModel = price.NewPriceModel(basic.Connection, basic.CacheConf, basic.DB)
 	// account
+
 	accountModel        = account.NewAccountModel(basic.Connection, basic.CacheConf, basic.DB)
 	accountHistoryModel = account.NewAccountHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
 	// l2 asset
@@ -145,7 +147,6 @@ func TestDataInitialize(t *testing.T) {
 	nftExchangeModel.CreateL2NftExchangeTable()
 	nftCollectionModel.CreateL2NftCollectionTable()
 	nftWithdrawHistoryModel.CreateL2NftWithdrawHistoryTable()
-
 	// init l1 asset info
 	rowsAffected, err := assetInfoModel.CreateAssetsInfoInBatches(initAssetsInfo())
 	if err != nil {
