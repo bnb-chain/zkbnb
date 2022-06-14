@@ -162,7 +162,7 @@ github.com/consensys/bavard v0.1.10/go.mod h1:9ItSMtA/dXMAiL7BG6bqW2m3NdSEObYWoH
 github.com/consensys/gnark v0.7.0 h1:zyI8zPAhSazrZPeQpKIFUHLgrnAuxI+EDrFLNizKb9I=
 github.com/consensys/gnark v0.7.0/go.mod h1:oQnMurInsfe+9rG4l8qh8AFVihfuRCS5H3XPJH/6HPM=
 github.com/consensys/gnark-crypto v0.4.1-0.20210426202927-39ac3d4b3f1f/go.mod h1:815PAHg3wvysy0SyIqanF8gZ0Y1wjk/hrDHD/iT88+Q=
-github.com/consensys/gnark-crypto v0.7.0 h1:pxGDRS9ZNRQaXlAJPigJ1Nc9HPwCPKrJjUF/0SgNFmA=
+github.com/consensys/gnark-crypto v0.7.0 h1:rwdy8+ssmLYRqKp+ryRRgQJl/rCq2uv+n83cOydm5UE=
 github.com/consensys/gnark-crypto v0.7.0/go.mod h1:KPSuJzyxkJA8xZ/+CV47tyqkr9MmpZA3PXivK4VPrVg=
 github.com/coocood/freecache v1.2.1 h1:/v1CqMq45NFH9mp/Pt142reundeBM0dVUD3osQBeu/U=
 github.com/coocood/freecache v1.2.1/go.mod h1:RBUWa/Cy+OHdfTGFEhEuE1pMCMX51Ncizj7rthiQ3vk=
