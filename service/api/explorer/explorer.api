@@ -138,7 +138,7 @@ type (
 		BlockCommitment string `form:"block_commitment"`
 	}
 	RespGetBlockByCommitment {
-		Blocks []*Block `json:"blocks"`
+		Block Block `json:"block"`
 	}
 )
 
@@ -228,7 +228,7 @@ type (
 // getTxsListByAccountIndex
 type (
 	ReqGetTxsListByAccountIndex {
-		AccountIndex uint32 `form:"account_index"`
+		AccountIndex string `form:"account_index"`
 		Offset       uint16 `form:"offset"`
 		Limit        uint16 `form:"limit"`
 	}

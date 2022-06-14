@@ -77,3 +77,20 @@ func (m *tx) GetTxByTxHash(txHash string) (tx *table.Tx, err error) {
 
 	return tx, nil
 }
+
+func (m *tx) GetTxsByBlockId(blockId int64, limit, offset uint32) (txs []table.Tx, total int64, err error) {
+	query := m.db.Table(m.table).Where("block_id = ?", blockId)
+	if err = query.Count(&total).Error; err != nil {
+		err = fmt.Errorf("[txVerification.GetTxsByBlockId] %s", err)
+		return
+	}
+	dbTx := query.Offset(int(offset)).Limit(int(limit)).Find(&txs)
+	if dbTx.Error != nil {
+		err = fmt.Errorf("[txVerification.GetTxsByBlockId] %s", dbTx.Error)
+		return
+	} else if dbTx.RowsAffected == 0 {
+		err = fmt.Errorf("[txVerification.GetTxsByBlockId] No such Tx with blockId: %v", blockId)
+		return
+	}
+	return
+}

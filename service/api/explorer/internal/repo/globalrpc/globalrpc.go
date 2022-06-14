@@ -18,6 +18,7 @@ package globalrpc
 
 import (
 	"context"
+
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
@@ -119,10 +120,11 @@ func (m *globalRPC) GetLatestTxsListByAccountIndexAndTxType(accountIndex uint64,
 	return txs, nil
 }
 
-func (m *globalRPC) GetLatestTxsListByAccountIndex(accountIndex uint32, limit uint32) ([]*mempool.MempoolTx, uint32, error) {
+func (m *globalRPC) GetLatestTxsListByAccountIndex(accountIndex uint32, limit, offset uint32) ([]*mempool.MempoolTx, uint32, error) {
 	resRpc, err := m.globalRPC.GetLatestTxsListByAccountIndex(m.ctx, &globalrpc.ReqGetLatestTxsListByAccountIndex{
 		AccountIndex: accountIndex,
 		Limit:        limit,
+		Offset:       offset,
 	})
 
 	txls := make([]*mempool.MempoolTx, 0)

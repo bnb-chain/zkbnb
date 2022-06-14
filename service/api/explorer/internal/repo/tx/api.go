@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	modeltx "github.com/zecrey-labs/zecrey-legend/common/model/tx"
+	table "github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/config"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -17,6 +18,7 @@ type Tx interface {
 	GetTxsTotalCount() (count int64, err error)
 	GetTxsTotalCountByAccountIndex(accountIndex int64) (count int64, err error)
 	GetTxByTxHash(txHash string) (tx *modeltx.Tx, err error)
+	GetTxsByBlockId(blockId int64, limit, offset uint32) (txs []table.Tx, total int64, err error)
 }
 
 var singletonValue *tx

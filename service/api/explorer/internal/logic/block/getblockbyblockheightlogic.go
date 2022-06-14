@@ -26,7 +26,7 @@ func NewGetBlockByBlockHeightLogic(ctx context.Context, svcCtx *svc.ServiceConte
 
 func (l *GetBlockByBlockHeightLogic) GetBlockByBlockHeight(req *types.ReqGetBlockByBlockHeight) (resp *types.RespGetBlockByBlockHeight, err error) {
 	// query basic block info
-	block, err := l.svcCtx.Block.GetBlockByBlockHeight(int64(req.BlockHeight))
+	block, err := l.svcCtx.Block.GetBlockWithTxsByBlockHeight(int64(req.BlockHeight))
 	if err != nil {
 		err = fmt.Errorf("[explorer.block.GetBlockByBlockHeight]<=>%s", err.Error())
 		l.Error(err)
@@ -48,10 +48,7 @@ func (l *GetBlockByBlockHeightLogic) GetBlockByBlockHeight(req *types.ReqGetBloc
 		resp.Block.Txs = append(resp.Block.Txs, tx.TxHash)
 	}
 
-	block.BlockCommitment
-
 	for _, tx := range block.Txs {
-		tx.TxStatus
 		resp.Block.CommittedTxHash = append(resp.Block.CommittedTxHash, &types.TxHash{
 			TxHash:    tx.TxHash,
 			CreatedAt: tx.CreatedAt.Unix(),
@@ -62,15 +59,10 @@ func (l *GetBlockByBlockHeightLogic) GetBlockByBlockHeight(req *types.ReqGetBloc
 			CreatedAt: tx.CreatedAt.Unix(),
 		})
 
-		verifiedTxHash = append(verifiedTxHash, &types.VerifiedTxHash{
-			ChainId:   int32(blockDetail.ChainId),
-			TxHash:    blockDetail.VerifiedTxHash,
-			CreatedAt: blockDetail.VerifiedAt,
-		})
-		executedTxHash = append(executedTxHash, &types.ExecutedTxHash{
-			ChainId:   int32(blockDetail.ChainId),
-			TxHash:    blockDetail.ExecutedTxHash,
-			CreatedAt: blockDetail.ExecutedAt,
+		resp.Block.ExecutedTxHash = append(resp.Block.ExecutedTxHash, &types.TxHash{
+			TxHash:    tx.TxHash,
+			CreatedAt: tx.CreatedAt.Unix(),
 		})
 	}
+	return
 }

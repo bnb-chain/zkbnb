@@ -87,7 +87,7 @@ func (m *block) GetCommitedBlocksCount() (count int64, err error) {
 	Return: err error
 	Description:  For API /api/v1/block/getBlockByBlockHeight
 */
-func (m *block) GetBlockByBlockHeight(blockHeight int64) (block *table.Block, err error) {
+func (m *block) GetBlockWithTxsByBlockHeight(blockHeight int64) (block *table.Block, err error) {
 	txForeignKeyColumn := `Txs`
 	dbTx := m.db.Table(m.table).Where("block_height = ?", blockHeight).Find(&block)
 	if dbTx.Error != nil {
@@ -102,6 +102,24 @@ func (m *block) GetBlockByBlockHeight(blockHeight int64) (block *table.Block, er
 	return block, nil
 }
 
-func (m *block) GetBlockByCommitment(blockCommitment string) (block *table.Block, err error) {
+func (m *block) GetBlockByBlockHeight(blockHeight int64) (block *table.Block, err error) {
+	dbTx := m.db.Table(m.table).Where("block_height = ?", blockHeight).Find(&block)
+	if dbTx.Error != nil {
+		return nil, fmt.Errorf("[GetBlockByBlockHeight]: %v", dbTx.Error)
+	} else if dbTx.RowsAffected == 0 {
+		return nil, fmt.Errorf("[GetBlockByBlockHeight]: %v", ErrNotFound)
+	}
+	return
+}
+
+func (m *block) GetBlockWithTxsByCommitment(blockCommitment string) (block *table.Block, err error) {
 	return m.blockModel.GetBlockByCommitment(blockCommitment)
+}
+
+func (m *block) GetBlocksList(limit int64, offset int64) (blocks []*table.Block, err error) {
+	return m.blockModel.GetBlocksList(limit, offset)
+}
+
+func (m *block) GetBlocksTotalCount() (count int64, err error) {
+	return m.blockModel.GetBlocksTotalCount()
 }
