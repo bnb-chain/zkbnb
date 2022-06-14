@@ -2,8 +2,8 @@ package svc
 
 import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
+	"github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2TxEventMonitor"
-	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
@@ -18,7 +18,7 @@ import (
 type ServiceContext struct {
 	Config                config.Config
 	L2TxEventMonitorModel l2TxEventMonitor.L2TxEventMonitorModel
-	L2assetInfoModel      l2asset.L2AssetInfoModel
+	L2assetInfoModel      asset.AssetInfoModel
 	AccountModel          account.AccountModel
 	AccountHistoryModel   account.AccountHistoryModel
 	MempoolModel          mempool.MempoolModel
@@ -46,7 +46,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	return &ServiceContext{
 		Config:                c,
 		L2TxEventMonitorModel: l2TxEventMonitor.NewL2TxEventMonitorModel(conn, c.CacheRedis, gormPointer),
-		L2assetInfoModel:      l2asset.NewL2AssetInfoModel(conn, c.CacheRedis, gormPointer),
+		L2assetInfoModel:      asset.NewAssetInfoModel(conn, c.CacheRedis, gormPointer),
 		AccountModel:          account.NewAccountModel(conn, c.CacheRedis, gormPointer),
 		AccountHistoryModel:   account.NewAccountHistoryModel(conn, c.CacheRedis, gormPointer),
 		MempoolModel:          mempool.NewMempoolModel(conn, c.CacheRedis, gormPointer),
