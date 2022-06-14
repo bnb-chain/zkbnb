@@ -143,12 +143,12 @@ func MonitorL2BlockEvents(
 				// check block height
 				if blockHeight == pendingSender.L2BlockHeight {
 					isValidSender = true
-					pendingUpdateProofSenderStatus[blockHeight] = proofSender.Confirmed
 				}
 				// update block status
 				relatedBlocks[blockHeight].VerifiedTxHash = receipt.TxHash.Hex()
 				relatedBlocks[blockHeight].VerifiedAt = timeAt
 				relatedBlocks[blockHeight].BlockStatus = block.StatusVerifiedAndExecuted
+				pendingUpdateProofSenderStatus[blockHeight] = proofSender.Confirmed
 				break
 			case ZecreyLogBlocksRevertSigHash.Hex():
 				// TODO revert
