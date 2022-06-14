@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	L2AssetInfoTableName = `l2_asset_info`
+	AssetInfoTableName = `l2_asset_info`
 )
 
 var (
