@@ -54,7 +54,7 @@ func (l *GetWithdrawGasFeeLogic) GetWithdrawGasFee(req *types.ReqGetWithdrawGasF
 	// TODO: integer overflow
 	resp.WithdrawGasFee = price * float64(req.WithdrawAmount) * math.Pow(10, -float64(l2Asset.Decimals)) * 0.001 / withdrawPrice
 	minNum := math.Pow(10, -float64(l2Asset.Decimals))
-	resp.WithdrawGasFee = truncate(resp.WithdrawGasFee, l2Asset.Decimals)
+	resp.WithdrawGasFee = truncate(resp.WithdrawGasFee, int64(l2Asset.Decimals))
 	if resp.WithdrawGasFee < minNum {
 		resp.WithdrawGasFee = minNum
 	}

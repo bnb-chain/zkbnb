@@ -1,7 +1,7 @@
 package l2asset
 
 import (
-	table "github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
+	table "github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
@@ -27,7 +27,7 @@ type l2asset struct {
 	Return: err error
 	Description: create account table
 */
-func (m *l2asset) GetL2AssetsList() (res []*table.L2AssetInfo, err error) {
+func (m *l2asset) GetL2AssetsList() (res []*table.AssetInfo, err error) {
 	dbTx := m.db.Table(m.table).Find(&res)
 	if dbTx.Error != nil {
 		return nil, dbTx.Error
@@ -44,7 +44,7 @@ func (m *l2asset) GetL2AssetsList() (res []*table.L2AssetInfo, err error) {
 	Return: res *L2AssetInfo, err error
 	Description: get l2 asset info by l2 symbol
 */
-func (m *l2asset) GetL2AssetInfoBySymbol(symbol string) (res *table.L2AssetInfo, err error) {
+func (m *l2asset) GetL2AssetInfoBySymbol(symbol string) (res *table.AssetInfo, err error) {
 	dbTx := m.db.Table(m.table).Where("l2_symbol = ?", symbol).Find(&res)
 	if dbTx.Error != nil {
 		return nil, dbTx.Error
@@ -61,7 +61,7 @@ func (m *l2asset) GetL2AssetInfoBySymbol(symbol string) (res *table.L2AssetInfo,
 	Return: L2AssetInfo, error
 	Description: get layer-2 asset info by assetId
 */
-func (m *l2asset) GetSimpleL2AssetInfoByAssetId(assetId uint32) (res *table.L2AssetInfo, err error) {
+func (m *l2asset) GetSimpleL2AssetInfoByAssetId(assetId uint32) (res *table.AssetInfo, err error) {
 	dbTx := m.db.Table(m.table).Where("asset_id = ?", assetId).Find(&res)
 	if dbTx.Error != nil {
 		return nil, dbTx.Error

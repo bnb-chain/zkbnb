@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2BlockEventMonitor"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2TxEventMonitor"
-	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
@@ -40,8 +40,8 @@ type (
 		CreateMonitorsInfo(blockInfo *L1BlockMonitor, txEventMonitors []*l2TxEventMonitor.L2TxEventMonitor, blockEventMonitors []*l2BlockEventMonitor.L2BlockEventMonitor) (err error)
 		CreateGovernanceMonitorInfo(
 			blockInfo *L1BlockMonitor,
-			l2AssetInfos []*l2asset.L2AssetInfo,
-			pendingUpdateL2AssetInfos []*l2asset.L2AssetInfo,
+			l2AssetInfos []*asset.AssetInfo,
+			pendingUpdateL2AssetInfos []*asset.AssetInfo,
 			pendingNewSysconfigInfos []*sysconfig.Sysconfig,
 			pendingUpdateSysconfigInfos []*sysconfig.Sysconfig,
 		) (err error)
@@ -177,8 +177,8 @@ func (m *defaultL1BlockMonitorModel) CreateMonitorsInfo(
 
 func (m *defaultL1BlockMonitorModel) CreateGovernanceMonitorInfo(
 	blockInfo *L1BlockMonitor,
-	pendingNewL2AssetInfos []*l2asset.L2AssetInfo,
-	pendingUpdateL2AssetInfos []*l2asset.L2AssetInfo,
+	pendingNewL2AssetInfos []*asset.AssetInfo,
+	pendingUpdateL2AssetInfos []*asset.AssetInfo,
 	pendingNewSysconfigInfos []*sysconfig.Sysconfig,
 	pendingUpdateSysconfigInfos []*sysconfig.Sysconfig,
 ) (err error) {
@@ -194,7 +194,7 @@ func (m *defaultL1BlockMonitorModel) CreateGovernanceMonitorInfo(
 			}
 			// create l2 asset info
 			if len(pendingNewL2AssetInfos) != 0 {
-				dbTx = tx.Table(l2asset.L2AssetInfoTableName).CreateInBatches(pendingNewL2AssetInfos, len(pendingNewL2AssetInfos))
+				dbTx = tx.Table(asset.AssetInfoTableName).CreateInBatches(pendingNewL2AssetInfos, len(pendingNewL2AssetInfos))
 				if dbTx.Error != nil {
 					return dbTx.Error
 				}
@@ -205,7 +205,7 @@ func (m *defaultL1BlockMonitorModel) CreateGovernanceMonitorInfo(
 			}
 			// update l2 asset info
 			for _, pendingUpdateL2AssetInfo := range pendingUpdateL2AssetInfos {
-				dbTx = tx.Table(l2asset.L2AssetInfoTableName).Where("id = ?", pendingUpdateL2AssetInfo.ID).Select("*").Updates(&pendingUpdateL2AssetInfo)
+				dbTx = tx.Table(asset.AssetInfoTableName).Where("id = ?", pendingUpdateL2AssetInfo.ID).Select("*").Updates(&pendingUpdateL2AssetInfo)
 				if dbTx.Error != nil {
 					return dbTx.Error
 				}

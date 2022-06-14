@@ -15,7 +15,7 @@
  *
  */
 
-package l2asset
+package asset
 
 import (
 	"errors"
@@ -24,13 +24,13 @@ import (
 )
 
 const (
-	L2AssetInfoTableName = `l2_asset_info`
+	AssetInfoTableName = `asset_info`
 
-	StatusActive   = 0
-	StatusInactive = 1
+	StatusActive   uint32 = 0
+	StatusInactive uint32 = 1
 )
 
 var (
 	ErrNotFound            = sqlx.ErrNotFound
-	ErrInvalidL2AssetInput = errors.New("[ErrInvalidL2AssetInput] Invalid L2AssetInfo input")
+	ErrInvalidL2AssetInput = errors.New("[ErrInvalidAssetInput] Invalid AssetInfo input")
 )

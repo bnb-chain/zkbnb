@@ -3,7 +3,7 @@ package svc
 import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
-	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
@@ -33,7 +33,7 @@ type ServiceContext struct {
 	BlockModel         block.BlockModel
 	MempoolDetailModel mempool.MempoolTxDetailModel
 	MempoolModel       mempool.MempoolModel
-	L2AssetInfoModel   l2asset.L2AssetInfoModel
+	L2AssetInfoModel   assetInfo.L2AssetInfoModel
 
 	SysConfigModel sysconfig.SysconfigModel
 }
@@ -66,7 +66,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		BlockModel:            block.NewBlockModel(conn, c.CacheRedis, gormPointer, redisConn),
 		MempoolDetailModel:    mempool.NewMempoolDetailModel(conn, c.CacheRedis, gormPointer),
 		MempoolModel:          mempool.NewMempoolModel(conn, c.CacheRedis, gormPointer),
-		L2AssetInfoModel:      l2asset.NewL2AssetInfoModel(conn, c.CacheRedis, gormPointer),
+		L2AssetInfoModel:      assetInfo.NewL2AssetInfoModel(conn, c.CacheRedis, gormPointer),
 		SysConfigModel:        sysconfig.NewSysconfigModel(conn, c.CacheRedis, gormPointer),
 	}
 }

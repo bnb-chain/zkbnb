@@ -6,7 +6,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/common/model/blockForCommit"
-	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
@@ -47,8 +47,8 @@ type (
 	SysconfigModel   = sysconfig.SysconfigModel
 	MempoolModel     = mempool.MempoolModel
 	BlockModel       = block.BlockModel
-	L2AssetInfoModel = l2asset.L2AssetInfoModel
-	L2AssetInfo      = l2asset.L2AssetInfo
+	L2AssetInfoModel = assetInfo.L2AssetInfoModel
+	L2AssetInfo      = assetInfo.L2AssetInfo
 
 	L2NftModel        = nft.L2NftModel
 	L2NftHistoryModel = nft.L2NftHistoryModel

@@ -184,6 +184,34 @@ message RespSendTx{
   string TxId = 1;
 }
 
+/*
+	Proto Name: getTransactionCount
+	Description: getMaxNonce
+ */
+
+message ReqGetTransactionCount{
+  uint32 AccountIndex = 1;
+}
+
+message RespGetTransactionCount{
+  uint64 Nonce = 1;
+}
+
+/* ====================== NFT ====================== */
+
+/*
+	Proto Name: getMaxOfferId
+	Description:
+ */
+
+message ReqGetMaxOfferId{
+  uint32 AccountIndex = 1;
+}
+
+message RespGetMaxOfferId{
+  uint64 OfferId = 1;
+}
+
 /* ====================== END ====================== */
 
 
@@ -202,6 +230,10 @@ service globalRPC {
   rpc getLatestTxsListByAccountIndex(ReqGetLatestTxsListByAccountIndex) returns (RespGetLatestTxsListByAccountIndex);
   rpc getLatestTxsListByAccountIndexAndTxType(ReqGetLatestTxsListByAccountIndexAndTxType) returns (RespGetLatestTxsListByAccountIndexAndTxType);
   rpc sendTx(ReqSendTx) returns (RespSendTx);
+  rpc getTransactionCount(ReqGetTransactionCount) returns (RespGetTransactionCount);
+  // NFT
+  rpc getMaxOfferId(ReqGetMaxOfferId) returns (RespGetMaxOfferId);
+
 
 
 }

@@ -24,7 +24,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/l1BlockMonitor"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2BlockEventMonitor"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2TxEventMonitor"
-	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"strings"
@@ -37,10 +37,10 @@ type (
 	// event monitor
 	L2TxEventMonitor    = l2TxEventMonitor.L2TxEventMonitor
 	L2BlockEventMonitor = l2BlockEventMonitor.L2BlockEventMonitor
-	L2AssetInfo         = l2asset.L2AssetInfo
+	L2AssetInfo         = asset.AssetInfo
 	Sysconfig           = sysconfig.Sysconfig
 
-	L2AssetInfoModel = l2asset.L2AssetInfoModel
+	L2AssetInfoModel = asset.AssetInfoModel
 
 	// model
 	SysconfigModel           = sysconfig.SysconfigModel

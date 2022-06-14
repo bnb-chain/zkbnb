@@ -23,7 +23,7 @@ import (
 	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
 	"github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey/basic"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l1BlockMonitor"
-	"github.com/zecrey-labs/zecrey-legend/common/model/l2asset"
+	"github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 	"github.com/zecrey-labs/zecrey-legend/common/sysconfigName"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"math/big"
@@ -142,12 +142,12 @@ func MonitorGovernanceContract(
 			}
 
 			l2AssetInfo := &L2AssetInfo{
-				AssetId:      int64(event.AssetId),
-				AssetAddress: event.AssetAddress.Hex(),
+				AssetId:      uint32(event.AssetId),
+				L1Address:    event.AssetAddress.Hex(),
 				AssetName:    name,
 				AssetSymbol:  symbol,
-				Decimals:     int64(decimals),
-				Status:       l2asset.StatusActive,
+				Decimals:     uint32(decimals),
+				Status:       asset.StatusActive,
 			}
 			// set into array
 			l1EventInfos = append(l1EventInfos, l1EventInfo)
@@ -313,18 +313,18 @@ func MonitorGovernanceContract(
 			if l2AssetInfoMap[event.Token.Hex()] != nil {
 				assetInfo = l2AssetInfoMap[event.Token.Hex()]
 			} else {
-				assetInfo, err = l2AssetInfoModel.GetL2AssetByAddress(event.Token.Hex())
+				assetInfo, err = l2AssetInfoModel.GetAssetByAddress(event.Token.Hex())
 				if err != nil {
 					logx.Errorf("[MonitorGovernanceContract] unable to get l2 asset by address: %s", err.Error())
 					return err
 				}
 				pendingUpdateL2AssetInfoMap[event.Token.Hex()] = assetInfo
 			}
-			var status int
+			var status uint32
 			if event.Paused {
-				status = l2asset.StatusInactive
+				status = asset.StatusInactive
 			} else {
-				status = l2asset.StatusActive
+				status = asset.StatusActive
 			}
 			assetInfo.Status = status
 			// set into array
