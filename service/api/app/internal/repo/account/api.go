@@ -23,8 +23,8 @@ import (
 
 	table "github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
-
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/config"
+
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"gorm.io/driver/postgres"
@@ -49,7 +49,6 @@ type AccountModel interface {
 
 var singletonValue *account
 var once sync.Once
-var c config.Config
 
 func New(c config.Config) AccountModel {
 	once.Do(func() {

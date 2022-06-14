@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
+	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"math/big"
 	"time"
 
@@ -82,7 +83,7 @@ func SendVerifiedAndExecutedBlocks(
 				return err
 			}
 			// get proofs
-			proofSenders, err := proofSenderModel.GetProofsBetween(1, end)
+			proofSenders, err := proofSenderModel.GetProofsByBlockRange(1, end, maxBlockCount)
 			if err != nil {
 				logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get proofs: %s", err.Error())
 				return err
@@ -92,13 +93,16 @@ func SendVerifiedAndExecutedBlocks(
 				return errors.New("[SendVerifiedAndExecutedBlocks] we haven't generated related proofs, please wait")
 			}
 			for _, proofSender := range proofSenders {
-				var proofInfo []*big.Int
+				var proofInfo *util.FormattedProof
 				err = json.Unmarshal([]byte(proofSender.ProofInfo), &proofInfo)
 				if err != nil {
 					logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to unmarshal proof info: %s", err.Error())
 					return err
 				}
-				proofs = append(proofs, proofInfo...)
+				proofs = append(proofs, proofInfo.A[:]...)
+				proofs = append(proofs, proofInfo.B[0][0], proofInfo.B[0][1])
+				proofs = append(proofs, proofInfo.B[1][0], proofInfo.B[1][1])
+				proofs = append(proofs, proofInfo.C[:]...)
 			}
 		} else {
 			_, isPending, err := cli.GetTransactionByHash(pendingSender.L1TxHash)
@@ -162,7 +166,7 @@ func SendVerifiedAndExecutedBlocks(
 			}
 			end := blocks[len(blocks)-1].BlockHeight
 			// get proofs
-			proofSenders, err := proofSenderModel.GetProofsBetween(lastHandledBlock.L2BlockHeight+1, end)
+			proofSenders, err := proofSenderModel.GetProofsByBlockRange(lastHandledBlock.L2BlockHeight+1, end, maxBlockCount)
 			if err != nil {
 				logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get proofs: %s", err.Error())
 				return err
@@ -172,13 +176,16 @@ func SendVerifiedAndExecutedBlocks(
 				return errors.New("[SendVerifiedAndExecutedBlocks] we haven't generated related proofs, please wait")
 			}
 			for _, proofSender := range proofSenders {
-				var proofInfo []*big.Int
+				var proofInfo *util.FormattedProof
 				err = json.Unmarshal([]byte(proofSender.ProofInfo), &proofInfo)
 				if err != nil {
 					logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to unmarshal proof info: %s", err.Error())
 					return err
 				}
-				proofs = append(proofs, proofInfo...)
+				proofs = append(proofs, proofInfo.A[:]...)
+				proofs = append(proofs, proofInfo.B[0][0], proofInfo.B[0][1])
+				proofs = append(proofs, proofInfo.B[1][0], proofInfo.B[1][1])
+				proofs = append(proofs, proofInfo.C[:]...)
 			}
 		} else {
 			isSuccess, err := cli.WaitingTransactionStatus(pendingSender.L1TxHash)

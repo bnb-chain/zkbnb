@@ -57,35 +57,18 @@ func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*BlockForCommit) (commit
 func ConvertBlocksToVerifyAndExecuteBlockInfos(oBlocks []*Block) (verifyAndExecuteBlocks []ZecreyLegendVerifyBlockInfo, err error) {
 	for _, oBlock := range oBlocks {
 		var pendingOnChainOpsPubData [][]byte
-		err = json.Unmarshal([]byte(oBlock.PendingOnChainOperationsPubData), &pendingOnChainOpsPubData)
-		if err != nil {
-			logx.Errorf("[ConvertBlocksToVerifyAndExecuteBlockInfos] unable to unmarshal pending pub data: %s", err.Error())
-			return nil, err
+		if oBlock.PendingOnChainOperationsPubData != "" {
+			err = json.Unmarshal([]byte(oBlock.PendingOnChainOperationsPubData), &pendingOnChainOpsPubData)
+			if err != nil {
+				logx.Errorf("[ConvertBlocksToVerifyAndExecuteBlockInfos] unable to unmarshal pending pub data: %s", err.Error())
+				return nil, err
+			}
 		}
 		verifyAndExecuteBlock := ZecreyLegendVerifyBlockInfo{
-			BlockHeader:              ConstructStoredBlockHeader(oBlock),
+			BlockHeader:              util.ConstructStoredBlockInfo(oBlock),
 			PendingOnchainOpsPubData: pendingOnChainOpsPubData,
 		}
 		verifyAndExecuteBlocks = append(verifyAndExecuteBlocks, verifyAndExecuteBlock)
 	}
 	return verifyAndExecuteBlocks, nil
-}
-
-func ConstructStoredBlockHeader(oBlock *Block) StorageStoredBlockInfo {
-	var (
-		PendingOnchainOperationsHash [32]byte
-		StateRoot                    [32]byte
-		Commitment                   [32]byte
-	)
-	copy(PendingOnchainOperationsHash[:], common.FromHex(oBlock.PendingOnChainOperationsHash)[:])
-	copy(StateRoot[:], common.FromHex(oBlock.StateRoot)[:])
-	copy(Commitment[:], common.FromHex(oBlock.BlockCommitment)[:])
-	return StorageStoredBlockInfo{
-		BlockNumber:                  uint32(oBlock.BlockHeight),
-		PriorityOperations:           uint64(oBlock.PriorityOperations),
-		PendingOnchainOperationsHash: PendingOnchainOperationsHash,
-		Timestamp:                    big.NewInt(oBlock.CreatedAt.UnixMilli()),
-		StateRoot:                    StateRoot,
-		Commitment:                   Commitment,
-	}
 }

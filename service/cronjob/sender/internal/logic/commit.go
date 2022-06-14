@@ -18,7 +18,10 @@ package logic
 
 import (
 	"errors"
+	"github.com/ethereum/go-ethereum/common"
 	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
+	"github.com/zecrey-labs/zecrey-legend/common/util"
+	"log"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -146,7 +149,7 @@ func SendCommittedBlocks(
 				return err
 			}
 			// construct last stored block header
-			lastStoredBlockInfo = ConstructStoredBlockHeader(lastHandledBlockInfo)
+			lastStoredBlockInfo = util.ConstructStoredBlockInfo(lastHandledBlockInfo)
 		} else {
 			isSuccess, err := cli.WaitingTransactionStatus(pendingSender.L1TxHash)
 			// if err != nil, means we cannot get this tx by hash
@@ -176,6 +179,14 @@ func SendCommittedBlocks(
 	}
 	// commit blocks on-chain
 	if len(pendingCommitBlocks) != 0 {
+		log.Println(lastStoredBlockInfo.BlockNumber)
+		log.Println(lastStoredBlockInfo.Timestamp)
+		log.Println(common.Bytes2Hex(lastStoredBlockInfo.StateRoot[:]))
+		log.Println(common.Bytes2Hex(lastStoredBlockInfo.PendingOnchainOperationsHash[:]))
+		log.Println(common.Bytes2Hex(lastStoredBlockInfo.Commitment[:]))
+		log.Println(pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber)
+		log.Println(pendingCommitBlocks[len(pendingCommitBlocks)-1].Timestamp)
+		log.Println(common.Bytes2Hex(pendingCommitBlocks[len(pendingCommitBlocks)-1].NewStateRoot[:]))
 		txHash, err := zecreyLegend.CommitBlocks(
 			cli, authCli,
 			zecreyLegendInstance,

@@ -20,7 +20,6 @@ package util
 import (
 	"bytes"
 	"errors"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
@@ -295,7 +294,6 @@ func ConvertTxToAddLiquidityPubData(oTx *mempool.MempoolTx) (pubData []byte, err
 		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
 		return nil, err
 	}
-	buf.Write(packedAssetBAmountBytes)
 	buf.Write(LpAmountBytes)
 	KLastBytes, err := AmountToPackedAmountBytes(txInfo.KLast)
 	if err != nil {
@@ -362,7 +360,6 @@ func ConvertTxToRemoveLiquidityPubData(oTx *mempool.MempoolTx) (pubData []byte, 
 		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
 		return nil, err
 	}
-	buf.Write(packedAssetBAmountBytes)
 	buf.Write(LpAmountBytes)
 	KLastBytes, err := AmountToPackedAmountBytes(txInfo.KLast)
 	if err != nil {
@@ -484,7 +481,7 @@ func ConvertTxToMintNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err erro
 	buf.WriteByte(uint8(oTx.TxType))
 	buf.Write(Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
 	buf.Write(Uint32ToBytes(uint32(txInfo.ToAccountIndex)))
-	buf.Write(Uint64ToBytes(uint64(txInfo.NftIndex)))
+	buf.Write(Uint40ToBytes(txInfo.NftIndex))
 	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
 	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
 	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
@@ -521,7 +518,7 @@ func ConvertTxToTransferNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err 
 	buf.WriteByte(uint8(oTx.TxType))
 	buf.Write(Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
 	buf.Write(Uint32ToBytes(uint32(txInfo.ToAccountIndex)))
-	buf.Write(Uint64ToBytes(uint64(txInfo.NftIndex)))
+	buf.Write(Uint40ToBytes(txInfo.NftIndex))
 	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
 	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
 	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
@@ -559,6 +556,7 @@ func ConvertTxToAtomicMatchPubData(oTx *mempool.MempoolTx) (pubData []byte, err 
 	buf.Write(Uint24ToBytes(txInfo.BuyOffer.OfferId))
 	buf.Write(Uint32ToBytes(uint32(txInfo.SellOffer.AccountIndex)))
 	buf.Write(Uint24ToBytes(txInfo.SellOffer.OfferId))
+	buf.Write(Uint40ToBytes(txInfo.BuyOffer.NftIndex))
 	buf.Write(Uint16ToBytes(uint16(txInfo.SellOffer.AssetId)))
 	chunk1 := SuffixPaddingBufToChunkSize(buf.Bytes())
 	buf.Reset()
@@ -745,14 +743,16 @@ func CreateBlockCommitment(
 	onChainOpsCount int64,
 ) string {
 	var buf bytes.Buffer
-	buf.Write(Int64ToBytes(currentBlockHeight))
-	buf.Write(Int64ToBytes(createdAt))
+	PaddingInt64IntoBuf(&buf, currentBlockHeight)
+	PaddingInt64IntoBuf(&buf, createdAt)
 	buf.Write(oldStateRoot)
 	buf.Write(newStateRoot)
 	buf.Write(pubData)
-	buf.Write(Int64ToBytes(onChainOpsCount))
-	hFunc := mimc.NewMiMC()
-	hFunc.Write(buf.Bytes())
-	commitment := hFunc.Sum(nil)
+	PaddingInt64IntoBuf(&buf, onChainOpsCount)
+	// TODO Keccak256
+	//hFunc := mimc.NewMiMC()
+	//hFunc.Write(buf.Bytes())
+	//commitment := hFunc.Sum(nil)
+	commitment := KeccakHash(buf.Bytes())
 	return common.Bytes2Hex(commitment)
 }

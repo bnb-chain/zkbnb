@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2BlockEventMonitor"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2TxEventMonitor"
+	"github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
+	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
@@ -36,8 +38,16 @@ type (
 		CreateL1BlockMonitor(tx *L1BlockMonitor) (bool, error)
 		CreateL1BlockMonitorsInBatches(blockInfos []*L1BlockMonitor) (rowsAffected int64, err error)
 		CreateMonitorsInfo(blockInfo *L1BlockMonitor, txEventMonitors []*l2TxEventMonitor.L2TxEventMonitor, blockEventMonitors []*l2BlockEventMonitor.L2BlockEventMonitor) (err error)
+		CreateGovernanceMonitorInfo(
+			blockInfo *L1BlockMonitor,
+			l2AssetInfos []*asset.AssetInfo,
+			pendingUpdateL2AssetInfos []*asset.AssetInfo,
+			pendingNewSysconfigInfos []*sysconfig.Sysconfig,
+			pendingUpdateSysconfigInfos []*sysconfig.Sysconfig,
+		) (err error)
 		GetL1BlockMonitors() (blockInfos []*L1BlockMonitor, err error)
-		GetLatestL1BlockMonitor() (blockInfo *L1BlockMonitor, err error)
+		GetLatestL1BlockMonitorByBlock() (blockInfo *L1BlockMonitor, err error)
+		GetLatestL1BlockMonitorByGovernance() (blockInfo *L1BlockMonitor, err error)
 	}
 
 	defaultL1BlockMonitorModel struct {
@@ -51,7 +61,8 @@ type (
 		// l1 block height
 		L1BlockHeight int64
 		// block info, array of hashes
-		BlockInfo string
+		BlockInfo   string
+		MonitorType int
 	}
 )
 
@@ -130,7 +141,8 @@ func (m *defaultL1BlockMonitorModel) CreateL1BlockMonitorsInBatches(blockInfos [
 func (m *defaultL1BlockMonitorModel) CreateMonitorsInfo(
 	blockInfo *L1BlockMonitor,
 	txEventMonitors []*l2TxEventMonitor.L2TxEventMonitor,
-	blockEventMonitors []*l2BlockEventMonitor.L2BlockEventMonitor) (err error) {
+	blockEventMonitors []*l2BlockEventMonitor.L2BlockEventMonitor,
+) (err error) {
 	err = m.DB.Transaction(
 		func(tx *gorm.DB) error { // transact
 			// create data for l1 block info
@@ -163,6 +175,65 @@ func (m *defaultL1BlockMonitorModel) CreateMonitorsInfo(
 	return err
 }
 
+func (m *defaultL1BlockMonitorModel) CreateGovernanceMonitorInfo(
+	blockInfo *L1BlockMonitor,
+	pendingNewL2AssetInfos []*asset.AssetInfo,
+	pendingUpdateL2AssetInfos []*asset.AssetInfo,
+	pendingNewSysconfigInfos []*sysconfig.Sysconfig,
+	pendingUpdateSysconfigInfos []*sysconfig.Sysconfig,
+) (err error) {
+	err = m.DB.Transaction(
+		func(tx *gorm.DB) error { // transact
+			// create data for l1 block info
+			dbTx := tx.Table(m.table).Create(blockInfo)
+			if dbTx.Error != nil {
+				return dbTx.Error
+			}
+			if dbTx.RowsAffected == 0 {
+				return errors.New("[CreateGovernanceMonitorInfo] unable to create l1 block info")
+			}
+			// create l2 asset info
+			if len(pendingNewL2AssetInfos) != 0 {
+				dbTx = tx.Table(asset.AssetInfoTableName).CreateInBatches(pendingNewL2AssetInfos, len(pendingNewL2AssetInfos))
+				if dbTx.Error != nil {
+					return dbTx.Error
+				}
+				if dbTx.RowsAffected != int64(len(pendingNewL2AssetInfos)) {
+					logx.Errorf("[CreateGovernanceMonitorInfo] invalid l2 asset info")
+					return errors.New("[CreateGovernanceMonitorInfo] invalid l2 asset info")
+				}
+			}
+			// update l2 asset info
+			for _, pendingUpdateL2AssetInfo := range pendingUpdateL2AssetInfos {
+				dbTx = tx.Table(asset.AssetInfoTableName).Where("id = ?", pendingUpdateL2AssetInfo.ID).Select("*").Updates(&pendingUpdateL2AssetInfo)
+				if dbTx.Error != nil {
+					return dbTx.Error
+				}
+			}
+			// create new sys config
+			if len(pendingNewSysconfigInfos) != 0 {
+				dbTx = tx.Table(sysconfig.TableName).CreateInBatches(pendingNewSysconfigInfos, len(pendingNewSysconfigInfos))
+				if dbTx.Error != nil {
+					return dbTx.Error
+				}
+				if dbTx.RowsAffected != int64(len(pendingNewSysconfigInfos)) {
+					logx.Errorf("[CreateGovernanceMonitorInfo] invalid sys config info")
+					return errors.New("[CreateGovernanceMonitorInfo] invalid sys config info")
+				}
+			}
+			// update sys config
+			for _, pendingUpdateSysconfigInfo := range pendingUpdateSysconfigInfos {
+				dbTx = tx.Table(sysconfig.TableName).Where("id = ?", pendingUpdateSysconfigInfo.ID).Select("*").Updates(&pendingUpdateSysconfigInfo)
+				if dbTx.Error != nil {
+					return dbTx.Error
+				}
+			}
+			return nil
+		},
+	)
+	return err
+}
+
 /*
 	GetL1BlockMonitors: get all L1BlockMonitors
 */
@@ -185,15 +256,30 @@ func (m *defaultL1BlockMonitorModel) GetL1BlockMonitors() (blockInfos []*L1Block
 	Return: blockInfos []*L1BlockMonitor, err error
 	Description: get latest l1 block monitor info
 */
-func (m *defaultL1BlockMonitorModel) GetLatestL1BlockMonitor() (blockInfo *L1BlockMonitor, err error) {
-	dbTx := m.DB.Table(m.table).Order("l1_block_height desc").Find(&blockInfo)
+func (m *defaultL1BlockMonitorModel) GetLatestL1BlockMonitorByBlock() (blockInfo *L1BlockMonitor, err error) {
+	dbTx := m.DB.Table(m.table).Where("monitor_type = ?", MonitorTypeBlock).Order("l1_block_height desc").Find(&blockInfo)
 	if dbTx.Error != nil {
-		err := fmt.Sprintf("[l1BlockMonitor.GetLatestL1BlockMonitor] %s", dbTx.Error)
+		err := fmt.Sprintf("[l1BlockMonitor.GetLatestL1BlockMonitorByBlock] %s", dbTx.Error)
 		logx.Error(err)
 		return nil, dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l1BlockMonitor.GetLatestL1BlockMonitor] %s", ErrNotFound)
+		err := fmt.Sprintf("[l1BlockMonitor.GetLatestL1BlockMonitorByBlock] %s", ErrNotFound)
+		logx.Error(err)
+		return nil, ErrNotFound
+	}
+	return blockInfo, nil
+}
+
+func (m *defaultL1BlockMonitorModel) GetLatestL1BlockMonitorByGovernance() (blockInfo *L1BlockMonitor, err error) {
+	dbTx := m.DB.Table(m.table).Where("monitor_type = ?", MonitorTypeGovernance).Order("l1_block_height desc").Find(&blockInfo)
+	if dbTx.Error != nil {
+		err := fmt.Sprintf("[l1BlockMonitor.GetLatestL1BlockMonitorByGovernance] %s", dbTx.Error)
+		logx.Error(err)
+		return nil, dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		err := fmt.Sprintf("[l1BlockMonitor.GetLatestL1BlockMonitorByGovernance] %s", ErrNotFound)
 		logx.Error(err)
 		return nil, ErrNotFound
 	}

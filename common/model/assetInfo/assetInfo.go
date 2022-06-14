@@ -15,7 +15,7 @@
  *
  */
 
-package l2asset
+package asset
 
 import (
 	"fmt"
@@ -27,23 +27,24 @@ import (
 )
 
 var (
-	cacheZecreyAssetInfoIdPrefix          = "cache:zecrey:l2AssetInfo:id:"
-	cacheZecreyAssetInfoL2AssetIdPrefix   = "cache:zecrey:l2AssetInfo:l2AssetId:"
-	cacheZecreyAssetInfoL2AssetNamePrefix = "cache:zecrey:l2AssetInfo:l2AssetName:"
+	cacheZecreyAssetInfoIdPrefix        = "cache:zecrey:assetInfo:id:"
+	cacheZecreyAssetInfoAssetIdPrefix   = "cache:zecrey:assetInfo:assetId:"
+	cacheZecreyAssetInfoAssetNamePrefix = "cache:zecrey:assetInfo:assetName:"
 )
 
 type (
-	L2AssetInfoModel interface {
-		CreateL2AssetInfoTable() error
-		DropL2AssetInfoTable() error
-		CreateL2AssetInfo(l2AssetInfo *AssetInfo) (bool, error)
-		CreateL2AssetsInfoInBatches(l2AssetsInfo []*AssetInfo) (rowsAffected int64, err error)
-		GetL2AssetsCount() (assetCount uint32, err error)
-		GetL2AssetsList() (res []*AssetInfo, err error)
-		GetL2AssetsListWithoutL1AssetsInfo() (res []*AssetInfo, err error)
-		GetSimpleL2AssetInfoByAssetId(assetId int64) (res *AssetInfo, err error)
+	AssetInfoModel interface {
+		CreateAssetInfoTable() error
+		DropAssetInfoTable() error
+		CreateAssetInfo(l2AssetInfo *AssetInfo) (bool, error)
+		CreateAssetsInfoInBatches(l2AssetsInfo []*AssetInfo) (rowsAffected int64, err error)
+		GetAssetsCount() (assetCount uint32, err error)
+		GetAssetsList() (res []*AssetInfo, err error)
+		GetAssetsListWithoutL1AssetsInfo() (res []*AssetInfo, err error)
+		GetSimpleAssetInfoByAssetId(assetId int64) (res *AssetInfo, err error)
 		GetAssetIdCount() (res int64, err error)
-		GetL2AssetInfoBySymbol(symbol string) (res *AssetInfo, err error)
+		GetAssetInfoBySymbol(symbol string) (res *AssetInfo, err error)
+		GetAssetByAddress(address string) (info *AssetInfo, err error)
 	}
 
 	defaultAssetInfoModel struct {
@@ -67,7 +68,7 @@ func (*AssetInfo) TableName() string {
 	return AssetInfoTableName
 }
 
-func NewL2AssetInfoModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) L2AssetInfoModel {
+func NewAssetInfoModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) AssetInfoModel {
 	return &defaultAssetInfoModel{
 		CachedConn: sqlc.NewConn(conn, c),
 		table:      AssetInfoTableName,
@@ -81,7 +82,7 @@ func NewL2AssetInfoModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) L2As
 	Return: err error
 	Description: create l2 asset info table
 */
-func (m *defaultAssetInfoModel) CreateL2AssetInfoTable() error {
+func (m *defaultAssetInfoModel) CreateAssetInfoTable() error {
 	return m.DB.AutoMigrate(AssetInfo{})
 }
 
@@ -91,7 +92,7 @@ func (m *defaultAssetInfoModel) CreateL2AssetInfoTable() error {
 	Return: err error
 	Description: drop l2 asset info table
 */
-func (m *defaultAssetInfoModel) DropL2AssetInfoTable() error {
+func (m *defaultAssetInfoModel) DropAssetInfoTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
@@ -101,7 +102,7 @@ func (m *defaultAssetInfoModel) DropL2AssetInfoTable() error {
 	Return: err error
 	Description: create account table
 */
-func (m *defaultAssetInfoModel) GetL2AssetsList() (res []*AssetInfo, err error) {
+func (m *defaultAssetInfoModel) GetAssetsList() (res []*AssetInfo, err error) {
 	dbTx := m.DB.Table(m.table).Find(&res)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[l2asset.GetL2AssetsList] %s", dbTx.Error)
@@ -122,7 +123,7 @@ func (m *defaultAssetInfoModel) GetL2AssetsList() (res []*AssetInfo, err error) 
 	Return: err error
 	Description: GetL2AssetsListWithoutL1AssetsInfo
 */
-func (m *defaultAssetInfoModel) GetL2AssetsListWithoutL1AssetsInfo() (res []*AssetInfo, err error) {
+func (m *defaultAssetInfoModel) GetAssetsListWithoutL1AssetsInfo() (res []*AssetInfo, err error) {
 	dbTx := m.DB.Table(m.table).Find(&res)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[l2asset.GetL2AssetsList] %s", dbTx.Error)
@@ -143,7 +144,7 @@ func (m *defaultAssetInfoModel) GetL2AssetsListWithoutL1AssetsInfo() (res []*Ass
 	Return: bool, error
 	Description: create L2AssetsInfo batches
 */
-func (m *defaultAssetInfoModel) CreateL2AssetInfo(l2AssetInfo *AssetInfo) (bool, error) {
+func (m *defaultAssetInfoModel) CreateAssetInfo(l2AssetInfo *AssetInfo) (bool, error) {
 	dbTx := m.DB.Table(m.table).Create(l2AssetInfo)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[l2asset.CreateL2AssetInfo] %s", dbTx.Error)
@@ -164,7 +165,7 @@ func (m *defaultAssetInfoModel) CreateL2AssetInfo(l2AssetInfo *AssetInfo) (bool,
 	Return: rowsAffected int64, err error
 	Description: create L2AssetsInfo batches
 */
-func (m *defaultAssetInfoModel) CreateL2AssetsInfoInBatches(l2AssetsInfo []*AssetInfo) (rowsAffected int64, err error) {
+func (m *defaultAssetInfoModel) CreateAssetsInfoInBatches(l2AssetsInfo []*AssetInfo) (rowsAffected int64, err error) {
 	dbTx := m.DB.Table(m.table).CreateInBatches(l2AssetsInfo, len(l2AssetsInfo))
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[l2asset.CreateL2AssetsInfoInBatches] %s", dbTx.Error)
@@ -183,7 +184,7 @@ func (m *defaultAssetInfoModel) CreateL2AssetsInfoInBatches(l2AssetsInfo []*Asse
 	Return: latestHeight int64, err error
 	Description: get latest l1asset id to active accounts
 */
-func (m *defaultAssetInfoModel) GetL2AssetsCount() (assetCount uint32, err error) {
+func (m *defaultAssetInfoModel) GetAssetsCount() (assetCount uint32, err error) {
 	var asset *AssetInfo
 	dbTx := m.DB.Table(m.table).Order("l2_asset_id desc").First(&asset)
 	if dbTx.Error != nil {
@@ -205,7 +206,7 @@ func (m *defaultAssetInfoModel) GetL2AssetsCount() (assetCount uint32, err error
 	Return: L2AssetInfo, error
 	Description: get layer-2 asset info by assetId
 */
-func (m *defaultAssetInfoModel) GetSimpleL2AssetInfoByAssetId(assetId int64) (res *AssetInfo, err error) {
+func (m *defaultAssetInfoModel) GetSimpleAssetInfoByAssetId(assetId int64) (res *AssetInfo, err error) {
 	dbTx := m.DB.Table(m.table).Where("asset_id = ?", assetId).Find(&res)
 	if dbTx.Error != nil {
 		errInfo := fmt.Sprintf("[l2asset.GetL2AssetInfoByAssetId] %s", dbTx.Error)
@@ -244,7 +245,7 @@ func (m *defaultAssetInfoModel) GetAssetIdCount() (res int64, err error) {
 	Return: res *L2AssetInfo, err error
 	Description: get l2 asset info by l2 symbol
 */
-func (m *defaultAssetInfoModel) GetL2AssetInfoBySymbol(symbol string) (res *AssetInfo, err error) {
+func (m *defaultAssetInfoModel) GetAssetInfoBySymbol(symbol string) (res *AssetInfo, err error) {
 	dbTx := m.DB.Table(m.table).Where("l2_symbol = ?", symbol).Find(&res)
 	if dbTx.Error != nil {
 		errInfo := fmt.Sprintf("[l2asset.GetL2AssetInfoBySymbol] %s", dbTx.Error)
@@ -257,4 +258,14 @@ func (m *defaultAssetInfoModel) GetL2AssetInfoBySymbol(symbol string) (res *Asse
 		return nil, ErrNotFound
 	}
 	return res, nil
+}
+
+func (m *defaultAssetInfoModel) GetAssetByAddress(address string) (info *AssetInfo, err error) {
+	dbTx := m.DB.Table(m.table).Where("asset_address = ?", address).Find(&info)
+	if dbTx.Error != nil {
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return nil, ErrNotFound
+	}
+	return info, nil
 }

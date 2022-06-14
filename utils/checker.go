@@ -25,6 +25,15 @@ const (
 
 	minLPAmount = 0
 	maxLPAmount = math.MaxUint32
+
+	minTxtype = 0
+	maxTxtype = 8
+
+	minLimit = 0
+	maxLimit = 50
+
+	minOffset = 0
+	maxOffset = math.MaxUint32
 )
 
 func CheckAccountName(accountName string) bool {
@@ -51,8 +60,24 @@ func CheckPairIndex(pairIndex uint32) bool {
 	return pairIndex > maxAccountIndex
 }
 
-func CheckLPAmount(LPAmount uint32) bool {
-	return LPAmount > maxLPAmount
+func CheckAmount(amount string) bool {
+	return true
+}
+
+func CheckTxType(txType uint32) bool {
+	return txType > maxTxtype
+}
+
+func CheckTypeLimit(limit uint32) bool {
+	return limit > maxLimit
+}
+
+func CheckTypeOffset(offset uint32) bool {
+	return offset > maxOffset
+}
+
+func CheckLPAmount(lPAmount uint32) bool {
+	return lPAmount > maxLPAmount
 }
 
 // Format AccountName and

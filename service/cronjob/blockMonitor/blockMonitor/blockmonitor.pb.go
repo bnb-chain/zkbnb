@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.28.0
 // 	protoc        v3.17.3
-// source: blockMonitor.proto
+// source: governanceMonitor.proto
 
 package blockMonitor
 

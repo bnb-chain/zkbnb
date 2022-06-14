@@ -15,4 +15,5 @@ CacheRedis:
 
 ChainConfig:
   BSCNetworkRPCSysConfigName: "Local_Test_Network_RPC"
+  #  BSCNetworkRPCSysConfigName: "BscTestNetworkRpc"
   BSCPendingBlocksCount: 0

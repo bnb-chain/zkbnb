@@ -1,0 +1,24 @@
+Name: proverClient.cronjob
+Postgres:
+  DataSource: host=127.0.0.1 user=postgres password=ZecreyProtocolDB@123 dbname=zecreyLegend port=5432 sslmode=disable
+
+CacheRedis:
+  - Host: 127.0.0.1:6379
+    Pass: myredis
+    Type: node
+
+ProverHubRPC:
+  Etcd:
+    Hosts:
+      - 127.0.0.1:2379
+    Key: proverhub.rpc
+
+KeyPath:
+  ProvingKeyPath: D:\Projects\mygo\src\Zecrey\SherLzp\zecrey-legend\zecrey-legend.pk
+  VerifyingKeyPath: D:\Projects\mygo\src\Zecrey\SherLzp\zecrey-legend\zecrey-legend.vk
+
+LogConf:
+  ServiceName: proverClient
+  Mode: console
+  Path: ./log/proverClient
+  StackCooldownMillis: 500

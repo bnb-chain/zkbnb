@@ -24,11 +24,11 @@ const (
 
 var (
 	ErrInvalidProof = errors.New("Invalid Proof")
-	ErrNotFound = errors.New("Not found error")
+	ErrNotFound     = errors.New("Not found error")
 )
 
 const (
-	Pending = iota
-	SentOnChain
-	ConfirmedOnChain
+	NotSent = iota
+	NotConfirmed
+	Confirmed
 )

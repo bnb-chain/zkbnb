@@ -10,10 +10,9 @@ const (
 	BSC_Test_Network_RPC   = "http://tf-dex-preview-validator-nlb-6fd109ac8b9d390a.elb.ap-northeast-1.amazonaws.com:8545"
 	Local_Test_Network_RPC = "http://127.0.0.1:8545/"
 
-	ZecreyLegendContractAddr    = "0x3Ad0Da185EBdA8D982719275de1B594551F4B014"
-	GovernanceContractAddr      = "0xbEac1B11D9267113499E0Ef38B2B43949767A219"
-	AssetGovernanceContractAddr = "0x0f4362Ec42b2bd0AE8329fC8B20D674c65bFB886"
-	VerifierContractAddr        = "0xD1aaF91B838c868c7264eCc7542211e7Db8aCaDE"
+	ZecreyLegendContractAddr = "0xdC3001ccBf422A32678099A9ff56213d19ceBC49"
+	GovernanceContractAddr   = "0xDaCAf54cab7cd8F47Ba5F1Cc5CbF3151468b9c12"
+	VerifierContractAddr     = "0x9f3C50eb83Ea5FD6D149918FC203801E5B3650a8"
 )
 
 func initSysConfig() []*sysconfig.Sysconfig {
@@ -57,20 +56,20 @@ func initSysConfig() []*sysconfig.Sysconfig {
 		},
 
 		// Asset_Governance Contract
-		{
-			Name:      sysconfigName.AssetGovernanceContract,
-			Value:     AssetGovernanceContractAddr,
-			ValueType: "string",
-			Comment:   "Asset_Governance contract on BSC",
-		},
+		//{
+		//	Name:      sysconfigName.AssetGovernanceContract,
+		//	Value:     AssetGovernanceContractAddr,
+		//	ValueType: "string",
+		//	Comment:   "Asset_Governance contract on BSC",
+		//},
 
 		// Verifier Contract
-		{
-			Name:      sysconfigName.VerifierContract,
-			Value:     VerifierContractAddr,
-			ValueType: "string",
-			Comment:   "Verifier contract on BSC",
-		},
+		//{
+		//	Name:      sysconfigName.VerifierContract,
+		//	Value:     VerifierContractAddr,
+		//	ValueType: "string",
+		//	Comment:   "Verifier contract on BSC",
+		//},
 		// network rpc
 		{
 			Name:      sysconfigName.BscTestNetworkRpc,

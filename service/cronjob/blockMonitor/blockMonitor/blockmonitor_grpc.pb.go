@@ -97,5 +97,5 @@ var BlockMonitor_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "blockMonitor.proto",
+	Metadata: "governanceMonitor.proto",
 }
