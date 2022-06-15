@@ -19,7 +19,6 @@ package logic
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
@@ -53,16 +52,16 @@ func MonitorMempool(
 		}
 	}
 	// initialize mempool txs
-	nextAccountIndex, err := ctx.AccountModel.GetLatestAccountIndex()
-	if err != nil {
-		if err == account.ErrNotFound {
-			nextAccountIndex = -1
-		} else {
-			errInfo := fmt.Sprintf("[mempoolMoniter.MonitorMempool]<=>[accountModel.GetMaxAccountIndex] %s", err.Error())
-			logx.Error(errInfo)
-			return err
-		}
-	}
+	//nextAccountIndex, err := ctx.AccountModel.GetLatestAccountIndex()
+	//if err != nil {
+	//	if err == account.ErrNotFound {
+	//		nextAccountIndex = -1
+	//	} else {
+	//		errInfo := fmt.Sprintf("[mempoolMoniter.MonitorMempool]<=>[accountModel.GetMaxAccountIndex] %s", err.Error())
+	//		logx.Error(errInfo)
+	//		return err
+	//	}
+	//}
 
 	var (
 		pendingNewAccounts       []*account.Account
@@ -106,11 +105,11 @@ func MonitorMempool(
 				return errors.New("[MonitorMempool] account name has been registered")
 			}
 			// set correct account index
-			nextAccountIndex++
-			txInfo.AccountIndex = nextAccountIndex
+			//nextAccountIndex++
+			//txInfo.AccountIndex = nextAccountIndex
 			// create new account and account history
 			accountInfo := &account.Account{
-				AccountIndex:    nextAccountIndex,
+				AccountIndex:    txInfo.AccountIndex,
 				AccountName:     txInfo.AccountName,
 				PublicKey:       txInfo.PubKey,
 				AccountNameHash: common.Bytes2Hex(txInfo.AccountNameHash),
@@ -142,7 +141,7 @@ func MonitorMempool(
 				TxAmount:      commonConstant.NilAssetAmountStr,
 				NativeAddress: oTx.SenderAddress,
 				TxInfo:        string(txInfoBytes),
-				AccountIndex:  nextAccountIndex,
+				AccountIndex:  txInfo.AccountIndex,
 				Nonce:         commonConstant.NilNonce,
 				ExpiredAt:     commonConstant.NilExpiredAt,
 				L2BlockHeight: commonConstant.NilBlockHeight,
@@ -795,10 +794,10 @@ func MonitorMempool(
 	// transaction: active accounts not in account table & update l2 oTx event & create mempool txs
 
 	logx.Info("====================call CreateMempoolAndActiveAccount=======================")
-	logx.Infof("accounts: %v, mempoolTxs: %v, finalL2TxEvents: %v, nextAccountIndex: %v",
+	logx.Infof("accounts: %v, mempoolTxs: %v, finalL2TxEvents: %v",
 		len(pendingNewAccounts),
 		len(pendingNewMempoolTxs),
-		len(txs), nextAccountIndex)
+		len(txs))
 
 	// clean cache
 	var pendingDeletedKeys []string

@@ -1,8 +1,6 @@
 package init
 
-import (
-	asset "github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
-)
+import asset "github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 
 // TODO l2 asset monitor
 func initAssetsInfo() []*asset.AssetInfo {
