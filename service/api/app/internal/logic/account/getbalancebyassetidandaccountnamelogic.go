@@ -33,17 +33,17 @@ func NewGetBalanceByAssetIdAndAccountNameLogic(ctx context.Context, svcCtx *svc.
 
 func (l *GetBalanceByAssetIdAndAccountNameLogic) GetBalanceByAssetIdAndAccountName(req *types.ReqGetBlanceByAssetIdAndAccountName) (resp *types.RespGetBlanceInfoByAssetIdAndAccountName, err error) {
 	if utils.CheckAccountName(req.AccountName) {
-		logx.Error("[CheckAccountIndex] param:%v", req.AccountName)
+		logx.Errorf("[CheckAccountIndex] param:%v", req.AccountName)
 		return nil, errcode.ErrInvalidParam
 	}
 	account, err := l.account.GetAccountByAccountName(req.AccountName)
 	if err != nil {
-		logx.Error("[GetAccountByAccountName] err:%v", err)
+		logx.Errorf("[GetAccountByAccountName] err:%v", err)
 		return nil, err
 	}
 	assets, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(uint32(account.AccountIndex))
 	if err != nil {
-		logx.Error("[GetLatestAccountInfoByAccountIndex] err:%v", err)
+		logx.Errorf("[GetLatestAccountInfoByAccountIndex] err:%v", err)
 		return nil, err
 	}
 	for _, asset := range assets {

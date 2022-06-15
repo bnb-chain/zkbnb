@@ -7,7 +7,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/account"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/accounthistory"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/globalrpc"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/l2asset"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
 	"github.com/zecrey-labs/zecrey-legend/utils"
@@ -20,7 +19,6 @@ type GetAccountInfoByAccountNameLogic struct {
 	ctx            context.Context
 	svcCtx         *svc.ServiceContext
 	accountHistory accounthistory.AccountHistory
-	l2asset        l2asset.L2asset
 	globalRPC      globalrpc.GlobalRPC
 	account        account.AccountModel
 }
@@ -31,7 +29,6 @@ func NewGetAccountInfoByAccountNameLogic(ctx context.Context, svcCtx *svc.Servic
 		ctx:            ctx,
 		svcCtx:         svcCtx,
 		accountHistory: accounthistory.New(svcCtx.Config),
-		l2asset:        l2asset.New(svcCtx.Config),
 		globalRPC:      globalrpc.New(svcCtx.Config, ctx),
 		account:        account.New(svcCtx.Config),
 	}

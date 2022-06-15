@@ -31,20 +31,23 @@ func NewGetAssetsByAccountNameLogic(ctx context.Context, svcCtx *svc.ServiceCont
 	}
 }
 
-func (l *GetAssetsByAccountNameLogic) GetAssetsByAccountName(req *types.ReqGetAssetsByAccountName) (resp *types.RespGetAssetsByAccountName, err error) {
+func (l *GetAssetsByAccountNameLogic) GetAssetsByAccountName(req *types.ReqGetAssetsByAccountName) (*types.RespGetAssetsByAccountName, error) {
 	if utils.CheckAccountName(req.AccountName) {
-		logx.Error("[CheckAccountName] param:%v", req.AccountName)
+		logx.Errorf("[CheckAccountName] param:%v", req.AccountName)
 		return nil, errcode.ErrInvalidParam
 	}
 	account, err := l.account.GetAccountByAccountName(req.AccountName)
 	if err != nil {
-		logx.Error("[GetAccountByAccountName] err:%v", err)
+		logx.Errorf("[GetAccountByAccountName] err:%v", err)
 		return nil, err
 	}
 	assets, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(uint32(account.AccountIndex))
 	if err != nil {
-		logx.Error("[GetLatestAccountInfoByAccountIndex] err:%v", err)
+		logx.Errorf("[GetLatestAccountInfoByAccountIndex] err:%v", err)
 		return nil, err
+	}
+	resp := &types.RespGetAssetsByAccountName{
+		Assets: make([]*types.Asset, 0),
 	}
 	for _, asset := range assets {
 		v := &types.Asset{
