@@ -54,8 +54,8 @@ func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (resp *t
 					//Todo: verify if accountBalance is still needed, since its no longer a field of table TxDetail
 					//Todo: int64 or int?
 					//Todo: need balance or not?  no need
-					AssetId:      int(txDetail.AssetId),
-					AssetType:    int(txDetail.AssetType),
+					AssetId:      uint32(txDetail.AssetId),
+					AssetType:    uint32(txDetail.AssetType),
 					AccountIndex: int32(txDetail.AccountIndex),
 					AccountName:  txDetail.AccountName,
 					AccountDelta: txDetail.BalanceDelta,
@@ -73,10 +73,10 @@ func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (resp *t
 		data = append(data, &types.Tx{
 			TxHash:        mempoolTx.TxHash,
 			TxType:        uint32(mempoolTx.TxType),
-			AssetAId:      int(mempoolTx.AssetId),
-			AssetBId:      int(mempoolTx.AssetId),
+			AssetAId:      uint32(mempoolTx.AssetId),
+			AssetBId:      uint32(mempoolTx.AssetId),
 			TxDetails:     txDetails,
-			TxAmount:      txAmount,
+			TxAmount:      uint32(txAmount),
 			NativeAddress: mempoolTx.NativeAddress,
 			TxStatus:      1, //pending
 			GasFeeAssetId: uint32(mempoolTx.GasFeeAssetId),

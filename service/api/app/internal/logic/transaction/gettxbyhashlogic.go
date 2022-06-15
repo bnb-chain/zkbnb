@@ -55,8 +55,8 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (resp *types.R
 	txDetails := make([]*types.TxDetail, 0)
 	for _, w := range txMemppol.MempoolDetails {
 		txDetails = append(txDetails, &types.TxDetail{
-			AssetId:      int(w.AssetId),
-			AssetType:    int(w.AssetType),
+			AssetId:      uint32(w.AssetId),
+			AssetType:    uint32(w.AssetType),
 			AccountIndex: int32(w.AccountIndex),
 			AccountName:  w.AccountName,
 			AccountDelta: w.BalanceDelta,
@@ -82,14 +82,14 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (resp *types.R
 		TxType:        uint32(txMemppol.TxType),
 		GasFee:        int64(gasFee),
 		GasFeeAssetId: uint32(txMemppol.GasFeeAssetId),
-		TxStatus:      txMemppol.Status,
-		BlockHeight:   int(txMemppol.L2BlockHeight),
-		BlockStatus:   int(blockStatusInfo.BlockStatus),
-		BlockId:       int(block.ID),
+		TxStatus:      uint32(txMemppol.Status),
+		BlockHeight:   uint32(txMemppol.L2BlockHeight),
+		BlockStatus:   uint32(blockStatusInfo.BlockStatus),
+		BlockId:       uint32(block.ID),
 		//Todo: globalRPC won't return data with 2 asset ids, where are these fields from
-		AssetAId:      int(txMemppol.AssetId),
-		AssetBId:      int(txMemppol.AssetId),
-		TxAmount:      txAmount,
+		AssetAId:      uint32(txMemppol.AssetId),
+		AssetBId:      uint32(txMemppol.AssetId),
+		TxAmount:      uint32(txAmount),
 		TxDetails:     txDetails,
 		NativeAddress: txMemppol.NativeAddress,
 		CreatedAt:     txMemppol.CreatedAt.UnixNano() / 1e6,

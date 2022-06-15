@@ -73,8 +73,8 @@ func (l *GetTxsByAccountNameLogic) GetTxsByAccountName(req *types.ReqGetTxsByAcc
 		txDetails := make([]*types.TxDetail, 0)
 		for _, txDetail := range tx.MempoolDetails {
 			txDetails = append(txDetails, &types.TxDetail{
-				AssetId:      int(txDetail.AssetId),
-				AssetType:    int(txDetail.AssetType),
+				AssetId:      uint32(txDetail.AssetId),
+				AssetType:    uint32(txDetail.AssetType),
 				AccountIndex: int32(txDetail.AccountIndex),
 				AccountName:  txDetail.AccountName,
 				AccountDelta: txDetail.BalanceDelta,
@@ -92,14 +92,14 @@ func (l *GetTxsByAccountNameLogic) GetTxsByAccountName(req *types.ReqGetTxsByAcc
 			TxType:        uint32(tx.TxType),
 			GasFeeAssetId: uint32(tx.GasFeeAssetId),
 			GasFee:        gasFee,
-			TxStatus:      int(tx.Status),
-			BlockHeight:   int(tx.L2BlockHeight),
-			BlockStatus:   int(blockInfo.BlockStatus),
-			BlockId:       int(blockInfo.ID),
+			TxStatus:      uint32(tx.Status),
+			BlockHeight:   uint32(tx.L2BlockHeight),
+			BlockStatus:   uint32(blockInfo.BlockStatus),
+			BlockId:       uint32(blockInfo.ID),
 			//Todo: still need assetAId and assetBId?
-			AssetAId:      int(tx.AssetId),
-			AssetBId:      int(tx.AssetId),
-			TxAmount:      int(txAmount),
+			AssetAId:      uint32(tx.AssetId),
+			AssetBId:      uint32(tx.AssetId),
+			TxAmount:      uint32(txAmount),
 			TxDetails:     txDetails,
 			NativeAddress: tx.NativeAddress,
 			CreatedAt:     tx.CreatedAt.UnixNano() / 1e6,

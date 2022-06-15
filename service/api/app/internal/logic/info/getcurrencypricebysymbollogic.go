@@ -41,7 +41,7 @@ func (l *GetCurrencyPriceBySymbolLogic) GetCurrencyPriceBySymbol(req *types.ReqG
 		logx.Error("[GetL2AssetInfoBySymbol] err:%v", err)
 		return nil, err
 	}
-	resp.AssetId = int(l2Asset.ID)
+	resp.AssetId = uint32(l2Asset.ID)
 	logx.Info("[GetL2AssetInfoBySymbol]", "Symbol:", req.Symbol, "response:", resp)
 	return resp, nil
 }

@@ -44,7 +44,7 @@ func (l *GetCurrencyPricesLogic) GetCurrencyPrices(_ *types.ReqGetCurrencyPrices
 		}
 		resp.Data = append(resp.Data, &types.DataCurrencyPrices{
 			Pair:    asset.AssetSymbol + "/" + "USDT",
-			AssetId: int(asset.AssetId),
+			AssetId: uint32(asset.AssetId),
 			Price:   price,
 		})
 	}

@@ -20,13 +20,13 @@ type RespGetAccountStatusByPubKey struct {
 }
 
 type ReqGetAccountStatusByAccountName struct {
-	AccountName string `form:"account_name"`
+	AccountName string `json:"account_name"`
 }
 
 type RespGetAccountStatusByAccountName struct {
 	AccountStatus uint32 `json:"account_status"`
 	AccountIndex  uint32 `json:"account_index"`
-	AccountPk     string `form:"account_pk"`
+	AccountPk     string `json:"account_pk"`
 }
 
 type Asset struct {
@@ -45,7 +45,7 @@ type RespGetAccountInfoByAccountName struct {
 }
 
 type ReqGetBlanceByAssetIdAndAccountName struct {
-	AssetId     uint32 `form:"asset_id"`
+	AssetId     uint32 `json:"asset_id"`
 	AccountName string `json:"account_name"`
 }
 
@@ -54,7 +54,7 @@ type RespGetBlanceInfoByAssetIdAndAccountName struct {
 }
 
 type ReqGetAssetsByAccountName struct {
-	AccountName string `form:"account_name"`
+	AccountName string `json:"account_name"`
 }
 
 type RespGetAssetsByAccountName struct {
@@ -62,7 +62,7 @@ type RespGetAssetsByAccountName struct {
 }
 
 type ReqGetAccountLiquidityPairsByAccountIndex struct {
-	AccountIndex uint32 `form:"account_index"`
+	AccountIndex uint32 `json:"account_index"`
 }
 
 type AccountLiquidityPairs struct {
@@ -95,11 +95,11 @@ type RespGetAssetsList struct {
 }
 
 type ReqGetCurrencyPriceBySymbol struct {
-	Symbol string `form:"symbol"`
+	Symbol string `json:"symbol"`
 }
 
 type RespGetCurrencyPriceBySymbol struct {
-	AssetId int     `json:"assetId"`
+	AssetId uint32  `json:"assetId"`
 	Price   float64 `json:"price"`
 }
 
@@ -108,7 +108,7 @@ type ReqGetCurrencyPrices struct {
 
 type DataCurrencyPrices struct {
 	Pair    string  `json:"pair"`
-	AssetId int     `json:"assetId"`
+	AssetId uint32  `json:"assetId"`
 	Price   float64 `json:"price"`
 }
 
@@ -117,7 +117,7 @@ type RespGetCurrencyPrices struct {
 }
 
 type ReqGetGasFee struct {
-	AssetId uint32 `form:"asset_id"`
+	AssetId uint32 `json:"asset_id"`
 }
 
 type RespGetGasFee struct {
@@ -125,9 +125,9 @@ type RespGetGasFee struct {
 }
 
 type ReqGetWithdrawGasFee struct {
-	AssetId         uint32 `form:"asset_id"`
-	WithdrawAssetId uint32 `form:"withdraw_asset_id"`
-	WithdrawAmount  uint64 `form:"withdraw_amount"`
+	AssetId         uint32 `json:"asset_id"`
+	WithdrawAssetId uint32 `json:"withdraw_asset_id"`
+	WithdrawAmount  uint64 `json:"withdraw_amount"`
 }
 
 type RespGetWithdrawGasFee struct {
@@ -135,10 +135,10 @@ type RespGetWithdrawGasFee struct {
 }
 
 type ReqGetSwapAmount struct {
-	PairIndex   uint32 `form:"pair_index"`
-	AssetId     uint32 `form:"asset_id"`
-	AssetAmount string `form:"asset_amount"`
-	IsFrom      bool   `form:"is_from"`
+	PairIndex   uint32 `json:"pair_index"`
+	AssetId     uint32 `json:"asset_id"`
+	AssetAmount string `json:"asset_amount"`
+	IsFrom      bool   `json:"is_from"`
 }
 
 type RespGetSwapAmount struct {
@@ -164,8 +164,8 @@ type RespGetAvailablePairs struct {
 }
 
 type ReqGetLPValue struct {
-	PairIndex uint32 `form:"pair_index"`
-	LpAmount  string `form:"lp_amount"`
+	PairIndex uint32 `json:"pair_index"`
+	LpAmount  string `json:"lp_amount"`
 }
 
 type RespGetLPValue struct {
@@ -178,7 +178,7 @@ type RespGetLPValue struct {
 }
 
 type ReqGetPairInfo struct {
-	PairIndex uint32 `form:"pair_index"`
+	PairIndex uint32 `json:"pair_index"`
 }
 
 type RespGetPairInfo struct {
@@ -190,8 +190,8 @@ type RespGetPairInfo struct {
 }
 
 type TxDetail struct {
-	AssetId        int    `json:"assetId"`
-	AssetType      int    `json:"assetType"`
+	AssetId        uint32 `json:"assetId"`
+	AssetType      uint32 `json:"assetType"`
 	AccountIndex   int32  `json:"accountIndex"`
 	AccountName    string `json:"accountName"`
 	AccountBalance string `json:"accountBalance"`
@@ -203,32 +203,31 @@ type Tx struct {
 	TxType        uint32      `json:"tx_type,range=[1:64]"`
 	GasFee        int64       `json:"gas_fee"`
 	GasFeeAssetId uint32      `json:"gas_fee_asset_id"`
-	TxStatus      int         `json:"tx_status,options=0|1|2"`
-	BlockHeight   int         `json:"block_height"`
-	BlockStatus   int         `json:"block_status"`
-	BlockId       int         `json:"block_id"`
-	AssetAId      int         `json:"asset_a_id"`
-	AssetBId      int         `json:"asset_b_id"`
-	TxAmount      int         `json:"tx_amount"`
+	TxStatus      uint32      `json:"tx_status,options=0|1|2"`
+	BlockHeight   uint32      `json:"block_height"`
+	BlockStatus   uint32      `json:"block_status"`
+	BlockId       uint32      `json:"block_id"`
+	AssetAId      uint32      `json:"asset_a_id"`
+	AssetBId      uint32      `json:"asset_b_id"`
+	TxAmount      uint32      `json:"tx_amount"`
 	TxDetails     []*TxDetail `json:"tx_detail"`
 	NativeAddress string      `json:"native_address"`
-	ChainId       int         `json:"chain_id"`
 	CreatedAt     int64       `json:"created_at"`
 	Memo          string      `json:"memo"`
 }
 
 type TxAccount struct {
-	AccountIndex   int    `json:"account_index"`
+	AccountIndex   uint32 `json:"account_index"`
 	AccountName    string `json:"account_name"`
 	AccountBalance string `json:"account_balance"`
 	AccountDelta   string `json:"account_delta"`
 }
 
 type ReqGetTxsByAccountIndexAndTxType struct {
-	Pk     string `form:"account_index"`
-	TxType uint32 `form:"tx_type"`
-	Offset uint32 `form:"offset"`
-	Limit  uint32 `form:"limit"`
+	Pk     string `json:"account_index"`
+	TxType uint32 `json:"tx_type"`
+	Offset uint32 `json:"offset"`
+	Limit  uint32 `json:"limit"`
 }
 
 type RespGetTxsByAccountIndexAndTxType struct {
@@ -237,9 +236,9 @@ type RespGetTxsByAccountIndexAndTxType struct {
 }
 
 type ReqGetTxsByAccountName struct {
-	AccountName string `form:"account_name"`
-	Offset      uint32 `form:"offset"`
-	Limit       uint32 `form:"limit"`
+	AccountName string `json:"account_name"`
+	Offset      uint32 `json:"offset"`
+	Limit       uint32 `json:"limit"`
 }
 
 type RespGetTxsByAccountName struct {
@@ -259,7 +258,7 @@ type RespGetTxsByPubKey struct {
 }
 
 type ReqGetTxByHash struct {
-	TxHash string `form:"tx_hash"`
+	TxHash string `json:"tx_hash"`
 }
 
 type RespGetTxByHash struct {
@@ -279,8 +278,8 @@ type RespSendTx struct {
 }
 
 type ReqGetMempoolTxs struct {
-	Offset uint32 `form:"offset"`
-	Limit  uint32 `form:"limit"`
+	Offset uint32 `json:"offset"`
+	Limit  uint32 `json:"limit"`
 }
 
 type RespGetMempoolTxs struct {
