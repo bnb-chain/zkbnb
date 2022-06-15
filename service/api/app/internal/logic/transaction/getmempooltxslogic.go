@@ -2,9 +2,9 @@ package transaction
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/logic/errcode"
+	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/block"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/mempool"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
@@ -17,6 +17,7 @@ type GetMempoolTxsLogic struct {
 	ctx     context.Context
 	svcCtx  *svc.ServiceContext
 	mempool mempool.Mempool
+	block   block.Block
 }
 
 func NewGetMempoolTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetMempoolTxsLogic {
@@ -25,6 +26,7 @@ func NewGetMempoolTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 		ctx:     ctx,
 		svcCtx:  svcCtx,
 		mempool: mempool.New(svcCtx.Config),
+		block:   block.New(svcCtx.Config),
 	}
 }
 func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (*types.RespGetMempoolTxs, error) {
@@ -60,24 +62,36 @@ func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (*types.
 				AccountName:  txDetail.AccountName,
 			})
 		}
-		txAmount, err := strconv.Atoi(mempoolTx.TxAmount)
 		if err != nil {
 			logx.Error("[GetMempoolTxs] err:%v", err)
 			return &types.RespGetMempoolTxs{}, err
 		}
+		blockInfo, err := l.block.GetBlockByBlockHeight(mempoolTx.L2BlockHeight)
+		if err != nil {
+			logx.Error("[transaction.GetTxsByAccountName] err:%v", err)
+			return nil, err
+		}
 		resp.MempoolTxs = append(resp.MempoolTxs, &types.Tx{
 			TxHash:        mempoolTx.TxHash,
 			TxType:        uint32(mempoolTx.TxType),
-			AssetAId:      uint32(mempoolTx.AssetId),
-			AssetBId:      uint32(mempoolTx.AssetId),
-			TxDetails:     txDetails,
-			TxAmount:      uint32(txAmount),
-			NativeAddress: mempoolTx.NativeAddress,
-			TxStatus:      uint32(mempoolTx.TxType),
 			GasFeeAssetId: uint32(mempoolTx.GasFeeAssetId),
 			GasFee:        mempoolTx.GasFee,
-			CreatedAt:     mempoolTx.CreatedAt.Unix(),
+			NftIndex:      uint32(mempoolTx.NftIndex),
+			PairIndex:     uint32(mempoolTx.PairIndex),
+			AssetId:       uint32(mempoolTx.AssetId),
+			TxAmount:      mempoolTx.TxAmount,
+			NativeAddress: mempoolTx.NativeAddress,
+			TxDetails:     txDetails,
+			TxInfo:        mempoolTx.TxInfo,
+			ExtraInfo:     mempoolTx.ExtraInfo,
 			Memo:          mempoolTx.Memo,
+			AccountIndex:  uint32(mempoolTx.AccountIndex),
+			Nonce:         uint32(mempoolTx.Nonce),
+			ExpiredAt:     uint32(mempoolTx.ExpiredAt),
+			L2BlockHeight: uint32(mempoolTx.L2BlockHeight),
+			Status:        uint32(mempoolTx.Status),
+			CreatedAt:     uint32(mempoolTx.CreatedAt.Unix()),
+			BlockID:       uint32(blockInfo.ID),
 		})
 	}
 	return resp, nil

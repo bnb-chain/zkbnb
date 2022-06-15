@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/account"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/block"
@@ -40,11 +39,6 @@ func NewGetTxsByAccountIndexAndTxTypeLogic(ctx context.Context, svcCtx *svc.Serv
 }
 
 func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *types.ReqGetTxsByAccountIndexAndTxType) (resp *types.RespGetTxsByAccountIndexAndTxType, err error) {
-
-	//err = utils.CheckRequestParam(utils.TypeAccountIndex, reflect.ValueOf(req.AccountIndex))
-	//err = utils.CheckRequestParam(utils.TypeTxType, reflect.ValueOf(req.TxType))
-	//err = utils.CheckRequestParam(utils.TypeLimit, reflect.ValueOf(req.Limit))
-
 	account, err := l.account.GetAccountByPk(req.Pk)
 	if err != nil {
 		logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
@@ -78,10 +72,9 @@ func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *
 				AccountDelta: txDetail.BalanceDelta,
 			})
 		}
-		txAmount, _ := strconv.Atoi(tx.TxAmount)
-		blockInfo, err := l.block.GetBlockByBlockHeight(tx.L2BlockHeight)
+		block, err := l.block.GetBlockByBlockHeight(tx.L2BlockHeight)
 		if err != nil {
-			logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
+			logx.Errorf("[GetBlockByBlockHeight]:%v", err)
 			return nil, err
 		}
 		results = append(results, &types.Tx{
@@ -89,18 +82,22 @@ func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *
 			TxType:        uint32(tx.TxType),
 			GasFeeAssetId: uint32(tx.GasFeeAssetId),
 			GasFee:        tx.GasFee,
-			TxStatus:      uint32(tx.Status),
-			BlockHeight:   uint32(tx.L2BlockHeight),
-			BlockStatus:   uint32(blockInfo.BlockStatus),
-			BlockId:       uint32(blockInfo.ID),
-			//Todo: still need AssetAId, AssetBId?
-			AssetAId:      uint32(tx.AssetId),
-			AssetBId:      uint32(tx.AssetId),
-			TxAmount:      uint32(txAmount),
-			TxDetails:     txDetails,
+			NftIndex:      uint32(tx.NftIndex),
+			PairIndex:     uint32(tx.PairIndex),
+			AssetId:       uint32(tx.AssetId),
+			TxAmount:      tx.TxAmount,
 			NativeAddress: tx.NativeAddress,
-			CreatedAt:     tx.CreatedAt.UnixNano() / 1e6,
+			TxDetails:     txDetails,
+			TxInfo:        tx.TxInfo,
+			ExtraInfo:     tx.ExtraInfo,
 			Memo:          tx.Memo,
+			AccountIndex:  uint32(tx.AccountIndex),
+			Nonce:         uint32(tx.Nonce),
+			ExpiredAt:     uint32(tx.ExpiredAt),
+			L2BlockHeight: uint32(tx.L2BlockHeight),
+			Status:        uint32(tx.Status),
+			CreatedAt:     uint32(tx.CreatedAt.Unix()),
+			BlockID:       uint32(block.ID),
 		})
 	}
 

@@ -198,25 +198,27 @@ type TxDetail struct {
 	AccountDelta   string `json:"accountDelta"`
 }
 
-type Tx struct {	
+type Tx struct {
 	TxHash        string      `json:"tx_hash"`
 	TxType        uint32      `json:"tx_type,range=[1:64]"`
 	GasFeeAssetId uint32      `json:"gas_fee_asset_id"`
-	GasFee        string       `json:"gas_fee"`
-	NftIndex       uint32 	`json:"nft_index"`
-	PairIndex      uint32	`json:"pair_index"`
-	AssetId        uint32	`json:"asset_id"`
-	TxAmount       string	`json:"tx_amount"`
-	NativeAddress  string		`json:"native_adress"`
-	TxDetails     []*TxDetail 	`json:"tx_details"`
-	TxInfo         string      `json:"tx_info"`
-	ExtraInfo      string      `json:"extra_info"`
-	Memo           string      `json:"memo"`
-	AccountIndex   uint32      `json:"account_index"`
-	Nonce          uint32      `json:"nonce"`
-	ExpiredAt      uint32      `json:"expire_at"`
-	L2BlockHeight  uint32      `json:"l2_block_height"`
-	Status         uint32       `json:"status,options=0|1|2"`
+	GasFee        string      `json:"gas_fee"`
+	NftIndex      uint32      `json:"nft_index"`
+	PairIndex     uint32      `json:"pair_index"`
+	AssetId       uint32      `json:"asset_id"`
+	TxAmount      string      `json:"tx_amount"`
+	NativeAddress string      `json:"native_adress"`
+	TxDetails     []*TxDetail `json:"tx_details"`
+	TxInfo        string      `json:"tx_info"`
+	ExtraInfo     string      `json:"extra_info"`
+	Memo          string      `json:"memo"`
+	AccountIndex  uint32      `json:"account_index"`
+	Nonce         uint32      `json:"nonce"`
+	ExpiredAt     uint32      `json:"expire_at"`
+	L2BlockHeight uint32      `json:"l2_block_height"`
+	Status        uint32      `json:"status,options=0|1|2"`
+	CreatedAt     uint32      `json:"created_at"`
+	BlockID       uint32      `json:"block_id"`
 }
 
 type TxAccount struct {

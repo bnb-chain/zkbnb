@@ -3,10 +3,6 @@ package transaction
 import (
 	"context"
 
-	blockModel "github.com/zecrey-labs/zecrey-legend/common/model/block"
-
-	"strconv"
-
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/block"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/mempool"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/tx"
@@ -35,15 +31,6 @@ func NewGetTxByHashLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTx
 	}
 }
 
-func packGetTxByHashResp(tx types.Tx, committedAt int64, verifiedAt int64, executedAt int64) (res *types.RespGetTxByHash) {
-	return &types.RespGetTxByHash{
-		Tx:          tx,
-		CommittedAt: committedAt,
-		VerifiedAt:  verifiedAt,
-		ExecutedAt:  executedAt,
-	}
-}
-
 func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (resp *types.RespGetTxByHash, err error) {
 	txMemppol, err := l.mempool.GetMempoolTxByTxHash(req.TxHash)
 	if err != nil {
@@ -65,33 +52,32 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (resp *types.R
 		logx.Errorf("[GetBlockByBlockHeight]:%v", err)
 		return nil, err
 	}
-	blockStatusInfo := &blockModel.BlockStatusInfo{
-		BlockStatus: block.BlockStatus,
+	tx := types.Tx{
+		TxHash:        txMemppol.TxHash,
+		TxType:        uint32(txMemppol.TxType),
+		GasFeeAssetId: uint32(txMemppol.GasFeeAssetId),
+		GasFee:        txMemppol.GasFee,
+		NftIndex:      uint32(txMemppol.NftIndex),
+		PairIndex:     uint32(txMemppol.PairIndex),
+		AssetId:       uint32(txMemppol.AssetId),
+		TxAmount:      txMemppol.TxAmount,
+		NativeAddress: txMemppol.NativeAddress,
+		TxDetails:     txDetails,
+		TxInfo:        txMemppol.TxInfo,
+		ExtraInfo:     txMemppol.ExtraInfo,
+		Memo:          txMemppol.Memo,
+		AccountIndex:  uint32(txMemppol.AccountIndex),
+		Nonce:         uint32(txMemppol.Nonce),
+		ExpiredAt:     uint32(txMemppol.ExpiredAt),
+		L2BlockHeight: uint32(txMemppol.L2BlockHeight),
+		Status:        uint32(txMemppol.Status),
+		CreatedAt:     uint32(txMemppol.CreatedAt.Unix()),
+		BlockID:       uint32(block.ID),
+	}
+	return &types.RespGetTxByHash{
+		Tx:          tx,
 		CommittedAt: block.CommittedAt,
 		VerifiedAt:  block.VerifiedAt,
-	}
-	txAmount, _ := strconv.Atoi(txMemppol.TxAmount)
-	return packGetTxByHashResp(types.Tx{
-		TxHash :        txMemppol.TxHash,
-		TxType  :        uint32(txMemppol.TxType),
-		GasFeeAssetId  : uint32(txMemppol.GasFeeAssetId),
-		GasFee         :        txMemppol.GasFee,
-		NftIndex       txMemppol.NftIndex,
-		PairIndex      int64
-		AssetId        :       uint32(txMemppol.AssetId),
-		TxAmount       :      uint32(txAmount),
-		NativeAddress  : txMemppol.NativeAddress,
-		MempoolDetails []*MempoolTxDetail `gorm:"foreignkey:TxId"`
-		TxInfo         string
-		ExtraInfo      string
-		Memo:          txMemppol.Memo,
-		AccountIndex   int64
-		Nonce          int64
-		ExpiredAt      int64
-		L2BlockHeight  :   uint32(txMemppol.L2BlockHeight),
-		Status         int `gorm:"index"` // 0: pending tx; 1: committed tx; 2: verified tx;
-
-		// Todo: where is executedAt field from?
-		// -> gavin
-	}, blockStatusInfo.CommittedAt, blockStatusInfo.VerifiedAt, 0), nil
+		ExecutedAt:  0,
+	}, nil
 }
