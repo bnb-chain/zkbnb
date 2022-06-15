@@ -41,7 +41,7 @@ type (
 // GetAccountStatusByAccountName
 type (
 	ReqGetAccountStatusByAccountName {
-		AccountName string `json:"account_name"`
+		AccountName string `form:"account_name"`
 	}
 	RespGetAccountStatusByAccountName {
 		AccountStatus uint32 `json:"account_status"`
@@ -58,7 +58,7 @@ type Asset {
 // GetAccountInfoByAccountName
 type (
 	ReqGetAccountInfoByAccountName {
-		AccountName string `json:"account_name"`
+		AccountName string `form:"account_name"`
 	}
 	RespGetAccountInfoByAccountName {
 		AccountIndex  uint32   `json:"account_index"`
@@ -70,8 +70,8 @@ type (
 // GetBalanceByAssetIdAndAccountName
 type (
 	ReqGetBlanceByAssetIdAndAccountName {
-		AssetId     uint32 `json:"asset_id"`
-		AccountName string `json:"account_name"`
+		AssetId     uint32 `form:"asset_id"`
+		AccountName string `form:"account_name"`
 	}
 	RespGetBlanceInfoByAssetIdAndAccountName {
 		Balance string `json:"balance_enc"`
@@ -81,7 +81,7 @@ type (
 // GetAssetsByAccountName
 type (
 	ReqGetAssetsByAccountName {
-		AccountName string `json:"account_name"`
+		AccountName string `form:"account_name"`
 	}
 	RespGetAssetsByAccountName {
 		Assets []*Asset `json:"assets"`
@@ -91,7 +91,7 @@ type (
 // GetAccountLiquidityPairsByAccountIndex
 type (
 	ReqGetAccountLiquidityPairsByAccountIndex {
-		AccountIndex uint32 `json:"account_index"`
+		AccountIndex uint32 `form:"account_index"`
 	}
 	AccountLiquidityPairs {
 		PairIndex   uint32 `json:"pair_index"`
@@ -151,10 +151,10 @@ type (
 // GetCurrencyPriceBySymbol
 type (
 	ReqGetCurrencyPriceBySymbol {
-		Symbol string `json:"symbol"`
+		Symbol string `form:"symbol"`
 	}
 	RespGetCurrencyPriceBySymbol {
-		AssetId uint32     `json:"assetId"`
+		AssetId uint32  `json:"assetId"`
 		Price   float64 `json:"price"`
 	}
 )
@@ -164,7 +164,7 @@ type (
 	ReqGetCurrencyPrices struct{}
 	DataCurrencyPrices   {
 		Pair    string  `json:"pair"`
-		AssetId uint32     `json:"assetId"`
+		AssetId uint32  `json:"assetId"`
 		Price   float64 `json:"price"`
 	}
 	RespGetCurrencyPrices {
@@ -175,7 +175,7 @@ type (
 // GetGasFee
 type (
 	ReqGetGasFee {
-		AssetId uint32 `json:"asset_id"`
+		AssetId uint32 `form:"asset_id"`
 	}
 	RespGetGasFee {
 		GasFee float64 `json:"gas_fee"`
@@ -185,9 +185,9 @@ type (
 // GetWithdrawGasFee
 type (
 	ReqGetWithdrawGasFee {
-		AssetId         uint32 `json:"asset_id"`
-		WithdrawAssetId uint32 `json:"withdraw_asset_id"`
-		WithdrawAmount  uint64 `json:"withdraw_amount"`
+		AssetId         uint32 `form:"asset_id"`
+		WithdrawAssetId uint32 `form:"withdraw_asset_id"`
+		WithdrawAmount  uint64 `form:"withdraw_amount"`
 	}
 	RespGetWithdrawGasFee {
 		WithdrawGasFee float64 `json:"withdraw_gas_fee"`
@@ -218,10 +218,10 @@ service appService-api{
 // getSwapAmount
 type (
 	ReqGetSwapAmount {
-		PairIndex   uint32 `json:"pair_index"`
-		AssetId     uint32 `json:"asset_id"`
-		AssetAmount string `json:"asset_amount"`
-		IsFrom      bool   `json:"is_from"`
+		PairIndex   uint32 `form:"pair_index"`
+		AssetId     uint32 `form:"asset_id"`
+		AssetAmount string `form:"asset_amount"`
+		IsFrom      bool   `form:"is_from"`
 	}
 	RespGetSwapAmount {
 		ResAssetAmount string `json:"res_asset_amount"`
@@ -249,8 +249,8 @@ type (
 // GetLPValue
 type (
 	ReqGetLPValue {
-		PairIndex uint32 `json:"pair_index"`
-		LpAmount  string `json:"lp_amount"`
+		PairIndex uint32 `form:"pair_index"`
+		LpAmount  string `form:"lp_amount"`
 	}
 	RespGetLPValue {
 		AssetAId     uint32 `json:"asset_a_id"`
@@ -265,7 +265,7 @@ type (
 // getPairInfo
 type (
 	ReqGetPairInfo {
-		PairIndex uint32 `json:"pair_index"`
+		PairIndex uint32 `form:"pair_index"`
 	}
 	RespGetPairInfo {
 		AssetAId      uint32 `json:"asset_a_id"`
@@ -295,8 +295,8 @@ service appService-api{
 
 /* ======================= transaction =======================*/
 type TxDetail {
-	AssetId        uint32    `json:"assetId"`
-	AssetType      uint32    `json:"assetType"`
+	AssetId        uint32 `json:"assetId"`
+	AssetType      uint32 `json:"assetType"`
 	AccountIndex   int32  `json:"accountIndex"`
 	AccountName    string `json:"accountName"`
 	AccountBalance string `json:"accountBalance"`
@@ -308,13 +308,13 @@ type Tx {
 	TxType        uint32      `json:"tx_type,range=[1:64]"`
 	GasFee        int64       `json:"gas_fee"`
 	GasFeeAssetId uint32      `json:"gas_fee_asset_id"`
-	TxStatus      uint32         `json:"tx_status,options=0|1|2"`
-	BlockHeight   uint32         `json:"block_height"`
-	BlockStatus   uint32         `json:"block_status"`
-	BlockId       uint32         `json:"block_id"`
-	AssetAId      uint32         `json:"asset_a_id"`
-	AssetBId      uint32         `json:"asset_b_id"`
-	TxAmount      uint32         `json:"tx_amount"`
+	TxStatus      uint32      `json:"tx_status,options=0|1|2"`
+	BlockHeight   uint32      `json:"block_height"`
+	BlockStatus   uint32      `json:"block_status"`
+	BlockId       uint32      `json:"block_id"`
+	AssetAId      uint32      `json:"asset_a_id"`
+	AssetBId      uint32      `json:"asset_b_id"`
+	TxAmount      uint32      `json:"tx_amount"`
 	TxDetails     []*TxDetail `json:"tx_detail"`
 	NativeAddress string      `json:"native_address"`
 	CreatedAt     int64       `json:"created_at"`
@@ -322,7 +322,7 @@ type Tx {
 }
 
 type TxAccount {
-	AccountIndex   uint32    `json:"account_index"`
+	AccountIndex   uint32 `json:"account_index"`
 	AccountName    string `json:"account_name"`
 	AccountBalance string `json:"account_balance"`
 	AccountDelta   string `json:"account_delta"`
@@ -331,10 +331,10 @@ type TxAccount {
 // getTxsByAccountIndexAndTxType
 type (
 	ReqGetTxsByAccountIndexAndTxType {
-		Pk     string `json:"account_index"`
-		TxType uint32 `json:"tx_type"`
-		Offset uint32 `json:"offset"`
-		Limit  uint32 `json:"limit"`
+		Pk     string `form:"account_index"`
+		TxType uint32 `form:"tx_type"`
+		Offset uint32 `form:"offset"`
+		Limit  uint32 `form:"limit"`
 	}
 	RespGetTxsByAccountIndexAndTxType {
 		Total uint32 `json:"total"`
@@ -345,9 +345,9 @@ type (
 // GetTxsByAccountName
 type (
 	ReqGetTxsByAccountName {
-		AccountName string `json:"account_name"`
-		Offset      uint32 `json:"offset"`
-		Limit       uint32 `json:"limit"`
+		AccountName string `form:"account_name"`
+		Offset      uint32 `form:"offset"`
+		Limit       uint32 `form:"limit"`
 	}
 	RespGetTxsByAccountName {
 		Total uint32 `json:"total"`
@@ -371,7 +371,7 @@ type (
 // GetTxByHash
 type (
 	ReqGetTxByHash {
-		TxHash string `json:"tx_hash"`
+		TxHash string `form:"tx_hash"`
 	}
 	RespGetTxByHash {
 		Tx          Tx    `json:"result"`
@@ -395,8 +395,8 @@ type (
 // GetMempoolTxs
 type (
 	ReqGetMempoolTxs {
-		Offset uint32 `json:"offset"`
-		Limit  uint32 `json:"limit"`
+		Offset uint32 `form:"offset"`
+		Limit  uint32 `form:"limit"`
 	}
 	RespGetMempoolTxs {
 		Total      uint32 `json:"total"`
