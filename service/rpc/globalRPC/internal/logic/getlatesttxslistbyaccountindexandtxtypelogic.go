@@ -38,37 +38,35 @@ func NewGetLatestTxsListByAccountIndexAndTxTypeLogic(ctx context.Context, svcCtx
 }
 
 func (l *GetLatestTxsListByAccountIndexAndTxTypeLogic) GetLatestTxsListByAccountIndexAndTxType(in *globalRPCProto.ReqGetLatestTxsListByAccountIndexAndTxType) (*globalRPCProto.RespGetLatestTxsListByAccountIndexAndTxType, error) {
-
-	// todo: add your logic here and delete this line
-
 	if utils.CheckAccountIndex(in.AccountIndex) {
-		logx.Error("[CheckAccountIndex] param:%v", in.AccountIndex)
+		logx.Errorf("[CheckAccountIndex] param:%v", in.AccountIndex)
 		return nil, errcode.ErrInvalidParam
 	}
 	if utils.CheckTxType(in.TxType) {
-		logx.Error("[CheckTxType] param:%v", in.TxType)
+		logx.Errorf("[CheckTxType] param:%v", in.TxType)
 		return nil, errcode.ErrInvalidParam
 	}
 	if utils.CheckTypeLimit(in.Limit) {
-		logx.Error("[CheckTypeLimit] param:%v", in.Limit)
+		logx.Errorf("[CheckTypeLimit] param:%v", in.Limit)
 		return nil, errcode.ErrInvalidParam
 	}
 	if utils.CheckTypeOffset(in.Offset) {
-		logx.Error("[CheckTypeOffset] param:%v", in.Offset)
+		logx.Errorf("[CheckTypeOffset] param:%v", in.Offset)
 		return nil, errcode.ErrInvalidParam
 	}
 	txTypeArray, err := GetTxTypeArray(uint(in.TxType))
 	if err != nil {
-		logx.Error("[GetTxTypeArray] err:%v", err)
+		logx.Errorf("[GetTxTypeArray] err:%v", err)
 		return nil, err
 	}
 	mempoolTxCount, err := l.mempool.GetMempoolTxsTotalCountByAccountIndexAndTxTypeArray(int64(in.AccountIndex), txTypeArray)
 	if err != nil {
-		logx.Error("[GetMempoolTxsTotalCountByAccountIndexAndTxTypeArray] err:%v", err)
+		logx.Errorf("[GetMempoolTxsTotalCountByAccountIndexAndTxTypeArray] err:%v", err)
 		return nil, err
 	}
 	resp := &globalRPCProto.RespGetLatestTxsListByAccountIndexAndTxType{
-		Total: uint32(mempoolTxCount),
+		Total:   uint32(mempoolTxCount),
+		TxsList: make([]*globalRPCProto.TxInfo, 0),
 	}
 	var offsetMempool int64
 	offsetMempool = int64(in.Offset)
@@ -77,11 +75,10 @@ func (l *GetLatestTxsListByAccountIndexAndTxTypeLogic) GetLatestTxsListByAccount
 	}
 	mempoolTxs, err := l.mempool.GetMempoolTxsListByAccountIndexAndTxTypeArray(int64(in.AccountIndex),
 		txTypeArray, int64(in.Limit), offsetMempool)
-	if err != nil && err != mempool.ErrNotFound {
-		logx.Error("[GetMempoolTxsListByAccountIndexAndTxTypeArray] err:%v", err)
+	if err != nil && err != mempool.ErrNotExistInSql {
+		logx.Errorf("[GetMempoolTxsListByAccountIndexAndTxTypeArray] err:%v", err)
 		return nil, err
 	}
-
 	for _, tx := range mempoolTxs {
 		var details []*globalRPCProto.TxDetailInfo
 		for _, d := range tx.MempoolDetails {

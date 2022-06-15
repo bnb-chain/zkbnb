@@ -229,7 +229,7 @@ type TxAccount struct {
 }
 
 type ReqGetTxsByAccountIndexAndTxType struct {
-	Pk     string `form:"account_index"`
+	AccountIndex   uint32 `form:"account_index"`
 	TxType uint32 `form:"tx_type"`
 	Offset uint32 `form:"offset"`
 	Limit  uint32 `form:"limit"`

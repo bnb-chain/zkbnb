@@ -36,16 +36,16 @@ func NewGetLatestAccountLpLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 
 func (l *GetLatestAccountLpLogic) GetLatestAccountLp(in *globalRPCProto.ReqGetLatestAccountLp) (*globalRPCProto.RespGetLatestAccountLp, error) {
 	if utils.CheckAccountIndex(in.AccountIndex) {
-		logx.Error("[CheckAccountIndex] param:%v", in.AccountIndex)
+		logx.Errorf("[CheckAccountIndex] param:%v", in.AccountIndex)
 		return nil, errcode.ErrInvalidParam
 	}
 	if utils.CheckPairIndex(in.PairIndex) {
-		logx.Error("[CheckPairIndex] param:%v", in.PairIndex)
+		logx.Errorf("[CheckPairIndex] param:%v", in.PairIndex)
 		return nil, errcode.ErrInvalidParam
 	}
 	accountInfo, err := l.commglobalmap.GetLatestAccountInfo(int64(in.AccountIndex))
 	if err != nil {
-		logx.Error("[GetLatestAccountInfo] err:%v", err)
+		logx.Errorf("[GetLatestAccountInfo] err:%v", err)
 		return nil, err
 	}
 	return &globalRPCProto.RespGetLatestAccountLp{

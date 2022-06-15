@@ -28,15 +28,14 @@ func NewGetLatestPairInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 	}
 }
 
-//  Liquidity
 func (l *GetLatestPairInfoLogic) GetLatestPairInfo(in *globalRPCProto.ReqGetLatestPairInfo) (*globalRPCProto.RespGetLatestPairInfo, error) {
 	if utils.CheckPairIndex(in.PairIndex) {
-		logx.Error("[CheckPairIndex] param:%v", in.PairIndex)
+		logx.Errorf("[CheckPairIndex] param:%v", in.PairIndex)
 		return nil, errcode.ErrInvalidParam
 	}
 	liquidity, err := l.commglobalmap.GetLatestLiquidityInfoForRead(int64(in.PairIndex))
 	if err != nil {
-		logx.Error("[GetLatestLiquidityInfoForRead] err:%v", err)
+		logx.Errorf("[GetLatestLiquidityInfoForRead] err:%v", err)
 		return nil, err
 	}
 	return &globalRPCProto.RespGetLatestPairInfo{

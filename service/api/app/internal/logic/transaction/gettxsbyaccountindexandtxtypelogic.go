@@ -3,7 +3,6 @@ package transaction
 import (
 	"context"
 
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/account"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/block"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/globalrpc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/mempool"
@@ -19,9 +18,8 @@ type GetTxsByAccountIndexAndTxTypeLogic struct {
 	ctx       context.Context
 	svcCtx    *svc.ServiceContext
 	tx        tx.Tx
-	globalRpc globalrpc.GlobalRPC
+	globalRPC globalrpc.GlobalRPC
 	block     block.Block
-	account   account.AccountModel
 	mempool   mempool.Mempool
 }
 
@@ -31,35 +29,28 @@ func NewGetTxsByAccountIndexAndTxTypeLogic(ctx context.Context, svcCtx *svc.Serv
 		ctx:       ctx,
 		svcCtx:    svcCtx,
 		tx:        tx.New(svcCtx.Config),
-		globalRpc: globalrpc.New(svcCtx.Config, ctx),
+		globalRPC: globalrpc.New(svcCtx.Config, ctx),
 		block:     block.New(svcCtx.Config),
-		account:   account.New(svcCtx.Config),
 		mempool:   mempool.New(svcCtx.Config),
 	}
 }
 
 func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *types.ReqGetTxsByAccountIndexAndTxType) (resp *types.RespGetTxsByAccountIndexAndTxType, err error) {
-	account, err := l.account.GetAccountByPk(req.Pk)
+	txCount, err := l.tx.GetTxsTotalCountByAccountIndex(int64(req.AccountIndex))
 	if err != nil {
-		logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
-		return &types.RespGetTxsByAccountIndexAndTxType{}, err
+		logx.Error("[GetTxsTotalCountByAccountIndex] err:%v", err)
+		return nil, err
 	}
-	txCount, err := l.tx.GetTxsTotalCountByAccountIndex(account.AccountIndex)
+	mempoolTxCount, err := l.mempool.GetMempoolTxsTotalCountByAccountIndex(int64(req.AccountIndex))
 	if err != nil {
-		logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
-		return &types.RespGetTxsByAccountIndexAndTxType{}, err
+		logx.Error("[GetMempoolTxsTotalCountByAccountIndex] err:%v", err)
+		return nil, err
 	}
-	mempoolTxCount, err := l.mempool.GetMempoolTxsTotalCountByAccountIndex(account.AccountIndex)
+	mempoolTxs, err := l.globalRPC.GetLatestTxsListByAccountIndexAndTxType(uint64(req.AccountIndex), uint64(req.TxType), uint64(req.Limit), uint64(req.Offset))
 	if err != nil {
-		logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
-		return &types.RespGetTxsByAccountIndexAndTxType{}, err
+		logx.Error("[GetLatestTxsListByAccountIndexAndTxType] err:%v", err)
+		return nil, err
 	}
-	mempoolTxs, err := l.globalRpc.GetLatestTxsListByAccountIndexAndTxType(uint64(account.AccountIndex), uint64(req.TxType), uint64(req.Limit), uint64(req.Offset))
-	if err != nil {
-		logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
-		return &types.RespGetTxsByAccountIndexAndTxType{}, err
-	}
-
 	results := make([]*types.Tx, 0)
 	for _, tx := range mempoolTxs {
 		txDetails := make([]*types.TxDetail, 0)
@@ -100,6 +91,5 @@ func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *
 			BlockID:       uint32(block.ID),
 		})
 	}
-
 	return &types.RespGetTxsByAccountIndexAndTxType{Total: uint32(txCount + mempoolTxCount), Txs: results}, nil
 }

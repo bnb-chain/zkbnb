@@ -32,21 +32,21 @@ func NewGetLpValueLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetLpV
 
 func (l *GetLpValueLogic) GetLpValue(in *globalRPCProto.ReqGetLpValue) (*globalRPCProto.RespGetLpValue, error) {
 	if utils.CheckPairIndex(in.PairIndex) {
-		logx.Error("[CheckPairIndex] param:%v", in.PairIndex)
+		logx.Errorf("[CheckPairIndex] param:%v", in.PairIndex)
 		return nil, errcode.ErrInvalidParam
 	}
 	if utils.CheckAmount(in.LPAmount) {
-		logx.Error("[CheckAmount] param:%v", in.LPAmount)
+		logx.Errorf("[CheckAmount] param:%v", in.LPAmount)
 		return nil, errcode.ErrInvalidParam
 	}
 	liquidity, err := l.commglobalmap.GetLatestLiquidityInfoForRead(int64(in.PairIndex))
 	if err != nil {
-		logx.Error("[GetLatestLiquidityInfoForRead] err:%v", err)
+		logx.Errorf("[GetLatestLiquidityInfoForRead] err:%v", err)
 		return nil, err
 	}
 	amount, isTure := new(big.Int).SetString(in.LPAmount, 10)
 	if !isTure {
-		logx.Error("[SetString] err:%v", in.LPAmount)
+		logx.Errorf("[SetString] err:%v", in.LPAmount)
 		return nil, errcode.ErrInvalidParam
 	}
 	assetAAmount, assetBAmount := util.ComputeRemoveLiquidityAmount(liquidity, amount)

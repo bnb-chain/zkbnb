@@ -5,7 +5,6 @@ import (
 
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/block"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/mempool"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/tx"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -17,7 +16,6 @@ type GetTxByHashLogic struct {
 	svcCtx  *svc.ServiceContext
 	mempool mempool.Mempool
 	block   block.Block
-	tx      tx.Tx
 }
 
 func NewGetTxByHashLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTxByHashLogic {
@@ -27,7 +25,6 @@ func NewGetTxByHashLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTx
 		svcCtx:  svcCtx,
 		mempool: mempool.New(svcCtx.Config),
 		block:   block.New(svcCtx.Config),
-		tx:      tx.New(svcCtx.Config),
 	}
 }
 

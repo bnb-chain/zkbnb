@@ -38,15 +38,17 @@ func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (*types.
 		logx.Errorf("[CheckTypeOffset] param:%v", req.Offset)
 		return nil, errcode.ErrInvalidParam
 	}
-	resp := &types.RespGetMempoolTxs{
-		MempoolTxs: make([]*types.Tx, 0),
-	}
-	var err error
-	resp.Total, err = l.mempool.GetMempoolTxsTotalCount()
+	count, err := l.mempool.GetMempoolTxsTotalCount()
 	if err != nil {
 		logx.Errorf("[GetMempoolTxsTotalCount] err:%v", err)
 		return nil, err
 	}
+	resp := &types.RespGetMempoolTxs{
+		MempoolTxs: make([]*types.Tx, 0),
+		Total:      uint32(count),
+	}
+	logx.Errorf("[GetMempoolTxsTotalCount] count:%v", count)
+
 	mempoolTxs, err := l.mempool.GetMempoolTxs(int64(req.Limit), int64(req.Offset))
 	if err != nil {
 		logx.Errorf("[GetMempoolTxs] err:%v", err)
