@@ -51,10 +51,6 @@ func main() {
 			bscCli,
 			c.ChainConfig.BSCPendingBlocksCount,
 			ctx.Mempool,
-			ctx.AccountModel,
-			ctx.AccountHistoryModel,
-			ctx.NftModel,
-			ctx.NftHistoryModel,
 			ctx.Block,
 			ctx.L1TxSender,
 		)

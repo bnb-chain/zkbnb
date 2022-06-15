@@ -34,10 +34,6 @@ func MonitorL2BlockEvents(
 	bscCli *_rpc.ProviderClient,
 	bscPendingBlocksCount uint64,
 	mempoolModel MempoolModel,
-	accountModel AccountModel,
-	accountHistoryModel AccountHistoryModel,
-	nftModel L2NftModel,
-	nftHistoryModel L2NftHistoryModel,
 	blockModel BlockModel,
 	l1TxSenderModel L1TxSenderModel,
 ) (err error) {
