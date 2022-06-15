@@ -45,7 +45,7 @@ func (m *l2asset) GetL2AssetsList() (res []*table.AssetInfo, err error) {
 	Description: get l2 asset info by l2 symbol
 */
 func (m *l2asset) GetL2AssetInfoBySymbol(symbol string) (res *table.AssetInfo, err error) {
-	dbTx := m.db.Table(m.table).Where("l2_symbol = ?", symbol).Find(&res)
+	dbTx := m.db.Table(m.table).Where("asset_symbol = ?", symbol).Find(&res)
 	if dbTx.Error != nil {
 		return nil, dbTx.Error
 	}

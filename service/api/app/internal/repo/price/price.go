@@ -61,7 +61,7 @@ func UpdateCurrencyPriceBySymbol(l2Symbol string, cache multcache.MultCache) err
 	}
 	for _, latestQuote := range latestQuotes {
 		key := fmt.Sprintf("%s%s", cachePriceSymbolPrefix, latestQuote.Symbol)
-		fmt.Println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX======>", key, "   ", latestQuote.Quote["USD"].Price)
+		logx.Info(key, "   ", latestQuote.Quote["USD"].Price)
 		if err := cache.Set(key, latestQuote.Quote["USD"].Price); err != nil {
 			return ErrSetCache.RefineError(err.Error())
 		}
