@@ -41,12 +41,12 @@ func NewGetLatestAssetInfoByAccountIndexAndAssetIdLogic(ctx context.Context, svc
 
 func (l *GetLatestAssetInfoByAccountIndexAndAssetIdLogic) GetLatestAssetInfoByAccountIndexAndAssetId(in *globalRPCProto.ReqGetLatestAssetInfoByAccountIndexAndAssetId) (*globalRPCProto.RespGetLatestAssetInfoByAccountIndexAndAssetId, error) {
 	if utils.CheckAccountIndex(in.AccountIndex) {
-		logx.Error("[CheckAccountIndex] param:%v", in.AccountIndex)
+		logx.Errorf("[CheckAccountIndex] param:%v", in.AccountIndex)
 		return nil, errcode.ErrInvalidParam
 	}
 	accountInfo, err := l.commglobalmap.GetLatestAccountInfo(int64(in.AccountIndex))
 	if err != nil {
-		logx.Error("[GetLatestAccountInfo] err:%v", err)
+		logx.Errorf("[GetLatestAccountInfo] err:%v", err)
 		return nil, err
 	}
 	return &globalRPCProto.RespGetLatestAssetInfoByAccountIndexAndAssetId{

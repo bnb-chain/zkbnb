@@ -38,12 +38,12 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: account.GetAccountStatusByAccountNameHandler(serverCtx),
 			},
 			{
-				Method:  http.MethodPost,
+				Method:  http.MethodGet,
 				Path:    "/api/v1/account/getAccountInfoByAccountName",
 				Handler: account.GetAccountInfoByAccountNameHandler(serverCtx),
 			},
 			{
-				Method:  http.MethodPost,
+				Method:  http.MethodGet,
 				Path:    "/api/v1/account/getBalanceByAssetIdAndAccountName",
 				Handler: account.GetBalanceByAssetIdAndAccountNameHandler(serverCtx),
 			},

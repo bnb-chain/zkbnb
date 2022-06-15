@@ -141,12 +141,13 @@ func (m *mempool) GetMempoolTxsListByAccountIndexAndTxTypeArray(accountIndex int
 	)
 	var mempoolTxDetails []*table.MempoolTxDetail
 	dbTx := m.db.Table(mempoolDetailTable).Select("tx_id").Where("account_index = ?", accountIndex).Find(&mempoolTxDetails).Group("tx_id").Find(&mempoolIds)
+	if dbTx.RowsAffected == 0 {
+		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndexAndTxType] Get MempoolIds Error")
+		return nil, ErrNotExistInSql
+	}
 	if dbTx.Error != nil {
 		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndexAndTxType] %s", dbTx.Error)
 		return nil, dbTx.Error
-	} else if dbTx.RowsAffected == 0 {
-		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndexAndTxType] Get MempoolIds Error")
-		return nil, ErrNotFound
 	}
 	dbTx = m.db.Table(m.table).Where("status = ? and tx_type in (?)", PendingTxStatus, txTypeArray).Order("created_at desc").Offset(int(offset)).Limit(int(limit)).Find(&mempoolTxs, mempoolIds)
 	if dbTx.Error != nil {
@@ -154,7 +155,7 @@ func (m *mempool) GetMempoolTxsListByAccountIndexAndTxTypeArray(accountIndex int
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndexAndTxType] Get MempoolTxs Error")
-		return nil, ErrNotFound
+		return nil, ErrNotExistInSql
 	}
 	// TODO: cache operation
 	for _, mempoolTx := range mempoolTxs {

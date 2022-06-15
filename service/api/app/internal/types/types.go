@@ -26,7 +26,7 @@ type ReqGetAccountStatusByAccountName struct {
 type RespGetAccountStatusByAccountName struct {
 	AccountStatus uint32 `json:"account_status"`
 	AccountIndex  uint32 `json:"account_index"`
-	AccountPk     string `form:"account_pk"`
+	AccountPk     string `json:"account_pk"`
 }
 
 type Asset struct {
@@ -35,7 +35,7 @@ type Asset struct {
 }
 
 type ReqGetAccountInfoByAccountName struct {
-	AccountName string `json:"account_name"`
+	AccountName string `form:"account_name"`
 }
 
 type RespGetAccountInfoByAccountName struct {
@@ -46,7 +46,7 @@ type RespGetAccountInfoByAccountName struct {
 
 type ReqGetBlanceByAssetIdAndAccountName struct {
 	AssetId     uint32 `form:"asset_id"`
-	AccountName string `json:"account_name"`
+	AccountName string `form:"account_name"`
 }
 
 type RespGetBlanceInfoByAssetIdAndAccountName struct {
@@ -99,7 +99,7 @@ type ReqGetCurrencyPriceBySymbol struct {
 }
 
 type RespGetCurrencyPriceBySymbol struct {
-	AssetId int     `json:"assetId"`
+	AssetId uint32  `json:"assetId"`
 	Price   float64 `json:"price"`
 }
 
@@ -108,7 +108,7 @@ type ReqGetCurrencyPrices struct {
 
 type DataCurrencyPrices struct {
 	Pair    string  `json:"pair"`
-	AssetId int     `json:"assetId"`
+	AssetId uint32  `json:"assetId"`
 	Price   float64 `json:"price"`
 }
 
@@ -190,8 +190,8 @@ type RespGetPairInfo struct {
 }
 
 type TxDetail struct {
-	AssetId        int    `json:"assetId"`
-	AssetType      int    `json:"assetType"`
+	AssetId        uint32 `json:"assetId"`
+	AssetType      uint32 `json:"assetType"`
 	AccountIndex   int32  `json:"accountIndex"`
 	AccountName    string `json:"accountName"`
 	AccountBalance string `json:"accountBalance"`
@@ -201,31 +201,35 @@ type TxDetail struct {
 type Tx struct {
 	TxHash        string      `json:"tx_hash"`
 	TxType        uint32      `json:"tx_type,range=[1:64]"`
-	GasFee        int64       `json:"gas_fee"`
 	GasFeeAssetId uint32      `json:"gas_fee_asset_id"`
-	TxStatus      int         `json:"tx_status,options=0|1|2"`
-	BlockHeight   int         `json:"block_height"`
-	BlockStatus   int         `json:"block_status"`
-	BlockId       int         `json:"block_id"`
-	AssetAId      int         `json:"asset_a_id"`
-	AssetBId      int         `json:"asset_b_id"`
-	TxAmount      int         `json:"tx_amount"`
-	TxDetails     []*TxDetail `json:"tx_detail"`
-	NativeAddress string      `json:"native_address"`
-	ChainId       int         `json:"chain_id"`
-	CreatedAt     int64       `json:"created_at"`
+	GasFee        string      `json:"gas_fee"`
+	NftIndex      uint32      `json:"nft_index"`
+	PairIndex     uint32      `json:"pair_index"`
+	AssetId       uint32      `json:"asset_id"`
+	TxAmount      string      `json:"tx_amount"`
+	NativeAddress string      `json:"native_adress"`
+	TxDetails     []*TxDetail `json:"tx_details"`
+	TxInfo        string      `json:"tx_info"`
+	ExtraInfo     string      `json:"extra_info"`
 	Memo          string      `json:"memo"`
+	AccountIndex  uint32      `json:"account_index"`
+	Nonce         uint32      `json:"nonce"`
+	ExpiredAt     uint32      `json:"expire_at"`
+	L2BlockHeight uint32      `json:"l2_block_height"`
+	Status        uint32      `json:"status,options=0|1|2"`
+	CreatedAt     uint32      `json:"created_at"`
+	BlockID       uint32      `json:"block_id"`
 }
 
 type TxAccount struct {
-	AccountIndex   int    `json:"account_index"`
+	AccountIndex   uint32 `json:"account_index"`
 	AccountName    string `json:"account_name"`
 	AccountBalance string `json:"account_balance"`
 	AccountDelta   string `json:"account_delta"`
 }
 
 type ReqGetTxsByAccountIndexAndTxType struct {
-	Pk     string `form:"account_index"`
+	AccountIndex   uint32 `form:"account_index"`
 	TxType uint32 `form:"tx_type"`
 	Offset uint32 `form:"offset"`
 	Limit  uint32 `form:"limit"`

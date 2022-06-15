@@ -16,3 +16,8 @@ const (
 	PendingTxStatus = iota
 	HandledTxStatus
 )
+
+var (
+	ErrNotExistInSql = zerror.New(40000, "not exist in sql ")
+	ErrIllegalParam  = zerror.New(40001, "illegal param ")
+)

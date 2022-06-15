@@ -30,13 +30,13 @@ func NewGetWithdrawGasFeeLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 	}
 }
 
-func (l *GetWithdrawGasFeeLogic) GetWithdrawGasFee(req *types.ReqGetWithdrawGasFee) (resp *types.RespGetWithdrawGasFee, err error) {
+func (l *GetWithdrawGasFeeLogic) GetWithdrawGasFee(req *types.ReqGetWithdrawGasFee) (*types.RespGetWithdrawGasFee, error) {
 	l2Asset, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(uint32(req.AssetId))
 	if err != nil {
 		logx.Error("[GetSimpleL2AssetInfoByAssetId] err:%v", err)
 		return nil, err
 	}
-	withdrawL2Asset, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(uint32(req.WithdrawAssetId))
+	withdrawL2Asset, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(req.WithdrawAssetId)
 	if err != nil {
 		logx.Error("[GetSimpleL2AssetInfoByAssetId] err:%v", err)
 		return nil, err
@@ -52,6 +52,7 @@ func (l *GetWithdrawGasFeeLogic) GetWithdrawGasFee(req *types.ReqGetWithdrawGasF
 		return nil, err
 	}
 	// TODO: integer overflow
+	resp := &types.RespGetWithdrawGasFee{}
 	resp.WithdrawGasFee = price * float64(req.WithdrawAmount) * math.Pow(10, -float64(l2Asset.Decimals)) * 0.001 / withdrawPrice
 	minNum := math.Pow(10, -float64(l2Asset.Decimals))
 	resp.WithdrawGasFee = truncate(resp.WithdrawGasFee, int64(l2Asset.Decimals))

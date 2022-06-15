@@ -84,7 +84,6 @@ func (c *globalRPCClient) GetSwapAmount(ctx context.Context, in *ReqGetSwapAmoun
 	}
 	return out, nil
 }
-
 func (c *globalRPCClient) GetLpValue(ctx context.Context, in *ReqGetLpValue, opts ...grpc.CallOption) (*RespGetLpValue, error) {
 	out := new(RespGetLpValue)
 	err := c.cc.Invoke(ctx, "/globalRPCProto.globalRPC/getLpValue", in, out, opts...)

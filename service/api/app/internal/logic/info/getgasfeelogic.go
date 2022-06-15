@@ -35,34 +35,35 @@ func NewGetGasFeeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetGasF
 }
 
 // GetGasFee 需求文档
-func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (resp *types.RespGetGasFee, err error) {
-	l2Asset, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(uint32(req.AssetId))
+func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.RespGetGasFee, error) {
+	l2Asset, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(req.AssetId)
 	if err != nil {
-		logx.Error("[GetSimpleL2AssetInfoByAssetId] err:%v", err)
+		logx.Errorf("[GetSimpleL2AssetInfoByAssetId] err:%v", err)
 		return nil, err
 	}
 	price, err := l.price.GetCurrencyPrice(l2Asset.AssetSymbol)
 	if err != nil {
-		logx.Error("[GetCurrencyPrice] err:%v", err)
+		logx.Errorf("[GetCurrencyPrice] err:%v", err)
 		return nil, err
 	}
-	sysGasFee, err := l.sysconf.GetSysconfigByName("Sys_Gas_Fee")
+	sysGasFee, err := l.sysconf.GetSysconfigByName("SysGasFee")
 	if err != nil {
-		logx.Error("[GetSysconfigByName] err:%v", err)
+		logx.Errorf("[GetSysconfigByName] err:%v", err)
 		return nil, err
 	}
 	sysGasFeeInt, err := strconv.ParseFloat(sysGasFee.Value, 64)
 	if err != nil {
-		logx.Error("[strconv.ParseFloat] err:%v", err)
+		logx.Errorf("[strconv.ParseFloat] err:%v", err)
 		return nil, err
 	}
 
 	ethPrice, err := l.price.GetCurrencyPrice("ETH")
 	if err != nil {
-		logx.Error("[GetCurrencyPrice] err:%v", err)
+		logx.Errorf("[GetCurrencyPrice] err:%v", err)
 		return nil, err
 	}
 	// TODO: integer overflow
+	resp := &types.RespGetGasFee{}
 	resp.GasFee = ethPrice * sysGasFeeInt * math.Pow(10, -5) / price
 	minNum := math.Pow(10, -float64(l2Asset.Decimals))
 	resp.GasFee = truncate(resp.GasFee, int64(l2Asset.Decimals))

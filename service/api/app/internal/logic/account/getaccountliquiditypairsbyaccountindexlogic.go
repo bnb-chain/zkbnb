@@ -4,9 +4,7 @@ import (
 	"context"
 
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/logic/errcode"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/globalrpc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/liquidity"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/mempool"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
 	"github.com/zecrey-labs/zecrey-legend/utils"
@@ -18,9 +16,7 @@ type GetAccountLiquidityPairsByAccountIndexLogic struct {
 	logx.Logger
 	ctx       context.Context
 	svcCtx    *svc.ServiceContext
-	globalRPC globalrpc.GlobalRPC
 	liquidity liquidity.Liquidity
-	mempool   mempool.Mempool
 }
 
 func NewGetAccountLiquidityPairsByAccountIndexLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAccountLiquidityPairsByAccountIndexLogic {
@@ -28,9 +24,7 @@ func NewGetAccountLiquidityPairsByAccountIndexLogic(ctx context.Context, svcCtx 
 		Logger:    logx.WithContext(ctx),
 		ctx:       ctx,
 		svcCtx:    svcCtx,
-		globalRPC: globalrpc.New(svcCtx.Config, ctx),
 		liquidity: liquidity.New(svcCtx.Config),
-		mempool:   mempool.New(svcCtx.Config),
 	}
 }
 
@@ -41,7 +35,11 @@ func (l *GetAccountLiquidityPairsByAccountIndexLogic) GetAccountLiquidityPairsBy
 	}
 	entitie, err := l.liquidity.GetLiquidityByPairIndex(int64(req.AccountIndex))
 	if err != nil {
-		logx.Errorf("[GetLiquidityByPairIndex] err:%v", err)
+		logx.Errorf("[GetLiquidityByPairIndex] err:%v", err.Error())
+		return nil, err
+	}
+	if entitie == nil {
+		logx.Errorf("[GetLiquidityByPairIndex] err:%v", err.Error())
 		return nil, err
 	}
 	pair := &types.AccountLiquidityPairs{
@@ -51,8 +49,9 @@ func (l *GetAccountLiquidityPairsByAccountIndexLogic) GetAccountLiquidityPairsBy
 		AssetBId:    uint32(entitie.AssetBId),
 		AssetBName:  entitie.AssetB,
 		LpAmountEnc: entitie.LpAmount,
-		// CreatedAt  : entitie.
+		CreatedAt:   entitie.CreatedAt.Unix(),
 	}
+	resp = &types.RespGetAccountLiquidityPairsByAccountIndex{}
 	resp.Pairs = append(resp.Pairs, pair)
 	return resp, nil
 }

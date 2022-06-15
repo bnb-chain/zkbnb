@@ -29,10 +29,12 @@ func NewGetLatestAssetsListByAccountIndexLogic(ctx context.Context, svcCtx *svc.
 func (l *GetLatestAssetsListByAccountIndexLogic) GetLatestAssetsListByAccountIndex(in *globalRPCProto.ReqGetLatestAssetsListByAccountIndex) (*globalRPCProto.RespGetLatestAssetsListByAccountIndex, error) {
 	accountInfo, err := l.commglobalmap.GetLatestAccountInfo(int64(in.AccountIndex))
 	if err != nil {
-		logx.Error("[GetLatestAccountInfo] err:%v", err)
+		logx.Errorf("[GetLatestAccountInfo] err:%v", err)
 		return nil, err
 	}
-	resp := &globalRPCProto.RespGetLatestAssetsListByAccountIndex{}
+	resp := &globalRPCProto.RespGetLatestAssetsListByAccountIndex{
+		ResultAssetsList: make([]*globalRPCProto.AssetResult, 0),
+	}
 	for assetID, asset := range accountInfo.AssetInfo {
 		resp.ResultAssetsList = append(resp.ResultAssetsList, &globalRPCProto.AssetResult{
 			AssetId: uint32(assetID),

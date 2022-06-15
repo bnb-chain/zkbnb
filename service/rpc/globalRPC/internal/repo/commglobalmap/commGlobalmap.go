@@ -7,6 +7,8 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	commGlobalmapHandler "github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
+
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type commglobalmap struct {
@@ -23,5 +25,7 @@ func (l *commglobalmap) GetLatestAccountInfo( accountIndex int64) (accountInfo *
 }
 
 func (l *commglobalmap) GetLatestLiquidityInfoForRead( pairIndex int64) (liquidityInfo *commGlobalmapHandler.LiquidityInfo, err error){
-	return  commGlobalmapHandler.GetLatestLiquidityInfoForRead(l.liquidityModel,l.mempoolTxDetailModel, l.redisConnection, pairIndex)
+	res,err := commGlobalmapHandler.GetLatestLiquidityInfoForRead(l.liquidityModel,l.mempoolTxDetailModel, l.redisConnection, pairIndex)
+	logx.Errorf("[GetLatestAccountInfo] err:%v", err)
+	return res,err
 }

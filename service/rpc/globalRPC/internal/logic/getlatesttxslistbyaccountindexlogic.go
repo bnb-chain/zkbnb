@@ -30,15 +30,16 @@ func NewGetLatestTxsListByAccountIndexLogic(ctx context.Context, svcCtx *svc.Ser
 func (l *GetLatestTxsListByAccountIndexLogic) GetLatestTxsListByAccountIndex(in *globalRPCProto.ReqGetLatestTxsListByAccountIndex) (*globalRPCProto.RespGetLatestTxsListByAccountIndex, error) {
 	count, err := l.mempool.GetMempoolTxsTotalCount()
 	if err != nil {
-		logx.Error("[GetMempoolTxsTotalCount] err:%v", err)
+		logx.Errorf("[GetMempoolTxsTotalCount] err:%v", err)
 		return nil, err
 	}
 	resp := &globalRPCProto.RespGetLatestTxsListByAccountIndex{
-		Total: uint32(count),
+		Total:   uint32(count),
+		TxsList: make([]*globalRPCProto.TxInfo, 0),
 	}
 	mempoolTxs, err := l.mempool.GetMempoolTxsListByAccountIndex(int64(in.AccountIndex), int64(in.Limit), int64(in.Offset))
 	if err != nil {
-		logx.Error("[GetLatestLiquidityInfoForRead] err:%v", err)
+		logx.Errorf("[GetLatestLiquidityInfoForRead] err:%v", err)
 		return nil, err
 	}
 	for _, tx := range mempoolTxs {

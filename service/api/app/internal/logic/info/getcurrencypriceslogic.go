@@ -29,13 +29,13 @@ func NewGetCurrencyPricesLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 	}
 }
 
-func (l *GetCurrencyPricesLogic) GetCurrencyPrices(req *types.ReqGetCurrencyPrices) (resp *types.RespGetCurrencyPrices, err error) {
+func (l *GetCurrencyPricesLogic) GetCurrencyPrices(_ *types.ReqGetCurrencyPrices) (*types.RespGetCurrencyPrices, error) {
 	l2Assets, err := l.l2asset.GetL2AssetsList()
 	if err != nil {
 		logx.Error("[GetL2AssetsList] err:%v", err)
 		return nil, err
 	}
-	resp.Data = make([]*types.DataCurrencyPrices, 0)
+	resp := &types.RespGetCurrencyPrices{}
 	for _, asset := range l2Assets {
 		price, err := l.price.GetCurrencyPrice(asset.AssetSymbol)
 		if err != nil {
@@ -44,7 +44,7 @@ func (l *GetCurrencyPricesLogic) GetCurrencyPrices(req *types.ReqGetCurrencyPric
 		}
 		resp.Data = append(resp.Data, &types.DataCurrencyPrices{
 			Pair:    asset.AssetSymbol + "/" + "USDT",
-			AssetId: int(asset.AssetId),
+			AssetId: uint32(asset.AssetId),
 			Price:   price,
 		})
 	}

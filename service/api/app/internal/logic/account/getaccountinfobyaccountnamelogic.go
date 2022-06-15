@@ -5,9 +5,7 @@ import (
 
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/logic/errcode"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/account"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/accounthistory"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/globalrpc"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/l2asset"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
 	"github.com/zecrey-labs/zecrey-legend/utils"
@@ -17,28 +15,26 @@ import (
 
 type GetAccountInfoByAccountNameLogic struct {
 	logx.Logger
-	ctx            context.Context
-	svcCtx         *svc.ServiceContext
-	accountHistory accounthistory.AccountHistory
-	l2asset        l2asset.L2asset
-	globalRPC      globalrpc.GlobalRPC
-	account        account.AccountModel
+	ctx       context.Context
+	svcCtx    *svc.ServiceContext
+	globalRPC globalrpc.GlobalRPC
+	account   account.AccountModel
 }
 
 func NewGetAccountInfoByAccountNameLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAccountInfoByAccountNameLogic {
 	return &GetAccountInfoByAccountNameLogic{
-		Logger:         logx.WithContext(ctx),
-		ctx:            ctx,
-		svcCtx:         svcCtx,
-		accountHistory: accounthistory.New(svcCtx.Config),
-		l2asset:        l2asset.New(svcCtx.Config),
-		globalRPC:      globalrpc.New(svcCtx.Config, ctx),
-		account:        account.New(svcCtx.Config),
+		Logger:    logx.WithContext(ctx),
+		ctx:       ctx,
+		svcCtx:    svcCtx,
+		globalRPC: globalrpc.New(svcCtx.Config, ctx),
+		account:   account.New(svcCtx.Config),
 	}
 }
 
-func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *types.ReqGetAccountInfoByAccountName) (resp *types.RespGetAccountInfoByAccountName, err error) {
-	resp.AssetsAccount = make([]*types.Asset, 0)
+func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *types.ReqGetAccountInfoByAccountName) (*types.RespGetAccountInfoByAccountName, error) {
+	resp := &types.RespGetAccountInfoByAccountName{
+		AssetsAccount: make([]*types.Asset, 0),
+	}
 	if utils.CheckAccountName(req.AccountName) {
 		logx.Errorf("[CheckAccountName] req.AccountName:%v", req.AccountName)
 		return nil, errcode.ErrInvalidParam

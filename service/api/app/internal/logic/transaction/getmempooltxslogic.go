@@ -2,12 +2,13 @@ package transaction
 
 import (
 	"context"
-	"strconv"
 
-	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
+	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/logic/errcode"
+	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/block"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/mempool"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
+	"github.com/zecrey-labs/zecrey-legend/utils"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -16,6 +17,7 @@ type GetMempoolTxsLogic struct {
 	ctx     context.Context
 	svcCtx  *svc.ServiceContext
 	mempool mempool.Mempool
+	block   block.Block
 }
 
 func NewGetMempoolTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetMempoolTxsLogic {
@@ -24,70 +26,75 @@ func NewGetMempoolTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 		ctx:     ctx,
 		svcCtx:  svcCtx,
 		mempool: mempool.New(svcCtx.Config),
+		block:   block.New(svcCtx.Config),
 	}
 }
-func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (resp *types.RespGetMempoolTxs, err error) {
-	//	err := utils.CheckRequestParam(utils.TypeLimit, reflect.ValueOf(req.Limit))
-	//	err = utils.CheckRequestParam(utils.TypeLimit, reflect.ValueOf(req.Limit))
+func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (*types.RespGetMempoolTxs, error) {
+	if utils.CheckTypeLimit(req.Limit) {
+		logx.Errorf("[CheckTypeLimit] param:%v", req.Limit)
+		return nil, errcode.ErrInvalidParam
+	}
+	if utils.CheckTypeOffset(req.Offset) {
+		logx.Errorf("[CheckTypeOffset] param:%v", req.Offset)
+		return nil, errcode.ErrInvalidParam
+	}
+	count, err := l.mempool.GetMempoolTxsTotalCount()
+	if err != nil {
+		logx.Errorf("[GetMempoolTxsTotalCount] err:%v", err)
+		return nil, err
+	}
+	resp := &types.RespGetMempoolTxs{
+		MempoolTxs: make([]*types.Tx, 0),
+		Total:      uint32(count),
+	}
+	logx.Errorf("[GetMempoolTxsTotalCount] count:%v", count)
+
 	mempoolTxs, err := l.mempool.GetMempoolTxs(int64(req.Limit), int64(req.Offset))
 	if err != nil {
-		logx.Error("[GetMempoolTxs] err:%v", err)
-		return &types.RespGetMempoolTxs{}, err
+		logx.Errorf("[GetMempoolTxs] err:%v", err)
+		return nil, err
 	}
-
-	// Todo: why not do total=len(mempoolTxs)
-	total, err := l.mempool.GetMempoolTxsTotalCount()
-	if err != nil {
-		logx.Error("[GetMempoolTxs] err:%v", err)
-		return &types.RespGetMempoolTxs{}, err
-	}
-
-	data := make([]*types.Tx, 0)
 	for _, mempoolTx := range mempoolTxs {
 		txDetails := make([]*types.TxDetail, 0)
 		for _, txDetail := range mempoolTx.MempoolDetails {
-
-			if txDetail.AssetType == commonAsset.LiquidityAssetType {
-				//Todo: add json string of liquidity transaction to the list
-			} else {
-				txDetails = append(txDetails, &types.TxDetail{
-					//Todo: verify if accountBalance is still needed, since its no longer a field of table TxDetail
-					//Todo: int64 or int?
-					//Todo: need balance or not?  no need
-					AssetId:      int(txDetail.AssetId),
-					AssetType:    int(txDetail.AssetType),
-					AccountIndex: int32(txDetail.AccountIndex),
-					AccountName:  txDetail.AccountName,
-					AccountDelta: txDetail.BalanceDelta,
-				})
-			}
+			txDetails = append(txDetails, &types.TxDetail{
+				AssetId:      uint32(txDetail.AssetId),
+				AssetType:    uint32(txDetail.AssetType),
+				AccountIndex: int32(txDetail.AccountIndex),
+				AccountName:  txDetail.AccountName,
+			})
 		}
-		//Todo: int64 or int?
-		txAmount, err := strconv.Atoi(mempoolTx.TxAmount)
 		if err != nil {
 			logx.Error("[GetMempoolTxs] err:%v", err)
 			return &types.RespGetMempoolTxs{}, err
 		}
-		// Todo: why is the field in db string?
-		gasFee, err := strconv.Atoi(mempoolTx.GasFee)
-		data = append(data, &types.Tx{
+		blockInfo, err := l.block.GetBlockByBlockHeight(mempoolTx.L2BlockHeight)
+		if err != nil {
+			logx.Error("[transaction.GetTxsByAccountName] err:%v", err)
+			return nil, err
+		}
+		resp.MempoolTxs = append(resp.MempoolTxs, &types.Tx{
 			TxHash:        mempoolTx.TxHash,
 			TxType:        uint32(mempoolTx.TxType),
-			AssetAId:      int(mempoolTx.AssetId),
-			AssetBId:      int(mempoolTx.AssetId),
-			TxDetails:     txDetails,
-			TxAmount:      txAmount,
-			NativeAddress: mempoolTx.NativeAddress,
-			TxStatus:      1, //pending
 			GasFeeAssetId: uint32(mempoolTx.GasFeeAssetId),
-			GasFee:        int64(gasFee),
-			CreatedAt:     mempoolTx.CreatedAt.Unix(),
+			GasFee:        mempoolTx.GasFee,
+			NftIndex:      uint32(mempoolTx.NftIndex),
+			PairIndex:     uint32(mempoolTx.PairIndex),
+			AssetId:       uint32(mempoolTx.AssetId),
+			TxAmount:      mempoolTx.TxAmount,
+			NativeAddress: mempoolTx.NativeAddress,
+			TxDetails:     txDetails,
+			TxInfo:        mempoolTx.TxInfo,
+			ExtraInfo:     mempoolTx.ExtraInfo,
 			Memo:          mempoolTx.Memo,
+			AccountIndex:  uint32(mempoolTx.AccountIndex),
+			Nonce:         uint32(mempoolTx.Nonce),
+			ExpiredAt:     uint32(mempoolTx.ExpiredAt),
+			L2BlockHeight: uint32(mempoolTx.L2BlockHeight),
+			Status:        uint32(mempoolTx.Status),
+			CreatedAt:     uint32(mempoolTx.CreatedAt.Unix()),
+			BlockID:       uint32(blockInfo.ID),
 		})
-	}
-	resp = &types.RespGetMempoolTxs{
-		Total:      uint32(total),
-		MempoolTxs: data,
 	}
 	return resp, nil
 }
