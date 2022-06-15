@@ -52,14 +52,14 @@ func (m *mempool) GetMempoolTxs(offset int64, limit int64) (mempoolTx []*mempool
 	return mempoolTx, nil
 }
 
-func (m *mempool) GetMempoolTxsTotalCount() (count int64, err error) {
+func (m *mempool) GetMempoolTxsTotalCount() (count uint32, err error) {
 	where := "status = @status and deleted_at is NULL"
 	whereCondition := sql.Named("status", PendingTxStatus)
 	ct, err := m.cache.GetWithSet(cacheMempoolTxTotalCount, count, multcache.SqlQueryCountNamed, m.db, m.table, where, whereCondition)
 	if err != nil {
 		return 0, err
 	}
-	return ct.(int64), nil
+	return uint32(ct.(int64)), nil
 }
 
 func (m *mempool) GetMempoolTxByTxHash(hash string) (mempoolTx *mempoolModel.MempoolTx, err error) {

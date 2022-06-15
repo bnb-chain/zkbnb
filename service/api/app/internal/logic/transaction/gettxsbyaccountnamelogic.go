@@ -80,7 +80,6 @@ func (l *GetTxsByAccountNameLogic) GetTxsByAccountName(req *types.ReqGetTxsByAcc
 				AccountDelta: txDetail.BalanceDelta,
 			})
 		}
-		gasFee, _ := strconv.ParseInt(tx.GasFee, 10, 64)
 		txAmount, _ := strconv.ParseInt(tx.TxAmount, 10, 64)
 		blockInfo, err := l.block.GetBlockByBlockHeight(tx.L2BlockHeight)
 		if err != nil {
@@ -91,7 +90,7 @@ func (l *GetTxsByAccountNameLogic) GetTxsByAccountName(req *types.ReqGetTxsByAcc
 			TxHash:        tx.TxHash,
 			TxType:        uint32(tx.TxType),
 			GasFeeAssetId: uint32(tx.GasFeeAssetId),
-			GasFee:        gasFee,
+			GasFee:        tx.GasFee,
 			TxStatus:      uint32(tx.Status),
 			BlockHeight:   uint32(tx.L2BlockHeight),
 			BlockStatus:   uint32(blockInfo.BlockStatus),

@@ -79,7 +79,6 @@ func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *
 			})
 		}
 		txAmount, _ := strconv.Atoi(tx.TxAmount)
-		gasFee, _ := strconv.ParseInt(tx.GasFee, 10, 64)
 		blockInfo, err := l.block.GetBlockByBlockHeight(tx.L2BlockHeight)
 		if err != nil {
 			logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
@@ -89,7 +88,7 @@ func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *
 			TxHash:        tx.TxHash,
 			TxType:        uint32(tx.TxType),
 			GasFeeAssetId: uint32(tx.GasFeeAssetId),
-			GasFee:        gasFee,
+			GasFee:        tx.GasFee,
 			TxStatus:      uint32(tx.Status),
 			BlockHeight:   uint32(tx.L2BlockHeight),
 			BlockStatus:   uint32(blockInfo.BlockStatus),

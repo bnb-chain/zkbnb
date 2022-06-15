@@ -45,11 +45,9 @@ func packGetTxByHashResp(tx types.Tx, committedAt int64, verifiedAt int64, execu
 }
 
 func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (resp *types.RespGetTxByHash, err error) {
-	//	err := utils.CheckRequestParam(utils.TypeHash, reflect.ValueOf(req.TxHash))
-
 	txMemppol, err := l.mempool.GetMempoolTxByTxHash(req.TxHash)
 	if err != nil {
-		logx.Error("[mempool.GetMempoolTxByTxHash]:%v", err)
+		logx.Errorf("[mempool.GetMempoolTxByTxHash]:%v", err)
 		return nil, err
 	}
 	txDetails := make([]*types.TxDetail, 0)
@@ -63,37 +61,35 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (resp *types.R
 		})
 	}
 	block, err := l.block.GetBlockByBlockHeight(txMemppol.L2BlockHeight)
+	if err != nil {
+		logx.Errorf("[GetBlockByBlockHeight]:%v", err)
+		return nil, err
+	}
 	blockStatusInfo := &blockModel.BlockStatusInfo{
 		BlockStatus: block.BlockStatus,
 		CommittedAt: block.CommittedAt,
 		VerifiedAt:  block.VerifiedAt,
 	}
-	// Todo: update blockstatus to cache, but not sure if the whole block shall be inserted. which kind of tx? mempoolTx or tx?
-	//err = l.svcCtx.BlockModel.UpdateBlockStatusCacheByBlockHeight(tx.BlockHeight, blockStatusInfo)
-	//if err != nil {
-	//	errInfo := fmt.Sprintf("[appService.tx.GetTxByHash]<=>[BlockModel.UpdateBlockStatusCacheByBlockHeight] %s", err.Error())
-	//	logx.Error(errInfo)
-	//	return packGetTxByHashResp(types.FailStatus, "fail", errInfo, respResult), nil
-	//}
-	gasFee, _ := strconv.Atoi(txMemppol.GasFee)
 	txAmount, _ := strconv.Atoi(txMemppol.TxAmount)
 	return packGetTxByHashResp(types.Tx{
-		TxHash:        txMemppol.TxHash,
-		TxType:        uint32(txMemppol.TxType),
-		GasFee:        int64(gasFee),
-		GasFeeAssetId: uint32(txMemppol.GasFeeAssetId),
-		TxStatus:      uint32(txMemppol.Status),
-		BlockHeight:   uint32(txMemppol.L2BlockHeight),
-		BlockStatus:   uint32(blockStatusInfo.BlockStatus),
-		BlockId:       uint32(block.ID),
-		//Todo: globalRPC won't return data with 2 asset ids, where are these fields from
-		AssetAId:      uint32(txMemppol.AssetId),
-		AssetBId:      uint32(txMemppol.AssetId),
-		TxAmount:      uint32(txAmount),
-		TxDetails:     txDetails,
-		NativeAddress: txMemppol.NativeAddress,
-		CreatedAt:     txMemppol.CreatedAt.UnixNano() / 1e6,
+		TxHash :        txMemppol.TxHash,
+		TxType  :        uint32(txMemppol.TxType),
+		GasFeeAssetId  : uint32(txMemppol.GasFeeAssetId),
+		GasFee         :        txMemppol.GasFee,
+		NftIndex       txMemppol.NftIndex,
+		PairIndex      int64
+		AssetId        :       uint32(txMemppol.AssetId),
+		TxAmount       :      uint32(txAmount),
+		NativeAddress  : txMemppol.NativeAddress,
+		MempoolDetails []*MempoolTxDetail `gorm:"foreignkey:TxId"`
+		TxInfo         string
+		ExtraInfo      string
 		Memo:          txMemppol.Memo,
+		AccountIndex   int64
+		Nonce          int64
+		ExpiredAt      int64
+		L2BlockHeight  :   uint32(txMemppol.L2BlockHeight),
+		Status         int `gorm:"index"` // 0: pending tx; 1: committed tx; 2: verified tx;
 
 		// Todo: where is executedAt field from?
 		// -> gavin

@@ -2,8 +2,9 @@ package multcache
 
 import (
 	"database/sql"
-	"gorm.io/gorm"
 	"log"
+
+	"gorm.io/gorm"
 )
 
 // SqlQueryCount sql query count opention Template
