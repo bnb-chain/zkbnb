@@ -38,10 +38,11 @@ func (l *GetSwapAmountLogic) GetSwapAmount(req *types.ReqGetSwapAmount) (*types.
 		return nil, errcode.ErrInvalidParam
 	}
 	resAssetAmount, resAssetId, err := l.globalRPC.GetSwapAmount(uint64(req.PairIndex), uint64(req.AssetId), req.AssetAmount, req.IsFrom)
-	resp := &types.RespGetSwapAmount{resAssetAmount, resAssetId}
 	if err != nil {
 		logx.Error("[GetSwapAmount] err:%v", err)
 		return nil, err
 	}
+	resp := &types.RespGetSwapAmount{resAssetAmount, resAssetId}
+
 	return resp, nil
 }

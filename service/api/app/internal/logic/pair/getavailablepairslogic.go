@@ -26,12 +26,13 @@ func NewGetAvailablePairsLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 	}
 }
 
-func (l *GetAvailablePairsLogic) GetAvailablePairs(req *types.ReqGetAvailablePairs) (resp *types.RespGetAvailablePairs, err error) {
+func (l *GetAvailablePairsLogic) GetAvailablePairs(req *types.ReqGetAvailablePairs) (*types.RespGetAvailablePairs, error) {
 	liquidityAssets, err := l.liquidity.GetAllLiquidityAssets()
 	if err != nil {
 		logx.Error("[GetAllLiquidityAssets] err:%v", err)
 		return nil, err
 	}
+	resp := &types.RespGetAvailablePairs{}
 	for _, asset := range liquidityAssets {
 		resp.Pairs = append(resp.Pairs, &types.Pair{
 			PairIndex:    uint32(asset.PairIndex),

@@ -54,6 +54,9 @@ func (m *globalRPC) GetSwapAmount(pairIndex, assetId uint64, assetAmount string,
 		AssetAmount: assetAmount,
 		IsFrom:      isFrom,
 	})
+	if err != nil {
+		return "", 0, err
+	}
 	return resRpc.SwapAssetAmount, resRpc.SwapAssetId, err
 }
 
