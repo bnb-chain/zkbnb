@@ -22,8 +22,8 @@ import (
 	"fmt"
 	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
 	"github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey/basic"
+	asset "github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l1BlockMonitor"
-	"github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 	"github.com/zecrey-labs/zecrey-legend/common/sysconfigName"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"math/big"
@@ -142,12 +142,12 @@ func MonitorGovernanceContract(
 			}
 
 			l2AssetInfo := &L2AssetInfo{
-				AssetId:      uint32(event.AssetId),
-				L1Address:    event.AssetAddress.Hex(),
-				AssetName:    name,
-				AssetSymbol:  symbol,
-				Decimals:     uint32(decimals),
-				Status:       asset.StatusActive,
+				AssetId:     uint32(event.AssetId),
+				L1Address:   event.AssetAddress.Hex(),
+				AssetName:   name,
+				AssetSymbol: symbol,
+				Decimals:    uint32(decimals),
+				Status:      asset.StatusActive,
 			}
 			// set into array
 			l1EventInfos = append(l1EventInfos, l1EventInfo)
