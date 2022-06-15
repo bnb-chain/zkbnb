@@ -1,19 +1,17 @@
 package init
 
-import (
-	"github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
-)
+import asset "github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 
 // TODO l2 asset monitor
 func initAssetsInfo() []*asset.AssetInfo {
 	return []*asset.AssetInfo{
 		{
-			AssetId:      0,
-			L1Address: "0x00",
-			AssetName:    "BNB",
-			AssetSymbol:  "BNB",
-			Decimals:     18,
-			Status:       0,
+			AssetId:     0,
+			L1Address:   "0x00",
+			AssetName:   "BNB",
+			AssetSymbol: "BNB",
+			Decimals:    18,
+			Status:      0,
 		},
 		//{
 		//	AssetId:     1,

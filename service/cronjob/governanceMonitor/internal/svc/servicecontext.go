@@ -1,8 +1,8 @@
 package svc
 
 import (
+	asset "github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l1BlockMonitor"
-	"github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/governanceMonitor/internal/config"
 	"github.com/zeromicro/go-zero/core/logx"
