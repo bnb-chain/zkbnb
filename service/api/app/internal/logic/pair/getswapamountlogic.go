@@ -37,7 +37,7 @@ func (l *GetSwapAmountLogic) GetSwapAmount(req *types.ReqGetSwapAmount) (*types.
 		logx.Error("[CheckAssetId] param:%v", req.AssetId)
 		return nil, errcode.ErrInvalidParam
 	}
-	resAssetAmount, resAssetId, err := l.globalRPC.GetSwapAmount(uint64(req.PairIndex), uint64(req.AssetId), req.AssetAmount, req.IsFrom)
+	resAssetAmount, resAssetId, err := l.globalRPC.GetSwapAmount(l.ctx, uint64(req.PairIndex), uint64(req.AssetId), req.AssetAmount, req.IsFrom)
 	if err != nil {
 		logx.Error("[GetSwapAmount] err:%v", err)
 		return nil, err
