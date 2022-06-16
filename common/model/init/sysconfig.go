@@ -1,4 +1,4 @@
-package init
+package main
 
 import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
