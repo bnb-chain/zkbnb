@@ -217,8 +217,8 @@ type Tx struct {
 	ExpiredAt     uint32      `json:"expire_at"`
 	L2BlockHeight uint32      `json:"l2_block_height"`
 	Status        uint32      `json:"status,options=0|1|2"`
-	CreatedAt     uint32      `json:"created_at"`
 	BlockID       uint32      `json:"block_id"`
+	CreatedAt     uint32      `json:"created_at"`
 }
 
 type TxAccount struct {
@@ -229,10 +229,10 @@ type TxAccount struct {
 }
 
 type ReqGetTxsByAccountIndexAndTxType struct {
-	AccountIndex   uint32 `form:"account_index"`
-	TxType uint32 `form:"tx_type"`
-	Offset uint32 `form:"offset"`
-	Limit  uint32 `form:"limit"`
+	AccountIndex uint32 `form:"account_index"`
+	TxType       uint32 `form:"tx_type"`
+	Offset       uint32 `form:"offset"`
+	Limit        uint32 `form:"limit"`
 }
 
 type RespGetTxsByAccountIndexAndTxType struct {
