@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/consensys/gnark-crypto/ecc"
+	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/frontend"
 	cryptoBlock "github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/block"
+	"github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/std"
 	"log"
 	"math/big"
 	"os"
@@ -72,7 +74,7 @@ func GenerateProof(
 	}
 	elapse := time.Now()
 	fmt.Println("start proving")
-	proof, err = groth16.Prove(r1cs, provingKey, witness)
+	proof, err = groth16.Prove(r1cs, provingKey, witness, backend.WithHints(std.Keccak256, std.ComputeSLp))
 	if err != nil {
 		log.Println("[GenerateProof] unable to make a proof:", err)
 		return proof, err
