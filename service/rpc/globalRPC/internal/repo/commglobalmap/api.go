@@ -7,12 +7,9 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	commGlobalmapHandler "github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/config"
-	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 type GlobalAssetInfo struct {
@@ -38,19 +35,15 @@ func withRedis(redisType string, redisPass string) redis.Option {
 	}
 }
 
-func New(c config.Config) Commglobalmap {
+func New(svcCtx *svc.ServiceContext) Commglobalmap {
 	once.Do(func() {
-		conn := sqlx.NewSqlConn("postgres", c.Postgres.DataSource)
-		gormPointer, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
-		if err != nil {
-			logx.Errorf("gorm connect db error, err = %s", err.Error())
-		}
-		redisConn := redis.New(c.CacheRedis[0].Host, withRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
+		conn := sqlx.NewSqlConn("postgres", svcCtx.Config.Postgres.DataSource)
+		redisConn := redis.New(svcCtx.Config.CacheRedis[0].Host, withRedis(svcCtx.Config.CacheRedis[0].Type, svcCtx.Config.CacheRedis[0].Pass))
 		singletonValue = &commglobalmap{
-			mempoolTxDetailModel: mempool.NewMempoolDetailModel(conn, c.CacheRedis, gormPointer),
-			mempoolModel:         mempool.NewMempoolModel(conn, c.CacheRedis, gormPointer),
-			AccountModel:         account.NewAccountModel(conn, c.CacheRedis, gormPointer),
-			liquidityModel:       liquidity.NewLiquidityModel(conn, c.CacheRedis, gormPointer),
+			mempoolTxDetailModel: mempool.NewMempoolDetailModel(conn, svcCtx.Config.CacheRedis, svcCtx.GormPointer),
+			mempoolModel:         mempool.NewMempoolModel(conn, svcCtx.Config.CacheRedis, svcCtx.GormPointer),
+			AccountModel:         account.NewAccountModel(conn, svcCtx.Config.CacheRedis, svcCtx.GormPointer),
+			liquidityModel:       liquidity.NewLiquidityModel(conn, svcCtx.Config.CacheRedis, svcCtx.GormPointer),
 			redisConnection:      redisConn,
 		}
 	})

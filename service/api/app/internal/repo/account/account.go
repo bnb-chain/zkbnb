@@ -18,6 +18,7 @@
 package account
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -144,7 +145,7 @@ func (m *account) GetAccountByPk(pk string) (account *table.Account, err error) 
 	Description: get account info by account name
 */
 
-func (m *account) GetAccountByAccountName(accountName string) (account *table.Account, err error) {
+func (m *account) GetAccountByAccountName(ctx context.Context, accountName string) (account *table.Account, err error) {
 	dbTx := m.db.Table(m.table).Where("account_name = ?", accountName).Find(&account)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[account.GetAccountByAccountName] %s", dbTx.Error)

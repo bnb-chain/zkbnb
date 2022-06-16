@@ -2,16 +2,9 @@ package tx
 
 import (
 	"context"
-	"log"
 
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"gorm.io/gorm"
-)
-
-var (
-	cacheZecreyTxIdPrefix      = "cache:zecrey:tx:id:"
-	cacheZecreyTxTxHashPrefix  = "cache:zecrey:tx:txHash:"
-	cacheZecreyTxTxCountPrefix = "cache:zecrey:tx:txCount"
 )
 
 type tx struct {
@@ -27,15 +20,12 @@ type tx struct {
 	Description: used for counting total transactions for explorer dashboard
 */
 func (m *tx) GetTxsTotalCount(ctx context.Context) (count int64, err error) {
-	result, err := m.cache.GetWithSet(ctx, cacheZecreyTxTxCountPrefix, count, 1,
-		multcache.SqlQueryCount, m.db, m.table,
-		"deleted_at is NULL")
-	if err != nil {
-		return 0, err
+	dbTx := m.db.Table(m.table).Where("deleted_at is NULL").Count(&count)
+	if dbTx.Error == ErrNotFound {
+		return 0, nil
 	}
-	count, ok := result.(int64)
-	if !ok {
-		log.Fatal("Error type!")
+	if dbTx.Error != nil {
+		return 0, err
 	}
 	return count, nil
 }

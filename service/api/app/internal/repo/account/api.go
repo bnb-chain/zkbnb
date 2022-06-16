@@ -18,6 +18,8 @@
 package account
 
 import (
+	"context"
+
 	table "github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 )
@@ -29,7 +31,7 @@ type AccountModel interface {
 	GetVerifiedAccountByAccountIndex(accountIndex int64) (account *table.Account, err error)
 	GetConfirmedAccountByAccountIndex(accountIndex int64) (account *table.Account, err error)
 	GetAccountByPk(pk string) (account *table.Account, err error)
-	GetAccountByAccountName(accountName string) (account *table.Account, err error)
+	GetAccountByAccountName(ctx context.Context, accountName string) (account *table.Account, err error)
 	GetAccountByAccountNameHash(accountNameHash string) (account *table.Account, err error)
 	GetAccountsList(limit int, offset int64) (accounts []*table.Account, err error)
 	GetAccountsTotalCount() (count int64, err error)

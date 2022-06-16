@@ -26,7 +26,7 @@ func NewGetLpValueLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetLpV
 		ctx:           ctx,
 		svcCtx:        svcCtx,
 		Logger:        logx.WithContext(ctx),
-		commglobalmap: commglobalmap.New(svcCtx.Config),
+		commglobalmap: commglobalmap.New(svcCtx),
 	}
 }
 

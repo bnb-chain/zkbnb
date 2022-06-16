@@ -22,7 +22,7 @@ func NewGetLatestTxsListByAccountIndexLogic(ctx context.Context, svcCtx *svc.Ser
 		ctx:     ctx,
 		svcCtx:  svcCtx,
 		Logger:  logx.WithContext(ctx),
-		mempool: mempool.New(svcCtx.Config),
+		mempool: mempool.New(svcCtx),
 	}
 }
 

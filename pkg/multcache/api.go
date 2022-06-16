@@ -15,7 +15,7 @@ import (
 // Query function when key does not exist
 type MultCache interface {
 	GetWithSet(ctx context.Context, key string, value interface{}, timeOut uint32,
-		query QueryFunc, args ...interface{}) (interface{}, error)
+		query QueryFunc, arg interface{}) (interface{}, error)
 	Get(ctx context.Context, key string, value interface{}) (interface{}, error)
 	Set(ctx context.Context, key string, value interface{}, timeOut uint32) error
 }
