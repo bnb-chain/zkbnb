@@ -5,15 +5,11 @@ import (
 	"fmt"
 	"github.com/robfig/cron/v3"
 	"github.com/zecrey-labs/zecrey-eth-rpc/_rpc"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/governanceMonitor/governanceMonitor"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/governanceMonitor/internal/config"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/governanceMonitor/internal/logic"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/governanceMonitor/internal/server"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/governanceMonitor/internal/svc"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/zrpc"
-	"google.golang.org/grpc"
 )
 
 var configFile = flag.String("f",
@@ -24,9 +20,7 @@ func main() {
 
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
-	logx.MustSetup(c.LogConf)
 	ctx := svc.NewServiceContext(c)
-	srv := server.NewGovernanceMonitorServer(ctx)
 
 	GovernanceContractAddress, err := ctx.SysConfigModel.GetSysconfigByName(c.ChainConfig.GovernanceContractAddrSysConfigName)
 
@@ -79,11 +73,6 @@ func main() {
 	}
 	cronjob.Start()
 
-	s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {
-		governanceMonitor.RegisterGovernanceMonitorServer(grpcServer, srv)
-	})
-	defer s.Stop()
-
-	fmt.Printf("Starting rpc server at %s...\n", c.ListenOn)
-	s.Start()
+	fmt.Printf("Starting GovernanceMonitor cronjob ...")
+	select{}
 }

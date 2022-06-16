@@ -1,4 +1,4 @@
-package init
+package main
 
 import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
@@ -10,9 +10,9 @@ const (
 	BSC_Test_Network_RPC   = "http://tf-dex-preview-validator-nlb-6fd109ac8b9d390a.elb.ap-northeast-1.amazonaws.com:8545"
 	Local_Test_Network_RPC = "http://127.0.0.1:8545/"
 
-	ZecreyLegendContractAddr = "0x045A98016DF9C1790caD1be1c4d69ba1fd2aB9d9"
-	GovernanceContractAddr   = "0x45E486062b952225c97621567fCdD29eCE730B87"
-	VerifierContractAddr     = "0x7bdeC59d5Be028594b7E7E46a261D54c08A1BdC9"
+	ZecreyLegendContractAddr = "0x4e3F5dEA74e924eaDd4D2A51c878c336C4ef0BFa"
+	GovernanceContractAddr   = "0x6F95f0A2C842aa52ec622e13051b6CD12aB260D5"
+	VerifierContractAddr     = "0xBc7Cd1d37d16f0f76083c6c7ee65db42Cbc23b30"
 )
 
 func initSysConfig() []*sysconfig.Sysconfig {
@@ -79,7 +79,7 @@ func initSysConfig() []*sysconfig.Sysconfig {
 		},
 		// TODO
 		{
-			Name:      "Local_Test_Network_RPC",
+			Name:      sysconfigName.LocalTestNetworkRpc,
 			Value:     Local_Test_Network_RPC,
 			ValueType: "string",
 			Comment:   "Local network rpc",

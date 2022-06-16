@@ -56,7 +56,7 @@ func WithRedis(redisType string, redisPass string) redis.Option {
 func NewServiceContext(c config.Config) *ServiceContext {
 	gormPointer, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
 	if err != nil {
-		logx.Errorf("gorm connect db error, err = %s", err.Error())
+		logx.Must(err)
 	}
 	conn := sqlx.NewSqlConn("postgres", c.Postgres.DataSource)
 	redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
