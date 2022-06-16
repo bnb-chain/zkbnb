@@ -205,7 +205,7 @@ func HandleCryptoBlock(
 				logx.Errorf("[prover] unable to convert block to crypto block")
 				return err
 			}
-			//if blockInfo.BlockNumber > 23 {
+			//if blockInfo.BlockNumber == 14 {
 			//	infoBytes, _ := json.Marshal(blockInfo)
 			//	fmt.Println(string(infoBytes))
 			//}
