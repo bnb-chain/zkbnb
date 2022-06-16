@@ -201,9 +201,9 @@ func MonitorL2BlockEvents(
 		pendingUpdateMempoolTxs,
 		pendingUpdateProofSenderStatus,
 	)
-	logx.Info("[MonitorL2BlockEvents] update blocks count: %v", len(pendingUpdateBlocks))
-	logx.Info("[MonitorL2BlockEvents] update senders count: %v", len(pendingUpdateSenders))
-	logx.Info("[MonitorL2BlockEvents] update mempool txs count: %v", len(pendingUpdateMempoolTxs))
+	logx.Infof("[MonitorL2BlockEvents] update blocks count: %v", len(pendingUpdateBlocks))
+	logx.Infof("[MonitorL2BlockEvents] update senders count: %v", len(pendingUpdateSenders))
+	logx.Infof("[MonitorL2BlockEvents] update mempool txs count: %v", len(pendingUpdateMempoolTxs))
 	if err != nil {
 		logx.Errorf("[MonitorL2BlockEvents] unable to update everything: %s", err.Error())
 		return err

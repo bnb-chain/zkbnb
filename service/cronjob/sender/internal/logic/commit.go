@@ -190,7 +190,7 @@ func SendCommittedBlocks(
 			return err
 		}
 		for _, pendingCommittedBlock := range pendingCommitBlocks {
-			logx.Info("[SendCommittedBlocks] commit blocks: %v", pendingCommittedBlock.BlockNumber)
+			logx.Infof("[SendCommittedBlocks] commit blocks: %v", pendingCommittedBlock.BlockNumber)
 		}
 		// update l1 tx sender table records
 		newSender := &L1TxSender{

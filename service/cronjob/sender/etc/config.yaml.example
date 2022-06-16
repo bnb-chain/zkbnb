@@ -1,12 +1,7 @@
-Name: senderBSC.rpc
-ListenOn: 127.0.0.1:28003
-Etcd:
-  Hosts:
-    - 127.0.0.1:2379
-  Key: senderBSC.rpc
+Name: sender.cronjob
 
 Postgres:
-  DataSource: host=127.0.0.1 user=postgres password=ZecreyProtocolDB@123 dbname=zecreyLegend port=5432 sslmode=disable
+  DataSource: host=127.0.0.1 user=postgres password=ZecreyProtocolDB@123 dbname=zecreylegend port=5432 sslmode=disable
 
 CacheRedis:
   - Host: 127.0.0.1:6379
@@ -15,7 +10,7 @@ CacheRedis:
 
 ChainConfig:
   #  NetworkRPCSysConfigName: "BscTestNetworkRpc"
-  NetworkRPCSysConfigName: "Local_Test_Network_RPC"
+  NetworkRPCSysConfigName: "LocalTestNetworkRpc"
   ZecreyContractAddrSysConfigName: "ZecreyLegendContract"
   MaxWaitingTime: 120
   MaxBlockCount: 1
@@ -24,8 +19,3 @@ ChainConfig:
   GasLimit: 5000000
   L1ChainId: "48"
 
-LogConf:
-  ServiceName: senderAvalanche
-  Mode: console
-  Path: ./log/senderAvalanche
-  StackCooldownMillis: 500
