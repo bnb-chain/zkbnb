@@ -3,6 +3,7 @@ FROM golang:alpine AS builder
 LABEL stage=gobuilder
 
 ENV CGO_ENABLED 0
+# ENV GOPROXY https://goproxy.cn,direct
 
 RUN apk update --no-cache && apk add --no-cache tzdata
 
@@ -13,10 +14,7 @@ COPY --from=builder /usr/share/zoneinfo/Asia/Shanghai /usr/share/zoneinfo/Asia/S
 ENV TZ Asia/Shanghai
 
 WORKDIR /app
-COPY bin/proverclient /app/proverclient
+COPY bin/l2blockmonitor /app/l2blockmonitor
 COPY configyaml /app/etc
 
-RUN wget http://35.188.192.39/zecrey-legend.vk
-RUN wget http://35.188.192.39/zecrey-legned.pk
-
-CMD ["./proverclient", "-f", "etc/proverclient.yaml"]
+CMD ["./l2blockmonitor", "-f", "etc/l2blockmonitor.yaml"]
