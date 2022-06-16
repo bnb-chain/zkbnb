@@ -9,8 +9,10 @@ CacheRedis:
     Type: node
 
 ChainConfig:
+  # NetworkRPCSysConfigName: "BscTestNetworkRpc"
   NetworkRPCSysConfigName: "LocalTestNetworkRpc"
   ZecreyContractAddrSysConfigName: "ZecreyLegendContract"
+  # StartL1BlockHeight: 520000
   StartL1BlockHeight: 0
   PendingBlocksCount: 0
   MaxHandledBlocksCount: 100000
