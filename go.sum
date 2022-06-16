@@ -892,8 +892,8 @@ github.com/yuin/gopher-lua v0.0.0-20200816102855-ee81675732da h1:NimzV1aGyq29m5u
 github.com/yuin/gopher-lua v0.0.0-20200816102855-ee81675732da/go.mod h1:E1AXubJBdNmFERAOucpDIxNzeGfLzg0mYh+UfMWdChA=
 github.com/zecrey-labs/zecrey-crypto v0.0.6-legend h1:mT/ZiNR+vlKXJf+2x06deAKaH/NSU4k6ZYDd+Tf/lxE=
 github.com/zecrey-labs/zecrey-crypto v0.0.6-legend/go.mod h1:AuJ9R6mBMxm9X1dGfxgjZwiZFtsx3CPH5HCB+Pra9NI=
-github.com/zecrey-labs/zecrey-eth-rpc v0.0.14 h1:3UOmwWoVjDeU6gFl6hYpwOpqDeBXdFnam6i5ViN5qHU=
-github.com/zecrey-labs/zecrey-eth-rpc v0.0.14/go.mod h1:D/qGWiW1mwInLjZshiLzms161r3OuTO7rVtQifgE0UU=
+github.com/zecrey-labs/zecrey-eth-rpc v0.0.15 h1:aREnWmtUnredD9iNAf5DpESEZtXsHyV5J4yTTc+vBgA=
+github.com/zecrey-labs/zecrey-eth-rpc v0.0.15/go.mod h1:D/qGWiW1mwInLjZshiLzms161r3OuTO7rVtQifgE0UU=
 github.com/zenazn/goji v0.9.0/go.mod h1:7S9M489iMyHBNxwZnk9/EHS098H4/F6TATF2mIxtB1Q=
 github.com/zeromicro/antlr v0.0.1/go.mod h1:nfpjEwFR6Q4xGDJMcZnCL9tEfQRgszMwu3rDz2Z+p5M=
 github.com/zeromicro/ddl-parser v1.0.3/go.mod h1:ISU/8NuPyEpl9pa17Py9TBPetMjtsiHrb9f5XGiYbo8=
