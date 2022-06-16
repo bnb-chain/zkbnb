@@ -19,6 +19,7 @@
 **/*.pb.go
 **/.DS_Store
 
+**/*.yaml
 
 *.vk
 *.pk

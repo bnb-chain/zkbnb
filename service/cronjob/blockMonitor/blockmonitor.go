@@ -5,15 +5,11 @@ import (
 	"fmt"
 	"github.com/robfig/cron/v3"
 	"github.com/zecrey-labs/zecrey-eth-rpc/_rpc"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/blockMonitor/blockMonitor"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/blockMonitor/internal/config"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/blockMonitor/internal/logic"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/blockMonitor/internal/server"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/blockMonitor/internal/svc"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/zrpc"
-	"google.golang.org/grpc"
 )
 
 var configFile = flag.String("f",
@@ -24,9 +20,7 @@ func main() {
 
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
-	logx.MustSetup(c.LogConf)
 	ctx := svc.NewServiceContext(c)
-	srv := server.NewBlockMonitorServer(ctx)
 
 	ZecreyRollupAddress, err := ctx.SysConfig.GetSysconfigByName(c.ChainConfig.ZecreyContractAddrSysConfigName)
 
@@ -49,7 +43,7 @@ func main() {
 		NetworkRpc.Value)
 
 	// load client
-	cli, err := _rpc.NewClient(NetworkRpc.Value)
+	zecreyRpcCli, err := _rpc.NewClient(NetworkRpc.Value)
 	if err != nil {
 		panic(err)
 	}
@@ -62,7 +56,7 @@ func main() {
 	_, err = cronjob.AddFunc("@every 10s", func() {
 		logx.Info("========================= start monitor blocks =========================")
 		err := logic.MonitorBlocks(
-			cli,
+			zecreyRpcCli,
 			c.ChainConfig.StartL1BlockHeight, c.ChainConfig.PendingBlocksCount, c.ChainConfig.MaxHandledBlocksCount,
 			ZecreyRollupAddress.Value,
 			ctx.L1BlockMonitor,
@@ -77,11 +71,7 @@ func main() {
 	}
 	cronjob.Start()
 
-	s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {
-		blockMonitor.RegisterBlockMonitorServer(grpcServer, srv)
-	})
-	defer s.Stop()
 
-	fmt.Printf("Starting rpc server at %s...\n", c.ListenOn)
-	s.Start()
+	fmt.Printf("Starting BlockMonitor cronjob ...")
+	select {}
 }
