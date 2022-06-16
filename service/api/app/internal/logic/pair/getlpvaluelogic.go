@@ -24,7 +24,7 @@ func NewGetLPValueLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetLPV
 		Logger:    logx.WithContext(ctx),
 		ctx:       ctx,
 		svcCtx:    svcCtx,
-		globalRPC: globalrpc.New(svcCtx.Config, ctx),
+		globalRPC: globalrpc.New(svcCtx, ctx),
 	}
 }
 

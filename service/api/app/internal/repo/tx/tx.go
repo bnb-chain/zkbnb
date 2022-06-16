@@ -1,25 +1,16 @@
 package tx
 
 import (
-	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
-	"github.com/zeromicro/go-zero/core/stores/redis"
-	"github.com/zeromicro/go-zero/core/stores/sqlc"
-	"gorm.io/gorm"
-	"log"
-)
+	"context"
 
-var (
-	cacheZecreyTxIdPrefix      = "cache:zecrey:tx:id:"
-	cacheZecreyTxTxHashPrefix  = "cache:zecrey:tx:txHash:"
-	cacheZecreyTxTxCountPrefix = "cache:zecrey:tx:txCount"
+	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
+	"gorm.io/gorm"
 )
 
 type tx struct {
-	table      string
-	db         *gorm.DB
-	cachedConn sqlc.CachedConn
-	redisConn  *redis.Redis
-	cache      multcache.MultCache
+	table string
+	db    *gorm.DB
+	cache multcache.MultCache
 }
 
 /*
@@ -28,17 +19,17 @@ type tx struct {
 	Return: count int64, err error
 	Description: used for counting total transactions for explorer dashboard
 */
-func (m *tx) GetTxsTotalCount() (count int64, err error) {
-	result, err := m.cache.GetWithSet(cacheZecreyTxTxCountPrefix, count,
-		multcache.SqlQueryCount, m.db, m.table,
-		"deleted_at is NULL")
-	if err != nil {
-		return 0, err
-	}
-	count, ok := result.(int64)
-	if !ok {
-		log.Fatal("Error type!")
-	}
+func (m *tx) GetTxsTotalCount(ctx context.Context) (count int64, err error) {
+	// result, err := m.cache.GetWithSet(ctx, cacheZecreyTxTxCountPrefix, count, 1,
+	// 	multcache.SqlQueryCount, m.db, m.table,
+	// 	"deleted_at is NULL")
+	// if err != nil {
+	// 	return 0, err
+	// }
+	// count, ok := result.(int64)
+	// if !ok {
+	// 	log.Fatal("Error type!")
+	// }
 	return count, nil
 }
 

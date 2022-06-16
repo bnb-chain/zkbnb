@@ -25,8 +25,8 @@ func NewGetMempoolTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 		Logger:  logx.WithContext(ctx),
 		ctx:     ctx,
 		svcCtx:  svcCtx,
-		mempool: mempool.New(svcCtx.Config),
-		block:   block.New(svcCtx.Config),
+		mempool: mempool.New(svcCtx),
+		block:   block.New(svcCtx),
 	}
 }
 func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (*types.RespGetMempoolTxs, error) {

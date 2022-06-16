@@ -29,11 +29,11 @@ func NewGetTxsByAccountNameLogic(ctx context.Context, svcCtx *svc.ServiceContext
 		Logger:    logx.WithContext(ctx),
 		ctx:       ctx,
 		svcCtx:    svcCtx,
-		account:   account.New(svcCtx.Config),
-		globalRpc: globalrpc.New(svcCtx.Config, ctx),
-		tx:        tx.New(svcCtx.Config),
-		mempool:   mempool.New(svcCtx.Config),
-		block:     block.New(svcCtx.Config),
+		account:   account.New(svcCtx),
+		globalRpc: globalrpc.New(svcCtx, ctx),
+		tx:        tx.New(svcCtx),
+		mempool:   mempool.New(svcCtx),
+		block:     block.New(svcCtx),
 	}
 }
 

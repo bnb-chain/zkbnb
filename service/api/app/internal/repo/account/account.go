@@ -18,21 +18,21 @@
 package account
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"strings"
 
 	table "github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/redis"
 	"gorm.io/gorm"
 )
 
 type account struct {
-	table     string
-	db        *gorm.DB
-	redisConn *redis.Redis
-	cache     multcache.MultCache
+	table string
+	db    *gorm.DB
+	cache multcache.MultCache
 }
 
 /*
@@ -146,18 +146,55 @@ func (m *account) GetAccountByPk(pk string) (account *table.Account, err error) 
 	Description: get account info by account name
 */
 
-func (m *account) GetAccountByAccountName(accountName string) (account *table.Account, err error) {
-	dbTx := m.db.Table(m.table).Where("account_name = ?", accountName).Find(&account)
+type queryInput struct {
+	db        *gorm.DB
+	table     string
+	sqlComd   string
+	condition string
+}
+
+func SqlWhereFind(input interface{}) (interface{}, error) {
+	arg, ok := input.(queryInput)
+	if !ok {
+		log.Fatalf("error type!")
+	}
+	var res interface{}
+	dbTx := arg.db.Table(arg.table).Where(arg.sqlComd, arg.condition).Find(&res)
 	if dbTx.Error != nil {
-		err := fmt.Sprintf("[account.GetAccountByAccountName] %s", dbTx.Error)
-		logx.Error(err)
 		return nil, dbTx.Error
-	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[account.GetAccountByAccountName] %s", ErrNotFound)
-		logx.Info(err)
-		return nil, ErrNotFound
+	}
+	return res, nil
+}
+
+func (m *account) GetAccountByAccountName(ctx context.Context, accountName string) (account *table.Account, err error) {
+	key := fmt.Sprintf("cache:account_%s", accountName)
+	arg := &queryInput{
+		db:        m.db,
+		table:     m.table,
+		sqlComd:   "account_name = ?",
+		condition: accountName,
+	}
+	result, err := m.cache.GetWithSet(ctx, key, account, 1, SqlWhereFind, arg)
+	if err != nil {
+		return nil, err
+	}
+	account, ok := result.(*table.Account)
+	if !ok {
+		log.Fatal("Error type!")
 	}
 	return account, nil
+	///////////////////////////
+	// dbTx := m.db.Table(m.table).Where("account_name = ?", accountName).Find(&account)
+	// if dbTx.Error != nil {
+	// 	err := fmt.Sprintf("[account.GetAccountByAccountName] %s", dbTx.Error)
+	// 	logx.Error(err)
+	// 	return nil, dbTx.Error
+	// } else if dbTx.RowsAffected == 0 {
+	// 	err := fmt.Sprintf("[account.GetAccountByAccountName] %s", ErrNotFound)
+	// 	logx.Info(err)
+	// 	return nil, ErrNotFound
+	// }
+	// return account, nil
 }
 
 /*
