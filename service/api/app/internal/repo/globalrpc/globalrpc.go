@@ -47,8 +47,8 @@ func (m *globalRPC) GetLatestAccountInfo(accountIndex int64) (accountInfo *commo
 	return accountInfo, nil
 }
 
-func (m *globalRPC) GetSwapAmount(pairIndex, assetId uint64, assetAmount string, isFrom bool) (string, uint32, error) {
-	resRpc, err := m.globalRPC.GetSwapAmount(m.ctx, &globalrpc.ReqGetSwapAmount{
+func (m *globalRPC) GetSwapAmount(ctx context.Context, pairIndex, assetId uint64, assetAmount string, isFrom bool) (string, uint32, error) {
+	resRpc, err := m.globalRPC.GetSwapAmount(ctx, &globalrpc.ReqGetSwapAmount{
 		PairIndex:   uint32(pairIndex),
 		AssetId:     uint32(assetId),
 		AssetAmount: assetAmount,

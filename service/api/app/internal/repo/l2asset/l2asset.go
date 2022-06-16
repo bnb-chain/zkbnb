@@ -4,21 +4,13 @@ import (
 	table "github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
-	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"gorm.io/gorm"
 )
 
-var (
-	cacheZecreyL2AssetInfoIdPrefix          = "cache:zecrey:l2AssetInfo:id:"
-	cacheZecreyL2AssetInfoL2AssetIdPrefix   = "cache:zecrey:l2AssetInfo:l2AssetId:"
-	cacheZecreyL2AssetInfoL2AssetNamePrefix = "cache:zecrey:l2AssetInfo:l2AssetName:"
-)
-
 type l2asset struct {
-	cachedConn sqlc.CachedConn
-	table      string
-	db         *gorm.DB
-	cache      multcache.MultCache
+	table string
+	db    *gorm.DB
+	cache multcache.MultCache
 }
 
 /*

@@ -21,7 +21,6 @@ var (
 )
 
 const (
-	BlockTableName  = `block`
 	DetailTableName = `block_detail`
 
 	BlockStatusColumn = "block_status"

@@ -17,6 +17,7 @@
 package accounthistory
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -24,15 +25,13 @@ import (
 	table "github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/redis"
 	"gorm.io/gorm"
 )
 
 type accountHistory struct {
-	table     string
-	db        *gorm.DB
-	redisConn *redis.Redis
-	cache     multcache.MultCache
+	table string
+	db    *gorm.DB
+	cache multcache.MultCache
 }
 
 /*
@@ -42,9 +41,9 @@ type accountHistory struct {
 	Description:  For API /api/v1/info/getAccountsList
 
 */
-func (m *accountHistory) GetAccountsList(limit int, offset int64) (accounts []*table.AccountHistory, err error) {
+func (m *accountHistory) GetAccountsList(ctx context.Context, limit int, offset int64) (accounts []*table.AccountHistory, err error) {
 	cacheKeyAccountsList := fmt.Sprintf("cache:AccountsHistoryList_%v_%v", limit, offset)
-	result, err := m.cache.GetWithSet(cacheKeyAccountsList, accounts,
+	result, err := m.cache.GetWithSet(ctx, cacheKeyAccountsList, accounts, 1,
 		multcache.SqlBatchQuery, m.db, m.table, limit, offset, "account_index desc")
 	if err != nil {
 		return nil, err
@@ -62,11 +61,10 @@ func (m *accountHistory) GetAccountsList(limit int, offset int64) (accounts []*t
 	Return: count int64, err error
 	Description: used for counting total accounts for explorer dashboard
 */
-func (m *accountHistory) GetAccountsTotalCount() (count int64, err error) {
+func (m *accountHistory) GetAccountsTotalCount(ctx context.Context) (count int64, err error) {
 	cacheKeyAccountsTotalCount := "cache:AccountsTotalCount"
-	result, err := m.cache.GetWithSet(cacheKeyAccountsTotalCount, count,
-		multcache.SqlQueryCount, m.db, m.table,
-		"deleted_at is NULL")
+	result, err := m.cache.GetWithSet(ctx, cacheKeyAccountsTotalCount, count, 1,
+		multcache.SqlQueryCount, m.db, m.table, "deleted_at is NULL")
 	if err != nil {
 		return 0, err
 	}

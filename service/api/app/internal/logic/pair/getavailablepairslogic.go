@@ -22,7 +22,7 @@ func NewGetAvailablePairsLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 		Logger:    logx.WithContext(ctx),
 		ctx:       ctx,
 		svcCtx:    svcCtx,
-		liquidity: liquidity.New(svcCtx.Config),
+		liquidity: liquidity.New(svcCtx),
 	}
 }
 

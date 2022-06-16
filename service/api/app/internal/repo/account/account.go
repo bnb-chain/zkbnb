@@ -24,15 +24,13 @@ import (
 	table "github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/redis"
 	"gorm.io/gorm"
 )
 
 type account struct {
-	table     string
-	db        *gorm.DB
-	redisConn *redis.Redis
-	cache     multcache.MultCache
+	table string
+	db    *gorm.DB
+	cache multcache.MultCache
 }
 
 /*

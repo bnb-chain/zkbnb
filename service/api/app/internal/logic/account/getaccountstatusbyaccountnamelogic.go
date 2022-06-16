@@ -24,7 +24,7 @@ func NewGetAccountStatusByAccountNameLogic(ctx context.Context, svcCtx *svc.Serv
 		Logger:  logx.WithContext(ctx),
 		ctx:     ctx,
 		svcCtx:  svcCtx,
-		account: account.New(svcCtx.Config),
+		account: account.New(svcCtx),
 	}
 }
 

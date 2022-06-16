@@ -20,11 +20,13 @@ package util
 import (
 	"bytes"
 	"errors"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
+	curve "github.com/zecrey-labs/zecrey-crypto/ecc/ztwistededwards/tebn254"
+	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zeromicro/go-zero/core/logx"
+	"math/big"
 )
 
 func ConvertTxToRegisterZNSPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
@@ -746,14 +748,27 @@ func CreateBlockCommitment(
 	var buf bytes.Buffer
 	PaddingInt64IntoBuf(&buf, currentBlockHeight)
 	PaddingInt64IntoBuf(&buf, createdAt)
-	buf.Write(oldStateRoot)
-	buf.Write(newStateRoot)
-	buf.Write(pubData)
+	buf.Write(CleanAndPaddingByteByModulus(oldStateRoot))
+	buf.Write(CleanAndPaddingByteByModulus(newStateRoot))
+	buf.Write(CleanAndPaddingByteByModulus(pubData))
 	PaddingInt64IntoBuf(&buf, onChainOpsCount)
 	// TODO Keccak256
-	hFunc := mimc.NewMiMC()
-	hFunc.Write(buf.Bytes())
-	commitment := hFunc.Sum(nil)
-	//commitment := KeccakHash(buf.Bytes())
+	//hFunc := mimc.NewMiMC()
+	//hFunc.Write(buf.Bytes())
+	//commitment := hFunc.Sum(nil)
+	commitment := KeccakHash(buf.Bytes())
 	return common.Bytes2Hex(commitment)
+}
+
+func CleanAndPaddingByteByModulus(buf []byte) []byte {
+	if len(buf) <= 32 {
+		return ffmath.Mod(new(big.Int).SetBytes(buf), curve.Modulus).FillBytes(make([]byte, 32))
+	}
+	offset := 32
+	var pendingBuf bytes.Buffer
+	for offset <= len(buf) {
+		pendingBuf.Write(ffmath.Mod(new(big.Int).SetBytes(buf[offset-32:offset]), curve.Modulus).FillBytes(make([]byte, 32)))
+		offset += 32
+	}
+	return pendingBuf.Bytes()
 }

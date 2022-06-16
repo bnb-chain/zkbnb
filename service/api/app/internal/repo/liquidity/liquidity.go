@@ -3,17 +3,13 @@ package liquidity
 import (
 	table "github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
-	"github.com/zeromicro/go-zero/core/stores/redis"
-	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"gorm.io/gorm"
 )
 
 type liquidity struct {
-	cachedConn sqlc.CachedConn
-	table      string
-	db         *gorm.DB
-	redisConn  *redis.Redis
-	cache      multcache.MultCache
+	table string
+	db    *gorm.DB
+	cache multcache.MultCache
 }
 
 /*

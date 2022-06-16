@@ -116,6 +116,11 @@ func ToCryptoRemoveLiquidityTx(txInfo *commonTx.RemoveLiquidityTxInfo) (info *Cr
 		logx.Errorf("[ToCryptoAddLiquidityTx] unable to convert to packed amount: %s", err.Error())
 		return nil, err
 	}
+	packedTreasuryAmount, err := util.ToPackedAmount(txInfo.TreasuryAmount)
+	if err != nil {
+		logx.Errorf("[ToCryptoAddLiquidityTx] unable to convert to packed amount: %s", err.Error())
+		return nil, err
+	}
 	packedFee, err := util.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
 		logx.Errorf("[ToCryptoRemoveLiquidityTx] unable to convert to packed fee: %s", err.Error())
@@ -130,6 +135,7 @@ func ToCryptoRemoveLiquidityTx(txInfo *commonTx.RemoveLiquidityTxInfo) (info *Cr
 		AssetBMinAmount:   packedBMinAmount,
 		LpAmount:          packedLpAmount,
 		KLast:             packedKLast,
+		TreasuryAmount:    packedTreasuryAmount,
 		AssetAAmountDelta: packedAAmount,
 		AssetBAmountDelta: packedBAmount,
 		GasAccountIndex:   txInfo.GasAccountIndex,

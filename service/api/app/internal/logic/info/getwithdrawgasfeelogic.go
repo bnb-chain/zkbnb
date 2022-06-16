@@ -25,8 +25,8 @@ func NewGetWithdrawGasFeeLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 		Logger:  logx.WithContext(ctx),
 		ctx:     ctx,
 		svcCtx:  svcCtx,
-		price:   price.New(svcCtx.Config),
-		l2asset: l2asset.New(svcCtx.Config),
+		price:   price.New(svcCtx),
+		l2asset: l2asset.New(svcCtx),
 	}
 }
 
@@ -41,12 +41,12 @@ func (l *GetWithdrawGasFeeLogic) GetWithdrawGasFee(req *types.ReqGetWithdrawGasF
 		logx.Error("[GetSimpleL2AssetInfoByAssetId] err:%v", err)
 		return nil, err
 	}
-	price, err := l.price.GetCurrencyPrice(l2Asset.AssetSymbol)
+	price, err := l.price.GetCurrencyPrice(l.ctx, l2Asset.AssetSymbol)
 	if err != nil {
 		logx.Error("[GetCurrencyPrice] L2Symbol:%v, err:%v", l2Asset.AssetSymbol, err)
 		return nil, err
 	}
-	withdrawPrice, err := l.price.GetCurrencyPrice(withdrawL2Asset.AssetSymbol)
+	withdrawPrice, err := l.price.GetCurrencyPrice(l.ctx, withdrawL2Asset.AssetSymbol)
 	if err != nil {
 		logx.Error("[GetCurrencyPrice] L2Symbol:%v, err:%v", withdrawL2Asset.AssetSymbol, err)
 		return nil, err

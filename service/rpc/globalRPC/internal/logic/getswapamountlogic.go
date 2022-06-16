@@ -36,10 +36,6 @@ func (l *GetSwapAmountLogic) GetSwapAmount(in *globalRPCProto.ReqGetSwapAmount) 
 		logx.Errorf("[CheckPairIndex] param:%v", in.PairIndex)
 		return nil, errcode.ErrInvalidParam
 	}
-	if utils.CheckAmount(in.AssetAmount) {
-		logx.Errorf("[CheckAmount] param:%v", in.AssetAmount)
-		return nil, errcode.ErrInvalidParam
-	}
 	liquidity, err := l.commglobalmap.GetLatestLiquidityInfoForRead(int64(in.PairIndex))
 	if err != nil {
 		logx.Errorf("[GetLatestLiquidityInfoForRead] err:%v", err)

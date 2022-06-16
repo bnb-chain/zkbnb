@@ -24,7 +24,7 @@ func NewGetAccountLiquidityPairsByAccountIndexLogic(ctx context.Context, svcCtx 
 		Logger:    logx.WithContext(ctx),
 		ctx:       ctx,
 		svcCtx:    svcCtx,
-		liquidity: liquidity.New(svcCtx.Config),
+		liquidity: liquidity.New(svcCtx),
 	}
 }
 

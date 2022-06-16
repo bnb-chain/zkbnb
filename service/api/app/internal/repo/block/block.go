@@ -1,12 +1,12 @@
 package block
 
 import (
+	"context"
 	"log"
 
 	table "github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 
-	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"gorm.io/gorm"
 )
@@ -15,7 +15,6 @@ type block struct {
 	cachedConn sqlc.CachedConn
 	table      string
 	db         *gorm.DB
-	redisConn  *redis.Redis
 	cache      multcache.MultCache
 }
 
@@ -25,8 +24,8 @@ type block struct {
 	Return: count int64, err error
 	Description:  For API /api/v1/info/getLayer2BasicInfo
 */
-func (m *block) GetExecutedBlocksCount() (count int64, err error) {
-	result, err := m.cache.GetWithSet("cache::block:executed_count", count,
+func (m *block) GetExecutedBlocksCount(ctx context.Context) (count int64, err error) {
+	result, err := m.cache.GetWithSet(ctx, "cache::block:executed_count", count, 1,
 		multcache.SqlQueryCount, m.db, m.table,
 		"block_status = ? and deleted_at is NULL", StatusExecuted)
 	if err != nil {
@@ -45,8 +44,8 @@ func (m *block) GetExecutedBlocksCount() (count int64, err error) {
 	Return: count int64, err error
 	Description:  For API /api/v1/info/getLayer2BasicInfo
 */
-func (m *block) GetCommitedBlocksCount() (count int64, err error) {
-	result, err := m.cache.GetWithSet("cache::block:committed_count", count,
+func (m *block) GetCommitedBlocksCount(ctx context.Context) (count int64, err error) {
+	result, err := m.cache.GetWithSet(ctx, "cache::block:committed_count", count, 1,
 		multcache.SqlQueryCount, m.db, m.table,
 		"block_status >= ? and deleted_at is NULL", StatusCommitted)
 	if err != nil {
