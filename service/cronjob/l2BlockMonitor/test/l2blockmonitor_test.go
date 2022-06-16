@@ -67,8 +67,6 @@ func TestL2BlockMonitor(t *testing.T) {
 			bscCli,
 			c.ChainConfig.BSCPendingBlocksCount,
 			ctx.Mempool,
-			ctx.AccountAssetModel, ctx.AccountLiquidityModel, nil,
-			ctx.AccountAssetHistoryModel, ctx.AccountLiquidityHistoryModel, nil,
 			ctx.Block,
 			ctx.L1TxSender,
 		)

@@ -2,7 +2,7 @@ package svc
 
 import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
+	asset "github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
@@ -33,7 +33,7 @@ type ServiceContext struct {
 	NftModel   nft.L2NftModel
 	OfferModel nft.OfferModel
 
-	L2AssetModel assetInfo.AssetInfoModel
+	L2AssetModel asset.AssetInfoModel
 
 	SysConfigModel sysconfig.SysconfigModel
 
@@ -70,7 +70,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		BlockModel:            block.NewBlockModel(conn, c.CacheRedis, gormPointer, redisConn),
 		NftModel:              nft.NewL2NftModel(conn, c.CacheRedis, gormPointer),
 		OfferModel:            nft.NewOfferModel(conn, c.CacheRedis, gormPointer),
-		L2AssetModel:          assetInfo.NewAssetInfoModel(conn, c.CacheRedis, gormPointer),
+		L2AssetModel:          asset.NewAssetInfoModel(conn, c.CacheRedis, gormPointer),
 		SysConfigModel:        sysconfig.NewSysconfigModel(conn, c.CacheRedis, gormPointer),
 		RedisConnection:       redisConn,
 	}
