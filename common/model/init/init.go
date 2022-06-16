@@ -15,12 +15,10 @@
  *
  */
 
-package init
+package main
+
 
 import (
-	"log"
-	"testing"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	asset "github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
@@ -39,6 +37,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/common/tree"
 	"github.com/zeromicro/go-zero/core/stores/redis"
+	"log"
 )
 
 func WithRedis(redisType string, redisPass string) redis.Option {
@@ -92,7 +91,7 @@ var (
 	nftWithdrawHistoryModel = nft.NewL2NftWithdrawHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
 )
 
-func TestDropTables(t *testing.T) {
+func DropTables() {
 	sysconfigModel.DropSysconfigTable()
 	//priceModel.
 	accountModel.DropAccountTable()
@@ -120,7 +119,7 @@ func TestDropTables(t *testing.T) {
 	nftWithdrawHistoryModel.DropL2NftWithdrawHistoryTable()
 }
 
-func TestDataInitialize(t *testing.T) {
+func InitTable() {
 	// create tables
 	sysconfigModel.CreateSysconfigTable()
 	//priceModel.
@@ -150,13 +149,13 @@ func TestDataInitialize(t *testing.T) {
 	// init l1 asset info
 	rowsAffected, err := assetInfoModel.CreateAssetsInfoInBatches(initAssetsInfo())
 	if err != nil {
-		t.Fatal(err)
+		log.Fatal(err)
 	}
 	log.Println("l2 assets info rows affected:", rowsAffected)
 	// sys config
 	rowsAffected, err = sysconfigModel.CreateSysconfigInBatches(initSysConfig())
 	if err != nil {
-		t.Fatal(err)
+		log.Fatal(err)
 	}
 	log.Println("sys config rows affected:", rowsAffected)
 	// genesis block
@@ -173,6 +172,11 @@ func TestDataInitialize(t *testing.T) {
 		BlockStatus:                  block.StatusVerifiedAndExecuted,
 	})
 	if err != nil {
-		t.Fatal(err)
+		log.Fatal(err)
 	}
+}
+
+func main(){
+	DropTables()
+	InitTable()
 }

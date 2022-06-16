@@ -1,8 +1,7 @@
-package init
+package main
 
 import asset "github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 
-// TODO l2 asset monitor
 func initAssetsInfo() []*asset.AssetInfo {
 	return []*asset.AssetInfo{
 		{
