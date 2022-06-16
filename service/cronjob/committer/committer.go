@@ -5,19 +5,13 @@ import (
 	"fmt"
 	"github.com/robfig/cron/v3"
 	"github.com/zecrey-labs/zecrey-legend/common/tree"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/committer/committerProto"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/committer/internal/config"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/committer/internal/logic"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/committer/internal/server"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/committer/internal/svc"
 	"github.com/zeromicro/go-zero/core/logx"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/conf"
-	"github.com/zeromicro/go-zero/core/service"
-	"github.com/zeromicro/go-zero/zrpc"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
 )
 
 var configFile = flag.String("f",
@@ -28,9 +22,7 @@ func main() {
 
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
-	logx.MustSetup(c.LogConf)
 	ctx := svc.NewServiceContext(c)
-	srv := server.NewCommitterServer(ctx)
 
 	var (
 		accountTree       *tree.Tree
@@ -129,14 +121,6 @@ func main() {
 	}
 	cronJob.Start()
 
-	s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {
-		committerProto.RegisterCommitterServer(grpcServer, srv)
-
-		if c.Mode == service.DevMode || c.Mode == service.TestMode {
-			reflection.Register(grpcServer)
-		}
-	})
-	defer s.Stop()
-	fmt.Printf("Starting rpc server at %s...\n", c.ListenOn)
-	s.Start()
+	fmt.Printf("Starting committer cronjob ...")
+	select {}
 }

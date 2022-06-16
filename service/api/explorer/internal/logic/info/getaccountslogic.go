@@ -2,6 +2,7 @@ package info
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/types"
@@ -24,7 +25,28 @@ func NewGetAccountsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAc
 }
 
 func (l *GetAccountsLogic) GetAccounts(req *types.ReqGetAccounts) (resp *types.RespGetAccounts, err error) {
-	// todo: add your logic here and delete this line
+	accounts, e := l.svcCtx.Account.GetAccountsList(int(req.Limit), int64(req.Offset))
+	if e != nil {
+		err = fmt.Errorf("[explorer.info.GetAccountsList]%s", e.Error())
+		l.Error(err)
+		return
+	}
+
+	total, e := l.svcCtx.Account.GetAccountsTotalCount()
+	if e != nil {
+		err = fmt.Errorf("[explorer.info.GetAccountsList]%s", e.Error())
+		l.Error(err)
+		return
+	}
+	resp.Total = uint32(total)
+
+	for _, a := range accounts {
+		resp.Accounts = append(resp.Accounts, &types.Accounts{
+			AccountIndex: uint32(a.AccountIndex),
+			AccountName:  a.AccountName,
+			PublicKey:    a.PublicKey,
+		})
+	}
 
 	return
 }

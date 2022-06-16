@@ -29,16 +29,16 @@ func NewGetTxsByAccountNameLogic(ctx context.Context, svcCtx *svc.ServiceContext
 		Logger:    logx.WithContext(ctx),
 		ctx:       ctx,
 		svcCtx:    svcCtx,
-		account:   account.New(svcCtx.Config),
-		globalRpc: globalrpc.New(svcCtx.Config, ctx),
-		tx:        tx.New(svcCtx.Config),
-		mempool:   mempool.New(svcCtx.Config),
-		block:     block.New(svcCtx.Config),
+		account:   account.New(svcCtx),
+		globalRpc: globalrpc.New(svcCtx, ctx),
+		tx:        tx.New(svcCtx),
+		mempool:   mempool.New(svcCtx),
+		block:     block.New(svcCtx),
 	}
 }
 
 func (l *GetTxsByAccountNameLogic) GetTxsByAccountName(req *types.ReqGetTxsByAccountName) (resp *types.RespGetTxsByAccountName, err error) {
-	account, err := l.account.GetAccountByAccountName(req.AccountName)
+	account, err := l.account.GetAccountByAccountName(l.ctx, req.AccountName)
 	if err != nil {
 		logx.Errorf("[transaction.GetTxsByAccountName] err:%v", err)
 		return nil, err

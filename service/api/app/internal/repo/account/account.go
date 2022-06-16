@@ -18,21 +18,20 @@
 package account
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	table "github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/redis"
 	"gorm.io/gorm"
 )
 
 type account struct {
-	table     string
-	db        *gorm.DB
-	redisConn *redis.Redis
-	cache     multcache.MultCache
+	table string
+	db    *gorm.DB
+	cache multcache.MultCache
 }
 
 /*
@@ -146,7 +145,7 @@ func (m *account) GetAccountByPk(pk string) (account *table.Account, err error) 
 	Description: get account info by account name
 */
 
-func (m *account) GetAccountByAccountName(accountName string) (account *table.Account, err error) {
+func (m *account) GetAccountByAccountName(ctx context.Context, accountName string) (account *table.Account, err error) {
 	dbTx := m.db.Table(m.table).Where("account_name = ?", accountName).Find(&account)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[account.GetAccountByAccountName] %s", dbTx.Error)

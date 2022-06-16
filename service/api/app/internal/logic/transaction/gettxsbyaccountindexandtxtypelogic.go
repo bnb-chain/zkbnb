@@ -28,10 +28,10 @@ func NewGetTxsByAccountIndexAndTxTypeLogic(ctx context.Context, svcCtx *svc.Serv
 		Logger:    logx.WithContext(ctx),
 		ctx:       ctx,
 		svcCtx:    svcCtx,
-		tx:        tx.New(svcCtx.Config),
-		globalRPC: globalrpc.New(svcCtx.Config, ctx),
-		block:     block.New(svcCtx.Config),
-		mempool:   mempool.New(svcCtx.Config),
+		tx:        tx.New(svcCtx),
+		globalRPC: globalrpc.New(svcCtx, ctx),
+		block:     block.New(svcCtx),
+		mempool:   mempool.New(svcCtx),
 	}
 }
 

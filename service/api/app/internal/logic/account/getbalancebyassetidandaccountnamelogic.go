@@ -26,8 +26,8 @@ func NewGetBalanceByAssetIdAndAccountNameLogic(ctx context.Context, svcCtx *svc.
 		Logger:    logx.WithContext(ctx),
 		ctx:       ctx,
 		svcCtx:    svcCtx,
-		globalRPC: globalrpc.New(svcCtx.Config, ctx),
-		account:   account.New(svcCtx.Config),
+		globalRPC: globalrpc.New(svcCtx, ctx),
+		account:   account.New(svcCtx),
 	}
 }
 
@@ -37,7 +37,7 @@ func (l *GetBalanceByAssetIdAndAccountNameLogic) GetBalanceByAssetIdAndAccountNa
 		logx.Errorf("[CheckAccountIndex] param:%v", req.AccountName)
 		return nil, errcode.ErrInvalidParam
 	}
-	account, err := l.account.GetAccountByAccountName(req.AccountName)
+	account, err := l.account.GetAccountByAccountName(l.ctx, req.AccountName)
 	if err != nil {
 		logx.Errorf("[GetAccountByAccountName] err:%v", err)
 		return nil, err

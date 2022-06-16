@@ -24,8 +24,8 @@ func NewGetCurrencyPricesLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 		Logger:  logx.WithContext(ctx),
 		ctx:     ctx,
 		svcCtx:  svcCtx,
-		price:   price.New(svcCtx.Config),
-		l2asset: l2asset.New(svcCtx.Config),
+		price:   price.New(svcCtx),
+		l2asset: l2asset.New(svcCtx),
 	}
 }
 
@@ -37,7 +37,7 @@ func (l *GetCurrencyPricesLogic) GetCurrencyPrices(_ *types.ReqGetCurrencyPrices
 	}
 	resp := &types.RespGetCurrencyPrices{}
 	for _, asset := range l2Assets {
-		price, err := l.price.GetCurrencyPrice(asset.AssetSymbol)
+		price, err := l.price.GetCurrencyPrice(l.ctx, asset.AssetSymbol)
 		if err != nil {
 			logx.Error("[GetCurrencyPrice] err:%v", err)
 			return nil, err

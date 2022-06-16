@@ -31,9 +31,9 @@ func NewGetLatestTxsListByAccountIndexAndTxTypeLogic(ctx context.Context, svcCtx
 		svcCtx:  svcCtx,
 		Logger:  logx.WithContext(ctx),
 		tx:      tx.New(svcCtx.Config),
-		mempool: mempool.New(svcCtx.Config),
-		account: account.New(svcCtx.Config),
-		block:   block.New(svcCtx.Config),
+		mempool: mempool.New(svcCtx),
+		account: account.New(svcCtx),
+		block:   block.New(svcCtx),
 	}
 }
 

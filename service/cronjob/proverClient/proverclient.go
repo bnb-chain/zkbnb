@@ -27,6 +27,7 @@ func main() {
 	conf.MustLoad(*configFile, &c)
 	ctx := svc.NewServiceContext(c)
 	// srv := server.NewProverClientPingServer(ctx)
+
 	cronJob := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))
@@ -40,16 +41,15 @@ func main() {
 	fmt.Println("circuit constraints:", r1csValue.GetNbConstraints())
 	fmt.Println("finish compile circuit")
 	// read proving and verifying keys
-	// TODO proving key
 	provingKey, err := util.LoadProvingKey(c.KeyPath.ProvingKeyPath)
 	if err != nil {
 		panic("provingKey loading error")
 	}
-	// TODO verifying key
 	verifyingKey, err := util.LoadVerifyingKey(c.KeyPath.VerifyingKeyPath)
 	if err != nil {
 		panic("verifyingKey loading error")
 	}
+
 
 	_, err = cronJob.AddFunc("@every 10s", func() {
 		// cron job for receiving cryptoBlock and handling
@@ -62,6 +62,7 @@ func main() {
 		panic(err)
 	}
 	cronJob.Start()
-	logx.Info("prover client cron job is starting......")
+
+	logx.Info("proverClient cronjob is starting......")
 	select {}
 }

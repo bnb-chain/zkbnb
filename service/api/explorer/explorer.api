@@ -29,7 +29,8 @@ service explorer-api{
 
 // GetLayer2BasicInfo
 type (
-	ReqGetLayer2BasicInfo  struct{}
+	ReqGetLayer2BasicInfo struct{}
+
 	RespGetLayer2BasicInfo {
 		BlockCommitted         int64    `json:"block_committed"`
 		BlockExecuted          int64    `json:"block_executed"`
@@ -65,8 +66,8 @@ type (
 // GetAccounts
 type (
 	ReqGetAccounts {
-		Offset uint16 `form:"offset"`
-		Limit  uint16 `form:"limit"`
+		Offset uint16 `form:"offset" validator:"min=0"`
+		Limit  uint16 `form:"limit" validator:"min=0,max=50"`
 	}
 	Accounts {
 		AccountIndex uint32 `json:"account_index"`
@@ -137,7 +138,7 @@ type (
 		BlockCommitment string `form:"block_commitment"`
 	}
 	RespGetBlockByCommitment {
-		Blocks []*Block `json:"blocks"`
+		Block Block `json:"block"`
 	}
 )
 
@@ -227,7 +228,7 @@ type (
 // getTxsListByAccountIndex
 type (
 	ReqGetTxsListByAccountIndex {
-		AccountIndex uint32 `form:"account_index"`
+		AccountIndex string `form:"account_index"`
 		Offset       uint16 `form:"offset"`
 		Limit        uint16 `form:"limit"`
 	}

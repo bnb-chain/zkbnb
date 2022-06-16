@@ -10,37 +10,35 @@ import (
 
 type multcache struct {
 	marshal *marshaler.Marshaler
-	timeOut uint32
-	ctx     context.Context
 }
 
-type QueryFunc func(value ...interface{}) (interface{}, error)
+type QueryFunc func(arg interface{}) (interface{}, error)
 
-func (m *multcache) GetWithSet(key string, value interface{},
-	query QueryFunc, args ...interface{}) (interface{}, error) {
-	returnObj, err := m.marshal.Get(m.ctx, key, value)
+func (m *multcache) GetWithSet(ctx context.Context, key string, value interface{}, timeOut uint32,
+	query QueryFunc, arg interface{}) (interface{}, error) {
+	returnObj, err := m.marshal.Get(ctx, key, value)
 	if err == nil {
 		return returnObj, nil
 	}
 	if err.Error() == errGoCacheKeyNotExist.Error() || err.Error() == errRedisCacheKeyNotExist.Error() {
-		result, err := query(args...)
+		result, err := query(arg)
 		if err != nil {
 			return nil, err
 		}
-		return result, m.Set(key, result)
+		return result, m.Set(ctx, key, result, timeOut)
 	}
 	return nil, err
 }
 
-func (m *multcache) Get(key string, value interface{}) (interface{}, error) {
-	returnObj, err := m.marshal.Get(m.ctx, key, value)
+func (m *multcache) Get(ctx context.Context, key string, value interface{}) (interface{}, error) {
+	returnObj, err := m.marshal.Get(ctx, key, value)
 	if err == nil {
 		return returnObj, nil
 	}
 	return nil, err
 }
 
-func (m *multcache) Set(key string, value interface{}) error {
-	return m.marshal.Set(m.ctx, key, value,
-		&store.Options{Expiration: time.Duration(m.timeOut) * time.Second})
+func (m *multcache) Set(ctx context.Context, key string, value interface{}, timeOut uint32) error {
+	return m.marshal.Set(ctx, key, value,
+		&store.Options{Expiration: time.Duration(timeOut) * time.Second})
 }

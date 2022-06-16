@@ -1,7 +1,6 @@
 package tx
 
 import (
-	"context"
 	"sync"
 
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
@@ -36,7 +35,7 @@ func New(c config.Config) Tx {
 			table:     `tx`,
 			db:        gormPointer,
 			redisConn: redisConn,
-			cache:     multcache.NewGoCache(context.Background(), 100, 10),
+			cache:     multcache.NewGoCache(100, 10),
 		}
 	})
 	return singletonValue

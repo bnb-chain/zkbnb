@@ -26,8 +26,8 @@ func NewGetAssetsByAccountNameLogic(ctx context.Context, svcCtx *svc.ServiceCont
 		Logger:    logx.WithContext(ctx),
 		ctx:       ctx,
 		svcCtx:    svcCtx,
-		account:   account.New(svcCtx.Config),
-		globalRPC: globalrpc.New(svcCtx.Config, ctx),
+		account:   account.New(svcCtx),
+		globalRPC: globalrpc.New(svcCtx, ctx),
 	}
 }
 
@@ -39,7 +39,7 @@ func (l *GetAssetsByAccountNameLogic) GetAssetsByAccountName(req *types.ReqGetAs
 		logx.Errorf("[CheckAccountName] param:%v", req.AccountName)
 		return nil, errcode.ErrInvalidParam
 	}
-	account, err := l.account.GetAccountByAccountName(req.AccountName)
+	account, err := l.account.GetAccountByAccountName(l.ctx, req.AccountName)
 	if err != nil {
 		logx.Errorf("[GetAccountByAccountName] err:%v", err)
 		return nil, err

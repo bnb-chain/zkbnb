@@ -28,9 +28,9 @@ func NewGetLatestAccountLpLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 		ctx:           ctx,
 		svcCtx:        svcCtx,
 		Logger:        logx.WithContext(ctx),
-		liquidity:     liquidity.New(svcCtx.Config),
-		mempool:       mempool.New(svcCtx.Config),
-		commglobalmap: commglobalmap.New(svcCtx.Config),
+		liquidity:     liquidity.New(svcCtx),
+		mempool:       mempool.New(svcCtx),
+		commglobalmap: commglobalmap.New(svcCtx),
 	}
 }
 

@@ -24,7 +24,6 @@ func main() {
 
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
-	logx.MustSetup(c.LogConf)
 	ctx := svc.NewServiceContext(c)
 	// srv := server.NewSenderServer(ctx)
 
@@ -116,6 +115,6 @@ func main() {
 	}
 	cronJob.Start()
 
-	logx.Info("sender cron job is starting......")
+	logx.Info("sender cronjob is starting......")
 	select {}
 }

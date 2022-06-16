@@ -1,6 +1,7 @@
 package price
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -8,15 +9,10 @@ import (
 
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/sqlc"
-	"gorm.io/gorm"
 )
 
 type price struct {
-	cachedConn sqlc.CachedConn
-	table      string
-	db         *gorm.DB
-	cache      multcache.MultCache
+	cache multcache.MultCache
 }
 
 /*
@@ -25,9 +21,9 @@ type price struct {
 	Return: price float64, err error
 	Description: get currency price cache by currency symbol
 */
-func (m *price) GetCurrencyPrice(l2Symbol string) (float64, error) {
+func (m *price) GetCurrencyPrice(ctx context.Context, l2Symbol string) (float64, error) {
 	// quote.Quote["USD"].Price
-	err := UpdateCurrencyPriceBySymbol(l2Symbol, m.cache)
+	err := UpdateCurrencyPriceBySymbol(ctx, l2Symbol, m.cache)
 	if err != nil {
 		errInfo := fmt.Sprintf("[PriceModel.GetCurrencyPrice.UpdateCurrencyPriceBySymbol] %s", err)
 		logx.Error(errInfo)
@@ -35,7 +31,7 @@ func (m *price) GetCurrencyPrice(l2Symbol string) (float64, error) {
 	}
 	key := fmt.Sprintf("%s%v", cachePriceSymbolPrefix, l2Symbol)
 	var returnObj interface{}
-	_, err = m.cache.Get(key, &returnObj)
+	_, err = m.cache.Get(ctx, key, &returnObj)
 	if err != nil {
 		errInfo := fmt.Sprintf("[PriceModel.GetCurrencyPrice.Getcache] %s %s", key, err)
 		logx.Error(errInfo)
@@ -54,7 +50,7 @@ func (m *price) GetCurrencyPrice(l2Symbol string) (float64, error) {
 	Return: err
 	Description: update currency price cache by symbol
 */
-func UpdateCurrencyPriceBySymbol(l2Symbol string, cache multcache.MultCache) error {
+func UpdateCurrencyPriceBySymbol(ctx context.Context, l2Symbol string, cache multcache.MultCache) error {
 	latestQuotes, err := getQuotesLatest(l2Symbol)
 	if err != nil {
 		return err
@@ -62,7 +58,7 @@ func UpdateCurrencyPriceBySymbol(l2Symbol string, cache multcache.MultCache) err
 	for _, latestQuote := range latestQuotes {
 		key := fmt.Sprintf("%s%s", cachePriceSymbolPrefix, latestQuote.Symbol)
 		logx.Info(key, "   ", latestQuote.Quote["USD"].Price)
-		if err := cache.Set(key, latestQuote.Quote["USD"].Price); err != nil {
+		if err := cache.Set(ctx, key, latestQuote.Quote["USD"].Price, 1); err != nil {
 			return ErrSetCache.RefineError(err.Error())
 		}
 	}

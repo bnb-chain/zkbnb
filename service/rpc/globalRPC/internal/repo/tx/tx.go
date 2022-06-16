@@ -1,8 +1,6 @@
 package tx
 
 import (
-	"log"
-
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
@@ -31,16 +29,16 @@ type tx struct {
 	Description: used for counting total transactions for explorer dashboard
 */
 func (m *tx) GetTxsTotalCount() (count int64, err error) {
-	result, err := m.cache.GetWithSet(cacheZecreyTxTxCountPrefix, count,
-		multcache.SqlQueryCount, m.db, m.table,
-		"deleted_at is NULL")
-	if err != nil {
-		return 0, err
-	}
-	count, ok := result.(int64)
-	if !ok {
-		log.Fatal("Error type!")
-	}
+	// result, err := m.cache.GetWithSet(cacheZecreyTxTxCountPrefix, count,
+	// 	multcache.SqlQueryCount, m.db, m.table,
+	// 	"deleted_at is NULL")
+	// if err != nil {
+	// 	return 0, err
+	// }
+	// count, ok := result.(int64)
+	// if !ok {
+	// 	log.Fatal("Error type!")
+	// }
 	return count, nil
 }
 

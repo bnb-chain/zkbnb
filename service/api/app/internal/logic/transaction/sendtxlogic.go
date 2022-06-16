@@ -21,7 +21,7 @@ func NewSendTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendTxLogi
 		Logger:    logx.WithContext(ctx),
 		ctx:       ctx,
 		svcCtx:    svcCtx,
-		globalRpc: globalrpc.New(svcCtx.Config, ctx),
+		globalRpc: globalrpc.New(svcCtx, ctx),
 	}
 }
 

@@ -4,16 +4,17 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
+	"math/big"
+	"os"
+	"time"
+
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/frontend"
 	cryptoBlock "github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/block"
 	"github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/std"
-	"log"
-	"math/big"
-	"os"
-	"time"
 )
 
 const (

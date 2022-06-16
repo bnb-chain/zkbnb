@@ -26,8 +26,8 @@ func NewGetAccountInfoByAccountNameLogic(ctx context.Context, svcCtx *svc.Servic
 		Logger:    logx.WithContext(ctx),
 		ctx:       ctx,
 		svcCtx:    svcCtx,
-		globalRPC: globalrpc.New(svcCtx.Config, ctx),
-		account:   account.New(svcCtx.Config),
+		globalRPC: globalrpc.New(svcCtx, ctx),
+		account:   account.New(svcCtx),
 	}
 }
 
@@ -44,7 +44,7 @@ func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *type
 		logx.Errorf("[CheckFormatAccountName] accountName:%v", accountName)
 		return nil, errcode.ErrInvalidParam
 	}
-	account, err := l.account.GetAccountByAccountName(accountName)
+	account, err := l.account.GetAccountByAccountName(l.ctx, accountName)
 	if err != nil {
 		logx.Errorf("[GetAccountByAccountName] accountName:%v, err:%v", accountName, err)
 		return nil, err

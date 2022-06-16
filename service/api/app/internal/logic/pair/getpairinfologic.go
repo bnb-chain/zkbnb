@@ -24,7 +24,7 @@ func NewGetPairInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPa
 		Logger:    logx.WithContext(ctx),
 		ctx:       ctx,
 		svcCtx:    svcCtx,
-		globalRPC: globalrpc.New(svcCtx.Config, ctx),
+		globalRPC: globalrpc.New(svcCtx, ctx),
 	}
 }
 

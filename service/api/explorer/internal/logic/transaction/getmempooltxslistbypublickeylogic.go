@@ -2,7 +2,9 @@ package transaction
 
 import (
 	"context"
+	"strconv"
 
+	blockmodel "github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/types"
 
@@ -24,7 +26,68 @@ func NewGetMempoolTxsListByPublicKeyLogic(ctx context.Context, svcCtx *svc.Servi
 }
 
 func (l *GetMempoolTxsListByPublicKeyLogic) GetMempoolTxsListByPublicKey(req *types.ReqGetMempoolTxsListByPublicKey) (resp *types.RespGetMempoolTxsListByPublicKey, err error) {
-	// todo: add your logic here and delete this line
+	account, err := l.svcCtx.Account.GetAccountByPk(req.AccountPk)
+	if err != nil {
+		l.Error("[transaction.GetTxsByPubKey] err:%v", err)
+		return
+	}
 
+	txList, _, err := l.svcCtx.GlobalRPC.GetLatestTxsListByAccountIndex(uint32(account.AccountIndex), uint32(req.Limit), uint32(req.Offset))
+	if err != nil {
+		l.Error("[transaction.GetTxsByPubKey] err:%v", err)
+		return
+	}
+	txCount, err := l.svcCtx.Tx.GetTxsTotalCountByAccountIndex(account.AccountIndex)
+	if err != nil {
+		logx.Error("[transaction.GetTxsByPubKey] err:%v", err)
+		return
+	}
+
+	mempoolTxCount, err := l.svcCtx.Mempool.GetMempoolTxsTotalCountByAccountIndex(account.AccountIndex)
+	if err != nil {
+		logx.Error("[transaction.GetTxsByPubKey] err:%v", err)
+		return
+	}
+
+	for _, tx := range txList {
+		txDetails := make([]*types.TxDetail, 0)
+		for _, txDetail := range tx.MempoolDetails {
+			txDetails = append(txDetails, &types.TxDetail{
+				AssetId:        int(txDetail.AssetId),
+				AssetType:      int(txDetail.AssetType),
+				AccountIndex:   int32(txDetail.AccountIndex),
+				AccountName:    txDetail.AccountName,
+				AccountBalance: txDetail.BalanceDelta,
+			})
+		}
+		gasFee, _ := strconv.ParseInt(tx.GasFee, 10, 64)
+		txAmount, _ := strconv.ParseInt(tx.TxAmount, 10, 64)
+		var blockInfo *blockmodel.Block
+		blockInfo, err = l.svcCtx.Block.GetBlockByBlockHeight(tx.L2BlockHeight)
+		if err != nil {
+			logx.Error("[transaction.GetTxsByPubKey] err:%v", err)
+			return
+		}
+		resp.Txs = append(resp.Txs, &types.Tx{
+			TxHash:        tx.TxHash,
+			TxType:        int32(tx.TxType),
+			GasFeeAssetId: int32(tx.GasFeeAssetId),
+			GasFee:        int32(gasFee),
+			TxStatus:      int32(tx.Status),
+			BlockHeight:   int64(tx.L2BlockHeight),
+			BlockStatus:   int32(blockInfo.BlockStatus),
+			BlockId:       int32(blockInfo.ID),
+			//Todo: do we still need AssetAId and AssetBId
+			AssetAId:      int32(tx.AssetId),
+			AssetBId:      int32(tx.AssetId),
+			TxAmount:      int64(txAmount),
+			TxDetails:     txDetails,
+			NativeAddress: tx.NativeAddress,
+			CreatedAt:     tx.CreatedAt.UnixNano() / 1e6,
+			Memo:          tx.Memo,
+		})
+	}
+
+	resp.Total = uint32(txCount + mempoolTxCount)
 	return
 }

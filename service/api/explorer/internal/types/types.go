@@ -42,8 +42,8 @@ type RespSearch struct {
 }
 
 type ReqGetAccounts struct {
-	Offset uint16 `form:"offset"`
-	Limit  uint16 `form:"limit"`
+	Offset uint16 `form:"offset" validator:"min=0"`
+	Limit  uint16 `form:"limit" validator:"min=0,max=50"`
 }
 
 type Accounts struct {
@@ -92,7 +92,7 @@ type ReqGetBlockByCommitment struct {
 }
 
 type RespGetBlockByCommitment struct {
-	Blocks []*Block `json:"blocks"`
+	Block Block `json:"block"`
 }
 
 type ReqGetBlockByBlockHeight struct {
@@ -156,7 +156,7 @@ type RespGetTxByHash struct {
 }
 
 type ReqGetTxsListByAccountIndex struct {
-	AccountIndex uint32 `form:"account_index"`
+	AccountIndex string `form:"account_index"`
 	Offset       uint16 `form:"offset"`
 	Limit        uint16 `form:"limit"`
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
+	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/config"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
@@ -39,7 +40,10 @@ type ServiceContext struct {
 
 	RedisConnection *redis.Redis
 
-	DbEngine *gorm.DB
+	GormPointer *gorm.DB
+
+	Conn  sqlx.SqlConn
+	Cache multcache.MultCache
 }
 
 func WithRedis(redisType string, redisPass string) redis.Option {
@@ -52,7 +56,7 @@ func WithRedis(redisType string, redisPass string) redis.Option {
 func NewServiceContext(c config.Config) *ServiceContext {
 	gormPointer, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
 	if err != nil {
-		logx.Errorf("gorm connect db error, err = %s", err.Error())
+		logx.Must(err)
 	}
 	conn := sqlx.NewSqlConn("postgres", c.Postgres.DataSource)
 	redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
@@ -73,5 +77,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		L2AssetModel:          asset.NewAssetInfoModel(conn, c.CacheRedis, gormPointer),
 		SysConfigModel:        sysconfig.NewSysconfigModel(conn, c.CacheRedis, gormPointer),
 		RedisConnection:       redisConn,
+		GormPointer:           gormPointer,
+		Conn:                  conn,
+		Cache:                 multcache.NewGoCache(100, 10),
 	}
 }

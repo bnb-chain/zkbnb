@@ -27,17 +27,13 @@ func NewGetSwapAmountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 		ctx:           ctx,
 		svcCtx:        svcCtx,
 		Logger:        logx.WithContext(ctx),
-		commglobalmap: commglobalmap.New(svcCtx.Config),
+		commglobalmap: commglobalmap.New(svcCtx),
 	}
 }
 
 func (l *GetSwapAmountLogic) GetSwapAmount(in *globalRPCProto.ReqGetSwapAmount) (*globalRPCProto.RespGetSwapAmount, error) {
 	if utils.CheckPairIndex(in.PairIndex) {
 		logx.Errorf("[CheckPairIndex] param:%v", in.PairIndex)
-		return nil, errcode.ErrInvalidParam
-	}
-	if utils.CheckAmount(in.AssetAmount) {
-		logx.Errorf("[CheckAmount] param:%v", in.AssetAmount)
 		return nil, errcode.ErrInvalidParam
 	}
 	liquidity, err := l.commglobalmap.GetLatestLiquidityInfoForRead(int64(in.PairIndex))
