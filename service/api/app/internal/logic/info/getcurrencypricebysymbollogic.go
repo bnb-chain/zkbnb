@@ -24,13 +24,13 @@ func NewGetCurrencyPriceBySymbolLogic(ctx context.Context, svcCtx *svc.ServiceCo
 		Logger:  logx.WithContext(ctx),
 		ctx:     ctx,
 		svcCtx:  svcCtx,
-		price:   price.New(svcCtx.Config),
-		l2asset: l2asset.New(svcCtx.Config),
+		price:   price.New(svcCtx),
+		l2asset: l2asset.New(svcCtx),
 	}
 }
 
 func (l *GetCurrencyPriceBySymbolLogic) GetCurrencyPriceBySymbol(req *types.ReqGetCurrencyPriceBySymbol) (*types.RespGetCurrencyPriceBySymbol, error) {
-	_price, err := l.price.GetCurrencyPrice(req.Symbol)
+	_price, err := l.price.GetCurrencyPrice(l.ctx, req.Symbol)
 	if err != nil {
 		logx.Error("[GetCurrencyPrice] err:%v", err)
 		return nil, err

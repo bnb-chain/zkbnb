@@ -22,7 +22,7 @@ func NewGetAssetsListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 		Logger:  logx.WithContext(ctx),
 		ctx:     ctx,
 		svcCtx:  svcCtx,
-		l2asset: l2asset.New(svcCtx.Config),
+		l2asset: l2asset.New(svcCtx),
 	}
 }
 

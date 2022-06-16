@@ -23,8 +23,8 @@ func NewGetTxByHashLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTx
 		Logger:  logx.WithContext(ctx),
 		ctx:     ctx,
 		svcCtx:  svcCtx,
-		mempool: mempool.New(svcCtx.Config),
-		block:   block.New(svcCtx.Config),
+		mempool: mempool.New(svcCtx),
+		block:   block.New(svcCtx),
 	}
 }
 

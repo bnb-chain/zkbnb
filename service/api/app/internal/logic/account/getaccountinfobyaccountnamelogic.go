@@ -26,8 +26,8 @@ func NewGetAccountInfoByAccountNameLogic(ctx context.Context, svcCtx *svc.Servic
 		Logger:    logx.WithContext(ctx),
 		ctx:       ctx,
 		svcCtx:    svcCtx,
-		globalRPC: globalrpc.New(svcCtx.Config, ctx),
-		account:   account.New(svcCtx.Config),
+		globalRPC: globalrpc.New(svcCtx, ctx),
+		account:   account.New(svcCtx),
 	}
 }
 
