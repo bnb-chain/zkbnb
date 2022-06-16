@@ -6,7 +6,7 @@ package globalrpc
 import (
 	"context"
 
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/pb/globalRPCProto"
 
 	"github.com/zeromicro/go-zero/zrpc"
 	"google.golang.org/grpc"
@@ -21,7 +21,9 @@ type (
 	ReqGetLatestTxsListByAccountIndex              = globalRPCProto.ReqGetLatestTxsListByAccountIndex
 	ReqGetLatestTxsListByAccountIndexAndTxType     = globalRPCProto.ReqGetLatestTxsListByAccountIndexAndTxType
 	ReqGetLpValue                                  = globalRPCProto.ReqGetLpValue
+	ReqGetMaxOfferId                               = globalRPCProto.ReqGetMaxOfferId
 	ReqGetSwapAmount                               = globalRPCProto.ReqGetSwapAmount
+	ReqGetTransactionCount                         = globalRPCProto.ReqGetTransactionCount
 	ReqSendTx                                      = globalRPCProto.ReqSendTx
 	RespGetLatestAccountLp                         = globalRPCProto.RespGetLatestAccountLp
 	RespGetLatestAssetInfoByAccountIndexAndAssetId = globalRPCProto.RespGetLatestAssetInfoByAccountIndexAndAssetId
@@ -30,7 +32,9 @@ type (
 	RespGetLatestTxsListByAccountIndex             = globalRPCProto.RespGetLatestTxsListByAccountIndex
 	RespGetLatestTxsListByAccountIndexAndTxType    = globalRPCProto.RespGetLatestTxsListByAccountIndexAndTxType
 	RespGetLpValue                                 = globalRPCProto.RespGetLpValue
+	RespGetMaxOfferId                              = globalRPCProto.RespGetMaxOfferId
 	RespGetSwapAmount                              = globalRPCProto.RespGetSwapAmount
+	RespGetTransactionCount                        = globalRPCProto.RespGetTransactionCount
 	RespSendTx                                     = globalRPCProto.RespSendTx
 	TxDetailInfo                                   = globalRPCProto.TxDetailInfo
 	TxInfo                                         = globalRPCProto.TxInfo
@@ -48,6 +52,9 @@ type (
 		GetLatestTxsListByAccountIndex(ctx context.Context, in *ReqGetLatestTxsListByAccountIndex, opts ...grpc.CallOption) (*RespGetLatestTxsListByAccountIndex, error)
 		GetLatestTxsListByAccountIndexAndTxType(ctx context.Context, in *ReqGetLatestTxsListByAccountIndexAndTxType, opts ...grpc.CallOption) (*RespGetLatestTxsListByAccountIndexAndTxType, error)
 		SendTx(ctx context.Context, in *ReqSendTx, opts ...grpc.CallOption) (*RespSendTx, error)
+		GetTransactionCount(ctx context.Context, in *ReqGetTransactionCount, opts ...grpc.CallOption) (*RespGetTransactionCount, error)
+		//  NFT
+		GetMaxOfferId(ctx context.Context, in *ReqGetMaxOfferId, opts ...grpc.CallOption) (*RespGetMaxOfferId, error)
 	}
 
 	defaultGlobalRPC struct {
@@ -107,4 +114,15 @@ func (m *defaultGlobalRPC) GetLatestTxsListByAccountIndexAndTxType(ctx context.C
 func (m *defaultGlobalRPC) SendTx(ctx context.Context, in *ReqSendTx, opts ...grpc.CallOption) (*RespSendTx, error) {
 	client := globalRPCProto.NewGlobalRPCClient(m.cli.Conn())
 	return client.SendTx(ctx, in, opts...)
+}
+
+func (m *defaultGlobalRPC) GetTransactionCount(ctx context.Context, in *ReqGetTransactionCount, opts ...grpc.CallOption) (*RespGetTransactionCount, error) {
+	client := globalRPCProto.NewGlobalRPCClient(m.cli.Conn())
+	return client.GetTransactionCount(ctx, in, opts...)
+}
+
+//  NFT
+func (m *defaultGlobalRPC) GetMaxOfferId(ctx context.Context, in *ReqGetMaxOfferId, opts ...grpc.CallOption) (*RespGetMaxOfferId, error) {
+	client := globalRPCProto.NewGlobalRPCClient(m.cli.Conn())
+	return client.GetMaxOfferId(ctx, in, opts...)
 }

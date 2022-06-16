@@ -6,9 +6,9 @@ package server
 import (
 	"context"
 
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/logic"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/pb/globalRPCProto"
 )
 
 type GlobalRPCServer struct {
@@ -68,4 +68,15 @@ func (s *GlobalRPCServer) GetLatestTxsListByAccountIndexAndTxType(ctx context.Co
 func (s *GlobalRPCServer) SendTx(ctx context.Context, in *globalRPCProto.ReqSendTx) (*globalRPCProto.RespSendTx, error) {
 	l := logic.NewSendTxLogic(ctx, s.svcCtx)
 	return l.SendTx(in)
+}
+
+func (s *GlobalRPCServer) GetTransactionCount(ctx context.Context, in *globalRPCProto.ReqGetTransactionCount) (*globalRPCProto.RespGetTransactionCount, error) {
+	l := logic.NewGetTransactionCountLogic(ctx, s.svcCtx)
+	return l.GetTransactionCount(in)
+}
+
+//  NFT
+func (s *GlobalRPCServer) GetMaxOfferId(ctx context.Context, in *globalRPCProto.ReqGetMaxOfferId) (*globalRPCProto.RespGetMaxOfferId, error) {
+	l := logic.NewGetMaxOfferIdLogic(ctx, s.svcCtx)
+	return l.GetMaxOfferId(in)
 }
