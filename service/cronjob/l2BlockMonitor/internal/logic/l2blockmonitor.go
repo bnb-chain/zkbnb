@@ -169,7 +169,7 @@ func MonitorL2BlockEvents(
 	// sort for blocks
 	if len(pendingUpdateBlocks) != 0 {
 		sort.Sort(blockInfosByBlockHeight(pendingUpdateBlocks))
-		logx.Info("pending update blocks count: %v and height: %v", len(pendingUpdateBlocks), pendingUpdateBlocks[len(pendingUpdateBlocks)-1].BlockHeight)
+		logx.Infof("pending update blocks count: %v and height: %v", len(pendingUpdateBlocks), pendingUpdateBlocks[len(pendingUpdateBlocks)-1].BlockHeight)
 	}
 
 	// handle executed blocks
