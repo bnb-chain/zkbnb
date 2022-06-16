@@ -80,7 +80,7 @@ func main() {
 		AuthCli:              authCli,
 		ZecreyLegendInstance: zecreyInstance,
 		MaxWaitingTime:       c.ChainConfig.MaxWaitingTime * time.Second.Milliseconds(),
-		MaxBlocksCount:       3,
+		MaxBlocksCount:       c.ChainConfig.MaxBlockCount,
 		GasPrice:             gasPrice,
 		GasLimit:             c.ChainConfig.GasLimit,
 	}
