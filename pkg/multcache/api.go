@@ -14,13 +14,13 @@ import (
 
 // Query function when key does not exist
 type MultCache interface {
-	GetWithSet(key string, value interface{},
+	GetWithSet(ctx context.Context, key string, value interface{}, timeOut uint32,
 		query QueryFunc, args ...interface{}) (interface{}, error)
-	Get(key string, value interface{}) (interface{}, error)
-	Set(key string, value interface{}) error
+	Get(ctx context.Context, key string, value interface{}) (interface{}, error)
+	Set(ctx context.Context, key string, value interface{}, timeOut uint32) error
 }
 
-func NewGoCache(ctx context.Context, expiration, cleanupInterval uint32) MultCache {
+func NewGoCache(expiration, cleanupInterval uint32) MultCache {
 	gocacheClient := gocache.New(time.Duration(expiration)*time.Minute,
 		time.Duration(cleanupInterval)*time.Minute)
 	gocacheStore := store.NewGoCache(gocacheClient, nil)
@@ -29,12 +29,10 @@ func NewGoCache(ctx context.Context, expiration, cleanupInterval uint32) MultCac
 	cacheManager := cache.NewMetric(promMetrics, goCacheManager)
 	return &multcache{
 		marshal: marshaler.New(cacheManager),
-		ctx:     ctx,
 	}
 }
 
-func NewRedisCache(ctx context.Context,
-	redisAdd string, expiration uint32) MultCache {
+func NewRedisCache(redisAdd string, expiration uint32) MultCache {
 	redisClient := redis.NewClient(&redis.Options{Addr: redisAdd})
 	redisStore := store.NewRedis(redisClient,
 		&store.Options{Expiration: time.Duration(expiration) * time.Minute})
@@ -43,12 +41,10 @@ func NewRedisCache(ctx context.Context,
 	cacheManager := cache.NewMetric(promMetrics, redisCacheManager)
 	return &multcache{
 		marshal: marshaler.New(cacheManager),
-		ctx:     ctx,
 	}
 }
 
-func NewMultCache(ctx context.Context,
-	redisAdd string, expiration, cleanupInterval uint32) MultCache {
+func NewMultCache(redisAdd string, expiration, cleanupInterval uint32) MultCache {
 	gocacheClient := gocache.New(time.Duration(expiration)*time.Minute,
 		time.Duration(cleanupInterval)*time.Minute)
 	gocacheStore := store.NewGoCache(gocacheClient, nil)
@@ -66,6 +62,5 @@ func NewMultCache(ctx context.Context,
 	)
 	return &multcache{
 		marshal: marshaler.New(cacheManager),
-		ctx:     ctx,
 	}
 }
