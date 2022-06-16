@@ -4,23 +4,13 @@ import (
 	mempoolModel "github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/redis"
-	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"gorm.io/gorm"
 )
 
-var (
-	cacheMempoolTxListPrefix = "cache:mempool:txList"
-	cacheMempoolTxTotalCount = "cache:mempool:totalCount"
-	//"cache:AccountsHistoryList_%v_%v", limit, offset
-)
-
 type mempool struct {
-	cachedConn sqlc.CachedConn
-	table      string
-	db         *gorm.DB
-	cache      multcache.MultCache
-	redisConn  *redis.Redis
+	table string
+	db    *gorm.DB
+	cache multcache.MultCache
 }
 
 /*

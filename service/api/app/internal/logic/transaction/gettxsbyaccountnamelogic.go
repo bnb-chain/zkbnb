@@ -38,7 +38,7 @@ func NewGetTxsByAccountNameLogic(ctx context.Context, svcCtx *svc.ServiceContext
 }
 
 func (l *GetTxsByAccountNameLogic) GetTxsByAccountName(req *types.ReqGetTxsByAccountName) (resp *types.RespGetTxsByAccountName, err error) {
-	account, err := l.account.GetAccountByAccountName(req.AccountName)
+	account, err := l.account.GetAccountByAccountName(l.ctx, req.AccountName)
 	if err != nil {
 		logx.Errorf("[transaction.GetTxsByAccountName] err:%v", err)
 		return nil, err

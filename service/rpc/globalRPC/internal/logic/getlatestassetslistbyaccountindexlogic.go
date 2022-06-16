@@ -22,7 +22,7 @@ func NewGetLatestAssetsListByAccountIndexLogic(ctx context.Context, svcCtx *svc.
 		ctx:           ctx,
 		svcCtx:        svcCtx,
 		Logger:        logx.WithContext(ctx),
-		commglobalmap: commglobalmap.New(svcCtx.Config),
+		commglobalmap: commglobalmap.New(svcCtx),
 	}
 }
 

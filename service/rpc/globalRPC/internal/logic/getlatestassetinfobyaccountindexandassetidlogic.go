@@ -32,10 +32,10 @@ func NewGetLatestAssetInfoByAccountIndexAndAssetIdLogic(ctx context.Context, svc
 		ctx:           ctx,
 		svcCtx:        svcCtx,
 		Logger:        logx.WithContext(ctx),
-		account:       account.New(svcCtx.Config),
-		l2asset:       l2asset.New(svcCtx.Config),
-		mempool:       mempool.New(svcCtx.Config),
-		commglobalmap: commglobalmap.New(svcCtx.Config),
+		account:       account.New(svcCtx),
+		l2asset:       l2asset.New(svcCtx),
+		mempool:       mempool.New(svcCtx),
+		commglobalmap: commglobalmap.New(svcCtx),
 	}
 }
 

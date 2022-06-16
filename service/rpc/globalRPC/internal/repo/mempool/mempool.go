@@ -1,9 +1,6 @@
 package mempool
 
 import (
-	"database/sql"
-	"fmt"
-
 	mempoolModel "github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	table "github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
@@ -34,33 +31,33 @@ type mempool struct {
 	Description: query txs from db that sit in the range
 */
 func (m *mempool) GetMempoolTxs(offset int64, limit int64) (mempoolTx []*mempoolModel.MempoolTx, err error) {
-	var mempoolForeignKeyColumn = `MempoolDetails`
-	where := "status = @status"
-	whereCondition := sql.Named("status", PendingTxStatus)
-	order := "created_at desc, id desc"
-	key := cacheMempoolTxListPrefix + fmt.Sprintf("_%v_%v", offset, limit)
-	_, err = m.cache.GetWithSet(key, mempoolTx, multcache.SqlBatchQueryWithWhere, m.db, m.table, where, whereCondition, int(limit), int(offset), order)
-	if err != nil {
-		logx.Errorf("[mempool.GetMempoolTxs] %s", err)
-		return nil, err
-	}
-	for _, mempoolTx := range mempoolTx {
-		err := m.db.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
-		if err != nil {
-			return nil, err
-		}
-	}
+	// var mempoolForeignKeyColumn = `MempoolDetails`
+	// where := "status = @status"
+	// whereCondition := sql.Named("status", PendingTxStatus)
+	// order := "created_at desc, id desc"
+	// key := cacheMempoolTxListPrefix + fmt.Sprintf("_%v_%v", offset, limit)
+	// _, err = m.cache.GetWithSet(key, mempoolTx, multcache.SqlBatchQueryWithWhere, m.db, m.table, where, whereCondition, int(limit), int(offset), order)
+	// if err != nil {
+	// 	logx.Errorf("[mempool.GetMempoolTxs] %s", err)
+	// 	return nil, err
+	// }
+	// for _, mempoolTx := range mempoolTx {
+	// 	err := m.db.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// }
 	return mempoolTx, nil
 }
 
 func (m *mempool) GetMempoolTxsTotalCount() (count int64, err error) {
-	where := "status = @status and deleted_at is NULL"
-	whereCondition := sql.Named("status", PendingTxStatus)
-	ct, err := m.cache.GetWithSet(cacheMempoolTxTotalCount, count, multcache.SqlQueryCountNamed, m.db, m.table, where, whereCondition)
-	if err != nil {
-		return 0, err
-	}
-	return ct.(int64), nil
+	// where := "status = @status and deleted_at is NULL"
+	// whereCondition := sql.Named("status", PendingTxStatus)
+	// ct, err := m.cache.GetWithSet(cacheMempoolTxTotalCount, count, multcache.SqlQueryCountNamed, m.db, m.table, where, whereCondition)
+	// if err != nil {
+	// 	return 0, err
+	// }
+	return 0, nil
 }
 
 func (m *mempool) GetMempoolTxByTxHash(hash string) (mempoolTx *mempoolModel.MempoolTx, err error) {

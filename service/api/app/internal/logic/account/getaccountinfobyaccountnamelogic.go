@@ -44,7 +44,7 @@ func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *type
 		logx.Errorf("[CheckFormatAccountName] accountName:%v", accountName)
 		return nil, errcode.ErrInvalidParam
 	}
-	account, err := l.account.GetAccountByAccountName(accountName)
+	account, err := l.account.GetAccountByAccountName(l.ctx, accountName)
 	if err != nil {
 		logx.Errorf("[GetAccountByAccountName] accountName:%v, err:%v", accountName, err)
 		return nil, err

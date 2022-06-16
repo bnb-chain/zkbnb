@@ -27,7 +27,7 @@ func NewGetSwapAmountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 		ctx:           ctx,
 		svcCtx:        svcCtx,
 		Logger:        logx.WithContext(ctx),
-		commglobalmap: commglobalmap.New(svcCtx.Config),
+		commglobalmap: commglobalmap.New(svcCtx),
 	}
 }
 
