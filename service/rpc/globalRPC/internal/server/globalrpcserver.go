@@ -6,9 +6,9 @@ package server
 import (
 	"context"
 
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/logic"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/pb/globalRPCProto"
 )
 
 type GlobalRPCServer struct {
