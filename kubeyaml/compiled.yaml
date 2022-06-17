@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: appservice-svc
+  name: app-svc
   namespace: default
 spec:
   ports:
   - port: 8888
   selector:
-    app: appservice
+    app: app
 ---
 apiVersion: v1
 kind: Service
@@ -57,23 +57,23 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: appservice
-  name: appservice
+    app: app
+  name: app
   namespace: default
 spec:
   replicas: 1
   revisionHistoryLimit: 5
   selector:
     matchLabels:
-      app: appservice
+      app: app
   template:
     metadata:
       labels:
-        app: appservice
+        app: app
     spec:
       serviceAccountName: find-endpoints
       containers:
-      - image: us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/appservice:$TAG_NAME
+      - image: us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/app:$TAG_NAME
         imagePullPolicy: Always
         lifecycle:
           preStop:
@@ -87,7 +87,7 @@ spec:
           periodSeconds: 20
           tcpSocket:
             port: 8888
-        name: appservice
+        name: app
         ports:
         - containerPort: 8888
         readinessProbe:
@@ -628,8 +628,8 @@ apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
 metadata:
   labels:
-    app: appservice-hpa-c
-  name: appservice-hpa-c
+    app: app-hpa-c
+  name: app-hpa-c
   namespace: default
 spec:
   maxReplicas: 1
@@ -642,14 +642,14 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: appservice
+    name: app
 ---
 apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
 metadata:
   labels:
-    app: appservice-hpa-m
-  name: appservice-hpa-m
+    app: app-hpa-m
+  name: app-hpa-m
   namespace: default
 spec:
   maxReplicas: 1
@@ -662,7 +662,7 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: appservice
+    name: app
 ---
 apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
