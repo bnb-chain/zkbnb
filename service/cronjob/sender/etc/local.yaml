@@ -1,0 +1,20 @@
+Name: sender.cronjob
+
+Postgres:
+  DataSource: host=127.0.0.1 user=postgres password=ZecreyProtocolDB@123 dbname=zecreylegend port=5432 sslmode=disable
+
+CacheRedis:
+  - Host: 127.0.0.1:6379
+    Pass: myredis
+    Type: node
+
+ChainConfig:
+  #  NetworkRPCSysConfigName: "BscTestNetworkRpc"
+  NetworkRPCSysConfigName: "LocalTestNetworkRpc"
+  ZecreyContractAddrSysConfigName: "ZecreyLegendContract"
+  MaxWaitingTime: 120
+  MaxBlockCount: 3
+  Sk: "906d5dc5a8ec5050a21987278d42af90852724df53a576e66057990ee48ac269"
+  GasLimit: 5000000
+  L1ChainId: "48"
+

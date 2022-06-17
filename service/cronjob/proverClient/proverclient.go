@@ -15,14 +15,17 @@ import (
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
+	"path/filepath"
 )
-
-var configFile = flag.String("f",
-	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\cronjob\\proverClient\\etc\\proverClient.yaml", "the config file")
 
 func main() {
 	flag.Parse()
+	dir, err := filepath.Abs(filepath.Dir("service/cronjob/proverClient/etc/local.yaml"))
+	if err != nil {
+		fmt.Println(err)
+	}
 
+	var configFile = flag.String("f", filepath.Join(dir, "local.yaml"), "the config file")
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
 	ctx := svc.NewServiceContext(c)

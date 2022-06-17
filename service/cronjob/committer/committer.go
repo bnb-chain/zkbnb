@@ -12,14 +12,17 @@ import (
 	"time"
 
 	"github.com/zeromicro/go-zero/core/conf"
+	"path/filepath"
 )
-
-var configFile = flag.String("f",
-	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\cronjob\\committer\\etc\\committer.yaml", "the config file")
 
 func main() {
 	flag.Parse()
+	dir, err := filepath.Abs(filepath.Dir("./service/cronjob/committer/etc/local.yaml"))
+	if err != nil {
+		fmt.Println(err)
+	}
 
+	var configFile = flag.String("f", filepath.Join(dir, "local.yaml"), "the config file")
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
 	ctx := svc.NewServiceContext(c)

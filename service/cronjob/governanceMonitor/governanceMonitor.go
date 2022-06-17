@@ -10,14 +10,17 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/governanceMonitor/internal/svc"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
+	"path/filepath"
 )
-
-var configFile = flag.String("f",
-	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\cronjob\\governanceMonitor\\etc\\local.yaml", "the config file")
 
 func main() {
 	flag.Parse()
+	dir, err := filepath.Abs(filepath.Dir("./service/cronjob/governanceMonitor/etc/local.yaml"))
+	if err != nil {
+		fmt.Println(err)
+	}
 
+	var configFile = flag.String("f", filepath.Join(dir, "local.yaml"), "the config file")
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
 	ctx := svc.NewServiceContext(c)

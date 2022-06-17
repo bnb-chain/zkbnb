@@ -19,14 +19,17 @@ import (
 	"github.com/zeromicro/go-zero/zrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"path/filepath"
 )
-
-var configFile = flag.String("f",
-	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\rpc\\proverHub\\etc\\proverhub.yaml", "the config file")
 
 func main() {
 	flag.Parse()
+	dir, err := filepath.Abs(filepath.Dir("./service/rpc/proverHub/etc/proverhub.yaml"))
+	if err != nil {
+		fmt.Println(err)
+	}
 
+	var configFile = flag.String("f", filepath.Join(dir, "proverhub.yaml"), "the config file")
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
 	ctx := svc.NewServiceContext(c)
