@@ -85,7 +85,7 @@ func constructSendMintNftTxInfo() string {
 		GasFeeAssetId:       2,
 		GasFeeAssetAmount:   big.NewInt(5000),
 		ExpiredAt:           expiredAt,
-		Nonce:               7,
+		Nonce:               3,
 		Sig:                 nil,
 	}
 	hFunc.Reset()

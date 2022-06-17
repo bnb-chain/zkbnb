@@ -74,7 +74,7 @@ func constructSendCreateCollectionTxInfo() string {
 		GasFeeAssetId:     2,
 		GasFeeAssetAmount: big.NewInt(5000),
 		ExpiredAt:         expiredAt,
-		Nonce:             6,
+		Nonce:             2,
 		Sig:               nil,
 	}
 	hFunc := mimc.NewMiMC()

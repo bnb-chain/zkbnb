@@ -75,8 +75,8 @@ func constructSendAtomicMatchTxInfo() string {
 	buyOffer := &commonTx.OfferTxInfo{
 		Type:         commonAsset.BuyOfferType,
 		OfferId:      0,
-		AccountIndex: 3,
-		NftIndex:     1,
+		AccountIndex: 2,
+		NftIndex:     0,
 		AssetId:      0,
 		AssetAmount:  big.NewInt(10000),
 		ListedAt:     listedAt,
@@ -90,7 +90,7 @@ func constructSendAtomicMatchTxInfo() string {
 		panic(err)
 	}
 	hFunc.Reset()
-	buySig, err := gavinKey.Sign(buyHash, hFunc)
+	buySig, err := sherKey.Sign(buyHash, hFunc)
 	if err != nil {
 		panic(err)
 	}
@@ -98,8 +98,8 @@ func constructSendAtomicMatchTxInfo() string {
 	sellOffer := &commonTx.OfferTxInfo{
 		Type:         commonAsset.SellOfferType,
 		OfferId:      0,
-		AccountIndex: 2,
-		NftIndex:     1,
+		AccountIndex: 3,
+		NftIndex:     0,
 		AssetId:      0,
 		AssetAmount:  big.NewInt(10000),
 		ListedAt:     listedAt,
@@ -113,7 +113,7 @@ func constructSendAtomicMatchTxInfo() string {
 		panic(err)
 	}
 	hFunc.Reset()
-	sellSig, err := sherKey.Sign(sellHash, hFunc)
+	sellSig, err := gavinKey.Sign(sellHash, hFunc)
 	if err != nil {
 		panic(err)
 	}
@@ -125,7 +125,7 @@ func constructSendAtomicMatchTxInfo() string {
 		GasAccountIndex:   1,
 		GasFeeAssetId:     0,
 		GasFeeAssetAmount: big.NewInt(5000),
-		Nonce:             8,
+		Nonce:             4,
 		ExpiredAt:         expiredAt,
 		Sig:               nil,
 	}
