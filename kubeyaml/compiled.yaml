@@ -42,17 +42,6 @@ spec:
   selector:
     app: proverhub
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: governancemonitor-svc
-  namespace: default
-spec:
-  ports:
-  - port: 39000
-  selector:
-    app: governancemonitor
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
