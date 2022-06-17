@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/block"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/types"
 
@@ -14,6 +15,7 @@ type GetBlocksLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
+	block  block.Block
 }
 
 func NewGetBlocksLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetBlocksLogic {
@@ -21,17 +23,18 @@ func NewGetBlocksLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetBloc
 		Logger: logx.WithContext(ctx),
 		ctx:    ctx,
 		svcCtx: svcCtx,
+		block:  block.New(svcCtx),
 	}
 }
 
 func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetBlocks) (resp *types.RespGetBlocks, err error) {
-	blocks, err := l.svcCtx.Block.GetBlocksList(int64(req.Limit), int64(req.Offset))
+	blocks, err := l.block.GetBlocksList(int64(req.Limit), int64(req.Offset))
 	if err != nil {
 		err = fmt.Errorf("[explorer.block.GetBlocks]<=>%s", err.Error())
 		l.Error(err)
 		return
 	}
-	total, err := l.svcCtx.Block.GetBlocksTotalCount()
+	total, err := l.block.GetBlocksTotalCount()
 	if err != nil {
 		err = fmt.Errorf("[explorer.block.GetBlocksTotalCount]<=>%s", err.Error())
 		l.Error(err)

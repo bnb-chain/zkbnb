@@ -1,29 +1,16 @@
 package mempool
 
 import (
-	"database/sql"
-	"fmt"
-
 	mempoolModel "github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/redis"
-	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"gorm.io/gorm"
 )
 
-var (
-	cacheMempoolTxListPrefix = "cache:mempool:txList"
-	cacheMempoolTxTotalCount = "cache:mempool:totalCount"
-	//"cache:AccountsHistoryList_%v_%v", limit, offset
-)
-
 type mempool struct {
-	cachedConn sqlc.CachedConn
-	table      string
-	db         *gorm.DB
-	cache      multcache.MultCache
-	redisConn  *redis.Redis
+	table string
+	db    *gorm.DB
+	cache multcache.MultCache
 }
 
 /*
@@ -32,34 +19,32 @@ type mempool struct {
 	Return: mempoolTx []*mempoolModel.MempoolTx, err error
 	Description: query txs from db that sit in the range
 */
-func (m *mempool) GetMempoolTxs(offset int64, limit int64) (mempoolTx []*mempoolModel.MempoolTx, err error) {
+func (m *mempool) GetMempoolTxs(offset int64, limit int64) (mempoolTxs []*mempoolModel.MempoolTx, err error) {
 	var mempoolForeignKeyColumn = `MempoolDetails`
-	where := "status = @status"
-	whereCondition := sql.Named("status", PendingTxStatus)
-	order := "created_at desc, id desc"
-	key := cacheMempoolTxListPrefix + fmt.Sprintf("_%v_%v", offset, limit)
-	_, err = m.cache.GetWithSet(key, mempoolTx, multcache.SqlBatchQueryWithWhere, m.db, m.table, where, whereCondition, int(limit), int(offset), order)
-	if err != nil {
-		logx.Errorf("[mempool.GetMempoolTxs] %s", err)
-		return nil, err
+	dbTx := m.db.Table(m.table).Order("created_at, id").Find(&mempoolTxs)
+	if dbTx.Error != nil {
+		logx.Errorf("[mempool.GetMempoolTxsList] %s", dbTx.Error)
+		return nil, dbTx.Error
 	}
-	for _, mempoolTx := range mempoolTx {
+	for _, mempoolTx := range mempoolTxs {
 		err := m.db.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
 		if err != nil {
+			logx.Errorf("[mempool.GetMempoolTxsList] Get Associate MempoolDetails Error")
 			return nil, err
 		}
 	}
-	return mempoolTx, nil
+	return mempoolTxs, nil
 }
 
 func (m *mempool) GetMempoolTxsTotalCount() (count int64, err error) {
-	where := "status = @status and deleted_at is NULL"
-	whereCondition := sql.Named("status", PendingTxStatus)
-	ct, err := m.cache.GetWithSet(cacheMempoolTxTotalCount, count, multcache.SqlQueryCountNamed, m.db, m.table, where, whereCondition)
-	if err != nil {
-		return 0, err
+	dbTx := m.db.Table(m.table).Where("status = ? and deleted_at is NULL", PendingTxStatus).Count(&count)
+	if dbTx.Error != nil {
+		logx.Errorf("[txVerification.GetTxsTotalCount] %s", dbTx.Error)
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
 	}
-	return ct.(int64), nil
+	return count, nil
 }
 
 func (m *mempool) GetMempoolTxByTxHash(hash string) (mempoolTx *mempoolModel.MempoolTx, err error) {

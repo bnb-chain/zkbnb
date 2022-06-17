@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/block"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/types"
 
@@ -14,6 +15,7 @@ type GetBlockByCommitmentLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
+	block  block.Block
 }
 
 func NewGetBlockByCommitmentLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetBlockByCommitmentLogic {
@@ -21,12 +23,13 @@ func NewGetBlockByCommitmentLogic(ctx context.Context, svcCtx *svc.ServiceContex
 		Logger: logx.WithContext(ctx),
 		ctx:    ctx,
 		svcCtx: svcCtx,
+		block:  block.New(svcCtx),
 	}
 }
 
 func (l *GetBlockByCommitmentLogic) GetBlockByCommitment(req *types.ReqGetBlockByCommitment) (resp *types.RespGetBlockByCommitment, err error) {
 	// query basic block info
-	block, err := l.svcCtx.Block.GetBlockWithTxsByCommitment(req.BlockCommitment)
+	block, err := l.block.GetBlockWithTxsByCommitment(req.BlockCommitment)
 	if err != nil {
 		err = fmt.Errorf("[explorer.block.GetBlockWithTxsByCommitment]<=>%s", err.Error())
 		l.Error(err)

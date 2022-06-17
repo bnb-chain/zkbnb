@@ -18,11 +18,9 @@ var (
 	ErrNotFound         = sqlx.ErrNotFound
 	ErrInvalidBlock     = errors.New("[ErrInvalidBlock] invalid block")
 	ErrInvalidMempoolTx = errors.New("[ErrInvalidBlock] invalid mempool tx")
-	ErrInvalidL1Amount  = errors.New("[ErrInvalidBlock] invalid l1 amount")
 )
 
 const (
-	BlockTableName  = `block`
 	DetailTableName = `block_detail`
 
 	BlockStatusColumn = "block_status"

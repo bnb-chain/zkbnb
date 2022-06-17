@@ -1,29 +1,19 @@
 package tx
 
 import (
+	"context"
 	"fmt"
-	"log"
 	"sort"
 
 	table "github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
-	"github.com/zeromicro/go-zero/core/stores/redis"
-	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"gorm.io/gorm"
 )
 
-var (
-	cacheZecreyTxIdPrefix      = "cache:zecrey:tx:id:"
-	cacheZecreyTxTxHashPrefix  = "cache:zecrey:tx:txHash:"
-	cacheZecreyTxTxCountPrefix = "cache:zecrey:tx:txCount"
-)
-
 type tx struct {
-	table      string
-	db         *gorm.DB
-	cachedConn sqlc.CachedConn
-	redisConn  *redis.Redis
-	cache      multcache.MultCache
+	table string
+	db    *gorm.DB
+	cache multcache.MultCache
 }
 
 /*
@@ -32,16 +22,13 @@ type tx struct {
 	Return: count int64, err error
 	Description: used for counting total transactions for explorer dashboard
 */
-func (m *tx) GetTxsTotalCount() (count int64, err error) {
-	result, err := m.cache.GetWithSet(cacheZecreyTxTxCountPrefix, count,
-		multcache.SqlQueryCount, m.db, m.table,
-		"deleted_at is NULL")
-	if err != nil {
-		return 0, err
+func (m *tx) GetTxsTotalCount(ctx context.Context) (count int64, err error) {
+	dbTx := m.db.Table(m.table).Where("deleted_at is NULL").Count(&count)
+	if dbTx.Error == ErrNotFound {
+		return 0, nil
 	}
-	count, ok := result.(int64)
-	if !ok {
-		log.Fatal("Error type!")
+	if dbTx.Error != nil {
+		return 0, err
 	}
 	return count, nil
 }

@@ -4,6 +4,11 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/account"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/block"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/globalrpc"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/mempool"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/tx"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/types"
 
@@ -12,25 +17,35 @@ import (
 
 type GetTxsListByBlockHeightLogic struct {
 	logx.Logger
-	ctx    context.Context
-	svcCtx *svc.ServiceContext
+	ctx       context.Context
+	svcCtx    *svc.ServiceContext
+	tx        tx.Tx
+	block     block.Block
+	account   account.AccountModel
+	mempool   mempool.Mempool
+	globalRPC globalrpc.GlobalRPC
 }
 
 func NewGetTxsListByBlockHeightLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTxsListByBlockHeightLogic {
 	return &GetTxsListByBlockHeightLogic{
-		Logger: logx.WithContext(ctx),
-		ctx:    ctx,
-		svcCtx: svcCtx,
+		Logger:    logx.WithContext(ctx),
+		ctx:       ctx,
+		svcCtx:    svcCtx,
+		tx:        tx.New(svcCtx),
+		block:     block.New(svcCtx),
+		account:   account.New(svcCtx),
+		mempool:   mempool.New(svcCtx),
+		globalRPC: globalrpc.New(svcCtx, ctx),
 	}
 }
 
 func (l *GetTxsListByBlockHeightLogic) GetTxsListByBlockHeight(req *types.ReqGetTxsListByBlockHeight) (resp *types.RespGetTxsListByBlockHeight, err error) {
-	b, err := l.svcCtx.Block.GetBlockByBlockHeight(int64(req.BlockHeight))
+	b, err := l.block.GetBlockByBlockHeight(int64(req.BlockHeight))
 	if err != nil {
 		l.Error("[transaction.GetBlockByBlockHeight] err:%v", err)
 		return
 	}
-	txs, total, err := l.svcCtx.Tx.GetTxsByBlockId(int64(b.ID), uint32(req.Limit), uint32(req.Offset))
+	txs, total, err := l.tx.GetTxsByBlockId(int64(b.ID), uint32(req.Limit), uint32(req.Offset))
 	if err != nil {
 		l.Error("[transaction.GetTxsByBlockId] err:%v", err)
 		return

@@ -1,46 +1,37 @@
 package svc
 
 import (
-	"context"
-
+	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/config"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/account"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/accounthistory"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/block"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/globalrpc"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/l2asset"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/liquidity"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/mempool"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/sysconf"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/tx"
+
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/redis"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 type ServiceContext struct {
-	Config config.Config
-
-	SysconfigModel sysconf.Sysconf
-	Block          block.Block
-	Tx             tx.Tx
-	L2AssetInfo    l2asset.L2asset
-
-	Account        account.AccountModel
-	AccountHistory accounthistory.AccountHistory
-	Liquidity      liquidity.Liquidity
-	Mempool        mempool.Mempool
-	GlobalRPC      globalrpc.GlobalRPC
+	Config      config.Config
+	Conn        sqlx.SqlConn
+	GormPointer *gorm.DB
+	RedisConn   *redis.Redis
+	Cache       multcache.MultCache
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
+	g, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
+	if err != nil {
+		logx.Must(err)
+	}
 	return &ServiceContext{
-		Config:         c,
-		SysconfigModel: sysconf.New(c),
-		Block:          block.New(c),
-		Tx:             tx.New(c),
-		L2AssetInfo:    l2asset.New(c),
-		Account:        account.New(c),
-		AccountHistory: accounthistory.New(c),
-		Liquidity:      liquidity.New(c),
-		Mempool:        mempool.New(c),
-		GlobalRPC:      globalrpc.New(c, context.Background()),
+		Config:      c,
+		Conn:        sqlx.NewSqlConn("postgres", c.Postgres.DataSource),
+		GormPointer: g,
+		RedisConn: redis.New(c.CacheRedis[0].Host, func(p *redis.Redis) {
+			p.Type = c.CacheRedis[0].Type
+			p.Pass = c.CacheRedis[0].Pass
+		}),
+		Cache: multcache.NewGoCache(100, 10),
 	}
 }
