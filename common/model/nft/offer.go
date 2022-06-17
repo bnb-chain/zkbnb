@@ -47,7 +47,9 @@ type (
 		NftIndex     int64
 		AssetId      int64
 		AssetAmount  string
+		ListedAt     int64
 		ExpiredAt    int64
+		TreasuryRate int64
 		Sig          string
 		Status       int
 	}
