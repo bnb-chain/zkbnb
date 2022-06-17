@@ -79,7 +79,7 @@ func initSysConfig() []*sysconfig.Sysconfig {
 		},
 		// TODO
 		{
-			Name:      "Local_Test_Network_RPC",
+			Name:      sysconfigName.LocalTestNetworkRpc,
 			Value:     Local_Test_Network_RPC,
 			ValueType: "string",
 			Comment:   "Local network rpc",
