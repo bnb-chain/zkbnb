@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -13,18 +14,25 @@ type GetTransactionCountLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
 	logx.Logger
+	commglobalmap commglobalmap.Commglobalmap
 }
 
 func NewGetTransactionCountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTransactionCountLogic {
 	return &GetTransactionCountLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
+		ctx:           ctx,
+		svcCtx:        svcCtx,
+		Logger:        logx.WithContext(ctx),
+		commglobalmap: commglobalmap.New(svcCtx),
 	}
 }
 
 func (l *GetTransactionCountLogic) GetTransactionCount(in *globalRPCProto.ReqGetTransactionCount) (*globalRPCProto.RespGetTransactionCount, error) {
-	// todo: add your logic here and delete this line
-
-	return &globalRPCProto.RespGetTransactionCount{}, nil
+	accountInfo, err := l.commglobalmap.GetLatestAccountInfo(int64(in.AccountIndex))
+	if err != nil {
+		logx.Errorf("[GetLatestAccountInfo] err:%v", err)
+		return nil, err
+	}
+	return &globalRPCProto.RespGetTransactionCount{
+		Nonce: uint64(accountInfo.Nonce),
+	}, nil
 }
