@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/l2asset"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/types"
 
@@ -14,13 +15,16 @@ type GetAssetsListLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
+
+	l2AssetInfo l2asset.L2asset
 }
 
 func NewGetAssetsListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAssetsListLogic {
 	return &GetAssetsListLogic{
-		Logger: logx.WithContext(ctx),
-		ctx:    ctx,
-		svcCtx: svcCtx,
+		Logger:      logx.WithContext(ctx),
+		ctx:         ctx,
+		svcCtx:      svcCtx,
+		l2AssetInfo: l2asset.New(svcCtx),
 	}
 }
 
@@ -32,7 +36,7 @@ func (l *GetAssetsListLogic) GetAssetsList(req *types.ReqGetAssetsList) (resp *t
 	// 	return packGetAssetsListResp(logic.FailStatus, "fail", errInfo, respResult), nil
 	// }
 
-	l2Assets, e := l.svcCtx.L2AssetInfo.GetL2AssetsList()
+	l2assets, e := l.l2AssetInfo.GetL2AssetsList()
 	if e != nil {
 		err = fmt.Errorf("[explorer.info.GetAssetsList]<=>%v", e)
 		l.Error(err)
@@ -49,11 +53,11 @@ func (l *GetAssetsListLogic) GetAssetsList(req *types.ReqGetAssetsList) (resp *t
 	// 		L1AssetSymbol:   l1Asset.AssetSymbol,
 	// 	})
 	// }
-	for _, l2Asset := range l2Assets {
+	for _, l2Asset := range l2assets {
 		resp.Assets = append(resp.Assets, &types.Asset{
-			AssetId:       l2Asset.AssetId,
-			AssetAddr:     l2Asset.AssetAddress,
-			AssetDecimals: l2Asset.Decimals,
+			AssetId:       int64(l2Asset.AssetId),
+			AssetAddr:     l2Asset.L1Address,
+			AssetDecimals: int64(l2Asset.Decimals),
 			AssetSymbol:   l2Asset.AssetSymbol,
 		})
 	}

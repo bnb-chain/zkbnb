@@ -14,7 +14,7 @@ import (
 )
 
 var configFile = flag.String("f",
-	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\cronjob\\mempoolMonitor\\etc\\mempoolmonitor.yaml", "the config file")
+	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\cronjob\\mempoolMonitor\\etc\\local.yaml", "the config file")
 
 func main() {
 	flag.Parse()
@@ -47,7 +47,6 @@ func main() {
 	}
 	cronjob.Start()
 
-
 	fmt.Printf("Starting MempoolMonitor cronjob ...")
-	select{}
+	select {}
 }

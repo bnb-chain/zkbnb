@@ -15,9 +15,14 @@ import (
 // Query function when key does not exist
 type MultCache interface {
 	GetWithSet(ctx context.Context, key string, value interface{}, timeOut uint32,
-		query QueryFunc, arg interface{}) (interface{}, error)
+		query QueryFunc) (interface{}, error)
 	Get(ctx context.Context, key string, value interface{}) (interface{}, error)
 	Set(ctx context.Context, key string, value interface{}, timeOut uint32) error
+}
+
+type Book struct {
+	ID   string
+	Name string
 }
 
 func NewGoCache(expiration, cleanupInterval uint32) MultCache {

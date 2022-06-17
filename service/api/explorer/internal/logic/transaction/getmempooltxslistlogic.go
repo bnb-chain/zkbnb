@@ -5,6 +5,11 @@ import (
 	"strconv"
 
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/account"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/block"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/globalrpc"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/mempool"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/tx"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/types"
 
@@ -13,28 +18,38 @@ import (
 
 type GetMempoolTxsListLogic struct {
 	logx.Logger
-	ctx    context.Context
-	svcCtx *svc.ServiceContext
+	ctx       context.Context
+	svcCtx    *svc.ServiceContext
+	tx        tx.Tx
+	block     block.Block
+	account   account.AccountModel
+	mempool   mempool.Mempool
+	globalRPC globalrpc.GlobalRPC
 }
 
 func NewGetMempoolTxsListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetMempoolTxsListLogic {
 	return &GetMempoolTxsListLogic{
-		Logger: logx.WithContext(ctx),
-		ctx:    ctx,
-		svcCtx: svcCtx,
+		Logger:    logx.WithContext(ctx),
+		ctx:       ctx,
+		svcCtx:    svcCtx,
+		tx:        tx.New(svcCtx),
+		block:     block.New(svcCtx),
+		account:   account.New(svcCtx),
+		mempool:   mempool.New(svcCtx),
+		globalRPC: globalrpc.New(svcCtx, ctx),
 	}
 }
 
 func (l *GetMempoolTxsListLogic) GetMempoolTxsList(req *types.ReqGetMempoolTxsList) (resp *types.RespGetMempoolTxsList, err error) {
 	//	err = utils.CheckRequestParam(utils.TypeLimit, reflect.ValueOf(req.Limit))
-	mempoolTxs, err := l.svcCtx.Mempool.GetMempoolTxs(int64(req.Limit), int64(req.Offset))
+	mempoolTxs, err := l.mempool.GetMempoolTxs(int64(req.Limit), int64(req.Offset))
 	if err != nil {
 		logx.Error("[GetMempoolTxs] err:%v", err)
 		return
 	}
 
 	// Todo: why not do total=len(mempoolTxs)
-	total, err := l.svcCtx.Mempool.GetMempoolTxsTotalCount()
+	total, err := l.mempool.GetMempoolTxsTotalCount()
 	if err != nil {
 		logx.Error("[GetMempoolTxs] err:%v", err)
 		return

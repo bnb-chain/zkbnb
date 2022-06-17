@@ -16,7 +16,8 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
-var configFile = flag.String("f", "etc/globalrpc.yaml", "the config file")
+var configFile = flag.String("f",
+	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\rpc\\globalRPC\\etc\\config.yaml", "the config file")
 
 func main() {
 	flag.Parse()

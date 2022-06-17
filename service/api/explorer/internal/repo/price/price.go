@@ -1,6 +1,7 @@
 package price
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -8,15 +9,10 @@ import (
 
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/sqlc"
-	"gorm.io/gorm"
 )
 
 type price struct {
-	cachedConn sqlc.CachedConn
-	table      string
-	db         *gorm.DB
-	cache      multcache.MultCache
+	cache multcache.MultCache
 }
 
 /*
@@ -25,20 +21,27 @@ type price struct {
 	Return: price float64, err error
 	Description: get currency price cache by currency symbol
 */
-func (m *price) GetCurrencyPrice(l2Symbol string) (price float64, err error) {
+func (m *price) GetCurrencyPrice(ctx context.Context, l2Symbol string) (float64, error) {
 	// quote.Quote["USD"].Price
+	err := UpdateCurrencyPriceBySymbol(ctx, l2Symbol, m.cache)
+	if err != nil {
+		errInfo := fmt.Sprintf("[PriceModel.GetCurrencyPrice.UpdateCurrencyPriceBySymbol] %s", err)
+		logx.Error(errInfo)
+		return 0, err
+	}
 	key := fmt.Sprintf("%s%v", cachePriceSymbolPrefix, l2Symbol)
-	result, err := m.cache.Get(key, price)
+	var returnObj interface{}
+	_, err = m.cache.Get(ctx, key, &returnObj)
 	if err != nil {
 		errInfo := fmt.Sprintf("[PriceModel.GetCurrencyPrice.Getcache] %s %s", key, err)
 		logx.Error(errInfo)
 		return 0, err
 	}
-	price, ok := result.(float64)
+	_price, ok := returnObj.(float64)
 	if !ok {
-		return price, ErrTypeAssertion
+		return _price, ErrTypeAssertion
 	}
-	return price, nil
+	return _price, nil
 }
 
 /*
@@ -47,14 +50,15 @@ func (m *price) GetCurrencyPrice(l2Symbol string) (price float64, err error) {
 	Return: err
 	Description: update currency price cache by symbol
 */
-func UpdateCurrencyPriceBySymbol(l2Symbol string, cache multcache.MultCache) error {
+func UpdateCurrencyPriceBySymbol(ctx context.Context, l2Symbol string, cache multcache.MultCache) error {
 	latestQuotes, err := getQuotesLatest(l2Symbol)
 	if err != nil {
 		return err
 	}
 	for _, latestQuote := range latestQuotes {
 		key := fmt.Sprintf("%s%s", cachePriceSymbolPrefix, latestQuote.Symbol)
-		if err := cache.Set(key, latestQuote.Quote["USD"].Price); err != nil {
+		logx.Info(key, "   ", latestQuote.Quote["USD"].Price)
+		if err := cache.Set(ctx, key, latestQuote.Quote["USD"].Price, 1); err != nil {
 			return ErrSetCache.RefineError(err.Error())
 		}
 	}
@@ -94,12 +98,12 @@ func getQuotesLatest(l2Symbol string) (quotesLatest []QuoteLatest, err error) {
 		if err != nil {
 			return nil, ErrJsonMarshal
 		}
-		quoteLatest := QuoteLatest{}
+		quoteLatest := &QuoteLatest{}
 		err = json.Unmarshal(b, quoteLatest)
 		if err != nil {
 			return nil, ErrJsonUnmarshal
 		}
-		quotesLatest = append(quotesLatest, quoteLatest)
+		quotesLatest = append(quotesLatest, *quoteLatest)
 	}
 	return quotesLatest, nil
 }

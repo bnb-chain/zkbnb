@@ -48,7 +48,7 @@ func CommitterTask(
 	accountTree *tree.Tree,
 	liquidityTree *tree.Tree,
 	nftTree *tree.Tree,
-	accountAssetTrees []*tree.Tree,
+	accountAssetTrees *[]*tree.Tree,
 ) error {
 	// Get Txs from Mempool
 	mempoolTxs, err := ctx.MempoolModel.GetMempoolTxsListForCommitter()
@@ -180,7 +180,7 @@ func CommitterTask(
 					accountMap[mempoolTx.AccountIndex].Status = account.AccountStatusConfirmed
 					pendingUpdateAccountIndexMap[mempoolTx.AccountIndex] = true
 					// update account tree
-					if int64(len(accountAssetTrees)) != mempoolTx.AccountIndex {
+					if int64(len(*accountAssetTrees)) != mempoolTx.AccountIndex {
 						logx.Errorf("[CommitterTask] invalid account index")
 						return errors.New("[CommitterTask] invalid account index")
 					}
@@ -189,13 +189,13 @@ func CommitterTask(
 						logx.Errorf("[CommitterTask] unable to new empty account state tree")
 						return err
 					}
-					accountAssetTrees = append(accountAssetTrees, emptyAssetTree)
+					*accountAssetTrees = append(*accountAssetTrees, emptyAssetTree)
 					nAccountLeafHash, err := tree.ComputeAccountLeafHash(
 						accountMap[mempoolTx.AccountIndex].AccountNameHash,
 						accountMap[mempoolTx.AccountIndex].PublicKey,
 						accountMap[mempoolTx.AccountIndex].Nonce,
 						accountMap[mempoolTx.AccountIndex].CollectionNonce,
-						accountAssetTrees[mempoolTx.AccountIndex].RootNode.Value,
+						(*accountAssetTrees)[mempoolTx.AccountIndex].RootNode.Value,
 					)
 					if err != nil {
 						log.Println("[CommitterTask] unable to compute account leaf:", err)
@@ -317,14 +317,14 @@ func CommitterTask(
 						log.Println("[CommitterTask] unable to compute new account asset leaf:", err)
 						return err
 					}
-					err = accountAssetTrees[mempoolTxDetail.AccountIndex].Update(mempoolTxDetail.AssetId, nAssetLeaf)
+					err = (*accountAssetTrees)[mempoolTxDetail.AccountIndex].Update(mempoolTxDetail.AssetId, nAssetLeaf)
 					if err != nil {
 						log.Println("[CommitterTask] unable to update asset tree:", err)
 						return err
 					}
 
 					accountMap[mempoolTxDetail.AccountIndex].AssetRoot = common.Bytes2Hex(
-						accountAssetTrees[mempoolTxDetail.AccountIndex].RootNode.Value)
+						(*accountAssetTrees)[mempoolTxDetail.AccountIndex].RootNode.Value)
 
 					break
 				case LiquidityAssetType:
@@ -546,7 +546,7 @@ func CommitterTask(
 					accountMap[accountIndex].PublicKey,
 					accountMap[accountIndex].Nonce,
 					accountMap[accountIndex].CollectionNonce,
-					accountAssetTrees[accountIndex].RootNode.Value,
+					(*accountAssetTrees)[accountIndex].RootNode.Value,
 				)
 				if err != nil {
 					log.Println("[CommitterTask] unable to compute account leaf:", err)

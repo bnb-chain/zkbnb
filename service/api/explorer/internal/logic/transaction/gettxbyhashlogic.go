@@ -5,6 +5,11 @@ import (
 	"strconv"
 
 	blockModel "github.com/zecrey-labs/zecrey-legend/common/model/block"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/account"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/block"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/globalrpc"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/mempool"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/tx"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/types"
 
@@ -13,20 +18,30 @@ import (
 
 type GetTxByHashLogic struct {
 	logx.Logger
-	ctx    context.Context
-	svcCtx *svc.ServiceContext
+	ctx       context.Context
+	svcCtx    *svc.ServiceContext
+	tx        tx.Tx
+	block     block.Block
+	account   account.AccountModel
+	mempool   mempool.Mempool
+	globalRPC globalrpc.GlobalRPC
 }
 
 func NewGetTxByHashLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTxByHashLogic {
 	return &GetTxByHashLogic{
-		Logger: logx.WithContext(ctx),
-		ctx:    ctx,
-		svcCtx: svcCtx,
+		Logger:    logx.WithContext(ctx),
+		ctx:       ctx,
+		svcCtx:    svcCtx,
+		tx:        tx.New(svcCtx),
+		block:     block.New(svcCtx),
+		account:   account.New(svcCtx),
+		mempool:   mempool.New(svcCtx),
+		globalRPC: globalrpc.New(svcCtx, ctx),
 	}
 }
 
 func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (resp *types.RespGetTxByHash, err error) {
-	txMemppol, err := l.svcCtx.Mempool.GetMempoolTxByTxHash(req.TxHash)
+	txMemppol, err := l.mempool.GetMempoolTxByTxHash(req.TxHash)
 	if err != nil {
 		l.Error("[mempool.GetMempoolTxByTxHash]:%v", err)
 		return
@@ -42,7 +57,7 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (resp *types.R
 			AccountDelta: w.BalanceDelta,
 		})
 	}
-	block, err := l.svcCtx.Block.GetBlockByBlockHeight(txMemppol.L2BlockHeight)
+	block, err := l.block.GetBlockByBlockHeight(txMemppol.L2BlockHeight)
 	if err != nil {
 		l.Error("[Block.GetBlockByBlockHeight]:%v", err)
 		return
