@@ -49,7 +49,7 @@ done
 gcloud auth configure-docker us-central1-docker.pkg.dev
 
 for val in $api; do
-    echo "Docker{val}] & Push: "
+    echo "Docker Build & Push [${val}]: "
     declare -l lower="${val}"
     docker build -t us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/${lower}:$1 -f service/api/${val}/Dockerfile .
     docker push us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/${lower}:$1
