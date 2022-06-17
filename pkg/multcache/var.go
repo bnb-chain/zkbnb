@@ -17,8 +17,9 @@ var (
 	ErrNotExistInSql = zerror.New(40001, "data not exist in sql")
 )
 
-// key register
+// cache key register
 const (
+	KeyExample = "cache:dataName_dataIdentity"
 	// account
 	KeyAccountAccountName = "cache:account_accountName"
 )

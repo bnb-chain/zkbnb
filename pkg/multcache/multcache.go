@@ -14,21 +14,20 @@ type multcache struct {
 
 type QueryFunc func() (interface{}, error)
 
-func (m *multcache) GetWithSet(ctx context.Context, key string, value interface{}, timeOut uint32,
-	query QueryFunc) error {
-	_, err := m.marshal.Get(ctx, key, value)
+func (m *multcache) GetWithSet(ctx context.Context, key string, valueStruct interface{}, timeOut uint32,
+	query QueryFunc) (interface{}, error) {
+	value, err := m.marshal.Get(ctx, key, valueStruct)
 	if err == nil {
-		return nil
+		return value, nil
 	}
 	if err.Error() == errGoCacheKeyNotExist.Error() || err.Error() == errRedisCacheKeyNotExist.Error() {
-		result, err := query()
+		value, err = query()
 		if err != nil {
-			return err
+			return nil, err
 		}
-		err = m.Set(ctx, key, result, timeOut)
-		return err
+		return value, m.Set(ctx, key, value, timeOut)
 	}
-	return err
+	return nil, err
 }
 
 func (m *multcache) Get(ctx context.Context, key string, value interface{}) (interface{}, error) {
