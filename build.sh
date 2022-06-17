@@ -1,11 +1,14 @@
 #!/bin/bash
 
+
+# ./build.sh <TAG_VERSION> <REPO_PATH>
+
 api="app explorer"
 rpc="globalRPC proverHub"
 cronjob="blockMonitor mempoolMonitor committer sender l2BlockMonitor proverClient governanceMonitor"
 
 # pull newest code
-cd /home/songnezha1997/zecrey
+cd $2
 git fetch -unf wenki $1:refs/tags/$1
 git checkout $1
 
