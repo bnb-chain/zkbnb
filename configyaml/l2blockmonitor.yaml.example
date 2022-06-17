@@ -1,0 +1,13 @@
+Name: l2blockmonitor.cronjob
+
+Postgres:
+  DataSource: host=127.0.0.1 user=postgres password=pw dbname=zecreylegend port=5432 sslmode=disable
+
+CacheRedis:
+  - Host: redis:6379
+    Type: node
+
+ChainConfig:
+  # BSCNetworkRPCSysConfigName: "LocalTestNetworkRpc"
+  BSCNetworkRPCSysConfigName: "BscTestNetworkRpc"
+  BSCPendingBlocksCount: 0
