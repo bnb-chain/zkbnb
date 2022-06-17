@@ -6,6 +6,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	commGlobalmapHandler "github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 	"github.com/zeromicro/go-zero/core/stores/redis"
@@ -23,6 +24,7 @@ type GlobalAssetInfo struct {
 type Commglobalmap interface {
 	GetLatestAccountInfo(accountIndex int64) (accountInfo *commGlobalmapHandler.AccountInfo, err error)
 	GetLatestLiquidityInfoForRead(pairIndex int64) (liquidityInfo *commGlobalmapHandler.LiquidityInfo, err error)
+	GetLatestOfferIdForWrite(accountIndex int64) (nftIndex int64, err error)
 }
 
 var singletonValue *commglobalmap
@@ -45,6 +47,7 @@ func New(svcCtx *svc.ServiceContext) Commglobalmap {
 			AccountModel:         account.NewAccountModel(conn, svcCtx.Config.CacheRedis, svcCtx.GormPointer),
 			liquidityModel:       liquidity.NewLiquidityModel(conn, svcCtx.Config.CacheRedis, svcCtx.GormPointer),
 			redisConnection:      redisConn,
+			offerModel:           nft.NewOfferModel(conn, svcCtx.Config.CacheRedis, svcCtx.GormPointer),
 		}
 	})
 	return singletonValue
