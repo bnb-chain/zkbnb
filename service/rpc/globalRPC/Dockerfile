@@ -1,3 +1,4 @@
+
 FROM golang:alpine AS builder
 
 LABEL stage=gobuilder
@@ -13,10 +14,9 @@ COPY --from=builder /usr/share/zoneinfo/Asia/Shanghai /usr/share/zoneinfo/Asia/S
 ENV TZ Asia/Shanghai
 
 WORKDIR /app
-COPY bin/proverclient /app/proverclient
+COPY bin/proverhub /app/proverhub
 COPY configyaml /app/etc
 
-RUN wget http://35.188.192.39/zecrey-legend.vk
-RUN wget http://35.188.192.39/zecrey-legned.pk
+RUN wget http://35.188.192.39/zecrey.vk
 
-CMD ["./proverclient", "-f", "etc/proverclient.yaml"]
+CMD ["./proverhub", "-f", "etc/proverhub.yaml"]

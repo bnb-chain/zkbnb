@@ -13,10 +13,7 @@ COPY --from=builder /usr/share/zoneinfo/Asia/Shanghai /usr/share/zoneinfo/Asia/S
 ENV TZ Asia/Shanghai
 
 WORKDIR /app
-COPY bin/proverclient /app/proverclient
+COPY bin/governancemonitor /app/governancemonitor
 COPY configyaml /app/etc
 
-RUN wget http://35.188.192.39/zecrey-legend.vk
-RUN wget http://35.188.192.39/zecrey-legned.pk
-
-CMD ["./proverclient", "-f", "etc/proverclient.yaml"]
+CMD ["./governancemonitor", "-f", "etc/governancemonitor.yaml"]

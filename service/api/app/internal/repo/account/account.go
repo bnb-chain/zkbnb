@@ -144,17 +144,20 @@ func (m *account) GetAccountByPk(pk string) (account *table.Account, err error) 
 	Return: account Account, err error
 	Description: get account info by account name
 */
-
-func (m *account) GetAccountByAccountName(ctx context.Context, accountName string) (account *table.Account, err error) {
-	dbTx := m.db.Table(m.table).Where("account_name = ?", accountName).Find(&account)
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[account.GetAccountByAccountName] %s", dbTx.Error)
-		logx.Error(err)
-		return nil, dbTx.Error
-	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[account.GetAccountByAccountName] %s", ErrNotFound)
-		logx.Info(err)
-		return nil, ErrNotFound
+func (m *account) GetAccountByAccountName(ctx context.Context, accountName string) (*table.Account, error) {
+	f := func() (interface{}, error) {
+		account := &table.Account{}
+		dbTx := m.db.Table(m.table).Where("account_name = ?", accountName).Find(&account)
+		if dbTx.Error != nil {
+			return nil, dbTx.Error
+		} else if dbTx.RowsAffected == 0 {
+			return nil, ErrNotFound
+		}
+		return account, nil
+	}
+	account := &table.Account{}
+	if err := m.cache.GetWithSet(ctx, multcache.KeyAccountAccountName, account, 10, f); err != nil {
+		return nil, err
 	}
 	return account, nil
 }

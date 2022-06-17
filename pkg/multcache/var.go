@@ -4,14 +4,10 @@ import (
 	"errors"
 
 	"github.com/zecrey-labs/zecrey-legend/pkg/zerror"
-
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
 // error got from other package
 var (
-	errNotFoundInSql         = sqlx.ErrNotFound
-	errRowsAffectedNull      = int64(0)
 	errRedisCacheKeyNotExist = errors.New("redis: nil")
 	errGoCacheKeyNotExist    = errors.New("Value not found in GoCache store")
 )
@@ -21,7 +17,8 @@ var (
 	ErrNotExistInSql = zerror.New(40001, "data not exist in sql")
 )
 
+// key register
 const (
-	// Block
-	KeyBlockCommittedCountPrefix = "cache:block:committed_count"
+	// account
+	KeyAccountAccountName = "cache:account_accountName"
 )

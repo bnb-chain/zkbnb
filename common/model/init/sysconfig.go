@@ -10,9 +10,9 @@ const (
 	BSC_Test_Network_RPC   = "http://tf-dex-preview-validator-nlb-6fd109ac8b9d390a.elb.ap-northeast-1.amazonaws.com:8545"
 	Local_Test_Network_RPC = "http://127.0.0.1:8545/"
 
-	ZecreyLegendContractAddr = "0x4e3F5dEA74e924eaDd4D2A51c878c336C4ef0BFa"
-	GovernanceContractAddr   = "0x6F95f0A2C842aa52ec622e13051b6CD12aB260D5"
-	VerifierContractAddr     = "0xBc7Cd1d37d16f0f76083c6c7ee65db42Cbc23b30"
+	ZecreyLegendContractAddr = "0x3DD01F094a7D64c5B13b9ce0400Cf6cC61466C8A"
+	GovernanceContractAddr   = "0x34fB7f0b5B69796248c745f8a2D2650ae1A014F7"
+	VerifierContractAddr     = "0x194Ac316B82993fd0C482F6C3C1F69F261921490"
 )
 
 func initSysConfig() []*sysconfig.Sysconfig {
@@ -79,7 +79,7 @@ func initSysConfig() []*sysconfig.Sysconfig {
 		},
 		// TODO
 		{
-			Name:      sysconfigName.LocalTestNetworkRpc,
+			Name:      "Local_Test_Network_RPC",
 			Value:     Local_Test_Network_RPC,
 			ValueType: "string",
 			Comment:   "Local network rpc",

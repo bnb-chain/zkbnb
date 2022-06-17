@@ -12,22 +12,23 @@ type multcache struct {
 	marshal *marshaler.Marshaler
 }
 
-type QueryFunc func(arg interface{}) (interface{}, error)
+type QueryFunc func() (interface{}, error)
 
 func (m *multcache) GetWithSet(ctx context.Context, key string, value interface{}, timeOut uint32,
-	query QueryFunc, arg interface{}) (interface{}, error) {
-	returnObj, err := m.marshal.Get(ctx, key, value)
+	query QueryFunc) error {
+	_, err := m.marshal.Get(ctx, key, value)
 	if err == nil {
-		return returnObj, nil
+		return nil
 	}
 	if err.Error() == errGoCacheKeyNotExist.Error() || err.Error() == errRedisCacheKeyNotExist.Error() {
-		result, err := query(arg)
+		result, err := query()
 		if err != nil {
-			return nil, err
+			return err
 		}
-		return result, m.Set(ctx, key, result, timeOut)
+		err = m.Set(ctx, key, result, timeOut)
+		return err
 	}
-	return nil, err
+	return err
 }
 
 func (m *multcache) Get(ctx context.Context, key string, value interface{}) (interface{}, error) {
