@@ -82,7 +82,7 @@ func main() {
 			accountTree,
 			liquidityTree,
 			nftTree,
-			accountStateTrees,
+			&accountStateTrees,
 		)
 		if err != nil {
 			logx.Info("[committer.CommitterTask main] unable to run:", err)
