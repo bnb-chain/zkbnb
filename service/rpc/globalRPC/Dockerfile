@@ -17,4 +17,4 @@ WORKDIR /app
 COPY bin/globalrpc /app/globalrpc
 COPY configyaml /app/etc
 
-CMD ["./proverhub", "-f", "etc/proverhub.yaml"]
+CMD ["./globalrpc", "-f", "etc/globalrpc.yaml"]
