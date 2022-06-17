@@ -121,19 +121,19 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: blockmonitoravalanche
-  name: blockmonitoravalanche
+    app: blockmonitor
+  name: blockmonitor
   namespace: default
 spec:
   replicas: 1
   revisionHistoryLimit: 5
   selector:
     matchLabels:
-      app: blockmonitoravalanche
+      app: blockmonitor
   template:
     metadata:
       labels:
-        app: blockmonitoravalanche
+        app: blockmonitor
     spec:
       containers:
       - image: us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/blockmonitor:$TAG_NAME
@@ -145,7 +145,7 @@ spec:
               - sh
               - -c
               - sleep 5
-        name: blockmonitoravalanche
+        name: blockmonitor
         resources:
           limits:
             cpu: 1000m
@@ -528,19 +528,19 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: senderavalanche
-  name: senderavalanche
+    app: sender
+  name: sender
   namespace: default
 spec:
   replicas: 1
   revisionHistoryLimit: 5
   selector:
     matchLabels:
-      app: senderavalanche
+      app: sender
   template:
     metadata:
       labels:
-        app: senderavalanche
+        app: sender
     spec:
       containers:
       - image: us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/sender:$TAG_NAME
@@ -552,7 +552,7 @@ spec:
               - sh
               - -c
               - sleep 5
-        name: senderavalanche
+        name: sender
         resources:
           limits:
             cpu: 1000m
@@ -668,8 +668,8 @@ apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
 metadata:
   labels:
-    app: blockmonitoravalanche-hpa-c
-  name: blockmonitoravalanche-hpa-c
+    app: blockmonitor
+  name: blockmonitor
   namespace: default
 spec:
   maxReplicas: 1
@@ -682,14 +682,14 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: blockmonitoravalanche
+    name: blockmonitor
 ---
 apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
 metadata:
   labels:
-    app: blockmonitoravalanche-hpa-m
-  name: blockmonitoravalanche-hpa-m
+    app: blockmonitor
+  name: blockmonitor
   namespace: default
 spec:
   maxReplicas: 1
@@ -702,7 +702,7 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: blockmonitoravalanche
+    name: blockmonitor
 ---
 apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
@@ -988,8 +988,8 @@ apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
 metadata:
   labels:
-    app: senderavalanche-hpa-c
-  name: senderavalanche-hpa-c
+    app: sender
+  name: sender
   namespace: default
 spec:
   maxReplicas: 1
@@ -1002,14 +1002,14 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: senderavalanche
+    name: sender
 ---
 apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
 metadata:
   labels:
-    app: senderavalanche-hpa-m
-  name: senderavalanche-hpa-m
+    app: sender
+  name: sender
   namespace: default
 spec:
   maxReplicas: 1
@@ -1022,7 +1022,7 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: senderavalanche
+    name: sender
 ---
 apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
