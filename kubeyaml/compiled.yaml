@@ -596,19 +596,7 @@ spec:
               - sh
               - -c
               - sleep 5
-        livenessProbe:
-          initialDelaySeconds: 15
-          periodSeconds: 20
-          tcpSocket:
-            port: 39000
         name: governancemonitor
-        ports:
-        - containerPort: 39000
-        readinessProbe:
-          initialDelaySeconds: 5
-          periodSeconds: 10
-          tcpSocket:
-            port: 39000
         resources:
           limits:
             cpu: 1000m
