@@ -4,6 +4,11 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/account"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/block"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/globalrpc"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/mempool"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/tx"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/types"
 
@@ -12,20 +17,30 @@ import (
 
 type GetTxsListByAccountIndexLogic struct {
 	logx.Logger
-	ctx    context.Context
-	svcCtx *svc.ServiceContext
+	ctx       context.Context
+	svcCtx    *svc.ServiceContext
+	tx        tx.Tx
+	block     block.Block
+	account   account.AccountModel
+	mempool   mempool.Mempool
+	globalRPC globalrpc.GlobalRPC
 }
 
 func NewGetTxsListByAccountIndexLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTxsListByAccountIndexLogic {
 	return &GetTxsListByAccountIndexLogic{
-		Logger: logx.WithContext(ctx),
-		ctx:    ctx,
-		svcCtx: svcCtx,
+		Logger:    logx.WithContext(ctx),
+		ctx:       ctx,
+		svcCtx:    svcCtx,
+		tx:        tx.New(svcCtx),
+		block:     block.New(svcCtx),
+		account:   account.New(svcCtx),
+		mempool:   mempool.New(svcCtx),
+		globalRPC: globalrpc.New(svcCtx, ctx),
 	}
 }
 
 func (l *GetTxsListByAccountIndexLogic) GetTxsListByAccountIndex(req *types.ReqGetTxsListByAccountIndex) (resp *types.RespGetTxsListByAccountIndex, err error) {
-	account, err := l.svcCtx.Account.GetAccountByPk(req.AccountIndex)
+	account, err := l.account.GetAccountByPk(req.AccountIndex)
 	if err != nil {
 		logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
 		return
@@ -35,12 +50,12 @@ func (l *GetTxsListByAccountIndexLogic) GetTxsListByAccountIndex(req *types.ReqG
 	// 	logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
 	// 	return
 	// }
-	mempoolTxCount, err := l.svcCtx.Mempool.GetMempoolTxsTotalCountByAccountIndex(account.AccountIndex)
+	mempoolTxCount, err := l.mempool.GetMempoolTxsTotalCountByAccountIndex(account.AccountIndex)
 	if err != nil {
 		logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
 		return
 	}
-	mempoolTxs, total, err := l.svcCtx.GlobalRPC.GetLatestTxsListByAccountIndex(uint32(account.AccountIndex), uint32(req.Limit), uint32(req.Offset))
+	mempoolTxs, total, err := l.globalRPC.GetLatestTxsListByAccountIndex(uint32(account.AccountIndex), uint32(req.Limit), uint32(req.Offset))
 	if err != nil {
 		logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
 		return
@@ -59,7 +74,7 @@ func (l *GetTxsListByAccountIndexLogic) GetTxsListByAccountIndex(req *types.ReqG
 		}
 		txAmount, _ := strconv.Atoi(tx.TxAmount)
 		gasFee, _ := strconv.ParseInt(tx.GasFee, 10, 64)
-		blockInfo, err := l.svcCtx.Block.GetBlockByBlockHeight(tx.L2BlockHeight)
+		blockInfo, err := l.block.GetBlockByBlockHeight(tx.L2BlockHeight)
 		if err != nil {
 			logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
 			return nil, err

@@ -5,6 +5,11 @@ import (
 	"strconv"
 
 	blockmodel "github.com/zecrey-labs/zecrey-legend/common/model/block"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/account"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/block"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/globalrpc"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/mempool"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/tx"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/types"
 
@@ -15,35 +20,46 @@ type GetMempoolTxsListByPublicKeyLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
+
+	tx        tx.Tx
+	block     block.Block
+	account   account.AccountModel
+	mempool   mempool.Mempool
+	globalRPC globalrpc.GlobalRPC
 }
 
 func NewGetMempoolTxsListByPublicKeyLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetMempoolTxsListByPublicKeyLogic {
 	return &GetMempoolTxsListByPublicKeyLogic{
-		Logger: logx.WithContext(ctx),
-		ctx:    ctx,
-		svcCtx: svcCtx,
+		Logger:    logx.WithContext(ctx),
+		ctx:       ctx,
+		svcCtx:    svcCtx,
+		tx:        tx.New(svcCtx),
+		block:     block.New(svcCtx),
+		account:   account.New(svcCtx),
+		mempool:   mempool.New(svcCtx),
+		globalRPC: globalrpc.New(svcCtx, ctx),
 	}
 }
 
 func (l *GetMempoolTxsListByPublicKeyLogic) GetMempoolTxsListByPublicKey(req *types.ReqGetMempoolTxsListByPublicKey) (resp *types.RespGetMempoolTxsListByPublicKey, err error) {
-	account, err := l.svcCtx.Account.GetAccountByPk(req.AccountPk)
+	account, err := l.account.GetAccountByPk(req.AccountPk)
 	if err != nil {
 		l.Error("[transaction.GetTxsByPubKey] err:%v", err)
 		return
 	}
 
-	txList, _, err := l.svcCtx.GlobalRPC.GetLatestTxsListByAccountIndex(uint32(account.AccountIndex), uint32(req.Limit), uint32(req.Offset))
+	txList, _, err := l.globalRPC.GetLatestTxsListByAccountIndex(uint32(account.AccountIndex), uint32(req.Limit), uint32(req.Offset))
 	if err != nil {
 		l.Error("[transaction.GetTxsByPubKey] err:%v", err)
 		return
 	}
-	txCount, err := l.svcCtx.Tx.GetTxsTotalCountByAccountIndex(account.AccountIndex)
+	txCount, err := l.tx.GetTxsTotalCountByAccountIndex(account.AccountIndex)
 	if err != nil {
 		logx.Error("[transaction.GetTxsByPubKey] err:%v", err)
 		return
 	}
 
-	mempoolTxCount, err := l.svcCtx.Mempool.GetMempoolTxsTotalCountByAccountIndex(account.AccountIndex)
+	mempoolTxCount, err := l.mempool.GetMempoolTxsTotalCountByAccountIndex(account.AccountIndex)
 	if err != nil {
 		logx.Error("[transaction.GetTxsByPubKey] err:%v", err)
 		return
@@ -63,7 +79,7 @@ func (l *GetMempoolTxsListByPublicKeyLogic) GetMempoolTxsListByPublicKey(req *ty
 		gasFee, _ := strconv.ParseInt(tx.GasFee, 10, 64)
 		txAmount, _ := strconv.ParseInt(tx.TxAmount, 10, 64)
 		var blockInfo *blockmodel.Block
-		blockInfo, err = l.svcCtx.Block.GetBlockByBlockHeight(tx.L2BlockHeight)
+		blockInfo, err = l.block.GetBlockByBlockHeight(tx.L2BlockHeight)
 		if err != nil {
 			logx.Error("[transaction.GetTxsByPubKey] err:%v", err)
 			return

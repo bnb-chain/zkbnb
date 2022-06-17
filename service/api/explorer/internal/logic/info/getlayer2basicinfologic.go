@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/block"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/sysconf"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/tx"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/types"
 
@@ -14,13 +17,20 @@ type GetLayer2BasicInfoLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
+
+	sysconfigModel sysconf.Sysconf
+	block          block.Block
+	tx             tx.Tx
 }
 
 func NewGetLayer2BasicInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetLayer2BasicInfoLogic {
 	return &GetLayer2BasicInfoLogic{
-		Logger: logx.WithContext(ctx),
-		ctx:    ctx,
-		svcCtx: svcCtx,
+		Logger:         logx.WithContext(ctx),
+		ctx:            ctx,
+		svcCtx:         svcCtx,
+		sysconfigModel: sysconf.New(svcCtx),
+		block:          block.New(svcCtx),
+		tx:             tx.New(svcCtx),
 	}
 }
 
@@ -34,19 +44,19 @@ func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo(req *types.ReqGetLayer2Basi
 		return false
 	}
 
-	committedBlocksCount, e := l.svcCtx.Block.GetCommitedBlocksCount()
+	committedBlocksCount, e := l.block.GetCommitedBlocksCount()
 	if errorHandler(e) {
 		return
 	}
 	resp.BlockCommitted = committedBlocksCount
 
-	executedBlocksCount, e := l.svcCtx.Block.GetExecutedBlocksCount()
+	executedBlocksCount, e := l.block.GetExecutedBlocksCount()
 	if errorHandler(e) {
 		return
 	}
 	resp.BlockExecuted = executedBlocksCount
 
-	txsCount, e := l.svcCtx.Tx.GetTxsTotalCount()
+	txsCount, e := l.tx.GetTxsTotalCount(l.ctx)
 	if errorHandler(e) {
 		return
 	}
@@ -54,7 +64,7 @@ func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo(req *types.ReqGetLayer2Basi
 
 	resp.ContractAddresses = make([]string, 0)
 	for _, contractAddressesName := range contractAddressesNames {
-		contract, e := l.svcCtx.SysconfigModel.GetSysconfigByName(contractAddressesName)
+		contract, e := l.sysconfigModel.GetSysconfigByName(contractAddressesName)
 		if errorHandler(e) {
 			return
 		}
