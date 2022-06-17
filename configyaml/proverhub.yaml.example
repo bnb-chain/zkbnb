@@ -1,0 +1,18 @@
+Name: proverhub.rpc
+ListenOn: 0.0.0.0:38000
+
+#Etcd:
+#  Hosts:
+#    - 127.0.0.1:2379
+#  Key: proverhub.rpc
+
+Postgres:
+  DataSource: host=127.0.0.1 user=postgres password=ZecreyProtocolDB@123 dbname=zecreylegend port=5432 sslmode=disable
+
+CacheRedis:
+  - Host: 127.0.0.1:6379
+    Pass: myredis
+    Type: node
+
+KeyPath:
+  VerifyingKeyPath: /Users/gavin/Documents/zecrey/zecrey-legend/zecrey-legend.vk
