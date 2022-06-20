@@ -13,7 +13,7 @@ type L2asset interface {
 
 func New(svcCtx *svc.ServiceContext) L2asset {
 	return &l2asset{
-		table: `l2_asset_info`,
+		table: `asset_info`,
 		db:    svcCtx.GormPointer,
 		cache: svcCtx.Cache,
 	}
