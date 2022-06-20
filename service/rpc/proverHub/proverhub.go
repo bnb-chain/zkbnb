@@ -65,12 +65,12 @@ func main() {
 		return
 	}
 
-	liquidityTree, err = tree.InitLiquidityTree(ctx.LiquidityHistoryModel, 1)
+	liquidityTree, err = tree.InitLiquidityTree(ctx.LiquidityHistoryModel, p.BlockNumber)
 	if err != nil {
 		logx.Errorf("[prover] InitLiquidityTree error: %s", err)
 		return
 	}
-	nftTree, err = tree.InitNftTree(ctx.NftHistoryModel, 1)
+	nftTree, err = tree.InitNftTree(ctx.NftHistoryModel, p.BlockNumber)
 	if err != nil {
 		logx.Errorf("[prover] InitNftTree error: %s", err)
 		return
