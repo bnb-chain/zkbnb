@@ -11,16 +11,16 @@ rm -rf ~/zecreylegend-bak && mv ~/zecreylegend ~/zecreylegend-bak
 mkdir zecreylegend && cd zecreylegend
 git clone --branch qa_testnet_with_keccak256 https://github.com/bnb-chain/zecrey-legend
 
+
 echo "2. download zecrey-legend.vk and zecrey-legend.pk"
 echo "You need to manually obtain the download link upload_vk_url from root@tf_bsc_qa_bsc_zecrey_site12_ec2:/root/zecreylegend/upload_vk_url.txt"
-cd ~/zecreylegend
-curl $upload_vk_url -o ./zecrey-legend/zecrey-legend.vk
+# curl $upload_vk_url -o ~/zecreylegend/zecrey-legend/zecrey-legend.vk
 
 echo "You need to manually obtain the download link upload_pk_url from root@tf_bsc_qa_bsc_zecrey_site12_ec2:/root/zecreylegend/upload_pk_url.txt"
-curl $upload_pk_url -o ./zecrey-legend/zecrey-legend.pk
+# curl $upload_pk_url -o ~/zecreylegend/zecrey-legend/zecrey-legend.pk
 
 echo "3. run proverHub"
-cd ~/zecreylegend/zecrey-legend
+cd /zecrey-legend
 pm2 start --name proverHub "go run service/rpc/proverHub/proverhub.go"
 
 echo "4. run proverClient"
