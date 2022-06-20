@@ -29,6 +29,8 @@ const (
 	OfferTableName = `offer`
 
 	StatusAlreadyWithdraw = 1
+
+	OfferFinishedStatus = 1
 )
 
 var (

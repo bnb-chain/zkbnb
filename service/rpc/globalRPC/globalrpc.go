@@ -17,7 +17,7 @@ import (
 )
 
 var configFile = flag.String("f",
-	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\rpc\\globalRPC\\etc\\config.yaml", "the config file")
+	"./etc/config.yaml", "the config file")
 
 func main() {
 	flag.Parse()

@@ -18,7 +18,7 @@ import (
 )
 
 var configFile = flag.String("f",
-	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\cronjob\\proverClient\\etc\\proverClient.yaml", "the config file")
+	"./etc/proverClient.yaml", "the config file")
 
 func main() {
 	flag.Parse()
@@ -49,7 +49,6 @@ func main() {
 	if err != nil {
 		panic("verifyingKey loading error")
 	}
-
 
 	_, err = cronJob.AddFunc("@every 10s", func() {
 		// cron job for receiving cryptoBlock and handling

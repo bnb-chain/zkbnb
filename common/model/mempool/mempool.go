@@ -55,7 +55,8 @@ type (
 		GetPendingNftTxs() (mempoolTxs []*MempoolTx, err error)
 		CreateBatchedMempoolTxs(mempoolTxs []*MempoolTx) error
 		CreateMempoolTxAndL2Nft(mempoolTx *MempoolTx, nftInfo *nft.L2Nft) error
-		CreateMempoolTxAndL2NftExchange(mempoolTx *MempoolTx, nftExchange *nft.L2NftExchange) error
+		CreateMempoolTxAndL2NftExchange(mempoolTx *MempoolTx, offers []*nft.Offer, nftExchange *nft.L2NftExchange) error
+		CreateMempoolTxAndUpdateOffer(mempoolTx *MempoolTx, offer *nft.Offer, isUpdate bool) error
 		DeleteMempoolTxs(txIds []*int64) error
 
 		GetPendingMempoolTxsByAccountIndex(accountIndex int64) (mempoolTxs []*MempoolTx, err error)
@@ -91,8 +92,6 @@ type (
 	}
 )
 
-
-
 func NewMempoolModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) MempoolModel {
 	return &defaultMempoolModel{
 		CachedConn: sqlc.NewConn(conn, c),
@@ -100,7 +99,6 @@ func NewMempoolModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) MempoolM
 		DB:         db,
 	}
 }
-
 
 func (*MempoolTx) TableName() string {
 	return MempoolTableName
@@ -692,7 +690,7 @@ func (m *defaultMempoolModel) CreateMempoolTxAndL2Nft(mempoolTx *MempoolTx, nftI
 	})
 }
 
-func (m *defaultMempoolModel) CreateMempoolTxAndL2NftExchange(mempoolTx *MempoolTx, nftExchange *nft.L2NftExchange) error {
+func (m *defaultMempoolModel) CreateMempoolTxAndL2NftExchange(mempoolTx *MempoolTx, offers []*nft.Offer, nftExchange *nft.L2NftExchange) error {
 	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
 		dbTx := tx.Table(m.table).Create(mempoolTx)
 		if dbTx.Error != nil {
@@ -703,6 +701,17 @@ func (m *defaultMempoolModel) CreateMempoolTxAndL2NftExchange(mempoolTx *Mempool
 			logx.Errorf("[mempool.CreateMempoolTxAndL2NftExchange] Create Invalid Mempool Tx")
 			return ErrInvalidMempoolTx
 		}
+		if len(offers) != 0 {
+			dbTx = tx.Table(nft.OfferTableName).CreateInBatches(offers, len(offers))
+			if dbTx.Error != nil {
+				logx.Errorf("[mempool.CreateMempoolTxAndL2NftExchange] %s", dbTx.Error)
+				return dbTx.Error
+			}
+			if dbTx.RowsAffected == 0 {
+				logx.Errorf("[mempool.CreateMempoolTxAndL2NftExchange] Create Invalid nft info")
+				return ErrInvalidMempoolTx
+			}
+		}
 		dbTx = tx.Table(nft.L2NftExchangeTableName).Create(nftExchange)
 		if dbTx.Error != nil {
 			logx.Errorf("[mempool.CreateMempoolTxAndL2NftExchange] %s", dbTx.Error)
@@ -711,6 +720,42 @@ func (m *defaultMempoolModel) CreateMempoolTxAndL2NftExchange(mempoolTx *Mempool
 		if dbTx.RowsAffected == 0 {
 			logx.Errorf("[mempool.CreateMempoolTxAndL2NftExchange] Create Invalid nft info")
 			return ErrInvalidMempoolTx
+		}
+		return nil
+	})
+}
+
+func (m *defaultMempoolModel) CreateMempoolTxAndUpdateOffer(mempoolTx *MempoolTx, offer *nft.Offer, isUpdate bool) error {
+	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
+		dbTx := tx.Table(m.table).Create(mempoolTx)
+		if dbTx.Error != nil {
+			logx.Errorf("[mempool.CreateMempoolTxAndUpdateOffer] %s", dbTx.Error)
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			logx.Errorf("[mempool.CreateMempoolTxAndUpdateOffer] Create Invalid Mempool Tx")
+			return ErrInvalidMempoolTx
+		}
+		if isUpdate {
+			dbTx = tx.Table(nft.OfferTableName).Where("id = ?", offer.ID).Select("*").Updates(&offer)
+			if dbTx.Error != nil {
+				logx.Errorf("[mempool.CreateMempoolTxAndUpdateOffer] %s", dbTx.Error)
+				return dbTx.Error
+			}
+			if dbTx.RowsAffected == 0 {
+				logx.Errorf("[mempool.CreateMempoolTxAndUpdateOffer] Create Invalid nft info")
+				return ErrInvalidMempoolTx
+			}
+		} else {
+			dbTx = tx.Table(nft.OfferTableName).Create(offer)
+			if dbTx.Error != nil {
+				logx.Errorf("[mempool.CreateMempoolTxAndUpdateOffer] %s", dbTx.Error)
+				return dbTx.Error
+			}
+			if dbTx.RowsAffected == 0 {
+				logx.Errorf("[mempool.CreateMempoolTxAndUpdateOffer] Create Invalid nft info")
+				return ErrInvalidMempoolTx
+			}
 		}
 		return nil
 	})
