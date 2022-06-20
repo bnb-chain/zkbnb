@@ -9,14 +9,15 @@ type RespGetStatus struct {
 	NetworkId uint32 `json:"network_id"`
 }
 
-type ReqGetAccountStatusByPubKey struct {
+type ReqGetAccountInfoByPubKey struct {
 	AccountPk string `form:"account_pk"`
 }
 
-type RespGetAccountStatusByPubKey struct {
-	AccountStatus uint32 `json:"account_status"`
-	AccountName   string `json:"account_name"`
-	AccountIndex  uint32 `json:"account_index"`
+type RespGetAccountInfoByPubKey struct {
+	AccountStatus uint32   `json:"account_status"`
+	AccountName   string   `json:"account_name"`
+	AccountIndex  int64    `json:"account_index"`
+	Assets        []*Asset `json:"assets"`
 }
 
 type ReqGetAccountStatusByAccountName struct {
@@ -39,9 +40,9 @@ type ReqGetAccountInfoByAccountName struct {
 }
 
 type RespGetAccountInfoByAccountName struct {
-	AccountIndex  uint32   `json:"account_index"`
-	AccountPk     string   `json:"account_pk"`
-	AssetsAccount []*Asset `json:"assets"`
+	AccountIndex uint32   `json:"account_index"`
+	AccountPk    string   `json:"account_pk"`
+	Assets       []*Asset `json:"assets"`
 }
 
 type ReqGetBlanceByAssetIdAndAccountName struct {

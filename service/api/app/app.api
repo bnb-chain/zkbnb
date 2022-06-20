@@ -26,15 +26,16 @@ service appService-api{
 }
 
 /* ========================= Account =========================*/
-// GetAccountStatusByPubKey
+// GetAccountInfoByPubKey
 type (
-	ReqGetAccountStatusByPubKey {
+	ReqGetAccountInfoByPubKey {
 		AccountPk string `form:"account_pk"`
 	}
-	RespGetAccountStatusByPubKey {
-		AccountStatus uint32 `json:"account_status"`
-		AccountName   string `json:"account_name"`
-		AccountIndex  uint32 `json:"account_index"`
+	RespGetAccountInfoByPubKey {
+		AccountStatus uint32   `json:"account_status"`
+		AccountName   string   `json:"account_name"`
+		AccountIndex  int64    `json:"account_index"`
+		Assets        []*Asset `json:"assets"`
 	}
 )
 
@@ -61,9 +62,9 @@ type (
 		AccountName string `form:"account_name"`
 	}
 	RespGetAccountInfoByAccountName {
-		AccountIndex  uint32   `json:"account_index"`
-		AccountPk     string   `json:"account_pk"`
-		AssetsAccount []*Asset `json:"assets"`
+		AccountIndex uint32   `json:"account_index"`
+		AccountPk    string   `json:"account_pk"`
+		Assets       []*Asset `json:"assets"`
 	}
 )
 
@@ -112,8 +113,8 @@ type (
 )
 
 service appService-api{
-	@handler GetAccountStatusByPubKey
-	post /api/v1/account/getAccountStatusByPubKey (ReqGetAccountStatusByPubKey) returns (RespGetAccountStatusByPubKey)
+	@handler GetAccountInfoByPubKey
+	post /api/v1/account/getAccountInfoByPubKey (ReqGetAccountInfoByPubKey) returns (RespGetAccountInfoByPubKey)
 	
 	@handler GetAccountStatusByAccountName
 	get /api/v1/account/getAccountStatusByAccountName (ReqGetAccountStatusByAccountName) returns (RespGetAccountStatusByAccountName)
