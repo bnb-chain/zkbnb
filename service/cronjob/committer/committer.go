@@ -15,7 +15,7 @@ import (
 )
 
 var configFile = flag.String("f",
-	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\cronjob\\committer\\etc\\committer.yaml", "the config file")
+	"./etc/committer.yaml", "the config file")
 
 func main() {
 	flag.Parse()

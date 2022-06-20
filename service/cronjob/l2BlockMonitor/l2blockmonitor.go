@@ -13,7 +13,7 @@ import (
 )
 
 var configFile = flag.String("f",
-	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\cronjob\\l2BlockMonitor\\etc\\l2blockmonitor.yaml", "the config file")
+	"./etc/l2blockmonitor.yaml", "the config file")
 
 func main() {
 	flag.Parse()
@@ -59,5 +59,5 @@ func main() {
 	cronjob.Start()
 
 	fmt.Printf("Starting l2BlockMonitor cronjob ...")
-	select{}
+	select {}
 }

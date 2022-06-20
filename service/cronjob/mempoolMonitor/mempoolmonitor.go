@@ -14,7 +14,7 @@ import (
 )
 
 var configFile = flag.String("f",
-	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\cronjob\\mempoolMonitor\\etc\\local.yaml", "the config file")
+	"./etc/local.yaml", "the config file")
 
 func main() {
 	flag.Parse()
