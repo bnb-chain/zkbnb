@@ -34,6 +34,8 @@ upload_vk_url=`curl --upload-file ./zecrey-legend/zecrey-legend.vk https://trans
 upload_pk_url=`curl --upload-file ./zecrey-legend/zecrey-legend.pk https://transfer.toolsfdg.net/zecrey-legend.pk`
 echo "upload_vk_url $upload_vk_url"
 echo "upload_pk_url $upload_pk_url"
+echo -e "$upload_vk_url" > ~/zecreylegend/upload_vk_url.txt
+echo -e "$upload_pk_url" > ~/zecreylegend/upload_pk_url.txt
 
 
 echo '4. start verify_parse for ZecreyVerifier'
