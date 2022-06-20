@@ -1,9 +1,9 @@
 package block
 
 import (
-	"errors"
-
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
+
+	"github.com/zecrey-labs/zecrey-legend/pkg/zerror"
 )
 
 const (
@@ -15,16 +15,8 @@ const (
 )
 
 var (
-	ErrNotFound         = sqlx.ErrNotFound
-	ErrInvalidBlock     = errors.New("[ErrInvalidBlock] invalid block")
-	ErrInvalidMempoolTx = errors.New("[ErrInvalidBlock] invalid mempool tx")
-)
-
-const (
-	DetailTableName = `block_detail`
-
-	BlockStatusColumn = "block_status"
-	CommittedAtColumn = "committed_at"
-	VerifiedAtColumn  = "verified_at"
-	ExecutedAtColumn  = "executed_at"
+	ErrNotFound          = sqlx.ErrNotFound
+	ErrDataNotExistInSQL = zerror.New(40000, "Err data not exist in SQL")
+	ErrInvalidBlock      = zerror.New(40001, "[ErrInvalidBlock] invalid block")
+	ErrInvalidMempoolTx  = zerror.New(40002, "[ErrInvalidBlock] invalid mempool tx")
 )

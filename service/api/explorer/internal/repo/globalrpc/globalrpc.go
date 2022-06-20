@@ -165,3 +165,10 @@ func (m *globalRPC) SendTx(txType uint32, txInfo string) (string, error) {
 	})
 	return rpcRsp.GetTxId(), err
 }
+
+func (m *globalRPC) GetMaxOfferId(accountIndex uint32) (uint64, error) {
+	rpcRsp, err := m.globalRPC.GetMaxOfferId(m.ctx, &globalrpc.ReqGetMaxOfferId{
+		AccountIndex: accountIndex,
+	})
+	return rpcRsp.GetOfferId(), err
+}
