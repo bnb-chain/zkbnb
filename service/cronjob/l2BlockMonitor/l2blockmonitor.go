@@ -15,7 +15,7 @@ import (
 
 func main() {
 	flag.Parse()
-	dir, err := filepath.Abs(filepath.Dir("./service/cronjob/l2blockmonitor/etc/local.yaml"))
+	dir, err := filepath.Abs(filepath.Dir("./service/cronjob/l2BlockMonitor/etc/local.yaml"))
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -62,5 +62,5 @@ func main() {
 	cronjob.Start()
 
 	fmt.Printf("Starting l2BlockMonitor cronjob ...")
-	select{}
+	select {}
 }

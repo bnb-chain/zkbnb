@@ -3,7 +3,8 @@
 # only for `root@tf_bsc_qa_bsc_zecrey_site11_ec2`
 # config
 echo '0. stop old database/redis and docker run new database/redis'
-docker rm $ (docker ps -a -q)
+pm2 delete all
+docker rm $(docker ps -a -q)
 docker run -d --name zecreyredis -p 6379:6379 redis
 docker run --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=ZecreyProtocolDB@123 -e POSTGRES_USER=postgres -e POSTGRES_DB=zecreylegend -d postgres
 
@@ -74,7 +75,6 @@ cd common/model/init/
 go run .
 
 echo "8. run governanceMonitor"
-pm2 delete all
 cd ~/zecreylegend/zecrey-legend
 pm2 start --name governanceMonitor "go run service/cronjob/governanceMonitor/governanceMonitor.go"
 

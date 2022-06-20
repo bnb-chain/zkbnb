@@ -1,5 +1,7 @@
 #!/bin/bash
 
+pm2 delete all
+
 # only for `root@tf_bsc_qa_bsc_zecrey_site13_ec2`
 # config
 echo '1. basic config and git clone repos'
@@ -18,8 +20,6 @@ echo "You need to manually obtain the download link upload_vk_url from root@tf_b
 
 echo "You need to manually obtain the download link upload_pk_url from root@tf_bsc_qa_bsc_zecrey_site12_ec2:/root/zecreylegend/upload_pk_url.txt"
 # curl $upload_pk_url -o ~/zecreylegend/zecrey-legend/zecrey-legend.pk
-
-pm2 delete all
 
 echo "3. run proverHub"
 cd /zecrey-legend
