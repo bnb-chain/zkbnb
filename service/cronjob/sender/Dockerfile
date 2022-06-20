@@ -17,4 +17,4 @@ WORKDIR /app
 COPY bin/sender /app/sender
 COPY configyaml /app/etc
 
-CMD ["/bin/sh", "-c", "./sender -f sender.yaml"]
+CMD ["./sender",  "-f", "etc/sender.yaml"]
