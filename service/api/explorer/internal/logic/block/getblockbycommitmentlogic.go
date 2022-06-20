@@ -27,13 +27,14 @@ func NewGetBlockByCommitmentLogic(ctx context.Context, svcCtx *svc.ServiceContex
 	}
 }
 
-func (l *GetBlockByCommitmentLogic) GetBlockByCommitment(req *types.ReqGetBlockByCommitment) (resp *types.RespGetBlockByCommitment, err error) {
+func (l *GetBlockByCommitmentLogic) GetBlockByCommitment(req *types.ReqGetBlockByCommitment) (*types.RespGetBlockByCommitment, error) {
 	// query basic block info
 	block, err := l.block.GetBlockWithTxsByCommitment(req.BlockCommitment)
 	if err != nil {
 		logx.Errorf("[GetBlockWithTxsByCommitment] err:%v", err)
 		return nil, err
 	}
+	resp := &types.RespGetBlockByCommitment{}
 	resp.Block = types.Block{
 		BlockCommitment:                 block.BlockCommitment,
 		BlockHeight:                     block.BlockHeight,

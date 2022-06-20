@@ -40,28 +40,29 @@ func NewGetMempoolTxsListByPublicKeyLogic(ctx context.Context, svcCtx *svc.Servi
 	}
 }
 
-func (l *GetMempoolTxsListByPublicKeyLogic) GetMempoolTxsListByPublicKey(req *types.ReqGetMempoolTxsListByPublicKey) (resp *types.RespGetMempoolTxsListByPublicKey, err error) {
+func (l *GetMempoolTxsListByPublicKeyLogic) GetMempoolTxsListByPublicKey(req *types.ReqGetMempoolTxsListByPublicKey) (*types.RespGetMempoolTxsListByPublicKey, error) {
+	resp := &types.RespGetMempoolTxsListByPublicKey{}
 	account, err := l.account.GetAccountByPk(req.AccountPk)
 	if err != nil {
 		l.Error("[transaction.GetTxsByPubKey] err:%v", err)
-		return
+		return nil, err
 	}
 
 	txList, _, err := l.globalRPC.GetLatestTxsListByAccountIndex(uint32(account.AccountIndex), uint32(req.Limit), uint32(req.Offset))
 	if err != nil {
 		l.Error("[transaction.GetTxsByPubKey] err:%v", err)
-		return
+		return nil, err
 	}
 	txCount, err := l.tx.GetTxsTotalCountByAccountIndex(account.AccountIndex)
 	if err != nil {
 		logx.Error("[transaction.GetTxsByPubKey] err:%v", err)
-		return
+		return nil, err
 	}
 
 	mempoolTxCount, err := l.mempool.GetMempoolTxsTotalCountByAccountIndex(account.AccountIndex)
 	if err != nil {
 		logx.Error("[transaction.GetTxsByPubKey] err:%v", err)
-		return
+		return nil, err
 	}
 
 	for _, tx := range txList {
@@ -78,7 +79,7 @@ func (l *GetMempoolTxsListByPublicKeyLogic) GetMempoolTxsListByPublicKey(req *ty
 		blockInfo, err = l.block.GetBlockByBlockHeight(tx.L2BlockHeight)
 		if err != nil {
 			logx.Error("[transaction.GetTxsByPubKey] err:%v", err)
-			return
+			return nil, err
 		}
 		resp.Txs = append(resp.Txs, &types.Tx{
 			TxHash:        tx.TxHash,
@@ -95,5 +96,5 @@ func (l *GetMempoolTxsListByPublicKeyLogic) GetMempoolTxsListByPublicKey(req *ty
 		})
 	}
 	resp.Total = uint32(txCount + mempoolTxCount)
-	return
+	return resp, nil
 }

@@ -28,19 +28,20 @@ func NewGetAccountsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAc
 	}
 }
 
-func (l *GetAccountsLogic) GetAccounts(req *types.ReqGetAccounts) (resp *types.RespGetAccounts, err error) {
+func (l *GetAccountsLogic) GetAccounts(req *types.ReqGetAccounts) (*types.RespGetAccounts, error) {
+	resp := &types.RespGetAccounts{}
 	accounts, e := l.account.GetAccountsList(int(req.Limit), int64(req.Offset))
 	if e != nil {
-		err = fmt.Errorf("[explorer.info.GetAccountsList]%s", e.Error())
+		err := fmt.Errorf("[explorer.info.GetAccountsList]%s", e.Error())
 		l.Error(err)
-		return
+		return nil, err
 	}
 
 	total, e := l.account.GetAccountsTotalCount()
 	if e != nil {
-		err = fmt.Errorf("[explorer.info.GetAccountsList]%s", e.Error())
+		err := fmt.Errorf("[explorer.info.GetAccountsList]%s", e.Error())
 		l.Error(err)
-		return
+		return nil, err
 	}
 	resp.Total = uint32(total)
 
@@ -52,5 +53,5 @@ func (l *GetAccountsLogic) GetAccounts(req *types.ReqGetAccounts) (resp *types.R
 		})
 	}
 
-	return
+	return resp, nil
 }

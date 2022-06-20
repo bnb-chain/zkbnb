@@ -32,29 +32,30 @@ func NewGetAccountInfoByAccountNameLogic(ctx context.Context, svcCtx *svc.Servic
 	}
 }
 
-func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *types.ReqGetAccountInfoByAccountName) (resp *types.RespGetAccountInfoByAccountName, err error) {
+func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *types.ReqGetAccountInfoByAccountName) (*types.RespGetAccountInfoByAccountName, error) {
+	resp := &types.RespGetAccountInfoByAccountName{}
 	if utils.CheckAccountName(req.AccountName) {
-		err = fmt.Errorf("[CheckAccountName] req.AccountName:%v", req.AccountName)
+		err := fmt.Errorf("[CheckAccountName] req.AccountName:%v", req.AccountName)
 		l.Error(err)
-		return
+		return nil, err
 	}
 	accountName := utils.FormatSting(req.AccountName)
 	if utils.CheckFormatAccountName(accountName) {
-		err = fmt.Errorf("[CheckFormatAccountName] accountName:%v", accountName)
+		err := fmt.Errorf("[CheckFormatAccountName] accountName:%v", accountName)
 		l.Error(err)
-		return
+		return nil, err
 	}
 	account, err := l.account.GetAccountByAccountName(l.ctx, accountName)
 	if err != nil {
 		err = fmt.Errorf("[GetAccountByAccountName] accountName:%v, err:%v", accountName, err)
 		l.Error(err)
-		return
+		return nil, err
 	}
 	assets, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(uint32(account.AccountIndex))
 	if err != nil {
 		err = fmt.Errorf("[GetLatestAccountInfoByAccountIndex] err:%v", err)
 		l.Error(err)
-		return
+		return nil, err
 	}
 
 	for _, asset := range assets {
@@ -67,5 +68,5 @@ func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *type
 	resp.Account.AccountIndex = uint32(account.AccountIndex)
 	resp.Account.AccountName = accountName
 	resp.Account.AccountPk = account.PublicKey
-	return
+	return resp, nil
 }

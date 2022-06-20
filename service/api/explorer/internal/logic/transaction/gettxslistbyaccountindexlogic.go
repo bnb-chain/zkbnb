@@ -38,11 +38,12 @@ func NewGetTxsListByAccountIndexLogic(ctx context.Context, svcCtx *svc.ServiceCo
 	}
 }
 
-func (l *GetTxsListByAccountIndexLogic) GetTxsListByAccountIndex(req *types.ReqGetTxsListByAccountIndex) (resp *types.RespGetTxsListByAccountIndex, err error) {
+func (l *GetTxsListByAccountIndexLogic) GetTxsListByAccountIndex(req *types.ReqGetTxsListByAccountIndex) (*types.RespGetTxsListByAccountIndex, error) {
+	resp := &types.RespGetTxsListByAccountIndex{}
 	account, err := l.account.GetAccountByPk(req.AccountIndex)
 	if err != nil {
 		logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
-		return
+		return nil, err
 	}
 	// txCount, err := l.svcCtx.Tx.GetTxsTotalCountByAccountIndex(account.AccountIndex)
 	// if err != nil {
@@ -52,12 +53,12 @@ func (l *GetTxsListByAccountIndexLogic) GetTxsListByAccountIndex(req *types.ReqG
 	mempoolTxCount, err := l.mempool.GetMempoolTxsTotalCountByAccountIndex(account.AccountIndex)
 	if err != nil {
 		logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
-		return
+		return nil, err
 	}
 	mempoolTxs, total, err := l.globalRPC.GetLatestTxsListByAccountIndex(uint32(account.AccountIndex), uint32(req.Limit), uint32(req.Offset))
 	if err != nil {
 		logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
-		return
+		return nil, err
 	}
 	for _, tx := range mempoolTxs {
 		txDetails := make([]*types.TxDetail, 0)
@@ -90,5 +91,5 @@ func (l *GetTxsListByAccountIndexLogic) GetTxsListByAccountIndex(req *types.ReqG
 		})
 	}
 	resp.Total = total + uint32(mempoolTxCount)
-	return
+	return resp, nil
 }

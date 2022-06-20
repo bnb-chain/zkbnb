@@ -28,19 +28,19 @@ func NewGetAssetsListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 	}
 }
 
-func (l *GetAssetsListLogic) GetAssetsList(req *types.ReqGetAssetsList) (resp *types.RespGetAssetsList, err error) {
+func (l *GetAssetsListLogic) GetAssetsList(req *types.ReqGetAssetsList) (*types.RespGetAssetsList, error) {
 	// l1Assets, err := l.svcCtx.L1AssetInfo.GetAssets()
 	// if err != nil {
 	// 	errInfo := fmt.Sprintf("[explorer.info.GetAssetsList]<=>[L1AssetInfoModel.GetAssets] %s", err.Error())
 	// 	logx.Error(errInfo)
 	// 	return packGetAssetsListResp(logic.FailStatus, "fail", errInfo, respResult), nil
 	// }
-
+	resp := &types.RespGetAssetsList{}
 	l2assets, e := l.l2AssetInfo.GetL2AssetsList()
 	if e != nil {
-		err = fmt.Errorf("[explorer.info.GetAssetsList]<=>%v", e)
+		err := fmt.Errorf("[explorer.info.GetAssetsList]<=>%v", e)
 		l.Error(err)
-		return
+		return nil, err
 	}
 
 	// l1 := make([]*types.L1Asset, 0)
@@ -62,5 +62,5 @@ func (l *GetAssetsListLogic) GetAssetsList(req *types.ReqGetAssetsList) (resp *t
 		})
 	}
 
-	return
+	return resp, nil
 }
