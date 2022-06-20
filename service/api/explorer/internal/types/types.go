@@ -63,18 +63,18 @@ type TxHash struct {
 }
 
 type Block struct {
-	BlockHeight     int32     `json:"block_height"`
-	BlockStatus     int32     `json:"block_status"`
-	NewAccountRoot  string    `json:"new_account_root"`
-	CommittedAt     int64     `json:"committed_at"`
-	VerifiedAt      int64     `json:"verified_at"`
-	ExecutedAt      int64     `json:"executed_at"`
-	CommittedTxHash []*TxHash `json:"committed_tx_hash"`
-	VerifiedTxHash  []*TxHash `json:"verified_tx_hash"`
-	ExecutedTxHash  []*TxHash `json:"executed_tx_hash"`
-	BlockCommitment string    `json:"block_commitment"`
-	TxCount         int64     `json:"tx_count"`
-	Txs             []string  `json:"txs"`
+	BlockCommitment                 string `json:"block_commitment"`
+	BlockHeight                     int64  `json:"block_height"`
+	StateRoot                       string `json:"state_root"`
+	PriorityOperations              int64  `json:"priority_operations"`
+	PendingOnChainOperationsHash    string `json:"pending_on_chain_operations_hash"`
+	PendingOnChainOperationsPubData string `json:"pending_on_chain_operations_hub_data"`
+	CommittedTxHash                 string `json:"committed_tx_hash"`
+	CommittedAt                     int64  `json:"committed_at"`
+	VerifiedTxHash                  string `json:"verified_tx_hash"`
+	VerifiedAt                      int64  `json:"verified_at"`
+	Txs                             []*Tx  `json:"txs"`
+	BlockStatus                     int64  `json:"block_status"`
 }
 
 type ReqGetBlocks struct {
@@ -104,36 +104,40 @@ type RespGetBlockByBlockHeight struct {
 }
 
 type Tx struct {
-	TxHash         string      `json:"tx_hash"`
-	TxType         int32       `json:"tx_type"`
-	GasFee         int32       `json:"gas_fee"`
-	GasFeeAssetId  int32       `json:"gas_fee_asset_id"`
-	TxStatus       int32       `json:"tx_status"`
-	BlockHeight    int64       `json:"block_height"`
-	BlockStatus    int32       `json:"block_status"`
-	BlockId        int32       `json:"block_id"`
-	AssetAId       int32       `json:"asseta_id"`
-	AssetBId       int32       `json:"assetb_id"`
-	TxAmount       int64       `json:"tx_amount"`
-	TxParticipants []string    `json:"tx_participants"`
-	NativeAddress  string      `json:"native_address"`
-	CreatedAt      int64       `json:"created_at"`
-	TxAssetAId     int32       `json:"tx_asseta_id"`
-	TxAssetBId     int32       `json:"tx_assetb_id"`
-	TxDetails      []*TxDetail `json:"tx_detail"`
-	CommittedAt    int64       `json:"committed_at"`
-	VerifiedAt     int64       `json:"verified_at"`
-	ExecutedAt     int64       `json:"executed_at"`
-	Memo           string      `json:"memo"`
+	TxHash        string      `json:"tx_hash"`
+	TxType        int64       `json:"tx_type"`
+	GasFee        string      `json:"gas_fee"`
+	GasFeeAssetId int64       `json:"gas_fee_asset_id"`
+	TxStatus      int64       `json:"tx_status"`
+	BlockHeight   int64       `json:"block_height"`
+	BlockId       int64       `json:"block_id"`
+	StateRoot     string      `json:"state_root"`
+	NftIndex      int64       `json:"nft_index"`
+	PairIndex     int64       `json:"pair_index"`
+	AssetId       int64       `json:"asset_id"`
+	TxAmount      string      `json:"tx_amount"`
+	NativeAddress string      `json:"native_address"`
+	TxInfo        string      `json:"tx_info"`
+	TxDetails     []*TxDetail `json:"tx_details"`
+	ExtraInfo     string      `json:"extra_info"`
+	Memo          string      `json:"memo"`
+	AccountIndex  int64       `json:"account_index"`
+	Nonce         int64       `json:"nonce"`
+	ExpiredAt     int64       `json:"expired_at"`
 }
 
 type TxDetail struct {
-	AssetId        int    `json:"asset_id"`
-	AssetType      int    `json:"asset_type"`
-	AccountIndex   int32  `json:"account_index"`
-	AccountName    string `json:"account_name"`
-	AccountBalance string `json:"account_balance"`
-	AccountDelta   string `json:"account_delta"`
+	TxId            int64  `json:"tx_id"`
+	AssetId         int64  `json:"asset_id"`
+	AssetType       int64  `json:"asset_type"`
+	AccountIndex    int64  `json:"account_index"`
+	AccountName     string `json:"account_name"`
+	Balance         string `json:"balance"`
+	BalanceDelta    string `json:"balance_delta"`
+	Order           int64  `json:"order"`
+	AccountOrder    int64  `json:"account_order"`
+	Nonce           int64  `json:"nonce"`
+	CollectionNonce int64  `json:"collection_nonce"`
 }
 
 type ReqGetTxsListByBlockHeight struct {

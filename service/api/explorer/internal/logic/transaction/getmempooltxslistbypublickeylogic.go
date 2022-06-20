@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"context"
-	"strconv"
 
 	blockmodel "github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/account"
@@ -69,15 +68,12 @@ func (l *GetMempoolTxsListByPublicKeyLogic) GetMempoolTxsListByPublicKey(req *ty
 		txDetails := make([]*types.TxDetail, 0)
 		for _, txDetail := range tx.MempoolDetails {
 			txDetails = append(txDetails, &types.TxDetail{
-				AssetId:        int(txDetail.AssetId),
-				AssetType:      int(txDetail.AssetType),
-				AccountIndex:   int32(txDetail.AccountIndex),
-				AccountName:    txDetail.AccountName,
-				AccountBalance: txDetail.BalanceDelta,
+				AssetId:      txDetail.AssetId,
+				AssetType:    txDetail.AssetType,
+				AccountIndex: txDetail.AccountIndex,
+				AccountName:  txDetail.AccountName,
 			})
 		}
-		gasFee, _ := strconv.ParseInt(tx.GasFee, 10, 64)
-		txAmount, _ := strconv.ParseInt(tx.TxAmount, 10, 64)
 		var blockInfo *blockmodel.Block
 		blockInfo, err = l.block.GetBlockByBlockHeight(tx.L2BlockHeight)
 		if err != nil {
@@ -86,24 +82,18 @@ func (l *GetMempoolTxsListByPublicKeyLogic) GetMempoolTxsListByPublicKey(req *ty
 		}
 		resp.Txs = append(resp.Txs, &types.Tx{
 			TxHash:        tx.TxHash,
-			TxType:        int32(tx.TxType),
-			GasFeeAssetId: int32(tx.GasFeeAssetId),
-			GasFee:        int32(gasFee),
-			TxStatus:      int32(tx.Status),
-			BlockHeight:   int64(tx.L2BlockHeight),
-			BlockStatus:   int32(blockInfo.BlockStatus),
-			BlockId:       int32(blockInfo.ID),
-			//Todo: do we still need AssetAId and AssetBId
-			AssetAId:      int32(tx.AssetId),
-			AssetBId:      int32(tx.AssetId),
-			TxAmount:      int64(txAmount),
+			TxType:        tx.TxType,
+			GasFeeAssetId: tx.GasFeeAssetId,
+			GasFee:        tx.GasFee,
+			TxStatus:      int64(tx.Status),
+			BlockHeight:   tx.L2BlockHeight,
+			BlockId:       int64(blockInfo.ID),
+			TxAmount:      tx.TxAmount,
 			TxDetails:     txDetails,
 			NativeAddress: tx.NativeAddress,
-			CreatedAt:     tx.CreatedAt.UnixNano() / 1e6,
 			Memo:          tx.Memo,
 		})
 	}
-
 	resp.Total = uint32(txCount + mempoolTxCount)
 	return
 }

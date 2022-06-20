@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/account"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/block"
@@ -60,20 +59,17 @@ func (l *GetTxsListByAccountIndexLogic) GetTxsListByAccountIndex(req *types.ReqG
 		logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
 		return
 	}
-
 	for _, tx := range mempoolTxs {
 		txDetails := make([]*types.TxDetail, 0)
 		for _, txDetail := range tx.MempoolDetails {
 			txDetails = append(txDetails, &types.TxDetail{
-				AssetId:      int(txDetail.AssetId),
-				AssetType:    int(txDetail.AssetType),
-				AccountIndex: int32(txDetail.AccountIndex),
+				AssetId:      txDetail.AssetId,
+				AssetType:    txDetail.AssetType,
+				AccountIndex: txDetail.AccountIndex,
 				AccountName:  txDetail.AccountName,
-				AccountDelta: txDetail.BalanceDelta,
+				BalanceDelta: txDetail.BalanceDelta,
 			})
 		}
-		txAmount, _ := strconv.Atoi(tx.TxAmount)
-		gasFee, _ := strconv.ParseInt(tx.GasFee, 10, 64)
 		blockInfo, err := l.block.GetBlockByBlockHeight(tx.L2BlockHeight)
 		if err != nil {
 			logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
@@ -81,20 +77,15 @@ func (l *GetTxsListByAccountIndexLogic) GetTxsListByAccountIndex(req *types.ReqG
 		}
 		resp.Txs = append(resp.Txs, &types.Tx{
 			TxHash:        tx.TxHash,
-			TxType:        int32(tx.TxType),
-			GasFeeAssetId: int32(tx.GasFeeAssetId),
-			GasFee:        int32(gasFee),
-			TxStatus:      int32(tx.Status),
+			TxType:        (tx.TxType),
+			GasFeeAssetId: (tx.GasFeeAssetId),
+			GasFee:        tx.GasFee,
+			TxStatus:      int64(tx.Status),
 			BlockHeight:   int64(tx.L2BlockHeight),
-			BlockStatus:   int32(blockInfo.BlockStatus),
-			BlockId:       int32(blockInfo.ID),
-			//Todo: still need AssetAId, AssetBId?
-			AssetAId:      int32(tx.AssetId),
-			AssetBId:      int32(tx.AssetId),
-			TxAmount:      int64(txAmount),
+			BlockId:       int64(blockInfo.ID),
+			TxAmount:      tx.TxAmount,
 			TxDetails:     txDetails,
 			NativeAddress: tx.NativeAddress,
-			CreatedAt:     tx.CreatedAt.UnixNano() / 1e6,
 			Memo:          tx.Memo,
 		})
 	}
