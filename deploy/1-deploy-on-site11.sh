@@ -72,6 +72,7 @@ cd common/model/init/
 go run .
 
 echo "8. run governanceMonitor"
+pm2 delete all
 cd ~/zecreylegend/zecrey-legend
 pm2 start --name governanceMonitor "go run service/cronjob/governanceMonitor/governanceMonitor.go"
 

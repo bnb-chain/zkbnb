@@ -12,5 +12,7 @@ mkdir zecreylegend && cd zecreylegend
 git clone --branch qa_testnet_with_keccak256 https://github.com/bnb-chain/zecrey-legend
 
 echo "2. run committer"
+pm2 delete all
+
 cd ~/zecreylegend/zecrey-legend
 pm2 start --name committer "go run service/cronjob/committer/committer.go"

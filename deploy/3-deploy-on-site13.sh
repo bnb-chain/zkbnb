@@ -19,6 +19,8 @@ echo "You need to manually obtain the download link upload_vk_url from root@tf_b
 echo "You need to manually obtain the download link upload_pk_url from root@tf_bsc_qa_bsc_zecrey_site12_ec2:/root/zecreylegend/upload_pk_url.txt"
 # curl $upload_pk_url -o ~/zecreylegend/zecrey-legend/zecrey-legend.pk
 
+pm2 delete all
+
 echo "3. run proverHub"
 cd /zecrey-legend
 pm2 start --name proverHub "go run service/rpc/proverHub/proverhub.go"
