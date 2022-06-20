@@ -24,11 +24,13 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/common/sysconfigName"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
+	"github.com/zeromicro/go-zero/core/stores/redis"
 	"math/big"
 	"reflect"
 	"strconv"
@@ -164,7 +166,33 @@ func (l *SendTxLogic) sendCancelOfferTx(rawTxInfo string) (txId string, err erro
 		txInfo.ExpiredAt,
 		txDetails,
 	)
-	err = CreateMempoolTx(mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)
+	var isUpdate bool
+	offerInfo, err := l.svcCtx.OfferModel.GetOfferByAccountIndexAndOfferId(txInfo.AccountIndex, txInfo.OfferId)
+	if err == nft.ErrNotFound {
+		offerInfo = &nft.Offer{
+			OfferType:    0,
+			OfferId:      txInfo.OfferId,
+			AccountIndex: txInfo.AccountIndex,
+			NftIndex:     0,
+			AssetId:      0,
+			AssetAmount:  "0",
+			ListedAt:     0,
+			ExpiredAt:    0,
+			TreasuryRate: 0,
+			Sig:          "",
+			Status:       nft.OfferFinishedStatus,
+		}
+	} else {
+		offerInfo.Status = nft.OfferFinishedStatus
+		isUpdate = true
+	}
+	err = CreateMempoolTxForCancelOffer(
+		mempoolTx,
+		offerInfo,
+		isUpdate,
+		l.svcCtx.RedisConnection,
+		l.svcCtx.MempoolModel,
+	)
 	if err != nil {
 		return "", l.HandleCreateFailCancelOfferTx(txInfo, err)
 	}
@@ -223,6 +251,36 @@ func (l *SendTxLogic) CreateFailCancelOfferTx(info *commonTx.CancelOfferTxInfo, 
 	err = l.svcCtx.FailTxModel.CreateFailTx(failTx)
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendtxlogic.CreateFailCancelOfferTx] %s", err.Error())
+		logx.Error(errInfo)
+		return errors.New(errInfo)
+	}
+	return nil
+}
+
+func CreateMempoolTxForCancelOffer(
+	nMempoolTx *mempool.MempoolTx,
+	offer *nft.Offer,
+	isUpdate bool,
+	redisConnection *redis.Redis,
+	mempoolModel mempool.MempoolModel,
+) (err error) {
+	var keys []string
+	for _, mempoolTxDetail := range nMempoolTx.MempoolDetails {
+		keys = append(keys, util.GetAccountKey(mempoolTxDetail.AccountIndex))
+	}
+	_, err = redisConnection.Del(keys...)
+	if err != nil {
+		logx.Errorf("[CreateMempoolTx] error with redis: %s", err.Error())
+		return err
+	}
+	// write into mempool
+	err = mempoolModel.CreateMempoolTxAndUpdateOffer(
+		nMempoolTx,
+		offer,
+		isUpdate,
+	)
+	if err != nil {
+		errInfo := fmt.Sprintf("[CreateMempoolTx] %s", err.Error())
 		logx.Error(errInfo)
 		return errors.New(errInfo)
 	}
