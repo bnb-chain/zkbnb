@@ -10,15 +10,15 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-type GetTransactionCountLogic struct {
+type GetNextNonceLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
 	logx.Logger
 	commglobalmap commglobalmap.Commglobalmap
 }
 
-func NewGetTransactionCountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTransactionCountLogic {
-	return &GetTransactionCountLogic{
+func NewGetNextNonceLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetNextNonceLogic {
+	return &GetNextNonceLogic{
 		ctx:           ctx,
 		svcCtx:        svcCtx,
 		Logger:        logx.WithContext(ctx),
@@ -26,13 +26,13 @@ func NewGetTransactionCountLogic(ctx context.Context, svcCtx *svc.ServiceContext
 	}
 }
 
-func (l *GetTransactionCountLogic) GetTransactionCount(in *globalRPCProto.ReqGetTransactionCount) (*globalRPCProto.RespGetTransactionCount, error) {
+func (l *GetNextNonceLogic) GetNextNonce(in *globalRPCProto.ReqGetNextNonce) (*globalRPCProto.RespGetNextNonce, error) {
 	accountInfo, err := l.commglobalmap.GetLatestAccountInfo(int64(in.AccountIndex))
 	if err != nil {
 		logx.Errorf("[GetLatestAccountInfo] err:%v", err)
 		return nil, err
 	}
-	return &globalRPCProto.RespGetTransactionCount{
+	return &globalRPCProto.RespGetNextNonce{
 		Nonce: uint64(accountInfo.Nonce),
 	}, nil
 }

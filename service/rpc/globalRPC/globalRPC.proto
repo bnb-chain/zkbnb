@@ -189,11 +189,11 @@ message RespSendTx{
 	Description: getMaxNonce
  */
 
-message ReqGetTransactionCount{
+message ReqGetNextNonce{
   uint32 AccountIndex = 1;
 }
 
-message RespGetTransactionCount{
+message RespGetNextNonce{
   uint64 Nonce = 1;
 }
 
@@ -230,7 +230,7 @@ service globalRPC {
   rpc getLatestTxsListByAccountIndex(ReqGetLatestTxsListByAccountIndex) returns (RespGetLatestTxsListByAccountIndex);
   rpc getLatestTxsListByAccountIndexAndTxType(ReqGetLatestTxsListByAccountIndexAndTxType) returns (RespGetLatestTxsListByAccountIndexAndTxType);
   rpc sendTx(ReqSendTx) returns (RespSendTx);
-  rpc getTransactionCount(ReqGetTransactionCount) returns (RespGetTransactionCount);
+  rpc getNextNonce(ReqGetNextNonce) returns (RespGetNextNonce);
   // NFT
   rpc getMaxOfferId(ReqGetMaxOfferId) returns (RespGetMaxOfferId);
 

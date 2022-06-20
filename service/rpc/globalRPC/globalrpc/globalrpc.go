@@ -22,8 +22,8 @@ type (
 	ReqGetLatestTxsListByAccountIndexAndTxType     = globalRPCProto.ReqGetLatestTxsListByAccountIndexAndTxType
 	ReqGetLpValue                                  = globalRPCProto.ReqGetLpValue
 	ReqGetMaxOfferId                               = globalRPCProto.ReqGetMaxOfferId
+	ReqGetNextNonce                                = globalRPCProto.ReqGetNextNonce
 	ReqGetSwapAmount                               = globalRPCProto.ReqGetSwapAmount
-	ReqGetTransactionCount                         = globalRPCProto.ReqGetTransactionCount
 	ReqSendTx                                      = globalRPCProto.ReqSendTx
 	RespGetLatestAccountLp                         = globalRPCProto.RespGetLatestAccountLp
 	RespGetLatestAssetInfoByAccountIndexAndAssetId = globalRPCProto.RespGetLatestAssetInfoByAccountIndexAndAssetId
@@ -33,8 +33,8 @@ type (
 	RespGetLatestTxsListByAccountIndexAndTxType    = globalRPCProto.RespGetLatestTxsListByAccountIndexAndTxType
 	RespGetLpValue                                 = globalRPCProto.RespGetLpValue
 	RespGetMaxOfferId                              = globalRPCProto.RespGetMaxOfferId
+	RespGetNextNonce                               = globalRPCProto.RespGetNextNonce
 	RespGetSwapAmount                              = globalRPCProto.RespGetSwapAmount
-	RespGetTransactionCount                        = globalRPCProto.RespGetTransactionCount
 	RespSendTx                                     = globalRPCProto.RespSendTx
 	TxDetailInfo                                   = globalRPCProto.TxDetailInfo
 	TxInfo                                         = globalRPCProto.TxInfo
@@ -52,7 +52,7 @@ type (
 		GetLatestTxsListByAccountIndex(ctx context.Context, in *ReqGetLatestTxsListByAccountIndex, opts ...grpc.CallOption) (*RespGetLatestTxsListByAccountIndex, error)
 		GetLatestTxsListByAccountIndexAndTxType(ctx context.Context, in *ReqGetLatestTxsListByAccountIndexAndTxType, opts ...grpc.CallOption) (*RespGetLatestTxsListByAccountIndexAndTxType, error)
 		SendTx(ctx context.Context, in *ReqSendTx, opts ...grpc.CallOption) (*RespSendTx, error)
-		GetTransactionCount(ctx context.Context, in *ReqGetTransactionCount, opts ...grpc.CallOption) (*RespGetTransactionCount, error)
+		GetNextNonce(ctx context.Context, in *ReqGetNextNonce, opts ...grpc.CallOption) (*RespGetNextNonce, error)
 		//  NFT
 		GetMaxOfferId(ctx context.Context, in *ReqGetMaxOfferId, opts ...grpc.CallOption) (*RespGetMaxOfferId, error)
 	}
@@ -116,9 +116,9 @@ func (m *defaultGlobalRPC) SendTx(ctx context.Context, in *ReqSendTx, opts ...gr
 	return client.SendTx(ctx, in, opts...)
 }
 
-func (m *defaultGlobalRPC) GetTransactionCount(ctx context.Context, in *ReqGetTransactionCount, opts ...grpc.CallOption) (*RespGetTransactionCount, error) {
+func (m *defaultGlobalRPC) GetNextNonce(ctx context.Context, in *ReqGetNextNonce, opts ...grpc.CallOption) (*RespGetNextNonce, error) {
 	client := globalRPCProto.NewGlobalRPCClient(m.cli.Conn())
-	return client.GetTransactionCount(ctx, in, opts...)
+	return client.GetNextNonce(ctx, in, opts...)
 }
 
 //  NFT
