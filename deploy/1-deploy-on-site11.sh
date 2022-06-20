@@ -38,7 +38,7 @@ echo "upload_pk_url $upload_pk_url"
 
 echo '4. start verify_parse for ZecreyVerifier'
 cd ~/zecreylegend
-python3 ./zecrey-legend/deploy/verify_parse.py ./zecrey-legend/circuit/bn254/solidity/ZecreyVerifier.sol ./zecrey-legend-contract/contracts/ZecreyVerifier.sol
+python3 ./zecrey-legend/deploy/verify_parse.py ./zecrey-crypto/zecrey-legend/circuit/bn254/solidity/ZecreyVerifier.sol ./zecrey-legend-contract/contracts/ZecreyVerifier.sol
 
 
 echo '5. deploy contracts, register and deposit on BSC Testnet'
