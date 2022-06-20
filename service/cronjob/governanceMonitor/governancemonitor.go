@@ -13,7 +13,7 @@ import (
 )
 
 var configFile = flag.String("f",
-	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\cronjob\\governanceMonitor\\etc\\local.yaml", "the config file")
+	"./etc/local.yaml", "the config file")
 
 func main() {
 	flag.Parse()
@@ -74,5 +74,5 @@ func main() {
 	cronjob.Start()
 
 	fmt.Printf("Starting GovernanceMonitor cronjob ...")
-	select{}
+	select {}
 }

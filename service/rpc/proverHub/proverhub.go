@@ -22,7 +22,7 @@ import (
 )
 
 var configFile = flag.String("f",
-	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\rpc\\proverHub\\etc\\proverhub.yaml", "the config file")
+	"./etc/proverhub.yaml", "the config file")
 
 func main() {
 	flag.Parse()
