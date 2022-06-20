@@ -5,10 +5,10 @@ Postgres:
 
 CacheRedis:
   - Host: 127.0.0.1:6379
-    Pass: myredis
+    # Pass: myredis
     Type: node
 
 ChainConfig:
-  BSCNetworkRPCSysConfigName: "LocalTestNetworkRpc"
-  #  BSCNetworkRPCSysConfigName: "BscTestNetworkRpc"
+  # BSCNetworkRPCSysConfigName: "LocalTestNetworkRpc"
+  BSCNetworkRPCSysConfigName: "BscTestNetworkRpc"
   BSCPendingBlocksCount: 0

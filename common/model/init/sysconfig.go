@@ -7,7 +7,8 @@ import (
 
 const (
 	// network rpc
-	BSC_Test_Network_RPC   = "http://tf-dex-preview-validator-nlb-6fd109ac8b9d390a.elb.ap-northeast-1.amazonaws.com:8545"
+	//BSC_Test_Network_RPC   = "http://tf-dex-preview-validator-nlb-6fd109ac8b9d390a.elb.ap-northeast-1.amazonaws.com:8545"
+	BSC_Test_Network_RPC   = "https://data-seed-prebsc-2-s1.binance.org:8545/"
 	Local_Test_Network_RPC = "http://127.0.0.1:8545/"
 
 	ZecreyLegendContractAddr = "0x915Bf51F6C9Fff38730C4557e79E1dEC4C01355a"

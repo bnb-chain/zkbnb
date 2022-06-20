@@ -6,7 +6,7 @@ Postgres:
 
 CacheRedis:
   - Host: 127.0.0.1:6379
-    Pass: myredis
+    # Pass: myredis
     Type: node
 GlobalRpc:
   Etcd:

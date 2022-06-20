@@ -1,5 +1,5 @@
 Name: global.rpc
-ListenOn: 127.0.0.1:8080
+ListenOn: 127.0.0.1:8888
 
 Postgres:
   DataSource: host=127.0.0.1 user=postgres password=ZecreyProtocolDB@123 dbname=zecreylegend port=5432 sslmode=disable
