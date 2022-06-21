@@ -14,7 +14,7 @@ type GetAvailablePairsLogic struct {
 	logx.Logger
 	ctx       context.Context
 	svcCtx    *svc.ServiceContext
-	liquidity liquidity.Liquidity
+	liquidity liquidity.LiquidityModel
 }
 
 func NewGetAvailablePairsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAvailablePairsLogic {
