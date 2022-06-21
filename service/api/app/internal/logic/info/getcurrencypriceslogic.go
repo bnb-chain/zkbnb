@@ -2,12 +2,11 @@ package info
 
 import (
 	"context"
-	"strconv"
-
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/l2asset"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/price"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
+	"math"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -39,7 +38,8 @@ func (l *GetCurrencyPricesLogic) GetCurrencyPrices(_ *types.ReqGetCurrencyPrices
 	resp := &types.RespGetCurrencyPrices{}
 	for _, asset := range l2Assets {
 		_price, err := l.price.GetCurrencyPrice(l.ctx, asset.AssetSymbol)
-		_price2 := strconv.FormatFloat(_price, 'f', 30, 32) //float64 to string
+		_price = _price * math.Pow(10, float64(asset.Decimals))
+		_price2 := uint64(_price)
 		if err != nil {
 			logx.Errorf("[GetCurrencyPrice] err:%v", err)
 			return nil, err

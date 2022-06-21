@@ -70,7 +70,8 @@ func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.RespGetGasFe
 	if GasFee < minNum {
 		GasFee = minNum
 	}
-	resp.GasFee = strconv.FormatFloat(GasFee, 'f', 30, 32) //float64 to string
+	GasFee = GasFee * math.Pow(10, float64(l2Asset.Decimals))
+	resp.GasFee = uint64(GasFee)
 	return resp, nil
 }
 
