@@ -155,8 +155,8 @@ type (
 		Symbol string `form:"symbol"`
 	}
 	RespGetCurrencyPriceBySymbol {
-		AssetId uint32  `json:"assetId"`
-		Price   float64 `json:"price"`
+		AssetId uint32 `json:"assetId"`
+		Price   string `json:"price"`
 	}
 )
 
@@ -164,9 +164,9 @@ type (
 type (
 	ReqGetCurrencyPrices struct{}
 	DataCurrencyPrices   {
-		Pair    string  `json:"pair"`
-		AssetId uint32  `json:"assetId"`
-		Price   float64 `json:"price"`
+		Pair    string `json:"pair"`
+		AssetId uint32 `json:"assetId"`
+		Price   string `json:"price"`
 	}
 	RespGetCurrencyPrices {
 		Data []*DataCurrencyPrices `json:"data"`
@@ -179,7 +179,7 @@ type (
 		AssetId uint32 `form:"asset_id"`
 	}
 	RespGetGasFee {
-		GasFee float64 `json:"gas_fee"`
+		GasFee string `json:"gas_fee"`
 	}
 )
 
@@ -191,7 +191,7 @@ type (
 		WithdrawAmount  uint64 `form:"withdraw_amount"`
 	}
 	RespGetWithdrawGasFee {
-		WithdrawGasFee float64 `json:"withdraw_gas_fee"`
+		WithdrawGasFee string `json:"withdraw_gas_fee"`
 	}
 )
 
