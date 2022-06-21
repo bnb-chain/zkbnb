@@ -40,7 +40,7 @@ func NewGetTxsListByBlockHeightLogic(ctx context.Context, svcCtx *svc.ServiceCon
 }
 
 func (l *GetTxsListByBlockHeightLogic) GetTxsListByBlockHeight(req *types.ReqGetTxsListByBlockHeight) (*types.RespGetTxsListByBlockHeight, error) {
-	block, err := l.block.GetBlockByBlockHeight(int64(req.BlockHeight))
+	block, err := l.block.GetBlockWithTxsByBlockHeight(int64(req.BlockHeight))
 	if err != nil {
 		logx.Errorf("[GetBlockByBlockHeight] err:%v", err)
 		return nil, err
