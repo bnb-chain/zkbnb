@@ -14,4 +14,4 @@ CacheRedis:
     Type: node
 
 KeyPath:
-  VerifyingKeyPath: /root/zkbas-deploy/zkbas/zkbas.vk
+  VerifyingKeyPath: /tmp/zkbas.vk

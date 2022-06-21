@@ -19,8 +19,8 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
-
 	var configFile = flag.String("f", filepath.Join(dir, "local.yaml"), "the config file")
+
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
 	ctx := svc.NewServiceContext(c)

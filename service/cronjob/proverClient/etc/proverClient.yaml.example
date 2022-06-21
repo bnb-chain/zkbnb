@@ -14,5 +14,5 @@ ProverHubRPC:
     Key: proverhub.rpc
 
 KeyPath:
-  ProvingKeyPath: /root/zkbas-deploy/zkbas/zkbas.pk
-  VerifyingKeyPath: /root/zkbas-deploy/zkbas/zkbas.vk
+  ProvingKeyPath: /tmp/zkbas.pk
+  VerifyingKeyPath: /tmp/zkbas.vk

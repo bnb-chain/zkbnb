@@ -12,5 +12,5 @@ ProverHubRPC:
     - 127.0.0.1:8099
 
 KeyPath:
-  ProvingKeyPath: /root/zkbas-deploy/zkbas/zkbas.pk
-  VerifyingKeyPath: /root/zkbas-deploy/zkbas/zkbas.vk
+  ProvingKeyPath: /tmp/zkbas.pk
+  VerifyingKeyPath: /tmp/zkbas.vk

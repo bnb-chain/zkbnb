@@ -35,6 +35,8 @@ cd zkbas-crypto && go test ./legend/circuit/bn254/solidity -run TestExportSol
 
 cd ~/zkbas-deploy
 cp ./zkbas-crypto/legend/circuit/bn254/solidity/zkbas.vk ./zkbas && cp ./zkbas-crypto/legend/circuit/bn254/solidity/zkbas.pk ./zkbas
+cp ./zkbas-crypto/legend/circuit/bn254/solidity/zkbas.vk /tmp && cp ./zkbas-crypto/legend/circuit/bn254/solidity/zkbas.pk /tmp
+
 
 echo '3. start verify_parse for ZecreyVerifier'
 cd ~/zkbas-deploy
