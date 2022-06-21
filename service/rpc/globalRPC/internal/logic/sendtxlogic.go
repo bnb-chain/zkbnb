@@ -40,7 +40,7 @@ func NewSendTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendTxLogi
 }
 
 func (l *SendTxLogic) SendTx(in *globalRPCProto.ReqSendTx) (resp *globalRPCProto.RespSendTx, err error) {
-	resp = new(globalRPCProto.RespSendTx)
+	resp = &globalRPCProto.RespSendTx{}
 	switch in.TxType {
 	case commonTx.TxTypeTransfer:
 		resp.TxId, err = l.sendTransferTx(in.TxInfo)

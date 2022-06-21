@@ -38,11 +38,12 @@ func NewGetTxByHashLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTx
 	}
 }
 
-func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (resp *types.RespGetTxByHash, err error) {
+func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (*types.RespGetTxByHash, error) {
+	resp := &types.RespGetTxByHash{}
 	txMemppol, err := l.mempool.GetMempoolTxByTxHash(req.TxHash)
 	if err != nil {
 		l.Error("[mempool.GetMempoolTxByTxHash]:%v", err)
-		return
+		return nil, err
 	}
 
 	txDetails := make([]*types.TxDetail, 0)
@@ -58,7 +59,7 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (resp *types.R
 	block, err := l.block.GetBlockByBlockHeight(txMemppol.L2BlockHeight)
 	if err != nil {
 		l.Error("[Block.GetBlockByBlockHeight]:%v", err)
-		return
+		return nil, err
 	}
 
 	// Todo: update blockstatus to cache, but not sure if the whole block shall be inserted. which kind of tx? mempoolTx or tx?
@@ -85,5 +86,5 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (resp *types.R
 		// -> gavin
 	}
 
-	return
+	return resp, nil
 }

@@ -34,42 +34,42 @@ func NewGetLayer2BasicInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	}
 }
 
-func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo(req *types.ReqGetLayer2BasicInfo) (resp *types.RespGetLayer2BasicInfo, err error) {
+func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo(req *types.ReqGetLayer2BasicInfo) (*types.RespGetLayer2BasicInfo, error) {
+	resp := &types.RespGetLayer2BasicInfo{}
 	errorHandler := func(e error) bool {
 		if e != nil {
-			err = fmt.Errorf("[explorer.info.GetLayer2BasicInfo]<=>%s", e.Error())
+			err := fmt.Errorf("[explorer.info.GetLayer2BasicInfo]<=>%s", e.Error())
 			l.Error(err)
 			return true
 		}
 		return false
 	}
 
-	committedBlocksCount, e := l.block.GetCommitedBlocksCount()
-	if errorHandler(e) {
-		return
+	committedBlocksCount, err := l.block.GetCommitedBlocksCount()
+	if errorHandler(err) {
+		return nil, err
 	}
 	resp.BlockCommitted = committedBlocksCount
 
-	executedBlocksCount, e := l.block.GetExecutedBlocksCount()
-	if errorHandler(e) {
-		return
+	executedBlocksCount, err := l.block.GetExecutedBlocksCount()
+	if errorHandler(err) {
+		return nil, err
 	}
 	resp.BlockExecuted = executedBlocksCount
 
-	txsCount, e := l.tx.GetTxsTotalCount(l.ctx)
-	if errorHandler(e) {
-		return
+	txsCount, err := l.tx.GetTxsTotalCount(l.ctx)
+	if errorHandler(err) {
+		return nil, err
 	}
 	resp.TotalTransactionsCount = txsCount
 
 	resp.ContractAddresses = make([]string, 0)
 	for _, contractAddressesName := range contractAddressesNames {
-		contract, e := l.sysconfigModel.GetSysconfigByName(contractAddressesName)
-		if errorHandler(e) {
-			return
+		contract, err := l.sysconfigModel.GetSysconfigByName(contractAddressesName)
+		if errorHandler(err) {
+			return nil, err
 		}
 		resp.ContractAddresses = append(resp.ContractAddresses, contract.Value)
 	}
-
-	return
+	return resp, nil
 }

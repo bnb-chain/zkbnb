@@ -39,19 +39,20 @@ func NewGetMempoolTxsListLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 	}
 }
 
-func (l *GetMempoolTxsListLogic) GetMempoolTxsList(req *types.ReqGetMempoolTxsList) (resp *types.RespGetMempoolTxsList, err error) {
+func (l *GetMempoolTxsListLogic) GetMempoolTxsList(req *types.ReqGetMempoolTxsList) (*types.RespGetMempoolTxsList, error) {
 	//	err = utils.CheckRequestParam(utils.TypeLimit, reflect.ValueOf(req.Limit))
+	resp := &types.RespGetMempoolTxsList{}
 	mempoolTxs, err := l.mempool.GetMempoolTxs(int64(req.Limit), int64(req.Offset))
 	if err != nil {
 		logx.Error("[GetMempoolTxs] err:%v", err)
-		return
+		return nil, err
 	}
 
 	// Todo: why not do total=len(mempoolTxs)
 	total, err := l.mempool.GetMempoolTxsTotalCount()
 	if err != nil {
 		logx.Error("[GetMempoolTxs] err:%v", err)
-		return
+		return nil, err
 	}
 
 	for _, mempoolTx := range mempoolTxs {
@@ -72,6 +73,7 @@ func (l *GetMempoolTxsListLogic) GetMempoolTxsList(req *types.ReqGetMempoolTxsLi
 				})
 			}
 		}
+
 		resp.Txs = append(resp.Txs, &types.Tx{
 			TxHash:        mempoolTx.TxHash,
 			TxType:        mempoolTx.TxType,
@@ -85,5 +87,5 @@ func (l *GetMempoolTxsListLogic) GetMempoolTxsList(req *types.ReqGetMempoolTxsLi
 		})
 	}
 	resp.Total = uint32(total)
-	return
+	return resp, err
 }
