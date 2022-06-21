@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type liquidity struct {
+type liquidityModel struct {
 	table string
 	db    *gorm.DB
 	cache multcache.MultCache
@@ -18,7 +18,7 @@ type liquidity struct {
 	Return: entities []*Liquidity, err error
 	Description: get account liquidity entities by account index
 */
-func (m *liquidity) GetLiquidityByPairIndex(pairIndex int64) (entity *table.Liquidity, err error) {
+func (m *liquidityModel) GetLiquidityByPairIndex(pairIndex int64) (entity *table.Liquidity, err error) {
 	dbTx := m.db.Table(m.table).Where("pair_index = ?", pairIndex).Find(&entity)
 	if dbTx.Error != nil {
 		return entity, dbTx.Error
@@ -28,6 +28,6 @@ func (m *liquidity) GetLiquidityByPairIndex(pairIndex int64) (entity *table.Liqu
 	return entity, nil
 }
 
-func (m *liquidity) GetAllLiquidityAssets() (entity []*table.Liquidity, err error) {
+func (m *liquidityModel) GetAllLiquidityAssets() (entity []*table.Liquidity, err error) {
 	return entity, nil
 }

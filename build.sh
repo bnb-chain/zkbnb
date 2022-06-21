@@ -9,7 +9,7 @@ cronjob="blockMonitor mempoolMonitor committer sender l2BlockMonitor proverClien
 
 # pull newest code
 cd $2
-git fetch -unf wenki $1:refs/tags/$1
+git fetch -unf origin $1:refs/tags/$1
 git checkout $1
 
 

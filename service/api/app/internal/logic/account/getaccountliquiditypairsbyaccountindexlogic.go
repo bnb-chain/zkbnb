@@ -16,7 +16,7 @@ type GetAccountLiquidityPairsByAccountIndexLogic struct {
 	logx.Logger
 	ctx       context.Context
 	svcCtx    *svc.ServiceContext
-	liquidity liquidity.Liquidity
+	liquidity liquidity.LiquidityModel
 }
 
 func NewGetAccountLiquidityPairsByAccountIndexLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAccountLiquidityPairsByAccountIndexLogic {

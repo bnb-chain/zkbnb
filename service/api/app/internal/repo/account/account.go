@@ -28,7 +28,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type account struct {
+type accountModel struct {
 	table string
 	db    *gorm.DB
 	cache multcache.MultCache
@@ -40,7 +40,7 @@ type account struct {
 	Return: bool, error
 	Description: check account name existence
 */
-func (m *account) IfAccountNameExist(name string) (bool, error) {
+func (m *accountModel) IfAccountNameExist(name string) (bool, error) {
 	var res int64
 	dbTx := m.db.Table(m.table).Where("account_name = ? and deleted_at is NULL", strings.ToLower(name)).Count(&res)
 	if dbTx.Error != nil {
@@ -63,7 +63,7 @@ func (m *account) IfAccountNameExist(name string) (bool, error) {
 	Return: bool, error
 	Description: check account index existence
 */
-func (m *account) IfAccountExistsByAccountIndex(accountIndex int64) (bool, error) {
+func (m *accountModel) IfAccountExistsByAccountIndex(accountIndex int64) (bool, error) {
 	var res int64
 	dbTx := m.db.Table(m.table).Where("account_index = ? and deleted_at is NULL", accountIndex).Count(&res)
 
@@ -89,7 +89,7 @@ func (m *account) IfAccountExistsByAccountIndex(accountIndex int64) (bool, error
 	Description: get account info by index
 */
 
-func (m *account) GetAccountByAccountIndex(accountIndex int64) (account *table.Account, err error) {
+func (m *accountModel) GetAccountByAccountIndex(accountIndex int64) (account *table.Account, err error) {
 	dbTx := m.db.Table(m.table).Where("account_index = ?", accountIndex).Find(&account)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", dbTx.Error)
@@ -103,7 +103,7 @@ func (m *account) GetAccountByAccountIndex(accountIndex int64) (account *table.A
 	return account, nil
 }
 
-func (m *account) GetVerifiedAccountByAccountIndex(accountIndex int64) (account *table.Account, err error) {
+func (m *accountModel) GetVerifiedAccountByAccountIndex(accountIndex int64) (account *table.Account, err error) {
 	dbTx := m.db.Table(m.table).Where("account_index = ? and status = ?", accountIndex, AccountStatusVerified).Find(&account)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", dbTx.Error)
@@ -124,7 +124,7 @@ func (m *account) GetVerifiedAccountByAccountIndex(accountIndex int64) (account 
 	Description: get account info by public key
 */
 
-func (m *account) GetAccountByPk(pk string) (account *table.Account, err error) {
+func (m *accountModel) GetAccountByPk(pk string) (account *table.Account, err error) {
 	dbTx := m.db.Table(m.table).Where("public_key = ?", pk).Find(&account)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[account.GetAccountByPk] %s", dbTx.Error)
@@ -144,7 +144,7 @@ func (m *account) GetAccountByPk(pk string) (account *table.Account, err error) 
 	Return: account Account, err error
 	Description: get account info by account name
 */
-func (m *account) GetAccountByAccountName(ctx context.Context, accountName string) (*table.Account, error) {
+func (m *accountModel) GetAccountByAccountName(ctx context.Context, accountName string) (*table.Account, error) {
 	f := func() (interface{}, error) {
 		account := &table.Account{}
 		dbTx := m.db.Table(m.table).Where("account_name = ?", accountName).Find(&account)
@@ -171,7 +171,7 @@ func (m *account) GetAccountByAccountName(ctx context.Context, accountName strin
 	Description:  For API /api/v1/info/getAccountsList
 
 */
-func (m *account) GetAccountsList(limit int, offset int64) (accounts []*table.Account, err error) {
+func (m *accountModel) GetAccountsList(limit int, offset int64) (accounts []*table.Account, err error) {
 	dbTx := m.db.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("account_index desc").Find(&accounts)
 	if dbTx.Error != nil {
 		logx.Error("[account.GetAccountsList] %s", dbTx.Error)
@@ -189,7 +189,7 @@ func (m *account) GetAccountsList(limit int, offset int64) (accounts []*table.Ac
 	Return: count int64, err error
 	Description: used for counting total accounts for explorer dashboard
 */
-func (m *account) GetAccountsTotalCount() (count int64, err error) {
+func (m *accountModel) GetAccountsTotalCount() (count int64, err error) {
 	dbTx := m.db.Table(m.table).Where("deleted_at is NULL").Count(&count)
 	if dbTx.Error != nil {
 		logx.Error("[account.GetAccountsTotalCount] %s", dbTx.Error)
@@ -207,7 +207,7 @@ func (m *account) GetAccountsTotalCount() (count int64, err error) {
 	Return: count int64, err error
 	Description: used for construct MPT
 */
-func (m *account) GetAllAccounts() (accounts []*table.Account, err error) {
+func (m *accountModel) GetAllAccounts() (accounts []*table.Account, err error) {
 	dbTx := m.db.Table(m.table).Order("account_index").Find(&accounts)
 	if dbTx.Error != nil {
 		logx.Error("[account.GetAllAccounts] %s", dbTx.Error)
@@ -225,7 +225,7 @@ func (m *account) GetAllAccounts() (accounts []*table.Account, err error) {
 	Return: accountIndex int64, err error
 	Description: get max accountIndex
 */
-func (m *account) GetLatestAccountIndex() (accountIndex int64, err error) {
+func (m *accountModel) GetLatestAccountIndex() (accountIndex int64, err error) {
 	dbTx := m.db.Table(m.table).Select("account_index").Order("account_index desc").Limit(1).Find(&accountIndex)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[account.GetLatestAccountIndex] %s", dbTx.Error)
@@ -239,7 +239,7 @@ func (m *account) GetLatestAccountIndex() (accountIndex int64, err error) {
 	return accountIndex, nil
 }
 
-func (m *account) GetAccountByAccountNameHash(accountNameHash string) (account *table.Account, err error) {
+func (m *accountModel) GetAccountByAccountNameHash(accountNameHash string) (account *table.Account, err error) {
 	dbTx := m.db.Table(m.table).Where("account_name_hash = ?", accountNameHash).Find(&account)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[account.GetAccountByAccountNameHash] %s", dbTx.Error)
@@ -253,7 +253,7 @@ func (m *account) GetAccountByAccountNameHash(accountNameHash string) (account *
 	return account, nil
 }
 
-func (m *account) GetConfirmedAccounts() (accounts []*table.Account, err error) {
+func (m *accountModel) GetConfirmedAccounts() (accounts []*table.Account, err error) {
 	dbTx := m.db.Table(m.table).Where("status = ?", AccountStatusConfirmed).Order("account_index").Find(&accounts)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[account.GetConfirmedAccounts] %s", dbTx.Error)
@@ -267,7 +267,7 @@ func (m *account) GetConfirmedAccounts() (accounts []*table.Account, err error) 
 	return accounts, nil
 }
 
-func (m *account) GetConfirmedAccountByAccountIndex(accountIndex int64) (account *table.Account, err error) {
+func (m *accountModel) GetConfirmedAccountByAccountIndex(accountIndex int64) (account *table.Account, err error) {
 	dbTx := m.db.Table(m.table).Where("account_index = ? and status = ?", accountIndex, AccountStatusConfirmed).Find(&account)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", dbTx.Error)
