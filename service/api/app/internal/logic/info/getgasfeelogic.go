@@ -64,12 +64,13 @@ func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.RespGetGasFe
 	}
 	// TODO: integer overflow
 	resp := &types.RespGetGasFee{}
-	resp.GasFee = ethPrice * sysGasFeeInt * math.Pow(10, -5) / price
+	GasFee := ethPrice * sysGasFeeInt * math.Pow(10, -5) / price
 	minNum := math.Pow(10, -float64(l2Asset.Decimals))
-	resp.GasFee = truncate(resp.GasFee, int64(l2Asset.Decimals))
-	if resp.GasFee < minNum {
-		resp.GasFee = minNum
+	GasFee = truncate(GasFee, int64(l2Asset.Decimals))
+	if GasFee < minNum {
+		GasFee = minNum
 	}
+	resp.GasFee = strconv.FormatFloat(GasFee, 'f', 30, 32) //float64 to string
 	return resp, nil
 }
 

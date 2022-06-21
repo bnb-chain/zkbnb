@@ -52,7 +52,7 @@ func (m *block) GetBlockByBlockHeight(blockHeight int64) (block *table.Block, er
 	if dbTx.Error != nil {
 		return nil, fmt.Errorf("[GetBlockByBlockHeight]: %v", dbTx.Error)
 	} else if dbTx.RowsAffected == 0 {
-		return nil, fmt.Errorf("[GetBlockByBlockHeight]: %v", ErrNotFound)
+		return nil, ErrDataNotExistInSQL
 	}
 	return
 }

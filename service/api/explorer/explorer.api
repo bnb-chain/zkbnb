@@ -267,6 +267,17 @@ type (
 	}
 )
 
+// sendTx
+type (
+	ReqSendTx {
+		TxType uint32 `form:"tx_type"`
+		TxInfo string `form:"tx_info"`
+	}
+	RespSendTx {
+		TxId string `json:"tx_id"`
+	}
+)
+
 @server(
 	group: transaction
 )
@@ -285,6 +296,9 @@ service explorer-api{
 	
 	@handler GetMempoolTxsListByPublicKey
 	get /api/v1/tx/getMempoolTxsListByPublicKey  (ReqGetMempoolTxsListByPublicKey) returns (RespGetMempoolTxsListByPublicKey)
+	
+	@handler SendTx
+	post /api/v1/tx/sendTx  (ReqSendTx) returns (RespSendTx)
 }
 
 /* ========================= Account =========================*/
@@ -294,20 +308,15 @@ type AssetInfo {
 	Balance string `json:"balance"`
 }
 
-type AccountInfo {
-	AccountIndex uint32       `json:"account_index"`
-	AccountName  string       `json:"account_name"`
-	AccountPk    string       `json:"account_pk"`
-	Assets       []*AssetInfo `json:"assets"`
-}
-
 // GetAccountInfoByAccountName
 type (
 	ReqGetAccountInfoByAccountName {
 		AccountName string `form:"account_name"`
 	}
 	RespGetAccountInfoByAccountName {
-		Account AccountInfo `json:"account"`
+		AccountIndex uint32       `json:"account_index"`
+		AccountPk    string       `json:"account_pk"`
+		Assets       []*AssetInfo `json:"assets"`
 	}
 )
 
@@ -317,4 +326,22 @@ type (
 service explorer-api{
 	@handler GetAccountInfoByAccountName
 	get /api/v1/account/getAccountInfoByAccountName  (ReqGetAccountInfoByAccountName) returns (RespGetAccountInfoByAccountName)
+}
+
+// GetMaxOfferId
+type (
+	ReqGetMaxOfferId {
+		AccountIndex uint32 `form:"account_index"`
+	}
+	RespGetMaxOfferId {
+		OfferId uint64 `json:"offer_id"`
+	}
+)
+
+@server(
+	group: nft
+)
+service explorer-api{
+	@handler GetMaxOfferId
+	get /api/v1/nft/getMaxOfferId  (ReqGetMaxOfferId) returns (RespGetMaxOfferId)
 }

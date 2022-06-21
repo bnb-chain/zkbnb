@@ -100,17 +100,17 @@ type ReqGetCurrencyPriceBySymbol struct {
 }
 
 type RespGetCurrencyPriceBySymbol struct {
-	AssetId uint32  `json:"assetId"`
-	Price   float64 `json:"price"`
+	AssetId uint32 `json:"assetId"`
+	Price   string `json:"price"`
 }
 
 type ReqGetCurrencyPrices struct {
 }
 
 type DataCurrencyPrices struct {
-	Pair    string  `json:"pair"`
-	AssetId uint32  `json:"assetId"`
-	Price   float64 `json:"price"`
+	Pair    string `json:"pair"`
+	AssetId uint32 `json:"assetId"`
+	Price   string `json:"price"`
 }
 
 type RespGetCurrencyPrices struct {
@@ -122,7 +122,7 @@ type ReqGetGasFee struct {
 }
 
 type RespGetGasFee struct {
-	GasFee float64 `json:"gas_fee"`
+	GasFee string `json:"gas_fee"`
 }
 
 type ReqGetWithdrawGasFee struct {
@@ -132,7 +132,7 @@ type ReqGetWithdrawGasFee struct {
 }
 
 type RespGetWithdrawGasFee struct {
-	WithdrawGasFee float64 `json:"withdraw_gas_fee"`
+	WithdrawGasFee string `json:"withdraw_gas_fee"`
 }
 
 type ReqGetSwapAmount struct {

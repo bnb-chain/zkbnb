@@ -29,7 +29,7 @@ func NewGetAssetsListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 func (l *GetAssetsListLogic) GetAssetsList(req *types.ReqGetAssetsList) (*types.RespGetAssetsList, error) {
 	assets, err := l.l2asset.GetL2AssetsList()
 	if err != nil {
-		logx.Error("[GetL2AssetsList] err:%v", err)
+		logx.Errorf("[GetL2AssetsList] err:%v", err)
 		return nil, err
 	}
 	resp := &types.RespGetAssetsList{}
