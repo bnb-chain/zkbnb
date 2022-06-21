@@ -19,9 +19,10 @@ package util
 
 import (
 	"fmt"
-	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"math/big"
 	"testing"
+
+	"github.com/bnb-chain/zkbas/common/commonAsset"
 )
 
 func TestComputeDeltaY(t *testing.T) {

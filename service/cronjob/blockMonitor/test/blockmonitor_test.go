@@ -18,14 +18,15 @@ package test
 
 import (
 	"flag"
-	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
-	"github.com/bnb-chain/zkbas/service/cronjob/blockMonitor/internal/config"
-	"github.com/bnb-chain/zkbas/service/cronjob/blockMonitor/internal/logic"
-	"github.com/bnb-chain/zkbas/service/cronjob/blockMonitor/internal/svc"
 	"testing"
 
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
+	"github.com/bnb-chain/zkbas/service/cronjob/blockMonitor/internal/config"
+	"github.com/bnb-chain/zkbas/service/cronjob/blockMonitor/internal/logic"
+	"github.com/bnb-chain/zkbas/service/cronjob/blockMonitor/internal/svc"
 )
 
 var configFile = flag.String("f",
@@ -36,7 +37,6 @@ func TestBlockMonitor(t *testing.T) {
 
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
-	logx.MustSetup(c.LogConf)
 	ctx := svc.NewServiceContext(c)
 
 	ZecreyRollupAddress, err := ctx.SysConfig.GetSysconfigByName(c.ChainConfig.ZecreyContractAddrSysConfigName)

@@ -42,32 +42,32 @@ func NewGetMempoolTxsListByPublicKeyLogic(ctx context.Context, svcCtx *svc.Servi
 }
 
 func (l *GetMempoolTxsListByPublicKeyLogic) GetMempoolTxsListByPublicKey(req *types.ReqGetMempoolTxsListByPublicKey) (resp *types.RespGetMempoolTxsListByPublicKey, err error) {
-	account, err := l.account.GetAccountByPk(req.AccountPk)
+	accountInfo, err := l.account.GetAccountByPk(req.AccountPk)
 	if err != nil {
 		l.Error("[transaction.GetTxsByPubKey] err:%v", err)
 		return
 	}
 
-	txList, _, err := l.globalRPC.GetLatestTxsListByAccountIndex(uint32(account.AccountIndex), uint32(req.Limit), uint32(req.Offset))
+	txList, _, err := l.globalRPC.GetLatestTxsListByAccountIndex(uint32(accountInfo.AccountIndex), uint32(req.Limit), uint32(req.Offset))
 	if err != nil {
 		l.Error("[transaction.GetTxsByPubKey] err:%v", err)
 		return
 	}
-	txCount, err := l.tx.GetTxsTotalCountByAccountIndex(account.AccountIndex)
+	txCount, err := l.tx.GetTxsTotalCountByAccountIndex(accountInfo.AccountIndex)
 	if err != nil {
 		logx.Error("[transaction.GetTxsByPubKey] err:%v", err)
 		return
 	}
 
-	mempoolTxCount, err := l.mempool.GetMempoolTxsTotalCountByAccountIndex(account.AccountIndex)
+	mempoolTxCount, err := l.mempool.GetMempoolTxsTotalCountByAccountIndex(accountInfo.AccountIndex)
 	if err != nil {
 		logx.Error("[transaction.GetTxsByPubKey] err:%v", err)
 		return
 	}
 
-	for _, tx := range txList {
+	for _, txInfo := range txList {
 		txDetails := make([]*types.TxDetail, 0)
-		for _, txDetail := range tx.MempoolDetails {
+		for _, txDetail := range txInfo.MempoolDetails {
 			txDetails = append(txDetails, &types.TxDetail{
 				AssetId:        int(txDetail.AssetId),
 				AssetType:      int(txDetail.AssetType),
@@ -76,31 +76,31 @@ func (l *GetMempoolTxsListByPublicKeyLogic) GetMempoolTxsListByPublicKey(req *ty
 				AccountBalance: txDetail.BalanceDelta,
 			})
 		}
-		gasFee, _ := strconv.ParseInt(tx.GasFee, 10, 64)
-		txAmount, _ := strconv.ParseInt(tx.TxAmount, 10, 64)
+		gasFee, _ := strconv.ParseInt(txInfo.GasFee, 10, 64)
+		txAmount, _ := strconv.ParseInt(txInfo.TxAmount, 10, 64)
 		var blockInfo *blockmodel.Block
-		blockInfo, err = l.block.GetBlockByBlockHeight(tx.L2BlockHeight)
+		blockInfo, err = l.block.GetBlockByBlockHeight(txInfo.L2BlockHeight)
 		if err != nil {
 			logx.Error("[transaction.GetTxsByPubKey] err:%v", err)
 			return
 		}
 		resp.Txs = append(resp.Txs, &types.Tx{
-			TxHash:        tx.TxHash,
-			TxType:        int32(tx.TxType),
-			GasFeeAssetId: int32(tx.GasFeeAssetId),
+			TxHash:        txInfo.TxHash,
+			TxType:        int32(txInfo.TxType),
+			GasFeeAssetId: int32(txInfo.GasFeeAssetId),
 			GasFee:        int32(gasFee),
-			TxStatus:      int32(tx.Status),
-			BlockHeight:   int64(tx.L2BlockHeight),
+			TxStatus:      int32(txInfo.Status),
+			BlockHeight:   txInfo.L2BlockHeight,
 			BlockStatus:   int32(blockInfo.BlockStatus),
 			BlockId:       int32(blockInfo.ID),
 			//Todo: do we still need AssetAId and AssetBId
-			AssetAId:      int32(tx.AssetId),
-			AssetBId:      int32(tx.AssetId),
-			TxAmount:      int64(txAmount),
+			AssetAId:      int32(txInfo.AssetId),
+			AssetBId:      int32(txInfo.AssetId),
+			TxAmount:      txAmount,
 			TxDetails:     txDetails,
-			NativeAddress: tx.NativeAddress,
-			CreatedAt:     tx.CreatedAt.UnixNano() / 1e6,
-			Memo:          tx.Memo,
+			NativeAddress: txInfo.NativeAddress,
+			CreatedAt:     txInfo.CreatedAt.UnixNano() / 1e6,
+			Memo:          txInfo.Memo,
 		})
 	}
 

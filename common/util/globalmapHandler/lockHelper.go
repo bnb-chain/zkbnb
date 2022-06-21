@@ -19,9 +19,10 @@ package globalmapHandler
 
 import (
 	"errors"
+	"time"
+
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
-	"time"
 )
 
 func GetRedisLockByKey(conn *redis.Redis, keyLock string) (redisLock *redis.RedisLock) {
@@ -62,10 +63,4 @@ func TryAcquireLock(redisLock *redis.RedisLock) (err error) {
 		}
 	}
 	return nil
-}
-
-func ReleaseLock(redisLockMap map[string]*redis.RedisLock) {
-	for _, redisLock := range redisLockMap {
-		redisLock.Release()
-	}
 }

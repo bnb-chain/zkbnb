@@ -52,9 +52,9 @@ func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *
 		return nil, err
 	}
 	results := make([]*types.Tx, 0)
-	for _, tx := range mempoolTxs {
+	for _, memTx := range mempoolTxs {
 		txDetails := make([]*types.TxDetail, 0)
-		for _, txDetail := range tx.MempoolDetails {
+		for _, txDetail := range memTx.MempoolDetails {
 			txDetails = append(txDetails, &types.TxDetail{
 				AssetId:      uint32(txDetail.AssetId),
 				AssetType:    uint32(txDetail.AssetType),
@@ -63,32 +63,32 @@ func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *
 				AccountDelta: txDetail.BalanceDelta,
 			})
 		}
-		block, err := l.block.GetBlockByBlockHeight(tx.L2BlockHeight)
+		blockInfo, err := l.block.GetBlockByBlockHeight(memTx.L2BlockHeight)
 		if err != nil {
 			logx.Errorf("[GetBlockByBlockHeight]:%v", err)
 			return nil, err
 		}
 		results = append(results, &types.Tx{
-			TxHash:        tx.TxHash,
-			TxType:        uint32(tx.TxType),
-			GasFeeAssetId: uint32(tx.GasFeeAssetId),
-			GasFee:        tx.GasFee,
-			NftIndex:      uint32(tx.NftIndex),
-			PairIndex:     uint32(tx.PairIndex),
-			AssetId:       uint32(tx.AssetId),
-			TxAmount:      tx.TxAmount,
-			NativeAddress: tx.NativeAddress,
+			TxHash:        memTx.TxHash,
+			TxType:        uint32(memTx.TxType),
+			GasFeeAssetId: uint32(memTx.GasFeeAssetId),
+			GasFee:        memTx.GasFee,
+			NftIndex:      uint32(memTx.NftIndex),
+			PairIndex:     uint32(memTx.PairIndex),
+			AssetId:       uint32(memTx.AssetId),
+			TxAmount:      memTx.TxAmount,
+			NativeAddress: memTx.NativeAddress,
 			TxDetails:     txDetails,
-			TxInfo:        tx.TxInfo,
-			ExtraInfo:     tx.ExtraInfo,
-			Memo:          tx.Memo,
-			AccountIndex:  uint32(tx.AccountIndex),
-			Nonce:         uint32(tx.Nonce),
-			ExpiredAt:     uint32(tx.ExpiredAt),
-			L2BlockHeight: uint32(tx.L2BlockHeight),
-			Status:        uint32(tx.Status),
-			CreatedAt:     uint32(tx.CreatedAt.Unix()),
-			BlockID:       uint32(block.ID),
+			TxInfo:        memTx.TxInfo,
+			ExtraInfo:     memTx.ExtraInfo,
+			Memo:          memTx.Memo,
+			AccountIndex:  uint32(memTx.AccountIndex),
+			Nonce:         uint32(memTx.Nonce),
+			ExpiredAt:     uint32(memTx.ExpiredAt),
+			L2BlockHeight: uint32(memTx.L2BlockHeight),
+			Status:        uint32(memTx.Status),
+			CreatedAt:     uint32(memTx.CreatedAt.Unix()),
+			BlockID:       uint32(blockInfo.ID),
 		})
 	}
 	return &types.RespGetTxsByAccountIndexAndTxType{Total: uint32(txCount + mempoolTxCount), Txs: results}, nil

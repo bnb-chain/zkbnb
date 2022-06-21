@@ -37,15 +37,15 @@ func (l *GetCurrencyPricesLogic) GetCurrencyPrices(_ *types.ReqGetCurrencyPrices
 	}
 	resp := &types.RespGetCurrencyPrices{}
 	for _, asset := range l2Assets {
-		price, err := l.price.GetCurrencyPrice(l.ctx, asset.AssetSymbol)
+		currencyPrice, err := l.price.GetCurrencyPrice(l.ctx, asset.AssetSymbol)
 		if err != nil {
 			logx.Error("[GetCurrencyPrice] err:%v", err)
 			return nil, err
 		}
 		resp.Data = append(resp.Data, &types.DataCurrencyPrices{
 			Pair:    asset.AssetSymbol + "/" + "USDT",
-			AssetId: uint32(asset.AssetId),
-			Price:   price,
+			AssetId: asset.AssetId,
+			Price:   currencyPrice,
 		})
 	}
 	return resp, nil

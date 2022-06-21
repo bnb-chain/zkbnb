@@ -18,17 +18,14 @@
 package sysconfigName
 
 const (
-	PoolAccountIndex        = "PoolAccountIndex"
 	TreasuryAccountIndex    = "TreasuryAccountIndex"
 	GasAccountIndex         = "GasAccountIndex"
 	BscTestNetworkRpc       = "BscTestNetworkRpc"
-	LocalTestNetworkRpc     = "LocalTestNetworkRpc"
 	SysGasFee               = "SysGasFee"
 	MaxAssetId              = "MaxAssetId"
 	ZecreyLegendContract    = "ZecreyLegendContract"
 	GovernanceContract      = "GovernanceContract"
 	AssetGovernanceContract = "AssetGovernanceContract"
 	Validators              = "Validators"
-	VerifierContract        = "VerifierContract"
 	Governor                = "Governor"
 )

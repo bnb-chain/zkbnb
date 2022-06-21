@@ -27,15 +27,15 @@ func NewGetAccountStatusByPubKeyLogic(ctx context.Context, svcCtx *svc.ServiceCo
 }
 
 func (l *GetAccountStatusByPubKeyLogic) GetAccountStatusByPubKey(req *types.ReqGetAccountStatusByPubKey) (resp *types.RespGetAccountStatusByPubKey, err error) {
-	account, err := l.account.GetAccountByPk(req.AccountPk)
+	accountInfo, err := l.account.GetAccountByPk(req.AccountPk)
 	if err != nil {
 		logx.Errorf("[GetAccountByPk] err:%v", err)
 		return nil, err
 	}
 	resp = &types.RespGetAccountStatusByPubKey{
-		AccountStatus: uint32(account.Status),
-		AccountName:   account.AccountName,
-		AccountIndex:  uint32(account.AccountIndex),
+		AccountStatus: uint32(accountInfo.Status),
+		AccountName:   accountInfo.AccountName,
+		AccountIndex:  uint32(accountInfo.AccountIndex),
 	}
 	return resp, nil
 }

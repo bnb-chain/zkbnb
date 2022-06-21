@@ -25,10 +25,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	cacheZecreyFailTxIdPrefix = "cache:zecrey:failTx:id:"
-)
-
 type (
 	FailTxModel interface {
 		CreateFailTxTable() error

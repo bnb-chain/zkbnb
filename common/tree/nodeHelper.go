@@ -18,8 +18,9 @@
 package tree
 
 import (
-	"github.com/bnb-chain/zkbas-crypto/accumulators/merkleTree"
 	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas-crypto/accumulators/merkleTree"
 )
 
 func AssetToNode(balance string, lpAmount string, offerCanceledOrFinalized string) (node *Node, err error) {

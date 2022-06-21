@@ -4,13 +4,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/tx"
 )
 
-func Min(x, y int) int {
-	if x < y {
-		return x
-	}
-	return y
-}
-
 func ConvertMempoolTxToTx(mempoolTx *MempoolTx, txDetails []*tx.TxDetail, accountRoot string, currentBlockHeight int64) (tx *Tx) {
 	tx = &Tx{
 		TxHash:        mempoolTx.TxHash,

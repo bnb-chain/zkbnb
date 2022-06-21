@@ -17,12 +17,13 @@
 package globalmapHandler
 
 import (
+	"github.com/zeromicro/go-zero/core/stores/redis"
+
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
-	"github.com/zeromicro/go-zero/core/stores/redis"
 )
 
 type (
@@ -42,14 +43,6 @@ type (
 )
 
 const (
-	LpPrefix            = "LP::"
-	LockPrefix          = "Lock::"
-	PoolLiquidityPrefix = "PoolLiquidity::"
-	AccountAssetPrefix  = "AccountAsset::"
-
-
-	LockNumber = 50
-
 	LockExpiryTime = 10 // seconds
 	RetryInterval  = 500
 	MaxRetryTimes  = 3

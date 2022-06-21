@@ -18,11 +18,13 @@
 package txVerification
 
 import (
+	"math/big"
+
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
+
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
-	"math/big"
 )
 
 type (
@@ -49,8 +51,6 @@ type (
 )
 
 const (
-	Base = 10
-
 	OfferPerAsset = 128
 
 	TenThousand = 10000

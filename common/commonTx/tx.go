@@ -19,9 +19,11 @@ package commonTx
 
 import (
 	"encoding/json"
-	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
-	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
+
+	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 )
 
 type (

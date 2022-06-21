@@ -1,25 +1,25 @@
 package zerror
 
-type error struct {
+type zError struct {
 	code    int32
 	message string
 }
 
-func (e *error) Error() string {
+func (e *zError) Error() string {
 	return e.message
 }
 
-func (e *error) Code() int32 {
+func (e *zError) Code() int32 {
 	return e.code
 }
 
-func (e *error) RefineError(err string) *error {
+func (e *zError) RefineError(err string) *zError {
 	e.message = e.message + err
 	return e
 }
 
-func new(code int32, msg string) *error {
-	return &error{
+func newError(code int32, msg string) *zError {
+	return &zError{
 		code:    code,
 		message: msg,
 	}

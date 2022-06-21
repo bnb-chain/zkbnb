@@ -19,9 +19,11 @@ package proverUtil
 
 import (
 	"errors"
+
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonTx"
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 func ConstructProverInfo(

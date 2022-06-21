@@ -4,12 +4,12 @@ import (
 	"flag"
 	"fmt"
 
+	"github.com/zeromicro/go-zero/core/conf"
+	"github.com/zeromicro/go-zero/rest"
+
 	"github.com/bnb-chain/zkbas/service/api/explorer/internal/config"
 	"github.com/bnb-chain/zkbas/service/api/explorer/internal/handler"
 	"github.com/bnb-chain/zkbas/service/api/explorer/internal/svc"
-
-	"github.com/zeromicro/go-zero/core/conf"
-	"github.com/zeromicro/go-zero/rest"
 )
 
 var configFile = flag.String("f", "etc/explorer-api.yaml", "the config file")

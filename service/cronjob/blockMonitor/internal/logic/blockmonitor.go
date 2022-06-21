@@ -21,16 +21,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
+
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/zeromicro/go-zero/core/logx"
+
 	zecreyLegend "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/bnb-chain/zkbas/common/model/l1BlockMonitor"
 	"github.com/bnb-chain/zkbas/common/model/l2TxEventMonitor"
 	"github.com/bnb-chain/zkbas/common/util"
-	"math/big"
-
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 /*

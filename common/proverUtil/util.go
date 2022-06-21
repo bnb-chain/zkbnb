@@ -19,12 +19,14 @@ package proverUtil
 
 import (
 	"errors"
+	"log"
+
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/zeromicro/go-zero/core/logx"
+
 	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/model/block"
-	"github.com/zeromicro/go-zero/core/logx"
-	"log"
 )
 
 func SetFixedAccountArray(proof [][]byte) (res [AccountMerkleLevels][]byte, err error) {

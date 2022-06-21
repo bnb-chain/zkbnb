@@ -71,7 +71,7 @@ func (l *GetLatestTxsListByAccountIndexAndTxTypeLogic) GetLatestTxsListByAccount
 	var offsetMempool int64
 	offsetMempool = int64(in.Offset)
 	if mempoolTxCount <= int64(in.Offset) {
-		offsetMempool = int64(mempoolTxCount)
+		offsetMempool = mempoolTxCount
 	}
 	mempoolTxs, err := l.mempool.GetMempoolTxsListByAccountIndexAndTxTypeArray(int64(in.AccountIndex),
 		txTypeArray, int64(in.Limit), offsetMempool)
@@ -79,9 +79,9 @@ func (l *GetLatestTxsListByAccountIndexAndTxTypeLogic) GetLatestTxsListByAccount
 		logx.Errorf("[GetMempoolTxsListByAccountIndexAndTxTypeArray] err:%v", err)
 		return nil, err
 	}
-	for _, tx := range mempoolTxs {
+	for _, memTx := range mempoolTxs {
 		var details []*globalRPCProto.TxDetailInfo
-		for _, d := range tx.MempoolDetails {
+		for _, d := range memTx.MempoolDetails {
 			details = append(details, &globalRPCProto.TxDetailInfo{
 				AssetId:      uint32(d.AssetId),
 				AssetType:    uint32(d.AssetType),
@@ -91,22 +91,22 @@ func (l *GetLatestTxsListByAccountIndexAndTxTypeLogic) GetLatestTxsListByAccount
 			})
 		}
 		resTx := &globalRPCProto.TxInfo{
-			TxHash:        tx.TxHash,
-			TxType:        uint32(tx.TxType),
-			GasFeeAssetId: uint32(tx.GasFeeAssetId),
-			GasFee:        tx.GasFee,
-			NftIndex:      uint32(tx.NftIndex),
-			PairIndex:     uint32(tx.PairIndex),
-			AssetId:       uint32(tx.AssetId),
-			TxAmount:      tx.TxAmount,
-			NativeAddress: tx.NativeAddress,
+			TxHash:        memTx.TxHash,
+			TxType:        uint32(memTx.TxType),
+			GasFeeAssetId: uint32(memTx.GasFeeAssetId),
+			GasFee:        memTx.GasFee,
+			NftIndex:      uint32(memTx.NftIndex),
+			PairIndex:     uint32(memTx.PairIndex),
+			AssetId:       uint32(memTx.AssetId),
+			TxAmount:      memTx.TxAmount,
+			NativeAddress: memTx.NativeAddress,
 			TxDetails:     details,
-			Memo:          tx.Memo,
-			AccountIndex:  uint32(tx.AccountIndex),
-			Nonce:         uint64(tx.Nonce),
-			CreateAt:      uint64(tx.CreatedAt.Unix()),
-			Status:        uint32(tx.Status),
-			BlockHeight:   uint64(tx.L2BlockHeight),
+			Memo:          memTx.Memo,
+			AccountIndex:  uint32(memTx.AccountIndex),
+			Nonce:         uint64(memTx.Nonce),
+			CreateAt:      uint64(memTx.CreatedAt.Unix()),
+			Status:        uint32(memTx.Status),
+			BlockHeight:   uint64(memTx.L2BlockHeight),
 		}
 		resp.TxsList = append(resp.TxsList, resTx)
 	}

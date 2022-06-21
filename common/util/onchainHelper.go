@@ -1,10 +1,12 @@
 package util
 
 import (
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/common"
+
 	zecreyLegend "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/bnb-chain/zkbas/common/model/block"
-	"math/big"
 )
 
 func ConstructStoredBlockInfo(oBlock *block.Block) zecreyLegend.StorageStoredBlockInfo {

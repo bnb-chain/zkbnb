@@ -1,9 +1,10 @@
 package svc
 
 import (
+	"github.com/zeromicro/go-zero/zrpc"
+
 	"github.com/bnb-chain/zkbas/service/cronjob/proverClient/internal/config"
 	"github.com/bnb-chain/zkbas/service/rpc/proverHub/proverhubrpc"
-	"github.com/zeromicro/go-zero/zrpc"
 )
 
 type ServiceContext struct {

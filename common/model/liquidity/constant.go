@@ -23,8 +23,8 @@ import (
 )
 
 const (
-	LiquidityTable        = `liquidity`
-	LiquidityHistoryTable = `liquidity_history`
+	TableName        = `liquidity`
+	HistoryTableName = `liquidity_history`
 )
 
 var (

@@ -48,13 +48,13 @@ type (
 func NewL2NftExchangeModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) L2NftExchangeModel {
 	return &defaultL2NftExchangeModel{
 		CachedConn: sqlc.NewConn(conn, c),
-		table:      L2NftExchangeTableName,
+		table:      ExchangeTableName,
 		DB:         db,
 	}
 }
 
 func (*L2NftExchange) TableName() string {
-	return L2NftExchangeTableName
+	return ExchangeTableName
 }
 
 /*

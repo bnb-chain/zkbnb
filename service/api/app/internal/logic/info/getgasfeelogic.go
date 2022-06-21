@@ -41,7 +41,7 @@ func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.RespGetGasFe
 		logx.Errorf("[GetSimpleL2AssetInfoByAssetId] err:%v", err)
 		return nil, err
 	}
-	price, err := l.price.GetCurrencyPrice(l.ctx, l2Asset.AssetSymbol)
+	currencyPrice, err := l.price.GetCurrencyPrice(l.ctx, l2Asset.AssetSymbol)
 	if err != nil {
 		logx.Errorf("[GetCurrencyPrice] err:%v", err)
 		return nil, err
@@ -64,7 +64,7 @@ func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.RespGetGasFe
 	}
 	// TODO: integer overflow
 	resp := &types.RespGetGasFee{}
-	resp.GasFee = ethPrice * sysGasFeeInt * math.Pow(10, -5) / price
+	resp.GasFee = ethPrice * sysGasFeeInt * math.Pow(10, -5) / currencyPrice
 	minNum := math.Pow(10, -float64(l2Asset.Decimals))
 	resp.GasFee = truncate(resp.GasFee, int64(l2Asset.Decimals))
 	if resp.GasFee < minNum {

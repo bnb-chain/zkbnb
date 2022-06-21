@@ -9,8 +9,6 @@ import (
 var (
 	ErrNotFound         = sqlx.ErrNotFound
 	ErrInvalidSysconfig = errors.New("[ErrInvalidSysconfig] invalid system config")
-	MaxChainId          = "Max_Chain_Id"
-	MaxAssetId          = "Max_Asset_Id"
 
 	NameColumn      = "name"
 	ValueColumn     = "value"

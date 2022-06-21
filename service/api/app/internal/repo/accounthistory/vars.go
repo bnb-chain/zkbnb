@@ -2,11 +2,6 @@ package accounthistory
 
 import (
 	"github.com/bnb-chain/zkbas/pkg/zerror"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
-)
-
-var (
-	ErrNotFound = sqlx.ErrNotFound
 )
 
 var (

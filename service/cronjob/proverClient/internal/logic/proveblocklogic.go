@@ -21,14 +21,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/bnb-chain/zkbas/service/cronjob/proverClient/internal/svc"
-	"github.com/bnb-chain/zkbas/service/rpc/proverHub/proverHubProto"
 	"log"
 
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/frontend"
 	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/service/cronjob/proverClient/internal/svc"
+	"github.com/bnb-chain/zkbas/service/rpc/proverHub/proverHubProto"
 )
 
 func ProveBlock(

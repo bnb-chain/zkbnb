@@ -23,14 +23,13 @@ import (
 )
 
 const (
-	MempoolTableName = `mempool_tx`
-	DetailTableName  = `mempool_tx_detail`
+	TableName       = `mempool_tx`
+	DetailTableName = `mempool_tx_detail`
 )
 
 var (
-	ErrNotFound               = sqlx.ErrNotFound
-	ErrInvalidMempoolTx       = errors.New("[ErrInvalidMempoolTx] invalid mempool txVerification")
-	ErrInvalidMempoolTxDetail = errors.New("[ErrInvalidMempoolTxDetail] invalid mempool txDtail")
+	ErrNotFound         = sqlx.ErrNotFound
+	ErrInvalidMempoolTx = errors.New("[ErrInvalidMempoolTx] invalid mempool txVerification")
 )
 
 const (

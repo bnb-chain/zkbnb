@@ -27,11 +27,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	cacheZecreySysconfigIdPrefix   = "cache:zecrey:sysconfig:id:"
-	cacheZecreySysconfigNamePrefix = "cache:zecrey:sysconfig:name:"
-)
-
 type (
 	SysconfigModel interface {
 		CreateSysconfigTable() error

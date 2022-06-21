@@ -3,11 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
-	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/bnb-chain/zkbas/service/cronjob/proverClient/internal/config"
-	"github.com/bnb-chain/zkbas/service/cronjob/proverClient/internal/logic"
-	"github.com/bnb-chain/zkbas/service/cronjob/proverClient/internal/svc"
+	"path/filepath"
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/frontend"
@@ -15,7 +11,12 @@ import (
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
-	"path/filepath"
+
+	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
+	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/service/cronjob/proverClient/internal/config"
+	"github.com/bnb-chain/zkbas/service/cronjob/proverClient/internal/logic"
+	"github.com/bnb-chain/zkbas/service/cronjob/proverClient/internal/svc"
 )
 
 func main() {
@@ -52,7 +53,6 @@ func main() {
 	if err != nil {
 		panic("verifyingKey loading error")
 	}
-
 
 	_, err = cronJob.AddFunc("@every 10s", func() {
 		// cron job for receiving cryptoBlock and handling

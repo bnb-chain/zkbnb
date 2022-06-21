@@ -252,7 +252,7 @@ func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 	err = m.DB.Transaction(func(tx *gorm.DB) error {
 		// update blocks
 		for _, pendingUpdateBlock := range pendingUpdateBlocks {
-			dbTx := tx.Table(block.BlockTableName).Where("id = ?", pendingUpdateBlock.ID).
+			dbTx := tx.Table(block.TableName).Where("id = ?", pendingUpdateBlock.ID).
 				Omit(Txs).
 				Select("*").
 				Updates(&pendingUpdateBlock)
@@ -306,7 +306,7 @@ func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 					return errors.New("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Delete Invalid Mempool Tx")
 				}
 			}
-			dbTx := tx.Table(mempool.MempoolTableName).Where("id = ?", pendingDeleteMempoolTx.ID).Delete(&pendingDeleteMempoolTx)
+			dbTx := tx.Table(mempool.TableName).Where("id = ?", pendingDeleteMempoolTx.ID).Delete(&pendingDeleteMempoolTx)
 			if dbTx.Error != nil {
 				logx.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] %s", dbTx.Error)
 				return dbTx.Error
@@ -348,7 +348,7 @@ func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 func (m *defaultL1TxSenderModel) GetLatestHandledBlock(txType int64) (txSender *L1TxSender, err error) {
 	dbTx := m.DB.Table(m.table).Where("tx_type = ? AND tx_status = ?", txType, HandledStatus).Order("l2_block_height desc").Find(&txSender)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetLatestHandledBlock] unable to get latest handled block: %s", err.Error())
+		logx.Errorf("[GetLatestHandledBlock] unable to get latest handled block: %s", dbTx.Error)
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		return nil, ErrNotFound
@@ -359,7 +359,7 @@ func (m *defaultL1TxSenderModel) GetLatestHandledBlock(txType int64) (txSender *
 func (m *defaultL1TxSenderModel) GetLatestPendingBlock(txType int64) (txSender *L1TxSender, err error) {
 	dbTx := m.DB.Table(m.table).Where("tx_type = ? AND tx_status = ?", txType, PendingStatus).Find(&txSender)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetLatestHandledBlock] unable to get latest pending block: %s", err.Error())
+		logx.Errorf("[GetLatestHandledBlock] unable to get latest pending block: %s", dbTx.Error)
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		return nil, ErrNotFound

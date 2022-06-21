@@ -17,15 +17,17 @@
 package logic
 
 import (
+	"strings"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
+
 	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
 	zecreyLegend "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/bnb-chain/zkbas/common/model/l1BlockMonitor"
 	"github.com/bnb-chain/zkbas/common/model/l2BlockEventMonitor"
 	"github.com/bnb-chain/zkbas/common/model/l2TxEventMonitor"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
-	"strings"
 )
 
 type (
@@ -45,9 +47,6 @@ type (
 const (
 	// zecrey event name
 	EventNameNewPriorityRequest = "NewPriorityRequest"
-	EventNameDeposit            = "Deposit"
-	EventNameWithdrawal         = "Withdrawal"
-	EventNameWithdrawalPending  = "WithdrawalPending"
 	EventNameBlockCommit        = "BlockCommit"
 	EventNameBlockVerification  = "BlockVerification"
 	EventNameBlocksRevert       = "BlocksRevert"
@@ -59,7 +58,6 @@ const (
 	EventTypeRevertedBlock      = l2BlockEventMonitor.RevertedBlockEventType
 	// status
 	PendingStatusL2BlockEventMonitor = l2BlockEventMonitor.PendingStatus
-	HandledStatusL2BlockEventMonitor = l2BlockEventMonitor.HandledStatus
 )
 
 var (

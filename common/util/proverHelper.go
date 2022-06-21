@@ -13,6 +13,7 @@ import (
 	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/frontend"
+
 	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 )
@@ -185,19 +186,4 @@ func UnformatProof(proof *FormattedProof) (oProof groth16.Proof, err error) {
 	}
 
 	return oProof, nil
-}
-
-func CompactProofs(proofs []*FormattedProof) []*big.Int {
-	var res []*big.Int
-	for _, proof := range proofs {
-		res = append(res, proof.A[0])
-		res = append(res, proof.A[1])
-		res = append(res, proof.B[0][0])
-		res = append(res, proof.B[0][1])
-		res = append(res, proof.B[1][0])
-		res = append(res, proof.B[1][1])
-		res = append(res, proof.C[0])
-		res = append(res, proof.C[1])
-	}
-	return res
 }

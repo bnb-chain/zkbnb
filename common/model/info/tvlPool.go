@@ -20,16 +20,10 @@ package info
 import (
 	"time"
 
-	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/cache"
-	"github.com/zeromicro/go-zero/core/stores/sqlc"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
-)
 
-var (
-	cacheZecreyTVLPoolPoolIdPrefix = "cache:zecrey:tvlpool:id:"
-	cacheZecreyTVLPoolDatePrefix   = "cache:zecrey:tvlpool:date:"
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/sqlc"
 )
 
 type (
@@ -55,14 +49,6 @@ type (
 		Date         time.Time `gorm:"index"` //days:hour
 	}
 )
-
-func NewTVLPoolModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) TVLPoolModel {
-	return &defaultTVLPoolModel{
-		CachedConn: sqlc.NewConn(conn, c),
-		table:      `tvl_pool`,
-		DB:         db,
-	}
-}
 
 func (*TVLPool) TableName() string {
 	return `tvl_pool`

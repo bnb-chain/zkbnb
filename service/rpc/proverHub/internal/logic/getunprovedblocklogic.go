@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/service/rpc/proverHub/internal/svc"
 	"github.com/bnb-chain/zkbas/service/rpc/proverHub/proverHubProto"

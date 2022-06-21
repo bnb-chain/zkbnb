@@ -21,11 +21,13 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
-	"github.com/bnb-chain/zkbas-crypto/zero/twistededwards/tebn254/zero"
-	"github.com/bnb-chain/zkbas/common/commonConstant"
-	"github.com/zeromicro/go-zero/core/logx"
 	"log"
 	"math/big"
+
+	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas-crypto/zero/twistededwards/tebn254/zero"
+	"github.com/bnb-chain/zkbas/common/commonConstant"
 )
 
 func SetFixed32Bytes(buf []byte) [32]byte {
@@ -43,11 +45,6 @@ func PaddingStringBigIntIntoBuf(buf *bytes.Buffer, aStr string) error {
 	}
 	buf.Write(a.FillBytes(make([]byte, zero.PointSize)))
 	return nil
-}
-
-func WriteAccountNameIntoBuf(buf *bytes.Buffer, accountName string) {
-	infoBytes := SetFixed32Bytes([]byte(accountName))
-	buf.Write(new(big.Int).SetBytes(infoBytes[:]).FillBytes(make([]byte, zero.PointSize)))
 }
 
 func PaddingAddressIntoBuf(buf *bytes.Buffer, address string) (err error) {

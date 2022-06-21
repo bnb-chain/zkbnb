@@ -11,11 +11,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	cacheAccountLiquidityIdPrefix                  = "cache::accountLiquidity:id:"
-	cacheAccountLiquidityPairAndAccountIndexPrefix = "cache::accountLiquidity:pairAndAccountIndex:"
-)
-
 type liquidity struct {
 	cachedConn sqlc.CachedConn
 	table      string

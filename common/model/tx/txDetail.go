@@ -24,10 +24,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	cacheZecreyTxDetailIdPrefix = "cache:zecrey:txDetail:id:"
-)
-
 type (
 	TxDetailModel interface {
 		CreateTxDetailTable() error
@@ -61,13 +57,13 @@ type (
 func NewTxDetailModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) TxDetailModel {
 	return &defaultTxDetailModel{
 		CachedConn: sqlc.NewConn(conn, c),
-		table:      TxDetailTableName,
+		table:      DetailTableName,
 		DB:         db,
 	}
 }
 
 func (*TxDetail) TableName() string {
-	return TxDetailTableName
+	return DetailTableName
 }
 
 /*

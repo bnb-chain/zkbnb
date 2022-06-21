@@ -24,14 +24,12 @@ import (
 
 var (
 	ErrReflectInvalid     = errors.New("reflect invalid")
-	ErrReflectIntInvalid  = errors.New("reflect invalid int type")
 	ErrReflectTypeInvalid = errors.New("reflect invalid type")
 
 	ErrAccountIndexInvalid = errors.New("invalid account index")
 	ErrAssetIdInvalid      = errors.New("invalid asset id")
 	ErrAccountNameInvalid  = errors.New("invalid account name")
 	ErrAccountPkInvalid    = errors.New("invalid account publickey")
-	ErrChainIdInvalid      = errors.New("invalid chain id")
 	ErrPairIndexInvalid    = errors.New("invalid pair index")
 	ErrLimitInvalid        = errors.New("invalid limit")
 	ErrOffsetInvalid       = errors.New("invalid offset")

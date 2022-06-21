@@ -51,27 +51,27 @@ func (l *GetTxsListByBlockHeightLogic) GetTxsListByBlockHeight(req *types.ReqGet
 		return
 	}
 
-	for _, tx := range txs {
-		txAmount, _ := strconv.Atoi(tx.TxAmount)
-		gasFee, _ := strconv.ParseInt(tx.GasFee, 10, 64)
+	for _, txInfo := range txs {
+		txAmount, _ := strconv.Atoi(txInfo.TxAmount)
+		gasFee, _ := strconv.ParseInt(txInfo.GasFee, 10, 64)
 		respTxs := &types.Tx{
-			TxHash:        tx.TxHash,
-			TxType:        int32(tx.TxType),
-			GasFeeAssetId: int32(tx.GasFeeAssetId),
+			TxHash:        txInfo.TxHash,
+			TxType:        int32(txInfo.TxType),
+			GasFeeAssetId: int32(txInfo.GasFeeAssetId),
 			GasFee:        int32(gasFee),
-			TxStatus:      int32(tx.TxStatus),
-			BlockHeight:   int64(tx.BlockHeight),
+			TxStatus:      int32(txInfo.TxStatus),
+			BlockHeight:   txInfo.BlockHeight,
 			BlockStatus:   int32(b.BlockStatus),
-			BlockId:       int32(tx.BlockId),
+			BlockId:       int32(txInfo.BlockId),
 			//Todo: still need AssetAId, AssetBId?
-			AssetAId:      int32(tx.AssetId),
-			AssetBId:      int32(tx.AssetId),
+			AssetAId:      int32(txInfo.AssetId),
+			AssetBId:      int32(txInfo.AssetId),
 			TxAmount:      int64(txAmount),
-			NativeAddress: tx.NativeAddress,
-			CreatedAt:     tx.CreatedAt.UnixNano() / 1e6,
-			Memo:          tx.Memo,
+			NativeAddress: txInfo.NativeAddress,
+			CreatedAt:     txInfo.CreatedAt.UnixNano() / 1e6,
+			Memo:          txInfo.Memo,
 		}
-		for _, d := range tx.TxDetails {
+		for _, d := range txInfo.TxDetails {
 			respTxs.TxDetails = append(respTxs.TxDetails, &types.TxDetail{
 				AssetId:      int(d.AssetId),
 				AssetType:    int(d.AssetType),

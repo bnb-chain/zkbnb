@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	AssetInfoTableName = `asset_info`
+	TableName = `asset_info`
 
 	StatusActive   uint32 = 0
 	StatusInactive uint32 = 1

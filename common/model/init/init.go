@@ -17,9 +17,12 @@
 
 package main
 
-
 import (
+	"log"
+
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/zeromicro/go-zero/core/stores/redis"
+
 	"github.com/bnb-chain/zkbas/common/model/account"
 	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
 	"github.com/bnb-chain/zkbas/common/model/basic"
@@ -36,8 +39,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/sysconfig"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/tree"
-	"github.com/zeromicro/go-zero/core/stores/redis"
-	"log"
 )
 
 func WithRedis(redisType string, redisPass string) redis.Option {
@@ -176,7 +177,7 @@ func InitTable() {
 	}
 }
 
-func main(){
+func main() {
 	DropTables()
 	InitTable()
 }

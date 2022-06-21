@@ -37,12 +37,12 @@ func (l *GetBalanceByAssetIdAndAccountNameLogic) GetBalanceByAssetIdAndAccountNa
 		logx.Errorf("[CheckAccountIndex] param:%v", req.AccountName)
 		return nil, errcode.ErrInvalidParam
 	}
-	account, err := l.account.GetAccountByAccountName(l.ctx, req.AccountName)
+	accountInfo, err := l.account.GetAccountByAccountName(l.ctx, req.AccountName)
 	if err != nil {
 		logx.Errorf("[GetAccountByAccountName] err:%v", err)
 		return nil, err
 	}
-	assets, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(uint32(account.AccountIndex))
+	assets, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(uint32(accountInfo.AccountIndex))
 	if err != nil {
 		logx.Errorf("[GetLatestAccountInfoByAccountIndex] err:%v", err)
 		return nil, err

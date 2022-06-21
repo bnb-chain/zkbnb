@@ -34,7 +34,6 @@ import (
 
 var (
 	cacheZecreyTxIdPrefix      = "cache:zecrey:txVerification:id:"
-	cacheZecreyTxTxHashPrefix  = "cache:zecrey:txVerification:txHash:"
 	cacheZecreyTxTxCountPrefix = "cache:zecrey:txVerification:txCount"
 )
 
@@ -92,14 +91,14 @@ type (
 func NewTxModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB, redisConn *redis.Redis) TxModel {
 	return &defaultTxModel{
 		CachedConn: sqlc.NewConn(conn, c),
-		table:      TxTableName,
+		table:      TableName,
 		DB:         db,
 		RedisConn:  redisConn,
 	}
 }
 
 func (*Tx) TableName() string {
-	return TxTableName
+	return TableName
 }
 
 /*

@@ -19,12 +19,14 @@ package account
 
 import (
 	"fmt"
+	"strings"
+
+	"gorm.io/gorm"
+
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
-	"gorm.io/gorm"
-	"strings"
 )
 
 type (
@@ -68,20 +70,20 @@ type (
 		AssetInfo string
 		AssetRoot string
 		// 0 - registered, not committer 1 - committer
-		Status    int
+		Status int
 	}
 )
 
 func NewAccountModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) AccountModel {
 	return &defaultAccountModel{
 		CachedConn: sqlc.NewConn(conn, c),
-		table:      AccountTableName,
+		table:      TableName,
 		DB:         db,
 	}
 }
 
 func (*Account) TableName() string {
-	return AccountTableName
+	return TableName
 }
 
 /*
@@ -175,7 +177,7 @@ func (m *defaultAccountModel) GetAccountByAccountIndex(accountIndex int64) (acco
 }
 
 func (m *defaultAccountModel) GetVerifiedAccountByAccountIndex(accountIndex int64) (account *Account, err error) {
-	dbTx := m.DB.Table(m.table).Where("account_index = ? and status = ?", accountIndex, AccountStatusVerified).Find(&account)
+	dbTx := m.DB.Table(m.table).Where("account_index = ? and status = ?", accountIndex, StatusVerified).Find(&account)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", dbTx.Error)
 		logx.Error(err)
@@ -238,7 +240,7 @@ func (m *defaultAccountModel) GetAccountByAccountName(accountName string) (accou
 
 */
 func (m *defaultAccountModel) GetAccountsList(limit int, offset int64) (accounts []*Account, err error) {
-	dbTx := m.DB.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("account_index desc").Find(&accounts)
+	dbTx := m.DB.Table(m.table).Limit(limit).Offset(int(offset)).Order("account_index desc").Find(&accounts)
 	if dbTx.Error != nil {
 		logx.Error("[account.GetAccountsList] %s", dbTx.Error)
 		return nil, dbTx.Error
@@ -320,7 +322,7 @@ func (m *defaultAccountModel) GetAccountByAccountNameHash(accountNameHash string
 }
 
 func (m *defaultAccountModel) GetConfirmedAccounts() (accounts []*Account, err error) {
-	dbTx := m.DB.Table(m.table).Where("status = ?", AccountStatusConfirmed).Order("account_index").Find(&accounts)
+	dbTx := m.DB.Table(m.table).Where("status = ?", StatusConfirmed).Order("account_index").Find(&accounts)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[account.GetConfirmedAccounts] %s", dbTx.Error)
 		logx.Error(err)
@@ -334,7 +336,7 @@ func (m *defaultAccountModel) GetConfirmedAccounts() (accounts []*Account, err e
 }
 
 func (m *defaultAccountModel) GetConfirmedAccountByAccountIndex(accountIndex int64) (account *Account, err error) {
-	dbTx := m.DB.Table(m.table).Where("account_index = ? and status = ?", accountIndex, AccountStatusConfirmed).Find(&account)
+	dbTx := m.DB.Table(m.table).Where("account_index = ? and status = ?", accountIndex, StatusConfirmed).Find(&account)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", dbTx.Error)
 		logx.Error(err)

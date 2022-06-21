@@ -6,14 +6,12 @@ import (
 )
 
 const (
-	// network rpc
 	//BSC_Test_Network_RPC   = "http://tf-dex-preview-validator-nlb-6fd109ac8b9d390a.elb.ap-northeast-1.amazonaws.com:8545"
 	BSC_Test_Network_RPC   = "https://data-seed-prebsc-2-s1.binance.org:8545/"
 	Local_Test_Network_RPC = "http://127.0.0.1:8545/"
 
 	ZecreyLegendContractAddr = "0x915Bf51F6C9Fff38730C4557e79E1dEC4C01355a"
 	GovernanceContractAddr   = "0xb081E0e1f243A32B3310eCdA15Ecb5B8189a8851"
-	VerifierContractAddr     = "0x49113B180cAF7fb927006334a7c17eed6Dd92f70"
 )
 
 func initSysConfig() []*sysconfig.Sysconfig {

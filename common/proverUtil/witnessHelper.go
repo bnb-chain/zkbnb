@@ -19,15 +19,17 @@ package proverUtil
 
 import (
 	"errors"
-	"github.com/ethereum/go-ethereum/common"
+	"math/big"
+
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/tree"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/zeromicro/go-zero/core/logx"
-	"math/big"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func ConstructWitnessInfo(

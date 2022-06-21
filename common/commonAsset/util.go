@@ -18,8 +18,9 @@
 package commonAsset
 
 import (
-	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"math/big"
+
+	"github.com/bnb-chain/zkbas-crypto/ffmath"
 )
 
 func ComputeSLp(

@@ -17,12 +17,13 @@
 package logic
 
 import (
-	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
-	zecreyLegend "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
-	"github.com/bnb-chain/zkbas/common/model/block"
 	"sync"
 	"sync/atomic"
 	"unsafe"
+
+	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
+	"github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
+	"github.com/bnb-chain/zkbas/common/model/block"
 )
 
 type CryptoBlockInfo struct {
@@ -54,7 +55,7 @@ const (
 
 type (
 	Block                  = block.Block
-	StorageStoredBlockInfo = zecreyLegend.StorageStoredBlockInfo
+	StorageStoredBlockInfo = legend.StorageStoredBlockInfo
 	CryptoTx               = cryptoBlock.Tx
 	CryptoBlock            = cryptoBlock.Block
 )

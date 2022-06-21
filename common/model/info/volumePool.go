@@ -20,16 +20,10 @@ package info
 import (
 	"time"
 
-	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/cache"
-	"github.com/zeromicro/go-zero/core/stores/sqlc"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
-)
 
-var (
-	cacheZecreyVolumePoolIdPrefix   = "cache:zecrey:volume:id:"
-	cacheZecreyVolumePoolDatePrefix = "cache:zecrey:volume:date:"
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/sqlc"
 )
 
 type (
@@ -54,14 +48,6 @@ type (
 		Date         time.Time `gorm:"index"` //days:hour
 	}
 )
-
-func NewVolumePoolModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) VolumePoolModel {
-	return &defaultVolumePoolModel{
-		CachedConn: sqlc.NewConn(conn, c),
-		table:      `volume_pool`,
-		DB:         db,
-	}
-}
 
 func (*VolumePool) TableName() string {
 	return `volume_pool`

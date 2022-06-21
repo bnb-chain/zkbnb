@@ -187,11 +187,11 @@ func (l *SendTxLogic) CreateFailWithdrawTx(info *commonTx.WithdrawTxInfo, extraI
 		// tx fee
 		GasFee: info.GasFeeAssetAmount.String(),
 		// tx fee l1asset id
-		GasFeeAssetId: int64(txFeeAssetId),
+		GasFeeAssetId: txFeeAssetId,
 		// tx status, 1 - success(default), 2 - failure
 		TxStatus: TxFail,
 		// l1asset id
-		AssetAId: int64(assetId),
+		AssetAId: assetId,
 		// tx amount
 		TxAmount: info.AssetAmount.String(),
 		// layer1 address

@@ -17,8 +17,6 @@
 package logic
 
 import (
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/crypto"
 	zecreyLegend "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/zero/basic"
 	"github.com/bnb-chain/zkbas/common/model/account"
@@ -27,7 +25,8 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/l2BlockEventMonitor"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/crypto"
 	"strings"
 )
 
@@ -53,23 +52,6 @@ type (
 )
 
 const (
-	// event status
-	EventPendingStatus = l2BlockEventMonitor.PendingStatus
-	EventHandledStatus = l2BlockEventMonitor.HandledStatus
-
-	// block event type
-	CommittedBlockEventType = l2BlockEventMonitor.CommittedBlockEventType
-	VerifiedBlockEventType  = l2BlockEventMonitor.VerifiedBlockEventType
-	RevertedBlockEventType  = l2BlockEventMonitor.RevertedBlockEventType
-
-	// l1 tx sender tx type
-	CommitTxType = l1TxSender.CommitTxType
-	VerifyTxType = l1TxSender.VerifyAndExecuteTxType
-	RevertTxType = l1TxSender.RevertTxType
-	// status
-	L1TxPendingStatus = l1TxSender.HandledStatus
-	L1TxHandledStatus = l1TxSender.HandledStatus
-
 	// block status
 	BlockPendingStatus   = block.StatusPending
 	BlockCommittedStatus = block.StatusCommitted
@@ -78,17 +60,12 @@ const (
 	L1TxSenderPendingStatus = l1TxSender.PendingStatus
 	L1TxSenderHandledStatus = l1TxSender.HandledStatus
 
-	// status
-	PendingStatusL2BlockEventMonitor = l2BlockEventMonitor.PendingStatus
-	HandledStatusL2BlockEventMonitor = l2BlockEventMonitor.HandledStatus
-
 	BlockCommitEventName       = "BlockCommit"
 	BlockVerificationEventName = "BlockVerification"
 	BlocksRevertEventName      = "BlocksRevert"
 )
 
 var (
-	ErrNotFound = sqlx.ErrNotFound
 
 	// Zecrey contract logs sig
 	zecreyLogBlockCommitSig       = []byte("BlockCommit(uint32)")

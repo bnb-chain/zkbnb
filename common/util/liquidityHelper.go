@@ -19,10 +19,12 @@ package util
 
 import (
 	"errors"
+	"math/big"
+
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas/common/commonAsset"
-	"github.com/zeromicro/go-zero/core/logx"
-	"math/big"
 )
 
 func ComputeEmptyLpAmount(

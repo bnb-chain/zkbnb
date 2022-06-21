@@ -18,7 +18,6 @@
 package util
 
 import (
-	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonTx"
 )
 
@@ -33,10 +32,6 @@ type (
 )
 
 const (
-	GeneralAssetType   = commonAsset.GeneralAssetType
-	LiquidityAssetType = commonAsset.LiquidityAssetType
-	NftAssetType       = commonAsset.NftAssetType
-
 	Base        = 10
 	AddressSize = 20
 
@@ -51,9 +46,7 @@ const (
 )
 
 const (
-	CHUNK_BYTES_SIZE           = 32
 	TXTYPE_BYTES_SIZE          = 1
-	NFTTYPE_BYTES_SIZE         = 1
 	ADDRESS_BYTES_SIZE         = 20
 	ACCOUNTINDEX_BYTES_SIZE    = 4
 	ACCOUNTNAME_BYTES_SIZE     = 32
@@ -61,7 +54,6 @@ const (
 	PUBKEY_BYTES_SIZE          = 32
 	ASSETID_BYTES_SIZE         = 2
 	PAIRINDEX_BYTES_SIZE       = 2
-	PACKEDAMOUNT_BYTES_SIZE    = 5
 	STATEAMOUNT_BYTES_SIZE     = 16
 	NFTINDEX_BYTES_SIZE        = 5
 	NFTTOKENID_BYTES_SIZE      = 32
@@ -108,43 +100,31 @@ const (
 )
 
 const (
-	// TODO(Gavin): these constraints is not settled yet and should be revised before production
-	minAccountIndex = 0
+	// TODO: these constraints is not settled yet and should be revised before production
 	maxAccountIndex = (1 << 32) - 1
 
-	minBlockHeight = 0
 	maxBlockHeight = (1 << 64) - 1 //60
 
-	minHashLength = 20
 	maxHashLength = 100
 
-	minPublicKeyLength = 20
 	maxPublicKeyLength = 50 //TODO
 
-	minAssetId = 0
 	maxAssetId = (1 << 32) - 1
 
 	maxAccountNameLength          = 30
 	maxAccountNameLengthOmitSpace = 20
 
-	minPairIndex = 0
 	maxPairIndex = (1 << 16) - 1
 
-	minLimit = 0
 	maxLimit = 50
 
-	minOffset = 0
 	maxOffset = (1 << 64) - 1 //TODO
 
-	minTxtype = 0
 	maxTxtype = 15
 
-	minLPAmount = 0
 	maxLPAmount = (1 << 64) - 1
 
-	minAssetAmount = 0
 	maxAssetAmount = (1 << 64) - 1
 
-	minGasFee = 0
 	maxGasFee = (1 << 64) - 1
 )

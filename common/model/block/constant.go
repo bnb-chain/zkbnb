@@ -31,11 +31,10 @@ const (
 )
 
 var (
-	ErrNotFound         = sqlx.ErrNotFound
-	ErrInvalidBlock     = errors.New("[ErrInvalidBlock] invalid block")
-	ErrInvalidMempoolTx = errors.New("[ErrInvalidBlock] invalid mempool txVerification")
+	ErrNotFound     = sqlx.ErrNotFound
+	ErrInvalidBlock = errors.New("[ErrInvalidBlock] invalid block")
 )
 
 const (
-	BlockTableName = `block`
+	TableName = `block`
 )

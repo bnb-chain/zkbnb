@@ -57,16 +57,16 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (resp *types.R
 			AccountDelta: w.BalanceDelta,
 		})
 	}
-	block, err := l.block.GetBlockByBlockHeight(txMemppol.L2BlockHeight)
+	blockInfo, err := l.block.GetBlockByBlockHeight(txMemppol.L2BlockHeight)
 	if err != nil {
 		l.Error("[Block.GetBlockByBlockHeight]:%v", err)
 		return
 	}
 
 	blockStatusInfo := &blockModel.BlockStatusInfo{
-		BlockStatus: block.BlockStatus,
-		CommittedAt: block.CommittedAt,
-		VerifiedAt:  block.VerifiedAt,
+		BlockStatus: blockInfo.BlockStatus,
+		CommittedAt: blockInfo.CommittedAt,
+		VerifiedAt:  blockInfo.VerifiedAt,
 	}
 
 	// Todo: update blockstatus to cache, but not sure if the whole block shall be inserted. which kind of tx? mempoolTx or tx?
@@ -85,9 +85,9 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (resp *types.R
 		GasFee:        int32(gasFee),
 		GasFeeAssetId: int32(txMemppol.GasFeeAssetId),
 		TxStatus:      int32(txMemppol.Status),
-		BlockHeight:   int64(txMemppol.L2BlockHeight),
+		BlockHeight:   txMemppol.L2BlockHeight,
 		BlockStatus:   int32(blockStatusInfo.BlockStatus),
-		BlockId:       int32(block.ID),
+		BlockId:       int32(blockInfo.ID),
 		//Todo: globalRPC won't return data with 2 asset ids, where are these fields from
 		AssetAId:      int32(txMemppol.AssetId),
 		AssetBId:      int32(txMemppol.AssetId),

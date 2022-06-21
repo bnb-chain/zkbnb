@@ -47,13 +47,13 @@ type (
 func NewL2NftCollectionModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) L2NftCollectionModel {
 	return &defaultL2NftCollectionModel{
 		CachedConn: sqlc.NewConn(conn, c),
-		table:      L2NftCollectionTableName,
+		table:      CollectionTableName,
 		DB:         db,
 	}
 }
 
 func (*L2NftCollection) TableName() string {
-	return L2NftCollectionTableName
+	return CollectionTableName
 }
 
 /*

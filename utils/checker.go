@@ -11,28 +11,18 @@ const (
 	maxAccountNameLength          = 30
 	maxAccountNameLengthOmitSpace = 20
 
-	minAssetId = 0
 	maxAssetId = math.MaxUint32
 
-	minAccountIndex = 0
 	maxAccountIndex = math.MaxUint32
 
-	minPublicKeyLength = 20
 	maxPublicKeyLength = 50
 
-	minPairIndex = 0
-	maxPairIndex = math.MaxUint32
-
-	minLPAmount = 0
 	maxLPAmount = math.MaxUint32
 
-	minTxtype = 0
 	maxTxtype = 8
 
-	minLimit = 0
 	maxLimit = 50
 
-	minOffset = 0
 	maxOffset = math.MaxUint32
 )
 
@@ -42,10 +32,6 @@ func CheckAccountName(accountName string) bool {
 
 func CheckFormatAccountName(accountName string) bool {
 	return len(accountName) > maxAccountNameLengthOmitSpace
-}
-
-func CheckAccountPK(accountPK string) bool {
-	return len(accountPK) > maxPublicKeyLength
 }
 
 func CheckAssetId(assetId uint32) bool {
@@ -74,10 +60,6 @@ func CheckTypeLimit(limit uint32) bool {
 
 func CheckTypeOffset(offset uint32) bool {
 	return offset > maxOffset
-}
-
-func CheckLPAmount(lPAmount uint32) bool {
-	return lPAmount > maxLPAmount
 }
 
 // Format AccountName and

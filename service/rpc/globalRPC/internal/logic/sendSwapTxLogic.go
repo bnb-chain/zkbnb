@@ -294,13 +294,13 @@ func (l *SendTxLogic) CreateFailSwapTx(info *commonTx.SwapTxInfo, extraInfo stri
 		// tx fee
 		GasFee: info.GasFeeAssetAmount.String(),
 		// tx fee l1asset id
-		GasFeeAssetId: int64(txFeeAssetId),
+		GasFeeAssetId: txFeeAssetId,
 		// tx status, 1 - success(default), 2 - failure
 		TxStatus: TxFail,
 		// AssetAId
-		AssetAId: int64(assetAId),
+		AssetAId: assetAId,
 		// l1asset id
-		AssetBId: int64(assetBId),
+		AssetBId: assetBId,
 		// tx amount
 		TxAmount: util.ZeroBigInt.String(),
 		// layer1 address

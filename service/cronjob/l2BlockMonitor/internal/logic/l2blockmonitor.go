@@ -18,10 +18,10 @@ package logic
 
 import (
 	"fmt"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/proofSender"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/zeromicro/go-zero/core/logx"
 	"sort"
 	"time"

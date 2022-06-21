@@ -8,12 +8,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	cacheZecreyL2AssetInfoIdPrefix          = "cache:zecrey:l2AssetInfo:id:"
-	cacheZecreyL2AssetInfoL2AssetIdPrefix   = "cache:zecrey:l2AssetInfo:l2AssetId:"
-	cacheZecreyL2AssetInfoL2AssetNamePrefix = "cache:zecrey:l2AssetInfo:l2AssetName:"
-)
-
 type l2asset struct {
 	cachedConn sqlc.CachedConn
 	table      string

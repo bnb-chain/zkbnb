@@ -20,7 +20,7 @@ import "github.com/bnb-chain/zkbas/common/util"
 
 func GetUnprovedCryptoBlockStatus(blockNumber int64) (status int64) {
 	for _, v := range UnProvedCryptoBlocks {
-		if int64(v.BlockInfo.BlockNumber) == blockNumber {
+		if v.BlockInfo.BlockNumber == blockNumber {
 			return v.Status
 		}
 	}
@@ -72,7 +72,7 @@ func GetLatestUnprovedBlockHeight() (h int64) {
 	if UnProvedCryptoBlocks == nil {
 		return 0
 	} else {
-		return int64(UnProvedCryptoBlocks[len(UnProvedCryptoBlocks)-1].BlockInfo.BlockNumber)
+		return UnProvedCryptoBlocks[len(UnProvedCryptoBlocks)-1].BlockInfo.BlockNumber
 	}
 
 }

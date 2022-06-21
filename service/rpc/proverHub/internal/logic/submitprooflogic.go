@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/zeromicro/go-zero/core/logx"
+
 	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/bnb-chain/zkbas/common/model/proofSender"
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/service/rpc/proverHub/internal/svc"
 	"github.com/bnb-chain/zkbas/service/rpc/proverHub/proverHubProto"
-
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type SubmitProofLogic struct {

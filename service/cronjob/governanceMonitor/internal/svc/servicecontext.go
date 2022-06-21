@@ -1,14 +1,15 @@
 package svc
 
 import (
-	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
-	"github.com/bnb-chain/zkbas/common/model/l1BlockMonitor"
-	"github.com/bnb-chain/zkbas/common/model/sysconfig"
-	"github.com/bnb-chain/zkbas/service/cronjob/governanceMonitor/internal/config"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+
+	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
+	"github.com/bnb-chain/zkbas/common/model/l1BlockMonitor"
+	"github.com/bnb-chain/zkbas/common/model/sysconfig"
+	"github.com/bnb-chain/zkbas/service/cronjob/governanceMonitor/internal/config"
 )
 
 type ServiceContext struct {

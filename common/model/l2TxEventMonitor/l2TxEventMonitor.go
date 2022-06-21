@@ -20,15 +20,17 @@ package l2TxEventMonitor
 import (
 	"errors"
 	"fmt"
-	"github.com/bnb-chain/zkbas/common/model/account"
-	"github.com/bnb-chain/zkbas/common/model/liquidity"
-	"github.com/bnb-chain/zkbas/common/model/mempool"
-	"github.com/bnb-chain/zkbas/common/model/nft"
+
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
+
+	"github.com/bnb-chain/zkbas/common/model/account"
+	"github.com/bnb-chain/zkbas/common/model/liquidity"
+	"github.com/bnb-chain/zkbas/common/model/mempool"
+	"github.com/bnb-chain/zkbas/common/model/nft"
 )
 
 type (
@@ -234,7 +236,7 @@ func (m *defaultL2TxEventMonitorModel) CreateMempoolAndActiveAccount(
 ) (err error) {
 	err = m.DB.Transaction(
 		func(tx *gorm.DB) error { //transact
-			dbTx := tx.Table(account.AccountTableName).CreateInBatches(pendingNewAccount, len(pendingNewAccount))
+			dbTx := tx.Table(account.TableName).CreateInBatches(pendingNewAccount, len(pendingNewAccount))
 			if dbTx.Error != nil {
 				logx.Errorf("[CreateMempoolAndActiveAccount] unable to create pending new account: %s", err.Error())
 				return dbTx.Error
@@ -243,7 +245,7 @@ func (m *defaultL2TxEventMonitorModel) CreateMempoolAndActiveAccount(
 				logx.Errorf("[CreateMempoolAndActiveAccount] invalid new account")
 				return errors.New("[CreateMempoolAndActiveAccount] invalid new account")
 			}
-			dbTx = tx.Table(mempool.MempoolTableName).CreateInBatches(pendingNewMempoolTxs, len(pendingNewMempoolTxs))
+			dbTx = tx.Table(mempool.TableName).CreateInBatches(pendingNewMempoolTxs, len(pendingNewMempoolTxs))
 			if dbTx.Error != nil {
 				logx.Errorf("[CreateMempoolAndActiveAccount] unable to create pending new mempool txs: %s", err.Error())
 				return dbTx.Error
@@ -253,7 +255,7 @@ func (m *defaultL2TxEventMonitorModel) CreateMempoolAndActiveAccount(
 				return errors.New("[CreateMempoolAndActiveAccount] invalid new mempool txs")
 			}
 			if len(pendingNewLiquidityInfos) != 0 {
-				dbTx = tx.Table(liquidity.LiquidityTable).CreateInBatches(pendingNewLiquidityInfos, len(pendingNewLiquidityInfos))
+				dbTx = tx.Table(liquidity.TableName).CreateInBatches(pendingNewLiquidityInfos, len(pendingNewLiquidityInfos))
 				if dbTx.Error != nil {
 					logx.Errorf("[CreateMempoolAndActiveAccount] unable to create pending new liquidity infos: %s", err.Error())
 					return dbTx.Error
@@ -264,7 +266,7 @@ func (m *defaultL2TxEventMonitorModel) CreateMempoolAndActiveAccount(
 				}
 			}
 			if len(pendingNewNfts) != 0 {
-				dbTx = tx.Table(nft.L2NftTableName).CreateInBatches(pendingNewNfts, len(pendingNewNfts))
+				dbTx = tx.Table(nft.TableName).CreateInBatches(pendingNewNfts, len(pendingNewNfts))
 				if dbTx.Error != nil {
 					logx.Errorf("[CreateMempoolAndActiveAccount] unable to create pending new nft infos: %s", err.Error())
 					return dbTx.Error
@@ -294,7 +296,7 @@ func (m *defaultL2TxEventMonitorModel) GetLastHandledRequestId() (requestId int6
 	var event *L2TxEventMonitor
 	dbTx := m.DB.Table(m.table).Where("status = ?", HandledStatus).Order("request_id desc").Find(&event)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetLastHandledRequestId] unable to get last handled request id: %s", err.Error())
+		logx.Errorf("[GetLastHandledRequestId] unable to get last handled request id: %s", dbTx.Error)
 		return -1, dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {

@@ -29,7 +29,7 @@ func NewGetBlockByCommitmentLogic(ctx context.Context, svcCtx *svc.ServiceContex
 
 func (l *GetBlockByCommitmentLogic) GetBlockByCommitment(req *types.ReqGetBlockByCommitment) (resp *types.RespGetBlockByCommitment, err error) {
 	// query basic block info
-	block, err := l.block.GetBlockWithTxsByCommitment(req.BlockCommitment)
+	blockInfo, err := l.block.GetBlockWithTxsByCommitment(req.BlockCommitment)
 	if err != nil {
 		err = fmt.Errorf("[explorer.block.GetBlockWithTxsByCommitment]<=>%s", err.Error())
 		l.Error(err)
@@ -37,21 +37,21 @@ func (l *GetBlockByCommitmentLogic) GetBlockByCommitment(req *types.ReqGetBlockB
 	}
 
 	resp.Block = types.Block{
-		BlockHeight:    int32(block.BlockHeight),
-		BlockStatus:    int32(block.BlockStatus),
-		NewAccountRoot: block.StateRoot,
-		CommittedAt:    block.CommittedAt,
-		VerifiedAt:     block.VerifiedAt,
+		BlockHeight:    int32(blockInfo.BlockHeight),
+		BlockStatus:    int32(blockInfo.BlockStatus),
+		NewAccountRoot: blockInfo.StateRoot,
+		CommittedAt:    blockInfo.CommittedAt,
+		VerifiedAt:     blockInfo.VerifiedAt,
 		// ExecutedAt: block.,
-		BlockCommitment: block.BlockCommitment,
-		TxCount:         int64(len(block.Txs)),
+		BlockCommitment: blockInfo.BlockCommitment,
+		TxCount:         int64(len(blockInfo.Txs)),
 	}
 
-	for _, tx := range block.Txs {
+	for _, tx := range blockInfo.Txs {
 		resp.Block.Txs = append(resp.Block.Txs, tx.TxHash)
 	}
 
-	for _, tx := range block.Txs {
+	for _, tx := range blockInfo.Txs {
 		resp.Block.CommittedTxHash = append(resp.Block.CommittedTxHash, &types.TxHash{
 			TxHash:    tx.TxHash,
 			CreatedAt: tx.CreatedAt.Unix(),

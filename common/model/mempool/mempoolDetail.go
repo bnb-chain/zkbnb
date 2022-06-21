@@ -27,10 +27,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	cacheZecreyMempoolDetailIdPrefix = "cache:zecrey:mempoolDetail:id:"
-)
-
 type (
 	MempoolTxDetailModel interface {
 		CreateMempoolDetailTable() error

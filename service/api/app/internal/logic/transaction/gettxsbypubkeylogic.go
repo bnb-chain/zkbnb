@@ -60,9 +60,9 @@ func (l *GetTxsByPubKeyLogic) GetTxsByPubKey(req *types.ReqGetTxsByPubKey) (resp
 		return &types.RespGetTxsByPubKey{}, err
 	}
 	results := make([]*types.Tx, 0)
-	for _, tx := range txList {
+	for _, txInfo := range txList {
 		txDetails := make([]*types.TxDetail, 0)
-		for _, txDetail := range tx.MempoolDetails {
+		for _, txDetail := range txInfo.MempoolDetails {
 			txDetails = append(txDetails, &types.TxDetail{
 				AssetId:        uint32(txDetail.AssetId),
 				AssetType:      uint32(txDetail.AssetType),
@@ -71,32 +71,32 @@ func (l *GetTxsByPubKeyLogic) GetTxsByPubKey(req *types.ReqGetTxsByPubKey) (resp
 				AccountBalance: txDetail.BalanceDelta,
 			})
 		}
-		block, err := l.block.GetBlockByBlockHeight(tx.L2BlockHeight)
+		blockInfo, err := l.block.GetBlockByBlockHeight(txInfo.L2BlockHeight)
 		if err != nil {
 			logx.Errorf("[transaction.GetTxsByPubKey] err:%v", err)
 			return &types.RespGetTxsByPubKey{}, err
 		}
 		results = append(results, &types.Tx{
-			TxHash:        tx.TxHash,
-			TxType:        uint32(tx.TxType),
-			GasFeeAssetId: uint32(tx.GasFeeAssetId),
-			GasFee:        tx.GasFee,
-			NftIndex:      uint32(tx.NftIndex),
-			PairIndex:     uint32(tx.PairIndex),
-			AssetId:       uint32(tx.AssetId),
-			TxAmount:      tx.TxAmount,
-			NativeAddress: tx.NativeAddress,
+			TxHash:        txInfo.TxHash,
+			TxType:        uint32(txInfo.TxType),
+			GasFeeAssetId: uint32(txInfo.GasFeeAssetId),
+			GasFee:        txInfo.GasFee,
+			NftIndex:      uint32(txInfo.NftIndex),
+			PairIndex:     uint32(txInfo.PairIndex),
+			AssetId:       uint32(txInfo.AssetId),
+			TxAmount:      txInfo.TxAmount,
+			NativeAddress: txInfo.NativeAddress,
 			TxDetails:     txDetails,
-			TxInfo:        tx.TxInfo,
-			ExtraInfo:     tx.ExtraInfo,
-			Memo:          tx.Memo,
-			AccountIndex:  uint32(tx.AccountIndex),
-			Nonce:         uint32(tx.Nonce),
-			ExpiredAt:     uint32(tx.ExpiredAt),
-			L2BlockHeight: uint32(tx.L2BlockHeight),
-			Status:        uint32(tx.Status),
-			CreatedAt:     uint32(tx.CreatedAt.Unix()),
-			BlockID:       uint32(block.ID),
+			TxInfo:        txInfo.TxInfo,
+			ExtraInfo:     txInfo.ExtraInfo,
+			Memo:          txInfo.Memo,
+			AccountIndex:  uint32(txInfo.AccountIndex),
+			Nonce:         uint32(txInfo.Nonce),
+			ExpiredAt:     uint32(txInfo.ExpiredAt),
+			L2BlockHeight: uint32(txInfo.L2BlockHeight),
+			Status:        uint32(txInfo.Status),
+			CreatedAt:     uint32(txInfo.CreatedAt.Unix()),
+			BlockID:       uint32(blockInfo.ID),
 		})
 	}
 	return &types.RespGetTxsByPubKey{

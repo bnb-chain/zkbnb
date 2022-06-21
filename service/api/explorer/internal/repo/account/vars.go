@@ -29,11 +29,6 @@ const (
 	AccountStatusVerified
 )
 
-const (
-	AccountHistoryStatusPending = iota
-	AccountHistoryStatusConfirmed
-)
-
 var (
 	ErrNotFound               = sqlx.ErrNotFound
 	ErrDuplicatedAccountName  = errors.New("duplicated account name, fatal error")

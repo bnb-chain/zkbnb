@@ -21,40 +21,31 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/builder"
+	"github.com/zeromicro/go-zero/core/stores/cache"
+	"github.com/zeromicro/go-zero/core/stores/redis"
+	"github.com/zeromicro/go-zero/core/stores/sqlc"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
+	"gorm.io/gorm"
+	"strconv"
+
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/blockForCommit"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/tx"
-	"github.com/zeromicro/go-zero/core/stores/builder"
-	"strconv"
-	"strings"
-
-	"github.com/zeromicro/go-zero/core/stores/redis"
-
-	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/cache"
-	"github.com/zeromicro/go-zero/core/stores/sqlc"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
-	"github.com/zeromicro/go-zero/core/stringx"
-	"gorm.io/gorm"
 )
 
 var (
-	blockFieldNames          = builder.RawFieldNames(&Block{})
-	blockRows                = strings.Join(blockFieldNames, ",")
-	blockRowsExpectAutoSet   = strings.Join(stringx.Remove(blockFieldNames, "`id`", "`create_time`", "`update_time`"), ",")
-	blockRowsWithPlaceHolder = strings.Join(stringx.Remove(blockFieldNames, "`id`", "`create_time`", "`update_time`"), "=?,") + "=?"
+	blockFieldNames = builder.RawFieldNames(&Block{})
 
-	cacheBlockIdPrefix              = "cache::block:id:"
-	cacheBlockBlockCommitmentPrefix = "cache::block:blockCommitment:"
-	cacheBlockHeightPrefix          = "cache::block:blockHeight:"
-	CacheBlockStatusPrefix          = "cache::block:blockStatus:"
-	cacheBlockListLimitPrefix       = "cache::block:blockList:"
-	cacheBlockCommittedCountPrefix  = "cache::block:committed_count"
-	cacheBlockVerifiedCountPrefix   = "cache::block:verified_count"
-	cacheBlockExecutedCountPrefix   = "cache::block:executed_count"
+	cacheBlockIdPrefix             = "cache::block:id:"
+	CacheBlockStatusPrefix         = "cache::block:blockStatus:"
+	cacheBlockListLimitPrefix      = "cache::block:blockList:"
+	cacheBlockCommittedCountPrefix = "cache::block:committed_count"
+	cacheBlockVerifiedCountPrefix  = "cache::block:verified_count"
 )
 
 type (
@@ -124,14 +115,14 @@ type (
 func NewBlockModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB, redisConn *redis.Redis) BlockModel {
 	return &defaultBlockModel{
 		CachedConn: sqlc.NewConn(conn, c),
-		table:      BlockTableName,
+		table:      TableName,
 		DB:         db,
 		RedisConn:  redisConn,
 	}
 }
 
 func (*Block) TableName() string {
-	return BlockTableName
+	return TableName
 }
 
 /*
@@ -706,7 +697,7 @@ func (m *defaultBlockModel) UpdateBlockStatusCacheByBlockHeight(blockHeight int6
 
 	jsonBytes, err := json.Marshal(blockStatusInfo)
 	if err != nil {
-		errInfo := fmt.Sprintf("[blockModel.UpdateBlockStatusCacheByBlockHeight] json.Marshal Error: %s, value: %v", blockStatusInfo)
+		errInfo := fmt.Sprintf("[blockModel.UpdateBlockStatusCacheByBlockHeight] json.Marshal Error: %s, value: %v", err, blockStatusInfo)
 		logx.Error(errInfo)
 		return err
 	}
@@ -787,7 +778,7 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 			return errors.New("[CreateBlockForCommitter] invalid block info")
 		}
 		// create block for commit
-		dbTx = tx.Table(blockForCommit.BlockForCommitTableName).Create(oBlockForCommit)
+		dbTx = tx.Table(blockForCommit.TableName).Create(oBlockForCommit)
 		if dbTx.Error != nil {
 			logx.Errorf("[CreateBlockForCommitter] unable to create block for commit: %s", err.Error())
 			return dbTx.Error
@@ -803,7 +794,7 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 		}
 		// update mempool
 		for _, mempoolTx := range pendingMempoolTxs {
-			dbTx := tx.Table(mempool.MempoolTableName).Where("id = ?", mempoolTx.ID).
+			dbTx := tx.Table(mempool.TableName).Where("id = ?", mempoolTx.ID).
 				Select("*").
 				Updates(&mempoolTx)
 			if dbTx.Error != nil {
@@ -817,7 +808,7 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 		}
 		// update account
 		for _, pendignUpdateAccount := range pendingUpdateAccounts {
-			dbTx = tx.Table(account.AccountTableName).Where("id = ?", pendignUpdateAccount.ID).
+			dbTx = tx.Table(account.TableName).Where("id = ?", pendignUpdateAccount.ID).
 				Select("*").
 				Updates(&pendignUpdateAccount)
 			if dbTx.Error != nil {
@@ -831,7 +822,7 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 		}
 		// create new account history
 		if len(pendingNewAccountHistories) != 0 {
-			dbTx = tx.Table(account.AccountHistoryTableName).CreateInBatches(pendingNewAccountHistories, len(pendingNewAccountHistories))
+			dbTx = tx.Table(account.HistoryTableName).CreateInBatches(pendingNewAccountHistories, len(pendingNewAccountHistories))
 			if dbTx.Error != nil {
 				return dbTx.Error
 			}
@@ -842,7 +833,7 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 		}
 		// update liquidity
 		for _, entity := range pendingUpdateLiquiditys {
-			dbTx = tx.Table(liquidity.LiquidityTable).Where("id = ?", entity.ID).
+			dbTx = tx.Table(liquidity.TableName).Where("id = ?", entity.ID).
 				Select("*").
 				Updates(&entity)
 			if dbTx.Error != nil {
@@ -856,7 +847,7 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 		}
 		// create new liquidity history
 		if len(pendingNewLiquidityHistories) != 0 {
-			dbTx = tx.Table(liquidity.LiquidityHistoryTable).CreateInBatches(pendingNewLiquidityHistories, len(pendingNewLiquidityHistories))
+			dbTx = tx.Table(liquidity.HistoryTableName).CreateInBatches(pendingNewLiquidityHistories, len(pendingNewLiquidityHistories))
 			if dbTx.Error != nil {
 				return dbTx.Error
 			}
@@ -867,7 +858,7 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 		}
 		// new nft
 		if len(pendingNewNftWithdrawHistory) != 0 {
-			dbTx = tx.Table(nft.L2NftWithdrawHistoryTableName).CreateInBatches(pendingNewNftWithdrawHistory, len(pendingNewNftWithdrawHistory))
+			dbTx = tx.Table(nft.WithdrawHistoryTableName).CreateInBatches(pendingNewNftWithdrawHistory, len(pendingNewNftWithdrawHistory))
 			if dbTx.Error != nil {
 				return dbTx.Error
 			}
@@ -878,7 +869,7 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 		}
 		// update nft
 		for _, entity := range pendingUpdateNfts {
-			dbTx = tx.Table(nft.L2NftTableName).Where("id = ?", entity.ID).
+			dbTx = tx.Table(nft.TableName).Where("id = ?", entity.ID).
 				Select("*").
 				Updates(&entity)
 			if dbTx.Error != nil {
@@ -892,7 +883,7 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 		}
 		// new nft history
 		if len(pendingNewNftHistories) != 0 {
-			dbTx = tx.Table(nft.L2NftHistoryTableName).CreateInBatches(pendingNewNftHistories, len(pendingNewNftHistories))
+			dbTx = tx.Table(nft.HistoryTableName).CreateInBatches(pendingNewNftHistories, len(pendingNewNftHistories))
 			if dbTx.Error != nil {
 				return dbTx.Error
 			}
@@ -911,7 +902,7 @@ func (m *defaultBlockModel) GetBlocksForProverBetween(start, end int64) (blocks 
 		Order("block_height").
 		Find(&blocks)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetBlocksForProverBetween] unable to get block between: %s", err.Error())
+		logx.Errorf("[GetBlocksForProverBetween] unable to get block between: %s", dbTx.Error)
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		return nil, ErrNotFound

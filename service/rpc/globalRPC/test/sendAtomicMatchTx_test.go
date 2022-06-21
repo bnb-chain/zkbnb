@@ -5,8 +5,15 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"math/big"
+	"testing"
+	"time"
+
 	curve "github.com/bnb-chain/zkbas-crypto/ecc/ztwistededwards/tebn254"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"github.com/zeromicro/go-zero/core/conf"
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonTx"
@@ -14,12 +21,6 @@ import (
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/config"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/server"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/svc"
-	"github.com/zeromicro/go-zero/core/logx"
-	"math/big"
-	"testing"
-	"time"
-
-	"github.com/zeromicro/go-zero/core/conf"
 )
 
 func TestSendAtomicMatchTx(t *testing.T) {

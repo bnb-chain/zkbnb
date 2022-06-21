@@ -19,18 +19,15 @@ package mempool
 
 import (
 	"fmt"
-	"github.com/bnb-chain/zkbas/common/commonConstant"
-	"github.com/bnb-chain/zkbas/common/model/nft"
+
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
-)
 
-var (
-	cacheZecreyMempoolIdPrefix     = "cache:zecrey:mempool:id:"
-	cacheZecreyMempoolTxHashPrefix = "cache:zecrey:mempool:txHash:"
+	"github.com/bnb-chain/zkbas/common/commonConstant"
+	"github.com/bnb-chain/zkbas/common/model/nft"
 )
 
 type (
@@ -91,19 +88,16 @@ type (
 	}
 )
 
-
-
 func NewMempoolModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) MempoolModel {
 	return &defaultMempoolModel{
 		CachedConn: sqlc.NewConn(conn, c),
-		table:      MempoolTableName,
+		table:      TableName,
 		DB:         db,
 	}
 }
 
-
 func (*MempoolTx) TableName() string {
-	return MempoolTableName
+	return TableName
 }
 
 /*
@@ -679,7 +673,7 @@ func (m *defaultMempoolModel) CreateMempoolTxAndL2Nft(mempoolTx *MempoolTx, nftI
 			logx.Errorf("[mempool.CreateMempoolTxAndL2Nft] Create Invalid Mempool Tx")
 			return ErrInvalidMempoolTx
 		}
-		dbTx = tx.Table(nft.L2NftTableName).Create(nftInfo)
+		dbTx = tx.Table(nft.TableName).Create(nftInfo)
 		if dbTx.Error != nil {
 			logx.Errorf("[mempool.CreateMempoolTxAndL2Nft] %s", dbTx.Error)
 			return dbTx.Error
@@ -703,7 +697,7 @@ func (m *defaultMempoolModel) CreateMempoolTxAndL2NftExchange(mempoolTx *Mempool
 			logx.Errorf("[mempool.CreateMempoolTxAndL2NftExchange] Create Invalid Mempool Tx")
 			return ErrInvalidMempoolTx
 		}
-		dbTx = tx.Table(nft.L2NftExchangeTableName).Create(nftExchange)
+		dbTx = tx.Table(nft.ExchangeTableName).Create(nftExchange)
 		if dbTx.Error != nil {
 			logx.Errorf("[mempool.CreateMempoolTxAndL2NftExchange] %s", dbTx.Error)
 			return dbTx.Error

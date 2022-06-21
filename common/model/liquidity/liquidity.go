@@ -19,6 +19,7 @@ package liquidity
 
 import (
 	"fmt"
+
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
@@ -59,13 +60,13 @@ type (
 func NewLiquidityModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) LiquidityModel {
 	return &defaultLiquidityModel{
 		CachedConn: sqlc.NewConn(conn, c),
-		table:      LiquidityTable,
+		table:      TableName,
 		DB:         db,
 	}
 }
 
 func (*Liquidity) TableName() string {
-	return LiquidityTable
+	return TableName
 }
 
 /*

@@ -18,10 +18,12 @@
 package tree
 
 import (
+	"log"
+
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas-crypto/accumulators/merkleTree"
 	"github.com/bnb-chain/zkbas-crypto/hash/bn254/zmimc"
-	"github.com/zeromicro/go-zero/core/logx"
-	"log"
 )
 
 // TODO replace history as nft + nftHistory

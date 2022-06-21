@@ -20,15 +20,13 @@ package nft
 import "github.com/zeromicro/go-zero/core/stores/sqlx"
 
 const (
-	L2NftTableName                = `l2_nft`
-	L2NftHistoryTableName         = `l2_nft_history`
-	L2NftCollectionTableName      = `l2_nft_collection`
-	L2NftExchangeTableName        = `l2_nft_exchange`
-	L2NftWithdrawHistoryTableName = `l2_nft_withdraw_history`
+	TableName                = `l2_nft`
+	HistoryTableName         = `l2_nft_history`
+	CollectionTableName      = `l2_nft_collection`
+	ExchangeTableName        = `l2_nft_exchange`
+	WithdrawHistoryTableName = `l2_nft_withdraw_history`
 
 	OfferTableName = `offer`
-
-	StatusAlreadyWithdraw = 1
 )
 
 var (

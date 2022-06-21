@@ -19,8 +19,17 @@ package logic
 import (
 	"encoding/json"
 	"errors"
+	"gorm.io/gorm"
+	"log"
+	"math"
+	"math/big"
+	"strconv"
+	"time"
+
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
@@ -33,13 +42,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/tree"
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/service/cronjob/committer/internal/svc"
-	"github.com/zeromicro/go-zero/core/logx"
-	"gorm.io/gorm"
-	"log"
-	"math"
-	"math/big"
-	"strconv"
-	"time"
 )
 
 func CommitterTask(
@@ -172,12 +174,12 @@ func CommitterTask(
 				}
 				// handle registerZNS tx
 				pendingUpdateAccountIndexMap[mempoolTx.AccountIndex] = true
-				if accountMap[mempoolTx.AccountIndex].Status == account.AccountStatusPending {
+				if accountMap[mempoolTx.AccountIndex].Status == account.StatusPending {
 					if mempoolTx.TxType != TxTypeRegisterZns {
 						logx.Errorf("[CommitterTask] first transaction should be registerZNS")
 						return errors.New("[CommitterTask] first transaction should be registerZNS")
 					}
-					accountMap[mempoolTx.AccountIndex].Status = account.AccountStatusConfirmed
+					accountMap[mempoolTx.AccountIndex].Status = account.StatusConfirmed
 					pendingUpdateAccountIndexMap[mempoolTx.AccountIndex] = true
 					// update account tree
 					if int64(len(*accountAssetTrees)) != mempoolTx.AccountIndex {
@@ -540,7 +542,7 @@ func CommitterTask(
 				accountMap[mempoolTx.AccountIndex].CollectionNonce = newCollectionNonce
 			}
 			// update account tree
-			for accountIndex, _ := range pendingUpdateAccountIndexMap {
+			for accountIndex := range pendingUpdateAccountIndexMap {
 				nAccountLeafHash, err := tree.ComputeAccountLeafHash(
 					accountMap[accountIndex].AccountNameHash,
 					accountMap[accountIndex].PublicKey,

@@ -23,8 +23,8 @@ const (
 )
 
 var (
-	ErrInvalidProof = errors.New("Invalid Proof")
-	ErrNotFound     = errors.New("Not found error")
+	ErrInvalidProof = errors.New("invalid proof")
+	ErrNotFound     = errors.New("not found error")
 )
 
 const (

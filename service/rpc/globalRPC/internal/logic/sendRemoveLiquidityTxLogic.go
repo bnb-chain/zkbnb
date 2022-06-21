@@ -106,10 +106,6 @@ func (l *SendTxLogic) sendRemoveLiquidityTx(rawTxInfo string) (txId string, err 
 		liquidityInfo,
 		txInfo.LpAmount,
 	)
-	if err != nil {
-		logx.Errorf("[sendRemoveLiquidityTx] unable to compute lp portion: %s", err.Error())
-		return "", err
-	}
 	if assetAAmount.Cmp(txInfo.AssetAMinAmount) < 0 || assetBAmount.Cmp(txInfo.AssetBMinAmount) < 0 {
 		errInfo := fmt.Sprintf("[logic.sendRemoveLiquidityTx] less than MinDelta: %s:%s/%s:%s",
 			txInfo.AssetAMinAmount.String(), txInfo.AssetBMinAmount.String(), assetAAmount.String(), assetBAmount.String())

@@ -172,7 +172,7 @@ func (m *account) GetAccountByAccountName(ctx context.Context, accountName strin
 
 */
 func (m *account) GetAccountsList(limit int, offset int64) (accounts []*table.Account, err error) {
-	dbTx := m.db.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("account_index desc").Find(&accounts)
+	dbTx := m.db.Table(m.table).Limit(limit).Offset(int(offset)).Order("account_index desc").Find(&accounts)
 	if dbTx.Error != nil {
 		logx.Error("[account.GetAccountsList] %s", dbTx.Error)
 		return nil, dbTx.Error

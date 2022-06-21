@@ -8,12 +8,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	cacheZecreyTxIdPrefix      = "cache:zecrey:tx:id:"
-	cacheZecreyTxTxHashPrefix  = "cache:zecrey:tx:txHash:"
-	cacheZecreyTxTxCountPrefix = "cache:zecrey:tx:txCount"
-)
-
 type tx struct {
 	table      string
 	db         *gorm.DB

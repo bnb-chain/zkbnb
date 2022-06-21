@@ -19,6 +19,7 @@ package nft
 
 import (
 	"fmt"
+
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
@@ -62,13 +63,13 @@ type (
 func NewL2NftHistoryModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) L2NftHistoryModel {
 	return &defaultL2NftHistoryModel{
 		CachedConn: sqlc.NewConn(conn, c),
-		table:      L2NftHistoryTableName,
+		table:      HistoryTableName,
 		DB:         db,
 	}
 }
 
 func (*L2NftHistory) TableName() string {
-	return L2NftHistoryTableName
+	return HistoryTableName
 }
 
 /*
@@ -125,7 +126,7 @@ func (m *defaultL2NftHistoryModel) GetLatestNftAsset(nftIndex int64) (
 func (m *defaultL2NftHistoryModel) GetNftAssetsByBlockHeight(l2BlockHeight int64) (rowsAffected int64, nftAssets []*L2NftHistory, err error) {
 	dbTx := m.DB.Table(m.table).Where("l2_block_height = ?", l2BlockHeight).Find(&nftAssets)
 	if dbTx.Error != nil {
-		errInfo := fmt.Sprintf("[GetLiquidityAssetsByBlockHeight] unable to get related assets: %s", err.Error())
+		errInfo := fmt.Sprintf("[GetLiquidityAssetsByBlockHeight] unable to get related assets: %s", dbTx.Error)
 		logx.Error(errInfo)
 		return 0, nil, dbTx.Error
 	}

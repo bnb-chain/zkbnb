@@ -1,6 +1,10 @@
 package logic
 
 import (
+	"math/big"
+
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
+
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/model/account"
@@ -12,8 +16,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/sysconfig"
 	"github.com/bnb-chain/zkbas/common/model/tx"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
-	"math/big"
 )
 
 var (
@@ -59,10 +61,6 @@ type (
 const (
 	// tx status
 	TxStatusPending = tx.StatusPending
-	// mempool status
-	MempoolTxHandledTxStatus = mempool.SuccessTxStatus
-	// block status
-	BlockStatusPending = block.StatusPending
 	// asset type
 	GeneralAssetType         = commonAsset.GeneralAssetType
 	LiquidityAssetType       = commonAsset.LiquidityAssetType
@@ -97,6 +95,5 @@ const (
 )
 
 var (
-	ZeroBigIntString = big.NewInt(0).String()
-	ZeroBigInt       = big.NewInt(0)
+	ZeroBigInt = big.NewInt(0)
 )

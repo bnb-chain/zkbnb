@@ -6,10 +6,7 @@ import (
 )
 
 var (
-	ErrNotFound               = sqlx.ErrNotFound
-	ErrInvalidMempoolTx       = zerror.New(30000, "[ErrInvalidMempoolTx] invalid mempool tx")
-	ErrInvalidMempoolTxDetail = zerror.New(30001, "[ErrInvalidMempoolTxDetail] invalid mempool txDtail")
-	MempoolTableName          = `mempool_tx`
+	ErrNotFound = sqlx.ErrNotFound
 )
 
 const (
@@ -19,5 +16,4 @@ const (
 
 var (
 	ErrNotExistInSql = zerror.New(40000, "not exist in sql ")
-	ErrIllegalParam  = zerror.New(40001, "illegal param ")
 )

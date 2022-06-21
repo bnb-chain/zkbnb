@@ -19,10 +19,12 @@ package util
 
 import (
 	"errors"
+
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas/common/commonTx"
 )
 
 func ParseRegisterZnsPubData(pubData []byte) (tx *RegisterZnsTxInfo, err error) {
@@ -154,7 +156,7 @@ func ParseDepositNftPubData(pubData []byte) (tx *DepositNftTxInfo, err error) {
 	tx = &DepositNftTxInfo{
 		TxType:              txType,
 		AccountIndex:        int64(accountIndex),
-		NftIndex:            int64(nftIndex),
+		NftIndex:            nftIndex,
 		NftL1Address:        nftL1Address,
 		CreatorAccountIndex: int64(creatorAccountIndex),
 		CreatorTreasuryRate: int64(creatorTreasuryRate),
@@ -209,7 +211,7 @@ func ParseFullExitNftPubData(pubData []byte) (tx *commonTx.FullExitNftTxInfo, er
 		AccountIndex:           int64(accountIndex),
 		CreatorAccountIndex:    int64(creatorAccountIndex),
 		CreatorTreasuryRate:    int64(creatorTreasuryRate),
-		NftIndex:               int64(nftIndex),
+		NftIndex:               nftIndex,
 		CollectionId:           int64(collectionId),
 		NftL1Address:           nftL1Address,
 		AccountNameHash:        accountNameHash,

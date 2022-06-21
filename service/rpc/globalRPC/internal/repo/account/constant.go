@@ -24,19 +24,9 @@ import (
 )
 
 const (
-	AccountTableName        = `account`
-	AccountHistoryTableName = `account_history`
-)
-
-const (
 	AccountStatusPending = iota
 	AccountStatusConfirmed
 	AccountStatusVerified
-)
-
-const (
-	AccountHistoryStatusPending = iota
-	AccountHistoryStatusConfirmed
 )
 
 var (

@@ -18,15 +18,17 @@ package logic
 
 import (
 	"errors"
+
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/mathx"
+
 	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/proofSender"
 	"github.com/bnb-chain/zkbas/common/proverUtil"
 	"github.com/bnb-chain/zkbas/common/tree"
 	"github.com/bnb-chain/zkbas/service/rpc/proverHub/internal/svc"
-	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/mathx"
 )
 
 func InitUnprovedList(
@@ -53,7 +55,7 @@ func InitUnprovedList(
 	// handle the proof between initHeight and proofEnd
 
 	// get last handled block info in range
-	blocks, err := ctx.BlockModel.GetBlocksBetween(int64(initHeight+1), proofEndHeight)
+	blocks, err := ctx.BlockModel.GetBlocksBetween(initHeight+1, proofEndHeight)
 	if err != nil {
 		if err == block.ErrNotFound {
 			return nil

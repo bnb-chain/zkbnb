@@ -21,9 +21,10 @@ import (
 	"encoding/json"
 	"math/big"
 
-	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
+
+	"github.com/bnb-chain/zkbas/common/model/account"
 )
 
 type AccountAsset struct {
@@ -129,43 +130,4 @@ type FormatAccountHistoryInfo struct {
 	// map[int64]*Liquidity
 	L2BlockHeight int64
 	Status        int
-}
-
-func FromFormatAccountHistoryInfo(formatAccountInfo *FormatAccountHistoryInfo) (accountInfo *account.AccountHistory, err error) {
-	assetInfoBytes, err := json.Marshal(formatAccountInfo.AssetInfo)
-	if err != nil {
-		return nil, err
-	}
-	accountInfo = &account.AccountHistory{
-		Model: gorm.Model{
-			ID: formatAccountInfo.AccountId,
-		},
-		AccountIndex:    formatAccountInfo.AccountIndex,
-		Nonce:           formatAccountInfo.Nonce,
-		CollectionNonce: formatAccountInfo.CollectionNonce,
-		AssetInfo:       string(assetInfoBytes),
-		AssetRoot:       formatAccountInfo.AssetRoot,
-		L2BlockHeight:   formatAccountInfo.L2BlockHeight,
-	}
-	return accountInfo, nil
-}
-
-func ToFormatAccountHistoryInfo(accountInfo *account.AccountHistory) (formatAccountInfo *FormatAccountHistoryInfo, err error) {
-	var (
-		assetInfo map[int64]*AccountAsset
-	)
-	err = json.Unmarshal([]byte(accountInfo.AssetInfo), &assetInfo)
-	if err != nil {
-		return nil, err
-	}
-	formatAccountInfo = &FormatAccountHistoryInfo{
-		AccountId:       accountInfo.ID,
-		AccountIndex:    accountInfo.AccountIndex,
-		Nonce:           accountInfo.Nonce,
-		CollectionNonce: accountInfo.CollectionNonce,
-		AssetInfo:       assetInfo,
-		AssetRoot:       accountInfo.AssetRoot,
-		L2BlockHeight:   accountInfo.L2BlockHeight,
-	}
-	return formatAccountInfo, nil
 }

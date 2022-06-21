@@ -24,8 +24,8 @@ import (
 )
 
 const (
-	TxDetailTableName = `tx_detail`
-	TxTableName       = `tx`
+	DetailTableName = `tx_detail`
+	TableName       = `tx`
 )
 
 const (

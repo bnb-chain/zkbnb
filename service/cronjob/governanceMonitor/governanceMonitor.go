@@ -3,14 +3,16 @@ package main
 import (
 	"flag"
 	"fmt"
+	"path/filepath"
+
 	"github.com/robfig/cron/v3"
+	"github.com/zeromicro/go-zero/core/conf"
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
 	"github.com/bnb-chain/zkbas/service/cronjob/governanceMonitor/internal/config"
 	"github.com/bnb-chain/zkbas/service/cronjob/governanceMonitor/internal/logic"
 	"github.com/bnb-chain/zkbas/service/cronjob/governanceMonitor/internal/svc"
-	"github.com/zeromicro/go-zero/core/conf"
-	"github.com/zeromicro/go-zero/core/logx"
-	"path/filepath"
 )
 
 func main() {
@@ -77,5 +79,5 @@ func main() {
 	cronjob.Start()
 
 	fmt.Printf("Starting GovernanceMonitor cronjob ...")
-	select{}
+	select {}
 }

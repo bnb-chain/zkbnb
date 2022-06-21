@@ -3,6 +3,16 @@ package main
 import (
 	"flag"
 	"fmt"
+	"path/filepath"
+
+	"github.com/robfig/cron/v3"
+	"github.com/zeromicro/go-zero/core/conf"
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/service"
+	"github.com/zeromicro/go-zero/zrpc"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
+
 	"github.com/bnb-chain/zkbas/common/model/proofSender"
 	"github.com/bnb-chain/zkbas/common/tree"
 	"github.com/bnb-chain/zkbas/service/rpc/proverHub/internal/config"
@@ -10,16 +20,6 @@ import (
 	"github.com/bnb-chain/zkbas/service/rpc/proverHub/internal/server"
 	"github.com/bnb-chain/zkbas/service/rpc/proverHub/internal/svc"
 	"github.com/bnb-chain/zkbas/service/rpc/proverHub/proverHubProto"
-
-	"github.com/robfig/cron/v3"
-	"github.com/zeromicro/go-zero/core/logx"
-
-	"github.com/zeromicro/go-zero/core/conf"
-	"github.com/zeromicro/go-zero/core/service"
-	"github.com/zeromicro/go-zero/zrpc"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
-	"path/filepath"
 )
 
 func main() {

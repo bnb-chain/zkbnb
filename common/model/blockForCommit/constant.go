@@ -26,5 +26,5 @@ var (
 )
 
 const (
-	BlockForCommitTableName = `block_for_commit`
+	TableName = `block_for_commit`
 )

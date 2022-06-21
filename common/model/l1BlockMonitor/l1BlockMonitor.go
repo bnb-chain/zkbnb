@@ -20,15 +20,17 @@ package l1BlockMonitor
 import (
 	"errors"
 	"fmt"
-	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
-	"github.com/bnb-chain/zkbas/common/model/l2BlockEventMonitor"
-	"github.com/bnb-chain/zkbas/common/model/l2TxEventMonitor"
-	"github.com/bnb-chain/zkbas/common/model/sysconfig"
+
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
+
+	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
+	"github.com/bnb-chain/zkbas/common/model/l2BlockEventMonitor"
+	"github.com/bnb-chain/zkbas/common/model/l2TxEventMonitor"
+	"github.com/bnb-chain/zkbas/common/model/sysconfig"
 )
 
 type (
@@ -194,7 +196,7 @@ func (m *defaultL1BlockMonitorModel) CreateGovernanceMonitorInfo(
 			}
 			// create l2 asset info
 			if len(pendingNewL2AssetInfos) != 0 {
-				dbTx = tx.Table(asset.AssetInfoTableName).CreateInBatches(pendingNewL2AssetInfos, len(pendingNewL2AssetInfos))
+				dbTx = tx.Table(asset.TableName).CreateInBatches(pendingNewL2AssetInfos, len(pendingNewL2AssetInfos))
 				if dbTx.Error != nil {
 					return dbTx.Error
 				}
@@ -205,7 +207,7 @@ func (m *defaultL1BlockMonitorModel) CreateGovernanceMonitorInfo(
 			}
 			// update l2 asset info
 			for _, pendingUpdateL2AssetInfo := range pendingUpdateL2AssetInfos {
-				dbTx = tx.Table(asset.AssetInfoTableName).Where("id = ?", pendingUpdateL2AssetInfo.ID).Select("*").Updates(&pendingUpdateL2AssetInfo)
+				dbTx = tx.Table(asset.TableName).Where("id = ?", pendingUpdateL2AssetInfo.ID).Select("*").Updates(&pendingUpdateL2AssetInfo)
 				if dbTx.Error != nil {
 					return dbTx.Error
 				}

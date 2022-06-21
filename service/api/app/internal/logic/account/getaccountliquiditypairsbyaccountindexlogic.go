@@ -39,8 +39,8 @@ func (l *GetAccountLiquidityPairsByAccountIndexLogic) GetAccountLiquidityPairsBy
 		return nil, err
 	}
 	if entitie == nil {
-		logx.Errorf("[GetLiquidityByPairIndex] err:%v", err.Error())
-		return nil, err
+		logx.Errorf("[GetLiquidityByPairIndex] err: no liquidity found")
+		return nil, errcode.ErrNoLiquidity
 	}
 	pair := &types.AccountLiquidityPairs{
 		PairIndex:   uint32(entitie.PairIndex),

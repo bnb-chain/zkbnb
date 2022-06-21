@@ -27,12 +27,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	cacheZecreyAssetInfoIdPrefix        = "cache:zecrey:assetInfo:id:"
-	cacheZecreyAssetInfoAssetIdPrefix   = "cache:zecrey:assetInfo:assetId:"
-	cacheZecreyAssetInfoAssetNamePrefix = "cache:zecrey:assetInfo:assetName:"
-)
-
 type (
 	AssetInfoModel interface {
 		CreateAssetInfoTable() error
@@ -66,13 +60,13 @@ type (
 )
 
 func (*AssetInfo) TableName() string {
-	return AssetInfoTableName
+	return TableName
 }
 
 func NewAssetInfoModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) AssetInfoModel {
 	return &defaultAssetInfoModel{
 		CachedConn: sqlc.NewConn(conn, c),
-		table:      AssetInfoTableName,
+		table:      TableName,
 		DB:         db,
 	}
 }

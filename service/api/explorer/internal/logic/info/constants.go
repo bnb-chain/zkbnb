@@ -1,15 +1,5 @@
 package info
 
-import "errors"
-
-const (
-	TypeError = iota
-	TypeNil
-	TypeBlock
-	TypeTx
-	TypeAccount
-)
-
 var (
 	contractAddressesNames = []string{
 		"Zecrey_Contract_Ethereum",
@@ -18,6 +8,4 @@ var (
 		"Zecrey_Contract_Avalanche",
 		"Zecrey_Contract_BSC",
 	}
-	ErrBlockNumOutOfRange = errors.New("[info]Block Number is out of range")
-	ErrNoInfoMatched      = errors.New("[info]No Info Matched")
 )

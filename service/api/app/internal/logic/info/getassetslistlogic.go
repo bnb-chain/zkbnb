@@ -36,9 +36,9 @@ func (l *GetAssetsListLogic) GetAssetsList(req *types.ReqGetAssetsList) (*types.
 	resp.Assets = []*types.AssetInfo{}
 	for _, asset := range assets {
 		resp.Assets = append(resp.Assets, &types.AssetInfo{
-			AssetId:       uint32(asset.AssetId),
+			AssetId:       asset.AssetId,
 			AssetName:     asset.AssetName,
-			AssetDecimals: uint32(asset.Decimals),
+			AssetDecimals: asset.Decimals,
 			AssetSymbol:   asset.AssetSymbol,
 		})
 	}

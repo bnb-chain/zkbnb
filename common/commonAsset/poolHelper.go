@@ -20,8 +20,9 @@ package commonAsset
 import (
 	"encoding/json"
 	"errors"
-	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
+
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type LiquidityInfo struct {

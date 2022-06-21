@@ -17,8 +17,12 @@
 package logic
 
 import (
+	"strings"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
+
 	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
 	zecreyLegend "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
@@ -26,8 +30,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/l2BlockEventMonitor"
 	"github.com/bnb-chain/zkbas/common/model/l2TxEventMonitor"
 	"github.com/bnb-chain/zkbas/common/model/sysconfig"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
-	"strings"
 )
 
 type (

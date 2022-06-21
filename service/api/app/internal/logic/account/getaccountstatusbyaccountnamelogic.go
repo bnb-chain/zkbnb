@@ -33,15 +33,15 @@ func (l *GetAccountStatusByAccountNameLogic) GetAccountStatusByAccountName(req *
 		logx.Errorf("[CheckAccountIndex] param:%v", req.AccountName)
 		return nil, errcode.ErrInvalidParam
 	}
-	account, err := l.account.GetAccountByAccountName(l.ctx, req.AccountName)
+	accountInfo, err := l.account.GetAccountByAccountName(l.ctx, req.AccountName)
 	if err != nil {
 		logx.Errorf("[GetAccountByAccountName] err:%v", err)
 		return nil, err
 	}
 	resp = &types.RespGetAccountStatusByAccountName{
-		AccountStatus: uint32(account.Status),
-		AccountPk:     account.PublicKey,
-		AccountIndex:  uint32(account.AccountIndex),
+		AccountStatus: uint32(accountInfo.Status),
+		AccountPk:     accountInfo.PublicKey,
+		AccountIndex:  uint32(accountInfo.AccountIndex),
 	}
 	return resp, nil
 }

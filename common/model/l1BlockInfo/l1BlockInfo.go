@@ -3,10 +3,9 @@ package l1BlockInfo
 import (
 	"errors"
 	"fmt"
+
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 )
 
@@ -40,14 +39,6 @@ type (
 
 func (*L1BlockInfo) TableName() string {
 	return TableName
-}
-
-func NewL1BlockInfoModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) L1BlockInfoModel {
-	return &defaultL1BlockInfoModel{
-		CachedConn: sqlc.NewConn(conn, c),
-		table:      TableName,
-		DB:         db,
-	}
 }
 
 /*

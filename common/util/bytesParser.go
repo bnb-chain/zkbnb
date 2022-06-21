@@ -19,8 +19,9 @@ package util
 
 import (
 	"encoding/binary"
-	"github.com/ethereum/go-ethereum/common"
 	"math/big"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func ReadUint8(buf []byte, offset int) (newOffset int, res uint8) {
@@ -39,11 +40,6 @@ func ReadUint32(buf []byte, offset int) (newOffset int, res uint32) {
 
 func ReadUint40(buf []byte, offset int) (newOffset int, res int64) {
 	return offset + 5, new(big.Int).SetBytes(buf[offset : offset+5]).Int64()
-}
-
-func ReadUint64(buf []byte, offset int) (newOffset int, res uint64) {
-	res = binary.BigEndian.Uint64(buf[offset : offset+8])
-	return offset + 8, res
 }
 
 func ReadUint128(buf []byte, offset int) (newOffset int, res *big.Int) {

@@ -17,16 +17,6 @@
 package logic
 
 const (
-	SuccessMsg = "success"
-	FailMsg    = "fail"
-)
-
-const (
-	SuccessStatus = iota
-	FailStatus
-)
-
-const (
 	_ = iota
 	TxPending
 	TxSuccess

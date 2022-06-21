@@ -43,7 +43,7 @@ func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetBlocks) (resp *types.RespGet
 	resp.Total = uint32(total)
 
 	for _, b := range blocks {
-		block := types.Block{
+		blockInfo := types.Block{
 			BlockHeight:    int32(b.BlockHeight),
 			BlockStatus:    int32(b.BlockStatus),
 			NewAccountRoot: b.StateRoot,
@@ -55,27 +55,27 @@ func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetBlocks) (resp *types.RespGet
 		}
 
 		for _, tx := range b.Txs {
-			block.Txs = append(block.Txs, tx.TxHash)
+			blockInfo.Txs = append(blockInfo.Txs, tx.TxHash)
 		}
 
 		for _, tx := range b.Txs {
-			block.CommittedTxHash = append(block.CommittedTxHash, &types.TxHash{
+			blockInfo.CommittedTxHash = append(blockInfo.CommittedTxHash, &types.TxHash{
 				TxHash:    tx.TxHash,
 				CreatedAt: tx.CreatedAt.Unix(),
 			})
 
-			block.VerifiedTxHash = append(block.VerifiedTxHash, &types.TxHash{
+			blockInfo.VerifiedTxHash = append(blockInfo.VerifiedTxHash, &types.TxHash{
 				TxHash:    tx.TxHash,
 				CreatedAt: tx.CreatedAt.Unix(),
 			})
 
-			block.ExecutedTxHash = append(block.ExecutedTxHash, &types.TxHash{
+			blockInfo.ExecutedTxHash = append(blockInfo.ExecutedTxHash, &types.TxHash{
 				TxHash:    tx.TxHash,
 				CreatedAt: tx.CreatedAt.Unix(),
 			})
 		}
 
-		resp.Blocks = append(resp.Blocks, &block)
+		resp.Blocks = append(resp.Blocks, &blockInfo)
 	}
 	return
 }

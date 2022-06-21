@@ -3,8 +3,6 @@ package block
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
-
 	table "github.com/bnb-chain/zkbas/common/model/block"
 	tableTx "github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
@@ -12,25 +10,15 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
-	"github.com/zeromicro/go-zero/core/stringx"
 	"github.com/zeromicro/go-zero/tools/goctl/model/sql/builderx"
 	"gorm.io/gorm"
 )
 
 var (
-	blockFieldNames          = builderx.RawFieldNames(&block{})
-	blockRows                = strings.Join(blockFieldNames, ",")
-	blockRowsExpectAutoSet   = strings.Join(stringx.Remove(blockFieldNames, "`id`", "`create_time`", "`update_time`"), ",")
-	blockRowsWithPlaceHolder = strings.Join(stringx.Remove(blockFieldNames, "`id`", "`create_time`", "`update_time`"), "=?,") + "=?"
+	blockFieldNames = builderx.RawFieldNames(&block{})
 
-	cacheBlockIdPrefix              = "cache::block:id:"
-	cacheBlockBlockCommitmentPrefix = "cache::block:blockCommitment:"
-	cacheBlockHeightPrefix          = "cache::block:blockHeight:"
-	CacheBlockStatusPrefix          = "cache::block:blockStatus:"
-	cacheBlockListLimitPrefix       = "cache::block:blockList:"
-	cacheBlockCommittedCountPrefix  = "cache::block:committed_count"
-	cacheBlockVerifiedCountPrefix   = "cache::block:verified_count"
-	cacheBlockExecutedCountPrefix   = "cache::block:executed_count"
+	cacheBlockIdPrefix        = "cache::block:id:"
+	cacheBlockListLimitPrefix = "cache::block:blockList:"
 )
 
 type block struct {

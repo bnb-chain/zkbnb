@@ -44,7 +44,7 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (resp *types.R
 			AccountDelta: w.BalanceDelta,
 		})
 	}
-	block, err := l.block.GetBlockByBlockHeight(txMemppol.L2BlockHeight)
+	blockInfo, err := l.block.GetBlockByBlockHeight(txMemppol.L2BlockHeight)
 	if err != nil {
 		logx.Errorf("[GetBlockByBlockHeight]:%v", err)
 		return nil, err
@@ -69,12 +69,12 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (resp *types.R
 		L2BlockHeight: uint32(txMemppol.L2BlockHeight),
 		Status:        uint32(txMemppol.Status),
 		CreatedAt:     uint32(txMemppol.CreatedAt.Unix()),
-		BlockID:       uint32(block.ID),
+		BlockID:       uint32(blockInfo.ID),
 	}
 	return &types.RespGetTxByHash{
 		Tx:          tx,
-		CommittedAt: block.CommittedAt,
-		VerifiedAt:  block.VerifiedAt,
+		CommittedAt: blockInfo.CommittedAt,
+		VerifiedAt:  blockInfo.VerifiedAt,
 		ExecutedAt:  0,
 	}, nil
 }

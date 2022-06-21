@@ -19,7 +19,6 @@ package logic
 import (
 	"encoding/json"
 	"errors"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/commonTx"
@@ -32,6 +31,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/common/util/globalmapHandler"
 	"github.com/bnb-chain/zkbas/service/cronjob/mempoolMonitor/internal/svc"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"math/big"
@@ -118,7 +118,7 @@ func MonitorMempool(
 				CollectionNonce: commonConstant.NilNonce,
 				AssetInfo:       commonConstant.NilAssetInfo,
 				AssetRoot:       common.Bytes2Hex(tree.NilAccountAssetRoot),
-				Status:          account.AccountStatusPending,
+				Status:          account.StatusPending,
 			}
 			pendingNewAccounts = append(pendingNewAccounts, accountInfo)
 			accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
@@ -339,7 +339,7 @@ func MonitorMempool(
 				GasFee:         commonConstant.NilAssetAmountStr,
 				NftIndex:       commonConstant.NilTxNftIndex,
 				PairIndex:      commonConstant.NilPairIndex,
-				AssetId:        int64(txInfo.AssetId),
+				AssetId:        txInfo.AssetId,
 				TxAmount:       txInfo.AssetAmount.String(),
 				NativeAddress:  oTx.SenderAddress,
 				MempoolDetails: mempoolTxDetails,
@@ -380,6 +380,7 @@ func MonitorMempool(
 				logx.Errorf("[MonitorMempool] unable to get latest nft index: %s", err.Error())
 				return err
 			}
+			// TODO possible resource leak
 			defer redisLock.Release()
 			var (
 				nftInfo *commonAsset.NftInfo
@@ -801,7 +802,7 @@ func MonitorMempool(
 
 	// clean cache
 	var pendingDeletedKeys []string
-	for index, _ := range relatedAccountIndex {
+	for index := range relatedAccountIndex {
 		pendingDeletedKeys = append(pendingDeletedKeys, util.GetAccountKey(index))
 	}
 	_, _ = ctx.RedisConnection.Del(pendingDeletedKeys...)

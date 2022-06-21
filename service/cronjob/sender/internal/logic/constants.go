@@ -53,10 +53,6 @@ type (
 )
 
 const (
-	StatusPending             = block.StatusPending
-	StatusCommitted           = block.StatusCommitted
-	StatusVerifiedAndExecuted = block.StatusVerifiedAndExecuted
-
 	PendingStatus          = l1TxSender.PendingStatus
 	CommitTxType           = l1TxSender.CommitTxType
 	VerifyAndExecuteTxType = l1TxSender.VerifyAndExecuteTxType

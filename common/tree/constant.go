@@ -19,6 +19,7 @@ package tree
 
 import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+
 	"github.com/bnb-chain/zkbas-crypto/accumulators/merkleTree"
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
@@ -48,9 +49,16 @@ const (
 )
 
 var (
-	NilHash                                                                           = merkleTree.NilHash
-	NilAccountAssetRoot, NilStateRoot, NilAccountRoot, NilLiquidityRoot, NilNftRoot   []byte
-	NilAccountAssetNodeHash, NilAccountNodeHash, NilLiquidityNodeHash, NilNftNodeHash []byte
+	NilHash                 = merkleTree.NilHash
+	NilStateRoot            []byte
+	NilAccountRoot          []byte
+	NilLiquidityRoot        []byte
+	NilNftRoot              []byte
+	NilAccountAssetRoot     []byte
+	NilAccountNodeHash      []byte
+	NilLiquidityNodeHash    []byte
+	NilNftNodeHash          []byte
+	NilAccountAssetNodeHash []byte
 )
 
 func init() {

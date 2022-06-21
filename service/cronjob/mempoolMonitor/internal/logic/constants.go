@@ -40,12 +40,6 @@ const (
 	NftAssetType     = commonAsset.NftAssetType
 
 	Base = 10
-
-	// default gas fee
-	DefaultGasFee = 0
-
-	// default asset b id
-	DefaultAssetBId = -1
 )
 
 var (

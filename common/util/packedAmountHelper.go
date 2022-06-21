@@ -19,10 +19,11 @@ package util
 
 import (
 	"errors"
-	"github.com/bnb-chain/zkbas-crypto/ffmath"
-	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
 	"strconv"
+
+	"github.com/bnb-chain/zkbas-crypto/ffmath"
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 var (
@@ -104,19 +105,4 @@ func ToPackedFee(amount *big.Int) (res int64, err error) {
 		return 0, err
 	}
 	return packedFee, nil
-}
-
-func CleanPackedFee(amount *big.Int) (nAmount *big.Int, err error) {
-	if amount.Cmp(ZeroBigInt) < 0 || amount.Cmp(PackedFeeMaxAmount) > 0 {
-		logx.Errorf("[ToPackedFee] invalid amount")
-		return nil, errors.New("[ToPackedFee] invalid amount")
-	}
-	oAmount := new(big.Int).Set(amount)
-	exponent := int64(0)
-	for oAmount.Cmp(PackedFeeMaxMantissa) > 0 {
-		oAmount = ffmath.Div(oAmount, big.NewInt(10))
-		exponent++
-	}
-	nAmount = ffmath.Multiply(oAmount, new(big.Int).Exp(big.NewInt(10), big.NewInt(exponent), nil))
-	return nAmount, nil
 }

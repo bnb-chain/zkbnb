@@ -50,8 +50,6 @@ var (
 	ErrNotFound = sqlx.ErrNotFound
 )
 
-var BinancePriceUrl = "https://api.binance.com/api/v3/ticker/price?symbol="
-
 var CoinMarketCap = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol="
 
 var ErrTypeAssertion = errors.New("type assertion error")

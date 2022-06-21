@@ -19,23 +19,19 @@ package account
 
 import (
 	"errors"
+
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
 const (
-	AccountTableName        = `account`
-	AccountHistoryTableName = `account_history`
+	TableName        = `account`
+	HistoryTableName = `account_history`
 )
 
 const (
-	AccountStatusPending = iota
-	AccountStatusConfirmed
-	AccountStatusVerified
-)
-
-const (
-	AccountHistoryStatusPending = iota
-	AccountHistoryStatusConfirmed
+	StatusPending = iota
+	StatusConfirmed
+	StatusVerified
 )
 
 var (

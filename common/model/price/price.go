@@ -3,15 +3,15 @@ package price
 import (
 	"encoding/json"
 	"fmt"
-	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
+
+	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
 )
 
 var (
@@ -35,14 +35,6 @@ type (
 		gorm.Model
 	}
 )
-
-func NewPriceModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) PriceModel {
-	return &defaultPriceModel{
-		CachedConn: sqlc.NewConn(conn, c),
-		table:      `price`,
-		DB:         db,
-	}
-}
 
 func (*Price) TableName() string {
 	return `price`
@@ -119,7 +111,7 @@ func (m *defaultPriceModel) UpdateCurrencyPrice() error {
 	var (
 		l2AssetInfos []*asset.AssetInfo
 	)
-	dbTx := m.DB.Table(asset.AssetInfoTableName).Find(&l2AssetInfos)
+	dbTx := m.DB.Table(asset.TableName).Find(&l2AssetInfos)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[price.GetL2AssetsList] %s", dbTx.Error)
 		logx.Error(err)

@@ -3,19 +3,20 @@ package main
 import (
 	"context"
 	"flag"
-	zecreyLegend "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
-	"github.com/bnb-chain/zkbas/service/cronjob/sender/internal/config"
-	"github.com/bnb-chain/zkbas/service/cronjob/sender/internal/logic"
-	"github.com/bnb-chain/zkbas/service/cronjob/sender/internal/svc"
+	"fmt"
 	"math/big"
+	"path/filepath"
 	"time"
 
 	"github.com/robfig/cron/v3"
-	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
-	"path/filepath"
-	"fmt"
+
+	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
+	"github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
+	"github.com/bnb-chain/zkbas/service/cronjob/sender/internal/config"
+	"github.com/bnb-chain/zkbas/service/cronjob/sender/internal/logic"
+	"github.com/bnb-chain/zkbas/service/cronjob/sender/internal/svc"
 )
 
 func main() {
@@ -69,7 +70,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	zecreyInstance, err := zecreyLegend.LoadZecreyLegendInstance(cli, ZecreyRollupAddress.Value)
+	zecreyInstance, err := legend.LoadZecreyLegendInstance(cli, ZecreyRollupAddress.Value)
 	if err != nil {
 		panic(err)
 	}

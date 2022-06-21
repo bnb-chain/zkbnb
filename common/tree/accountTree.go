@@ -19,12 +19,14 @@ package tree
 
 import (
 	"errors"
+
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas-crypto/accumulators/merkleTree"
 	"github.com/bnb-chain/zkbas-crypto/hash/bn254/zmimc"
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/model/account"
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 // TODO optimize, bad performance
@@ -59,7 +61,7 @@ func InitAccountTree(
 				L1Address:       accountInfo.L1Address,
 				Nonce:           0,
 				CollectionNonce: 0,
-				Status:          account.AccountStatusConfirmed,
+				Status:          account.StatusConfirmed,
 			}
 		}
 		if accountHistory.Nonce != commonConstant.NilNonce {

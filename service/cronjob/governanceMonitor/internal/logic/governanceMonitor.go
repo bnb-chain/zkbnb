@@ -20,17 +20,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	zecreyLegend "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
-	"github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/zero/basic"
-	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
-	"github.com/bnb-chain/zkbas/common/model/l1BlockMonitor"
-	"github.com/bnb-chain/zkbas/common/sysconfigName"
-	"github.com/bnb-chain/zkbas/common/util"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
+	"github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/zero/basic"
+	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
+	"github.com/bnb-chain/zkbas/common/model/l1BlockMonitor"
+	"github.com/bnb-chain/zkbas/common/sysconfigName"
+	"github.com/bnb-chain/zkbas/common/util"
 )
 
 /*
@@ -107,7 +108,7 @@ func MonitorGovernanceContract(
 		// deposit or lock event
 		case GovernanceLogNewAssetSigHash.Hex():
 			// parse event info
-			var event zecreyLegend.GovernanceNewAsset
+			var event legend.GovernanceNewAsset
 			err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameNewAsset, vlog.Data)
 			if err != nil {
 				logx.Errorf("[blockMoniter.MonitorGovernanceContract]<=>[GovernanceContractAbi.UnpackIntoInterface] %s", err.Error())
@@ -120,7 +121,7 @@ func MonitorGovernanceContract(
 			}
 
 			// get asset info by contract address
-			erc20Instance, err := zecreyLegend.LoadERC20(cli, event.AssetAddress.Hex())
+			erc20Instance, err := legend.LoadERC20(cli, event.AssetAddress.Hex())
 			if err != nil {
 				logx.Errorf("[MonitorGovernanceContract] unable to load erc20: %s", err.Error())
 				return err
@@ -155,7 +156,7 @@ func MonitorGovernanceContract(
 			break
 		case governanceLogNewGovernorSigHash.Hex():
 			// parse event info
-			var event zecreyLegend.GovernanceNewGovernor
+			var event legend.GovernanceNewGovernor
 			err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameNewGovernor, vlog.Data)
 			if err != nil {
 				logx.Errorf("[blockMoniter.MonitorGovernanceContract]<=>[GovernanceContractAbi.UnpackIntoInterface] %s", err.Error())
@@ -180,7 +181,7 @@ func MonitorGovernanceContract(
 			break
 		case governanceLogNewAssetGovernanceSigHash.Hex():
 			// parse event info
-			var event zecreyLegend.GovernanceNewAssetGovernance
+			var event legend.GovernanceNewAssetGovernance
 			err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameNewAssetGovernance, vlog.Data)
 			if err != nil {
 				logx.Errorf("[blockMoniter.MonitorGovernanceContract]<=>[GovernanceContractAbi.UnpackIntoInterface] %s", err.Error())
@@ -205,7 +206,7 @@ func MonitorGovernanceContract(
 			break
 		case governanceLogValidatorStatusUpdateSigHash.Hex():
 			// parse event info
-			var event zecreyLegend.GovernanceValidatorStatusUpdate
+			var event legend.GovernanceValidatorStatusUpdate
 			err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameValidatorStatusUpdate, vlog.Data)
 			if err != nil {
 				logx.Errorf("[blockMoniter.MonitorGovernanceContract]<=>[GovernanceContractAbi.UnpackIntoInterface] %s", err.Error())
@@ -297,7 +298,7 @@ func MonitorGovernanceContract(
 			break
 		case governanceLogAssetPausedUpdateSigHash.Hex():
 			// parse event info
-			var event zecreyLegend.GovernanceAssetPausedUpdate
+			var event legend.GovernanceAssetPausedUpdate
 			err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameAssetPausedUpdate, vlog.Data)
 			if err != nil {
 				logx.Errorf("[blockMoniter.MonitorGovernanceContract]<=>[GovernanceContractAbi.UnpackIntoInterface] %s", err.Error())

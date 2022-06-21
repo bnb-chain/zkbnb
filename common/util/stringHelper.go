@@ -20,10 +20,10 @@ package util
 import (
 	"bytes"
 	"errors"
-	"github.com/ethereum/go-ethereum/common"
-	"hash"
 	"strings"
 	"unicode"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func LowerCase(s string) string {
@@ -50,12 +50,6 @@ func CleanAccountName(name string) string {
 
 func SerializeAccountName(a []byte) string {
 	return string(bytes.Trim(a[:], "\x00")) + ".legend"
-}
-
-func MiMCHash(hFunc hash.Hash, buf []byte) []byte {
-	hFunc.Reset()
-	hFunc.Write(buf)
-	return hFunc.Sum(nil)
 }
 
 //func AccountNameHash(accountName string) (res string, err error) {

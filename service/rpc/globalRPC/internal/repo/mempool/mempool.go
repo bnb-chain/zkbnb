@@ -10,12 +10,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	cacheMempoolTxListPrefix = "cache:mempool:txList"
-	cacheMempoolTxTotalCount = "cache:mempool:totalCount"
-	//"cache:AccountsHistoryList_%v_%v", limit, offset
-)
-
 type mempool struct {
 	cachedConn sqlc.CachedConn
 	table      string

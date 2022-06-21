@@ -19,11 +19,13 @@ package proverUtil
 
 import (
 	"errors"
+
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 func ConstructTransferCryptoTx(
@@ -105,7 +107,7 @@ func ToCryptoTransferTx(txInfo *commonTx.TransferTxInfo) (info *CryptoTransferTx
 		AssetAmount:       packedAmount,
 		GasAccountIndex:   txInfo.GasAccountIndex,
 		GasFeeAssetId:     txInfo.GasFeeAssetId,
-		GasFeeAssetAmount: int64(packedFee),
+		GasFeeAssetAmount: packedFee,
 		CallDataHash:      txInfo.CallDataHash,
 	}
 	return info, nil

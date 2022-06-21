@@ -44,13 +44,13 @@ func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *type
 		l.Error(err)
 		return
 	}
-	account, err := l.account.GetAccountByAccountName(l.ctx, accountName)
+	accountInfo, err := l.account.GetAccountByAccountName(l.ctx, accountName)
 	if err != nil {
 		err = fmt.Errorf("[GetAccountByAccountName] accountName:%v, err:%v", accountName, err)
 		l.Error(err)
 		return
 	}
-	assets, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(uint32(account.AccountIndex))
+	assets, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(uint32(accountInfo.AccountIndex))
 	if err != nil {
 		err = fmt.Errorf("[GetLatestAccountInfoByAccountIndex] err:%v", err)
 		l.Error(err)
@@ -64,8 +64,8 @@ func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *type
 		})
 	}
 
-	resp.Account.AccountIndex = uint32(account.AccountIndex)
+	resp.Account.AccountIndex = uint32(accountInfo.AccountIndex)
 	resp.Account.AccountName = accountName
-	resp.Account.AccountPk = account.PublicKey
+	resp.Account.AccountPk = accountInfo.PublicKey
 	return
 }
