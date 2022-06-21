@@ -6,6 +6,10 @@
       {
         "source": "payload",
         "name": "release.tag_name"
+      },
+      {
+        "source": "string",
+        "name": ""
       }
     ],
     "trigger-rule": {
