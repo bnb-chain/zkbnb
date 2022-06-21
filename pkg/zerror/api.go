@@ -10,7 +10,7 @@ package zerror
 type Error interface {
 	Error() string
 	Code() int32
-	RefineError(err string) *zError
+	RefineError(err string) Error
 }
 
 func New(code int32, msg string) Error {
