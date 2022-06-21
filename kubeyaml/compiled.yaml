@@ -50,7 +50,7 @@ metadata:
   name: app
   namespace: default
 spec:
-  replicas: 1
+  replicas: 3
   revisionHistoryLimit: 5
   selector:
     matchLabels:
@@ -116,6 +116,8 @@ metadata:
 spec:
   replicas: 1
   revisionHistoryLimit: 5
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: blockmonitor
@@ -160,6 +162,8 @@ metadata:
 spec:
   replicas: 1
   revisionHistoryLimit: 5
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: committer
@@ -203,7 +207,7 @@ metadata:
   name: explorer
   namespace: default
 spec:
-  replicas: 1
+  replicas: 3
   revisionHistoryLimit: 5
   selector:
     matchLabels:
@@ -267,7 +271,7 @@ metadata:
   name: globalrpc
   namespace: default
 spec:
-  replicas: 1
+  replicas: 3
   revisionHistoryLimit: 5
   selector:
     matchLabels:
@@ -325,6 +329,8 @@ metadata:
 spec:
   replicas: 1
   revisionHistoryLimit: 5
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: l2blockmonitor
@@ -368,6 +374,8 @@ metadata:
   namespace: default
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   revisionHistoryLimit: 5
   selector:
     matchLabels:
@@ -412,7 +420,7 @@ metadata:
   name: proverclient
   namespace: default
 spec:
-  replicas: 1
+  replicas: 3
   revisionHistoryLimit: 5
   selector:
     matchLabels:
@@ -466,6 +474,8 @@ metadata:
   namespace: default
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   revisionHistoryLimit: 5
   selector:
     matchLabels:
@@ -522,6 +532,8 @@ metadata:
   namespace: default
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   revisionHistoryLimit: 5
   selector:
     matchLabels:
@@ -566,6 +578,8 @@ metadata:
   namespace: default
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   revisionHistoryLimit: 5
   selector:
     matchLabels:
@@ -609,7 +623,7 @@ metadata:
   name: app-hpa-c
   namespace: default
 spec:
-  maxReplicas: 1
+  maxReplicas: 5
   metrics:
   - resource:
       name: cpu
@@ -629,7 +643,7 @@ metadata:
   name: app-hpa-m
   namespace: default
 spec:
-  maxReplicas: 1
+  maxReplicas: 5
   metrics:
   - resource:
       name: memory
@@ -645,91 +659,11 @@ apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
 metadata:
   labels:
-    app: blockmonitor
-  name: blockmonitor
-  namespace: default
-spec:
-  maxReplicas: 1
-  metrics:
-  - resource:
-      name: cpu
-      targetAverageUtilization: 80
-    type: Resource
-  minReplicas: 1
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: blockmonitor
----
-apiVersion: autoscaling/v2beta1
-kind: HorizontalPodAutoscaler
-metadata:
-  labels:
-    app: blockmonitor
-  name: blockmonitor
-  namespace: default
-spec:
-  maxReplicas: 1
-  metrics:
-  - resource:
-      name: memory
-      targetAverageUtilization: 80
-    type: Resource
-  minReplicas: 1
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: blockmonitor
----
-apiVersion: autoscaling/v2beta1
-kind: HorizontalPodAutoscaler
-metadata:
-  labels:
-    app: committer-hpa-c
-  name: committer-hpa-c
-  namespace: default
-spec:
-  maxReplicas: 1
-  metrics:
-  - resource:
-      name: cpu
-      targetAverageUtilization: 80
-    type: Resource
-  minReplicas: 1
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: committer
----
-apiVersion: autoscaling/v2beta1
-kind: HorizontalPodAutoscaler
-metadata:
-  labels:
-    app: committer-hpa-m
-  name: committer-hpa-m
-  namespace: default
-spec:
-  maxReplicas: 1
-  metrics:
-  - resource:
-      name: memory
-      targetAverageUtilization: 80
-    type: Resource
-  minReplicas: 1
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: committer
----
-apiVersion: autoscaling/v2beta1
-kind: HorizontalPodAutoscaler
-metadata:
-  labels:
     app: explorer-hpa-c
   name: explorer-hpa-c
   namespace: default
 spec:
-  maxReplicas: 1
+  maxReplicas: 5
   metrics:
   - resource:
       name: cpu
@@ -749,7 +683,7 @@ metadata:
   name: explorer-hpa-m
   namespace: default
 spec:
-  maxReplicas: 1
+  maxReplicas: 5
   metrics:
   - resource:
       name: memory
@@ -769,7 +703,7 @@ metadata:
   name: globalrpc-hpa-c
   namespace: default
 spec:
-  maxReplicas: 1
+  maxReplicas: 5
   metrics:
   - resource:
       name: cpu
@@ -789,7 +723,7 @@ metadata:
   name: globalrpc-hpa-m
   namespace: default
 spec:
-  maxReplicas: 1
+  maxReplicas: 5
   metrics:
   - resource:
       name: memory
@@ -805,91 +739,11 @@ apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
 metadata:
   labels:
-    app: l2blockmonitor-hpa-c
-  name: l2blockmonitor-hpa-c
-  namespace: default
-spec:
-  maxReplicas: 1
-  metrics:
-  - resource:
-      name: cpu
-      targetAverageUtilization: 80
-    type: Resource
-  minReplicas: 1
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: l2blockmonitor
----
-apiVersion: autoscaling/v2beta1
-kind: HorizontalPodAutoscaler
-metadata:
-  labels:
-    app: l2blockmonitor-hpa-m
-  name: l2blockmonitor-hpa-m
-  namespace: default
-spec:
-  maxReplicas: 1
-  metrics:
-  - resource:
-      name: memory
-      targetAverageUtilization: 80
-    type: Resource
-  minReplicas: 1
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: l2blockmonitor
----
-apiVersion: autoscaling/v2beta1
-kind: HorizontalPodAutoscaler
-metadata:
-  labels:
-    app: mempoolmonitor-hpa-c
-  name: mempoolmonitor-hpa-c
-  namespace: default
-spec:
-  maxReplicas: 1
-  metrics:
-  - resource:
-      name: cpu
-      targetAverageUtilization: 80
-    type: Resource
-  minReplicas: 1
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: mempoolmonitor
----
-apiVersion: autoscaling/v2beta1
-kind: HorizontalPodAutoscaler
-metadata:
-  labels:
-    app: mempoolmonitor-hpa-m
-  name: mempoolmonitor-hpa-m
-  namespace: default
-spec:
-  maxReplicas: 1
-  metrics:
-  - resource:
-      name: memory
-      targetAverageUtilization: 80
-    type: Resource
-  minReplicas: 1
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: mempoolmonitor
----
-apiVersion: autoscaling/v2beta1
-kind: HorizontalPodAutoscaler
-metadata:
-  labels:
     app: proverclient-hpa-c
   name: proverclient-hpa-c
   namespace: default
 spec:
-  maxReplicas: 1
+  maxReplicas: 5
   metrics:
   - resource:
       name: cpu
@@ -909,7 +763,7 @@ metadata:
   name: proverclient-hpa-m
   namespace: default
 spec:
-  maxReplicas: 1
+  maxReplicas: 5
   metrics:
   - resource:
       name: memory
@@ -920,123 +774,3 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: proverclient
----
-apiVersion: autoscaling/v2beta1
-kind: HorizontalPodAutoscaler
-metadata:
-  labels:
-    app: proverhub-hpa-c
-  name: proverhub-hpa-c
-  namespace: default
-spec:
-  maxReplicas: 1
-  metrics:
-  - resource:
-      name: cpu
-      targetAverageUtilization: 80
-    type: Resource
-  minReplicas: 1
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: proverhub
----
-apiVersion: autoscaling/v2beta1
-kind: HorizontalPodAutoscaler
-metadata:
-  labels:
-    app: proverhub-hpa-m
-  name: proverhub-hpa-m
-  namespace: default
-spec:
-  maxReplicas: 1
-  metrics:
-  - resource:
-      name: memory
-      targetAverageUtilization: 80
-    type: Resource
-  minReplicas: 1
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: proverhub
----
-apiVersion: autoscaling/v2beta1
-kind: HorizontalPodAutoscaler
-metadata:
-  labels:
-    app: sender
-  name: sender
-  namespace: default
-spec:
-  maxReplicas: 1
-  metrics:
-  - resource:
-      name: cpu
-      targetAverageUtilization: 80
-    type: Resource
-  minReplicas: 1
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: sender
----
-apiVersion: autoscaling/v2beta1
-kind: HorizontalPodAutoscaler
-metadata:
-  labels:
-    app: sender
-  name: sender
-  namespace: default
-spec:
-  maxReplicas: 1
-  metrics:
-  - resource:
-      name: memory
-      targetAverageUtilization: 80
-    type: Resource
-  minReplicas: 1
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: sender
----
-apiVersion: autoscaling/v2beta1
-kind: HorizontalPodAutoscaler
-metadata:
-  labels:
-    app: governancemonitor-hpa-c
-  name: governancemonitor-hpa-c
-  namespace: default
-spec:
-  maxReplicas: 1
-  metrics:
-  - resource:
-      name: cpu
-      targetAverageUtilization: 80
-    type: Resource
-  minReplicas: 1
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: governancemonitor
----
-apiVersion: autoscaling/v2beta1
-kind: HorizontalPodAutoscaler
-metadata:
-  labels:
-    app: governancemonitor-hpa-m
-  name: governancemonitor-hpa-m
-  namespace: default
-spec:
-  maxReplicas: 1
-  metrics:
-  - resource:
-      name: memory
-      targetAverageUtilization: 80
-    type: Resource
-  minReplicas: 1
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: governancemonitor
