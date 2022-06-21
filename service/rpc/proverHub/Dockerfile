@@ -16,6 +16,6 @@ WORKDIR /app
 COPY bin/proverhub /app/proverhub
 COPY configyaml /app/etc
 
-RUN wget http://35.188.192.39:8000/zecrey-legend.vk
+RUN wget http://35.188.192.39:8000/zkbas.vk
 
 CMD ["./proverhub", "-f", "etc/proverhub.yaml"]

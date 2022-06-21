@@ -3,23 +3,24 @@ package main
 import (
 	"flag"
 	"fmt"
-
-	"github.com/robfig/cron/v3"
-	"github.com/zeromicro/go-zero/core/conf"
-	"github.com/zeromicro/go-zero/core/logx"
-
 	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
 	"github.com/bnb-chain/zkbas/service/cronjob/blockMonitor/internal/config"
 	"github.com/bnb-chain/zkbas/service/cronjob/blockMonitor/internal/logic"
 	"github.com/bnb-chain/zkbas/service/cronjob/blockMonitor/internal/svc"
+	"github.com/robfig/cron/v3"
+	"github.com/zeromicro/go-zero/core/conf"
+	"github.com/zeromicro/go-zero/core/logx"
+	"path/filepath"
 )
-
-var configFile = flag.String("f",
-	"./etc/local.yaml", "the config file")
 
 func main() {
 	flag.Parse()
+	dir, err := filepath.Abs(filepath.Dir("./service/cronjob/blockMonitor/etc/local.yaml"))
+	if err != nil {
+		fmt.Println(err)
+	}
 
+	var configFile = flag.String("f", filepath.Join(dir, "local.yaml"), "the config file")
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
 	ctx := svc.NewServiceContext(c)
@@ -27,7 +28,7 @@ func main() {
 	ZecreyRollupAddress, err := ctx.SysConfig.GetSysconfigByName(c.ChainConfig.ZecreyContractAddrSysConfigName)
 
 	if err != nil {
-		logx.Severef("[blockMonitor] fatal error, cannot fetch ZecreyLegendContractAddr from sysConfig, err: %s, SysConfigName: %s",
+		logx.Severef("[blockMonitor] fatal error, cannot fetch ZkbasContractAddr from sysConfig, err: %s, SysConfigName: %s",
 			err.Error(), c.ChainConfig.ZecreyContractAddrSysConfigName)
 		panic(err)
 	}
