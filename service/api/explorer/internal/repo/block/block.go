@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	table "github.com/zecrey-labs/zecrey-legend/common/model/block"
-	tableTx "github.com/zecrey-labs/zecrey-legend/common/model/tx"
-	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
+	table "github.com/bnb-chain/zkbas/common/model/block"
+	tableTx "github.com/bnb-chain/zkbas/common/model/tx"
+	"github.com/bnb-chain/zkbas/pkg/multcache"
 
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"

@@ -3,7 +3,7 @@ package multcache
 import (
 	"errors"
 
-	"github.com/zecrey-labs/zecrey-legend/pkg/zerror"
+	"github.com/bnb-chain/zkbas/pkg/zerror"
 )
 
 // error got from other package

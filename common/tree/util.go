@@ -19,8 +19,8 @@ package tree
 
 import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
-	"github.com/zecrey-labs/zecrey-crypto/accumulators/merkleTree"
-	"github.com/zecrey-labs/zecrey-crypto/hash/bn254/zmimc"
+	"github.com/bnb-chain/zkbas-crypto/accumulators/merkleTree"
+	"github.com/bnb-chain/zkbas-crypto/hash/bn254/zmimc"
 	"math/big"
 )
 

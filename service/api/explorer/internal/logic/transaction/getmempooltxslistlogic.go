@@ -4,14 +4,14 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/account"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/block"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/globalrpc"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/mempool"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/tx"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/types"
+	"github.com/bnb-chain/zkbas/common/commonAsset"
+	"github.com/bnb-chain/zkbas/service/api/explorer/internal/repo/account"
+	"github.com/bnb-chain/zkbas/service/api/explorer/internal/repo/block"
+	"github.com/bnb-chain/zkbas/service/api/explorer/internal/repo/globalrpc"
+	"github.com/bnb-chain/zkbas/service/api/explorer/internal/repo/mempool"
+	"github.com/bnb-chain/zkbas/service/api/explorer/internal/repo/tx"
+	"github.com/bnb-chain/zkbas/service/api/explorer/internal/svc"
+	"github.com/bnb-chain/zkbas/service/api/explorer/internal/types"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )

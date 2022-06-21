@@ -1,8 +1,8 @@
 package liquidity
 
 import (
-	table "github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
-	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
+	table "github.com/bnb-chain/zkbas/common/model/liquidity"
+	"github.com/bnb-chain/zkbas/pkg/multcache"
 	"gorm.io/gorm"
 )
 

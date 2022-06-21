@@ -18,10 +18,10 @@ package test
 
 import (
 	"flag"
-	"github.com/zecrey-labs/zecrey-legend/common/model/l2TxEventMonitor"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/mempoolMonitor/internal/config"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/mempoolMonitor/internal/logic"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/mempoolMonitor/internal/svc"
+	"github.com/bnb-chain/zkbas/common/model/l2TxEventMonitor"
+	"github.com/bnb-chain/zkbas/service/cronjob/mempoolMonitor/internal/config"
+	"github.com/bnb-chain/zkbas/service/cronjob/mempoolMonitor/internal/logic"
+	"github.com/bnb-chain/zkbas/service/cronjob/mempoolMonitor/internal/svc"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 	"testing"

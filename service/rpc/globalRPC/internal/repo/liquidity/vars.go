@@ -1,6 +1,6 @@
 package liquidity
 
-import "github.com/zecrey-labs/zecrey-legend/pkg/zerror"
+import "github.com/bnb-chain/zkbas/pkg/zerror"
 
 const (
 	Fail = iota

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
-	"github.com/zecrey-labs/zecrey-legend/common/sysconfigName"
+	"github.com/bnb-chain/zkbas/common/model/sysconfig"
+	"github.com/bnb-chain/zkbas/common/sysconfigName"
 )
 
 const (

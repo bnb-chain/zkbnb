@@ -4,10 +4,10 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/config"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/server"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/config"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/server"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/svc"
 
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/service"

@@ -19,7 +19,7 @@ package commonAsset
 
 import (
 	"encoding/json"
-	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
+	"github.com/bnb-chain/zkbas/common/commonConstant"
 )
 
 type NftInfo struct {

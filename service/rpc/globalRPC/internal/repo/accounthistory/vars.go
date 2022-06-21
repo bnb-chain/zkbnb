@@ -1,7 +1,7 @@
 package accounthistory
 
 import (
-	"github.com/zecrey-labs/zecrey-legend/pkg/zerror"
+	"github.com/bnb-chain/zkbas/pkg/zerror"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 

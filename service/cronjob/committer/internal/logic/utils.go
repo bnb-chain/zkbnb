@@ -1,7 +1,7 @@
 package logic
 
 import (
-	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
+	"github.com/bnb-chain/zkbas/common/model/tx"
 )
 
 func Min(x, y int) int {

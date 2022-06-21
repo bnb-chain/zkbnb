@@ -3,11 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/block"
-	"github.com/zecrey-labs/zecrey-legend/common/util"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/proverClient/internal/config"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/proverClient/internal/logic"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/proverClient/internal/svc"
+	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
+	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/service/cronjob/proverClient/internal/config"
+	"github.com/bnb-chain/zkbas/service/cronjob/proverClient/internal/logic"
+	"github.com/bnb-chain/zkbas/service/cronjob/proverClient/internal/svc"
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/frontend"

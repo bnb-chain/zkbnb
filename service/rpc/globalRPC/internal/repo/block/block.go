@@ -1,9 +1,9 @@
 package block
 
 import (
-	table "github.com/zecrey-labs/zecrey-legend/common/model/block"
-	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/tx"
+	table "github.com/bnb-chain/zkbas/common/model/block"
+	"github.com/bnb-chain/zkbas/pkg/multcache"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/tx"
 
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"

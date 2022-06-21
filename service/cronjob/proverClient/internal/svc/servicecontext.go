@@ -1,8 +1,8 @@
 package svc
 
 import (
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/proverClient/internal/config"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/proverhubrpc"
+	"github.com/bnb-chain/zkbas/service/cronjob/proverClient/internal/config"
+	"github.com/bnb-chain/zkbas/service/rpc/proverHub/proverhubrpc"
 	"github.com/zeromicro/go-zero/zrpc"
 )
 

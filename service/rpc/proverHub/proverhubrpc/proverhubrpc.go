@@ -6,7 +6,7 @@ package proverhubrpc
 import (
 	"context"
 
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/proverHubProto"
+	"github.com/bnb-chain/zkbas/service/rpc/proverHub/proverHubProto"
 
 	"github.com/zeromicro/go-zero/zrpc"
 	"google.golang.org/grpc"

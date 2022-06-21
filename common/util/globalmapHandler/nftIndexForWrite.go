@@ -18,7 +18,7 @@
 package globalmapHandler
 
 import (
-	"github.com/zecrey-labs/zecrey-legend/common/util"
+	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 

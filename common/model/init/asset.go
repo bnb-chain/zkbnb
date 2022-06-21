@@ -1,6 +1,6 @@
 package main
 
-import asset "github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
+import asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
 
 func initAssetsInfo() []*asset.AssetInfo {
 	return []*asset.AssetInfo{

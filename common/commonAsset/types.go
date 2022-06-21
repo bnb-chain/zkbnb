@@ -21,7 +21,7 @@ import (
 	"encoding/json"
 	"math/big"
 
-	"github.com/zecrey-labs/zecrey-legend/common/model/account"
+	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 )

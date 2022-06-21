@@ -19,8 +19,8 @@ package proverUtil
 
 import (
 	"errors"
-	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
-	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
+	"github.com/bnb-chain/zkbas/common/commonAsset"
+	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 

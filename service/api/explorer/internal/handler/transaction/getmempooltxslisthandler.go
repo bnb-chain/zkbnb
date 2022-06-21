@@ -3,9 +3,9 @@ package transaction
 import (
 	"net/http"
 
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/logic/transaction"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/types"
+	"github.com/bnb-chain/zkbas/service/api/explorer/internal/logic/transaction"
+	"github.com/bnb-chain/zkbas/service/api/explorer/internal/svc"
+	"github.com/bnb-chain/zkbas/service/api/explorer/internal/types"
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 

@@ -1,9 +1,9 @@
 package mempool
 
 import (
-	mempoolModel "github.com/zecrey-labs/zecrey-legend/common/model/mempool"
-	table "github.com/zecrey-labs/zecrey-legend/common/model/mempool"
-	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
+	mempoolModel "github.com/bnb-chain/zkbas/common/model/mempool"
+	table "github.com/bnb-chain/zkbas/common/model/mempool"
+	"github.com/bnb-chain/zkbas/pkg/multcache"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"

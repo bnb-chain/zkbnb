@@ -3,7 +3,7 @@ package price
 import (
 	"context"
 
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
+	"github.com/bnb-chain/zkbas/service/api/explorer/internal/svc"
 )
 
 type Price interface {

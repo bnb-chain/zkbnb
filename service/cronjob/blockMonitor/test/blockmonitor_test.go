@@ -18,10 +18,10 @@ package test
 
 import (
 	"flag"
-	"github.com/zecrey-labs/zecrey-eth-rpc/_rpc"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/blockMonitor/internal/config"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/blockMonitor/internal/logic"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/blockMonitor/internal/svc"
+	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
+	"github.com/bnb-chain/zkbas/service/cronjob/blockMonitor/internal/config"
+	"github.com/bnb-chain/zkbas/service/cronjob/blockMonitor/internal/logic"
+	"github.com/bnb-chain/zkbas/service/cronjob/blockMonitor/internal/svc"
 	"testing"
 
 	"github.com/zeromicro/go-zero/core/conf"

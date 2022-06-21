@@ -1,8 +1,8 @@
 package mempool
 
 import (
-	mempoolModel "github.com/zecrey-labs/zecrey-legend/common/model/mempool"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
+	mempoolModel "github.com/bnb-chain/zkbas/common/model/mempool"
+	"github.com/bnb-chain/zkbas/service/api/explorer/internal/svc"
 )
 
 type Mempool interface {

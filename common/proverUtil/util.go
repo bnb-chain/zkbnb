@@ -20,9 +20,9 @@ package proverUtil
 import (
 	"errors"
 	"github.com/ethereum/go-ethereum/common"
-	cryptoBlock "github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/block"
-	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
-	"github.com/zecrey-labs/zecrey-legend/common/model/block"
+	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
+	"github.com/bnb-chain/zkbas/common/commonTx"
+	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/zeromicro/go-zero/core/logx"
 	"log"
 )

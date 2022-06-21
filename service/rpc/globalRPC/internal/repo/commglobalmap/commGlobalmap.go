@@ -3,11 +3,11 @@ package commglobalmap
 import (
 	"github.com/zeromicro/go-zero/core/stores/redis"
 
-	"github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
-	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
-	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
-	commGlobalmapHandler "github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
+	"github.com/bnb-chain/zkbas/common/model/account"
+	"github.com/bnb-chain/zkbas/common/model/nft"
+	"github.com/bnb-chain/zkbas/common/model/mempool"
+	"github.com/bnb-chain/zkbas/common/model/liquidity"
+	commGlobalmapHandler "github.com/bnb-chain/zkbas/common/util/globalmapHandler"
 )
 
 type commglobalmap struct {

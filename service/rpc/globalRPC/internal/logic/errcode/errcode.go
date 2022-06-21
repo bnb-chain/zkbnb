@@ -1,7 +1,7 @@
 package errcode
 
 import (
-	"github.com/zecrey-labs/zecrey-legend/pkg/zerror"
+	"github.com/bnb-chain/zkbas/pkg/zerror"
 )
 
 var (

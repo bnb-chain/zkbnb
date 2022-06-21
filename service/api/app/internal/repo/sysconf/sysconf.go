@@ -3,9 +3,9 @@ package sysconf
 import (
 	"fmt"
 
-	table "github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
+	table "github.com/bnb-chain/zkbas/common/model/sysconfig"
 
-	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
+	"github.com/bnb-chain/zkbas/pkg/multcache"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 )

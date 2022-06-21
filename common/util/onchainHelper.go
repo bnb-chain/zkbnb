@@ -2,8 +2,8 @@ package util
 
 import (
 	"github.com/ethereum/go-ethereum/common"
-	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
-	"github.com/zecrey-labs/zecrey-legend/common/model/block"
+	zecreyLegend "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
+	"github.com/bnb-chain/zkbas/common/model/block"
 	"math/big"
 )
 

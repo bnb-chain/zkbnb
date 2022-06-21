@@ -1,7 +1,7 @@
 package tx
 
 import (
-	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
+	"github.com/bnb-chain/zkbas/pkg/multcache"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"

@@ -18,8 +18,8 @@
 package tree
 
 import (
-	"github.com/zecrey-labs/zecrey-crypto/accumulators/merkleTree"
-	"github.com/zecrey-labs/zecrey-crypto/hash/bn254/zmimc"
+	"github.com/bnb-chain/zkbas-crypto/accumulators/merkleTree"
+	"github.com/bnb-chain/zkbas-crypto/hash/bn254/zmimc"
 	"github.com/zeromicro/go-zero/core/logx"
 	"log"
 )

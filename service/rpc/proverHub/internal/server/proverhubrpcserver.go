@@ -6,9 +6,9 @@ package server
 import (
 	"context"
 
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/internal/logic"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/internal/svc"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/proverHubProto"
+	"github.com/bnb-chain/zkbas/service/rpc/proverHub/internal/logic"
+	"github.com/bnb-chain/zkbas/service/rpc/proverHub/internal/svc"
+	"github.com/bnb-chain/zkbas/service/rpc/proverHub/proverHubProto"
 )
 
 type ProverHubRPCServer struct {

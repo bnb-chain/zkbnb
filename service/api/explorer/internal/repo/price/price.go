@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
+	"github.com/bnb-chain/zkbas/pkg/multcache"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 

@@ -19,9 +19,9 @@ package proverUtil
 
 import (
 	"errors"
-	"github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/std"
-	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
-	"github.com/zecrey-labs/zecrey-legend/common/util"
+	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
+	"github.com/bnb-chain/zkbas/common/commonTx"
+	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
 	"strings"
 )

@@ -19,7 +19,7 @@ package commonAsset
 
 import (
 	"fmt"
-	"github.com/zecrey-labs/zecrey-crypto/ffmath"
+	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"math/big"
 	"testing"
 )

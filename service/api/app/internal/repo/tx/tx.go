@@ -3,7 +3,7 @@ package tx
 import (
 	"context"
 
-	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
+	"github.com/bnb-chain/zkbas/pkg/multcache"
 	"gorm.io/gorm"
 )
 

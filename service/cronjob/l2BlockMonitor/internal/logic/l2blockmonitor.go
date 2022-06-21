@@ -19,9 +19,9 @@ package logic
 import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/zecrey-labs/zecrey-eth-rpc/_rpc"
-	"github.com/zecrey-labs/zecrey-legend/common/model/block"
-	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
+	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
+	"github.com/bnb-chain/zkbas/common/model/block"
+	"github.com/bnb-chain/zkbas/common/model/proofSender"
 	"github.com/zeromicro/go-zero/core/logx"
 	"sort"
 	"time"

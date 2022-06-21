@@ -16,7 +16,7 @@
 
 package logic
 
-import "github.com/zecrey-labs/zecrey-legend/common/util"
+import "github.com/bnb-chain/zkbas/common/util"
 
 func GetUnprovedCryptoBlockStatus(blockNumber int64) (status int64) {
 	for _, v := range UnProvedCryptoBlocks {

@@ -1,8 +1,8 @@
 package block
 
 import (
-	table "github.com/zecrey-labs/zecrey-legend/common/model/block"
-	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
+	table "github.com/bnb-chain/zkbas/common/model/block"
+	"github.com/bnb-chain/zkbas/pkg/multcache"
 
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"gorm.io/gorm"

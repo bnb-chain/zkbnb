@@ -20,8 +20,8 @@ import (
 	"errors"
 	"fmt"
 
-	table "github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
+	table "github.com/bnb-chain/zkbas/common/model/account"
+	"github.com/bnb-chain/zkbas/pkg/multcache"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 )

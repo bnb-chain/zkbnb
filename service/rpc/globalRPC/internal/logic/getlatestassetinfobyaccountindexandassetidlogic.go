@@ -3,15 +3,15 @@ package logic
 import (
 	"context"
 
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/logic/errcode"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/account"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/l2asset"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/mempool"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/logic/errcode"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/account"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/commglobalmap"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/l2asset"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/mempool"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/svc"
 
-	"github.com/zecrey-labs/zecrey-legend/utils"
+	"github.com/bnb-chain/zkbas/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )

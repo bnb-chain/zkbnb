@@ -19,7 +19,7 @@ package util
 
 import (
 	"errors"
-	"github.com/zecrey-labs/zecrey-crypto/ffmath"
+	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
 	"strconv"

@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/zecrey-labs/zecrey-legend/common/util"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/internal/svc"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/proverHubProto"
+	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/service/rpc/proverHub/internal/svc"
+	"github.com/bnb-chain/zkbas/service/rpc/proverHub/proverHubProto"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 

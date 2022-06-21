@@ -17,14 +17,14 @@
 package logic
 
 import (
-	"github.com/zecrey-labs/zecrey-eth-rpc/_rpc"
-	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
-	"github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
-	"github.com/zecrey-labs/zecrey-legend/common/model/block"
-	"github.com/zecrey-labs/zecrey-legend/common/model/blockForCommit"
-	"github.com/zecrey-labs/zecrey-legend/common/model/l1TxSender"
-	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
-	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
+	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
+	zecreyLegend "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
+	"github.com/bnb-chain/zkbas/common/model/assetInfo"
+	"github.com/bnb-chain/zkbas/common/model/block"
+	"github.com/bnb-chain/zkbas/common/model/blockForCommit"
+	"github.com/bnb-chain/zkbas/common/model/l1TxSender"
+	"github.com/bnb-chain/zkbas/common/model/proofSender"
+	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"math/big"
 )

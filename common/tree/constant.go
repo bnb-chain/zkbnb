@@ -19,11 +19,11 @@ package tree
 
 import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
-	"github.com/zecrey-labs/zecrey-crypto/accumulators/merkleTree"
-	"github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
-	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
-	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
+	"github.com/bnb-chain/zkbas-crypto/accumulators/merkleTree"
+	"github.com/bnb-chain/zkbas/common/model/account"
+	"github.com/bnb-chain/zkbas/common/model/liquidity"
+	"github.com/bnb-chain/zkbas/common/model/nft"
+	"github.com/bnb-chain/zkbas/common/model/sysconfig"
 )
 
 type (

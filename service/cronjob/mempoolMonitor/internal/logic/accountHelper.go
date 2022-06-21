@@ -18,7 +18,7 @@
 package logic
 
 import (
-	"github.com/zecrey-labs/zecrey-legend/common/model/account"
+	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 

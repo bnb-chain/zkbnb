@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/block"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/sysconf"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/tx"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/types"
+	"github.com/bnb-chain/zkbas/service/api/explorer/internal/repo/block"
+	"github.com/bnb-chain/zkbas/service/api/explorer/internal/repo/sysconf"
+	"github.com/bnb-chain/zkbas/service/api/explorer/internal/repo/tx"
+	"github.com/bnb-chain/zkbas/service/api/explorer/internal/svc"
+	"github.com/bnb-chain/zkbas/service/api/explorer/internal/types"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )

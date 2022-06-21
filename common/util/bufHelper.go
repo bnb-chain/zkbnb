@@ -21,16 +21,16 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
-	"github.com/zecrey-labs/zecrey-crypto/zecrey/twistededwards/tebn254/zecrey"
-	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
+	"github.com/bnb-chain/zkbas-crypto/zero/twistededwards/tebn254/zero"
+	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/zeromicro/go-zero/core/logx"
 	"log"
 	"math/big"
 )
 
 func SetFixed32Bytes(buf []byte) [32]byte {
-	newBuf := new(big.Int).SetBytes(buf).FillBytes(make([]byte, zecrey.PointSize))
-	var res [zecrey.PointSize]byte
+	newBuf := new(big.Int).SetBytes(buf).FillBytes(make([]byte, zero.PointSize))
+	var res [zero.PointSize]byte
 	copy(res[:], newBuf[:])
 	return res
 }
@@ -41,13 +41,13 @@ func PaddingStringBigIntIntoBuf(buf *bytes.Buffer, aStr string) error {
 		logx.Errorf("[PaddingStringBigIntIntoBuf] invalid string")
 		return errors.New("[PaddingStringBigIntIntoBuf] invalid string")
 	}
-	buf.Write(a.FillBytes(make([]byte, zecrey.PointSize)))
+	buf.Write(a.FillBytes(make([]byte, zero.PointSize)))
 	return nil
 }
 
 func WriteAccountNameIntoBuf(buf *bytes.Buffer, accountName string) {
 	infoBytes := SetFixed32Bytes([]byte(accountName))
-	buf.Write(new(big.Int).SetBytes(infoBytes[:]).FillBytes(make([]byte, zecrey.PointSize)))
+	buf.Write(new(big.Int).SetBytes(infoBytes[:]).FillBytes(make([]byte, zero.PointSize)))
 }
 
 func PaddingAddressIntoBuf(buf *bytes.Buffer, address string) (err error) {
@@ -60,7 +60,7 @@ func PaddingAddressIntoBuf(buf *bytes.Buffer, address string) (err error) {
 		log.Println("[PaddingAddressIntoBuf] invalid addr:", err)
 		return err
 	}
-	buf.Write(new(big.Int).SetBytes(addrBytes).FillBytes(make([]byte, zecrey.PointSize)))
+	buf.Write(new(big.Int).SetBytes(addrBytes).FillBytes(make([]byte, zero.PointSize)))
 	return nil
 }
 
@@ -80,7 +80,7 @@ func DecodeAddress(addr string) ([]byte, error) {
 }
 
 func PaddingInt64IntoBuf(buf *bytes.Buffer, a int64) {
-	buf.Write(new(big.Int).SetInt64(a).FillBytes(make([]byte, zecrey.PointSize)))
+	buf.Write(new(big.Int).SetInt64(a).FillBytes(make([]byte, zero.PointSize)))
 }
 
 func PaddingPkIntoBuf(buf *bytes.Buffer, pkStr string) (err error) {
@@ -93,7 +93,7 @@ func PaddingPkIntoBuf(buf *bytes.Buffer, pkStr string) (err error) {
 	return nil
 }
 
-func writePointIntoBuf(buf *bytes.Buffer, p *zecrey.Point) {
+func writePointIntoBuf(buf *bytes.Buffer, p *zero.Point) {
 	buf.Write(p.X.Marshal())
 	buf.Write(p.Y.Marshal())
 }

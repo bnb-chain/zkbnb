@@ -19,7 +19,7 @@ package util
 
 import (
 	"fmt"
-	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
+	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"math/big"
 	"testing"
 )

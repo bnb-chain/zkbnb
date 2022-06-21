@@ -21,9 +21,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/zecrey-labs/zecrey-legend/common/util"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/proverClient/internal/svc"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/proverHubProto"
+	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/service/cronjob/proverClient/internal/svc"
+	"github.com/bnb-chain/zkbas/service/rpc/proverHub/proverHubProto"
 	"log"
 
 	"github.com/consensys/gnark/backend/groth16"

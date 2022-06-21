@@ -4,12 +4,12 @@ package handler
 import (
 	"net/http"
 
-	account "github.com/zecrey-labs/zecrey-legend/service/api/app/internal/handler/account"
-	info "github.com/zecrey-labs/zecrey-legend/service/api/app/internal/handler/info"
-	pair "github.com/zecrey-labs/zecrey-legend/service/api/app/internal/handler/pair"
-	root "github.com/zecrey-labs/zecrey-legend/service/api/app/internal/handler/root"
-	transaction "github.com/zecrey-labs/zecrey-legend/service/api/app/internal/handler/transaction"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
+	account "github.com/bnb-chain/zkbas/service/api/app/internal/handler/account"
+	info "github.com/bnb-chain/zkbas/service/api/app/internal/handler/info"
+	pair "github.com/bnb-chain/zkbas/service/api/app/internal/handler/pair"
+	root "github.com/bnb-chain/zkbas/service/api/app/internal/handler/root"
+	transaction "github.com/bnb-chain/zkbas/service/api/app/internal/handler/transaction"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest"
 )

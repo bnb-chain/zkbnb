@@ -1,8 +1,8 @@
 package accounthistory
 
 import (
-	table "github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
+	table "github.com/bnb-chain/zkbas/common/model/account"
+	"github.com/bnb-chain/zkbas/service/api/explorer/internal/svc"
 )
 
 type AccountHistory interface {

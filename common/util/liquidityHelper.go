@@ -19,8 +19,8 @@ package util
 
 import (
 	"errors"
-	"github.com/zecrey-labs/zecrey-crypto/ffmath"
-	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
+	"github.com/bnb-chain/zkbas-crypto/ffmath"
+	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
 )

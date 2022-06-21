@@ -3,7 +3,7 @@ package l2asset
 import (
 	"errors"
 
-	"github.com/zecrey-labs/zecrey-legend/pkg/zerror"
+	"github.com/bnb-chain/zkbas/pkg/zerror"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 

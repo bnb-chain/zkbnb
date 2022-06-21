@@ -4,9 +4,9 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/config"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/handler"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
+	"github.com/bnb-chain/zkbas/service/api/explorer/internal/config"
+	"github.com/bnb-chain/zkbas/service/api/explorer/internal/handler"
+	"github.com/bnb-chain/zkbas/service/api/explorer/internal/svc"
 
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/rest"

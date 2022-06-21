@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/l2asset"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
-	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/types"
+	"github.com/bnb-chain/zkbas/service/api/explorer/internal/repo/l2asset"
+	"github.com/bnb-chain/zkbas/service/api/explorer/internal/svc"
+	"github.com/bnb-chain/zkbas/service/api/explorer/internal/types"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
