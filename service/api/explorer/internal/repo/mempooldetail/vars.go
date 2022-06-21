@@ -1,4 +1,4 @@
-package mempool
+package mempooldetail
 
 import (
 	"github.com/zecrey-labs/zecrey-legend/pkg/zerror"

@@ -78,3 +78,14 @@ func (m *mempool) GetMempoolTxsTotalCountByAccountIndex(accountIndex int64) (cou
 	}
 	return count, nil
 }
+
+func (m *mempool) GetMempoolTxByTxID(txID int64) (*mempoolModel.MempoolTx, error) {
+	mempoolTx := &mempoolModel.MempoolTx{}
+	dbTx := m.db.Table(m.table).Where("id = ? and deleted_at is NULL", txID).Find(&mempoolTx)
+	if dbTx.Error != nil {
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return nil, ErrDataNotExist
+	}
+	return mempoolTx, nil
+}

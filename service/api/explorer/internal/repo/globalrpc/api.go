@@ -16,7 +16,7 @@ type GlobalRPC interface {
 	GetLatestAccountInfo(accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error)
 	SendTx(txType uint32, txInfo string) (string, error)
 	GetLatestTxsListByAccountIndex(accountIndex uint32, limit, offset uint32) ([]*mempool.MempoolTx, uint32, error)
-	GetLatestAccountInfoByAccountIndex(accountIndex uint32) ([]*globalrpc.AssetResult, error)
+	GetLatestAssetsListByAccountIndex(accountIndex uint32) ([]*globalrpc.AssetResult, error)
 	GetLpValue(pairIndex uint32, lpAmount string) (*globalRPCProto.RespGetLpValue, error)
 	GetPairInfo(pairIndex uint32) (*globalRPCProto.RespGetLatestPairInfo, error)
 	GetSwapAmount(ctx context.Context, pairIndex, assetId uint64, assetAmount string, isFrom bool) (string, uint32, error)
