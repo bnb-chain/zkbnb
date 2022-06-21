@@ -69,7 +69,7 @@ go run .
 
 echo "7. run governanceMonitor"
 cd ~/zkbas-deploy/zkbas
-pm2 start --name governanceMonitor "go run service/cronjob/governanceMonitor/governanceMonitor.go"
+pm2 start --name governanceMonitor "go run service/cronjob/governanceMonitor/governancemonitor.go"
 
 echo "8. run blockMonitor"
 cd ~/zkbas-deploy/zkbas
