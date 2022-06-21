@@ -29,6 +29,10 @@ for val in $rpc; do
     cd ../../..
 done
 
+
+echo "go mod tidy ..."
+go mod tidy
+
 # go build all service&rpc in one script
 for val in $api; do
     echo "Go Build [${val}]: "
