@@ -27,6 +27,10 @@ const (
 	WithdrawHistoryTableName = `l2_nft_withdraw_history`
 
 	OfferTableName = `offer`
+
+	StatusAlreadyWithdraw = 1
+
+	OfferFinishedStatus = 1
 )
 
 var (

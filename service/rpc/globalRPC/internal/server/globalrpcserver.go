@@ -70,9 +70,9 @@ func (s *GlobalRPCServer) SendTx(ctx context.Context, in *globalRPCProto.ReqSend
 	return l.SendTx(in)
 }
 
-func (s *GlobalRPCServer) GetTransactionCount(ctx context.Context, in *globalRPCProto.ReqGetTransactionCount) (*globalRPCProto.RespGetTransactionCount, error) {
-	l := logic.NewGetTransactionCountLogic(ctx, s.svcCtx)
-	return l.GetTransactionCount(in)
+func (s *GlobalRPCServer) GetNextNonce(ctx context.Context, in *globalRPCProto.ReqGetNextNonce) (*globalRPCProto.RespGetNextNonce, error) {
+	l := logic.NewGetNextNonceLogic(ctx, s.svcCtx)
+	return l.GetNextNonce(in)
 }
 
 //  NFT

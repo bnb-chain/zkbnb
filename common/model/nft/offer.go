@@ -31,6 +31,7 @@ type (
 	OfferModel interface {
 		CreateOfferTable() error
 		DropOfferTable() error
+		GetOfferByAccountIndexAndOfferId(accountIndex int64, offerId int64) (offer *Offer, err error)
 		GetLatestOfferId(accountIndex int64) (offerId int64, err error)
 		CreateOffer(offer *Offer) (err error)
 	}
@@ -110,4 +111,16 @@ func (m *defaultOfferModel) CreateOffer(offer *Offer) (err error) {
 		return errors.New("[CreateOffer] invalid offer info")
 	}
 	return nil
+}
+
+func (m *defaultOfferModel) GetOfferByAccountIndexAndOfferId(accountIndex int64, offerId int64) (offer *Offer, err error) {
+	dbTx := m.DB.Table(m.table).Where("account_index = ? AND offer_id = ?", accountIndex, offerId).Find(&offer)
+	if dbTx.Error != nil {
+		logx.Errorf("[CreateOffer] unable to create offer: %s", dbTx.Error)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		logx.Errorf("[CreateOffer] invalid offer info")
+		return nil, errors.New("[CreateOffer] invalid offer info")
+	}
+	return offer, nil
 }

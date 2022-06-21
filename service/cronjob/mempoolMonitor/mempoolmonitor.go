@@ -3,8 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"path/filepath"
-
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -15,14 +13,12 @@ import (
 	"github.com/bnb-chain/zkbas/service/cronjob/mempoolMonitor/internal/svc"
 )
 
+var configFile = flag.String("f",
+	"./etc/local.yaml", "the config file")
+
 func main() {
 	flag.Parse()
-	dir, err := filepath.Abs(filepath.Dir("./service/cronjob/mempoolMonitor/etc/local.yaml"))
-	if err != nil {
-		fmt.Println(err)
-	}
 
-	var configFile = flag.String("f", filepath.Join(dir, "local.yaml"), "the config file")
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
 
@@ -32,7 +28,7 @@ func main() {
 	cronjob := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))
-	_, err = cronjob.AddFunc("@every 15s", func() {
+	_, err := cronjob.AddFunc("@every 15s", func() {
 		logx.Info("===== start monitor mempool txs")
 		err := logic.MonitorMempool(
 			ctx,

@@ -21,6 +21,7 @@ type GlobalRPC interface {
 	GetPairInfo(pairIndex uint32) (*globalRPCProto.RespGetLatestPairInfo, error)
 	GetSwapAmount(ctx context.Context, pairIndex, assetId uint64, assetAmount string, isFrom bool) (string, uint32, error)
 	GetLatestTxsListByAccountIndexAndTxType(accountIndex uint64, txType uint64, limit uint64, offset uint64) ([]*mempool.MempoolTx, error)
+	GetMaxOfferId(accountIndex uint32) (uint64, error)
 }
 
 func New(svcCtx *svc.ServiceContext, ctx context.Context) GlobalRPC {

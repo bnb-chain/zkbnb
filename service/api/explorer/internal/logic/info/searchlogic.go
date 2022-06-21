@@ -39,23 +39,25 @@ func NewSearchLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SearchLogi
 	}
 }
 
-func (l *SearchLogic) Search(req *types.ReqSearch) (resp *types.RespSearch, err error) {
+func (l *SearchLogic) Search(req *types.ReqSearch) (*types.RespSearch, error) {
+	resp := &types.RespSearch{}
 	// check if it is searching by blockHeight
-	blockHeight, e := strconv.ParseInt(req.Info, 10, 64)
-	if e == nil {
-		_, e = l.block.GetBlockByBlockHeight(blockHeight)
+	blockHeight, err := strconv.ParseInt(req.Info, 10, 64)
+	if err == nil {
+		_, err = l.block.GetBlockByBlockHeight(blockHeight)
 		resp.DataType = util.TypeBlockHeight
-		if e != nil {
-			err = fmt.Errorf("[explorer.info.SearchInfo] find block by height %d error: %s", blockHeight, e.Error())
-			l.Error(err)
+		if err != nil {
+			err1 := fmt.Errorf("[explorer.info.SearchInfo] find block by height %d error: %s", blockHeight, err.Error())
+			l.Error(err1)
+			return nil, err
 		}
-		return
+		return resp, nil
 	}
 	// check if this is for querying tx by hash
 	_, err = l.tx.GetTxByTxHash(req.Info)
 	if err == nil {
 		resp.DataType = util.TypeTxType
-		return
+		return resp, nil
 	}
 	// check if this is for querying account by name
 	_, err = l.account.GetAccountByAccountName(l.ctx, req.Info)
@@ -63,6 +65,7 @@ func (l *SearchLogic) Search(req *types.ReqSearch) (resp *types.RespSearch, err 
 	if err != nil {
 		err = fmt.Errorf("[explorer.info.SearchInfo] find block by name %s error: %s", req.Info, err.Error())
 		l.Error(err)
+		return nil, err
 	}
-	return
+	return resp, nil
 }

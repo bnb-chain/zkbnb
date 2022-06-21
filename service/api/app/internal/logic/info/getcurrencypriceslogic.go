@@ -2,6 +2,7 @@ package info
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/l2asset"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/price"
@@ -32,20 +33,21 @@ func NewGetCurrencyPricesLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 func (l *GetCurrencyPricesLogic) GetCurrencyPrices(_ *types.ReqGetCurrencyPrices) (*types.RespGetCurrencyPrices, error) {
 	l2Assets, err := l.l2asset.GetL2AssetsList()
 	if err != nil {
-		logx.Error("[GetL2AssetsList] err:%v", err)
+		logx.Errorf("[GetL2AssetsList] err:%v", err)
 		return nil, err
 	}
 	resp := &types.RespGetCurrencyPrices{}
 	for _, asset := range l2Assets {
-		currencyPrice, err := l.price.GetCurrencyPrice(l.ctx, asset.AssetSymbol)
+		_price, err := l.price.GetCurrencyPrice(l.ctx, asset.AssetSymbol)
+		_price2 := strconv.FormatFloat(_price, 'f', 30, 32) //float64 to string
 		if err != nil {
-			logx.Error("[GetCurrencyPrice] err:%v", err)
+			logx.Errorf("[GetCurrencyPrice] err:%v", err)
 			return nil, err
 		}
 		resp.Data = append(resp.Data, &types.DataCurrencyPrices{
 			Pair:    asset.AssetSymbol + "/" + "USDT",
 			AssetId: asset.AssetId,
-			Price:   currencyPrice,
+			Price:   _price2,
 		})
 	}
 	return resp, nil

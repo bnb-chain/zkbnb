@@ -9,14 +9,15 @@ type RespGetStatus struct {
 	NetworkId uint32 `json:"network_id"`
 }
 
-type ReqGetAccountStatusByPubKey struct {
+type ReqGetAccountInfoByPubKey struct {
 	AccountPk string `form:"account_pk"`
 }
 
-type RespGetAccountStatusByPubKey struct {
-	AccountStatus uint32 `json:"account_status"`
-	AccountName   string `json:"account_name"`
-	AccountIndex  uint32 `json:"account_index"`
+type RespGetAccountInfoByPubKey struct {
+	AccountStatus uint32   `json:"account_status"`
+	AccountName   string   `json:"account_name"`
+	AccountIndex  int64    `json:"account_index"`
+	Assets        []*Asset `json:"assets"`
 }
 
 type ReqGetAccountStatusByAccountName struct {
@@ -39,9 +40,9 @@ type ReqGetAccountInfoByAccountName struct {
 }
 
 type RespGetAccountInfoByAccountName struct {
-	AccountIndex  uint32   `json:"account_index"`
-	AccountPk     string   `json:"account_pk"`
-	AssetsAccount []*Asset `json:"assets"`
+	AccountIndex uint32   `json:"account_index"`
+	AccountPk    string   `json:"account_pk"`
+	Assets       []*Asset `json:"assets"`
 }
 
 type ReqGetBlanceByAssetIdAndAccountName struct {
@@ -99,17 +100,17 @@ type ReqGetCurrencyPriceBySymbol struct {
 }
 
 type RespGetCurrencyPriceBySymbol struct {
-	AssetId uint32  `json:"assetId"`
-	Price   float64 `json:"price"`
+	AssetId uint32 `json:"assetId"`
+	Price   string `json:"price"`
 }
 
 type ReqGetCurrencyPrices struct {
 }
 
 type DataCurrencyPrices struct {
-	Pair    string  `json:"pair"`
-	AssetId uint32  `json:"assetId"`
-	Price   float64 `json:"price"`
+	Pair    string `json:"pair"`
+	AssetId uint32 `json:"assetId"`
+	Price   string `json:"price"`
 }
 
 type RespGetCurrencyPrices struct {
@@ -121,7 +122,7 @@ type ReqGetGasFee struct {
 }
 
 type RespGetGasFee struct {
-	GasFee float64 `json:"gas_fee"`
+	GasFee string `json:"gas_fee"`
 }
 
 type ReqGetWithdrawGasFee struct {
@@ -131,7 +132,7 @@ type ReqGetWithdrawGasFee struct {
 }
 
 type RespGetWithdrawGasFee struct {
-	WithdrawGasFee float64 `json:"withdraw_gas_fee"`
+	WithdrawGasFee string `json:"withdraw_gas_fee"`
 }
 
 type ReqGetSwapAmount struct {

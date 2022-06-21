@@ -2,6 +2,7 @@ package info
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/l2asset"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/price"
@@ -32,13 +33,14 @@ func NewGetCurrencyPriceBySymbolLogic(ctx context.Context, svcCtx *svc.ServiceCo
 func (l *GetCurrencyPriceBySymbolLogic) GetCurrencyPriceBySymbol(req *types.ReqGetCurrencyPriceBySymbol) (*types.RespGetCurrencyPriceBySymbol, error) {
 	_price, err := l.price.GetCurrencyPrice(l.ctx, req.Symbol)
 	if err != nil {
-		logx.Error("[GetCurrencyPrice] err:%v", err)
+		logx.Errorf("[GetCurrencyPrice] err:%v", err)
 		return nil, err
 	}
-	resp := &types.RespGetCurrencyPriceBySymbol{Price: _price}
+	_price2 := strconv.FormatFloat(_price, 'f', 30, 32) //float64 to string
+	resp := &types.RespGetCurrencyPriceBySymbol{Price: _price2}
 	l2Asset, err := l.l2asset.GetL2AssetInfoBySymbol(req.Symbol)
 	if err != nil {
-		logx.Error("[GetL2AssetInfoBySymbol] err:%v", err)
+		logx.Errorf("[GetL2AssetInfoBySymbol] err:%v", err)
 		return nil, err
 	}
 	resp.AssetId = uint32(l2Asset.ID)

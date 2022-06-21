@@ -17,4 +17,4 @@ WORKDIR /app
 COPY bin/blockmonitor /app/blockmonitor
 COPY configyaml /app/etc
 
-CMD ["/bin/sh", "-c", "./blockmonitor -f blockmonitor.yaml"]
+CMD ["./blockmonitor", "-f", "etc/blockmonitor.yaml"]

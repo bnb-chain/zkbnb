@@ -46,8 +46,8 @@ func CheckPairIndex(pairIndex uint32) bool {
 	return pairIndex > maxAccountIndex
 }
 
-func CheckAmount(amount string) bool {
-	return true
+func CheckAmount(amount string) bool { //true:report errors   false:continue
+	return false
 }
 
 func CheckTxType(txType uint32) bool {

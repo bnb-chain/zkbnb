@@ -28,6 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	curve "github.com/bnb-chain/zkbas-crypto/ecc/ztwistededwards/tebn254"
+	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas/common/model/basic"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 )
@@ -113,4 +114,19 @@ func TestMiMCHash(t *testing.T) {
 	a := hFunc.Sum(nil)
 	fmt.Println(new(big.Int).SetBytes(a).String())
 	fmt.Println(common.Bytes2Hex(curve.Modulus.Bytes()))
+}
+
+func TestParsePubKey(t *testing.T) {
+	pk, err := ParsePubKey("58130e24cd20d9de8a110a20751f0a9b36089400ac0f20ca1993c28ee663318a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	a := curve.ScalarBaseMul(big.NewInt(2))
+	f, _ := new(big.Int).SetString("15527681003928902128179717624703512672403908117992798440346960750464748824729", 10)
+	log.Println(ffmath.DivMod(new(big.Int).SetBytes(a.X.Marshal()), f, curve.Modulus).String())
+	log.Println(a.Y.String())
+	log.Println(pk.A.IsOnCurve())
+	log.Println(pk.A.X.String())
+	log.Println(pk.A.Y.String())
+	log.Println(pk.Bytes())
 }

@@ -28,7 +28,7 @@ func NewGetPairInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPa
 	}
 }
 
-func (l *GetPairInfoLogic) GetPairInfo(req *types.ReqGetPairInfo) (resp *types.RespGetPairInfo, err error) {
+func (l *GetPairInfoLogic) GetPairInfo(req *types.ReqGetPairInfo) (*types.RespGetPairInfo, error) {
 	if utils.CheckPairIndex(req.PairIndex) {
 		logx.Error("[CheckPairIndex] param:%v", req.PairIndex)
 		return nil, errcode.ErrInvalidParam
@@ -38,7 +38,7 @@ func (l *GetPairInfoLogic) GetPairInfo(req *types.ReqGetPairInfo) (resp *types.R
 		logx.Error("[GetPairRatio] err:%v", err)
 		return nil, err
 	}
-	resp = &types.RespGetPairInfo{
+	resp := &types.RespGetPairInfo{
 		AssetAId:      pair.AssetAId,
 		AssetAAmount:  pair.AssetAAmount,
 		AssetBId:      pair.AssetBId,

@@ -1,0 +1,12 @@
+Name: proverClient.cronjob
+
+Postgres:
+  DataSource: host=127.0.0.1 user=postgres password=pw dbname=zecreylegend port=5432 sslmode=disable
+
+CacheRedis:
+  - Host: redis:6379
+    Type: node
+
+KeyPath:
+  ProvingKeyPath: /app/zecrey-legend.pk
+  VerifyingKeyPath: /app/zecrey-legend.vk

@@ -1,0 +1,12 @@
+Name: proverhub.rpc
+ListenOn: 0.0.0.0:38000
+
+Postgres:
+  DataSource: host=34.122.163.215 user=postgres password=zecreyLegendTest@ dbname=zecreylegend port=5432 sslmode=disable
+
+CacheRedis:
+  - Host: 10.70.61.91:6379
+    Type: node
+
+KeyPath:
+  VerifyingKeyPath: /app/zecrey-legend.vk

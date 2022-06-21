@@ -7,6 +7,7 @@ import (
 	account "github.com/bnb-chain/zkbas/service/api/explorer/internal/handler/account"
 	block "github.com/bnb-chain/zkbas/service/api/explorer/internal/handler/block"
 	info "github.com/bnb-chain/zkbas/service/api/explorer/internal/handler/info"
+	nft "github.com/bnb-chain/zkbas/service/api/explorer/internal/handler/nft"
 	root "github.com/bnb-chain/zkbas/service/api/explorer/internal/handler/root"
 	transaction "github.com/bnb-chain/zkbas/service/api/explorer/internal/handler/transaction"
 	"github.com/bnb-chain/zkbas/service/api/explorer/internal/svc"
@@ -97,6 +98,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/api/v1/tx/getMempoolTxsListByPublicKey",
 				Handler: transaction.GetMempoolTxsListByPublicKeyHandler(serverCtx),
 			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/v1/tx/sendTx",
+				Handler: transaction.SendTxHandler(serverCtx),
+			},
 		},
 	)
 
@@ -106,6 +112,16 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/api/v1/account/getAccountInfoByAccountName",
 				Handler: account.GetAccountInfoByAccountNameHandler(serverCtx),
+			},
+		},
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/nft/getMaxOfferId",
+				Handler: nft.GetMaxOfferIdHandler(serverCtx),
 			},
 		},
 	)

@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"context"
-	"strconv"
 
 	blockmodel "github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/service/api/explorer/internal/repo/account"
@@ -41,69 +40,61 @@ func NewGetMempoolTxsListByPublicKeyLogic(ctx context.Context, svcCtx *svc.Servi
 	}
 }
 
-func (l *GetMempoolTxsListByPublicKeyLogic) GetMempoolTxsListByPublicKey(req *types.ReqGetMempoolTxsListByPublicKey) (resp *types.RespGetMempoolTxsListByPublicKey, err error) {
-	accountInfo, err := l.account.GetAccountByPk(req.AccountPk)
+func (l *GetMempoolTxsListByPublicKeyLogic) GetMempoolTxsListByPublicKey(req *types.ReqGetMempoolTxsListByPublicKey) (*types.RespGetMempoolTxsListByPublicKey, error) {
+	resp := &types.RespGetMempoolTxsListByPublicKey{}
+	account, err := l.account.GetAccountByPk(req.AccountPk)
 	if err != nil {
 		l.Error("[transaction.GetTxsByPubKey] err:%v", err)
-		return
+		return nil, err
 	}
 
-	txList, _, err := l.globalRPC.GetLatestTxsListByAccountIndex(uint32(accountInfo.AccountIndex), uint32(req.Limit), uint32(req.Offset))
+	txList, _, err := l.globalRPC.GetLatestTxsListByAccountIndex(uint32(account.AccountIndex), uint32(req.Limit), uint32(req.Offset))
 	if err != nil {
 		l.Error("[transaction.GetTxsByPubKey] err:%v", err)
-		return
+		return nil, err
 	}
-	txCount, err := l.tx.GetTxsTotalCountByAccountIndex(accountInfo.AccountIndex)
+	txCount, err := l.tx.GetTxsTotalCountByAccountIndex(account.AccountIndex)
 	if err != nil {
 		logx.Error("[transaction.GetTxsByPubKey] err:%v", err)
-		return
+		return nil, err
 	}
 
-	mempoolTxCount, err := l.mempool.GetMempoolTxsTotalCountByAccountIndex(accountInfo.AccountIndex)
+	mempoolTxCount, err := l.mempool.GetMempoolTxsTotalCountByAccountIndex(account.AccountIndex)
 	if err != nil {
 		logx.Error("[transaction.GetTxsByPubKey] err:%v", err)
-		return
+		return nil, err
 	}
 
-	for _, txInfo := range txList {
+	for _, tx := range txList {
 		txDetails := make([]*types.TxDetail, 0)
-		for _, txDetail := range txInfo.MempoolDetails {
+		for _, txDetail := range tx.MempoolDetails {
 			txDetails = append(txDetails, &types.TxDetail{
-				AssetId:        int(txDetail.AssetId),
-				AssetType:      int(txDetail.AssetType),
-				AccountIndex:   int32(txDetail.AccountIndex),
-				AccountName:    txDetail.AccountName,
-				AccountBalance: txDetail.BalanceDelta,
+				AssetId:      txDetail.AssetId,
+				AssetType:    txDetail.AssetType,
+				AccountIndex: txDetail.AccountIndex,
+				AccountName:  txDetail.AccountName,
 			})
 		}
-		gasFee, _ := strconv.ParseInt(txInfo.GasFee, 10, 64)
-		txAmount, _ := strconv.ParseInt(txInfo.TxAmount, 10, 64)
 		var blockInfo *blockmodel.Block
-		blockInfo, err = l.block.GetBlockByBlockHeight(txInfo.L2BlockHeight)
+		blockInfo, err = l.block.GetBlockByBlockHeight(tx.L2BlockHeight)
 		if err != nil {
 			logx.Error("[transaction.GetTxsByPubKey] err:%v", err)
-			return
+			return nil, err
 		}
 		resp.Txs = append(resp.Txs, &types.Tx{
-			TxHash:        txInfo.TxHash,
-			TxType:        int32(txInfo.TxType),
-			GasFeeAssetId: int32(txInfo.GasFeeAssetId),
-			GasFee:        int32(gasFee),
-			TxStatus:      int32(txInfo.Status),
-			BlockHeight:   txInfo.L2BlockHeight,
-			BlockStatus:   int32(blockInfo.BlockStatus),
-			BlockId:       int32(blockInfo.ID),
-			//Todo: do we still need AssetAId and AssetBId
-			AssetAId:      int32(txInfo.AssetId),
-			AssetBId:      int32(txInfo.AssetId),
-			TxAmount:      txAmount,
+			TxHash:        tx.TxHash,
+			TxType:        tx.TxType,
+			GasFeeAssetId: tx.GasFeeAssetId,
+			GasFee:        tx.GasFee,
+			TxStatus:      int64(tx.Status),
+			BlockHeight:   tx.L2BlockHeight,
+			BlockId:       int64(blockInfo.ID),
+			TxAmount:      tx.TxAmount,
 			TxDetails:     txDetails,
-			NativeAddress: txInfo.NativeAddress,
-			CreatedAt:     txInfo.CreatedAt.UnixNano() / 1e6,
-			Memo:          txInfo.Memo,
+			NativeAddress: tx.NativeAddress,
+			Memo:          tx.Memo,
 		})
 	}
-
 	resp.Total = uint32(txCount + mempoolTxCount)
-	return
+	return resp, nil
 }

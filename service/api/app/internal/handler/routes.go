@@ -29,8 +29,8 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		[]rest.Route{
 			{
 				Method:  http.MethodPost,
-				Path:    "/api/v1/account/getAccountStatusByPubKey",
-				Handler: account.GetAccountStatusByPubKeyHandler(serverCtx),
+				Path:    "/api/v1/account/getAccountInfoByPubKey",
+				Handler: account.GetAccountInfoByPubKeyHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,

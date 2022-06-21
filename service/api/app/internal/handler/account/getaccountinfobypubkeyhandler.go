@@ -9,16 +9,16 @@ import (
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-func GetAccountStatusByPubKeyHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func GetAccountInfoByPubKeyHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.ReqGetAccountStatusByPubKey
+		var req types.ReqGetAccountInfoByPubKey
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.Error(w, err)
 			return
 		}
 
-		l := account.NewGetAccountStatusByPubKeyLogic(r.Context(), svcCtx)
-		resp, err := l.GetAccountStatusByPubKey(&req)
+		l := account.NewGetAccountInfoByPubKeyLogic(r.Context(), svcCtx)
+		resp, err := l.GetAccountInfoByPubKey(&req)
 		if err != nil {
 			httpx.Error(w, err)
 		} else {

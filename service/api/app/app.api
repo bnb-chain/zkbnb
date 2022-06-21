@@ -26,15 +26,16 @@ service appService-api{
 }
 
 /* ========================= Account =========================*/
-// GetAccountStatusByPubKey
+// GetAccountInfoByPubKey
 type (
-	ReqGetAccountStatusByPubKey {
+	ReqGetAccountInfoByPubKey {
 		AccountPk string `form:"account_pk"`
 	}
-	RespGetAccountStatusByPubKey {
-		AccountStatus uint32 `json:"account_status"`
-		AccountName   string `json:"account_name"`
-		AccountIndex  uint32 `json:"account_index"`
+	RespGetAccountInfoByPubKey {
+		AccountStatus uint32   `json:"account_status"`
+		AccountName   string   `json:"account_name"`
+		AccountIndex  int64    `json:"account_index"`
+		Assets        []*Asset `json:"assets"`
 	}
 )
 
@@ -61,9 +62,9 @@ type (
 		AccountName string `form:"account_name"`
 	}
 	RespGetAccountInfoByAccountName {
-		AccountIndex  uint32   `json:"account_index"`
-		AccountPk     string   `json:"account_pk"`
-		AssetsAccount []*Asset `json:"assets"`
+		AccountIndex uint32   `json:"account_index"`
+		AccountPk    string   `json:"account_pk"`
+		Assets       []*Asset `json:"assets"`
 	}
 )
 
@@ -112,8 +113,8 @@ type (
 )
 
 service appService-api{
-	@handler GetAccountStatusByPubKey
-	post /api/v1/account/getAccountStatusByPubKey (ReqGetAccountStatusByPubKey) returns (RespGetAccountStatusByPubKey)
+	@handler GetAccountInfoByPubKey
+	post /api/v1/account/getAccountInfoByPubKey (ReqGetAccountInfoByPubKey) returns (RespGetAccountInfoByPubKey)
 	
 	@handler GetAccountStatusByAccountName
 	get /api/v1/account/getAccountStatusByAccountName (ReqGetAccountStatusByAccountName) returns (RespGetAccountStatusByAccountName)
@@ -154,8 +155,8 @@ type (
 		Symbol string `form:"symbol"`
 	}
 	RespGetCurrencyPriceBySymbol {
-		AssetId uint32  `json:"assetId"`
-		Price   float64 `json:"price"`
+		AssetId uint32 `json:"assetId"`
+		Price   string `json:"price"`
 	}
 )
 
@@ -163,9 +164,9 @@ type (
 type (
 	ReqGetCurrencyPrices struct{}
 	DataCurrencyPrices   {
-		Pair    string  `json:"pair"`
-		AssetId uint32  `json:"assetId"`
-		Price   float64 `json:"price"`
+		Pair    string `json:"pair"`
+		AssetId uint32 `json:"assetId"`
+		Price   string `json:"price"`
 	}
 	RespGetCurrencyPrices {
 		Data []*DataCurrencyPrices `json:"data"`
@@ -178,7 +179,7 @@ type (
 		AssetId uint32 `form:"asset_id"`
 	}
 	RespGetGasFee {
-		GasFee float64 `json:"gas_fee"`
+		GasFee string `json:"gas_fee"`
 	}
 )
 
@@ -190,7 +191,7 @@ type (
 		WithdrawAmount  uint64 `form:"withdraw_amount"`
 	}
 	RespGetWithdrawGasFee {
-		WithdrawGasFee float64 `json:"withdraw_gas_fee"`
+		WithdrawGasFee string `json:"withdraw_gas_fee"`
 	}
 )
 

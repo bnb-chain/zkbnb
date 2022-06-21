@@ -28,7 +28,7 @@ func NewGetTxByHashLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTx
 	}
 }
 
-func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (resp *types.RespGetTxByHash, err error) {
+func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (*types.RespGetTxByHash, error) {
 	txMemppol, err := l.mempool.GetMempoolTxByTxHash(req.TxHash)
 	if err != nil {
 		logx.Errorf("[mempool.GetMempoolTxByTxHash]:%v", err)

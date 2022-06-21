@@ -16,7 +16,7 @@ type GetAccountLiquidityPairsByAccountIndexLogic struct {
 	logx.Logger
 	ctx       context.Context
 	svcCtx    *svc.ServiceContext
-	liquidity liquidity.Liquidity
+	liquidity liquidity.LiquidityModel
 }
 
 func NewGetAccountLiquidityPairsByAccountIndexLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAccountLiquidityPairsByAccountIndexLogic {
@@ -28,7 +28,7 @@ func NewGetAccountLiquidityPairsByAccountIndexLogic(ctx context.Context, svcCtx 
 	}
 }
 
-func (l *GetAccountLiquidityPairsByAccountIndexLogic) GetAccountLiquidityPairsByAccountIndex(req *types.ReqGetAccountLiquidityPairsByAccountIndex) (resp *types.RespGetAccountLiquidityPairsByAccountIndex, err error) {
+func (l *GetAccountLiquidityPairsByAccountIndexLogic) GetAccountLiquidityPairsByAccountIndex(req *types.ReqGetAccountLiquidityPairsByAccountIndex) (*types.RespGetAccountLiquidityPairsByAccountIndex, error) {
 	if utils.CheckAccountIndex(req.AccountIndex) {
 		logx.Errorf("[CheckAccountIndex] param:%v", req.AccountIndex)
 		return nil, errcode.ErrInvalidParam
@@ -51,7 +51,7 @@ func (l *GetAccountLiquidityPairsByAccountIndexLogic) GetAccountLiquidityPairsBy
 		LpAmountEnc: entitie.LpAmount,
 		CreatedAt:   entitie.CreatedAt.Unix(),
 	}
-	resp = &types.RespGetAccountLiquidityPairsByAccountIndex{}
+	resp := &types.RespGetAccountLiquidityPairsByAccountIndex{}
 	resp.Pairs = append(resp.Pairs, pair)
 	return resp, nil
 }

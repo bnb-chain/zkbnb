@@ -2,11 +2,11 @@ package block
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/bnb-chain/zkbas/service/api/explorer/internal/repo/block"
 	"github.com/bnb-chain/zkbas/service/api/explorer/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/explorer/internal/types"
+	"github.com/bnb-chain/zkbas/service/api/explorer/internal/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -28,45 +28,29 @@ func NewGetBlockByBlockHeightLogic(ctx context.Context, svcCtx *svc.ServiceConte
 	}
 }
 
-func (l *GetBlockByBlockHeightLogic) GetBlockByBlockHeight(req *types.ReqGetBlockByBlockHeight) (resp *types.RespGetBlockByBlockHeight, err error) {
-	// query basic blockInfo info
-	blockInfo, err := l.block.GetBlockWithTxsByBlockHeight(int64(req.BlockHeight))
+func (l *GetBlockByBlockHeightLogic) GetBlockByBlockHeight(req *types.ReqGetBlockByBlockHeight) (*types.RespGetBlockByBlockHeight, error) {
+	block, err := l.block.GetBlockWithTxsByBlockHeight(int64(req.BlockHeight))
 	if err != nil {
-		err = fmt.Errorf("[explorer.blockInfo.GetBlockByBlockHeight]<=>%s", err.Error())
-		l.Error(err)
-		return
+		logx.Errorf("[GetBlockWithTxsByBlockHeight] err:%v", err)
+		return nil, err
 	}
-
+	resp := &types.RespGetBlockByBlockHeight{}
 	resp.Block = types.Block{
-		BlockHeight:    int32(blockInfo.BlockHeight),
-		BlockStatus:    int32(blockInfo.BlockStatus),
-		NewAccountRoot: blockInfo.StateRoot,
-		CommittedAt:    blockInfo.CommittedAt,
-		VerifiedAt:     blockInfo.VerifiedAt,
-		// ExecutedAt: blockInfo.,
-		BlockCommitment: blockInfo.BlockCommitment,
-		TxCount:         int64(len(blockInfo.Txs)),
+		BlockCommitment:                 block.BlockCommitment,
+		BlockHeight:                     block.BlockHeight,
+		StateRoot:                       block.StateRoot,
+		PriorityOperations:              block.PriorityOperations,
+		PendingOnChainOperationsHash:    block.PendingOnChainOperationsHash,
+		PendingOnChainOperationsPubData: block.PendingOnChainOperationsPubData,
+		CommittedTxHash:                 block.CommittedTxHash,
+		CommittedAt:                     block.BlockHeight,
+		VerifiedTxHash:                  block.VerifiedTxHash,
+		VerifiedAt:                      block.BlockHeight,
+		BlockStatus:                     block.BlockHeight,
 	}
-
-	for _, tx := range blockInfo.Txs {
-		resp.Block.Txs = append(resp.Block.Txs, tx.TxHash)
+	for _, t := range block.Txs {
+		tx := utils.GormTx2Tx(t)
+		resp.Block.Txs = append(resp.Block.Txs, tx)
 	}
-
-	for _, tx := range blockInfo.Txs {
-		resp.Block.CommittedTxHash = append(resp.Block.CommittedTxHash, &types.TxHash{
-			TxHash:    tx.TxHash,
-			CreatedAt: tx.CreatedAt.Unix(),
-		})
-
-		resp.Block.VerifiedTxHash = append(resp.Block.VerifiedTxHash, &types.TxHash{
-			TxHash:    tx.TxHash,
-			CreatedAt: tx.CreatedAt.Unix(),
-		})
-
-		resp.Block.ExecutedTxHash = append(resp.Block.ExecutedTxHash, &types.TxHash{
-			TxHash:    tx.TxHash,
-			CreatedAt: tx.CreatedAt.Unix(),
-		})
-	}
-	return
+	return resp, nil
 }

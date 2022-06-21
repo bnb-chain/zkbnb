@@ -16,7 +16,7 @@ WORKDIR /app
 COPY bin/proverclient /app/proverclient
 COPY configyaml /app/etc
 
-RUN wget http://35.188.192.39/zecrey-legend.vk
-RUN wget http://35.188.192.39/zecrey-legned.pk
+RUN wget http://35.188.192.39:8000/zecrey-legend.vk
+RUN wget http://35.188.192.39:8000/zecrey-legend.pk
 
 CMD ["./proverclient", "-f", "etc/proverclient.yaml"]

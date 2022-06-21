@@ -14,9 +14,7 @@ COPY --from=builder /usr/share/zoneinfo/Asia/Shanghai /usr/share/zoneinfo/Asia/S
 ENV TZ Asia/Shanghai
 
 WORKDIR /app
-COPY bin/proverhub /app/proverhub
+COPY bin/globalrpc /app/globalrpc
 COPY configyaml /app/etc
 
-RUN wget http://35.188.192.39/zecrey.vk
-
-CMD ["./proverhub", "-f", "etc/proverhub.yaml"]
+CMD ["./globalrpc", "-f", "etc/globalrpc.yaml"]

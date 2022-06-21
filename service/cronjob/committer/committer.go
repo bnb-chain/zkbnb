@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"path/filepath"
 	"time"
 
 	"github.com/robfig/cron/v3"
@@ -16,14 +15,12 @@ import (
 	"github.com/bnb-chain/zkbas/service/cronjob/committer/internal/svc"
 )
 
+var configFile = flag.String("f",
+	"./etc/committer.yaml", "the config file")
+
 func main() {
 	flag.Parse()
-	dir, err := filepath.Abs(filepath.Dir("./service/cronjob/committer/etc/local.yaml"))
-	if err != nil {
-		fmt.Println(err)
-	}
 
-	var configFile = flag.String("f", filepath.Join(dir, "local.yaml"), "the config file")
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
 	ctx := svc.NewServiceContext(c)

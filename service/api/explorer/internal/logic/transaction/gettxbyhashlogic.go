@@ -2,9 +2,7 @@ package transaction
 
 import (
 	"context"
-	"strconv"
 
-	blockModel "github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/service/api/explorer/internal/repo/account"
 	"github.com/bnb-chain/zkbas/service/api/explorer/internal/repo/block"
 	"github.com/bnb-chain/zkbas/service/api/explorer/internal/repo/globalrpc"
@@ -40,33 +38,28 @@ func NewGetTxByHashLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTx
 	}
 }
 
-func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (resp *types.RespGetTxByHash, err error) {
+func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (*types.RespGetTxByHash, error) {
+	resp := &types.RespGetTxByHash{}
 	txMemppol, err := l.mempool.GetMempoolTxByTxHash(req.TxHash)
 	if err != nil {
 		l.Error("[mempool.GetMempoolTxByTxHash]:%v", err)
-		return
+		return nil, err
 	}
 
 	txDetails := make([]*types.TxDetail, 0)
 	for _, w := range txMemppol.MempoolDetails {
 		txDetails = append(txDetails, &types.TxDetail{
-			AssetId:      int(w.AssetId),
-			AssetType:    int(w.AssetType),
-			AccountIndex: int32(w.AccountIndex),
+			AssetId:      w.AssetId,
+			AssetType:    w.AssetType,
+			AccountIndex: w.AccountIndex,
 			AccountName:  w.AccountName,
-			AccountDelta: w.BalanceDelta,
+			BalanceDelta: w.BalanceDelta,
 		})
 	}
-	blockInfo, err := l.block.GetBlockByBlockHeight(txMemppol.L2BlockHeight)
+	block, err := l.block.GetBlockByBlockHeight(txMemppol.L2BlockHeight)
 	if err != nil {
 		l.Error("[Block.GetBlockByBlockHeight]:%v", err)
-		return
-	}
-
-	blockStatusInfo := &blockModel.BlockStatusInfo{
-		BlockStatus: blockInfo.BlockStatus,
-		CommittedAt: blockInfo.CommittedAt,
-		VerifiedAt:  blockInfo.VerifiedAt,
+		return nil, err
 	}
 
 	// Todo: update blockstatus to cache, but not sure if the whole block shall be inserted. which kind of tx? mempoolTx or tx?
@@ -76,30 +69,22 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (resp *types.R
 	//	logx.Error(errInfo)
 	//	return packGetTxByHashResp(types.FailStatus, "fail", errInfo, respResult), nil
 	//}
-	gasFee, _ := strconv.Atoi(txMemppol.GasFee)
-	txAmount, _ := strconv.Atoi(txMemppol.TxAmount)
-
 	resp.Txs = types.Tx{
 		TxHash:        txMemppol.TxHash,
-		TxType:        int32(txMemppol.TxType),
-		GasFee:        int32(gasFee),
-		GasFeeAssetId: int32(txMemppol.GasFeeAssetId),
-		TxStatus:      int32(txMemppol.Status),
+		TxType:        txMemppol.TxType,
+		GasFee:        txMemppol.GasFee,
+		GasFeeAssetId: txMemppol.GasFeeAssetId,
+		TxStatus:      int64(txMemppol.Status),
 		BlockHeight:   txMemppol.L2BlockHeight,
-		BlockStatus:   int32(blockStatusInfo.BlockStatus),
-		BlockId:       int32(blockInfo.ID),
-		//Todo: globalRPC won't return data with 2 asset ids, where are these fields from
-		AssetAId:      int32(txMemppol.AssetId),
-		AssetBId:      int32(txMemppol.AssetId),
-		TxAmount:      int64(txAmount),
+		BlockId:       int64(block.ID),
+		TxAmount:      txMemppol.TxAmount,
 		TxDetails:     txDetails,
 		NativeAddress: txMemppol.NativeAddress,
-		CreatedAt:     txMemppol.CreatedAt.UnixNano() / 1e6,
 		Memo:          txMemppol.Memo,
 
 		// Todo: where is executedAt field from?
 		// -> gavin
 	}
 
-	return
+	return resp, nil
 }

@@ -15,6 +15,8 @@
  *
  */
 
+//go:generate mockgen -source api.go -destination api_mock.go -package account
+
 package account
 
 import (
@@ -41,7 +43,7 @@ type AccountModel interface {
 }
 
 func New(svcCtx *svc.ServiceContext) AccountModel {
-	return &account{
+	return &accountModel{
 		table: `account`,
 		db:    svcCtx.GormPointer,
 		cache: svcCtx.Cache,

@@ -218,7 +218,19 @@ func CommitterTask(
 					continue
 				}
 			}
-
+			if mempoolTx.Nonce != commonConstant.NilNonce {
+				// check nonce, the latest nonce should be previous nonce + 1
+				if mempoolTx.Nonce != accountMap[mempoolTx.AccountIndex].Nonce+1 {
+					mempoolTx.Status = mempool.FailTxStatus
+					mempoolTx.L2BlockHeight = currentBlockHeight
+					pendingMempoolTxs = append(pendingMempoolTxs, mempoolTx)
+					continue
+					//logx.Errorf("[CommitterTask] invalid nonce")
+					//return errors.New("[CommitterTask] invalid nonce")
+				}
+				// update nonce
+				accountMap[mempoolTx.AccountIndex].Nonce = mempoolTx.Nonce
+			}
 			// check mempool tx details are correct
 			var (
 				txDetails []*tx.TxDetail
@@ -529,15 +541,6 @@ func CommitterTask(
 				})
 			}
 			// check if we need to update nonce
-			if mempoolTx.Nonce != commonConstant.NilNonce {
-				// check nonce, the latest nonce should be previous nonce + 1
-				if mempoolTx.Nonce != accountMap[mempoolTx.AccountIndex].Nonce+1 {
-					logx.Errorf("[CommitterTask] invalid nonce")
-					return errors.New("[CommitterTask] invalid nonce")
-				}
-				// update nonce
-				accountMap[mempoolTx.AccountIndex].Nonce = mempoolTx.Nonce
-			}
 			if newCollectionNonce != commonConstant.NilCollectionId {
 				accountMap[mempoolTx.AccountIndex].CollectionNonce = newCollectionNonce
 			}

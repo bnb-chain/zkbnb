@@ -26,7 +26,7 @@ import (
 func ParsePubKey(pkStr string) (pk *eddsa.PublicKey, err error) {
 	pkBytes := common.FromHex(pkStr)
 	pk = new(eddsa.PublicKey)
-	_, err = pk.SetBytes(pkBytes)
+	_, err = pk.A.SetBytes(pkBytes)
 	if err != nil {
 		logx.Errorf("[ParsePubKey] unable to set pk bytes: %s", err.Error())
 		return nil, err

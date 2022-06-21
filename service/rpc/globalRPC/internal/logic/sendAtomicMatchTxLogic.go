@@ -20,6 +20,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
+	"strconv"
+	"time"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/redis"
+
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/commonTx"
@@ -30,12 +38,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/common/util/globalmapHandler"
 	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
-	"github.com/zeromicro/go-zero/core/stores/redis"
-	"reflect"
-	"strconv"
-	"time"
-
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 func (l *SendTxLogic) sendAtomicMatchTx(rawTxInfo string) (txId string, err error) {
@@ -223,7 +225,40 @@ func (l *SendTxLogic) sendAtomicMatchTx(rawTxInfo string) (txId string, err erro
 		AssetId:           txInfo.BuyOffer.AssetId,
 		AssetAmount:       txInfo.BuyOffer.AssetAmount.String(),
 	}
-	err = CreateMempoolTxForAtomicMatch(nftExchange, mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)
+	var offers []*nft.Offer
+	offers = append(offers, &nft.Offer{
+		OfferType:    txInfo.BuyOffer.Type,
+		OfferId:      txInfo.BuyOffer.OfferId,
+		AccountIndex: txInfo.BuyOffer.AccountIndex,
+		NftIndex:     txInfo.BuyOffer.NftIndex,
+		AssetId:      txInfo.BuyOffer.AssetId,
+		AssetAmount:  txInfo.BuyOffer.AssetAmount.String(),
+		ListedAt:     txInfo.BuyOffer.ListedAt,
+		ExpiredAt:    txInfo.BuyOffer.ExpiredAt,
+		TreasuryRate: txInfo.BuyOffer.TreasuryRate,
+		Sig:          common.Bytes2Hex(txInfo.BuyOffer.Sig),
+		Status:       nft.OfferFinishedStatus,
+	})
+	offers = append(offers, &nft.Offer{
+		OfferType:    txInfo.SellOffer.Type,
+		OfferId:      txInfo.SellOffer.OfferId,
+		AccountIndex: txInfo.SellOffer.AccountIndex,
+		NftIndex:     txInfo.SellOffer.NftIndex,
+		AssetId:      txInfo.SellOffer.AssetId,
+		AssetAmount:  txInfo.SellOffer.AssetAmount.String(),
+		ListedAt:     txInfo.SellOffer.ListedAt,
+		ExpiredAt:    txInfo.SellOffer.ExpiredAt,
+		TreasuryRate: txInfo.SellOffer.TreasuryRate,
+		Sig:          common.Bytes2Hex(txInfo.SellOffer.Sig),
+		Status:       nft.OfferFinishedStatus,
+	})
+	err = CreateMempoolTxForAtomicMatch(
+		nftExchange,
+		mempoolTx,
+		offers,
+		l.svcCtx.RedisConnection,
+		l.svcCtx.MempoolModel,
+	)
 	if err != nil {
 		return "", l.HandleCreateFailAtomicMatchTx(txInfo, err)
 	}
@@ -308,6 +343,7 @@ func (l *SendTxLogic) CreateFailAtomicMatchTx(info *commonTx.AtomicMatchTxInfo, 
 func CreateMempoolTxForAtomicMatch(
 	nftExchange *nft.L2NftExchange,
 	nMempoolTx *mempool.MempoolTx,
+	offers []*nft.Offer,
 	redisConnection *redis.Redis,
 	mempoolModel mempool.MempoolModel,
 ) (err error) {
@@ -321,7 +357,11 @@ func CreateMempoolTxForAtomicMatch(
 		return err
 	}
 	// write into mempool
-	err = mempoolModel.CreateMempoolTxAndL2NftExchange(nMempoolTx, nftExchange)
+	err = mempoolModel.CreateMempoolTxAndL2NftExchange(
+		nMempoolTx,
+		offers,
+		nftExchange,
+	)
 	if err != nil {
 		errInfo := fmt.Sprintf("[CreateMempoolTx] %s", err.Error())
 		logx.Error(errInfo)
