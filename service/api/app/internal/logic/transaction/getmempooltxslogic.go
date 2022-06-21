@@ -64,10 +64,6 @@ func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (*types.
 				AccountName:  txDetail.AccountName,
 			})
 		}
-		if err != nil {
-			logx.Error("[GetMempoolTxs] err:%v", err)
-			return &types.RespGetMempoolTxs{}, err
-		}
 		blockInfo, err := l.block.GetBlockByBlockHeight(mempoolTx.L2BlockHeight)
 		if err != nil {
 			logx.Error("[transaction.GetTxsByAccountName] err:%v", err)

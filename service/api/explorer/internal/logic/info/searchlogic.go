@@ -49,14 +49,15 @@ func (l *SearchLogic) Search(req *types.ReqSearch) (*types.RespSearch, error) {
 		if err != nil {
 			err1 := fmt.Errorf("[explorer.info.SearchInfo] find block by height %d error: %s", blockHeight, err.Error())
 			l.Error(err1)
+			return nil, err
 		}
-		return nil, err
+		return resp, nil
 	}
 	// check if this is for querying tx by hash
 	_, err = l.tx.GetTxByTxHash(req.Info)
 	if err == nil {
 		resp.DataType = util.TypeTxType
-		return nil, err
+		return resp, nil
 	}
 	// check if this is for querying account by name
 	_, err = l.account.GetAccountByAccountName(l.ctx, req.Info)
@@ -64,6 +65,7 @@ func (l *SearchLogic) Search(req *types.ReqSearch) (*types.RespSearch, error) {
 	if err != nil {
 		err = fmt.Errorf("[explorer.info.SearchInfo] find block by name %s error: %s", req.Info, err.Error())
 		l.Error(err)
+		return nil, err
 	}
 	return resp, nil
 }
