@@ -22,7 +22,7 @@
 
 **/*.yaml
 
-**/types.go
+***/types/types.go
 
 *.vk
 *.pk
