@@ -29,6 +29,10 @@ for val in $rpc; do
     cd ../../..
 done
 
+
+echo "go mod tidy ..."
+go mod tidy
+
 # go build all service&rpc in one script
 for val in $api; do
     echo "Go Build [${val}]: "
@@ -51,7 +55,7 @@ for val in $rpc; do
 
     echo "Docker Build & Push [${val}]: "
     declare -l lower="${val}"
-    docker build -t us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/${lower}:$1 -f service/rpc/${val}/Dockerfile .
+    docker build --no-cache -t us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/${lower}:$1 -f service/rpc/${val}/Dockerfile .
     docker push us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/${lower}:$1
     docker image prune --filter label=stage=gobuilder --force
 
@@ -65,9 +69,13 @@ for val in $cronjob; do
 
     echo "Docker Build & Push [${val}]: "
     declare -l lower="${val}"
-    docker build -t us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/${lower}:$1 -f service/cronjob/${val}/Dockerfile .
+
+
+    docker build --no-cache -t  us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/${lower}:$1 -f service/cronjob/${val}/Dockerfile .
+
     docker push us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/${lower}:$1
     docker image prune --filter label=stage=gobuilder --force
+
 
     rm ./bin/${lower}
 done

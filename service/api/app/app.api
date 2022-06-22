@@ -156,7 +156,7 @@ type (
 	}
 	RespGetCurrencyPriceBySymbol {
 		AssetId uint32 `json:"assetId"`
-		Price   string `json:"price"`
+		Price   uint64 `json:"price"`
 	}
 )
 
@@ -166,7 +166,7 @@ type (
 	DataCurrencyPrices   {
 		Pair    string `json:"pair"`
 		AssetId uint32 `json:"assetId"`
-		Price   string `json:"price"`
+		Price   uint64 `json:"price"`
 	}
 	RespGetCurrencyPrices {
 		Data []*DataCurrencyPrices `json:"data"`
@@ -179,7 +179,7 @@ type (
 		AssetId uint32 `form:"asset_id"`
 	}
 	RespGetGasFee {
-		GasFee string `json:"gas_fee"`
+		GasFee uint64 `json:"gas_fee"`
 	}
 )
 
@@ -191,7 +191,7 @@ type (
 		WithdrawAmount  uint64 `form:"withdraw_amount"`
 	}
 	RespGetWithdrawGasFee {
-		WithdrawGasFee string `json:"withdraw_gas_fee"`
+		WithdrawGasFee uint64 `json:"withdraw_gas_fee"`
 	}
 )
 
@@ -410,6 +410,16 @@ type (
 	}
 )
 
+// GetNextNonce
+type (
+	ReqGetNextNonce {
+		AccountIndex uint32 `form:"account_index"`
+	}
+	RespGetNextNonce {
+		Nonce uint64 `json:"nonce"`
+	}
+)
+
 @server(
 	group: transaction
 )
@@ -431,4 +441,7 @@ service appService-api{
 	
 	@handler GetMempoolTxs
 	get /api/v1/tx/getMempoolTxs (ReqGetMempoolTxs) returns (RespGetMempoolTxs)
+	
+	@handler GetNextNonce
+	get /api/v1/tx/getNextNonce (ReqGetNextNonce) returns (RespGetNextNonce)
 }

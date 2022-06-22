@@ -18,6 +18,7 @@ package globalrpc
 
 import (
 	"context"
+
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
@@ -162,4 +163,11 @@ func (m *globalRPC) SendTx(txType uint32, txInfo string) (string, error) {
 		TxInfo: txInfo,
 	})
 	return rpcRsp.GetTxId(), err
+}
+
+func (m *globalRPC) GetNextNonce(accountIndex uint32) (uint64, error) {
+	rpcRsp, err := m.globalRPC.GetNextNonce(m.ctx, &globalrpc.ReqGetNextNonce{
+		AccountIndex: accountIndex,
+	})
+	return rpcRsp.GetNonce(), err
 }

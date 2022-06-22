@@ -164,6 +164,26 @@ func (m *account) GetAccountByAccountName(ctx context.Context, accountName strin
 	return account, nil
 }
 
+func (m *account) GetAccountByAccountPk(ctx context.Context, accountPk string) (*table.Account, error) {
+	f := func() (interface{}, error) {
+		account := &table.Account{}
+		dbTx := m.db.Table(m.table).Where("public_key = ?", accountPk).Find(&account)
+		if dbTx.Error != nil {
+			return nil, dbTx.Error
+		} else if dbTx.RowsAffected == 0 {
+			return nil, ErrNotFound
+		}
+		return account, nil
+	}
+	account := &table.Account{}
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyAccountAccountName, account, 10, f)
+	if err != nil {
+		return nil, err
+	}
+	account, _ = value.(*table.Account)
+	return account, nil
+}
+
 /*
 	Func: GetAccountsList
 	Params: limit int, offset int64

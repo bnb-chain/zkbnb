@@ -2,13 +2,11 @@ package info
 
 import (
 	"context"
-	"math"
-	"strconv"
-
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/l2asset"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/price"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
+	"math"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -32,7 +30,7 @@ func NewGetWithdrawGasFeeLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 func (l *GetWithdrawGasFeeLogic) GetWithdrawGasFee(req *types.ReqGetWithdrawGasFee) (*types.RespGetWithdrawGasFee, error) {
-	l2Asset, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(uint32(req.AssetId))
+	l2Asset, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(req.AssetId)
 	if err != nil {
 		logx.Errorf("[GetSimpleL2AssetInfoByAssetId] err:%v", err)
 		return nil, err
@@ -60,6 +58,7 @@ func (l *GetWithdrawGasFeeLogic) GetWithdrawGasFee(req *types.ReqGetWithdrawGasF
 	if WithdrawGasFee < minNum {
 		WithdrawGasFee = minNum
 	}
-	resp.WithdrawGasFee = strconv.FormatFloat(WithdrawGasFee, 'f', 30, 32) //float64 to string
+	WithdrawGasFee = WithdrawGasFee * math.Pow(10, float64(l2Asset.Decimals))
+	resp.WithdrawGasFee = uint64(WithdrawGasFee)
 	return resp, nil
 }

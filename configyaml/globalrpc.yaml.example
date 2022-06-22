@@ -2,6 +2,11 @@ Name: global.rpc
 ListenOn: 127.0.0.1:8080
 
 
+Prometheus:
+  Host: 0.0.0.0
+  Port: 9091
+  Path: /metrics
+
 Postgres:
   DataSource: host=127.0.0.1 user=postgres password=pw dbname=zecreylegend port=5432 sslmode=disable
 
