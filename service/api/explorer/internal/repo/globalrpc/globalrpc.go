@@ -61,7 +61,7 @@ func (m *globalRPC) GetSwapAmount(ctx context.Context, pairIndex, assetId uint64
 	return resRpc.SwapAssetAmount, resRpc.SwapAssetId, err
 }
 
-func (m *globalRPC) GetLatestAccountInfoByAccountIndex(accountIndex uint32) ([]*globalrpc.AssetResult, error) {
+func (m *globalRPC) GetLatestAssetsListByAccountIndex(accountIndex uint32) ([]*globalrpc.AssetResult, error) {
 	res, err := m.globalRPC.GetLatestAssetsListByAccountIndex(m.ctx, &globalrpc.ReqGetLatestAssetsListByAccountIndex{
 		AccountIndex: accountIndex,
 	})

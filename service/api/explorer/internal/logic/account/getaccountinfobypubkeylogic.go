@@ -7,12 +7,11 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/globalrpc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/types"
-	"github.com/zecrey-labs/zecrey-legend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-type GetAccountInfoByAccountNameLogic struct {
+type GetAccountInfoByPubKeyLogic struct {
 	logx.Logger
 	ctx       context.Context
 	svcCtx    *svc.ServiceContext
@@ -20,8 +19,8 @@ type GetAccountInfoByAccountNameLogic struct {
 	globalRPC globalrpc.GlobalRPC
 }
 
-func NewGetAccountInfoByAccountNameLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAccountInfoByAccountNameLogic {
-	return &GetAccountInfoByAccountNameLogic{
+func NewGetAccountInfoByPubKeyLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAccountInfoByPubKeyLogic {
+	return &GetAccountInfoByPubKeyLogic{
 		Logger:    logx.WithContext(ctx),
 		ctx:       ctx,
 		svcCtx:    svcCtx,
@@ -30,11 +29,10 @@ func NewGetAccountInfoByAccountNameLogic(ctx context.Context, svcCtx *svc.Servic
 	}
 }
 
-func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *types.ReqGetAccountInfoByAccountName) (*types.RespGetAccountInfoByAccountName, error) {
-	accountName := utils.FormatSting(req.AccountName)
-	account, err := l.account.GetAccountByAccountName(l.ctx, accountName)
+func (l *GetAccountInfoByPubKeyLogic) GetAccountInfoByPubKey(req *types.ReqGetAccountInfoByPubKey) (*types.RespGetAccountInfoByPubKey, error) {
+	account, err := l.account.GetAccountByAccountPk(l.ctx, req.AccountPk)
 	if err != nil {
-		logx.Errorf("[GetAccountByAccountName] err:%v", err)
+		logx.Errorf("[GetAccountByAccountPk] err:%v", err)
 		return nil, err
 	}
 	assets, err := l.globalRPC.GetLatestAssetsListByAccountIndex(uint32(account.AccountIndex))
@@ -42,9 +40,9 @@ func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *type
 		logx.Errorf("[GetLatestAssetsListByAccountIndex] err:%v", err)
 		return nil, err
 	}
-	resp := &types.RespGetAccountInfoByAccountName{
+	resp := &types.RespGetAccountInfoByPubKey{
 		AccountIndex: uint32(account.AccountIndex),
-		AccountPk:    account.PublicKey,
+		AccountName:  account.PublicKey,
 		Assets:       make([]*types.AssetInfo, 0),
 	}
 	for _, asset := range assets {

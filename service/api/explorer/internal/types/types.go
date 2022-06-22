@@ -191,6 +191,15 @@ type RespGetMempoolTxsListByPublicKey struct {
 	Txs   []*Tx  `json:"data"`
 }
 
+type ReqGetmempoolTxsByAccountName struct {
+	AccountName string `json:"account_name"`
+}
+
+type RespGetmempoolTxsByAccountName struct {
+	Total uint32 `json:"total"`
+	Txs   []*Tx  `json:"data"`
+}
+
 type ReqSendTx struct {
 	TxType uint32 `form:"tx_type"`
 	TxInfo string `form:"tx_info"`
@@ -212,6 +221,16 @@ type ReqGetAccountInfoByAccountName struct {
 type RespGetAccountInfoByAccountName struct {
 	AccountIndex uint32       `json:"account_index"`
 	AccountPk    string       `json:"account_pk"`
+	Assets       []*AssetInfo `json:"assets"`
+}
+
+type ReqGetAccountInfoByPubKey struct {
+	AccountPk string `form:"account_pk"`
+}
+
+type RespGetAccountInfoByPubKey struct {
+	AccountIndex uint32       `json:"account_index"`
+	AccountName  string       `form:"account_name"`
 	Assets       []*AssetInfo `json:"assets"`
 }
 

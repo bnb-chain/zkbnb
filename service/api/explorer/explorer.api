@@ -267,6 +267,17 @@ type (
 	}
 )
 
+// getmempoolTxsByAccountName
+type (
+	ReqGetmempoolTxsByAccountName {
+		AccountName string `json:"account_name"`
+	}
+	RespGetmempoolTxsByAccountName {
+		Total uint32 `json:"total"`
+		Txs   []*Tx  `json:"data"`
+	}
+)
+
 // sendTx
 type (
 	ReqSendTx {
@@ -297,6 +308,9 @@ service explorer-api{
 	@handler GetMempoolTxsListByPublicKey
 	get /api/v1/tx/getMempoolTxsListByPublicKey  (ReqGetMempoolTxsListByPublicKey) returns (RespGetMempoolTxsListByPublicKey)
 	
+	@handler GetmempoolTxsByAccountName
+	get /api/v1/tx/getmempoolTxsByAccountName  (ReqGetmempoolTxsByAccountName) returns (RespGetmempoolTxsByAccountName)
+	
 	@handler SendTx
 	post /api/v1/tx/sendTx  (ReqSendTx) returns (RespSendTx)
 }
@@ -320,12 +334,28 @@ type (
 	}
 )
 
+// GetAccountInfoByPubKey
+type (
+	ReqGetAccountInfoByPubKey {
+		AccountPk string `form:"account_pk"`
+	}
+	RespGetAccountInfoByPubKey {
+		AccountIndex uint32       `json:"account_index"`
+		AccountName  string       `form:"account_name"`
+		Assets       []*AssetInfo `json:"assets"`
+	}
+)
+
 @server(
 	group: account
 )
 service explorer-api{
 	@handler GetAccountInfoByAccountName
 	get /api/v1/account/getAccountInfoByAccountName  (ReqGetAccountInfoByAccountName) returns (RespGetAccountInfoByAccountName)
+	
+	@handler GetAccountInfoByPubKey
+	get /api/v1/account/getAccountInfoByPubKey  (ReqGetAccountInfoByPubKey) returns (RespGetAccountInfoByPubKey)
+	
 }
 
 // GetMaxOfferId

@@ -10,6 +10,7 @@ type Mempool interface {
 	GetMempoolTxsTotalCount() (count int64, err error)
 	GetMempoolTxsTotalCountByAccountIndex(accountIndex int64) (count int64, err error)
 	GetMempoolTxByTxHash(hash string) (mempoolTxs *mempoolModel.MempoolTx, err error)
+	GetMempoolTxByTxID(txID int64) (*mempoolModel.MempoolTx, error)
 }
 
 func New(svcCtx *svc.ServiceContext) Mempool {

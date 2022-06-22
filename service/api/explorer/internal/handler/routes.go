@@ -99,6 +99,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: transaction.GetMempoolTxsListByPublicKeyHandler(serverCtx),
 			},
 			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/tx/getmempoolTxsByAccountName",
+				Handler: transaction.GetmempoolTxsByAccountNameHandler(serverCtx),
+			},
+			{
 				Method:  http.MethodPost,
 				Path:    "/api/v1/tx/sendTx",
 				Handler: transaction.SendTxHandler(serverCtx),
@@ -112,6 +117,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/api/v1/account/getAccountInfoByAccountName",
 				Handler: account.GetAccountInfoByAccountNameHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/account/getAccountInfoByPubKey",
+				Handler: account.GetAccountInfoByPubKeyHandler(serverCtx),
 			},
 		},
 	)
