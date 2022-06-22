@@ -24,7 +24,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
 	"github.com/zeromicro/go-zero/core/logx"
 	"sort"
-	"time"
 )
 
 /*
@@ -88,9 +87,20 @@ func MonitorL2BlockEvents(
 		}
 		// get events from the tx
 		logs := receipt.Logs
-		timeAt := time.Now().UnixMilli()
-		var isValidSender bool
+		var (
+			isValidSender      bool
+			isQueriedBlockHash = make(map[string]int64)
+		)
 		for _, vlog := range logs {
+			if isQueriedBlockHash[vlog.BlockHash.Hex()] == 0 {
+				onChainBlockInfo, err := bscCli.GetBlockHeaderByHash(vlog.BlockHash.Hex())
+				if err != nil {
+					logx.Errorf("[MonitorL2BlockEvents] unable to get block by hash: %s", err.Error())
+					return err
+				}
+				isQueriedBlockHash[vlog.BlockHash.Hex()] = int64(onChainBlockInfo.Time)
+			}
+			timeAt := isQueriedBlockHash[vlog.BlockHash.Hex()]
 			switch vlog.Topics[0].Hex() {
 			case ZecreyLogBlockCommitSigHash.Hex():
 				// parse event info
