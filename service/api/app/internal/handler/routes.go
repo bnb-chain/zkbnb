@@ -147,6 +147,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/api/v1/tx/getMempoolTxs",
 				Handler: transaction.GetMempoolTxsHandler(serverCtx),
 			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/tx/getNextNonce",
+				Handler: transaction.GetNextNonceHandler(serverCtx),
+			},
 		},
 	)
 }

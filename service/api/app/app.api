@@ -410,6 +410,16 @@ type (
 	}
 )
 
+// GetNextNonce
+type (
+	ReqGetNextNonce {
+		AccountIndex uint32 `form:"account_index"`
+	}
+	RespGetNextNonce {
+		Nonce uint64 `json:"nonce"`
+	}
+)
+
 @server(
 	group: transaction
 )
@@ -431,4 +441,7 @@ service appService-api{
 	
 	@handler GetMempoolTxs
 	get /api/v1/tx/getMempoolTxs (ReqGetMempoolTxs) returns (RespGetMempoolTxs)
+	
+	@handler GetNextNonce
+	get /api/v1/tx/getNextNonce (ReqGetNextNonce) returns (RespGetNextNonce)
 }
