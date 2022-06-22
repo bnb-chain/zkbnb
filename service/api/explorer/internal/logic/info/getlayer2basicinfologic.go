@@ -20,7 +20,7 @@ type GetLayer2BasicInfoLogic struct {
 
 	sysconfigModel sysconf.Sysconf
 	block          block.Block
-	tx             tx.Tx
+	tx             tx.Model
 }
 
 func NewGetLayer2BasicInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetLayer2BasicInfoLogic {

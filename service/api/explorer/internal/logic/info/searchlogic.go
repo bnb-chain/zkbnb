@@ -23,7 +23,7 @@ type SearchLogic struct {
 
 	sysconfigModel sysconf.Sysconf
 	block          block.Block
-	tx             tx.Tx
+	tx             tx.Model
 	account        account.AccountModel
 }
 

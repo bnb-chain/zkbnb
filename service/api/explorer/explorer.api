@@ -232,7 +232,7 @@ type (
 // getTxsListByAccountIndex
 type (
 	ReqGetTxsListByAccountIndex {
-		AccountIndex string `form:"account_index"`
+		AccountIndex uint32 `form:"account_index"`
 		Offset       uint16 `form:"offset"`
 		Limit        uint16 `form:"limit"`
 	}
@@ -270,7 +270,7 @@ type (
 // getmempoolTxsByAccountName
 type (
 	ReqGetmempoolTxsByAccountName {
-		AccountName string `json:"account_name"`
+		AccountName string `form:"account_name"`
 	}
 	RespGetmempoolTxsByAccountName {
 		Total uint32 `json:"total"`
