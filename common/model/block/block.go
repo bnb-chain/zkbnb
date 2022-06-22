@@ -107,7 +107,7 @@ type (
 		gorm.Model
 		// pubdata
 		BlockCommitment                 string
-		BlockHeight                     int64
+		BlockHeight                     int64 `gorm:"uniqueIndex"`
 		StateRoot                       string
 		PriorityOperations              int64
 		PendingOnChainOperationsHash    string
