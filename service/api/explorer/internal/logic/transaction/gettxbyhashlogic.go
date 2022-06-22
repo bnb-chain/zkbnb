@@ -3,6 +3,7 @@ package transaction
 import (
 	"context"
 
+	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/account"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/block"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/globalrpc"
@@ -45,7 +46,17 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (*types.RespGe
 		logx.Errorf("[GetTxByTxHash]:%v", err)
 		return nil, err
 	}
-	return &types.RespGetTxByHash{
+	resp := &types.RespGetTxByHash{
 		Txs: *utils.GormTx2Tx(tx),
-	}, nil
+	}
+	if tx.TxType == commonTx.TxTypeSwap {
+		txInfo, err := commonTx.ParseSwapTxInfo(tx.TxInfo)
+		if err != nil {
+			logx.Errorf("[ParseSwapTxInfo]:%v", err)
+			return nil, err
+		}
+		resp.AssetAId = txInfo.AssetAId
+		resp.AssetBId = txInfo.AssetBId
+	}
+	return resp, nil
 }

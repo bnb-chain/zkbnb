@@ -225,7 +225,9 @@ type (
 		TxHash string `form:"tx_hash"`
 	}
 	RespGetTxByHash {
-		Txs Tx `json:"result"`
+		Txs      Tx    `json:"result"`
+		AssetAId int64 `json:"asset_a_id"`
+		AssetBId int64 `json:"asset_b_id"`
 	}
 )
 
