@@ -101,7 +101,7 @@ type ReqGetCurrencyPriceBySymbol struct {
 
 type RespGetCurrencyPriceBySymbol struct {
 	AssetId uint32 `json:"assetId"`
-	Price   string `json:"price"`
+	Price   uint64 `json:"price"`
 }
 
 type ReqGetCurrencyPrices struct {
@@ -110,7 +110,7 @@ type ReqGetCurrencyPrices struct {
 type DataCurrencyPrices struct {
 	Pair    string `json:"pair"`
 	AssetId uint32 `json:"assetId"`
-	Price   string `json:"price"`
+	Price   uint64 `json:"price"`
 }
 
 type RespGetCurrencyPrices struct {
@@ -122,7 +122,7 @@ type ReqGetGasFee struct {
 }
 
 type RespGetGasFee struct {
-	GasFee string `json:"gas_fee"`
+	GasFee uint64 `json:"gas_fee"`
 }
 
 type ReqGetWithdrawGasFee struct {
@@ -132,7 +132,7 @@ type ReqGetWithdrawGasFee struct {
 }
 
 type RespGetWithdrawGasFee struct {
-	WithdrawGasFee string `json:"withdraw_gas_fee"`
+	WithdrawGasFee uint64 `json:"withdraw_gas_fee"`
 }
 
 type ReqGetSwapAmount struct {
@@ -291,4 +291,12 @@ type ReqGetMempoolTxs struct {
 type RespGetMempoolTxs struct {
 	Total      uint32 `json:"total"`
 	MempoolTxs []*Tx  `json:"mempool_txs"`
+}
+
+type ReqGetNextNonce struct {
+	AccountIndex uint32 `form:"account_index"`
+}
+
+type RespGetNextNonce struct {
+	Nonce uint64 `json:"nonce"`
 }
