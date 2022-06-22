@@ -35,7 +35,6 @@ func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetBlocks) (*types.RespGetBlock
 	}
 	total, err := l.block.GetBlocksTotalCount()
 	if err != nil {
-		logx.Errorf("[GetBlocksTotalCount] err:%v", err)
 		return nil, err
 	}
 	resp := &types.RespGetBlocks{
