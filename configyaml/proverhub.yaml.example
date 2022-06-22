@@ -1,6 +1,11 @@
 Name: proverhub.rpc
 ListenOn: 0.0.0.0:38000
 
+Prometheus:
+  Host: 0.0.0.0
+  Port: 9091
+  Path: /metrics
+
 Postgres:
   DataSource: host=34.122.163.215 user=postgres password=zecreyLegendTest@ dbname=zecreylegend port=5432 sslmode=disable
 
