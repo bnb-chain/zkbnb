@@ -1,12 +1,10 @@
 package block
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
 	table "github.com/zecrey-labs/zecrey-legend/common/model/block"
-	tableTx "github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -103,96 +101,18 @@ func (m *block) GetBlockWithTxsByBlockHeight(blockHeight int64) (block *table.Bl
 }
 
 func (m *block) GetBlocksList(limit int64, offset int64) (blocks []*table.Block, err error) {
-	var (
-		//blockForeignKeyColumn = `BlockDetails`
-		txForeignKeyColumn = `Txs`
-	)
-	key := fmt.Sprintf("%s%v:%v", cacheBlockListLimitPrefix, limit, offset)
-	cacheBlockListLimitVal, err := m.redisConn.Get(key)
-
-	if err != nil {
-		errInfo := fmt.Sprintf("[block.GetBlocksList] Get Redis Error: %s, key:%s", err.Error(), key)
-		logx.Errorf(errInfo)
-		return nil, err
-	} else if cacheBlockListLimitVal == "" {
-		dbTx := m.db.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("block_height desc").Find(&blocks)
-		if dbTx.Error != nil {
-			logx.Error("[block.GetBlocksList] %s", dbTx.Error)
-			return nil, dbTx.Error
-		} else if dbTx.RowsAffected == 0 {
-			logx.Error("[block.GetBlocksList] Get Blocks Error")
-			return nil, ErrNotFound
-		}
-
-		for _, block := range blocks {
-			cacheBlockIdKey := fmt.Sprintf("%s%v", cacheBlockIdPrefix, block.ID)
-			cacheBlockIdVal, err := m.redisConn.Get(cacheBlockIdKey)
-			if err != nil {
-				errInfo := fmt.Sprintf("[block.GetBlocksList] Get Redis Error: %s, key:%s", err.Error(), key)
-				logx.Errorf(errInfo)
-				return nil, err
-			} else if cacheBlockIdVal == "" {
-				/*
-					err = m.DB.Model(&block).Association(blockForeignKeyColumn).Find(&block.BlockDetails)
-					if err != nil {
-						logx.Error("[block.GetBlocksList] Get Associate BlockDetails Error")
-						return nil, err
-					}
-				*/
-				txLength := m.db.Model(&block).Association(txForeignKeyColumn).Count()
-				block.Txs = make([]*tableTx.Tx, txLength)
-
-				// json string
-				jsonString, err := json.Marshal(block)
-				if err != nil {
-					logx.Errorf("[block.GetBlocksList] json.Marshal Error: %s, value: %v", block)
-					return nil, err
-				}
-				// todo
-				err = m.redisConn.Setex(key, string(jsonString), 60)
-				if err != nil {
-					logx.Errorf("[block.GetBlocksList] redis set error: %s", err.Error())
-					return nil, err
-				}
-			} else {
-				// json string unmarshal
-				var (
-					nBlock *table.Block
-				)
-				err = json.Unmarshal([]byte(cacheBlockIdVal), &nBlock)
-				if err != nil {
-					logx.Errorf("[tblock.GetBlocksList] json.Unmarshal error: %s, value : %s", err.Error(), cacheBlockIdVal)
-					return nil, err
-				}
-				block = nBlock
-			}
-		}
-		// json string
-		jsonString, err := json.Marshal(blocks)
-		if err != nil {
-			logx.Errorf("[block.GetBlocksList] json.Marshal Error: %s, value: %v", err.Error(), blocks)
-			return nil, err
-		}
-		// todo
-		err = m.redisConn.Setex(key, string(jsonString), 30)
-		if err != nil {
-			logx.Errorf("[block.GetBlocksList] redis set error: %s", err.Error())
-			return nil, err
-		}
-
-	} else {
-		// json string unmarshal
-		var (
-			nBlocks []*table.Block
-		)
-		err = json.Unmarshal([]byte(cacheBlockListLimitVal), &nBlocks)
-		if err != nil {
-			logx.Errorf("[block.GetBlocksList] json.Unmarshal error: %s, value : %s", err.Error(), cacheBlockListLimitVal)
-			return nil, err
-		}
-		blocks = nBlocks
+	dbTx := m.db.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("block_height desc").Find(&blocks)
+	if dbTx.Error != nil {
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return nil, ErrNotFound
 	}
-
+	for _, block := range blocks {
+		err = m.db.Model(&block).Association(`Txs`).Find(&block.Txs)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return blocks, nil
 }
 
