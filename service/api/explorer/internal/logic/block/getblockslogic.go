@@ -6,6 +6,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/block"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/types"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -53,6 +54,10 @@ func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetBlocks) (*types.RespGetBlock
 			VerifiedTxHash:                  b.VerifiedTxHash,
 			VerifiedAt:                      b.BlockHeight,
 			BlockStatus:                     b.BlockHeight,
+		}
+		for _, t := range b.Txs {
+			tx := utils.GormTx2Tx(t)
+			block.Txs = append(block.Txs, tx)
 		}
 		resp.Blocks = append(resp.Blocks, block)
 	}
