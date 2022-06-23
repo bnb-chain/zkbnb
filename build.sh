@@ -41,7 +41,7 @@ go mod tidy
 for val in $api; do
     echo "Go Build [${val}]: "
     declare -l lower="${val}"
-    go build -ldflags "-X main.CodeVersion=`git describe --tags` -X main.GitCommitHash=`git rev-parse --short HEAD`" -ldflags '-linkmode "external" -extldflags "-static"' -o ./bin/${lower} service/api/${val}/${lower}.go
+    go build -ldflags "-X main.CodeVersion=`git describe --tags` -X main.GitCommitHash=`git rev-parse --short HEAD` -linkmode=external -extldflags=-static" -o ./bin/${lower} service/api/${val}/${lower}.go
 
     echo "Docker Build & Push [${val}]: "
     declare -l lower="${val}"
