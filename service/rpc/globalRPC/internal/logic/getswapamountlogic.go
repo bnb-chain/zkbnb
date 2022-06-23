@@ -53,16 +53,15 @@ func (l *GetSwapAmountLogic) GetSwapAmount(in *globalRPCProto.ReqGetSwapAmount) 
 	var assetAmount *big.Int
 	var toAssetId int64
 
-	switch in.AssetId {
-	case uint32(liquidity.AssetAId):
-		assetAmount, toAssetId, err = util.ComputeDelta(liquidity.AssetA, liquidity.AssetB, liquidity.AssetAId, liquidity.AssetBId,
-			int64(in.AssetId), in.IsFrom, deltaAmount, liquidity.FeeRate)
-	case uint32(liquidity.AssetBId):
-		assetAmount, toAssetId, err = util.ComputeDelta(liquidity.AssetA, liquidity.AssetB, liquidity.AssetAId, liquidity.AssetBId,
-			int64(in.AssetId), in.IsFrom, deltaAmount, liquidity.FeeRate)
-	default:
+	if int64(in.AssetId) != liquidity.AssetAId && int64(in.AssetId) != liquidity.AssetBId {
 		return &globalRPCProto.RespGetSwapAmount{}, zerror.New(-1, "invalid pair assetIds")
 	}
+
+
+
+	assetAmount, toAssetId, err = util.ComputeDelta(liquidity.AssetA, liquidity.AssetB, liquidity.AssetAId, liquidity.AssetBId,
+		int64(in.AssetId), in.IsFrom, deltaAmount, liquidity.FeeRate)
+
 	if err != nil {
 		logx.Errorf("[GetSwapAmount ComputeDelta] err:%v", err)
 		return nil, err
