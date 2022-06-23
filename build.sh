@@ -3,7 +3,7 @@
 
 # ./build.sh <TAG_VERSION> <REPO_PATH>
 
-api="app explorer"
+api="app"
 rpc="globalRPC proverHub"
 cronjob="blockMonitor mempoolMonitor committer sender l2BlockMonitor proverClient governanceMonitor"
 
@@ -41,7 +41,7 @@ go mod tidy
 for val in $api; do
     echo "Go Build [${val}]: "
     declare -l lower="${val}"
-    go build -ldflags '-linkmode "external" -extldflags "-static"' -o ./bin/${lower} service/api/${val}/${lower}.go
+    go build -ldflags "-X main.CodeVersion=`git describe --tags` -X main.GitCommitHash=`git rev-parse --short HEAD` -linkmode=external -extldflags=-static" -o ./bin/${lower} service/api/${val}/${lower}.go
 
     echo "Docker Build & Push [${val}]: "
     declare -l lower="${val}"
