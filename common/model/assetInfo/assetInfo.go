@@ -62,6 +62,7 @@ type (
 		L1Address   string
 		Decimals    uint32
 		Status      uint32
+		IsGasAsset  uint32
 	}
 )
 

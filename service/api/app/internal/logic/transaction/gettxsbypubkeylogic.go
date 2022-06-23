@@ -3,6 +3,7 @@ package transaction
 import (
 	"context"
 
+	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/account"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/block"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/globalrpc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/mempool"
@@ -17,7 +18,7 @@ type GetTxsByPubKeyLogic struct {
 	logx.Logger
 	ctx       context.Context
 	svcCtx    *svc.ServiceContext
-	account   account.Account
+	account   account.AccountModel
 	globalRpc globalrpc.GlobalRPC
 	tx        tx.Model
 	mempool   mempool.Mempool
