@@ -3,7 +3,7 @@ package transaction
 import (
 	"context"
 
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/accounthistory"
+	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/account"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/block"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/globalrpc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/mempool"
@@ -18,9 +18,9 @@ type GetTxsByPubKeyLogic struct {
 	logx.Logger
 	ctx       context.Context
 	svcCtx    *svc.ServiceContext
-	account   accounthistory.AccountHistory
+	account   account.AccountModel
 	globalRpc globalrpc.GlobalRPC
-	tx        tx.Tx
+	tx        tx.Model
 	mempool   mempool.Mempool
 	block     block.Block
 }
@@ -30,7 +30,7 @@ func NewGetTxsByPubKeyLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 		Logger:    logx.WithContext(ctx),
 		ctx:       ctx,
 		svcCtx:    svcCtx,
-		account:   accounthistory.New(svcCtx),
+		account:   account.New(svcCtx),
 		globalRpc: globalrpc.New(svcCtx, ctx),
 		tx:        tx.New(svcCtx),
 		mempool:   mempool.New(svcCtx),
@@ -39,7 +39,7 @@ func NewGetTxsByPubKeyLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 }
 
 func (l *GetTxsByPubKeyLogic) GetTxsByPubKey(req *types.ReqGetTxsByPubKey) (resp *types.RespGetTxsByPubKey, err error) {
-	account, err := l.account.GetAccountByPk(req.Pk)
+	account, err := l.account.GetAccountByPk(req.AccountPk)
 	if err != nil {
 		logx.Errorf("[GetAccountByPk] err:%v", err)
 		return &types.RespGetTxsByPubKey{}, err
@@ -64,9 +64,9 @@ func (l *GetTxsByPubKeyLogic) GetTxsByPubKey(req *types.ReqGetTxsByPubKey) (resp
 		txDetails := make([]*types.TxDetail, 0)
 		for _, txDetail := range tx.MempoolDetails {
 			txDetails = append(txDetails, &types.TxDetail{
-				AssetId:        uint32(txDetail.AssetId),
-				AssetType:      uint32(txDetail.AssetType),
-				AccountIndex:   int32(txDetail.AccountIndex),
+				AssetId:        (txDetail.AssetId),
+				AssetType:      (txDetail.AssetType),
+				AccountIndex:   (txDetail.AccountIndex),
 				AccountName:    txDetail.AccountName,
 				AccountBalance: txDetail.BalanceDelta,
 			})
@@ -78,25 +78,25 @@ func (l *GetTxsByPubKeyLogic) GetTxsByPubKey(req *types.ReqGetTxsByPubKey) (resp
 		}
 		results = append(results, &types.Tx{
 			TxHash:        tx.TxHash,
-			TxType:        uint32(tx.TxType),
-			GasFeeAssetId: uint32(tx.GasFeeAssetId),
+			TxType:        (tx.TxType),
+			GasFeeAssetId: (tx.GasFeeAssetId),
 			GasFee:        tx.GasFee,
-			NftIndex:      uint32(tx.NftIndex),
-			PairIndex:     uint32(tx.PairIndex),
-			AssetId:       uint32(tx.AssetId),
+			NftIndex:      (tx.NftIndex),
+			PairIndex:     (tx.PairIndex),
+			AssetId:       (tx.AssetId),
 			TxAmount:      tx.TxAmount,
 			NativeAddress: tx.NativeAddress,
 			TxDetails:     txDetails,
 			TxInfo:        tx.TxInfo,
 			ExtraInfo:     tx.ExtraInfo,
 			Memo:          tx.Memo,
-			AccountIndex:  uint32(tx.AccountIndex),
-			Nonce:         uint32(tx.Nonce),
-			ExpiredAt:     uint32(tx.ExpiredAt),
-			L2BlockHeight: uint32(tx.L2BlockHeight),
-			Status:        uint32(tx.Status),
-			CreatedAt:     uint32(tx.CreatedAt.Unix()),
-			BlockID:       uint32(block.ID),
+			AccountIndex:  (tx.AccountIndex),
+			Nonce:         (tx.Nonce),
+			ExpiredAt:     (tx.ExpiredAt),
+			BlockHeight:   (tx.L2BlockHeight),
+			Status:        int64(tx.Status),
+			CreatedAt:     (tx.CreatedAt.Unix()),
+			BlockId:       int64(block.ID),
 		})
 	}
 	return &types.RespGetTxsByPubKey{

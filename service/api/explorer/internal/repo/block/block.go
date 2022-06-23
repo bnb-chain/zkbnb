@@ -60,8 +60,8 @@ func (m *block) GetCommitedBlocksCount() (count int64, err error) {
 	return
 }
 
-func (m *block) GetExecutedBlocksCount() (count int64, err error) {
-	err = m.db.Table(m.table).Where("block_status = ? and deleted_at is NULL", StatusExecuted).Count(&count).Error
+func (m *block) GetVerifiedBlocksCount() (count int64, err error) {
+	err = m.db.Table(m.table).Where("block_status = ? and deleted_at is NULL", table.StatusVerifiedAndExecuted).Count(&count).Error
 	return
 }
 

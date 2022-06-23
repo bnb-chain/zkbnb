@@ -40,6 +40,8 @@ func (l *GetAssetsListLogic) GetAssetsList(req *types.ReqGetAssetsList) (*types.
 			AssetName:     asset.AssetName,
 			AssetDecimals: uint32(asset.Decimals),
 			AssetSymbol:   asset.AssetSymbol,
+			AssetAddress:  asset.L1Address,
+			IsGasAsset:    asset.IsGasAsset,
 		})
 	}
 	return resp, nil

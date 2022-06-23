@@ -29,5 +29,11 @@ func (m *liquidityModel) GetLiquidityByPairIndex(pairIndex int64) (entity *table
 }
 
 func (m *liquidityModel) GetAllLiquidityAssets() (entity []*table.Liquidity, err error) {
+	dbTx := m.db.Table(m.table).Raw("SELECT * FROM liquidity").Find(&entity)
+	if dbTx.Error != nil {
+		return entity, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return entity, ErrNotExistInSql
+	}
 	return entity, nil
 }

@@ -171,3 +171,17 @@ func (m *globalRPC) GetNextNonce(accountIndex uint32) (uint64, error) {
 	})
 	return rpcRsp.GetNonce(), err
 }
+
+func (m *globalRPC) GetLatestAssetsListByAccountIndex(accountIndex uint32) ([]*globalrpc.AssetResult, error) {
+	res, err := m.globalRPC.GetLatestAssetsListByAccountIndex(m.ctx, &globalrpc.ReqGetLatestAssetsListByAccountIndex{
+		AccountIndex: accountIndex,
+	})
+	return res.ResultAssetsList, err
+}
+
+func (m *globalRPC) GetMaxOfferId(accountIndex uint32) (uint64, error) {
+	rpcRsp, err := m.globalRPC.GetMaxOfferId(m.ctx, &globalrpc.ReqGetMaxOfferId{
+		AccountIndex: accountIndex,
+	})
+	return rpcRsp.GetOfferId(), err
+}

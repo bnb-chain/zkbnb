@@ -37,8 +37,10 @@ func (l *GetLatestAssetsListByAccountIndexLogic) GetLatestAssetsListByAccountInd
 	}
 	for assetID, asset := range accountInfo.AssetInfo {
 		resp.ResultAssetsList = append(resp.ResultAssetsList, &globalRPCProto.AssetResult{
-			AssetId: uint32(assetID),
-			Balance: asset.Balance.String(),
+			AssetId:                  uint32(assetID),
+			Balance:                  asset.Balance.String(),
+			LpAmount:                 asset.LpAmount.String(),
+			OfferCanceledOrFinalized: asset.OfferCanceledOrFinalized.String(),
 		})
 	}
 	return resp, nil

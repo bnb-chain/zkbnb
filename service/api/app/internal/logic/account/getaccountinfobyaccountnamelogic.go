@@ -32,9 +32,7 @@ func NewGetAccountInfoByAccountNameLogic(ctx context.Context, svcCtx *svc.Servic
 }
 
 func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *types.ReqGetAccountInfoByAccountName) (*types.RespGetAccountInfoByAccountName, error) {
-	resp := &types.RespGetAccountInfoByAccountName{
-		Assets: make([]*types.Asset, 0),
-	}
+
 	if utils.CheckAccountName(req.AccountName) {
 		logx.Errorf("[CheckAccountName] req.AccountName:%v", req.AccountName)
 		return nil, errcode.ErrInvalidParam
@@ -49,15 +47,22 @@ func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *type
 		logx.Errorf("[GetAccountByAccountName] accountName:%v, err:%v", accountName, err)
 		return nil, err
 	}
+	resp := &types.RespGetAccountInfoByAccountName{
+		AccountIndex: uint32(account.AccountIndex),
+		AccountPk:    account.PublicKey,
+		Assets:       make([]*types.AccountAsset, 0),
+	}
 	assets, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(uint32(account.AccountIndex))
 	if err != nil {
 		logx.Errorf("[GetLatestAccountInfoByAccountIndex] err:%v", err)
 		return nil, err
 	}
 	for _, asset := range assets {
-		resp.Assets = append(resp.Assets, &types.Asset{
-			AssetId: asset.AssetId,
-			Balance: asset.Balance,
+		resp.Assets = append(resp.Assets, &types.AccountAsset{
+			AssetId:                  asset.AssetId,
+			Balance:                  asset.Balance,
+			LpAmount:                 asset.LpAmount,
+			OfferCanceledOrFinalized: asset.OfferCanceledOrFinalized,
 		})
 	}
 	resp.AccountIndex = uint32(account.AccountIndex)

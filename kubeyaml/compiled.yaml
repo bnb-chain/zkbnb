@@ -12,17 +12,6 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: explorer-svc
-  namespace: default
-spec:
-  ports:
-  - port: 8889
-  selector:
-    app: explorer
----
-apiVersion: v1
-kind: Service
-metadata:
   name: globalrpc-svc
   namespace: default
 spec:
@@ -78,7 +67,8 @@ spec:
             port: 8888
         name: app
         ports:
-        - containerPort: 8888
+        - name: metrics
+          containerPort: 8888
         readinessProbe:
           initialDelaySeconds: 5
           periodSeconds: 10
@@ -199,70 +189,8 @@ spec:
           path: /usr/share/zoneinfo/Asia/Shanghai
         name: timezone
 ---
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    app: explorer
-  name: explorer
-  namespace: default
-spec:
-  replicas: 3
-  revisionHistoryLimit: 5
-  selector:
-    matchLabels:
-      app: explorer
-  template:
-    metadata:
-      labels:
-        app: explorer
-    spec:
-      serviceAccountName: find-endpoints
-      containers:
-      - image: us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/explorer:$TAG_NAME
-        imagePullPolicy: Always
-        lifecycle:
-          preStop:
-            exec:
-              command:
-              - sh
-              - -c
-              - sleep 5
-        livenessProbe:
-          initialDelaySeconds: 15
-          periodSeconds: 20
-          tcpSocket:
-            port: 8889
-        name: explorer
-        ports:
-        - containerPort: 8889
-        readinessProbe:
-          initialDelaySeconds: 5
-          periodSeconds: 10
-          tcpSocket:
-            port: 8889
-        resources:
-          limits:
-            cpu: 500m
-            memory: 512Mi
-          requests:
-            cpu: 200m
-            memory: 256Mi
-        volumeMounts:
-        - mountPath: /etc/localtime
-          name: timezone
-      initContainers:
-      - command:
-        - sh
-        - -c
-        - until nslookup globalrpc-svc; do echo waiting for globalrpc; sleep 2; done;
-        image: busybox
-        name: init-globalrpc
-      volumes:
-      - hostPath:
-          path: /usr/share/zoneinfo/Asia/Shanghai
-        name: timezone
----
+
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -298,7 +226,8 @@ spec:
             port: 8080
         name: globalrpc
         ports:
-        - containerPort: 8080
+        - name: metrics
+          containerPort: 8080
         readinessProbe:
           initialDelaySeconds: 5
           periodSeconds: 10
@@ -502,7 +431,8 @@ spec:
             port: 38000
         name: proverhub
         ports:
-        - containerPort: 38000
+        - name: metrics
+          containerPort: 38000
         readinessProbe:
           initialDelaySeconds: 5
           periodSeconds: 10
@@ -654,46 +584,6 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: app
----
-apiVersion: autoscaling/v2beta1
-kind: HorizontalPodAutoscaler
-metadata:
-  labels:
-    app: explorer-hpa-c
-  name: explorer-hpa-c
-  namespace: default
-spec:
-  maxReplicas: 5
-  metrics:
-  - resource:
-      name: cpu
-      targetAverageUtilization: 80
-    type: Resource
-  minReplicas: 1
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: explorer
----
-apiVersion: autoscaling/v2beta1
-kind: HorizontalPodAutoscaler
-metadata:
-  labels:
-    app: explorer-hpa-m
-  name: explorer-hpa-m
-  namespace: default
-spec:
-  maxReplicas: 5
-  metrics:
-  - resource:
-      name: memory
-      targetAverageUtilization: 80
-    type: Resource
-  minReplicas: 1
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: explorer
 ---
 apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler

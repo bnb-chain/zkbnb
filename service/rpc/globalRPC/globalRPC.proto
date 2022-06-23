@@ -31,6 +31,9 @@ message ReqGetLatestAssetsListByAccountIndex{
 message AssetResult{
   uint32 AssetId = 1;
   string Balance = 2;
+  string LpAmount           = 3;      
+	string OfferCanceledOrFinalized = 4;
+
 }
 
 message RespGetLatestAssetsListByAccountIndex{

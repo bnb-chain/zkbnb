@@ -2,11 +2,12 @@ package info
 
 import (
 	"context"
+	"math"
+
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/l2asset"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/price"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
-	"math"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -35,7 +36,6 @@ func (l *GetCurrencyPriceBySymbolLogic) GetCurrencyPriceBySymbol(req *types.ReqG
 		logx.Errorf("[GetCurrencyPrice] err:%v", err)
 		return nil, err
 	}
-
 	l2Asset, err := l.l2asset.GetL2AssetInfoBySymbol(req.Symbol)
 	if err != nil {
 		logx.Errorf("[GetL2AssetInfoBySymbol] err:%v", err)
@@ -43,8 +43,9 @@ func (l *GetCurrencyPriceBySymbolLogic) GetCurrencyPriceBySymbol(req *types.ReqG
 	}
 	_price = _price * math.Pow(10, float64(l2Asset.Decimals))
 	_price2 := uint64(_price)
-	resp := &types.RespGetCurrencyPriceBySymbol{Price: _price2}
-	resp.AssetId = uint32(l2Asset.ID)
-	logx.Info("[GetL2AssetInfoBySymbol]", "Symbol:", req.Symbol, "response:", resp)
+	resp := &types.RespGetCurrencyPriceBySymbol{
+		Price:   _price2,
+		AssetId: uint32(l2Asset.ID),
+	}
 	return resp, nil
 }

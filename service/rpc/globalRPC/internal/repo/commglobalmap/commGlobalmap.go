@@ -25,7 +25,7 @@ func (l *commglobalmap) GetLatestAccountInfo( accountIndex int64) (accountInfo *
 }
 
 func (l *commglobalmap) GetLatestLiquidityInfoForRead( pairIndex int64) (liquidityInfo *commGlobalmapHandler.LiquidityInfo, err error){
-	return  commGlobalmapHandler.GetLatestLiquidityInfoForRead(l.liquidityModel,l.mempoolTxDetailModel, l.redisConnection, pairIndex)
+	return  commGlobalmapHandler.GetLatestLiquidityInfoForRead(l.liquidityModel,l.mempoolModel, l.redisConnection, pairIndex)
 }
 
 
