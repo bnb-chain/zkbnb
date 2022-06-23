@@ -78,7 +78,8 @@ spec:
             port: 8888
         name: app
         ports:
-        - containerPort: 8888
+        - name: metrics
+          containerPort: 8888
         readinessProbe:
           initialDelaySeconds: 5
           periodSeconds: 10
@@ -235,7 +236,8 @@ spec:
             port: 8889
         name: explorer
         ports:
-        - containerPort: 8889
+        - name: metrics
+          containerPort: 8889
         readinessProbe:
           initialDelaySeconds: 5
           periodSeconds: 10
@@ -298,7 +300,8 @@ spec:
             port: 8080
         name: globalrpc
         ports:
-        - containerPort: 8080
+        - name: metrics
+          containerPort: 8080
         readinessProbe:
           initialDelaySeconds: 5
           periodSeconds: 10
@@ -502,7 +505,8 @@ spec:
             port: 38000
         name: proverhub
         ports:
-        - containerPort: 38000
+        - name: metrics
+          containerPort: 38000
         readinessProbe:
           initialDelaySeconds: 5
           periodSeconds: 10
