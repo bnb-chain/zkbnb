@@ -14,6 +14,7 @@ type (
 	RespGetStatus {
 		Status    uint32 `json:"status"`
 		NetworkId uint32 `json:"network_id"`
+		ServerVersion string `json:"server_version"`
 	}
 )
 
