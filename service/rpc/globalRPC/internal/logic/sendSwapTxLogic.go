@@ -145,7 +145,7 @@ func (l *SendTxLogic) sendSwapTx(rawTxInfo string) (txId string, err error) {
 		return "", errors.New(errInfo)
 	}
 
-	// check if toDelta is over minToAmount
+	// check if toDelta is less than minToAmount
 	if toDelta.Cmp(txInfo.AssetBMinAmount) < 0 {
 		errInfo := fmt.Sprintf("[logic.sendSwapTx] => minToAmount is bigger than toDelta: %s/%s",
 			txInfo.AssetBMinAmount.String(), toDelta.String())

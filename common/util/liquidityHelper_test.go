@@ -20,22 +20,23 @@ package util
 import (
 	"fmt"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
+	"log"
 	"math/big"
 	"testing"
 )
 
 func TestComputeDeltaY(t *testing.T) {
-	poolA := big.NewInt(100000)
-	poolB := big.NewInt(100000)
-	deltaY, _, err := ComputeDelta(
+	poolA := big.NewInt(1000)
+	poolB := big.NewInt(1000)
+	deltaY, assetId, err := ComputeDelta(
 		poolA, poolB,
-		0, 2, 0, true, big.NewInt(100),
+		0, 2, 0, false, big.NewInt(500),
 		30,
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(deltaY.String())
+	fmt.Println(deltaY.String(), assetId)
 }
 
 func TestComputeRemoveLiquidityAmount(t *testing.T) {
@@ -57,4 +58,33 @@ func TestComputeRemoveLiquidityAmount(t *testing.T) {
 	)
 	fmt.Println(aAmount.String())
 	fmt.Println(bAmount.String())
+}
+
+func TestComputeInputPrice(t *testing.T) {
+	poolA := big.NewInt(1000)
+	poolB := big.NewInt(1000)
+	deltaY := ComputeInputPrice(
+		poolA, poolB,
+		big.NewInt(500), 30,
+	)
+	fmt.Println(deltaY.String())
+}
+
+func TestComputeInputPriceS(t *testing.T) {
+	X := 1000
+	Y := 1000
+	inputX := 500
+
+	output := (9970 * inputX * Y ) / (10000 * X + 9970 * inputX)
+	log.Println(output)
+}
+
+func TestComputeOutputPrice(t *testing.T){
+	poolA := big.NewInt(1000)
+	poolB := big.NewInt(1000)
+	deltaY := ComputeOutputPrice(
+		poolA, poolB,
+		big.NewInt(500), 30,
+	)
+	fmt.Println(deltaY.String())
 }
