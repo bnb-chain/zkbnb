@@ -192,7 +192,7 @@ type (
 @server(
 	group: block
 )
-service appService-api{
+service app-api{
 	@handler GetBlocks
 	get /api/v1/block/getBlocks  (ReqGetBlocks) returns (RespGetBlocks)
 
@@ -639,7 +639,7 @@ type (
 @server(
 	group: nft
 )
-service appService-api{
+service app-api{
 	@handler GetMaxOfferId
 	get /api/v1/nft/getMaxOfferId  (ReqGetMaxOfferId) returns (RespGetMaxOfferId)
 }
