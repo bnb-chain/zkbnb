@@ -378,8 +378,10 @@ type (
 		PairIndex    uint32 `json:"pair_index"`
 		AssetAId     uint32 `json:"asset_a_id"`
 		AssetAName   string `json:"asset_a_name"`
+		AssetAAmount string `json:"asset_a_amount"`
 		AssetBId     uint32 `json:"asset_b_id"`
 		AssetBName   string `json:"asset_b_name"`
+		AssetBAmount string `json:"asset_b_amount"`
 		FeeRate      int64  `json:"fee_Rate"`
 		TreasuryRate int64  `json:"treasury_rate"`
 	}
