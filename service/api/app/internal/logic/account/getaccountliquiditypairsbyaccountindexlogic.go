@@ -51,7 +51,9 @@ func (l *GetAccountLiquidityPairsByAccountIndexLogic) GetAccountLiquidityPairsBy
 		LpAmountEnc: entitie.LpAmount,
 		CreatedAt:   entitie.CreatedAt.Unix(),
 	}
-	resp := &types.RespGetAccountLiquidityPairsByAccountIndex{}
+	resp := &types.RespGetAccountLiquidityPairsByAccountIndex{
+		Pairs: make([]*types.AccountLiquidityPairs, 0),
+	}
 	resp.Pairs = append(resp.Pairs, pair)
 	return resp, nil
 }

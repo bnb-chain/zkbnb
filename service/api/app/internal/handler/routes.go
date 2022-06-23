@@ -35,6 +35,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: account.GetAccountInfoByPubKeyHandler(serverCtx),
 			},
 			{
+				Method:  http.MethodPost,
+				Path:    "/api/v1/account/getAccountInfoByAccountIndex",
+				Handler: account.GetAccountInfoByAccountIndexHandler(serverCtx),
+			},
+			{
 				Method:  http.MethodGet,
 				Path:    "/api/v1/account/getAccountStatusByAccountName",
 				Handler: account.GetAccountStatusByAccountNameHandler(serverCtx),

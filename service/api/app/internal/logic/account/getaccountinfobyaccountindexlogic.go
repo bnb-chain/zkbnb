@@ -11,37 +11,38 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-type GetAccountInfoByPubKeyLogic struct {
+type GetAccountInfoByAccountIndexLogic struct {
 	logx.Logger
 	ctx       context.Context
 	svcCtx    *svc.ServiceContext
-	account   account.AccountModel
 	globalRPC globalrpc.GlobalRPC
+	account   account.AccountModel
 }
 
-func NewGetAccountInfoByPubKeyLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAccountInfoByPubKeyLogic {
-	return &GetAccountInfoByPubKeyLogic{
+func NewGetAccountInfoByAccountIndexLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAccountInfoByAccountIndexLogic {
+	return &GetAccountInfoByAccountIndexLogic{
 		Logger:    logx.WithContext(ctx),
 		ctx:       ctx,
 		svcCtx:    svcCtx,
-		account:   account.New(svcCtx),
 		globalRPC: globalrpc.New(svcCtx, ctx),
+		account:   account.New(svcCtx),
 	}
 }
 
-func (l *GetAccountInfoByPubKeyLogic) GetAccountInfoByPubKey(req *types.ReqGetAccountInfoByPubKey) (*types.RespGetAccountInfoByPubKey, error) {
-	account, err := l.account.GetAccountByPk(req.AccountPk)
+func (l *GetAccountInfoByAccountIndexLogic) GetAccountInfoByAccountIndex(req *types.ReqGetAccountInfoByAccountIndex) (*types.RespGetAccountInfoByAccountIndex, error) {
+
+	account, err := l.account.GetAccountByAccountIndex(req.AccountIndex)
 	if err != nil {
-		logx.Errorf("[GetAccountByPk] err:%v", err)
+		logx.Errorf("[GetAccountByAccountIndex] accountName:%v, err:%v", req.AccountIndex, err)
 		return nil, err
 	}
-	resp := &types.RespGetAccountInfoByPubKey{
+	resp := &types.RespGetAccountInfoByAccountIndex{
 		AccountStatus: uint32(account.Status),
 		AccountName:   account.AccountName,
-		AccountIndex:  account.AccountIndex,
+		AccountPk:     account.PublicKey,
 		Assets:        make([]*types.AccountAsset, 0),
 	}
-	assets, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(uint32(account.AccountIndex))
+	assets, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(uint32(req.AccountIndex))
 	if err != nil {
 		logx.Errorf("[GetLatestAccountInfoByAccountIndex] err:%v", err)
 		return nil, err
