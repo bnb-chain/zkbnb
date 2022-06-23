@@ -24,9 +24,9 @@ export PATH=$PATH:/usr/local/go/bin/
 cd ~
 rm -rf ~/zkbas-deploy-bak && mv ~/zkbas-deploy ~/zkbas-deploy-bak
 mkdir zkbas-deploy && cd zkbas-deploy
-git clone --branch local_testnet_with_keccak256 https://github.com/bnb-chain/zkbas
-git clone --branch local_testnet_with_keccak256 https://github.com/bnb-chain/zkbas-contract
-git clone --branch local_testnet_with_keccak256 https://github.com/bnb-chain/zkbas-crypto
+git clone --branch develop https://github.com/bnb-chain/zkbas
+git clone --branch develop https://github.com/bnb-chain/zkbas-contract
+git clone --branch develop https://github.com/bnb-chain/zkbas-crypto
 
 
 cd ~/zkbas-deploy
