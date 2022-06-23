@@ -1,24 +1,24 @@
-package account
+package info
 
 import (
 	"net/http"
 
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/logic/account"
+	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/logic/info"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-func GetAssetsByAccountNameHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func GetGasFeeAssetListHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.ReqGetAssetsByAccountName
+		var req types.ReqGetGasFeeAssetList
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.Error(w, err)
 			return
 		}
 
-		l := account.NewGetAssetsByAccountNameLogic(r.Context(), svcCtx)
-		resp, err := l.GetAssetsByAccountName(&req)
+		l := info.NewGetGasFeeAssetListLogic(r.Context(), svcCtx)
+		resp, err := l.GetGasFeeAssetList(&req)
 		if err != nil {
 			httpx.Error(w, err)
 		} else {

@@ -9,16 +9,16 @@ import (
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-func GetAccountLiquidityPairsByAccountIndexHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func GetAccountStatusByAccountPkHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.ReqGetAccountLiquidityPairsByAccountIndex
+		var req types.ReqGetAccountStatusByAccountPk
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.Error(w, err)
 			return
 		}
 
-		l := account.NewGetAccountLiquidityPairsByAccountIndexLogic(r.Context(), svcCtx)
-		resp, err := l.GetAccountLiquidityPairsByAccountIndex(&req)
+		l := account.NewGetAccountStatusByAccountPkLogic(r.Context(), svcCtx)
+		resp, err := l.GetAccountStatusByAccountPk(&req)
 		if err != nil {
 			httpx.Error(w, err)
 		} else {
