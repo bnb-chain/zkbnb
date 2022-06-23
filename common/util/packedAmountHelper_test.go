@@ -24,7 +24,7 @@ import (
 )
 
 func TestToPackedAmount(t *testing.T) {
-	amount, err := ToPackedAmount(big.NewInt(1111111111123))
+	amount, err := CleanPackedAmount(big.NewInt(1111111111123))
 	if err != nil {
 		t.Fatal(err)
 	}
