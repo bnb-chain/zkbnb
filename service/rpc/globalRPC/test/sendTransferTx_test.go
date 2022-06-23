@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"math/big"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -25,14 +24,11 @@ import (
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/svc"
 )
 
+var configFile = flag.String("f",
+	"../etc/globalrpc.yaml", "the config file")
+
 func TestSendTransferTx(t *testing.T) {
 	flag.Parse()
-
-	dir, err := filepath.Abs(filepath.Dir("./service/rpc/globalRPC/etc/globalrpc.yaml"))
-	if err != nil {
-		fmt.Println(err)
-	}
-	var configFile = flag.String("f", filepath.Join(dir, "globalrpc.yaml"), "the config file")
 
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
