@@ -19,7 +19,7 @@ type GetTxsListByBlockHeightLogic struct {
 	logx.Logger
 	ctx       context.Context
 	svcCtx    *svc.ServiceContext
-	tx        tx.Tx
+	tx        tx.Model
 	block     block.Block
 	account   account.AccountModel
 	mempool   mempool.Mempool

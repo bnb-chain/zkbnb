@@ -8,21 +8,23 @@ import (
 
 func GormTx2Tx(tx *tx.Tx) *types.Tx {
 	details := make([]*types.TxDetail, 0)
-	for _, detail := range tx.TxDetails {
-		d := &types.TxDetail{
-			TxId:            detail.TxId,
-			AssetId:         detail.AssetId,
-			AssetType:       detail.AssetType,
-			AccountIndex:    detail.AccountIndex,
-			AccountName:     detail.AccountName,
-			Balance:         detail.Balance,
-			BalanceDelta:    detail.BalanceDelta,
-			Order:           detail.Order,
-			AccountOrder:    detail.AccountOrder,
-			Nonce:           detail.Nonce,
-			CollectionNonce: detail.CollectionNonce,
+	if tx.TxDetails != nil {
+		for _, detail := range tx.TxDetails {
+			d := &types.TxDetail{
+				TxId:            detail.TxId,
+				AssetId:         detail.AssetId,
+				AssetType:       detail.AssetType,
+				AccountIndex:    detail.AccountIndex,
+				AccountName:     detail.AccountName,
+				Balance:         detail.Balance,
+				BalanceDelta:    detail.BalanceDelta,
+				Order:           detail.Order,
+				AccountOrder:    detail.AccountOrder,
+				Nonce:           detail.Nonce,
+				CollectionNonce: detail.CollectionNonce,
+			}
+			details = append(details, d)
 		}
-		details = append(details, d)
 	}
 	return &types.Tx{
 		TxHash:        tx.TxHash,
@@ -45,6 +47,7 @@ func GormTx2Tx(tx *tx.Tx) *types.Tx {
 		AccountIndex:  tx.AccountIndex,
 		Nonce:         tx.Nonce,
 		ExpiredAt:     tx.ExpiredAt,
+		CreatedAt:     tx.CreatedAt.Unix(),
 	}
 }
 

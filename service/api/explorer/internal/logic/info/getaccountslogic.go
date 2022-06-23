@@ -13,9 +13,8 @@ import (
 
 type GetAccountsLogic struct {
 	logx.Logger
-	ctx    context.Context
-	svcCtx *svc.ServiceContext
-
+	ctx     context.Context
+	svcCtx  *svc.ServiceContext
 	account account.AccountModel
 }
 

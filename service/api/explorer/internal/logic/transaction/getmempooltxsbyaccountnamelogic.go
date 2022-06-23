@@ -44,15 +44,17 @@ func (l *GetmempoolTxsByAccountNameLogic) GetmempoolTxsByAccountName(req *types.
 	}
 	mempoolTxDetails, err := l.mempooldetail.GetMempoolTxDetailByAccountIndex(int64(account.AccountIndex))
 	if err != nil {
-		logx.Errorf("[GetMempoolTxDetailByAccountIndex] err:%v", err)
+		logx.Errorf("[GetMempoolTxDetailByAccountIndex] AccountIndex:%v err:%v", account.AccountIndex, err)
 		return nil, err
 	}
+	logx.Errorf("[GetMempoolTxByTxID] TxId:%v", mempoolTxDetails)
+
 	for _, d := range mempoolTxDetails {
 		// loop run GetMempoolTxByTxID to add cache with txID
 		tx, err := l.mempool.GetMempoolTxByTxID(d.TxId)
 		if err != nil {
-			logx.Errorf("[GetMempoolTxByTxID] err:%v", err)
-			return nil, err
+			logx.Errorf("[GetMempoolTxByTxID] TxId:%v, err:%v", d.TxId, err)
+			continue
 		}
 		resp.Txs = append(resp.Txs, utils.MempoolTx2Tx(tx))
 	}

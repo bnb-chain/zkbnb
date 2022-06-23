@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	table "github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/errcode"
 
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -25,13 +26,9 @@ type sysconf struct {
 func (m *sysconf) GetSysconfigByName(name string) (config *table.Sysconfig, err error) {
 	dbTx := m.db.Table(m.table).Where("name = ?", name).Find(&config)
 	if dbTx.Error != nil {
-		err := fmt.Sprintf("[sysconfig.GetSysconfigByName] %s", dbTx.Error)
-		logx.Error(err)
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[sysconfig.GetSysconfigByName] %s", ErrNotFound)
-		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errcode.ErrDataNotExist
 	}
 	return config, nil
 }
@@ -51,7 +48,7 @@ func (m *sysconf) CreateSysconfig(config *table.Sysconfig) error {
 	}
 	if dbTx.RowsAffected == 0 {
 		logx.Error("[sysconfig.sysconfig] Create Invalid Sysconfig")
-		return ErrInvalidSysconfig
+		return errcode.ErrInvalidSysconfig
 	}
 	return nil
 }
@@ -64,7 +61,7 @@ func (m *sysconf) CreateSysconfigInBatches(configs []*table.Sysconfig) (rowsAffe
 	}
 	if dbTx.RowsAffected == 0 {
 		logx.Error("[sysconfig.CreateSysconfigInBatches] Create Invalid Sysconfig Batches")
-		return 0, ErrInvalidSysconfig
+		return 0, errcode.ErrInvalidSysconfig
 	}
 	return dbTx.RowsAffected, nil
 }
@@ -76,16 +73,14 @@ func (m *sysconf) CreateSysconfigInBatches(configs []*table.Sysconfig) (rowsAffe
 	Description: update sysconfig by config name
 */
 func (m *sysconf) UpdateSysconfig(config *table.Sysconfig) error {
-	dbTx := m.db.Table(m.table).Where("name = ?", config.Name).Select(NameColumn, ValueColumn, ValueTypeColumn, CommentColumn).
+	dbTx := m.db.Table(m.table).Where("name = ?", config.Name).Select("name", "value", "value_type", "comment").
 		Updates(config)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[sysconfig.UpdateSysconfig] %s", dbTx.Error)
 		logx.Error(err)
 		return dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[sysconfig.UpdateSysconfig] %s", ErrNotFound)
-		logx.Error(err)
-		return ErrNotFound
+		return errcode.ErrDataNotExist
 	}
 	return nil
 }

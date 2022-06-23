@@ -8,8 +8,10 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/globalrpc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/mempool"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/tx"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/txdetail"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/types"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -18,11 +20,12 @@ type GetTxsListByAccountIndexLogic struct {
 	logx.Logger
 	ctx       context.Context
 	svcCtx    *svc.ServiceContext
-	tx        tx.Tx
+	tx        tx.Model
 	block     block.Block
 	account   account.AccountModel
 	mempool   mempool.Mempool
 	globalRPC globalrpc.GlobalRPC
+	txDetail  txdetail.Model
 }
 
 func NewGetTxsListByAccountIndexLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTxsListByAccountIndexLogic {
@@ -35,61 +38,27 @@ func NewGetTxsListByAccountIndexLogic(ctx context.Context, svcCtx *svc.ServiceCo
 		account:   account.New(svcCtx),
 		mempool:   mempool.New(svcCtx),
 		globalRPC: globalrpc.New(svcCtx, ctx),
+		txDetail:  txdetail.New(svcCtx),
 	}
 }
 
 func (l *GetTxsListByAccountIndexLogic) GetTxsListByAccountIndex(req *types.ReqGetTxsListByAccountIndex) (*types.RespGetTxsListByAccountIndex, error) {
-	resp := &types.RespGetTxsListByAccountIndex{}
-	account, err := l.account.GetAccountByPk(req.AccountIndex)
+	resp := &types.RespGetTxsListByAccountIndex{
+		Txs: make([]*types.Tx, 0),
+	}
+	txDetails, err := l.txDetail.GetTxDetailByAccountIndex(l.ctx, int64(req.AccountIndex))
 	if err != nil {
-		logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
+		logx.Errorf("[GetTxDetailByAccountIndex] err:%v", err)
 		return nil, err
 	}
-	// txCount, err := l.svcCtx.Tx.GetTxsTotalCountByAccountIndex(account.AccountIndex)
-	// if err != nil {
-	// 	logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
-	// 	return
-	// }
-	mempoolTxCount, err := l.mempool.GetMempoolTxsTotalCountByAccountIndex(account.AccountIndex)
-	if err != nil {
-		logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
-		return nil, err
-	}
-	mempoolTxs, total, err := l.globalRPC.GetLatestTxsListByAccountIndex(uint32(account.AccountIndex), uint32(req.Limit), uint32(req.Offset))
-	if err != nil {
-		logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
-		return nil, err
-	}
-	for _, tx := range mempoolTxs {
-		txDetails := make([]*types.TxDetail, 0)
-		for _, txDetail := range tx.MempoolDetails {
-			txDetails = append(txDetails, &types.TxDetail{
-				AssetId:      txDetail.AssetId,
-				AssetType:    txDetail.AssetType,
-				AccountIndex: txDetail.AccountIndex,
-				AccountName:  txDetail.AccountName,
-				BalanceDelta: txDetail.BalanceDelta,
-			})
-		}
-		blockInfo, err := l.block.GetBlockByBlockHeight(tx.L2BlockHeight)
+	for _, d := range txDetails {
+		// loop run GetMempoolTxByTxID to add cache with txID
+		tx, err := l.tx.GetTxByTxID(d.TxId)
 		if err != nil {
-			logx.Error("[transaction.GetTxsByAccountIndexAndTxType] err:%v", err)
+			logx.Errorf("[GetTxByTxID] err:%v", err)
 			return nil, err
 		}
-		resp.Txs = append(resp.Txs, &types.Tx{
-			TxHash:        tx.TxHash,
-			TxType:        (tx.TxType),
-			GasFeeAssetId: (tx.GasFeeAssetId),
-			GasFee:        tx.GasFee,
-			TxStatus:      int64(tx.Status),
-			BlockHeight:   int64(tx.L2BlockHeight),
-			BlockId:       int64(blockInfo.ID),
-			TxAmount:      tx.TxAmount,
-			TxDetails:     txDetails,
-			NativeAddress: tx.NativeAddress,
-			Memo:          tx.Memo,
-		})
+		resp.Txs = append(resp.Txs, utils.GormTx2Tx(tx))
 	}
-	resp.Total = total + uint32(mempoolTxCount)
 	return resp, nil
 }
