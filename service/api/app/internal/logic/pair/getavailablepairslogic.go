@@ -26,7 +26,7 @@ func NewGetAvailablePairsLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 	}
 }
 
-func (l *GetAvailablePairsLogic) GetAvailablePairs(req *types.ReqGetAvailablePairs) (*types.RespGetAvailablePairs, error) {
+func (l *GetAvailablePairsLogic) GetAvailablePairs(_ *types.ReqGetAvailablePairs) (*types.RespGetAvailablePairs, error) {
 	liquidityAssets, err := l.liquidity.GetAllLiquidityAssets()
 	if err != nil {
 		logx.Error("[GetAllLiquidityAssets] err:%v", err)
