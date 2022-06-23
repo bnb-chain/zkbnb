@@ -25,6 +25,7 @@ import (
 	"math/big"
 )
 
+
 func ComputeEmptyLpAmount(
 	assetAAmount *big.Int,
 	assetBAmount *big.Int,
@@ -69,82 +70,6 @@ func ComputeRemoveLiquidityAmount(
 	return assetAAmount, assetBAmount
 }
 
-/*
-	ComputeDeltaX:
-	(x-deltaX)(y+deltaY) = k
-	deltaX = x - k/(y+deltaY)
-*/
-func ComputeDeltaX(x *big.Int, y *big.Int, deltaY *big.Int) (*big.Int, error) {
-	k := ffmath.Multiply(x, y)
-	yAddDeltaY := ffmath.Add(y, deltaY)
-	kDivYAddDeltaY := ffmath.FloatDivByInt(k, yAddDeltaY)
-	delatX, err := CleanPackedAmount(ffmath.Sub(x, ffmath.FloatToInt(kDivYAddDeltaY)))
-	if err != nil {
-		logx.Errorf("[ComputeDeltaX] unable to compute delta x: %s", err.Error())
-		return nil, err
-	}
-	return delatX, nil
-}
-
-/*
-	ComputeDeltaXInverse:
-	(x+deltaX)(y-deltaY) = k
-	deltaX = k/(y-deltaY) - x
-*/
-func ComputeDeltaXInverse(assetAAmount *big.Int, assetBAmount *big.Int, deltaY *big.Int) (*big.Int, error) {
-	k := ffmath.Multiply(assetAAmount, assetBAmount)
-	ySubDeltaY := ffmath.Sub(assetBAmount, deltaY)
-	rate := ffmath.FloatDivByInt(k, ySubDeltaY)
-	delatX, err := CleanPackedAmount(ffmath.Sub(ffmath.FloatToInt(rate), assetAAmount))
-	if err != nil {
-		logx.Errorf("[ComputeDeltaXInverse] unable to compute delta x: %s", err.Error())
-		return nil, err
-	}
-	return delatX, nil
-}
-
-/*
-	ComputeDeltaY:
-	(x+deltaX)(y-deltaY) = k
-	deltaY = y - k/(x+deltaX)
-*/
-func ComputeDeltaY(assetAAmount *big.Int, assetBAmount *big.Int, deltaX *big.Int) (*big.Int, error) {
-	k := ffmath.Multiply(assetAAmount, assetBAmount)
-	xAddDeltaX := ffmath.Add(assetAAmount, deltaX)
-	if xAddDeltaX.Cmp(ZeroBigInt) == 0 {
-		return big.NewInt(0), nil
-	} else {
-		rate := ffmath.FloatDivByInt(k, xAddDeltaX)
-		deltaY, err := CleanPackedAmount(ffmath.Sub(assetBAmount, ffmath.FloatToInt(rate)))
-		if err != nil {
-			logx.Errorf("[ComputeDeltaY] unable to compute delta x: %s", err.Error())
-			return nil, err
-		}
-		return deltaY, nil
-	}
-}
-
-/*
-	ComputeDeltaY:
-	(x-deltaX)(y+deltaY) = k
-	deltaY = k/(x-deltaX) - y
-*/
-func ComputeDeltaYInverse(assetAAmount *big.Int, assetBAmount *big.Int, deltaX *big.Int) (*big.Int, error) {
-	k := ffmath.Multiply(assetAAmount, assetBAmount)
-	//xSubDeltaX := assetAAmount - deltaX
-	xSubDeltaX := ffmath.Sub(assetAAmount, deltaX)
-	if xSubDeltaX.Cmp(ZeroBigInt) == 0 {
-		return ZeroBigInt, nil
-	} else {
-		rate := ffmath.FloatDivByInt(k, xSubDeltaX)
-		deltaY, err := CleanPackedAmount(ffmath.Sub(ffmath.FloatToInt(rate), assetBAmount))
-		if err != nil {
-			logx.Errorf("[ComputeDeltaYInverse] unable to compute delta x: %s", err.Error())
-			return nil, err
-		}
-		return deltaY, nil
-	}
-}
 
 func ComputeDelta(
 	assetAAmount *big.Int,
@@ -155,20 +80,11 @@ func ComputeDelta(
 ) (assetAmount *big.Int, toAssetId int64, err error) {
 
 	if isFrom {
-		nDeltaAmount := ComputeDeltaWithFeeRate(deltaAmount, feeRate)
 		if assetAId == assetId {
-			delta, err := ComputeDeltaY(assetAAmount, assetBAmount, nDeltaAmount)
-			if err != nil {
-				logx.Errorf("[ComputeDelta] unable to compute delta Y: %s", err.Error())
-				return nil, assetBId, err
-			}
+			delta := ComputeInputPrice(assetAAmount, assetBAmount, deltaAmount, feeRate)
 			return delta, assetBId, nil
 		} else if assetBId == assetId {
-			delta, err := ComputeDeltaX(assetAAmount, assetBAmount, nDeltaAmount)
-			if err != nil {
-				logx.Errorf("[ComputeDelta] unable to compute delta X: %s", err.Error())
-				return nil, assetBId, err
-			}
+			delta := ComputeInputPrice(assetBAmount, assetAAmount, deltaAmount,feeRate)
 			return delta, assetAId, nil
 		} else {
 			logx.Errorf("[ComputeDelta] invalid asset id")
@@ -176,52 +92,34 @@ func ComputeDelta(
 		}
 	} else {
 		if assetAId == assetId {
-			delta, err := ComputeDeltaYInverse(assetAAmount, assetBAmount, deltaAmount)
-			if err != nil {
-				logx.Errorf("[ComputeDelta] unable to ComputeDeltaYInverse: %s", err.Error())
-				return nil, assetBId, err
-			}
-			amount, err := ComputeRealDeltaXWithFeeRate(delta, feeRate)
-			if err != nil {
-				logx.Errorf("[ComputeDelta] unable to ComputeRealDeltaXWithFeeRate: %s", err.Error())
-				return nil, assetBId, err
-			}
-			return amount, assetBId, nil
+			delta := ComputeOutputPrice(assetAAmount, assetBAmount, deltaAmount, feeRate)
+			return delta, assetBId, nil
 		} else if assetBId == assetId {
-			delta, err := ComputeDeltaXInverse(assetAAmount, assetBAmount, deltaAmount)
-			if err != nil {
-				logx.Errorf("[ComputeDelta] unable to ComputeDeltaXInverse: %s", err.Error())
-				return nil, assetBId, err
-			}
-			amount, err := ComputeRealDeltaXWithFeeRate(delta, feeRate)
-			if err != nil {
-				logx.Errorf("[ComputeDelta] unable to ComputeRealDeltaXWithFeeRate: %s", err.Error())
-				return nil, assetBId, err
-			}
-			return amount, assetAId, nil
+			delta := ComputeOutputPrice(assetBAmount, assetAAmount, deltaAmount,feeRate)
+			return delta, assetAId, nil
 		} else {
 			logx.Errorf("[ComputeDelta] invalid asset id")
-			return ZeroBigInt, 0, errors.New("[utils.ComputeDelta]: invalid asset id")
+			return ZeroBigInt, 0, errors.New("[ComputeDelta]: invalid asset id")
 		}
 	}
 }
 
-// deltaX - gas = deltaX * (10000 - feeRate) / 10000
-func ComputeDeltaWithFeeRate(iDelta *big.Int, feeRate int64) *big.Int {
-	realADeltaBigInt := ffmath.Div(ffmath.Multiply(iDelta, big.NewInt(FeeRateBase-feeRate)), big.NewInt(int64(FeeRateBase)))
-	return realADeltaBigInt
+/*
+	Implementation Reference:
+	https://github.com/runtimeverification/verified-smart-contracts/blob/master/uniswap/x-y-k.pdf
+ */
+
+/*
+	InputPrice = （9970 * deltaX * y) / (10000 * x + 9970 * deltaX)
+ */
+func ComputeInputPrice(x *big.Int, y *big.Int, inputX *big.Int, feeRate int64) *big.Int{
+	rFeeR := big.NewInt(FeeRateBase - feeRate)
+	return ffmath.Div(ffmath.Multiply(rFeeR, ffmath.Multiply(inputX, y)), ffmath.Add(ffmath.Multiply(big.NewInt(FeeRateBase), x), ffmath.Multiply(rFeeR, inputX)))
 }
-
-// realDeltaX = deltaX / (1 - feeRate / 10000)
-func ComputeRealDeltaXWithFeeRate(deltaX *big.Int, feeRate int64) (realDeltaX *big.Int, err error) {
-
-	realDeltaX, err = CleanPackedAmount(ffmath.FloatToInt(
-		ffmath.FloatDiv(
-			ffmath.IntToFloat(deltaX),
-			new(big.Float).SetFloat64(float64(FeeRateBase-feeRate)/float64(FeeRateBase))),
-	))
-	if err != nil {
-		return nil, err
-	}
-	return realDeltaX, nil
+/*
+	OutputPrice = （10000 * x * deltaY) / (9970 * (y - deltaY)) + 1
+*/
+func ComputeOutputPrice(x *big.Int, y *big.Int, inputY *big.Int, feeRate int64) *big.Int{
+	rFeeR := big.NewInt(FeeRateBase - feeRate)
+	return ffmath.Add(ffmath.Div(ffmath.Multiply(big.NewInt(FeeRateBase), ffmath.Multiply(x, inputY)), ffmath.Multiply(rFeeR, ffmath.Sub(y, inputY))), big.NewInt(1))
 }
