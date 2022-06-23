@@ -210,13 +210,13 @@ type (
 @server(
 	group: block
 )
-service appService-api{
+service app-api{
 	@handler GetBlocks
 	get /api/v1/block/getBlocks  (ReqGetBlocks) returns (RespGetBlocks)
-
+	
 	@handler GetBlockByCommitment
 	get /api/v1/block/getBlockByCommitment  (ReqGetBlockByCommitment) returns (RespGetBlockByCommitment)
-
+	
 	@handler GetBlockByBlockHeight
 	get /api/v1/block/getBlockByBlockHeight  (ReqGetBlockByBlockHeight) returns (RespGetBlockByBlockHeight)
 }
@@ -333,7 +333,7 @@ type (
 service app-api{
 	@handler GetLayer2BasicInfo
 	get /api/v1/info/getLayer2BasicInfo  (ReqGetLayer2BasicInfo) returns (RespGetLayer2BasicInfo)
-
+	
 	@handler GetAssetsList
 	get /api/v1/info/getAssetsList  (ReqGetAssetsList) returns (RespGetAssetsList)
 	
@@ -348,10 +348,10 @@ service app-api{
 	
 	@handler GetWithdrawGasFee
 	get /api/v1/info/getWithdrawGasFee  (ReqGetWithdrawGasFee) returns (RespGetWithdrawGasFee)
-
+	
 	@handler GetAccounts
 	get /api/v1/info/getAccounts  (ReqGetAccounts) returns (RespGetAccounts)
-
+	
 	@handler Search
 	get /api/v1/info/search  (ReqSearch) returns (RespSearch)
 }
@@ -613,10 +613,10 @@ type (
 service app-api{
 	@handler GetTxsListByBlockHeight
 	get /api/v1/tx/getTxsListByBlockHeight  (ReqGetTxsListByBlockHeight) returns (RespGetTxsListByBlockHeight)
-
+	
 	@handler GetTxsListByAccountIndex
 	get /api/v1/tx/getTxsListByAccountIndex  (ReqGetTxsListByAccountIndex) returns (RespGetTxsListByAccountIndex)
-
+	
 	@handler GetTxsByAccountIndexAndTxType
 	get /api/v1/tx/getTxsByAccountIndexAndTxType   (ReqGetTxsByAccountIndexAndTxType) returns (RespGetTxsByAccountIndexAndTxType)
 	
@@ -637,7 +637,7 @@ service app-api{
 	
 	@handler GetmempoolTxsByAccountName
 	get /api/v1/tx/getmempoolTxsByAccountName  (ReqGetmempoolTxsByAccountName) returns (RespGetmempoolTxsByAccountName)
-
+	
 	@handler GetNextNonce
 	get /api/v1/tx/getNextNonce (ReqGetNextNonce) returns (RespGetNextNonce)
 }
@@ -657,7 +657,7 @@ type (
 @server(
 	group: nft
 )
-service appService-api{
+service app-api{
 	@handler GetMaxOfferId
 	get /api/v1/nft/getMaxOfferId  (ReqGetMaxOfferId) returns (RespGetMaxOfferId)
 }
