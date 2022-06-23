@@ -7,7 +7,7 @@ import (
 // error got from other package
 var (
 	errRedisCacheKeyNotExist = errors.New("redis: nil")
-	errGoCacheKeyNotExist    = errors.New("value not found in GoCache store")
+	errGoCacheKeyNotExist    = errors.New("Value not found in GoCache store")
 )
 
 // cache key register

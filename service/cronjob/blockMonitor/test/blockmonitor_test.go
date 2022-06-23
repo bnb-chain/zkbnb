@@ -42,7 +42,7 @@ func TestBlockMonitor(t *testing.T) {
 	ZecreyRollupAddress, err := ctx.SysConfig.GetSysconfigByName(c.ChainConfig.ZecreyContractAddrSysConfigName)
 
 	if err != nil {
-		logx.Severef("[blockMonitor] fatal error, cannot fetch ZecreyLegendContractAddr from sysConfig, err: %s, SysConfigName: %s",
+		logx.Severef("[blockMonitor] fatal error, cannot fetch ZkbasContractAddr from sysConfig, err: %s, SysConfigName: %s",
 			err.Error(), c.ChainConfig.ZecreyContractAddrSysConfigName)
 		panic(err)
 	}

@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"path/filepath"
 
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/service"
@@ -16,11 +17,14 @@ import (
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/svc"
 )
 
-var configFile = flag.String("f",
-	"./etc/config.yaml", "the config file")
-
 func main() {
 	flag.Parse()
+
+	dir, err := filepath.Abs(filepath.Dir("./service/rpc/globalRPC/etc/globalrpc.yaml"))
+	if err != nil {
+		fmt.Println(err)
+	}
+	var configFile = flag.String("f", filepath.Join(dir, "globalrpc.yaml"), "the config file")
 
 	var c config.Config
 	conf.MustLoad(*configFile, &c)

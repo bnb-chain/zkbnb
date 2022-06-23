@@ -26,11 +26,11 @@ type L1EventInfo struct {
 }
 
 type ChainConfig struct {
-	L2ChainId                uint8
-	NativeChainId            *big.Int
-	NetworkRPC               string
-	ZecreyLegendContractAddr string
-	GovernanceContractAddr   string
-	StartL1BlockHeight       int64
-	PendingBlocksCount       uint64
+	L2ChainId              uint8
+	NativeChainId          *big.Int
+	NetworkRPC             string
+	ZkbasContractAddr      string
+	GovernanceContractAddr string
+	StartL1BlockHeight     int64
+	PendingBlocksCount     uint64
 }

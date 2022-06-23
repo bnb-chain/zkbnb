@@ -3,10 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
+	"path/filepath"
 
 	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
 	"github.com/bnb-chain/zkbas/service/cronjob/l2BlockMonitor/internal/config"
@@ -14,11 +14,14 @@ import (
 	"github.com/bnb-chain/zkbas/service/cronjob/l2BlockMonitor/internal/svc"
 )
 
-var configFile = flag.String("f",
-	"./etc/l2blockmonitor.yaml", "the config file")
-
 func main() {
 	flag.Parse()
+
+	dir, err := filepath.Abs(filepath.Dir("./service/cronjob/l2BlockMonitor/etc/local.yaml"))
+	if err != nil {
+		fmt.Println(err)
+	}
+	var configFile = flag.String("f", filepath.Join(dir, "local.yaml"), "the config file")
 
 	var c config.Config
 	conf.MustLoad(*configFile, &c)

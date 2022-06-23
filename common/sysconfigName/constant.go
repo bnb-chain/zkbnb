@@ -21,6 +21,7 @@ const (
 	TreasuryAccountIndex    = "TreasuryAccountIndex"
 	GasAccountIndex         = "GasAccountIndex"
 	BscTestNetworkRpc       = "BscTestNetworkRpc"
+	LocalTestNetworkRpc     = "LocalTestNetworkRpc"
 	SysGasFee               = "SysGasFee"
 	MaxAssetId              = "MaxAssetId"
 	ZecreyLegendContract    = "ZecreyLegendContract"

@@ -14,5 +14,5 @@ ProverHubRPC:
     Key: proverhub.rpc
 
 KeyPath:
-  ProvingKeyPath: /Users/gavin/Documents/zecrey/zecrey-legend/zecrey-legend.pk
-  VerifyingKeyPath: /Users/gavin/Documents/zecrey/zecrey-legend/zecrey-legend.vk
+  ProvingKeyPath: /tmp/zkbas.pk
+  VerifyingKeyPath: /tmp/zkbas.vk
