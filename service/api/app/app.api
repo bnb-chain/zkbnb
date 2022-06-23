@@ -28,9 +28,11 @@ service app-api{
 
 /* ========================= Account =========================*/
 
-type AssetBalance {
-	AssetId uint32 `json:"asset_id"`
-	Balance string `json:"balance"`
+type AccountAsset {
+	AssetId                  uint32 `json:"asset_id"`
+	Balance                  string `json:"balance"`
+	LpAmount                 string `json:"lp_amount"`
+	OfferCanceledOrFinalized string `json:"offer_canceled_or_finalized"`
 }
 
 // GetAccountInfoByPubKey
@@ -42,7 +44,20 @@ type (
 		AccountStatus uint32          `json:"account_status"`
 		AccountName   string          `json:"account_name"`
 		AccountIndex  int64           `json:"account_index"`
-		Assets        []*AssetBalance `json:"assets"`
+		Assets        []*AccountAsset `json:"assets"`
+	}
+)
+
+// getAccountInfoByAccountIndex
+type (
+	ReqGetAccountInfoByAccountIndex {
+		AccountIndex int64 `json:"account_index"`
+	}
+	RespGetAccountInfoByAccountIndex {
+		AccountStatus uint32          `json:"account_status"`
+		AccountName   string          `json:"account_name"`
+		AccountPk     string          `form:"account_pk"`
+		Assets        []*AccountAsset `json:"assets"`
 	}
 )
 
@@ -66,7 +81,7 @@ type (
 	RespGetAccountInfoByAccountName {
 		AccountIndex uint32          `json:"account_index"`
 		AccountPk    string          `json:"account_pk"`
-		Assets       []*AssetBalance `json:"assets"`
+		Assets       []*AccountAsset `json:"assets"`
 	}
 )
 
@@ -87,7 +102,7 @@ type (
 		AccountName string `form:"account_name"`
 	}
 	RespGetAssetsByAccountName {
-		Assets []*AssetBalance `json:"assets"`
+		Assets []*AccountAsset `json:"assets"`
 	}
 )
 
@@ -117,6 +132,9 @@ type (
 service app-api{
 	@handler GetAccountInfoByPubKey
 	post /api/v1/account/getAccountInfoByPubKey (ReqGetAccountInfoByPubKey) returns (RespGetAccountInfoByPubKey)
+	
+	@handler GetAccountInfoByAccountIndex
+	post /api/v1/account/getAccountInfoByAccountIndex (ReqGetAccountInfoByAccountIndex) returns (RespGetAccountInfoByAccountIndex)
 	
 	@handler GetAccountStatusByAccountName
 	get /api/v1/account/getAccountStatusByAccountName (ReqGetAccountStatusByAccountName) returns (RespGetAccountStatusByAccountName)
@@ -192,13 +210,13 @@ type (
 @server(
 	group: block
 )
-service appService-api{
+service app-api{
 	@handler GetBlocks
 	get /api/v1/block/getBlocks  (ReqGetBlocks) returns (RespGetBlocks)
-
+	
 	@handler GetBlockByCommitment
 	get /api/v1/block/getBlockByCommitment  (ReqGetBlockByCommitment) returns (RespGetBlockByCommitment)
-
+	
 	@handler GetBlockByBlockHeight
 	get /api/v1/block/getBlockByBlockHeight  (ReqGetBlockByBlockHeight) returns (RespGetBlockByBlockHeight)
 }
@@ -315,7 +333,7 @@ type (
 service app-api{
 	@handler GetLayer2BasicInfo
 	get /api/v1/info/getLayer2BasicInfo  (ReqGetLayer2BasicInfo) returns (RespGetLayer2BasicInfo)
-
+	
 	@handler GetAssetsList
 	get /api/v1/info/getAssetsList  (ReqGetAssetsList) returns (RespGetAssetsList)
 	
@@ -330,10 +348,10 @@ service app-api{
 	
 	@handler GetWithdrawGasFee
 	get /api/v1/info/getWithdrawGasFee  (ReqGetWithdrawGasFee) returns (RespGetWithdrawGasFee)
-
+	
 	@handler GetAccounts
 	get /api/v1/info/getAccounts  (ReqGetAccounts) returns (RespGetAccounts)
-
+	
 	@handler Search
 	get /api/v1/info/search  (ReqSearch) returns (RespSearch)
 }
@@ -595,10 +613,10 @@ type (
 service app-api{
 	@handler GetTxsListByBlockHeight
 	get /api/v1/tx/getTxsListByBlockHeight  (ReqGetTxsListByBlockHeight) returns (RespGetTxsListByBlockHeight)
-
+	
 	@handler GetTxsListByAccountIndex
 	get /api/v1/tx/getTxsListByAccountIndex  (ReqGetTxsListByAccountIndex) returns (RespGetTxsListByAccountIndex)
-
+	
 	@handler GetTxsByAccountIndexAndTxType
 	get /api/v1/tx/getTxsByAccountIndexAndTxType   (ReqGetTxsByAccountIndexAndTxType) returns (RespGetTxsByAccountIndexAndTxType)
 	
@@ -619,7 +637,7 @@ service app-api{
 	
 	@handler GetmempoolTxsByAccountName
 	get /api/v1/tx/getmempoolTxsByAccountName  (ReqGetmempoolTxsByAccountName) returns (RespGetmempoolTxsByAccountName)
-
+	
 	@handler GetNextNonce
 	get /api/v1/tx/getNextNonce (ReqGetNextNonce) returns (RespGetNextNonce)
 }
@@ -639,7 +657,7 @@ type (
 @server(
 	group: nft
 )
-service appService-api{
+service app-api{
 	@handler GetMaxOfferId
 	get /api/v1/nft/getMaxOfferId  (ReqGetMaxOfferId) returns (RespGetMaxOfferId)
 }
