@@ -22,5 +22,5 @@ explorer:
 	@echo "Done generate explorer api";
 
 gRPCProto:
-	cd $(globalRPCProto) && goctl rpc protoc globalRPC.proto --go_out=. --go-grpc_out=. --zrpc_out=.l
+	cd $(gRPCProto) && goctl rpc protoc globalRPC.proto --go_out=. --go-grpc_out=. --zrpc_out=.;
 	@echo "Done generate globalRPCProto";
