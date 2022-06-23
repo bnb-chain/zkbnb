@@ -7,7 +7,7 @@ import (
 
 type Block interface {
 	GetCommitedBlocksCount() (count int64, err error)
-	GetExecutedBlocksCount() (count int64, err error)
+	GetVerifiedBlocksCount() (count int64, err error)
 	GetBlockWithTxsByCommitment(BlockCommitment string) (block *table.Block, err error)
 	GetBlockByBlockHeight(blockHeight int64) (block *table.Block, err error)
 	GetBlockWithTxsByBlockHeight(blockHeight int64) (block *table.Block, err error)

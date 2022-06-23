@@ -14,6 +14,7 @@ type Model interface {
 	GetTxByTxHash(txHash string) (tx *table.Tx, err error)
 	GetTxs(limit, offset uint32) (txs []*table.Tx, err error)
 	GetTxByTxID(txID int64) (tx *table.Tx, err error)
+	GetTxCountByTimeRange(data string) (count int64, err error)
 }
 
 func New(svcCtx *svc.ServiceContext) Model {

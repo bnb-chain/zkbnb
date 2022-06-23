@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"time"
 
 	table "github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
@@ -104,4 +105,28 @@ func (m *model) GetTxByTxID(txID int64) (*table.Tx, error) {
 		return nil, errcode.ErrDataNotExist
 	}
 	return tx, nil
+}
+
+func (m *model) GetTxCountByTimeRange(data string) (count int64, err error) {
+	var (
+		from time.Time
+		to   time.Time
+	)
+	now := time.Now()
+	today := now.Round(24 * time.Hour).Add(-8 * time.Hour)
+	switch data {
+	case "yesterday":
+		from = today.Add(-24 * time.Hour)
+		to = today
+	case "today":
+		from = today
+		to = now
+	}
+	dbTx := m.db.Table(m.table).
+		Where("created_at BETWEEN ? AND ?", from, to).Count(&count)
+
+	if dbTx.Error != nil {
+		return 0, dbTx.Error
+	}
+	return count, nil
 }

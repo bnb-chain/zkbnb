@@ -13,10 +13,14 @@ type ReqGetLayer2BasicInfo struct {
 }
 
 type RespGetLayer2BasicInfo struct {
-	BlockCommitted         int64    `json:"block_committed"`
-	BlockExecuted          int64    `json:"block_executed"`
-	TotalTransactionsCount int64    `json:"total_transactions_count"`
-	ContractAddresses      []string `json:"contract_addresses"`
+	BlockCommitted             int64    `json:"block_committed"`
+	BlockVerified              int64    `json:"block_verified"`
+	TotalTransactions          int64    `json:"total_transactions"`
+	TransactionsCountYesterday int64    `json:"transactions_count_yesterday"`
+	TransactionsCountToday     int64    `json:"transactions_count_today"`
+	DauYesterday               int64    `json:"dau_yesterday"`
+	DauToday                   int64    `json:"dau_today"`
+	ContractAddresses          []string `json:"contract_addresses"`
 }
 
 type ReqGetAssetsList struct {
@@ -124,6 +128,7 @@ type Tx struct {
 	AccountIndex  int64       `json:"account_index"`
 	Nonce         int64       `json:"nonce"`
 	ExpiredAt     int64       `json:"expired_at"`
+	CreatedAt     int64       `json:"created_at"`
 }
 
 type TxDetail struct {
@@ -156,11 +161,13 @@ type ReqGetTxByHash struct {
 }
 
 type RespGetTxByHash struct {
-	Txs Tx `json:"result"`
+	Txs      Tx    `json:"result"`
+	AssetAId int64 `json:"asset_a_id"`
+	AssetBId int64 `json:"asset_b_id"`
 }
 
 type ReqGetTxsListByAccountIndex struct {
-	AccountIndex string `form:"account_index"`
+	AccountIndex uint32 `form:"account_index"`
 	Offset       uint16 `form:"offset"`
 	Limit        uint16 `form:"limit"`
 }
@@ -192,7 +199,7 @@ type RespGetMempoolTxsListByPublicKey struct {
 }
 
 type ReqGetmempoolTxsByAccountName struct {
-	AccountName string `json:"account_name"`
+	AccountName string `form:"account_name"`
 }
 
 type RespGetmempoolTxsByAccountName struct {

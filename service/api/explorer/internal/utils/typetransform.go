@@ -47,6 +47,7 @@ func GormTx2Tx(tx *tx.Tx) *types.Tx {
 		AccountIndex:  tx.AccountIndex,
 		Nonce:         tx.Nonce,
 		ExpiredAt:     tx.ExpiredAt,
+		CreatedAt:     tx.CreatedAt.Unix(),
 	}
 }
 

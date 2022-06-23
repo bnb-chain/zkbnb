@@ -2,11 +2,11 @@ package info
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/block"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/sysconf"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/tx"
+	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/txdetail"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/types"
 
@@ -21,6 +21,7 @@ type GetLayer2BasicInfoLogic struct {
 	sysconfigModel sysconf.Sysconf
 	block          block.Block
 	tx             tx.Model
+	txDetail       txdetail.Model
 }
 
 func NewGetLayer2BasicInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetLayer2BasicInfoLogic {
@@ -31,42 +32,54 @@ func NewGetLayer2BasicInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 		sysconfigModel: sysconf.New(svcCtx),
 		block:          block.New(svcCtx),
 		tx:             tx.New(svcCtx),
+		txDetail:       txdetail.New(svcCtx),
 	}
 }
 
 func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo(req *types.ReqGetLayer2BasicInfo) (*types.RespGetLayer2BasicInfo, error) {
-	resp := &types.RespGetLayer2BasicInfo{}
-	errorHandler := func(e error) bool {
-		if e != nil {
-			err := fmt.Errorf("[explorer.info.GetLayer2BasicInfo]<=>%s", e.Error())
-			l.Error(err)
-			return true
-		}
-		return false
+	resp := &types.RespGetLayer2BasicInfo{
+		ContractAddresses: make([]string, 0),
 	}
-
-	committedBlocksCount, err := l.block.GetCommitedBlocksCount()
-	if errorHandler(err) {
+	var err error
+	resp.BlockCommitted, err = l.block.GetCommitedBlocksCount()
+	if err != nil {
+		logx.Errorf("[GetCommitedBlocksCount] err:%v", err)
 		return nil, err
 	}
-	resp.BlockCommitted = committedBlocksCount
-
-	executedBlocksCount, err := l.block.GetExecutedBlocksCount()
-	if errorHandler(err) {
+	resp.BlockVerified, err = l.block.GetVerifiedBlocksCount()
+	if err != nil {
+		logx.Errorf("[GetVerifiedBlocksCount] err:%v", err)
 		return nil, err
 	}
-	resp.BlockExecuted = executedBlocksCount
-
-	txsCount, err := l.tx.GetTxsTotalCount(l.ctx)
-	if errorHandler(err) {
+	resp.TotalTransactions, err = l.tx.GetTxsTotalCount(l.ctx)
+	if err != nil {
+		logx.Errorf("[GetTxsTotalCount] err:%v", err)
 		return nil, err
 	}
-	resp.TotalTransactionsCount = txsCount
-
-	resp.ContractAddresses = make([]string, 0)
+	resp.TransactionsCountYesterday, err = l.tx.GetTxCountByTimeRange("yesterday")
+	if err != nil {
+		logx.Errorf("[GetTxCountByTimeRange] err:%v", err)
+		return nil, err
+	}
+	resp.TransactionsCountToday, err = l.tx.GetTxCountByTimeRange("today")
+	if err != nil {
+		logx.Errorf("[GetTxCountByTimeRange] err:%v", err)
+		return nil, err
+	}
+	resp.DauYesterday, err = l.txDetail.GetDauInTxDetail(l.ctx, "yesterday")
+	if err != nil {
+		logx.Errorf("[GetTxCountByTimeRange] err:%v", err)
+		return nil, err
+	}
+	resp.DauToday, err = l.txDetail.GetDauInTxDetail(l.ctx, "today")
+	if err != nil {
+		logx.Errorf("[GetTxCountByTimeRange] err:%v", err)
+		return nil, err
+	}
 	for _, contractAddressesName := range contractAddressesNames {
 		contract, err := l.sysconfigModel.GetSysconfigByName(contractAddressesName)
-		if errorHandler(err) {
+		if err != nil {
+			logx.Errorf("[GetSysconfigByName] err:%v", err)
 			return nil, err
 		}
 		resp.ContractAddresses = append(resp.ContractAddresses, contract.Value)
