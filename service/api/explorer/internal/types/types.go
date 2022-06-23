@@ -211,6 +211,7 @@ type ReqGetAccountInfoByAccountName struct {
 
 type RespGetAccountInfoByAccountName struct {
 	AccountIndex uint32       `json:"account_index"`
+	Nonce        int64        `json:"nonce"`
 	AccountPk    string       `json:"account_pk"`
 	Assets       []*AssetInfo `json:"assets"`
 }
