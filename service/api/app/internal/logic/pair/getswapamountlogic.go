@@ -42,7 +42,8 @@ func (l *GetSwapAmountLogic) GetSwapAmount(req *types.ReqGetSwapAmount) (*types.
 		logx.Error("[GetSwapAmount] err:%v", err)
 		return nil, err
 	}
-	resp := &types.RespGetSwapAmount{resAssetAmount, resAssetId}
-
-	return resp, nil
+	return &types.RespGetSwapAmount{
+		ResAssetAmount: resAssetAmount,
+		ResAssetId:     resAssetId,
+	}, nil
 }

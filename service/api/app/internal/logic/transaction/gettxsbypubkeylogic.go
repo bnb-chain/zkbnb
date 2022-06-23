@@ -3,7 +3,6 @@ package transaction
 import (
 	"context"
 
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/accounthistory"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/block"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/globalrpc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/mempool"
@@ -18,7 +17,7 @@ type GetTxsByPubKeyLogic struct {
 	logx.Logger
 	ctx       context.Context
 	svcCtx    *svc.ServiceContext
-	account   accounthistory.AccountHistory
+	account   account.Account
 	globalRpc globalrpc.GlobalRPC
 	tx        tx.Model
 	mempool   mempool.Mempool
@@ -30,7 +29,7 @@ func NewGetTxsByPubKeyLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 		Logger:    logx.WithContext(ctx),
 		ctx:       ctx,
 		svcCtx:    svcCtx,
-		account:   accounthistory.New(svcCtx),
+		account:   account.New(svcCtx),
 		globalRpc: globalrpc.New(svcCtx, ctx),
 		tx:        tx.New(svcCtx),
 		mempool:   mempool.New(svcCtx),

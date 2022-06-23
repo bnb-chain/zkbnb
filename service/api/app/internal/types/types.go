@@ -5,8 +5,9 @@ type ReqGetStatus struct {
 }
 
 type RespGetStatus struct {
-	Status    uint32 `json:"status"`
-	NetworkId uint32 `json:"network_id"`
+	Status        uint32 `json:"status"`
+	NetworkId     uint32 `json:"network_id"`
+	ServerVersion string `json:"server_version"`
 }
 
 type AccountAsset struct {
@@ -251,8 +252,10 @@ type Pair struct {
 	PairIndex    uint32 `json:"pair_index"`
 	AssetAId     uint32 `json:"asset_a_id"`
 	AssetAName   string `json:"asset_a_name"`
+	AssetAAmount string `json:"asset_a_amount"`
 	AssetBId     uint32 `json:"asset_b_id"`
 	AssetBName   string `json:"asset_b_name"`
+	AssetBAmount string `json:"asset_b_amount"`
 	FeeRate      int64  `json:"fee_Rate"`
 	TreasuryRate int64  `json:"treasury_rate"`
 }
