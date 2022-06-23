@@ -9,7 +9,11 @@ cronjob="blockMonitor mempoolMonitor committer sender l2BlockMonitor proverClien
 
 # pull newest code
 cd $2
+# ignore local modification
+git checkout .
+# fetch tags
 git fetch -unf origin $1:refs/tags/$1
+# switch to new tag
 git checkout $1
 
 
