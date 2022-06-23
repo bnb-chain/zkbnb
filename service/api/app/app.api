@@ -35,6 +35,18 @@ type AccountAsset {
 	OfferCanceledOrFinalized string `json:"offer_canceled_or_finalized"`
 }
 
+// GetAccountStatusByAccountPk
+type (
+	ReqGetAccountStatusByAccountPk {
+		AccountPk string `json:"account_pk"`
+	}
+	RespGetAccountStatusByAccountPk {
+		AccountStatus int64  `json:"account_status"`
+		AccountIndex  int64  `json:"account_index"`
+		AccountName   string `form:"account_name"`
+	}
+)
+
 // GetAccountInfoByPubKey
 type (
 	ReqGetAccountInfoByPubKey {
@@ -96,40 +108,14 @@ type (
 	}
 )
 
-// GetAssetsByAccountName
-type (
-	ReqGetAssetsByAccountName {
-		AccountName string `form:"account_name"`
-	}
-	RespGetAssetsByAccountName {
-		Assets []*AccountAsset `json:"assets"`
-	}
-)
-
-// GetAccountLiquidityPairsByAccountIndex
-type (
-	ReqGetAccountLiquidityPairsByAccountIndex {
-		AccountIndex uint32 `form:"account_index"`
-	}
-	AccountLiquidityPairs {
-		PairIndex   uint32 `json:"pair_index"`
-		AssetAId    uint32 `json:"asset_a_id"`
-		AssetAName  string `json:"asset_a_name"`
-		AssetBId    uint32 `json:"asset_b_id"`
-		AssetBName  string `json:"asset_b_name"`
-		LpAmountEnc string `json:"lp_amount_enc"`
-		CreatedAt   int64  `json:"created_at"`
-	}
-	RespGetAccountLiquidityPairsByAccountIndex {
-		Pairs []*AccountLiquidityPairs `json:"pairs"`
-	}
-)
-
 @server(
 	group: account
 )
 
 service app-api{
+	@handler GetAccountStatusByAccountPk
+	get /api/v1/account/getAccountStatusByAccountPk (ReqGetAccountStatusByAccountPk) returns (RespGetAccountStatusByAccountPk)
+	
 	@handler GetAccountInfoByPubKey
 	post /api/v1/account/getAccountInfoByPubKey (ReqGetAccountInfoByPubKey) returns (RespGetAccountInfoByPubKey)
 	
@@ -144,12 +130,6 @@ service app-api{
 	
 	@handler GetBalanceByAssetIdAndAccountName
 	get /api/v1/account/getBalanceByAssetIdAndAccountName    (ReqGetBlanceByAssetIdAndAccountName) returns (RespGetBlanceInfoByAssetIdAndAccountName)
-	
-	@handler GetAssetsByAccountName
-	get /api/v1/account/getAssetsByAccountName (ReqGetAssetsByAccountName) returns (RespGetAssetsByAccountName)
-	
-	@handler GetAccountLiquidityPairsByAccountIndex
-	get /api/v1/account/getAccountLiquidityPairsByAccountIndex (ReqGetAccountLiquidityPairsByAccountIndex) returns (RespGetAccountLiquidityPairsByAccountIndex)
 }
 
 /* ========================= Block =========================*/
@@ -248,6 +228,7 @@ type (
 		AssetDecimals uint32 `json:"asset_decimals"`
 		AssetSymbol   string `json:"asset_symbol"`
 		AssetAddress  string `json:"asset_address"`
+		IsGasAsset    uint32 `json:"is_gas_asset"`
 	}
 	RespGetAssetsList {
 		Assets []*AssetInfo `json:"assets"`
@@ -300,6 +281,14 @@ type (
 	}
 )
 
+// GetGasFeeAssetList
+type (
+	ReqGetGasFeeAssetList  struct{}
+	RespGetGasFeeAssetList {
+		Assets []AssetInfo `json:"assets"`
+	}
+)
+
 // GetAccounts
 type (
 	ReqGetAccounts {
@@ -348,6 +337,9 @@ service app-api{
 	
 	@handler GetWithdrawGasFee
 	get /api/v1/info/getWithdrawGasFee  (ReqGetWithdrawGasFee) returns (RespGetWithdrawGasFee)
+	
+	@handler GetGasFeeAssetList
+	get /api/v1/info/getGasFeeAssetList  (ReqGetGasFeeAssetList) returns (RespGetGasFeeAssetList)
 	
 	@handler GetAccounts
 	get /api/v1/info/getAccounts  (ReqGetAccounts) returns (RespGetAccounts)

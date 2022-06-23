@@ -30,6 +30,12 @@ const (
 	StatusInactive uint32 = 1
 )
 
+// flag: asset could be used as gasfee or not
+const (
+	IsGasAsset  = 0
+	NotGasAsset = 1
+)
+
 var (
 	ErrNotFound            = sqlx.ErrNotFound
 	ErrInvalidL2AssetInput = errors.New("[ErrInvalidAssetInput] Invalid AssetInfo input")

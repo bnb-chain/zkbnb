@@ -30,6 +30,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 	server.AddRoutes(
 		[]rest.Route{
 			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/account/getAccountStatusByAccountPk",
+				Handler: account.GetAccountStatusByAccountPkHandler(serverCtx),
+			},
+			{
 				Method:  http.MethodPost,
 				Path:    "/api/v1/account/getAccountInfoByPubKey",
 				Handler: account.GetAccountInfoByPubKeyHandler(serverCtx),
@@ -53,16 +58,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/api/v1/account/getBalanceByAssetIdAndAccountName",
 				Handler: account.GetBalanceByAssetIdAndAccountNameHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodGet,
-				Path:    "/api/v1/account/getAssetsByAccountName",
-				Handler: account.GetAssetsByAccountNameHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodGet,
-				Path:    "/api/v1/account/getAccountLiquidityPairsByAccountIndex",
-				Handler: account.GetAccountLiquidityPairsByAccountIndexHandler(serverCtx),
 			},
 		},
 	)
@@ -118,6 +113,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/api/v1/info/getWithdrawGasFee",
 				Handler: info.GetWithdrawGasFeeHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/info/getGasFeeAssetList",
+				Handler: info.GetGasFeeAssetListHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,

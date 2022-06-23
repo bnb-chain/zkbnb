@@ -17,6 +17,16 @@ type AccountAsset struct {
 	OfferCanceledOrFinalized string `json:"offer_canceled_or_finalized"`
 }
 
+type ReqGetAccountStatusByAccountPk struct {
+	AccountPk string `json:"account_pk"`
+}
+
+type RespGetAccountStatusByAccountPk struct {
+	AccountStatus int64  `json:"account_status"`
+	AccountIndex  int64  `json:"account_index"`
+	AccountName   string `form:"account_name"`
+}
+
 type ReqGetAccountInfoByPubKey struct {
 	AccountPk string `form:"account_pk"`
 }
@@ -66,32 +76,6 @@ type ReqGetBlanceByAssetIdAndAccountName struct {
 
 type RespGetBlanceInfoByAssetIdAndAccountName struct {
 	Balance string `json:"balance_enc"`
-}
-
-type ReqGetAssetsByAccountName struct {
-	AccountName string `form:"account_name"`
-}
-
-type RespGetAssetsByAccountName struct {
-	Assets []*AccountAsset `json:"assets"`
-}
-
-type ReqGetAccountLiquidityPairsByAccountIndex struct {
-	AccountIndex uint32 `form:"account_index"`
-}
-
-type AccountLiquidityPairs struct {
-	PairIndex   uint32 `json:"pair_index"`
-	AssetAId    uint32 `json:"asset_a_id"`
-	AssetAName  string `json:"asset_a_name"`
-	AssetBId    uint32 `json:"asset_b_id"`
-	AssetBName  string `json:"asset_b_name"`
-	LpAmountEnc string `json:"lp_amount_enc"`
-	CreatedAt   int64  `json:"created_at"`
-}
-
-type RespGetAccountLiquidityPairsByAccountIndex struct {
-	Pairs []*AccountLiquidityPairs `json:"pairs"`
 }
 
 type TxHash struct {
@@ -163,6 +147,7 @@ type AssetInfo struct {
 	AssetDecimals uint32 `json:"asset_decimals"`
 	AssetSymbol   string `json:"asset_symbol"`
 	AssetAddress  string `json:"asset_address"`
+	IsGasAsset    uint32 `json:"is_gas_asset"`
 }
 
 type RespGetAssetsList struct {
@@ -207,6 +192,13 @@ type ReqGetWithdrawGasFee struct {
 
 type RespGetWithdrawGasFee struct {
 	WithdrawGasFee uint64 `json:"withdraw_gas_fee"`
+}
+
+type ReqGetGasFeeAssetList struct {
+}
+
+type RespGetGasFeeAssetList struct {
+	Assets []AssetInfo `json:"assets"`
 }
 
 type ReqGetAccounts struct {
