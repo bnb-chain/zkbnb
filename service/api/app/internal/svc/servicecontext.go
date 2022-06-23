@@ -12,11 +12,13 @@ import (
 )
 
 type ServiceContext struct {
-	Config      config.Config
-	Conn        sqlx.SqlConn
-	GormPointer *gorm.DB
-	RedisConn   *redis.Redis
-	Cache       multcache.MultCache
+	Config        config.Config
+	Conn          sqlx.SqlConn
+	GormPointer   *gorm.DB
+	RedisConn     *redis.Redis
+	Cache         multcache.MultCache
+	CodeVersion   string
+	GitCommitHash string
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {

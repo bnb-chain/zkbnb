@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/config"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/handler"
@@ -14,13 +15,27 @@ import (
 
 var configFile = flag.String("f", "etc/appservice-api.yaml", "the config file")
 
+var (
+	CodeVersion   = ""
+	GitCommitHash = ""
+)
+
 func main() {
+	args := os.Args
+	if len(args) == 2 && (args[1] == "--version" || args[1] == "-v") {
+		fmt.Printf("Git Commit Hash: %s\n", GitCommitHash)
+		fmt.Printf("Git Code Version : %s\n", CodeVersion)
+		return
+	}
+
 	flag.Parse()
 
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
 
 	ctx := svc.NewServiceContext(c)
+	ctx.CodeVersion = CodeVersion
+	ctx.GitCommitHash = GitCommitHash
 	server := rest.MustNewServer(c.RestConf)
 	defer server.Stop()
 
