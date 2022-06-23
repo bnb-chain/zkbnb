@@ -58,9 +58,9 @@ func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (*types.
 		txDetails := make([]*types.TxDetail, 0)
 		for _, txDetail := range mempoolTx.MempoolDetails {
 			txDetails = append(txDetails, &types.TxDetail{
-				AssetId:      uint32(txDetail.AssetId),
-				AssetType:    uint32(txDetail.AssetType),
-				AccountIndex: int32(txDetail.AccountIndex),
+				AssetId:      (txDetail.AssetId),
+				AssetType:    (txDetail.AssetType),
+				AccountIndex: (txDetail.AccountIndex),
 				AccountName:  txDetail.AccountName,
 			})
 		}
@@ -71,25 +71,25 @@ func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (*types.
 		}
 		resp.MempoolTxs = append(resp.MempoolTxs, &types.Tx{
 			TxHash:        mempoolTx.TxHash,
-			TxType:        uint32(mempoolTx.TxType),
-			GasFeeAssetId: uint32(mempoolTx.GasFeeAssetId),
+			TxType:        (mempoolTx.TxType),
+			GasFeeAssetId: (mempoolTx.GasFeeAssetId),
 			GasFee:        mempoolTx.GasFee,
-			NftIndex:      uint32(mempoolTx.NftIndex),
-			PairIndex:     uint32(mempoolTx.PairIndex),
-			AssetId:       uint32(mempoolTx.AssetId),
+			NftIndex:      (mempoolTx.NftIndex),
+			PairIndex:     (mempoolTx.PairIndex),
+			AssetId:       (mempoolTx.AssetId),
 			TxAmount:      mempoolTx.TxAmount,
 			NativeAddress: mempoolTx.NativeAddress,
 			TxDetails:     txDetails,
 			TxInfo:        mempoolTx.TxInfo,
 			ExtraInfo:     mempoolTx.ExtraInfo,
 			Memo:          mempoolTx.Memo,
-			AccountIndex:  uint32(mempoolTx.AccountIndex),
-			Nonce:         uint32(mempoolTx.Nonce),
-			ExpiredAt:     uint32(mempoolTx.ExpiredAt),
-			L2BlockHeight: uint32(mempoolTx.L2BlockHeight),
-			Status:        uint32(mempoolTx.Status),
-			CreatedAt:     uint32(mempoolTx.CreatedAt.Unix()),
-			BlockID:       uint32(blockInfo.ID),
+			AccountIndex:  (mempoolTx.AccountIndex),
+			Nonce:         (mempoolTx.Nonce),
+			ExpiredAt:     (mempoolTx.ExpiredAt),
+			BlockHeight:   (mempoolTx.L2BlockHeight),
+			Status:        int64(mempoolTx.Status),
+			CreatedAt:     (mempoolTx.CreatedAt.Unix()),
+			BlockId:       int64(blockInfo.ID),
 		})
 	}
 	return resp, nil

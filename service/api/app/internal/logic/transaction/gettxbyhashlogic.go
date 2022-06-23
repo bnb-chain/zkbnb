@@ -37,9 +37,9 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (*types.RespGe
 	txDetails := make([]*types.TxDetail, 0)
 	for _, w := range txMemppol.MempoolDetails {
 		txDetails = append(txDetails, &types.TxDetail{
-			AssetId:      uint32(w.AssetId),
-			AssetType:    uint32(w.AssetType),
-			AccountIndex: int32(w.AccountIndex),
+			AssetId:      (w.AssetId),
+			AssetType:    (w.AssetType),
+			AccountIndex: (w.AccountIndex),
 			AccountName:  w.AccountName,
 			AccountDelta: w.BalanceDelta,
 		})
@@ -51,25 +51,25 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (*types.RespGe
 	}
 	tx := types.Tx{
 		TxHash:        txMemppol.TxHash,
-		TxType:        uint32(txMemppol.TxType),
-		GasFeeAssetId: uint32(txMemppol.GasFeeAssetId),
+		TxType:        (txMemppol.TxType),
+		GasFeeAssetId: (txMemppol.GasFeeAssetId),
 		GasFee:        txMemppol.GasFee,
-		NftIndex:      uint32(txMemppol.NftIndex),
-		PairIndex:     uint32(txMemppol.PairIndex),
-		AssetId:       uint32(txMemppol.AssetId),
+		NftIndex:      (txMemppol.NftIndex),
+		PairIndex:     (txMemppol.PairIndex),
+		AssetId:       (txMemppol.AssetId),
 		TxAmount:      txMemppol.TxAmount,
 		NativeAddress: txMemppol.NativeAddress,
 		TxDetails:     txDetails,
 		TxInfo:        txMemppol.TxInfo,
 		ExtraInfo:     txMemppol.ExtraInfo,
 		Memo:          txMemppol.Memo,
-		AccountIndex:  uint32(txMemppol.AccountIndex),
-		Nonce:         uint32(txMemppol.Nonce),
-		ExpiredAt:     uint32(txMemppol.ExpiredAt),
-		L2BlockHeight: uint32(txMemppol.L2BlockHeight),
-		Status:        uint32(txMemppol.Status),
-		CreatedAt:     uint32(txMemppol.CreatedAt.Unix()),
-		BlockID:       uint32(block.ID),
+		AccountIndex:  (txMemppol.AccountIndex),
+		Nonce:         (txMemppol.Nonce),
+		ExpiredAt:     (txMemppol.ExpiredAt),
+		BlockHeight:   (txMemppol.L2BlockHeight),
+		Status:        int64(txMemppol.Status),
+		CreatedAt:     (txMemppol.CreatedAt.Unix()),
+		BlockId:       int64(block.ID),
 	}
 	return &types.RespGetTxByHash{
 		Tx:          tx,

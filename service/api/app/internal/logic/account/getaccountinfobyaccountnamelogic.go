@@ -33,7 +33,7 @@ func NewGetAccountInfoByAccountNameLogic(ctx context.Context, svcCtx *svc.Servic
 
 func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *types.ReqGetAccountInfoByAccountName) (*types.RespGetAccountInfoByAccountName, error) {
 	resp := &types.RespGetAccountInfoByAccountName{
-		Assets: make([]*types.Asset, 0),
+		Assets: make([]*types.AssetBalance, 0),
 	}
 	if utils.CheckAccountName(req.AccountName) {
 		logx.Errorf("[CheckAccountName] req.AccountName:%v", req.AccountName)
@@ -55,7 +55,7 @@ func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *type
 		return nil, err
 	}
 	for _, asset := range assets {
-		resp.Assets = append(resp.Assets, &types.Asset{
+		resp.Assets = append(resp.Assets, &types.AssetBalance{
 			AssetId: asset.AssetId,
 			Balance: asset.Balance,
 		})

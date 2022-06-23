@@ -5,7 +5,9 @@ import (
 	"net/http"
 
 	account "github.com/zecrey-labs/zecrey-legend/service/api/app/internal/handler/account"
+	block "github.com/zecrey-labs/zecrey-legend/service/api/app/internal/handler/block"
 	info "github.com/zecrey-labs/zecrey-legend/service/api/app/internal/handler/info"
+	nft "github.com/zecrey-labs/zecrey-legend/service/api/app/internal/handler/nft"
 	pair "github.com/zecrey-labs/zecrey-legend/service/api/app/internal/handler/pair"
 	root "github.com/zecrey-labs/zecrey-legend/service/api/app/internal/handler/root"
 	transaction "github.com/zecrey-labs/zecrey-legend/service/api/app/internal/handler/transaction"
@@ -64,6 +66,31 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		[]rest.Route{
 			{
 				Method:  http.MethodGet,
+				Path:    "/api/v1/block/getBlocks",
+				Handler: block.GetBlocksHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/block/getBlockByCommitment",
+				Handler: block.GetBlockByCommitmentHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/block/getBlockByBlockHeight",
+				Handler: block.GetBlockByBlockHeightHandler(serverCtx),
+			},
+		},
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/info/getLayer2BasicInfo",
+				Handler: info.GetLayer2BasicInfoHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
 				Path:    "/api/v1/info/getAssetsList",
 				Handler: info.GetAssetsListHandler(serverCtx),
 			},
@@ -86,6 +113,16 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/api/v1/info/getWithdrawGasFee",
 				Handler: info.GetWithdrawGasFeeHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/info/getAccounts",
+				Handler: info.GetAccountsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/info/search",
+				Handler: info.SearchHandler(serverCtx),
 			},
 		},
 	)
@@ -119,6 +156,16 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		[]rest.Route{
 			{
 				Method:  http.MethodGet,
+				Path:    "/api/v1/tx/getTxsListByBlockHeight",
+				Handler: transaction.GetTxsListByBlockHeightHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/tx/getTxsListByAccountIndex",
+				Handler: transaction.GetTxsListByAccountIndexHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
 				Path:    "/api/v1/tx/getTxsByAccountIndexAndTxType",
 				Handler: transaction.GetTxsByAccountIndexAndTxTypeHandler(serverCtx),
 			},
@@ -149,8 +196,23 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 			{
 				Method:  http.MethodGet,
+				Path:    "/api/v1/tx/getmempoolTxsByAccountName",
+				Handler: transaction.GetmempoolTxsByAccountNameHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
 				Path:    "/api/v1/tx/getNextNonce",
 				Handler: transaction.GetNextNonceHandler(serverCtx),
+			},
+		},
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/nft/getMaxOfferId",
+				Handler: nft.GetMaxOfferIdHandler(serverCtx),
 			},
 		},
 	)
