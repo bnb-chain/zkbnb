@@ -39,7 +39,7 @@ func (l *GetAccountInfoByPubKeyLogic) GetAccountInfoByPubKey(req *types.ReqGetAc
 		AccountStatus: uint32(account.Status),
 		AccountName:   account.AccountName,
 		AccountIndex:  account.AccountIndex,
-		Assets:        make([]*types.Asset, 0),
+		Assets:        make([]*types.AssetBalance, 0),
 	}
 	assets, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(uint32(account.AccountIndex))
 	if err != nil {
@@ -47,7 +47,7 @@ func (l *GetAccountInfoByPubKeyLogic) GetAccountInfoByPubKey(req *types.ReqGetAc
 		return nil, err
 	}
 	for _, asset := range assets {
-		resp.Assets = append(resp.Assets, &types.Asset{
+		resp.Assets = append(resp.Assets, &types.AssetBalance{
 			AssetId: asset.AssetId,
 			Balance: asset.Balance,
 		})
