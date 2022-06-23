@@ -27,9 +27,11 @@ service appService-api{
 
 /* ========================= Account =========================*/
 
-type AssetBalance {
-	AssetId uint32 `json:"asset_id"`
-	Balance string `json:"balance"`
+type AccountAsset {
+	AssetId                  uint32 `json:"asset_id"`
+	Balance                  string `json:"balance"`
+	LpAmount                 string `json:"lp_amount"`
+	OfferCanceledOrFinalized string `json:"offer_canceled_or_finalized"`
 }
 
 // GetAccountInfoByPubKey
@@ -41,7 +43,20 @@ type (
 		AccountStatus uint32          `json:"account_status"`
 		AccountName   string          `json:"account_name"`
 		AccountIndex  int64           `json:"account_index"`
-		Assets        []*AssetBalance `json:"assets"`
+		Assets        []*AccountAsset `json:"assets"`
+	}
+)
+
+// getAccountInfoByAccountIndex
+type (
+	ReqGetAccountInfoByAccountIndex {
+		AccountIndex int64 `json:"account_index"`
+	}
+	RespGetAccountInfoByAccountIndex {
+		AccountStatus uint32          `json:"account_status"`
+		AccountName   string          `json:"account_name"`
+		AccountPk     string          `form:"account_pk"`
+		Assets        []*AccountAsset `json:"assets"`
 	}
 )
 
@@ -65,7 +80,7 @@ type (
 	RespGetAccountInfoByAccountName {
 		AccountIndex uint32          `json:"account_index"`
 		AccountPk    string          `json:"account_pk"`
-		Assets       []*AssetBalance `json:"assets"`
+		Assets       []*AccountAsset `json:"assets"`
 	}
 )
 
@@ -86,7 +101,7 @@ type (
 		AccountName string `form:"account_name"`
 	}
 	RespGetAssetsByAccountName {
-		Assets []*AssetBalance `json:"assets"`
+		Assets []*AccountAsset `json:"assets"`
 	}
 )
 
@@ -116,6 +131,9 @@ type (
 service appService-api{
 	@handler GetAccountInfoByPubKey
 	post /api/v1/account/getAccountInfoByPubKey (ReqGetAccountInfoByPubKey) returns (RespGetAccountInfoByPubKey)
+	
+	@handler GetAccountInfoByAccountIndex
+	post /api/v1/account/getAccountInfoByAccountIndex (ReqGetAccountInfoByAccountIndex) returns (RespGetAccountInfoByAccountIndex)
 	
 	@handler GetAccountStatusByAccountName
 	get /api/v1/account/getAccountStatusByAccountName (ReqGetAccountStatusByAccountName) returns (RespGetAccountStatusByAccountName)

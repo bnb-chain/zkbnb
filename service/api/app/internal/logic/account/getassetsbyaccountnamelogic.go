@@ -32,9 +32,6 @@ func NewGetAssetsByAccountNameLogic(ctx context.Context, svcCtx *svc.ServiceCont
 }
 
 func (l *GetAssetsByAccountNameLogic) GetAssetsByAccountName(req *types.ReqGetAssetsByAccountName) (*types.RespGetAssetsByAccountName, error) {
-	resp := &types.RespGetAssetsByAccountName{
-		Assets: make([]*types.AssetBalance, 0),
-	}
 	if utils.CheckAccountName(req.AccountName) {
 		logx.Errorf("[CheckAccountName] param:%v", req.AccountName)
 		return nil, errcode.ErrInvalidParam
@@ -49,10 +46,15 @@ func (l *GetAssetsByAccountNameLogic) GetAssetsByAccountName(req *types.ReqGetAs
 		logx.Errorf("[GetLatestAccountInfoByAccountIndex] err:%v", err)
 		return nil, err
 	}
+	resp := &types.RespGetAssetsByAccountName{
+		Assets: make([]*types.AccountAsset, 0),
+	}
 	for _, asset := range assets {
-		v := &types.AssetBalance{
-			AssetId: asset.AssetId,
-			Balance: asset.Balance,
+		v := &types.AccountAsset{
+			AssetId:                  asset.AssetId,
+			Balance:                  asset.Balance,
+			LpAmount:                 asset.LpAmount,
+			OfferCanceledOrFinalized: asset.OfferCanceledOrFinalized,
 		}
 		resp.Assets = append(resp.Assets, v)
 	}
