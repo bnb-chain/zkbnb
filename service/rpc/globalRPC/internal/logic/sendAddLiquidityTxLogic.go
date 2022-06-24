@@ -116,7 +116,10 @@ func (l *SendTxLogic) sendAddLiquidityTx(rawTxInfo string) (txId string, err err
 			return "", err
 		}
 	} else {
-		lpAmount = util.ComputeLpAmount(liquidityInfo, txInfo.AssetAAmount)
+		lpAmount, err = util.ComputeLpAmount(liquidityInfo, txInfo.AssetAAmount)
+		if err != nil {
+			return "", l.HandleCreateFailAddLiquidityTx(txInfo, err)
+		}
 	}
 	// add into tx info
 	txInfo.LpAmount = lpAmount
