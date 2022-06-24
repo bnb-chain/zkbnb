@@ -82,7 +82,7 @@ func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo(_ *types.ReqGetLayer2BasicI
 		return nil, err
 	}
 	for _, contractAddressesName := range contractAddressesNames {
-		contract, err := l.sysconfigModel.GetSysconfigByName(contractAddressesName)
+		contract, err := l.sysconfigModel.GetSysconfigByName(l.ctx, contractAddressesName)
 		if err != nil {
 			logx.Errorf("[GetSysconfigByName] err:%v", err)
 			return nil, err
