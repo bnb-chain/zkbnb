@@ -3,6 +3,9 @@ package transaction
 import (
 	"context"
 
+	"github.com/zecrey-labs/zecrey-legend/common/checker"
+	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/logic/errcode"
+	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/logic/utils"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/account"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/block"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/globalrpc"
@@ -41,69 +44,36 @@ func NewGetTxsByPubKeyLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 	}
 }
 
-func (l *GetTxsByPubKeyLogic) GetTxsByPubKey(req *types.ReqGetTxsByPubKey) (resp *types.RespGetTxsByPubKey, err error) {
+func (l *GetTxsByPubKeyLogic) GetTxsByPubKey(req *types.ReqGetTxsByPubKey) (*types.RespGetTxsByPubKey, error) {
 	account, err := l.account.GetAccountByPk(req.AccountPk)
 	if err != nil {
 		logx.Errorf("[GetAccountByPk] err:%v", err)
 		return &types.RespGetTxsByPubKey{}, err
 	}
-	txList, _, err := l.globalRpc.GetLatestTxsListByAccountIndex(uint32(account.AccountIndex), req.Limit)
+	txIds, err := l.txDetail.GetTxIdsByAccountIndex(l.ctx, int64(account.AccountIndex))
 	if err != nil {
-		logx.Errorf("[GetLatestTxsListByAccountIndex] err:%v", err)
-		return &types.RespGetTxsByPubKey{}, err
+		logx.Errorf("[GetTxDetailByAccountIndex] err:%v", err)
+		return nil, err
 	}
-	txCount, err := l.txDetail.GetTxsTotalCountByAccountIndex(l.ctx, account.AccountIndex)
-	if err != nil {
-		logx.Errorf("[GetTxsTotalCountByAccountIndex] err:%v", err)
-		return &types.RespGetTxsByPubKey{}, err
+	resp := &types.RespGetTxsByPubKey{
+		Total: uint32(len(txIds)),
+		Txs:   make([]*types.Tx, 0),
 	}
-	mempoolTxCount, err := l.mempool.GetMempoolTxsTotalCountByAccountIndex(account.AccountIndex)
-	if err != nil {
-		logx.Errorf("[GetMempoolTxsTotalCountByAccountIndex] err:%v", err)
-		return &types.RespGetTxsByPubKey{}, err
+	if checker.CheckOfferset(req.Offset, resp.Total) {
+		return nil, errcode.ErrInvalidParam
 	}
-	results := make([]*types.Tx, 0)
-	for _, tx := range txList {
-		txDetails := make([]*types.TxDetail, 0)
-		for _, txDetail := range tx.MempoolDetails {
-			txDetails = append(txDetails, &types.TxDetail{
-				AssetId:        (txDetail.AssetId),
-				AssetType:      (txDetail.AssetType),
-				AccountIndex:   (txDetail.AccountIndex),
-				AccountName:    txDetail.AccountName,
-				AccountBalance: txDetail.BalanceDelta,
-			})
-		}
-		block, err := l.block.GetBlockByBlockHeight(l.ctx, tx.L2BlockHeight)
+	end := req.Offset + req.Limit
+	if resp.Total < (req.Offset + req.Limit) {
+		end = resp.Total
+	}
+	for _, id := range txIds[req.Offset:end] {
+		tx, err := l.tx.GetTxByTxID(l.ctx, id)
 		if err != nil {
-			logx.Errorf("[transaction.GetTxsByPubKey] err:%v", err)
-			return &types.RespGetTxsByPubKey{}, err
+			logx.Errorf("[GetTxByTxID] err:%v", err)
+			return nil, err
 		}
-		results = append(results, &types.Tx{
-			TxHash:        tx.TxHash,
-			TxType:        (tx.TxType),
-			GasFeeAssetId: (tx.GasFeeAssetId),
-			GasFee:        tx.GasFee,
-			NftIndex:      (tx.NftIndex),
-			PairIndex:     (tx.PairIndex),
-			AssetId:       (tx.AssetId),
-			TxAmount:      tx.TxAmount,
-			NativeAddress: tx.NativeAddress,
-			TxDetails:     txDetails,
-			TxInfo:        tx.TxInfo,
-			ExtraInfo:     tx.ExtraInfo,
-			Memo:          tx.Memo,
-			AccountIndex:  (tx.AccountIndex),
-			Nonce:         (tx.Nonce),
-			ExpiredAt:     (tx.ExpiredAt),
-			BlockHeight:   (tx.L2BlockHeight),
-			Status:        int64(tx.Status),
-			CreatedAt:     (tx.CreatedAt.Unix()),
-			BlockId:       int64(block.ID),
-		})
+		resp.Txs = append(resp.Txs, utils.GormTx2Tx(tx))
 	}
-	return &types.RespGetTxsByPubKey{
-		Total: uint32(txCount + mempoolTxCount),
-		Txs:   results,
-	}, nil
+	return resp, nil
+
 }
