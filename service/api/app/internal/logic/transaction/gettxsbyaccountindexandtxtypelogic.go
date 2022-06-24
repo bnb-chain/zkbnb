@@ -66,7 +66,7 @@ func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *
 				AccountDelta: txDetail.BalanceDelta,
 			})
 		}
-		block, err := l.block.GetBlockByBlockHeight(tx.L2BlockHeight)
+		block, err := l.block.GetBlockByBlockHeight(l.ctx, tx.L2BlockHeight)
 		if err != nil {
 			logx.Errorf("[GetBlockByBlockHeight]:%v", err)
 			return nil, err

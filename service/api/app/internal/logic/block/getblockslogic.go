@@ -28,12 +28,12 @@ func NewGetBlocksLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetBloc
 }
 
 func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetBlocks) (*types.RespGetBlocks, error) {
-	blocks, err := l.block.GetBlocksList(int64(req.Limit), int64(req.Offset))
+	blocks, err := l.block.GetBlocksList(l.ctx, int64(req.Limit), int64(req.Offset))
 	if err != nil {
 		logx.Errorf("[GetBlocksList] err:%v", err)
 		return nil, err
 	}
-	total, err := l.block.GetBlocksTotalCount()
+	total, err := l.block.GetBlocksTotalCount(l.ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -35,7 +35,7 @@ func NewGetWithdrawGasFeeLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 
 //todo modify 【now function copy from service/api/app/internal/logic/info/getgasfeelogic.go:38】
 func (l *GetWithdrawGasFeeLogic) GetWithdrawGasFee(req *types.ReqGetWithdrawGasFee) (*types.RespGetWithdrawGasFee, error) {
-	l2Asset, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(req.AssetId)
+	l2Asset, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(l.ctx, req.AssetId)
 	if err != nil {
 		logx.Errorf("[GetSimpleL2AssetInfoByAssetId] err:%v", err)
 		return nil, err

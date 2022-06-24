@@ -74,7 +74,7 @@ func (l *GetTxsByPubKeyLogic) GetTxsByPubKey(req *types.ReqGetTxsByPubKey) (resp
 				AccountBalance: txDetail.BalanceDelta,
 			})
 		}
-		block, err := l.block.GetBlockByBlockHeight(tx.L2BlockHeight)
+		block, err := l.block.GetBlockByBlockHeight(l.ctx, tx.L2BlockHeight)
 		if err != nil {
 			logx.Errorf("[transaction.GetTxsByPubKey] err:%v", err)
 			return &types.RespGetTxsByPubKey{}, err

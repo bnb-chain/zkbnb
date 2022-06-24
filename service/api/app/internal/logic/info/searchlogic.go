@@ -44,7 +44,7 @@ func (l *SearchLogic) Search(req *types.ReqSearch) (*types.RespSearch, error) {
 	// check if it is searching by blockHeight
 	blockHeight, err := strconv.ParseInt(req.Info, 10, 64)
 	if err == nil {
-		_, err = l.block.GetBlockByBlockHeight(blockHeight)
+		_, err = l.block.GetBlockByBlockHeight(l.ctx, blockHeight)
 		resp.DataType = util.TypeBlockHeight
 		if err != nil {
 			err1 := fmt.Errorf("[explorer.info.SearchInfo] find block by height %d error: %s", blockHeight, err.Error())

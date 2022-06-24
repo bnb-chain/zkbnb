@@ -41,17 +41,17 @@ var (
 	}
 )
 
-func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo(req *types.ReqGetLayer2BasicInfo) (*types.RespGetLayer2BasicInfo, error) {
+func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo(_ *types.ReqGetLayer2BasicInfo) (*types.RespGetLayer2BasicInfo, error) {
 	resp := &types.RespGetLayer2BasicInfo{
 		ContractAddresses: make([]string, 0),
 	}
 	var err error
-	resp.BlockCommitted, err = l.block.GetCommitedBlocksCount()
+	resp.BlockCommitted, err = l.block.GetCommitedBlocksCount(l.ctx)
 	if err != nil {
 		logx.Errorf("[GetCommitedBlocksCount] err:%v", err)
 		return nil, err
 	}
-	resp.BlockVerified, err = l.block.GetVerifiedBlocksCount()
+	resp.BlockVerified, err = l.block.GetVerifiedBlocksCount(l.ctx)
 	if err != nil {
 		logx.Errorf("[GetVerifiedBlocksCount] err:%v", err)
 		return nil, err

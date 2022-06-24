@@ -54,7 +54,7 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (*types.RespGe
 		resp.AssetAId = txInfo.AssetAId
 		resp.AssetBId = txInfo.AssetBId
 	}
-	block, err := l.block.GetBlockByBlockHeight(resp.Tx.BlockHeight)
+	block, err := l.block.GetBlockByBlockHeight(l.ctx, resp.Tx.BlockHeight)
 	if err != nil {
 		logx.Errorf("[GetBlockByBlockHeight]:%v", err)
 		return nil, err
