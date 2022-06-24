@@ -19,9 +19,14 @@ package util
 
 import (
 	"errors"
-	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"log"
 	"math/big"
+
+	"github.com/zecrey-labs/zecrey-crypto/ffmath"
+)
+
+var (
+	ZeroBigInt = big.NewInt(0)
 )
 
 func BigIntStringAdd(a, b string) (c string, err error) {
