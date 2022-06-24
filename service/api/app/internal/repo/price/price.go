@@ -22,26 +22,34 @@ type price struct {
 	Description: get currency price cache by currency symbol
 */
 func (m *price) GetCurrencyPrice(ctx context.Context, l2Symbol string) (float64, error) {
-	// quote.Quote["USD"].Price
-	err := UpdateCurrencyPriceBySymbol(ctx, l2Symbol, m.cache)
+	f := func() (interface{}, error) {
+		// quote.Quote["USD"].Price
+		err := UpdateCurrencyPriceBySymbol(ctx, l2Symbol, m.cache)
+		if err != nil {
+			return 0, fmt.Errorf("[PriceModel.GetCurrencyPrice.UpdateCurrencyPriceBySymbol]: %v", err)
+		}
+		key := fmt.Sprintf("%s%v", cachePriceSymbolPrefix, l2Symbol)
+		var returnObj interface{}
+		_, err = m.cache.Get(ctx, key, &returnObj)
+		if err != nil {
+			return 0, fmt.Errorf("[PriceModel.GetCurrencyPrice.Getcache]: %v %v", key, err)
+		}
+		_price, ok := returnObj.(float64)
+		if !ok {
+			return _price, ErrTypeAssertion
+		}
+		return &_price, nil
+	}
+	var _price float64
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetCurrencyPrice+l2Symbol, &_price, 10, f)
 	if err != nil {
-		errInfo := fmt.Sprintf("[PriceModel.GetCurrencyPrice.UpdateCurrencyPriceBySymbol] %s", err)
-		logx.Error(errInfo)
 		return 0, err
 	}
-	key := fmt.Sprintf("%s%v", cachePriceSymbolPrefix, l2Symbol)
-	var returnObj interface{}
-	_, err = m.cache.Get(ctx, key, &returnObj)
-	if err != nil {
-		errInfo := fmt.Sprintf("[PriceModel.GetCurrencyPrice.Getcache] %s %s", key, err)
-		logx.Error(errInfo)
-		return 0, err
-	}
-	_price, ok := returnObj.(float64)
+	value1, ok := value.(*float64)
 	if !ok {
-		return _price, ErrTypeAssertion
+		return 0, fmt.Errorf("[GetCurrencyPrice] ErrConvertFail")
 	}
-	return _price, nil
+	return *value1, nil
 }
 
 /*
