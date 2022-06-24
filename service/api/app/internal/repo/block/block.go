@@ -9,7 +9,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/errcode"
 
-	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"gorm.io/gorm"
 )
@@ -48,14 +47,45 @@ func (m *block) GetBlockByBlockHeight(ctx context.Context, blockHeight int64) (*
 
 }
 
-func (m *block) GetCommitedBlocksCount(_ context.Context) (count int64, err error) {
-	err = m.db.Table(m.table).Where("block_status = ? and deleted_at is NULL", StatusCommitted).Count(&count).Error
-	return
+func (m *block) GetCommitedBlocksCount(ctx context.Context) (int64, error) {
+	f := func() (interface{}, error) {
+		var count int64
+		dbTx := m.db.Table(m.table).Where("block_status = ? and deleted_at is NULL", table.StatusCommitted).Count(&count)
+		if dbTx.Error != nil {
+			return nil, fmt.Errorf("[GetCommitedBlocksCount]: %v", dbTx.Error)
+		} else if dbTx.RowsAffected == 0 {
+			return nil, errcode.ErrDataNotExist
+		}
+		return &count, nil
+	}
+	var count int64
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetCommittedBlocksCount, &count, 5, f)
+	if err != nil {
+		return count, err
+	}
+	count1, _ := value.(*int64)
+	return *count1, nil
 }
 
-func (m *block) GetVerifiedBlocksCount(_ context.Context) (count int64, err error) {
-	err = m.db.Table(m.table).Where("block_status = ? and deleted_at is NULL", table.StatusVerifiedAndExecuted).Count(&count).Error
-	return
+func (m *block) GetVerifiedBlocksCount(ctx context.Context) (int64, error) {
+	f := func() (interface{}, error) {
+		var count int64
+		dbTx := m.db.Table(m.table).Where("block_status = ? and deleted_at is NULL", table.StatusVerifiedAndExecuted).Count(&count)
+		if dbTx.Error != nil {
+			return nil, fmt.Errorf("[GetCommitedBlocksCount]: %v", dbTx.Error)
+		} else if dbTx.RowsAffected == 0 {
+			return nil, errcode.ErrDataNotExist
+		}
+		return &count, nil
+	}
+	var count int64
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetVerifiedBlocksCount, &count, 5, f)
+	if err != nil {
+		return count, err
+	}
+	count1, _ := value.(*int64)
+	return *count1, nil
+
 }
 
 func (m *block) GetBlockWithTxsByCommitment(ctx context.Context, blockCommitment string) (*table.Block, error) {
@@ -64,16 +94,13 @@ func (m *block) GetBlockWithTxsByCommitment(ctx context.Context, blockCommitment
 		_block := &table.Block{}
 		dbTx := m.db.Table(m.table).Where("block_commitment = ?", blockCommitment).Find(_block)
 		if dbTx.Error != nil {
-			logx.Error("[block.GetBlockByCommitment] %s", dbTx.Error)
-			return nil, dbTx.Error
+			return nil, fmt.Errorf("[GetBlockWithTxsByCommitment] %v", dbTx.Error)
 		} else if dbTx.RowsAffected == 0 {
-			logx.Error("[block.GetBlockByCommitment] Get Block Error")
-			return nil, ErrNotFound
+			return nil, errcode.ErrDataNotExist
 		}
 		err := m.db.Model(&_block).Association(txForeignKeyColumn).Find(&_block.Txs)
 		if err != nil {
-			logx.Error("[block.GetBlockByCommitment] Get Associate Txs Error")
-			return nil, err
+			return nil, fmt.Errorf("[GetBlockWithTxsByCommitment] Get Associate Txs Error: %v", ErrNotFound)
 		}
 		return _block, nil
 	}
@@ -93,13 +120,13 @@ func (m *block) GetBlockWithTxsByBlockHeight(ctx context.Context, blockHeight in
 		_block := &table.Block{}
 		dbTx := m.db.Table(m.table).Where("block_height = ?", blockHeight).Find(_block)
 		if dbTx.Error != nil {
-			return nil, fmt.Errorf("[GetBlockByBlockHeight]: %v", dbTx.Error)
+			return nil, fmt.Errorf("[GetBlockWithTxsByBlockHeight]: %v", dbTx.Error)
 		} else if dbTx.RowsAffected == 0 {
-			return nil, fmt.Errorf("[GetBlockByBlockHeight]: %v", ErrNotFound)
+			return nil, fmt.Errorf("[GetBlockWithTxsByBlockHeight]: %v", ErrNotFound)
 		}
 		err := m.db.Model(&_block).Association(txForeignKeyColumn).Find(&_block.Txs)
 		if err != nil {
-			return nil, fmt.Errorf("[GetBlockByBlockHeight]: %v", err)
+			return nil, fmt.Errorf("[GetBlockWithTxsByBlockHeight]: %v", err)
 		}
 		return _block, nil
 	}
@@ -136,18 +163,28 @@ func (m *block) GetBlocksList(ctx context.Context, limit int64, offset int64) ([
 		return nil, err
 	}
 	blockList, ok := value.(*[]*table.Block)
-	fmt.Println(blockList, ok)
+	if !ok {
+		return nil, err
+	}
 	return *blockList, nil
 }
 
-func (m *block) GetBlocksTotalCount(_ context.Context) (count int64, err error) {
-	dbTx := m.db.Table(m.table).Where("deleted_at is NULL").Count(&count)
-	if dbTx.Error != nil {
-		logx.Error("[block.GetBlocksTotalCount] %s", dbTx.Error)
-		return 0, dbTx.Error
-	} else if dbTx.RowsAffected == 0 {
-		logx.Info("[block.GetBlocksTotalCount] No Blocks in Block Table")
-		return 0, nil
+func (m *block) GetBlocksTotalCount(ctx context.Context) (int64, error) {
+	f := func() (interface{}, error) {
+		var count int64
+		dbTx := m.db.Table(m.table).Where("deleted_at is NULL").Count(&count)
+		if dbTx.Error != nil {
+			return 0, fmt.Errorf("[GetBlocksTotalCount]: %v", dbTx.Error)
+		} else if dbTx.RowsAffected == 0 {
+			return 0, ErrNotFound
+		}
+		return count, nil
 	}
-	return count, nil
+	var count int64
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetBlocksTotalCount, &count, 5, f)
+	if err != nil {
+		return count, err
+	}
+	count1, _ := value.(*int64)
+	return *count1, nil
 }
