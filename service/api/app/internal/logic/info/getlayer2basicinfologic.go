@@ -61,12 +61,12 @@ func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo(_ *types.ReqGetLayer2BasicI
 		logx.Errorf("[GetTxsTotalCount] err:%v", err)
 		return nil, err
 	}
-	resp.TransactionsCountYesterday, err = l.tx.GetTxCountByTimeRange("yesterday")
+	resp.TransactionsCountYesterday, err = l.tx.GetTxCountByTimeRange(l.ctx, "yesterday")
 	if err != nil {
 		logx.Errorf("[GetTxCountByTimeRange] err:%v", err)
 		return nil, err
 	}
-	resp.TransactionsCountToday, err = l.tx.GetTxCountByTimeRange("today")
+	resp.TransactionsCountToday, err = l.tx.GetTxCountByTimeRange(l.ctx, "today")
 	if err != nil {
 		logx.Errorf("[GetTxCountByTimeRange] err:%v", err)
 		return nil, err
@@ -82,7 +82,7 @@ func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo(_ *types.ReqGetLayer2BasicI
 		return nil, err
 	}
 	for _, contractAddressesName := range contractAddressesNames {
-		contract, err := l.sysconfigModel.GetSysconfigByName(contractAddressesName)
+		contract, err := l.sysconfigModel.GetSysconfigByName(l.ctx, contractAddressesName)
 		if err != nil {
 			logx.Errorf("[GetSysconfigByName] err:%v", err)
 			return nil, err

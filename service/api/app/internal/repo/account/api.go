@@ -26,24 +26,19 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 )
 
-type AccountModel interface {
-	IfAccountNameExist(name string) (bool, error)
-	IfAccountExistsByAccountIndex(accountIndex int64) (bool, error)
+type Model interface {
+	GetBasicAccountByAccountName(ctx context.Context, accountName string) (account *table.Account, err error)
+	GetBasicAccountByAccountPk(ctx context.Context, accountPK string) (account *table.Account, err error)
+
 	GetAccountByAccountIndex(accountIndex int64) (account *table.Account, err error)
-	GetVerifiedAccountByAccountIndex(accountIndex int64) (account *table.Account, err error)
-	GetConfirmedAccountByAccountIndex(accountIndex int64) (account *table.Account, err error)
 	GetAccountByPk(pk string) (account *table.Account, err error)
 	GetAccountByAccountName(ctx context.Context, accountName string) (account *table.Account, err error)
-	GetAccountByAccountNameHash(accountNameHash string) (account *table.Account, err error)
 	GetAccountsList(limit int, offset int64) (accounts []*table.Account, err error)
 	GetAccountsTotalCount() (count int64, err error)
-	GetAllAccounts() (accounts []*table.Account, err error)
-	GetLatestAccountIndex() (accountIndex int64, err error)
-	GetConfirmedAccounts() (accounts []*table.Account, err error)
 }
 
-func New(svcCtx *svc.ServiceContext) AccountModel {
-	return &accountModel{
+func New(svcCtx *svc.ServiceContext) Model {
+	return &model{
 		table: `account`,
 		db:    svcCtx.GormPointer,
 		cache: svcCtx.Cache,

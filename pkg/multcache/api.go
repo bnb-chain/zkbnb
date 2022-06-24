@@ -20,11 +20,6 @@ type MultCache interface {
 	Set(ctx context.Context, key string, value interface{}, timeOut uint32) error
 }
 
-type Book struct {
-	ID   string
-	Name string
-}
-
 func NewGoCache(expiration, cleanupInterval uint32) MultCache {
 	gocacheClient := gocache.New(time.Duration(expiration)*time.Minute,
 		time.Duration(cleanupInterval)*time.Minute)

@@ -8,7 +8,9 @@ import (
 )
 
 type Model interface {
+	GetTxsTotalCountByAccountIndex(ctx context.Context, accountIndex int64) (count int64, err error)
 	GetTxDetailByAccountIndex(ctx context.Context, accountIndex int64) ([]*table.TxDetail, error)
+	GetTxIdsByAccountIndex(ctx context.Context, accountIndex int64) ([]int64, error)
 	GetDauInTxDetail(ctx context.Context, data string) (count int64, err error)
 }
 

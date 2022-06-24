@@ -3,6 +3,8 @@ package transaction
 import (
 	"context"
 
+	"github.com/zecrey-labs/zecrey-legend/common/checker"
+	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/logic/errcode"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/logic/utils"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/account"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/block"
@@ -19,7 +21,7 @@ type GetTxsByAccountNameLogic struct {
 	logx.Logger
 	ctx       context.Context
 	svcCtx    *svc.ServiceContext
-	account   account.AccountModel
+	account   account.Model
 	tx        tx.Model
 	globalRpc globalrpc.GlobalRPC
 	mempool   mempool.Mempool
@@ -47,18 +49,26 @@ func (l *GetTxsByAccountNameLogic) GetTxsByAccountName(req *types.ReqGetTxsByAcc
 		logx.Errorf("[transaction.GetTxsByAccountName] err:%v", err)
 		return nil, err
 	}
-
-	resp := &types.RespGetTxsByAccountName{
-		Txs: make([]*types.Tx, 0),
-	}
-	txDetails, err := l.txDetail.GetTxDetailByAccountIndex(l.ctx, int64(account.AccountIndex))
+	txIds, err := l.txDetail.GetTxIdsByAccountIndex(l.ctx, int64(account.AccountIndex))
 	if err != nil {
 		logx.Errorf("[GetTxDetailByAccountIndex] err:%v", err)
 		return nil, err
 	}
-	for _, d := range txDetails {
-		// loop run GetMempoolTxByTxID to add cache with txID
-		tx, err := l.tx.GetTxByTxID(d.TxId)
+	logx.Errorf("[GetTxDetailByAccountIndex] err:%v", txIds)
+
+	resp := &types.RespGetTxsByAccountName{
+		Total: uint32(len(txIds)),
+		Txs:   make([]*types.Tx, 0),
+	}
+	if checker.CheckOfferset(req.Offset, resp.Total) {
+		return nil, errcode.ErrInvalidParam
+	}
+	end := req.Offset + req.Limit
+	if resp.Total < (req.Offset + req.Limit) {
+		end = resp.Total
+	}
+	for _, id := range txIds[req.Offset:end] {
+		tx, err := l.tx.GetTxByTxID(l.ctx, id)
 		if err != nil {
 			logx.Errorf("[GetTxByTxID] err:%v", err)
 			return nil, err

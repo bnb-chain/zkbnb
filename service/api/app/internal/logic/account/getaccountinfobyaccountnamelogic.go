@@ -18,7 +18,7 @@ type GetAccountInfoByAccountNameLogic struct {
 	ctx       context.Context
 	svcCtx    *svc.ServiceContext
 	globalRPC globalrpc.GlobalRPC
-	account   account.AccountModel
+	account   account.Model
 }
 
 func NewGetAccountInfoByAccountNameLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAccountInfoByAccountNameLogic {
