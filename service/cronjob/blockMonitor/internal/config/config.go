@@ -10,10 +10,10 @@ type Config struct {
 	}
 	CacheRedis  cache.CacheConf
 	ChainConfig struct {
-		NetworkRPCSysConfigName         string
-		ZecreyContractAddrSysConfigName string
-		StartL1BlockHeight              int64
-		PendingBlocksCount              uint64
-		MaxHandledBlocksCount           int64
+		NetworkRPCSysConfigName        string
+		ZkbasContractAddrSysConfigName string
+		StartL1BlockHeight             int64
+		PendingBlocksCount             uint64
+		MaxHandledBlocksCount          int64
 	}
 }

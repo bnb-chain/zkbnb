@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package logic
 
 import (
 	"errors"
-	zecreyLegend "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
+	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/bnb-chain/zkbas/common/util"
 	"time"
 
@@ -33,13 +33,13 @@ func SendCommittedBlocks(
 ) (err error) {
 
 	var (
-		cli                  = param.Cli
-		authCli              = param.AuthCli
-		zecreyLegendInstance = param.ZecreyLegendInstance
-		gasPrice             = param.GasPrice
-		gasLimit             = param.GasLimit
-		maxBlockCount        = param.MaxBlocksCount
-		maxWaitingTime       = param.MaxWaitingTime
+		cli            = param.Cli
+		authCli        = param.AuthCli
+		zkbasInstance  = param.ZkbasInstance
+		gasPrice       = param.GasPrice
+		gasLimit       = param.GasLimit
+		maxBlockCount  = param.MaxBlocksCount
+		maxWaitingTime = param.MaxWaitingTime
 	)
 
 	// scan l1 tx sender table for handled committed height
@@ -52,7 +52,7 @@ func SendCommittedBlocks(
 	}
 
 	var lastStoredBlockInfo StorageStoredBlockInfo
-	var pendingCommitBlocks []ZecreyLegendCommitBlockInfo
+	var pendingCommitBlocks []ZkbasCommitBlockInfo
 	// if lastHandledBlock == nil, means we haven't committed any blocks, just start from 0
 	if err == ErrNotFound {
 		// scan l1 tx sender table for pending committed height that higher than the latest handled height
@@ -177,9 +177,9 @@ func SendCommittedBlocks(
 	}
 	// commit blocks on-chain
 	if len(pendingCommitBlocks) != 0 {
-		txHash, err := zecreyLegend.CommitBlocks(
+		txHash, err := zkbas.CommitBlocks(
 			cli, authCli,
-			zecreyLegendInstance,
+			zkbasInstance,
 			lastStoredBlockInfo,
 			pendingCommitBlocks,
 			gasPrice,

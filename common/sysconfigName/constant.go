@@ -24,7 +24,7 @@ const (
 	LocalTestNetworkRpc     = "LocalTestNetworkRpc"
 	SysGasFee               = "SysGasFee"
 	MaxAssetId              = "MaxAssetId"
-	ZecreyLegendContract    = "ZecreyLegendContract"
+	ZkbasContract           = "ZkbasContract"
 	GovernanceContract      = "GovernanceContract"
 	AssetGovernanceContract = "AssetGovernanceContract"
 	Validators              = "Validators"
