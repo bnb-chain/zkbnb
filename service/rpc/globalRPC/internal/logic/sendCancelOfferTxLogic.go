@@ -101,7 +101,7 @@ func (l *SendTxLogic) sendCancelOfferTx(rawTxInfo string) (txId string, err erro
 	offerIndex := txInfo.OfferId % 128
 	if accountInfoMap[txInfo.AccountIndex].AssetInfo[offerAssetId] == nil {
 		accountInfoMap[txInfo.AccountIndex].AssetInfo[offerAssetId] = &commonAsset.AccountAsset{
-			AssetId:                  0,
+			AssetId:                  offerAssetId,
 			Balance:                  big.NewInt(0),
 			LpAmount:                 big.NewInt(0),
 			OfferCanceledOrFinalized: big.NewInt(0),

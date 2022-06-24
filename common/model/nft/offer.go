@@ -119,7 +119,7 @@ func (m *defaultOfferModel) GetOfferByAccountIndexAndOfferId(accountIndex int64,
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[CreateOffer] invalid offer info")
-		return nil, errors.New("[CreateOffer] invalid offer info")
+		return nil, ErrNotFound
 	}
 	return offer, nil
 }
