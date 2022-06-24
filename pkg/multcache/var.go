@@ -30,4 +30,8 @@ const (
 	KeyGetCommittedBlocksCount = "cache::block:CommittedBlocksCount:"
 	KeyGetVerifiedBlocksCount  = "cache::block:VerifiedBlocksCount:"
 	KeyGetBlocksTotalCount     = "cache::block:BlocksTotalCount:"
+
+	KeyGetL2AssetsList               = "cache::l2asset:L2AssetsList:"
+	KeyGetL2AssetInfoBySymbol        = "cache::l2asset:L2AssetInfoBySymbol:"
+	KeyGetSimpleL2AssetInfoByAssetId = "cache::l2asset:SimpleL2AssetInfoByAssetId:"
 )
