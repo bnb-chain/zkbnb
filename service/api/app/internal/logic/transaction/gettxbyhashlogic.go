@@ -3,8 +3,11 @@ package transaction
 import (
 	"context"
 
+	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
+	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/logic/utils"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/block"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/mempool"
+	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/tx"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -16,6 +19,7 @@ type GetTxByHashLogic struct {
 	svcCtx  *svc.ServiceContext
 	mempool mempool.Mempool
 	block   block.Block
+	tx      tx.Model
 }
 
 func NewGetTxByHashLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTxByHashLogic {
@@ -25,56 +29,38 @@ func NewGetTxByHashLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTx
 		svcCtx:  svcCtx,
 		mempool: mempool.New(svcCtx),
 		block:   block.New(svcCtx),
+		tx:      tx.New(svcCtx),
 	}
 }
 
 func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (*types.RespGetTxByHash, error) {
-	txMemppol, err := l.mempool.GetMempoolTxByTxHash(req.TxHash)
+	resp := &types.RespGetTxByHash{}
+	tx, err := l.tx.GetTxByTxHash(l.ctx, req.TxHash)
 	if err != nil {
-		logx.Errorf("[mempool.GetMempoolTxByTxHash]:%v", err)
-		return nil, err
+		memppolTx, err := l.mempool.GetMempoolTxByTxHash(req.TxHash)
+		if err != nil {
+			logx.Errorf("[GetMempoolTxByTxHash]:%v", err)
+			return nil, err
+		}
+		resp.Tx = *utils.MempoolTx2Tx(memppolTx)
 	}
-	txDetails := make([]*types.TxDetail, 0)
-	for _, w := range txMemppol.MempoolDetails {
-		txDetails = append(txDetails, &types.TxDetail{
-			AssetId:      (w.AssetId),
-			AssetType:    (w.AssetType),
-			AccountIndex: (w.AccountIndex),
-			AccountName:  w.AccountName,
-			AccountDelta: w.BalanceDelta,
-		})
+	resp.Tx = *utils.GormTx2Tx(tx)
+	if resp.Tx.TxType == commonTx.TxTypeSwap {
+		txInfo, err := commonTx.ParseSwapTxInfo(tx.TxInfo)
+		if err != nil {
+			logx.Errorf("[ParseSwapTxInfo]:%v", err)
+			return nil, err
+		}
+		resp.AssetAId = txInfo.AssetAId
+		resp.AssetBId = txInfo.AssetBId
 	}
-	block, err := l.block.GetBlockByBlockHeight(txMemppol.L2BlockHeight)
+	block, err := l.block.GetBlockByBlockHeight(resp.Tx.BlockHeight)
 	if err != nil {
 		logx.Errorf("[GetBlockByBlockHeight]:%v", err)
 		return nil, err
 	}
-	tx := types.Tx{
-		TxHash:        txMemppol.TxHash,
-		TxType:        (txMemppol.TxType),
-		GasFeeAssetId: (txMemppol.GasFeeAssetId),
-		GasFee:        txMemppol.GasFee,
-		NftIndex:      (txMemppol.NftIndex),
-		PairIndex:     (txMemppol.PairIndex),
-		AssetId:       (txMemppol.AssetId),
-		TxAmount:      txMemppol.TxAmount,
-		NativeAddress: txMemppol.NativeAddress,
-		TxDetails:     txDetails,
-		TxInfo:        txMemppol.TxInfo,
-		ExtraInfo:     txMemppol.ExtraInfo,
-		Memo:          txMemppol.Memo,
-		AccountIndex:  (txMemppol.AccountIndex),
-		Nonce:         (txMemppol.Nonce),
-		ExpiredAt:     (txMemppol.ExpiredAt),
-		BlockHeight:   (txMemppol.L2BlockHeight),
-		Status:        int64(txMemppol.Status),
-		CreatedAt:     (txMemppol.CreatedAt.Unix()),
-		BlockId:       int64(block.ID),
-	}
-	return &types.RespGetTxByHash{
-		Tx:          tx,
-		CommittedAt: block.CommittedAt,
-		VerifiedAt:  block.VerifiedAt,
-		ExecutedAt:  0,
-	}, nil
+	resp.CommittedAt = block.CommittedAt
+	resp.ExecutedAt = block.CreatedAt.Unix()
+	resp.VerifiedAt = block.VerifiedAt
+	return resp, nil
 }

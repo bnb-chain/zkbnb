@@ -24,7 +24,7 @@ type SearchLogic struct {
 	sysconfigModel sysconf.Sysconf
 	block          block.Block
 	tx             tx.Model
-	account        account.AccountModel
+	account        account.Model
 }
 
 func NewSearchLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SearchLogic {
@@ -54,7 +54,7 @@ func (l *SearchLogic) Search(req *types.ReqSearch) (*types.RespSearch, error) {
 		return resp, nil
 	}
 	// check if this is for querying tx by hash
-	_, err = l.tx.GetTxByTxHash(req.Info)
+	_, err = l.tx.GetTxByTxHash(l.ctx, req.Info)
 	if err == nil {
 		resp.DataType = util.TypeTxType
 		return resp, nil

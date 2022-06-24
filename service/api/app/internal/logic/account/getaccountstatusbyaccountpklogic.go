@@ -14,7 +14,7 @@ type GetAccountStatusByAccountPkLogic struct {
 	logx.Logger
 	ctx     context.Context
 	svcCtx  *svc.ServiceContext
-	account account.AccountModel
+	account account.Model
 }
 
 func NewGetAccountStatusByAccountPkLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAccountStatusByAccountPkLogic {
@@ -27,9 +27,9 @@ func NewGetAccountStatusByAccountPkLogic(ctx context.Context, svcCtx *svc.Servic
 }
 
 func (l *GetAccountStatusByAccountPkLogic) GetAccountStatusByAccountPk(req *types.ReqGetAccountStatusByAccountPk) (*types.RespGetAccountStatusByAccountPk, error) {
-	account, err := l.account.GetAccountByPk(req.AccountPk)
+	account, err := l.account.GetBasicAccountByAccountPk(l.ctx, req.AccountPk)
 	if err != nil {
-		logx.Errorf("[GetAccountByPk] err:%v", err)
+		logx.Errorf("[GetBasicAccountByAccountPk] err:%v", err)
 		return nil, err
 	}
 	return &types.RespGetAccountStatusByAccountPk{

@@ -12,31 +12,31 @@ import (
 	account "github.com/zecrey-labs/zecrey-legend/common/model/account"
 )
 
-// MockAccountModel is a mock of AccountModel interface.
-type MockAccountModel struct {
+// MockModel is a mock of Model interface.
+type MockModel struct {
 	ctrl     *gomock.Controller
-	recorder *MockAccountModelMockRecorder
+	recorder *MockModelMockRecorder
 }
 
-// MockAccountModelMockRecorder is the mock recorder for MockAccountModel.
-type MockAccountModelMockRecorder struct {
-	mock *MockAccountModel
+// MockModelMockRecorder is the mock recorder for MockModel.
+type MockModelMockRecorder struct {
+	mock *MockModel
 }
 
-// NewMockAccountModel creates a new mock instance.
-func NewMockAccountModel(ctrl *gomock.Controller) *MockAccountModel {
-	mock := &MockAccountModel{ctrl: ctrl}
-	mock.recorder = &MockAccountModelMockRecorder{mock}
+// NewMockModel creates a new mock instance.
+func NewMockModel(ctrl *gomock.Controller) *MockModel {
+	mock := &MockModel{ctrl: ctrl}
+	mock.recorder = &MockModelMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockAccountModel) EXPECT() *MockAccountModelMockRecorder {
+func (m *MockModel) EXPECT() *MockModelMockRecorder {
 	return m.recorder
 }
 
 // GetAccountByAccountIndex mocks base method.
-func (m *MockAccountModel) GetAccountByAccountIndex(accountIndex int64) (*account.Account, error) {
+func (m *MockModel) GetAccountByAccountIndex(accountIndex int64) (*account.Account, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAccountByAccountIndex", accountIndex)
 	ret0, _ := ret[0].(*account.Account)
@@ -45,13 +45,13 @@ func (m *MockAccountModel) GetAccountByAccountIndex(accountIndex int64) (*accoun
 }
 
 // GetAccountByAccountIndex indicates an expected call of GetAccountByAccountIndex.
-func (mr *MockAccountModelMockRecorder) GetAccountByAccountIndex(accountIndex interface{}) *gomock.Call {
+func (mr *MockModelMockRecorder) GetAccountByAccountIndex(accountIndex interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountByAccountIndex", reflect.TypeOf((*MockAccountModel)(nil).GetAccountByAccountIndex), accountIndex)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountByAccountIndex", reflect.TypeOf((*MockModel)(nil).GetAccountByAccountIndex), accountIndex)
 }
 
 // GetAccountByAccountName mocks base method.
-func (m *MockAccountModel) GetAccountByAccountName(ctx context.Context, accountName string) (*account.Account, error) {
+func (m *MockModel) GetAccountByAccountName(ctx context.Context, accountName string) (*account.Account, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAccountByAccountName", ctx, accountName)
 	ret0, _ := ret[0].(*account.Account)
@@ -60,28 +60,13 @@ func (m *MockAccountModel) GetAccountByAccountName(ctx context.Context, accountN
 }
 
 // GetAccountByAccountName indicates an expected call of GetAccountByAccountName.
-func (mr *MockAccountModelMockRecorder) GetAccountByAccountName(ctx, accountName interface{}) *gomock.Call {
+func (mr *MockModelMockRecorder) GetAccountByAccountName(ctx, accountName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountByAccountName", reflect.TypeOf((*MockAccountModel)(nil).GetAccountByAccountName), ctx, accountName)
-}
-
-// GetAccountByAccountNameHash mocks base method.
-func (m *MockAccountModel) GetAccountByAccountNameHash(accountNameHash string) (*account.Account, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAccountByAccountNameHash", accountNameHash)
-	ret0, _ := ret[0].(*account.Account)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAccountByAccountNameHash indicates an expected call of GetAccountByAccountNameHash.
-func (mr *MockAccountModelMockRecorder) GetAccountByAccountNameHash(accountNameHash interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountByAccountNameHash", reflect.TypeOf((*MockAccountModel)(nil).GetAccountByAccountNameHash), accountNameHash)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountByAccountName", reflect.TypeOf((*MockModel)(nil).GetAccountByAccountName), ctx, accountName)
 }
 
 // GetAccountByPk mocks base method.
-func (m *MockAccountModel) GetAccountByPk(pk string) (*account.Account, error) {
+func (m *MockModel) GetAccountByPk(pk string) (*account.Account, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAccountByPk", pk)
 	ret0, _ := ret[0].(*account.Account)
@@ -90,13 +75,13 @@ func (m *MockAccountModel) GetAccountByPk(pk string) (*account.Account, error) {
 }
 
 // GetAccountByPk indicates an expected call of GetAccountByPk.
-func (mr *MockAccountModelMockRecorder) GetAccountByPk(pk interface{}) *gomock.Call {
+func (mr *MockModelMockRecorder) GetAccountByPk(pk interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountByPk", reflect.TypeOf((*MockAccountModel)(nil).GetAccountByPk), pk)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountByPk", reflect.TypeOf((*MockModel)(nil).GetAccountByPk), pk)
 }
 
 // GetAccountsList mocks base method.
-func (m *MockAccountModel) GetAccountsList(limit int, offset int64) ([]*account.Account, error) {
+func (m *MockModel) GetAccountsList(limit int, offset int64) ([]*account.Account, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAccountsList", limit, offset)
 	ret0, _ := ret[0].([]*account.Account)
@@ -105,13 +90,13 @@ func (m *MockAccountModel) GetAccountsList(limit int, offset int64) ([]*account.
 }
 
 // GetAccountsList indicates an expected call of GetAccountsList.
-func (mr *MockAccountModelMockRecorder) GetAccountsList(limit, offset interface{}) *gomock.Call {
+func (mr *MockModelMockRecorder) GetAccountsList(limit, offset interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountsList", reflect.TypeOf((*MockAccountModel)(nil).GetAccountsList), limit, offset)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountsList", reflect.TypeOf((*MockModel)(nil).GetAccountsList), limit, offset)
 }
 
 // GetAccountsTotalCount mocks base method.
-func (m *MockAccountModel) GetAccountsTotalCount() (int64, error) {
+func (m *MockModel) GetAccountsTotalCount() (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAccountsTotalCount")
 	ret0, _ := ret[0].(int64)
@@ -120,112 +105,37 @@ func (m *MockAccountModel) GetAccountsTotalCount() (int64, error) {
 }
 
 // GetAccountsTotalCount indicates an expected call of GetAccountsTotalCount.
-func (mr *MockAccountModelMockRecorder) GetAccountsTotalCount() *gomock.Call {
+func (mr *MockModelMockRecorder) GetAccountsTotalCount() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountsTotalCount", reflect.TypeOf((*MockAccountModel)(nil).GetAccountsTotalCount))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountsTotalCount", reflect.TypeOf((*MockModel)(nil).GetAccountsTotalCount))
 }
 
-// GetAllAccounts mocks base method.
-func (m *MockAccountModel) GetAllAccounts() ([]*account.Account, error) {
+// GetBasicAccountByAccountName mocks base method.
+func (m *MockModel) GetBasicAccountByAccountName(ctx context.Context, accountName string) (*account.Account, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllAccounts")
-	ret0, _ := ret[0].([]*account.Account)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAllAccounts indicates an expected call of GetAllAccounts.
-func (mr *MockAccountModelMockRecorder) GetAllAccounts() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllAccounts", reflect.TypeOf((*MockAccountModel)(nil).GetAllAccounts))
-}
-
-// GetConfirmedAccountByAccountIndex mocks base method.
-func (m *MockAccountModel) GetConfirmedAccountByAccountIndex(accountIndex int64) (*account.Account, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetConfirmedAccountByAccountIndex", accountIndex)
+	ret := m.ctrl.Call(m, "GetBasicAccountByAccountName", ctx, accountName)
 	ret0, _ := ret[0].(*account.Account)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetConfirmedAccountByAccountIndex indicates an expected call of GetConfirmedAccountByAccountIndex.
-func (mr *MockAccountModelMockRecorder) GetConfirmedAccountByAccountIndex(accountIndex interface{}) *gomock.Call {
+// GetBasicAccountByAccountName indicates an expected call of GetBasicAccountByAccountName.
+func (mr *MockModelMockRecorder) GetBasicAccountByAccountName(ctx, accountName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfirmedAccountByAccountIndex", reflect.TypeOf((*MockAccountModel)(nil).GetConfirmedAccountByAccountIndex), accountIndex)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBasicAccountByAccountName", reflect.TypeOf((*MockModel)(nil).GetBasicAccountByAccountName), ctx, accountName)
 }
 
-// GetConfirmedAccounts mocks base method.
-func (m *MockAccountModel) GetConfirmedAccounts() ([]*account.Account, error) {
+// GetBasicAccountByAccountPk mocks base method.
+func (m *MockModel) GetBasicAccountByAccountPk(ctx context.Context, accountPK string) (*account.Account, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetConfirmedAccounts")
-	ret0, _ := ret[0].([]*account.Account)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetConfirmedAccounts indicates an expected call of GetConfirmedAccounts.
-func (mr *MockAccountModelMockRecorder) GetConfirmedAccounts() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfirmedAccounts", reflect.TypeOf((*MockAccountModel)(nil).GetConfirmedAccounts))
-}
-
-// GetLatestAccountIndex mocks base method.
-func (m *MockAccountModel) GetLatestAccountIndex() (int64, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLatestAccountIndex")
-	ret0, _ := ret[0].(int64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetLatestAccountIndex indicates an expected call of GetLatestAccountIndex.
-func (mr *MockAccountModelMockRecorder) GetLatestAccountIndex() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestAccountIndex", reflect.TypeOf((*MockAccountModel)(nil).GetLatestAccountIndex))
-}
-
-// GetVerifiedAccountByAccountIndex mocks base method.
-func (m *MockAccountModel) GetVerifiedAccountByAccountIndex(accountIndex int64) (*account.Account, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetVerifiedAccountByAccountIndex", accountIndex)
+	ret := m.ctrl.Call(m, "GetBasicAccountByAccountPk", ctx, accountPK)
 	ret0, _ := ret[0].(*account.Account)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetVerifiedAccountByAccountIndex indicates an expected call of GetVerifiedAccountByAccountIndex.
-func (mr *MockAccountModelMockRecorder) GetVerifiedAccountByAccountIndex(accountIndex interface{}) *gomock.Call {
+// GetBasicAccountByAccountPk indicates an expected call of GetBasicAccountByAccountPk.
+func (mr *MockModelMockRecorder) GetBasicAccountByAccountPk(ctx, accountPK interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVerifiedAccountByAccountIndex", reflect.TypeOf((*MockAccountModel)(nil).GetVerifiedAccountByAccountIndex), accountIndex)
-}
-
-// IfAccountExistsByAccountIndex mocks base method.
-func (m *MockAccountModel) IfAccountExistsByAccountIndex(accountIndex int64) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IfAccountExistsByAccountIndex", accountIndex)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// IfAccountExistsByAccountIndex indicates an expected call of IfAccountExistsByAccountIndex.
-func (mr *MockAccountModelMockRecorder) IfAccountExistsByAccountIndex(accountIndex interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IfAccountExistsByAccountIndex", reflect.TypeOf((*MockAccountModel)(nil).IfAccountExistsByAccountIndex), accountIndex)
-}
-
-// IfAccountNameExist mocks base method.
-func (m *MockAccountModel) IfAccountNameExist(name string) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IfAccountNameExist", name)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// IfAccountNameExist indicates an expected call of IfAccountNameExist.
-func (mr *MockAccountModelMockRecorder) IfAccountNameExist(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IfAccountNameExist", reflect.TypeOf((*MockAccountModel)(nil).IfAccountNameExist), name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBasicAccountByAccountPk", reflect.TypeOf((*MockModel)(nil).GetBasicAccountByAccountPk), ctx, accountPK)
 }

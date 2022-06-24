@@ -7,6 +7,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/globalrpc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/mempool"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/tx"
+	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/txdetail"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
 
@@ -21,6 +22,7 @@ type GetTxsByAccountIndexAndTxTypeLogic struct {
 	globalRPC globalrpc.GlobalRPC
 	block     block.Block
 	mempool   mempool.Mempool
+	txDetail  txdetail.Model
 }
 
 func NewGetTxsByAccountIndexAndTxTypeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTxsByAccountIndexAndTxTypeLogic {
@@ -32,11 +34,12 @@ func NewGetTxsByAccountIndexAndTxTypeLogic(ctx context.Context, svcCtx *svc.Serv
 		globalRPC: globalrpc.New(svcCtx, ctx),
 		block:     block.New(svcCtx),
 		mempool:   mempool.New(svcCtx),
+		txDetail:  txdetail.New(svcCtx),
 	}
 }
 
 func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *types.ReqGetTxsByAccountIndexAndTxType) (resp *types.RespGetTxsByAccountIndexAndTxType, err error) {
-	txCount, err := l.tx.GetTxsTotalCountByAccountIndex(int64(req.AccountIndex))
+	txCount, err := l.txDetail.GetTxsTotalCountByAccountIndex(l.ctx, int64(req.AccountIndex))
 	if err != nil {
 		logx.Error("[GetTxsTotalCountByAccountIndex] err:%v", err)
 		return nil, err

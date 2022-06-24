@@ -15,7 +15,7 @@ type GetAccountInfoByPubKeyLogic struct {
 	logx.Logger
 	ctx       context.Context
 	svcCtx    *svc.ServiceContext
-	account   account.AccountModel
+	account   account.Model
 	globalRPC globalrpc.GlobalRPC
 }
 
