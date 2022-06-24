@@ -18,13 +18,15 @@ package logic
 
 import (
 	"fmt"
-	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
-	"github.com/bnb-chain/zkbas/common/model/block"
-	"github.com/bnb-chain/zkbas/common/model/proofSender"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/zeromicro/go-zero/core/logx"
 	"sort"
 	"time"
+
+	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas/common/model/block"
+	"github.com/bnb-chain/zkbas/common/model/proofSender"
 )
 
 /*
@@ -86,6 +88,13 @@ func MonitorL2BlockEvents(
 			logx.Infof("[MonitorL2BlockEvents] haven't reached to safe block height, should wait: %s", txHash)
 			continue
 		}
+
+		l1Block, err := bscCli.GetBlockHeaderByNumber(receipt.BlockNumber)
+		if err != nil {
+			logx.Errorf("[MonitorL2BlockEvents] unable to get block header: %s", err.Error())
+			continue
+		}
+
 		// get events from the tx
 		logs := receipt.Logs
 		timeAt := time.Now().UnixMilli()
@@ -142,7 +151,7 @@ func MonitorL2BlockEvents(
 				}
 				// update block status
 				relatedBlocks[blockHeight].VerifiedTxHash = receipt.TxHash.Hex()
-				relatedBlocks[blockHeight].VerifiedAt = timeAt
+				relatedBlocks[blockHeight].VerifiedAt = int64(l1Block.Time)
 				relatedBlocks[blockHeight].BlockStatus = block.StatusVerifiedAndExecuted
 				pendingUpdateProofSenderStatus[blockHeight] = proofSender.Confirmed
 				break
