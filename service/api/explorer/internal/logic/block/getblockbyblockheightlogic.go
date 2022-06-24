@@ -43,10 +43,10 @@ func (l *GetBlockByBlockHeightLogic) GetBlockByBlockHeight(req *types.ReqGetBloc
 		PendingOnChainOperationsHash:    block.PendingOnChainOperationsHash,
 		PendingOnChainOperationsPubData: block.PendingOnChainOperationsPubData,
 		CommittedTxHash:                 block.CommittedTxHash,
-		CommittedAt:                     block.BlockHeight,
+		CommittedAt:                     block.CommittedAt,
 		VerifiedTxHash:                  block.VerifiedTxHash,
-		VerifiedAt:                      block.BlockHeight,
-		BlockStatus:                     block.BlockHeight,
+		VerifiedAt:                      block.VerifiedAt,
+		BlockStatus:                     block.BlockStatus,
 	}
 	for _, t := range block.Txs {
 		tx := utils.GormTx2Tx(t)
