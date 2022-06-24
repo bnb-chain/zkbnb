@@ -22,4 +22,9 @@ const (
 	KeyExample = "cache:dataName_dataIdentity"
 	// account
 	KeyAccountAccountName = "cache:account_accountName"
+
+	KeyGetBlockByBlockHeight   = "cache:block_blockHeight"
+	KeyGetBlockBlockCommitment = "cache::block:blockCommitment:"
+	KeyGetBlockWithTxHeight    = "cache::block:blockHeightWithTx:"
+	KeyGetBlockList            = "cache::block:blockList:"
 )

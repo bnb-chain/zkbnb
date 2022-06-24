@@ -44,7 +44,7 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (*types.RespGe
 			AccountDelta: w.BalanceDelta,
 		})
 	}
-	block, err := l.block.GetBlockByBlockHeight(txMemppol.L2BlockHeight)
+	block, err := l.block.GetBlockByBlockHeight(l.ctx, txMemppol.L2BlockHeight)
 	if err != nil {
 		logx.Errorf("[GetBlockByBlockHeight]:%v", err)
 		return nil, err
