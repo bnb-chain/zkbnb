@@ -1,0 +1,33 @@
+package mempooltxdetail
+
+import (
+	"context"
+
+	table "github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
+	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/errcode"
+	"gorm.io/gorm"
+)
+
+type model struct {
+	table string
+	db    *gorm.DB
+	cache multcache.MultCache
+}
+
+/*
+	Func: GetMempoolTxs
+	Params: offset uint64, limit uint64
+	Return: mempoolTx []*mempoolModel.MempoolTx, err error
+	Description: query txs from db that sit in the range
+*/
+func (m *model) GetMemPoolTxDetailByAccountIndex(ctx context.Context, accountIndex int64) ([]*table.MempoolTxDetail, error) {
+	result := make([]*table.MempoolTxDetail, 0)
+	dbTx := m.db.Table(m.table).Where("account_index = ?", accountIndex).Order("created_at").Find(&result)
+	if dbTx.Error != nil {
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return nil, errcode.ErrDataNotExist
+	}
+	return result, nil
+}
