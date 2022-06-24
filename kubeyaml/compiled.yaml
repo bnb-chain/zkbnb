@@ -67,8 +67,10 @@ spec:
             port: 8888
         name: app
         ports:
-        - name: metrics
-          containerPort: 8888
+          - name: metrics
+            containerPort: 9091
+          - name: app
+            containerPort: 8888
         readinessProbe:
           initialDelaySeconds: 5
           periodSeconds: 10
