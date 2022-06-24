@@ -19,7 +19,19 @@ var (
 
 // cache key register
 const (
-	KeyExample = "cache:dataName_dataIdentity"
+	KeyExample = "cache::dataName:dataIdentity"
 	// account
-	KeyAccountAccountName = "cache:account_accountName"
+	KeyAccountAccountName = "cache::account:accountName"
+
+	KeyGetBlockByBlockHeight   = "cache:block:blockHeight"
+	KeyGetBlockBlockCommitment = "cache::block:blockCommitment:"
+	KeyGetBlockWithTxHeight    = "cache::block:blockHeightWithTx:"
+	KeyGetBlockList            = "cache::block:blockList:"
+	KeyGetCommittedBlocksCount = "cache::block:CommittedBlocksCount:"
+	KeyGetVerifiedBlocksCount  = "cache::block:VerifiedBlocksCount:"
+	KeyGetBlocksTotalCount     = "cache::block:BlocksTotalCount:"
+
+	KeyGetL2AssetsList               = "cache::l2asset:L2AssetsList:"
+	KeyGetL2AssetInfoBySymbol        = "cache::l2asset:L2AssetInfoBySymbol:"
+	KeyGetSimpleL2AssetInfoByAssetId = "cache::l2asset:SimpleL2AssetInfoByAssetId:"
 )

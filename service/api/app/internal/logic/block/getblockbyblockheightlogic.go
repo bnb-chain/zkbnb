@@ -28,7 +28,7 @@ func NewGetBlockByBlockHeightLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 func (l *GetBlockByBlockHeightLogic) GetBlockByBlockHeight(req *types.ReqGetBlockByBlockHeight) (*types.RespGetBlockByBlockHeight, error) {
-	block, err := l.block.GetBlockWithTxsByBlockHeight(int64(req.BlockHeight))
+	block, err := l.block.GetBlockWithTxsByBlockHeight(l.ctx, int64(req.BlockHeight))
 	if err != nil {
 		logx.Errorf("[GetBlockWithTxsByBlockHeight] err:%v", err)
 		return nil, err

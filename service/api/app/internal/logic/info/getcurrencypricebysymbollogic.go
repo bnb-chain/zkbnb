@@ -36,7 +36,7 @@ func (l *GetCurrencyPriceBySymbolLogic) GetCurrencyPriceBySymbol(req *types.ReqG
 		logx.Errorf("[GetCurrencyPrice] err:%v", err)
 		return nil, err
 	}
-	l2Asset, err := l.l2asset.GetL2AssetInfoBySymbol(req.Symbol)
+	l2Asset, err := l.l2asset.GetL2AssetInfoBySymbol(l.ctx, req.Symbol)
 	if err != nil {
 		logx.Errorf("[GetL2AssetInfoBySymbol] err:%v", err)
 		return nil, err
