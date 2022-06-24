@@ -27,7 +27,7 @@ func NewGetAssetsListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 }
 
 func (l *GetAssetsListLogic) GetAssetsList(req *types.ReqGetAssetsList) (*types.RespGetAssetsList, error) {
-	assets, err := l.l2asset.GetL2AssetsList()
+	assets, err := l.l2asset.GetL2AssetsList(l.ctx)
 	if err != nil {
 		logx.Errorf("[GetL2AssetsList] err:%v", err)
 		return nil, err
@@ -36,9 +36,9 @@ func (l *GetAssetsListLogic) GetAssetsList(req *types.ReqGetAssetsList) (*types.
 	resp.Assets = []*types.AssetInfo{}
 	for _, asset := range assets {
 		resp.Assets = append(resp.Assets, &types.AssetInfo{
-			AssetId:       uint32(asset.AssetId),
+			AssetId:       asset.AssetId,
 			AssetName:     asset.AssetName,
-			AssetDecimals: uint32(asset.Decimals),
+			AssetDecimals: asset.Decimals,
 			AssetSymbol:   asset.AssetSymbol,
 			AssetAddress:  asset.L1Address,
 			IsGasAsset:    asset.IsGasAsset,

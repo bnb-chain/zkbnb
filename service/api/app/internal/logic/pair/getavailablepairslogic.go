@@ -37,12 +37,12 @@ func (l *GetAvailablePairsLogic) GetAvailablePairs(_ *types.ReqGetAvailablePairs
 	}
 	resp := &types.RespGetAvailablePairs{}
 	for _, asset := range liquidityAssets {
-		assetA, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(uint32(asset.AssetAId))
+		assetA, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(l.ctx, uint32(asset.AssetAId))
 		if err != nil {
 			logx.Error("[GetSimpleL2AssetInfoByAssetId] err:%v", err)
 			return nil, err
 		}
-		assetB, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(uint32(asset.AssetBId))
+		assetB, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(l.ctx, uint32(asset.AssetBId))
 		if err != nil {
 			logx.Error("[GetSimpleL2AssetInfoByAssetId] err:%v", err)
 			return nil, err

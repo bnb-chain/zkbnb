@@ -226,8 +226,6 @@ func CommitterTask(
 					//logx.Errorf("[CommitterTask] invalid nonce")
 					//return errors.New("[CommitterTask] invalid nonce")
 				}
-				// update nonce
-				accountMap[mempoolTx.AccountIndex].Nonce = mempoolTx.Nonce
 			}
 			// check mempool tx details are correct
 			var (
@@ -537,6 +535,10 @@ func CommitterTask(
 					AccountOrder:    mempoolTxDetail.AccountOrder,
 					CollectionNonce: collectionNonce,
 				})
+			}
+			if mempoolTx.Nonce != commonConstant.NilNonce {
+				// update nonce
+				accountMap[mempoolTx.AccountIndex].Nonce = mempoolTx.Nonce
 			}
 			// check if we need to update nonce
 			if newCollectionNonce != commonConstant.NilCollectionId {

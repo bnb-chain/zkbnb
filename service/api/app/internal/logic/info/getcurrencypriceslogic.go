@@ -30,7 +30,7 @@ func NewGetCurrencyPricesLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 func (l *GetCurrencyPricesLogic) GetCurrencyPrices(_ *types.ReqGetCurrencyPrices) (*types.RespGetCurrencyPrices, error) {
-	l2Assets, err := l.l2asset.GetL2AssetsList()
+	l2Assets, err := l.l2asset.GetL2AssetsList(l.ctx)
 	if err != nil {
 		logx.Errorf("[GetL2AssetsList] err:%v", err)
 		return nil, err

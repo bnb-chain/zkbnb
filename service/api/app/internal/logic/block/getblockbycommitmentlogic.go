@@ -30,7 +30,7 @@ func NewGetBlockByCommitmentLogic(ctx context.Context, svcCtx *svc.ServiceContex
 func (l *GetBlockByCommitmentLogic) GetBlockByCommitment(req *types.ReqGetBlockByCommitment) (*types.RespGetBlockByCommitment, error) {
 	// todo: add your logic here and delete this line
 	// query basic block info
-	block, err := l.block.GetBlockWithTxsByCommitment(req.BlockCommitment)
+	block, err := l.block.GetBlockWithTxsByCommitment(l.ctx, req.BlockCommitment)
 	if err != nil {
 		logx.Errorf("[GetBlockWithTxsByCommitment] err:%v", err)
 		return nil, err
