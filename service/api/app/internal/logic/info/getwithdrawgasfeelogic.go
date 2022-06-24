@@ -48,7 +48,7 @@ func (l *GetWithdrawGasFeeLogic) GetWithdrawGasFee(req *types.ReqGetWithdrawGasF
 
 	// TODO: integer overflow
 	ethPrice, err := l.price.GetCurrencyPrice(l.ctx, "ETH")
-	sysGasFee, err := l.sysconf.GetSysconfigByName("SysGasFee")
+	sysGasFee, err := l.sysconf.GetSysconfigByName(l.ctx, "SysGasFee")
 	if err != nil {
 		logx.Errorf("[GetSysconfigByName] err:%v", err)
 		return nil, err
