@@ -37,6 +37,8 @@ const (
 	KeyGetSimpleL2AssetInfoByAssetId = "cache::l2asset:SimpleL2AssetInfoByAssetId:"
 
 	KeyGetSysconfigByName = "cache::sysconf:GetSysconfigByName:"
+
+	KeyGetCurrencyPrice = "cache::sysconf:GetCurrencyPrice:"
 )
 
 // cache key prefix: account
