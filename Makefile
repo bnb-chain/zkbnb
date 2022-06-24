@@ -11,7 +11,8 @@
 APP = ./service/api/app
 EXPLORE = ./service/api/explorer
 
-GRPCProto = ./service/rpc/globalRPC
+globalRPCProtoPath = ./service/rpc/globalRPC
+proverHubProtoPath = ./service/rpc/proverHub
 
 app:
 	cd $(APP) && goctl api go -api app.api -dir .;
@@ -21,6 +22,10 @@ explorer:
 	cd $(EXPLORE) && goctl api go -api explorer.api -dir .;
 	@echo "Done generate explorer api";
 
-gRPCProto:
-	cd $(GRPCProto) && goctl rpc protoc globalRPC.proto --go_out=. --go-grpc_out=. --zrpc_out=.;
+globalRPCProto:
+	cd $(globalRPCProtoPath) && goctl rpc protoc globalRPC.proto --go_out=. --go-grpc_out=. --zrpc_out=.;
 	@echo "Done generate globalRPCProto";
+
+proverHubProto:
+	cd $(proverHubProtoPath) && goctl rpc protoc proverHub.proto --go_out=. --go-grpc_out=. --zrpc_out=.;
+	@echo "Done generate proverHubProto";

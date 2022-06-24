@@ -46,7 +46,7 @@ func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.RespGetGasFe
 		logx.Errorf("[GetCurrencyPrice] err:%v", err)
 		return nil, err
 	}
-	sysGasFee, err := l.sysconf.GetSysconfigByName("SysGasFee")
+	sysGasFee, err := l.sysconf.GetSysconfigByName(l.ctx, "SysGasFee")
 	if err != nil {
 		logx.Errorf("[GetSysconfigByName] err:%v", err)
 		return nil, err
