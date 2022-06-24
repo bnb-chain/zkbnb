@@ -2,6 +2,7 @@ package multcache
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/zecrey-labs/zecrey-legend/pkg/zerror"
 )
@@ -37,3 +38,29 @@ const (
 
 	KeyGetSysconfigByName = "cache::sysconf:GetSysconfigByName:"
 )
+
+// cache key prefix: account
+func SpliceCacheKeyAccountByAccountName(accountName string) string {
+	return "cache:account_accountName" + accountName
+}
+
+func SpliceCacheKeyAccountByAccountPk(accountPk string) string {
+	return "cache:account_accountPk" + accountPk
+}
+
+// cache key prefix: tx
+func SpliceCacheKeyTxsCount() string {
+	return "cache:txsCount"
+}
+
+func SpliceCacheKeyTxByTxHash(txHash string) string {
+	return "cache:tx_txHash" + txHash
+}
+
+func SpliceCacheKeyTxByTxId(txID int64) string {
+	return fmt.Sprintf("cache:tx_txId_%d", txID)
+}
+
+func SpliceCacheKeyTxCountByTimeRange(data string) string {
+	return "cache:txCount_" + data
+}

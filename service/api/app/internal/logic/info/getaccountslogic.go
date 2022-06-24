@@ -14,7 +14,7 @@ type GetAccountsLogic struct {
 	logx.Logger
 	ctx     context.Context
 	svcCtx  *svc.ServiceContext
-	account account.AccountModel
+	account account.Model
 }
 
 func NewGetAccountsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAccountsLogic {

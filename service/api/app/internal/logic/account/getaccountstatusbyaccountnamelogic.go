@@ -16,7 +16,7 @@ type GetAccountStatusByAccountNameLogic struct {
 	logx.Logger
 	ctx     context.Context
 	svcCtx  *svc.ServiceContext
-	account account.AccountModel
+	account account.Model
 }
 
 func NewGetAccountStatusByAccountNameLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAccountStatusByAccountNameLogic {
@@ -33,9 +33,9 @@ func (l *GetAccountStatusByAccountNameLogic) GetAccountStatusByAccountName(req *
 		logx.Errorf("[CheckAccountIndex] param:%v", req.AccountName)
 		return nil, errcode.ErrInvalidParam
 	}
-	account, err := l.account.GetAccountByAccountName(l.ctx, req.AccountName)
+	account, err := l.account.GetBasicAccountByAccountName(l.ctx, req.AccountName)
 	if err != nil {
-		logx.Errorf("[GetAccountByAccountName] err:%v", err)
+		logx.Errorf("[GetBasicAccountByAccountName] err:%v", err)
 		return nil, err
 	}
 	resp = &types.RespGetAccountStatusByAccountName{

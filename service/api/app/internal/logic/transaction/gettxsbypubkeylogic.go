@@ -8,6 +8,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/globalrpc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/mempool"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/tx"
+	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/txdetail"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
 
@@ -18,11 +19,12 @@ type GetTxsByPubKeyLogic struct {
 	logx.Logger
 	ctx       context.Context
 	svcCtx    *svc.ServiceContext
-	account   account.AccountModel
+	account   account.Model
 	globalRpc globalrpc.GlobalRPC
 	tx        tx.Model
 	mempool   mempool.Mempool
 	block     block.Block
+	txDetail  txdetail.Model
 }
 
 func NewGetTxsByPubKeyLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTxsByPubKeyLogic {
@@ -35,6 +37,7 @@ func NewGetTxsByPubKeyLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 		tx:        tx.New(svcCtx),
 		mempool:   mempool.New(svcCtx),
 		block:     block.New(svcCtx),
+		txDetail:  txdetail.New(svcCtx),
 	}
 }
 
@@ -49,7 +52,7 @@ func (l *GetTxsByPubKeyLogic) GetTxsByPubKey(req *types.ReqGetTxsByPubKey) (resp
 		logx.Errorf("[GetLatestTxsListByAccountIndex] err:%v", err)
 		return &types.RespGetTxsByPubKey{}, err
 	}
-	txCount, err := l.tx.GetTxsTotalCountByAccountIndex(account.AccountIndex)
+	txCount, err := l.txDetail.GetTxsTotalCountByAccountIndex(l.ctx, account.AccountIndex)
 	if err != nil {
 		logx.Errorf("[GetTxsTotalCountByAccountIndex] err:%v", err)
 		return &types.RespGetTxsByPubKey{}, err

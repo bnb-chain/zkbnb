@@ -2,7 +2,6 @@ package tx
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"time"
 
@@ -24,90 +23,82 @@ type model struct {
 	Return: count int64, err error
 	Description: used for counting total transactions for explorer dashboard
 */
-func (m *model) GetTxsTotalCount(ctx context.Context) (count int64, err error) {
-	dbTx := m.db.Table(m.table).Where("deleted_at is NULL").Count(&count)
-	if dbTx.Error == errcode.ErrNotFound {
-		return 0, nil
+
+func (m *model) GetTxsTotalCount(ctx context.Context) (int64, error) {
+	f := func() (interface{}, error) {
+		var count int64
+		dbTx := m.db.Table(m.table).Where("deleted_at is NULL").Count(&count)
+		if dbTx.Error != nil {
+			return nil, dbTx.Error
+		} else if dbTx.RowsAffected == 0 {
+			return nil, nil
+		}
+		return &count, nil
 	}
-	if dbTx.Error != nil {
+	var countType int64
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyTxsCount(), &countType, 5, f)
+	if err != nil {
 		return 0, err
 	}
-	return count, nil
+	count, _ := value.(*int64)
+	return *count, nil
 }
 
-func (m *model) GetTxsTotalCountByAccountIndex(accountIndex int64) (count int64, err error) {
-	var (
-		txDetailTable = `tx_detail`
-	)
-	dbTx := m.db.Table(txDetailTable).Select("tx_id").Where("account_index = ? and deleted_at is NULL", accountIndex).Group("tx_id").Count(&count)
-	return count, dbTx.Error
-}
-
-func (m *model) GetTxByTxHash(txHash string) (tx *table.Tx, err error) {
-	var txForeignKeyColumn = `TxDetails`
-
-	dbTx := m.db.Table(m.table).Where("tx_hash = ?", txHash).Find(&tx)
-	if dbTx.Error != nil {
-		err = fmt.Errorf("[txVerification.GetTxByTxHash] %s", dbTx.Error)
-		return nil, err
-	} else if dbTx.RowsAffected == 0 {
-		err = fmt.Errorf("[txVerification.GetTxByTxHash] No such Tx with txHash: %s", txHash)
-		return nil, err
+func (m *model) GetTxByTxHash(ctx context.Context, txHash string) (*table.Tx, error) {
+	f := func() (interface{}, error) {
+		tx := &table.Tx{}
+		dbTx := m.db.Table(m.table).Where("tx_hash = ?", txHash).Find(&tx)
+		if dbTx.Error != nil {
+			return nil, dbTx.Error
+		} else if dbTx.RowsAffected == 0 {
+			return nil, errcode.ErrDataNotExist
+		}
+		err := m.db.Model(&tx).Association(`TxDetails`).Find(&tx.TxDetails)
+		if err != nil {
+			return nil, err
+		}
+		sort.SliceStable(tx.TxDetails, func(i, j int) bool {
+			return tx.TxDetails[i].Order < tx.TxDetails[j].Order
+		})
+		return tx, nil
 	}
-	err = m.db.Model(&tx).Association(txForeignKeyColumn).Find(&tx.TxDetails)
-	if err != nil {
-		err = fmt.Errorf("[txVerification.GetTxByTxHash] Get Associate TxDetails Error")
-		return nil, err
-	}
-	// re-order tx details
-	sort.SliceStable(tx.TxDetails, func(i, j int) bool {
-		return tx.TxDetails[i].Order < tx.TxDetails[j].Order
-	})
-
-	return tx, nil
-}
-
-func (m *model) GetTxsByBlockId(blockId int64, limit, offset uint32) (txs []table.Tx, total int64, err error) {
-	query := m.db.Table(m.table).Where("block_id = ?", blockId)
-	if err = query.Count(&total).Error; err != nil {
-		err = fmt.Errorf("[txVerification.GetTxsByBlockId] %s", err)
-		return
-	}
-	dbTx := query.Offset(int(offset)).Limit(int(limit)).Find(&txs)
-	if dbTx.Error != nil {
-		err = fmt.Errorf("[txVerification.GetTxsByBlockId] %s", dbTx.Error)
-		return
-	} else if dbTx.RowsAffected == 0 {
-		err = fmt.Errorf("[txVerification.GetTxsByBlockId] No such Tx with blockId: %v", blockId)
-		return
-	}
-	return
-}
-
-func (m *model) GetTxs(limit, offset uint32) (txs []*table.Tx, err error) {
-	// dbTx := m.db.Table(m.table).Where("block_id = ?", blockId).Offset(int(offset)).Limit(int(limit)).Find(&txs)
-	// if dbTx.Error != nil {
-	// 	err = fmt.Errorf("[txVerification.GetTxsByBlockId] %s", dbTx.Error)
-	// 	return
-	// } else if dbTx.RowsAffected == 0 {
-	// 	err = fmt.Errorf("[txVerification.GetTxsByBlockId] No such Tx with blockId: %v", blockId)
-	// 	return
-	// }
-	return
-}
-
-func (m *model) GetTxByTxID(txID int64) (*table.Tx, error) {
 	tx := &table.Tx{}
-	dbTx := m.db.Table(m.table).Where("id = ? and deleted_at is NULL", txID).Find(&tx)
-	if dbTx.Error != nil {
-		return nil, dbTx.Error
-	} else if dbTx.RowsAffected == 0 {
-		return nil, errcode.ErrDataNotExist
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyTxByTxHash(txHash), tx, 1, f)
+	if err != nil {
+		return nil, err
 	}
+	tx, _ = value.(*table.Tx)
 	return tx, nil
 }
 
-func (m *model) GetTxCountByTimeRange(data string) (count int64, err error) {
+func (m *model) GetTxByTxID(ctx context.Context, txID int64) (*table.Tx, error) {
+	f := func() (interface{}, error) {
+		tx := &table.Tx{}
+		dbTx := m.db.Table(m.table).Where("id = ? and deleted_at is NULL", txID).Find(&tx)
+		if dbTx.Error != nil {
+			return nil, dbTx.Error
+		} else if dbTx.RowsAffected == 0 {
+			return nil, errcode.ErrDataNotExist
+		}
+		err := m.db.Model(&tx).Association(`TxDetails`).Find(&tx.TxDetails)
+		if err != nil {
+			return nil, err
+		}
+		sort.SliceStable(tx.TxDetails, func(i, j int) bool {
+			return tx.TxDetails[i].Order < tx.TxDetails[j].Order
+		})
+		return tx, nil
+	}
+	tx := &table.Tx{}
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyTxByTxId(txID), tx, 1, f)
+	if err != nil {
+		return nil, err
+	}
+	tx, _ = value.(*table.Tx)
+	return tx, nil
+}
+
+func (m *model) GetTxCountByTimeRange(ctx context.Context, data string) (int64, error) {
 	var (
 		from time.Time
 		to   time.Time
@@ -122,11 +113,21 @@ func (m *model) GetTxCountByTimeRange(data string) (count int64, err error) {
 		from = today
 		to = now
 	}
-	dbTx := m.db.Table(m.table).
-		Where("created_at BETWEEN ? AND ?", from, to).Count(&count)
-
-	if dbTx.Error != nil {
-		return 0, dbTx.Error
+	f := func() (interface{}, error) {
+		var count int64
+		dbTx := m.db.Table(m.table).Where("created_at BETWEEN ? AND ?", from, to).Count(&count)
+		if dbTx.Error != nil {
+			return nil, dbTx.Error
+		} else if dbTx.RowsAffected == 0 {
+			return nil, nil
+		}
+		return &count, nil
 	}
-	return count, nil
+	var countType int64
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyTxCountByTimeRange(data), &countType, 5, f)
+	if err != nil {
+		return 0, err
+	}
+	count, _ := value.(*int64)
+	return *count, nil
 }

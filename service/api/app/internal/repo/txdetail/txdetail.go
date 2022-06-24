@@ -2,6 +2,7 @@ package txdetail
 
 import (
 	"context"
+	"sort"
 	"time"
 
 	table "github.com/zecrey-labs/zecrey-legend/common/model/tx"
@@ -16,6 +17,27 @@ type model struct {
 	cache multcache.MultCache
 }
 
+func (m *model) GetTxsTotalCountByAccountIndex(ctx context.Context, accountIndex int64) (int64, error) {
+	f := func() (interface{}, error) {
+		var count int64
+		dbTx := m.db.Table(m.table).Select("tx_id").
+			Where("account_index = ? and deleted_at is NULL", accountIndex).Group("tx_id").Count(&count)
+		if dbTx.Error != nil {
+			return nil, dbTx.Error
+		} else if dbTx.RowsAffected == 0 {
+			return nil, nil
+		}
+		return &count, nil
+	}
+	var countType int64
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyTxsCount(), &countType, 5, f)
+	if err != nil {
+		return 0, err
+	}
+	count, _ := value.(*int64)
+	return *count, nil
+}
+
 func (m *model) GetTxDetailByAccountIndex(ctx context.Context, accountIndex int64) ([]*table.TxDetail, error) {
 	result := make([]*table.TxDetail, 0)
 	dbTx := m.db.Table(m.table).Where("account_index = ?", accountIndex).Find(&result)
@@ -25,6 +47,20 @@ func (m *model) GetTxDetailByAccountIndex(ctx context.Context, accountIndex int6
 		return nil, errcode.ErrDataNotExist
 	}
 	return result, nil
+}
+
+func (m *model) GetTxIdsByAccountIndex(ctx context.Context, accountIndex int64) ([]int64, error) {
+	txIds := make([]int64, 0)
+	dbTx := m.db.Table(m.table).Select("tx_id").Where("account_index = ?", accountIndex).Group("tx_id").Find(&txIds)
+	if dbTx.Error != nil {
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return nil, errcode.ErrDataNotExist
+	}
+	sort.Slice(txIds, func(i, j int) bool {
+		return txIds[i] > txIds[j]
+	})
+	return txIds, nil
 }
 
 func (m *model) GetDauInTxDetail(ctx context.Context, data string) (count int64, err error) {

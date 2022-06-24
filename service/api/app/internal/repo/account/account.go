@@ -19,67 +19,57 @@ package account
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	table "github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
-	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/errcode"
 	"gorm.io/gorm"
 )
 
-type accountModel struct {
+type model struct {
 	table string
 	db    *gorm.DB
 	cache multcache.MultCache
 }
 
-/*
-	Func: IfAccountNameExist
-	Params: name string
-	Return: bool, error
-	Description: check account name existence
-*/
-func (m *accountModel) IfAccountNameExist(name string) (bool, error) {
-	var res int64
-	dbTx := m.db.Table(m.table).Where("account_name = ? and deleted_at is NULL", strings.ToLower(name)).Count(&res)
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[account.IfAccountNameExist] %s", dbTx.Error)
-		logx.Error(err)
-		return true, dbTx.Error
-	} else if res == 0 {
-		return false, nil
-	} else if res != 1 {
-		logx.Errorf("[account.IfAccountNameExist] %s", ErrDuplicatedAccountName)
-		return true, ErrDuplicatedAccountName
-	} else {
-		return true, nil
+func (m *model) GetBasicAccountByAccountName(ctx context.Context, accountName string) (*table.Account, error) {
+	f := func() (interface{}, error) {
+		account := &table.Account{}
+		dbTx := m.db.Table(m.table).Where("account_name = ?", accountName).Find(&account)
+		if dbTx.Error != nil {
+			return nil, dbTx.Error
+		} else if dbTx.RowsAffected == 0 {
+			return nil, errcode.ErrDataNotExist
+		}
+		return account, nil
 	}
+	account := &table.Account{}
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountByAccountName(accountName), account, 10, f)
+	if err != nil {
+		return nil, err
+	}
+	account, _ = value.(*table.Account)
+	return account, nil
 }
 
-/*
-	Func: IfAccountExistsByAccountIndex
-	Params: accountIndex int64
-	Return: bool, error
-	Description: check account index existence
-*/
-func (m *accountModel) IfAccountExistsByAccountIndex(accountIndex int64) (bool, error) {
-	var res int64
-	dbTx := m.db.Table(m.table).Where("account_index = ? and deleted_at is NULL", accountIndex).Count(&res)
-
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[account.IfAccountExistsByAccountIndex] %s", dbTx.Error)
-		logx.Error(err)
-		// TODO : to be modified
-		return true, dbTx.Error
-	} else if res == 0 {
-		return false, nil
-	} else if res != 1 {
-		logx.Errorf("[account.IfAccountExistsByAccountIndex] %s", ErrDuplicatedAccountIndex)
-		return true, ErrDuplicatedAccountIndex
-	} else {
-		return true, nil
+func (m *model) GetBasicAccountByAccountPk(ctx context.Context, accountPk string) (*table.Account, error) {
+	f := func() (interface{}, error) {
+		account := &table.Account{}
+		dbTx := m.db.Table(m.table).Where("public_key = ?", accountPk).Find(&account)
+		if dbTx.Error != nil {
+			return nil, dbTx.Error
+		} else if dbTx.RowsAffected == 0 {
+			return nil, errcode.ErrDataNotExist
+		}
+		return account, nil
 	}
+	account := &table.Account{}
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountByAccountPk(accountPk), account, 10, f)
+	if err != nil {
+		return nil, err
+	}
+	account, _ = value.(*table.Account)
+	return account, nil
 }
 
 /*
@@ -89,30 +79,12 @@ func (m *accountModel) IfAccountExistsByAccountIndex(accountIndex int64) (bool, 
 	Description: get account info by index
 */
 
-func (m *accountModel) GetAccountByAccountIndex(accountIndex int64) (account *table.Account, err error) {
+func (m *model) GetAccountByAccountIndex(accountIndex int64) (account *table.Account, err error) {
 	dbTx := m.db.Table(m.table).Where("account_index = ?", accountIndex).Find(&account)
 	if dbTx.Error != nil {
-		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", dbTx.Error)
-		logx.Error(err)
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", ErrNotFound)
-		logx.Error(err)
-		return nil, ErrNotFound
-	}
-	return account, nil
-}
-
-func (m *accountModel) GetVerifiedAccountByAccountIndex(accountIndex int64) (account *table.Account, err error) {
-	dbTx := m.db.Table(m.table).Where("account_index = ? and status = ?", accountIndex, AccountStatusVerified).Find(&account)
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", dbTx.Error)
-		logx.Error(err)
-		return nil, dbTx.Error
-	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", ErrNotFound)
-		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errcode.ErrDataNotExist
 	}
 	return account, nil
 }
@@ -124,16 +96,12 @@ func (m *accountModel) GetVerifiedAccountByAccountIndex(accountIndex int64) (acc
 	Description: get account info by public key
 */
 
-func (m *accountModel) GetAccountByPk(pk string) (account *table.Account, err error) {
+func (m *model) GetAccountByPk(pk string) (account *table.Account, err error) {
 	dbTx := m.db.Table(m.table).Where("public_key = ?", pk).Find(&account)
 	if dbTx.Error != nil {
-		err := fmt.Sprintf("[account.GetAccountByPk] %s", dbTx.Error)
-		logx.Error(err)
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[account.GetAccountByPk] %s", ErrNotFound)
-		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errcode.ErrDataNotExist
 	}
 	return account, nil
 }
@@ -144,23 +112,14 @@ func (m *accountModel) GetAccountByPk(pk string) (account *table.Account, err er
 	Return: account Account, err error
 	Description: get account info by account name
 */
-func (m *accountModel) GetAccountByAccountName(ctx context.Context, accountName string) (*table.Account, error) {
-	f := func() (interface{}, error) {
-		account := &table.Account{}
-		dbTx := m.db.Table(m.table).Where("account_name = ?", accountName).Find(&account)
-		if dbTx.Error != nil {
-			return nil, dbTx.Error
-		} else if dbTx.RowsAffected == 0 {
-			return nil, ErrNotFound
-		}
-		return account, nil
-	}
+func (m *model) GetAccountByAccountName(ctx context.Context, accountName string) (*table.Account, error) {
 	account := &table.Account{}
-	value, err := m.cache.GetWithSet(ctx, multcache.KeyAccountAccountName+accountName, account, 10, f)
-	if err != nil {
-		return nil, err
+	dbTx := m.db.Table(m.table).Where("account_name = ?", accountName).Find(&account)
+	if dbTx.Error != nil {
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return nil, errcode.ErrDataNotExist
 	}
-	account, _ = value.(*table.Account)
 	return account, nil
 }
 
@@ -171,14 +130,12 @@ func (m *accountModel) GetAccountByAccountName(ctx context.Context, accountName 
 	Description:  For API /api/v1/info/getAccountsList
 
 */
-func (m *accountModel) GetAccountsList(limit int, offset int64) (accounts []*table.Account, err error) {
+func (m *model) GetAccountsList(limit int, offset int64) (accounts []*table.Account, err error) {
 	dbTx := m.db.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("account_index desc").Find(&accounts)
 	if dbTx.Error != nil {
-		logx.Error("[account.GetAccountsList] %s", dbTx.Error)
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		logx.Error("[account.GetAccountsList] Get Accounts Error")
-		return nil, ErrNotFound
+		return nil, errcode.ErrDataNotExist
 	}
 	return accounts, nil
 }
@@ -189,94 +146,12 @@ func (m *accountModel) GetAccountsList(limit int, offset int64) (accounts []*tab
 	Return: count int64, err error
 	Description: used for counting total accounts for explorer dashboard
 */
-func (m *accountModel) GetAccountsTotalCount() (count int64, err error) {
+func (m *model) GetAccountsTotalCount() (count int64, err error) {
 	dbTx := m.db.Table(m.table).Where("deleted_at is NULL").Count(&count)
 	if dbTx.Error != nil {
-		logx.Error("[account.GetAccountsTotalCount] %s", dbTx.Error)
 		return 0, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		logx.Error("[account.GetAccountsTotalCount] No Accounts in Account Table")
 		return 0, nil
 	}
 	return count, nil
-}
-
-/*
-	Func: GetAllAccounts
-	Params:
-	Return: count int64, err error
-	Description: used for construct MPT
-*/
-func (m *accountModel) GetAllAccounts() (accounts []*table.Account, err error) {
-	dbTx := m.db.Table(m.table).Order("account_index").Find(&accounts)
-	if dbTx.Error != nil {
-		logx.Error("[account.GetAllAccounts] %s", dbTx.Error)
-		return accounts, dbTx.Error
-	} else if dbTx.RowsAffected == 0 {
-		logx.Error("[account.GetAllAccounts] No Account in Account Table")
-		return accounts, nil
-	}
-	return accounts, nil
-}
-
-/*
-	Func: GetLatestAccountIndex
-	Params:
-	Return: accountIndex int64, err error
-	Description: get max accountIndex
-*/
-func (m *accountModel) GetLatestAccountIndex() (accountIndex int64, err error) {
-	dbTx := m.db.Table(m.table).Select("account_index").Order("account_index desc").Limit(1).Find(&accountIndex)
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[account.GetLatestAccountIndex] %s", dbTx.Error)
-		logx.Error(err)
-		return 0, dbTx.Error
-	} else if dbTx.RowsAffected == 0 {
-		logx.Info("[account.GetLatestAccountIndex] No Account in Account Table")
-		return 0, ErrNotFound
-	}
-	logx.Info(accountIndex)
-	return accountIndex, nil
-}
-
-func (m *accountModel) GetAccountByAccountNameHash(accountNameHash string) (account *table.Account, err error) {
-	dbTx := m.db.Table(m.table).Where("account_name_hash = ?", accountNameHash).Find(&account)
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[account.GetAccountByAccountNameHash] %s", dbTx.Error)
-		logx.Error(err)
-		return nil, dbTx.Error
-	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[account.GetAccountByAccountNameHash] %s", ErrNotFound)
-		logx.Info(err)
-		return nil, ErrNotFound
-	}
-	return account, nil
-}
-
-func (m *accountModel) GetConfirmedAccounts() (accounts []*table.Account, err error) {
-	dbTx := m.db.Table(m.table).Where("status = ?", AccountStatusConfirmed).Order("account_index").Find(&accounts)
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[account.GetConfirmedAccounts] %s", dbTx.Error)
-		logx.Error(err)
-		return nil, dbTx.Error
-	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[account.GetConfirmedAccounts] %s", ErrNotFound)
-		logx.Info(err)
-		return nil, ErrNotFound
-	}
-	return accounts, nil
-}
-
-func (m *accountModel) GetConfirmedAccountByAccountIndex(accountIndex int64) (account *table.Account, err error) {
-	dbTx := m.db.Table(m.table).Where("account_index = ? and status = ?", accountIndex, AccountStatusConfirmed).Find(&account)
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", dbTx.Error)
-		logx.Error(err)
-		return nil, dbTx.Error
-	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", ErrNotFound)
-		logx.Error(err)
-		return nil, ErrNotFound
-	}
-	return account, nil
 }
