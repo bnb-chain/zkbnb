@@ -142,31 +142,31 @@ func (m *block) GetBlockWithTxsByBlockHeight(ctx context.Context, blockHeight in
 
 func (m *block) GetBlocksList(ctx context.Context, limit int64, offset int64) ([]*table.Block, error) {
 	f := func() (interface{}, error) {
-		blockList := &[]*table.Block{}
+		blockList := []*table.Block{}
 		dbTx := m.db.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("block_height desc").Find(&blockList)
 		if dbTx.Error != nil {
 			return nil, dbTx.Error
 		} else if dbTx.RowsAffected == 0 {
 			return nil, ErrNotFound
 		}
-		for _, _block := range *blockList {
+		for _, _block := range blockList {
 			err := m.db.Model(&_block).Association(`Txs`).Find(&_block.Txs)
 			if err != nil {
 				return nil, err
 			}
 		}
-		return blockList, nil
+		return &blockList, nil
 	}
-	blockList := &[]*table.Block{}
-	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetBlockList+strconv.FormatInt(limit, 10)+strconv.FormatInt(offset, 10), blockList, 10, f)
+	blockList := []*table.Block{}
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetBlockList+strconv.FormatInt(limit, 10)+strconv.FormatInt(offset, 10), &blockList, 10, f)
 	if err != nil {
 		return nil, err
 	}
-	blockList, ok := value.(*[]*table.Block)
+	blockList1, ok := value.(*[]*table.Block)
 	if !ok {
-		return nil, err
+		return nil, fmt.Errorf("[GetBlocksList] ErrConvertFail")
 	}
-	return *blockList, nil
+	return *blockList1, nil
 }
 
 func (m *block) GetBlocksTotalCount(ctx context.Context) (int64, error) {
@@ -178,13 +178,16 @@ func (m *block) GetBlocksTotalCount(ctx context.Context) (int64, error) {
 		} else if dbTx.RowsAffected == 0 {
 			return 0, ErrNotFound
 		}
-		return count, nil
+		return &count, nil
 	}
 	var count int64
 	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetBlocksTotalCount, &count, 5, f)
 	if err != nil {
 		return count, err
 	}
-	count1, _ := value.(*int64)
+	count1, ok := value.(*int64)
+	if !ok {
+		return 0, fmt.Errorf("[GetBlocksTotalCount] ErrConvertFail")
+	}
 	return *count1, nil
 }
