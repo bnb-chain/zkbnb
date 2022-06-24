@@ -45,6 +45,7 @@ func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *type
 	}
 	resp := &types.RespGetAccountInfoByAccountName{
 		AccountIndex: uint32(account.AccountIndex),
+		Nonce:        account.Nonce,
 		AccountPk:    account.PublicKey,
 		Assets:       make([]*types.AssetInfo, 0),
 	}
