@@ -29,10 +29,6 @@ var (
 	ZeroBigInt = big.NewInt(0)
 )
 
-var (
-	ZeroBigInt = big.NewInt(0)
-)
-
 func BigIntStringAdd(a, b string) (c string, err error) {
 	aInt, isValid := new(big.Int).SetString(a, Base)
 	if !isValid {

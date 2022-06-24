@@ -63,7 +63,7 @@ func (m *model) GetTxIdsByAccountIndex(ctx context.Context, accountIndex int64) 
 	return txIds, nil
 }
 
-func (m *model) GetDauInTxDetail(ctx context.Context, data string) (count int64, err error) {
+func (m *model) GetDauInTxDetail(ctx context.Context, data string) (int64, error) {
 	var (
 		from time.Time
 		to   time.Time
@@ -78,9 +78,21 @@ func (m *model) GetDauInTxDetail(ctx context.Context, data string) (count int64,
 		from = today
 		to = now
 	}
-	dbTx := m.db.Raw("SELECT account_index FROM tx_detail WHERE created_at BETWEEN ? AND ? AND account_index != -1 GROUP BY account_index", from, to).Count(&count)
-	if dbTx.Error != nil {
-		return 0, dbTx.Error
+	f := func() (interface{}, error) {
+		var count int64
+		dbTx := m.db.Raw("SELECT account_index FROM tx_detail WHERE created_at BETWEEN ? AND ? AND account_index != -1 GROUP BY account_index", from, to).Count(&count)
+		if dbTx.Error != nil {
+			return nil, dbTx.Error
+		} else if dbTx.RowsAffected == 0 {
+			return nil, nil
+		}
+		return &count, nil
 	}
-	return count, nil
+	var countType int64
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyTxCountByTimeRange(data), &countType, 5, f)
+	if err != nil {
+		return 0, err
+	}
+	count, _ := value.(*int64)
+	return *count, nil
 }
