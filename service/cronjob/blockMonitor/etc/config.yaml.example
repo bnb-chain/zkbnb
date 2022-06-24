@@ -11,7 +11,7 @@ CacheRedis:
 ChainConfig:
   # NetworkRPCSysConfigName: "BscTestNetworkRpc"
   NetworkRPCSysConfigName: "LocalTestNetworkRpc"
-  ZecreyContractAddrSysConfigName: "ZecreyLegendContract"
+  ZkbasContractAddrSysConfigName: "ZkbasContract"
   # StartL1BlockHeight: 520000
   StartL1BlockHeight: 0
   PendingBlocksCount: 0

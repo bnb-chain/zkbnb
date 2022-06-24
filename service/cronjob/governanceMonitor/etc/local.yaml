@@ -10,9 +10,8 @@ CacheRedis:
 
 ChainConfig:
   NetworkRPCSysConfigName: "BscTestNetworkRpc"
-#  NetworkRPCSysConfigName: "LocalTestNetworkRpc"
+  #NetworkRPCSysConfigName: "LocalTestNetworkRpc"
   GovernanceContractAddrSysConfigName: "GovernanceContract"
-  #  StartL1BlockHeight: 520000
   StartL1BlockHeight: 20348744
   PendingBlocksCount: 0
   MaxHandledBlocksCount: 100000

@@ -10,4 +10,4 @@ CacheRedis:
     Type: node
 
 KeyPath:
-  VerifyingKeyPath: /tmp/zkbas.vk
+  VerifyingKeyPath: /Users/likang/Documents/git/bnb-chain/zkbas/zkbas.vk

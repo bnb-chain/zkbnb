@@ -1125,7 +1125,7 @@ INSERT INTO "public"."sys_config" VALUES (1, '2022-06-08 08:24:27.338662+00', '2
 INSERT INTO "public"."sys_config" VALUES (2, '2022-06-08 08:24:27.338662+00', '2022-06-08 08:24:27.338662+00', NULL, 'MaxAssetId', '9', 'int', 'max number of asset id');
 INSERT INTO "public"."sys_config" VALUES (3, '2022-06-08 08:24:27.338662+00', '2022-06-08 08:24:27.338662+00', NULL, 'TreasuryAccountIndex', '0', 'int', 'treasury index');
 INSERT INTO "public"."sys_config" VALUES (4, '2022-06-08 08:24:27.338662+00', '2022-06-08 08:24:27.338662+00', NULL, 'GasAccountIndex', '1', 'int', 'gas index');
-INSERT INTO "public"."sys_config" VALUES (5, '2022-06-08 08:24:27.338662+00', '2022-06-08 08:24:27.338662+00', NULL, 'ZecreyLegendContract', '0x39c6354FdB9009E15B4006205E5Aa4C08c558c35', 'string', 'Zecrey contract on BSC');
+INSERT INTO "public"."sys_config" VALUES (5, '2022-06-08 08:24:27.338662+00', '2022-06-08 08:24:27.338662+00', NULL, 'ZkbasContract', '0x39c6354FdB9009E15B4006205E5Aa4C08c558c35', 'string', 'Zecrey contract on BSC');
 INSERT INTO "public"."sys_config" VALUES (6, '2022-06-08 08:24:27.338662+00', '2022-06-08 08:24:27.338662+00', NULL, 'GovernanceContract', '0x5b7adDf0882aB683E5aC0BD880830eb0947B2BD1', 'string', 'Governance contract on BSC');
 INSERT INTO "public"."sys_config" VALUES (7, '2022-06-08 08:24:27.338662+00', '2022-06-08 08:24:27.338662+00', NULL, 'BscTestNetworkRpc', 'http://tf-dex-preview-validator-nlb-6fd109ac8b9d390a.elb.ap-northeast-1.amazonaws.com:8545', 'string', 'BSC network rpc');
 INSERT INTO "public"."sys_config" VALUES (8, '2022-06-08 08:24:27.338662+00', '2022-06-08 08:24:27.338662+00', NULL, 'Local_Test_Network_RPC', 'http://127.0.0.1:8545/', 'string', 'Local network rpc');

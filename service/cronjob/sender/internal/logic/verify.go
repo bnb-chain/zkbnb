@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package logic
 import (
 	"encoding/json"
 	"errors"
-	zecreyLegend "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
+	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/bnb-chain/zkbas/common/util"
 	"math/big"
 	"time"
@@ -35,13 +35,13 @@ func SendVerifiedAndExecutedBlocks(
 ) (err error) {
 
 	var (
-		cli                  = param.Cli
-		authCli              = param.AuthCli
-		zecreyLegendInstance = param.ZecreyLegendInstance
-		gasPrice             = param.GasPrice
-		gasLimit             = param.GasLimit
-		maxBlockCount        = param.MaxBlocksCount
-		maxWaitingTime       = param.MaxWaitingTime
+		cli            = param.Cli
+		authCli        = param.AuthCli
+		zkbasInstance  = param.ZkbasInstance
+		gasPrice       = param.GasPrice
+		gasLimit       = param.GasLimit
+		maxBlockCount  = param.MaxBlocksCount
+		maxWaitingTime = param.MaxWaitingTime
 	)
 
 	// scan l1 tx sender table for handled verified and executed height
@@ -54,7 +54,7 @@ func SendVerifiedAndExecutedBlocks(
 	}
 
 	var (
-		pendingVerifyAndExecuteBlocks []ZecreyLegendVerifyBlockInfo
+		pendingVerifyAndExecuteBlocks []ZkbasVerifyBlockInfo
 		proofs                        []*big.Int
 	)
 	// if lastHandledBlock == nil, means we haven't verified and executed any blocks, just start from 0
@@ -216,9 +216,9 @@ func SendVerifiedAndExecutedBlocks(
 	}
 	// commit blocks on-chain
 	if len(pendingVerifyAndExecuteBlocks) != 0 {
-		txHash, err := zecreyLegend.VerifyAndExecuteBlocks(
+		txHash, err := zkbas.VerifyAndExecuteBlocks(
 			cli, authCli,
-			zecreyLegendInstance,
+			zkbasInstance,
 			pendingVerifyAndExecuteBlocks,
 			proofs,
 			gasPrice,

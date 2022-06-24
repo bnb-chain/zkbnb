@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	zecreyLegend "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
+	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/bnb-chain/zkbas/common/model/l1BlockMonitor"
 	"github.com/bnb-chain/zkbas/common/model/l2TxEventMonitor"
 	"github.com/bnb-chain/zkbas/common/util"
@@ -40,7 +40,7 @@ import (
 func MonitorBlocks(
 	cli *ProviderClient,
 	startHeight int64, pendingBlocksCount uint64, maxHandledBlocksCount int64,
-	zecreyContract string,
+	zkbasContract string,
 	l1BlockMonitorModel L1BlockMonitorModel,
 ) (err error) {
 
@@ -75,18 +75,18 @@ func MonitorBlocks(
 		return nil
 	}
 
-	// filter query for Zecrey contract
-	contractAddress := common.HexToAddress(zecreyContract)
+	// filter query for Zkbas contract
+	contractAddress := common.HexToAddress(zkbasContract)
 	// set filter
 	logx.Infof("[MonitorBlocks] fromBlock: %d, toBlock: %d", big.NewInt(handledHeight+1), big.NewInt(int64(safeHeight)))
 
-	zecreyInstance, err := zecreyLegend.LoadZecreyLegendInstance(cli, zecreyContract)
+	zkbasInstance, err := zkbas.LoadZkbasInstance(cli, zkbasContract)
 	if err != nil {
 		logx.Errorf("[MonitorBlocks] unable to load zecrey instance")
 		return err
 	}
 	// deposit or lock logs
-	priorityRequests, err := zecreyInstance.ZecreyLegendFilterer.
+	priorityRequests, err := zkbasInstance.ZkbasFilterer.
 		FilterNewPriorityRequest(&bind.FilterOpts{Start: uint64(handledHeight + 1), End: &safeHeight})
 	if err != nil {
 		logx.Errorf("[MonitorBlocks] unable to filter deposit or lock events: %s", err.Error())
@@ -119,13 +119,13 @@ func MonitorBlocks(
 	for _, vlog := range logs {
 		switch vlog.Topics[0].Hex() {
 		// deposit or lock event
-		case zecreyLogNewPriorityRequestSigHash.Hex():
+		case ZkbasLogNewPriorityRequestSigHash.Hex():
 			priorityRequestCountCheck++
 			// parse event info
-			var event zecreyLegend.ZecreyLegendNewPriorityRequest
-			err = ZecreyContractAbi.UnpackIntoInterface(&event, EventNameNewPriorityRequest, vlog.Data)
+			var event zkbas.ZkbasNewPriorityRequest
+			err = ZkbasContractAbi.UnpackIntoInterface(&event, EventNameNewPriorityRequest, vlog.Data)
 			if err != nil {
-				logx.Errorf("[blockMoniter.MonitorBlocks]<=>[ZecreyContractAbi.UnpackIntoInterface] %s", err.Error())
+				logx.Errorf("[blockMoniter.MonitorBlocks]<=>[zkbasContractAbi.UnpackIntoInterface] %s", err.Error())
 				return err
 			}
 			// set up database info
@@ -149,16 +149,16 @@ func MonitorBlocks(
 			l1EventInfos = append(l1EventInfos, l1EventInfo)
 			l2TxEventMonitors = append(l2TxEventMonitors, l2TxEventMonitorInfo)
 			break
-		case ZecreyLogWithdrawalSigHash.Hex():
+		case ZkbasLogWithdrawalSigHash.Hex():
 			break
-		case ZecreyLogWithdrawalPendingSigHash.Hex():
+		case ZkbasLogWithdrawalPendingSigHash.Hex():
 			break
-		case ZecreyLogBlockCommitSigHash.Hex():
+		case ZkbasLogBlockCommitSigHash.Hex():
 			// parse event info
-			var event zecreyLegend.ZecreyLegendBlockCommit
-			err = ZecreyContractAbi.UnpackIntoInterface(&event, EventNameBlockCommit, vlog.Data)
+			var event zkbas.ZkbasBlockCommit
+			err = ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlockCommit, vlog.Data)
 			if err != nil {
-				errInfo := fmt.Sprintf("[blockMoniter.MonitorBlocks]<=>[ZecreyContractAbi.UnpackIntoInterface] %s", err.Error())
+				errInfo := fmt.Sprintf("[blockMoniter.MonitorBlocks]<=>[zkbasContractAbi.UnpackIntoInterface] %s", err.Error())
 				logx.Error(errInfo)
 				return err
 			}
@@ -178,12 +178,12 @@ func MonitorBlocks(
 			l1EventInfos = append(l1EventInfos, l1EventInfo)
 			l2BlockEventMonitors = append(l2BlockEventMonitors, l2BlockEventMonitorInfo)
 			break
-		case ZecreyLogBlockVerificationSigHash.Hex():
+		case ZkbasLogBlockVerificationSigHash.Hex():
 			// parse event info
-			var event zecreyLegend.ZecreyLegendBlockVerification
-			err = ZecreyContractAbi.UnpackIntoInterface(&event, EventNameBlockVerification, vlog.Data)
+			var event zkbas.ZkbasBlockVerification
+			err = ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlockVerification, vlog.Data)
 			if err != nil {
-				errInfo := fmt.Sprintf("[blockMoniter.MonitorBlocks]<=>[ZecreyContractAbi.UnpackIntoInterface] %s", err.Error())
+				errInfo := fmt.Sprintf("[blockMoniter.MonitorBlocks]<=>[zkbasContractAbi.UnpackIntoInterface] %s", err.Error())
 				logx.Error(errInfo)
 				return err
 			}
@@ -203,12 +203,12 @@ func MonitorBlocks(
 			l1EventInfos = append(l1EventInfos, l1EventInfo)
 			l2BlockEventMonitors = append(l2BlockEventMonitors, l2BlockEventMonitorInfo)
 			break
-		case ZecreyLogBlocksRevertSigHash.Hex():
+		case ZkbasLogBlocksRevertSigHash.Hex():
 			// parse event info
-			var event zecreyLegend.ZecreyLegendBlocksRevert
-			err = ZecreyContractAbi.UnpackIntoInterface(&event, EventNameBlocksRevert, vlog.Data)
+			var event zkbas.ZkbasBlocksRevert
+			err = ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlocksRevert, vlog.Data)
 			if err != nil {
-				errInfo := fmt.Sprintf("[blockMoniter.MonitorBlocks]<=>[ZecreyContractAbi.UnpackIntoInterface] %s", err.Error())
+				errInfo := fmt.Sprintf("[blockMoniter.MonitorBlocks]<=>[zkbasContractAbi.UnpackIntoInterface] %s", err.Error())
 				logx.Error(errInfo)
 				return err
 			}

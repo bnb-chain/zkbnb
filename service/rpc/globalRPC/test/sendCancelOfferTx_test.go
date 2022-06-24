@@ -74,7 +74,7 @@ func constructSendCancelOfferTxInfo() string {
 		GasFeeAssetId:     2,
 		GasFeeAssetAmount: big.NewInt(5000),
 		ExpiredAt:         expiredAt,
-		Nonce:             9,
+		Nonce:             2,
 		Sig:               nil,
 	}
 	hFunc := mimc.NewMiMC()

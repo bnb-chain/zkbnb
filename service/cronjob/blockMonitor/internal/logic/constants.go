@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 
 	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
-	zecreyLegend "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
+	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/bnb-chain/zkbas/common/model/l1BlockMonitor"
 	"github.com/bnb-chain/zkbas/common/model/l2BlockEventMonitor"
 	"github.com/bnb-chain/zkbas/common/model/l2TxEventMonitor"
@@ -45,7 +45,7 @@ type (
 )
 
 const (
-	// zecrey event name
+	// zkbas event name
 	EventNameNewPriorityRequest = "NewPriorityRequest"
 	EventNameBlockCommit        = "BlockCommit"
 	EventNameBlockVerification  = "BlockVerification"
@@ -63,20 +63,20 @@ const (
 var (
 	// err
 	ErrNotFound = sqlx.ErrNotFound
-	// Zecrey contract logs sig
-	zecreyLogNewPriorityRequestSig = []byte("NewPriorityRequest(address,uint64,uint8,bytes,uint256)")
-	zecreyLogWithdrawalSig         = []byte("Withdrawal(uint16,uint128)")
-	zecreyLogWithdrawalPendingSig  = []byte("WithdrawalPending(uint16,uint128)")
-	zecreyLogBlockCommitSig        = []byte("BlockCommit(uint32)")
-	zecreyLogBlockVerificationSig  = []byte("BlockVerification(uint32)")
-	zecreyLogBlocksRevertSig       = []byte("BlocksRevert(uint32,uint32)")
+	// Zkbas contract logs sig
+	zkbasLogNewPriorityRequestSig = []byte("NewPriorityRequest(address,uint64,uint8,bytes,uint256)")
+	zkbasLogWithdrawalSig         = []byte("Withdrawal(uint16,uint128)")
+	zkbasLogWithdrawalPendingSig  = []byte("WithdrawalPending(uint16,uint128)")
+	zkbasLogBlockCommitSig        = []byte("BlockCommit(uint32)")
+	zkbasLogBlockVerificationSig  = []byte("BlockVerification(uint32)")
+	zkbasLogBlocksRevertSig       = []byte("BlocksRevert(uint32,uint32)")
 
-	zecreyLogNewPriorityRequestSigHash = crypto.Keccak256Hash(zecreyLogNewPriorityRequestSig)
-	ZecreyLogWithdrawalSigHash         = crypto.Keccak256Hash(zecreyLogWithdrawalSig)
-	ZecreyLogWithdrawalPendingSigHash  = crypto.Keccak256Hash(zecreyLogWithdrawalPendingSig)
-	ZecreyLogBlockCommitSigHash        = crypto.Keccak256Hash(zecreyLogBlockCommitSig)
-	ZecreyLogBlockVerificationSigHash  = crypto.Keccak256Hash(zecreyLogBlockVerificationSig)
-	ZecreyLogBlocksRevertSigHash       = crypto.Keccak256Hash(zecreyLogBlocksRevertSig)
+	ZkbasLogNewPriorityRequestSigHash = crypto.Keccak256Hash(zkbasLogNewPriorityRequestSig)
+	ZkbasLogWithdrawalSigHash         = crypto.Keccak256Hash(zkbasLogWithdrawalSig)
+	ZkbasLogWithdrawalPendingSigHash  = crypto.Keccak256Hash(zkbasLogWithdrawalPendingSig)
+	ZkbasLogBlockCommitSigHash        = crypto.Keccak256Hash(zkbasLogBlockCommitSig)
+	ZkbasLogBlockVerificationSigHash  = crypto.Keccak256Hash(zkbasLogBlockVerificationSig)
+	ZkbasLogBlocksRevertSigHash       = crypto.Keccak256Hash(zkbasLogBlocksRevertSig)
 
-	ZecreyContractAbi, _ = abi.JSON(strings.NewReader(zecreyLegend.ZecreyLegendABI))
+	ZkbasContractAbi, _ = abi.JSON(strings.NewReader(zkbas.ZkbasMetaData.ABI))
 )

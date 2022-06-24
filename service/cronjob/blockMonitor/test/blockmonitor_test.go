@@ -39,11 +39,11 @@ func TestBlockMonitor(t *testing.T) {
 	conf.MustLoad(*configFile, &c)
 	ctx := svc.NewServiceContext(c)
 
-	ZecreyRollupAddress, err := ctx.SysConfig.GetSysconfigByName(c.ChainConfig.ZecreyContractAddrSysConfigName)
+	ZkbasRollupAddress, err := ctx.SysConfig.GetSysconfigByName(c.ChainConfig.ZkbasContractAddrSysConfigName)
 
 	if err != nil {
 		logx.Severef("[blockMonitor] fatal error, cannot fetch ZkbasContractAddr from sysConfig, err: %s, SysConfigName: %s",
-			err.Error(), c.ChainConfig.ZecreyContractAddrSysConfigName)
+			err.Error(), c.ChainConfig.ZkbasContractAddrSysConfigName)
 		panic(err)
 	}
 
@@ -54,9 +54,9 @@ func TestBlockMonitor(t *testing.T) {
 		panic(err)
 	}
 
-	logx.Infof("[blockMonitor] ChainName: %s, ZecreyRollupAddress: %s, NetworkRpc: %s",
-		c.ChainConfig.ZecreyContractAddrSysConfigName,
-		ZecreyRollupAddress.Value,
+	logx.Infof("[blockMonitor] ChainName: %s, ZkbasRollupAddress: %s, NetworkRpc: %s",
+		c.ChainConfig.ZkbasContractAddrSysConfigName,
+		ZkbasRollupAddress.Value,
 		NetworkRpc.Value)
 
 	// load client
@@ -69,7 +69,7 @@ func TestBlockMonitor(t *testing.T) {
 	err = logic.MonitorBlocks(
 		cli,
 		c.ChainConfig.StartL1BlockHeight, c.ChainConfig.PendingBlocksCount, c.ChainConfig.MaxHandledBlocksCount,
-		ZecreyRollupAddress.Value,
+		ZkbasRollupAddress.Value,
 		ctx.L1BlockMonitor,
 	)
 	if err != nil {

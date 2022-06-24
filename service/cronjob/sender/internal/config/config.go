@@ -10,12 +10,12 @@ type Config struct {
 	}
 	CacheRedis  cache.CacheConf
 	ChainConfig struct {
-		NetworkRPCSysConfigName         string
-		ZecreyContractAddrSysConfigName string
-		MaxWaitingTime                  int64
-		MaxBlockCount                   int
-		Sk                              string
-		GasLimit                        uint64
-		L1ChainId                       string
+		NetworkRPCSysConfigName        string
+		ZkbasContractAddrSysConfigName string
+		MaxWaitingTime                 int64
+		MaxBlockCount                  int
+		Sk                             string
+		GasLimit                       uint64
+		L1ChainId                      string
 	}
 }

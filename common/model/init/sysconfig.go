@@ -11,9 +11,9 @@ const (
 	BSC_Test_Network_RPC   = "https://data-seed-prebsc-2-s1.binance.org:8545/"
 	Local_Test_Network_RPC = "http://127.0.0.1:8545/"
 
-	ZkbasContractAddr      = "0x915Bf51F6C9Fff38730C4557e79E1dEC4C01355a"
-	GovernanceContractAddr = "0xb081E0e1f243A32B3310eCdA15Ecb5B8189a8851"
-	VerifierContractAddr   = "0x49113B180cAF7fb927006334a7c17eed6Dd92f70"
+	ZkbasContractAddr      = "0x813023132BBE09C2D03F14E273c35cd7995496A4"
+	GovernanceContractAddr = "0x2FA87eC864E5B763779b5026deFC927024f2324A"
+	VerifierContractAddr   = "0x73a97dAFba3A65C61a90eA9501075157AAc7CAbe"
 )
 
 func initSysConfig() []*sysconfig.Sysconfig {
@@ -43,10 +43,10 @@ func initSysConfig() []*sysconfig.Sysconfig {
 			Comment:   "gas index",
 		},
 		{
-			Name:      sysconfigName.ZecreyLegendContract,
+			Name:      sysconfigName.ZkbasContract,
 			Value:     ZkbasContractAddr,
 			ValueType: "string",
-			Comment:   "Zecrey contract on BSC",
+			Comment:   "Zkbas contract on BSC",
 		},
 		// Governance Contract
 		{

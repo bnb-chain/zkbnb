@@ -32,7 +32,7 @@ func DefaultBlockHeader() StorageStoredBlockInfo {
 /*
 	ConvertBlocksForCommitToCommitBlockInfos: helper function to convert blocks to commit block infos
 */
-func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*BlockForCommit) (commitBlocks []ZecreyLegendCommitBlockInfo, err error) {
+func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*BlockForCommit) (commitBlocks []ZkbasCommitBlockInfo, err error) {
 	for _, oBlock := range oBlocks {
 		var newStateRoot [32]byte
 		var pubDataOffsets []uint32
@@ -42,7 +42,7 @@ func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*BlockForCommit) (commit
 			logx.Errorf("[ConvertBlocksForCommitToCommitBlockInfos] unable to unmarshal: %s", err.Error())
 			return nil, err
 		}
-		commitBlock := ZecreyLegendCommitBlockInfo{
+		commitBlock := ZkbasCommitBlockInfo{
 			NewStateRoot:      newStateRoot,
 			PublicData:        common.FromHex(oBlock.PublicData),
 			Timestamp:         big.NewInt(oBlock.Timestamp),
@@ -54,7 +54,7 @@ func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*BlockForCommit) (commit
 	return commitBlocks, nil
 }
 
-func ConvertBlocksToVerifyAndExecuteBlockInfos(oBlocks []*Block) (verifyAndExecuteBlocks []ZecreyLegendVerifyBlockInfo, err error) {
+func ConvertBlocksToVerifyAndExecuteBlockInfos(oBlocks []*Block) (verifyAndExecuteBlocks []ZkbasVerifyBlockInfo, err error) {
 	for _, oBlock := range oBlocks {
 		var pendingOnChainOpsPubData [][]byte
 		if oBlock.PendingOnChainOperationsPubData != "" {
@@ -64,7 +64,7 @@ func ConvertBlocksToVerifyAndExecuteBlockInfos(oBlocks []*Block) (verifyAndExecu
 				return nil, err
 			}
 		}
-		verifyAndExecuteBlock := ZecreyLegendVerifyBlockInfo{
+		verifyAndExecuteBlock := ZkbasVerifyBlockInfo{
 			BlockHeader:              util.ConstructStoredBlockInfo(oBlock),
 			PendingOnchainOpsPubData: pendingOnChainOpsPubData,
 		}
