@@ -61,13 +61,6 @@ func (m *globalRPC) GetSwapAmount(ctx context.Context, pairIndex, assetId uint64
 	return resRpc.SwapAssetAmount, resRpc.SwapAssetId, err
 }
 
-func (m *globalRPC) GetLatestAccountInfoByAccountIndex(accountIndex uint32) ([]*globalrpc.AssetResult, error) {
-	res, err := m.globalRPC.GetLatestAssetsListByAccountIndex(m.ctx, &globalrpc.ReqGetLatestAssetsListByAccountIndex{
-		AccountIndex: accountIndex,
-	})
-	return res.ResultAssetsList, err
-}
-
 func (m *globalRPC) GetLpValue(pairIndex uint32, lpAmount string) (*globalRPCProto.RespGetLpValue, error) {
 	return m.globalRPC.GetLpValue(m.ctx, &globalrpc.ReqGetLpValue{
 		PairIndex: pairIndex,
@@ -79,48 +72,6 @@ func (m *globalRPC) GetPairInfo(pairIndex uint32) (*globalRPCProto.RespGetLatest
 	return m.globalRPC.GetLatestPairInfo(m.ctx, &globalrpc.ReqGetLatestPairInfo{
 		PairIndex: pairIndex,
 	})
-}
-func (m *globalRPC) GetLatestTxsListByAccountIndexAndTxType(accountIndex uint64, txType uint64, limit uint64, offset uint64) ([]*mempool.MempoolTx, error) {
-	resRpc, _ := m.globalRPC.GetLatestTxsListByAccountIndexAndTxType(m.ctx, &globalrpc.ReqGetLatestTxsListByAccountIndexAndTxType{
-		AccountIndex: uint32(accountIndex),
-		TxType:       uint32(txType),
-		Offset:       uint32(offset),
-		Limit:        uint32(limit),
-	})
-	txs := make([]*mempool.MempoolTx, 0)
-	for _, each := range resRpc.GetTxsList() {
-		singleTxDetail := make([]*mempool.MempoolTxDetail, 0)
-		for _, eachDetail := range each.TxDetails {
-			singleTxDetail = append(singleTxDetail, &mempool.MempoolTxDetail{
-				AssetId:      int64(eachDetail.AssetId),
-				AssetType:    int64(eachDetail.AssetType),
-				AccountIndex: int64(eachDetail.AccountIndex),
-				AccountName:  eachDetail.AccountName,
-				BalanceDelta: eachDetail.BalanceDelta,
-			})
-		}
-
-		txs = append(txs, &mempool.MempoolTx{
-			Model:          gorm.Model{},
-			TxHash:         each.TxHash,
-			TxType:         int64(each.TxType),
-			GasFeeAssetId:  int64(each.GasFeeAssetId),
-			GasFee:         each.GasFee,
-			AssetId:        int64(each.AssetId),
-			TxAmount:       each.TxAmount,
-			NativeAddress:  each.NativeAddress,
-			MempoolDetails: singleTxDetail,
-			TxInfo:         "",
-			ExtraInfo:      "",
-			Memo:           each.Memo,
-			AccountIndex:   0,
-			Nonce:          0,
-			ExpiredAt:      0,
-			L2BlockHeight:  int64(each.BlockHeight),
-			Status:         int(each.Status),
-		})
-	}
-	return txs, nil
 }
 
 func (m *globalRPC) GetLatestTxsListByAccountIndex(accountIndex uint32, limit uint32) ([]*mempool.MempoolTx, uint32, error) {

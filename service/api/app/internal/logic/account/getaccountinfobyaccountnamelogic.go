@@ -52,9 +52,9 @@ func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *type
 		AccountPk:    account.PublicKey,
 		Assets:       make([]*types.AccountAsset, 0),
 	}
-	assets, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(uint32(account.AccountIndex))
+	assets, err := l.globalRPC.GetLatestAssetsListByAccountIndex(uint32(account.AccountIndex))
 	if err != nil {
-		logx.Errorf("[GetLatestAccountInfoByAccountIndex] err:%v", err)
+		logx.Errorf("[GetLatestAssetsListByAccountIndex] err:%v", err)
 		return nil, err
 	}
 	for _, asset := range assets {
