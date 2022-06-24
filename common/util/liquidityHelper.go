@@ -25,7 +25,6 @@ import (
 	"math/big"
 )
 
-
 func ComputeEmptyLpAmount(
 	assetAAmount *big.Int,
 	assetBAmount *big.Int,
@@ -43,12 +42,15 @@ func ComputeEmptyLpAmount(
 func ComputeLpAmount(
 	liquidityInfo *commonAsset.LiquidityInfo,
 	assetAAmount *big.Int,
-) (lpAmount *big.Int) {
+) (lpAmount *big.Int, err error) {
 	// lp = assetAAmount / poolA * LpAmount
 	sLp := commonAsset.ComputeSLp(liquidityInfo.AssetA, liquidityInfo.AssetB, liquidityInfo.KLast, liquidityInfo.FeeRate, liquidityInfo.TreasuryRate)
 	poolLpAmount := ffmath.Sub(liquidityInfo.LpAmount, sLp)
-	lpAmount = ffmath.Div(ffmath.Multiply(assetAAmount, poolLpAmount), liquidityInfo.AssetA)
-	return lpAmount
+	lpAmount, err = CleanPackedAmount(ffmath.Div(ffmath.Multiply(assetAAmount, poolLpAmount), liquidityInfo.AssetA))
+	if err != nil {
+		return nil, err
+	}
+	return lpAmount, nil
 }
 
 func ComputeRemoveLiquidityAmount(
@@ -70,7 +72,6 @@ func ComputeRemoveLiquidityAmount(
 	return assetAAmount, assetBAmount
 }
 
-
 func ComputeDelta(
 	assetAAmount *big.Int,
 	assetBAmount *big.Int,
@@ -84,7 +85,7 @@ func ComputeDelta(
 			delta := ComputeInputPrice(assetAAmount, assetBAmount, deltaAmount, feeRate)
 			return delta, assetBId, nil
 		} else if assetBId == assetId {
-			delta := ComputeInputPrice(assetBAmount, assetAAmount, deltaAmount,feeRate)
+			delta := ComputeInputPrice(assetBAmount, assetAAmount, deltaAmount, feeRate)
 			return delta, assetAId, nil
 		} else {
 			logx.Errorf("[ComputeDelta] invalid asset id")
@@ -95,7 +96,7 @@ func ComputeDelta(
 			delta := ComputeOutputPrice(assetAAmount, assetBAmount, deltaAmount, feeRate)
 			return delta, assetBId, nil
 		} else if assetBId == assetId {
-			delta := ComputeOutputPrice(assetBAmount, assetAAmount, deltaAmount,feeRate)
+			delta := ComputeOutputPrice(assetBAmount, assetAAmount, deltaAmount, feeRate)
 			return delta, assetAId, nil
 		} else {
 			logx.Errorf("[ComputeDelta] invalid asset id")
@@ -107,19 +108,20 @@ func ComputeDelta(
 /*
 	Implementation Reference:
 	https://github.com/runtimeverification/verified-smart-contracts/blob/master/uniswap/x-y-k.pdf
- */
+*/
 
 /*
 	InputPrice = （9970 * deltaX * y) / (10000 * x + 9970 * deltaX)
- */
-func ComputeInputPrice(x *big.Int, y *big.Int, inputX *big.Int, feeRate int64) *big.Int{
+*/
+func ComputeInputPrice(x *big.Int, y *big.Int, inputX *big.Int, feeRate int64) *big.Int {
 	rFeeR := big.NewInt(FeeRateBase - feeRate)
 	return ffmath.Div(ffmath.Multiply(rFeeR, ffmath.Multiply(inputX, y)), ffmath.Add(ffmath.Multiply(big.NewInt(FeeRateBase), x), ffmath.Multiply(rFeeR, inputX)))
 }
+
 /*
 	OutputPrice = （10000 * x * deltaY) / (9970 * (y - deltaY)) + 1
 */
-func ComputeOutputPrice(x *big.Int, y *big.Int, inputY *big.Int, feeRate int64) *big.Int{
+func ComputeOutputPrice(x *big.Int, y *big.Int, inputY *big.Int, feeRate int64) *big.Int {
 	rFeeR := big.NewInt(FeeRateBase - feeRate)
 	return ffmath.Add(ffmath.Div(ffmath.Multiply(big.NewInt(FeeRateBase), ffmath.Multiply(x, inputY)), ffmath.Multiply(rFeeR, ffmath.Sub(y, inputY))), big.NewInt(1))
 }
