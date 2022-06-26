@@ -682,7 +682,13 @@ kind: Deployment
 metadata:
   name: prometheus
 spec:
-  replicas: 2
+  maxReplicas: 3
+  metrics:
+  - resource:
+      name: cpu
+      targetAverageUtilization: 80
+    type: Resource
+  minReplicas: 1
   selector:
     matchLabels:
       app: prometheus
