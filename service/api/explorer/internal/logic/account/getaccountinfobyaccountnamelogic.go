@@ -7,7 +7,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/repo/globalrpc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/explorer/internal/types"
-	"github.com/zecrey-labs/zecrey-legend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -31,8 +30,7 @@ func NewGetAccountInfoByAccountNameLogic(ctx context.Context, svcCtx *svc.Servic
 }
 
 func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *types.ReqGetAccountInfoByAccountName) (*types.RespGetAccountInfoByAccountName, error) {
-	accountName := utils.FormatSting(req.AccountName)
-	account, err := l.account.GetAccountByAccountName(l.ctx, accountName)
+	account, err := l.account.GetAccountByAccountName(l.ctx, req.AccountName)
 	if err != nil {
 		logx.Errorf("[GetAccountByAccountName] err:%v", err)
 		return nil, err

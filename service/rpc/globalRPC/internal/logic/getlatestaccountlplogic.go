@@ -3,13 +3,13 @@ package logic
 import (
 	"context"
 
+	"github.com/zecrey-labs/zecrey-legend/common/checker"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/logic/errcode"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/mempool"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
-	"github.com/zecrey-labs/zecrey-legend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -35,11 +35,11 @@ func NewGetLatestAccountLpLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 
 func (l *GetLatestAccountLpLogic) GetLatestAccountLp(in *globalRPCProto.ReqGetLatestAccountLp) (*globalRPCProto.RespGetLatestAccountLp, error) {
-	if utils.CheckAccountIndex(in.AccountIndex) {
+	if checker.CheckAccountIndex(in.AccountIndex) {
 		logx.Errorf("[CheckAccountIndex] param:%v", in.AccountIndex)
 		return nil, errcode.ErrInvalidParam
 	}
-	if utils.CheckPairIndex(in.PairIndex) {
+	if checker.CheckPairIndex(in.PairIndex) {
 		logx.Errorf("[CheckPairIndex] param:%v", in.PairIndex)
 		return nil, errcode.ErrInvalidParam
 	}
