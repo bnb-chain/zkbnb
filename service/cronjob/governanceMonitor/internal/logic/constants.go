@@ -24,7 +24,7 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 
 	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
-	zecreyLegend "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
+	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
 	"github.com/bnb-chain/zkbas/common/model/l1BlockMonitor"
 	"github.com/bnb-chain/zkbas/common/model/l2BlockEventMonitor"
@@ -82,5 +82,5 @@ var (
 	governanceLogValidatorStatusUpdateSigHash = crypto.Keccak256Hash(governanceLogValidatorStatusUpdateSig)
 	governanceLogAssetPausedUpdateSigHash     = crypto.Keccak256Hash(governanceLogAssetPausedUpdateSig)
 
-	GovernanceContractAbi, _ = abi.JSON(strings.NewReader(zecreyLegend.GovernanceABI))
+	GovernanceContractAbi, _ = abi.JSON(strings.NewReader(zkbas.GovernanceABI))
 )

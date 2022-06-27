@@ -127,6 +127,8 @@ github.com/bnb-chain/zkbas-crypto v0.0.0-20220621101440-e38cf2039800 h1:UgQ5uOuu
 github.com/bnb-chain/zkbas-crypto v0.0.0-20220621101440-e38cf2039800/go.mod h1:T2erL+OCXw66yqBdsI5waTEx4FG2d8lYDh1XcEB1kRU=
 github.com/bnb-chain/zkbas-eth-rpc v0.0.0-20220620133434-3d27b92fa67d h1:lVvWuMc103p+2mMZDDnZvno1QTvhKhGQu277yPMtxRQ=
 github.com/bnb-chain/zkbas-eth-rpc v0.0.0-20220620133434-3d27b92fa67d/go.mod h1:t8jY6/Jt/Rw8LeU9Rhw406uaOIOou4ycVX06LKyVxKo=
+github.com/bnb-chain/zkbas-eth-rpc v0.0.0-20220623031829-91f3e7686de8 h1:eFV493dH6/kf3nM/dSrFIGgkDSanMQGJCwElgC8zRSI=
+github.com/bnb-chain/zkbas-eth-rpc v0.0.0-20220623031829-91f3e7686de8/go.mod h1:t8jY6/Jt/Rw8LeU9Rhw406uaOIOou4ycVX06LKyVxKo=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
 github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d h1:pVrfxiGfwelyab6n21ZBkbkmbevaf+WvMIiR7sr97hw=
 github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d/go.mod h1:H0wQNHz2YrLsuXOZozoeDmnHXkNCRmMW0gwFWDfEZDA=

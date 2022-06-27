@@ -17,7 +17,7 @@
 package logic
 
 import (
-	zecreyLegend "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
+	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/zero/basic"
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/block"
@@ -43,8 +43,8 @@ type (
 	L1TxSenderModel          = l1TxSender.L1TxSenderModel
 	L1TxSender               = l1TxSender.L1TxSender
 
-	ZecreyLegendBlockCommit       = zecreyLegend.ZecreyLegendBlockCommit
-	ZecreyLegendBlockVerification = zecreyLegend.ZecreyLegendBlockVerification
+	ZkbasBlockCommit       = zkbas.ZkbasBlockCommit
+	ZkbasBlockVerification = zkbas.ZkbasBlockVerification
 
 	MempoolTx = mempool.MempoolTx
 
@@ -76,5 +76,5 @@ var (
 	ZecreyLogBlockVerificationSigHash = crypto.Keccak256Hash(zecreyLogBlockVerificationSig)
 	ZecreyLogBlocksRevertSigHash      = crypto.Keccak256Hash(zecreyLogBlocksRevertSig)
 
-	ZecreyContractAbi, _ = abi.JSON(strings.NewReader(zecreyLegend.ZecreyLegendABI))
+	ZecreyContractAbi, _ = abi.JSON(strings.NewReader(zkbas.ZkbasABI))
 )

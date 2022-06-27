@@ -103,7 +103,7 @@ func MonitorL2BlockEvents(
 			switch vlog.Topics[0].Hex() {
 			case ZecreyLogBlockCommitSigHash.Hex():
 				// parse event info
-				var event ZecreyLegendBlockCommit
+				var event ZkbasBlockCommit
 				err = ZecreyContractAbi.UnpackIntoInterface(&event, BlockCommitEventName, vlog.Data)
 				if err != nil {
 					errInfo := fmt.Sprintf("[MonitorL2BlockEvents]<=>[ZecreyContractAbi.UnpackIntoInterface] %s", err.Error())
@@ -129,7 +129,7 @@ func MonitorL2BlockEvents(
 				break
 			case ZecreyLogBlockVerificationSigHash.Hex():
 				// parse event info
-				var event ZecreyLegendBlockVerification
+				var event ZkbasBlockVerification
 				err = ZecreyContractAbi.UnpackIntoInterface(&event, BlockVerificationEventName, vlog.Data)
 				if err != nil {
 					errInfo := fmt.Sprintf("[blockMoniter.MonitorL2BlockEvents]<=>[ZecreyContractAbi.UnpackIntoInterface] %s", err.Error())

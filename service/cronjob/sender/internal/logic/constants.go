@@ -18,7 +18,7 @@ package logic
 
 import (
 	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
-	zecreyLegend "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
+	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/bnb-chain/zkbas/common/model/assetInfo"
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/blockForCommit"
@@ -41,11 +41,11 @@ type (
 
 	ProviderClient = _rpc.ProviderClient
 	AuthClient     = _rpc.AuthClient
-	ZecreyLegend   = zecreyLegend.ZecreyLegend
+	Zkbas          = zkbas.Zkbas
 
-	ZecreyLegendCommitBlockInfo = zecreyLegend.OldZecreyLegendCommitBlockInfo
-	ZecreyLegendVerifyBlockInfo = zecreyLegend.OldZecreyLegendVerifyAndExecuteBlockInfo
-	StorageStoredBlockInfo      = zecreyLegend.StorageStoredBlockInfo
+	ZkbasCommitBlockInfo   = zkbas.OldZkbasCommitBlockInfo
+	ZkbasVerifyBlockInfo   = zkbas.OldZkbasVerifyAndExecuteBlockInfo
+	StorageStoredBlockInfo = zkbas.StorageStoredBlockInfo
 
 	L2AssetInfoModel = assetInfo.AssetInfoModel
 
@@ -63,11 +63,11 @@ var (
 )
 
 type SenderParam struct {
-	Cli                  *ProviderClient
-	AuthCli              *AuthClient
-	ZecreyLegendInstance *ZecreyLegend
-	MaxWaitingTime       int64
-	MaxBlocksCount       int
-	GasPrice             *big.Int
-	GasLimit             uint64
+	Cli            *ProviderClient
+	AuthCli        *AuthClient
+	ZkbasInstance  *Zkbas
+	MaxWaitingTime int64
+	MaxBlocksCount int
+	GasPrice       *big.Int
+	GasLimit       uint64
 }
