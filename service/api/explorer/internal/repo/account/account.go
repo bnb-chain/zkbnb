@@ -156,7 +156,7 @@ func (m *account) GetAccountByAccountName(ctx context.Context, accountName strin
 		return account, nil
 	}
 	account := &table.Account{}
-	value, err := m.cache.GetWithSet(ctx, multcache.KeyAccountAccountName, account, 10, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyAccountAccountNamePrefix+accountName, account, 10, f)
 	if err != nil {
 		return nil, err
 	}

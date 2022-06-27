@@ -13,5 +13,5 @@ var (
 // cache key register
 const (
 	// account
-	KeyAccountAccountName = "cache:account_accountName"
+	KeyAccountAccountNamePrefix = "cache:account_accountName:"
 )
