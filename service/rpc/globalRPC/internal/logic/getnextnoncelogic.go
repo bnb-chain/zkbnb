@@ -27,7 +27,7 @@ func NewGetNextNonceLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetN
 }
 
 func (l *GetNextNonceLogic) GetNextNonce(in *globalRPCProto.ReqGetNextNonce) (*globalRPCProto.RespGetNextNonce, error) {
-	accountInfo, err := l.commglobalmap.GetLatestAccountInfo(int64(in.AccountIndex))
+	accountInfo, err := l.commglobalmap.GetLatestAccountInfo(l.ctx, int64(in.AccountIndex))
 	if err != nil {
 		logx.Errorf("[GetLatestAccountInfo] err:%v", err)
 		return nil, err

@@ -22,7 +22,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
-	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalrpc"
 	"github.com/zeromicro/go-zero/core/stores/redis"
@@ -40,12 +39,7 @@ type globalRPC struct {
 }
 
 func (m *globalRPC) GetLatestAccountInfo(accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error) {
-	accountInfo, err = globalmapHandler.GetLatestAccountInfo(m.AccountModel,
-		m.MempoolModel, m.RedisConnection, accountIndex)
-	if err != nil {
-		return nil, err
-	}
-	return accountInfo, nil
+	return nil, nil
 }
 
 func (m *globalRPC) GetSwapAmount(ctx context.Context, pairIndex, assetId uint64, assetAmount string, isFrom bool) (string, uint32, error) {

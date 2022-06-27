@@ -20,6 +20,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
+	"reflect"
+	"strconv"
+	"time"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
@@ -30,10 +35,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
-	"math/big"
-	"reflect"
-	"strconv"
-	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -84,12 +85,7 @@ func (l *SendTxLogic) sendWithdrawNftTx(rawTxInfo string) (txId string, err erro
 		logx.Errorf("[sendWithdrawNftTx] unable to get nft info")
 		return "", l.HandleCreateFailWithdrawNftTx(txInfo, err)
 	}
-	accountInfoMap[txInfo.AccountIndex], err = globalmapHandler.GetLatestAccountInfo(
-		l.svcCtx.AccountModel,
-		l.svcCtx.MempoolModel,
-		l.svcCtx.RedisConnection,
-		txInfo.AccountIndex,
-	)
+	accountInfoMap[txInfo.AccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.AccountIndex)
 	if err != nil {
 		logx.Errorf("[sendWithdrawNftTx] unable to get account info: %s", err.Error())
 		return "", l.HandleCreateFailWithdrawNftTx(txInfo, err)

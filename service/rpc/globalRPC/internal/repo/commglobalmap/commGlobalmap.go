@@ -1,39 +1,117 @@
 package commglobalmap
 
 import (
+	"context"
+	"strconv"
+
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 
+	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
+	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
-	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
+	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
+	"github.com/zecrey-labs/zecrey-legend/common/util"
 	commGlobalmapHandler "github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
+	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/errcode"
 )
 
-type commglobalmap struct {
-	mempoolTxDetailModel    mempool.MempoolTxDetailModel
-	mempoolModel mempool.MempoolModel
-	AccountModel    account.AccountModel
-	liquidityModel liquidity.LiquidityModel
+type model struct {
+	mempoolModel    mempool.MempoolModel
+	accountModel    account.AccountModel
+	liquidityModel  liquidity.LiquidityModel
 	redisConnection *redis.Redis
-	offerModel nft.OfferModel
+	offerModel      nft.OfferModel
+	cache           multcache.MultCache
 }
 
-func (l *commglobalmap) GetLatestAccountInfo( accountIndex int64) (accountInfo *commGlobalmapHandler.AccountInfo, err error){
-	return  commGlobalmapHandler.GetLatestAccountInfo(l.AccountModel,
-		l.mempoolModel, l.redisConnection, accountIndex)
+func (m *model) GetLatestAccountInfo(ctx context.Context, accountIndex int64) (*commonAsset.AccountInfo, error) {
+	f := func() (interface{}, error) {
+		oAccountInfo, err := m.accountModel.GetAccountByAccountIndex(accountIndex)
+		if err != nil {
+			logx.Errorf("[GetAccountByAccountIndex]param:%v, err:%v", accountIndex, err)
+			return nil, err
+		}
+		accountInfo, err := commonAsset.ToFormatAccountInfo(oAccountInfo)
+		if err != nil {
+			logx.Errorf("[ToFormatAccountInfo]param:%v, err:%v", oAccountInfo, err)
+			return nil, err
+		}
+		mempoolTxs, err := m.mempoolModel.GetPendingMempoolTxsByAccountIndex(accountIndex)
+		if err != nil && err != mempool.ErrNotFound {
+			logx.Errorf("[GetPendingMempoolTxsByAccountIndex]param:%v, err:%v", accountIndex, err)
+			return nil, err
+		}
+		for _, mempoolTx := range mempoolTxs {
+			if mempoolTx.Nonce != commonConstant.NilNonce {
+				accountInfo.Nonce = mempoolTx.Nonce
+			}
+			for _, mempoolTxDetail := range mempoolTx.MempoolDetails {
+				switch mempoolTxDetail.AssetType {
+				case commonAsset.GeneralAssetType:
+					// TODO maybe less than 0
+					if accountInfo.AssetInfo[mempoolTxDetail.AssetId] == nil {
+						accountInfo.AssetInfo[mempoolTxDetail.AssetId] = &commonAsset.AccountAsset{
+							AssetId:                  mempoolTxDetail.AssetId,
+							Balance:                  util.ZeroBigInt,
+							LpAmount:                 util.ZeroBigInt,
+							OfferCanceledOrFinalized: util.ZeroBigInt,
+						}
+					}
+					nBalance, err := commonAsset.ComputeNewBalance(commonAsset.GeneralAssetType,
+						accountInfo.AssetInfo[mempoolTxDetail.AssetId].String(), mempoolTxDetail.BalanceDelta)
+					if err != nil {
+						logx.Errorf("[ComputeNewBalance] err:%v", err)
+						return nil, err
+					}
+					accountInfo.AssetInfo[mempoolTxDetail.AssetId], err = commonAsset.ParseAccountAsset(nBalance)
+					if err != nil {
+						logx.Errorf("[ParseAccountAsset]param:%v, err:%v", nBalance, err)
+						return nil, err
+					}
+				case commonAsset.CollectionNonceAssetType:
+					accountInfo.CollectionNonce, err = strconv.ParseInt(mempoolTxDetail.BalanceDelta, 10, 64)
+					if err != nil {
+						logx.Errorf("[ParseInt] unable to parse int: err:%v", err)
+						return nil, err
+					}
+				case commonAsset.LiquidityAssetType:
+				case commonAsset.NftAssetType:
+				default:
+					logx.Errorf("invalid asset type")
+					return nil, errcode.ErrInvalidAssetType
+				}
+			}
+		}
+		// latest nonce
+		accountInfo.Nonce = accountInfo.Nonce + 1
+		accountInfo.CollectionNonce = accountInfo.CollectionNonce + 1
+		// TODO: write to db
+		logx.Errorf("%v", multcache.SpliceCacheKeyAccountByAccountIndex(accountIndex))
+
+		return accountInfo, nil
+	}
+	accountInfo := &commonAsset.AccountInfo{}
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountByAccountIndex(accountIndex), accountInfo, 1, f)
+	if err != nil {
+		return nil, err
+	}
+	accountInfo, _ = value.(*commonAsset.AccountInfo)
+	return accountInfo, nil
 }
 
-func (l *commglobalmap) GetLatestLiquidityInfoForRead( pairIndex int64) (liquidityInfo *commGlobalmapHandler.LiquidityInfo, err error){
-	return  commGlobalmapHandler.GetLatestLiquidityInfoForRead(l.liquidityModel,l.mempoolModel, l.redisConnection, pairIndex)
+func (l *model) GetLatestLiquidityInfoForRead(pairIndex int64) (liquidityInfo *commGlobalmapHandler.LiquidityInfo, err error) {
+	return commGlobalmapHandler.GetLatestLiquidityInfoForRead(l.liquidityModel, l.mempoolModel, l.redisConnection, pairIndex)
 }
 
-
-func (l *commglobalmap) GetLatestOfferIdForWrite(accountIndex int64) (nftIndex int64,err error) {
-	redisLock, offerId, err:=  commGlobalmapHandler.GetLatestOfferIdForWrite(l.offerModel, l.redisConnection,accountIndex)
+func (l *model) GetLatestOfferIdForWrite(accountIndex int64) (nftIndex int64, err error) {
+	redisLock, offerId, err := commGlobalmapHandler.GetLatestOfferIdForWrite(l.offerModel, l.redisConnection, accountIndex)
 	if err != nil {
 		return 0, err
 	}
 	defer redisLock.Release()
-	return offerId,nil
+	return offerId, nil
 }

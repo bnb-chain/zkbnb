@@ -43,7 +43,7 @@ func (l *GetLatestAccountLpLogic) GetLatestAccountLp(in *globalRPCProto.ReqGetLa
 		logx.Errorf("[CheckPairIndex] param:%v", in.PairIndex)
 		return nil, errcode.ErrInvalidParam
 	}
-	accountInfo, err := l.commglobalmap.GetLatestAccountInfo(int64(in.AccountIndex))
+	accountInfo, err := l.commglobalmap.GetLatestAccountInfo(l.ctx, int64(in.AccountIndex))
 	if err != nil {
 		logx.Errorf("[GetLatestAccountInfo] err:%v", err)
 		return nil, err
