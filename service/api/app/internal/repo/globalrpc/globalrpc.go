@@ -24,7 +24,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalrpc"
 	"github.com/zeromicro/go-zero/core/stores/redis"
-	"gorm.io/gorm"
 )
 
 type globalRPC struct {
@@ -63,39 +62,39 @@ func (m *globalRPC) GetPairInfo(pairIndex uint32) (*globalRPCProto.RespGetLatest
 	})
 }
 
-func (m *globalRPC) GetLatestTxsListByAccountIndex(accountIndex uint32, limit uint32) ([]*mempool.MempoolTx, uint32, error) {
-	resRpc, err := m.globalRPC.GetLatestTxsListByAccountIndex(m.ctx, &globalrpc.ReqGetLatestTxsListByAccountIndex{
-		AccountIndex: accountIndex,
-		Limit:        limit,
-	})
+// func (m *globalRPC) GetLatestTxsListByAccountIndex(accountIndex uint32, limit uint32) ([]*mempool.MempoolTx, uint32, error) {
+// 	resRpc, err := m.globalRPC.GetLatestTxsListByAccountIndex(m.ctx, &globalrpc.ReqGetLatestTxsListByAccountIndex{
+// 		AccountIndex: accountIndex,
+// 		Limit:        limit,
+// 	})
 
-	txls := make([]*mempool.MempoolTx, 0)
-	for _, each := range resRpc.GetTxsList() {
-		txls = append(txls, &mempool.MempoolTx{
-			Model:          gorm.Model{},
-			TxHash:         each.TxHash,
-			TxType:         int64(each.TxType),
-			GasFeeAssetId:  int64(each.GasFeeAssetId),
-			GasFee:         each.GasFee,
-			NftIndex:       int64(each.NftIndex),
-			PairIndex:      int64(each.PairIndex),
-			AssetId:        int64(each.AssetId),
-			TxAmount:       each.TxAmount,
-			NativeAddress:  each.NativeAddress,
-			MempoolDetails: nil,
-			TxInfo:         "",
-			ExtraInfo:      "",
-			Memo:           each.Memo,
-			AccountIndex:   int64(each.AccountIndex),
-			Nonce:          int64(each.Nonce),
-			ExpiredAt:      0,
-			L2BlockHeight:  int64(each.BlockHeight),
-			Status:         int(each.Status),
-		})
-	}
+// 	txls := make([]*mempool.MempoolTx, 0)
+// 	for _, each := range resRpc.GetTxsList() {
+// 		txls = append(txls, &mempool.MempoolTx{
+// 			Model:          gorm.Model{},
+// 			TxHash:         each.TxHash,
+// 			TxType:         int64(each.TxType),
+// 			GasFeeAssetId:  int64(each.GasFeeAssetId),
+// 			GasFee:         each.GasFee,
+// 			NftIndex:       int64(each.NftIndex),
+// 			PairIndex:      int64(each.PairIndex),
+// 			AssetId:        int64(each.AssetId),
+// 			TxAmount:       each.TxAmount,
+// 			NativeAddress:  each.NativeAddress,
+// 			MempoolDetails: nil,
+// 			TxInfo:         "",
+// 			ExtraInfo:      "",
+// 			Memo:           each.Memo,
+// 			AccountIndex:   int64(each.AccountIndex),
+// 			Nonce:          int64(each.Nonce),
+// 			ExpiredAt:      0,
+// 			L2BlockHeight:  int64(each.BlockHeight),
+// 			Status:         int(each.Status),
+// 		})
+// 	}
 
-	return txls, resRpc.GetTotal(), err
-}
+// 	return txls, resRpc.GetTotal(), err
+// }
 
 func (m *globalRPC) SendTx(txType uint32, txInfo string) (string, error) {
 	rpcRsp, err := m.globalRPC.SendTx(m.ctx, &globalrpc.ReqSendTx{

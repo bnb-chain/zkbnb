@@ -13,7 +13,7 @@ import (
 
 type GlobalRPC interface {
 	SendTx(txType uint32, txInfo string) (string, error)
-	GetLatestTxsListByAccountIndex(accountIndex uint32, limit uint32) ([]*mempool.MempoolTx, uint32, error)
+	// GetLatestTxsListByAccountIndex(accountIndex uint32, limit uint32) ([]*mempool.MempoolTx, uint32, error)
 	GetLpValue(pairIndex uint32, lpAmount string) (*globalRPCProto.RespGetLpValue, error)
 	GetPairInfo(pairIndex uint32) (*globalRPCProto.RespGetLatestPairInfo, error)
 	GetSwapAmount(ctx context.Context, pairIndex, assetId uint64, assetAmount string, isFrom bool) (string, uint32, error)
