@@ -191,11 +191,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/tx/sendTx",
-				Handler: transaction.SendTxHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodGet,
 				Path:    "/api/v1/tx/getMempoolTxs",
 				Handler: transaction.GetMempoolTxsHandler(serverCtx),
 			},
@@ -208,6 +203,21 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/api/v1/tx/getNextNonce",
 				Handler: transaction.GetNextNonceHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/tx/sendTx",
+				Handler: transaction.SendTxHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/tx/sendCreateCollectionTx",
+				Handler: transaction.SendCreateCollectionTxHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/tx/sendMintNftTx",
+				Handler: transaction.SendMintNftTxHandler(serverCtx),
 			},
 		},
 	)

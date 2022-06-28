@@ -19,6 +19,8 @@ type GlobalRPC interface {
 	GetNextNonce(accountIndex uint32) (uint64, error)
 	GetLatestAssetsListByAccountIndex(accountIndex uint32) ([]*globalrpc.AssetResult, error)
 	GetMaxOfferId(accountIndex uint32) (uint64, error)
+	SendMintNftTx(txInfo string) (int64, error)
+	SendCreateCollectionTx(txInfo string) (int64, error)
 }
 
 func New(svcCtx *svc.ServiceContext, ctx context.Context) GlobalRPC {
