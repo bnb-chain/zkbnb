@@ -23,19 +23,9 @@ func NewGlobalRPCServer(svcCtx *svc.ServiceContext) *GlobalRPCServer {
 }
 
 //  Asset
-func (s *GlobalRPCServer) GetLatestAccountLp(ctx context.Context, in *globalRPCProto.ReqGetLatestAccountLp) (*globalRPCProto.RespGetLatestAccountLp, error) {
-	l := logic.NewGetLatestAccountLpLogic(ctx, s.svcCtx)
-	return l.GetLatestAccountLp(in)
-}
-
 func (s *GlobalRPCServer) GetLatestAssetsListByAccountIndex(ctx context.Context, in *globalRPCProto.ReqGetLatestAssetsListByAccountIndex) (*globalRPCProto.RespGetLatestAssetsListByAccountIndex, error) {
 	l := logic.NewGetLatestAssetsListByAccountIndexLogic(ctx, s.svcCtx)
 	return l.GetLatestAssetsListByAccountIndex(in)
-}
-
-func (s *GlobalRPCServer) GetLatestAssetInfoByAccountIndexAndAssetId(ctx context.Context, in *globalRPCProto.ReqGetLatestAssetInfoByAccountIndexAndAssetId) (*globalRPCProto.RespGetLatestAssetInfoByAccountIndexAndAssetId, error) {
-	l := logic.NewGetLatestAssetInfoByAccountIndexAndAssetIdLogic(ctx, s.svcCtx)
-	return l.GetLatestAssetInfoByAccountIndexAndAssetId(in)
 }
 
 //  Liquidity
@@ -55,16 +45,6 @@ func (s *GlobalRPCServer) GetLpValue(ctx context.Context, in *globalRPCProto.Req
 }
 
 //  Transaction
-func (s *GlobalRPCServer) GetLatestTxsListByAccountIndex(ctx context.Context, in *globalRPCProto.ReqGetLatestTxsListByAccountIndex) (*globalRPCProto.RespGetLatestTxsListByAccountIndex, error) {
-	l := logic.NewGetLatestTxsListByAccountIndexLogic(ctx, s.svcCtx)
-	return l.GetLatestTxsListByAccountIndex(in)
-}
-
-func (s *GlobalRPCServer) GetLatestTxsListByAccountIndexAndTxType(ctx context.Context, in *globalRPCProto.ReqGetLatestTxsListByAccountIndexAndTxType) (*globalRPCProto.RespGetLatestTxsListByAccountIndexAndTxType, error) {
-	l := logic.NewGetLatestTxsListByAccountIndexAndTxTypeLogic(ctx, s.svcCtx)
-	return l.GetLatestTxsListByAccountIndexAndTxType(in)
-}
-
 func (s *GlobalRPCServer) SendTx(ctx context.Context, in *globalRPCProto.ReqSendTx) (*globalRPCProto.RespSendTx, error) {
 	l := logic.NewSendTxLogic(ctx, s.svcCtx)
 	return l.SendTx(in)
