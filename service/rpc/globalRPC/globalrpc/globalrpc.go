@@ -13,44 +13,32 @@ import (
 )
 
 type (
-	AssetResult                                    = globalRPCProto.AssetResult
-	ReqGetLatestAccountLp                          = globalRPCProto.ReqGetLatestAccountLp
-	ReqGetLatestAssetInfoByAccountIndexAndAssetId  = globalRPCProto.ReqGetLatestAssetInfoByAccountIndexAndAssetId
-	ReqGetLatestAssetsListByAccountIndex           = globalRPCProto.ReqGetLatestAssetsListByAccountIndex
-	ReqGetLatestPairInfo                           = globalRPCProto.ReqGetLatestPairInfo
-	ReqGetLatestTxsListByAccountIndex              = globalRPCProto.ReqGetLatestTxsListByAccountIndex
-	ReqGetLatestTxsListByAccountIndexAndTxType     = globalRPCProto.ReqGetLatestTxsListByAccountIndexAndTxType
-	ReqGetLpValue                                  = globalRPCProto.ReqGetLpValue
-	ReqGetMaxOfferId                               = globalRPCProto.ReqGetMaxOfferId
-	ReqGetNextNonce                                = globalRPCProto.ReqGetNextNonce
-	ReqGetSwapAmount                               = globalRPCProto.ReqGetSwapAmount
-	ReqSendTx                                      = globalRPCProto.ReqSendTx
-	RespGetLatestAccountLp                         = globalRPCProto.RespGetLatestAccountLp
-	RespGetLatestAssetInfoByAccountIndexAndAssetId = globalRPCProto.RespGetLatestAssetInfoByAccountIndexAndAssetId
-	RespGetLatestAssetsListByAccountIndex          = globalRPCProto.RespGetLatestAssetsListByAccountIndex
-	RespGetLatestPairInfo                          = globalRPCProto.RespGetLatestPairInfo
-	RespGetLatestTxsListByAccountIndex             = globalRPCProto.RespGetLatestTxsListByAccountIndex
-	RespGetLatestTxsListByAccountIndexAndTxType    = globalRPCProto.RespGetLatestTxsListByAccountIndexAndTxType
-	RespGetLpValue                                 = globalRPCProto.RespGetLpValue
-	RespGetMaxOfferId                              = globalRPCProto.RespGetMaxOfferId
-	RespGetNextNonce                               = globalRPCProto.RespGetNextNonce
-	RespGetSwapAmount                              = globalRPCProto.RespGetSwapAmount
-	RespSendTx                                     = globalRPCProto.RespSendTx
-	TxDetailInfo                                   = globalRPCProto.TxDetailInfo
-	TxInfo                                         = globalRPCProto.TxInfo
+	AssetResult                           = globalRPCProto.AssetResult
+	ReqGetLatestAssetsListByAccountIndex  = globalRPCProto.ReqGetLatestAssetsListByAccountIndex
+	ReqGetLatestPairInfo                  = globalRPCProto.ReqGetLatestPairInfo
+	ReqGetLpValue                         = globalRPCProto.ReqGetLpValue
+	ReqGetMaxOfferId                      = globalRPCProto.ReqGetMaxOfferId
+	ReqGetNextNonce                       = globalRPCProto.ReqGetNextNonce
+	ReqGetSwapAmount                      = globalRPCProto.ReqGetSwapAmount
+	ReqSendTx                             = globalRPCProto.ReqSendTx
+	RespGetLatestAssetsListByAccountIndex = globalRPCProto.RespGetLatestAssetsListByAccountIndex
+	RespGetLatestPairInfo                 = globalRPCProto.RespGetLatestPairInfo
+	RespGetLpValue                        = globalRPCProto.RespGetLpValue
+	RespGetMaxOfferId                     = globalRPCProto.RespGetMaxOfferId
+	RespGetNextNonce                      = globalRPCProto.RespGetNextNonce
+	RespGetSwapAmount                     = globalRPCProto.RespGetSwapAmount
+	RespSendTx                            = globalRPCProto.RespSendTx
+	TxDetailInfo                          = globalRPCProto.TxDetailInfo
+	TxInfo                                = globalRPCProto.TxInfo
 
 	GlobalRPC interface {
 		//  Asset
-		GetLatestAccountLp(ctx context.Context, in *ReqGetLatestAccountLp, opts ...grpc.CallOption) (*RespGetLatestAccountLp, error)
 		GetLatestAssetsListByAccountIndex(ctx context.Context, in *ReqGetLatestAssetsListByAccountIndex, opts ...grpc.CallOption) (*RespGetLatestAssetsListByAccountIndex, error)
-		GetLatestAssetInfoByAccountIndexAndAssetId(ctx context.Context, in *ReqGetLatestAssetInfoByAccountIndexAndAssetId, opts ...grpc.CallOption) (*RespGetLatestAssetInfoByAccountIndexAndAssetId, error)
 		//  Liquidity
 		GetLatestPairInfo(ctx context.Context, in *ReqGetLatestPairInfo, opts ...grpc.CallOption) (*RespGetLatestPairInfo, error)
 		GetSwapAmount(ctx context.Context, in *ReqGetSwapAmount, opts ...grpc.CallOption) (*RespGetSwapAmount, error)
 		GetLpValue(ctx context.Context, in *ReqGetLpValue, opts ...grpc.CallOption) (*RespGetLpValue, error)
 		//  Transaction
-		GetLatestTxsListByAccountIndex(ctx context.Context, in *ReqGetLatestTxsListByAccountIndex, opts ...grpc.CallOption) (*RespGetLatestTxsListByAccountIndex, error)
-		GetLatestTxsListByAccountIndexAndTxType(ctx context.Context, in *ReqGetLatestTxsListByAccountIndexAndTxType, opts ...grpc.CallOption) (*RespGetLatestTxsListByAccountIndexAndTxType, error)
 		SendTx(ctx context.Context, in *ReqSendTx, opts ...grpc.CallOption) (*RespSendTx, error)
 		GetNextNonce(ctx context.Context, in *ReqGetNextNonce, opts ...grpc.CallOption) (*RespGetNextNonce, error)
 		//  NFT
@@ -69,19 +57,9 @@ func NewGlobalRPC(cli zrpc.Client) GlobalRPC {
 }
 
 //  Asset
-func (m *defaultGlobalRPC) GetLatestAccountLp(ctx context.Context, in *ReqGetLatestAccountLp, opts ...grpc.CallOption) (*RespGetLatestAccountLp, error) {
-	client := globalRPCProto.NewGlobalRPCClient(m.cli.Conn())
-	return client.GetLatestAccountLp(ctx, in, opts...)
-}
-
 func (m *defaultGlobalRPC) GetLatestAssetsListByAccountIndex(ctx context.Context, in *ReqGetLatestAssetsListByAccountIndex, opts ...grpc.CallOption) (*RespGetLatestAssetsListByAccountIndex, error) {
 	client := globalRPCProto.NewGlobalRPCClient(m.cli.Conn())
 	return client.GetLatestAssetsListByAccountIndex(ctx, in, opts...)
-}
-
-func (m *defaultGlobalRPC) GetLatestAssetInfoByAccountIndexAndAssetId(ctx context.Context, in *ReqGetLatestAssetInfoByAccountIndexAndAssetId, opts ...grpc.CallOption) (*RespGetLatestAssetInfoByAccountIndexAndAssetId, error) {
-	client := globalRPCProto.NewGlobalRPCClient(m.cli.Conn())
-	return client.GetLatestAssetInfoByAccountIndexAndAssetId(ctx, in, opts...)
 }
 
 //  Liquidity
@@ -101,16 +79,6 @@ func (m *defaultGlobalRPC) GetLpValue(ctx context.Context, in *ReqGetLpValue, op
 }
 
 //  Transaction
-func (m *defaultGlobalRPC) GetLatestTxsListByAccountIndex(ctx context.Context, in *ReqGetLatestTxsListByAccountIndex, opts ...grpc.CallOption) (*RespGetLatestTxsListByAccountIndex, error) {
-	client := globalRPCProto.NewGlobalRPCClient(m.cli.Conn())
-	return client.GetLatestTxsListByAccountIndex(ctx, in, opts...)
-}
-
-func (m *defaultGlobalRPC) GetLatestTxsListByAccountIndexAndTxType(ctx context.Context, in *ReqGetLatestTxsListByAccountIndexAndTxType, opts ...grpc.CallOption) (*RespGetLatestTxsListByAccountIndexAndTxType, error) {
-	client := globalRPCProto.NewGlobalRPCClient(m.cli.Conn())
-	return client.GetLatestTxsListByAccountIndexAndTxType(ctx, in, opts...)
-}
-
 func (m *defaultGlobalRPC) SendTx(ctx context.Context, in *ReqSendTx, opts ...grpc.CallOption) (*RespSendTx, error) {
 	client := globalRPCProto.NewGlobalRPCClient(m.cli.Conn())
 	return client.SendTx(ctx, in, opts...)
