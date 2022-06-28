@@ -35,12 +35,12 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: account.GetAccountStatusByAccountPkHandler(serverCtx),
 			},
 			{
-				Method:  http.MethodPost,
+				Method:  http.MethodGet,
 				Path:    "/api/v1/account/getAccountInfoByPubKey",
 				Handler: account.GetAccountInfoByPubKeyHandler(serverCtx),
 			},
 			{
-				Method:  http.MethodPost,
+				Method:  http.MethodGet,
 				Path:    "/api/v1/account/getAccountInfoByAccountIndex",
 				Handler: account.GetAccountInfoByAccountIndexHandler(serverCtx),
 			},
@@ -180,7 +180,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: transaction.GetTxsByAccountNameHandler(serverCtx),
 			},
 			{
-				Method:  http.MethodPost,
+				Method:  http.MethodGet,
 				Path:    "/api/v1/tx/getTxsByPubKey",
 				Handler: transaction.GetTxsByPubKeyHandler(serverCtx),
 			},
@@ -190,7 +190,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: transaction.GetTxByHashHandler(serverCtx),
 			},
 			{
-				Method:  http.MethodPost,
+				Method:  http.MethodGet,
 				Path:    "/api/v1/tx/sendTx",
 				Handler: transaction.SendTxHandler(serverCtx),
 			},
