@@ -32,8 +32,8 @@ func NewGoCache(expiration, cleanupInterval uint32) MultCache {
 	}
 }
 
-func NewRedisCache(redisAdd string, expiration uint32) MultCache {
-	redisClient := redis.NewClient(&redis.Options{Addr: redisAdd})
+func NewRedisCache(redisAdd, password string, expiration uint32) MultCache {
+	redisClient := redis.NewClient(&redis.Options{Addr: redisAdd, Password: password})
 	redisStore := store.NewRedis(redisClient,
 		&store.Options{Expiration: time.Duration(expiration) * time.Minute})
 	redisCacheManager := cache.New(redisStore)

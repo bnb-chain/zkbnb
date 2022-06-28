@@ -54,8 +54,6 @@ func (l *GetTxsByAccountNameLogic) GetTxsByAccountName(req *types.ReqGetTxsByAcc
 		logx.Errorf("[GetTxDetailByAccountIndex] err:%v", err)
 		return nil, err
 	}
-	logx.Errorf("[GetTxDetailByAccountIndex] err:%v", txIds)
-
 	resp := &types.RespGetTxsByAccountName{
 		Total: uint32(len(txIds)),
 		Txs:   make([]*types.Tx, 0),
@@ -76,5 +74,4 @@ func (l *GetTxsByAccountNameLogic) GetTxsByAccountName(req *types.ReqGetTxsByAcc
 		resp.Txs = append(resp.Txs, utils.GormTx2Tx(tx))
 	}
 	return resp, nil
-
 }

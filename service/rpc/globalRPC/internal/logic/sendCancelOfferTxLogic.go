@@ -20,6 +20,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
+	"reflect"
+	"strconv"
+	"time"
+
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
@@ -31,10 +36,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
 	"github.com/zeromicro/go-zero/core/stores/redis"
-	"math/big"
-	"reflect"
-	"strconv"
-	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -87,12 +88,7 @@ func (l *SendTxLogic) sendCancelOfferTx(rawTxInfo string) (txId string, err erro
 	var (
 		accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
 	)
-	accountInfoMap[txInfo.AccountIndex], err = globalmapHandler.GetLatestAccountInfo(
-		l.svcCtx.AccountModel,
-		l.svcCtx.MempoolModel,
-		l.svcCtx.RedisConnection,
-		txInfo.AccountIndex,
-	)
+	accountInfoMap[txInfo.AccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.AccountIndex)
 	if err != nil {
 		logx.Errorf("[sendCancelOfferTx] unable to get account info: %s", err.Error())
 		return "", l.HandleCreateFailCancelOfferTx(txInfo, err)

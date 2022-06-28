@@ -20,6 +20,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
+	"strconv"
+	"time"
+
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
@@ -31,9 +35,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
 	"github.com/zeromicro/go-zero/core/stores/redis"
-	"reflect"
-	"strconv"
-	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -54,12 +55,7 @@ func (l *SendTxLogic) sendMintNftTx(rawTxInfo string) (txId string, err error) {
 		errInfo := fmt.Sprintf("[sendMintNftTx] err: invalid collection id %v", txInfo.NftCollectionId)
 		return "", l.HandleCreateFailMintNftTx(txInfo, errors.New(errInfo))
 	}
-	accountInfo, err := globalmapHandler.GetLatestAccountInfo(
-		l.svcCtx.AccountModel,
-		l.svcCtx.MempoolModel,
-		l.svcCtx.RedisConnection,
-		txInfo.CreatorAccountIndex,
-	)
+	accountInfo, err := l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.CreatorAccountIndex)
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendMintNftTx] err: invalid accountIndex %v", txInfo.CreatorAccountIndex)
 		return "", l.HandleCreateFailMintNftTx(txInfo, errors.New(errInfo))
@@ -114,12 +110,7 @@ func (l *SendTxLogic) sendMintNftTx(rawTxInfo string) (txId string, err error) {
 		return "", err
 	}
 	defer redisLock.Release()
-	accountInfoMap[txInfo.CreatorAccountIndex], err = globalmapHandler.GetLatestAccountInfo(
-		l.svcCtx.AccountModel,
-		l.svcCtx.MempoolModel,
-		l.svcCtx.RedisConnection,
-		txInfo.CreatorAccountIndex,
-	)
+	accountInfoMap[txInfo.CreatorAccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.CreatorAccountIndex)
 	if err != nil {
 		logx.Errorf("[sendMintNftTx] unable to get account info: %s", err.Error())
 		return "", l.HandleCreateFailMintNftTx(txInfo, err)

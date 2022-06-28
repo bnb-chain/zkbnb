@@ -3,12 +3,12 @@ package account
 import (
 	"context"
 
+	"github.com/zecrey-labs/zecrey-legend/common/checker"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/logic/errcode"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/account"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/globalrpc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
-	"github.com/zecrey-labs/zecrey-legend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -33,12 +33,12 @@ func NewGetAccountInfoByAccountNameLogic(ctx context.Context, svcCtx *svc.Servic
 
 func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *types.ReqGetAccountInfoByAccountName) (*types.RespGetAccountInfoByAccountName, error) {
 
-	if utils.CheckAccountName(req.AccountName) {
+	if checker.CheckAccountName(req.AccountName) {
 		logx.Errorf("[CheckAccountName] req.AccountName:%v", req.AccountName)
 		return nil, errcode.ErrInvalidParam
 	}
-	accountName := utils.FormatSting(req.AccountName)
-	if utils.CheckFormatAccountName(accountName) {
+	accountName := checker.FormatSting(req.AccountName)
+	if checker.CheckFormatAccountName(accountName) {
 		logx.Errorf("[CheckFormatAccountName] accountName:%v", accountName)
 		return nil, errcode.ErrInvalidParam
 	}
@@ -52,9 +52,9 @@ func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *type
 		AccountPk:    account.PublicKey,
 		Assets:       make([]*types.AccountAsset, 0),
 	}
-	assets, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(uint32(account.AccountIndex))
+	assets, err := l.globalRPC.GetLatestAssetsListByAccountIndex(uint32(account.AccountIndex))
 	if err != nil {
-		logx.Errorf("[GetLatestAccountInfoByAccountIndex] err:%v", err)
+		logx.Errorf("[GetLatestAssetsListByAccountIndex] err:%v", err)
 		return nil, err
 	}
 	for _, asset := range assets {

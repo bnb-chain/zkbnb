@@ -21,6 +21,7 @@ import (
 
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -29,13 +30,15 @@ type SendTxLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
 	logx.Logger
+	commglobalmap commglobalmap.Commglobalmap
 }
 
 func NewSendTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendTxLogic {
 	return &SendTxLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
+		ctx:           ctx,
+		svcCtx:        svcCtx,
+		Logger:        logx.WithContext(ctx),
+		commglobalmap: commglobalmap.New(svcCtx),
 	}
 }
 

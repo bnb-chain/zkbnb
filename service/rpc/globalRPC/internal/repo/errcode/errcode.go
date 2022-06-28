@@ -18,4 +18,5 @@ var (
 var (
 	ErrDataNotExist     = zerror.New(30000, "Data not exist")
 	ErrInvalidSysconfig = zerror.New(30001, "Invalid system config")
+	ErrInvalidAssetType = zerror.New(30002, "invalid asset type")
 )

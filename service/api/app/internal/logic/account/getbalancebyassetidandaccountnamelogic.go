@@ -3,12 +3,12 @@ package account
 import (
 	"context"
 
+	"github.com/zecrey-labs/zecrey-legend/common/checker"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/logic/errcode"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/account"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/globalrpc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
-	"github.com/zecrey-labs/zecrey-legend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -33,7 +33,7 @@ func NewGetBalanceByAssetIdAndAccountNameLogic(ctx context.Context, svcCtx *svc.
 
 func (l *GetBalanceByAssetIdAndAccountNameLogic) GetBalanceByAssetIdAndAccountName(req *types.ReqGetBlanceByAssetIdAndAccountName) (*types.RespGetBlanceInfoByAssetIdAndAccountName, error) {
 	resp := &types.RespGetBlanceInfoByAssetIdAndAccountName{}
-	if utils.CheckAccountName(req.AccountName) {
+	if checker.CheckAccountName(req.AccountName) {
 		logx.Errorf("[CheckAccountIndex] param:%v", req.AccountName)
 		return nil, errcode.ErrInvalidParam
 	}
@@ -42,9 +42,9 @@ func (l *GetBalanceByAssetIdAndAccountNameLogic) GetBalanceByAssetIdAndAccountNa
 		logx.Errorf("[GetAccountByAccountName] err:%v", err)
 		return nil, err
 	}
-	assets, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(uint32(account.AccountIndex))
+	assets, err := l.globalRPC.GetLatestAssetsListByAccountIndex(uint32(account.AccountIndex))
 	if err != nil {
-		logx.Errorf("[GetLatestAccountInfoByAccountIndex] err:%v", err)
+		logx.Errorf("[GetLatestAssetsListByAccountIndex] err:%v", err)
 		return nil, err
 	}
 	for _, asset := range assets {

@@ -79,6 +79,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		RedisConnection:       redisConn,
 		GormPointer:           gormPointer,
 		Conn:                  conn,
-		Cache:                 multcache.NewGoCache(100, 10),
+		Cache:                 multcache.NewRedisCache(c.CacheRedis[0].Host, c.CacheRedis[0].Pass, 10),
 	}
 }
