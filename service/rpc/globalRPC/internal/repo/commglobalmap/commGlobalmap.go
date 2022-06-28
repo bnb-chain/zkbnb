@@ -52,7 +52,6 @@ func (m *model) GetLatestAccountInfo(ctx context.Context, accountIndex int64) (*
 			for _, mempoolTxDetail := range mempoolTx.MempoolDetails {
 				switch mempoolTxDetail.AssetType {
 				case commonAsset.GeneralAssetType:
-					// TODO maybe less than 0
 					if accountInfo.AssetInfo[mempoolTxDetail.AssetId] == nil {
 						accountInfo.AssetInfo[mempoolTxDetail.AssetId] = &commonAsset.AccountAsset{
 							AssetId:                  mempoolTxDetail.AssetId,
@@ -86,12 +85,8 @@ func (m *model) GetLatestAccountInfo(ctx context.Context, accountIndex int64) (*
 				}
 			}
 		}
-		// latest nonce
 		accountInfo.Nonce = accountInfo.Nonce + 1
 		accountInfo.CollectionNonce = accountInfo.CollectionNonce + 1
-		// TODO: write to db
-		logx.Errorf("%v", multcache.SpliceCacheKeyAccountByAccountIndex(accountIndex))
-
 		return accountInfo, nil
 	}
 	accountInfo := &commonAsset.AccountInfo{}
