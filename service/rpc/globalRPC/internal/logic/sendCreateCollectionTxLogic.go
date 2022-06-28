@@ -102,6 +102,7 @@ func (l *SendTxLogic) sendCreateCollectionTx(rawTxInfo string) (txId string, err
 			return "", l.HandleCreateFailCreateCollectionTx(txInfo, err)
 		}
 	}
+	txInfo.CollectionId = accountInfoMap[txInfo.AccountIndex].CollectionNonce
 	var (
 		txDetails []*mempool.MempoolTxDetail
 	)
