@@ -20,6 +20,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
+	"strconv"
+	"time"
+
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
@@ -29,9 +33,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
-	"reflect"
-	"strconv"
-	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -88,12 +89,7 @@ func (l *SendTxLogic) sendTransferNftTx(rawTxInfo string) (txId string, err erro
 		logx.Errorf("[sendTransferNftTx] unable to get nft info")
 		return "", l.HandleCreateFailTransferNftTx(txInfo, err)
 	}
-	accountInfoMap[txInfo.FromAccountIndex], err = globalmapHandler.GetLatestAccountInfo(
-		l.svcCtx.AccountModel,
-		l.svcCtx.MempoolModel,
-		l.svcCtx.RedisConnection,
-		txInfo.FromAccountIndex,
-	)
+	accountInfoMap[txInfo.FromAccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.FromAccountIndex)
 	if err != nil {
 		logx.Errorf("[sendTransferNftTx] unable to get account info: %s", err.Error())
 		return "", l.HandleCreateFailTransferNftTx(txInfo, err)

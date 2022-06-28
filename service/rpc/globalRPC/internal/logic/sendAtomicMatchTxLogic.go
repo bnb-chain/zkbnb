@@ -20,6 +20,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
+	"strconv"
+	"time"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
@@ -32,9 +36,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
 	"github.com/zeromicro/go-zero/core/stores/redis"
-	"reflect"
-	"strconv"
-	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -110,24 +111,14 @@ func (l *SendTxLogic) sendAtomicMatchTx(rawTxInfo string) (txId string, err erro
 		logx.Errorf("[sendAtomicMatchTx] unable to get latest nft index: %s", err.Error())
 		return "", err
 	}
-	accountInfoMap[txInfo.AccountIndex], err = globalmapHandler.GetLatestAccountInfo(
-		l.svcCtx.AccountModel,
-		l.svcCtx.MempoolModel,
-		l.svcCtx.RedisConnection,
-		txInfo.AccountIndex,
-	)
+	accountInfoMap[txInfo.AccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.AccountIndex)
 	if err != nil {
 		logx.Errorf("[sendAtomicMatchTx] unable to get account info: %s", err.Error())
 		return "", l.HandleCreateFailAtomicMatchTx(txInfo, err)
 	}
 	// get account info by to index
 	if accountInfoMap[txInfo.BuyOffer.AccountIndex] == nil {
-		accountInfoMap[txInfo.BuyOffer.AccountIndex], err = globalmapHandler.GetLatestAccountInfo(
-			l.svcCtx.AccountModel,
-			l.svcCtx.MempoolModel,
-			l.svcCtx.RedisConnection,
-			txInfo.BuyOffer.AccountIndex,
-		)
+		accountInfoMap[txInfo.BuyOffer.AccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.BuyOffer.AccountIndex)
 		if err != nil {
 			logx.Errorf("[sendAtomicMatchTx] unable to get account info: %s", err.Error())
 			return "", l.HandleCreateFailAtomicMatchTx(txInfo, err)

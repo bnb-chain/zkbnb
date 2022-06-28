@@ -19,6 +19,9 @@ package logic
 import (
 	"errors"
 	"fmt"
+	"reflect"
+	"strconv"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
@@ -27,8 +30,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
 	"github.com/zeromicro/go-zero/core/logx"
-	"reflect"
-	"strconv"
 )
 
 func (l *SendTxLogic) sendOfferTx(rawTxInfo string) (txId string, err error) {
@@ -78,12 +79,7 @@ func (l *SendTxLogic) sendOfferTx(rawTxInfo string) (txId string, err error) {
 		logx.Errorf("[sendOfferTx] unable to get latest nft index: %s", err.Error())
 		return "", err
 	}
-	accountInfoMap[txInfo.AccountIndex], err = globalmapHandler.GetLatestAccountInfo(
-		l.svcCtx.AccountModel,
-		l.svcCtx.MempoolModel,
-		l.svcCtx.RedisConnection,
-		txInfo.AccountIndex,
-	)
+	accountInfoMap[txInfo.AccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.AccountIndex)
 	if err != nil {
 		logx.Errorf("[sendOfferTx] unable to get account info: %s", err.Error())
 		return "", err

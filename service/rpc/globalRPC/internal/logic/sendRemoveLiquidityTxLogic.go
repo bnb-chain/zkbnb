@@ -20,6 +20,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
+	"strconv"
+	"time"
+
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
@@ -30,9 +34,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
 	"github.com/zeromicro/go-zero/core/stores/redis"
-	"math/big"
-	"strconv"
-	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -123,12 +124,7 @@ func (l *SendTxLogic) sendRemoveLiquidityTx(rawTxInfo string) (txId string, err 
 
 	// get latest account info for from account index
 	if accountInfoMap[txInfo.FromAccountIndex] == nil {
-		accountInfoMap[txInfo.FromAccountIndex], err = globalmapHandler.GetLatestAccountInfo(
-			l.svcCtx.AccountModel,
-			l.svcCtx.MempoolModel,
-			l.svcCtx.RedisConnection,
-			txInfo.FromAccountIndex,
-		)
+		accountInfoMap[txInfo.FromAccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.FromAccountIndex)
 		if err != nil {
 			logx.Errorf("[sendRemoveLiquidityTx] unable to get latest account info: %s", err.Error())
 			return "", err

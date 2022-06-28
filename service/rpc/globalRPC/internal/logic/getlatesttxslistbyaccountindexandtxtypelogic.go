@@ -3,6 +3,7 @@ package logic
 import (
 	"context"
 
+	"github.com/zecrey-labs/zecrey-legend/common/checker"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/logic/errcode"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/account"
@@ -10,7 +11,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/mempool"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/tx"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
-	"github.com/zecrey-labs/zecrey-legend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -38,19 +38,19 @@ func NewGetLatestTxsListByAccountIndexAndTxTypeLogic(ctx context.Context, svcCtx
 }
 
 func (l *GetLatestTxsListByAccountIndexAndTxTypeLogic) GetLatestTxsListByAccountIndexAndTxType(in *globalRPCProto.ReqGetLatestTxsListByAccountIndexAndTxType) (*globalRPCProto.RespGetLatestTxsListByAccountIndexAndTxType, error) {
-	if utils.CheckAccountIndex(in.AccountIndex) {
+	if checker.CheckAccountIndex(in.AccountIndex) {
 		logx.Errorf("[CheckAccountIndex] param:%v", in.AccountIndex)
 		return nil, errcode.ErrInvalidParam
 	}
-	if utils.CheckTxType(in.TxType) {
+	if checker.CheckTxType(in.TxType) {
 		logx.Errorf("[CheckTxType] param:%v", in.TxType)
 		return nil, errcode.ErrInvalidParam
 	}
-	if utils.CheckTypeLimit(in.Limit) {
+	if checker.CheckTypeLimit(in.Limit) {
 		logx.Errorf("[CheckTypeLimit] param:%v", in.Limit)
 		return nil, errcode.ErrInvalidParam
 	}
-	if utils.CheckTypeOffset(in.Offset) {
+	if checker.CheckTypeOffset(in.Offset) {
 		logx.Errorf("[CheckTypeOffset] param:%v", in.Offset)
 		return nil, errcode.ErrInvalidParam
 	}

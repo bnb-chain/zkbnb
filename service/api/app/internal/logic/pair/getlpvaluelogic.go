@@ -3,11 +3,11 @@ package pair
 import (
 	"context"
 
+	"github.com/zecrey-labs/zecrey-legend/common/checker"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/logic/errcode"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/globalrpc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
-	"github.com/zecrey-labs/zecrey-legend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -29,7 +29,7 @@ func NewGetLPValueLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetLPV
 }
 
 func (l *GetLPValueLogic) GetLPValue(req *types.ReqGetLPValue) (resp *types.RespGetLPValue, err error) {
-	if utils.CheckPairIndex(req.PairIndex) {
+	if checker.CheckPairIndex(req.PairIndex) {
 		logx.Error("[CheckPairIndex] param:%v", req.PairIndex)
 		return nil, errcode.ErrInvalidParam
 	}
