@@ -62,14 +62,6 @@ func (m *globalRPC) GetPairInfo(pairIndex uint32) (*globalRPCProto.RespGetLatest
 	})
 }
 
-func (m *globalRPC) SendTx(txType uint32, txInfo string) (string, error) {
-	rpcRsp, err := m.globalRPC.SendTx(m.ctx, &globalrpc.ReqSendTx{
-		TxType: txType,
-		TxInfo: txInfo,
-	})
-	return rpcRsp.GetTxId(), err
-}
-
 func (m *globalRPC) GetNextNonce(accountIndex uint32) (uint64, error) {
 	rpcRsp, err := m.globalRPC.GetNextNonce(m.ctx, &globalrpc.ReqGetNextNonce{
 		AccountIndex: accountIndex,
@@ -89,4 +81,26 @@ func (m *globalRPC) GetMaxOfferId(accountIndex uint32) (uint64, error) {
 		AccountIndex: accountIndex,
 	})
 	return rpcRsp.GetOfferId(), err
+}
+
+func (m *globalRPC) SendTx(txType uint32, txInfo string) (string, error) {
+	rpcRsp, err := m.globalRPC.SendTx(m.ctx, &globalrpc.ReqSendTx{
+		TxType: txType,
+		TxInfo: txInfo,
+	})
+	return rpcRsp.GetTxId(), err
+}
+
+func (m *globalRPC) SendMintNftTx(txInfo string) (int64, error) {
+	rpcRsp, err := m.globalRPC.SendMintNftTx(m.ctx, &globalrpc.ReqSendMintNftTx{
+		TxInfo: txInfo,
+	})
+	return rpcRsp.GetNftIndex(), err
+}
+
+func (m *globalRPC) SendCreateCollectionTx(txInfo string) (int64, error) {
+	rpcRsp, err := m.globalRPC.SendCreateCollectionTx(m.ctx, &globalrpc.ReqSendCreateCollectionTx{
+		TxInfo: txInfo,
+	})
+	return rpcRsp.GetCollectionId(), err
 }

@@ -600,6 +600,26 @@ type (
 	}
 )
 
+// SendCreateCollectionTx
+type (
+	ReqSendCreateCollectionTx {
+		TxInfo string `form:"tx_info"`
+	}
+	RespSendCreateCollectionTx {
+		CollectionId int64 `json:"collection_id"`
+	}
+)
+
+// SendMintNftTx
+type (
+	ReqSendMintNftTx {
+		TxInfo string `form:"tx_info"`
+	}
+	RespSendMintNftTx {
+		NftIndex int64 `json:"nft_index"`
+	}
+)
+
 @server(
 	group: transaction
 )
@@ -622,9 +642,6 @@ service app-api{
 	@handler GetTxByHash
 	get /api/v1/tx/getTxByHash (ReqGetTxByHash) returns (RespGetTxByHash)
 	
-	@handler SendTx
-	get /api/v1/tx/sendTx  (ReqSendTx) returns (RespSendTx)
-	
 	@handler GetMempoolTxs
 	get /api/v1/tx/getMempoolTxs (ReqGetMempoolTxs) returns (RespGetMempoolTxs)
 	
@@ -633,6 +650,15 @@ service app-api{
 	
 	@handler GetNextNonce
 	get /api/v1/tx/getNextNonce (ReqGetNextNonce) returns (RespGetNextNonce)
+	
+	@handler SendTx
+	post /api/v1/tx/sendTx  (ReqSendTx) returns (RespSendTx)
+	
+	@handler SendCreateCollectionTx
+	post /api/v1/tx/sendCreateCollectionTx  (ReqSendCreateCollectionTx) returns (RespSendCreateCollectionTx)
+	
+	@handler SendMintNftTx
+	post /api/v1/tx/sendMintNftTx  (ReqSendMintNftTx) returns (RespSendMintNftTx)
 }
 
 /* ========================= Nft =========================*/

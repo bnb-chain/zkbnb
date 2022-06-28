@@ -6,18 +6,19 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/globalrpc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
+
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-type SendTxLogic struct {
+type SendCreateCollectionTxLogic struct {
 	logx.Logger
 	ctx       context.Context
 	svcCtx    *svc.ServiceContext
 	globalRpc globalrpc.GlobalRPC
 }
 
-func NewSendTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendTxLogic {
-	return &SendTxLogic{
+func NewSendCreateCollectionTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendCreateCollectionTxLogic {
+	return &SendCreateCollectionTxLogic{
 		Logger:    logx.WithContext(ctx),
 		ctx:       ctx,
 		svcCtx:    svcCtx,
@@ -25,12 +26,11 @@ func NewSendTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendTxLogi
 	}
 }
 
-func (l *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.RespSendTx, err error) {
-	//err := utils.CheckRequestParam(utils.TypeTxType, reflect.ValueOf(req.TxType))
-	txId, err := l.globalRpc.SendTx(req.TxType, req.TxInfo)
+func (l *SendCreateCollectionTxLogic) SendCreateCollectionTx(req *types.ReqSendCreateCollectionTx) (resp *types.RespSendCreateCollectionTx, err error) {
+	collectionId, err := l.globalRpc.SendCreateCollectionTx(req.TxInfo)
 	if err != nil {
-		logx.Error("[transaction.SendTx] err:%v", err)
+		logx.Error("[SendCreateCollectionTx] err:%v", err)
 		return nil, err
 	}
-	return &types.RespSendTx{TxId: txId}, nil
+	return &types.RespSendCreateCollectionTx{CollectionId: collectionId}, nil
 }
