@@ -31,18 +31,6 @@ spec:
   selector:
     app: proverhub
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: prometheus
-  namespace: monitoring
-spec:
-  selector:
-    app: prometheus
-  ports:
-  - name: web
-    port: 9090
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -676,60 +664,3 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: proverclient
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: prometheus
-  namespace: monitoring
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: prometheus
-  template:
-    metadata:
-      labels:
-        app: prometheus
-    spec:
-      automountServiceAccountToken: true
-      nodeSelector:
-        kubernetes.io/os: linux
-        kubernetes.io/arch: amd64
-      containers:
-      - name: prometheus
-        image: "gke.gcr.io/prometheus-engine/frontend:v0.4.1-gke.0"
-        args:
-        - "--web.listen-address=:9090"
-        - "--query.project-id=zecrey-330903"
-        ports:
-        - name: web
-          containerPort: 9090
-        readinessProbe:
-          httpGet:
-            path: /-/ready
-            port: web
-        livenessProbe:
-          httpGet:
-            path: /-/healthy
-            port: web
----
-apiVersion: autoscaling/v2beta1
-kind: HorizontalPodAutoscaler
-metadata:
-  labels:
-    app: prometheus-hpa-c
-  name: prometheus-hpa-c
-  namespace: monitoring
-spec:
-  maxReplicas: 3
-  metrics:
-  - resource:
-      name: cpu
-      targetAverageUtilization: 80
-    type: Resource
-  minReplicas: 1
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: prometheus
