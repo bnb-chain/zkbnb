@@ -87,15 +87,24 @@ func (m *model) GetLatestAccountInfo(ctx context.Context, accountIndex int64) (*
 		}
 		accountInfo.Nonce = accountInfo.Nonce + 1
 		accountInfo.CollectionNonce = accountInfo.CollectionNonce + 1
-		return accountInfo, nil
+		account, err := commonAsset.FromFormatAccountInfo(accountInfo)
+		if err != nil {
+			logx.Errorf("[FromFormatAccountInfo]param:%v, err:%v", oAccountInfo, err)
+			return nil, err
+		}
+		return account, nil
 	}
-	accountInfo := &commonAsset.AccountInfo{}
+	accountInfo := &account.Account{}
 	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountByAccountIndex(accountIndex), accountInfo, 1, f)
 	if err != nil {
 		return nil, err
 	}
-	accountInfo, _ = value.(*commonAsset.AccountInfo)
-	return accountInfo, nil
+	account, _ := value.(*account.Account)
+	res, err := commonAsset.ToFormatAccountInfo(account)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 func (l *model) GetLatestLiquidityInfoForRead(pairIndex int64) (liquidityInfo *commGlobalmapHandler.LiquidityInfo, err error) {
