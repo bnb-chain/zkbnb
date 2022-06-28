@@ -97,10 +97,7 @@ func (l *SendCreateCollectionTxLogic) SendCreateCollectionTx(in *globalRPCProto.
 	var (
 		txDetails []*mempool.MempoolTxDetail
 	)
-	txDetails, err = txVerification.VerifyCreateCollectionTxInfo(
-		accountInfoMap,
-		txInfo,
-	)
+	txDetails, err = txVerification.VerifyCreateCollectionTxInfo(accountInfoMap, txInfo)
 	if err != nil {
 		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
 	}

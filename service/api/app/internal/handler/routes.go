@@ -205,17 +205,17 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: transaction.GetNextNonceHandler(serverCtx),
 			},
 			{
-				Method:  http.MethodGet,
+				Method:  http.MethodPost,
 				Path:    "/api/v1/tx/sendTx",
 				Handler: transaction.SendTxHandler(serverCtx),
 			},
 			{
-				Method:  http.MethodGet,
+				Method:  http.MethodPost,
 				Path:    "/api/v1/tx/sendCreateCollectionTx",
 				Handler: transaction.SendCreateCollectionTxHandler(serverCtx),
 			},
 			{
-				Method:  http.MethodGet,
+				Method:  http.MethodPost,
 				Path:    "/api/v1/tx/sendMintNftTx",
 				Handler: transaction.SendMintNftTxHandler(serverCtx),
 			},

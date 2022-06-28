@@ -652,13 +652,13 @@ service app-api{
 	get /api/v1/tx/getNextNonce (ReqGetNextNonce) returns (RespGetNextNonce)
 	
 	@handler SendTx
-	get /api/v1/tx/sendTx  (ReqSendTx) returns (RespSendTx)
+	post /api/v1/tx/sendTx  (ReqSendTx) returns (RespSendTx)
 	
 	@handler SendCreateCollectionTx
-	get /api/v1/tx/sendCreateCollectionTx  (ReqSendCreateCollectionTx) returns (RespSendCreateCollectionTx)
+	post /api/v1/tx/sendCreateCollectionTx  (ReqSendCreateCollectionTx) returns (RespSendCreateCollectionTx)
 	
 	@handler SendMintNftTx
-	get /api/v1/tx/sendMintNftTx  (ReqSendMintNftTx) returns (RespSendMintNftTx)
+	post /api/v1/tx/sendMintNftTx  (ReqSendMintNftTx) returns (RespSendMintNftTx)
 }
 
 /* ========================= Nft =========================*/
