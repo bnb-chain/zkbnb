@@ -5,21 +5,6 @@ package globalRPCProto;
 option go_package = "./globalRPCProto";
 
 /* =================== Asset =================== */
-
-/*
-	Proto Name: getLatestAccountLp
-	Description: get latest account lp
-*/
-message ReqGetLatestAccountLp{
-  uint32 AccountIndex = 1;
-  uint32 PairIndex = 2;
-}
-
-
-message RespGetLatestAccountLp{
-  string LpAmount = 1;
-}
-
 /*
 	Proto Name: GetLatestAssetsListByAccountIndex
 	Description: get latest account assets info by accountIndex
@@ -39,20 +24,6 @@ message AssetResult{
 message RespGetLatestAssetsListByAccountIndex{
   repeated AssetResult ResultAssetsList = 1;
 }
-
-/*
-	Proto Name: getLatestAssetInfoByAccountIndexAndAssetId
-	Description: get latest account asset balance
-*/
-message ReqGetLatestAssetInfoByAccountIndexAndAssetId{
-  uint32 AccountIndex = 1;
-  uint32 AssetId = 2;
-}
-
-message RespGetLatestAssetInfoByAccountIndexAndAssetId{
-  string Balance = 1;
-}
-
 
 /* ====================== Liquidity ====================== */
 
@@ -139,41 +110,6 @@ message TxInfo{
   uint64 BlockHeight = 16;
 }
 
-
-/*
-	Proto Name: getLatestTxsListByAccountIndex
-	Description: Get the latest transaction list including mempool transactions  by account index
- */
-
-message ReqGetLatestTxsListByAccountIndex{
-  uint32 AccountIndex = 1;
-  uint32 Limit = 2;
-  uint32 Offset = 3;
-}
-
-
-message RespGetLatestTxsListByAccountIndex{
-  uint32 Total = 1;
-  repeated TxInfo TxsList = 2;
-}
-
-/*
-	Proto Name: getLatestTxsListByAccountIndexAndTxType
-	Description: Get the latest transaction list including mempool transaction by account index and tx type
- */
-
-message ReqGetLatestTxsListByAccountIndexAndTxType{
-  uint32 AccountIndex = 1;
-  uint32 TxType = 2;
-  uint32 Limit = 3;
-  uint32 Offset = 4;
-}
-
-message RespGetLatestTxsListByAccountIndexAndTxType{
-  uint32 Total = 1;
-  repeated TxInfo TxsList = 2;
-}
-
 /*
 	Proto Name: sendTx
 	Description: sendTransaction
@@ -222,16 +158,12 @@ message RespGetMaxOfferId{
 service globalRPC {
 
   // Asset
-  rpc getLatestAccountLp(ReqGetLatestAccountLp) returns (RespGetLatestAccountLp);
   rpc getLatestAssetsListByAccountIndex (ReqGetLatestAssetsListByAccountIndex) returns (RespGetLatestAssetsListByAccountIndex);
-  rpc getLatestAssetInfoByAccountIndexAndAssetId(ReqGetLatestAssetInfoByAccountIndexAndAssetId) returns (RespGetLatestAssetInfoByAccountIndexAndAssetId);
   // Liquidity
   rpc getLatestPairInfo(ReqGetLatestPairInfo) returns (RespGetLatestPairInfo);
   rpc getSwapAmount(ReqGetSwapAmount) returns (RespGetSwapAmount);
   rpc getLpValue(ReqGetLpValue) returns (RespGetLpValue);
   // Transaction
-  rpc getLatestTxsListByAccountIndex(ReqGetLatestTxsListByAccountIndex) returns (RespGetLatestTxsListByAccountIndex);
-  rpc getLatestTxsListByAccountIndexAndTxType(ReqGetLatestTxsListByAccountIndexAndTxType) returns (RespGetLatestTxsListByAccountIndexAndTxType);
   rpc sendTx(ReqSendTx) returns (RespSendTx);
   rpc getNextNonce(ReqGetNextNonce) returns (RespGetNextNonce);
   // NFT
