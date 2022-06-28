@@ -4,12 +4,12 @@ import (
 	"context"
 	"math/big"
 
+	"github.com/zecrey-labs/zecrey-legend/common/checker"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/logic/errcode"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
-	"github.com/zecrey-labs/zecrey-legend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -31,11 +31,11 @@ func NewGetLpValueLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetLpV
 }
 
 func (l *GetLpValueLogic) GetLpValue(in *globalRPCProto.ReqGetLpValue) (*globalRPCProto.RespGetLpValue, error) {
-	if utils.CheckPairIndex(in.PairIndex) {
+	if checker.CheckPairIndex(in.PairIndex) {
 		logx.Errorf("[CheckPairIndex] param:%v", in.PairIndex)
 		return nil, errcode.ErrInvalidParam
 	}
-	if utils.CheckAmount(in.LPAmount) {
+	if checker.CheckAmount(in.LPAmount) {
 		logx.Errorf("[CheckAmount] param:%v", in.LPAmount)
 		return nil, errcode.ErrInvalidParam
 	}

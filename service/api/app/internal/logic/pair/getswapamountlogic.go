@@ -3,11 +3,11 @@ package pair
 import (
 	"context"
 
+	"github.com/zecrey-labs/zecrey-legend/common/checker"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/logic/errcode"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/globalrpc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
-	"github.com/zecrey-labs/zecrey-legend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -29,11 +29,11 @@ func NewGetSwapAmountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 }
 
 func (l *GetSwapAmountLogic) GetSwapAmount(req *types.ReqGetSwapAmount) (*types.RespGetSwapAmount, error) {
-	if utils.CheckPairIndex(req.PairIndex) {
+	if checker.CheckPairIndex(req.PairIndex) {
 		logx.Error("[CheckPairIndex] param:%v", req.PairIndex)
 		return nil, errcode.ErrInvalidParam
 	}
-	if utils.CheckAssetId(req.AssetId) {
+	if checker.CheckAssetId(req.AssetId) {
 		logx.Error("[CheckAssetId] param:%v", req.AssetId)
 		return nil, errcode.ErrInvalidParam
 	}

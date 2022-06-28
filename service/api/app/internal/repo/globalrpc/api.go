@@ -3,7 +3,6 @@ package globalrpc
 import (
 	"context"
 
-	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
@@ -13,7 +12,6 @@ import (
 )
 
 type GlobalRPC interface {
-	GetLatestAccountInfo(accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error)
 	SendTx(txType uint32, txInfo string) (string, error)
 	GetLatestTxsListByAccountIndex(accountIndex uint32, limit uint32) ([]*mempool.MempoolTx, uint32, error)
 	GetLpValue(pairIndex uint32, lpAmount string) (*globalRPCProto.RespGetLpValue, error)

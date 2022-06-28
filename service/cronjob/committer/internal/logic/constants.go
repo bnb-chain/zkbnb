@@ -1,6 +1,7 @@
 package logic
 
 import (
+	cryptoBlock "github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/block"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
@@ -69,7 +70,7 @@ const (
 	NftAssetType             = commonAsset.NftAssetType
 	CollectionNonceAssetType = commonAsset.CollectionNonceAssetType
 	//MaxTxsAmountPerBlock = transactions.TxsCountPerBlock
-	MaxTxsAmountPerBlock = 1
+	MaxTxsAmountPerBlock = cryptoBlock.NbTxsPerBlock
 
 	TxTypeRegisterZns      = commonTx.TxTypeRegisterZns
 	TxTypeCreatePair       = commonTx.TxTypeCreatePair

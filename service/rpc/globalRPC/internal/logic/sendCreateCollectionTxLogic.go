@@ -20,6 +20,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
+	"strconv"
+	"time"
+
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
@@ -29,9 +33,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
-	"reflect"
-	"strconv"
-	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -84,12 +85,7 @@ func (l *SendTxLogic) sendCreateCollectionTx(rawTxInfo string) (txId string, err
 	var (
 		accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
 	)
-	accountInfoMap[txInfo.AccountIndex], err = globalmapHandler.GetLatestAccountInfo(
-		l.svcCtx.AccountModel,
-		l.svcCtx.MempoolModel,
-		l.svcCtx.RedisConnection,
-		txInfo.AccountIndex,
-	)
+	accountInfoMap[txInfo.AccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.AccountIndex)
 	if err != nil {
 		logx.Errorf("[sendCreateCollectionTx] unable to get account info: %s", err.Error())
 		return "", l.HandleCreateFailCreateCollectionTx(txInfo, err)

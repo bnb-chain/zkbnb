@@ -20,6 +20,8 @@ package globalmapHandler
 import (
 	"encoding/json"
 	"errors"
+	"strconv"
+
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
@@ -27,7 +29,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
-	"strconv"
 )
 
 func GetLatestAccountInfo(

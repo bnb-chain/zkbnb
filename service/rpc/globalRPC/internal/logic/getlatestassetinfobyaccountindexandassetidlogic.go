@@ -3,6 +3,7 @@ package logic
 import (
 	"context"
 
+	"github.com/zecrey-labs/zecrey-legend/common/checker"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/logic/errcode"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/account"
@@ -10,8 +11,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/l2asset"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/mempool"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
-
-	"github.com/zecrey-labs/zecrey-legend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -40,11 +39,11 @@ func NewGetLatestAssetInfoByAccountIndexAndAssetIdLogic(ctx context.Context, svc
 }
 
 func (l *GetLatestAssetInfoByAccountIndexAndAssetIdLogic) GetLatestAssetInfoByAccountIndexAndAssetId(in *globalRPCProto.ReqGetLatestAssetInfoByAccountIndexAndAssetId) (*globalRPCProto.RespGetLatestAssetInfoByAccountIndexAndAssetId, error) {
-	if utils.CheckAccountIndex(in.AccountIndex) {
+	if checker.CheckAccountIndex(in.AccountIndex) {
 		logx.Errorf("[CheckAccountIndex] param:%v", in.AccountIndex)
 		return nil, errcode.ErrInvalidParam
 	}
-	accountInfo, err := l.commglobalmap.GetLatestAccountInfo(int64(in.AccountIndex))
+	accountInfo, err := l.commglobalmap.GetLatestAccountInfo(l.ctx, int64(in.AccountIndex))
 	if err != nil {
 		logx.Errorf("[GetLatestAccountInfo] err:%v", err)
 		return nil, err
