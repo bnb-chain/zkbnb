@@ -228,8 +228,8 @@ type NftNode struct {
     CreatorAccountIndex int64
     OwnerAccountIndex   int64
     NftContentHash      string
-    NftL1TokenId        string
     NftL1Address        string
+    NftL1TokenId        string
     CreatorTreasuryRate int64
     CollectionId        int64 // 32 bit
 }
@@ -362,7 +362,7 @@ This is a layer-1 transaction and a user needs to call this method first to regi
 
 | Chunks | Significant bytes |
 | ------ | ----------------- |
-| 4      | 101               |
+| 6      | 101               |
 
 ##### Structure
 
@@ -423,10 +423,10 @@ func VerifyRegisterZNSTx(
 	api API, flag Variable,
 	tx RegisterZnsTxConstraints,
 	accountsBefore [NbAccountsPerTx]AccountConstraints,
-	hFunc *MiMC,
-) {
-	CollectPubDataFromRegisterZNS(api, flag, tx, hFunc)
+) (pubData [PubDataSizePerTx]Variable) {
+	pubData = CollectPubDataFromRegisterZNS(api, tx)
 	CheckEmptyAccountNode(api, flag, accountsBefore[0])
+	return pubData
 }
 ```
 
@@ -442,7 +442,7 @@ This is a layer-1 transaction and is used for creating a trading pair for L2.
 
 | Chunks | Significant bytes |
 | ------ | ----------------- |
-| 1      | 15                |
+| 6      | 15                |
 
 ##### Structure
 
@@ -502,12 +502,12 @@ func VerifyCreatePairTx(
 	api API, flag Variable,
 	tx CreatePairTxConstraints,
 	liquidityBefore LiquidityConstraints,
-	hFunc *MiMC,
-) {
-	CollectPubDataFromCreatePair(api, flag, tx, hFunc)
+) (pubData [PubDataSizePerTx]Variable) {
+	pubData = CollectPubDataFromCreatePair(api, tx)
 	// verify params
 	IsVariableEqual(api, flag, tx.PairIndex, liquidityBefore.PairIndex)
 	CheckEmptyLiquidityNode(api, flag, liquidityBefore)
+	return pubData
 }
 ```
 
@@ -523,7 +523,7 @@ This is a layer-1 transaction and is used for updating a trading pair for L2.
 
 | Chunks | Significant bytes |
 | ------ | ----------------- |
-| 1      | 11                |
+| 6      | 11                |
 
 ##### Structure
 
@@ -582,12 +582,12 @@ func VerifyUpdatePairRateTx(
 	api API, flag Variable,
 	tx UpdatePairRateTxConstraints,
 	liquidityBefore LiquidityConstraints,
-	hFunc *MiMC,
-) {
-	CollectPubDataFromUpdatePairRate(api, flag, tx, hFunc)
+) (pubData [PubDataSizePerTx]Variable) {
+	pubData = CollectPubDataFromUpdatePairRate(api, tx)
 	// verify params
 	IsVariableEqual(api, flag, tx.PairIndex, liquidityBefore.PairIndex)
 	IsVariableLessOrEqual(api, flag, tx.TreasuryRate, tx.FeeRate)
+	return pubData
 }
 ```
 
@@ -603,7 +603,7 @@ This is a layer-1 transaction and is used for depositing assets into the layer-2
 
 | Chunks | Significant bytes |
 | ------ | ----------------- |
-| 2      | 55                |
+| 6      | 55                |
 
 ##### Structure
 
@@ -667,13 +667,13 @@ func VerifyDepositTx(
 	api API, flag Variable,
 	tx DepositTxConstraints,
 	accountsBefore [NbAccountsPerTx]AccountConstraints,
-	hFunc *MiMC,
-) {
-	CollectPubDataFromDeposit(api, flag, tx, hFunc)
+) (pubData [PubDataSizePerTx]Variable) {
+	pubData = CollectPubDataFromDeposit(api, tx)
 	// verify params
 	IsVariableEqual(api, flag, tx.AccountNameHash, accountsBefore[0].AccountNameHash)
 	IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[0].AccountIndex)
 	IsVariableEqual(api, flag, tx.AssetId, accountsBefore[0].AssetsInfo[0].AssetId)
+	return pubData
 }
 ```
 
@@ -689,7 +689,7 @@ This is a layer-1 transaction and is used for depositing nfts into the layer-2 a
 
 | Chunks | Significant bytes |
 | ------ | ----------------- |
-| 5      | 134               |
+| 6      | 134               |
 
 ##### Structure
 
@@ -757,9 +757,8 @@ func VerifyDepositNftTx(
 	tx DepositNftTxConstraints,
 	accountsBefore [NbAccountsPerTx]AccountConstraints,
 	nftBefore NftConstraints,
-	hFunc *MiMC,
-) {
-	CollectPubDataFromDepositNft(api, flag, tx, hFunc)
+) (pubData [PubDataSizePerTx]Variable) {
+	pubData = CollectPubDataFromDepositNft(api, tx)
 	// verify params
 	// check empty nft
 	CheckEmptyNftNode(api, flag, nftBefore)
@@ -767,6 +766,7 @@ func VerifyDepositNftTx(
 	IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[0].AccountIndex)
 	// account name hash
 	IsVariableEqual(api, flag, tx.AccountNameHash, accountsBefore[0].AccountNameHash)
+	return pubData
 }
 ```
 
@@ -782,7 +782,7 @@ This is a layer-2 transaction and is used for transfering assets in the layer-2 
 
 | Chunks | Significant bytes |
 | ------ | ----------------- |
-| 2      | 56                |
+| 6      | 56                |
 
 ##### Structure
 
@@ -848,7 +848,7 @@ func ConvertTxToTransferPubData(oTx *mempool.MempoolTx) (pubData []byte, err err
 type TransferTxInfo struct {
 	FromAccountIndex  int64
 	ToAccountIndex    int64
-	ToAccountName     string
+	ToAccountNameHash string
 	AssetId           int64
 	AssetAmount       *big.Int
 	GasAccountIndex   int64
@@ -870,10 +870,9 @@ func VerifyTransferTx(
 	api API, flag Variable,
 	tx *TransferTxConstraints,
 	accountsBefore [NbAccountsPerTx]AccountConstraints,
-	hFunc *MiMC,
-) {
+) (pubData [PubDataSizePerTx]Variable) {
 	// collect pubdata
-	CollectPubDataFromTransfer(api, flag, *tx, hFunc)
+	pubData = CollectPubDataFromTransfer(api, *tx)
 	// verify params
 	// account index
 	IsVariableEqual(api, flag, tx.FromAccountIndex, accountsBefore[0].AccountIndex)
@@ -893,6 +892,7 @@ func VerifyTransferTx(
 	//tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
 	IsVariableLessOrEqual(api, flag, tx.AssetAmount, accountsBefore[0].AssetsInfo[0].Balance)
 	IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[0].AssetsInfo[1].Balance)
+	return pubData
 }
 ```
 
@@ -908,7 +908,7 @@ This is a layer-2 transaction and is used for making a swap for assets in the la
 
 | Chunks | Significant bytes |
 | ------ | ----------------- |
-| 1      | 25                |
+| 6      | 25                |
 
 ##### Structure
 
@@ -998,9 +998,8 @@ func VerifySwapTx(
 	api API, flag Variable,
 	tx *SwapTxConstraints,
 	accountsBefore [NbAccountsPerTx]AccountConstraints, liquidityBefore LiquidityConstraints,
-	hFunc *MiMC,
-) {
-	CollectPubDataFromSwap(api, flag, *tx, hFunc)
+) (pubData [PubDataSizePerTx]Variable) {
+	pubData = CollectPubDataFromSwap(api, *tx)
 	// verify params
 	// account index
 	IsVariableEqual(api, flag, tx.FromAccountIndex, accountsBefore[0].AccountIndex)
@@ -1043,10 +1042,6 @@ func VerifySwapTx(
 	// pool info
 	isSameAsset = api.And(flag, isSameAsset)
 	isDifferentAsset = api.And(flag, isSameAsset)
-	IsVariableLessOrEqual(api, isSameAsset, tx.PoolAAmount, liquidityBefore.AssetA)
-	IsVariableLessOrEqual(api, isSameAsset, tx.PoolBAmount, liquidityBefore.AssetB)
-	IsVariableLessOrEqual(api, isDifferentAsset, tx.PoolAAmount, liquidityBefore.AssetB)
-	IsVariableLessOrEqual(api, isDifferentAsset, tx.PoolBAmount, liquidityBefore.AssetA)
 	IsVariableEqual(api, flag, liquidityBefore.FeeRate, liquidityBefore.FeeRate)
 	IsVariableLessOrEqual(api, flag, liquidityBefore.FeeRate, RateBase)
 	assetAAmount := api.Select(isSameAsset, tx.AssetAAmount, tx.AssetBAmountDelta)
@@ -1061,6 +1056,7 @@ func VerifySwapTx(
 		api.Add(assetBAmount, liquidityBefore.AssetB),
 	)
 	IsVariableLessOrEqual(api, flag, r, l)
+	return pubData
 }
 ```
 
@@ -1076,7 +1072,7 @@ This is a layer-2 transaction and is used for adding liquidity for a trading pai
 
 | Chunks | Significant bytes |
 | ------ | ----------------- |
-| 2      | 40                |
+| 6      | 40                |
 
 ##### Structure
 
@@ -1127,7 +1123,6 @@ func ConvertTxToAddLiquidityPubData(oTx *mempool.MempoolTx) (pubData []byte, err
 		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
 		return nil, err
 	}
-	buf.Write(packedAssetBAmountBytes)
 	buf.Write(LpAmountBytes)
 	KLastBytes, err := AmountToPackedAmountBytes(txInfo.KLast)
 	if err != nil {
@@ -1253,7 +1248,7 @@ This is a layer-2 transaction and is used for removing liquidity for a trading p
 
 | Chunks | Significant bytes |
 | ------ | ----------------- |
-| 2      | 40                |
+| 6      | 40                |
 
 ##### Structure
 
@@ -1304,7 +1299,6 @@ func ConvertTxToRemoveLiquidityPubData(oTx *mempool.MempoolTx) (pubData []byte, 
 		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
 		return nil, err
 	}
-	buf.Write(packedAssetBAmountBytes)
 	buf.Write(LpAmountBytes)
 	KLastBytes, err := AmountToPackedAmountBytes(txInfo.KLast)
 	if err != nil {
@@ -1371,9 +1365,8 @@ func VerifyRemoveLiquidityTx(
 	api API, flag Variable,
 	tx *RemoveLiquidityTxConstraints,
 	accountsBefore [NbAccountsPerTx]AccountConstraints, liquidityBefore LiquidityConstraints,
-	hFunc *MiMC,
-) {
-	CollectPubDataFromRemoveLiquidity(api, flag, *tx, hFunc)
+) (pubData [PubDataSizePerTx]Variable, err error) {
+	pubData = CollectPubDataFromRemoveLiquidity(api, *tx)
 	// verify params
 	// account index
 	IsVariableEqual(api, flag, tx.FromAccountIndex, accountsBefore[0].AccountIndex)
@@ -1394,15 +1387,25 @@ func VerifyRemoveLiquidityTx(
 	tx.AssetBMinAmount = UnpackAmount(api, tx.AssetBMinAmount)
 	tx.AssetBAmountDelta = UnpackAmount(api, tx.AssetBAmountDelta)
 	tx.LpAmount = UnpackAmount(api, tx.LpAmount)
+	tx.TreasuryAmount = UnpackAmount(api, tx.TreasuryAmount)
 	tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
 	IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[0].AssetsInfo[3].Balance)
 	// TODO verify LP
-	sLp := ComputeSLp(api, flag, liquidityBefore.AssetA, liquidityBefore.AssetB, liquidityBefore.KLast, liquidityBefore.FeeRate, liquidityBefore.TreasuryRate)
+	kCurrent := api.Mul(liquidityBefore.AssetA, liquidityBefore.AssetB)
+	IsVariableLessOrEqual(api, flag, liquidityBefore.KLast, kCurrent)
+	IsVariableLessOrEqual(api, flag, liquidityBefore.TreasuryRate, liquidityBefore.FeeRate)
+	sLps, err := api.Compiler().NewHint(ComputeSLp, 1, liquidityBefore.AssetA, liquidityBefore.AssetB, liquidityBefore.KLast, liquidityBefore.FeeRate, liquidityBefore.TreasuryRate)
+	if err != nil {
+		return pubData, err
+	}
+	sLp := sLps[0]
+	IsVariableEqual(api, flag, tx.TreasuryAmount, sLp)
 	poolLpVar := api.Sub(liquidityBefore.LpAmount, sLp)
 	IsVariableLessOrEqual(api, flag, api.Mul(tx.AssetAAmountDelta, poolLpVar), api.Mul(tx.LpAmount, liquidityBefore.AssetA))
 	IsVariableLessOrEqual(api, flag, api.Mul(tx.AssetBAmountDelta, poolLpVar), api.Mul(tx.LpAmount, liquidityBefore.AssetB))
 	IsVariableLessOrEqual(api, flag, tx.AssetAMinAmount, tx.AssetAAmountDelta)
 	IsVariableLessOrEqual(api, flag, tx.AssetBMinAmount, tx.AssetBAmountDelta)
+	return pubData, nil
 }
 ```
 
@@ -1418,7 +1421,7 @@ This is a layer-2 transaction and is used for withdrawing assets from the layer-
 
 | Chunks | Significant bytes |
 | ------ | ----------------- |
-| 2      | 51                |
+| 6      | 51                |
 
 ##### Structure
 
@@ -1497,9 +1500,8 @@ func VerifyWithdrawTx(
 	api API, flag Variable,
 	tx *WithdrawTxConstraints,
 	accountsBefore [NbAccountsPerTx]AccountConstraints,
-	hFunc *MiMC,
-) {
-	CollectPubDataFromWithdraw(api, flag, *tx, hFunc)
+) (pubData [PubDataSizePerTx]Variable) {
+	pubData = CollectPubDataFromWithdraw(api, *tx)
 	// verify params
 	// account index
 	IsVariableEqual(api, flag, tx.FromAccountIndex, accountsBefore[0].AccountIndex)
@@ -1512,6 +1514,7 @@ func VerifyWithdrawTx(
 	tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
 	IsVariableLessOrEqual(api, flag, tx.AssetAmount, accountsBefore[0].AssetsInfo[0].Balance)
 	IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[0].AssetsInfo[1].Balance)
+	return pubData
 }
 ```
 
@@ -1527,7 +1530,7 @@ This is a layer-2 transaction and is used for creating a new collection
 
 | Chunks | Significant bytes |
 | ------ | ----------------- |
-| 1      | 15                |
+| 6      | 15                |
 
 ##### Structure
 
@@ -1600,10 +1603,10 @@ func VerifyCreateCollectionTx(
 	api API, flag Variable,
 	tx *CreateCollectionTxConstraints,
 	accountsBefore [NbAccountsPerTx]AccountConstraints,
-	hFunc *MiMC,
-) {
-	CollectPubDataFromCreateCollection(api, flag, *tx, hFunc)
+) (pubData [PubDataSizePerTx]Variable) {
+	pubData = CollectPubDataFromCreateCollection(api, *tx)
 	// verify params
+	IsVariableLessOrEqual(api, flag, tx.CollectionId, 65535)
 	// account index
 	IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[0].AccountIndex)
 	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[1].AccountIndex)
@@ -1615,6 +1618,7 @@ func VerifyCreateCollectionTx(
 	// should have enough assets
 	tx.GasFeeAssetAmount = UnpackAmount(api, tx.GasFeeAssetAmount)
 	IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[0].AssetsInfo[0].Balance)
+	return pubData
 }
 ```
 
@@ -1630,7 +1634,7 @@ This is a layer-2 transaction and is used for minting nfts in the layer-2 networ
 
 | Chunks | Significant bytes |
 | ------ | ----------------- |
-| 2      | 58                |
+| 6      | 58                |
 
 ##### Structure
 
@@ -1663,7 +1667,7 @@ func ConvertTxToMintNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err erro
 	buf.WriteByte(uint8(oTx.TxType))
 	buf.Write(Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
 	buf.Write(Uint32ToBytes(uint32(txInfo.ToAccountIndex)))
-	buf.Write(Uint64ToBytes(uint64(txInfo.NftIndex)))
+	buf.Write(Uint40ToBytes(txInfo.NftIndex))
 	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
 	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
 	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
@@ -1713,9 +1717,8 @@ func VerifyMintNftTx(
 	api API, flag Variable,
 	tx *MintNftTxConstraints,
 	accountsBefore [NbAccountsPerTx]AccountConstraints, nftBefore NftConstraints,
-	hFunc *MiMC,
-) {
-	CollectPubDataFromMintNft(api, flag, *tx, hFunc)
+) (pubData [PubDataSizePerTx]Variable) {
+	pubData = CollectPubDataFromMintNft(api, *tx)
 	// verify params
 	// check empty nft
 	CheckEmptyNftNode(api, flag, nftBefore)
@@ -1734,6 +1737,7 @@ func VerifyMintNftTx(
 	// should have enough balance
 	tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
 	IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[0].AssetsInfo[0].Balance)
+	return pubData
 }
 ```
 
@@ -1749,7 +1753,7 @@ This is a layer-2 transaction and is used for transfering nfts to others in the 
 
 | Chunks | Significant bytes |
 | ------ | ----------------- |
-| 2      | 54                |
+| 6      | 54                |
 
 ##### Structure
 
@@ -1780,7 +1784,7 @@ func ConvertTxToTransferNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err 
 	buf.WriteByte(uint8(oTx.TxType))
 	buf.Write(Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
 	buf.Write(Uint32ToBytes(uint32(txInfo.ToAccountIndex)))
-	buf.Write(Uint64ToBytes(uint64(txInfo.NftIndex)))
+	buf.Write(Uint40ToBytes(txInfo.NftIndex))
 	buf.Write(Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
 	buf.Write(Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
 	packedFeeBytes, err := FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
@@ -1829,9 +1833,8 @@ func VerifyTransferNftTx(
 	tx *TransferNftTxConstraints,
 	accountsBefore [NbAccountsPerTx]AccountConstraints,
 	nftBefore NftConstraints,
-	hFunc *MiMC,
-) {
-	CollectPubDataFromTransferNft(api, flag, *tx, hFunc)
+) (pubData [PubDataSizePerTx]Variable) {
+	pubData = CollectPubDataFromTransferNft(api, *tx)
 	// verify params
 	// account index
 	IsVariableEqual(api, flag, tx.FromAccountIndex, accountsBefore[0].AccountIndex)
@@ -1848,6 +1851,7 @@ func VerifyTransferNftTx(
 	// should have enough balance
 	tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
 	IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[0].AssetsInfo[0].Balance)
+	return pubData
 }
 ```
 
@@ -1863,7 +1867,7 @@ This is a layer-2 transaction that will be used for buying or selling Nft in the
 
 | Chunks | Significant bytes |
 | ------ | ----------------- |
-| 2      | 44                |
+| 6      | 44                |
 
 ##### Structure
 
@@ -1917,6 +1921,7 @@ func ConvertTxToAtomicMatchPubData(oTx *mempool.MempoolTx) (pubData []byte, err 
 	buf.Write(Uint24ToBytes(txInfo.BuyOffer.OfferId))
 	buf.Write(Uint32ToBytes(uint32(txInfo.SellOffer.AccountIndex)))
 	buf.Write(Uint24ToBytes(txInfo.SellOffer.OfferId))
+	buf.Write(Uint40ToBytes(txInfo.BuyOffer.NftIndex))
 	buf.Write(Uint16ToBytes(uint16(txInfo.SellOffer.AssetId)))
 	chunk1 := SuffixPaddingBufToChunkSize(buf.Bytes())
 	buf.Reset()
@@ -1998,9 +2003,9 @@ func VerifyAtomicMatchTx(
 	accountsBefore [NbAccountsPerTx]AccountConstraints,
 	nftBefore NftConstraints,
 	blockCreatedAt Variable,
-	hFunc *MiMC,
-) (err error) {
-	CollectPubDataFromAtomicMatch(api, flag, *tx, hFunc)
+	hFunc MiMC,
+) (pubData [PubDataSizePerTx]Variable, err error) {
+	pubData = CollectPubDataFromAtomicMatch(api, *tx)
 	// verify params
 	IsVariableEqual(api, flag, tx.BuyOffer.Type, 0)
 	IsVariableEqual(api, flag, tx.SellOffer.Type, 1)
@@ -2019,18 +2024,22 @@ func VerifyAtomicMatchTx(
 	IsVariableEqual(api, flag, tx.BuyOffer.TreasuryRate, tx.SellOffer.TreasuryRate)
 	// verify signature
 	hFunc.Reset()
-	buyOfferHash := ComputeHashFromOfferTx(tx.BuyOffer, *hFunc)
+	buyOfferHash := ComputeHashFromOfferTx(tx.BuyOffer, hFunc)
 	hFunc.Reset()
-	err = VerifyEddsaSig(flag, api, *hFunc, buyOfferHash, accountsBefore[1].AccountPk, tx.BuyOffer.Sig)
+	notBuyer := api.IsZero(api.IsZero(api.Sub(tx.AccountIndex, tx.BuyOffer.AccountIndex)))
+	notBuyer = api.And(flag, notBuyer)
+	err = VerifyEddsaSig(notBuyer, api, hFunc, buyOfferHash, accountsBefore[1].AccountPk, tx.BuyOffer.Sig)
 	if err != nil {
-		return err
+		return pubData, err
 	}
 	hFunc.Reset()
-	sellOfferHash := ComputeHashFromOfferTx(tx.SellOffer, *hFunc)
+	sellOfferHash := ComputeHashFromOfferTx(tx.SellOffer, hFunc)
 	hFunc.Reset()
-	err = VerifyEddsaSig(flag, api, *hFunc, sellOfferHash, accountsBefore[2].AccountPk, tx.SellOffer.Sig)
+	notSeller := api.IsZero(api.IsZero(api.Sub(tx.AccountIndex, tx.SellOffer.AccountIndex)))
+	notSeller = api.And(flag, notSeller)
+	err = VerifyEddsaSig(notSeller, api, hFunc, sellOfferHash, accountsBefore[2].AccountPk, tx.SellOffer.Sig)
 	if err != nil {
-		return err
+		return pubData, err
 	}
 	// verify account index
 	// submitter
@@ -2075,7 +2084,7 @@ func VerifyAtomicMatchTx(
 	// submitter should have enough balance
 	tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
 	IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[0].AssetsInfo[0].Balance)
-	return nil
+	return pubData, nil
 }
 ```
 
@@ -2091,7 +2100,7 @@ This is a layer-2 transaction and is used for canceling nft offer.
 
 | Chunks | Significant bytes |
 | ------ | ----------------- |
-| 1      | 16                |
+| 6      | 16                |
 
 ##### Structure
 
@@ -2162,9 +2171,8 @@ func VerifyCancelOfferTx(
 	api API, flag Variable,
 	tx *CancelOfferTxConstraints,
 	accountsBefore [NbAccountsPerTx]AccountConstraints,
-	hFunc *MiMC,
-) {
-	CollectPubDataFromCancelOffer(api, flag, *tx, hFunc)
+) (pubData [PubDataSizePerTx]Variable) {
+	pubData = CollectPubDataFromCancelOffer(api, *tx)
 	// verify params
 	IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[0].AccountIndex)
 	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[1].AccountIndex)
@@ -2176,6 +2184,7 @@ func VerifyCancelOfferTx(
 	// should have enough balance
 	tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
 	IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[0].AssetsInfo[1].Balance)
+	return pubData
 }
 ```
 
@@ -2289,9 +2298,8 @@ func VerifyWithdrawNftTx(
 	tx *WithdrawNftTxConstraints,
 	accountsBefore [NbAccountsPerTx]AccountConstraints,
 	nftBefore NftConstraints,
-	hFunc *MiMC,
-) {
-	CollectPubDataFromWithdrawNft(api, flag, *tx, hFunc)
+) (pubData [PubDataSizePerTx]Variable) {
+	pubData = CollectPubDataFromWithdrawNft(api, *tx)
 	// verify params
 	// account index
 	IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[0].AccountIndex)
@@ -2299,6 +2307,8 @@ func VerifyWithdrawNftTx(
 	IsVariableEqual(api, flag, tx.GasAccountIndex, accountsBefore[2].AccountIndex)
 	// account name hash
 	IsVariableEqual(api, flag, tx.CreatorAccountNameHash, accountsBefore[1].AccountNameHash)
+	// collection id
+	IsVariableEqual(api, flag, tx.CollectionId, nftBefore.CollectionId)
 	// asset id
 	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[0].AssetsInfo[0].AssetId)
 	IsVariableEqual(api, flag, tx.GasFeeAssetId, accountsBefore[2].AssetsInfo[0].AssetId)
@@ -2313,6 +2323,7 @@ func VerifyWithdrawNftTx(
 	// have enough assets
 	tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
 	IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[0].AssetsInfo[0].Balance)
+	return pubData
 }
 ```
 
@@ -2328,7 +2339,7 @@ This is a layer-1 transaction and is used for full exit assets from the layer-2 
 
 | Chunks | Significant bytes |
 | ------ | ----------------- |
-| 2      | 55                |
+| 6      | 55                |
 
 ##### Structure
 
@@ -2383,14 +2394,14 @@ func VerifyFullExitTx(
 	api API, flag Variable,
 	tx FullExitTxConstraints,
 	accountsBefore [NbAccountsPerTx]AccountConstraints,
-	hFunc *MiMC,
-) {
-	CollectPubDataFromFullExit(api, flag, tx, hFunc)
+) (pubData [PubDataSizePerTx]Variable) {
+	pubData = CollectPubDataFromFullExit(api, tx)
 	// verify params
 	IsVariableEqual(api, flag, tx.AccountNameHash, accountsBefore[0].AccountNameHash)
 	IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[0].AccountIndex)
 	IsVariableEqual(api, flag, tx.AssetId, accountsBefore[0].AssetsInfo[0].AssetId)
 	IsVariableEqual(api, flag, tx.AssetAmount, accountsBefore[0].AssetsInfo[0].Balance)
+	return pubData
 }
 ```
 
@@ -2472,15 +2483,16 @@ func VerifyFullExitNftTx(
 	api API, flag Variable,
 	tx FullExitNftTxConstraints,
 	accountsBefore [NbAccountsPerTx]AccountConstraints, nftBefore NftConstraints,
-	hFunc *MiMC,
-) {
-	CollectPubDataFromFullExitNft(api, flag, tx, hFunc)
+) (pubData [PubDataSizePerTx]Variable) {
+	pubData = CollectPubDataFromFullExitNft(api, tx)
 	// verify params
 	IsVariableEqual(api, flag, tx.AccountNameHash, accountsBefore[0].AccountNameHash)
 	IsVariableEqual(api, flag, tx.AccountIndex, accountsBefore[0].AccountIndex)
 	IsVariableEqual(api, flag, tx.NftIndex, nftBefore.NftIndex)
-	IsVariableEqual(api, flag, tx.CreatorAccountIndex, accountsBefore[1].AccountIndex)
-	IsVariableEqual(api, flag, tx.CreatorAccountNameHash, accountsBefore[1].AccountNameHash)
+	isCheck := api.IsZero(api.IsZero(tx.CreatorAccountNameHash))
+	isCheck = api.And(flag, isCheck)
+	IsVariableEqual(api, isCheck, tx.CreatorAccountIndex, accountsBefore[1].AccountIndex)
+	IsVariableEqual(api, isCheck, tx.CreatorAccountNameHash, accountsBefore[1].AccountNameHash)
 	IsVariableEqual(api, flag, tx.CreatorAccountIndex, nftBefore.CreatorAccountIndex)
 	IsVariableEqual(api, flag, tx.CreatorTreasuryRate, nftBefore.CreatorTreasuryRate)
 	isOwner := api.And(api.IsZero(api.Sub(tx.AccountIndex, nftBefore.OwnerAccountIndex)), flag)
@@ -2490,6 +2502,7 @@ func VerifyFullExitNftTx(
 	tx.NftContentHash = api.Select(isOwner, tx.NftContentHash, 0)
 	tx.NftL1Address = api.Select(isOwner, tx.NftL1Address, 0)
 	tx.NftL1TokenId = api.Select(isOwner, tx.NftL1TokenId, 0)
+	return pubData
 }
 ```
 
@@ -2502,30 +2515,39 @@ func VerifyFullExitNftTx(
 Register an ZNS account which is an ENS like domain for layer-1 and a short account name for your layer-2 account.
 
 ```js
-function registerZNS(string calldata _name, address _owner, bytes32 _zecreyPubKey) external nonReentrant
+function registerZNS(string calldata _name, address _owner, bytes32 _zecreyPubKeyX, bytes32 _zecreyPubKeyY) external payable nonReentrant
 ```
 
 - `_name`: your favor account name
 - `_owner`: account name layer-1 owner address
-- `_zecreyPubKey`: zecrey layer-2 public key
+- `_zecreyPubKeyX`: zecrey layer-2 public key X
+- `_zecreyPubKeyY`: zecrey layer-2 public key Y
 
 #### CreatePair
 
 Create a trading pair for layer-2.
 
 ```js
-function createPair(address _assetAAddr, address _assetBAddr) external nonReentrant
+function createPair(address _tokenA, address _tokenB) external
 ```
 
-- `_assetAAddr`: asset A address
-- `_assetBAddr`: asset B address
+- `_tokenA`: asset A address
+- `_tokenB`: asset B address
 
 #### UpdatePairRate
 
 update a trading pair rate for layer-2:
 
 ```js
-function updatePairRate(address _assetAAddr, address _assetBAddr, uint16 _feeRate, uint32 _treasuryAccountIndex, uint16 _treasuryRate) external nonReentrant
+struct PairInfo {
+    address tokenA;
+    address tokenB;
+    uint16 feeRate;
+    uint32 treasuryAccountIndex;
+    uint16 treasuryRate;
+}
+
+function updatePairRate(PairInfo memory _pairInfo) external
 ```
 
 - `_assetAAddr`: asset A address
@@ -2580,7 +2602,11 @@ function withdrawPendingBalance(
 
 Withdraw NFT to L1
 
-// TODO
+```js
+function withdrawPendingNFTBalance(uint40 _nftIndex) external
+```
+
+- `_nftIndex`: nft index
 
 #### Censorship resistance
 
@@ -2617,7 +2643,7 @@ Withdraws token from Rollup to L1 in case of desert mode. User must provide proo
 Submit committed block data. Only active validator can make it. Onchain operations will be checked on contract and fulfilled on block verification.
 
 ```js
-struct BlockHeader {
+struct StoredBlockInfo {
     uint32 blockNumber;
     uint64 priorityOperations;
     bytes32 pendingOnchainOperationsHash;
@@ -2635,14 +2661,13 @@ struct CommitBlockInfo {
 }
 
 function commitBlocks(
-    BlockHeader memory _lastCommittedBlockData,
+    StoredBlockInfo memory _lastCommittedBlockData,
     CommitBlockInfo[] memory _newBlocksData
 )
 external
-nonReentrant
 ```
 
-`BlockHeader`: block data that we store on BNB Chain. We store hash of this structure in storage and pass it in tx arguments every time we need to access any of its field.
+`StoredBlockInfo`: block data that we store on BNB Chain. We store hash of this structure in storage and pass it in tx arguments every time we need to access any of its field.
 
 - `blockNumber`: rollup block number
 - `priorityOperations`: priority operations count
@@ -2664,20 +2689,20 @@ nonReentrant
 - `_lastCommittedBlockData`: last committed block header
 - `_newBlocksData`: pending commit blocks
 
-##### Verify blocks
+##### Verify and execute blocks
 
 Submit proofs of blocks and make it verified onchain. Only active validator can make it. This block onchain operations will be fulfilled.
 
 ```js
-struct VerifyBlockInfo {
-    BlockHeader blockHeader;
-    bytes[] pendingOnchainOpsPubdata;
+struct VerifyAndExecuteBlockInfo {
+    StoredBlockInfo blockHeader;
+    bytes[] pendingOnchainOpsPubData;
 }
 
-function verifyBlocks(VerifyBlockInfo[] memory _blocks, uint256[] memory _proofs) external nonReentrant
+function verifyAndExecuteBlocks(VerifyAndExecuteBlockInfo[] memory _blocks, uint256[] memory _proofs) external
 ```
 
-`VerifyBlockInfo`: block data that is used for verifying blocks
+`VerifyAndExecuteBlockInfo`: block data that is used for verifying blocks
 
 - `blockHeader`: related block header
 - `pendingOnchainOpsPubdata`: public data of pending onchain operations
@@ -2697,15 +2722,50 @@ function activateDesertMode() public returns (bool)
 
 #### Revert blocks
 
-// TODO
-
 Revert blocks that were not verified before deadline determined by `EXPECT_VERIFICATION_IN` constant. The caller must be valid operator.
 
 ```js
-function revertBlocks(BlockHeader[] memory _blocksToRevert) external
+function revertBlocks(StoredBlockInfo[] memory _blocksToRevert) external
 ```
 
 - `_blocksToRevert`: committed blocks to revert in reverse order starting from last committed.
+
+#### Set default NFT factory
+
+Set default NFT factory, which will be used for withdrawing NFT by default
+
+```js
+function setDefaultNFTFactory(NFTFactory _factory) external
+```
+
+- `_factory`: NFT factory address
+
+#### Register NFT factory
+
+Register NFT factory, which will be used for withdrawing NFT.
+
+```js
+function registerNFTFactory(
+    string calldata _creatorAccountName,
+    uint32 _collectionId,
+    NFTFactory _factory
+) external
+```
+
+- `_creatorAccountName`: NFT creator account name
+- `_collectionId`: Collection id in the layer-2
+- `_factory`: Address of NFTFactory
+
+#### Get NFT factory for creator
+
+Get NFT factory which will be used for withdrawing NFT for corresponding creator
+
+```js
+function getNFTFactory(bytes32 _creatorAccountNameHash, uint32 _collectionId) public view returns (address)
+```
+
+- `_creatorAccountNameHash`: Creator account name hash
+- `_collectionId`: Collection id
 
 ### Governance contract
 
@@ -2785,31 +2845,6 @@ function validateAssetAddress(address _assetAddr) external view returns (uint16)
 - `_assetAddr`: Asset address
 
 Returns: asset id.
-
-#### Set default NFT factory
-
-// TODO
-
-Register factory, which will be use for withdrawing NFT by default
-
-```js
-function setDefaultNFTFactory(address _factory)
-```
-
-- `_factory`: NFT factory address
-
-#### Get NFT factory for creator
-
-// TODO
-
-Get NFT factory which will be used for withdrawing NFT for corresponding creator
-
-```js
-function getNFTFactory(uint32 _creatorAccountId, address _creatorAddress)
-```
-
-- `_creatorAccountId`: Creator account id
-- `_creatorAddress`: Creator address
 
 ### Asset Governance contract
 
