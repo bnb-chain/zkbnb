@@ -20,6 +20,7 @@ package util
 import (
 	"errors"
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
+	"github.com/zecrey-labs/zecrey-crypto/util"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
@@ -115,7 +116,8 @@ func ComputeDelta(
 */
 func ComputeInputPrice(x *big.Int, y *big.Int, inputX *big.Int, feeRate int64) *big.Int {
 	rFeeR := big.NewInt(FeeRateBase - feeRate)
-	return ffmath.Div(ffmath.Multiply(rFeeR, ffmath.Multiply(inputX, y)), ffmath.Add(ffmath.Multiply(big.NewInt(FeeRateBase), x), ffmath.Multiply(rFeeR, inputX)))
+	res, _ := util.CleanPackedAmount(ffmath.Div(ffmath.Multiply(rFeeR, ffmath.Multiply(inputX, y)), ffmath.Add(ffmath.Multiply(big.NewInt(FeeRateBase), x), ffmath.Multiply(rFeeR, inputX))))
+	return res
 }
 
 /*
@@ -123,5 +125,6 @@ func ComputeInputPrice(x *big.Int, y *big.Int, inputX *big.Int, feeRate int64) *
 */
 func ComputeOutputPrice(x *big.Int, y *big.Int, inputY *big.Int, feeRate int64) *big.Int {
 	rFeeR := big.NewInt(FeeRateBase - feeRate)
-	return ffmath.Add(ffmath.Div(ffmath.Multiply(big.NewInt(FeeRateBase), ffmath.Multiply(x, inputY)), ffmath.Multiply(rFeeR, ffmath.Sub(y, inputY))), big.NewInt(1))
+	res, _ := util.CleanPackedAmount(ffmath.Add(ffmath.Div(ffmath.Multiply(big.NewInt(FeeRateBase), ffmath.Multiply(x, inputY)), ffmath.Multiply(rFeeR, ffmath.Sub(y, inputY))), big.NewInt(1)), )
+	return  res
 }
