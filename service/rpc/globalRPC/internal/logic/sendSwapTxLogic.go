@@ -66,7 +66,6 @@ func (l *SendTxLogic) sendSwapTx(rawTxInfo string) (txId string, err error) {
 		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetBAmountDelta, err)
 		return "", err
 	}
-
 	err = util.CheckRequestParam(util.TypeAssetId, reflect.ValueOf(txInfo.AssetAId))
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendSwapTx] err: invalid assetAId %v", txInfo.AssetAId)
