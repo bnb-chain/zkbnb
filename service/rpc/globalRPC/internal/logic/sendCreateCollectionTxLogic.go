@@ -1,25 +1,8 @@
-/*
- * Copyright © 2021 Zecrey Protocol
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package logic
 
 import (
+	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"reflect"
 	"strconv"
 	"time"
@@ -33,62 +16,70 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-func (l *SendTxLogic) sendCreateCollectionTx(rawTxInfo string) (txId string, err error) {
-	// parse transfer tx info
-	txInfo, err := commonTx.ParseCreateCollectionTxInfo(rawTxInfo)
-	if err != nil {
-		errInfo := fmt.Sprintf("[sendCreateCollectionTx.ParseCreateCollectionTxInfo] %s", err.Error())
-		logx.Error(errInfo)
-		return "", errors.New(errInfo)
+type SendCreateCollectionTxLogic struct {
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
+	logx.Logger
+	commglobalmap commglobalmap.Commglobalmap
+}
+
+func NewSendCreateCollectionTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendCreateCollectionTxLogic {
+	return &SendCreateCollectionTxLogic{
+		ctx:           ctx,
+		svcCtx:        svcCtx,
+		Logger:        logx.WithContext(ctx),
+		commglobalmap: commglobalmap.New(svcCtx),
 	}
-	/*
-		Check Params
-	*/
-	// check param: from account index
+}
+
+func (l *SendCreateCollectionTxLogic) SendCreateCollectionTx(in *globalRPCProto.ReqSendCreateCollectionTx) (*globalRPCProto.RespSendCreateCollectionTx, error) {
+	txInfo, err := commonTx.ParseCreateCollectionTxInfo(in.TxInfo)
+	if err != nil {
+		logx.Errorf("[ParseCreateCollectionTxInfo] err:%v", err)
+		return nil, err
+	}
 	err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.AccountIndex))
 	if err != nil {
-		errInfo := fmt.Sprintf("[sendCreateCollectionTx] err: invalid accountIndex %v", txInfo.AccountIndex)
-		return "", l.HandleCreateFailCreateCollectionTx(txInfo, errors.New(errInfo))
+		logx.Errorf("[CheckRequestParam] err:%v", err)
+		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
 	}
-	// check param: to account index
 	err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.GasAccountIndex))
 	if err != nil {
-		errInfo := fmt.Sprintf("[sendCreateCollectionTx] err: invalid accountIndex %v", txInfo.GasAccountIndex)
-		return "", l.HandleCreateFailCreateCollectionTx(txInfo, errors.New(errInfo))
+		logx.Errorf("[CheckRequestParam] err:%v", err)
+		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
 	}
-	// check gas account index
 	gasAccountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
 	if err != nil {
-		logx.Errorf("[sendCreateCollectionTx] unable to get sysconfig by name: %s", err.Error())
-		return "", l.HandleCreateFailCreateCollectionTx(txInfo, err)
+		logx.Errorf("[CheckRequestParam] err:%v", err)
+		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
 	}
 	gasAccountIndex, err := strconv.ParseInt(gasAccountIndexConfig.Value, 10, 64)
 	if err != nil {
-		return "", l.HandleCreateFailCreateCollectionTx(txInfo, errors.New("[sendCreateCollectionTx] unable to parse big int"))
+		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
 	}
 	if gasAccountIndex != txInfo.GasAccountIndex {
 		logx.Errorf("[sendCreateCollectionTx] invalid gas account index")
-		return "", l.HandleCreateFailCreateCollectionTx(txInfo, errors.New("[sendCreateCollectionTx] invalid gas account index"))
+		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
 	}
-
-	// check expired at
 	now := time.Now().UnixMilli()
 	if txInfo.ExpiredAt < now {
 		logx.Errorf("[sendCreateCollectionTx] invalid time stamp")
-		return "", l.HandleCreateFailCreateCollectionTx(txInfo, errors.New("[sendCreateCollectionTx] invalid time stamp"))
+		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
 	}
-
 	var (
 		accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
 	)
 	accountInfoMap[txInfo.AccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.AccountIndex)
 	if err != nil {
 		logx.Errorf("[sendCreateCollectionTx] unable to get account info: %s", err.Error())
-		return "", l.HandleCreateFailCreateCollectionTx(txInfo, err)
+		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
 	}
 	// get account info by gas index
 	if accountInfoMap[txInfo.GasAccountIndex] == nil {
@@ -99,33 +90,21 @@ func (l *SendTxLogic) sendCreateCollectionTx(rawTxInfo string) (txId string, err
 			txInfo.GasAccountIndex)
 		if err != nil {
 			logx.Errorf("[sendCreateCollectionTx] unable to get account info: %s", err.Error())
-			return "", l.HandleCreateFailCreateCollectionTx(txInfo, err)
+			return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
 		}
 	}
 	txInfo.CollectionId = accountInfoMap[txInfo.AccountIndex].CollectionNonce
 	var (
 		txDetails []*mempool.MempoolTxDetail
 	)
-	// verify transfer tx
-	txDetails, err = txVerification.VerifyCreateCollectionTxInfo(
-		accountInfoMap,
-		txInfo,
-	)
+	txDetails, err = txVerification.VerifyCreateCollectionTxInfo(accountInfoMap, txInfo)
 	if err != nil {
-		return "", l.HandleCreateFailCreateCollectionTx(txInfo, err)
+		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
 	}
-
-	/*
-		Check tx details
-	*/
-
-	/*
-		Create Mempool Transaction
-	*/
 	// write into mempool
 	txInfoBytes, err := json.Marshal(txInfo)
 	if err != nil {
-		return "", l.HandleCreateFailCreateCollectionTx(txInfo, err)
+		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
 	}
 	txId, mempoolTx := ConstructMempoolTx(
 		commonTx.TxTypeCreateCollection,
@@ -145,36 +124,24 @@ func (l *SendTxLogic) sendCreateCollectionTx(rawTxInfo string) (txId string, err
 	)
 	err = CreateMempoolTx(mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)
 	if err != nil {
-		return "", l.HandleCreateFailCreateCollectionTx(txInfo, err)
+		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
 	}
-	return txId, nil
+	collectionId, err := strconv.ParseInt(txId, 10, 64)
+	if err != nil {
+		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
+	}
+	return &globalRPCProto.RespSendCreateCollectionTx{CollectionId: collectionId}, nil
 }
 
-func (l *SendTxLogic) HandleCreateFailCreateCollectionTx(txInfo *commonTx.CreateCollectionTxInfo, err error) error {
-	errCreate := l.CreateFailCreateCollectionTx(txInfo, err.Error())
-	if errCreate != nil {
-		logx.Error("[sendtransfertxlogic.HandleCreateFailCreateCollectionTx] %s", errCreate.Error())
-		return errCreate
-	} else {
-		errInfo := fmt.Sprintf("[sendtransfertxlogic.HandleCreateFailCreateCollectionTx] %s", err.Error())
-		logx.Error(errInfo)
-		return errors.New(errInfo)
-	}
-}
-
-func (l *SendTxLogic) CreateFailCreateCollectionTx(info *commonTx.CreateCollectionTxInfo, extraInfo string) error {
-	txHash := util.RandomUUID()
-	nativeAddress := "0x00"
+func (l *SendCreateCollectionTxLogic) createFailCreateCollectionTx(info *commonTx.CreateCollectionTxInfo, extraInfo string) error {
 	txInfo, err := json.Marshal(info)
 	if err != nil {
-		errInfo := fmt.Sprintf("[sendtxlogic.CreateFailCreateCollectionTx] %s", err.Error())
-		logx.Error(errInfo)
-		return errors.New(errInfo)
+		logx.Errorf("[Marshal] err:%v", err)
+		return err
 	}
-	// write into fail tx
 	failTx := &tx.FailTx{
 		// transaction id, is primary key
-		TxHash: txHash,
+		TxHash: util.RandomUUID(),
 		// transaction type
 		TxType: commonTx.TxTypeCreateCollection,
 		// tx fee
@@ -190,7 +157,7 @@ func (l *SendTxLogic) CreateFailCreateCollectionTx(info *commonTx.CreateCollecti
 		// tx amount
 		TxAmount: commonConstant.NilAssetAmountStr,
 		// layer1 address
-		NativeAddress: nativeAddress,
+		NativeAddress: "0x00",
 		// tx proof
 		TxInfo: string(txInfo),
 		// extra info, if tx fails, show the error info
@@ -198,12 +165,5 @@ func (l *SendTxLogic) CreateFailCreateCollectionTx(info *commonTx.CreateCollecti
 		// native memo info
 		Memo: "",
 	}
-
-	err = l.svcCtx.FailTxModel.CreateFailTx(failTx)
-	if err != nil {
-		errInfo := fmt.Sprintf("[sendtxlogic.CreateFailCreateCollectionTx] %s", err.Error())
-		logx.Error(errInfo)
-		return errors.New(errInfo)
-	}
-	return nil
+	return l.svcCtx.FailTxModel.CreateFailTx(failTx)
 }
