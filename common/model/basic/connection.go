@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	// dsn = "host=8.210.214.159 user=postgres password=ZecreyProtocolDB@123 dbname=zecrey port=5432 sslmode=disable"
-	dsn        = "host=localhost user=postgres password=ZecreyProtocolDB@123 dbname=zecreylegend port=5432 sslmode=disable"
+	dsn = "host=34.122.163.215 user=postgres password=zecreyLegendTest@ dbname=zecreylegend port=5432 sslmode=disable"
+	//dsn        = "host=localhost user=postgres password=ZecreyProtocolDB@123 dbname=zecreylegend port=5432 sslmode=disable"
 	DB, _      = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	DbInfo, _  = DB.DB()
 	Connection = sqlx.NewSqlConnFromDB(DbInfo)

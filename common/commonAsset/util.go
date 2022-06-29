@@ -19,6 +19,7 @@ package commonAsset
 
 import (
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
+	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"math/big"
 )
 
@@ -34,5 +35,6 @@ func ComputeSLp(
 	l := ffmath.Multiply(ffmath.Sub(kCurrent, kLast), big.NewInt(RateBase))
 	r := ffmath.Multiply(ffmath.Sub(ffmath.Multiply(big.NewInt(RateBase), ffmath.Div(big.NewInt(feeRate), big.NewInt(treasuryRate))), big.NewInt(RateBase)), kCurrent)
 	r = ffmath.Add(r, ffmath.Multiply(big.NewInt(RateBase), kLast))
-	return ffmath.Div(l, r)
+	res, _ := util.CleanPackedAmount(ffmath.Div(l, r))
+	return res
 }
