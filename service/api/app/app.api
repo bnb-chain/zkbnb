@@ -38,12 +38,12 @@ type AccountAsset {
 // GetAccountStatusByAccountPk
 type (
 	ReqGetAccountStatusByAccountPk {
-		AccountPk string `json:"account_pk"`
+		AccountPk string `form:"account_pk"`
 	}
 	RespGetAccountStatusByAccountPk {
 		AccountStatus int64  `json:"account_status"`
 		AccountIndex  int64  `json:"account_index"`
-		AccountName   string `form:"account_name"`
+		AccountName   string `json:"account_name"`
 	}
 )
 
@@ -63,7 +63,7 @@ type (
 // getAccountInfoByAccountIndex
 type (
 	ReqGetAccountInfoByAccountIndex {
-		AccountIndex int64 `json:"account_index"`
+		AccountIndex int64 `form:"account_index"`
 	}
 	RespGetAccountInfoByAccountIndex {
 		AccountStatus uint32          `json:"account_status"`
@@ -117,10 +117,10 @@ service app-api{
 	get /api/v1/account/getAccountStatusByAccountPk (ReqGetAccountStatusByAccountPk) returns (RespGetAccountStatusByAccountPk)
 	
 	@handler GetAccountInfoByPubKey
-	post /api/v1/account/getAccountInfoByPubKey (ReqGetAccountInfoByPubKey) returns (RespGetAccountInfoByPubKey)
+	get /api/v1/account/getAccountInfoByPubKey (ReqGetAccountInfoByPubKey) returns (RespGetAccountInfoByPubKey)
 	
 	@handler GetAccountInfoByAccountIndex
-	post /api/v1/account/getAccountInfoByAccountIndex (ReqGetAccountInfoByAccountIndex) returns (RespGetAccountInfoByAccountIndex)
+	get /api/v1/account/getAccountInfoByAccountIndex (ReqGetAccountInfoByAccountIndex) returns (RespGetAccountInfoByAccountIndex)
 	
 	@handler GetAccountStatusByAccountName
 	get /api/v1/account/getAccountStatusByAccountName (ReqGetAccountStatusByAccountName) returns (RespGetAccountStatusByAccountName)
@@ -205,8 +205,7 @@ service app-api{
 
 // GetLayer2BasicInfo
 type (
-	ReqGetLayer2BasicInfo struct{}
-
+	ReqGetLayer2BasicInfo  struct{}
 	RespGetLayer2BasicInfo {
 		BlockCommitted             int64    `json:"block_committed"`
 		BlockVerified              int64    `json:"block_verified"`
@@ -601,6 +600,26 @@ type (
 	}
 )
 
+// SendCreateCollectionTx
+type (
+	ReqSendCreateCollectionTx {
+		TxInfo string `form:"tx_info"`
+	}
+	RespSendCreateCollectionTx {
+		CollectionId int64 `json:"collection_id"`
+	}
+)
+
+// SendMintNftTx
+type (
+	ReqSendMintNftTx {
+		TxInfo string `form:"tx_info"`
+	}
+	RespSendMintNftTx {
+		NftIndex int64 `json:"nft_index"`
+	}
+)
+
 @server(
 	group: transaction
 )
@@ -618,13 +637,10 @@ service app-api{
 	get /api/v1/tx/getTxsByAccountName (ReqGetTxsByAccountName) returns (RespGetTxsByAccountName)
 	
 	@handler GetTxsByPubKey
-	post /api/v1/tx/getTxsByPubKey  (ReqGetTxsByPubKey) returns (RespGetTxsByPubKey)
+	get /api/v1/tx/getTxsByPubKey  (ReqGetTxsByPubKey) returns (RespGetTxsByPubKey)
 	
 	@handler GetTxByHash
 	get /api/v1/tx/getTxByHash (ReqGetTxByHash) returns (RespGetTxByHash)
-	
-	@handler SendTx
-	post /api/v1/tx/sendTx  (ReqSendTx) returns (RespSendTx)
 	
 	@handler GetMempoolTxs
 	get /api/v1/tx/getMempoolTxs (ReqGetMempoolTxs) returns (RespGetMempoolTxs)
@@ -634,6 +650,15 @@ service app-api{
 	
 	@handler GetNextNonce
 	get /api/v1/tx/getNextNonce (ReqGetNextNonce) returns (RespGetNextNonce)
+	
+	@handler SendTx
+	post /api/v1/tx/sendTx  (ReqSendTx) returns (RespSendTx)
+	
+	@handler SendCreateCollectionTx
+	post /api/v1/tx/sendCreateCollectionTx  (ReqSendCreateCollectionTx) returns (RespSendCreateCollectionTx)
+	
+	@handler SendMintNftTx
+	post /api/v1/tx/sendMintNftTx  (ReqSendMintNftTx) returns (RespSendMintNftTx)
 }
 
 /* ========================= Nft =========================*/

@@ -6,18 +6,19 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/globalrpc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
+
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-type SendTxLogic struct {
+type SendMintNftTxLogic struct {
 	logx.Logger
 	ctx       context.Context
 	svcCtx    *svc.ServiceContext
 	globalRpc globalrpc.GlobalRPC
 }
 
-func NewSendTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendTxLogic {
-	return &SendTxLogic{
+func NewSendMintNftTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendMintNftTxLogic {
+	return &SendMintNftTxLogic{
 		Logger:    logx.WithContext(ctx),
 		ctx:       ctx,
 		svcCtx:    svcCtx,
@@ -25,12 +26,11 @@ func NewSendTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendTxLogi
 	}
 }
 
-func (l *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.RespSendTx, err error) {
-	//err := utils.CheckRequestParam(utils.TypeTxType, reflect.ValueOf(req.TxType))
-	txId, err := l.globalRpc.SendTx(req.TxType, req.TxInfo)
+func (l *SendMintNftTxLogic) SendMintNftTx(req *types.ReqSendMintNftTx) (resp *types.RespSendMintNftTx, err error) {
+	nftIndex, err := l.globalRpc.SendMintNftTx(req.TxInfo)
 	if err != nil {
-		logx.Error("[transaction.SendTx] err:%v", err)
+		logx.Error("[transaction.SendMintNftTx] err:%v", err)
 		return nil, err
 	}
-	return &types.RespSendTx{TxId: txId}, nil
+	return &types.RespSendMintNftTx{NftIndex: nftIndex}, nil
 }

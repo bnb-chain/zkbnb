@@ -35,12 +35,12 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: account.GetAccountStatusByAccountPkHandler(serverCtx),
 			},
 			{
-				Method:  http.MethodPost,
+				Method:  http.MethodGet,
 				Path:    "/api/v1/account/getAccountInfoByPubKey",
 				Handler: account.GetAccountInfoByPubKeyHandler(serverCtx),
 			},
 			{
-				Method:  http.MethodPost,
+				Method:  http.MethodGet,
 				Path:    "/api/v1/account/getAccountInfoByAccountIndex",
 				Handler: account.GetAccountInfoByAccountIndexHandler(serverCtx),
 			},
@@ -180,7 +180,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: transaction.GetTxsByAccountNameHandler(serverCtx),
 			},
 			{
-				Method:  http.MethodPost,
+				Method:  http.MethodGet,
 				Path:    "/api/v1/tx/getTxsByPubKey",
 				Handler: transaction.GetTxsByPubKeyHandler(serverCtx),
 			},
@@ -188,11 +188,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/api/v1/tx/getTxByHash",
 				Handler: transaction.GetTxByHashHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodPost,
-				Path:    "/api/v1/tx/sendTx",
-				Handler: transaction.SendTxHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
@@ -208,6 +203,21 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/api/v1/tx/getNextNonce",
 				Handler: transaction.GetNextNonceHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/v1/tx/sendTx",
+				Handler: transaction.SendTxHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/v1/tx/sendCreateCollectionTx",
+				Handler: transaction.SendCreateCollectionTxHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/v1/tx/sendMintNftTx",
+				Handler: transaction.SendMintNftTxHandler(serverCtx),
 			},
 		},
 	)

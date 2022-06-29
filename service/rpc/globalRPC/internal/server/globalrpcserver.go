@@ -50,6 +50,16 @@ func (s *GlobalRPCServer) SendTx(ctx context.Context, in *globalRPCProto.ReqSend
 	return l.SendTx(in)
 }
 
+func (s *GlobalRPCServer) SendCreateCollectionTx(ctx context.Context, in *globalRPCProto.ReqSendCreateCollectionTx) (*globalRPCProto.RespSendCreateCollectionTx, error) {
+	l := logic.NewSendCreateCollectionTxLogic(ctx, s.svcCtx)
+	return l.SendCreateCollectionTx(in)
+}
+
+func (s *GlobalRPCServer) SendMintNftTx(ctx context.Context, in *globalRPCProto.ReqSendMintNftTx) (*globalRPCProto.RespSendMintNftTx, error) {
+	l := logic.NewSendMintNftTxLogic(ctx, s.svcCtx)
+	return l.SendMintNftTx(in)
+}
+
 func (s *GlobalRPCServer) GetNextNonce(ctx context.Context, in *globalRPCProto.ReqGetNextNonce) (*globalRPCProto.RespGetNextNonce, error) {
 	l := logic.NewGetNextNonceLogic(ctx, s.svcCtx)
 	return l.GetNextNonce(in)
