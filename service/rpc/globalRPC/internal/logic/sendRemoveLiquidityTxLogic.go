@@ -49,6 +49,30 @@ func (l *SendTxLogic) sendRemoveLiquidityTx(rawTxInfo string) (txId string, err 
 		return "", errors.New(errInfo)
 	}
 
+	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
+		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		return "", err
+	}
+	if err := util.CheckPackedAmount(txInfo.AssetAMinAmount); err != nil {
+		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetAMinAmount, err)
+		return "", err
+	}
+	if err := util.CheckPackedAmount(txInfo.AssetBMinAmount); err != nil {
+		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetBMinAmount, err)
+		return "", err
+	}
+	if err := util.CheckPackedAmount(txInfo.AssetAAmountDelta); err != nil {
+		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetAAmountDelta, err)
+		return "", err
+	}
+	if err := util.CheckPackedAmount(txInfo.AssetBAmountDelta); err != nil {
+		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetBAmountDelta, err)
+		return "", err
+	}
+	if err := util.CheckPackedAmount(txInfo.TreasuryAmount); err != nil {
+		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.TreasuryAmount, err)
+		return "", err
+	}
 	// check gas account index
 	gasAccountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
 	if err != nil {

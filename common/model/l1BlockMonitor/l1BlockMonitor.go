@@ -20,6 +20,7 @@ package l1BlockMonitor
 import (
 	"errors"
 	"fmt"
+
 	asset "github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2BlockEventMonitor"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2TxEventMonitor"

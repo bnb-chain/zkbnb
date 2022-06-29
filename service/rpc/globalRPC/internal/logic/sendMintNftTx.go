@@ -51,6 +51,10 @@ func (l *SendTxLogic) sendMintNftTx(rawTxInfo string) (txId string, err error) {
 	/*
 		Check Params
 	*/
+	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
+		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		return "", err
+	}
 	if txInfo.NftCollectionId == commonConstant.NilCollectionId {
 		errInfo := fmt.Sprintf("[sendMintNftTx] err: invalid collection id %v", txInfo.NftCollectionId)
 		return "", l.HandleCreateFailMintNftTx(txInfo, errors.New(errInfo))
