@@ -38,7 +38,7 @@ type AccountAsset {
 // GetAccountStatusByAccountPk
 type (
 	ReqGetAccountStatusByAccountPk {
-		AccountPk string `json:"account_pk"`
+		AccountPk string `form:"account_pk"`
 	}
 	RespGetAccountStatusByAccountPk {
 		AccountStatus int64  `json:"account_status"`
