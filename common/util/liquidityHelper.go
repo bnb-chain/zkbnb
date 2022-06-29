@@ -65,6 +65,7 @@ func ComputeRemoveLiquidityAmount(
 		liquidityInfo.FeeRate,
 		liquidityInfo.TreasuryRate,
 	)
+	lpAmount , _ = CleanPackedAmount(lpAmount)
 	poolLp := ffmath.Sub(liquidityInfo.LpAmount, sLp)
 	assetAAmount = ffmath.Multiply(lpAmount, liquidityInfo.AssetA)
 	assetAAmount = ffmath.Div(assetAAmount, poolLp)
