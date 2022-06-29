@@ -49,6 +49,10 @@ func (l *SendMintNftTxLogic) SendMintNftTx(in *globalRPCProto.ReqSendMintNftTx) 
 		logx.Errorf("[ParseMintNftTxInfo] err:%v", err)
 		return nil, err
 	}
+	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
+		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		return nil, err
+	}
 	if txInfo.NftCollectionId == commonConstant.NilCollectionId {
 		return nil, l.createFailMintNftTx(txInfo, "nft collection id is nil")
 	}

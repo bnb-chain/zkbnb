@@ -50,6 +50,22 @@ func (l *SendTxLogic) sendSwapTx(rawTxInfo string) (txId string, err error) {
 	/*
 		Check Params
 	*/
+	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
+		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		return "", err
+	}
+	if err := util.CheckPackedAmount(txInfo.AssetAAmount); err != nil {
+		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetAAmount, err)
+		return "", err
+	}
+	if err := util.CheckPackedAmount(txInfo.AssetBMinAmount); err != nil {
+		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetBMinAmount, err)
+		return "", err
+	}
+	if err := util.CheckPackedAmount(txInfo.AssetBAmountDelta); err != nil {
+		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetBAmountDelta, err)
+		return "", err
+	}
 	err = util.CheckRequestParam(util.TypeAssetId, reflect.ValueOf(txInfo.AssetAId))
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendSwapTx] err: invalid assetAId %v", txInfo.AssetAId)

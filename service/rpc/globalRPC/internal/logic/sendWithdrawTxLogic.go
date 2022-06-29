@@ -50,6 +50,14 @@ func (l *SendTxLogic) sendWithdrawTx(rawTxInfo string) (txId string, err error) 
 	/*
 		Check Params
 	*/
+	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
+		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		return "", err
+	}
+	if err := util.CheckPackedAmount(txInfo.AssetAmount); err != nil {
+		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetAmount, err)
+		return "", err
+	}
 	err = util.CheckRequestParam(util.TypeAssetId, reflect.ValueOf(txInfo.AssetId))
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendWithdrawTx] err: invalid assetId %v", txInfo.AssetId)

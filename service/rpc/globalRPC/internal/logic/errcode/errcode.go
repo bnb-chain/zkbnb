@@ -10,4 +10,6 @@ var (
 	// error code in [20000,30000) represent code logic error
 	ErrInvalidParam  = zerror.New(20000, "Invalid param")
 	ErrInvalidTxType = zerror.New(20001, "txType error")
+	ErrInvalidGasFee = zerror.New(20002, "Invalid Gas Fee")
+	ErrInvalidAmount = zerror.New(20003, "Invalid Amount")
 )

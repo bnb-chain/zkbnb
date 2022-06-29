@@ -19,6 +19,12 @@ package logic
 import (
 	"encoding/json"
 	"errors"
+	"log"
+	"math"
+	"math/big"
+	"strconv"
+	"time"
+
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
@@ -35,11 +41,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/committer/internal/svc"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
-	"log"
-	"math"
-	"math/big"
-	"strconv"
-	"time"
 )
 
 func CommitterTask(

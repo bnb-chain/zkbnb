@@ -45,6 +45,10 @@ func (l *SendCreateCollectionTxLogic) SendCreateCollectionTx(in *globalRPCProto.
 		logx.Errorf("[ParseCreateCollectionTxInfo] err:%v", err)
 		return nil, err
 	}
+	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
+		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		return nil, err
+	}
 	err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.AccountIndex))
 	if err != nil {
 		logx.Errorf("[CheckRequestParam] err:%v", err)

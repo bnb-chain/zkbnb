@@ -18,8 +18,11 @@
 package util
 
 import (
-	"github.com/zecrey-labs/zecrey-crypto/util"
 	"math/big"
+
+	"github.com/zecrey-labs/zecrey-crypto/ffmath"
+	"github.com/zecrey-labs/zecrey-crypto/util"
+	"github.com/zecrey-labs/zecrey-legend/pkg/zerror"
 )
 
 /*
@@ -42,4 +45,26 @@ func ToPackedFee(amount *big.Int) (res int64, err error) {
 
 func CleanPackedFee(amount *big.Int) (nAmount *big.Int, err error) {
 	return util.CleanPackedFee(amount)
+}
+
+func CheckPackedFee(gassFee *big.Int) (err error) {
+	checkParm, err := util.CleanPackedFee(gassFee)
+	if err != nil {
+		return err
+	}
+	if !ffmath.Equal(gassFee, checkParm) {
+		return zerror.New(20002, "Invalid Gas Fee")
+	}
+	return nil
+}
+
+func CheckPackedAmount(amount *big.Int) (err error) {
+	checkParm, err := util.CleanPackedAmount(amount)
+	if err != nil {
+		return err
+	}
+	if !ffmath.Equal(amount, checkParm) {
+		return zerror.New(20003, "Invalid amount")
+	}
+	return nil
 }
