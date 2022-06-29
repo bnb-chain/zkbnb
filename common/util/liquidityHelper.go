@@ -65,12 +65,12 @@ func ComputeRemoveLiquidityAmount(
 		liquidityInfo.FeeRate,
 		liquidityInfo.TreasuryRate,
 	)
-	lpAmount , _ = CleanPackedAmount(lpAmount)
+	lpAmount, _ = CleanPackedAmount(lpAmount)
 	poolLp := ffmath.Sub(liquidityInfo.LpAmount, sLp)
 	assetAAmount = ffmath.Multiply(lpAmount, liquidityInfo.AssetA)
-	assetAAmount = ffmath.Div(assetAAmount, poolLp)
+	assetAAmount, _ = util.CleanPackedAmount(ffmath.Div(assetAAmount, poolLp))
 	assetBAmount = ffmath.Multiply(lpAmount, liquidityInfo.AssetB)
-	assetBAmount = ffmath.Div(assetBAmount, poolLp)
+	assetBAmount, _ = util.CleanPackedAmount(ffmath.Div(assetBAmount, poolLp))
 	return assetAAmount, assetBAmount
 }
 
@@ -126,6 +126,6 @@ func ComputeInputPrice(x *big.Int, y *big.Int, inputX *big.Int, feeRate int64) *
 */
 func ComputeOutputPrice(x *big.Int, y *big.Int, inputY *big.Int, feeRate int64) *big.Int {
 	rFeeR := big.NewInt(FeeRateBase - feeRate)
-	res, _ := util.CleanPackedAmount(ffmath.Add(ffmath.Div(ffmath.Multiply(big.NewInt(FeeRateBase), ffmath.Multiply(x, inputY)), ffmath.Multiply(rFeeR, ffmath.Sub(y, inputY))), big.NewInt(1)), )
-	return  res
+	res, _ := util.CleanPackedAmount(ffmath.Add(ffmath.Div(ffmath.Multiply(big.NewInt(FeeRateBase), ffmath.Multiply(x, inputY)), ffmath.Multiply(rFeeR, ffmath.Sub(y, inputY))), big.NewInt(1)))
+	return res
 }
