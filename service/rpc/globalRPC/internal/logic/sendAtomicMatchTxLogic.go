@@ -52,6 +52,18 @@ func (l *SendTxLogic) sendAtomicMatchTx(rawTxInfo string) (txId string, err erro
 	/*
 		Check Params
 	*/
+	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
+		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		return "", err
+	}
+	if err := util.CheckPackedAmount(txInfo.CreatorAmount); err != nil {
+		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.CreatorAmount, err)
+		return "", err
+	}
+	if err := util.CheckPackedAmount(txInfo.TreasuryAmount); err != nil {
+		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.TreasuryAmount, err)
+		return "", err
+	}
 	// check param: from account index
 	err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.AccountIndex))
 	if err != nil {

@@ -51,6 +51,10 @@ func (l *SendTxLogic) sendWithdrawNftTx(rawTxInfo string) (txId string, err erro
 	/*
 		Check Params
 	*/
+	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
+		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		return "", err
+	}
 	// check param: from account index
 	err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.AccountIndex))
 	if err != nil {

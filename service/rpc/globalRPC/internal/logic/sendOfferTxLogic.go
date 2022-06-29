@@ -44,6 +44,15 @@ func (l *SendTxLogic) sendOfferTx(rawTxInfo string) (txId string, err error) {
 	/*
 		Check Params
 	*/
+	if err := util.CheckPackedAmount(txInfo.AssetAmount); err != nil {
+		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetAmount, err)
+		return "", err
+	}
+
+	if err := util.CheckPackedAmount(txInfo.AssetAmount); err != nil {
+		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetAmount, err)
+		return "", err
+	}
 	// check param: from account index
 	err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.AccountIndex))
 	if err != nil {
