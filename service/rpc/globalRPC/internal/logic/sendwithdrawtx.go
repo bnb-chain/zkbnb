@@ -19,13 +19,9 @@
 package logic
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 	"reflect"
 	"strconv"
 	"time"
@@ -43,52 +39,35 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-type SendWithdrawTxLogic struct {
-	ctx    context.Context
-	svcCtx *svc.ServiceContext
-	logx.Logger
-	commglobalmap commglobalmap.Commglobalmap
-}
-
-func NewSendWithdrawTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendWithdrawTxLogic {
-	return &SendWithdrawTxLogic{
-		ctx:           ctx,
-		svcCtx:        svcCtx,
-		Logger:        logx.WithContext(ctx),
-		commglobalmap: commglobalmap.New(svcCtx),
-	}
-}
-func (l *SendWithdrawTxLogic) SendWithdrawTx(in *globalRPCProto.ReqSendTxByRawInfo) (respSendTx *globalRPCProto.RespSendTx, err error) {
-	rawTxInfo := in.TxInfo
-	respSendTx = &globalRPCProto.RespSendTx{}
+func (l *SendTxLogic) sendWithdrawTx(rawTxInfo string) (txId string, err error) {
 	// parse withdraw tx info
 	txInfo, err := commonTx.ParseWithdrawTxInfo(rawTxInfo)
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendWithdrawTx.ParseWithdrawTxInfo] %s", err.Error())
 		logx.Error(errInfo)
-		return respSendTx, errors.New(errInfo)
+		return "", errors.New(errInfo)
 	}
 	/*
 		Check Params
 	*/
 	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
 		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
-		return respSendTx, err
+		return "", err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetAmount); err != nil {
 		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetAmount, err)
-		return respSendTx, err
+		return "", err
 	}
 	err = util.CheckRequestParam(util.TypeAssetId, reflect.ValueOf(txInfo.AssetId))
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendWithdrawTx] err: invalid assetId %v", txInfo.AssetId)
-		return respSendTx, l.HandleCreateFailWithdrawTx(txInfo, errors.New(errInfo))
+		return "", l.HandleCreateFailWithdrawTx(txInfo, errors.New(errInfo))
 	}
 
 	err = util.CheckRequestParam(util.TypeAssetId, reflect.ValueOf(txInfo.GasFeeAssetId))
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendWithdrawTx] err: invalid gasFeeAssetId %v", txInfo.GasFeeAssetId)
-		return respSendTx, l.HandleCreateFailWithdrawTx(txInfo, errors.New(errInfo))
+		return "", l.HandleCreateFailWithdrawTx(txInfo, errors.New(errInfo))
 	}
 	l.commglobalmap.DeleteLatestAccountInfoInCache(l.ctx, txInfo.FromAccountIndex)
 	if err != nil {
@@ -98,22 +77,22 @@ func (l *SendWithdrawTxLogic) SendWithdrawTx(in *globalRPCProto.ReqSendTxByRawIn
 	gasAccountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
 	if err != nil {
 		logx.Errorf("[sendWithdrawTx] unable to get sysconfig by name: %s", err.Error())
-		return respSendTx, l.HandleCreateFailWithdrawTx(txInfo, err)
+		return "", l.HandleCreateFailWithdrawTx(txInfo, err)
 	}
 	gasAccountIndex, err := strconv.ParseInt(gasAccountIndexConfig.Value, 10, 64)
 	if err != nil {
-		return respSendTx, l.HandleCreateFailWithdrawTx(txInfo, errors.New("[sendWithdrawTx] unable to parse big int"))
+		return "", l.HandleCreateFailWithdrawTx(txInfo, errors.New("[sendWithdrawTx] unable to parse big int"))
 	}
 	if gasAccountIndex != txInfo.GasAccountIndex {
 		logx.Errorf("[sendWithdrawTx] invalid gas account index")
-		return respSendTx, l.HandleCreateFailWithdrawTx(txInfo, errors.New("[sendWithdrawTx] invalid gas account index"))
+		return "", l.HandleCreateFailWithdrawTx(txInfo, errors.New("[sendWithdrawTx] invalid gas account index"))
 	}
 
 	// check expired at
 	now := time.Now().UnixMilli()
 	if txInfo.ExpiredAt < now {
 		logx.Errorf("[sendWithdrawTx] invalid time stamp")
-		return respSendTx, l.HandleCreateFailWithdrawTx(txInfo, errors.New("[sendWithdrawTx] invalid time stamp"))
+		return "", l.HandleCreateFailWithdrawTx(txInfo, errors.New("[sendWithdrawTx] invalid time stamp"))
 	}
 
 	var (
@@ -122,7 +101,7 @@ func (l *SendWithdrawTxLogic) SendWithdrawTx(in *globalRPCProto.ReqSendTxByRawIn
 	accountInfoMap[txInfo.FromAccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.FromAccountIndex)
 	if err != nil {
 		logx.Errorf("[sendWithdrawTx] unable to get account info: %s", err.Error())
-		return respSendTx, l.HandleCreateFailWithdrawTx(txInfo, err)
+		return "", l.HandleCreateFailWithdrawTx(txInfo, err)
 	}
 	// get account info by gas index
 	if accountInfoMap[txInfo.GasAccountIndex] == nil {
@@ -133,7 +112,7 @@ func (l *SendWithdrawTxLogic) SendWithdrawTx(in *globalRPCProto.ReqSendTxByRawIn
 			txInfo.GasAccountIndex)
 		if err != nil {
 			logx.Errorf("[sendWithdrawTx] unable to get account info: %s", err.Error())
-			return respSendTx, l.HandleCreateFailWithdrawTx(txInfo, err)
+			return "", l.HandleCreateFailWithdrawTx(txInfo, err)
 		}
 	}
 
@@ -149,7 +128,7 @@ func (l *SendWithdrawTxLogic) SendWithdrawTx(in *globalRPCProto.ReqSendTxByRawIn
 		txInfo,
 	)
 	if err != nil {
-		return respSendTx, l.HandleCreateFailWithdrawTx(txInfo, err)
+		return "", l.HandleCreateFailWithdrawTx(txInfo, err)
 	}
 
 	/*
@@ -158,7 +137,7 @@ func (l *SendWithdrawTxLogic) SendWithdrawTx(in *globalRPCProto.ReqSendTxByRawIn
 	// write into mempool
 	txInfoBytes, err := json.Marshal(txInfo)
 	if err != nil {
-		return respSendTx, l.HandleCreateFailWithdrawTx(txInfo, err)
+		return "", l.HandleCreateFailWithdrawTx(txInfo, err)
 	}
 	txId, mempoolTx := ConstructMempoolTx(
 		commonTx.TxTypeWithdraw,
@@ -178,13 +157,13 @@ func (l *SendWithdrawTxLogic) SendWithdrawTx(in *globalRPCProto.ReqSendTxByRawIn
 	)
 	err = CreateMempoolTx(mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)
 	if err != nil {
-		return respSendTx, l.HandleCreateFailWithdrawTx(txInfo, err)
+		return "", l.HandleCreateFailWithdrawTx(txInfo, err)
 	}
-	respSendTx.TxId = txId
-	return respSendTx, nil
+
+	return txId, nil
 }
 
-func (l *SendWithdrawTxLogic) HandleCreateFailWithdrawTx(txInfo *commonTx.WithdrawTxInfo, err error) error {
+func (l *SendTxLogic) HandleCreateFailWithdrawTx(txInfo *commonTx.WithdrawTxInfo, err error) error {
 	errCreate := l.CreateFailWithdrawTx(txInfo, err.Error())
 	if errCreate != nil {
 		logx.Error("[sendwithdrawtxlogic.HandleCreateFailWithdrawTx] %s", errCreate.Error())
@@ -196,7 +175,7 @@ func (l *SendWithdrawTxLogic) HandleCreateFailWithdrawTx(txInfo *commonTx.Withdr
 	}
 }
 
-func (l *SendWithdrawTxLogic) CreateFailWithdrawTx(info *commonTx.WithdrawTxInfo, extraInfo string) error {
+func (l *SendTxLogic) CreateFailWithdrawTx(info *commonTx.WithdrawTxInfo, extraInfo string) error {
 	txHash := util.RandomUUID()
 	txFeeAssetId := info.AssetId
 	assetId := info.AssetId

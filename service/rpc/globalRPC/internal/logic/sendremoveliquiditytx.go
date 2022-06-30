@@ -17,13 +17,9 @@
 package logic
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 	"math/big"
 	"strconv"
 	"time"
@@ -42,61 +38,44 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-type SendRemoveLiquidityTxLogic struct {
-	ctx    context.Context
-	svcCtx *svc.ServiceContext
-	logx.Logger
-	commglobalmap commglobalmap.Commglobalmap
-}
+func (l *SendTxLogic) sendRemoveLiquidityTx(rawTxInfo string) (txId string, err error) {
 
-func NewSendRemoveLiquidityTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendRemoveLiquidityTxLogic {
-	return &SendRemoveLiquidityTxLogic{
-		ctx:           ctx,
-		svcCtx:        svcCtx,
-		Logger:        logx.WithContext(ctx),
-		commglobalmap: commglobalmap.New(svcCtx),
-	}
-}
-
-func (l *SendRemoveLiquidityTxLogic) SendRemoveLiquidityTx(in *globalRPCProto.ReqSendTxByRawInfo) (respSendTx *globalRPCProto.RespSendTx, err error) {
-	rawTxInfo := in.TxInfo
-	respSendTx = &globalRPCProto.RespSendTx{}
 	// parse removeliquidity tx info
 	txInfo, err := commonTx.ParseRemoveLiquidityTxInfo(rawTxInfo)
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendRemoveLiquidityTx] => [commonTx.ParseRemoveLiquidityTxInfo] : %s. invalid rawTxInfo %s",
 			err.Error(), rawTxInfo)
 		logx.Error(errInfo)
-		return respSendTx, errors.New(errInfo)
+		return "", errors.New(errInfo)
 	}
 
 	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
 		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
-		return respSendTx, err
+		return "", err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetAMinAmount); err != nil {
 		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetAMinAmount, err)
-		return respSendTx, err
+		return "", err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetBMinAmount); err != nil {
 		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetBMinAmount, err)
-		return respSendTx, err
+		return "", err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetAAmountDelta); err != nil {
 		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetAAmountDelta, err)
-		return respSendTx, err
+		return "", err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetBAmountDelta); err != nil {
 		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetBAmountDelta, err)
-		return respSendTx, err
+		return "", err
 	}
 	if err := util.CheckPackedAmount(txInfo.TreasuryAmount); err != nil {
 		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.TreasuryAmount, err)
-		return respSendTx, err
+		return "", err
 	}
 	if err := util.CheckPackedAmount(txInfo.KLast); err != nil {
 		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.KLast, err)
-		return respSendTx, err
+		return "", err
 	}
 	l.commglobalmap.DeleteLatestAccountInfoInCache(l.ctx, txInfo.FromAccountIndex)
 	if err != nil {
@@ -106,22 +85,22 @@ func (l *SendRemoveLiquidityTxLogic) SendRemoveLiquidityTx(in *globalRPCProto.Re
 	gasAccountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
 	if err != nil {
 		logx.Errorf("[sendRemoveLiquidityTx] unable to get sysconfig by name: %s", err.Error())
-		return respSendTx, l.HandleCreateFailRemoveLiquidityTx(txInfo, err)
+		return "", l.HandleCreateFailRemoveLiquidityTx(txInfo, err)
 	}
 	gasAccountIndex, err := strconv.ParseInt(gasAccountIndexConfig.Value, 10, 64)
 	if err != nil {
-		return respSendTx, l.HandleCreateFailRemoveLiquidityTx(txInfo, errors.New("[sendRemoveLiquidityTx] unable to parse big int"))
+		return "", l.HandleCreateFailRemoveLiquidityTx(txInfo, errors.New("[sendRemoveLiquidityTx] unable to parse big int"))
 	}
 	if gasAccountIndex != txInfo.GasAccountIndex {
 		logx.Errorf("[sendRemoveLiquidityTx] invalid gas account index")
-		return respSendTx, l.HandleCreateFailRemoveLiquidityTx(txInfo, errors.New("[sendRemoveLiquidityTx] invalid gas account index"))
+		return "", l.HandleCreateFailRemoveLiquidityTx(txInfo, errors.New("[sendRemoveLiquidityTx] invalid gas account index"))
 	}
 
 	// check expired at
 	now := time.Now().UnixMilli()
 	if txInfo.ExpiredAt < now {
 		logx.Errorf("[sendRemoveLiquidityTx] invalid time stamp")
-		return respSendTx, l.HandleCreateFailRemoveLiquidityTx(txInfo, errors.New("[sendRemoveLiquidityTx] invalid time stamp"))
+		return "", l.HandleCreateFailRemoveLiquidityTx(txInfo, errors.New("[sendRemoveLiquidityTx] invalid time stamp"))
 	}
 
 	var (
@@ -138,7 +117,7 @@ func (l *SendRemoveLiquidityTxLogic) SendRemoveLiquidityTx(in *globalRPCProto.Re
 	)
 	if err != nil {
 		logx.Errorf("[sendRemoveLiquidityTx] unable to get latest liquidity info for write: %s", err.Error())
-		return respSendTx, l.HandleCreateFailRemoveLiquidityTx(txInfo, err)
+		return "", l.HandleCreateFailRemoveLiquidityTx(txInfo, err)
 	}
 	defer redisLock.Release()
 
@@ -150,7 +129,7 @@ func (l *SendRemoveLiquidityTxLogic) SendRemoveLiquidityTx(in *globalRPCProto.Re
 		liquidityInfo.LpAmount == nil ||
 		liquidityInfo.LpAmount.Cmp(big.NewInt(0)) == 0 {
 		logx.Errorf("[sendRemoveLiquidityTx] invalid params")
-		return respSendTx, errors.New("[sendRemoveLiquidityTx] invalid params")
+		return "", errors.New("[sendRemoveLiquidityTx] invalid params")
 	}
 
 	var (
@@ -162,13 +141,13 @@ func (l *SendRemoveLiquidityTxLogic) SendRemoveLiquidityTx(in *globalRPCProto.Re
 	)
 	if err != nil {
 		logx.Errorf("[sendRemoveLiquidityTx] unable to compute lp portion: %s", err.Error())
-		return respSendTx, err
+		return "", err
 	}
 	if assetAAmount.Cmp(txInfo.AssetAMinAmount) < 0 || assetBAmount.Cmp(txInfo.AssetBMinAmount) < 0 {
-		errInfo := fmt.Sprintf("[logic.sendRemoveLiquidityTx] less than MinDelta: %s:%s/%s:%s",
+		errInfo := fmt.Sprintf("[sendRemoveLiquidityTx] less than MinDelta: %s:%s/%s:%s",
 			txInfo.AssetAMinAmount.String(), txInfo.AssetBMinAmount.String(), assetAAmount.String(), assetBAmount.String())
 		logx.Error(errInfo)
-		return respSendTx, errors.New(errInfo)
+		return "", errors.New(errInfo)
 	}
 
 	// add into tx info
@@ -180,7 +159,7 @@ func (l *SendRemoveLiquidityTxLogic) SendRemoveLiquidityTx(in *globalRPCProto.Re
 		accountInfoMap[txInfo.FromAccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.FromAccountIndex)
 		if err != nil {
 			logx.Errorf("[sendRemoveLiquidityTx] unable to get latest account info: %s", err.Error())
-			return respSendTx, err
+			return "", err
 		}
 	}
 	if accountInfoMap[txInfo.GasAccountIndex] == nil {
@@ -191,7 +170,7 @@ func (l *SendRemoveLiquidityTxLogic) SendRemoveLiquidityTx(in *globalRPCProto.Re
 		)
 		if err != nil {
 			logx.Errorf("[sendRemoveLiquidityTx] unable to get latest account info: %s", err.Error())
-			return respSendTx, err
+			return "", err
 		}
 	}
 	if accountInfoMap[liquidityInfo.TreasuryAccountIndex] == nil {
@@ -202,7 +181,7 @@ func (l *SendRemoveLiquidityTxLogic) SendRemoveLiquidityTx(in *globalRPCProto.Re
 		)
 		if err != nil {
 			logx.Errorf("[sendRemoveLiquidityTx] unable to get latest account info: %s", err.Error())
-			return respSendTx, err
+			return "", err
 		}
 	}
 
@@ -215,7 +194,7 @@ func (l *SendRemoveLiquidityTxLogic) SendRemoveLiquidityTx(in *globalRPCProto.Re
 		liquidityInfo,
 		txInfo)
 	if err != nil {
-		return respSendTx, l.HandleCreateFailRemoveLiquidityTx(txInfo, err)
+		return "", l.HandleCreateFailRemoveLiquidityTx(txInfo, err)
 	}
 
 	/*
@@ -224,7 +203,7 @@ func (l *SendRemoveLiquidityTxLogic) SendRemoveLiquidityTx(in *globalRPCProto.Re
 	// write into mempool
 	txInfoBytes, err := json.Marshal(txInfo)
 	if err != nil {
-		return respSendTx, l.HandleCreateFailRemoveLiquidityTx(txInfo, err)
+		return "", l.HandleCreateFailRemoveLiquidityTx(txInfo, err)
 	}
 	txId, mempoolTx := ConstructMempoolTx(
 		commonTx.TxTypeRemoveLiquidity,
@@ -248,19 +227,18 @@ func (l *SendRemoveLiquidityTxLogic) SendRemoveLiquidityTx(in *globalRPCProto.Re
 	_, err = l.svcCtx.RedisConnection.Del(key)
 	if err != nil {
 		logx.Errorf("[sendRemoveLiquidityTx] unable to delete key from redis: %s", err.Error())
-		return respSendTx, l.HandleCreateFailRemoveLiquidityTx(txInfo, err)
+		return "", l.HandleCreateFailRemoveLiquidityTx(txInfo, err)
 	}
 	_, err = l.svcCtx.RedisConnection.Del(key2)
 	if err != nil {
 		logx.Errorf("[sendRemoveLiquidityTx] unable to delete key from redis: %s", err.Error())
-		return respSendTx, l.HandleCreateFailRemoveLiquidityTx(txInfo, err)
+		return "", l.HandleCreateFailRemoveLiquidityTx(txInfo, err)
 	}
 	// insert into mempool
 	err = CreateMempoolTx(mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)
 	if err != nil {
-		return respSendTx, l.HandleCreateFailRemoveLiquidityTx(txInfo, err)
+		return "", l.HandleCreateFailRemoveLiquidityTx(txInfo, err)
 	}
-	respSendTx.TxId = txId
 	// update redis
 	// get latest liquidity info
 	for _, txDetail := range txDetails {
@@ -268,26 +246,26 @@ func (l *SendRemoveLiquidityTxLogic) SendRemoveLiquidityTx(in *globalRPCProto.Re
 			nBalance, err := commonAsset.ComputeNewBalance(commonAsset.LiquidityAssetType, liquidityInfo.String(), txDetail.BalanceDelta)
 			if err != nil {
 				logx.Errorf("[sendAddLiquidityTx] unable to compute new balance: %s", err.Error())
-				return respSendTx, nil
+				return txId, nil
 			}
 			liquidityInfo, err = commonAsset.ParseLiquidityInfo(nBalance)
 			if err != nil {
 				logx.Errorf("[sendAddLiquidityTx] unable to parse liquidity info: %s", err.Error())
-				return respSendTx, nil
+				return txId, nil
 			}
 		}
 	}
 	liquidityInfoBytes, err := json.Marshal(liquidityInfo)
 	if err != nil {
 		logx.Errorf("[sendRemoveLiquidityTx] unable to marshal: %s", err.Error())
-		return respSendTx, nil
+		return txId, nil
 	}
 	_ = l.svcCtx.RedisConnection.Setex(key, string(liquidityInfoBytes), globalmapHandler.LiquidityExpiryTime)
 
-	return respSendTx, nil
+	return txId, nil
 }
 
-func (l *SendRemoveLiquidityTxLogic) HandleCreateFailRemoveLiquidityTx(txInfo *commonTx.RemoveLiquidityTxInfo, err error) error {
+func (l *SendTxLogic) HandleCreateFailRemoveLiquidityTx(txInfo *commonTx.RemoveLiquidityTxInfo, err error) error {
 	errCreate := l.CreateFailRemoveLiquidityTx(txInfo, err.Error())
 	if errCreate != nil {
 		logx.Error("[sendremoveliquiditytxlogic.HandleCreateFailRemoveLiquidityTx] %s", errCreate.Error())
@@ -299,7 +277,7 @@ func (l *SendRemoveLiquidityTxLogic) HandleCreateFailRemoveLiquidityTx(txInfo *c
 	}
 }
 
-func (l *SendRemoveLiquidityTxLogic) CreateFailRemoveLiquidityTx(info *commonTx.RemoveLiquidityTxInfo, extraInfo string) error {
+func (l *SendTxLogic) CreateFailRemoveLiquidityTx(info *commonTx.RemoveLiquidityTxInfo, extraInfo string) error {
 	txHash := util.RandomUUID()
 	txFeeAssetId := info.GasFeeAssetId
 
