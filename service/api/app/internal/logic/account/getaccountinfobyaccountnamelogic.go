@@ -32,7 +32,6 @@ func NewGetAccountInfoByAccountNameLogic(ctx context.Context, svcCtx *svc.Servic
 }
 
 func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *types.ReqGetAccountInfoByAccountName) (*types.RespGetAccountInfoByAccountName, error) {
-
 	if checker.CheckAccountName(req.AccountName) {
 		logx.Errorf("[CheckAccountName] req.AccountName:%v", req.AccountName)
 		return nil, errcode.ErrInvalidParam
@@ -42,22 +41,25 @@ func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *type
 		logx.Errorf("[CheckFormatAccountName] accountName:%v", accountName)
 		return nil, errcode.ErrInvalidParam
 	}
-	account, err := l.account.GetAccountByAccountName(l.ctx, accountName)
+	info, err := l.account.GetAccountByAccountName(l.ctx, accountName)
 	if err != nil {
 		logx.Errorf("[GetAccountByAccountName] accountName:%v, err:%v", accountName, err)
 		return nil, err
 	}
+	account, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(uint32(info.AccountIndex))
+	if err != nil {
+		logx.Errorf("[GetLatestAccountInfoByAccountIndex] err:%v", err)
+		return nil, err
+	}
+	logx.Errorf("[GetLatestAccountInfoByAccountIndex] err:%v", account)
+
 	resp := &types.RespGetAccountInfoByAccountName{
 		AccountIndex: uint32(account.AccountIndex),
 		AccountPk:    account.PublicKey,
+		Nonce:        account.Nonce,
 		Assets:       make([]*types.AccountAsset, 0),
 	}
-	assets, err := l.globalRPC.GetLatestAssetsListByAccountIndex(uint32(account.AccountIndex))
-	if err != nil {
-		logx.Errorf("[GetLatestAssetsListByAccountIndex] err:%v", err)
-		return nil, err
-	}
-	for _, asset := range assets {
+	for _, asset := range account.AccountAsset {
 		resp.Assets = append(resp.Assets, &types.AccountAsset{
 			AssetId:                  asset.AssetId,
 			Balance:                  asset.Balance,
@@ -65,7 +67,5 @@ func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *type
 			OfferCanceledOrFinalized: asset.OfferCanceledOrFinalized,
 		})
 	}
-	resp.AccountIndex = uint32(account.AccountIndex)
-	resp.AccountPk = account.PublicKey
 	return resp, nil
 }

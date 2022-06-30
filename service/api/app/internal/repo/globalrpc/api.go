@@ -18,6 +18,7 @@ type GlobalRPC interface {
 	GetSwapAmount(ctx context.Context, pairIndex, assetId uint64, assetAmount string, isFrom bool) (string, uint32, error)
 	GetNextNonce(accountIndex uint32) (uint64, error)
 	GetLatestAssetsListByAccountIndex(accountIndex uint32) ([]*globalrpc.AssetResult, error)
+	GetLatestAccountInfoByAccountIndex(accountIndex uint32) (*globalrpc.RespGetLatestAccountInfoByAccountIndex, error)
 	GetMaxOfferId(accountIndex uint32) (uint64, error)
 	SendMintNftTx(txInfo string) (int64, error)
 	SendCreateCollectionTx(txInfo string) (int64, error)

@@ -30,24 +30,19 @@ func NewGetAccountInfoByAccountIndexLogic(ctx context.Context, svcCtx *svc.Servi
 }
 
 func (l *GetAccountInfoByAccountIndexLogic) GetAccountInfoByAccountIndex(req *types.ReqGetAccountInfoByAccountIndex) (*types.RespGetAccountInfoByAccountIndex, error) {
-
-	account, err := l.account.GetAccountByAccountIndex(req.AccountIndex)
+	account, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(uint32(req.AccountIndex))
 	if err != nil {
-		logx.Errorf("[GetAccountByAccountIndex] accountName:%v, err:%v", req.AccountIndex, err)
+		logx.Errorf("[GetLatestAccountInfoByAccountIndex] err:%v", err)
 		return nil, err
 	}
 	resp := &types.RespGetAccountInfoByAccountIndex{
 		AccountStatus: uint32(account.Status),
 		AccountName:   account.AccountName,
 		AccountPk:     account.PublicKey,
+		Nonce:         account.Nonce,
 		Assets:        make([]*types.AccountAsset, 0),
 	}
-	assets, err := l.globalRPC.GetLatestAssetsListByAccountIndex(uint32(req.AccountIndex))
-	if err != nil {
-		logx.Errorf("[GetLatestAssetsListByAccountIndex] err:%v", err)
-		return nil, err
-	}
-	for _, asset := range assets {
+	for _, asset := range account.AccountAsset {
 		resp.Assets = append(resp.Assets, &types.AccountAsset{
 			AssetId:                  asset.AssetId,
 			Balance:                  asset.Balance,
