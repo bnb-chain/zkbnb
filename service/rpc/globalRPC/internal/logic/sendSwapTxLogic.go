@@ -71,7 +71,10 @@ func (l *SendTxLogic) sendSwapTx(rawTxInfo string) (txId string, err error) {
 		errInfo := fmt.Sprintf("[sendSwapTx] err: invalid assetAId %v", txInfo.AssetAId)
 		return "", l.HandleCreateFailSwapTx(txInfo, errors.New(errInfo))
 	}
-
+	l.commglobalmap.DeleteLatestAccountInfoInCache(l.ctx, txInfo.FromAccountIndex)
+	if err != nil {
+		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
+	}
 	// check gas account index
 	gasAccountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
 	if err != nil {

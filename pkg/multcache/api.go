@@ -18,6 +18,7 @@ type MultCache interface {
 		query QueryFunc) (interface{}, error)
 	Get(ctx context.Context, key string, value interface{}) (interface{}, error)
 	Set(ctx context.Context, key string, value interface{}, timeOut uint32) error
+	Delete(ctx context.Context, key string) error
 }
 
 func NewGoCache(expiration, cleanupInterval uint32) MultCache {
