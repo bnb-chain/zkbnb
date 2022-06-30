@@ -11,6 +11,7 @@ func initAssetsInfo() []*asset.AssetInfo {
 			AssetSymbol: "BNB",
 			Decimals:    18,
 			Status:      0,
+			IsGasAsset:  asset.IsGasAsset,
 		},
 		//{
 		//	AssetId:     1,
