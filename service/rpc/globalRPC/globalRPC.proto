@@ -188,6 +188,14 @@ message RespGetMaxOfferId{
      uint64 OfferId = 1;
 }
 
+/*
+	Proto Name:  sendTxByRawInfo
+	Description: sendTransactionByRawInfo
+ */
+message ReqSendTxByRawInfo{
+  string TxInfo = 1;
+}
+
 /* ====================== END ====================== */
 
 
@@ -208,6 +216,20 @@ service globalRPC {
   rpc getNextNonce(ReqGetNextNonce) returns (RespGetNextNonce);
   // NFT
   rpc getMaxOfferId(ReqGetMaxOfferId) returns (RespGetMaxOfferId);
+
+  rpc sendAddLiquidityTx(ReqSendTxByRawInfo) returns (RespSendTx);
+  rpc sendAtomicMatchTx(ReqSendTxByRawInfo) returns (RespSendTx);
+  rpc sendCancelOfferTx(ReqSendTxByRawInfo) returns (RespSendTx);
+  rpc sendRemoveLiquidityTx(ReqSendTxByRawInfo) returns (RespSendTx);
+  rpc sendSwapTx(ReqSendTxByRawInfo) returns (RespSendTx);
+  rpc sendTransferNftTx(ReqSendTxByRawInfo) returns (RespSendTx);
+  rpc sendTransferTx(ReqSendTxByRawInfo) returns (RespSendTx);
+  rpc sendWithdrawNftTx(ReqSendTxByRawInfo) returns (RespSendTx);
+  rpc sendWithdrawTx(ReqSendTxByRawInfo) returns (RespSendTx);
+
+
+
+  //
 
 
 
