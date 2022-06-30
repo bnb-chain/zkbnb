@@ -14,7 +14,7 @@
 * limitations under the License.
  */
 
-package logic
+package sendRawTypeTx
 
 import (
 	"context"
@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/logic"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 	"reflect"
@@ -74,14 +75,6 @@ func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(reqSendTx *globalRPCProto.Req
 	*/
 	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
 		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
-		return respSendTx, err
-	}
-	if err := util.CheckPackedAmount(txInfo.CreatorAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.CreatorAmount, err)
-		return respSendTx, err
-	}
-	if err := util.CheckPackedAmount(txInfo.TreasuryAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.TreasuryAmount, err)
 		return respSendTx, err
 	}
 	// check param: from account index
@@ -228,7 +221,7 @@ func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(reqSendTx *globalRPCProto.Req
 	if err != nil {
 		return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, err)
 	}
-	txId, mempoolTx := ConstructMempoolTx(
+	txId, mempoolTx := logic.ConstructMempoolTx(
 		commonTx.TxTypeAtomicMatch,
 		txInfo.GasFeeAssetId,
 		txInfo.GasFeeAssetAmount.String(),
@@ -278,7 +271,7 @@ func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(reqSendTx *globalRPCProto.Req
 		Sig:          common.Bytes2Hex(txInfo.SellOffer.Sig),
 		Status:       nft.OfferFinishedStatus,
 	})
-	err = CreateMempoolTxForAtomicMatch(
+	err = logic.CreateMempoolTxForAtomicMatch(
 		nftExchange,
 		mempoolTx,
 		offers,

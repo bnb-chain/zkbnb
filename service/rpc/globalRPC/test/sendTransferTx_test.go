@@ -24,7 +24,7 @@ import (
 )
 
 var configFile = flag.String("f",
-	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\rpc\\globalRPC\\etc\\globalrpc.yaml", "the config file")
+	"/Users/zhangwei/work/zhangwei/zecrey-legend/service/rpc/globalRPC/etc/config.yaml", "the config file")
 
 func TestSendTransferTx(t *testing.T) {
 	flag.Parse()
