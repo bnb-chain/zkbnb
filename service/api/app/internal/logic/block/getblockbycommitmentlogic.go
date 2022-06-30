@@ -44,10 +44,10 @@ func (l *GetBlockByCommitmentLogic) GetBlockByCommitment(req *types.ReqGetBlockB
 			PendingOnChainOperationsHash:    block.PendingOnChainOperationsHash,
 			PendingOnChainOperationsPubData: block.PendingOnChainOperationsPubData,
 			CommittedTxHash:                 block.CommittedTxHash,
-			CommittedAt:                     block.BlockHeight,
+			CommittedAt:                     block.CommittedAt,
 			VerifiedTxHash:                  block.VerifiedTxHash,
-			VerifiedAt:                      block.BlockHeight,
-			BlockStatus:                     block.BlockHeight,
+			VerifiedAt:                      block.VerifiedAt,
+			BlockStatus:                     block.BlockStatus,
 		},
 	}
 	for _, t := range block.Txs {
