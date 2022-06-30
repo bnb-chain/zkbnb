@@ -114,7 +114,7 @@ func (l *SendCreateCollectionTxLogic) SendCreateCollectionTx(in *globalRPCProto.
 	if err != nil {
 		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
 	}
-	txId, mempoolTx := ConstructMempoolTx(
+	_, mempoolTx := ConstructMempoolTx(
 		commonTx.TxTypeCreateCollection,
 		txInfo.GasFeeAssetId,
 		txInfo.GasFeeAssetAmount.String(),
@@ -134,11 +134,7 @@ func (l *SendCreateCollectionTxLogic) SendCreateCollectionTx(in *globalRPCProto.
 	if err != nil {
 		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
 	}
-	collectionId, err := strconv.ParseInt(txId, 10, 64)
-	if err != nil {
-		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
-	}
-	return &globalRPCProto.RespSendCreateCollectionTx{CollectionId: collectionId}, nil
+	return &globalRPCProto.RespSendCreateCollectionTx{CollectionId: txInfo.CollectionId}, nil
 }
 
 func (l *SendCreateCollectionTxLogic) createFailCreateCollectionTx(info *commonTx.CreateCollectionTxInfo, extraInfo string) error {
