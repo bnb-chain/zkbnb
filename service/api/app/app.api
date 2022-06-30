@@ -569,6 +569,12 @@ type (
 		TxId string `json:"tx_id"`
 	}
 )
+// sendRawTx
+type (
+	ReqSendRawTx {
+		TxInfo string `form:"tx_info"`
+	}
+)
 
 // GetMempoolTxs
 type (
@@ -622,6 +628,95 @@ type (
 		NftIndex int64 `json:"nft_index"`
 	}
 )
+// SendAddLiquidityTx
+type (
+	ReqSendAddLiquidityTx {
+		TxInfo string `form:"tx_info"`
+	}
+	RespSendAddLiquidityTx {
+		TxId string `json:"tx_id"`
+	}
+)
+
+// SendAtomicMatchTx
+type (
+	ReqSendAtomicMatchTx {
+		TxInfo string `form:"tx_info"`
+	}
+	RespSendAtomicMatchTx {
+		TxId string `json:"tx_id"`
+	}
+)
+
+// SendCancelOfferTx
+type (
+	ReqSendCancelOfferTx {
+		TxInfo string `form:"tx_info"`
+	}
+	RespSendCancelOfferTx {
+		TxId string `json:"tx_id"`
+	}
+)
+
+// SendRemoveLiquidityTx
+type (
+	ReqSendRemoveLiquidityTx {
+		TxInfo string `form:"tx_info"`
+	}
+	RespSendRemoveLiquidityTx {
+		TxId string `json:"tx_id"`
+	}
+)
+
+// SendSendSwapTx
+type (
+	ReqSendSwapTx {
+		TxInfo string `form:"tx_info"`
+	}
+	RespSendSwapTx {
+		TxId string `json:"tx_id"`
+	}
+)
+
+// SendTransferNftTx
+type (
+	ReqSendTransferNftTx {
+		TxInfo string `form:"tx_info"`
+	}
+	RespSendTransferNftTx {
+		TxId string `json:"tx_id"`
+	}
+)
+
+// SendTransferTx
+type (
+	ReqSendTransferTx {
+		TxInfo string `form:"tx_info"`
+	}
+	RespSendTransferTx {
+		TxId string `json:"tx_id"`
+	}
+)
+
+// SendWithdrawNftTx
+type (
+	ReqSendWithdrawNftTx {
+		TxInfo string `form:"tx_info"`
+	}
+	RespSendWithdrawNftTx {
+		TxId string `json:"tx_id"`
+	}
+)
+
+// SendWithdrawTx
+type (
+	ReqSendWithdrawTx {
+		TxInfo string `form:"tx_info"`
+	}
+	RespSendWithdrawTx {
+		TxId string `json:"tx_id"`
+	}
+)
 
 @server(
 	group: transaction
@@ -661,7 +756,34 @@ service app-api{
 	post /api/v1/tx/sendCreateCollectionTx  (ReqSendCreateCollectionTx) returns (RespSendCreateCollectionTx)
 	
 	@handler SendMintNftTx
-	post /api/v1/tx/sendMintNftTx  (ReqSendMintNftTx) returns (RespSendMintNftTx)
+	post /api/v1/tx/sendMintNftTx (ReqSendMintNftTx) returns (RespSendMintNftTx)
+	
+	@handler SendAddLiquidityTx
+	post /api/v1/tx/sendAddLiquidityTx (ReqSendAddLiquidityTx) returns (RespSendAddLiquidityTx)
+	
+	@handler SendAtomicMatchTx
+	post /api/v1/tx/sendAtomicMatchTx (ReqSendAtomicMatchTx) returns (RespSendAtomicMatchTx)
+	
+	@handler SendCancelOfferTx
+	post /api/v1/tx/sendCancelOfferTx (ReqSendCancelOfferTx) returns (RespSendCancelOfferTx)
+	
+	@handler SendRemoveLiquidityTx
+	post /api/v1/tx/sendRemoveLiquidityTx (ReqSendRemoveLiquidityTx) returns (RespSendRemoveLiquidityTx)
+	
+	@handler SendSwapTx
+	post /api/v1/tx/sendSwapTx (ReqSendSwapTx) returns (RespSendSwapTx)
+	
+	@handler SendTransferNftTx
+	post /api/v1/tx/sendTransferNftTx (ReqSendTransferNftTx) returns (RespSendTransferNftTx)
+	
+	@handler SendTransferTx
+	post /api/v1/tx/sendTransferTx (ReqSendTransferTx) returns (RespSendTransferTx)
+	
+	@handler SendWithdrawNftTx
+	post /api/v1/tx/sendWithdrawNftTx (ReqSendWithdrawNftTx) returns (RespSendWithdrawNftTx)
+	
+	@handler SendWithdrawTx
+	post /api/v1/tx/sendWithdrawTx (ReqSendWithdrawTx) returns (RespSendWithdrawTx)
 }
 
 /* ========================= Nft =========================*/
