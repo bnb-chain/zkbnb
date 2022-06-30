@@ -19,6 +19,7 @@ package logic
 import (
 	"encoding/json"
 	"errors"
+	"github.com/zecrey-labs/zecrey-legend/common/model/blockForCommit"
 	"log"
 	"math"
 	"math/big"
@@ -121,6 +122,7 @@ func CommitterTask(
 			pendingOnChainOperationsPubData [][]byte
 			pendingOnChainOperationsHash    []byte
 			pendingMempoolTxs               []*MempoolTx
+			pendingDeleteMempoolTxs         []*MempoolTx
 		)
 		// write default string into pending onchain operations hash
 		pendingOnChainOperationsHash = common.FromHex(util.EmptyStringKeccak)
@@ -214,6 +216,7 @@ func CommitterTask(
 				if mempoolTx.ExpiredAt < createdAt {
 					mempoolTx.Status = mempool.FailTxStatus
 					mempoolTx.L2BlockHeight = currentBlockHeight
+					pendingDeleteMempoolTxs = append(pendingDeleteMempoolTxs, mempoolTx)
 					continue
 				}
 			}
@@ -222,7 +225,7 @@ func CommitterTask(
 				if mempoolTx.Nonce != accountMap[mempoolTx.AccountIndex].Nonce+1 {
 					mempoolTx.Status = mempool.FailTxStatus
 					mempoolTx.L2BlockHeight = currentBlockHeight
-					pendingMempoolTxs = append(pendingMempoolTxs, mempoolTx)
+					pendingDeleteMempoolTxs = append(pendingDeleteMempoolTxs, mempoolTx)
 					continue
 					//logx.Errorf("[CommitterTask] invalid nonce")
 					//return errors.New("[CommitterTask] invalid nonce")
@@ -314,7 +317,7 @@ func CommitterTask(
 						// mark this transaction as invalid transaction
 						mempoolTx.Status = mempool.FailTxStatus
 						mempoolTx.L2BlockHeight = currentBlockHeight
-						pendingMempoolTxs = append(pendingMempoolTxs, mempoolTx)
+						pendingDeleteMempoolTxs = append(pendingDeleteMempoolTxs, mempoolTx)
 						continue
 					}
 					accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId] = nAccountAsset
@@ -663,41 +666,43 @@ func CommitterTask(
 		oldStateRoot = finalStateRoot
 		// construct block
 		createAtTime := time.UnixMilli(createdAt)
-		if len(txs) == 0 {
-			logx.Errorf("[CommitterTask] error with txs size")
-			return errors.New("[CommitterTask] error with txs size")
-		}
-		oBlock := &Block{
-			Model: gorm.Model{
-				CreatedAt: createAtTime,
-			},
-			BlockCommitment:              commitment,
-			BlockHeight:                  currentBlockHeight,
-			StateRoot:                    finalStateRoot,
-			PriorityOperations:           priorityOperations,
-			PendingOnChainOperationsHash: common.Bytes2Hex(pendingOnChainOperationsHash),
-			Txs:                          txs,
-			BlockStatus:                  block.StatusPending,
-		}
-		if pendingOnChainOperationsPubData != nil {
-			onChainOperationsPubDataBytes, err := json.Marshal(pendingOnChainOperationsPubData)
+		var (
+			oBlock          *block.Block
+			oBlockForCommit *blockForCommit.BlockForCommit
+		)
+		if len(txs) != 0 {
+			oBlock = &Block{
+				Model: gorm.Model{
+					CreatedAt: createAtTime,
+				},
+				BlockCommitment:              commitment,
+				BlockHeight:                  currentBlockHeight,
+				StateRoot:                    finalStateRoot,
+				PriorityOperations:           priorityOperations,
+				PendingOnChainOperationsHash: common.Bytes2Hex(pendingOnChainOperationsHash),
+				Txs:                          txs,
+				BlockStatus:                  block.StatusPending,
+			}
+			if pendingOnChainOperationsPubData != nil {
+				onChainOperationsPubDataBytes, err := json.Marshal(pendingOnChainOperationsPubData)
+				if err != nil {
+					logx.Errorf("[CommitterTask] unable to marshal on chain operations pub data: %s", err.Error())
+					return err
+				}
+				oBlock.PendingOnChainOperationsPubData = string(onChainOperationsPubDataBytes)
+			}
+			offsetBytes, err := json.Marshal(pubDataOffset)
 			if err != nil {
-				logx.Errorf("[CommitterTask] unable to marshal on chain operations pub data: %s", err.Error())
+				logx.Errorf("[CommitterTask] unable to marshal pub data: %s", err.Error())
 				return err
 			}
-			oBlock.PendingOnChainOperationsPubData = string(onChainOperationsPubDataBytes)
-		}
-		offsetBytes, err := json.Marshal(pubDataOffset)
-		if err != nil {
-			logx.Errorf("[CommitterTask] unable to marshal pub data: %s", err.Error())
-			return err
-		}
-		oBlockForCommit := &BlockForCommit{
-			BlockHeight:       currentBlockHeight,
-			StateRoot:         finalStateRoot,
-			PublicData:        common.Bytes2Hex(pubData),
-			Timestamp:         createdAt,
-			PublicDataOffsets: string(offsetBytes),
+			oBlockForCommit = &BlockForCommit{
+				BlockHeight:       currentBlockHeight,
+				StateRoot:         finalStateRoot,
+				PublicData:        common.Bytes2Hex(pubData),
+				Timestamp:         createdAt,
+				PublicDataOffsets: string(offsetBytes),
+			}
 		}
 
 		// create block for committer
@@ -706,6 +711,7 @@ func CommitterTask(
 			oBlock,
 			oBlockForCommit,
 			pendingMempoolTxs,
+			pendingDeleteMempoolTxs,
 			pendingUpdateAccounts,
 			pendingNewAccountHistory,
 			pendingUpdateLiquidity,
