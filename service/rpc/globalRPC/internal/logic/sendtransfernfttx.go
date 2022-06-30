@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package sendRawTypeTx
+package logic
 
 import (
 	"context"
@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/logic"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 	"reflect"
@@ -201,7 +200,7 @@ func (l *SendTransferNftTxLogic) SendTransferNftTx(in *globalRPCProto.ReqSendTxB
 	if err != nil {
 		return respSendTx, l.HandleCreateFailTransferNftTx(txInfo, err)
 	}
-	txId, mempoolTx := logic.ConstructMempoolTx(
+	txId, mempoolTx := ConstructMempoolTx(
 		commonTx.TxTypeTransferNft,
 		txInfo.GasFeeAssetId,
 		txInfo.GasFeeAssetAmount.String(),
@@ -217,7 +216,7 @@ func (l *SendTransferNftTxLogic) SendTransferNftTx(in *globalRPCProto.ReqSendTxB
 		txInfo.ExpiredAt,
 		txDetails,
 	)
-	err = logic.CreateMempoolTx(mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)
+	err = CreateMempoolTx(mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)
 	if err != nil {
 		return respSendTx, l.HandleCreateFailTransferNftTx(txInfo, err)
 	}

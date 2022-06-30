@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package sendRawTypeTx
+package logic
 
 import (
 	"context"
@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/logic"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 	"math/big"
@@ -174,7 +173,7 @@ func (l *SendCancelOfferTxLogic) SendCancelOfferTx(in *globalRPCProto.ReqSendTxB
 	if err != nil {
 		return respSendTx, l.HandleCreateFailCancelOfferTx(txInfo, err)
 	}
-	txId, mempoolTx := logic.ConstructMempoolTx(
+	txId, mempoolTx := ConstructMempoolTx(
 		commonTx.TxTypeCancelOffer,
 		txInfo.GasFeeAssetId,
 		txInfo.GasFeeAssetAmount.String(),
@@ -211,7 +210,7 @@ func (l *SendCancelOfferTxLogic) SendCancelOfferTx(in *globalRPCProto.ReqSendTxB
 		offerInfo.Status = nft.OfferFinishedStatus
 		isUpdate = true
 	}
-	err = logic.CreateMempoolTxForCancelOffer(
+	err = CreateMempoolTxForCancelOffer(
 		mempoolTx,
 		offerInfo,
 		isUpdate,

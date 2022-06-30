@@ -14,7 +14,7 @@
 * limitations under the License.
  */
 
-package sendRawTypeTx
+package logic
 
 import (
 	"context"
@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/logic"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 	"reflect"
@@ -221,7 +220,7 @@ func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(reqSendTx *globalRPCProto.Req
 	if err != nil {
 		return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, err)
 	}
-	txId, mempoolTx := logic.ConstructMempoolTx(
+	txId, mempoolTx := ConstructMempoolTx(
 		commonTx.TxTypeAtomicMatch,
 		txInfo.GasFeeAssetId,
 		txInfo.GasFeeAssetAmount.String(),
@@ -271,7 +270,7 @@ func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(reqSendTx *globalRPCProto.Req
 		Sig:          common.Bytes2Hex(txInfo.SellOffer.Sig),
 		Status:       nft.OfferFinishedStatus,
 	})
-	err = logic.CreateMempoolTxForAtomicMatch(
+	err = CreateMempoolTxForAtomicMatch(
 		nftExchange,
 		mempoolTx,
 		offers,
