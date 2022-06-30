@@ -16,7 +16,7 @@
  *
  */
 
-package sendRawTypeTx
+package logic
 
 import (
 	"context"
@@ -24,7 +24,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/logic"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 	"reflect"
@@ -161,7 +160,7 @@ func (l *SendWithdrawTxLogic) SendWithdrawTx(in *globalRPCProto.ReqSendTxByRawIn
 	if err != nil {
 		return respSendTx, l.HandleCreateFailWithdrawTx(txInfo, err)
 	}
-	txId, mempoolTx := logic.ConstructMempoolTx(
+	txId, mempoolTx := ConstructMempoolTx(
 		commonTx.TxTypeWithdraw,
 		txInfo.GasFeeAssetId,
 		txInfo.GasFeeAssetAmount.String(),
@@ -177,7 +176,7 @@ func (l *SendWithdrawTxLogic) SendWithdrawTx(in *globalRPCProto.ReqSendTxByRawIn
 		txInfo.ExpiredAt,
 		txDetails,
 	)
-	err = logic.CreateMempoolTx(mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)
+	err = CreateMempoolTx(mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)
 	if err != nil {
 		return respSendTx, l.HandleCreateFailWithdrawTx(txInfo, err)
 	}
@@ -218,7 +217,7 @@ func (l *SendWithdrawTxLogic) CreateFailWithdrawTx(info *commonTx.WithdrawTxInfo
 		// tx fee l1asset id
 		GasFeeAssetId: int64(txFeeAssetId),
 		// tx status, 1 - success(default), 2 - failure
-		TxStatus: logic.TxFail,
+		TxStatus: TxFail,
 		// l1asset id
 		AssetAId: int64(assetId),
 		// tx amount
