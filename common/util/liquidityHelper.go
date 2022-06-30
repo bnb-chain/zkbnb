@@ -19,11 +19,13 @@ package util
 
 import (
 	"errors"
+	"math/big"
+
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-crypto/util"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
+
 	"github.com/zeromicro/go-zero/core/logx"
-	"math/big"
 )
 
 func ComputeEmptyLpAmount(
@@ -45,7 +47,7 @@ func ComputeLpAmount(
 	assetAAmount *big.Int,
 ) (lpAmount *big.Int, err error) {
 	// lp = assetAAmount / poolA * LpAmount
-	sLp := commonAsset.ComputeSLp(liquidityInfo.AssetA, liquidityInfo.AssetB, liquidityInfo.KLast, liquidityInfo.FeeRate, liquidityInfo.TreasuryRate)
+	sLp := ComputeSLp(liquidityInfo.AssetA, liquidityInfo.AssetB, liquidityInfo.KLast, liquidityInfo.FeeRate, liquidityInfo.TreasuryRate)
 	poolLpAmount := ffmath.Sub(liquidityInfo.LpAmount, sLp)
 	lpAmount, err = CleanPackedAmount(ffmath.Div(ffmath.Multiply(assetAAmount, poolLpAmount), liquidityInfo.AssetA))
 	if err != nil {
@@ -58,7 +60,7 @@ func ComputeRemoveLiquidityAmount(
 	liquidityInfo *commonAsset.LiquidityInfo,
 	lpAmount *big.Int,
 ) (assetAAmount, assetBAmount *big.Int) {
-	sLp := commonAsset.ComputeSLp(
+	sLp := ComputeSLp(
 		liquidityInfo.AssetA,
 		liquidityInfo.AssetB,
 		liquidityInfo.KLast,
@@ -126,6 +128,22 @@ func ComputeInputPrice(x *big.Int, y *big.Int, inputX *big.Int, feeRate int64) *
 */
 func ComputeOutputPrice(x *big.Int, y *big.Int, inputY *big.Int, feeRate int64) *big.Int {
 	rFeeR := big.NewInt(FeeRateBase - feeRate)
-	res, _ := util.CleanPackedAmount(ffmath.Add(ffmath.Div(ffmath.Multiply(big.NewInt(FeeRateBase), ffmath.Multiply(x, inputY)), ffmath.Multiply(rFeeR, ffmath.Sub(y, inputY))), big.NewInt(1)))
+	res, _ := CleanPackedAmount(ffmath.Add(ffmath.Div(ffmath.Multiply(big.NewInt(FeeRateBase), ffmath.Multiply(x, inputY)), ffmath.Multiply(rFeeR, ffmath.Sub(y, inputY))), big.NewInt(1)))
+	return res
+}
+
+func ComputeSLp(
+	poolA, poolB *big.Int, kLast *big.Int, feeRate, treasuryRate int64,
+) *big.Int {
+	kCurrent := ffmath.Multiply(poolA, poolB)
+	if kCurrent.Cmp(ZeroBigInt) == 0 {
+		return ZeroBigInt
+	}
+	kCurrent.Sqrt(kCurrent)
+	kLast.Sqrt(kLast)
+	l := ffmath.Multiply(ffmath.Sub(kCurrent, kLast), big.NewInt(FeeRateBase))
+	r := ffmath.Multiply(ffmath.Sub(ffmath.Multiply(big.NewInt(FeeRateBase), ffmath.Div(big.NewInt(feeRate), big.NewInt(treasuryRate))), big.NewInt(FeeRateBase)), kCurrent)
+	r = ffmath.Add(r, ffmath.Multiply(big.NewInt(FeeRateBase), kLast))
+	res, _ := CleanPackedAmount(ffmath.Div(l, r))
 	return res
 }

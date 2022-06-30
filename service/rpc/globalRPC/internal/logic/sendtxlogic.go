@@ -75,18 +75,6 @@ func (l *SendTxLogic) SendTx(in *globalRPCProto.ReqSendTx) (resp *globalRPCProto
 			logx.Error("[sendWithdrawTx] err:%v", err)
 			return nil, err
 		}
-	case commonTx.TxTypeCreateCollection:
-		resp.TxId, err = l.sendCreateCollectionTx(in.TxInfo)
-		if err != nil {
-			logx.Error("[sendWithdrawTx] err:%v", err)
-			return nil, err
-		}
-	case commonTx.TxTypeMintNft:
-		resp.TxId, err = l.sendMintNftTx(in.TxInfo)
-		if err != nil {
-			logx.Error("[sendWithdrawTx] err:%v", err)
-			return nil, err
-		}
 	case commonTx.TxTypeTransferNft:
 		resp.TxId, err = l.sendTransferNftTx(in.TxInfo)
 		if err != nil {
