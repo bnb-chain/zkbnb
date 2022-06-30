@@ -21,6 +21,8 @@ type GlobalAssetInfo struct {
 }
 
 type Commglobalmap interface {
+	DeleteLatestAccountInfoInCache(ctx context.Context, accountIndex int64) error
+	GetLatestAccountInfoWithCache(ctx context.Context, accountIndex int64) (*commonAsset.AccountInfo, error)
 	GetLatestAccountInfo(ctx context.Context, accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error)
 	GetLatestLiquidityInfoForRead(pairIndex int64) (liquidityInfo *commGlobalmapHandler.LiquidityInfo, err error)
 	GetLatestOfferIdForWrite(accountIndex int64) (nftIndex int64, err error)

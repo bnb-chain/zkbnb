@@ -70,6 +70,14 @@ func (l *SendTxLogic) sendTransferTx(rawTxInfo string) (txId string, err error) 
 		errInfo := fmt.Sprintf("[sendTransferTx] err: invalid accountIndex %v", txInfo.ToAccountIndex)
 		return "", l.HandleCreateFailTransferTx(txInfo, errors.New(errInfo))
 	}
+	l.commglobalmap.DeleteLatestAccountInfoInCache(l.ctx, txInfo.FromAccountIndex)
+	if err != nil {
+		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
+	}
+	l.commglobalmap.DeleteLatestAccountInfoInCache(l.ctx, txInfo.ToAccountIndex)
+	if err != nil {
+		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
+	}
 	// check gas account index
 	gasAccountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
 	if err != nil {

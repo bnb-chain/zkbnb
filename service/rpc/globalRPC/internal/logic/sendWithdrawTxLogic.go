@@ -69,7 +69,10 @@ func (l *SendTxLogic) sendWithdrawTx(rawTxInfo string) (txId string, err error) 
 		errInfo := fmt.Sprintf("[sendWithdrawTx] err: invalid gasFeeAssetId %v", txInfo.GasFeeAssetId)
 		return "", l.HandleCreateFailWithdrawTx(txInfo, errors.New(errInfo))
 	}
-
+	l.commglobalmap.DeleteLatestAccountInfoInCache(l.ctx, txInfo.FromAccountIndex)
+	if err != nil {
+		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
+	}
 	// check gas account index
 	gasAccountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
 	if err != nil {

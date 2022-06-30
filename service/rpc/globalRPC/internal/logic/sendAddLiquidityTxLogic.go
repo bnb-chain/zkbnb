@@ -84,7 +84,10 @@ func (l *SendTxLogic) sendAddLiquidityTx(rawTxInfo string) (txId string, err err
 		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.KLast, err)
 		return "", err
 	}
-
+	l.commglobalmap.DeleteLatestAccountInfoInCache(l.ctx, txInfo.FromAccountIndex)
+	if err != nil {
+		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
+	}
 	// check gas account index
 	gasAccountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
 	if err != nil {
