@@ -20,6 +20,8 @@ type (
 	ReqGetMaxOfferId                      = globalRPCProto.ReqGetMaxOfferId
 	ReqGetNextNonce                       = globalRPCProto.ReqGetNextNonce
 	ReqGetSwapAmount                      = globalRPCProto.ReqGetSwapAmount
+	ReqSendCreateCollectionTx             = globalRPCProto.ReqSendCreateCollectionTx
+	ReqSendMintNftTx                      = globalRPCProto.ReqSendMintNftTx
 	ReqSendTx                             = globalRPCProto.ReqSendTx
 	RespGetLatestAssetsListByAccountIndex = globalRPCProto.RespGetLatestAssetsListByAccountIndex
 	RespGetLatestPairInfo                 = globalRPCProto.RespGetLatestPairInfo
@@ -27,6 +29,8 @@ type (
 	RespGetMaxOfferId                     = globalRPCProto.RespGetMaxOfferId
 	RespGetNextNonce                      = globalRPCProto.RespGetNextNonce
 	RespGetSwapAmount                     = globalRPCProto.RespGetSwapAmount
+	RespSendCreateCollectionTx            = globalRPCProto.RespSendCreateCollectionTx
+	RespSendMintNftTx                     = globalRPCProto.RespSendMintNftTx
 	RespSendTx                            = globalRPCProto.RespSendTx
 	TxDetailInfo                          = globalRPCProto.TxDetailInfo
 	TxInfo                                = globalRPCProto.TxInfo
@@ -40,6 +44,8 @@ type (
 		GetLpValue(ctx context.Context, in *ReqGetLpValue, opts ...grpc.CallOption) (*RespGetLpValue, error)
 		//  Transaction
 		SendTx(ctx context.Context, in *ReqSendTx, opts ...grpc.CallOption) (*RespSendTx, error)
+		SendCreateCollectionTx(ctx context.Context, in *ReqSendCreateCollectionTx, opts ...grpc.CallOption) (*RespSendCreateCollectionTx, error)
+		SendMintNftTx(ctx context.Context, in *ReqSendMintNftTx, opts ...grpc.CallOption) (*RespSendMintNftTx, error)
 		GetNextNonce(ctx context.Context, in *ReqGetNextNonce, opts ...grpc.CallOption) (*RespGetNextNonce, error)
 		//  NFT
 		GetMaxOfferId(ctx context.Context, in *ReqGetMaxOfferId, opts ...grpc.CallOption) (*RespGetMaxOfferId, error)
@@ -82,6 +88,16 @@ func (m *defaultGlobalRPC) GetLpValue(ctx context.Context, in *ReqGetLpValue, op
 func (m *defaultGlobalRPC) SendTx(ctx context.Context, in *ReqSendTx, opts ...grpc.CallOption) (*RespSendTx, error) {
 	client := globalRPCProto.NewGlobalRPCClient(m.cli.Conn())
 	return client.SendTx(ctx, in, opts...)
+}
+
+func (m *defaultGlobalRPC) SendCreateCollectionTx(ctx context.Context, in *ReqSendCreateCollectionTx, opts ...grpc.CallOption) (*RespSendCreateCollectionTx, error) {
+	client := globalRPCProto.NewGlobalRPCClient(m.cli.Conn())
+	return client.SendCreateCollectionTx(ctx, in, opts...)
+}
+
+func (m *defaultGlobalRPC) SendMintNftTx(ctx context.Context, in *ReqSendMintNftTx, opts ...grpc.CallOption) (*RespSendMintNftTx, error) {
+	client := globalRPCProto.NewGlobalRPCClient(m.cli.Conn())
+	return client.SendMintNftTx(ctx, in, opts...)
 }
 
 func (m *defaultGlobalRPC) GetNextNonce(ctx context.Context, in *ReqGetNextNonce, opts ...grpc.CallOption) (*RespGetNextNonce, error) {
