@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package logic
+package sendRawTypeTx
 
 import (
 	"context"
@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/logic"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 	"math/big"
@@ -226,7 +227,7 @@ func (l *SendRemoveLiquidityTxLogic) SendRemoveLiquidityTx(in *globalRPCProto.Re
 	if err != nil {
 		return respSendTx, l.HandleCreateFailRemoveLiquidityTx(txInfo, err)
 	}
-	txId, mempoolTx := ConstructMempoolTx(
+	txId, mempoolTx := logic.ConstructMempoolTx(
 		commonTx.TxTypeRemoveLiquidity,
 		txInfo.GasFeeAssetId,
 		txInfo.GasFeeAssetAmount.String(),
@@ -256,7 +257,7 @@ func (l *SendRemoveLiquidityTxLogic) SendRemoveLiquidityTx(in *globalRPCProto.Re
 		return respSendTx, l.HandleCreateFailRemoveLiquidityTx(txInfo, err)
 	}
 	// insert into mempool
-	err = CreateMempoolTx(mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)
+	err = logic.CreateMempoolTx(mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)
 	if err != nil {
 		return respSendTx, l.HandleCreateFailRemoveLiquidityTx(txInfo, err)
 	}
@@ -323,7 +324,7 @@ func (l *SendRemoveLiquidityTxLogic) CreateFailRemoveLiquidityTx(info *commonTx.
 		// tx fee l1asset id
 		GasFeeAssetId: txFeeAssetId,
 		// tx status, 1 - success(default), 2 - failure
-		TxStatus: TxFail,
+		TxStatus: logic.TxFail,
 		// AssetAId
 		AssetAId: assetAId,
 		// l1asset id
