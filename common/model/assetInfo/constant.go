@@ -32,8 +32,8 @@ const (
 
 // flag: asset could be used as gasfee or not
 const (
-	IsGasAsset  = 0
-	NotGasAsset = 1
+	NotGasAsset = 0
+	IsGasAsset  = 1
 )
 
 var (
