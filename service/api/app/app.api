@@ -56,6 +56,7 @@ type (
 		AccountStatus uint32          `json:"account_status"`
 		AccountName   string          `json:"account_name"`
 		AccountIndex  int64           `json:"account_index"`
+		Nonce         int64           `json:"nonce"`
 		Assets        []*AccountAsset `json:"assets"`
 	}
 )
@@ -69,6 +70,7 @@ type (
 		AccountStatus uint32          `json:"account_status"`
 		AccountName   string          `json:"account_name"`
 		AccountPk     string          `form:"account_pk"`
+		Nonce         int64           `json:"nonce"`
 		Assets        []*AccountAsset `json:"assets"`
 	}
 )
@@ -93,6 +95,7 @@ type (
 	RespGetAccountInfoByAccountName {
 		AccountIndex uint32          `json:"account_index"`
 		AccountPk    string          `json:"account_pk"`
+		Nonce        int64           `json:"nonce"`
 		Assets       []*AccountAsset `json:"assets"`
 	}
 )

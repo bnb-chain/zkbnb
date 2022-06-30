@@ -4,6 +4,25 @@ package globalRPCProto;
 
 option go_package = "./globalRPCProto";
 
+/* =================== Account =================== */
+message ReqGetLatestAccountInfoByAccountIndex{
+  uint32 AccountIndex = 1;
+}
+
+message RespGetLatestAccountInfoByAccountIndex{
+  int64 AccountId       = 1;
+	int64 AccountIndex      = 2;
+	string AccountName       = 3;
+  string 	PublicKey         = 4;
+	string AccountNameHash   = 5;
+	string L1Address         = 6;
+	int64 Nonce             = 7;
+	int64 CollectionNonce   = 8;
+  repeated AssetResult	AccountAsset   = 9;
+	string AssetRoot   = 10;
+	int64 Status      = 11;
+}
+
 /* =================== Asset =================== */
 /*
 	Proto Name: GetLatestAssetsListByAccountIndex
@@ -18,7 +37,6 @@ message AssetResult{
   string Balance = 2;
   string LpAmount           = 3;      
 	string OfferCanceledOrFinalized = 4;
-
 }
 
 message RespGetLatestAssetsListByAccountIndex{
@@ -178,6 +196,7 @@ service globalRPC {
 
   // Asset
   rpc getLatestAssetsListByAccountIndex (ReqGetLatestAssetsListByAccountIndex) returns (RespGetLatestAssetsListByAccountIndex);
+  rpc getLatestAccountInfoByAccountIndex (ReqGetLatestAccountInfoByAccountIndex) returns (RespGetLatestAccountInfoByAccountIndex);
   // Liquidity
   rpc getLatestPairInfo(ReqGetLatestPairInfo) returns (RespGetLatestPairInfo);
   rpc getSwapAmount(ReqGetSwapAmount) returns (RespGetSwapAmount);

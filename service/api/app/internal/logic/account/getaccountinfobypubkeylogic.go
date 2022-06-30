@@ -30,23 +30,24 @@ func NewGetAccountInfoByPubKeyLogic(ctx context.Context, svcCtx *svc.ServiceCont
 }
 
 func (l *GetAccountInfoByPubKeyLogic) GetAccountInfoByPubKey(req *types.ReqGetAccountInfoByPubKey) (*types.RespGetAccountInfoByPubKey, error) {
-	account, err := l.account.GetAccountByPk(req.AccountPk)
+	info, err := l.account.GetAccountByPk(req.AccountPk)
 	if err != nil {
 		logx.Errorf("[GetAccountByPk] err:%v", err)
+		return nil, err
+	}
+	account, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(uint32(info.AccountIndex))
+	if err != nil {
+		logx.Errorf("[GetLatestAccountInfoByAccountIndex] err:%v", err)
 		return nil, err
 	}
 	resp := &types.RespGetAccountInfoByPubKey{
 		AccountStatus: uint32(account.Status),
 		AccountName:   account.AccountName,
 		AccountIndex:  account.AccountIndex,
+		Nonce:         account.Nonce,
 		Assets:        make([]*types.AccountAsset, 0),
 	}
-	assets, err := l.globalRPC.GetLatestAssetsListByAccountIndex(uint32(account.AccountIndex))
-	if err != nil {
-		logx.Errorf("[GetLatestAssetsListByAccountIndex] err:%v", err)
-		return nil, err
-	}
-	for _, asset := range assets {
+	for _, asset := range account.AccountAsset {
 		resp.Assets = append(resp.Assets, &types.AccountAsset{
 			AssetId:                  asset.AssetId,
 			Balance:                  asset.Balance,

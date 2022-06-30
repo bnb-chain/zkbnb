@@ -76,6 +76,13 @@ func (m *globalRPC) GetLatestAssetsListByAccountIndex(accountIndex uint32) ([]*g
 	return res.ResultAssetsList, err
 }
 
+func (m *globalRPC) GetLatestAccountInfoByAccountIndex(accountIndex uint32) (*globalrpc.RespGetLatestAccountInfoByAccountIndex, error) {
+	res, err := m.globalRPC.GetLatestAccountInfoByAccountIndex(m.ctx, &globalrpc.ReqGetLatestAccountInfoByAccountIndex{
+		AccountIndex: accountIndex,
+	})
+	return res, err
+}
+
 func (m *globalRPC) GetMaxOfferId(accountIndex uint32) (uint64, error) {
 	rpcRsp, err := m.globalRPC.GetMaxOfferId(m.ctx, &globalrpc.ReqGetMaxOfferId{
 		AccountIndex: accountIndex,
