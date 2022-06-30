@@ -1,30 +1,25 @@
 /*
-* Copyright © 2021 Zecrey Protocol
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
+ * Copyright © 2021 Zecrey Protocol
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package logic
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 	"reflect"
 	"strconv"
 	"time"
@@ -35,38 +30,23 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
+	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/common/sysconfigName"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
+	"github.com/zeromicro/go-zero/core/stores/redis"
+
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-type SendAtomicMatchTxLogic struct {
-	ctx    context.Context
-	svcCtx *svc.ServiceContext
-	logx.Logger
-	commglobalmap commglobalmap.Commglobalmap
-}
-
-func NewSendAtomicMatchTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendAtomicMatchTxLogic {
-	return &SendAtomicMatchTxLogic{
-		ctx:           ctx,
-		svcCtx:        svcCtx,
-		Logger:        logx.WithContext(ctx),
-		commglobalmap: commglobalmap.New(svcCtx),
-	}
-}
-
-func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(reqSendTx *globalRPCProto.ReqSendTxByRawInfo) (respSendTx *globalRPCProto.RespSendTx, err error) {
-	respSendTx = &globalRPCProto.RespSendTx{}
-	rawTxInfo := reqSendTx.TxInfo
+func (l *SendTxLogic) sendAtomicMatchTx(rawTxInfo string) (txId string, err error) {
 	// parse transfer tx info
 	txInfo, err := commonTx.ParseAtomicMatchTxInfo(rawTxInfo)
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendAtomicMatchTx.ParseAtomicMatchTxInfo] %s", err.Error())
 		logx.Error(errInfo)
-		return respSendTx, errors.New(errInfo)
+		return "", errors.New(errInfo)
 	}
 
 	/*
@@ -74,24 +54,24 @@ func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(reqSendTx *globalRPCProto.Req
 	*/
 	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
 		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
-		return respSendTx, err
+		return "", err
 	}
 	// check param: from account index
 	err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.AccountIndex))
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendAtomicMatchTx] err: invalid accountIndex %v", txInfo.AccountIndex)
-		return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, errors.New(errInfo))
+		return "", l.HandleCreateFailAtomicMatchTx(txInfo, errors.New(errInfo))
 	}
 	// check param: to account index
 	err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.BuyOffer.AccountIndex))
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendAtomicMatchTx] err: invalid accountIndex %v", txInfo.BuyOffer.AccountIndex)
-		return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, errors.New(errInfo))
+		return "", l.HandleCreateFailAtomicMatchTx(txInfo, errors.New(errInfo))
 	}
 	err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.SellOffer.AccountIndex))
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendAtomicMatchTx] err: invalid accountIndex %v", txInfo.SellOffer.AccountIndex)
-		return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, errors.New(errInfo))
+		return "", l.HandleCreateFailAtomicMatchTx(txInfo, errors.New(errInfo))
 	}
 	l.commglobalmap.DeleteLatestAccountInfoInCache(l.ctx, txInfo.AccountIndex)
 	if err != nil {
@@ -101,29 +81,29 @@ func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(reqSendTx *globalRPCProto.Req
 	gasAccountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
 	if err != nil {
 		logx.Errorf("[sendAtomicMatchTx] unable to get sysconfig by name: %s", err.Error())
-		return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, err)
+		return "", l.HandleCreateFailAtomicMatchTx(txInfo, err)
 	}
 	gasAccountIndex, err := strconv.ParseInt(gasAccountIndexConfig.Value, 10, 64)
 	if err != nil {
-		return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, errors.New("[sendAtomicMatchTx] unable to parse big int"))
+		return "", l.HandleCreateFailAtomicMatchTx(txInfo, errors.New("[sendAtomicMatchTx] unable to parse big int"))
 	}
 	if gasAccountIndex != txInfo.GasAccountIndex {
 		logx.Errorf("[sendAtomicMatchTx] invalid gas account index")
-		return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, errors.New("[sendAtomicMatchTx] invalid gas account index"))
+		return "", l.HandleCreateFailAtomicMatchTx(txInfo, errors.New("[sendAtomicMatchTx] invalid gas account index"))
 	}
 
 	// check expired at
 	now := time.Now().UnixMilli()
 	if txInfo.ExpiredAt < now || txInfo.BuyOffer.ExpiredAt < now || txInfo.SellOffer.ExpiredAt < now {
 		logx.Errorf("[sendAtomicMatchTx] invalid time stamp")
-		return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, errors.New("[sendAtomicMatchTx] invalid time stamp"))
+		return "", l.HandleCreateFailAtomicMatchTx(txInfo, errors.New("[sendAtomicMatchTx] invalid time stamp"))
 	}
 
 	if txInfo.BuyOffer.NftIndex != txInfo.SellOffer.NftIndex ||
 		txInfo.BuyOffer.AssetId != txInfo.SellOffer.AssetId ||
 		txInfo.BuyOffer.AssetAmount.String() != txInfo.SellOffer.AssetAmount.String() ||
 		txInfo.BuyOffer.TreasuryRate != txInfo.SellOffer.TreasuryRate {
-		return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, errors.New("[sendAtomicMatchTx] invalid params"))
+		return "", l.HandleCreateFailAtomicMatchTx(txInfo, errors.New("[sendAtomicMatchTx] invalid params"))
 	}
 
 	var (
@@ -137,19 +117,19 @@ func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(reqSendTx *globalRPCProto.Req
 	)
 	if err != nil {
 		logx.Errorf("[sendAtomicMatchTx] unable to get latest nft index: %s", err.Error())
-		return respSendTx, err
+		return "", err
 	}
 	accountInfoMap[txInfo.AccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.AccountIndex)
 	if err != nil {
 		logx.Errorf("[sendAtomicMatchTx] unable to get account info: %s", err.Error())
-		return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, err)
+		return "", l.HandleCreateFailAtomicMatchTx(txInfo, err)
 	}
 	// get account info by to index
 	if accountInfoMap[txInfo.BuyOffer.AccountIndex] == nil {
 		accountInfoMap[txInfo.BuyOffer.AccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.BuyOffer.AccountIndex)
 		if err != nil {
 			logx.Errorf("[sendAtomicMatchTx] unable to get account info: %s", err.Error())
-			return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, err)
+			return "", l.HandleCreateFailAtomicMatchTx(txInfo, err)
 		}
 	}
 	if accountInfoMap[nftInfo.CreatorAccountIndex] == nil {
@@ -159,7 +139,7 @@ func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(reqSendTx *globalRPCProto.Req
 			nftInfo.CreatorAccountIndex)
 		if err != nil {
 			logx.Errorf("[sendAtomicMatchTx] unable to get account info: %s", err.Error())
-			return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, err)
+			return "", l.HandleCreateFailAtomicMatchTx(txInfo, err)
 		}
 	}
 	if accountInfoMap[txInfo.SellOffer.AccountIndex] == nil {
@@ -169,7 +149,7 @@ func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(reqSendTx *globalRPCProto.Req
 			txInfo.SellOffer.AccountIndex)
 		if err != nil {
 			logx.Errorf("[sendAtomicMatchTx] unable to get account info: %s", err.Error())
-			return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, err)
+			return "", l.HandleCreateFailAtomicMatchTx(txInfo, err)
 		}
 	}
 	// get account info by gas index
@@ -181,12 +161,12 @@ func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(reqSendTx *globalRPCProto.Req
 			txInfo.GasAccountIndex)
 		if err != nil {
 			logx.Errorf("[sendAtomicMatchTx] unable to get account info: %s", err.Error())
-			return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, err)
+			return "", l.HandleCreateFailAtomicMatchTx(txInfo, err)
 		}
 	}
 	if nftInfo.OwnerAccountIndex != txInfo.SellOffer.AccountIndex {
 		logx.Errorf("[sendAtomicMatchTx] you're not owner")
-		return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, errors.New("[sendAtomicMatchTx] you're not owner"))
+		return "", l.HandleCreateFailAtomicMatchTx(txInfo, errors.New("[sendAtomicMatchTx] you're not owner"))
 	}
 	var (
 		txDetails []*mempool.MempoolTxDetail
@@ -198,7 +178,7 @@ func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(reqSendTx *globalRPCProto.Req
 		txInfo,
 	)
 	if err != nil {
-		return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, err)
+		return "", l.HandleCreateFailAtomicMatchTx(txInfo, err)
 	}
 
 	/*
@@ -213,12 +193,12 @@ func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(reqSendTx *globalRPCProto.Req
 	_, err = l.svcCtx.RedisConnection.Del(key)
 	if err != nil {
 		logx.Errorf("[sendAtomicMatchTx] unable to delete key from redis: %s", err.Error())
-		return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, err)
+		return "", l.HandleCreateFailAtomicMatchTx(txInfo, err)
 	}
 	// write into mempool
 	txInfoBytes, err := json.Marshal(txInfo)
 	if err != nil {
-		return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, err)
+		return "", l.HandleCreateFailAtomicMatchTx(txInfo, err)
 	}
 	txId, mempoolTx := ConstructMempoolTx(
 		commonTx.TxTypeAtomicMatch,
@@ -278,9 +258,8 @@ func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(reqSendTx *globalRPCProto.Req
 		l.svcCtx.MempoolModel,
 	)
 	if err != nil {
-		return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, err)
+		return "", l.HandleCreateFailAtomicMatchTx(txInfo, err)
 	}
-	respSendTx.TxId = txId
 	// update redis
 	var formatNftInfo *commonAsset.NftInfo
 	for _, txDetail := range mempoolTx.MempoolDetails {
@@ -288,20 +267,20 @@ func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(reqSendTx *globalRPCProto.Req
 			formatNftInfo, err = commonAsset.ParseNftInfo(txDetail.BalanceDelta)
 			if err != nil {
 				logx.Errorf("[sendMintNftTx] unable to parse nft info: %s", err.Error())
-				return respSendTx, nil
+				return txId, nil
 			}
 		}
 	}
 	nftInfoBytes, err := json.Marshal(formatNftInfo)
 	if err != nil {
 		logx.Errorf("[sendMintNftTx] unable to marshal: %s", err.Error())
-		return respSendTx, nil
+		return txId, nil
 	}
 	_ = l.svcCtx.RedisConnection.Setex(key, string(nftInfoBytes), globalmapHandler.NftExpiryTime)
-	return respSendTx, nil
+	return txId, nil
 }
 
-func (l *SendAtomicMatchTxLogic) HandleCreateFailAtomicMatchTx(txInfo *commonTx.AtomicMatchTxInfo, err error) error {
+func (l *SendTxLogic) HandleCreateFailAtomicMatchTx(txInfo *commonTx.AtomicMatchTxInfo, err error) error {
 	errCreate := l.CreateFailAtomicMatchTx(txInfo, err.Error())
 	if errCreate != nil {
 		logx.Error("[sendtransfertxlogic.HandleCreateFailAtomicMatchTx] %s", errCreate.Error())
@@ -313,7 +292,7 @@ func (l *SendAtomicMatchTxLogic) HandleCreateFailAtomicMatchTx(txInfo *commonTx.
 	}
 }
 
-func (l *SendAtomicMatchTxLogic) CreateFailAtomicMatchTx(info *commonTx.AtomicMatchTxInfo, extraInfo string) error {
+func (l *SendTxLogic) CreateFailAtomicMatchTx(info *commonTx.AtomicMatchTxInfo, extraInfo string) error {
 	txHash := util.RandomUUID()
 	nativeAddress := "0x00"
 	txInfo, err := json.Marshal(info)
@@ -353,6 +332,36 @@ func (l *SendAtomicMatchTxLogic) CreateFailAtomicMatchTx(info *commonTx.AtomicMa
 	err = l.svcCtx.FailTxModel.CreateFailTx(failTx)
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendtxlogic.CreateFailAtomicMatchTx] %s", err.Error())
+		logx.Error(errInfo)
+		return errors.New(errInfo)
+	}
+	return nil
+}
+
+func CreateMempoolTxForAtomicMatch(
+	nftExchange *nft.L2NftExchange,
+	nMempoolTx *mempool.MempoolTx,
+	offers []*nft.Offer,
+	redisConnection *redis.Redis,
+	mempoolModel mempool.MempoolModel,
+) (err error) {
+	var keys []string
+	for _, mempoolTxDetail := range nMempoolTx.MempoolDetails {
+		keys = append(keys, util.GetAccountKey(mempoolTxDetail.AccountIndex))
+	}
+	_, err = redisConnection.Del(keys...)
+	if err != nil {
+		logx.Errorf("[CreateMempoolTx] error with redis: %s", err.Error())
+		return err
+	}
+	// write into mempool
+	err = mempoolModel.CreateMempoolTxAndL2NftExchange(
+		nMempoolTx,
+		offers,
+		nftExchange,
+	)
+	if err != nil {
+		errInfo := fmt.Sprintf("[CreateMempoolTx] %s", err.Error())
 		logx.Error(errInfo)
 		return errors.New(errInfo)
 	}

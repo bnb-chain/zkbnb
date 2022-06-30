@@ -17,9 +17,13 @@
 package logic
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 	"math/big"
 	"reflect"
 	"strconv"
@@ -39,13 +43,30 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-func (l *SendTxLogic) sendWithdrawNftTx(rawTxInfo string) (txId string, err error) {
+type SendWithdrawNftTxLogic struct {
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
+	logx.Logger
+	commglobalmap commglobalmap.Commglobalmap
+}
+
+func NewSendWithdrawNftTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendWithdrawNftTxLogic {
+	return &SendWithdrawNftTxLogic{
+		ctx:           ctx,
+		svcCtx:        svcCtx,
+		Logger:        logx.WithContext(ctx),
+		commglobalmap: commglobalmap.New(svcCtx),
+	}
+}
+func (l *SendWithdrawNftTxLogic) SendWithdrawNftTx(in *globalRPCProto.ReqSendTxByRawInfo) (respSendTx *globalRPCProto.RespSendTx, err error) {
+	rawTxInfo := in.TxInfo
+	respSendTx = &globalRPCProto.RespSendTx{}
 	// parse transfer tx info
 	txInfo, err := commonTx.ParseWithdrawNftTxInfo(rawTxInfo)
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendWithdrawNftTx.ParseWithdrawNftTxInfo] %s", err.Error())
 		logx.Error(errInfo)
-		return "", errors.New(errInfo)
+		return respSendTx, errors.New(errInfo)
 	}
 
 	/*
@@ -53,13 +74,13 @@ func (l *SendTxLogic) sendWithdrawNftTx(rawTxInfo string) (txId string, err erro
 	*/
 	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
 		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
-		return "", err
+		return respSendTx, err
 	}
 	// check param: from account index
 	err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.AccountIndex))
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendWithdrawNftTx] err: invalid accountIndex %v", txInfo.AccountIndex)
-		return "", l.HandleCreateFailWithdrawNftTx(txInfo, errors.New(errInfo))
+		return respSendTx, l.HandleCreateFailWithdrawNftTx(txInfo, errors.New(errInfo))
 	}
 	l.commglobalmap.DeleteLatestAccountInfoInCache(l.ctx, txInfo.AccountIndex)
 	if err != nil {
@@ -69,15 +90,15 @@ func (l *SendTxLogic) sendWithdrawNftTx(rawTxInfo string) (txId string, err erro
 	gasAccountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
 	if err != nil {
 		logx.Errorf("[sendWithdrawNftTx] unable to get sysconfig by name: %s", err.Error())
-		return "", l.HandleCreateFailWithdrawNftTx(txInfo, err)
+		return respSendTx, l.HandleCreateFailWithdrawNftTx(txInfo, err)
 	}
 	gasAccountIndex, err := strconv.ParseInt(gasAccountIndexConfig.Value, 10, 64)
 	if err != nil {
-		return "", l.HandleCreateFailWithdrawNftTx(txInfo, errors.New("[sendWithdrawNftTx] unable to parse big int"))
+		return respSendTx, l.HandleCreateFailWithdrawNftTx(txInfo, errors.New("[sendWithdrawNftTx] unable to parse big int"))
 	}
 	if gasAccountIndex != txInfo.GasAccountIndex {
 		logx.Errorf("[sendWithdrawNftTx] invalid gas account index")
-		return "", l.HandleCreateFailWithdrawNftTx(txInfo, errors.New("[sendWithdrawNftTx] invalid gas account index"))
+		return respSendTx, l.HandleCreateFailWithdrawNftTx(txInfo, errors.New("[sendWithdrawNftTx] invalid gas account index"))
 	}
 
 	var (
@@ -91,12 +112,12 @@ func (l *SendTxLogic) sendWithdrawNftTx(rawTxInfo string) (txId string, err erro
 	)
 	if err != nil {
 		logx.Errorf("[sendWithdrawNftTx] unable to get nft info")
-		return "", l.HandleCreateFailWithdrawNftTx(txInfo, err)
+		return respSendTx, l.HandleCreateFailWithdrawNftTx(txInfo, err)
 	}
 	accountInfoMap[txInfo.AccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.AccountIndex)
 	if err != nil {
 		logx.Errorf("[sendWithdrawNftTx] unable to get account info: %s", err.Error())
-		return "", l.HandleCreateFailWithdrawNftTx(txInfo, err)
+		return respSendTx, l.HandleCreateFailWithdrawNftTx(txInfo, err)
 	}
 	if accountInfoMap[nftInfo.CreatorAccountIndex] == nil {
 		// get account info by gas index
@@ -106,7 +127,7 @@ func (l *SendTxLogic) sendWithdrawNftTx(rawTxInfo string) (txId string, err erro
 			nftInfo.CreatorAccountIndex)
 		if err != nil {
 			logx.Errorf("[sendWithdrawNftTx] unable to get account info: %s", err.Error())
-			return "", l.HandleCreateFailWithdrawNftTx(txInfo, err)
+			return respSendTx, l.HandleCreateFailWithdrawNftTx(txInfo, err)
 		}
 	}
 	// get account info by gas index
@@ -118,13 +139,13 @@ func (l *SendTxLogic) sendWithdrawNftTx(rawTxInfo string) (txId string, err erro
 			txInfo.GasAccountIndex)
 		if err != nil {
 			logx.Errorf("[sendWithdrawNftTx] unable to get account info: %s", err.Error())
-			return "", l.HandleCreateFailWithdrawNftTx(txInfo, err)
+			return respSendTx, l.HandleCreateFailWithdrawNftTx(txInfo, err)
 		}
 	}
 
 	if nftInfo.OwnerAccountIndex != txInfo.AccountIndex {
 		logx.Errorf("[sendWithdrawNftTx] you're not owner")
-		return "", l.HandleCreateFailWithdrawNftTx(txInfo, errors.New("[sendWithdrawNftTx] you're not owner"))
+		return respSendTx, l.HandleCreateFailWithdrawNftTx(txInfo, errors.New("[sendWithdrawNftTx] you're not owner"))
 	}
 
 	txInfo.CreatorAccountIndex = nftInfo.CreatorAccountIndex
@@ -139,7 +160,7 @@ func (l *SendTxLogic) sendWithdrawNftTx(rawTxInfo string) (txId string, err erro
 	now := time.Now().UnixMilli()
 	if txInfo.ExpiredAt < now {
 		logx.Errorf("[sendWithdrawNftTx] invalid time stamp")
-		return "", l.HandleCreateFailWithdrawNftTx(txInfo, errors.New("[sendWithdrawNftTx] invalid time stamp"))
+		return respSendTx, l.HandleCreateFailWithdrawNftTx(txInfo, errors.New("[sendWithdrawNftTx] invalid time stamp"))
 	}
 
 	var (
@@ -152,7 +173,7 @@ func (l *SendTxLogic) sendWithdrawNftTx(rawTxInfo string) (txId string, err erro
 		txInfo,
 	)
 	if err != nil {
-		return "", l.HandleCreateFailWithdrawNftTx(txInfo, err)
+		return respSendTx, l.HandleCreateFailWithdrawNftTx(txInfo, err)
 	}
 
 	/*
@@ -167,12 +188,12 @@ func (l *SendTxLogic) sendWithdrawNftTx(rawTxInfo string) (txId string, err erro
 	_, err = l.svcCtx.RedisConnection.Del(key)
 	if err != nil {
 		logx.Errorf("[sendWithdrawNftTx] unable to delete key from redis: %s", err.Error())
-		return "", l.HandleCreateFailWithdrawNftTx(txInfo, err)
+		return respSendTx, l.HandleCreateFailWithdrawNftTx(txInfo, err)
 	}
 	// write into mempool
 	txInfoBytes, err := json.Marshal(txInfo)
 	if err != nil {
-		return "", l.HandleCreateFailWithdrawNftTx(txInfo, err)
+		return respSendTx, l.HandleCreateFailWithdrawNftTx(txInfo, err)
 	}
 	txId, mempoolTx := ConstructMempoolTx(
 		commonTx.TxTypeWithdrawNft,
@@ -192,8 +213,9 @@ func (l *SendTxLogic) sendWithdrawNftTx(rawTxInfo string) (txId string, err erro
 	)
 	err = CreateMempoolTx(mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)
 	if err != nil {
-		return "", l.HandleCreateFailWithdrawNftTx(txInfo, err)
+		return respSendTx, l.HandleCreateFailWithdrawNftTx(txInfo, err)
 	}
+	respSendTx.TxId = txId
 	// update redis
 	var formatNftInfo *commonAsset.NftInfo
 	for _, txDetail := range mempoolTx.MempoolDetails {
@@ -201,21 +223,21 @@ func (l *SendTxLogic) sendWithdrawNftTx(rawTxInfo string) (txId string, err erro
 			formatNftInfo, err = commonAsset.ParseNftInfo(txDetail.BalanceDelta)
 			if err != nil {
 				logx.Errorf("[sendWithdrawNftTx] unable to parse nft info: %s", err.Error())
-				return txId, nil
+				return respSendTx, nil
 			}
 		}
 	}
 	nftInfoBytes, err := json.Marshal(formatNftInfo)
 	if err != nil {
 		logx.Errorf("[sendWithdrawNftTx] unable to marshal: %s", err.Error())
-		return txId, nil
+		return respSendTx, nil
 	}
 	_ = l.svcCtx.RedisConnection.Setex(key, string(nftInfoBytes), globalmapHandler.NftExpiryTime)
 
-	return txId, nil
+	return respSendTx, nil
 }
 
-func (l *SendTxLogic) HandleCreateFailWithdrawNftTx(txInfo *commonTx.WithdrawNftTxInfo, err error) error {
+func (l *SendWithdrawNftTxLogic) HandleCreateFailWithdrawNftTx(txInfo *commonTx.WithdrawNftTxInfo, err error) error {
 	errCreate := l.CreateFailWithdrawNftTx(txInfo, err.Error())
 	if errCreate != nil {
 		logx.Error("[sendtransfertxlogic.HandleCreateFailWithdrawNftTx] %s", errCreate.Error())
@@ -227,7 +249,7 @@ func (l *SendTxLogic) HandleCreateFailWithdrawNftTx(txInfo *commonTx.WithdrawNft
 	}
 }
 
-func (l *SendTxLogic) CreateFailWithdrawNftTx(info *commonTx.WithdrawNftTxInfo, extraInfo string) error {
+func (l *SendWithdrawNftTxLogic) CreateFailWithdrawNftTx(info *commonTx.WithdrawNftTxInfo, extraInfo string) error {
 	txHash := util.RandomUUID()
 	nativeAddress := "0x00"
 	txInfo, err := json.Marshal(info)
