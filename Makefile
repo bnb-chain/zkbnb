@@ -18,9 +18,6 @@ app:
 	cd $(APP) && goctl api go -api app.api -dir .;
 	@echo "Done generate app api";
 
-explorer:
-	cd $(EXPLORE) && goctl api go -api explorer.api -dir .;
-	@echo "Done generate explorer api";
 
 globalRPCProto:
 	cd $(globalRPCProtoPath) && goctl rpc protoc globalRPC.proto --go_out=. --go-grpc_out=. --zrpc_out=.;
