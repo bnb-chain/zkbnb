@@ -19,6 +19,9 @@ package txVerification
 
 import (
 	"errors"
+	"log"
+	"math/big"
+
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-crypto/wasm/zecrey-legend/legendTxTypes"
@@ -26,8 +29,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
-	"log"
-	"math/big"
 )
 
 func VerifyAddLiquidityTxInfo(
@@ -88,7 +89,7 @@ func VerifyAddLiquidityTxInfo(
 	poolAssetADelta := txInfo.AssetAAmount
 	poolAssetBDelta := txInfo.AssetBAmount
 	// from account lp
-	lpDeltaForTreasuryAccount = commonAsset.ComputeSLp(
+	lpDeltaForTreasuryAccount = util.ComputeSLp(
 		liquidityInfo.AssetA,
 		liquidityInfo.AssetB,
 		liquidityInfo.KLast,
@@ -126,7 +127,10 @@ func VerifyAddLiquidityTxInfo(
 		TreasuryRate:         liquidityInfo.TreasuryRate,
 	}
 	// set tx info
-	txInfo.KLast = ffmath.Multiply(finalPoolA, finalPoolB)
+	txInfo.KLast, err = util.CleanPackedAmount(ffmath.Multiply(finalPoolA, finalPoolB))
+	if err != nil {
+		return nil, err
+	}
 	txInfo.TreasuryAmount = lpDeltaForTreasuryAccount
 	// gas account asset Gas
 	if assetDeltaMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId] == nil {

@@ -188,7 +188,7 @@ func (l *SendMintNftTxLogic) SendMintNftTx(in *globalRPCProto.ReqSendMintNftTx) 
 		return nil, l.createFailMintNftTx(txInfo, err.Error())
 	}
 
-	err = CreateMempoolTxForMintNft(nftInfo, mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)
+	err = createMempoolTxForMintNft(nftInfo, mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)
 	if err != nil {
 		return nil, l.createFailMintNftTx(txInfo, err.Error())
 	}
