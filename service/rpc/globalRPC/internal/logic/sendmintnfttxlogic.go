@@ -92,7 +92,6 @@ func (l *SendMintNftTxLogic) SendMintNftTx(in *globalRPCProto.ReqSendMintNftTx) 
 		logx.Errorf("[sendMintNftTx] invalid gas account index")
 		return nil, l.createFailMintNftTx(txInfo, err.Error())
 	}
-
 	// check expired at
 	now := time.Now().UnixMilli()
 	if txInfo.ExpiredAt < now {
@@ -175,7 +174,7 @@ func (l *SendMintNftTxLogic) SendMintNftTx(in *globalRPCProto.ReqSendMintNftTx) 
 	if err != nil {
 		return nil, l.createFailMintNftTx(txInfo, err.Error())
 	}
-	txId, mempoolTx := ConstructMempoolTx(
+	_, mempoolTx := ConstructMempoolTx(
 		commonTx.TxTypeMintNft,
 		txInfo.GasFeeAssetId,
 		txInfo.GasFeeAssetAmount.String(),
@@ -191,11 +190,6 @@ func (l *SendMintNftTxLogic) SendMintNftTx(in *globalRPCProto.ReqSendMintNftTx) 
 		txInfo.ExpiredAt,
 		txDetails,
 	)
-	resNftIndex, err := strconv.ParseInt(txId, 10, 64)
-	if err != nil {
-		return nil, l.createFailMintNftTx(txInfo, err.Error())
-	}
-
 	err = createMempoolTxForMintNft(nftInfo, mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)
 	if err != nil {
 		return nil, l.createFailMintNftTx(txInfo, err.Error())
@@ -218,7 +212,7 @@ func (l *SendMintNftTxLogic) SendMintNftTx(in *globalRPCProto.ReqSendMintNftTx) 
 	}
 	_ = l.svcCtx.RedisConnection.Setex(key, string(nftInfoBytes), globalmapHandler.NftExpiryTime)
 
-	return &globalRPCProto.RespSendMintNftTx{NftIndex: resNftIndex}, nil
+	return &globalRPCProto.RespSendMintNftTx{NftIndex: txInfo.NftIndex}, nil
 }
 
 func (l *SendMintNftTxLogic) createFailMintNftTx(info *commonTx.MintNftTxInfo, extraInfo string) error {
