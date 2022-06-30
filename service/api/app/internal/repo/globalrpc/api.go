@@ -23,15 +23,15 @@ type GlobalRPC interface {
 	SendMintNftTx(txInfo string) (int64, error)
 	SendCreateCollectionTx(txInfo string) (int64, error)
 
-	SendAddLiquidityTx(txInfo string) (string, error)
-	SendAtomicMatchTx(txInfo string) (string, error)
-	SendCancelOfferTx(txInfo string) (string, error)
-	SendRemoveLiquidityTx(txInfo string) (string, error)
-	SendSwapTx(txInfo string) (string, error)
-	SendTransferNftTx(txInfo string) (string, error)
-	SendTransferTx(txInfo string) (string, error)
-	SendWithdrawNftTx(txInfo string) (string, error)
-	SendWithdrawTx(txInfo string) (string, error)
+	//SendAddLiquidityTx(txInfo string) (string, error)
+	//SendAtomicMatchTx(txInfo string) (string, error)
+	//SendCancelOfferTx(txInfo string) (string, error)
+	//SendRemoveLiquidityTx(txInfo string) (string, error)
+	//SendSwapTx(txInfo string) (string, error)
+	//SendTransferNftTx(txInfo string) (string, error)
+	//SendTransferTx(txInfo string) (string, error)
+	//SendWithdrawNftTx(txInfo string) (string, error)
+	//SendWithdrawTx(txInfo string) (string, error)
 }
 
 func New(svcCtx *svc.ServiceContext, ctx context.Context) GlobalRPC {
