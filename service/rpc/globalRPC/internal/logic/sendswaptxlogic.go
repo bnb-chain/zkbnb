@@ -84,10 +84,6 @@ func (l *SendSwapTxLogic) SendSwapTx(in *globalRPCProto.ReqSendTxByRawInfo) (res
 		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetBMinAmount, err)
 		return respSendTx, err
 	}
-	if err := util.CheckPackedAmount(txInfo.AssetBAmountDelta); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetBAmountDelta, err)
-		return respSendTx, err
-	}
 	err = util.CheckRequestParam(util.TypeAssetId, reflect.ValueOf(txInfo.AssetAId))
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendSwapTx] err: invalid assetAId %v", txInfo.AssetAId)
