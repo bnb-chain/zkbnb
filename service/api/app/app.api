@@ -267,7 +267,7 @@ type (
 		AssetId uint32 `form:"asset_id"`
 	}
 	RespGetGasFee {
-		GasFee uint64 `json:"gas_fee"`
+		GasFee string `json:"gas_fee"`
 	}
 )
 
@@ -279,7 +279,7 @@ type (
 		WithdrawAmount  uint64 `form:"withdraw_amount"`
 	}
 	RespGetWithdrawGasFee {
-		WithdrawGasFee uint64 `json:"withdraw_gas_fee"`
+		WithdrawGasFee string `json:"withdraw_gas_fee"`
 	}
 )
 

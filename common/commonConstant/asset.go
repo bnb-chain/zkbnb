@@ -20,6 +20,7 @@ package commonConstant
 import "math/big"
 
 const (
+	BNBAssetId        = 0
 	NilPairIndex      = -1
 	NilAssetId        = 0
 	NilBlockHeight    = -1
@@ -32,6 +33,7 @@ const (
 	NilAccountIndex   = int64(0)
 	NilTxNftIndex     = int64(-1)
 	NilTxAccountIndex = int64(-1)
+	BNBDecimalsStr    = "1000000000000000000"
 )
 
 var (
