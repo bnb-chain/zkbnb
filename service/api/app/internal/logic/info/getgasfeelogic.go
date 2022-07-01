@@ -2,14 +2,19 @@ package info
 
 import (
 	"context"
-	"math"
-	"strconv"
-
+	"errors"
+	"github.com/zecrey-labs/zecrey-crypto/ffmath"
+	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
+	"github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
+	"github.com/zecrey-labs/zecrey-legend/common/sysconfigName"
+	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/l2asset"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/price"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/sysconf"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
+	"math"
+	"math/big"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -36,42 +41,58 @@ func NewGetGasFeeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetGasF
 
 // GetGasFee 需求文档
 func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.RespGetGasFee, error) {
+	resp := &types.RespGetGasFee{}
 	l2Asset, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(l.ctx, req.AssetId)
 	if err != nil {
-		logx.Errorf("[GetSimpleL2AssetInfoByAssetId] err:%v", err)
+		logx.Errorf("[GetGasFee] err:%v", err)
 		return nil, err
 	}
-	price, err := l.price.GetCurrencyPrice(l.ctx, l2Asset.AssetSymbol)
+	oAssetInfo, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(context.Background(), req.AssetId)
 	if err != nil {
-		logx.Errorf("[GetCurrencyPrice] err:%v", err)
+		logx.Errorf("[GetGasFee] unable to get l2 asset info: %s", err.Error())
 		return nil, err
 	}
-	sysGasFee, err := l.sysconf.GetSysconfigByName(l.ctx, "SysGasFee")
+	if oAssetInfo.IsGasAsset != assetInfo.IsGasAsset {
+		logx.Errorf("[GetGasFee] not gas asset id")
+		return nil, errors.New("[GetGasFee] not gas asset id")
+	}
+	sysGasFee, err := l.sysconf.GetSysconfigByName(l.ctx, sysconfigName.SysGasFee)
 	if err != nil {
-		logx.Errorf("[GetSysconfigByName] err:%v", err)
+		logx.Errorf("[GetGasFee] err:%v", err)
 		return nil, err
 	}
-	sysGasFeeInt, err := strconv.ParseFloat(sysGasFee.Value, 64)
+	sysGasFeeBigInt, isValid := new(big.Int).SetString(sysGasFee.Value, 10)
+	if !isValid {
+		logx.Errorf("[GetGasFee] parse sys gas fee err:%v", err)
+		return nil, err
+	}
+	// if asset id == BNB, just return
+	if l2Asset.AssetId == commonConstant.BNBAssetId {
+		resp.GasFee = sysGasFeeBigInt.String()
+		return resp, nil
+	}
+	// if not, try to compute the gas amount based on USD
+	assetPrice, err := l.price.GetCurrencyPrice(l.ctx, l2Asset.AssetSymbol)
 	if err != nil {
-		logx.Errorf("[strconv.ParseFloat] err:%v", err)
+		logx.Errorf("[GetGasFee] err:%v", err)
 		return nil, err
 	}
-
-	ethPrice, err := l.price.GetCurrencyPrice(l.ctx, "ETH")
+	bnbPrice, err := l.price.GetCurrencyPrice(l.ctx, "BNB")
 	if err != nil {
-		logx.Errorf("[GetCurrencyPrice] err:%v", err)
+		logx.Errorf("[GetGasFee] err:%v", err)
 		return nil, err
 	}
-	// TODO: integer overflow
-	resp := &types.RespGetGasFee{}
-	GasFee := ethPrice * sysGasFeeInt * math.Pow(10, -5) / price
-	minNum := math.Pow(10, -float64(l2Asset.Decimals))
-	GasFee = truncate(GasFee, int64(l2Asset.Decimals))
-	if GasFee < minNum {
-		GasFee = minNum
+	bnbDecimals, _ := new(big.Int).SetString(commonConstant.BNBDecimalsStr, 10)
+	assetDecimals := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(oAssetInfo.Decimals)), nil)
+	// bnbPrice * bnbAmount * assetDecimals / (10^18 * assetPrice)
+	left := ffmath.FloatMul(ffmath.FloatMul(big.NewFloat(bnbPrice), ffmath.IntToFloat(sysGasFeeBigInt)), ffmath.IntToFloat(assetDecimals))
+	right := ffmath.FloatMul(ffmath.IntToFloat(bnbDecimals), big.NewFloat(assetPrice))
+	gasFee, err := util.CleanPackedFee(ffmath.FloatToInt(ffmath.FloatDiv(left, right)))
+	if err != nil {
+		logx.Errorf("[GetGasFee] unable to clean packed fee: %s", err.Error())
+		return nil, err
 	}
-	GasFee = GasFee * math.Pow(10, float64(l2Asset.Decimals))
-	resp.GasFee = uint64(GasFee)
+	resp.GasFee = gasFee.String()
 	return resp, nil
 }
 

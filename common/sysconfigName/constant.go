@@ -24,7 +24,6 @@ const (
 	BscTestNetworkRpc       = "BscTestNetworkRpc"
 	LocalTestNetworkRpc     = "LocalTestNetworkRpc"
 	SysGasFee               = "SysGasFee"
-	MaxAssetId              = "MaxAssetId"
 	ZecreyLegendContract    = "ZecreyLegendContract"
 	GovernanceContract      = "GovernanceContract"
 	AssetGovernanceContract = "AssetGovernanceContract"

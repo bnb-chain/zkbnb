@@ -19,15 +19,9 @@ func initSysConfig() []*sysconfig.Sysconfig {
 	return []*sysconfig.Sysconfig{
 		{
 			Name:      sysconfigName.SysGasFee,
-			Value:     "1",
-			ValueType: "float",
-			Comment:   "based on ETH",
-		},
-		{
-			Name:      sysconfigName.MaxAssetId,
-			Value:     "9",
-			ValueType: "int",
-			Comment:   "max number of asset id",
+			Value:     "100000000000000",
+			ValueType: "string",
+			Comment:   "based on BNB",
 		},
 		{
 			Name:      sysconfigName.TreasuryAccountIndex,

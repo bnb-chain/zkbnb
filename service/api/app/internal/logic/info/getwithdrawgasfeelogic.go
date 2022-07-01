@@ -2,15 +2,19 @@ package info
 
 import (
 	"context"
+	"errors"
+	"github.com/zecrey-labs/zecrey-crypto/ffmath"
+	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
+	"github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
+	"github.com/zecrey-labs/zecrey-legend/common/sysconfigName"
+	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/l2asset"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/price"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/sysconf"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
-	"math"
-	"strconv"
-
 	"github.com/zeromicro/go-zero/core/logx"
+	"math/big"
 )
 
 type GetWithdrawGasFeeLogic struct {
@@ -35,37 +39,57 @@ func NewGetWithdrawGasFeeLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 
 //todo modify 【now function copy from service/api/app/internal/logic/info/getgasfeelogic.go:38】
 func (l *GetWithdrawGasFeeLogic) GetWithdrawGasFee(req *types.ReqGetWithdrawGasFee) (*types.RespGetWithdrawGasFee, error) {
+	resp := &types.RespGetWithdrawGasFee{}
 	l2Asset, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(l.ctx, req.AssetId)
 	if err != nil {
-		logx.Errorf("[GetSimpleL2AssetInfoByAssetId] err:%v", err)
+		logx.Errorf("[GetGasFee] err:%v", err)
 		return nil, err
 	}
-	SymbolPrice, err := l.price.GetCurrencyPrice(l.ctx, l2Asset.AssetSymbol)
+	oAssetInfo, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(context.Background(), req.AssetId)
 	if err != nil {
-		logx.Errorf("[GetCurrencyPrice] L2Symbol:%v, err:%v", l2Asset.AssetSymbol, err)
+		logx.Errorf("[GetGasFee] unable to get l2 asset info: %s", err.Error())
 		return nil, err
 	}
-
-	// TODO: integer overflow
-	ethPrice, err := l.price.GetCurrencyPrice(l.ctx, "ETH")
-	sysGasFee, err := l.sysconf.GetSysconfigByName(l.ctx, "SysGasFee")
+	if oAssetInfo.IsGasAsset != assetInfo.IsGasAsset {
+		logx.Errorf("[GetGasFee] not gas asset id")
+		return nil, errors.New("[GetGasFee] not gas asset id")
+	}
+	sysGasFee, err := l.sysconf.GetSysconfigByName(l.ctx, sysconfigName.SysGasFee)
 	if err != nil {
-		logx.Errorf("[GetSysconfigByName] err:%v", err)
+		logx.Errorf("[GetGasFee] err:%v", err)
 		return nil, err
 	}
-	sysGasFeeInt, err := strconv.ParseFloat(sysGasFee.Value, 64)
+	sysGasFeeBigInt, isValid := new(big.Int).SetString(sysGasFee.Value, 10)
+	if !isValid {
+		logx.Errorf("[GetGasFee] parse sys gas fee err:%v", err)
+		return nil, err
+	}
+	// if asset id == BNB, just return
+	if l2Asset.AssetId == commonConstant.BNBAssetId {
+		resp.GasFee = sysGasFeeBigInt.String()
+		return resp, nil
+	}
+	// if not, try to compute the gas amount based on USD
+	assetPrice, err := l.price.GetCurrencyPrice(l.ctx, l2Asset.AssetSymbol)
 	if err != nil {
-		logx.Errorf("[strconv.ParseFloat] err:%v", err)
+		logx.Errorf("[GetGasFee] err:%v", err)
 		return nil, err
 	}
-	resp := &types.RespGetWithdrawGasFee{}
-	WithdrawGasFee := ethPrice * sysGasFeeInt * math.Pow(10, -5) / SymbolPrice
-	minNum := math.Pow(10, -float64(l2Asset.Decimals))
-	WithdrawGasFee = truncate(WithdrawGasFee, int64(l2Asset.Decimals))
-	if WithdrawGasFee < minNum {
-		WithdrawGasFee = minNum
+	bnbPrice, err := l.price.GetCurrencyPrice(l.ctx, "BNB")
+	if err != nil {
+		logx.Errorf("[GetGasFee] err:%v", err)
+		return nil, err
 	}
-	WithdrawGasFee = WithdrawGasFee * math.Pow(10, float64(l2Asset.Decimals))
-	resp.WithdrawGasFee = uint64(WithdrawGasFee)
+	bnbDecimals, _ := new(big.Int).SetString(commonConstant.BNBDecimalsStr, 10)
+	assetDecimals := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(oAssetInfo.Decimals)), nil)
+	// bnbPrice * bnbAmount * assetDecimals / (10^18 * assetPrice)
+	left := ffmath.FloatMul(ffmath.FloatMul(big.NewFloat(bnbPrice), ffmath.IntToFloat(sysGasFeeBigInt)), ffmath.IntToFloat(assetDecimals))
+	right := ffmath.FloatMul(ffmath.IntToFloat(bnbDecimals), big.NewFloat(assetPrice))
+	gasFee, err := util.CleanPackedFee(ffmath.FloatToInt(ffmath.FloatDiv(left, right)))
+	if err != nil {
+		logx.Errorf("[GetGasFee] unable to clean packed fee: %s", err.Error())
+		return nil, err
+	}
+	resp.GasFee = gasFee.String()
 	return resp, nil
 }

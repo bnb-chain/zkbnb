@@ -38,6 +38,7 @@ type (
 		GetLatestMempoolDetail(accountIndex int64, assetId int64, assetType int64) (mempoolTxDetail *MempoolTxDetail, err error)
 		GetAccountAssetsMempoolDetails(accountIndex int64, assetType int64) (mempoolTxDetails []*MempoolTxDetail, err error)
 		GetAccountMempoolDetails(accountIndex int64) (mempoolTxDetails []*MempoolTxDetail, err error)
+		GetMempoolTxDetailsByAccountIndex(accountIndex int64) (mempoolTxDetails []*MempoolTxDetail, err error)
 		GetAccountAssetMempoolDetails(accountIndex int64, assetId int64, assetType int64) (mempoolTxDetails []*MempoolTxDetail, err error)
 		GetLatestAccountAssetMempoolDetail(accountIndex int64, assetId int64, assetType int64) (mempoolTxDetail *MempoolTxDetail, err error)
 		GetMempoolTxDetailsByAssetType(assetType int) (mempoolTxDetails []*MempoolTxDetail, err error)
@@ -221,6 +222,18 @@ func (m *defaultMempoolDetailModel) GetMempoolTxDetailsByAssetIdAndAssetType(
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[mempoolDetail.GetAccountMempoolDetails] no related mempool tx details")
+		return nil, ErrNotFound
+	}
+	return mempoolTxDetails, nil
+}
+
+func (m *defaultMempoolDetailModel) GetMempoolTxDetailsByAccountIndex(accountIndex int64) (mempoolTxDetails []*MempoolTxDetail, err error) {
+	var dbTx *gorm.DB
+	dbTx = m.DB.Table(m.table).Where("account_index = ?", accountIndex).Find(&mempoolTxDetails)
+	if dbTx.Error != nil {
+		logx.Errorf("[GetMempoolTxDetailsByAccountIndex] unable to get by account index: %s", err.Error())
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
 		return nil, ErrNotFound
 	}
 	return mempoolTxDetails, nil
