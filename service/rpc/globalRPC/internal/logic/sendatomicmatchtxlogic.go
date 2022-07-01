@@ -21,13 +21,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
+	"strconv"
+	"time"
+
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
-	"reflect"
-	"strconv"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
@@ -40,6 +41,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/redis"
 )
 
 type SendAtomicMatchTxLogic struct {
@@ -270,7 +272,7 @@ func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(reqSendTx *globalRPCProto.Req
 		Sig:          common.Bytes2Hex(txInfo.SellOffer.Sig),
 		Status:       nft.OfferFinishedStatus,
 	})
-	err = CreateMempoolTxForAtomicMatch(
+	err = createMempoolTxForAtomicMatch(
 		nftExchange,
 		mempoolTx,
 		offers,
@@ -353,6 +355,36 @@ func (l *SendAtomicMatchTxLogic) CreateFailAtomicMatchTx(info *commonTx.AtomicMa
 	err = l.svcCtx.FailTxModel.CreateFailTx(failTx)
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendtxlogic.CreateFailAtomicMatchTx] %s", err.Error())
+		logx.Error(errInfo)
+		return errors.New(errInfo)
+	}
+	return nil
+}
+
+func createMempoolTxForAtomicMatch(
+	nftExchange *nft.L2NftExchange,
+	nMempoolTx *mempool.MempoolTx,
+	offers []*nft.Offer,
+	redisConnection *redis.Redis,
+	mempoolModel mempool.MempoolModel,
+) (err error) {
+	var keys []string
+	for _, mempoolTxDetail := range nMempoolTx.MempoolDetails {
+		keys = append(keys, util.GetAccountKey(mempoolTxDetail.AccountIndex))
+	}
+	_, err = redisConnection.Del(keys...)
+	if err != nil {
+		logx.Errorf("[CreateMempoolTx] error with redis: %s", err.Error())
+		return err
+	}
+	// write into mempool
+	err = mempoolModel.CreateMempoolTxAndL2NftExchange(
+		nMempoolTx,
+		offers,
+		nftExchange,
+	)
+	if err != nil {
+		errInfo := fmt.Sprintf("[CreateMempoolTx] %s", err.Error())
 		logx.Error(errInfo)
 		return errors.New(errInfo)
 	}
