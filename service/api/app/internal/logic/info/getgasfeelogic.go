@@ -3,6 +3,9 @@ package info
 import (
 	"context"
 	"errors"
+	"math"
+	"math/big"
+
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
@@ -13,8 +16,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/sysconf"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
-	"math"
-	"math/big"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )

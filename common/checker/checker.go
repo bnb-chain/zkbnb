@@ -80,8 +80,8 @@ func CheckLPAmount(lPAmount uint32) bool {
 	return lPAmount > maxLPAmount
 }
 
-func CheckOfferset(offerset, total uint32) bool {
-	return offerset < total && offerset > 0
+func CheckOffset(offerset, total uint32) bool {
+	return offerset < total
 }
 
 // Format AccountName and

@@ -58,7 +58,7 @@ func (l *GetTxsByAccountNameLogic) GetTxsByAccountName(req *types.ReqGetTxsByAcc
 		Total: uint32(len(txIds)),
 		Txs:   make([]*types.Tx, 0),
 	}
-	if checker.CheckOfferset(req.Offset, resp.Total) {
+	if !checker.CheckOffset(req.Offset, resp.Total) {
 		return nil, errcode.ErrInvalidParam
 	}
 	end := req.Offset + req.Limit

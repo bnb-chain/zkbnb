@@ -50,10 +50,10 @@ func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetBlocks) (*types.RespGetBlock
 			PendingOnChainOperationsHash:    b.PendingOnChainOperationsHash,
 			PendingOnChainOperationsPubData: b.PendingOnChainOperationsPubData,
 			CommittedTxHash:                 b.CommittedTxHash,
-			CommittedAt:                     b.BlockHeight,
+			CommittedAt:                     b.CommittedAt,
 			VerifiedTxHash:                  b.VerifiedTxHash,
-			VerifiedAt:                      b.BlockHeight,
-			BlockStatus:                     b.BlockHeight,
+			VerifiedAt:                      b.VerifiedAt,
+			BlockStatus:                     b.BlockStatus,
 		}
 		for _, t := range b.Txs {
 			tx := utils.GormTx2Tx(t)

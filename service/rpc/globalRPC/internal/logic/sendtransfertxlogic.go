@@ -21,12 +21,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
@@ -130,6 +131,7 @@ func (l *SendTransferTxLogic) SendTransferTx(in *globalRPCProto.ReqSendTxByRawIn
 		logx.Errorf("[sendTransferTx] unable to get account info: %s", err.Error())
 		return respSendTx, l.HandleCreateFailTransferTx(txInfo, err)
 	}
+
 	// get account info by to index
 	if accountInfoMap[txInfo.ToAccountIndex] == nil {
 		accountInfoMap[txInfo.ToAccountIndex], err = globalmapHandler.GetBasicAccountInfo(
