@@ -90,14 +90,6 @@ func (l *SendRemoveLiquidityTxLogic) SendRemoveLiquidityTx(in *globalRPCProto.Re
 		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetBAmountDelta, err)
 		return respSendTx, err
 	}
-	if err := util.CheckPackedAmount(txInfo.TreasuryAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.TreasuryAmount, err)
-		return respSendTx, err
-	}
-	if err := util.CheckPackedAmount(txInfo.KLast); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.KLast, err)
-		return respSendTx, err
-	}
 	l.commglobalmap.DeleteLatestAccountInfoInCache(l.ctx, txInfo.FromAccountIndex)
 	if err != nil {
 		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
