@@ -21,6 +21,7 @@ import (
 
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/logic/sendrawtx"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -46,55 +47,55 @@ func (l *SendTxLogic) SendTx(in *globalRPCProto.ReqSendTx) (resp *globalRPCProto
 	resp = &globalRPCProto.RespSendTx{}
 	switch in.TxType {
 	case commonTx.TxTypeTransfer:
-		resp.TxId, err = l.sendTransferTx(in.TxInfo)
+		resp.TxId, err = sendrawtx.SendTransferTx(l.ctx, l.svcCtx, l.commglobalmap, in.TxInfo)
 		if err != nil {
 			logx.Error("[sendTransferTx] err:%v", err)
 			return nil, err
 		}
 	case commonTx.TxTypeSwap:
-		resp.TxId, err = l.sendSwapTx(in.TxInfo)
+		resp.TxId, err = sendrawtx.SendSwapTx(l.ctx, l.svcCtx, l.commglobalmap, in.TxInfo)
 		if err != nil {
 			logx.Error("[sendSwapTx] err:%v", err)
 			return nil, err
 		}
 	case commonTx.TxTypeAddLiquidity:
-		resp.TxId, err = l.sendAddLiquidityTx(in.TxInfo)
+		resp.TxId, err = sendrawtx.SendAddLiquidityTx(l.ctx, l.svcCtx, l.commglobalmap, in.TxInfo)
 		if err != nil {
 			logx.Error("[sendAddLiquidityTx] err:%v", err)
 			return nil, err
 		}
 	case commonTx.TxTypeRemoveLiquidity:
-		resp.TxId, err = l.sendRemoveLiquidityTx(in.TxInfo)
+		resp.TxId, err = sendrawtx.SendRemoveLiquidityTx(l.ctx, l.svcCtx, l.commglobalmap, in.TxInfo)
 		if err != nil {
 			logx.Error("[sendRemoveLiquidityTx] err:%v", err)
 			return nil, err
 		}
 	case commonTx.TxTypeWithdraw:
-		resp.TxId, err = l.sendWithdrawTx(in.TxInfo)
+		resp.TxId, err = sendrawtx.SendWithdrawTx(l.ctx, l.svcCtx, l.commglobalmap, in.TxInfo)
 		if err != nil {
 			logx.Error("[sendWithdrawTx] err:%v", err)
 			return nil, err
 		}
 	case commonTx.TxTypeTransferNft:
-		resp.TxId, err = l.sendTransferNftTx(in.TxInfo)
+		resp.TxId, err = sendrawtx.SendTransferNftTx(l.ctx, l.svcCtx, l.commglobalmap, in.TxInfo)
 		if err != nil {
 			logx.Error("[sendWithdrawTx] err:%v", err)
 			return nil, err
 		}
 	case commonTx.TxTypeAtomicMatch:
-		resp.TxId, err = l.sendAtomicMatchTx(in.TxInfo)
+		resp.TxId, err = sendrawtx.SendAtomicMatchTx(l.ctx, l.svcCtx, l.commglobalmap, in.TxInfo)
 		if err != nil {
 			logx.Error("[sendWithdrawTx] err:%v", err)
 			return nil, err
 		}
 	case commonTx.TxTypeCancelOffer:
-		resp.TxId, err = l.sendCancelOfferTx(in.TxInfo)
+		resp.TxId, err = sendrawtx.SendCancelOfferTx(l.ctx, l.svcCtx, l.commglobalmap, in.TxInfo)
 		if err != nil {
 			logx.Error("[sendWithdrawTx] err:%v", err)
 			return nil, err
 		}
 	case commonTx.TxTypeWithdrawNft:
-		resp.TxId, err = l.sendWithdrawNftTx(in.TxInfo)
+		resp.TxId, err = sendrawtx.SendWithdrawNftTx(l.ctx, l.svcCtx, l.commglobalmap, in.TxInfo)
 		if err != nil {
 			logx.Error("[sendWithdrawTx] err:%v", err)
 			return nil, err

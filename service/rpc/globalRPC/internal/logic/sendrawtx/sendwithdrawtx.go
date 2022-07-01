@@ -1,24 +1,7 @@
-/*
- *
- *  * Copyright © 2021 Zecrey Protocol
- *  *
- *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  * you may not use this file except in compliance with the License.
- *  * You may obtain a copy of the License at
- *  *
- *  *     http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  * See the License for the specific language governing permissions and
- *  * limitations under the License.
- *
- */
-
-package logic
+package sendrawtx
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -35,11 +18,13 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-func (l *SendTxLogic) sendWithdrawTx(rawTxInfo string) (txId string, err error) {
+func SendWithdrawTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalmap commglobalmap.Commglobalmap, rawTxInfo string) (txId string, err error) {
 	// parse withdraw tx info
 	txInfo, err := commonTx.ParseWithdrawTxInfo(rawTxInfo)
 	if err != nil {
@@ -61,58 +46,58 @@ func (l *SendTxLogic) sendWithdrawTx(rawTxInfo string) (txId string, err error) 
 	err = util.CheckRequestParam(util.TypeAssetId, reflect.ValueOf(txInfo.AssetId))
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendWithdrawTx] err: invalid assetId %v", txInfo.AssetId)
-		return "", l.HandleCreateFailWithdrawTx(txInfo, errors.New(errInfo))
+		return "", handleCreateFailWithdrawTx(svcCtx.FailTxModel, txInfo, errors.New(errInfo))
 	}
 
 	err = util.CheckRequestParam(util.TypeAssetId, reflect.ValueOf(txInfo.GasFeeAssetId))
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendWithdrawTx] err: invalid gasFeeAssetId %v", txInfo.GasFeeAssetId)
-		return "", l.HandleCreateFailWithdrawTx(txInfo, errors.New(errInfo))
+		return "", handleCreateFailWithdrawTx(svcCtx.FailTxModel, txInfo, errors.New(errInfo))
 	}
-	l.commglobalmap.DeleteLatestAccountInfoInCache(l.ctx, txInfo.FromAccountIndex)
+	commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.FromAccountIndex)
 	if err != nil {
 		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
 	}
 	// check gas account index
-	gasAccountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
+	gasAccountIndexConfig, err := svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
 	if err != nil {
 		logx.Errorf("[sendWithdrawTx] unable to get sysconfig by name: %s", err.Error())
-		return "", l.HandleCreateFailWithdrawTx(txInfo, err)
+		return "", handleCreateFailWithdrawTx(svcCtx.FailTxModel, txInfo, err)
 	}
 	gasAccountIndex, err := strconv.ParseInt(gasAccountIndexConfig.Value, 10, 64)
 	if err != nil {
-		return "", l.HandleCreateFailWithdrawTx(txInfo, errors.New("[sendWithdrawTx] unable to parse big int"))
+		return "", handleCreateFailWithdrawTx(svcCtx.FailTxModel, txInfo, errors.New("[sendWithdrawTx] unable to parse big int"))
 	}
 	if gasAccountIndex != txInfo.GasAccountIndex {
 		logx.Errorf("[sendWithdrawTx] invalid gas account index")
-		return "", l.HandleCreateFailWithdrawTx(txInfo, errors.New("[sendWithdrawTx] invalid gas account index"))
+		return "", handleCreateFailWithdrawTx(svcCtx.FailTxModel, txInfo, errors.New("[sendWithdrawTx] invalid gas account index"))
 	}
 
 	// check expired at
 	now := time.Now().UnixMilli()
 	if txInfo.ExpiredAt < now {
 		logx.Errorf("[sendWithdrawTx] invalid time stamp")
-		return "", l.HandleCreateFailWithdrawTx(txInfo, errors.New("[sendWithdrawTx] invalid time stamp"))
+		return "", handleCreateFailWithdrawTx(svcCtx.FailTxModel, txInfo, errors.New("[sendWithdrawTx] invalid time stamp"))
 	}
 
 	var (
 		accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
 	)
-	accountInfoMap[txInfo.FromAccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.FromAccountIndex)
+	accountInfoMap[txInfo.FromAccountIndex], err = commglobalmap.GetLatestAccountInfo(ctx, txInfo.FromAccountIndex)
 	if err != nil {
 		logx.Errorf("[sendWithdrawTx] unable to get account info: %s", err.Error())
-		return "", l.HandleCreateFailWithdrawTx(txInfo, err)
+		return "", handleCreateFailWithdrawTx(svcCtx.FailTxModel, txInfo, err)
 	}
 	// get account info by gas index
 	if accountInfoMap[txInfo.GasAccountIndex] == nil {
 		// get account info by gas index
 		accountInfoMap[txInfo.GasAccountIndex], err = globalmapHandler.GetBasicAccountInfo(
-			l.svcCtx.AccountModel,
-			l.svcCtx.RedisConnection,
+			svcCtx.AccountModel,
+			svcCtx.RedisConnection,
 			txInfo.GasAccountIndex)
 		if err != nil {
 			logx.Errorf("[sendWithdrawTx] unable to get account info: %s", err.Error())
-			return "", l.HandleCreateFailWithdrawTx(txInfo, err)
+			return "", handleCreateFailWithdrawTx(svcCtx.FailTxModel, txInfo, err)
 		}
 	}
 
@@ -128,7 +113,7 @@ func (l *SendTxLogic) sendWithdrawTx(rawTxInfo string) (txId string, err error) 
 		txInfo,
 	)
 	if err != nil {
-		return "", l.HandleCreateFailWithdrawTx(txInfo, err)
+		return "", handleCreateFailWithdrawTx(svcCtx.FailTxModel, txInfo, err)
 	}
 
 	/*
@@ -137,7 +122,7 @@ func (l *SendTxLogic) sendWithdrawTx(rawTxInfo string) (txId string, err error) 
 	// write into mempool
 	txInfoBytes, err := json.Marshal(txInfo)
 	if err != nil {
-		return "", l.HandleCreateFailWithdrawTx(txInfo, err)
+		return "", handleCreateFailWithdrawTx(svcCtx.FailTxModel, txInfo, err)
 	}
 	txId, mempoolTx := ConstructMempoolTx(
 		commonTx.TxTypeWithdraw,
@@ -155,16 +140,16 @@ func (l *SendTxLogic) sendWithdrawTx(rawTxInfo string) (txId string, err error) 
 		txInfo.ExpiredAt,
 		txDetails,
 	)
-	err = CreateMempoolTx(mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)
+	err = CreateMempoolTx(mempoolTx, svcCtx.RedisConnection, svcCtx.MempoolModel)
 	if err != nil {
-		return "", l.HandleCreateFailWithdrawTx(txInfo, err)
+		return "", handleCreateFailWithdrawTx(svcCtx.FailTxModel, txInfo, err)
 	}
 
 	return txId, nil
 }
 
-func (l *SendTxLogic) HandleCreateFailWithdrawTx(txInfo *commonTx.WithdrawTxInfo, err error) error {
-	errCreate := l.CreateFailWithdrawTx(txInfo, err.Error())
+func handleCreateFailWithdrawTx(failTxModel tx.FailTxModel, txInfo *commonTx.WithdrawTxInfo, err error) error {
+	errCreate := createFailWithdrawTx(failTxModel, txInfo, err.Error())
 	if errCreate != nil {
 		logx.Error("[sendwithdrawtxlogic.HandleCreateFailWithdrawTx] %s", errCreate.Error())
 		return errCreate
@@ -175,7 +160,7 @@ func (l *SendTxLogic) HandleCreateFailWithdrawTx(txInfo *commonTx.WithdrawTxInfo
 	}
 }
 
-func (l *SendTxLogic) CreateFailWithdrawTx(info *commonTx.WithdrawTxInfo, extraInfo string) error {
+func createFailWithdrawTx(failTxModel tx.FailTxModel, info *commonTx.WithdrawTxInfo, extraInfo string) error {
 	txHash := util.RandomUUID()
 	txFeeAssetId := info.AssetId
 	assetId := info.AssetId
@@ -209,7 +194,7 @@ func (l *SendTxLogic) CreateFailWithdrawTx(info *commonTx.WithdrawTxInfo, extraI
 		ExtraInfo: extraInfo,
 	}
 
-	err = l.svcCtx.FailTxModel.CreateFailTx(failTx)
+	err = failTxModel.CreateFailTx(failTx)
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendtxlogic.CreateFailWithdrawTx] %s", err.Error())
 		logx.Error(errInfo)
