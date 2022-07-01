@@ -59,18 +59,6 @@ func SendAddLiquidityTx(ctx context.Context, svcCtx *svc.ServiceContext, commglo
 		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetBAmount, err)
 		return "", err
 	}
-	if err := util.CheckPackedAmount(txInfo.LpAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.LpAmount, err)
-		return "", err
-	}
-	if err := util.CheckPackedAmount(txInfo.TreasuryAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.TreasuryAmount, err)
-		return "", err
-	}
-	if err := util.CheckPackedAmount(txInfo.KLast); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.KLast, err)
-		return "", err
-	}
 	commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.FromAccountIndex)
 	if err != nil {
 		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
