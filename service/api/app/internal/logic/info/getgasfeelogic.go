@@ -2,8 +2,10 @@ package info
 
 import (
 	"context"
+	"errors"
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
+	"github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 	"github.com/zecrey-labs/zecrey-legend/common/sysconfigName"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/l2asset"
@@ -45,6 +47,15 @@ func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.RespGetGasFe
 		logx.Errorf("[GetGasFee] err:%v", err)
 		return nil, err
 	}
+	oAssetInfo, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(context.Background(), req.AssetId)
+	if err != nil {
+		logx.Errorf("[GetGasFee] unable to get l2 asset info: %s", err.Error())
+		return nil, err
+	}
+	if oAssetInfo.IsGasAsset != assetInfo.IsGasAsset {
+		logx.Errorf("[GetGasFee] not gas asset id")
+		return nil, errors.New("[GetGasFee] not gas asset id")
+	}
 	sysGasFee, err := l.sysconf.GetSysconfigByName(l.ctx, sysconfigName.SysGasFee)
 	if err != nil {
 		logx.Errorf("[GetGasFee] err:%v", err)
@@ -71,13 +82,8 @@ func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.RespGetGasFe
 		logx.Errorf("[GetGasFee] err:%v", err)
 		return nil, err
 	}
-	assetInfo, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(context.Background(), req.AssetId)
-	if err != nil {
-		logx.Errorf("[GetGasFee] unable to get l2 asset info: %s", err.Error())
-		return nil, err
-	}
 	bnbDecimals, _ := new(big.Int).SetString(commonConstant.BNBDecimalsStr, 10)
-	assetDecimals := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(assetInfo.Decimals)), nil)
+	assetDecimals := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(oAssetInfo.Decimals)), nil)
 	// bnbPrice * bnbAmount * assetDecimals / (10^18 * assetPrice)
 	left := ffmath.FloatMul(ffmath.FloatMul(big.NewFloat(bnbPrice), ffmath.IntToFloat(sysGasFeeBigInt)), ffmath.IntToFloat(assetDecimals))
 	right := ffmath.FloatMul(ffmath.IntToFloat(bnbDecimals), big.NewFloat(assetPrice))

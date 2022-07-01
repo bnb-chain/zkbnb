@@ -274,12 +274,10 @@ type (
 // GetWithdrawGasFee
 type (
 	ReqGetWithdrawGasFee {
-		AssetId         uint32 `form:"asset_id"`
-		WithdrawAssetId uint32 `form:"withdraw_asset_id"`
-		WithdrawAmount  uint64 `form:"withdraw_amount"`
+		AssetId uint32 `form:"asset_id"`
 	}
 	RespGetWithdrawGasFee {
-		WithdrawGasFee string `json:"withdraw_gas_fee"`
+		GasFee string `json:"gas_fee"`
 	}
 )
 
