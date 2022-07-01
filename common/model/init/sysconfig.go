@@ -24,12 +24,6 @@ func initSysConfig() []*sysconfig.Sysconfig {
 			Comment:   "based on BNB",
 		},
 		{
-			Name:      sysconfigName.MaxAssetId,
-			Value:     "9",
-			ValueType: "int",
-			Comment:   "max number of asset id",
-		},
-		{
 			Name:      sysconfigName.TreasuryAccountIndex,
 			Value:     "0",
 			ValueType: "int",
