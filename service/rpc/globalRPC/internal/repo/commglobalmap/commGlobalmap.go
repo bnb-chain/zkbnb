@@ -2,9 +2,9 @@ package commglobalmap
 
 import (
 	"context"
-	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
-	"log"
 	"strconv"
+
+	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
@@ -112,8 +112,6 @@ func (m *model) GetLatestAccountInfo(ctx context.Context, accountIndex int64) (*
 				logx.Errorf("[ParseAccountAsset]param:%v, err:%v", nBalance, err)
 				return nil, err
 			}
-			log.Println(txDetail.AssetId)
-			log.Println(accountInfo.AssetInfo[txDetail.AssetId])
 		case commonAsset.CollectionNonceAssetType:
 			accountInfo.CollectionNonce, err = strconv.ParseInt(txDetail.BalanceDelta, 10, 64)
 			if err != nil {
