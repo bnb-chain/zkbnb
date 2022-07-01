@@ -111,3 +111,66 @@ func (m *globalRPC) SendCreateCollectionTx(txInfo string) (int64, error) {
 	})
 	return rpcRsp.GetCollectionId(), err
 }
+
+func (m *globalRPC) SendAddLiquidityTx(txInfo string) (string, error) {
+	rpcRsp, err := m.globalRPC.SendAddLiquidityTx(m.ctx, &globalrpc.ReqSendTxByRawInfo{
+		TxInfo: txInfo,
+	})
+	return rpcRsp.GetTxId(), err
+}
+
+func (m *globalRPC) SendAtomicMatchTx(txInfo string) (string, error) {
+	rpcRsp, err := m.globalRPC.SendAtomicMatchTx(m.ctx, &globalrpc.ReqSendTxByRawInfo{
+		TxInfo: txInfo,
+	})
+	return rpcRsp.GetTxId(), err
+}
+
+func (m *globalRPC) SendCancelOfferTx(txInfo string) (string, error) {
+	rpcRsp, err := m.globalRPC.SendCancelOfferTx(m.ctx, &globalrpc.ReqSendTxByRawInfo{
+		TxInfo: txInfo,
+	})
+	return rpcRsp.GetTxId(), err
+}
+
+func (m *globalRPC) SendRemoveLiquidityTx(txInfo string) (string, error) {
+	rpcRsp, err := m.globalRPC.SendRemoveLiquidityTx(m.ctx, &globalrpc.ReqSendTxByRawInfo{
+		TxInfo: txInfo,
+	})
+	return rpcRsp.GetTxId(), err
+}
+
+func (m *globalRPC) SendSwapTx(txInfo string) (string, error) {
+	rpcRsp, err := m.globalRPC.SendSwapTx(m.ctx, &globalrpc.ReqSendTxByRawInfo{
+		TxInfo: txInfo,
+	})
+	return rpcRsp.GetTxId(), err
+}
+
+func (m *globalRPC) SendTransferNftTx(txInfo string) (string, error) {
+	rpcRsp, err := m.globalRPC.SendTransferNftTx(m.ctx, &globalrpc.ReqSendTxByRawInfo{
+		TxInfo: txInfo,
+	})
+	return rpcRsp.GetTxId(), err
+}
+
+func (m *globalRPC) SendTransferTx(txInfo string) (string, error) {
+	rpcRsp, err := m.globalRPC.SendTransferTx(m.ctx, &globalrpc.ReqSendTxByRawInfo{
+		TxInfo: txInfo,
+	})
+	return rpcRsp.GetTxId(), err
+}
+
+func (m *globalRPC) SendWithdrawNftTx(txInfo string) (string, error) {
+	rpcRsp, err := m.globalRPC.SendWithdrawNftTx(m.ctx, &globalrpc.ReqSendTxByRawInfo{
+		TxInfo: txInfo,
+	})
+	return rpcRsp.GetTxId(), err
+}
+
+func (m *globalRPC) SendWithdrawTx(txInfo string) (string, error) {
+	rpcRsp, err := m.globalRPC.SendWithdrawTx(m.ctx, &globalrpc.ReqSendTxByRawInfo{
+		TxInfo: txInfo,
+	})
+	return rpcRsp.GetTxId(), err
+}
