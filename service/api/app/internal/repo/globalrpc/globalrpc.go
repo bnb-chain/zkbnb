@@ -18,6 +18,7 @@ package globalrpc
 
 import (
 	"context"
+	"sort"
 
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
@@ -79,6 +80,9 @@ func (m *globalRPC) GetLatestAssetsListByAccountIndex(accountIndex uint32) ([]*g
 func (m *globalRPC) GetLatestAccountInfoByAccountIndex(accountIndex uint32) (*globalrpc.RespGetLatestAccountInfoByAccountIndex, error) {
 	res, err := m.globalRPC.GetLatestAccountInfoByAccountIndex(m.ctx, &globalrpc.ReqGetLatestAccountInfoByAccountIndex{
 		AccountIndex: accountIndex,
+	})
+	sort.SliceStable(res.AccountAsset, func(i, j int) bool {
+		return res.AccountAsset[i].AssetId < res.AccountAsset[j].AssetId
 	})
 	return res, err
 }
