@@ -58,8 +58,7 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (*types.RespGe
 	}
 	block, err := l.block.GetBlockByBlockHeight(l.ctx, resp.Tx.BlockHeight)
 	if err != nil {
-		logx.Errorf("[GetBlockByBlockHeight]:%v", err)
-		return nil, err
+		logx.Infof("[GetBlockByBlockHeight]:%v", err)
 	}
 	resp.CommittedAt = block.CommittedAt
 	resp.ExecutedAt = block.CreatedAt.Unix()
