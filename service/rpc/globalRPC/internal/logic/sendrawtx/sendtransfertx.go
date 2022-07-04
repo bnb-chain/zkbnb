@@ -1,22 +1,7 @@
-/*
- * Copyright © 2021 Zecrey Protocol
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-package logic
+package sendrawtx
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -33,11 +18,13 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-func (l *SendTxLogic) sendTransferTx(rawTxInfo string) (txId string, err error) {
+func SendTransferTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalmap commglobalmap.Commglobalmap, rawTxInfo string) (txId string, err error) {
 	// parse transfer tx info
 	txInfo, err := commonTx.ParseTransferTxInfo(rawTxInfo)
 	if err != nil {
@@ -56,83 +43,83 @@ func (l *SendTxLogic) sendTransferTx(rawTxInfo string) (txId string, err error) 
 	err = util.CheckRequestParam(util.TypeAssetId, reflect.ValueOf(txInfo.AssetId))
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendTransferTx] err: invalid assetId %v", txInfo.AssetId)
-		return "", l.HandleCreateFailTransferTx(txInfo, errors.New(errInfo))
+		return "", handleCreateFailTransferTx(svcCtx.FailTxModel, txInfo, errors.New(errInfo))
 	}
 	// check param: from account index
 	err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.FromAccountIndex))
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendTransferTx] err: invalid accountIndex %v", txInfo.FromAccountIndex)
-		return "", l.HandleCreateFailTransferTx(txInfo, errors.New(errInfo))
+		return "", handleCreateFailTransferTx(svcCtx.FailTxModel, txInfo, errors.New(errInfo))
 	}
 	// check param: to account index
 	err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.ToAccountIndex))
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendTransferTx] err: invalid accountIndex %v", txInfo.ToAccountIndex)
-		return "", l.HandleCreateFailTransferTx(txInfo, errors.New(errInfo))
+		return "", handleCreateFailTransferTx(svcCtx.FailTxModel, txInfo, errors.New(errInfo))
 	}
-	l.commglobalmap.DeleteLatestAccountInfoInCache(l.ctx, txInfo.FromAccountIndex)
+	commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.FromAccountIndex)
 	if err != nil {
 		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
 	}
-	l.commglobalmap.DeleteLatestAccountInfoInCache(l.ctx, txInfo.ToAccountIndex)
+	commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.ToAccountIndex)
 	if err != nil {
 		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
 	}
 	// check gas account index
-	gasAccountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
+	gasAccountIndexConfig, err := svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
 	if err != nil {
 		logx.Errorf("[sendTransferTx] unable to get sysconfig by name: %s", err.Error())
-		return "", l.HandleCreateFailTransferTx(txInfo, err)
+		return "", handleCreateFailTransferTx(svcCtx.FailTxModel, txInfo, err)
 	}
 	gasAccountIndex, err := strconv.ParseInt(gasAccountIndexConfig.Value, 10, 64)
 	if err != nil {
-		return "", l.HandleCreateFailTransferTx(txInfo, errors.New("[sendTransferTx] unable to parse big int"))
+		return "", handleCreateFailTransferTx(svcCtx.FailTxModel, txInfo, errors.New("[sendTransferTx] unable to parse big int"))
 	}
 	if gasAccountIndex != txInfo.GasAccountIndex {
 		logx.Errorf("[sendTransferTx] invalid gas account index")
-		return "", l.HandleCreateFailTransferTx(txInfo, errors.New("[sendTransferTx] invalid gas account index"))
+		return "", handleCreateFailTransferTx(svcCtx.FailTxModel, txInfo, errors.New("[sendTransferTx] invalid gas account index"))
 	}
 
 	// check expired at
 	now := time.Now().UnixMilli()
 	if txInfo.ExpiredAt < now {
 		logx.Errorf("[sendTransferTx] invalid time stamp")
-		return "", l.HandleCreateFailTransferTx(txInfo, errors.New("[sendTransferTx] invalid time stamp"))
+		return "", handleCreateFailTransferTx(svcCtx.FailTxModel, txInfo, errors.New("[sendTransferTx] invalid time stamp"))
 	}
 
 	var (
 		accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
 	)
-	accountInfoMap[txInfo.FromAccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.FromAccountIndex)
+	accountInfoMap[txInfo.FromAccountIndex], err = commglobalmap.GetLatestAccountInfo(ctx, txInfo.FromAccountIndex)
 	if err != nil {
 		logx.Errorf("[sendTransferTx] unable to get account info: %s", err.Error())
-		return "", l.HandleCreateFailTransferTx(txInfo, err)
+		return "", handleCreateFailTransferTx(svcCtx.FailTxModel, txInfo, err)
 	}
 	// get account info by to index
 	if accountInfoMap[txInfo.ToAccountIndex] == nil {
 		accountInfoMap[txInfo.ToAccountIndex], err = globalmapHandler.GetBasicAccountInfo(
-			l.svcCtx.AccountModel,
-			l.svcCtx.RedisConnection,
+			svcCtx.AccountModel,
+			svcCtx.RedisConnection,
 			txInfo.ToAccountIndex)
 		if err != nil {
 			logx.Errorf("[sendTransferTx] unable to get account info: %s", err.Error())
-			return "", l.HandleCreateFailTransferTx(txInfo, err)
+			return "", handleCreateFailTransferTx(svcCtx.FailTxModel, txInfo, err)
 		}
 	}
 	if accountInfoMap[txInfo.ToAccountIndex].AccountNameHash != txInfo.ToAccountNameHash {
 		logx.Errorf("[sendTransferTx] invalid account name")
-		return "", l.HandleCreateFailTransferTx(txInfo, errors.New("[sendTransferTx] invalid account name"))
+		return "", handleCreateFailTransferTx(svcCtx.FailTxModel, txInfo, errors.New("[sendTransferTx] invalid account name"))
 	}
 	// get account info by gas index
 	if accountInfoMap[txInfo.GasAccountIndex] == nil {
 		// get account info by gas index
 		accountInfoMap[txInfo.GasAccountIndex], err = globalmapHandler.GetBasicAccountInfo(
-			l.svcCtx.AccountModel,
-			l.svcCtx.RedisConnection,
+			svcCtx.AccountModel,
+			svcCtx.RedisConnection,
 			txInfo.GasAccountIndex)
 		if err != nil {
 			logx.Errorf("[sendTransferTx] unable to get account info: %s", err.Error())
-			return "", l.HandleCreateFailTransferTx(txInfo, err)
+			return "", handleCreateFailTransferTx(svcCtx.FailTxModel, txInfo, err)
 		}
 	}
 	var (
@@ -144,7 +131,7 @@ func (l *SendTxLogic) sendTransferTx(rawTxInfo string) (txId string, err error) 
 		txInfo,
 	)
 	if err != nil {
-		return "", l.HandleCreateFailTransferTx(txInfo, err)
+		return "", handleCreateFailTransferTx(svcCtx.FailTxModel, txInfo, err)
 	}
 
 	/*
@@ -157,7 +144,7 @@ func (l *SendTxLogic) sendTransferTx(rawTxInfo string) (txId string, err error) 
 	// write into mempool
 	txInfoBytes, err := json.Marshal(txInfo)
 	if err != nil {
-		return "", l.HandleCreateFailTransferTx(txInfo, err)
+		return "", handleCreateFailTransferTx(svcCtx.FailTxModel, txInfo, err)
 	}
 	txId, mempoolTx := ConstructMempoolTx(
 		commonTx.TxTypeTransfer,
@@ -175,15 +162,15 @@ func (l *SendTxLogic) sendTransferTx(rawTxInfo string) (txId string, err error) 
 		txInfo.ExpiredAt,
 		txDetails,
 	)
-	err = CreateMempoolTx(mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)
+	err = CreateMempoolTx(mempoolTx, svcCtx.RedisConnection, svcCtx.MempoolModel)
 	if err != nil {
-		return "", l.HandleCreateFailTransferTx(txInfo, err)
+		return "", handleCreateFailTransferTx(svcCtx.FailTxModel, txInfo, err)
 	}
 	return txId, nil
 }
 
-func (l *SendTxLogic) HandleCreateFailTransferTx(txInfo *commonTx.TransferTxInfo, err error) error {
-	errCreate := l.CreateFailTransferTx(txInfo, err.Error())
+func handleCreateFailTransferTx(failTxModel tx.FailTxModel, txInfo *commonTx.TransferTxInfo, err error) error {
+	errCreate := createFailTransferTx(failTxModel, txInfo, err.Error())
 	if errCreate != nil {
 		logx.Error("[sendtransfertxlogic.HandleCreateFailTransferTx] %s", errCreate.Error())
 		return errCreate
@@ -194,7 +181,7 @@ func (l *SendTxLogic) HandleCreateFailTransferTx(txInfo *commonTx.TransferTxInfo
 	}
 }
 
-func (l *SendTxLogic) CreateFailTransferTx(info *commonTx.TransferTxInfo, extraInfo string) error {
+func createFailTransferTx(failTxModel tx.FailTxModel, info *commonTx.TransferTxInfo, extraInfo string) error {
 	txHash := util.RandomUUID()
 	txFeeAssetId := info.AssetId
 	assetId := info.AssetId
@@ -233,7 +220,7 @@ func (l *SendTxLogic) CreateFailTransferTx(info *commonTx.TransferTxInfo, extraI
 		Memo: info.Memo,
 	}
 
-	err = l.svcCtx.FailTxModel.CreateFailTx(failTx)
+	err = failTxModel.CreateFailTx(failTx)
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendtxlogic.CreateFailTransferTx] %s", err.Error())
 		logx.Error(errInfo)

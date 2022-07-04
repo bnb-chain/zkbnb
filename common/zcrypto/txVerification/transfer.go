@@ -19,12 +19,14 @@ package txVerification
 
 import (
 	"errors"
+	"fmt"
+	"math/big"
+
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-crypto/wasm/zecrey-legend/legendTxTypes"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zeromicro/go-zero/core/logx"
-	"math/big"
 )
 
 func VerifyTransferTxInfo(
@@ -43,10 +45,9 @@ func VerifyTransferTxInfo(
 		txInfo.GasFeeAssetAmount.Cmp(ZeroBigInt) < 0 {
 		return nil, errors.New("[VerifyTransferTxInfo] invalid params")
 	}
-	// verify nonce
 	if txInfo.Nonce != accountInfoMap[txInfo.FromAccountIndex].Nonce {
-		logx.Errorf("[VerifyTransferTxInfo] invalid nonce")
-		return nil, errors.New("[VerifyTransferTxInfo] invalid nonce")
+		return nil, fmt.Errorf("[VerifyTransferTxInfo] invalid nonce, txInfo.Nonce:%v :%v",
+			txInfo.Nonce, accountInfoMap[txInfo.FromAccountIndex].Nonce)
 	}
 	// init delta map
 	var (

@@ -19,12 +19,13 @@ package logic
 import (
 	"encoding/json"
 	"errors"
-	"github.com/zecrey-labs/zecrey-legend/common/model/blockForCommit"
 	"log"
 	"math"
 	"math/big"
 	"strconv"
 	"time"
+
+	"github.com/zecrey-labs/zecrey-legend/common/model/blockForCommit"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
@@ -40,49 +41,34 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/tree"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/committer/internal/svc"
+	"github.com/zecrey-labs/zecrey-legend/service/cronjob/errcode"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 )
 
-func CommitterTask(
-	ctx *svc.ServiceContext,
-	lastCommitTimeStamp time.Time,
-	accountTree *tree.Tree,
-	liquidityTree *tree.Tree,
-	nftTree *tree.Tree,
-	accountAssetTrees *[]*tree.Tree,
-) error {
-	// Get Txs from Mempool
+func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp time.Time, accountTree *tree.Tree,
+	liquidityTree *tree.Tree, nftTree *tree.Tree, accountAssetTrees *[]*tree.Tree) error {
 	mempoolTxs, err := ctx.MempoolModel.GetMempoolTxsListForCommitter()
 	if err != nil {
-		if err == ErrNotFound {
-			logx.Info("[CommitterTask] no tx in mempool")
+		if err == errcode.ErrNotFound {
 			return nil
-		} else {
-			logx.Error("[CommitterTask] unable to get tx in mempool")
-			return err
 		}
+		logx.Errorf("[GetMempoolTxsListForCommitter] unable to get tx in mempool")
+		return err
 	}
-
 	var nTxs = len(mempoolTxs)
 	logx.Infof("[CommitterTask] Mempool txs number : %d", nTxs)
-
-	// get current block height
 	currentBlockHeight, err := ctx.BlockModel.GetCurrentBlockHeight()
-	if err != nil && err != ErrNotFound {
-		logx.Error("[CommitterTask] err when get current block height")
+	if err != nil && err != errcode.ErrNotFound {
+		logx.Errorf("[GetCurrentBlockHeight] err when get current block height")
 		return err
 	}
-	// get last block info
 	lastBlock, err := ctx.BlockModel.GetBlockByBlockHeight(currentBlockHeight)
 	if err != nil {
-		logx.Errorf("[CommitterTask] unable to get block by height: %s", err.Error())
+		logx.Errorf("[GetBlockByBlockHeight] unable to get block by height: %s", err.Error())
 		return err
 	}
-	// handle txs
-	// check how many blocks
 	blocksSize := int(math.Ceil(float64(nTxs) / float64(MaxTxsAmountPerBlock)))
-
 	// accountMap store the map from account index to accountInfo, decrease the duplicated query from Account Model
 	var (
 		accountMap   = make(map[int64]*FormatAccountInfo)
@@ -91,31 +77,24 @@ func CommitterTask(
 		oldStateRoot = lastBlock.StateRoot
 	)
 	for i := 0; i < blocksSize; i++ {
-		// Check time stamp
 		var now = time.Now()
 		if now.Unix()-lastCommitTimeStamp.Unix() < MaxCommitterInterval {
 			// if time is less than MaxCommitterInterval (15 minutes for now)
 			// and remaining txs number( equals to "nTxs - (i + 1) * MaxTxsAmountPerBlock") is less than MaxTxsAmountPerBlock
 			if nTxs-i*MaxTxsAmountPerBlock < MaxTxsAmountPerBlock {
 				logx.Infof("[CommitterTask] not enough transactions")
-				return errors.New("[CommitterTask] not enough transactions")
+				return errcode.ErrNotEnoughTransactions
 			}
 		}
-
 		var (
 			pendingUpdateAccountIndexMap   = make(map[int64]bool)
 			pendingUpdateLiquidityIndexMap = make(map[int64]bool)
-
-			pendingUpdateNftIndexMap     = make(map[int64]bool)
-			pendingNewNftIndexMap        = make(map[int64]bool)
-			pendingNewNftWithdrawHistory []*nft.L2NftWithdrawHistory
-
-			// block txs
-			txs []*Tx
-			// final account root
-			finalStateRoot string
-			// pub data
-			pubData []byte
+			pendingUpdateNftIndexMap       = make(map[int64]bool)
+			pendingNewNftIndexMap          = make(map[int64]bool)
+			pendingNewNftWithdrawHistory   []*nft.L2NftWithdrawHistory
+			txs                            []*Tx
+			finalStateRoot                 string
+			pubData                        []byte
 			// onchain tx info
 			priorityOperations              int64
 			pubDataOffset                   []uint32
@@ -128,10 +107,8 @@ func CommitterTask(
 		pendingOnChainOperationsHash = common.FromHex(util.EmptyStringKeccak)
 		// handle each transaction
 		currentBlockHeight += 1
-
 		// compute block commitment
 		createdAt := time.Now().UnixMilli()
-
 		for j := 0; j < MaxTxsAmountPerBlock; j++ {
 			// if not full block, just break
 			if i*MaxTxsAmountPerBlock+j >= nTxs {
@@ -145,31 +122,24 @@ func CommitterTask(
 			mempoolTx := mempoolTxs[i*MaxTxsAmountPerBlock+j]
 			// handle tx pub data
 			pendingPriorityOperation, pendingOnChainOperationsPubData, pendingOnChainOperationsHash, pubData, pubDataOffset, err =
-				handleTxPubData(
-					mempoolTx,
-					pubData,
-					pendingOnChainOperationsPubData,
-					pendingOnChainOperationsHash,
-					pubDataOffset,
-				)
+				handleTxPubData(mempoolTx, pubData, pendingOnChainOperationsPubData, pendingOnChainOperationsHash, pubDataOffset)
 			if err != nil {
-				logx.Errorf("[CommitterTask] unable to handle l1 tx: %s", err.Error())
+				logx.Errorf("[handleTxPubData] unable to handle l1 tx: %v", err)
 				return err
 			}
 			// compute new priority operations
 			priorityOperations += pendingPriorityOperation
-
 			// get related account info
 			if mempoolTx.AccountIndex != commonConstant.NilTxAccountIndex {
 				if accountMap[mempoolTx.AccountIndex] == nil {
 					accountInfo, err := ctx.AccountModel.GetAccountByAccountIndex(mempoolTx.AccountIndex)
 					if err != nil {
-						logx.Errorf("[CommitterTask] get account by account index: %s", err.Error())
+						logx.Errorf("[CommitterTask] get account by account index: %v", err)
 						return err
 					}
 					accountMap[mempoolTx.AccountIndex], err = commonAsset.ToFormatAccountInfo(accountInfo)
 					if err != nil {
-						logx.Errorf("[CommitterTask] unable to format account info: %s", err.Error())
+						logx.Errorf("[CommitterTask] unable to format account info: %v", err)
 						return err
 					}
 				}
@@ -227,8 +197,6 @@ func CommitterTask(
 					mempoolTx.L2BlockHeight = currentBlockHeight
 					pendingDeleteMempoolTxs = append(pendingDeleteMempoolTxs, mempoolTx)
 					continue
-					//logx.Errorf("[CommitterTask] invalid nonce")
-					//return errors.New("[CommitterTask] invalid nonce")
 				}
 			}
 			// check mempool tx details are correct
@@ -541,7 +509,6 @@ func CommitterTask(
 				})
 			}
 			if mempoolTx.Nonce != commonConstant.NilNonce {
-				// update nonce
 				accountMap[mempoolTx.AccountIndex].Nonce = mempoolTx.Nonce
 			}
 			// check if we need to update nonce
@@ -558,12 +525,12 @@ func CommitterTask(
 					(*accountAssetTrees)[accountIndex].RootNode.Value,
 				)
 				if err != nil {
-					log.Println("[CommitterTask] unable to compute account leaf:", err)
+					logx.Errorf("[CommitterTask] unable to compute account leaf:", err)
 					return err
 				}
 				err = accountTree.Update(accountIndex, nAccountLeafHash)
 				if err != nil {
-					log.Println("[CommitterTask] unable to update account tree:", err)
+					logx.Errorf("[CommitterTask] unable to update account tree:", err)
 					return err
 				}
 			}
@@ -686,14 +653,14 @@ func CommitterTask(
 			if pendingOnChainOperationsPubData != nil {
 				onChainOperationsPubDataBytes, err := json.Marshal(pendingOnChainOperationsPubData)
 				if err != nil {
-					logx.Errorf("[CommitterTask] unable to marshal on chain operations pub data: %s", err.Error())
+					logx.Errorf("[CommitterTask] unable to marshal on chain operations pub data: %v", err)
 					return err
 				}
 				oBlock.PendingOnChainOperationsPubData = string(onChainOperationsPubDataBytes)
 			}
 			offsetBytes, err := json.Marshal(pubDataOffset)
 			if err != nil {
-				logx.Errorf("[CommitterTask] unable to marshal pub data: %s", err.Error())
+				logx.Errorf("[CommitterTask] unable to marshal pub data: %v", err)
 				return err
 			}
 			oBlockForCommit = &BlockForCommit{
@@ -704,24 +671,10 @@ func CommitterTask(
 				PublicDataOffsets: string(offsetBytes),
 			}
 		}
-
-		// create block for committer
-		// create block, history, update mempool txs, create new l1 amount infos
-		err = ctx.BlockModel.CreateBlockForCommitter(
-			oBlock,
-			oBlockForCommit,
-			pendingMempoolTxs,
-			pendingDeleteMempoolTxs,
-			pendingUpdateAccounts,
-			pendingNewAccountHistory,
-			pendingUpdateLiquidity,
-			pendingNewLiquidityHistory,
-			pendingUpdateNft,
-			pendingNewNftHistory,
-			pendingNewNftWithdrawHistory,
-		)
-		if err != nil {
-			logx.Errorf("[CommitterTask] unable to create block for committer: %s", err.Error())
+		if err = ctx.BlockModel.CreateBlockForCommitter(oBlock, oBlockForCommit,
+			pendingMempoolTxs, pendingDeleteMempoolTxs, pendingUpdateAccounts, pendingNewAccountHistory, pendingUpdateLiquidity,
+			pendingNewLiquidityHistory, pendingUpdateNft, pendingNewNftHistory, pendingNewNftWithdrawHistory); err != nil {
+			logx.Errorf("[CommitterTask] unable to create block for committer: %v", err)
 			return err
 		}
 	}
