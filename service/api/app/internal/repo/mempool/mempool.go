@@ -54,12 +54,17 @@ func (m *model) GetMempoolTxsTotalCount() (count int64, err error) {
 func (m *model) GetMempoolTxByTxHash(hash string) (mempoolTx *table.MempoolTx, err error) {
 	var mempoolForeignKeyColumn = `MempoolDetails`
 	dbTx := m.db.Table(m.table).Where("status = ? and tx_hash = ?", PendingTxStatus, hash).Find(&mempoolTx)
-	err = m.db.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
-	if err != nil {
+	if dbTx.Error != nil {
+		logx.Errorf("[GetMempoolTxByTxHash] %v", dbTx.Error)
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return nil, errcode.ErrDataNotExist
+	}
+	if err = m.db.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails); err != nil {
 		logx.Errorf("[mempool.GetMempoolTxByTxHash] Get Associate MempoolDetails Error")
 		return nil, err
 	}
-	return mempoolTx, dbTx.Error
+	return mempoolTx, nil
 }
 
 func (m *model) GetMempoolTxsTotalCountByAccountIndex(accountIndex int64) (count int64, err error) {

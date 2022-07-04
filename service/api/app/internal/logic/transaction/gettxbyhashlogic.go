@@ -36,6 +36,9 @@ func NewGetTxByHashLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTx
 func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (*types.RespGetTxByHash, error) {
 	resp := &types.RespGetTxByHash{}
 	tx, err := l.tx.GetTxByTxHash(l.ctx, req.TxHash)
+	if err == nil {
+		resp.Tx = *utils.GormTx2Tx(tx)
+	}
 	if err != nil {
 		memppolTx, err := l.mempool.GetMempoolTxByTxHash(req.TxHash)
 		if err != nil {
@@ -44,7 +47,6 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (*types.RespGe
 		}
 		resp.Tx = *utils.MempoolTx2Tx(memppolTx)
 	}
-	resp.Tx = *utils.GormTx2Tx(tx)
 	if resp.Tx.TxType == commonTx.TxTypeSwap {
 		txInfo, err := commonTx.ParseSwapTxInfo(tx.TxInfo)
 		if err != nil {
