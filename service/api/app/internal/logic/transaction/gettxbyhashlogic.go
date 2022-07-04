@@ -57,11 +57,10 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (*types.RespGe
 		resp.AssetBId = txInfo.AssetBId
 	}
 	block, err := l.block.GetBlockByBlockHeight(l.ctx, resp.Tx.BlockHeight)
-	if err != nil {
-		logx.Infof("[GetBlockByBlockHeight]:%v", err)
+	if err == nil {
+		resp.CommittedAt = block.CommittedAt
+		resp.ExecutedAt = block.CreatedAt.Unix()
+		resp.VerifiedAt = block.VerifiedAt
 	}
-	resp.CommittedAt = block.CommittedAt
-	resp.ExecutedAt = block.CreatedAt.Unix()
-	resp.VerifiedAt = block.VerifiedAt
 	return resp, nil
 }
