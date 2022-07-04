@@ -88,8 +88,8 @@ func main() {
 	cronJob := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))
-	_, err = cronJob.AddFunc("@every 10s", func() {
 
+	_, err = cronJob.AddFunc("@every 10s", func() {
 		logx.Info("========================= start sender committer task =========================")
 		err := logic.SendCommittedBlocks(
 			param,
@@ -101,18 +101,23 @@ func main() {
 			logx.Info("[sender.SendCommittedBlocks main] unable to run:", err)
 		}
 		logx.Info("========================= end sender committer task =========================")
+	})
+	if err != nil {
+		panic(err)
+	}
 
+	_, err = cronJob.AddFunc("@every 10s", func() {
 		logx.Info("========================= start sender verifier task =========================")
 		err = logic.SendVerifiedAndExecutedBlocks(param, ctx.L1TxSenderModel, ctx.BlockModel, ctx.ProofSenderModel)
 		if err != nil {
 			logx.Info("[sender.SendCommittedBlocks main] unable to run:", err)
 		}
 		logx.Info("========================= end sender verifier task =========================")
-
 	})
 	if err != nil {
 		panic(err)
 	}
+
 	cronJob.Start()
 
 	logx.Info("sender cronjob is starting......")
