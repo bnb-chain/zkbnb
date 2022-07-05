@@ -15,4 +15,5 @@ var (
 	// error code in [20000,30000) represent code logic error
 	ErrNotEnoughTransactions     = zerror.New(20000, "[CommitterTask] not enough transactions")
 	ErrNotInvalidCollectionNonce = zerror.New(20001, "[CommitterTask] invalid collection nonce")
+	ErrContinueFlag              = zerror.New(20002, "[CommitterTask] Continue Flag")
 )
