@@ -201,9 +201,7 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp time.Time, accou
 				}
 			}
 			// check mempool tx details are correct
-			var (
-				txDetails []*tx.TxDetail
-			)
+			var txDetails []*tx.TxDetail
 			for _, mempoolTxDetail := range mempoolTx.MempoolDetails {
 				if mempoolTxDetail.AccountIndex != commonConstant.NilTxAccountIndex {
 					pendingUpdateAccountIndexMap[mempoolTxDetail.AccountIndex] = true
@@ -220,174 +218,23 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp time.Time, accou
 						}
 					}
 				}
-				var (
-					baseBalance string
-				)
+				var baseBalance string
 				// check balance
 				switch mempoolTxDetail.AssetType {
 				case GeneralAssetType:
-					if accountMap[mempoolTxDetail.AccountIndex].AssetInfo == nil {
-						accountMap[mempoolTxDetail.AccountIndex].AssetInfo = make(map[int64]*commonAsset.AccountAsset)
-					}
-					if accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId] == nil {
-						accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId] = &commonAsset.AccountAsset{
-							AssetId:                  mempoolTxDetail.AssetId,
-							Balance:                  ZeroBigInt,
-							LpAmount:                 ZeroBigInt,
-							OfferCanceledOrFinalized: ZeroBigInt,
-						}
-					}
-					// get latest account asset info
-					baseBalance = accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId].String()
-					var (
-						nBalance string
-					)
-					if mempoolTx.TxType == TxTypeFullExit {
-						balanceDelta := &commonAsset.AccountAsset{
-							AssetId:                  accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId].AssetId,
-							Balance:                  ffmath.Neg(accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId].Balance),
-							LpAmount:                 big.NewInt(0),
-							OfferCanceledOrFinalized: big.NewInt(0),
-						}
-						// compute new balance
-						nBalance, err = commonAsset.ComputeNewBalance(GeneralAssetType, baseBalance, balanceDelta.String())
-						if err != nil {
-							logx.Error("[CommitterTask] unable to compute new balance: %s", err.Error())
-							return err
-						}
-						mempoolTxDetail.BalanceDelta = balanceDelta.String()
-						txInfo, err := commonTx.ParseFullExitTxInfo(mempoolTx.TxInfo)
-						if err != nil {
-							logx.Errorf("[CommitterTask] unable to parse full exit tx info: %s", err.Error())
-							return err
-						}
-						txInfo.AssetAmount = accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId].Balance
-						infoBytes, err := json.Marshal(txInfo)
-						if err != nil {
-							logx.Errorf("[CommitterTask] unable to marshal tx: %s", err.Error())
-							return err
-						}
-						mempoolTx.TxInfo = string(infoBytes)
-
-					} else {
-						// compute new balance
-						nBalance, err = commonAsset.ComputeNewBalance(GeneralAssetType, baseBalance, mempoolTxDetail.BalanceDelta)
-						if err != nil {
-							logx.Error("[CommitterTask] unable to compute new balance: %s", err.Error())
-							return err
-						}
-					}
-					nAccountAsset, err := commonAsset.ParseAccountAsset(nBalance)
-					if err != nil {
-						logx.Errorf("[CommitterTask] unable to parse account asset: %s", err.Error())
-						return err
-					}
-					// check balance is valid
-					if nAccountAsset.Balance.Cmp(util.ZeroBigInt) < 0 {
-						// mark this transaction as invalid transaction
-						mempoolTx.Status = mempool.FailTxStatus
-						mempoolTx.L2BlockHeight = currentBlockHeight
-						pendingDeleteMempoolTxs = append(pendingDeleteMempoolTxs, mempoolTx)
+					pendingDeleteMempoolTxs, mempoolTx, mempoolTxDetail, accountMap, baseBalance, err = processGeneralAssetType(ctx,
+						accountMap, pendingDeleteMempoolTxs, mempoolTx, accountAssetTrees, mempoolTxDetail, currentBlockHeight)
+					if err.Error() == errcode.ErrContinueFlag.Error() {
 						continue
 					}
-					accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId] = nAccountAsset
-					// update account state tree
-					nAssetLeaf, err := tree.ComputeAccountAssetLeafHash(
-						accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId].Balance.String(),
-						accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId].LpAmount.String(),
-						accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId].OfferCanceledOrFinalized.String(),
-					)
 					if err != nil {
-						log.Println("[CommitterTask] unable to compute new account asset leaf:", err)
-						return err
+						logx.Errorf("[processGeneralAssetType] err: %v", err)
 					}
-					err = (*accountAssetTrees)[mempoolTxDetail.AccountIndex].Update(mempoolTxDetail.AssetId, nAssetLeaf)
-					if err != nil {
-						log.Println("[CommitterTask] unable to update asset tree:", err)
-						return err
-					}
-					accountMap[mempoolTxDetail.AccountIndex].AssetRoot = common.Bytes2Hex(
-						(*accountAssetTrees)[mempoolTxDetail.AccountIndex].RootNode.Value)
 				case LiquidityAssetType:
-					pendingUpdateLiquidityIndexMap[mempoolTxDetail.AssetId] = true
-					if liquidityMap[mempoolTxDetail.AssetId] == nil {
-						liquidityMap[mempoolTxDetail.AssetId], err = ctx.LiquidityModel.GetLiquidityByPairIndex(mempoolTxDetail.AssetId)
-						if err != nil {
-							logx.Errorf("[CommitterTask] unable to get latest liquidity by pair index: %s", err.Error())
-							return err
-						}
-					}
-					var (
-						poolInfo *commonAsset.LiquidityInfo
-					)
-					if mempoolTx.TxType == TxTypeCreatePair {
-						poolInfo = commonAsset.EmptyLiquidityInfo(mempoolTxDetail.AssetId)
-					} else {
-						poolInfo, err = commonAsset.ConstructLiquidityInfo(
-							liquidityMap[mempoolTxDetail.AssetId].PairIndex,
-							liquidityMap[mempoolTxDetail.AssetId].AssetAId,
-							liquidityMap[mempoolTxDetail.AssetId].AssetA,
-							liquidityMap[mempoolTxDetail.AssetId].AssetBId,
-							liquidityMap[mempoolTxDetail.AssetId].AssetB,
-							liquidityMap[mempoolTxDetail.AssetId].LpAmount,
-							liquidityMap[mempoolTxDetail.AssetId].KLast,
-							liquidityMap[mempoolTxDetail.AssetId].FeeRate,
-							liquidityMap[mempoolTxDetail.AssetId].TreasuryAccountIndex,
-							liquidityMap[mempoolTxDetail.AssetId].TreasuryRate,
-						)
-						if err != nil {
-							logx.Errorf("[CommitterTask] unable to construct pool info: %s", err.Error())
-							return err
-						}
-					}
-					baseBalance = poolInfo.String()
-					// compute new balance
-					nBalance, err := commonAsset.ComputeNewBalance(
-						LiquidityAssetType, baseBalance, mempoolTxDetail.BalanceDelta)
+					pendingUpdateLiquidityIndexMap, liquidityMap, baseBalance, err = processLiquidityAssetType(ctx,
+						pendingUpdateLiquidityIndexMap, mempoolTx, mempoolTxDetail, liquidityMap, liquidityTree)
 					if err != nil {
-						logx.Error("[CommitterTask] unable to compute new balance: %s", err.Error())
-						return err
-					}
-					nPoolInfo, err := commonAsset.ParseLiquidityInfo(nBalance)
-					if err != nil {
-						logx.Errorf("[CommitterTask] unable to parse pair info: %s", err.Error())
-						return err
-					}
-					// update liquidity info
-					liquidityMap[mempoolTxDetail.AssetId] = &Liquidity{
-						Model:                liquidityMap[mempoolTxDetail.AssetId].Model,
-						PairIndex:            nPoolInfo.PairIndex,
-						AssetAId:             liquidityMap[mempoolTxDetail.AssetId].AssetAId,
-						AssetA:               nPoolInfo.AssetA.String(),
-						AssetBId:             liquidityMap[mempoolTxDetail.AssetId].AssetBId,
-						AssetB:               nPoolInfo.AssetB.String(),
-						LpAmount:             nPoolInfo.LpAmount.String(),
-						KLast:                nPoolInfo.KLast.String(),
-						FeeRate:              nPoolInfo.FeeRate,
-						TreasuryAccountIndex: nPoolInfo.TreasuryAccountIndex,
-						TreasuryRate:         nPoolInfo.TreasuryRate,
-					}
-
-					// update account state tree
-					nLiquidityAssetLeaf, err := tree.ComputeLiquidityAssetLeafHash(
-						liquidityMap[mempoolTxDetail.AssetId].AssetAId,
-						liquidityMap[mempoolTxDetail.AssetId].AssetA,
-						liquidityMap[mempoolTxDetail.AssetId].AssetBId,
-						liquidityMap[mempoolTxDetail.AssetId].AssetB,
-						liquidityMap[mempoolTxDetail.AssetId].LpAmount,
-						liquidityMap[mempoolTxDetail.AssetId].KLast,
-						liquidityMap[mempoolTxDetail.AssetId].FeeRate,
-						liquidityMap[mempoolTxDetail.AssetId].TreasuryAccountIndex,
-						liquidityMap[mempoolTxDetail.AssetId].TreasuryRate,
-					)
-					if err != nil {
-						log.Println("[CommitterTask] unable to compute new account liquidity leaf:", err)
-						return err
-					}
-					err = liquidityTree.Update(mempoolTxDetail.AssetId, nLiquidityAssetLeaf)
-					if err != nil {
-						log.Println("[CommitterTask] unable to update liquidity tree:", err)
-						return err
+						logx.Errorf("[processLiquidityAssetType] err: %v", err)
 					}
 				case NftAssetType:
 					pendingNewNftWithdrawHistory, baseBalance, pendingNewNftIndexMap, pendingUpdateNftIndexMap, err = processNftAssetType(ctx,
@@ -489,6 +336,177 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp time.Time, accou
 		}
 	}
 	return nil
+}
+
+func processGeneralAssetType(ctx *svc.ServiceContext, accountMap map[int64]*commonAsset.AccountInfo, pendingDeleteMempoolTxs []*mempool.MempoolTx,
+	mempoolTx *mempool.MempoolTx, accountAssetTrees *[]*merkleTree.Tree, mempoolTxDetail *mempool.MempoolTxDetail,
+	currentBlockHeight int64) ([]*mempool.MempoolTx, *mempool.MempoolTx, *mempool.MempoolTxDetail, map[int64]*commonAsset.AccountInfo, string, error) {
+	var err error
+	if accountMap[mempoolTxDetail.AccountIndex].AssetInfo == nil {
+		accountMap[mempoolTxDetail.AccountIndex].AssetInfo = make(map[int64]*commonAsset.AccountAsset)
+	}
+	if accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId] == nil {
+		accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId] = &commonAsset.AccountAsset{
+			AssetId:                  mempoolTxDetail.AssetId,
+			Balance:                  ZeroBigInt,
+			LpAmount:                 ZeroBigInt,
+			OfferCanceledOrFinalized: ZeroBigInt,
+		}
+	}
+	// get latest account asset info
+	baseBalance := accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId].String()
+	var nBalance string
+	if mempoolTx.TxType == TxTypeFullExit {
+		balanceDelta := &commonAsset.AccountAsset{
+			AssetId:                  accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId].AssetId,
+			Balance:                  ffmath.Neg(accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId].Balance),
+			LpAmount:                 big.NewInt(0),
+			OfferCanceledOrFinalized: big.NewInt(0),
+		}
+		// compute new balance
+		nBalance, err = commonAsset.ComputeNewBalance(GeneralAssetType, baseBalance, balanceDelta.String())
+		if err != nil {
+			logx.Error("[CommitterTask] unable to compute new balance: %s", err.Error())
+			return pendingDeleteMempoolTxs, mempoolTx, mempoolTxDetail, accountMap, baseBalance, err
+		}
+		mempoolTxDetail.BalanceDelta = balanceDelta.String()
+		txInfo, err := commonTx.ParseFullExitTxInfo(mempoolTx.TxInfo)
+		if err != nil {
+			logx.Errorf("[CommitterTask] unable to parse full exit tx info: %s", err.Error())
+			return pendingDeleteMempoolTxs, mempoolTx, mempoolTxDetail, accountMap, baseBalance, err
+		}
+		txInfo.AssetAmount = accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId].Balance
+		infoBytes, err := json.Marshal(txInfo)
+		if err != nil {
+			logx.Errorf("[CommitterTask] unable to marshal tx: %s", err.Error())
+			return pendingDeleteMempoolTxs, mempoolTx, mempoolTxDetail, accountMap, baseBalance, err
+		}
+		mempoolTx.TxInfo = string(infoBytes)
+	} else {
+		// compute new balance
+		nBalance, err = commonAsset.ComputeNewBalance(GeneralAssetType, baseBalance, mempoolTxDetail.BalanceDelta)
+		if err != nil {
+			logx.Error("[CommitterTask] unable to compute new balance: %s", err.Error())
+			return pendingDeleteMempoolTxs, mempoolTx, mempoolTxDetail, accountMap, baseBalance, err
+		}
+	}
+	nAccountAsset, err := commonAsset.ParseAccountAsset(nBalance)
+	if err != nil {
+		logx.Errorf("[CommitterTask] unable to parse account asset: %s", err.Error())
+		return pendingDeleteMempoolTxs, mempoolTx, mempoolTxDetail, accountMap, baseBalance, err
+	}
+	// check balance is valid
+	if nAccountAsset.Balance.Cmp(util.ZeroBigInt) < 0 {
+		// mark this transaction as invalid transaction
+		mempoolTx.Status = mempool.FailTxStatus
+		mempoolTx.L2BlockHeight = currentBlockHeight
+		pendingDeleteMempoolTxs = append(pendingDeleteMempoolTxs, mempoolTx)
+		// continue
+		return pendingDeleteMempoolTxs, mempoolTx, mempoolTxDetail, accountMap, baseBalance, errcode.ErrContinueFlag
+	}
+	accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId] = nAccountAsset
+	// update account state tree
+	nAssetLeaf, err := tree.ComputeAccountAssetLeafHash(
+		accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId].Balance.String(),
+		accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId].LpAmount.String(),
+		accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId].OfferCanceledOrFinalized.String(),
+	)
+	if err != nil {
+		log.Println("[CommitterTask] unable to compute new account asset leaf:", err)
+		return pendingDeleteMempoolTxs, mempoolTx, mempoolTxDetail, accountMap, baseBalance, err
+	}
+	err = (*accountAssetTrees)[mempoolTxDetail.AccountIndex].Update(mempoolTxDetail.AssetId, nAssetLeaf)
+	if err != nil {
+		log.Println("[CommitterTask] unable to update asset tree:", err)
+		return pendingDeleteMempoolTxs, mempoolTx, mempoolTxDetail, accountMap, baseBalance, err
+	}
+	accountMap[mempoolTxDetail.AccountIndex].AssetRoot = common.Bytes2Hex(
+		(*accountAssetTrees)[mempoolTxDetail.AccountIndex].RootNode.Value)
+	return pendingDeleteMempoolTxs, mempoolTx, mempoolTxDetail, accountMap, baseBalance, nil
+}
+
+func processLiquidityAssetType(ctx *svc.ServiceContext, pendingUpdateLiquidityIndexMap map[int64]bool, mempoolTx *mempool.MempoolTx,
+	mempoolTxDetail *mempool.MempoolTxDetail, liquidityMap map[int64]*liquidity.Liquidity, liquidityTree *tree.Tree) (map[int64]bool, map[int64]*liquidity.Liquidity, string, error) {
+	var err error
+	pendingUpdateLiquidityIndexMap[mempoolTxDetail.AssetId] = true
+	if liquidityMap[mempoolTxDetail.AssetId] == nil {
+		liquidityMap[mempoolTxDetail.AssetId], err = ctx.LiquidityModel.GetLiquidityByPairIndex(mempoolTxDetail.AssetId)
+		if err != nil {
+			logx.Errorf("[CommitterTask] unable to get latest liquidity by pair index: %s", err.Error())
+			return pendingUpdateLiquidityIndexMap, liquidityMap, "", err
+		}
+	}
+	var poolInfo *commonAsset.LiquidityInfo
+	if mempoolTx.TxType == TxTypeCreatePair {
+		poolInfo = commonAsset.EmptyLiquidityInfo(mempoolTxDetail.AssetId)
+	} else {
+		poolInfo, err = commonAsset.ConstructLiquidityInfo(
+			liquidityMap[mempoolTxDetail.AssetId].PairIndex,
+			liquidityMap[mempoolTxDetail.AssetId].AssetAId,
+			liquidityMap[mempoolTxDetail.AssetId].AssetA,
+			liquidityMap[mempoolTxDetail.AssetId].AssetBId,
+			liquidityMap[mempoolTxDetail.AssetId].AssetB,
+			liquidityMap[mempoolTxDetail.AssetId].LpAmount,
+			liquidityMap[mempoolTxDetail.AssetId].KLast,
+			liquidityMap[mempoolTxDetail.AssetId].FeeRate,
+			liquidityMap[mempoolTxDetail.AssetId].TreasuryAccountIndex,
+			liquidityMap[mempoolTxDetail.AssetId].TreasuryRate,
+		)
+		if err != nil {
+			logx.Errorf("[CommitterTask] unable to construct pool info: %s", err.Error())
+			return pendingUpdateLiquidityIndexMap, liquidityMap, "", err
+		}
+	}
+	baseBalance := poolInfo.String()
+	// compute new balance
+	nBalance, err := commonAsset.ComputeNewBalance(
+		LiquidityAssetType, baseBalance, mempoolTxDetail.BalanceDelta)
+	if err != nil {
+		logx.Error("[CommitterTask] unable to compute new balance: %s", err.Error())
+		return pendingUpdateLiquidityIndexMap, liquidityMap, "", err
+	}
+	nPoolInfo, err := commonAsset.ParseLiquidityInfo(nBalance)
+	if err != nil {
+		logx.Errorf("[CommitterTask] unable to parse pair info: %s", err.Error())
+		return pendingUpdateLiquidityIndexMap, liquidityMap, baseBalance, err
+	}
+	// update liquidity info
+	liquidityMap[mempoolTxDetail.AssetId] = &Liquidity{
+		Model:                liquidityMap[mempoolTxDetail.AssetId].Model,
+		PairIndex:            nPoolInfo.PairIndex,
+		AssetAId:             liquidityMap[mempoolTxDetail.AssetId].AssetAId,
+		AssetA:               nPoolInfo.AssetA.String(),
+		AssetBId:             liquidityMap[mempoolTxDetail.AssetId].AssetBId,
+		AssetB:               nPoolInfo.AssetB.String(),
+		LpAmount:             nPoolInfo.LpAmount.String(),
+		KLast:                nPoolInfo.KLast.String(),
+		FeeRate:              nPoolInfo.FeeRate,
+		TreasuryAccountIndex: nPoolInfo.TreasuryAccountIndex,
+		TreasuryRate:         nPoolInfo.TreasuryRate,
+	}
+
+	// update account state tree
+	nLiquidityAssetLeaf, err := tree.ComputeLiquidityAssetLeafHash(
+		liquidityMap[mempoolTxDetail.AssetId].AssetAId,
+		liquidityMap[mempoolTxDetail.AssetId].AssetA,
+		liquidityMap[mempoolTxDetail.AssetId].AssetBId,
+		liquidityMap[mempoolTxDetail.AssetId].AssetB,
+		liquidityMap[mempoolTxDetail.AssetId].LpAmount,
+		liquidityMap[mempoolTxDetail.AssetId].KLast,
+		liquidityMap[mempoolTxDetail.AssetId].FeeRate,
+		liquidityMap[mempoolTxDetail.AssetId].TreasuryAccountIndex,
+		liquidityMap[mempoolTxDetail.AssetId].TreasuryRate,
+	)
+	if err != nil {
+		log.Println("[CommitterTask] unable to compute new account liquidity leaf:", err)
+		return pendingUpdateLiquidityIndexMap, liquidityMap, baseBalance, err
+	}
+	if err = liquidityTree.Update(mempoolTxDetail.AssetId, nLiquidityAssetLeaf); err != nil {
+		log.Println("[CommitterTask] unable to update liquidity tree:", err)
+		return pendingUpdateLiquidityIndexMap, liquidityMap, baseBalance, err
+	}
+	return pendingUpdateLiquidityIndexMap, liquidityMap, baseBalance, err
+
 }
 
 func processNftAssetType(ctx *svc.ServiceContext, nftMap map[int64]*nft.L2Nft, nftTree *merkleTree.Tree,
