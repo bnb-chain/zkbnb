@@ -268,6 +268,7 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp time.Time, accou
 							return err
 						}
 						mempoolTx.TxInfo = string(infoBytes)
+
 					} else {
 						// compute new balance
 						nBalance, err = commonAsset.ComputeNewBalance(GeneralAssetType, baseBalance, mempoolTxDetail.BalanceDelta)
@@ -389,83 +390,10 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp time.Time, accou
 						return err
 					}
 				case NftAssetType:
-					// check if nft exists in the db
-					if nftMap[mempoolTxDetail.AssetId] == nil {
-						nftMap[mempoolTxDetail.AssetId], err = ctx.L2NftModel.GetNftAsset(mempoolTxDetail.AssetId)
-						if err != nil {
-							logx.Errorf("[CommitterTask] unable to get nft asset: %s", err.Error())
-							return err
-						}
-					}
-					// check special type
-					if mempoolTx.TxType == commonTx.TxTypeDepositNft || mempoolTx.TxType == commonTx.TxTypeMintNft {
-						pendingNewNftIndexMap[mempoolTxDetail.AssetId] = true
-						baseBalance = commonAsset.EmptyNftInfo(nftMap[mempoolTxDetail.AssetId].NftIndex).String()
-					} else {
-						pendingNewNftIndexMap[mempoolTxDetail.AssetId] = true
-						pendingUpdateNftIndexMap[mempoolTxDetail.AssetId] = true
-						// before nft info
-						baseBalance = commonAsset.ConstructNftInfo(
-							nftMap[mempoolTxDetail.AssetId].NftIndex,
-							nftMap[mempoolTxDetail.AssetId].CreatorAccountIndex,
-							nftMap[mempoolTxDetail.AssetId].OwnerAccountIndex,
-							nftMap[mempoolTxDetail.AssetId].NftContentHash,
-							nftMap[mempoolTxDetail.AssetId].NftL1TokenId,
-							nftMap[mempoolTxDetail.AssetId].NftL1Address,
-							nftMap[mempoolTxDetail.AssetId].CreatorTreasuryRate,
-							nftMap[mempoolTxDetail.AssetId].CollectionId,
-						).String()
-					}
-					if mempoolTx.TxType == commonTx.TxTypeWithdrawNft || mempoolTx.TxType == commonTx.TxTypeFullExitNft {
-						pendingNewNftWithdrawHistory = append(pendingNewNftWithdrawHistory, &nft.L2NftWithdrawHistory{
-							NftIndex:            nftMap[mempoolTxDetail.AssetId].NftIndex,
-							CreatorAccountIndex: nftMap[mempoolTxDetail.AssetId].CreatorAccountIndex,
-							OwnerAccountIndex:   nftMap[mempoolTxDetail.AssetId].OwnerAccountIndex,
-							NftContentHash:      nftMap[mempoolTxDetail.AssetId].NftContentHash,
-							NftL1Address:        nftMap[mempoolTxDetail.AssetId].NftL1Address,
-							NftL1TokenId:        nftMap[mempoolTxDetail.AssetId].NftL1TokenId,
-							CreatorTreasuryRate: nftMap[mempoolTxDetail.AssetId].CreatorTreasuryRate,
-							CollectionId:        nftMap[mempoolTxDetail.AssetId].CollectionId,
-						})
-					}
-					// delta nft info
-					nftInfo, err := commonAsset.ParseNftInfo(mempoolTxDetail.BalanceDelta)
+					pendingNewNftWithdrawHistory, baseBalance, pendingNewNftIndexMap, pendingUpdateNftIndexMap, err = processNftAssetType(ctx,
+						nftMap, nftTree, mempoolTxDetail, mempoolTx, pendingNewNftIndexMap, pendingUpdateNftIndexMap, pendingNewNftWithdrawHistory)
 					if err != nil {
-						logx.Errorf("[CommitterTask] unable to parse nft info: %s", err.Error())
-						return err
-					}
-					if pendingUpdateNftIndexMap[mempoolTxDetail.AssetId] {
-						// update nft info
-						nftMap[mempoolTxDetail.AssetId] = &L2Nft{
-							Model:               nftMap[mempoolTxDetail.AssetId].Model,
-							NftIndex:            nftInfo.NftIndex,
-							CreatorAccountIndex: nftInfo.CreatorAccountIndex,
-							OwnerAccountIndex:   nftInfo.OwnerAccountIndex,
-							NftContentHash:      nftInfo.NftContentHash,
-							NftL1Address:        nftInfo.NftL1Address,
-							NftL1TokenId:        nftInfo.NftL1TokenId,
-							CreatorTreasuryRate: nftInfo.CreatorTreasuryRate,
-							CollectionId:        nftInfo.CollectionId,
-						}
-					}
-					// get nft asset
-					nftAsset := nftMap[mempoolTxDetail.AssetId]
-					// update nft tree
-					nNftAssetLeaf, err := tree.ComputeNftAssetLeafHash(
-						nftAsset.CreatorAccountIndex, nftAsset.OwnerAccountIndex,
-						nftAsset.NftContentHash,
-						nftAsset.NftL1Address, nftAsset.NftL1TokenId,
-						nftAsset.CreatorTreasuryRate,
-						nftAsset.CollectionId,
-					)
-					if err != nil {
-						logx.Errorf("[CommitterTask] unable to compute new nft asset leaf: %s", err)
-						return err
-					}
-					err = nftTree.Update(mempoolTxDetail.AssetId, nNftAssetLeaf)
-					if err != nil {
-						log.Println("[CommitterTask] unable to update nft tree:", err)
-						return err
+						logx.Errorf("[processNftAssetType] err: %v", err)
 					}
 				case CollectionNonceAssetType:
 					baseBalance, newCollectionNonce, err = processCollectionNonceAssetType(accountMap, mempoolTxDetail)
@@ -561,6 +489,91 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp time.Time, accou
 		}
 	}
 	return nil
+}
+
+func processNftAssetType(ctx *svc.ServiceContext, nftMap map[int64]*nft.L2Nft, nftTree *merkleTree.Tree,
+	mempoolTxDetail *mempool.MempoolTxDetail, mempoolTx *mempool.MempoolTx,
+	pendingNewNftIndexMap map[int64]bool, pendingUpdateNftIndexMap map[int64]bool,
+	pendingNewNftWithdrawHistory []*nft.L2NftWithdrawHistory) ([]*nft.L2NftWithdrawHistory, string, map[int64]bool, map[int64]bool, error) {
+	// check if nft exists in the db
+	var err error
+	var baseBalance string
+	if nftMap[mempoolTxDetail.AssetId] == nil {
+		nftMap[mempoolTxDetail.AssetId], err = ctx.L2NftModel.GetNftAsset(mempoolTxDetail.AssetId)
+		if err != nil {
+			logx.Errorf("[L2NftModel.GetNftAsset] err: %v", err)
+			return pendingNewNftWithdrawHistory, baseBalance, pendingNewNftIndexMap, pendingUpdateNftIndexMap, err
+		}
+	}
+	// check special type
+	if mempoolTx.TxType == commonTx.TxTypeDepositNft || mempoolTx.TxType == commonTx.TxTypeMintNft {
+		pendingNewNftIndexMap[mempoolTxDetail.AssetId] = true
+		baseBalance = commonAsset.EmptyNftInfo(nftMap[mempoolTxDetail.AssetId].NftIndex).String()
+	} else {
+		pendingNewNftIndexMap[mempoolTxDetail.AssetId] = true
+		pendingUpdateNftIndexMap[mempoolTxDetail.AssetId] = true
+		// before nft info
+		baseBalance = commonAsset.ConstructNftInfo(
+			nftMap[mempoolTxDetail.AssetId].NftIndex,
+			nftMap[mempoolTxDetail.AssetId].CreatorAccountIndex,
+			nftMap[mempoolTxDetail.AssetId].OwnerAccountIndex,
+			nftMap[mempoolTxDetail.AssetId].NftContentHash,
+			nftMap[mempoolTxDetail.AssetId].NftL1TokenId,
+			nftMap[mempoolTxDetail.AssetId].NftL1Address,
+			nftMap[mempoolTxDetail.AssetId].CreatorTreasuryRate,
+			nftMap[mempoolTxDetail.AssetId].CollectionId,
+		).String()
+	}
+	if mempoolTx.TxType == commonTx.TxTypeWithdrawNft || mempoolTx.TxType == commonTx.TxTypeFullExitNft {
+		pendingNewNftWithdrawHistory = append(pendingNewNftWithdrawHistory, &nft.L2NftWithdrawHistory{
+			NftIndex:            nftMap[mempoolTxDetail.AssetId].NftIndex,
+			CreatorAccountIndex: nftMap[mempoolTxDetail.AssetId].CreatorAccountIndex,
+			OwnerAccountIndex:   nftMap[mempoolTxDetail.AssetId].OwnerAccountIndex,
+			NftContentHash:      nftMap[mempoolTxDetail.AssetId].NftContentHash,
+			NftL1Address:        nftMap[mempoolTxDetail.AssetId].NftL1Address,
+			NftL1TokenId:        nftMap[mempoolTxDetail.AssetId].NftL1TokenId,
+			CreatorTreasuryRate: nftMap[mempoolTxDetail.AssetId].CreatorTreasuryRate,
+			CollectionId:        nftMap[mempoolTxDetail.AssetId].CollectionId,
+		})
+	}
+	// delta nft info
+	nftInfo, err := commonAsset.ParseNftInfo(mempoolTxDetail.BalanceDelta)
+	if err != nil {
+		logx.Errorf("[CommitterTask] unable to parse nft info: %s", err.Error())
+		return pendingNewNftWithdrawHistory, baseBalance, pendingNewNftIndexMap, pendingUpdateNftIndexMap, err
+	}
+	if pendingUpdateNftIndexMap[mempoolTxDetail.AssetId] {
+		// update nft info
+		nftMap[mempoolTxDetail.AssetId] = &L2Nft{
+			Model:               nftMap[mempoolTxDetail.AssetId].Model,
+			NftIndex:            nftInfo.NftIndex,
+			CreatorAccountIndex: nftInfo.CreatorAccountIndex,
+			OwnerAccountIndex:   nftInfo.OwnerAccountIndex,
+			NftContentHash:      nftInfo.NftContentHash,
+			NftL1Address:        nftInfo.NftL1Address,
+			NftL1TokenId:        nftInfo.NftL1TokenId,
+			CreatorTreasuryRate: nftInfo.CreatorTreasuryRate,
+			CollectionId:        nftInfo.CollectionId,
+		}
+	}
+	// get nft asset
+	nftAsset := nftMap[mempoolTxDetail.AssetId]
+	nNftAssetLeaf, err := tree.ComputeNftAssetLeafHash(
+		nftAsset.CreatorAccountIndex, nftAsset.OwnerAccountIndex,
+		nftAsset.NftContentHash,
+		nftAsset.NftL1Address, nftAsset.NftL1TokenId,
+		nftAsset.CreatorTreasuryRate,
+		nftAsset.CollectionId,
+	)
+	if err != nil {
+		logx.Errorf("[CommitterTask] unable to compute new nft asset leaf: %s", err)
+		return pendingNewNftWithdrawHistory, baseBalance, pendingNewNftIndexMap, pendingUpdateNftIndexMap, err
+	}
+	if err = nftTree.Update(mempoolTxDetail.AssetId, nNftAssetLeaf); err != nil {
+		log.Println("[CommitterTask] unable to update nft tree:", err)
+		return pendingNewNftWithdrawHistory, baseBalance, pendingNewNftIndexMap, pendingUpdateNftIndexMap, err
+	}
+	return pendingNewNftWithdrawHistory, baseBalance, pendingNewNftIndexMap, pendingUpdateNftIndexMap, nil
 }
 
 func processCollectionNonceAssetType(accountMap map[int64]*commonAsset.AccountInfo, mempoolTxDetail *mempool.MempoolTxDetail) (string, int64, error) {
