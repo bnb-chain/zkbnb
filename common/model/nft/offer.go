@@ -19,6 +19,7 @@ package nft
 
 import (
 	"errors"
+
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
@@ -95,7 +96,7 @@ func (m *defaultOfferModel) GetLatestOfferId(accountIndex int64) (offerId int64,
 		logx.Errorf("[GetLatestOfferId] unable to get latest offer info: %s", err.Error())
 		return -1, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		return -1, nil
+		return -1, errors.New("OfferId not exist")
 	}
 	return offer.OfferId, nil
 }

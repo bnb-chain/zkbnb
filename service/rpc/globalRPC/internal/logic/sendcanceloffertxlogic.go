@@ -88,10 +88,6 @@ func (l *SendCancelOfferTxLogic) SendCancelOfferTx(in *globalRPCProto.ReqSendTxB
 		errInfo := fmt.Sprintf("[sendCancelOfferTx] err: invalid accountIndex %v", txInfo.GasAccountIndex)
 		return respSendTx, l.HandleCreateFailCancelOfferTx(txInfo, errors.New(errInfo))
 	}
-	l.commglobalmap.DeleteLatestAccountInfoInCache(l.ctx, txInfo.AccountIndex)
-	if err != nil {
-		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
-	}
 	// check gas account index
 	gasAccountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
 	if err != nil {

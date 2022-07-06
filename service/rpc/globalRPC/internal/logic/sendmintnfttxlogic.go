@@ -71,14 +71,6 @@ func (l *SendMintNftTxLogic) SendMintNftTx(in *globalRPCProto.ReqSendMintNftTx) 
 	if err != nil {
 		return nil, l.createFailMintNftTx(txInfo, err.Error())
 	}
-	l.commglobalmap.DeleteLatestAccountInfoInCache(l.ctx, txInfo.CreatorAccountIndex)
-	if err != nil {
-		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
-	}
-	l.commglobalmap.DeleteLatestAccountInfoInCache(l.ctx, txInfo.ToAccountIndex)
-	if err != nil {
-		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
-	}
 	gasAccountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
 	if err != nil {
 		logx.Errorf("[GetSysconfigByName] err: %v", err)

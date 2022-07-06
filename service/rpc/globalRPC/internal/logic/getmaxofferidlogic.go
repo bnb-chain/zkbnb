@@ -29,7 +29,7 @@ func NewGetMaxOfferIdLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 //  NFT
 func (l *GetMaxOfferIdLogic) GetMaxOfferId(in *globalRPCProto.ReqGetMaxOfferId) (*globalRPCProto.RespGetMaxOfferId, error) {
 	// todo: add your logic here and delete this line
-	nftIndex, err := l.commglobalmap.GetLatestOfferIdForWrite(int64(in.AccountIndex))
+	nftIndex, err := l.commglobalmap.GetLatestOfferIdForWrite(l.ctx, int64(in.AccountIndex))
 	if err != nil {
 		logx.Errorf("[GetLatestAccountInfo] err:%v", err)
 		return nil, err

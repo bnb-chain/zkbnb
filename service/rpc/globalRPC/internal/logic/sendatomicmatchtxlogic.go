@@ -95,10 +95,6 @@ func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(reqSendTx *globalRPCProto.Req
 		errInfo := fmt.Sprintf("[sendAtomicMatchTx] err: invalid accountIndex %v", txInfo.SellOffer.AccountIndex)
 		return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, errors.New(errInfo))
 	}
-	l.commglobalmap.DeleteLatestAccountInfoInCache(l.ctx, txInfo.AccountIndex)
-	if err != nil {
-		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
-	}
 	// check gas account index
 	gasAccountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
 	if err != nil {

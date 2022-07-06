@@ -70,3 +70,13 @@ func SpliceCacheKeyTxByTxId(txID int64) string {
 func SpliceCacheKeyTxCountByTimeRange(data string) string {
 	return "cache:txCount_" + data
 }
+
+// cache key prefix: liquidity
+func SpliceCacheKeyLiquidityByPairIndex(pairIndex int64) string {
+	return fmt.Sprintf("cache:liquidity_pairIndex_%d", pairIndex)
+}
+
+// cache key prefix: nft
+func SpliceCacheKeyOfferIdByAccountIndex(accountIndex int64) string {
+	return fmt.Sprintf("cache:offerId_accountIndex_%d", accountIndex)
+}

@@ -20,6 +20,7 @@ package globalmapHandler
 import (
 	"encoding/json"
 	"errors"
+
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
@@ -57,7 +58,7 @@ func GetLatestLiquidityInfoForRead(
 		if err != nil {
 			if err != mempool.ErrNotFound {
 				logx.Errorf("[GetLatestLiquidityInfoForRead] unable to get mempool txs by account index: %s", err.Error())
-				return nil,  err
+				return nil, err
 			}
 		}
 		liquidityInfo, err = commonAsset.ConstructLiquidityInfo(

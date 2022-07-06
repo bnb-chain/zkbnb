@@ -33,9 +33,9 @@ func (l *GetLatestPairInfoLogic) GetLatestPairInfo(in *globalRPCProto.ReqGetLate
 		logx.Errorf("[CheckPairIndex] param:%v", in.PairIndex)
 		return nil, errcode.ErrInvalidParam
 	}
-	liquidity, err := l.commglobalmap.GetLatestLiquidityInfoForRead(int64(in.PairIndex))
+	liquidity, err := l.commglobalmap.GetLatestLiquidityInfoForReadWithCache(l.ctx, int64(in.PairIndex))
 	if err != nil {
-		logx.Errorf("[GetLatestLiquidityInfoForRead] err:%v", err)
+		logx.Errorf("[GetLatestLiquidityInfoForReadWithCache] err:%v", err)
 		return nil, err
 	}
 	return &globalRPCProto.RespGetLatestPairInfo{
