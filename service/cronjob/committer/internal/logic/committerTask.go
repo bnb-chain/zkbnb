@@ -25,7 +25,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zecrey-labs/zecrey-crypto/accumulators/merkleTree"
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
@@ -33,8 +32,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/common/model/block"
-	"github.com/zecrey-labs/zecrey-legend/common/model/blockForCommit"
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
@@ -44,11 +41,27 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/committer/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/errcode"
 	"github.com/zeromicro/go-zero/core/logx"
-	"gorm.io/gorm"
 )
 
-func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp time.Time, accountTree *tree.Tree,
-	liquidityTree *tree.Tree, nftTree *tree.Tree, accountAssetTrees *[]*tree.Tree) error {
+type paramInfo struct {
+	pendingUpdateAccountIndexMap    map[int64]bool
+	pendingUpdateLiquidityIndexMap  map[int64]bool
+	pendingUpdateNftIndexMap        map[int64]bool
+	pendingNewNftIndexMap           map[int64]bool
+	pendingNewNftWithdrawHistory    []*nft.L2NftWithdrawHistory
+	txs                             []*Tx
+	finalStateRoot                  string
+	pubData                         []byte
+	priorityOperations              int64
+	pubDataOffset                   []uint32
+	pendingOnChainOperationsPubData [][]byte
+	pendingOnChainOperationsHash    []byte
+	pendingMempoolTxs               []*MempoolTx
+	pendingDeleteMempoolTxs         []*MempoolTx
+}
+
+func CommitterTask(ctx *svc.ServiceContext,
+	lastCommitTimeStamp time.Time, accountTree *tree.Tree, liquidityTree *tree.Tree, nftTree *tree.Tree, accountAssetTrees *[]*tree.Tree) error {
 	mempoolTxs, err := ctx.MempoolModel.GetMempoolTxsListForCommitter()
 	if err != nil {
 		if err == errcode.ErrNotFound {
@@ -57,20 +70,19 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp time.Time, accou
 		logx.Errorf("[GetMempoolTxsListForCommitter] unable to get tx in mempool")
 		return err
 	}
-	var nTxs = len(mempoolTxs)
-	logx.Infof("[CommitterTask] Mempool txs number : %d", nTxs)
+	var txsLength = len(mempoolTxs)
+	logx.Infof("[CommitterTask] Mempool txs number : %d", txsLength)
 	currentBlockHeight, err := ctx.BlockModel.GetCurrentBlockHeight()
 	if err != nil && err != errcode.ErrNotFound {
-		logx.Errorf("[GetCurrentBlockHeight] err when get current block height")
+		logx.Errorf("[GetCurrentBlockHeight] err when get current block height err:%v", err)
 		return err
 	}
 	lastBlock, err := ctx.BlockModel.GetBlockByBlockHeight(currentBlockHeight)
 	if err != nil {
-		logx.Errorf("[GetBlockByBlockHeight] unable to get block by height: %s", err.Error())
+		logx.Errorf("[GetBlockByBlockHeight] unable to get block by height: %v", err)
 		return err
 	}
-	blocksSize := int(math.Ceil(float64(nTxs) / float64(MaxTxsAmountPerBlock)))
-	// accountMap store the map from account index to accountInfo, decrease the duplicated query from Account Model
+	blocksSize := int(math.Ceil(float64(txsLength) / float64(MaxTxsAmountPerBlock)))
 	var (
 		accountMap   = make(map[int64]*FormatAccountInfo)
 		liquidityMap = make(map[int64]*Liquidity)
@@ -80,233 +92,36 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp time.Time, accou
 	for i := 0; i < blocksSize; i++ {
 		var now = time.Now()
 		if now.Unix()-lastCommitTimeStamp.Unix() < MaxCommitterInterval {
-			// if time is less than MaxCommitterInterval (15 minutes for now)
-			// and remaining txs number( equals to "nTxs - (i + 1) * MaxTxsAmountPerBlock") is less than MaxTxsAmountPerBlock
-			if nTxs-i*MaxTxsAmountPerBlock < MaxTxsAmountPerBlock {
+			if txsLength-i*MaxTxsAmountPerBlock < MaxTxsAmountPerBlock {
 				logx.Infof("[CommitterTask] not enough transactions")
 				return errcode.ErrNotEnoughTransactions
 			}
 		}
-		var (
-			pendingUpdateAccountIndexMap   = make(map[int64]bool)
-			pendingUpdateLiquidityIndexMap = make(map[int64]bool)
-			pendingUpdateNftIndexMap       = make(map[int64]bool)
-			pendingNewNftIndexMap          = make(map[int64]bool)
-			pendingNewNftWithdrawHistory   []*nft.L2NftWithdrawHistory
-			txs                            []*Tx
-			finalStateRoot                 string
-			pubData                        []byte
-			// onchain tx info
-			priorityOperations              int64
-			pubDataOffset                   []uint32
-			pendingOnChainOperationsPubData [][]byte
-			pendingOnChainOperationsHash    []byte
-			pendingMempoolTxs               []*MempoolTx
-			pendingDeleteMempoolTxs         []*MempoolTx
-		)
-		// write default string into pending onchain operations hash
-		pendingOnChainOperationsHash = common.FromHex(util.EmptyStringKeccak)
-		// handle each transaction
-		currentBlockHeight += 1
-		// compute block commitment
 		createdAt := time.Now().UnixMilli()
-		for j := 0; j < MaxTxsAmountPerBlock; j++ {
-			// if not full block, just break
-			if i*MaxTxsAmountPerBlock+j >= nTxs {
-				break
-			}
-			var (
-				pendingPriorityOperation int64
-				newCollectionNonce       = commonConstant.NilCollectionId
-			)
-			// get mempool tx
-			mempoolTx := mempoolTxs[i*MaxTxsAmountPerBlock+j]
-			// handle tx pub data
-			pendingPriorityOperation, pendingOnChainOperationsPubData, pendingOnChainOperationsHash, pubData, pubDataOffset, err =
-				handleTxPubData(mempoolTx, pubData, pendingOnChainOperationsPubData, pendingOnChainOperationsHash, pubDataOffset)
-			if err != nil {
-				logx.Errorf("[handleTxPubData] unable to handle l1 tx: %v", err)
-				return err
-			}
-			// compute new priority operations
-			priorityOperations += pendingPriorityOperation
-			// get related account info
-			if mempoolTx.AccountIndex != commonConstant.NilTxAccountIndex {
-				if accountMap[mempoolTx.AccountIndex] == nil {
-					accountInfo, err := ctx.AccountModel.GetAccountByAccountIndex(mempoolTx.AccountIndex)
-					if err != nil {
-						logx.Errorf("[CommitterTask] get account by account index: %v", err)
-						return err
-					}
-					accountMap[mempoolTx.AccountIndex], err = commonAsset.ToFormatAccountInfo(accountInfo)
-					if err != nil {
-						logx.Errorf("[CommitterTask] unable to format account info: %v", err)
-						return err
-					}
-				}
-				// handle registerZNS tx
-				pendingUpdateAccountIndexMap[mempoolTx.AccountIndex] = true
-				if accountMap[mempoolTx.AccountIndex].Status == account.AccountStatusPending {
-					if mempoolTx.TxType != TxTypeRegisterZns {
-						logx.Errorf("[CommitterTask] first transaction should be registerZNS")
-						return errors.New("[CommitterTask] first transaction should be registerZNS")
-					}
-					accountMap[mempoolTx.AccountIndex].Status = account.AccountStatusConfirmed
-					pendingUpdateAccountIndexMap[mempoolTx.AccountIndex] = true
-					// update account tree
-					if int64(len(*accountAssetTrees)) != mempoolTx.AccountIndex {
-						logx.Errorf("[CommitterTask] invalid account index")
-						return errors.New("[CommitterTask] invalid account index")
-					}
-					emptyAssetTree, err := tree.NewEmptyAccountAssetTree()
-					if err != nil {
-						logx.Errorf("[CommitterTask] unable to new empty account state tree")
-						return err
-					}
-					*accountAssetTrees = append(*accountAssetTrees, emptyAssetTree)
-					nAccountLeafHash, err := tree.ComputeAccountLeafHash(
-						accountMap[mempoolTx.AccountIndex].AccountNameHash,
-						accountMap[mempoolTx.AccountIndex].PublicKey,
-						accountMap[mempoolTx.AccountIndex].Nonce,
-						accountMap[mempoolTx.AccountIndex].CollectionNonce,
-						(*accountAssetTrees)[mempoolTx.AccountIndex].RootNode.Value,
-					)
-					if err != nil {
-						log.Println("[CommitterTask] unable to compute account leaf:", err)
-						return err
-					}
-					err = accountTree.Update(mempoolTx.AccountIndex, nAccountLeafHash)
-					if err != nil {
-						log.Println("[CommitterTask] unable to update account tree:", err)
-						return err
-					}
-				}
-			}
-			// check if the tx is still valid
-			if mempoolTx.ExpiredAt != commonConstant.NilExpiredAt {
-				if mempoolTx.ExpiredAt < createdAt {
-					mempoolTx.Status = mempool.FailTxStatus
-					mempoolTx.L2BlockHeight = currentBlockHeight
-					pendingDeleteMempoolTxs = append(pendingDeleteMempoolTxs, mempoolTx)
-					continue
-				}
-			}
-			if mempoolTx.Nonce != commonConstant.NilNonce {
-				// check nonce, the latest nonce should be previous nonce + 1
-				if mempoolTx.Nonce != accountMap[mempoolTx.AccountIndex].Nonce+1 {
-					mempoolTx.Status = mempool.FailTxStatus
-					mempoolTx.L2BlockHeight = currentBlockHeight
-					pendingDeleteMempoolTxs = append(pendingDeleteMempoolTxs, mempoolTx)
-					continue
-				}
-			}
-			// check mempool tx details are correct
-			var txDetails []*tx.TxDetail
-			for _, mempoolTxDetail := range mempoolTx.MempoolDetails {
-				if mempoolTxDetail.AccountIndex != commonConstant.NilTxAccountIndex {
-					pendingUpdateAccountIndexMap[mempoolTxDetail.AccountIndex] = true
-					if accountMap[mempoolTxDetail.AccountIndex] == nil {
-						accountInfo, err := ctx.AccountModel.GetAccountByAccountIndex(mempoolTxDetail.AccountIndex)
-						if err != nil {
-							logx.Errorf("[CommitterTask] get account by account index: %s", err.Error())
-							return err
-						}
-						accountMap[mempoolTxDetail.AccountIndex], err = commonAsset.ToFormatAccountInfo(accountInfo)
-						if err != nil {
-							logx.Errorf("[CommitterTask] unable to format account info: %s", err.Error())
-							return err
-						}
-					}
-				}
-				var baseBalance string
-				// check balance
-				switch mempoolTxDetail.AssetType {
-				case GeneralAssetType:
-					pendingDeleteMempoolTxs, mempoolTx, mempoolTxDetail, accountMap, baseBalance, err = processGeneralAssetType(ctx,
-						accountMap, pendingDeleteMempoolTxs, mempoolTx, accountAssetTrees, mempoolTxDetail, currentBlockHeight)
-					if err.Error() == errcode.ErrContinueFlag.Error() {
-						continue
-					}
-					if err != nil {
-						logx.Errorf("[processGeneralAssetType] err: %v", err)
-					}
-				case LiquidityAssetType:
-					pendingUpdateLiquidityIndexMap, liquidityMap, baseBalance, err = processLiquidityAssetType(ctx,
-						pendingUpdateLiquidityIndexMap, mempoolTx, mempoolTxDetail, liquidityMap, liquidityTree)
-					if err != nil {
-						logx.Errorf("[processLiquidityAssetType] err: %v", err)
-					}
-				case NftAssetType:
-					pendingNewNftWithdrawHistory, baseBalance, pendingNewNftIndexMap, pendingUpdateNftIndexMap, err = processNftAssetType(ctx,
-						nftMap, nftTree, mempoolTxDetail, mempoolTx, pendingNewNftIndexMap, pendingUpdateNftIndexMap, pendingNewNftWithdrawHistory)
-					if err != nil {
-						logx.Errorf("[processNftAssetType] err: %v", err)
-					}
-				case CollectionNonceAssetType:
-					baseBalance, newCollectionNonce, err = processCollectionNonceAssetType(accountMap, mempoolTxDetail)
-					if err != nil {
-						logx.Errorf("[processCollectionNonceAssetType] err: %v", err)
-						return err
-					}
-				default:
-					logx.Error("[CommitterTask] invalid tx type")
-					return errors.New("[CommitterTask] invalid tx type")
-				}
-				tmpTx := &tx.TxDetail{
-					AssetId:      mempoolTxDetail.AssetId,
-					AssetType:    mempoolTxDetail.AssetType,
-					AccountIndex: mempoolTxDetail.AccountIndex,
-					AccountName:  mempoolTxDetail.AccountName,
-					Balance:      baseBalance,
-					BalanceDelta: mempoolTxDetail.BalanceDelta,
-					Order:        mempoolTxDetail.Order,
-					AccountOrder: mempoolTxDetail.AccountOrder,
-				}
-				if mempoolTxDetail.AccountIndex != commonConstant.NilTxAccountIndex {
-					tmpTx.Nonce = accountMap[mempoolTxDetail.AccountIndex].Nonce
-					tmpTx.CollectionNonce = accountMap[mempoolTxDetail.AccountIndex].CollectionNonce
-				}
-				txDetails = append(txDetails, tmpTx)
-			}
-			if mempoolTx.Nonce != commonConstant.NilNonce {
-				accountMap[mempoolTx.AccountIndex].Nonce = mempoolTx.Nonce
-			}
-			if newCollectionNonce != commonConstant.NilCollectionId {
-				accountMap[mempoolTx.AccountIndex].CollectionNonce = newCollectionNonce
-			}
-			// update account tree
-			for accountIndex, _ := range pendingUpdateAccountIndexMap {
-				nAccountLeafHash, err := tree.ComputeAccountLeafHash(accountMap[accountIndex].AccountNameHash, accountMap[accountIndex].PublicKey,
-					accountMap[accountIndex].Nonce, accountMap[accountIndex].CollectionNonce, (*accountAssetTrees)[accountIndex].RootNode.Value)
-				if err != nil {
-					logx.Errorf("[CommitterTask] unable to compute account leaf:", err)
-					return err
-				}
-				if err = accountTree.Update(accountIndex, nAccountLeafHash); err != nil {
-					logx.Errorf("[accountTree.Update] err:", err)
-					return err
-				}
-			}
-			// update mempool tx info
-			mempoolTx.L2BlockHeight = currentBlockHeight
-			mempoolTx.Status = mempool.SuccessTxStatus
-			pendingMempoolTxs = append(pendingMempoolTxs, mempoolTx)
-			finalStateRoot = newStateRoot(accountTree, liquidityTree, nftTree)
-			txs = append(txs, ConvertMempoolTxToTx(mempoolTx, txDetails, finalStateRoot, currentBlockHeight))
+		currentBlockHeight += 1
+		startIndex := i * MaxTxsAmountPerBlock
+		endIndex := (i + 1) * MaxTxsAmountPerBlock
+		if endIndex > txsLength {
+			endIndex = txsLength
 		}
-		if len(txs) == 0 {
+		param, err := getCommitTxs(ctx, accountAssetTrees, accountTree, nftTree, liquidityTree,
+			currentBlockHeight, mempoolTxs[startIndex:endIndex], accountMap, liquidityMap, nftMap, createdAt)
+		if err != nil {
+			logx.Errorf("[getCommitTxs] err: %v", err)
+			return err
+		}
+		if len(param.txs) == 0 {
 			return nil
 		}
-		// construct assets history
-		pendingUpdateAccounts, pendingNewAccountHistory, err := newAccount(pendingUpdateAccountIndexMap, accountMap, currentBlockHeight)
+		pendingUpdateAccounts, pendingNewAccountHistory, err := newAccount(param.pendingUpdateAccountIndexMap, accountMap, currentBlockHeight)
 		if err != nil {
 			logx.Errorf("[newAccount] err: %v", err)
 			return err
 		}
-		pendingUpdateLiquidity, pendingNewLiquidityHistory := newLiquidity(pendingUpdateLiquidityIndexMap, liquidityMap, currentBlockHeight)
-		pendingNewNftHistory := newPendingNewNftHistory(pendingNewNftIndexMap, nftMap, currentBlockHeight)
+		pendingUpdateLiquidity, pendingNewLiquidityHistory := newLiquidity(param.pendingUpdateLiquidityIndexMap, liquidityMap, currentBlockHeight)
+		pendingNewNftHistory := newPendingNewNftHistory(param.pendingNewNftIndexMap, nftMap, currentBlockHeight)
 		var pendingUpdateNft []*L2Nft
-		for nftIndex, flag := range pendingUpdateNftIndexMap {
+		for nftIndex, flag := range param.pendingUpdateNftIndexMap {
 			if !flag {
 				continue
 			}
@@ -314,28 +129,232 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp time.Time, accou
 		}
 		// create commitment
 		commitment := util.CreateBlockCommitment(currentBlockHeight, createdAt,
-			common.FromHex(oldStateRoot), common.FromHex(finalStateRoot), pubData, int64(len(pubDataOffset)))
+			common.FromHex(oldStateRoot), common.FromHex(param.finalStateRoot), param.pubData, int64(len(param.pubDataOffset)))
 		// update old state root
-		oldStateRoot = finalStateRoot
-		oBlock, err := newBlock(time.UnixMilli(createdAt), commitment, finalStateRoot, txs, pendingOnChainOperationsPubData,
-			currentBlockHeight, priorityOperations, pendingOnChainOperationsHash)
+		oldStateRoot = param.finalStateRoot
+		oBlock, err := newBlock(time.UnixMilli(createdAt), commitment, param.finalStateRoot, param.txs, param.pendingOnChainOperationsPubData,
+			currentBlockHeight, param.priorityOperations, param.pendingOnChainOperationsHash)
 		if err != nil {
 			logx.Errorf("[newBlock] unable to marshal pub data: %v", err)
 			return err
 		}
-		oBlockForCommit, err := newBlockForCommit(currentBlockHeight, finalStateRoot, pubData, createdAt, pubDataOffset)
+		oBlockForCommit, err := newBlockForCommit(currentBlockHeight, param.finalStateRoot, param.pubData, createdAt, param.pubDataOffset)
 		if err != nil {
 			logx.Errorf("[newBlockForCommit] unable to marshal pub data: %v", err)
 			return err
 		}
 		if err = ctx.BlockModel.CreateBlockForCommitter(oBlock, oBlockForCommit,
-			pendingMempoolTxs, pendingDeleteMempoolTxs, pendingUpdateAccounts, pendingNewAccountHistory, pendingUpdateLiquidity,
-			pendingNewLiquidityHistory, pendingUpdateNft, pendingNewNftHistory, pendingNewNftWithdrawHistory); err != nil {
+			param.pendingMempoolTxs, param.pendingDeleteMempoolTxs, pendingUpdateAccounts, pendingNewAccountHistory, pendingUpdateLiquidity,
+			pendingNewLiquidityHistory, pendingUpdateNft, pendingNewNftHistory, param.pendingNewNftWithdrawHistory); err != nil {
 			logx.Errorf("[CommitterTask] unable to create block for committer: %v", err)
 			return err
 		}
 	}
 	return nil
+}
+
+func getCommitTxs(ctx *svc.ServiceContext, accountAssetTrees *[]*tree.Tree, accountTree *tree.Tree, nftTree *merkleTree.Tree, liquidityTree *tree.Tree,
+	currentBlockHeight int64, mempoolTxs []*mempool.MempoolTx, accountMap map[int64]*FormatAccountInfo, liquidityMap map[int64]*liquidity.Liquidity,
+	nftMap map[int64]*nft.L2Nft, createdAt int64) (*paramInfo, error) {
+	var err error
+	param := &paramInfo{
+		pendingUpdateAccountIndexMap:    make(map[int64]bool),
+		pendingUpdateLiquidityIndexMap:  make(map[int64]bool),
+		pendingUpdateNftIndexMap:        make(map[int64]bool),
+		pendingNewNftIndexMap:           make(map[int64]bool),
+		pendingNewNftWithdrawHistory:    make([]*nft.L2NftWithdrawHistory, 0),
+		txs:                             make([]*Tx, 0),
+		finalStateRoot:                  "",
+		pubData:                         make([]byte, 0),
+		priorityOperations:              0,
+		pubDataOffset:                   make([]uint32, 0),
+		pendingOnChainOperationsPubData: make([][]byte, 0),
+		pendingOnChainOperationsHash:    make([]byte, 0),
+		pendingMempoolTxs:               make([]*MempoolTx, 0),
+		pendingDeleteMempoolTxs:         make([]*MempoolTx, 0),
+	}
+	param.pendingOnChainOperationsHash = common.FromHex(util.EmptyStringKeccak)
+	for _, mempoolTx := range mempoolTxs {
+		var (
+			pendingPriorityOperation int64
+			newCollectionNonce       = commonConstant.NilCollectionId
+		)
+		pendingPriorityOperation, param.pendingOnChainOperationsPubData, param.pendingOnChainOperationsHash, param.pubData, param.pubDataOffset, err =
+			handleTxPubData(mempoolTx, param.pubData, param.pendingOnChainOperationsPubData, param.pendingOnChainOperationsHash, param.pubDataOffset)
+		if err != nil {
+			logx.Errorf("[handleTxPubData] unable to handle l1 tx: %v", err)
+			return param, err
+		}
+		param.priorityOperations += pendingPriorityOperation
+		// get related account info
+		if mempoolTx.AccountIndex != commonConstant.NilTxAccountIndex {
+			if accountMap[mempoolTx.AccountIndex] == nil {
+				accountInfo, err := ctx.AccountModel.GetAccountByAccountIndex(mempoolTx.AccountIndex)
+				if err != nil {
+					logx.Errorf("[CommitterTask] get account by account index: %v", err)
+					return param, err
+				}
+				accountMap[mempoolTx.AccountIndex], err = commonAsset.ToFormatAccountInfo(accountInfo)
+				if err != nil {
+					logx.Errorf("[CommitterTask] unable to format account info: %v", err)
+					return param, err
+				}
+			}
+			// handle registerZNS tx
+			param.pendingUpdateAccountIndexMap[mempoolTx.AccountIndex] = true
+			if accountMap[mempoolTx.AccountIndex].Status == account.AccountStatusPending {
+				if mempoolTx.TxType != TxTypeRegisterZns {
+					logx.Errorf("[CommitterTask] first transaction should be registerZNS")
+					return param, errors.New("[CommitterTask] first transaction should be registerZNS")
+				}
+				accountMap[mempoolTx.AccountIndex].Status = account.AccountStatusConfirmed
+				param.pendingUpdateAccountIndexMap[mempoolTx.AccountIndex] = true
+				// update account tree
+				if int64(len(*accountAssetTrees)) != mempoolTx.AccountIndex {
+					logx.Errorf("[CommitterTask] invalid account index")
+					return param, errors.New("[CommitterTask] invalid account index")
+				}
+				emptyAssetTree, err := tree.NewEmptyAccountAssetTree()
+				if err != nil {
+					logx.Errorf("[CommitterTask] unable to new empty account state tree")
+					return param, err
+				}
+				*accountAssetTrees = append(*accountAssetTrees, emptyAssetTree)
+				nAccountLeafHash, err := tree.ComputeAccountLeafHash(
+					accountMap[mempoolTx.AccountIndex].AccountNameHash,
+					accountMap[mempoolTx.AccountIndex].PublicKey,
+					accountMap[mempoolTx.AccountIndex].Nonce,
+					accountMap[mempoolTx.AccountIndex].CollectionNonce,
+					(*accountAssetTrees)[mempoolTx.AccountIndex].RootNode.Value,
+				)
+				if err != nil {
+					log.Println("[CommitterTask] unable to compute account leaf:", err)
+					return param, err
+				}
+				err = accountTree.Update(mempoolTx.AccountIndex, nAccountLeafHash)
+				if err != nil {
+					log.Println("[CommitterTask] unable to update account tree:", err)
+					return param, err
+				}
+			}
+		}
+		// check if the tx is still valid
+		if mempoolTx.ExpiredAt != commonConstant.NilExpiredAt {
+			if mempoolTx.ExpiredAt < createdAt {
+				mempoolTx.Status = mempool.FailTxStatus
+				mempoolTx.L2BlockHeight = currentBlockHeight
+				param.pendingDeleteMempoolTxs = append(param.pendingDeleteMempoolTxs, mempoolTx)
+				continue
+			}
+		}
+		if mempoolTx.Nonce != commonConstant.NilNonce {
+			// check nonce, the latest nonce should be previous nonce + 1
+			if mempoolTx.Nonce != accountMap[mempoolTx.AccountIndex].Nonce+1 {
+				mempoolTx.Status = mempool.FailTxStatus
+				mempoolTx.L2BlockHeight = currentBlockHeight
+				param.pendingDeleteMempoolTxs = append(param.pendingDeleteMempoolTxs, mempoolTx)
+				continue
+			}
+		}
+		// check mempool tx details are correct
+		var txDetails []*tx.TxDetail
+		for _, mempoolTxDetail := range mempoolTx.MempoolDetails {
+			if mempoolTxDetail.AccountIndex != commonConstant.NilTxAccountIndex {
+				param.pendingUpdateAccountIndexMap[mempoolTxDetail.AccountIndex] = true
+				if accountMap[mempoolTxDetail.AccountIndex] == nil {
+					accountInfo, err := ctx.AccountModel.GetAccountByAccountIndex(mempoolTxDetail.AccountIndex)
+					if err != nil {
+						logx.Errorf("[CommitterTask] get account by account index: %s", err.Error())
+						return param, err
+					}
+					accountMap[mempoolTxDetail.AccountIndex], err = commonAsset.ToFormatAccountInfo(accountInfo)
+					if err != nil {
+						logx.Errorf("[CommitterTask] unable to format account info: %s", err.Error())
+						return param, err
+					}
+				}
+			}
+			var baseBalance string
+			// check balance
+			switch mempoolTxDetail.AssetType {
+			case GeneralAssetType:
+				param.pendingDeleteMempoolTxs, mempoolTx, mempoolTxDetail, accountMap, baseBalance, err = processGeneralAssetType(ctx,
+					accountMap, param.pendingDeleteMempoolTxs, mempoolTx, accountAssetTrees, mempoolTxDetail, currentBlockHeight)
+				if err != nil {
+					if err.Error() == errcode.ErrContinueFlag.Error() {
+						continue
+					}
+					logx.Errorf("[processGeneralAssetType] err: %v", err)
+					return param, err
+				}
+			case LiquidityAssetType:
+				param.pendingUpdateLiquidityIndexMap, liquidityMap, baseBalance, err = processLiquidityAssetType(ctx,
+					param.pendingUpdateLiquidityIndexMap, mempoolTx, mempoolTxDetail, liquidityMap, liquidityTree)
+				if err != nil {
+					logx.Errorf("[processLiquidityAssetType] err: %v", err)
+					return param, err
+				}
+			case NftAssetType:
+				param.pendingNewNftWithdrawHistory, baseBalance, param.pendingNewNftIndexMap, param.pendingUpdateNftIndexMap, err = processNftAssetType(ctx,
+					nftMap, nftTree, mempoolTxDetail, mempoolTx, param.pendingNewNftIndexMap, param.pendingUpdateNftIndexMap, param.pendingNewNftWithdrawHistory)
+				if err != nil {
+					logx.Errorf("[processNftAssetType] err: %v", err)
+					return param, err
+				}
+			case CollectionNonceAssetType:
+				baseBalance, newCollectionNonce, err = processCollectionNonceAssetType(accountMap, mempoolTxDetail)
+				if err != nil {
+					logx.Errorf("[processCollectionNonceAssetType] err: %v", err)
+					return param, err
+				}
+			default:
+				logx.Error("[CommitterTask] invalid tx type")
+				return param, errors.New("[CommitterTask] invalid tx type")
+			}
+			tmpTx := &tx.TxDetail{
+				AssetId:      mempoolTxDetail.AssetId,
+				AssetType:    mempoolTxDetail.AssetType,
+				AccountIndex: mempoolTxDetail.AccountIndex,
+				AccountName:  mempoolTxDetail.AccountName,
+				Balance:      baseBalance,
+				BalanceDelta: mempoolTxDetail.BalanceDelta,
+				Order:        mempoolTxDetail.Order,
+				AccountOrder: mempoolTxDetail.AccountOrder,
+			}
+			if mempoolTxDetail.AccountIndex != commonConstant.NilTxAccountIndex {
+				tmpTx.Nonce = accountMap[mempoolTxDetail.AccountIndex].Nonce
+				tmpTx.CollectionNonce = accountMap[mempoolTxDetail.AccountIndex].CollectionNonce
+			}
+			txDetails = append(txDetails, tmpTx)
+		}
+		if mempoolTx.Nonce != commonConstant.NilNonce {
+			accountMap[mempoolTx.AccountIndex].Nonce = mempoolTx.Nonce
+		}
+		if newCollectionNonce != commonConstant.NilCollectionId {
+			accountMap[mempoolTx.AccountIndex].CollectionNonce = newCollectionNonce
+		}
+		// update account tree
+		for accountIndex, _ := range param.pendingUpdateAccountIndexMap {
+			nAccountLeafHash, err := tree.ComputeAccountLeafHash(accountMap[accountIndex].AccountNameHash, accountMap[accountIndex].PublicKey,
+				accountMap[accountIndex].Nonce, accountMap[accountIndex].CollectionNonce, (*accountAssetTrees)[accountIndex].RootNode.Value)
+			if err != nil {
+				logx.Errorf("[CommitterTask] unable to compute account leaf:", err)
+				return param, err
+			}
+			if err = accountTree.Update(accountIndex, nAccountLeafHash); err != nil {
+				logx.Errorf("[accountTree.Update] err:", err)
+				return param, err
+			}
+		}
+		// update mempool tx info
+		mempoolTx.L2BlockHeight = currentBlockHeight
+		mempoolTx.Status = mempool.SuccessTxStatus
+		param.pendingMempoolTxs = append(param.pendingMempoolTxs, mempoolTx)
+		param.finalStateRoot = newStateRoot(accountTree, liquidityTree, nftTree)
+		param.txs = append(param.txs, ConvertMempoolTxToTx(mempoolTx, txDetails, param.finalStateRoot, currentBlockHeight))
+	}
+	return param, err
+
 }
 
 func processGeneralAssetType(ctx *svc.ServiceContext, accountMap map[int64]*commonAsset.AccountInfo, pendingDeleteMempoolTxs []*mempool.MempoolTx,
@@ -606,275 +625,4 @@ func processCollectionNonceAssetType(accountMap map[int64]*commonAsset.AccountIn
 		return "", 0, errcode.ErrNotInvalidCollectionNonce
 	}
 	return baseBalance, newCollectionNonce, nil
-}
-func newStateRoot(accountTree, liquidityTree, nftTree *merkleTree.Tree) string {
-	hFunc := mimc.NewMiMC()
-	hFunc.Write(accountTree.RootNode.Value)
-	hFunc.Write(liquidityTree.RootNode.Value)
-	hFunc.Write(nftTree.RootNode.Value)
-	stateRoot := common.Bytes2Hex(hFunc.Sum(nil))
-	return stateRoot
-}
-
-func newAccount(pendingUpdateAccountIndexMap map[int64]bool, accountMap map[int64]*commonAsset.AccountInfo,
-	currentBlockHeight int64) ([]*Account, []*AccountHistory, error) {
-	var pendingUpdateAccounts []*Account
-	var pendingNewAccountHistory []*AccountHistory
-	for accountIndex, flag := range pendingUpdateAccountIndexMap {
-		if !flag {
-			continue
-		}
-		accountInfo, err := commonAsset.FromFormatAccountInfo(accountMap[accountIndex])
-		if err != nil {
-			logx.Errorf("[CommitterTask] unable to convert from format account info: %s", err.Error())
-			return nil, nil, err
-		}
-		pendingUpdateAccounts = append(pendingUpdateAccounts, accountInfo)
-		pendingNewAccountHistory = append(pendingNewAccountHistory, &AccountHistory{
-			AccountIndex:    accountInfo.AccountIndex,
-			Nonce:           accountInfo.Nonce,
-			CollectionNonce: accountInfo.CollectionNonce,
-			AssetInfo:       accountInfo.AssetInfo,
-			AssetRoot:       accountInfo.AssetRoot,
-			L2BlockHeight:   currentBlockHeight,
-		})
-	}
-	return pendingUpdateAccounts, pendingNewAccountHistory, nil
-}
-
-func newLiquidity(pendingUpdateLiquidityIndexMap map[int64]bool, liquidityMap map[int64]*liquidity.Liquidity,
-	currentBlockHeight int64) ([]*liquidity.Liquidity, []*liquidity.LiquidityHistory) {
-	var pendingUpdateLiquidity []*liquidity.Liquidity
-	var pendingNewLiquidityHistory []*liquidity.LiquidityHistory
-	for pairIndex, flag := range pendingUpdateLiquidityIndexMap {
-		if !flag {
-			continue
-		}
-		pendingUpdateLiquidity = append(pendingUpdateLiquidity, liquidityMap[pairIndex])
-		pendingNewLiquidityHistory = append(pendingNewLiquidityHistory, &LiquidityHistory{
-			PairIndex:            liquidityMap[pairIndex].PairIndex,
-			AssetAId:             liquidityMap[pairIndex].AssetAId,
-			AssetA:               liquidityMap[pairIndex].AssetA,
-			AssetBId:             liquidityMap[pairIndex].AssetBId,
-			AssetB:               liquidityMap[pairIndex].AssetB,
-			LpAmount:             liquidityMap[pairIndex].LpAmount,
-			KLast:                liquidityMap[pairIndex].KLast,
-			FeeRate:              liquidityMap[pairIndex].FeeRate,
-			TreasuryAccountIndex: liquidityMap[pairIndex].TreasuryAccountIndex,
-			TreasuryRate:         liquidityMap[pairIndex].TreasuryRate,
-			L2BlockHeight:        currentBlockHeight,
-		})
-	}
-	return pendingUpdateLiquidity, pendingNewLiquidityHistory
-}
-
-func newPendingNewNftHistory(pendingNewNftIndexMap map[int64]bool, nftMap map[int64]*nft.L2Nft, currentBlockHeight int64) []*nft.L2NftHistory {
-	var pendingNewNftHistory []*nft.L2NftHistory
-	for nftIndex, flag := range pendingNewNftIndexMap {
-		if !flag {
-			continue
-		}
-		pendingNewNftHistory = append(pendingNewNftHistory, &L2NftHistory{
-			NftIndex:            nftMap[nftIndex].NftIndex,
-			CreatorAccountIndex: nftMap[nftIndex].CreatorAccountIndex,
-			OwnerAccountIndex:   nftMap[nftIndex].OwnerAccountIndex,
-			NftContentHash:      nftMap[nftIndex].NftContentHash,
-			NftL1Address:        nftMap[nftIndex].NftL1Address,
-			NftL1TokenId:        nftMap[nftIndex].NftL1TokenId,
-			CreatorTreasuryRate: nftMap[nftIndex].CreatorTreasuryRate,
-			CollectionId:        nftMap[nftIndex].CollectionId,
-			L2BlockHeight:       currentBlockHeight,
-		})
-	}
-	return pendingNewNftHistory
-}
-
-func newBlock(createAtTime time.Time, commitment, finalStateRoot string, txs []*tx.Tx, pendingOnChainOperationsPubData [][]byte,
-	currentBlockHeight, priorityOperations int64, pendingOnChainOperationsHash []byte) (*block.Block, error) {
-	block := &Block{
-		Model:                        gorm.Model{CreatedAt: createAtTime},
-		BlockCommitment:              commitment,
-		BlockHeight:                  currentBlockHeight,
-		StateRoot:                    finalStateRoot,
-		PriorityOperations:           priorityOperations,
-		PendingOnChainOperationsHash: common.Bytes2Hex(pendingOnChainOperationsHash),
-		Txs:                          txs,
-		BlockStatus:                  block.StatusPending,
-	}
-	if pendingOnChainOperationsPubData != nil {
-		onChainOperationsPubDataBytes, err := json.Marshal(pendingOnChainOperationsPubData)
-		if err != nil {
-			logx.Errorf("[CommitterTask] unable to marshal on chain operations pub data: %v", err)
-			return nil, err
-		}
-		block.PendingOnChainOperationsPubData = string(onChainOperationsPubDataBytes)
-	}
-	return block, nil
-}
-func newBlockForCommit(currentBlockHeight int64, finalStateRoot string,
-	pubData []byte, createdAt int64, pubDataOffset []uint32) (*blockForCommit.BlockForCommit, error) {
-	offsetBytes, err := json.Marshal(pubDataOffset)
-	if err != nil {
-		logx.Errorf("[Marshal] unable to marshal pub data: %v", err)
-		return nil, err
-	}
-	return &BlockForCommit{
-		BlockHeight:       currentBlockHeight,
-		StateRoot:         finalStateRoot,
-		PublicData:        common.Bytes2Hex(pubData),
-		Timestamp:         createdAt,
-		PublicDataOffsets: string(offsetBytes),
-	}, nil
-}
-
-/**
-handleTxPubData: handle different layer-1 txs
-*/
-func handleTxPubData(mempoolTx *MempoolTx, oldPubData []byte, oldPendingOnChainOperationsPubData [][]byte,
-	oldPendingOnChainOperationsHash []byte, oldPubDataOffset []uint32) (priorityOperation int64, newPendingOnChainOperationsPubData [][]byte,
-	newPendingOnChainOperationsHash []byte, newPubData []byte, newPubDataOffset []uint32, err error) {
-	priorityOperation = 0
-	newPendingOnChainOperationsHash = oldPendingOnChainOperationsHash
-	newPendingOnChainOperationsPubData = oldPendingOnChainOperationsPubData
-	newPubDataOffset = oldPubDataOffset
-	var pubData []byte
-	switch mempoolTx.TxType {
-	case TxTypeRegisterZns:
-		pubData, err = util.ConvertTxToRegisterZNSPubData(mempoolTx)
-		if err != nil {
-			logx.Errorf("[handleTxPubData] unable to convert tx to registerZNS pub data")
-			return priorityOperation, nil, nil, nil, nil, err
-		}
-		newPubDataOffset = append(newPubDataOffset, uint32(len(oldPubData)))
-		priorityOperation++
-	case TxTypeCreatePair:
-		pubData, err = util.ConvertTxToCreatePairPubData(mempoolTx)
-		if err != nil {
-			logx.Errorf("[handleTxPubData] unable to convert tx to create pair pub data")
-			return priorityOperation, nil, nil, nil, nil, err
-		}
-		newPubDataOffset = append(newPubDataOffset, uint32(len(oldPubData)))
-		priorityOperation++
-	case TxTypeUpdatePairRate:
-		pubData, err = util.ConvertTxToUpdatePairRatePubData(mempoolTx)
-		if err != nil {
-			logx.Errorf("[handleTxPubData] unable to convert tx to update pair rate pub data")
-			return priorityOperation, nil, nil, nil, nil, err
-		}
-		newPubDataOffset = append(newPubDataOffset, uint32(len(oldPubData)))
-		priorityOperation++
-	case TxTypeDeposit:
-		pubData, err = util.ConvertTxToDepositPubData(mempoolTx)
-		if err != nil {
-			logx.Errorf("[handleTxPubData] unable to convert tx to deposit pub data")
-			return priorityOperation, nil, nil, nil, nil, err
-		}
-		newPubDataOffset = append(newPubDataOffset, uint32(len(oldPubData)))
-		priorityOperation++
-	case TxTypeDepositNft:
-		pubData, err = util.ConvertTxToDepositNftPubData(mempoolTx)
-		if err != nil {
-			logx.Errorf("[handleTxPubData] unable to convert tx to deposit nft pub data")
-			return priorityOperation, nil, nil, nil, nil, err
-		}
-		newPubDataOffset = append(newPubDataOffset, uint32(len(oldPubData)))
-		priorityOperation++
-	case TxTypeTransfer:
-		pubData, err = util.ConvertTxToTransferPubData(mempoolTx)
-		if err != nil {
-			logx.Errorf("[handleTxPubData] unable to convert tx to transfer pub data")
-			return priorityOperation, nil, nil, nil, nil, err
-		}
-	case TxTypeSwap:
-		pubData, err = util.ConvertTxToSwapPubData(mempoolTx)
-		if err != nil {
-			logx.Errorf("[handleTxPubData] unable to convert tx to swap pub data")
-			return priorityOperation, nil, nil, nil, nil, err
-		}
-	case TxTypeAddLiquidity:
-		pubData, err = util.ConvertTxToAddLiquidityPubData(mempoolTx)
-		if err != nil {
-			logx.Errorf("[handleTxPubData] unable to convert tx to add liquidity pub data")
-			return priorityOperation, nil, nil, nil, nil, err
-		}
-	case TxTypeRemoveLiquidity:
-		pubData, err = util.ConvertTxToRemoveLiquidityPubData(mempoolTx)
-		if err != nil {
-			logx.Errorf("[handleTxPubData] unable to convert tx to remove liquidity pub data")
-			return priorityOperation, nil, nil, nil, nil, err
-		}
-	case TxTypeCreateCollection:
-		pubData, err = util.ConvertTxToCreateCollectionPubData(mempoolTx)
-		if err != nil {
-			logx.Errorf("[handleTxPubData] unable to convert tx to create collection pub data")
-			return priorityOperation, nil, nil, nil, nil, err
-		}
-	case TxTypeMintNft:
-		pubData, err = util.ConvertTxToMintNftPubData(mempoolTx)
-		if err != nil {
-			logx.Errorf("[handleTxPubData] unable to convert tx to mint nft pub data")
-			return priorityOperation, nil, nil, nil, nil, err
-		}
-	case TxTypeTransferNft:
-		pubData, err = util.ConvertTxToTransferNftPubData(mempoolTx)
-		if err != nil {
-			logx.Errorf("[handleTxPubData] unable to convert tx to transfer nft pub data")
-			return priorityOperation, nil, nil, nil, nil, err
-		}
-	case TxTypeAtomicMatch:
-		pubData, err = util.ConvertTxToAtomicMatchPubData(mempoolTx)
-		if err != nil {
-			logx.Errorf("[handleTxPubData] unable to convert tx to atomic match pub data")
-			return priorityOperation, nil, nil, nil, nil, err
-		}
-	case TxTypeCancelOffer:
-		pubData, err = util.ConvertTxToCancelOfferPubData(mempoolTx)
-		if err != nil {
-			logx.Errorf("[handleTxPubData] unable to convert tx to cancel offer pub data")
-			return priorityOperation, nil, nil, nil, nil, err
-		}
-	case TxTypeWithdraw:
-		pubData, err = util.ConvertTxToWithdrawPubData(mempoolTx)
-		if err != nil {
-			logx.Errorf("[handleTxPubData] unable to convert tx to withdraw pub data")
-			return priorityOperation, nil, nil, nil, nil, err
-		}
-		newPubDataOffset = append(newPubDataOffset, uint32(len(oldPubData)))
-		newPendingOnChainOperationsPubData = append(newPendingOnChainOperationsPubData, pubData)
-		newPendingOnChainOperationsHash = util.ConcatKeccakHash(oldPendingOnChainOperationsHash, pubData)
-	case TxTypeWithdrawNft:
-		pubData, err = util.ConvertTxToWithdrawNftPubData(mempoolTx)
-		if err != nil {
-			logx.Errorf("[handleTxPubData] unable to convert tx to withdraw nft pub data")
-			return priorityOperation, nil, nil, nil, nil, err
-		}
-		newPubDataOffset = append(newPubDataOffset, uint32(len(oldPubData)))
-		newPendingOnChainOperationsPubData = append(newPendingOnChainOperationsPubData, pubData)
-		newPendingOnChainOperationsHash = util.ConcatKeccakHash(oldPendingOnChainOperationsHash, pubData)
-	case TxTypeFullExit:
-		pubData, err = util.ConvertTxToFullExitPubData(mempoolTx)
-		if err != nil {
-			logx.Errorf("[handleTxPubData] unable to convert tx to full exit pub data")
-			return priorityOperation, nil, nil, nil, nil, err
-		}
-		newPubDataOffset = append(newPubDataOffset, uint32(len(oldPubData)))
-		priorityOperation++
-		newPendingOnChainOperationsPubData = append(newPendingOnChainOperationsPubData, pubData)
-		newPendingOnChainOperationsHash = util.ConcatKeccakHash(oldPendingOnChainOperationsHash, pubData)
-	case TxTypeFullExitNft:
-		pubData, err = util.ConvertTxToFullExitNftPubData(mempoolTx)
-		if err != nil {
-			logx.Errorf("[handleTxPubData] unable to convert tx to full exit nft pub data")
-			return priorityOperation, nil, nil, nil, nil, err
-		}
-		newPubDataOffset = append(newPubDataOffset, uint32(len(oldPubData)))
-		priorityOperation++
-		newPendingOnChainOperationsPubData = append(newPendingOnChainOperationsPubData, pubData)
-		newPendingOnChainOperationsHash = util.ConcatKeccakHash(oldPendingOnChainOperationsHash, pubData)
-	default:
-		logx.Errorf("[handleTxPubData] invalid tx type")
-		return priorityOperation, nil, nil, nil, nil, errors.New("[handleTxPubData] invalid tx type")
-	}
-	newPubData = append(oldPubData, pubData...)
-	return priorityOperation, newPendingOnChainOperationsPubData, newPendingOnChainOperationsHash, newPubData, newPubDataOffset, nil
 }
