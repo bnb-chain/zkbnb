@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type price struct {
@@ -23,57 +22,27 @@ type price struct {
 */
 func (m *price) GetCurrencyPrice(ctx context.Context, l2Symbol string) (float64, error) {
 	f := func() (interface{}, error) {
-		// quote.Quote["USD"].Price
-		err := UpdateCurrencyPriceBySymbol(ctx, l2Symbol, m.cache)
+		quoteMap, err := getQuotesLatest(l2Symbol)
 		if err != nil {
-			return 0, fmt.Errorf("[PriceModel.GetCurrencyPrice.UpdateCurrencyPriceBySymbol]: %v", err)
+			return 0, err
 		}
-		key := fmt.Sprintf("%s%v", cachePriceSymbolPrefix, l2Symbol)
-		var returnObj interface{}
-		_, err = m.cache.Get(ctx, key, &returnObj)
-		if err != nil {
-			return 0, fmt.Errorf("[PriceModel.GetCurrencyPrice.Getcache]: %v %v", key, err)
-		}
-		_price, ok := returnObj.(float64)
-		if !ok {
-			return _price, ErrTypeAssertion
-		}
-		return &_price, nil
+		return &quoteMap, nil
 	}
-	var _price float64
-	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetCurrencyPrice+l2Symbol, &_price, 10, f)
+	var quoteType map[string]QuoteLatest
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyCurrencyPrice(), &quoteType, 10, f)
 	if err != nil {
 		return 0, err
 	}
-	value1, ok := value.(*float64)
+	res, _ := value.(*map[string]QuoteLatest)
+	quoteMap := *res
+	q, ok := quoteMap[l2Symbol]
 	if !ok {
-		return 0, fmt.Errorf("[GetCurrencyPrice] ErrConvertFail")
+		return 0, err
 	}
-	return *value1, nil
+	return q.Quote["USD"].Price, nil
 }
 
-/*
-	Func: UpdateCurrencyPriceBySymbol
-	Params:
-	Return: err
-	Description: update currency price cache by symbol
-*/
-func UpdateCurrencyPriceBySymbol(ctx context.Context, l2Symbol string, cache multcache.MultCache) error {
-	latestQuotes, err := getQuotesLatest(l2Symbol)
-	if err != nil {
-		return err
-	}
-	for _, latestQuote := range latestQuotes {
-		key := fmt.Sprintf("%s%s", cachePriceSymbolPrefix, latestQuote.Symbol)
-		logx.Info(key, "   ", latestQuote.Quote["USD"].Price)
-		if err := cache.Set(ctx, key, latestQuote.Quote["USD"].Price, 1); err != nil {
-			return ErrSetCache.RefineError(err.Error())
-		}
-	}
-	return nil
-}
-
-func getQuotesLatest(l2Symbol string) (quotesLatest []QuoteLatest, err error) {
+func getQuotesLatest(l2Symbol string) (map[string]QuoteLatest, error) {
 	client := &http.Client{}
 	url := fmt.Sprintf("%s%s", coinMarketCap, l2Symbol)
 	reqest, err := http.NewRequest("GET", url, nil)
@@ -91,7 +60,6 @@ func getQuotesLatest(l2Symbol string) (quotesLatest []QuoteLatest, err error) {
 	if err != nil {
 		return nil, ErrIoutilReadAll.RefineError(err.Error())
 	}
-	// TODO: currencyPrice's interface{} looks like not necessary, body could Unmarshal to a fixed type struct
 	currencyPrice := &currencyPrice{}
 	err = json.Unmarshal(body, &currencyPrice)
 	if err != nil {
@@ -101,6 +69,7 @@ func getQuotesLatest(l2Symbol string) (quotesLatest []QuoteLatest, err error) {
 	if !ok {
 		return nil, ErrTypeAssertion
 	}
+	quotesLatest := make(map[string]QuoteLatest, 0)
 	for _, coinObj := range ifcs.(map[string]interface{}) {
 		b, err := json.Marshal(coinObj)
 		if err != nil {
@@ -111,7 +80,7 @@ func getQuotesLatest(l2Symbol string) (quotesLatest []QuoteLatest, err error) {
 		if err != nil {
 			return nil, ErrJsonUnmarshal
 		}
-		quotesLatest = append(quotesLatest, *quoteLatest)
+		quotesLatest[quoteLatest.Symbol] = *quoteLatest
 	}
 	return quotesLatest, nil
 }
