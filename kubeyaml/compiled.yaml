@@ -97,52 +97,7 @@ spec:
       - hostPath:
           path: /usr/share/zoneinfo/Asia/Shanghai
         name: timezone
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    app: blockmonitor
-  name: blockmonitor
-  namespace: default
-spec:
-  replicas: 1
-  revisionHistoryLimit: 5
-  strategy:
-    type: Recreate
-  selector:
-    matchLabels:
-      app: blockmonitor
-  template:
-    metadata:
-      labels:
-        app: blockmonitor
-    spec:
-      containers:
-      - image: us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/blockmonitor:$TAG_NAME
-        imagePullPolicy: Always
-        lifecycle:
-          preStop:
-            exec:
-              command:
-              - sh
-              - -c
-              - sleep 5
-        name: blockmonitor
-        resources:
-          limits:
-            cpu: 1000m
-            memory: 512Mi
-          requests:
-            cpu: 200m
-            memory: 256Mi
-        volumeMounts:
-        - mountPath: /etc/localtime
-          name: timezone
-      volumes:
-      - hostPath:
-          path: /usr/share/zoneinfo/Asia/Shanghai
-        name: timezone
+
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -254,8 +209,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: l2blockmonitor
-  name: l2blockmonitor
+    app: monitor
+  name: monitor
   namespace: default
 spec:
   replicas: 1
@@ -264,14 +219,14 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app: l2blockmonitor
+      app: monitor
   template:
     metadata:
       labels:
-        app: l2blockmonitor
+        app: monitor
     spec:
       containers:
-      - image: us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/l2blockmonitor:$TAG_NAME
+      - image: us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/monitor:$TAG_NAME
         imagePullPolicy: Always
         lifecycle:
           preStop:
@@ -280,7 +235,7 @@ spec:
               - sh
               - -c
               - sleep 5
-        name: l2blockmonitor
+        name: monitor
         resources:
           limits:
             cpu: 1000m
@@ -295,53 +250,7 @@ spec:
       - hostPath:
           path: /usr/share/zoneinfo/Asia/Shanghai
         name: timezone
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    app: mempoolmonitor
-  name: mempoolmonitor
-  namespace: default
-spec:
-  replicas: 1
-  strategy:
-    type: Recreate
-  revisionHistoryLimit: 5
-  selector:
-    matchLabels:
-      app: mempoolmonitor
-  template:
-    metadata:
-      labels:
-        app: mempoolmonitor
-    spec:
-      serviceAccountName: find-endpoints
-      containers:
-      - image: us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/mempoolmonitor:$TAG_NAME
-        imagePullPolicy: Always
-        lifecycle:
-          preStop:
-            exec:
-              command:
-              - sh
-              - -c
-              - sleep 5
-        name: mempoolmonitor
-        resources:
-          limits:
-            cpu: 1000m
-            memory: 512Mi
-          requests:
-            cpu: 200m
-            memory: 256Mi
-        volumeMounts:
-        - mountPath: /etc/localtime
-          name: timezone
-      volumes:
-      - hostPath:
-          path: /usr/share/zoneinfo/Asia/Shanghai
-        name: timezone
+
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -486,52 +395,6 @@ spec:
               - -c
               - sleep 5
         name: sender
-        resources:
-          limits:
-            cpu: 1000m
-            memory: 1024Mi
-          requests:
-            cpu: 200m
-            memory: 256Mi
-        volumeMounts:
-        - mountPath: /etc/localtime
-          name: timezone
-      volumes:
-      - hostPath:
-          path: /usr/share/zoneinfo/Asia/Shanghai
-        name: timezone
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    app: governancemonitor
-  name: governancemonitor
-  namespace: default
-spec:
-  replicas: 1
-  strategy:
-    type: Recreate
-  revisionHistoryLimit: 5
-  selector:
-    matchLabels:
-      app: governancemonitor
-  template:
-    metadata:
-      labels:
-        app: governancemonitor
-    spec:
-      containers:
-      - image: us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/governancemonitor:$TAG_NAME
-        imagePullPolicy: Always
-        lifecycle:
-          preStop:
-            exec:
-              command:
-              - sh
-              - -c
-              - sleep 5
-        name: governancemonitor
         resources:
           limits:
             cpu: 1000m
