@@ -294,7 +294,7 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp time.Time, accou
 			finalStateRoot = newStateRoot(accountTree, liquidityTree, nftTree)
 			txs = append(txs, ConvertMempoolTxToTx(mempoolTx, txDetails, finalStateRoot, currentBlockHeight))
 		}
-		if len(txs) != 0 {
+		if len(txs) == 0 {
 			return nil
 		}
 		// construct assets history
