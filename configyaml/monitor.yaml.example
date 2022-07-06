@@ -1,4 +1,5 @@
-Name: governanceMonitor.cronjob
+Name: blockMonitor.cronjob
+
 
 Prometheus:
   Host: 0.0.0.0
@@ -15,9 +16,10 @@ CacheRedis:
 ChainConfig:
   NetworkRPCSysConfigName: "BscTestNetworkRpc"
   # NetworkRPCSysConfigName: "LocalTestNetworkRpc"
+  ZecreyContractAddrSysConfigName: "ZecreyLegendContract"
   GovernanceContractAddrSysConfigName: "GovernanceContract"
-  #  StartL1BlockHeight: 520000
   StartL1BlockHeight: 26770000
+  # StartL1BlockHeight: 0
   PendingBlocksCount: 0
   MaxHandledBlocksCount: 100000
 
