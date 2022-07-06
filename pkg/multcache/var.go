@@ -37,8 +37,6 @@ const (
 	KeyGetSimpleL2AssetInfoByAssetId = "cache::l2asset:SimpleL2AssetInfoByAssetId:"
 
 	KeyGetSysconfigByName = "cache::sysconf:GetSysconfigByName:"
-
-	KeyGetCurrencyPrice = "cache::sysconf:GetCurrencyPrice:"
 )
 
 // cache key prefix: account
@@ -79,4 +77,10 @@ func SpliceCacheKeyLiquidityByPairIndex(pairIndex int64) string {
 // cache key prefix: nft
 func SpliceCacheKeyOfferIdByAccountIndex(accountIndex int64) string {
 	return fmt.Sprintf("cache:offerId_accountIndex_%d", accountIndex)
+}
+
+// cache key prefix: price
+func SpliceCacheKeyCurrencyPrice() string {
+	return "cache:currencyPrice:"
+
 }
