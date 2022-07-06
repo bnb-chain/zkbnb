@@ -223,11 +223,19 @@ func (m *model) GetLatestLiquidityInfoForRead(ctx context.Context, pairIndex int
 	return liquidityInfo, nil
 }
 
-func (l *model) GetLatestOfferIdForWrite(accountIndex int64) (nftIndex int64, err error) {
-	redisLock, offerId, err := commGlobalmapHandler.GetLatestOfferIdForWrite(l.offerModel, l.redisConnection, accountIndex)
+func (m *model) GetLatestOfferIdForWrite(ctx context.Context, accountIndex int64) (int64, error) {
+	f := func() (interface{}, error) {
+		lastOfferId, err := m.offerModel.GetLatestOfferId(accountIndex)
+		if err != nil {
+			return nil, err
+		}
+		return &lastOfferId, nil
+	}
+	var lastOfferId int64
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyOfferIdByAccountIndex(accountIndex), &lastOfferId, 1, f)
 	if err != nil {
 		return 0, err
 	}
-	defer redisLock.Release()
-	return offerId, nil
+	nftIndex, _ := value.(*int64)
+	return *nftIndex, nil
 }

@@ -75,3 +75,8 @@ func SpliceCacheKeyTxCountByTimeRange(data string) string {
 func SpliceCacheKeyLiquidityByPairIndex(pairIndex int64) string {
 	return fmt.Sprintf("cache:liquidity_pairIndex_%d", pairIndex)
 }
+
+// cache key prefix: nft
+func SpliceCacheKeyOfferIdByAccountIndex(accountIndex int64) string {
+	return fmt.Sprintf("cache:offerId_accountIndex_%d", accountIndex)
+}
