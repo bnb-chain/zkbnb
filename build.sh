@@ -5,7 +5,7 @@
 
 api="app"
 rpc="globalRPC proverHub"
-cronjob="blockMonitor mempoolMonitor committer sender l2BlockMonitor proverClient governanceMonitor"
+cronjob="monitor committer sender proverClient"
 
 # pull newest code
 cd $2
