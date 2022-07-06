@@ -59,10 +59,6 @@ func (l *SendCreateCollectionTxLogic) SendCreateCollectionTx(in *globalRPCProto.
 		logx.Errorf("[CheckRequestParam] err:%v", err)
 		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
 	}
-	l.commglobalmap.DeleteLatestAccountInfoInCache(l.ctx, txInfo.AccountIndex)
-	if err != nil {
-		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
-	}
 	gasAccountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
 	if err != nil {
 		logx.Errorf("[CheckRequestParam] err:%v", err)
