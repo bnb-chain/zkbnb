@@ -18,9 +18,20 @@ package logic
 
 import (
 	"github.com/google/uuid"
+	"github.com/zecrey-labs/zecrey-legend/common/model/account"
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 func RandomTxHash() string {
 	id, _ := uuid.NewUUID()
 	return id.String()
+}
+
+func getAccountInfoByAccountNameHash(accountNameHash string, accountModel account.AccountModel) (accountInfo *account.Account, err error) {
+	accountInfo, err = accountModel.GetAccountByAccountNameHash(accountNameHash)
+	if err != nil {
+		logx.Errorf("[MonitorMempool] unable to get account by account name hash: %s", err.Error())
+		return nil, err
+	}
+	return accountInfo, nil
 }
