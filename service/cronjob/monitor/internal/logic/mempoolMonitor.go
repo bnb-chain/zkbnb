@@ -295,9 +295,9 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 			if newAccountInfoMap[accountNameHash] != nil {
 				accountInfo = newAccountInfoMap[accountNameHash]
 			} else {
-				accountInfo, err = GetAccountInfoByAccountNameHash(accountNameHash, ctx.AccountModel)
+				accountInfo, err = getAccountInfoByAccountNameHash(accountNameHash, ctx.AccountModel)
 				if err != nil {
-					logx.Errorf("[MonitorMempool] unable to get account info: %s", err.Error())
+					logx.Errorf("[getAccountInfoByAccountNameHash] unable to get account info: %s", err.Error())
 					return err
 				}
 			}
@@ -360,7 +360,7 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 			if newAccountInfoMap[accountNameHash] != nil {
 				accountInfo = newAccountInfoMap[accountNameHash]
 			} else {
-				accountInfo, err = GetAccountInfoByAccountNameHash(accountNameHash, ctx.AccountModel)
+				accountInfo, err = getAccountInfoByAccountNameHash(accountNameHash, ctx.AccountModel)
 				if err != nil {
 					logx.Errorf("[MonitorMempool] unable to get account info: %s", err.Error())
 					return err
@@ -510,9 +510,9 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 					}
 				}
 			} else {
-				newAccountInfoMap[accountNameHash], err = GetAccountInfoByAccountNameHash(accountNameHash, ctx.AccountModel)
+				newAccountInfoMap[accountNameHash], err = getAccountInfoByAccountNameHash(accountNameHash, ctx.AccountModel)
 				if err != nil {
-					logx.Errorf("[MonitorMempool] unable to get account info: %s", err.Error())
+					logx.Errorf("[MonitorMempool] getAccountInfoByAccountNameHash unable to get account info: %s", err.Error())
 					return err
 				}
 				accountInfo, err = commonAsset.ToFormatAccountInfo(newAccountInfoMap[accountNameHash])
@@ -654,9 +654,9 @@ func processFullExitNft(ctx *svc.ServiceContext, newAccountInfoMap map[string]*a
 	}
 	accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
 	if newAccountInfoMap[accountNameHash] == nil {
-		accountInfo, err = GetAccountInfoByAccountNameHash(accountNameHash, ctx.AccountModel)
+		accountInfo, err = getAccountInfoByAccountNameHash(accountNameHash, ctx.AccountModel)
 		if err != nil {
-			logx.Errorf("[MonitorMempool] unable to get account info: %s", err.Error())
+			logx.Errorf("[MonitorMempool] getAccountInfoByAccountNameHash unable to get account info: %s", err.Error())
 			return pendingNewMempoolTxs, nil, err
 		}
 	} else {

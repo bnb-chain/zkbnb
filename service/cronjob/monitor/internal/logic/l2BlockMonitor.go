@@ -31,13 +31,7 @@ import (
 /*
 	MonitorL2BlockEvents: monitor layer-2 block events
 */
-func MonitorL2BlockEvents(
-	bscCli *_rpc.ProviderClient,
-	bscPendingBlocksCount uint64,
-	mempoolModel MempoolModel,
-	blockModel BlockModel,
-	l1TxSenderModel L1TxSenderModel,
-) (err error) {
+func MonitorL2BlockEvents(bscCli *_rpc.ProviderClient, bscPendingBlocksCount uint64, mempoolModel MempoolModel, blockModel BlockModel, l1TxSenderModel L1TxSenderModel) (err error) {
 	// get pending transactions from l1TxSender
 	pendingSenders, err := l1TxSenderModel.GetL1TxSendersByTxStatus(L1TxSenderPendingStatus)
 	if err != nil {
@@ -209,12 +203,7 @@ func MonitorL2BlockEvents(
 	// update blocks, blockDetails, updateEvents, sender
 	// update assets, locked assets, liquidity
 	// delete mempool txs
-	err = l1TxSenderModel.UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
-		pendingUpdateBlocks,
-		pendingUpdateSenders,
-		pendingUpdateMempoolTxs,
-		pendingUpdateProofSenderStatus,
-	)
+	err = l1TxSenderModel.UpdateRelatedEventsAndResetRelatedAssetsAndTxs(pendingUpdateBlocks, pendingUpdateSenders, pendingUpdateMempoolTxs, pendingUpdateProofSenderStatus)
 	logx.Infof("[MonitorL2BlockEvents] update blocks count: %v", len(pendingUpdateBlocks))
 	logx.Infof("[MonitorL2BlockEvents] update senders count: %v", len(pendingUpdateSenders))
 	logx.Infof("[MonitorL2BlockEvents] update mempool txs count: %v", len(pendingUpdateMempoolTxs))

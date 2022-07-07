@@ -37,14 +37,7 @@ import (
 /*
 	MonitorBlocks: monitor layer-1 block events
 */
-func MonitorBlocks(
-	cli *ProviderClient,
-	startHeight int64, pendingBlocksCount uint64, maxHandledBlocksCount int64,
-	zecreyContract string,
-	l1BlockMonitorModel L1BlockMonitorModel,
-) (err error) {
-
-	// get latest handled l1 block from database by chain id
+func MonitorBlocks(cli *ProviderClient, startHeight int64, pendingBlocksCount uint64, maxHandledBlocksCount int64, zecreyContract string, l1BlockMonitorModel L1BlockMonitorModel) (err error) {
 	latestHandledBlock, err := l1BlockMonitorModel.GetLatestL1BlockMonitorByBlock()
 	var handledHeight int64
 	if err != nil {
@@ -57,35 +50,25 @@ func MonitorBlocks(
 	} else {
 		handledHeight = latestHandledBlock.L1BlockHeight
 	}
-
 	// get latest l1 block height(latest height - pendingBlocksCount)
 	latestHeight, err := cli.GetHeight()
 	if err != nil {
 		logx.Errorf("[blockMoniter.MonitorBlocks]<=>[cli.GetHeight] %s", err.Error())
 		return err
 	}
-
-	// compute safe height
 	safeHeight := latestHeight - pendingBlocksCount
 	safeHeight = uint64(util.MinInt64(int64(safeHeight), handledHeight+maxHandledBlocksCount))
-
-	// check if safe height > handledHeight
 	if safeHeight <= uint64(handledHeight) {
 		logx.Error("[l2BlockMonitor.MonitorBlocks] no new blocks need to be handled")
 		return nil
 	}
-
-	// filter query for Zecrey contract
 	contractAddress := common.HexToAddress(zecreyContract)
-	// set filter
 	logx.Infof("[MonitorBlocks] fromBlock: %d, toBlock: %d", big.NewInt(handledHeight+1), big.NewInt(int64(safeHeight)))
-
 	zecreyInstance, err := zecreyLegend.LoadZecreyLegendInstance(cli, zecreyContract)
 	if err != nil {
 		logx.Errorf("[MonitorBlocks] unable to load zecrey instance")
 		return err
 	}
-	// deposit or lock logs
 	priorityRequests, err := zecreyInstance.ZecreyLegendFilterer.
 		FilterNewPriorityRequest(&bind.FilterOpts{Start: uint64(handledHeight + 1), End: &safeHeight})
 	if err != nil {
@@ -96,45 +79,35 @@ func MonitorBlocks(
 	for priorityRequests.Next() {
 		priorityRequestCount++
 	}
-	// block query
 	query := ethereum.FilterQuery{
 		FromBlock: big.NewInt(handledHeight + 1),
 		ToBlock:   big.NewInt(int64(safeHeight)),
 		Addresses: []common.Address{contractAddress},
 	}
-	// get logs from client
 	logs, err := cli.FilterLogs(context.Background(), query)
 	if err != nil {
 		errInfo := fmt.Sprintf("[blockMoniter.MonitorBlocks]<=>[cli.FilterLogs] %s", err.Error())
 		logx.Error(errInfo)
 		return err
 	}
-	// initialize L2TxEventMonitor & L2BlockEventMonitor & L1EventInfo
 	var (
 		l1EventInfos         []*L1EventInfo
 		l2TxEventMonitors    []*L2TxEventMonitor
 		l2BlockEventMonitors []*L2BlockEventMonitor
-		//LondonSigner         = types.NewLondonSigner(nativeChainId)
 	)
 	for _, vlog := range logs {
+		l1EventInfo := &L1EventInfo{
+			TxHash: vlog.TxHash.Hex(),
+		}
 		switch vlog.Topics[0].Hex() {
-		// deposit or lock event
 		case zecreyLogNewPriorityRequestSigHash.Hex():
 			priorityRequestCountCheck++
-			// parse event info
 			var event zecreyLegend.ZecreyLegendNewPriorityRequest
-			err = ZecreyContractAbi.UnpackIntoInterface(&event, EventNameNewPriorityRequest, vlog.Data)
-			if err != nil {
-				logx.Errorf("[blockMoniter.MonitorBlocks]<=>[ZecreyContractAbi.UnpackIntoInterface] %s", err.Error())
+			if err = ZecreyContractAbi.UnpackIntoInterface(&event, EventNameNewPriorityRequest, vlog.Data); err != nil {
+				logx.Errorf("[blockMoniter.MonitorBlocks]<=>[ZecreyContractAbi.UnpackIntoInterface] %v", err)
 				return err
 			}
-			// set up database info
-			l1EventInfo := &L1EventInfo{
-				EventType: EventTypeNewPriorityRequest,
-				TxHash:    vlog.TxHash.Hex(),
-			}
-
-			// compute balance delta
+			l1EventInfo.EventType = EventTypeNewPriorityRequest
 			l2TxEventMonitorInfo := &L2TxEventMonitor{
 				L1TxHash:        vlog.TxHash.Hex(),
 				L1BlockHeight:   int64(vlog.BlockNumber),
@@ -145,28 +118,17 @@ func MonitorBlocks(
 				ExpirationBlock: event.ExpirationBlock.Int64(),
 				Status:          l2TxEventMonitor.PendingStatus,
 			}
-			// set into array
-			l1EventInfos = append(l1EventInfos, l1EventInfo)
 			l2TxEventMonitors = append(l2TxEventMonitors, l2TxEventMonitorInfo)
-			break
 		case zecreyLogWithdrawalSigHash.Hex():
-			break
 		case zecreyLogWithdrawalPendingSigHash.Hex():
-			break
 		case zecreyLogBlockCommitSigHash.Hex():
-			// parse event info
 			var event zecreyLegend.ZecreyLegendBlockCommit
-			err = ZecreyContractAbi.UnpackIntoInterface(&event, EventNameBlockCommit, vlog.Data)
-			if err != nil {
+			if err = ZecreyContractAbi.UnpackIntoInterface(&event, EventNameBlockCommit, vlog.Data); err != nil {
 				errInfo := fmt.Sprintf("[blockMoniter.MonitorBlocks]<=>[ZecreyContractAbi.UnpackIntoInterface] %s", err.Error())
 				logx.Error(errInfo)
 				return err
 			}
-			// set up database info
-			l1EventInfo := &L1EventInfo{
-				EventType: EventTypeCommittedBlock,
-				TxHash:    vlog.TxHash.Hex(),
-			}
+			l1EventInfo.EventType = EventTypeCommittedBlock
 			l2BlockEventMonitorInfo := &L2BlockEventMonitor{
 				BlockEventType: EventTypeCommittedBlock,
 				L1BlockHeight:  int64(vlog.BlockNumber),
@@ -174,24 +136,15 @@ func MonitorBlocks(
 				L2BlockHeight:  int64(event.BlockNumber),
 				Status:         PendingStatusL2BlockEventMonitor,
 			}
-			// set into array
-			l1EventInfos = append(l1EventInfos, l1EventInfo)
 			l2BlockEventMonitors = append(l2BlockEventMonitors, l2BlockEventMonitorInfo)
-			break
 		case zecreyLogBlockVerificationSigHash.Hex():
-			// parse event info
 			var event zecreyLegend.ZecreyLegendBlockVerification
-			err = ZecreyContractAbi.UnpackIntoInterface(&event, EventNameBlockVerification, vlog.Data)
-			if err != nil {
+			if err = ZecreyContractAbi.UnpackIntoInterface(&event, EventNameBlockVerification, vlog.Data); err != nil {
 				errInfo := fmt.Sprintf("[blockMoniter.MonitorBlocks]<=>[ZecreyContractAbi.UnpackIntoInterface] %s", err.Error())
 				logx.Error(errInfo)
 				return err
 			}
-			// set up database info
-			l1EventInfo := &L1EventInfo{
-				EventType: EventTypeVerifiedBlock,
-				TxHash:    vlog.TxHash.Hex(),
-			}
+			l1EventInfo.EventType = EventTypeVerifiedBlock
 			l2BlockEventMonitorInfo := &L2BlockEventMonitor{
 				BlockEventType: EventTypeVerifiedBlock,
 				L1BlockHeight:  int64(vlog.BlockNumber),
@@ -199,24 +152,15 @@ func MonitorBlocks(
 				L2BlockHeight:  int64(event.BlockNumber),
 				Status:         PendingStatusL2BlockEventMonitor,
 			}
-			// set into array
-			l1EventInfos = append(l1EventInfos, l1EventInfo)
 			l2BlockEventMonitors = append(l2BlockEventMonitors, l2BlockEventMonitorInfo)
-			break
 		case zecreyLogBlocksRevertSigHash.Hex():
-			// parse event info
 			var event zecreyLegend.ZecreyLegendBlocksRevert
-			err = ZecreyContractAbi.UnpackIntoInterface(&event, EventNameBlocksRevert, vlog.Data)
-			if err != nil {
+			if err = ZecreyContractAbi.UnpackIntoInterface(&event, EventNameBlocksRevert, vlog.Data); err != nil {
 				errInfo := fmt.Sprintf("[blockMoniter.MonitorBlocks]<=>[ZecreyContractAbi.UnpackIntoInterface] %s", err.Error())
 				logx.Error(errInfo)
 				return err
 			}
-			// set up database info
-			l1EventInfo := &L1EventInfo{
-				EventType: EventTypeRevertedBlock,
-				TxHash:    vlog.TxHash.Hex(),
-			}
+			l1EventInfo.EventType = EventTypeRevertedBlock
 			l2BlockEventMonitorInfo := &L2BlockEventMonitor{
 				BlockEventType: EventTypeRevertedBlock,
 				L1BlockHeight:  int64(vlog.BlockNumber),
@@ -224,24 +168,18 @@ func MonitorBlocks(
 				L2BlockHeight:  int64(event.TotalBlocksCommitted),
 				Status:         PendingStatusL2BlockEventMonitor,
 			}
-			// set into array
-			l1EventInfos = append(l1EventInfos, l1EventInfo)
 			l2BlockEventMonitors = append(l2BlockEventMonitors, l2BlockEventMonitorInfo)
-			break
 		default:
-			break
 		}
+		l1EventInfos = append(l1EventInfos, l1EventInfo)
 	}
-	// check deposit or lock events
 	if priorityRequestCount != priorityRequestCountCheck {
 		logx.Errorf("[MonitorBlocks] new priority requests events not match, try it again")
 		return errors.New("[MonitorBlocks] new priority requests events not match, try it again")
 	}
-	// serialize into block info
 	eventInfosBytes, err := json.Marshal(l1EventInfos)
 	if err != nil {
-		errInfo := fmt.Sprintf("[blockMoniter.MonitorBlocks]<=>[json.Marshal] %s", err.Error())
-		logx.Error(errInfo)
+		logx.Error(fmt.Sprintf("[blockMoniter.MonitorBlocks]<=>[json.Marshal] %s", err.Error()))
 		return err
 	}
 	l1BlockMonitorInfo := &l1BlockMonitor.L1BlockMonitor{
@@ -249,9 +187,7 @@ func MonitorBlocks(
 		BlockInfo:     string(eventInfosBytes),
 		MonitorType:   l1BlockMonitor.MonitorTypeBlock,
 	}
-	// write into database, need to use transaction
-	err = l1BlockMonitorModel.CreateMonitorsInfo(l1BlockMonitorInfo, l2TxEventMonitors, l2BlockEventMonitors)
-	if err != nil {
+	if err = l1BlockMonitorModel.CreateMonitorsInfo(l1BlockMonitorInfo, l2TxEventMonitors, l2BlockEventMonitors); err != nil {
 		errInfo := fmt.Sprintf("[l1BlockMonitorModel.CreateMonitorsInfo] %s", err.Error())
 		logx.Error(errInfo)
 		return err
