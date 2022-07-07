@@ -26,7 +26,7 @@ func NewSendCreateCollectionTxLogic(ctx context.Context, svcCtx *svc.ServiceCont
 	}
 }
 
-func (l *SendCreateCollectionTxLogic) SendCreateCollectionTx(req *types.ReqSendCreateCollectionTx) (resp *types.RespSendCreateCollectionTx, err error) {
+func (l *SendCreateCollectionTxLogic) SendCreateCollectionTx(req *types.ReqSendCreateCollectionTx) (*types.RespSendCreateCollectionTx, error) {
 	collectionId, err := l.globalRpc.SendCreateCollectionTx(req.TxInfo)
 	if err != nil {
 		logx.Error("[SendCreateCollectionTx] err:%v", err)

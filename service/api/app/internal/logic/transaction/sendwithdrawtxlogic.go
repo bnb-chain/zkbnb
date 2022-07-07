@@ -19,18 +19,18 @@ type SendWithdrawTxLogic struct {
 
 func NewSendWithdrawTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendWithdrawTxLogic {
 	return &SendWithdrawTxLogic{
-		Logger: logx.WithContext(ctx),
-		ctx:    ctx,
-		svcCtx: svcCtx,
+		Logger:    logx.WithContext(ctx),
+		ctx:       ctx,
+		svcCtx:    svcCtx,
+		globalRpc: globalrpc.New(svcCtx, ctx),
 	}
 }
 
-func (l *SendWithdrawTxLogic) SendWithdrawTx(req *types.ReqSendWithdrawTx) (resp *types.RespSendWithdrawTx, err error) {
+func (l *SendWithdrawTxLogic) SendWithdrawTx(req *types.ReqSendWithdrawTx) (*types.RespSendWithdrawTx, error) {
 	txIndex, err := l.globalRpc.SendWithdrawTx(req.TxInfo)
 	if err != nil {
 		logx.Error("[transaction.SendWithdrawTx] err:%v", err)
 		return nil, err
 	}
-
 	return &types.RespSendWithdrawTx{TxId: txIndex}, nil
 }

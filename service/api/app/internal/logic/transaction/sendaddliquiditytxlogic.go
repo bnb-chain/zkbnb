@@ -26,12 +26,11 @@ func NewSendAddLiquidityTxLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	}
 }
 
-func (l *SendAddLiquidityTxLogic) SendAddLiquidityTx(req *types.ReqSendAddLiquidityTx) (resp *types.RespSendAddLiquidityTx, err error) {
+func (l *SendAddLiquidityTxLogic) SendAddLiquidityTx(req *types.ReqSendAddLiquidityTx) (*types.RespSendAddLiquidityTx, error) {
 	txIndex, err := l.globalRpc.SendAddLiquidityTx(req.TxInfo)
 	if err != nil {
 		logx.Error("[transaction.SendAddLiquidityTx] err:%v", err)
 		return nil, err
 	}
-
 	return &types.RespSendAddLiquidityTx{TxId: txIndex}, nil
 }
