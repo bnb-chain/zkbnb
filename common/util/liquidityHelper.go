@@ -61,7 +61,10 @@ func ComputeRemoveLiquidityAmount(liquidityInfo *commonAsset.LiquidityInfo, lpAm
 	if err != nil {
 		return nil, nil, err
 	}
-	lpAmount, _ = CleanPackedAmount(lpAmount)
+	lpAmount, err = CleanPackedAmount(lpAmount)
+	if err != nil {
+		return nil, nil, err
+	}
 	poolLp := ffmath.Sub(liquidityInfo.LpAmount, sLp)
 	assetAAmount = ffmath.Multiply(lpAmount, liquidityInfo.AssetA)
 	assetAAmount, _ = util.CleanPackedAmount(ffmath.Div(assetAAmount, poolLp))
