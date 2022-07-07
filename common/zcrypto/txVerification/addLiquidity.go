@@ -89,13 +89,11 @@ func VerifyAddLiquidityTxInfo(
 	poolAssetADelta := txInfo.AssetAAmount
 	poolAssetBDelta := txInfo.AssetBAmount
 	// from account lp
-	lpDeltaForTreasuryAccount = util.ComputeSLp(
-		liquidityInfo.AssetA,
-		liquidityInfo.AssetB,
-		liquidityInfo.KLast,
-		liquidityInfo.FeeRate,
-		liquidityInfo.TreasuryRate,
-	)
+	lpDeltaForTreasuryAccount, err = util.ComputeSLp(liquidityInfo.AssetA, liquidityInfo.AssetB, liquidityInfo.KLast, liquidityInfo.FeeRate, liquidityInfo.TreasuryRate)
+	if err != nil {
+		logx.Errorf("[ComputeSLp] err: %v", err)
+		return nil, err
+	}
 	poolLp := ffmath.Sub(liquidityInfo.LpAmount, lpDeltaForTreasuryAccount)
 	// lp = \Delta{x}/x * poolLp
 	if liquidityInfo.AssetA.Cmp(ZeroBigInt) == 0 {

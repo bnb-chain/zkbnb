@@ -56,12 +56,17 @@ func (l *GetSwapAmountLogic) GetSwapAmount(in *globalRPCProto.ReqGetSwapAmount) 
 		logx.Errorf("input:%v,liquidity:%v, err:%v", in, liquidity, errcode.ErrInvalidAsset)
 		return &globalRPCProto.RespGetSwapAmount{}, errcode.ErrInvalidAssetID
 	}
+	logx.Errorf("[ComputeDelta] liquidity:%v", liquidity)
+	logx.Errorf("[ComputeDelta] in:%v", in)
+	logx.Errorf("[ComputeDelta] deltaAmount:%v", deltaAmount)
+
 	assetAmount, toAssetId, err = util.ComputeDelta(liquidity.AssetA, liquidity.AssetB, liquidity.AssetAId, liquidity.AssetBId,
 		int64(in.AssetId), in.IsFrom, deltaAmount, liquidity.FeeRate)
 	if err != nil {
 		logx.Errorf("[ComputeDelta] err:%v", err)
 		return nil, err
 	}
+	logx.Errorf("[ComputeDelta] assetAmount:%v", assetAmount)
 	return &globalRPCProto.RespGetSwapAmount{
 		SwapAssetAmount: assetAmount.String(),
 		SwapAssetId:     uint32(toAssetId),

@@ -49,7 +49,11 @@ func (l *GetLpValueLogic) GetLpValue(in *globalRPCProto.ReqGetLpValue) (*globalR
 		logx.Errorf("[SetString] err:%v", in.LPAmount)
 		return nil, errcode.ErrInvalidParam
 	}
-	assetAAmount, assetBAmount := util.ComputeRemoveLiquidityAmount(liquidity, amount)
+	assetAAmount, assetBAmount, err := util.ComputeRemoveLiquidityAmount(liquidity, amount)
+	if err != nil {
+		logx.Errorf("[ComputeRemoveLiquidityAmount] err:%v", err)
+		return nil, err
+	}
 	return &globalRPCProto.RespGetLpValue{
 		AssetAId:     uint32(liquidity.AssetAId),
 		AssetAAmount: assetAAmount.String(),
