@@ -25,7 +25,6 @@ import (
 )
 
 func SendTransferTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalmap commglobalmap.Commglobalmap, rawTxInfo string) (txId string, err error) {
-	// parse transfer tx info
 	txInfo, err := commonTx.ParseTransferTxInfo(rawTxInfo)
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendTransferTx.ParseTransferTxInfo] %s", err.Error())
@@ -45,7 +44,6 @@ func SendTransferTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalm
 		errInfo := fmt.Sprintf("[sendTransferTx] err: invalid assetId %v", txInfo.AssetId)
 		return "", handleCreateFailTransferTx(svcCtx.FailTxModel, txInfo, errors.New(errInfo))
 	}
-	// check param: from account index
 	err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.FromAccountIndex))
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendTransferTx] err: invalid accountIndex %v", txInfo.FromAccountIndex)
@@ -57,15 +55,6 @@ func SendTransferTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalm
 		errInfo := fmt.Sprintf("[sendTransferTx] err: invalid accountIndex %v", txInfo.ToAccountIndex)
 		return "", handleCreateFailTransferTx(svcCtx.FailTxModel, txInfo, errors.New(errInfo))
 	}
-	commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.FromAccountIndex)
-	if err != nil {
-		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
-	}
-	commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.ToAccountIndex)
-	if err != nil {
-		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
-	}
-	// check gas account index
 	gasAccountIndexConfig, err := svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
 	if err != nil {
 		logx.Errorf("[sendTransferTx] unable to get sysconfig by name: %s", err.Error())
@@ -79,14 +68,11 @@ func SendTransferTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalm
 		logx.Errorf("[sendTransferTx] invalid gas account index")
 		return "", handleCreateFailTransferTx(svcCtx.FailTxModel, txInfo, errors.New("[sendTransferTx] invalid gas account index"))
 	}
-
-	// check expired at
 	now := time.Now().UnixMilli()
 	if txInfo.ExpiredAt < now {
 		logx.Errorf("[sendTransferTx] invalid time stamp")
 		return "", handleCreateFailTransferTx(svcCtx.FailTxModel, txInfo, errors.New("[sendTransferTx] invalid time stamp"))
 	}
-
 	var (
 		accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
 	)
