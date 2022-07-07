@@ -6,7 +6,6 @@ import (
 
 	"github.com/zecrey-labs/zecrey-legend/common/checker"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
-	"github.com/zecrey-labs/zecrey-legend/pkg/zerror"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/logic/errcode"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
@@ -43,7 +42,8 @@ func (l *GetSwapAmountLogic) GetSwapAmount(in *globalRPCProto.ReqGetSwapAmount) 
 	}
 	if liquidity.AssetA == nil || liquidity.AssetA.Cmp(big.NewInt(0)) == 0 ||
 		liquidity.AssetB == nil || liquidity.AssetB.Cmp(big.NewInt(0)) == 0 {
-		return &globalRPCProto.RespGetSwapAmount{}, zerror.New(-1, "[sendSwapTx func:GetSwapAmount] AssetA or AssetB is 0 in the liquidity Table")
+		logx.Errorf("liquidity:%v, err:%v", liquidity, errcode.ErrInvalidAsset)
+		return &globalRPCProto.RespGetSwapAmount{}, errcode.ErrInvalidAsset
 	}
 	deltaAmount, isTure := new(big.Int).SetString(in.AssetAmount, 10)
 	if !isTure {
@@ -53,7 +53,8 @@ func (l *GetSwapAmountLogic) GetSwapAmount(in *globalRPCProto.ReqGetSwapAmount) 
 	var assetAmount *big.Int
 	var toAssetId int64
 	if int64(in.AssetId) != liquidity.AssetAId && int64(in.AssetId) != liquidity.AssetBId {
-		return &globalRPCProto.RespGetSwapAmount{}, zerror.New(-1, "invalid pair assetIds")
+		logx.Errorf("input:%v,liquidity:%v, err:%v", in, liquidity, errcode.ErrInvalidAsset)
+		return &globalRPCProto.RespGetSwapAmount{}, errcode.ErrInvalidAssetID
 	}
 	assetAmount, toAssetId, err = util.ComputeDelta(liquidity.AssetA, liquidity.AssetB, liquidity.AssetAId, liquidity.AssetBId,
 		int64(in.AssetId), in.IsFrom, deltaAmount, liquidity.FeeRate)

@@ -12,4 +12,5 @@ var (
 	ErrInvalidTxType = zerror.New(20001, "txType error")
 	ErrInvalidGasFee = zerror.New(20002, "Invalid Gas Fee")
 	ErrInvalidAmount = zerror.New(20003, "Invalid Amount")
+	ErrInvalidAsset  = zerror.New(20004, "AssetA or AssetB is 0 in the liquidity Table")
 )
