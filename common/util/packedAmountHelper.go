@@ -22,6 +22,7 @@ import (
 
 	"github.com/zecrey-labs/zecrey-crypto/ffmath"
 	"github.com/zecrey-labs/zecrey-crypto/util"
+	"github.com/zecrey-labs/zecrey-legend/common/util/errcode"
 	"github.com/zecrey-labs/zecrey-legend/pkg/zerror"
 )
 
@@ -59,12 +60,15 @@ func CheckPackedFee(gassFee *big.Int) (err error) {
 }
 
 func CheckPackedAmount(amount *big.Int) (err error) {
+	if amount == nil {
+		return errcode.ErrInvalidAmount
+	}
 	checkParm, err := util.CleanPackedAmount(amount)
 	if err != nil {
 		return err
 	}
 	if !ffmath.Equal(amount, checkParm) {
-		return zerror.New(20003, "Invalid amount")
+		return errcode.ErrInvalidAmount
 	}
 	return nil
 }
