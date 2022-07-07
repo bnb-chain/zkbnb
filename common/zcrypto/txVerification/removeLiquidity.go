@@ -105,13 +105,10 @@ func VerifyRemoveLiquidityTxInfo(
 		TreasuryRate:         liquidityInfo.TreasuryRate,
 	}
 	// treasury account
-	lpDeltaForTreasuryAccount = util.ComputeSLp(
-		liquidityInfo.AssetA,
-		liquidityInfo.AssetB,
-		liquidityInfo.KLast,
-		liquidityInfo.FeeRate,
-		liquidityInfo.TreasuryRate,
-	)
+	lpDeltaForTreasuryAccount, err = util.ComputeSLp(liquidityInfo.AssetA, liquidityInfo.AssetB, liquidityInfo.KLast, liquidityInfo.FeeRate, liquidityInfo.TreasuryRate)
+	if err != nil {
+		return nil, err
+	}
 	// set tx info
 	txInfo.KLast, err = util.CleanPackedAmount(ffmath.Multiply(finalPoolA, finalPoolB))
 	if err != nil {

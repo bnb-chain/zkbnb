@@ -145,12 +145,9 @@ func (l *SendRemoveLiquidityTxLogic) SendRemoveLiquidityTx(in *globalRPCProto.Re
 	var (
 		assetAAmount, assetBAmount *big.Int
 	)
-	assetAAmount, assetBAmount = util.ComputeRemoveLiquidityAmount(
-		liquidityInfo,
-		txInfo.LpAmount,
-	)
+	assetAAmount, assetBAmount,err = util.ComputeRemoveLiquidityAmount(liquidityI nfo,txInfo.LpAmunt,)
 	if err != nil {
-		logx.Errorf("[sendRemoveLiquidityTx] unable to compute lp portion: %s", err.Error())
+		logx.Errorf("[ComputeRemoveLiquidityAmount] err: %v", err)
 		return respSendTx, err
 	}
 	if assetAAmount.Cmp(txInfo.AssetAMinAmount) < 0 || assetBAmount.Cmp(txInfo.AssetBMinAmount) < 0 {
@@ -159,11 +156,9 @@ func (l *SendRemoveLiquidityTxLogic) SendRemoveLiquidityTx(in *globalRPCProto.Re
 		logx.Error(errInfo)
 		return respSendTx, errors.New(errInfo)
 	}
-
 	// add into tx info
 	txInfo.AssetAAmountDelta = assetAAmount
 	txInfo.AssetBAmountDelta = assetBAmount
-
 	// get latest account info for from account index
 	if accountInfoMap[txInfo.FromAccountIndex] == nil {
 		accountInfoMap[txInfo.FromAccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.FromAccountIndex)

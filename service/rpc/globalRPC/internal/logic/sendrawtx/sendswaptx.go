@@ -52,6 +52,7 @@ func SendSwapTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalmap c
 	err = util.CheckRequestParam(util.TypeAssetId, reflect.ValueOf(txInfo.AssetAId))
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendSwapTx] err: invalid assetAId %v", txInfo.AssetAId)
+		logx.Error(errInfo)
 		return "", handleCreateFailSwapTx(svcCtx.FailTxModel, txInfo, errors.New(errInfo))
 	}
 	commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.FromAccountIndex)
@@ -66,6 +67,7 @@ func SendSwapTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalmap c
 	}
 	gasAccountIndex, err := strconv.ParseInt(gasAccountIndexConfig.Value, 10, 64)
 	if err != nil {
+		logx.Error(err)
 		return "", handleCreateFailSwapTx(svcCtx.FailTxModel, txInfo, errors.New("[sendSwapTx] unable to parse big int"))
 	}
 	if gasAccountIndex != txInfo.GasAccountIndex {
@@ -138,7 +140,6 @@ func SendSwapTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalmap c
 	} else {
 		err = errors.New("invalid pair assetIds")
 	}
-
 	if err != nil {
 		errInfo := fmt.Sprintf("[sendSwapTx] => [util.ComputeDelta]: %s. invalid AssetId: %v/%v/%v",
 			err.Error(), txInfo.AssetAId,
@@ -147,7 +148,6 @@ func SendSwapTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalmap c
 		logx.Error(errInfo)
 		return "", errors.New(errInfo)
 	}
-
 	// check if toDelta is less than minToAmount
 	if toDelta.Cmp(txInfo.AssetBMinAmount) < 0 {
 		errInfo := fmt.Sprintf("[sendSwapTx] => minToAmount is bigger than toDelta: %s/%s",
@@ -155,10 +155,8 @@ func SendSwapTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalmap c
 		logx.Error(errInfo)
 		return "", errors.New(errInfo)
 	}
-
 	// complete tx info
 	txInfo.AssetBAmountDelta = toDelta
-
 	// get latest account info for from account index
 	if accountInfoMap[txInfo.FromAccountIndex] == nil {
 		accountInfoMap[txInfo.FromAccountIndex], err = commglobalmap.GetLatestAccountInfo(ctx, txInfo.FromAccountIndex)

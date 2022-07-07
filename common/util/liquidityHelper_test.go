@@ -19,10 +19,11 @@ package util
 
 import (
 	"fmt"
-	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"log"
 	"math/big"
 	"testing"
+
+	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 )
 
 func TestComputeDeltaY(t *testing.T) {
@@ -52,7 +53,7 @@ func TestComputeRemoveLiquidityAmount(t *testing.T) {
 		TreasuryAccountIndex: 0,
 		TreasuryRate:         5,
 	}
-	aAmount, bAmount := ComputeRemoveLiquidityAmount(
+	aAmount, bAmount, _ := ComputeRemoveLiquidityAmount(
 		liquidityInfo,
 		big.NewInt(100),
 	)
@@ -63,7 +64,7 @@ func TestComputeRemoveLiquidityAmount(t *testing.T) {
 func TestComputeInputPrice(t *testing.T) {
 	poolA := big.NewInt(1000)
 	poolB := big.NewInt(1000)
-	deltaY := ComputeInputPrice(
+	deltaY, _ := ComputeInputPrice(
 		poolA, poolB,
 		big.NewInt(500), 30,
 	)
@@ -75,14 +76,14 @@ func TestComputeInputPriceS(t *testing.T) {
 	Y := 1000
 	inputX := 500
 
-	output := (9970 * inputX * Y ) / (10000 * X + 9970 * inputX)
+	output := (9970 * inputX * Y) / (10000*X + 9970*inputX)
 	log.Println(output)
 }
 
-func TestComputeOutputPrice(t *testing.T){
+func TestComputeOutputPrice(t *testing.T) {
 	poolA := big.NewInt(1000)
 	poolB := big.NewInt(1000)
-	deltaY := ComputeOutputPrice(
+	deltaY, _ := ComputeOutputPrice(
 		poolA, poolB,
 		big.NewInt(500), 30,
 	)

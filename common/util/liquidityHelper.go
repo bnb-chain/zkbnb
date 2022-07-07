@@ -42,12 +42,12 @@ func ComputeEmptyLpAmount(
 	return lpAmount, nil
 }
 
-func ComputeLpAmount(
-	liquidityInfo *commonAsset.LiquidityInfo,
-	assetAAmount *big.Int,
-) (lpAmount *big.Int, err error) {
+func ComputeLpAmount(liquidityInfo *commonAsset.LiquidityInfo, assetAAmount *big.Int) (lpAmount *big.Int, err error) {
 	// lp = assetAAmount / poolA * LpAmount
-	sLp := ComputeSLp(liquidityInfo.AssetA, liquidityInfo.AssetB, liquidityInfo.KLast, liquidityInfo.FeeRate, liquidityInfo.TreasuryRate)
+	sLp, err := ComputeSLp(liquidityInfo.AssetA, liquidityInfo.AssetB, liquidityInfo.KLast, liquidityInfo.FeeRate, liquidityInfo.TreasuryRate)
+	if err != nil {
+		return nil, err
+	}
 	poolLpAmount := ffmath.Sub(liquidityInfo.LpAmount, sLp)
 	lpAmount, err = CleanPackedAmount(ffmath.Div(ffmath.Multiply(assetAAmount, poolLpAmount), liquidityInfo.AssetA))
 	if err != nil {
@@ -56,24 +56,18 @@ func ComputeLpAmount(
 	return lpAmount, nil
 }
 
-func ComputeRemoveLiquidityAmount(
-	liquidityInfo *commonAsset.LiquidityInfo,
-	lpAmount *big.Int,
-) (assetAAmount, assetBAmount *big.Int) {
-	sLp := ComputeSLp(
-		liquidityInfo.AssetA,
-		liquidityInfo.AssetB,
-		liquidityInfo.KLast,
-		liquidityInfo.FeeRate,
-		liquidityInfo.TreasuryRate,
-	)
+func ComputeRemoveLiquidityAmount(liquidityInfo *commonAsset.LiquidityInfo, lpAmount *big.Int) (assetAAmount, assetBAmount *big.Int, err error) {
+	sLp, err := ComputeSLp(liquidityInfo.AssetA, liquidityInfo.AssetB, liquidityInfo.KLast, liquidityInfo.FeeRate, liquidityInfo.TreasuryRate)
+	if err != nil {
+		return nil, nil, err
+	}
 	lpAmount, _ = CleanPackedAmount(lpAmount)
 	poolLp := ffmath.Sub(liquidityInfo.LpAmount, sLp)
 	assetAAmount = ffmath.Multiply(lpAmount, liquidityInfo.AssetA)
 	assetAAmount, _ = util.CleanPackedAmount(ffmath.Div(assetAAmount, poolLp))
 	assetBAmount = ffmath.Multiply(lpAmount, liquidityInfo.AssetB)
 	assetBAmount, _ = util.CleanPackedAmount(ffmath.Div(assetBAmount, poolLp))
-	return assetAAmount, assetBAmount
+	return assetAAmount, assetBAmount, nil
 }
 
 func ComputeDelta(
@@ -86,10 +80,16 @@ func ComputeDelta(
 
 	if isFrom {
 		if assetAId == assetId {
-			delta := ComputeInputPrice(assetAAmount, assetBAmount, deltaAmount, feeRate)
+			delta, err := ComputeInputPrice(assetAAmount, assetBAmount, deltaAmount, feeRate)
+			if err != nil {
+				return nil, 0, err
+			}
 			return delta, assetBId, nil
 		} else if assetBId == assetId {
-			delta := ComputeInputPrice(assetBAmount, assetAAmount, deltaAmount, feeRate)
+			delta, err := ComputeInputPrice(assetBAmount, assetAAmount, deltaAmount, feeRate)
+			if err != nil {
+				return nil, 0, err
+			}
 			return delta, assetAId, nil
 		} else {
 			logx.Errorf("[ComputeDelta] invalid asset id")
@@ -97,10 +97,16 @@ func ComputeDelta(
 		}
 	} else {
 		if assetAId == assetId {
-			delta := ComputeOutputPrice(assetAAmount, assetBAmount, deltaAmount, feeRate)
+			delta, err := ComputeOutputPrice(assetAAmount, assetBAmount, deltaAmount, feeRate)
+			if err != nil {
+				return nil, 0, err
+			}
 			return delta, assetBId, nil
 		} else if assetBId == assetId {
-			delta := ComputeOutputPrice(assetBAmount, assetAAmount, deltaAmount, feeRate)
+			delta, err := ComputeOutputPrice(assetBAmount, assetAAmount, deltaAmount, feeRate)
+			if err != nil {
+				return nil, 0, err
+			}
 			return delta, assetAId, nil
 		} else {
 			logx.Errorf("[ComputeDelta] invalid asset id")
@@ -117,33 +123,40 @@ func ComputeDelta(
 /*
 	InputPrice = （9970 * deltaX * y) / (10000 * x + 9970 * deltaX)
 */
-func ComputeInputPrice(x *big.Int, y *big.Int, inputX *big.Int, feeRate int64) *big.Int {
+func ComputeInputPrice(x *big.Int, y *big.Int, inputX *big.Int, feeRate int64) (*big.Int, error) {
 	rFeeR := big.NewInt(FeeRateBase - feeRate)
-	res, _ := util.CleanPackedAmount(ffmath.Div(ffmath.Multiply(rFeeR, ffmath.Multiply(inputX, y)), ffmath.Add(ffmath.Multiply(big.NewInt(FeeRateBase), x), ffmath.Multiply(rFeeR, inputX))))
-	return res
+	res, err := util.CleanPackedAmount(ffmath.Div(ffmath.Multiply(rFeeR, ffmath.Multiply(inputX, y)), ffmath.Add(ffmath.Multiply(big.NewInt(FeeRateBase), x), ffmath.Multiply(rFeeR, inputX))))
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 /*
 	OutputPrice = （10000 * x * deltaY) / (9970 * (y - deltaY)) + 1
 */
-func ComputeOutputPrice(x *big.Int, y *big.Int, inputY *big.Int, feeRate int64) *big.Int {
+func ComputeOutputPrice(x *big.Int, y *big.Int, inputY *big.Int, feeRate int64) (*big.Int, error) {
 	rFeeR := big.NewInt(FeeRateBase - feeRate)
-	res, _ := CleanPackedAmount(ffmath.Add(ffmath.Div(ffmath.Multiply(big.NewInt(FeeRateBase), ffmath.Multiply(x, inputY)), ffmath.Multiply(rFeeR, ffmath.Sub(y, inputY))), big.NewInt(1)))
-	return res
+	res, err := CleanPackedAmount(ffmath.Add(ffmath.Div(ffmath.Multiply(big.NewInt(FeeRateBase), ffmath.Multiply(x, inputY)), ffmath.Multiply(rFeeR, ffmath.Sub(y, inputY))), big.NewInt(1)))
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
-func ComputeSLp(
-	poolA, poolB *big.Int, kLast *big.Int, feeRate, treasuryRate int64,
-) *big.Int {
+func ComputeSLp(poolA, poolB *big.Int, kLast *big.Int, feeRate, treasuryRate int64) (*big.Int, error) {
 	kCurrent := ffmath.Multiply(poolA, poolB)
 	if kCurrent.Cmp(ZeroBigInt) == 0 {
-		return ZeroBigInt
+		return ZeroBigInt, nil
 	}
 	kCurrent.Sqrt(kCurrent)
 	kLast.Sqrt(kLast)
 	l := ffmath.Multiply(ffmath.Sub(kCurrent, kLast), big.NewInt(FeeRateBase))
 	r := ffmath.Multiply(ffmath.Sub(ffmath.Multiply(big.NewInt(FeeRateBase), ffmath.Div(big.NewInt(feeRate), big.NewInt(treasuryRate))), big.NewInt(FeeRateBase)), kCurrent)
 	r = ffmath.Add(r, ffmath.Multiply(big.NewInt(FeeRateBase), kLast))
-	res, _ := CleanPackedAmount(ffmath.Div(l, r))
-	return res
+	res, err := CleanPackedAmount(ffmath.Div(l, r))
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
