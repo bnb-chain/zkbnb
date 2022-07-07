@@ -19,18 +19,18 @@ type SendCancelOfferTxLogic struct {
 
 func NewSendCancelOfferTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendCancelOfferTxLogic {
 	return &SendCancelOfferTxLogic{
-		Logger: logx.WithContext(ctx),
-		ctx:    ctx,
-		svcCtx: svcCtx,
+		Logger:    logx.WithContext(ctx),
+		ctx:       ctx,
+		svcCtx:    svcCtx,
+		globalRpc: globalrpc.New(svcCtx, ctx),
 	}
 }
 
-func (l *SendCancelOfferTxLogic) SendCancelOfferTx(req *types.ReqSendCancelOfferTx) (resp *types.RespSendCancelOfferTx, err error) {
+func (l *SendCancelOfferTxLogic) SendCancelOfferTx(req *types.ReqSendCancelOfferTx) (*types.RespSendCancelOfferTx, error) {
 	txIndex, err := l.globalRpc.SendCancelOfferTx(req.TxInfo)
 	if err != nil {
 		logx.Error("[transaction.SendCancelOfferTx] err:%v", err)
 		return nil, err
 	}
-
 	return &types.RespSendCancelOfferTx{TxId: txIndex}, nil
 }

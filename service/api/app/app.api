@@ -666,7 +666,7 @@ type (
 	}
 )
 
-// SendSendSwapTx
+// SendSwapTx
 type (
 	ReqSendSwapTx {
 		TxInfo string `form:"tx_info"`

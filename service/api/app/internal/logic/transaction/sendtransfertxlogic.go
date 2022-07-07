@@ -19,18 +19,18 @@ type SendTransferTxLogic struct {
 
 func NewSendTransferTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendTransferTxLogic {
 	return &SendTransferTxLogic{
-		Logger: logx.WithContext(ctx),
-		ctx:    ctx,
-		svcCtx: svcCtx,
+		Logger:    logx.WithContext(ctx),
+		ctx:       ctx,
+		svcCtx:    svcCtx,
+		globalRpc: globalrpc.New(svcCtx, ctx),
 	}
 }
 
-func (l *SendTransferTxLogic) SendTransferTx(req *types.ReqSendTransferTx) (resp *types.RespSendTransferTx, err error) {
+func (l *SendTransferTxLogic) SendTransferTx(req *types.ReqSendTransferTx) (*types.RespSendTransferTx, error) {
 	txIndex, err := l.globalRpc.SendTransferTx(req.TxInfo)
 	if err != nil {
 		logx.Error("[transaction.SendTransferTx] err:%v", err)
 		return nil, err
 	}
-
 	return &types.RespSendTransferTx{TxId: txIndex}, nil
 }
