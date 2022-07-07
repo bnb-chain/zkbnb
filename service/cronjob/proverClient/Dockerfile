@@ -16,6 +16,8 @@ WORKDIR /app
 COPY bin/proverclient /app/proverclient
 COPY configyaml /app/etc
 
+RUN apk --no-cache add ca-certificates openssl libstdc++ && update-ca-certificates
+
 RUN wget https://storage.cloud.google.com/zecrey_key/zecrey-legend.vk
 RUN wget https://storage.cloud.google.com/zecrey_key/zecrey-legend.pk
 
