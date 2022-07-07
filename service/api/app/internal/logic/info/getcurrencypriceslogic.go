@@ -2,7 +2,7 @@ package info
 
 import (
 	"context"
-	"math"
+	"strconv"
 
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/l2asset"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/price"
@@ -46,7 +46,7 @@ func (l *GetCurrencyPricesLogic) GetCurrencyPrices(req *types.ReqGetCurrencyPric
 		resp.Data = append(resp.Data, &types.DataCurrencyPrices{
 			Pair:    asset.AssetSymbol + "/" + "USDT",
 			AssetId: asset.AssetId,
-			Price:   uint64(price * math.Pow(10, float64(asset.Decimals))),
+			Price:   strconv.FormatFloat(price, 'E', -1, 64),
 		})
 	}
 	return resp, nil

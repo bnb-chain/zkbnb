@@ -244,7 +244,7 @@ type (
 	}
 	RespGetCurrencyPriceBySymbol {
 		AssetId uint32 `json:"assetId"`
-		Price   uint64 `json:"price"`
+		Price   string `json:"price"`
 	}
 )
 
@@ -254,7 +254,7 @@ type (
 	DataCurrencyPrices   {
 		Pair    string `json:"pair"`
 		AssetId uint32 `json:"assetId"`
-		Price   uint64 `json:"price"`
+		Price   string `json:"price"`
 	}
 	RespGetCurrencyPrices {
 		Data []*DataCurrencyPrices `json:"data"`

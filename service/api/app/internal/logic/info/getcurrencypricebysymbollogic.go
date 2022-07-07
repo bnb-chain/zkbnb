@@ -2,7 +2,7 @@ package info
 
 import (
 	"context"
-	"math"
+	"strconv"
 
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/l2asset"
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/price"
@@ -31,7 +31,7 @@ func NewGetCurrencyPriceBySymbolLogic(ctx context.Context, svcCtx *svc.ServiceCo
 }
 
 func (l *GetCurrencyPriceBySymbolLogic) GetCurrencyPriceBySymbol(req *types.ReqGetCurrencyPriceBySymbol) (*types.RespGetCurrencyPriceBySymbol, error) {
-	_price, err := l.price.GetCurrencyPrice(l.ctx, req.Symbol)
+	price, err := l.price.GetCurrencyPrice(l.ctx, req.Symbol)
 	if err != nil {
 		logx.Errorf("[GetCurrencyPrice] err:%v", err)
 		return nil, err
@@ -41,10 +41,8 @@ func (l *GetCurrencyPriceBySymbolLogic) GetCurrencyPriceBySymbol(req *types.ReqG
 		logx.Errorf("[GetL2AssetInfoBySymbol] err:%v", err)
 		return nil, err
 	}
-	_price = _price * math.Pow(10, float64(l2Asset.Decimals))
-	_price2 := uint64(_price)
 	resp := &types.RespGetCurrencyPriceBySymbol{
-		Price:   _price2,
+		Price:   strconv.FormatFloat(price, 'E', -1, 64),
 		AssetId: uint32(l2Asset.ID),
 	}
 	return resp, nil
