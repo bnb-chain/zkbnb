@@ -1,0 +1,24 @@
+Name: committer.cronjob
+
+Postgres:
+  DataSource: host=127.0.0.1 user=postgres password=ZecreyProtocolDB@123 dbname=zecreylegend port=5432 sslmode=disable
+
+CacheRedis:
+  - Host: 127.0.0.1:6379
+    Pass: myredis
+    Type: node
+GlobalRpc:
+  Etcd:
+    Hosts:
+      - 127.0.0.1:2379
+    Key: global.rpc
+LogConf:
+  ServiceName: appservice
+  Mode: console
+  Path: ./log/appService
+  StackCooldownMillis: 500
+
+Prometheus:
+  Host: 127.0.0.1
+  Port: 9091
+  Path: /metrics
