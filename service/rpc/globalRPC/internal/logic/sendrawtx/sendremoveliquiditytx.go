@@ -114,10 +114,7 @@ func SendRemoveLiquidityTx(ctx context.Context, svcCtx *svc.ServiceContext, comm
 	var (
 		assetAAmount, assetBAmount *big.Int
 	)
-	assetAAmount, assetBAmount = util.ComputeRemoveLiquidityAmount(
-		liquidityInfo,
-		txInfo.LpAmount,
-	)
+	assetAAmount, assetBAmount, err = util.ComputeRemoveLiquidityAmount(liquidityInfo, txInfo.LpAmount)
 	if err != nil {
 		logx.Errorf("[sendRemoveLiquidityTx] unable to compute lp portion: %s", err.Error())
 		return "", err

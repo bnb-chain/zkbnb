@@ -145,7 +145,7 @@ func (l *SendRemoveLiquidityTxLogic) SendRemoveLiquidityTx(in *globalRPCProto.Re
 	var (
 		assetAAmount, assetBAmount *big.Int
 	)
-	assetAAmount, assetBAmount,err = util.ComputeRemoveLiquidityAmount(liquidityI nfo,txInfo.LpAmunt,)
+	assetAAmount, assetBAmount, err = util.ComputeRemoveLiquidityAmount(liquidityInfo, txInfo.LpAmount)
 	if err != nil {
 		logx.Errorf("[ComputeRemoveLiquidityAmount] err: %v", err)
 		return respSendTx, err
