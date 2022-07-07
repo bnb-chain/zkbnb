@@ -137,31 +137,32 @@ func (m *model) GetLatestAccountInfo(ctx context.Context, accountIndex int64) (*
 }
 
 func (m *model) GetLatestLiquidityInfoForReadWithCache(ctx context.Context, pairIndex int64) (*commGlobalmapHandler.LiquidityInfo, error) {
-	f := func() (interface{}, error) {
-		tmpLiquidity, err := m.GetLatestLiquidityInfoForRead(ctx, pairIndex)
-		if err != nil {
-			return nil, err
-		}
-		infoBytes, err := json.Marshal(tmpLiquidity)
-		if err != nil {
-			logx.Errorf("[json.Marshal] unable to marshal: %v", err)
-			return nil, err
-		}
-		return &infoBytes, nil
-	}
-	var byteLiquidity []byte
-	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyLiquidityByPairIndex(pairIndex), &byteLiquidity, 1, f)
-	if err != nil {
-		return nil, err
-	}
-	res, _ := value.(*[]byte)
-	liquidity := &commGlobalmapHandler.LiquidityInfo{}
-	err = json.Unmarshal([]byte(*res), &liquidity)
-	if err != nil {
-		logx.Errorf("[json.Unmarshal] unable to unmarshal liquidity info: %v", err)
-		return nil, err
-	}
-	return liquidity, nil
+	// f := func() (interface{}, error) {
+	// 	tmpLiquidity, err := m.GetLatestLiquidityInfoForRead(ctx, pairIndex)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	infoBytes, err := json.Marshal(tmpLiquidity)
+	// 	if err != nil {
+	// 		logx.Errorf("[json.Marshal] unable to marshal: %v", err)
+	// 		return nil, err
+	// 	}
+	// 	return &infoBytes, nil
+	// }
+	// var byteLiquidity []byte
+	// value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyLiquidityByPairIndex(pairIndex), &byteLiquidity, 1, f)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// res, _ := value.(*[]byte)
+	// liquidity := &commGlobalmapHandler.LiquidityInfo{}
+	// err = json.Unmarshal([]byte(*res), &liquidity)
+	// if err != nil {
+	// 	logx.Errorf("[json.Unmarshal] unable to unmarshal liquidity info: %v", err)
+	// 	return nil, err
+	// }
+	// return liquidity, nil
+	return m.GetLatestLiquidityInfoForRead(ctx, pairIndex)
 
 }
 func (m *model) GetLatestLiquidityInfoForRead(ctx context.Context, pairIndex int64) (liquidityInfo *commGlobalmapHandler.LiquidityInfo, err error) {
