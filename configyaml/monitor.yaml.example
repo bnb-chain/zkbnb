@@ -1,4 +1,4 @@
-Name: blockMonitor.cronjob
+Name: monitor.cronjob
 
 
 Prometheus:
@@ -22,4 +22,7 @@ ChainConfig:
   # StartL1BlockHeight: 0
   PendingBlocksCount: 0
   MaxHandledBlocksCount: 100000
+
+
+
 
