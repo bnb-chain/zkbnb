@@ -3,13 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
+	"time"
+
 	"github.com/robfig/cron/v3"
 	"github.com/zecrey-labs/zecrey-legend/common/tree"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/committer/internal/config"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/committer/internal/logic"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/committer/internal/svc"
 	"github.com/zeromicro/go-zero/core/logx"
-	"time"
 
 	"github.com/zeromicro/go-zero/core/conf"
 )
