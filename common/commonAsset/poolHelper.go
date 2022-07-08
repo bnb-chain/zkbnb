@@ -20,8 +20,9 @@ package commonAsset
 import (
 	"encoding/json"
 	"errors"
-	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
+
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type LiquidityInfo struct {
@@ -57,18 +58,8 @@ func EmptyLiquidityInfo(pairIndex int64) (info *LiquidityInfo) {
 	}
 }
 
-func ConstructLiquidityInfo(
-	pairIndex int64,
-	assetAId int64,
-	assetAAmount string,
-	assetBId int64,
-	assetBAmount string,
-	lpAmount string,
-	kLast string,
-	feeRate int64,
-	treasuryAccountIndex int64,
-	treasuryRate int64,
-) (info *LiquidityInfo, err error) {
+func ConstructLiquidityInfo(pairIndex int64, assetAId int64, assetAAmount string, assetBId int64, assetBAmount string,
+	lpAmount string, kLast string, feeRate int64, treasuryAccountIndex int64, treasuryRate int64) (info *LiquidityInfo, err error) {
 	assetA, isValid := new(big.Int).SetString(assetAAmount, 10)
 	if !isValid {
 		logx.Errorf("[ConstructLiquidityInfo] invalid big int")

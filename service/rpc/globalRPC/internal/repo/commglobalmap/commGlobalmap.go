@@ -211,13 +211,13 @@ func (m *model) GetLatestLiquidityInfoForRead(ctx context.Context, pairIndex int
 			}
 		}
 	}
+	// TODO: this set cache operation will be deleted in the future, we should use GetLatestLiquidityInfoForReadWithCache anywhere
+	// and delete the cache where mempool be changed
 	infoBytes, err := json.Marshal(liquidityInfo)
 	if err != nil {
 		logx.Errorf("[json.Marshal] unable to marshal: %v", err)
 		return nil, err
 	}
-	// TODO: this set cache operation will be deleted in the future, we should use GetLatestLiquidityInfoForReadWithCache anywhere
-	// and delete the cache where mempool be changed
 	if err := m.cache.Set(ctx, multcache.SpliceCacheKeyLiquidityByPairIndex(pairIndex), infoBytes, 1); err != nil {
 		return nil, err
 	}
