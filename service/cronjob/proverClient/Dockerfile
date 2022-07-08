@@ -4,7 +4,7 @@ LABEL stage=gobuilder
 
 ENV CGO_ENABLED 0
 
-RUN apk update --no-cache && apk add --no-cache tzdata python curl which bash
+RUN apk update --no-cache && apk add --no-cache tzdata python3 curl which bash
 
 RUN curl -sSL https://sdk.cloud.google.com | bash
 
