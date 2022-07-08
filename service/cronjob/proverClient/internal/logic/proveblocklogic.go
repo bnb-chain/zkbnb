@@ -21,10 +21,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
+
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/proverClient/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/proverHubProto"
-	"log"
 
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/frontend"
@@ -85,8 +86,6 @@ func ProveBlock(
 		logx.Error("ProverHubRPC.SubmitProof Error: ", err)
 		return errors.New("ProverHubRPC.SubmitProof Error")
 	}
-
 	// TODO proof store locally
-
 	return nil
 }
