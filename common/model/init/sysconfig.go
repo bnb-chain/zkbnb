@@ -10,9 +10,9 @@ const (
 	BSC_Test_Network_RPC   = "http://tf-dex-preview-validator-nlb-6fd109ac8b9d390a.elb.ap-northeast-1.amazonaws.com:8545"
 	Local_Test_Network_RPC = "http://127.0.0.1:8545/"
 
-	ZecreyLegendContractAddr = "0x3DD01F094a7D64c5B13b9ce0400Cf6cC61466C8A"
-	GovernanceContractAddr   = "0x34fB7f0b5B69796248c745f8a2D2650ae1A014F7"
-	VerifierContractAddr     = "0x194Ac316B82993fd0C482F6C3C1F69F261921490"
+	zecreyLegendProxy = "0x08d306364bC632b842F54FEA6315120D3556A953" // ZecreyLegendContractAddr
+	governance        = "0x0dEAcdC13562BE41Af17d0FD272fbD220405D706" // GovernanceContractAddr
+	verifierProxy     = "0xEEb4f4A4b3eA23e80D75410c7f9f78cF53E2aEdf" // VerifierContractAddr
 )
 
 func initSysConfig() []*sysconfig.Sysconfig {
@@ -37,14 +37,14 @@ func initSysConfig() []*sysconfig.Sysconfig {
 		},
 		{
 			Name:      sysconfigName.ZecreyLegendContract,
-			Value:     ZecreyLegendContractAddr,
+			Value:     zecreyLegendProxy,
 			ValueType: "string",
 			Comment:   "Zecrey contract on BSC",
 		},
 		// Governance Contract
 		{
 			Name:      sysconfigName.GovernanceContract,
-			Value:     GovernanceContractAddr,
+			Value:     governance,
 			ValueType: "string",
 			Comment:   "Governance contract on BSC",
 		},
