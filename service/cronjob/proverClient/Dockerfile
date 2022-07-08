@@ -4,7 +4,15 @@ LABEL stage=gobuilder
 
 ENV CGO_ENABLED 0
 
-RUN apk update --no-cache && apk add --no-cache tzdata
+RUN apk update --no-cache && apk add --no-cache tzdata python curl which bash
+
+RUN curl -sSL https://sdk.cloud.google.com | bash
+
+ENV PATH $PATH:/root/google-cloud-sdk/bin
+
+WORKDIR /app
+RUN gsutil cp gs://zecrey_key/zecrey-legend.pk zecrey-legend.pk
+RUN gsutil cp gs://zecrey_key/zecrey-legend.vk zecrey-legend.vk
 
 FROM alpine:3.4
 
@@ -15,10 +23,7 @@ ENV TZ Asia/Shanghai
 WORKDIR /app
 COPY bin/proverclient /app/proverclient
 COPY configyaml /app/etc
-
-RUN apk --no-cache add ca-certificates openssl libstdc++ && update-ca-certificates
-
-RUN wget https://storage.cloud.google.com/zecrey_key/zecrey-legend.vk
-RUN wget https://storage.cloud.google.com/zecrey_key/zecrey-legend.pk
+COPY --from=builder /app/zecrey-legend.pk zecrey-legend.pk
+COPY --from=builder /app/zecrey-legend.vk zecrey-legend.vk
 
 CMD ["./proverclient", "-f", "etc/proverclient.yaml"]
