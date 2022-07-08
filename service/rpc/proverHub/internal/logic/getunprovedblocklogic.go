@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/proverHubProto"
@@ -65,9 +66,7 @@ func (l *GetUnprovedBlockLogic) GetUnprovedBlock(in *proverHubProto.ReqGetUnprov
 	if err != nil {
 		return packGetUnprovedBlockLogic(util.FailStatus, util.FailMsg, err.Error(), result), nil
 	}
-
 	// write cryptoBlock to result
 	result.BlockInfo = string(cryptoBlockInfoBytes)
-
 	return packGetUnprovedBlockLogic(util.SuccessStatus, util.SuccessMsg, util.NilErrorString, result), nil
 }
