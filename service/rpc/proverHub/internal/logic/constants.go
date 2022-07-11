@@ -17,13 +17,16 @@
 package logic
 
 import (
-	"github.com/consensys/gnark/backend/groth16"
-	cryptoBlock "github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/block"
-	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
-	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"sync"
 	"sync/atomic"
 	"unsafe"
+
+	"github.com/consensys/gnark/backend/groth16"
+	cryptoBlock "github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/block"
+	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
+
+	"github.com/zecrey-labs/zecrey-legend/common/model/block"
+	"github.com/zecrey-labs/zecrey-legend/common/model/blockForProof"
 )
 
 type CryptoBlockInfo struct {
@@ -32,7 +35,6 @@ type CryptoBlockInfo struct {
 }
 
 var (
-	UnProvedCryptoBlocks []*CryptoBlockInfo
 	M                    Mutex
 	VerifyingKeyPath     []string
 	VerifyingKeyTxsCount []int
@@ -57,6 +59,7 @@ const (
 
 type (
 	Block                  = block.Block
+	BlockForProof          = blockForProof.BlockForProof
 	StorageStoredBlockInfo = zecreyLegend.StorageStoredBlockInfo
 	CryptoTx               = cryptoBlock.Tx
 	CryptoBlock            = cryptoBlock.Block

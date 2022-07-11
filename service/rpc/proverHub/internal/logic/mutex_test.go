@@ -18,12 +18,13 @@ package logic
 
 import (
 	"fmt"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
-	"github.com/ethereum/go-ethereum/common"
 	"log"
 	"math/big"
 	"testing"
 	"time"
+
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func TestTryLock(t *testing.T) {

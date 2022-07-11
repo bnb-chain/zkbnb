@@ -1,19 +1,21 @@
 package svc
 
 import (
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/redis"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
+	"github.com/zecrey-labs/zecrey-legend/common/model/blockForProof"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l1TxSender"
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
 	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/internal/config"
-	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/redis"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 type ServiceContext struct {
@@ -30,6 +32,7 @@ type ServiceContext struct {
 	NftHistoryModel       nft.L2NftHistoryModel
 	SysconfigModel        sysconfig.SysconfigModel
 	ProofSenderModel      proofSender.ProofSenderModel
+	BlockForProofModel    blockForProof.BlockForProofModel
 }
 
 func WithRedis(redisType string, redisPass string) redis.Option {

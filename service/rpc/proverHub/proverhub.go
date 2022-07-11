@@ -3,25 +3,24 @@ package main
 import (
 	"flag"
 	"fmt"
+
 	"github.com/consensys/gnark/backend/groth16"
-	"github.com/zecrey-labs/zecrey-legend/common/util"
+	"github.com/robfig/cron/v3"
+	"github.com/zeromicro/go-zero/core/conf"
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/service"
+	"github.com/zeromicro/go-zero/zrpc"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
 	"github.com/zecrey-labs/zecrey-legend/common/tree"
+	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/internal/config"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/internal/logic"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/internal/server"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/proverHubProto"
-
-	"github.com/robfig/cron/v3"
-	"github.com/zeromicro/go-zero/core/logx"
-
-	"github.com/zeromicro/go-zero/core/conf"
-	"github.com/zeromicro/go-zero/core/service"
-	"github.com/zeromicro/go-zero/zrpc"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
 )
 
 var configFile = flag.String("f",
@@ -115,9 +114,6 @@ func main() {
 	_, err = cronJob.AddFunc("@every 10s", func() {
 		// cron job for creating cryptoBlock
 		logx.Info("==========start handle crypto block==========")
-		for _, v := range logic.UnProvedCryptoBlocks {
-			logx.Infof("BlockNumber: %v, Status: %d", v.BlockInfo.BlockNumber, v.Status)
-		}
 		logic.HandleCryptoBlock(
 			accountTree,
 			&assetTrees,

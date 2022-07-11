@@ -18,15 +18,18 @@ package logic
 
 import (
 	"errors"
+
 	"github.com/ethereum/go-ethereum/common"
 	cryptoBlock "github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/block"
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/mathx"
+
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
+	"github.com/zecrey-labs/zecrey-legend/common/model/blockForProof"
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
 	"github.com/zecrey-labs/zecrey-legend/common/proverUtil"
 	"github.com/zecrey-labs/zecrey-legend/common/tree"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/internal/svc"
-	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/mathx"
 )
 
 func InitUnprovedList(
@@ -115,8 +118,18 @@ func InitUnprovedList(
 					}
 					logx.Info("new root:", common.Bytes2Hex(nCryptoBlockInfo.BlockInfo.NewStateRoot))
 					logx.Info("BlockCommitment:", common.Bytes2Hex(nCryptoBlockInfo.BlockInfo.BlockCommitment))
+
 					// insert crypto blocks array
-					UnProvedCryptoBlocks = append(UnProvedCryptoBlocks, nCryptoBlockInfo)
+					unprovedCryptoBlockModel, err := CryptoBlockInfoToBlockForProof(nCryptoBlockInfo)
+					if err != nil {
+						logx.Errorf("[prover] marshal crypto block info error, err=%s", err.Error())
+						return err
+					}
+					err = ctx.BlockForProofModel.CreateUnprovedCryptoBlockIfNotExists(unprovedCryptoBlockModel)
+					if err != nil {
+						logx.Errorf("[prover] create unproved crypto block error, err=%s", err.Error())
+						return err
+					}
 				}
 			} else {
 				logx.Errorf("[InitUnprovedList] GetProofByBlockNumber error: %s", err.Error())
@@ -147,7 +160,17 @@ func HandleCryptoBlock(
 			return err
 		}
 	}
-	var start = mathx.MaxInt(int(GetLatestUnprovedBlockHeight()), int(proofStart))
+
+	latestUnprovedHeight, err := ctx.BlockForProofModel.GetLatestUnprovedBlockHeight()
+	if err != nil {
+		if err == blockForProof.ErrNotFound {
+			latestUnprovedHeight = 0
+		} else {
+			return err
+		}
+	}
+
+	var start = mathx.MaxInt(int(latestUnprovedHeight), int(proofStart))
 	// get last handled block info
 	blocks, err = ctx.BlockModel.GetBlocksBetween(int64(start+1), int64(start)+deltaHeight)
 	if err != nil {
@@ -216,8 +239,18 @@ func HandleCryptoBlock(
 			}
 			logx.Info("new root:", common.Bytes2Hex(nCryptoBlockInfo.BlockInfo.NewStateRoot))
 			logx.Info("BlockCommitment:", common.Bytes2Hex(nCryptoBlockInfo.BlockInfo.BlockCommitment))
+
 			// insert crypto blocks array
-			UnProvedCryptoBlocks = append(UnProvedCryptoBlocks, nCryptoBlockInfo)
+			unprovedCryptoBlockModel, err := CryptoBlockInfoToBlockForProof(nCryptoBlockInfo)
+			if err != nil {
+				logx.Errorf("[prover] marshal crypto block info error, err=%s", err.Error())
+				return err
+			}
+			err = ctx.BlockForProofModel.CreateUnprovedCryptoBlockIfNotExists(unprovedCryptoBlockModel)
+			if err != nil {
+				logx.Errorf("[prover] create unproved crypto block error, err=%s", err.Error())
+				return err
+			}
 		}
 	}
 

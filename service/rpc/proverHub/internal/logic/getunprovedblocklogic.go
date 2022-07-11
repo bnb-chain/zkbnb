@@ -2,13 +2,14 @@ package logic
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/zecrey-labs/zecrey-legend/common/model/blockForProof"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/proverHubProto"
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type GetUnprovedBlockLogic struct {
@@ -54,19 +55,17 @@ func (l *GetUnprovedBlockLogic) GetUnprovedBlock(in *proverHubProto.ReqGetUnprov
 	defer M.Unlock()
 
 	// get crypto block with Mode
-	cryptoBlockInfo := GetUnprovedCryptoBlock(in.Mode)
+	cryptoBlockInfo, err := l.svcCtx.BlockForProofModel.GetUnprovedCryptoBlockByMode(in.Mode)
+	if err != nil {
+		logx.Errorf("get unproved crypto block error, mode=%d, err=%s", in.Mode, err.Error())
+	}
 	if cryptoBlockInfo == nil {
 		return packGetUnprovedBlockLogic(util.FailStatus, util.FailMsg, "no unproved block", result), nil
 	}
 	// change crypto block status
-	cryptoBlockInfo.Status = RECEIVED
+	l.svcCtx.BlockForProofModel.UpdateUnprovedCryptoBlockStatus(cryptoBlockInfo, blockForProof.StatusReceived)
 
-	cryptoBlockInfoBytes, err := json.Marshal(cryptoBlockInfo.BlockInfo)
-
-	if err != nil {
-		return packGetUnprovedBlockLogic(util.FailStatus, util.FailMsg, err.Error(), result), nil
-	}
 	// write cryptoBlock to result
-	result.BlockInfo = string(cryptoBlockInfoBytes)
+	result.BlockInfo = cryptoBlockInfo.BlockData
 	return packGetUnprovedBlockLogic(util.SuccessStatus, util.SuccessMsg, util.NilErrorString, result), nil
 }
