@@ -228,6 +228,9 @@ func (m *model) GetLatestOfferIdForWrite(ctx context.Context, accountIndex int64
 	var lastOfferId int64
 	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyOfferIdByAccountIndex(accountIndex), &lastOfferId, 1, f)
 	if err != nil {
+		if err.Error() == "OfferId not exist" {
+			return 0, nil
+		}
 		return 0, err
 	}
 	nftIndex, _ := value.(*int64)
