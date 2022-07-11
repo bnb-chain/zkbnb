@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
 	"github.com/zecrey-labs/zecrey-legend/common/tree"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/internal/config"
@@ -31,6 +32,7 @@ func main() {
 	conf.MustLoad(*configFile, &c)
 	ctx := svc.NewServiceContext(c)
 	srv := server.NewProverHubRPCServer(ctx)
+	logx.DisableStat()
 
 	p, err := ctx.ProofSenderModel.GetLatestConfirmedProof()
 	if err != nil {

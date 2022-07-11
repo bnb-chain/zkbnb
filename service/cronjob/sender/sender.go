@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"flag"
+	"math/big"
+	"time"
+
 	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/sender/internal/config"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/sender/internal/logic"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/sender/internal/svc"
-	"math/big"
-	"time"
 
 	"github.com/robfig/cron/v3"
 	"github.com/zecrey-labs/zecrey-eth-rpc/_rpc"
@@ -26,7 +27,7 @@ func main() {
 	conf.MustLoad(*configFile, &c)
 	ctx := svc.NewServiceContext(c)
 	// srv := server.NewSenderServer(ctx)
-
+	logx.DisableStat()
 	networkEndpointName := c.ChainConfig.NetworkRPCSysConfigName
 	networkEndpoint, err := ctx.SysConfigModel.GetSysconfigByName(networkEndpointName)
 	if err != nil {

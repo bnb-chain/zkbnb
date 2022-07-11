@@ -50,17 +50,6 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 			return err
 		}
 	}
-	// initialize mempool txs
-	//nextAccountIndex, err := ctx.AccountModel.GetLatestAccountIndex()
-	//if err != nil {
-	//	if err == account.ErrNotFound {
-	//		nextAccountIndex = -1
-	//	} else {
-	//		errInfo := fmt.Sprintf("[mempoolMoniter.MonitorMempool]<=>[accountModel.GetMaxAccountIndex] %s", err.Error())
-	//		logx.Error(errInfo)
-	//		return err
-	//	}
-	//}
 	var (
 		pendingNewAccounts       []*account.Account
 		pendingNewMempoolTxs     []*mempool.MempoolTx

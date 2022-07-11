@@ -68,6 +68,7 @@ func SendRemoveLiquidityTx(ctx context.Context, svcCtx *svc.ServiceContext, comm
 	}
 	gasAccountIndex, err := strconv.ParseInt(gasAccountIndexConfig.Value, 10, 64)
 	if err != nil {
+		logx.Errorf("[ParseInt] err: %s", err)
 		return "", handleCreateFailRemoveLiquidityTx(svcCtx.FailTxModel, txInfo, errors.New("[sendRemoveLiquidityTx] unable to parse big int"))
 	}
 	if gasAccountIndex != txInfo.GasAccountIndex {
@@ -170,6 +171,7 @@ func SendRemoveLiquidityTx(ctx context.Context, svcCtx *svc.ServiceContext, comm
 		liquidityInfo,
 		txInfo)
 	if err != nil {
+		logx.Errorf("[VerifyRemoveLiquidityTxInfo] err: %v", err)
 		return "", handleCreateFailRemoveLiquidityTx(svcCtx.FailTxModel, txInfo, err)
 	}
 
@@ -179,6 +181,7 @@ func SendRemoveLiquidityTx(ctx context.Context, svcCtx *svc.ServiceContext, comm
 	// write into mempool
 	txInfoBytes, err := json.Marshal(txInfo)
 	if err != nil {
+		logx.Errorf("[Marshal] err: %v", err)
 		return "", handleCreateFailRemoveLiquidityTx(svcCtx.FailTxModel, txInfo, err)
 	}
 	txId, mempoolTx := ConstructMempoolTx(
@@ -213,6 +216,7 @@ func SendRemoveLiquidityTx(ctx context.Context, svcCtx *svc.ServiceContext, comm
 	// insert into mempool
 	err = CreateMempoolTx(mempoolTx, svcCtx.RedisConnection, svcCtx.MempoolModel)
 	if err != nil {
+		logx.Errorf("[CreateMempoolTx] err: %v", err)
 		return "", handleCreateFailRemoveLiquidityTx(svcCtx.FailTxModel, txInfo, err)
 	}
 	// update redis
