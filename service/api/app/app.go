@@ -10,6 +10,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
 
 	"github.com/zeromicro/go-zero/core/conf"
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/rest"
 )
 
@@ -27,20 +28,16 @@ func main() {
 		fmt.Printf("Git Code Version : %s\n", CodeVersion)
 		return
 	}
-
 	flag.Parse()
-
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
-
+	logx.DisableStat()
 	ctx := svc.NewServiceContext(c)
 	ctx.CodeVersion = CodeVersion
 	ctx.GitCommitHash = GitCommitHash
 	server := rest.MustNewServer(c.RestConf)
 	defer server.Stop()
-
 	handler.RegisterHandlers(server, ctx)
-
 	fmt.Printf("Starting server at %s:%d...\n", c.Host, c.Port)
 	server.Start()
 }

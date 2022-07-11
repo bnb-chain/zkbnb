@@ -24,7 +24,7 @@ func main() {
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
 	ctx := svc.NewServiceContext(c)
-
+	logx.DisableStat()
 	var (
 		accountTree       *tree.Tree
 		accountStateTrees []*tree.Tree

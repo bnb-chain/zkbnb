@@ -51,8 +51,6 @@ func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *type
 		logx.Errorf("[GetLatestAccountInfoByAccountIndex] err:%v", err)
 		return nil, err
 	}
-	logx.Errorf("[GetLatestAccountInfoByAccountIndex] err:%v", account)
-
 	resp := &types.RespGetAccountInfoByAccountName{
 		AccountIndex: uint32(account.AccountIndex),
 		AccountPk:    account.PublicKey,
