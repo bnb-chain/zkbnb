@@ -52,6 +52,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	return &ServiceContext{
 		Config:                c,
 		BlockModel:            block.NewBlockModel(conn, c.CacheRedis, gormPointer, redisConn),
+		BlockForProofModel:    blockForProof.NewBlockForProofModel(conn, c.CacheRedis, gormPointer),
 		L1TxSenderModel:       l1TxSender.NewL1TxSenderModel(conn, c.CacheRedis, gormPointer),
 		SysConfigModel:        sysconfig.NewSysconfigModel(conn, c.CacheRedis, gormPointer),
 		AccountModel:          account.NewAccountModel(conn, c.CacheRedis, gormPointer),
