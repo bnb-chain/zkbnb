@@ -47,13 +47,13 @@ func SendVerifiedAndExecutedBlocks(
 	// scan l1 tx sender table for handled verified and executed height
 	lastHandledBlock, getHandleErr := l1TxSenderModel.GetLatestHandledBlock(VerifyAndExecuteTxType)
 	if getHandleErr != nil && getHandleErr != ErrNotFound {
-		logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get latest handled block: %s", err.Error())
+		logx.Errorf("[SendVerifiedAndExecutedBlocks] GetLatestHandledBlock err:%v", getHandleErr)
 		return err
 	}
 	// scan l1 tx sender table for pending verified and executed height that higher than the latest handled height
 	pendingSender, getPendingerr := l1TxSenderModel.GetLatestPendingBlock(VerifyAndExecuteTxType)
 	if getPendingerr != nil && err != ErrNotFound {
-		logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get latest pending blocks: %s", err.Error())
+		logx.Errorf("[SendVerifiedAndExecutedBlocks] GetLatestPendingBlock err:%v", getPendingerr)
 		return err
 	}
 	// case 1: check tx status on L1
@@ -73,7 +73,6 @@ func SendVerifiedAndExecutedBlocks(
 				}
 				return nil
 			} else {
-				logx.Infof("[SendVerifiedAndExecutedBlocks] tx cannot be found, but not exceed time limit %s", pendingSender.L1TxHash)
 				return nil
 			}
 		}
