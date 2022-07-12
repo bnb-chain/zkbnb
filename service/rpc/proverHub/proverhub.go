@@ -76,6 +76,11 @@ func main() {
 	}
 	// TODO
 	logic.VerifyingKeyPath = c.KeyPath.VerifyingKeyPath
+	logic.VerifyingKeyTxsCount = c.KeyPath.VerifyingKeyTxsCount
+	if len(logic.VerifyingKeyTxsCount) != len(logic.VerifyingKeyPath) {
+		logx.Errorf("VerifyingKeyPath doesn't match VerifyingKeyTxsCount")
+		return
+	}
 
 	err = logic.InitUnprovedList(
 		accountTree,

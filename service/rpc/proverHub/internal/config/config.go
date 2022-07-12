@@ -12,7 +12,8 @@ type Config struct {
 		DataSource string
 	}
 	KeyPath struct {
-		VerifyingKeyPath string
+		VerifyingKeyPath []string
+		VerifyingKeyTxsCount []int
 	}
 	CacheRedis cache.CacheConf
 	LogConf    logx.LogConf

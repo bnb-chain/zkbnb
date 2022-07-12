@@ -33,7 +33,8 @@ type CryptoBlockInfo struct {
 var (
 	UnProvedCryptoBlocks []*CryptoBlockInfo
 	M                    Mutex
-	VerifyingKeyPath     string
+	VerifyingKeyPath     []string
+	VerifyingKeyTxsCount []int
 )
 
 const mutexLocked = 1 << iota

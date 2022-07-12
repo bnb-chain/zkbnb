@@ -73,7 +73,7 @@ func ConstructCryptoTx(
 ) (cryptoTx *CryptoTx, err error) {
 	switch oTx.TxType {
 	case commonTx.TxTypeEmpty:
-		cryptoTx = cryptoBlock.EmptyTx()
+		log.Println("[ConstructProverBlocks] there should be no empty tx")
 		break
 	case commonTx.TxTypeRegisterZns:
 		cryptoTx, err = ConstructRegisterZnsCryptoTx(
@@ -345,12 +345,8 @@ func BlockToCryptoBlock(
 		NewStateRoot:    newStateRoot,
 		BlockCommitment: common.FromHex(oBlock.BlockCommitment),
 	}
-	if len(cBlock.Txs) != len(cryptoTxs) {
-		logx.Errorf("[BlockToCryptoBlock] invalid size")
-		return nil, errors.New("[BlockToCryptoBlock] invalid size")
-	}
-	for i := 0; i < len(cBlock.Txs); i++ {
-		cBlock.Txs[i] = cryptoTxs[i]
+	for i := 0; i < len(cryptoTxs); i++ {
+		cBlock.Txs = append(cBlock.Txs, cryptoTxs[i])
 	}
 	return cBlock, nil
 }

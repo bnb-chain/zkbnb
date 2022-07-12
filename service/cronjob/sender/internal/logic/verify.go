@@ -47,14 +47,14 @@ func SendVerifiedAndExecutedBlocks(
 	// scan l1 tx sender table for handled verified and executed height
 	lastHandledBlock, getHandleErr := l1TxSenderModel.GetLatestHandledBlock(VerifyAndExecuteTxType)
 	if getHandleErr != nil && getHandleErr != ErrNotFound {
-		logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get latest handled block: %s", err.Error())
-		return err
+		logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get latest handled block: %s", getHandleErr.Error())
+		return getHandleErr
 	}
 	// scan l1 tx sender table for pending verified and executed height that higher than the latest handled height
 	pendingSender, getPendingerr := l1TxSenderModel.GetLatestPendingBlock(VerifyAndExecuteTxType)
-	if getPendingerr != nil && err != ErrNotFound {
-		logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get latest pending blocks: %s", err.Error())
-		return err
+	if getPendingerr != nil && getPendingerr != ErrNotFound {
+		logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get latest pending blocks: %s", getPendingerr.Error())
+		return getPendingerr
 	}
 	// case 1: check tx status on L1
 	if getHandleErr == ErrNotFound && getPendingerr == nil {
@@ -147,6 +147,13 @@ func SendVerifiedAndExecutedBlocks(
 		}
 		start = lastHandledBlock.L2BlockHeight + 1
 	}
+	// TODO: for test
+	/*
+		if len(blocks) < maxBlockCount {
+			logx.Errorf("current pending verify blocks %d is less than %d", len(blocks), maxBlockCount)
+			return err
+		}
+	*/
 	proofSenders, err := proofSenderModel.GetProofsByBlockRange(start, blocks[len(blocks)-1].BlockHeight, maxBlockCount)
 	if err != nil {
 		logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get proofs: %s", err.Error())

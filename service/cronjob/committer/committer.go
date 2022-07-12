@@ -115,7 +115,7 @@ func main() {
 		}
 		logx.Info("========================= end committer task =========================")
 		// update time stamp
-		lastCommitTimeStamp = time.Now()
+		// lastCommitTimeStamp = time.Now()
 	})
 	if err != nil {
 		panic(err)

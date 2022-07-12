@@ -20,6 +20,7 @@ func DefaultBlockHeader() StorageStoredBlockInfo {
 	copy(stateRoot[:], tree.NilStateRoot[:])
 	copy(commitment[:], common.FromHex("0x0000000000000000000000000000000000000000000000000000000000000000")[:])
 	return StorageStoredBlockInfo{
+		BlockSize:                    0,
 		BlockNumber:                  0,
 		PriorityOperations:           0,
 		PendingOnchainOperationsHash: pendingOnchainOperationsHash,
@@ -48,6 +49,7 @@ func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*BlockForCommit) (commit
 			Timestamp:         big.NewInt(oBlock.Timestamp),
 			PublicDataOffsets: pubDataOffsets,
 			BlockNumber:       uint32(oBlock.BlockHeight),
+			BlockSize:         oBlock.BlockSize,
 		}
 		commitBlocks = append(commitBlocks, commitBlock)
 	}

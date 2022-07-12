@@ -23,5 +23,6 @@ func ConstructStoredBlockInfo(oBlock *block.Block) zecreyLegend.StorageStoredBlo
 		Timestamp:                    big.NewInt(oBlock.CreatedAt.UnixMilli()),
 		StateRoot:                    StateRoot,
 		Commitment:                   Commitment,
+		BlockSize:                    oBlock.BlockSize,
 	}
 }

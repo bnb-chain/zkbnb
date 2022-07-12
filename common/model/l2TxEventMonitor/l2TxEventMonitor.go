@@ -172,7 +172,7 @@ func (m *defaultL2TxEventMonitorModel) GetL2TxEventMonitors() (txs []*L2TxEventM
 */
 func (m *defaultL2TxEventMonitorModel) GetL2TxEventMonitorsByStatus(status int) (txs []*L2TxEventMonitor, err error) {
 	// todo order id
-	dbTx := m.DB.Table(m.table).Where("status = ?", status).Find(&txs).Order("request_id")
+	dbTx := m.DB.Table(m.table).Where("status = ?", status).Order("request_id").Find(&txs)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[l2TxEventMonitor.GetL2TxEventMonitorsByStatus] %s", dbTx.Error)
 		logx.Error(err)

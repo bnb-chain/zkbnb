@@ -106,6 +106,7 @@ type (
 
 	Block struct {
 		gorm.Model
+		BlockSize                       uint16
 		// pubdata
 		BlockCommitment                 string
 		BlockHeight                     int64 `gorm:"uniqueIndex"`
