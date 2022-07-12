@@ -19,10 +19,11 @@ package logic
 import (
 	"encoding/json"
 	"errors"
-	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
-	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"math/big"
 	"time"
+
+	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
+	"github.com/zecrey-labs/zecrey-legend/common/util"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -73,7 +74,7 @@ func SendVerifiedAndExecutedBlocks(
 			// get blocks from block table
 			blocks, err := blockModel.GetBlocksForProverBetween(1, int64(maxBlockCount))
 			if err != nil {
-				logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get blocks: %s", err.Error())
+				logx.Errorf("[SendVerifiedAndExecutedBlocks] GetBlocksForProverBetween err:%v, maxBlockCount:%v", err, maxBlockCount)
 				return err
 			}
 			end := blocks[len(blocks)-1].BlockHeight

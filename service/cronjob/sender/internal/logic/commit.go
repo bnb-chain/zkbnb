@@ -18,20 +18,16 @@ package logic
 
 import (
 	"errors"
+	"time"
+
 	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
-	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-func SendCommittedBlocks(
-	param *SenderParam,
-	l1TxSenderModel L1TxSenderModel,
-	blockModel BlockModel,
-	blockForCommitModel BlockForCommitModel,
-) (err error) {
-
+func SendCommittedBlocks(param *SenderParam, l1TxSenderModel L1TxSenderModel,
+	blockModel BlockModel, blockForCommitModel BlockForCommitModel) (err error) {
 	var (
 		cli                  = param.Cli
 		authCli              = param.AuthCli
@@ -50,7 +46,6 @@ func SendCommittedBlocks(
 			return err
 		}
 	}
-
 	var lastStoredBlockInfo StorageStoredBlockInfo
 	var pendingCommitBlocks []ZecreyLegendCommitBlockInfo
 	// if lastHandledBlock == nil, means we haven't committed any blocks, just start from 0
@@ -63,14 +58,13 @@ func SendCommittedBlocks(
 				return err
 			}
 		}
-
 		// if ErrNotFound, means we haven't committed new blocks, just start to commit
 		if err == ErrNotFound {
 			// get blocks from block table
 			var blocks []*BlockForCommit
 			blocks, err = blockForCommitModel.GetBlockForCommitBetween(1, int64(maxBlockCount))
 			if err != nil {
-				logx.Errorf("[SendCommittedBlocks] unable to blocks: %s", err.Error())
+				logx.Errorf("[SendCommittedBlocks] GetBlockForCommitBetween err:%v, maxBlockCount:%v", err, maxBlockCount)
 				return err
 			}
 			pendingCommitBlocks, err = ConvertBlocksForCommitToCommitBlockInfos(blocks)
