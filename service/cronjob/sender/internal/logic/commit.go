@@ -37,137 +37,127 @@ func SendCommittedBlocks(param *SenderParam, l1TxSenderModel L1TxSenderModel,
 		maxBlockCount        = param.MaxBlocksCount
 		maxWaitingTime       = param.MaxWaitingTime
 	)
-
 	// scan l1 tx sender table for handled committed height
-	lastHandledBlock, err := l1TxSenderModel.GetLatestHandledBlock(CommitTxType)
-	if err != nil {
-		if err != ErrNotFound {
-			logx.Errorf("[SendCommittedBlocks] unable to get latest handled block: %s", err.Error())
-			return err
+	lastHandledBlock, getHandleErr := l1TxSenderModel.GetLatestHandledBlock(CommitTxType)
+	if getHandleErr != nil && getHandleErr != ErrNotFound {
+		logx.Errorf("[SendVerifiedAndExecutedBlocks] GetLatestHandledBlock err:%v", getHandleErr)
+		return getHandleErr
+	}
+	// scan l1 tx sender table for pending committed height that higher than the latest handled height
+	pendingSender, getPendingerr := l1TxSenderModel.GetLatestPendingBlock(CommitTxType)
+	if getPendingerr != nil {
+		if getPendingerr != ErrNotFound {
+			logx.Errorf("[SendVerifiedAndExecutedBlocks] GetLatestPendingBlock err:%v", getPendingerr)
+			return getPendingerr
 		}
 	}
+
+	// case 1:
+	if getHandleErr == ErrNotFound && getPendingerr == nil {
+		_, isPending, err := cli.GetTransactionByHash(pendingSender.L1TxHash)
+		// if err != nil, means we cannot get this tx by hash
+		if err != nil {
+			// if we cannot get it from rpc and the time over 1 min
+			lastUpdatedAt := pendingSender.UpdatedAt.UnixMilli()
+			now := time.Now().UnixMilli()
+			if now-lastUpdatedAt > maxWaitingTime {
+				err := l1TxSenderModel.DeleteL1TxSender(pendingSender)
+				if err != nil {
+					logx.Errorf("[SendCommittedBlocks] unable to delete l1 tx sender: %s", err.Error())
+					return err
+				}
+				return nil
+			} else {
+				return nil
+			}
+		}
+		// if it is pending, still waiting
+		if isPending {
+			logx.Infof("[SendCommittedBlocks] tx is still pending, no need to work for anything tx hash: %s", pendingSender.L1TxHash)
+			return nil
+		} else {
+			receipt, err := cli.GetTransactionReceipt(pendingSender.L1TxHash)
+			if err != nil {
+				logx.Errorf("[SendCommittedBlocks] unable to get transaction receipt: %s", err.Error())
+				return err
+			}
+			if receipt.Status == 0 {
+				logx.Infof("[SendCommittedBlocks] the transaction is failure, please check: %s", pendingSender.L1TxHash)
+				return nil
+			}
+		}
+	}
+	// case 2:
+	if getHandleErr == nil && getPendingerr == nil {
+		isSuccess, err := cli.WaitingTransactionStatus(pendingSender.L1TxHash)
+		// if err != nil, means we cannot get this tx by hash
+		if err != nil {
+			// if we cannot get it from rpc and the time over 1 min
+			lastUpdatedAt := pendingSender.UpdatedAt.UnixMilli()
+			now := time.Now().UnixMilli()
+			if now-lastUpdatedAt > maxWaitingTime {
+				// drop the record
+				err := l1TxSenderModel.DeleteL1TxSender(pendingSender)
+				if err != nil {
+					logx.Errorf("[SendCommittedBlocks] unable to delete l1 tx sender: %s", err.Error())
+					return err
+				}
+				return nil
+			} else {
+				logx.Infof("[SendCommittedBlocks] tx cannot be found, but not exceed time limit: %s", pendingSender.L1TxHash)
+				return nil
+			}
+		}
+		// if it is pending, still waiting
+		if !isSuccess {
+			logx.Infof("[SendCommittedBlocks] tx is still pending, no need to work for anything tx hash: %s", pendingSender.L1TxHash)
+			return nil
+		}
+	}
+
+	// case 3:
 	var lastStoredBlockInfo StorageStoredBlockInfo
 	var pendingCommitBlocks []ZecreyLegendCommitBlockInfo
 	// if lastHandledBlock == nil, means we haven't committed any blocks, just start from 0
-	if err == ErrNotFound {
-		// scan l1 tx sender table for pending committed height that higher than the latest handled height
-		pendingSender, err := l1TxSenderModel.GetLatestPendingBlock(CommitTxType)
+	// if ErrNotFound, means we haven't committed new blocks, just start to commit
+	if getHandleErr == ErrNotFound && getPendingerr == ErrNotFound {
+		var blocks []*BlockForCommit
+		blocks, err = blockForCommitModel.GetBlockForCommitBetween(1, int64(maxBlockCount))
 		if err != nil {
-			if err != ErrNotFound {
-				logx.Errorf("[SendCommittedBlocks] unable to get latest pending blocks: %s", err.Error())
-				return err
-			}
+			logx.Errorf("[SendCommittedBlocks] GetBlockForCommitBetween err:%v, maxBlockCount:%v", err, maxBlockCount)
+			return err
 		}
-		// if ErrNotFound, means we haven't committed new blocks, just start to commit
-		if err == ErrNotFound {
-			// get blocks from block table
-			var blocks []*BlockForCommit
-			blocks, err = blockForCommitModel.GetBlockForCommitBetween(1, int64(maxBlockCount))
-			if err != nil {
-				logx.Errorf("[SendCommittedBlocks] GetBlockForCommitBetween err:%v, maxBlockCount:%v", err, maxBlockCount)
-				return err
-			}
-			pendingCommitBlocks, err = ConvertBlocksForCommitToCommitBlockInfos(blocks)
-			if err != nil {
-				logx.Errorf("[SendCommittedBlocks] unable to convert blocks to commit block infos: %s", err.Error())
-				return err
-			}
-			// set stored block header to default 0
-			lastStoredBlockInfo = DefaultBlockHeader()
-		} else {
-			_, isPending, err := cli.GetTransactionByHash(pendingSender.L1TxHash)
-			// if err != nil, means we cannot get this tx by hash
-			if err != nil {
-				// if we cannot get it from rpc and the time over 1 min
-				lastUpdatedAt := pendingSender.UpdatedAt.UnixMilli()
-				now := time.Now().UnixMilli()
-				if now-lastUpdatedAt > maxWaitingTime {
-					// drop the record
-					err := l1TxSenderModel.DeleteL1TxSender(pendingSender)
-					if err != nil {
-						logx.Errorf("[SendCommittedBlocks] unable to delete l1 tx sender: %s", err.Error())
-						return err
-					}
-					return nil
-				} else {
-					logx.Infof("[SendCommittedBlocks] tx cannot be found, but not exceed time limit %s", pendingSender.L1TxHash)
-					return nil
-				}
-			}
-			// if it is pending, still waiting
-			if isPending {
-				logx.Infof("[SendCommittedBlocks] tx is still pending, no need to work for anything tx hash: %s", pendingSender.L1TxHash)
-				return nil
-			} else {
-				receipt, err := cli.GetTransactionReceipt(pendingSender.L1TxHash)
-				if err != nil {
-					logx.Errorf("[SendCommittedBlocks] unable to get transaction receipt: %s", err.Error())
-					return err
-				}
-				if receipt.Status == 0 {
-					logx.Infof("[SendCommittedBlocks] the transaction is failure, please check: %s", pendingSender.L1TxHash)
-					return nil
-				}
-			}
-		}
-	} else { // if lastHandledBlock != nil
-		// scan l1 tx sender table for pending committed height that higher than the latest handled height
-		pendingSender, err := l1TxSenderModel.GetLatestPendingBlock(CommitTxType)
+		pendingCommitBlocks, err = ConvertBlocksForCommitToCommitBlockInfos(blocks)
 		if err != nil {
-			if err != ErrNotFound {
-				logx.Errorf("[SendCommittedBlocks] unable to get latest pending blocks: %s", err.Error())
-				return err
-			}
+			logx.Errorf("[SendCommittedBlocks] unable to convert blocks to commit block infos: %s", err.Error())
+			return err
 		}
+		// set stored block header to default 0
+		lastStoredBlockInfo = DefaultBlockHeader()
+	}
+	if getHandleErr == nil && getPendingerr == ErrNotFound {
 		// if ErrNotFound, means we haven't committed new blocks, just start to commit
-		if err == ErrNotFound {
-			// get blocks higher than last handled blocks
-			var blocks []*BlockForCommit
-			// commit new blocks
-			blocks, err = blockForCommitModel.GetBlockForCommitBetween(lastHandledBlock.L2BlockHeight+1, lastHandledBlock.L2BlockHeight+int64(maxBlockCount))
-			if err != nil {
-				logx.Errorf("[SendCommittedBlocks] unable to get sender new blocks: %s", err.Error())
-				return err
-			}
-			pendingCommitBlocks, err = ConvertBlocksForCommitToCommitBlockInfos(blocks)
-			if err != nil {
-				logx.Errorf("[SendCommittedBlocks] unable to convert blocks to commit block infos: %s", err.Error())
-				return err
-			}
-			// get last block info
-			lastHandledBlockInfo, err := blockModel.GetBlockByBlockHeight(lastHandledBlock.L2BlockHeight)
-			if err != nil && err != ErrNotFound {
-				logx.Errorf("[SendCommittedBlocks] unable to get last handled block info: %s", err.Error())
-				return err
-			}
-			// construct last stored block header
-			lastStoredBlockInfo = util.ConstructStoredBlockInfo(lastHandledBlockInfo)
-		} else {
-			isSuccess, err := cli.WaitingTransactionStatus(pendingSender.L1TxHash)
-			// if err != nil, means we cannot get this tx by hash
-			if err != nil {
-				// if we cannot get it from rpc and the time over 1 min
-				lastUpdatedAt := pendingSender.UpdatedAt.UnixMilli()
-				now := time.Now().UnixMilli()
-				if now-lastUpdatedAt > maxWaitingTime {
-					// drop the record
-					err := l1TxSenderModel.DeleteL1TxSender(pendingSender)
-					if err != nil {
-						logx.Errorf("[SendCommittedBlocks] unable to delete l1 tx sender: %s", err.Error())
-						return err
-					}
-					return nil
-				} else {
-					logx.Infof("[SendCommittedBlocks] tx cannot be found, but not exceed time limit: %s", pendingSender.L1TxHash)
-					return nil
-				}
-			}
-			// if it is pending, still waiting
-			if !isSuccess {
-				logx.Infof("[SendCommittedBlocks] tx is still pending, no need to work for anything tx hash: %s", pendingSender.L1TxHash)
-				return nil
-			}
+		// get blocks higher than last handled blocks
+		var blocks []*BlockForCommit
+		// commit new blocks
+		blocks, err = blockForCommitModel.GetBlockForCommitBetween(lastHandledBlock.L2BlockHeight+1, lastHandledBlock.L2BlockHeight+int64(maxBlockCount))
+		if err != nil {
+			logx.Errorf("[SendCommittedBlocks] unable to get sender new blocks: %s", err.Error())
+			return err
 		}
+		pendingCommitBlocks, err = ConvertBlocksForCommitToCommitBlockInfos(blocks)
+		if err != nil {
+			logx.Errorf("[SendCommittedBlocks] unable to convert blocks to commit block infos: %s", err.Error())
+			return err
+		}
+		// get last block info
+		lastHandledBlockInfo, err := blockModel.GetBlockByBlockHeight(lastHandledBlock.L2BlockHeight)
+		if err != nil && err != ErrNotFound {
+			logx.Errorf("[SendCommittedBlocks] unable to get last handled block info: %s", err.Error())
+			return err
+		}
+		// construct last stored block header
+		lastStoredBlockInfo = util.ConstructStoredBlockInfo(lastHandledBlockInfo)
 	}
 	// commit blocks on-chain
 	if len(pendingCommitBlocks) != 0 {
@@ -177,8 +167,7 @@ func SendCommittedBlocks(param *SenderParam, l1TxSenderModel L1TxSenderModel,
 			lastStoredBlockInfo,
 			pendingCommitBlocks,
 			gasPrice,
-			gasLimit,
-		)
+			gasLimit)
 		if err != nil {
 			logx.Errorf("[SendCommittedBlocks] unable to commit blocks: %s", err.Error())
 			return err
@@ -204,8 +193,6 @@ func SendCommittedBlocks(param *SenderParam, l1TxSenderModel L1TxSenderModel,
 		}
 		logx.Infof("[SendCommittedBlocks] new blocks have been committed(height): %v", newSender.L2BlockHeight)
 		return nil
-	} else {
-		logx.Infof("[SendCommittedBlocks] no new blocks need to commit")
-		return nil
 	}
+	return nil
 }
