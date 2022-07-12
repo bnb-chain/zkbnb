@@ -40,6 +40,7 @@ import (
 )
 
 func MonitorMempool(ctx *svc.ServiceContext) error {
+	logx.Errorf("========== start MonitorMempool ==========")
 	txs, err := ctx.L2TxEventMonitorModel.GetL2TxEventMonitorsByStatus(PendingStatus)
 	if err != nil {
 		if err == l2TxEventMonitor.ErrNotFound {
@@ -628,6 +629,7 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 		logx.Errorf("[CreateMempoolAndActiveAccount] unable to create mempool txs and update l2 oTx event monitors, error: %v", err)
 		return err
 	}
+	logx.Errorf("========== end MonitorMempool ==========")
 	return nil
 }
 
@@ -789,5 +791,4 @@ func processFullExitNft(ctx *svc.ServiceContext, newAccountInfoMap map[string]*a
 		relatedAccountIndex[accountInfo.AccountIndex] = true
 	}
 	return pendingNewMempoolTxs, relatedAccountIndex, nil
-
 }

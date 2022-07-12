@@ -39,6 +39,7 @@ import (
 */
 func MonitorBlocks(cli *ProviderClient, startHeight int64, pendingBlocksCount uint64, maxHandledBlocksCount int64, zecreyContract string, l1BlockMonitorModel L1BlockMonitorModel) (err error) {
 	latestHandledBlock, err := l1BlockMonitorModel.GetLatestL1BlockMonitorByBlock()
+	logx.Errorf("========== start MonitorBlocks ==========")
 	var handledHeight int64
 	if err != nil {
 		if err == ErrNotFound {
@@ -194,5 +195,6 @@ func MonitorBlocks(cli *ProviderClient, startHeight int64, pendingBlocksCount ui
 	}
 	logx.Info("[MonitorBlocks] create txs count:", len(l2TxEventMonitors))
 	logx.Info("[MonitorBlocks] create blocks events count:", len(l2BlockEventMonitors))
+	logx.Errorf("========== end MonitorBlocks ==========")
 	return nil
 }
