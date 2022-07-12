@@ -23,6 +23,7 @@ import (
 	"time"
 
 	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
+	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -35,15 +36,13 @@ func SendVerifiedAndExecutedBlocks(
 	proofSenderModel ProofSenderModel,
 ) (err error) {
 	var (
-		cli                           = param.Cli
-		authCli                       = param.AuthCli
-		zecreyLegendInstance          = param.ZecreyLegendInstance
-		gasPrice                      = param.GasPrice
-		gasLimit                      = param.GasLimit
-		maxBlockCount                 = param.MaxBlocksCount
-		maxWaitingTime                = param.MaxWaitingTime
-		pendingVerifyAndExecuteBlocks []ZecreyLegendVerifyBlockInfo
-		proofs                        []*big.Int
+		cli                  = param.Cli
+		authCli              = param.AuthCli
+		zecreyLegendInstance = param.ZecreyLegendInstance
+		gasPrice             = param.GasPrice
+		gasLimit             = param.GasLimit
+		maxBlockCount        = param.MaxBlocksCount
+		maxWaitingTime       = param.MaxWaitingTime
 	)
 	// scan l1 tx sender table for handled verified and executed height
 	lastHandledBlock, getHandleErr := l1TxSenderModel.GetLatestHandledBlock(VerifyAndExecuteTxType)
@@ -57,80 +56,7 @@ func SendVerifiedAndExecutedBlocks(
 		logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get latest pending blocks: %s", err.Error())
 		return err
 	}
-	// case 1:  means we haven't verified and executed new blocks, just start to commit
-	if getHandleErr == ErrNotFound && getPendingerr == ErrNotFound {
-		// get blocks from block table
-		blocks, err := blockModel.GetBlocksForProverBetween(1, int64(maxBlockCount))
-		if err != nil {
-			logx.Errorf("[SendVerifiedAndExecutedBlocks] GetBlocksForProverBetween err:%v, maxBlockCount:%v", err, maxBlockCount)
-			return err
-		}
-		end := blocks[len(blocks)-1].BlockHeight
-		pendingVerifyAndExecuteBlocks, err = ConvertBlocksToVerifyAndExecuteBlockInfos(blocks)
-		if err != nil {
-			logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to convert blocks to verify and execute block infos: %s", err.Error())
-			return err
-		}
-		// get proofs
-		proofSenders, err := proofSenderModel.GetProofsByBlockRange(1, end, maxBlockCount)
-		if err != nil {
-			logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get proofs: %s", err.Error())
-			return err
-		}
-		if len(proofSenders) != len(blocks) {
-			logx.Errorf("[SendVerifiedAndExecutedBlocks] we haven't generated related proofs, please wait")
-			return errors.New("[SendVerifiedAndExecutedBlocks] we haven't generated related proofs, please wait")
-		}
-		for _, proofSender := range proofSenders {
-			var proofInfo *util.FormattedProof
-			err = json.Unmarshal([]byte(proofSender.ProofInfo), &proofInfo)
-			if err != nil {
-				logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to unmarshal proof info: %s", err.Error())
-				return err
-			}
-			proofs = append(proofs, proofInfo.A[:]...)
-			proofs = append(proofs, proofInfo.B[0][0], proofInfo.B[0][1])
-			proofs = append(proofs, proofInfo.B[1][0], proofInfo.B[1][1])
-			proofs = append(proofs, proofInfo.C[:]...)
-		}
-	}
-	// case 2: getPendingerr==ErrNotFound, means we haven't verified and executed new blocks, just start to commit
-	if getHandleErr == nil && getPendingerr == ErrNotFound {
-		blocks, err := blockModel.GetBlocksForProverBetween(lastHandledBlock.L2BlockHeight+1, lastHandledBlock.L2BlockHeight+int64(maxBlockCount))
-		if err != nil {
-			logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get sender new blocks: %s", err.Error())
-			return err
-		}
-		pendingVerifyAndExecuteBlocks, err = ConvertBlocksToVerifyAndExecuteBlockInfos(blocks)
-		if err != nil {
-			logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to convert blocks to commit block infos: %s", err.Error())
-			return err
-		}
-		start := lastHandledBlock.L2BlockHeight + 1
-		end := blocks[len(blocks)-1].BlockHeight
-		proofSenders, err := proofSenderModel.GetProofsByBlockRange(start, end, maxBlockCount)
-		if err != nil {
-			logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get proofs: %s", err.Error())
-			return err
-		}
-		if len(proofSenders) != len(blocks) {
-			logx.Errorf("[SendVerifiedAndExecutedBlocks] we haven't generated related proofs, please wait")
-			return errors.New("[SendVerifiedAndExecutedBlocks] we haven't generated related proofs, please wait")
-		}
-		for _, proofSender := range proofSenders {
-			var proofInfo *util.FormattedProof
-			err = json.Unmarshal([]byte(proofSender.ProofInfo), &proofInfo)
-			if err != nil {
-				logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to unmarshal proof info: %s", err.Error())
-				return err
-			}
-			proofs = append(proofs, proofInfo.A[:]...)
-			proofs = append(proofs, proofInfo.B[0][0], proofInfo.B[0][1])
-			proofs = append(proofs, proofInfo.B[1][0], proofInfo.B[1][1])
-			proofs = append(proofs, proofInfo.C[:]...)
-		}
-	}
-	// case 3:
+	// case 1: check tx status on L1
 	if getHandleErr == ErrNotFound && getPendingerr == nil {
 		_, isPending, err := cli.GetTransactionByHash(pendingSender.L1TxHash)
 		// if err != nil, means we cannot get this tx by hash
@@ -167,7 +93,7 @@ func SendVerifiedAndExecutedBlocks(
 			}
 		}
 	}
-	// case 4:
+	// case 2:
 	if getHandleErr == nil && getPendingerr == nil {
 		isSuccess, err := cli.WaitingTransactionStatus(pendingSender.L1TxHash)
 		// if err != nil, means we cannot get this tx by hash
@@ -187,6 +113,61 @@ func SendVerifiedAndExecutedBlocks(
 		if !isSuccess {
 			return nil
 		}
+	}
+	// case 3:  means we haven't verified and executed new blocks, just start to commit
+	var (
+		start                         int64
+		blocks                        []*block.Block
+		pendingVerifyAndExecuteBlocks []ZecreyLegendVerifyBlockInfo
+	)
+	if getHandleErr == ErrNotFound && getPendingerr == ErrNotFound {
+		// get blocks from block table
+		blocks, err = blockModel.GetBlocksForProverBetween(1, int64(maxBlockCount))
+		if err != nil {
+			logx.Errorf("[SendVerifiedAndExecutedBlocks] GetBlocksForProverBetween err:%v, maxBlockCount:%v", err, maxBlockCount)
+			return err
+		}
+		pendingVerifyAndExecuteBlocks, err = ConvertBlocksToVerifyAndExecuteBlockInfos(blocks)
+		if err != nil {
+			logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to convert blocks to verify and execute block infos: %s", err.Error())
+			return err
+		}
+		start = int64(1)
+	}
+	if getHandleErr == nil && getPendingerr == ErrNotFound {
+		blocks, err = blockModel.GetBlocksForProverBetween(lastHandledBlock.L2BlockHeight+1, lastHandledBlock.L2BlockHeight+int64(maxBlockCount))
+		if err != nil {
+			logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get sender new blocks: %s", err.Error())
+			return err
+		}
+		pendingVerifyAndExecuteBlocks, err = ConvertBlocksToVerifyAndExecuteBlockInfos(blocks)
+		if err != nil {
+			logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to convert blocks to commit block infos: %s", err.Error())
+			return err
+		}
+		start = lastHandledBlock.L2BlockHeight + 1
+	}
+	proofSenders, err := proofSenderModel.GetProofsByBlockRange(start, blocks[len(blocks)-1].BlockHeight, maxBlockCount)
+	if err != nil {
+		logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get proofs: %s", err.Error())
+		return err
+	}
+	if len(proofSenders) != len(blocks) {
+		logx.Errorf("[SendVerifiedAndExecutedBlocks] we haven't generated related proofs, please wait")
+		return errors.New("[SendVerifiedAndExecutedBlocks] we haven't generated related proofs, please wait")
+	}
+	var proofs []*big.Int
+	for _, proofSender := range proofSenders {
+		var proofInfo *util.FormattedProof
+		err = json.Unmarshal([]byte(proofSender.ProofInfo), &proofInfo)
+		if err != nil {
+			logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to unmarshal proof info: %s", err.Error())
+			return err
+		}
+		proofs = append(proofs, proofInfo.A[:]...)
+		proofs = append(proofs, proofInfo.B[0][0], proofInfo.B[0][1])
+		proofs = append(proofs, proofInfo.B[1][0], proofInfo.B[1][1])
+		proofs = append(proofs, proofInfo.C[:]...)
 	}
 	// commit blocks on-chain
 	if len(pendingVerifyAndExecuteBlocks) != 0 {
@@ -214,8 +195,6 @@ func SendVerifiedAndExecutedBlocks(
 		}
 		logx.Errorf("[SendVerifiedAndExecutedBlocks] new blocks have been verified and executed(height): %v", newSender.L2BlockHeight)
 		return nil
-	} else {
-		logx.Errorf("[SendVerifiedAndExecutedBlocks] no new blocks need to commit")
-		return nil
 	}
+	return nil
 }
