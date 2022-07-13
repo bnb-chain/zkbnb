@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/consensys/gnark/backend/groth16"
 	cryptoBlock "github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/block"
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
@@ -75,19 +74,6 @@ func (l *SubmitProofLogic) SubmitProof(in *proverHubProto.ReqSubmitProof) (*prov
 		return packSubmitProofLogic(util.FailStatus, util.FailMsg, err.Error(), result), nil
 	}
 
-	// load vk
-	fmt.Println("start reading verifying key")
-	// TODO vk file path
-	vks := make([]groth16.VerifyingKey, len(VerifyingKeyPath))
-	for i := 0; i < len(VerifyingKeyPath); i++ {
-		vks[i], err = util.LoadVerifyingKey(VerifyingKeyPath[i])
-		if err != nil {
-			SetUnprovedCryptoBlockStatus(cBlock.BlockNumber, PUBLISHED)
-			logx.Error(fmt.Sprintf("LoadVerifyingKey %d Error: %s", i, err.Error()))
-			return packSubmitProofLogic(util.FailStatus, util.FailMsg, err.Error(), result), nil
-		}
-	}
-
 	oProof, err := util.UnformatProof(proof)
 	if err != nil {
 		SetUnprovedCryptoBlockStatus(cBlock.BlockNumber, PUBLISHED)
@@ -107,7 +93,7 @@ func (l *SubmitProofLogic) SubmitProof(in *proverHubProto.ReqSubmitProof) (*prov
 		return packSubmitProofLogic(util.FailStatus, util.FailMsg, err.Error(), result), nil
 	}
 	// VerifyProof
-	err = util.VerifyProof(oProof, vks[vkIndex], cBlock)
+	err = util.VerifyProof(oProof, VerifyingKeys[vkIndex], cBlock)
 	if err != nil {
 		SetUnprovedCryptoBlockStatus(cBlock.BlockNumber, PUBLISHED)
 		logx.Error(fmt.Sprintf("Verify Proof Error: %s", err.Error()))

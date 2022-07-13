@@ -17,6 +17,7 @@
 package logic
 
 import (
+	"github.com/consensys/gnark/backend/groth16"
 	cryptoBlock "github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/block"
 	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
@@ -35,6 +36,7 @@ var (
 	M                    Mutex
 	VerifyingKeyPath     []string
 	VerifyingKeyTxsCount []int
+	VerifyingKeys        []groth16.VerifyingKey
 )
 
 const mutexLocked = 1 << iota

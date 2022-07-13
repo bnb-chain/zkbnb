@@ -8,5 +8,8 @@ type Config struct {
 	Postgres struct {
 		DataSource string
 	}
+	KeyPath struct {
+		KeyTxCounts []int
+	}
 	CacheRedis cache.CacheConf
 }

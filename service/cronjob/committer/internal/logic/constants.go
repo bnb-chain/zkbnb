@@ -95,7 +95,7 @@ const (
 )
 
 var (
-	ZeroBigIntString   = big.NewInt(0).String()
-	ZeroBigInt         = big.NewInt(0)
-	TxsAmountPerBlock  = [2]int{1, 10}
+	ZeroBigIntString  = big.NewInt(0).String()
+	ZeroBigInt        = big.NewInt(0)
+	TxsAmountPerBlock = []int{}
 )

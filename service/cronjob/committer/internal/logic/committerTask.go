@@ -48,7 +48,7 @@ import (
 
 func CommitterTask(
 	ctx *svc.ServiceContext,
-	lastCommitTimeStamp time.Time,
+	lastCommitTimeStamp *time.Time,
 	accountTree *tree.Tree,
 	liquidityTree *tree.Tree,
 	nftTree *tree.Tree,
@@ -739,7 +739,7 @@ func CommitterTask(
 			logx.Errorf("[CommitterTask] unable to create block for committer: %s", err.Error())
 			return err
 		}
-		lastCommitTimeStamp = time.Now()
+		*lastCommitTimeStamp = time.Now()
 	}
 	return nil
 }
