@@ -40,7 +40,7 @@ func (m *multcache) Get(ctx context.Context, key string, value interface{}) (int
 
 func (m *multcache) Set(ctx context.Context, key string, value interface{}, timeOut uint32) error {
 	return m.marshal.Set(ctx, key, value,
-		&store.Options{Expiration: time.Duration(timeOut) * time.Minute})
+		&store.Options{Expiration: time.Duration(timeOut) * time.Second})
 }
 
 func (m *multcache) Delete(ctx context.Context, key string) error {
