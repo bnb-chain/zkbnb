@@ -73,7 +73,6 @@ func SendVerifiedAndExecutedBlocks(
 				}
 				return nil
 			} else {
-				logx.Infof("[SendVerifiedAndExecutedBlocks] tx cannot be found, but not exceed time limit %s", pendingSender.L1TxHash)
 				return nil
 			}
 		}
