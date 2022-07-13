@@ -1,12 +1,14 @@
 package zerror
 
+import "fmt"
+
 type error struct {
 	code    int32
 	message string
 }
 
 func (e *error) Error() string {
-	return e.message
+	return fmt.Sprintf("%d: %s", e.code, e.message)
 }
 
 func (e *error) Code() int32 {
