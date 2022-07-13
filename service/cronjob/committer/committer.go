@@ -23,6 +23,7 @@ func main() {
 
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
+	logic.TxsAmountPerBlock = c.KeyPath.KeyTxCounts
 	ctx := svc.NewServiceContext(c)
 	logx.DisableStat()
 	var (
@@ -79,7 +80,7 @@ func main() {
 		logx.Info("========================= start committer task =========================")
 		err := logic.CommitterTask(
 			ctx,
-			lastCommitTimeStamp,
+			&lastCommitTimeStamp,
 			accountTree,
 			liquidityTree,
 			nftTree,
@@ -115,7 +116,7 @@ func main() {
 		}
 		logx.Info("========================= end committer task =========================")
 		// update time stamp
-		lastCommitTimeStamp = time.Now()
+		// lastCommitTimeStamp = time.Now()
 	})
 	if err != nil {
 		panic(err)

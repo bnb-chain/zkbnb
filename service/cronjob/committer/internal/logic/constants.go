@@ -1,7 +1,6 @@
 package logic
 
 import (
-	cryptoBlock "github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/block"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
@@ -69,8 +68,6 @@ const (
 	LiquidityAssetType       = commonAsset.LiquidityAssetType
 	NftAssetType             = commonAsset.NftAssetType
 	CollectionNonceAssetType = commonAsset.CollectionNonceAssetType
-	//MaxTxsAmountPerBlock = transactions.TxsCountPerBlock
-	MaxTxsAmountPerBlock = cryptoBlock.NbTxsPerBlock
 
 	TxTypeRegisterZns      = commonTx.TxTypeRegisterZns
 	TxTypeCreatePair       = commonTx.TxTypeCreatePair
@@ -94,10 +91,11 @@ const (
 
 const (
 	// 15 minutes
-	MaxCommitterInterval = 60 * 15
+	MaxCommitterInterval = 60 * 1
 )
 
 var (
-	ZeroBigIntString = big.NewInt(0).String()
-	ZeroBigInt       = big.NewInt(0)
+	ZeroBigIntString  = big.NewInt(0).String()
+	ZeroBigInt        = big.NewInt(0)
+	TxsAmountPerBlock = []int{}
 )

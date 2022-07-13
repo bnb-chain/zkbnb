@@ -91,7 +91,8 @@ func InitUnprovedList(
 			newStateRoot = cryptoTx.StateRootAfter
 			cryptoTxs = append(cryptoTxs, cryptoTx)
 		}
-		emptyTxCount := cryptoBlock.NbTxsPerBlock - len(oBlock.Txs)
+
+		emptyTxCount := int(oBlock.BlockSize) - len(oBlock.Txs)
 		for i := 0; i < emptyTxCount; i++ {
 			cryptoTxs = append(cryptoTxs, cryptoBlock.EmptyTx())
 		}
@@ -190,7 +191,7 @@ func HandleCryptoBlock(
 			cryptoTxs = append(cryptoTxs, cryptoTx)
 			logx.Info("after state root:", common.Bytes2Hex(newStateRoot))
 		}
-		emptyTxCount := cryptoBlock.NbTxsPerBlock - len(oBlock.Txs)
+		emptyTxCount := int(oBlock.BlockSize) - len(oBlock.Txs)
 		for i := 0; i < emptyTxCount; i++ {
 			cryptoTxs = append(cryptoTxs, cryptoBlock.EmptyTx())
 		}

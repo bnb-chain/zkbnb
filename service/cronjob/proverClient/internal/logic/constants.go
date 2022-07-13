@@ -17,9 +17,18 @@
 package logic
 
 import (
+	"github.com/consensys/gnark/backend/groth16"
+	"github.com/consensys/gnark/frontend"
 	cryptoBlock "github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/block"
 )
 
 type (
 	CryptoBlock = cryptoBlock.Block
+)
+
+var (
+	VerifyingKeys []groth16.VerifyingKey
+	ProvingKeys   []groth16.ProvingKey
+	KeyTxCounts   []int
+	R1cs          []frontend.CompiledConstraintSystem
 )

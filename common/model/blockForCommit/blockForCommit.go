@@ -41,6 +41,7 @@ type (
 
 	BlockForCommit struct {
 		gorm.Model
+		BlockSize         uint16
 		BlockHeight       int64
 		StateRoot         string
 		PublicData        string

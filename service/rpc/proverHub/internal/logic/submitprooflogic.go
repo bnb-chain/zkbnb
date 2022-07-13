@@ -74,16 +74,6 @@ func (l *SubmitProofLogic) SubmitProof(in *proverHubProto.ReqSubmitProof) (*prov
 		return packSubmitProofLogic(util.FailStatus, util.FailMsg, err.Error(), result), nil
 	}
 
-	// load vk
-	fmt.Println("start reading verifying key")
-	// TODO vk file path
-	vk, err := util.LoadVerifyingKey(VerifyingKeyPath)
-	if err != nil {
-		SetUnprovedCryptoBlockStatus(cBlock.BlockNumber, PUBLISHED)
-		logx.Error(fmt.Sprintf("LoadVerifyingKey Error: %s", err.Error()))
-		return packSubmitProofLogic(util.FailStatus, util.FailMsg, err.Error(), result), nil
-	}
-
 	oProof, err := util.UnformatProof(proof)
 	if err != nil {
 		SetUnprovedCryptoBlockStatus(cBlock.BlockNumber, PUBLISHED)
@@ -91,8 +81,19 @@ func (l *SubmitProofLogic) SubmitProof(in *proverHubProto.ReqSubmitProof) (*prov
 		return packSubmitProofLogic(util.FailStatus, util.FailMsg, err.Error(), result), nil
 	}
 
+	vkIndex := 0
+	for ; vkIndex < len(VerifyingKeyTxsCount); vkIndex++ {
+		if VerifyingKeyTxsCount[vkIndex] == len(cBlock.Txs) {
+			break
+		}
+	}
+	// sanity check
+	if vkIndex == len(VerifyingKeyTxsCount) {
+		logx.Errorf("Can't find correct vk")
+		return packSubmitProofLogic(util.FailStatus, util.FailMsg, err.Error(), result), nil
+	}
 	// VerifyProof
-	err = util.VerifyProof(oProof, vk, cBlock)
+	err = util.VerifyProof(oProof, VerifyingKeys[vkIndex], cBlock)
 	if err != nil {
 		SetUnprovedCryptoBlockStatus(cBlock.BlockNumber, PUBLISHED)
 		logx.Error(fmt.Sprintf("Verify Proof Error: %s", err.Error()))
@@ -128,7 +129,7 @@ func (l *SubmitProofLogic) SubmitProof(in *proverHubProto.ReqSubmitProof) (*prov
 				logx.Error(fmt.Sprintf("CreateProof error"))
 				return packSubmitProofLogic(util.FailStatus, util.FailMsg, err.Error(), result), nil
 			}
-			logx.Info(fmt.Sprintf("CreateProof Successfully!"))
+			logx.Info(fmt.Sprintf("Block %d CreateProof Successfully!", cBlock.BlockNumber))
 		} else {
 			logx.Error(fmt.Sprintf("data inconsistency error"))
 			return packSubmitProofLogic(util.FailStatus, util.FailMsg, "data inconsistency", result), nil

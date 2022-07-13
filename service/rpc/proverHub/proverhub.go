@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/consensys/gnark/backend/groth16"
+	"github.com/zecrey-labs/zecrey-legend/common/util"
 
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
 	"github.com/zecrey-labs/zecrey-legend/common/tree"
@@ -76,6 +78,23 @@ func main() {
 	}
 	// TODO
 	logic.VerifyingKeyPath = c.KeyPath.VerifyingKeyPath
+	logic.VerifyingKeyTxsCount = c.KeyPath.VerifyingKeyTxsCount
+	if len(logic.VerifyingKeyTxsCount) != len(logic.VerifyingKeyPath) {
+		logx.Errorf("VerifyingKeyPath doesn't match VerifyingKeyTxsCount")
+		return
+	}
+
+	// load vk
+	fmt.Println("start reading verifying key")
+	// TODO vk file path
+	logic.VerifyingKeys = make([]groth16.VerifyingKey, len(logic.VerifyingKeyPath))
+	for i := 0; i < len(logic.VerifyingKeyPath); i++ {
+		logic.VerifyingKeys[i], err = util.LoadVerifyingKey(logic.VerifyingKeyPath[i])
+		if err != nil {
+			logx.Error(fmt.Sprintf("LoadVerifyingKey %d Error: %s", i, err.Error()))
+			return
+		}
+	}
 
 	err = logic.InitUnprovedList(
 		accountTree,

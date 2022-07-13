@@ -26,18 +26,10 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/proverClient/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/proverHubProto"
-
-	"github.com/consensys/gnark/backend/groth16"
-	"github.com/consensys/gnark/frontend"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-func ProveBlock(
-	ctx *svc.ServiceContext,
-	r1cs frontend.CompiledConstraintSystem,
-	provingKey groth16.ProvingKey,
-	verifyingKey groth16.VerifyingKey,
-) error {
+func ProveBlock(ctx *svc.ServiceContext) error {
 	// fetch unproved block
 	resp, err := ctx.ProverHubRPC.GetUnprovedBlock(context.Background(), &proverHubProto.ReqGetUnprovedBlock{Mode: 1})
 	if err != nil || resp == nil || resp.Status == util.FailStatus {
@@ -51,8 +43,19 @@ func ProveBlock(
 		return errors.New("[ProveBlock] json.Unmarshal Error")
 	}
 
+	var keyIndex int
+	for ; keyIndex < len(KeyTxCounts); keyIndex++ {
+		if len(cryptoBlock.Txs) == KeyTxCounts[keyIndex] {
+			break
+		}
+	}
+	if keyIndex == len(KeyTxCounts) {
+		log.Println("[ProveBlock] Can't find correct vk/pk")
+		return err
+	}
+
 	// Generate Proof
-	proof, err := util.GenerateProof(r1cs, provingKey, verifyingKey, cryptoBlock)
+	proof, err := util.GenerateProof(R1cs[keyIndex], ProvingKeys[keyIndex], VerifyingKeys[keyIndex], cryptoBlock)
 	if err != nil {
 		return errors.New("[ProveBlock] GenerateProof Error")
 	}

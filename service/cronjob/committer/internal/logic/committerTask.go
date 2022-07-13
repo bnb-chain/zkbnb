@@ -25,6 +25,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/std"
 	"github.com/zecrey-labs/zecrey-legend/common/model/blockForCommit"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
@@ -47,7 +48,7 @@ import (
 
 func CommitterTask(
 	ctx *svc.ServiceContext,
-	lastCommitTimeStamp time.Time,
+	lastCommitTimeStamp *time.Time,
 	accountTree *tree.Tree,
 	liquidityTree *tree.Tree,
 	nftTree *tree.Tree,
@@ -82,6 +83,7 @@ func CommitterTask(
 	}
 	// handle txs
 	// check how many blocks
+	MaxTxsAmountPerBlock := TxsAmountPerBlock[len(TxsAmountPerBlock)-1]
 	blocksSize := int(math.Ceil(float64(nTxs) / float64(MaxTxsAmountPerBlock)))
 
 	// accountMap store the map from account index to accountInfo, decrease the duplicated query from Account Model
@@ -654,6 +656,16 @@ func CommitterTask(
 			}
 			pendingUpdateNft = append(pendingUpdateNft, nftMap[nftIndex])
 		}
+		var realTxsAmountPerBlock int
+		for i := 0; i < len(TxsAmountPerBlock); i++ {
+			if len(txs) <= TxsAmountPerBlock[i] {
+				realTxsAmountPerBlock = TxsAmountPerBlock[i]
+				logx.Infof("the block contains %d txs: %d real txs, %d empty txs", realTxsAmountPerBlock, len(txs), realTxsAmountPerBlock-len(txs))
+				break
+			}
+		}
+		emptyPubdata := make([]byte, (realTxsAmountPerBlock-len(txs))*32*std.PubDataSizePerTx)
+		pubData = append(pubData, emptyPubdata...)
 		// create commitment
 		commitment := util.CreateBlockCommitment(
 			currentBlockHeight,
@@ -676,6 +688,7 @@ func CommitterTask(
 				Model: gorm.Model{
 					CreatedAt: createAtTime,
 				},
+				BlockSize:                    uint16(realTxsAmountPerBlock),
 				BlockCommitment:              commitment,
 				BlockHeight:                  currentBlockHeight,
 				StateRoot:                    finalStateRoot,
@@ -698,6 +711,7 @@ func CommitterTask(
 				return err
 			}
 			oBlockForCommit = &BlockForCommit{
+				BlockSize:         uint16(realTxsAmountPerBlock),
 				BlockHeight:       currentBlockHeight,
 				StateRoot:         finalStateRoot,
 				PublicData:        common.Bytes2Hex(pubData),
@@ -725,6 +739,7 @@ func CommitterTask(
 			logx.Errorf("[CommitterTask] unable to create block for committer: %s", err.Error())
 			return err
 		}
+		*lastCommitTimeStamp = time.Now()
 	}
 	return nil
 }
