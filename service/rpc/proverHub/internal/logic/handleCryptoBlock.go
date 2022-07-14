@@ -18,116 +18,18 @@ package logic
 
 import (
 	"errors"
+	"time"
+
 	"github.com/ethereum/go-ethereum/common"
 	cryptoBlock "github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/block"
-	"github.com/zecrey-labs/zecrey-legend/common/model/block"
+	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/zecrey-labs/zecrey-legend/common/model/blockForProof"
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
 	"github.com/zecrey-labs/zecrey-legend/common/proverUtil"
 	"github.com/zecrey-labs/zecrey-legend/common/tree"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/internal/svc"
-	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/mathx"
 )
-
-func InitUnprovedList(
-	accountTree *tree.Tree,
-	assetTrees *[]*tree.Tree,
-	liquidityTree *tree.Tree,
-	nftTree *tree.Tree,
-	ctx *svc.ServiceContext,
-	initHeight int64,
-) (err error) {
-	proofEndHeight, err := ctx.ProofSenderModel.GetProofStartBlockNumber()
-	if err != nil {
-		if err == proofSender.ErrNotFound {
-			if initHeight == 0 {
-				return nil
-			} else {
-				return errors.New("[InitUnprovedList] proof not found but initHeight is not zero")
-			}
-		} else {
-			return err
-		}
-	}
-
-	// handle the proof between initHeight and proofEnd
-
-	// get last handled block info in range
-	blocks, err := ctx.BlockModel.GetBlocksBetween(int64(initHeight+1), proofEndHeight)
-	if err != nil {
-		if err == block.ErrNotFound {
-			return nil
-		}
-		return err
-	}
-	// lock UnprovedBlockMap
-	M.Lock()
-	defer M.Unlock()
-
-	// scan each block
-	for _, oBlock := range blocks {
-		var (
-			oldStateRoot []byte
-			newStateRoot []byte
-			isFirst      bool
-		)
-		var (
-			cryptoTxs []*CryptoTx
-		)
-		// scan each transaction
-		for _, oTx := range oBlock.Txs {
-			var (
-				cryptoTx *CryptoTx
-			)
-			cryptoTx, err = proverUtil.ConstructCryptoTx(oTx, accountTree, assetTrees, liquidityTree, nftTree, ctx.AccountModel)
-			if err != nil {
-				logx.Errorf("[prover] unable to construct crypto tx: %s", err.Error())
-				return err
-			}
-			if !isFirst {
-				oldStateRoot = cryptoTx.StateRootBefore
-				isFirst = true
-			}
-			newStateRoot = cryptoTx.StateRootAfter
-			cryptoTxs = append(cryptoTxs, cryptoTx)
-		}
-
-		emptyTxCount := int(oBlock.BlockSize) - len(oBlock.Txs)
-		for i := 0; i < emptyTxCount; i++ {
-			cryptoTxs = append(cryptoTxs, cryptoBlock.EmptyTx())
-		}
-		// Check if the block is already in proofSender Table
-		_, err := ctx.ProofSenderModel.GetProofByBlockNumber(oBlock.BlockHeight)
-		if err != nil {
-			if err == proofSender.ErrNotFound { // no proof in table, keep inserting the new block
-				logx.Info(oBlock.BlockCommitment)
-				if common.Bytes2Hex(newStateRoot) != oBlock.StateRoot {
-					return errors.New("state root doesn't match")
-				} else {
-					blockInfo, err := proverUtil.BlockToCryptoBlock(oBlock, oldStateRoot, newStateRoot, cryptoTxs)
-					if err != nil {
-						logx.Errorf("[prover] unable to convert block to crypto block")
-						return err
-					}
-					var nCryptoBlockInfo = &CryptoBlockInfo{
-						BlockInfo: blockInfo,
-						Status:    PUBLISHED,
-					}
-					logx.Info("new root:", common.Bytes2Hex(nCryptoBlockInfo.BlockInfo.NewStateRoot))
-					logx.Info("BlockCommitment:", common.Bytes2Hex(nCryptoBlockInfo.BlockInfo.BlockCommitment))
-					// insert crypto blocks array
-					UnProvedCryptoBlocks = append(UnProvedCryptoBlocks, nCryptoBlockInfo)
-				}
-			} else {
-				logx.Errorf("[InitUnprovedList] GetProofByBlockNumber error: %s", err.Error())
-			}
-		}
-
-	}
-	// after the init the tree status will be updated to proofEndHeight,
-	// the UnprovedList will be updated to proofEndHeight too.
-	return nil
-}
 
 func HandleCryptoBlock(
 	accountTree *tree.Tree,
@@ -136,27 +38,38 @@ func HandleCryptoBlock(
 	nftTree *tree.Tree,
 	ctx *svc.ServiceContext,
 	deltaHeight int64,
-) error {
-	var blocks []*block.Block
-
-	proofStart, err := ctx.ProofSenderModel.GetProofStartBlockNumber()
+) {
+	err := generateUnprovedBlockWitness(ctx, accountTree, assetTrees, liquidityTree, nftTree, deltaHeight)
 	if err != nil {
-		if err == proofSender.ErrNotFound {
-			proofStart = 0
+		logx.Errorf("generate block witness error, err=%s", err.Error())
+	}
+
+	updateTimeoutUnprovedBlock(ctx)
+}
+
+func generateUnprovedBlockWitness(
+	ctx *svc.ServiceContext,
+	accountTree *tree.Tree,
+	assetTrees *[]*tree.Tree,
+	liquidityTree *tree.Tree,
+	nftTree *tree.Tree,
+	deltaHeight int64,
+) error {
+	latestUnprovedHeight, err := ctx.BlockForProofModel.GetLatestUnprovedBlockHeight()
+	if err != nil {
+		if err == blockForProof.ErrNotFound {
+			latestUnprovedHeight = 0
 		} else {
 			return err
 		}
 	}
-	var start = mathx.MaxInt(int(GetLatestUnprovedBlockHeight()), int(proofStart))
+
 	// get last handled block info
-	blocks, err = ctx.BlockModel.GetBlocksBetween(int64(start+1), int64(start)+deltaHeight)
+	blocks, err := ctx.BlockModel.GetBlocksBetween(latestUnprovedHeight+1, latestUnprovedHeight+deltaHeight)
 	if err != nil {
 		return err
 	}
 
-	// lock UnprovedBlockMap
-	M.Lock()
-	defer M.Unlock()
 	// scan each block
 	for _, oBlock := range blocks {
 		var (
@@ -183,11 +96,6 @@ func HandleCryptoBlock(
 				isFirst = true
 			}
 			newStateRoot = cryptoTx.StateRootAfter
-			//cryptoTxTypeBytes, err := json.Marshal(cryptoTx)
-			//if err != nil {
-			//	return errors.New("json.Marshal(cryptoTx) error")
-			//}
-			//logx.Info(string(cryptoTxTypeBytes))
 			cryptoTxs = append(cryptoTxs, cryptoTx)
 			logx.Info("after state root:", common.Bytes2Hex(newStateRoot))
 		}
@@ -206,20 +114,63 @@ func HandleCryptoBlock(
 				logx.Errorf("[prover] unable to convert block to crypto block")
 				return err
 			}
-			//if blockInfo.BlockNumber == 14 {
-			//	infoBytes, _ := json.Marshal(blockInfo)
-			//	fmt.Println(string(infoBytes))
-			//}
 			var nCryptoBlockInfo = &CryptoBlockInfo{
 				BlockInfo: blockInfo,
-				Status:    PUBLISHED,
+				Status:    blockForProof.StatusPublished,
 			}
 			logx.Info("new root:", common.Bytes2Hex(nCryptoBlockInfo.BlockInfo.NewStateRoot))
 			logx.Info("BlockCommitment:", common.Bytes2Hex(nCryptoBlockInfo.BlockInfo.BlockCommitment))
+
 			// insert crypto blocks array
-			UnProvedCryptoBlocks = append(UnProvedCryptoBlocks, nCryptoBlockInfo)
+			unprovedCryptoBlockModel, err := CryptoBlockInfoToBlockForProof(nCryptoBlockInfo)
+			if err != nil {
+				logx.Errorf("[prover] marshal crypto block info error, err=%s", err.Error())
+				return err
+			}
+			err = ctx.BlockForProofModel.CreateConsecutiveUnprovedCryptoBlock(unprovedCryptoBlockModel)
+			if err != nil {
+				logx.Errorf("[prover] create unproved crypto block error, err=%s", err.Error())
+				return err
+			}
 		}
 	}
-
 	return nil
+}
+
+func updateTimeoutUnprovedBlock(ctx *svc.ServiceContext) {
+	latestConfirmedProof, err := ctx.ProofSenderModel.GetLatestConfirmedProof()
+	if err != nil && err != proofSender.ErrNotFound {
+		return
+	}
+
+	var nextBlockNumber int64 = 1
+	if err != proofSender.ErrNotFound {
+		nextBlockNumber = latestConfirmedProof.BlockNumber + 1
+	}
+
+	nextUnprovedBlock, err := ctx.BlockForProofModel.GetUnprovedCryptoBlockByBlockNumber(nextBlockNumber)
+	if err != nil {
+		return
+	}
+
+	// skip if next block is not processed
+	if nextUnprovedBlock.Status == blockForProof.StatusPublished {
+		return
+	}
+
+	// skip if the next block proof exists
+	// if the proof is not submitted and verified in L1, there should be another alerts
+	_, err = ctx.ProofSenderModel.GetProofByBlockNumber(nextBlockNumber)
+	if err == nil {
+		return
+	}
+
+	// update block status to Published if it's timeout
+	if time.Now().After(nextUnprovedBlock.UpdatedAt.Add(UnprovedBlockReceivedTimeout)) {
+		err := ctx.BlockForProofModel.UpdateUnprovedCryptoBlockStatus(nextUnprovedBlock, blockForProof.StatusPublished)
+		if err != nil {
+			logx.Errorf("update unproved block status error, err=%s", err.Error())
+			return
+		}
+	}
 }

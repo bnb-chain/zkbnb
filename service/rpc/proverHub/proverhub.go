@@ -2,26 +2,24 @@ package main
 
 import (
 	"flag"
-	"fmt"
+
 	"github.com/consensys/gnark/backend/groth16"
-	"github.com/zecrey-labs/zecrey-legend/common/util"
+	"github.com/robfig/cron/v3"
+	"github.com/zeromicro/go-zero/core/conf"
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/service"
+	"github.com/zeromicro/go-zero/zrpc"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
 	"github.com/zecrey-labs/zecrey-legend/common/tree"
+	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/internal/config"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/internal/logic"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/internal/server"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/internal/svc"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/proverHubProto"
-
-	"github.com/robfig/cron/v3"
-	"github.com/zeromicro/go-zero/core/logx"
-
-	"github.com/zeromicro/go-zero/core/conf"
-	"github.com/zeromicro/go-zero/core/service"
-	"github.com/zeromicro/go-zero/zrpc"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
 )
 
 var configFile = flag.String("f",
@@ -76,7 +74,7 @@ func main() {
 		logx.Errorf("[prover] InitNftTree error: %s", err)
 		return
 	}
-	// TODO
+
 	logic.VerifyingKeyPath = c.KeyPath.VerifyingKeyPath
 	logic.VerifyingKeyTxsCount = c.KeyPath.VerifyingKeyTxsCount
 	if len(logic.VerifyingKeyTxsCount) != len(logic.VerifyingKeyPath) {
@@ -84,29 +82,14 @@ func main() {
 		return
 	}
 
-	// load vk
-	fmt.Println("start reading verifying key")
-	// TODO vk file path
+	logx.Info("start reading verifying key")
 	logic.VerifyingKeys = make([]groth16.VerifyingKey, len(logic.VerifyingKeyPath))
 	for i := 0; i < len(logic.VerifyingKeyPath); i++ {
 		logic.VerifyingKeys[i], err = util.LoadVerifyingKey(logic.VerifyingKeyPath[i])
 		if err != nil {
-			logx.Error(fmt.Sprintf("LoadVerifyingKey %d Error: %s", i, err.Error()))
+			logx.Errorf("LoadVerifyingKey %d Error: %s", i, err.Error())
 			return
 		}
-	}
-
-	err = logic.InitUnprovedList(
-		accountTree,
-		&assetTrees,
-		liquidityTree,
-		nftTree,
-		ctx,
-		p.BlockNumber)
-
-	if err != nil {
-		logx.Error("[prover] => InitUnprovedList error:", err)
-		return
 	}
 
 	cronJob := cron.New(cron.WithChain(
@@ -115,9 +98,6 @@ func main() {
 	_, err = cronJob.AddFunc("@every 10s", func() {
 		// cron job for creating cryptoBlock
 		logx.Info("==========start handle crypto block==========")
-		for _, v := range logic.UnProvedCryptoBlocks {
-			logx.Infof("BlockNumber: %v, Status: %d", v.BlockInfo.BlockNumber, v.Status)
-		}
 		logic.HandleCryptoBlock(
 			accountTree,
 			&assetTrees,
@@ -142,6 +122,6 @@ func main() {
 	})
 	defer s.Stop()
 
-	fmt.Printf("Starting rpc server at %s...\n", c.ListenOn)
+	logx.Infof("Starting rpc server at %s...\n", c.ListenOn)
 	s.Start()
 }

@@ -1,23 +1,27 @@
 package svc
 
 import (
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/redis"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
+	"github.com/zecrey-labs/zecrey-legend/common/model/blockForProof"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l1TxSender"
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
 	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/internal/config"
-	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/redis"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 type ServiceContext struct {
 	Config config.Config
+
+	RedisConn *redis.Redis
 
 	BlockModel            block.BlockModel
 	L1TxSenderModel       l1TxSender.L1TxSenderModel
@@ -30,6 +34,7 @@ type ServiceContext struct {
 	NftHistoryModel       nft.L2NftHistoryModel
 	SysconfigModel        sysconfig.SysconfigModel
 	ProofSenderModel      proofSender.ProofSenderModel
+	BlockForProofModel    blockForProof.BlockForProofModel
 }
 
 func WithRedis(redisType string, redisPass string) redis.Option {
@@ -48,7 +53,9 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
 	return &ServiceContext{
 		Config:                c,
+		RedisConn:             redisConn,
 		BlockModel:            block.NewBlockModel(conn, c.CacheRedis, gormPointer, redisConn),
+		BlockForProofModel:    blockForProof.NewBlockForProofModel(conn, c.CacheRedis, gormPointer),
 		L1TxSenderModel:       l1TxSender.NewL1TxSenderModel(conn, c.CacheRedis, gormPointer),
 		SysConfigModel:        sysconfig.NewSysconfigModel(conn, c.CacheRedis, gormPointer),
 		AccountModel:          account.NewAccountModel(conn, c.CacheRedis, gormPointer),

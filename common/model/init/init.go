@@ -17,14 +17,18 @@
 
 package main
 
-
 import (
+	"log"
+
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/zeromicro/go-zero/core/stores/redis"
+
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	asset "github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
 	"github.com/zecrey-labs/zecrey-legend/common/model/basic"
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/common/model/blockForCommit"
+	"github.com/zecrey-labs/zecrey-legend/common/model/blockForProof"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l1BlockMonitor"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l1TxSender"
 	"github.com/zecrey-labs/zecrey-legend/common/model/l2BlockEventMonitor"
@@ -36,8 +40,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/common/tree"
-	"github.com/zeromicro/go-zero/core/stores/redis"
-	"log"
 )
 
 func WithRedis(redisType string, redisPass string) redis.Option {
@@ -70,6 +72,9 @@ var (
 	blockModel = block.NewBlockModel(basic.Connection, basic.CacheConf, basic.DB, redisConn)
 	// block for commit
 	blockForCommitModel = blockForCommit.NewBlockForCommitModel(basic.Connection, basic.CacheConf, basic.DB)
+	// block for proof
+	blockForProofModel = blockForProof.NewBlockForProofModel(basic.Connection, basic.CacheConf, basic.DB)
+
 	// block for proverUtil
 	proofSenderModel = proofSender.NewProofSenderModel(basic.DB)
 	// monitor
@@ -104,6 +109,7 @@ func DropTables() {
 	txModel.DropTxTable()
 	blockModel.DropBlockTable()
 	blockForCommitModel.DropBlockForCommitTable()
+	blockForProofModel.DropBlockForProofTable()
 	proofSenderModel.DropProofSenderTable()
 	l1BlockMonitorModel.DropL1BlockMonitorTable()
 	l2TxEventMonitorModel.DropL2TxEventMonitorTable()
@@ -133,6 +139,7 @@ func InitTable() {
 	txModel.CreateTxTable()
 	blockModel.CreateBlockTable()
 	blockForCommitModel.CreateBlockForCommitTable()
+	blockForProofModel.CreateBlockForProofTable()
 	proofSenderModel.CreateProofSenderTable()
 	l1BlockMonitorModel.CreateL1BlockMonitorTable()
 	l2TxEventMonitorModel.CreateL2TxEventMonitorTable()
@@ -176,7 +183,7 @@ func InitTable() {
 	}
 }
 
-func main(){
+func main() {
 	DropTables()
 	InitTable()
 }

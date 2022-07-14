@@ -17,47 +17,37 @@
 package logic
 
 import (
+	"time"
+
 	"github.com/consensys/gnark/backend/groth16"
 	cryptoBlock "github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/block"
 	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
+
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
-	"sync"
-	"sync/atomic"
-	"unsafe"
+	"github.com/zecrey-labs/zecrey-legend/common/model/blockForProof"
+)
+
+const (
+	UnprovedBlockReceivedTimeout = 10 * time.Minute
+
+	RedisLockKey = "prover_hub_mutex_key"
+)
+
+var (
+	VerifyingKeyPath     []string
+	VerifyingKeyTxsCount []int
+	VerifyingKeys        []groth16.VerifyingKey
+)
+
+type (
+	Block                  = block.Block
+	BlockForProof          = blockForProof.BlockForProof
+	StorageStoredBlockInfo = zecreyLegend.StorageStoredBlockInfo
+	CryptoTx               = cryptoBlock.Tx
+	CryptoBlock            = cryptoBlock.Block
 )
 
 type CryptoBlockInfo struct {
 	BlockInfo *CryptoBlock
 	Status    int64
 }
-
-var (
-	UnProvedCryptoBlocks []*CryptoBlockInfo
-	M                    Mutex
-	VerifyingKeyPath     []string
-	VerifyingKeyTxsCount []int
-	VerifyingKeys        []groth16.VerifyingKey
-)
-
-const mutexLocked = 1 << iota
-
-type Mutex struct {
-	sync.Mutex
-}
-
-func (m *Mutex) TryLock() bool {
-	return atomic.CompareAndSwapInt32((*int32)(unsafe.Pointer(&m.Mutex)), 0, mutexLocked)
-}
-
-const (
-	PUBLISHED = iota
-	RECEIVED
-	VERIFIED
-)
-
-type (
-	Block                  = block.Block
-	StorageStoredBlockInfo = zecreyLegend.StorageStoredBlockInfo
-	CryptoTx               = cryptoBlock.Tx
-	CryptoBlock            = cryptoBlock.Block
-)

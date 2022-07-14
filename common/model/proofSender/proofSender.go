@@ -40,7 +40,7 @@ type (
 	ProofSender struct {
 		gorm.Model
 		ProofInfo   string
-		BlockNumber int64 `gorm:"index"`
+		BlockNumber int64 `gorm:"index:idx_number,unique"`
 		Status      int64
 	}
 )

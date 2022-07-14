@@ -882,10 +882,10 @@ github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1
 github.com/yuin/goldmark v1.4.0/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 github.com/yuin/gopher-lua v0.0.0-20200816102855-ee81675732da h1:NimzV1aGyq29m5ukMK0AMWEhFaL/lrEOaephfuoiARg=
 github.com/yuin/gopher-lua v0.0.0-20200816102855-ee81675732da/go.mod h1:E1AXubJBdNmFERAOucpDIxNzeGfLzg0mYh+UfMWdChA=
-github.com/zecrey-labs/zecrey-crypto v0.0.10-legend h1:89gxIO7Lyi+Y+FduJiMtwRLqJ57pYzptWxPzouepsTk=
-github.com/zecrey-labs/zecrey-crypto v0.0.10-legend/go.mod h1:LtE2ulSGJSk4hrIseKtQY1KCBCAgiJklS5WCPZdBh04=
-github.com/zecrey-labs/zecrey-eth-rpc v0.0.15 h1:aREnWmtUnredD9iNAf5DpESEZtXsHyV5J4yTTc+vBgA=
-github.com/zecrey-labs/zecrey-eth-rpc v0.0.15/go.mod h1:D/qGWiW1mwInLjZshiLzms161r3OuTO7rVtQifgE0UU=
+github.com/zecrey-labs/zecrey-crypto v0.0.2-stable h1:l3zSAbV8x9GyZzOTXidGmDsjylZJ5jeOJTfxrXu155A=
+github.com/zecrey-labs/zecrey-crypto v0.0.2-stable/go.mod h1:LtE2ulSGJSk4hrIseKtQY1KCBCAgiJklS5WCPZdBh04=
+github.com/zecrey-labs/zecrey-eth-rpc v0.0.2-stable h1:68YhgSpxVZwxQv+IwkGfS1608AZpwOgDnIdLx8+cHvY=
+github.com/zecrey-labs/zecrey-eth-rpc v0.0.2-stable/go.mod h1:D/qGWiW1mwInLjZshiLzms161r3OuTO7rVtQifgE0UU=
 github.com/zenazn/goji v0.9.0/go.mod h1:7S9M489iMyHBNxwZnk9/EHS098H4/F6TATF2mIxtB1Q=
 github.com/zeromicro/go-zero v1.3.3 h1:6qv9PcfqfB1tMgp1FJlP1LfWSZ4XD+FwojvA2h5LL2k=
 github.com/zeromicro/go-zero v1.3.3/go.mod h1:LwuYc2V04ZHhWPWGJYQ+kJ5DT4QSkeaZGqXiQcpkfks=

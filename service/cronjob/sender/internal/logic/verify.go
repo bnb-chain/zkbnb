@@ -23,10 +23,10 @@ import (
 	"time"
 
 	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
-
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 func SendVerifiedAndExecutedBlocks(
