@@ -11,11 +11,11 @@ RUN curl -sSL https://sdk.cloud.google.com | bash
 ENV PATH $PATH:/root/google-cloud-sdk/bin
 
 WORKDIR /app
-RUN gsutil cp gs://zecrey_key/zecrey-legend.pk zecrey-legend1.pk
-RUN gsutil cp gs://zecrey_key/zecrey-legend.vk zecrey-legend1.vk
+RUN gsutil cp gs://zecrey_key/zecrey-legend1.pk zecrey-legend1.pk
+RUN gsutil cp gs://zecrey_key/zecrey-legend1.vk zecrey-legend1.vk
 
-RUN gsutil cp gs://zecrey_key/zecrey-legend.pk zecrey-legend10.pk
-RUN gsutil cp gs://zecrey_key/zecrey-legend.vk zecrey-legend10.vk
+RUN gsutil cp gs://zecrey_key/zecrey-legend10.pk zecrey-legend10.pk
+RUN gsutil cp gs://zecrey_key/zecrey-legend10.vk zecrey-legend10.vk
 
 FROM alpine:3.4
 
