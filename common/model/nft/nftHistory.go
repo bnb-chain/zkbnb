@@ -97,7 +97,7 @@ func (m *defaultL2NftHistoryModel) GetLatestNftAssetsByBlockHeight(height int64)
 	// TODO sql
 	dbTx := m.DB.Table(m.table).
 		Raw("SELECT a.* FROM l2_nft_history a WHERE NOT EXISTS"+
-			"(SELECT * FROM l2_nft_history WHERE owner_account_index = a.owner_account_index AND nft_index = a.nft_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height) "+
+			"(SELECT * FROM l2_nft_history WHERE nft_index = a.nft_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height) "+
 			"AND l2_block_height <= ? ORDER BY nft_index", height, height).
 		Find(&accountNftAssets)
 	if dbTx.Error != nil {
