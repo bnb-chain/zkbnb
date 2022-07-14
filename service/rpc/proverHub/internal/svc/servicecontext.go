@@ -21,6 +21,8 @@ import (
 type ServiceContext struct {
 	Config config.Config
 
+	RedisConn *redis.Redis
+
 	BlockModel            block.BlockModel
 	L1TxSenderModel       l1TxSender.L1TxSenderModel
 	SysConfigModel        sysconfig.SysconfigModel
@@ -51,6 +53,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
 	return &ServiceContext{
 		Config:                c,
+		RedisConn:             redisConn,
 		BlockModel:            block.NewBlockModel(conn, c.CacheRedis, gormPointer, redisConn),
 		BlockForProofModel:    blockForProof.NewBlockForProofModel(conn, c.CacheRedis, gormPointer),
 		L1TxSenderModel:       l1TxSender.NewL1TxSenderModel(conn, c.CacheRedis, gormPointer),

@@ -38,7 +38,7 @@ func (m *block) GetBlockByBlockHeight(ctx context.Context, blockHeight int64) (*
 		return _block, nil
 	}
 	_block := &table.Block{}
-	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetBlockByBlockHeight+strconv.FormatInt(blockHeight, 10), _block, 10, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetBlockByBlockHeight+strconv.FormatInt(blockHeight, 10), _block, 1, f)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (m *block) GetBlockWithTxsByCommitment(ctx context.Context, blockCommitment
 		return _block, nil
 	}
 	_block := &table.Block{}
-	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetBlockBlockCommitment+blockCommitment, _block, 10, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetBlockBlockCommitment+blockCommitment, _block, 1, f)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +131,7 @@ func (m *block) GetBlockWithTxsByBlockHeight(ctx context.Context, blockHeight in
 		return _block, nil
 	}
 	_block := &table.Block{}
-	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetBlockWithTxHeight+strconv.FormatInt(blockHeight, 10), _block, 10, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetBlockWithTxHeight+strconv.FormatInt(blockHeight, 10), _block, 1, f)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func (m *block) GetBlocksList(ctx context.Context, limit int64, offset int64) ([
 		return &blockList, nil
 	}
 	blockList := []*table.Block{}
-	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetBlockList+strconv.FormatInt(limit, 10)+strconv.FormatInt(offset, 10), &blockList, 10, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetBlockList+strconv.FormatInt(limit, 10)+strconv.FormatInt(offset, 10), &blockList, 1, f)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func (m *block) GetBlocksTotalCount(ctx context.Context) (int64, error) {
 		return &count, nil
 	}
 	var count int64
-	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetBlocksTotalCount, &count, 5, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetBlocksTotalCount, &count, 1, f)
 	if err != nil {
 		return count, err
 	}

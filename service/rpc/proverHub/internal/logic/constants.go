@@ -17,9 +17,7 @@
 package logic
 
 import (
-	"sync"
-	"sync/atomic"
-	"unsafe"
+	"time"
 
 	"github.com/consensys/gnark/backend/groth16"
 	cryptoBlock "github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/block"
@@ -29,32 +27,16 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/blockForProof"
 )
 
-type CryptoBlockInfo struct {
-	BlockInfo *CryptoBlock
-	Status    int64
-}
+const (
+	UnprovedBlockReceivedTimeout = 10 * time.Minute
+
+	RedisLockKey = "prover_hub_mutex_key"
+)
 
 var (
-	M                    Mutex
 	VerifyingKeyPath     []string
 	VerifyingKeyTxsCount []int
 	VerifyingKeys        []groth16.VerifyingKey
-)
-
-const mutexLocked = 1 << iota
-
-type Mutex struct {
-	sync.Mutex
-}
-
-func (m *Mutex) TryLock() bool {
-	return atomic.CompareAndSwapInt32((*int32)(unsafe.Pointer(&m.Mutex)), 0, mutexLocked)
-}
-
-const (
-	PUBLISHED = iota
-	RECEIVED
-	VERIFIED
 )
 
 type (
@@ -64,3 +46,8 @@ type (
 	CryptoTx               = cryptoBlock.Tx
 	CryptoBlock            = cryptoBlock.Block
 )
+
+type CryptoBlockInfo struct {
+	BlockInfo *CryptoBlock
+	Status    int64
+}

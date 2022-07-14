@@ -18,6 +18,8 @@
 package blockForProof
 
 import (
+	"time"
+
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
@@ -46,7 +48,7 @@ type (
 
 	BlockForProof struct {
 		gorm.Model
-		BlockHeight int64
+		BlockHeight int64 `gorm:"index:idx_height,unique"`
 		BlockData   string
 		Status      int64
 	}
@@ -154,6 +156,7 @@ func (m *defaultBlockForProofModel) CreateUnprovedCryptoBlockIfNotExists(block *
 
 func (m *defaultBlockForProofModel) UpdateUnprovedCryptoBlockStatus(block *BlockForProof, status int64) error {
 	block.Status = status
+	block.UpdatedAt = time.Now()
 	dbTx := m.DB.Table(m.table).Save(block)
 	if dbTx.Error != nil {
 		logx.Errorf("[UpdateUnprovedCryptoBlockStatus] update block status error: %s", dbTx.Error.Error())

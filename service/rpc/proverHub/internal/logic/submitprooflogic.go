@@ -9,6 +9,7 @@ import (
 	cryptoBlock "github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/block"
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/zecrey-labs/zecrey-legend/common/model/blockForProof"
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/proverHub/internal/svc"
@@ -44,11 +45,6 @@ func packSubmitProofLogic(
 }
 
 func (l *SubmitProofLogic) SubmitProof(in *proverHubProto.ReqSubmitProof) (*proverHubProto.RespSubmitProof, error) {
-
-	// Read Lock
-	M.Lock()
-	defer M.Unlock()
-
 	var (
 		result = &proverHubProto.ResultSubmitProof{}
 	)
@@ -59,7 +55,7 @@ func (l *SubmitProofLogic) SubmitProof(in *proverHubProto.ReqSubmitProof) (*prov
 	)
 	err := json.Unmarshal([]byte(in.BlockInfo), &cBlock)
 	if err != nil {
-		logx.Error(fmt.Sprintf("Unmarshal Error: %s", err.Error()))
+		logx.Errorf("Unmarshal Error: %s", err.Error())
 		return packSubmitProofLogic(util.FailStatus, util.FailMsg, err.Error(), result), nil
 	}
 
@@ -69,13 +65,13 @@ func (l *SubmitProofLogic) SubmitProof(in *proverHubProto.ReqSubmitProof) (*prov
 	)
 	err = json.Unmarshal([]byte(in.Proof), &proof)
 	if err != nil {
-		logx.Error(fmt.Sprintf("Unmarshal Error: %s", err.Error()))
+		logx.Errorf("Unmarshal Error: %s", err.Error())
 		return packSubmitProofLogic(util.FailStatus, util.FailMsg, err.Error(), result), nil
 	}
 
 	oProof, err := util.UnformatProof(proof)
 	if err != nil {
-		logx.Error(fmt.Sprintf("UnformatProof Error: %s", err.Error()))
+		logx.Errorf("UnformatProof Error: %s", err.Error())
 		return packSubmitProofLogic(util.FailStatus, util.FailMsg, err.Error(), result), nil
 	}
 
@@ -93,7 +89,7 @@ func (l *SubmitProofLogic) SubmitProof(in *proverHubProto.ReqSubmitProof) (*prov
 	// VerifyProof
 	err = util.VerifyProof(oProof, VerifyingKeys[vkIndex], cBlock)
 	if err != nil {
-		logx.Error(fmt.Sprintf("Verify Proof Error: %s", err.Error()))
+		logx.Errorf("Verify Proof Error: %s", err.Error())
 		return packSubmitProofLogic(util.FailStatus, util.FailMsg, err.Error(), result), nil
 	}
 
@@ -114,36 +110,36 @@ func (l *SubmitProofLogic) SubmitProof(in *proverHubProto.ReqSubmitProof) (*prov
 	}
 
 	// modify UnprovedBlockList
-	if provedBlockModel.Status != RECEIVED {
-		l.svcCtx.BlockForProofModel.UpdateUnprovedCryptoBlockStatus(provedBlockModel, PUBLISHED)
-		logx.Error(fmt.Sprintf("block status error: %d", provedBlockModel.Status))
+	if provedBlockModel.Status != blockForProof.StatusReceived {
+		logx.Errorf("block status error: %d", provedBlockModel.Status)
 		return packSubmitProofLogic(util.FailStatus, util.FailMsg, fmt.Sprintf("block status error: %d", provedBlockModel.Status), result), nil
 	}
 
-	if provedBlock != nil {
-		if common.Bytes2Hex(provedBlock.BlockInfo.NewStateRoot[:]) == common.Bytes2Hex(cBlock.NewStateRoot) &&
-			common.Bytes2Hex(provedBlock.BlockInfo.BlockCommitment[:]) == common.Bytes2Hex(cBlock.BlockCommitment) &&
-			provedBlock.BlockInfo.CreatedAt == cBlock.CreatedAt {
-			var row = &proofSender.ProofSender{
-				ProofInfo:   in.Proof,
-				BlockNumber: cBlock.BlockNumber,
-				Status:      proofSender.NotSent,
-			}
-			err = l.svcCtx.ProofSenderModel.CreateProof(row)
-			if err != nil {
-				// rollback UnprovedList
-				l.svcCtx.BlockForProofModel.UpdateUnprovedCryptoBlockStatus(provedBlockModel, PUBLISHED)
-				logx.Error("CreateProof error")
-				return packSubmitProofLogic(util.FailStatus, util.FailMsg, err.Error(), result), nil
-			}
-			logx.Info(fmt.Sprintf("Block %d CreateProof Successfully!", cBlock.BlockNumber))
-		} else {
-			logx.Error("data inconsistency error")
-			return packSubmitProofLogic(util.FailStatus, util.FailMsg, "data inconsistency", result), nil
+	// check the existence of proof
+	_, err = l.svcCtx.ProofSenderModel.GetProofByBlockNumber(provedBlockModel.BlockHeight)
+	if err == nil {
+		return packSubmitProofLogic(util.FailStatus, util.FailMsg, "proof of current height exists", result), nil
+	}
+
+	if common.Bytes2Hex(provedBlock.BlockInfo.NewStateRoot[:]) == common.Bytes2Hex(cBlock.NewStateRoot) &&
+		common.Bytes2Hex(provedBlock.BlockInfo.BlockCommitment[:]) == common.Bytes2Hex(cBlock.BlockCommitment) &&
+		provedBlock.BlockInfo.CreatedAt == cBlock.CreatedAt {
+		var row = &proofSender.ProofSender{
+			ProofInfo:   in.Proof,
+			BlockNumber: cBlock.BlockNumber,
+			Status:      proofSender.NotSent,
 		}
+		err = l.svcCtx.ProofSenderModel.CreateProof(row)
+		if err != nil {
+			// rollback the status, it is fine if it fails updating the status for we will check the timeout
+			_ = l.svcCtx.BlockForProofModel.UpdateUnprovedCryptoBlockStatus(provedBlockModel, blockForProof.StatusPublished)
+			logx.Error("CreateProof error")
+			return packSubmitProofLogic(util.FailStatus, util.FailMsg, err.Error(), result), nil
+		}
+		logx.Infof("Block %d CreateProof Successfully!", cBlock.BlockNumber)
 	} else {
-		logx.Error("get provedBlock error, provedBlock is nil")
-		return packSubmitProofLogic(util.FailStatus, util.FailMsg, "get provedBlock error", result), nil
+		logx.Error("data inconsistency error")
+		return packSubmitProofLogic(util.FailStatus, util.FailMsg, "data inconsistency", result), nil
 	}
 
 	return packSubmitProofLogic(util.SuccessStatus, util.SuccessMsg, util.NilErrorString, result), nil
