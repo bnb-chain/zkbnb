@@ -114,3 +114,14 @@ func FeeToPackedFeeBytes(a *big.Int) (res []byte, err error) {
 	}
 	return Uint16ToBytes(uint16(packedFee)), nil
 }
+
+func FromHex(s string) ([]byte, error) {
+	if len(s) >= 2 && s[0] == '0' && (s[1] == 'x' || s[1] == 'X') {
+		s = s[2:]
+	}
+
+	if len(s)%2 == 1 {
+		s = "0" + s
+	}
+	return hex.DecodeString(s)
+}
