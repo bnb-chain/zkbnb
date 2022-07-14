@@ -106,7 +106,7 @@ type (
 
 	Block struct {
 		gorm.Model
-		BlockSize                       uint16
+		BlockSize uint16
 		// pubdata
 		BlockCommitment                 string
 		BlockHeight                     int64 `gorm:"uniqueIndex"`
@@ -316,7 +316,12 @@ func (m *defaultBlockModel) GetBlocksBetween(start int64, end int64) (blocks []*
 			return nil, err
 		}
 		for _, txInfo := range block.Txs {
-			err = m.DB.Model(&txInfo).Association(txDetailsForeignKeyColumn).Find(&txInfo.TxDetails)
+			var tmpTxDetails []*tx.TxDetail
+			err = m.DB.Model(&txInfo).Association(txDetailsForeignKeyColumn).Find(&tmpTxDetails)
+			txInfo.TxDetails = make([]*tx.TxDetail, len(tmpTxDetails))
+			for i := 0; i < len(tmpTxDetails); i++ {
+				txInfo.TxDetails[tmpTxDetails[i].Order] = tmpTxDetails[i]
+			}
 			if err != nil {
 				logx.Error("[block.GetBlocksList] Get Associate Tx details Error")
 				return nil, err
