@@ -22,3 +22,4 @@ LogConf:
   Mode: console
   Path: ./log/appService
   StackCooldownMillis: 500
+  Level: error

@@ -11,8 +11,11 @@ RUN curl -sSL https://sdk.cloud.google.com | bash
 ENV PATH $PATH:/root/google-cloud-sdk/bin
 
 WORKDIR /app
-RUN gsutil cp gs://zecrey_key/zecrey-legend.pk zecrey-legend.pk
-RUN gsutil cp gs://zecrey_key/zecrey-legend.vk zecrey-legend.vk
+RUN gsutil cp gs://zecrey_key/zecrey-legend.pk zecrey-legend1.pk
+RUN gsutil cp gs://zecrey_key/zecrey-legend.vk zecrey-legend1.vk
+
+RUN gsutil cp gs://zecrey_key/zecrey-legend.pk zecrey-legend10.pk
+RUN gsutil cp gs://zecrey_key/zecrey-legend.vk zecrey-legend10.vk
 
 FROM alpine:3.4
 
@@ -23,7 +26,10 @@ ENV TZ Asia/Shanghai
 WORKDIR /app
 COPY bin/proverclient /app/proverclient
 COPY configyaml /app/etc
-COPY --from=builder /app/zecrey-legend.pk zecrey-legend.pk
-COPY --from=builder /app/zecrey-legend.vk zecrey-legend.vk
+COPY --from=builder /app/zecrey-legend1.pk zecrey-legend1.pk
+COPY --from=builder /app/zecrey-legend1.vk zecrey-legend1.vk
+
+COPY --from=builder /app/zecrey-legend10.pk zecrey-legend10.pk
+COPY --from=builder /app/zecrey-legend10.vk zecrey-legend10.vk
 
 CMD ["./proverclient", "-f", "etc/proverclient.yaml"]
