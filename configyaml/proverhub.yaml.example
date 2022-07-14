@@ -14,4 +14,5 @@ CacheRedis:
     Type: node
 
 KeyPath:
-  VerifyingKeyPath: /app/zecrey-legend.vk
+  VerifyingKeyPath: [/app/zecrey-legend1.vk,/app/zecrey-legend10.vk]
+  KeyTxCounts:    [1, 10]
