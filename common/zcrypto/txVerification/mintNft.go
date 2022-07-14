@@ -24,6 +24,7 @@ import (
 	"github.com/zecrey-labs/zecrey-crypto/wasm/zecrey-legend/legendTxTypes"
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
+	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
 	"log"
 	"math/big"
@@ -33,6 +34,11 @@ func VerifyMintNftTxInfo(
 	accountInfoMap map[int64]*AccountInfo,
 	txInfo *MintNftTxInfo,
 ) (txDetails []*MempoolTxDetail, err error) {
+	realNftContentHash, err := util.FromHex(txInfo.NftContentHash)
+	if err != nil || len(realNftContentHash) != 32 {
+		logx.Errorf("[VerifyMintNftTxInfo] invalid NftContentHash")
+		return nil, errors.New("[VerifyMintNftTxInfo] invalid NftContentHash")
+	}
 	// verify params
 	if accountInfoMap[txInfo.CreatorAccountIndex] == nil ||
 		accountInfoMap[txInfo.ToAccountIndex] == nil ||
