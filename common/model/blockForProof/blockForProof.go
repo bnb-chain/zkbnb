@@ -18,6 +18,7 @@
 package blockForProof
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -37,7 +38,7 @@ type (
 		GetUnprovedCryptoBlockByBlockNumber(height int64) (block *BlockForProof, err error)
 		UpdateUnprovedCryptoBlockStatus(block *BlockForProof, status int64) error
 		GetUnprovedCryptoBlockByMode(mode int64) (block *BlockForProof, err error)
-		CreateUnprovedCryptoBlockIfNotExists(block *BlockForProof) error
+		CreateConsecutiveUnprovedCryptoBlock(block *BlockForProof) error
 	}
 
 	defaultBlockForProofModel struct {
@@ -136,19 +137,18 @@ func (m *defaultBlockForProofModel) GetUnprovedCryptoBlockByBlockNumber(height i
 	return block, nil
 }
 
-func (m *defaultBlockForProofModel) CreateUnprovedCryptoBlockIfNotExists(block *BlockForProof) error {
-	_, err := m.GetUnprovedCryptoBlockByBlockNumber(block.BlockHeight)
-	if err == nil {
-		logx.Infof("[CreateUnprovedCryptoBlockIfNotExists] block exist", err.Error())
-		return nil
+func (m *defaultBlockForProofModel) CreateConsecutiveUnprovedCryptoBlock(block *BlockForProof) error {
+	if block.BlockHeight > 1 {
+		_, err := m.GetUnprovedCryptoBlockByBlockNumber(block.BlockHeight - 1)
+		if err != nil {
+			logx.Infof("[CreateConsecutiveUnprovedCryptoBlock] block exist", err.Error())
+			return fmt.Errorf("previous block does not exist")
+		}
 	}
-	if err != ErrNotFound {
-		logx.Infof("[CreateUnprovedCryptoBlockIfNotExists] get block error, height=%d, err=%s", block.BlockHeight, err.Error())
-		return err
-	}
+
 	dbTx := m.DB.Table(m.table).Create(block)
 	if dbTx.Error != nil {
-		logx.Errorf("[CreateUnprovedCryptoBlockIfNotExists] create block error: %s", dbTx.Error.Error())
+		logx.Errorf("[CreateConsecutiveUnprovedCryptoBlock] create block error: %s", dbTx.Error.Error())
 		return dbTx.Error
 	}
 	return nil
