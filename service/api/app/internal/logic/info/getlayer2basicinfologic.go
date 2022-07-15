@@ -38,6 +38,7 @@ func NewGetLayer2BasicInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 var (
 	contractAddressesNames = []string{
 		"ZecreyLegendContract",
+		"ZnsPriceOracle",
 	}
 )
 
