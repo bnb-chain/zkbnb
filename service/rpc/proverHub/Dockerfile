@@ -18,6 +18,12 @@ COPY configyaml /app/etc
 
 RUN apk --no-cache add ca-certificates openssl libstdc++ && update-ca-certificates
 
+RUN apk update --no-cache && apk add --no-cache tzdata python3 curl which bash
+
+RUN curl -sSL https://sdk.cloud.google.com | bash
+
+ENV PATH $PATH:/root/google-cloud-sdk/bin
+
 WORKDIR /app
 RUN gsutil cp gs://zecrey_key/zecrey-legend1.vk zecrey-legend1.vk
 RUN gsutil cp gs://zecrey_key/zecrey-legend10.vk zecrey-legend10.vk
