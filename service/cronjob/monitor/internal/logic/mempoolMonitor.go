@@ -390,6 +390,7 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 			}
 			// user info
 			accountOrder := int64(0)
+			order := int64(0)
 			emptyDeltaAsset := &commonAsset.AccountAsset{
 				AssetId:                  0,
 				Balance:                  big.NewInt(0),
@@ -403,7 +404,9 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 				AccountName:  accountInfo.AccountName,
 				BalanceDelta: emptyDeltaAsset.String(),
 				AccountOrder: accountOrder,
+				Order:        order,
 			})
+			order++
 			// nft info
 			mempoolTxDetails = append(mempoolTxDetails, &mempool.MempoolTxDetail{
 				AssetId:      txInfo.NftIndex,
@@ -412,6 +415,7 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 				AccountName:  accountInfo.AccountName,
 				BalanceDelta: nftInfo.String(),
 				AccountOrder: commonConstant.NilAccountOrder,
+				Order:        order,
 			})
 			// serialize oTx info
 			txInfoBytes, err := json.Marshal(txInfo)
