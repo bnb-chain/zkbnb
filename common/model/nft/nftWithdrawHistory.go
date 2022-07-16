@@ -85,7 +85,7 @@ func (m *defaultL2NftWithdrawHistoryModel) DropL2NftWithdrawHistoryTable() error
 func (m *defaultL2NftWithdrawHistoryModel) GetNftAsset(nftIndex int64) (nftAsset *L2NftWithdrawHistory, err error) {
 	dbTx := m.DB.Table(m.table).Where("nft_index = ?", nftIndex).Find(&nftAsset)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetNftAsset] unable to get nft asset: %s", err.Error())
+		logx.Errorf("[GetNftAsset] unable to get nft asset: %s", dbTx.Error.Error())
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[GetNftAsset] no such info")
