@@ -20,7 +20,7 @@
 
 **/.DS_Store
 
-**/*.yaml
+**/etc/*.yaml
 
 ***/types/types.go
 
