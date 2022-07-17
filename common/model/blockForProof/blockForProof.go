@@ -93,7 +93,7 @@ func (m *defaultBlockForProofModel) GetLatestUnprovedBlockHeight() (blockNumber 
 	var row *BlockForProof
 	dbTx := m.DB.Table(m.table).Order("block_height desc").Limit(1).Find(&row)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetLatestUnprovedBlockHeight] unable to get latest unproved block: %s", err.Error())
+		logx.Errorf("[GetLatestUnprovedBlockHeight] unable to get latest unproved block: %s", dbTx.Error.Error())
 		return 0, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		return 0, ErrNotFound
@@ -106,7 +106,7 @@ func (m *defaultBlockForProofModel) GetUnprovedCryptoBlockByMode(mode int64) (bl
 	case util.COO_MODE:
 		dbTx := m.DB.Table(m.table).Where("status = ?", StatusPublished).Order("block_height asc").Limit(1).Find(&block)
 		if dbTx.Error != nil {
-			logx.Errorf("[GetUnprovedCryptoBlockByMode] unable to get unproved block: %s", err.Error())
+			logx.Errorf("[GetUnprovedCryptoBlockByMode] unable to get unproved block: %s", dbTx.Error.Error())
 			return nil, dbTx.Error
 		} else if dbTx.RowsAffected == 0 {
 			return nil, ErrNotFound
@@ -115,7 +115,7 @@ func (m *defaultBlockForProofModel) GetUnprovedCryptoBlockByMode(mode int64) (bl
 	case util.COM_MODE:
 		dbTx := m.DB.Table(m.table).Where("status <= ?", StatusReceived).Order("block_height asc").Limit(1).Find(&block)
 		if dbTx.Error != nil {
-			logx.Errorf("[GetUnprovedCryptoBlockByMode] unable to get unproved block: %s", err.Error())
+			logx.Errorf("[GetUnprovedCryptoBlockByMode] unable to get unproved block: %s", dbTx.Error.Error())
 			return nil, dbTx.Error
 		} else if dbTx.RowsAffected == 0 {
 			return nil, ErrNotFound
@@ -129,7 +129,7 @@ func (m *defaultBlockForProofModel) GetUnprovedCryptoBlockByMode(mode int64) (bl
 func (m *defaultBlockForProofModel) GetUnprovedCryptoBlockByBlockNumber(height int64) (block *BlockForProof, err error) {
 	dbTx := m.DB.Table(m.table).Where("block_height = ?", height).Limit(1).Find(&block)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetUnprovedCryptoBlockByBlockNumber] unable to get unproved block: %s", err.Error())
+		logx.Errorf("[GetUnprovedCryptoBlockByBlockNumber] unable to get unproved block: %s", dbTx.Error.Error())
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		return nil, ErrNotFound

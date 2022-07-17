@@ -4,8 +4,8 @@
 # ./build.sh <TAG_VERSION> <REPO_PATH>
 
 api="app"
-rpc="globalRPC proverHub"
-cronjob="monitor committer sender proverClient"
+rpc="globalRPC"
+cronjob="monitor committer sender prover witnessGenerator"
 
 # pull newest code
 cd $2

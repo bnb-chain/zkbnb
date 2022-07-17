@@ -21,15 +21,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
+
+	"github.com/zeromicro/go-zero/core/stores/builder"
+
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/blockForCommit"
 	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
-	"github.com/zeromicro/go-zero/core/stores/builder"
-	"strconv"
-	"strings"
 
 	"github.com/zeromicro/go-zero/core/stores/redis"
 
@@ -783,7 +785,7 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 		if oBlock != nil {
 			dbTx := tx.Table(m.table).Create(oBlock)
 			if dbTx.Error != nil {
-				logx.Errorf("[CreateBlockForCommitter] unable to create block: %s", err.Error())
+				logx.Errorf("[CreateBlockForCommitter] unable to create block: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
@@ -800,7 +802,7 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 			// create block for commit
 			dbTx := tx.Table(blockForCommit.BlockForCommitTableName).Create(oBlockForCommit)
 			if dbTx.Error != nil {
-				logx.Errorf("[CreateBlockForCommitter] unable to create block for commit: %s", err.Error())
+				logx.Errorf("[CreateBlockForCommitter] unable to create block for commit: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
@@ -831,7 +833,7 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 			for _, detail := range pendingDeleteMempoolTx.MempoolDetails {
 				dbTx := tx.Table(mempool.DetailTableName).Where("id = ?", detail.ID).Delete(&detail)
 				if dbTx.Error != nil {
-					logx.Errorf("[CreateBlockForCommitter] %s", dbTx.Error)
+					logx.Errorf("[CreateBlockForCommitter] %s", dbTx.Error.Error())
 					return dbTx.Error
 				}
 				if dbTx.RowsAffected == 0 {
@@ -841,7 +843,7 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 			}
 			dbTx := tx.Table(mempool.MempoolTableName).Where("id = ?", pendingDeleteMempoolTx.ID).Delete(&pendingDeleteMempoolTx)
 			if dbTx.Error != nil {
-				logx.Errorf("[CreateBlockForCommitter] %s", dbTx.Error)
+				logx.Errorf("[CreateBlockForCommitter] %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
@@ -945,7 +947,7 @@ func (m *defaultBlockModel) GetBlocksForProverBetween(start, end int64) (blocks 
 		Order("block_height").
 		Find(&blocks)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetBlocksForProverBetween] unable to get block between: %s", err.Error())
+		logx.Errorf("[GetBlocksForProverBetween] unable to get block between: %s", dbTx.Error.Error())
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		return nil, ErrNotFound

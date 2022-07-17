@@ -20,17 +20,6 @@ spec:
   selector:
     app: globalrpc
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: proverhub-svc
-  namespace: default
-spec:
-  ports:
-  - port: 38000
-  selector:
-    app: proverhub
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -146,8 +135,6 @@ spec:
           path: /usr/share/zoneinfo/Asia/Shanghai
         name: timezone
 ---
-
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -250,29 +237,74 @@ spec:
       - hostPath:
           path: /usr/share/zoneinfo/Asia/Shanghai
         name: timezone
-
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: proverclient
-  name: proverclient
+    app: witnessgenerator
+  name: witnessgenerator
+  namespace: default
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: witnessgenerator
+  template:
+    metadata:
+      labels:
+        app: witnessgenerator
+    spec:
+      containers:
+        - image: us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/witnessgenerator:$TAG_NAME
+          imagePullPolicy: Always
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  - sleep 5
+          name: witnessgenerator
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+            requests:
+              cpu: 200m
+              memory: 256Mi
+          volumeMounts:
+            - mountPath: /etc/localtime
+              name: timezone
+      volumes:
+        - hostPath:
+            path: /usr/share/zoneinfo/Asia/Shanghai
+          name: timezone
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: prover
+  name: prover
   namespace: default
 spec:
   replicas: 3
   revisionHistoryLimit: 5
   selector:
     matchLabels:
-      app: proverclient
+      app: prover
   template:
     metadata:
       labels:
-        app: proverclient
+        app: prover
     spec:
       serviceAccountName: find-endpoints
       containers:
-      - image: us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/proverclient:$TAG_NAME
+      - image: us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/prover:$TAG_NAME
         imagePullPolicy: Always
         lifecycle:
           preStop:
@@ -281,7 +313,7 @@ spec:
               - sh
               - -c
               - sleep 5
-        name: proverclient
+        name: prover
         resources:
           limits:
             cpu: 2000m
@@ -289,73 +321,6 @@ spec:
           requests:
             cpu: 500m
             memory: 2048Mi
-        volumeMounts:
-        - mountPath: /etc/localtime
-          name: timezone
-      initContainers:
-      - command:
-        - sh
-        - -c
-        - sleep 120 && until nslookup proverhub-svc; do echo waiting for proverhub;
-          sleep 2; done;
-        image: busybox
-        name: init-proverhub
-      volumes:
-      - hostPath:
-          path: /usr/share/zoneinfo/Asia/Shanghai
-        name: timezone
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    app: proverhub
-  name: proverhub
-  namespace: default
-spec:
-  replicas: 1
-  strategy:
-    type: Recreate
-  revisionHistoryLimit: 5
-  selector:
-    matchLabels:
-      app: proverhub
-  template:
-    metadata:
-      labels:
-        app: proverhub
-    spec:
-      containers:
-      - image: us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/proverhub:$TAG_NAME
-        imagePullPolicy: Always
-        lifecycle:
-          preStop:
-            exec:
-              command:
-              - sh
-              - -c
-              - sleep 5
-        livenessProbe:
-          initialDelaySeconds: 15
-          periodSeconds: 20
-          tcpSocket:
-            port: 38000
-        name: proverhub
-        ports:
-        - name: metrics
-          containerPort: 38000
-        readinessProbe:
-          initialDelaySeconds: 5
-          periodSeconds: 10
-          tcpSocket:
-            port: 38000
-        resources:
-          limits:
-            cpu: 1000m
-            memory: 1024Mi
-          requests:
-            cpu: 200m
-            memory: 256Mi
         volumeMounts:
         - mountPath: /etc/localtime
           name: timezone
@@ -494,8 +459,8 @@ apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
 metadata:
   labels:
-    app: proverclient-hpa-c
-  name: proverclient-hpa-c
+    app: prover-hpa-c
+  name: prover-hpa-c
   namespace: default
 spec:
   maxReplicas: 5
@@ -508,14 +473,14 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: proverclient
+    name: prover
 ---
 apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
 metadata:
   labels:
-    app: proverclient-hpa-m
-  name: proverclient-hpa-m
+    app: prover-hpa-m
+  name: prover-hpa-m
   namespace: default
 spec:
   maxReplicas: 5
@@ -528,4 +493,4 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: proverclient
+    name: prover

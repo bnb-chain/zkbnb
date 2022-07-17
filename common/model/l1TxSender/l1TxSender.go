@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
@@ -348,7 +349,7 @@ func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 func (m *defaultL1TxSenderModel) GetLatestHandledBlock(txType int64) (txSender *L1TxSender, err error) {
 	dbTx := m.DB.Table(m.table).Where("tx_type = ? AND tx_status = ?", txType, HandledStatus).Order("l2_block_height desc").Find(&txSender)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetLatestHandledBlock] unable to get latest handled block: %s", err.Error())
+		logx.Errorf("[GetLatestHandledBlock] unable to get latest handled block: %s", dbTx.Error.Error())
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		return nil, ErrNotFound
@@ -359,7 +360,7 @@ func (m *defaultL1TxSenderModel) GetLatestHandledBlock(txType int64) (txSender *
 func (m *defaultL1TxSenderModel) GetLatestPendingBlock(txType int64) (txSender *L1TxSender, err error) {
 	dbTx := m.DB.Table(m.table).Where("tx_type = ? AND tx_status = ?", txType, PendingStatus).Find(&txSender)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetLatestHandledBlock] unable to get latest pending block: %s", err.Error())
+		logx.Errorf("[GetLatestHandledBlock] unable to get latest pending block: %s", dbTx.Error.Error())
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		return nil, ErrNotFound

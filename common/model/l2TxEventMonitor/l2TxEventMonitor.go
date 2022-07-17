@@ -19,16 +19,17 @@ package l2TxEventMonitor
 
 import (
 	"errors"
-	"fmt"
-	"github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
-	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
-	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
+
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
+
+	"github.com/zecrey-labs/zecrey-legend/common/model/account"
+	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
+	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 )
 
 type (
@@ -117,13 +118,11 @@ func (m *defaultL2TxEventMonitorModel) DropL2TxEventMonitorTable() error {
 func (m *defaultL2TxEventMonitorModel) CreateL2TxEventMonitor(tx *L2TxEventMonitor) (bool, error) {
 	dbTx := m.DB.Table(m.table).Create(tx)
 	if dbTx.Error != nil {
-		err := fmt.Sprintf("[l2TxEventMonitor.CreateL2TxEventMonitor] %s", dbTx.Error)
-		logx.Error(err)
+		logx.Errorf("[l2TxEventMonitor.CreateL2TxEventMonitor] %s", dbTx.Error.Error())
 		return false, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		ErrInvalidL2TxEventMonitor := errors.New("invalid l2TxEventMonitor")
-		err := fmt.Sprintf("[l2TxEventMonitor.CreateL2TxEventMonitor] %s", ErrInvalidL2TxEventMonitor)
-		logx.Error(err)
+		logx.Errorf("[l2TxEventMonitor.CreateL2TxEventMonitor] %s", ErrInvalidL2TxEventMonitor.Error())
 		return false, ErrInvalidL2TxEventMonitor
 	}
 	return true, nil
@@ -138,8 +137,7 @@ func (m *defaultL2TxEventMonitorModel) CreateL2TxEventMonitor(tx *L2TxEventMonit
 func (m *defaultL2TxEventMonitorModel) CreateL2TxEventMonitorsInBatches(l2TxEventMonitors []*L2TxEventMonitor) (rowsAffected int64, err error) {
 	dbTx := m.DB.Table(m.table).CreateInBatches(l2TxEventMonitors, len(l2TxEventMonitors))
 	if dbTx.Error != nil {
-		err := fmt.Sprintf("[l2TxEventMonitor.CreateL1AssetsMonitorInBatches] %s", dbTx.Error)
-		logx.Error(err)
+		logx.Errorf("[l2TxEventMonitor.CreateL1AssetsMonitorInBatches] %s", dbTx.Error.Error())
 		return 0, dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
@@ -154,12 +152,10 @@ func (m *defaultL2TxEventMonitorModel) CreateL2TxEventMonitorsInBatches(l2TxEven
 func (m *defaultL2TxEventMonitorModel) GetL2TxEventMonitors() (txs []*L2TxEventMonitor, err error) {
 	dbTx := m.DB.Table(m.table).Find(&txs).Order("l1_block_height")
 	if dbTx.Error != nil {
-		err := fmt.Sprintf("[l2TxEventMonitor.GetL2TxEventMonitors] %s", dbTx.Error)
-		logx.Error(err)
+		logx.Errorf("[l2TxEventMonitor.GetL2TxEventMonitors] %s", dbTx.Error.Error())
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l2TxEventMonitor.GetL2TxEventMonitors] %s", ErrNotFound)
-		logx.Error(err)
+		logx.Error("[l2TxEventMonitor.GetL2TxEventMonitors] %s", ErrNotFound.Error())
 		return nil, ErrNotFound
 	}
 	return txs, dbTx.Error
@@ -174,12 +170,10 @@ func (m *defaultL2TxEventMonitorModel) GetL2TxEventMonitorsByStatus(status int) 
 	// todo order id
 	dbTx := m.DB.Table(m.table).Where("status = ?", status).Order("request_id").Find(&txs)
 	if dbTx.Error != nil {
-		err := fmt.Sprintf("[l2TxEventMonitor.GetL2TxEventMonitorsByStatus] %s", dbTx.Error)
-		logx.Error(err)
+		logx.Errorf("[l2TxEventMonitor.GetL2TxEventMonitorsByStatus] %s", dbTx.Error.Error())
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l2TxEventMonitor.GetL2TxEventMonitorsByStatus] %s", ErrNotFound)
-		logx.Info(err)
+		logx.Infof("[l2TxEventMonitor.GetL2TxEventMonitorsByStatus] %s", ErrNotFound.Error())
 		return nil, ErrNotFound
 	}
 	return txs, nil
@@ -194,12 +188,10 @@ func (m *defaultL2TxEventMonitorModel) GetL2TxEventMonitorsBySenderAddress(sende
 	// todo order id
 	dbTx := m.DB.Table(m.table).Where("sender_address = ?", senderAddr).Find(&txs).Order("l1_block_height")
 	if dbTx.Error != nil {
-		err := fmt.Sprintf("[l2TxEventMonitor.GetL2TxEventMonitorsBySenderAddress] %s", dbTx.Error)
-		logx.Error(err)
+		logx.Errorf("[l2TxEventMonitor.GetL2TxEventMonitorsBySenderAddress] %s", dbTx.Error.Error())
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l2TxEventMonitor.GetL2TxEventMonitorsBySenderAddress] %s", ErrNotFound)
-		logx.Error(err)
+		logx.Errorf("[l2TxEventMonitor.GetL2TxEventMonitorsBySenderAddress] %s", ErrNotFound.Error())
 		return nil, ErrNotFound
 	}
 	return txs, nil
@@ -214,12 +206,10 @@ func (m *defaultL2TxEventMonitorModel) GetL2TxEventMonitorsByTxType(txType uint8
 	// todo order id
 	dbTx := m.DB.Table(m.table).Where("tx_type = ?", txType).Find(&txs).Order("l1_block_height")
 	if dbTx.Error != nil {
-		err := fmt.Sprintf("[l2TxEventMonitor.GetL2TxEventMonitorsByTxType] %s", dbTx.Error)
-		logx.Error(err)
+		logx.Errorf("[l2TxEventMonitor.GetL2TxEventMonitorsByTxType] %s", dbTx.Error.Error())
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l2TxEventMonitor.GetL2TxEventMonitorsByTxType] %s", ErrNotFound)
-		logx.Error(err)
+		logx.Errorf("[l2TxEventMonitor.GetL2TxEventMonitorsByTxType] %s", ErrNotFound.Error())
 		return nil, ErrNotFound
 	}
 	return txs, nil
@@ -236,7 +226,7 @@ func (m *defaultL2TxEventMonitorModel) CreateMempoolAndActiveAccount(
 		func(tx *gorm.DB) error { //transact
 			dbTx := tx.Table(account.AccountTableName).CreateInBatches(pendingNewAccount, len(pendingNewAccount))
 			if dbTx.Error != nil {
-				logx.Errorf("[CreateMempoolAndActiveAccount] unable to create pending new account: %s", err.Error())
+				logx.Errorf("[CreateMempoolAndActiveAccount] unable to create pending new account: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected != int64(len(pendingNewAccount)) {
@@ -245,7 +235,7 @@ func (m *defaultL2TxEventMonitorModel) CreateMempoolAndActiveAccount(
 			}
 			dbTx = tx.Table(mempool.MempoolTableName).CreateInBatches(pendingNewMempoolTxs, len(pendingNewMempoolTxs))
 			if dbTx.Error != nil {
-				logx.Errorf("[CreateMempoolAndActiveAccount] unable to create pending new mempool txs: %s", err.Error())
+				logx.Errorf("[CreateMempoolAndActiveAccount] unable to create pending new mempool txs: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected != int64(len(pendingNewMempoolTxs)) {
@@ -255,7 +245,7 @@ func (m *defaultL2TxEventMonitorModel) CreateMempoolAndActiveAccount(
 			if len(pendingNewLiquidityInfos) != 0 {
 				dbTx = tx.Table(liquidity.LiquidityTable).CreateInBatches(pendingNewLiquidityInfos, len(pendingNewLiquidityInfos))
 				if dbTx.Error != nil {
-					logx.Errorf("[CreateMempoolAndActiveAccount] unable to create pending new liquidity infos: %s", err.Error())
+					logx.Errorf("[CreateMempoolAndActiveAccount] unable to create pending new liquidity infos: %s", dbTx.Error.Error())
 					return dbTx.Error
 				}
 				if dbTx.RowsAffected != int64(len(pendingNewLiquidityInfos)) {
@@ -266,7 +256,7 @@ func (m *defaultL2TxEventMonitorModel) CreateMempoolAndActiveAccount(
 			if len(pendingNewNfts) != 0 {
 				dbTx = tx.Table(nft.L2NftTableName).CreateInBatches(pendingNewNfts, len(pendingNewNfts))
 				if dbTx.Error != nil {
-					logx.Errorf("[CreateMempoolAndActiveAccount] unable to create pending new nft infos: %s", err.Error())
+					logx.Errorf("[CreateMempoolAndActiveAccount] unable to create pending new nft infos: %s", dbTx.Error.Error())
 					return dbTx.Error
 				}
 				if dbTx.RowsAffected != int64(len(pendingNewNfts)) {
@@ -277,7 +267,7 @@ func (m *defaultL2TxEventMonitorModel) CreateMempoolAndActiveAccount(
 			for _, pendingUpdateL2Event := range pendingUpdateL2Events {
 				dbTx = tx.Table(m.table).Where("id = ?", pendingUpdateL2Event.ID).Select("*").Updates(&pendingUpdateL2Event)
 				if dbTx.Error != nil {
-					logx.Errorf("[CreateMempoolAndActiveAccount] unable to update l2 tx event: %s", err.Error())
+					logx.Errorf("[CreateMempoolAndActiveAccount] unable to update l2 tx event: %s", dbTx.Error.Error())
 					return dbTx.Error
 				}
 				if dbTx.RowsAffected == 0 {
@@ -294,7 +284,7 @@ func (m *defaultL2TxEventMonitorModel) GetLastHandledRequestId() (requestId int6
 	var event *L2TxEventMonitor
 	dbTx := m.DB.Table(m.table).Where("status = ?", HandledStatus).Order("request_id desc").Find(&event)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetLastHandledRequestId] unable to get last handled request id: %s", err.Error())
+		logx.Errorf("[GetLastHandledRequestId] unable to get last handled request id: %s", dbTx.Error.Error())
 		return -1, dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {

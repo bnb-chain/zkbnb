@@ -87,7 +87,7 @@ func (m *defaultBlockForCommitModel) DropBlockForCommitTable() error {
 func (m *defaultBlockForCommitModel) GetBlockForCommitByHeight(height int64) (blockForCommit *BlockForCommit, err error) {
 	dbTx := m.DB.Table(m.table).Where("block_height = ?", height).Find(&blockForCommit)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetBlockForCommitBetween] unable to get block for commit by height: %s", err.Error())
+		logx.Errorf("[GetBlockForCommitBetween] unable to get block for commit by height: %s", dbTx.Error.Error())
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		return nil, ErrNotFound
@@ -98,7 +98,7 @@ func (m *defaultBlockForCommitModel) GetBlockForCommitByHeight(height int64) (bl
 func (m *defaultBlockForCommitModel) GetBlockForCommitBetween(start, end int64) (blocksForCommit []*BlockForCommit, err error) {
 	dbTx := m.DB.Table(m.table).Where("block_height >= ? AND block_height <= ?", start, end).Find(&blocksForCommit)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetBlockForCommitBetween] unable to get block for commit between: %s", err.Error())
+		logx.Errorf("[GetBlockForCommitBetween] unable to get block for commit between: %s", dbTx.Error.Error())
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		return nil, ErrNotFound

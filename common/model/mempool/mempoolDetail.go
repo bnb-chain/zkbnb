@@ -115,7 +115,7 @@ func (m *defaultMempoolDetailModel) GetLatestMempoolDetail(accountIndex int64, a
 		"account_index = ? and asset_id = ? and asset_type = ?", accountIndex, assetId, assetType).
 		Order("created_at desc, id desc").Limit(1).Find(&mempoolTxDetail)
 	if dbTx.Error != nil {
-		logx.Errorf("[mempoolDetail.GetLatestMempoolDetail] %s", dbTx.Error)
+		logx.Errorf("[mempoolDetail.GetLatestMempoolDetail] %s", dbTx.Error.Error())
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[mempoolDetail.GetLatestMempoolDetail] Get MempoolTxDetail Error")
@@ -135,7 +135,7 @@ func (m *defaultMempoolDetailModel) GetAccountAssetsMempoolDetails(accountIndex 
 	dbTx = m.DB.Table(m.table).Where("account_index = ? and asset_type = ? and chain_id != -1", accountIndex, assetType).
 		Order("created_at, id").Find(&mempoolTxDetails)
 	if dbTx.Error != nil {
-		logx.Error("[mempoolDetail.GetAccountAssetsMempoolDetails] %s", dbTx.Error)
+		logx.Error("[mempoolDetail.GetAccountAssetsMempoolDetails] %s", dbTx.Error.Error())
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[mempoolDetail.GetAccountAssetsMempoolDetails] Get MempoolTxDetails Error")
@@ -155,7 +155,7 @@ func (m *defaultMempoolDetailModel) GetAccountAssetMempoolDetails(accountIndex i
 	dbTx = m.DB.Table(m.table).Where("account_index = ? and asset_id = ? and asset_type = ? ", accountIndex, assetId, assetType).
 		Order("created_at, id").Find(&mempoolTxDetails)
 	if dbTx.Error != nil {
-		logx.Errorf("[mempoolDetail.GetAccountAssetMempoolDetails] %s", dbTx.Error)
+		logx.Errorf("[mempoolDetail.GetAccountAssetMempoolDetails] %s", dbTx.Error.Error())
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[mempoolDetail.GetAccountAssetMempoolDetails] Get MempoolTxDetails Error")
@@ -172,7 +172,7 @@ func (m *defaultMempoolDetailModel) GetLatestAccountAssetMempoolDetail(
 		accountIndex, assetId, assetType).
 		Order("created_at desc, id desc").Find(&mempoolTxDetail)
 	if dbTx.Error != nil {
-		logx.Errorf("[mempoolDetail.GetAccountAssetMempoolDetails] %s", dbTx.Error)
+		logx.Errorf("[mempoolDetail.GetAccountAssetMempoolDetails] %s", dbTx.Error.Error())
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[mempoolDetail.GetAccountAssetMempoolDetails] no related mempool tx detail")
@@ -186,7 +186,7 @@ func (m *defaultMempoolDetailModel) GetAccountMempoolDetails(accountIndex int64)
 	dbTx = m.DB.Table(m.table).Where("account_index = ?", accountIndex).
 		Order("created_at").Find(&mempoolTxDetails)
 	if dbTx.Error != nil {
-		logx.Errorf("[mempoolDetail.GetAccountMempoolDetails] %s", dbTx.Error)
+		logx.Errorf("[mempoolDetail.GetAccountMempoolDetails] %s", dbTx.Error.Error())
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[mempoolDetail.GetAccountMempoolDetails] no related mempool tx details")
@@ -200,7 +200,7 @@ func (m *defaultMempoolDetailModel) GetMempoolTxDetailsByAssetType(assetType int
 	dbTx = m.DB.Table(m.table).Where("asset_type = ?", assetType).
 		Order("created_at").Find(&mempoolTxDetails)
 	if dbTx.Error != nil {
-		logx.Errorf("[mempoolDetail.GetAccountMempoolDetails] %s", dbTx.Error)
+		logx.Errorf("[mempoolDetail.GetAccountMempoolDetails] %s", dbTx.Error.Error())
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[mempoolDetail.GetAccountMempoolDetails] no related mempool tx details")
@@ -218,7 +218,7 @@ func (m *defaultMempoolDetailModel) GetMempoolTxDetailsByAssetIdAndAssetType(
 	dbTx = m.DB.Table(m.table).Where("asset_id = ? AND asset_type = ?", assetId, assetType).
 		Order("created_at").Find(&mempoolTxDetails)
 	if dbTx.Error != nil {
-		logx.Errorf("[mempoolDetail.GetAccountMempoolDetails] %s", dbTx.Error)
+		logx.Errorf("[mempoolDetail.GetAccountMempoolDetails] %s", dbTx.Error.Error())
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[mempoolDetail.GetAccountMempoolDetails] no related mempool tx details")
@@ -231,7 +231,7 @@ func (m *defaultMempoolDetailModel) GetMempoolTxDetailsByAccountIndex(accountInd
 	var dbTx *gorm.DB
 	dbTx = m.DB.Table(m.table).Where("account_index = ?", accountIndex).Find(&mempoolTxDetails)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetMempoolTxDetailsByAccountIndex] unable to get by account index: %s", err.Error())
+		logx.Errorf("[GetMempoolTxDetailsByAccountIndex] unable to get by account index: %s", dbTx.Error.Error())
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		return nil, ErrNotFound
