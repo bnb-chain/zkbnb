@@ -240,7 +240,7 @@ func VerifyAtomicMatchTxInfo(
 	})
 	// buyer offer
 	buyerOfferIndex := txInfo.BuyOffer.OfferId % OfferPerAsset
-	oBuyerOffer := accountInfoMap[txInfo.AccountIndex].AssetInfo[buyerOfferAssetId].OfferCanceledOrFinalized
+	oBuyerOffer := accountInfoMap[txInfo.BuyOffer.AccountIndex].AssetInfo[buyerOfferAssetId].OfferCanceledOrFinalized
 	nBuyerOffer := new(big.Int).SetBit(oBuyerOffer, int(buyerOfferIndex), 1)
 	order++
 	txDetails = append(txDetails, &MempoolTxDetail{
@@ -291,7 +291,7 @@ func VerifyAtomicMatchTxInfo(
 	})
 	// seller offer
 	sellerOfferIndex := txInfo.SellOffer.OfferId % OfferPerAsset
-	oSellerOffer := accountInfoMap[txInfo.AccountIndex].AssetInfo[sellerOfferAssetId].OfferCanceledOrFinalized
+	oSellerOffer := accountInfoMap[txInfo.SellOffer.AccountIndex].AssetInfo[sellerOfferAssetId].OfferCanceledOrFinalized
 	nSellerOffer := new(big.Int).SetBit(oSellerOffer, int(sellerOfferIndex), 1)
 	order++
 	txDetails = append(txDetails, &MempoolTxDetail{
