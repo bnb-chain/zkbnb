@@ -17,10 +17,21 @@
 package logic
 
 import (
+	"encoding/base64"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/google/uuid"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zeromicro/go-zero/core/logx"
+	"strconv"
 )
+
+func ComputeL1TxTxHash(requestId int64, txHash string) string {
+	hFunc := mimc.NewMiMC()
+	hFunc.Write([]byte(strconv.FormatInt(requestId, 10)))
+	hFunc.Write(common.FromHex(txHash))
+	return base64.StdEncoding.EncodeToString(hFunc.Sum(nil))
+}
 
 func RandomTxHash() string {
 	id, _ := uuid.NewUUID()
