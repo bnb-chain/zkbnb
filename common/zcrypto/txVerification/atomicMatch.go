@@ -241,6 +241,11 @@ func VerifyAtomicMatchTxInfo(
 	// buyer offer
 	buyerOfferIndex := txInfo.BuyOffer.OfferId % OfferPerAsset
 	oBuyerOffer := accountInfoMap[txInfo.BuyOffer.AccountIndex].AssetInfo[buyerOfferAssetId].OfferCanceledOrFinalized
+	// verify whether buyer offer id is valid for use
+	if oBuyerOffer.Bit(int(buyerOfferIndex)) == 1 {
+		log.Printf("account %d offer index %d is already in use.\n", txInfo.BuyOffer.AccountIndex, buyerOfferIndex)
+		return nil, errors.New("[VerifyAtomicMatchTxInfo] invalid buyer offer id")
+	}
 	nBuyerOffer := new(big.Int).SetBit(oBuyerOffer, int(buyerOfferIndex), 1)
 	order++
 	txDetails = append(txDetails, &MempoolTxDetail{
@@ -292,6 +297,11 @@ func VerifyAtomicMatchTxInfo(
 	// seller offer
 	sellerOfferIndex := txInfo.SellOffer.OfferId % OfferPerAsset
 	oSellerOffer := accountInfoMap[txInfo.SellOffer.AccountIndex].AssetInfo[sellerOfferAssetId].OfferCanceledOrFinalized
+	// verify whether buyer offer id is valid for use
+	if oSellerOffer.Bit(int(sellerOfferIndex)) == 1 {
+		log.Printf("account %d offer index %d is already in use.\n", txInfo.SellOffer.AccountIndex, sellerOfferIndex)
+		return nil, errors.New("[VerifyAtomicMatchTxInfo] invalid seller offer id")
+	}
 	nSellerOffer := new(big.Int).SetBit(oSellerOffer, int(sellerOfferIndex), 1)
 	order++
 	txDetails = append(txDetails, &MempoolTxDetail{
