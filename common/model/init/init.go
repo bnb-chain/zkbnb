@@ -18,12 +18,14 @@
 package main
 
 import (
+	"flag"
 	"log"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/zecrey-labs/zecrey-legend/common/sysconfigName"
 	"github.com/zecrey-labs/zecrey-legend/common/tree"
+	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
@@ -44,14 +46,21 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 )
 
+var configFile = flag.String("f", "./contractaddr.yaml", "the config file")
+var svrConf config
+
 const (
-	// network rpc
 	BSC_Test_Network_RPC   = "http://tf-dex-preview-validator-nlb-6fd109ac8b9d390a.elb.ap-northeast-1.amazonaws.com:8545"
 	Local_Test_Network_RPC = "http://127.0.0.1:8545/"
-
-	zecreyLegendProxy = "0x4a5B8869a5A27Cf2d481E4EbeF1343f4E6C19F52" // ZecreyLegendContractAddr
-	governance        = "0x6f73ee7d600285b444E6504416AB9b0B143c1Fe4" // GovernanceContractAddr
 )
+
+func main() {
+	conf.MustLoad(*configFile, &svrConf)
+	log.Println("config:", svrConf)
+
+	dropTables()
+	initTable()
+}
 
 func initSysConfig() []*sysconfig.Sysconfig {
 	return []*sysconfig.Sysconfig{
@@ -75,14 +84,14 @@ func initSysConfig() []*sysconfig.Sysconfig {
 		},
 		{
 			Name:      sysconfigName.ZecreyLegendContract,
-			Value:     zecreyLegendProxy,
+			Value:     svrConf.ZecreyLegendProxy,
 			ValueType: "string",
 			Comment:   "Zecrey contract on BSC",
 		},
 		// Governance Contract
 		{
 			Name:      sysconfigName.GovernanceContract,
-			Value:     governance,
+			Value:     svrConf.Governance,
 			ValueType: "string",
 			Comment:   "Governance contract on BSC",
 		},
@@ -184,7 +193,7 @@ var (
 	nftWithdrawHistoryModel  = nft.NewL2NftWithdrawHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
 )
 
-func DropTables() {
+func dropTables() {
 	assert.Nil(nil, sysconfigModel.DropSysconfigTable())
 	assert.Nil(nil, accountModel.DropAccountTable())
 	assert.Nil(nil, accountHistoryModel.DropAccountHistoryTable())
@@ -212,7 +221,7 @@ func DropTables() {
 	assert.Nil(nil, nftWithdrawHistoryModel.DropL2NftWithdrawHistoryTable())
 }
 
-func InitTable() {
+func initTable() {
 	assert.Nil(nil, sysconfigModel.CreateSysconfigTable())
 	assert.Nil(nil, accountModel.CreateAccountTable())
 	assert.Nil(nil, accountHistoryModel.CreateAccountHistoryTable())
@@ -265,7 +274,16 @@ func InitTable() {
 	}
 }
 
-func main() {
-	DropTables()
-	InitTable()
+type config struct {
+	Governance         string
+	AssetGovernance    string
+	VerifierProxy      string
+	ZnsControllerProxy string
+	ZnsResolverProxy   string
+	ZecreyLegendProxy  string
+	UpgradeGateKeeper  string
+	LEGToken           string
+	REYToken           string
+	ERC721             string
+	ZnsPriceOracle     string
 }
