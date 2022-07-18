@@ -33,7 +33,7 @@ func (l *GetLPValueLogic) GetLPValue(req *types.ReqGetLPValue) (resp *types.Resp
 		logx.Error("[CheckPairIndex] param:%v", req.PairIndex)
 		return nil, errcode.ErrInvalidParam
 	}
-	lpValue, err := l.globalRPC.GetLpValue(req.PairIndex, req.LpAmount)
+	lpValue, err := l.globalRPC.GetLpValue(l.ctx, req.PairIndex, req.LpAmount)
 	if err != nil {
 		logx.Error("[GetLpValue] err:%v", err)
 		return nil, err

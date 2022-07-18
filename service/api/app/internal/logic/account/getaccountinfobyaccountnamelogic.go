@@ -46,7 +46,7 @@ func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *type
 		logx.Errorf("[GetAccountByAccountName] accountName:%v, err:%v", accountName, err)
 		return nil, err
 	}
-	account, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(uint32(info.AccountIndex))
+	account, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(l.ctx, info.AccountIndex)
 	if err != nil {
 		logx.Errorf("[GetLatestAccountInfoByAccountIndex] err:%v", err)
 		return nil, err
