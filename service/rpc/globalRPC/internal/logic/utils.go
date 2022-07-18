@@ -17,8 +17,10 @@
 package logic
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
@@ -44,6 +46,12 @@ func GetTxTypeArray(txType uint) ([]uint8, error) {
 	}
 }
 
+func ComputeL2TxTxHash(txInfo string) string {
+	hFunc := mimc.NewMiMC()
+	hFunc.Write([]byte(txInfo))
+	return base64.StdEncoding.EncodeToString(hFunc.Sum(nil))
+}
+
 func ConstructMempoolTx(
 	txType int64,
 	gasFeeAssetId int64,
@@ -60,9 +68,9 @@ func ConstructMempoolTx(
 	expiredAt int64,
 	txDetails []*mempool.MempoolTxDetail,
 ) (txId string, mempoolTx *mempool.MempoolTx) {
-	txId = util.RandomUUID()
-	return txId, &mempool.MempoolTx{
-		TxHash:         txId,
+	txHash := ComputeL2TxTxHash(txInfo)
+	return txHash, &mempool.MempoolTx{
+		TxHash:         txHash,
 		TxType:         txType,
 		GasFeeAssetId:  gasFeeAssetId,
 		GasFee:         gasFeeAssetAmount,

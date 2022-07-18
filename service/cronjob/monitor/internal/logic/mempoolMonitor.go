@@ -76,6 +76,7 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 			return errors.New("[MonitorMempool] invalid request id")
 		}
 		currentRequestId++
+		txHash := ComputeL1TxTxHash(oTx.RequestId, oTx.L1TxHash)
 		// handle oTx based on oTx type
 		switch oTx.TxType {
 		case TxTypeRegisterZns:
@@ -118,7 +119,7 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 				return err
 			}
 			mempoolTx := &mempool.MempoolTx{
-				TxHash:        RandomTxHash(),
+				TxHash:        txHash,
 				TxType:        int64(txInfo.TxType),
 				GasFeeAssetId: commonConstant.NilAssetId,
 				GasFee:        commonConstant.NilAssetAmountStr,
@@ -185,7 +186,7 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 				return err
 			}
 			mempoolTx := &mempool.MempoolTx{
-				TxHash:         RandomTxHash(),
+				TxHash:         txHash,
 				TxType:         int64(txInfo.TxType),
 				GasFeeAssetId:  commonConstant.NilAssetId,
 				GasFee:         commonConstant.NilAssetAmountStr,
@@ -255,7 +256,7 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 				return err
 			}
 			mempoolTx := &mempool.MempoolTx{
-				TxHash:         RandomTxHash(),
+				TxHash:         txHash,
 				TxType:         int64(txInfo.TxType),
 				GasFeeAssetId:  commonConstant.NilAssetId,
 				GasFee:         commonConstant.NilAssetAmountStr,
@@ -317,7 +318,7 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 				return err
 			}
 			mempoolTx := &mempool.MempoolTx{
-				TxHash:         RandomTxHash(),
+				TxHash:         txHash,
 				TxType:         int64(txInfo.TxType),
 				GasFeeAssetId:  commonConstant.NilAssetId,
 				GasFee:         commonConstant.NilAssetAmountStr,
@@ -424,7 +425,7 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 				return err
 			}
 			mempoolTx := &mempool.MempoolTx{
-				TxHash:         RandomTxHash(),
+				TxHash:         txHash,
 				TxType:         int64(txInfo.TxType),
 				GasFee:         commonConstant.NilAssetAmountStr,
 				GasFeeAssetId:  commonConstant.NilAssetId,
@@ -588,7 +589,7 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 				return err
 			}
 			mempoolTx := &mempool.MempoolTx{
-				TxHash:         RandomTxHash(),
+				TxHash:         txHash,
 				TxType:         int64(txInfo.TxType),
 				GasFee:         commonConstant.NilAssetAmountStr,
 				GasFeeAssetId:  commonConstant.NilAssetId,
@@ -610,6 +611,7 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 			}
 		case TxTypeFullExitNft:
 			pendingNewMempoolTxs, relatedAccountIndex, err = processFullExitNft(ctx,
+				txHash,
 				newAccountInfoMap, newNftInfoMap, oTx, pendingNewMempoolTxs, relatedAccountIndex)
 			if err != nil {
 				return err
@@ -637,7 +639,9 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 	return nil
 }
 
-func processFullExitNft(ctx *svc.ServiceContext, newAccountInfoMap map[string]*account.Account,
+func processFullExitNft(ctx *svc.ServiceContext,
+	txHash string,
+	newAccountInfoMap map[string]*account.Account,
 	newNftInfoMap map[int64]*commonAsset.NftInfo, oTx *l2TxEventMonitor.L2TxEventMonitor, pendingNewMempoolTxs []*mempool.MempoolTx,
 	relatedAccountIndex map[int64]bool) ([]*mempool.MempoolTx, map[int64]bool, error) {
 	// create mempool oTx
@@ -774,7 +778,7 @@ func processFullExitNft(ctx *svc.ServiceContext, newAccountInfoMap map[string]*a
 		return pendingNewMempoolTxs, nil, err
 	}
 	mempoolTx := &mempool.MempoolTx{
-		TxHash:         RandomTxHash(),
+		TxHash:         txHash,
 		TxType:         int64(txInfo.TxType),
 		GasFee:         commonConstant.NilAssetAmountStr,
 		GasFeeAssetId:  commonConstant.NilAssetId,
