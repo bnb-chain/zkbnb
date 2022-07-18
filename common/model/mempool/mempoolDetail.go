@@ -53,7 +53,7 @@ type (
 
 	MempoolTxDetail struct {
 		gorm.Model
-		TxId         int64 `gorm:"index"`
+		TxId         int64 `json:"tx_id" gorm:"index;not null"`
 		AssetId      int64
 		AssetType    int64
 		AccountIndex int64 `gorm:"index"`

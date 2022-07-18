@@ -18,10 +18,11 @@
 package main
 
 import (
-	"log"
-
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/assert"
+	"github.com/zecrey-labs/zecrey-legend/common/tree"
 	"github.com/zeromicro/go-zero/core/stores/redis"
+	"log"
 
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	asset "github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
@@ -39,7 +40,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
 	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
-	"github.com/zecrey-labs/zecrey-legend/common/tree"
 )
 
 func WithRedis(redisType string, redisPass string) redis.Option {
@@ -97,62 +97,71 @@ var (
 )
 
 func DropTables() {
-	sysconfigModel.DropSysconfigTable()
+	assert.Nil(nil, sysconfigModel.DropSysconfigTable())
 	//priceModel.
-	accountModel.DropAccountTable()
-	accountHistoryModel.DropAccountHistoryTable()
-	assetInfoModel.DropAssetInfoTable()
-	mempoolDetailModel.DropMempoolDetailTable()
-	mempoolModel.DropMempoolTxTable()
-	failTxModel.DropFailTxTable()
-	txDetailModel.DropTxDetailTable()
-	txModel.DropTxTable()
-	blockModel.DropBlockTable()
-	blockForCommitModel.DropBlockForCommitTable()
-	blockForProofModel.DropBlockForProofTable()
-	proofSenderModel.DropProofSenderTable()
-	l1BlockMonitorModel.DropL1BlockMonitorTable()
-	l2TxEventMonitorModel.DropL2TxEventMonitorTable()
-	l2BlockEventMonitorModel.DropL2BlockEventMonitorTable()
-	l1TxSenderModel.DropL1TxSenderTable()
-	liquidityModel.DropLiquidityTable()
-	liquidityHistoryModel.DropLiquidityHistoryTable()
-	nftModel.DropL2NftTable()
-	offerModel.DropOfferTable()
-	nftHistoryModel.DropL2NftHistoryTable()
-	nftExchangeModel.DropL2NftExchangeTable()
-	nftCollectionModel.DropL2NftCollectionTable()
-	nftWithdrawHistoryModel.DropL2NftWithdrawHistoryTable()
+	assert.Nil(nil,accountModel.DropAccountTable())
+	assert.Nil(nil,accountHistoryModel.DropAccountHistoryTable())
+	assert.Nil(nil,assetInfoModel.DropAssetInfoTable())
+	assert.Nil(nil,mempoolDetailModel.DropMempoolDetailTable())
+	assert.Nil(nil,mempoolModel.DropMempoolTxTable())
+	assert.Nil(nil,failTxModel.DropFailTxTable())
+	assert.Nil(nil,txDetailModel.DropTxDetailTable())
+	assert.Nil(nil,txModel.DropTxTable())
+	assert.Nil(nil,blockModel.DropBlockTable())
+	assert.Nil(nil,blockForCommitModel.DropBlockForCommitTable())
+	assert.Nil(nil,blockForProofModel.DropBlockForProofTable())
+	assert.Nil(nil,proofSenderModel.DropProofSenderTable())
+	assert.Nil(nil,l1BlockMonitorModel.DropL1BlockMonitorTable())
+	assert.Nil(nil,l2TxEventMonitorModel.DropL2TxEventMonitorTable())
+	assert.Nil(nil,l2BlockEventMonitorModel.DropL2BlockEventMonitorTable())
+	assert.Nil(nil,l1TxSenderModel.DropL1TxSenderTable())
+	assert.Nil(nil,liquidityModel.DropLiquidityTable())
+	assert.Nil(nil,liquidityHistoryModel.DropLiquidityHistoryTable())
+	assert.Nil(nil,nftModel.DropL2NftTable())
+	assert.Nil(nil,offerModel.DropOfferTable())
+	assert.Nil(nil,nftHistoryModel.DropL2NftHistoryTable())
+	assert.Nil(nil,nftExchangeModel.DropL2NftExchangeTable())
+	assert.Nil(nil,nftCollectionModel.DropL2NftCollectionTable())
+	assert.Nil(nil,nftWithdrawHistoryModel.DropL2NftWithdrawHistoryTable())
 }
 
 func InitTable() {
+
+
+
+
+
 	// create tables
-	sysconfigModel.CreateSysconfigTable()
+
+	assert.Nil(nil,sysconfigModel.CreateSysconfigTable())
 	//priceModel.
-	accountModel.CreateAccountTable()
-	accountHistoryModel.CreateAccountHistoryTable()
-	assetInfoModel.CreateAssetInfoTable()
-	mempoolDetailModel.CreateMempoolDetailTable()
-	mempoolModel.CreateMempoolTxTable()
-	failTxModel.CreateFailTxTable()
-	txDetailModel.CreateTxDetailTable()
-	txModel.CreateTxTable()
-	blockModel.CreateBlockTable()
-	blockForCommitModel.CreateBlockForCommitTable()
-	blockForProofModel.CreateBlockForProofTable()
-	proofSenderModel.CreateProofSenderTable()
-	l1BlockMonitorModel.CreateL1BlockMonitorTable()
-	l2TxEventMonitorModel.CreateL2TxEventMonitorTable()
-	l2BlockEventMonitorModel.CreateL2BlockEventMonitorTable()
-	l1TxSenderModel.CreateL1TxSenderTable()
-	liquidityModel.CreateLiquidityTable()
-	liquidityHistoryModel.CreateLiquidityHistoryTable()
-	nftModel.CreateL2NftTable()
-	offerModel.CreateOfferTable()
-	nftHistoryModel.CreateL2NftHistoryTable()
-	nftExchangeModel.CreateL2NftExchangeTable()
-	nftCollectionModel.CreateL2NftCollectionTable()
-	nftWithdrawHistoryModel.CreateL2NftWithdrawHistoryTable()
+	assert.Nil(nil,accountModel.CreateAccountTable())
+	assert.Nil(nil,accountHistoryModel.CreateAccountHistoryTable())
+	assert.Nil(nil,assetInfoModel.CreateAssetInfoTable())
+
+	assert.Nil(nil,mempoolModel.CreateMempoolTxTable())
+	assert.Nil(nil,mempoolDetailModel.CreateMempoolDetailTable())
+
+	assert.Nil(nil,failTxModel.CreateFailTxTable())
+	assert.Nil(nil,blockModel.CreateBlockTable())
+	assert.Nil(nil,txModel.CreateTxTable())
+	assert.Nil(nil,txDetailModel.CreateTxDetailTable())
+
+	assert.Nil(nil,blockForCommitModel.CreateBlockForCommitTable())
+	assert.Nil(nil,blockForProofModel.CreateBlockForProofTable())
+	assert.Nil(nil,proofSenderModel.CreateProofSenderTable())
+	assert.Nil(nil,l1BlockMonitorModel.CreateL1BlockMonitorTable())
+	assert.Nil(nil,l2TxEventMonitorModel.CreateL2TxEventMonitorTable())
+	assert.Nil(nil,l2BlockEventMonitorModel.CreateL2BlockEventMonitorTable())
+	assert.Nil(nil,l1TxSenderModel.CreateL1TxSenderTable())
+	assert.Nil(nil,liquidityModel.CreateLiquidityTable())
+	assert.Nil(nil,liquidityHistoryModel.CreateLiquidityHistoryTable())
+	assert.Nil(nil,nftModel.CreateL2NftTable())
+	assert.Nil(nil,offerModel.CreateOfferTable())
+	assert.Nil(nil,nftHistoryModel.CreateL2NftHistoryTable())
+	assert.Nil(nil,nftExchangeModel.CreateL2NftExchangeTable())
+	assert.Nil(nil,nftCollectionModel.CreateL2NftCollectionTable())
+	assert.Nil(nil,nftWithdrawHistoryModel.CreateL2NftWithdrawHistoryTable())
 	// init l1 asset info
 	rowsAffected, err := assetInfoModel.CreateAssetsInfoInBatches(initAssetsInfo())
 	if err != nil {
@@ -181,6 +190,8 @@ func InitTable() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+
 }
 
 func main() {
