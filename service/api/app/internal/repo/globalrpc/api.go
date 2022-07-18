@@ -12,26 +12,26 @@ import (
 )
 
 type GlobalRPC interface {
-	SendTx(txType uint32, txInfo string) (string, error)
-	GetLpValue(pairIndex uint32, lpAmount string) (*globalRPCProto.RespGetLpValue, error)
-	GetPairInfo(pairIndex uint32) (*globalRPCProto.RespGetLatestPairInfo, error)
+	SendTx(ctx context.Context, txType uint32, txInfo string) (string, error)
+	GetLpValue(ctx context.Context, pairIndex uint32, lpAmount string) (*globalRPCProto.RespGetLpValue, error)
+	GetPairInfo(ctx context.Context, pairIndex uint32) (*globalRPCProto.RespGetLatestPairInfo, error)
 	GetSwapAmount(ctx context.Context, pairIndex, assetId uint64, assetAmount string, isFrom bool) (string, uint32, error)
-	GetNextNonce(accountIndex uint32) (uint64, error)
-	GetLatestAssetsListByAccountIndex(accountIndex uint32) ([]*globalrpc.AssetResult, error)
-	GetLatestAccountInfoByAccountIndex(accountIndex uint32) (*globalrpc.RespGetLatestAccountInfoByAccountIndex, error)
-	GetMaxOfferId(accountIndex uint32) (uint64, error)
-	SendMintNftTx(txInfo string) (int64, error)
-	SendCreateCollectionTx(txInfo string) (int64, error)
+	GetNextNonce(ctx context.Context, accountIndex uint32) (uint64, error)
+	GetLatestAssetsListByAccountIndex(ctx context.Context, accountIndex uint32) ([]*globalrpc.AssetResult, error)
+	GetLatestAccountInfoByAccountIndex(ctx context.Context, accountIndex int64) (*globalrpc.RespGetLatestAccountInfoByAccountIndex, error)
+	GetMaxOfferId(ctx context.Context, accountIndex uint32) (uint64, error)
+	SendMintNftTx(ctx context.Context, txInfo string) (int64, error)
+	SendCreateCollectionTx(ctx context.Context, txInfo string) (int64, error)
 
-	SendAddLiquidityTx(txInfo string) (string, error)
-	SendAtomicMatchTx(txInfo string) (string, error)
-	SendCancelOfferTx(txInfo string) (string, error)
-	SendRemoveLiquidityTx(txInfo string) (string, error)
-	SendSwapTx(txInfo string) (string, error)
-	SendTransferNftTx(txInfo string) (string, error)
-	SendTransferTx(txInfo string) (string, error)
-	SendWithdrawNftTx(txInfo string) (string, error)
-	SendWithdrawTx(txInfo string) (string, error)
+	SendAddLiquidityTx(ctx context.Context, txInfo string) (string, error)
+	SendAtomicMatchTx(ctx context.Context, txInfo string) (string, error)
+	SendCancelOfferTx(ctx context.Context, txInfo string) (string, error)
+	SendRemoveLiquidityTx(ctx context.Context, txInfo string) (string, error)
+	SendSwapTx(ctx context.Context, txInfo string) (string, error)
+	SendTransferNftTx(ctx context.Context, txInfo string) (string, error)
+	SendTransferTx(ctx context.Context, txInfo string) (string, error)
+	SendWithdrawNftTx(ctx context.Context, txInfo string) (string, error)
+	SendWithdrawTx(ctx context.Context, txInfo string) (string, error)
 }
 
 func New(svcCtx *svc.ServiceContext, ctx context.Context) GlobalRPC {
@@ -42,6 +42,6 @@ func New(svcCtx *svc.ServiceContext, ctx context.Context) GlobalRPC {
 		MempoolDetailModel:  mempool.NewMempoolDetailModel(svcCtx.Conn, svcCtx.Config.CacheRedis, svcCtx.GormPointer),
 		RedisConnection:     svcCtx.RedisConn,
 		globalRPC:           globalrpc.NewGlobalRPC(zrpc.MustNewClient(svcCtx.Config.GlobalRpc)),
-		ctx:                 ctx,
+		cache:               svcCtx.Cache,
 	}
 }

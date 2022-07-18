@@ -27,7 +27,7 @@ func NewSendWithdrawNftTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 func (l *SendWithdrawNftTxLogic) SendWithdrawNftTx(req *types.ReqSendWithdrawNftTx) (*types.RespSendWithdrawNftTx, error) {
-	txIndex, err := l.globalRpc.SendWithdrawNftTx(req.TxInfo)
+	txIndex, err := l.globalRpc.SendWithdrawNftTx(l.ctx, req.TxInfo)
 	if err != nil {
 		logx.Error("[transaction.SendWithdrawNftTx] err:%v", err)
 		return nil, err

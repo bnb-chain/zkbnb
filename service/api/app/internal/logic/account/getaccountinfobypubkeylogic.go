@@ -35,7 +35,7 @@ func (l *GetAccountInfoByPubKeyLogic) GetAccountInfoByPubKey(req *types.ReqGetAc
 		logx.Errorf("[GetAccountByPk] err:%v", err)
 		return nil, err
 	}
-	account, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(uint32(info.AccountIndex))
+	account, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(l.ctx, info.AccountIndex)
 	if err != nil {
 		logx.Errorf("[GetLatestAccountInfoByAccountIndex] err:%v", err)
 		return nil, err

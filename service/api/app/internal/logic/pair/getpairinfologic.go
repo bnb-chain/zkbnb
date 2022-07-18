@@ -33,7 +33,7 @@ func (l *GetPairInfoLogic) GetPairInfo(req *types.ReqGetPairInfo) (*types.RespGe
 		logx.Error("[CheckPairIndex] param:%v", req.PairIndex)
 		return nil, errcode.ErrInvalidParam
 	}
-	pair, err := l.globalRPC.GetPairInfo(req.PairIndex)
+	pair, err := l.globalRPC.GetPairInfo(l.ctx, req.PairIndex)
 	if err != nil {
 		logx.Error("[GetPairRatio] err:%v", err)
 		return nil, err

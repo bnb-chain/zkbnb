@@ -27,7 +27,7 @@ func NewSendAtomicMatchTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(req *types.ReqSendAtomicMatchTx) (*types.RespSendAtomicMatchTx, error) {
-	txIndex, err := l.globalRpc.SendAtomicMatchTx(req.TxInfo)
+	txIndex, err := l.globalRpc.SendAtomicMatchTx(l.ctx, req.TxInfo)
 	if err != nil {
 		logx.Error("[transaction.SendAtomicMatchTx] err:%v", err)
 		return nil, err

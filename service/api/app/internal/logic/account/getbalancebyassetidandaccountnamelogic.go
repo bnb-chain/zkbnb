@@ -42,7 +42,7 @@ func (l *GetBalanceByAssetIdAndAccountNameLogic) GetBalanceByAssetIdAndAccountNa
 		logx.Errorf("[GetAccountByAccountName] err:%v", err)
 		return nil, err
 	}
-	assets, err := l.globalRPC.GetLatestAssetsListByAccountIndex(uint32(account.AccountIndex))
+	assets, err := l.globalRPC.GetLatestAssetsListByAccountIndex(l.ctx, uint32(account.AccountIndex))
 	if err != nil {
 		logx.Errorf("[GetLatestAssetsListByAccountIndex] err:%v", err)
 		return nil, err

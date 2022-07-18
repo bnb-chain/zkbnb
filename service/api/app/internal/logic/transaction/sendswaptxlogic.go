@@ -27,7 +27,7 @@ func NewSendSwapTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendSw
 }
 
 func (l *SendSwapTxLogic) SendSwapTx(req *types.ReqSendSwapTx) (*types.RespSendSwapTx, error) {
-	txIndex, err := l.globalRpc.SendSwapTx(req.TxInfo)
+	txIndex, err := l.globalRpc.SendSwapTx(l.ctx, req.TxInfo)
 	if err != nil {
 		logx.Error("[transaction.SendSwapTx] err:%v", err)
 		return nil, err
