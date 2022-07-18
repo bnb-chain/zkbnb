@@ -120,7 +120,7 @@ type (
 		CommittedAt                     int64
 		VerifiedTxHash                  string
 		VerifiedAt                      int64
-		Txs                             []*tx.Tx `gorm:"foreignkey:BlockId"`
+		Txs                             []*tx.Tx `gorm:"foreignKey:BlockId"`
 		BlockStatus                     int64
 	}
 )

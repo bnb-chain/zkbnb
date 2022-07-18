@@ -80,7 +80,7 @@ type (
 		TxAmount      string
 		NativeAddress string
 		TxInfo        string
-		TxDetails     []*TxDetail `gorm:"foreignkey:TxId"`
+		TxDetails     []*TxDetail `gorm:"foreignKey:TxId"`
 		ExtraInfo     string
 		Memo          string
 		AccountIndex  int64

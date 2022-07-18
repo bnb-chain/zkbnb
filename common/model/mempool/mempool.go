@@ -71,24 +71,25 @@ type (
 
 	MempoolTx struct {
 		gorm.Model
-		TxHash         string `gorm:"uniqueIndex"`
-		TxType         int64
-		GasFeeAssetId  int64
-		GasFee         string
-		NftIndex       int64
-		PairIndex      int64
-		AssetId        int64
-		TxAmount       string
-		NativeAddress  string
-		MempoolDetails []*MempoolTxDetail `gorm:"foreignkey:TxId"`
-		TxInfo         string
-		ExtraInfo      string
-		Memo           string
-		AccountIndex   int64
-		Nonce          int64
-		ExpiredAt      int64
-		L2BlockHeight  int64
-		Status         int `gorm:"index"` // 0: pending tx; 1: committed tx; 2: verified tx;
+		TxHash        string `gorm:"uniqueIndex"`
+		TxType        int64
+		GasFeeAssetId int64
+		GasFee        string
+		NftIndex      int64
+		PairIndex     int64
+		AssetId       int64
+		TxAmount      string
+		NativeAddress string
+		TxInfo        string
+		ExtraInfo     string
+		Memo          string
+		AccountIndex  int64
+		Nonce         int64
+		ExpiredAt     int64
+		L2BlockHeight int64
+		Status        int `gorm:"index"` // 0: pending tx; 1: committed tx; 2: verified tx;
+
+		MempoolDetails []*MempoolTxDetail `json:"mempool_details" gorm:"foreignKey:TxId"`
 	}
 )
 
