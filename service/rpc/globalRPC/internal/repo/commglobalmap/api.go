@@ -30,6 +30,7 @@ type Commglobalmap interface {
 	GetLatestLiquidityInfoForRead(ctx context.Context, pairIndex int64) (liquidityInfo *commGlobalmapHandler.LiquidityInfo, err error)
 	GetLatestOfferIdForWrite(ctx context.Context, accountIndex int64) (nftIndex int64, err error)
 	GetBasicAccountInfo(ctx context.Context, accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error)
+	GetLatestNftInfoForRead(ctx context.Context, nftIndex int64) (*commonAsset.NftInfo, error)
 }
 
 func New(svcCtx *svc.ServiceContext) Commglobalmap {

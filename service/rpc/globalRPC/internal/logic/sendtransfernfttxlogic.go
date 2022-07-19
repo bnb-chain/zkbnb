@@ -95,10 +95,9 @@ func (l *SendTransferNftTxLogic) SendTransferNftTx(in *globalRPCProto.ReqSendTxB
 		return nil, l.createFailTransferNftTx(txInfo, errors.New("[sendTransferNftTx] invalid gas account index"))
 	}
 	var accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
-	nftInfo, err := globalmapHandler.GetLatestNftInfoForRead(l.svcCtx.NftModel,
-		l.svcCtx.MempoolModel, l.svcCtx.RedisConnection, txInfo.NftIndex)
+	nftInfo, err := l.commglobalmap.GetLatestNftInfoForRead(l.ctx, txInfo.NftIndex)
 	if err != nil {
-		logx.Errorf("[sendTransferNftTx] unable to get nft info")
+		logx.Errorf("[GetLatestNftInfoForRead] err:%v", err)
 		return nil, l.createFailTransferNftTx(txInfo, err)
 	}
 	accountInfoMap[txInfo.FromAccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.FromAccountIndex)

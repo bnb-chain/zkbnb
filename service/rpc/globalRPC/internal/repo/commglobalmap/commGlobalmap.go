@@ -28,6 +28,7 @@ type model struct {
 	liquidityModel       liquidity.LiquidityModel
 	redisConnection      *redis.Redis
 	offerModel           nft.OfferModel
+	nftModel             nft.L2NftModel
 	cache                multcache.MultCache
 }
 
@@ -254,4 +255,45 @@ func (m *model) GetBasicAccountInfo(ctx context.Context, accountIndex int64) (ac
 		return nil, err
 	}
 	return accountInfo, nil
+}
+
+func (m *model) GetLatestNftInfoForRead(ctx context.Context, nftIndex int64) (*commonAsset.NftInfo, error) {
+	//
+	dbNftInfo, err := m.nftModel.GetNftAsset(nftIndex)
+	if err != nil {
+		logx.Errorf("[GetNftAsset] unable to get latest nft by nft index: %v", err)
+		return nil, err
+	}
+	mempoolTxs, err := m.mempoolModel.GetPendingNftTxs()
+	if err != nil {
+		if err != mempool.ErrNotFound {
+			logx.Errorf("[GetLatestAccountInfo] unable to get mempool txs by account index: %s", err.Error())
+			return nil, err
+		}
+	}
+	nftInfo := commonAsset.ConstructNftInfo(nftIndex, dbNftInfo.CreatorAccountIndex, dbNftInfo.OwnerAccountIndex, dbNftInfo.NftContentHash,
+		dbNftInfo.NftL1TokenId, dbNftInfo.NftL1Address, dbNftInfo.CreatorTreasuryRate, dbNftInfo.CollectionId)
+	for _, mempoolTx := range mempoolTxs {
+		for _, txDetail := range mempoolTx.MempoolDetails {
+			if txDetail.AssetType != commonAsset.NftAssetType || txDetail.AssetId != nftInfo.NftIndex {
+				continue
+			}
+			nBalance, err := commonAsset.ComputeNewBalance(commonAsset.NftAssetType, nftInfo.String(), txDetail.BalanceDelta)
+			if err != nil {
+				logx.Errorf("[GetLatestAccountInfo] unable to compute new balance: %s", err.Error())
+				return nil, err
+			}
+			nftInfo, err = commonAsset.ParseNftInfo(nBalance)
+			if err != nil {
+				logx.Errorf("[GetLatestAccountInfo] unable to parse nft info: %s", err.Error())
+				return nil, err
+			}
+		}
+	}
+	// TODO: this set cache operation will be deleted in the future, we should use GetLatestLiquidityInfoForReadWithCache anywhere
+	// and delete the cache where mempool be changed
+	if err := m.cache.Set(ctx, multcache.SpliceCacheKeyNftInfoByAccountIndex(nftIndex), nftInfo, 10); err != nil {
+		return nil, err
+	}
+	return nftInfo, nil
 }
