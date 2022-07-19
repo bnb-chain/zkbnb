@@ -20,21 +20,27 @@ package proverUtil
 import (
 	"errors"
 
+	bsmt "github.com/bnb-chain/bas-smt"
+	"github.com/bnb-chain/bas-smt/database"
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/pkg/treedb"
 )
 
 func ConstructMintNftCryptoTx(
 	oTx *Tx,
-	accountTree *Tree,
-	accountAssetsTree *[]*Tree,
-	liquidityTree *Tree,
-	nftTree *Tree,
+	treeDBDriver treedb.Driver,
+	treeDB database.TreeDB,
+	accountTree bsmt.SparseMerkleTree,
+	accountAssetsTree *[]bsmt.SparseMerkleTree,
+	liquidityTree bsmt.SparseMerkleTree,
+	nftTree bsmt.SparseMerkleTree,
 	accountModel AccountModel,
+	finalityBlockNr uint64,
 ) (cryptoTx *CryptoTx, err error) {
 	if oTx.TxType != commonTx.TxTypeMintNft {
 		logx.Errorf("[ConstructMintNftCryptoTx] invalid tx type")
@@ -62,6 +68,8 @@ func ConstructMintNftCryptoTx(
 	cryptoTx, err = ConstructWitnessInfo(
 		oTx,
 		accountModel,
+		treeDBDriver,
+		treeDB,
 		accountTree,
 		accountAssetsTree,
 		liquidityTree,
@@ -70,6 +78,7 @@ func ConstructMintNftCryptoTx(
 		proverAccounts,
 		proverLiquidityInfo,
 		proverNftInfo,
+		finalityBlockNr,
 	)
 	if err != nil {
 		logx.Errorf("[ConstructMintNftCryptoTx] unable to construct witness info: %s", err.Error())

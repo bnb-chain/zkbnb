@@ -20,26 +20,30 @@ import (
 	"errors"
 	"time"
 
+	bsmt "github.com/bnb-chain/bas-smt"
+	"github.com/bnb-chain/bas-smt/database"
 	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/model/blockForProof"
 	"github.com/bnb-chain/zkbas/common/proverUtil"
-	"github.com/bnb-chain/zkbas/common/tree"
 	"github.com/bnb-chain/zkbas/errorcode"
+	"github.com/bnb-chain/zkbas/pkg/treedb"
 	"github.com/bnb-chain/zkbas/service/cronjob/witnessGenerator/internal/svc"
 )
 
 func GenerateWitness(
-	accountTree *tree.Tree,
-	assetTrees *[]*tree.Tree,
-	liquidityTree *tree.Tree,
-	nftTree *tree.Tree,
+	treeDBDriver treedb.Driver,
+	treeDB database.TreeDB,
+	accountTree bsmt.SparseMerkleTree,
+	assetTrees *[]bsmt.SparseMerkleTree,
+	liquidityTree bsmt.SparseMerkleTree,
+	nftTree bsmt.SparseMerkleTree,
 	ctx *svc.ServiceContext,
 	deltaHeight int64,
 ) {
-	err := generateUnprovedBlockWitness(ctx, accountTree, assetTrees, liquidityTree, nftTree, deltaHeight)
+	err := generateUnprovedBlockWitness(ctx, treeDBDriver, treeDB, accountTree, assetTrees, liquidityTree, nftTree, deltaHeight)
 	if err != nil {
 		logx.Errorf("generate block witness error, err=%s", err.Error())
 	}
@@ -49,10 +53,12 @@ func GenerateWitness(
 
 func generateUnprovedBlockWitness(
 	ctx *svc.ServiceContext,
-	accountTree *tree.Tree,
-	assetTrees *[]*tree.Tree,
-	liquidityTree *tree.Tree,
-	nftTree *tree.Tree,
+	treeDBDriver treedb.Driver,
+	treeDB database.TreeDB,
+	accountTree bsmt.SparseMerkleTree,
+	assetTrees *[]bsmt.SparseMerkleTree,
+	liquidityTree bsmt.SparseMerkleTree,
+	nftTree bsmt.SparseMerkleTree,
 	deltaHeight int64,
 ) error {
 	latestUnprovedHeight, err := ctx.BlockForProofModel.GetLatestUnprovedBlockHeight()
@@ -66,6 +72,11 @@ func generateUnprovedBlockWitness(
 
 	// get last handled block info
 	blocks, err := ctx.BlockModel.GetBlocksBetween(latestUnprovedHeight+1, latestUnprovedHeight+deltaHeight)
+	if err != nil {
+		return err
+	}
+	// get latestVerifiedBlockNr
+	latestVerifiedBlockNr, err := ctx.BlockModel.GetLatestVerifiedBlockHeight()
 	if err != nil {
 		return err
 	}
@@ -86,7 +97,7 @@ func generateUnprovedBlockWitness(
 			var (
 				cryptoTx *CryptoTx
 			)
-			cryptoTx, err = proverUtil.ConstructCryptoTx(oTx, accountTree, assetTrees, liquidityTree, nftTree, ctx.AccountModel)
+			cryptoTx, err = proverUtil.ConstructCryptoTx(oTx, treeDBDriver, treeDB, accountTree, assetTrees, liquidityTree, nftTree, ctx.AccountModel, uint64(latestVerifiedBlockNr))
 			if err != nil {
 				logx.Errorf("[prover] unable to construct crypto tx: %s", err.Error())
 				return err

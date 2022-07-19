@@ -75,6 +75,7 @@ type (
 		GetNotVerifiedOrExecutedBlocks() (blocks []*Block, err error)
 		GetCommitedBlocksCount() (count int64, err error)
 		GetVerifiedBlocksCount() (count int64, err error)
+		GetLatestVerifiedBlockHeight() (height int64, err error)
 		GetBlocksForProverBetween(start, end int64) (blocks []*Block, err error)
 		CreateBlock(block *Block) error
 		CreateGenesisBlock(block *Block) error
@@ -952,4 +953,19 @@ func (m *defaultBlockModel) GetBlocksForProverBetween(start, end int64) (blocks 
 		return nil, errorcode.DbErrNotFound
 	}
 	return blocks, nil
+}
+
+func (m *defaultBlockModel) GetLatestVerifiedBlockHeight() (height int64, err error) {
+	block := &Block{}
+	dbTx := m.DB.Table(m.table).Where("block_status = ?", StatusVerifiedAndExecuted).
+		Order("block_height DESC").
+		Limit(1).
+		First(&block)
+	if dbTx.Error != nil {
+		logx.Errorf("[GetLatestVerifiedBlockHeight] unable to get block: %s", dbTx.Error)
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, errorcode.DbErrNotFound
+	}
+	return block.BlockHeight, nil
 }

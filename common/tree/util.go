@@ -20,26 +20,8 @@ package tree
 import (
 	"math/big"
 
-	"github.com/bnb-chain/zkbas-crypto/accumulators/merkleTree"
-	"github.com/bnb-chain/zkbas-crypto/hash/bn254/zmimc"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 )
-
-func NewEmptyAccountAssetTree() (tree *Tree, err error) {
-	return merkleTree.NewEmptyTree(AssetTreeHeight, NilAccountAssetNodeHash, zmimc.Hmimc)
-}
-
-func NewEmptyAccountTree() (tree *Tree, err error) {
-	return merkleTree.NewEmptyTree(AccountTreeHeight, NilAccountNodeHash, zmimc.Hmimc)
-}
-
-func NewEmptyLiquidityTree() (tree *Tree, err error) {
-	return merkleTree.NewEmptyTree(LiquidityTreeHeight, NilLiquidityNodeHash, zmimc.Hmimc)
-}
-
-func NewEmptyNftTree() (tree *Tree, err error) {
-	return merkleTree.NewEmptyTree(NftTreeHeight, NilNftNodeHash, zmimc.Hmimc)
-}
 
 func EmptyAccountNodeHash() []byte {
 	hFunc := mimc.NewMiMC()
