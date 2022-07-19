@@ -35,7 +35,7 @@ func main() {
 	ctx := svc.NewServiceContext(c)
 	ctx.CodeVersion = CodeVersion
 	ctx.GitCommitHash = GitCommitHash
-	server := rest.MustNewServer(c.RestConf)
+	server := rest.MustNewServer(c.RestConf, rest.WithCors())
 	defer server.Stop()
 	handler.RegisterHandlers(server, ctx)
 	fmt.Printf("Starting server at %s:%d...\n", c.Host, c.Port)

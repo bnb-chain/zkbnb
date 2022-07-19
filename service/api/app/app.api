@@ -316,6 +316,16 @@ type (
 	}
 )
 
+// GetGasAccount
+type (
+	ReqGetGasAccount  struct{}
+	RespGetGasAccount {
+		AccountStatus int64  `json:"account_status"`
+		AccountIndex  int64  `json:"account_index"`
+		AccountName   string `json:"account_name"`
+	}
+)
+
 @server(
 	group: info
 )
@@ -346,6 +356,9 @@ service app-api{
 	
 	@handler Search
 	get /api/v1/info/search  (ReqSearch) returns (RespSearch)
+	
+	@handler GetGasAccount
+	get /api/v1/info/getGasAccount  (ReqGetGasAccount) returns (RespGetGasAccount)
 }
 
 /* =========================== Pair ==========================*/
@@ -796,10 +809,39 @@ type (
 	}
 )
 
+type (
+	Nft {
+		NftIndex            int64  `json:"nft_index"`
+		CreatorAccountIndex int64  `json:"creator_account_index"`
+		OwnerAccountIndex   int64  `json:"owner_account_index"`
+		NftContentHash      string `json:"nft_content_hash"`
+		NftL1Address        string `json:"nft_l1_address"`
+		NftL1TokenId        string `json:"nft_l1_token_id"`
+		CreatorTreasuryRate int64  `json:"creator_treasury_rate"`
+		CollectionId        int64  `json:"collection_id"`
+	}
+)
+
+// GetAccountNftList
+type (
+	ReqGetAccountNftList {
+		AccountIndex int64  `form:"account_index"`
+		Offset       uint16 `form:"offset"`
+		Limit        uint16 `form:"limit"`
+	}
+	RespGetAccountNftList {
+		Total int64  `json:"total"`
+		Nfts  []*Nft `json:"nfts"`
+	}
+)
+
 @server(
 	group: nft
 )
 service app-api{
 	@handler GetMaxOfferId
 	get /api/v1/nft/getMaxOfferId  (ReqGetMaxOfferId) returns (RespGetMaxOfferId)
+	
+	@handler GetAccountNftList
+	get /api/v1/nft/getAccountNftList  (ReqGetAccountNftList) returns (RespGetAccountNftList)
 }

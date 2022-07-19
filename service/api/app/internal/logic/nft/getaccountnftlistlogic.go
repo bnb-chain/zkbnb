@@ -1,0 +1,63 @@
+package nft
+
+import (
+	"context"
+
+	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/nft"
+	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
+	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
+)
+
+type GetAccountNftListLogic struct {
+	logx.Logger
+	ctx      context.Context
+	svcCtx   *svc.ServiceContext
+	nftModel nft.Nft
+}
+
+func NewGetAccountNftListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAccountNftListLogic {
+	return &GetAccountNftListLogic{
+		Logger:   logx.WithContext(ctx),
+		ctx:      ctx,
+		svcCtx:   svcCtx,
+		nftModel: nft.New(svcCtx),
+	}
+}
+
+func (l *GetAccountNftListLogic) GetAccountNftList(req *types.ReqGetAccountNftList) (*types.RespGetAccountNftList, error) {
+	total, err := l.nftModel.GetAccountNftTotalCount(l.ctx, req.AccountIndex)
+	if err != nil {
+		return nil, err
+	}
+	if total == 0 || total < int64(req.Offset) {
+		return &types.RespGetAccountNftList{
+			Total: 0,
+			Nfts:  nil,
+		}, nil
+	}
+
+	nftList, err := l.nftModel.GetNftListByAccountIndex(l.ctx, req.AccountIndex, int64(req.Limit), int64(req.Offset))
+	if err != nil {
+		logx.Errorf("[GetAccountNftList] err:%v", err)
+		return nil, err
+	}
+	resp := &types.RespGetAccountNftList{
+		Total: total,
+		Nfts:  make([]*types.Nft, 0),
+	}
+	for _, nftItem := range nftList {
+		resp.Nfts = append(resp.Nfts, &types.Nft{
+			NftIndex:            nftItem.NftIndex,
+			CreatorAccountIndex: nftItem.CreatorAccountIndex,
+			OwnerAccountIndex:   nftItem.OwnerAccountIndex,
+			NftContentHash:      nftItem.NftContentHash,
+			NftL1Address:        nftItem.NftL1Address,
+			NftL1TokenId:        nftItem.NftL1TokenId,
+			CreatorTreasuryRate: nftItem.CreatorTreasuryRate,
+			CollectionId:        nftItem.CollectionId,
+		})
+	}
+	return resp, nil
+}

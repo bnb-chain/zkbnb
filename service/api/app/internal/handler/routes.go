@@ -129,6 +129,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/api/v1/info/search",
 				Handler: info.SearchHandler(serverCtx),
 			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/info/getGasAccount",
+				Handler: info.GetGasAccountHandler(serverCtx),
+			},
 		},
 	)
 
@@ -273,6 +278,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/api/v1/nft/getMaxOfferId",
 				Handler: nft.GetMaxOfferIdHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/nft/getAccountNftList",
+				Handler: nft.GetAccountNftListHandler(serverCtx),
 			},
 		},
 	)
