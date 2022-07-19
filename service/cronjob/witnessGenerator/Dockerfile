@@ -26,4 +26,4 @@ ENV PATH $PATH:/root/google-cloud-sdk/bin
 
 WORKDIR /app
 
-CMD ["./witnessgenerator", "-f", "etc/witnessGenerator.yaml"]
+CMD ["./witnessgenerator", "-f", "etc/witnessgenerator.yaml"]
