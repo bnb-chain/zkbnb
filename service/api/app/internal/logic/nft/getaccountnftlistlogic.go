@@ -29,24 +29,24 @@ func NewGetAccountNftListLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 func (l *GetAccountNftListLogic) GetAccountNftList(req *types.ReqGetAccountNftList) (*types.RespGetAccountNftList, error) {
 	total, err := l.nftModel.GetAccountNftTotalCount(l.ctx, req.AccountIndex)
 	if err != nil {
+		logx.Errorf("[GetAccountNftList] get account nft total count error: %v", err)
 		return nil, err
-	}
-	if total == 0 || total < int64(req.Offset) {
-		return &types.RespGetAccountNftList{
-			Total: 0,
-			Nfts:  nil,
-		}, nil
 	}
 
-	nftList, err := l.nftModel.GetNftListByAccountIndex(l.ctx, req.AccountIndex, int64(req.Limit), int64(req.Offset))
-	if err != nil {
-		logx.Errorf("[GetAccountNftList] err:%v", err)
-		return nil, err
-	}
 	resp := &types.RespGetAccountNftList{
 		Total: total,
 		Nfts:  make([]*types.Nft, 0),
 	}
+	if total == 0 || total < int64(req.Offset) {
+		return resp, nil
+	}
+
+	nftList, err := l.nftModel.GetNftListByAccountIndex(l.ctx, req.AccountIndex, int64(req.Limit), int64(req.Offset))
+	if err != nil {
+		logx.Errorf("[GetAccountNftList] get nft list by account error:%v", err)
+		return nil, err
+	}
+
 	for _, nftItem := range nftList {
 		resp.Nfts = append(resp.Nfts, &types.Nft{
 			NftIndex:            nftItem.NftIndex,

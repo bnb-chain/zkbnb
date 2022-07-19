@@ -31,8 +31,6 @@ const (
 	KeyGetCommittedBlocksCount = "cache::block:CommittedBlocksCount:"
 	KeyGetVerifiedBlocksCount  = "cache::block:VerifiedBlocksCount:"
 	KeyGetBlocksTotalCount     = "cache::block:BlocksTotalCount:"
-	KeyGetAccountNftTotalCount = "cache::nft:AccountNftTotalCount:"
-	KeyGetAccountNftList       = "cache::nft:AccountNftList:"
 
 	KeyGetL2AssetsList               = "cache::l2asset:L2AssetsList:"
 	KeyGetL2AssetInfoBySymbol        = "cache::l2asset:L2AssetInfoBySymbol:"
@@ -87,6 +85,14 @@ func SpliceCacheKeyOfferIdByAccountIndex(accountIndex int64) string {
 
 func SpliceCacheKeyNftInfoByAccountIndex(nftIndex int64) string {
 	return fmt.Sprintf("cache:nftInfo_nftIndex_%d", nftIndex)
+}
+
+func SpliceCacheKeyAccountTotalNftCount(accountIndex int64) string {
+	return fmt.Sprintf("cache:account_nftTotalCount_%d", accountIndex)
+}
+
+func SpliceCacheKeyAccountNftList(accountIndex int64, offset, limit int64) string {
+	return fmt.Sprintf("cache:account_nftList_%d_%d_%d", accountIndex, offset, limit)
 }
 
 // cache key prefix: price
