@@ -3,6 +3,9 @@ package logic
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"reflect"
 	"strconv"
 	"time"
@@ -80,7 +83,7 @@ func (l *SendCreateCollectionTxLogic) SendCreateCollectionTx(in *globalRPCProto.
 	var (
 		accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
 	)
-	accountInfoMap[txInfo.AccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.AccountIndex)
+	accountInfoMap[txInfo.AccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.AccountIndex) //get  CollectionNonce + 1
 	if err != nil {
 		logx.Errorf("[sendCreateCollectionTx] unable to get account info: %s", err.Error())
 		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
@@ -126,9 +129,18 @@ func (l *SendCreateCollectionTxLogic) SendCreateCollectionTx(in *globalRPCProto.
 		txInfo.ExpiredAt,
 		txDetails,
 	)
-	err = CreateMempoolTx(mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)
+	// construct nft Collection info
+	nftCollectionInfo := &nft.L2NftCollection{
+		CollectionId: txInfo.CollectionId,
+		AccountIndex: txInfo.AccountIndex,
+		Name:         txInfo.Name,
+		Introduction: txInfo.Introduction,
+		Status:       nft.CollectionPending,
+	}
+	err = createMempoolTxForCreateCollection(nftCollectionInfo, mempoolTx, l.svcCtx)
 	if err != nil {
-		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
+		l.createFailCreateCollectionTx(txInfo, err.Error())
+		return nil, err
 	}
 	return &globalRPCProto.RespSendCreateCollectionTx{CollectionId: txInfo.CollectionId}, nil
 }
@@ -166,4 +178,38 @@ func (l *SendCreateCollectionTxLogic) createFailCreateCollectionTx(info *commonT
 		Memo: "",
 	}
 	return l.svcCtx.FailTxModel.CreateFailTx(failTx)
+}
+func createMempoolTxForCreateCollection(
+	nftCollectionInfo *nft.L2NftCollection,
+	nMempoolTx *mempool.MempoolTx,
+	svcCtx *svc.ServiceContext,
+) (err error) {
+	var keys []string
+	for _, mempoolTxDetail := range nMempoolTx.MempoolDetails {
+		keys = append(keys, util.GetAccountKey(mempoolTxDetail.AccountIndex))
+	}
+	_, err = svcCtx.RedisConnection.Del(keys...)
+	if err != nil {
+		logx.Errorf("[CreateMempoolTx] error with redis: %s", err.Error())
+		return err
+	}
+	// check collectionId exist
+	exist, err := svcCtx.CollectionModel.IfCollectionExistsByCollectionId(nftCollectionInfo.CollectionId)
+	if err != nil {
+		errInfo := fmt.Sprintf("[createMempoolTxForCreateCollection] %s", err.Error())
+		logx.Error(errInfo)
+		return errors.New(errInfo)
+	}
+	if exist {
+		return errors.New("[createMempoolTxForCreateCollection] collectionId duplicate creation")
+	}
+
+	// write into mempool
+	err = svcCtx.MempoolModel.CreateMempoolTxAndL2CollectionAndNonce(nMempoolTx, nftCollectionInfo)
+	if err != nil {
+		errInfo := fmt.Sprintf("[createMempoolTxForCreateCollection] %s", err.Error())
+		logx.Error(errInfo)
+		return errors.New(errInfo)
+	}
+	return nil
 }
