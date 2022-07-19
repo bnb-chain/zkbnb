@@ -18,6 +18,8 @@
 package nft
 
 import (
+	"fmt"
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -28,6 +30,7 @@ type (
 	L2NftCollectionModel interface {
 		CreateL2NftCollectionTable() error
 		DropL2NftCollectionTable() error
+		IfCollectionExistsByCollectionId(collectionId int64) (bool, error)
 	}
 	defaultL2NftCollectionModel struct {
 		sqlc.CachedConn
@@ -38,9 +41,10 @@ type (
 	L2NftCollection struct {
 		gorm.Model
 		AccountIndex int64
+		CollectionId int64
 		Name         string
 		Introduction string
-		Status       int
+		Status       int //Collection status indicates whether it is certified by L2. 0 means no, 1 means yes，Change this state with a transaction in the future
 	}
 )
 
@@ -74,4 +78,21 @@ func (m *defaultL2NftCollectionModel) CreateL2NftCollectionTable() error {
 */
 func (m *defaultL2NftCollectionModel) DropL2NftCollectionTable() error {
 	return m.DB.Migrator().DropTable(m.table)
+}
+func (m *defaultL2NftCollectionModel) IfCollectionExistsByCollectionId(collectionId int64) (bool, error) {
+	var res int64
+	dbTx := m.DB.Table(m.table).Where("collection_id = ? and deleted_at is NULL", collectionId).Count(&res)
+
+	if dbTx.Error != nil {
+		err := fmt.Sprintf("[collection.IfCollectionExistsByCollectionId] %s", dbTx.Error)
+		logx.Error(err)
+		return true, dbTx.Error
+	} else if res == 0 {
+		return false, nil
+	} else if res != 1 {
+		logx.Errorf("[collection.IfCollectionExistsByCollectionId] %s", ErrDuplicatedCollectionIndex)
+		return true, ErrDuplicatedCollectionIndex
+	} else {
+		return true, nil
+	}
 }

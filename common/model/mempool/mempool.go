@@ -20,6 +20,7 @@ package mempool
 import (
 	"fmt"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
+	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
@@ -54,6 +55,7 @@ type (
 		GetPendingLiquidityTxs() (mempoolTxs []*MempoolTx, err error)
 		GetPendingNftTxs() (mempoolTxs []*MempoolTx, err error)
 		CreateBatchedMempoolTxs(mempoolTxs []*MempoolTx) error
+		CreateMempoolTxAndL2CollectionAndNonce(mempoolTx *MempoolTx, nftInfo *nft.L2NftCollection) error
 		CreateMempoolTxAndL2Nft(mempoolTx *MempoolTx, nftInfo *nft.L2Nft) error
 		CreateMempoolTxAndL2NftExchange(mempoolTx *MempoolTx, offers []*nft.Offer, nftExchange *nft.L2NftExchange) error
 		CreateMempoolTxAndUpdateOffer(mempoolTx *MempoolTx, offer *nft.Offer, isUpdate bool) error
@@ -665,6 +667,35 @@ func (m *defaultMempoolModel) GetPendingNftTxs() (mempoolTxs []*MempoolTx, err e
 		}
 	}
 	return mempoolTxs, nil
+}
+
+func (m *defaultMempoolModel) CreateMempoolTxAndL2CollectionAndNonce(mempoolTx *MempoolTx, nftCollectionInfo *nft.L2NftCollection) error {
+	return m.DB.Transaction(func(db *gorm.DB) error { // transact
+		dbTx := db.Table(m.table).Create(mempoolTx)
+		if dbTx.Error != nil {
+			logx.Errorf("[mempool.CreateMempoolTxAndL2Collection] %s", dbTx.Error)
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			logx.Errorf("[mempool.CreateMempoolTxAndL2Collection] Create Invalid Mempool Tx")
+			return ErrInvalidMempoolTx
+		}
+		dbTx = db.Table(nft.L2NftCollectionTableName).Create(nftCollectionInfo)
+		if dbTx.Error != nil {
+			logx.Errorf("[mempool.CreateMempoolTxAndL2Collection] %s", dbTx.Error)
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			logx.Errorf("[mempool.CreateMempoolTxAndL2Collection] Create Invalid nft collection info")
+			return ErrInvalidMempoolTx
+		}
+		err := db.Model(&account.Account{}).Where("account_index = ?", nftCollectionInfo.AccountIndex).Update("collection_nonce", nftCollectionInfo.CollectionId)
+		if err != nil {
+			logx.Errorf("[mempool.CreateMempoolTxAndL2Collection] %s", err)
+			return dbTx.Error
+		}
+		return nil
+	})
 }
 
 func (m *defaultMempoolModel) CreateMempoolTxAndL2Nft(mempoolTx *MempoolTx, nftInfo *nft.L2Nft) error {
