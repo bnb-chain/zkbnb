@@ -202,7 +202,7 @@ func (l *SendTransferTxLogic) SendTransferTx(in *globalRPCProto.ReqSendTxByRawIn
 func (l *SendTransferTxLogic) HandleCreateFailTransferTx(txInfo *commonTx.TransferTxInfo, err error) error {
 	errCreate := l.CreateFailTransferTx(txInfo, err.Error())
 	if errCreate != nil {
-		logx.Error("[sendtransfertxlogic.HandleCreateFailTransferTx] %s", errCreate.Error())
+		logx.Errorf("[sendtransfertxlogic.HandleCreateFailTransferTx] %s", errCreate.Error())
 		return errCreate
 	} else {
 		errInfo := fmt.Sprintf("[sendtransfertxlogic.HandleCreateFailTransferTx] %s", err.Error())

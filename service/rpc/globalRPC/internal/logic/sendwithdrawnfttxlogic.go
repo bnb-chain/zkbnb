@@ -237,7 +237,7 @@ func (l *SendWithdrawNftTxLogic) SendWithdrawNftTx(in *globalRPCProto.ReqSendTxB
 func (l *SendWithdrawNftTxLogic) HandleCreateFailWithdrawNftTx(txInfo *commonTx.WithdrawNftTxInfo, err error) error {
 	errCreate := l.CreateFailWithdrawNftTx(txInfo, err.Error())
 	if errCreate != nil {
-		logx.Error("[sendtransfertxlogic.HandleCreateFailWithdrawNftTx] %s", errCreate.Error())
+		logx.Errorf("[sendtransfertxlogic.HandleCreateFailWithdrawNftTx] %s", errCreate.Error())
 		return errCreate
 	} else {
 		errInfo := fmt.Sprintf("[sendtransfertxlogic.HandleCreateFailWithdrawNftTx] %s", err.Error())

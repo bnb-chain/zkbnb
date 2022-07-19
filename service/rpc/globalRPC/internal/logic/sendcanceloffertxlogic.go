@@ -224,7 +224,7 @@ func (l *SendCancelOfferTxLogic) SendCancelOfferTx(in *globalRPCProto.ReqSendTxB
 func (l *SendCancelOfferTxLogic) HandleCreateFailCancelOfferTx(txInfo *commonTx.CancelOfferTxInfo, err error) error {
 	errCreate := l.CreateFailCancelOfferTx(txInfo, err.Error())
 	if errCreate != nil {
-		logx.Error("[sendtransfertxlogic.HandleCreateFailCancelOfferTx] %s", errCreate.Error())
+		logx.Errorf("[sendtransfertxlogic.HandleCreateFailCancelOfferTx] %s", errCreate.Error())
 		return errCreate
 	} else {
 		errInfo := fmt.Sprintf("[sendtransfertxlogic.HandleCreateFailCancelOfferTx] %s", err.Error())

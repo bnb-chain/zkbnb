@@ -236,3 +236,22 @@ func (m *model) GetLatestOfferIdForWrite(ctx context.Context, accountIndex int64
 	nftIndex, _ := value.(*int64)
 	return *nftIndex, nil
 }
+
+func (m *model) GetBasicAccountInfo(ctx context.Context, accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error) {
+	oAccountInfo, err := m.accountModel.GetAccountByAccountIndex(accountIndex)
+	if err != nil {
+		logx.Errorf("[GetBasicAccountInfo] unable to get account by account index: %s", err.Error())
+		return nil, err
+	}
+	accountInfo, err = commonAsset.ToFormatAccountInfo(oAccountInfo)
+	if err != nil {
+		logx.Errorf("[GetBasicAccountInfo] unable to get basic account info: %s", err.Error())
+		return nil, err
+	}
+	// TODO: this set cache operation will be deleted in the future, we should use GetLatestLiquidityInfoForReadWithCache anywhere
+	// and delete the cache where mempool be changed
+	if err := m.cache.Set(ctx, multcache.SpliceCacheKeyBasicAccountByAccountIndex(accountIndex), accountInfo, 10); err != nil {
+		return nil, err
+	}
+	return accountInfo, nil
+}
