@@ -184,7 +184,7 @@ func (l *SendWithdrawTxLogic) SendWithdrawTx(in *globalRPCProto.ReqSendTxByRawIn
 func (l *SendWithdrawTxLogic) HandleCreateFailWithdrawTx(txInfo *commonTx.WithdrawTxInfo, err error) error {
 	errCreate := l.CreateFailWithdrawTx(txInfo, err.Error())
 	if errCreate != nil {
-		logx.Error("[sendwithdrawtxlogic.HandleCreateFailWithdrawTx] %s", errCreate.Error())
+		logx.Errorf("[sendwithdrawtxlogic.HandleCreateFailWithdrawTx] %s", errCreate.Error())
 		return errCreate
 	} else {
 		errInfo := fmt.Sprintf("[sendwithdrawtxlogic.HandleCreateFailWithdrawTx] %s", err.Error())

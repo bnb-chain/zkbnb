@@ -48,6 +48,10 @@ func SpliceCacheKeyAccountByAccountPk(accountPk string) string {
 	return "cache:account_accountPk_" + accountPk
 }
 
+func SpliceCacheKeyBasicAccountByAccountIndex(accountIndex int64) string {
+	return fmt.Sprintf("cache:basicAccount_accountIndex_%d", accountIndex)
+}
+
 func SpliceCacheKeyAccountByAccountIndex(accountIndex int64) string {
 	return fmt.Sprintf("cache:account_accountIndex_%d", accountIndex)
 }

@@ -12,6 +12,8 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 )
 
+//go:generate mockgen -source api.go -destination api_mock.go -package commglobalmap
+
 type GlobalAssetInfo struct {
 	AccountIndex   int64
 	AssetId        int64
@@ -27,6 +29,7 @@ type Commglobalmap interface {
 	GetLatestLiquidityInfoForReadWithCache(ctx context.Context, pairIndex int64) (liquidityInfo *commGlobalmapHandler.LiquidityInfo, err error)
 	GetLatestLiquidityInfoForRead(ctx context.Context, pairIndex int64) (liquidityInfo *commGlobalmapHandler.LiquidityInfo, err error)
 	GetLatestOfferIdForWrite(ctx context.Context, accountIndex int64) (nftIndex int64, err error)
+	GetBasicAccountInfo(ctx context.Context, accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error)
 }
 
 func New(svcCtx *svc.ServiceContext) Commglobalmap {

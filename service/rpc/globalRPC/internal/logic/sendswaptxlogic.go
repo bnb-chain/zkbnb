@@ -295,7 +295,7 @@ func (l *SendSwapTxLogic) SendSwapTx(in *globalRPCProto.ReqSendTxByRawInfo) (res
 func (l *SendSwapTxLogic) HandleCreateFailSwapTx(txInfo *commonTx.SwapTxInfo, err error) error {
 	errCreate := l.CreateFailSwapTx(txInfo, err.Error())
 	if errCreate != nil {
-		logx.Error("[sendswaptxlogic.HandleCreateFailSwapTx] %s", errCreate.Error())
+		logx.Errorf("[sendswaptxlogic.HandleCreateFailSwapTx] %s", errCreate.Error())
 		return errCreate
 	} else {
 		errInfo := fmt.Sprintf("[sendswaptxlogic.HandleCreateFailSwapTx] %s", err.Error())

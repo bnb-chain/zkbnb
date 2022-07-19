@@ -62,11 +62,11 @@ func NewSendAddLiquidityTxLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 func (l *SendAddLiquidityTxLogic) HandleCreateFailAddLiquidityTx(txInfo *commonTx.AddLiquidityTxInfo, err error) error {
 	errCreate := l.CreateFailAddLiquidityTx(txInfo, err.Error())
 	if errCreate != nil {
-		logx.Error("[sendaddliquiditytxlogic.HandleFailAddLiquidityTx] %s", errCreate.Error())
+		logx.Errorf("[sendaddliquiditytxlogic.HandleFailAddLiquidityTx] %s", errCreate.Error())
 		return errCreate
 	} else {
 		errInfo := fmt.Sprintf("[sendaddliquiditytxlogic.HandleFailAddLiquidityTx] %s", err.Error())
-		logx.Error(errInfo)
+		logx.Errorf(errInfo)
 		return errors.New(errInfo)
 	}
 }

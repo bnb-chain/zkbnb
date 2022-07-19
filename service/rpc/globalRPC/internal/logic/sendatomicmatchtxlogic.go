@@ -302,7 +302,7 @@ func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(reqSendTx *globalRPCProto.Req
 func (l *SendAtomicMatchTxLogic) HandleCreateFailAtomicMatchTx(txInfo *commonTx.AtomicMatchTxInfo, err error) error {
 	errCreate := l.CreateFailAtomicMatchTx(txInfo, err.Error())
 	if errCreate != nil {
-		logx.Error("[sendtransfertxlogic.HandleCreateFailAtomicMatchTx] %s", errCreate.Error())
+		logx.Errorf("[sendtransfertxlogic.HandleCreateFailAtomicMatchTx] %s", errCreate.Error())
 		return errCreate
 	} else {
 		errInfo := fmt.Sprintf("[sendtransfertxlogic.HandleCreateFailAtomicMatchTx] %s", err.Error())
