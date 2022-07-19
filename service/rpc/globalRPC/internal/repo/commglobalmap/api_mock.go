@@ -125,6 +125,21 @@ func (mr *MockCommglobalmapMockRecorder) GetLatestLiquidityInfoForReadWithCache(
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestLiquidityInfoForReadWithCache", reflect.TypeOf((*MockCommglobalmap)(nil).GetLatestLiquidityInfoForReadWithCache), ctx, pairIndex)
 }
 
+// GetLatestNftInfoForRead mocks base method.
+func (m *MockCommglobalmap) GetLatestNftInfoForRead(ctx context.Context, nftIndex int64) (*commonAsset.NftInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLatestNftInfoForRead", ctx, nftIndex)
+	ret0, _ := ret[0].(*commonAsset.NftInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLatestNftInfoForRead indicates an expected call of GetLatestNftInfoForRead.
+func (mr *MockCommglobalmapMockRecorder) GetLatestNftInfoForRead(ctx, nftIndex interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestNftInfoForRead", reflect.TypeOf((*MockCommglobalmap)(nil).GetLatestNftInfoForRead), ctx, nftIndex)
+}
+
 // GetLatestOfferIdForWrite mocks base method.
 func (m *MockCommglobalmap) GetLatestOfferIdForWrite(ctx context.Context, accountIndex int64) (int64, error) {
 	m.ctrl.T.Helper()

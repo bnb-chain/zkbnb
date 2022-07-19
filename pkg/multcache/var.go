@@ -83,6 +83,10 @@ func SpliceCacheKeyOfferIdByAccountIndex(accountIndex int64) string {
 	return fmt.Sprintf("cache:offerId_accountIndex_%d", accountIndex)
 }
 
+func SpliceCacheKeyNftInfoByAccountIndex(nftIndex int64) string {
+	return fmt.Sprintf("cache:nftInfo_nftIndex_%d", nftIndex)
+}
+
 // cache key prefix: price
 func SpliceCacheKeyCurrencyPrice() string {
 	return "cache:currencyPrice:"
