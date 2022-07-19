@@ -258,7 +258,6 @@ func (m *model) GetBasicAccountInfo(ctx context.Context, accountIndex int64) (ac
 }
 
 func (m *model) GetLatestNftInfoForRead(ctx context.Context, nftIndex int64) (*commonAsset.NftInfo, error) {
-	//
 	dbNftInfo, err := m.nftModel.GetNftAsset(nftIndex)
 	if err != nil {
 		logx.Errorf("[GetNftAsset] unable to get latest nft by nft index: %v", err)
