@@ -3,6 +3,7 @@ module github.com/bnb-chain/zkbas
 go 1.16
 
 require (
+	github.com/bnb-chain/bas-smt v0.0.0-20220713015932-528021957c2d
 	github.com/zeromicro/go-zero v1.3.4
 	gorm.io/gorm v1.23.4
 )

@@ -20,19 +20,25 @@ package proverUtil
 import (
 	"errors"
 
+	bsmt "github.com/bnb-chain/bas-smt"
+	"github.com/bnb-chain/bas-smt/database"
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonTx"
+	"github.com/bnb-chain/zkbas/pkg/treedb"
 )
 
 func ConstructFullExitNftCryptoTx(
 	oTx *Tx,
-	accountTree *Tree,
-	accountAssetsTree *[]*Tree,
-	liquidityTree *Tree,
-	nftTree *Tree,
+	treeDBDriver treedb.Driver,
+	treeDB database.TreeDB,
+	accountTree bsmt.SparseMerkleTree,
+	accountAssetsTree *[]bsmt.SparseMerkleTree,
+	liquidityTree bsmt.SparseMerkleTree,
+	nftTree bsmt.SparseMerkleTree,
 	accountModel AccountModel,
+	finalityBlockNr uint64,
 ) (cryptoTx *CryptoTx, err error) {
 	if oTx.TxType != commonTx.TxTypeFullExitNft {
 		logx.Errorf("[ConstructFullExitNftCryptoTx] invalid tx type")
@@ -60,6 +66,8 @@ func ConstructFullExitNftCryptoTx(
 	cryptoTx, err = ConstructWitnessInfo(
 		oTx,
 		accountModel,
+		treeDBDriver,
+		treeDB,
 		accountTree,
 		accountAssetsTree,
 		liquidityTree,
@@ -68,6 +76,7 @@ func ConstructFullExitNftCryptoTx(
 		proverAccounts,
 		proverLiquidityInfo,
 		proverNftInfo,
+		finalityBlockNr,
 	)
 	if err != nil {
 		logx.Errorf("[ConstructFullExitNftCryptoTx] unable to construct witness info: %s", err.Error())

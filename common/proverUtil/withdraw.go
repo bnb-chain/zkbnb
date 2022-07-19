@@ -21,21 +21,27 @@ import (
 	"errors"
 	"math/big"
 
+	bsmt "github.com/bnb-chain/bas-smt"
+	"github.com/bnb-chain/bas-smt/database"
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/pkg/treedb"
 )
 
 func ConstructWithdrawCryptoTx(
 	oTx *Tx,
-	accountTree *Tree,
-	accountAssetsTree *[]*Tree,
-	liquidityTree *Tree,
-	nftTree *Tree,
+	treeDBDriver treedb.Driver,
+	treeDB database.TreeDB,
+	accountTree bsmt.SparseMerkleTree,
+	accountAssetsTree *[]bsmt.SparseMerkleTree,
+	liquidityTree bsmt.SparseMerkleTree,
+	nftTree bsmt.SparseMerkleTree,
 	accountModel AccountModel,
+	finalityBlockNr uint64,
 ) (cryptoTx *CryptoTx, err error) {
 	if oTx.TxType != commonTx.TxTypeWithdraw {
 		logx.Errorf("[ConstructWithdrawCryptoTx] invalid tx type")
@@ -63,6 +69,8 @@ func ConstructWithdrawCryptoTx(
 	cryptoTx, err = ConstructWitnessInfo(
 		oTx,
 		accountModel,
+		treeDBDriver,
+		treeDB,
 		accountTree,
 		accountAssetsTree,
 		liquidityTree,
@@ -71,6 +79,7 @@ func ConstructWithdrawCryptoTx(
 		proverAccounts,
 		proverLiquidityInfo,
 		proverNftInfo,
+		0,
 	)
 	if err != nil {
 		logx.Errorf("[ConstructWithdrawCryptoTx] unable to construct witness info: %s", err.Error())
