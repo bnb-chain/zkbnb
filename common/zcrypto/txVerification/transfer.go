@@ -100,7 +100,7 @@ func VerifyTransferTxInfo(
 	}
 	isValid, err := pk.Verify(txInfo.Sig, msgHash, hFunc)
 	if err != nil {
-		logx.Errorf("[VerifyTransferTxInfo] unable to verify signature:", err)
+		logx.Errorf("[VerifyTransferTxInfo] unable to verify signature: %s", err.Error())
 		return nil, err
 	}
 	if !isValid {
