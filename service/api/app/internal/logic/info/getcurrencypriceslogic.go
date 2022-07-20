@@ -43,6 +43,12 @@ func (l *GetCurrencyPricesLogic) GetCurrencyPrices(req *types.ReqGetCurrencyPric
 			logx.Errorf("[GetCurrencyPrice] err:%v", err)
 			return nil, err
 		}
+		if asset.AssetSymbol == "LEG" {
+			price = 1.0
+		}
+		if asset.AssetSymbol == "REY" {
+			price = 0.5
+		}
 		resp.Data = append(resp.Data, &types.DataCurrencyPrices{
 			Pair:    asset.AssetSymbol + "/" + "USDT",
 			AssetId: asset.AssetId,
