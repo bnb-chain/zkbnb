@@ -17,6 +17,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
+	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/config"
 )
 
@@ -33,6 +34,10 @@ type ServiceContext struct {
 	L1BlockMonitorModel   l1BlockMonitor.L1BlockMonitorModel
 
 	RedisConnection *redis.Redis
+	GormPointer     *gorm.DB
+	Cache           multcache.MultCache
+	Conn            sqlx.SqlConn
+	Config          config.Config
 }
 
 func WithRedis(redisType string, redisPass string) redis.Option {
@@ -61,5 +66,9 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		L2AssetInfoModel:      asset.NewAssetInfoModel(conn, c.CacheRedis, gormPointer),
 		SysConfigModel:        sysconfig.NewSysconfigModel(conn, c.CacheRedis, gormPointer),
 		RedisConnection:       redisConn,
+		GormPointer:           gormPointer,
+		Cache:                 multcache.NewGoCache(100, 10),
+		Conn:                  conn,
+		Config:                c,
 	}
 }

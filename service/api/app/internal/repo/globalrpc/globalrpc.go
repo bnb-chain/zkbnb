@@ -91,7 +91,7 @@ func (m *globalRPC) GetLatestAccountInfoByAccountIndex(ctx context.Context, acco
 		return res, nil
 	}
 	account := &globalRPCProto.RespGetLatestAccountInfoByAccountIndex{}
-	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountByAccountIndex(accountIndex), account, 10, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountByAccountIndex(accountIndex), account, 5, f)
 	if err != nil {
 		return nil, err
 	}

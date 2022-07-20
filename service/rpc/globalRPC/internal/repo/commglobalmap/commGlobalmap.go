@@ -45,7 +45,7 @@ func (m *model) GetLatestAccountInfoWithCache(ctx context.Context, accountIndex 
 		return account, nil
 	}
 	accountInfo := &account.Account{}
-	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountByAccountIndex(accountIndex), accountInfo, 1, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountByAccountIndex(accountIndex), accountInfo, 10, f)
 	if err != nil {
 		return nil, err
 	}
@@ -55,6 +55,21 @@ func (m *model) GetLatestAccountInfoWithCache(ctx context.Context, accountIndex 
 		return nil, err
 	}
 	return res, nil
+}
+
+func (m *model) SetLatestAccountInfoInToCache(ctx context.Context, accountIndex int64) error {
+	accountInfo, err := m.GetLatestAccountInfo(ctx, accountIndex)
+	if err != nil {
+		return err
+	}
+	account, err := commonAsset.FromFormatAccountInfo(accountInfo)
+	if err != nil {
+		return err
+	}
+	if err := m.cache.Set(ctx, multcache.SpliceCacheKeyAccountByAccountIndex(accountIndex), account, 10); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (m *model) DeleteLatestAccountInfoInCache(ctx context.Context, accountIndex int64) error {
@@ -122,11 +137,6 @@ func (m *model) GetLatestAccountInfo(ctx context.Context, accountIndex int64) (*
 	}
 	accountInfo.Nonce = accountInfo.Nonce + 1
 	accountInfo.CollectionNonce = accountInfo.CollectionNonce + 1
-	// TODO: this set cache operation will be deleted in the future, we should use GetLatestAccountInfoWithCache anywhere
-	// and delete the cache where mempool be changed
-	if err := m.cache.Set(ctx, multcache.SpliceCacheKeyAccountByAccountIndex(accountIndex), accountInfo, 1); err != nil {
-		return nil, err
-	}
 	return accountInfo, nil
 }
 
@@ -212,7 +222,7 @@ func (m *model) GetLatestLiquidityInfoForRead(ctx context.Context, pairIndex int
 		logx.Errorf("[json.Marshal] unable to marshal: %v", err)
 		return nil, err
 	}
-	if err := m.cache.Set(ctx, multcache.SpliceCacheKeyLiquidityByPairIndex(pairIndex), infoBytes, 1); err != nil {
+	if err := m.cache.Set(ctx, multcache.SpliceCacheKeyLiquidityForReadByPairIndex(pairIndex), infoBytes, 1); err != nil {
 		return nil, err
 	}
 	return liquidityInfo, nil
@@ -238,6 +248,31 @@ func (m *model) GetLatestOfferIdForWrite(ctx context.Context, accountIndex int64
 	return *nftIndex, nil
 }
 
+func (m *model) GetBasicAccountInfoWithCache(ctx context.Context, accountIndex int64) (*commonAsset.AccountInfo, error) {
+	f := func() (interface{}, error) {
+		accountInfo, err := m.GetBasicAccountInfo(ctx, accountIndex)
+		if err != nil {
+			return nil, err
+		}
+		account, err := commonAsset.FromFormatAccountInfo(accountInfo)
+		if err != nil {
+			return nil, err
+		}
+		return account, nil
+	}
+	accountInfo := &account.Account{}
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyBasicAccountByAccountIndex(accountIndex), accountInfo, 10, f)
+	if err != nil {
+		return nil, err
+	}
+	account, _ := value.(*account.Account)
+	res, err := commonAsset.ToFormatAccountInfo(account)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 func (m *model) GetBasicAccountInfo(ctx context.Context, accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error) {
 	oAccountInfo, err := m.accountModel.GetAccountByAccountIndex(accountIndex)
 	if err != nil {
@@ -247,11 +282,6 @@ func (m *model) GetBasicAccountInfo(ctx context.Context, accountIndex int64) (ac
 	accountInfo, err = commonAsset.ToFormatAccountInfo(oAccountInfo)
 	if err != nil {
 		logx.Errorf("[GetBasicAccountInfo] unable to get basic account info: %s", err.Error())
-		return nil, err
-	}
-	// TODO: this set cache operation will be deleted in the future, we should use GetLatestLiquidityInfoForReadWithCache anywhere
-	// and delete the cache where mempool be changed
-	if err := m.cache.Set(ctx, multcache.SpliceCacheKeyBasicAccountByAccountIndex(accountIndex), accountInfo, 10); err != nil {
 		return nil, err
 	}
 	return accountInfo, nil
@@ -266,7 +296,7 @@ func (m *model) GetLatestNftInfoForRead(ctx context.Context, nftIndex int64) (*c
 	mempoolTxs, err := m.mempoolModel.GetPendingNftTxs()
 	if err != nil {
 		if err != mempool.ErrNotFound {
-			logx.Errorf("[GetLatestAccountInfo] unable to get mempool txs by account index: %s", err.Error())
+			logx.Errorf("[GetPendingNftTxs] unable to get mempool txs by account index: %s", err.Error())
 			return nil, err
 		}
 	}
@@ -279,20 +309,72 @@ func (m *model) GetLatestNftInfoForRead(ctx context.Context, nftIndex int64) (*c
 			}
 			nBalance, err := commonAsset.ComputeNewBalance(commonAsset.NftAssetType, nftInfo.String(), txDetail.BalanceDelta)
 			if err != nil {
-				logx.Errorf("[GetLatestAccountInfo] unable to compute new balance: %s", err.Error())
+				logx.Errorf("[ComputeNewBalance] unable to compute new balance: %s", err.Error())
 				return nil, err
 			}
 			nftInfo, err = commonAsset.ParseNftInfo(nBalance)
 			if err != nil {
-				logx.Errorf("[GetLatestAccountInfo] unable to parse nft info: %s", err.Error())
+				logx.Errorf("[ParseNftInfo] unable to parse nft info: %s", err.Error())
 				return nil, err
 			}
 		}
 	}
 	// TODO: this set cache operation will be deleted in the future, we should use GetLatestLiquidityInfoForReadWithCache anywhere
 	// and delete the cache where mempool be changed
-	if err := m.cache.Set(ctx, multcache.SpliceCacheKeyNftInfoByAccountIndex(nftIndex), nftInfo, 10); err != nil {
+	if err := m.cache.Set(ctx, multcache.SpliceCacheKeyNftInfoByNftIndex(nftIndex), nftInfo, 10); err != nil {
 		return nil, err
 	}
 	return nftInfo, nil
+}
+
+func (m *model) GetLatestLiquidityInfoForWrite(ctx context.Context, pairIndex int64) (liquidityInfo *commGlobalmapHandler.LiquidityInfo, err error) {
+	dbLiquidityInfo, err := m.liquidityModel.GetLiquidityByPairIndex(pairIndex)
+	if err != nil {
+		logx.Errorf("[GetLiquidityByPairIndex] err: %v", err)
+		return nil, err
+	}
+	mempoolTxs, err := m.mempoolModel.GetPendingLiquidityTxs()
+	if err != nil && err != mempool.ErrNotFound {
+		logx.Errorf("[GetPendingLiquidityTxs] err: %v", err)
+		return nil, err
+	}
+	liquidityInfo, err = commonAsset.ConstructLiquidityInfo(
+		pairIndex,
+		dbLiquidityInfo.AssetAId,
+		dbLiquidityInfo.AssetA,
+		dbLiquidityInfo.AssetBId,
+		dbLiquidityInfo.AssetB,
+		dbLiquidityInfo.LpAmount,
+		dbLiquidityInfo.KLast,
+		dbLiquidityInfo.FeeRate,
+		dbLiquidityInfo.TreasuryAccountIndex,
+		dbLiquidityInfo.TreasuryRate,
+	)
+	if err != nil {
+		logx.Errorf("[ConstructLiquidityInfo] err: %v", err)
+		return nil, err
+	}
+	for _, mempoolTx := range mempoolTxs {
+		for _, txDetail := range mempoolTx.MempoolDetails {
+			if txDetail.AssetType != commonAsset.LiquidityAssetType || liquidityInfo.PairIndex != txDetail.AssetId {
+				continue
+			}
+			nBalance, err := commonAsset.ComputeNewBalance(commonAsset.LiquidityAssetType, liquidityInfo.String(), txDetail.BalanceDelta)
+			if err != nil {
+				logx.Errorf("[ComputeNewBalance] err: %s", err)
+				return nil, err
+			}
+			liquidityInfo, err = commonAsset.ParseLiquidityInfo(nBalance)
+			if err != nil {
+				logx.Errorf("[ParseLiquidityInfo] unable to parse pool info: %v", err)
+				return nil, err
+			}
+		}
+	}
+	// TODO: this set cache operation will be deleted in the future, we should use GetLatestLiquidityInfoForReadWithCache anywhere
+	// and delete the cache where mempool be changed
+	if err := m.cache.Set(ctx, multcache.SpliceCacheKeyLiquidityInfoForWriteByPairIndex(pairIndex), liquidityInfo, 10); err != nil {
+		return nil, err
+	}
+	return liquidityInfo, nil
 }

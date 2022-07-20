@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 
 	"github.com/robfig/cron/v3"
@@ -47,7 +48,7 @@ func main() {
 		panic(err)
 	}
 	if _, err = cronjob.AddFunc("@every 10s", func() {
-		logic.MonitorMempool(ctx)
+		logic.MonitorMempool(context.Background(), ctx)
 	}); err != nil {
 		panic(err)
 	}
