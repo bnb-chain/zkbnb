@@ -65,6 +65,21 @@ func (mr *MockCommglobalmapMockRecorder) GetBasicAccountInfo(ctx, accountIndex i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBasicAccountInfo", reflect.TypeOf((*MockCommglobalmap)(nil).GetBasicAccountInfo), ctx, accountIndex)
 }
 
+// GetBasicAccountInfoWithCache mocks base method.
+func (m *MockCommglobalmap) GetBasicAccountInfoWithCache(ctx context.Context, accountIndex int64) (*commonAsset.AccountInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBasicAccountInfoWithCache", ctx, accountIndex)
+	ret0, _ := ret[0].(*commonAsset.AccountInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBasicAccountInfoWithCache indicates an expected call of GetBasicAccountInfoWithCache.
+func (mr *MockCommglobalmapMockRecorder) GetBasicAccountInfoWithCache(ctx, accountIndex interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBasicAccountInfoWithCache", reflect.TypeOf((*MockCommglobalmap)(nil).GetBasicAccountInfoWithCache), ctx, accountIndex)
+}
+
 // GetLatestAccountInfo mocks base method.
 func (m *MockCommglobalmap) GetLatestAccountInfo(ctx context.Context, accountIndex int64) (*commonAsset.AccountInfo, error) {
 	m.ctrl.T.Helper()
@@ -125,6 +140,21 @@ func (mr *MockCommglobalmapMockRecorder) GetLatestLiquidityInfoForReadWithCache(
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestLiquidityInfoForReadWithCache", reflect.TypeOf((*MockCommglobalmap)(nil).GetLatestLiquidityInfoForReadWithCache), ctx, pairIndex)
 }
 
+// GetLatestLiquidityInfoForWrite mocks base method.
+func (m *MockCommglobalmap) GetLatestLiquidityInfoForWrite(ctx context.Context, pairIndex int64) (*globalmapHandler.LiquidityInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLatestLiquidityInfoForWrite", ctx, pairIndex)
+	ret0, _ := ret[0].(*globalmapHandler.LiquidityInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLatestLiquidityInfoForWrite indicates an expected call of GetLatestLiquidityInfoForWrite.
+func (mr *MockCommglobalmapMockRecorder) GetLatestLiquidityInfoForWrite(ctx, pairIndex interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestLiquidityInfoForWrite", reflect.TypeOf((*MockCommglobalmap)(nil).GetLatestLiquidityInfoForWrite), ctx, pairIndex)
+}
+
 // GetLatestNftInfoForRead mocks base method.
 func (m *MockCommglobalmap) GetLatestNftInfoForRead(ctx context.Context, nftIndex int64) (*commonAsset.NftInfo, error) {
 	m.ctrl.T.Helper()
@@ -153,4 +183,18 @@ func (m *MockCommglobalmap) GetLatestOfferIdForWrite(ctx context.Context, accoun
 func (mr *MockCommglobalmapMockRecorder) GetLatestOfferIdForWrite(ctx, accountIndex interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestOfferIdForWrite", reflect.TypeOf((*MockCommglobalmap)(nil).GetLatestOfferIdForWrite), ctx, accountIndex)
+}
+
+// SetLatestAccountInfoInToCache mocks base method.
+func (m *MockCommglobalmap) SetLatestAccountInfoInToCache(ctx context.Context, accountIndex int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetLatestAccountInfoInToCache", ctx, accountIndex)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetLatestAccountInfoInToCache indicates an expected call of SetLatestAccountInfoInToCache.
+func (mr *MockCommglobalmapMockRecorder) SetLatestAccountInfoInToCache(ctx, accountIndex interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLatestAccountInfoInToCache", reflect.TypeOf((*MockCommglobalmap)(nil).SetLatestAccountInfoInToCache), ctx, accountIndex)
 }

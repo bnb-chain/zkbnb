@@ -1,0 +1,174 @@
+/*
+ * Copyright © 2021 Zecrey Protocol
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+package accountoperator
+
+import (
+	"context"
+	"errors"
+
+	"github.com/zecrey-labs/zecrey-legend/common/model/account"
+	table "github.com/zecrey-labs/zecrey-legend/common/model/account"
+	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
+	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/repo/errcode"
+	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
+)
+
+type model struct {
+	table string
+	db    *gorm.DB
+	cache multcache.MultCache
+}
+
+func (m *model) GetBasicAccountByAccountName(ctx context.Context, accountName string) (*table.Account, error) {
+	f := func() (interface{}, error) {
+		account := &table.Account{}
+		dbTx := m.db.Table(m.table).Where("account_name = ?", accountName).Find(&account)
+		if dbTx.Error != nil {
+			return nil, dbTx.Error
+		} else if dbTx.RowsAffected == 0 {
+			return nil, errcode.ErrDataNotExist
+		}
+		return account, nil
+	}
+	account := &table.Account{}
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountByAccountName(accountName), account, 10, f)
+	if err != nil {
+		return nil, err
+	}
+	account, _ = value.(*table.Account)
+	return account, nil
+}
+
+func (m *model) GetBasicAccountByAccountPk(ctx context.Context, accountPk string) (*table.Account, error) {
+	f := func() (interface{}, error) {
+		account := &table.Account{}
+		dbTx := m.db.Table(m.table).Where("public_key = ?", accountPk).Find(&account)
+		if dbTx.Error != nil {
+			return nil, dbTx.Error
+		} else if dbTx.RowsAffected == 0 {
+			return nil, errcode.ErrDataNotExist
+		}
+		return account, nil
+	}
+	account := &table.Account{}
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountByAccountPk(accountPk), account, 10, f)
+	if err != nil {
+		return nil, err
+	}
+	account, _ = value.(*table.Account)
+	return account, nil
+}
+
+/*
+	Func: GetAccountByAccountIndex
+	Params: accountIndex int64
+	Return: account Account, err error
+	Description: get account info by index
+*/
+
+func (m *model) GetAccountByAccountIndex(accountIndex int64) (account *table.Account, err error) {
+	dbTx := m.db.Table(m.table).Where("account_index = ?", accountIndex).Find(&account)
+	if dbTx.Error != nil {
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return nil, errcode.ErrDataNotExist
+	}
+	return account, nil
+}
+
+/*
+	Func: GetAccountByPk
+	Params: pk string
+	Return: account Account, err error
+	Description: get account info by public key
+*/
+
+func (m *model) GetAccountByPk(pk string) (account *table.Account, err error) {
+	dbTx := m.db.Table(m.table).Where("public_key = ?", pk).Find(&account)
+	if dbTx.Error != nil {
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return nil, errcode.ErrDataNotExist
+	}
+	return account, nil
+}
+
+/*
+	Func: GetAccountByAccountName
+	Params: accountName string
+	Return: account Account, err error
+	Description: get account info by account name
+*/
+func (m *model) GetAccountByAccountName(ctx context.Context, accountName string) (*table.Account, error) {
+	account := &table.Account{}
+	dbTx := m.db.Table(m.table).Where("account_name = ?", accountName).Find(&account)
+	if dbTx.Error != nil {
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return nil, errcode.ErrDataNotExist
+	}
+	return account, nil
+}
+
+/*
+	Func: GetAccountsList
+	Params: limit int, offset int64
+	Return: err error
+	Description:  For API /api/v1/info/getAccountsList
+
+*/
+func (m *model) GetAccountsList(limit int, offset int64) (accounts []*table.Account, err error) {
+	dbTx := m.db.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("account_index desc").Find(&accounts)
+	if dbTx.Error != nil {
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return nil, errcode.ErrDataNotExist
+	}
+	return accounts, nil
+}
+
+/*
+	Func: GetAccountsTotalCount
+	Params:
+	Return: count int64, err error
+	Description: used for counting total accounts for explorer dashboard
+*/
+func (m *model) GetAccountsTotalCount() (count int64, err error) {
+	dbTx := m.db.Table(m.table).Where("deleted_at is NULL").Count(&count)
+	if dbTx.Error != nil {
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	return count, nil
+}
+
+func (m *model) CreateActiveAccount(pendingNewAccounts []*account.Account) (err error) {
+	// TODO: ensure create will update existing account
+	dbTx := m.db.Table(m.table).CreateInBatches(pendingNewAccounts, len(pendingNewAccounts))
+	if dbTx.Error != nil {
+		logx.Errorf("[CreateInBatches] unable to create pending new account: %s", dbTx.Error.Error())
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected != int64(len(pendingNewAccounts)) {
+		logx.Errorf("[CreateMempoolAndActiveAccount] invalid new account")
+		return errors.New("[CreateMempoolAndActiveAccount] invalid new account")
+	}
+	return nil
+}

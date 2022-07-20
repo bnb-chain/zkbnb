@@ -17,6 +17,7 @@
 package logic
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"math/big"
@@ -36,12 +37,44 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/tree"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
+	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/repo/accountoperator"
+	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/repo/commglobalmap"
+	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/repo/l2eventoperator"
+	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/repo/liquidityoperator"
+	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/repo/mempooloperator"
+	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/repo/nftoperator"
 	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/svc"
 )
 
-func MonitorMempool(ctx *svc.ServiceContext) error {
+type mempoolMonitor struct {
+	logx.Logger
+	ctx               context.Context
+	svcCtx            *svc.ServiceContext
+	accountOperator   accountoperator.Model
+	mempoolOperator   mempooloperator.Model
+	liquidityOperator liquidityoperator.Model
+	nftOperator       nftoperator.Model
+	l2eventOperator   l2eventoperator.Model
+	commglobalmap     commglobalmap.Model
+}
+
+func NewMempoolMonitor(ctx context.Context, svcCtx *svc.ServiceContext) *mempoolMonitor {
+	return &mempoolMonitor{
+		Logger:            logx.WithContext(ctx),
+		ctx:               ctx,
+		svcCtx:            svcCtx,
+		accountOperator:   accountoperator.New(svcCtx),
+		mempoolOperator:   mempooloperator.New(svcCtx),
+		liquidityOperator: liquidityoperator.New(svcCtx),
+		nftOperator:       nftoperator.New(svcCtx),
+		l2eventOperator:   l2eventoperator.New(svcCtx),
+		commglobalmap:     commglobalmap.New(svcCtx),
+	}
+}
+
+func MonitorMempool(ctx context.Context, svcCtx *svc.ServiceContext) error {
 	logx.Errorf("========== start MonitorMempool ==========")
-	txs, err := ctx.L2TxEventMonitorModel.GetL2TxEventMonitorsByStatus(PendingStatus)
+	txs, err := svcCtx.L2TxEventMonitorModel.GetL2TxEventMonitorsByStatus(PendingStatus)
 	if err != nil {
 		if err == l2TxEventMonitor.ErrNotFound {
 			logx.Info("[MonitorMempool] no l2 oTx event monitors")
@@ -62,7 +95,7 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 		relatedAccountIndex      = make(map[int64]bool)
 	)
 	// get last handled request id
-	currentRequestId, err := ctx.L2TxEventMonitorModel.GetLastHandledRequestId()
+	currentRequestId, err := svcCtx.L2TxEventMonitorModel.GetLastHandledRequestId()
 	if err != nil {
 		logx.Errorf("[MonitorMempool] unable to get last handled request id: %s", err.Error())
 		return err
@@ -87,7 +120,7 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 				return err
 			}
 			// check if the account name has been registered
-			_, err = ctx.AccountModel.GetAccountByAccountName(txInfo.AccountName)
+			_, err = svcCtx.AccountModel.GetAccountByAccountName(txInfo.AccountName)
 			if err != ErrNotFound {
 				logx.Errorf("[MonitorMempool] account name has been registered")
 				return errors.New("[MonitorMempool] account name has been registered")
@@ -215,7 +248,7 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 			if newLiquidityInfoMap[txInfo.PairIndex] != nil {
 				liquidityInfo = newLiquidityInfoMap[txInfo.PairIndex]
 			} else {
-				liquidityInfo, err = ctx.LiquidityModel.GetLiquidityByPairIndex(txInfo.PairIndex)
+				liquidityInfo, err = svcCtx.LiquidityModel.GetLiquidityByPairIndex(txInfo.PairIndex)
 				if err != nil {
 					logx.Errorf("[MonitorMempool] unable to get liquidity by pair index: %s", err.Error())
 					return err
@@ -286,7 +319,7 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 			if newAccountInfoMap[accountNameHash] != nil {
 				accountInfo = newAccountInfoMap[accountNameHash]
 			} else {
-				accountInfo, err = getAccountInfoByAccountNameHash(accountNameHash, ctx.AccountModel)
+				accountInfo, err = getAccountInfoByAccountNameHash(accountNameHash, svcCtx.AccountModel)
 				if err != nil {
 					logx.Errorf("[getAccountInfoByAccountNameHash] unable to get account info: %s", err.Error())
 					return err
@@ -351,7 +384,7 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 			if newAccountInfoMap[accountNameHash] != nil {
 				accountInfo = newAccountInfoMap[accountNameHash]
 			} else {
-				accountInfo, err = getAccountInfoByAccountNameHash(accountNameHash, ctx.AccountModel)
+				accountInfo, err = getAccountInfoByAccountNameHash(accountNameHash, svcCtx.AccountModel)
 				if err != nil {
 					logx.Errorf("[MonitorMempool] unable to get account info: %s", err.Error())
 					return err
@@ -359,7 +392,7 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 			}
 			// complete oTx info
 			txInfo.AccountIndex = accountInfo.AccountIndex
-			redisLock, nftIndex, err := globalmapHandler.GetLatestNftIndexForWrite(ctx.NftModel, ctx.RedisConnection)
+			redisLock, nftIndex, err := globalmapHandler.GetLatestNftIndexForWrite(svcCtx.NftModel, svcCtx.RedisConnection)
 			if err != nil {
 				logx.Errorf("[MonitorMempool] unable to get latest nft index: %s", err.Error())
 				return err
@@ -505,7 +538,7 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 					}
 				}
 			} else {
-				newAccountInfoMap[accountNameHash], err = getAccountInfoByAccountNameHash(accountNameHash, ctx.AccountModel)
+				newAccountInfoMap[accountNameHash], err = getAccountInfoByAccountNameHash(accountNameHash, svcCtx.AccountModel)
 				if err != nil {
 					logx.Errorf("[MonitorMempool] getAccountInfoByAccountNameHash unable to get account info: %s", err.Error())
 					return err
@@ -517,7 +550,7 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 				}
 				key := util.GetAccountKey(accountInfo.AccountIndex)
 				lockKey := util.GetLockKey(key)
-				redisLock = redis.NewRedisLock(ctx.RedisConnection, lockKey)
+				redisLock = redis.NewRedisLock(svcCtx.RedisConnection, lockKey)
 				redisLock.SetExpire(5)
 				isAcquired, err := redisLock.Acquire()
 				if err != nil {
@@ -528,7 +561,7 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 					logx.Errorf("[MonitorMempool] unable to acquire the lock")
 					return errors.New("[MonitorMempool] unable to acquire the lock")
 				}
-				mempoolTxs, err := ctx.MempoolModel.GetPendingMempoolTxsByAccountIndex(accountInfo.AccountIndex)
+				mempoolTxs, err := svcCtx.MempoolModel.GetPendingMempoolTxsByAccountIndex(accountInfo.AccountIndex)
 				if err != nil {
 					if err != ErrNotFound {
 						logx.Errorf("[MonitorMempool] unable to get pending mempool txs: %s", err.Error())
@@ -610,7 +643,7 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 				relatedAccountIndex[accountInfo.AccountIndex] = true
 			}
 		case TxTypeFullExitNft:
-			pendingNewMempoolTxs, relatedAccountIndex, err = processFullExitNft(ctx,
+			pendingNewMempoolTxs, relatedAccountIndex, err = processFullExitNft(svcCtx,
 				txHash,
 				newAccountInfoMap, newNftInfoMap, oTx, pendingNewMempoolTxs, relatedAccountIndex)
 			if err != nil {
@@ -628,18 +661,40 @@ func MonitorMempool(ctx *svc.ServiceContext) error {
 	for index, _ := range relatedAccountIndex {
 		pendingDeletedKeys = append(pendingDeletedKeys, util.GetAccountKey(index))
 	}
-	_, _ = ctx.RedisConnection.Del(pendingDeletedKeys...)
-	// update db
-	if err = ctx.L2TxEventMonitorModel.CreateMempoolAndActiveAccount(pendingNewAccounts, pendingNewMempoolTxs,
-		pendingNewLiquidityInfos, pendingNewNfts, txs); err != nil {
-		logx.Errorf("[CreateMempoolAndActiveAccount] unable to create mempool txs and update l2 oTx event monitors, error: %v", err)
+	_, _ = svcCtx.RedisConnection.Del(pendingDeletedKeys...)
+
+	m := NewMempoolMonitor(ctx, svcCtx)
+	if err := m.accountOperator.CreateActiveAccount(pendingNewAccounts); err != nil {
+		logx.Errorf("[CreateActiveAccount] unable to create NewAccounts, error: %v", err)
+		return err
+	}
+	if err := m.mempoolOperator.CreateMempoolTxs(pendingNewMempoolTxs); err != nil {
+		logx.Errorf("[CreateMempoolTxs] unable to CreateMempoolTxs, error: %v", err)
+		return err
+	}
+	// update account cache for globalrpc sendtx interface
+	for _, mempooltx := range pendingNewMempoolTxs {
+		if err := m.commglobalmap.SetLatestAccountInfoInToCache(ctx, mempooltx.AccountIndex); err != nil {
+			logx.Errorf("[CreateMempoolTxs] unable to CreateMempoolTxs, error: %v", err)
+		}
+	}
+	if err := m.liquidityOperator.CreateLiquidities(pendingNewLiquidityInfos); err != nil {
+		logx.Errorf("[CreateLiquidities] unable to CreateLiquidities, error: %v", err)
+		return err
+	}
+	if err := m.nftOperator.CreateNfts(pendingNewNfts); err != nil {
+		logx.Errorf("[CreateNfts] unable to CreateLiquidities, error: %v", err)
+		return err
+	}
+	if err := m.l2eventOperator.UpdateL2Events(txs); err != nil {
+		logx.Errorf("[UpdateL2Events] unable to UpdateL2Events, error: %v", err)
 		return err
 	}
 	logx.Errorf("========== end MonitorMempool ==========")
 	return nil
 }
 
-func processFullExitNft(ctx *svc.ServiceContext,
+func processFullExitNft(svcCtx *svc.ServiceContext,
 	txHash string,
 	newAccountInfoMap map[string]*account.Account,
 	newNftInfoMap map[int64]*commonAsset.NftInfo, oTx *l2TxEventMonitor.L2TxEventMonitor, pendingNewMempoolTxs []*mempool.MempoolTx,
@@ -653,7 +708,7 @@ func processFullExitNft(ctx *svc.ServiceContext,
 	}
 	accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
 	if newAccountInfoMap[accountNameHash] == nil {
-		accountInfo, err = getAccountInfoByAccountNameHash(accountNameHash, ctx.AccountModel)
+		accountInfo, err = getAccountInfoByAccountNameHash(accountNameHash, svcCtx.AccountModel)
 		if err != nil {
 			logx.Errorf("[MonitorMempool] getAccountInfoByAccountNameHash unable to get account info: %s", err.Error())
 			return pendingNewMempoolTxs, nil, err
@@ -663,7 +718,7 @@ func processFullExitNft(ctx *svc.ServiceContext,
 	}
 	var nftAsset *nft.L2Nft
 	if newNftInfoMap[txInfo.NftIndex] == nil {
-		nftAsset, err = ctx.NftModel.GetNftAsset(txInfo.NftIndex)
+		nftAsset, err = svcCtx.NftModel.GetNftAsset(txInfo.NftIndex)
 		if err != nil {
 			if err == ErrNotFound {
 				emptyNftInfo := commonAsset.EmptyNftInfo(txInfo.NftIndex)
@@ -712,7 +767,7 @@ func processFullExitNft(ctx *svc.ServiceContext,
 	if txInfo.CreatorAccountIndex == 0 && txInfo.CreatorTreasuryRate == 0 {
 		creatorAccountNameHash = []byte{0}
 	} else {
-		creatorAccountInfo, err := ctx.AccountModel.GetAccountByAccountIndex(nftAsset.CreatorAccountIndex)
+		creatorAccountInfo, err := svcCtx.AccountModel.GetAccountByAccountIndex(nftAsset.CreatorAccountIndex)
 		if err != nil {
 			logx.Errorf("[MonitorMempool] unable to get account info: %s", err.Error())
 			return pendingNewMempoolTxs, nil, err
