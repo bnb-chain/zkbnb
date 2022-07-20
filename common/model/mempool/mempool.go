@@ -134,8 +134,18 @@ func (m *defaultMempoolModel) DropMempoolTxTable() error {
 	Description: used for Init globalMap
 */
 
-func (m *defaultMempoolModel) GetAllMempoolTxsList() (mempoolTxs []*MempoolTx, err error) {
+func (m *defaultMempoolModel) OrderMempoolTxDetails(tx *MempoolTx) (err error) {
 	var mempoolForeignKeyColumn = `MempoolDetails`
+	var tmpMempoolTxDetails []*MempoolTxDetail
+	err = m.DB.Model(&tx).Association(mempoolForeignKeyColumn).Find(&tmpMempoolTxDetails)
+	tx.MempoolDetails = make([]*MempoolTxDetail, len(tmpMempoolTxDetails))
+	for i := 0; i < len(tmpMempoolTxDetails); i++ {
+		tx.MempoolDetails[tmpMempoolTxDetails[i].Order] = tmpMempoolTxDetails[i]
+	}
+	return err
+}
+
+func (m *defaultMempoolModel) GetAllMempoolTxsList() (mempoolTxs []*MempoolTx, err error) {
 	dbTx := m.DB.Table(m.table).Order("created_at, id").Find(&mempoolTxs)
 	if dbTx.Error != nil {
 		logx.Errorf("[mempool.GetMempoolTxsList] %s", dbTx.Error)
@@ -143,7 +153,7 @@ func (m *defaultMempoolModel) GetAllMempoolTxsList() (mempoolTxs []*MempoolTx, e
 	}
 	// TODO: cache operation
 	for _, mempoolTx := range mempoolTxs {
-		err := m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+		err := m.OrderMempoolTxDetails(mempoolTx)
 		if err != nil {
 			logx.Errorf("[mempool.GetMempoolTxsList] Get Associate MempoolDetails Error")
 			return nil, err
@@ -159,7 +169,6 @@ func (m *defaultMempoolModel) GetAllMempoolTxsList() (mempoolTxs []*MempoolTx, e
 	Description: used for /api/v1/txVerification/getMempoolTxsList
 */
 func (m *defaultMempoolModel) GetMempoolTxsList(limit int64, offset int64) (mempoolTxs []*MempoolTx, err error) {
-	var mempoolForeignKeyColumn = `MempoolDetails`
 	dbTx := m.DB.Table(m.table).Where("status = ?", PendingTxStatus).Limit(int(limit)).Offset(int(offset)).Order("created_at desc, id desc").Find(&mempoolTxs)
 	if dbTx.Error != nil {
 		logx.Errorf("[mempool.GetMempoolTxsList] %s", dbTx.Error)
@@ -167,7 +176,7 @@ func (m *defaultMempoolModel) GetMempoolTxsList(limit int64, offset int64) (memp
 	}
 	// TODO: cache operation
 	for _, mempoolTx := range mempoolTxs {
-		err := m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+		err := m.OrderMempoolTxDetails(mempoolTx)
 		if err != nil {
 			logx.Errorf("[mempool.GetMempoolTxsList] Get Associate MempoolDetails Error")
 			return nil, err
@@ -177,7 +186,6 @@ func (m *defaultMempoolModel) GetMempoolTxsList(limit int64, offset int64) (memp
 }
 
 func (m *defaultMempoolModel) GetMempoolTxsByBlockHeight(l2BlockHeight int64) (rowsAffected int64, mempoolTxs []*MempoolTx, err error) {
-	var mempoolForeignKeyColumn = `MempoolDetails`
 	dbTx := m.DB.Table(m.table).Where("l2_block_height = ?", l2BlockHeight).Find(&mempoolTxs)
 	if dbTx.Error != nil {
 		logx.Errorf("[mempool.GetMempoolTxsByBlockHeight] %s", dbTx.Error)
@@ -185,7 +193,7 @@ func (m *defaultMempoolModel) GetMempoolTxsByBlockHeight(l2BlockHeight int64) (r
 	}
 	// TODO: cache operation
 	for _, mempoolTx := range mempoolTxs {
-		err := m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+		err := m.OrderMempoolTxDetails(mempoolTx)
 		if err != nil {
 			logx.Errorf("[mempool.GetMempoolTxsByBlockHeight] Get Associate MempoolDetails Error")
 			return 0, nil, err
@@ -201,7 +209,6 @@ func (m *defaultMempoolModel) GetMempoolTxsByBlockHeight(l2BlockHeight int64) (r
 */
 
 func (m *defaultMempoolModel) GetMempoolTxsListForCommitter() (mempoolTxs []*MempoolTx, err error) {
-	var mempoolForeignKeyColumn = `MempoolDetails`
 	dbTx := m.DB.Table(m.table).Where("status = ?", PendingTxStatus).Order("created_at, id").Find(&mempoolTxs)
 	if dbTx.Error != nil {
 		logx.Errorf("[mempool.GetMempoolTxsList] %s", dbTx.Error)
@@ -209,7 +216,7 @@ func (m *defaultMempoolModel) GetMempoolTxsListForCommitter() (mempoolTxs []*Mem
 	}
 	// TODO: cache operation
 	for _, mempoolTx := range mempoolTxs {
-		err := m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+		err := m.OrderMempoolTxDetails(mempoolTx)
 		if err != nil {
 			logx.Errorf("[mempool.GetMempoolTxsList] Get Associate MempoolDetails Error")
 			return nil, err
@@ -227,9 +234,8 @@ func (m *defaultMempoolModel) GetMempoolTxsListForCommitter() (mempoolTxs []*Mem
 
 func (m *defaultMempoolModel) GetMempoolTxsListByAccountIndex(accountIndex int64, limit int64, offset int64) (mempoolTxs []*MempoolTx, err error) {
 	var (
-		mempoolDetailTable      = `mempool_tx_detail`
-		mempoolIds              []int64
-		mempoolForeignKeyColumn = `MempoolDetails`
+		mempoolDetailTable = `mempool_tx_detail`
+		mempoolIds         []int64
 	)
 	var mempoolTxDetails []*MempoolTxDetail
 	dbTx := m.DB.Table(mempoolDetailTable).Select("tx_id").Where("account_index = ?", accountIndex).Find(&mempoolTxDetails).Group("tx_id").Find(&mempoolIds)
@@ -251,7 +257,7 @@ func (m *defaultMempoolModel) GetMempoolTxsListByAccountIndex(accountIndex int64
 	}
 	// TODO: cache operation
 	for _, mempoolTx := range mempoolTxs {
-		err := m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+		err := m.OrderMempoolTxDetails(mempoolTx)
 		if err != nil {
 			logx.Errorf("[mempool.GetMempoolTxsListByAccountIndex] Get Associate MempoolDetails Error")
 			return nil, err
@@ -269,9 +275,8 @@ func (m *defaultMempoolModel) GetMempoolTxsListByAccountIndex(accountIndex int64
 
 func (m *defaultMempoolModel) GetMempoolTxsListByAccountIndexAndTxType(accountIndex int64, txType uint8, limit int64, offset int64) (mempoolTxs []*MempoolTx, err error) {
 	var (
-		mempoolDetailTable      = `mempool_tx_detail`
-		mempoolIds              []int64
-		mempoolForeignKeyColumn = `MempoolDetails`
+		mempoolDetailTable = `mempool_tx_detail`
+		mempoolIds         []int64
 	)
 	var mempoolTxDetails []*MempoolTxDetail
 	dbTx := m.DB.Table(mempoolDetailTable).Select("tx_id").Where("account_index = ?", accountIndex).Find(&mempoolTxDetails).Group("tx_id").Find(&mempoolIds)
@@ -292,7 +297,7 @@ func (m *defaultMempoolModel) GetMempoolTxsListByAccountIndexAndTxType(accountIn
 	}
 	// TODO: cache operation
 	for _, mempoolTx := range mempoolTxs {
-		err := m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+		err := m.OrderMempoolTxDetails(mempoolTx)
 		if err != nil {
 			logx.Errorf("[mempool.GetMempoolTxsListByAccountIndexAndTxType] Get Associate MempoolDetails Error")
 			return nil, err
@@ -303,9 +308,8 @@ func (m *defaultMempoolModel) GetMempoolTxsListByAccountIndexAndTxType(accountIn
 
 func (m *defaultMempoolModel) GetMempoolTxsListByAccountIndexAndTxTypeArray(accountIndex int64, txTypeArray []uint8, limit int64, offset int64) (mempoolTxs []*MempoolTx, err error) {
 	var (
-		mempoolDetailTable      = `mempool_tx_detail`
-		mempoolIds              []int64
-		mempoolForeignKeyColumn = `MempoolDetails`
+		mempoolDetailTable = `mempool_tx_detail`
+		mempoolIds         []int64
 	)
 	var mempoolTxDetails []*MempoolTxDetail
 	dbTx := m.DB.Table(mempoolDetailTable).Select("tx_id").Where("account_index = ?", accountIndex).Find(&mempoolTxDetails).Group("tx_id").Find(&mempoolIds)
@@ -326,7 +330,7 @@ func (m *defaultMempoolModel) GetMempoolTxsListByAccountIndexAndTxTypeArray(acco
 	}
 	// TODO: cache operation
 	for _, mempoolTx := range mempoolTxs {
-		err := m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+		err := m.OrderMempoolTxDetails(mempoolTx)
 		if err != nil {
 			logx.Errorf("[mempool.GetMempoolTxsListByAccountIndexAndTxType] Get Associate MempoolDetails Error")
 			return nil, err
@@ -488,7 +492,6 @@ func (m *defaultMempoolModel) GetMempoolTxsTotalCountByPublicKey(pk string) (cou
 	Description: used for get  transactions in mempool by txVerification hash
 */
 func (m *defaultMempoolModel) GetMempoolTxByTxHash(hash string) (mempoolTx *MempoolTx, err error) {
-	var mempoolForeignKeyColumn = `MempoolDetails`
 	dbTx := m.DB.Table(m.table).Where("status = ? and tx_hash = ?", PendingTxStatus, hash).Find(&mempoolTx)
 	if dbTx.Error != nil {
 		if dbTx.Error == ErrNotFound {
@@ -503,7 +506,7 @@ func (m *defaultMempoolModel) GetMempoolTxByTxHash(hash string) (mempoolTx *Memp
 		logx.Info(err)
 		return nil, ErrNotFound
 	}
-	err = m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+	err = m.OrderMempoolTxDetails(mempoolTx)
 	if err != nil {
 		logx.Errorf("[mempool.GetMempoolTxByTxHash] Get Associate MempoolDetails Error")
 		return nil, err
@@ -603,7 +606,6 @@ func (m *defaultMempoolModel) GetLatestL2MempoolTxByAccountIndex(accountIndex in
 }
 
 func (m *defaultMempoolModel) GetPendingMempoolTxsByAccountIndex(accountIndex int64) (mempoolTxs []*MempoolTx, err error) {
-	var mempoolForeignKeyColumn = `MempoolDetails`
 	dbTx := m.DB.Table(m.table).Where("status = ? AND account_index = ?", PendingTxStatus, accountIndex).
 		Order("created_at, id").Find(&mempoolTxs)
 	if dbTx.Error != nil {
@@ -614,7 +616,7 @@ func (m *defaultMempoolModel) GetPendingMempoolTxsByAccountIndex(accountIndex in
 		return nil, ErrNotFound
 	}
 	for _, mempoolTx := range mempoolTxs {
-		err = m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+		err = m.OrderMempoolTxDetails(mempoolTx)
 		if err != nil {
 			logx.Errorf("[GetPendingMempoolTxsByAccountIndex] Get Associate MempoolDetails Error")
 			return nil, err
@@ -624,7 +626,6 @@ func (m *defaultMempoolModel) GetPendingMempoolTxsByAccountIndex(accountIndex in
 }
 
 func (m *defaultMempoolModel) GetPendingLiquidityTxs() (mempoolTxs []*MempoolTx, err error) {
-	var mempoolForeignKeyColumn = `MempoolDetails`
 	dbTx := m.DB.Table(m.table).Where("status = ? and pair_index != ?", PendingTxStatus, commonConstant.NilPairIndex).
 		Find(&mempoolTxs)
 	if dbTx.Error != nil {
@@ -637,7 +638,7 @@ func (m *defaultMempoolModel) GetPendingLiquidityTxs() (mempoolTxs []*MempoolTx,
 		return nil, ErrNotFound
 	}
 	for _, mempoolTx := range mempoolTxs {
-		err = m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+		err = m.OrderMempoolTxDetails(mempoolTx)
 		if err != nil {
 			logx.Errorf("[mempool.GetMempoolTxByTxHash] Get Associate MempoolDetails Error")
 			return nil, err
@@ -647,7 +648,6 @@ func (m *defaultMempoolModel) GetPendingLiquidityTxs() (mempoolTxs []*MempoolTx,
 }
 
 func (m *defaultMempoolModel) GetPendingNftTxs() (mempoolTxs []*MempoolTx, err error) {
-	var mempoolForeignKeyColumn = `MempoolDetails`
 	dbTx := m.DB.Table(m.table).Where("status = ? and nft_index != ?", PendingTxStatus, commonConstant.NilTxNftIndex).
 		Find(&mempoolTxs)
 	if dbTx.Error != nil {
@@ -660,7 +660,7 @@ func (m *defaultMempoolModel) GetPendingNftTxs() (mempoolTxs []*MempoolTx, err e
 		return nil, ErrNotFound
 	}
 	for _, mempoolTx := range mempoolTxs {
-		err = m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+		err = m.OrderMempoolTxDetails(mempoolTx)
 		if err != nil {
 			logx.Errorf("[mempool.GetMempoolTxByTxHash] Get Associate MempoolDetails Error")
 			return nil, err
@@ -794,7 +794,6 @@ func (m *defaultMempoolModel) CreateMempoolTxAndUpdateOffer(mempoolTx *MempoolTx
 }
 
 func (m *defaultMempoolModel) GetMempoolTxByTxId(id uint) (mempoolTx *MempoolTx, err error) {
-	var mempoolForeignKeyColumn = `MempoolDetails`
 	dbTx := m.DB.Table(m.table).Where("id = ?", id).
 		Find(&mempoolTx)
 	if dbTx.Error != nil {
@@ -806,7 +805,7 @@ func (m *defaultMempoolModel) GetMempoolTxByTxId(id uint) (mempoolTx *MempoolTx,
 		logx.Info(err)
 		return nil, ErrNotFound
 	}
-	err = m.DB.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
+	err = m.OrderMempoolTxDetails(mempoolTx)
 	if err != nil {
 		logx.Errorf("[mempool.GetMempoolTxByTxHash] Get Associate MempoolDetails Error")
 		return nil, err

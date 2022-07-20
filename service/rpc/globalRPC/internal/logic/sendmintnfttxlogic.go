@@ -82,7 +82,7 @@ func (l *SendMintNftTxLogic) SendMintNftTx(in *globalRPCProto.ReqSendMintNftTx) 
 	}
 	if gasAccountIndex != txInfo.GasAccountIndex {
 		logx.Errorf("[sendMintNftTx] invalid gas account index")
-		return nil, l.createFailMintNftTx(txInfo, err.Error())
+		return nil, l.createFailMintNftTx(txInfo, "invalid gas account index")
 	}
 	// check expired at
 	now := time.Now().UnixMilli()
