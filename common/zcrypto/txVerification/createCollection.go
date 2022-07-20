@@ -74,7 +74,7 @@ func VerifyCreateCollectionTxInfo(
 	}
 	// check balance
 	if accountInfoMap[txInfo.AccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(
-		assetDeltaMap[txInfo.AccountIndex][txInfo.GasFeeAssetId]) < 0 {
+		txInfo.GasFeeAssetAmount) < 0 {
 		logx.Errorf("[VerifyCollectionTxInfo] you don't have enough balance of asset Gas")
 		return nil, errors.New("[VerifyCollectionTxInfo] you don't have enough balance of asset Gas")
 	}

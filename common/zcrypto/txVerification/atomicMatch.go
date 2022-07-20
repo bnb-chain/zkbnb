@@ -134,12 +134,12 @@ func VerifyAtomicMatchTxInfo(
 	}
 	// check balance
 	if accountInfoMap[txInfo.BuyOffer.AccountIndex].AssetInfo[txInfo.BuyOffer.AssetId].Balance.Cmp(
-		assetDeltaMap[txInfo.BuyOffer.AccountIndex][txInfo.BuyOffer.AssetId]) < 0 {
+		new(big.Int).Abs(assetDeltaMap[txInfo.BuyOffer.AccountIndex][txInfo.BuyOffer.AssetId])) < 0 {
 		logx.Errorf("[VerifyAtomicMatchTxInfo] you don't have enough balance of asset A")
 		return nil, errors.New("[VerifyAtomicMatchTxInfo] you don't have enough balance of asset A")
 	}
 	if accountInfoMap[txInfo.AccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(
-		assetDeltaMap[txInfo.AccountIndex][txInfo.GasFeeAssetId]) < 0 {
+		new(big.Int).Abs(assetDeltaMap[txInfo.AccountIndex][txInfo.GasFeeAssetId])) < 0 {
 		logx.Errorf("[VerifyAtomicMatchTxInfo] you don't have enough balance of asset Gas")
 		return nil, errors.New("[VerifyAtomicMatchTxInfo] you don't have enough balance of asset Gas")
 	}

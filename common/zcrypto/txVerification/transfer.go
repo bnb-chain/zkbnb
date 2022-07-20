@@ -72,13 +72,13 @@ func VerifyTransferTxInfo(
 	// check if from account has enough assetABalance
 	// asset A
 	if accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.AssetId].Balance.Cmp(
-		assetDeltaMap[txInfo.FromAccountIndex][txInfo.AssetId]) < 0 {
+		new(big.Int).Abs(assetDeltaMap[txInfo.FromAccountIndex][txInfo.AssetId])) < 0 {
 		logx.Errorf("[VerifyTransferTxInfo] you don't have enough assetABalance")
 		return nil, errors.New("[VerifyTransferTxInfo] you don't have enough assetABalance")
 	}
 	// asset Gas
 	if accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(
-		assetDeltaMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId]) < 0 {
+		new(big.Int).Abs(assetDeltaMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId])) < 0 {
 		logx.Errorf("[VerifyTransferTxInfo] you don't have enough assetGasBalance")
 		return nil, errors.New("[VerifyTransferTxInfo] you don't have enough assetGasBalance")
 	}
