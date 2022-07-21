@@ -76,7 +76,7 @@ func VerifyCancelOfferTxInfo(
 	}
 	// check balance
 	if accountInfoMap[txInfo.AccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(
-		assetDeltaMap[txInfo.AccountIndex][txInfo.GasFeeAssetId]) < 0 {
+		new(big.Int).Abs(assetDeltaMap[txInfo.AccountIndex][txInfo.GasFeeAssetId])) < 0 {
 		logx.Errorf("[VerifyCancelOfferTxInfo] you don't have enough balance of asset Gas")
 		return nil, errors.New("[VerifyCancelOfferTxInfo] you don't have enough balance of asset Gas")
 	}

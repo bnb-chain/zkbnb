@@ -78,11 +78,11 @@ func VerifyWithdrawTxInfo(
 		)
 	}
 	// check balance
-	if accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.AssetId].Balance.Cmp(assetDeltaMap[txInfo.FromAccountIndex][txInfo.AssetId]) < 0 {
+	if accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.AssetId].Balance.Cmp(new(big.Int).Abs(assetDeltaMap[txInfo.FromAccountIndex][txInfo.AssetId])) < 0 {
 		logx.Errorf("[VerifyWithdrawTxInfo] you don't have enough balance of asset A")
 		return nil, errors.New("[VerifyWithdrawTxInfo] you don't have enough balance of asset A")
 	}
-	if accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(assetDeltaMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId]) < 0 {
+	if accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(new(big.Int).Abs(assetDeltaMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId])) < 0 {
 		logx.Errorf("[VerifyWithdrawTxInfo] you don't have enough balance of asset Gas")
 		return nil, errors.New("[VerifyWithdrawTxInfo] you don't have enough balance of asset Gas")
 	}

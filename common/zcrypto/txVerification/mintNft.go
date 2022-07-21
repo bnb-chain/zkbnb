@@ -88,7 +88,7 @@ func VerifyMintNftTxInfo(
 	}
 	// check balance
 	if accountInfoMap[txInfo.CreatorAccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(
-		assetDeltaMap[txInfo.CreatorAccountIndex][txInfo.GasFeeAssetId]) < 0 {
+		new(big.Int).Abs(assetDeltaMap[txInfo.CreatorAccountIndex][txInfo.GasFeeAssetId])) < 0 {
 		logx.Errorf("[VerifyMintNftTxInfo] you don't have enough balance of asset Gas")
 		return nil, errors.New("[VerifyMintNftTxInfo] you don't have enough balance of asset Gas")
 	}
