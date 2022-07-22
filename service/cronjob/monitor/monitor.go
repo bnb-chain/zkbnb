@@ -53,7 +53,7 @@ func main() {
 		panic(err)
 	}
 	if _, err = cronjob.AddFunc("@every 10s", func() {
-		logic.MonitorL2BlockEvents(zecreyRpcCli, c.ChainConfig.PendingBlocksCount,
+		logic.MonitorL2BlockEvents(context.Background(), ctx, zecreyRpcCli, c.ChainConfig.PendingBlocksCount,
 			ctx.MempoolModel, ctx.BlockModel, ctx.L1TxSenderModel)
 	}); err != nil {
 		panic(err)

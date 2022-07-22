@@ -17,6 +17,7 @@
 package logic
 
 import (
+	"context"
 	"sort"
 
 	"github.com/zecrey-labs/zecrey-eth-rpc/_rpc"
@@ -24,9 +25,43 @@ import (
 
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
+	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/repo/accountoperator"
+	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/repo/commglobalmap"
+	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/repo/l2eventoperator"
+	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/repo/liquidityoperator"
+	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/repo/mempooloperator"
+	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/repo/nftoperator"
+	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/svc"
 )
 
-func MonitorL2BlockEvents(bscCli *_rpc.ProviderClient, bscPendingBlocksCount uint64, mempoolModel MempoolModel, blockModel BlockModel, l1TxSenderModel L1TxSenderModel) (err error) {
+type l2BlockEventsMonitor struct {
+	logx.Logger
+	ctx               context.Context
+	svcCtx            *svc.ServiceContext
+	accountOperator   accountoperator.Model
+	mempoolOperator   mempooloperator.Model
+	liquidityOperator liquidityoperator.Model
+	nftOperator       nftoperator.Model
+	l2eventOperator   l2eventoperator.Model
+	commglobalmap     commglobalmap.Model
+}
+
+func Newl2BlockEventsMonitor(ctx context.Context, svcCtx *svc.ServiceContext) *l2BlockEventsMonitor {
+	return &l2BlockEventsMonitor{
+		Logger:            logx.WithContext(ctx),
+		ctx:               ctx,
+		svcCtx:            svcCtx,
+		accountOperator:   accountoperator.New(svcCtx),
+		mempoolOperator:   mempooloperator.New(svcCtx),
+		liquidityOperator: liquidityoperator.New(svcCtx),
+		nftOperator:       nftoperator.New(svcCtx),
+		l2eventOperator:   l2eventoperator.New(svcCtx),
+		commglobalmap:     commglobalmap.New(svcCtx),
+	}
+}
+
+func MonitorL2BlockEvents(ctx context.Context, svcCtx *svc.ServiceContext,
+	bscCli *_rpc.ProviderClient, bscPendingBlocksCount uint64, mempoolModel MempoolModel, blockModel BlockModel, l1TxSenderModel L1TxSenderModel) (err error) {
 	logx.Errorf("========== start MonitorL2BlockEvents ==========")
 	pendingSenders, err := l1TxSenderModel.GetL1TxSendersByTxStatus(L1TxSenderPendingStatus)
 	if err != nil {
@@ -156,9 +191,20 @@ func MonitorL2BlockEvents(bscCli *_rpc.ProviderClient, bscPendingBlocksCount uin
 	// update blocks, blockDetails, updateEvents, sender
 	// update assets, locked assets, liquidity
 	// delete mempool txs
-	if err = l1TxSenderModel.UpdateRelatedEventsAndResetRelatedAssetsAndTxs(pendingUpdateBlocks, pendingUpdateSenders, pendingUpdateMempoolTxs, pendingUpdateProofSenderStatus); err != nil {
+	if err = l1TxSenderModel.UpdateRelatedEventsAndResetRelatedAssetsAndTxs(pendingUpdateBlocks, pendingUpdateSenders, pendingUpdateProofSenderStatus); err != nil {
 		logx.Errorf("[MonitorL2BlockEvents] UpdateRelatedEventsAndResetRelatedAssetsAndTxs err:%v", err)
 		return err
+	}
+	m := Newl2BlockEventsMonitor(ctx, svcCtx)
+	if err := m.mempoolOperator.DeleteMempoolTxs(pendingUpdateMempoolTxs); err != nil {
+		logx.Errorf("[DeleteMempoolTxs] error: %v", err)
+		return err
+	}
+	// update account cache for globalrpc sendtx interface
+	for _, mempooltx := range pendingUpdateMempoolTxs {
+		if err := m.commglobalmap.SetLatestAccountInfoInToCache(ctx, mempooltx.AccountIndex); err != nil {
+			logx.Errorf("[CreateMempoolTxs] unable to CreateMempoolTxs, error: %v", err)
+		}
 	}
 	logx.Errorf("[MonitorL2BlockEvents] update blocks count: %v", len(pendingUpdateBlocks))
 	logx.Errorf("[MonitorL2BlockEvents] update senders count: %v", len(pendingUpdateSenders))

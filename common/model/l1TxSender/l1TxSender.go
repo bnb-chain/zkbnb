@@ -23,7 +23,6 @@ import (
 	"fmt"
 
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
-	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -50,7 +49,6 @@ type (
 		UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 			pendingUpdateBlocks []*block.Block,
 			pendingUpdateSenders []*L1TxSender,
-			pendingUpdateMempoolTxs []*mempool.MempoolTx,
 			pendingUpdateProofSenderStatus map[int64]int,
 		) (err error)
 	}
@@ -244,7 +242,6 @@ func (m *defaultL1TxSenderModel) DeleteL1TxSender(sender *L1TxSender) error {
 func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 	pendingUpdateBlocks []*block.Block,
 	pendingUpdateSenders []*L1TxSender,
-	pendingUpdateMempoolTxs []*mempool.MempoolTx,
 	pendingUpdateProofSenderStatus map[int64]int,
 ) (err error) {
 	const (
@@ -292,29 +289,6 @@ func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 				}
 				logx.Error("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] %s" + "Invalid sender:  " + string(senderInfo))
 				return errors.New("Invalid sender:  " + string(senderInfo))
-			}
-		}
-		// delete mempool txs
-		for _, pendingDeleteMempoolTx := range pendingUpdateMempoolTxs {
-			for _, detail := range pendingDeleteMempoolTx.MempoolDetails {
-				dbTx := tx.Table(mempool.DetailTableName).Where("id = ?", detail.ID).Delete(&detail)
-				if dbTx.Error != nil {
-					logx.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] %s", dbTx.Error)
-					return dbTx.Error
-				}
-				if dbTx.RowsAffected == 0 {
-					logx.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Delete Invalid Mempool Tx")
-					return errors.New("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Delete Invalid Mempool Tx")
-				}
-			}
-			dbTx := tx.Table(mempool.MempoolTableName).Where("id = ?", pendingDeleteMempoolTx.ID).Delete(&pendingDeleteMempoolTx)
-			if dbTx.Error != nil {
-				logx.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] %s", dbTx.Error)
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				logx.Error("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Delete Invalid Mempool Tx")
-				return errors.New("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Delete Invalid Mempool Tx")
 			}
 		}
 		// modify proofSender Status
