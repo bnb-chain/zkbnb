@@ -77,7 +77,6 @@ func ConstructCryptoTx(
 	liquidityTree bsmt.SparseMerkleTree,
 	nftTree bsmt.SparseMerkleTree,
 	accountModel AccountModel,
-	finalityBlockNr uint64,
 ) (cryptoTx *CryptoTx, err error) {
 	switch oTx.TxType {
 	case commonTx.TxTypeEmpty:
@@ -93,7 +92,6 @@ func ConstructCryptoTx(
 			liquidityTree,
 			nftTree,
 			accountModel,
-			finalityBlockNr,
 		)
 		if err != nil {
 			log.Println("[ConstructProverBlocks] unable to construct registerZNS crypto tx:", err)
@@ -110,7 +108,6 @@ func ConstructCryptoTx(
 			liquidityTree,
 			nftTree,
 			accountModel,
-			finalityBlockNr,
 		)
 		if err != nil {
 			log.Println("[ConstructProverBlocks] unable to construct create pair crypto tx:", err)
@@ -127,7 +124,6 @@ func ConstructCryptoTx(
 			liquidityTree,
 			nftTree,
 			accountModel,
-			finalityBlockNr,
 		)
 		if err != nil {
 			log.Println("[ConstructProverBlocks] unable to construct update pair crypto tx:", err)
@@ -144,7 +140,6 @@ func ConstructCryptoTx(
 			liquidityTree,
 			nftTree,
 			accountModel,
-			finalityBlockNr,
 		)
 		if err != nil {
 			log.Println("[ConstructProverBlocks] unable to construct deposit crypto tx:", err)
@@ -161,7 +156,6 @@ func ConstructCryptoTx(
 			liquidityTree,
 			nftTree,
 			accountModel,
-			finalityBlockNr,
 		)
 		if err != nil {
 			log.Println("[ConstructProverBlocks] unable to construct deposit nft crypto tx:", err)
@@ -178,7 +172,6 @@ func ConstructCryptoTx(
 			liquidityTree,
 			nftTree,
 			accountModel,
-			finalityBlockNr,
 		)
 		if err != nil {
 			log.Println("[ConstructProverBlocks] unable to construct transfer crypto tx:", err)
@@ -195,7 +188,6 @@ func ConstructCryptoTx(
 			liquidityTree,
 			nftTree,
 			accountModel,
-			finalityBlockNr,
 		)
 		if err != nil {
 			log.Println("[ConstructProverBlocks] unable to construct swap crypto tx:", err)
@@ -212,7 +204,6 @@ func ConstructCryptoTx(
 			liquidityTree,
 			nftTree,
 			accountModel,
-			finalityBlockNr,
 		)
 		if err != nil {
 			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
@@ -229,7 +220,6 @@ func ConstructCryptoTx(
 			liquidityTree,
 			nftTree,
 			accountModel,
-			finalityBlockNr,
 		)
 		if err != nil {
 			log.Println("[ConstructProverBlocks] unable to construct remove liquidity crypto tx:", err)
@@ -246,7 +236,6 @@ func ConstructCryptoTx(
 			liquidityTree,
 			nftTree,
 			accountModel,
-			finalityBlockNr,
 		)
 		if err != nil {
 			log.Println("[ConstructProverBlocks] unable to construct withdraw crypto tx:", err)
@@ -263,7 +252,6 @@ func ConstructCryptoTx(
 			liquidityTree,
 			nftTree,
 			accountModel,
-			finalityBlockNr,
 		)
 		if err != nil {
 			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
@@ -280,7 +268,6 @@ func ConstructCryptoTx(
 			liquidityTree,
 			nftTree,
 			accountModel,
-			finalityBlockNr,
 		)
 		if err != nil {
 			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
@@ -297,7 +284,6 @@ func ConstructCryptoTx(
 			liquidityTree,
 			nftTree,
 			accountModel,
-			finalityBlockNr,
 		)
 		if err != nil {
 			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
@@ -314,7 +300,6 @@ func ConstructCryptoTx(
 			liquidityTree,
 			nftTree,
 			accountModel,
-			finalityBlockNr,
 		)
 		if err != nil {
 			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
@@ -331,7 +316,6 @@ func ConstructCryptoTx(
 			liquidityTree,
 			nftTree,
 			accountModel,
-			finalityBlockNr,
 		)
 		if err != nil {
 			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
@@ -348,7 +332,6 @@ func ConstructCryptoTx(
 			liquidityTree,
 			nftTree,
 			accountModel,
-			finalityBlockNr,
 		)
 		if err != nil {
 			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
@@ -365,7 +348,6 @@ func ConstructCryptoTx(
 			liquidityTree,
 			nftTree,
 			accountModel,
-			finalityBlockNr,
 		)
 		if err != nil {
 			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
@@ -382,7 +364,6 @@ func ConstructCryptoTx(
 			liquidityTree,
 			nftTree,
 			accountModel,
-			finalityBlockNr,
 		)
 		if err != nil {
 			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)

@@ -20,6 +20,7 @@ package tree
 import (
 	"math/big"
 
+	bsmt "github.com/bnb-chain/bas-smt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 )
 
@@ -103,4 +104,32 @@ func EmptyNftNodeHash() []byte {
 	hFunc.Write(zero)
 	hFunc.Write(zero)
 	return hFunc.Sum(nil)
+}
+
+func CommitTrees(version uint64,
+	accountTree bsmt.SparseMerkleTree,
+	assetTrees *[]bsmt.SparseMerkleTree,
+	liquidityTree bsmt.SparseMerkleTree,
+	nftTree bsmt.SparseMerkleTree) error {
+
+	prunedVersion := bsmt.Version(version)
+	_, err := accountTree.Commit(&prunedVersion)
+	if err != nil {
+		return err
+	}
+	for _, assetTree := range *assetTrees {
+		_, err := assetTree.Commit(&prunedVersion)
+		if err != nil {
+			return err
+		}
+	}
+	_, err = liquidityTree.Commit(&prunedVersion)
+	if err != nil {
+		return err
+	}
+	_, err = nftTree.Commit(&prunedVersion)
+	if err != nil {
+		return err
+	}
+	return nil
 }

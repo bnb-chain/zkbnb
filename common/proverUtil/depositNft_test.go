@@ -69,7 +69,6 @@ func TestConstructDepositNftCryptoTxFirst(t *testing.T) {
 		liquidityTree,
 		nftTree,
 		accountModel,
-		0,
 	)
 	if err != nil {
 		t.Fatal(err)

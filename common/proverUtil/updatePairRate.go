@@ -38,7 +38,6 @@ func ConstructUpdatePairRateCryptoTx(
 	liquidityTree bsmt.SparseMerkleTree,
 	nftTree bsmt.SparseMerkleTree,
 	accountModel AccountModel,
-	finalityBlockNr uint64,
 ) (cryptoTx *CryptoTx, err error) {
 	if oTx.TxType != commonTx.TxTypeUpdatePairRate {
 		logx.Errorf("[ConstructUpdatePairRateCryptoTx] invalid tx type")
@@ -76,7 +75,6 @@ func ConstructUpdatePairRateCryptoTx(
 		proverAccounts,
 		proverLiquidityInfo,
 		proverNftInfo,
-		finalityBlockNr,
 	)
 	if err != nil {
 		logx.Errorf("[ConstructUpdatePairRateCryptoTx] unable to construct witness info: %s", err.Error())

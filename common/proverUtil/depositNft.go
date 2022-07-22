@@ -38,7 +38,6 @@ func ConstructDepositNftCryptoTx(
 	liquidityTree bsmt.SparseMerkleTree,
 	nftTree bsmt.SparseMerkleTree,
 	accountModel AccountModel,
-	finalityBlockNr uint64,
 ) (cryptoTx *CryptoTx, err error) {
 	if oTx.TxType != commonTx.TxTypeDepositNft {
 		logx.Errorf("[ConstructCreatePairCryptoTx] invalid tx type")
@@ -76,7 +75,6 @@ func ConstructDepositNftCryptoTx(
 		proverAccounts,
 		proverLiquidityInfo,
 		proverNftInfo,
-		finalityBlockNr,
 	)
 	if err != nil {
 		logx.Errorf("[ConstructDepositNftCryptoTx] unable to construct witness info: %s", err.Error())
