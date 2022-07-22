@@ -16,8 +16,18 @@ var (
 )
 
 var (
-	ErrDataNotExist     = zerror.New(30000, "Data not exist")
-	ErrInvalidSysconfig = zerror.New(30001, "Invalid system config")
-	ErrInvalidAssetType = zerror.New(30002, "invalid asset type")
-	ErrInvalidFailTx    = zerror.New(30003, "[ErrInvalidTxFail] invalid fail txVerification")
+	ErrDataNotExist           = zerror.New(30000, "Data not exist")
+	ErrSqlOperation           = zerror.New(30001, "Sql operation")
+	ErrToFormatAccountInfo    = zerror.New(30002, "Err ToFormatAccountInfo")
+	ErrFromFormatAccountInfo  = zerror.New(30003, "Err FromFormatAccountInfo")
+	ErrComputeNewBalance      = zerror.New(30004, "Err ComputeNewBalance")
+	ErrParseAccountAsset      = zerror.New(30005, "Err ParseAccountAsset")
+	ErrParseInt               = zerror.New(30006, "Err ParseInt")
+	ErrInvalidAssetType       = zerror.New(30007, "Invalid asset type")
+	ErrConstructLiquidityInfo = zerror.New(30008, "Err ConstructLiquidityInfo")
+	ErrParseLiquidityInfo     = zerror.New(30009, "Err ParseLiquidityInfo")
+	ErrParseNftInfo           = zerror.New(30010, "Err ParseNftInfo")
+	ErrInvalidFailTx          = zerror.New(30011, "Err invalid fail txVerification")
+
+	ErrInvalidSysconfig = zerror.New(30011, "Invalid system config")
 )

@@ -19,8 +19,10 @@ package commonAsset
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
 
+	"github.com/zecrey-labs/zecrey-legend/common/commonAsset/errcode"
 	"github.com/zecrey-labs/zecrey-legend/common/model/account"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
@@ -95,12 +97,10 @@ func FromFormatAccountInfo(formatAccountInfo *AccountInfo) (accountInfo *account
 }
 
 func ToFormatAccountInfo(accountInfo *account.Account) (formatAccountInfo *AccountInfo, err error) {
-	var (
-		assetInfo map[int64]*AccountAsset
-	)
+	var assetInfo map[int64]*AccountAsset
 	err = json.Unmarshal([]byte(accountInfo.AssetInfo), &assetInfo)
 	if err != nil {
-		return nil, err
+		return nil, errcode.ErrUnmarshal.RefineError(fmt.Sprint(accountInfo.AssetInfo))
 	}
 	formatAccountInfo = &AccountInfo{
 		AccountId:       accountInfo.ID,
