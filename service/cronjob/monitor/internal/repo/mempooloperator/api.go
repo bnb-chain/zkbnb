@@ -7,6 +7,7 @@ import (
 
 type Model interface {
 	CreateMempoolTxs(pendingNewMempoolTxs []*table.MempoolTx) (err error)
+	DeleteMempoolTxs(pendingUpdateMempoolTxs []*table.MempoolTx) (err error)
 }
 
 func New(svcCtx *svc.ServiceContext) Model {

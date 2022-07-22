@@ -28,3 +28,29 @@ func (m *model) CreateMempoolTxs(pendingNewMempoolTxs []*mempool.MempoolTx) (err
 	return nil
 
 }
+
+func (m *model) DeleteMempoolTxs(pendingUpdateMempoolTxs []*mempool.MempoolTx) (err error) {
+	for _, pendingDeleteMempoolTx := range pendingUpdateMempoolTxs {
+		for _, detail := range pendingDeleteMempoolTx.MempoolDetails {
+			dbTx := m.db.Table(mempool.DetailTableName).Where("id = ?", detail.ID).Delete(&detail)
+			if dbTx.Error != nil {
+				logx.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] %s", dbTx.Error)
+				return dbTx.Error
+			}
+			if dbTx.RowsAffected == 0 {
+				logx.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Delete Invalid Mempool Tx")
+				return errors.New("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Delete Invalid Mempool Tx")
+			}
+		}
+		dbTx := m.db.Table(mempool.MempoolTableName).Where("id = ?", pendingDeleteMempoolTx.ID).Delete(&pendingDeleteMempoolTx)
+		if dbTx.Error != nil {
+			logx.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] %s", dbTx.Error)
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			logx.Error("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Delete Invalid Mempool Tx")
+			return errors.New("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Delete Invalid Mempool Tx")
+		}
+	}
+	return nil
+}
