@@ -8,7 +8,7 @@ import (
 
 	table "github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
-	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/errcode"
 )
 
 type model struct {
@@ -17,24 +17,14 @@ type model struct {
 	cache multcache.MultCache
 }
 
-/*
-	Func: GetSysconfigByName
-	Params: name string
-	Return: info *Sysconfig, err error
-	Description: get sysconfig by config name
-*/
 func (m *model) GetSysconfigByName(ctx context.Context, name string) (*table.Sysconfig, error) {
 	f := func() (interface{}, error) {
 		var config table.Sysconfig
 		dbTx := m.db.Table(m.table).Where("name = ?", name).Find(&config)
 		if dbTx.Error != nil {
-			err := fmt.Sprintf("[sysconfig.GetSysconfigByName] %s", dbTx.Error)
-			logx.Error(err)
-			return nil, dbTx.Error
+			return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprint("GetSysconfigByName:", dbTx.Error.Error()))
 		} else if dbTx.RowsAffected == 0 {
-			err := fmt.Sprintf("[sysconfig.GetSysconfigByName] %s", ErrNotFound)
-			logx.Error(err)
-			return nil, ErrNotFound
+			return nil, errcode.ErrDataNotExist
 		}
 		return &config, nil
 	}

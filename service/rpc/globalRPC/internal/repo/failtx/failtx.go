@@ -1,6 +1,8 @@
 package failtx
 
 import (
+	"fmt"
+
 	table "github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/errcode"
 
@@ -23,7 +25,7 @@ type model struct {
 func (m *model) CreateFailTx(failTx *table.FailTx) error {
 	dbTx := m.db.Table(m.table).Create(failTx)
 	if dbTx.Error != nil {
-		return dbTx.Error
+		return errcode.ErrSqlOperation.RefineError(fmt.Sprint("CreateFailTx:", dbTx.Error.Error()))
 	}
 	if dbTx.RowsAffected == 0 {
 		return errcode.ErrInvalidFailTx
