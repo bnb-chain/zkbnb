@@ -71,7 +71,6 @@ func TestConstructRegisterZnsCryptoTxFirst(t *testing.T) {
 		liquidityTree,
 		nftTree,
 		accountModel,
-		0,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -120,7 +119,6 @@ func TestConstructRegisterZnsCryptoTxNotFirst(t *testing.T) {
 		liquidityTree,
 		nftTree,
 		accountModel,
-		0,
 	)
 	if err != nil {
 		t.Fatal(err)

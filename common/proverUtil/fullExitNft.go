@@ -38,7 +38,6 @@ func ConstructFullExitNftCryptoTx(
 	liquidityTree bsmt.SparseMerkleTree,
 	nftTree bsmt.SparseMerkleTree,
 	accountModel AccountModel,
-	finalityBlockNr uint64,
 ) (cryptoTx *CryptoTx, err error) {
 	if oTx.TxType != commonTx.TxTypeFullExitNft {
 		logx.Errorf("[ConstructFullExitNftCryptoTx] invalid tx type")
@@ -76,7 +75,6 @@ func ConstructFullExitNftCryptoTx(
 		proverAccounts,
 		proverLiquidityInfo,
 		proverNftInfo,
-		finalityBlockNr,
 	)
 	if err != nil {
 		logx.Errorf("[ConstructFullExitNftCryptoTx] unable to construct witness info: %s", err.Error())

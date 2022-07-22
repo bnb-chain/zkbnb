@@ -40,7 +40,6 @@ func ConstructRegisterZnsCryptoTx(
 	liquidityTree bsmt.SparseMerkleTree,
 	nftTree bsmt.SparseMerkleTree,
 	accountModel AccountModel,
-	finalityBlockNr uint64,
 ) (cryptoTx *CryptoTx, err error) {
 	if oTx.TxType != commonTx.TxTypeRegisterZns {
 		logx.Errorf("[ConstructCreatePairCryptoTx] invalid tx type")
@@ -78,7 +77,6 @@ func ConstructRegisterZnsCryptoTx(
 		proverAccounts,
 		proverLiquidityInfo,
 		proverNftInfo,
-		0,
 	)
 	if err != nil {
 		logx.Errorf("[ConstructRegisterZnsCryptoTx] unable to construct witness info: %s", err.Error())

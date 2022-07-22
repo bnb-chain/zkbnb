@@ -39,7 +39,6 @@ func ConstructCreateCollectionCryptoTx(
 	liquidityTree bsmt.SparseMerkleTree,
 	nftTree bsmt.SparseMerkleTree,
 	accountModel AccountModel,
-	finalityBlockNr uint64,
 ) (cryptoTx *CryptoTx, err error) {
 	if oTx.TxType != commonTx.TxTypeCreateCollection {
 		logx.Errorf("[ConstructCreateCollectionCryptoTx] invalid tx type")
@@ -77,7 +76,6 @@ func ConstructCreateCollectionCryptoTx(
 		proverAccounts,
 		proverLiquidityInfo,
 		proverNftInfo,
-		0,
 	)
 	if err != nil {
 		logx.Errorf("[ConstructCreateCollectionCryptoTx] unable to construct witness info: %s", err.Error())

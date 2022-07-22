@@ -220,13 +220,8 @@ func CommitterTask(
 						return err
 					}
 				}
-				ver := bsmt.Version(finalityBlockNr)
-				_, err = accountTree.Commit(&ver)
-				if err != nil {
-					log.Println("[CommitterTask] unable to commit account tree:", err)
-					return err
-				}
 			}
+
 			// check if the tx is still valid
 			if mempoolTx.ExpiredAt != commonConstant.NilExpiredAt {
 				if mempoolTx.ExpiredAt < createdAt {
@@ -442,12 +437,6 @@ func CommitterTask(
 						logx.Errorf("[CommitterTask] unable to update liquidity tree: %s", err.Error())
 						return err
 					}
-					ver := bsmt.Version(finalityBlockNr)
-					_, err = liquidityTree.Commit(&ver)
-					if err != nil {
-						log.Println("[CommitterTask] unable to commit liquidity tree:", err)
-						return err
-					}
 					break
 				case NftAssetType:
 					// check if nft exists in the db
@@ -528,12 +517,6 @@ func CommitterTask(
 						logx.Errorf("[CommitterTask] unable to update nft tree: %s", err.Error())
 						return err
 					}
-					ver := bsmt.Version(finalityBlockNr)
-					_, err = nftTree.Commit(&ver)
-					if err != nil {
-						log.Println("[CommitterTask] unable to commit nft tree:", err)
-						return err
-					}
 					break
 				case CollectionNonceAssetType:
 					baseBalance = strconv.FormatInt(accountMap[mempoolTxDetail.AccountIndex].CollectionNonce, 10)
@@ -599,12 +582,7 @@ func CommitterTask(
 					return err
 				}
 			}
-			ver := bsmt.Version(finalityBlockNr)
-			_, err = accountTree.Commit(&ver)
-			if err != nil {
-				log.Println("[CommitterTask] unable to commit account tree:", err)
-				return err
-			}
+
 			// add into mempool tx
 			pendingMempoolTxs = append(pendingMempoolTxs, mempoolTx)
 			// update mempool tx info
@@ -621,6 +599,12 @@ func CommitterTask(
 			oTx := ConvertMempoolTxToTx(mempoolTx, txDetails, stateRoot, currentBlockHeight)
 			oTx.TxIndex = int64(len(txs))
 			txs = append(txs, oTx)
+		}
+
+		err = tree.CommitTrees(uint64(finalityBlockNr), accountTree, accountAssetTrees, liquidityTree, nftTree)
+		if err != nil {
+			log.Println("[CommitterTask] unable to commit trees after txs is executed", err)
+			return err
 		}
 		// construct assets history
 		var (

@@ -39,7 +39,6 @@ func ConstructSwapCryptoTx(
 	liquidityTree bsmt.SparseMerkleTree,
 	nftTree bsmt.SparseMerkleTree,
 	accountModel AccountModel,
-	finalityBlockNr uint64,
 ) (cryptoTx *CryptoTx, err error) {
 	if oTx.TxType != commonTx.TxTypeSwap {
 		logx.Errorf("[ConstructSwapCryptoTx] invalid tx type")
@@ -77,7 +76,6 @@ func ConstructSwapCryptoTx(
 		proverAccounts,
 		proverLiquidityInfo,
 		proverNftInfo,
-		finalityBlockNr,
 	)
 	if err != nil {
 		logx.Errorf("[ConstructSwapCryptoTx] unable to construct witness info: %s", err.Error())

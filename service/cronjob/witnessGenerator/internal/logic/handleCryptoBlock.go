@@ -28,6 +28,7 @@ import (
 
 	"github.com/bnb-chain/zkbas/common/model/blockForProof"
 	"github.com/bnb-chain/zkbas/common/proverUtil"
+	"github.com/bnb-chain/zkbas/common/tree"
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/pkg/treedb"
 	"github.com/bnb-chain/zkbas/service/cronjob/witnessGenerator/internal/svc"
@@ -97,7 +98,7 @@ func generateUnprovedBlockWitness(
 			var (
 				cryptoTx *CryptoTx
 			)
-			cryptoTx, err = proverUtil.ConstructCryptoTx(oTx, treeDBDriver, treeDB, accountTree, assetTrees, liquidityTree, nftTree, ctx.AccountModel, uint64(latestVerifiedBlockNr))
+			cryptoTx, err = proverUtil.ConstructCryptoTx(oTx, treeDBDriver, treeDB, accountTree, assetTrees, liquidityTree, nftTree, ctx.AccountModel)
 			if err != nil {
 				logx.Errorf("[prover] unable to construct crypto tx: %s", err.Error())
 				return err
@@ -110,6 +111,14 @@ func generateUnprovedBlockWitness(
 			cryptoTxs = append(cryptoTxs, cryptoTx)
 			logx.Info("after state root:", common.Bytes2Hex(newStateRoot))
 		}
+
+		// commit trees
+		err = tree.CommitTrees(uint64(latestVerifiedBlockNr), accountTree, assetTrees, liquidityTree, nftTree)
+		if err != nil {
+			logx.Errorf("[prover] unable to commit trees after txs is executed", err.Error())
+			return err
+		}
+
 		emptyTxCount := int(oBlock.BlockSize) - len(oBlock.Txs)
 		for i := 0; i < emptyTxCount; i++ {
 			cryptoTxs = append(cryptoTxs, cryptoBlock.EmptyTx())

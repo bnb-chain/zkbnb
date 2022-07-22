@@ -39,7 +39,6 @@ func ConstructWithdrawNftCryptoTx(
 	liquidityTree bsmt.SparseMerkleTree,
 	nftTree bsmt.SparseMerkleTree,
 	accountModel AccountModel,
-	finalityBlockNr uint64,
 ) (cryptoTx *CryptoTx, err error) {
 	if oTx.TxType != commonTx.TxTypeWithdrawNft {
 		logx.Errorf("[ConstructWithdrawNftCryptoTx] invalid tx type")
@@ -77,7 +76,6 @@ func ConstructWithdrawNftCryptoTx(
 		proverAccounts,
 		proverLiquidityInfo,
 		proverNftInfo,
-		finalityBlockNr,
 	)
 	if err != nil {
 		logx.Errorf("[ConstructWithdrawNftCryptoTx] unable to construct witness info: %s", err.Error())

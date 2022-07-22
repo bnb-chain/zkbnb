@@ -48,28 +48,27 @@ func ConstructWitnessInfo(
 	proverAccounts []*ProverAccountInfo,
 	proverLiquidityInfo *ProverLiquidityInfo,
 	proverNftInfo *ProverNftInfo,
-	finalityBlockNr uint64,
 ) (
 	cryptoTx *CryptoTx,
 	err error,
 ) {
 	// construct account witness
 	AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err :=
-		ConstructAccountWitness(oTx, treeDBDriver, treeDB, accountModel, accountTree, accountAssetTrees, accountKeys, proverAccounts, finalityBlockNr)
+		ConstructAccountWitness(oTx, treeDBDriver, treeDB, accountModel, accountTree, accountAssetTrees, accountKeys, proverAccounts)
 	if err != nil {
 		logx.Errorf("[ConstructWitnessInfo] unable to construct account witness: %s", err.Error())
 		return nil, err
 	}
 	// construct liquidity witness
 	LiquidityRootBefore, LiquidityBefore, MerkleProofsLiquidityBefore, err :=
-		ConstructLiquidityWitness(liquidityTree, proverLiquidityInfo, finalityBlockNr)
+		ConstructLiquidityWitness(liquidityTree, proverLiquidityInfo)
 	if err != nil {
 		logx.Errorf("[ConstructWitnessInfo] unable to construct liquidity witness: %s", err.Error())
 		return nil, err
 	}
 	// construct nft witness
 	NftRootBefore, NftBefore, MerkleProofsNftBefore, err :=
-		ConstructNftWitness(nftTree, proverNftInfo, finalityBlockNr)
+		ConstructNftWitness(nftTree, proverNftInfo)
 	if err != nil {
 		logx.Errorf("[ConstructWitnessInfo] unable to construct nft witness: %s", err.Error())
 		return nil, err
@@ -102,7 +101,6 @@ func ConstructAccountWitness(
 	accountAssetTrees *[]bsmt.SparseMerkleTree,
 	accountKeys []int64,
 	proverAccounts []*ProverAccountInfo,
-	finalityBlockNr uint64,
 ) (
 	AccountRootBefore []byte,
 	// account before info, size is 5
@@ -223,13 +221,12 @@ func ConstructAccountWitness(
 					logx.Errorf("[ConstructAccountWitness] unable to update asset tree: %s", err.Error())
 					return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
 				}
-				ver := bsmt.Version(finalityBlockNr)
-				_, err = (*accountAssetTrees)[accountKey].Commit(&ver)
-				if err != nil {
-					logx.Errorf("[ConstructAccountWitness] unable to commit asset tree: %s", err.Error())
-					return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
-				}
+
 				assetCount++
+			}
+			if err != nil {
+				logx.Errorf("[ConstructAccountWitness] unable to commit asset tree: %s", err.Error())
+				return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
 			}
 		}
 		// padding empty account asset
@@ -283,8 +280,6 @@ func ConstructAccountWitness(
 		// add count
 		accountCount++
 	}
-	ver := bsmt.Version(finalityBlockNr)
-	_, err = accountTree.Commit(&ver)
 	if err != nil {
 		logx.Errorf("[ConstructAccountWitness] unable to commit account tree: %s", err.Error())
 		return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
@@ -330,7 +325,6 @@ func ConstructAccountWitness(
 func ConstructLiquidityWitness(
 	liquidityTree bsmt.SparseMerkleTree,
 	proverLiquidityInfo *ProverLiquidityInfo,
-	finalityBlockNr uint64,
 ) (
 	// liquidity root before
 	LiquidityRootBefore []byte,
@@ -412,19 +406,12 @@ func ConstructLiquidityWitness(
 		logx.Errorf("[ConstructLiquidityWitness] unable to update liquidity tree: %s", err.Error())
 		return LiquidityRootBefore, LiquidityBefore, MerkleProofsLiquidityBefore, err
 	}
-	ver := bsmt.Version(finalityBlockNr)
-	_, err = liquidityTree.Commit(&ver)
-	if err != nil {
-		logx.Errorf("[ConstructLiquidityWitness] unable to commit liquidity tree: %s", err.Error())
-		return LiquidityRootBefore, LiquidityBefore, MerkleProofsLiquidityBefore, err
-	}
 	return LiquidityRootBefore, LiquidityBefore, MerkleProofsLiquidityBefore, nil
 }
 
 func ConstructNftWitness(
 	nftTree bsmt.SparseMerkleTree,
 	proverNftInfo *ProverNftInfo,
-	finalityBlockNr uint64,
 ) (
 	// nft root before
 	NftRootBefore []byte,
@@ -508,8 +495,6 @@ func ConstructNftWitness(
 		logx.Errorf("[ConstructNftWitness] unable to update liquidity tree: %s", err.Error())
 		return NftRootBefore, NftBefore, MerkleProofsNftBefore, err
 	}
-	ver := bsmt.Version(finalityBlockNr)
-	_, err = nftTree.Commit(&ver)
 	if err != nil {
 		logx.Errorf("[ConstructNftWitness] unable to commit liquidity tree: %s", err.Error())
 		return NftRootBefore, NftBefore, MerkleProofsNftBefore, err

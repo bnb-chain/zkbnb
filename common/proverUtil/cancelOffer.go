@@ -39,7 +39,6 @@ func ConstructCancelOfferCryptoTx(
 	liquidityTree bsmt.SparseMerkleTree,
 	nftTree bsmt.SparseMerkleTree,
 	accountModel AccountModel,
-	finalityBlockNr uint64,
 ) (cryptoTx *CryptoTx, err error) {
 	if oTx.TxType != commonTx.TxTypeCancelOffer {
 		logx.Errorf("[ConstructCancelOfferCryptoTx] invalid tx type")
@@ -77,7 +76,6 @@ func ConstructCancelOfferCryptoTx(
 		proverAccounts,
 		proverLiquidityInfo,
 		proverNftInfo,
-		finalityBlockNr,
 	)
 	if err != nil {
 		logx.Errorf("[ConstructCancelOfferCryptoTx] unable to construct witness info: %s", err.Error())
