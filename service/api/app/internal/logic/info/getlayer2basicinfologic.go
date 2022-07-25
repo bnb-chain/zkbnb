@@ -74,12 +74,12 @@ func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo(_ *types.ReqGetLayer2BasicI
 	}
 	resp.DauYesterday, err = l.txDetail.GetDauInTxDetail(l.ctx, "yesterday")
 	if err != nil {
-		logx.Errorf("[GetTxCountByTimeRange] err:%v", err)
+		logx.Errorf("[GetDauInTxDetail] err:%v", err)
 		return nil, err
 	}
 	resp.DauToday, err = l.txDetail.GetDauInTxDetail(l.ctx, "today")
 	if err != nil {
-		logx.Errorf("[GetTxCountByTimeRange] err:%v", err)
+		logx.Errorf("[GetDauInTxDetail] err:%v", err)
 		return nil, err
 	}
 	for _, contractAddressesName := range contractAddressesNames {
