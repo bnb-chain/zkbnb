@@ -17,6 +17,9 @@ type QueryFunc func() (interface{}, error)
 func (m *multcache) GetWithSet(ctx context.Context, key string, valueStruct interface{}, timeOut uint32,
 	query QueryFunc) (interface{}, error) {
 	value, err := m.marshal.Get(ctx, key, valueStruct)
+	if err == nil {
+		return value, nil
+	}
 	if err.Error() == errGoCacheKeyNotExist.Error() || err.Error() == errRedisCacheKeyNotExist.Error() {
 		value, err = query()
 		if err != nil {
@@ -24,10 +27,7 @@ func (m *multcache) GetWithSet(ctx context.Context, key string, valueStruct inte
 		}
 		return value, m.Set(ctx, key, value, timeOut)
 	}
-	if err != nil {
-		return nil, err
-	}
-	return value, nil
+	return nil, err
 }
 
 func (m *multcache) Get(ctx context.Context, key string, value interface{}) (interface{}, error) {
