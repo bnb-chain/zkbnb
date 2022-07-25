@@ -15,8 +15,8 @@ func (e *error) Code() int32 {
 	return e.code
 }
 
-func (e *error) RefineError(err string) *error {
-	e.message = e.message + err
+func (e *error) RefineError(err ...interface{}) *error {
+	e.message = e.message + fmt.Sprint(err...)
 	return e
 }
 
