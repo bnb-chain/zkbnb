@@ -189,3 +189,26 @@ func (m *block) GetBlocksTotalCount(ctx context.Context) (int64, error) {
 	}
 	return *count1, nil
 }
+func (m *block) GetCurrentBlockHeight(ctx context.Context) (int64, error) {
+	f := func() (interface{}, error) {
+		var blockHeight int64
+		dbTx := m.db.Table(m.table).Select("block_height").Order("block_height desc").Limit(1).Find(&blockHeight)
+		if dbTx.Error != nil {
+			return 0, fmt.Errorf("[GetBlocksTotalCount]: %v", dbTx.Error)
+		} else if dbTx.RowsAffected == 0 {
+			return 0, ErrNotFound
+		}
+		return &blockHeight, nil
+	}
+
+	var height int64
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetCurrentBlockHeight, &height, 5, f)
+	if err != nil {
+		return height, err
+	}
+	height1, ok := value.(*int64)
+	if !ok {
+		return 0, fmt.Errorf("[GetCurrentBlockHeight] ErrConvertFail")
+	}
+	return *height1, nil
+}
