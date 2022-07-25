@@ -2,7 +2,6 @@ package info
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -41,31 +40,24 @@ func NewSearchLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SearchLogi
 
 func (l *SearchLogic) Search(req *types.ReqSearch) (*types.RespSearch, error) {
 	resp := &types.RespSearch{}
-	// check if it is searching by blockHeight
 	blockHeight, err := strconv.ParseInt(req.Info, 10, 64)
 	if err == nil {
-		_, err = l.block.GetBlockByBlockHeight(l.ctx, blockHeight)
-		resp.DataType = util.TypeBlockHeight
-		if err != nil {
-			err1 := fmt.Errorf("[explorer.info.SearchInfo] find block by height %d error: %s", blockHeight, err.Error())
-			l.Error(err1)
+		if _, err = l.block.GetBlockByBlockHeight(l.ctx, blockHeight); err != nil {
+			logx.Errorf("[GetBlockByBlockHeight] err:%v", err)
 			return nil, err
 		}
+		resp.DataType = util.TypeBlockHeight
 		return resp, nil
 	}
-	// check if this is for querying tx by hash
-	_, err = l.tx.GetTxByTxHash(l.ctx, req.Info)
-	if err == nil {
+	// TODO: prevent sql slow query, bloom Filter
+	if _, err = l.tx.GetTxByTxHash(l.ctx, req.Info); err == nil {
 		resp.DataType = util.TypeTxType
 		return resp, nil
 	}
-	// check if this is for querying account by name
-	_, err = l.account.GetAccountByAccountName(l.ctx, req.Info)
-	resp.DataType = util.TypeAccountName
-	if err != nil {
-		err = fmt.Errorf("[explorer.info.SearchInfo] find block by name %s error: %s", req.Info, err.Error())
-		l.Error(err)
+	if _, err = l.account.GetAccountByAccountName(l.ctx, req.Info); err != nil {
+		logx.Errorf("[GetAccountByAccountName] err:%v", err)
 		return nil, err
 	}
+	resp.DataType = util.TypeAccountName
 	return resp, nil
 }
