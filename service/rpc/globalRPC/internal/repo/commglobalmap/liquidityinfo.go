@@ -46,12 +46,12 @@ func (m *model) GetLatestLiquidityInfoForReadWithCache(ctx context.Context, pair
 func (m *model) GetLatestLiquidityInfoForRead(ctx context.Context, pairIndex int64) (liquidityInfo *commGlobalmapHandler.LiquidityInfo, err error) {
 	dbLiquidityInfo, err := m.liquidityModel.GetLiquidityByPairIndex(pairIndex)
 	if err != nil {
-		return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprint("GetLiquidityByPairIndex:", err.Error()))
+		return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprintf("GetLiquidityByPairIndex:%v", err))
 	}
 	mempoolTxs, err := m.mempoolModel.GetPendingLiquidityTxs()
 	if err != nil {
 		if err != mempool.ErrNotFound {
-			return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprint("GetPendingLiquidityTxs:", err.Error()))
+			return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprintf("GetPendingLiquidityTxs:%v", err))
 		}
 	}
 	liquidityInfo, err = commonAsset.ConstructLiquidityInfo(
@@ -66,7 +66,7 @@ func (m *model) GetLatestLiquidityInfoForRead(ctx context.Context, pairIndex int
 		dbLiquidityInfo.TreasuryAccountIndex,
 		dbLiquidityInfo.TreasuryRate)
 	if err != nil {
-		return nil, errcode.ErrConstructLiquidityInfo.RefineError(fmt.Sprint("ConstructLiquidityInfo:", err.Error()))
+		return nil, errcode.ErrConstructLiquidityInfo.RefineError(fmt.Sprintf("ConstructLiquidityInfo:%v", err))
 	}
 	for _, mempoolTx := range mempoolTxs {
 		for _, txDetail := range mempoolTx.MempoolDetails {
@@ -75,11 +75,11 @@ func (m *model) GetLatestLiquidityInfoForRead(ctx context.Context, pairIndex int
 			}
 			nBalance, err := commonAsset.ComputeNewBalance(commonAsset.LiquidityAssetType, liquidityInfo.String(), txDetail.BalanceDelta)
 			if err != nil {
-				return nil, errcode.ErrComputeNewBalance.RefineError(err.Error())
+				return nil, errcode.ErrComputeNewBalance.RefineError(err)
 			}
 			liquidityInfo, err = commonAsset.ParseLiquidityInfo(nBalance)
 			if err != nil {
-				return nil, errcode.ErrParseLiquidityInfo.RefineError(err.Error())
+				return nil, errcode.ErrParseLiquidityInfo.RefineError(err)
 			}
 		}
 	}
@@ -99,11 +99,11 @@ func (m *model) GetLatestLiquidityInfoForRead(ctx context.Context, pairIndex int
 func (m *model) GetLatestLiquidityInfoForWrite(ctx context.Context, pairIndex int64) (liquidityInfo *commGlobalmapHandler.LiquidityInfo, err error) {
 	dbLiquidityInfo, err := m.liquidityModel.GetLiquidityByPairIndex(pairIndex)
 	if err != nil {
-		return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprint("GetLiquidityByPairIndex:", err.Error()))
+		return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprint("GetLiquidityByPairIndex:", err))
 	}
 	mempoolTxs, err := m.mempoolModel.GetPendingLiquidityTxs()
 	if err != nil && err != mempool.ErrNotFound {
-		return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprint("GetPendingLiquidityTxs:", err.Error()))
+		return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprint("GetPendingLiquidityTxs:", err))
 	}
 	liquidityInfo, err = commonAsset.ConstructLiquidityInfo(
 		pairIndex,
@@ -128,11 +128,11 @@ func (m *model) GetLatestLiquidityInfoForWrite(ctx context.Context, pairIndex in
 			}
 			nBalance, err := commonAsset.ComputeNewBalance(commonAsset.LiquidityAssetType, liquidityInfo.String(), txDetail.BalanceDelta)
 			if err != nil {
-				return nil, errcode.ErrComputeNewBalance.RefineError(err.Error())
+				return nil, errcode.ErrComputeNewBalance.RefineError(err)
 			}
 			liquidityInfo, err = commonAsset.ParseLiquidityInfo(nBalance)
 			if err != nil {
-				return nil, errcode.ErrParseLiquidityInfo.RefineError(err.Error())
+				return nil, errcode.ErrParseLiquidityInfo.RefineError(err)
 			}
 		}
 	}

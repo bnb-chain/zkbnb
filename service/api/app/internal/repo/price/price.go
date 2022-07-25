@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
+	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/errcode"
 )
 
 type price struct {
@@ -37,7 +38,7 @@ func (m *price) GetCurrencyPrice(ctx context.Context, l2Symbol string) (float64,
 	quoteMap := *res
 	q, ok := quoteMap[l2Symbol]
 	if !ok {
-		return 0, err
+		return 0, errcode.ErrQuoteNotExist
 	}
 	return q.Quote["USD"].Price, nil
 }
@@ -47,38 +48,37 @@ func getQuotesLatest(l2Symbol string) (map[string]QuoteLatest, error) {
 	url := fmt.Sprintf("%s%s", coinMarketCap, l2Symbol)
 	reqest, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return nil, ErrNewHttpRequest.RefineError(err.Error())
+		return nil, errcode.ErrNewHttpRequest.RefineError(err.Error())
 	}
 	reqest.Header.Add("X-CMC_PRO_API_KEY", "cfce503f-dd3d-4847-9570-bbab5257dac8")
 	reqest.Header.Add("Accept", "application/json")
 	resp, err := client.Do(reqest)
 	if err != nil {
-		return nil, ErrHttpClientDo.RefineError(err.Error())
+		return nil, errcode.ErrHttpClientDo.RefineError(err.Error())
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, ErrIoutilReadAll.RefineError(err.Error())
+		return nil, errcode.ErrIoutilReadAll.RefineError(err.Error())
 	}
 	currencyPrice := &currencyPrice{}
-	err = json.Unmarshal(body, &currencyPrice)
-	if err != nil {
-		return nil, ErrJsonUnmarshal.RefineError(err.Error() + string(body))
+	if err = json.Unmarshal(body, &currencyPrice); err != nil {
+		return nil, errcode.ErrJsonUnmarshal.RefineError(err.Error() + string(body))
 	}
 	ifcs, ok := currencyPrice.Data.(interface{})
 	if !ok {
-		return nil, ErrTypeAssertion
+		return nil, errcode.ErrTypeAssertion
 	}
 	quotesLatest := make(map[string]QuoteLatest, 0)
 	for _, coinObj := range ifcs.(map[string]interface{}) {
 		b, err := json.Marshal(coinObj)
 		if err != nil {
-			return nil, ErrJsonMarshal
+			return nil, errcode.ErrJsonMarshal
 		}
 		quoteLatest := &QuoteLatest{}
 		err = json.Unmarshal(b, quoteLatest)
 		if err != nil {
-			return nil, ErrJsonUnmarshal
+			return nil, errcode.ErrJsonUnmarshal
 		}
 		quotesLatest[quoteLatest.Symbol] = *quoteLatest
 	}

@@ -28,6 +28,4 @@ var (
 	ErrParseLiquidityInfo     = zerror.New(30009, "Err ParseLiquidityInfo")
 	ErrParseNftInfo           = zerror.New(30010, "Err ParseNftInfo")
 	ErrInvalidFailTx          = zerror.New(30011, "Err invalid fail txVerification")
-
-	ErrInvalidSysconfig = zerror.New(30011, "Invalid system config")
 )

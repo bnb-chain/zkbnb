@@ -17,5 +17,15 @@ var (
 
 var (
 	ErrDataNotExist     = zerror.New(30000, "Data not exist")
-	ErrInvalidSysconfig = zerror.New(30001, "Invalid system config")
+	ErrSqlOperation     = zerror.New(30001, "Sql operation")
+	ErrInvalidSysconfig = zerror.New(30002, "Invalid system config")
+	ErrTypeAsset        = zerror.New(30003, "Err TypeAsset")
+	ErrQuoteNotExist    = zerror.New(30004, "Err QuoteNotExist")
+	ErrNewHttpRequest   = zerror.New(30005, "http.NewRequest err")
+	ErrHttpClientDo     = zerror.New(30006, "http.Client.Do err")
+	ErrIoutilReadAll    = zerror.New(30007, "ioutil.ReadAll err")
+	ErrJsonUnmarshal    = zerror.New(30008, "json.Unmarshal err")
+	ErrJsonMarshal      = zerror.New(30009, "json.Marshal err")
+	ErrTypeAssertion    = zerror.New(30010, "type assertion err")
+	ErrSetCache         = zerror.New(30011, "set cache err")
 )

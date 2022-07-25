@@ -49,11 +49,11 @@ func (m *model) GetLatestOfferIdForWrite(ctx context.Context, accountIndex int64
 func (m *model) GetLatestNftInfoForRead(ctx context.Context, nftIndex int64) (*commonAsset.NftInfo, error) {
 	dbNftInfo, err := m.nftModel.GetNftAsset(nftIndex)
 	if err != nil {
-		return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprint("GetNftAsset:", err.Error()))
+		return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprintf("GetNftAsset:%v", err))
 	}
 	mempoolTxs, err := m.mempoolModel.GetPendingNftTxs()
 	if err != nil && err != mempool.ErrNotFound {
-		return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprint("GetPendingNftTxs:", err.Error()))
+		return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprintf("GetPendingNftTxs:%v", err))
 	}
 	nftInfo := commonAsset.ConstructNftInfo(nftIndex, dbNftInfo.CreatorAccountIndex, dbNftInfo.OwnerAccountIndex, dbNftInfo.NftContentHash,
 		dbNftInfo.NftL1TokenId, dbNftInfo.NftL1Address, dbNftInfo.CreatorTreasuryRate, dbNftInfo.CollectionId)
@@ -64,11 +64,11 @@ func (m *model) GetLatestNftInfoForRead(ctx context.Context, nftIndex int64) (*c
 			}
 			nBalance, err := commonAsset.ComputeNewBalance(commonAsset.NftAssetType, nftInfo.String(), txDetail.BalanceDelta)
 			if err != nil {
-				return nil, errcode.ErrComputeNewBalance.RefineError(err.Error())
+				return nil, errcode.ErrComputeNewBalance.RefineError(err)
 			}
 			nftInfo, err = commonAsset.ParseNftInfo(nBalance)
 			if err != nil {
-				return nil, errcode.ErrParseNftInfo.RefineError(err.Error())
+				return nil, errcode.ErrParseNftInfo.RefineError(err)
 			}
 		}
 	}

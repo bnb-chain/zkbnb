@@ -38,7 +38,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
-	"github.com/zeromicro/go-zero/core/stores/redis"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -118,23 +117,14 @@ func (l *SendAddLiquidityTxLogic) SendAddLiquidityTx(reqSendTx *globalRPCProto.R
 	}
 
 	var (
-		redisLock      *redis.RedisLock
 		liquidityInfo  *commonAsset.LiquidityInfo
 		accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
 	)
-
-	redisLock, liquidityInfo, err = globalmapHandler.GetLatestLiquidityInfoForWrite(
-		l.svcCtx.LiquidityModel,
-		l.svcCtx.MempoolModel,
-		l.svcCtx.RedisConnection,
-		txInfo.PairIndex,
-	)
+	liquidityInfo, err = l.commglobalmap.GetLatestLiquidityInfoForWrite(l.ctx, txInfo.PairIndex)
 	if err != nil {
 		logx.Errorf("[sendAddLiquidityTx] unable to get latest liquidity info for write: %s", err.Error())
 		return respSendTx, l.HandleCreateFailAddLiquidityTx(txInfo, err)
 	}
-	defer redisLock.Release()
-
 	// check params
 	if liquidityInfo.AssetA == nil ||
 		liquidityInfo.AssetB == nil {
@@ -168,41 +158,25 @@ func (l *SendAddLiquidityTxLogic) SendAddLiquidityTx(reqSendTx *globalRPCProto.R
 		}
 	}
 	if accountInfoMap[txInfo.GasAccountIndex] == nil {
-		accountInfoMap[txInfo.GasAccountIndex], err = globalmapHandler.GetBasicAccountInfo(
-			l.svcCtx.AccountModel,
-			l.svcCtx.RedisConnection,
-			txInfo.GasAccountIndex,
-		)
+		accountInfoMap[txInfo.GasAccountIndex], err = l.commglobalmap.GetBasicAccountInfo(l.ctx, txInfo.GasAccountIndex)
 		if err != nil {
 			logx.Errorf("[sendAddLiquidityTx] unable to get latest account info: %s", err.Error())
 			return respSendTx, err
 		}
 	}
 	if accountInfoMap[liquidityInfo.TreasuryAccountIndex] == nil {
-		accountInfoMap[liquidityInfo.TreasuryAccountIndex], err = globalmapHandler.GetBasicAccountInfo(
-			l.svcCtx.AccountModel,
-			l.svcCtx.RedisConnection,
-			liquidityInfo.TreasuryAccountIndex,
-		)
+		accountInfoMap[liquidityInfo.TreasuryAccountIndex], err = l.commglobalmap.GetBasicAccountInfo(l.ctx, liquidityInfo.TreasuryAccountIndex)
 		if err != nil {
 			logx.Errorf("[sendAddLiquidityTx] unable to get latest account info: %s", err.Error())
 			return respSendTx, err
 		}
 	}
-
-	var (
-		txDetails []*mempool.MempoolTxDetail
-	)
+	var txDetails []*mempool.MempoolTxDetail
 	// verify addLiquidity tx
-	txDetails, err = txVerification.VerifyAddLiquidityTxInfo(
-		accountInfoMap,
-		liquidityInfo,
-		txInfo)
-
+	txDetails, err = txVerification.VerifyAddLiquidityTxInfo(accountInfoMap, liquidityInfo, txInfo)
 	if err != nil {
 		return respSendTx, l.HandleCreateFailAddLiquidityTx(txInfo, err)
 	}
-
 	/*
 		Create Mempool Transaction
 	*/

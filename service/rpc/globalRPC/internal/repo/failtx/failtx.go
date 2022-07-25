@@ -25,7 +25,7 @@ type model struct {
 func (m *model) CreateFailTx(failTx *table.FailTx) error {
 	dbTx := m.db.Table(m.table).Create(failTx)
 	if dbTx.Error != nil {
-		return errcode.ErrSqlOperation.RefineError(fmt.Sprint("CreateFailTx:", dbTx.Error.Error()))
+		return errcode.ErrSqlOperation.RefineError(fmt.Sprintf("CreateFailTx:%v", dbTx.Error))
 	}
 	if dbTx.RowsAffected == 0 {
 		return errcode.ErrInvalidFailTx

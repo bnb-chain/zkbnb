@@ -61,7 +61,7 @@ func (m *model) DeleteLatestAccountInfoInCache(ctx context.Context, accountIndex
 func (m *model) GetLatestAccountInfo(ctx context.Context, accountIndex int64) (*commonAsset.AccountInfo, error) {
 	oAccountInfo, err := m.accountModel.GetAccountByAccountIndex(accountIndex)
 	if err != nil {
-		return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprint("GetAccountByAccountIndex:", err.Error()))
+		return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprintf("GetAccountByAccountIndex:%v", err))
 	}
 	accountInfo, err := commonAsset.ToFormatAccountInfo(oAccountInfo)
 	if err != nil {
@@ -69,7 +69,7 @@ func (m *model) GetLatestAccountInfo(ctx context.Context, accountIndex int64) (*
 	}
 	mempoolTxs, err := m.mempoolModel.GetPendingMempoolTxsByAccountIndex(accountIndex)
 	if err != nil && err != mempool.ErrNotFound {
-		return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprint("GetPendingMempoolTxsByAccountIndex:", err.Error()))
+		return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprintf("GetPendingMempoolTxsByAccountIndex:%v", err))
 	}
 	for _, mempoolTx := range mempoolTxs {
 		if mempoolTx.Nonce != commonConstant.NilNonce {
