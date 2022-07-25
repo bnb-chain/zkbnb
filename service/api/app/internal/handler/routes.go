@@ -79,6 +79,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/api/v1/block/getBlockByBlockHeight",
 				Handler: block.GetBlockByBlockHeightHandler(serverCtx),
 			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/block/getCurrentBlockHeight",
+				Handler: block.GetCurrentBlockHeightHandler(serverCtx),
+			},
 		},
 	)
 

@@ -190,6 +190,12 @@ type (
 	}
 )
 
+// GetCurrentBlockHeight
+type (
+	RespCurrentBlockHeight {
+		Height int64 `json:"height"`
+	}
+)
 @server(
 	group: block
 )
@@ -202,6 +208,9 @@ service app-api{
 	
 	@handler GetBlockByBlockHeight
 	get /api/v1/block/getBlockByBlockHeight  (ReqGetBlockByBlockHeight) returns (RespGetBlockByBlockHeight)
+	
+	@handler GetCurrentBlockHeight
+	get /api/v1/block/getCurrentBlockHeight() returns (RespCurrentBlockHeight)
 }
 
 /* ========================= Info =========================*/
