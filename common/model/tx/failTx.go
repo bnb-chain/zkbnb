@@ -48,7 +48,7 @@ type (
 		TxType        int64
 		GasFee        string
 		GasFeeAssetId int64
-		TxStatus      int64
+		TxStatus      int64 // tx status, 1 - success(default), 2 - failure
 		AssetAId      int64
 		AssetBId      int64
 		TxAmount      string

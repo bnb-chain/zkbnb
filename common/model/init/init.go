@@ -125,6 +125,12 @@ func initSysConfig() []*sysconfig.Sysconfig {
 			ValueType: "string",
 			Comment:   "Local network rpc",
 		},
+		{
+			Name:      sysconfigName.ZnsPriceOracle,
+			Value:     svrConf.ZnsPriceOracle,
+			ValueType: "string",
+			Comment:   "Zns Price Oracle",
+		},
 	}
 }
 

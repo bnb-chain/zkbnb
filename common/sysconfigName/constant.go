@@ -30,4 +30,5 @@ const (
 	Validators              = "Validators"
 	VerifierContract        = "VerifierContract"
 	Governor                = "Governor"
+	ZnsPriceOracle          = "ZnsPriceOracle"
 )
