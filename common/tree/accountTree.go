@@ -47,16 +47,16 @@ func InitAccountTree(
 ) (
 	accountTree bsmt.SparseMerkleTree, accountAssetTrees []bsmt.SparseMerkleTree, err error,
 ) {
-	// get all accountHistories
-	_, accountHistories, err := accountHistoryModel.GetValidAccounts(blockHeight)
+	// TODO: If there are too many accounts, it may cause reading too long, which can be optimized again
+	accountNums, err := accountHistoryModel.GetValidAccountNums(blockHeight)
 	if err != nil {
-		logx.Errorf("[InitAccountTree] unable to get all accountHistories")
+		logx.Errorf("[InitAccountTree] unable to get all accountNums")
 		return nil, nil, err
 	}
 
 	// init account state trees
-	accountAssetTrees = make([]bsmt.SparseMerkleTree, len(accountHistories))
-	for index := int64(0); index < int64(len(accountHistories)); index++ {
+	accountAssetTrees = make([]bsmt.SparseMerkleTree, accountNums)
+	for index := int64(0); index < int64(accountNums); index++ {
 		// create account assets tree
 		accountAssetTrees[index], err = bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(zmimc.Hmimc),
 			treedb.SetNamespace(dbDriver, db, accountAssetNamespace(index)), AssetTreeHeight, NilAccountAssetNodeHash,
@@ -74,14 +74,21 @@ func InitAccountTree(
 		return nil, nil, err
 	}
 
-	if len(accountHistories) == 0 {
+	if accountNums == 0 {
 		return accountTree, accountAssetTrees, nil
 	}
 
 	if dbDriver == treedb.MemoryDB {
+		_, accountHistories, err := accountHistoryModel.GetValidAccounts(blockHeight)
+		if err != nil {
+			logx.Errorf("[InitAccountTree] unable to get all accountHistories")
+			return nil, nil, err
+		}
+
 		var (
 			accountInfoMap = make(map[int64]*account.Account)
 		)
+
 		for _, accountHistory := range accountHistories {
 			if accountInfoMap[accountHistory.AccountIndex] == nil {
 				accountInfo, err := accountModel.GetAccountByAccountIndex(accountHistory.AccountIndex)
