@@ -14,7 +14,7 @@ import (
 	"github.com/zeromicro/go-zero/rest"
 )
 
-var configFile = flag.String("f", "etc/appservice-api.yaml", "the config file")
+var configFile = flag.String("f", "etc/app.yaml", "the config file")
 
 var (
 	CodeVersion   = ""
