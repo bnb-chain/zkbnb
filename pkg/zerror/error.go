@@ -16,7 +16,7 @@ func (e *error) Code() int32 {
 }
 
 func (e *error) RefineError(err ...interface{}) *error {
-	e.message = e.message + fmt.Sprint(err...)
+	e.message = e.message + ", " + fmt.Sprint(err...)
 	return e
 }
 
