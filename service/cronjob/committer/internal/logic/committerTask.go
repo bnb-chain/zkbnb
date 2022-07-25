@@ -46,26 +46,17 @@ import (
 	"gorm.io/gorm"
 )
 
-func CommitterTask(
-	ctx *svc.ServiceContext,
-	lastCommitTimeStamp *time.Time,
-	accountTree *tree.Tree,
-	liquidityTree *tree.Tree,
-	nftTree *tree.Tree,
-	accountAssetTrees *[]*tree.Tree,
-) error {
-	// Get Txs from Mempool
+func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp *time.Time,
+	accountTree *tree.Tree, liquidityTree *tree.Tree, nftTree *tree.Tree, accountAssetTrees *[]*tree.Tree) error {
 	mempoolTxs, err := ctx.MempoolModel.GetMempoolTxsListForCommitter()
 	if err != nil {
 		if err == ErrNotFound {
-			logx.Info("[CommitterTask] no tx in mempool")
 			return nil
 		} else {
 			logx.Error("[CommitterTask] unable to get tx in mempool")
 			return err
 		}
 	}
-
 	var nTxs = len(mempoolTxs)
 	logx.Infof("[CommitterTask] Mempool txs number : %d", nTxs)
 

@@ -77,52 +77,29 @@ func main() {
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))
 	_, err = cronJob.AddFunc("@every 10s", func() {
-		logx.Info("========================= start committer task =========================")
-		err := logic.CommitterTask(
-			ctx,
-			&lastCommitTimeStamp,
-			accountTree,
-			liquidityTree,
-			nftTree,
-			&accountStateTrees,
-		)
-		if err != nil {
-			logx.Info("[committer.CommitterTask main] unable to run:", err)
-
+		if err := logic.CommitterTask(ctx, &lastCommitTimeStamp, accountTree, liquidityTree, nftTree, &accountStateTrees); err != nil {
 			cbh, err := ctx.BlockModel.GetCurrentBlockHeight()
 			if err != nil {
-				logx.Error("[committer] => Re-Init MerkleTree GetCurrentBlockHeight error:", err)
+				logx.Errorf("[GetCurrentBlockHeight] err:%v", err)
 				panic("merkle tree re-init.GetCurrentBlockHeight error")
 			}
-
-			accountTree, accountStateTrees, err = tree.InitAccountTree(
-				ctx.AccountModel,
-				ctx.AccountHistoryModel,
-				cbh,
-			)
+			accountTree, accountStateTrees, err = tree.InitAccountTree(ctx.AccountModel, ctx.AccountHistoryModel, cbh)
 			if err != nil {
 				logx.Error("[committer] => Re-Init MerkleTree error:", err)
 				panic("merkle tree re-init error")
 			}
 			// init nft tree
-			nftTree, err = tree.InitNftTree(
-				ctx.L2NftHistoryModel,
-				cbh,
-			)
+			nftTree, err = tree.InitNftTree(ctx.L2NftHistoryModel, cbh)
 			if err != nil {
 				logx.Error("[committer] => InitMerkleTree error:", err)
 				return
 			}
 		}
-		logx.Info("========================= end committer task =========================")
-		// update time stamp
-		// lastCommitTimeStamp = time.Now()
 	})
 	if err != nil {
 		panic(err)
 	}
 	cronJob.Start()
-
 	fmt.Printf("Starting committer cronjob ...")
 	select {}
 }
