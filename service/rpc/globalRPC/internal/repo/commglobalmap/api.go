@@ -23,9 +23,10 @@ type GlobalAssetInfo struct {
 }
 
 type Commglobalmap interface {
-	DeleteLatestAccountInfoInCache(ctx context.Context, accountIndex int64) error
 	GetLatestAccountInfoWithCache(ctx context.Context, accountIndex int64) (*commonAsset.AccountInfo, error)
 	SetLatestAccountInfoInToCache(ctx context.Context, accountIndex int64) error
+	DeleteLatestAccountInfoInCache(ctx context.Context, accountIndex int64) error
+
 	GetLatestAccountInfo(ctx context.Context, accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error)
 	GetLatestLiquidityInfoForReadWithCache(ctx context.Context, pairIndex int64) (liquidityInfo *commGlobalmapHandler.LiquidityInfo, err error)
 	GetLatestLiquidityInfoForRead(ctx context.Context, pairIndex int64) (liquidityInfo *commGlobalmapHandler.LiquidityInfo, err error)
@@ -33,7 +34,10 @@ type Commglobalmap interface {
 	GetBasicAccountInfo(ctx context.Context, accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error)
 	GetBasicAccountInfoWithCache(ctx context.Context, accountIndex int64) (*commonAsset.AccountInfo, error)
 	GetLatestNftInfoForRead(ctx context.Context, nftIndex int64) (*commonAsset.NftInfo, error)
+
 	GetLatestLiquidityInfoForWrite(ctx context.Context, pairIndex int64) (liquidityInfo *commGlobalmapHandler.LiquidityInfo, err error)
+	SetLatestLiquidityInfoForWrite(ctx context.Context, pairIndex int64) error
+	DeleteLatestLiquidityInfoForWriteInCache(ctx context.Context, pairIndex int64) error
 }
 
 func New(svcCtx *svc.ServiceContext) Commglobalmap {

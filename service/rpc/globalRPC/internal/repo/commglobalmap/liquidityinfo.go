@@ -136,10 +136,20 @@ func (m *model) GetLatestLiquidityInfoForWrite(ctx context.Context, pairIndex in
 			}
 		}
 	}
-	// TODO: this set cache operation will be deleted in the future, we should use GetLatestLiquidityInfoForReadWithCache anywhere
-	// and delete the cache where mempool be changed
-	if err := m.cache.Set(ctx, multcache.SpliceCacheKeyLiquidityInfoForWriteByPairIndex(pairIndex), liquidityInfo, 10); err != nil {
-		return nil, err
-	}
 	return liquidityInfo, nil
+}
+
+func (m *model) SetLatestLiquidityInfoForWrite(ctx context.Context, pairIndex int64) error {
+	liquidityInfo, err := m.GetLatestLiquidityInfoForWrite(ctx, pairIndex)
+	if err != nil {
+		return err
+	}
+	if err := m.cache.Set(ctx, multcache.SpliceCacheKeyLiquidityInfoForWriteByPairIndex(pairIndex), liquidityInfo, 10); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *model) DeleteLatestLiquidityInfoForWriteInCache(ctx context.Context, pairIndex int64) error {
+	return m.cache.Delete(ctx, multcache.SpliceCacheKeyLiquidityInfoForWriteByPairIndex(pairIndex))
 }
