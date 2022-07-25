@@ -17,4 +17,4 @@ WORKDIR /app
 COPY bin/app /app/app
 COPY configyaml /app/etc
 
-CMD ["./app", "-f", "etc/app-api.yaml"]
+CMD ["./app", "-f", "etc/app.yaml"]

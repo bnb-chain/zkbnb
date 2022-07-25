@@ -25,14 +25,15 @@ type sysconf struct {
 	Description: get sysconfig by config name
 */
 func (m *sysconf) GetSysconfigByName(ctx context.Context, name string) (*table.Sysconfig, error) {
+	logx.Errorf("[GetSysconfigByName] name:%v", name)
+
 	f := func() (interface{}, error) {
 		var config table.Sysconfig
 		dbTx := m.db.Table(m.table).Where("name = ?", name).Find(&config)
 		if dbTx.Error != nil {
 			return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprintf("GetSysconfigByName:%v", dbTx.Error))
 		} else if dbTx.RowsAffected == 0 {
-			erfdgsfdafadg := errcode.ErrDataNotExist.RefineError(fmt.Sprintf("GetSysconfigByName:%v", dbTx.Error))
-			return nil, erfdgsfdafadg
+			return nil, errcode.ErrDataNotExist.RefineError(name)
 		}
 		return &config, nil
 	}
