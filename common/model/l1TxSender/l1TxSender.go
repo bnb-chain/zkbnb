@@ -23,6 +23,7 @@ import (
 	"fmt"
 
 	"github.com/zecrey-labs/zecrey-legend/common/model/block"
+	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -49,6 +50,7 @@ type (
 		UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 			pendingUpdateBlocks []*block.Block,
 			pendingUpdateSenders []*L1TxSender,
+			pendingUpdateMempoolTxs []*mempool.MempoolTx,
 			pendingUpdateProofSenderStatus map[int64]int,
 		) (err error)
 	}
@@ -242,6 +244,7 @@ func (m *defaultL1TxSenderModel) DeleteL1TxSender(sender *L1TxSender) error {
 func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 	pendingUpdateBlocks []*block.Block,
 	pendingUpdateSenders []*L1TxSender,
+	pendingUpdateMempoolTxs []*mempool.MempoolTx,
 	pendingUpdateProofSenderStatus map[int64]int,
 ) (err error) {
 	const (
@@ -291,6 +294,29 @@ func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 				return errors.New("Invalid sender:  " + string(senderInfo))
 			}
 		}
+		// delete mempool txs
+		for _, pendingDeleteMempoolTx := range pendingUpdateMempoolTxs {
+			for _, detail := range pendingDeleteMempoolTx.MempoolDetails {
+				dbTx := tx.Table(mempool.DetailTableName).Where("id = ?", detail.ID).Delete(&detail)
+				if dbTx.Error != nil {
+					logx.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] %s", dbTx.Error)
+					return dbTx.Error
+				}
+				if dbTx.RowsAffected == 0 {
+					logx.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Delete Invalid Mempool Tx")
+					return errors.New("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Delete Invalid Mempool Tx")
+				}
+			}
+			dbTx := tx.Table(mempool.MempoolTableName).Where("id = ?", pendingDeleteMempoolTx.ID).Delete(&pendingDeleteMempoolTx)
+			if dbTx.Error != nil {
+				logx.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] %s", dbTx.Error)
+				return dbTx.Error
+			}
+			if dbTx.RowsAffected == 0 {
+				logx.Error("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Delete Invalid Mempool Tx")
+				return errors.New("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Delete Invalid Mempool Tx")
+			}
+		}
 		// modify proofSender Status
 		for blockHeight, newStatus := range pendingUpdateProofSenderStatus {
 			var row *proofSender.ProofSender
@@ -301,7 +327,7 @@ func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 			}
 			if dbTx.RowsAffected == 0 {
 				logx.Error(fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] No such proof. Height: %d", blockHeight))
-				return errors.New(fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] No such proof. Height: %d", blockHeight))
+				return fmt.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] No such proof. Height: %d", blockHeight)
 			}
 			dbTx = tx.Model(&row).
 				Select("status").
@@ -312,7 +338,7 @@ func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 			}
 			if dbTx.RowsAffected == 0 {
 				logx.Error(fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Update No Proof: %d", row.BlockNumber))
-				return errors.New(fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Update No Proof: %d", row.BlockNumber))
+				return fmt.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Update No Proof: %d", row.BlockNumber)
 			}
 		}
 		return nil
