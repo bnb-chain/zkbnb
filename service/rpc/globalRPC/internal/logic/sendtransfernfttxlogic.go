@@ -19,7 +19,6 @@ package logic
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"reflect"
 	"time"
 
@@ -32,10 +31,8 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
-	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
-	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -73,7 +70,7 @@ func (l *SendTransferNftTxLogic) SendTransferNftTx(in *globalRPCProto.ReqSendTxB
 	}
 	if err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.FromAccountIndex)); err != nil {
 		logx.Errorf("[CheckRequestParam] param:%v,err:%v", txInfo.FromAccountIndex, err)
-		return nil, l.createFailTransferNftTx(txInfo, err)
+		return nil, err
 	}
 	if err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.ToAccountIndex)); err != nil {
 		logx.Errorf("[CheckRequestParam] param:%v,err:%v", txInfo.ToAccountIndex, err)
@@ -87,53 +84,44 @@ func (l *SendTransferNftTxLogic) SendTransferNftTx(in *globalRPCProto.ReqSendTxB
 	nftInfo, err := l.commglobalmap.GetLatestNftInfoForRead(l.ctx, txInfo.NftIndex)
 	if err != nil {
 		logx.Errorf("[GetLatestNftInfoForRead] err:%v", err)
-		return nil, l.createFailTransferNftTx(txInfo, err)
+		return nil, err
 	}
 	accountInfoMap[txInfo.FromAccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.FromAccountIndex)
 	if err != nil {
 		logx.Errorf("[sendTransferNftTx] unable to get account info: %s", err.Error())
-		return nil, l.createFailTransferNftTx(txInfo, err)
+		return nil, err
 	}
 	if accountInfoMap[txInfo.ToAccountIndex] == nil {
 		accountInfoMap[txInfo.ToAccountIndex], err = l.commglobalmap.GetBasicAccountInfo(l.ctx, txInfo.ToAccountIndex)
 		if err != nil {
 			logx.Errorf("[sendTransferNftTx] unable to get account info: %s", err.Error())
-			return nil, l.createFailTransferNftTx(txInfo, err)
+			return nil, err
 		}
 	}
 	if accountInfoMap[txInfo.ToAccountIndex].AccountNameHash != txInfo.ToAccountNameHash {
 		logx.Errorf("[sendTransferNftTx] invalid account name")
-		return nil, l.createFailTransferNftTx(txInfo, errors.New("[sendTransferNftTx] invalid account name"))
+		return nil, err
 	}
 	if accountInfoMap[txInfo.GasAccountIndex] == nil {
 		accountInfoMap[txInfo.GasAccountIndex], err = l.commglobalmap.GetBasicAccountInfo(l.ctx, txInfo.GasAccountIndex)
 		if err != nil {
 			logx.Errorf("[sendTransferNftTx] unable to get account info: %s", err.Error())
-			return nil, l.createFailTransferNftTx(txInfo, err)
+			return nil, err
 		}
 	}
 	if nftInfo.OwnerAccountIndex != txInfo.FromAccountIndex {
 		logx.Errorf("[sendTransferNftTx] you're not owner")
-		return nil, l.createFailTransferNftTx(txInfo, errors.New("[sendTransferNftTx] you're not owner"))
+		return nil, err
 	}
 	// check expired at
-	now := time.Now().UnixMilli()
-	if txInfo.ExpiredAt < now {
+	if txInfo.ExpiredAt < time.Now().UnixMilli() {
 		logx.Errorf("[sendTransferNftTx] invalid time stamp")
-		return nil, l.createFailTransferNftTx(txInfo, errors.New("[sendTransferNftTx] invalid time stamp"))
+		return nil, err
 	}
-	var txDetails []*mempool.MempoolTxDetail
-	txDetails, err = txVerification.VerifyTransferNftTxInfo(accountInfoMap, nftInfo, txInfo)
+	txDetails, err := txVerification.VerifyTransferNftTxInfo(accountInfoMap, nftInfo, txInfo)
 	if err != nil {
 		return nil, l.createFailTransferNftTx(txInfo, err)
 	}
-	// delete key
-	key := util.GetNftKeyForRead(txInfo.NftIndex)
-	if _, err = l.svcCtx.RedisConnection.Del(key); err != nil {
-		logx.Errorf("[sendTransferNftTx] unable to delete key from redis: %s", err.Error())
-		return nil, l.createFailTransferNftTx(txInfo, err)
-	}
-	// write into mempool
 	txInfoBytes, err := json.Marshal(txInfo)
 	if err != nil {
 		return nil, l.createFailTransferNftTx(txInfo, err)
@@ -154,29 +142,20 @@ func (l *SendTransferNftTxLogic) SendTransferNftTx(in *globalRPCProto.ReqSendTxB
 		txInfo.ExpiredAt,
 		txDetails,
 	)
-	if err = CreateMempoolTx(mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel); err != nil {
-		return nil, l.createFailTransferNftTx(txInfo, err)
-	}
 	respSendTx = &globalRPCProto.RespSendTx{
 		TxId: txId,
 	}
-	// update redis
-	var formatNftInfo *commonAsset.NftInfo
-	for _, txDetail := range mempoolTx.MempoolDetails {
-		if txDetail.AssetType == commonAsset.NftAssetType {
-			formatNftInfo, err = commonAsset.ParseNftInfo(txDetail.BalanceDelta)
-			if err != nil {
-				logx.Errorf("[sendTransferNftTx] unable to parse nft info: %s", err.Error())
-				return respSendTx, nil
-			}
-		}
+	if err := l.commglobalmap.DeleteLatestNftInfoForReadInCache(l.ctx, txInfo.NftIndex); err != nil {
+		logx.Errorf("[DeleteLatestNftInfoForReadInCache] param:%v, err:%v", txInfo.NftIndex, err)
+		return nil, err
 	}
-	nftInfoBytes, err := json.Marshal(formatNftInfo)
-	if err != nil {
-		logx.Errorf("[sendTransferNftTx] unable to marshal: %s", err.Error())
-		return respSendTx, nil
+	if err = CreateMempoolTx(mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel); err != nil {
+		return nil, l.createFailTransferNftTx(txInfo, err)
 	}
-	_ = l.svcCtx.RedisConnection.Setex(key, string(nftInfoBytes), globalmapHandler.NftExpiryTime)
+	// update cacke, not key logic
+	if err := l.commglobalmap.SetLatestNftInfoForReadInCache(l.ctx, txInfo.NftIndex); err != nil {
+		logx.Errorf("[SetLatestNftInfoForReadInCache] param:%v, err:%v", txInfo.NftIndex, err)
+	}
 	return respSendTx, nil
 }
 
