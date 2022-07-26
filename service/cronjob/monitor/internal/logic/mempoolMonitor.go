@@ -662,33 +662,18 @@ func MonitorMempool(ctx context.Context, svcCtx *svc.ServiceContext) error {
 		pendingDeletedKeys = append(pendingDeletedKeys, util.GetAccountKey(index))
 	}
 	_, _ = svcCtx.RedisConnection.Del(pendingDeletedKeys...)
-
+	// update db
+	if err = svcCtx.L2TxEventMonitorModel.CreateMempoolAndActiveAccount(pendingNewAccounts, pendingNewMempoolTxs,
+		pendingNewLiquidityInfos, pendingNewNfts, txs); err != nil {
+		logx.Errorf("[CreateMempoolAndActiveAccount] unable to create mempool txs and update l2 oTx event monitors, error: %v", err)
+		return err
+	}
 	m := NewMempoolMonitor(ctx, svcCtx)
-	if err := m.accountOperator.CreateActiveAccount(pendingNewAccounts); err != nil {
-		logx.Errorf("[CreateActiveAccount] unable to create NewAccounts, error: %v", err)
-		return err
-	}
-	if err := m.mempoolOperator.CreateMempoolTxs(pendingNewMempoolTxs); err != nil {
-		logx.Errorf("[CreateMempoolTxs] unable to CreateMempoolTxs, error: %v", err)
-		return err
-	}
 	// update account cache for globalrpc sendtx interface
 	for _, mempooltx := range pendingNewMempoolTxs {
 		if err := m.commglobalmap.SetLatestAccountInfoInToCache(ctx, mempooltx.AccountIndex); err != nil {
 			logx.Errorf("[CreateMempoolTxs] unable to CreateMempoolTxs, error: %v", err)
 		}
-	}
-	if err := m.liquidityOperator.CreateLiquidities(pendingNewLiquidityInfos); err != nil {
-		logx.Errorf("[CreateLiquidities] unable to CreateLiquidities, error: %v", err)
-		return err
-	}
-	if err := m.nftOperator.CreateNfts(pendingNewNfts); err != nil {
-		logx.Errorf("[CreateNfts] unable to CreateLiquidities, error: %v", err)
-		return err
-	}
-	if err := m.l2eventOperator.UpdateL2Events(txs); err != nil {
-		logx.Errorf("[UpdateL2Events] unable to UpdateL2Events, error: %v", err)
-		return err
 	}
 	logx.Errorf("========== end MonitorMempool ==========")
 	return nil
