@@ -191,16 +191,13 @@ func MonitorL2BlockEvents(ctx context.Context, svcCtx *svc.ServiceContext,
 	// update blocks, blockDetails, updateEvents, sender
 	// update assets, locked assets, liquidity
 	// delete mempool txs
-	if err = l1TxSenderModel.UpdateRelatedEventsAndResetRelatedAssetsAndTxs(pendingUpdateBlocks, pendingUpdateSenders, pendingUpdateProofSenderStatus); err != nil {
+	if err = l1TxSenderModel.UpdateRelatedEventsAndResetRelatedAssetsAndTxs(pendingUpdateBlocks,
+		pendingUpdateSenders, pendingUpdateMempoolTxs, pendingUpdateProofSenderStatus); err != nil {
 		logx.Errorf("[MonitorL2BlockEvents] UpdateRelatedEventsAndResetRelatedAssetsAndTxs err:%v", err)
 		return err
 	}
-	m := Newl2BlockEventsMonitor(ctx, svcCtx)
-	if err := m.mempoolOperator.DeleteMempoolTxs(pendingUpdateMempoolTxs); err != nil {
-		logx.Errorf("[DeleteMempoolTxs] error: %v", err)
-		return err
-	}
 	// update account cache for globalrpc sendtx interface
+	m := Newl2BlockEventsMonitor(ctx, svcCtx)
 	for _, mempooltx := range pendingUpdateMempoolTxs {
 		if err := m.commglobalmap.SetLatestAccountInfoInToCache(ctx, mempooltx.AccountIndex); err != nil {
 			logx.Errorf("[CreateMempoolTxs] unable to CreateMempoolTxs, error: %v", err)
