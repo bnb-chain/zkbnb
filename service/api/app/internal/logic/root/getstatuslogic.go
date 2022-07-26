@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )

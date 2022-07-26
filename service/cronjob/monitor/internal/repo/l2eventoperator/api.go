@@ -1,8 +1,8 @@
 package l2eventoperator
 
 import (
-	table "github.com/zecrey-labs/zecrey-legend/common/model/l2TxEventMonitor"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/svc"
+	table "github.com/bnb-chain/zkbas/common/model/l2TxEventMonitor"
+	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/svc"
 )
 
 type Model interface {

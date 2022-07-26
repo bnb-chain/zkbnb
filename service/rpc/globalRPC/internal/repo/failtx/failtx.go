@@ -3,10 +3,10 @@ package failtx
 import (
 	"fmt"
 
-	table "github.com/zecrey-labs/zecrey-legend/common/model/tx"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/errcode"
+	table "github.com/bnb-chain/zkbas/common/model/tx"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/errcode"
 
-	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
+	"github.com/bnb-chain/zkbas/pkg/multcache"
 	"gorm.io/gorm"
 )
 

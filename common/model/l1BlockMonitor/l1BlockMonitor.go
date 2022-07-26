@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,10 @@ import (
 	"errors"
 	"fmt"
 
-	asset "github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
-	"github.com/zecrey-labs/zecrey-legend/common/model/l2BlockEventMonitor"
-	"github.com/zecrey-labs/zecrey-legend/common/model/l2TxEventMonitor"
-	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
+	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
+	"github.com/bnb-chain/zkbas/common/model/l2BlockEventMonitor"
+	"github.com/bnb-chain/zkbas/common/model/l2TxEventMonitor"
+	"github.com/bnb-chain/zkbas/common/model/sysconfig"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"

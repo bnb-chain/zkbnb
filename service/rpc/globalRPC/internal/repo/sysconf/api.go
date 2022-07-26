@@ -3,8 +3,8 @@ package sysconf
 import (
 	"context"
 
-	table "github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
+	table "github.com/bnb-chain/zkbas/common/model/sysconfig"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/svc"
 )
 
 type Model interface {

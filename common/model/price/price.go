@@ -3,7 +3,7 @@ package price
 import (
 	"encoding/json"
 	"fmt"
-	asset "github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
+	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
 	"io/ioutil"
 	"net/http"
 

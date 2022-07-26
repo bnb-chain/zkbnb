@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,23 +25,23 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/std"
-	"github.com/zecrey-labs/zecrey-legend/common/model/blockForCommit"
+	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
+	"github.com/bnb-chain/zkbas/common/model/blockForCommit"
 
+	"github.com/bnb-chain/zkbas-crypto/ffmath"
+	"github.com/bnb-chain/zkbas/common/commonAsset"
+	"github.com/bnb-chain/zkbas/common/commonConstant"
+	"github.com/bnb-chain/zkbas/common/commonTx"
+	"github.com/bnb-chain/zkbas/common/model/account"
+	"github.com/bnb-chain/zkbas/common/model/block"
+	"github.com/bnb-chain/zkbas/common/model/mempool"
+	"github.com/bnb-chain/zkbas/common/model/nft"
+	"github.com/bnb-chain/zkbas/common/model/tx"
+	"github.com/bnb-chain/zkbas/common/tree"
+	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/service/cronjob/committer/internal/svc"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/zecrey-labs/zecrey-crypto/ffmath"
-	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
-	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
-	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
-	"github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/common/model/block"
-	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
-	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
-	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
-	"github.com/zecrey-labs/zecrey-legend/common/tree"
-	"github.com/zecrey-labs/zecrey-legend/common/util"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/committer/internal/svc"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 )

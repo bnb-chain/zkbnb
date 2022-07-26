@@ -3,12 +3,12 @@ package info
 import (
 	"context"
 
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/block"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/sysconf"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/tx"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/txdetail"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/block"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/sysconf"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/tx"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/txdetail"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -37,7 +37,7 @@ func NewGetLayer2BasicInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 
 var (
 	contractAddressesNames = []string{
-		"ZecreyLegendContract",
+		"ZkbasContract",
 		"ZnsPriceOracle",
 	}
 )

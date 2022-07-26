@@ -4,14 +4,14 @@ package handler
 import (
 	"net/http"
 
-	account "github.com/zecrey-labs/zecrey-legend/service/api/app/internal/handler/account"
-	block "github.com/zecrey-labs/zecrey-legend/service/api/app/internal/handler/block"
-	info "github.com/zecrey-labs/zecrey-legend/service/api/app/internal/handler/info"
-	nft "github.com/zecrey-labs/zecrey-legend/service/api/app/internal/handler/nft"
-	pair "github.com/zecrey-labs/zecrey-legend/service/api/app/internal/handler/pair"
-	root "github.com/zecrey-labs/zecrey-legend/service/api/app/internal/handler/root"
-	transaction "github.com/zecrey-labs/zecrey-legend/service/api/app/internal/handler/transaction"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
+	account "github.com/bnb-chain/zkbas/service/api/app/internal/handler/account"
+	block "github.com/bnb-chain/zkbas/service/api/app/internal/handler/block"
+	info "github.com/bnb-chain/zkbas/service/api/app/internal/handler/info"
+	nft "github.com/bnb-chain/zkbas/service/api/app/internal/handler/nft"
+	pair "github.com/bnb-chain/zkbas/service/api/app/internal/handler/pair"
+	root "github.com/bnb-chain/zkbas/service/api/app/internal/handler/root"
+	transaction "github.com/bnb-chain/zkbas/service/api/app/internal/handler/transaction"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest"
 )

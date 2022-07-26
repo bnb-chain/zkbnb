@@ -9,8 +9,8 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	commonAsset "github.com/zecrey-labs/zecrey-legend/common/commonAsset"
-	globalmapHandler "github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
+	commonAsset "github.com/bnb-chain/zkbas/common/commonAsset"
+	globalmapHandler "github.com/bnb-chain/zkbas/common/util/globalmapHandler"
 )
 
 // MockCommglobalmap is a mock of Commglobalmap interface.

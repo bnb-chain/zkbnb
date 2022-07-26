@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,9 +28,9 @@ import (
 )
 
 var (
-	cacheZecreyAssetInfoIdPrefix        = "cache:zecrey:assetInfo:id:"
-	cacheZecreyAssetInfoAssetIdPrefix   = "cache:zecrey:assetInfo:assetId:"
-	cacheZecreyAssetInfoAssetNamePrefix = "cache:zecrey:assetInfo:assetName:"
+	cacheZkbasAssetInfoIdPrefix        = "cache:zkbas:assetInfo:id:"
+	cacheZkbasAssetInfoAssetIdPrefix   = "cache:zkbas:assetInfo:assetId:"
+	cacheZkbasAssetInfoAssetNamePrefix = "cache:zkbas:assetInfo:assetName:"
 )
 
 type (

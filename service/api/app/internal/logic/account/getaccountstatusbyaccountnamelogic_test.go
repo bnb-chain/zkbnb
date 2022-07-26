@@ -3,12 +3,12 @@ package account
 import (
 	"testing"
 
+	table "github.com/bnb-chain/zkbas/common/model/account"
+	"github.com/bnb-chain/zkbas/pkg/zerror"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/account"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	table "github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/pkg/zerror"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/account"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
 )
 
 func TestGetAccountStatusByAccountNameLogic_GetAccountStatusByAccountName(t *testing.T) {

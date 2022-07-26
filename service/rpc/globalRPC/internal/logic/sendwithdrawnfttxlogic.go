@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,19 +25,19 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/commglobalmap"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/svc"
 
+	"github.com/bnb-chain/zkbas/common/commonAsset"
+	"github.com/bnb-chain/zkbas/common/commonConstant"
+	"github.com/bnb-chain/zkbas/common/commonTx"
+	"github.com/bnb-chain/zkbas/common/model/mempool"
+	"github.com/bnb-chain/zkbas/common/model/tx"
+	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/common/util/globalmapHandler"
+	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
-	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
-	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
-	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
-	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
-	"github.com/zecrey-labs/zecrey-legend/common/util"
-	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
-	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )

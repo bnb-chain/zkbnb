@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,10 @@ import (
 	"context"
 	"errors"
 
-	"github.com/zecrey-labs/zecrey-legend/common/model/account"
-	table "github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/repo/errcode"
+	"github.com/bnb-chain/zkbas/common/model/account"
+	table "github.com/bnb-chain/zkbas/common/model/account"
+	"github.com/bnb-chain/zkbas/pkg/multcache"
+	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/repo/errcode"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 )

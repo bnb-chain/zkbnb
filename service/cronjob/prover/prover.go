@@ -3,19 +3,19 @@ package main
 import (
 	"flag"
 
+	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/cs/r1cs"
 	"github.com/robfig/cron/v3"
-	"github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/block"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/zecrey-labs/zecrey-legend/common/util"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/prover/internal/config"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/prover/internal/logic"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/prover/internal/svc"
+	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/service/cronjob/prover/internal/config"
+	"github.com/bnb-chain/zkbas/service/cronjob/prover/internal/logic"
+	"github.com/bnb-chain/zkbas/service/cronjob/prover/internal/svc"
 )
 
 var configFile = flag.String("f", "./etc/prover.yaml", "the config file")

@@ -3,8 +3,8 @@ package l2asset
 import (
 	"context"
 	"fmt"
-	table "github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
-	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
+	table "github.com/bnb-chain/zkbas/common/model/assetInfo"
+	"github.com/bnb-chain/zkbas/pkg/multcache"
 	"gorm.io/gorm"
 	"strconv"
 )

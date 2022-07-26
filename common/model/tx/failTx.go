@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	cacheZecreyFailTxIdPrefix = "cache:zecrey:failTx:id:"
+	cacheZkbasFailTxIdPrefix = "cache:zkbas:failTx:id:"
 )
 
 type (

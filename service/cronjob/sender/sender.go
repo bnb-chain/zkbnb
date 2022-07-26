@@ -6,13 +6,13 @@ import (
 	"math/big"
 	"time"
 
-	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/sender/internal/config"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/sender/internal/logic"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/sender/internal/svc"
+	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
+	"github.com/bnb-chain/zkbas/service/cronjob/sender/internal/config"
+	"github.com/bnb-chain/zkbas/service/cronjob/sender/internal/logic"
+	"github.com/bnb-chain/zkbas/service/cronjob/sender/internal/svc"
 
+	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
 	"github.com/robfig/cron/v3"
-	"github.com/zecrey-labs/zecrey-eth-rpc/_rpc"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -35,10 +35,10 @@ func main() {
 			err.Error(), c.ChainConfig.NetworkRPCSysConfigName)
 		panic(err)
 	}
-	ZecreyRollupAddress, err := ctx.SysConfigModel.GetSysconfigByName(c.ChainConfig.ZecreyContractAddrSysConfigName)
+	ZkbasRollupAddress, err := ctx.SysConfigModel.GetSysconfigByName(c.ChainConfig.ZkbasContractAddrSysConfigName)
 	if err != nil {
-		logx.Severef("[sender] fatal error, cannot fetch ZecreyRollupAddress from sysConfig, err: %s, SysConfigName: %s",
-			err.Error(), c.ChainConfig.ZecreyContractAddrSysConfigName)
+		logx.Severef("[sender] fatal error, cannot fetch ZkbasRollupAddress from sysConfig, err: %s, SysConfigName: %s",
+			err.Error(), c.ChainConfig.ZkbasContractAddrSysConfigName)
 		panic(err)
 	}
 
@@ -66,7 +66,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	zecreyInstance, err := zecreyLegend.LoadZecreyLegendInstance(cli, ZecreyRollupAddress.Value)
+	zkbasInstance, err := zkbas.LoadZkbasInstance(cli, ZkbasRollupAddress.Value)
 	if err != nil {
 		panic(err)
 	}
@@ -76,13 +76,13 @@ func main() {
 	}
 
 	var param = &logic.SenderParam{
-		Cli:                  cli,
-		AuthCli:              authCli,
-		ZecreyLegendInstance: zecreyInstance,
-		MaxWaitingTime:       c.ChainConfig.MaxWaitingTime * time.Second.Milliseconds(),
-		MaxBlocksCount:       c.ChainConfig.MaxBlockCount,
-		GasPrice:             gasPrice,
-		GasLimit:             c.ChainConfig.GasLimit,
+		Cli:            cli,
+		AuthCli:        authCli,
+		ZkbasInstance:  zkbasInstance,
+		MaxWaitingTime: c.ChainConfig.MaxWaitingTime * time.Second.Milliseconds(),
+		MaxBlocksCount: c.ChainConfig.MaxBlockCount,
+		GasPrice:       gasPrice,
+		GasLimit:       c.ChainConfig.GasLimit,
 	}
 
 	// new cron

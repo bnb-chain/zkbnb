@@ -8,7 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	tx "github.com/zecrey-labs/zecrey-legend/common/model/tx"
+	tx "github.com/bnb-chain/zkbas/common/model/tx"
 )
 
 // MockModel is a mock of Model interface.

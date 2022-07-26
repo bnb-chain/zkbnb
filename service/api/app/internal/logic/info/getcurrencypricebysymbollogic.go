@@ -4,10 +4,10 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/l2asset"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/price"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/types"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/l2asset"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/price"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )

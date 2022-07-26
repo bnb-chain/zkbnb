@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,11 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/zecrey-labs/zecrey-legend/common/model/blockForProof"
-	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
-	"github.com/zecrey-labs/zecrey-legend/common/util"
-	lockUtil "github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/prover/internal/svc"
+	"github.com/bnb-chain/zkbas/common/model/blockForProof"
+	"github.com/bnb-chain/zkbas/common/model/proofSender"
+	"github.com/bnb-chain/zkbas/common/util"
+	lockUtil "github.com/bnb-chain/zkbas/common/util/globalmapHandler"
+	"github.com/bnb-chain/zkbas/service/cronjob/prover/internal/svc"
 )
 
 func ProveBlock(ctx *svc.ServiceContext) error {

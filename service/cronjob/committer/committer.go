@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bnb-chain/zkbas/common/tree"
+	"github.com/bnb-chain/zkbas/service/cronjob/committer/internal/config"
+	"github.com/bnb-chain/zkbas/service/cronjob/committer/internal/logic"
+	"github.com/bnb-chain/zkbas/service/cronjob/committer/internal/svc"
 	"github.com/robfig/cron/v3"
-	"github.com/zecrey-labs/zecrey-legend/common/tree"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/committer/internal/config"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/committer/internal/logic"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/committer/internal/svc"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/zeromicro/go-zero/core/conf"

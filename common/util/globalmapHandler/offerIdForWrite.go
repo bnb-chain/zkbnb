@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@
 package globalmapHandler
 
 import (
-	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
-	"github.com/zecrey-labs/zecrey-legend/common/util"
+	"github.com/bnb-chain/zkbas/common/model/nft"
+	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 

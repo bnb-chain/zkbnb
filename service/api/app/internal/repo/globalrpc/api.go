@@ -3,11 +3,11 @@ package globalrpc
 import (
 	"context"
 
-	"github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalrpc"
+	"github.com/bnb-chain/zkbas/common/model/account"
+	"github.com/bnb-chain/zkbas/common/model/mempool"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalrpc"
 	"github.com/zeromicro/go-zero/zrpc"
 )
 

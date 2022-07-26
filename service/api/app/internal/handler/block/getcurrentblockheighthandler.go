@@ -3,8 +3,8 @@ package block
 import (
 	"net/http"
 
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/logic/block"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/block"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 

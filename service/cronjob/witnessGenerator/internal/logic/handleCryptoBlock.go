@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,15 +20,15 @@ import (
 	"errors"
 	"time"
 
+	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/ethereum/go-ethereum/common"
-	cryptoBlock "github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/block"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/zecrey-labs/zecrey-legend/common/model/blockForProof"
-	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
-	"github.com/zecrey-labs/zecrey-legend/common/proverUtil"
-	"github.com/zecrey-labs/zecrey-legend/common/tree"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/witnessGenerator/internal/svc"
+	"github.com/bnb-chain/zkbas/common/model/blockForProof"
+	"github.com/bnb-chain/zkbas/common/model/proofSender"
+	"github.com/bnb-chain/zkbas/common/proverUtil"
+	"github.com/bnb-chain/zkbas/common/tree"
+	"github.com/bnb-chain/zkbas/service/cronjob/witnessGenerator/internal/svc"
 )
 
 func GenerateWitness(

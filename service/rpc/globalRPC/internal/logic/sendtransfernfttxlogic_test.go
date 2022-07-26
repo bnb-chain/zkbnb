@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,13 @@ package logic
 import (
 	"testing"
 
+	"github.com/bnb-chain/zkbas/common/commonAsset"
+	"github.com/bnb-chain/zkbas/pkg/zerror"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/commglobalmap"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/failtx"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
-	"github.com/zecrey-labs/zecrey-legend/pkg/zerror"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/failtx"
 )
 
 func TestSendTransferNftTxLogic_SendTransferNftTx(t *testing.T) {

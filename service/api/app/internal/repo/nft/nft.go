@@ -8,8 +8,8 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 
-	nftModel "github.com/zecrey-labs/zecrey-legend/common/model/nft"
-	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
+	nftModel "github.com/bnb-chain/zkbas/common/model/nft"
+	"github.com/bnb-chain/zkbas/pkg/multcache"
 )
 
 type nft struct {

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,29 +21,29 @@ import (
 	"flag"
 	"log"
 
+	"github.com/bnb-chain/zkbas/common/sysconfigName"
+	"github.com/bnb-chain/zkbas/common/tree"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
-	"github.com/zecrey-labs/zecrey-legend/common/sysconfigName"
-	"github.com/zecrey-labs/zecrey-legend/common/tree"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 
-	"github.com/zecrey-labs/zecrey-legend/common/model/account"
-	asset "github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
-	"github.com/zecrey-labs/zecrey-legend/common/model/basic"
-	"github.com/zecrey-labs/zecrey-legend/common/model/block"
-	"github.com/zecrey-labs/zecrey-legend/common/model/blockForCommit"
-	"github.com/zecrey-labs/zecrey-legend/common/model/blockForProof"
-	"github.com/zecrey-labs/zecrey-legend/common/model/l1BlockMonitor"
-	"github.com/zecrey-labs/zecrey-legend/common/model/l1TxSender"
-	"github.com/zecrey-labs/zecrey-legend/common/model/l2BlockEventMonitor"
-	"github.com/zecrey-labs/zecrey-legend/common/model/l2TxEventMonitor"
-	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
-	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
-	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
-	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
-	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
-	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
+	"github.com/bnb-chain/zkbas/common/model/account"
+	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
+	"github.com/bnb-chain/zkbas/common/model/basic"
+	"github.com/bnb-chain/zkbas/common/model/block"
+	"github.com/bnb-chain/zkbas/common/model/blockForCommit"
+	"github.com/bnb-chain/zkbas/common/model/blockForProof"
+	"github.com/bnb-chain/zkbas/common/model/l1BlockMonitor"
+	"github.com/bnb-chain/zkbas/common/model/l1TxSender"
+	"github.com/bnb-chain/zkbas/common/model/l2BlockEventMonitor"
+	"github.com/bnb-chain/zkbas/common/model/l2TxEventMonitor"
+	"github.com/bnb-chain/zkbas/common/model/liquidity"
+	"github.com/bnb-chain/zkbas/common/model/mempool"
+	"github.com/bnb-chain/zkbas/common/model/nft"
+	"github.com/bnb-chain/zkbas/common/model/proofSender"
+	"github.com/bnb-chain/zkbas/common/model/sysconfig"
+	"github.com/bnb-chain/zkbas/common/model/tx"
 )
 
 var configFile = flag.String("f", "./contractaddr.yaml", "the config file")
@@ -83,10 +83,10 @@ func initSysConfig() []*sysconfig.Sysconfig {
 			Comment:   "gas index",
 		},
 		{
-			Name:      sysconfigName.ZecreyLegendContract,
-			Value:     svrConf.ZecreyLegendProxy,
+			Name:      sysconfigName.ZkbasContract,
+			Value:     svrConf.ZkbasProxy,
 			ValueType: "string",
-			Comment:   "Zecrey contract on BSC",
+			Comment:   "Zkbas contract on BSC",
 		},
 		// Governance Contract
 		{
@@ -286,7 +286,7 @@ type config struct {
 	VerifierProxy      string
 	ZnsControllerProxy string
 	ZnsResolverProxy   string
-	ZecreyLegendProxy  string
+	ZkbasProxy         string
 	UpgradeGateKeeper  string
 	LEGToken           string
 	REYToken           string

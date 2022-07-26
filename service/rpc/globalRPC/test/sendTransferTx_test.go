@@ -5,16 +5,16 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	curve "github.com/bnb-chain/zkbas-crypto/ecc/ztwistededwards/tebn254"
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+	"github.com/bnb-chain/zkbas/common/commonTx"
+	"github.com/bnb-chain/zkbas/common/tree"
+	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/config"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/server"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/svc"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
-	curve "github.com/zecrey-labs/zecrey-crypto/ecc/ztwistededwards/tebn254"
-	"github.com/zecrey-labs/zecrey-crypto/wasm/zecrey-legend/legendTxTypes"
-	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
-	"github.com/zecrey-labs/zecrey-legend/common/tree"
-	"github.com/zecrey-labs/zecrey-legend/common/util"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/config"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/server"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
 	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
 	"testing"
@@ -24,7 +24,7 @@ import (
 )
 
 var configFile = flag.String("f",
-	"D:\\Projects\\mygo\\src\\Zecrey\\SherLzp\\zecrey-legend\\service\\rpc\\globalRPC\\etc\\globalrpc.yaml", "the config file")
+	"../etc/globalrpc.yaml", "the config file")
 
 func TestSendTransferTx(t *testing.T) {
 	flag.Parse()

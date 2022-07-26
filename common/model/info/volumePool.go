@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,8 @@ import (
 )
 
 var (
-	cacheZecreyVolumePoolIdPrefix   = "cache:zecrey:volume:id:"
-	cacheZecreyVolumePoolDatePrefix = "cache:zecrey:volume:date:"
+	cacheZkbasVolumePoolIdPrefix   = "cache:zkbas:volume:id:"
+	cacheZkbasVolumePoolDatePrefix = "cache:zkbas:volume:date:"
 )
 
 type (

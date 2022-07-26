@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,11 @@ package logic
 import (
 	"time"
 
-	cryptoBlock "github.com/zecrey-labs/zecrey-crypto/zecrey-legend/circuit/bn254/block"
-	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
+	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
+	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 
-	"github.com/zecrey-labs/zecrey-legend/common/model/block"
-	"github.com/zecrey-labs/zecrey-legend/common/model/blockForProof"
+	"github.com/bnb-chain/zkbas/common/model/block"
+	"github.com/bnb-chain/zkbas/common/model/blockForProof"
 )
 
 const (
@@ -37,7 +37,7 @@ type (
 	CryptoTx               = cryptoBlock.Tx
 	CryptoBlock            = cryptoBlock.Block
 	BlockForProof          = blockForProof.BlockForProof
-	StorageStoredBlockInfo = zecreyLegend.StorageStoredBlockInfo
+	StorageStoredBlockInfo = zkbas.StorageStoredBlockInfo
 )
 
 type CryptoBlockInfo struct {

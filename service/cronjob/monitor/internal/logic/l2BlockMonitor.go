@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,18 +20,18 @@ import (
 	"context"
 	"sort"
 
-	"github.com/zecrey-labs/zecrey-eth-rpc/_rpc"
+	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/zecrey-labs/zecrey-legend/common/model/block"
-	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/repo/accountoperator"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/repo/commglobalmap"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/repo/l2eventoperator"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/repo/liquidityoperator"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/repo/mempooloperator"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/repo/nftoperator"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/svc"
+	"github.com/bnb-chain/zkbas/common/model/block"
+	"github.com/bnb-chain/zkbas/common/model/proofSender"
+	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/repo/accountoperator"
+	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/repo/commglobalmap"
+	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/repo/l2eventoperator"
+	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/repo/liquidityoperator"
+	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/repo/mempooloperator"
+	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/repo/nftoperator"
+	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/svc"
 )
 
 type l2BlockEventsMonitor struct {
@@ -113,9 +113,9 @@ func MonitorL2BlockEvents(ctx context.Context, svcCtx *svc.ServiceContext,
 			}
 			timeAt := isQueriedBlockHash[vlog.BlockHash.Hex()]
 			switch vlog.Topics[0].Hex() {
-			case zecreyLogBlockCommitSigHash.Hex():
-				var event ZecreyLegendBlockCommit
-				if err = ZecreyContractAbi.UnpackIntoInterface(&event, EventNameBlockCommit, vlog.Data); err != nil {
+			case zkbasLogBlockCommitSigHash.Hex():
+				var event ZkbasBlockCommit
+				if err = ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlockCommit, vlog.Data); err != nil {
 					logx.Errorf("[MonitorL2BlockEvents] UnpackIntoInterface err:%v", err)
 					return err
 				}
@@ -133,9 +133,9 @@ func MonitorL2BlockEvents(ctx context.Context, svcCtx *svc.ServiceContext,
 				relatedBlocks[blockHeight].CommittedTxHash = receipt.TxHash.Hex()
 				relatedBlocks[blockHeight].CommittedAt = timeAt
 				relatedBlocks[blockHeight].BlockStatus = block.StatusCommitted
-			case zecreyLogBlockVerificationSigHash.Hex():
-				var event ZecreyLegendBlockVerification
-				if err = ZecreyContractAbi.UnpackIntoInterface(&event, EventNameBlockVerification, vlog.Data); err != nil {
+			case zkbasLogBlockVerificationSigHash.Hex():
+				var event ZkbasBlockVerification
+				if err = ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlockVerification, vlog.Data); err != nil {
 					logx.Errorf("[MonitorL2BlockEvents] UnpackIntoInterface err:%v", err)
 					return err
 				}
@@ -154,7 +154,7 @@ func MonitorL2BlockEvents(ctx context.Context, svcCtx *svc.ServiceContext,
 				relatedBlocks[blockHeight].VerifiedAt = timeAt
 				relatedBlocks[blockHeight].BlockStatus = block.StatusVerifiedAndExecuted
 				pendingUpdateProofSenderStatus[blockHeight] = proofSender.Confirmed
-			case zecreyLogBlocksRevertSigHash.Hex():
+			case zkbasLogBlocksRevertSigHash.Hex():
 				// TODO revert
 			default:
 			}

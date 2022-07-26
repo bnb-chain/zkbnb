@@ -1,10 +1,10 @@
 package errcode
 
 import (
-	"github.com/zecrey-labs/zecrey-legend/pkg/zerror"
+	"github.com/bnb-chain/zkbas/pkg/zerror"
 )
 
-// error Custom error type in zecrey
+// error Custom error type in zkbas
 // using method:
 // err := error.New(10000, "Example error msg")
 // fmt.Println("err:", err.Sprintf())

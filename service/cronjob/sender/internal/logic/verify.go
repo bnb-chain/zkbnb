@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,11 @@ import (
 	"math/big"
 	"time"
 
-	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
+	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/zecrey-labs/zecrey-legend/common/model/block"
-	"github.com/zecrey-labs/zecrey-legend/common/util"
+	"github.com/bnb-chain/zkbas/common/model/block"
+	"github.com/bnb-chain/zkbas/common/util"
 )
 
 func SendVerifiedAndExecutedBlocks(
@@ -36,13 +36,13 @@ func SendVerifiedAndExecutedBlocks(
 	proofSenderModel ProofSenderModel,
 ) (err error) {
 	var (
-		cli                  = param.Cli
-		authCli              = param.AuthCli
-		zecreyLegendInstance = param.ZecreyLegendInstance
-		gasPrice             = param.GasPrice
-		gasLimit             = param.GasLimit
-		maxBlockCount        = param.MaxBlocksCount
-		maxWaitingTime       = param.MaxWaitingTime
+		cli            = param.Cli
+		authCli        = param.AuthCli
+		zkbasInstance  = param.ZkbasInstance
+		gasPrice       = param.GasPrice
+		gasLimit       = param.GasLimit
+		maxBlockCount  = param.MaxBlocksCount
+		maxWaitingTime = param.MaxWaitingTime
 	)
 	// scan l1 tx sender table for handled verified and executed height
 	lastHandledBlock, getHandleErr := l1TxSenderModel.GetLatestHandledBlock(VerifyAndExecuteTxType)
@@ -117,7 +117,7 @@ func SendVerifiedAndExecutedBlocks(
 	var (
 		start                         int64
 		blocks                        []*block.Block
-		pendingVerifyAndExecuteBlocks []ZecreyLegendVerifyBlockInfo
+		pendingVerifyAndExecuteBlocks []ZkbasVerifyBlockInfo
 	)
 	if getHandleErr == ErrNotFound && getPendingerr == ErrNotFound {
 		// get blocks from block table
@@ -177,7 +177,7 @@ func SendVerifiedAndExecutedBlocks(
 	}
 	// commit blocks on-chain
 	if len(pendingVerifyAndExecuteBlocks) != 0 {
-		txHash, err := zecreyLegend.VerifyAndExecuteBlocks(cli, authCli, zecreyLegendInstance,
+		txHash, err := zkbas.VerifyAndExecuteBlocks(cli, authCli, zkbasInstance,
 			pendingVerifyAndExecuteBlocks, proofs, gasPrice, gasLimit)
 		if err != nil {
 			logx.Errorf("[SendVerifiedAndExecutedBlocks] VerifyAndExecuteBlocks err:%v", err)

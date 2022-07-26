@@ -1,8 +1,8 @@
 package mempooloperator
 
 import (
-	table "github.com/zecrey-labs/zecrey-legend/common/model/mempool"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/svc"
+	table "github.com/bnb-chain/zkbas/common/model/mempool"
+	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/svc"
 )
 
 type Model interface {

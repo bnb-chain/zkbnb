@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	account "github.com/zecrey-labs/zecrey-legend/common/model/account"
+	account "github.com/bnb-chain/zkbas/common/model/account"
 )
 
 // MockModel is a mock of Model interface.

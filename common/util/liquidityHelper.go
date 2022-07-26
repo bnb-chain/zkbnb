@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,9 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/zecrey-labs/zecrey-crypto/ffmath"
-	"github.com/zecrey-labs/zecrey-crypto/util"
-	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
+	"github.com/bnb-chain/zkbas-crypto/ffmath"
+	"github.com/bnb-chain/zkbas-crypto/util"
+	"github.com/bnb-chain/zkbas/common/commonAsset"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )

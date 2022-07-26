@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/zecrey-labs/zecrey-legend/common/commonAsset/errcode"
-	"github.com/zecrey-labs/zecrey-legend/common/model/account"
+	"github.com/bnb-chain/zkbas/common/commonAsset/errcode"
+	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 )

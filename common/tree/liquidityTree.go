@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@
 package tree
 
 import (
-	"github.com/zecrey-labs/zecrey-crypto/accumulators/merkleTree"
-	"github.com/zecrey-labs/zecrey-crypto/hash/bn254/zmimc"
-	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
+	"github.com/bnb-chain/zkbas-crypto/accumulators/merkleTree"
+	"github.com/bnb-chain/zkbas-crypto/hash/bn254/zmimc"
+	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/zeromicro/go-zero/core/logx"
 	"log"
 )

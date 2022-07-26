@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/zecrey-labs/zecrey-legend/common/model/blockForProof"
+	"github.com/bnb-chain/zkbas/common/model/blockForProof"
 )
 
 func CryptoBlockInfoToBlockForProof(cryptoBlock *CryptoBlockInfo) (*BlockForProof, error) {

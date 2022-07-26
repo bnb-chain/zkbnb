@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,8 @@ package accountoperator
 import (
 	"context"
 
-	table "github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/svc"
+	table "github.com/bnb-chain/zkbas/common/model/account"
+	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/svc"
 )
 
 type Model interface {

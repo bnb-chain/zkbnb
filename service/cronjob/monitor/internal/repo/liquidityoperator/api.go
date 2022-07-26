@@ -1,8 +1,8 @@
 package liquidityoperator
 
 import (
-	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/monitor/internal/svc"
+	"github.com/bnb-chain/zkbas/common/model/liquidity"
+	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/svc"
 )
 
 //go:generate mockgen -source api.go -destination api_mock.go -package liquidity

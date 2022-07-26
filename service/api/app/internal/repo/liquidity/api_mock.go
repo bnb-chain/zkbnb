@@ -8,7 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	liquidity "github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
+	liquidity "github.com/bnb-chain/zkbas/common/model/liquidity"
 )
 
 // MockLiquidityModel is a mock of LiquidityModel interface.

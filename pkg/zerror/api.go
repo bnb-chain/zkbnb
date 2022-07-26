@@ -1,4 +1,4 @@
-// error Custom error type in zecrey
+// error Custom error type in zkbas
 // using method:
 // err := error.New(10000, "Example error msg")
 // fmt.Println("err:", err.Sprintf())

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,9 +33,9 @@ import (
 )
 
 var (
-	cacheZecreyTxIdPrefix      = "cache:zecrey:txVerification:id:"
-	cacheZecreyTxTxHashPrefix  = "cache:zecrey:txVerification:txHash:"
-	cacheZecreyTxTxCountPrefix = "cache:zecrey:txVerification:txCount"
+	cacheZkbasTxIdPrefix      = "cache:zkbas:txVerification:id:"
+	cacheZkbasTxTxHashPrefix  = "cache:zkbas:txVerification:txHash:"
+	cacheZkbasTxTxCountPrefix = "cache:zkbas:txVerification:txCount"
 )
 
 type (
@@ -142,7 +142,7 @@ func (m *defaultTxModel) GetTxsListByBlockHeight(blockHeight int64, limit int, o
 	}
 
 	for _, tx := range txs {
-		key := fmt.Sprintf("%s%v", cacheZecreyTxIdPrefix, tx.ID)
+		key := fmt.Sprintf("%s%v", cacheZkbasTxIdPrefix, tx.ID)
 		val, err := m.RedisConn.Get(key)
 		if err != nil {
 			errInfo := fmt.Sprintf("[txVerification.GetTxsListByBlockHeight] Get Redis Error: %s, key:%s", err.Error(), key)
@@ -218,7 +218,7 @@ func (m *defaultTxModel) GetTxsListByAccountIndex(accountIndex int64, limit int,
 	}
 	//TODO: cache operation
 	for _, tx := range txs {
-		key := fmt.Sprintf("%s%v", cacheZecreyTxIdPrefix, tx.ID)
+		key := fmt.Sprintf("%s%v", cacheZkbasTxIdPrefix, tx.ID)
 		val, err := m.RedisConn.Get(key)
 		if err != nil {
 			errInfo := fmt.Sprintf("[txVerification.GetTxsListByAccountIndex] Get Redis Error: %s, key:%s", err.Error(), key)
@@ -294,7 +294,7 @@ func (m *defaultTxModel) GetTxsListByAccountIndexAndTxType(accountIndex int64, t
 	}
 	//TODO: cache operation
 	for _, tx := range txs {
-		key := fmt.Sprintf("%s%v:txType:%v", cacheZecreyTxIdPrefix, tx.ID, txType)
+		key := fmt.Sprintf("%s%v:txType:%v", cacheZkbasTxIdPrefix, tx.ID, txType)
 		val, err := m.RedisConn.Get(key)
 		if err != nil {
 			errInfo := fmt.Sprintf("[txVerification.GetTxsListByAccountIndexAndTxType] Get Redis Error: %s, key:%s", err.Error(), key)
@@ -370,7 +370,7 @@ func (m *defaultTxModel) GetTxsListByAccountIndexAndTxTypeArray(accountIndex int
 	}
 	//TODO: cache operation
 	for _, tx := range txs {
-		key := fmt.Sprintf("%s%v:txTypeArray:%s", cacheZecreyTxIdPrefix, tx.ID, txTypeArray)
+		key := fmt.Sprintf("%s%v:txTypeArray:%s", cacheZkbasTxIdPrefix, tx.ID, txTypeArray)
 		val, err := m.RedisConn.Get(key)
 		if err != nil {
 			errInfo := fmt.Sprintf("[txVerification.GetTxsListByAccountIndexAndTxTypeArray] Get Redis Error: %s, key:%s", err.Error(), key)
@@ -461,7 +461,7 @@ func (m *defaultTxModel) GetTxsListByAccountName(accountName string, limit int, 
 */
 func (m *defaultTxModel) GetTxsTotalCount() (count int64, err error) {
 
-	key := fmt.Sprintf("%s", cacheZecreyTxTxCountPrefix)
+	key := fmt.Sprintf("%s", cacheZkbasTxTxCountPrefix)
 	val, err := m.RedisConn.Get(key)
 	if err != nil {
 		errInfo := fmt.Sprintf("[txVerification.GetTxsTotalCount] Get Redis Error: %s, key:%s", err.Error(), key)

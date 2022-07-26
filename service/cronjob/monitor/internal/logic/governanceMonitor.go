@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,16 +21,16 @@ import (
 	"encoding/json"
 	"math/big"
 
+	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
+	"github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/zero/basic"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
-	"github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey/basic"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	asset "github.com/zecrey-labs/zecrey-legend/common/model/assetInfo"
-	"github.com/zecrey-labs/zecrey-legend/common/model/l1BlockMonitor"
-	"github.com/zecrey-labs/zecrey-legend/common/sysconfigName"
-	"github.com/zecrey-labs/zecrey-legend/common/util"
+	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
+	"github.com/bnb-chain/zkbas/common/model/l1BlockMonitor"
+	"github.com/bnb-chain/zkbas/common/sysconfigName"
+	"github.com/bnb-chain/zkbas/common/util"
 )
 
 /*
@@ -87,7 +87,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 	for _, vlog := range logs {
 		switch vlog.Topics[0].Hex() {
 		case governanceLogNewAssetSigHash.Hex():
-			var event zecreyLegend.GovernanceNewAsset
+			var event zkbas.GovernanceNewAsset
 			if err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameNewAsset, vlog.Data); err != nil {
 				logx.Errorf("[MonitorGovernanceContract] UnpackIntoInterface err:%v", err)
 				return err
@@ -97,7 +97,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 				TxHash:    vlog.TxHash.Hex(),
 			}
 			// get asset info by contract address
-			erc20Instance, err := zecreyLegend.LoadERC20(cli, event.AssetAddress.Hex())
+			erc20Instance, err := zkbas.LoadERC20(cli, event.AssetAddress.Hex())
 			if err != nil {
 				logx.Errorf("[MonitorGovernanceContract] LoadERC20 err:%v", err)
 				return err
@@ -129,7 +129,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 			l2AssetInfoMap[event.AssetAddress.Hex()] = l2AssetInfo
 		case governanceLogNewGovernorSigHash.Hex():
 			// parse event info
-			var event zecreyLegend.GovernanceNewGovernor
+			var event zkbas.GovernanceNewGovernor
 			if err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameNewGovernor, vlog.Data); err != nil {
 				logx.Errorf("[MonitorGovernanceContract] UnpackIntoInterface err:%v", err)
 				return err
@@ -150,7 +150,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 			pendingNewSysconfigInfoMap[configInfo.Name] = configInfo
 		case governanceLogNewAssetGovernanceSigHash.Hex():
 			// parse event info
-			var event zecreyLegend.GovernanceNewAssetGovernance
+			var event zkbas.GovernanceNewAssetGovernance
 			err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameNewAssetGovernance, vlog.Data)
 			if err != nil {
 				logx.Errorf("[MonitorGovernanceContract] UnpackIntoInterface err:%v", err)
@@ -171,7 +171,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 			pendingNewSysconfigInfoMap[configInfo.Name] = configInfo
 		case governanceLogValidatorStatusUpdateSigHash.Hex():
 			// parse event info
-			var event zecreyLegend.GovernanceValidatorStatusUpdate
+			var event zkbas.GovernanceValidatorStatusUpdate
 			if err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameValidatorStatusUpdate, vlog.Data); err != nil {
 				logx.Errorf("[blockMoniter.MonitorGovernanceContract]<=>[GovernanceContractAbi.UnpackIntoInterface] %s", err.Error())
 				return err
@@ -260,7 +260,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 			break
 		case governanceLogAssetPausedUpdateSigHash.Hex():
 			// parse event info
-			var event zecreyLegend.GovernanceAssetPausedUpdate
+			var event zkbas.GovernanceAssetPausedUpdate
 			err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameAssetPausedUpdate, vlog.Data)
 			if err != nil {
 				logx.Errorf("[blockMoniter.MonitorGovernanceContract]<=>[GovernanceContractAbi.UnpackIntoInterface] %s", err.Error())

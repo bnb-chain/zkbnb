@@ -3,13 +3,13 @@ package commglobalmap
 import (
 	"context"
 
-	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
-	"github.com/zecrey-labs/zecrey-legend/common/model/account"
-	"github.com/zecrey-labs/zecrey-legend/common/model/liquidity"
-	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
-	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
-	commGlobalmapHandler "github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
+	"github.com/bnb-chain/zkbas/common/commonAsset"
+	"github.com/bnb-chain/zkbas/common/model/account"
+	"github.com/bnb-chain/zkbas/common/model/liquidity"
+	"github.com/bnb-chain/zkbas/common/model/mempool"
+	"github.com/bnb-chain/zkbas/common/model/nft"
+	commGlobalmapHandler "github.com/bnb-chain/zkbas/common/util/globalmapHandler"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/svc"
 )
 
 //go:generate mockgen -source api.go -destination api_mock.go -package commglobalmap

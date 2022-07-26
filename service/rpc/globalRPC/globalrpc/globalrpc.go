@@ -6,7 +6,7 @@ package globalrpc
 import (
 	"context"
 
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
 
 	"github.com/zeromicro/go-zero/zrpc"
 	"google.golang.org/grpc"

@@ -3,9 +3,9 @@ package mempooltxdetail
 import (
 	"context"
 
-	table "github.com/zecrey-labs/zecrey-legend/common/model/mempool"
-	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/repo/errcode"
+	table "github.com/bnb-chain/zkbas/common/model/mempool"
+	"github.com/bnb-chain/zkbas/pkg/multcache"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/errcode"
 	"gorm.io/gorm"
 )
 

@@ -7,9 +7,9 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/zecrey-labs/zecrey-legend/common/model/blockForProof"
-	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/prover/internal/config"
+	"github.com/bnb-chain/zkbas/common/model/blockForProof"
+	"github.com/bnb-chain/zkbas/common/model/proofSender"
+	"github.com/bnb-chain/zkbas/service/cronjob/prover/internal/config"
 )
 
 type ServiceContext struct {

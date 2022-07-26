@@ -3,8 +3,8 @@ package nft
 import (
 	"context"
 
-	nftModel "github.com/zecrey-labs/zecrey-legend/common/model/nft"
-	"github.com/zecrey-labs/zecrey-legend/service/api/app/internal/svc"
+	nftModel "github.com/bnb-chain/zkbas/common/model/nft"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 )
 
 type Nft interface {

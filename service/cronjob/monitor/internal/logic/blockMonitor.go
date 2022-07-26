@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,21 +23,21 @@ import (
 	"fmt"
 	"math/big"
 
+	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	zecreyLegend "github.com/zecrey-labs/zecrey-eth-rpc/zecrey/core/zecrey-legend"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/zecrey-labs/zecrey-legend/common/model/l1BlockMonitor"
-	"github.com/zecrey-labs/zecrey-legend/common/model/l2TxEventMonitor"
-	"github.com/zecrey-labs/zecrey-legend/common/util"
+	"github.com/bnb-chain/zkbas/common/model/l1BlockMonitor"
+	"github.com/bnb-chain/zkbas/common/model/l2TxEventMonitor"
+	"github.com/bnb-chain/zkbas/common/util"
 )
 
 /*
 	MonitorBlocks: monitor layer-1 block events
 */
-func MonitorBlocks(cli *ProviderClient, startHeight int64, pendingBlocksCount uint64, maxHandledBlocksCount int64, zecreyContract string, l1BlockMonitorModel L1BlockMonitorModel) (err error) {
+func MonitorBlocks(cli *ProviderClient, startHeight int64, pendingBlocksCount uint64, maxHandledBlocksCount int64, zkbasContract string, l1BlockMonitorModel L1BlockMonitorModel) (err error) {
 	latestHandledBlock, err := l1BlockMonitorModel.GetLatestL1BlockMonitorByBlock()
 	logx.Errorf("========== start MonitorBlocks ==========")
 	var handledHeight int64
@@ -63,14 +63,14 @@ func MonitorBlocks(cli *ProviderClient, startHeight int64, pendingBlocksCount ui
 		logx.Error("[l2BlockMonitor.MonitorBlocks] no new blocks need to be handled")
 		return nil
 	}
-	contractAddress := common.HexToAddress(zecreyContract)
+	contractAddress := common.HexToAddress(zkbasContract)
 	logx.Infof("[MonitorBlocks] fromBlock: %d, toBlock: %d", big.NewInt(handledHeight+1), big.NewInt(int64(safeHeight)))
-	zecreyInstance, err := zecreyLegend.LoadZecreyLegendInstance(cli, zecreyContract)
+	zkbasInstance, err := zkbas.LoadZkbasInstance(cli, zkbasContract)
 	if err != nil {
-		logx.Errorf("[MonitorBlocks] unable to load zecrey instance")
+		logx.Errorf("[MonitorBlocks] unable to load zkbas instance")
 		return err
 	}
-	priorityRequests, err := zecreyInstance.ZecreyLegendFilterer.
+	priorityRequests, err := zkbasInstance.ZkbasFilterer.
 		FilterNewPriorityRequest(&bind.FilterOpts{Start: uint64(handledHeight + 1), End: &safeHeight})
 	if err != nil {
 		logx.Errorf("[MonitorBlocks] unable to filter deposit or lock events: %s", err.Error())
@@ -101,11 +101,11 @@ func MonitorBlocks(cli *ProviderClient, startHeight int64, pendingBlocksCount ui
 			TxHash: vlog.TxHash.Hex(),
 		}
 		switch vlog.Topics[0].Hex() {
-		case zecreyLogNewPriorityRequestSigHash.Hex():
+		case zkbasLogNewPriorityRequestSigHash.Hex():
 			priorityRequestCountCheck++
-			var event zecreyLegend.ZecreyLegendNewPriorityRequest
-			if err = ZecreyContractAbi.UnpackIntoInterface(&event, EventNameNewPriorityRequest, vlog.Data); err != nil {
-				logx.Errorf("[blockMoniter.MonitorBlocks]<=>[ZecreyContractAbi.UnpackIntoInterface] %v", err)
+			var event zkbas.ZkbasNewPriorityRequest
+			if err = ZkbasContractAbi.UnpackIntoInterface(&event, EventNameNewPriorityRequest, vlog.Data); err != nil {
+				logx.Errorf("[blockMoniter.MonitorBlocks]<=>[ZkbasContractAbi.UnpackIntoInterface] %v", err)
 				return err
 			}
 			l1EventInfo.EventType = EventTypeNewPriorityRequest
@@ -120,12 +120,12 @@ func MonitorBlocks(cli *ProviderClient, startHeight int64, pendingBlocksCount ui
 				Status:          l2TxEventMonitor.PendingStatus,
 			}
 			l2TxEventMonitors = append(l2TxEventMonitors, l2TxEventMonitorInfo)
-		case zecreyLogWithdrawalSigHash.Hex():
-		case zecreyLogWithdrawalPendingSigHash.Hex():
-		case zecreyLogBlockCommitSigHash.Hex():
-			var event zecreyLegend.ZecreyLegendBlockCommit
-			if err = ZecreyContractAbi.UnpackIntoInterface(&event, EventNameBlockCommit, vlog.Data); err != nil {
-				errInfo := fmt.Sprintf("[blockMoniter.MonitorBlocks]<=>[ZecreyContractAbi.UnpackIntoInterface] %s", err.Error())
+		case zkbasLogWithdrawalSigHash.Hex():
+		case zkbasLogWithdrawalPendingSigHash.Hex():
+		case zkbasLogBlockCommitSigHash.Hex():
+			var event zkbas.ZkbasBlockCommit
+			if err = ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlockCommit, vlog.Data); err != nil {
+				errInfo := fmt.Sprintf("[blockMoniter.MonitorBlocks]<=>[ZkbasContractAbi.UnpackIntoInterface] %s", err.Error())
 				logx.Error(errInfo)
 				return err
 			}
@@ -138,10 +138,10 @@ func MonitorBlocks(cli *ProviderClient, startHeight int64, pendingBlocksCount ui
 				Status:         PendingStatusL2BlockEventMonitor,
 			}
 			l2BlockEventMonitors = append(l2BlockEventMonitors, l2BlockEventMonitorInfo)
-		case zecreyLogBlockVerificationSigHash.Hex():
-			var event zecreyLegend.ZecreyLegendBlockVerification
-			if err = ZecreyContractAbi.UnpackIntoInterface(&event, EventNameBlockVerification, vlog.Data); err != nil {
-				errInfo := fmt.Sprintf("[blockMoniter.MonitorBlocks]<=>[ZecreyContractAbi.UnpackIntoInterface] %s", err.Error())
+		case zkbasLogBlockVerificationSigHash.Hex():
+			var event zkbas.ZkbasBlockVerification
+			if err = ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlockVerification, vlog.Data); err != nil {
+				errInfo := fmt.Sprintf("[blockMoniter.MonitorBlocks]<=>[ZkbasContractAbi.UnpackIntoInterface] %s", err.Error())
 				logx.Error(errInfo)
 				return err
 			}
@@ -154,10 +154,10 @@ func MonitorBlocks(cli *ProviderClient, startHeight int64, pendingBlocksCount ui
 				Status:         PendingStatusL2BlockEventMonitor,
 			}
 			l2BlockEventMonitors = append(l2BlockEventMonitors, l2BlockEventMonitorInfo)
-		case zecreyLogBlocksRevertSigHash.Hex():
-			var event zecreyLegend.ZecreyLegendBlocksRevert
-			if err = ZecreyContractAbi.UnpackIntoInterface(&event, EventNameBlocksRevert, vlog.Data); err != nil {
-				errInfo := fmt.Sprintf("[blockMoniter.MonitorBlocks]<=>[ZecreyContractAbi.UnpackIntoInterface] %s", err.Error())
+		case zkbasLogBlocksRevertSigHash.Hex():
+			var event zkbas.ZkbasBlocksRevert
+			if err = ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlocksRevert, vlog.Data); err != nil {
+				errInfo := fmt.Sprintf("[blockMoniter.MonitorBlocks]<=>[ZkbasContractAbi.UnpackIntoInterface] %s", err.Error())
 				logx.Error(errInfo)
 				return err
 			}

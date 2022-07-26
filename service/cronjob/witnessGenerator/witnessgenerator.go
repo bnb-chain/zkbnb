@@ -7,11 +7,11 @@ import (
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/zecrey-labs/zecrey-legend/common/model/proofSender"
-	"github.com/zecrey-labs/zecrey-legend/common/tree"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/witnessGenerator/internal/config"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/witnessGenerator/internal/logic"
-	"github.com/zecrey-labs/zecrey-legend/service/cronjob/witnessGenerator/internal/svc"
+	"github.com/bnb-chain/zkbas/common/model/proofSender"
+	"github.com/bnb-chain/zkbas/common/tree"
+	"github.com/bnb-chain/zkbas/service/cronjob/witnessGenerator/internal/config"
+	"github.com/bnb-chain/zkbas/service/cronjob/witnessGenerator/internal/logic"
+	"github.com/bnb-chain/zkbas/service/cronjob/witnessGenerator/internal/svc"
 )
 
 var configFile = flag.String("f", "./etc/witnessGenerator.yaml", "the config file")

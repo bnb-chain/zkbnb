@@ -6,9 +6,9 @@ import (
 
 	"gorm.io/gorm"
 
-	table "github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
-	"github.com/zecrey-labs/zecrey-legend/pkg/multcache"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/errcode"
+	table "github.com/bnb-chain/zkbas/common/model/sysconfig"
+	"github.com/bnb-chain/zkbas/pkg/multcache"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/errcode"
 )
 
 type model struct {

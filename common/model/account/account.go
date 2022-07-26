@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zecrey Protocol
+ * Copyright © 2021 Zkbas Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ type (
 		AssetInfo string
 		AssetRoot string
 		// 0 - registered, not committer 1 - committer
-		Status    int
+		Status int
 	}
 )
 

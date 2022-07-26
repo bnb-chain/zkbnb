@@ -1,8 +1,8 @@
 package failtx
 
 import (
-	table "github.com/zecrey-labs/zecrey-legend/common/model/tx"
-	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/svc"
+	table "github.com/bnb-chain/zkbas/common/model/tx"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/svc"
 )
 
 //go:generate mockgen -source api.go -destination api_mock.go -package failtx

@@ -1,7 +1,7 @@
 package price
 
 var (
-	cachePriceSymbolPrefix = "cache:zecrey-legend:cachePriceSymbolPrefix"
+	cachePriceSymbolPrefix = "cache:zkbas:cachePriceSymbolPrefix"
 	coinMarketCap          = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol="
 )
 
