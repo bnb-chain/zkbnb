@@ -18,7 +18,7 @@ import (
 )
 
 var configFile = flag.String("f",
-	"./etc/local.yaml", "the config file")
+	"./etc/sender.yaml", "the config file")
 
 func main() {
 	flag.Parse()
