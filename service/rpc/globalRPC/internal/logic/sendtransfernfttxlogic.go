@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"reflect"
-	"strconv"
 	"time"
 
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
@@ -35,7 +34,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
-	"github.com/zecrey-labs/zecrey-legend/common/sysconfigName"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
@@ -79,20 +77,11 @@ func (l *SendTransferNftTxLogic) SendTransferNftTx(in *globalRPCProto.ReqSendTxB
 	}
 	if err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.ToAccountIndex)); err != nil {
 		logx.Errorf("[CheckRequestParam] param:%v,err:%v", txInfo.ToAccountIndex, err)
-		return nil, l.createFailTransferNftTx(txInfo, err)
+		return nil, err
 	}
-	gasAccountIndexConfig, err := l.sysconf.GetSysconfigByName(l.ctx, sysconfigName.GasAccountIndex)
-	if err != nil {
-		logx.Errorf("[sendTransferNftTx] unable to get sysconfig by name: %s", err.Error())
-		return nil, l.createFailTransferNftTx(txInfo, err)
-	}
-	gasAccountIndex, err := strconv.ParseInt(gasAccountIndexConfig.Value, 10, 64)
-	if err != nil {
-		return nil, l.createFailTransferNftTx(txInfo, errors.New("[sendTransferNftTx] unable to parse big int"))
-	}
-	if gasAccountIndex != txInfo.GasAccountIndex {
-		logx.Errorf("[sendTransferNftTx] invalid gas account index")
-		return nil, l.createFailTransferNftTx(txInfo, errors.New("[sendTransferNftTx] invalid gas account index"))
+	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, l.svcCtx.SysConfigModel); err != nil {
+		logx.Errorf("[checkGasAccountIndex] err: %v", err)
+		return nil, err
 	}
 	var accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
 	nftInfo, err := l.commglobalmap.GetLatestNftInfoForRead(l.ctx, txInfo.NftIndex)
@@ -192,15 +181,13 @@ func (l *SendTransferNftTxLogic) SendTransferNftTx(in *globalRPCProto.ReqSendTxB
 }
 
 func (l *SendTransferNftTxLogic) createFailTransferNftTx(info *commonTx.TransferNftTxInfo, inputErr error) error {
-	txHash := util.RandomUUID()
-	nativeAddress := "0x00"
 	txInfo, err := json.Marshal(info)
 	if err != nil {
 		logx.Errorf("[Marshal] err:%v", err)
 		return err
 	}
 	failTx := &tx.FailTx{
-		TxHash:        txHash,
+		TxHash:        util.RandomUUID(),
 		TxType:        commonTx.TxTypeTransferNft,
 		GasFee:        info.GasFeeAssetAmount.String(),
 		GasFeeAssetId: info.GasFeeAssetId,
@@ -209,10 +196,10 @@ func (l *SendTransferNftTxLogic) createFailTransferNftTx(info *commonTx.Transfer
 		AssetAId:      commonConstant.NilAssetId,
 		AssetBId:      commonConstant.NilAssetId,
 		TxAmount:      commonConstant.NilAssetAmountStr,
-		NativeAddress: nativeAddress,
+		NativeAddress: "0x00",
 		TxInfo:        string(txInfo),
 		// extra info, if tx fails, show the error info
-		ExtraInfo: err.Error(),
+		ExtraInfo: inputErr.Error(),
 		Memo:      "",
 	}
 	if err = l.failtx.CreateFailTx(failTx); err != nil {

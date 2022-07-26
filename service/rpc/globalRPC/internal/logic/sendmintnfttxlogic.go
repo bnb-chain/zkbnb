@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strconv"
 	"time"
 
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
@@ -15,7 +14,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
-	"github.com/zecrey-labs/zecrey-legend/common/sysconfigName"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
@@ -71,18 +69,9 @@ func (l *SendMintNftTxLogic) SendMintNftTx(in *globalRPCProto.ReqSendMintNftTx) 
 	if err != nil {
 		return nil, l.createFailMintNftTx(txInfo, err.Error())
 	}
-	gasAccountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
-	if err != nil {
-		logx.Errorf("[GetSysconfigByName] err: %v", err)
-		return nil, l.createFailMintNftTx(txInfo, err.Error())
-	}
-	gasAccountIndex, err := strconv.ParseInt(gasAccountIndexConfig.Value, 10, 64)
-	if err != nil {
-		return nil, l.createFailMintNftTx(txInfo, err.Error())
-	}
-	if gasAccountIndex != txInfo.GasAccountIndex {
-		logx.Errorf("[sendMintNftTx] invalid gas account index")
-		return nil, l.createFailMintNftTx(txInfo, "invalid gas account index")
+	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, l.svcCtx.SysConfigModel); err != nil {
+		logx.Errorf("[checkGasAccountIndex] err: %v", err)
+		return nil, err
 	}
 	// check expired at
 	now := time.Now().UnixMilli()

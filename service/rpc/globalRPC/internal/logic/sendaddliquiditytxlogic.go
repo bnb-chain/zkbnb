@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"math/big"
-	"strconv"
 	"time"
 
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
@@ -32,7 +31,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
-	"github.com/zecrey-labs/zecrey-legend/common/sysconfigName"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
 
@@ -74,8 +72,7 @@ func (l *SendAddLiquidityTxLogic) SendAddLiquidityTx(reqSendTx *globalRPCProto.R
 		logx.Errorf("[CheckPackedAmount] param:%v,err:%v", txInfo.AssetBAmount, err)
 		return nil, err
 	}
-	// check gas account index
-	if err := l.checkGasAccountIndex(txInfo.GasAccountIndex); err != nil {
+	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, l.svcCtx.SysConfigModel); err != nil {
 		logx.Errorf("[checkGasAccountIndex] err: %v", err)
 		return nil, err
 	}
@@ -191,24 +188,6 @@ func (l *SendAddLiquidityTxLogic) createFailAddLiquidityTx(info *commonTx.AddLiq
 		return errcode.ErrCreateFailTx.RefineError(err)
 	}
 	return errInput
-}
-
-func (l *SendAddLiquidityTxLogic) checkGasAccountIndex(txGasAccountIndex int64) error {
-	gasAccountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
-	if err != nil {
-		logx.Errorf("[GetSysconfigByName] err: %v", err)
-		return err
-	}
-	gasAccountIndex, err := strconv.ParseInt(gasAccountIndexConfig.Value, 10, 64)
-	if err != nil {
-		logx.Errorf("[ParseInt] param:%v,err:%v", gasAccountIndexConfig.Value, err)
-		return err
-	}
-	if gasAccountIndex != txGasAccountIndex {
-		logx.Errorf("[ParseInt] param:%v, txGasAccountIndex:%v, err:%v", gasAccountIndex, txGasAccountIndex, err)
-		return errcode.ErrInvalidGasAccountIndex
-	}
-	return nil
 }
 
 func (l *SendAddLiquidityTxLogic) checkExpiredAt(expiredAt int64) error {

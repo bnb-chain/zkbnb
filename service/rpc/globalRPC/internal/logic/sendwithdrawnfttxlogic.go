@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"math/big"
 	"reflect"
-	"strconv"
 	"time"
 
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
@@ -36,7 +35,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
-	"github.com/zecrey-labs/zecrey-legend/common/sysconfigName"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
@@ -83,21 +81,10 @@ func (l *SendWithdrawNftTxLogic) SendWithdrawNftTx(in *globalRPCProto.ReqSendTxB
 		errInfo := fmt.Sprintf("[sendWithdrawNftTx] err: invalid accountIndex %v", txInfo.AccountIndex)
 		return respSendTx, l.HandleCreateFailWithdrawNftTx(txInfo, errors.New(errInfo))
 	}
-	// check gas account index
-	gasAccountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
-	if err != nil {
-		logx.Errorf("[sendWithdrawNftTx] unable to get sysconfig by name: %s", err.Error())
-		return respSendTx, l.HandleCreateFailWithdrawNftTx(txInfo, err)
+	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, l.svcCtx.SysConfigModel); err != nil {
+		logx.Errorf("[checkGasAccountIndex] err: %v", err)
+		return nil, err
 	}
-	gasAccountIndex, err := strconv.ParseInt(gasAccountIndexConfig.Value, 10, 64)
-	if err != nil {
-		return respSendTx, l.HandleCreateFailWithdrawNftTx(txInfo, errors.New("[sendWithdrawNftTx] unable to parse big int"))
-	}
-	if gasAccountIndex != txInfo.GasAccountIndex {
-		logx.Errorf("[sendWithdrawNftTx] invalid gas account index")
-		return respSendTx, l.HandleCreateFailWithdrawNftTx(txInfo, errors.New("[sendWithdrawNftTx] invalid gas account index"))
-	}
-
 	var (
 		accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
 	)

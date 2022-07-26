@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strconv"
 	"time"
 
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
@@ -36,7 +35,6 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
-	"github.com/zecrey-labs/zecrey-legend/common/sysconfigName"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
 	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
@@ -95,21 +93,10 @@ func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(reqSendTx *globalRPCProto.Req
 		errInfo := fmt.Sprintf("[sendAtomicMatchTx] err: invalid accountIndex %v", txInfo.SellOffer.AccountIndex)
 		return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, errors.New(errInfo))
 	}
-	// check gas account index
-	gasAccountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
-	if err != nil {
-		logx.Errorf("[sendAtomicMatchTx] unable to get sysconfig by name: %s", err.Error())
-		return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, err)
+	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, l.svcCtx.SysConfigModel); err != nil {
+		logx.Errorf("[checkGasAccountIndex] err: %v", err)
+		return nil, err
 	}
-	gasAccountIndex, err := strconv.ParseInt(gasAccountIndexConfig.Value, 10, 64)
-	if err != nil {
-		return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, errors.New("[sendAtomicMatchTx] unable to parse big int"))
-	}
-	if gasAccountIndex != txInfo.GasAccountIndex {
-		logx.Errorf("[sendAtomicMatchTx] invalid gas account index")
-		return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, errors.New("[sendAtomicMatchTx] invalid gas account index"))
-	}
-
 	// check expired at
 	now := time.Now().UnixMilli()
 	if txInfo.ExpiredAt < now || txInfo.BuyOffer.ExpiredAt < now || txInfo.SellOffer.ExpiredAt < now {
@@ -127,12 +114,7 @@ func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(reqSendTx *globalRPCProto.Req
 	var (
 		accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
 	)
-	nftInfo, err := globalmapHandler.GetLatestNftInfoForRead(
-		l.svcCtx.NftModel,
-		l.svcCtx.MempoolModel,
-		l.svcCtx.RedisConnection,
-		txInfo.BuyOffer.NftIndex,
-	)
+	nftInfo, err := l.commglobalmap.GetLatestNftInfoForRead(l.ctx, txInfo.BuyOffer.NftIndex)
 	if err != nil {
 		logx.Errorf("[sendAtomicMatchTx] unable to get latest nft index: %s", err.Error())
 		return respSendTx, err
@@ -151,20 +133,14 @@ func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(reqSendTx *globalRPCProto.Req
 		}
 	}
 	if accountInfoMap[nftInfo.CreatorAccountIndex] == nil {
-		accountInfoMap[nftInfo.CreatorAccountIndex], err = globalmapHandler.GetBasicAccountInfo(
-			l.svcCtx.AccountModel,
-			l.svcCtx.RedisConnection,
-			nftInfo.CreatorAccountIndex)
+		accountInfoMap[nftInfo.CreatorAccountIndex], err = l.commglobalmap.GetBasicAccountInfo(l.ctx, nftInfo.CreatorAccountIndex)
 		if err != nil {
 			logx.Errorf("[sendAtomicMatchTx] unable to get account info: %s", err.Error())
 			return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, err)
 		}
 	}
 	if accountInfoMap[txInfo.SellOffer.AccountIndex] == nil {
-		accountInfoMap[txInfo.SellOffer.AccountIndex], err = globalmapHandler.GetBasicAccountInfo(
-			l.svcCtx.AccountModel,
-			l.svcCtx.RedisConnection,
-			txInfo.SellOffer.AccountIndex)
+		accountInfoMap[txInfo.SellOffer.AccountIndex], err = l.commglobalmap.GetBasicAccountInfo(l.ctx, txInfo.SellOffer.AccountIndex)
 		if err != nil {
 			logx.Errorf("[sendAtomicMatchTx] unable to get account info: %s", err.Error())
 			return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, err)
@@ -173,10 +149,7 @@ func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(reqSendTx *globalRPCProto.Req
 	// get account info by gas index
 	if accountInfoMap[txInfo.GasAccountIndex] == nil {
 		// get account info by gas index
-		accountInfoMap[txInfo.GasAccountIndex], err = globalmapHandler.GetBasicAccountInfo(
-			l.svcCtx.AccountModel,
-			l.svcCtx.RedisConnection,
-			txInfo.GasAccountIndex)
+		accountInfoMap[txInfo.GasAccountIndex], err = l.commglobalmap.GetBasicAccountInfo(l.ctx, txInfo.GasAccountIndex)
 		if err != nil {
 			logx.Errorf("[sendAtomicMatchTx] unable to get account info: %s", err.Error())
 			return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, err)

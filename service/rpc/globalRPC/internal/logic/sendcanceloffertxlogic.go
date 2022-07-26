@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"math/big"
 	"reflect"
-	"strconv"
 	"time"
 
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
@@ -36,9 +35,7 @@ import (
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
 	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
-	"github.com/zecrey-labs/zecrey-legend/common/sysconfigName"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
-	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
@@ -89,20 +86,10 @@ func (l *SendCancelOfferTxLogic) SendCancelOfferTx(in *globalRPCProto.ReqSendTxB
 		return respSendTx, l.HandleCreateFailCancelOfferTx(txInfo, errors.New(errInfo))
 	}
 	// check gas account index
-	gasAccountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
-	if err != nil {
-		logx.Errorf("[sendCancelOfferTx] unable to get sysconfig by name: %s", err.Error())
-		return respSendTx, l.HandleCreateFailCancelOfferTx(txInfo, err)
+	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, l.svcCtx.SysConfigModel); err != nil {
+		logx.Errorf("[checkGasAccountIndex] err: %v", err)
+		return nil, err
 	}
-	gasAccountIndex, err := strconv.ParseInt(gasAccountIndexConfig.Value, 10, 64)
-	if err != nil {
-		return respSendTx, l.HandleCreateFailCancelOfferTx(txInfo, errors.New("[sendCancelOfferTx] unable to parse big int"))
-	}
-	if gasAccountIndex != txInfo.GasAccountIndex {
-		logx.Errorf("[sendCancelOfferTx] invalid gas account index")
-		return respSendTx, l.HandleCreateFailCancelOfferTx(txInfo, errors.New("[sendCancelOfferTx] invalid gas account index"))
-	}
-
 	// check expired at
 	now := time.Now().UnixMilli()
 	if txInfo.ExpiredAt < now {
@@ -138,10 +125,7 @@ func (l *SendCancelOfferTxLogic) SendCancelOfferTx(in *globalRPCProto.ReqSendTxB
 	// get account info by gas index
 	if accountInfoMap[txInfo.GasAccountIndex] == nil {
 		// get account info by gas index
-		accountInfoMap[txInfo.GasAccountIndex], err = globalmapHandler.GetBasicAccountInfo(
-			l.svcCtx.AccountModel,
-			l.svcCtx.RedisConnection,
-			txInfo.GasAccountIndex)
+		accountInfoMap[txInfo.GasAccountIndex], err = l.commglobalmap.GetBasicAccountInfo(l.ctx, txInfo.GasAccountIndex)
 		if err != nil {
 			logx.Errorf("[sendCancelOfferTx] unable to get account info: %s", err.Error())
 			return respSendTx, l.HandleCreateFailCancelOfferTx(txInfo, err)
