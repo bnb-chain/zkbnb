@@ -33,7 +33,11 @@ type Commglobalmap interface {
 	GetLatestOfferIdForWrite(ctx context.Context, accountIndex int64) (nftIndex int64, err error)
 	GetBasicAccountInfo(ctx context.Context, accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error)
 	GetBasicAccountInfoWithCache(ctx context.Context, accountIndex int64) (*commonAsset.AccountInfo, error)
+
 	GetLatestNftInfoForRead(ctx context.Context, nftIndex int64) (*commonAsset.NftInfo, error)
+	GetLatestNftInfoForReadWithCache(ctx context.Context, nftIndex int64) (*commonAsset.NftInfo, error)
+	SetLatestNftInfoForReadInCache(ctx context.Context, nftIndex int64) error
+	DeleteLatestNftInfoForReadInCache(ctx context.Context, nftIndex int64) error
 
 	GetLatestLiquidityInfoForWrite(ctx context.Context, pairIndex int64) (liquidityInfo *commGlobalmapHandler.LiquidityInfo, err error)
 	SetLatestLiquidityInfoForWrite(ctx context.Context, pairIndex int64) error

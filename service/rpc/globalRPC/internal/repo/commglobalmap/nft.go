@@ -79,3 +79,35 @@ func (m *model) GetLatestNftInfoForRead(ctx context.Context, nftIndex int64) (*c
 	}
 	return nftInfo, nil
 }
+
+func (m *model) GetLatestNftInfoForReadWithCache(ctx context.Context, nftIndex int64) (*commonAsset.NftInfo, error) {
+	f := func() (interface{}, error) {
+		tmpNftInfo, err := m.GetLatestNftInfoForRead(ctx, nftIndex)
+		if err != nil {
+			return nil, err
+		}
+		return tmpNftInfo, nil
+	}
+	nftInfoType := &commonAsset.NftInfo{}
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyNftInfoByNftIndex(nftIndex), nftInfoType, 10, f)
+	if err != nil {
+		return nil, err
+	}
+	nftInfo, _ := value.(*commonAsset.NftInfo)
+	return nftInfo, nil
+}
+
+func (m *model) SetLatestNftInfoForReadInCache(ctx context.Context, nftIndex int64) error {
+	nftInfo, err := m.GetLatestNftInfoForRead(ctx, nftIndex)
+	if err != nil {
+		return err
+	}
+	if err := m.cache.Set(ctx, multcache.SpliceCacheKeyNftInfoByNftIndex(nftIndex), nftInfo, 10); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *model) DeleteLatestNftInfoForReadInCache(ctx context.Context, nftIndex int64) error {
+	return m.cache.Delete(ctx, multcache.SpliceCacheKeyNftInfoByNftIndex(nftIndex))
+}
