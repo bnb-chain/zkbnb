@@ -5,19 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"reflect"
-	"strconv"
 	"time"
 
 	"github.com/zecrey-labs/zecrey-legend/common/commonAsset"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/common/model/nft"
 	"github.com/zecrey-labs/zecrey-legend/common/model/tx"
-	"github.com/zecrey-labs/zecrey-legend/common/sysconfigName"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
-	"github.com/zecrey-labs/zecrey-legend/common/util/globalmapHandler"
 	"github.com/zecrey-labs/zecrey-legend/common/zcrypto/txVerification"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/globalRPCProto"
 	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/repo/commglobalmap"
@@ -62,18 +59,9 @@ func (l *SendCreateCollectionTxLogic) SendCreateCollectionTx(in *globalRPCProto.
 		logx.Errorf("[CheckRequestParam] err:%v", err)
 		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
 	}
-	gasAccountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
-	if err != nil {
-		logx.Errorf("[CheckRequestParam] err:%v", err)
-		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
-	}
-	gasAccountIndex, err := strconv.ParseInt(gasAccountIndexConfig.Value, 10, 64)
-	if err != nil {
-		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
-	}
-	if gasAccountIndex != txInfo.GasAccountIndex {
-		logx.Errorf("[sendCreateCollectionTx] invalid gas account index")
-		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
+	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, l.svcCtx.SysConfigModel); err != nil {
+		logx.Errorf("[checkGasAccountIndex] err: %v", err)
+		return nil, err
 	}
 	now := time.Now().UnixMilli()
 	if txInfo.ExpiredAt < now {
@@ -88,22 +76,15 @@ func (l *SendCreateCollectionTxLogic) SendCreateCollectionTx(in *globalRPCProto.
 		logx.Errorf("[sendCreateCollectionTx] unable to get account info: %s", err.Error())
 		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
 	}
-	// get account info by gas index
 	if accountInfoMap[txInfo.GasAccountIndex] == nil {
-		// get account info by gas index
-		accountInfoMap[txInfo.GasAccountIndex], err = globalmapHandler.GetBasicAccountInfo(
-			l.svcCtx.AccountModel,
-			l.svcCtx.RedisConnection,
-			txInfo.GasAccountIndex)
+		accountInfoMap[txInfo.GasAccountIndex], err = l.commglobalmap.GetBasicAccountInfo(l.ctx, txInfo.GasAccountIndex)
 		if err != nil {
 			logx.Errorf("[sendCreateCollectionTx] unable to get account info: %s", err.Error())
 			return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
 		}
 	}
 	txInfo.CollectionId = accountInfoMap[txInfo.AccountIndex].CollectionNonce
-	var (
-		txDetails []*mempool.MempoolTxDetail
-	)
+	var txDetails []*mempool.MempoolTxDetail
 	txDetails, err = txVerification.VerifyCreateCollectionTxInfo(accountInfoMap, txInfo)
 	if err != nil {
 		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
@@ -137,8 +118,7 @@ func (l *SendCreateCollectionTxLogic) SendCreateCollectionTx(in *globalRPCProto.
 		Introduction: txInfo.Introduction,
 		Status:       nft.CollectionPending,
 	}
-	err = createMempoolTxForCreateCollection(nftCollectionInfo, mempoolTx, l.svcCtx)
-	if err != nil {
+	if err = createMempoolTxForCreateCollection(nftCollectionInfo, mempoolTx, l.svcCtx); err != nil {
 		l.createFailCreateCollectionTx(txInfo, err.Error())
 		return nil, err
 	}

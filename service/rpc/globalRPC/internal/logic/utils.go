@@ -20,11 +20,16 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"strconv"
+
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/zecrey-labs/zecrey-legend/common/commonConstant"
 	"github.com/zecrey-labs/zecrey-legend/common/commonTx"
 	"github.com/zecrey-labs/zecrey-legend/common/model/mempool"
+	"github.com/zecrey-labs/zecrey-legend/common/model/sysconfig"
+	"github.com/zecrey-labs/zecrey-legend/common/sysconfigName"
 	"github.com/zecrey-labs/zecrey-legend/common/util"
+	"github.com/zecrey-labs/zecrey-legend/service/rpc/globalRPC/internal/logic/errcode"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 )
@@ -111,6 +116,24 @@ func CreateMempoolTx(
 		errInfo := fmt.Sprintf("[CreateMempoolTx] %s", err.Error())
 		logx.Error(errInfo)
 		return errors.New(errInfo)
+	}
+	return nil
+}
+
+func CheckGasAccountIndex(txGasAccountIndex int64, sysConfigModel sysconfig.SysconfigModel) error {
+	gasAccountIndexConfig, err := sysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
+	if err != nil {
+		logx.Errorf("[GetSysconfigByName] err: %v", err)
+		return err
+	}
+	gasAccountIndex, err := strconv.ParseInt(gasAccountIndexConfig.Value, 10, 64)
+	if err != nil {
+		logx.Errorf("[ParseInt] param:%v,err:%v", gasAccountIndexConfig.Value, err)
+		return err
+	}
+	if gasAccountIndex != txGasAccountIndex {
+		logx.Errorf("[ParseInt] param:%v, txGasAccountIndex:%v, err:%v", gasAccountIndex, txGasAccountIndex, err)
+		return errcode.ErrInvalidGasAccountIndex
 	}
 	return nil
 }
