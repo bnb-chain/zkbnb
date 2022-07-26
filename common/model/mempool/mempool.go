@@ -20,7 +20,6 @@ package mempool
 import (
 	"fmt"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
-	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
@@ -688,11 +687,6 @@ func (m *defaultMempoolModel) CreateMempoolTxAndL2CollectionAndNonce(mempoolTx *
 		if dbTx.RowsAffected == 0 {
 			logx.Errorf("[mempool.CreateMempoolTxAndL2Collection] Create Invalid nft collection info")
 			return ErrInvalidMempoolTx
-		}
-		err := db.Model(&account.Account{}).Where("account_index = ?", nftCollectionInfo.AccountIndex).Update("collection_nonce", nftCollectionInfo.CollectionId)
-		if err != nil {
-			logx.Errorf("[mempool.CreateMempoolTxAndL2Collection] %s", err)
-			return dbTx.Error
 		}
 		return nil
 	})
