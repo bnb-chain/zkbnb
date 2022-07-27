@@ -2,12 +2,12 @@ package tx
 
 import (
 	"context"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"sort"
 	"time"
 
 	table "github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/errcode"
 	"gorm.io/gorm"
 )
 
@@ -51,7 +51,7 @@ func (m *model) GetTxByTxHash(ctx context.Context, txHash string) (*table.Tx, er
 		if dbTx.Error != nil {
 			return nil, dbTx.Error
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errcode.ErrDataNotExist
+			return nil, errorcode.RepoErrDataNotExist
 		}
 		err := m.db.Model(&tx).Association(`TxDetails`).Find(&tx.TxDetails)
 		if err != nil {
@@ -78,7 +78,7 @@ func (m *model) GetTxByTxID(ctx context.Context, txID int64) (*table.Tx, error) 
 		if dbTx.Error != nil {
 			return nil, dbTx.Error
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errcode.ErrDataNotExist
+			return nil, errorcode.RepoErrDataNotExist
 		}
 		err := m.db.Model(&tx).Association(`TxDetails`).Find(&tx.TxDetails)
 		if err != nil {

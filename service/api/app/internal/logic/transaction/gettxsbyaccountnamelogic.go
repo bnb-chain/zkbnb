@@ -2,9 +2,8 @@ package transaction
 
 import (
 	"context"
-
 	"github.com/bnb-chain/zkbas/common/checker"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/errcode"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/account"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/block"
@@ -59,7 +58,7 @@ func (l *GetTxsByAccountNameLogic) GetTxsByAccountName(req *types.ReqGetTxsByAcc
 		Txs:   make([]*types.Tx, 0),
 	}
 	if !checker.CheckOffset(req.Offset, resp.Total) {
-		return nil, errcode.ErrInvalidParam
+		return nil, errorcode.AppErrInvalidParam
 	}
 	end := req.Offset + req.Limit
 	if resp.Total < (req.Offset + req.Limit) {

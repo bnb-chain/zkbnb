@@ -3,11 +3,11 @@ package block
 import (
 	"context"
 	"fmt"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"strconv"
 
 	table "github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/errcode"
 
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"gorm.io/gorm"
@@ -31,9 +31,9 @@ func (m *block) GetBlockByBlockHeight(ctx context.Context, blockHeight int64) (*
 		_block := &table.Block{}
 		dbTx := m.db.Table(m.table).Where("block_height = ?", blockHeight).Find(_block)
 		if dbTx.Error != nil {
-			return nil, errcode.ErrSqlOperation.RefineError(dbTx.Error)
+			return nil, errorcode.RepoErrSqlOperation.RefineError(dbTx.Error)
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errcode.ErrDataNotExist.RefineError(blockHeight)
+			return nil, errorcode.RepoErrDataNotExist.RefineError(blockHeight)
 		}
 		return _block, nil
 	}
@@ -52,9 +52,9 @@ func (m *block) GetCommitedBlocksCount(ctx context.Context) (int64, error) {
 		var count int64
 		dbTx := m.db.Table(m.table).Where("block_status = ? and deleted_at is NULL", table.StatusCommitted).Count(&count)
 		if dbTx.Error != nil {
-			return nil, errcode.ErrSqlOperation.RefineError(dbTx.Error)
+			return nil, errorcode.RepoErrSqlOperation.RefineError(dbTx.Error)
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errcode.ErrDataNotExist
+			return nil, errorcode.RepoErrDataNotExist
 		}
 		return &count, nil
 	}
@@ -72,9 +72,9 @@ func (m *block) GetVerifiedBlocksCount(ctx context.Context) (int64, error) {
 		var count int64
 		dbTx := m.db.Table(m.table).Where("block_status = ? and deleted_at is NULL", table.StatusVerifiedAndExecuted).Count(&count)
 		if dbTx.Error != nil {
-			return nil, errcode.ErrSqlOperation.RefineError(dbTx.Error)
+			return nil, errorcode.RepoErrSqlOperation.RefineError(dbTx.Error)
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errcode.ErrDataNotExist
+			return nil, errorcode.RepoErrDataNotExist
 		}
 		return &count, nil
 	}
@@ -94,12 +94,12 @@ func (m *block) GetBlockWithTxsByCommitment(ctx context.Context, blockCommitment
 		_block := &table.Block{}
 		dbTx := m.db.Table(m.table).Where("block_commitment = ?", blockCommitment).Find(_block)
 		if dbTx.Error != nil {
-			return nil, errcode.ErrSqlOperation.RefineError(dbTx.Error)
+			return nil, errorcode.RepoErrSqlOperation.RefineError(dbTx.Error)
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errcode.ErrDataNotExist.RefineError("GetBlockWithTxsByCommitment")
+			return nil, errorcode.RepoErrDataNotExist.RefineError("GetBlockWithTxsByCommitment")
 		}
 		if err := m.db.Model(&_block).Association(txForeignKeyColumn).Find(&_block.Txs); err != nil {
-			return nil, errcode.ErrDataNotExist.RefineError("GetBlockWithTxsByCommitment.Association")
+			return nil, errorcode.RepoErrDataNotExist.RefineError("GetBlockWithTxsByCommitment.Association")
 		}
 		return _block, nil
 	}
@@ -119,13 +119,13 @@ func (m *block) GetBlockWithTxsByBlockHeight(ctx context.Context, blockHeight in
 		_block := &table.Block{}
 		dbTx := m.db.Table(m.table).Where("block_height = ?", blockHeight).Find(_block)
 		if dbTx.Error != nil {
-			return nil, errcode.ErrSqlOperation.RefineError(dbTx.Error)
+			return nil, errorcode.RepoErrSqlOperation.RefineError(dbTx.Error)
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errcode.ErrDataNotExist.RefineError(blockHeight)
+			return nil, errorcode.RepoErrDataNotExist.RefineError(blockHeight)
 		}
 		err := m.db.Model(&_block).Association(txForeignKeyColumn).Find(&_block.Txs)
 		if err != nil {
-			return nil, errcode.ErrDataNotExist.RefineError(blockHeight)
+			return nil, errorcode.RepoErrDataNotExist.RefineError(blockHeight)
 		}
 		return _block, nil
 	}
@@ -144,9 +144,9 @@ func (m *block) GetBlocksList(ctx context.Context, limit int64, offset int64) ([
 		blockList := []*table.Block{}
 		dbTx := m.db.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("block_height desc").Find(&blockList)
 		if dbTx.Error != nil {
-			return nil, errcode.ErrSqlOperation.RefineError(dbTx.Error)
+			return nil, errorcode.RepoErrSqlOperation.RefineError(dbTx.Error)
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errcode.ErrDataNotExist.RefineError(limit, offset)
+			return nil, errorcode.RepoErrDataNotExist.RefineError(limit, offset)
 		}
 		for _, _block := range blockList {
 			if err := m.db.Model(&_block).Association(`Txs`).Find(&_block.Txs); err != nil {
@@ -172,9 +172,9 @@ func (m *block) GetBlocksTotalCount(ctx context.Context) (int64, error) {
 		var count int64
 		dbTx := m.db.Table(m.table).Where("deleted_at is NULL").Count(&count)
 		if dbTx.Error != nil {
-			return 0, errcode.ErrSqlOperation.RefineError(dbTx.Error)
+			return 0, errorcode.RepoErrSqlOperation.RefineError(dbTx.Error)
 		} else if dbTx.RowsAffected == 0 {
-			return 0, errcode.ErrDataNotExist
+			return 0, errorcode.RepoErrDataNotExist
 		}
 		return &count, nil
 	}

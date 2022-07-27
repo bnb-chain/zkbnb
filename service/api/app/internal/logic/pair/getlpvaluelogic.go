@@ -2,9 +2,8 @@ package pair
 
 import (
 	"context"
-
 	"github.com/bnb-chain/zkbas/common/checker"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/errcode"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/globalrpc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
@@ -31,7 +30,7 @@ func NewGetLPValueLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetLPV
 func (l *GetLPValueLogic) GetLPValue(req *types.ReqGetLPValue) (resp *types.RespGetLPValue, err error) {
 	if checker.CheckPairIndex(req.PairIndex) {
 		logx.Error("[CheckPairIndex] param:%v", req.PairIndex)
-		return nil, errcode.ErrInvalidParam
+		return nil, errorcode.AppErrInvalidParam
 	}
 	lpValue, err := l.globalRPC.GetLpValue(l.ctx, req.PairIndex, req.LpAmount)
 	if err != nil {

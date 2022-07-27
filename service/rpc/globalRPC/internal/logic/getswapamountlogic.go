@@ -2,12 +2,12 @@ package logic
 
 import (
 	"context"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"math/big"
 
 	"github.com/bnb-chain/zkbas/common/checker"
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
-	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/logic/errcode"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/commglobalmap"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/svc"
 
@@ -33,7 +33,7 @@ func NewGetSwapAmountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 func (l *GetSwapAmountLogic) GetSwapAmount(in *globalRPCProto.ReqGetSwapAmount) (*globalRPCProto.RespGetSwapAmount, error) {
 	if checker.CheckPairIndex(in.PairIndex) {
 		logx.Errorf("[CheckPairIndex] Parameter mismatch:%v", in.PairIndex)
-		return nil, errcode.ErrInvalidParam
+		return nil, errorcode.GlobalRpcInvalidParam
 	}
 	liquidity, err := l.commglobalmap.GetLatestLiquidityInfoForReadWithCache(l.ctx, int64(in.PairIndex))
 	if err != nil {
@@ -42,19 +42,19 @@ func (l *GetSwapAmountLogic) GetSwapAmount(in *globalRPCProto.ReqGetSwapAmount) 
 	}
 	if liquidity.AssetA == nil || liquidity.AssetA.Cmp(big.NewInt(0)) == 0 ||
 		liquidity.AssetB == nil || liquidity.AssetB.Cmp(big.NewInt(0)) == 0 {
-		logx.Errorf("liquidity:%v, err:%v", liquidity, errcode.ErrInvalidAsset)
-		return &globalRPCProto.RespGetSwapAmount{}, errcode.ErrInvalidAsset
+		logx.Errorf("liquidity:%v, err:%v", liquidity, errorcode.GlobalRpcErrInvalidAsset)
+		return &globalRPCProto.RespGetSwapAmount{}, errorcode.GlobalRpcErrInvalidAsset
 	}
 	deltaAmount, isTure := new(big.Int).SetString(in.AssetAmount, 10)
 	if !isTure {
 		logx.Errorf("[SetString] err, AssetAmount:%v", in.AssetAmount)
-		return nil, errcode.ErrInvalidParam
+		return nil, errorcode.GlobalRpcInvalidParam
 	}
 	var assetAmount *big.Int
 	var toAssetId int64
 	if int64(in.AssetId) != liquidity.AssetAId && int64(in.AssetId) != liquidity.AssetBId {
-		logx.Errorf("input:%v,liquidity:%v, err:%v", in, liquidity, errcode.ErrInvalidAsset)
-		return &globalRPCProto.RespGetSwapAmount{}, errcode.ErrInvalidAssetID
+		logx.Errorf("input:%v,liquidity:%v, err:%v", in, liquidity, errorcode.GlobalRpcErrInvalidAsset)
+		return &globalRPCProto.RespGetSwapAmount{}, errorcode.GlobalRpcErrInvalidAssetID
 	}
 	logx.Errorf("[ComputeDelta] liquidity:%v", liquidity)
 	logx.Errorf("[ComputeDelta] in:%v", in)

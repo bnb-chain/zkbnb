@@ -18,12 +18,12 @@
 package util
 
 import (
+	"errors"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"math/big"
 
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas-crypto/util"
-	"github.com/bnb-chain/zkbas/common/util/errcode"
-	"github.com/bnb-chain/zkbas/pkg/zerror"
 )
 
 /*
@@ -54,21 +54,21 @@ func CheckPackedFee(gassFee *big.Int) (err error) {
 		return err
 	}
 	if !ffmath.Equal(gassFee, checkParm) {
-		return zerror.New(20002, "Invalid Gas Fee")
+		return errorcode.New(20002, "Invalid Gas Fee")
 	}
 	return nil
 }
 
 func CheckPackedAmount(amount *big.Int) (err error) {
 	if amount == nil {
-		return errcode.ErrInvalidAmount
+		return errors.New("invalid amount")
 	}
 	checkParm, err := util.CleanPackedAmount(amount)
 	if err != nil {
 		return err
 	}
 	if !ffmath.Equal(amount, checkParm) {
-		return errcode.ErrInvalidAmount
+		return errors.New("invalid amount")
 	}
 	return nil
 }

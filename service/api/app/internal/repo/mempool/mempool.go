@@ -2,11 +2,11 @@ package mempool
 
 import (
 	"context"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"sort"
 
 	table "github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/errcode"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 )
@@ -58,7 +58,7 @@ func (m *model) GetMempoolTxByTxHash(hash string) (mempoolTx *table.MempoolTx, e
 		logx.Errorf("[GetMempoolTxByTxHash] %v", dbTx.Error)
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		return nil, errcode.ErrDataNotExist
+		return nil, errorcode.RepoErrDataNotExist
 	}
 	if err = m.db.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails); err != nil {
 		logx.Errorf("[mempool.GetMempoolTxByTxHash] Get Associate MempoolDetails Error")
@@ -95,7 +95,7 @@ func (m *model) GetMempoolTxByTxId(ctx context.Context, txID int64) (*table.Memp
 		if dbTx.Error != nil {
 			return nil, dbTx.Error
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errcode.ErrDataNotExist
+			return nil, errorcode.RepoErrDataNotExist
 		}
 		err := m.db.Model(&tx).Association(`MempoolDetails`).Find(&tx.MempoolDetails)
 		if err != nil {

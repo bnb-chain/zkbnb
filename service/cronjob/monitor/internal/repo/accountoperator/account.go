@@ -20,11 +20,10 @@ package accountoperator
 import (
 	"context"
 	"errors"
-
 	"github.com/bnb-chain/zkbas/common/model/account"
 	table "github.com/bnb-chain/zkbas/common/model/account"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
-	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/repo/errcode"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 )
@@ -42,7 +41,7 @@ func (m *model) GetBasicAccountByAccountName(ctx context.Context, accountName st
 		if dbTx.Error != nil {
 			return nil, dbTx.Error
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errcode.ErrDataNotExist
+			return nil, errorcode.RepoErrNotFound
 		}
 		return account, nil
 	}
@@ -62,7 +61,7 @@ func (m *model) GetBasicAccountByAccountPk(ctx context.Context, accountPk string
 		if dbTx.Error != nil {
 			return nil, dbTx.Error
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errcode.ErrDataNotExist
+			return nil, errorcode.RepoErrNotFound
 		}
 		return account, nil
 	}
@@ -87,7 +86,7 @@ func (m *model) GetAccountByAccountIndex(accountIndex int64) (account *table.Acc
 	if dbTx.Error != nil {
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		return nil, errcode.ErrDataNotExist
+		return nil, errorcode.RepoErrNotFound
 	}
 	return account, nil
 }
@@ -104,7 +103,7 @@ func (m *model) GetAccountByPk(pk string) (account *table.Account, err error) {
 	if dbTx.Error != nil {
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		return nil, errcode.ErrDataNotExist
+		return nil, errorcode.RepoErrNotFound
 	}
 	return account, nil
 }
@@ -121,7 +120,7 @@ func (m *model) GetAccountByAccountName(ctx context.Context, accountName string)
 	if dbTx.Error != nil {
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		return nil, errcode.ErrDataNotExist
+		return nil, errorcode.RepoErrNotFound
 	}
 	return account, nil
 }
@@ -138,7 +137,7 @@ func (m *model) GetAccountsList(limit int, offset int64) (accounts []*table.Acco
 	if dbTx.Error != nil {
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		return nil, errcode.ErrDataNotExist
+		return nil, errorcode.RepoErrNotFound
 	}
 	return accounts, nil
 }

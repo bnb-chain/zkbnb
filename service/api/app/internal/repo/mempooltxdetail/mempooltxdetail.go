@@ -2,10 +2,9 @@ package mempooltxdetail
 
 import (
 	"context"
-
 	table "github.com/bnb-chain/zkbas/common/model/mempool"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/errcode"
 	"gorm.io/gorm"
 )
 
@@ -27,7 +26,7 @@ func (m *model) GetMemPoolTxDetailByAccountIndex(ctx context.Context, accountInd
 	if dbTx.Error != nil {
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		return nil, errcode.ErrDataNotExist
+		return nil, errorcode.RepoErrDataNotExist
 	}
 	return result, nil
 }

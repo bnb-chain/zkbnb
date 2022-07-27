@@ -2,9 +2,8 @@ package account
 
 import (
 	"context"
-
 	"github.com/bnb-chain/zkbas/common/checker"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/errcode"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/account"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/globalrpc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
@@ -35,7 +34,7 @@ func (l *GetBalanceByAssetIdAndAccountNameLogic) GetBalanceByAssetIdAndAccountNa
 	resp := &types.RespGetBlanceInfoByAssetIdAndAccountName{}
 	if checker.CheckAccountName(req.AccountName) {
 		logx.Errorf("[CheckAccountIndex] param:%v", req.AccountName)
-		return nil, errcode.ErrInvalidParam
+		return nil, errorcode.AppErrInvalidParam
 	}
 	account, err := l.account.GetAccountByAccountName(l.ctx, req.AccountName)
 	if err != nil {

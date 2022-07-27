@@ -2,10 +2,9 @@ package logic
 
 import (
 	"context"
-
 	"github.com/bnb-chain/zkbas/common/checker"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
-	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/logic/errcode"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/commglobalmap"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/svc"
 
@@ -31,7 +30,7 @@ func NewGetLatestPairInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 func (l *GetLatestPairInfoLogic) GetLatestPairInfo(in *globalRPCProto.ReqGetLatestPairInfo) (*globalRPCProto.RespGetLatestPairInfo, error) {
 	if checker.CheckPairIndex(in.PairIndex) {
 		logx.Errorf("[CheckPairIndex] param:%v", in.PairIndex)
-		return nil, errcode.ErrInvalidParam
+		return nil, errorcode.GlobalRpcInvalidParam
 	}
 	liquidity, err := l.commglobalmap.GetLatestLiquidityInfoForReadWithCache(l.ctx, int64(in.PairIndex))
 	if err != nil {

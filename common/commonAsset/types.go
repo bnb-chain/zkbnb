@@ -19,10 +19,8 @@ package commonAsset
 
 import (
 	"encoding/json"
-	"fmt"
 	"math/big"
 
-	"github.com/bnb-chain/zkbas/common/commonAsset/errcode"
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
@@ -100,7 +98,7 @@ func ToFormatAccountInfo(accountInfo *account.Account) (formatAccountInfo *Accou
 	var assetInfo map[int64]*AccountAsset
 	err = json.Unmarshal([]byte(accountInfo.AssetInfo), &assetInfo)
 	if err != nil {
-		return nil, errcode.ErrUnmarshal.RefineError(fmt.Sprint(accountInfo.AssetInfo))
+		return nil, err
 	}
 	formatAccountInfo = &AccountInfo{
 		AccountId:       accountInfo.ID,

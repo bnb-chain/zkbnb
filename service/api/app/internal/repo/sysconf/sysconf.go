@@ -3,12 +3,11 @@ package sysconf
 import (
 	"context"
 	"fmt"
-
+	"github.com/bnb-chain/zkbas/errorcode"
 	"gorm.io/gorm"
 
 	table "github.com/bnb-chain/zkbas/common/model/sysconfig"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/errcode"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -31,9 +30,9 @@ func (m *sysconf) GetSysconfigByName(ctx context.Context, name string) (*table.S
 		var config table.Sysconfig
 		dbTx := m.db.Table(m.table).Where("name = ?", name).Find(&config)
 		if dbTx.Error != nil {
-			return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprintf("GetSysconfigByName:%v", dbTx.Error))
+			return nil, errorcode.RepoErrSqlOperation.RefineError(fmt.Sprintf("GetSysconfigByName:%v", dbTx.Error))
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errcode.ErrDataNotExist.RefineError(name)
+			return nil, errorcode.RepoErrDataNotExist.RefineError(name)
 		}
 		return &config, nil
 	}
@@ -44,7 +43,7 @@ func (m *sysconf) GetSysconfigByName(ctx context.Context, name string) (*table.S
 	}
 	config1, ok := value.(*table.Sysconfig)
 	if !ok {
-		return nil, errcode.ErrTypeAsset
+		return nil, errorcode.RepoErrTypeAsset
 	}
 	return config1, nil
 }
@@ -64,7 +63,7 @@ func (m *sysconf) CreateSysconfig(_ context.Context, config *table.Sysconfig) er
 	}
 	if dbTx.RowsAffected == 0 {
 		logx.Error("[sysconfig.sysconfig] Create Invalid Sysconfig")
-		return errcode.ErrInvalidSysconfig
+		return errorcode.RepoErrInvalidSysconfig
 	}
 	return nil
 }
@@ -77,7 +76,7 @@ func (m *sysconf) CreateSysconfigInBatches(_ context.Context, configs []*table.S
 	}
 	if dbTx.RowsAffected == 0 {
 		logx.Error("[sysconfig.CreateSysconfigInBatches] Create Invalid Sysconfig Batches")
-		return 0, errcode.ErrInvalidSysconfig
+		return 0, errorcode.RepoErrInvalidSysconfig
 	}
 	return dbTx.RowsAffected, nil
 }

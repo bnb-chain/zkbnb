@@ -17,10 +17,10 @@
 package logic
 
 import (
+	"github.com/bnb-chain/zkbas/errorcode"
 	"testing"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
-	"github.com/bnb-chain/zkbas/pkg/zerror"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/commglobalmap"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/failtx"
@@ -38,10 +38,10 @@ func TestSendTransferNftTxLogic_SendTransferNftTx(t *testing.T) {
 		failtx:        mockFailtx,
 	}
 
-	mockFailtx.EXPECT().CreateFailTx(gomock.Any()).Return(zerror.New(-1, "error")).AnyTimes()
+	mockFailtx.EXPECT().CreateFailTx(gomock.Any()).Return(errorcode.New(-1, "error")).AnyTimes()
 
 	// error case
-	mockCommglobalmap.EXPECT().GetLatestAccountInfo(gomock.Any(), gomock.Any()).Return(nil, zerror.New(-1, "error")).MaxTimes(1)
+	mockCommglobalmap.EXPECT().GetLatestAccountInfo(gomock.Any(), gomock.Any()).Return(nil, errorcode.New(-1, "error")).MaxTimes(1)
 	req := &globalRPCProto.ReqSendTxByRawInfo{TxInfo: ""}
 	_, err := l.SendTransferNftTx(req)
 	assert.NotNil(t, err)
