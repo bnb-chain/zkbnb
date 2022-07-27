@@ -97,6 +97,19 @@ type (
 			pendingNewNftHistories []*nft.L2NftHistory,
 			pendingNewNftWithdrawHistories []*nft.L2NftWithdrawHistory,
 		) (err error)
+		CreateBlockForRestorer(
+			oBlock *Block,
+			pendingNewAccounts []*account.Account,
+			pendingUpdateAccounts []*account.Account,
+			pendingNewAccountHistories []*account.AccountHistory,
+			pendingNewLiquidity []*liquidity.Liquidity,
+			pendingUpdateLiquidity []*liquidity.Liquidity,
+			pendingNewLiquidityHistories []*liquidity.LiquidityHistory,
+			pendingNewNft []*nft.L2Nft,
+			pendingUpdateNft []*nft.L2Nft,
+			pendingNewNftHistories []*nft.L2NftHistory,
+			pendingNewNftWithdrawHistories []*nft.L2NftWithdrawHistory,
+		) (err error)
 	}
 
 	defaultBlockModel struct {
@@ -928,4 +941,20 @@ func (m *defaultBlockModel) GetBlocksForProverBetween(start, end int64) (blocks 
 		return nil, errorcode.DbErrNotFound
 	}
 	return blocks, nil
+}
+
+func (m *defaultBlockModel) CreateBlockForRestorer(
+	oBlock *Block,
+	pendingNewAccounts []*account.Account,
+	pendingUpdateAccounts []*account.Account,
+	pendingNewAccountHistories []*account.AccountHistory,
+	pendingNewLiquidity []*liquidity.Liquidity,
+	pendingUpdateLiquidity []*liquidity.Liquidity,
+	pendingNewLiquidityHistories []*liquidity.LiquidityHistory,
+	pendingNewNft []*nft.L2Nft,
+	pendingUpdateNft []*nft.L2Nft,
+	pendingNewNftHistories []*nft.L2NftHistory,
+	pendingNewNftWithdrawHistories []*nft.L2NftWithdrawHistory,
+) (err error) {
+	return nil
 }

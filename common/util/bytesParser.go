@@ -33,6 +33,11 @@ func ReadUint16(buf []byte, offset int) (newOffset int, res uint16) {
 	return offset + 2, res
 }
 
+func ReadUint24(buf []byte, offset int) (newOffset int, res uint32) {
+	res = binary.BigEndian.Uint32(buf[offset : offset+3])
+	return offset + 3, res
+}
+
 func ReadUint32(buf []byte, offset int) (newOffset int, res uint32) {
 	res = binary.BigEndian.Uint32(buf[offset : offset+4])
 	return offset + 4, res
