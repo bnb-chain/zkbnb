@@ -572,6 +572,147 @@ func (m *RestoreManager) replayTxPubData(state *BlockReplayState, pubData []byte
 	return nil
 }
 
+func (m *RestoreManager) prepareAccountsAndAssets(accounts []int64, assets []int64) error {
+	for _, accountIndex := range accounts {
+		if m.accountMap[accountIndex] == nil {
+			accountInfo, err := m.Blockchain.AccountModel.GetAccountByAccountIndex(accountIndex)
+			if err != nil {
+				return err
+			}
+			m.accountMap[accountIndex], err = commonAsset.ToFormatAccountInfo(accountInfo)
+			if err != nil {
+				return fmt.Errorf("convert to format account info failed: %v", err)
+			}
+		}
+		if m.accountMap[accountIndex].AssetInfo == nil {
+			m.accountMap[accountIndex].AssetInfo = make(map[int64]*commonAsset.AccountAsset)
+		}
+		for _, assetId := range assets {
+			if m.accountMap[accountIndex].AssetInfo[assetId] == nil {
+				m.accountMap[accountIndex].AssetInfo[assetId] = &commonAsset.AccountAsset{
+					AssetId:                  assetId,
+					Balance:                  ZeroBigInt,
+					LpAmount:                 ZeroBigInt,
+					OfferCanceledOrFinalized: ZeroBigInt,
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func (m *RestoreManager) prepareLiquidity(pairIndex int64) error {
+	if m.liquidityMap[pairIndex] == nil {
+		liquidityInfo, err := m.Blockchain.LiquidityModel.GetLiquidityByPairIndex(pairIndex)
+		if err != nil {
+			return err
+		}
+		m.liquidityMap[pairIndex] = liquidityInfo
+	}
+	return nil
+}
+
+func (m *RestoreManager) prepareNft(nftIndex int64) error {
+	if m.nftMap[nftIndex] == nil {
+		nftAsset, err := m.Blockchain.L2NftModel.GetNftAsset(nftIndex)
+		if err != nil {
+			return err
+		}
+		m.nftMap[nftIndex] = nftAsset
+	}
+	return nil
+}
+
+func (m *RestoreManager) updateAccountTree(accounts []int64, assets []int64) error {
+	for _, accountIndex := range accounts {
+		for _, assetId := range assets {
+			assetLeaf, err := tree.ComputeAccountAssetLeafHash(
+				m.accountMap[accountIndex].AssetInfo[assetId].Balance.String(),
+				m.accountMap[accountIndex].AssetInfo[assetId].LpAmount.String(),
+				m.accountMap[accountIndex].AssetInfo[assetId].OfferCanceledOrFinalized.String(),
+			)
+			if err != nil {
+				return fmt.Errorf("compute new account asset leaf failed: %v", err)
+			}
+			err = m.accountAssetTrees[accountIndex].Update(assetId, assetLeaf)
+			if err != nil {
+				return fmt.Errorf("update asset tree failed: %v", err)
+			}
+		}
+
+		m.accountMap[accountIndex].AssetRoot = common.Bytes2Hex(m.accountAssetTrees[accountIndex].RootNode.Value)
+		nAccountLeafHash, err := tree.ComputeAccountLeafHash(
+			m.accountMap[accountIndex].AccountNameHash,
+			m.accountMap[accountIndex].PublicKey,
+			m.accountMap[accountIndex].Nonce,
+			m.accountMap[accountIndex].CollectionNonce,
+			m.accountAssetTrees[accountIndex].RootNode.Value,
+		)
+		if err != nil {
+			return fmt.Errorf("unable to compute account leaf: %v", err)
+		}
+		err = m.accountTree.Update(accountIndex, nAccountLeafHash)
+		if err != nil {
+			return fmt.Errorf("unable to update account tree: %v", err)
+		}
+	}
+
+	return nil
+}
+
+func (m *RestoreManager) updateLiquidityTree(pairIndex int64) error {
+	nLiquidityAssetLeaf, err := tree.ComputeLiquidityAssetLeafHash(
+		m.liquidityMap[pairIndex].AssetAId,
+		m.liquidityMap[pairIndex].AssetA,
+		m.liquidityMap[pairIndex].AssetBId,
+		m.liquidityMap[pairIndex].AssetB,
+		m.liquidityMap[pairIndex].LpAmount,
+		m.liquidityMap[pairIndex].KLast,
+		m.liquidityMap[pairIndex].FeeRate,
+		m.liquidityMap[pairIndex].TreasuryAccountIndex,
+		m.liquidityMap[pairIndex].TreasuryRate,
+	)
+	if err != nil {
+		return fmt.Errorf("unable to compute liquidity leaf: %v", err)
+	}
+	err = m.liquidityTree.Update(pairIndex, nLiquidityAssetLeaf)
+	if err != nil {
+		return fmt.Errorf("unable to update liquidity tree: %v", err)
+	}
+
+	return nil
+}
+
+func (m *RestoreManager) updateNftTree(nftIndex int64) error {
+	nftAssetLeaf, err := tree.ComputeNftAssetLeafHash(
+		m.nftMap[nftIndex].CreatorAccountIndex,
+		m.nftMap[nftIndex].OwnerAccountIndex,
+		m.nftMap[nftIndex].NftContentHash,
+		m.nftMap[nftIndex].NftL1Address,
+		m.nftMap[nftIndex].NftL1TokenId,
+		m.nftMap[nftIndex].CreatorTreasuryRate,
+		m.nftMap[nftIndex].CollectionId,
+	)
+	if err != nil {
+		return fmt.Errorf("unable to compute nft leaf: %v", err)
+	}
+	err = m.nftTree.Update(nftIndex, nftAssetLeaf)
+	if err != nil {
+		return fmt.Errorf("unable to update nft tree: %v", err)
+	}
+
+	return nil
+}
+
+func (m *RestoreManager) getStateRoot() string {
+	hFunc := mimc.NewMiMC()
+	hFunc.Write(m.accountTree.RootNode.Value)
+	hFunc.Write(m.liquidityTree.RootNode.Value)
+	hFunc.Write(m.nftTree.RootNode.Value)
+	return common.Bytes2Hex(hFunc.Sum(nil))
+}
+
 func (m *RestoreManager) getL1Address(accountIndex int64, accountNameHash []byte) (string, error) {
 	var nameHash [32]byte
 	copy(nameHash[:], accountNameHash)
@@ -608,7 +749,7 @@ func (m *RestoreManager) replayRegisterZns(state *BlockReplayState, pubData []by
 		return fmt.Errorf("unable to serialize tx info : %v", err)
 	}
 
-	// check if the account name has been registered
+	// Check if the account name has been registered.
 	_, err = m.Blockchain.AccountModel.GetAccountByAccountName(txInfo.AccountName)
 	if err != ErrNotFound {
 		return fmt.Errorf("account name has been registered")
@@ -617,6 +758,7 @@ func (m *RestoreManager) replayRegisterZns(state *BlockReplayState, pubData []by
 		return fmt.Errorf("unepxect account index, expect: %d, real: %d", len(m.accountAssetTrees), txInfo.AccountIndex)
 	}
 
+	// Register new account.
 	accountInfo := &account.Account{
 		AccountIndex:    txInfo.AccountIndex,
 		AccountName:     txInfo.AccountName,
@@ -637,9 +779,6 @@ func (m *RestoreManager) replayRegisterZns(state *BlockReplayState, pubData []by
 	if err != nil {
 		return fmt.Errorf("convert to format account info failed: %v", err)
 	}
-	state.pendingNewAccountIndexMap[txInfo.AccountIndex] = true
-
-	// update account tree
 	if int64(len(m.accountAssetTrees)) != txInfo.AccountIndex {
 		return fmt.Errorf("unepxect account index from account asset tree, expect: %d, real: %d",
 			int64(len(m.accountAssetTrees)), txInfo.AccountIndex)
@@ -649,25 +788,13 @@ func (m *RestoreManager) replayRegisterZns(state *BlockReplayState, pubData []by
 		return fmt.Errorf("unable to new empty account state tree: %v", err)
 	}
 	m.accountAssetTrees = append(m.accountAssetTrees, emptyAssetTree)
-	nAccountLeafHash, err := tree.ComputeAccountLeafHash(
-		m.accountMap[txInfo.AccountIndex].AccountNameHash,
-		m.accountMap[txInfo.AccountIndex].PublicKey,
-		m.accountMap[txInfo.AccountIndex].Nonce,
-		m.accountMap[txInfo.AccountIndex].CollectionNonce,
-		m.accountAssetTrees[txInfo.AccountIndex].RootNode.Value,
-	)
+
+	// Update trees and compute state root.
+	err = m.updateAccountTree([]int64{txInfo.AccountIndex}, nil)
 	if err != nil {
-		return fmt.Errorf("unable to compute account leaf: %v", err)
+		return fmt.Errorf("update account tree failed: %v", err)
 	}
-	err = m.accountTree.Update(txInfo.AccountIndex, nAccountLeafHash)
-	if err != nil {
-		return fmt.Errorf("unable to update account tree: %v", err)
-	}
-	hFunc := mimc.NewMiMC()
-	hFunc.Write(m.accountTree.RootNode.Value)
-	hFunc.Write(m.liquidityTree.RootNode.Value)
-	hFunc.Write(m.nftTree.RootNode.Value)
-	state.stateRoot = common.Bytes2Hex(hFunc.Sum(nil))
+	stateRoot := m.getStateRoot()
 
 	tx := &tx.Tx{
 		TxHash:        common.Hash{}.String(), // FIXME: need change tx hash
@@ -676,7 +803,7 @@ func (m *RestoreManager) replayRegisterZns(state *BlockReplayState, pubData []by
 		GasFeeAssetId: commonConstant.NilAssetId,
 		TxStatus:      mempool.SuccessTxStatus,
 		BlockHeight:   state.blockNumber,
-		StateRoot:     state.stateRoot,
+		StateRoot:     stateRoot,
 		NftIndex:      commonConstant.NilTxNftIndex,
 		PairIndex:     commonConstant.NilPairIndex,
 		AssetId:       commonConstant.NilAssetId,
@@ -688,9 +815,10 @@ func (m *RestoreManager) replayRegisterZns(state *BlockReplayState, pubData []by
 		ExpiredAt:     commonConstant.NilExpiredAt,
 	}
 	state.txs = append(state.txs, tx)
+	state.stateRoot = stateRoot
+	state.pendingNewAccountIndexMap[txInfo.AccountIndex] = true
 	state.priorityOperations += 1
 	state.pubDataOffset = append(state.pubDataOffset, uint32(len(state.pubDataOffset)))
-
 	return nil
 }
 
@@ -717,6 +845,10 @@ func (m *RestoreManager) replayCreatePair(state *BlockReplayState, pubData []byt
 		return fmt.Errorf("unable to serialize tx info : %v", err)
 	}
 
+	_, err = m.Blockchain.LiquidityModel.GetLiquidityByPairIndex(txInfo.PairIndex)
+	if err != ErrNotFound {
+		return fmt.Errorf("unexpected get liquidity by pair index: %d err: %v", txInfo.PairIndex, err)
+	}
 	liquidityInfo := &liquidity.Liquidity{
 		PairIndex:            txInfo.PairIndex,
 		AssetAId:             txInfo.AssetAId,
@@ -729,37 +861,14 @@ func (m *RestoreManager) replayCreatePair(state *BlockReplayState, pubData []byt
 		FeeRate:              txInfo.FeeRate,
 		TreasuryRate:         txInfo.TreasuryRate,
 	}
-	_, err = m.Blockchain.LiquidityModel.GetLiquidityByPairIndex(txInfo.PairIndex)
-	if err != ErrNotFound {
-		return fmt.Errorf("unexpected get liquidity by pair index: %d err: %v", txInfo.PairIndex, err)
-	}
 	m.liquidityMap[txInfo.PairIndex] = liquidityInfo
-	state.pendingNewLiquidityInfoIndexMap[txInfo.PairIndex] = true
 
-	// update liquidity tree
-	nLiquidityAssetLeaf, err := tree.ComputeLiquidityAssetLeafHash(
-		m.liquidityMap[txInfo.PairIndex].AssetAId,
-		m.liquidityMap[txInfo.PairIndex].AssetA,
-		m.liquidityMap[txInfo.PairIndex].AssetBId,
-		m.liquidityMap[txInfo.PairIndex].AssetB,
-		m.liquidityMap[txInfo.PairIndex].LpAmount,
-		m.liquidityMap[txInfo.PairIndex].KLast,
-		m.liquidityMap[txInfo.PairIndex].FeeRate,
-		m.liquidityMap[txInfo.PairIndex].TreasuryAccountIndex,
-		m.liquidityMap[txInfo.PairIndex].TreasuryRate,
-	)
+	// Update trees and compute state root.
+	err = m.updateLiquidityTree(txInfo.PairIndex)
 	if err != nil {
-		return fmt.Errorf("unable to compute liquidity leaf: %v", err)
+		return fmt.Errorf("update liquidity tree failed: %v", err)
 	}
-	err = m.liquidityTree.Update(txInfo.PairIndex, nLiquidityAssetLeaf)
-	if err != nil {
-		return fmt.Errorf("unable to update liquidity tree: %v", err)
-	}
-	hFunc := mimc.NewMiMC()
-	hFunc.Write(m.accountTree.RootNode.Value)
-	hFunc.Write(m.liquidityTree.RootNode.Value)
-	hFunc.Write(m.nftTree.RootNode.Value)
-	state.stateRoot = common.Bytes2Hex(hFunc.Sum(nil))
+	stateRoot := m.getStateRoot()
 
 	poolInfo := &commonAsset.LiquidityInfo{
 		PairIndex:            txInfo.PairIndex,
@@ -789,7 +898,7 @@ func (m *RestoreManager) replayCreatePair(state *BlockReplayState, pubData []byt
 		GasFeeAssetId: commonConstant.NilAssetId,
 		TxStatus:      mempool.SuccessTxStatus,
 		BlockHeight:   state.blockNumber,
-		StateRoot:     state.stateRoot,
+		StateRoot:     stateRoot,
 		NftIndex:      commonConstant.NilTxNftIndex,
 		PairIndex:     txInfo.PairIndex,
 		AssetId:       commonConstant.NilAssetId,
@@ -802,9 +911,10 @@ func (m *RestoreManager) replayCreatePair(state *BlockReplayState, pubData []byt
 		ExpiredAt:     commonConstant.NilExpiredAt,
 	}
 	state.txs = append(state.txs, tx)
+	state.stateRoot = stateRoot
+	state.pendingNewLiquidityInfoIndexMap[txInfo.PairIndex] = true
 	state.priorityOperations += 1
 	state.pubDataOffset = append(state.pubDataOffset, uint32(len(state.pubDataOffset)))
-
 	return nil
 }
 
@@ -827,42 +937,21 @@ func (m *RestoreManager) replayUpdatePairRate(state *BlockReplayState, pubData [
 		return fmt.Errorf("unable to serialize tx info : %v", err)
 	}
 
-	if m.liquidityMap[txInfo.PairIndex] == nil {
-		liquidityInfo, err := m.Blockchain.LiquidityModel.GetLiquidityByPairIndex(txInfo.PairIndex)
-		if err != nil {
-			return fmt.Errorf("get liquidity by pair index: %d failed: %v", txInfo.PairIndex, err)
-		}
-		m.liquidityMap[txInfo.PairIndex] = liquidityInfo
+	err = m.prepareLiquidity(txInfo.PairIndex)
+	if err != nil {
+		return fmt.Errorf("prepare liquidity failed: %v", err)
 	}
 	liquidityInfo := m.liquidityMap[txInfo.PairIndex]
 	liquidityInfo.FeeRate = txInfo.FeeRate
 	liquidityInfo.TreasuryAccountIndex = txInfo.TreasuryAccountIndex
 	liquidityInfo.TreasuryRate = txInfo.TreasuryRate
 
-	// update liquidity tree
-	nLiquidityAssetLeaf, err := tree.ComputeLiquidityAssetLeafHash(
-		m.liquidityMap[txInfo.PairIndex].AssetAId,
-		m.liquidityMap[txInfo.PairIndex].AssetA,
-		m.liquidityMap[txInfo.PairIndex].AssetBId,
-		m.liquidityMap[txInfo.PairIndex].AssetB,
-		m.liquidityMap[txInfo.PairIndex].LpAmount,
-		m.liquidityMap[txInfo.PairIndex].KLast,
-		m.liquidityMap[txInfo.PairIndex].FeeRate,
-		m.liquidityMap[txInfo.PairIndex].TreasuryAccountIndex,
-		m.liquidityMap[txInfo.PairIndex].TreasuryRate,
-	)
+	// Update trees and compute state root.
+	err = m.updateLiquidityTree(txInfo.PairIndex)
 	if err != nil {
-		return fmt.Errorf("unable to compute liquidity leaf: %v", err)
+		return fmt.Errorf("update liquidity tree failed: %v", err)
 	}
-	err = m.liquidityTree.Update(txInfo.PairIndex, nLiquidityAssetLeaf)
-	if err != nil {
-		return fmt.Errorf("unable to update liquidity tree: %v", err)
-	}
-	hFunc := mimc.NewMiMC()
-	hFunc.Write(m.accountTree.RootNode.Value)
-	hFunc.Write(m.liquidityTree.RootNode.Value)
-	hFunc.Write(m.nftTree.RootNode.Value)
-	state.stateRoot = common.Bytes2Hex(hFunc.Sum(nil))
+	stateRoot := m.getStateRoot()
 
 	poolInfo, err := commonAsset.ConstructLiquidityInfo(
 		liquidityInfo.PairIndex,
@@ -895,7 +984,7 @@ func (m *RestoreManager) replayUpdatePairRate(state *BlockReplayState, pubData [
 		GasFeeAssetId: commonConstant.NilAssetId,
 		TxStatus:      mempool.SuccessTxStatus,
 		BlockHeight:   state.blockNumber,
-		StateRoot:     state.stateRoot,
+		StateRoot:     stateRoot,
 		NftIndex:      commonConstant.NilTxNftIndex,
 		PairIndex:     txInfo.PairIndex,
 		AssetId:       commonConstant.NilAssetId,
@@ -908,6 +997,8 @@ func (m *RestoreManager) replayUpdatePairRate(state *BlockReplayState, pubData [
 		ExpiredAt:     commonConstant.NilExpiredAt,
 	}
 	state.txs = append(state.txs, tx)
+	state.stateRoot = stateRoot
+	state.pendingUpdateLiquidityIndexMap[txInfo.PairIndex] = true
 	state.priorityOperations += 1
 	state.pubDataOffset = append(state.pubDataOffset, uint32(len(state.pubDataOffset)))
 	return nil
@@ -921,7 +1012,6 @@ func (m *RestoreManager) replayDeposit(state *BlockReplayState, pubData []byte) 
 	offset, amount := util.ReadUint128(pubData, offset)
 	offset = 1 * ChunkBytesSize
 	offset, accountNameHash := util.ReadBytes32(pubData, offset)
-
 	txInfo := &DepositTxInfo{
 		TxType:          txType,
 		AccountIndex:    int64(accountIndex),
@@ -934,94 +1024,20 @@ func (m *RestoreManager) replayDeposit(state *BlockReplayState, pubData []byte) 
 		return fmt.Errorf("unable to serialize tx info : %v", err)
 	}
 
-	if m.accountMap[txInfo.AccountIndex] == nil {
-		accountInfo, err := m.Blockchain.AccountModel.GetAccountByAccountIndex(txInfo.AccountIndex)
-		if err != nil {
-			return fmt.Errorf("get account by index: %d failed: %v", txInfo.AccountIndex, err)
-		}
-		m.accountMap[txInfo.AccountIndex], err = commonAsset.ToFormatAccountInfo(accountInfo)
-		if err != nil {
-			return fmt.Errorf("convert to format account info failed: %v", err)
-		}
+	err = m.prepareAccountsAndAssets([]int64{txInfo.AccountIndex}, []int64{txInfo.AssetId})
+	if err != nil {
+		return fmt.Errorf("prepare accounts failed: %v", err)
 	}
 	accountInfo := m.accountMap[txInfo.AccountIndex]
-	state.pendingUpdateAccountIndexMap[txInfo.AccountIndex] = true
+	accountInfo.AssetInfo[txInfo.AssetId].Balance = ffmath.Add(accountInfo.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
 
-	// Update asset info and asset tree.
-	if m.accountMap[txInfo.AccountIndex].AssetInfo == nil {
-		m.accountMap[txInfo.AccountIndex].AssetInfo = make(map[int64]*commonAsset.AccountAsset)
-	}
-	if m.accountMap[txInfo.AccountIndex].AssetInfo[txInfo.AssetId] == nil {
-		m.accountMap[txInfo.AccountIndex].AssetInfo[txInfo.AssetId] = &commonAsset.AccountAsset{
-			AssetId:                  txInfo.AssetId,
-			Balance:                  ZeroBigInt,
-			LpAmount:                 ZeroBigInt,
-			OfferCanceledOrFinalized: ZeroBigInt,
-		}
-	}
-	baseBalance := m.accountMap[txInfo.AccountIndex].AssetInfo[txInfo.AssetId].String()
-	balanceDelta := &commonAsset.AccountAsset{
-		AssetId:                  txInfo.AssetId,
-		Balance:                  txInfo.AssetAmount,
-		LpAmount:                 big.NewInt(0),
-		OfferCanceledOrFinalized: big.NewInt(0),
-	}
-	newBalance, err := commonAsset.ComputeNewBalance(commonAsset.GeneralAssetType, baseBalance, balanceDelta.String())
+	// Update trees and compute state root.
+	err = m.updateAccountTree([]int64{txInfo.AccountIndex}, []int64{txInfo.AssetId})
 	if err != nil {
-		return fmt.Errorf("compute new balance failed: %v", err)
+		return fmt.Errorf("update account tree failed: %v", err)
 	}
-	accountAsset, err := commonAsset.ParseAccountAsset(newBalance)
-	if err != nil {
-		return fmt.Errorf("parse account asset failed: %v", err)
-	}
-	if accountAsset.Balance.Cmp(ZeroBigInt) < 0 {
-		return fmt.Errorf("unexpected negative balance")
-	}
-	m.accountMap[txInfo.AccountIndex].AssetInfo[txInfo.AssetId] = accountAsset
-	assetLeaf, err := tree.ComputeAccountAssetLeafHash(
-		m.accountMap[txInfo.AccountIndex].AssetInfo[txInfo.AssetId].Balance.String(),
-		m.accountMap[txInfo.AccountIndex].AssetInfo[txInfo.AssetId].LpAmount.String(),
-		m.accountMap[txInfo.AccountIndex].AssetInfo[txInfo.AssetId].OfferCanceledOrFinalized.String(),
-	)
-	if err != nil {
-		return fmt.Errorf("compute new account asset leaf failed: %v", err)
-	}
-	err = m.accountAssetTrees[txInfo.AccountIndex].Update(txInfo.AssetId, assetLeaf)
-	if err != nil {
-		return fmt.Errorf("update asset tree failed: %v", err)
-	}
-	m.accountMap[txInfo.AccountIndex].AssetRoot = common.Bytes2Hex(m.accountAssetTrees[txInfo.AccountIndex].RootNode.Value)
+	stateRoot := m.getStateRoot()
 
-	// Update account tree.
-	nAccountLeafHash, err := tree.ComputeAccountLeafHash(
-		m.accountMap[txInfo.AccountIndex].AccountNameHash,
-		m.accountMap[txInfo.AccountIndex].PublicKey,
-		m.accountMap[txInfo.AccountIndex].Nonce,
-		m.accountMap[txInfo.AccountIndex].CollectionNonce,
-		m.accountAssetTrees[txInfo.AccountIndex].RootNode.Value,
-	)
-	if err != nil {
-		return fmt.Errorf("unable to compute account leaf: %v", err)
-	}
-	err = m.accountTree.Update(txInfo.AccountIndex, nAccountLeafHash)
-	if err != nil {
-		return fmt.Errorf("unable to update account tree: %v", err)
-	}
-	hFunc := mimc.NewMiMC()
-	hFunc.Write(m.accountTree.RootNode.Value)
-	hFunc.Write(m.liquidityTree.RootNode.Value)
-	hFunc.Write(m.nftTree.RootNode.Value)
-	state.stateRoot = common.Bytes2Hex(hFunc.Sum(nil))
-
-	txDetail := &tx.TxDetail{
-		AssetId:      txInfo.AssetId,
-		AssetType:    commonAsset.GeneralAssetType,
-		AccountIndex: txInfo.AccountIndex,
-		AccountName:  accountInfo.AccountName,
-		BalanceDelta: balanceDelta.String(),
-		Order:        0,
-		AccountOrder: 0,
-	}
 	tx := &tx.Tx{
 		TxHash:        common.Hash{}.String(), // FIXME: need change tx hash
 		TxType:        int64(txInfo.TxType),
@@ -1029,19 +1045,21 @@ func (m *RestoreManager) replayDeposit(state *BlockReplayState, pubData []byte) 
 		GasFeeAssetId: commonConstant.NilAssetId,
 		TxStatus:      mempool.SuccessTxStatus,
 		BlockHeight:   state.blockNumber,
-		StateRoot:     state.stateRoot,
+		StateRoot:     stateRoot,
 		NftIndex:      commonConstant.NilTxNftIndex,
 		PairIndex:     commonConstant.NilPairIndex,
 		AssetId:       txInfo.AssetId,
 		TxAmount:      txInfo.AssetAmount.String(),
 		NativeAddress: m.accountMap[txInfo.AccountIndex].L1Address,
 		TxInfo:        string(txInfoBytes),
-		TxDetails:     []*tx.TxDetail{txDetail},
-		AccountIndex:  txInfo.AccountIndex,
-		Nonce:         commonConstant.NilNonce,
-		ExpiredAt:     commonConstant.NilExpiredAt,
+		//TxDetails:     []*tx.TxDetail{txDetail},
+		AccountIndex: txInfo.AccountIndex,
+		Nonce:        commonConstant.NilNonce,
+		ExpiredAt:    commonConstant.NilExpiredAt,
 	}
 	state.txs = append(state.txs, tx)
+	state.stateRoot = stateRoot
+	state.pendingUpdateAccountIndexMap[txInfo.AccountIndex] = true
 	state.priorityOperations += 1
 	state.pubDataOffset = append(state.pubDataOffset, uint32(len(state.pubDataOffset)))
 	return nil
@@ -1078,25 +1096,15 @@ func (m *RestoreManager) replayDepositNft(state *BlockReplayState, pubData []byt
 		return fmt.Errorf("unable to serialize tx info : %v", err)
 	}
 
-	// Update account map.
-	if m.accountMap[txInfo.AccountIndex] == nil {
-		accountInfo, err := m.Blockchain.AccountModel.GetAccountByAccountIndex(txInfo.AccountIndex)
-		if err != nil {
-			return fmt.Errorf("get account by index: %d failed: %v", txInfo.AccountIndex, err)
-		}
-		m.accountMap[txInfo.AccountIndex], err = commonAsset.ToFormatAccountInfo(accountInfo)
-		if err != nil {
-			return fmt.Errorf("convert to format account info failed: %v", err)
-		}
-	}
-	accountInfo := m.accountMap[txInfo.AccountIndex]
-	state.pendingUpdateAccountIndexMap[txInfo.AccountIndex] = true
-
-	// Update nft map.
 	_, err = m.Blockchain.L2NftModel.GetNftAsset(txInfo.NftIndex)
 	if err != ErrNotFound {
 		return fmt.Errorf("unexpected get nft asset result, index: %d, result: %v", txInfo.NftIndex, err)
 	}
+	err = m.prepareAccountsAndAssets([]int64{txInfo.AccountIndex}, nil)
+	if err != nil {
+		return fmt.Errorf("prepare accounts failed: %v", err)
+	}
+	accountInfo := m.accountMap[txInfo.AccountIndex]
 	nftAsset := &nft.L2Nft{
 		NftIndex:            txInfo.NftIndex,
 		CreatorAccountIndex: txInfo.CreatorAccountIndex,
@@ -1108,28 +1116,13 @@ func (m *RestoreManager) replayDepositNft(state *BlockReplayState, pubData []byt
 		CollectionId:        txInfo.CollectionId,
 	}
 	m.nftMap[txInfo.NftIndex] = nftAsset
-	state.pendingNewNftIndexMap[txInfo.NftIndex] = true
 
-	// Update nft tree.
-	nftAssetLeaf, err := tree.ComputeNftAssetLeafHash(
-		nftAsset.CreatorAccountIndex, nftAsset.OwnerAccountIndex,
-		nftAsset.NftContentHash,
-		nftAsset.NftL1Address, nftAsset.NftL1TokenId,
-		nftAsset.CreatorTreasuryRate,
-		nftAsset.CollectionId,
-	)
+	// Update trees and compute state root.
+	err = m.updateNftTree(txInfo.NftIndex)
 	if err != nil {
-		return fmt.Errorf("unable to compute nft leaf: %v", err)
+		return fmt.Errorf("update nft tree failed: %v", err)
 	}
-	err = m.nftTree.Update(txInfo.NftIndex, nftAssetLeaf)
-	if err != nil {
-		return fmt.Errorf("unable to update nft tree: %v", err)
-	}
-	hFunc := mimc.NewMiMC()
-	hFunc.Write(m.accountTree.RootNode.Value)
-	hFunc.Write(m.liquidityTree.RootNode.Value)
-	hFunc.Write(m.nftTree.RootNode.Value)
-	state.stateRoot = common.Bytes2Hex(hFunc.Sum(nil))
+	stateRoot := m.getStateRoot()
 
 	// Construct tx.
 	var txDetails []*tx.TxDetail
@@ -1172,7 +1165,7 @@ func (m *RestoreManager) replayDepositNft(state *BlockReplayState, pubData []byt
 		GasFeeAssetId: commonConstant.NilAssetId,
 		TxStatus:      mempool.SuccessTxStatus,
 		BlockHeight:   state.blockNumber,
-		StateRoot:     state.stateRoot,
+		StateRoot:     stateRoot,
 		NftIndex:      txInfo.NftIndex,
 		PairIndex:     commonConstant.NilPairIndex,
 		AssetId:       commonConstant.NilAssetId,
@@ -1185,6 +1178,8 @@ func (m *RestoreManager) replayDepositNft(state *BlockReplayState, pubData []byt
 		ExpiredAt:     commonConstant.NilExpiredAt,
 	}
 	state.txs = append(state.txs, tx)
+	state.stateRoot = stateRoot
+	state.pendingNewNftIndexMap[txInfo.NftIndex] = true
 	state.priorityOperations += 1
 	state.pubDataOffset = append(state.pubDataOffset, uint32(len(state.pubDataOffset)))
 	return nil
@@ -1214,31 +1209,9 @@ func (m *RestoreManager) replayTransfer(state *BlockReplayState, pubData []byte)
 	}
 
 	// Prepare account map and asset info.
-	for _, accountIndex := range []int64{txInfo.FromAccountIndex, txInfo.ToAccountIndex, txInfo.GasAccountIndex} {
-		state.pendingUpdateAccountIndexMap[accountIndex] = true
-		if m.accountMap[accountIndex] == nil {
-			accountInfo, err := m.Blockchain.AccountModel.GetAccountByAccountIndex(accountIndex)
-			if err != nil {
-				return fmt.Errorf("get account by index: %d failed: %v", accountIndex, err)
-			}
-			m.accountMap[accountIndex], err = commonAsset.ToFormatAccountInfo(accountInfo)
-			if err != nil {
-				return fmt.Errorf("convert to format account info failed: %v", err)
-			}
-		}
-		if m.accountMap[accountIndex].AssetInfo == nil {
-			m.accountMap[accountIndex].AssetInfo = make(map[int64]*commonAsset.AccountAsset)
-		}
-		for _, assetId := range []int64{txInfo.AssetId, txInfo.GasFeeAssetId} {
-			if m.accountMap[accountIndex].AssetInfo[assetId] == nil {
-				m.accountMap[accountIndex].AssetInfo[assetId] = &commonAsset.AccountAsset{
-					AssetId:                  assetId,
-					Balance:                  ZeroBigInt,
-					LpAmount:                 ZeroBigInt,
-					OfferCanceledOrFinalized: ZeroBigInt,
-				}
-			}
-		}
+	err := m.prepareAccountsAndAssets([]int64{txInfo.FromAccountIndex, txInfo.ToAccountIndex, txInfo.GasAccountIndex}, []int64{txInfo.AssetId, txInfo.GasFeeAssetId})
+	if err != nil {
+		return fmt.Errorf("prepare accounts failed: %v", err)
 	}
 
 	// Update asset info and asset tree.
@@ -1252,44 +1225,12 @@ func (m *RestoreManager) replayTransfer(state *BlockReplayState, pubData []byte)
 	toAccountInfo.AssetInfo[txInfo.AssetId].Balance = new(big.Int).Add(toAccountInfo.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
 	gasAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance = new(big.Int).Add(gasAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 
-	// Update account tree.
-	for _, accountIndex := range []int64{txInfo.FromAccountIndex, txInfo.ToAccountIndex, txInfo.GasAccountIndex} {
-		for _, assetId := range []int64{txInfo.AssetId, txInfo.GasFeeAssetId} {
-			assetLeaf, err := tree.ComputeAccountAssetLeafHash(
-				m.accountMap[accountIndex].AssetInfo[assetId].Balance.String(),
-				m.accountMap[accountIndex].AssetInfo[assetId].LpAmount.String(),
-				m.accountMap[accountIndex].AssetInfo[assetId].OfferCanceledOrFinalized.String(),
-			)
-			if err != nil {
-				return fmt.Errorf("compute new account asset leaf failed: %v", err)
-			}
-			err = m.accountAssetTrees[accountIndex].Update(assetId, assetLeaf)
-			if err != nil {
-				return fmt.Errorf("update asset tree failed: %v", err)
-			}
-		}
-
-		m.accountMap[accountIndex].AssetRoot = common.Bytes2Hex(m.accountAssetTrees[accountIndex].RootNode.Value)
-		nAccountLeafHash, err := tree.ComputeAccountLeafHash(
-			m.accountMap[accountIndex].AccountNameHash,
-			m.accountMap[accountIndex].PublicKey,
-			m.accountMap[accountIndex].Nonce,
-			m.accountMap[accountIndex].CollectionNonce,
-			m.accountAssetTrees[accountIndex].RootNode.Value,
-		)
-		if err != nil {
-			return fmt.Errorf("unable to compute account leaf: %v", err)
-		}
-		err = m.accountTree.Update(accountIndex, nAccountLeafHash)
-		if err != nil {
-			return fmt.Errorf("unable to update account tree: %v", err)
-		}
+	// Update trees and compute state root.
+	err = m.updateAccountTree([]int64{txInfo.FromAccountIndex, txInfo.ToAccountIndex, txInfo.GasAccountIndex}, []int64{txInfo.AssetId, txInfo.GasFeeAssetId})
+	if err != nil {
+		return fmt.Errorf("update account tree failed: %v", err)
 	}
-	hFunc := mimc.NewMiMC()
-	hFunc.Write(m.accountTree.RootNode.Value)
-	hFunc.Write(m.liquidityTree.RootNode.Value)
-	hFunc.Write(m.nftTree.RootNode.Value)
-	state.stateRoot = common.Bytes2Hex(hFunc.Sum(nil))
+	stateRoot := m.getStateRoot()
 
 	tx := &tx.Tx{
 		TxHash:        common.Hash{}.String(), // FIXME: need change tx hash
@@ -1298,7 +1239,7 @@ func (m *RestoreManager) replayTransfer(state *BlockReplayState, pubData []byte)
 		GasFeeAssetId: txInfo.GasFeeAssetId,
 		TxStatus:      mempool.SuccessTxStatus,
 		BlockHeight:   state.blockNumber,
-		StateRoot:     state.stateRoot,
+		StateRoot:     stateRoot,
 		NftIndex:      commonConstant.NilTxNftIndex,
 		PairIndex:     commonConstant.NilPairIndex,
 		AssetId:       txInfo.AssetId,
@@ -1310,21 +1251,22 @@ func (m *RestoreManager) replayTransfer(state *BlockReplayState, pubData []byte)
 		ExpiredAt:    commonConstant.NilExpiredAt,
 	}
 	state.txs = append(state.txs, tx)
+	state.stateRoot = stateRoot
+	state.pendingUpdateAccountIndexMap[txInfo.FromAccountIndex] = true
+	state.pendingUpdateAccountIndexMap[txInfo.ToAccountIndex] = true
+	state.pendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = true
 	return nil
 }
 
 func (m *RestoreManager) replaySwap(state *BlockReplayState, pubData []byte) error {
-
 	return nil
 }
 
 func (m *RestoreManager) replayAddLiquidity(state *BlockReplayState, pubData []byte) error {
-
 	return nil
 }
 
 func (m *RestoreManager) replayRemoveLiquidity(state *BlockReplayState, pubData []byte) error {
-
 	return nil
 }
 
@@ -1350,31 +1292,9 @@ func (m *RestoreManager) replayWithdraw(state *BlockReplayState, pubData []byte)
 	}
 
 	// Prepare account map and asset info.
-	for _, accountIndex := range []int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex} {
-		state.pendingUpdateAccountIndexMap[accountIndex] = true
-		if m.accountMap[accountIndex] == nil {
-			accountInfo, err := m.Blockchain.AccountModel.GetAccountByAccountIndex(accountIndex)
-			if err != nil {
-				return fmt.Errorf("get account by index: %d failed: %v", accountIndex, err)
-			}
-			m.accountMap[accountIndex], err = commonAsset.ToFormatAccountInfo(accountInfo)
-			if err != nil {
-				return fmt.Errorf("convert to format account info failed: %v", err)
-			}
-		}
-		if m.accountMap[accountIndex].AssetInfo == nil {
-			m.accountMap[accountIndex].AssetInfo = make(map[int64]*commonAsset.AccountAsset)
-		}
-		for _, assetId := range []int64{txInfo.AssetId, txInfo.GasFeeAssetId} {
-			if m.accountMap[accountIndex].AssetInfo[assetId] == nil {
-				m.accountMap[accountIndex].AssetInfo[assetId] = &commonAsset.AccountAsset{
-					AssetId:                  assetId,
-					Balance:                  ZeroBigInt,
-					LpAmount:                 ZeroBigInt,
-					OfferCanceledOrFinalized: ZeroBigInt,
-				}
-			}
-		}
+	err := m.prepareAccountsAndAssets([]int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex}, []int64{txInfo.AssetId, txInfo.GasFeeAssetId})
+	if err != nil {
+		return fmt.Errorf("prepare accounts failed: %v", err)
 	}
 
 	// Update asset info and asset tree.
@@ -1386,44 +1306,12 @@ func (m *RestoreManager) replayWithdraw(state *BlockReplayState, pubData []byte)
 	fromAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance = new(big.Int).Sub(fromAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	gasAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance = new(big.Int).Add(gasAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 
-	// Update account tree.
-	for _, accountIndex := range []int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex} {
-		for _, assetId := range []int64{txInfo.AssetId, txInfo.GasFeeAssetId} {
-			assetLeaf, err := tree.ComputeAccountAssetLeafHash(
-				m.accountMap[accountIndex].AssetInfo[assetId].Balance.String(),
-				m.accountMap[accountIndex].AssetInfo[assetId].LpAmount.String(),
-				m.accountMap[accountIndex].AssetInfo[assetId].OfferCanceledOrFinalized.String(),
-			)
-			if err != nil {
-				return fmt.Errorf("compute new account asset leaf failed: %v", err)
-			}
-			err = m.accountAssetTrees[accountIndex].Update(assetId, assetLeaf)
-			if err != nil {
-				return fmt.Errorf("update asset tree failed: %v", err)
-			}
-		}
-
-		m.accountMap[accountIndex].AssetRoot = common.Bytes2Hex(m.accountAssetTrees[accountIndex].RootNode.Value)
-		nAccountLeafHash, err := tree.ComputeAccountLeafHash(
-			m.accountMap[accountIndex].AccountNameHash,
-			m.accountMap[accountIndex].PublicKey,
-			m.accountMap[accountIndex].Nonce,
-			m.accountMap[accountIndex].CollectionNonce,
-			m.accountAssetTrees[accountIndex].RootNode.Value,
-		)
-		if err != nil {
-			return fmt.Errorf("unable to compute account leaf: %v", err)
-		}
-		err = m.accountTree.Update(accountIndex, nAccountLeafHash)
-		if err != nil {
-			return fmt.Errorf("unable to update account tree: %v", err)
-		}
+	// Update trees and compute state root.
+	err = m.updateAccountTree([]int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex}, []int64{txInfo.AssetId, txInfo.GasFeeAssetId})
+	if err != nil {
+		return fmt.Errorf("update account tree failed: %v", err)
 	}
-	hFunc := mimc.NewMiMC()
-	hFunc.Write(m.accountTree.RootNode.Value)
-	hFunc.Write(m.liquidityTree.RootNode.Value)
-	hFunc.Write(m.nftTree.RootNode.Value)
-	state.stateRoot = common.Bytes2Hex(hFunc.Sum(nil))
+	stateRoot := m.getStateRoot()
 
 	tx := &tx.Tx{
 		TxHash:        common.Hash{}.String(), // FIXME: need change tx hash
@@ -1432,7 +1320,7 @@ func (m *RestoreManager) replayWithdraw(state *BlockReplayState, pubData []byte)
 		GasFeeAssetId: txInfo.GasFeeAssetId,
 		TxStatus:      mempool.SuccessTxStatus,
 		BlockHeight:   state.blockNumber,
-		StateRoot:     state.stateRoot,
+		StateRoot:     stateRoot,
 		NftIndex:      commonConstant.NilTxNftIndex,
 		PairIndex:     commonConstant.NilPairIndex,
 		AssetId:       txInfo.AssetId,
@@ -1445,7 +1333,10 @@ func (m *RestoreManager) replayWithdraw(state *BlockReplayState, pubData []byte)
 		ExpiredAt:    commonConstant.NilExpiredAt,
 	}
 	state.txs = append(state.txs, tx)
+	state.stateRoot = stateRoot
 	state.priorityOperations++
+	state.pendingUpdateAccountIndexMap[txInfo.FromAccountIndex] = true
+	state.pendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = true
 	state.pubDataOffset = append(state.pubDataOffset, uint32(len(state.pubDataOffset)))
 	state.pendingOnChainOperationsPubData = append(state.pendingOnChainOperationsPubData, pubData)
 	state.pendingOnChainOperationsHash = util.ConcatKeccakHash(state.pendingOnChainOperationsHash, pubData)
@@ -1469,31 +1360,9 @@ func (m *RestoreManager) replayCreateCollection(state *BlockReplayState, pubData
 	}
 
 	// Prepare account map and asset info.
-	for _, accountIndex := range []int64{txInfo.AccountIndex, txInfo.GasAccountIndex} {
-		state.pendingUpdateAccountIndexMap[accountIndex] = true
-		if m.accountMap[accountIndex] == nil {
-			accountInfo, err := m.Blockchain.AccountModel.GetAccountByAccountIndex(accountIndex)
-			if err != nil {
-				return fmt.Errorf("get account by index: %d failed: %v", accountIndex, err)
-			}
-			m.accountMap[accountIndex], err = commonAsset.ToFormatAccountInfo(accountInfo)
-			if err != nil {
-				return fmt.Errorf("convert to format account info failed: %v", err)
-			}
-		}
-		if m.accountMap[accountIndex].AssetInfo == nil {
-			m.accountMap[accountIndex].AssetInfo = make(map[int64]*commonAsset.AccountAsset)
-		}
-		for _, assetId := range []int64{txInfo.GasFeeAssetId} {
-			if m.accountMap[accountIndex].AssetInfo[assetId] == nil {
-				m.accountMap[accountIndex].AssetInfo[assetId] = &commonAsset.AccountAsset{
-					AssetId:                  assetId,
-					Balance:                  ZeroBigInt,
-					LpAmount:                 ZeroBigInt,
-					OfferCanceledOrFinalized: ZeroBigInt,
-				}
-			}
-		}
+	err := m.prepareAccountsAndAssets([]int64{txInfo.AccountIndex, txInfo.GasAccountIndex}, []int64{txInfo.GasFeeAssetId})
+	if err != nil {
+		return fmt.Errorf("prepare accounts failed: %v", err)
 	}
 
 	// Update asset info and asset tree.
@@ -1506,43 +1375,12 @@ func (m *RestoreManager) replayCreateCollection(state *BlockReplayState, pubData
 	gasAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance = new(big.Int).Add(gasAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 
 	// Update account tree.
-	for _, accountIndex := range []int64{txInfo.AccountIndex, txInfo.GasAccountIndex} {
-		for _, assetId := range []int64{txInfo.GasFeeAssetId} {
-			assetLeaf, err := tree.ComputeAccountAssetLeafHash(
-				m.accountMap[accountIndex].AssetInfo[assetId].Balance.String(),
-				m.accountMap[accountIndex].AssetInfo[assetId].LpAmount.String(),
-				m.accountMap[accountIndex].AssetInfo[assetId].OfferCanceledOrFinalized.String(),
-			)
-			if err != nil {
-				return fmt.Errorf("compute new account asset leaf failed: %v", err)
-			}
-			err = m.accountAssetTrees[accountIndex].Update(assetId, assetLeaf)
-			if err != nil {
-				return fmt.Errorf("update asset tree failed: %v", err)
-			}
-		}
-
-		m.accountMap[accountIndex].AssetRoot = common.Bytes2Hex(m.accountAssetTrees[accountIndex].RootNode.Value)
-		nAccountLeafHash, err := tree.ComputeAccountLeafHash(
-			m.accountMap[accountIndex].AccountNameHash,
-			m.accountMap[accountIndex].PublicKey,
-			m.accountMap[accountIndex].Nonce,
-			m.accountMap[accountIndex].CollectionNonce,
-			m.accountAssetTrees[accountIndex].RootNode.Value,
-		)
-		if err != nil {
-			return fmt.Errorf("unable to compute account leaf: %v", err)
-		}
-		err = m.accountTree.Update(accountIndex, nAccountLeafHash)
-		if err != nil {
-			return fmt.Errorf("unable to update account tree: %v", err)
-		}
+	// Update trees and compute state root.
+	err = m.updateAccountTree([]int64{txInfo.AccountIndex, txInfo.GasAccountIndex}, []int64{txInfo.GasFeeAssetId})
+	if err != nil {
+		return fmt.Errorf("update account tree failed: %v", err)
 	}
-	hFunc := mimc.NewMiMC()
-	hFunc.Write(m.accountTree.RootNode.Value)
-	hFunc.Write(m.liquidityTree.RootNode.Value)
-	hFunc.Write(m.nftTree.RootNode.Value)
-	state.stateRoot = common.Bytes2Hex(hFunc.Sum(nil))
+	stateRoot := m.getStateRoot()
 
 	tx := &tx.Tx{
 		TxHash:        common.Hash{}.String(), // FIXME: need change tx hash
@@ -1551,7 +1389,7 @@ func (m *RestoreManager) replayCreateCollection(state *BlockReplayState, pubData
 		GasFeeAssetId: txInfo.GasFeeAssetId,
 		TxStatus:      mempool.SuccessTxStatus,
 		BlockHeight:   state.blockNumber,
-		StateRoot:     state.stateRoot,
+		StateRoot:     stateRoot,
 		NftIndex:      commonConstant.NilTxNftIndex,
 		PairIndex:     commonConstant.NilPairIndex,
 		NativeAddress: commonConstant.NilL1Address,
@@ -1562,6 +1400,9 @@ func (m *RestoreManager) replayCreateCollection(state *BlockReplayState, pubData
 		ExpiredAt:    commonConstant.NilExpiredAt,
 	}
 	state.txs = append(state.txs, tx)
+	state.stateRoot = stateRoot
+	state.pendingUpdateAccountIndexMap[txInfo.AccountIndex] = true
+	state.pendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = true
 	return nil
 }
 
@@ -1591,18 +1432,9 @@ func (m *RestoreManager) replayMintNft(state *BlockReplayState, pubData []byte) 
 	}
 
 	// Prepare account map and asset info.
-	for _, accountIndex := range []int64{txInfo.CreatorAccountIndex, txInfo.ToAccountIndex, txInfo.GasAccountIndex} {
-		state.pendingUpdateAccountIndexMap[accountIndex] = true
-		if m.accountMap[accountIndex] == nil {
-			accountInfo, err := m.Blockchain.AccountModel.GetAccountByAccountIndex(accountIndex)
-			if err != nil {
-				return fmt.Errorf("get account by index: %d failed: %v", accountIndex, err)
-			}
-			m.accountMap[accountIndex], err = commonAsset.ToFormatAccountInfo(accountInfo)
-			if err != nil {
-				return fmt.Errorf("convert to format account info failed: %v", err)
-			}
-		}
+	err := m.prepareAccountsAndAssets([]int64{txInfo.CreatorAccountIndex, txInfo.GasAccountIndex}, []int64{txInfo.GasFeeAssetId})
+	if err != nil {
+		return fmt.Errorf("prepare accounts failed: %v", err)
 	}
 
 	// Update asset info and asset tree.
@@ -1623,61 +1455,16 @@ func (m *RestoreManager) replayMintNft(state *BlockReplayState, pubData []byte) 
 		CollectionId:        txInfo.NftCollectionId,
 	}
 
-	// Update nft tree.
-	nftAsset := m.nftMap[txInfo.NftIndex]
-	nftAssetLeaf, err := tree.ComputeNftAssetLeafHash(
-		nftAsset.CreatorAccountIndex, nftAsset.OwnerAccountIndex,
-		nftAsset.NftContentHash,
-		nftAsset.NftL1Address, nftAsset.NftL1TokenId,
-		nftAsset.CreatorTreasuryRate,
-		nftAsset.CollectionId,
-	)
+	// Update trees and compute state root.
+	err = m.updateAccountTree([]int64{txInfo.CreatorAccountIndex, txInfo.GasAccountIndex}, []int64{txInfo.GasFeeAssetId})
 	if err != nil {
-		return fmt.Errorf("unable to compute nft leaf: %v", err)
+		return fmt.Errorf("update account tree failed: %v", err)
 	}
-	err = m.nftTree.Update(txInfo.NftIndex, nftAssetLeaf)
+	err = m.updateNftTree(txInfo.NftIndex)
 	if err != nil {
-		return fmt.Errorf("unable to update nft tree: %v", err)
+		return fmt.Errorf("update nft tree failed: %v", err)
 	}
-
-	// Update account tree.
-	for _, accountIndex := range []int64{txInfo.CreatorAccountIndex, txInfo.ToAccountIndex, txInfo.GasAccountIndex} {
-		for _, assetId := range []int64{txInfo.GasFeeAssetId} {
-			assetLeaf, err := tree.ComputeAccountAssetLeafHash(
-				m.accountMap[accountIndex].AssetInfo[assetId].Balance.String(),
-				m.accountMap[accountIndex].AssetInfo[assetId].LpAmount.String(),
-				m.accountMap[accountIndex].AssetInfo[assetId].OfferCanceledOrFinalized.String(),
-			)
-			if err != nil {
-				return fmt.Errorf("compute new account asset leaf failed: %v", err)
-			}
-			err = m.accountAssetTrees[accountIndex].Update(assetId, assetLeaf)
-			if err != nil {
-				return fmt.Errorf("update asset tree failed: %v", err)
-			}
-		}
-
-		m.accountMap[accountIndex].AssetRoot = common.Bytes2Hex(m.accountAssetTrees[accountIndex].RootNode.Value)
-		nAccountLeafHash, err := tree.ComputeAccountLeafHash(
-			m.accountMap[accountIndex].AccountNameHash,
-			m.accountMap[accountIndex].PublicKey,
-			m.accountMap[accountIndex].Nonce,
-			m.accountMap[accountIndex].CollectionNonce,
-			m.accountAssetTrees[accountIndex].RootNode.Value,
-		)
-		if err != nil {
-			return fmt.Errorf("unable to compute account leaf: %v", err)
-		}
-		err = m.accountTree.Update(accountIndex, nAccountLeafHash)
-		if err != nil {
-			return fmt.Errorf("unable to update account tree: %v", err)
-		}
-	}
-	hFunc := mimc.NewMiMC()
-	hFunc.Write(m.accountTree.RootNode.Value)
-	hFunc.Write(m.liquidityTree.RootNode.Value)
-	hFunc.Write(m.nftTree.RootNode.Value)
-	state.stateRoot = common.Bytes2Hex(hFunc.Sum(nil))
+	stateRoot := m.getStateRoot()
 
 	tx := &tx.Tx{
 		TxHash:        common.Hash{}.String(), // FIXME: need change tx hash
@@ -1686,7 +1473,7 @@ func (m *RestoreManager) replayMintNft(state *BlockReplayState, pubData []byte) 
 		GasFeeAssetId: txInfo.GasFeeAssetId,
 		TxStatus:      mempool.SuccessTxStatus,
 		BlockHeight:   state.blockNumber,
-		StateRoot:     state.stateRoot,
+		StateRoot:     stateRoot,
 		NftIndex:      txInfo.NftIndex,
 		PairIndex:     commonConstant.NilPairIndex,
 		AssetId:       commonConstant.NilAssetId,
@@ -1699,6 +1486,10 @@ func (m *RestoreManager) replayMintNft(state *BlockReplayState, pubData []byte) 
 		ExpiredAt:    commonConstant.NilExpiredAt,
 	}
 	state.txs = append(state.txs, tx)
+	state.stateRoot = stateRoot
+	state.pendingUpdateAccountIndexMap[txInfo.CreatorAccountIndex] = true
+	state.pendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = true
+	state.pendingNewNftIndexMap[txInfo.NftIndex] = true
 	return nil
 }
 
@@ -1724,25 +1515,13 @@ func (m *RestoreManager) replayTransferNft(state *BlockReplayState, pubData []by
 	}
 
 	// Prepare account map and asset info.
-	for _, accountIndex := range []int64{txInfo.FromAccountIndex, txInfo.ToAccountIndex, txInfo.GasAccountIndex} {
-		state.pendingUpdateAccountIndexMap[accountIndex] = true
-		if m.accountMap[accountIndex] == nil {
-			accountInfo, err := m.Blockchain.AccountModel.GetAccountByAccountIndex(accountIndex)
-			if err != nil {
-				return fmt.Errorf("get account by index: %d failed: %v", accountIndex, err)
-			}
-			m.accountMap[accountIndex], err = commonAsset.ToFormatAccountInfo(accountInfo)
-			if err != nil {
-				return fmt.Errorf("convert to format account info failed: %v", err)
-			}
-		}
+	err := m.prepareAccountsAndAssets([]int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex}, []int64{txInfo.GasFeeAssetId})
+	if err != nil {
+		return fmt.Errorf("prepare accounts failed: %v", err)
 	}
-	if m.nftMap[txInfo.NftIndex] == nil {
-		nftAsset, err := m.Blockchain.L2NftModel.GetNftAsset(txInfo.NftIndex)
-		if err != nil {
-			return fmt.Errorf("get nft asset failed, index: %d, err: %v", txInfo.NftIndex, err)
-		}
-		m.nftMap[txInfo.NftIndex] = nftAsset
+	err = m.prepareNft(txInfo.NftIndex)
+	if err != nil {
+		return fmt.Errorf("prepare nft failed: %v", err)
 	}
 
 	// Update asset info and asset tree.
@@ -1754,61 +1533,16 @@ func (m *RestoreManager) replayTransferNft(state *BlockReplayState, pubData []by
 	gasAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance = new(big.Int).Add(gasAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	m.nftMap[txInfo.NftIndex].OwnerAccountIndex = txInfo.ToAccountIndex
 
-	// Update nft tree.
-	nftAsset := m.nftMap[txInfo.NftIndex]
-	nftAssetLeaf, err := tree.ComputeNftAssetLeafHash(
-		nftAsset.CreatorAccountIndex, nftAsset.OwnerAccountIndex,
-		nftAsset.NftContentHash,
-		nftAsset.NftL1Address, nftAsset.NftL1TokenId,
-		nftAsset.CreatorTreasuryRate,
-		nftAsset.CollectionId,
-	)
+	// Update trees and compute state root.
+	err = m.updateAccountTree([]int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex}, []int64{txInfo.GasFeeAssetId})
 	if err != nil {
-		return fmt.Errorf("unable to compute nft leaf: %v", err)
+		return fmt.Errorf("update account tree failed: %v", err)
 	}
-	err = m.nftTree.Update(txInfo.NftIndex, nftAssetLeaf)
+	err = m.updateNftTree(txInfo.NftIndex)
 	if err != nil {
-		return fmt.Errorf("unable to update nft tree: %v", err)
+		return fmt.Errorf("update nft tree failed: %v", err)
 	}
-
-	// Update account tree.
-	for _, accountIndex := range []int64{txInfo.FromAccountIndex, txInfo.ToAccountIndex, txInfo.GasAccountIndex} {
-		for _, assetId := range []int64{txInfo.GasFeeAssetId} {
-			assetLeaf, err := tree.ComputeAccountAssetLeafHash(
-				m.accountMap[accountIndex].AssetInfo[assetId].Balance.String(),
-				m.accountMap[accountIndex].AssetInfo[assetId].LpAmount.String(),
-				m.accountMap[accountIndex].AssetInfo[assetId].OfferCanceledOrFinalized.String(),
-			)
-			if err != nil {
-				return fmt.Errorf("compute new account asset leaf failed: %v", err)
-			}
-			err = m.accountAssetTrees[accountIndex].Update(assetId, assetLeaf)
-			if err != nil {
-				return fmt.Errorf("update asset tree failed: %v", err)
-			}
-		}
-
-		m.accountMap[accountIndex].AssetRoot = common.Bytes2Hex(m.accountAssetTrees[accountIndex].RootNode.Value)
-		nAccountLeafHash, err := tree.ComputeAccountLeafHash(
-			m.accountMap[accountIndex].AccountNameHash,
-			m.accountMap[accountIndex].PublicKey,
-			m.accountMap[accountIndex].Nonce,
-			m.accountMap[accountIndex].CollectionNonce,
-			m.accountAssetTrees[accountIndex].RootNode.Value,
-		)
-		if err != nil {
-			return fmt.Errorf("unable to compute account leaf: %v", err)
-		}
-		err = m.accountTree.Update(accountIndex, nAccountLeafHash)
-		if err != nil {
-			return fmt.Errorf("unable to update account tree: %v", err)
-		}
-	}
-	hFunc := mimc.NewMiMC()
-	hFunc.Write(m.accountTree.RootNode.Value)
-	hFunc.Write(m.liquidityTree.RootNode.Value)
-	hFunc.Write(m.nftTree.RootNode.Value)
-	state.stateRoot = common.Bytes2Hex(hFunc.Sum(nil))
+	stateRoot := m.getStateRoot()
 
 	tx := &tx.Tx{
 		TxHash:        common.Hash{}.String(), // FIXME: need change tx hash
@@ -1817,7 +1551,7 @@ func (m *RestoreManager) replayTransferNft(state *BlockReplayState, pubData []by
 		GasFeeAssetId: txInfo.GasFeeAssetId,
 		TxStatus:      mempool.SuccessTxStatus,
 		BlockHeight:   state.blockNumber,
-		StateRoot:     state.stateRoot,
+		StateRoot:     stateRoot,
 		NftIndex:      txInfo.NftIndex,
 		PairIndex:     commonConstant.NilPairIndex,
 		AssetId:       commonConstant.NilAssetId,
@@ -1830,6 +1564,10 @@ func (m *RestoreManager) replayTransferNft(state *BlockReplayState, pubData []by
 		ExpiredAt:    commonConstant.NilExpiredAt,
 	}
 	state.txs = append(state.txs, tx)
+	state.stateRoot = stateRoot
+	state.pendingUpdateAccountIndexMap[txInfo.FromAccountIndex] = true
+	state.pendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = true
+	state.pendingUpdateNftIndexMap[txInfo.NftIndex] = true
 	return nil
 }
 
@@ -1871,41 +1609,16 @@ func (m *RestoreManager) replayAtomicMatch(state *BlockReplayState, pubData []by
 	}
 
 	// Prepare account map and asset info.
-	if m.nftMap[txInfo.BuyOffer.NftIndex] == nil {
-		nftAsset, err := m.Blockchain.L2NftModel.GetNftAsset(txInfo.BuyOffer.NftIndex)
-		if err != nil {
-			return fmt.Errorf("get nft asset failed, index: %d, err: %v", txInfo.BuyOffer.NftIndex, err)
-		}
-		m.nftMap[txInfo.BuyOffer.NftIndex] = nftAsset
+	err := m.prepareNft(txInfo.BuyOffer.NftIndex)
+	if err != nil {
+		return fmt.Errorf("prepare nft failed: %v", err)
 	}
 	nftAsset := m.nftMap[txInfo.BuyOffer.NftIndex]
 	offerAssetId := txInfo.BuyOffer.OfferId / OfferPerAsset
-	offerIndex := txInfo.BuyOffer.OfferId % OfferPerAsset
-	for _, accountIndex := range []int64{txInfo.AccountIndex, txInfo.BuyOffer.AccountIndex, txInfo.SellOffer.AccountIndex, nftAsset.CreatorAccountIndex, txInfo.GasAccountIndex} {
-		state.pendingUpdateAccountIndexMap[accountIndex] = true
-		if m.accountMap[accountIndex] == nil {
-			accountInfo, err := m.Blockchain.AccountModel.GetAccountByAccountIndex(accountIndex)
-			if err != nil {
-				return fmt.Errorf("get account by index: %d failed: %v", accountIndex, err)
-			}
-			m.accountMap[accountIndex], err = commonAsset.ToFormatAccountInfo(accountInfo)
-			if err != nil {
-				return fmt.Errorf("convert to format account info failed: %v", err)
-			}
-		}
-		if m.accountMap[accountIndex].AssetInfo == nil {
-			m.accountMap[accountIndex].AssetInfo = make(map[int64]*commonAsset.AccountAsset)
-		}
-		for _, assetId := range []int64{offerAssetId, txInfo.SellOffer.AssetId, txInfo.GasFeeAssetId} {
-			if m.accountMap[accountIndex].AssetInfo[assetId] == nil {
-				m.accountMap[accountIndex].AssetInfo[assetId] = &commonAsset.AccountAsset{
-					AssetId:                  assetId,
-					Balance:                  ZeroBigInt,
-					LpAmount:                 ZeroBigInt,
-					OfferCanceledOrFinalized: ZeroBigInt,
-				}
-			}
-		}
+	err = m.prepareAccountsAndAssets([]int64{txInfo.AccountIndex, txInfo.BuyOffer.AccountIndex, txInfo.SellOffer.AccountIndex, nftAsset.CreatorAccountIndex, txInfo.GasAccountIndex},
+		[]int64{offerAssetId, txInfo.SellOffer.AssetId, txInfo.GasFeeAssetId})
+	if err != nil {
+		return fmt.Errorf("prepare accounts failed: %v", err)
 	}
 
 	// Update asset info and asset tree.
@@ -1921,6 +1634,7 @@ func (m *RestoreManager) replayAtomicMatch(state *BlockReplayState, pubData []by
 	// Update buyer.
 	buyerAccountInfo.AssetInfo[txInfo.SellOffer.AssetId].Balance = new(big.Int).Sub(buyerAccountInfo.AssetInfo[txInfo.SellOffer.AssetId].Balance, txInfo.BuyOffer.AssetAmount)
 	oOffer := buyerAccountInfo.AssetInfo[offerAssetId].OfferCanceledOrFinalized
+	offerIndex := txInfo.BuyOffer.OfferId % OfferPerAsset
 	nOffer := new(big.Int).SetBit(oOffer, int(offerIndex), 1)
 	buyerAccountInfo.AssetInfo[offerAssetId].OfferCanceledOrFinalized = nOffer
 	// Update seller.
@@ -1933,45 +1647,19 @@ func (m *RestoreManager) replayAtomicMatch(state *BlockReplayState, pubData []by
 	creatorAccountInfo.AssetInfo[txInfo.SellOffer.AssetId].Balance = ffmath.Add(creatorAccountInfo.AssetInfo[txInfo.SellOffer.AssetId].Balance, txInfo.CreatorAmount)
 	// Update treasury.
 	gasAccountInfo.AssetInfo[txInfo.SellOffer.AssetId].Balance = ffmath.Add(gasAccountInfo.AssetInfo[txInfo.SellOffer.AssetId].Balance, txInfo.TreasuryAmount)
+	// TODO: update nft info.
 
-	// Update account tree.
-	for _, accountIndex := range []int64{txInfo.AccountIndex, txInfo.BuyOffer.AccountIndex, txInfo.SellOffer.AccountIndex, nftAsset.CreatorAccountIndex, txInfo.GasAccountIndex} {
-		for _, assetId := range []int64{offerAssetId, txInfo.SellOffer.AssetId, txInfo.GasFeeAssetId} {
-			assetLeaf, err := tree.ComputeAccountAssetLeafHash(
-				m.accountMap[accountIndex].AssetInfo[assetId].Balance.String(),
-				m.accountMap[accountIndex].AssetInfo[assetId].LpAmount.String(),
-				m.accountMap[accountIndex].AssetInfo[assetId].OfferCanceledOrFinalized.String(),
-			)
-			if err != nil {
-				return fmt.Errorf("compute new account asset leaf failed: %v", err)
-			}
-			err = m.accountAssetTrees[accountIndex].Update(assetId, assetLeaf)
-			if err != nil {
-				return fmt.Errorf("update asset tree failed: %v", err)
-			}
-		}
-
-		m.accountMap[accountIndex].AssetRoot = common.Bytes2Hex(m.accountAssetTrees[accountIndex].RootNode.Value)
-		nAccountLeafHash, err := tree.ComputeAccountLeafHash(
-			m.accountMap[accountIndex].AccountNameHash,
-			m.accountMap[accountIndex].PublicKey,
-			m.accountMap[accountIndex].Nonce,
-			m.accountMap[accountIndex].CollectionNonce,
-			m.accountAssetTrees[accountIndex].RootNode.Value,
-		)
-		if err != nil {
-			return fmt.Errorf("unable to compute account leaf: %v", err)
-		}
-		err = m.accountTree.Update(accountIndex, nAccountLeafHash)
-		if err != nil {
-			return fmt.Errorf("unable to update account tree: %v", err)
-		}
+	// Update trees and compute state root.
+	err = m.updateAccountTree([]int64{txInfo.AccountIndex, txInfo.BuyOffer.AccountIndex, txInfo.SellOffer.AccountIndex, nftAsset.CreatorAccountIndex, txInfo.GasAccountIndex},
+		[]int64{offerAssetId, txInfo.SellOffer.AssetId, txInfo.GasFeeAssetId})
+	if err != nil {
+		return fmt.Errorf("update account tree failed: %v", err)
 	}
-	hFunc := mimc.NewMiMC()
-	hFunc.Write(m.accountTree.RootNode.Value)
-	hFunc.Write(m.liquidityTree.RootNode.Value)
-	hFunc.Write(m.nftTree.RootNode.Value)
-	state.stateRoot = common.Bytes2Hex(hFunc.Sum(nil))
+	err = m.updateNftTree(txInfo.BuyOffer.NftIndex)
+	if err != nil {
+		return fmt.Errorf("update nft tree failed: %v", err)
+	}
+	stateRoot := m.getStateRoot()
 
 	tx := &tx.Tx{
 		TxHash:        common.Hash{}.String(), // FIXME: need change tx hash
@@ -1980,7 +1668,7 @@ func (m *RestoreManager) replayAtomicMatch(state *BlockReplayState, pubData []by
 		GasFeeAssetId: txInfo.GasFeeAssetId,
 		TxStatus:      mempool.SuccessTxStatus,
 		BlockHeight:   state.blockNumber,
-		StateRoot:     state.stateRoot,
+		StateRoot:     stateRoot,
 		NftIndex:      txInfo.BuyOffer.NftIndex,
 		PairIndex:     commonConstant.NilPairIndex,
 		AssetId:       txInfo.SellOffer.AssetId,
@@ -1993,6 +1681,13 @@ func (m *RestoreManager) replayAtomicMatch(state *BlockReplayState, pubData []by
 		ExpiredAt:    commonConstant.NilExpiredAt,
 	}
 	state.txs = append(state.txs, tx)
+	state.stateRoot = stateRoot
+	state.pendingUpdateAccountIndexMap[txInfo.AccountIndex] = true
+	state.pendingUpdateAccountIndexMap[txInfo.BuyOffer.AccountIndex] = true
+	state.pendingUpdateAccountIndexMap[txInfo.SellOffer.AccountIndex] = true
+	state.pendingUpdateAccountIndexMap[nftAsset.CreatorAccountIndex] = true
+	state.pendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = true
+	state.pendingUpdateNftIndexMap[txInfo.BuyOffer.NftIndex] = true
 	return nil
 }
 
@@ -2015,31 +1710,10 @@ func (m *RestoreManager) replayCancelOffer(state *BlockReplayState, pubData []by
 	// Prepare account map and asset info.
 	offerAssetId := txInfo.OfferId / OfferPerAsset
 	offerIndex := txInfo.OfferId % OfferPerAsset
-	for _, accountIndex := range []int64{txInfo.AccountIndex, txInfo.GasAccountIndex} {
-		state.pendingUpdateAccountIndexMap[accountIndex] = true
-		if m.accountMap[accountIndex] == nil {
-			accountInfo, err := m.Blockchain.AccountModel.GetAccountByAccountIndex(accountIndex)
-			if err != nil {
-				return fmt.Errorf("get account by index: %d failed: %v", accountIndex, err)
-			}
-			m.accountMap[accountIndex], err = commonAsset.ToFormatAccountInfo(accountInfo)
-			if err != nil {
-				return fmt.Errorf("convert to format account info failed: %v", err)
-			}
-		}
-		if m.accountMap[accountIndex].AssetInfo == nil {
-			m.accountMap[accountIndex].AssetInfo = make(map[int64]*commonAsset.AccountAsset)
-		}
-		for _, assetId := range []int64{offerAssetId, txInfo.GasFeeAssetId} {
-			if m.accountMap[accountIndex].AssetInfo[assetId] == nil {
-				m.accountMap[accountIndex].AssetInfo[assetId] = &commonAsset.AccountAsset{
-					AssetId:                  assetId,
-					Balance:                  ZeroBigInt,
-					LpAmount:                 ZeroBigInt,
-					OfferCanceledOrFinalized: ZeroBigInt,
-				}
-			}
-		}
+	// Prepare account map and asset info.
+	err := m.prepareAccountsAndAssets([]int64{txInfo.AccountIndex, txInfo.GasAccountIndex}, []int64{offerAssetId, txInfo.GasFeeAssetId})
+	if err != nil {
+		return fmt.Errorf("prepare accounts failed: %v", err)
 	}
 
 	// Update asset info and asset tree.
@@ -2053,44 +1727,12 @@ func (m *RestoreManager) replayCancelOffer(state *BlockReplayState, pubData []by
 	nOffer := new(big.Int).SetBit(oOffer, int(offerIndex), 1)
 	fromAccountInfo.AssetInfo[offerAssetId].OfferCanceledOrFinalized = nOffer
 
-	// Update account tree.
-	for _, accountIndex := range []int64{txInfo.AccountIndex, txInfo.GasAccountIndex} {
-		for _, assetId := range []int64{offerAssetId, txInfo.GasFeeAssetId} {
-			assetLeaf, err := tree.ComputeAccountAssetLeafHash(
-				m.accountMap[accountIndex].AssetInfo[assetId].Balance.String(),
-				m.accountMap[accountIndex].AssetInfo[assetId].LpAmount.String(),
-				m.accountMap[accountIndex].AssetInfo[assetId].OfferCanceledOrFinalized.String(),
-			)
-			if err != nil {
-				return fmt.Errorf("compute new account asset leaf failed: %v", err)
-			}
-			err = m.accountAssetTrees[accountIndex].Update(assetId, assetLeaf)
-			if err != nil {
-				return fmt.Errorf("update asset tree failed: %v", err)
-			}
-		}
-
-		m.accountMap[accountIndex].AssetRoot = common.Bytes2Hex(m.accountAssetTrees[accountIndex].RootNode.Value)
-		nAccountLeafHash, err := tree.ComputeAccountLeafHash(
-			m.accountMap[accountIndex].AccountNameHash,
-			m.accountMap[accountIndex].PublicKey,
-			m.accountMap[accountIndex].Nonce,
-			m.accountMap[accountIndex].CollectionNonce,
-			m.accountAssetTrees[accountIndex].RootNode.Value,
-		)
-		if err != nil {
-			return fmt.Errorf("unable to compute account leaf: %v", err)
-		}
-		err = m.accountTree.Update(accountIndex, nAccountLeafHash)
-		if err != nil {
-			return fmt.Errorf("unable to update account tree: %v", err)
-		}
+	// Update trees and compute state root.
+	err = m.updateAccountTree([]int64{txInfo.AccountIndex, txInfo.GasAccountIndex}, []int64{offerAssetId, txInfo.GasFeeAssetId})
+	if err != nil {
+		return fmt.Errorf("update account tree failed: %v", err)
 	}
-	hFunc := mimc.NewMiMC()
-	hFunc.Write(m.accountTree.RootNode.Value)
-	hFunc.Write(m.liquidityTree.RootNode.Value)
-	hFunc.Write(m.nftTree.RootNode.Value)
-	state.stateRoot = common.Bytes2Hex(hFunc.Sum(nil))
+	stateRoot := m.getStateRoot()
 
 	tx := &tx.Tx{
 		TxHash:        common.Hash{}.String(), // FIXME: need change tx hash
@@ -2099,7 +1741,7 @@ func (m *RestoreManager) replayCancelOffer(state *BlockReplayState, pubData []by
 		GasFeeAssetId: txInfo.GasFeeAssetId,
 		TxStatus:      mempool.SuccessTxStatus,
 		BlockHeight:   state.blockNumber,
-		StateRoot:     state.stateRoot,
+		StateRoot:     stateRoot,
 		NftIndex:      commonConstant.NilTxNftIndex,
 		PairIndex:     commonConstant.NilPairIndex,
 		AssetId:       commonConstant.NilAssetId,
@@ -2112,6 +1754,9 @@ func (m *RestoreManager) replayCancelOffer(state *BlockReplayState, pubData []by
 		ExpiredAt:    commonConstant.NilExpiredAt,
 	}
 	state.txs = append(state.txs, tx)
+	state.stateRoot = stateRoot
+	state.pendingUpdateAccountIndexMap[txInfo.AccountIndex] = true
+	state.pendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = true
 	return nil
 }
 
@@ -2151,25 +1796,13 @@ func (m *RestoreManager) replayWithdrawNft(state *BlockReplayState, pubData []by
 	}
 
 	// Prepare account map and asset info.
-	for _, accountIndex := range []int64{txInfo.AccountIndex, txInfo.CreatorAccountIndex, txInfo.GasAccountIndex} {
-		state.pendingUpdateAccountIndexMap[accountIndex] = true
-		if m.accountMap[accountIndex] == nil {
-			accountInfo, err := m.Blockchain.AccountModel.GetAccountByAccountIndex(accountIndex)
-			if err != nil {
-				return fmt.Errorf("get account by index: %d failed: %v", accountIndex, err)
-			}
-			m.accountMap[accountIndex], err = commonAsset.ToFormatAccountInfo(accountInfo)
-			if err != nil {
-				return fmt.Errorf("convert to format account info failed: %v", err)
-			}
-		}
+	err := m.prepareAccountsAndAssets([]int64{txInfo.AccountIndex, txInfo.GasAccountIndex}, []int64{txInfo.GasFeeAssetId})
+	if err != nil {
+		return fmt.Errorf("prepare accounts failed: %v", err)
 	}
-	if m.nftMap[txInfo.NftIndex] == nil {
-		nftAsset, err := m.Blockchain.L2NftModel.GetNftAsset(txInfo.NftIndex)
-		if err != nil {
-			return fmt.Errorf("get nft asset failed, index: %d, err: %v", txInfo.NftIndex, err)
-		}
-		m.nftMap[txInfo.NftIndex] = nftAsset
+	err = m.prepareNft(txInfo.NftIndex)
+	if err != nil {
+		return fmt.Errorf("prepare nft failed: %v", err)
 	}
 
 	// Update asset info and asset tree.
@@ -2203,61 +1836,16 @@ func (m *RestoreManager) replayWithdrawNft(state *BlockReplayState, pubData []by
 		CollectionId:        newNftInfo.CollectionId,
 	}
 
-	// Update nft tree.
-	nftAsset = m.nftMap[txInfo.NftIndex]
-	nftAssetLeaf, err := tree.ComputeNftAssetLeafHash(
-		nftAsset.CreatorAccountIndex, nftAsset.OwnerAccountIndex,
-		nftAsset.NftContentHash,
-		nftAsset.NftL1Address, nftAsset.NftL1TokenId,
-		nftAsset.CreatorTreasuryRate,
-		nftAsset.CollectionId,
-	)
+	// Update trees and compute state root.
+	err = m.updateAccountTree([]int64{txInfo.AccountIndex, txInfo.GasAccountIndex}, []int64{txInfo.GasFeeAssetId})
 	if err != nil {
-		return fmt.Errorf("unable to compute nft leaf: %v", err)
+		return fmt.Errorf("update account tree failed: %v", err)
 	}
-	err = m.nftTree.Update(txInfo.NftIndex, nftAssetLeaf)
+	err = m.updateNftTree(txInfo.NftIndex)
 	if err != nil {
-		return fmt.Errorf("unable to update nft tree: %v", err)
+		return fmt.Errorf("update nft tree failed: %v", err)
 	}
-
-	// Update account tree.
-	for _, accountIndex := range []int64{txInfo.AccountIndex, txInfo.CreatorAccountIndex, txInfo.GasAccountIndex} {
-		for _, assetId := range []int64{txInfo.GasFeeAssetId} {
-			assetLeaf, err := tree.ComputeAccountAssetLeafHash(
-				m.accountMap[accountIndex].AssetInfo[assetId].Balance.String(),
-				m.accountMap[accountIndex].AssetInfo[assetId].LpAmount.String(),
-				m.accountMap[accountIndex].AssetInfo[assetId].OfferCanceledOrFinalized.String(),
-			)
-			if err != nil {
-				return fmt.Errorf("compute new account asset leaf failed: %v", err)
-			}
-			err = m.accountAssetTrees[accountIndex].Update(assetId, assetLeaf)
-			if err != nil {
-				return fmt.Errorf("update asset tree failed: %v", err)
-			}
-		}
-
-		m.accountMap[accountIndex].AssetRoot = common.Bytes2Hex(m.accountAssetTrees[accountIndex].RootNode.Value)
-		nAccountLeafHash, err := tree.ComputeAccountLeafHash(
-			m.accountMap[accountIndex].AccountNameHash,
-			m.accountMap[accountIndex].PublicKey,
-			m.accountMap[accountIndex].Nonce,
-			m.accountMap[accountIndex].CollectionNonce,
-			m.accountAssetTrees[accountIndex].RootNode.Value,
-		)
-		if err != nil {
-			return fmt.Errorf("unable to compute account leaf: %v", err)
-		}
-		err = m.accountTree.Update(accountIndex, nAccountLeafHash)
-		if err != nil {
-			return fmt.Errorf("unable to update account tree: %v", err)
-		}
-	}
-	hFunc := mimc.NewMiMC()
-	hFunc.Write(m.accountTree.RootNode.Value)
-	hFunc.Write(m.liquidityTree.RootNode.Value)
-	hFunc.Write(m.nftTree.RootNode.Value)
-	state.stateRoot = common.Bytes2Hex(hFunc.Sum(nil))
+	stateRoot := m.getStateRoot()
 
 	tx := &tx.Tx{
 		TxHash:        common.Hash{}.String(), // FIXME: need change tx hash
@@ -2266,7 +1854,7 @@ func (m *RestoreManager) replayWithdrawNft(state *BlockReplayState, pubData []by
 		GasFeeAssetId: txInfo.GasFeeAssetId,
 		TxStatus:      mempool.SuccessTxStatus,
 		BlockHeight:   state.blockNumber,
-		StateRoot:     state.stateRoot,
+		StateRoot:     stateRoot,
 		NftIndex:      txInfo.NftIndex,
 		PairIndex:     commonConstant.NilPairIndex,
 		AssetId:       commonConstant.NilAssetId,
@@ -2279,6 +1867,10 @@ func (m *RestoreManager) replayWithdrawNft(state *BlockReplayState, pubData []by
 		ExpiredAt:    commonConstant.NilExpiredAt,
 	}
 	state.txs = append(state.txs, tx)
+	state.stateRoot = stateRoot
+	state.pendingUpdateAccountIndexMap[txInfo.AccountIndex] = true
+	state.pendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = true
+	state.pendingUpdateNftIndexMap[txInfo.NftIndex] = true
 	state.pubDataOffset = append(state.pubDataOffset, uint32(len(state.pubDataOffset)))
 	state.pendingOnChainOperationsPubData = append(state.pendingOnChainOperationsPubData, pubData)
 	state.pendingOnChainOperationsHash = util.ConcatKeccakHash(state.pendingOnChainOperationsHash, pubData)
@@ -2305,20 +1897,14 @@ func (m *RestoreManager) replayFullExit(state *BlockReplayState, pubData []byte)
 		return fmt.Errorf("unable to serialize tx info : %v", err)
 	}
 
-	if m.accountMap[txInfo.AccountIndex] == nil {
-		accountInfo, err := m.Blockchain.AccountModel.GetAccountByAccountIndex(txInfo.AccountIndex)
-		if err != nil {
-			return fmt.Errorf("get account by index: %d failed: %v", txInfo.AccountIndex, err)
-		}
-		m.accountMap[txInfo.AccountIndex], err = commonAsset.ToFormatAccountInfo(accountInfo)
-		if err != nil {
-			return fmt.Errorf("convert to format account info failed: %v", err)
-		}
+	// Prepare account map and asset info.
+	err = m.prepareAccountsAndAssets([]int64{txInfo.AccountIndex}, []int64{txInfo.AssetId})
+	if err != nil {
+		return fmt.Errorf("prepare accounts failed: %v", err)
 	}
-	accountInfo := m.accountMap[txInfo.AccountIndex]
-	state.pendingUpdateAccountIndexMap[txInfo.AccountIndex] = true
 
 	// Update asset balance.
+	accountInfo := m.accountMap[txInfo.AccountIndex]
 	if (accountInfo.AssetInfo == nil || accountInfo.AssetInfo[txInfo.AssetId] == nil) && txInfo.AssetAmount.Int64() != 0 {
 		return fmt.Errorf("unexpect asset amount, expect: 0, real: %d", txInfo.AssetAmount.Int64())
 	}
@@ -2329,41 +1915,12 @@ func (m *RestoreManager) replayFullExit(state *BlockReplayState, pubData []byte)
 	}
 	accountInfo.AssetInfo[txInfo.AssetId].Balance = ZeroBigInt
 
-	// Update asset tree.
-	assetLeaf, err := tree.ComputeAccountAssetLeafHash(
-		m.accountMap[txInfo.AccountIndex].AssetInfo[txInfo.AssetId].Balance.String(),
-		m.accountMap[txInfo.AccountIndex].AssetInfo[txInfo.AssetId].LpAmount.String(),
-		m.accountMap[txInfo.AccountIndex].AssetInfo[txInfo.AssetId].OfferCanceledOrFinalized.String(),
-	)
+	// Update trees and compute state root.
+	err = m.updateAccountTree([]int64{txInfo.AccountIndex}, []int64{txInfo.AssetId})
 	if err != nil {
-		return fmt.Errorf("compute new account asset leaf failed: %v", err)
+		return fmt.Errorf("update account tree failed: %v", err)
 	}
-	err = m.accountAssetTrees[txInfo.AccountIndex].Update(txInfo.AssetId, assetLeaf)
-	if err != nil {
-		return fmt.Errorf("update asset tree failed: %v", err)
-	}
-	m.accountMap[txInfo.AccountIndex].AssetRoot = common.Bytes2Hex(m.accountAssetTrees[txInfo.AccountIndex].RootNode.Value)
-
-	// Update account tree.
-	nAccountLeafHash, err := tree.ComputeAccountLeafHash(
-		m.accountMap[txInfo.AccountIndex].AccountNameHash,
-		m.accountMap[txInfo.AccountIndex].PublicKey,
-		m.accountMap[txInfo.AccountIndex].Nonce,
-		m.accountMap[txInfo.AccountIndex].CollectionNonce,
-		m.accountAssetTrees[txInfo.AccountIndex].RootNode.Value,
-	)
-	if err != nil {
-		return fmt.Errorf("unable to compute account leaf: %v", err)
-	}
-	err = m.accountTree.Update(txInfo.AccountIndex, nAccountLeafHash)
-	if err != nil {
-		return fmt.Errorf("unable to update account tree: %v", err)
-	}
-	hFunc := mimc.NewMiMC()
-	hFunc.Write(m.accountTree.RootNode.Value)
-	hFunc.Write(m.liquidityTree.RootNode.Value)
-	hFunc.Write(m.nftTree.RootNode.Value)
-	state.stateRoot = common.Bytes2Hex(hFunc.Sum(nil))
+	stateRoot := m.getStateRoot()
 
 	balanceDelta := &commonAsset.AccountAsset{
 		AssetId:                  txInfo.AssetId,
@@ -2387,7 +1944,7 @@ func (m *RestoreManager) replayFullExit(state *BlockReplayState, pubData []byte)
 		GasFeeAssetId: commonConstant.NilAssetId,
 		TxStatus:      mempool.SuccessTxStatus,
 		BlockHeight:   state.blockNumber,
-		StateRoot:     state.stateRoot,
+		StateRoot:     stateRoot,
 		NftIndex:      commonConstant.NilTxNftIndex,
 		PairIndex:     commonConstant.NilPairIndex,
 		AssetId:       txInfo.AssetId,
@@ -2400,7 +1957,9 @@ func (m *RestoreManager) replayFullExit(state *BlockReplayState, pubData []byte)
 		ExpiredAt:     commonConstant.NilExpiredAt,
 	}
 	state.txs = append(state.txs, tx)
-	state.priorityOperations += 1
+	state.stateRoot = stateRoot
+	state.pendingUpdateAccountIndexMap[txInfo.AccountIndex] = true
+	state.priorityOperations++
 	state.pubDataOffset = append(state.pubDataOffset, uint32(len(state.pubDataOffset)))
 	state.pendingOnChainOperationsPubData = append(state.pendingOnChainOperationsPubData, pubData)
 	state.pendingOnChainOperationsHash = util.ConcatKeccakHash(state.pendingOnChainOperationsHash, pubData)
@@ -2440,27 +1999,16 @@ func (m *RestoreManager) replayFullExitNft(state *BlockReplayState, pubData []by
 		return fmt.Errorf("unable to serialize tx info : %v", err)
 	}
 
-	// Update account map.
-	if m.accountMap[txInfo.AccountIndex] == nil {
-		accountInfo, err := m.Blockchain.AccountModel.GetAccountByAccountIndex(txInfo.AccountIndex)
-		if err != nil {
-			return fmt.Errorf("get account by index: %d failed: %v", txInfo.AccountIndex, err)
-		}
-		m.accountMap[txInfo.AccountIndex], err = commonAsset.ToFormatAccountInfo(accountInfo)
-		if err != nil {
-			return fmt.Errorf("convert to format account info failed: %v", err)
-		}
+	// Prepare account map and asset info.
+	err = m.prepareAccountsAndAssets([]int64{txInfo.AccountIndex}, nil)
+	if err != nil {
+		return fmt.Errorf("prepare accounts failed: %v", err)
 	}
-	accountInfo := m.accountMap[txInfo.AccountIndex]
-	state.pendingUpdateAccountIndexMap[txInfo.AccountIndex] = true
+	err = m.prepareNft(txInfo.NftIndex)
+	if err != nil {
+		return fmt.Errorf("prepare nft failed: %v", err)
+	}
 
-	// Update nft map.
-	if m.nftMap[txInfo.NftIndex] == nil {
-		m.nftMap[txInfo.NftIndex], err = m.Blockchain.L2NftModel.GetNftAsset(txInfo.NftIndex)
-		if err != nil {
-			return fmt.Errorf("get nft asset failed, index: %d, err: %v", txInfo.NftIndex, err)
-		}
-	}
 	nftAsset := m.nftMap[txInfo.NftIndex]
 	if nftAsset.OwnerAccountIndex != txInfo.AccountIndex {
 		return fmt.Errorf("owner mismatch, expect: %d, real: %d", nftAsset.OwnerAccountIndex, txInfo.AccountIndex)
@@ -2487,32 +2035,17 @@ func (m *RestoreManager) replayFullExitNft(state *BlockReplayState, pubData []by
 		CreatorTreasuryRate: nftInfo.CreatorTreasuryRate,
 		CollectionId:        nftInfo.CollectionId,
 	}
-	state.pendingUpdateNftIndexMap[txInfo.NftIndex] = true
 
-	// Update nft tree.
-	nftAsset = m.nftMap[txInfo.NftIndex]
-	nftAssetLeaf, err := tree.ComputeNftAssetLeafHash(
-		nftAsset.CreatorAccountIndex, nftAsset.OwnerAccountIndex,
-		nftAsset.NftContentHash,
-		nftAsset.NftL1Address, nftAsset.NftL1TokenId,
-		nftAsset.CreatorTreasuryRate,
-		nftAsset.CollectionId,
-	)
+	// Update trees and compute state root.
+	err = m.updateNftTree(txInfo.NftIndex)
 	if err != nil {
-		return fmt.Errorf("unable to compute nft leaf: %v", err)
+		return fmt.Errorf("update nft tree failed: %v", err)
 	}
-	err = m.nftTree.Update(txInfo.NftIndex, nftAssetLeaf)
-	if err != nil {
-		return fmt.Errorf("unable to update nft tree: %v", err)
-	}
-	hFunc := mimc.NewMiMC()
-	hFunc.Write(m.accountTree.RootNode.Value)
-	hFunc.Write(m.liquidityTree.RootNode.Value)
-	hFunc.Write(m.nftTree.RootNode.Value)
-	state.stateRoot = common.Bytes2Hex(hFunc.Sum(nil))
+	stateRoot := m.getStateRoot()
 
 	// Construct tx.
 	var txDetails []*tx.TxDetail
+	accountInfo := m.accountMap[txInfo.AccountIndex]
 	emptyDeltaAsset := &commonAsset.AccountAsset{
 		AssetId:                  0,
 		Balance:                  big.NewInt(0),
@@ -2557,6 +2090,9 @@ func (m *RestoreManager) replayFullExitNft(state *BlockReplayState, pubData []by
 		ExpiredAt:     commonConstant.NilExpiredAt,
 	}
 	state.txs = append(state.txs, tx)
+	state.stateRoot = stateRoot
+	state.pendingUpdateAccountIndexMap[txInfo.AccountIndex] = true
+	state.pendingUpdateNftIndexMap[txInfo.NftIndex] = true
 	state.priorityOperations++
 	state.pubDataOffset = append(state.pubDataOffset, uint32(len(state.pubDataOffset)))
 	state.pendingOnChainOperationsPubData = append(state.pendingOnChainOperationsPubData, pubData)
