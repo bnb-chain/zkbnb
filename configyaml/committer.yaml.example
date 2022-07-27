@@ -12,3 +12,6 @@ Postgres:
 CacheRedis:
   - Host: 10.70.61.91:6379
     Type: node
+
+TreeDB:
+  Driver: memorydb
