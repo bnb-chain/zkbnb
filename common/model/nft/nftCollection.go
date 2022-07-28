@@ -20,6 +20,8 @@ package nft
 import (
 	"fmt"
 
+	"github.com/bnb-chain/zkbas/errorcode"
+
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
@@ -91,8 +93,8 @@ func (m *defaultL2NftCollectionModel) IfCollectionExistsByCollectionId(collectio
 	} else if res == 0 {
 		return false, nil
 	} else if res != 1 {
-		logx.Errorf("[collection.IfCollectionExistsByCollectionId] %s", ErrDuplicatedCollectionIndex)
-		return true, ErrDuplicatedCollectionIndex
+		logx.Errorf("[collection.IfCollectionExistsByCollectionId] %s", errorcode.DbErrDuplicatedCollectionIndex)
+		return true, errorcode.DbErrDuplicatedCollectionIndex
 	} else {
 		return true, nil
 	}

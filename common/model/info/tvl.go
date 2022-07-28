@@ -25,6 +25,8 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 var (
@@ -104,7 +106,7 @@ func (m *defaultTVLModel) CreateTVL(tvl *TVL) error {
 	}
 	if dbTx.RowsAffected == 0 {
 		logx.Errorf("[tvl.CreateTVL] Delete Invalid Mempool Tx")
-		return ErrInvalidTVL
+		return errorcode.DbErrFailToCreateTVL
 	}
 	return nil
 }
@@ -123,7 +125,7 @@ func (m *defaultTVLModel) CreateTVLsInBatch(tvls []*TVL) error {
 	}
 	if dbTx.RowsAffected == 0 {
 		logx.Errorf("[tvl.CreateTVLsInBatch] Create TVL Error")
-		return ErrInvalidTVL
+		return errorcode.DbErrFailToCreateTVL
 	}
 	return nil
 }
@@ -143,10 +145,10 @@ func (m *defaultTVLModel) GetLockAmountSum(date time.Time) (result []*ResultTvlS
 	dbTx := m.DB.Table(m.table).Select("asset_id, sum(lock_amount_delta) as total").Where("date <= ?", date).Group("asset_id").Order("asset_id").Find(&result)
 	if dbTx.Error != nil {
 		logx.Errorf("[tvl.CreateTVLsInBatch] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[volume.GetLockAmountSum] no result in tvl table")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 
 	return result, nil
@@ -163,10 +165,10 @@ func (m *defaultTVLModel) GetLockAmountSumGroupByDays() (result []*ResultTvlDayS
 	dbTx := m.DB.Table(m.table).Debug().Select("sum(lock_amount_delta) as total, asset_id, date_trunc( 'day', DATE )::date as date").Group("date_trunc( 'day', DATE ), asset_id").Order("date_trunc( 'day', DATE ), asset_id").Find(&result)
 	if dbTx.Error != nil {
 		logx.Errorf("[tvl.GetLockAmountSumGroupByDays] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[volume.GetLockAmountSumGroupByDays] no result in tvl table")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 
 	return result, nil

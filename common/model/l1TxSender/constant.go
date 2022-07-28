@@ -17,14 +17,6 @@
 
 package l1TxSender
 
-import (
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
-)
-
-var (
-	ErrNotFound = sqlx.ErrNotFound
-)
-
 const (
 	TableName = "l1_tx_sender"
 

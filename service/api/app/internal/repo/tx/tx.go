@@ -30,7 +30,7 @@ func (m *model) GetTxsTotalCount(ctx context.Context) (int64, error) {
 		var count int64
 		dbTx := m.db.Table(m.table).Where("deleted_at is NULL").Count(&count)
 		if dbTx.Error != nil {
-			return nil, dbTx.Error
+			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			return nil, nil
 		}
@@ -50,9 +50,9 @@ func (m *model) GetTxByTxHash(ctx context.Context, txHash string) (*table.Tx, er
 		tx := &table.Tx{}
 		dbTx := m.db.Table(m.table).Where("tx_hash = ?", txHash).Find(&tx)
 		if dbTx.Error != nil {
-			return nil, dbTx.Error
+			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errorcode.RepoErrDataNotExist
+			return nil, errorcode.DbErrNotFound
 		}
 		err := m.db.Model(&tx).Association(`TxDetails`).Find(&tx.TxDetails)
 		if err != nil {
@@ -77,9 +77,9 @@ func (m *model) GetTxByTxID(ctx context.Context, txID int64) (*table.Tx, error) 
 		tx := &table.Tx{}
 		dbTx := m.db.Table(m.table).Where("id = ? and deleted_at is NULL", txID).Find(&tx)
 		if dbTx.Error != nil {
-			return nil, dbTx.Error
+			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errorcode.RepoErrDataNotExist
+			return nil, errorcode.DbErrNotFound
 		}
 		err := m.db.Model(&tx).Association(`TxDetails`).Find(&tx.TxDetails)
 		if err != nil {
@@ -118,7 +118,7 @@ func (m *model) GetTxCountByTimeRange(ctx context.Context, data string) (int64, 
 		var count int64
 		dbTx := m.db.Table(m.table).Where("created_at BETWEEN ? AND ?", from, to).Count(&count)
 		if dbTx.Error != nil {
-			return nil, dbTx.Error
+			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			return nil, nil
 		}

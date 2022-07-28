@@ -26,6 +26,8 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type (
@@ -143,11 +145,11 @@ func (m *defaultL2BlockEventMonitorModel) GetL2BlockEventMonitors() (events []*L
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[l2BlockEventMonitor.go.GetL2BlockEventMonitors] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l2BlockEventMonitor.go.GetL2BlockEventMonitors] %s", ErrNotFound)
+		err := fmt.Sprintf("[l2BlockEventMonitor.go.GetL2BlockEventMonitors] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return events, dbTx.Error
 }
@@ -162,11 +164,11 @@ func (m *defaultL2BlockEventMonitorModel) GetL2BlockEventMonitorsByEventType(blo
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[l2BlockEventMonitor.go.GetL2BlockEventMonitorsByEventType] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l2BlockEventMonitor.go.GetL2BlockEventMonitorsByEventType] %s", ErrNotFound)
+		err := fmt.Sprintf("[l2BlockEventMonitor.go.GetL2BlockEventMonitorsByEventType] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return events, nil
 }
@@ -181,11 +183,11 @@ func (m *defaultL2BlockEventMonitorModel) GetL2BlockEventMonitorsByEventTypeAndS
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[l2BlockEventMonitor.go.GetL2BlockEventMonitorsByEventTypeAndStatus] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l2BlockEventMonitor.go.GetL2BlockEventMonitorsByEventTypeAndStatus] %s", ErrNotFound)
+		err := fmt.Sprintf("[l2BlockEventMonitor.go.GetL2BlockEventMonitorsByEventTypeAndStatus] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return events, nil
 }
@@ -215,11 +217,11 @@ func (m *defaultL2BlockEventMonitorModel) GetL2BlockEventMonitorsByTxType(txType
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[l2BlockEventMonitor.go.GetL2BlockEventMonitorsByTxType] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l2BlockEventMonitor.go.GetL2BlockEventMonitorsByTxType] %s", ErrNotFound)
+		err := fmt.Sprintf("[l2BlockEventMonitor.go.GetL2BlockEventMonitorsByTxType] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return events, nil
 }
@@ -234,11 +236,11 @@ func (m *defaultL2BlockEventMonitorModel) GetL2BlockEventMonitorsByL2BlockHeight
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[l2BlockEventMonitor.go.GetL2BlockEventMonitorsByL2BlockHeight] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l2BlockEventMonitor.go.GetL2BlockEventMonitorsByL2BlockHeight] %s", ErrNotFound)
+		err := fmt.Sprintf("[l2BlockEventMonitor.go.GetL2BlockEventMonitorsByL2BlockHeight] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return events, nil
 }

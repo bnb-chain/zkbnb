@@ -3,6 +3,8 @@ package logic
 import (
 	"context"
 
+	"github.com/bnb-chain/zkbas/errorcode"
+
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
@@ -26,13 +28,14 @@ func NewGetMaxOfferIdLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 	}
 }
 
-//  NFT
 func (l *GetMaxOfferIdLogic) GetMaxOfferId(in *globalRPCProto.ReqGetMaxOfferId) (*globalRPCProto.RespGetMaxOfferId, error) {
-	// todo: add your logic here and delete this line
 	nftIndex, err := l.commglobalmap.GetLatestOfferIdForWrite(l.ctx, int64(in.AccountIndex))
 	if err != nil {
 		logx.Errorf("[GetLatestAccountInfo] err:%v", err)
-		return nil, err
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.RpcErrNotFound
+		}
+		return nil, errorcode.RpcErrInternal
 	}
 	return &globalRPCProto.RespGetMaxOfferId{
 		OfferId: uint64(nftIndex),

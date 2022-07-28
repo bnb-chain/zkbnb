@@ -22,13 +22,14 @@ import (
 	"errors"
 	"strconv"
 
+	"github.com/bnb-chain/zkbas/errorcode"
+
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/model/account"
-	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/util"
 )
 
@@ -63,7 +64,7 @@ func GetLatestAccountInfo(
 		// compute latest nonce
 		mempoolTxs, err := mempoolTxModel.GetPendingMempoolTxsByAccountIndex(accountIndex)
 		if err != nil {
-			if err != mempool.ErrNotFound {
+			if err != errorcode.DbErrNotFound {
 				logx.Errorf("[GetLatestAccountInfo] unable to get mempool txs by account index: %s", err.Error())
 				return nil, err
 			}

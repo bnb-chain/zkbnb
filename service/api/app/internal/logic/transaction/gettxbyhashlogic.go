@@ -3,6 +3,8 @@ package transaction
 import (
 	"context"
 
+	"github.com/bnb-chain/zkbas/errorcode"
+
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonTx"
@@ -41,10 +43,16 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (*types.RespGe
 		resp.Tx = *utils.GormTx2Tx(tx)
 	}
 	if err != nil {
+		if err != errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrInternal
+		}
 		memppolTx, err := l.mempool.GetMempoolTxByTxHash(req.TxHash)
 		if err != nil {
 			logx.Errorf("[GetMempoolTxByTxHash]:%v", err)
-			return nil, err
+			if err == errorcode.DbErrNotFound {
+				return nil, errorcode.AppErrNotFound
+			}
+			return nil, errorcode.AppErrInternal
 		}
 		resp.Tx = *utils.MempoolTx2Tx(memppolTx)
 	}
@@ -52,7 +60,7 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (*types.RespGe
 		txInfo, err := commonTx.ParseSwapTxInfo(tx.TxInfo)
 		if err != nil {
 			logx.Errorf("[ParseSwapTxInfo]:%v", err)
-			return nil, err
+			return nil, errorcode.AppErrInternal
 		}
 		resp.AssetAId = txInfo.AssetAId
 		resp.AssetBId = txInfo.AssetBId

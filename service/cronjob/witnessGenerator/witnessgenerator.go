@@ -26,7 +26,7 @@ func main() {
 
 	p, err := ctx.ProofSenderModel.GetLatestConfirmedProof()
 	if err != nil {
-		if err != proofSender.ErrNotFound {
+		if err != proofSender.RepoErrNotFound {
 			logx.Error("[prover] => GetLatestConfirmedProof error:", err)
 			return
 		} else {

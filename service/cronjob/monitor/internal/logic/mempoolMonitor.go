@@ -76,7 +76,7 @@ func MonitorMempool(ctx context.Context, svcCtx *svc.ServiceContext) error {
 	logx.Errorf("========== start MonitorMempool ==========")
 	txs, err := svcCtx.L2TxEventMonitorModel.GetL2TxEventMonitorsByStatus(PendingStatus)
 	if err != nil {
-		if err == l2TxEventMonitor.ErrNotFound {
+		if err == l2TxEventMonitor.RepoErrNotFound {
 			logx.Info("[MonitorMempool] no l2 oTx event monitors")
 			return err
 		} else {

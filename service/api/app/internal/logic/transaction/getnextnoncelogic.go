@@ -3,6 +3,8 @@ package transaction
 import (
 	"context"
 
+	"github.com/bnb-chain/zkbas/errorcode"
+
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/globalrpc"
@@ -30,7 +32,10 @@ func (l *GetNextNonceLogic) GetNextNonce(req *types.ReqGetNextNonce) (*types.Res
 	nonce, err := l.globalRpc.GetNextNonce(l.ctx, req.AccountIndex)
 	if err != nil {
 		logx.Errorf("[GetNextNonce] err:%v", err)
-		return nil, err
+		if err == errorcode.RpcErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	return &types.RespGetNextNonce{Nonce: nonce}, nil
 }

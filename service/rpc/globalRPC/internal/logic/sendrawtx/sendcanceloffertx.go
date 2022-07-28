@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/bnb-chain/zkbas/errorcode"
+
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 
@@ -156,7 +158,7 @@ func SendCancelOfferTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 	)
 	var isUpdate bool
 	offerInfo, err := svcCtx.OfferModel.GetOfferByAccountIndexAndOfferId(txInfo.AccountIndex, txInfo.OfferId)
-	if err == nft.ErrNotFound {
+	if err == errorcode.DbErrNotFound {
 		offerInfo = &nft.Offer{
 			OfferType:    0,
 			OfferId:      txInfo.OfferId,

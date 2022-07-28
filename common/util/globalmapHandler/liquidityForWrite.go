@@ -20,11 +20,12 @@ package globalmapHandler
 import (
 	"encoding/json"
 
+	"github.com/bnb-chain/zkbas/errorcode"
+
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
-	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/util"
 )
 
@@ -64,7 +65,7 @@ func GetLatestLiquidityInfoForWrite(
 
 		mempoolTxs, err := mempoolTxModel.GetPendingLiquidityTxs()
 		if err != nil {
-			if err != mempool.ErrNotFound {
+			if err != errorcode.DbErrNotFound {
 				logx.Errorf("[GetLatestLiquidityInfoForWrite] unable to get mempool txs by account index: %s", err.Error())
 				return nil, nil, err
 			}

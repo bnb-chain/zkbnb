@@ -3,6 +3,8 @@ package logic
 import (
 	"context"
 
+	"github.com/bnb-chain/zkbas/errorcode"
+
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
@@ -30,7 +32,10 @@ func (l *GetLatestAssetsListByAccountIndexLogic) GetLatestAssetsListByAccountInd
 	accountInfo, err := l.commglobalmap.GetLatestAccountInfoWithCache(l.ctx, int64(in.AccountIndex))
 	if err != nil {
 		logx.Errorf("[GetLatestAccountInfo] err:%v", err)
-		return nil, err
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.RpcErrNotFound
+		}
+		return nil, errorcode.RpcErrInternal
 	}
 	resp := &globalRPCProto.RespGetLatestAssetsListByAccountIndex{
 		ResultAssetsList: make([]*globalRPCProto.AssetResult, 0),

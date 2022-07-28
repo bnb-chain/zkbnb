@@ -25,6 +25,8 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 var (
@@ -106,7 +108,7 @@ func (m *defaultVolumeModel) CreateVolume(volume *Volume) error {
 	}
 	if dbTx.RowsAffected == 0 {
 		logx.Errorf("[volume.CreateVolume] Create Volume Error")
-		return ErrInvalidVolume
+		return errorcode.DbErrFailToCreateVolume
 	}
 	return nil
 }
@@ -126,7 +128,7 @@ func (m *defaultVolumeModel) CreateVolumesInBatch(volumes []*Volume) error {
 	}
 	if dbTx.RowsAffected == 0 {
 		logx.Errorf("[volume.CreateVolumesInBatch] Create Volume Error")
-		return ErrInvalidVolume
+		return errorcode.DbErrFailToCreateVolume
 	}
 	return nil
 }
@@ -152,7 +154,7 @@ func (m *defaultVolumeModel) CreateVolumesAndTVLsInBatch(volumes []*Volume, tvls
 		}
 		if dbTx.RowsAffected == 0 {
 			logx.Errorf("[volume.CreateVolumesAndTVLInBatch] Create Volume Error")
-			return ErrInvalidVolume
+			return errorcode.DbErrFailToCreateVolume
 		}
 
 		if len(tvls) != 0 {
@@ -163,7 +165,7 @@ func (m *defaultVolumeModel) CreateVolumesAndTVLsInBatch(volumes []*Volume, tvls
 			}
 			if dbTx.RowsAffected == 0 {
 				logx.Errorf("[tvl.CreateVolumesAndTVLInBatch] Create TVL Error")
-				return ErrInvalidTVL
+				return errorcode.DbErrFailToCreateTVL
 			}
 		}
 
@@ -175,7 +177,7 @@ func (m *defaultVolumeModel) CreateVolumesAndTVLsInBatch(volumes []*Volume, tvls
 			}
 			if dbTx.RowsAffected == 0 {
 				logx.Errorf("[tvl.CreateVolumesAndTVLInBatch] Create TVL Error")
-				return ErrInvalidTVL
+				return errorcode.DbErrFailToCreateTVL
 			}
 		}
 
@@ -187,7 +189,7 @@ func (m *defaultVolumeModel) CreateVolumesAndTVLsInBatch(volumes []*Volume, tvls
 			}
 			if dbTx.RowsAffected == 0 {
 				logx.Errorf("[tvl.CreateVolumesAndTVLInBatch] Create TVL Error")
-				return ErrInvalidTVL
+				return errorcode.DbErrFailToCreateTVL
 			}
 		}
 
@@ -212,7 +214,7 @@ func (m *defaultVolumeModel) GetLatestBlockHeight() (blockHeight int64, err erro
 	}
 	if dbTx.RowsAffected == 0 {
 		logx.Info("[volume.CreateVolume] no result in volume table")
-		return 0, ErrNotFound
+		return 0, errorcode.DbErrNotFound
 	}
 	return blockHeight, nil
 }
@@ -232,10 +234,10 @@ func (m *defaultVolumeModel) GetVolumeSumBetweenDate(date1 time.Time, date2 time
 	dbTx := m.DB.Table(m.table).Select("asset_id, sum(volume_delta) as total").Where("date <= ? and date > ?", date1, date2).Group("asset_id").Order("asset_id").Find(&result)
 	if dbTx.Error != nil {
 		logx.Errorf("[tvl.GetVolumeSum] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[volume.CreateVolume] no result in volume table")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 
 	return result, nil
@@ -252,10 +254,10 @@ func (m *defaultVolumeModel) GetVolumeSumGroupByDays() (result []*ResultVolumeDa
 	dbTx := m.DB.Table(m.table).Debug().Select("sum(volume_delta) as total, asset_id, date_trunc( 'day', DATE )::date as date").Group("date_trunc( 'day', DATE ), asset_id").Order("date_trunc( 'day', DATE ), asset_id").Find(&result)
 	if dbTx.Error != nil {
 		logx.Errorf("[tvl.GetVolumeSumGroupByDays] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[volume.GetVolumeSumGroupByDays] no result in tvl table")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 
 	return result, nil

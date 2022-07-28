@@ -25,6 +25,8 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/bnb-chain/zkbas/errorcode"
+
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 
@@ -174,7 +176,7 @@ func (l *SendCancelOfferTxLogic) SendCancelOfferTx(in *globalRPCProto.ReqSendTxB
 	respSendTx.TxId = txId
 	var isUpdate bool
 	offerInfo, err := l.svcCtx.OfferModel.GetOfferByAccountIndexAndOfferId(txInfo.AccountIndex, txInfo.OfferId)
-	if err == nft.ErrNotFound {
+	if err == errorcode.DbErrNotFound {
 		offerInfo = &nft.Offer{
 			OfferType:    0,
 			OfferId:      txInfo.OfferId,

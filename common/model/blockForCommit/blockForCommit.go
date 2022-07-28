@@ -23,6 +23,8 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type (
@@ -88,9 +90,9 @@ func (m *defaultBlockForCommitModel) GetBlockForCommitByHeight(height int64) (bl
 	dbTx := m.DB.Table(m.table).Where("block_height = ?", height).Find(&blockForCommit)
 	if dbTx.Error != nil {
 		logx.Errorf("[GetBlockForCommitBetween] unable to get block for commit by height: %s", dbTx.Error.Error())
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return blockForCommit, nil
 }
@@ -99,9 +101,9 @@ func (m *defaultBlockForCommitModel) GetBlockForCommitBetween(start, end int64) 
 	dbTx := m.DB.Table(m.table).Where("block_height >= ? AND block_height <= ?", start, end).Find(&blocksForCommit)
 	if dbTx.Error != nil {
 		logx.Errorf("[GetBlockForCommitBetween] unable to get block for commit between: %s", dbTx.Error.Error())
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return blocksForCommit, nil
 }

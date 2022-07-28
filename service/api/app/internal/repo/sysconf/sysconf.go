@@ -2,6 +2,7 @@ package sysconf
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -31,9 +32,9 @@ func (m *sysconf) GetSysconfigByName(ctx context.Context, name string) (*table.S
 		var config table.Sysconfig
 		dbTx := m.db.Table(m.table).Where("name = ?", name).Find(&config)
 		if dbTx.Error != nil {
-			return nil, errorcode.RepoErrSqlOperation.RefineError(fmt.Sprintf("GetSysconfigByName:%v", dbTx.Error))
+			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errorcode.RepoErrDataNotExist.RefineError(name)
+			return nil, errorcode.DbErrNotFound
 		}
 		return &config, nil
 	}
@@ -44,7 +45,8 @@ func (m *sysconf) GetSysconfigByName(ctx context.Context, name string) (*table.S
 	}
 	config1, ok := value.(*table.Sysconfig)
 	if !ok {
-		return nil, errorcode.RepoErrTypeAsset
+		logx.Errorf("fail to convert value to sysconfig, value=%v, name=%s", value, name)
+		return nil, errors.New("conversion error")
 	}
 	return config1, nil
 }
@@ -64,7 +66,7 @@ func (m *sysconf) CreateSysconfig(_ context.Context, config *table.Sysconfig) er
 	}
 	if dbTx.RowsAffected == 0 {
 		logx.Error("[sysconfig.sysconfig] Create Invalid Sysconfig")
-		return errorcode.RepoErrInvalidSysconfig
+		return errorcode.DbErrFailToCreateSysconfig
 	}
 	return nil
 }
@@ -77,7 +79,7 @@ func (m *sysconf) CreateSysconfigInBatches(_ context.Context, configs []*table.S
 	}
 	if dbTx.RowsAffected == 0 {
 		logx.Error("[sysconfig.CreateSysconfigInBatches] Create Invalid Sysconfig Batches")
-		return 0, errorcode.RepoErrInvalidSysconfig
+		return 0, errorcode.DbErrFailToCreateSysconfig
 	}
 	return dbTx.RowsAffected, nil
 }

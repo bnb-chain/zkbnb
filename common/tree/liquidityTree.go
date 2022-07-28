@@ -36,7 +36,7 @@ func InitLiquidityTree(
 ) {
 	liquidityAssets, err := liquidityHistoryModel.GetLatestLiquidityByBlockHeight(blockHeight)
 	if err != nil {
-		if err != liquidity.ErrNotFound {
+		if err != liquidity.RepoErrNotFound {
 			logx.Errorf("[InitLiquidityTree] unable to get latest nft assets: %s", err.Error())
 			return nil, err
 		} else {

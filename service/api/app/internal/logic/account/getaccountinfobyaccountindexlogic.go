@@ -3,6 +3,8 @@ package account
 import (
 	"context"
 
+	"github.com/bnb-chain/zkbas/errorcode"
+
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/account"
@@ -33,7 +35,10 @@ func (l *GetAccountInfoByAccountIndexLogic) GetAccountInfoByAccountIndex(req *ty
 	account, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(l.ctx, (req.AccountIndex))
 	if err != nil {
 		logx.Errorf("[GetLatestAccountInfoByAccountIndex] err:%v", err)
-		return nil, err
+		if err == errorcode.RpcErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	resp := &types.RespGetAccountInfoByAccountIndex{
 		AccountStatus: uint32(account.Status),

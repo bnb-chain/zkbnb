@@ -3,12 +3,10 @@ package commglobalmap
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
-	"github.com/bnb-chain/zkbas/common/model/mempool"
 	commGlobalmapHandler "github.com/bnb-chain/zkbas/common/util/globalmapHandler"
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
@@ -46,12 +44,12 @@ func (m *model) GetLatestLiquidityInfoForReadWithCache(ctx context.Context, pair
 func (m *model) GetLatestLiquidityInfoForRead(ctx context.Context, pairIndex int64) (liquidityInfo *commGlobalmapHandler.LiquidityInfo, err error) {
 	dbLiquidityInfo, err := m.liquidityModel.GetLiquidityByPairIndex(pairIndex)
 	if err != nil {
-		return nil, errorcode.RepoErrSqlOperation.RefineError(fmt.Sprintf("GetLiquidityByPairIndex:%v", err))
+		return nil, err
 	}
 	mempoolTxs, err := m.mempoolModel.GetPendingLiquidityTxs()
 	if err != nil {
-		if err != mempool.ErrNotFound {
-			return nil, errorcode.RepoErrSqlOperation.RefineError(fmt.Sprintf("GetPendingLiquidityTxs:%v", err))
+		if err != errorcode.DbErrNotFound {
+			return nil, err
 		}
 	}
 	liquidityInfo, err = commonAsset.ConstructLiquidityInfo(
@@ -66,7 +64,7 @@ func (m *model) GetLatestLiquidityInfoForRead(ctx context.Context, pairIndex int
 		dbLiquidityInfo.TreasuryAccountIndex,
 		dbLiquidityInfo.TreasuryRate)
 	if err != nil {
-		return nil, errorcode.RepoErrConstructLiquidityInfo.RefineError(fmt.Sprintf("ConstructLiquidityInfo:%v", err))
+		return nil, err
 	}
 	for _, mempoolTx := range mempoolTxs {
 		for _, txDetail := range mempoolTx.MempoolDetails {
@@ -75,11 +73,11 @@ func (m *model) GetLatestLiquidityInfoForRead(ctx context.Context, pairIndex int
 			}
 			nBalance, err := commonAsset.ComputeNewBalance(commonAsset.LiquidityAssetType, liquidityInfo.String(), txDetail.BalanceDelta)
 			if err != nil {
-				return nil, errorcode.RepoErrComputeNewBalance.RefineError(err)
+				return nil, err
 			}
 			liquidityInfo, err = commonAsset.ParseLiquidityInfo(nBalance)
 			if err != nil {
-				return nil, errorcode.RepoErrParseLiquidityInfo.RefineError(err)
+				return nil, err
 			}
 		}
 	}
@@ -99,11 +97,11 @@ func (m *model) GetLatestLiquidityInfoForRead(ctx context.Context, pairIndex int
 func (m *model) GetLatestLiquidityInfoForWrite(ctx context.Context, pairIndex int64) (liquidityInfo *commGlobalmapHandler.LiquidityInfo, err error) {
 	dbLiquidityInfo, err := m.liquidityModel.GetLiquidityByPairIndex(pairIndex)
 	if err != nil {
-		return nil, errorcode.RepoErrSqlOperation.RefineError(fmt.Sprint("GetLiquidityByPairIndex:", err))
+		return nil, err
 	}
 	mempoolTxs, err := m.mempoolModel.GetPendingLiquidityTxs()
-	if err != nil && err != mempool.ErrNotFound {
-		return nil, errorcode.RepoErrSqlOperation.RefineError(fmt.Sprint("GetPendingLiquidityTxs:", err))
+	if err != nil && err != errorcode.DbErrNotFound {
+		return nil, err
 	}
 	liquidityInfo, err = commonAsset.ConstructLiquidityInfo(
 		pairIndex,
@@ -128,11 +126,11 @@ func (m *model) GetLatestLiquidityInfoForWrite(ctx context.Context, pairIndex in
 			}
 			nBalance, err := commonAsset.ComputeNewBalance(commonAsset.LiquidityAssetType, liquidityInfo.String(), txDetail.BalanceDelta)
 			if err != nil {
-				return nil, errorcode.RepoErrComputeNewBalance.RefineError(err)
+				return nil, err
 			}
 			liquidityInfo, err = commonAsset.ParseLiquidityInfo(nBalance)
 			if err != nil {
-				return nil, errorcode.RepoErrParseLiquidityInfo.RefineError(err)
+				return nil, err
 			}
 		}
 	}

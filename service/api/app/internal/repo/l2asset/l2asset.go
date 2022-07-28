@@ -29,7 +29,7 @@ func (m *l2asset) GetL2AssetsList(ctx context.Context) ([]*table.AssetInfo, erro
 		res := []*table.AssetInfo{}
 		dbTx := m.db.Table(m.table).Find(&res)
 		if dbTx.Error != nil {
-			return nil, dbTx.Error
+			return nil, errorcode.DbErrSqlOperation
 		}
 		if dbTx.RowsAffected == 0 {
 			return nil, ErrNotFound
@@ -59,10 +59,10 @@ func (m *l2asset) GetL2AssetInfoBySymbol(ctx context.Context, symbol string) (*t
 		res := table.AssetInfo{}
 		dbTx := m.db.Table(m.table).Where("asset_symbol = ?", symbol).Find(&res)
 		if dbTx.Error != nil {
-			return nil, dbTx.Error
+			return nil, errorcode.DbErrSqlOperation
 		}
 		if dbTx.RowsAffected == 0 {
-			return nil, errorcode.RepoErrNotFound
+			return nil, errorcode.DbErrNotFound
 		}
 		return &res, nil
 	}
@@ -89,7 +89,7 @@ func (m *l2asset) GetSimpleL2AssetInfoByAssetId(ctx context.Context, assetId uin
 		res := table.AssetInfo{}
 		dbTx := m.db.Table(m.table).Where("asset_id = ?", assetId).Find(&res)
 		if dbTx.Error != nil {
-			return nil, dbTx.Error
+			return nil, errorcode.DbErrSqlOperation
 		}
 		if dbTx.RowsAffected == 0 {
 			return nil, ErrNotFound

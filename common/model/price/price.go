@@ -13,6 +13,7 @@ import (
 	"gorm.io/gorm"
 
 	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 var (
@@ -127,9 +128,9 @@ func (m *defaultPriceModel) UpdateCurrencyPrice() error {
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[price.GetL2AssetsList] %s", ErrNotFound)
+		err := fmt.Sprintf("[price.GetL2AssetsList] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return ErrNotFound
+		return errorcode.DbErrNotFound
 	}
 
 	var l2Symbol string
@@ -234,7 +235,7 @@ func (m *defaultPriceModel) UpdateCurrencyPriceBySymbol(symbol string) error {
 func (m *defaultPriceModel) GetCurrencyPrice(currency string) (price float64, err error) {
 	key := fmt.Sprintf("%s%v", cachePriceSymbolPrefix, currency)
 	err = m.QueryRow(&price, key, func(conn sqlx.SqlConn, v interface{}) error {
-		return ErrNotFound
+		return errorcode.DbErrNotFound
 	})
 	if err != nil {
 		errInfo := fmt.Sprintf("[PriceModel.GetCurrencyPrice.Getcache] %s %s", key, err)

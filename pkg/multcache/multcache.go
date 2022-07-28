@@ -6,8 +6,6 @@ import (
 
 	"github.com/eko/gocache/v2/marshaler"
 	"github.com/eko/gocache/v2/store"
-
-	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type multcache struct {
@@ -35,21 +33,21 @@ func (m *multcache) GetWithSet(ctx context.Context, key string, valueStruct inte
 func (m *multcache) Get(ctx context.Context, key string, value interface{}) (interface{}, error) {
 	returnObj, err := m.marshal.Get(ctx, key, value)
 	if err != nil {
-		return nil, errorcode.CacheErrGet.RefineError(err.Error())
+		return nil, err
 	}
 	return returnObj, nil
 }
 
 func (m *multcache) Set(ctx context.Context, key string, value interface{}, timeOut uint32) error {
 	if err := m.marshal.Set(ctx, key, value, &store.Options{Expiration: time.Duration(timeOut) * time.Second}); err != nil {
-		return errorcode.CacheErrSet.RefineError(err.Error())
+		return err
 	}
 	return nil
 }
 
 func (m *multcache) Delete(ctx context.Context, key string) error {
 	if err := m.marshal.Delete(ctx, key); err != nil {
-		return errorcode.CacheErrDel.RefineError(err.Error())
+		return err
 	}
 	return nil
 }

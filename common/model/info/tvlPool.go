@@ -25,6 +25,8 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 var (
@@ -103,7 +105,7 @@ func (m *defaultTVLPoolModel) CreateTVLPool(tvlpool *TVLPool) error {
 	}
 	if dbTx.RowsAffected == 0 {
 		logx.Errorf("[tvlpool.CreateTVLPool] Delete Invalid Mempool Tx")
-		return ErrInvalidTVL
+		return errorcode.DbErrFailToCreateTVL
 	}
 	return nil
 }
@@ -122,7 +124,7 @@ func (m *defaultTVLPoolModel) CreateTVLPoolsInBatch(tvlPools []*TVLPool) error {
 	}
 	if dbTx.RowsAffected == 0 {
 		logx.Errorf("[tvlpool.CreateTVLPoolsInBatch] Create TVLPool Error")
-		return ErrInvalidTVL
+		return errorcode.DbErrFailToCreateTVL
 	}
 	return nil
 }
@@ -143,10 +145,10 @@ func (m *defaultTVLPoolModel) GetPoolAmountSum(date time.Time) (result []*Result
 	dbTx := m.DB.Table(m.table).Select("pool_id, sum(amount_delta_a) as total_a, sum(amount_delta_b) as total_b").Where("date <= ?", date).Group("pool_id").Order("pool_id").Find(&result)
 	if dbTx.Error != nil {
 		logx.Errorf("[tvl.GetPoolAmountSum] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[volume.GetPoolAmountSum] no result in tvl pool table")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 
 	return result, nil

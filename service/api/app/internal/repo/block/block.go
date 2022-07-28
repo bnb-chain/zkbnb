@@ -31,9 +31,9 @@ func (m *block) GetBlockByBlockHeight(ctx context.Context, blockHeight int64) (*
 		_block := &table.Block{}
 		dbTx := m.db.Table(m.table).Where("block_height = ?", blockHeight).Find(_block)
 		if dbTx.Error != nil {
-			return nil, errorcode.RepoErrSqlOperation.RefineError(dbTx.Error)
+			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errorcode.RepoErrDataNotExist.RefineError(blockHeight)
+			return nil, errorcode.DbErrNotFound
 		}
 		return _block, nil
 	}
@@ -52,9 +52,9 @@ func (m *block) GetCommitedBlocksCount(ctx context.Context) (int64, error) {
 		var count int64
 		dbTx := m.db.Table(m.table).Where("block_status = ? and deleted_at is NULL", table.StatusCommitted).Count(&count)
 		if dbTx.Error != nil {
-			return nil, errorcode.RepoErrSqlOperation.RefineError(dbTx.Error)
+			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errorcode.RepoErrDataNotExist
+			return nil, errorcode.DbErrNotFound
 		}
 		return &count, nil
 	}
@@ -72,9 +72,9 @@ func (m *block) GetVerifiedBlocksCount(ctx context.Context) (int64, error) {
 		var count int64
 		dbTx := m.db.Table(m.table).Where("block_status = ? and deleted_at is NULL", table.StatusVerifiedAndExecuted).Count(&count)
 		if dbTx.Error != nil {
-			return nil, errorcode.RepoErrSqlOperation.RefineError(dbTx.Error)
+			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errorcode.RepoErrDataNotExist
+			return nil, errorcode.DbErrNotFound
 		}
 		return &count, nil
 	}
@@ -94,12 +94,12 @@ func (m *block) GetBlockWithTxsByCommitment(ctx context.Context, blockCommitment
 		_block := &table.Block{}
 		dbTx := m.db.Table(m.table).Where("block_commitment = ?", blockCommitment).Find(_block)
 		if dbTx.Error != nil {
-			return nil, errorcode.RepoErrSqlOperation.RefineError(dbTx.Error)
+			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errorcode.RepoErrDataNotExist.RefineError("GetBlockWithTxsByCommitment")
+			return nil, errorcode.DbErrNotFound
 		}
 		if err := m.db.Model(&_block).Association(txForeignKeyColumn).Find(&_block.Txs); err != nil {
-			return nil, errorcode.RepoErrDataNotExist.RefineError("GetBlockWithTxsByCommitment.Association")
+			return nil, errorcode.DbErrNotFound
 		}
 		return _block, nil
 	}
@@ -119,13 +119,13 @@ func (m *block) GetBlockWithTxsByBlockHeight(ctx context.Context, blockHeight in
 		_block := &table.Block{}
 		dbTx := m.db.Table(m.table).Where("block_height = ?", blockHeight).Find(_block)
 		if dbTx.Error != nil {
-			return nil, errorcode.RepoErrSqlOperation.RefineError(dbTx.Error)
+			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errorcode.RepoErrDataNotExist.RefineError(blockHeight)
+			return nil, errorcode.DbErrNotFound
 		}
 		err := m.db.Model(&_block).Association(txForeignKeyColumn).Find(&_block.Txs)
 		if err != nil {
-			return nil, errorcode.RepoErrDataNotExist.RefineError(blockHeight)
+			return nil, errorcode.DbErrNotFound
 		}
 		return _block, nil
 	}
@@ -144,9 +144,9 @@ func (m *block) GetBlocksList(ctx context.Context, limit int64, offset int64) ([
 		blockList := []*table.Block{}
 		dbTx := m.db.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("block_height desc").Find(&blockList)
 		if dbTx.Error != nil {
-			return nil, errorcode.RepoErrSqlOperation.RefineError(dbTx.Error)
+			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errorcode.RepoErrDataNotExist.RefineError(limit, offset)
+			return nil, errorcode.DbErrNotFound
 		}
 		for _, _block := range blockList {
 			if err := m.db.Model(&_block).Association(`Txs`).Find(&_block.Txs); err != nil {
@@ -172,9 +172,9 @@ func (m *block) GetBlocksTotalCount(ctx context.Context) (int64, error) {
 		var count int64
 		dbTx := m.db.Table(m.table).Where("deleted_at is NULL").Count(&count)
 		if dbTx.Error != nil {
-			return 0, errorcode.RepoErrSqlOperation.RefineError(dbTx.Error)
+			return 0, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
-			return 0, errorcode.RepoErrDataNotExist
+			return 0, errorcode.DbErrNotFound
 		}
 		return &count, nil
 	}

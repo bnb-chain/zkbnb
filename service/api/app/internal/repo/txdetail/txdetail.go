@@ -24,7 +24,7 @@ func (m *model) GetTxsTotalCountByAccountIndex(ctx context.Context, accountIndex
 		dbTx := m.db.Table(m.table).Select("tx_id").
 			Where("account_index = ? and deleted_at is NULL", accountIndex).Group("tx_id").Count(&count)
 		if dbTx.Error != nil {
-			return nil, dbTx.Error
+			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			return nil, nil
 		}
@@ -43,9 +43,9 @@ func (m *model) GetTxDetailByAccountIndex(ctx context.Context, accountIndex int6
 	result := make([]*table.TxDetail, 0)
 	dbTx := m.db.Table(m.table).Where("account_index = ?", accountIndex).Find(&result)
 	if dbTx.Error != nil {
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, errorcode.RepoErrDataNotExist
+		return nil, errorcode.DbErrNotFound
 	}
 	return result, nil
 }
@@ -54,9 +54,9 @@ func (m *model) GetTxIdsByAccountIndex(ctx context.Context, accountIndex int64) 
 	txIds := make([]int64, 0)
 	dbTx := m.db.Table(m.table).Select("tx_id").Where("account_index = ?", accountIndex).Group("tx_id").Find(&txIds)
 	if dbTx.Error != nil {
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, errorcode.RepoErrDataNotExist
+		return nil, errorcode.DbErrNotFound
 	}
 	sort.Slice(txIds, func(i, j int) bool {
 		return txIds[i] > txIds[j]
@@ -83,7 +83,7 @@ func (m *model) GetDauInTxDetail(ctx context.Context, data string) (int64, error
 		var count int64
 		dbTx := m.db.Raw("SELECT account_index FROM tx_detail WHERE created_at BETWEEN ? AND ? AND account_index != -1 GROUP BY account_index", from, to).Count(&count)
 		if dbTx.Error != nil {
-			return nil, dbTx.Error
+			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			return nil, nil
 		}

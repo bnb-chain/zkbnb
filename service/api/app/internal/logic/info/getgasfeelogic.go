@@ -2,9 +2,10 @@ package info
 
 import (
 	"context"
-	"errors"
 	"math"
 	"math/big"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -46,26 +47,35 @@ func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.RespGetGasFe
 	l2Asset, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(l.ctx, req.AssetId)
 	if err != nil {
 		logx.Errorf("[GetGasFee] err:%v", err)
-		return nil, err
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	oAssetInfo, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(context.Background(), req.AssetId)
 	if err != nil {
 		logx.Errorf("[GetGasFee] unable to get l2 asset info: %s", err.Error())
-		return nil, err
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	if oAssetInfo.IsGasAsset != assetInfo.IsGasAsset {
 		logx.Errorf("[GetGasFee] not gas asset id")
-		return nil, errors.New("[GetGasFee] not gas asset id")
+		return nil, errorcode.AppErrInvalidGasAsset
 	}
 	sysGasFee, err := l.sysconf.GetSysconfigByName(l.ctx, sysconfigName.SysGasFee)
 	if err != nil {
 		logx.Errorf("[GetGasFee] err:%v", err)
-		return nil, err
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	sysGasFeeBigInt, isValid := new(big.Int).SetString(sysGasFee.Value, 10)
 	if !isValid {
 		logx.Errorf("[GetGasFee] parse sys gas fee err:%v", err)
-		return nil, err
+		return nil, errorcode.AppErrInternal
 	}
 	// if asset id == BNB, just return
 	if l2Asset.AssetId == commonConstant.BNBAssetId {
@@ -76,12 +86,12 @@ func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.RespGetGasFe
 	assetPrice, err := l.price.GetCurrencyPrice(l.ctx, l2Asset.AssetSymbol)
 	if err != nil {
 		logx.Errorf("[GetGasFee] err:%v", err)
-		return nil, err
+		return nil, errorcode.AppErrInternal
 	}
 	bnbPrice, err := l.price.GetCurrencyPrice(l.ctx, "BNB")
 	if err != nil {
 		logx.Errorf("[GetGasFee] err:%v", err)
-		return nil, err
+		return nil, errorcode.AppErrInternal
 	}
 	bnbDecimals, _ := new(big.Int).SetString(commonConstant.BNBDecimalsStr, 10)
 	assetDecimals := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(oAssetInfo.Decimals)), nil)
@@ -91,7 +101,7 @@ func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.RespGetGasFe
 	gasFee, err := util.CleanPackedFee(ffmath.FloatToInt(ffmath.FloatDiv(left, right)))
 	if err != nil {
 		logx.Errorf("[GetGasFee] unable to clean packed fee: %s", err.Error())
-		return nil, err
+		return nil, errorcode.AppErrInternal
 	}
 	resp.GasFee = gasFee.String()
 	return resp, nil

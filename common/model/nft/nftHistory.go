@@ -25,6 +25,8 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type (
@@ -115,10 +117,10 @@ func (m *defaultL2NftHistoryModel) GetLatestNftAsset(nftIndex int64) (
 
 	if dbTx.Error != nil {
 		logx.Errorf("[GetLatestNftAsset] unable to get related nft asset: %s", dbTx.Error.Error())
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[GetLatestNftAsset] no such info")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return nftAsset, nil
 }

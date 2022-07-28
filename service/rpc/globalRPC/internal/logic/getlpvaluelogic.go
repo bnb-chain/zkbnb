@@ -33,26 +33,30 @@ func NewGetLpValueLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetLpV
 func (l *GetLpValueLogic) GetLpValue(in *globalRPCProto.ReqGetLpValue) (*globalRPCProto.RespGetLpValue, error) {
 	if checker.CheckPairIndex(in.PairIndex) {
 		logx.Errorf("[CheckPairIndex] param:%v", in.PairIndex)
-		return nil, errorcode.GlobalRpcInvalidParam
+		return nil, errorcode.RpcErrInvalidParam.RefineError("invalid PairIndex")
 	}
 	if checker.CheckAmount(in.LPAmount) {
 		logx.Errorf("[CheckAmount] param:%v", in.LPAmount)
-		return nil, errorcode.GlobalRpcInvalidParam
-	}
-	liquidity, err := l.commglobalmap.GetLatestLiquidityInfoForReadWithCache(l.ctx, int64(in.PairIndex))
-	if err != nil {
-		logx.Errorf("[GetLatestLiquidityInfoForReadWithCache] err:%v", err)
-		return nil, err
+		return nil, errorcode.RpcErrInvalidParam.RefineError("invalid LPAmount")
 	}
 	amount, isTure := new(big.Int).SetString(in.LPAmount, 10)
 	if !isTure {
 		logx.Errorf("[SetString] err:%v", in.LPAmount)
-		return nil, errorcode.GlobalRpcInvalidParam
+		return nil, errorcode.RpcErrInvalidParam
+	}
+
+	liquidity, err := l.commglobalmap.GetLatestLiquidityInfoForReadWithCache(l.ctx, int64(in.PairIndex))
+	if err != nil {
+		logx.Errorf("[GetLatestLiquidityInfoForReadWithCache] err:%v", err)
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.RpcErrNotFound
+		}
+		return nil, errorcode.RpcErrInternal
 	}
 	assetAAmount, assetBAmount, err := util.ComputeRemoveLiquidityAmount(liquidity, amount)
 	if err != nil {
 		logx.Errorf("[ComputeRemoveLiquidityAmount] err:%v", err)
-		return nil, err
+		return nil, errorcode.RpcErrInternal
 	}
 	return &globalRPCProto.RespGetLpValue{
 		AssetAId:     uint32(liquidity.AssetAId),

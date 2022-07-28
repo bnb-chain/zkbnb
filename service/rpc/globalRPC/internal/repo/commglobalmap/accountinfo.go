@@ -2,13 +2,12 @@ package commglobalmap
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"strconv"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/model/account"
-	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
@@ -22,7 +21,7 @@ func (m *model) GetLatestAccountInfoWithCache(ctx context.Context, accountIndex 
 		}
 		account, err := commonAsset.FromFormatAccountInfo(accountInfo)
 		if err != nil {
-			return nil, errorcode.RepoErrFromFormatAccountInfo.RefineError(fmt.Sprint(accountInfo))
+			return nil, err
 		}
 		return account, nil
 	}
@@ -61,18 +60,15 @@ func (m *model) DeleteLatestAccountInfoInCache(ctx context.Context, accountIndex
 func (m *model) GetLatestAccountInfo(ctx context.Context, accountIndex int64) (*commonAsset.AccountInfo, error) {
 	oAccountInfo, err := m.accountModel.GetAccountByAccountIndex(accountIndex)
 	if err != nil {
-		if err == account.ErrNotFound {
-
-		}
-		return nil, errorcode.RepoErrSqlOperation.RefineError(fmt.Sprintf("GetAccountByAccountIndex:%v", err))
+		return nil, err
 	}
 	accountInfo, err := commonAsset.ToFormatAccountInfo(oAccountInfo)
 	if err != nil {
-		return nil, errorcode.RepoErrToFormatAccountInfo.RefineError(err.Error())
+		return nil, err
 	}
 	mempoolTxs, err := m.mempoolModel.GetPendingMempoolTxsByAccountIndex(accountIndex)
-	if err != nil && err != mempool.ErrNotFound {
-		return nil, errorcode.RepoErrSqlOperation.RefineError(fmt.Sprintf("GetPendingMempoolTxsByAccountIndex:%v", err))
+	if err != nil && err != errorcode.DbErrNotFound {
+		return nil, err
 	}
 	for _, mempoolTx := range mempoolTxs {
 		if mempoolTx.Nonce != commonConstant.NilNonce {
@@ -95,21 +91,21 @@ func (m *model) GetLatestAccountInfo(ctx context.Context, accountIndex int64) (*
 				nBalance, err := commonAsset.ComputeNewBalance(commonAsset.GeneralAssetType,
 					accountInfo.AssetInfo[mempoolTxDetail.AssetId].String(), mempoolTxDetail.BalanceDelta)
 				if err != nil {
-					return nil, errorcode.RepoErrComputeNewBalance.RefineError(err.Error())
+					return nil, err
 				}
 				accountInfo.AssetInfo[mempoolTxDetail.AssetId], err = commonAsset.ParseAccountAsset(nBalance)
 				if err != nil {
-					return nil, errorcode.RepoErrParseAccountAsset.RefineError(err.Error())
+					return nil, err
 				}
 			case commonAsset.CollectionNonceAssetType:
 				accountInfo.CollectionNonce, err = strconv.ParseInt(mempoolTxDetail.BalanceDelta, 10, 64)
 				if err != nil {
-					return nil, errorcode.RepoErrParseInt.RefineError(mempoolTxDetail.BalanceDelta)
+					return nil, err
 				}
 			case commonAsset.LiquidityAssetType:
 			case commonAsset.NftAssetType:
 			default:
-				return nil, errorcode.RepoErrInvalidAssetType
+				return nil, errors.New("invalid asset type")
 			}
 		}
 	}
@@ -126,7 +122,7 @@ func (m *model) GetBasicAccountInfoWithCache(ctx context.Context, accountIndex i
 		}
 		account, err := commonAsset.FromFormatAccountInfo(accountInfo)
 		if err != nil {
-			return nil, errorcode.RepoErrFromFormatAccountInfo.RefineError(fmt.Sprint(accountInfo))
+			return nil, err
 		}
 		return account, nil
 	}
@@ -138,7 +134,7 @@ func (m *model) GetBasicAccountInfoWithCache(ctx context.Context, accountIndex i
 	account, _ := value.(*account.Account)
 	res, err := commonAsset.ToFormatAccountInfo(account)
 	if err != nil {
-		return nil, errorcode.RepoErrToFormatAccountInfo.RefineError(fmt.Sprint(accountInfo))
+		return nil, err
 	}
 	return res, nil
 }
@@ -146,11 +142,11 @@ func (m *model) GetBasicAccountInfoWithCache(ctx context.Context, accountIndex i
 func (m *model) GetBasicAccountInfo(ctx context.Context, accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error) {
 	oAccountInfo, err := m.accountModel.GetAccountByAccountIndex(accountIndex)
 	if err != nil {
-		return nil, errorcode.RepoErrSqlOperation.RefineError(fmt.Sprint("GetAccountByAccountIndex:", err.Error()))
+		return nil, err
 	}
 	accountInfo, err = commonAsset.ToFormatAccountInfo(oAccountInfo)
 	if err != nil {
-		return nil, errorcode.RepoErrToFormatAccountInfo.RefineError(fmt.Sprint(accountInfo))
+		return nil, err
 	}
 	return accountInfo, nil
 }

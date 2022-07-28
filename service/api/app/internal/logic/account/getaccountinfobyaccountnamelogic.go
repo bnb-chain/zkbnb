@@ -34,22 +34,28 @@ func NewGetAccountInfoByAccountNameLogic(ctx context.Context, svcCtx *svc.Servic
 func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *types.ReqGetAccountInfoByAccountName) (*types.RespGetAccountInfoByAccountName, error) {
 	if checker.CheckAccountName(req.AccountName) {
 		logx.Errorf("[CheckAccountName] req.AccountName:%v", req.AccountName)
-		return nil, errorcode.AppErrInvalidParam
+		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountName")
 	}
 	accountName := checker.FormatSting(req.AccountName)
 	if checker.CheckFormatAccountName(accountName) {
 		logx.Errorf("[CheckFormatAccountName] accountName:%v", accountName)
-		return nil, errorcode.AppErrInvalidParam
+		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountName")
 	}
 	info, err := l.account.GetAccountByAccountName(l.ctx, accountName)
 	if err != nil {
 		logx.Errorf("[GetAccountByAccountName] accountName:%v, err:%v", accountName, err)
-		return nil, err
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	account, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(l.ctx, info.AccountIndex)
 	if err != nil {
 		logx.Errorf("[GetLatestAccountInfoByAccountIndex] err:%v", err)
-		return nil, err
+		if err == errorcode.RpcErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	resp := &types.RespGetAccountInfoByAccountName{
 		AccountIndex: uint32(account.AccountIndex),

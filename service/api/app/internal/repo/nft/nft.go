@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 
 	nftModel "github.com/bnb-chain/zkbas/common/model/nft"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
 )
 
@@ -25,7 +26,7 @@ func (n *nft) GetNftListByAccountIndex(ctx context.Context, accountIndex, limit,
 		dbTx := n.db.Table(n.table).Where("owner_account_index = ? and deleted_at is NULL", accountIndex).
 			Limit(int(limit)).Offset(int(offset)).Order("nft_index desc").Find(&nftList)
 		if dbTx.Error != nil {
-			return nil, dbTx.Error
+			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			return nil, sqlx.ErrNotFound
 		}

@@ -2,8 +2,6 @@ package price
 
 import (
 	"errors"
-
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
 type Status struct {
@@ -45,10 +43,6 @@ type CurrencyPrice struct {
 	Status Status      `json:"status"`
 	Data   interface{} `json:"data"`
 }
-
-var (
-	ErrNotFound = sqlx.ErrNotFound
-)
 
 var BinancePriceUrl = "https://api.binance.com/api/v3/ticker/price?symbol="
 

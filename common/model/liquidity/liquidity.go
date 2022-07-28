@@ -25,6 +25,8 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type (
@@ -103,9 +105,9 @@ func (m *defaultLiquidityModel) CreateLiquidity(liquidity *Liquidity) error {
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[liquidity.CreateLiquidity] %s", ErrInvalidAccountLiquidityInput)
+		err := fmt.Sprintf("[liquidity.CreateLiquidity] %s", errorcode.DbErrFailToCreateLiquidity)
 		logx.Error(err)
-		return ErrInvalidAccountLiquidityInput
+		return errorcode.DbErrFailToCreateLiquidity
 	}
 	return nil
 }
@@ -124,9 +126,9 @@ func (m *defaultLiquidityModel) CreateLiquidityInBatches(entities []*Liquidity) 
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[liquidity.CreateLiquidityInBatches] %s", ErrInvalidAccountLiquidityInput)
+		err := fmt.Sprintf("[liquidity.CreateLiquidityInBatches] %s", errorcode.DbErrFailToCreateLiquidity)
 		logx.Error(err)
-		return ErrInvalidAccountLiquidityInput
+		return errorcode.DbErrFailToCreateLiquidity
 	}
 	return nil
 }
@@ -142,11 +144,11 @@ func (m *defaultLiquidityModel) GetLiquidityByPairIndex(pairIndex int64) (entity
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[liquidity.GetLiquidityByPairIndex] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[liquidity.GetLiquidityByPairIndex] %s", ErrNotFound)
+		err := fmt.Sprintf("[liquidity.GetLiquidityByPairIndex] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return entity, nil
 }

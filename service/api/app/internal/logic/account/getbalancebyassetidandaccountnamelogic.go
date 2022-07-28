@@ -35,17 +35,23 @@ func (l *GetBalanceByAssetIdAndAccountNameLogic) GetBalanceByAssetIdAndAccountNa
 	resp := &types.RespGetBlanceInfoByAssetIdAndAccountName{}
 	if checker.CheckAccountName(req.AccountName) {
 		logx.Errorf("[CheckAccountIndex] param:%v", req.AccountName)
-		return nil, errorcode.AppErrInvalidParam
+		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountName")
 	}
 	account, err := l.account.GetAccountByAccountName(l.ctx, req.AccountName)
 	if err != nil {
 		logx.Errorf("[GetAccountByAccountName] err:%v", err)
-		return nil, err
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	assets, err := l.globalRPC.GetLatestAssetsListByAccountIndex(l.ctx, uint32(account.AccountIndex))
 	if err != nil {
 		logx.Errorf("[GetLatestAssetsListByAccountIndex] err:%v", err)
-		return nil, err
+		if err == errorcode.RpcErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	for _, asset := range assets {
 		if req.AssetId == asset.AssetId {

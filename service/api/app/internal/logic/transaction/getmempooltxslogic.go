@@ -3,6 +3,8 @@ package transaction
 import (
 	"context"
 
+	"github.com/bnb-chain/zkbas/errorcode"
+
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
@@ -33,7 +35,10 @@ func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (*types.
 	count, err := l.mempool.GetMempoolTxsTotalCount()
 	if err != nil {
 		logx.Errorf("[GetMempoolTxsTotalCount] err:%v", err)
-		return nil, err
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	resp := &types.RespGetMempoolTxs{
 		MempoolTxs: make([]*types.Tx, 0),
@@ -42,7 +47,7 @@ func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (*types.
 	mempoolTxs, err := l.mempool.GetMempoolTxs(int64(req.Limit), int64(req.Offset))
 	if err != nil {
 		logx.Errorf("[GetMempoolTxs] err:%v", err)
-		return nil, err
+		return nil, errorcode.AppErrInternal
 	}
 	for _, mempoolTx := range mempoolTxs {
 		resp.MempoolTxs = append(resp.MempoolTxs, utils.MempoolTx2Tx(mempoolTx))

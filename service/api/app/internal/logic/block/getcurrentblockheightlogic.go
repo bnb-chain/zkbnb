@@ -3,6 +3,8 @@ package block
 import (
 	"context"
 
+	"github.com/bnb-chain/zkbas/errorcode"
+
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/block"
@@ -30,7 +32,10 @@ func (l *GetCurrentBlockHeightLogic) GetCurrentBlockHeight() (resp *types.RespCu
 	height, err := l.block.GetCurrentBlockHeight(l.ctx)
 	if err != nil {
 		logx.Errorf("[GetBlockWithTxsByBlockHeight] err:%v", err)
-		return nil, err
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	return &types.RespCurrentBlockHeight{
 		Height: height,

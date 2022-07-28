@@ -45,15 +45,22 @@ func NewGetTxsByPubKeyLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 }
 
 func (l *GetTxsByPubKeyLogic) GetTxsByPubKey(req *types.ReqGetTxsByPubKey) (*types.RespGetTxsByPubKey, error) {
+	//TODO: check pubkey
 	account, err := l.account.GetAccountByPk(req.AccountPk)
 	if err != nil {
 		logx.Errorf("[GetAccountByPk] err:%v", err)
-		return &types.RespGetTxsByPubKey{}, err
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	txIds, err := l.txDetail.GetTxIdsByAccountIndex(l.ctx, int64(account.AccountIndex))
 	if err != nil {
 		logx.Errorf("[GetTxDetailByAccountIndex] err:%v", err)
-		return nil, err
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	resp := &types.RespGetTxsByPubKey{
 		Total: uint32(len(txIds)),

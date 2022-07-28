@@ -22,6 +22,8 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 var (
@@ -99,10 +101,10 @@ func (m *defaultTxDetailModel) DropTxDetailTable() error {
 func (m *defaultTxDetailModel) GetTxDetailsByAccountName(name string) (txDetails []*TxDetail, err error) {
 	dbTx := m.DB.Table(m.table).Where("account_name = ?", name).Find(&txDetails)
 	if dbTx.Error != nil {
-		if dbTx.Error == ErrNotFound {
+		if dbTx.Error == errorcode.DbErrNotFound {
 			return nil, nil
 		} else {
-			return nil, dbTx.Error
+			return nil, errorcode.DbErrSqlOperation
 		}
 	} else {
 		return txDetails, nil
@@ -112,7 +114,7 @@ func (m *defaultTxDetailModel) GetTxDetailsByAccountName(name string) (txDetails
 func (m *defaultTxDetailModel) UpdateTxDetail(detail *TxDetail) error {
 	dbTx := m.DB.Save(&detail)
 	if dbTx.Error != nil {
-		if dbTx.Error == ErrNotFound {
+		if dbTx.Error == errorcode.DbErrNotFound {
 			return nil
 		} else {
 			return dbTx.Error

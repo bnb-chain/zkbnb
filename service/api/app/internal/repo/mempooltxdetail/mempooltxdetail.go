@@ -26,9 +26,9 @@ func (m *model) GetMemPoolTxDetailByAccountIndex(ctx context.Context, accountInd
 	result := make([]*table.MempoolTxDetail, 0)
 	dbTx := m.db.Table(m.table).Where("account_index = ?", accountIndex).Order("created_at").Find(&result)
 	if dbTx.Error != nil {
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, errorcode.RepoErrDataNotExist
+		return nil, errorcode.DbErrNotFound
 	}
 	return result, nil
 }

@@ -85,7 +85,7 @@ func (m *model) GetLatestAccountInfo(ctx context.Context, accountIndex int64) (*
 		return nil, err
 	}
 	mempoolTxs, err := m.mempoolModel.GetPendingMempoolTxsByAccountIndex(accountIndex)
-	if err != nil && err != mempool.ErrNotFound {
+	if err != nil && err != mempool.RepoErrNotFound {
 		logx.Errorf("[GetPendingMempoolTxsByAccountIndex]param:%v, err:%v", accountIndex, err)
 		return nil, err
 	}

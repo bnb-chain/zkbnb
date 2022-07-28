@@ -17,18 +17,7 @@
 
 package liquidity
 
-import (
-	"errors"
-
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
-)
-
 const (
 	LiquidityTable        = `liquidity`
 	LiquidityHistoryTable = `liquidity_history`
-)
-
-var (
-	ErrNotFound                     = sqlx.ErrNotFound
-	ErrInvalidAccountLiquidityInput = errors.New("[ErrInvalidAccountLiquidityInput] invalid account liquidity input")
 )

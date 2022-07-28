@@ -3,6 +3,8 @@ package info
 import (
 	"context"
 
+	"github.com/bnb-chain/zkbas/errorcode"
+
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/account"
@@ -30,12 +32,15 @@ func (l *GetAccountsLogic) GetAccounts(req *types.ReqGetAccounts) (*types.RespGe
 	accounts, err := l.account.GetAccountsList(int(req.Limit), int64(req.Offset))
 	if err != nil {
 		logx.Errorf("[GetAccountsList] err:%v", err)
-		return nil, err
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	total, err := l.account.GetAccountsTotalCount()
 	if err != nil {
 		logx.Errorf("[GetAccountsTotalCount] err:%v", err)
-		return nil, err
+		return nil, errorcode.AppErrInternal
 	}
 	resp := &types.RespGetAccounts{
 		Total:    uint32(total),

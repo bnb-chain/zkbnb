@@ -25,6 +25,8 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 var (
@@ -102,7 +104,7 @@ func (m *defaultVolumePoolModel) CreateVolumePool(volumePool *VolumePool) error 
 	}
 	if dbTx.RowsAffected == 0 {
 		logx.Errorf("[volumePool.CreateVolumePool] Create VolumePool Error")
-		return ErrInvalidVolume
+		return errorcode.DbErrFailToCreateVolume
 	}
 	return nil
 }
@@ -123,10 +125,10 @@ func (m *defaultVolumePoolModel) GetPoolVolumeSumBetweenDate(date1 time.Time, da
 	dbTx := m.DB.Table(m.table).Select("pool_id, sum(volume_delta_a) as total_a, sum(volume_delta_b) as total_b").Where("date <= ? and date > ?", date1, date2).Group("pool_id").Order("pool_id").Find(&result)
 	if dbTx.Error != nil {
 		logx.Errorf("[tvl.GetPoolVolumeSum] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[volume.GetPoolVolumeSum] no result in tvl pool table")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 
 	return result, nil
