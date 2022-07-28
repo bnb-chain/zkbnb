@@ -11,7 +11,7 @@ import (
 // does not use the codes. We can leave the codes for future enhancement.
 
 var (
-	DbErrNotFound                  = errors.New(sqlx.ErrNotFound.Error())
+	DbErrNotFound                  = sqlx.ErrNotFound
 	DbErrSqlOperation              = errors.New("unknown sql operation error")
 	DbErrDuplicatedAccountName     = errors.New("duplicated account name")
 	DbErrDuplicatedAccountIndex    = errors.New("duplicated account index")

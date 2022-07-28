@@ -25,6 +25,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/bnb-chain/zkbas/errorcode"
+
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
@@ -50,7 +52,7 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp *time.Time,
 	accountTree *tree.Tree, liquidityTree *tree.Tree, nftTree *tree.Tree, accountAssetTrees *[]*tree.Tree) error {
 	mempoolTxs, err := ctx.MempoolModel.GetMempoolTxsListForCommitter()
 	if err != nil {
-		if err == ErrNotFound {
+		if err == errorcode.DbErrNotFound {
 			return nil
 		} else {
 			logx.Error("[CommitterTask] unable to get tx in mempool")
@@ -62,7 +64,7 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp *time.Time,
 
 	// get current block height
 	currentBlockHeight, err := ctx.BlockModel.GetCurrentBlockHeight()
-	if err != nil && err != ErrNotFound {
+	if err != nil && err != errorcode.DbErrNotFound {
 		logx.Error("[CommitterTask] err when get current block height")
 		return err
 	}

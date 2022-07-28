@@ -37,6 +37,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/tree"
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/common/util/globalmapHandler"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/repo/accountoperator"
 	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/repo/commglobalmap"
 	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/repo/l2eventoperator"
@@ -76,7 +77,7 @@ func MonitorMempool(ctx context.Context, svcCtx *svc.ServiceContext) error {
 	logx.Errorf("========== start MonitorMempool ==========")
 	txs, err := svcCtx.L2TxEventMonitorModel.GetL2TxEventMonitorsByStatus(PendingStatus)
 	if err != nil {
-		if err == l2TxEventMonitor.RepoErrNotFound {
+		if err == errorcode.DbErrNotFound {
 			logx.Info("[MonitorMempool] no l2 oTx event monitors")
 			return err
 		} else {
@@ -121,7 +122,7 @@ func MonitorMempool(ctx context.Context, svcCtx *svc.ServiceContext) error {
 			}
 			// check if the account name has been registered
 			_, err = svcCtx.AccountModel.GetAccountByAccountName(txInfo.AccountName)
-			if err != ErrNotFound {
+			if err != errorcode.DbErrNotFound {
 				logx.Errorf("[MonitorMempool] account name has been registered")
 				return errors.New("[MonitorMempool] account name has been registered")
 			}
@@ -563,7 +564,7 @@ func MonitorMempool(ctx context.Context, svcCtx *svc.ServiceContext) error {
 				}
 				mempoolTxs, err := svcCtx.MempoolModel.GetPendingMempoolTxsByAccountIndex(accountInfo.AccountIndex)
 				if err != nil {
-					if err != ErrNotFound {
+					if err != errorcode.DbErrNotFound {
 						logx.Errorf("[MonitorMempool] unable to get pending mempool txs: %s", err.Error())
 						return err
 					}
@@ -705,7 +706,7 @@ func processFullExitNft(svcCtx *svc.ServiceContext,
 	if newNftInfoMap[txInfo.NftIndex] == nil {
 		nftAsset, err = svcCtx.NftModel.GetNftAsset(txInfo.NftIndex)
 		if err != nil {
-			if err == ErrNotFound {
+			if err == errorcode.DbErrNotFound {
 				emptyNftInfo := commonAsset.EmptyNftInfo(txInfo.NftIndex)
 				nftAsset = &nft.L2Nft{
 					NftIndex:            emptyNftInfo.NftIndex,

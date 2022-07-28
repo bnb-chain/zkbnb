@@ -24,7 +24,7 @@ import (
 	"github.com/bnb-chain/zkbas-crypto/hash/bn254/zmimc"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/common/model/liquidity"
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 // TODO replace history as liquidity + liquidityHistory
@@ -36,7 +36,7 @@ func InitLiquidityTree(
 ) {
 	liquidityAssets, err := liquidityHistoryModel.GetLatestLiquidityByBlockHeight(blockHeight)
 	if err != nil {
-		if err != liquidity.RepoErrNotFound {
+		if err != errorcode.DbErrNotFound {
 			logx.Errorf("[InitLiquidityTree] unable to get latest nft assets: %s", err.Error())
 			return nil, err
 		} else {

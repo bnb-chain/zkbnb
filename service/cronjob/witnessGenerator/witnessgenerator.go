@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 
+	"github.com/bnb-chain/zkbas/errorcode"
+
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -26,7 +28,7 @@ func main() {
 
 	p, err := ctx.ProofSenderModel.GetLatestConfirmedProof()
 	if err != nil {
-		if err != proofSender.RepoErrNotFound {
+		if err != errorcode.DbErrNotFound {
 			logx.Error("[prover] => GetLatestConfirmedProof error:", err)
 			return
 		} else {

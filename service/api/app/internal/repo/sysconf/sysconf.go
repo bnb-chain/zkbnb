@@ -3,7 +3,6 @@ package sysconf
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
@@ -94,13 +93,10 @@ func (m *sysconf) UpdateSysconfig(_ context.Context, config *table.Sysconfig) er
 	dbTx := m.db.Table(m.table).Where("name = ?", config.Name).Select(NameColumn, ValueColumn, ValueTypeColumn, CommentColumn).
 		Updates(config)
 	if dbTx.Error != nil {
-		err := fmt.Sprintf("[sysconfig.UpdateSysconfig] %s", dbTx.Error)
-		logx.Error(err)
-		return dbTx.Error
+		logx.Error("[sysconfig.UpdateSysconfig] %s", dbTx.Error)
+		return errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[sysconfig.UpdateSysconfig] %s", ErrNotFound)
-		logx.Error(err)
-		return ErrNotFound
+		return errorcode.DbErrNotFound
 	}
 	return nil
 }

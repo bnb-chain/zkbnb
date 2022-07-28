@@ -32,7 +32,7 @@ func (m *l2asset) GetL2AssetsList(ctx context.Context) ([]*table.AssetInfo, erro
 			return nil, errorcode.DbErrSqlOperation
 		}
 		if dbTx.RowsAffected == 0 {
-			return nil, ErrNotFound
+			return nil, errorcode.DbErrNotFound
 		}
 		return &res, nil
 	}
@@ -92,7 +92,7 @@ func (m *l2asset) GetSimpleL2AssetInfoByAssetId(ctx context.Context, assetId uin
 			return nil, errorcode.DbErrSqlOperation
 		}
 		if dbTx.RowsAffected == 0 {
-			return nil, ErrNotFound
+			return nil, errorcode.DbErrNotFound
 		}
 		return &res, nil
 	}

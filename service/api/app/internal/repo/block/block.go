@@ -194,9 +194,9 @@ func (m *block) GetCurrentBlockHeight(ctx context.Context) (int64, error) {
 		var blockHeight int64
 		dbTx := m.db.Table(m.table).Select("block_height").Order("block_height desc").Limit(1).Find(&blockHeight)
 		if dbTx.Error != nil {
-			return 0, fmt.Errorf("[GetBlocksTotalCount]: %v", dbTx.Error)
+			return 0, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
-			return 0, ErrNotFound
+			return 0, errorcode.DbErrNotFound
 		}
 		return &blockHeight, nil
 	}

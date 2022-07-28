@@ -15,6 +15,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
 )
 
@@ -85,7 +86,7 @@ func (m *model) GetLatestAccountInfo(ctx context.Context, accountIndex int64) (*
 		return nil, err
 	}
 	mempoolTxs, err := m.mempoolModel.GetPendingMempoolTxsByAccountIndex(accountIndex)
-	if err != nil && err != mempool.RepoErrNotFound {
+	if err != nil && err != errorcode.DbErrNotFound {
 		logx.Errorf("[GetPendingMempoolTxsByAccountIndex]param:%v, err:%v", accountIndex, err)
 		return nil, err
 	}

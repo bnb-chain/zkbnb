@@ -3,8 +3,6 @@ package logic
 import (
 	"math/big"
 
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
-
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/model/account"
@@ -16,10 +14,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/sysconfig"
 	"github.com/bnb-chain/zkbas/common/model/tx"
-)
-
-var (
-	ErrNotFound = sqlx.ErrNotFound
 )
 
 type (
