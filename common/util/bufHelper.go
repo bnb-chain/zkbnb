@@ -21,11 +21,13 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
-	"github.com/bnb-chain/zkbas-crypto/zero/twistededwards/tebn254/zero"
-	"github.com/bnb-chain/zkbas/common/commonConstant"
-	"github.com/zeromicro/go-zero/core/logx"
 	"log"
 	"math/big"
+
+	"github.com/bnb-chain/zkbas-crypto/zero/twistededwards/tebn254/zero"
+	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas/common/commonConstant"
 )
 
 func SetFixed32Bytes(buf []byte) [32]byte {

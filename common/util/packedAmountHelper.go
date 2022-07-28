@@ -19,11 +19,12 @@ package util
 
 import (
 	"errors"
-	"github.com/bnb-chain/zkbas/errorcode"
 	"math/big"
 
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas-crypto/util"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 /*

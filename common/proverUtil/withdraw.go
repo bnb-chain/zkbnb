@@ -19,12 +19,14 @@ package proverUtil
 
 import (
 	"errors"
+	"math/big"
+
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
-	"github.com/bnb-chain/zkbas/common/commonTx"
-	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/zeromicro/go-zero/core/logx"
-	"math/big"
+
+	"github.com/bnb-chain/zkbas/common/commonTx"
+	"github.com/bnb-chain/zkbas/common/util"
 )
 
 func ConstructWithdrawCryptoTx(

@@ -18,11 +18,13 @@
 package tree
 
 import (
+	"log"
+
 	"github.com/bnb-chain/zkbas-crypto/accumulators/merkleTree"
 	"github.com/bnb-chain/zkbas-crypto/hash/bn254/zmimc"
-	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/zeromicro/go-zero/core/logx"
-	"log"
+
+	"github.com/bnb-chain/zkbas/common/model/liquidity"
 )
 
 // TODO replace history as liquidity + liquidityHistory

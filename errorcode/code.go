@@ -1,6 +1,8 @@
 package errorcode
 
-import "github.com/zeromicro/go-zero/core/stores/sqlx"
+import (
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
+)
 
 // using method:
 // err := error.New(10000, "Example error msg")

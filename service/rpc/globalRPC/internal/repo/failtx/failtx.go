@@ -2,11 +2,12 @@ package failtx
 
 import (
 	"fmt"
+
+	"gorm.io/gorm"
+
 	table "github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/errorcode"
-
 	"github.com/bnb-chain/zkbas/pkg/multcache"
-	"gorm.io/gorm"
 )
 
 type model struct {

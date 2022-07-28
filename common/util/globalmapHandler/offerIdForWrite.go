@@ -18,9 +18,10 @@
 package globalmapHandler
 
 import (
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 func GetLatestOfferIdForWrite(

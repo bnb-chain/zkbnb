@@ -6,15 +6,15 @@ import (
 	"math/big"
 	"time"
 
-	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
-	"github.com/bnb-chain/zkbas/service/cronjob/sender/internal/config"
-	"github.com/bnb-chain/zkbas/service/cronjob/sender/internal/logic"
-	"github.com/bnb-chain/zkbas/service/cronjob/sender/internal/svc"
-
 	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
+	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas/service/cronjob/sender/internal/config"
+	"github.com/bnb-chain/zkbas/service/cronjob/sender/internal/logic"
+	"github.com/bnb-chain/zkbas/service/cronjob/sender/internal/svc"
 )
 
 var configFile = flag.String("f",

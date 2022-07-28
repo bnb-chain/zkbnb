@@ -21,9 +21,9 @@ import (
 	"time"
 
 	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
-	"github.com/bnb-chain/zkbas/common/util"
-
 	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas/common/util"
 )
 
 func SendCommittedBlocks(param *SenderParam, l1TxSenderModel L1TxSenderModel,

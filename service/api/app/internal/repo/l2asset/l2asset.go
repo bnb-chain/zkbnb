@@ -3,11 +3,13 @@ package l2asset
 import (
 	"context"
 	"fmt"
+	"strconv"
+
+	"gorm.io/gorm"
+
 	table "github.com/bnb-chain/zkbas/common/model/assetInfo"
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
-	"gorm.io/gorm"
-	"strconv"
 )
 
 type l2asset struct {

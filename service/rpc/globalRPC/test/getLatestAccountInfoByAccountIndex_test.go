@@ -5,13 +5,15 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"testing"
+
+	"github.com/zeromicro/go-zero/core/conf"
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/config"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/server"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/svc"
-	"github.com/zeromicro/go-zero/core/conf"
-	"github.com/zeromicro/go-zero/core/logx"
-	"testing"
 )
 
 func TestGetLatestAccountInfoByAccountIndex(t *testing.T) {

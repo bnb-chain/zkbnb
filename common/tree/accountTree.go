@@ -19,12 +19,14 @@ package tree
 
 import (
 	"errors"
+
 	"github.com/bnb-chain/zkbas-crypto/accumulators/merkleTree"
 	"github.com/bnb-chain/zkbas-crypto/hash/bn254/zmimc"
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/model/account"
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 // TODO optimize, bad performance

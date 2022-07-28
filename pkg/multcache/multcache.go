@@ -2,11 +2,12 @@ package multcache
 
 import (
 	"context"
-	"github.com/bnb-chain/zkbas/errorcode"
 	"time"
 
 	"github.com/eko/gocache/v2/marshaler"
 	"github.com/eko/gocache/v2/store"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type multcache struct {

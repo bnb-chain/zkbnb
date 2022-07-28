@@ -21,15 +21,16 @@ import (
 	"errors"
 	"fmt"
 
-	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
-	"github.com/bnb-chain/zkbas/common/model/l2BlockEventMonitor"
-	"github.com/bnb-chain/zkbas/common/model/l2TxEventMonitor"
-	"github.com/bnb-chain/zkbas/common/model/sysconfig"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
+
+	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
+	"github.com/bnb-chain/zkbas/common/model/l2BlockEventMonitor"
+	"github.com/bnb-chain/zkbas/common/model/l2TxEventMonitor"
+	"github.com/bnb-chain/zkbas/common/model/sysconfig"
 )
 
 type (

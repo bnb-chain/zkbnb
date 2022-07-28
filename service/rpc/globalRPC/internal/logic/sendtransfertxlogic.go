@@ -23,9 +23,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
-	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/commglobalmap"
-	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/svc"
+	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
@@ -34,8 +32,9 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
-
-	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/commglobalmap"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/svc"
 )
 
 type SendTransferTxLogic struct {

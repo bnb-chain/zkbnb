@@ -17,7 +17,9 @@
 
 package util
 
-import "strconv"
+import (
+	"strconv"
+)
 
 const (
 	AccountPrefix        = "AccountIndex::"

@@ -19,9 +19,10 @@ package globalmapHandler
 
 import (
 	"errors"
+	"time"
+
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
-	"time"
 )
 
 func GetRedisLockByKey(conn *redis.Redis, keyLock string) (redisLock *redis.RedisLock) {

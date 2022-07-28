@@ -19,13 +19,15 @@ package tree
 
 import (
 	"bytes"
+	"math/big"
+
 	curve "github.com/bnb-chain/zkbas-crypto/ecc/ztwistededwards/tebn254"
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
-	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
-	"math/big"
+
+	"github.com/bnb-chain/zkbas/common/util"
 )
 
 func ComputeAccountLeafHash(

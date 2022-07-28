@@ -18,10 +18,11 @@
 package tree
 
 import (
+	"math/big"
+
 	"github.com/bnb-chain/zkbas-crypto/accumulators/merkleTree"
 	"github.com/bnb-chain/zkbas-crypto/hash/bn254/zmimc"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
-	"math/big"
 )
 
 func NewEmptyAccountAssetTree() (tree *Tree, err error) {

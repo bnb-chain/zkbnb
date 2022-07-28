@@ -1,10 +1,11 @@
 package liquidity
 
 import (
+	"gorm.io/gorm"
+
 	table "github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
-	"gorm.io/gorm"
 )
 
 type liquidityModel struct {

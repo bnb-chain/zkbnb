@@ -19,13 +19,15 @@ package txVerification
 
 import (
 	"errors"
-	"github.com/bnb-chain/zkbas-crypto/ffmath"
-	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
-	"github.com/bnb-chain/zkbas/common/commonAsset"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
-	"github.com/zeromicro/go-zero/core/logx"
 	"log"
 	"math/big"
+
+	"github.com/bnb-chain/zkbas-crypto/ffmath"
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas/common/commonAsset"
 )
 
 func VerifyCancelOfferTxInfo(

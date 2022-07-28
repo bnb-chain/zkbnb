@@ -1,6 +1,12 @@
 package svc
 
 import (
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/redis"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+
 	"github.com/bnb-chain/zkbas/common/model/account"
 	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
 	"github.com/bnb-chain/zkbas/common/model/block"
@@ -11,11 +17,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/config"
-	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/redis"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 type ServiceContext struct {

@@ -3,10 +3,11 @@ package pair
 import (
 	"net/http"
 
+	"github.com/zeromicro/go-zero/rest/httpx"
+
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/pair"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 func GetLPValueHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {

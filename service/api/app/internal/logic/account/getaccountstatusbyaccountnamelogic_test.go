@@ -1,14 +1,15 @@
 package account
 
 import (
-	"github.com/bnb-chain/zkbas/errorcode"
 	"testing"
 
-	table "github.com/bnb-chain/zkbas/common/model/account"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/account"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+
+	table "github.com/bnb-chain/zkbas/common/model/account"
+	"github.com/bnb-chain/zkbas/errorcode"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/account"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
 func TestGetAccountStatusByAccountNameLogic_GetAccountStatusByAccountName(t *testing.T) {

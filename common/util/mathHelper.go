@@ -1,6 +1,8 @@
 package util
 
-import "strconv"
+import (
+	"strconv"
+)
 
 func Uint64ToString(a uint64) string {
 	return strconv.FormatUint(a, Base)

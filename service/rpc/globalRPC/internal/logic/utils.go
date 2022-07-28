@@ -20,17 +20,18 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/bnb-chain/zkbas/errorcode"
 	"strconv"
+
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/redis"
 
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/sysconfig"
 	"github.com/bnb-chain/zkbas/common/sysconfigName"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
-	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/redis"
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 func ComputeL2TxTxHash(txInfo string) string {

@@ -16,7 +16,9 @@
 
 package commonAsset
 
-import "math/big"
+import (
+	"math/big"
+)
 
 const (
 	// asset type

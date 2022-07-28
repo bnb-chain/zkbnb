@@ -21,8 +21,6 @@ import (
 	"flag"
 	"log"
 
-	"github.com/bnb-chain/zkbas/common/sysconfigName"
-	"github.com/bnb-chain/zkbas/common/tree"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/zeromicro/go-zero/core/conf"
@@ -44,6 +42,8 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/proofSender"
 	"github.com/bnb-chain/zkbas/common/model/sysconfig"
 	"github.com/bnb-chain/zkbas/common/model/tx"
+	"github.com/bnb-chain/zkbas/common/sysconfigName"
+	"github.com/bnb-chain/zkbas/common/tree"
 )
 
 var configFile = flag.String("f", "./contractaddr.yaml", "the config file")

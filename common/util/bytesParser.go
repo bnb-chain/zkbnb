@@ -19,8 +19,9 @@ package util
 
 import (
 	"encoding/binary"
-	"github.com/ethereum/go-ethereum/common"
 	"math/big"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func ReadUint8(buf []byte, offset int) (newOffset int, res uint8) {

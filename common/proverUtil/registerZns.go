@@ -19,11 +19,13 @@ package proverUtil
 
 import (
 	"errors"
+	"strings"
+
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/zeromicro/go-zero/core/logx"
-	"strings"
 )
 
 func ConstructRegisterZnsCryptoTx(
