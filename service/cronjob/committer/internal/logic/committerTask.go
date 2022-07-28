@@ -19,7 +19,6 @@ package logic
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"math"
 	"math/big"
 	"strconv"
@@ -55,7 +54,7 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp *time.Time,
 		if err == errorcode.DbErrNotFound {
 			return nil
 		} else {
-			logx.Error("[CommitterTask] unable to get tx in mempool")
+			logx.Errorf("[CommitterTask] unable to get tx in mempool: %s", err.Error())
 			return err
 		}
 	}
@@ -185,7 +184,7 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp *time.Time,
 					}
 					emptyAssetTree, err := tree.NewEmptyAccountAssetTree()
 					if err != nil {
-						logx.Errorf("[CommitterTask] unable to new empty account state tree")
+						logx.Errorf("[CommitterTask] unable to new empty account state tree: %s", err.Error())
 						return err
 					}
 					*accountAssetTrees = append(*accountAssetTrees, emptyAssetTree)
@@ -197,12 +196,12 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp *time.Time,
 						(*accountAssetTrees)[mempoolTx.AccountIndex].RootNode.Value,
 					)
 					if err != nil {
-						log.Println("[CommitterTask] unable to compute account leaf:", err)
+						logx.Errorf("[CommitterTask] unable to compute account leaf: %s", err.Error())
 						return err
 					}
 					err = accountTree.Update(mempoolTx.AccountIndex, nAccountLeafHash)
 					if err != nil {
-						log.Println("[CommitterTask] unable to update account tree:", err)
+						logx.Errorf("[CommitterTask] unable to update account tree: %s", err.Error())
 						return err
 					}
 				}
@@ -213,6 +212,9 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp *time.Time,
 					mempoolTx.Status = mempool.FailTxStatus
 					mempoolTx.L2BlockHeight = currentBlockHeight
 					pendingDeleteMempoolTxs = append(pendingDeleteMempoolTxs, mempoolTx)
+
+					logx.Infof("[CommitterTask] tx %s is expired, mark tx as failed, expiredAt=%d, now=%",
+						mempoolTx.TxHash, mempoolTx.ExpiredAt, createdAt)
 					continue
 				}
 			}
@@ -222,9 +224,10 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp *time.Time,
 					mempoolTx.Status = mempool.FailTxStatus
 					mempoolTx.L2BlockHeight = currentBlockHeight
 					pendingDeleteMempoolTxs = append(pendingDeleteMempoolTxs, mempoolTx)
+
+					logx.Errorf("[CommitterTask] tx %s has invalid nonce, mark tx as failed, txNonce=%d, accountNonce=%d",
+						mempoolTx.TxHash, mempoolTx.Nonce, accountMap[mempoolTx.AccountIndex].Nonce)
 					continue
-					//logx.Errorf("[CommitterTask] invalid nonce")
-					//return errors.New("[CommitterTask] invalid nonce")
 				}
 			}
 			// check mempool tx details are correct
@@ -279,7 +282,7 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp *time.Time,
 						// compute new balance
 						nBalance, err = commonAsset.ComputeNewBalance(GeneralAssetType, baseBalance, balanceDelta.String())
 						if err != nil {
-							logx.Error("[CommitterTask] unable to compute new balance: %s", err.Error())
+							logx.Errorf("[CommitterTask] unable to compute new balance: %s", err.Error())
 							return err
 						}
 						mempoolTxDetail.BalanceDelta = balanceDelta.String()
@@ -299,7 +302,7 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp *time.Time,
 						// compute new balance
 						nBalance, err = commonAsset.ComputeNewBalance(GeneralAssetType, baseBalance, mempoolTxDetail.BalanceDelta)
 						if err != nil {
-							logx.Error("[CommitterTask] unable to compute new balance: %s", err.Error())
+							logx.Errorf("[CommitterTask] unable to compute new balance: %s", err.Error())
 							return err
 						}
 					}
@@ -324,12 +327,12 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp *time.Time,
 						accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId].OfferCanceledOrFinalized.String(),
 					)
 					if err != nil {
-						log.Println("[CommitterTask] unable to compute new account asset leaf:", err)
+						logx.Errorf("[CommitterTask] unable to compute new account asset leaf: %s", err.Error())
 						return err
 					}
 					err = (*accountAssetTrees)[mempoolTxDetail.AccountIndex].Update(mempoolTxDetail.AssetId, nAssetLeaf)
 					if err != nil {
-						log.Println("[CommitterTask] unable to update asset tree:", err)
+						logx.Errorf("[CommitterTask] unable to update asset tree: %s", err.Error())
 						return err
 					}
 
@@ -374,7 +377,7 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp *time.Time,
 					nBalance, err := commonAsset.ComputeNewBalance(
 						LiquidityAssetType, baseBalance, mempoolTxDetail.BalanceDelta)
 					if err != nil {
-						logx.Error("[CommitterTask] unable to compute new balance: %s", err.Error())
+						logx.Errorf("[CommitterTask] unable to compute new balance: %s", err.Error())
 						return err
 					}
 					nPoolInfo, err := commonAsset.ParseLiquidityInfo(nBalance)
@@ -410,12 +413,12 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp *time.Time,
 						liquidityMap[mempoolTxDetail.AssetId].TreasuryRate,
 					)
 					if err != nil {
-						log.Println("[CommitterTask] unable to compute new account liquidity leaf:", err)
+						logx.Errorf("[CommitterTask] unable to compute new account liquidity leaf: %s", err.Error())
 						return err
 					}
 					err = liquidityTree.Update(mempoolTxDetail.AssetId, nLiquidityAssetLeaf)
 					if err != nil {
-						log.Println("[CommitterTask] unable to update liquidity tree:", err)
+						logx.Errorf("[CommitterTask] unable to update liquidity tree: %s", err.Error())
 						return err
 					}
 
@@ -496,7 +499,7 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp *time.Time,
 					}
 					err = nftTree.Update(mempoolTxDetail.AssetId, nNftAssetLeaf)
 					if err != nil {
-						log.Println("[CommitterTask] unable to update nft tree:", err)
+						logx.Errorf("[CommitterTask] unable to update nft tree: %s", err.Error())
 						return err
 					}
 					break
@@ -508,7 +511,8 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp *time.Time,
 						return err
 					}
 					if newCollectionNonce != accountMap[mempoolTxDetail.AccountIndex].CollectionNonce+1 {
-						logx.Errorf("[CommitterTask] invalid collection nonce")
+						logx.Errorf("[CommitterTask] invalid collection nonce, newCollectionNonce=%d, accountCollectionNonce=%d",
+							newCollectionNonce, accountMap[mempoolTxDetail.AccountIndex].CollectionNonce)
 						return errors.New("[CommitterTask] invalid collection nonce")
 					}
 					break
@@ -554,12 +558,12 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp *time.Time,
 					(*accountAssetTrees)[accountIndex].RootNode.Value,
 				)
 				if err != nil {
-					log.Println("[CommitterTask] unable to compute account leaf:", err)
+					logx.Errorf("[CommitterTask] unable to compute account leaf: %s", err.Error())
 					return err
 				}
 				err = accountTree.Update(accountIndex, nAccountLeafHash)
 				if err != nil {
-					log.Println("[CommitterTask] unable to update account tree:", err)
+					logx.Errorf("[CommitterTask] unable to update account tree: %s", err.Error())
 					return err
 				}
 			}
