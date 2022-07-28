@@ -3,7 +3,6 @@ package commglobalmap
 import (
 	"context"
 	"fmt"
-	"github.com/bnb-chain/zkbas/errorcode"
 	"strconv"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
@@ -11,6 +10,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
 )
 

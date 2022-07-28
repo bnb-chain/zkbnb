@@ -19,6 +19,7 @@ package commonAsset
 
 import (
 	"encoding/json"
+
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 )
 

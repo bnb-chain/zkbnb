@@ -1,10 +1,12 @@
 package util
 
 import (
-	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
-	"github.com/bnb-chain/zkbas/common/model/block"
-	"github.com/ethereum/go-ethereum/common"
 	"math/big"
+
+	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
+	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/bnb-chain/zkbas/common/model/block"
 )
 
 func ConstructStoredBlockInfo(oBlock *block.Block) zkbas.StorageStoredBlockInfo {

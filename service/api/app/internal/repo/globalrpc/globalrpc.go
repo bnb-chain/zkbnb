@@ -20,12 +20,13 @@ import (
 	"context"
 	"sort"
 
+	"github.com/zeromicro/go-zero/core/stores/redis"
+
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalrpc"
-	"github.com/zeromicro/go-zero/core/stores/redis"
 )
 
 type globalRPC struct {

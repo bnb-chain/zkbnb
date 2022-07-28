@@ -3,10 +3,11 @@ package account
 import (
 	"net/http"
 
+	"github.com/zeromicro/go-zero/rest/httpx"
+
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/account"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 func GetAccountStatusByAccountPkHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {

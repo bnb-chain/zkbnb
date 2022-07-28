@@ -3,12 +3,13 @@ package globalrpc
 import (
 	"context"
 
+	"github.com/zeromicro/go-zero/zrpc"
+
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalrpc"
-	"github.com/zeromicro/go-zero/zrpc"
 )
 
 type GlobalRPC interface {

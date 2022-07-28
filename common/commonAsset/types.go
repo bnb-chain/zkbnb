@@ -21,9 +21,10 @@ import (
 	"encoding/json"
 	"math/big"
 
-	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
+
+	"github.com/bnb-chain/zkbas/common/model/account"
 )
 
 type AccountAsset struct {

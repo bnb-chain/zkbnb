@@ -20,13 +20,15 @@ package util
 import (
 	"bytes"
 	"errors"
+	"math/big"
+
 	curve "github.com/bnb-chain/zkbas-crypto/ecc/ztwistededwards/tebn254"
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
-	"github.com/bnb-chain/zkbas/common/commonTx"
-	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
-	"math/big"
+
+	"github.com/bnb-chain/zkbas/common/commonTx"
+	"github.com/bnb-chain/zkbas/common/model/mempool"
 )
 
 func ConvertTxToRegisterZNSPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {

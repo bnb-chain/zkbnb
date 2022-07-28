@@ -20,14 +20,16 @@ package proverUtil
 import (
 	"encoding/json"
 	"fmt"
+	"testing"
+
+	"github.com/zeromicro/go-zero/core/stores/redis"
+
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/basic"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/tree"
-	"github.com/zeromicro/go-zero/core/stores/redis"
-	"testing"
 )
 
 func TestConstructCreatePairCryptoTxFirst(t *testing.T) {

@@ -19,11 +19,12 @@ package tree
 
 import (
 	"github.com/bnb-chain/zkbas-crypto/accumulators/merkleTree"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/sysconfig"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 )
 
 type (

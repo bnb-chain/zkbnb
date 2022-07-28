@@ -17,7 +17,9 @@
 
 package util
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+)
 
 /*
 	GetRandomUUID: get random value

@@ -16,7 +16,9 @@
 
 package proofSender
 
-import "errors"
+import (
+	"errors"
+)
 
 const (
 	TableName = "proof_sender"

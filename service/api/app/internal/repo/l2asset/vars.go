@@ -2,6 +2,7 @@ package l2asset
 
 import (
 	"errors"
+
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 

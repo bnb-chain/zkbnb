@@ -17,7 +17,9 @@
 
 package util
 
-import "github.com/ethereum/go-ethereum/crypto"
+import (
+	"github.com/ethereum/go-ethereum/crypto"
+)
 
 func ConcatKeccakHash(oldHash, paddingValue []byte) []byte {
 	hashVal := crypto.Keccak256Hash(oldHash, paddingValue)

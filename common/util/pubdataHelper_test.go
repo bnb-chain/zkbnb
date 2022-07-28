@@ -20,15 +20,17 @@ package util
 import (
 	"bytes"
 	"fmt"
-	curve "github.com/bnb-chain/zkbas-crypto/ecc/ztwistededwards/tebn254"
-	"github.com/bnb-chain/zkbas-crypto/ffmath"
-	"github.com/bnb-chain/zkbas/common/model/basic"
-	"github.com/bnb-chain/zkbas/common/model/mempool"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
-	"github.com/ethereum/go-ethereum/common"
 	"log"
 	"math/big"
 	"testing"
+
+	curve "github.com/bnb-chain/zkbas-crypto/ecc/ztwistededwards/tebn254"
+	"github.com/bnb-chain/zkbas-crypto/ffmath"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/bnb-chain/zkbas/common/model/basic"
+	"github.com/bnb-chain/zkbas/common/model/mempool"
 )
 
 var (

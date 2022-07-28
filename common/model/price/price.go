@@ -3,7 +3,6 @@ package price
 import (
 	"encoding/json"
 	"fmt"
-	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
 	"io/ioutil"
 	"net/http"
 
@@ -12,6 +11,8 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
+
+	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
 )
 
 var (

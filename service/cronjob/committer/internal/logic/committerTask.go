@@ -25,25 +25,25 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
-	"github.com/bnb-chain/zkbas/common/model/blockForCommit"
-
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
+	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
+
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/block"
+	"github.com/bnb-chain/zkbas/common/model/blockForCommit"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/tree"
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/service/cronjob/committer/internal/svc"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/zeromicro/go-zero/core/logx"
-	"gorm.io/gorm"
 )
 
 func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp *time.Time,

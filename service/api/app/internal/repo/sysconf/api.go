@@ -2,6 +2,7 @@ package sysconf
 
 import (
 	"context"
+
 	table "github.com/bnb-chain/zkbas/common/model/sysconfig"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 )

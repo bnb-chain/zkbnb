@@ -3,7 +3,7 @@ package commglobalmap
 import (
 	"context"
 	"fmt"
-	"github.com/bnb-chain/zkbas/errorcode"
+
 	"github.com/zeromicro/go-zero/core/stores/redis"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
@@ -11,6 +11,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
 )
 

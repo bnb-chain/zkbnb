@@ -20,12 +20,14 @@ package accountoperator
 import (
 	"context"
 	"errors"
+
+	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
+
 	"github.com/bnb-chain/zkbas/common/model/account"
 	table "github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
-	"github.com/zeromicro/go-zero/core/logx"
-	"gorm.io/gorm"
 )
 
 type model struct {

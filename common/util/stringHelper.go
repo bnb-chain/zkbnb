@@ -20,10 +20,11 @@ package util
 import (
 	"bytes"
 	"errors"
-	"github.com/ethereum/go-ethereum/common"
 	"hash"
 	"strings"
 	"unicode"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func LowerCase(s string) string {

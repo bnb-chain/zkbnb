@@ -19,12 +19,14 @@ package util
 
 import (
 	"fmt"
-	curve "github.com/bnb-chain/zkbas-crypto/ecc/ztwistededwards/tebn254"
-	"github.com/bnb-chain/zkbas/common/model/basic"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/zeromicro/go-zero/core/stores/redis"
 	"testing"
 	"time"
+
+	curve "github.com/bnb-chain/zkbas-crypto/ecc/ztwistededwards/tebn254"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/zeromicro/go-zero/core/stores/redis"
+
+	"github.com/bnb-chain/zkbas/common/model/basic"
 )
 
 func TestAccountNameHash(t *testing.T) {

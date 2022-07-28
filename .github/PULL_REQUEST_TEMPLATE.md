@@ -1,10 +1,17 @@
-## Types of changes
+### Description
 
-_Put an `x` in the boxes that apply_
-- [ ] New feature 
-- [ ] Fix bug
-- [ ] Recode
-- [ ] Log or code annotation change
-- [ ] Documentation Update (if none of the other choices apply)
-## Change descrpition
+add a description of your changes here...
 
+### Rationale
+
+tell us why we need these changes...
+
+### Example
+
+add an example CLI or API response...
+
+### Changes
+
+Notable changes:
+* add each change in a bullet point here
+* ...

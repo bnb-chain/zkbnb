@@ -2,13 +2,14 @@ package tx
 
 import (
 	"context"
-	"github.com/bnb-chain/zkbas/errorcode"
 	"sort"
 	"time"
 
-	table "github.com/bnb-chain/zkbas/common/model/tx"
-	"github.com/bnb-chain/zkbas/pkg/multcache"
 	"gorm.io/gorm"
+
+	table "github.com/bnb-chain/zkbas/common/model/tx"
+	"github.com/bnb-chain/zkbas/errorcode"
+	"github.com/bnb-chain/zkbas/pkg/multcache"
 )
 
 type model struct {

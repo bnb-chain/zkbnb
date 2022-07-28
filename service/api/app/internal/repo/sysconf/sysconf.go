@@ -3,12 +3,13 @@ package sysconf
 import (
 	"context"
 	"fmt"
-	"github.com/bnb-chain/zkbas/errorcode"
+
+	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 
 	table "github.com/bnb-chain/zkbas/common/model/sysconfig"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type sysconf struct {

@@ -17,7 +17,9 @@
 
 package commonConstant
 
-import "math/big"
+import (
+	"math/big"
+)
 
 const (
 	BNBAssetId        = 0

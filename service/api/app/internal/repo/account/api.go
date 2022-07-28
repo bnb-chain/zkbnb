@@ -17,14 +17,14 @@
 
 //go:generate mockgen -source api.go -destination api_mock.go -package account
 
-package account
-
 import (
 	"context"
 
 	table "github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 )
+
+package account
 
 type Model interface {
 	GetBasicAccountByAccountName(ctx context.Context, accountName string) (account *table.Account, err error)

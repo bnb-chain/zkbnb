@@ -2,6 +2,7 @@ package l2asset
 
 import (
 	"context"
+
 	table "github.com/bnb-chain/zkbas/common/model/assetInfo"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 )

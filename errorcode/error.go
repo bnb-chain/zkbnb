@@ -1,6 +1,8 @@
 package errorcode
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Error interface {
 	Error() string
