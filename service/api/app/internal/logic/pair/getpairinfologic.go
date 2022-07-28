@@ -31,12 +31,15 @@ func NewGetPairInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPa
 func (l *GetPairInfoLogic) GetPairInfo(req *types.ReqGetPairInfo) (*types.RespGetPairInfo, error) {
 	if checker.CheckPairIndex(req.PairIndex) {
 		logx.Error("[CheckPairIndex] param:%v", req.PairIndex)
-		return nil, errorcode.AppErrInvalidParam
+		return nil, errorcode.AppErrInvalidParam.RefineError("invalid PairIndex")
 	}
 	pair, err := l.globalRPC.GetPairInfo(l.ctx, req.PairIndex)
 	if err != nil {
 		logx.Error("[GetPairRatio] err:%v", err)
-		return nil, err
+		if err == errorcode.RpcErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	resp := &types.RespGetPairInfo{
 		AssetAId:      pair.AssetAId,

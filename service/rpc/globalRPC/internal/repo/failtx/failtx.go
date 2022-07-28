@@ -1,8 +1,6 @@
 package failtx
 
 import (
-	"fmt"
-
 	"gorm.io/gorm"
 
 	table "github.com/bnb-chain/zkbas/common/model/tx"
@@ -25,10 +23,10 @@ type model struct {
 func (m *model) CreateFailTx(failTx *table.FailTx) error {
 	dbTx := m.db.Table(m.table).Create(failTx)
 	if dbTx.Error != nil {
-		return errorcode.RepoErrSqlOperation.RefineError(fmt.Sprintf("CreateFailTx:%v", dbTx.Error))
+		return errorcode.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {
-		return errorcode.RepoErrInvalidFailTx
+		return errorcode.DbErrFailToCreateFailTx
 	}
 	return nil
 }

@@ -31,6 +31,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/l1BlockMonitor"
 	"github.com/bnb-chain/zkbas/common/sysconfigName"
 	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 /*
@@ -43,7 +44,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 	latestHandledBlock, err := l1BlockMonitorModel.GetLatestL1BlockMonitorByGovernance()
 	var handledHeight int64
 	if err != nil {
-		if err == ErrNotFound {
+		if err == errorcode.DbErrNotFound {
 			handledHeight = startHeight
 		} else {
 			logx.Errorf("[l1BlockMonitorModel.GetLatestL1BlockMonitorByBlock]: %s", err.Error())
@@ -211,7 +212,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 			} else {
 				configInfo, err := sysconfigModel.GetSysconfigByName(sysconfigName.Validators)
 				if err != nil {
-					if err != ErrNotFound {
+					if err != errorcode.DbErrNotFound {
 						logx.Errorf("[MonitorGovernanceContract] unable to get sysconfig by name: %s", err.Error())
 						return err
 					} else {

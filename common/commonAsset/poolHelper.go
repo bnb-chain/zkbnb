@@ -23,6 +23,8 @@ import (
 	"math/big"
 
 	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type LiquidityInfo struct {
@@ -98,7 +100,7 @@ func ConstructLiquidityInfo(pairIndex int64, assetAId int64, assetAAmount string
 func ParseLiquidityInfo(infoStr string) (info *LiquidityInfo, err error) {
 	err = json.Unmarshal([]byte(infoStr), &info)
 	if err != nil {
-		return nil, err
+		return nil, errorcode.JsonErrUnmarshal
 	}
 	return info, nil
 }

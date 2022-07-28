@@ -65,7 +65,7 @@ const (
 )
 
 var (
-	ErrNotFound = sqlx.ErrNotFound
+	DbErrNotFound = sqlx.ErrNotFound
 )
 
 type SenderParam struct {

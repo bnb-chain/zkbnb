@@ -25,9 +25,9 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/model/blockForProof"
-	"github.com/bnb-chain/zkbas/common/model/proofSender"
 	"github.com/bnb-chain/zkbas/common/proverUtil"
 	"github.com/bnb-chain/zkbas/common/tree"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/cronjob/witnessGenerator/internal/svc"
 )
 
@@ -57,7 +57,7 @@ func generateUnprovedBlockWitness(
 ) error {
 	latestUnprovedHeight, err := ctx.BlockForProofModel.GetLatestUnprovedBlockHeight()
 	if err != nil {
-		if err == blockForProof.ErrNotFound {
+		if err == errorcode.DbErrNotFound {
 			latestUnprovedHeight = 0
 		} else {
 			return err
@@ -139,12 +139,12 @@ func generateUnprovedBlockWitness(
 
 func updateTimeoutUnprovedBlock(ctx *svc.ServiceContext) {
 	latestConfirmedProof, err := ctx.ProofSenderModel.GetLatestConfirmedProof()
-	if err != nil && err != proofSender.ErrNotFound {
+	if err != nil && err != errorcode.DbErrNotFound {
 		return
 	}
 
 	var nextBlockNumber int64 = 1
-	if err != proofSender.ErrNotFound {
+	if err != errorcode.DbErrNotFound {
 		nextBlockNumber = latestConfirmedProof.BlockNumber + 1
 	}
 

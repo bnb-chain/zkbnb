@@ -25,9 +25,9 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/redis"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
-	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 func GetLatestNftInfoForRead(
@@ -57,7 +57,7 @@ func GetLatestNftInfoForRead(
 		}
 		mempoolTxs, err := mempoolTxModel.GetPendingNftTxs()
 		if err != nil {
-			if err != mempool.ErrNotFound {
+			if err != errorcode.DbErrNotFound {
 				logx.Errorf("[GetLatestAccountInfo] unable to get mempool txs by account index: %s", err.Error())
 				return nil, err
 			}

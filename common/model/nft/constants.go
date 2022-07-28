@@ -17,12 +17,6 @@
 
 package nft
 
-import (
-	"errors"
-
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
-)
-
 const (
 	L2NftTableName                = `l2_nft`
 	L2NftHistoryTableName         = `l2_nft_history`
@@ -38,9 +32,4 @@ const (
 
 	CollectionPending = 0 // create collection request received by api
 	CollectionCreated = 1 // collection created in l2
-)
-
-var (
-	ErrNotFound                  = sqlx.ErrNotFound
-	ErrDuplicatedCollectionIndex = errors.New("duplicated account index, fatal error")
 )

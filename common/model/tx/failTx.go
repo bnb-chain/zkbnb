@@ -23,6 +23,8 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 var (
@@ -105,7 +107,7 @@ func (m *defaultFailTxModel) CreateFailTx(failTx *FailTx) error {
 	}
 	if dbTx.RowsAffected == 0 {
 		logx.Error("[txVerification.CreateFailTx] Create Invalid Fail Tx")
-		return ErrInvalidFailTx
+		return errorcode.DbErrFailToCreateFailTx
 	}
 	return nil
 }

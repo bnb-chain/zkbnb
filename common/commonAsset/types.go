@@ -25,6 +25,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/common/model/account"
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type AccountAsset struct {
@@ -47,7 +48,7 @@ func ParseAccountAsset(balance string) (asset *AccountAsset, err error) {
 	err = json.Unmarshal([]byte(balance), &asset)
 	if err != nil {
 		logx.Errorf("[ParseAccountAsset] unable to parse account asset")
-		return nil, err
+		return nil, errorcode.JsonErrUnmarshal
 	}
 	return asset, nil
 }
@@ -75,7 +76,7 @@ type AccountInfo struct {
 func FromFormatAccountInfo(formatAccountInfo *AccountInfo) (accountInfo *account.Account, err error) {
 	assetInfoBytes, err := json.Marshal(formatAccountInfo.AssetInfo)
 	if err != nil {
-		return nil, err
+		return nil, errorcode.JsonErrMarshal
 	}
 	accountInfo = &account.Account{
 		Model: gorm.Model{
@@ -99,7 +100,7 @@ func ToFormatAccountInfo(accountInfo *account.Account) (formatAccountInfo *Accou
 	var assetInfo map[int64]*AccountAsset
 	err = json.Unmarshal([]byte(accountInfo.AssetInfo), &assetInfo)
 	if err != nil {
-		return nil, err
+		return nil, errorcode.JsonErrUnmarshal
 	}
 	formatAccountInfo = &AccountInfo{
 		AccountId:       accountInfo.ID,

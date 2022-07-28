@@ -5,6 +5,7 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/block"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
@@ -31,11 +32,14 @@ func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetBlocks) (*types.RespGetBlock
 	blocks, err := l.block.GetBlocksList(l.ctx, int64(req.Limit), int64(req.Offset))
 	if err != nil {
 		logx.Errorf("[GetBlocksList] err:%v", err)
-		return nil, err
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	total, err := l.block.GetBlocksTotalCount(l.ctx)
 	if err != nil {
-		return nil, err
+		return nil, errorcode.AppErrInternal
 	}
 	resp := &types.RespGetBlocks{
 		Total:  uint32(total),

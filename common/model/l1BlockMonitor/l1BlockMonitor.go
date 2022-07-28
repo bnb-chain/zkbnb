@@ -31,6 +31,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/l2BlockEventMonitor"
 	"github.com/bnb-chain/zkbas/common/model/l2TxEventMonitor"
 	"github.com/bnb-chain/zkbas/common/model/sysconfig"
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type (
@@ -244,11 +245,11 @@ func (m *defaultL1BlockMonitorModel) GetL1BlockMonitors() (blockInfos []*L1Block
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[l1BlockMonitor.GetL1BlockMonitors] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l1BlockMonitor.GetL1BlockMonitors] %s", ErrNotFound)
+		err := fmt.Sprintf("[l1BlockMonitor.GetL1BlockMonitors] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return blockInfos, dbTx.Error
 }
@@ -263,12 +264,12 @@ func (m *defaultL1BlockMonitorModel) GetLatestL1BlockMonitorByBlock() (blockInfo
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[l1BlockMonitor.GetLatestL1BlockMonitorByBlock] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l1BlockMonitor.GetLatestL1BlockMonitorByBlock] %s", ErrNotFound)
+		err := fmt.Sprintf("[l1BlockMonitor.GetLatestL1BlockMonitorByBlock] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return blockInfo, nil
 }
@@ -278,12 +279,12 @@ func (m *defaultL1BlockMonitorModel) GetLatestL1BlockMonitorByGovernance() (bloc
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[l1BlockMonitor.GetLatestL1BlockMonitorByGovernance] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l1BlockMonitor.GetLatestL1BlockMonitorByGovernance] %s", ErrNotFound)
+		err := fmt.Sprintf("[l1BlockMonitor.GetLatestL1BlockMonitorByGovernance] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return blockInfo, nil
 }

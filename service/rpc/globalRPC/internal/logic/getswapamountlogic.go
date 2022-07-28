@@ -33,38 +33,43 @@ func NewGetSwapAmountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 func (l *GetSwapAmountLogic) GetSwapAmount(in *globalRPCProto.ReqGetSwapAmount) (*globalRPCProto.RespGetSwapAmount, error) {
 	if checker.CheckPairIndex(in.PairIndex) {
 		logx.Errorf("[CheckPairIndex] Parameter mismatch:%v", in.PairIndex)
-		return nil, errorcode.GlobalRpcInvalidParam
-	}
-	liquidity, err := l.commglobalmap.GetLatestLiquidityInfoForReadWithCache(l.ctx, int64(in.PairIndex))
-	if err != nil {
-		logx.Errorf("[GetLatestLiquidityInfoForReadWithCache] err:%v", err)
-		return nil, err
-	}
-	if liquidity.AssetA == nil || liquidity.AssetA.Cmp(big.NewInt(0)) == 0 ||
-		liquidity.AssetB == nil || liquidity.AssetB.Cmp(big.NewInt(0)) == 0 {
-		logx.Errorf("liquidity:%v, err:%v", liquidity, errorcode.GlobalRpcErrInvalidAsset)
-		return &globalRPCProto.RespGetSwapAmount{}, errorcode.GlobalRpcErrInvalidAsset
+		return nil, errorcode.RpcErrInvalidParam
 	}
 	deltaAmount, isTure := new(big.Int).SetString(in.AssetAmount, 10)
 	if !isTure {
 		logx.Errorf("[SetString] err, AssetAmount:%v", in.AssetAmount)
-		return nil, errorcode.GlobalRpcInvalidParam
+		return nil, errorcode.RpcErrInvalidParam
 	}
-	var assetAmount *big.Int
-	var toAssetId int64
+
+	liquidity, err := l.commglobalmap.GetLatestLiquidityInfoForReadWithCache(l.ctx, int64(in.PairIndex))
+	if err != nil {
+		logx.Errorf("[GetLatestLiquidityInfoForReadWithCache] err:%v", err)
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.RpcErrNotFound
+		}
+		return nil, errorcode.RpcErrInternal
+	}
+	if liquidity.AssetA == nil || liquidity.AssetA.Cmp(big.NewInt(0)) == 0 ||
+		liquidity.AssetB == nil || liquidity.AssetB.Cmp(big.NewInt(0)) == 0 {
+		logx.Errorf("liquidity:%v, err:%v", liquidity, errorcode.RpcErrLiquidityInvalidAssetAmount)
+		return &globalRPCProto.RespGetSwapAmount{}, errorcode.RpcErrLiquidityInvalidAssetAmount
+	}
+
 	if int64(in.AssetId) != liquidity.AssetAId && int64(in.AssetId) != liquidity.AssetBId {
-		logx.Errorf("input:%v,liquidity:%v, err:%v", in, liquidity, errorcode.GlobalRpcErrInvalidAsset)
-		return &globalRPCProto.RespGetSwapAmount{}, errorcode.GlobalRpcErrInvalidAssetID
+		logx.Errorf("input:%v,liquidity:%v, err:%v", in, liquidity, errorcode.RpcErrLiquidityInvalidAssetAmount)
+		return &globalRPCProto.RespGetSwapAmount{}, errorcode.RpcErrLiquidityInvalidAssetID
 	}
 	logx.Errorf("[ComputeDelta] liquidity:%v", liquidity)
 	logx.Errorf("[ComputeDelta] in:%v", in)
 	logx.Errorf("[ComputeDelta] deltaAmount:%v", deltaAmount)
 
+	var assetAmount *big.Int
+	var toAssetId int64
 	assetAmount, toAssetId, err = util.ComputeDelta(liquidity.AssetA, liquidity.AssetB, liquidity.AssetAId, liquidity.AssetBId,
 		int64(in.AssetId), in.IsFrom, deltaAmount, liquidity.FeeRate)
 	if err != nil {
 		logx.Errorf("[ComputeDelta] err:%v", err)
-		return nil, err
+		return nil, errorcode.RpcErrInternal
 	}
 	logx.Errorf("[ComputeDelta] assetAmount:%v", assetAmount)
 	return &globalRPCProto.RespGetSwapAmount{

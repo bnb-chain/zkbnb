@@ -17,14 +17,6 @@
 
 package blockForCommit
 
-import (
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
-)
-
-var (
-	ErrNotFound = sqlx.ErrNotFound
-)
-
 const (
 	BlockForCommitTableName = `block_for_commit`
 )

@@ -28,6 +28,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type (
@@ -96,7 +97,7 @@ func (m *defaultBlockForProofModel) GetLatestUnprovedBlockHeight() (blockNumber 
 		logx.Errorf("[GetLatestUnprovedBlockHeight] unable to get latest unproved block: %s", dbTx.Error.Error())
 		return 0, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		return 0, ErrNotFound
+		return 0, errorcode.DbErrNotFound
 	}
 	return row.BlockHeight, nil
 }
@@ -107,18 +108,18 @@ func (m *defaultBlockForProofModel) GetUnprovedCryptoBlockByMode(mode int64) (bl
 		dbTx := m.DB.Table(m.table).Where("status = ?", StatusPublished).Order("block_height asc").Limit(1).Find(&block)
 		if dbTx.Error != nil {
 			logx.Errorf("[GetUnprovedCryptoBlockByMode] unable to get unproved block: %s", dbTx.Error.Error())
-			return nil, dbTx.Error
+			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
-			return nil, ErrNotFound
+			return nil, errorcode.DbErrNotFound
 		}
 		return block, nil
 	case util.COM_MODE:
 		dbTx := m.DB.Table(m.table).Where("status <= ?", StatusReceived).Order("block_height asc").Limit(1).Find(&block)
 		if dbTx.Error != nil {
 			logx.Errorf("[GetUnprovedCryptoBlockByMode] unable to get unproved block: %s", dbTx.Error.Error())
-			return nil, dbTx.Error
+			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
-			return nil, ErrNotFound
+			return nil, errorcode.DbErrNotFound
 		}
 		return block, nil
 	default:
@@ -130,9 +131,9 @@ func (m *defaultBlockForProofModel) GetUnprovedCryptoBlockByBlockNumber(height i
 	dbTx := m.DB.Table(m.table).Where("block_height = ?", height).Limit(1).Find(&block)
 	if dbTx.Error != nil {
 		logx.Errorf("[GetUnprovedCryptoBlockByBlockNumber] unable to get unproved block: %s", dbTx.Error.Error())
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return block, nil
 }

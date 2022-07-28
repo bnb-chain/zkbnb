@@ -22,9 +22,9 @@ func (m *model) GetSysconfigByName(ctx context.Context, name string) (*table.Sys
 		var config table.Sysconfig
 		dbTx := m.db.Table(m.table).Where("name = ?", name).Find(&config)
 		if dbTx.Error != nil {
-			return nil, errorcode.RepoErrSqlOperation.RefineError(fmt.Sprintf("GetSysconfigByName:%v", dbTx.Error))
+			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errorcode.RepoErrNotFound
+			return nil, errorcode.DbErrNotFound
 		}
 		return &config, nil
 	}

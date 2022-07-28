@@ -116,7 +116,7 @@ func CheckGasAccountIndex(txGasAccountIndex int64, sysConfigModel sysconfig.Sysc
 	}
 	if gasAccountIndex != txGasAccountIndex {
 		logx.Errorf("[ParseInt] param:%v, txGasAccountIndex:%v, err:%v", gasAccountIndex, txGasAccountIndex, err)
-		return errorcode.GlobalRpcErrInvalidGasAccountIndex
+		return errorcode.RpcErrInvalidGasAccountIndex
 	}
 	return nil
 }

@@ -30,6 +30,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type (
@@ -153,10 +154,10 @@ func (m *defaultL2TxEventMonitorModel) GetL2TxEventMonitors() (txs []*L2TxEventM
 	dbTx := m.DB.Table(m.table).Find(&txs).Order("l1_block_height")
 	if dbTx.Error != nil {
 		logx.Errorf("[l2TxEventMonitor.GetL2TxEventMonitors] %s", dbTx.Error.Error())
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		logx.Error("[l2TxEventMonitor.GetL2TxEventMonitors] %s", ErrNotFound.Error())
-		return nil, ErrNotFound
+		logx.Error("[l2TxEventMonitor.GetL2TxEventMonitors] %s", errorcode.DbErrNotFound.Error())
+		return nil, errorcode.DbErrNotFound
 	}
 	return txs, dbTx.Error
 }
@@ -171,10 +172,10 @@ func (m *defaultL2TxEventMonitorModel) GetL2TxEventMonitorsByStatus(status int) 
 	dbTx := m.DB.Table(m.table).Where("status = ?", status).Order("request_id").Find(&txs)
 	if dbTx.Error != nil {
 		logx.Errorf("[l2TxEventMonitor.GetL2TxEventMonitorsByStatus] %s", dbTx.Error.Error())
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		logx.Infof("[l2TxEventMonitor.GetL2TxEventMonitorsByStatus] %s", ErrNotFound.Error())
-		return nil, ErrNotFound
+		logx.Infof("[l2TxEventMonitor.GetL2TxEventMonitorsByStatus] %s", errorcode.DbErrNotFound.Error())
+		return nil, errorcode.DbErrNotFound
 	}
 	return txs, nil
 }
@@ -189,10 +190,10 @@ func (m *defaultL2TxEventMonitorModel) GetL2TxEventMonitorsBySenderAddress(sende
 	dbTx := m.DB.Table(m.table).Where("sender_address = ?", senderAddr).Find(&txs).Order("l1_block_height")
 	if dbTx.Error != nil {
 		logx.Errorf("[l2TxEventMonitor.GetL2TxEventMonitorsBySenderAddress] %s", dbTx.Error.Error())
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		logx.Errorf("[l2TxEventMonitor.GetL2TxEventMonitorsBySenderAddress] %s", ErrNotFound.Error())
-		return nil, ErrNotFound
+		logx.Errorf("[l2TxEventMonitor.GetL2TxEventMonitorsBySenderAddress] %s", errorcode.DbErrNotFound.Error())
+		return nil, errorcode.DbErrNotFound
 	}
 	return txs, nil
 }
@@ -207,10 +208,10 @@ func (m *defaultL2TxEventMonitorModel) GetL2TxEventMonitorsByTxType(txType uint8
 	dbTx := m.DB.Table(m.table).Where("tx_type = ?", txType).Find(&txs).Order("l1_block_height")
 	if dbTx.Error != nil {
 		logx.Errorf("[l2TxEventMonitor.GetL2TxEventMonitorsByTxType] %s", dbTx.Error.Error())
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		logx.Errorf("[l2TxEventMonitor.GetL2TxEventMonitorsByTxType] %s", ErrNotFound.Error())
-		return nil, ErrNotFound
+		logx.Errorf("[l2TxEventMonitor.GetL2TxEventMonitorsByTxType] %s", errorcode.DbErrNotFound.Error())
+		return nil, errorcode.DbErrNotFound
 	}
 	return txs, nil
 }

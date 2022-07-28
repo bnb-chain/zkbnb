@@ -31,12 +31,15 @@ func NewGetLPValueLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetLPV
 func (l *GetLPValueLogic) GetLPValue(req *types.ReqGetLPValue) (resp *types.RespGetLPValue, err error) {
 	if checker.CheckPairIndex(req.PairIndex) {
 		logx.Error("[CheckPairIndex] param:%v", req.PairIndex)
-		return nil, errorcode.AppErrInvalidParam
+		return nil, errorcode.AppErrInvalidParam.RefineError("invalid PairIndex")
 	}
 	lpValue, err := l.globalRPC.GetLpValue(l.ctx, req.PairIndex, req.LpAmount)
 	if err != nil {
 		logx.Error("[GetLpValue] err:%v", err)
-		return nil, err
+		if err == errorcode.RpcErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	resp = &types.RespGetLPValue{
 		AssetAId:     lpValue.AssetAId,

@@ -24,6 +24,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 func SendCommittedBlocks(param *SenderParam, l1TxSenderModel L1TxSenderModel,
@@ -39,21 +40,21 @@ func SendCommittedBlocks(param *SenderParam, l1TxSenderModel L1TxSenderModel,
 	)
 	// scan l1 tx sender table for handled committed height
 	lastHandledBlock, getHandleErr := l1TxSenderModel.GetLatestHandledBlock(CommitTxType)
-	if getHandleErr != nil && getHandleErr != ErrNotFound {
+	if getHandleErr != nil && getHandleErr != errorcode.DbErrNotFound {
 		logx.Errorf("[SendVerifiedAndExecutedBlocks] GetLatestHandledBlock err:%v", getHandleErr)
 		return getHandleErr
 	}
 	// scan l1 tx sender table for pending committed height that higher than the latest handled height
 	pendingSender, getPendingerr := l1TxSenderModel.GetLatestPendingBlock(CommitTxType)
 	if getPendingerr != nil {
-		if getPendingerr != ErrNotFound {
+		if getPendingerr != errorcode.DbErrNotFound {
 			logx.Errorf("[SendVerifiedAndExecutedBlocks] GetLatestPendingBlock err:%v", getPendingerr)
 			return getPendingerr
 		}
 	}
 
 	// case 1:
-	if getHandleErr == ErrNotFound && getPendingerr == nil {
+	if getHandleErr == errorcode.DbErrNotFound && getPendingerr == nil {
 		_, isPending, err := cli.GetTransactionByHash(pendingSender.L1TxHash)
 		// if err != nil, means we cannot get this tx by hash
 		if err != nil {
@@ -119,8 +120,8 @@ func SendCommittedBlocks(param *SenderParam, l1TxSenderModel L1TxSenderModel,
 	var lastStoredBlockInfo StorageStoredBlockInfo
 	var pendingCommitBlocks []ZkbasCommitBlockInfo
 	// if lastHandledBlock == nil, means we haven't committed any blocks, just start from 0
-	// if ErrNotFound, means we haven't committed new blocks, just start to commit
-	if getHandleErr == ErrNotFound && getPendingerr == ErrNotFound {
+	// if errorcode.DbErrNotFound, means we haven't committed new blocks, just start to commit
+	if getHandleErr == errorcode.DbErrNotFound && getPendingerr == errorcode.DbErrNotFound {
 		var blocks []*BlockForCommit
 		blocks, err = blockForCommitModel.GetBlockForCommitBetween(1, int64(maxBlockCount))
 		if err != nil {
@@ -135,8 +136,8 @@ func SendCommittedBlocks(param *SenderParam, l1TxSenderModel L1TxSenderModel,
 		// set stored block header to default 0
 		lastStoredBlockInfo = DefaultBlockHeader()
 	}
-	if getHandleErr == nil && getPendingerr == ErrNotFound {
-		// if ErrNotFound, means we haven't committed new blocks, just start to commit
+	if getHandleErr == nil && getPendingerr == errorcode.DbErrNotFound {
+		// if errorcode.DbErrNotFound, means we haven't committed new blocks, just start to commit
 		// get blocks higher than last handled blocks
 		var blocks []*BlockForCommit
 		// commit new blocks
@@ -152,7 +153,7 @@ func SendCommittedBlocks(param *SenderParam, l1TxSenderModel L1TxSenderModel,
 		}
 		// get last block info
 		lastHandledBlockInfo, err := blockModel.GetBlockByBlockHeight(lastHandledBlock.L2BlockHeight)
-		if err != nil && err != ErrNotFound {
+		if err != nil && err != errorcode.DbErrNotFound {
 			logx.Errorf("[SendCommittedBlocks] unable to get last handled block info: %s", err.Error())
 			return err
 		}

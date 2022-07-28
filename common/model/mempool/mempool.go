@@ -28,6 +28,7 @@ import (
 
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/model/nft"
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 var (
@@ -150,7 +151,7 @@ func (m *defaultMempoolModel) GetAllMempoolTxsList() (mempoolTxs []*MempoolTx, e
 	dbTx := m.DB.Table(m.table).Order("created_at, id").Find(&mempoolTxs)
 	if dbTx.Error != nil {
 		logx.Errorf("[mempool.GetMempoolTxsList] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	}
 	// TODO: cache operation
 	for _, mempoolTx := range mempoolTxs {
@@ -173,7 +174,7 @@ func (m *defaultMempoolModel) GetMempoolTxsList(limit int64, offset int64) (memp
 	dbTx := m.DB.Table(m.table).Where("status = ?", PendingTxStatus).Limit(int(limit)).Offset(int(offset)).Order("created_at desc, id desc").Find(&mempoolTxs)
 	if dbTx.Error != nil {
 		logx.Errorf("[mempool.GetMempoolTxsList] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	}
 	// TODO: cache operation
 	for _, mempoolTx := range mempoolTxs {
@@ -213,7 +214,7 @@ func (m *defaultMempoolModel) GetMempoolTxsListForCommitter() (mempoolTxs []*Mem
 	dbTx := m.DB.Table(m.table).Where("status = ?", PendingTxStatus).Order("created_at, id").Find(&mempoolTxs)
 	if dbTx.Error != nil {
 		logx.Errorf("[mempool.GetMempoolTxsList] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	}
 	// TODO: cache operation
 	for _, mempoolTx := range mempoolTxs {
@@ -242,19 +243,19 @@ func (m *defaultMempoolModel) GetMempoolTxsListByAccountIndex(accountIndex int64
 	dbTx := m.DB.Table(mempoolDetailTable).Select("tx_id").Where("account_index = ?", accountIndex).Find(&mempoolTxDetails).Group("tx_id").Find(&mempoolIds)
 	if dbTx.Error != nil {
 		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndex] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[mempool.GetMempoolTxsListByAccountIndex] No rows in mempool list")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 
 	dbTx = m.DB.Table(m.table).Where("status = ?", PendingTxStatus).Order("created_at desc").Offset(int(offset)).Limit(int(limit)).Find(&mempoolTxs, mempoolIds)
 	if dbTx.Error != nil {
 		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndex] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[mempool.GetMempoolTxsListByAccountIndex] No rows in mempool with Pending Status")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	// TODO: cache operation
 	for _, mempoolTx := range mempoolTxs {
@@ -283,18 +284,18 @@ func (m *defaultMempoolModel) GetMempoolTxsListByAccountIndexAndTxType(accountIn
 	dbTx := m.DB.Table(mempoolDetailTable).Select("tx_id").Where("account_index = ?", accountIndex).Find(&mempoolTxDetails).Group("tx_id").Find(&mempoolIds)
 	if dbTx.Error != nil {
 		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndexAndTxType] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndexAndTxType] Get MempoolIds Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	dbTx = m.DB.Table(m.table).Where("status = ? and tx_type = ?", PendingTxStatus, txType).Order("created_at desc").Offset(int(offset)).Limit(int(limit)).Find(&mempoolTxs, mempoolIds)
 	if dbTx.Error != nil {
 		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndexAndTxType] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndexAndTxType] Get MempoolTxs Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	// TODO: cache operation
 	for _, mempoolTx := range mempoolTxs {
@@ -316,18 +317,18 @@ func (m *defaultMempoolModel) GetMempoolTxsListByAccountIndexAndTxTypeArray(acco
 	dbTx := m.DB.Table(mempoolDetailTable).Select("tx_id").Where("account_index = ?", accountIndex).Find(&mempoolTxDetails).Group("tx_id").Find(&mempoolIds)
 	if dbTx.Error != nil {
 		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndexAndTxType] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndexAndTxType] Get MempoolIds Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	dbTx = m.DB.Table(m.table).Where("status = ? and tx_type in (?)", PendingTxStatus, txTypeArray).Order("created_at desc").Offset(int(offset)).Limit(int(limit)).Find(&mempoolTxs, mempoolIds)
 	if dbTx.Error != nil {
 		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndexAndTxType] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[mempool.GetMempoolTxsListByAccountIndexAndTxType] Get MempoolTxs Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	// TODO: cache operation
 	for _, mempoolTx := range mempoolTxs {
@@ -495,17 +496,17 @@ func (m *defaultMempoolModel) GetMempoolTxsTotalCountByPublicKey(pk string) (cou
 func (m *defaultMempoolModel) GetMempoolTxByTxHash(hash string) (mempoolTx *MempoolTx, err error) {
 	dbTx := m.DB.Table(m.table).Where("status = ? and tx_hash = ?", PendingTxStatus, hash).Find(&mempoolTx)
 	if dbTx.Error != nil {
-		if dbTx.Error == ErrNotFound {
+		if dbTx.Error == errorcode.DbErrNotFound {
 			return mempoolTx, dbTx.Error
 		} else {
 			err := fmt.Sprintf("[mempool.GetMempoolTxByTxHash] %s", dbTx.Error)
 			logx.Errorf(err)
-			return nil, dbTx.Error
+			return nil, errorcode.DbErrSqlOperation
 		}
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[mempool.GetMempoolTxByTxHash] %s", ErrNotFound)
+		err := fmt.Sprintf("[mempool.GetMempoolTxByTxHash] %s", errorcode.DbErrNotFound)
 		logx.Info(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	err = m.OrderMempoolTxDetails(mempoolTx)
 	if err != nil {
@@ -531,7 +532,7 @@ func (m *defaultMempoolModel) CreateBatchedMempoolTxs(mempoolTxs []*MempoolTx) e
 		}
 		if dbTx.RowsAffected == 0 {
 			logx.Errorf("[mempool.CreateMempoolTxs] Create Invalid Mempool Tx")
-			return ErrInvalidMempoolTx
+			return errorcode.DbErrFailToCreateMempoolTx
 		}
 		return nil
 	})
@@ -556,7 +557,7 @@ func (m *defaultMempoolModel) DeleteMempoolTxs(txIds []*int64) error {
 			}
 			if dbTx.RowsAffected == 0 {
 				logx.Errorf("[mempool.DeleteMempoolTxs] Delete Invalid Mempool Tx")
-				return ErrInvalidMempoolTx
+				return errorcode.DbErrFailToCreateMempoolTx
 			}
 
 			//var mempoolTxDetail *MempoolTxDetail
@@ -584,10 +585,10 @@ func (m *defaultMempoolModel) GetMempoolTxsListByL2BlockHeight(blockHeight int64
 	dbTx := m.DB.Table(m.table).Where("status = ? and l2_block_height <= ?", SuccessTxStatus, blockHeight).Find(&mempoolTxs)
 	if dbTx.Error != nil {
 		logx.Errorf("[mempool.GetMempoolTxsListByL2BlockHeight] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[mempool.GetMempoolTxsListByL2BlockHeight] Get MempoolTxs Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 
 	return mempoolTxs, nil
@@ -598,10 +599,10 @@ func (m *defaultMempoolModel) GetLatestL2MempoolTxByAccountIndex(accountIndex in
 		Order("created_at desc, id desc").Find(&mempoolTx)
 	if dbTx.Error != nil {
 		logx.Errorf("[GetLatestL2MempoolTxByAccountIndex] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[GetLatestL2MempoolTxByAccountIndex] Get MempoolTxs Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return mempoolTx, nil
 }
@@ -611,10 +612,10 @@ func (m *defaultMempoolModel) GetPendingMempoolTxsByAccountIndex(accountIndex in
 		Order("created_at, id").Find(&mempoolTxs)
 	if dbTx.Error != nil {
 		logx.Errorf("[GetPendingMempoolTxsByAccountIndex] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[GetPendingMempoolTxsByAccountIndex] Get MempoolTxs Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	for _, mempoolTx := range mempoolTxs {
 		err = m.OrderMempoolTxDetails(mempoolTx)
@@ -632,11 +633,11 @@ func (m *defaultMempoolModel) GetPendingLiquidityTxs() (mempoolTxs []*MempoolTx,
 	if dbTx.Error != nil {
 		errInfo := fmt.Sprintf("[mempool.GetMempoolTxByTxHash] %s", dbTx.Error)
 		logx.Errorf(errInfo)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[mempool.GetMempoolTxByTxHash] %s", ErrNotFound)
+		err := fmt.Sprintf("[mempool.GetMempoolTxByTxHash] %s", errorcode.DbErrNotFound)
 		logx.Info(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	for _, mempoolTx := range mempoolTxs {
 		err = m.OrderMempoolTxDetails(mempoolTx)
@@ -654,11 +655,11 @@ func (m *defaultMempoolModel) GetPendingNftTxs() (mempoolTxs []*MempoolTx, err e
 	if dbTx.Error != nil {
 		errInfo := fmt.Sprintf("[mempool.GetMempoolTxByTxHash] %s", dbTx.Error)
 		logx.Errorf(errInfo)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[mempool.GetMempoolTxByTxHash] %s", ErrNotFound)
+		err := fmt.Sprintf("[mempool.GetMempoolTxByTxHash] %s", errorcode.DbErrNotFound)
 		logx.Info(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	for _, mempoolTx := range mempoolTxs {
 		err = m.OrderMempoolTxDetails(mempoolTx)
@@ -679,7 +680,7 @@ func (m *defaultMempoolModel) CreateMempoolTxAndL2CollectionAndNonce(mempoolTx *
 		}
 		if dbTx.RowsAffected == 0 {
 			logx.Errorf("[mempool.CreateMempoolTxAndL2Collection] Create Invalid Mempool Tx")
-			return ErrInvalidMempoolTx
+			return errorcode.DbErrFailToCreateMempoolTx
 		}
 		dbTx = db.Table(nft.L2NftCollectionTableName).Create(nftCollectionInfo)
 		if dbTx.Error != nil {
@@ -688,7 +689,7 @@ func (m *defaultMempoolModel) CreateMempoolTxAndL2CollectionAndNonce(mempoolTx *
 		}
 		if dbTx.RowsAffected == 0 {
 			logx.Errorf("[mempool.CreateMempoolTxAndL2Collection] Create Invalid nft collection info")
-			return ErrInvalidMempoolTx
+			return errorcode.DbErrFailToCreateMempoolTx
 		}
 		return nil
 	})
@@ -703,7 +704,7 @@ func (m *defaultMempoolModel) CreateMempoolTxAndL2Nft(mempoolTx *MempoolTx, nftI
 		}
 		if dbTx.RowsAffected == 0 {
 			logx.Errorf("[mempool.CreateMempoolTxAndL2Nft] Create Invalid Mempool Tx")
-			return ErrInvalidMempoolTx
+			return errorcode.DbErrFailToCreateMempoolTx
 		}
 		dbTx = tx.Table(nft.L2NftTableName).Create(nftInfo)
 		if dbTx.Error != nil {
@@ -712,7 +713,7 @@ func (m *defaultMempoolModel) CreateMempoolTxAndL2Nft(mempoolTx *MempoolTx, nftI
 		}
 		if dbTx.RowsAffected == 0 {
 			logx.Errorf("[mempool.CreateMempoolTxAndL2Nft] Create Invalid nft info")
-			return ErrInvalidMempoolTx
+			return errorcode.DbErrFailToCreateMempoolTx
 		}
 		return nil
 	})
@@ -727,7 +728,7 @@ func (m *defaultMempoolModel) CreateMempoolTxAndL2NftExchange(mempoolTx *Mempool
 		}
 		if dbTx.RowsAffected == 0 {
 			logx.Errorf("[mempool.CreateMempoolTxAndL2NftExchange] Create Invalid Mempool Tx")
-			return ErrInvalidMempoolTx
+			return errorcode.DbErrFailToCreateMempoolTx
 		}
 		if len(offers) != 0 {
 			dbTx = tx.Table(nft.OfferTableName).CreateInBatches(offers, len(offers))
@@ -737,7 +738,7 @@ func (m *defaultMempoolModel) CreateMempoolTxAndL2NftExchange(mempoolTx *Mempool
 			}
 			if dbTx.RowsAffected == 0 {
 				logx.Errorf("[mempool.CreateMempoolTxAndL2NftExchange] Create Invalid nft info")
-				return ErrInvalidMempoolTx
+				return errorcode.DbErrFailToCreateMempoolTx
 			}
 		}
 		dbTx = tx.Table(nft.L2NftExchangeTableName).Create(nftExchange)
@@ -747,7 +748,7 @@ func (m *defaultMempoolModel) CreateMempoolTxAndL2NftExchange(mempoolTx *Mempool
 		}
 		if dbTx.RowsAffected == 0 {
 			logx.Errorf("[mempool.CreateMempoolTxAndL2NftExchange] Create Invalid nft info")
-			return ErrInvalidMempoolTx
+			return errorcode.DbErrFailToCreateMempoolTx
 		}
 		return nil
 	})
@@ -762,7 +763,7 @@ func (m *defaultMempoolModel) CreateMempoolTxAndUpdateOffer(mempoolTx *MempoolTx
 		}
 		if dbTx.RowsAffected == 0 {
 			logx.Errorf("[mempool.CreateMempoolTxAndUpdateOffer] Create Invalid Mempool Tx")
-			return ErrInvalidMempoolTx
+			return errorcode.DbErrFailToCreateMempoolTx
 		}
 		if isUpdate {
 			dbTx = tx.Table(nft.OfferTableName).Where("id = ?", offer.ID).Select("*").Updates(&offer)
@@ -772,7 +773,7 @@ func (m *defaultMempoolModel) CreateMempoolTxAndUpdateOffer(mempoolTx *MempoolTx
 			}
 			if dbTx.RowsAffected == 0 {
 				logx.Errorf("[mempool.CreateMempoolTxAndUpdateOffer] Create Invalid nft info")
-				return ErrInvalidMempoolTx
+				return errorcode.DbErrFailToCreateMempoolTx
 			}
 		} else {
 			dbTx = tx.Table(nft.OfferTableName).Create(offer)
@@ -782,7 +783,7 @@ func (m *defaultMempoolModel) CreateMempoolTxAndUpdateOffer(mempoolTx *MempoolTx
 			}
 			if dbTx.RowsAffected == 0 {
 				logx.Errorf("[mempool.CreateMempoolTxAndUpdateOffer] Create Invalid nft info")
-				return ErrInvalidMempoolTx
+				return errorcode.DbErrFailToCreateMempoolTx
 			}
 		}
 		return nil
@@ -795,11 +796,11 @@ func (m *defaultMempoolModel) GetMempoolTxByTxId(id uint) (mempoolTx *MempoolTx,
 	if dbTx.Error != nil {
 		errInfo := fmt.Sprintf("[mempool.GetMempoolTxByTxId] %s", dbTx.Error)
 		logx.Errorf(errInfo)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[mempool.GetMempoolTxByTxId] %s", ErrNotFound)
+		err := fmt.Sprintf("[mempool.GetMempoolTxByTxId] %s", errorcode.DbErrNotFound)
 		logx.Info(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	err = m.OrderMempoolTxDetails(mempoolTx)
 	if err != nil {

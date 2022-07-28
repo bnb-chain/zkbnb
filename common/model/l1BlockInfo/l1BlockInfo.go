@@ -9,6 +9,8 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type (
@@ -119,11 +121,11 @@ func (m *defaultL1BlockInfoModel) GetL1BlockInfos() (blockInfos []*L1BlockInfo, 
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[l1BlockInfo.GetL1BlockInfos] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l1BlockInfo.GetL1BlockInfos] %s", ErrNotFound)
+		err := fmt.Sprintf("[l1BlockInfo.GetL1BlockInfos] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return blockInfos, dbTx.Error
 }
@@ -138,11 +140,11 @@ func (m *defaultL1BlockInfoModel) GetLatestL1BlockInfo() (blockInfo *L1BlockInfo
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[l1BlockInfo.GetLatestL1BlockInfo] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l1BlockInfo.GetLatestL1BlockInfo] %s", ErrNotFound)
+		err := fmt.Sprintf("[l1BlockInfo.GetLatestL1BlockInfo] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return blockInfo, nil
 }
@@ -157,11 +159,11 @@ func (m *defaultL1BlockInfoModel) GetL1BlockInfosByL2BlockHeight(l2BlockHeight i
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[l1BlockInfo.GetL1BlockInfosByL2BlockHeight] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l1BlockInfo.GetL1BlockInfosByL2BlockHeight] %s", ErrNotFound)
+		err := fmt.Sprintf("[l1BlockInfo.GetL1BlockInfosByL2BlockHeight] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return blockInfo, nil
 }

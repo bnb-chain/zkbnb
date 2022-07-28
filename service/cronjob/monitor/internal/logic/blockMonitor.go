@@ -32,6 +32,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/l1BlockMonitor"
 	"github.com/bnb-chain/zkbas/common/model/l2TxEventMonitor"
 	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 /*
@@ -42,7 +43,7 @@ func MonitorBlocks(cli *ProviderClient, startHeight int64, pendingBlocksCount ui
 	logx.Errorf("========== start MonitorBlocks ==========")
 	var handledHeight int64
 	if err != nil {
-		if err == ErrNotFound {
+		if err == errorcode.DbErrNotFound {
 			handledHeight = startHeight
 		} else {
 			logx.Errorf("[l1BlockMonitorModel.GetLatestL1BlockMonitorByBlock]: %s", err.Error())

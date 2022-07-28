@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 
 	"github.com/bnb-chain/zkbas/common/commonConstant"
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type NftInfo struct {
@@ -42,7 +43,7 @@ func (info *NftInfo) String() string {
 func ParseNftInfo(infoStr string) (info *NftInfo, err error) {
 	err = json.Unmarshal([]byte(infoStr), &info)
 	if err != nil {
-		return nil, err
+		return nil, errorcode.JsonErrUnmarshal
 	}
 	return info, nil
 }

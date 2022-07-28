@@ -19,6 +19,8 @@ package proofSender
 import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type (
@@ -93,7 +95,7 @@ func (m *defaultProofSenderModel) CreateProof(row *ProofSender) error {
 	}
 	if dbTx.RowsAffected == 0 {
 		logx.Errorf("[proofSender.CreateProof] Create Invalid Proof")
-		return ErrInvalidProof
+		return errorcode.DbErrFailToCreateProof
 	}
 	return nil
 }
@@ -120,7 +122,7 @@ func (m *defaultProofSenderModel) GetProofsByBlockRange(start int64, end int64, 
 		return proofs, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[proofSender.GetProofsByBlockRange] error not found")
-		return proofs, ErrNotFound
+		return proofs, errorcode.DbErrNotFound
 	}
 
 	return proofs, err
@@ -141,7 +143,7 @@ func (m *defaultProofSenderModel) GetProofStartBlockNumber() (num int64, err err
 		return num, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[proofSender.GetProofStartBlockNumber] not found")
-		return num, ErrNotFound
+		return num, errorcode.DbErrNotFound
 	} else {
 		return row.BlockNumber, nil
 	}
@@ -159,10 +161,10 @@ func (m *defaultProofSenderModel) GetLatestConfirmedProof() (p *ProofSender, err
 	dbTx := m.DB.Table(m.table).Where("status >= ?", NotConfirmed).Order("block_number desc").Limit(1).Find(&row)
 	if dbTx.Error != nil {
 		logx.Error("[proofSender.GetLatestSentProof] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[proofSender.GetLatestSentProof] not found")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	} else {
 		return row, nil
 	}
@@ -180,10 +182,10 @@ func (m *defaultProofSenderModel) GetProofByBlockNumber(num int64) (p *ProofSend
 	dbTx := m.DB.Table(m.table).Where("block_number = ?", num).Find(&row)
 	if dbTx.Error != nil {
 		logx.Error("[proofSender.GetProofByBlockNumber] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[proofSender.GetProofByBlockNumber] not found")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	} else {
 		return row, nil
 	}

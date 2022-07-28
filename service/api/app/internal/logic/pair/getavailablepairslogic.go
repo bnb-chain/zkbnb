@@ -5,6 +5,7 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/l2asset"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/liquidity"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
@@ -33,19 +34,28 @@ func (l *GetAvailablePairsLogic) GetAvailablePairs(_ *types.ReqGetAvailablePairs
 	liquidityAssets, err := l.liquidity.GetAllLiquidityAssets()
 	if err != nil {
 		logx.Error("[GetAllLiquidityAssets] err:%v", err)
-		return nil, err
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	resp := &types.RespGetAvailablePairs{}
 	for _, asset := range liquidityAssets {
 		assetA, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(l.ctx, uint32(asset.AssetAId))
 		if err != nil {
 			logx.Error("[GetSimpleL2AssetInfoByAssetId] err:%v", err)
-			return nil, err
+			if err == errorcode.DbErrNotFound {
+				return nil, errorcode.AppErrNotFound
+			}
+			return nil, errorcode.AppErrInternal
 		}
 		assetB, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(l.ctx, uint32(asset.AssetBId))
 		if err != nil {
 			logx.Error("[GetSimpleL2AssetInfoByAssetId] err:%v", err)
-			return nil, err
+			if err == errorcode.DbErrNotFound {
+				return nil, errorcode.AppErrNotFound
+			}
+			return nil, errorcode.AppErrInternal
 		}
 		resp.Pairs = append(resp.Pairs, &types.Pair{
 			PairIndex:    uint32(asset.PairIndex),

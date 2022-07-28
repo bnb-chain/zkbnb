@@ -39,6 +39,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/tx"
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 var (
@@ -181,10 +182,10 @@ func (m *defaultBlockModel) GetBlocksList(limit int64, offset int64) (blocks []*
 		dbTx := m.DB.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("block_height desc").Find(&blocks)
 		if dbTx.Error != nil {
 			logx.Error("[block.GetBlocksList] %s", dbTx.Error)
-			return nil, dbTx.Error
+			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			logx.Error("[block.GetBlocksList] Get Blocks Error")
-			return nil, ErrNotFound
+			return nil, errorcode.DbErrNotFound
 		}
 
 		for _, block := range blocks {
@@ -270,10 +271,10 @@ func (m *defaultBlockModel) GetBlocksForSender(status int, limit int) (blocks []
 	dbTx := m.DB.Table(m.table).Where("block_status = ?", status).Limit(limit).Order("block_height").Find(&blocks)
 	if dbTx.Error != nil {
 		logx.Error("[block.GetBlocksList] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[block.GetBlocksList] Get Blocks Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return blocks, nil
 }
@@ -285,10 +286,10 @@ func (m *defaultBlockModel) GetBlocksForSenderBetween(start int64, end int64, st
 		Find(&blocks)
 	if dbTx.Error != nil {
 		logx.Error("[block.GetBlocksList] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[block.GetBlocksList] Get Blocks Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return blocks, nil
 }
@@ -303,10 +304,10 @@ func (m *defaultBlockModel) GetBlocksBetween(start int64, end int64) (blocks []*
 		Find(&blocks)
 	if dbTx.Error != nil {
 		logx.Error("[block.GetBlocksList] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[block.GetBlocksList] Blocks not found")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 
 	for _, block := range blocks {
@@ -347,10 +348,10 @@ func (m *defaultBlockModel) GetBlocksForSenderHigherThanBlockHeight(blockHeight 
 	dbTx := m.DB.Table(m.table).Limit(limit).Where("block_height > ? AND block_status = ?", blockHeight, status).Order("block_height").Find(&blocks)
 	if dbTx.Error != nil {
 		logx.Error("[block.GetBlocksList] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[block.GetBlocksList] Get Blocks Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	for _, block := range blocks {
 		err = m.DB.Model(&block).Association(txForeignKeyColumn).Find(&block.Txs)
@@ -376,10 +377,10 @@ func (m *defaultBlockModel) GetBlocksHigherThanBlockHeight(blockHeight int64) (b
 	dbTx := m.DB.Table(m.table).Where("block_height > ?", blockHeight).Order("block_height desc").Find(&blocks)
 	if dbTx.Error != nil {
 		logx.Error("[block.GetBlocksHigherThanBlockHeight] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[block.GetBlocksHigherThanBlockHeight] Get Blocks Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	for _, block := range blocks {
 		err = m.DB.Model(&block).Association(txForeignKeyColumn).Find(&block.Txs)
@@ -404,10 +405,10 @@ func (m *defaultBlockModel) GetBlockByCommitment(blockCommitment string) (block 
 	dbTx := m.DB.Table(m.table).Where("block_commitment = ?", blockCommitment).Find(&block)
 	if dbTx.Error != nil {
 		logx.Error("[block.GetBlockByCommitment] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[block.GetBlockByCommitment] Get Block Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	err = m.DB.Model(&block).Association(txForeignKeyColumn).Find(&block.Txs)
 	if err != nil {
@@ -429,10 +430,10 @@ func (m *defaultBlockModel) GetNotVerifiedOrExecutedBlocks() (blocks []*Block, e
 	dbTx := m.DB.Table(m.table).Where("block_status < ?", StatusVerifiedAndExecuted).Find(&blocks)
 	if dbTx.Error != nil {
 		logx.Error("[block.GetBlockByBlockHeight] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[block.GetBlockByBlockHeight] Get Block Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	for _, block := range blocks {
 		err = m.DB.Model(&block).Association(txForeignKeyColumn).Find(&block.Txs)
@@ -472,10 +473,10 @@ func (m *defaultBlockModel) GetBlockByBlockHeight(blockHeight int64) (block *Blo
 	dbTx := m.DB.Table(m.table).Where("block_height = ?", blockHeight).Find(&block)
 	if dbTx.Error != nil {
 		logx.Error("[block.GetBlockByBlockHeight] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[block.GetBlockByBlockHeight] Get Block Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	err = m.DB.Model(&block).Association(txForeignKeyColumn).Find(&block.Txs)
 	if err != nil {
@@ -521,10 +522,10 @@ func (m *defaultBlockModel) GetBlockByBlockHeightWithoutTx(blockHeight int64) (b
 	dbTx := m.DB.Table(m.table).Where("block_height = ?", blockHeight).Find(&block)
 	if dbTx.Error != nil {
 		logx.Error("[block.GetBlockByBlockHeight] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[block.GetBlockByBlockHeight] Get Block Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return block, nil
 }
@@ -547,7 +548,7 @@ func (m *defaultBlockModel) GetCommitedBlocksCount() (count int64, err error) {
 		dbTx := m.DB.Table(m.table).Where("block_status >= ? and deleted_at is NULL", StatusCommitted).Count(&count)
 
 		if dbTx.Error != nil {
-			if dbTx.Error == ErrNotFound {
+			if dbTx.Error == errorcode.DbErrNotFound {
 				return 0, nil
 			}
 			logx.Error("[block.GetCommitedBlocksCount] Get block Count Error")
@@ -589,7 +590,7 @@ func (m *defaultBlockModel) GetVerifiedBlocksCount() (count int64, err error) {
 		dbTx := m.DB.Table(m.table).Where("block_status = ? and deleted_at is NULL", StatusVerifiedAndExecuted).Count(&count)
 
 		if dbTx.Error != nil {
-			if dbTx.Error == ErrNotFound {
+			if dbTx.Error == errorcode.DbErrNotFound {
 				return 0, nil
 			}
 			logx.Error("[block.GetVerifiedBlocksCount] Get block Count Error")
@@ -627,7 +628,7 @@ func (m *defaultBlockModel) CreateBlock(block *Block) error {
 	}
 	if dbTx.RowsAffected == 0 {
 		logx.Error("[block.CreateBlock] Create Invalid Block")
-		return ErrInvalidBlock
+		return errorcode.DbErrFailToCreateBlock
 	}
 	return nil
 }
@@ -641,7 +642,7 @@ func (m *defaultBlockModel) CreateGenesisBlock(block *Block) error {
 	}
 	if dbTx.RowsAffected == 0 {
 		logx.Error("[block.CreateBlock] Create Invalid Block")
-		return ErrInvalidBlock
+		return errorcode.DbErrFailToCreateBlock
 	}
 	return nil
 }
@@ -661,7 +662,7 @@ func (m *defaultBlockModel) UpdateBlock(block *Block) error {
 	}
 	if dbTx.RowsAffected == 0 {
 		logx.Error("[block.UpdateBlock] Update Invalid Block")
-		return ErrInvalidBlock
+		return errorcode.DbErrFailToCreateBlock
 	}
 	return nil
 }
@@ -679,7 +680,7 @@ func (m *defaultBlockModel) GetCurrentBlockHeight() (blockHeight int64, err erro
 		return 0, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[block.GetCurrentBlockHeight] No block yet")
-		return 0, ErrNotFound
+		return 0, errorcode.DbErrNotFound
 	}
 	return blockHeight, nil
 }
@@ -753,7 +754,7 @@ func (m *defaultBlockModel) GetBlockStatusCacheByBlockHeight(blockHeight int64) 
 	} else if blockStatusInfoFromCache == "" {
 		errInfo := fmt.Sprintf("[blockModel.GetBlockStatusCacheByBlockHeight] %s not found", key)
 		logx.Info(errInfo)
-		return blockStatusInfo, ErrNotFound
+		return blockStatusInfo, errorcode.DbErrNotFound
 	} else {
 		err = json.Unmarshal([]byte(blockStatusInfoFromCache), &blockStatusInfo)
 		if err != nil {
@@ -946,9 +947,9 @@ func (m *defaultBlockModel) GetBlocksForProverBetween(start, end int64) (blocks 
 		Find(&blocks)
 	if dbTx.Error != nil {
 		logx.Errorf("[GetBlocksForProverBetween] unable to get block between: %s", dbTx.Error.Error())
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return blocks, nil
 }

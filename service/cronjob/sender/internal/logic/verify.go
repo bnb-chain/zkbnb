@@ -27,6 +27,7 @@ import (
 
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 func SendVerifiedAndExecutedBlocks(
@@ -46,18 +47,18 @@ func SendVerifiedAndExecutedBlocks(
 	)
 	// scan l1 tx sender table for handled verified and executed height
 	lastHandledBlock, getHandleErr := l1TxSenderModel.GetLatestHandledBlock(VerifyAndExecuteTxType)
-	if getHandleErr != nil && getHandleErr != ErrNotFound {
+	if getHandleErr != nil && getHandleErr != errorcode.DbErrNotFound {
 		logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get latest handled block: %s", getHandleErr.Error())
 		return getHandleErr
 	}
 	// scan l1 tx sender table for pending verified and executed height that higher than the latest handled height
 	pendingSender, getPendingerr := l1TxSenderModel.GetLatestPendingBlock(VerifyAndExecuteTxType)
-	if getPendingerr != nil && getPendingerr != ErrNotFound {
+	if getPendingerr != nil && getPendingerr != errorcode.DbErrNotFound {
 		logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get latest pending blocks: %s", getPendingerr.Error())
 		return getPendingerr
 	}
 	// case 1: check tx status on L1
-	if getHandleErr == ErrNotFound && getPendingerr == nil {
+	if getHandleErr == errorcode.DbErrNotFound && getPendingerr == nil {
 		_, isPending, err := cli.GetTransactionByHash(pendingSender.L1TxHash)
 		// if err != nil, means we cannot get this tx by hash
 		if err != nil {
@@ -119,7 +120,7 @@ func SendVerifiedAndExecutedBlocks(
 		blocks                        []*block.Block
 		pendingVerifyAndExecuteBlocks []ZkbasVerifyBlockInfo
 	)
-	if getHandleErr == ErrNotFound && getPendingerr == ErrNotFound {
+	if getHandleErr == errorcode.DbErrNotFound && getPendingerr == errorcode.DbErrNotFound {
 		// get blocks from block table
 		blocks, err = blockModel.GetBlocksForProverBetween(1, int64(maxBlockCount))
 		if err != nil {
@@ -133,7 +134,7 @@ func SendVerifiedAndExecutedBlocks(
 		}
 		start = int64(1)
 	}
-	if getHandleErr == nil && getPendingerr == ErrNotFound {
+	if getHandleErr == nil && getPendingerr == errorcode.DbErrNotFound {
 		blocks, err = blockModel.GetBlocksForProverBetween(lastHandledBlock.L2BlockHeight+1, lastHandledBlock.L2BlockHeight+int64(maxBlockCount))
 		if err != nil {
 			logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get sender new blocks: %s", err.Error())

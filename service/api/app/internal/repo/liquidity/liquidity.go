@@ -25,7 +25,7 @@ func (m *liquidityModel) GetLiquidityByPairIndex(pairIndex int64) (entity *table
 	if dbTx.Error != nil {
 		return entity, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		return nil, errorcode.RepoErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return entity, nil
 }
@@ -35,7 +35,7 @@ func (m *liquidityModel) GetAllLiquidityAssets() (entity []*table.Liquidity, err
 	if dbTx.Error != nil {
 		return entity, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		return nil, errorcode.RepoErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return entity, nil
 }

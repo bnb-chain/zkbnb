@@ -29,7 +29,7 @@ func (m *model) GetMempoolTxs(offset int64, limit int64) (mempoolTxs []*table.Me
 	dbTx := m.db.Table(m.table).Order("created_at, id").Find(&mempoolTxs)
 	if dbTx.Error != nil {
 		logx.Errorf("[mempool.GetMempoolTxsList] %s", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	}
 	for _, mempoolTx := range mempoolTxs {
 		err := m.db.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
@@ -57,9 +57,9 @@ func (m *model) GetMempoolTxByTxHash(hash string) (mempoolTx *table.MempoolTx, e
 	dbTx := m.db.Table(m.table).Where("status = ? and tx_hash = ?", PendingTxStatus, hash).Find(&mempoolTx)
 	if dbTx.Error != nil {
 		logx.Errorf("[GetMempoolTxByTxHash] %v", dbTx.Error)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, errorcode.RepoErrDataNotExist
+		return nil, errorcode.DbErrNotFound
 	}
 	if err = m.db.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails); err != nil {
 		logx.Errorf("[mempool.GetMempoolTxByTxHash] Get Associate MempoolDetails Error")
@@ -94,9 +94,9 @@ func (m *model) GetMempoolTxByTxId(ctx context.Context, txID int64) (*table.Memp
 		tx := &table.MempoolTx{}
 		dbTx := m.db.Table(m.table).Where("id = ? and deleted_at is NULL", txID).Find(&tx)
 		if dbTx.Error != nil {
-			return nil, dbTx.Error
+			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errorcode.RepoErrDataNotExist
+			return nil, errorcode.DbErrNotFound
 		}
 		err := m.db.Model(&tx).Association(`MempoolDetails`).Find(&tx.MempoolDetails)
 		if err != nil {

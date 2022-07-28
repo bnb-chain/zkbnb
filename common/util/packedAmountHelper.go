@@ -23,8 +23,6 @@ import (
 
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas-crypto/util"
-
-	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 /*
@@ -55,7 +53,7 @@ func CheckPackedFee(gassFee *big.Int) (err error) {
 		return err
 	}
 	if !ffmath.Equal(gassFee, checkParm) {
-		return errorcode.New(20002, "Invalid Gas Fee")
+		return errors.New("invalid gas fee")
 	}
 	return nil
 }

@@ -23,6 +23,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/common/util/globalmapHandler"
 	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/commglobalmap"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/svc"
 )
@@ -156,7 +157,7 @@ func SendCancelOfferTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 	)
 	var isUpdate bool
 	offerInfo, err := svcCtx.OfferModel.GetOfferByAccountIndexAndOfferId(txInfo.AccountIndex, txInfo.OfferId)
-	if err == nft.ErrNotFound {
+	if err == errorcode.DbErrNotFound {
 		offerInfo = &nft.Offer{
 			OfferType:    0,
 			OfferId:      txInfo.OfferId,

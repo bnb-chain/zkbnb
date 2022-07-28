@@ -23,6 +23,8 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type (
@@ -87,10 +89,10 @@ func (m *defaultL2NftModel) GetNftAsset(nftIndex int64) (nftAsset *L2Nft, err er
 	dbTx := m.DB.Table(m.table).Where("nft_index = ?", nftIndex).Find(&nftAsset)
 	if dbTx.Error != nil {
 		logx.Errorf("[GetNftAsset] unable to get nft asset: %s", dbTx.Error.Error())
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[GetNftAsset] no such info")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return nftAsset, nil
 }

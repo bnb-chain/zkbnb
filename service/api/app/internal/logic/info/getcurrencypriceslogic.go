@@ -6,6 +6,7 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/l2asset"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/price"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
@@ -34,15 +35,24 @@ func (l *GetCurrencyPricesLogic) GetCurrencyPrices(req *types.ReqGetCurrencyPric
 	l2Assets, err := l.l2asset.GetL2AssetsList(l.ctx)
 	if err != nil {
 		logx.Errorf("[GetL2AssetsList] err:%v", err)
-		return nil, err
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
+
+	//TODO: performance issue here
 	resp := &types.RespGetCurrencyPrices{}
 	for _, asset := range l2Assets {
 		price, err := l.price.GetCurrencyPrice(l.ctx, asset.AssetSymbol)
 		if err != nil {
 			logx.Errorf("[GetCurrencyPrice] err:%v", err)
-			return nil, err
+			if err == errorcode.AppErrQuoteNotExist {
+				return nil, err
+			}
+			return nil, errorcode.AppErrInternal
 		}
+		//TODO: fix the symbol
 		if asset.AssetSymbol == "LEG" {
 			price = 1.0
 		}
