@@ -20,8 +20,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/bnb-chain/zkbas/errorcode"
-
 	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -29,6 +27,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/blockForProof"
 	"github.com/bnb-chain/zkbas/common/proverUtil"
 	"github.com/bnb-chain/zkbas/common/tree"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/cronjob/witnessGenerator/internal/svc"
 )
 

@@ -15,9 +15,9 @@
  *
  */
 
-//go:generate mockgen -source api.go -destination api_mock.go -package account
-
 package account
+
+//go:generate mockgen -source api.go -destination api_mock.go -package account
 
 import (
 	"context"

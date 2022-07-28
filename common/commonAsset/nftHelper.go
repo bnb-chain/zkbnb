@@ -20,9 +20,8 @@ package commonAsset
 import (
 	"encoding/json"
 
-	"github.com/bnb-chain/zkbas/errorcode"
-
 	"github.com/bnb-chain/zkbas/common/commonConstant"
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type NftInfo struct {

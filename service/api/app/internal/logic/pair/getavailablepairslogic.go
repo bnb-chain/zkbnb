@@ -3,10 +3,9 @@ package pair
 import (
 	"context"
 
-	"github.com/bnb-chain/zkbas/errorcode"
-
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/l2asset"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/liquidity"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"

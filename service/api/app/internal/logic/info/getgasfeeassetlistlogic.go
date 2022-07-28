@@ -3,11 +3,10 @@ package info
 import (
 	"context"
 
-	"github.com/bnb-chain/zkbas/errorcode"
-
 	"github.com/zeromicro/go-zero/core/logx"
 
 	table "github.com/bnb-chain/zkbas/common/model/assetInfo"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/l2asset"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"

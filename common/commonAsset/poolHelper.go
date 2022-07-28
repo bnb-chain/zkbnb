@@ -22,9 +22,9 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/bnb-chain/zkbas/errorcode"
-
 	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type LiquidityInfo struct {

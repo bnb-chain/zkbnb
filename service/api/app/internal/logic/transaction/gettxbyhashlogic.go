@@ -3,11 +3,10 @@ package transaction
 import (
 	"context"
 
-	"github.com/bnb-chain/zkbas/errorcode"
-
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonTx"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/block"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/mempool"
