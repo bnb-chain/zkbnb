@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	table "github.com/bnb-chain/zkbas/common/model/assetInfo"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
 	"gorm.io/gorm"
 	"strconv"
@@ -59,7 +60,7 @@ func (m *l2asset) GetL2AssetInfoBySymbol(ctx context.Context, symbol string) (*t
 			return nil, dbTx.Error
 		}
 		if dbTx.RowsAffected == 0 {
-			return nil, ErrNotExistInSql
+			return nil, errorcode.RepoErrNotFound
 		}
 		return &res, nil
 	}

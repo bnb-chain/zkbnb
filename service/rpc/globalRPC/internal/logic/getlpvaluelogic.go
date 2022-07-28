@@ -2,12 +2,12 @@ package logic
 
 import (
 	"context"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"math/big"
 
 	"github.com/bnb-chain/zkbas/common/checker"
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
-	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/logic/errcode"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/commglobalmap"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/svc"
 
@@ -33,11 +33,11 @@ func NewGetLpValueLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetLpV
 func (l *GetLpValueLogic) GetLpValue(in *globalRPCProto.ReqGetLpValue) (*globalRPCProto.RespGetLpValue, error) {
 	if checker.CheckPairIndex(in.PairIndex) {
 		logx.Errorf("[CheckPairIndex] param:%v", in.PairIndex)
-		return nil, errcode.ErrInvalidParam
+		return nil, errorcode.GlobalRpcInvalidParam
 	}
 	if checker.CheckAmount(in.LPAmount) {
 		logx.Errorf("[CheckAmount] param:%v", in.LPAmount)
-		return nil, errcode.ErrInvalidParam
+		return nil, errorcode.GlobalRpcInvalidParam
 	}
 	liquidity, err := l.commglobalmap.GetLatestLiquidityInfoForReadWithCache(l.ctx, int64(in.PairIndex))
 	if err != nil {
@@ -47,7 +47,7 @@ func (l *GetLpValueLogic) GetLpValue(in *globalRPCProto.ReqGetLpValue) (*globalR
 	amount, isTure := new(big.Int).SetString(in.LPAmount, 10)
 	if !isTure {
 		logx.Errorf("[SetString] err:%v", in.LPAmount)
-		return nil, errcode.ErrInvalidParam
+		return nil, errorcode.GlobalRpcInvalidParam
 	}
 	assetAAmount, assetBAmount, err := util.ComputeRemoveLiquidityAmount(liquidity, amount)
 	if err != nil {

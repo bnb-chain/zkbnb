@@ -3,7 +3,7 @@ package commglobalmap
 import (
 	"context"
 	"fmt"
-
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
@@ -12,7 +12,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
-	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/errcode"
 )
 
 type model struct {
@@ -49,11 +48,11 @@ func (m *model) GetLatestOfferIdForWrite(ctx context.Context, accountIndex int64
 func (m *model) GetLatestNftInfoForRead(ctx context.Context, nftIndex int64) (*commonAsset.NftInfo, error) {
 	dbNftInfo, err := m.nftModel.GetNftAsset(nftIndex)
 	if err != nil {
-		return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprintf("GetNftAsset:%v", err))
+		return nil, errorcode.RepoErrSqlOperation.RefineError(fmt.Sprintf("GetNftAsset:%v", err))
 	}
 	mempoolTxs, err := m.mempoolModel.GetPendingNftTxs()
 	if err != nil && err != mempool.ErrNotFound {
-		return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprintf("GetPendingNftTxs:%v", err))
+		return nil, errorcode.RepoErrSqlOperation.RefineError(fmt.Sprintf("GetPendingNftTxs:%v", err))
 	}
 	nftInfo := commonAsset.ConstructNftInfo(nftIndex, dbNftInfo.CreatorAccountIndex, dbNftInfo.OwnerAccountIndex, dbNftInfo.NftContentHash,
 		dbNftInfo.NftL1TokenId, dbNftInfo.NftL1Address, dbNftInfo.CreatorTreasuryRate, dbNftInfo.CollectionId)
@@ -64,11 +63,11 @@ func (m *model) GetLatestNftInfoForRead(ctx context.Context, nftIndex int64) (*c
 			}
 			nBalance, err := commonAsset.ComputeNewBalance(commonAsset.NftAssetType, nftInfo.String(), txDetail.BalanceDelta)
 			if err != nil {
-				return nil, errcode.ErrComputeNewBalance.RefineError(err)
+				return nil, errorcode.RepoErrComputeNewBalance.RefineError(err)
 			}
 			nftInfo, err = commonAsset.ParseNftInfo(nBalance)
 			if err != nil {
-				return nil, errcode.ErrParseNftInfo.RefineError(err)
+				return nil, errorcode.RepoErrParseNftInfo.RefineError(err)
 			}
 		}
 	}

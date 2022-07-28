@@ -2,6 +2,7 @@ package liquidity
 
 import (
 	table "github.com/bnb-chain/zkbas/common/model/liquidity"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
 	"gorm.io/gorm"
 )
@@ -23,7 +24,7 @@ func (m *liquidityModel) GetLiquidityByPairIndex(pairIndex int64) (entity *table
 	if dbTx.Error != nil {
 		return entity, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		return entity, ErrNotExistInSql
+		return nil, errorcode.RepoErrNotFound
 	}
 	return entity, nil
 }
@@ -33,7 +34,7 @@ func (m *liquidityModel) GetAllLiquidityAssets() (entity []*table.Liquidity, err
 	if dbTx.Error != nil {
 		return entity, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		return entity, ErrNotExistInSql
+		return nil, errorcode.RepoErrNotFound
 	}
 	return entity, nil
 }

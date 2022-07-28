@@ -20,36 +20,18 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"strconv"
 
 	"github.com/bnb-chain/zkbas/common/commonConstant"
-	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/sysconfig"
 	"github.com/bnb-chain/zkbas/common/sysconfigName"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/logic/errcode"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 )
-
-func GetTxTypeArray(txType uint) ([]uint8, error) {
-	switch txType {
-	case L2TransferType:
-		return []uint8{commonTx.TxTypeTransfer}, nil
-	case LiquidityType:
-		return []uint8{commonTx.TxTypeAddLiquidity, commonTx.TxTypeRemoveLiquidity}, nil
-	case L2SwapType:
-		return []uint8{commonTx.TxTypeSwap}, nil
-	case WithdrawAssetsType:
-		return []uint8{commonTx.TxTypeWithdraw}, nil
-	default:
-		errInfo := fmt.Sprintf("[GetTxTypeArray] txType error: %v", txType)
-		logx.Error(errInfo)
-		return []uint8{}, errors.New(errInfo)
-	}
-}
 
 func ComputeL2TxTxHash(txInfo string) string {
 	hFunc := mimc.NewMiMC()
@@ -133,7 +115,7 @@ func CheckGasAccountIndex(txGasAccountIndex int64, sysConfigModel sysconfig.Sysc
 	}
 	if gasAccountIndex != txGasAccountIndex {
 		logx.Errorf("[ParseInt] param:%v, txGasAccountIndex:%v, err:%v", gasAccountIndex, txGasAccountIndex, err)
-		return errcode.ErrInvalidGasAccountIndex
+		return errorcode.GlobalRpcErrInvalidGasAccountIndex
 	}
 	return nil
 }

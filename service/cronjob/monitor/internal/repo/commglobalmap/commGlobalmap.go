@@ -2,6 +2,7 @@ package commglobalmap
 
 import (
 	"context"
+	"errors"
 	"strconv"
 
 	"github.com/bnb-chain/zkbas/common/commonConstant"
@@ -16,7 +17,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
-	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/repo/errcode"
 )
 
 type model struct {
@@ -129,7 +129,7 @@ func (m *model) GetLatestAccountInfo(ctx context.Context, accountIndex int64) (*
 			case commonAsset.NftAssetType:
 			default:
 				logx.Errorf("invalid asset type")
-				return nil, errcode.ErrInvalidAssetType
+				return nil, errors.New("invalid asset type")
 			}
 		}
 	}

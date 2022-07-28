@@ -19,11 +19,11 @@ package logic
 import (
 	"context"
 	"encoding/json"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"math/big"
 	"time"
 
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
-	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/logic/errcode"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/commglobalmap"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/svc"
 
@@ -88,7 +88,7 @@ func (l *SendAddLiquidityTxLogic) SendAddLiquidityTx(reqSendTx *globalRPCProto.R
 	}
 	if liquidityInfo.AssetA == nil || liquidityInfo.AssetB == nil {
 		logx.Errorf("[ErrInvalidLiquidityAsset]")
-		return nil, errcode.ErrInvalidLiquidityAsset
+		return nil, errorcode.GlobalRpcErrInvalidLiquidityAsset
 	}
 	var accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
 	if liquidityInfo.AssetA.Cmp(big.NewInt(0)) == 0 {
@@ -169,7 +169,7 @@ func (l *SendAddLiquidityTxLogic) createFailAddLiquidityTx(info *commonTx.AddLiq
 	txInfo, err := json.Marshal(info)
 	if err != nil {
 		logx.Errorf("[createFailAddLiquidityTx] Marshal param:%v, err:%v", txInfo, err)
-		return errcode.ErrMarshal.RefineError(err)
+		return errorcode.GlobalRpcErrMarshal.RefineError(err)
 	}
 	failTx := &tx.FailTx{
 		TxHash:        util.RandomUUID(),
@@ -185,7 +185,7 @@ func (l *SendAddLiquidityTxLogic) createFailAddLiquidityTx(info *commonTx.AddLiq
 		ExtraInfo:     errInput.Error(),
 	}
 	if err = l.svcCtx.FailTxModel.CreateFailTx(failTx); err != nil {
-		return errcode.ErrCreateFailTx.RefineError(err)
+		return errorcode.GlobalRpcErrCreateFailTx.RefineError(err)
 	}
 	return errInput
 }
@@ -194,7 +194,7 @@ func (l *SendAddLiquidityTxLogic) checkExpiredAt(expiredAt int64) error {
 	now := time.Now().UnixMilli()
 	if expiredAt < now {
 		logx.Errorf("[sendWithdrawTx] invalid time stamp,expiredAt:%v,now:%v", expiredAt, now)
-		return errcode.ErrInvalidExpiredAt
+		return errorcode.GlobalRpcErrInvalidExpiredAt
 	}
 	return nil
 }

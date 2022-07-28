@@ -2,9 +2,8 @@ package account
 
 import (
 	"context"
-
 	"github.com/bnb-chain/zkbas/common/checker"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/errcode"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/account"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/globalrpc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
@@ -34,12 +33,12 @@ func NewGetAccountInfoByAccountNameLogic(ctx context.Context, svcCtx *svc.Servic
 func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *types.ReqGetAccountInfoByAccountName) (*types.RespGetAccountInfoByAccountName, error) {
 	if checker.CheckAccountName(req.AccountName) {
 		logx.Errorf("[CheckAccountName] req.AccountName:%v", req.AccountName)
-		return nil, errcode.ErrInvalidParam
+		return nil, errorcode.AppErrInvalidParam
 	}
 	accountName := checker.FormatSting(req.AccountName)
 	if checker.CheckFormatAccountName(accountName) {
 		logx.Errorf("[CheckFormatAccountName] accountName:%v", accountName)
-		return nil, errcode.ErrInvalidParam
+		return nil, errorcode.AppErrInvalidParam
 	}
 	info, err := l.account.GetAccountByAccountName(l.ctx, accountName)
 	if err != nil {

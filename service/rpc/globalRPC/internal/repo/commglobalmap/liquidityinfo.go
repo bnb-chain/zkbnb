@@ -4,14 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	commGlobalmapHandler "github.com/bnb-chain/zkbas/common/util/globalmapHandler"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
-	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/errcode"
 )
 
 func (m *model) GetLatestLiquidityInfoForReadWithCache(ctx context.Context, pairIndex int64) (*commGlobalmapHandler.LiquidityInfo, error) {
@@ -46,12 +45,12 @@ func (m *model) GetLatestLiquidityInfoForReadWithCache(ctx context.Context, pair
 func (m *model) GetLatestLiquidityInfoForRead(ctx context.Context, pairIndex int64) (liquidityInfo *commGlobalmapHandler.LiquidityInfo, err error) {
 	dbLiquidityInfo, err := m.liquidityModel.GetLiquidityByPairIndex(pairIndex)
 	if err != nil {
-		return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprintf("GetLiquidityByPairIndex:%v", err))
+		return nil, errorcode.RepoErrSqlOperation.RefineError(fmt.Sprintf("GetLiquidityByPairIndex:%v", err))
 	}
 	mempoolTxs, err := m.mempoolModel.GetPendingLiquidityTxs()
 	if err != nil {
 		if err != mempool.ErrNotFound {
-			return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprintf("GetPendingLiquidityTxs:%v", err))
+			return nil, errorcode.RepoErrSqlOperation.RefineError(fmt.Sprintf("GetPendingLiquidityTxs:%v", err))
 		}
 	}
 	liquidityInfo, err = commonAsset.ConstructLiquidityInfo(
@@ -66,7 +65,7 @@ func (m *model) GetLatestLiquidityInfoForRead(ctx context.Context, pairIndex int
 		dbLiquidityInfo.TreasuryAccountIndex,
 		dbLiquidityInfo.TreasuryRate)
 	if err != nil {
-		return nil, errcode.ErrConstructLiquidityInfo.RefineError(fmt.Sprintf("ConstructLiquidityInfo:%v", err))
+		return nil, errorcode.RepoErrConstructLiquidityInfo.RefineError(fmt.Sprintf("ConstructLiquidityInfo:%v", err))
 	}
 	for _, mempoolTx := range mempoolTxs {
 		for _, txDetail := range mempoolTx.MempoolDetails {
@@ -75,11 +74,11 @@ func (m *model) GetLatestLiquidityInfoForRead(ctx context.Context, pairIndex int
 			}
 			nBalance, err := commonAsset.ComputeNewBalance(commonAsset.LiquidityAssetType, liquidityInfo.String(), txDetail.BalanceDelta)
 			if err != nil {
-				return nil, errcode.ErrComputeNewBalance.RefineError(err)
+				return nil, errorcode.RepoErrComputeNewBalance.RefineError(err)
 			}
 			liquidityInfo, err = commonAsset.ParseLiquidityInfo(nBalance)
 			if err != nil {
-				return nil, errcode.ErrParseLiquidityInfo.RefineError(err)
+				return nil, errorcode.RepoErrParseLiquidityInfo.RefineError(err)
 			}
 		}
 	}
@@ -99,11 +98,11 @@ func (m *model) GetLatestLiquidityInfoForRead(ctx context.Context, pairIndex int
 func (m *model) GetLatestLiquidityInfoForWrite(ctx context.Context, pairIndex int64) (liquidityInfo *commGlobalmapHandler.LiquidityInfo, err error) {
 	dbLiquidityInfo, err := m.liquidityModel.GetLiquidityByPairIndex(pairIndex)
 	if err != nil {
-		return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprint("GetLiquidityByPairIndex:", err))
+		return nil, errorcode.RepoErrSqlOperation.RefineError(fmt.Sprint("GetLiquidityByPairIndex:", err))
 	}
 	mempoolTxs, err := m.mempoolModel.GetPendingLiquidityTxs()
 	if err != nil && err != mempool.ErrNotFound {
-		return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprint("GetPendingLiquidityTxs:", err))
+		return nil, errorcode.RepoErrSqlOperation.RefineError(fmt.Sprint("GetPendingLiquidityTxs:", err))
 	}
 	liquidityInfo, err = commonAsset.ConstructLiquidityInfo(
 		pairIndex,
@@ -128,11 +127,11 @@ func (m *model) GetLatestLiquidityInfoForWrite(ctx context.Context, pairIndex in
 			}
 			nBalance, err := commonAsset.ComputeNewBalance(commonAsset.LiquidityAssetType, liquidityInfo.String(), txDetail.BalanceDelta)
 			if err != nil {
-				return nil, errcode.ErrComputeNewBalance.RefineError(err)
+				return nil, errorcode.RepoErrComputeNewBalance.RefineError(err)
 			}
 			liquidityInfo, err = commonAsset.ParseLiquidityInfo(nBalance)
 			if err != nil {
-				return nil, errcode.ErrParseLiquidityInfo.RefineError(err)
+				return nil, errorcode.RepoErrParseLiquidityInfo.RefineError(err)
 			}
 		}
 	}

@@ -3,12 +3,11 @@ package sysconf
 import (
 	"context"
 	"fmt"
-
+	"github.com/bnb-chain/zkbas/errorcode"
 	"gorm.io/gorm"
 
 	table "github.com/bnb-chain/zkbas/common/model/sysconfig"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
-	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/errcode"
 )
 
 type model struct {
@@ -22,9 +21,9 @@ func (m *model) GetSysconfigByName(ctx context.Context, name string) (*table.Sys
 		var config table.Sysconfig
 		dbTx := m.db.Table(m.table).Where("name = ?", name).Find(&config)
 		if dbTx.Error != nil {
-			return nil, errcode.ErrSqlOperation.RefineError(fmt.Sprintf("GetSysconfigByName:%v", dbTx.Error))
+			return nil, errorcode.RepoErrSqlOperation.RefineError(fmt.Sprintf("GetSysconfigByName:%v", dbTx.Error))
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errcode.ErrDataNotExist
+			return nil, errorcode.RepoErrNotFound
 		}
 		return &config, nil
 	}
