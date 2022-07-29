@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"strconv"
 	"strings"
 	"time"
 
@@ -138,7 +139,6 @@ type RestoreManager struct {
 	l1ContractABI      abi.ABI
 	l1ContractInstance *zkbas.Zkbas
 	l1genesisNumber    *big.Int
-	l1genesisTxHash    common.Hash
 
 	commitCh chan *zkbas.OldZkbasCommitBlockInfo
 	verifyCh chan struct{}
@@ -180,6 +180,14 @@ func NewRestoreManager(db *gorm.DB, conn sqlx.SqlConn, redisConn *redis.Redis, c
 	if err != nil {
 		return nil, fmt.Errorf("parse layer1 contract abi failed: %v", err)
 	}
+	l1GenesisNumberConfig, err := chainStorage.SysconfigModel.GetSysconfigByName(sysconfigName.ZkbasGenesisNumber)
+	if err != nil {
+		return nil, fmt.Errorf("get %s failed: %v", sysconfigName.ZkbasGenesisNumber, err)
+	}
+	l1GenesisNumber, err := strconv.ParseInt(l1GenesisNumberConfig.Value, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("parse l1 genesis number failed: %v", err)
+	}
 
 	height, err := chainStorage.BlockModel.GetCurrentBlockHeight()
 	if err != nil {
@@ -214,7 +222,7 @@ func NewRestoreManager(db *gorm.DB, conn sqlx.SqlConn, redisConn *redis.Redis, c
 		l1Contract:         l1Contract,
 		l1ContractABI:      l1ContractABI,
 		l1ContractInstance: l1ContractInstance,
-		l1genesisNumber:    big.NewInt(21400300), // TODO:Just for test
+		l1genesisNumber:    big.NewInt(l1GenesisNumber),
 
 		commitCh: make(chan *zkbas.OldZkbasCommitBlockInfo, CommitChannelSize),
 		quitCh:   make(chan struct{}),

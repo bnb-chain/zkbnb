@@ -48,7 +48,7 @@ func TestRestoreManager(t *testing.T) {
 		os.Exit(1)
 	}
 
-	err = restoreMnager.RestoreHistoryData(nil, big.NewInt(214010000))
+	err = restoreMnager.RestoreHistoryData(restoreMnager.l1genesisNumber, new(big.Int).Add(restoreMnager.l1genesisNumber, big.NewInt(1000)))
 	if err != nil {
 		t.Errorf("restore hitory data failed: %v", err)
 	}
