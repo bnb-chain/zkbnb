@@ -20,6 +20,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
@@ -133,6 +134,18 @@ func initSysConfig() []*sysconfig.Sysconfig {
 			Value:     svrConf.ZnsPriceOracle,
 			ValueType: "string",
 			Comment:   "Zns Price Oracle",
+		},
+		{
+			Name:      sysconfigName.ZkbasGenesisTxHash,
+			Value:     svrConf.ZkbasGenesisTxHash,
+			ValueType: "string",
+			Comment:   "Tx hash of creating Zkbas contract on BSC",
+		},
+		{
+			Name:      sysconfigName.ZkbasGenesisNumber,
+			Value:     strconv.FormatInt(svrConf.ZkbasGenesisNumber, 10),
+			ValueType: "int64",
+			Comment:   "Block number of creating Zkbas contract on BSC",
 		},
 	}
 }
@@ -295,4 +308,6 @@ type config struct {
 	REYToken           string
 	ERC721             string
 	ZnsPriceOracle     string
+	ZkbasGenesisTxHash string
+	ZkbasGenesisNumber int64
 }

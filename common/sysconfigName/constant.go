@@ -31,4 +31,6 @@ const (
 	VerifierContract        = "VerifierContract"
 	Governor                = "Governor"
 	ZnsPriceOracle          = "ZnsPriceOracle"
+	ZkbasGenesisTxHash      = "ZkbasGenesisTxHash"
+	ZkbasGenesisNumber      = "ZkbasGenesisNumber"
 )
