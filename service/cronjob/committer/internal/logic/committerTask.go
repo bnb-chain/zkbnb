@@ -127,6 +127,7 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp *time.Time,
 		// compute block commitment
 		createdAt := time.Now().UnixMilli()
 
+	OUTER:
 		for j := 0; j < MaxTxsAmountPerBlock; j++ {
 			// if not full block, just break
 			if i*MaxTxsAmountPerBlock+j >= nTxs {
@@ -317,7 +318,7 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp *time.Time,
 						mempoolTx.Status = mempool.FailTxStatus
 						mempoolTx.L2BlockHeight = currentBlockHeight
 						pendingDeleteMempoolTxs = append(pendingDeleteMempoolTxs, mempoolTx)
-						continue
+						continue OUTER
 					}
 					accountMap[mempoolTxDetail.AccountIndex].AssetInfo[mempoolTxDetail.AssetId] = nAccountAsset
 					// update account state tree
