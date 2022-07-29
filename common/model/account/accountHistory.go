@@ -328,7 +328,7 @@ func (m *defaultAccountHistoryModel) GetValidAccountNums(height int64) (accounts
 	dbTx := m.DB.Table(m.table).
 		Raw("SELECT count(a.*) FROM account_history a WHERE NOT EXISTS"+
 			"(SELECT * FROM account_history WHERE account_index = a.account_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height AND l2_block_height != -1) "+
-			"AND l2_block_height <= ? AND l2_block_height != -1 ORDER BY account_index", height, height).
+			"AND l2_block_height <= ? AND l2_block_height != -1", height, height).
 		Scan(&countResult)
 	if dbTx.Error != nil {
 		logx.Errorf("[GetValidAccountNums] unable to get related accounts: %s", dbTx.Error.Error())

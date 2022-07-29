@@ -3,7 +3,7 @@ module github.com/bnb-chain/zkbas
 go 1.16
 
 require (
-	github.com/bnb-chain/bas-smt v0.0.0-20220713015932-528021957c2d
+	github.com/bnb-chain/bas-smt v0.0.0-20220729031608-317451e0cb04
 	github.com/zeromicro/go-zero v1.3.4
 	gorm.io/gorm v1.23.4
 )
@@ -19,6 +19,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.3.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/stretchr/testify v1.7.1
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
