@@ -4,6 +4,7 @@ import (
 	"flag"
 
 	bsmt "github.com/bnb-chain/bas-smt"
+	"github.com/pkg/errors"
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -47,7 +48,7 @@ func main() {
 	// init tree database
 	baseTreeDB, err := treedb.NewTreeDB(c.TreeDB.Driver, c.TreeDB.LevelDBOption, c.TreeDB.RedisDBOption)
 	if err != nil {
-		panic(err)
+		panic(errors.Wrap(err, "[prover] => Init tree database failed"))
 	}
 	// init accountTree and accountStateTrees
 	// the init block number use the latest sent block

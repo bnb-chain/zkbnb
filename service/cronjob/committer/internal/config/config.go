@@ -15,7 +15,7 @@ type Config struct {
 	CacheRedis cache.CacheConf
 	TreeDB     struct {
 		Driver        treedb.Driver
-		LevelDBOption treedb.LevelDBOptions `yaml:",optional"`
-		RedisDBOption treedb.RedisDBOptions `yaml:",optional"`
+		LevelDBOption treedb.LevelDBOption `json:",optional"`
+		RedisDBOption treedb.RedisDBOption `json:",optional"`
 	}
 }
