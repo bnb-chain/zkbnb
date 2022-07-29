@@ -20,6 +20,7 @@ package util
 import (
 	"errors"
 	"math/big"
+	"strconv"
 
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas-crypto/util"
@@ -32,6 +33,30 @@ func ToPackedAmount(amount *big.Int) (res int64, err error) {
 	return util.ToPackedAmount(amount)
 }
 
+func FromPackedAmount(packedAmount int64) (res *big.Int, err error) {
+	if packedAmount == 0 {
+		return ZeroBigInt, nil
+	}
+
+	packedAmountBits := strconv.FormatInt(packedAmount, 2)
+	if len(packedAmountBits) <= 5 {
+		return nil, errors.New("[FromPackedFee] invalid amount")
+	}
+	exponentBits := packedAmountBits[len(packedAmountBits)-5:]
+	exponent, err := strconv.ParseInt(exponentBits, 2, 41)
+	if err != nil {
+		return nil, err
+	}
+	mantissaBits := packedAmountBits[:len(packedAmountBits)-5]
+	mantissa, err := strconv.ParseInt(mantissaBits, 2, 41)
+	if err != nil {
+		return nil, err
+	}
+
+	res = ffmath.Multiply(big.NewInt(mantissa), new(big.Int).Exp(big.NewInt(10), big.NewInt(exponent), nil))
+	return res, nil
+}
+
 func CleanPackedAmount(amount *big.Int) (nAmount *big.Int, err error) {
 	return util.CleanPackedAmount(amount)
 }
@@ -41,6 +66,30 @@ func CleanPackedAmount(amount *big.Int) (nAmount *big.Int, err error) {
 */
 func ToPackedFee(amount *big.Int) (res int64, err error) {
 	return util.ToPackedFee(amount)
+}
+
+func FromPackedFee(packedAmount int64) (res *big.Int, err error) {
+	if packedAmount == 0 {
+		return ZeroBigInt, nil
+	}
+
+	packedAmountBits := strconv.FormatInt(packedAmount, 2)
+	if len(packedAmountBits) <= 5 {
+		return nil, errors.New("[FromPackedFee] invalid amount")
+	}
+	exponentBits := packedAmountBits[len(packedAmountBits)-5:]
+	exponent, err := strconv.ParseInt(exponentBits, 2, 17)
+	if err != nil {
+		return nil, err
+	}
+	mantissaBits := packedAmountBits[:len(packedAmountBits)-5]
+	mantissa, err := strconv.ParseInt(mantissaBits, 2, 17)
+	if err != nil {
+		return nil, err
+	}
+
+	res = ffmath.Multiply(big.NewInt(mantissa), new(big.Int).Exp(big.NewInt(10), big.NewInt(exponent), nil))
+	return res, nil
 }
 
 func CleanPackedFee(amount *big.Int) (nAmount *big.Int, err error) {

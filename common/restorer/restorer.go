@@ -214,7 +214,7 @@ func NewRestoreManager(db *gorm.DB, conn sqlx.SqlConn, redisConn *redis.Redis, c
 		l1Contract:         l1Contract,
 		l1ContractABI:      l1ContractABI,
 		l1ContractInstance: l1ContractInstance,
-		l1genesisNumber:    big.NewInt(21162800), // TODO:Just for test
+		l1genesisNumber:    big.NewInt(21400300), // TODO:Just for test
 
 		commitCh: make(chan *zkbas.OldZkbasCommitBlockInfo, CommitChannelSize),
 		quitCh:   make(chan struct{}),
@@ -248,8 +248,7 @@ func (m *RestoreManager) loop() {
 				return
 			}
 			blockNumber += 1
-			expectRoot := common.Bytes2Hex(commitData.NewStateRoot[:])
-			block, err = m.replayBlockPubData(block, commitData.PublicData, commitData.Timestamp.Int64(), expectRoot)
+			block, err = m.replayBlockPubData(block, commitData)
 			if err != nil {
 				logx.Errorf("replay block public data failed: %s", err.Error())
 				return
@@ -262,7 +261,10 @@ func (m *RestoreManager) loop() {
 	}
 }
 
-func (m *RestoreManager) replayBlockPubData(lastBlock *block.Block, pubData []byte, createTime int64, expectRoot string) (*block.Block, error) {
+func (m *RestoreManager) replayBlockPubData(lastBlock *block.Block, commitData *zkbas.OldZkbasCommitBlockInfo) (*block.Block, error) {
+	pubData := commitData.PublicData
+	expectRoot := common.Bytes2Hex(commitData.NewStateRoot[:])
+	createTime := commitData.Timestamp.Int64()
 	if len(pubData)%TxPubDataLength != 0 {
 		return nil, fmt.Errorf("wrong block public data length: %d", len(pubData))
 	}
@@ -433,6 +435,7 @@ func (m *RestoreManager) replayBlockPubData(lastBlock *block.Block, pubData []by
 		Model: gorm.Model{
 			CreatedAt: time.UnixMilli(createTime),
 		},
+		BlockSize:                    commitData.BlockSize,
 		BlockCommitment:              commitment,
 		BlockHeight:                  state.blockNumber,
 		StateRoot:                    state.stateRoot,
@@ -464,6 +467,7 @@ func (m *RestoreManager) replayBlockPubData(lastBlock *block.Block, pubData []by
 	if err != nil {
 		return nil, fmt.Errorf("create block for restorer failed: %v", err)
 	}
+	logx.Infof("Inserted block: %d, state root: %s\n", block.BlockHeight, block.StateRoot)
 
 	return block, nil
 }
@@ -1060,7 +1064,7 @@ func (m *RestoreManager) replayDeposit(state *BlockReplayState, pubData []byte) 
 	state.txs = append(state.txs, tx)
 	state.stateRoot = stateRoot
 	state.pendingUpdateAccountIndexMap[txInfo.AccountIndex] = true
-	state.priorityOperations += 1
+	state.priorityOperations++
 	state.pubDataOffset = append(state.pubDataOffset, uint32(len(state.pubDataOffset)))
 	return nil
 }
@@ -1191,25 +1195,33 @@ func (m *RestoreManager) replayTransfer(state *BlockReplayState, pubData []byte)
 	offset, fromAccountIndex := util.ReadUint32(pubData, offset)
 	offset, toAccountIndex := util.ReadUint32(pubData, offset)
 	offset, assetId := util.ReadUint16(pubData, offset)
-	offset, assetAmount := util.ReadUint40(pubData, offset) // TODO: maybe wrong
+	offset, packedAssetAmount := util.ReadUint40(pubData, offset)
 	offset, gasAccountIndex := util.ReadUint32(pubData, offset)
 	offset, gasFeeAssetId := util.ReadUint16(pubData, offset)
-	offset, gasFeeAssetAmount := util.ReadUint16(pubData, offset) // TODO: maybe wrong
+	offset, packedGasFeeAssetAmount := util.ReadUint16(pubData, offset)
 	offset = 1 * ChunkBytesSize
 	offset, callDataHash := util.ReadBytes32(pubData, offset)
+	assetAmount, err := util.FromPackedAmount(packedAssetAmount)
+	if err != nil {
+		return fmt.Errorf("parse packed asset amount failed: %v", err)
+	}
+	gasFeeAssetAmount, err := util.FromPackedFee(int64(packedGasFeeAssetAmount))
+	if err != nil {
+		return fmt.Errorf("parse packed fee amount failed: %v", err)
+	}
 	txInfo := &TransferTxInfo{
 		FromAccountIndex:  int64(fromAccountIndex),
 		ToAccountIndex:    int64(toAccountIndex),
 		AssetId:           int64(assetId),
-		AssetAmount:       big.NewInt(assetAmount),
+		AssetAmount:       assetAmount,
 		GasAccountIndex:   int64(gasAccountIndex),
 		GasFeeAssetId:     int64(gasFeeAssetId),
-		GasFeeAssetAmount: big.NewInt(int64(gasFeeAssetAmount)),
+		GasFeeAssetAmount: gasFeeAssetAmount,
 		CallDataHash:      callDataHash,
 	}
 
 	// Prepare account map and asset info.
-	err := m.prepareAccountsAndAssets([]int64{txInfo.FromAccountIndex, txInfo.ToAccountIndex, txInfo.GasAccountIndex}, []int64{txInfo.AssetId, txInfo.GasFeeAssetId})
+	err = m.prepareAccountsAndAssets([]int64{txInfo.FromAccountIndex, txInfo.ToAccountIndex, txInfo.GasAccountIndex}, []int64{txInfo.AssetId, txInfo.GasFeeAssetId})
 	if err != nil {
 		return fmt.Errorf("prepare accounts failed: %v", err)
 	}
@@ -1277,22 +1289,30 @@ func (m *RestoreManager) replayWithdraw(state *BlockReplayState, pubData []byte)
 	offset, toAddress := util.ReadAddress(pubData, offset)
 	offset, assetId := util.ReadUint16(pubData, offset)
 	offset = 1 * ChunkBytesSize
-	offset, assetAmount := util.ReadUint40(pubData, offset) // TODO: maybe wrong
+	offset, packedAssetAmount := util.ReadUint40(pubData, offset)
 	offset, gasAccountIndex := util.ReadUint32(pubData, offset)
 	offset, gasFeeAssetId := util.ReadUint16(pubData, offset)
-	offset, gasFeeAssetAmount := util.ReadUint16(pubData, offset) // TODO: maybe wrong
+	offset, packedGasFeeAssetAmount := util.ReadUint16(pubData, offset)
+	assetAmount, err := util.FromPackedAmount(packedAssetAmount)
+	if err != nil {
+		return fmt.Errorf("parse packed asset amount failed: %v", err)
+	}
+	gasFeeAssetAmount, err := util.FromPackedFee(int64(packedGasFeeAssetAmount))
+	if err != nil {
+		return fmt.Errorf("parse packed fee amount failed: %v", err)
+	}
 	txInfo := &WithdrawTxInfo{
 		FromAccountIndex:  int64(fromAccountIndex),
 		ToAddress:         toAddress,
 		AssetId:           int64(assetId),
-		AssetAmount:       big.NewInt(assetAmount),
+		AssetAmount:       assetAmount,
 		GasAccountIndex:   int64(gasAccountIndex),
 		GasFeeAssetId:     int64(gasFeeAssetId),
-		GasFeeAssetAmount: big.NewInt(int64(gasFeeAssetAmount)),
+		GasFeeAssetAmount: gasFeeAssetAmount,
 	}
 
 	// Prepare account map and asset info.
-	err := m.prepareAccountsAndAssets([]int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex}, []int64{txInfo.AssetId, txInfo.GasFeeAssetId})
+	err = m.prepareAccountsAndAssets([]int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex}, []int64{txInfo.AssetId, txInfo.GasFeeAssetId})
 	if err != nil {
 		return fmt.Errorf("prepare accounts failed: %v", err)
 	}
@@ -1350,17 +1370,21 @@ func (m *RestoreManager) replayCreateCollection(state *BlockReplayState, pubData
 	offset, collectionId := util.ReadUint16(pubData, offset)
 	offset, gasAccountIndex := util.ReadUint32(pubData, offset)
 	offset, gasFeeAssetId := util.ReadUint16(pubData, offset)
-	offset, gasFeeAssetAmount := util.ReadUint16(pubData, offset) // TODO: maybe wrong
+	offset, packedGasFeeAssetAmount := util.ReadUint16(pubData, offset)
+	gasFeeAssetAmount, err := util.FromPackedFee(int64(packedGasFeeAssetAmount))
+	if err != nil {
+		return fmt.Errorf("parse packed fee amount failed: %v", err)
+	}
 	txInfo := &CreateCollectionTxInfo{
 		AccountIndex:      int64(accountIndex),
 		CollectionId:      int64(collectionId),
 		GasAccountIndex:   int64(gasAccountIndex),
 		GasFeeAssetId:     int64(gasFeeAssetId),
-		GasFeeAssetAmount: big.NewInt(int64(gasFeeAssetAmount)),
+		GasFeeAssetAmount: gasFeeAssetAmount,
 	}
 
 	// Prepare account map and asset info.
-	err := m.prepareAccountsAndAssets([]int64{txInfo.AccountIndex, txInfo.GasAccountIndex}, []int64{txInfo.GasFeeAssetId})
+	err = m.prepareAccountsAndAssets([]int64{txInfo.AccountIndex, txInfo.GasAccountIndex}, []int64{txInfo.GasFeeAssetId})
 	if err != nil {
 		return fmt.Errorf("prepare accounts failed: %v", err)
 	}
@@ -1414,25 +1438,29 @@ func (m *RestoreManager) replayMintNft(state *BlockReplayState, pubData []byte) 
 	offset, nftIndex := util.ReadUint40(pubData, offset)
 	offset, gasAccountIndex := util.ReadUint32(pubData, offset)
 	offset, gasFeeAssetId := util.ReadUint16(pubData, offset)
-	offset, gasFeeAssetAmount := util.ReadUint16(pubData, offset) // TODO: maybe wrong
+	offset, packedGasFeeAssetAmount := util.ReadUint16(pubData, offset)
 	offset, creatorTreasuryRate := util.ReadUint16(pubData, offset)
 	offset, nftCollectionId := util.ReadUint16(pubData, offset)
 	offset = 1 * ChunkBytesSize
-	offset, nftContentHash := util.ReadBytes32(pubData, offset) // TODO: maybe wrong
+	offset, nftContentHash := util.ReadBytes32(pubData, offset)
+	gasFeeAssetAmount, err := util.FromPackedFee(int64(packedGasFeeAssetAmount))
+	if err != nil {
+		return fmt.Errorf("parse packed fee amount failed: %v", err)
+	}
 	txInfo := &MintNftTxInfo{
 		CreatorAccountIndex: int64(creatorAccountIndex),
 		ToAccountIndex:      int64(toAccountIndex),
 		NftIndex:            nftIndex,
 		GasAccountIndex:     int64(gasAccountIndex),
 		GasFeeAssetId:       int64(gasFeeAssetId),
-		GasFeeAssetAmount:   big.NewInt(int64(gasFeeAssetAmount)),
+		GasFeeAssetAmount:   gasFeeAssetAmount,
 		CreatorTreasuryRate: int64(creatorTreasuryRate),
 		NftCollectionId:     int64(nftCollectionId),
 		NftContentHash:      common.Bytes2Hex(nftContentHash),
 	}
 
 	// Prepare account map and asset info.
-	err := m.prepareAccountsAndAssets([]int64{txInfo.CreatorAccountIndex, txInfo.GasAccountIndex}, []int64{txInfo.GasFeeAssetId})
+	err = m.prepareAccountsAndAssets([]int64{txInfo.CreatorAccountIndex, txInfo.GasAccountIndex}, []int64{txInfo.GasFeeAssetId})
 	if err != nil {
 		return fmt.Errorf("prepare accounts failed: %v", err)
 	}
@@ -1501,21 +1529,25 @@ func (m *RestoreManager) replayTransferNft(state *BlockReplayState, pubData []by
 	offset, nftIndex := util.ReadUint40(pubData, offset)
 	offset, gasAccountIndex := util.ReadUint32(pubData, offset)
 	offset, gasFeeAssetId := util.ReadUint16(pubData, offset)
-	offset, gasFeeAssetAmount := util.ReadUint16(pubData, offset) // TODO: maybe wrong
+	offset, packedGasFeeAssetAmount := util.ReadUint16(pubData, offset)
 	offset = 1 * ChunkBytesSize
-	offset, callDataHash := util.ReadBytes32(pubData, offset) // TODO: maybe wrong
+	offset, callDataHash := util.ReadBytes32(pubData, offset)
+	gasFeeAssetAmount, err := util.FromPackedFee(int64(packedGasFeeAssetAmount))
+	if err != nil {
+		return fmt.Errorf("parse packed fee amount failed: %v", err)
+	}
 	txInfo := &TransferNftTxInfo{
 		FromAccountIndex:  int64(fromAccountIndex),
 		ToAccountIndex:    int64(toAccountIndex),
 		NftIndex:          nftIndex,
 		GasAccountIndex:   int64(gasAccountIndex),
 		GasFeeAssetId:     int64(gasFeeAssetId),
-		GasFeeAssetAmount: big.NewInt(int64(gasFeeAssetAmount)),
+		GasFeeAssetAmount: gasFeeAssetAmount,
 		CallDataHash:      callDataHash,
 	}
 
 	// Prepare account map and asset info.
-	err := m.prepareAccountsAndAssets([]int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex}, []int64{txInfo.GasFeeAssetId})
+	err = m.prepareAccountsAndAssets([]int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex}, []int64{txInfo.GasFeeAssetId})
 	if err != nil {
 		return fmt.Errorf("prepare accounts failed: %v", err)
 	}
@@ -1698,20 +1730,24 @@ func (m *RestoreManager) replayCancelOffer(state *BlockReplayState, pubData []by
 	offset, offerId := util.ReadUint24(pubData, offset)
 	offset, gasAccountIndex := util.ReadUint32(pubData, offset)
 	offset, gasFeeAssetId := util.ReadUint16(pubData, offset)
-	offset, gasFeeAssetAmount := util.ReadUint16(pubData, offset) // TODO: maybe wrong
+	offset, packedGasFeeAssetAmount := util.ReadUint16(pubData, offset) // TODO: maybe wrong
+	gasFeeAssetAmount, err := util.FromPackedFee(int64(packedGasFeeAssetAmount))
+	if err != nil {
+		return fmt.Errorf("parse packed fee amount failed: %v", err)
+	}
 	txInfo := &CancelOfferTxInfo{
 		AccountIndex:      int64(accountIndex),
 		OfferId:           int64(offerId),
 		GasAccountIndex:   int64(gasAccountIndex),
 		GasFeeAssetId:     int64(gasFeeAssetId),
-		GasFeeAssetAmount: big.NewInt(int64(gasFeeAssetAmount)),
+		GasFeeAssetAmount: gasFeeAssetAmount,
 	}
 
 	// Prepare account map and asset info.
 	offerAssetId := txInfo.OfferId / OfferPerAsset
 	offerIndex := txInfo.OfferId % OfferPerAsset
 	// Prepare account map and asset info.
-	err := m.prepareAccountsAndAssets([]int64{txInfo.AccountIndex, txInfo.GasAccountIndex}, []int64{offerAssetId, txInfo.GasFeeAssetId})
+	err = m.prepareAccountsAndAssets([]int64{txInfo.AccountIndex, txInfo.GasAccountIndex}, []int64{offerAssetId, txInfo.GasFeeAssetId})
 	if err != nil {
 		return fmt.Errorf("prepare accounts failed: %v", err)
 	}
@@ -1774,11 +1810,15 @@ func (m *RestoreManager) replayWithdrawNft(state *BlockReplayState, pubData []by
 	offset, toAddress := util.ReadAddress(pubData, offset)
 	offset, gasAccountIndex := util.ReadUint32(pubData, offset)
 	offset, gasFeeAssetId := util.ReadUint16(pubData, offset)
-	offset, gasFeeAssetAmount := util.ReadUint16(pubData, offset) // TODO: maybe wrong
+	offset, packedGasFeeAssetAmount := util.ReadUint16(pubData, offset)
 	offset = 3 * ChunkBytesSize
 	offset, nftContentHash := util.ReadBytes32(pubData, offset)
 	offset, nftL1TokenId := util.ReadUint256(pubData, offset)
 	offset, creatorAccountNameHash := util.ReadBytes32(pubData, offset)
+	gasFeeAssetAmount, err := util.FromPackedFee(int64(packedGasFeeAssetAmount))
+	if err != nil {
+		return fmt.Errorf("parse packed fee amount failed: %v", err)
+	}
 	txInfo := &WithdrawNftTxInfo{
 		AccountIndex:           int64(accountIndex),
 		CreatorAccountIndex:    int64(creatorAccountIndex),
@@ -1789,14 +1829,14 @@ func (m *RestoreManager) replayWithdrawNft(state *BlockReplayState, pubData []by
 		ToAddress:              toAddress,
 		GasAccountIndex:        int64(gasAccountIndex),
 		GasFeeAssetId:          int64(gasFeeAssetId),
-		GasFeeAssetAmount:      big.NewInt(int64(gasFeeAssetAmount)),
+		GasFeeAssetAmount:      gasFeeAssetAmount,
 		NftContentHash:         nftContentHash,
 		NftL1TokenId:           nftL1TokenId,
 		CreatorAccountNameHash: creatorAccountNameHash,
 	}
 
 	// Prepare account map and asset info.
-	err := m.prepareAccountsAndAssets([]int64{txInfo.AccountIndex, txInfo.GasAccountIndex}, []int64{txInfo.GasFeeAssetId})
+	err = m.prepareAccountsAndAssets([]int64{txInfo.AccountIndex, txInfo.GasAccountIndex}, []int64{txInfo.GasFeeAssetId})
 	if err != nil {
 		return fmt.Errorf("prepare accounts failed: %v", err)
 	}
