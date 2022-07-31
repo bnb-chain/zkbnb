@@ -1,13 +1,13 @@
 
 
-# ZecreyLegend Layer-2 Design
+# Zkbas Layer-2 Design
 
 ## Table of contents
 
 ## Glossary
 
 - **L1**: layer-1 blockchain(BNB Chain)
-- **Rollup**: layer-2 network (ZecreyLegend)
+- **Rollup**: layer-2 network (Zkbas)
 - **Owner**: a user who controls some assets in L2.
 - **Operator**: entity operating the rollup.
 - **Eventually**: happening within finite time.
@@ -19,7 +19,7 @@
 
 ### Overview
 
-ZecreyLegend implements a ZK rollup protocol (in short "rollup" below) for:
+Zkbas implements a ZK rollup protocol (in short "rollup" below) for:
 
 - BNB and BEP20 fungible token deposit and transfer
 - AMM-based fungible token swap on L2
@@ -55,7 +55,7 @@ We assume that 1 `Chunk` = 32 bytes.
 
 ### Amount packing
 
-Mantissa and exponent parameters used in ZecreyLegend:
+Mantissa and exponent parameters used in Zkbas:
 
 `amount = mantissa * radix^{exponent}`
 
@@ -290,9 +290,9 @@ func ComputeStateRootHash(
 }
 ```
 
-## ZecreyLegend Transactions
+## Zkbas Transactions
 
-ZecreyLegend transactions are divided into Rollup transactions (initiated inside Rollup by a Rollup account) and Priority operations (initiated on the mainchain by an BNB Chain account).
+Zkbas transactions are divided into Rollup transactions (initiated inside Rollup by a Rollup account) and Priority operations (initiated on the mainchain by an BNB Chain account).
 
 Rollup transactions:
 
@@ -323,8 +323,8 @@ Priority operations:
 
 1. User creates a `Transaction` or a `Priority operation`.
 2. After processing this request, operator creates a `Rollup operation` and adds it to the block.
-3. Once the block is complete, operator submits it to the ZecreyLegend smart contract as a block commitment. Part of the logic of some `Rollup transaction` is checked by the smart contract.
-4. The proof for the block is submitted to the ZecreyLegend smart contract as the block verification. If the verification succeeds, the new state is considered finalized.
+3. Once the block is complete, operator submits it to the Zkbas smart contract as a block commitment. Part of the logic of some `Rollup transaction` is checked by the smart contract.
+4. The proof for the block is submitted to the Zkbas smart contract as the block verification. If the verification succeeds, the new state is considered finalized.
 
 ### EmptyTx
 
@@ -2515,13 +2515,13 @@ func VerifyFullExitNftTx(
 Register an ZNS account which is an ENS like domain for layer-1 and a short account name for your layer-2 account.
 
 ```js
-function registerZNS(string calldata _name, address _owner, bytes32 _zecreyPubKeyX, bytes32 _zecreyPubKeyY) external payable nonReentrant
+function registerZNS(string calldata _name, address _owner, bytes32 _zkbasPubKeyX, bytes32 _zkbasPubKeyY) external payable nonReentrant
 ```
 
 - `_name`: your favor account name
 - `_owner`: account name layer-1 owner address
-- `_zecreyPubKeyX`: zecrey layer-2 public key X
-- `_zecreyPubKeyY`: zecrey layer-2 public key Y
+- `_zkbasPubKeyX`: zkbas layer-2 public key X
+- `_zkbasPubKeyY`: zkbas layer-2 public key Y
 
 #### CreatePair
 
