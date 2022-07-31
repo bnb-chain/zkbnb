@@ -37,7 +37,7 @@ func (m *model) GetTxsTotalCount(ctx context.Context) (int64, error) {
 		return &count, nil
 	}
 	var countType int64
-	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyTxsCount(), &countType, 5, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyTxsCount(), &countType, multcache.TxCountTtl, f)
 	if err != nil {
 		return 0, err
 	}
@@ -64,7 +64,7 @@ func (m *model) GetTxByTxHash(ctx context.Context, txHash string) (*table.Tx, er
 		return tx, nil
 	}
 	tx := &table.Tx{}
-	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyTxByTxHash(txHash), tx, 1, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyTxByTxHash(txHash), tx, multcache.TxTtl, f)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (m *model) GetTxByTxID(ctx context.Context, txID int64) (*table.Tx, error) 
 		return tx, nil
 	}
 	tx := &table.Tx{}
-	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyTxByTxId(txID), tx, 1, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyTxByTxId(txID), tx, multcache.TxTtl, f)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (m *model) GetTxCountByTimeRange(ctx context.Context, data string) (int64, 
 		return &count, nil
 	}
 	var countType int64
-	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyTxCountByTimeRange(data), &countType, 5, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyTxCountByTimeRange(data), &countType, multcache.TxCountTtl, f)
 	if err != nil {
 		return 0, err
 	}

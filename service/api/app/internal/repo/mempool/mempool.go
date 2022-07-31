@@ -108,7 +108,7 @@ func (m *model) GetMempoolTxByTxId(ctx context.Context, txID int64) (*table.Memp
 		return tx, nil
 	}
 	tx := &table.MempoolTx{}
-	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyTxByTxId(txID), tx, 1, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyTxByTxId(txID), tx, multcache.MempoolTxTtl, f)
 	if err != nil {
 		return nil, err
 	}

@@ -45,7 +45,7 @@ func (m *model) GetBasicAccountByAccountName(ctx context.Context, accountName st
 		return account, nil
 	}
 	account := &table.Account{}
-	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountByAccountName(accountName), account, 10, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountByAccountName(accountName), account, multcache.AccountTtl, f)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (m *model) GetBasicAccountByAccountPk(ctx context.Context, accountPk string
 		return account, nil
 	}
 	account := &table.Account{}
-	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountByAccountPk(accountPk), account, 10, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountByAccountPk(accountPk), account, multcache.AccountTtl, f)
 	if err != nil {
 		return nil, err
 	}

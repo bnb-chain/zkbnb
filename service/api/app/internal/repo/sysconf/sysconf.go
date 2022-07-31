@@ -38,7 +38,7 @@ func (m *sysconf) GetSysconfigByName(ctx context.Context, name string) (*table.S
 		return &config, nil
 	}
 	var config table.Sysconfig
-	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetSysconfigByName+name, &config, 5, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetSysconfigByName+name, &config, multcache.SysconfigTtl, f)
 	if err != nil {
 		return &config, err
 	}

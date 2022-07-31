@@ -26,23 +26,14 @@ type model struct {
 }
 
 func (m *model) GetLatestOfferIdForWrite(ctx context.Context, accountIndex int64) (int64, error) {
-	f := func() (interface{}, error) {
-		lastOfferId, err := m.offerModel.GetLatestOfferId(accountIndex)
-		if err != nil {
-			return nil, err
-		}
-		return &lastOfferId, nil
-	}
-	var lastOfferId int64
-	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyOfferIdByAccountIndex(accountIndex), &lastOfferId, 1, f)
+	lastOfferId, err := m.offerModel.GetLatestOfferId(accountIndex)
 	if err != nil {
-		if err.Error() == "OfferId not exist" {
+		if err == errorcode.DbErrNotFound {
 			return 0, nil
 		}
-		return 0, err
+		return -1, err
 	}
-	nftIndex, _ := value.(*int64)
-	return *nftIndex, nil
+	return lastOfferId, nil
 }
 
 func (m *model) GetLatestNftInfoForRead(ctx context.Context, nftIndex int64) (*commonAsset.NftInfo, error) {
@@ -88,7 +79,7 @@ func (m *model) GetLatestNftInfoForReadWithCache(ctx context.Context, nftIndex i
 		return tmpNftInfo, nil
 	}
 	nftInfoType := &commonAsset.NftInfo{}
-	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyNftInfoByNftIndex(nftIndex), nftInfoType, 10, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyNftInfoByNftIndex(nftIndex), nftInfoType, multcache.NftTtl, f)
 	if err != nil {
 		return nil, err
 	}
