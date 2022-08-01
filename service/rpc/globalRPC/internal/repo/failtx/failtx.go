@@ -1,6 +1,7 @@
 package failtx
 
 import (
+	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 
 	table "github.com/bnb-chain/zkbas/common/model/tx"
@@ -23,6 +24,7 @@ type model struct {
 func (m *model) CreateFailTx(failTx *table.FailTx) error {
 	dbTx := m.db.Table(m.table).Create(failTx)
 	if dbTx.Error != nil {
+		logx.Errorf("fail to create failTx, error: %s", dbTx.Error.Error())
 		return errorcode.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {

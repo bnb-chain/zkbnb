@@ -25,12 +25,12 @@ type sysconf struct {
 	Description: get sysconfig by config name
 */
 func (m *sysconf) GetSysconfigByName(ctx context.Context, name string) (*table.Sysconfig, error) {
-	logx.Errorf("[GetSysconfigByName] name:%v", name)
-
+	logx.Infof("[GetSysconfigByName] name: %s", name)
 	f := func() (interface{}, error) {
 		var config table.Sysconfig
 		dbTx := m.db.Table(m.table).Where("name = ?", name).Find(&config)
 		if dbTx.Error != nil {
+			logx.Errorf("fail to get sysconfig: %s, error: %s", name, dbTx.Error.Error())
 			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			return nil, errorcode.DbErrNotFound
@@ -93,7 +93,7 @@ func (m *sysconf) UpdateSysconfig(_ context.Context, config *table.Sysconfig) er
 	dbTx := m.db.Table(m.table).Where("name = ?", config.Name).Select(NameColumn, ValueColumn, ValueTypeColumn, CommentColumn).
 		Updates(config)
 	if dbTx.Error != nil {
-		logx.Error("[sysconfig.UpdateSysconfig] %s", dbTx.Error)
+		logx.Errorf("[sysconfig.UpdateSysconfig] %s", dbTx.Error.Error())
 		return errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return errorcode.DbErrNotFound

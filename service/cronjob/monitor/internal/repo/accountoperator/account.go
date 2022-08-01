@@ -41,6 +41,7 @@ func (m *model) GetBasicAccountByAccountName(ctx context.Context, accountName st
 		account := &table.Account{}
 		dbTx := m.db.Table(m.table).Where("account_name = ?", accountName).Find(&account)
 		if dbTx.Error != nil {
+			logx.Errorf("fail to get account by name: %s, error: %s", accountName, dbTx.Error.Error())
 			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			return nil, errorcode.DbErrNotFound
@@ -61,6 +62,7 @@ func (m *model) GetBasicAccountByAccountPk(ctx context.Context, accountPk string
 		account := &table.Account{}
 		dbTx := m.db.Table(m.table).Where("public_key = ?", accountPk).Find(&account)
 		if dbTx.Error != nil {
+			logx.Errorf("fail to get account by pk: %s, error: %d", accountPk, dbTx.Error.Error())
 			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			return nil, errorcode.DbErrNotFound
@@ -86,6 +88,7 @@ func (m *model) GetBasicAccountByAccountPk(ctx context.Context, accountPk string
 func (m *model) GetAccountByAccountIndex(accountIndex int64) (account *table.Account, err error) {
 	dbTx := m.db.Table(m.table).Where("account_index = ?", accountIndex).Find(&account)
 	if dbTx.Error != nil {
+		logx.Errorf("fail to get account by index: %d, error: %s", accountIndex, dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, errorcode.DbErrNotFound
@@ -103,6 +106,7 @@ func (m *model) GetAccountByAccountIndex(accountIndex int64) (account *table.Acc
 func (m *model) GetAccountByPk(pk string) (account *table.Account, err error) {
 	dbTx := m.db.Table(m.table).Where("public_key = ?", pk).Find(&account)
 	if dbTx.Error != nil {
+		logx.Errorf("fail to get account by pk: %s, error: %s", pk, dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, errorcode.DbErrNotFound
@@ -120,6 +124,7 @@ func (m *model) GetAccountByAccountName(ctx context.Context, accountName string)
 	account := &table.Account{}
 	dbTx := m.db.Table(m.table).Where("account_name = ?", accountName).Find(&account)
 	if dbTx.Error != nil {
+		logx.Errorf("fail to get account by name: %s, error: %s", accountName, dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, errorcode.DbErrNotFound
@@ -137,6 +142,7 @@ func (m *model) GetAccountByAccountName(ctx context.Context, accountName string)
 func (m *model) GetAccountsList(limit int, offset int64) (accounts []*table.Account, err error) {
 	dbTx := m.db.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("account_index desc").Find(&accounts)
 	if dbTx.Error != nil {
+		logx.Errorf("fail to get accounts, offset: %d, limit: %d, error: %s", offset, limit, dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, errorcode.DbErrNotFound

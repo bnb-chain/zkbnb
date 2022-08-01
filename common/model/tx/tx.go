@@ -136,7 +136,7 @@ func (m *defaultTxModel) GetTxsListByBlockHeight(blockHeight int64, limit int, o
 	// todo cache optimize
 	dbTx := m.DB.Table(m.table).Where("block_height = ?", blockHeight).Order("created_at desc, id desc").Offset(offset).Limit(limit).Find(&txs)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsListByBlockHeight] %s", dbTx.Error)
+		logx.Errorf("[txVerification.GetTxsListByBlockHeight] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[txVerification.GetTxsListByBlockHeight] Get Txs Error")
@@ -204,7 +204,7 @@ func (m *defaultTxModel) GetTxsListByAccountIndex(accountIndex int64, limit int,
 	)
 	dbTx := m.DB.Table(txDetailTable).Select("tx_id").Where("account_index = ? and deleted_at is NULL", accountIndex).Group("tx_id").Find(&txIds)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsListByAccountIndex] %s", dbTx.Error)
+		logx.Errorf("[txVerification.GetTxsListByAccountIndex] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[info.GetTxsListByAccountIndex] Get TxIds Error")
@@ -212,7 +212,7 @@ func (m *defaultTxModel) GetTxsListByAccountIndex(accountIndex int64, limit int,
 	}
 	dbTx = m.DB.Table(m.table).Order("created_at desc, id desc").Offset(offset).Limit(limit).Find(&txs, txIds)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsListByAccountIndex] %s", dbTx.Error)
+		logx.Errorf("[txVerification.GetTxsListByAccountIndex] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[txVerification.GetTxsListByAccountIndex] Get Txs Error")
@@ -280,7 +280,7 @@ func (m *defaultTxModel) GetTxsListByAccountIndexAndTxType(accountIndex int64, t
 	)
 	dbTx := m.DB.Table(txDetailTable).Select("tx_id").Where("account_index = ? and deleted_at is NULL", accountIndex).Group("tx_id").Find(&txIds)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsListByAccountIndexAndTxType] %s", dbTx.Error)
+		logx.Errorf("[txVerification.GetTxsListByAccountIndexAndTxType] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[info.GetTxsListByAccountIndexAndTxType] Get TxIds Error")
@@ -288,7 +288,7 @@ func (m *defaultTxModel) GetTxsListByAccountIndexAndTxType(accountIndex int64, t
 	}
 	dbTx = m.DB.Table(m.table).Order("created_at desc").Where("tx_type = ?", txType).Offset(offset).Limit(limit).Find(&txs, txIds)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsListByAccountIndexAndTxType] %s", dbTx.Error)
+		logx.Errorf("[txVerification.GetTxsListByAccountIndexAndTxType] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[txVerification.GetTxsListByAccountIndexAndTxType] Get Txs Error")
@@ -356,7 +356,7 @@ func (m *defaultTxModel) GetTxsListByAccountIndexAndTxTypeArray(accountIndex int
 	)
 	dbTx := m.DB.Table(txDetailTable).Select("tx_id").Where("account_index = ? and deleted_at is NULL", accountIndex).Group("tx_id").Find(&txIds)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsListByAccountIndexAndTxTypeArray] %s", dbTx.Error)
+		logx.Errorf("[txVerification.GetTxsListByAccountIndexAndTxTypeArray] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[info.GetTxsListByAccountIndexAndTxTypeArray] Get TxIds Error")
@@ -364,7 +364,7 @@ func (m *defaultTxModel) GetTxsListByAccountIndexAndTxTypeArray(accountIndex int
 	}
 	dbTx = m.DB.Table(m.table).Order("created_at desc").Where("tx_type in (?)", txTypeArray).Offset(offset).Limit(limit).Find(&txs, txIds)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsListByAccountIndexAndTxTypeArray] %s", dbTx.Error)
+		logx.Errorf("[txVerification.GetTxsListByAccountIndexAndTxTypeArray] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[GetTxsListByAccountIndexAndTxTypeArray] Get Txs Error")
@@ -430,7 +430,7 @@ func (m *defaultTxModel) GetTxsListByAccountName(accountName string, limit int, 
 	)
 	dbTx := m.DB.Table(txDetailTable).Select("tx_id").Where("account_name = ? and deleted_at is NULL", accountName).Group("tx_id").Find(&txIds)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsListByAccountName] %s", dbTx.Error)
+		logx.Errorf("[txVerification.GetTxsListByAccountName] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[txVerification.GetTxsListByAccountName] Get TxIds Error")
@@ -438,7 +438,7 @@ func (m *defaultTxModel) GetTxsListByAccountName(accountName string, limit int, 
 	}
 	dbTx = m.DB.Table(m.table).Order("created_at desc, id desc").Offset(offset).Limit(limit).Find(&txs, txIds)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsListByAccountName] %s", dbTx.Error)
+		logx.Errorf("[txVerification.GetTxsListByAccountName] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[txVerification.GetTxsListByAccountName] Get Txs Error")
@@ -606,7 +606,7 @@ func (m *defaultTxModel) GetTxByTxHash(txHash string) (tx *Tx, err error) {
 
 	dbTx := m.DB.Table(m.table).Where("tx_hash = ?", txHash).Find(&tx)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxByTxHash] %s", dbTx.Error)
+		logx.Errorf("[txVerification.GetTxByTxHash] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[txVerification.GetTxByTxHash] No such Tx with txHash: %s", txHash)
@@ -630,7 +630,7 @@ func (m *defaultTxModel) GetTxByTxId(id uint) (tx *Tx, err error) {
 
 	dbTx := m.DB.Table(m.table).Where("id = ?", id).Find(&tx)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxByTxId] %s", dbTx.Error)
+		logx.Errorf("[txVerification.GetTxByTxId] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[txVerification.GetTxByTxId] No such Tx with tx id: %s", id)
@@ -664,7 +664,7 @@ func (m *defaultTxModel) GetTxsListGreaterThanBlockHeight(blockHeight int64) (tx
 	dbTx := m.DB.Table(m.table).Where("block_height >= ? and block_height < ?", blockHeight, blockHeight+maxBlocks).Order("created_at, id").Find(&txs)
 
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsListGreaterThanBlockHeight] %s", dbTx.Error)
+		logx.Errorf("[txVerification.GetTxsListGreaterThanBlockHeight] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Infof("[txVerification.GetTxsListGreaterThanBlockHeight] No txVerification blockHeight greater than %d", blockHeight)

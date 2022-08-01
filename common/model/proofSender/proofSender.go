@@ -160,7 +160,7 @@ func (m *defaultProofSenderModel) GetLatestConfirmedProof() (p *ProofSender, err
 	var row *ProofSender
 	dbTx := m.DB.Table(m.table).Where("status >= ?", NotConfirmed).Order("block_number desc").Limit(1).Find(&row)
 	if dbTx.Error != nil {
-		logx.Error("[proofSender.GetLatestSentProof] %s", dbTx.Error)
+		logx.Errorf("[proofSender.GetLatestSentProof] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[proofSender.GetLatestSentProof] not found")
@@ -181,7 +181,7 @@ func (m *defaultProofSenderModel) GetProofByBlockNumber(num int64) (p *ProofSend
 	var row *ProofSender
 	dbTx := m.DB.Table(m.table).Where("block_number = ?", num).Find(&row)
 	if dbTx.Error != nil {
-		logx.Error("[proofSender.GetProofByBlockNumber] %s", dbTx.Error)
+		logx.Errorf("[proofSender.GetProofByBlockNumber] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[proofSender.GetProofByBlockNumber] not found")
