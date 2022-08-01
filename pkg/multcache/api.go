@@ -14,10 +14,10 @@ import (
 
 // Query function when key does not exist
 type MultCache interface {
-	GetWithSet(ctx context.Context, key string, value interface{}, timeOut uint32,
+	GetWithSet(ctx context.Context, key string, value interface{}, duration time.Duration,
 		query QueryFunc) (interface{}, error)
 	Get(ctx context.Context, key string, value interface{}) (interface{}, error)
-	Set(ctx context.Context, key string, value interface{}, timeOut uint32) error
+	Set(ctx context.Context, key string, value interface{}, duration time.Duration) error
 	Delete(ctx context.Context, key string) error
 }
 

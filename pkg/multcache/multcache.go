@@ -14,7 +14,7 @@ type multcache struct {
 
 type QueryFunc func() (interface{}, error)
 
-func (m *multcache) GetWithSet(ctx context.Context, key string, valueStruct interface{}, timeOut uint32,
+func (m *multcache) GetWithSet(ctx context.Context, key string, valueStruct interface{}, duration time.Duration,
 	query QueryFunc) (interface{}, error) {
 	value, err := m.marshal.Get(ctx, key, valueStruct)
 	if err == nil {
@@ -25,7 +25,7 @@ func (m *multcache) GetWithSet(ctx context.Context, key string, valueStruct inte
 		if err != nil {
 			return nil, err
 		}
-		return value, m.Set(ctx, key, value, timeOut)
+		return value, m.Set(ctx, key, value, duration)
 	}
 	return nil, err
 }
@@ -38,8 +38,8 @@ func (m *multcache) Get(ctx context.Context, key string, value interface{}) (int
 	return returnObj, nil
 }
 
-func (m *multcache) Set(ctx context.Context, key string, value interface{}, timeOut uint32) error {
-	if err := m.marshal.Set(ctx, key, value, &store.Options{Expiration: time.Duration(timeOut) * time.Second}); err != nil {
+func (m *multcache) Set(ctx context.Context, key string, value interface{}, duration time.Duration) error {
+	if err := m.marshal.Set(ctx, key, value, &store.Options{Expiration: duration}); err != nil {
 		return err
 	}
 	return nil

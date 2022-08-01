@@ -1,27 +1,29 @@
 package multcache
 
+import "time"
+
 const (
-	AccountTtl = 1 //cache ttl of account in second
+	AccountTtl = 1000 * time.Millisecond //cache ttl of account
 
-	AssetTtl     = 1 //cache ttl of asset in second
-	AssetListTtl = 2 //cache ttl of asset list in second
+	AssetTtl     = 1000 * time.Millisecond //cache ttl of asset
+	AssetListTtl = 2000 * time.Millisecond //cache ttl of asset list
 
-	NftTtl      = 1 //cache ttl of nft in second
-	NftCountTtl = 2 //cache ttl of nft total count in second
-	NftListTtl  = 2 //cache ttl of nft list in second
+	NftTtl      = 1000 * time.Millisecond //cache ttl of nft
+	NftCountTtl = 2000 * time.Millisecond //cache ttl of nft total count
+	NftListTtl  = 2000 * time.Millisecond //cache ttl of nft list
 
-	BlockTtl       = 2 //cache ttl of block in second
-	BlockListTtl   = 2 //cache ttl of block list in second
-	BlockHeightTtl = 1 //cache ttl of current block height in second
-	BlockCountTtl  = 2 //cache ttl of block count in second
+	BlockTtl       = 1000 * time.Millisecond //cache ttl of block
+	BlockListTtl   = 2000 * time.Millisecond //cache ttl of block list
+	BlockHeightTtl = 500 * time.Millisecond  //cache ttl of current block height
+	BlockCountTtl  = 2000 * time.Millisecond //cache ttl of block count
 
-	MempoolTxTtl = 1 //cache ttl of mempool tx in second
-	TxTtl        = 2 //cache ttl of tx in second
-	TxCountTtl   = 2 //cache ttl of tx count in second
+	MempoolTxTtl = 500 * time.Millisecond  //cache ttl of mempool tx
+	TxTtl        = 2000 * time.Millisecond //cache ttl of tx
+	TxCountTtl   = 2000 * time.Millisecond //cache ttl of tx count
 
-	PriceTtl = 1 //cache ttl of currency price in second
+	PriceTtl = 500 * time.Millisecond //cache ttl of currency price
 
-	DauTtl = 5 //cache ttl of dau in second
+	DauTtl = 5000 * time.Millisecond //cache ttl of dau
 
-	SysconfigTtl = 10 //cache ttl of sysconfig in second
+	SysconfigTtl = 10000 * time.Millisecond //cache ttl of sysconfig
 )

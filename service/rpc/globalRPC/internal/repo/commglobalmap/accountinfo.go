@@ -47,7 +47,7 @@ func (m *model) SetLatestAccountInfoInToCache(ctx context.Context, accountIndex 
 	if err != nil {
 		return err
 	}
-	if err := m.cache.Set(ctx, multcache.SpliceCacheKeyAccountByAccountIndex(accountIndex), account, 10); err != nil {
+	if err := m.cache.Set(ctx, multcache.SpliceCacheKeyAccountByAccountIndex(accountIndex), account, multcache.AccountTtl); err != nil {
 		return err
 	}
 	return nil

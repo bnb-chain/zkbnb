@@ -62,11 +62,6 @@ func (m *model) GetLatestNftInfoForRead(ctx context.Context, nftIndex int64) (*c
 			}
 		}
 	}
-	// TODO: this set cache operation will be deleted in the future, we should use GetLatestLiquidityInfoForReadWithCache anywhere
-	// and delete the cache where mempool be changed
-	if err := m.cache.Set(ctx, multcache.SpliceCacheKeyNftInfoByNftIndex(nftIndex), nftInfo, 10); err != nil {
-		return nil, err
-	}
 	return nftInfo, nil
 }
 
@@ -92,7 +87,7 @@ func (m *model) SetLatestNftInfoForReadInCache(ctx context.Context, nftIndex int
 	if err != nil {
 		return err
 	}
-	if err := m.cache.Set(ctx, multcache.SpliceCacheKeyNftInfoByNftIndex(nftIndex), nftInfo, 10); err != nil {
+	if err := m.cache.Set(ctx, multcache.SpliceCacheKeyNftInfoByNftIndex(nftIndex), nftInfo, multcache.NftTtl); err != nil {
 		return err
 	}
 	return nil
