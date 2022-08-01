@@ -53,7 +53,7 @@ func SendAtomicMatchTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 		errInfo := fmt.Sprintf("[sendAtomicMatchTx] err: invalid accountIndex %v", txInfo.SellOffer.AccountIndex)
 		return "", handleCreateFailAtomicMatchTx(svcCtx.FailTxModel, txInfo, errors.New(errInfo))
 	}
-	commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.AccountIndex)
+	err = commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.AccountIndex)
 	if err != nil {
 		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
 	}

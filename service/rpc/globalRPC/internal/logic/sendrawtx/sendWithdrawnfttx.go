@@ -48,7 +48,7 @@ func SendWithdrawNftTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 		errInfo := fmt.Sprintf("[sendWithdrawNftTx] err: invalid accountIndex %v", txInfo.AccountIndex)
 		return "", handleCreateFailWithdrawNftTx(svcCtx.FailTxModel, txInfo, errors.New(errInfo))
 	}
-	commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.AccountIndex)
+	err = commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.AccountIndex)
 	if err != nil {
 		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
 	}

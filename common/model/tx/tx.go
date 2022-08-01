@@ -160,7 +160,7 @@ func (m *defaultTxModel) GetTxsListByBlockHeight(blockHeight int64, limit int, o
 			// json string
 			jsonString, err := json.Marshal(tx.TxDetails)
 			if err != nil {
-				logx.Errorf("[txVerification.GetTxsListByBlockHeight] json.Marshal Error: %s, value: %v", tx.TxDetails)
+				logx.Errorf("[txVerification.GetTxsListByBlockHeight] json.Marshal Error: %s, value: %v", err.Error(), tx.TxDetails)
 				return nil, err
 			}
 			// todo
@@ -237,7 +237,7 @@ func (m *defaultTxModel) GetTxsListByAccountIndex(accountIndex int64, limit int,
 			// json string
 			jsonString, err := json.Marshal(tx.TxDetails)
 			if err != nil {
-				logx.Errorf("[txVerification.GetTxsListByAccountIndex] json.Marshal Error: %s, value: %v", tx.TxDetails)
+				logx.Errorf("[txVerification.GetTxsListByAccountIndex] json.Marshal Error: %s, value: %v", err.Error(), tx.TxDetails)
 				return nil, err
 			}
 			// todo
@@ -313,7 +313,7 @@ func (m *defaultTxModel) GetTxsListByAccountIndexAndTxType(accountIndex int64, t
 			// json string
 			jsonString, err := json.Marshal(tx.TxDetails)
 			if err != nil {
-				logx.Errorf("[txVerification.GetTxsListByAccountIndexAndTxType] json.Marshal Error: %s, value: %v", tx.TxDetails)
+				logx.Errorf("[txVerification.GetTxsListByAccountIndexAndTxType] json.Marshal Error: %s, value: %v", err.Error(), tx.TxDetails)
 				return nil, err
 			}
 			// todo
@@ -560,16 +560,16 @@ func (m *defaultTxModel) GetTxsTotalCountByAccountIndexAndTxTypeArray(accountInd
 	)
 	dbTx := m.DB.Table(txDetailTable).Select("tx_id").Where("account_index = ? and deleted_at is NULL", accountIndex).Group("tx_id").Find(&txIds)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsTotalCountByAccountIndexAndTxTypeArray] %s", dbTx.Error)
-		return 0, dbTx.Error
+		logx.Errorf("[txVerification.GetTxsTotalCountByAccountIndexAndTxTypeArray] %s", dbTx.Error.Error())
+		return 0, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		logx.Info("[txVerification.GetTxsTotalCountByAccountIndexAndTxTypeArray] No Txs of account index %d  and txVerification type %v in Tx Table", accountIndex, txTypeArray)
+		logx.Infof("[txVerification.GetTxsTotalCountByAccountIndexAndTxTypeArray] No Txs of account index %d  and txVerification type %v in Tx Table", accountIndex, txTypeArray)
 		return 0, nil
 	}
 	dbTx = m.DB.Table(m.table).Where("id in (?) and deleted_at is NULL and tx_type in (?)", txIds, txTypeArray).Count(&count)
 	if dbTx.Error != nil {
-		logx.Errorf("[txVerification.GetTxsTotalCountByAccountIndexAndTxTypeArray] %s", dbTx.Error)
-		return 0, dbTx.Error
+		logx.Errorf("[txVerification.GetTxsTotalCountByAccountIndexAndTxTypeArray] %s", dbTx.Error.Error())
+		return 0, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Infof("[txVerification.GetTxsTotalCountByAccountIndexAndTxTypeArray] no txVerification of account index %d and txVerification type = %v in mempool", accountIndex, txTypeArray)
 		return 0, nil

@@ -209,7 +209,7 @@ func (m *defaultBlockModel) GetBlocksList(limit int64, offset int64) (blocks []*
 				// json string
 				jsonString, err := json.Marshal(block)
 				if err != nil {
-					logx.Errorf("[block.GetBlocksList] json.Marshal Error: %s, value: %v", block)
+					logx.Errorf("[block.GetBlocksList] json.Marshal Error: %s, value: %v", err.Error(), block)
 					return nil, err
 				}
 				// todo
@@ -674,14 +674,12 @@ func (m *defaultBlockModel) UpdateBlockStatusCacheByBlockHeight(blockHeight int6
 
 	jsonBytes, err := json.Marshal(blockStatusInfo)
 	if err != nil {
-		errInfo := fmt.Sprintf("[blockModel.UpdateBlockStatusCacheByBlockHeight] json.Marshal Error: %s, value: %v", blockStatusInfo)
-		logx.Error(errInfo)
+		logx.Errorf("[blockModel.UpdateBlockStatusCacheByBlockHeight] json.Marshal Error: %s, value: %v", err.Error(), blockStatusInfo)
 		return err
 	}
 	err = m.RedisConn.Setex(key, string(jsonBytes), 60)
 	if err != nil {
-		errInfo := fmt.Sprintf("[blockModel.UpdateBlockStatusCacheByBlockHeight] %s", err)
-		logx.Error(errInfo)
+		logx.Errorf("[blockModel.UpdateBlockStatusCacheByBlockHeight] error: %s", err.Error())
 		return err
 	}
 

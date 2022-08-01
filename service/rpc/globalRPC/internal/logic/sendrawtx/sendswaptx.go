@@ -55,7 +55,7 @@ func SendSwapTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalmap c
 		logx.Error(errInfo)
 		return "", handleCreateFailSwapTx(svcCtx.FailTxModel, txInfo, errors.New(errInfo))
 	}
-	commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.FromAccountIndex)
+	err = commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.FromAccountIndex)
 	if err != nil {
 		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
 	}

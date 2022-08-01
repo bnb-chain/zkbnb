@@ -56,7 +56,7 @@ func SendRemoveLiquidityTx(ctx context.Context, svcCtx *svc.ServiceContext, comm
 		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetBAmountDelta, err)
 		return "", err
 	}
-	commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.FromAccountIndex)
+	err = commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.FromAccountIndex)
 	if err != nil {
 		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
 	}

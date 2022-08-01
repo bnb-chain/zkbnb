@@ -142,7 +142,7 @@ func (m *defaultBlockForProofModel) CreateConsecutiveUnprovedCryptoBlock(block *
 	if block.BlockHeight > 1 {
 		_, err := m.GetUnprovedCryptoBlockByBlockNumber(block.BlockHeight - 1)
 		if err != nil {
-			logx.Infof("[CreateConsecutiveUnprovedCryptoBlock] block exist", err.Error())
+			logx.Infof("[CreateConsecutiveUnprovedCryptoBlock] block exist: %s", err.Error())
 			return fmt.Errorf("previous block does not exist")
 		}
 	}
