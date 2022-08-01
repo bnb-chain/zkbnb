@@ -69,7 +69,7 @@ type (
 	RespGetAccountInfoByAccountIndex {
 		AccountStatus uint32          `json:"account_status"`
 		AccountName   string          `json:"account_name"`
-		AccountPk     string          `form:"account_pk"`
+		AccountPk     string          `json:"account_pk"`
 		Nonce         int64           `json:"nonce"`
 		Assets        []*AccountAsset `json:"assets"`
 	}
@@ -210,7 +210,7 @@ service app-api{
 	get /api/v1/block/getBlockByBlockHeight  (ReqGetBlockByBlockHeight) returns (RespGetBlockByBlockHeight)
 	
 	@handler GetCurrentBlockHeight
-	get /api/v1/block/getCurrentBlockHeight() returns (RespCurrentBlockHeight)
+	get /api/v1/block/getCurrentBlockHeight returns (RespCurrentBlockHeight)
 }
 
 /* ========================= Info =========================*/

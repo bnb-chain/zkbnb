@@ -24,9 +24,9 @@ type model struct {
 	Return: mempoolTx []*mempoolModel.MempoolTx, err error
 	Description: query txs from db that sit in the range
 */
-func (m *model) GetMempoolTxs(offset int64, limit int64) (mempoolTxs []*table.MempoolTx, err error) {
+func (m *model) GetMempoolTxs(offset int, limit int) (mempoolTxs []*table.MempoolTx, err error) {
 	var mempoolForeignKeyColumn = `MempoolDetails`
-	dbTx := m.db.Table(m.table).Order("created_at, id").Find(&mempoolTxs)
+	dbTx := m.db.Table(m.table).Where("status = ? and deleted_at is NULL", PendingTxStatus).Order("created_at, id").Offset(offset).Limit(limit).Find(&mempoolTxs)
 	if dbTx.Error != nil {
 		logx.Errorf("[mempool.GetMempoolTxsList] %s", dbTx.Error)
 		return nil, errorcode.DbErrSqlOperation
