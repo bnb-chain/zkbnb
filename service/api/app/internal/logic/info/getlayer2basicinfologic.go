@@ -49,7 +49,7 @@ func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo(_ *types.ReqGetLayer2BasicI
 	var err error
 	resp.BlockCommitted, err = l.block.GetCommitedBlocksCount(l.ctx)
 	if err != nil {
-		logx.Errorf("[GetCommitedBlocksCount] err:%v", err)
+		logx.Errorf("[GetCommittedBlocksCount] err:%v", err)
 		return nil, err
 	}
 	resp.BlockVerified, err = l.block.GetVerifiedBlocksCount(l.ctx)

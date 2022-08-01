@@ -19,7 +19,6 @@ package txVerification
 
 import (
 	"errors"
-	"log"
 	"math/big"
 
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
@@ -60,7 +59,7 @@ func VerifyTransferNftTxInfo(
 	}
 	// verify nonce
 	if txInfo.Nonce != accountInfoMap[txInfo.FromAccountIndex].Nonce {
-		log.Println("[VerifyTransferNftTxInfo] invalid nonce")
+		logx.Errorf("[VerifyTransferNftTxInfo] invalid nonce: %d, account index: %d", txInfo.Nonce, txInfo.FromAccountIndex)
 		return nil, errors.New("[VerifyTransferNftTxInfo] invalid nonce")
 	}
 	// set tx info
@@ -115,11 +114,11 @@ func VerifyTransferNftTxInfo(
 	}
 	isValid, err := pk.Verify(txInfo.Sig, msgHash, hFunc)
 	if err != nil {
-		log.Println("[VerifyTransferNftTxInfo] unable to verify signature:", err)
+		logx.Errorf("[VerifyTransferNftTxInfo] unable to verify signature: %s", err.Error())
 		return nil, err
 	}
 	if !isValid {
-		log.Println("[VerifyTransferNftTxInfo] invalid signature")
+		logx.Error("[VerifyTransferNftTxInfo] invalid signature")
 		return nil, errors.New("[VerifyTransferNftTxInfo] invalid signature")
 	}
 	// compute tx details

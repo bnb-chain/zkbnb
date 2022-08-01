@@ -20,7 +20,6 @@ package txVerification
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"math/big"
 
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
@@ -52,13 +51,13 @@ func VerifyRemoveLiquidityTxInfo(
 		txInfo.LpAmount.Cmp(ZeroBigInt) < 0 ||
 		txInfo.GasFeeAssetAmount.Cmp(ZeroBigInt) < 0 {
 		infoBytes, _ := json.Marshal(accountInfoMap)
-		log.Println(string(infoBytes))
+		logx.Info(string(infoBytes))
 		logx.Errorf("[VerifyRemoveLiquidityTxInfo] invalid params")
 		return nil, errors.New("[VerifyRemoveLiquidityTxInfo] invalid params")
 	}
 	// verify nonce
 	if txInfo.Nonce != accountInfoMap[txInfo.FromAccountIndex].Nonce {
-		log.Println("[VerifyRemoveLiquidityTxInfo] invalid nonce")
+		logx.Errorf("[VerifyRemoveLiquidityTxInfo] invalid nonce: %d, account index: %d", txInfo.Nonce, txInfo.FromAccountIndex)
 		return nil, errors.New("[VerifyRemoveLiquidityTxInfo] invalid nonce")
 	}
 	// add tx info
@@ -146,11 +145,11 @@ func VerifyRemoveLiquidityTxInfo(
 	}
 	isValid, err := pk.Verify(txInfo.Sig, msgHash, hFunc)
 	if err != nil {
-		log.Println("[VerifyRemoveLiquidityTxInfo] unable to verify signature:", err)
+		logx.Errorf("[VerifyRemoveLiquidityTxInfo] unable to verify signature: %s", err.Error())
 		return nil, err
 	}
 	if !isValid {
-		log.Println("[VerifyRemoveLiquidityTxInfo] invalid signature")
+		logx.Error("[VerifyRemoveLiquidityTxInfo] invalid signature")
 		return nil, errors.New("[VerifyRemoveLiquidityTxInfo] invalid signature")
 	}
 	// compute tx details

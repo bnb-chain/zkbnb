@@ -19,7 +19,6 @@ package txVerification
 
 import (
 	"errors"
-	"log"
 	"math/big"
 
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
@@ -53,7 +52,7 @@ func VerifyCancelOfferTxInfo(
 	}
 	// verify nonce
 	if txInfo.Nonce != accountInfoMap[txInfo.AccountIndex].Nonce {
-		log.Println("[VerifyCancelOfferTxInfo] invalid nonce")
+		logx.Errorf("[VerifyCancelOfferTxInfo] invalid nonce: %d, account index: %d", txInfo.Nonce, txInfo.AccountIndex)
 		return nil, errors.New("[VerifyCancelOfferTxInfo] invalid nonce")
 	}
 	// set tx info
@@ -97,11 +96,11 @@ func VerifyCancelOfferTxInfo(
 	}
 	isValid, err := pk.Verify(txInfo.Sig, msgHash, hFunc)
 	if err != nil {
-		log.Println("[VerifyCancelOfferTxInfo] unable to verify signature:", err)
+		logx.Errorf("[VerifyCancelOfferTxInfo] unable to verify signature: %s", err.Error())
 		return nil, err
 	}
 	if !isValid {
-		log.Println("[VerifyCancelOfferTxInfo] invalid signature")
+		logx.Error("[VerifyCancelOfferTxInfo] invalid signature")
 		return nil, errors.New("[VerifyCancelOfferTxInfo] invalid signature")
 	}
 	// compute tx details
@@ -124,7 +123,7 @@ func VerifyCancelOfferTxInfo(
 	oOffer := accountInfoMap[txInfo.AccountIndex].AssetInfo[offerAssetId].OfferCanceledOrFinalized
 	// verify whether account offer id is valid for use
 	if oOffer.Bit(int(offerIndex)) == 1 {
-		log.Printf("account %d offer index %d is already in use.\n", txInfo.AccountIndex, offerIndex)
+		logx.Errorf("account %d offer index %d is already in use.\n", txInfo.AccountIndex, offerIndex)
 		return nil, errors.New("[VerifyCancelOfferTxInfo] invalid offer id")
 	}
 	nOffer := new(big.Int).SetBit(oOffer, int(offerIndex), 1)
