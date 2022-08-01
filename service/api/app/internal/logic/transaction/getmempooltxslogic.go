@@ -46,7 +46,7 @@ func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (*types.
 	if count == 0 {
 		return resp, nil
 	}
-	mempoolTxs, err := l.mempool.GetMempoolTxs(int(req.Limit), int(req.Offset))
+	mempoolTxs, err := l.mempool.GetMempoolTxs(int(req.Offset), int(req.Limit))
 	if err != nil {
 		logx.Errorf("[GetMempoolTxs] err:%v", err)
 		return nil, errorcode.AppErrInternal
