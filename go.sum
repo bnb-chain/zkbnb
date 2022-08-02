@@ -125,6 +125,10 @@ github.com/bnb-chain/bas-smt v0.0.0-20220802072513-fe099bf48921 h1:4SO/xCoVKtUeE
 github.com/bnb-chain/bas-smt v0.0.0-20220802072513-fe099bf48921/go.mod h1:L6GrCKEU4Ygsuebtx5vsG7ZpVLRoaLNZaLw8NH20HjE=
 github.com/bnb-chain/bas-smt v0.0.0-20220802084546-d232e95b63cd h1:J3GDYuH+nRzzBullBLz7Ly58vmqh3KYTH0lYhTZLz8A=
 github.com/bnb-chain/bas-smt v0.0.0-20220802084546-d232e95b63cd/go.mod h1:L6GrCKEU4Ygsuebtx5vsG7ZpVLRoaLNZaLw8NH20HjE=
+github.com/bnb-chain/bas-smt v0.0.0-20220802092723-80d9e9c0c217 h1:JNDVdzMjly7jbVlAd+fiSLpcaDR1zkwNV7z34Bi7+jo=
+github.com/bnb-chain/bas-smt v0.0.0-20220802092723-80d9e9c0c217/go.mod h1:KTxDr9UwOAvMgC5p6wAmUL7VpbQcrMRuSPOgVonRBBs=
+github.com/bnb-chain/bas-smt v0.0.0-20220802101732-96e306e5ba4e h1:gbkjKRGDKtYla6CK394gbaXc0ErpbnV5zg6xbCCw0Zc=
+github.com/bnb-chain/bas-smt v0.0.0-20220802101732-96e306e5ba4e/go.mod h1:KTxDr9UwOAvMgC5p6wAmUL7VpbQcrMRuSPOgVonRBBs=
 github.com/bnb-chain/zkbas-crypto v0.0.1 h1:AntDPKJ79/3OBxQUPCr6rIplWZFDzZF8VluXVZNPKMw=
 github.com/bnb-chain/zkbas-crypto v0.0.1/go.mod h1:T2erL+OCXw66yqBdsI5waTEx4FG2d8lYDh1XcEB1kRU=
 github.com/bnb-chain/zkbas-crypto v0.0.2-0.20220802110852-0fc92f61a79a h1:PTMnZwNXnfO4Ky1kn2LGhQ0B1+mZjcXnV0jz8oBTBHY=
