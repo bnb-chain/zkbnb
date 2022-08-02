@@ -64,7 +64,7 @@ func TestConstructCancelOfferCryptoTxFirst(t *testing.T) {
 	}
 	cryptoTx, err := ConstructCancelOfferCryptoTx(
 		txInfo,
-		treeDBDriver, treeDB,
+		treeDBDriver, treeDB, 0,
 		accountTree, &accountAssetTrees,
 		liquidityTree,
 		nftTree,

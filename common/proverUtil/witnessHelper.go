@@ -40,6 +40,7 @@ func ConstructWitnessInfo(
 	accountModel AccountModel,
 	treeDBDriver treedb.Driver,
 	treeDB database.TreeDB,
+	finalityBlockNr uint64,
 	accountTree bsmt.SparseMerkleTree,
 	accountAssetTrees *[]bsmt.SparseMerkleTree,
 	liquidityTree bsmt.SparseMerkleTree,
@@ -54,7 +55,7 @@ func ConstructWitnessInfo(
 ) {
 	// construct account witness
 	AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err :=
-		ConstructAccountWitness(oTx, treeDBDriver, treeDB, accountModel, accountTree, accountAssetTrees, accountKeys, proverAccounts)
+		ConstructAccountWitness(oTx, treeDBDriver, treeDB, finalityBlockNr, accountModel, accountTree, accountAssetTrees, accountKeys, proverAccounts)
 	if err != nil {
 		logx.Errorf("[ConstructWitnessInfo] unable to construct account witness: %s", err.Error())
 		return nil, err
@@ -96,6 +97,7 @@ func ConstructAccountWitness(
 	oTx *Tx,
 	treeDBDriver treedb.Driver,
 	treeDB database.TreeDB,
+	finalityBlockNr uint64,
 	accountModel AccountModel,
 	accountTree bsmt.SparseMerkleTree,
 	accountAssetTrees *[]bsmt.SparseMerkleTree,
@@ -134,7 +136,7 @@ func ConstructAccountWitness(
 				return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore,
 					errors.New("[ConstructAccountWitness] invalid key")
 			}
-			emptyAccountAssetTree, err := tree.NewEmptyAccountAssetTree(treeDBDriver, treeDB, accountKey)
+			emptyAccountAssetTree, err := tree.NewEmptyAccountAssetTree(treeDBDriver, treeDB, accountKey, finalityBlockNr)
 			if err != nil {
 				logx.Errorf("[ConstructAccountWitness] unable to create empty account asset tree: %s", err.Error())
 				return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err

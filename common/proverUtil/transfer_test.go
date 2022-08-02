@@ -64,7 +64,7 @@ func TestConstructTransferCryptoTxFirst(t *testing.T) {
 	}
 	cryptoTx, err := ConstructTransferCryptoTx(
 		txInfo,
-		treeDBDriver, treeDB,
+		treeDBDriver, treeDB, 0,
 		accountTree, &accountAssetTrees,
 		liquidityTree,
 		nftTree,

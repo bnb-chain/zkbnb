@@ -64,7 +64,7 @@ func TestConstructWithdrawNftCryptoTxFirst(t *testing.T) {
 	}
 	cryptoTx, err := ConstructWithdrawNftCryptoTx(
 		txInfo,
-		treeDBDriver, treeDB,
+		treeDBDriver, treeDB, 0,
 		accountTree, &accountAssetTrees,
 		liquidityTree,
 		nftTree,

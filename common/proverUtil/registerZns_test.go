@@ -66,7 +66,7 @@ func TestConstructRegisterZnsCryptoTxFirst(t *testing.T) {
 	}
 	cryptoTx, err := ConstructRegisterZnsCryptoTx(
 		txInfo,
-		treeDBDriver, treeDB,
+		treeDBDriver, treeDB, 0,
 		accountTree, &accountAssetTrees,
 		liquidityTree,
 		nftTree,
@@ -114,7 +114,7 @@ func TestConstructRegisterZnsCryptoTxNotFirst(t *testing.T) {
 	}
 	cryptoTx, err := ConstructRegisterZnsCryptoTx(
 		txInfo,
-		treeDBDriver, treeDB,
+		treeDBDriver, treeDB, 0,
 		accountTree, &accountAssetTrees,
 		liquidityTree,
 		nftTree,

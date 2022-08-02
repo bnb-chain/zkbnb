@@ -64,7 +64,7 @@ func TestConstructCreatePairCryptoTxFirst(t *testing.T) {
 	}
 	cryptoTx, err := ConstructCreatePairCryptoTx(
 		txInfo,
-		treeDBDriver, treeDB,
+		treeDBDriver, treeDB, 0,
 		accountTree, &accountAssetTrees,
 		liquidityTree,
 		nftTree,

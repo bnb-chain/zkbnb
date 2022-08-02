@@ -22,6 +22,7 @@ import (
 
 	bsmt "github.com/bnb-chain/bas-smt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"github.com/pkg/errors"
 )
 
 func EmptyAccountNodeHash() []byte {
@@ -115,21 +116,21 @@ func CommitTrees(version uint64,
 	prunedVersion := bsmt.Version(version)
 	_, err := accountTree.Commit(&prunedVersion)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "unable to commit account tree")
 	}
 	for _, assetTree := range *assetTrees {
 		_, err := assetTree.Commit(&prunedVersion)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "unable to commit asset tree")
 		}
 	}
 	_, err = liquidityTree.Commit(&prunedVersion)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "unable to commit liquidity tree")
 	}
 	_, err = nftTree.Commit(&prunedVersion)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "unable to commit nft tree")
 	}
 	return nil
 }

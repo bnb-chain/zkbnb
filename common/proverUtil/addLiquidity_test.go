@@ -64,7 +64,7 @@ func TestConstructAddLiquidityCryptoTxFirst(t *testing.T) {
 	}
 	cryptoTx, err := ConstructAddLiquidityCryptoTx(
 		txInfo,
-		treeDBDriver, treeDB,
+		treeDBDriver, treeDB, 0,
 		accountTree, &accountAssetTrees,
 		liquidityTree,
 		nftTree,

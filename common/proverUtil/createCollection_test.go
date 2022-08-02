@@ -64,7 +64,7 @@ func TestConstructCreateCollectionCryptoTxFirst(t *testing.T) {
 	}
 	cryptoTx, err := ConstructCreateCollectionCryptoTx(
 		txInfo,
-		treeDBDriver, treeDB,
+		treeDBDriver, treeDB, 0,
 		accountTree, &accountAssetTrees,
 		liquidityTree,
 		nftTree,
