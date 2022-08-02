@@ -58,28 +58,28 @@ func (l *SendSwapTxLogic) SendSwapTx(in *globalRPCProto.ReqSendTxByRawInfo) (res
 	respSendTx = &globalRPCProto.RespSendTx{}
 	txInfo, err := commonTx.ParseSwapTxInfo(in.TxInfo)
 	if err != nil {
-		logx.Errorf("[ParseSwapTxInfo] err:%v", err)
+		logx.Errorf("[ParseSwapTxInfo] err: %s", err.Error())
 		return nil, err
 	}
 	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v ,err: %s", txInfo.GasFeeAssetAmount, err.Error())
 		return nil, err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetAAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetAAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v ,err: %s", txInfo.AssetAAmount, err.Error())
 		return nil, err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetBMinAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetBMinAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v ,err: %s", txInfo.AssetBMinAmount, err.Error())
 		return nil, err
 	}
 	err = util.CheckRequestParam(util.TypeAssetId, reflect.ValueOf(txInfo.AssetAId))
 	if err != nil {
-		logx.Errorf("[CheckRequestParam] param:%v,err:%v", txInfo.AssetAId, err)
+		logx.Errorf("[CheckRequestParam] param: %v ,err: %s", txInfo.AssetAId, err.Error())
 		return nil, err
 	}
 	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, l.svcCtx.SysConfigModel); err != nil {
-		logx.Errorf("[checkGasAccountIndex] err: %v", err)
+		logx.Errorf("[checkGasAccountIndex] err: %s", err.Error())
 		return nil, err
 	}
 	now := time.Now().UnixMilli()
@@ -156,7 +156,7 @@ func (l *SendSwapTxLogic) SendSwapTx(in *globalRPCProto.ReqSendTxByRawInfo) (res
 	}
 	txDetails, err := txVerification.VerifySwapTxInfo(accountInfoMap, liquidityInfo, txInfo)
 	if err != nil {
-		logx.Errorf("[VerifySwapTxInfo] err: %v", err)
+		logx.Errorf("[VerifySwapTxInfo] err: %s", err.Error())
 		return respSendTx, err
 	}
 	txInfoBytes, err := json.Marshal(txInfo)

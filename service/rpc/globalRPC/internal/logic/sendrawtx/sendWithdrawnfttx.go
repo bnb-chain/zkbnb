@@ -39,7 +39,7 @@ func SendWithdrawNftTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 		Check Params
 	*/
 	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.GasFeeAssetAmount, err.Error())
 		return "", err
 	}
 	// check param: from account index
@@ -48,9 +48,9 @@ func SendWithdrawNftTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 		errInfo := fmt.Sprintf("[sendWithdrawNftTx] err: invalid accountIndex %v", txInfo.AccountIndex)
 		return "", handleCreateFailWithdrawNftTx(svcCtx.FailTxModel, txInfo, errors.New(errInfo))
 	}
-	commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.AccountIndex)
+	err = commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.AccountIndex)
 	if err != nil {
-		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
+		logx.Errorf("[DeleteLatestAccountInfoInCache] err: %s", err.Error())
 	}
 	// check gas account index
 	gasAccountIndexConfig, err := svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
@@ -205,7 +205,7 @@ func SendWithdrawNftTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 func handleCreateFailWithdrawNftTx(failTxModel tx.FailTxModel, txInfo *commonTx.WithdrawNftTxInfo, err error) error {
 	errCreate := createFailWithdrawNftTx(failTxModel, txInfo, err.Error())
 	if errCreate != nil {
-		logx.Error("[sendtransfertxlogic.HandleCreateFailWithdrawNftTx] %s", errCreate.Error())
+		logx.Errorf("[sendtransfertxlogic.HandleCreateFailWithdrawNftTx] %s", errCreate.Error())
 		return errCreate
 	} else {
 		errInfo := fmt.Sprintf("[sendtransfertxlogic.HandleCreateFailWithdrawNftTx] %s", err.Error())

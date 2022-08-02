@@ -233,7 +233,7 @@ type ResultVolumeSum struct {
 func (m *defaultVolumeModel) GetVolumeSumBetweenDate(date1 time.Time, date2 time.Time) (result []*ResultVolumeSum, err error) {
 	dbTx := m.DB.Table(m.table).Select("asset_id, sum(volume_delta) as total").Where("date <= ? and date > ?", date1, date2).Group("asset_id").Order("asset_id").Find(&result)
 	if dbTx.Error != nil {
-		logx.Errorf("[tvl.GetVolumeSum] %s", dbTx.Error)
+		logx.Errorf("[tvl.GetVolumeSum] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[volume.CreateVolume] no result in volume table")
@@ -253,7 +253,7 @@ func (m *defaultVolumeModel) GetVolumeSumGroupByDays() (result []*ResultVolumeDa
 	// SELECT SUM( lock_amount_delta ), asset_id, date_trunc( 'day', DATE ) FROM tvl GROUP BY date_trunc( 'day', DATE ), asset_id ORDER BY date_trunc( 'day', DATE ), asset_id
 	dbTx := m.DB.Table(m.table).Debug().Select("sum(volume_delta) as total, asset_id, date_trunc( 'day', DATE )::date as date").Group("date_trunc( 'day', DATE ), asset_id").Order("date_trunc( 'day', DATE ), asset_id").Find(&result)
 	if dbTx.Error != nil {
-		logx.Errorf("[tvl.GetVolumeSumGroupByDays] %s", dbTx.Error)
+		logx.Errorf("[tvl.GetVolumeSumGroupByDays] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[volume.GetVolumeSumGroupByDays] no result in tvl table")

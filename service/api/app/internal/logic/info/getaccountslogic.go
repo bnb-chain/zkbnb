@@ -30,7 +30,7 @@ func NewGetAccountsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAc
 func (l *GetAccountsLogic) GetAccounts(req *types.ReqGetAccounts) (*types.RespGetAccounts, error) {
 	accounts, err := l.account.GetAccountsList(int(req.Limit), int64(req.Offset))
 	if err != nil {
-		logx.Errorf("[GetAccountsList] err:%v", err)
+		logx.Errorf("[GetAccountsList] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
@@ -38,7 +38,7 @@ func (l *GetAccountsLogic) GetAccounts(req *types.ReqGetAccounts) (*types.RespGe
 	}
 	total, err := l.account.GetAccountsTotalCount()
 	if err != nil {
-		logx.Errorf("[GetAccountsTotalCount] err:%v", err)
+		logx.Errorf("[GetAccountsTotalCount] err: %s", err.Error())
 		return nil, errorcode.AppErrInternal
 	}
 	resp := &types.RespGetAccounts{

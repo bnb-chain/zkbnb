@@ -106,16 +106,16 @@ func CreateMempoolTx(
 func CheckGasAccountIndex(txGasAccountIndex int64, sysConfigModel sysconfig.SysconfigModel) error {
 	gasAccountIndexConfig, err := sysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
 	if err != nil {
-		logx.Errorf("[GetSysconfigByName] err: %v", err)
+		logx.Errorf("[GetSysconfigByName] err: %s", err.Error())
 		return err
 	}
 	gasAccountIndex, err := strconv.ParseInt(gasAccountIndexConfig.Value, 10, 64)
 	if err != nil {
-		logx.Errorf("[ParseInt] param:%v,err:%v", gasAccountIndexConfig.Value, err)
+		logx.Errorf("[ParseInt] param :%v, err: %s", gasAccountIndexConfig.Value, err.Error())
 		return err
 	}
 	if gasAccountIndex != txGasAccountIndex {
-		logx.Errorf("[ParseInt] param:%v, txGasAccountIndex:%v, err:%v", gasAccountIndex, txGasAccountIndex, err)
+		logx.Errorf("[ParseInt] gasAccountIndex: %d, txGasAccountIndex: %d, err: %s", gasAccountIndex, txGasAccountIndex, err.Error())
 		return errorcode.RpcErrInvalidGasAccountIndex
 	}
 	return nil

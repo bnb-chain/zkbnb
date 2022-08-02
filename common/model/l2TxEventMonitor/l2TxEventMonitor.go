@@ -156,7 +156,7 @@ func (m *defaultL2TxEventMonitorModel) GetL2TxEventMonitors() (txs []*L2TxEventM
 		logx.Errorf("[l2TxEventMonitor.GetL2TxEventMonitors] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		logx.Error("[l2TxEventMonitor.GetL2TxEventMonitors] %s", errorcode.DbErrNotFound.Error())
+		logx.Error("[l2TxEventMonitor.GetL2TxEventMonitors] not found")
 		return nil, errorcode.DbErrNotFound
 	}
 	return txs, dbTx.Error

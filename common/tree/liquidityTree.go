@@ -18,8 +18,6 @@
 package tree
 
 import (
-	"log"
-
 	"github.com/bnb-chain/zkbas-crypto/accumulators/merkleTree"
 	"github.com/bnb-chain/zkbas-crypto/hash/bn254/zmimc"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -42,7 +40,7 @@ func InitLiquidityTree(
 		} else {
 			liquidityTree, err = NewEmptyLiquidityTree()
 			if err != nil {
-				log.Println("[InitLiquidityTree] unable to create empty tree:", err)
+				logx.Errorf("[InitLiquidityTree] unable to create empty tree: %s", err.Error())
 				return nil, err
 			}
 			return liquidityTree, nil
@@ -52,7 +50,7 @@ func InitLiquidityTree(
 	if len(liquidityAssets) == 0 {
 		liquidityTree, err = NewEmptyLiquidityTree()
 		if err != nil {
-			log.Println("[InitLiquidityTree] unable to create empty tree:", err)
+			logx.Errorf("[InitLiquidityTree] unable to create empty tree: %s", err.Error())
 			return nil, err
 		}
 		return liquidityTree, nil

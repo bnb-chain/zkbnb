@@ -35,7 +35,7 @@ func (l *GetCurrencyPriceBySymbolLogic) GetCurrencyPriceBySymbol(req *types.ReqG
 	//TODO: check symbol
 	price, err := l.price.GetCurrencyPrice(l.ctx, req.Symbol)
 	if err != nil {
-		logx.Errorf("[GetCurrencyPrice] err:%v", err)
+		logx.Errorf("[GetCurrencyPrice] err: %s", err.Error())
 		if err == errorcode.AppErrQuoteNotExist {
 			return nil, err
 		}
@@ -43,7 +43,7 @@ func (l *GetCurrencyPriceBySymbolLogic) GetCurrencyPriceBySymbol(req *types.ReqG
 	}
 	l2Asset, err := l.l2asset.GetL2AssetInfoBySymbol(l.ctx, req.Symbol)
 	if err != nil {
-		logx.Errorf("[GetL2AssetInfoBySymbol] err:%v", err)
+		logx.Errorf("[GetL2AssetInfoBySymbol] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}

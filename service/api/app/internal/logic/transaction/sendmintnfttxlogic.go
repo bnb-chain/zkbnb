@@ -29,7 +29,7 @@ func NewSendMintNftTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Sen
 func (l *SendMintNftTxLogic) SendMintNftTx(req *types.ReqSendMintNftTx) (*types.RespSendMintNftTx, error) {
 	nftIndex, err := l.globalRpc.SendMintNftTx(l.ctx, req.TxInfo)
 	if err != nil {
-		logx.Error("[transaction.SendMintNftTx] err:%v", err)
+		logx.Errorf("[transaction.SendMintNftTx] err: %s", err.Error())
 		return nil, err
 	}
 	return &types.RespSendMintNftTx{NftIndex: nftIndex}, nil

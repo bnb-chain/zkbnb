@@ -37,7 +37,7 @@ func TryAcquireLock(redisLock *redis.RedisLock) (err error) {
 	// lock
 	ok, err := redisLock.Acquire()
 	if err != nil {
-		logx.Errorf("[GetLatestAssetByLock] unable to acquire the lock:", err.Error())
+		logx.Errorf("[GetLatestAssetByLock] unable to acquire the lock: %s", err.Error())
 		return err
 	}
 	// re-try for three times
@@ -52,7 +52,7 @@ func TryAcquireLock(redisLock *redis.RedisLock) (err error) {
 			}
 			ok, err = redisLock.Acquire()
 			if err != nil {
-				logx.Errorf("[GetLatestAssetByLock] unable to acquire the lock:", err.Error())
+				logx.Errorf("[GetLatestAssetByLock] unable to acquire the lock: %s", err.Error())
 				return err
 			}
 			if ok {

@@ -25,12 +25,12 @@ type sysconf struct {
 	Description: get sysconfig by config name
 */
 func (m *sysconf) GetSysconfigByName(ctx context.Context, name string) (*table.Sysconfig, error) {
-	logx.Errorf("[GetSysconfigByName] name:%v", name)
-
+	logx.Infof("[GetSysconfigByName] name: %s", name)
 	f := func() (interface{}, error) {
 		var config table.Sysconfig
 		dbTx := m.db.Table(m.table).Where("name = ?", name).Find(&config)
 		if dbTx.Error != nil {
+			logx.Errorf("fail to get sysconfig: %s, error: %s", name, dbTx.Error.Error())
 			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			return nil, errorcode.DbErrNotFound
@@ -44,7 +44,7 @@ func (m *sysconf) GetSysconfigByName(ctx context.Context, name string) (*table.S
 	}
 	config1, ok := value.(*table.Sysconfig)
 	if !ok {
-		logx.Errorf("fail to convert value to sysconfig, value=%v, name=%s", value, name)
+		logx.Errorf("fail to convert value to sysconfig, value: %v, name: %s", value, name)
 		return nil, errors.New("conversion error")
 	}
 	return config1, nil
@@ -60,7 +60,7 @@ func (m *sysconf) GetSysconfigByName(ctx context.Context, name string) (*table.S
 func (m *sysconf) CreateSysconfig(_ context.Context, config *table.Sysconfig) error {
 	dbTx := m.db.Table(m.table).Create(config)
 	if dbTx.Error != nil {
-		logx.Error("[sysconfig.sysconfig] %s", dbTx.Error)
+		logx.Errorf("[sysconfig.sysconfig] %s", dbTx.Error.Error())
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
@@ -73,7 +73,7 @@ func (m *sysconf) CreateSysconfig(_ context.Context, config *table.Sysconfig) er
 func (m *sysconf) CreateSysconfigInBatches(_ context.Context, configs []*table.Sysconfig) (rowsAffected int64, err error) {
 	dbTx := m.db.Table(m.table).CreateInBatches(configs, len(configs))
 	if dbTx.Error != nil {
-		logx.Error("[sysconfig.CreateSysconfigInBatches] %s", dbTx.Error)
+		logx.Errorf("[sysconfig.CreateSysconfigInBatches] %s", dbTx.Error.Error())
 		return 0, dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
@@ -93,7 +93,7 @@ func (m *sysconf) UpdateSysconfig(_ context.Context, config *table.Sysconfig) er
 	dbTx := m.db.Table(m.table).Where("name = ?", config.Name).Select(NameColumn, ValueColumn, ValueTypeColumn, CommentColumn).
 		Updates(config)
 	if dbTx.Error != nil {
-		logx.Error("[sysconfig.UpdateSysconfig] %s", dbTx.Error)
+		logx.Errorf("[sysconfig.UpdateSysconfig] %s", dbTx.Error.Error())
 		return errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return errorcode.DbErrNotFound

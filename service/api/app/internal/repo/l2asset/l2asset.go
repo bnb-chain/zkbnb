@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"gorm.io/gorm"
 
 	table "github.com/bnb-chain/zkbas/common/model/assetInfo"
@@ -29,6 +31,7 @@ func (m *l2asset) GetL2AssetsList(ctx context.Context) ([]*table.AssetInfo, erro
 		res := []*table.AssetInfo{}
 		dbTx := m.db.Table(m.table).Find(&res)
 		if dbTx.Error != nil {
+			logx.Errorf("fail to get assets, error: %s", dbTx.Error.Error())
 			return nil, errorcode.DbErrSqlOperation
 		}
 		if dbTx.RowsAffected == 0 {
@@ -59,6 +62,7 @@ func (m *l2asset) GetL2AssetInfoBySymbol(ctx context.Context, symbol string) (*t
 		res := table.AssetInfo{}
 		dbTx := m.db.Table(m.table).Where("asset_symbol = ?", symbol).Find(&res)
 		if dbTx.Error != nil {
+			logx.Errorf("fail to get asset by symbol: %s, error: %s", symbol, dbTx.Error.Error())
 			return nil, errorcode.DbErrSqlOperation
 		}
 		if dbTx.RowsAffected == 0 {
@@ -89,6 +93,7 @@ func (m *l2asset) GetSimpleL2AssetInfoByAssetId(ctx context.Context, assetId uin
 		res := table.AssetInfo{}
 		dbTx := m.db.Table(m.table).Where("asset_id = ?", assetId).Find(&res)
 		if dbTx.Error != nil {
+			logx.Errorf("fail to get asset by id: %d, error: %s", assetId, dbTx.Error.Error())
 			return nil, errorcode.DbErrSqlOperation
 		}
 		if dbTx.RowsAffected == 0 {

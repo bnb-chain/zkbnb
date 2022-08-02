@@ -42,25 +42,25 @@ func NewSendCreateCollectionTxLogic(ctx context.Context, svcCtx *svc.ServiceCont
 func (l *SendCreateCollectionTxLogic) SendCreateCollectionTx(in *globalRPCProto.ReqSendCreateCollectionTx) (*globalRPCProto.RespSendCreateCollectionTx, error) {
 	txInfo, err := commonTx.ParseCreateCollectionTxInfo(in.TxInfo)
 	if err != nil {
-		logx.Errorf("[ParseCreateCollectionTxInfo] err:%v", err)
+		logx.Errorf("[ParseCreateCollectionTxInfo] err: %s", err.Error())
 		return nil, err
 	}
 	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.GasFeeAssetAmount, err.Error())
 		return nil, err
 	}
 	err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.AccountIndex))
 	if err != nil {
-		logx.Errorf("[CheckRequestParam] err:%v", err)
+		logx.Errorf("[CheckRequestParam] err: %s", err.Error())
 		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
 	}
 	err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.GasAccountIndex))
 	if err != nil {
-		logx.Errorf("[CheckRequestParam] err:%v", err)
+		logx.Errorf("[CheckRequestParam] err: %s", err.Error())
 		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
 	}
 	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, l.svcCtx.SysConfigModel); err != nil {
-		logx.Errorf("[checkGasAccountIndex] err: %v", err)
+		logx.Errorf("[checkGasAccountIndex] err: %s", err.Error())
 		return nil, err
 	}
 	now := time.Now().UnixMilli()
@@ -128,7 +128,7 @@ func (l *SendCreateCollectionTxLogic) SendCreateCollectionTx(in *globalRPCProto.
 func (l *SendCreateCollectionTxLogic) createFailCreateCollectionTx(info *commonTx.CreateCollectionTxInfo, extraInfo string) error {
 	txInfo, err := json.Marshal(info)
 	if err != nil {
-		logx.Errorf("[Marshal] err:%v", err)
+		logx.Errorf("[Marshal] err: %s", err.Error())
 		return err
 	}
 	failTx := &tx.FailTx{

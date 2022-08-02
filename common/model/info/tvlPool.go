@@ -144,7 +144,7 @@ type ResultTvlPoolSum struct {
 func (m *defaultTVLPoolModel) GetPoolAmountSum(date time.Time) (result []*ResultTvlPoolSum, err error) {
 	dbTx := m.DB.Table(m.table).Select("pool_id, sum(amount_delta_a) as total_a, sum(amount_delta_b) as total_b").Where("date <= ?", date).Group("pool_id").Order("pool_id").Find(&result)
 	if dbTx.Error != nil {
-		logx.Errorf("[tvl.GetPoolAmountSum] %s", dbTx.Error)
+		logx.Errorf("[tvl.GetPoolAmountSum] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[volume.GetPoolAmountSum] no result in tvl pool table")

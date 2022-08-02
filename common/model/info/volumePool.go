@@ -124,7 +124,7 @@ type ResultVolumePoolSum struct {
 func (m *defaultVolumePoolModel) GetPoolVolumeSumBetweenDate(date1 time.Time, date2 time.Time) (result []*ResultVolumePoolSum, err error) {
 	dbTx := m.DB.Table(m.table).Select("pool_id, sum(volume_delta_a) as total_a, sum(volume_delta_b) as total_b").Where("date <= ? and date > ?", date1, date2).Group("pool_id").Order("pool_id").Find(&result)
 	if dbTx.Error != nil {
-		logx.Errorf("[tvl.GetPoolVolumeSum] %s", dbTx.Error)
+		logx.Errorf("[tvl.GetPoolVolumeSum] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[volume.GetPoolVolumeSum] no result in tvl pool table")

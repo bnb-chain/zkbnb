@@ -214,7 +214,7 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp *time.Time,
 					mempoolTx.L2BlockHeight = currentBlockHeight
 					pendingDeleteMempoolTxs = append(pendingDeleteMempoolTxs, mempoolTx)
 
-					logx.Infof("[CommitterTask] tx %s is expired, mark tx as failed, expiredAt=%d, now=%",
+					logx.Infof("[CommitterTask] tx %s is expired, mark tx as failed, expiredAt=%d, now=%d",
 						mempoolTx.TxHash, mempoolTx.ExpiredAt, createdAt)
 					continue
 				}
@@ -495,7 +495,7 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp *time.Time,
 						nftAsset.CollectionId,
 					)
 					if err != nil {
-						logx.Errorf("[CommitterTask] unable to compute new nft asset leaf: %s", err)
+						logx.Errorf("[CommitterTask] unable to compute new nft asset leaf: %s", err.Error())
 						return err
 					}
 					err = nftTree.Update(mempoolTxDetail.AssetId, nNftAssetLeaf)

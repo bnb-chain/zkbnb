@@ -241,9 +241,9 @@ func (m *defaultAccountModel) GetAccountByAccountName(accountName string) (accou
 
 */
 func (m *defaultAccountModel) GetAccountsList(limit int, offset int64) (accounts []*Account, err error) {
-	dbTx := m.DB.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("account_index desc").Find(&accounts)
+	dbTx := m.DB.Table(m.table).Limit(limit).Offset(int(offset)).Order("account_index desc").Find(&accounts)
 	if dbTx.Error != nil {
-		logx.Error("[account.GetAccountsList] %s", dbTx.Error)
+		logx.Errorf("[account.GetAccountsList] error: %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[account.GetAccountsList] Get Accounts Error")
@@ -261,8 +261,8 @@ func (m *defaultAccountModel) GetAccountsList(limit int, offset int64) (accounts
 func (m *defaultAccountModel) GetAccountsTotalCount() (count int64, err error) {
 	dbTx := m.DB.Table(m.table).Where("deleted_at is NULL").Count(&count)
 	if dbTx.Error != nil {
-		logx.Error("[account.GetAccountsTotalCount] %s", dbTx.Error)
-		return 0, dbTx.Error
+		logx.Errorf("[account.GetAccountsTotalCount] error: %s", dbTx.Error.Error())
+		return 0, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[account.GetAccountsTotalCount] No Accounts in Account Table")
 		return 0, nil
@@ -279,8 +279,8 @@ func (m *defaultAccountModel) GetAccountsTotalCount() (count int64, err error) {
 func (m *defaultAccountModel) GetAllAccounts() (accounts []*Account, err error) {
 	dbTx := m.DB.Table(m.table).Order("account_index").Find(&accounts)
 	if dbTx.Error != nil {
-		logx.Error("[account.GetAllAccounts] %s", dbTx.Error)
-		return accounts, dbTx.Error
+		logx.Errorf("[account.GetAllAccounts] %s", dbTx.Error.Error())
+		return accounts, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[account.GetAllAccounts] No Account in Account Table")
 		return accounts, nil

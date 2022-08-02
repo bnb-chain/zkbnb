@@ -45,7 +45,7 @@ func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.RespGetGasFe
 	resp := &types.RespGetGasFee{}
 	l2Asset, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(l.ctx, req.AssetId)
 	if err != nil {
-		logx.Errorf("[GetGasFee] err:%v", err)
+		logx.Errorf("[GetGasFee] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
@@ -65,7 +65,7 @@ func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.RespGetGasFe
 	}
 	sysGasFee, err := l.sysconf.GetSysconfigByName(l.ctx, sysconfigName.SysGasFee)
 	if err != nil {
-		logx.Errorf("[GetGasFee] err:%v", err)
+		logx.Errorf("[GetGasFee] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
@@ -73,7 +73,7 @@ func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.RespGetGasFe
 	}
 	sysGasFeeBigInt, isValid := new(big.Int).SetString(sysGasFee.Value, 10)
 	if !isValid {
-		logx.Errorf("[GetGasFee] parse sys gas fee err:%v", err)
+		logx.Errorf("[GetGasFee] parse sys gas fee err: %s", err.Error())
 		return nil, errorcode.AppErrInternal
 	}
 	// if asset id == BNB, just return
@@ -84,12 +84,12 @@ func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.RespGetGasFe
 	// if not, try to compute the gas amount based on USD
 	assetPrice, err := l.price.GetCurrencyPrice(l.ctx, l2Asset.AssetSymbol)
 	if err != nil {
-		logx.Errorf("[GetGasFee] err:%v", err)
+		logx.Errorf("[GetGasFee] err: %s", err.Error())
 		return nil, errorcode.AppErrInternal
 	}
 	bnbPrice, err := l.price.GetCurrencyPrice(l.ctx, "BNB")
 	if err != nil {
-		logx.Errorf("[GetGasFee] err:%v", err)
+		logx.Errorf("[GetGasFee] err: %s", err.Error())
 		return nil, errorcode.AppErrInternal
 	}
 	bnbDecimals, _ := new(big.Int).SetString(commonConstant.BNBDecimalsStr, 10)

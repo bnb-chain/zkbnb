@@ -18,8 +18,6 @@
 package tree
 
 import (
-	"log"
-
 	"github.com/bnb-chain/zkbas-crypto/accumulators/merkleTree"
 	"github.com/bnb-chain/zkbas-crypto/hash/bn254/zmimc"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -41,7 +39,7 @@ func InitNftTree(
 	if len(nftAssets) == 0 {
 		nftTree, err = NewEmptyNftTree()
 		if err != nil {
-			log.Println("[InitNftTree] unable to create empty tree:", err)
+			logx.Errorf("[InitNftTree] unable to create empty tree: %s", err.Error())
 			return nil, err
 		}
 		return nftTree, nil

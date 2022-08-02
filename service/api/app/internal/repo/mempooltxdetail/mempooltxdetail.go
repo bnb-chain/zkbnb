@@ -3,6 +3,8 @@ package mempooltxdetail
 import (
 	"context"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"gorm.io/gorm"
 
 	table "github.com/bnb-chain/zkbas/common/model/mempool"
@@ -26,6 +28,7 @@ func (m *model) GetMemPoolTxDetailByAccountIndex(ctx context.Context, accountInd
 	result := make([]*table.MempoolTxDetail, 0)
 	dbTx := m.db.Table(m.table).Where("account_index = ?", accountIndex).Order("created_at").Find(&result)
 	if dbTx.Error != nil {
+		logx.Errorf("fail to get mempool tx by account: %d, error: %s", accountIndex, dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, errorcode.DbErrNotFound

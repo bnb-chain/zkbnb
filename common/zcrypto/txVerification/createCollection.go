@@ -19,7 +19,6 @@ package txVerification
 
 import (
 	"errors"
-	"log"
 	"math/big"
 	"strconv"
 
@@ -47,13 +46,10 @@ func VerifyCreateCollectionTxInfo(
 	}
 	// verify nonce
 	if txInfo.Nonce != accountInfoMap[txInfo.AccountIndex].Nonce {
-		log.Println("[VerifyCollectionTxInfo] invalid nonce")
+		logx.Errorf("[VerifyCancelOfferTxInfo] invalid nonce: %d, account index: %d", txInfo.Nonce, txInfo.AccountIndex)
 		return nil, errors.New("[VerifyCollectionTxInfo] invalid nonce")
 	}
-	if txInfo.CollectionId != accountInfoMap[txInfo.AccountIndex].CollectionNonce {
-		log.Println("[VerifyCollectionTxInfo] invalid nonce")
-		return nil, errors.New("[VerifyCollectionTxInfo] invalid nonce")
-	}
+
 	// set tx info
 	var (
 		assetDeltaMap = make(map[int64]map[int64]*big.Int)
@@ -95,11 +91,11 @@ func VerifyCreateCollectionTxInfo(
 	}
 	isValid, err := pk.Verify(txInfo.Sig, msgHash, hFunc)
 	if err != nil {
-		log.Println("[VerifyCollectionTxInfo] unable to verify signature:", err)
+		logx.Errorf("[VerifyCollectionTxInfo] unable to verify signature: %s", err.Error())
 		return nil, err
 	}
 	if !isValid {
-		log.Println("[VerifyCollectionTxInfo] invalid signature")
+		logx.Error("[VerifyCollectionTxInfo] invalid signature")
 		return nil, errors.New("[VerifyCollectionTxInfo] invalid signature")
 	}
 	// compute tx details

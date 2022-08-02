@@ -231,7 +231,7 @@ func (m *defaultL1TxSenderModel) DeleteL1TxSender(sender *L1TxSender) error {
 	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
 		dbTx := tx.Table(m.table).Where("id = ?", sender.ID).Delete(&sender)
 		if dbTx.Error != nil {
-			logx.Error("[l1TxSender.DeleteL1TxSender] %s", dbTx.Error)
+			logx.Errorf("[l1TxSender.DeleteL1TxSender] %s", dbTx.Error.Error())
 			return dbTx.Error
 		}
 		if dbTx.RowsAffected == 0 {
@@ -270,7 +270,7 @@ func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 					logx.Error(res)
 					return err
 				}
-				logx.Error("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] %s" + "Invalid block:  " + string(blocksInfo))
+				logx.Error("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Invalid block:  " + string(blocksInfo))
 				return errors.New("Invalid blocks:  " + string(blocksInfo))
 			}
 		}
@@ -327,7 +327,7 @@ func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
-				logx.Error(fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] No such proof. Height: %d", blockHeight))
+				logx.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] No such proof. Height: %d", blockHeight)
 				return fmt.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] No such proof. Height: %d", blockHeight)
 			}
 			dbTx = tx.Model(&row).
@@ -338,7 +338,7 @@ func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
-				logx.Error(fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Update No Proof: %d", row.BlockNumber))
+				logx.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Update No Proof: %d", row.BlockNumber)
 				return fmt.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Update No Proof: %d", row.BlockNumber)
 			}
 		}

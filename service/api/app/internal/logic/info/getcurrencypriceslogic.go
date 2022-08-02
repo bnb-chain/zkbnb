@@ -34,7 +34,7 @@ func NewGetCurrencyPricesLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 func (l *GetCurrencyPricesLogic) GetCurrencyPrices(req *types.ReqGetCurrencyPrices) (*types.RespGetCurrencyPrices, error) {
 	l2Assets, err := l.l2asset.GetL2AssetsList(l.ctx)
 	if err != nil {
-		logx.Errorf("[GetL2AssetsList] err:%v", err)
+		logx.Errorf("[GetL2AssetsList] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
@@ -46,7 +46,7 @@ func (l *GetCurrencyPricesLogic) GetCurrencyPrices(req *types.ReqGetCurrencyPric
 	for _, asset := range l2Assets {
 		price, err := l.price.GetCurrencyPrice(l.ctx, asset.AssetSymbol)
 		if err != nil {
-			logx.Errorf("[GetCurrencyPrice] err:%v", err)
+			logx.Errorf("[GetCurrencyPrice] err: %s", err.Error())
 			if err == errorcode.AppErrQuoteNotExist {
 				return nil, err
 			}

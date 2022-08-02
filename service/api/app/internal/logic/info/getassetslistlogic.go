@@ -30,7 +30,7 @@ func NewGetAssetsListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 func (l *GetAssetsListLogic) GetAssetsList(req *types.ReqGetAssetsList) (*types.RespGetAssetsList, error) {
 	assets, err := l.l2asset.GetL2AssetsList(l.ctx)
 	if err != nil {
-		logx.Errorf("[GetL2AssetsList] err:%v", err)
+		logx.Errorf("[GetL2AssetsList] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}

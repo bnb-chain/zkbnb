@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"gorm.io/gorm"
 
@@ -25,6 +27,7 @@ func (n *nft) GetNftListByAccountIndex(ctx context.Context, accountIndex, limit,
 		dbTx := n.db.Table(n.table).Where("owner_account_index = ? and deleted_at is NULL", accountIndex).
 			Limit(int(limit)).Offset(int(offset)).Order("nft_index desc").Find(&nftList)
 		if dbTx.Error != nil {
+			logx.Errorf("fail to get nfts by account: %d, offset: %d, limit: %d, error: %s", accountIndex, offset, limit, dbTx.Error.Error())
 			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			return nil, errorcode.DbErrNotFound
@@ -48,6 +51,7 @@ func (n *nft) GetAccountNftTotalCount(ctx context.Context, accountIndex int64) (
 		var count int64
 		dbTx := n.db.Table(n.table).Where("owner_account_index = ? and deleted_at is NULL", accountIndex).Count(&count)
 		if dbTx.Error != nil {
+			logx.Errorf("fail to get nft count by account: %d, error: %s", accountIndex, dbTx.Error.Error())
 			return 0, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			return 0, errorcode.DbErrNotFound

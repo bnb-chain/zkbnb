@@ -24,7 +24,7 @@ func main() {
 	ctx := svc.NewServiceContext(c)
 	ZkbasRollupAddress, err := ctx.SysConfigModel.GetSysconfigByName(c.ChainConfig.ZkbasContractAddrSysConfigName)
 	if err != nil {
-		logx.Errorf("[main] GetSysconfigByName err: %s", err)
+		logx.Errorf("[main] GetSysconfigByName err: %s", err.Error())
 		panic(err)
 	}
 	NetworkRpc, err := ctx.SysConfigModel.GetSysconfigByName(c.ChainConfig.NetworkRPCSysConfigName)

@@ -29,7 +29,7 @@ func NewSendAtomicMatchTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(req *types.ReqSendAtomicMatchTx) (*types.RespSendAtomicMatchTx, error) {
 	txIndex, err := l.globalRpc.SendAtomicMatchTx(l.ctx, req.TxInfo)
 	if err != nil {
-		logx.Error("[transaction.SendAtomicMatchTx] err:%v", err)
+		logx.Errorf("[transaction.SendAtomicMatchTx] err: %s", err.Error())
 		return nil, err
 	}
 	return &types.RespSendAtomicMatchTx{TxId: txIndex}, nil

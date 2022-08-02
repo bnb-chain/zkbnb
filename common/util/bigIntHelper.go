@@ -18,28 +18,9 @@
 package util
 
 import (
-	"errors"
-	"log"
 	"math/big"
-
-	"github.com/bnb-chain/zkbas-crypto/ffmath"
 )
 
 var (
 	ZeroBigInt = big.NewInt(0)
 )
-
-func BigIntStringAdd(a, b string) (c string, err error) {
-	aInt, isValid := new(big.Int).SetString(a, Base)
-	if !isValid {
-		log.Println("[BigIntStringAdd] invalid big int")
-		return "", errors.New("[BigIntStringAdd] invalid big int")
-	}
-	bInt, isValid := new(big.Int).SetString(b, Base)
-	if !isValid {
-		log.Println("[BigIntStringAdd] invalid big int")
-		return "", errors.New("[BigIntStringAdd] invalid big int")
-	}
-	c = ffmath.Add(aInt, bInt).String()
-	return c, nil
-}

@@ -29,7 +29,7 @@ func NewSendRemoveLiquidityTxLogic(ctx context.Context, svcCtx *svc.ServiceConte
 func (l *SendRemoveLiquidityTxLogic) SendRemoveLiquidityTx(req *types.ReqSendRemoveLiquidityTx) (*types.RespSendRemoveLiquidityTx, error) {
 	txIndex, err := l.globalRpc.SendRemoveLiquidityTx(l.ctx, req.TxInfo)
 	if err != nil {
-		logx.Error("[transaction.SendRemoveLiquidityTx] err:%v", err)
+		logx.Errorf("[transaction.SendRemoveLiquidityTx] err: %s", err.Error())
 		return nil, err
 	}
 	return &types.RespSendRemoveLiquidityTx{TxId: txIndex}, nil

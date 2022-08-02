@@ -19,7 +19,6 @@ package txVerification
 
 import (
 	"errors"
-	"log"
 
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
@@ -71,11 +70,11 @@ func VerifyOfferTxInfo(
 	}
 	isValid, err := pk.Verify(txInfo.Sig, msgHash, hFunc)
 	if err != nil {
-		log.Println("[VerifyCancelOfferTxInfo] unable to verify signature:", err)
+		logx.Errorf("[VerifyCancelOfferTxInfo] unable to verify signature: %s", err.Error())
 		return err
 	}
 	if !isValid {
-		log.Println("[VerifyCancelOfferTxInfo] invalid signature")
+		logx.Error("[VerifyCancelOfferTxInfo] invalid signature")
 		return errors.New("[VerifyCancelOfferTxInfo] invalid signature")
 	}
 	return nil

@@ -18,12 +18,13 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
-	"log"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/zeromicro/go-zero/core/conf"
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 
 	"github.com/bnb-chain/zkbas/common/model/account"
@@ -56,7 +57,9 @@ const (
 
 func main() {
 	conf.MustLoad(*configFile, &svrConf)
-	log.Println("config:", svrConf)
+
+	unmarshal, _ := json.Marshal(svrConf)
+	logx.Infof("init configs: %s", string(unmarshal))
 
 	dropTables()
 	initTable()
@@ -255,14 +258,14 @@ func initTable() {
 	assert.Nil(nil, nftWithdrawHistoryModel.CreateL2NftWithdrawHistoryTable())
 	rowsAffected, err := assetInfoModel.CreateAssetsInfoInBatches(initAssetsInfo())
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
-	log.Println("l2 assets info rows affected:", rowsAffected)
+	logx.Infof("l2 assets info rows affected: %d", rowsAffected)
 	rowsAffected, err = sysconfigModel.CreateSysconfigInBatches(initSysConfig())
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
-	log.Println("sys config rows affected:", rowsAffected)
+	logx.Infof("sys config rows affected: %d", rowsAffected)
 	err = blockModel.CreateGenesisBlock(&block.Block{
 		BlockCommitment:              "0000000000000000000000000000000000000000000000000000000000000000",
 		BlockHeight:                  0,
@@ -276,7 +279,7 @@ func initTable() {
 		BlockStatus:                  block.StatusVerifiedAndExecuted,
 	})
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 }
 

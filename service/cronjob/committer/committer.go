@@ -80,7 +80,7 @@ func main() {
 		if err := logic.CommitterTask(ctx, &lastCommitTimeStamp, accountTree, liquidityTree, nftTree, &accountStateTrees); err != nil {
 			cbh, err := ctx.BlockModel.GetCurrentBlockHeight()
 			if err != nil {
-				logx.Errorf("[GetCurrentBlockHeight] err:%v", err)
+				logx.Errorf("[GetCurrentBlockHeight] err: %s", err.Error())
 				panic("merkle tree re-init.GetCurrentBlockHeight error")
 			}
 			accountTree, accountStateTrees, err = tree.InitAccountTree(ctx.AccountModel, ctx.AccountHistoryModel, cbh)

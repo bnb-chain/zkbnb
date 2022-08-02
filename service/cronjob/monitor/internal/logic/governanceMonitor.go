@@ -56,7 +56,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 	// get latest l1 block height(latest height - pendingBlocksCount)
 	latestHeight, err := cli.GetHeight()
 	if err != nil {
-		logx.Errorf("[MonitorGovernanceContract] GetHeight err:%v", err)
+		logx.Errorf("[MonitorGovernanceContract] GetHeight err: %s", err.Error())
 		return err
 	}
 	// compute safe height
@@ -75,7 +75,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 	}
 	logs, err := cli.FilterLogs(context.Background(), query)
 	if err != nil {
-		logx.Errorf("[MonitorGovernanceContract] FilterLogs err:%v", err)
+		logx.Errorf("[MonitorGovernanceContract] FilterLogs err: %s", err.Error())
 		return err
 	}
 	var (
@@ -90,7 +90,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 		case governanceLogNewAssetSigHash.Hex():
 			var event zkbas.GovernanceNewAsset
 			if err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameNewAsset, vlog.Data); err != nil {
-				logx.Errorf("[MonitorGovernanceContract] UnpackIntoInterface err:%v", err)
+				logx.Errorf("[MonitorGovernanceContract] UnpackIntoInterface err: %s", err.Error())
 				return err
 			}
 			l1EventInfo := &L1EventInfo{
@@ -100,22 +100,22 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 			// get asset info by contract address
 			erc20Instance, err := zkbas.LoadERC20(cli, event.AssetAddress.Hex())
 			if err != nil {
-				logx.Errorf("[MonitorGovernanceContract] LoadERC20 err:%v", err)
+				logx.Errorf("[MonitorGovernanceContract] LoadERC20 err: %s", err.Error())
 				return err
 			}
 			name, err := erc20Instance.Name(basic.EmptyCallOpts())
 			if err != nil {
-				logx.Errorf("[MonitorGovernanceContract] erc20Instance.Name err:%v", err)
+				logx.Errorf("[MonitorGovernanceContract] erc20Instance.Name err: %s", err.Error())
 				return err
 			}
 			symbol, err := erc20Instance.Symbol(basic.EmptyCallOpts())
 			if err != nil {
-				logx.Errorf("[MonitorGovernanceContract] erc20Instance.Symbol err:%v", err)
+				logx.Errorf("[MonitorGovernanceContract] erc20Instance.Symbol err: %s", err.Error())
 				return err
 			}
 			decimals, err := erc20Instance.Decimals(basic.EmptyCallOpts())
 			if err != nil {
-				logx.Errorf("[MonitorGovernanceContract] erc20Instance.Decimals err:%v", err)
+				logx.Errorf("[MonitorGovernanceContract] erc20Instance.Decimals err: %s", err.Error())
 				return err
 			}
 			l2AssetInfo := &L2AssetInfo{
@@ -132,7 +132,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 			// parse event info
 			var event zkbas.GovernanceNewGovernor
 			if err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameNewGovernor, vlog.Data); err != nil {
-				logx.Errorf("[MonitorGovernanceContract] UnpackIntoInterface err:%v", err)
+				logx.Errorf("[MonitorGovernanceContract] UnpackIntoInterface err: %s", err.Error())
 				return err
 			}
 			// set up database info
@@ -154,7 +154,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 			var event zkbas.GovernanceNewAssetGovernance
 			err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameNewAssetGovernance, vlog.Data)
 			if err != nil {
-				logx.Errorf("[MonitorGovernanceContract] UnpackIntoInterface err:%v", err)
+				logx.Errorf("[MonitorGovernanceContract] UnpackIntoInterface err: %s", err.Error())
 				return err
 			}
 			l1EventInfo := &L1EventInfo{
@@ -300,7 +300,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 	// serialize into block info
 	eventInfosBytes, err := json.Marshal(l1EventInfos)
 	if err != nil {
-		logx.Errorf("[MonitorGovernanceContract] Marshal err:%v", err)
+		logx.Errorf("[MonitorGovernanceContract] Marshal err: %s", err.Error())
 		return err
 	}
 	l1BlockMonitorInfo := &l1BlockMonitor.L1BlockMonitor{
@@ -333,7 +333,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 	)
 	if err = l1BlockMonitorModel.CreateGovernanceMonitorInfo(l1BlockMonitorInfo, l2AssetInfos,
 		pendingUpdateL2AssetInfos, pendingNewSysconfigInfos, pendingUpdateSysconfigInfos); err != nil {
-		logx.Errorf("[MonitorGovernanceContract] CreateGovernanceMonitorInfo err:%v", err)
+		logx.Errorf("[MonitorGovernanceContract] CreateGovernanceMonitorInfo err: %s", err.Error())
 		return err
 	}
 	logx.Info("========================= end MonitorGovernanceContract =========================")

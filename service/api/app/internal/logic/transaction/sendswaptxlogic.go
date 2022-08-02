@@ -29,7 +29,7 @@ func NewSendSwapTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendSw
 func (l *SendSwapTxLogic) SendSwapTx(req *types.ReqSendSwapTx) (*types.RespSendSwapTx, error) {
 	txIndex, err := l.globalRpc.SendSwapTx(l.ctx, req.TxInfo)
 	if err != nil {
-		logx.Error("[transaction.SendSwapTx] err:%v", err)
+		logx.Errorf("[transaction.SendSwapTx] err: %s", err.Error())
 		return nil, err
 	}
 	return &types.RespSendSwapTx{TxId: txIndex}, nil

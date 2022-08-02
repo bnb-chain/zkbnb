@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"log"
 	"math/big"
 	"os"
 	"time"
+
+	"github.com/zeromicro/go-zero/core/logx"
 
 	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
@@ -56,7 +57,7 @@ func GenerateProof(
 	// verify CryptoBlock
 	blockWitness, err := cryptoBlock.SetBlockWitness(cBlock)
 	if err != nil {
-		log.Println("[GenerateProof] unable to set block witness:", err)
+		logx.Errorf("[GenerateProof] unable to set block witness: %s", err.Error())
 		return proof, err
 	}
 	var verifyWitness cryptoBlock.BlockConstraints
@@ -65,27 +66,27 @@ func GenerateProof(
 	verifyWitness.BlockCommitment = cBlock.BlockCommitment
 	witness, err := frontend.NewWitness(&blockWitness, ecc.BN254)
 	if err != nil {
-		log.Println("[GenerateProof] unable to new witness:", err)
+		logx.Errorf("[GenerateProof] unable to generate new witness: %s", err.Error())
 		return proof, err
 	}
 	vWitness, err := frontend.NewWitness(&verifyWitness, ecc.BN254, frontend.PublicOnly())
 	if err != nil {
-		log.Println("[GenerateProof] unable to new witness:", err)
+		logx.Errorf("[GenerateProof] unable to generate new witness: %s", err.Error())
 		return proof, err
 	}
 	elapse := time.Now()
-	fmt.Println("start proving")
+	logx.Info("start proving")
 	proof, err = groth16.Prove(r1cs, provingKey, witness, backend.WithHints(std.Keccak256, std.ComputeSLp))
 	if err != nil {
-		log.Println("[GenerateProof] unable to make a proof:", err)
+		logx.Errorf("[GenerateProof] unable to make a proof: %s", err.Error())
 		return proof, err
 	}
 	fmt.Println("finish proving: ", time.Since(elapse))
 	elapse = time.Now()
-	fmt.Println("start verifying")
+	logx.Info("start verifying")
 	err = groth16.Verify(proof, verifyingKey, vWitness)
 	if err != nil {
-		log.Println("[GenerateProof] invalid block proof:", err)
+		logx.Errorf("[GenerateProof] invalid block proof: %s", err.Error())
 		return proof, err
 	}
 
@@ -100,7 +101,7 @@ func VerifyProof(
 	// verify CryptoBlock
 	blockWitness, err := cryptoBlock.SetBlockWitness(cBlock)
 	if err != nil {
-		log.Println("[VerifyProof] unable to set block witness:", err)
+		logx.Errorf("[VerifyProof] unable to set block witness: %s", err.Error())
 		return err
 	}
 
@@ -110,19 +111,19 @@ func VerifyProof(
 	verifyWitness.BlockCommitment = cBlock.BlockCommitment
 	_, err = frontend.NewWitness(&blockWitness, ecc.BN254)
 	if err != nil {
-		log.Println("[VerifyProof] unable to new witness:", err)
+		logx.Errorf("[VerifyProof] unable to generate new witness: %s", err.Error())
 		return err
 	}
 
 	vWitness, err := frontend.NewWitness(&verifyWitness, ecc.BN254, frontend.PublicOnly())
 	if err != nil {
-		log.Println("[VerifyProof] unable to new witness:", err)
+		logx.Errorf("[VerifyProof] unable to generate new witness: %s", err.Error())
 		return err
 	}
 
 	err = groth16.Verify(proof, vk, vWitness)
 	if err != nil {
-		log.Println("[VerifyProof] invalid block proof:", err)
+		logx.Errorf("[VerifyProof] invalid block proof: %s", err.Error())
 		return err
 	}
 	return nil
@@ -141,7 +142,7 @@ func FormatProof(oProof groth16.Proof, oldRoot, newRoot, commitment []byte) (pro
 	var buf bytes.Buffer
 	_, err = oProof.WriteRawTo(&buf)
 	if err != nil {
-		log.Println("[FormatProof] unable to format proof:", err)
+		logx.Errorf("[FormatProof] unable to format proof: %s", err.Error())
 		return nil, err
 	}
 	proofBytes := buf.Bytes()
@@ -180,7 +181,7 @@ func UnformatProof(proof *FormattedProof) (oProof groth16.Proof, err error) {
 	// read buffer
 	_, err = oProof.ReadFrom(bytes.NewReader(buf.Bytes()))
 	if err != nil {
-		log.Println("[UnformatProof] unable to ReadFrom proof buffer:", err)
+		logx.Errorf("[UnformatProof] unable to ReadFrom proof buffer: %s", err.Error())
 		return oProof, err
 	}
 
