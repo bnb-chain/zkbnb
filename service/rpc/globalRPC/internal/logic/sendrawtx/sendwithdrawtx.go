@@ -151,7 +151,7 @@ func SendWithdrawTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalm
 func handleCreateFailWithdrawTx(failTxModel tx.FailTxModel, txInfo *commonTx.WithdrawTxInfo, err error) error {
 	errCreate := createFailWithdrawTx(failTxModel, txInfo, err.Error())
 	if errCreate != nil {
-		logx.Error("[sendwithdrawtxlogic.HandleCreateFailWithdrawTx] %s", errCreate.Error())
+		logx.Errorf("[sendwithdrawtxlogic.HandleCreateFailWithdrawTx] %s", errCreate.Error())
 		return errCreate
 	} else {
 		errInfo := fmt.Sprintf("[sendwithdrawtxlogic.HandleCreateFailWithdrawTx] %s", err.Error())

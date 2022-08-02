@@ -60,7 +60,7 @@ func (m *sysconf) GetSysconfigByName(ctx context.Context, name string) (*table.S
 func (m *sysconf) CreateSysconfig(_ context.Context, config *table.Sysconfig) error {
 	dbTx := m.db.Table(m.table).Create(config)
 	if dbTx.Error != nil {
-		logx.Error("[sysconfig.sysconfig] %s", dbTx.Error)
+		logx.Errorf("[sysconfig.sysconfig] %s", dbTx.Error.Error())
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
@@ -73,7 +73,7 @@ func (m *sysconf) CreateSysconfig(_ context.Context, config *table.Sysconfig) er
 func (m *sysconf) CreateSysconfigInBatches(_ context.Context, configs []*table.Sysconfig) (rowsAffected int64, err error) {
 	dbTx := m.db.Table(m.table).CreateInBatches(configs, len(configs))
 	if dbTx.Error != nil {
-		logx.Error("[sysconfig.CreateSysconfigInBatches] %s", dbTx.Error)
+		logx.Errorf("[sysconfig.CreateSysconfigInBatches] %s", dbTx.Error.Error())
 		return 0, dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {

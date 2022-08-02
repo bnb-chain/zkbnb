@@ -29,7 +29,7 @@ func NewSendTransferNftTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 func (l *SendTransferNftTxLogic) SendTransferNftTx(req *types.ReqSendTransferNftTx) (*types.RespSendTransferNftTx, error) {
 	txIndex, err := l.globalRpc.SendTransferNftTx(l.ctx, req.TxInfo)
 	if err != nil {
-		logx.Error("[transaction.SendTransferNftTx] err:%v", err)
+		logx.Errorf("[transaction.SendTransferNftTx] err: %s", err.Error())
 		return nil, err
 	}
 	return &types.RespSendTransferNftTx{TxId: txIndex}, nil

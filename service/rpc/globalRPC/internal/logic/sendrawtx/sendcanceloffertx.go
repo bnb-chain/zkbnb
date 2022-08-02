@@ -191,7 +191,7 @@ func SendCancelOfferTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 func handleCreateFailCancelOfferTx(failTxModel tx.FailTxModel, txInfo *commonTx.CancelOfferTxInfo, err error) error {
 	errCreate := createFailCancelOfferTx(failTxModel, txInfo, err.Error())
 	if errCreate != nil {
-		logx.Error("[sendtransfertxlogic.HandleCreateFailCancelOfferTx] %s", errCreate.Error())
+		logx.Errorf("[sendtransfertxlogic.HandleCreateFailCancelOfferTx] %s", errCreate.Error())
 		return errCreate
 	} else {
 		errInfo := fmt.Sprintf("[sendtransfertxlogic.HandleCreateFailCancelOfferTx] %s", err.Error())

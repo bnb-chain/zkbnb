@@ -243,7 +243,7 @@ func SendAtomicMatchTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 func handleCreateFailAtomicMatchTx(failTxModel tx.FailTxModel, txInfo *commonTx.AtomicMatchTxInfo, err error) error {
 	errCreate := createFailAtomicMatchTx(failTxModel, txInfo, err.Error())
 	if errCreate != nil {
-		logx.Error("[sendtransfertxlogic.HandleCreateFailAtomicMatchTx] %s", errCreate.Error())
+		logx.Errorf("[sendtransfertxlogic.HandleCreateFailAtomicMatchTx] %s", errCreate.Error())
 		return errCreate
 	} else {
 		errInfo := fmt.Sprintf("[sendtransfertxlogic.HandleCreateFailAtomicMatchTx] %s", err.Error())

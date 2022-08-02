@@ -102,7 +102,7 @@ func (m *defaultFailTxModel) DropFailTxTable() error {
 func (m *defaultFailTxModel) CreateFailTx(failTx *FailTx) error {
 	dbTx := m.DB.Table(m.table).Create(failTx)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.CreateFailTx] %s", dbTx.Error)
+		logx.Errorf("[txVerification.CreateFailTx] %s", dbTx.Error.Error())
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {

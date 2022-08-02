@@ -508,7 +508,7 @@ func (m *defaultTxModel) GetTxsTotalCountByAccountIndex(accountIndex int64) (cou
 	)
 	dbTx := m.DB.Table(txDetailTable).Select("tx_id").Where("account_index = ? and deleted_at is NULL", accountIndex).Group("tx_id").Count(&count)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsTotalCountByAccountIndex] %s", dbTx.Error)
+		logx.Errorf("[txVerification.GetTxsTotalCountByAccountIndex] %s", dbTx.Error.Error())
 		return 0, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[txVerification.GetTxsTotalCountByAccountIndex] No Txs of account index %d in Tx Table", accountIndex)
@@ -530,7 +530,7 @@ func (m *defaultTxModel) GetTxsTotalCountByAccountIndexAndTxType(accountIndex in
 	)
 	dbTx := m.DB.Table(txDetailTable).Select("tx_id").Where("account_index = ? and deleted_at is NULL", accountIndex).Group("tx_id").Find(&txIds)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsTotalCountByAccountIndexAndTxType] %s", dbTx.Error)
+		logx.Errorf("[txVerification.GetTxsTotalCountByAccountIndexAndTxType] %s", dbTx.Error.Error())
 		return 0, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[txVerification.GetTxsTotalCountByAccountIndexAndTxType] No Txs of account index %d  and txVerification type %d in Tx Table", accountIndex, txType)
@@ -538,7 +538,7 @@ func (m *defaultTxModel) GetTxsTotalCountByAccountIndexAndTxType(accountIndex in
 	}
 	dbTx = m.DB.Table(m.table).Where("id in (?) and deleted_at is NULL and tx_type = ?", txIds, txType).Count(&count)
 	if dbTx.Error != nil {
-		logx.Errorf("[txVerification.GetTxsTotalCountByAccountIndexAndTxTypee] %s", dbTx.Error)
+		logx.Errorf("[txVerification.GetTxsTotalCountByAccountIndexAndTxTypee] %s", dbTx.Error.Error())
 		return 0, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Infof("[txVerification.GetTxsTotalCountByAccountIndexAndTxType] no txVerification of account index %d and txVerification type = %d in mempool", accountIndex, txType)
@@ -586,7 +586,7 @@ func (m *defaultTxModel) GetTxsTotalCountByAccountIndexAndTxTypeArray(accountInd
 func (m *defaultTxModel) GetTxsTotalCountByBlockHeight(blockHeight int64) (count int64, err error) {
 	dbTx := m.DB.Table(m.table).Where("block_height = ? and deleted_at is NULL", blockHeight).Count(&count)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsTotalCountByBlockHeight] %s", dbTx.Error)
+		logx.Errorf("[txVerification.GetTxsTotalCountByBlockHeight] %s", dbTx.Error.Error())
 		return 0, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[txVerification.GetTxsTotalCountByBlockHeight] No Txs of block height %d in Tx Table", blockHeight)
@@ -609,7 +609,7 @@ func (m *defaultTxModel) GetTxByTxHash(txHash string) (tx *Tx, err error) {
 		logx.Errorf("[txVerification.GetTxByTxHash] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		logx.Error("[txVerification.GetTxByTxHash] No such Tx with txHash: %s", txHash)
+		logx.Errorf("[txVerification.GetTxByTxHash] No such Tx with txHash: %s", txHash)
 		return nil, errorcode.DbErrNotFound
 	}
 	err = m.DB.Model(&tx).Association(txForeignKeyColumn).Find(&tx.TxDetails)
@@ -633,7 +633,7 @@ func (m *defaultTxModel) GetTxByTxId(id uint) (tx *Tx, err error) {
 		logx.Errorf("[txVerification.GetTxByTxId] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		logx.Error("[txVerification.GetTxByTxId] No such Tx with tx id: %s", id)
+		logx.Errorf("[txVerification.GetTxByTxId] No such Tx with tx id: %d", id)
 		return nil, errorcode.DbErrNotFound
 	}
 	err = m.DB.Model(&tx).Association(txForeignKeyColumn).Find(&tx.TxDetails)

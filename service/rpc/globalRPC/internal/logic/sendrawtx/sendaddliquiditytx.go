@@ -28,7 +28,7 @@ import (
 func handleCreateFailAddLiquidityTx(failTxModel tx.FailTxModel, txInfo *commonTx.AddLiquidityTxInfo, err error) error {
 	errCreate := createFailAddLiquidityTx(failTxModel, txInfo, err.Error())
 	if errCreate != nil {
-		logx.Error("[sendaddliquiditytxlogic.HandleFailAddLiquidityTx] %s", errCreate.Error())
+		logx.Errorf("[sendaddliquiditytxlogic.HandleFailAddLiquidityTx] %s", errCreate.Error())
 		return errCreate
 	} else {
 		errInfo := fmt.Sprintf("[sendaddliquiditytxlogic.HandleFailAddLiquidityTx] %s", err.Error())

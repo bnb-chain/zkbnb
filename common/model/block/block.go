@@ -335,7 +335,7 @@ func (m *defaultBlockModel) GetBlocksBetween(start int64, end int64) (blocks []*
 func (m *defaultBlockModel) GetBlocksLowerThanHeight(end int64, status int) (rowsAffected int64, blocks []*Block, err error) {
 	dbTx := m.DB.Table(m.table).Where("block_status = ? AND block_height <= ?", status, end).Order("block_height").Find(&blocks)
 	if dbTx.Error != nil {
-		logx.Error("[block.GetBlocksLowerThanHeight] %s", dbTx.Error)
+		logx.Errorf("[block.GetBlocksLowerThanHeight] %s", dbTx.Error.Error())
 		return 0, nil, dbTx.Error
 	}
 	return dbTx.RowsAffected, blocks, nil
@@ -583,7 +583,7 @@ func (m *defaultBlockModel) CreateBlock(block *Block) error {
 	dbTx := m.DB.Table(m.table).Create(block)
 
 	if dbTx.Error != nil {
-		logx.Error("[block.CreateBlock] %s", dbTx.Error)
+		logx.Errorf("[block.CreateBlock] %s", dbTx.Error.Error())
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
@@ -597,7 +597,7 @@ func (m *defaultBlockModel) CreateGenesisBlock(block *Block) error {
 	dbTx := m.DB.Table(m.table).Omit("BlockDetails").Omit("Txs").Create(block)
 
 	if dbTx.Error != nil {
-		logx.Error("[block.CreateBlock] %s", dbTx.Error)
+		logx.Errorf("[block.CreateBlock] %s", dbTx.Error.Error())
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
@@ -617,7 +617,7 @@ func (m *defaultBlockModel) UpdateBlock(block *Block) error {
 	dbTx := m.DB.Save(block)
 
 	if dbTx.Error != nil {
-		logx.Error("[block.UpdateBlock] %s", dbTx.Error)
+		logx.Errorf("[block.UpdateBlock] %s", dbTx.Error.Error())
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
@@ -636,7 +636,7 @@ func (m *defaultBlockModel) UpdateBlock(block *Block) error {
 func (m *defaultBlockModel) GetCurrentBlockHeight() (blockHeight int64, err error) {
 	dbTx := m.DB.Table(m.table).Select("block_height").Order("block_height desc").Limit(1).Find(&blockHeight)
 	if dbTx.Error != nil {
-		logx.Error("[block.GetCurrentBlockHeight] %s", dbTx.Error)
+		logx.Errorf("[block.GetCurrentBlockHeight] %s", dbTx.Error.Error())
 		return 0, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[block.GetCurrentBlockHeight] No block yet")
@@ -654,7 +654,7 @@ func (m *defaultBlockModel) GetCurrentBlockHeight() (blockHeight int64, err erro
 func (m *defaultBlockModel) GetBlocksTotalCount() (count int64, err error) {
 	dbTx := m.DB.Table(m.table).Where("deleted_at is NULL").Count(&count)
 	if dbTx.Error != nil {
-		logx.Error("[block.GetBlocksTotalCount] %s", dbTx.Error)
+		logx.Errorf("[block.GetBlocksTotalCount] %s", dbTx.Error.Error())
 		return 0, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[block.GetBlocksTotalCount] No Blocks in Block Table")

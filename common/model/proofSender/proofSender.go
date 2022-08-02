@@ -118,10 +118,10 @@ func (m *defaultProofSenderModel) GetProofsByBlockRange(start int64, end int64, 
 		Find(&proofs)
 
 	if dbTx.Error != nil {
-		logx.Error("[proofSender.GetProofsByBlockRange] %s", dbTx.Error)
+		logx.Errorf("[proofSender.GetProofsByBlockRange] %s", dbTx.Error.Error())
 		return proofs, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		logx.Errorf("[proofSender.GetProofsByBlockRange] error not found")
+		logx.Error("[proofSender.GetProofsByBlockRange] error not found")
 		return proofs, errorcode.DbErrNotFound
 	}
 
@@ -139,7 +139,7 @@ func (m *defaultProofSenderModel) GetProofStartBlockNumber() (num int64, err err
 	var row *ProofSender
 	dbTx := m.DB.Table(m.table).Order("block_number desc").Limit(1).Find(&row)
 	if dbTx.Error != nil {
-		logx.Error("[proofSender.GetProofStartBlockNumber] %s", dbTx.Error)
+		logx.Errorf("[proofSender.GetProofStartBlockNumber] %s", dbTx.Error.Error())
 		return num, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[proofSender.GetProofStartBlockNumber] not found")

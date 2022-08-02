@@ -248,7 +248,7 @@ func SendRemoveLiquidityTx(ctx context.Context, svcCtx *svc.ServiceContext, comm
 func handleCreateFailRemoveLiquidityTx(failTxModel tx.FailTxModel, txInfo *commonTx.RemoveLiquidityTxInfo, err error) error {
 	errCreate := createFailRemoveLiquidityTx(failTxModel, txInfo, err.Error())
 	if errCreate != nil {
-		logx.Error("[sendremoveliquiditytxlogic.HandleCreateFailRemoveLiquidityTx] %s", errCreate.Error())
+		logx.Errorf("[sendremoveliquiditytxlogic.HandleCreateFailRemoveLiquidityTx] %s", errCreate.Error())
 		return errCreate
 	} else {
 		errInfo := fmt.Sprintf("[sendremoveliquiditytxlogic.HandleCreateFailRemoveLiquidityTx] %s", err.Error())

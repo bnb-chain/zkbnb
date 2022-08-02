@@ -260,7 +260,7 @@ func SendSwapTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalmap c
 func handleCreateFailSwapTx(failTxModel tx.FailTxModel, txInfo *commonTx.SwapTxInfo, err error) error {
 	errCreate := createFailSwapTx(failTxModel, txInfo, err.Error())
 	if errCreate != nil {
-		logx.Error("[sendswaptxlogic.HandleCreateFailSwapTx] %s", errCreate.Error())
+		logx.Errorf("[sendswaptxlogic.HandleCreateFailSwapTx] %s", errCreate.Error())
 		return errCreate
 	} else {
 		errInfo := fmt.Sprintf("[sendswaptxlogic.HandleCreateFailSwapTx] %s", err.Error())

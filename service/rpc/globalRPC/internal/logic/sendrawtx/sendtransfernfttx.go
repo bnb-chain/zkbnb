@@ -209,7 +209,7 @@ func SendTransferNftTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 func handleCreateFailTransferNftTx(failTxModel tx.FailTxModel, txInfo *commonTx.TransferNftTxInfo, err error) error {
 	errCreate := createFailTransferNftTx(failTxModel, txInfo, err.Error())
 	if errCreate != nil {
-		logx.Error("[sendtransfertxlogic.HandleCreateFailTransferNftTx] %s", errCreate.Error())
+		logx.Errorf("[sendtransfertxlogic.HandleCreateFailTransferNftTx] %s", errCreate.Error())
 		return errCreate
 	} else {
 		errInfo := fmt.Sprintf("[sendtransfertxlogic.HandleCreateFailTransferNftTx] %s", err.Error())

@@ -158,7 +158,7 @@ func SendTransferTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalm
 func handleCreateFailTransferTx(failTxModel tx.FailTxModel, txInfo *commonTx.TransferTxInfo, err error) error {
 	errCreate := createFailTransferTx(failTxModel, txInfo, err.Error())
 	if errCreate != nil {
-		logx.Error("[sendtransfertxlogic.HandleCreateFailTransferTx] %s", errCreate.Error())
+		logx.Errorf("[sendtransfertxlogic.HandleCreateFailTransferTx] %s", errCreate.Error())
 		return errCreate
 	} else {
 		errInfo := fmt.Sprintf("[sendtransfertxlogic.HandleCreateFailTransferTx] %s", err.Error())

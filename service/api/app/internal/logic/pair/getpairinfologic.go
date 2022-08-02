@@ -30,12 +30,12 @@ func NewGetPairInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPa
 
 func (l *GetPairInfoLogic) GetPairInfo(req *types.ReqGetPairInfo) (*types.RespGetPairInfo, error) {
 	if checker.CheckPairIndex(req.PairIndex) {
-		logx.Error("[CheckPairIndex] param:%v", req.PairIndex)
+		logx.Errorf("[CheckPairIndex] param: %d", req.PairIndex)
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid PairIndex")
 	}
 	pair, err := l.globalRPC.GetPairInfo(l.ctx, req.PairIndex)
 	if err != nil {
-		logx.Error("[GetPairRatio] err:%v", err)
+		logx.Errorf("[GetPairRatio] err: %s", err.Error())
 		if err == errorcode.RpcErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}

@@ -137,7 +137,7 @@ func (m *defaultMempoolDetailModel) GetAccountAssetsMempoolDetails(accountIndex 
 	dbTx = m.DB.Table(m.table).Where("account_index = ? and asset_type = ? and chain_id != -1", accountIndex, assetType).
 		Order("created_at, id").Find(&mempoolTxDetails)
 	if dbTx.Error != nil {
-		logx.Error("[mempoolDetail.GetAccountAssetsMempoolDetails] error: %s", dbTx.Error.Error())
+		logx.Errorf("[mempoolDetail.GetAccountAssetsMempoolDetails] error: %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[mempoolDetail.GetAccountAssetsMempoolDetails] Get MempoolTxDetails Error")
