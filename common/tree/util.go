@@ -114,23 +114,23 @@ func CommitTrees(version uint64,
 	nftTree bsmt.SparseMerkleTree) error {
 
 	prunedVersion := bsmt.Version(version)
-	_, err := accountTree.Commit(&prunedVersion)
+	ver, err := accountTree.Commit(&prunedVersion)
 	if err != nil {
-		return errors.Wrap(err, "unable to commit account tree")
+		return errors.Wrapf(err, "unable to commit account tree, tree ver: %d, prune ver: %d", ver, prunedVersion)
 	}
-	for _, assetTree := range *assetTrees {
-		_, err := assetTree.Commit(&prunedVersion)
+	for idx, assetTree := range *assetTrees {
+		ver, err := assetTree.Commit(&prunedVersion)
 		if err != nil {
-			return errors.Wrap(err, "unable to commit asset tree")
+			return errors.Wrapf(err, "unable to commit asset tree [%d], tree ver: %d, prune ver: %d", idx, ver, prunedVersion)
 		}
 	}
-	_, err = liquidityTree.Commit(&prunedVersion)
+	ver, err = liquidityTree.Commit(&prunedVersion)
 	if err != nil {
-		return errors.Wrap(err, "unable to commit liquidity tree")
+		return errors.Wrapf(err, "unable to commit liquidity tree, tree ver: %d, prune ver: %d", ver, prunedVersion)
 	}
-	_, err = nftTree.Commit(&prunedVersion)
+	ver, err = nftTree.Commit(&prunedVersion)
 	if err != nil {
-		return errors.Wrap(err, "unable to commit nft tree")
+		return errors.Wrapf(err, "unable to commit nft tree, tree ver: %d, prune ver: %d", ver, prunedVersion)
 	}
 	return nil
 }
