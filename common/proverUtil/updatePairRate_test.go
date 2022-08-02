@@ -64,7 +64,7 @@ func TestConstructUpdatePairRateCryptoTxFirst(t *testing.T) {
 	}
 	cryptoTx, err := ConstructUpdatePairRateCryptoTx(
 		txInfo,
-		treeDBDriver, treeDB,
+		treeDBDriver, treeDB, 0,
 		accountTree, &accountAssetTrees,
 		liquidityTree,
 		nftTree,

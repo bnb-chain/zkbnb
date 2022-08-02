@@ -64,7 +64,7 @@ func TestConstructSwapCryptoTxFirst(t *testing.T) {
 	}
 	cryptoTx, err := ConstructSwapCryptoTx(
 		txInfo,
-		treeDBDriver, treeDB,
+		treeDBDriver, treeDB, 0,
 		accountTree, &accountAssetTrees,
 		liquidityTree,
 		nftTree,

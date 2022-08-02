@@ -98,7 +98,7 @@ func generateUnprovedBlockWitness(
 			var (
 				cryptoTx *CryptoTx
 			)
-			cryptoTx, err = proverUtil.ConstructCryptoTx(oTx, treeDBDriver, treeDB, accountTree, assetTrees, liquidityTree, nftTree, ctx.AccountModel)
+			cryptoTx, err = proverUtil.ConstructCryptoTx(oTx, treeDBDriver, treeDB, accountTree, assetTrees, liquidityTree, nftTree, ctx.AccountModel, uint64(latestVerifiedBlockNr))
 			if err != nil {
 				logx.Errorf("[prover] unable to construct crypto tx: %s", err.Error())
 				return err

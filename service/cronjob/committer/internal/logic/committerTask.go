@@ -19,7 +19,6 @@ package logic
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"math"
 	"math/big"
 	"strconv"
@@ -197,7 +196,7 @@ func CommitterTask(
 						logx.Errorf("[CommitterTask] invalid account index")
 						return errors.New("[CommitterTask] invalid account index")
 					}
-					emptyAssetTree, err := tree.NewEmptyAccountAssetTree(treeDBDriver, treeDB, mempoolTx.AccountIndex)
+					emptyAssetTree, err := tree.NewEmptyAccountAssetTree(treeDBDriver, treeDB, mempoolTx.AccountIndex, finalityBlockNr)
 					if err != nil {
 						logx.Errorf("[CommitterTask] unable to new empty account state tree: %s", err.Error())
 						return err
@@ -602,7 +601,7 @@ func CommitterTask(
 
 		err = tree.CommitTrees(uint64(finalityBlockNr), accountTree, accountAssetTrees, liquidityTree, nftTree)
 		if err != nil {
-			log.Println("[CommitterTask] unable to commit trees after txs is executed", err)
+			logx.Errorf("[CommitterTask] unable to commit trees after txs is executed", err)
 			return err
 		}
 		// construct assets history

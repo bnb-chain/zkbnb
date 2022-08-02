@@ -212,9 +212,14 @@ func NewEmptyAccountAssetTree(
 	dbDriver treedb.Driver,
 	db database.TreeDB,
 	index int64,
+	blockHeight uint64,
 ) (tree bsmt.SparseMerkleTree, err error) {
-	return bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(zmimc.Hmimc),
-		treedb.SetNamespace(dbDriver, db, accountAssetNamespace(index)), AssetTreeHeight, NilAccountAssetNodeHash)
+	return bsmt.NewBASSparseMerkleTree(
+		bsmt.NewHasher(zmimc.Hmimc),
+		treedb.SetNamespace(dbDriver, db, accountAssetNamespace(index)),
+		AssetTreeHeight, NilAccountAssetNodeHash,
+		bsmt.InitializeVersion(bsmt.Version(blockHeight)),
+	)
 }
 
 func NewMemAccountAssetTree() (tree bsmt.SparseMerkleTree, err error) {

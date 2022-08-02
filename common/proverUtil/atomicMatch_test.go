@@ -64,7 +64,7 @@ func TestConstructAtomicMatchCryptoTxFirst(t *testing.T) {
 	}
 	cryptoTx, err := ConstructAtomicMatchCryptoTx(
 		txInfo,
-		treeDBDriver, treeDB,
+		treeDBDriver, treeDB, 0,
 		accountTree, &accountAssetTrees,
 		liquidityTree,
 		nftTree,
