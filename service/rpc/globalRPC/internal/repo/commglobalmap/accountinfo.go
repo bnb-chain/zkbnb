@@ -26,7 +26,7 @@ func (m *model) GetLatestAccountInfoWithCache(ctx context.Context, accountIndex 
 		return account, nil
 	}
 	accountInfo := &account.Account{}
-	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountByAccountIndex(accountIndex), accountInfo, 10, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountByAccountIndex(accountIndex), accountInfo, multcache.AccountTtl, f)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func (m *model) SetLatestAccountInfoInToCache(ctx context.Context, accountIndex 
 	if err != nil {
 		return err
 	}
-	if err := m.cache.Set(ctx, multcache.SpliceCacheKeyAccountByAccountIndex(accountIndex), account, 10); err != nil {
+	if err := m.cache.Set(ctx, multcache.SpliceCacheKeyAccountByAccountIndex(accountIndex), account, multcache.AccountTtl); err != nil {
 		return err
 	}
 	return nil
@@ -127,7 +127,7 @@ func (m *model) GetBasicAccountInfoWithCache(ctx context.Context, accountIndex i
 		return account, nil
 	}
 	accountInfo := &account.Account{}
-	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyBasicAccountByAccountIndex(accountIndex), accountInfo, 10, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyBasicAccountByAccountIndex(accountIndex), accountInfo, multcache.AccountTtl, f)
 	if err != nil {
 		return nil, err
 	}

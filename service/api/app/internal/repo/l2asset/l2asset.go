@@ -37,7 +37,7 @@ func (m *l2asset) GetL2AssetsList(ctx context.Context) ([]*table.AssetInfo, erro
 		return &res, nil
 	}
 	res := []*table.AssetInfo{}
-	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetL2AssetsList, &res, 10, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetL2AssetsList, &res, multcache.AssetListTtl, f)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func (m *l2asset) GetL2AssetInfoBySymbol(ctx context.Context, symbol string) (*t
 		return &res, nil
 	}
 	res := table.AssetInfo{}
-	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetL2AssetInfoBySymbol+symbol, &res, 10, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetL2AssetInfoBySymbol+symbol, &res, multcache.AssetTtl, f)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (m *l2asset) GetSimpleL2AssetInfoByAssetId(ctx context.Context, assetId uin
 		return &res, nil
 	}
 	res := table.AssetInfo{}
-	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetSimpleL2AssetInfoByAssetId+strconv.Itoa(int(assetId)), &res, 10, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetSimpleL2AssetInfoByAssetId+strconv.Itoa(int(assetId)), &res, multcache.AssetTtl, f)
 	if err != nil {
 		return nil, err
 	}

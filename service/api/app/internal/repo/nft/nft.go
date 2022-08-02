@@ -32,7 +32,7 @@ func (n *nft) GetNftListByAccountIndex(ctx context.Context, accountIndex, limit,
 		return &nftList, nil
 	}
 	nftList := make([]*nftModel.L2Nft, 0)
-	value, err := n.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountNftList(accountIndex, offset, limit), &nftList, 1, f)
+	value, err := n.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountNftList(accountIndex, offset, limit), &nftList, multcache.NftListTtl, f)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (n *nft) GetAccountNftTotalCount(ctx context.Context, accountIndex int64) (
 	}
 
 	var count int64
-	value, err := n.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountTotalNftCount(accountIndex), &count, 5, f)
+	value, err := n.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountTotalNftCount(accountIndex), &count, multcache.NftCountTtl, f)
 	if err != nil {
 		return count, err
 	}

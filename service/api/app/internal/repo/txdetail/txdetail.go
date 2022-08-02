@@ -31,7 +31,7 @@ func (m *model) GetTxsTotalCountByAccountIndex(ctx context.Context, accountIndex
 		return &count, nil
 	}
 	var countType int64
-	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyTxsCount(), &countType, 5, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyTxsCount(), &countType, multcache.TxCountTtl, f)
 	if err != nil {
 		return 0, err
 	}
@@ -90,7 +90,7 @@ func (m *model) GetDauInTxDetail(ctx context.Context, data string) (int64, error
 		return &count, nil
 	}
 	var countType int64
-	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyTxCountByTimeRange(data), &countType, 5, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyTxCountByTimeRange(data), &countType, multcache.DauTtl, f)
 	if err != nil {
 		return 0, err
 	}
