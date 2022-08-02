@@ -109,34 +109,12 @@ func main() {
 		if err != nil {
 			logx.Info("[committer.CommitterTask main] unable to run:", err)
 
-			cbh, err := ctx.BlockModel.GetCurrentBlockHeight()
-			if err != nil {
-				logx.Errorf("[GetCurrentBlockHeight] err:%v", err)
-				panic("merkle tree re-init.GetCurrentBlockHeight error")
+			accountTree.Reset()
+			for _, assetTree := range accountStateTrees {
+				assetTree.Reset()
 			}
-
-			accountTree, accountStateTrees, err = tree.InitAccountTree(
-				ctx.AccountModel,
-				ctx.AccountHistoryModel,
-				cbh,
-				c.TreeDB.Driver,
-				baseTreeDB,
-			)
-			if err != nil {
-				logx.Error("[committer] => Re-Init MerkleTree error:", err)
-				panic("merkle tree re-init error")
-			}
-			// init nft tree
-			nftTree, err = tree.InitNftTree(
-				ctx.L2NftHistoryModel,
-				cbh,
-				c.TreeDB.Driver,
-				baseTreeDB,
-			)
-			if err != nil {
-				logx.Error("[committer] => InitMerkleTree error:", err)
-				return
-			}
+			nftTree.Reset()
+			liquidityTree.Reset()
 		}
 	})
 	if err != nil {
