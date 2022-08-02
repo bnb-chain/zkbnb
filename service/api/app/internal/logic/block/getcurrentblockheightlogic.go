@@ -30,7 +30,7 @@ func NewGetCurrentBlockHeightLogic(ctx context.Context, svcCtx *svc.ServiceConte
 func (l *GetCurrentBlockHeightLogic) GetCurrentBlockHeight() (resp *types.RespCurrentBlockHeight, err error) {
 	height, err := l.block.GetCurrentBlockHeight(l.ctx)
 	if err != nil {
-		logx.Errorf("[GetBlockWithTxsByBlockHeight] err:%v", err)
+		logx.Errorf("[GetBlockWithTxsByBlockHeight] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}

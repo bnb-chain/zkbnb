@@ -38,15 +38,15 @@ func SendSwapTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalmap c
 		Check Params
 	*/
 	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.GasFeeAssetAmount, err.Error())
 		return "", err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetAAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetAAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.AssetAAmount, err.Error())
 		return "", err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetBMinAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetBMinAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.AssetBMinAmount, err.Error())
 		return "", err
 	}
 	err = util.CheckRequestParam(util.TypeAssetId, reflect.ValueOf(txInfo.AssetAId))
@@ -57,7 +57,7 @@ func SendSwapTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalmap c
 	}
 	err = commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.FromAccountIndex)
 	if err != nil {
-		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
+		logx.Errorf("[DeleteLatestAccountInfoInCache] err: %s", err.Error())
 	}
 	// check gas account index
 	gasAccountIndexConfig, err := svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)

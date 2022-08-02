@@ -106,7 +106,7 @@ func MonitorBlocks(cli *ProviderClient, startHeight int64, pendingBlocksCount ui
 			priorityRequestCountCheck++
 			var event zkbas.ZkbasNewPriorityRequest
 			if err = ZkbasContractAbi.UnpackIntoInterface(&event, EventNameNewPriorityRequest, vlog.Data); err != nil {
-				logx.Errorf("[blockMoniter.MonitorBlocks]<=>[ZkbasContractAbi.UnpackIntoInterface] %v", err)
+				logx.Errorf("[blockMoniter.MonitorBlocks]<=>[ZkbasContractAbi.UnpackIntoInterface] err: %s", err.Error())
 				return err
 			}
 			l1EventInfo.EventType = EventTypeNewPriorityRequest

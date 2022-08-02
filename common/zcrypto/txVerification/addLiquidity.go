@@ -91,7 +91,7 @@ func VerifyAddLiquidityTxInfo(
 	// from account lp
 	lpDeltaForTreasuryAccount, err = util.ComputeSLp(liquidityInfo.AssetA, liquidityInfo.AssetB, liquidityInfo.KLast, liquidityInfo.FeeRate, liquidityInfo.TreasuryRate)
 	if err != nil {
-		logx.Errorf("[ComputeSLp] err: %v", err)
+		logx.Errorf("[ComputeSLp] err: %s", err.Error())
 		return nil, err
 	}
 	poolLp := ffmath.Sub(liquidityInfo.LpAmount, lpDeltaForTreasuryAccount)

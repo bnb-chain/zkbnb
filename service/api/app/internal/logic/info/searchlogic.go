@@ -43,7 +43,7 @@ func (l *SearchLogic) Search(req *types.ReqSearch) (*types.RespSearch, error) {
 	blockHeight, err := strconv.ParseInt(req.Info, 10, 64)
 	if err == nil {
 		if _, err = l.block.GetBlockByBlockHeight(l.ctx, blockHeight); err != nil {
-			logx.Errorf("[GetBlockByBlockHeight] err:%v", err)
+			logx.Errorf("[GetBlockByBlockHeight] err: %s", err.Error())
 			return nil, err
 		}
 		resp.DataType = util.TypeBlockHeight
@@ -55,7 +55,7 @@ func (l *SearchLogic) Search(req *types.ReqSearch) (*types.RespSearch, error) {
 		return resp, nil
 	}
 	if _, err = l.account.GetAccountByAccountName(l.ctx, req.Info); err != nil {
-		logx.Errorf("[GetAccountByAccountName] err:%v", err)
+		logx.Errorf("[GetAccountByAccountName] err: %s", err.Error())
 		return nil, err
 	}
 	resp.DataType = util.TypeAccountName

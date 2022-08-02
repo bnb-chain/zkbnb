@@ -495,7 +495,7 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp *time.Time,
 						nftAsset.CollectionId,
 					)
 					if err != nil {
-						logx.Errorf("[CommitterTask] unable to compute new nft asset leaf: %s", err)
+						logx.Errorf("[CommitterTask] unable to compute new nft asset leaf: %s", err.Error())
 						return err
 					}
 					err = nftTree.Update(mempoolTxDetail.AssetId, nNftAssetLeaf)

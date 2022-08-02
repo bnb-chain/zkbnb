@@ -34,7 +34,7 @@ func (l *GetAccountInfoByPubKeyLogic) GetAccountInfoByPubKey(req *types.ReqGetAc
 	//TODO: check AccountPk
 	info, err := l.account.GetAccountByPk(req.AccountPk)
 	if err != nil {
-		logx.Errorf("[GetAccountByPk] err:%v", err)
+		logx.Errorf("[GetAccountByPk] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
@@ -42,7 +42,7 @@ func (l *GetAccountInfoByPubKeyLogic) GetAccountInfoByPubKey(req *types.ReqGetAc
 	}
 	account, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(l.ctx, info.AccountIndex)
 	if err != nil {
-		logx.Errorf("[GetLatestAccountInfoByAccountIndex] err:%v", err)
+		logx.Errorf("[GetLatestAccountInfoByAccountIndex] err: %s", err.Error())
 		if err == errorcode.RpcErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}

@@ -44,7 +44,7 @@ func (m *sysconf) GetSysconfigByName(ctx context.Context, name string) (*table.S
 	}
 	config1, ok := value.(*table.Sysconfig)
 	if !ok {
-		logx.Errorf("fail to convert value to sysconfig, value=%v, name=%s", value, name)
+		logx.Errorf("fail to convert value to sysconfig, value: %v, name: %s", value, name)
 		return nil, errors.New("conversion error")
 	}
 	return config1, nil

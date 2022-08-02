@@ -666,14 +666,14 @@ func MonitorMempool(ctx context.Context, svcCtx *svc.ServiceContext) error {
 	// update db
 	if err = svcCtx.L2TxEventMonitorModel.CreateMempoolAndActiveAccount(pendingNewAccounts, pendingNewMempoolTxs,
 		pendingNewLiquidityInfos, pendingNewNfts, txs); err != nil {
-		logx.Errorf("[CreateMempoolAndActiveAccount] unable to create mempool txs and update l2 oTx event monitors, error: %v", err)
+		logx.Errorf("[CreateMempoolAndActiveAccount] unable to create mempool txs and update l2 oTx event monitors, error: %s", err.Error())
 		return err
 	}
 	m := NewMempoolMonitor(ctx, svcCtx)
 	// update account cache for globalrpc sendtx interface
 	for _, mempooltx := range pendingNewMempoolTxs {
 		if err := m.commglobalmap.SetLatestAccountInfoInToCache(ctx, mempooltx.AccountIndex); err != nil {
-			logx.Errorf("[CreateMempoolTxs] unable to CreateMempoolTxs, error: %v", err)
+			logx.Errorf("[CreateMempoolTxs] unable to CreateMempoolTxs, error: %s", err.Error())
 		}
 	}
 	logx.Errorf("========== end MonitorMempool ==========")

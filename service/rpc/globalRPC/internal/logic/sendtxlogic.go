@@ -50,55 +50,55 @@ func (l *SendTxLogic) SendTx(in *globalRPCProto.ReqSendTx) (resp *globalRPCProto
 	case commonTx.TxTypeTransfer:
 		resp.TxId, err = sendrawtx.SendTransferTx(l.ctx, l.svcCtx, l.commglobalmap, in.TxInfo)
 		if err != nil {
-			logx.Errorf("[sendTransferTx] err:%v", err)
+			logx.Errorf("[sendTransferTx] err: %s", err.Error())
 			return nil, err
 		}
 	case commonTx.TxTypeSwap:
 		resp.TxId, err = sendrawtx.SendSwapTx(l.ctx, l.svcCtx, l.commglobalmap, in.TxInfo)
 		if err != nil {
-			logx.Errorf("[sendSwapTx] err:%v", err)
+			logx.Errorf("[sendSwapTx] err: %s", err.Error())
 			return nil, err
 		}
 	case commonTx.TxTypeAddLiquidity:
 		resp.TxId, err = sendrawtx.SendAddLiquidityTx(l.ctx, l.svcCtx, l.commglobalmap, in.TxInfo)
 		if err != nil {
-			logx.Errorf("[sendAddLiquidityTx] err:%v", err)
+			logx.Errorf("[sendAddLiquidityTx] err: %s", err.Error())
 			return nil, err
 		}
 	case commonTx.TxTypeRemoveLiquidity:
 		resp.TxId, err = sendrawtx.SendRemoveLiquidityTx(l.ctx, l.svcCtx, l.commglobalmap, in.TxInfo)
 		if err != nil {
-			logx.Errorf("[sendRemoveLiquidityTx] err:%v", err)
+			logx.Errorf("[sendRemoveLiquidityTx] err: %s", err.Error())
 			return nil, err
 		}
 	case commonTx.TxTypeWithdraw:
 		resp.TxId, err = sendrawtx.SendWithdrawTx(l.ctx, l.svcCtx, l.commglobalmap, in.TxInfo)
 		if err != nil {
-			logx.Errorf("[sendWithdrawTx] err:%v", err)
+			logx.Errorf("[sendWithdrawTx] err: %s", err.Error())
 			return nil, err
 		}
 	case commonTx.TxTypeTransferNft:
 		resp.TxId, err = sendrawtx.SendTransferNftTx(l.ctx, l.svcCtx, l.commglobalmap, in.TxInfo)
 		if err != nil {
-			logx.Errorf("[sendWithdrawTx] err:%v", err)
+			logx.Errorf("[sendWithdrawTx] err: %s", err.Error())
 			return nil, err
 		}
 	case commonTx.TxTypeAtomicMatch:
 		resp.TxId, err = sendrawtx.SendAtomicMatchTx(l.ctx, l.svcCtx, l.commglobalmap, in.TxInfo)
 		if err != nil {
-			logx.Errorf("[sendWithdrawTx] err:%v", err)
+			logx.Errorf("[sendWithdrawTx] err: %s", err.Error())
 			return nil, err
 		}
 	case commonTx.TxTypeCancelOffer:
 		resp.TxId, err = sendrawtx.SendCancelOfferTx(l.ctx, l.svcCtx, l.commglobalmap, in.TxInfo)
 		if err != nil {
-			logx.Errorf("[sendWithdrawTx] err:%v", err)
+			logx.Errorf("[sendWithdrawTx] err: %s", err.Error())
 			return nil, err
 		}
 	case commonTx.TxTypeWithdrawNft:
 		resp.TxId, err = sendrawtx.SendWithdrawNftTx(l.ctx, l.svcCtx, l.commglobalmap, in.TxInfo)
 		if err != nil {
-			logx.Errorf("[sendWithdrawTx] err:%v", err)
+			logx.Errorf("[sendWithdrawTx] err: %s", err.Error())
 			return nil, err
 		}
 	case commonTx.TxTypeOffer:

@@ -499,8 +499,7 @@ func (m *defaultMempoolModel) GetMempoolTxByTxHash(hash string) (mempoolTx *Memp
 		if dbTx.Error == errorcode.DbErrNotFound {
 			return mempoolTx, dbTx.Error
 		} else {
-			err := fmt.Sprintf("[mempool.GetMempoolTxByTxHash] %s", dbTx.Error)
-			logx.Errorf(err)
+			logx.Errorf("[mempool.GetMempoolTxByTxHash] %s", dbTx.Error)
 			return nil, errorcode.DbErrSqlOperation
 		}
 	} else if dbTx.RowsAffected == 0 {

@@ -60,29 +60,29 @@ func NewSendTransferNftTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 func (l *SendTransferNftTxLogic) SendTransferNftTx(in *globalRPCProto.ReqSendTxByRawInfo) (respSendTx *globalRPCProto.RespSendTx, err error) {
 	txInfo, err := commonTx.ParseTransferNftTxInfo(in.TxInfo)
 	if err != nil {
-		logx.Errorf("[ParseTransferNftTxInfo] err:%v", err)
+		logx.Errorf("[ParseTransferNftTxInfo] err: %s", err.Error())
 		return nil, err
 	}
 	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err:%s", txInfo.GasFeeAssetAmount, err.Error())
 		return nil, err
 	}
 	if err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.FromAccountIndex)); err != nil {
-		logx.Errorf("[CheckRequestParam] param:%v,err:%v", txInfo.FromAccountIndex, err)
+		logx.Errorf("[CheckRequestParam] param: %d, err: %s", txInfo.FromAccountIndex, err.Error())
 		return nil, err
 	}
 	if err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.ToAccountIndex)); err != nil {
-		logx.Errorf("[CheckRequestParam] param:%v,err:%v", txInfo.ToAccountIndex, err)
+		logx.Errorf("[CheckRequestParam] param: %d, err: %s", txInfo.ToAccountIndex, err.Error())
 		return nil, err
 	}
 	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, l.svcCtx.SysConfigModel); err != nil {
-		logx.Errorf("[checkGasAccountIndex] err: %v", err)
+		logx.Errorf("[checkGasAccountIndex] err: %s", err.Error())
 		return nil, err
 	}
 	var accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
 	nftInfo, err := l.commglobalmap.GetLatestNftInfoForRead(l.ctx, txInfo.NftIndex)
 	if err != nil {
-		logx.Errorf("[GetLatestNftInfoForRead] err:%v", err)
+		logx.Errorf("[GetLatestNftInfoForRead] err: %s", err.Error())
 		return nil, err
 	}
 	accountInfoMap[txInfo.FromAccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.FromAccountIndex)
@@ -145,7 +145,7 @@ func (l *SendTransferNftTxLogic) SendTransferNftTx(in *globalRPCProto.ReqSendTxB
 		TxId: txId,
 	}
 	if err := l.commglobalmap.DeleteLatestNftInfoForReadInCache(l.ctx, txInfo.NftIndex); err != nil {
-		logx.Errorf("[DeleteLatestNftInfoForReadInCache] param:%v, err:%v", txInfo.NftIndex, err)
+		logx.Errorf("[DeleteLatestNftInfoForReadInCache] param: %d, err: %s", txInfo.NftIndex, err.Error())
 		return nil, err
 	}
 	if err = CreateMempoolTx(mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel); err != nil {
@@ -153,7 +153,7 @@ func (l *SendTransferNftTxLogic) SendTransferNftTx(in *globalRPCProto.ReqSendTxB
 	}
 	// update cacke, not key logic
 	if err := l.commglobalmap.SetLatestNftInfoForReadInCache(l.ctx, txInfo.NftIndex); err != nil {
-		logx.Errorf("[SetLatestNftInfoForReadInCache] param:%v, err:%v", txInfo.NftIndex, err)
+		logx.Errorf("[SetLatestNftInfoForReadInCache] param: %d, err: %s", txInfo.NftIndex, err.Error())
 	}
 	return respSendTx, nil
 }
@@ -161,7 +161,7 @@ func (l *SendTransferNftTxLogic) SendTransferNftTx(in *globalRPCProto.ReqSendTxB
 func (l *SendTransferNftTxLogic) createFailTransferNftTx(info *commonTx.TransferNftTxInfo, inputErr error) error {
 	txInfo, err := json.Marshal(info)
 	if err != nil {
-		logx.Errorf("[Marshal] err:%v", err)
+		logx.Errorf("[Marshal] err: %s", err.Error())
 		return err
 	}
 	failTx := &tx.FailTx{
@@ -181,7 +181,7 @@ func (l *SendTransferNftTxLogic) createFailTransferNftTx(info *commonTx.Transfer
 		Memo:      "",
 	}
 	if err = l.failtx.CreateFailTx(failTx); err != nil {
-		logx.Errorf("[CreateFailTx] err:%v", err)
+		logx.Errorf("[CreateFailTx] err: %s", err.Error())
 		return err
 	}
 	return inputErr

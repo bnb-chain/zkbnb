@@ -31,7 +31,7 @@ func (l *GetAccountStatusByAccountPkLogic) GetAccountStatusByAccountPk(req *type
 	//TODO: check pk
 	account, err := l.account.GetBasicAccountByAccountPk(l.ctx, req.AccountPk)
 	if err != nil {
-		logx.Errorf("[GetBasicAccountByAccountPk] err:%v", err)
+		logx.Errorf("[GetBasicAccountByAccountPk] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}

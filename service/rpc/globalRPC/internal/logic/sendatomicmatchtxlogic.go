@@ -73,7 +73,7 @@ func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(reqSendTx *globalRPCProto.Req
 		Check Params
 	*/
 	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v,err: %s", txInfo.GasFeeAssetAmount, err.Error())
 		return respSendTx, err
 	}
 	// check param: from account index
@@ -94,7 +94,7 @@ func (l *SendAtomicMatchTxLogic) SendAtomicMatchTx(reqSendTx *globalRPCProto.Req
 		return respSendTx, l.HandleCreateFailAtomicMatchTx(txInfo, errors.New(errInfo))
 	}
 	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, l.svcCtx.SysConfigModel); err != nil {
-		logx.Errorf("[checkGasAccountIndex] err: %v", err)
+		logx.Errorf("[checkGasAccountIndex] err: %s", err.Error())
 		return nil, err
 	}
 	// check expired at

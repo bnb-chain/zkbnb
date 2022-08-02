@@ -56,23 +56,23 @@ func (l *SendAddLiquidityTxLogic) SendAddLiquidityTx(reqSendTx *globalRPCProto.R
 	respSendTx = &globalRPCProto.RespSendTx{}
 	txInfo, err := commonTx.ParseAddLiquidityTxInfo(reqSendTx.TxInfo)
 	if err != nil {
-		logx.Errorf("[ParseAddLiquidityTxInfo] param:%v,err:%v", reqSendTx.TxInfo, err)
+		logx.Errorf("[ParseAddLiquidityTxInfo] param: %v, err: %s", reqSendTx.TxInfo, err.Error())
 		return nil, err
 	}
 	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.GasFeeAssetAmount, err.Error())
 		return nil, err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetAAmount); err != nil {
-		logx.Errorf("[CheckPackedAmount] param:%v,err:%v", txInfo.AssetAAmount, err)
+		logx.Errorf("[CheckPackedAmount] param: %v, err: %s", txInfo.AssetAAmount, err.Error())
 		return nil, err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetBAmount); err != nil {
-		logx.Errorf("[CheckPackedAmount] param:%v,err:%v", txInfo.AssetBAmount, err)
+		logx.Errorf("[CheckPackedAmount] param: %v, err: %s", txInfo.AssetBAmount, err.Error())
 		return nil, err
 	}
 	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, l.svcCtx.SysConfigModel); err != nil {
-		logx.Errorf("[checkGasAccountIndex] err: %v", err)
+		logx.Errorf("[checkGasAccountIndex] err: %s", err.Error())
 		return nil, err
 	}
 	// check expired at
@@ -82,7 +82,7 @@ func (l *SendAddLiquidityTxLogic) SendAddLiquidityTx(reqSendTx *globalRPCProto.R
 	}
 	liquidityInfo, err := l.commglobalmap.GetLatestLiquidityInfoForWrite(l.ctx, txInfo.PairIndex)
 	if err != nil {
-		logx.Errorf("[GetLatestLiquidityInfoForWrite] err: %v", err)
+		logx.Errorf("[GetLatestLiquidityInfoForWrite] err: %s", err.Error())
 		return nil, err
 	}
 	if liquidityInfo.AssetA == nil || liquidityInfo.AssetB == nil {
@@ -93,7 +93,7 @@ func (l *SendAddLiquidityTxLogic) SendAddLiquidityTx(reqSendTx *globalRPCProto.R
 	if liquidityInfo.AssetA.Cmp(big.NewInt(0)) == 0 {
 		txInfo.LpAmount, err = util.ComputeEmptyLpAmount(txInfo.AssetAAmount, txInfo.AssetBAmount)
 		if err != nil {
-			logx.Errorf("[ComputeEmptyLpAmount] : %v", err)
+			logx.Errorf("[ComputeEmptyLpAmount] err: %s", err.Error())
 			return nil, err
 		}
 	} else {
@@ -105,27 +105,27 @@ func (l *SendAddLiquidityTxLogic) SendAddLiquidityTx(reqSendTx *globalRPCProto.R
 	if accountInfoMap[txInfo.FromAccountIndex] == nil {
 		accountInfoMap[txInfo.FromAccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.FromAccountIndex)
 		if err != nil {
-			logx.Errorf("[GetLatestAccountInfo] param:%v,err:%v", txInfo.FromAccountIndex, err)
+			logx.Errorf("[GetLatestAccountInfo] param: %d, err: %s", txInfo.FromAccountIndex, err.Error())
 			return nil, err
 		}
 	}
 	if accountInfoMap[txInfo.GasAccountIndex] == nil {
 		accountInfoMap[txInfo.GasAccountIndex], err = l.commglobalmap.GetBasicAccountInfo(l.ctx, txInfo.GasAccountIndex)
 		if err != nil {
-			logx.Errorf("[GetLatestAccountInfo] param:%v,err:%v", txInfo.GasAccountIndex, err)
+			logx.Errorf("[GetLatestAccountInfo] param: %d, err: %s", txInfo.GasAccountIndex, err.Error())
 			return nil, err
 		}
 	}
 	if accountInfoMap[liquidityInfo.TreasuryAccountIndex] == nil {
 		accountInfoMap[liquidityInfo.TreasuryAccountIndex], err = l.commglobalmap.GetBasicAccountInfo(l.ctx, liquidityInfo.TreasuryAccountIndex)
 		if err != nil {
-			logx.Errorf("[GetLatestAccountInfo] param:%v,err:%v", liquidityInfo.TreasuryAccountIndex, err)
+			logx.Errorf("[GetLatestAccountInfo] param: %d, err: %s", liquidityInfo.TreasuryAccountIndex, err.Error())
 			return nil, err
 		}
 	}
 	txDetails, err := txVerification.VerifyAddLiquidityTxInfo(accountInfoMap, liquidityInfo, txInfo)
 	if err != nil {
-		logx.Errorf("[VerifyAddLiquidityTxInfo] param:%v, err:%v", txInfo, err)
+		logx.Errorf("[VerifyAddLiquidityTxInfo] param: %v, err: %s", txInfo, err.Error())
 		return nil, l.createFailAddLiquidityTx(txInfo, err)
 	}
 	txInfoBytes, err := json.Marshal(txInfo)
@@ -150,16 +150,16 @@ func (l *SendAddLiquidityTxLogic) SendAddLiquidityTx(reqSendTx *globalRPCProto.R
 	)
 	respSendTx.TxId = txId
 	if err := l.commglobalmap.DeleteLatestLiquidityInfoForWriteInCache(l.ctx, txInfo.PairIndex); err != nil {
-		logx.Errorf("[DeleteLatestLiquidityInfoForWriteInCache] param:%v, err:%v", txInfo.PairIndex, err)
+		logx.Errorf("[DeleteLatestLiquidityInfoForWriteInCache] param: %d, err: %s", txInfo.PairIndex, err.Error())
 		return nil, err
 	}
 	if err = CreateMempoolTx(mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel); err != nil {
-		logx.Errorf("[CreateMempoolTx] param:%v, err:%v", mempoolTx, err)
+		logx.Errorf("[CreateMempoolTx] param: %v, err: %s", mempoolTx, err.Error())
 		return nil, err
 	}
 	// update cacke, not key logic
 	if err := l.commglobalmap.SetLatestLiquidityInfoForWrite(l.ctx, txInfo.PairIndex); err != nil {
-		logx.Errorf("[SetLatestLiquidityInfoForWrite] param:%v, err:%v", txInfo.PairIndex, err)
+		logx.Errorf("[SetLatestLiquidityInfoForWrite] param: %d, err: %s", txInfo.PairIndex, err.Error())
 	}
 	return respSendTx, nil
 }
@@ -167,7 +167,7 @@ func (l *SendAddLiquidityTxLogic) SendAddLiquidityTx(reqSendTx *globalRPCProto.R
 func (l *SendAddLiquidityTxLogic) createFailAddLiquidityTx(info *commonTx.AddLiquidityTxInfo, errInput error) error {
 	txInfo, err := json.Marshal(info)
 	if err != nil {
-		logx.Errorf("[createFailAddLiquidityTx] Marshal param:%v, err:%v", txInfo, err)
+		logx.Errorf("[createFailAddLiquidityTx] Marshal param: %v, err: %s", txInfo, err.Error())
 		return err
 	}
 	failTx := &tx.FailTx{
@@ -192,7 +192,7 @@ func (l *SendAddLiquidityTxLogic) createFailAddLiquidityTx(info *commonTx.AddLiq
 func (l *SendAddLiquidityTxLogic) checkExpiredAt(expiredAt int64) error {
 	now := time.Now().UnixMilli()
 	if expiredAt < now {
-		logx.Errorf("[sendWithdrawTx] invalid time stamp,expiredAt:%v,now:%v", expiredAt, now)
+		logx.Errorf("[sendWithdrawTx] invalid time stamp,expiredAt: %d, now: %d", expiredAt, now)
 		return errorcode.RpcErrInvalidExpiredAt
 	}
 	return nil

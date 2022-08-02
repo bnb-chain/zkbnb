@@ -32,11 +32,11 @@ func SendTransferTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalm
 		return "", errors.New(errInfo)
 	}
 	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.GasFeeAssetAmount, err.Error())
 		return "", err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.AssetAmount, err.Error())
 		return "", err
 	}
 	err = util.CheckRequestParam(util.TypeAssetId, reflect.ValueOf(txInfo.AssetId))

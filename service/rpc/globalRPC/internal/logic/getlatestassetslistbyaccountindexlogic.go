@@ -30,7 +30,7 @@ func NewGetLatestAssetsListByAccountIndexLogic(ctx context.Context, svcCtx *svc.
 func (l *GetLatestAssetsListByAccountIndexLogic) GetLatestAssetsListByAccountIndex(in *globalRPCProto.ReqGetLatestAssetsListByAccountIndex) (*globalRPCProto.RespGetLatestAssetsListByAccountIndex, error) {
 	accountInfo, err := l.commglobalmap.GetLatestAccountInfoWithCache(l.ctx, int64(in.AccountIndex))
 	if err != nil {
-		logx.Errorf("[GetLatestAccountInfo] err:%v", err)
+		logx.Errorf("[GetLatestAccountInfo] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.RpcErrNotFound
 		}

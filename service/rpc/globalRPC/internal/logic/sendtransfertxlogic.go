@@ -57,32 +57,32 @@ func (l *SendTransferTxLogic) SendTransferTx(in *globalRPCProto.ReqSendTxByRawIn
 	respSendTx = &globalRPCProto.RespSendTx{}
 	txInfo, err := commonTx.ParseTransferTxInfo(in.TxInfo)
 	if err != nil {
-		logx.Errorf("[ParseTransferTxInfo] err:%v", err)
+		logx.Errorf("[ParseTransferTxInfo] err: %s", err.Error())
 		return nil, err
 	}
 	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.GasFeeAssetAmount, err.Error())
 		return nil, err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetAmount); err != nil {
-		logx.Errorf("[CheckRequestParam] param:%v,err:%v", txInfo.AssetAmount, err)
+		logx.Errorf("[CheckRequestParam] param: %v, err: %s", txInfo.AssetAmount, err.Error())
 		return nil, err
 	}
 	if err = util.CheckRequestParam(util.TypeAssetId, reflect.ValueOf(txInfo.AssetId)); err != nil {
-		logx.Errorf("[CheckRequestParam] param:%v,err:%v", txInfo.AssetId, err)
+		logx.Errorf("[CheckRequestParam] param: %d, err: %s", txInfo.AssetId, err.Error())
 		return nil, err
 	}
 	if err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.FromAccountIndex)); err != nil {
-		logx.Errorf("[CheckRequestParam] param:%v,err:%v", txInfo.FromAccountIndex, err)
+		logx.Errorf("[CheckRequestParam] param: %d, err: %s", txInfo.FromAccountIndex, err.Error())
 		return nil, err
 	}
 	err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.ToAccountIndex))
 	if err != nil {
-		logx.Errorf("[CheckRequestParam] param:%v,err:%v", txInfo.ToAccountIndex, err)
+		logx.Errorf("[CheckRequestParam] param: %d, err: %s", txInfo.ToAccountIndex, err.Error())
 		return nil, err
 	}
 	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, l.svcCtx.SysConfigModel); err != nil {
-		logx.Errorf("[checkGasAccountIndex] err: %v", err)
+		logx.Errorf("[checkGasAccountIndex] err: %s", err.Error())
 		return nil, err
 	}
 	now := time.Now().UnixMilli()
@@ -144,10 +144,10 @@ func (l *SendTransferTxLogic) SendTransferTx(in *globalRPCProto.ReqSendTxByRawIn
 		return respSendTx, l.createFailTransferTx(txInfo, err)
 	}
 	if err := l.commglobalmap.SetLatestAccountInfoInToCache(l.ctx, txInfo.FromAccountIndex); err != nil {
-		logx.Errorf("[SetLatestAccountInfoInToCache] unable to set account info in cache: %v", err)
+		logx.Errorf("[SetLatestAccountInfoInToCache] unable to set account info in cache: %s", err.Error())
 	}
 	if err := l.commglobalmap.SetLatestAccountInfoInToCache(l.ctx, txInfo.ToAccountIndex); err != nil {
-		logx.Errorf("[SetLatestAccountInfoInToCache] unable to set account info in cache: %v", err)
+		logx.Errorf("[SetLatestAccountInfoInToCache] unable to set account info in cache: %s", err.Error())
 	}
 	return respSendTx, nil
 }
@@ -155,7 +155,7 @@ func (l *SendTransferTxLogic) SendTransferTx(in *globalRPCProto.ReqSendTxByRawIn
 func (l *SendTransferTxLogic) createFailTransferTx(info *commonTx.TransferTxInfo, inputErr error) error {
 	txInfo, err := json.Marshal(info)
 	if err != nil {
-		logx.Errorf("[Marshal] err:%v", err)
+		logx.Errorf("[Marshal] err: %s", err.Error())
 		return err
 	}
 	failTx := &tx.FailTx{
@@ -173,7 +173,7 @@ func (l *SendTransferTxLogic) createFailTransferTx(info *commonTx.TransferTxInfo
 		Memo:          info.Memo,
 	}
 	if err = l.svcCtx.FailTxModel.CreateFailTx(failTx); err != nil {
-		logx.Errorf("[CreateFailTx] err:%v", err)
+		logx.Errorf("[CreateFailTx] err: %s", err.Error())
 		return err
 	}
 	return inputErr

@@ -37,7 +37,7 @@ func SendCancelOfferTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 		return "", errors.New(errInfo)
 	}
 	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.GasFeeAssetAmount, err.Error())
 		return "", err
 	}
 	// check param: from account index

@@ -37,28 +37,28 @@ func SendRemoveLiquidityTx(ctx context.Context, svcCtx *svc.ServiceContext, comm
 	}
 
 	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.GasFeeAssetAmount, err.Error())
 		return "", err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetAMinAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetAMinAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.AssetAMinAmount, err.Error())
 		return "", err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetBMinAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetBMinAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.AssetBMinAmount, err.Error())
 		return "", err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetAAmountDelta); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetAAmountDelta, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.AssetAAmountDelta, err.Error())
 		return "", err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetBAmountDelta); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetBAmountDelta, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.AssetBAmountDelta, err.Error())
 		return "", err
 	}
 	err = commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.FromAccountIndex)
 	if err != nil {
-		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
+		logx.Errorf("[DeleteLatestAccountInfoInCache] err: %s", err.Error())
 	}
 	// check gas account index
 	gasAccountIndexConfig, err := svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
@@ -68,7 +68,7 @@ func SendRemoveLiquidityTx(ctx context.Context, svcCtx *svc.ServiceContext, comm
 	}
 	gasAccountIndex, err := strconv.ParseInt(gasAccountIndexConfig.Value, 10, 64)
 	if err != nil {
-		logx.Errorf("[ParseInt] err: %s", err)
+		logx.Errorf("[ParseInt] err: %s", err.Error())
 		return "", handleCreateFailRemoveLiquidityTx(svcCtx.FailTxModel, txInfo, errors.New("[sendRemoveLiquidityTx] unable to parse big int"))
 	}
 	if gasAccountIndex != txInfo.GasAccountIndex {
@@ -171,7 +171,7 @@ func SendRemoveLiquidityTx(ctx context.Context, svcCtx *svc.ServiceContext, comm
 		liquidityInfo,
 		txInfo)
 	if err != nil {
-		logx.Errorf("[VerifyRemoveLiquidityTxInfo] err: %v", err)
+		logx.Errorf("[VerifyRemoveLiquidityTxInfo] err: %s", err.Error())
 		return "", handleCreateFailRemoveLiquidityTx(svcCtx.FailTxModel, txInfo, err)
 	}
 
@@ -181,7 +181,7 @@ func SendRemoveLiquidityTx(ctx context.Context, svcCtx *svc.ServiceContext, comm
 	// write into mempool
 	txInfoBytes, err := json.Marshal(txInfo)
 	if err != nil {
-		logx.Errorf("[Marshal] err: %v", err)
+		logx.Errorf("[Marshal] err: %s", err.Error())
 		return "", handleCreateFailRemoveLiquidityTx(svcCtx.FailTxModel, txInfo, err)
 	}
 	txId, mempoolTx := ConstructMempoolTx(
@@ -216,7 +216,7 @@ func SendRemoveLiquidityTx(ctx context.Context, svcCtx *svc.ServiceContext, comm
 	// insert into mempool
 	err = CreateMempoolTx(mempoolTx, svcCtx.RedisConnection, svcCtx.MempoolModel)
 	if err != nil {
-		logx.Errorf("[CreateMempoolTx] err: %v", err)
+		logx.Errorf("[CreateMempoolTx] err: %s", err.Error())
 		return "", handleCreateFailRemoveLiquidityTx(svcCtx.FailTxModel, txInfo, err)
 	}
 	// update redis

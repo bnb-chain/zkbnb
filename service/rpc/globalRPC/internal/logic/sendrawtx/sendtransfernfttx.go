@@ -37,7 +37,7 @@ func SendTransferNftTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 		Check Params
 	*/
 	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.GasFeeAssetAmount, err.Error())
 		return "", err
 	}
 	// check param: from account index
@@ -54,11 +54,11 @@ func SendTransferNftTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 	}
 	commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.FromAccountIndex)
 	if err != nil {
-		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
+		logx.Errorf("[DeleteLatestAccountInfoInCache] err: %s", err.Error())
 	}
 	commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.ToAccountIndex)
 	if err != nil {
-		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
+		logx.Errorf("[DeleteLatestAccountInfoInCache] err: %s", err.Error())
 	}
 	// check gas account index
 	gasAccountIndexConfig, err := svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)

@@ -70,11 +70,11 @@ func (l *SendWithdrawTxLogic) SendWithdrawTx(in *globalRPCProto.ReqSendTxByRawIn
 		Check Params
 	*/
 	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.GasFeeAssetAmount, err.Error())
 		return respSendTx, err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.AssetAmount, err.Error())
 		return respSendTx, err
 	}
 	err = util.CheckRequestParam(util.TypeAssetId, reflect.ValueOf(txInfo.AssetId))
@@ -89,7 +89,7 @@ func (l *SendWithdrawTxLogic) SendWithdrawTx(in *globalRPCProto.ReqSendTxByRawIn
 		return respSendTx, l.HandleCreateFailWithdrawTx(txInfo, errors.New(errInfo))
 	}
 	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, l.svcCtx.SysConfigModel); err != nil {
-		logx.Errorf("[checkGasAccountIndex] err: %v", err)
+		logx.Errorf("[checkGasAccountIndex] err: %s", err.Error())
 		return nil, err
 	}
 	// check expired at

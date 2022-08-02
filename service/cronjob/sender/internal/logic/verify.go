@@ -124,7 +124,7 @@ func SendVerifiedAndExecutedBlocks(
 		// get blocks from block table
 		blocks, err = blockModel.GetBlocksForProverBetween(1, int64(maxBlockCount))
 		if err != nil {
-			logx.Errorf("[SendVerifiedAndExecutedBlocks] GetBlocksForProverBetween err:%v, maxBlockCount:%v", err, maxBlockCount)
+			logx.Errorf("[SendVerifiedAndExecutedBlocks] GetBlocksForProverBetween err: %s, maxBlockCount: %d", err.Error(), maxBlockCount)
 			return err
 		}
 		pendingVerifyAndExecuteBlocks, err = ConvertBlocksToVerifyAndExecuteBlockInfos(blocks)
@@ -181,7 +181,7 @@ func SendVerifiedAndExecutedBlocks(
 		txHash, err := zkbas.VerifyAndExecuteBlocks(cli, authCli, zkbasInstance,
 			pendingVerifyAndExecuteBlocks, proofs, gasPrice, gasLimit)
 		if err != nil {
-			logx.Errorf("[SendVerifiedAndExecutedBlocks] VerifyAndExecuteBlocks err:%v", err)
+			logx.Errorf("[SendVerifiedAndExecutedBlocks] VerifyAndExecuteBlocks err: %s", err.Error())
 			return err
 		}
 		// update l1 tx sender table records
@@ -193,14 +193,14 @@ func SendVerifiedAndExecutedBlocks(
 		}
 		isValid, err := l1TxSenderModel.CreateL1TxSender(newSender)
 		if err != nil {
-			logx.Errorf("[SendVerifiedAndExecutedBlocks] CreateL1TxSender err:%v", err)
+			logx.Errorf("[SendVerifiedAndExecutedBlocks] CreateL1TxSender err: %s", err.Error())
 			return err
 		}
 		if !isValid {
 			logx.Errorf("[SendVerifiedAndExecutedBlocks] cannot create new senders")
 			return errors.New("[SendVerifiedAndExecutedBlocks] cannot create new senders")
 		}
-		logx.Errorf("[SendVerifiedAndExecutedBlocks] new blocks have been verified and executed(height): %v", newSender.L2BlockHeight)
+		logx.Errorf("[SendVerifiedAndExecutedBlocks] new blocks have been verified and executed(height): %d", newSender.L2BlockHeight)
 		return nil
 	}
 	return nil

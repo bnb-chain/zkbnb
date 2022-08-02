@@ -58,7 +58,7 @@ func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *
 	for _, txDetail := range txDetails {
 		tx, err := l.tx.GetTxByTxID(l.ctx, txDetail.TxId)
 		if err != nil {
-			logx.Errorf("[GetTxByTxID] err:%v", err)
+			logx.Errorf("[GetTxByTxID] err: %s", err.Error())
 			return nil, err
 		}
 		if tx.TxType == int64(req.TxType) {

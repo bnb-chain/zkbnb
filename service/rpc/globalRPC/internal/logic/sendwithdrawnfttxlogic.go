@@ -71,7 +71,7 @@ func (l *SendWithdrawNftTxLogic) SendWithdrawNftTx(in *globalRPCProto.ReqSendTxB
 		Check Params
 	*/
 	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.GasFeeAssetAmount, err.Error())
 		return respSendTx, err
 	}
 	// check param: from account index
@@ -81,7 +81,7 @@ func (l *SendWithdrawNftTxLogic) SendWithdrawNftTx(in *globalRPCProto.ReqSendTxB
 		return respSendTx, l.HandleCreateFailWithdrawNftTx(txInfo, errors.New(errInfo))
 	}
 	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, l.svcCtx.SysConfigModel); err != nil {
-		logx.Errorf("[checkGasAccountIndex] err: %v", err)
+		logx.Errorf("[checkGasAccountIndex] err: %s", err.Error())
 		return nil, err
 	}
 	var (

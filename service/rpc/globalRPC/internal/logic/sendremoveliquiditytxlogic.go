@@ -68,27 +68,27 @@ func (l *SendRemoveLiquidityTxLogic) SendRemoveLiquidityTx(in *globalRPCProto.Re
 	}
 
 	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v ,err: %s", txInfo.GasFeeAssetAmount, err.Error())
 		return respSendTx, err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetAMinAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetAMinAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v ,err: %s", txInfo.AssetAMinAmount, err.Error())
 		return respSendTx, err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetBMinAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetBMinAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v ,err: %s", txInfo.AssetBMinAmount, err.Error())
 		return respSendTx, err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetAAmountDelta); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetAAmountDelta, err)
+		logx.Errorf("[CheckPackedFee] param: %v ,err: %s", txInfo.AssetAAmountDelta, err.Error())
 		return respSendTx, err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetBAmountDelta); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetBAmountDelta, err)
+		logx.Errorf("[CheckPackedFee] param: %v ,err: %s", txInfo.AssetBAmountDelta, err.Error())
 		return respSendTx, err
 	}
 	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, l.svcCtx.SysConfigModel); err != nil {
-		logx.Errorf("[checkGasAccountIndex] err: %v", err)
+		logx.Errorf("[checkGasAccountIndex] err: %s", err.Error())
 		return nil, err
 	}
 	// check expired at
@@ -125,7 +125,7 @@ func (l *SendRemoveLiquidityTxLogic) SendRemoveLiquidityTx(in *globalRPCProto.Re
 	)
 	assetAAmount, assetBAmount, err = util.ComputeRemoveLiquidityAmount(liquidityInfo, txInfo.LpAmount)
 	if err != nil {
-		logx.Errorf("[ComputeRemoveLiquidityAmount] err: %v", err)
+		logx.Errorf("[ComputeRemoveLiquidityAmount] err: %s", err.Error())
 		return respSendTx, err
 	}
 	if assetAAmount.Cmp(txInfo.AssetAMinAmount) < 0 || assetBAmount.Cmp(txInfo.AssetBMinAmount) < 0 {
