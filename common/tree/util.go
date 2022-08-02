@@ -113,24 +113,39 @@ func CommitTrees(version uint64,
 	liquidityTree bsmt.SparseMerkleTree,
 	nftTree bsmt.SparseMerkleTree) error {
 
-	prunedVersion := bsmt.Version(version)
-	ver, err := accountTree.Commit(&prunedVersion)
+	accPrunedVersion := bsmt.Version(version)
+	if accountTree.LatestVersion() < accPrunedVersion {
+		accPrunedVersion = accountTree.LatestVersion()
+	}
+	ver, err := accountTree.Commit(&accPrunedVersion)
 	if err != nil {
-		return errors.Wrapf(err, "unable to commit account tree, tree ver: %d, prune ver: %d", ver, prunedVersion)
+		return errors.Wrapf(err, "unable to commit account tree, tree ver: %d, prune ver: %d", ver, accPrunedVersion)
 	}
 	for idx, assetTree := range *assetTrees {
-		ver, err := assetTree.Commit(&prunedVersion)
+		assetPrunedVersion := bsmt.Version(version)
+		if assetTree.LatestVersion() < assetPrunedVersion {
+			assetPrunedVersion = assetTree.LatestVersion()
+		}
+		ver, err := assetTree.Commit(&assetPrunedVersion)
 		if err != nil {
-			return errors.Wrapf(err, "unable to commit asset tree [%d], tree ver: %d, prune ver: %d", idx, ver, prunedVersion)
+			return errors.Wrapf(err, "unable to commit asset tree [%d], tree ver: %d, prune ver: %d", idx, ver, assetPrunedVersion)
 		}
 	}
-	ver, err = liquidityTree.Commit(&prunedVersion)
-	if err != nil {
-		return errors.Wrapf(err, "unable to commit liquidity tree, tree ver: %d, prune ver: %d", ver, prunedVersion)
+	liquidityPrunedVersion := bsmt.Version(version)
+	if liquidityTree.LatestVersion() < liquidityPrunedVersion {
+		liquidityPrunedVersion = liquidityTree.LatestVersion()
 	}
-	ver, err = nftTree.Commit(&prunedVersion)
+	ver, err = liquidityTree.Commit(&liquidityPrunedVersion)
 	if err != nil {
-		return errors.Wrapf(err, "unable to commit nft tree, tree ver: %d, prune ver: %d", ver, prunedVersion)
+		return errors.Wrapf(err, "unable to commit liquidity tree, tree ver: %d, prune ver: %d", ver, liquidityPrunedVersion)
+	}
+	nftPrunedVersion := bsmt.Version(version)
+	if nftTree.LatestVersion() < nftPrunedVersion {
+		nftPrunedVersion = nftTree.LatestVersion()
+	}
+	ver, err = nftTree.Commit(&nftPrunedVersion)
+	if err != nil {
+		return errors.Wrapf(err, "unable to commit nft tree, tree ver: %d, prune ver: %d", ver, nftPrunedVersion)
 	}
 	return nil
 }
