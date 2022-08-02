@@ -19,7 +19,6 @@ package txVerification
 
 import (
 	"errors"
-	"log"
 	"math/big"
 
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
@@ -53,7 +52,7 @@ func VerifyMintNftTxInfo(
 	}
 	// verify nonce
 	if txInfo.Nonce != accountInfoMap[txInfo.CreatorAccountIndex].Nonce {
-		log.Println("[VerifyMintNftTxInfo] invalid nonce")
+		logx.Errorf("[VerifyMintNftTxInfo] invalid nonce: %d, account index: %d", txInfo.Nonce, txInfo.CreatorAccountIndex)
 		return nil, errors.New("[VerifyMintNftTxInfo] invalid nonce")
 	}
 	// set tx info
@@ -109,11 +108,11 @@ func VerifyMintNftTxInfo(
 	}
 	isValid, err := pk.Verify(txInfo.Sig, msgHash, hFunc)
 	if err != nil {
-		log.Println("[VerifyMintNftTxInfo] unable to verify signature:", err)
+		logx.Errorf("[VerifyMintNftTxInfo] unable to verify signature: %s", err.Error())
 		return nil, err
 	}
 	if !isValid {
-		log.Println("[VerifyMintNftTxInfo] invalid signature")
+		logx.Error("[VerifyMintNftTxInfo] invalid signature")
 		return nil, errors.New("[VerifyMintNftTxInfo] invalid signature")
 	}
 	// compute tx details

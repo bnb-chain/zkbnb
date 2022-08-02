@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"gorm.io/gorm"
 
@@ -31,6 +33,7 @@ func (m *block) GetBlockByBlockHeight(ctx context.Context, blockHeight int64) (*
 		_block := &table.Block{}
 		dbTx := m.db.Table(m.table).Where("block_height = ?", blockHeight).Find(_block)
 		if dbTx.Error != nil {
+			logx.Errorf("fail to get block by height: %d, error: %s", blockHeight, dbTx.Error.Error())
 			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			return nil, errorcode.DbErrNotFound
@@ -38,7 +41,7 @@ func (m *block) GetBlockByBlockHeight(ctx context.Context, blockHeight int64) (*
 		return _block, nil
 	}
 	_block := &table.Block{}
-	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetBlockByBlockHeight+strconv.FormatInt(blockHeight, 10), _block, 10, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetBlockByBlockHeight+strconv.FormatInt(blockHeight, 10), _block, multcache.BlockTtl, f)
 	if err != nil {
 		return nil, err
 	}
@@ -52,6 +55,7 @@ func (m *block) GetCommitedBlocksCount(ctx context.Context) (int64, error) {
 		var count int64
 		dbTx := m.db.Table(m.table).Where("block_status = ? and deleted_at is NULL", table.StatusCommitted).Count(&count)
 		if dbTx.Error != nil {
+			logx.Errorf("fail to get committed block count, error: %s", dbTx.Error.Error())
 			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			return nil, errorcode.DbErrNotFound
@@ -59,7 +63,7 @@ func (m *block) GetCommitedBlocksCount(ctx context.Context) (int64, error) {
 		return &count, nil
 	}
 	var count int64
-	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetCommittedBlocksCount, &count, 5, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetCommittedBlocksCount, &count, multcache.BlockCountTtl, f)
 	if err != nil {
 		return count, err
 	}
@@ -72,6 +76,7 @@ func (m *block) GetVerifiedBlocksCount(ctx context.Context) (int64, error) {
 		var count int64
 		dbTx := m.db.Table(m.table).Where("block_status = ? and deleted_at is NULL", table.StatusVerifiedAndExecuted).Count(&count)
 		if dbTx.Error != nil {
+			logx.Errorf("fail to get verified block count, error: %s", dbTx.Error.Error())
 			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			return nil, errorcode.DbErrNotFound
@@ -79,7 +84,7 @@ func (m *block) GetVerifiedBlocksCount(ctx context.Context) (int64, error) {
 		return &count, nil
 	}
 	var count int64
-	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetVerifiedBlocksCount, &count, 5, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetVerifiedBlocksCount, &count, multcache.BlockCountTtl, f)
 	if err != nil {
 		return count, err
 	}
@@ -94,6 +99,7 @@ func (m *block) GetBlockWithTxsByCommitment(ctx context.Context, blockCommitment
 		_block := &table.Block{}
 		dbTx := m.db.Table(m.table).Where("block_commitment = ?", blockCommitment).Find(_block)
 		if dbTx.Error != nil {
+			logx.Errorf("fail to get block by commitment: %d, error: %s", blockCommitment, dbTx.Error.Error())
 			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			return nil, errorcode.DbErrNotFound
@@ -104,7 +110,7 @@ func (m *block) GetBlockWithTxsByCommitment(ctx context.Context, blockCommitment
 		return _block, nil
 	}
 	_block := &table.Block{}
-	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetBlockBlockCommitment+blockCommitment, _block, 10, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetBlockBlockCommitment+blockCommitment, _block, multcache.BlockTtl, f)
 	if err != nil {
 		return nil, err
 	}
@@ -119,6 +125,7 @@ func (m *block) GetBlockWithTxsByBlockHeight(ctx context.Context, blockHeight in
 		_block := &table.Block{}
 		dbTx := m.db.Table(m.table).Where("block_height = ?", blockHeight).Find(_block)
 		if dbTx.Error != nil {
+			logx.Errorf("fail to get block by height: %d, error: %s", blockHeight, dbTx.Error.Error())
 			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			return nil, errorcode.DbErrNotFound
@@ -130,7 +137,7 @@ func (m *block) GetBlockWithTxsByBlockHeight(ctx context.Context, blockHeight in
 		return _block, nil
 	}
 	block := &table.Block{}
-	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetBlockWithTxHeight+strconv.FormatInt(blockHeight, 10), block, 10, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetBlockWithTxHeight+strconv.FormatInt(blockHeight, 10), block, multcache.BlockTtl, f)
 	if err != nil {
 		return nil, err
 	}
@@ -144,6 +151,7 @@ func (m *block) GetBlocksList(ctx context.Context, limit int64, offset int64) ([
 		blockList := []*table.Block{}
 		dbTx := m.db.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("block_height desc").Find(&blockList)
 		if dbTx.Error != nil {
+			logx.Errorf("fail to get blocks offset: %d, limit: %d, error: %s", offset, limit, dbTx.Error.Error())
 			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			return nil, errorcode.DbErrNotFound
@@ -156,7 +164,7 @@ func (m *block) GetBlocksList(ctx context.Context, limit int64, offset int64) ([
 		return &blockList, nil
 	}
 	blockList := []*table.Block{}
-	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetBlockList+strconv.FormatInt(limit, 10)+strconv.FormatInt(offset, 10), &blockList, 10, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetBlockList+strconv.FormatInt(limit, 10)+strconv.FormatInt(offset, 10), &blockList, multcache.BlockListTtl, f)
 	if err != nil {
 		return nil, err
 	}
@@ -172,6 +180,7 @@ func (m *block) GetBlocksTotalCount(ctx context.Context) (int64, error) {
 		var count int64
 		dbTx := m.db.Table(m.table).Where("deleted_at is NULL").Count(&count)
 		if dbTx.Error != nil {
+			logx.Errorf("fail to get block count, error: %s", dbTx.Error.Error())
 			return 0, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			return 0, errorcode.DbErrNotFound
@@ -179,7 +188,7 @@ func (m *block) GetBlocksTotalCount(ctx context.Context) (int64, error) {
 		return &count, nil
 	}
 	var count int64
-	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetBlocksTotalCount, &count, 5, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetBlocksTotalCount, &count, multcache.BlockCountTtl, f)
 	if err != nil {
 		return count, err
 	}
@@ -194,6 +203,7 @@ func (m *block) GetCurrentBlockHeight(ctx context.Context) (int64, error) {
 		var blockHeight int64
 		dbTx := m.db.Table(m.table).Select("block_height").Order("block_height desc").Limit(1).Find(&blockHeight)
 		if dbTx.Error != nil {
+			logx.Errorf("fail to get block height, error: %s", dbTx.Error.Error())
 			return 0, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			return 0, errorcode.DbErrNotFound
@@ -202,7 +212,7 @@ func (m *block) GetCurrentBlockHeight(ctx context.Context) (int64, error) {
 	}
 
 	var height int64
-	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetCurrentBlockHeight, &height, 5, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetCurrentBlockHeight, &height, multcache.BlockHeightTtl, f)
 	if err != nil {
 		return height, err
 	}

@@ -85,7 +85,7 @@ func (m *model) GetLatestLiquidityInfoForRead(ctx context.Context, pairIndex int
 	// and delete the cache where mempool be changed
 	infoBytes, err := json.Marshal(liquidityInfo)
 	if err != nil {
-		logx.Errorf("[json.Marshal] unable to marshal: %v", err)
+		logx.Errorf("[json.Marshal] unable to marshal, err : %s", err.Error())
 		return nil, err
 	}
 	if err := m.cache.Set(ctx, multcache.SpliceCacheKeyLiquidityForReadByPairIndex(pairIndex), infoBytes, 1); err != nil {
@@ -116,7 +116,7 @@ func (m *model) GetLatestLiquidityInfoForWrite(ctx context.Context, pairIndex in
 		dbLiquidityInfo.TreasuryRate,
 	)
 	if err != nil {
-		logx.Errorf("[ConstructLiquidityInfo] err: %v", err)
+		logx.Errorf("[ConstructLiquidityInfo] err: %s", err.Error())
 		return nil, err
 	}
 	for _, mempoolTx := range mempoolTxs {

@@ -29,7 +29,7 @@ func NewSendTransferTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Se
 func (l *SendTransferTxLogic) SendTransferTx(req *types.ReqSendTransferTx) (*types.RespSendTransferTx, error) {
 	txIndex, err := l.globalRpc.SendTransferTx(l.ctx, req.TxInfo)
 	if err != nil {
-		logx.Error("[transaction.SendTransferTx] err:%v", err)
+		logx.Errorf("[transaction.SendTransferTx] err: %s", err.Error())
 		return nil, err
 	}
 	return &types.RespSendTransferTx{TxId: txIndex}, nil

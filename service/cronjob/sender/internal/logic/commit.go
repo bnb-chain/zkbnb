@@ -41,14 +41,14 @@ func SendCommittedBlocks(param *SenderParam, l1TxSenderModel L1TxSenderModel,
 	// scan l1 tx sender table for handled committed height
 	lastHandledBlock, getHandleErr := l1TxSenderModel.GetLatestHandledBlock(CommitTxType)
 	if getHandleErr != nil && getHandleErr != errorcode.DbErrNotFound {
-		logx.Errorf("[SendVerifiedAndExecutedBlocks] GetLatestHandledBlock err:%v", getHandleErr)
+		logx.Errorf("[SendVerifiedAndExecutedBlocks] GetLatestHandledBlock err: %s", getHandleErr.Error())
 		return getHandleErr
 	}
 	// scan l1 tx sender table for pending committed height that higher than the latest handled height
 	pendingSender, getPendingerr := l1TxSenderModel.GetLatestPendingBlock(CommitTxType)
 	if getPendingerr != nil {
 		if getPendingerr != errorcode.DbErrNotFound {
-			logx.Errorf("[SendVerifiedAndExecutedBlocks] GetLatestPendingBlock err:%v", getPendingerr)
+			logx.Errorf("[SendVerifiedAndExecutedBlocks] GetLatestPendingBlock err: %s", getPendingerr.Error())
 			return getPendingerr
 		}
 	}
@@ -125,7 +125,7 @@ func SendCommittedBlocks(param *SenderParam, l1TxSenderModel L1TxSenderModel,
 		var blocks []*BlockForCommit
 		blocks, err = blockForCommitModel.GetBlockForCommitBetween(1, int64(maxBlockCount))
 		if err != nil {
-			logx.Errorf("[SendCommittedBlocks] GetBlockForCommitBetween err:%v, maxBlockCount:%v", err, maxBlockCount)
+			logx.Errorf("[SendCommittedBlocks] GetBlockForCommitBetween err: %d, maxBlockCount: %d", err.Error(), maxBlockCount)
 			return err
 		}
 		pendingCommitBlocks, err = ConvertBlocksForCommitToCommitBlockInfos(blocks)

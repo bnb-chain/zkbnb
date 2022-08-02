@@ -73,7 +73,7 @@ type (
 		GetBlockByBlockHeight(blockHeight int64) (block *Block, err error)
 		GetBlockByBlockHeightWithoutTx(blockHeight int64) (block *Block, err error)
 		GetNotVerifiedOrExecutedBlocks() (blocks []*Block, err error)
-		GetCommitedBlocksCount() (count int64, err error)
+		GetCommittedBlocksCount() (count int64, err error)
 		GetVerifiedBlocksCount() (count int64, err error)
 		GetLatestVerifiedBlockHeight() (height int64, err error)
 		GetBlocksForProverBetween(start, end int64) (blocks []*Block, err error)
@@ -182,7 +182,7 @@ func (m *defaultBlockModel) GetBlocksList(limit int64, offset int64) (blocks []*
 	} else if cacheBlockListLimitVal == "" {
 		dbTx := m.DB.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("block_height desc").Find(&blocks)
 		if dbTx.Error != nil {
-			logx.Error("[block.GetBlocksList] %s", dbTx.Error)
+			logx.Errorf("[block.GetBlocksList] %s", dbTx.Error.Error())
 			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			logx.Error("[block.GetBlocksList] Get Blocks Error")
@@ -210,7 +210,7 @@ func (m *defaultBlockModel) GetBlocksList(limit int64, offset int64) (blocks []*
 				// json string
 				jsonString, err := json.Marshal(block)
 				if err != nil {
-					logx.Errorf("[block.GetBlocksList] json.Marshal Error: %s, value: %v", block)
+					logx.Errorf("[block.GetBlocksList] json.Marshal Error: %s, value: %v", err.Error(), block)
 					return nil, err
 				}
 				// todo
@@ -271,7 +271,7 @@ func (m *defaultBlockModel) GetBlocksList(limit int64, offset int64) (blocks []*
 func (m *defaultBlockModel) GetBlocksForSender(status int, limit int) (blocks []*Block, err error) {
 	dbTx := m.DB.Table(m.table).Where("block_status = ?", status).Limit(limit).Order("block_height").Find(&blocks)
 	if dbTx.Error != nil {
-		logx.Error("[block.GetBlocksList] %s", dbTx.Error)
+		logx.Errorf("[block.GetBlocksList] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[block.GetBlocksList] Get Blocks Error")
@@ -286,7 +286,7 @@ func (m *defaultBlockModel) GetBlocksForSenderBetween(start int64, end int64, st
 		Limit(maxBlocksCount).
 		Find(&blocks)
 	if dbTx.Error != nil {
-		logx.Error("[block.GetBlocksList] %s", dbTx.Error)
+		logx.Errorf("[block.GetBlocksList] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[block.GetBlocksList] Get Blocks Error")
@@ -304,7 +304,7 @@ func (m *defaultBlockModel) GetBlocksBetween(start int64, end int64) (blocks []*
 		Order("block_height").
 		Find(&blocks)
 	if dbTx.Error != nil {
-		logx.Error("[block.GetBlocksList] %s", dbTx.Error)
+		logx.Errorf("[block.GetBlocksList] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[block.GetBlocksList] Blocks not found")
@@ -336,7 +336,7 @@ func (m *defaultBlockModel) GetBlocksBetween(start int64, end int64) (blocks []*
 func (m *defaultBlockModel) GetBlocksLowerThanHeight(end int64, status int) (rowsAffected int64, blocks []*Block, err error) {
 	dbTx := m.DB.Table(m.table).Where("block_status = ? AND block_height <= ?", status, end).Order("block_height").Find(&blocks)
 	if dbTx.Error != nil {
-		logx.Error("[block.GetBlocksLowerThanHeight] %s", dbTx.Error)
+		logx.Errorf("[block.GetBlocksLowerThanHeight] %s", dbTx.Error.Error())
 		return 0, nil, dbTx.Error
 	}
 	return dbTx.RowsAffected, blocks, nil
@@ -348,7 +348,7 @@ func (m *defaultBlockModel) GetBlocksForSenderHigherThanBlockHeight(blockHeight 
 	)
 	dbTx := m.DB.Table(m.table).Limit(limit).Where("block_height > ? AND block_status = ?", blockHeight, status).Order("block_height").Find(&blocks)
 	if dbTx.Error != nil {
-		logx.Error("[block.GetBlocksList] %s", dbTx.Error)
+		logx.Errorf("[block.GetBlocksList] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[block.GetBlocksList] Get Blocks Error")
@@ -377,7 +377,7 @@ func (m *defaultBlockModel) GetBlocksHigherThanBlockHeight(blockHeight int64) (b
 	)
 	dbTx := m.DB.Table(m.table).Where("block_height > ?", blockHeight).Order("block_height desc").Find(&blocks)
 	if dbTx.Error != nil {
-		logx.Error("[block.GetBlocksHigherThanBlockHeight] %s", dbTx.Error)
+		logx.Errorf("[block.GetBlocksHigherThanBlockHeight] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[block.GetBlocksHigherThanBlockHeight] Get Blocks Error")
@@ -405,7 +405,7 @@ func (m *defaultBlockModel) GetBlockByCommitment(blockCommitment string) (block 
 	)
 	dbTx := m.DB.Table(m.table).Where("block_commitment = ?", blockCommitment).Find(&block)
 	if dbTx.Error != nil {
-		logx.Error("[block.GetBlockByCommitment] %s", dbTx.Error)
+		logx.Errorf("[block.GetBlockByCommitment] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[block.GetBlockByCommitment] Get Block Error")
@@ -430,7 +430,7 @@ func (m *defaultBlockModel) GetNotVerifiedOrExecutedBlocks() (blocks []*Block, e
 	)
 	dbTx := m.DB.Table(m.table).Where("block_status < ?", StatusVerifiedAndExecuted).Find(&blocks)
 	if dbTx.Error != nil {
-		logx.Error("[block.GetBlockByBlockHeight] %s", dbTx.Error)
+		logx.Errorf("[block.GetBlockByBlockHeight] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[block.GetBlockByBlockHeight] Get Block Error")
@@ -456,24 +456,9 @@ func (m *defaultBlockModel) GetBlockByBlockHeight(blockHeight int64) (block *Blo
 	var (
 		txForeignKeyColumn = `Txs`
 	)
-
-	//cacheBlockHeightKey := fmt.Sprintf("%s%v", cacheBlockHeightPrefix, blockHeight)
-	//cacheBlockHeightVal, err := m.RedisConn.Get(cacheBlockHeightKey)
-	//if err != nil {
-	//	errInfo := fmt.Sprintf("[block.GetBlocksList] Get Redis Error: %s, key:%s", err.Error(), cacheBlockHeightKey)
-	//	logx.Errorf(errInfo)
-	//	return nil, err
-	//} else if cacheBlockHeightVal == "" {
-	/*
-		err = m.DB.Model(&block).Association(blockForeignKeyColumn).Find(&block.BlockDetails)
-		if err != nil {
-			logx.Error("[block.GetBlocksList] Get Associate BlockDetails Error")
-			return nil, err
-		}
-	*/
 	dbTx := m.DB.Table(m.table).Where("block_height = ?", blockHeight).Find(&block)
 	if dbTx.Error != nil {
-		logx.Error("[block.GetBlockByBlockHeight] %s", dbTx.Error)
+		logx.Errorf("[block.GetBlockByBlockHeight] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[block.GetBlockByBlockHeight] Get Block Error")
@@ -484,31 +469,6 @@ func (m *defaultBlockModel) GetBlockByBlockHeight(blockHeight int64) (block *Blo
 		logx.Error("[block.GetBlockByBlockHeight] Get Associate Txs Error")
 		return nil, err
 	}
-
-	// json string
-	//jsonString, err := json.Marshal(block)
-	//if err != nil {
-	//	logx.Errorf("[block.GetBlockByBlockHeight] json.Marshal Error: %s, value: %v", block)
-	//	return nil, err
-	//}
-	// todo
-	//err = m.RedisConn.Setex(cacheBlockHeightKey, string(jsonString), 120)
-	//if err != nil {
-	//	logx.Errorf("[block.GetBlockByBlockHeight] redis set error: %s", err.Error())
-	//	return nil, err
-	//}
-	//} else {
-	// json string unmarshal
-	//	var (
-	//		nBlock *Block
-	//	)
-	//	err = json.Unmarshal([]byte(cacheBlockHeightVal), &nBlock)
-	//	if err != nil {
-	//		logx.Errorf("[tblock.GetBlockByBlockHeight] json.Unmarshal error: %s, value : %s", err.Error(), cacheBlockHeightVal)
-	//		return nil, err
-	//	}
-	//	block = nBlock
-	//}
 
 	return block, nil
 }
@@ -522,7 +482,7 @@ func (m *defaultBlockModel) GetBlockByBlockHeight(blockHeight int64) (block *Blo
 func (m *defaultBlockModel) GetBlockByBlockHeightWithoutTx(blockHeight int64) (block *Block, err error) {
 	dbTx := m.DB.Table(m.table).Where("block_height = ?", blockHeight).Find(&block)
 	if dbTx.Error != nil {
-		logx.Error("[block.GetBlockByBlockHeight] %s", dbTx.Error)
+		logx.Errorf("[block.GetBlockByBlockHeight] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[block.GetBlockByBlockHeight] Get Block Error")
@@ -537,11 +497,11 @@ func (m *defaultBlockModel) GetBlockByBlockHeightWithoutTx(blockHeight int64) (b
 	Return: count int64, err error
 	Description:  For API /api/v1/info/getLayer2BasicInfo
 */
-func (m *defaultBlockModel) GetCommitedBlocksCount() (count int64, err error) {
+func (m *defaultBlockModel) GetCommittedBlocksCount() (count int64, err error) {
 	key := fmt.Sprintf("%s", cacheBlockCommittedCountPrefix)
 	val, err := m.RedisConn.Get(key)
 	if err != nil {
-		errInfo := fmt.Sprintf("[block.GetCommitedBlocksCount] Get Redis Error: %s, key:%s", err.Error(), key)
+		errInfo := fmt.Sprintf("[block.GetCommittedBlocksCount] Get Redis Error: %s, key:%s", err.Error(), key)
 		logx.Errorf(errInfo)
 		return 0, err
 
@@ -552,19 +512,19 @@ func (m *defaultBlockModel) GetCommitedBlocksCount() (count int64, err error) {
 			if dbTx.Error == errorcode.DbErrNotFound {
 				return 0, nil
 			}
-			logx.Error("[block.GetCommitedBlocksCount] Get block Count Error")
+			logx.Error("[block.GetCommittedBlocksCount] Get block Count Error")
 			return 0, err
 		}
 
 		err = m.RedisConn.Setex(key, strconv.FormatInt(count, 10), 120)
 		if err != nil {
-			logx.Errorf("[block.GetCommitedBlocksCount] redis set error: %s", err.Error())
+			logx.Errorf("[block.GetCommittedBlocksCount] redis set error: %s", err.Error())
 			return 0, err
 		}
 	} else {
 		count, err = strconv.ParseInt(val, 10, 64)
 		if err != nil {
-			logx.Errorf("[block.GetCommitedBlocksCount] strconv.ParseInt error: %s, value : %s", err.Error(), val)
+			logx.Errorf("[block.GetCommittedBlocksCount] strconv.ParseInt error: %s, value : %s", err.Error(), val)
 			return 0, err
 		}
 	}
@@ -624,7 +584,7 @@ func (m *defaultBlockModel) CreateBlock(block *Block) error {
 	dbTx := m.DB.Table(m.table).Create(block)
 
 	if dbTx.Error != nil {
-		logx.Error("[block.CreateBlock] %s", dbTx.Error)
+		logx.Errorf("[block.CreateBlock] %s", dbTx.Error.Error())
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
@@ -638,7 +598,7 @@ func (m *defaultBlockModel) CreateGenesisBlock(block *Block) error {
 	dbTx := m.DB.Table(m.table).Omit("BlockDetails").Omit("Txs").Create(block)
 
 	if dbTx.Error != nil {
-		logx.Error("[block.CreateBlock] %s", dbTx.Error)
+		logx.Errorf("[block.CreateBlock] %s", dbTx.Error.Error())
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
@@ -658,7 +618,7 @@ func (m *defaultBlockModel) UpdateBlock(block *Block) error {
 	dbTx := m.DB.Save(block)
 
 	if dbTx.Error != nil {
-		logx.Error("[block.UpdateBlock] %s", dbTx.Error)
+		logx.Errorf("[block.UpdateBlock] %s", dbTx.Error.Error())
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
@@ -677,7 +637,7 @@ func (m *defaultBlockModel) UpdateBlock(block *Block) error {
 func (m *defaultBlockModel) GetCurrentBlockHeight() (blockHeight int64, err error) {
 	dbTx := m.DB.Table(m.table).Select("block_height").Order("block_height desc").Limit(1).Find(&blockHeight)
 	if dbTx.Error != nil {
-		logx.Error("[block.GetCurrentBlockHeight] %s", dbTx.Error)
+		logx.Errorf("[block.GetCurrentBlockHeight] %s", dbTx.Error.Error())
 		return 0, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[block.GetCurrentBlockHeight] No block yet")
@@ -695,7 +655,7 @@ func (m *defaultBlockModel) GetCurrentBlockHeight() (blockHeight int64, err erro
 func (m *defaultBlockModel) GetBlocksTotalCount() (count int64, err error) {
 	dbTx := m.DB.Table(m.table).Where("deleted_at is NULL").Count(&count)
 	if dbTx.Error != nil {
-		logx.Error("[block.GetBlocksTotalCount] %s", dbTx.Error)
+		logx.Errorf("[block.GetBlocksTotalCount] %s", dbTx.Error.Error())
 		return 0, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[block.GetBlocksTotalCount] No Blocks in Block Table")
@@ -715,14 +675,12 @@ func (m *defaultBlockModel) UpdateBlockStatusCacheByBlockHeight(blockHeight int6
 
 	jsonBytes, err := json.Marshal(blockStatusInfo)
 	if err != nil {
-		errInfo := fmt.Sprintf("[blockModel.UpdateBlockStatusCacheByBlockHeight] json.Marshal Error: %s, value: %v", blockStatusInfo)
-		logx.Error(errInfo)
+		logx.Errorf("[blockModel.UpdateBlockStatusCacheByBlockHeight] json.Marshal Error: %s, value: %v", err.Error(), blockStatusInfo)
 		return err
 	}
 	err = m.RedisConn.Setex(key, string(jsonBytes), 60)
 	if err != nil {
-		errInfo := fmt.Sprintf("[blockModel.UpdateBlockStatusCacheByBlockHeight] %s", err)
-		logx.Error(errInfo)
+		logx.Errorf("[blockModel.UpdateBlockStatusCacheByBlockHeight] error: %s", err.Error())
 		return err
 	}
 

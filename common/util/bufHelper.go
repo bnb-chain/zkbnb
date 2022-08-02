@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
-	"log"
 	"math/big"
 
 	"github.com/bnb-chain/zkbas-crypto/zero/twistededwards/tebn254/zero"
@@ -59,7 +58,7 @@ func PaddingAddressIntoBuf(buf *bytes.Buffer, address string) (err error) {
 	}
 	addrBytes, err := DecodeAddress(address)
 	if err != nil {
-		log.Println("[PaddingAddressIntoBuf] invalid addr:", err)
+		logx.Errorf("[PaddingAddressIntoBuf] invalid addr: %s, err: %s", address, err.Error())
 		return err
 	}
 	buf.Write(new(big.Int).SetBytes(addrBytes).FillBytes(make([]byte, zero.PointSize)))
@@ -75,7 +74,7 @@ func DecodeAddress(addr string) ([]byte, error) {
 		return nil, err
 	}
 	if len(addrBytes) != AddressSize {
-		log.Println("[DecodeAddress] invalid address")
+		logx.Errorf("[DecodeAddress] invalid address: %s, err: %s", addr, err.Error())
 		return nil, errors.New("[DecodeAddress] invalid address")
 	}
 	return addrBytes, nil

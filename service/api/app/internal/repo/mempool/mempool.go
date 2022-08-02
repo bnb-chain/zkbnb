@@ -28,7 +28,7 @@ func (m *model) GetMempoolTxs(offset int, limit int) (mempoolTxs []*table.Mempoo
 	var mempoolForeignKeyColumn = `MempoolDetails`
 	dbTx := m.db.Table(m.table).Where("status = ? and deleted_at is NULL", PendingTxStatus).Order("created_at, id").Offset(offset).Limit(limit).Find(&mempoolTxs)
 	if dbTx.Error != nil {
-		logx.Errorf("[mempool.GetMempoolTxsList] %s", dbTx.Error)
+		logx.Errorf("[mempool.GetMempoolTxsList] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	}
 	for _, mempoolTx := range mempoolTxs {
@@ -56,7 +56,7 @@ func (m *model) GetMempoolTxByTxHash(hash string) (mempoolTx *table.MempoolTx, e
 	var mempoolForeignKeyColumn = `MempoolDetails`
 	dbTx := m.db.Table(m.table).Where("status = ? and tx_hash = ?", PendingTxStatus, hash).Find(&mempoolTx)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetMempoolTxByTxHash] %v", dbTx.Error)
+		logx.Errorf("[GetMempoolTxByTxHash] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, errorcode.DbErrNotFound
@@ -94,6 +94,7 @@ func (m *model) GetMempoolTxByTxId(ctx context.Context, txID int64) (*table.Memp
 		tx := &table.MempoolTx{}
 		dbTx := m.db.Table(m.table).Where("id = ? and deleted_at is NULL", txID).Find(&tx)
 		if dbTx.Error != nil {
+			logx.Errorf("fail to get mempool tx by id: %d, error: %s", txID, dbTx.Error.Error())
 			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			return nil, errorcode.DbErrNotFound
@@ -108,7 +109,7 @@ func (m *model) GetMempoolTxByTxId(ctx context.Context, txID int64) (*table.Memp
 		return tx, nil
 	}
 	tx := &table.MempoolTx{}
-	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyTxByTxId(txID), tx, 1, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyTxByTxId(txID), tx, multcache.MempoolTxTtl, f)
 	if err != nil {
 		return nil, err
 	}

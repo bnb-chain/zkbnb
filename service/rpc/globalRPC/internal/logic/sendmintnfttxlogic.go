@@ -44,11 +44,11 @@ func NewSendMintNftTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Sen
 func (l *SendMintNftTxLogic) SendMintNftTx(in *globalRPCProto.ReqSendMintNftTx) (*globalRPCProto.RespSendMintNftTx, error) {
 	txInfo, err := commonTx.ParseMintNftTxInfo(in.TxInfo)
 	if err != nil {
-		logx.Errorf("[ParseMintNftTxInfo] err:%v", err)
+		logx.Errorf("[ParseMintNftTxInfo] err: %s", err.Error())
 		return nil, err
 	}
 	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.GasFeeAssetAmount, err.Error())
 		return nil, err
 	}
 	if txInfo.NftCollectionId == commonConstant.NilCollectionId {
@@ -70,7 +70,7 @@ func (l *SendMintNftTxLogic) SendMintNftTx(in *globalRPCProto.ReqSendMintNftTx) 
 		return nil, l.createFailMintNftTx(txInfo, err.Error())
 	}
 	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, l.svcCtx.SysConfigModel); err != nil {
-		logx.Errorf("[checkGasAccountIndex] err: %v", err)
+		logx.Errorf("[checkGasAccountIndex] err: %s", err.Error())
 		return nil, err
 	}
 	// check expired at

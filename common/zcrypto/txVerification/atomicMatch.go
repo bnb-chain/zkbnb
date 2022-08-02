@@ -20,7 +20,6 @@ package txVerification
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"math/big"
 	"time"
 
@@ -62,7 +61,7 @@ func VerifyAtomicMatchTxInfo(
 		accountInfoMap[txInfo.BuyOffer.AccountIndex].AssetInfo[txInfo.BuyOffer.AssetId].Balance.Cmp(ZeroBigInt) <= 0 ||
 		txInfo.GasFeeAssetAmount.Cmp(ZeroBigInt) < 0 {
 		infoBytes, _ := json.Marshal(accountInfoMap)
-		log.Println(string(infoBytes))
+		logx.Info(string(infoBytes))
 		logx.Errorf("[VerifyAtomicMatchTxInfo] invalid params")
 		return nil, errors.New("[VerifyAtomicMatchTxInfo] invalid params")
 	}
@@ -86,7 +85,7 @@ func VerifyAtomicMatchTxInfo(
 	}
 	// verify nonce
 	if txInfo.Nonce != accountInfoMap[txInfo.AccountIndex].Nonce {
-		log.Println("[VerifyAtomicMatchTxInfo] invalid nonce")
+		logx.Errorf("[VerifyAtomicMatchTxInfo] invalid nonce: %d, account index: %d", txInfo.Nonce, txInfo.AccountIndex)
 		return nil, errors.New("[VerifyAtomicMatchTxInfo] invalid nonce")
 	}
 	// set tx info
@@ -161,11 +160,11 @@ func VerifyAtomicMatchTxInfo(
 	}
 	isValid, err := buyerPk.Verify(txInfo.BuyOffer.Sig, msgHash, hFunc)
 	if err != nil {
-		log.Println("[VerifyAtomicMatchTxInfo] unable to verify signature:", err)
+		logx.Errorf("[VerifyAtomicMatchTxInfo] unable to verify signature: %x", err.Error())
 		return nil, err
 	}
 	if !isValid {
-		log.Println("[VerifyAtomicMatchTxInfo] invalid signature")
+		logx.Error("[VerifyAtomicMatchTxInfo] invalid signature")
 		return nil, errors.New("[VerifyAtomicMatchTxInfo] invalid signature")
 	}
 	hFunc.Reset()
@@ -183,11 +182,11 @@ func VerifyAtomicMatchTxInfo(
 	}
 	isValid, err = sellerPk.Verify(txInfo.SellOffer.Sig, msgHash, hFunc)
 	if err != nil {
-		log.Println("[VerifyAtomicMatchTxInfo] unable to verify signature:", err)
+		logx.Errorf("[VerifyAtomicMatchTxInfo] unable to verify signature: %s", err.Error())
 		return nil, err
 	}
 	if !isValid {
-		log.Println("[VerifyAtomicMatchTxInfo] invalid signature")
+		logx.Error("[VerifyAtomicMatchTxInfo] invalid signature")
 		return nil, errors.New("[VerifyAtomicMatchTxInfo] invalid signature")
 	}
 	hFunc.Reset()
@@ -205,11 +204,11 @@ func VerifyAtomicMatchTxInfo(
 	}
 	isValid, err = submitterPk.Verify(txInfo.Sig, msgHash, hFunc)
 	if err != nil {
-		log.Println("[VerifyAtomicMatchTxInfo] unable to verify signature:", err)
+		logx.Errorf("[VerifyAtomicMatchTxInfo] unable to verify signature: %s", err.Error())
 		return nil, err
 	}
 	if !isValid {
-		log.Println("[VerifyAtomicMatchTxInfo] invalid signature")
+		logx.Error("[VerifyAtomicMatchTxInfo] invalid signature")
 		return nil, errors.New("[VerifyAtomicMatchTxInfo] invalid signature")
 	}
 	// compute tx details
@@ -245,7 +244,7 @@ func VerifyAtomicMatchTxInfo(
 	oBuyerOffer := accountInfoMap[txInfo.BuyOffer.AccountIndex].AssetInfo[buyerOfferAssetId].OfferCanceledOrFinalized
 	// verify whether buyer offer id is valid for use
 	if oBuyerOffer.Bit(int(buyerOfferIndex)) == 1 {
-		log.Printf("account %d offer index %d is already in use.\n", txInfo.BuyOffer.AccountIndex, buyerOfferIndex)
+		logx.Errorf("account %d offer index %d is already in use.\n", txInfo.BuyOffer.AccountIndex, buyerOfferIndex)
 		return nil, errors.New("[VerifyAtomicMatchTxInfo] invalid buyer offer id")
 	}
 	nBuyerOffer := new(big.Int).SetBit(oBuyerOffer, int(buyerOfferIndex), 1)
@@ -301,7 +300,7 @@ func VerifyAtomicMatchTxInfo(
 	oSellerOffer := accountInfoMap[txInfo.SellOffer.AccountIndex].AssetInfo[sellerOfferAssetId].OfferCanceledOrFinalized
 	// verify whether buyer offer id is valid for use
 	if oSellerOffer.Bit(int(sellerOfferIndex)) == 1 {
-		log.Printf("account %d offer index %d is already in use.\n", txInfo.SellOffer.AccountIndex, sellerOfferIndex)
+		logx.Errorf("account %d offer index %d is already in use.\n", txInfo.SellOffer.AccountIndex, sellerOfferIndex)
 		return nil, errors.New("[VerifyAtomicMatchTxInfo] invalid seller offer id")
 	}
 	nSellerOffer := new(big.Int).SetBit(oSellerOffer, int(sellerOfferIndex), 1)

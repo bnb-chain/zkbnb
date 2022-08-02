@@ -33,7 +33,7 @@ func NewGetAvailablePairsLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 func (l *GetAvailablePairsLogic) GetAvailablePairs(_ *types.ReqGetAvailablePairs) (*types.RespGetAvailablePairs, error) {
 	liquidityAssets, err := l.liquidity.GetAllLiquidityAssets()
 	if err != nil {
-		logx.Error("[GetAllLiquidityAssets] err:%v", err)
+		logx.Errorf("[GetAllLiquidityAssets] error: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
@@ -43,7 +43,7 @@ func (l *GetAvailablePairsLogic) GetAvailablePairs(_ *types.ReqGetAvailablePairs
 	for _, asset := range liquidityAssets {
 		assetA, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(l.ctx, uint32(asset.AssetAId))
 		if err != nil {
-			logx.Error("[GetSimpleL2AssetInfoByAssetId] err:%v", err)
+			logx.Errorf("[GetSimpleL2AssetInfoByAssetId] err: %s", err.Error())
 			if err == errorcode.DbErrNotFound {
 				return nil, errorcode.AppErrNotFound
 			}
@@ -51,7 +51,7 @@ func (l *GetAvailablePairsLogic) GetAvailablePairs(_ *types.ReqGetAvailablePairs
 		}
 		assetB, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(l.ctx, uint32(asset.AssetBId))
 		if err != nil {
-			logx.Error("[GetSimpleL2AssetInfoByAssetId] err:%v", err)
+			logx.Errorf("[GetSimpleL2AssetInfoByAssetId] err: %s", err.Error())
 			if err == errorcode.DbErrNotFound {
 				return nil, errorcode.AppErrNotFound
 			}

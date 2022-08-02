@@ -30,7 +30,7 @@ func (l *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.RespSendTx, err 
 	//err := utils.CheckRequestParam(utils.TypeTxType, reflect.ValueOf(req.TxType))
 	txId, err := l.globalRpc.SendTx(l.ctx, req.TxType, req.TxInfo)
 	if err != nil {
-		logx.Error("[transaction.SendTx] err:%v", err)
+		logx.Errorf("[transaction.SendTx] err: %s", err.Error())
 		return nil, err
 	}
 	return &types.RespSendTx{TxId: txId}, nil

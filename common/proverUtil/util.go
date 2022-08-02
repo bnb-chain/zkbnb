@@ -19,7 +19,6 @@ package proverUtil
 
 import (
 	"errors"
-	"log"
 
 	bsmt "github.com/bnb-chain/bas-smt"
 	"github.com/bnb-chain/bas-smt/database"
@@ -81,7 +80,7 @@ func ConstructCryptoTx(
 ) (cryptoTx *CryptoTx, err error) {
 	switch oTx.TxType {
 	case commonTx.TxTypeEmpty:
-		log.Println("[ConstructProverBlocks] there should be no empty tx")
+		logx.Error("[ConstructProverBlocks] there should be no empty tx")
 		break
 	case commonTx.TxTypeRegisterZns:
 		cryptoTx, err = ConstructRegisterZnsCryptoTx(
@@ -96,7 +95,7 @@ func ConstructCryptoTx(
 			accountModel,
 		)
 		if err != nil {
-			log.Println("[ConstructProverBlocks] unable to construct registerZNS crypto tx:", err)
+			logx.Errorf("[ConstructProverBlocks] unable to construct registerZNS crypto tx: %x", err.Error())
 			return nil, err
 		}
 		break
@@ -113,7 +112,7 @@ func ConstructCryptoTx(
 			accountModel,
 		)
 		if err != nil {
-			log.Println("[ConstructProverBlocks] unable to construct create pair crypto tx:", err)
+			logx.Errorf("[ConstructProverBlocks] unable to construct create pair crypto tx: %s", err.Error())
 			return nil, err
 		}
 		break
@@ -130,7 +129,7 @@ func ConstructCryptoTx(
 			accountModel,
 		)
 		if err != nil {
-			log.Println("[ConstructProverBlocks] unable to construct update pair crypto tx:", err)
+			logx.Errorf("[ConstructProverBlocks] unable to construct update pair crypto tx: %s", err.Error())
 			return nil, err
 		}
 		break
@@ -147,7 +146,7 @@ func ConstructCryptoTx(
 			accountModel,
 		)
 		if err != nil {
-			log.Println("[ConstructProverBlocks] unable to construct deposit crypto tx:", err)
+			logx.Errorf("[ConstructProverBlocks] unable to construct deposit crypto tx: %s", err.Error())
 			return nil, err
 		}
 		break
@@ -164,7 +163,7 @@ func ConstructCryptoTx(
 			accountModel,
 		)
 		if err != nil {
-			log.Println("[ConstructProverBlocks] unable to construct deposit nft crypto tx:", err)
+			logx.Errorf("[ConstructProverBlocks] unable to construct deposit nft crypto tx: %s", err.Error())
 			return nil, err
 		}
 		break
@@ -181,7 +180,7 @@ func ConstructCryptoTx(
 			accountModel,
 		)
 		if err != nil {
-			log.Println("[ConstructProverBlocks] unable to construct transfer crypto tx:", err)
+			logx.Errorf("[ConstructProverBlocks] unable to construct transfer crypto tx: %s", err.Error())
 			return nil, err
 		}
 		break
@@ -198,7 +197,7 @@ func ConstructCryptoTx(
 			accountModel,
 		)
 		if err != nil {
-			log.Println("[ConstructProverBlocks] unable to construct swap crypto tx:", err)
+			logx.Errorf("[ConstructProverBlocks] unable to construct swap crypto tx: %s", err.Error())
 			return nil, err
 		}
 		break
@@ -215,7 +214,7 @@ func ConstructCryptoTx(
 			accountModel,
 		)
 		if err != nil {
-			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
+			logx.Errorf("[ConstructProverBlocks] unable to construct add liquidity crypto tx: %s", err.Error())
 			return nil, err
 		}
 		break
@@ -232,7 +231,7 @@ func ConstructCryptoTx(
 			accountModel,
 		)
 		if err != nil {
-			log.Println("[ConstructProverBlocks] unable to construct remove liquidity crypto tx:", err)
+			logx.Errorf("[ConstructProverBlocks] unable to construct remove liquidity crypto tx: %s", err.Error())
 			return nil, err
 		}
 		break
@@ -249,7 +248,7 @@ func ConstructCryptoTx(
 			accountModel,
 		)
 		if err != nil {
-			log.Println("[ConstructProverBlocks] unable to construct withdraw crypto tx:", err)
+			logx.Errorf("[ConstructProverBlocks] unable to construct withdraw crypto tx: %s", err.Error())
 			return nil, err
 		}
 		break
@@ -266,7 +265,7 @@ func ConstructCryptoTx(
 			accountModel,
 		)
 		if err != nil {
-			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
+			logx.Errorf("[ConstructProverBlocks] unable to construct create collection crypto tx: %s", err.Error())
 			return nil, err
 		}
 		break
@@ -283,7 +282,7 @@ func ConstructCryptoTx(
 			accountModel,
 		)
 		if err != nil {
-			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
+			logx.Errorf("[ConstructProverBlocks] unable to construct mint nft crypto tx: %s", err.Error())
 			return nil, err
 		}
 		break
@@ -300,7 +299,7 @@ func ConstructCryptoTx(
 			accountModel,
 		)
 		if err != nil {
-			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
+			logx.Errorf("[ConstructProverBlocks] unable to construct transfer nft crypto tx: %s", err.Error())
 			return nil, err
 		}
 		break
@@ -317,7 +316,7 @@ func ConstructCryptoTx(
 			accountModel,
 		)
 		if err != nil {
-			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
+			logx.Errorf("[ConstructProverBlocks] unable to construct atomic match crypto tx: %s", err.Error())
 			return nil, err
 		}
 		break
@@ -334,7 +333,7 @@ func ConstructCryptoTx(
 			accountModel,
 		)
 		if err != nil {
-			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
+			logx.Errorf("[ConstructProverBlocks] unable to construct cancel offer crypto tx: %s", err.Error())
 			return nil, err
 		}
 		break
@@ -351,7 +350,7 @@ func ConstructCryptoTx(
 			accountModel,
 		)
 		if err != nil {
-			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
+			logx.Errorf("[ConstructProverBlocks] unable to construct withdraw nft crypto tx: %s", err.Error())
 			return nil, err
 		}
 		break
@@ -368,7 +367,7 @@ func ConstructCryptoTx(
 			accountModel,
 		)
 		if err != nil {
-			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
+			logx.Errorf("[ConstructProverBlocks] unable to construct full exit crypto tx: %s", err.Error())
 			return nil, err
 		}
 		break
@@ -385,7 +384,7 @@ func ConstructCryptoTx(
 			accountModel,
 		)
 		if err != nil {
-			log.Println("[ConstructProverBlocks] unable to construct add liquidity crypto tx:", err)
+			logx.Errorf("[ConstructProverBlocks] unable to construct full exit nft crypto tx: %s", err.Error())
 			return nil, err
 		}
 		break

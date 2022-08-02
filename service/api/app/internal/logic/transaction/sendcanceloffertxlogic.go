@@ -29,7 +29,7 @@ func NewSendCancelOfferTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 func (l *SendCancelOfferTxLogic) SendCancelOfferTx(req *types.ReqSendCancelOfferTx) (*types.RespSendCancelOfferTx, error) {
 	txIndex, err := l.globalRpc.SendCancelOfferTx(l.ctx, req.TxInfo)
 	if err != nil {
-		logx.Error("[transaction.SendCancelOfferTx] err:%v", err)
+		logx.Errorf("[transaction.SendCancelOfferTx] err: %s", err.Error())
 		return nil, err
 	}
 	return &types.RespSendCancelOfferTx{TxId: txIndex}, nil

@@ -31,7 +31,7 @@ func (m *price) GetCurrencyPrice(ctx context.Context, l2Symbol string) (float64,
 		return &quoteMap, nil
 	}
 	var quoteType map[string]QuoteLatest
-	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyCurrencyPrice(), &quoteType, 10, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyCurrencyPrice(), &quoteType, multcache.PriceTtl, f)
 	if err != nil {
 		return 0, err
 	}

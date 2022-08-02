@@ -38,15 +38,15 @@ func SendSwapTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalmap c
 		Check Params
 	*/
 	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.GasFeeAssetAmount, err.Error())
 		return "", err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetAAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetAAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.AssetAAmount, err.Error())
 		return "", err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetBMinAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetBMinAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.AssetBMinAmount, err.Error())
 		return "", err
 	}
 	err = util.CheckRequestParam(util.TypeAssetId, reflect.ValueOf(txInfo.AssetAId))
@@ -55,9 +55,9 @@ func SendSwapTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalmap c
 		logx.Error(errInfo)
 		return "", handleCreateFailSwapTx(svcCtx.FailTxModel, txInfo, errors.New(errInfo))
 	}
-	commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.FromAccountIndex)
+	err = commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.FromAccountIndex)
 	if err != nil {
-		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
+		logx.Errorf("[DeleteLatestAccountInfoInCache] err: %s", err.Error())
 	}
 	// check gas account index
 	gasAccountIndexConfig, err := svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
@@ -260,7 +260,7 @@ func SendSwapTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalmap c
 func handleCreateFailSwapTx(failTxModel tx.FailTxModel, txInfo *commonTx.SwapTxInfo, err error) error {
 	errCreate := createFailSwapTx(failTxModel, txInfo, err.Error())
 	if errCreate != nil {
-		logx.Error("[sendswaptxlogic.HandleCreateFailSwapTx] %s", errCreate.Error())
+		logx.Errorf("[sendswaptxlogic.HandleCreateFailSwapTx] %s", errCreate.Error())
 		return errCreate
 	} else {
 		errInfo := fmt.Sprintf("[sendswaptxlogic.HandleCreateFailSwapTx] %s", err.Error())

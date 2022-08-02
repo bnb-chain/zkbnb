@@ -37,6 +37,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/tree"
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/common/util/globalmapHandler"
+	lockUtil "github.com/bnb-chain/zkbas/common/util/globalmapHandler"
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/repo/accountoperator"
 	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/repo/commglobalmap"
@@ -551,17 +552,13 @@ func MonitorMempool(ctx context.Context, svcCtx *svc.ServiceContext) error {
 				}
 				key := util.GetAccountKey(accountInfo.AccountIndex)
 				lockKey := util.GetLockKey(key)
-				redisLock = redis.NewRedisLock(svcCtx.RedisConnection, lockKey)
-				redisLock.SetExpire(5)
-				isAcquired, err := redisLock.Acquire()
+				lock := lockUtil.GetRedisLockByKey(svcCtx.RedisConnection, lockKey)
+				err = lockUtil.TryAcquireLock(lock)
 				if err != nil {
 					logx.Errorf("[MonitorMempool] unable to acquire the lock: %s", err.Error())
 					return err
 				}
-				if !isAcquired {
-					logx.Errorf("[MonitorMempool] unable to acquire the lock")
-					return errors.New("[MonitorMempool] unable to acquire the lock")
-				}
+				defer redisLock.Release()
 				mempoolTxs, err := svcCtx.MempoolModel.GetPendingMempoolTxsByAccountIndex(accountInfo.AccountIndex)
 				if err != nil {
 					if err != errorcode.DbErrNotFound {
@@ -588,7 +585,6 @@ func MonitorMempool(ctx context.Context, svcCtx *svc.ServiceContext) error {
 						}
 					}
 				}
-				redisLock.Release()
 			}
 			// complete oTx info
 			txInfo.AccountIndex = accountInfo.AccountIndex
@@ -666,14 +662,14 @@ func MonitorMempool(ctx context.Context, svcCtx *svc.ServiceContext) error {
 	// update db
 	if err = svcCtx.L2TxEventMonitorModel.CreateMempoolAndActiveAccount(pendingNewAccounts, pendingNewMempoolTxs,
 		pendingNewLiquidityInfos, pendingNewNfts, txs); err != nil {
-		logx.Errorf("[CreateMempoolAndActiveAccount] unable to create mempool txs and update l2 oTx event monitors, error: %v", err)
+		logx.Errorf("[CreateMempoolAndActiveAccount] unable to create mempool txs and update l2 oTx event monitors, error: %s", err.Error())
 		return err
 	}
 	m := NewMempoolMonitor(ctx, svcCtx)
 	// update account cache for globalrpc sendtx interface
 	for _, mempooltx := range pendingNewMempoolTxs {
 		if err := m.commglobalmap.SetLatestAccountInfoInToCache(ctx, mempooltx.AccountIndex); err != nil {
-			logx.Errorf("[CreateMempoolTxs] unable to CreateMempoolTxs, error: %v", err)
+			logx.Errorf("[CreateMempoolTxs] unable to CreateMempoolTxs, error: %s", err.Error())
 		}
 	}
 	logx.Errorf("========== end MonitorMempool ==========")

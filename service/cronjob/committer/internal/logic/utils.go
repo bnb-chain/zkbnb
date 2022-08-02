@@ -149,7 +149,7 @@ func newBlock(createAtTime time.Time, commitment, finalStateRoot string, txs []*
 	if pendingOnChainOperationsPubData != nil {
 		onChainOperationsPubDataBytes, err := json.Marshal(pendingOnChainOperationsPubData)
 		if err != nil {
-			logx.Errorf("[CommitterTask] unable to marshal on chain operations pub data: %v", err)
+			logx.Errorf("[CommitterTask] unable to marshal on chain operations pub data: %s", err.Error())
 			return nil, err
 		}
 		block.PendingOnChainOperationsPubData = string(onChainOperationsPubDataBytes)
@@ -160,7 +160,7 @@ func newBlockForCommit(currentBlockHeight int64, finalStateRoot string,
 	pubData []byte, createdAt int64, pubDataOffset []uint32) (*blockForCommit.BlockForCommit, error) {
 	offsetBytes, err := json.Marshal(pubDataOffset)
 	if err != nil {
-		logx.Errorf("[Marshal] unable to marshal pub data: %v", err)
+		logx.Errorf("[Marshal] unable to marshal pub data: %s", err.Error())
 		return nil, err
 	}
 	return &BlockForCommit{

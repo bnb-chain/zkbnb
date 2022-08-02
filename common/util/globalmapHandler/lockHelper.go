@@ -35,13 +35,13 @@ func GetRedisLockByKey(conn *redis.Redis, keyLock string) (redisLock *redis.Redi
 
 func TryAcquireLock(redisLock *redis.RedisLock) (err error) {
 	// lock
-	notUsed, err := redisLock.Acquire()
+	ok, err := redisLock.Acquire()
 	if err != nil {
-		logx.Errorf("[GetLatestAssetByLock] unable to acquire the lock:", err.Error())
+		logx.Errorf("[GetLatestAssetByLock] unable to acquire the lock: %s", err.Error())
 		return err
 	}
 	// re-try for three times
-	if !notUsed {
+	if !ok {
 		ticker := time.NewTicker(RetryInterval)
 		defer ticker.Stop()
 		count := 0
@@ -50,12 +50,12 @@ func TryAcquireLock(redisLock *redis.RedisLock) (err error) {
 				logx.Errorf("[GetLatestAssetByLock] the lock has been used, re-try later")
 				return errors.New("[GetLatestAssetByLock] the lock has been used, re-try later")
 			}
-			notUsed, err = redisLock.Acquire()
+			ok, err = redisLock.Acquire()
 			if err != nil {
-				logx.Errorf("[GetLatestAssetByLock] unable to acquire the lock:", err.Error())
+				logx.Errorf("[GetLatestAssetByLock] unable to acquire the lock: %s", err.Error())
 				return err
 			}
-			if notUsed {
+			if ok {
 				break
 			}
 			count++
@@ -63,10 +63,4 @@ func TryAcquireLock(redisLock *redis.RedisLock) (err error) {
 		}
 	}
 	return nil
-}
-
-func ReleaseLock(redisLockMap map[string]*redis.RedisLock) {
-	for _, redisLock := range redisLockMap {
-		redisLock.Release()
-	}
 }

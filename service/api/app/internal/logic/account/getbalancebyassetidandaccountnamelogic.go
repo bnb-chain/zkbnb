@@ -34,12 +34,12 @@ func NewGetBalanceByAssetIdAndAccountNameLogic(ctx context.Context, svcCtx *svc.
 func (l *GetBalanceByAssetIdAndAccountNameLogic) GetBalanceByAssetIdAndAccountName(req *types.ReqGetBlanceByAssetIdAndAccountName) (*types.RespGetBlanceInfoByAssetIdAndAccountName, error) {
 	resp := &types.RespGetBlanceInfoByAssetIdAndAccountName{}
 	if checker.CheckAccountName(req.AccountName) {
-		logx.Errorf("[CheckAccountIndex] param:%v", req.AccountName)
+		logx.Errorf("[CheckAccountIndex] param: %s", req.AccountName)
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountName")
 	}
 	account, err := l.account.GetAccountByAccountName(l.ctx, req.AccountName)
 	if err != nil {
-		logx.Errorf("[GetAccountByAccountName] err:%v", err)
+		logx.Errorf("[GetAccountByAccountName] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
@@ -47,7 +47,7 @@ func (l *GetBalanceByAssetIdAndAccountNameLogic) GetBalanceByAssetIdAndAccountNa
 	}
 	assets, err := l.globalRPC.GetLatestAssetsListByAccountIndex(l.ctx, uint32(account.AccountIndex))
 	if err != nil {
-		logx.Errorf("[GetLatestAssetsListByAccountIndex] err:%v", err)
+		logx.Errorf("[GetLatestAssetsListByAccountIndex] err: %s", err.Error())
 		if err == errorcode.RpcErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}

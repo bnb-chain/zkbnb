@@ -118,10 +118,10 @@ func (m *defaultProofSenderModel) GetProofsByBlockRange(start int64, end int64, 
 		Find(&proofs)
 
 	if dbTx.Error != nil {
-		logx.Error("[proofSender.GetProofsByBlockRange] %s", dbTx.Error)
+		logx.Errorf("[proofSender.GetProofsByBlockRange] %s", dbTx.Error.Error())
 		return proofs, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		logx.Errorf("[proofSender.GetProofsByBlockRange] error not found")
+		logx.Error("[proofSender.GetProofsByBlockRange] error not found")
 		return proofs, errorcode.DbErrNotFound
 	}
 
@@ -139,7 +139,7 @@ func (m *defaultProofSenderModel) GetProofStartBlockNumber() (num int64, err err
 	var row *ProofSender
 	dbTx := m.DB.Table(m.table).Order("block_number desc").Limit(1).Find(&row)
 	if dbTx.Error != nil {
-		logx.Error("[proofSender.GetProofStartBlockNumber] %s", dbTx.Error)
+		logx.Errorf("[proofSender.GetProofStartBlockNumber] %s", dbTx.Error.Error())
 		return num, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[proofSender.GetProofStartBlockNumber] not found")
@@ -160,7 +160,7 @@ func (m *defaultProofSenderModel) GetLatestConfirmedProof() (p *ProofSender, err
 	var row *ProofSender
 	dbTx := m.DB.Table(m.table).Where("status >= ?", NotConfirmed).Order("block_number desc").Limit(1).Find(&row)
 	if dbTx.Error != nil {
-		logx.Error("[proofSender.GetLatestSentProof] %s", dbTx.Error)
+		logx.Errorf("[proofSender.GetLatestSentProof] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[proofSender.GetLatestSentProof] not found")
@@ -181,7 +181,7 @@ func (m *defaultProofSenderModel) GetProofByBlockNumber(num int64) (p *ProofSend
 	var row *ProofSender
 	dbTx := m.DB.Table(m.table).Where("block_number = ?", num).Find(&row)
 	if dbTx.Error != nil {
-		logx.Error("[proofSender.GetProofByBlockNumber] %s", dbTx.Error)
+		logx.Errorf("[proofSender.GetProofByBlockNumber] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[proofSender.GetProofByBlockNumber] not found")

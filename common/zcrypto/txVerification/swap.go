@@ -19,7 +19,6 @@ package txVerification
 
 import (
 	"errors"
-	"log"
 	"math/big"
 
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
@@ -57,12 +56,12 @@ func VerifySwapTxInfo(
 	}
 	// verify delta amount
 	if txInfo.AssetBAmountDelta.Cmp(txInfo.AssetBMinAmount) < 0 {
-		log.Println("[VerifySwapTxInfo] invalid swap amount")
+		logx.Error("[VerifySwapTxInfo] invalid swap amount")
 		return nil, errors.New("[VerifySwapTxInfo] invalid swap amount")
 	}
 	// verify nonce
 	if txInfo.Nonce != accountInfoMap[txInfo.FromAccountIndex].Nonce {
-		log.Println("[VerifySwapTxInfo] invalid nonce")
+		logx.Errorf("[VerifySwapTxInfo] invalid nonce: %d, account index: %d", txInfo.Nonce, txInfo.FromAccountIndex)
 		return nil, errors.New("[VerifySwapTxInfo] invalid nonce")
 	}
 	var (
@@ -89,7 +88,7 @@ func VerifySwapTxInfo(
 		)
 	}
 	if txInfo.AssetAAmount.Cmp(assetDeltaMap[txInfo.FromAccountIndex][txInfo.AssetAId]) < 0 {
-		log.Println("[VerifySwapTxInfo] invalid treasury amount")
+		logx.Error("[VerifySwapTxInfo] invalid treasury amount")
 		return nil, errors.New("[VerifySwapTxInfo] invalid treasury amount")
 	}
 	// to account pool
@@ -122,7 +121,7 @@ func VerifySwapTxInfo(
 			TreasuryRate:         liquidityInfo.TreasuryRate,
 		}
 	} else {
-		log.Println("[VerifySwapTxInfo] invalid pool")
+		logx.Error("[VerifySwapTxInfo] invalid pool")
 		return nil, errors.New("[VerifySwapTxInfo] invalid pool")
 	}
 	// gas account asset Gas
@@ -160,11 +159,11 @@ func VerifySwapTxInfo(
 	}
 	isValid, err := pk.Verify(txInfo.Sig, msgHash, hFunc)
 	if err != nil {
-		log.Println("[VerifySwapTxInfo] unable to verify signature:", err)
+		logx.Errorf("[VerifySwapTxInfo] unable to verify signature: %s", err.Error())
 		return nil, err
 	}
 	if !isValid {
-		log.Println("[VerifySwapTxInfo] invalid signature")
+		logx.Error("[VerifySwapTxInfo] invalid signature")
 		return nil, errors.New("[VerifySwapTxInfo] invalid signature")
 	}
 	// compute tx details

@@ -30,16 +30,16 @@ func NewGetSwapAmountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 
 func (l *GetSwapAmountLogic) GetSwapAmount(req *types.ReqGetSwapAmount) (*types.RespGetSwapAmount, error) {
 	if checker.CheckPairIndex(req.PairIndex) {
-		logx.Error("[CheckPairIndex] param:%v", req.PairIndex)
+		logx.Errorf("[CheckPairIndex] param: %d", req.PairIndex)
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid PairIndex")
 	}
 	if checker.CheckAssetId(req.AssetId) {
-		logx.Error("[CheckAssetId] param:%v", req.AssetId)
+		logx.Errorf("[CheckAssetId] param: %d", req.AssetId)
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AssetId")
 	}
 	resAssetAmount, resAssetId, err := l.globalRPC.GetSwapAmount(l.ctx, uint64(req.PairIndex), uint64(req.AssetId), req.AssetAmount, req.IsFrom)
 	if err != nil {
-		logx.Error("[GetSwapAmount] err:%v", err)
+		logx.Errorf("[GetSwapAmount] err: %s", err.Error())
 		if err == errorcode.RpcErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}

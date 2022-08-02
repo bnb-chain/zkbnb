@@ -144,7 +144,7 @@ type ResultTvlSum struct {
 func (m *defaultTVLModel) GetLockAmountSum(date time.Time) (result []*ResultTvlSum, err error) {
 	dbTx := m.DB.Table(m.table).Select("asset_id, sum(lock_amount_delta) as total").Where("date <= ?", date).Group("asset_id").Order("asset_id").Find(&result)
 	if dbTx.Error != nil {
-		logx.Errorf("[tvl.CreateTVLsInBatch] %s", dbTx.Error)
+		logx.Errorf("[tvl.CreateTVLsInBatch] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[volume.GetLockAmountSum] no result in tvl table")
@@ -164,7 +164,7 @@ func (m *defaultTVLModel) GetLockAmountSumGroupByDays() (result []*ResultTvlDayS
 	// SELECT SUM( lock_amount_delta ), asset_id, date_trunc( 'day', DATE ) FROM tvl GROUP BY date_trunc( 'day', DATE ), asset_id ORDER BY date_trunc( 'day', DATE ), asset_id
 	dbTx := m.DB.Table(m.table).Debug().Select("sum(lock_amount_delta) as total, asset_id, date_trunc( 'day', DATE )::date as date").Group("date_trunc( 'day', DATE ), asset_id").Order("date_trunc( 'day', DATE ), asset_id").Find(&result)
 	if dbTx.Error != nil {
-		logx.Errorf("[tvl.GetLockAmountSumGroupByDays] %s", dbTx.Error)
+		logx.Errorf("[tvl.GetLockAmountSumGroupByDays] %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[volume.GetLockAmountSumGroupByDays] no result in tvl table")

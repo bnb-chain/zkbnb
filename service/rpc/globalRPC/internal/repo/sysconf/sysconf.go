@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"gorm.io/gorm"
 
 	table "github.com/bnb-chain/zkbas/common/model/sysconfig"
@@ -22,6 +24,7 @@ func (m *model) GetSysconfigByName(ctx context.Context, name string) (*table.Sys
 		var config table.Sysconfig
 		dbTx := m.db.Table(m.table).Where("name = ?", name).Find(&config)
 		if dbTx.Error != nil {
+			logx.Errorf("fail to get sysconfig: %s, error: %s", name, dbTx.Error.Error())
 			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			return nil, errorcode.DbErrNotFound
@@ -29,7 +32,7 @@ func (m *model) GetSysconfigByName(ctx context.Context, name string) (*table.Sys
 		return &config, nil
 	}
 	var config table.Sysconfig
-	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetSysconfigByName+name, &config, 5, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetSysconfigByName+name, &config, multcache.SysconfigTtl, f)
 	if err != nil {
 		return &config, err
 	}

@@ -43,7 +43,7 @@ func (m *model) GetLatestAccountInfoWithCache(ctx context.Context, accountIndex 
 		return account, nil
 	}
 	accountInfo := &account.Account{}
-	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountByAccountIndex(accountIndex), accountInfo, 10, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountByAccountIndex(accountIndex), accountInfo, multcache.AccountTtl, f)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (m *model) SetLatestAccountInfoInToCache(ctx context.Context, accountIndex 
 	if err != nil {
 		return err
 	}
-	if err := m.cache.Set(ctx, multcache.SpliceCacheKeyAccountByAccountIndex(accountIndex), account, 10); err != nil {
+	if err := m.cache.Set(ctx, multcache.SpliceCacheKeyAccountByAccountIndex(accountIndex), account, multcache.AccountTtl); err != nil {
 		return err
 	}
 	return nil
@@ -77,17 +77,17 @@ func (m *model) DeleteLatestAccountInfoInCache(ctx context.Context, accountIndex
 func (m *model) GetLatestAccountInfo(ctx context.Context, accountIndex int64) (*commonAsset.AccountInfo, error) {
 	oAccountInfo, err := m.accountModel.GetAccountByAccountIndex(accountIndex)
 	if err != nil {
-		logx.Errorf("[GetAccountByAccountIndex]param:%v, err:%v", accountIndex, err)
+		logx.Errorf("[GetAccountByAccountIndex]param: %d, err: %s", accountIndex, err.Error())
 		return nil, err
 	}
 	accountInfo, err := commonAsset.ToFormatAccountInfo(oAccountInfo)
 	if err != nil {
-		logx.Errorf("[ToFormatAccountInfo]param:%v, err:%v", oAccountInfo, err)
+		logx.Errorf("[ToFormatAccountInfo]param: %v, err: %s", oAccountInfo, err.Error())
 		return nil, err
 	}
 	mempoolTxs, err := m.mempoolModel.GetPendingMempoolTxsByAccountIndex(accountIndex)
 	if err != nil && err != errorcode.DbErrNotFound {
-		logx.Errorf("[GetPendingMempoolTxsByAccountIndex]param:%v, err:%v", accountIndex, err)
+		logx.Errorf("[GetPendingMempoolTxsByAccountIndex]param: %d, err: %s", accountIndex, err.Error())
 		return nil, err
 	}
 	for _, mempoolTx := range mempoolTxs {
@@ -111,18 +111,18 @@ func (m *model) GetLatestAccountInfo(ctx context.Context, accountIndex int64) (*
 				nBalance, err := commonAsset.ComputeNewBalance(commonAsset.GeneralAssetType,
 					accountInfo.AssetInfo[mempoolTxDetail.AssetId].String(), mempoolTxDetail.BalanceDelta)
 				if err != nil {
-					logx.Errorf("[ComputeNewBalance] err:%v", err)
+					logx.Errorf("[ComputeNewBalance] err: %s", err.Error())
 					return nil, err
 				}
 				accountInfo.AssetInfo[mempoolTxDetail.AssetId], err = commonAsset.ParseAccountAsset(nBalance)
 				if err != nil {
-					logx.Errorf("[ParseAccountAsset]param:%v, err:%v", nBalance, err)
+					logx.Errorf("[ParseAccountAsset]param: %v, err: %s", nBalance, err.Error())
 					return nil, err
 				}
 			case commonAsset.CollectionNonceAssetType:
 				accountInfo.CollectionNonce, err = strconv.ParseInt(mempoolTxDetail.BalanceDelta, 10, 64)
 				if err != nil {
-					logx.Errorf("[ParseInt] unable to parse int: err:%v", err)
+					logx.Errorf("[ParseInt] unable to parse int, err: %s", err.Error())
 					return nil, err
 				}
 			case commonAsset.LiquidityAssetType:

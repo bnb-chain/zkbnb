@@ -47,7 +47,7 @@ func NewGetTxsByAccountNameLogic(ctx context.Context, svcCtx *svc.ServiceContext
 func (l *GetTxsByAccountNameLogic) GetTxsByAccountName(req *types.ReqGetTxsByAccountName) (*types.RespGetTxsByAccountName, error) {
 	account, err := l.account.GetAccountByAccountName(l.ctx, req.AccountName)
 	if err != nil {
-		logx.Errorf("[transaction.GetTxsByAccountName] err:%v", err)
+		logx.Errorf("[transaction.GetTxsByAccountName] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
@@ -55,7 +55,7 @@ func (l *GetTxsByAccountNameLogic) GetTxsByAccountName(req *types.ReqGetTxsByAcc
 	}
 	txIds, err := l.txDetail.GetTxIdsByAccountIndex(l.ctx, int64(account.AccountIndex))
 	if err != nil {
-		logx.Errorf("[GetTxDetailByAccountIndex] err:%v", err)
+		logx.Errorf("[GetTxDetailByAccountIndex] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
@@ -75,7 +75,7 @@ func (l *GetTxsByAccountNameLogic) GetTxsByAccountName(req *types.ReqGetTxsByAcc
 	for _, id := range txIds[req.Offset:end] {
 		tx, err := l.tx.GetTxByTxID(l.ctx, id)
 		if err != nil {
-			logx.Errorf("[GetTxByTxID] err:%v", err)
+			logx.Errorf("[GetTxByTxID] err: %s", err.Error())
 			return nil, err
 		}
 		resp.Txs = append(resp.Txs, utils.GormTx2Tx(tx))

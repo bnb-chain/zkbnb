@@ -30,12 +30,12 @@ func NewGetAccountStatusByAccountNameLogic(ctx context.Context, svcCtx *svc.Serv
 
 func (l *GetAccountStatusByAccountNameLogic) GetAccountStatusByAccountName(req *types.ReqGetAccountStatusByAccountName) (resp *types.RespGetAccountStatusByAccountName, err error) {
 	if checker.CheckAccountName(req.AccountName) {
-		logx.Errorf("[CheckAccountIndex] param:%v", req.AccountName)
+		logx.Errorf("[CheckAccountIndex] param: %s", req.AccountName)
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountName")
 	}
 	account, err := l.account.GetBasicAccountByAccountName(l.ctx, req.AccountName)
 	if err != nil {
-		logx.Errorf("[GetBasicAccountByAccountName] err:%v", err)
+		logx.Errorf("[GetBasicAccountByAccountName] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}

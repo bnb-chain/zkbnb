@@ -20,7 +20,8 @@ package txVerification
 import (
 	"encoding/hex"
 	"errors"
-	"log"
+
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 /*
@@ -29,17 +30,17 @@ import (
 func ParsePkStr(pkStr string) (pk *PublicKey, err error) {
 	pkBytes, err := hex.DecodeString(pkStr)
 	if err != nil {
-		log.Println("[ParsePkStr] invalid public key:", err)
+		logx.Errorf("[ParsePkStr] invalid public key: %s", err.Error())
 		return nil, err
 	}
 	pk = new(PublicKey)
 	size, err := pk.SetBytes(pkBytes)
 	if err != nil {
-		log.Println("[ParsePkStr] invalid public key:", err)
+		logx.Errorf("[ParsePkStr] invalid public key: %s", err.Error())
 		return nil, err
 	}
 	if size != 32 {
-		log.Println("[ParsePkStr] invalid public key")
+		logx.Error("[ParsePkStr] invalid public key")
 		return nil, errors.New("[ParsePkStr] invalid public key")
 	}
 	return pk, nil

@@ -120,7 +120,7 @@ func (m *defaultSysconfigModel) GetSysconfigByName(name string) (config *Sysconf
 func (m *defaultSysconfigModel) CreateSysconfig(config *Sysconfig) error {
 	dbTx := m.DB.Table(m.table).Create(config)
 	if dbTx.Error != nil {
-		logx.Error("[sysconfig.sysconfig] %s", dbTx.Error)
+		logx.Errorf("[sysconfig.sysconfig] %s", dbTx.Error.Error())
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
@@ -133,7 +133,7 @@ func (m *defaultSysconfigModel) CreateSysconfig(config *Sysconfig) error {
 func (m *defaultSysconfigModel) CreateSysconfigInBatches(configs []*Sysconfig) (rowsAffected int64, err error) {
 	dbTx := m.DB.Table(m.table).CreateInBatches(configs, len(configs))
 	if dbTx.Error != nil {
-		logx.Error("[sysconfig.CreateSysconfigInBatches] %s", dbTx.Error)
+		logx.Errorf("[sysconfig.CreateSysconfigInBatches] %s", dbTx.Error.Error())
 		return 0, dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {

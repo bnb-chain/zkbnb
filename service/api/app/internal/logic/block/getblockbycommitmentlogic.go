@@ -32,7 +32,7 @@ func (l *GetBlockByCommitmentLogic) GetBlockByCommitment(req *types.ReqGetBlockB
 	// query basic block info
 	block, err := l.block.GetBlockWithTxsByCommitment(l.ctx, req.BlockCommitment)
 	if err != nil {
-		logx.Errorf("[GetBlockWithTxsByCommitment] err:%v", err)
+		logx.Errorf("[GetBlockWithTxsByCommitment] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}

@@ -20,7 +20,6 @@ package txVerification
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"math/big"
 
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
@@ -49,14 +48,14 @@ func VerifyWithdrawNftTxInfo(
 		nftInfo.NftIndex != txInfo.NftIndex ||
 		nftInfo.NftContentHash != common.Bytes2Hex(txInfo.NftContentHash) {
 		infoBytes, _ := json.Marshal(nftInfo)
-		log.Println(string(infoBytes))
-		log.Println(common.Bytes2Hex(txInfo.NftContentHash))
+		logx.Info(string(infoBytes))
+		logx.Infof("content hash: %s", common.Bytes2Hex(txInfo.NftContentHash))
 		logx.Errorf("[VerifySetNftPriceTxInfo] invalid params")
 		return nil, errors.New("[VerifySetNftPriceTxInfo] invalid params")
 	}
 	// verify nonce
 	if txInfo.Nonce != accountInfoMap[txInfo.AccountIndex].Nonce {
-		log.Println("[VerifyWithdrawNftTxInfo] invalid nonce")
+		logx.Errorf("[VerifyWithdrawNftTxInfo] invalid nonce: %d, account index: %d", txInfo.Nonce, txInfo.AccountIndex)
 		return nil, errors.New("[VerifyWithdrawNftTxInfo] invalid nonce")
 	}
 	// set tx info
@@ -102,11 +101,11 @@ func VerifyWithdrawNftTxInfo(
 	}
 	isValid, err := pk.Verify(txInfo.Sig, msgHash, hFunc)
 	if err != nil {
-		log.Println("[VerifyWithdrawNftTxInfo] unable to verify signature:", err)
+		logx.Errorf("[VerifyWithdrawNftTxInfo] unable to verify signature: %s", err.Error())
 		return nil, err
 	}
 	if !isValid {
-		log.Println("[VerifyWithdrawNftTxInfo] invalid signature")
+		logx.Error("[VerifyWithdrawNftTxInfo] invalid signature")
 		return nil, errors.New("[VerifyWithdrawNftTxInfo] invalid signature")
 	}
 	// compute tx details

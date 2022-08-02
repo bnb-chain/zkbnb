@@ -98,7 +98,7 @@ func (m *defaultOfferModel) GetLatestOfferId(accountIndex int64) (offerId int64,
 		logx.Errorf("[GetLatestOfferId] unable to get latest offer info: %s", dbTx.Error.Error())
 		return -1, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		return -1, errors.New("OfferId not exist")
+		return -1, errorcode.DbErrNotFound
 	}
 	return offer.OfferId, nil
 }

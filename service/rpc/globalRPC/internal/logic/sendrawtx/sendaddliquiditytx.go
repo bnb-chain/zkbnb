@@ -28,7 +28,7 @@ import (
 func handleCreateFailAddLiquidityTx(failTxModel tx.FailTxModel, txInfo *commonTx.AddLiquidityTxInfo, err error) error {
 	errCreate := createFailAddLiquidityTx(failTxModel, txInfo, err.Error())
 	if errCreate != nil {
-		logx.Error("[sendaddliquiditytxlogic.HandleFailAddLiquidityTx] %s", errCreate.Error())
+		logx.Errorf("[sendaddliquiditytxlogic.HandleFailAddLiquidityTx] %s", errCreate.Error())
 		return errCreate
 	} else {
 		errInfo := fmt.Sprintf("[sendaddliquiditytxlogic.HandleFailAddLiquidityTx] %s", err.Error())
@@ -48,20 +48,20 @@ func SendAddLiquidityTx(ctx context.Context, svcCtx *svc.ServiceContext, commglo
 	}
 
 	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.GasFeeAssetAmount, err.Error())
 		return "", err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetAAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetAAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.AssetAAmount, err.Error())
 		return "", err
 	}
 	if err := util.CheckPackedAmount(txInfo.AssetBAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.AssetBAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.AssetBAmount, err.Error())
 		return "", err
 	}
-	commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.FromAccountIndex)
+	err = commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.FromAccountIndex)
 	if err != nil {
-		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
+		logx.Errorf("[DeleteLatestAccountInfoInCache] err: %s", err.Error())
 	}
 	// check gas account index
 	gasAccountIndexConfig, err := svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)

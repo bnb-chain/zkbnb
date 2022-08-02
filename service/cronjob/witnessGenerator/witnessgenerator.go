@@ -69,14 +69,14 @@ func main() {
 		c.TreeDB.Driver,
 		baseTreeDB)
 	if err != nil {
-		logx.Errorf("[prover] InitLiquidityTree error: %s", err)
+		logx.Errorf("[prover] InitLiquidityTree error: %s", err.Error())
 		return
 	}
 	nftTree, err = tree.InitNftTree(ctx.NftHistoryModel, p.BlockNumber,
 		c.TreeDB.Driver,
 		baseTreeDB)
 	if err != nil {
-		logx.Errorf("[prover] InitNftTree error: %s", err)
+		logx.Errorf("[prover] InitNftTree error: %s", err.Error())
 		return
 	}
 

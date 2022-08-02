@@ -35,7 +35,7 @@ func SendAtomicMatchTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 		return "", errors.New(errInfo)
 	}
 	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
+		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.GasFeeAssetAmount, err.Error())
 		return "", err
 	}
 	err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.AccountIndex))
@@ -53,9 +53,9 @@ func SendAtomicMatchTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 		errInfo := fmt.Sprintf("[sendAtomicMatchTx] err: invalid accountIndex %v", txInfo.SellOffer.AccountIndex)
 		return "", handleCreateFailAtomicMatchTx(svcCtx.FailTxModel, txInfo, errors.New(errInfo))
 	}
-	commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.AccountIndex)
+	err = commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.AccountIndex)
 	if err != nil {
-		logx.Errorf("[DeleteLatestAccountInfoInCache] err:%v", err)
+		logx.Errorf("[DeleteLatestAccountInfoInCache] err: %s", err.Error())
 	}
 	gasAccountIndexConfig, err := svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
 	if err != nil {
@@ -243,7 +243,7 @@ func SendAtomicMatchTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 func handleCreateFailAtomicMatchTx(failTxModel tx.FailTxModel, txInfo *commonTx.AtomicMatchTxInfo, err error) error {
 	errCreate := createFailAtomicMatchTx(failTxModel, txInfo, err.Error())
 	if errCreate != nil {
-		logx.Error("[sendtransfertxlogic.HandleCreateFailAtomicMatchTx] %s", errCreate.Error())
+		logx.Errorf("[sendtransfertxlogic.HandleCreateFailAtomicMatchTx] %s", errCreate.Error())
 		return errCreate
 	} else {
 		errInfo := fmt.Sprintf("[sendtransfertxlogic.HandleCreateFailAtomicMatchTx] %s", err.Error())

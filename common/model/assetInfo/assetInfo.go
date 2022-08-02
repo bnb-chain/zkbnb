@@ -267,6 +267,7 @@ func (m *defaultAssetInfoModel) GetAssetInfoBySymbol(symbol string) (res *AssetI
 func (m *defaultAssetInfoModel) GetAssetByAddress(address string) (info *AssetInfo, err error) {
 	dbTx := m.DB.Table(m.table).Where("asset_address = ?", address).Find(&info)
 	if dbTx.Error != nil {
+		logx.Errorf("fail to get asset by address: %s, error: %s", address, dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, errorcode.DbErrNotFound
