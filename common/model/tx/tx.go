@@ -88,6 +88,7 @@ type (
 		AccountIndex  int64
 		Nonce         int64
 		ExpiredAt     int64
+		TxIndex       int64
 	}
 )
 

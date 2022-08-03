@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -316,17 +317,19 @@ func (m *defaultBlockModel) GetBlocksBetween(start int64, end int64) (blocks []*
 			logx.Error("[block.GetBlocksList] Get Associate Txs Error")
 			return nil, err
 		}
+		sort.Slice(block.Txs, func(i, j int) bool {
+			return block.Txs[i].TxIndex < block.Txs[j].TxIndex
+		})
+
 		for _, txInfo := range block.Txs {
-			var tmpTxDetails []*tx.TxDetail
-			err = m.DB.Model(&txInfo).Association(txDetailsForeignKeyColumn).Find(&tmpTxDetails)
-			txInfo.TxDetails = make([]*tx.TxDetail, len(tmpTxDetails))
-			for i := 0; i < len(tmpTxDetails); i++ {
-				txInfo.TxDetails[tmpTxDetails[i].Order] = tmpTxDetails[i]
-			}
+			err = m.DB.Model(&txInfo).Association(txDetailsForeignKeyColumn).Find(&txInfo.TxDetails)
 			if err != nil {
 				logx.Error("[block.GetBlocksList] Get Associate Tx details Error")
 				return nil, err
 			}
+			sort.Slice(txInfo.TxDetails, func(i, j int) bool {
+				return txInfo.TxDetails[i].Order < txInfo.TxDetails[j].Order
+			})
 		}
 	}
 	return blocks, nil
@@ -355,6 +358,9 @@ func (m *defaultBlockModel) GetBlocksForSenderHigherThanBlockHeight(blockHeight 
 	}
 	for _, block := range blocks {
 		err = m.DB.Model(&block).Association(txForeignKeyColumn).Find(&block.Txs)
+		sort.Slice(block.Txs, func(i, j int) bool {
+			return block.Txs[i].TxIndex < block.Txs[j].TxIndex
+		})
 		if err != nil {
 			logx.Error("[block.GetBlocksList] Get Associate Txs Error")
 			return nil, err
@@ -384,6 +390,9 @@ func (m *defaultBlockModel) GetBlocksHigherThanBlockHeight(blockHeight int64) (b
 	}
 	for _, block := range blocks {
 		err = m.DB.Model(&block).Association(txForeignKeyColumn).Find(&block.Txs)
+		sort.Slice(block.Txs, func(i, j int) bool {
+			return block.Txs[i].TxIndex < block.Txs[j].TxIndex
+		})
 		if err != nil {
 			logx.Error("[block.GetBlocksHigherThanBlockHeight] Get Associate Txs Error")
 			return nil, err
@@ -411,6 +420,9 @@ func (m *defaultBlockModel) GetBlockByCommitment(blockCommitment string) (block 
 		return nil, errorcode.DbErrNotFound
 	}
 	err = m.DB.Model(&block).Association(txForeignKeyColumn).Find(&block.Txs)
+	sort.Slice(block.Txs, func(i, j int) bool {
+		return block.Txs[i].TxIndex < block.Txs[j].TxIndex
+	})
 	if err != nil {
 		logx.Error("[block.GetBlockByCommitment] Get Associate Txs Error")
 		return nil, err
@@ -437,6 +449,9 @@ func (m *defaultBlockModel) GetNotVerifiedOrExecutedBlocks() (blocks []*Block, e
 	}
 	for _, block := range blocks {
 		err = m.DB.Model(&block).Association(txForeignKeyColumn).Find(&block.Txs)
+		sort.Slice(block.Txs, func(i, j int) bool {
+			return block.Txs[i].TxIndex < block.Txs[j].TxIndex
+		})
 		if err != nil {
 			logx.Error("[block.GetBlockByBlockHeight] Get Associate Txs Error")
 			return nil, err
@@ -464,6 +479,9 @@ func (m *defaultBlockModel) GetBlockByBlockHeight(blockHeight int64) (block *Blo
 		return nil, errorcode.DbErrNotFound
 	}
 	err = m.DB.Model(&block).Association(txForeignKeyColumn).Find(&block.Txs)
+	sort.Slice(block.Txs, func(i, j int) bool {
+		return block.Txs[i].TxIndex < block.Txs[j].TxIndex
+	})
 	if err != nil {
 		logx.Error("[block.GetBlockByBlockHeight] Get Associate Txs Error")
 		return nil, err
