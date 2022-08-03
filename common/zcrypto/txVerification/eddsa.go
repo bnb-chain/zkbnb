@@ -21,6 +21,8 @@ import (
 	"encoding/hex"
 	"errors"
 
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -44,4 +46,22 @@ func ParsePkStr(pkStr string) (pk *PublicKey, err error) {
 		return nil, errors.New("[ParsePkStr] invalid public key")
 	}
 	return pk, nil
+}
+
+func VerifySignature(sig, msg []byte, pubkey string) error {
+	hFunc := mimc.NewMiMC()
+	pk, err := ParsePkStr(pubkey)
+	if err != nil {
+		return errors.New("cannot parse public key")
+	}
+	isValid, err := pk.Verify(sig, msg, hFunc)
+	if err != nil {
+		logx.Errorf("unable to verify signature: %s", err.Error())
+		return errors.New("unable to verify signature")
+	}
+	if !isValid {
+		logx.Errorf("invalid signature")
+		return errors.New("invalid signature")
+	}
+	return nil
 }

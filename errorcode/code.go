@@ -38,13 +38,17 @@ var (
 
 	//global rpc
 
+	RpcErrInvalidTx      = New(20001, "invalid tx: cannot parse tx")
+	RpcErrInvalidTxType  = New(20002, "invalid tx type ")
+	RpcErrInvalidTxField = New(20003, "invalid tx field: ")
+	RpcErrVerification   = New(20004, "tx verification failed: ")
+
 	RpcErrInvalidParam                = New(20000, "invalid param: ")
 	RpcErrLiquidityInvalidAssetAmount = New(20004, "invalid liquidity asset amount")
 	RpcErrLiquidityInvalidAssetID     = New(20005, "invalid liquidity asset id")
-	RpcErrInvalidGasAccountIndex      = New(20006, "invalid GasAccountIndex")
-	RpcErrInvalidExpiredAt            = New(20007, "invalid ExpiredAt")
-	RpcErrNotFound                    = New(24404, "not found")
-	RpcErrInternal                    = New(24500, "internal server error")
+
+	RpcErrNotFound = New(24404, "not found")
+	RpcErrInternal = New(24500, "internal server error")
 
 	//app service
 

@@ -19,6 +19,7 @@ package txVerification
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
@@ -53,13 +54,15 @@ func VerifyAddLiquidityTxInfo(
 		txInfo.AssetBAmount.Cmp(ZeroBigInt) < 0 ||
 		txInfo.LpAmount.Cmp(ZeroBigInt) < 0 ||
 		txInfo.GasFeeAssetAmount.Cmp(ZeroBigInt) < 0 {
-		logx.Errorf("[VerifyAddLiquidityTxInfo] invalid params")
-		return nil, errors.New("[VerifyAddLiquidityTxInfo] invalid params")
+		logx.Errorf("invalid params")
+		return nil, errors.New("invalid params")
 	}
 	// verify nonce
 	if txInfo.Nonce != accountInfoMap[txInfo.FromAccountIndex].Nonce {
-		logx.Errorf("[VerifyAddLiquidityTxInfo] invalid nonce: %d, account index: %d", txInfo.Nonce, txInfo.FromAccountIndex)
-		return nil, errors.New("[VerifyAddLiquidityTxInfo] invalid nonce")
+		logx.Errorf("invalid nonce, actual: %d, expected: %d",
+			txInfo.Nonce, accountInfoMap[txInfo.FromAccountIndex].Nonce)
+		return nil, fmt.Errorf("invalid nonce, actual: %d, expected: %d",
+			txInfo.Nonce, accountInfoMap[txInfo.FromAccountIndex].Nonce)
 	}
 	// add tx info
 	var (
@@ -91,22 +94,22 @@ func VerifyAddLiquidityTxInfo(
 	// from account lp
 	lpDeltaForTreasuryAccount, err = util.ComputeSLp(liquidityInfo.AssetA, liquidityInfo.AssetB, liquidityInfo.KLast, liquidityInfo.FeeRate, liquidityInfo.TreasuryRate)
 	if err != nil {
-		logx.Errorf("[ComputeSLp] err: %s", err.Error())
-		return nil, err
+		logx.Errorf("fail to compute liquidity, err: %s", err.Error())
+		return nil, errors.New("internal error")
 	}
 	poolLp := ffmath.Sub(liquidityInfo.LpAmount, lpDeltaForTreasuryAccount)
 	// lp = \Delta{x}/x * poolLp
 	if liquidityInfo.AssetA.Cmp(ZeroBigInt) == 0 {
 		lpDeltaForFromAccount, err = util.CleanPackedAmount(new(big.Int).Sqrt(ffmath.Multiply(txInfo.AssetAAmount, txInfo.AssetBAmount)))
 		if err != nil {
-			logx.Errorf("[VerifyAddLiquidityTxInfo] unable to compute lp delta: %s", err.Error())
-			return nil, err
+			logx.Errorf("unable to compute lp delta: %s", err.Error())
+			return nil, errors.New("internal error")
 		}
 	} else {
 		lpDeltaForFromAccount, err = util.CleanPackedAmount(ffmath.Div(ffmath.Multiply(poolAssetADelta, poolLp), liquidityInfo.AssetA))
 		if err != nil {
-			logx.Errorf("[VerifyAddLiquidityTxInfo] unable to compute lp delta: %s", err.Error())
-			return nil, err
+			logx.Errorf("unable to compute lp delta: %s", err.Error())
+			return nil, errors.New("internal error")
 		}
 	}
 	// pool account pool info
@@ -127,7 +130,7 @@ func VerifyAddLiquidityTxInfo(
 	// set tx info
 	txInfo.KLast, err = util.CleanPackedAmount(ffmath.Multiply(finalPoolA, finalPoolB))
 	if err != nil {
-		return nil, err
+		return nil, errors.New("internal error")
 	}
 	txInfo.TreasuryAmount = lpDeltaForTreasuryAccount
 	// gas account asset Gas
@@ -142,40 +145,35 @@ func VerifyAddLiquidityTxInfo(
 	// check balance
 	// check asset A
 	if accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.AssetAId].Balance.Cmp(txInfo.AssetAAmount) < 0 {
-		logx.Errorf("[VerifyAddLiquidityTxInfo] you don't have enough balance of asset A")
-		return nil, errors.New("[VerifyAddLiquidityTxInfo] you don't have enough balance of asset A")
+		logx.Errorf("not enough balance of asset %d", txInfo.AssetAId)
+		return nil, fmt.Errorf("not enough balance of asset %d", txInfo.AssetAId)
 	}
 	// check asset B
 	if accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.AssetBId].Balance.Cmp(txInfo.AssetBAmount) < 0 {
-		logx.Errorf("[VerifyAddLiquidityTxInfo] you don't have enough balance of asset B")
-		return nil, errors.New("[VerifyAddLiquidityTxInfo] you don't have enough balance of asset B")
+		logx.Errorf("not enough balance of asset %d", txInfo.AssetBId)
+		return nil, fmt.Errorf("not enough balance of asset %d", txInfo.AssetAId)
+	}
+	// asset Gas
+	if accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(
+		new(big.Int).Abs(assetDeltaMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId])) < 0 {
+		logx.Errorf("not enough balance of gas")
+		return nil, errors.New("not enough balance of gas")
 	}
 	// check lp amount
 	if lpDeltaForFromAccount.Cmp(txInfo.LpAmount) < 0 {
-		logx.Errorf("[VerifyAddLiquidityTxInfo] invalid lp amount")
-		return nil, errors.New("[VerifyAddLiquidityTxInfo] invalid lp amount")
+		logx.Errorf("invalid lp amount")
+		return nil, errors.New("invalid lp amount")
 	}
 	// compute hash
 	hFunc := mimc.NewMiMC()
 	msgHash, err := legendTxTypes.ComputeAddLiquidityMsgHash(txInfo, hFunc)
 	if err != nil {
-		logx.Errorf("[VerifyAddLiquidityTxInfo] unable to compute hash: %s", err.Error())
-		return nil, err
+		logx.Errorf("unable to compute tx hash: %s", err.Error())
+		return nil, errors.New("internal error")
 	}
 	// verify signature
-	hFunc.Reset()
-	pk, err := ParsePkStr(accountInfoMap[txInfo.FromAccountIndex].PublicKey)
-	if err != nil {
+	if err := VerifySignature(txInfo.Sig, msgHash, accountInfoMap[txInfo.FromAccountIndex].PublicKey); err != nil {
 		return nil, err
-	}
-	isValid, err := pk.Verify(txInfo.Sig, msgHash, hFunc)
-	if err != nil {
-		logx.Errorf("[VerifyAddLiquidityTxInfo] unable to verify signature: %s", err.Error())
-		return nil, err
-	}
-	if !isValid {
-		logx.Error("[VerifyAddLiquidityTxInfo] invalid signature")
-		return nil, errors.New("[VerifyAddLiquidityTxInfo] invalid signature")
 	}
 	// compute tx details
 	// from account asset A

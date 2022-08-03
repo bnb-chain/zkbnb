@@ -120,6 +120,10 @@ github.com/bketelsen/crypt v0.0.4/go.mod h1:aI6NrJ0pMGgvZKL1iVgXLnfIFJtfV+bKCoqO
 github.com/bmizerany/pat v0.0.0-20170815010413-6226ea591a40/go.mod h1:8rLXio+WjiTceGBHIoTvn60HIbs7Hm7bcHjyrSqYB9c=
 github.com/bnb-chain/zkbas-crypto v0.0.1 h1:AntDPKJ79/3OBxQUPCr6rIplWZFDzZF8VluXVZNPKMw=
 github.com/bnb-chain/zkbas-crypto v0.0.1/go.mod h1:T2erL+OCXw66yqBdsI5waTEx4FG2d8lYDh1XcEB1kRU=
+github.com/bnb-chain/zkbas-crypto v0.0.2-0.20220802110852-0fc92f61a79a h1:PTMnZwNXnfO4Ky1kn2LGhQ0B1+mZjcXnV0jz8oBTBHY=
+github.com/bnb-chain/zkbas-crypto v0.0.2-0.20220802110852-0fc92f61a79a/go.mod h1:T2erL+OCXw66yqBdsI5waTEx4FG2d8lYDh1XcEB1kRU=
+github.com/bnb-chain/zkbas-crypto v0.0.2-0.20220803024517-e40b077207a0 h1:YyCw4Tvb+H0lWg1WYo9sJ9OwP17dB9LPpe2WTEqsi2c=
+github.com/bnb-chain/zkbas-crypto v0.0.2-0.20220803024517-e40b077207a0/go.mod h1:T2erL+OCXw66yqBdsI5waTEx4FG2d8lYDh1XcEB1kRU=
 github.com/bnb-chain/zkbas-eth-rpc v0.0.1 h1:5wqS5TumcxXWovdMRWE6ZWC8mU4lmfRrRCV7sI7mVvw=
 github.com/bnb-chain/zkbas-eth-rpc v0.0.1/go.mod h1:t8jY6/Jt/Rw8LeU9Rhw406uaOIOou4ycVX06LKyVxKo=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=

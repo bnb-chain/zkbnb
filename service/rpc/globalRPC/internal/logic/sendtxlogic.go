@@ -19,6 +19,8 @@ package logic
 import (
 	"context"
 
+	"github.com/bnb-chain/zkbas/errorcode"
+
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonTx"
@@ -102,10 +104,10 @@ func (l *SendTxLogic) SendTx(in *globalRPCProto.ReqSendTx) (resp *globalRPCProto
 			return nil, err
 		}
 	case commonTx.TxTypeOffer:
-		break
+		return nil, errorcode.RpcErrInvalidTxType
 	default:
-		logx.Errorf("[sendtxlogic] invalid tx type")
-		return nil, err
+		logx.Errorf("[sendtxlogic] invalid tx type: %s", in.TxType)
+		return nil, errorcode.RpcErrInvalidTxType
 	}
 	return resp, err
 }
