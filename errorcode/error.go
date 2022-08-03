@@ -28,7 +28,7 @@ func (e *error) Code() int32 {
 }
 
 func (e *error) RefineError(err ...interface{}) *error {
-	return new(e.Code(), e.message+" "+fmt.Sprint(err...))
+	return new(e.Code(), e.message+fmt.Sprint(err...))
 }
 
 func new(code int32, msg string) *error {

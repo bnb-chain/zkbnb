@@ -153,7 +153,7 @@ func VerifyAtomicMatchTxInfo(
 		return nil, errors.New("internal error")
 	}
 	// verify signature
-	if err := VerifySignature(txInfo.Sig, msgHash, accountInfoMap[txInfo.BuyOffer.AccountIndex].PublicKey); err != nil {
+	if err := VerifySignature(txInfo.BuyOffer.Sig, msgHash, accountInfoMap[txInfo.BuyOffer.AccountIndex].PublicKey); err != nil {
 		return nil, err
 	}
 	// seller sig
@@ -164,7 +164,7 @@ func VerifyAtomicMatchTxInfo(
 		return nil, errors.New("internal error")
 	}
 	// verify signature
-	if err := VerifySignature(txInfo.Sig, msgHash, accountInfoMap[txInfo.SellOffer.AccountIndex].PublicKey); err != nil {
+	if err := VerifySignature(txInfo.SellOffer.Sig, msgHash, accountInfoMap[txInfo.SellOffer.AccountIndex].PublicKey); err != nil {
 		return nil, err
 	}
 	// submitter hash
