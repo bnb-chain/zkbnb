@@ -175,7 +175,7 @@ func VerifyAtomicMatchTxInfo(
 		return nil, errors.New("internal error")
 	}
 	// verify submitter signature
-	if err := VerifySignature(txInfo.Sig, msgHash, accountInfoMap[txInfo.BuyOffer.AccountIndex].PublicKey); err != nil {
+	if err := VerifySignature(txInfo.Sig, msgHash, accountInfoMap[txInfo.AccountIndex].PublicKey); err != nil {
 		return nil, err
 	}
 	// compute tx details
