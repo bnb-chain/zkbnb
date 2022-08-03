@@ -52,6 +52,7 @@ func New(svcCtx *svc.ServiceContext) Commglobalmap {
 		accountModel:         account.NewAccountModel(svcCtx.Conn, svcCtx.Config.CacheRedis, svcCtx.GormPointer),
 		liquidityModel:       liquidity.NewLiquidityModel(svcCtx.Conn, svcCtx.Config.CacheRedis, svcCtx.GormPointer),
 		redisConnection:      svcCtx.RedisConnection,
+		nftModel:             nft.NewL2NftModel(svcCtx.Conn, svcCtx.Config.CacheRedis, svcCtx.GormPointer),
 		offerModel:           nft.NewOfferModel(svcCtx.Conn, svcCtx.Config.CacheRedis, svcCtx.GormPointer),
 		cache:                svcCtx.Cache,
 	}
