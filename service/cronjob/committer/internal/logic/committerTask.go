@@ -582,6 +582,7 @@ func CommitterTask(ctx *svc.ServiceContext, lastCommitTimeStamp *time.Time,
 			stateRoot := common.Bytes2Hex(hFunc.Sum(nil))
 			finalStateRoot = stateRoot
 			oTx := ConvertMempoolTxToTx(mempoolTx, txDetails, stateRoot, currentBlockHeight)
+			oTx.TxIndex = int64(len(txs))
 			txs = append(txs, oTx)
 		}
 		// construct assets history
