@@ -40,7 +40,7 @@ spec:
     spec:
       serviceAccountName: find-endpoints
       containers:
-      - image: us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/app:$TAG_NAME
+      - image: us-central1-docker.pkg.dev/zkbas-330903/zkbas-webhook/app:$TAG_NAME
         imagePullPolicy: Always
         lifecycle:
           preStop:
@@ -110,7 +110,7 @@ spec:
     spec:
       serviceAccountName: find-endpoints
       containers:
-      - image: us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/committer:$TAG_NAME
+      - image: us-central1-docker.pkg.dev/zkbas-330903/zkbas-webhook/committer:$TAG_NAME
         imagePullPolicy: Always
         lifecycle:
           preStop:
@@ -154,7 +154,7 @@ spec:
         app: globalrpc
     spec:
       containers:
-      - image: us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/globalrpc:$TAG_NAME
+      - image: us-central1-docker.pkg.dev/zkbas-330903/zkbas-webhook/globalrpc:$TAG_NAME
         imagePullPolicy: Always
         lifecycle:
           preStop:
@@ -213,7 +213,7 @@ spec:
         app: monitor
     spec:
       containers:
-      - image: us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/monitor:$TAG_NAME
+      - image: us-central1-docker.pkg.dev/zkbas-330903/zkbas-webhook/monitor:$TAG_NAME
         imagePullPolicy: Always
         lifecycle:
           preStop:
@@ -259,7 +259,7 @@ spec:
         app: witnessgenerator
     spec:
       containers:
-        - image: us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/witnessgenerator:$TAG_NAME
+        - image: us-central1-docker.pkg.dev/zkbas-330903/zkbas-webhook/witnessgenerator:$TAG_NAME
           imagePullPolicy: Always
           lifecycle:
             preStop:
@@ -304,7 +304,7 @@ spec:
     spec:
       serviceAccountName: find-endpoints
       containers:
-      - image: us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/prover:$TAG_NAME
+      - image: us-central1-docker.pkg.dev/zkbas-330903/zkbas-webhook/prover:$TAG_NAME
         imagePullPolicy: Always
         lifecycle:
           preStop:
@@ -350,7 +350,7 @@ spec:
         app: sender
     spec:
       containers:
-      - image: us-central1-docker.pkg.dev/zecrey-330903/zecrey-webhook/sender:$TAG_NAME
+      - image: us-central1-docker.pkg.dev/zkbas-330903/zkbas-webhook/sender:$TAG_NAME
         imagePullPolicy: Always
         lifecycle:
           preStop:

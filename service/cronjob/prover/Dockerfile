@@ -11,11 +11,11 @@ RUN curl -sSL https://sdk.cloud.google.com | bash
 ENV PATH $PATH:/root/google-cloud-sdk/bin
 
 WORKDIR /app
-RUN gsutil cp gs://zecrey_key/zecrey-legend1.pk zecrey-legend1.pk
-RUN gsutil cp gs://zecrey_key/zecrey-legend1.vk zecrey-legend1.vk
+RUN gsutil cp gs://zkbas_key/zkbas-legend1.pk zkbas-legend1.pk
+RUN gsutil cp gs://zkbas_key/zkbas-legend1.vk zkbas-legend1.vk
 
-RUN gsutil cp gs://zecrey_key/zecrey-legend10.pk zecrey-legend10.pk
-RUN gsutil cp gs://zecrey_key/zecrey-legend10.vk zecrey-legend10.vk
+RUN gsutil cp gs://zkbas_key/zkbas-legend10.pk zkbas-legend10.pk
+RUN gsutil cp gs://zkbas_key/zkbas-legend10.vk zkbas-legend10.vk
 
 FROM alpine:3.4
 
@@ -26,10 +26,10 @@ ENV TZ Asia/Shanghai
 WORKDIR /app
 COPY bin/prover /app/prover
 COPY configyaml /app/etc
-COPY --from=builder /app/zecrey-legend1.pk zecrey-legend1.pk
-COPY --from=builder /app/zecrey-legend1.vk zecrey-legend1.vk
+COPY --from=builder /app/zkbas-legend1.pk zkbas-legend1.pk
+COPY --from=builder /app/zkbas-legend1.vk zkbas-legend1.vk
 
-COPY --from=builder /app/zecrey-legend10.pk zecrey-legend10.pk
-COPY --from=builder /app/zecrey-legend10.vk zecrey-legend10.vk
+COPY --from=builder /app/zkbas-legend10.pk zkbas-legend10.pk
+COPY --from=builder /app/zkbas-legend10.vk zkbas-legend10.vk
 
 CMD ["./prover", "-f", "etc/prover.yaml"]
