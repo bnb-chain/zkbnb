@@ -176,6 +176,7 @@ func InitAccountTree(
 	} else {
 		if accountTree.LatestVersion() > bsmt.Version(blockHeight) {
 			err := accountTree.Rollback(bsmt.Version(blockHeight))
+			logx.Infof("[InitAccountTree] account tree version [%d] if higher than block, rollback to %d", accountTree.LatestVersion(), blockHeight)
 			if err != nil {
 				logx.Errorf("[InitAccountTree] unable to rollback account tree: %s, version: %d", err.Error(), blockHeight)
 				return nil, nil, err
@@ -185,6 +186,7 @@ func InitAccountTree(
 		for i, assetTree := range accountAssetTrees {
 			if assetTree.LatestVersion() > bsmt.Version(blockHeight) {
 				err := assetTree.Rollback(bsmt.Version(blockHeight))
+				logx.Infof("[InitAccountTree] asset tree %d version [%d] if higher than block, rollback to %d", i, assetTree.LatestVersion(), blockHeight)
 				if err != nil {
 					logx.Errorf("[InitAccountTree] unable to rollback asset [%d] tree: %s, version: %d", i, err.Error(), blockHeight)
 					return nil, nil, err

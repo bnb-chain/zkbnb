@@ -75,6 +75,7 @@ func InitLiquidityTree(
 		}
 	} else if liquidityTree.LatestVersion() > bsmt.Version(blockHeight) {
 		err := liquidityTree.Rollback(bsmt.Version(blockHeight))
+		logx.Infof("[InitLiquidityTree] liquidity tree version [%d] if higher than block, rollback to %d", liquidityTree.LatestVersion(), blockHeight)
 		if err != nil {
 			logx.Errorf("[InitLiquidityTree] unable to rollback liquidity tree: %s, version: %d", err.Error(), blockHeight)
 			return nil, err
