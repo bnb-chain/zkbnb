@@ -49,7 +49,7 @@ func (m *model) GetTxsTotalCount(ctx context.Context) (int64, error) {
 }
 
 /*
-	Func: GetTxsLists
+	Func: GetTxsList
 	Params:
 	Return: list of txs, err error
 	Description: used for showing transactions for explorer
