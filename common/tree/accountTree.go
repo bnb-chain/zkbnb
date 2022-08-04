@@ -173,7 +173,26 @@ func InitAccountTree(
 				return nil, nil, err
 			}
 		}
+	} else {
+		if accountTree.LatestVersion() > bsmt.Version(blockHeight) {
+			err := accountTree.Rollback(bsmt.Version(blockHeight))
+			if err != nil {
+				logx.Errorf("[InitAccountTree] unable to rollback account tree: %s, version: %d", err.Error(), blockHeight)
+				return nil, nil, err
+			}
+		}
+
+		for i, assetTree := range accountAssetTrees {
+			if assetTree.LatestVersion() > bsmt.Version(blockHeight) {
+				err := assetTree.Rollback(bsmt.Version(blockHeight))
+				if err != nil {
+					logx.Errorf("[InitAccountTree] unable to rollback asset [%d] tree: %s, version: %d", i, err.Error(), blockHeight)
+					return nil, nil, err
+				}
+			}
+		}
 	}
+
 	return accountTree, accountAssetTrees, nil
 }
 

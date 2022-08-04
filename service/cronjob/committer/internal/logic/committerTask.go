@@ -597,11 +597,6 @@ func CommitterTask(
 			txs = append(txs, oTx)
 		}
 
-		err = tree.CommitTrees(uint64(finalityBlockNr), accountTree, accountAssetTrees, liquidityTree, nftTree)
-		if err != nil {
-			logx.Errorf("[CommitterTask] unable to commit trees after txs is executed", err)
-			return err
-		}
 		// construct assets history
 		var (
 			pendingUpdateAccounts      []*Account
@@ -736,6 +731,12 @@ func CommitterTask(
 			}
 		}
 
+		err = tree.CommitTrees(uint64(finalityBlockNr), accountTree, accountAssetTrees, liquidityTree, nftTree)
+		if err != nil {
+			logx.Errorf("[CommitterTask] unable to commit trees after txs is executed", err)
+			return err
+		}
+
 		// create block for committer
 		// create block, history, update mempool txs, create new l1 amount infos
 		err = ctx.BlockModel.CreateBlockForCommitter(
@@ -753,6 +754,11 @@ func CommitterTask(
 		)
 		if err != nil {
 			logx.Errorf("[CommitterTask] unable to create block for committer: %s", err.Error())
+			// rollback trees
+			err = tree.RollBackTrees(uint64(oBlock.BlockHeight)-1, accountTree, accountAssetTrees, liquidityTree, nftTree)
+			if err != nil {
+				logx.Errorf("[CommitterTask] unable to rollback trees", err)
+			}
 			return err
 		}
 		*lastCommitTimeStamp = time.Now()
