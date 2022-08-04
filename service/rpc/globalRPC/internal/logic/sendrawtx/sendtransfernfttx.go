@@ -124,7 +124,7 @@ func SendTransferNftTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 	}
 	if err = CreateMempoolTx(mempoolTx, svcCtx.RedisConnection, svcCtx.MempoolModel); err != nil {
 		logx.Errorf("fail to create mempool tx: %v, err: %s", mempoolTx, err.Error())
-		_ = CreateFailTx(svcCtx.FailTxModel, commonTx.TxTypeCancelOffer, txInfo, err)
+		_ = CreateFailTx(svcCtx.FailTxModel, commonTx.TxTypeTransferNft, txInfo, err)
 		return "", errorcode.RpcErrInternal
 	}
 	// update cache, not key logic

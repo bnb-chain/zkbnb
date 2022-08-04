@@ -7,7 +7,6 @@ import (
 
 	"github.com/zeromicro/go-zero/core/stores/redis"
 
-	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/util"
 
@@ -118,7 +117,7 @@ func CreateFailTx(failTxModel tx.FailTxModel, txType int, txInfo interface{}, er
 		// transaction id, is primary key
 		TxHash: txHash,
 		// transaction type
-		TxType: commonTx.TxTypeCancelOffer,
+		TxType: int64(txType),
 		// tx status, 1 - success(default), 2 - failure
 		TxStatus: tx.StatusFail,
 		// l1asset id

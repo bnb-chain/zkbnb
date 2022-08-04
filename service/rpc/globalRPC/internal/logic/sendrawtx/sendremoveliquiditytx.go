@@ -157,7 +157,7 @@ func SendRemoveLiquidityTx(ctx context.Context, svcCtx *svc.ServiceContext, comm
 	err = CreateMempoolTx(mempoolTx, svcCtx.RedisConnection, svcCtx.MempoolModel)
 	if err != nil {
 		logx.Errorf("fail to create mempool tx: %v, err: %s", mempoolTx, err.Error())
-		_ = CreateFailTx(svcCtx.FailTxModel, commonTx.TxTypeCancelOffer, txInfo, err)
+		_ = CreateFailTx(svcCtx.FailTxModel, commonTx.TxTypeRemoveLiquidity, txInfo, err)
 		return "", errorcode.RpcErrInternal
 	}
 	// update redis

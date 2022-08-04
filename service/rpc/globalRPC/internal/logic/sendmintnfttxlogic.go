@@ -163,7 +163,7 @@ func (l *SendMintNftTxLogic) SendMintNftTx(in *globalRPCProto.ReqSendMintNftTx) 
 	err = createMempoolTxForMintNft(nftInfo, mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)
 	if err != nil {
 		logx.Errorf("fail to create mempool tx: %v, err: %s", mempoolTx, err.Error())
-		_ = sendrawtx.CreateFailTx(l.svcCtx.FailTxModel, commonTx.TxTypeCancelOffer, txInfo, err)
+		_ = sendrawtx.CreateFailTx(l.svcCtx.FailTxModel, commonTx.TxTypeMintNft, txInfo, err)
 		return nil, errorcode.RpcErrInternal
 	}
 
