@@ -174,7 +174,7 @@ func InitAccountTree(
 			}
 		}
 	} else {
-		if accountTree.LatestVersion() > bsmt.Version(blockHeight) {
+		if accountTree.LatestVersion() > bsmt.Version(blockHeight) && !accountTree.IsEmpty() {
 			err := accountTree.Rollback(bsmt.Version(blockHeight))
 			logx.Infof("[InitAccountTree] account tree version [%d] if higher than block, rollback to %d", accountTree.LatestVersion(), blockHeight)
 			if err != nil {
@@ -184,7 +184,7 @@ func InitAccountTree(
 		}
 
 		for i, assetTree := range accountAssetTrees {
-			if assetTree.LatestVersion() > bsmt.Version(blockHeight) {
+			if assetTree.LatestVersion() > bsmt.Version(blockHeight) && !assetTree.IsEmpty() {
 				err := assetTree.Rollback(bsmt.Version(blockHeight))
 				logx.Infof("[InitAccountTree] asset tree %d version [%d] if higher than block, rollback to %d", i, assetTree.LatestVersion(), blockHeight)
 				if err != nil {

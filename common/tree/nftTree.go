@@ -66,7 +66,7 @@ func InitNftTree(
 				return nil, err
 			}
 		}
-	} else if nftTree.LatestVersion() > bsmt.Version(blockHeight) {
+	} else if nftTree.LatestVersion() > bsmt.Version(blockHeight) && !nftTree.IsEmpty() {
 		err := nftTree.Rollback(bsmt.Version(blockHeight))
 		logx.Infof("[InitNftTree] nft tree version [%d] if higher than block, rollback to %d", nftTree.LatestVersion(), blockHeight)
 		if err != nil {
