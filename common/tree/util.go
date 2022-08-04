@@ -157,24 +157,34 @@ func RollBackTrees(version uint64,
 	nftTree bsmt.SparseMerkleTree) error {
 
 	ver := bsmt.Version(version)
-	err := accountTree.Rollback(ver)
-	if err != nil {
-		return errors.Wrapf(err, "unable to rollback account tree, ver: %d", ver)
-	}
-	for idx, assetTree := range *assetTrees {
-		err := assetTree.Rollback(ver)
+	if accountTree.LatestVersion() > ver && !accountTree.IsEmpty() {
+		err := accountTree.Rollback(ver)
 		if err != nil {
-			return errors.Wrapf(err, "unable to rollback asset tree [%d], ver: %d", idx, ver)
+			return errors.Wrapf(err, "unable to rollback account tree, ver: %d", ver)
 		}
 	}
-	err = liquidityTree.Rollback(ver)
-	if err != nil {
-		return errors.Wrapf(err, "unable to rollback liquidity tree, ver: %d", ver)
+
+	for idx, assetTree := range *assetTrees {
+		if assetTree.LatestVersion() > ver && !assetTree.IsEmpty() {
+			err := assetTree.Rollback(ver)
+			if err != nil {
+				return errors.Wrapf(err, "unable to rollback asset tree [%d], ver: %d", idx, ver)
+			}
+		}
 	}
 
-	err = nftTree.Rollback(ver)
-	if err != nil {
-		return errors.Wrapf(err, "unable to rollback nft tree, tree ver: %d", ver)
+	if liquidityTree.LatestVersion() > ver && !liquidityTree.IsEmpty() {
+		err := liquidityTree.Rollback(ver)
+		if err != nil {
+			return errors.Wrapf(err, "unable to rollback liquidity tree, ver: %d", ver)
+		}
+	}
+
+	if nftTree.LatestVersion() > ver && !nftTree.IsEmpty() {
+		err := nftTree.Rollback(ver)
+		if err != nil {
+			return errors.Wrapf(err, "unable to rollback nft tree, tree ver: %d", ver)
+		}
 	}
 	return nil
 }
