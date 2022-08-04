@@ -149,3 +149,32 @@ func CommitTrees(version uint64,
 	}
 	return nil
 }
+
+func RollBackTrees(version uint64,
+	accountTree bsmt.SparseMerkleTree,
+	assetTrees *[]bsmt.SparseMerkleTree,
+	liquidityTree bsmt.SparseMerkleTree,
+	nftTree bsmt.SparseMerkleTree) error {
+
+	ver := bsmt.Version(version)
+	err := accountTree.Rollback(ver)
+	if err != nil {
+		return errors.Wrapf(err, "unable to rollback account tree, ver: %d", ver)
+	}
+	for idx, assetTree := range *assetTrees {
+		err := assetTree.Rollback(ver)
+		if err != nil {
+			return errors.Wrapf(err, "unable to rollback asset tree [%d], ver: %d", idx, ver)
+		}
+	}
+	err = liquidityTree.Rollback(ver)
+	if err != nil {
+		return errors.Wrapf(err, "unable to rollback liquidity tree, ver: %d", ver)
+	}
+
+	err = nftTree.Rollback(ver)
+	if err != nil {
+		return errors.Wrapf(err, "unable to rollback nft tree, tree ver: %d", ver)
+	}
+	return nil
+}

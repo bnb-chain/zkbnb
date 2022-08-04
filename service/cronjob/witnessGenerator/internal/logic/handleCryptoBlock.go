@@ -109,13 +109,6 @@ func generateUnprovedBlockWitness(
 			logx.Info("after state root:", common.Bytes2Hex(newStateRoot))
 		}
 
-		// commit trees
-		err = tree.CommitTrees(uint64(latestVerifiedBlockNr), accountTree, assetTrees, liquidityTree, nftTree)
-		if err != nil {
-			logx.Errorf("[prover] unable to commit trees after txs is executed", err.Error())
-			return err
-		}
-
 		emptyTxCount := int(oBlock.BlockSize) - len(oBlock.Txs)
 		for i := 0; i < emptyTxCount; i++ {
 			cryptoTxs = append(cryptoTxs, cryptoBlock.EmptyTx())
@@ -125,31 +118,45 @@ func generateUnprovedBlockWitness(
 			logx.Info("error: new root:", common.Bytes2Hex(newStateRoot))
 			logx.Info("error: BlockCommitment:", common.Bytes2Hex(blockCommitment))
 			return errors.New("state root doesn't match")
-		} else {
-			blockInfo, err := proverUtil.BlockToCryptoBlock(oBlock, oldStateRoot, newStateRoot, cryptoTxs)
-			if err != nil {
-				logx.Errorf("[prover] unable to convert block to crypto block")
-				return err
-			}
-			var nCryptoBlockInfo = &CryptoBlockInfo{
-				BlockInfo: blockInfo,
-				Status:    blockForProof.StatusPublished,
-			}
-			logx.Info("new root:", common.Bytes2Hex(nCryptoBlockInfo.BlockInfo.NewStateRoot))
-			logx.Info("BlockCommitment:", common.Bytes2Hex(nCryptoBlockInfo.BlockInfo.BlockCommitment))
-
-			// insert crypto blocks array
-			unprovedCryptoBlockModel, err := CryptoBlockInfoToBlockForProof(nCryptoBlockInfo)
-			if err != nil {
-				logx.Errorf("[prover] marshal crypto block info error, err=%s", err.Error())
-				return err
-			}
-			err = ctx.BlockForProofModel.CreateConsecutiveUnprovedCryptoBlock(unprovedCryptoBlockModel)
-			if err != nil {
-				logx.Errorf("[prover] create unproved crypto block error, err=%s", err.Error())
-				return err
-			}
 		}
+
+		blockInfo, err := proverUtil.BlockToCryptoBlock(oBlock, oldStateRoot, newStateRoot, cryptoTxs)
+		if err != nil {
+			logx.Errorf("[prover] unable to convert block to crypto block")
+			return err
+		}
+		var nCryptoBlockInfo = &CryptoBlockInfo{
+			BlockInfo: blockInfo,
+			Status:    blockForProof.StatusPublished,
+		}
+		logx.Info("new root:", common.Bytes2Hex(nCryptoBlockInfo.BlockInfo.NewStateRoot))
+		logx.Info("BlockCommitment:", common.Bytes2Hex(nCryptoBlockInfo.BlockInfo.BlockCommitment))
+
+		// insert crypto blocks array
+		unprovedCryptoBlockModel, err := CryptoBlockInfoToBlockForProof(nCryptoBlockInfo)
+		if err != nil {
+			logx.Errorf("[prover] marshal crypto block info error, err=%s", err.Error())
+			return err
+		}
+
+		// commit trees
+		err = tree.CommitTrees(uint64(latestVerifiedBlockNr), accountTree, assetTrees, liquidityTree, nftTree)
+		if err != nil {
+			logx.Errorf("[prover] unable to commit trees after txs is executed", err.Error())
+			return err
+		}
+
+		err = ctx.BlockForProofModel.CreateConsecutiveUnprovedCryptoBlock(unprovedCryptoBlockModel)
+		if err != nil {
+			// rollback trees
+			err = tree.RollBackTrees(uint64(oBlock.BlockHeight)-1, accountTree, assetTrees, liquidityTree, nftTree)
+			if err != nil {
+				logx.Errorf("[prover] unable to rollback trees", err)
+			}
+			logx.Errorf("[prover] create unproved crypto block error, err=%s", err.Error())
+			return err
+		}
+
 	}
 	return nil
 }

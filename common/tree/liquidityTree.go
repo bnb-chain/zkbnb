@@ -34,6 +34,7 @@ func InitLiquidityTree(
 ) (
 	liquidityTree bsmt.SparseMerkleTree, err error,
 ) {
+
 	liquidityTree, err = bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(zmimc.Hmimc),
 		treedb.SetNamespace(ctx, LiquidityPrefix), LiquidityTreeHeight, NilLiquidityNodeHash,
 		ctx.Options(blockHeight)...)
@@ -71,6 +72,12 @@ func InitLiquidityTree(
 				logx.Errorf("[InitLiquidityTree] unable to commit liquidity tree: %s", err.Error())
 				return nil, err
 			}
+		}
+	} else if liquidityTree.LatestVersion() > bsmt.Version(blockHeight) {
+		err := liquidityTree.Rollback(bsmt.Version(blockHeight))
+		if err != nil {
+			logx.Errorf("[InitLiquidityTree] unable to rollback liquidity tree: %s, version: %d", err.Error(), blockHeight)
+			return nil, err
 		}
 	}
 

@@ -121,6 +121,12 @@ github.com/bketelsen/crypt v0.0.4/go.mod h1:aI6NrJ0pMGgvZKL1iVgXLnfIFJtfV+bKCoqO
 github.com/bmizerany/pat v0.0.0-20170815010413-6226ea591a40/go.mod h1:8rLXio+WjiTceGBHIoTvn60HIbs7Hm7bcHjyrSqYB9c=
 github.com/bnb-chain/bas-smt v0.0.0-20220802101732-96e306e5ba4e h1:gbkjKRGDKtYla6CK394gbaXc0ErpbnV5zg6xbCCw0Zc=
 github.com/bnb-chain/bas-smt v0.0.0-20220802101732-96e306e5ba4e/go.mod h1:KTxDr9UwOAvMgC5p6wAmUL7VpbQcrMRuSPOgVonRBBs=
+github.com/bnb-chain/bas-smt v0.0.0-20220804061313-e16ed35f0842 h1:cNZhRSXvWgD7s0Xqccv3NZ2cQ/Y7FTfjkIw0RdK0w/U=
+github.com/bnb-chain/bas-smt v0.0.0-20220804061313-e16ed35f0842/go.mod h1:VJsBjo+k7FICpTw27+LwuAvfq9I13UJ4hUjmberr22Q=
+github.com/bnb-chain/bas-smt v0.0.0-20220804084339-998e1a927b7e h1:NpsS5IYCB0ungmEfGnXRoDM/CL11yEHXDbf/OncueyU=
+github.com/bnb-chain/bas-smt v0.0.0-20220804084339-998e1a927b7e/go.mod h1:VJsBjo+k7FICpTw27+LwuAvfq9I13UJ4hUjmberr22Q=
+github.com/bnb-chain/bas-smt v0.0.0-20220804090937-a7712cdee391 h1:U0pz17/+58EvEzjpqmRoJJ+wy0hYWNDQb+afohYrths=
+github.com/bnb-chain/bas-smt v0.0.0-20220804090937-a7712cdee391/go.mod h1:VJsBjo+k7FICpTw27+LwuAvfq9I13UJ4hUjmberr22Q=
 github.com/bnb-chain/zkbas-crypto v0.0.1 h1:AntDPKJ79/3OBxQUPCr6rIplWZFDzZF8VluXVZNPKMw=
 github.com/bnb-chain/zkbas-crypto v0.0.1/go.mod h1:T2erL+OCXw66yqBdsI5waTEx4FG2d8lYDh1XcEB1kRU=
 github.com/bnb-chain/zkbas-crypto v0.0.2-0.20220802110852-0fc92f61a79a h1:PTMnZwNXnfO4Ky1kn2LGhQ0B1+mZjcXnV0jz8oBTBHY=
@@ -725,6 +731,8 @@ github.com/patrickmn/go-cache v2.1.0+incompatible/go.mod h1:3Qf8kWWT7OJRJbdiICTK
 github.com/paulbellamy/ratecounter v0.2.0/go.mod h1:Hfx1hDpSGoqxkVVpBi/IlYD7kChlfo5C6hzIHwPqfFE=
 github.com/paulmach/orb v0.5.0/go.mod h1:FWRlTgl88VI1RBx/MkrwWDRhQ96ctqMCh8boXhmqB/A=
 github.com/paulmach/protoscan v0.2.1/go.mod h1:SpcSwydNLrxUGSDvXvO0P7g7AuhJ7lcKfDlhJCDw2gY=
+github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58 h1:onHthvaw9LFnH4t2DcNVpwGmV9E1BkGknEliJkfwQj0=
+github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58/go.mod h1:DXv8WO4yhMYhSNPKjeNKa5WY9YCIEBRbNzFFPJbWO6Y=
 github.com/pegasus-kv/thrift v0.13.0 h1:4ESwaNoHImfbHa9RUGJiJZ4hrxorihZHk5aarYwY8d4=
 github.com/pegasus-kv/thrift v0.13.0/go.mod h1:Gl9NT/WHG6ABm6NsrbfE8LiJN0sAyneCrvB4qN4NPqQ=
 github.com/pelletier/go-toml v1.9.3 h1:zeC5b1GviRUyKYd6OJPvBU/mcVDVoL1OhT17FCt5dSQ=
