@@ -68,6 +68,7 @@ func InitNftTree(
 		}
 	} else if nftTree.LatestVersion() > bsmt.Version(blockHeight) {
 		err := nftTree.Rollback(bsmt.Version(blockHeight))
+		logx.Infof("[InitNftTree] nft tree version [%d] if higher than block, rollback to %d", nftTree.LatestVersion(), blockHeight)
 		if err != nil {
 			logx.Errorf("[InitNftTree] unable to rollback nft tree: %s, version: %d", err.Error(), blockHeight)
 			return nil, err
