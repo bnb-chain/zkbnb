@@ -17,6 +17,8 @@
 package globalmapHandler
 
 import (
+	"time"
+
 	"github.com/zeromicro/go-zero/core/stores/redis"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
@@ -33,7 +35,7 @@ type (
 
 const (
 	LockExpiryTime = 10 // seconds
-	RetryInterval  = 500
+	RetryInterval  = 500 * time.Millisecond
 	MaxRetryTimes  = 3
 
 	LiquidityExpiryTime = 30 // seconds
