@@ -171,6 +171,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		[]rest.Route{
 			{
 				Method:  http.MethodGet,
+				Path:    "/api/v1/tx/getTxsList",
+				Handler: transaction.GetTxsListHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
 				Path:    "/api/v1/tx/getTxsListByBlockHeight",
 				Handler: transaction.GetTxsListByBlockHeightHandler(serverCtx),
 			},

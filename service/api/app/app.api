@@ -2,15 +2,16 @@ syntax = "v1"
 
 info(
 	author: "Gavin Gao, Tao Zhu, Wenki Wu"
-	date:   "2022-5-1"
-	desc:   "App API"
+	date: "2022-5-1"
+	desc: "App API"
 )
 
 /* ========================= root =========================*/
 
 /* root path */
 type (
-	ReqGetStatus  struct{}
+	ReqGetStatus {
+	}
 	RespGetStatus {
 		Status        uint32 `json:"status"`
 		NetworkId     uint32 `json:"network_id"`
@@ -21,9 +22,9 @@ type (
 @server(
 	group: root
 )
-service app-api{
+service app-api {
 	@handler GetStatus
-	get /  (ReqGetStatus) returns (RespGetStatus)
+	get / (ReqGetStatus) returns (RespGetStatus)
 }
 
 /* ========================= Account =========================*/
@@ -115,7 +116,7 @@ type (
 	group: account
 )
 
-service app-api{
+service app-api {
 	@handler GetAccountStatusByAccountPk
 	get /api/v1/account/getAccountStatusByAccountPk (ReqGetAccountStatusByAccountPk) returns (RespGetAccountStatusByAccountPk)
 	
@@ -129,10 +130,10 @@ service app-api{
 	get /api/v1/account/getAccountStatusByAccountName (ReqGetAccountStatusByAccountName) returns (RespGetAccountStatusByAccountName)
 	
 	@handler GetAccountInfoByAccountName
-	get /api/v1/account/getAccountInfoByAccountName  (ReqGetAccountInfoByAccountName) returns (RespGetAccountInfoByAccountName)
+	get /api/v1/account/getAccountInfoByAccountName (ReqGetAccountInfoByAccountName) returns (RespGetAccountInfoByAccountName)
 	
 	@handler GetBalanceByAssetIdAndAccountName
-	get /api/v1/account/getBalanceByAssetIdAndAccountName    (ReqGetBlanceByAssetIdAndAccountName) returns (RespGetBlanceInfoByAssetIdAndAccountName)
+	get /api/v1/account/getBalanceByAssetIdAndAccountName (ReqGetBlanceByAssetIdAndAccountName) returns (RespGetBlanceInfoByAssetIdAndAccountName)
 }
 
 /* ========================= Block =========================*/
@@ -199,15 +200,15 @@ type (
 @server(
 	group: block
 )
-service app-api{
+service app-api {
 	@handler GetBlocks
-	get /api/v1/block/getBlocks  (ReqGetBlocks) returns (RespGetBlocks)
+	get /api/v1/block/getBlocks (ReqGetBlocks) returns (RespGetBlocks)
 	
 	@handler GetBlockByCommitment
-	get /api/v1/block/getBlockByCommitment  (ReqGetBlockByCommitment) returns (RespGetBlockByCommitment)
+	get /api/v1/block/getBlockByCommitment (ReqGetBlockByCommitment) returns (RespGetBlockByCommitment)
 	
 	@handler GetBlockByBlockHeight
-	get /api/v1/block/getBlockByBlockHeight  (ReqGetBlockByBlockHeight) returns (RespGetBlockByBlockHeight)
+	get /api/v1/block/getBlockByBlockHeight (ReqGetBlockByBlockHeight) returns (RespGetBlockByBlockHeight)
 	
 	@handler GetCurrentBlockHeight
 	get /api/v1/block/getCurrentBlockHeight returns (RespCurrentBlockHeight)
@@ -217,7 +218,8 @@ service app-api{
 
 // GetLayer2BasicInfo
 type (
-	ReqGetLayer2BasicInfo  struct{}
+	ReqGetLayer2BasicInfo {
+	}
 	RespGetLayer2BasicInfo {
 		BlockCommitted             int64    `json:"block_committed"`
 		BlockVerified              int64    `json:"block_verified"`
@@ -232,8 +234,9 @@ type (
 
 // GetAssetsList
 type (
-	ReqGetAssetsList struct{}
-	AssetInfo        {
+	ReqGetAssetsList {
+	}
+	AssetInfo {
 		AssetId       uint32 `json:"asset_id"`
 		AssetName     string `json:"asset_name"`
 		AssetDecimals uint32 `json:"asset_decimals"`
@@ -259,8 +262,9 @@ type (
 
 // GetCurrencyPrices
 type (
-	ReqGetCurrencyPrices struct{}
-	DataCurrencyPrices   {
+	ReqGetCurrencyPrices {
+	}
+	DataCurrencyPrices {
 		Pair    string `json:"pair"`
 		AssetId uint32 `json:"assetId"`
 		Price   string `json:"price"`
@@ -292,7 +296,8 @@ type (
 
 // GetGasFeeAssetList
 type (
-	ReqGetGasFeeAssetList  struct{}
+	ReqGetGasFeeAssetList {
+	}
 	RespGetGasFeeAssetList {
 		Assets []AssetInfo `json:"assets"`
 	}
@@ -327,7 +332,8 @@ type (
 
 // GetGasAccount
 type (
-	ReqGetGasAccount  struct{}
+	ReqGetGasAccount {
+	}
 	RespGetGasAccount {
 		AccountStatus int64  `json:"account_status"`
 		AccountIndex  int64  `json:"account_index"`
@@ -338,36 +344,36 @@ type (
 @server(
 	group: info
 )
-service app-api{
+service app-api {
 	@handler GetLayer2BasicInfo
-	get /api/v1/info/getLayer2BasicInfo  (ReqGetLayer2BasicInfo) returns (RespGetLayer2BasicInfo)
+	get /api/v1/info/getLayer2BasicInfo (ReqGetLayer2BasicInfo) returns (RespGetLayer2BasicInfo)
 	
 	@handler GetAssetsList
-	get /api/v1/info/getAssetsList  (ReqGetAssetsList) returns (RespGetAssetsList)
+	get /api/v1/info/getAssetsList (ReqGetAssetsList) returns (RespGetAssetsList)
 	
 	@handler GetCurrencyPriceBySymbol
-	get /api/v1/info/getCurrencyPriceBySymbol  (ReqGetCurrencyPriceBySymbol) returns (RespGetCurrencyPriceBySymbol)
+	get /api/v1/info/getCurrencyPriceBySymbol (ReqGetCurrencyPriceBySymbol) returns (RespGetCurrencyPriceBySymbol)
 	
 	@handler GetCurrencyPrices
-	get /api/v1/info/getCurrencyPrices  (ReqGetCurrencyPrices) returns (RespGetCurrencyPrices)
+	get /api/v1/info/getCurrencyPrices (ReqGetCurrencyPrices) returns (RespGetCurrencyPrices)
 	
 	@handler GetGasFee
-	get /api/v1/info/getGasFee  (ReqGetGasFee) returns (RespGetGasFee)
+	get /api/v1/info/getGasFee (ReqGetGasFee) returns (RespGetGasFee)
 	
 	@handler GetWithdrawGasFee
-	get /api/v1/info/getWithdrawGasFee  (ReqGetWithdrawGasFee) returns (RespGetWithdrawGasFee)
+	get /api/v1/info/getWithdrawGasFee (ReqGetWithdrawGasFee) returns (RespGetWithdrawGasFee)
 	
 	@handler GetGasFeeAssetList
-	get /api/v1/info/getGasFeeAssetList  (ReqGetGasFeeAssetList) returns (RespGetGasFeeAssetList)
+	get /api/v1/info/getGasFeeAssetList (ReqGetGasFeeAssetList) returns (RespGetGasFeeAssetList)
 	
 	@handler GetAccounts
-	get /api/v1/info/getAccounts  (ReqGetAccounts) returns (RespGetAccounts)
+	get /api/v1/info/getAccounts (ReqGetAccounts) returns (RespGetAccounts)
 	
 	@handler Search
-	get /api/v1/info/search  (ReqSearch) returns (RespSearch)
+	get /api/v1/info/search (ReqSearch) returns (RespSearch)
 	
 	@handler GetGasAccount
-	get /api/v1/info/getGasAccount  (ReqGetGasAccount) returns (RespGetGasAccount)
+	get /api/v1/info/getGasAccount (ReqGetGasAccount) returns (RespGetGasAccount)
 }
 
 /* =========================== Pair ==========================*/
@@ -387,8 +393,9 @@ type (
 
 // getAvailablePairs
 type (
-	ReqGetAvailablePairs struct{}
-	Pair                 {
+	ReqGetAvailablePairs {
+	}
+	Pair {
 		PairIndex    uint32 `json:"pair_index"`
 		AssetAId     uint32 `json:"asset_a_id"`
 		AssetAName   string `json:"asset_a_name"`
@@ -435,20 +442,20 @@ type (
 )
 
 @server(
-	group:pair
+	group: pair
 )
-service app-api{
+service app-api {
 	@handler GetSwapAmount
 	get /api/v1/pair/getSwapAmount (ReqGetSwapAmount) returns (RespGetSwapAmount)
 	
 	@handler GetAvailablePairs
-	get /api/v1/pair/getAvailablePairs (ReqGetAvailablePairs) returns   (RespGetAvailablePairs)
+	get /api/v1/pair/getAvailablePairs (ReqGetAvailablePairs) returns (RespGetAvailablePairs)
 	
 	@handler GetLPValue
 	get /api/v1/pair/getLPValue (ReqGetLPValue) returns (RespGetLPValue)
 	
 	@handler GetPairInfo
-	get /api/v1/pair/getPairInfo (ReqGetPairInfo) returns   (RespGetPairInfo)
+	get /api/v1/pair/getPairInfo (ReqGetPairInfo) returns (RespGetPairInfo)
 }
 
 /* ======================= transaction =======================*/
@@ -497,6 +504,18 @@ type TxAccount {
 	AccountBalance string `json:"account_balance"`
 	AccountDelta   string `json:"account_delta"`
 }
+
+// GetTxsList
+type (
+	ReqGetTxsList {
+		Limit  uint16 `form:"limit"`
+		Offset uint16 `form:"offset"`
+	}
+	RespGetTxsList {
+		Total uint32 `json:"total"`
+		Txs   []*Tx  `json:"txs"`
+	}
+)
 
 // GetTxsListByBlockHeight
 type (
@@ -741,21 +760,24 @@ type (
 @server(
 	group: transaction
 )
-service app-api{
+service app-api {
+	@handler GetTxsList
+	get /api/v1/tx/getTxsList (ReqGetTxsList) returns (RespGetTxsList)
+	
 	@handler GetTxsListByBlockHeight
-	get /api/v1/tx/getTxsListByBlockHeight  (ReqGetTxsListByBlockHeight) returns (RespGetTxsListByBlockHeight)
+	get /api/v1/tx/getTxsListByBlockHeight (ReqGetTxsListByBlockHeight) returns (RespGetTxsListByBlockHeight)
 	
 	@handler GetTxsListByAccountIndex
-	get /api/v1/tx/getTxsListByAccountIndex  (ReqGetTxsListByAccountIndex) returns (RespGetTxsListByAccountIndex)
+	get /api/v1/tx/getTxsListByAccountIndex (ReqGetTxsListByAccountIndex) returns (RespGetTxsListByAccountIndex)
 	
 	@handler GetTxsByAccountIndexAndTxType
-	get /api/v1/tx/getTxsByAccountIndexAndTxType   (ReqGetTxsByAccountIndexAndTxType) returns (RespGetTxsByAccountIndexAndTxType)
+	get /api/v1/tx/getTxsByAccountIndexAndTxType (ReqGetTxsByAccountIndexAndTxType) returns (RespGetTxsByAccountIndexAndTxType)
 	
 	@handler GetTxsByAccountName
 	get /api/v1/tx/getTxsByAccountName (ReqGetTxsByAccountName) returns (RespGetTxsByAccountName)
 	
 	@handler GetTxsByPubKey
-	get /api/v1/tx/getTxsByPubKey  (ReqGetTxsByPubKey) returns (RespGetTxsByPubKey)
+	get /api/v1/tx/getTxsByPubKey (ReqGetTxsByPubKey) returns (RespGetTxsByPubKey)
 	
 	@handler GetTxByHash
 	get /api/v1/tx/getTxByHash (ReqGetTxByHash) returns (RespGetTxByHash)
@@ -764,16 +786,16 @@ service app-api{
 	get /api/v1/tx/getMempoolTxs (ReqGetMempoolTxs) returns (RespGetMempoolTxs)
 	
 	@handler GetmempoolTxsByAccountName
-	get /api/v1/tx/getmempoolTxsByAccountName  (ReqGetmempoolTxsByAccountName) returns (RespGetmempoolTxsByAccountName)
+	get /api/v1/tx/getmempoolTxsByAccountName (ReqGetmempoolTxsByAccountName) returns (RespGetmempoolTxsByAccountName)
 	
 	@handler GetNextNonce
 	get /api/v1/tx/getNextNonce (ReqGetNextNonce) returns (RespGetNextNonce)
 	
 	@handler SendTx
-	post /api/v1/tx/sendTx  (ReqSendTx) returns (RespSendTx)
+	post /api/v1/tx/sendTx (ReqSendTx) returns (RespSendTx)
 	
 	@handler SendCreateCollectionTx
-	post /api/v1/tx/sendCreateCollectionTx  (ReqSendCreateCollectionTx) returns (RespSendCreateCollectionTx)
+	post /api/v1/tx/sendCreateCollectionTx (ReqSendCreateCollectionTx) returns (RespSendCreateCollectionTx)
 	
 	@handler SendMintNftTx
 	post /api/v1/tx/sendMintNftTx (ReqSendMintNftTx) returns (RespSendMintNftTx)
@@ -847,10 +869,10 @@ type (
 @server(
 	group: nft
 )
-service app-api{
+service app-api {
 	@handler GetMaxOfferId
-	get /api/v1/nft/getMaxOfferId  (ReqGetMaxOfferId) returns (RespGetMaxOfferId)
+	get /api/v1/nft/getMaxOfferId (ReqGetMaxOfferId) returns (RespGetMaxOfferId)
 	
 	@handler GetAccountNftList
-	get /api/v1/nft/getAccountNftList  (ReqGetAccountNftList) returns (RespGetAccountNftList)
+	get /api/v1/nft/getAccountNftList (ReqGetAccountNftList) returns (RespGetAccountNftList)
 }

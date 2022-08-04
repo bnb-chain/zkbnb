@@ -8,7 +8,7 @@ import (
 )
 
 type Block interface {
-	GetCommitedBlocksCount(ctx context.Context) (count int64, err error)
+	GetCommittedBlocksCount(ctx context.Context) (count int64, err error)
 	GetVerifiedBlocksCount(ctx context.Context) (count int64, err error)
 	GetBlockWithTxsByCommitment(ctx context.Context, BlockCommitment string) (block *table.Block, err error)
 	GetBlockByBlockHeight(ctx context.Context, blockHeight int64) (block *table.Block, err error)
