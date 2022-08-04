@@ -132,7 +132,7 @@ func SendAddLiquidityTx(ctx context.Context, svcCtx *svc.ServiceContext, commglo
 		logx.Errorf("fail to delete liquidity info: %d, err: %s", txInfo.PairIndex, err.Error())
 		return "", errorcode.RpcErrInternal
 	}
-	if err = CreateMempoolTx(mempoolTx, svcCtx.RedisConnection, svcCtx.MempoolModel); err != nil {
+	if err := svcCtx.MempoolModel.CreateBatchedMempoolTxs([]*mempool.MempoolTx{mempoolTx}); err != nil {
 		logx.Errorf("fail to create mempool tx: %v, err: %s", mempoolTx, err.Error())
 		_ = CreateFailTx(svcCtx.FailTxModel, commonTx.TxTypeAddLiquidity, txInfo, err)
 		return "", err

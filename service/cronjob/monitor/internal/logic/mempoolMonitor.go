@@ -24,7 +24,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/redis"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
@@ -37,7 +36,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/tree"
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/common/util/globalmapHandler"
-	lockUtil "github.com/bnb-chain/zkbas/common/util/globalmapHandler"
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/repo/accountoperator"
 	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/repo/commglobalmap"
@@ -495,7 +493,6 @@ func MonitorMempool(ctx context.Context, svcCtx *svc.ServiceContext) error {
 			// create mempool oTx
 			var (
 				accountInfo *commonAsset.AccountInfo
-				redisLock   *redis.RedisLock
 			)
 			txInfo, err := util.ParseFullExitPubData(common.FromHex(oTx.Pubdata))
 			if err != nil {
@@ -550,15 +547,7 @@ func MonitorMempool(ctx context.Context, svcCtx *svc.ServiceContext) error {
 					logx.Errorf("[MonitorMempool] unable convert to format account info: %s", err.Error())
 					return err
 				}
-				key := util.GetAccountKey(accountInfo.AccountIndex)
-				lockKey := util.GetLockKey(key)
-				lock := lockUtil.GetRedisLockByKey(svcCtx.RedisConnection, lockKey)
-				err = lockUtil.TryAcquireLock(lock)
-				if err != nil {
-					logx.Errorf("[MonitorMempool] unable to acquire the lock: %s", err.Error())
-					return err
-				}
-				defer redisLock.Release()
+
 				mempoolTxs, err := svcCtx.MempoolModel.GetPendingMempoolTxsByAccountIndex(accountInfo.AccountIndex)
 				if err != nil {
 					if err != errorcode.DbErrNotFound {
@@ -653,12 +642,7 @@ func MonitorMempool(ctx context.Context, svcCtx *svc.ServiceContext) error {
 	}
 	// transaction: active accounts not in account table & update l2 oTx event & create mempool txs
 	logx.Infof("accounts: %v, mempoolTxs: %v, finalL2TxEvents: %v", len(pendingNewAccounts), len(pendingNewMempoolTxs), len(txs))
-	// clean cache
-	var pendingDeletedKeys []string
-	for index, _ := range relatedAccountIndex {
-		pendingDeletedKeys = append(pendingDeletedKeys, util.GetAccountKey(index))
-	}
-	_, _ = svcCtx.RedisConnection.Del(pendingDeletedKeys...)
+
 	// update db
 	if err = svcCtx.L2TxEventMonitorModel.CreateMempoolAndActiveAccount(pendingNewAccounts, pendingNewMempoolTxs,
 		pendingNewLiquidityInfos, pendingNewNfts, txs); err != nil {
@@ -676,11 +660,15 @@ func MonitorMempool(ctx context.Context, svcCtx *svc.ServiceContext) error {
 	return nil
 }
 
-func processFullExitNft(svcCtx *svc.ServiceContext,
+func processFullExitNft(
+	svcCtx *svc.ServiceContext,
 	txHash string,
 	newAccountInfoMap map[string]*account.Account,
-	newNftInfoMap map[int64]*commonAsset.NftInfo, oTx *l2TxEventMonitor.L2TxEventMonitor, pendingNewMempoolTxs []*mempool.MempoolTx,
-	relatedAccountIndex map[int64]bool) ([]*mempool.MempoolTx, map[int64]bool, error) {
+	newNftInfoMap map[int64]*commonAsset.NftInfo,
+	oTx *l2TxEventMonitor.L2TxEventMonitor,
+	pendingNewMempoolTxs []*mempool.MempoolTx,
+	relatedAccountIndex map[int64]bool,
+) ([]*mempool.MempoolTx, map[int64]bool, error) {
 	// create mempool oTx
 	var accountInfo *account.Account
 	txInfo, err := util.ParseFullExitNftPubData(common.FromHex(oTx.Pubdata))

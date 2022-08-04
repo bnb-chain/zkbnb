@@ -103,8 +103,7 @@ func SendTransferTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalm
 		txInfo.ExpiredAt,
 		txDetails,
 	)
-	err = CreateMempoolTx(mempoolTx, svcCtx.RedisConnection, svcCtx.MempoolModel)
-	if err != nil {
+	if err := svcCtx.MempoolModel.CreateBatchedMempoolTxs([]*mempool.MempoolTx{mempoolTx}); err != nil {
 		_ = CreateFailTx(svcCtx.FailTxModel, commonTx.TxTypeTransfer, txInfo, err)
 		return "", errorcode.RpcErrInternal
 	}

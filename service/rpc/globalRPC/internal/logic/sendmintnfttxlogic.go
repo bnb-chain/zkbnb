@@ -4,10 +4,9 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
-
-	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
@@ -160,8 +159,8 @@ func (l *SendMintNftTxLogic) SendMintNftTx(in *globalRPCProto.ReqSendMintNftTx) 
 		txInfo.ExpiredAt,
 		txDetails,
 	)
-	err = createMempoolTxForMintNft(nftInfo, mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel)
-	if err != nil {
+
+	if err := l.svcCtx.MempoolModel.CreateMempoolTxAndL2Nft(mempoolTx, nftInfo); err != nil {
 		logx.Errorf("fail to create mempool tx: %v, err: %s", mempoolTx, err.Error())
 		_ = sendrawtx.CreateFailTx(l.svcCtx.FailTxModel, commonTx.TxTypeMintNft, txInfo, err)
 		return nil, errorcode.RpcErrInternal
@@ -188,26 +187,4 @@ func (l *SendMintNftTxLogic) SendMintNftTx(in *globalRPCProto.ReqSendMintNftTx) 
 	_ = l.svcCtx.RedisConnection.Setex(key, string(nftInfoBytes), globalmapHandler.NftExpiryTime)
 
 	return resp, nil
-}
-
-func createMempoolTxForMintNft(
-	nftInfo *nft.L2Nft,
-	nMempoolTx *mempool.MempoolTx,
-	redisConnection *redis.Redis,
-	mempoolModel mempool.MempoolModel,
-) (err error) {
-	var keys []string
-	for _, mempoolTxDetail := range nMempoolTx.MempoolDetails {
-		keys = append(keys, util.GetAccountKey(mempoolTxDetail.AccountIndex))
-	}
-	_, err = redisConnection.Del(keys...)
-	if err != nil {
-		logx.Errorf("fail to delete keys from redis: %s", err.Error())
-		return err
-	}
-	// write into mempool
-	if err := mempoolModel.CreateMempoolTxAndL2Nft(nMempoolTx, nftInfo); err != nil {
-		return err
-	}
-	return nil
 }
