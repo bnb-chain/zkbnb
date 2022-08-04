@@ -18,8 +18,8 @@
 package txVerification
 
 import (
-	"encoding/json"
 	"errors"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -60,10 +60,8 @@ func VerifyAtomicMatchTxInfo(
 		accountInfoMap[txInfo.BuyOffer.AccountIndex].AssetInfo[txInfo.BuyOffer.AssetId] == nil ||
 		accountInfoMap[txInfo.BuyOffer.AccountIndex].AssetInfo[txInfo.BuyOffer.AssetId].Balance.Cmp(ZeroBigInt) <= 0 ||
 		txInfo.GasFeeAssetAmount.Cmp(ZeroBigInt) < 0 {
-		infoBytes, _ := json.Marshal(accountInfoMap)
-		logx.Info(string(infoBytes))
-		logx.Errorf("[VerifyAtomicMatchTxInfo] invalid params")
-		return nil, errors.New("[VerifyAtomicMatchTxInfo] invalid params")
+		logx.Error("invalid params")
+		return nil, errors.New("invalid params")
 	}
 	buyerOfferAssetId := txInfo.BuyOffer.OfferId / OfferPerAsset
 	sellerOfferAssetId := txInfo.SellOffer.OfferId / OfferPerAsset
@@ -85,8 +83,10 @@ func VerifyAtomicMatchTxInfo(
 	}
 	// verify nonce
 	if txInfo.Nonce != accountInfoMap[txInfo.AccountIndex].Nonce {
-		logx.Errorf("[VerifyAtomicMatchTxInfo] invalid nonce: %d, account index: %d", txInfo.Nonce, txInfo.AccountIndex)
-		return nil, errors.New("[VerifyAtomicMatchTxInfo] invalid nonce")
+		logx.Errorf("invalid nonce, actual: %d, expected: %d",
+			txInfo.Nonce, accountInfoMap[txInfo.AccountIndex].Nonce)
+		return nil, fmt.Errorf("invalid nonce, actual: %d, expected: %d",
+			txInfo.Nonce, accountInfoMap[txInfo.AccountIndex].Nonce)
 	}
 	// set tx info
 	var (
@@ -136,80 +136,47 @@ func VerifyAtomicMatchTxInfo(
 	// check balance
 	if accountInfoMap[txInfo.BuyOffer.AccountIndex].AssetInfo[txInfo.BuyOffer.AssetId].Balance.Cmp(
 		new(big.Int).Abs(assetDeltaMap[txInfo.BuyOffer.AccountIndex][txInfo.BuyOffer.AssetId])) < 0 {
-		logx.Errorf("[VerifyAtomicMatchTxInfo] you don't have enough balance of asset A")
-		return nil, errors.New("[VerifyAtomicMatchTxInfo] you don't have enough balance of asset A")
+		logx.Errorf("not enough balance of asset %d", txInfo.BuyOffer.AssetId)
+		return nil, fmt.Errorf("not enough balance of asset %d", txInfo.BuyOffer.AssetId)
 	}
 	if accountInfoMap[txInfo.AccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(
 		new(big.Int).Abs(assetDeltaMap[txInfo.AccountIndex][txInfo.GasFeeAssetId])) < 0 {
-		logx.Errorf("[VerifyAtomicMatchTxInfo] you don't have enough balance of asset Gas")
-		return nil, errors.New("[VerifyAtomicMatchTxInfo] you don't have enough balance of asset Gas")
+		logx.Errorf("not enough balance of gas")
+		return nil, errors.New("not enough balance of gas")
 	}
 	// compute hash
 	hFunc := mimc.NewMiMC()
 	// buyer sig
 	msgHash, err := legendTxTypes.ComputeOfferMsgHash(txInfo.BuyOffer, hFunc)
 	if err != nil {
-		logx.Errorf("[VerifyAtomicMatchTxInfo] unable to compute buyer offer msg hash:%s", err.Error())
-		return nil, err
+		logx.Errorf("unable to compute tx hash: %s", err.Error())
+		return nil, errors.New("internal error")
 	}
 	// verify signature
-	hFunc.Reset()
-	buyerPk, err := ParsePkStr(accountInfoMap[txInfo.BuyOffer.AccountIndex].PublicKey)
-	if err != nil {
+	if err := VerifySignature(txInfo.BuyOffer.Sig, msgHash, accountInfoMap[txInfo.BuyOffer.AccountIndex].PublicKey); err != nil {
 		return nil, err
 	}
-	isValid, err := buyerPk.Verify(txInfo.BuyOffer.Sig, msgHash, hFunc)
-	if err != nil {
-		logx.Errorf("[VerifyAtomicMatchTxInfo] unable to verify signature: %x", err.Error())
-		return nil, err
-	}
-	if !isValid {
-		logx.Error("[VerifyAtomicMatchTxInfo] invalid signature")
-		return nil, errors.New("[VerifyAtomicMatchTxInfo] invalid signature")
-	}
-	hFunc.Reset()
 	// seller sig
+	hFunc.Reset()
 	msgHash, err = legendTxTypes.ComputeOfferMsgHash(txInfo.SellOffer, hFunc)
 	if err != nil {
-		logx.Errorf("[VerifyAtomicMatchTxInfo] unable to compute seller offer msg hash:%s", err.Error())
-		return nil, err
+		logx.Errorf("unable to compute tx hash: %s", err.Error())
+		return nil, errors.New("internal error")
 	}
 	// verify signature
-	hFunc.Reset()
-	sellerPk, err := ParsePkStr(accountInfoMap[txInfo.SellOffer.AccountIndex].PublicKey)
-	if err != nil {
+	if err := VerifySignature(txInfo.SellOffer.Sig, msgHash, accountInfoMap[txInfo.SellOffer.AccountIndex].PublicKey); err != nil {
 		return nil, err
 	}
-	isValid, err = sellerPk.Verify(txInfo.SellOffer.Sig, msgHash, hFunc)
-	if err != nil {
-		logx.Errorf("[VerifyAtomicMatchTxInfo] unable to verify signature: %s", err.Error())
-		return nil, err
-	}
-	if !isValid {
-		logx.Error("[VerifyAtomicMatchTxInfo] invalid signature")
-		return nil, errors.New("[VerifyAtomicMatchTxInfo] invalid signature")
-	}
-	hFunc.Reset()
 	// submitter hash
+	hFunc.Reset()
 	msgHash, err = legendTxTypes.ComputeAtomicMatchMsgHash(txInfo, hFunc)
 	if err != nil {
-		logx.Errorf("[VerifyAtomicMatchTxInfo] unable to compute atomic match msg hash:%s", err.Error())
-		return nil, err
+		logx.Errorf("unable to compute tx hash: %s", err.Error())
+		return nil, errors.New("internal error")
 	}
 	// verify submitter signature
-	hFunc.Reset()
-	submitterPk, err := ParsePkStr(accountInfoMap[txInfo.AccountIndex].PublicKey)
-	if err != nil {
+	if err := VerifySignature(txInfo.Sig, msgHash, accountInfoMap[txInfo.AccountIndex].PublicKey); err != nil {
 		return nil, err
-	}
-	isValid, err = submitterPk.Verify(txInfo.Sig, msgHash, hFunc)
-	if err != nil {
-		logx.Errorf("[VerifyAtomicMatchTxInfo] unable to verify signature: %s", err.Error())
-		return nil, err
-	}
-	if !isValid {
-		logx.Error("[VerifyAtomicMatchTxInfo] invalid signature")
-		return nil, errors.New("[VerifyAtomicMatchTxInfo] invalid signature")
 	}
 	// compute tx details
 	// from account asset gas
@@ -241,41 +208,44 @@ func VerifyAtomicMatchTxInfo(
 	})
 	// buyer offer
 	buyerOfferIndex := txInfo.BuyOffer.OfferId % OfferPerAsset
-	oBuyerOffer := accountInfoMap[txInfo.BuyOffer.AccountIndex].AssetInfo[buyerOfferAssetId].OfferCanceledOrFinalized
-	// verify whether buyer offer id is valid for use
-	if oBuyerOffer.Bit(int(buyerOfferIndex)) == 1 {
-		logx.Errorf("account %d offer index %d is already in use.\n", txInfo.BuyOffer.AccountIndex, buyerOfferIndex)
-		return nil, errors.New("[VerifyAtomicMatchTxInfo] invalid buyer offer id")
+	if accountInfoMap[txInfo.BuyOffer.AccountIndex].AssetInfo[buyerOfferAssetId] != nil {
+		oBuyerOffer := accountInfoMap[txInfo.BuyOffer.AccountIndex].AssetInfo[buyerOfferAssetId].OfferCanceledOrFinalized
+		// verify whether buyer offer id is valid for use
+		if oBuyerOffer.Bit(int(buyerOfferIndex)) == 1 {
+			logx.Errorf("account %d offer index %d is already in use", txInfo.BuyOffer.AccountIndex, buyerOfferIndex)
+			return nil, errors.New("invalid buyer offer id")
+		}
+
+		nBuyerOffer := new(big.Int).SetBit(oBuyerOffer, int(buyerOfferIndex), 1)
+		order++
+		txDetails = append(txDetails, &MempoolTxDetail{
+			AssetId:      buyerOfferAssetId,
+			AssetType:    GeneralAssetType,
+			AccountIndex: txInfo.BuyOffer.AccountIndex,
+			AccountName:  accountInfoMap[txInfo.BuyOffer.AccountIndex].AccountName,
+			BalanceDelta: commonAsset.ConstructAccountAsset(
+				buyerOfferAssetId, ZeroBigInt, ZeroBigInt, nBuyerOffer,
+			).String(),
+			Order:        order,
+			AccountOrder: accountOrder,
+		})
 	}
-	nBuyerOffer := new(big.Int).SetBit(oBuyerOffer, int(buyerOfferIndex), 1)
-	order++
-	txDetails = append(txDetails, &MempoolTxDetail{
-		AssetId:      buyerOfferAssetId,
-		AssetType:    GeneralAssetType,
-		AccountIndex: txInfo.BuyOffer.AccountIndex,
-		AccountName:  accountInfoMap[txInfo.BuyOffer.AccountIndex].AccountName,
-		BalanceDelta: commonAsset.ConstructAccountAsset(
-			buyerOfferAssetId, ZeroBigInt, ZeroBigInt, nBuyerOffer,
-		).String(),
-		Order:        order,
-		AccountOrder: accountOrder,
-	})
 	// seller asset A
 	// treasury fee
 	treasuryFee, err := util.CleanPackedAmount(ffmath.Div(
 		ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(txInfo.SellOffer.TreasuryRate)),
 		big.NewInt(TenThousand)))
 	if err != nil {
-		logx.Errorf("[VerifyAtomicMatchTxInfo] unable to compute treasury fee: %s", err.Error())
-		return nil, err
+		logx.Errorf("unable to compute treasury fee: %s", err.Error())
+		return nil, errors.New("internal error")
 	}
 	// creator fee
 	creatorFee, err := util.CleanPackedAmount(ffmath.Div(
 		ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(nftInfo.CreatorTreasuryRate)),
 		big.NewInt(TenThousand)))
 	if err != nil {
-		logx.Errorf("[VerifyAtomicMatchTxInfo] unable to compute treasury fee: %s", err.Error())
-		return nil, err
+		logx.Errorf("unable to compute creator fee: %s", err.Error())
+		return nil, errors.New("internal error")
 	}
 	// set tx info
 	txInfo.CreatorAmount = creatorFee
@@ -297,25 +267,27 @@ func VerifyAtomicMatchTxInfo(
 	})
 	// seller offer
 	sellerOfferIndex := txInfo.SellOffer.OfferId % OfferPerAsset
-	oSellerOffer := accountInfoMap[txInfo.SellOffer.AccountIndex].AssetInfo[sellerOfferAssetId].OfferCanceledOrFinalized
-	// verify whether buyer offer id is valid for use
-	if oSellerOffer.Bit(int(sellerOfferIndex)) == 1 {
-		logx.Errorf("account %d offer index %d is already in use.\n", txInfo.SellOffer.AccountIndex, sellerOfferIndex)
-		return nil, errors.New("[VerifyAtomicMatchTxInfo] invalid seller offer id")
+	if accountInfoMap[txInfo.SellOffer.AccountIndex].AssetInfo[sellerOfferAssetId] != nil {
+		oSellerOffer := accountInfoMap[txInfo.SellOffer.AccountIndex].AssetInfo[sellerOfferAssetId].OfferCanceledOrFinalized
+		// verify whether buyer offer id is valid for use
+		if oSellerOffer.Bit(int(sellerOfferIndex)) == 1 {
+			logx.Errorf("account %d offer index %d is already in use", txInfo.SellOffer.AccountIndex, sellerOfferIndex)
+			return nil, errors.New("invalid seller offer id")
+		}
+		nSellerOffer := new(big.Int).SetBit(oSellerOffer, int(sellerOfferIndex), 1)
+		order++
+		txDetails = append(txDetails, &MempoolTxDetail{
+			AssetId:      sellerOfferAssetId,
+			AssetType:    GeneralAssetType,
+			AccountIndex: txInfo.SellOffer.AccountIndex,
+			AccountName:  accountInfoMap[txInfo.SellOffer.AccountIndex].AccountName,
+			BalanceDelta: commonAsset.ConstructAccountAsset(
+				sellerOfferAssetId, ZeroBigInt, ZeroBigInt, nSellerOffer,
+			).String(),
+			Order:        order,
+			AccountOrder: accountOrder,
+		})
 	}
-	nSellerOffer := new(big.Int).SetBit(oSellerOffer, int(sellerOfferIndex), 1)
-	order++
-	txDetails = append(txDetails, &MempoolTxDetail{
-		AssetId:      sellerOfferAssetId,
-		AssetType:    GeneralAssetType,
-		AccountIndex: txInfo.SellOffer.AccountIndex,
-		AccountName:  accountInfoMap[txInfo.SellOffer.AccountIndex].AccountName,
-		BalanceDelta: commonAsset.ConstructAccountAsset(
-			sellerOfferAssetId, ZeroBigInt, ZeroBigInt, nSellerOffer,
-		).String(),
-		Order:        order,
-		AccountOrder: accountOrder,
-	})
 	// creator fee
 	order++
 	accountOrder++

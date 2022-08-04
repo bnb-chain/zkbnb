@@ -4,18 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"reflect"
-	"time"
 
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/logic/sendrawtx"
+
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
-	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
@@ -42,59 +43,56 @@ func NewSendCreateCollectionTxLogic(ctx context.Context, svcCtx *svc.ServiceCont
 func (l *SendCreateCollectionTxLogic) SendCreateCollectionTx(in *globalRPCProto.ReqSendCreateCollectionTx) (*globalRPCProto.RespSendCreateCollectionTx, error) {
 	txInfo, err := commonTx.ParseCreateCollectionTxInfo(in.TxInfo)
 	if err != nil {
-		logx.Errorf("[ParseCreateCollectionTxInfo] err: %s", err.Error())
+		logx.Errorf("cannot parse tx err: %s", err.Error())
+		return nil, errorcode.RpcErrInvalidTx
+	}
+
+	if err := legendTxTypes.ValidateCreateCollectionTxInfo(txInfo); err != nil {
+		logx.Errorf("cannot pass static check, err: %s", err.Error())
+		return nil, errorcode.RpcErrInvalidTxField.RefineError(err)
+	}
+
+	if err := sendrawtx.CheckGasAccountIndex(txInfo.GasAccountIndex, l.svcCtx.SysConfigModel); err != nil {
 		return nil, err
 	}
-	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.GasFeeAssetAmount, err.Error())
-		return nil, err
-	}
-	err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.AccountIndex))
-	if err != nil {
-		logx.Errorf("[CheckRequestParam] err: %s", err.Error())
-		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
-	}
-	err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.GasAccountIndex))
-	if err != nil {
-		logx.Errorf("[CheckRequestParam] err: %s", err.Error())
-		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
-	}
-	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, l.svcCtx.SysConfigModel); err != nil {
-		logx.Errorf("[checkGasAccountIndex] err: %s", err.Error())
-		return nil, err
-	}
-	now := time.Now().UnixMilli()
-	if txInfo.ExpiredAt < now {
-		logx.Errorf("[sendCreateCollectionTx] invalid time stamp")
-		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
-	}
+
 	var (
 		accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
 	)
-	accountInfoMap[txInfo.AccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.AccountIndex) //get  CollectionNonce + 1
+	accountInfoMap[txInfo.AccountIndex], err = l.commglobalmap.GetLatestAccountInfo(l.ctx, txInfo.AccountIndex)
 	if err != nil {
-		logx.Errorf("[sendCreateCollectionTx] unable to get account info: %s", err.Error())
-		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.RpcErrInvalidTxField.RefineError("invalid FromAccountIndex")
+		}
+		logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.AccountIndex, err.Error())
+		return nil, errorcode.RpcErrInternal
 	}
 	if accountInfoMap[txInfo.GasAccountIndex] == nil {
 		accountInfoMap[txInfo.GasAccountIndex], err = l.commglobalmap.GetBasicAccountInfo(l.ctx, txInfo.GasAccountIndex)
 		if err != nil {
-			logx.Errorf("[sendCreateCollectionTx] unable to get account info: %s", err.Error())
-			return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
+			if err == errorcode.DbErrNotFound {
+				return nil, errorcode.RpcErrInvalidTxField.RefineError("invalid GasAccountIndex")
+			}
+			logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.GasAccountIndex, err.Error())
+			return nil, errorcode.RpcErrInternal
 		}
 	}
+
 	txInfo.CollectionId = accountInfoMap[txInfo.AccountIndex].CollectionNonce
+
 	var txDetails []*mempool.MempoolTxDetail
 	txDetails, err = txVerification.VerifyCreateCollectionTxInfo(accountInfoMap, txInfo)
 	if err != nil {
-		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
+		return nil, errorcode.RpcErrVerification.RefineError(err)
 	}
+
 	// write into mempool
 	txInfoBytes, err := json.Marshal(txInfo)
 	if err != nil {
-		return nil, l.createFailCreateCollectionTx(txInfo, err.Error())
+		logx.Errorf("unable to marshal tx, err: %s", err.Error())
+		return nil, errorcode.RpcErrInternal
 	}
-	_, mempoolTx := ConstructMempoolTx(
+	_, mempoolTx := sendrawtx.ConstructMempoolTx(
 		commonTx.TxTypeCreateCollection,
 		txInfo.GasFeeAssetId,
 		txInfo.GasFeeAssetAmount.String(),
@@ -119,46 +117,13 @@ func (l *SendCreateCollectionTxLogic) SendCreateCollectionTx(in *globalRPCProto.
 		Status:       nft.CollectionPending,
 	}
 	if err = createMempoolTxForCreateCollection(nftCollectionInfo, mempoolTx, l.svcCtx); err != nil {
-		l.createFailCreateCollectionTx(txInfo, err.Error())
-		return nil, err
+		logx.Errorf("fail to create mempool tx: %v, err: %s", mempoolTx, err.Error())
+		_ = sendrawtx.CreateFailTx(l.svcCtx.FailTxModel, commonTx.TxTypeCreateCollection, txInfo, err)
+		return nil, errorcode.RpcErrInternal
 	}
 	return &globalRPCProto.RespSendCreateCollectionTx{CollectionId: txInfo.CollectionId}, nil
 }
 
-func (l *SendCreateCollectionTxLogic) createFailCreateCollectionTx(info *commonTx.CreateCollectionTxInfo, extraInfo string) error {
-	txInfo, err := json.Marshal(info)
-	if err != nil {
-		logx.Errorf("[Marshal] err: %s", err.Error())
-		return err
-	}
-	failTx := &tx.FailTx{
-		// transaction id, is primary key
-		TxHash: util.RandomUUID(),
-		// transaction type
-		TxType: commonTx.TxTypeCreateCollection,
-		// tx fee
-		GasFee: info.GasFeeAssetAmount.String(),
-		// tx fee l1asset id
-		GasFeeAssetId: info.GasFeeAssetId,
-		// tx status, 1 - success(default), 2 - failure
-		TxStatus: tx.StatusFail,
-		// l1asset id
-		AssetAId: commonConstant.NilAssetId,
-		// AssetBId
-		AssetBId: commonConstant.NilAssetId,
-		// tx amount
-		TxAmount: commonConstant.NilAssetAmountStr,
-		// layer1 address
-		NativeAddress: "0x00",
-		// tx proof
-		TxInfo: string(txInfo),
-		// extra info, if tx fails, show the error info
-		ExtraInfo: extraInfo,
-		// native memo info
-		Memo: "",
-	}
-	return l.svcCtx.FailTxModel.CreateFailTx(failTx)
-}
 func createMempoolTxForCreateCollection(
 	nftCollectionInfo *nft.L2NftCollection,
 	nMempoolTx *mempool.MempoolTx,
@@ -168,28 +133,23 @@ func createMempoolTxForCreateCollection(
 	for _, mempoolTxDetail := range nMempoolTx.MempoolDetails {
 		keys = append(keys, util.GetAccountKey(mempoolTxDetail.AccountIndex))
 	}
-	_, err = svcCtx.RedisConnection.Del(keys...)
-	if err != nil {
-		logx.Errorf("[CreateMempoolTx] error with redis: %s", err.Error())
+	if _, err := svcCtx.RedisConnection.Del(keys...); err != nil {
+		logx.Errorf("fail to delete keys from redis: %s", err.Error())
 		return err
 	}
 	// check collectionId exist
 	exist, err := svcCtx.CollectionModel.IfCollectionExistsByCollectionId(nftCollectionInfo.CollectionId)
 	if err != nil {
-		errInfo := fmt.Sprintf("[createMempoolTxForCreateCollection] %s", err.Error())
-		logx.Error(errInfo)
-		return errors.New(errInfo)
+		return err
 	}
 	if exist {
-		return errors.New("[createMempoolTxForCreateCollection] collectionId duplicate creation")
+		logx.Errorf("collectionId duplicate creation: %d", nftCollectionInfo.CollectionId)
+		return errors.New("collectionId duplicate creation")
 	}
 
 	// write into mempool
-	err = svcCtx.MempoolModel.CreateMempoolTxAndL2CollectionAndNonce(nMempoolTx, nftCollectionInfo)
-	if err != nil {
-		errInfo := fmt.Sprintf("[createMempoolTxForCreateCollection] %s", err.Error())
-		logx.Error(errInfo)
-		return errors.New(errInfo)
+	if err := svcCtx.MempoolModel.CreateMempoolTxAndL2CollectionAndNonce(nMempoolTx, nftCollectionInfo); err != nil {
+		return err
 	}
 	return nil
 }

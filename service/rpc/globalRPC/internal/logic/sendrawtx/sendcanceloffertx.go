@@ -3,13 +3,9 @@ package sendrawtx
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"math/big"
-	"reflect"
-	"strconv"
-	"time"
 
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 
@@ -18,10 +14,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
-	"github.com/bnb-chain/zkbas/common/model/tx"
-	"github.com/bnb-chain/zkbas/common/sysconfigName"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/bnb-chain/zkbas/common/util/globalmapHandler"
 	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/commglobalmap"
@@ -29,53 +22,19 @@ import (
 )
 
 func SendCancelOfferTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalmap commglobalmap.Commglobalmap, rawTxInfo string) (txId string, err error) {
-	// parse transfer tx info
 	txInfo, err := commonTx.ParseCancelOfferTxInfo(rawTxInfo)
 	if err != nil {
-		errInfo := fmt.Sprintf("[sendCancelOfferTx.ParseCancelOfferTxInfo] %s", err.Error())
-		logx.Error(errInfo)
-		return "", errors.New(errInfo)
-	}
-	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param: %v, err: %s", txInfo.GasFeeAssetAmount, err.Error())
-		return "", err
-	}
-	// check param: from account index
-	err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.AccountIndex))
-	if err != nil {
-		errInfo := fmt.Sprintf("[sendCancelOfferTx] err: invalid accountIndex %v", txInfo.AccountIndex)
-		return "", handleCreateFailCancelOfferTx(svcCtx.FailTxModel, txInfo, errors.New(errInfo))
-	}
-	// check param: to account index
-	err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.GasAccountIndex))
-	if err != nil {
-		errInfo := fmt.Sprintf("[sendCancelOfferTx] err: invalid accountIndex %v", txInfo.GasAccountIndex)
-		return "", handleCreateFailCancelOfferTx(svcCtx.FailTxModel, txInfo, errors.New(errInfo))
-	}
-	err = commglobalmap.DeleteLatestAccountInfoInCache(ctx, txInfo.AccountIndex)
-	if err != nil {
-		logx.Errorf("[DeleteLatestAccountInfoInCache] err: %s", err.Error())
-	}
-	// check gas account index
-	gasAccountIndexConfig, err := svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
-	if err != nil {
-		logx.Errorf("[sendCancelOfferTx] unable to get sysconfig by name: %s", err.Error())
-		return "", handleCreateFailCancelOfferTx(svcCtx.FailTxModel, txInfo, err)
-	}
-	gasAccountIndex, err := strconv.ParseInt(gasAccountIndexConfig.Value, 10, 64)
-	if err != nil {
-		return "", handleCreateFailCancelOfferTx(svcCtx.FailTxModel, txInfo, errors.New("[sendCancelOfferTx] unable to parse big int"))
-	}
-	if gasAccountIndex != txInfo.GasAccountIndex {
-		logx.Errorf("[sendCancelOfferTx] invalid gas account index")
-		return "", handleCreateFailCancelOfferTx(svcCtx.FailTxModel, txInfo, errors.New("[sendCancelOfferTx] invalid gas account index"))
+		logx.Errorf("cannot parse tx err: %s", err.Error())
+		return "", errorcode.RpcErrInvalidTx
 	}
 
-	// check expired at
-	now := time.Now().UnixMilli()
-	if txInfo.ExpiredAt < now {
-		logx.Errorf("[sendCancelOfferTx] invalid time stamp")
-		return "", handleCreateFailCancelOfferTx(svcCtx.FailTxModel, txInfo, errors.New("[sendCancelOfferTx] invalid time stamp"))
+	if err := legendTxTypes.ValidateCancelOfferTxInfo(txInfo); err != nil {
+		logx.Errorf("cannot pass static check, err: %s", err.Error())
+		return "", errorcode.RpcErrInvalidTxField.RefineError(err)
+	}
+
+	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, svcCtx.SysConfigModel); err != nil {
+		return "", err
 	}
 
 	var (
@@ -83,9 +42,23 @@ func SendCancelOfferTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 	)
 	accountInfoMap[txInfo.AccountIndex], err = commglobalmap.GetLatestAccountInfo(ctx, txInfo.AccountIndex)
 	if err != nil {
-		logx.Errorf("[sendCancelOfferTx] unable to get account info: %s", err.Error())
-		return "", handleCreateFailCancelOfferTx(svcCtx.FailTxModel, txInfo, err)
+		if err == errorcode.DbErrNotFound {
+			return "", errorcode.RpcErrInvalidTxField.RefineError("invalid AccountIndex")
+		}
+		logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.AccountIndex, err.Error())
+		return "", errorcode.RpcErrInternal
 	}
+	if accountInfoMap[txInfo.GasAccountIndex] == nil {
+		accountInfoMap[txInfo.GasAccountIndex], err = commglobalmap.GetBasicAccountInfo(ctx, txInfo.GasAccountIndex)
+		if err != nil {
+			if err == errorcode.DbErrNotFound {
+				return "", errorcode.RpcErrInvalidTxField.RefineError("invalid GasAccountIndex")
+			}
+			logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.GasAccountIndex, err.Error())
+			return "", errorcode.RpcErrInternal
+		}
+	}
+
 	offerAssetId := txInfo.OfferId / 128
 	offerIndex := txInfo.OfferId % 128
 	if accountInfoMap[txInfo.AccountIndex].AssetInfo[offerAssetId] == nil {
@@ -99,45 +72,28 @@ func SendCancelOfferTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 		offerInfo := accountInfoMap[txInfo.AccountIndex].AssetInfo[offerAssetId].OfferCanceledOrFinalized
 		xBit := offerInfo.Bit(int(offerIndex))
 		if xBit == 1 {
-			logx.Errorf("[sendCancelOfferTx] the offer is already confirmed or canceled")
-			return "", handleCreateFailCancelOfferTx(svcCtx.FailTxModel, txInfo, errors.New("[sendCancelOfferTx] the offer is already confirmed or canceled"))
+			logx.Errorf("offer is already confirmed or canceled")
+			return "", errorcode.RpcErrInvalidTxField.RefineError("invalid OfferId, already confirmed or canceled")
 		}
 	}
-	// get account info by gas index
-	if accountInfoMap[txInfo.GasAccountIndex] == nil {
-		// get account info by gas index
-		accountInfoMap[txInfo.GasAccountIndex], err = globalmapHandler.GetBasicAccountInfo(
-			svcCtx.AccountModel,
-			svcCtx.RedisConnection,
-			txInfo.GasAccountIndex)
-		if err != nil {
-			logx.Errorf("[sendCancelOfferTx] unable to get account info: %s", err.Error())
-			return "", handleCreateFailCancelOfferTx(svcCtx.FailTxModel, txInfo, err)
-		}
-	}
+
 	var (
 		txDetails []*mempool.MempoolTxDetail
 	)
-	// verify transfer tx
+	// verify tx
 	txDetails, err = txVerification.VerifyCancelOfferTxInfo(
 		accountInfoMap,
 		txInfo,
 	)
 	if err != nil {
-		return "", handleCreateFailCancelOfferTx(svcCtx.FailTxModel, txInfo, err)
+		return "", errorcode.RpcErrVerification.RefineError(err)
 	}
 
-	/*
-		Check tx details
-	*/
-
-	/*
-		Create Mempool Transaction
-	*/
 	// write into mempool
 	txInfoBytes, err := json.Marshal(txInfo)
 	if err != nil {
-		return "", handleCreateFailCancelOfferTx(svcCtx.FailTxModel, txInfo, err)
+		logx.Errorf("unable to marshal tx, err: %s", err.Error())
+		return "", errorcode.RpcErrInternal
 	}
 	txId, mempoolTx := ConstructMempoolTx(
 		commonTx.TxTypeCancelOffer,
@@ -183,67 +139,11 @@ func SendCancelOfferTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 		svcCtx.MempoolModel,
 	)
 	if err != nil {
-		return "", handleCreateFailCancelOfferTx(svcCtx.FailTxModel, txInfo, err)
+		logx.Errorf("fail to create mempool tx: %v, err: %s", mempoolTx, err.Error())
+		_ = CreateFailTx(svcCtx.FailTxModel, commonTx.TxTypeCancelOffer, txInfo, err)
+		return "", errorcode.RpcErrInternal
 	}
 	return txId, nil
-}
-
-func handleCreateFailCancelOfferTx(failTxModel tx.FailTxModel, txInfo *commonTx.CancelOfferTxInfo, err error) error {
-	errCreate := createFailCancelOfferTx(failTxModel, txInfo, err.Error())
-	if errCreate != nil {
-		logx.Errorf("[sendtransfertxlogic.HandleCreateFailCancelOfferTx] %s", errCreate.Error())
-		return errCreate
-	} else {
-		errInfo := fmt.Sprintf("[sendtransfertxlogic.HandleCreateFailCancelOfferTx] %s", err.Error())
-		logx.Error(errInfo)
-		return errors.New(errInfo)
-	}
-}
-
-func createFailCancelOfferTx(failTxModel tx.FailTxModel, info *commonTx.CancelOfferTxInfo, extraInfo string) error {
-	txHash := util.RandomUUID()
-	nativeAddress := "0x00"
-	txInfo, err := json.Marshal(info)
-	if err != nil {
-		errInfo := fmt.Sprintf("[sendtxlogic.CreateFailCancelOfferTx] %s", err.Error())
-		logx.Error(errInfo)
-		return errors.New(errInfo)
-	}
-	// write into fail tx
-	failTx := &tx.FailTx{
-		// transaction id, is primary key
-		TxHash: txHash,
-		// transaction type
-		TxType: commonTx.TxTypeCancelOffer,
-		// tx fee
-		GasFee: info.GasFeeAssetAmount.String(),
-		// tx fee l1asset id
-		GasFeeAssetId: info.GasFeeAssetId,
-		// tx status, 1 - success(default), 2 - failure
-		TxStatus: tx.StatusFail,
-		// l1asset id
-		AssetAId: commonConstant.NilAssetId,
-		// AssetBId
-		AssetBId: commonConstant.NilAssetId,
-		// tx amount
-		TxAmount: commonConstant.NilAssetAmountStr,
-		// layer1 address
-		NativeAddress: nativeAddress,
-		// tx proof
-		TxInfo: string(txInfo),
-		// extra info, if tx fails, show the error info
-		ExtraInfo: extraInfo,
-		// native memo info
-		Memo: "",
-	}
-
-	err = failTxModel.CreateFailTx(failTx)
-	if err != nil {
-		errInfo := fmt.Sprintf("[sendtxlogic.CreateFailCancelOfferTx] %s", err.Error())
-		logx.Error(errInfo)
-		return errors.New(errInfo)
-	}
-	return nil
 }
 
 func CreateMempoolTxForCancelOffer(
@@ -259,7 +159,7 @@ func CreateMempoolTxForCancelOffer(
 	}
 	_, err = redisConnection.Del(keys...)
 	if err != nil {
-		logx.Errorf("[CreateMempoolTx] error with redis: %s", err.Error())
+		logx.Errorf("fail to delete keys from redis: %s", err.Error())
 		return err
 	}
 	// write into mempool
@@ -268,10 +168,5 @@ func CreateMempoolTxForCancelOffer(
 		offer,
 		isUpdate,
 	)
-	if err != nil {
-		errInfo := fmt.Sprintf("[CreateMempoolTx] %s", err.Error())
-		logx.Error(errInfo)
-		return errors.New(errInfo)
-	}
-	return nil
+	return err
 }

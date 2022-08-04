@@ -675,7 +675,7 @@ func (m *defaultMempoolModel) CreateMempoolTxAndL2CollectionAndNonce(mempoolTx *
 		dbTx := db.Table(m.table).Create(mempoolTx)
 		if dbTx.Error != nil {
 			logx.Errorf("[mempool.CreateMempoolTxAndL2Collection] %s", dbTx.Error)
-			return dbTx.Error
+			return errorcode.DbErrSqlOperation
 		}
 		if dbTx.RowsAffected == 0 {
 			logx.Errorf("[mempool.CreateMempoolTxAndL2Collection] Create Invalid Mempool Tx")
@@ -684,7 +684,7 @@ func (m *defaultMempoolModel) CreateMempoolTxAndL2CollectionAndNonce(mempoolTx *
 		dbTx = db.Table(nft.L2NftCollectionTableName).Create(nftCollectionInfo)
 		if dbTx.Error != nil {
 			logx.Errorf("[mempool.CreateMempoolTxAndL2Collection] %s", dbTx.Error)
-			return dbTx.Error
+			return errorcode.DbErrSqlOperation
 		}
 		if dbTx.RowsAffected == 0 {
 			logx.Errorf("[mempool.CreateMempoolTxAndL2Collection] Create Invalid nft collection info")
@@ -699,7 +699,7 @@ func (m *defaultMempoolModel) CreateMempoolTxAndL2Nft(mempoolTx *MempoolTx, nftI
 		dbTx := tx.Table(m.table).Create(mempoolTx)
 		if dbTx.Error != nil {
 			logx.Errorf("[mempool.CreateMempoolTxAndL2Nft] %s", dbTx.Error)
-			return dbTx.Error
+			return errorcode.DbErrSqlOperation
 		}
 		if dbTx.RowsAffected == 0 {
 			logx.Errorf("[mempool.CreateMempoolTxAndL2Nft] Create Invalid Mempool Tx")
@@ -708,7 +708,7 @@ func (m *defaultMempoolModel) CreateMempoolTxAndL2Nft(mempoolTx *MempoolTx, nftI
 		dbTx = tx.Table(nft.L2NftTableName).Create(nftInfo)
 		if dbTx.Error != nil {
 			logx.Errorf("[mempool.CreateMempoolTxAndL2Nft] %s", dbTx.Error)
-			return dbTx.Error
+			return errorcode.DbErrSqlOperation
 		}
 		if dbTx.RowsAffected == 0 {
 			logx.Errorf("[mempool.CreateMempoolTxAndL2Nft] Create Invalid nft info")

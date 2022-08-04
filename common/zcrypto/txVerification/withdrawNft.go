@@ -18,8 +18,8 @@
 package txVerification
 
 import (
-	"encoding/json"
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
@@ -47,16 +47,15 @@ func VerifyWithdrawNftTxInfo(
 		nftInfo.OwnerAccountIndex != txInfo.AccountIndex ||
 		nftInfo.NftIndex != txInfo.NftIndex ||
 		nftInfo.NftContentHash != common.Bytes2Hex(txInfo.NftContentHash) {
-		infoBytes, _ := json.Marshal(nftInfo)
-		logx.Info(string(infoBytes))
-		logx.Infof("content hash: %s", common.Bytes2Hex(txInfo.NftContentHash))
-		logx.Errorf("[VerifySetNftPriceTxInfo] invalid params")
-		return nil, errors.New("[VerifySetNftPriceTxInfo] invalid params")
+		logx.Error("invalid params")
+		return nil, errors.New("invalid params")
 	}
 	// verify nonce
 	if txInfo.Nonce != accountInfoMap[txInfo.AccountIndex].Nonce {
-		logx.Errorf("[VerifyWithdrawNftTxInfo] invalid nonce: %d, account index: %d", txInfo.Nonce, txInfo.AccountIndex)
-		return nil, errors.New("[VerifyWithdrawNftTxInfo] invalid nonce")
+		logx.Errorf("invalid nonce, actual: %d, expected: %d",
+			txInfo.Nonce, accountInfoMap[txInfo.AccountIndex].Nonce)
+		return nil, fmt.Errorf("invalid nonce, actual: %d, expected: %d",
+			txInfo.Nonce, accountInfoMap[txInfo.AccountIndex].Nonce)
 	}
 	// set tx info
 	var (
@@ -83,30 +82,19 @@ func VerifyWithdrawNftTxInfo(
 	}
 	// check balance
 	if accountInfoMap[txInfo.AccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
-		logx.Errorf("[VerifyMintNftTxInfo] you don't have enough balance of asset Gas")
-		return nil, errors.New("[VerifyMintNftTxInfo] you don't have enough balance of asset Gas")
+		logx.Errorf("not enough balance of gas")
+		return nil, errors.New("not enough balance of gas")
 	}
 	// compute hash
 	hFunc := mimc.NewMiMC()
 	msgHash, err := legendTxTypes.ComputeWithdrawNftMsgHash(txInfo, hFunc)
 	if err != nil {
-		logx.Errorf("[VerifyWithdrawNftTxInfo] unable to compute hash: %s", err.Error())
-		return nil, err
+		logx.Errorf("unable to compute tx hash: %s", err.Error())
+		return nil, errors.New("internal error")
 	}
 	// verify signature
-	hFunc.Reset()
-	pk, err := ParsePkStr(accountInfoMap[txInfo.AccountIndex].PublicKey)
-	if err != nil {
+	if err := VerifySignature(txInfo.Sig, msgHash, accountInfoMap[txInfo.AccountIndex].PublicKey); err != nil {
 		return nil, err
-	}
-	isValid, err := pk.Verify(txInfo.Sig, msgHash, hFunc)
-	if err != nil {
-		logx.Errorf("[VerifyWithdrawNftTxInfo] unable to verify signature: %s", err.Error())
-		return nil, err
-	}
-	if !isValid {
-		logx.Error("[VerifyWithdrawNftTxInfo] invalid signature")
-		return nil, errors.New("[VerifyWithdrawNftTxInfo] invalid signature")
 	}
 	// compute tx details
 	// from account asset gas

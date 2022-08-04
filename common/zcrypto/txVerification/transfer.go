@@ -44,10 +44,13 @@ func VerifyTransferTxInfo(
 		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(ZeroBigInt) <= 0 ||
 		txInfo.AssetAmount.Cmp(ZeroBigInt) < 0 ||
 		txInfo.GasFeeAssetAmount.Cmp(ZeroBigInt) < 0 {
-		return nil, errors.New("[VerifyTransferTxInfo] invalid params")
+		logx.Error("invalid params")
+		return nil, errors.New("invalid params")
 	}
 	if txInfo.Nonce != accountInfoMap[txInfo.FromAccountIndex].Nonce {
-		return nil, fmt.Errorf("[VerifyTransferTxInfo] invalid nonce, txInfo.Nonce:%v :%v",
+		logx.Errorf("invalid nonce, actual: %d, expected: %d",
+			txInfo.Nonce, accountInfoMap[txInfo.FromAccountIndex].Nonce)
+		return nil, fmt.Errorf("invalid nonce, actual: %d, expected: %d",
 			txInfo.Nonce, accountInfoMap[txInfo.FromAccountIndex].Nonce)
 	}
 	// init delta map
@@ -74,14 +77,14 @@ func VerifyTransferTxInfo(
 	// asset A
 	if accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.AssetId].Balance.Cmp(
 		new(big.Int).Abs(assetDeltaMap[txInfo.FromAccountIndex][txInfo.AssetId])) < 0 {
-		logx.Errorf("[VerifyTransferTxInfo] you don't have enough assetABalance")
-		return nil, errors.New("[VerifyTransferTxInfo] you don't have enough assetABalance")
+		logx.Errorf("not enough balance of asset %d", txInfo.AssetId)
+		return nil, fmt.Errorf("not enough balance of asset %d", txInfo.AssetId)
 	}
 	// asset Gas
 	if accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(
 		new(big.Int).Abs(assetDeltaMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId])) < 0 {
-		logx.Errorf("[VerifyTransferTxInfo] you don't have enough assetGasBalance")
-		return nil, errors.New("[VerifyTransferTxInfo] you don't have enough assetGasBalance")
+		logx.Errorf("not enough balance of gas")
+		return nil, errors.New("not enough balance of gas")
 	}
 	// compute hash
 	hFunc := mimc.NewMiMC()
@@ -90,23 +93,12 @@ func VerifyTransferTxInfo(
 	txInfo.CallDataHash = callDataHash
 	msgHash, err := legendTxTypes.ComputeTransferMsgHash(txInfo, hFunc)
 	if err != nil {
-		logx.Errorf("[VerifyTransferTxInfo] unable to compute hash: %s", err.Error())
-		return nil, err
+		logx.Errorf("unable to compute message hash: %s", err.Error())
+		return nil, errors.New("internal error")
 	}
 	// verify signature
-	hFunc.Reset()
-	pk, err := ParsePkStr(accountInfoMap[txInfo.FromAccountIndex].PublicKey)
-	if err != nil {
+	if err := VerifySignature(txInfo.Sig, msgHash, accountInfoMap[txInfo.FromAccountIndex].PublicKey); err != nil {
 		return nil, err
-	}
-	isValid, err := pk.Verify(txInfo.Sig, msgHash, hFunc)
-	if err != nil {
-		logx.Errorf("[VerifyTransferTxInfo] unable to verify signature: %s", err.Error())
-		return nil, err
-	}
-	if !isValid {
-		logx.Errorf("[VerifyTransferTxInfo] invalid signature")
-		return nil, errors.New("[VerifyTransferTxInfo] invalid signature")
 	}
 	// compute tx details
 	// from account asset A
