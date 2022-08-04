@@ -43,9 +43,9 @@ var (
 	RpcErrInvalidTxField = New(20003, "invalid tx field: ")
 	RpcErrVerification   = New(20004, "tx verification failed: ")
 
-	RpcErrInvalidParam                = New(20000, "invalid param: ")
-	RpcErrLiquidityInvalidAssetAmount = New(20004, "invalid liquidity asset amount")
-	RpcErrLiquidityInvalidAssetID     = New(20005, "invalid liquidity asset id")
+	RpcErrInvalidParam                = New(20005, "invalid param: ")
+	RpcErrLiquidityInvalidAssetAmount = New(20006, "invalid liquidity asset amount")
+	RpcErrLiquidityInvalidAssetID     = New(20007, "invalid liquidity asset id")
 
 	RpcErrNotFound = New(24404, "not found")
 	RpcErrInternal = New(24500, "internal server error")
