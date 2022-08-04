@@ -112,25 +112,28 @@ func VerifyCancelOfferTxInfo(
 	// from account offer id
 	offerAssetId := txInfo.OfferId / OfferPerAsset
 	offerIndex := txInfo.OfferId % OfferPerAsset
-	oOffer := accountInfoMap[txInfo.AccountIndex].AssetInfo[offerAssetId].OfferCanceledOrFinalized
-	// verify whether account offer id is valid for use
-	if oOffer.Bit(int(offerIndex)) == 1 {
-		logx.Errorf("account %d offer index %d is already in use", txInfo.AccountIndex, offerIndex)
-		return nil, errors.New("invalid offer id")
+	if accountInfoMap[txInfo.AccountIndex].AssetInfo[offerAssetId] != nil {
+		oOffer := accountInfoMap[txInfo.AccountIndex].AssetInfo[offerAssetId].OfferCanceledOrFinalized
+		// verify whether account offer id is valid for use
+		if oOffer.Bit(int(offerIndex)) == 1 {
+			logx.Errorf("account %d offer index %d is already in use", txInfo.AccountIndex, offerIndex)
+			return nil, errors.New("invalid offer id")
+		}
+		nOffer := new(big.Int).SetBit(oOffer, int(offerIndex), 1)
+		order++
+		txDetails = append(txDetails, &MempoolTxDetail{
+			AssetId:      offerAssetId,
+			AssetType:    GeneralAssetType,
+			AccountIndex: txInfo.AccountIndex,
+			AccountName:  accountInfoMap[txInfo.AccountIndex].AccountName,
+			BalanceDelta: commonAsset.ConstructAccountAsset(
+				offerAssetId, ZeroBigInt, ZeroBigInt, nOffer,
+			).String(),
+			Order:        order,
+			AccountOrder: accountOrder,
+		})
 	}
-	nOffer := new(big.Int).SetBit(oOffer, int(offerIndex), 1)
-	order++
-	txDetails = append(txDetails, &MempoolTxDetail{
-		AssetId:      offerAssetId,
-		AssetType:    GeneralAssetType,
-		AccountIndex: txInfo.AccountIndex,
-		AccountName:  accountInfoMap[txInfo.AccountIndex].AccountName,
-		BalanceDelta: commonAsset.ConstructAccountAsset(
-			offerAssetId, ZeroBigInt, ZeroBigInt, nOffer,
-		).String(),
-		Order:        order,
-		AccountOrder: accountOrder,
-	})
+
 	// gas account asset gas
 	order++
 	accountOrder++
