@@ -22,7 +22,6 @@ import (
 	"strconv"
 
 	bsmt "github.com/bnb-chain/bas-smt"
-	"github.com/bnb-chain/bas-smt/database"
 	"github.com/bnb-chain/bas-smt/database/memory"
 	"github.com/bnb-chain/zkbas-crypto/hash/bn254/zmimc"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -42,8 +41,7 @@ func InitAccountTree(
 	accountModel AccountModel,
 	accountHistoryModel AccountHistoryModel,
 	blockHeight int64,
-	dbDriver treedb.Driver,
-	db database.TreeDB,
+	ctx *treedb.Context,
 ) (
 	accountTree bsmt.SparseMerkleTree, accountAssetTrees []bsmt.SparseMerkleTree, err error,
 ) {
@@ -54,21 +52,23 @@ func InitAccountTree(
 		return nil, nil, err
 	}
 
+	opts := ctx.Options(blockHeight)
+
 	// init account state trees
 	accountAssetTrees = make([]bsmt.SparseMerkleTree, accountNums)
 	for index := int64(0); index < int64(accountNums); index++ {
 		// create account assets tree
 		accountAssetTrees[index], err = bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(zmimc.Hmimc),
-			treedb.SetNamespace(dbDriver, db, accountAssetNamespace(index)), AssetTreeHeight, NilAccountAssetNodeHash,
-			bsmt.InitializeVersion(bsmt.Version(blockHeight)))
+			treedb.SetNamespace(ctx, accountAssetNamespace(index)), AssetTreeHeight, NilAccountAssetNodeHash,
+			opts...)
 		if err != nil {
 			logx.Errorf("[InitAccountTree] unable to create new tree by assets: %s", err.Error())
 			return nil, nil, err
 		}
 	}
 	accountTree, err = bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(zmimc.Hmimc),
-		treedb.SetNamespace(dbDriver, db, AccountPrefix), AccountTreeHeight, NilAccountNodeHash,
-		bsmt.InitializeVersion(bsmt.Version(blockHeight)))
+		treedb.SetNamespace(ctx, AccountPrefix), AccountTreeHeight, NilAccountNodeHash,
+		opts...)
 	if err != nil {
 		logx.Errorf("[InitAccountTree] unable to create new account tree: %s", err.Error())
 		return nil, nil, err
@@ -78,7 +78,7 @@ func InitAccountTree(
 		return accountTree, accountAssetTrees, nil
 	}
 
-	if dbDriver == treedb.MemoryDB {
+	if ctx.IsLoad() {
 		_, accountHistories, err := accountHistoryModel.GetValidAccounts(blockHeight)
 		if err != nil {
 			logx.Errorf("[InitAccountTree] unable to get all accountHistories")
@@ -209,17 +209,15 @@ func AccountToNode(
 }
 
 func NewEmptyAccountAssetTree(
-	dbDriver treedb.Driver,
-	db database.TreeDB,
+	ctx *treedb.Context,
 	index int64,
 	blockHeight uint64,
 ) (tree bsmt.SparseMerkleTree, err error) {
 	return bsmt.NewBASSparseMerkleTree(
 		bsmt.NewHasher(zmimc.Hmimc),
-		treedb.SetNamespace(dbDriver, db, accountAssetNamespace(index)),
+		treedb.SetNamespace(ctx, accountAssetNamespace(index)),
 		AssetTreeHeight, NilAccountAssetNodeHash,
-		bsmt.InitializeVersion(bsmt.Version(blockHeight)),
-	)
+		ctx.Options(int64(blockHeight))...)
 }
 
 func NewMemAccountAssetTree() (tree bsmt.SparseMerkleTree, err error) {

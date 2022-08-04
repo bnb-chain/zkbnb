@@ -2,6 +2,7 @@ package treedb
 
 import (
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/bnb-chain/bas-smt/database"
@@ -108,43 +109,51 @@ const (
 	RedisDB  Driver = "redis"
 )
 
-func NewTreeDB(
-	driver Driver,
-	LevelDBOption LevelDBOption,
-	redisDBOption RedisDBOption,
-) (database.TreeDB, error) {
-	switch driver {
+func SetupTreeDB(
+	context *Context,
+) error {
+	switch context.Driver {
 	case MemoryDB:
-		return memory.NewMemoryDB(), nil
+		context.TreeDB = memory.NewMemoryDB()
+		return nil
 	case LevelDB:
-		return leveldb.New(LevelDBOption.File, LevelDBOption.Cache, LevelDBOption.Handles, false)
-	case RedisDB:
-		bytes, err := json.Marshal(redisDBOption)
+		db, err := leveldb.New(context.LevelDBOption.File, context.LevelDBOption.Cache, context.LevelDBOption.Handles, false)
 		if err != nil {
-			return nil, err
+			return err
+		}
+		context.TreeDB = db
+		return nil
+	case RedisDB:
+		bytes, err := json.Marshal(context.RedisDBOption)
+		if err != nil {
+			return err
 		}
 		redisOption := &redis.RedisConfig{}
 		err = json.Unmarshal(bytes, redisOption)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		return redis.New(redisOption)
+		db, err := redis.New(redisOption)
+		if err != nil {
+			return err
+		}
+		context.TreeDB = db
+		return nil
 	}
-	return nil, ErrUnsupportedDriver
+	return ErrUnsupportedDriver
 }
 
 func SetNamespace(
-	driver Driver,
-	db database.TreeDB,
+	context *Context,
 	namespace string,
 ) database.TreeDB {
-	switch driver {
+	switch context.Driver {
 	case MemoryDB:
 		return memory.NewMemoryDB()
 	case LevelDB:
-		return leveldb.WrapWithNamespace(db.(*leveldb.Database), namespace)
+		return leveldb.WrapWithNamespace(context.TreeDB.(*leveldb.Database), strings.Join([]string{context.Name, namespace}, ":"))
 	case RedisDB:
-		return redis.WrapWithNamespace(db.(*redis.Database), namespace)
+		return redis.WrapWithNamespace(context.TreeDB.(*redis.Database), strings.Join([]string{context.Name, namespace}, ":"))
 	}
-	return db
+	return context.TreeDB
 }

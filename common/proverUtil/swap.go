@@ -21,7 +21,6 @@ import (
 	"errors"
 
 	bsmt "github.com/bnb-chain/bas-smt"
-	"github.com/bnb-chain/bas-smt/database"
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -32,8 +31,7 @@ import (
 
 func ConstructSwapCryptoTx(
 	oTx *Tx,
-	treeDBDriver treedb.Driver,
-	treeDB database.TreeDB,
+	treeCtx *treedb.Context,
 	finalityBlockNr uint64,
 	accountTree bsmt.SparseMerkleTree,
 	accountAssetsTree *[]bsmt.SparseMerkleTree,
@@ -67,8 +65,7 @@ func ConstructSwapCryptoTx(
 	cryptoTx, err = ConstructWitnessInfo(
 		oTx,
 		accountModel,
-		treeDBDriver,
-		treeDB,
+		treeCtx,
 		finalityBlockNr,
 		accountTree,
 		accountAssetsTree,

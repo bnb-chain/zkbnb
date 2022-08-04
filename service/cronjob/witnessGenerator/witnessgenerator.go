@@ -46,7 +46,13 @@ func main() {
 		nftTree       bsmt.SparseMerkleTree
 	)
 	// init tree database
-	baseTreeDB, err := treedb.NewTreeDB(c.TreeDB.Driver, c.TreeDB.LevelDBOption, c.TreeDB.RedisDBOption)
+	treeCtx := &treedb.Context{
+		Name:          "witness",
+		Driver:        c.TreeDB.Driver,
+		LevelDBOption: &c.TreeDB.LevelDBOption,
+		RedisDBOption: &c.TreeDB.RedisDBOption,
+	}
+	err = treedb.SetupTreeDB(treeCtx)
 	if err != nil {
 		panic(errors.Wrap(err, "[prover] => Init tree database failed"))
 	}
@@ -56,8 +62,7 @@ func main() {
 		ctx.AccountModel,
 		ctx.AccountHistoryModel,
 		p.BlockNumber,
-		c.TreeDB.Driver,
-		baseTreeDB,
+		treeCtx,
 	)
 	// the blockHeight depends on the proof start position
 	if err != nil {
@@ -66,15 +71,13 @@ func main() {
 	}
 
 	liquidityTree, err = tree.InitLiquidityTree(ctx.LiquidityHistoryModel, p.BlockNumber,
-		c.TreeDB.Driver,
-		baseTreeDB)
+		treeCtx)
 	if err != nil {
 		logx.Errorf("[prover] InitLiquidityTree error: %s", err.Error())
 		return
 	}
 	nftTree, err = tree.InitNftTree(ctx.NftHistoryModel, p.BlockNumber,
-		c.TreeDB.Driver,
-		baseTreeDB)
+		treeCtx)
 	if err != nil {
 		logx.Errorf("[prover] InitNftTree error: %s", err.Error())
 		return
@@ -87,8 +90,7 @@ func main() {
 		// cron job for creating cryptoBlock
 		logx.Info("==========start generate block witness==========")
 		logic.GenerateWitness(
-			c.TreeDB.Driver,
-			baseTreeDB,
+			treeCtx,
 			accountTree,
 			&assetTrees,
 			liquidityTree,

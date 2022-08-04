@@ -22,7 +22,6 @@ import (
 	"math/big"
 
 	bsmt "github.com/bnb-chain/bas-smt"
-	"github.com/bnb-chain/bas-smt/database"
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -38,8 +37,7 @@ import (
 func ConstructWitnessInfo(
 	oTx *Tx,
 	accountModel AccountModel,
-	treeDBDriver treedb.Driver,
-	treeDB database.TreeDB,
+	treeCtx *treedb.Context,
 	finalityBlockNr uint64,
 	accountTree bsmt.SparseMerkleTree,
 	accountAssetTrees *[]bsmt.SparseMerkleTree,
@@ -55,7 +53,7 @@ func ConstructWitnessInfo(
 ) {
 	// construct account witness
 	AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err :=
-		ConstructAccountWitness(oTx, treeDBDriver, treeDB, finalityBlockNr, accountModel, accountTree, accountAssetTrees, accountKeys, proverAccounts)
+		ConstructAccountWitness(oTx, treeCtx, finalityBlockNr, accountModel, accountTree, accountAssetTrees, accountKeys, proverAccounts)
 	if err != nil {
 		logx.Errorf("[ConstructWitnessInfo] unable to construct account witness: %s", err.Error())
 		return nil, err
@@ -95,8 +93,7 @@ func ConstructWitnessInfo(
 
 func ConstructAccountWitness(
 	oTx *Tx,
-	treeDBDriver treedb.Driver,
-	treeDB database.TreeDB,
+	treeCtx *treedb.Context,
 	finalityBlockNr uint64,
 	accountModel AccountModel,
 	accountTree bsmt.SparseMerkleTree,
@@ -136,7 +133,7 @@ func ConstructAccountWitness(
 				return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore,
 					errors.New("[ConstructAccountWitness] invalid key")
 			}
-			emptyAccountAssetTree, err := tree.NewEmptyAccountAssetTree(treeDBDriver, treeDB, accountKey, finalityBlockNr)
+			emptyAccountAssetTree, err := tree.NewEmptyAccountAssetTree(treeCtx, accountKey, finalityBlockNr)
 			if err != nil {
 				logx.Errorf("[ConstructAccountWitness] unable to create empty account asset tree: %s", err.Error())
 				return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err

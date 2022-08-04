@@ -25,7 +25,6 @@ import (
 	"time"
 
 	bsmt "github.com/bnb-chain/bas-smt"
-	"github.com/bnb-chain/bas-smt/database"
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/pkg/treedb"
 
@@ -53,8 +52,7 @@ import (
 func CommitterTask(
 	ctx *svc.ServiceContext,
 	lastCommitTimeStamp *time.Time,
-	treeDBDriver treedb.Driver,
-	treeDB database.TreeDB,
+	treeCtx *treedb.Context,
 	accountTree bsmt.SparseMerkleTree,
 	liquidityTree bsmt.SparseMerkleTree,
 	nftTree bsmt.SparseMerkleTree,
@@ -196,7 +194,7 @@ func CommitterTask(
 						logx.Errorf("[CommitterTask] invalid account index")
 						return errors.New("[CommitterTask] invalid account index")
 					}
-					emptyAssetTree, err := tree.NewEmptyAccountAssetTree(treeDBDriver, treeDB, mempoolTx.AccountIndex, finalityBlockNr)
+					emptyAssetTree, err := tree.NewEmptyAccountAssetTree(treeCtx, mempoolTx.AccountIndex, finalityBlockNr)
 					if err != nil {
 						logx.Errorf("[CommitterTask] unable to new empty account state tree: %s", err.Error())
 						return err
