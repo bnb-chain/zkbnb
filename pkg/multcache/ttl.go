@@ -1,6 +1,8 @@
 package multcache
 
-import "time"
+import (
+	"time"
+)
 
 const (
 	AccountTtl = 1000 * time.Millisecond //cache ttl of account

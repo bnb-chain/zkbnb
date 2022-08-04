@@ -31,7 +31,7 @@ func NewGetAccountInfoByAccountIndexLogic(ctx context.Context, svcCtx *svc.Servi
 }
 
 func (l *GetAccountInfoByAccountIndexLogic) GetAccountInfoByAccountIndex(req *types.ReqGetAccountInfoByAccountIndex) (*types.RespGetAccountInfoByAccountIndex, error) {
-	account, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(l.ctx, (req.AccountIndex))
+	account, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(l.ctx, req.AccountIndex)
 	if err != nil {
 		logx.Errorf("[GetLatestAccountInfoByAccountIndex] err: %s", err.Error())
 		if err == errorcode.RpcErrNotFound {

@@ -359,7 +359,7 @@ func MonitorMempool(ctx context.Context, svcCtx *svc.ServiceContext) error {
 				GasFee:         commonConstant.NilAssetAmountStr,
 				NftIndex:       commonConstant.NilTxNftIndex,
 				PairIndex:      commonConstant.NilPairIndex,
-				AssetId:        int64(txInfo.AssetId),
+				AssetId:        txInfo.AssetId,
 				TxAmount:       txInfo.AssetAmount.String(),
 				NativeAddress:  oTx.SenderAddress,
 				MempoolDetails: mempoolTxDetails,

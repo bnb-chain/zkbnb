@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/zeromicro/go-zero/core/logx"
-
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"gorm.io/gorm"
 
@@ -148,7 +147,7 @@ func (m *block) GetBlockWithTxsByBlockHeight(ctx context.Context, blockHeight in
 
 func (m *block) GetBlocksList(ctx context.Context, limit int64, offset int64) ([]*table.Block, error) {
 	f := func() (interface{}, error) {
-		blockList := []*table.Block{}
+		var blockList []*table.Block
 		dbTx := m.db.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("block_height desc").Find(&blockList)
 		if dbTx.Error != nil {
 			logx.Errorf("fail to get blocks offset: %d, limit: %d, error: %s", offset, limit, dbTx.Error.Error())
@@ -163,7 +162,7 @@ func (m *block) GetBlocksList(ctx context.Context, limit int64, offset int64) ([
 		}
 		return &blockList, nil
 	}
-	blockList := []*table.Block{}
+	var blockList []*table.Block
 	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetBlockList+strconv.FormatInt(limit, 10)+strconv.FormatInt(offset, 10), &blockList, multcache.BlockListTtl, f)
 	if err != nil {
 		return nil, err

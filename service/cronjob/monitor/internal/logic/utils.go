@@ -22,7 +22,6 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/model/account"
@@ -33,11 +32,6 @@ func ComputeL1TxTxHash(requestId int64, txHash string) string {
 	hFunc.Write([]byte(strconv.FormatInt(requestId, 10)))
 	hFunc.Write(common.FromHex(txHash))
 	return base64.StdEncoding.EncodeToString(hFunc.Sum(nil))
-}
-
-func RandomTxHash() string {
-	id, _ := uuid.NewUUID()
-	return id.String()
 }
 
 func getAccountInfoByAccountNameHash(accountNameHash string, accountModel account.AccountModel) (accountInfo *account.Account, err error) {

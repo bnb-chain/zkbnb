@@ -44,24 +44,3 @@ func NewRedisCache(redisAdd, password string, expiration uint32) MultCache {
 		marshal: marshaler.New(cacheManager),
 	}
 }
-
-func NewMultCache(redisAdd string, expiration, cleanupInterval uint32) MultCache {
-	gocacheClient := gocache.New(time.Duration(expiration)*time.Minute,
-		time.Duration(cleanupInterval)*time.Minute)
-	gocacheStore := store.NewGoCache(gocacheClient, nil)
-	goCacheManager := cache.New(gocacheStore)
-
-	redisClient := redis.NewClient(&redis.Options{Addr: redisAdd})
-	redisStore := store.NewRedis(redisClient,
-		&store.Options{Expiration: time.Duration(expiration) * time.Minute})
-	redisCacheManager := cache.New(redisStore)
-
-	promMetrics := metrics.NewPrometheus("my-amazing-app")
-	cacheManager := cache.NewMetric(promMetrics, cache.NewChain(
-		goCacheManager,
-		redisCacheManager),
-	)
-	return &multcache{
-		marshal: marshaler.New(cacheManager),
-	}
-}

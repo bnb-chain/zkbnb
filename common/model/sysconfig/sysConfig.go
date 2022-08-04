@@ -29,11 +29,6 @@ import (
 	"github.com/bnb-chain/zkbas/errorcode"
 )
 
-var (
-	cacheZkbasSysconfigIdPrefix   = "cache:zkbas:sysconfig:id:"
-	cacheZkbasSysconfigNamePrefix = "cache:zkbas:sysconfig:name:"
-)
-
 type (
 	SysconfigModel interface {
 		CreateSysconfigTable() error

@@ -44,7 +44,7 @@ func (l *GetmempoolTxsByAccountNameLogic) GetmempoolTxsByAccountName(req *types.
 		}
 		return nil, errorcode.AppErrInternal
 	}
-	mempoolTxDetails, err := l.memPoolTxDetail.GetMemPoolTxDetailByAccountIndex(l.ctx, int64(account.AccountIndex))
+	mempoolTxDetails, err := l.memPoolTxDetail.GetMemPoolTxDetailByAccountIndex(l.ctx, account.AccountIndex)
 	if err != nil {
 		logx.Errorf("[GetMemPoolTxDetailByAccountIndex] AccountIndex: %d err: %s", account.AccountIndex, err.Error())
 		if err == errorcode.DbErrNotFound {

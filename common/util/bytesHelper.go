@@ -19,7 +19,6 @@ package util
 
 import (
 	"encoding/hex"
-	"errors"
 	"math/big"
 	"strings"
 
@@ -48,20 +47,6 @@ func AccountNameToBytes32(accountName string) []byte {
 	return buf
 }
 
-func PubKeyStrToBytes32(pkStr string) (pkBytes []byte, err error) {
-	pkBytes, err = hex.DecodeString(pkStr)
-	if err != nil {
-		logx.Errorf("[PubKeyStrToBytes32] unable to decode pk str: %s", err.Error())
-		return nil, err
-	}
-	// TODO
-	if len(pkBytes) != 32 {
-		logx.Errorf("[PubKeyStrToBytes32] invalid pk")
-		return nil, errors.New("[PubKeyStrToBytes32] invalid pk")
-	}
-	return pkBytes, nil
-}
-
 func AddressStrToBytes(addr string) []byte {
 	return new(big.Int).SetBytes(common.FromHex(addr)).FillBytes(make([]byte, 20))
 }
@@ -80,14 +65,6 @@ func Uint32ToBytes(a uint32) []byte {
 
 func Uint40ToBytes(a int64) []byte {
 	return new(big.Int).SetInt64(a).FillBytes(make([]byte, 5))
-}
-
-func Int64ToBytes(a int64) []byte {
-	return new(big.Int).SetInt64(a).FillBytes(make([]byte, 8))
-}
-
-func Uint64ToBytes(a uint64) []byte {
-	return new(big.Int).SetUint64(a).FillBytes(make([]byte, 8))
 }
 
 func Uint128ToBytes(a *big.Int) []byte {

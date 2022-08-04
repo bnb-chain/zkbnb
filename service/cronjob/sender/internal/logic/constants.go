@@ -21,7 +21,6 @@ import (
 
 	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
 	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 
 	"github.com/bnb-chain/zkbas/common/model/assetInfo"
 	"github.com/bnb-chain/zkbas/common/model/block"
@@ -55,17 +54,9 @@ type (
 )
 
 const (
-	StatusPending             = block.StatusPending
-	StatusCommitted           = block.StatusCommitted
-	StatusVerifiedAndExecuted = block.StatusVerifiedAndExecuted
-
 	PendingStatus          = l1TxSender.PendingStatus
 	CommitTxType           = l1TxSender.CommitTxType
 	VerifyAndExecuteTxType = l1TxSender.VerifyAndExecuteTxType
-)
-
-var (
-	DbErrNotFound = sqlx.ErrNotFound
 )
 
 type SenderParam struct {

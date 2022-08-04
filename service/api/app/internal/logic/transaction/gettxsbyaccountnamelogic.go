@@ -53,7 +53,7 @@ func (l *GetTxsByAccountNameLogic) GetTxsByAccountName(req *types.ReqGetTxsByAcc
 		}
 		return nil, errorcode.AppErrInternal
 	}
-	txIds, err := l.txDetail.GetTxIdsByAccountIndex(l.ctx, int64(account.AccountIndex))
+	txIds, err := l.txDetail.GetTxIdsByAccountIndex(l.ctx, account.AccountIndex)
 	if err != nil {
 		logx.Errorf("[GetTxDetailByAccountIndex] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {

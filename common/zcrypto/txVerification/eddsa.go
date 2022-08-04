@@ -22,7 +22,6 @@ import (
 	"errors"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
-
 	"github.com/zeromicro/go-zero/core/logx"
 )
 

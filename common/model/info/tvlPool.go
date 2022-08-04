@@ -29,11 +29,6 @@ import (
 	"github.com/bnb-chain/zkbas/errorcode"
 )
 
-var (
-	cacheZkbasTVLPoolPoolIdPrefix = "cache:zkbas:tvlpool:id:"
-	cacheZkbasTVLPoolDatePrefix   = "cache:zkbas:tvlpool:date:"
-)
-
 type (
 	TVLPoolModel interface {
 		CreateTVLPoolTable() error

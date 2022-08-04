@@ -27,8 +27,6 @@ const (
 	NftAssetType             = 3
 	CollectionNonceAssetType = 4
 
-	RateBase = 10000
-
 	BuyOfferType  = 0
 	SellOfferType = 1
 )

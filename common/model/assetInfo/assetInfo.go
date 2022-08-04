@@ -29,12 +29,6 @@ import (
 	"github.com/bnb-chain/zkbas/errorcode"
 )
 
-var (
-	cacheZkbasAssetInfoIdPrefix        = "cache:zkbas:assetInfo:id:"
-	cacheZkbasAssetInfoAssetIdPrefix   = "cache:zkbas:assetInfo:assetId:"
-	cacheZkbasAssetInfoAssetNamePrefix = "cache:zkbas:assetInfo:assetName:"
-)
-
 type (
 	AssetInfoModel interface {
 		CreateAssetInfoTable() error

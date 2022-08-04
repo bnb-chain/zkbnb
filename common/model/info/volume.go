@@ -29,11 +29,6 @@ import (
 	"github.com/bnb-chain/zkbas/errorcode"
 )
 
-var (
-	cacheZkbasVolumeIdPrefix   = "cache:zkbas:volume:id:"
-	cacheZkbasVolumeDatePrefix = "cache:zkbas:volume:date:"
-)
-
 type (
 	VolumeModel interface {
 		CreateVolumeTable() error

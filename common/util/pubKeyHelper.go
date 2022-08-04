@@ -33,9 +33,3 @@ func ParsePubKey(pkStr string) (pk *eddsa.PublicKey, err error) {
 	}
 	return pk, nil
 }
-
-func PubKeyToString(pk *eddsa.PublicKey) (pkStr string) {
-	pkBytes := pk.Bytes()
-	pkStr = common.Bytes2Hex(pkBytes)
-	return pkStr
-}
