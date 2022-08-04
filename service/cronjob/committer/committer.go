@@ -44,7 +44,13 @@ func main() {
 		panic(err)
 	}
 	// init tree database
-	baseTreeDB, err := treedb.NewTreeDB(c.TreeDB.Driver, c.TreeDB.LevelDBOption, c.TreeDB.RedisDBOption)
+	treeCtx := &treedb.Context{
+		Name:          "committer",
+		Driver:        c.TreeDB.Driver,
+		LevelDBOption: &c.TreeDB.LevelDBOption,
+		RedisDBOption: &c.TreeDB.RedisDBOption,
+	}
+	err = treedb.SetupTreeDB(treeCtx)
 	if err != nil {
 		panic(err)
 	}
@@ -53,8 +59,7 @@ func main() {
 		ctx.AccountModel,
 		ctx.AccountHistoryModel,
 		h,
-		c.TreeDB.Driver,
-		baseTreeDB,
+		treeCtx,
 	)
 	if err != nil {
 		logx.Error("[committer] => InitMerkleTree error:", err)
@@ -64,8 +69,7 @@ func main() {
 	nftTree, err = tree.InitNftTree(
 		ctx.L2NftHistoryModel,
 		h,
-		c.TreeDB.Driver,
-		baseTreeDB,
+		treeCtx,
 	)
 	if err != nil {
 		logx.Error("[committer] => InitMerkleTree error:", err)
@@ -76,8 +80,7 @@ func main() {
 	liquidityTree, err = tree.InitLiquidityTree(
 		ctx.LiquidityHistoryModel,
 		h,
-		c.TreeDB.Driver,
-		baseTreeDB,
+		treeCtx,
 	)
 	if err != nil {
 		logx.Error("[committer] => InitMerkleTree error:", err)
@@ -98,8 +101,7 @@ func main() {
 		err := logic.CommitterTask(
 			ctx,
 			&lastCommitTimeStamp,
-			c.TreeDB.Driver,
-			baseTreeDB,
+			treeCtx,
 			accountTree,
 			liquidityTree,
 			nftTree,

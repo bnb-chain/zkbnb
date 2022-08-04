@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	bsmt "github.com/bnb-chain/bas-smt"
-	"github.com/bnb-chain/bas-smt/database"
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -33,8 +32,7 @@ import (
 
 func ConstructRegisterZnsCryptoTx(
 	oTx *Tx,
-	treeDBDriver treedb.Driver,
-	treeDB database.TreeDB,
+	treeCtx *treedb.Context,
 	finalityBlockNr uint64,
 	accountTree bsmt.SparseMerkleTree,
 	accountAssetsTree *[]bsmt.SparseMerkleTree,
@@ -68,8 +66,7 @@ func ConstructRegisterZnsCryptoTx(
 	cryptoTx, err = ConstructWitnessInfo(
 		oTx,
 		accountModel,
-		treeDBDriver,
-		treeDB,
+		treeCtx,
 		finalityBlockNr,
 		accountTree,
 		accountAssetsTree,

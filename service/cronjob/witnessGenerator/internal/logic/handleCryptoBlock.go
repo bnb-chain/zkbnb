@@ -21,7 +21,6 @@ import (
 	"time"
 
 	bsmt "github.com/bnb-chain/bas-smt"
-	"github.com/bnb-chain/bas-smt/database"
 	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -35,8 +34,7 @@ import (
 )
 
 func GenerateWitness(
-	treeDBDriver treedb.Driver,
-	treeDB database.TreeDB,
+	treeCtx *treedb.Context,
 	accountTree bsmt.SparseMerkleTree,
 	assetTrees *[]bsmt.SparseMerkleTree,
 	liquidityTree bsmt.SparseMerkleTree,
@@ -44,7 +42,7 @@ func GenerateWitness(
 	ctx *svc.ServiceContext,
 	deltaHeight int64,
 ) {
-	err := generateUnprovedBlockWitness(ctx, treeDBDriver, treeDB, accountTree, assetTrees, liquidityTree, nftTree, deltaHeight)
+	err := generateUnprovedBlockWitness(ctx, treeCtx, accountTree, assetTrees, liquidityTree, nftTree, deltaHeight)
 	if err != nil {
 		logx.Errorf("generate block witness error, err=%s", err.Error())
 	}
@@ -54,8 +52,7 @@ func GenerateWitness(
 
 func generateUnprovedBlockWitness(
 	ctx *svc.ServiceContext,
-	treeDBDriver treedb.Driver,
-	treeDB database.TreeDB,
+	treeCtx *treedb.Context,
 	accountTree bsmt.SparseMerkleTree,
 	assetTrees *[]bsmt.SparseMerkleTree,
 	liquidityTree bsmt.SparseMerkleTree,
@@ -98,7 +95,7 @@ func generateUnprovedBlockWitness(
 			var (
 				cryptoTx *CryptoTx
 			)
-			cryptoTx, err = proverUtil.ConstructCryptoTx(oTx, treeDBDriver, treeDB, accountTree, assetTrees, liquidityTree, nftTree, ctx.AccountModel, uint64(latestVerifiedBlockNr))
+			cryptoTx, err = proverUtil.ConstructCryptoTx(oTx, treeCtx, accountTree, assetTrees, liquidityTree, nftTree, ctx.AccountModel, uint64(latestVerifiedBlockNr))
 			if err != nil {
 				logx.Errorf("[prover] unable to construct crypto tx: %s", err.Error())
 				return err

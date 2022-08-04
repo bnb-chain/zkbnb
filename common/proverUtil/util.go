@@ -21,7 +21,6 @@ import (
 	"errors"
 
 	bsmt "github.com/bnb-chain/bas-smt"
-	"github.com/bnb-chain/bas-smt/database"
 	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -69,8 +68,7 @@ func SetFixedNftArray(proof [][]byte) (res [NftMerkleLevels][]byte, err error) {
 
 func ConstructCryptoTx(
 	oTx *Tx,
-	treeDBDriver treedb.Driver,
-	treeDB database.TreeDB,
+	treeCtx *treedb.Context,
 	accountTree bsmt.SparseMerkleTree,
 	assetTrees *[]bsmt.SparseMerkleTree,
 	liquidityTree bsmt.SparseMerkleTree,
@@ -85,8 +83,7 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeRegisterZns:
 		cryptoTx, err = ConstructRegisterZnsCryptoTx(
 			oTx,
-			treeDBDriver,
-			treeDB,
+			treeCtx,
 			finalityBlockNr,
 			accountTree,
 			assetTrees,
@@ -102,8 +99,7 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeCreatePair:
 		cryptoTx, err = ConstructCreatePairCryptoTx(
 			oTx,
-			treeDBDriver,
-			treeDB,
+			treeCtx,
 			finalityBlockNr,
 			accountTree,
 			assetTrees,
@@ -119,8 +115,7 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeUpdatePairRate:
 		cryptoTx, err = ConstructUpdatePairRateCryptoTx(
 			oTx,
-			treeDBDriver,
-			treeDB,
+			treeCtx,
 			finalityBlockNr,
 			accountTree,
 			assetTrees,
@@ -136,8 +131,7 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeDeposit:
 		cryptoTx, err = ConstructDepositCryptoTx(
 			oTx,
-			treeDBDriver,
-			treeDB,
+			treeCtx,
 			finalityBlockNr,
 			accountTree,
 			assetTrees,
@@ -153,8 +147,7 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeDepositNft:
 		cryptoTx, err = ConstructDepositNftCryptoTx(
 			oTx,
-			treeDBDriver,
-			treeDB,
+			treeCtx,
 			finalityBlockNr,
 			accountTree,
 			assetTrees,
@@ -170,8 +163,7 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeTransfer:
 		cryptoTx, err = ConstructTransferCryptoTx(
 			oTx,
-			treeDBDriver,
-			treeDB,
+			treeCtx,
 			finalityBlockNr,
 			accountTree,
 			assetTrees,
@@ -187,8 +179,7 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeSwap:
 		cryptoTx, err = ConstructSwapCryptoTx(
 			oTx,
-			treeDBDriver,
-			treeDB,
+			treeCtx,
 			finalityBlockNr,
 			accountTree,
 			assetTrees,
@@ -204,8 +195,7 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeAddLiquidity:
 		cryptoTx, err = ConstructAddLiquidityCryptoTx(
 			oTx,
-			treeDBDriver,
-			treeDB,
+			treeCtx,
 			finalityBlockNr,
 			accountTree,
 			assetTrees,
@@ -221,8 +211,7 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeRemoveLiquidity:
 		cryptoTx, err = ConstructRemoveLiquidityCryptoTx(
 			oTx,
-			treeDBDriver,
-			treeDB,
+			treeCtx,
 			finalityBlockNr,
 			accountTree,
 			assetTrees,
@@ -238,8 +227,7 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeWithdraw:
 		cryptoTx, err = ConstructWithdrawCryptoTx(
 			oTx,
-			treeDBDriver,
-			treeDB,
+			treeCtx,
 			finalityBlockNr,
 			accountTree,
 			assetTrees,
@@ -255,8 +243,7 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeCreateCollection:
 		cryptoTx, err = ConstructCreateCollectionCryptoTx(
 			oTx,
-			treeDBDriver,
-			treeDB,
+			treeCtx,
 			finalityBlockNr,
 			accountTree,
 			assetTrees,
@@ -272,8 +259,7 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeMintNft:
 		cryptoTx, err = ConstructMintNftCryptoTx(
 			oTx,
-			treeDBDriver,
-			treeDB,
+			treeCtx,
 			finalityBlockNr,
 			accountTree,
 			assetTrees,
@@ -289,8 +275,7 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeTransferNft:
 		cryptoTx, err = ConstructTransferNftCryptoTx(
 			oTx,
-			treeDBDriver,
-			treeDB,
+			treeCtx,
 			finalityBlockNr,
 			accountTree,
 			assetTrees,
@@ -306,8 +291,7 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeAtomicMatch:
 		cryptoTx, err = ConstructAtomicMatchCryptoTx(
 			oTx,
-			treeDBDriver,
-			treeDB,
+			treeCtx,
 			finalityBlockNr,
 			accountTree,
 			assetTrees,
@@ -323,8 +307,7 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeCancelOffer:
 		cryptoTx, err = ConstructCancelOfferCryptoTx(
 			oTx,
-			treeDBDriver,
-			treeDB,
+			treeCtx,
 			finalityBlockNr,
 			accountTree,
 			assetTrees,
@@ -340,8 +323,7 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeWithdrawNft:
 		cryptoTx, err = ConstructWithdrawNftCryptoTx(
 			oTx,
-			treeDBDriver,
-			treeDB,
+			treeCtx,
 			finalityBlockNr,
 			accountTree,
 			assetTrees,
@@ -357,8 +339,7 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeFullExit:
 		cryptoTx, err = ConstructFullExitCryptoTx(
 			oTx,
-			treeDBDriver,
-			treeDB,
+			treeCtx,
 			finalityBlockNr,
 			accountTree,
 			assetTrees,
@@ -374,8 +355,7 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeFullExitNft:
 		cryptoTx, err = ConstructFullExitNftCryptoTx(
 			oTx,
-			treeDBDriver,
-			treeDB,
+			treeCtx,
 			finalityBlockNr,
 			accountTree,
 			assetTrees,

@@ -19,7 +19,6 @@ package tree
 
 import (
 	bsmt "github.com/bnb-chain/bas-smt"
-	"github.com/bnb-chain/bas-smt/database"
 	"github.com/bnb-chain/zkbas-crypto/hash/bn254/zmimc"
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -30,20 +29,19 @@ import (
 func InitNftTree(
 	nftHistoryModel L2NftHistoryModel,
 	blockHeight int64,
-	dbDriver treedb.Driver,
-	db database.TreeDB,
+	ctx *treedb.Context,
 ) (
 	nftTree bsmt.SparseMerkleTree, err error,
 ) {
 	nftTree, err = bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(zmimc.Hmimc),
-		treedb.SetNamespace(dbDriver, db, NFTPrefix), NftTreeHeight, NilNftNodeHash,
-		bsmt.InitializeVersion(bsmt.Version(blockHeight)))
+		treedb.SetNamespace(ctx, NFTPrefix), NftTreeHeight, NilNftNodeHash,
+		ctx.Options(blockHeight)...)
 	if err != nil {
 		logx.Errorf("[InitNftTree] unable to create tree from db: %s", err.Error())
 		return nil, err
 	}
 
-	if dbDriver == treedb.MemoryDB {
+	if ctx.IsLoad() {
 		_, nftAssets, err := nftHistoryModel.GetLatestNftAssetsByBlockHeight(blockHeight)
 		if err != nil {
 			logx.Errorf("[InitNftTree] unable to get latest nft assets: %s", err.Error())

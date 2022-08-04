@@ -19,7 +19,6 @@ package tree
 
 import (
 	bsmt "github.com/bnb-chain/bas-smt"
-	"github.com/bnb-chain/bas-smt/database"
 	"github.com/bnb-chain/zkbas-crypto/hash/bn254/zmimc"
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -31,20 +30,19 @@ import (
 func InitLiquidityTree(
 	liquidityHistoryModel LiquidityHistoryModel,
 	blockHeight int64,
-	dbDriver treedb.Driver,
-	db database.TreeDB,
+	ctx *treedb.Context,
 ) (
 	liquidityTree bsmt.SparseMerkleTree, err error,
 ) {
 	liquidityTree, err = bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(zmimc.Hmimc),
-		treedb.SetNamespace(dbDriver, db, LiquidityPrefix), LiquidityTreeHeight, NilLiquidityNodeHash,
-		bsmt.InitializeVersion(bsmt.Version(blockHeight)))
+		treedb.SetNamespace(ctx, LiquidityPrefix), LiquidityTreeHeight, NilLiquidityNodeHash,
+		ctx.Options(blockHeight)...)
 	if err != nil {
 		logx.Errorf("[InitLiquidityTree] unable to create tree from db: %s", err.Error())
 		return nil, err
 	}
 
-	if dbDriver == treedb.MemoryDB {
+	if ctx.IsLoad() {
 		liquidityAssets, err := liquidityHistoryModel.GetLatestLiquidityByBlockHeight(blockHeight)
 		if err != nil {
 			if err != errorcode.DbErrNotFound {

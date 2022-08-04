@@ -22,7 +22,6 @@ import (
 	"math/big"
 
 	bsmt "github.com/bnb-chain/bas-smt"
-	"github.com/bnb-chain/bas-smt/database"
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -34,8 +33,7 @@ import (
 
 func ConstructWithdrawCryptoTx(
 	oTx *Tx,
-	treeDBDriver treedb.Driver,
-	treeDB database.TreeDB,
+	treeCtx *treedb.Context,
 	finalityBlockNr uint64,
 	accountTree bsmt.SparseMerkleTree,
 	accountAssetsTree *[]bsmt.SparseMerkleTree,
@@ -69,8 +67,7 @@ func ConstructWithdrawCryptoTx(
 	cryptoTx, err = ConstructWitnessInfo(
 		oTx,
 		accountModel,
-		treeDBDriver,
-		treeDB,
+		treeCtx,
 		finalityBlockNr,
 		accountTree,
 		accountAssetsTree,
