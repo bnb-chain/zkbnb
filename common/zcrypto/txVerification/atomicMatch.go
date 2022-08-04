@@ -208,25 +208,28 @@ func VerifyAtomicMatchTxInfo(
 	})
 	// buyer offer
 	buyerOfferIndex := txInfo.BuyOffer.OfferId % OfferPerAsset
-	oBuyerOffer := accountInfoMap[txInfo.BuyOffer.AccountIndex].AssetInfo[buyerOfferAssetId].OfferCanceledOrFinalized
-	// verify whether buyer offer id is valid for use
-	if oBuyerOffer.Bit(int(buyerOfferIndex)) == 1 {
-		logx.Errorf("account %d offer index %d is already in use", txInfo.BuyOffer.AccountIndex, buyerOfferIndex)
-		return nil, errors.New("invalid buyer offer id")
+	if accountInfoMap[txInfo.BuyOffer.AccountIndex].AssetInfo[buyerOfferAssetId] != nil {
+		oBuyerOffer := accountInfoMap[txInfo.BuyOffer.AccountIndex].AssetInfo[buyerOfferAssetId].OfferCanceledOrFinalized
+		// verify whether buyer offer id is valid for use
+		if oBuyerOffer.Bit(int(buyerOfferIndex)) == 1 {
+			logx.Errorf("account %d offer index %d is already in use", txInfo.BuyOffer.AccountIndex, buyerOfferIndex)
+			return nil, errors.New("invalid buyer offer id")
+		}
+
+		nBuyerOffer := new(big.Int).SetBit(oBuyerOffer, int(buyerOfferIndex), 1)
+		order++
+		txDetails = append(txDetails, &MempoolTxDetail{
+			AssetId:      buyerOfferAssetId,
+			AssetType:    GeneralAssetType,
+			AccountIndex: txInfo.BuyOffer.AccountIndex,
+			AccountName:  accountInfoMap[txInfo.BuyOffer.AccountIndex].AccountName,
+			BalanceDelta: commonAsset.ConstructAccountAsset(
+				buyerOfferAssetId, ZeroBigInt, ZeroBigInt, nBuyerOffer,
+			).String(),
+			Order:        order,
+			AccountOrder: accountOrder,
+		})
 	}
-	nBuyerOffer := new(big.Int).SetBit(oBuyerOffer, int(buyerOfferIndex), 1)
-	order++
-	txDetails = append(txDetails, &MempoolTxDetail{
-		AssetId:      buyerOfferAssetId,
-		AssetType:    GeneralAssetType,
-		AccountIndex: txInfo.BuyOffer.AccountIndex,
-		AccountName:  accountInfoMap[txInfo.BuyOffer.AccountIndex].AccountName,
-		BalanceDelta: commonAsset.ConstructAccountAsset(
-			buyerOfferAssetId, ZeroBigInt, ZeroBigInt, nBuyerOffer,
-		).String(),
-		Order:        order,
-		AccountOrder: accountOrder,
-	})
 	// seller asset A
 	// treasury fee
 	treasuryFee, err := util.CleanPackedAmount(ffmath.Div(
@@ -264,25 +267,27 @@ func VerifyAtomicMatchTxInfo(
 	})
 	// seller offer
 	sellerOfferIndex := txInfo.SellOffer.OfferId % OfferPerAsset
-	oSellerOffer := accountInfoMap[txInfo.SellOffer.AccountIndex].AssetInfo[sellerOfferAssetId].OfferCanceledOrFinalized
-	// verify whether buyer offer id is valid for use
-	if oSellerOffer.Bit(int(sellerOfferIndex)) == 1 {
-		logx.Errorf("account %d offer index %d is already in use", txInfo.SellOffer.AccountIndex, sellerOfferIndex)
-		return nil, errors.New("invalid seller offer id")
+	if accountInfoMap[txInfo.SellOffer.AccountIndex].AssetInfo[sellerOfferAssetId] != nil {
+		oSellerOffer := accountInfoMap[txInfo.SellOffer.AccountIndex].AssetInfo[sellerOfferAssetId].OfferCanceledOrFinalized
+		// verify whether buyer offer id is valid for use
+		if oSellerOffer.Bit(int(sellerOfferIndex)) == 1 {
+			logx.Errorf("account %d offer index %d is already in use", txInfo.SellOffer.AccountIndex, sellerOfferIndex)
+			return nil, errors.New("invalid seller offer id")
+		}
+		nSellerOffer := new(big.Int).SetBit(oSellerOffer, int(sellerOfferIndex), 1)
+		order++
+		txDetails = append(txDetails, &MempoolTxDetail{
+			AssetId:      sellerOfferAssetId,
+			AssetType:    GeneralAssetType,
+			AccountIndex: txInfo.SellOffer.AccountIndex,
+			AccountName:  accountInfoMap[txInfo.SellOffer.AccountIndex].AccountName,
+			BalanceDelta: commonAsset.ConstructAccountAsset(
+				sellerOfferAssetId, ZeroBigInt, ZeroBigInt, nSellerOffer,
+			).String(),
+			Order:        order,
+			AccountOrder: accountOrder,
+		})
 	}
-	nSellerOffer := new(big.Int).SetBit(oSellerOffer, int(sellerOfferIndex), 1)
-	order++
-	txDetails = append(txDetails, &MempoolTxDetail{
-		AssetId:      sellerOfferAssetId,
-		AssetType:    GeneralAssetType,
-		AccountIndex: txInfo.SellOffer.AccountIndex,
-		AccountName:  accountInfoMap[txInfo.SellOffer.AccountIndex].AccountName,
-		BalanceDelta: commonAsset.ConstructAccountAsset(
-			sellerOfferAssetId, ZeroBigInt, ZeroBigInt, nSellerOffer,
-		).String(),
-		Order:        order,
-		AccountOrder: accountOrder,
-	})
 	// creator fee
 	order++
 	accountOrder++
