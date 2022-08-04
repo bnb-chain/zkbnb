@@ -31,3 +31,8 @@ require (
 	gorm.io/driver/postgres v1.3.6
 	k8s.io/client-go v0.24.1 // indirect
 )
+replace github.com/bnb-chain/zkbas-crypto => ../zkbas-crypto
+replace (
+	github.com/consensys/gnark v0.7.0 => ../../gnark
+    github.com/consensys/gnark-crypto v0.7.0 => ../../gnark-crypto
+)

@@ -73,7 +73,7 @@ func ProveBlock(ctx *svc.ServiceContext) error {
 		return errors.New("[ProveBlock] GenerateProof Error")
 	}
 
-	formattedProof, err := util.FormatProof(proof, cryptoBlock.OldStateRoot, cryptoBlock.NewStateRoot, cryptoBlock.BlockCommitment)
+	formattedProof, err := util.FormatPlonkProof(proof)
 	if err != nil {
 		logx.Errorf("[ProveBlock] unable to format proof: %s", err.Error())
 		return err

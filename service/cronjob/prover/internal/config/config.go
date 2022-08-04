@@ -8,6 +8,7 @@ type Config struct {
 	KeyPath struct {
 		ProvingKeyPath   []string
 		VerifyingKeyPath []string
+		SrsPath          []string
 		KeyTxCounts      []int
 	}
 	Postgres struct {

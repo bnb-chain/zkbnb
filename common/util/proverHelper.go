@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/consensys/gnark-crypto/ecc/bn254"
+	"github.com/consensys/gnark/backend/groth16"
+	"github.com/consensys/gnark/backend/plonk"
 	"math/big"
 	"os"
 	"time"
@@ -13,8 +16,8 @@ import (
 	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	"github.com/consensys/gnark-crypto/ecc"
+	kzg_bn254 "github.com/consensys/gnark-crypto/ecc/bn254/fr/kzg"
 	"github.com/consensys/gnark/backend"
-	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/frontend"
 )
 
@@ -23,26 +26,34 @@ const (
 	COM_MODE = 2
 )
 
-func LoadProvingKey(filepath string) (pk groth16.ProvingKey, err error) {
+func LoadProvingKey(filepath string, srsfilepath string) (pk plonk.ProvingKey, err error) {
 	fmt.Println("start reading proving key")
-	pk = groth16.NewProvingKey(ecc.BN254)
+	pk = plonk.NewProvingKey(ecc.BN254)
 	f, _ := os.Open(filepath)
 	_, err = pk.ReadFrom(f)
 	if err != nil {
 		return pk, errors.New("read file error")
 	}
+	f, _ = os.Open(srsfilepath)
+	var srs kzg_bn254.SRS
+	_, err = srs.ReadFrom(f)
+	pk.InitKZG(&srs)
 	f.Close()
 
 	return pk, nil
 }
 
-func LoadVerifyingKey(filepath string) (verifyingKey groth16.VerifyingKey, err error) {
-	verifyingKey = groth16.NewVerifyingKey(ecc.BN254)
+func LoadVerifyingKey(filepath string, srsfilepath string) (verifyingKey plonk.VerifyingKey, err error) {
+	verifyingKey = plonk.NewVerifyingKey(ecc.BN254)
 	f, _ := os.Open(filepath)
 	_, err = verifyingKey.ReadFrom(f)
 	if err != nil {
 		return verifyingKey, errors.New("read file error")
 	}
+	f, _ = os.Open(srsfilepath)
+	var srs kzg_bn254.SRS
+	_, err = srs.ReadFrom(f)
+	verifyingKey.InitKZG(&srs)
 	f.Close()
 
 	return verifyingKey, nil
@@ -50,10 +61,10 @@ func LoadVerifyingKey(filepath string) (verifyingKey groth16.VerifyingKey, err e
 
 func GenerateProof(
 	r1cs frontend.CompiledConstraintSystem,
-	provingKey groth16.ProvingKey,
-	verifyingKey groth16.VerifyingKey,
+	provingKey plonk.ProvingKey,
+	verifyingKey plonk.VerifyingKey,
 	cBlock *cryptoBlock.Block,
-) (proof groth16.Proof, err error) {
+) (proof plonk.Proof, err error) {
 	// verify CryptoBlock
 	blockWitness, err := cryptoBlock.SetBlockWitness(cBlock)
 	if err != nil {
@@ -76,7 +87,7 @@ func GenerateProof(
 	}
 	elapse := time.Now()
 	logx.Info("start proving")
-	proof, err = groth16.Prove(r1cs, provingKey, witness, backend.WithHints(std.Keccak256, std.ComputeSLp))
+	proof, err = plonk.Prove(r1cs, provingKey, witness, backend.WithHints(std.Keccak256, std.ComputeSLp))
 	if err != nil {
 		logx.Errorf("[GenerateProof] unable to make a proof: %s", err.Error())
 		return proof, err
@@ -84,18 +95,19 @@ func GenerateProof(
 	fmt.Println("finish proving: ", time.Since(elapse))
 	elapse = time.Now()
 	logx.Info("start verifying")
-	err = groth16.Verify(proof, verifyingKey, vWitness)
+	err = plonk.Verify(proof, verifyingKey, vWitness)
 	if err != nil {
 		logx.Errorf("[GenerateProof] invalid block proof: %s", err.Error())
 		return proof, err
 	}
+	fmt.Println("finish verifying: ", time.Since(elapse))
 
 	return proof, nil
 }
 
 func VerifyProof(
-	proof groth16.Proof,
-	vk groth16.VerifyingKey,
+	proof plonk.Proof,
+	vk plonk.VerifyingKey,
 	cBlock *cryptoBlock.Block,
 ) error {
 	// verify CryptoBlock
@@ -121,12 +133,115 @@ func VerifyProof(
 		return err
 	}
 
-	err = groth16.Verify(proof, vk, vWitness)
+	err = plonk.Verify(proof, vk, vWitness)
 	if err != nil {
 		logx.Errorf("[VerifyProof] invalid block proof: %s", err.Error())
 		return err
 	}
 	return nil
+}
+
+type PlonkFormattedProof struct {
+	WireCommitments               [3][2]*big.Int
+	GrandProductCommitment        [2]*big.Int
+	QuotientPolyCommitments       [3][2]*big.Int
+	WireValuesAtZeta              [3]*big.Int
+	GrandProductAtZetaOmega       *big.Int
+	QuotientPolynomialAtZeta      *big.Int
+	LinearizationPolynomialAtZeta *big.Int
+	PermutationPolynomialsAtZeta  [2]*big.Int
+	OpeningAtZetaProof            [2]*big.Int
+	OpeningAtZetaOmegaProof       [2]*big.Int
+}
+
+func (p *PlonkFormattedProof) ConvertToArray(res *[]*big.Int) {
+	for i := 0; i < 3; i++ {
+		*res = append(*res, p.WireCommitments[i][:]...)
+	}
+	*res = append(*res, p.GrandProductCommitment[:]...)
+	for i := 0; i < 3; i++ {
+		*res = append(*res, p.QuotientPolyCommitments[i][:]...)
+	}
+	*res = append(*res, p.WireValuesAtZeta[:]...)
+	*res = append(*res, p.GrandProductAtZetaOmega)
+	*res = append(*res, p.QuotientPolynomialAtZeta)
+	*res = append(*res, p.LinearizationPolynomialAtZeta)
+	*res = append(*res, p.PermutationPolynomialsAtZeta[:]...)
+	*res = append(*res, p.OpeningAtZetaProof[:]...)
+	*res = append(*res, p.OpeningAtZetaOmegaProof[:]...)
+}
+
+func FormatPlonkProof(oProof plonk.Proof) (proof *PlonkFormattedProof, err error) {
+	proof = new(PlonkFormattedProof)
+	const fpSize = 32
+	var buf bytes.Buffer
+	_, err = oProof.WriteTo(&buf)
+
+	if err != nil {
+		logx.Errorf("unable to format plonk proof: %s", err.Error())
+		return nil, err
+	}
+	proofBytes := buf.Bytes()
+	index := 0
+	var g1point bn254.G1Affine
+	for i := 0; i < 3; i++ {
+		g1point.SetBytes(proofBytes[fpSize*index : fpSize*(index+1)])
+		uncompressed := g1point.RawBytes()
+		for j := 0; j < 2; j++ {
+			proof.WireCommitments[i][j] = new(big.Int).SetBytes(uncompressed[fpSize*j : fpSize*(j+1)])
+		}
+		index += 1
+	}
+
+	g1point.SetBytes(proofBytes[fpSize*index : fpSize*(index+1)])
+	uncompressed := g1point.RawBytes()
+	proof.GrandProductCommitment[0] = new(big.Int).SetBytes(uncompressed[0:fpSize])
+	proof.GrandProductCommitment[1] = new(big.Int).SetBytes(uncompressed[fpSize : fpSize*2])
+	index += 1
+
+	for i := 0; i < 3; i++ {
+		g1point.SetBytes(proofBytes[fpSize*index : fpSize*(index+1)])
+		uncompressed := g1point.RawBytes()
+		for j := 0; j < 2; j++ {
+			proof.QuotientPolyCommitments[i][j] = new(big.Int).SetBytes(uncompressed[fpSize*j : fpSize*(j+1)])
+		}
+		index += 1
+	}
+
+	g1point.SetBytes(proofBytes[fpSize*index : fpSize*(index+1)])
+	uncompressed = g1point.RawBytes()
+	proof.OpeningAtZetaProof[0] = new(big.Int).SetBytes(uncompressed[0:fpSize])
+	proof.OpeningAtZetaProof[1] = new(big.Int).SetBytes(uncompressed[fpSize : fpSize*2])
+	index += 1
+	fmt.Printf("OpeningAtZetaProof is %x\n", uncompressed)
+
+	// plonk proof write len(ClaimedValues) which is 4 bytes
+	offset := 4
+	fmt.Printf("QuotientPolynomialAtZeta is %x\n", proofBytes[offset+fpSize*index:offset+fpSize*(index+1)])
+	proof.QuotientPolynomialAtZeta = new(big.Int).SetBytes(proofBytes[offset+fpSize*index : offset+fpSize*(index+1)])
+	index += 1
+
+	proof.LinearizationPolynomialAtZeta = new(big.Int).SetBytes(proofBytes[offset+fpSize*index : offset+fpSize*(index+1)])
+	index += 1
+
+	for i := 0; i < 3; i++ {
+		proof.WireValuesAtZeta[i] = new(big.Int).SetBytes(proofBytes[offset+fpSize*index : offset+fpSize*(index+1)])
+		index += 1
+	}
+
+	for i := 0; i < 2; i++ {
+		proof.PermutationPolynomialsAtZeta[i] = new(big.Int).SetBytes(proofBytes[offset+fpSize*index : offset+fpSize*(index+1)])
+		index += 1
+	}
+
+	g1point.SetBytes(proofBytes[offset+fpSize*index : offset+fpSize*(index+1)])
+	uncompressed = g1point.RawBytes()
+	proof.OpeningAtZetaOmegaProof[0] = new(big.Int).SetBytes(uncompressed[0:fpSize])
+	proof.OpeningAtZetaOmegaProof[1] = new(big.Int).SetBytes(uncompressed[fpSize : fpSize*2])
+	index += 1
+
+	proof.GrandProductAtZetaOmega = new(big.Int).SetBytes(proofBytes[offset+fpSize*index : offset+fpSize*(index+1)])
+	return proof, nil
 }
 
 type FormattedProof struct {
@@ -163,7 +278,7 @@ func FormatProof(oProof groth16.Proof, oldRoot, newRoot, commitment []byte) (pro
 	return proof, nil
 }
 
-func UnformatProof(proof *FormattedProof) (oProof groth16.Proof, err error) {
+func UnformatProof(proof *FormattedProof) (oProof plonk.Proof, err error) {
 	var buf bytes.Buffer
 	// write bytes to buffer
 	buf.Write(proof.A[0].Bytes())
@@ -176,7 +291,7 @@ func UnformatProof(proof *FormattedProof) (oProof groth16.Proof, err error) {
 	buf.Write(proof.C[1].Bytes())
 
 	// init oProof
-	oProof = groth16.NewProof(ecc.BN254)
+	oProof = plonk.NewProof(ecc.BN254)
 
 	// read buffer
 	_, err = oProof.ReadFrom(bytes.NewReader(buf.Bytes()))

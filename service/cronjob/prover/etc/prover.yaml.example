@@ -10,5 +10,6 @@ CacheRedis:
 KeyPath:
   ProvingKeyPath: [/Users/likang/Documents/git/bnb-chain/zkbas/zkbas1.pk, /Users/likang/Documents/git/bnb-chain/zkbas/zkbas10.pk]
   VerifyingKeyPath: [/Users/likang/Documents/git/bnb-chain/zkbas/zkbas1.vk, /Users/likang/Documents/git/bnb-chain/zkbas/zkbas10.vk]
+  SrsPath: [/Users/likang/Documents/git/bnb-chain/zkbas/zkbas1.srs_plonk]
   KeyTxCounts:    [1, 10]
 

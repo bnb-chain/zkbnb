@@ -2,12 +2,12 @@ package main
 
 import (
 	"flag"
-
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/backend/groth16"
+	"github.com/consensys/gnark/backend/plonk"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/frontend/cs/r1cs"
+	"github.com/consensys/gnark/frontend/cs/scs"
+	// "github.com/consensys/gnark/frontend/cs/r1cs"
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -29,8 +29,8 @@ func main() {
 	logx.DisableStat()
 
 	logic.KeyTxCounts = c.KeyPath.KeyTxCounts
-	logic.ProvingKeys = make([]groth16.ProvingKey, len(logic.KeyTxCounts))
-	logic.VerifyingKeys = make([]groth16.VerifyingKey, len(logic.KeyTxCounts))
+	logic.ProvingKeys = make([]plonk.ProvingKey, len(logic.KeyTxCounts))
+	logic.VerifyingKeys = make([]plonk.VerifyingKey, len(logic.KeyTxCounts))
 	logic.R1cs = make([]frontend.CompiledConstraintSystem, len(logic.KeyTxCounts))
 	var err error
 	for i := 0; i < len(logic.KeyTxCounts); i++ {
@@ -41,18 +41,18 @@ func main() {
 			circuit.Txs[i] = block.GetZeroTxConstraint()
 		}
 		logx.Infof("start compile block size %d circuit", circuit.TxsCount)
-		logic.R1cs[i], err = frontend.Compile(ecc.BN254, r1cs.NewBuilder, &circuit, frontend.IgnoreUnconstrainedInputs())
+		logic.R1cs[i], err = frontend.Compile(ecc.BN254, scs.NewBuilder, &circuit, frontend.IgnoreUnconstrainedInputs())
 		if err != nil {
 			panic("r1cs init error")
 		}
 		logx.Infof("circuit constraints: %d", logic.R1cs[i].GetNbConstraints())
 		logx.Info("finish compile circuit")
 		// read proving and verifying keys
-		logic.ProvingKeys[i], err = util.LoadProvingKey(c.KeyPath.ProvingKeyPath[i])
+		logic.ProvingKeys[i], err = util.LoadProvingKey(c.KeyPath.ProvingKeyPath[i], c.KeyPath.SrsPath[i])
 		if err != nil {
 			panic("provingKey loading error")
 		}
-		logic.VerifyingKeys[i], err = util.LoadVerifyingKey(c.KeyPath.VerifyingKeyPath[i])
+		logic.VerifyingKeys[i], err = util.LoadVerifyingKey(c.KeyPath.VerifyingKeyPath[i], c.KeyPath.SrsPath[i])
 		if err != nil {
 			panic("verifyingKey loading error")
 		}

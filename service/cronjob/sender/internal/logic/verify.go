@@ -19,6 +19,7 @@ package logic
 import (
 	"encoding/json"
 	"errors"
+	"github.com/bnb-chain/zkbas/common/util"
 	"math/big"
 	"time"
 
@@ -26,7 +27,6 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/model/block"
-	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/errorcode"
 )
 
@@ -164,17 +164,28 @@ func SendVerifiedAndExecutedBlocks(
 		return errors.New("[SendVerifiedAndExecutedBlocks] we haven't generated related proofs, please wait")
 	}
 	var proofs []*big.Int
+	/*
+		for _, proofSender := range proofSenders {
+			var proofInfo *util.FormattedProof
+			err = json.Unmarshal([]byte(proofSender.ProofInfo), &proofInfo)
+			if err != nil {
+				logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to unmarshal proof info: %s", err.Error())
+				return err
+			}
+			proofs = append(proofs, proofInfo.A[:]...)
+			proofs = append(proofs, proofInfo.B[0][0], proofInfo.B[0][1])
+			proofs = append(proofs, proofInfo.B[1][0], proofInfo.B[1][1])
+			proofs = append(proofs, proofInfo.C[:]...)
+		}
+	*/
 	for _, proofSender := range proofSenders {
-		var proofInfo *util.FormattedProof
+		var proofInfo *util.PlonkFormattedProof
 		err = json.Unmarshal([]byte(proofSender.ProofInfo), &proofInfo)
 		if err != nil {
 			logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to unmarshal proof info: %s", err.Error())
 			return err
 		}
-		proofs = append(proofs, proofInfo.A[:]...)
-		proofs = append(proofs, proofInfo.B[0][0], proofInfo.B[0][1])
-		proofs = append(proofs, proofInfo.B[1][0], proofInfo.B[1][1])
-		proofs = append(proofs, proofInfo.C[:]...)
+		proofInfo.ConvertToArray(&proofs)
 	}
 	// commit blocks on-chain
 	if len(pendingVerifyAndExecuteBlocks) != 0 {
