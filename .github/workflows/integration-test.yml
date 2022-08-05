@@ -14,9 +14,8 @@ jobs:
     steps:
       - name: deploy new zkbas
         run: |
-          cd /tmp
-          rm -rf ./zkbas
-          git clone --branch github-action https://github.com/bnb-chain/zkbas.git
+          cd /tmp/zkbas
+          git checkout origin/github-action
           echo "start deploy new zkbas"
           sudo bash -x ./zkbas/deploy-local.sh new
           echo "end deploy"
