@@ -7,14 +7,12 @@ import (
 
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/redis"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
-	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/commglobalmap"
@@ -131,42 +129,11 @@ func SendCancelOfferTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 		offerInfo.Status = nft.OfferFinishedStatus
 		isUpdate = true
 	}
-	err = CreateMempoolTxForCancelOffer(
-		mempoolTx,
-		offerInfo,
-		isUpdate,
-		svcCtx.RedisConnection,
-		svcCtx.MempoolModel,
-	)
-	if err != nil {
+
+	if err := svcCtx.MempoolModel.CreateMempoolTxAndUpdateOffer(mempoolTx, offerInfo, isUpdate); err != nil {
 		logx.Errorf("fail to create mempool tx: %v, err: %s", mempoolTx, err.Error())
 		_ = CreateFailTx(svcCtx.FailTxModel, commonTx.TxTypeCancelOffer, txInfo, err)
 		return "", errorcode.RpcErrInternal
 	}
 	return txId, nil
-}
-
-func CreateMempoolTxForCancelOffer(
-	nMempoolTx *mempool.MempoolTx,
-	offer *nft.Offer,
-	isUpdate bool,
-	redisConnection *redis.Redis,
-	mempoolModel mempool.MempoolModel,
-) (err error) {
-	var keys []string
-	for _, mempoolTxDetail := range nMempoolTx.MempoolDetails {
-		keys = append(keys, util.GetAccountKey(mempoolTxDetail.AccountIndex))
-	}
-	_, err = redisConnection.Del(keys...)
-	if err != nil {
-		logx.Errorf("fail to delete keys from redis: %s", err.Error())
-		return err
-	}
-	// write into mempool
-	err = mempoolModel.CreateMempoolTxAndUpdateOffer(
-		nMempoolTx,
-		offer,
-		isUpdate,
-	)
-	return err
 }

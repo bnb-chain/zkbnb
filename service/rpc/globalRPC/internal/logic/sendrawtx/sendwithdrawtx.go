@@ -7,13 +7,12 @@ import (
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/errorcode"
-
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/commglobalmap"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/svc"
 )
@@ -89,8 +88,7 @@ func SendWithdrawTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalm
 		txInfo.ExpiredAt,
 		txDetails,
 	)
-	err = CreateMempoolTx(mempoolTx, svcCtx.RedisConnection, svcCtx.MempoolModel)
-	if err != nil {
+	if err := svcCtx.MempoolModel.CreateBatchedMempoolTxs([]*mempool.MempoolTx{mempoolTx}); err != nil {
 		logx.Errorf("fail to create mempool tx: %v, err: %s", mempoolTx, err.Error())
 		_ = CreateFailTx(svcCtx.FailTxModel, commonTx.TxTypeWithdraw, txInfo, err)
 		return "", errorcode.RpcErrInternal
