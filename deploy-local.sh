@@ -19,9 +19,9 @@ export PATH=$PATH:/usr/local/go/bin/
 cd ~
 rm -rf ~/zkbas-deploy-bak && mv ~/zkbas-deploy ~/zkbas-deploy-bak
 mkdir zkbas-deploy && cd zkbas-deploy
-git clone --branch develop https://github.com/bnb-chain/zkbas.git
 git clone --branch develop  https://github.com/bnb-chain/zkbas-contract.git
 git clone --branch develop https://github.com/bnb-chain/zkbas-crypto.git
+mv /home/ec2-user/zkbas ~/zkbas-deploy
 
 
 flag=$1

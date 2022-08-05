@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - develop
+      - master
+  pull_request:
+    branches:
+      - master
+      - develop
 
 jobs:
   deploy:
@@ -14,6 +19,17 @@ jobs:
     steps:
       - name: deploy new zkbas
         run: |
+          echo 'fetch zkbas repo'
+          export PR_NUMBER=$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
+          echo 'Pull requests/$PR_NUMBER'
+          
+          cd ~
+          rm -rf ./zkbas
+          git clone --branch develop https://github.com/bnb-chain/zkbas.git
+          cd ./zkbas
+          git fetch origin pull/$PR_NUMBER/head:deploy
+          git checkout deploy
+          
           cd /tmp
           sudo rm -rf ./zkbas
           git clone --branch github-action https://github.com/bnb-chain/zkbas.git
