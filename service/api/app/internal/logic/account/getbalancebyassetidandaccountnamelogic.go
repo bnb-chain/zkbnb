@@ -7,7 +7,6 @@ import (
 
 	"github.com/bnb-chain/zkbas/common/checker"
 	"github.com/bnb-chain/zkbas/errorcode"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/account"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/globalrpc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
@@ -18,7 +17,6 @@ type GetBalanceByAssetIdAndAccountNameLogic struct {
 	ctx       context.Context
 	svcCtx    *svc.ServiceContext
 	globalRPC globalrpc.GlobalRPC
-	account   account.Model
 }
 
 func NewGetBalanceByAssetIdAndAccountNameLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetBalanceByAssetIdAndAccountNameLogic {
@@ -27,7 +25,6 @@ func NewGetBalanceByAssetIdAndAccountNameLogic(ctx context.Context, svcCtx *svc.
 		ctx:       ctx,
 		svcCtx:    svcCtx,
 		globalRPC: globalrpc.New(svcCtx, ctx),
-		account:   account.New(svcCtx),
 	}
 }
 
@@ -37,7 +34,7 @@ func (l *GetBalanceByAssetIdAndAccountNameLogic) GetBalanceByAssetIdAndAccountNa
 		logx.Errorf("[CheckAccountIndex] param: %s", req.AccountName)
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountName")
 	}
-	account, err := l.account.GetAccountByAccountName(l.ctx, req.AccountName)
+	account, err := l.svcCtx.AccountModel.GetAccountByAccountName(req.AccountName)
 	if err != nil {
 		logx.Errorf("[GetAccountByAccountName] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {

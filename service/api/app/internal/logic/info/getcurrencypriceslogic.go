@@ -7,7 +7,6 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/errorcode"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/l2asset"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/price"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
@@ -15,24 +14,22 @@ import (
 
 type GetCurrencyPricesLogic struct {
 	logx.Logger
-	ctx     context.Context
-	svcCtx  *svc.ServiceContext
-	price   price.Price
-	l2asset l2asset.L2asset
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
+	price  price.Price
 }
 
 func NewGetCurrencyPricesLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetCurrencyPricesLogic {
 	return &GetCurrencyPricesLogic{
-		Logger:  logx.WithContext(ctx),
-		ctx:     ctx,
-		svcCtx:  svcCtx,
-		price:   price.New(svcCtx),
-		l2asset: l2asset.New(svcCtx),
+		Logger: logx.WithContext(ctx),
+		ctx:    ctx,
+		svcCtx: svcCtx,
+		price:  price.New(svcCtx),
 	}
 }
 
 func (l *GetCurrencyPricesLogic) GetCurrencyPrices(req *types.ReqGetCurrencyPrices) (*types.RespGetCurrencyPrices, error) {
-	l2Assets, err := l.l2asset.GetL2AssetsList(l.ctx)
+	l2Assets, err := l.svcCtx.L2AssetModel.GetAssetsList()
 	if err != nil {
 		logx.Errorf("[GetL2AssetsList] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {

@@ -35,7 +35,7 @@ type (
 	MempoolModel interface {
 		CreateMempoolTxTable() error
 		DropMempoolTxTable() error
-		GetMempoolTxByTxId(id uint) (mempoolTx *MempoolTx, err error)
+		GetMempoolTxByTxId(id int64) (mempoolTx *MempoolTx, err error)
 		GetAllMempoolTxsList() (mempoolTxs []*MempoolTx, err error)
 		GetMempoolTxsListForCommitter() (mempoolTxs []*MempoolTx, err error)
 		GetMempoolTxsList(limit int64, offset int64) (mempoolTxs []*MempoolTx, err error)
@@ -784,7 +784,7 @@ func (m *defaultMempoolModel) CreateMempoolTxAndUpdateOffer(mempoolTx *MempoolTx
 	})
 }
 
-func (m *defaultMempoolModel) GetMempoolTxByTxId(id uint) (mempoolTx *MempoolTx, err error) {
+func (m *defaultMempoolModel) GetMempoolTxByTxId(id int64) (mempoolTx *MempoolTx, err error) {
 	dbTx := m.DB.Table(m.table).Where("id = ?", id).
 		Find(&mempoolTx)
 	if dbTx.Error != nil {

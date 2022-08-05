@@ -7,44 +7,29 @@ import (
 
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/block"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/globalrpc"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/mempool"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/mempooltxdetail"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/tx"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/txdetail"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
 type GetTxsByAccountIndexAndTxTypeLogic struct {
 	logx.Logger
-	ctx             context.Context
-	svcCtx          *svc.ServiceContext
-	tx              tx.Model
-	globalRPC       globalrpc.GlobalRPC
-	block           block.Block
-	mempool         mempool.Mempool
-	txDetail        txdetail.Model
-	memPoolTxDetail mempooltxdetail.Model
+	ctx       context.Context
+	svcCtx    *svc.ServiceContext
+	globalRPC globalrpc.GlobalRPC
 }
 
 func NewGetTxsByAccountIndexAndTxTypeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTxsByAccountIndexAndTxTypeLogic {
 	return &GetTxsByAccountIndexAndTxTypeLogic{
-		Logger:          logx.WithContext(ctx),
-		ctx:             ctx,
-		svcCtx:          svcCtx,
-		tx:              tx.New(svcCtx),
-		globalRPC:       globalrpc.New(svcCtx, ctx),
-		block:           block.New(svcCtx),
-		mempool:         mempool.New(svcCtx),
-		txDetail:        txdetail.New(svcCtx),
-		memPoolTxDetail: mempooltxdetail.New(svcCtx),
+		Logger:    logx.WithContext(ctx),
+		ctx:       ctx,
+		svcCtx:    svcCtx,
+		globalRPC: globalrpc.New(svcCtx, ctx),
 	}
 }
 
 func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *types.ReqGetTxsByAccountIndexAndTxType) (*types.RespGetTxsByAccountIndexAndTxType, error) {
-	txDetails, err := l.txDetail.GetTxDetailByAccountIndex(l.ctx, int64(req.AccountIndex))
+	txDetails, err := l.svcCtx.TxDetailModel.GetTxDetailByAccountIndex(int64(req.AccountIndex))
 	if err != nil {
 		logx.Errorf("[GetTxDetailByAccountIndex] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
@@ -56,7 +41,7 @@ func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *
 		Txs: make([]*types.Tx, 0),
 	}
 	for _, txDetail := range txDetails {
-		tx, err := l.tx.GetTxByTxID(l.ctx, txDetail.TxId)
+		tx, err := l.svcCtx.TxModel.GetTxByTxId(txDetail.TxId)
 		if err != nil {
 			logx.Errorf("[GetTxByTxID] err: %s", err.Error())
 			return nil, err
@@ -66,13 +51,13 @@ func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *
 			resp.Txs = append(resp.Txs, utils.GormTx2Tx(tx))
 		}
 	}
-	memPoolTxDetails, err := l.memPoolTxDetail.GetMemPoolTxDetailByAccountIndex(l.ctx, int64(req.AccountIndex))
+	memPoolTxDetails, err := l.svcCtx.MempoolDetailModel.GetMempoolTxDetailsByAccountIndex(int64(req.AccountIndex))
 	if err != nil {
 		logx.Errorf("[GetMemPoolTxDetailByAccountIndex] err: %s", err.Error())
 		return nil, err
 	}
 	for _, txDetail := range memPoolTxDetails {
-		tx, err := l.mempool.GetMempoolTxByTxId(l.ctx, txDetail.TxId)
+		tx, err := l.svcCtx.MempoolModel.GetMempoolTxByTxId(txDetail.TxId)
 		if err != nil {
 			logx.Errorf("[GetMempoolTxByTxId] err: %s", err.Error())
 			return nil, err

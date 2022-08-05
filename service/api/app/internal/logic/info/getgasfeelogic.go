@@ -12,37 +12,31 @@ import (
 	"github.com/bnb-chain/zkbas/common/sysconfigName"
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/errorcode"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/l2asset"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/price"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/sysconf"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
 type GetGasFeeLogic struct {
 	logx.Logger
-	ctx     context.Context
-	svcCtx  *svc.ServiceContext
-	price   price.Price
-	l2asset l2asset.L2asset
-	sysconf sysconf.Sysconf
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
+	price  price.Price
 }
 
 func NewGetGasFeeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetGasFeeLogic {
 	return &GetGasFeeLogic{
-		Logger:  logx.WithContext(ctx),
-		ctx:     ctx,
-		svcCtx:  svcCtx,
-		price:   price.New(svcCtx),
-		l2asset: l2asset.New(svcCtx),
-		sysconf: sysconf.New(svcCtx),
+		Logger: logx.WithContext(ctx),
+		ctx:    ctx,
+		svcCtx: svcCtx,
+		price:  price.New(svcCtx),
 	}
 }
 
 // GetGasFee 需求文档
 func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.RespGetGasFee, error) {
 	resp := &types.RespGetGasFee{}
-	l2Asset, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(l.ctx, req.AssetId)
+	l2Asset, err := l.svcCtx.L2AssetModel.GetSimpleAssetInfoByAssetId(int64(req.AssetId))
 	if err != nil {
 		logx.Errorf("[GetGasFee] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
@@ -50,7 +44,7 @@ func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.RespGetGasFe
 		}
 		return nil, errorcode.AppErrInternal
 	}
-	oAssetInfo, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(context.Background(), req.AssetId)
+	oAssetInfo, err := l.svcCtx.L2AssetModel.GetSimpleAssetInfoByAssetId(int64(req.AssetId))
 	if err != nil {
 		logx.Errorf("[GetGasFee] unable to get l2 asset info: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
@@ -62,7 +56,7 @@ func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.RespGetGasFe
 		logx.Errorf("[GetGasFee] not gas asset id")
 		return nil, errorcode.AppErrInvalidGasAsset
 	}
-	sysGasFee, err := l.sysconf.GetSysconfigByName(l.ctx, sysconfigName.SysGasFee)
+	sysGasFee, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.SysGasFee)
 	if err != nil {
 		logx.Errorf("[GetGasFee] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {

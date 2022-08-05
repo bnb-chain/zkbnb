@@ -7,7 +7,6 @@ import (
 
 	"github.com/bnb-chain/zkbas/common/checker"
 	"github.com/bnb-chain/zkbas/errorcode"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/account"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/globalrpc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
@@ -18,7 +17,6 @@ type GetAccountInfoByAccountNameLogic struct {
 	ctx       context.Context
 	svcCtx    *svc.ServiceContext
 	globalRPC globalrpc.GlobalRPC
-	account   account.Model
 }
 
 func NewGetAccountInfoByAccountNameLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAccountInfoByAccountNameLogic {
@@ -27,7 +25,6 @@ func NewGetAccountInfoByAccountNameLogic(ctx context.Context, svcCtx *svc.Servic
 		ctx:       ctx,
 		svcCtx:    svcCtx,
 		globalRPC: globalrpc.New(svcCtx, ctx),
-		account:   account.New(svcCtx),
 	}
 }
 
@@ -41,7 +38,7 @@ func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *type
 		logx.Errorf("[CheckFormatAccountName] accountName: %s", accountName)
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountName")
 	}
-	info, err := l.account.GetAccountByAccountName(l.ctx, accountName)
+	info, err := l.svcCtx.AccountModel.GetAccountByAccountName(accountName)
 	if err != nil {
 		logx.Errorf("[GetAccountByAccountName] accountName: %s, err: %s", accountName, err.Error())
 		if err == errorcode.DbErrNotFound {

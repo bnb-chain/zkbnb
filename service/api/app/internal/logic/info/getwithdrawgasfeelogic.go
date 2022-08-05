@@ -12,42 +12,36 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/assetInfo"
 	"github.com/bnb-chain/zkbas/common/sysconfigName"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/l2asset"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/price"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/sysconf"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
 type GetWithdrawGasFeeLogic struct {
 	logx.Logger
-	ctx     context.Context
-	svcCtx  *svc.ServiceContext
-	price   price.Price
-	l2asset l2asset.L2asset
-	sysconf sysconf.Sysconf
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
+	price  price.Price
 }
 
 func NewGetWithdrawGasFeeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetWithdrawGasFeeLogic {
 	return &GetWithdrawGasFeeLogic{
-		Logger:  logx.WithContext(ctx),
-		ctx:     ctx,
-		svcCtx:  svcCtx,
-		price:   price.New(svcCtx),
-		l2asset: l2asset.New(svcCtx),
-		sysconf: sysconf.New(svcCtx),
+		Logger: logx.WithContext(ctx),
+		ctx:    ctx,
+		svcCtx: svcCtx,
+		price:  price.New(svcCtx),
 	}
 }
 
 //todo modify 【now function copy from service/api/app/internal/logic/info/getgasfeelogic.go:38】
 func (l *GetWithdrawGasFeeLogic) GetWithdrawGasFee(req *types.ReqGetWithdrawGasFee) (*types.RespGetWithdrawGasFee, error) {
 	resp := &types.RespGetWithdrawGasFee{}
-	l2Asset, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(l.ctx, req.AssetId)
+	l2Asset, err := l.svcCtx.L2AssetModel.GetSimpleAssetInfoByAssetId(int64(req.AssetId))
 	if err != nil {
 		logx.Errorf("[GetGasFee] err: %s", err.Error())
 		return nil, err
 	}
-	oAssetInfo, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(context.Background(), req.AssetId)
+	oAssetInfo, err := l.svcCtx.L2AssetModel.GetSimpleAssetInfoByAssetId(int64(req.AssetId))
 	if err != nil {
 		logx.Errorf("[GetGasFee] unable to get l2 asset info: %s", err.Error())
 		return nil, err
@@ -56,7 +50,7 @@ func (l *GetWithdrawGasFeeLogic) GetWithdrawGasFee(req *types.ReqGetWithdrawGasF
 		logx.Errorf("[GetGasFee] not gas asset id")
 		return nil, errors.New("[GetGasFee] not gas asset id")
 	}
-	sysGasFee, err := l.sysconf.GetSysconfigByName(l.ctx, sysconfigName.SysGasFee)
+	sysGasFee, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.SysGasFee)
 	if err != nil {
 		logx.Errorf("[GetGasFee] err: %s", err.Error())
 		return nil, err

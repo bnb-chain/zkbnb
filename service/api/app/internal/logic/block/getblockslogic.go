@@ -7,7 +7,6 @@ import (
 
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/block"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
@@ -16,7 +15,6 @@ type GetBlocksLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
-	block  block.Block
 }
 
 func NewGetBlocksLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetBlocksLogic {
@@ -24,12 +22,11 @@ func NewGetBlocksLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetBloc
 		Logger: logx.WithContext(ctx),
 		ctx:    ctx,
 		svcCtx: svcCtx,
-		block:  block.New(svcCtx),
 	}
 }
 
 func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetBlocks) (*types.RespGetBlocks, error) {
-	blocks, err := l.block.GetBlocksList(l.ctx, int64(req.Limit), int64(req.Offset))
+	blocks, err := l.svcCtx.BlockModel.GetBlocksList(int64(req.Limit), int64(req.Offset))
 	if err != nil {
 		logx.Errorf("[GetBlocksList] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
@@ -37,7 +34,7 @@ func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetBlocks) (*types.RespGetBlock
 		}
 		return nil, errorcode.AppErrInternal
 	}
-	total, err := l.block.GetBlocksTotalCount(l.ctx)
+	total, err := l.svcCtx.BlockModel.GetBlocksTotalCount()
 	if err != nil {
 		return nil, errorcode.AppErrInternal
 	}

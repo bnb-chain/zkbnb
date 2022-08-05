@@ -8,12 +8,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/checker"
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/account"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/block"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/globalrpc"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/mempool"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/tx"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/txdetail"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
@@ -22,12 +17,7 @@ type GetTxsByAccountNameLogic struct {
 	logx.Logger
 	ctx       context.Context
 	svcCtx    *svc.ServiceContext
-	account   account.Model
-	tx        tx.Model
 	globalRpc globalrpc.GlobalRPC
-	mempool   mempool.Mempool
-	block     block.Block
-	txDetail  txdetail.Model
 }
 
 func NewGetTxsByAccountNameLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTxsByAccountNameLogic {
@@ -35,17 +25,12 @@ func NewGetTxsByAccountNameLogic(ctx context.Context, svcCtx *svc.ServiceContext
 		Logger:    logx.WithContext(ctx),
 		ctx:       ctx,
 		svcCtx:    svcCtx,
-		account:   account.New(svcCtx),
 		globalRpc: globalrpc.New(svcCtx, ctx),
-		tx:        tx.New(svcCtx),
-		mempool:   mempool.New(svcCtx),
-		block:     block.New(svcCtx),
-		txDetail:  txdetail.New(svcCtx),
 	}
 }
 
 func (l *GetTxsByAccountNameLogic) GetTxsByAccountName(req *types.ReqGetTxsByAccountName) (*types.RespGetTxsByAccountName, error) {
-	account, err := l.account.GetAccountByAccountName(l.ctx, req.AccountName)
+	account, err := l.svcCtx.AccountModel.GetAccountByAccountName(req.AccountName)
 	if err != nil {
 		logx.Errorf("[transaction.GetTxsByAccountName] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
@@ -53,7 +38,7 @@ func (l *GetTxsByAccountNameLogic) GetTxsByAccountName(req *types.ReqGetTxsByAcc
 		}
 		return nil, errorcode.AppErrInternal
 	}
-	txIds, err := l.txDetail.GetTxIdsByAccountIndex(l.ctx, account.AccountIndex)
+	txIds, err := l.svcCtx.TxDetailModel.GetTxIdsByAccountIndex(account.AccountIndex)
 	if err != nil {
 		logx.Errorf("[GetTxDetailByAccountIndex] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
@@ -73,7 +58,7 @@ func (l *GetTxsByAccountNameLogic) GetTxsByAccountName(req *types.ReqGetTxsByAcc
 		end = resp.Total
 	}
 	for _, id := range txIds[req.Offset:end] {
-		tx, err := l.tx.GetTxByTxID(l.ctx, id)
+		tx, err := l.svcCtx.TxModel.GetTxByTxId(id)
 		if err != nil {
 			logx.Errorf("[GetTxByTxID] err: %s", err.Error())
 			return nil, err

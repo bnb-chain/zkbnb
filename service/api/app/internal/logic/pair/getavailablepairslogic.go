@@ -6,32 +6,26 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/errorcode"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/l2asset"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/liquidity"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
 type GetAvailablePairsLogic struct {
 	logx.Logger
-	ctx       context.Context
-	svcCtx    *svc.ServiceContext
-	liquidity liquidity.LiquidityModel
-	l2asset   l2asset.L2asset
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
 }
 
 func NewGetAvailablePairsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAvailablePairsLogic {
 	return &GetAvailablePairsLogic{
-		Logger:    logx.WithContext(ctx),
-		ctx:       ctx,
-		svcCtx:    svcCtx,
-		liquidity: liquidity.New(svcCtx),
-		l2asset:   l2asset.New(svcCtx),
+		Logger: logx.WithContext(ctx),
+		ctx:    ctx,
+		svcCtx: svcCtx,
 	}
 }
 
 func (l *GetAvailablePairsLogic) GetAvailablePairs(_ *types.ReqGetAvailablePairs) (*types.RespGetAvailablePairs, error) {
-	liquidityAssets, err := l.liquidity.GetAllLiquidityAssets()
+	liquidityAssets, err := l.svcCtx.LiquidityModel.GetAllLiquidityAssets()
 	if err != nil {
 		logx.Errorf("[GetAllLiquidityAssets] error: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
@@ -41,7 +35,7 @@ func (l *GetAvailablePairsLogic) GetAvailablePairs(_ *types.ReqGetAvailablePairs
 	}
 	resp := &types.RespGetAvailablePairs{}
 	for _, asset := range liquidityAssets {
-		assetA, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(l.ctx, uint32(asset.AssetAId))
+		assetA, err := l.svcCtx.L2AssetModel.GetSimpleAssetInfoByAssetId(asset.AssetAId)
 		if err != nil {
 			logx.Errorf("[GetSimpleL2AssetInfoByAssetId] err: %s", err.Error())
 			if err == errorcode.DbErrNotFound {
@@ -49,7 +43,7 @@ func (l *GetAvailablePairsLogic) GetAvailablePairs(_ *types.ReqGetAvailablePairs
 			}
 			return nil, errorcode.AppErrInternal
 		}
-		assetB, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(l.ctx, uint32(asset.AssetBId))
+		assetB, err := l.svcCtx.L2AssetModel.GetSimpleAssetInfoByAssetId(asset.AssetBId)
 		if err != nil {
 			logx.Errorf("[GetSimpleL2AssetInfoByAssetId] err: %s", err.Error())
 			if err == errorcode.DbErrNotFound {

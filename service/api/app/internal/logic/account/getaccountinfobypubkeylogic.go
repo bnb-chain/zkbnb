@@ -6,7 +6,6 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/errorcode"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/account"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/globalrpc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
@@ -16,7 +15,6 @@ type GetAccountInfoByPubKeyLogic struct {
 	logx.Logger
 	ctx       context.Context
 	svcCtx    *svc.ServiceContext
-	account   account.Model
 	globalRPC globalrpc.GlobalRPC
 }
 
@@ -25,14 +23,13 @@ func NewGetAccountInfoByPubKeyLogic(ctx context.Context, svcCtx *svc.ServiceCont
 		Logger:    logx.WithContext(ctx),
 		ctx:       ctx,
 		svcCtx:    svcCtx,
-		account:   account.New(svcCtx),
 		globalRPC: globalrpc.New(svcCtx, ctx),
 	}
 }
 
 func (l *GetAccountInfoByPubKeyLogic) GetAccountInfoByPubKey(req *types.ReqGetAccountInfoByPubKey) (*types.RespGetAccountInfoByPubKey, error) {
 	//TODO: check AccountPk
-	info, err := l.account.GetAccountByPk(req.AccountPk)
+	info, err := l.svcCtx.AccountModel.GetAccountByPk(req.AccountPk)
 	if err != nil {
 		logx.Errorf("[GetAccountByPk] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {

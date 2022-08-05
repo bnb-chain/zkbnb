@@ -7,7 +7,6 @@ import (
 
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/block"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
@@ -16,7 +15,6 @@ type GetBlockByCommitmentLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
-	block  block.Block
 }
 
 func NewGetBlockByCommitmentLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetBlockByCommitmentLogic {
@@ -24,13 +22,12 @@ func NewGetBlockByCommitmentLogic(ctx context.Context, svcCtx *svc.ServiceContex
 		Logger: logx.WithContext(ctx),
 		ctx:    ctx,
 		svcCtx: svcCtx,
-		block:  block.New(svcCtx),
 	}
 }
 
 func (l *GetBlockByCommitmentLogic) GetBlockByCommitment(req *types.ReqGetBlockByCommitment) (*types.RespGetBlockByCommitment, error) {
 	// query basic block info
-	block, err := l.block.GetBlockWithTxsByCommitment(l.ctx, req.BlockCommitment)
+	block, err := l.svcCtx.BlockModel.GetBlockByCommitment(req.BlockCommitment)
 	if err != nil {
 		logx.Errorf("[GetBlockWithTxsByCommitment] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
