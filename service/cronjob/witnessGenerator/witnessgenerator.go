@@ -1,11 +1,12 @@
 package main
 
 import (
-	bsmt "github.com/bnb-chain/bas-smt"
 	"github.com/pkg/errors"
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
+
+	bsmt "github.com/bnb-chain/bas-smt"
 
 	"github.com/bnb-chain/zkbas/common/model/proofSender"
 	"github.com/bnb-chain/zkbas/common/tree"
