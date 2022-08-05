@@ -21,3 +21,10 @@ app:
 globalRPCProto:
 	cd $(globalRPCProtoPath) && goctl rpc protoc globalRPC.proto --go_out=. --go-grpc_out=. --zrpc_out=.;
 	@echo "Done generate globalRPCProto";
+
+
+deploy:
+	sudo bash -x ./deploy-local.sh new
+
+test:
+	sudo bash -x ./local-test.sh
