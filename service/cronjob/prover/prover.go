@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 
+	"github.com/zeromicro/go-zero/core/proc"
+
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend/groth16"
@@ -26,7 +28,11 @@ func main() {
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
 	ctx := svc.NewServiceContext(c)
+	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
+	proc.AddShutdownListener(func() {
+		logx.Close()
+	})
 
 	logic.KeyTxCounts = c.KeyPath.KeyTxCounts
 	logic.ProvingKeys = make([]groth16.ProvingKey, len(logic.KeyTxCounts))

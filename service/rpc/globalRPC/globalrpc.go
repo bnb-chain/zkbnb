@@ -18,7 +18,7 @@ import (
 )
 
 var configFile = flag.String("f",
-	"./etc/config.yaml", "the config file")
+	"/Users/liguo/go/src/github.com/bnb-chain/zkbas/service/api/app/etc/app.yaml", "the config file")
 
 func main() {
 	flag.Parse()
@@ -27,6 +27,7 @@ func main() {
 	conf.MustLoad(*configFile, &c)
 	ctx := svc.NewServiceContext(c)
 	svr := server.NewGlobalRPCServer(ctx)
+	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 
 	s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {

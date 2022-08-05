@@ -22,3 +22,10 @@ ChainConfig:
   GasLimit: 20000000
   L1ChainId: "5777"
 
+LogConf:
+  ServiceName: sender
+  Mode: console
+  Path: ./log/sender
+  StackCooldownMillis: 500
+  Level: error
+

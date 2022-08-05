@@ -11,3 +11,10 @@ KeyPath:
   ProvingKeyPath: [/app/zkbas1.pk,/app/zkbas10.pk]
   VerifyingKeyPath: [/app/zkbas1.vk,/app/zkbas10.vk]
   KeyTxCounts:    [1, 10]
+
+LogConf:
+  ServiceName: prover
+  Mode: console
+  Path: ./log/prover
+  StackCooldownMillis: 500
+  Level: error
