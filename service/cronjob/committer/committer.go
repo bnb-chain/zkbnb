@@ -1,8 +1,6 @@
 package main
 
 import (
-	"flag"
-	"fmt"
 	"time"
 
 	bsmt "github.com/bnb-chain/bas-smt"
@@ -11,20 +9,18 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/tree"
+	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/pkg/treedb"
 	"github.com/bnb-chain/zkbas/service/cronjob/committer/internal/config"
 	"github.com/bnb-chain/zkbas/service/cronjob/committer/internal/logic"
 	"github.com/bnb-chain/zkbas/service/cronjob/committer/internal/svc"
 )
 
-var configFile = flag.String("f",
-	"./etc/committer.yaml", "the config file")
-
 func main() {
-	flag.Parse()
-
+	configFile := util.ReadConfigFileFlag()
 	var c config.Config
-	conf.MustLoad(*configFile, &c)
+	conf.MustLoad(configFile, &c)
+
 	logic.TxsAmountPerBlock = c.KeyPath.KeyTxCounts
 	ctx := svc.NewServiceContext(c)
 	logx.DisableStat()
@@ -123,6 +119,6 @@ func main() {
 		panic(err)
 	}
 	cronJob.Start()
-	fmt.Printf("Starting committer cronjob ...")
+	logx.Info("Starting committer cronjob ...")
 	select {}
 }

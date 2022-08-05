@@ -1,9 +1,6 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/service"
@@ -11,20 +8,18 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
+	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/config"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/server"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/svc"
 )
 
-var configFile = flag.String("f",
-	"./etc/config.yaml", "the config file")
-
 func main() {
-	flag.Parse()
-
+	configFile := util.ReadConfigFileFlag()
 	var c config.Config
-	conf.MustLoad(*configFile, &c)
+	conf.MustLoad(configFile, &c)
+
 	ctx := svc.NewServiceContext(c)
 	svr := server.NewGlobalRPCServer(ctx)
 	logx.DisableStat()
@@ -38,6 +33,6 @@ func main() {
 	})
 	defer s.Stop()
 
-	fmt.Printf("Starting rpc server at %s...\n", c.ListenOn)
+	logx.Infof("Starting rpc server at %s...\n", c.ListenOn)
 	s.Start()
 }

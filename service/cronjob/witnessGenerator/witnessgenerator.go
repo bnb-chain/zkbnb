@@ -1,8 +1,6 @@
 package main
 
 import (
-	"flag"
-
 	bsmt "github.com/bnb-chain/bas-smt"
 	"github.com/pkg/errors"
 	"github.com/robfig/cron/v3"
@@ -11,6 +9,7 @@ import (
 
 	"github.com/bnb-chain/zkbas/common/model/proofSender"
 	"github.com/bnb-chain/zkbas/common/tree"
+	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/pkg/treedb"
 	"github.com/bnb-chain/zkbas/service/cronjob/witnessGenerator/internal/config"
@@ -18,13 +17,11 @@ import (
 	"github.com/bnb-chain/zkbas/service/cronjob/witnessGenerator/internal/svc"
 )
 
-var configFile = flag.String("f", "./etc/witnessGenerator.yaml", "the config file")
-
 func main() {
-	flag.Parse()
-
+	configFile := util.ReadConfigFileFlag()
 	var c config.Config
-	conf.MustLoad(*configFile, &c)
+	conf.MustLoad(configFile, &c)
+
 	ctx := svc.NewServiceContext(c)
 	logx.DisableStat()
 

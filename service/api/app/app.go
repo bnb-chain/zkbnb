@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 
@@ -9,12 +8,11 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/rest"
 
+	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/config"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/handler"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 )
-
-var configFile = flag.String("f", "etc/app.yaml", "the config file")
 
 var (
 	CodeVersion   = ""
@@ -28,10 +26,11 @@ func main() {
 		fmt.Printf("Git Code Version : %s\n", CodeVersion)
 		return
 	}
-	flag.Parse()
+
+	configFile := util.ReadConfigFileFlag()
 	var c config.Config
-	conf.MustLoad(*configFile, &c)
-	logx.Severef("[config] err:%v", c)
+	conf.MustLoad(configFile, &c)
+
 	logx.DisableStat()
 	ctx := svc.NewServiceContext(c)
 	ctx.CodeVersion = CodeVersion
@@ -39,6 +38,6 @@ func main() {
 	server := rest.MustNewServer(c.RestConf, rest.WithCors())
 	defer server.Stop()
 	handler.RegisterHandlers(server, ctx)
-	fmt.Printf("Starting server at %s:%d...\n", c.Host, c.Port)
+	logx.Infof("Starting server at %s:%d...\n", c.Host, c.Port)
 	server.Start()
 }

@@ -1,16 +1,16 @@
 package main
 
 import (
-	"flag"
-
-	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/cs/r1cs"
 	"github.com/robfig/cron/v3"
+
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/service/cronjob/prover/internal/config"
@@ -18,13 +18,11 @@ import (
 	"github.com/bnb-chain/zkbas/service/cronjob/prover/internal/svc"
 )
 
-var configFile = flag.String("f", "./etc/prover.yaml", "the config file")
-
 func main() {
-	flag.Parse()
-
+	configFile := util.ReadConfigFileFlag()
 	var c config.Config
-	conf.MustLoad(*configFile, &c)
+	conf.MustLoad(configFile, &c)
+
 	ctx := svc.NewServiceContext(c)
 	logx.DisableStat()
 

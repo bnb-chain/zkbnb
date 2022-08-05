@@ -2,25 +2,23 @@ package main
 
 import (
 	"context"
-	"flag"
 
 	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/config"
 	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/logic"
 	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/svc"
 )
 
-var configFile = flag.String("f",
-	"./etc/monitor.yaml", "the config file")
-
 func main() {
-	flag.Parse()
+	configFile := util.ReadConfigFileFlag()
 	var c config.Config
-	conf.MustLoad(*configFile, &c)
+	conf.MustLoad(configFile, &c)
+
 	ctx := svc.NewServiceContext(c)
 	ZkbasRollupAddress, err := ctx.SysConfigModel.GetSysconfigByName(c.ChainConfig.ZkbasContractAddrSysConfigName)
 	if err != nil {

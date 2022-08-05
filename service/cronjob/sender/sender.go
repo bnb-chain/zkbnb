@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"math/big"
 	"time"
 
@@ -12,19 +11,17 @@ import (
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/service/cronjob/sender/internal/config"
 	"github.com/bnb-chain/zkbas/service/cronjob/sender/internal/logic"
 	"github.com/bnb-chain/zkbas/service/cronjob/sender/internal/svc"
 )
 
-var configFile = flag.String("f",
-	"./etc/sender.yaml", "the config file")
-
 func main() {
-	flag.Parse()
-
+	configFile := util.ReadConfigFileFlag()
 	var c config.Config
-	conf.MustLoad(*configFile, &c)
+	conf.MustLoad(configFile, &c)
+
 	ctx := svc.NewServiceContext(c)
 	// srv := server.NewSenderServer(ctx)
 	logx.DisableStat()
