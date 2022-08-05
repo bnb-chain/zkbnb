@@ -29,10 +29,6 @@ import (
 	"github.com/bnb-chain/zkbas/errorcode"
 )
 
-var (
-	cacheZkbasMempoolDetailIdPrefix = "cache:zkbas:mempoolDetail:id:"
-)
-
 type (
 	MempoolTxDetailModel interface {
 		CreateMempoolDetailTable() error

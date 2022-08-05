@@ -25,9 +25,6 @@ import (
 	"time"
 
 	bsmt "github.com/bnb-chain/bas-smt"
-	"github.com/bnb-chain/zkbas/errorcode"
-	"github.com/bnb-chain/zkbas/pkg/treedb"
-
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
@@ -46,6 +43,8 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/tree"
 	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/errorcode"
+	"github.com/bnb-chain/zkbas/pkg/treedb"
 	"github.com/bnb-chain/zkbas/service/cronjob/committer/internal/svc"
 )
 
@@ -561,7 +560,7 @@ func CommitterTask(
 				accountMap[mempoolTx.AccountIndex].CollectionNonce = newCollectionNonce
 			}
 			// update account tree
-			for accountIndex, _ := range pendingUpdateAccountIndexMap {
+			for accountIndex := range pendingUpdateAccountIndexMap {
 				nAccountLeafHash, err := tree.ComputeAccountLeafHash(
 					accountMap[accountIndex].AccountNameHash,
 					accountMap[accountIndex].PublicKey,

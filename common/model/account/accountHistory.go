@@ -233,7 +233,7 @@ func (m *defaultAccountHistoryModel) GetAccountByAccountName(accountName string)
 
 */
 func (m *defaultAccountHistoryModel) GetAccountsList(limit int, offset int64) (accounts []*AccountHistory, err error) {
-	dbTx := m.DB.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("account_index desc").Find(&accounts)
+	dbTx := m.DB.Table(m.table).Limit(limit).Offset(int(offset)).Order("account_index desc").Find(&accounts)
 	if dbTx.Error != nil {
 		errInfo := fmt.Sprintf("[accountHistory.GetAccountsList] %s", dbTx.Error)
 		logx.Error(errInfo)

@@ -11,12 +11,7 @@ var (
 	errGoCacheKeyNotExist    = errors.New("Value not found in GoCache store")
 )
 
-// cache key register
 const (
-	KeyExample = "cache::dataName:dataIdentity"
-	// account
-	KeyAccountAccountName = "cache::account:accountName"
-
 	KeyGetBlockByBlockHeight   = "cache:block:blockHeight"
 	KeyGetBlockBlockCommitment = "cache::block:blockCommitment:"
 	KeyGetBlockWithTxHeight    = "cache::block:blockHeightWithTx:"
@@ -77,9 +72,6 @@ func SpliceCacheKeyLiquidityInfoForWriteByPairIndex(pairIndex int64) string {
 }
 
 // cache key prefix: nft
-func SpliceCacheKeyOfferIdByAccountIndex(accountIndex int64) string {
-	return fmt.Sprintf("cache:offerId_accountIndex_%d", accountIndex)
-}
 
 func SpliceCacheKeyNftInfoByNftIndex(nftIndex int64) string {
 	return fmt.Sprintf("cache:nftInfo_nftIndex_%d", nftIndex)

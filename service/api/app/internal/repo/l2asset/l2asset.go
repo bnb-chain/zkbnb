@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/zeromicro/go-zero/core/logx"
-
 	"gorm.io/gorm"
 
 	table "github.com/bnb-chain/zkbas/common/model/assetInfo"
@@ -28,7 +27,7 @@ type l2asset struct {
 */
 func (m *l2asset) GetL2AssetsList(ctx context.Context) ([]*table.AssetInfo, error) {
 	f := func() (interface{}, error) {
-		res := []*table.AssetInfo{}
+		var res []*table.AssetInfo
 		dbTx := m.db.Table(m.table).Find(&res)
 		if dbTx.Error != nil {
 			logx.Errorf("fail to get assets, error: %s", dbTx.Error.Error())
@@ -39,7 +38,7 @@ func (m *l2asset) GetL2AssetsList(ctx context.Context) ([]*table.AssetInfo, erro
 		}
 		return &res, nil
 	}
-	res := []*table.AssetInfo{}
+	var res []*table.AssetInfo
 	value, err := m.cache.GetWithSet(ctx, multcache.KeyGetL2AssetsList, &res, multcache.AssetListTtl, f)
 	if err != nil {
 		return nil, err

@@ -1,8 +1,7 @@
 package price
 
 var (
-	cachePriceSymbolPrefix = "cache:zkbas:cachePriceSymbolPrefix"
-	coinMarketCap          = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol="
+	coinMarketCap = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol="
 )
 
 type status struct {

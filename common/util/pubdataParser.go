@@ -156,7 +156,7 @@ func ParseDepositNftPubData(pubData []byte) (tx *DepositNftTxInfo, err error) {
 	tx = &DepositNftTxInfo{
 		TxType:              txType,
 		AccountIndex:        int64(accountIndex),
-		NftIndex:            int64(nftIndex),
+		NftIndex:            nftIndex,
 		NftL1Address:        nftL1Address,
 		CreatorAccountIndex: int64(creatorAccountIndex),
 		CreatorTreasuryRate: int64(creatorTreasuryRate),
@@ -211,7 +211,7 @@ func ParseFullExitNftPubData(pubData []byte) (tx *commonTx.FullExitNftTxInfo, er
 		AccountIndex:           int64(accountIndex),
 		CreatorAccountIndex:    int64(creatorAccountIndex),
 		CreatorTreasuryRate:    int64(creatorTreasuryRate),
-		NftIndex:               int64(nftIndex),
+		NftIndex:               nftIndex,
 		CollectionId:           int64(collectionId),
 		NftL1Address:           nftL1Address,
 		AccountNameHash:        accountNameHash,

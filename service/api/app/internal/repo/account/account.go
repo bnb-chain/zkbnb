@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/zeromicro/go-zero/core/logx"
-
 	"gorm.io/gorm"
 
 	table "github.com/bnb-chain/zkbas/common/model/account"
@@ -139,7 +138,7 @@ func (m *model) GetAccountByAccountName(ctx context.Context, accountName string)
 
 */
 func (m *model) GetAccountsList(limit int, offset int64) (accounts []*table.Account, err error) {
-	dbTx := m.db.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("account_index desc").Find(&accounts)
+	dbTx := m.db.Table(m.table).Limit(limit).Offset(int(offset)).Order("account_index desc").Find(&accounts)
 	if dbTx.Error != nil {
 		logx.Errorf("fail to get accounts, offset: %d, limit: %d, error: %s", offset, limit, dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation

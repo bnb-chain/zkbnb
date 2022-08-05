@@ -236,15 +236,6 @@ func ParseTransferNftTxInfo(txInfoStr string) (txInfo *TransferNftTxInfo, err er
 	return txInfo, nil
 }
 
-func ParseOfferTxInfo(txInfoStr string) (txInfo *OfferTxInfo, err error) {
-	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
-	if err != nil {
-		logx.Errorf("[ParseOfferTxInfo] unable to parse tx info: %s", err.Error())
-		return nil, err
-	}
-	return txInfo, nil
-}
-
 func ParseAtomicMatchTxInfo(txInfoStr string) (txInfo *AtomicMatchTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {

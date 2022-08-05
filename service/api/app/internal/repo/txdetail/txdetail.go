@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
-
 	"gorm.io/gorm"
 
 	table "github.com/bnb-chain/zkbas/common/model/tx"

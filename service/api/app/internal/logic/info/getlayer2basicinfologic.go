@@ -47,7 +47,7 @@ func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo(_ *types.ReqGetLayer2BasicI
 		ContractAddresses: make([]string, 0),
 	}
 	var err error
-	resp.BlockCommitted, err = l.block.GetCommitedBlocksCount(l.ctx)
+	resp.BlockCommitted, err = l.block.GetCommittedBlocksCount(l.ctx)
 	if err != nil {
 		logx.Errorf("[GetCommittedBlocksCount] err: %s", err.Error())
 		return nil, err

@@ -2,7 +2,6 @@ package info
 
 import (
 	"context"
-	"math"
 	"math/big"
 
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
@@ -104,13 +103,4 @@ func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.RespGetGasFe
 	}
 	resp.GasFee = gasFee.String()
 	return resp, nil
-}
-
-func round(num float64) int {
-	return int(num + math.Copysign(0.5, num))
-}
-
-func truncate(num float64, precision int64) float64 {
-	output := math.Pow(10, float64(precision))
-	return float64(round(num*output)) / output
 }

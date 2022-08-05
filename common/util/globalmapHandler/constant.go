@@ -17,45 +17,27 @@
 package globalmapHandler
 
 import (
+	"time"
+
 	"github.com/zeromicro/go-zero/core/stores/redis"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
-	"github.com/bnb-chain/zkbas/common/model/account"
-	"github.com/bnb-chain/zkbas/common/model/liquidity"
-	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
 )
 
 type (
-	AccountModel          = account.AccountModel
-	AccountHistoryModel   = account.AccountHistoryModel
-	MempoolModel          = mempool.MempoolModel
-	MempoolTxDetailModel  = mempool.MempoolTxDetailModel
-	LiquidityModel        = liquidity.LiquidityModel
-	LiquidityHistoryModel = liquidity.LiquidityHistoryModel
-	NftModel              = nft.L2NftModel
-	Redis                 = redis.Redis
-	RedisLock             = redis.RedisLock
+	NftModel  = nft.L2NftModel
+	Redis     = redis.Redis
+	RedisLock = redis.RedisLock
 
-	AccountInfo   = commonAsset.AccountInfo
 	LiquidityInfo = commonAsset.LiquidityInfo
-	NftInfo       = commonAsset.NftInfo
 )
 
 const (
-	LpPrefix            = "LP::"
-	LockPrefix          = "Lock::"
-	PoolLiquidityPrefix = "PoolLiquidity::"
-	AccountAssetPrefix  = "AccountAsset::"
-
-	LockNumber = 50
-
 	LockExpiryTime = 10 // seconds
-	RetryInterval  = 500
+	RetryInterval  = 500 * time.Millisecond
 	MaxRetryTimes  = 3
 
-	AccountExpiryTime      = 30 // seconds
-	LiquidityExpiryTime    = 30 // seconds
-	NftExpiryTime          = 30 // seconds
-	BasicAccountExpiryTime = 30 // seconds
+	LiquidityExpiryTime = 30 // seconds
+	NftExpiryTime       = 30 // seconds
 )

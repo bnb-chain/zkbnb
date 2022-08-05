@@ -29,13 +29,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 )
 
-func SetFixed32Bytes(buf []byte) [32]byte {
-	newBuf := new(big.Int).SetBytes(buf).FillBytes(make([]byte, zero.PointSize))
-	var res [zero.PointSize]byte
-	copy(res[:], newBuf[:])
-	return res
-}
-
 func PaddingStringBigIntIntoBuf(buf *bytes.Buffer, aStr string) error {
 	a, isValid := new(big.Int).SetString(aStr, 10)
 	if !isValid {
@@ -44,11 +37,6 @@ func PaddingStringBigIntIntoBuf(buf *bytes.Buffer, aStr string) error {
 	}
 	buf.Write(a.FillBytes(make([]byte, zero.PointSize)))
 	return nil
-}
-
-func WriteAccountNameIntoBuf(buf *bytes.Buffer, accountName string) {
-	infoBytes := SetFixed32Bytes([]byte(accountName))
-	buf.Write(new(big.Int).SetBytes(infoBytes[:]).FillBytes(make([]byte, zero.PointSize)))
 }
 
 func PaddingAddressIntoBuf(buf *bytes.Buffer, address string) (err error) {

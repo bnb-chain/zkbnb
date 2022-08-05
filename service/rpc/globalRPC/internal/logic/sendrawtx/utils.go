@@ -5,20 +5,15 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"github.com/zeromicro/go-zero/core/stores/redis"
-
-	"github.com/bnb-chain/zkbas/common/model/tx"
-	"github.com/bnb-chain/zkbas/common/util"
-
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
-
-	"github.com/zeromicro/go-zero/core/logx"
-
 	"github.com/bnb-chain/zkbas/common/model/sysconfig"
+	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/sysconfigName"
+	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/errorcode"
 )
 
@@ -83,25 +78,6 @@ func ConstructMempoolTx(
 		L2BlockHeight:  commonConstant.NilBlockHeight,
 		Status:         mempool.PendingTxStatus,
 	}
-}
-
-func CreateMempoolTx(
-	nMempoolTx *mempool.MempoolTx,
-	redisConnection *redis.Redis,
-	mempoolModel mempool.MempoolModel,
-) (err error) {
-	var keys []string
-	for _, mempoolTxDetail := range nMempoolTx.MempoolDetails {
-		keys = append(keys, util.GetAccountKey(mempoolTxDetail.AccountIndex))
-	}
-	_, err = redisConnection.Del(keys...)
-	if err != nil {
-		logx.Errorf("fail to delete keys from redis: %s", err.Error())
-		return err
-	}
-	// write into mempool
-	err = mempoolModel.CreateBatchedMempoolTxs([]*mempool.MempoolTx{nMempoolTx})
-	return err
 }
 
 func CreateFailTx(failTxModel tx.FailTxModel, txType int, txInfo interface{}, error error) error {

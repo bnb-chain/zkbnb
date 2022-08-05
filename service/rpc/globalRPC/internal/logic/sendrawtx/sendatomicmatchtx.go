@@ -6,10 +6,8 @@ import (
 	"time"
 
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/redis"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
@@ -178,14 +176,8 @@ func SendAtomicMatchTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 		Sig:          common.Bytes2Hex(txInfo.SellOffer.Sig),
 		Status:       nft.OfferFinishedStatus,
 	})
-	err = CreateMempoolTxForAtomicMatch(
-		nftExchange,
-		mempoolTx,
-		offers,
-		svcCtx.RedisConnection,
-		svcCtx.MempoolModel,
-	)
-	if err != nil {
+
+	if err := svcCtx.MempoolModel.CreateMempoolTxAndL2NftExchange(mempoolTx, offers, nftExchange); err != nil {
 		logx.Errorf("fail to create mempool tx: %v, err: %s", mempoolTx, err.Error())
 		_ = CreateFailTx(svcCtx.FailTxModel, commonTx.TxTypeAtomicMatch, txInfo, err)
 		return "", err
@@ -207,25 +199,4 @@ func SendAtomicMatchTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 	}
 	_ = svcCtx.RedisConnection.Setex(key, string(nftInfoBytes), globalmapHandler.NftExpiryTime)
 	return txId, nil
-}
-
-func CreateMempoolTxForAtomicMatch(
-	nftExchange *nft.L2NftExchange,
-	nMempoolTx *mempool.MempoolTx,
-	offers []*nft.Offer,
-	redisConnection *redis.Redis,
-	mempoolModel mempool.MempoolModel,
-) (err error) {
-	var keys []string
-	for _, mempoolTxDetail := range nMempoolTx.MempoolDetails {
-		keys = append(keys, util.GetAccountKey(mempoolTxDetail.AccountIndex))
-	}
-	_, err = redisConnection.Del(keys...)
-	if err != nil {
-		logx.Errorf("fail to delete keys from redis: %s", err.Error())
-		return err
-	}
-	// write into mempool
-	err = mempoolModel.CreateMempoolTxAndL2NftExchange(nMempoolTx, offers, nftExchange)
-	return err
 }

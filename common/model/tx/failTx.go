@@ -27,10 +27,6 @@ import (
 	"github.com/bnb-chain/zkbas/errorcode"
 )
 
-var (
-	cacheZkbasFailTxIdPrefix = "cache:zkbas:failTx:id:"
-)
-
 type (
 	FailTxModel interface {
 		CreateFailTxTable() error

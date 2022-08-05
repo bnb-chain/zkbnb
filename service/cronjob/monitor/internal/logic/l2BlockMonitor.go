@@ -60,8 +60,15 @@ func Newl2BlockEventsMonitor(ctx context.Context, svcCtx *svc.ServiceContext) *l
 	}
 }
 
-func MonitorL2BlockEvents(ctx context.Context, svcCtx *svc.ServiceContext,
-	bscCli *_rpc.ProviderClient, bscPendingBlocksCount uint64, mempoolModel MempoolModel, blockModel BlockModel, l1TxSenderModel L1TxSenderModel) (err error) {
+func MonitorL2BlockEvents(
+	ctx context.Context,
+	svcCtx *svc.ServiceContext,
+	bscCli *_rpc.ProviderClient,
+	bscPendingBlocksCount uint64,
+	mempoolModel MempoolModel,
+	blockModel BlockModel,
+	l1TxSenderModel L1TxSenderModel,
+) (err error) {
 	logx.Errorf("========== start MonitorL2BlockEvents ==========")
 	pendingSenders, err := l1TxSenderModel.GetL1TxSendersByTxStatus(L1TxSenderPendingStatus)
 	if err != nil {

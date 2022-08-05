@@ -55,10 +55,6 @@ type (
 const (
 	// tx status
 	TxStatusPending = tx.StatusPending
-	// mempool status
-	MempoolTxHandledTxStatus = mempool.SuccessTxStatus
-	// block status
-	BlockStatusPending = block.StatusPending
 	// asset type
 	GeneralAssetType         = commonAsset.GeneralAssetType
 	LiquidityAssetType       = commonAsset.LiquidityAssetType
@@ -91,7 +87,6 @@ const (
 )
 
 var (
-	ZeroBigIntString  = big.NewInt(0).String()
 	ZeroBigInt        = big.NewInt(0)
-	TxsAmountPerBlock = []int{}
+	TxsAmountPerBlock []int
 )
