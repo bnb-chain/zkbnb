@@ -26,8 +26,6 @@ const (
 
 	OfferTableName = `offer`
 
-	StatusAlreadyWithdraw = 1
-
 	OfferFinishedStatus = 1
 
 	CollectionPending = 0 // create collection request received by api

@@ -29,11 +29,6 @@ import (
 	"github.com/bnb-chain/zkbas/errorcode"
 )
 
-var (
-	cacheZkbasVolumePoolIdPrefix   = "cache:zkbas:volume:id:"
-	cacheZkbasVolumePoolDatePrefix = "cache:zkbas:volume:date:"
-)
-
 type (
 	VolumePoolModel interface {
 		CreateVolumePoolTable() error

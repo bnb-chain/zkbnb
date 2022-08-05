@@ -8,14 +8,13 @@ import (
 	"os"
 	"time"
 
-	"github.com/zeromicro/go-zero/core/logx"
-
 	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/frontend"
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 const (

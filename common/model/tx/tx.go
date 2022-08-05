@@ -35,8 +35,8 @@ import (
 )
 
 var (
-	cacheZkbasTxIdPrefix      = "cache:zkbas:txVerification:id:"
-	cacheZkbasTxTxHashPrefix  = "cache:zkbas:txVerification:txHash:"
+	cacheZkbasTxIdPrefix = "cache:zkbas:txVerification:id:"
+
 	cacheZkbasTxTxCountPrefix = "cache:zkbas:txVerification:txCount"
 )
 

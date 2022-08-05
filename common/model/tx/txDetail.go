@@ -27,10 +27,6 @@ import (
 	"github.com/bnb-chain/zkbas/errorcode"
 )
 
-var (
-	cacheZkbasTxDetailIdPrefix = "cache:zkbas:txDetail:id:"
-)
-
 type (
 	TxDetailModel interface {
 		CreateTxDetailTable() error

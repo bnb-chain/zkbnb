@@ -35,10 +35,6 @@ func (l *GetLpValueLogic) GetLpValue(in *globalRPCProto.ReqGetLpValue) (*globalR
 		logx.Errorf("[CheckPairIndex] param: %d", in.PairIndex)
 		return nil, errorcode.RpcErrInvalidParam.RefineError("invalid PairIndex")
 	}
-	if checker.CheckAmount(in.LPAmount) {
-		logx.Errorf("[CheckAmount] param: %s", in.LPAmount)
-		return nil, errorcode.RpcErrInvalidParam.RefineError("invalid LPAmount")
-	}
 	amount, isTure := new(big.Int).SetString(in.LPAmount, 10)
 	if !isTure {
 		logx.Errorf("[SetString] err: %s", in.LPAmount)

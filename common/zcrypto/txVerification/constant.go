@@ -51,8 +51,6 @@ type (
 )
 
 const (
-	Base = 10
-
 	OfferPerAsset = 128
 
 	TenThousand = 10000

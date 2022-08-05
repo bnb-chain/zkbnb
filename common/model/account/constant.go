@@ -27,8 +27,3 @@ const (
 	AccountStatusConfirmed
 	AccountStatusVerified
 )
-
-const (
-	AccountHistoryStatusPending = iota
-	AccountHistoryStatusConfirmed
-)

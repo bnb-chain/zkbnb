@@ -29,11 +29,6 @@ import (
 	"github.com/bnb-chain/zkbas/errorcode"
 )
 
-var (
-	cacheZkbasTVLIdPrefix   = "cache:zkbas:tvl:id:"
-	cacheZkbasTVLDatePrefix = "cache:zkbas:tvl:date:"
-)
-
 type (
 	TVLModel interface {
 		CreateTVLTable() error

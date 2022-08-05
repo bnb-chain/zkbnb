@@ -107,7 +107,7 @@ func ToCryptoTransferTx(txInfo *commonTx.TransferTxInfo) (info *CryptoTransferTx
 		AssetAmount:       packedAmount,
 		GasAccountIndex:   txInfo.GasAccountIndex,
 		GasFeeAssetId:     txInfo.GasFeeAssetId,
-		GasFeeAssetAmount: int64(packedFee),
+		GasFeeAssetAmount: packedFee,
 		CallDataHash:      txInfo.CallDataHash,
 	}
 	return info, nil
