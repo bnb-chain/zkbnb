@@ -19,9 +19,10 @@ package commonAsset
 
 import (
 	"fmt"
-	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"math/big"
 	"testing"
+
+	"github.com/bnb-chain/zkbas-crypto/ffmath"
 )
 
 func TestFromFormatAccountInfo(t *testing.T) {

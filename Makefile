@@ -2,11 +2,11 @@
 # with Go source code. If you know what GOPATH is then you probably
 # don't need to bother with make.
 
-.PHONY: zecrey android ios zecrey-cross evm all test clean
-.PHONY: zecrey-linux zecrey-linux-386 zecrey-linux-amd64 zecrey-linux-mips64 zecrey-linux-mips64le
-.PHONY: zecrey-linux-arm zecrey-linux-arm-5 zecrey-linux-arm-6 zecrey-linux-arm-7 zecrey-linux-arm64
-.PHONY: zecrey-darwin zecrey-darwin-386 zecrey-darwin-amd64
-.PHONY: zecrey-windows zecrey-windows-386 zecrey-windows-amd64
+.PHONY: zkbas android ios zkbas-cross evm all test clean
+.PHONY: zkbas-linux zkbas-linux-386 zkbas-linux-amd64 zkbas-linux-mips64 zkbas-linux-mips64le
+.PHONY: zkbas-linux-arm zkbas-linux-arm-5 zkbas-linux-arm-6 zkbas-linux-arm-7 zkbas-linux-arm64
+.PHONY: zkbas-darwin zkbas-darwin-386 zkbas-darwin-amd64
+.PHONY: zkbas-windows zkbas-windows-386 zkbas-windows-amd64
 
 APP = ./service/api/app
 EXPLORE = ./service/api/explorer
@@ -21,3 +21,10 @@ app:
 globalRPCProto:
 	cd $(globalRPCProtoPath) && goctl rpc protoc globalRPC.proto --go_out=. --go-grpc_out=. --zrpc_out=.;
 	@echo "Done generate globalRPCProto";
+
+
+deploy:
+	sudo bash -x ./deploy-local.sh new
+
+test:
+	sudo bash -x ./local-test.sh

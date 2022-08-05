@@ -25,11 +25,8 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
-)
 
-var (
-	cacheZkbasSysconfigIdPrefix   = "cache:zkbas:sysconfig:id:"
-	cacheZkbasSysconfigNamePrefix = "cache:zkbas:sysconfig:name:"
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type (
@@ -100,41 +97,14 @@ func (m *defaultSysconfigModel) GetSysconfigByName(name string) (config *Sysconf
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[sysconfig.GetSysconfigByName] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[sysconfig.GetSysconfigByName] %s", ErrNotFound)
+		err := fmt.Sprintf("[sysconfig.GetSysconfigByName] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return config, nil
 }
-
-/*
-	Func: GetSysconfigByName
-	Params: name string
-	Return: info *Sysconfig, err error
-	Description: get sysconfig by config name
-*/
-/*
-func (m *defaultSysconfigModel) GetMaxChainId() (maxChainId int64, err error) {
-	var (
-		config *Sysconfig
-	)
-
-	dbTx := m.DB.Table(m.table).Where("name = ?", ).Find(&config)
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[sysconfig.GetSysconfigByName] %s", dbTx.Error)
-		logx.Error(err)
-		return nil, dbTx.Error
-	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[sysconfig.GetSysconfigByName] %s", ErrNotFound)
-		logx.Error(err)
-		return nil, ErrNotFound
-	}
-	return config, nil
-}
-
-*/
 
 /*
 	Func: CreateSysconfig
@@ -142,16 +112,15 @@ func (m *defaultSysconfigModel) GetMaxChainId() (maxChainId int64, err error) {
 	Return: error
 	Description: Insert New Sysconfig
 */
-
 func (m *defaultSysconfigModel) CreateSysconfig(config *Sysconfig) error {
 	dbTx := m.DB.Table(m.table).Create(config)
 	if dbTx.Error != nil {
-		logx.Error("[sysconfig.sysconfig] %s", dbTx.Error)
+		logx.Errorf("[sysconfig.sysconfig] %s", dbTx.Error.Error())
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
 		logx.Error("[sysconfig.sysconfig] Create Invalid Sysconfig")
-		return ErrInvalidSysconfig
+		return errorcode.DbErrFailToCreateSysconfig
 	}
 	return nil
 }
@@ -159,12 +128,12 @@ func (m *defaultSysconfigModel) CreateSysconfig(config *Sysconfig) error {
 func (m *defaultSysconfigModel) CreateSysconfigInBatches(configs []*Sysconfig) (rowsAffected int64, err error) {
 	dbTx := m.DB.Table(m.table).CreateInBatches(configs, len(configs))
 	if dbTx.Error != nil {
-		logx.Error("[sysconfig.CreateSysconfigInBatches] %s", dbTx.Error)
+		logx.Errorf("[sysconfig.CreateSysconfigInBatches] %s", dbTx.Error.Error())
 		return 0, dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
 		logx.Error("[sysconfig.CreateSysconfigInBatches] Create Invalid Sysconfig Batches")
-		return 0, ErrInvalidSysconfig
+		return 0, errorcode.DbErrFailToCreateSysconfig
 	}
 	return dbTx.RowsAffected, nil
 }
@@ -183,9 +152,9 @@ func (m *defaultSysconfigModel) UpdateSysconfig(config *Sysconfig) error {
 		logx.Error(err)
 		return dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[sysconfig.UpdateSysconfig] %s", ErrNotFound)
+		err := fmt.Sprintf("[sysconfig.UpdateSysconfig] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return ErrNotFound
+		return errorcode.DbErrNotFound
 	}
 	return nil
 }

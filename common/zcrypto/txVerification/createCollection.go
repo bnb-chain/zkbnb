@@ -19,15 +19,17 @@ package txVerification
 
 import (
 	"errors"
-	"github.com/bnb-chain/zkbas-crypto/ffmath"
-	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
-	"github.com/bnb-chain/zkbas/common/commonAsset"
-	"github.com/bnb-chain/zkbas/common/commonConstant"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
-	"github.com/zeromicro/go-zero/core/logx"
-	"log"
+	"fmt"
 	"math/big"
 	"strconv"
+
+	"github.com/bnb-chain/zkbas-crypto/ffmath"
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas/common/commonAsset"
+	"github.com/bnb-chain/zkbas/common/commonConstant"
 )
 
 func VerifyCreateCollectionTxInfo(
@@ -40,18 +42,17 @@ func VerifyCreateCollectionTxInfo(
 		accountInfoMap[txInfo.AccountIndex].AssetInfo[txInfo.GasFeeAssetId] == nil ||
 		accountInfoMap[txInfo.GasAccountIndex] == nil ||
 		txInfo.GasFeeAssetAmount.Cmp(ZeroBigInt) < 0 {
-		logx.Errorf("[VerifyCollectionTxInfo] invalid params")
-		return nil, errors.New("[VerifyCollectionTxInfo] invalid params")
+		logx.Error("invalid params")
+		return nil, errors.New("invalid params")
 	}
 	// verify nonce
 	if txInfo.Nonce != accountInfoMap[txInfo.AccountIndex].Nonce {
-		log.Println("[VerifyCollectionTxInfo] invalid nonce")
-		return nil, errors.New("[VerifyCollectionTxInfo] invalid nonce")
+		logx.Errorf("invalid nonce, actual: %d, expected: %d",
+			txInfo.Nonce, accountInfoMap[txInfo.AccountIndex].Nonce)
+		return nil, fmt.Errorf("invalid nonce, actual: %d, expected: %d",
+			txInfo.Nonce, accountInfoMap[txInfo.AccountIndex].Nonce)
 	}
-	if txInfo.CollectionId != accountInfoMap[txInfo.AccountIndex].CollectionNonce {
-		log.Println("[VerifyCollectionTxInfo] invalid nonce")
-		return nil, errors.New("[VerifyCollectionTxInfo] invalid nonce")
-	}
+
 	// set tx info
 	var (
 		assetDeltaMap = make(map[int64]map[int64]*big.Int)
@@ -75,30 +76,19 @@ func VerifyCreateCollectionTxInfo(
 	// check balance
 	if accountInfoMap[txInfo.AccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(
 		txInfo.GasFeeAssetAmount) < 0 {
-		logx.Errorf("[VerifyCollectionTxInfo] you don't have enough balance of asset Gas")
-		return nil, errors.New("[VerifyCollectionTxInfo] you don't have enough balance of asset Gas")
+		logx.Errorf("not enough balance of gas")
+		return nil, errors.New("not enough balance of gas")
 	}
 	// compute hash
 	hFunc := mimc.NewMiMC()
 	msgHash, err := legendTxTypes.ComputeCreateCollectionMsgHash(txInfo, hFunc)
 	if err != nil {
-		logx.Errorf("[VerifyCollectionTxInfo] unable to compute hash: %s", err.Error())
-		return nil, err
+		logx.Errorf("unable to compute tx hash: %s", err.Error())
+		return nil, errors.New("internal error")
 	}
 	// verify signature
-	hFunc.Reset()
-	pk, err := ParsePkStr(accountInfoMap[txInfo.AccountIndex].PublicKey)
-	if err != nil {
+	if err := VerifySignature(txInfo.Sig, msgHash, accountInfoMap[txInfo.AccountIndex].PublicKey); err != nil {
 		return nil, err
-	}
-	isValid, err := pk.Verify(txInfo.Sig, msgHash, hFunc)
-	if err != nil {
-		log.Println("[VerifyCollectionTxInfo] unable to verify signature:", err)
-		return nil, err
-	}
-	if !isValid {
-		log.Println("[VerifyCollectionTxInfo] invalid signature")
-		return nil, errors.New("[VerifyCollectionTxInfo] invalid signature")
 	}
 	// compute tx details
 	// from account collection nonce

@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 
 	nftModel "github.com/bnb-chain/zkbas/common/model/nft"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
 )
 
@@ -25,14 +26,15 @@ func (n *nft) GetNftListByAccountIndex(ctx context.Context, accountIndex, limit,
 		dbTx := n.db.Table(n.table).Where("owner_account_index = ? and deleted_at is NULL", accountIndex).
 			Limit(int(limit)).Offset(int(offset)).Order("nft_index desc").Find(&nftList)
 		if dbTx.Error != nil {
-			return nil, dbTx.Error
+			logx.Errorf("fail to get nfts by account: %d, offset: %d, limit: %d, error: %s", accountIndex, offset, limit, dbTx.Error.Error())
+			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
-			return nil, sqlx.ErrNotFound
+			return nil, errorcode.DbErrNotFound
 		}
 		return &nftList, nil
 	}
 	nftList := make([]*nftModel.L2Nft, 0)
-	value, err := n.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountNftList(accountIndex, offset, limit), &nftList, 1, f)
+	value, err := n.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountNftList(accountIndex, offset, limit), &nftList, multcache.NftListTtl, f)
 	if err != nil {
 		return nil, err
 	}
@@ -48,15 +50,16 @@ func (n *nft) GetAccountNftTotalCount(ctx context.Context, accountIndex int64) (
 		var count int64
 		dbTx := n.db.Table(n.table).Where("owner_account_index = ? and deleted_at is NULL", accountIndex).Count(&count)
 		if dbTx.Error != nil {
-			return 0, fmt.Errorf("[GetAccountNftTotalCount]: %v", dbTx.Error)
+			logx.Errorf("fail to get nft count by account: %d, error: %s", accountIndex, dbTx.Error.Error())
+			return 0, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
-			return 0, sqlx.ErrNotFound
+			return 0, errorcode.DbErrNotFound
 		}
 		return &count, nil
 	}
 
 	var count int64
-	value, err := n.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountTotalNftCount(accountIndex), &count, 5, f)
+	value, err := n.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountTotalNftCount(accountIndex), &count, multcache.NftCountTtl, f)
 	if err != nil {
 		return count, err
 	}

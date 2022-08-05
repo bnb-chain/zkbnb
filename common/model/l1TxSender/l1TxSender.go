@@ -22,15 +22,16 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/bnb-chain/zkbas/common/model/block"
-	"github.com/bnb-chain/zkbas/common/model/mempool"
-	"github.com/bnb-chain/zkbas/common/model/proofSender"
-
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
+
+	"github.com/bnb-chain/zkbas/common/model/block"
+	"github.com/bnb-chain/zkbas/common/model/mempool"
+	"github.com/bnb-chain/zkbas/common/model/proofSender"
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type (
@@ -154,11 +155,11 @@ func (m *defaultL1TxSenderModel) GetL1TxSenders() (txs []*L1TxSender, err error)
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[l1TxSender.GetL1TxSenders] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l1TxSender.GetL1TxSenders] %s", ErrNotFound)
+		err := fmt.Sprintf("[l1TxSender.GetL1TxSenders] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return txs, dbTx.Error
 }
@@ -173,11 +174,11 @@ func (m *defaultL1TxSenderModel) GetLatestL1TxSender() (blockInfo *L1TxSender, e
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[l1TxSender.GetLatestL1TxSender] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l1TxSender.GetLatestL1TxSender] %s", ErrNotFound)
+		err := fmt.Sprintf("[l1TxSender.GetLatestL1TxSender] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return blockInfo, nil
 }
@@ -192,11 +193,11 @@ func (m *defaultL1TxSenderModel) GetL1TxSendersByTxStatus(txStatus int) (txs []*
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[l1TxSender.GetL1TxSendersByTxStatus] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l1TxSender.GetL1TxSendersByTxStatus] %s", ErrNotFound)
+		err := fmt.Sprintf("[l1TxSender.GetL1TxSendersByTxStatus] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return txs, nil
 }
@@ -230,7 +231,7 @@ func (m *defaultL1TxSenderModel) DeleteL1TxSender(sender *L1TxSender) error {
 	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
 		dbTx := tx.Table(m.table).Where("id = ?", sender.ID).Delete(&sender)
 		if dbTx.Error != nil {
-			logx.Error("[l1TxSender.DeleteL1TxSender] %s", dbTx.Error)
+			logx.Errorf("[l1TxSender.DeleteL1TxSender] %s", dbTx.Error.Error())
 			return dbTx.Error
 		}
 		if dbTx.RowsAffected == 0 {
@@ -269,7 +270,7 @@ func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 					logx.Error(res)
 					return err
 				}
-				logx.Error("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] %s" + "Invalid block:  " + string(blocksInfo))
+				logx.Error("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Invalid block:  " + string(blocksInfo))
 				return errors.New("Invalid blocks:  " + string(blocksInfo))
 			}
 		}
@@ -326,7 +327,7 @@ func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
-				logx.Error(fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] No such proof. Height: %d", blockHeight))
+				logx.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] No such proof. Height: %d", blockHeight)
 				return fmt.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] No such proof. Height: %d", blockHeight)
 			}
 			dbTx = tx.Model(&row).
@@ -337,7 +338,7 @@ func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
-				logx.Error(fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Update No Proof: %d", row.BlockNumber))
+				logx.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Update No Proof: %d", row.BlockNumber)
 				return fmt.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Update No Proof: %d", row.BlockNumber)
 			}
 		}
@@ -350,9 +351,9 @@ func (m *defaultL1TxSenderModel) GetLatestHandledBlock(txType int64) (txSender *
 	dbTx := m.DB.Table(m.table).Where("tx_type = ? AND tx_status = ?", txType, HandledStatus).Order("l2_block_height desc").Find(&txSender)
 	if dbTx.Error != nil {
 		logx.Errorf("[GetLatestHandledBlock] unable to get latest handled block: %s", dbTx.Error.Error())
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return txSender, nil
 }
@@ -361,9 +362,9 @@ func (m *defaultL1TxSenderModel) GetLatestPendingBlock(txType int64) (txSender *
 	dbTx := m.DB.Table(m.table).Where("tx_type = ? AND tx_status = ?", txType, PendingStatus).Find(&txSender)
 	if dbTx.Error != nil {
 		logx.Errorf("[GetLatestHandledBlock] unable to get latest pending block: %s", dbTx.Error.Error())
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return txSender, nil
 }

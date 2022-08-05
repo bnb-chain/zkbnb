@@ -4,12 +4,13 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/l2asset"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/price"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
-
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type GetCurrencyPriceBySymbolLogic struct {
@@ -31,15 +32,22 @@ func NewGetCurrencyPriceBySymbolLogic(ctx context.Context, svcCtx *svc.ServiceCo
 }
 
 func (l *GetCurrencyPriceBySymbolLogic) GetCurrencyPriceBySymbol(req *types.ReqGetCurrencyPriceBySymbol) (*types.RespGetCurrencyPriceBySymbol, error) {
+	//TODO: check symbol
 	price, err := l.price.GetCurrencyPrice(l.ctx, req.Symbol)
 	if err != nil {
-		logx.Errorf("[GetCurrencyPrice] err:%v", err)
-		return nil, err
+		logx.Errorf("[GetCurrencyPrice] err: %s", err.Error())
+		if err == errorcode.AppErrQuoteNotExist {
+			return nil, err
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	l2Asset, err := l.l2asset.GetL2AssetInfoBySymbol(l.ctx, req.Symbol)
 	if err != nil {
-		logx.Errorf("[GetL2AssetInfoBySymbol] err:%v", err)
-		return nil, err
+		logx.Errorf("[GetL2AssetInfoBySymbol] err: %s", err.Error())
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	resp := &types.RespGetCurrencyPriceBySymbol{
 		Price:   strconv.FormatFloat(price, 'E', -1, 64),

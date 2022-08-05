@@ -20,18 +20,17 @@ package proverUtil
 import (
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
+
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/tx"
-	"github.com/bnb-chain/zkbas/common/tree"
 )
 
 type (
 	Tx       = tx.Tx
 	TxDetail = tx.TxDetail
-	Tree     = tree.Tree
 
 	Account      = account.Account
 	AccountAsset = commonAsset.AccountAsset

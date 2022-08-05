@@ -1,0 +1,30 @@
+name: Integration
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: deploy new zkbas
+        run: |
+          cd /tmp
+          sudo rm -rf ./zkbas
+          git clone --branch github-action https://github.com/bnb-chain/zkbas.git
+          echo "start deploy new zkbas"
+          sudo bash -x ./zkbas/deploy-local.sh new
+          echo "end deploy"
+
+      - name: run integration test
+        run: |
+          echo "start integration test"
+          cd /tmp
+          sudo bash -x ./zkbas/local-test.sh
+          echo "end integration test"
+

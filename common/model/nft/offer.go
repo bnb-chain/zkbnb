@@ -25,6 +25,8 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type (
@@ -96,7 +98,7 @@ func (m *defaultOfferModel) GetLatestOfferId(accountIndex int64) (offerId int64,
 		logx.Errorf("[GetLatestOfferId] unable to get latest offer info: %s", dbTx.Error.Error())
 		return -1, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		return -1, errors.New("OfferId not exist")
+		return -1, errorcode.DbErrNotFound
 	}
 	return offer.OfferId, nil
 }
@@ -117,10 +119,10 @@ func (m *defaultOfferModel) GetOfferByAccountIndexAndOfferId(accountIndex int64,
 	dbTx := m.DB.Table(m.table).Where("account_index = ? AND offer_id = ?", accountIndex, offerId).Find(&offer)
 	if dbTx.Error != nil {
 		logx.Errorf("[CreateOffer] unable to create offer: %s", dbTx.Error.Error())
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Errorf("[CreateOffer] invalid offer info")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return offer, nil
 }

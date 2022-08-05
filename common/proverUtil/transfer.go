@@ -19,19 +19,25 @@ package proverUtil
 
 import (
 	"errors"
-	"github.com/bnb-chain/zkbas/common/commonTx"
-	"github.com/bnb-chain/zkbas/common/util"
+
+	bsmt "github.com/bnb-chain/bas-smt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas/common/commonTx"
+	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/pkg/treedb"
 )
 
 func ConstructTransferCryptoTx(
 	oTx *Tx,
-	accountTree *Tree,
-	accountAssetsTree *[]*Tree,
-	liquidityTree *Tree,
-	nftTree *Tree,
+	treeCtx *treedb.Context,
+	finalityBlockNr uint64,
+	accountTree bsmt.SparseMerkleTree,
+	accountAssetsTree *[]bsmt.SparseMerkleTree,
+	liquidityTree bsmt.SparseMerkleTree,
+	nftTree bsmt.SparseMerkleTree,
 	accountModel AccountModel,
 ) (cryptoTx *CryptoTx, err error) {
 	if oTx.TxType != commonTx.TxTypeTransfer {
@@ -60,6 +66,8 @@ func ConstructTransferCryptoTx(
 	cryptoTx, err = ConstructWitnessInfo(
 		oTx,
 		accountModel,
+		treeCtx,
+		finalityBlockNr,
 		accountTree,
 		accountAssetsTree,
 		liquidityTree,
@@ -105,7 +113,7 @@ func ToCryptoTransferTx(txInfo *commonTx.TransferTxInfo) (info *CryptoTransferTx
 		AssetAmount:       packedAmount,
 		GasAccountIndex:   txInfo.GasAccountIndex,
 		GasFeeAssetId:     txInfo.GasFeeAssetId,
-		GasFeeAssetAmount: int64(packedFee),
+		GasFeeAssetAmount: packedFee,
 		CallDataHash:      txInfo.CallDataHash,
 	}
 	return info, nil

@@ -3,14 +3,14 @@ package account
 import (
 	"context"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/common/checker"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/errcode"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/account"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/globalrpc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
-
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type GetAccountInfoByAccountNameLogic struct {
@@ -33,23 +33,29 @@ func NewGetAccountInfoByAccountNameLogic(ctx context.Context, svcCtx *svc.Servic
 
 func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *types.ReqGetAccountInfoByAccountName) (*types.RespGetAccountInfoByAccountName, error) {
 	if checker.CheckAccountName(req.AccountName) {
-		logx.Errorf("[CheckAccountName] req.AccountName:%v", req.AccountName)
-		return nil, errcode.ErrInvalidParam
+		logx.Errorf("[CheckAccountName] req.AccountName: %s", req.AccountName)
+		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountName")
 	}
 	accountName := checker.FormatSting(req.AccountName)
 	if checker.CheckFormatAccountName(accountName) {
-		logx.Errorf("[CheckFormatAccountName] accountName:%v", accountName)
-		return nil, errcode.ErrInvalidParam
+		logx.Errorf("[CheckFormatAccountName] accountName: %s", accountName)
+		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountName")
 	}
 	info, err := l.account.GetAccountByAccountName(l.ctx, accountName)
 	if err != nil {
-		logx.Errorf("[GetAccountByAccountName] accountName:%v, err:%v", accountName, err)
-		return nil, err
+		logx.Errorf("[GetAccountByAccountName] accountName: %s, err: %s", accountName, err.Error())
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	account, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(l.ctx, info.AccountIndex)
 	if err != nil {
-		logx.Errorf("[GetLatestAccountInfoByAccountIndex] err:%v", err)
-		return nil, err
+		logx.Errorf("[GetLatestAccountInfoByAccountIndex] err: %s", err.Error())
+		if err == errorcode.RpcErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	resp := &types.RespGetAccountInfoByAccountName{
 		AccountIndex: uint32(account.AccountIndex),

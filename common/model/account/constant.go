@@ -17,11 +17,6 @@
 
 package account
 
-import (
-	"errors"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
-)
-
 const (
 	AccountTableName        = `account`
 	AccountHistoryTableName = `account_history`
@@ -31,15 +26,4 @@ const (
 	AccountStatusPending = iota
 	AccountStatusConfirmed
 	AccountStatusVerified
-)
-
-const (
-	AccountHistoryStatusPending = iota
-	AccountHistoryStatusConfirmed
-)
-
-var (
-	ErrNotFound               = sqlx.ErrNotFound
-	ErrDuplicatedAccountName  = errors.New("duplicated account name, fatal error")
-	ErrDuplicatedAccountIndex = errors.New("duplicated account index, fatal error")
 )

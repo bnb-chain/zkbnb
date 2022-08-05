@@ -18,14 +18,13 @@
 package tx
 
 import (
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
-)
 
-var (
-	cacheZkbasTxDetailIdPrefix = "cache:zkbas:txDetail:id:"
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type (
@@ -99,20 +98,18 @@ func (m *defaultTxDetailModel) DropTxDetailTable() error {
 func (m *defaultTxDetailModel) GetTxDetailsByAccountName(name string) (txDetails []*TxDetail, err error) {
 	dbTx := m.DB.Table(m.table).Where("account_name = ?", name).Find(&txDetails)
 	if dbTx.Error != nil {
-		if dbTx.Error == ErrNotFound {
-			return nil, nil
-		} else {
-			return nil, dbTx.Error
-		}
-	} else {
-		return txDetails, nil
+		logx.Errorf("fail to get tx by account: %s, error: %s", name, dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, errorcode.DbErrNotFound
 	}
+	return txDetails, nil
 }
 
 func (m *defaultTxDetailModel) UpdateTxDetail(detail *TxDetail) error {
 	dbTx := m.DB.Save(&detail)
 	if dbTx.Error != nil {
-		if dbTx.Error == ErrNotFound {
+		if dbTx.Error == errorcode.DbErrNotFound {
 			return nil
 		} else {
 			return dbTx.Error

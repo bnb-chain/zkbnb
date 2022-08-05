@@ -17,16 +17,17 @@
 package logic
 
 import (
+	"math/big"
+
 	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
 	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
+
 	"github.com/bnb-chain/zkbas/common/model/assetInfo"
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/blockForCommit"
 	"github.com/bnb-chain/zkbas/common/model/l1TxSender"
 	"github.com/bnb-chain/zkbas/common/model/proofSender"
 	"github.com/bnb-chain/zkbas/common/model/tx"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
-	"math/big"
 )
 
 type (
@@ -53,17 +54,9 @@ type (
 )
 
 const (
-	StatusPending             = block.StatusPending
-	StatusCommitted           = block.StatusCommitted
-	StatusVerifiedAndExecuted = block.StatusVerifiedAndExecuted
-
 	PendingStatus          = l1TxSender.PendingStatus
 	CommitTxType           = l1TxSender.CommitTxType
 	VerifyAndExecuteTxType = l1TxSender.VerifyAndExecuteTxType
-)
-
-var (
-	ErrNotFound = sqlx.ErrNotFound
 )
 
 type SenderParam struct {

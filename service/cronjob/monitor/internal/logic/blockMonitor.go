@@ -32,6 +32,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/l1BlockMonitor"
 	"github.com/bnb-chain/zkbas/common/model/l2TxEventMonitor"
 	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 /*
@@ -42,7 +43,7 @@ func MonitorBlocks(cli *ProviderClient, startHeight int64, pendingBlocksCount ui
 	logx.Errorf("========== start MonitorBlocks ==========")
 	var handledHeight int64
 	if err != nil {
-		if err == ErrNotFound {
+		if err == errorcode.DbErrNotFound {
 			handledHeight = startHeight
 		} else {
 			logx.Errorf("[l1BlockMonitorModel.GetLatestL1BlockMonitorByBlock]: %s", err.Error())
@@ -105,7 +106,7 @@ func MonitorBlocks(cli *ProviderClient, startHeight int64, pendingBlocksCount ui
 			priorityRequestCountCheck++
 			var event zkbas.ZkbasNewPriorityRequest
 			if err = ZkbasContractAbi.UnpackIntoInterface(&event, EventNameNewPriorityRequest, vlog.Data); err != nil {
-				logx.Errorf("[blockMoniter.MonitorBlocks]<=>[ZkbasContractAbi.UnpackIntoInterface] %v", err)
+				logx.Errorf("[blockMoniter.MonitorBlocks]<=>[ZkbasContractAbi.UnpackIntoInterface] err: %s", err.Error())
 				return err
 			}
 			l1EventInfo.EventType = EventTypeNewPriorityRequest
@@ -180,7 +181,7 @@ func MonitorBlocks(cli *ProviderClient, startHeight int64, pendingBlocksCount ui
 	}
 	eventInfosBytes, err := json.Marshal(l1EventInfos)
 	if err != nil {
-		logx.Error(fmt.Sprintf("[blockMoniter.MonitorBlocks]<=>[json.Marshal] %s", err.Error()))
+		logx.Errorf("[blockMoniter.MonitorBlocks]<=>[json.Marshal] %s", err.Error())
 		return err
 	}
 	l1BlockMonitorInfo := &l1BlockMonitor.L1BlockMonitor{

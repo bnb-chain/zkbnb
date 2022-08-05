@@ -6,6 +6,8 @@ import (
 	"math/big"
 
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/model/assetInfo"
 	"github.com/bnb-chain/zkbas/common/sysconfigName"
@@ -15,7 +17,6 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/sysconf"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type GetWithdrawGasFeeLogic struct {
@@ -43,7 +44,7 @@ func (l *GetWithdrawGasFeeLogic) GetWithdrawGasFee(req *types.ReqGetWithdrawGasF
 	resp := &types.RespGetWithdrawGasFee{}
 	l2Asset, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(l.ctx, req.AssetId)
 	if err != nil {
-		logx.Errorf("[GetGasFee] err:%v", err)
+		logx.Errorf("[GetGasFee] err: %s", err.Error())
 		return nil, err
 	}
 	oAssetInfo, err := l.l2asset.GetSimpleL2AssetInfoByAssetId(context.Background(), req.AssetId)
@@ -57,12 +58,12 @@ func (l *GetWithdrawGasFeeLogic) GetWithdrawGasFee(req *types.ReqGetWithdrawGasF
 	}
 	sysGasFee, err := l.sysconf.GetSysconfigByName(l.ctx, sysconfigName.SysGasFee)
 	if err != nil {
-		logx.Errorf("[GetGasFee] err:%v", err)
+		logx.Errorf("[GetGasFee] err: %s", err.Error())
 		return nil, err
 	}
 	sysGasFeeBigInt, isValid := new(big.Int).SetString(sysGasFee.Value, 10)
 	if !isValid {
-		logx.Errorf("[GetGasFee] parse sys gas fee err:%v", err)
+		logx.Errorf("[GetGasFee] parse sys gas fee err: %s", err.Error())
 		return nil, err
 	}
 	// if asset id == BNB, just return
@@ -73,12 +74,12 @@ func (l *GetWithdrawGasFeeLogic) GetWithdrawGasFee(req *types.ReqGetWithdrawGasF
 	// if not, try to compute the gas amount based on USD
 	assetPrice, err := l.price.GetCurrencyPrice(l.ctx, l2Asset.AssetSymbol)
 	if err != nil {
-		logx.Errorf("[GetGasFee] err:%v", err)
+		logx.Errorf("[GetGasFee] err: %s", err.Error())
 		return nil, err
 	}
 	bnbPrice, err := l.price.GetCurrencyPrice(l.ctx, "BNB")
 	if err != nil {
-		logx.Errorf("[GetGasFee] err:%v", err)
+		logx.Errorf("[GetGasFee] err: %s", err.Error())
 		return nil, err
 	}
 	bnbDecimals, _ := new(big.Int).SetString(commonConstant.BNBDecimalsStr, 10)

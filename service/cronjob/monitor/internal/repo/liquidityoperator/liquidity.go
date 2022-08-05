@@ -3,10 +3,11 @@ package liquidityoperator
 import (
 	"errors"
 
-	"github.com/bnb-chain/zkbas/common/model/liquidity"
-	"github.com/bnb-chain/zkbas/pkg/multcache"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
+
+	"github.com/bnb-chain/zkbas/common/model/liquidity"
+	"github.com/bnb-chain/zkbas/pkg/multcache"
 )
 
 type model struct {

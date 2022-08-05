@@ -19,12 +19,15 @@ package account
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
-	"strings"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type (
@@ -121,8 +124,8 @@ func (m *defaultAccountModel) IfAccountNameExist(name string) (bool, error) {
 	} else if res == 0 {
 		return false, nil
 	} else if res != 1 {
-		logx.Errorf("[account.IfAccountNameExist] %s", ErrDuplicatedAccountName)
-		return true, ErrDuplicatedAccountName
+		logx.Errorf("[account.IfAccountNameExist] %s", errorcode.DbErrDuplicatedAccountName)
+		return true, errorcode.DbErrDuplicatedAccountName
 	} else {
 		return true, nil
 	}
@@ -146,8 +149,8 @@ func (m *defaultAccountModel) IfAccountExistsByAccountIndex(accountIndex int64) 
 	} else if res == 0 {
 		return false, nil
 	} else if res != 1 {
-		logx.Errorf("[account.IfAccountExistsByAccountIndex] %s", ErrDuplicatedAccountIndex)
-		return true, ErrDuplicatedAccountIndex
+		logx.Errorf("[account.IfAccountExistsByAccountIndex] %s", errorcode.DbErrDuplicatedAccountIndex)
+		return true, errorcode.DbErrDuplicatedAccountIndex
 	} else {
 		return true, nil
 	}
@@ -165,11 +168,11 @@ func (m *defaultAccountModel) GetAccountByAccountIndex(accountIndex int64) (acco
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", ErrNotFound)
+		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return account, nil
 }
@@ -179,11 +182,11 @@ func (m *defaultAccountModel) GetVerifiedAccountByAccountIndex(accountIndex int6
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", ErrNotFound)
+		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return account, nil
 }
@@ -200,11 +203,11 @@ func (m *defaultAccountModel) GetAccountByPk(pk string) (account *Account, err e
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[account.GetAccountByPk] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[account.GetAccountByPk] %s", ErrNotFound)
+		err := fmt.Sprintf("[account.GetAccountByPk] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return account, nil
 }
@@ -221,11 +224,11 @@ func (m *defaultAccountModel) GetAccountByAccountName(accountName string) (accou
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[account.GetAccountByAccountName] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[account.GetAccountByAccountName] %s", ErrNotFound)
+		err := fmt.Sprintf("[account.GetAccountByAccountName] %s", errorcode.DbErrNotFound)
 		logx.Info(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return account, nil
 }
@@ -238,13 +241,13 @@ func (m *defaultAccountModel) GetAccountByAccountName(accountName string) (accou
 
 */
 func (m *defaultAccountModel) GetAccountsList(limit int, offset int64) (accounts []*Account, err error) {
-	dbTx := m.DB.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("account_index desc").Find(&accounts)
+	dbTx := m.DB.Table(m.table).Limit(limit).Offset(int(offset)).Order("account_index desc").Find(&accounts)
 	if dbTx.Error != nil {
-		logx.Error("[account.GetAccountsList] %s", dbTx.Error)
-		return nil, dbTx.Error
+		logx.Errorf("[account.GetAccountsList] error: %s", dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[account.GetAccountsList] Get Accounts Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return accounts, nil
 }
@@ -258,8 +261,8 @@ func (m *defaultAccountModel) GetAccountsList(limit int, offset int64) (accounts
 func (m *defaultAccountModel) GetAccountsTotalCount() (count int64, err error) {
 	dbTx := m.DB.Table(m.table).Where("deleted_at is NULL").Count(&count)
 	if dbTx.Error != nil {
-		logx.Error("[account.GetAccountsTotalCount] %s", dbTx.Error)
-		return 0, dbTx.Error
+		logx.Errorf("[account.GetAccountsTotalCount] error: %s", dbTx.Error.Error())
+		return 0, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[account.GetAccountsTotalCount] No Accounts in Account Table")
 		return 0, nil
@@ -276,8 +279,8 @@ func (m *defaultAccountModel) GetAccountsTotalCount() (count int64, err error) {
 func (m *defaultAccountModel) GetAllAccounts() (accounts []*Account, err error) {
 	dbTx := m.DB.Table(m.table).Order("account_index").Find(&accounts)
 	if dbTx.Error != nil {
-		logx.Error("[account.GetAllAccounts] %s", dbTx.Error)
-		return accounts, dbTx.Error
+		logx.Errorf("[account.GetAllAccounts] %s", dbTx.Error.Error())
+		return accounts, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[account.GetAllAccounts] No Account in Account Table")
 		return accounts, nil
@@ -299,7 +302,7 @@ func (m *defaultAccountModel) GetLatestAccountIndex() (accountIndex int64, err e
 		return 0, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[account.GetLatestAccountIndex] No Account in Account Table")
-		return 0, ErrNotFound
+		return 0, errorcode.DbErrNotFound
 	}
 	logx.Info(accountIndex)
 	return accountIndex, nil
@@ -310,11 +313,11 @@ func (m *defaultAccountModel) GetAccountByAccountNameHash(accountNameHash string
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[account.GetAccountByAccountNameHash] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[account.GetAccountByAccountNameHash] %s", ErrNotFound)
+		err := fmt.Sprintf("[account.GetAccountByAccountNameHash] %s", errorcode.DbErrNotFound)
 		logx.Info(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return account, nil
 }
@@ -324,11 +327,11 @@ func (m *defaultAccountModel) GetConfirmedAccounts() (accounts []*Account, err e
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[account.GetConfirmedAccounts] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[account.GetConfirmedAccounts] %s", ErrNotFound)
+		err := fmt.Sprintf("[account.GetConfirmedAccounts] %s", errorcode.DbErrNotFound)
 		logx.Info(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return accounts, nil
 }
@@ -338,11 +341,11 @@ func (m *defaultAccountModel) GetConfirmedAccountByAccountIndex(accountIndex int
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", ErrNotFound)
+		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return account, nil
 }

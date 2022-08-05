@@ -4,14 +4,14 @@ import (
 	"context"
 	"math/big"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/common/checker"
 	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
-	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/logic/errcode"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/commglobalmap"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/svc"
-
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type GetLpValueLogic struct {
@@ -32,27 +32,27 @@ func NewGetLpValueLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetLpV
 
 func (l *GetLpValueLogic) GetLpValue(in *globalRPCProto.ReqGetLpValue) (*globalRPCProto.RespGetLpValue, error) {
 	if checker.CheckPairIndex(in.PairIndex) {
-		logx.Errorf("[CheckPairIndex] param:%v", in.PairIndex)
-		return nil, errcode.ErrInvalidParam
-	}
-	if checker.CheckAmount(in.LPAmount) {
-		logx.Errorf("[CheckAmount] param:%v", in.LPAmount)
-		return nil, errcode.ErrInvalidParam
-	}
-	liquidity, err := l.commglobalmap.GetLatestLiquidityInfoForReadWithCache(l.ctx, int64(in.PairIndex))
-	if err != nil {
-		logx.Errorf("[GetLatestLiquidityInfoForReadWithCache] err:%v", err)
-		return nil, err
+		logx.Errorf("[CheckPairIndex] param: %d", in.PairIndex)
+		return nil, errorcode.RpcErrInvalidParam.RefineError("invalid PairIndex")
 	}
 	amount, isTure := new(big.Int).SetString(in.LPAmount, 10)
 	if !isTure {
-		logx.Errorf("[SetString] err:%v", in.LPAmount)
-		return nil, errcode.ErrInvalidParam
+		logx.Errorf("[SetString] err: %s", in.LPAmount)
+		return nil, errorcode.RpcErrInvalidParam
+	}
+
+	liquidity, err := l.commglobalmap.GetLatestLiquidityInfoForReadWithCache(l.ctx, int64(in.PairIndex))
+	if err != nil {
+		logx.Errorf("[GetLatestLiquidityInfoForReadWithCache] err: %s", err.Error())
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.RpcErrNotFound
+		}
+		return nil, errorcode.RpcErrInternal
 	}
 	assetAAmount, assetBAmount, err := util.ComputeRemoveLiquidityAmount(liquidity, amount)
 	if err != nil {
-		logx.Errorf("[ComputeRemoveLiquidityAmount] err:%v", err)
-		return nil, err
+		logx.Errorf("[ComputeRemoveLiquidityAmount] err: %s", err.Error())
+		return nil, errorcode.RpcErrInternal
 	}
 	return &globalRPCProto.RespGetLpValue{
 		AssetAId:     uint32(liquidity.AssetAId),

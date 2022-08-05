@@ -4,11 +4,12 @@ import (
 	"context"
 	"sort"
 
-	table "github.com/bnb-chain/zkbas/common/model/mempool"
-	"github.com/bnb-chain/zkbas/pkg/multcache"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/errcode"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
+
+	table "github.com/bnb-chain/zkbas/common/model/mempool"
+	"github.com/bnb-chain/zkbas/errorcode"
+	"github.com/bnb-chain/zkbas/pkg/multcache"
 )
 
 type model struct {
@@ -23,12 +24,12 @@ type model struct {
 	Return: mempoolTx []*mempoolModel.MempoolTx, err error
 	Description: query txs from db that sit in the range
 */
-func (m *model) GetMempoolTxs(offset int64, limit int64) (mempoolTxs []*table.MempoolTx, err error) {
+func (m *model) GetMempoolTxs(offset int, limit int) (mempoolTxs []*table.MempoolTx, err error) {
 	var mempoolForeignKeyColumn = `MempoolDetails`
-	dbTx := m.db.Table(m.table).Order("created_at, id").Find(&mempoolTxs)
+	dbTx := m.db.Table(m.table).Where("status = ? and deleted_at is NULL", PendingTxStatus).Order("created_at, id").Offset(offset).Limit(limit).Find(&mempoolTxs)
 	if dbTx.Error != nil {
-		logx.Errorf("[mempool.GetMempoolTxsList] %s", dbTx.Error)
-		return nil, dbTx.Error
+		logx.Errorf("[mempool.GetMempoolTxsList] %s", dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
 	}
 	for _, mempoolTx := range mempoolTxs {
 		err := m.db.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails)
@@ -55,10 +56,10 @@ func (m *model) GetMempoolTxByTxHash(hash string) (mempoolTx *table.MempoolTx, e
 	var mempoolForeignKeyColumn = `MempoolDetails`
 	dbTx := m.db.Table(m.table).Where("status = ? and tx_hash = ?", PendingTxStatus, hash).Find(&mempoolTx)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetMempoolTxByTxHash] %v", dbTx.Error)
-		return nil, dbTx.Error
+		logx.Errorf("[GetMempoolTxByTxHash] %s", dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, errcode.ErrDataNotExist
+		return nil, errorcode.DbErrNotFound
 	}
 	if err = m.db.Model(&mempoolTx).Association(mempoolForeignKeyColumn).Find(&mempoolTx.MempoolDetails); err != nil {
 		logx.Errorf("[mempool.GetMempoolTxByTxHash] Get Associate MempoolDetails Error")
@@ -93,9 +94,10 @@ func (m *model) GetMempoolTxByTxId(ctx context.Context, txID int64) (*table.Memp
 		tx := &table.MempoolTx{}
 		dbTx := m.db.Table(m.table).Where("id = ? and deleted_at is NULL", txID).Find(&tx)
 		if dbTx.Error != nil {
-			return nil, dbTx.Error
+			logx.Errorf("fail to get mempool tx by id: %d, error: %s", txID, dbTx.Error.Error())
+			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errcode.ErrDataNotExist
+			return nil, errorcode.DbErrNotFound
 		}
 		err := m.db.Model(&tx).Association(`MempoolDetails`).Find(&tx.MempoolDetails)
 		if err != nil {
@@ -107,7 +109,7 @@ func (m *model) GetMempoolTxByTxId(ctx context.Context, txID int64) (*table.Memp
 		return tx, nil
 	}
 	tx := &table.MempoolTx{}
-	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyTxByTxId(txID), tx, 1, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyTxByTxId(txID), tx, multcache.MempoolTxTtl, f)
 	if err != nil {
 		return nil, err
 	}

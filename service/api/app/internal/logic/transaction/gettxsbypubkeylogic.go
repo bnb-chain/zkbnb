@@ -3,8 +3,10 @@ package transaction
 import (
 	"context"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/common/checker"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/errcode"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/account"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/block"
@@ -14,8 +16,6 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/txdetail"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
-
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type GetTxsByPubKeyLogic struct {
@@ -45,22 +45,29 @@ func NewGetTxsByPubKeyLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 }
 
 func (l *GetTxsByPubKeyLogic) GetTxsByPubKey(req *types.ReqGetTxsByPubKey) (*types.RespGetTxsByPubKey, error) {
+	//TODO: check pubkey
 	account, err := l.account.GetAccountByPk(req.AccountPk)
 	if err != nil {
-		logx.Errorf("[GetAccountByPk] err:%v", err)
-		return &types.RespGetTxsByPubKey{}, err
+		logx.Errorf("[GetAccountByPk] err: %s", err.Error())
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
-	txIds, err := l.txDetail.GetTxIdsByAccountIndex(l.ctx, int64(account.AccountIndex))
+	txIds, err := l.txDetail.GetTxIdsByAccountIndex(l.ctx, account.AccountIndex)
 	if err != nil {
-		logx.Errorf("[GetTxDetailByAccountIndex] err:%v", err)
-		return nil, err
+		logx.Errorf("[GetTxDetailByAccountIndex] err: %s", err.Error())
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	resp := &types.RespGetTxsByPubKey{
 		Total: uint32(len(txIds)),
 		Txs:   make([]*types.Tx, 0),
 	}
 	if checker.CheckOffset(req.Offset, resp.Total) {
-		return nil, errcode.ErrInvalidParam
+		return nil, errorcode.AppErrInvalidParam
 	}
 	end := req.Offset + req.Limit
 	if resp.Total < (req.Offset + req.Limit) {
@@ -69,7 +76,7 @@ func (l *GetTxsByPubKeyLogic) GetTxsByPubKey(req *types.ReqGetTxsByPubKey) (*typ
 	for _, id := range txIds[req.Offset:end] {
 		tx, err := l.tx.GetTxByTxID(l.ctx, id)
 		if err != nil {
-			logx.Errorf("[GetTxByTxID] err:%v", err)
+			logx.Errorf("[GetTxByTxID] err: %s", err.Error())
 			return nil, err
 		}
 		resp.Txs = append(resp.Txs, utils.GormTx2Tx(tx))

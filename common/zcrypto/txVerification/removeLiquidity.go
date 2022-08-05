@@ -18,18 +18,18 @@
 package txVerification
 
 import (
-	"encoding/json"
 	"errors"
-	"log"
+	"fmt"
 	"math/big"
 
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 func VerifyRemoveLiquidityTxInfo(
@@ -50,15 +50,15 @@ func VerifyRemoveLiquidityTxInfo(
 		txInfo.AssetBMinAmount.Cmp(ZeroBigInt) < 0 ||
 		txInfo.LpAmount.Cmp(ZeroBigInt) < 0 ||
 		txInfo.GasFeeAssetAmount.Cmp(ZeroBigInt) < 0 {
-		infoBytes, _ := json.Marshal(accountInfoMap)
-		log.Println(string(infoBytes))
-		logx.Errorf("[VerifyRemoveLiquidityTxInfo] invalid params")
-		return nil, errors.New("[VerifyRemoveLiquidityTxInfo] invalid params")
+		logx.Error("invalid params")
+		return nil, errors.New("invalid params")
 	}
 	// verify nonce
 	if txInfo.Nonce != accountInfoMap[txInfo.FromAccountIndex].Nonce {
-		log.Println("[VerifyRemoveLiquidityTxInfo] invalid nonce")
-		return nil, errors.New("[VerifyRemoveLiquidityTxInfo] invalid nonce")
+		logx.Errorf("invalid nonce, actual: %d, expected: %d",
+			txInfo.Nonce, accountInfoMap[txInfo.FromAccountIndex].Nonce)
+		return nil, fmt.Errorf("invalid nonce, actual: %d, expected: %d",
+			txInfo.Nonce, accountInfoMap[txInfo.FromAccountIndex].Nonce)
 	}
 	// add tx info
 	var (
@@ -125,32 +125,27 @@ func VerifyRemoveLiquidityTxInfo(
 		)
 	}
 	// check balance
+	if accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(
+		assetDeltaMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId]) < 0 {
+		logx.Errorf("not enough balance of gas")
+		return nil, errors.New("not enough balance of gas")
+	}
+
 	// check lp amount
 	if accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.PairIndex].LpAmount.Cmp(txInfo.LpAmount) < 0 {
-		logx.Errorf("[VerifyRemoveLiquidityTxInfo] invalid lp amount")
-		return nil, errors.New("[VerifyRemoveLiquidityTxInfo] invalid lp amount")
+		logx.Errorf("invalid lp amount")
+		return nil, errors.New("invalid lp amount")
 	}
 	// compute hash
 	hFunc := mimc.NewMiMC()
 	msgHash, err := legendTxTypes.ComputeRemoveLiquidityMsgHash(txInfo, hFunc)
 	if err != nil {
-		logx.Errorf("[VerifyRemoveLiquidityTxInfo] unable to compute hash: %s", err.Error())
-		return nil, err
+		logx.Errorf("unable to compute tx hash: %s", err.Error())
+		return nil, errors.New("internal error")
 	}
 	// verify signature
-	hFunc.Reset()
-	pk, err := ParsePkStr(accountInfoMap[txInfo.FromAccountIndex].PublicKey)
-	if err != nil {
+	if err := VerifySignature(txInfo.Sig, msgHash, accountInfoMap[txInfo.FromAccountIndex].PublicKey); err != nil {
 		return nil, err
-	}
-	isValid, err := pk.Verify(txInfo.Sig, msgHash, hFunc)
-	if err != nil {
-		log.Println("[VerifyRemoveLiquidityTxInfo] unable to verify signature:", err)
-		return nil, err
-	}
-	if !isValid {
-		log.Println("[VerifyRemoveLiquidityTxInfo] invalid signature")
-		return nil, errors.New("[VerifyRemoveLiquidityTxInfo] invalid signature")
 	}
 	// compute tx details
 	// from account asset A

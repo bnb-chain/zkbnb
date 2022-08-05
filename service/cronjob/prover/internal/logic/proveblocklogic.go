@@ -75,7 +75,7 @@ func ProveBlock(ctx *svc.ServiceContext) error {
 
 	formattedProof, err := util.FormatProof(proof, cryptoBlock.OldStateRoot, cryptoBlock.NewStateRoot, cryptoBlock.BlockCommitment)
 	if err != nil {
-		logx.Errorf("[ProveBlock] Unable to Format Proof: %S", err.Error())
+		logx.Errorf("[ProveBlock] unable to format proof: %s", err.Error())
 		return err
 	}
 

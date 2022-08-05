@@ -16,15 +16,8 @@
 
 package proofSender
 
-import "errors"
-
 const (
 	TableName = "proof_sender"
-)
-
-var (
-	ErrInvalidProof = errors.New("Invalid Proof")
-	ErrNotFound     = errors.New("Not found error")
 )
 
 const (

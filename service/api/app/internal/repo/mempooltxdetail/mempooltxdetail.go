@@ -3,10 +3,12 @@ package mempooltxdetail
 import (
 	"context"
 
-	table "github.com/bnb-chain/zkbas/common/model/mempool"
-	"github.com/bnb-chain/zkbas/pkg/multcache"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/errcode"
+	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
+
+	table "github.com/bnb-chain/zkbas/common/model/mempool"
+	"github.com/bnb-chain/zkbas/errorcode"
+	"github.com/bnb-chain/zkbas/pkg/multcache"
 )
 
 type model struct {
@@ -25,9 +27,10 @@ func (m *model) GetMemPoolTxDetailByAccountIndex(ctx context.Context, accountInd
 	result := make([]*table.MempoolTxDetail, 0)
 	dbTx := m.db.Table(m.table).Where("account_index = ?", accountIndex).Order("created_at").Find(&result)
 	if dbTx.Error != nil {
-		return nil, dbTx.Error
+		logx.Errorf("fail to get mempool tx by account: %d, error: %s", accountIndex, dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, errcode.ErrDataNotExist
+		return nil, errorcode.DbErrNotFound
 	}
 	return result, nil
 }

@@ -20,26 +20,29 @@ import (
 	"errors"
 	"time"
 
+	bsmt "github.com/bnb-chain/bas-smt"
 	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/model/blockForProof"
-	"github.com/bnb-chain/zkbas/common/model/proofSender"
 	"github.com/bnb-chain/zkbas/common/proverUtil"
 	"github.com/bnb-chain/zkbas/common/tree"
+	"github.com/bnb-chain/zkbas/errorcode"
+	"github.com/bnb-chain/zkbas/pkg/treedb"
 	"github.com/bnb-chain/zkbas/service/cronjob/witnessGenerator/internal/svc"
 )
 
 func GenerateWitness(
-	accountTree *tree.Tree,
-	assetTrees *[]*tree.Tree,
-	liquidityTree *tree.Tree,
-	nftTree *tree.Tree,
+	treeCtx *treedb.Context,
+	accountTree bsmt.SparseMerkleTree,
+	assetTrees *[]bsmt.SparseMerkleTree,
+	liquidityTree bsmt.SparseMerkleTree,
+	nftTree bsmt.SparseMerkleTree,
 	ctx *svc.ServiceContext,
 	deltaHeight int64,
 ) {
-	err := generateUnprovedBlockWitness(ctx, accountTree, assetTrees, liquidityTree, nftTree, deltaHeight)
+	err := generateUnprovedBlockWitness(ctx, treeCtx, accountTree, assetTrees, liquidityTree, nftTree, deltaHeight)
 	if err != nil {
 		logx.Errorf("generate block witness error, err=%s", err.Error())
 	}
@@ -49,15 +52,16 @@ func GenerateWitness(
 
 func generateUnprovedBlockWitness(
 	ctx *svc.ServiceContext,
-	accountTree *tree.Tree,
-	assetTrees *[]*tree.Tree,
-	liquidityTree *tree.Tree,
-	nftTree *tree.Tree,
+	treeCtx *treedb.Context,
+	accountTree bsmt.SparseMerkleTree,
+	assetTrees *[]bsmt.SparseMerkleTree,
+	liquidityTree bsmt.SparseMerkleTree,
+	nftTree bsmt.SparseMerkleTree,
 	deltaHeight int64,
 ) error {
 	latestUnprovedHeight, err := ctx.BlockForProofModel.GetLatestUnprovedBlockHeight()
 	if err != nil {
-		if err == blockForProof.ErrNotFound {
+		if err == errorcode.DbErrNotFound {
 			latestUnprovedHeight = 0
 		} else {
 			return err
@@ -66,6 +70,11 @@ func generateUnprovedBlockWitness(
 
 	// get last handled block info
 	blocks, err := ctx.BlockModel.GetBlocksBetween(latestUnprovedHeight+1, latestUnprovedHeight+deltaHeight)
+	if err != nil {
+		return err
+	}
+	// get latestVerifiedBlockNr
+	latestVerifiedBlockNr, err := ctx.BlockModel.GetLatestVerifiedBlockHeight()
 	if err != nil {
 		return err
 	}
@@ -86,7 +95,7 @@ func generateUnprovedBlockWitness(
 			var (
 				cryptoTx *CryptoTx
 			)
-			cryptoTx, err = proverUtil.ConstructCryptoTx(oTx, accountTree, assetTrees, liquidityTree, nftTree, ctx.AccountModel)
+			cryptoTx, err = proverUtil.ConstructCryptoTx(oTx, treeCtx, accountTree, assetTrees, liquidityTree, nftTree, ctx.AccountModel, uint64(latestVerifiedBlockNr))
 			if err != nil {
 				logx.Errorf("[prover] unable to construct crypto tx: %s", err.Error())
 				return err
@@ -99,6 +108,7 @@ func generateUnprovedBlockWitness(
 			cryptoTxs = append(cryptoTxs, cryptoTx)
 			logx.Info("after state root:", common.Bytes2Hex(newStateRoot))
 		}
+
 		emptyTxCount := int(oBlock.BlockSize) - len(oBlock.Txs)
 		for i := 0; i < emptyTxCount; i++ {
 			cryptoTxs = append(cryptoTxs, cryptoBlock.EmptyTx())
@@ -108,43 +118,57 @@ func generateUnprovedBlockWitness(
 			logx.Info("error: new root:", common.Bytes2Hex(newStateRoot))
 			logx.Info("error: BlockCommitment:", common.Bytes2Hex(blockCommitment))
 			return errors.New("state root doesn't match")
-		} else {
-			blockInfo, err := proverUtil.BlockToCryptoBlock(oBlock, oldStateRoot, newStateRoot, cryptoTxs)
-			if err != nil {
-				logx.Errorf("[prover] unable to convert block to crypto block")
-				return err
-			}
-			var nCryptoBlockInfo = &CryptoBlockInfo{
-				BlockInfo: blockInfo,
-				Status:    blockForProof.StatusPublished,
-			}
-			logx.Info("new root:", common.Bytes2Hex(nCryptoBlockInfo.BlockInfo.NewStateRoot))
-			logx.Info("BlockCommitment:", common.Bytes2Hex(nCryptoBlockInfo.BlockInfo.BlockCommitment))
-
-			// insert crypto blocks array
-			unprovedCryptoBlockModel, err := CryptoBlockInfoToBlockForProof(nCryptoBlockInfo)
-			if err != nil {
-				logx.Errorf("[prover] marshal crypto block info error, err=%s", err.Error())
-				return err
-			}
-			err = ctx.BlockForProofModel.CreateConsecutiveUnprovedCryptoBlock(unprovedCryptoBlockModel)
-			if err != nil {
-				logx.Errorf("[prover] create unproved crypto block error, err=%s", err.Error())
-				return err
-			}
 		}
+
+		blockInfo, err := proverUtil.BlockToCryptoBlock(oBlock, oldStateRoot, newStateRoot, cryptoTxs)
+		if err != nil {
+			logx.Errorf("[prover] unable to convert block to crypto block")
+			return err
+		}
+		var nCryptoBlockInfo = &CryptoBlockInfo{
+			BlockInfo: blockInfo,
+			Status:    blockForProof.StatusPublished,
+		}
+		logx.Info("new root:", common.Bytes2Hex(nCryptoBlockInfo.BlockInfo.NewStateRoot))
+		logx.Info("BlockCommitment:", common.Bytes2Hex(nCryptoBlockInfo.BlockInfo.BlockCommitment))
+
+		// insert crypto blocks array
+		unprovedCryptoBlockModel, err := CryptoBlockInfoToBlockForProof(nCryptoBlockInfo)
+		if err != nil {
+			logx.Errorf("[prover] marshal crypto block info error, err=%s", err.Error())
+			return err
+		}
+
+		// commit trees
+		err = tree.CommitTrees(uint64(latestVerifiedBlockNr), accountTree, assetTrees, liquidityTree, nftTree)
+		if err != nil {
+			logx.Errorf("[prover] unable to commit trees after txs is executed", err.Error())
+			return err
+		}
+
+		err = ctx.BlockForProofModel.CreateConsecutiveUnprovedCryptoBlock(unprovedCryptoBlockModel)
+		if err != nil {
+			// rollback trees
+			err = tree.RollBackTrees(uint64(oBlock.BlockHeight)-1, accountTree, assetTrees, liquidityTree, nftTree)
+			if err != nil {
+				logx.Errorf("[prover] unable to rollback trees", err)
+			}
+			logx.Errorf("[prover] create unproved crypto block error, err=%s", err.Error())
+			return err
+		}
+
 	}
 	return nil
 }
 
 func updateTimeoutUnprovedBlock(ctx *svc.ServiceContext) {
 	latestConfirmedProof, err := ctx.ProofSenderModel.GetLatestConfirmedProof()
-	if err != nil && err != proofSender.ErrNotFound {
+	if err != nil && err != errorcode.DbErrNotFound {
 		return
 	}
 
 	var nextBlockNumber int64 = 1
-	if err != proofSender.ErrNotFound {
+	if err != errorcode.DbErrNotFound {
 		nextBlockNumber = latestConfirmedProof.BlockNumber + 1
 	}
 

@@ -30,11 +30,13 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 var (
-	cacheZkbasTxIdPrefix      = "cache:zkbas:txVerification:id:"
-	cacheZkbasTxTxHashPrefix  = "cache:zkbas:txVerification:txHash:"
+	cacheZkbasTxIdPrefix = "cache:zkbas:txVerification:id:"
+
 	cacheZkbasTxTxCountPrefix = "cache:zkbas:txVerification:txCount"
 )
 
@@ -86,6 +88,7 @@ type (
 		AccountIndex  int64
 		Nonce         int64
 		ExpiredAt     int64
+		TxIndex       int64
 	}
 )
 
@@ -134,11 +137,11 @@ func (m *defaultTxModel) GetTxsListByBlockHeight(blockHeight int64, limit int, o
 	// todo cache optimize
 	dbTx := m.DB.Table(m.table).Where("block_height = ?", blockHeight).Order("created_at desc, id desc").Offset(offset).Limit(limit).Find(&txs)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsListByBlockHeight] %s", dbTx.Error)
-		return nil, dbTx.Error
+		logx.Errorf("[txVerification.GetTxsListByBlockHeight] %s", dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[txVerification.GetTxsListByBlockHeight] Get Txs Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 
 	for _, tx := range txs {
@@ -158,7 +161,7 @@ func (m *defaultTxModel) GetTxsListByBlockHeight(blockHeight int64, limit int, o
 			// json string
 			jsonString, err := json.Marshal(tx.TxDetails)
 			if err != nil {
-				logx.Errorf("[txVerification.GetTxsListByBlockHeight] json.Marshal Error: %s, value: %v", tx.TxDetails)
+				logx.Errorf("[txVerification.GetTxsListByBlockHeight] json.Marshal Error: %s, value: %v", err.Error(), tx.TxDetails)
 				return nil, err
 			}
 			// todo
@@ -202,19 +205,19 @@ func (m *defaultTxModel) GetTxsListByAccountIndex(accountIndex int64, limit int,
 	)
 	dbTx := m.DB.Table(txDetailTable).Select("tx_id").Where("account_index = ? and deleted_at is NULL", accountIndex).Group("tx_id").Find(&txIds)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsListByAccountIndex] %s", dbTx.Error)
-		return nil, dbTx.Error
+		logx.Errorf("[txVerification.GetTxsListByAccountIndex] %s", dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[info.GetTxsListByAccountIndex] Get TxIds Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	dbTx = m.DB.Table(m.table).Order("created_at desc, id desc").Offset(offset).Limit(limit).Find(&txs, txIds)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsListByAccountIndex] %s", dbTx.Error)
-		return nil, dbTx.Error
+		logx.Errorf("[txVerification.GetTxsListByAccountIndex] %s", dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[txVerification.GetTxsListByAccountIndex] Get Txs Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	//TODO: cache operation
 	for _, tx := range txs {
@@ -235,7 +238,7 @@ func (m *defaultTxModel) GetTxsListByAccountIndex(accountIndex int64, limit int,
 			// json string
 			jsonString, err := json.Marshal(tx.TxDetails)
 			if err != nil {
-				logx.Errorf("[txVerification.GetTxsListByAccountIndex] json.Marshal Error: %s, value: %v", tx.TxDetails)
+				logx.Errorf("[txVerification.GetTxsListByAccountIndex] json.Marshal Error: %s, value: %v", err.Error(), tx.TxDetails)
 				return nil, err
 			}
 			// todo
@@ -278,19 +281,19 @@ func (m *defaultTxModel) GetTxsListByAccountIndexAndTxType(accountIndex int64, t
 	)
 	dbTx := m.DB.Table(txDetailTable).Select("tx_id").Where("account_index = ? and deleted_at is NULL", accountIndex).Group("tx_id").Find(&txIds)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsListByAccountIndexAndTxType] %s", dbTx.Error)
-		return nil, dbTx.Error
+		logx.Errorf("[txVerification.GetTxsListByAccountIndexAndTxType] %s", dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[info.GetTxsListByAccountIndexAndTxType] Get TxIds Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	dbTx = m.DB.Table(m.table).Order("created_at desc").Where("tx_type = ?", txType).Offset(offset).Limit(limit).Find(&txs, txIds)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsListByAccountIndexAndTxType] %s", dbTx.Error)
-		return nil, dbTx.Error
+		logx.Errorf("[txVerification.GetTxsListByAccountIndexAndTxType] %s", dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[txVerification.GetTxsListByAccountIndexAndTxType] Get Txs Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	//TODO: cache operation
 	for _, tx := range txs {
@@ -311,7 +314,7 @@ func (m *defaultTxModel) GetTxsListByAccountIndexAndTxType(accountIndex int64, t
 			// json string
 			jsonString, err := json.Marshal(tx.TxDetails)
 			if err != nil {
-				logx.Errorf("[txVerification.GetTxsListByAccountIndexAndTxType] json.Marshal Error: %s, value: %v", tx.TxDetails)
+				logx.Errorf("[txVerification.GetTxsListByAccountIndexAndTxType] json.Marshal Error: %s, value: %v", err.Error(), tx.TxDetails)
 				return nil, err
 			}
 			// todo
@@ -354,19 +357,19 @@ func (m *defaultTxModel) GetTxsListByAccountIndexAndTxTypeArray(accountIndex int
 	)
 	dbTx := m.DB.Table(txDetailTable).Select("tx_id").Where("account_index = ? and deleted_at is NULL", accountIndex).Group("tx_id").Find(&txIds)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsListByAccountIndexAndTxTypeArray] %s", dbTx.Error)
-		return nil, dbTx.Error
+		logx.Errorf("[txVerification.GetTxsListByAccountIndexAndTxTypeArray] %s", dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[info.GetTxsListByAccountIndexAndTxTypeArray] Get TxIds Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	dbTx = m.DB.Table(m.table).Order("created_at desc").Where("tx_type in (?)", txTypeArray).Offset(offset).Limit(limit).Find(&txs, txIds)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsListByAccountIndexAndTxTypeArray] %s", dbTx.Error)
-		return nil, dbTx.Error
+		logx.Errorf("[txVerification.GetTxsListByAccountIndexAndTxTypeArray] %s", dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[GetTxsListByAccountIndexAndTxTypeArray] Get Txs Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	//TODO: cache operation
 	for _, tx := range txs {
@@ -428,19 +431,19 @@ func (m *defaultTxModel) GetTxsListByAccountName(accountName string, limit int, 
 	)
 	dbTx := m.DB.Table(txDetailTable).Select("tx_id").Where("account_name = ? and deleted_at is NULL", accountName).Group("tx_id").Find(&txIds)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsListByAccountName] %s", dbTx.Error)
-		return nil, dbTx.Error
+		logx.Errorf("[txVerification.GetTxsListByAccountName] %s", dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[txVerification.GetTxsListByAccountName] Get TxIds Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	dbTx = m.DB.Table(m.table).Order("created_at desc, id desc").Offset(offset).Limit(limit).Find(&txs, txIds)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsListByAccountName] %s", dbTx.Error)
-		return nil, dbTx.Error
+		logx.Errorf("[txVerification.GetTxsListByAccountName] %s", dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[txVerification.GetTxsListByAccountName] Get Txs Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	//TODO: cache operation
 	for _, tx := range txs {
@@ -471,7 +474,7 @@ func (m *defaultTxModel) GetTxsTotalCount() (count int64, err error) {
 	} else if val == "" {
 		dbTx := m.DB.Table(m.table).Where("deleted_at is NULL").Count(&count)
 		if dbTx.Error != nil {
-			if dbTx.Error == ErrNotFound {
+			if dbTx.Error == errorcode.DbErrNotFound {
 				return 0, nil
 			}
 			logx.Error("[txVerification.GetTxsTotalCount] Get Tx Count Error")
@@ -506,7 +509,7 @@ func (m *defaultTxModel) GetTxsTotalCountByAccountIndex(accountIndex int64) (cou
 	)
 	dbTx := m.DB.Table(txDetailTable).Select("tx_id").Where("account_index = ? and deleted_at is NULL", accountIndex).Group("tx_id").Count(&count)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsTotalCountByAccountIndex] %s", dbTx.Error)
+		logx.Errorf("[txVerification.GetTxsTotalCountByAccountIndex] %s", dbTx.Error.Error())
 		return 0, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[txVerification.GetTxsTotalCountByAccountIndex] No Txs of account index %d in Tx Table", accountIndex)
@@ -528,7 +531,7 @@ func (m *defaultTxModel) GetTxsTotalCountByAccountIndexAndTxType(accountIndex in
 	)
 	dbTx := m.DB.Table(txDetailTable).Select("tx_id").Where("account_index = ? and deleted_at is NULL", accountIndex).Group("tx_id").Find(&txIds)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsTotalCountByAccountIndexAndTxType] %s", dbTx.Error)
+		logx.Errorf("[txVerification.GetTxsTotalCountByAccountIndexAndTxType] %s", dbTx.Error.Error())
 		return 0, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[txVerification.GetTxsTotalCountByAccountIndexAndTxType] No Txs of account index %d  and txVerification type %d in Tx Table", accountIndex, txType)
@@ -536,7 +539,7 @@ func (m *defaultTxModel) GetTxsTotalCountByAccountIndexAndTxType(accountIndex in
 	}
 	dbTx = m.DB.Table(m.table).Where("id in (?) and deleted_at is NULL and tx_type = ?", txIds, txType).Count(&count)
 	if dbTx.Error != nil {
-		logx.Errorf("[txVerification.GetTxsTotalCountByAccountIndexAndTxTypee] %s", dbTx.Error)
+		logx.Errorf("[txVerification.GetTxsTotalCountByAccountIndexAndTxTypee] %s", dbTx.Error.Error())
 		return 0, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Infof("[txVerification.GetTxsTotalCountByAccountIndexAndTxType] no txVerification of account index %d and txVerification type = %d in mempool", accountIndex, txType)
@@ -558,16 +561,16 @@ func (m *defaultTxModel) GetTxsTotalCountByAccountIndexAndTxTypeArray(accountInd
 	)
 	dbTx := m.DB.Table(txDetailTable).Select("tx_id").Where("account_index = ? and deleted_at is NULL", accountIndex).Group("tx_id").Find(&txIds)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsTotalCountByAccountIndexAndTxTypeArray] %s", dbTx.Error)
-		return 0, dbTx.Error
+		logx.Errorf("[txVerification.GetTxsTotalCountByAccountIndexAndTxTypeArray] %s", dbTx.Error.Error())
+		return 0, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		logx.Info("[txVerification.GetTxsTotalCountByAccountIndexAndTxTypeArray] No Txs of account index %d  and txVerification type %v in Tx Table", accountIndex, txTypeArray)
+		logx.Infof("[txVerification.GetTxsTotalCountByAccountIndexAndTxTypeArray] No Txs of account index %d  and txVerification type %v in Tx Table", accountIndex, txTypeArray)
 		return 0, nil
 	}
 	dbTx = m.DB.Table(m.table).Where("id in (?) and deleted_at is NULL and tx_type in (?)", txIds, txTypeArray).Count(&count)
 	if dbTx.Error != nil {
-		logx.Errorf("[txVerification.GetTxsTotalCountByAccountIndexAndTxTypeArray] %s", dbTx.Error)
-		return 0, dbTx.Error
+		logx.Errorf("[txVerification.GetTxsTotalCountByAccountIndexAndTxTypeArray] %s", dbTx.Error.Error())
+		return 0, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Infof("[txVerification.GetTxsTotalCountByAccountIndexAndTxTypeArray] no txVerification of account index %d and txVerification type = %v in mempool", accountIndex, txTypeArray)
 		return 0, nil
@@ -584,7 +587,7 @@ func (m *defaultTxModel) GetTxsTotalCountByAccountIndexAndTxTypeArray(accountInd
 func (m *defaultTxModel) GetTxsTotalCountByBlockHeight(blockHeight int64) (count int64, err error) {
 	dbTx := m.DB.Table(m.table).Where("block_height = ? and deleted_at is NULL", blockHeight).Count(&count)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsTotalCountByBlockHeight] %s", dbTx.Error)
+		logx.Errorf("[txVerification.GetTxsTotalCountByBlockHeight] %s", dbTx.Error.Error())
 		return 0, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[txVerification.GetTxsTotalCountByBlockHeight] No Txs of block height %d in Tx Table", blockHeight)
@@ -604,11 +607,11 @@ func (m *defaultTxModel) GetTxByTxHash(txHash string) (tx *Tx, err error) {
 
 	dbTx := m.DB.Table(m.table).Where("tx_hash = ?", txHash).Find(&tx)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxByTxHash] %s", dbTx.Error)
-		return nil, dbTx.Error
+		logx.Errorf("[txVerification.GetTxByTxHash] %s", dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		logx.Error("[txVerification.GetTxByTxHash] No such Tx with txHash: %s", txHash)
-		return nil, ErrNotFound
+		logx.Errorf("[txVerification.GetTxByTxHash] No such Tx with txHash: %s", txHash)
+		return nil, errorcode.DbErrNotFound
 	}
 	err = m.DB.Model(&tx).Association(txForeignKeyColumn).Find(&tx.TxDetails)
 	if err != nil {
@@ -628,11 +631,11 @@ func (m *defaultTxModel) GetTxByTxId(id uint) (tx *Tx, err error) {
 
 	dbTx := m.DB.Table(m.table).Where("id = ?", id).Find(&tx)
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxByTxId] %s", dbTx.Error)
-		return nil, dbTx.Error
+		logx.Errorf("[txVerification.GetTxByTxId] %s", dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		logx.Error("[txVerification.GetTxByTxId] No such Tx with tx id: %s", id)
-		return nil, ErrNotFound
+		logx.Errorf("[txVerification.GetTxByTxId] No such Tx with tx id: %d", id)
+		return nil, errorcode.DbErrNotFound
 	}
 	err = m.DB.Model(&tx).Association(txForeignKeyColumn).Find(&tx.TxDetails)
 	if err != nil {
@@ -662,8 +665,8 @@ func (m *defaultTxModel) GetTxsListGreaterThanBlockHeight(blockHeight int64) (tx
 	dbTx := m.DB.Table(m.table).Where("block_height >= ? and block_height < ?", blockHeight, blockHeight+maxBlocks).Order("created_at, id").Find(&txs)
 
 	if dbTx.Error != nil {
-		logx.Error("[txVerification.GetTxsListGreaterThanBlockHeight] %s", dbTx.Error)
-		return nil, dbTx.Error
+		logx.Errorf("[txVerification.GetTxsListGreaterThanBlockHeight] %s", dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		logx.Infof("[txVerification.GetTxsListGreaterThanBlockHeight] No txVerification blockHeight greater than %d", blockHeight)
 		return nil, nil

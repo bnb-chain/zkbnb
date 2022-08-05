@@ -19,14 +19,16 @@ package txVerification
 
 import (
 	"errors"
+	"fmt"
+	"math/big"
+
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
-	"github.com/bnb-chain/zkbas/common/commonAsset"
-	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/zeromicro/go-zero/core/logx"
-	"log"
-	"math/big"
+
+	"github.com/bnb-chain/zkbas/common/commonAsset"
+	"github.com/bnb-chain/zkbas/common/commonConstant"
 )
 
 func VerifySwapTxInfo(
@@ -50,18 +52,20 @@ func VerifySwapTxInfo(
 		txInfo.AssetAAmount.Cmp(ZeroBigInt) < 0 ||
 		txInfo.AssetBMinAmount.Cmp(ZeroBigInt) < 0 ||
 		txInfo.GasFeeAssetAmount.Cmp(ZeroBigInt) < 0 {
-		logx.Errorf("[VerifySwapTxInfo] invalid params")
-		return nil, errors.New("[VerifySwapTxInfo] invalid params")
+		logx.Error("invalid params")
+		return nil, errors.New("invalid params")
 	}
 	// verify delta amount
 	if txInfo.AssetBAmountDelta.Cmp(txInfo.AssetBMinAmount) < 0 {
-		log.Println("[VerifySwapTxInfo] invalid swap amount")
-		return nil, errors.New("[VerifySwapTxInfo] invalid swap amount")
+		logx.Error("invalid swap amount")
+		return nil, errors.New("invalid swap amount")
 	}
 	// verify nonce
 	if txInfo.Nonce != accountInfoMap[txInfo.FromAccountIndex].Nonce {
-		log.Println("[VerifySwapTxInfo] invalid nonce")
-		return nil, errors.New("[VerifySwapTxInfo] invalid nonce")
+		logx.Errorf("invalid nonce, actual: %d, expected: %d",
+			txInfo.Nonce, accountInfoMap[txInfo.FromAccountIndex].Nonce)
+		return nil, fmt.Errorf("invalid nonce, actual: %d, expected: %d",
+			txInfo.Nonce, accountInfoMap[txInfo.FromAccountIndex].Nonce)
 	}
 	var (
 		//assetDeltaForTreasuryAccount *big.Int
@@ -87,8 +91,8 @@ func VerifySwapTxInfo(
 		)
 	}
 	if txInfo.AssetAAmount.Cmp(assetDeltaMap[txInfo.FromAccountIndex][txInfo.AssetAId]) < 0 {
-		log.Println("[VerifySwapTxInfo] invalid treasury amount")
-		return nil, errors.New("[VerifySwapTxInfo] invalid treasury amount")
+		logx.Error("invalid treasury amount")
+		return nil, errors.New("invalid treasury amount")
 	}
 	// to account pool
 	poolAssetADelta := txInfo.AssetAAmount
@@ -120,8 +124,8 @@ func VerifySwapTxInfo(
 			TreasuryRate:         liquidityInfo.TreasuryRate,
 		}
 	} else {
-		log.Println("[VerifySwapTxInfo] invalid pool")
-		return nil, errors.New("[VerifySwapTxInfo] invalid pool")
+		logx.Error("invalid pool")
+		return nil, errors.New("invalid pool")
 	}
 	// gas account asset Gas
 	if assetDeltaMap[txInfo.GasAccountIndex][txInfo.GasFeeAssetId] == nil {
@@ -135,35 +139,24 @@ func VerifySwapTxInfo(
 	// check balance
 	if accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.AssetAId].Balance.Cmp(
 		assetDeltaMap[txInfo.FromAccountIndex][txInfo.AssetAId]) < 0 {
-		logx.Errorf("[VerifySwapTxInfo] you don't have enough balance of asset A")
-		return nil, errors.New("[VerifySwapTxInfo] you don't have enough balance of asset A")
+		logx.Errorf("not enough balance of asset %d", txInfo.AssetAId)
+		return nil, fmt.Errorf("not enough balance of asset %d", txInfo.AssetAId)
 	}
 	if accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(
 		assetDeltaMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId]) < 0 {
-		logx.Errorf("[VerifySwapTxInfo] you don't have enough balance of asset Gas")
-		return nil, errors.New("[VerifySwapTxInfo] you don't have enough balance of asset Gas")
+		logx.Errorf("not enough balance of gas")
+		return nil, errors.New("not enough balance of gas")
 	}
 	// compute hash
 	hFunc := mimc.NewMiMC()
 	msgHash, err := legendTxTypes.ComputeSwapMsgHash(txInfo, hFunc)
 	if err != nil {
-		logx.Errorf("[VerifySwapTxInfo] unable to compute hash: %s", err.Error())
-		return nil, err
+		logx.Errorf("unable to compute tx hash: %s", err.Error())
+		return nil, errors.New("internal error")
 	}
 	// verify signature
-	hFunc.Reset()
-	pk, err := ParsePkStr(accountInfoMap[txInfo.FromAccountIndex].PublicKey)
-	if err != nil {
+	if err := VerifySignature(txInfo.Sig, msgHash, accountInfoMap[txInfo.FromAccountIndex].PublicKey); err != nil {
 		return nil, err
-	}
-	isValid, err := pk.Verify(txInfo.Sig, msgHash, hFunc)
-	if err != nil {
-		log.Println("[VerifySwapTxInfo] unable to verify signature:", err)
-		return nil, err
-	}
-	if !isValid {
-		log.Println("[VerifySwapTxInfo] invalid signature")
-		return nil, errors.New("[VerifySwapTxInfo] invalid signature")
 	}
 	// compute tx details
 	// from account asset A

@@ -201,22 +201,16 @@ message ReqSendTxByRawInfo{
 
 
 service globalRPC {
-
-  // Asset
   rpc getLatestAssetsListByAccountIndex (ReqGetLatestAssetsListByAccountIndex) returns (RespGetLatestAssetsListByAccountIndex);
   rpc getLatestAccountInfoByAccountIndex (ReqGetLatestAccountInfoByAccountIndex) returns (RespGetLatestAccountInfoByAccountIndex);
-  // Liquidity
   rpc getLatestPairInfo(ReqGetLatestPairInfo) returns (RespGetLatestPairInfo);
   rpc getSwapAmount(ReqGetSwapAmount) returns (RespGetSwapAmount);
   rpc getLpValue(ReqGetLpValue) returns (RespGetLpValue);
-  // Transaction
   rpc sendTx(ReqSendTx) returns (RespSendTx);
   rpc sendCreateCollectionTx(ReqSendCreateCollectionTx) returns (RespSendCreateCollectionTx);
   rpc sendMintNftTx(ReqSendMintNftTx) returns (RespSendMintNftTx);
   rpc getNextNonce(ReqGetNextNonce) returns (RespGetNextNonce);
-  // NFT
   rpc getMaxOfferId(ReqGetMaxOfferId) returns (RespGetMaxOfferId);
-
   rpc sendAddLiquidityTx(ReqSendTxByRawInfo) returns (RespSendTx);
   rpc sendAtomicMatchTx(ReqSendTxByRawInfo) returns (RespSendTx);
   rpc sendCancelOfferTx(ReqSendTxByRawInfo) returns (RespSendTx);
@@ -226,11 +220,4 @@ service globalRPC {
   rpc sendTransferTx(ReqSendTxByRawInfo) returns (RespSendTx);
   rpc sendWithdrawNftTx(ReqSendTxByRawInfo) returns (RespSendTx);
   rpc sendWithdrawTx(ReqSendTxByRawInfo) returns (RespSendTx);
-
-
-
-  //
-
-
-
 }

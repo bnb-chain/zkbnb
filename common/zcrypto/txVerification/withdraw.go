@@ -19,13 +19,15 @@ package txVerification
 
 import (
 	"errors"
+	"fmt"
+	"math/big"
+
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
-	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/zeromicro/go-zero/core/logx"
-	"log"
-	"math/big"
+
+	"github.com/bnb-chain/zkbas/common/commonAsset"
 )
 
 func VerifyWithdrawTxInfo(
@@ -41,13 +43,15 @@ func VerifyWithdrawTxInfo(
 		accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId] == nil ||
 		txInfo.AssetAmount.Cmp(ZeroBigInt) < 0 ||
 		txInfo.GasFeeAssetAmount.Cmp(ZeroBigInt) < 0 {
-		logx.Errorf("[VerifyTransferNftTxInfo] invalid params")
-		return nil, errors.New("[VerifyTransferNftTxInfo] invalid params")
+		logx.Error("invalid params")
+		return nil, errors.New("invalid params")
 	}
 	// verify nonce
 	if txInfo.Nonce != accountInfoMap[txInfo.FromAccountIndex].Nonce {
-		log.Println("[VerifyWithdrawTxInfo] invalid nonce")
-		return nil, errors.New("[VerifyWithdrawTxInfo] invalid nonce")
+		logx.Errorf("invalid nonce, actual: %d, expected: %d",
+			txInfo.Nonce, accountInfoMap[txInfo.FromAccountIndex].Nonce)
+		return nil, fmt.Errorf("invalid nonce, actual: %d, expected: %d",
+			txInfo.Nonce, accountInfoMap[txInfo.FromAccountIndex].Nonce)
 	}
 	var (
 		assetDeltaMap = make(map[int64]map[int64]*big.Int)
@@ -79,34 +83,23 @@ func VerifyWithdrawTxInfo(
 	}
 	// check balance
 	if accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.AssetId].Balance.Cmp(new(big.Int).Abs(assetDeltaMap[txInfo.FromAccountIndex][txInfo.AssetId])) < 0 {
-		logx.Errorf("[VerifyWithdrawTxInfo] you don't have enough balance of asset A")
-		return nil, errors.New("[VerifyWithdrawTxInfo] you don't have enough balance of asset A")
+		logx.Errorf("not enough balance of asset %d", txInfo.AssetId)
+		return nil, fmt.Errorf("not enough balance of asset %d", txInfo.AssetId)
 	}
 	if accountInfoMap[txInfo.FromAccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(new(big.Int).Abs(assetDeltaMap[txInfo.FromAccountIndex][txInfo.GasFeeAssetId])) < 0 {
-		logx.Errorf("[VerifyWithdrawTxInfo] you don't have enough balance of asset Gas")
-		return nil, errors.New("[VerifyWithdrawTxInfo] you don't have enough balance of asset Gas")
+		logx.Errorf("not enough balance of gas")
+		return nil, errors.New("not enough balance of gas")
 	}
 	// compute hash
 	hFunc := mimc.NewMiMC()
 	msgHash, err := legendTxTypes.ComputeWithdrawMsgHash(txInfo, hFunc)
 	if err != nil {
-		logx.Errorf("[VerifyWithdrawTxInfo] unable to compute hash: %s", err.Error())
-		return nil, err
+		logx.Errorf("unable to compute tx hash: %s", err.Error())
+		return nil, errors.New("internal error")
 	}
 	// verify signature
-	hFunc.Reset()
-	pk, err := ParsePkStr(accountInfoMap[txInfo.FromAccountIndex].PublicKey)
-	if err != nil {
+	if err := VerifySignature(txInfo.Sig, msgHash, accountInfoMap[txInfo.FromAccountIndex].PublicKey); err != nil {
 		return nil, err
-	}
-	isValid, err := pk.Verify(txInfo.Sig, msgHash, hFunc)
-	if err != nil {
-		log.Println("[VerifyWithdrawTxInfo] unable to verify signature:", err)
-		return nil, err
-	}
-	if !isValid {
-		log.Println("[VerifyWithdrawTxInfo] invalid signature")
-		return nil, errors.New("[VerifyWithdrawTxInfo] invalid signature")
 	}
 	// compute tx details
 	// from account asset A

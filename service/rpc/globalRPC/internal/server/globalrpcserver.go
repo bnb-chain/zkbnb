@@ -22,7 +22,6 @@ func NewGlobalRPCServer(svcCtx *svc.ServiceContext) *GlobalRPCServer {
 	}
 }
 
-//  Asset
 func (s *GlobalRPCServer) GetLatestAssetsListByAccountIndex(ctx context.Context, in *globalRPCProto.ReqGetLatestAssetsListByAccountIndex) (*globalRPCProto.RespGetLatestAssetsListByAccountIndex, error) {
 	l := logic.NewGetLatestAssetsListByAccountIndexLogic(ctx, s.svcCtx)
 	return l.GetLatestAssetsListByAccountIndex(in)
@@ -33,7 +32,6 @@ func (s *GlobalRPCServer) GetLatestAccountInfoByAccountIndex(ctx context.Context
 	return l.GetLatestAccountInfoByAccountIndex(in)
 }
 
-//  Liquidity
 func (s *GlobalRPCServer) GetLatestPairInfo(ctx context.Context, in *globalRPCProto.ReqGetLatestPairInfo) (*globalRPCProto.RespGetLatestPairInfo, error) {
 	l := logic.NewGetLatestPairInfoLogic(ctx, s.svcCtx)
 	return l.GetLatestPairInfo(in)
@@ -49,7 +47,6 @@ func (s *GlobalRPCServer) GetLpValue(ctx context.Context, in *globalRPCProto.Req
 	return l.GetLpValue(in)
 }
 
-//  Transaction
 func (s *GlobalRPCServer) SendTx(ctx context.Context, in *globalRPCProto.ReqSendTx) (*globalRPCProto.RespSendTx, error) {
 	l := logic.NewSendTxLogic(ctx, s.svcCtx)
 	return l.SendTx(in)
@@ -70,7 +67,6 @@ func (s *GlobalRPCServer) GetNextNonce(ctx context.Context, in *globalRPCProto.R
 	return l.GetNextNonce(in)
 }
 
-//  NFT
 func (s *GlobalRPCServer) GetMaxOfferId(ctx context.Context, in *globalRPCProto.ReqGetMaxOfferId) (*globalRPCProto.RespGetMaxOfferId, error) {
 	l := logic.NewGetMaxOfferIdLogic(ctx, s.svcCtx)
 	return l.GetMaxOfferId(in)

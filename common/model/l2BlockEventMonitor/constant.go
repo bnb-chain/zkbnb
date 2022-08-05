@@ -17,12 +17,6 @@
 
 package l2BlockEventMonitor
 
-import "github.com/zeromicro/go-zero/core/stores/sqlx"
-
-var (
-	ErrNotFound = sqlx.ErrNotFound
-)
-
 const (
 	TableName = "l2_block_event_monitor"
 

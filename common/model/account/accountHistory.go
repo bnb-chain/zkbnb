@@ -19,12 +19,15 @@ package account
 import (
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
-	"strings"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type (
@@ -43,6 +46,7 @@ type (
 		GetAccountsTotalCount() (count int64, err error)
 		GetLatestAccountIndex() (accountIndex int64, err error)
 		GetValidAccounts(height int64) (rowsAffected int64, accounts []*AccountHistory, err error)
+		GetValidAccountNums(height int64) (accounts int64, err error)
 		GetLatestAccountInfoByAccountIndex(accountIndex int64) (account *AccountHistory, err error)
 	}
 
@@ -112,8 +116,8 @@ func (m *defaultAccountHistoryModel) IfAccountNameExist(name string) (bool, erro
 	} else if res == 0 {
 		return false, nil
 	} else if res != 1 {
-		logx.Errorf("[accountHistory.IfAccountNameExist] %s", ErrDuplicatedAccountName)
-		return true, ErrDuplicatedAccountName
+		logx.Errorf("[accountHistory.IfAccountNameExist] %s", errorcode.DbErrDuplicatedAccountName)
+		return true, errorcode.DbErrDuplicatedAccountName
 	} else {
 		return true, nil
 	}
@@ -136,8 +140,8 @@ func (m *defaultAccountHistoryModel) IfAccountExistsByAccountIndex(accountIndex 
 	} else if res == 0 {
 		return false, nil
 	} else if res != 1 {
-		logx.Errorf("[accountHistory.IfAccountExistsByAccountIndex] %s", ErrDuplicatedAccountIndex)
-		return true, ErrDuplicatedAccountIndex
+		logx.Errorf("[accountHistory.IfAccountExistsByAccountIndex] %s", errorcode.DbErrDuplicatedAccountIndex)
+		return true, errorcode.DbErrDuplicatedAccountIndex
 	} else {
 		return true, nil
 	}
@@ -155,11 +159,11 @@ func (m *defaultAccountHistoryModel) GetAccountByAccountIndex(accountIndex int64
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[accountHistory.GetAccountByAccountIndex] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[accountHistory.GetAccountByAccountIndex] %s", ErrNotFound)
+		err := fmt.Sprintf("[accountHistory.GetAccountByAccountIndex] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return account, nil
 }
@@ -172,9 +176,9 @@ func (m *defaultAccountHistoryModel) GetLatestAccountNonceByAccountIndex(account
 		logx.Error(err)
 		return 0, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[accountHistory.GetAccountByAccountIndex] %s", ErrNotFound)
+		err := fmt.Sprintf("[accountHistory.GetAccountByAccountIndex] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return 0, ErrNotFound
+		return 0, errorcode.DbErrNotFound
 	}
 	return account.Nonce, nil
 }
@@ -193,9 +197,9 @@ func (m *defaultAccountHistoryModel) GetAccountByPk(pk string) (account *Account
 		logx.Error(errInfo)
 		return nil, errors.New(errInfo)
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[accountHistory.GetAccountByPk] %s", ErrNotFound)
+		err := fmt.Sprintf("[accountHistory.GetAccountByPk] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return account, nil
 }
@@ -214,9 +218,9 @@ func (m *defaultAccountHistoryModel) GetAccountByAccountName(accountName string)
 		logx.Error(errInfo)
 		return nil, errors.New(errInfo)
 	} else if dbTx.RowsAffected == 0 {
-		errInfo := fmt.Sprintf("[accountHistory.GetAccountByAccountName] %s", ErrNotFound)
+		errInfo := fmt.Sprintf("[accountHistory.GetAccountByAccountName] %s", errorcode.DbErrNotFound)
 		logx.Info(errInfo)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return account, nil
 }
@@ -229,14 +233,14 @@ func (m *defaultAccountHistoryModel) GetAccountByAccountName(accountName string)
 
 */
 func (m *defaultAccountHistoryModel) GetAccountsList(limit int, offset int64) (accounts []*AccountHistory, err error) {
-	dbTx := m.DB.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("account_index desc").Find(&accounts)
+	dbTx := m.DB.Table(m.table).Limit(limit).Offset(int(offset)).Order("account_index desc").Find(&accounts)
 	if dbTx.Error != nil {
 		errInfo := fmt.Sprintf("[accountHistory.GetAccountsList] %s", dbTx.Error)
 		logx.Error(errInfo)
 		return nil, errors.New(errInfo)
 	} else if dbTx.RowsAffected == 0 {
 		logx.Error("[accountHistory.GetAccountsList] Get Accounts Error")
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return accounts, nil
 }
@@ -274,7 +278,7 @@ func (m *defaultAccountHistoryModel) GetLatestAccountIndex() (accountIndex int64
 		return 0, errors.New(errInfo)
 	} else if dbTx.RowsAffected == 0 {
 		logx.Info("[accountHistory.GetLatestAccountIndex] No Account in Account Table")
-		return 0, ErrNotFound
+		return 0, errorcode.DbErrNotFound
 	}
 	logx.Info(accountIndex)
 	return accountIndex, nil
@@ -315,13 +319,31 @@ func (m *defaultAccountHistoryModel) GetValidAccounts(height int64) (rowsAffecte
 
 }
 
+type countResult struct {
+	Count int `json:"count"`
+}
+
+func (m *defaultAccountHistoryModel) GetValidAccountNums(height int64) (accounts int64, err error) {
+	var countResult countResult
+	dbTx := m.DB.Table(m.table).
+		Raw("SELECT count(a.*) FROM account_history a WHERE NOT EXISTS"+
+			"(SELECT * FROM account_history WHERE account_index = a.account_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height AND l2_block_height != -1) "+
+			"AND l2_block_height <= ? AND l2_block_height != -1", height, height).
+		Scan(&countResult)
+	if dbTx.Error != nil {
+		logx.Errorf("[GetValidAccountNums] unable to get related accounts: %s", dbTx.Error.Error())
+		return 0, dbTx.Error
+	}
+	return int64(countResult.Count), nil
+}
+
 func (m *defaultAccountHistoryModel) GetLatestAccountInfoByAccountIndex(accountIndex int64) (account *AccountHistory, err error) {
 	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex).Order("l2_block_height desc").Find(&account)
 	if dbTx.Error != nil {
 		logx.Errorf("[GetLatestAccountInfoByAccountIndex] unable to get related account: %s", dbTx.Error.Error())
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return account, nil
 }
@@ -333,9 +355,9 @@ func (m *defaultAccountHistoryModel) GetAccountByAccountNameHash(accountNameHash
 		logx.Error(errInfo)
 		return nil, errors.New(errInfo)
 	} else if dbTx.RowsAffected == 0 {
-		errInfo := fmt.Sprintf("[accountHistory.GetAccountByAccountName] %s", ErrNotFound)
+		errInfo := fmt.Sprintf("[accountHistory.GetAccountByAccountName] %s", errorcode.DbErrNotFound)
 		logx.Info(errInfo)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return account, nil
 }
@@ -347,9 +369,9 @@ func (m *defaultAccountHistoryModel) GetAccountsByBlockHeight(blockHeight int64)
 		logx.Error(errInfo)
 		return nil, errors.New(errInfo)
 	} else if dbTx.RowsAffected == 0 {
-		errInfo := fmt.Sprintf("[accountHistory.GetAccountByAccountName] %s", ErrNotFound)
+		errInfo := fmt.Sprintf("[accountHistory.GetAccountByAccountName] %s", errorcode.DbErrNotFound)
 		logx.Info(errInfo)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return accounts, nil
 }

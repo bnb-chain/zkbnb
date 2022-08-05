@@ -3,13 +3,14 @@ package transaction
 import (
 	"context"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/tx"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/txdetail"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
-
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type GetTxsListByAccountIndexLogic struct {
@@ -31,18 +32,23 @@ func NewGetTxsListByAccountIndexLogic(ctx context.Context, svcCtx *svc.ServiceCo
 }
 
 func (l *GetTxsListByAccountIndexLogic) GetTxsListByAccountIndex(req *types.ReqGetTxsListByAccountIndex) (*types.RespGetTxsListByAccountIndex, error) {
-	resp := &types.RespGetTxsListByAccountIndex{
-		Txs: make([]*types.Tx, 0),
-	}
+
 	txDetails, err := l.txDetail.GetTxDetailByAccountIndex(l.ctx, int64(req.AccountIndex))
 	if err != nil {
-		logx.Errorf("[GetTxDetailByAccountIndex] err:%v", err)
-		return nil, err
+		logx.Errorf("[GetTxDetailByAccountIndex] err: %s", err.Error())
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
+	}
+
+	resp := &types.RespGetTxsListByAccountIndex{
+		Txs: make([]*types.Tx, 0),
 	}
 	for _, d := range txDetails {
 		tx, err := l.tx.GetTxByTxID(l.ctx, d.TxId)
 		if err != nil {
-			logx.Errorf("[GetTxByTxID] err:%v", err)
+			logx.Errorf("[GetTxByTxID] err: %s", err.Error())
 			return nil, err
 		}
 		resp.Txs = append(resp.Txs, utils.GormTx2Tx(tx))

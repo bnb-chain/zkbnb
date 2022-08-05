@@ -3,12 +3,13 @@ package transaction
 import (
 	"context"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/block"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
-
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type GetTxsListByBlockHeightLogic struct {
@@ -30,8 +31,11 @@ func NewGetTxsListByBlockHeightLogic(ctx context.Context, svcCtx *svc.ServiceCon
 func (l *GetTxsListByBlockHeightLogic) GetTxsListByBlockHeight(req *types.ReqGetTxsListByBlockHeight) (*types.RespGetTxsListByBlockHeight, error) {
 	block, err := l.block.GetBlockWithTxsByBlockHeight(l.ctx, int64(req.BlockHeight))
 	if err != nil {
-		logx.Errorf("[GetBlockByBlockHeight] err:%v", err)
-		return nil, err
+		logx.Errorf("[GetBlockByBlockHeight] err: %s", err.Error())
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	resp := &types.RespGetTxsListByBlockHeight{
 		Total: uint32(len(block.Txs)),

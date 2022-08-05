@@ -2,12 +2,13 @@ package logic
 
 import (
 	"encoding/json"
-	"github.com/bnb-chain/zkbas/common/tree"
-	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas/common/tree"
+	"github.com/bnb-chain/zkbas/common/util"
 )
 
 func DefaultBlockHeader() StorageStoredBlockInfo {

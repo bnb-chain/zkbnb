@@ -3,6 +3,9 @@ package transaction
 import (
 	"context"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/block"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/globalrpc"
@@ -12,8 +15,6 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/txdetail"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
-
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type GetTxsByAccountIndexAndTxTypeLogic struct {
@@ -45,8 +46,11 @@ func NewGetTxsByAccountIndexAndTxTypeLogic(ctx context.Context, svcCtx *svc.Serv
 func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *types.ReqGetTxsByAccountIndexAndTxType) (*types.RespGetTxsByAccountIndexAndTxType, error) {
 	txDetails, err := l.txDetail.GetTxDetailByAccountIndex(l.ctx, int64(req.AccountIndex))
 	if err != nil {
-		logx.Error("[GetTxDetailByAccountIndex] err:%v", err)
-		return nil, err
+		logx.Errorf("[GetTxDetailByAccountIndex] err: %s", err.Error())
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	resp := &types.RespGetTxsByAccountIndexAndTxType{
 		Txs: make([]*types.Tx, 0),
@@ -54,7 +58,7 @@ func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *
 	for _, txDetail := range txDetails {
 		tx, err := l.tx.GetTxByTxID(l.ctx, txDetail.TxId)
 		if err != nil {
-			logx.Errorf("[GetTxByTxID] err:%v", err)
+			logx.Errorf("[GetTxByTxID] err: %s", err.Error())
 			return nil, err
 		}
 		if tx.TxType == int64(req.TxType) {
@@ -64,13 +68,13 @@ func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *
 	}
 	memPoolTxDetails, err := l.memPoolTxDetail.GetMemPoolTxDetailByAccountIndex(l.ctx, int64(req.AccountIndex))
 	if err != nil {
-		logx.Error("[GetMemPoolTxDetailByAccountIndex] err:%v", err)
+		logx.Errorf("[GetMemPoolTxDetailByAccountIndex] err: %s", err.Error())
 		return nil, err
 	}
 	for _, txDetail := range memPoolTxDetails {
 		tx, err := l.mempool.GetMempoolTxByTxId(l.ctx, txDetail.TxId)
 		if err != nil {
-			logx.Errorf("[GetMempoolTxByTxId] err:%v", err)
+			logx.Errorf("[GetMempoolTxByTxId] err: %s", err.Error())
 			return nil, err
 		}
 		if tx.TxType == int64(req.TxType) {

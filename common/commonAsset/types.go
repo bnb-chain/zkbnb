@@ -19,13 +19,13 @@ package commonAsset
 
 import (
 	"encoding/json"
-	"fmt"
 	"math/big"
 
-	"github.com/bnb-chain/zkbas/common/commonAsset/errcode"
-	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
+
+	"github.com/bnb-chain/zkbas/common/model/account"
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type AccountAsset struct {
@@ -48,7 +48,7 @@ func ParseAccountAsset(balance string) (asset *AccountAsset, err error) {
 	err = json.Unmarshal([]byte(balance), &asset)
 	if err != nil {
 		logx.Errorf("[ParseAccountAsset] unable to parse account asset")
-		return nil, err
+		return nil, errorcode.JsonErrUnmarshal
 	}
 	return asset, nil
 }
@@ -76,7 +76,7 @@ type AccountInfo struct {
 func FromFormatAccountInfo(formatAccountInfo *AccountInfo) (accountInfo *account.Account, err error) {
 	assetInfoBytes, err := json.Marshal(formatAccountInfo.AssetInfo)
 	if err != nil {
-		return nil, err
+		return nil, errorcode.JsonErrMarshal
 	}
 	accountInfo = &account.Account{
 		Model: gorm.Model{
@@ -100,7 +100,7 @@ func ToFormatAccountInfo(accountInfo *account.Account) (formatAccountInfo *Accou
 	var assetInfo map[int64]*AccountAsset
 	err = json.Unmarshal([]byte(accountInfo.AssetInfo), &assetInfo)
 	if err != nil {
-		return nil, errcode.ErrUnmarshal.RefineError(fmt.Sprint(accountInfo.AssetInfo))
+		return nil, errorcode.JsonErrUnmarshal
 	}
 	formatAccountInfo = &AccountInfo{
 		AccountId:       accountInfo.ID,
@@ -129,43 +129,4 @@ type FormatAccountHistoryInfo struct {
 	// map[int64]*Liquidity
 	L2BlockHeight int64
 	Status        int
-}
-
-func FromFormatAccountHistoryInfo(formatAccountInfo *FormatAccountHistoryInfo) (accountInfo *account.AccountHistory, err error) {
-	assetInfoBytes, err := json.Marshal(formatAccountInfo.AssetInfo)
-	if err != nil {
-		return nil, err
-	}
-	accountInfo = &account.AccountHistory{
-		Model: gorm.Model{
-			ID: formatAccountInfo.AccountId,
-		},
-		AccountIndex:    formatAccountInfo.AccountIndex,
-		Nonce:           formatAccountInfo.Nonce,
-		CollectionNonce: formatAccountInfo.CollectionNonce,
-		AssetInfo:       string(assetInfoBytes),
-		AssetRoot:       formatAccountInfo.AssetRoot,
-		L2BlockHeight:   formatAccountInfo.L2BlockHeight,
-	}
-	return accountInfo, nil
-}
-
-func ToFormatAccountHistoryInfo(accountInfo *account.AccountHistory) (formatAccountInfo *FormatAccountHistoryInfo, err error) {
-	var (
-		assetInfo map[int64]*AccountAsset
-	)
-	err = json.Unmarshal([]byte(accountInfo.AssetInfo), &assetInfo)
-	if err != nil {
-		return nil, err
-	}
-	formatAccountInfo = &FormatAccountHistoryInfo{
-		AccountId:       accountInfo.ID,
-		AccountIndex:    accountInfo.AccountIndex,
-		Nonce:           accountInfo.Nonce,
-		CollectionNonce: accountInfo.CollectionNonce,
-		AssetInfo:       assetInfo,
-		AssetRoot:       accountInfo.AssetRoot,
-		L2BlockHeight:   accountInfo.L2BlockHeight,
-	}
-	return formatAccountInfo, nil
 }

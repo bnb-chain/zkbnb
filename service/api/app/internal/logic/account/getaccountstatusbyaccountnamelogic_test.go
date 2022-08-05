@@ -3,12 +3,13 @@ package account
 import (
 	"testing"
 
-	table "github.com/bnb-chain/zkbas/common/model/account"
-	"github.com/bnb-chain/zkbas/pkg/zerror"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/account"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+
+	table "github.com/bnb-chain/zkbas/common/model/account"
+	"github.com/bnb-chain/zkbas/errorcode"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/account"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
 func TestGetAccountStatusByAccountNameLogic_GetAccountStatusByAccountName(t *testing.T) {
@@ -19,7 +20,7 @@ func TestGetAccountStatusByAccountNameLogic_GetAccountStatusByAccountName(t *tes
 		account: mockAccount,
 	}
 	// error case
-	mockAccount.EXPECT().GetBasicAccountByAccountName(gomock.Any(), gomock.Any()).Return(nil, zerror.New(-1, "error")).MaxTimes(1)
+	mockAccount.EXPECT().GetBasicAccountByAccountName(gomock.Any(), gomock.Any()).Return(nil, errorcode.New(-1, "error")).MaxTimes(1)
 	req := &types.ReqGetAccountStatusByAccountName{AccountName: ""}
 	_, err := l.GetAccountStatusByAccountName(req)
 	assert.NotNil(t, err)

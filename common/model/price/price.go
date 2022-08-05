@@ -3,7 +3,6 @@ package price
 import (
 	"encoding/json"
 	"fmt"
-	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
 	"io/ioutil"
 	"net/http"
 
@@ -12,6 +11,9 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
+
+	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 var (
@@ -53,17 +55,17 @@ func GetQuotesLatest(l2Symbol string, client *http.Client) (quotesLatest []*Quot
 	url := fmt.Sprintf("%s%s", CoinMarketCap, currency)
 
 	// Get Request
-	reqest, err := http.NewRequest("GET", url, nil)
+	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		logx.Error("[price] New Request Error %s", err.Error())
+		logx.Errorf("[price] New Request Error %s", err.Error())
 		return nil, err
 	}
 
 	// Add Header
-	reqest.Header.Add("X-CMC_PRO_API_KEY", "cfce503f-dd3d-4847-9570-bbab5257dac8")
-	reqest.Header.Add("Accept", "application/json")
+	request.Header.Add("X-CMC_PRO_API_KEY", "cfce503f-dd3d-4847-9570-bbab5257dac8")
+	request.Header.Add("Accept", "application/json")
 
-	resp, err := client.Do(reqest)
+	resp, err := client.Do(request)
 	if err != nil {
 		errInfo := fmt.Sprintf("[price] Network Error %s", err.Error())
 		logx.Error(errInfo)
@@ -126,9 +128,9 @@ func (m *defaultPriceModel) UpdateCurrencyPrice() error {
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[price.GetL2AssetsList] %s", ErrNotFound)
+		err := fmt.Sprintf("[price.GetL2AssetsList] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return ErrNotFound
+		return errorcode.DbErrNotFound
 	}
 
 	var l2Symbol string
@@ -233,7 +235,7 @@ func (m *defaultPriceModel) UpdateCurrencyPriceBySymbol(symbol string) error {
 func (m *defaultPriceModel) GetCurrencyPrice(currency string) (price float64, err error) {
 	key := fmt.Sprintf("%s%v", cachePriceSymbolPrefix, currency)
 	err = m.QueryRow(&price, key, func(conn sqlx.SqlConn, v interface{}) error {
-		return ErrNotFound
+		return errorcode.DbErrNotFound
 	})
 	if err != nil {
 		errInfo := fmt.Sprintf("[PriceModel.GetCurrencyPrice.Getcache] %s %s", key, err)

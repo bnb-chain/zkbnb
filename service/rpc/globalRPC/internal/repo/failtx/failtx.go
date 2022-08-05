@@ -1,13 +1,12 @@
 package failtx
 
 import (
-	"fmt"
+	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 
 	table "github.com/bnb-chain/zkbas/common/model/tx"
-	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/errcode"
-
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
-	"gorm.io/gorm"
 )
 
 type model struct {
@@ -25,10 +24,11 @@ type model struct {
 func (m *model) CreateFailTx(failTx *table.FailTx) error {
 	dbTx := m.db.Table(m.table).Create(failTx)
 	if dbTx.Error != nil {
-		return errcode.ErrSqlOperation.RefineError(fmt.Sprintf("CreateFailTx:%v", dbTx.Error))
+		logx.Errorf("fail to create failTx, error: %s", dbTx.Error.Error())
+		return errorcode.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {
-		return errcode.ErrInvalidFailTx
+		return errorcode.DbErrFailToCreateFailTx
 	}
 	return nil
 }

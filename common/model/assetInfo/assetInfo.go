@@ -25,12 +25,8 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
-)
 
-var (
-	cacheZkbasAssetInfoIdPrefix        = "cache:zkbas:assetInfo:id:"
-	cacheZkbasAssetInfoAssetIdPrefix   = "cache:zkbas:assetInfo:assetId:"
-	cacheZkbasAssetInfoAssetNamePrefix = "cache:zkbas:assetInfo:assetName:"
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type (
@@ -109,12 +105,12 @@ func (m *defaultAssetInfoModel) GetAssetsList() (res []*AssetInfo, err error) {
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[l2asset.GetL2AssetsList] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l2asset.GetL2AssetsList] %s", ErrNotFound)
+		err := fmt.Sprintf("[l2asset.GetL2AssetsList] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return res, nil
 }
@@ -130,12 +126,12 @@ func (m *defaultAssetInfoModel) GetAssetsListWithoutL1AssetsInfo() (res []*Asset
 	if dbTx.Error != nil {
 		err := fmt.Sprintf("[l2asset.GetL2AssetsList] %s", dbTx.Error)
 		logx.Error(err)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l2asset.GetL2AssetsList] %s", ErrNotFound)
+		err := fmt.Sprintf("[l2asset.GetL2AssetsList] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return res, nil
 }
@@ -154,9 +150,9 @@ func (m *defaultAssetInfoModel) CreateAssetInfo(l2AssetInfo *AssetInfo) (bool, e
 		return false, dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l2asset.CreateL2AssetInfo] %s", ErrInvalidL2AssetInput)
+		err := fmt.Sprintf("[l2asset.CreateL2AssetInfo] %s", errorcode.DbErrFailToCreateAssetInfo)
 		logx.Error(err)
-		return false, ErrInvalidL2AssetInput
+		return false, errorcode.DbErrFailToCreateAssetInfo
 	}
 	return true, nil
 }
@@ -195,9 +191,9 @@ func (m *defaultAssetInfoModel) GetAssetsCount() (assetCount uint32, err error) 
 		return 0, dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l2asset.GetL2AssetsCount] %s", ErrNotFound)
+		err := fmt.Sprintf("[l2asset.GetL2AssetsCount] %s", errorcode.DbErrNotFound)
 		logx.Error(err)
-		return 0, ErrNotFound
+		return 0, errorcode.DbErrNotFound
 	}
 	return asset.AssetId + 1, nil
 }
@@ -213,12 +209,12 @@ func (m *defaultAssetInfoModel) GetSimpleAssetInfoByAssetId(assetId int64) (res 
 	if dbTx.Error != nil {
 		errInfo := fmt.Sprintf("[l2asset.GetL2AssetInfoByAssetId] %s", dbTx.Error)
 		logx.Error(errInfo)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {
-		errInfo := fmt.Sprintf("[l2asset.GetL2AssetInfoByAssetId] %s", ErrNotFound)
+		errInfo := fmt.Sprintf("[l2asset.GetL2AssetInfoByAssetId] %s", errorcode.DbErrNotFound)
 		logx.Error(errInfo)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return res, nil
 }
@@ -252,12 +248,12 @@ func (m *defaultAssetInfoModel) GetAssetInfoBySymbol(symbol string) (res *AssetI
 	if dbTx.Error != nil {
 		errInfo := fmt.Sprintf("[l2asset.GetL2AssetInfoBySymbol] %s", dbTx.Error)
 		logx.Error(errInfo)
-		return nil, dbTx.Error
+		return nil, errorcode.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {
-		errInfo := fmt.Sprintf("[l2asset.GetL2AssetInfoBySymbol] %s", ErrNotFound)
+		errInfo := fmt.Sprintf("[l2asset.GetL2AssetInfoBySymbol] %s", errorcode.DbErrNotFound)
 		logx.Error(errInfo)
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return res, nil
 }
@@ -265,9 +261,10 @@ func (m *defaultAssetInfoModel) GetAssetInfoBySymbol(symbol string) (res *AssetI
 func (m *defaultAssetInfoModel) GetAssetByAddress(address string) (info *AssetInfo, err error) {
 	dbTx := m.DB.Table(m.table).Where("asset_address = ?", address).Find(&info)
 	if dbTx.Error != nil {
-		return nil, dbTx.Error
+		logx.Errorf("fail to get asset by address: %s, error: %s", address, dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, ErrNotFound
+		return nil, errorcode.DbErrNotFound
 	}
 	return info, nil
 }

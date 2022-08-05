@@ -2,12 +2,13 @@ package block
 
 import (
 	"context"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/block"
-
-	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 
 	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas/errorcode"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/block"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
 type GetCurrentBlockHeightLogic struct {
@@ -29,8 +30,11 @@ func NewGetCurrentBlockHeightLogic(ctx context.Context, svcCtx *svc.ServiceConte
 func (l *GetCurrentBlockHeightLogic) GetCurrentBlockHeight() (resp *types.RespCurrentBlockHeight, err error) {
 	height, err := l.block.GetCurrentBlockHeight(l.ctx)
 	if err != nil {
-		logx.Errorf("[GetBlockWithTxsByBlockHeight] err:%v", err)
-		return nil, err
+		logx.Errorf("[GetBlockWithTxsByBlockHeight] err: %s", err.Error())
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	return &types.RespCurrentBlockHeight{
 		Height: height,

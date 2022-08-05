@@ -20,14 +20,18 @@ package proverUtil
 import (
 	"encoding/json"
 	"fmt"
+	"testing"
+
+	"github.com/bnb-chain/bas-smt/database/memory"
+	"github.com/zeromicro/go-zero/core/stores/redis"
+
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/basic"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/tree"
-	"github.com/zeromicro/go-zero/core/stores/redis"
-	"testing"
+	"github.com/bnb-chain/zkbas/pkg/treedb"
 )
 
 func TestConstructCreatePairCryptoTxFirst(t *testing.T) {
@@ -39,25 +43,30 @@ func TestConstructCreatePairCryptoTxFirst(t *testing.T) {
 	liquidityHistoryModel := liquidity.NewLiquidityHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
 	//nftModel := nft.NewL2NftModel(basic.Connection, basic.CacheConf, basic.DB)
 	nftHistoryModel := nft.NewL2NftHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
+	ctx := &treedb.Context{
+		Driver: treedb.MemoryDB,
+		TreeDB: memory.NewMemoryDB(),
+	}
 	txInfo, err := txModel.GetTxByTxId(9)
 	if err != nil {
 		t.Fatal(err)
 	}
 	blockHeight := int64(8)
-	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, accountHistoryModel, blockHeight)
+	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, accountHistoryModel, blockHeight, ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	liquidityTree, err := tree.InitLiquidityTree(liquidityHistoryModel, blockHeight)
+	liquidityTree, err := tree.InitLiquidityTree(liquidityHistoryModel, blockHeight, ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	nftTree, err := tree.InitNftTree(nftHistoryModel, blockHeight)
+	nftTree, err := tree.InitNftTree(nftHistoryModel, blockHeight, ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	cryptoTx, err := ConstructCreatePairCryptoTx(
 		txInfo,
+		ctx, 0,
 		accountTree, &accountAssetTrees,
 		liquidityTree,
 		nftTree,

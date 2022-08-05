@@ -3,12 +3,16 @@ package main
 import (
 	"flag"
 
+	bsmt "github.com/bnb-chain/bas-smt"
+	"github.com/pkg/errors"
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/model/proofSender"
 	"github.com/bnb-chain/zkbas/common/tree"
+	"github.com/bnb-chain/zkbas/errorcode"
+	"github.com/bnb-chain/zkbas/pkg/treedb"
 	"github.com/bnb-chain/zkbas/service/cronjob/witnessGenerator/internal/config"
 	"github.com/bnb-chain/zkbas/service/cronjob/witnessGenerator/internal/logic"
 	"github.com/bnb-chain/zkbas/service/cronjob/witnessGenerator/internal/svc"
@@ -26,7 +30,7 @@ func main() {
 
 	p, err := ctx.ProofSenderModel.GetLatestConfirmedProof()
 	if err != nil {
-		if err != proofSender.ErrNotFound {
+		if err != errorcode.DbErrNotFound {
 			logx.Error("[prover] => GetLatestConfirmedProof error:", err)
 			return
 		} else {
@@ -36,17 +40,29 @@ func main() {
 		}
 	}
 	var (
-		accountTree   *tree.Tree
-		assetTrees    []*tree.Tree
-		liquidityTree *tree.Tree
-		nftTree       *tree.Tree
+		accountTree   bsmt.SparseMerkleTree
+		assetTrees    []bsmt.SparseMerkleTree
+		liquidityTree bsmt.SparseMerkleTree
+		nftTree       bsmt.SparseMerkleTree
 	)
+	// init tree database
+	treeCtx := &treedb.Context{
+		Name:          "witness",
+		Driver:        c.TreeDB.Driver,
+		LevelDBOption: &c.TreeDB.LevelDBOption,
+		RedisDBOption: &c.TreeDB.RedisDBOption,
+	}
+	err = treedb.SetupTreeDB(treeCtx)
+	if err != nil {
+		panic(errors.Wrap(err, "[prover] => Init tree database failed"))
+	}
 	// init accountTree and accountStateTrees
 	// the init block number use the latest sent block
 	accountTree, assetTrees, err = tree.InitAccountTree(
 		ctx.AccountModel,
 		ctx.AccountHistoryModel,
 		p.BlockNumber,
+		treeCtx,
 	)
 	// the blockHeight depends on the proof start position
 	if err != nil {
@@ -54,14 +70,16 @@ func main() {
 		return
 	}
 
-	liquidityTree, err = tree.InitLiquidityTree(ctx.LiquidityHistoryModel, p.BlockNumber)
+	liquidityTree, err = tree.InitLiquidityTree(ctx.LiquidityHistoryModel, p.BlockNumber,
+		treeCtx)
 	if err != nil {
-		logx.Errorf("[prover] InitLiquidityTree error: %s", err)
+		logx.Errorf("[prover] InitLiquidityTree error: %s", err.Error())
 		return
 	}
-	nftTree, err = tree.InitNftTree(ctx.NftHistoryModel, p.BlockNumber)
+	nftTree, err = tree.InitNftTree(ctx.NftHistoryModel, p.BlockNumber,
+		treeCtx)
 	if err != nil {
-		logx.Errorf("[prover] InitNftTree error: %s", err)
+		logx.Errorf("[prover] InitNftTree error: %s", err.Error())
 		return
 	}
 
@@ -72,6 +90,7 @@ func main() {
 		// cron job for creating cryptoBlock
 		logx.Info("==========start generate block witness==========")
 		logic.GenerateWitness(
+			treeCtx,
 			accountTree,
 			&assetTrees,
 			liquidityTree,

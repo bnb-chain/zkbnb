@@ -17,12 +17,6 @@
 
 package assetInfo
 
-import (
-	"errors"
-
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
-)
-
 const (
 	AssetInfoTableName = `asset_info`
 
@@ -34,9 +28,4 @@ const (
 const (
 	NotGasAsset = 0
 	IsGasAsset  = 1
-)
-
-var (
-	ErrNotFound            = sqlx.ErrNotFound
-	ErrInvalidL2AssetInput = errors.New("[ErrInvalidAssetInput] Invalid AssetInfo input")
 )

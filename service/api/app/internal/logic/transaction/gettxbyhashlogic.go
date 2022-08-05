@@ -3,14 +3,16 @@ package transaction
 import (
 	"context"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/common/commonTx"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/block"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/mempool"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/tx"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type GetTxByHashLogic struct {
@@ -40,18 +42,24 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (*types.RespGe
 		resp.Tx = *utils.GormTx2Tx(tx)
 	}
 	if err != nil {
+		if err != errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrInternal
+		}
 		memppolTx, err := l.mempool.GetMempoolTxByTxHash(req.TxHash)
 		if err != nil {
-			logx.Errorf("[GetMempoolTxByTxHash]:%v", err)
-			return nil, err
+			logx.Errorf("[GetMempoolTxByTxHash]: %s", err.Error())
+			if err == errorcode.DbErrNotFound {
+				return nil, errorcode.AppErrNotFound
+			}
+			return nil, errorcode.AppErrInternal
 		}
 		resp.Tx = *utils.MempoolTx2Tx(memppolTx)
 	}
 	if resp.Tx.TxType == commonTx.TxTypeSwap {
 		txInfo, err := commonTx.ParseSwapTxInfo(tx.TxInfo)
 		if err != nil {
-			logx.Errorf("[ParseSwapTxInfo]:%v", err)
-			return nil, err
+			logx.Errorf("[ParseSwapTxInfo]: %s", err.Error())
+			return nil, errorcode.AppErrInternal
 		}
 		resp.AssetAId = txInfo.AssetAId
 		resp.AssetBId = txInfo.AssetBId

@@ -39,19 +39,15 @@ type (
 	TxInfo                                 = globalRPCProto.TxInfo
 
 	GlobalRPC interface {
-		//  Asset
 		GetLatestAssetsListByAccountIndex(ctx context.Context, in *ReqGetLatestAssetsListByAccountIndex, opts ...grpc.CallOption) (*RespGetLatestAssetsListByAccountIndex, error)
 		GetLatestAccountInfoByAccountIndex(ctx context.Context, in *ReqGetLatestAccountInfoByAccountIndex, opts ...grpc.CallOption) (*RespGetLatestAccountInfoByAccountIndex, error)
-		//  Liquidity
 		GetLatestPairInfo(ctx context.Context, in *ReqGetLatestPairInfo, opts ...grpc.CallOption) (*RespGetLatestPairInfo, error)
 		GetSwapAmount(ctx context.Context, in *ReqGetSwapAmount, opts ...grpc.CallOption) (*RespGetSwapAmount, error)
 		GetLpValue(ctx context.Context, in *ReqGetLpValue, opts ...grpc.CallOption) (*RespGetLpValue, error)
-		//  Transaction
 		SendTx(ctx context.Context, in *ReqSendTx, opts ...grpc.CallOption) (*RespSendTx, error)
 		SendCreateCollectionTx(ctx context.Context, in *ReqSendCreateCollectionTx, opts ...grpc.CallOption) (*RespSendCreateCollectionTx, error)
 		SendMintNftTx(ctx context.Context, in *ReqSendMintNftTx, opts ...grpc.CallOption) (*RespSendMintNftTx, error)
 		GetNextNonce(ctx context.Context, in *ReqGetNextNonce, opts ...grpc.CallOption) (*RespGetNextNonce, error)
-		//  NFT
 		GetMaxOfferId(ctx context.Context, in *ReqGetMaxOfferId, opts ...grpc.CallOption) (*RespGetMaxOfferId, error)
 		SendAddLiquidityTx(ctx context.Context, in *ReqSendTxByRawInfo, opts ...grpc.CallOption) (*RespSendTx, error)
 		SendAtomicMatchTx(ctx context.Context, in *ReqSendTxByRawInfo, opts ...grpc.CallOption) (*RespSendTx, error)
@@ -75,7 +71,6 @@ func NewGlobalRPC(cli zrpc.Client) GlobalRPC {
 	}
 }
 
-//  Asset
 func (m *defaultGlobalRPC) GetLatestAssetsListByAccountIndex(ctx context.Context, in *ReqGetLatestAssetsListByAccountIndex, opts ...grpc.CallOption) (*RespGetLatestAssetsListByAccountIndex, error) {
 	client := globalRPCProto.NewGlobalRPCClient(m.cli.Conn())
 	return client.GetLatestAssetsListByAccountIndex(ctx, in, opts...)
@@ -86,7 +81,6 @@ func (m *defaultGlobalRPC) GetLatestAccountInfoByAccountIndex(ctx context.Contex
 	return client.GetLatestAccountInfoByAccountIndex(ctx, in, opts...)
 }
 
-//  Liquidity
 func (m *defaultGlobalRPC) GetLatestPairInfo(ctx context.Context, in *ReqGetLatestPairInfo, opts ...grpc.CallOption) (*RespGetLatestPairInfo, error) {
 	client := globalRPCProto.NewGlobalRPCClient(m.cli.Conn())
 	return client.GetLatestPairInfo(ctx, in, opts...)
@@ -102,7 +96,6 @@ func (m *defaultGlobalRPC) GetLpValue(ctx context.Context, in *ReqGetLpValue, op
 	return client.GetLpValue(ctx, in, opts...)
 }
 
-//  Transaction
 func (m *defaultGlobalRPC) SendTx(ctx context.Context, in *ReqSendTx, opts ...grpc.CallOption) (*RespSendTx, error) {
 	client := globalRPCProto.NewGlobalRPCClient(m.cli.Conn())
 	return client.SendTx(ctx, in, opts...)
@@ -123,7 +116,6 @@ func (m *defaultGlobalRPC) GetNextNonce(ctx context.Context, in *ReqGetNextNonce
 	return client.GetNextNonce(ctx, in, opts...)
 }
 
-//  NFT
 func (m *defaultGlobalRPC) GetMaxOfferId(ctx context.Context, in *ReqGetMaxOfferId, opts ...grpc.CallOption) (*RespGetMaxOfferId, error) {
 	client := globalRPCProto.NewGlobalRPCClient(m.cli.Conn())
 	return client.GetMaxOfferId(ctx, in, opts...)

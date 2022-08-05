@@ -19,8 +19,9 @@ package util
 
 import (
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
 	"testing"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func TestAccountNameToBytes32(t *testing.T) {

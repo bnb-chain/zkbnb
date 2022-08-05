@@ -18,7 +18,6 @@
 package sysconfigName
 
 const (
-	PoolAccountIndex        = "PoolAccountIndex"
 	TreasuryAccountIndex    = "TreasuryAccountIndex"
 	GasAccountIndex         = "GasAccountIndex"
 	BscTestNetworkRpc       = "BscTestNetworkRpc"
@@ -28,7 +27,7 @@ const (
 	GovernanceContract      = "GovernanceContract"
 	AssetGovernanceContract = "AssetGovernanceContract"
 	Validators              = "Validators"
-	VerifierContract        = "VerifierContract"
-	Governor                = "Governor"
-	ZnsPriceOracle          = "ZnsPriceOracle"
+
+	Governor       = "Governor"
+	ZnsPriceOracle = "ZnsPriceOracle"
 )

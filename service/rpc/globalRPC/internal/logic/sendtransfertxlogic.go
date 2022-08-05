@@ -18,24 +18,13 @@ package logic
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"reflect"
-	"time"
-
-	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
-	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/commglobalmap"
-	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/svc"
-
-	"github.com/bnb-chain/zkbas/common/commonAsset"
-	"github.com/bnb-chain/zkbas/common/commonConstant"
-	"github.com/bnb-chain/zkbas/common/commonTx"
-	"github.com/bnb-chain/zkbas/common/model/mempool"
-	"github.com/bnb-chain/zkbas/common/model/tx"
-	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
 
 	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/logic/sendrawtx"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/commglobalmap"
+	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/svc"
 )
 
 type SendTransferTxLogic struct {
@@ -56,126 +45,10 @@ func NewSendTransferTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Se
 
 func (l *SendTransferTxLogic) SendTransferTx(in *globalRPCProto.ReqSendTxByRawInfo) (respSendTx *globalRPCProto.RespSendTx, err error) {
 	respSendTx = &globalRPCProto.RespSendTx{}
-	txInfo, err := commonTx.ParseTransferTxInfo(in.TxInfo)
+	txId, err := sendrawtx.SendTransferTx(l.ctx, l.svcCtx, l.commglobalmap, in.TxInfo)
 	if err != nil {
-		logx.Errorf("[ParseTransferTxInfo] err:%v", err)
 		return nil, err
 	}
-	if err := util.CheckPackedFee(txInfo.GasFeeAssetAmount); err != nil {
-		logx.Errorf("[CheckPackedFee] param:%v,err:%v", txInfo.GasFeeAssetAmount, err)
-		return nil, err
-	}
-	if err := util.CheckPackedAmount(txInfo.AssetAmount); err != nil {
-		logx.Errorf("[CheckRequestParam] param:%v,err:%v", txInfo.AssetAmount, err)
-		return nil, err
-	}
-	if err = util.CheckRequestParam(util.TypeAssetId, reflect.ValueOf(txInfo.AssetId)); err != nil {
-		logx.Errorf("[CheckRequestParam] param:%v,err:%v", txInfo.AssetId, err)
-		return nil, err
-	}
-	if err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.FromAccountIndex)); err != nil {
-		logx.Errorf("[CheckRequestParam] param:%v,err:%v", txInfo.FromAccountIndex, err)
-		return nil, err
-	}
-	err = util.CheckRequestParam(util.TypeAccountIndex, reflect.ValueOf(txInfo.ToAccountIndex))
-	if err != nil {
-		logx.Errorf("[CheckRequestParam] param:%v,err:%v", txInfo.ToAccountIndex, err)
-		return nil, err
-	}
-	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, l.svcCtx.SysConfigModel); err != nil {
-		logx.Errorf("[checkGasAccountIndex] err: %v", err)
-		return nil, err
-	}
-	now := time.Now().UnixMilli()
-	if txInfo.ExpiredAt < now {
-		logx.Errorf("[sendTransferTx] invalid time stamp")
-		return respSendTx, l.createFailTransferTx(txInfo, errors.New("[sendTransferTx] invalid time stamp"))
-	}
-	var accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
-	accountInfoMap[txInfo.FromAccountIndex], err = l.commglobalmap.GetLatestAccountInfoWithCache(l.ctx, txInfo.FromAccountIndex)
-	if err != nil {
-		logx.Errorf("[sendTransferTx] unable to get account info: %s", err.Error())
-		return respSendTx, l.createFailTransferTx(txInfo, err)
-	}
-	if accountInfoMap[txInfo.ToAccountIndex] == nil {
-		accountInfoMap[txInfo.ToAccountIndex], err = l.commglobalmap.GetBasicAccountInfoWithCache(l.ctx, txInfo.ToAccountIndex)
-		if err != nil {
-			logx.Errorf("[sendTransferTx] unable to get account info: %s", err.Error())
-			return respSendTx, l.createFailTransferTx(txInfo, err)
-		}
-	}
-	if accountInfoMap[txInfo.ToAccountIndex].AccountNameHash != txInfo.ToAccountNameHash {
-		logx.Errorf("[sendTransferTx] invalid account name")
-		return respSendTx, l.createFailTransferTx(txInfo, errors.New("[sendTransferTx] invalid account name"))
-	}
-	if accountInfoMap[txInfo.GasAccountIndex] == nil {
-		accountInfoMap[txInfo.GasAccountIndex], err = l.commglobalmap.GetBasicAccountInfoWithCache(l.ctx, txInfo.GasAccountIndex)
-		if err != nil {
-			logx.Errorf("[sendTransferTx] unable to get account info: %s", err.Error())
-			return respSendTx, l.createFailTransferTx(txInfo, err)
-		}
-	}
-	var txDetails []*mempool.MempoolTxDetail
-	txDetails, err = txVerification.VerifyTransferTxInfo(accountInfoMap, txInfo)
-	if err != nil {
-		return respSendTx, l.createFailTransferTx(txInfo, err)
-	}
-	txInfoBytes, err := json.Marshal(txInfo)
-	if err != nil {
-		return respSendTx, l.createFailTransferTx(txInfo, err)
-	}
-	txId, mempoolTx := ConstructMempoolTx(
-		commonTx.TxTypeTransfer,
-		txInfo.GasFeeAssetId,
-		txInfo.GasFeeAssetAmount.String(),
-		commonConstant.NilTxNftIndex,
-		commonConstant.NilPairIndex,
-		txInfo.AssetId,
-		txInfo.AssetAmount.String(),
-		"",
-		string(txInfoBytes),
-		txInfo.Memo,
-		txInfo.FromAccountIndex,
-		txInfo.Nonce,
-		txInfo.ExpiredAt,
-		txDetails,
-	)
 	respSendTx.TxId = txId
-	if err = CreateMempoolTx(mempoolTx, l.svcCtx.RedisConnection, l.svcCtx.MempoolModel); err != nil {
-		return respSendTx, l.createFailTransferTx(txInfo, err)
-	}
-	if err := l.commglobalmap.SetLatestAccountInfoInToCache(l.ctx, txInfo.FromAccountIndex); err != nil {
-		logx.Errorf("[SetLatestAccountInfoInToCache] unable to set account info in cache: %v", err)
-	}
-	if err := l.commglobalmap.SetLatestAccountInfoInToCache(l.ctx, txInfo.ToAccountIndex); err != nil {
-		logx.Errorf("[SetLatestAccountInfoInToCache] unable to set account info in cache: %v", err)
-	}
 	return respSendTx, nil
-}
-
-func (l *SendTransferTxLogic) createFailTransferTx(info *commonTx.TransferTxInfo, inputErr error) error {
-	txInfo, err := json.Marshal(info)
-	if err != nil {
-		logx.Errorf("[Marshal] err:%v", err)
-		return err
-	}
-	failTx := &tx.FailTx{
-		TxHash:        util.RandomUUID(),
-		TxType:        commonTx.TxTypeTransfer,
-		GasFee:        info.GasFeeAssetAmount.String(),
-		GasFeeAssetId: info.AssetId,
-		TxStatus:      tx.StatusFail,
-		AssetAId:      info.AssetId,
-		AssetBId:      commonConstant.NilAssetId,
-		TxAmount:      info.AssetAmount.String(),
-		NativeAddress: "0x00",
-		TxInfo:        string(txInfo),
-		ExtraInfo:     inputErr.Error(),
-		Memo:          info.Memo,
-	}
-	if err = l.svcCtx.FailTxModel.CreateFailTx(failTx); err != nil {
-		logx.Errorf("[CreateFailTx] err:%v", err)
-		return err
-	}
-	return inputErr
 }

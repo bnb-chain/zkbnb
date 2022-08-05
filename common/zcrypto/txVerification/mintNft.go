@@ -19,15 +19,17 @@ package txVerification
 
 import (
 	"errors"
+	"fmt"
+	"math/big"
+
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
-	"github.com/zeromicro/go-zero/core/logx"
-	"log"
-	"math/big"
 )
 
 func VerifyMintNftTxInfo(
@@ -36,8 +38,8 @@ func VerifyMintNftTxInfo(
 ) (txDetails []*MempoolTxDetail, err error) {
 	realNftContentHash, err := util.FromHex(txInfo.NftContentHash)
 	if err != nil || len(realNftContentHash) != 32 {
-		logx.Errorf("[VerifyMintNftTxInfo] invalid NftContentHash")
-		return nil, errors.New("[VerifyMintNftTxInfo] invalid NftContentHash")
+		logx.Errorf("invalid NftContentHash")
+		return nil, errors.New("invalid NftContentHash")
 	}
 	// verify params
 	if accountInfoMap[txInfo.CreatorAccountIndex] == nil ||
@@ -46,13 +48,15 @@ func VerifyMintNftTxInfo(
 		accountInfoMap[txInfo.CreatorAccountIndex].AssetInfo[txInfo.GasFeeAssetId] == nil ||
 		accountInfoMap[txInfo.GasAccountIndex] == nil ||
 		txInfo.GasFeeAssetAmount.Cmp(ZeroBigInt) < 0 {
-		logx.Errorf("[VerifyMintNftTxInfo] invalid params")
-		return nil, errors.New("[VerifyMintNftTxInfo] invalid params")
+		logx.Error("invalid params")
+		return nil, errors.New("invalid params")
 	}
 	// verify nonce
 	if txInfo.Nonce != accountInfoMap[txInfo.CreatorAccountIndex].Nonce {
-		log.Println("[VerifyMintNftTxInfo] invalid nonce")
-		return nil, errors.New("[VerifyMintNftTxInfo] invalid nonce")
+		logx.Errorf("invalid nonce, actual: %d, expected: %d",
+			txInfo.Nonce, accountInfoMap[txInfo.CreatorAccountIndex].Nonce)
+		return nil, fmt.Errorf("invalid nonce, actual: %d, expected: %d",
+			txInfo.Nonce, accountInfoMap[txInfo.CreatorAccountIndex].Nonce)
 	}
 	// set tx info
 	var (
@@ -89,30 +93,19 @@ func VerifyMintNftTxInfo(
 	// check balance
 	if accountInfoMap[txInfo.CreatorAccountIndex].AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(
 		new(big.Int).Abs(assetDeltaMap[txInfo.CreatorAccountIndex][txInfo.GasFeeAssetId])) < 0 {
-		logx.Errorf("[VerifyMintNftTxInfo] you don't have enough balance of asset Gas")
-		return nil, errors.New("[VerifyMintNftTxInfo] you don't have enough balance of asset Gas")
+		logx.Errorf("not enough balance of gas")
+		return nil, errors.New("not enough balance of gas")
 	}
 	// compute hash
 	hFunc := mimc.NewMiMC()
 	msgHash, err := legendTxTypes.ComputeMintNftMsgHash(txInfo, hFunc)
 	if err != nil {
-		logx.Errorf("[VerifyMintNftTxInfo] unable to compute hash: %s", err.Error())
-		return nil, err
+		logx.Errorf("unable to compute tx hash: %s", err.Error())
+		return nil, errors.New("internal error")
 	}
 	// verify signature
-	hFunc.Reset()
-	pk, err := ParsePkStr(accountInfoMap[txInfo.CreatorAccountIndex].PublicKey)
-	if err != nil {
+	if err := VerifySignature(txInfo.Sig, msgHash, accountInfoMap[txInfo.CreatorAccountIndex].PublicKey); err != nil {
 		return nil, err
-	}
-	isValid, err := pk.Verify(txInfo.Sig, msgHash, hFunc)
-	if err != nil {
-		log.Println("[VerifyMintNftTxInfo] unable to verify signature:", err)
-		return nil, err
-	}
-	if !isValid {
-		log.Println("[VerifyMintNftTxInfo] invalid signature")
-		return nil, errors.New("[VerifyMintNftTxInfo] invalid signature")
 	}
 	// compute tx details
 	// from account asset gas

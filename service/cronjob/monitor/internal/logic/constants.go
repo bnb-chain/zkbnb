@@ -23,7 +23,6 @@ import (
 	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonTx"
@@ -111,9 +110,6 @@ const (
 )
 
 var (
-	// err
-	ErrNotFound = sqlx.ErrNotFound
-
 	ZkbasContractAbi, _ = abi.JSON(strings.NewReader(zkbas.ZkbasABI))
 	// Zkbas contract logs sig
 	zkbasLogNewPriorityRequestSig = []byte("NewPriorityRequest(address,uint64,uint8,bytes,uint256)")

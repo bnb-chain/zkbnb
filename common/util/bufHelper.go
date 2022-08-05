@@ -21,19 +21,13 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
-	"github.com/bnb-chain/zkbas-crypto/zero/twistededwards/tebn254/zero"
-	"github.com/bnb-chain/zkbas/common/commonConstant"
-	"github.com/zeromicro/go-zero/core/logx"
-	"log"
 	"math/big"
-)
 
-func SetFixed32Bytes(buf []byte) [32]byte {
-	newBuf := new(big.Int).SetBytes(buf).FillBytes(make([]byte, zero.PointSize))
-	var res [zero.PointSize]byte
-	copy(res[:], newBuf[:])
-	return res
-}
+	"github.com/bnb-chain/zkbas-crypto/zero/twistededwards/tebn254/zero"
+	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas/common/commonConstant"
+)
 
 func PaddingStringBigIntIntoBuf(buf *bytes.Buffer, aStr string) error {
 	a, isValid := new(big.Int).SetString(aStr, 10)
@@ -45,11 +39,6 @@ func PaddingStringBigIntIntoBuf(buf *bytes.Buffer, aStr string) error {
 	return nil
 }
 
-func WriteAccountNameIntoBuf(buf *bytes.Buffer, accountName string) {
-	infoBytes := SetFixed32Bytes([]byte(accountName))
-	buf.Write(new(big.Int).SetBytes(infoBytes[:]).FillBytes(make([]byte, zero.PointSize)))
-}
-
 func PaddingAddressIntoBuf(buf *bytes.Buffer, address string) (err error) {
 	if address == commonConstant.NilL1Address {
 		buf.Write(new(big.Int).FillBytes(make([]byte, 32)))
@@ -57,7 +46,7 @@ func PaddingAddressIntoBuf(buf *bytes.Buffer, address string) (err error) {
 	}
 	addrBytes, err := DecodeAddress(address)
 	if err != nil {
-		log.Println("[PaddingAddressIntoBuf] invalid addr:", err)
+		logx.Errorf("[PaddingAddressIntoBuf] invalid addr: %s, err: %s", address, err.Error())
 		return err
 	}
 	buf.Write(new(big.Int).SetBytes(addrBytes).FillBytes(make([]byte, zero.PointSize)))
@@ -73,7 +62,7 @@ func DecodeAddress(addr string) ([]byte, error) {
 		return nil, err
 	}
 	if len(addrBytes) != AddressSize {
-		log.Println("[DecodeAddress] invalid address")
+		logx.Errorf("[DecodeAddress] invalid address: %s, err: %s", addr, err.Error())
 		return nil, errors.New("[DecodeAddress] invalid address")
 	}
 	return addrBytes, nil

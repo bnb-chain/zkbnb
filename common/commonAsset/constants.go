@@ -16,7 +16,9 @@
 
 package commonAsset
 
-import "math/big"
+import (
+	"math/big"
+)
 
 const (
 	// asset type
@@ -24,8 +26,6 @@ const (
 	LiquidityAssetType       = 2
 	NftAssetType             = 3
 	CollectionNonceAssetType = 4
-
-	RateBase = 10000
 
 	BuyOfferType  = 0
 	SellOfferType = 1

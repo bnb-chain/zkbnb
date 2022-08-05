@@ -3,11 +3,11 @@ package transaction
 import (
 	"context"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/globalrpc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
-
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type SendMintNftTxLogic struct {
@@ -29,7 +29,7 @@ func NewSendMintNftTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Sen
 func (l *SendMintNftTxLogic) SendMintNftTx(req *types.ReqSendMintNftTx) (*types.RespSendMintNftTx, error) {
 	nftIndex, err := l.globalRpc.SendMintNftTx(l.ctx, req.TxInfo)
 	if err != nil {
-		logx.Error("[transaction.SendMintNftTx] err:%v", err)
+		logx.Errorf("[transaction.SendMintNftTx] err: %s", err.Error())
 		return nil, err
 	}
 	return &types.RespSendMintNftTx{NftIndex: nftIndex}, nil

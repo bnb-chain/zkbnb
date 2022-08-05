@@ -20,7 +20,9 @@ package txVerification
 import (
 	"encoding/hex"
 	"errors"
-	"log"
+
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 /*
@@ -29,18 +31,36 @@ import (
 func ParsePkStr(pkStr string) (pk *PublicKey, err error) {
 	pkBytes, err := hex.DecodeString(pkStr)
 	if err != nil {
-		log.Println("[ParsePkStr] invalid public key:", err)
+		logx.Errorf("[ParsePkStr] invalid public key: %s", err.Error())
 		return nil, err
 	}
 	pk = new(PublicKey)
 	size, err := pk.SetBytes(pkBytes)
 	if err != nil {
-		log.Println("[ParsePkStr] invalid public key:", err)
+		logx.Errorf("[ParsePkStr] invalid public key: %s", err.Error())
 		return nil, err
 	}
 	if size != 32 {
-		log.Println("[ParsePkStr] invalid public key")
+		logx.Error("[ParsePkStr] invalid public key")
 		return nil, errors.New("[ParsePkStr] invalid public key")
 	}
 	return pk, nil
+}
+
+func VerifySignature(sig, msg []byte, pubkey string) error {
+	hFunc := mimc.NewMiMC()
+	pk, err := ParsePkStr(pubkey)
+	if err != nil {
+		return errors.New("cannot parse public key")
+	}
+	isValid, err := pk.Verify(sig, msg, hFunc)
+	if err != nil {
+		logx.Errorf("unable to verify signature: %s", err.Error())
+		return errors.New("unable to verify signature")
+	}
+	if !isValid {
+		logx.Errorf("invalid signature")
+		return errors.New("invalid signature")
+	}
+	return nil
 }

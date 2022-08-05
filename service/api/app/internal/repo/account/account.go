@@ -20,10 +20,12 @@ package account
 import (
 	"context"
 
-	table "github.com/bnb-chain/zkbas/common/model/account"
-	"github.com/bnb-chain/zkbas/pkg/multcache"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/errcode"
+	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
+
+	table "github.com/bnb-chain/zkbas/common/model/account"
+	"github.com/bnb-chain/zkbas/errorcode"
+	"github.com/bnb-chain/zkbas/pkg/multcache"
 )
 
 type model struct {
@@ -37,14 +39,15 @@ func (m *model) GetBasicAccountByAccountName(ctx context.Context, accountName st
 		account := &table.Account{}
 		dbTx := m.db.Table(m.table).Where("account_name = ?", accountName).Find(&account)
 		if dbTx.Error != nil {
-			return nil, dbTx.Error
+			logx.Errorf("fail to get account by name: %s, error: %s", accountName, dbTx.Error.Error())
+			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errcode.ErrDataNotExist
+			return nil, errorcode.DbErrNotFound
 		}
 		return account, nil
 	}
 	account := &table.Account{}
-	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountByAccountName(accountName), account, 10, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountByAccountName(accountName), account, multcache.AccountTtl, f)
 	if err != nil {
 		return nil, err
 	}
@@ -57,14 +60,15 @@ func (m *model) GetBasicAccountByAccountPk(ctx context.Context, accountPk string
 		account := &table.Account{}
 		dbTx := m.db.Table(m.table).Where("public_key = ?", accountPk).Find(&account)
 		if dbTx.Error != nil {
-			return nil, dbTx.Error
+			logx.Errorf("fail to get account by pk: %s, error: %s", accountPk, dbTx.Error.Error())
+			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
-			return nil, errcode.ErrDataNotExist
+			return nil, errorcode.DbErrNotFound
 		}
 		return account, nil
 	}
 	account := &table.Account{}
-	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountByAccountPk(accountPk), account, 10, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountByAccountPk(accountPk), account, multcache.AccountTtl, f)
 	if err != nil {
 		return nil, err
 	}
@@ -82,9 +86,10 @@ func (m *model) GetBasicAccountByAccountPk(ctx context.Context, accountPk string
 func (m *model) GetAccountByAccountIndex(accountIndex int64) (account *table.Account, err error) {
 	dbTx := m.db.Table(m.table).Where("account_index = ?", accountIndex).Find(&account)
 	if dbTx.Error != nil {
-		return nil, dbTx.Error
+		logx.Errorf("fail to get tx by account: %d, error: %s", accountIndex, dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, errcode.ErrDataNotExist
+		return nil, errorcode.DbErrNotFound
 	}
 	return account, nil
 }
@@ -99,9 +104,10 @@ func (m *model) GetAccountByAccountIndex(accountIndex int64) (account *table.Acc
 func (m *model) GetAccountByPk(pk string) (account *table.Account, err error) {
 	dbTx := m.db.Table(m.table).Where("public_key = ?", pk).Find(&account)
 	if dbTx.Error != nil {
-		return nil, dbTx.Error
+		logx.Errorf("fail to get tx by pk: %s, error: %s", pk, dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, errcode.ErrDataNotExist
+		return nil, errorcode.DbErrNotFound
 	}
 	return account, nil
 }
@@ -116,9 +122,10 @@ func (m *model) GetAccountByAccountName(ctx context.Context, accountName string)
 	account := &table.Account{}
 	dbTx := m.db.Table(m.table).Where("account_name = ?", accountName).Find(&account)
 	if dbTx.Error != nil {
-		return nil, dbTx.Error
+		logx.Errorf("fail to get tx by account: %s, error: %s", accountName, dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, errcode.ErrDataNotExist
+		return nil, errorcode.DbErrNotFound
 	}
 	return account, nil
 }
@@ -131,11 +138,12 @@ func (m *model) GetAccountByAccountName(ctx context.Context, accountName string)
 
 */
 func (m *model) GetAccountsList(limit int, offset int64) (accounts []*table.Account, err error) {
-	dbTx := m.db.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("account_index desc").Find(&accounts)
+	dbTx := m.db.Table(m.table).Limit(limit).Offset(int(offset)).Order("account_index desc").Find(&accounts)
 	if dbTx.Error != nil {
-		return nil, dbTx.Error
+		logx.Errorf("fail to get accounts, offset: %d, limit: %d, error: %s", offset, limit, dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, errcode.ErrDataNotExist
+		return nil, errorcode.DbErrNotFound
 	}
 	return accounts, nil
 }

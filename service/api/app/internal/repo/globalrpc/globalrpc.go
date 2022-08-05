@@ -20,12 +20,13 @@ import (
 	"context"
 	"sort"
 
+	"github.com/zeromicro/go-zero/core/stores/redis"
+
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalrpc"
-	"github.com/zeromicro/go-zero/core/stores/redis"
 )
 
 type globalRPC struct {
@@ -91,7 +92,7 @@ func (m *globalRPC) GetLatestAccountInfoByAccountIndex(ctx context.Context, acco
 		return res, nil
 	}
 	account := &globalRPCProto.RespGetLatestAccountInfoByAccountIndex{}
-	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountByAccountIndex(accountIndex), account, 5, f)
+	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyAccountByAccountIndex(accountIndex), account, multcache.AccountTtl, f)
 	if err != nil {
 		return nil, err
 	}

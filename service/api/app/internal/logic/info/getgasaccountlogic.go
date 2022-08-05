@@ -7,6 +7,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/sysconfigName"
+	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/account"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/sysconf"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
@@ -35,19 +36,25 @@ func (l *GetGasAccountLogic) GetGasAccount(req *types.ReqGetGasAccount) (resp *t
 	accountIndexConfig, err := l.sysConfig.GetSysconfigByName(l.ctx, sysconfigName.GasAccountIndex)
 	if err != nil {
 		logx.Errorf("[GetGasAccountLogic] get sys config error: %s", err.Error())
-		return nil, err
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 
 	accountIndex, err := strconv.ParseInt(accountIndexConfig.Value, 10, 64)
 	if err != nil {
 		logx.Errorf("[GetGasAccountLogic] invalid account index: %s", accountIndexConfig.Value)
-		return nil, err
+		return nil, errorcode.AppErrInternal
 	}
 
 	accountModel, err := l.account.GetAccountByAccountIndex(accountIndex)
 	if err != nil {
 		logx.Errorf("[GetGasAccountLogic] get account error, index: %d, err: %s", accountIndex, err.Error())
-		return nil, err
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 
 	resp = &types.RespGetGasAccount{

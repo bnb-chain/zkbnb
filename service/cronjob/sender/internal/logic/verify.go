@@ -27,6 +27,7 @@ import (
 
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 func SendVerifiedAndExecutedBlocks(
@@ -46,18 +47,18 @@ func SendVerifiedAndExecutedBlocks(
 	)
 	// scan l1 tx sender table for handled verified and executed height
 	lastHandledBlock, getHandleErr := l1TxSenderModel.GetLatestHandledBlock(VerifyAndExecuteTxType)
-	if getHandleErr != nil && getHandleErr != ErrNotFound {
+	if getHandleErr != nil && getHandleErr != errorcode.DbErrNotFound {
 		logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get latest handled block: %s", getHandleErr.Error())
 		return getHandleErr
 	}
 	// scan l1 tx sender table for pending verified and executed height that higher than the latest handled height
 	pendingSender, getPendingerr := l1TxSenderModel.GetLatestPendingBlock(VerifyAndExecuteTxType)
-	if getPendingerr != nil && getPendingerr != ErrNotFound {
+	if getPendingerr != nil && getPendingerr != errorcode.DbErrNotFound {
 		logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get latest pending blocks: %s", getPendingerr.Error())
 		return getPendingerr
 	}
 	// case 1: check tx status on L1
-	if getHandleErr == ErrNotFound && getPendingerr == nil {
+	if getHandleErr == errorcode.DbErrNotFound && getPendingerr == nil {
 		_, isPending, err := cli.GetTransactionByHash(pendingSender.L1TxHash)
 		// if err != nil, means we cannot get this tx by hash
 		if err != nil {
@@ -119,11 +120,11 @@ func SendVerifiedAndExecutedBlocks(
 		blocks                        []*block.Block
 		pendingVerifyAndExecuteBlocks []ZkbasVerifyBlockInfo
 	)
-	if getHandleErr == ErrNotFound && getPendingerr == ErrNotFound {
+	if getHandleErr == errorcode.DbErrNotFound && getPendingerr == errorcode.DbErrNotFound {
 		// get blocks from block table
 		blocks, err = blockModel.GetBlocksForProverBetween(1, int64(maxBlockCount))
 		if err != nil {
-			logx.Errorf("[SendVerifiedAndExecutedBlocks] GetBlocksForProverBetween err:%v, maxBlockCount:%v", err, maxBlockCount)
+			logx.Errorf("[SendVerifiedAndExecutedBlocks] GetBlocksForProverBetween err: %s, maxBlockCount: %d", err.Error(), maxBlockCount)
 			return err
 		}
 		pendingVerifyAndExecuteBlocks, err = ConvertBlocksToVerifyAndExecuteBlockInfos(blocks)
@@ -133,7 +134,7 @@ func SendVerifiedAndExecutedBlocks(
 		}
 		start = int64(1)
 	}
-	if getHandleErr == nil && getPendingerr == ErrNotFound {
+	if getHandleErr == nil && getPendingerr == errorcode.DbErrNotFound {
 		blocks, err = blockModel.GetBlocksForProverBetween(lastHandledBlock.L2BlockHeight+1, lastHandledBlock.L2BlockHeight+int64(maxBlockCount))
 		if err != nil {
 			logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get sender new blocks: %s", err.Error())
@@ -180,7 +181,7 @@ func SendVerifiedAndExecutedBlocks(
 		txHash, err := zkbas.VerifyAndExecuteBlocks(cli, authCli, zkbasInstance,
 			pendingVerifyAndExecuteBlocks, proofs, gasPrice, gasLimit)
 		if err != nil {
-			logx.Errorf("[SendVerifiedAndExecutedBlocks] VerifyAndExecuteBlocks err:%v", err)
+			logx.Errorf("[SendVerifiedAndExecutedBlocks] VerifyAndExecuteBlocks err: %s", err.Error())
 			return err
 		}
 		// update l1 tx sender table records
@@ -192,14 +193,14 @@ func SendVerifiedAndExecutedBlocks(
 		}
 		isValid, err := l1TxSenderModel.CreateL1TxSender(newSender)
 		if err != nil {
-			logx.Errorf("[SendVerifiedAndExecutedBlocks] CreateL1TxSender err:%v", err)
+			logx.Errorf("[SendVerifiedAndExecutedBlocks] CreateL1TxSender err: %s", err.Error())
 			return err
 		}
 		if !isValid {
 			logx.Errorf("[SendVerifiedAndExecutedBlocks] cannot create new senders")
 			return errors.New("[SendVerifiedAndExecutedBlocks] cannot create new senders")
 		}
-		logx.Errorf("[SendVerifiedAndExecutedBlocks] new blocks have been verified and executed(height): %v", newSender.L2BlockHeight)
+		logx.Errorf("[SendVerifiedAndExecutedBlocks] new blocks have been verified and executed(height): %d", newSender.L2BlockHeight)
 		return nil
 	}
 	return nil

@@ -10,3 +10,6 @@ CacheRedis:
 
 KeyPath:
   KeyTxCounts: [1, 10]
+
+TreeDB:
+  Driver: memorydb

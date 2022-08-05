@@ -18,12 +18,13 @@
 package nft
 
 import (
-	"fmt"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
+
+	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type (
@@ -84,14 +85,13 @@ func (m *defaultL2NftCollectionModel) IfCollectionExistsByCollectionId(collectio
 	dbTx := m.DB.Table(m.table).Where("collection_id = ? and deleted_at is NULL", collectionId).Count(&res)
 
 	if dbTx.Error != nil {
-		err := fmt.Sprintf("[collection.IfCollectionExistsByCollectionId] %s", dbTx.Error)
-		logx.Error(err)
-		return true, dbTx.Error
+		logx.Error("[collection.IfCollectionExistsByCollectionId] %s", dbTx.Error)
+		return true, errorcode.DbErrSqlOperation
 	} else if res == 0 {
 		return false, nil
 	} else if res != 1 {
-		logx.Errorf("[collection.IfCollectionExistsByCollectionId] %s", ErrDuplicatedCollectionIndex)
-		return true, ErrDuplicatedCollectionIndex
+		logx.Errorf("[collection.IfCollectionExistsByCollectionId] %s", errorcode.DbErrDuplicatedCollectionIndex)
+		return true, errorcode.DbErrDuplicatedCollectionIndex
 	} else {
 		return true, nil
 	}
