@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"time"
 
+	bsmt "github.com/bnb-chain/bas-smt"
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/tree"
+	"github.com/bnb-chain/zkbas/pkg/treedb"
 	"github.com/bnb-chain/zkbas/service/cronjob/committer/internal/config"
 	"github.com/bnb-chain/zkbas/service/cronjob/committer/internal/logic"
 	"github.com/bnb-chain/zkbas/service/cronjob/committer/internal/svc"
@@ -27,13 +29,28 @@ func main() {
 	ctx := svc.NewServiceContext(c)
 	logx.DisableStat()
 	var (
-		accountTree       *tree.Tree
-		accountStateTrees []*tree.Tree
-		liquidityTree     *tree.Tree
-		nftTree           *tree.Tree
+		accountTree       bsmt.SparseMerkleTree
+		accountStateTrees []bsmt.SparseMerkleTree
+		liquidityTree     bsmt.SparseMerkleTree
+		nftTree           bsmt.SparseMerkleTree
 	)
 	// get latest account
 	h, err := ctx.BlockModel.GetCurrentBlockHeight()
+	if err != nil {
+		panic(err)
+	}
+	latestVerifiedBlockNr, err := ctx.BlockModel.GetLatestVerifiedBlockHeight()
+	if err != nil {
+		panic(err)
+	}
+	// init tree database
+	treeCtx := &treedb.Context{
+		Name:          "committer",
+		Driver:        c.TreeDB.Driver,
+		LevelDBOption: &c.TreeDB.LevelDBOption,
+		RedisDBOption: &c.TreeDB.RedisDBOption,
+	}
+	err = treedb.SetupTreeDB(treeCtx)
 	if err != nil {
 		panic(err)
 	}
@@ -42,6 +59,7 @@ func main() {
 		ctx.AccountModel,
 		ctx.AccountHistoryModel,
 		h,
+		treeCtx,
 	)
 	if err != nil {
 		logx.Error("[committer] => InitMerkleTree error:", err)
@@ -51,6 +69,7 @@ func main() {
 	nftTree, err = tree.InitNftTree(
 		ctx.L2NftHistoryModel,
 		h,
+		treeCtx,
 	)
 	if err != nil {
 		logx.Error("[committer] => InitMerkleTree error:", err)
@@ -61,6 +80,7 @@ func main() {
 	liquidityTree, err = tree.InitLiquidityTree(
 		ctx.LiquidityHistoryModel,
 		h,
+		treeCtx,
 	)
 	if err != nil {
 		logx.Error("[committer] => InitMerkleTree error:", err)
@@ -77,23 +97,26 @@ func main() {
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))
 	_, err = cronJob.AddFunc("@every 10s", func() {
-		if err := logic.CommitterTask(ctx, &lastCommitTimeStamp, accountTree, liquidityTree, nftTree, &accountStateTrees); err != nil {
-			cbh, err := ctx.BlockModel.GetCurrentBlockHeight()
-			if err != nil {
-				logx.Errorf("[GetCurrentBlockHeight] err: %s", err.Error())
-				panic("merkle tree re-init.GetCurrentBlockHeight error")
+		logx.Info("========================= start committer task =========================")
+		err := logic.CommitterTask(
+			ctx,
+			&lastCommitTimeStamp,
+			treeCtx,
+			accountTree,
+			liquidityTree,
+			nftTree,
+			&accountStateTrees,
+			uint64(latestVerifiedBlockNr),
+		)
+		if err != nil {
+			logx.Info("[committer.CommitterTask main] unable to run:", err)
+
+			accountTree.Reset()
+			for _, assetTree := range accountStateTrees {
+				assetTree.Reset()
 			}
-			accountTree, accountStateTrees, err = tree.InitAccountTree(ctx.AccountModel, ctx.AccountHistoryModel, cbh)
-			if err != nil {
-				logx.Error("[committer] => Re-Init MerkleTree error:", err)
-				panic("merkle tree re-init error")
-			}
-			// init nft tree
-			nftTree, err = tree.InitNftTree(ctx.L2NftHistoryModel, cbh)
-			if err != nil {
-				logx.Error("[committer] => InitMerkleTree error:", err)
-				return
-			}
+			nftTree.Reset()
+			liquidityTree.Reset()
 		}
 	})
 	if err != nil {

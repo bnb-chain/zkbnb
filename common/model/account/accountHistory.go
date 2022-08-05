@@ -46,6 +46,7 @@ type (
 		GetAccountsTotalCount() (count int64, err error)
 		GetLatestAccountIndex() (accountIndex int64, err error)
 		GetValidAccounts(height int64) (rowsAffected int64, accounts []*AccountHistory, err error)
+		GetValidAccountNums(height int64) (accounts int64, err error)
 		GetLatestAccountInfoByAccountIndex(accountIndex int64) (account *AccountHistory, err error)
 	}
 
@@ -316,6 +317,24 @@ func (m *defaultAccountHistoryModel) GetValidAccounts(height int64) (rowsAffecte
 	}
 	return dbTx.RowsAffected, accounts, nil
 
+}
+
+type countResult struct {
+	Count int `json:"count"`
+}
+
+func (m *defaultAccountHistoryModel) GetValidAccountNums(height int64) (accounts int64, err error) {
+	var countResult countResult
+	dbTx := m.DB.Table(m.table).
+		Raw("SELECT count(a.*) FROM account_history a WHERE NOT EXISTS"+
+			"(SELECT * FROM account_history WHERE account_index = a.account_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height AND l2_block_height != -1) "+
+			"AND l2_block_height <= ? AND l2_block_height != -1", height, height).
+		Scan(&countResult)
+	if dbTx.Error != nil {
+		logx.Errorf("[GetValidAccountNums] unable to get related accounts: %s", dbTx.Error.Error())
+		return 0, dbTx.Error
+	}
+	return int64(countResult.Count), nil
 }
 
 func (m *defaultAccountHistoryModel) GetLatestAccountInfoByAccountIndex(accountIndex int64) (account *AccountHistory, err error) {

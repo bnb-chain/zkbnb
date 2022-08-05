@@ -20,12 +20,14 @@ package proverUtil
 import (
 	"errors"
 
+	bsmt "github.com/bnb-chain/bas-smt"
 	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/model/block"
+	"github.com/bnb-chain/zkbas/pkg/treedb"
 )
 
 func SetFixedAccountArray(proof [][]byte) (res [AccountMerkleLevels][]byte, err error) {
@@ -66,11 +68,13 @@ func SetFixedNftArray(proof [][]byte) (res [NftMerkleLevels][]byte, err error) {
 
 func ConstructCryptoTx(
 	oTx *Tx,
-	accountTree *Tree,
-	assetTrees *[]*Tree,
-	liquidityTree *Tree,
-	nftTree *Tree,
+	treeCtx *treedb.Context,
+	accountTree bsmt.SparseMerkleTree,
+	assetTrees *[]bsmt.SparseMerkleTree,
+	liquidityTree bsmt.SparseMerkleTree,
+	nftTree bsmt.SparseMerkleTree,
 	accountModel AccountModel,
+	finalityBlockNr uint64,
 ) (cryptoTx *CryptoTx, err error) {
 	switch oTx.TxType {
 	case commonTx.TxTypeEmpty:
@@ -79,6 +83,8 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeRegisterZns:
 		cryptoTx, err = ConstructRegisterZnsCryptoTx(
 			oTx,
+			treeCtx,
+			finalityBlockNr,
 			accountTree,
 			assetTrees,
 			liquidityTree,
@@ -93,6 +99,8 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeCreatePair:
 		cryptoTx, err = ConstructCreatePairCryptoTx(
 			oTx,
+			treeCtx,
+			finalityBlockNr,
 			accountTree,
 			assetTrees,
 			liquidityTree,
@@ -107,6 +115,8 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeUpdatePairRate:
 		cryptoTx, err = ConstructUpdatePairRateCryptoTx(
 			oTx,
+			treeCtx,
+			finalityBlockNr,
 			accountTree,
 			assetTrees,
 			liquidityTree,
@@ -121,6 +131,8 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeDeposit:
 		cryptoTx, err = ConstructDepositCryptoTx(
 			oTx,
+			treeCtx,
+			finalityBlockNr,
 			accountTree,
 			assetTrees,
 			liquidityTree,
@@ -135,6 +147,8 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeDepositNft:
 		cryptoTx, err = ConstructDepositNftCryptoTx(
 			oTx,
+			treeCtx,
+			finalityBlockNr,
 			accountTree,
 			assetTrees,
 			liquidityTree,
@@ -149,6 +163,8 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeTransfer:
 		cryptoTx, err = ConstructTransferCryptoTx(
 			oTx,
+			treeCtx,
+			finalityBlockNr,
 			accountTree,
 			assetTrees,
 			liquidityTree,
@@ -163,6 +179,8 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeSwap:
 		cryptoTx, err = ConstructSwapCryptoTx(
 			oTx,
+			treeCtx,
+			finalityBlockNr,
 			accountTree,
 			assetTrees,
 			liquidityTree,
@@ -177,6 +195,8 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeAddLiquidity:
 		cryptoTx, err = ConstructAddLiquidityCryptoTx(
 			oTx,
+			treeCtx,
+			finalityBlockNr,
 			accountTree,
 			assetTrees,
 			liquidityTree,
@@ -191,6 +211,8 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeRemoveLiquidity:
 		cryptoTx, err = ConstructRemoveLiquidityCryptoTx(
 			oTx,
+			treeCtx,
+			finalityBlockNr,
 			accountTree,
 			assetTrees,
 			liquidityTree,
@@ -205,6 +227,8 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeWithdraw:
 		cryptoTx, err = ConstructWithdrawCryptoTx(
 			oTx,
+			treeCtx,
+			finalityBlockNr,
 			accountTree,
 			assetTrees,
 			liquidityTree,
@@ -219,6 +243,8 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeCreateCollection:
 		cryptoTx, err = ConstructCreateCollectionCryptoTx(
 			oTx,
+			treeCtx,
+			finalityBlockNr,
 			accountTree,
 			assetTrees,
 			liquidityTree,
@@ -233,6 +259,8 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeMintNft:
 		cryptoTx, err = ConstructMintNftCryptoTx(
 			oTx,
+			treeCtx,
+			finalityBlockNr,
 			accountTree,
 			assetTrees,
 			liquidityTree,
@@ -247,6 +275,8 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeTransferNft:
 		cryptoTx, err = ConstructTransferNftCryptoTx(
 			oTx,
+			treeCtx,
+			finalityBlockNr,
 			accountTree,
 			assetTrees,
 			liquidityTree,
@@ -261,6 +291,8 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeAtomicMatch:
 		cryptoTx, err = ConstructAtomicMatchCryptoTx(
 			oTx,
+			treeCtx,
+			finalityBlockNr,
 			accountTree,
 			assetTrees,
 			liquidityTree,
@@ -275,6 +307,8 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeCancelOffer:
 		cryptoTx, err = ConstructCancelOfferCryptoTx(
 			oTx,
+			treeCtx,
+			finalityBlockNr,
 			accountTree,
 			assetTrees,
 			liquidityTree,
@@ -289,6 +323,8 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeWithdrawNft:
 		cryptoTx, err = ConstructWithdrawNftCryptoTx(
 			oTx,
+			treeCtx,
+			finalityBlockNr,
 			accountTree,
 			assetTrees,
 			liquidityTree,
@@ -303,6 +339,8 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeFullExit:
 		cryptoTx, err = ConstructFullExitCryptoTx(
 			oTx,
+			treeCtx,
+			finalityBlockNr,
 			accountTree,
 			assetTrees,
 			liquidityTree,
@@ -317,6 +355,8 @@ func ConstructCryptoTx(
 	case commonTx.TxTypeFullExitNft:
 		cryptoTx, err = ConstructFullExitNftCryptoTx(
 			oTx,
+			treeCtx,
+			finalityBlockNr,
 			accountTree,
 			assetTrees,
 			liquidityTree,

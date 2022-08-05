@@ -20,20 +20,24 @@ package proverUtil
 import (
 	"errors"
 
+	bsmt "github.com/bnb-chain/bas-smt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/pkg/treedb"
 )
 
 func ConstructTransferNftCryptoTx(
 	oTx *Tx,
-	accountTree *Tree,
-	accountAssetsTree *[]*Tree,
-	liquidityTree *Tree,
-	nftTree *Tree,
+	treeCtx *treedb.Context,
+	finalityBlockNr uint64,
+	accountTree bsmt.SparseMerkleTree,
+	accountAssetsTree *[]bsmt.SparseMerkleTree,
+	liquidityTree bsmt.SparseMerkleTree,
+	nftTree bsmt.SparseMerkleTree,
 	accountModel AccountModel,
 ) (cryptoTx *CryptoTx, err error) {
 	if oTx.TxType != commonTx.TxTypeTransferNft {
@@ -62,6 +66,8 @@ func ConstructTransferNftCryptoTx(
 	cryptoTx, err = ConstructWitnessInfo(
 		oTx,
 		accountModel,
+		treeCtx,
+		finalityBlockNr,
 		accountTree,
 		accountAssetsTree,
 		liquidityTree,

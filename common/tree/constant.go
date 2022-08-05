@@ -36,9 +36,6 @@ type (
 	LiquidityHistoryModel = liquidity.LiquidityHistoryModel
 	AccountHistory        = account.AccountHistory
 	AccountL2NftHistory   = nft.L2NftHistory
-
-	Tree = merkleTree.Tree
-	Node = merkleTree.Node
 )
 
 const (
@@ -46,6 +43,13 @@ const (
 	AssetTreeHeight     = 16
 	LiquidityTreeHeight = 16
 	NftTreeHeight       = 40
+)
+
+const (
+	NFTPrefix          = "nft:"
+	LiquidityPrefix    = "liquidity:"
+	AccountPrefix      = "account:"
+	AccountAssetPrefix = "account_asset:"
 )
 
 var (

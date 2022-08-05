@@ -21,19 +21,23 @@ import (
 	"errors"
 	"strings"
 
+	bsmt "github.com/bnb-chain/bas-smt"
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/pkg/treedb"
 )
 
 func ConstructRegisterZnsCryptoTx(
 	oTx *Tx,
-	accountTree *Tree,
-	accountAssetsTree *[]*Tree,
-	liquidityTree *Tree,
-	nftTree *Tree,
+	treeCtx *treedb.Context,
+	finalityBlockNr uint64,
+	accountTree bsmt.SparseMerkleTree,
+	accountAssetsTree *[]bsmt.SparseMerkleTree,
+	liquidityTree bsmt.SparseMerkleTree,
+	nftTree bsmt.SparseMerkleTree,
 	accountModel AccountModel,
 ) (cryptoTx *CryptoTx, err error) {
 	if oTx.TxType != commonTx.TxTypeRegisterZns {
@@ -62,6 +66,8 @@ func ConstructRegisterZnsCryptoTx(
 	cryptoTx, err = ConstructWitnessInfo(
 		oTx,
 		accountModel,
+		treeCtx,
+		finalityBlockNr,
 		accountTree,
 		accountAssetsTree,
 		liquidityTree,
