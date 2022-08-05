@@ -27,8 +27,8 @@ jobs:
           rm -rf ./zkbas
           git clone --branch develop https://github.com/bnb-chain/zkbas.git
           cd ./zkbas
-          git fetch origin pull/$PR_NUMBER/head:deploy
-          git checkout deploy
+          git fetch origin pull/$PR_NUMBER/head:local-deploy-tmp
+          git checkout local-deploy-tmp
           
           cd /tmp
           sudo rm -rf ./zkbas
