@@ -18,7 +18,7 @@ import (
 )
 
 var configFile = flag.String("f",
-	"/Users/liguo/go/src/github.com/bnb-chain/zkbas/service/api/app/etc/app.yaml", "the config file")
+	"./etc/config.yaml", "the config file")
 
 func main() {
 	flag.Parse()
