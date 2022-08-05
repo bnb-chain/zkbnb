@@ -48,6 +48,25 @@ func (m *model) GetTxsTotalCount(ctx context.Context) (int64, error) {
 	return *count, nil
 }
 
+/*
+	Func: GetTxsList
+	Params:
+	Return: list of txs, err error
+	Description: used for showing transactions for explorer
+*/
+
+func (m *model) GetTxsList(ctx context.Context, limit int64, offset int64) (blocks []*table.Tx, err error) {
+	txList := []*table.Tx{}
+	dbTx := m.db.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("created_at desc").Find(&txList)
+	if dbTx.Error != nil {
+		logx.Errorf("fail to get txs offset: %d, limit: %d, error: %s", offset, limit, dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, errorcode.DbErrNotFound
+	}
+	return txList, nil
+}
+
 func (m *model) GetTxByTxHash(ctx context.Context, txHash string) (*table.Tx, error) {
 	f := func() (interface{}, error) {
 		tx := &table.Tx{}

@@ -50,7 +50,7 @@ func (m *block) GetBlockByBlockHeight(ctx context.Context, blockHeight int64) (*
 
 }
 
-func (m *block) GetCommitedBlocksCount(ctx context.Context) (int64, error) {
+func (m *block) GetCommittedBlocksCount(ctx context.Context) (int64, error) {
 	f := func() (interface{}, error) {
 		var count int64
 		dbTx := m.db.Table(m.table).Where("block_status = ? and deleted_at is NULL", table.StatusCommitted).Count(&count)
