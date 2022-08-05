@@ -14,7 +14,7 @@ jobs:
     steps:
       - name: deploy new zkbas
         run: |
-          cd ~
+          cd /tmp
           sudo rm -rf ./zkbas
           git clone --branch github-action https://github.com/bnb-chain/zkbas.git
           echo "start deploy new zkbas"
@@ -24,7 +24,7 @@ jobs:
       - name: run integration test
         run: |
           echo "start integration test"
-          cd ~
+          cd /tmp
           sudo bash -x ./zkbas/local-test.sh
           echo "end integration test"
 
