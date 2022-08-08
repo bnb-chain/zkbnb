@@ -20,7 +20,7 @@ const (
 )
 
 func ValidateAccountName(accountName string) bool {
-	if strings.Contains(accountName, ".") {
+	if !strings.Contains(accountName, ".") {
 		return false
 	}
 
