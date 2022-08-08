@@ -21,20 +21,18 @@ rm -rf ~/zkbas-deploy-bak && mv ~/zkbas-deploy ~/zkbas-deploy-bak
 mkdir zkbas-deploy && cd zkbas-deploy
 git clone --branch develop  https://github.com/bnb-chain/zkbas-contract.git
 git clone --branch develop https://github.com/bnb-chain/zkbas-crypto.git
-mv /home/ec2-user/zkbas ~/zkbas-deploy
 
+# mv /home/ec2-user/zkbas ~/zkbas-deploy
+branch=$1
+git clone --branch $branch https://github.com/bnb-chain/zkbas.git
 
-flag=$1
-if [ $flag = "new" ]; then
-  echo "new crypto env"
-  echo '2. start generate zkbas.vk and zkbas.pk'
-  cd ~/zkbas-deploy
-  cd zkbas-crypto && go test ./legend/circuit/bn254/solidity -timeout 99999s -run TestExportSol
-  cd ~/zkbas-deploy
-  sudo mkdir /home/.zkbas
-  cp -r ./zkbas-crypto/legend/circuit/bn254/solidity/* /home/.zkbas
-fi
-
+echo "new crypto env"
+echo '2. start generate zkbas.vk and zkbas.pk'
+cd ~/zkbas-deploy
+cd zkbas-crypto && go test ./legend/circuit/bn254/solidity -timeout 99999s -run TestExportSol
+cd ~/zkbas-deploy
+sudo mkdir /home/.zkbas
+cp -r ./zkbas-crypto/legend/circuit/bn254/solidity/* /home/.zkbas
 
 
 echo '3. start verify_parse for ZkbasVerifier'
@@ -89,9 +87,7 @@ go run .
 cd ~/zkbas-deploy/zkbas/
 make app && make globalRPCProto
 
-
 sleep 30s
-
 
 echo "7. run prover"
 

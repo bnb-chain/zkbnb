@@ -1,8 +1,13 @@
-name: Integration
+name: Integration Test on Runner
 
 on:
   push:
     branches:
+      - develop
+      - master
+  pull_request:
+    branches:
+      - master
       - develop
 
 jobs:
@@ -12,13 +17,25 @@ jobs:
       issues: write
       pull-requests: write
     steps:
-      - name: deploy new zkbas
+      - name: deploy new zkbas on runner
         run: |
-          cd /tmp
-          sudo rm -rf ./zkbas
-          git clone --branch github-action https://github.com/bnb-chain/zkbas.git
+          echo 'fetch zkbas repo'
+          export PR_NUMBER=$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
+          echo Pull requests $PR_NUMBER
+          
+          cd ~
+          rm -rf ./zkbas
+          git clone --branch develop https://github.com/bnb-chain/zkbas.git
+          
+          cd ./zkbas
+          git fetch origin pull/$PR_NUMBER/head:local-deploy-tmp
+
+          git checkout local-deploy-tmp
+          
+          sudo cp -rf ./deploy-local.sh /tmp
+          
           echo "start deploy new zkbas"
-          sudo bash -x ./zkbas/deploy-local.sh new
+          sudo bash -x /tmp/deploy-local.sh new
           echo "end deploy"
 
       - name: run integration test
@@ -43,4 +60,11 @@ jobs:
           echo '3. start L2 test'
           go test -v -run TestL2Suite -timeout 30m
 
-
+      - name: Notification via slack
+        run: |
+          export SLACK_WEBHOOK_URL=`sudo cat /home/ec2-user/actions-runner/slack-config.json | jq -r '.slack'`
+          export JOB_STATUS=${{ job.status }}
+          export ZkBas=`sudo cat /root/zkbas-deploy/zkbas-contract/info/addresses.json  | jq -r '.zkbasProxy'`
+          export AssetGov=`sudo cat /root/zkbas-deploy/zkbas-contract/info/addresses.json  | jq -r '.assetGovernance'`
+          curl -X POST $SLACK_WEBHOOK_URL --header 'Content-Type: application/json' \
+          --data-raw '{ "author": "@'$GITHUB_ACTOR'", "status": "'$JOB_STATUS'", "ref": "'$GITHUB_REF'", "event": "'$GITHUB_EVENT_NAME'", "url": "'$GITHUB_SERVER_URL'/'$GITHUB_REPOSITORY'/commit/'$GITHUB_SHA'/checks", "ZkbasContract": "'$ZkBas'", "AssetGovContract": "'$AssetGov'" }'
