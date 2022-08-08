@@ -26,12 +26,7 @@ func NewGetmempoolTxsByAccountNameLogic(ctx context.Context, svcCtx *svc.Service
 }
 
 func (l *GetmempoolTxsByAccountNameLogic) GetmempoolTxsByAccountName(req *types.ReqGetmempoolTxsByAccountName) (*types.RespGetmempoolTxsByAccountName, error) {
-	if utils.CheckAccountName(req.AccountName) {
-		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountName")
-	}
-	accountName := utils.FormatAccountName(req.AccountName)
-	if utils.CheckFormatAccountName(accountName) {
-		logx.Errorf("invalid AccountName: %s", accountName)
+	if !utils.ValidateAccountName(req.AccountName) {
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountName")
 	}
 

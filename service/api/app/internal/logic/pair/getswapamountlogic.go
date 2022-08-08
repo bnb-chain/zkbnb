@@ -29,11 +29,11 @@ func NewGetSwapAmountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 }
 
 func (l *GetSwapAmountLogic) GetSwapAmount(req *types.ReqGetSwapAmount) (*types.RespGetSwapAmount, error) {
-	if utils.CheckPairIndex(req.PairIndex) {
+	if !utils.ValidatePairIndex(req.PairIndex) {
 		logx.Errorf("invalid PairIndex: %d", req.PairIndex)
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid PairIndex")
 	}
-	if utils.CheckAssetId(req.AssetId) {
+	if !utils.ValidateAssetId(req.AssetId) {
 		logx.Errorf("invalid AssetId: %d", req.AssetId)
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AssetId")
 	}

@@ -29,22 +29,17 @@ func NewGetBalanceByAssetIdAndAccountNameLogic(ctx context.Context, svcCtx *svc.
 }
 
 func (l *GetBalanceByAssetIdAndAccountNameLogic) GetBalanceByAssetIdAndAccountName(req *types.ReqGetBlanceByAssetIdAndAccountName) (*types.RespGetBlanceInfoByAssetIdAndAccountName, error) {
-	if utils.CheckAssetId(req.AssetId) {
+	if !utils.ValidateAssetId(req.AssetId) {
 		logx.Errorf("invalid AssetId: %s", req.AssetId)
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AssetId")
 	}
 
-	if utils.CheckAccountName(req.AccountName) {
+	if !utils.ValidateAccountName(req.AccountName) {
 		logx.Errorf("invalid AccountName: %s", req.AccountName)
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountName")
 	}
-	accountName := utils.FormatAccountName(req.AccountName)
-	if utils.CheckFormatAccountName(accountName) {
-		logx.Errorf("invalid AccountName: %s", accountName)
-		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountName")
-	}
 
-	account, err := l.svcCtx.AccountModel.GetAccountByAccountName(accountName)
+	account, err := l.svcCtx.AccountModel.GetAccountByAccountName(req.AccountName)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound

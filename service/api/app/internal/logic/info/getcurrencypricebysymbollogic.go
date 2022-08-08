@@ -31,7 +31,7 @@ func NewGetCurrencyPriceBySymbolLogic(ctx context.Context, svcCtx *svc.ServiceCo
 }
 
 func (l *GetCurrencyPriceBySymbolLogic) GetCurrencyPriceBySymbol(req *types.ReqGetCurrencyPriceBySymbol) (*types.RespGetCurrencyPriceBySymbol, error) {
-	if utils.CheckSymbol(req.Symbol) {
+	if !utils.ValidateSymbol(req.Symbol) {
 		logx.Errorf("invalid Symbol: %s", req.Symbol)
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid Symbol")
 	}

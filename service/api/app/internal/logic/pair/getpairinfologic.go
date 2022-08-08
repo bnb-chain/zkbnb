@@ -29,7 +29,7 @@ func NewGetPairInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPa
 }
 
 func (l *GetPairInfoLogic) GetPairInfo(req *types.ReqGetPairInfo) (*types.RespGetPairInfo, error) {
-	if utils.CheckPairIndex(req.PairIndex) {
+	if !utils.ValidatePairIndex(req.PairIndex) {
 		logx.Errorf("invalid PairIndex: %d", req.PairIndex)
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid PairIndex")
 	}

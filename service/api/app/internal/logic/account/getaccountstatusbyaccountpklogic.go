@@ -26,7 +26,7 @@ func NewGetAccountStatusByAccountPkLogic(ctx context.Context, svcCtx *svc.Servic
 }
 
 func (l *GetAccountStatusByAccountPkLogic) GetAccountStatusByAccountPk(req *types.ReqGetAccountStatusByAccountPk) (*types.RespGetAccountStatusByAccountPk, error) {
-	if utils.CheckAccountPk(req.AccountPk) {
+	if !utils.ValidateAccountPk(req.AccountPk) {
 		logx.Errorf("invalid AccountPk: %s", req.AccountPk)
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountPk")
 	}

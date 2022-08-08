@@ -29,7 +29,7 @@ func NewGetTxsByPubKeyLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 }
 
 func (l *GetTxsByPubKeyLogic) GetTxsByPubKey(req *types.ReqGetTxsByPubKey) (*types.RespGetTxsByPubKey, error) {
-	if utils.CheckAccountPk(req.AccountPk) {
+	if !utils.ValidateAccountPk(req.AccountPk) {
 		logx.Errorf("invalid AccountPk: %s", req.AccountPk)
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountPk")
 	}

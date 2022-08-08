@@ -29,16 +29,12 @@ func NewGetAccountInfoByAccountNameLogic(ctx context.Context, svcCtx *svc.Servic
 }
 
 func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *types.ReqGetAccountInfoByAccountName) (*types.RespGetAccountInfoByAccountName, error) {
-	if utils.CheckAccountName(req.AccountName) {
+	if !utils.ValidateAccountName(req.AccountName) {
 		logx.Errorf("invalid AccountName: %s", req.AccountName)
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountName")
 	}
-	accountName := utils.FormatAccountName(req.AccountName)
-	if utils.CheckFormatAccountName(accountName) {
-		logx.Errorf("invalid AccountName: %s", accountName)
-		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountName")
-	}
-	info, err := l.svcCtx.AccountModel.GetAccountByAccountName(accountName)
+
+	info, err := l.svcCtx.AccountModel.GetAccountByAccountName(req.AccountName)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
