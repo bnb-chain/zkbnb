@@ -29,12 +29,10 @@ jobs:
           cd ./zkbas
           git fetch origin pull/$PR_NUMBER/head:local-deploy-tmp
           git checkout local-deploy-tmp
+          sudo cp -rf ./deploy-local.sh /tmp
           
-          cd /tmp
-          sudo rm -rf ./zkbas
-          git clone --branch github-action https://github.com/bnb-chain/zkbas.git
           echo "start deploy new zkbas"
-          sudo bash -x ./zkbas/deploy-local.sh new
+          sudo bash -x /tmp/deploy-local.sh new
           echo "end deploy"
 
       - name: run integration test
