@@ -24,8 +24,6 @@ import (
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/logic/sendrawtx"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/commglobalmap"
-	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/failtx"
-	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/repo/sysconf"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/internal/svc"
 )
 
@@ -34,8 +32,6 @@ type SendTransferNftTxLogic struct {
 	svcCtx *svc.ServiceContext
 	logx.Logger
 	commglobalmap commglobalmap.Commglobalmap
-	failtx        failtx.Model
-	sysconf       sysconf.Model
 }
 
 func NewSendTransferNftTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendTransferNftTxLogic {
@@ -44,8 +40,6 @@ func NewSendTransferNftTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 		svcCtx:        svcCtx,
 		Logger:        logx.WithContext(ctx),
 		commglobalmap: commglobalmap.New(svcCtx),
-		failtx:        failtx.New(svcCtx),
-		sysconf:       sysconf.New(svcCtx),
 	}
 }
 
