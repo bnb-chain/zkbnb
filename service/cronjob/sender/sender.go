@@ -11,6 +11,7 @@ import (
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/proc"
 
 	"github.com/bnb-chain/zkbas/service/cronjob/sender/internal/config"
 	"github.com/bnb-chain/zkbas/service/cronjob/sender/internal/logic"
@@ -26,8 +27,11 @@ func main() {
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
 	ctx := svc.NewServiceContext(c)
-	// srv := server.NewSenderServer(ctx)
+	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
+	proc.AddShutdownListener(func() {
+		logx.Close()
+	})
 	networkEndpointName := c.ChainConfig.NetworkRPCSysConfigName
 	networkEndpoint, err := ctx.SysConfigModel.GetSysconfigByName(networkEndpointName)
 	if err != nil {

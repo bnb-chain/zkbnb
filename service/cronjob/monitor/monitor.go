@@ -4,6 +4,8 @@ import (
 	"context"
 	"flag"
 
+	"github.com/zeromicro/go-zero/core/proc"
+
 	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
@@ -22,6 +24,12 @@ func main() {
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
 	ctx := svc.NewServiceContext(c)
+	logx.MustSetup(c.LogConf)
+	logx.DisableStat()
+	proc.AddShutdownListener(func() {
+		logx.Close()
+	})
+
 	ZkbasRollupAddress, err := ctx.SysConfigModel.GetSysconfigByName(c.ChainConfig.ZkbasContractAddrSysConfigName)
 	if err != nil {
 		logx.Errorf("[main] GetSysconfigByName err: %s", err.Error())
