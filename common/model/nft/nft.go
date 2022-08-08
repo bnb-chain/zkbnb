@@ -33,6 +33,8 @@ type (
 		DropL2NftTable() error
 		GetNftAsset(nftIndex int64) (nftAsset *L2Nft, err error)
 		GetLatestNftIndex() (nftIndex int64, err error)
+		GetNftListByAccountIndex(accountIndex, limit, offset int64) (nfts []*L2Nft, err error)
+		GetAccountNftTotalCount(accountIndex int64) (int64, error)
 	}
 	defaultL2NftModel struct {
 		sqlc.CachedConn
@@ -107,4 +109,28 @@ func (m *defaultL2NftModel) GetLatestNftIndex() (nftIndex int64, err error) {
 		return -1, nil
 	}
 	return nftInfo.NftIndex, nil
+}
+
+func (m *defaultL2NftModel) GetNftListByAccountIndex(accountIndex, limit, offset int64) (nftList []*L2Nft, err error) {
+	dbTx := m.DB.Table(m.table).Where("owner_account_index = ? and deleted_at is NULL", accountIndex).
+		Limit(int(limit)).Offset(int(offset)).Order("nft_index desc").Find(&nftList)
+	if dbTx.Error != nil {
+		logx.Errorf("fail to get nfts by account: %d, offset: %d, limit: %d, error: %s", accountIndex, offset, limit, dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, errorcode.DbErrNotFound
+	}
+	return nftList, nil
+}
+
+func (m *defaultL2NftModel) GetAccountNftTotalCount(accountIndex int64) (int64, error) {
+	var count int64
+	dbTx := m.DB.Table(m.table).Where("owner_account_index = ? and deleted_at is NULL", accountIndex).Count(&count)
+	if dbTx.Error != nil {
+		logx.Errorf("fail to get nft count by account: %d, error: %s", accountIndex, dbTx.Error.Error())
+		return 0, errorcode.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return 0, errorcode.DbErrNotFound
+	}
+	return count, nil
 }

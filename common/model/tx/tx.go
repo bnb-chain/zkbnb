@@ -23,6 +23,7 @@ import (
 	"math/rand"
 	"sort"
 	"strconv"
+	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
@@ -50,13 +51,16 @@ type (
 		GetTxsListByAccountIndexAndTxTypeArray(accountIndex int64, txTypeArray []uint8, limit int, offset int) (txs []*Tx, err error)
 		GetTxsListByAccountName(accountName string, limit int, offset int) (txs []*Tx, err error)
 		GetTxsTotalCount() (count int64, err error)
+		GetTxsList(limit int64, offset int64) (txList []*Tx, err error)
 		GetTxsTotalCountByAccountIndex(accountIndex int64) (count int64, err error)
 		GetTxsTotalCountByAccountIndexAndTxType(accountIndex int64, txType uint8) (count int64, err error)
 		GetTxsTotalCountByAccountIndexAndTxTypeArray(accountIndex int64, txTypeArray []uint8) (count int64, err error)
 		GetTxsTotalCountByBlockHeight(blockHeight int64) (count int64, err error)
 		GetTxByTxHash(txHash string) (tx *Tx, err error)
-		GetTxByTxId(id uint) (tx *Tx, err error)
+		GetTxByTxId(id int64) (tx *Tx, err error)
 		GetTxsListGreaterThanBlockHeight(blockHeight int64) (txs []*Tx, err error)
+		GetTxsTotalCountBetween(from, to time.Time) (count int64, err error)
+		GetDistinctAccountCountBetween(from, to time.Time) (count int64, err error)
 	}
 
 	defaultTxModel struct {
@@ -498,6 +502,24 @@ func (m *defaultTxModel) GetTxsTotalCount() (count int64, err error) {
 }
 
 /*
+	Func: GetTxsList
+	Params:
+	Return: list of txs, err error
+	Description: used for showing transactions for explorer
+*/
+
+func (m *defaultTxModel) GetTxsList(limit int64, offset int64) (txList []*Tx, err error) {
+	dbTx := m.DB.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("created_at desc").Find(&txList)
+	if dbTx.Error != nil {
+		logx.Errorf("fail to get txs offset: %d, limit: %d, error: %s", offset, limit, dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, errorcode.DbErrNotFound
+	}
+	return txList, nil
+}
+
+/*
 	Func: GetTxsTotalCount
 	Params: accountIndex int64
 	Return: count int64, err error
@@ -626,7 +648,7 @@ func (m *defaultTxModel) GetTxByTxHash(txHash string) (tx *Tx, err error) {
 	return tx, nil
 }
 
-func (m *defaultTxModel) GetTxByTxId(id uint) (tx *Tx, err error) {
+func (m *defaultTxModel) GetTxByTxId(id int64) (tx *Tx, err error) {
 	var txForeignKeyColumn = `TxDetails`
 
 	dbTx := m.DB.Table(m.table).Where("id = ?", id).Find(&tx)
@@ -680,4 +702,26 @@ func (m *defaultTxModel) GetTxsListGreaterThanBlockHeight(blockHeight int64) (tx
 		}
 	}
 	return txs, nil
+}
+
+func (m *defaultTxModel) GetTxsTotalCountBetween(from, to time.Time) (count int64, err error) {
+	dbTx := m.DB.Table(m.table).Where("created_at BETWEEN ? AND ?", from, to).Count(&count)
+	if dbTx.Error != nil {
+		logx.Errorf("fail to get tx by time range: %d-%d, error: %s", from.Unix(), to.Unix(), dbTx.Error.Error())
+		return 0, errorcode.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	return count, nil
+}
+
+func (m *defaultTxModel) GetDistinctAccountCountBetween(from, to time.Time) (count int64, err error) {
+	dbTx := m.DB.Raw("SELECT account_index FROM tx WHERE created_at BETWEEN ? AND ? AND account_index != -1 GROUP BY account_index", from, to).Count(&count)
+	if dbTx.Error != nil {
+		logx.Errorf("fail to get dau by time range: %d-%d, error: %s", from.Unix(), to.Unix(), dbTx.Error.Error())
+		return 0, errorcode.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	return count, nil
 }

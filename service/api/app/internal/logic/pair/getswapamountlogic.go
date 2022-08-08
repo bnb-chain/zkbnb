@@ -5,8 +5,8 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/common/checker"
 	"github.com/bnb-chain/zkbas/errorcode"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/globalrpc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
@@ -29,17 +29,17 @@ func NewGetSwapAmountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 }
 
 func (l *GetSwapAmountLogic) GetSwapAmount(req *types.ReqGetSwapAmount) (*types.RespGetSwapAmount, error) {
-	if checker.CheckPairIndex(req.PairIndex) {
-		logx.Errorf("[CheckPairIndex] param: %d", req.PairIndex)
+	if !utils.ValidatePairIndex(req.PairIndex) {
+		logx.Errorf("invalid PairIndex: %d", req.PairIndex)
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid PairIndex")
 	}
-	if checker.CheckAssetId(req.AssetId) {
-		logx.Errorf("[CheckAssetId] param: %d", req.AssetId)
+	if !utils.ValidateAssetId(req.AssetId) {
+		logx.Errorf("invalid AssetId: %d", req.AssetId)
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AssetId")
 	}
 	resAssetAmount, resAssetId, err := l.globalRPC.GetSwapAmount(l.ctx, uint64(req.PairIndex), uint64(req.AssetId), req.AssetAmount, req.IsFrom)
 	if err != nil {
-		logx.Errorf("[GetSwapAmount] err: %s", err.Error())
+		logx.Errorf("fail to get swap amount from rpc for pair: %d, asset: %d, err: %s", req.PairIndex, req.AssetId, err.Error())
 		if err == errorcode.RpcErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}

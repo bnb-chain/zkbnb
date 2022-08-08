@@ -36,6 +36,7 @@ type (
 		CreateLiquidity(liquidity *Liquidity) error
 		CreateLiquidityInBatches(entities []*Liquidity) error
 		GetLiquidityByPairIndex(pairIndex int64) (entity *Liquidity, err error)
+		GetAllLiquidityAssets() (liquidityList []*Liquidity, err error)
 	}
 
 	defaultLiquidityModel struct {
@@ -151,4 +152,14 @@ func (m *defaultLiquidityModel) GetLiquidityByPairIndex(pairIndex int64) (entity
 		return nil, errorcode.DbErrNotFound
 	}
 	return entity, nil
+}
+
+func (m *defaultLiquidityModel) GetAllLiquidityAssets() (liquidityList []*Liquidity, err error) {
+	dbTx := m.DB.Table(m.table).Order("id").Find(&liquidityList)
+	if dbTx.Error != nil {
+		return liquidityList, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return nil, errorcode.DbErrNotFound
+	}
+	return liquidityList, nil
 }

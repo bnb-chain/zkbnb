@@ -5,8 +5,6 @@ import (
 
 	"github.com/zeromicro/go-zero/zrpc"
 
-	"github.com/bnb-chain/zkbas/common/model/account"
-	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalrpc"
@@ -21,9 +19,9 @@ type GlobalRPC interface {
 	GetLatestAssetsListByAccountIndex(ctx context.Context, accountIndex uint32) ([]*globalrpc.AssetResult, error)
 	GetLatestAccountInfoByAccountIndex(ctx context.Context, accountIndex int64) (*globalrpc.RespGetLatestAccountInfoByAccountIndex, error)
 	GetMaxOfferId(ctx context.Context, accountIndex uint32) (uint64, error)
+
 	SendMintNftTx(ctx context.Context, txInfo string) (int64, error)
 	SendCreateCollectionTx(ctx context.Context, txInfo string) (int64, error)
-
 	SendAddLiquidityTx(ctx context.Context, txInfo string) (string, error)
 	SendAtomicMatchTx(ctx context.Context, txInfo string) (string, error)
 	SendCancelOfferTx(ctx context.Context, txInfo string) (string, error)
@@ -37,12 +35,7 @@ type GlobalRPC interface {
 
 func New(svcCtx *svc.ServiceContext, ctx context.Context) GlobalRPC {
 	return &globalRPC{
-		AccountModel:        account.NewAccountModel(svcCtx.Conn, svcCtx.Config.CacheRedis, svcCtx.GormPointer),
-		AccountHistoryModel: account.NewAccountHistoryModel(svcCtx.Conn, svcCtx.Config.CacheRedis, svcCtx.GormPointer),
-		MempoolModel:        mempool.NewMempoolModel(svcCtx.Conn, svcCtx.Config.CacheRedis, svcCtx.GormPointer),
-		MempoolDetailModel:  mempool.NewMempoolDetailModel(svcCtx.Conn, svcCtx.Config.CacheRedis, svcCtx.GormPointer),
-		RedisConnection:     svcCtx.RedisConn,
-		globalRPC:           globalrpc.NewGlobalRPC(zrpc.MustNewClient(svcCtx.Config.GlobalRpc)),
-		cache:               svcCtx.Cache,
+		globalRPC: globalrpc.NewGlobalRPC(zrpc.MustNewClient(svcCtx.Config.GlobalRpc)),
+		cache:     svcCtx.Cache,
 	}
 }

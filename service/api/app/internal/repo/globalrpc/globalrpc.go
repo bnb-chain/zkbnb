@@ -20,23 +20,14 @@ import (
 	"context"
 	"sort"
 
-	"github.com/zeromicro/go-zero/core/stores/redis"
-
-	"github.com/bnb-chain/zkbas/common/model/account"
-	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/pkg/multcache"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalRPCProto"
 	"github.com/bnb-chain/zkbas/service/rpc/globalRPC/globalrpc"
 )
 
 type globalRPC struct {
-	AccountModel        account.AccountModel
-	AccountHistoryModel account.AccountHistoryModel
-	MempoolModel        mempool.MempoolModel
-	MempoolDetailModel  mempool.MempoolTxDetailModel
-	RedisConnection     *redis.Redis
-	globalRPC           globalrpc.GlobalRPC
-	cache               multcache.MultCache
+	globalRPC globalrpc.GlobalRPC
+	cache     multcache.MultCache
 }
 
 func (m *globalRPC) GetSwapAmount(ctx context.Context, pairIndex, assetId uint64, assetAmount string, isFrom bool) (string, uint32, error) {

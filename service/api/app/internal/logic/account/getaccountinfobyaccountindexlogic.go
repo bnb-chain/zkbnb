@@ -6,7 +6,6 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/errorcode"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/account"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/globalrpc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
@@ -17,7 +16,6 @@ type GetAccountInfoByAccountIndexLogic struct {
 	ctx       context.Context
 	svcCtx    *svc.ServiceContext
 	globalRPC globalrpc.GlobalRPC
-	account   account.Model
 }
 
 func NewGetAccountInfoByAccountIndexLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAccountInfoByAccountIndexLogic {
@@ -26,14 +24,13 @@ func NewGetAccountInfoByAccountIndexLogic(ctx context.Context, svcCtx *svc.Servi
 		ctx:       ctx,
 		svcCtx:    svcCtx,
 		globalRPC: globalrpc.New(svcCtx, ctx),
-		account:   account.New(svcCtx),
 	}
 }
 
 func (l *GetAccountInfoByAccountIndexLogic) GetAccountInfoByAccountIndex(req *types.ReqGetAccountInfoByAccountIndex) (*types.RespGetAccountInfoByAccountIndex, error) {
 	account, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(l.ctx, req.AccountIndex)
 	if err != nil {
-		logx.Errorf("[GetLatestAccountInfoByAccountIndex] err: %s", err.Error())
+		logx.Errorf("fail to get account info: %d from rpc, err: %s", req.AccountIndex, err.Error())
 		if err == errorcode.RpcErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}

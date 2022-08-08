@@ -18,6 +18,8 @@
 package tx
 
 import (
+	"sort"
+
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
@@ -32,6 +34,8 @@ type (
 		CreateTxDetailTable() error
 		DropTxDetailTable() error
 		GetTxDetailsByAccountName(name string) (txDetails []*TxDetail, err error)
+		GetTxDetailByAccountIndex(accountIndex int64) (txDetails []*TxDetail, err error)
+		GetTxIdsByAccountIndex(accountIndex int64) (txIds []int64, err error)
 		UpdateTxDetail(detail *TxDetail) error
 	}
 
@@ -104,6 +108,31 @@ func (m *defaultTxDetailModel) GetTxDetailsByAccountName(name string) (txDetails
 		return nil, errorcode.DbErrNotFound
 	}
 	return txDetails, nil
+}
+
+func (m *defaultTxDetailModel) GetTxDetailByAccountIndex(accountIndex int64) (txDetails []*TxDetail, err error) {
+	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex).Find(&txDetails)
+	if dbTx.Error != nil {
+		logx.Errorf("fail to get tx details by account: %d, error: %s", accountIndex, dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, errorcode.DbErrNotFound
+	}
+	return txDetails, nil
+}
+
+func (m *defaultTxDetailModel) GetTxIdsByAccountIndex(accountIndex int64) (txIds []int64, err error) {
+	dbTx := m.DB.Table(m.table).Select("tx_id").Where("account_index = ?", accountIndex).Group("tx_id").Find(&txIds)
+	if dbTx.Error != nil {
+		logx.Errorf("fail to get tx ids by account: %d, error: %s", accountIndex, dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, errorcode.DbErrNotFound
+	}
+	sort.Slice(txIds, func(i, j int) bool {
+		return txIds[i] > txIds[j]
+	})
+	return txIds, nil
 }
 
 func (m *defaultTxDetailModel) UpdateTxDetail(detail *TxDetail) error {

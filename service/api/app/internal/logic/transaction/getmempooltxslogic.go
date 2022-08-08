@@ -7,48 +7,40 @@ import (
 
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/block"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/mempool"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
 type GetMempoolTxsLogic struct {
 	logx.Logger
-	ctx     context.Context
-	svcCtx  *svc.ServiceContext
-	mempool mempool.Mempool
-	block   block.Block
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
 }
 
 func NewGetMempoolTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetMempoolTxsLogic {
 	return &GetMempoolTxsLogic{
-		Logger:  logx.WithContext(ctx),
-		ctx:     ctx,
-		svcCtx:  svcCtx,
-		mempool: mempool.New(svcCtx),
-		block:   block.New(svcCtx),
+		Logger: logx.WithContext(ctx),
+		ctx:    ctx,
+		svcCtx: svcCtx,
 	}
 }
 func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (*types.RespGetMempoolTxs, error) {
-	count, err := l.mempool.GetMempoolTxsTotalCount()
+	resp := &types.RespGetMempoolTxs{
+		MempoolTxs: make([]*types.Tx, 0),
+	}
+	count, err := l.svcCtx.MempoolModel.GetMempoolTxsTotalCount()
 	if err != nil {
-		logx.Errorf("[GetMempoolTxsTotalCount] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrNotFound
+			return resp, nil
 		}
 		return nil, errorcode.AppErrInternal
 	}
-	resp := &types.RespGetMempoolTxs{
-		MempoolTxs: make([]*types.Tx, 0),
-		Total:      uint32(count),
-	}
+
 	if count == 0 {
 		return resp, nil
 	}
-	mempoolTxs, err := l.mempool.GetMempoolTxs(int(req.Offset), int(req.Limit))
+	mempoolTxs, err := l.svcCtx.MempoolModel.GetMempoolTxsList(int64(req.Offset), int64(req.Limit))
 	if err != nil {
-		logx.Errorf("[GetMempoolTxs] err: %s", err.Error())
 		return nil, errorcode.AppErrInternal
 	}
 	for _, mempoolTx := range mempoolTxs {

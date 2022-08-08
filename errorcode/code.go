@@ -52,9 +52,10 @@ var (
 
 	//app service
 
-	AppErrInvalidParam    = New(25000, "invalid param")
-	AppErrQuoteNotExist   = New(25004, "quote asset does not exist")
-	AppErrInvalidGasAsset = New(25006, "invalid gas asset")
-	AppErrNotFound        = New(29404, "not found")
-	AppErrInternal        = New(29500, "internal server error")
+	AppErrInvalidParam    = New(25001, "invalid param:")
+	AppErrQuoteNotExist   = New(25002, "quote asset does not exist")
+	AppErrInvalidGasAsset = New(25003, "invalid gas asset")
+
+	AppErrNotFound = New(29404, "not found")
+	AppErrInternal = New(29500, "internal server error")
 )

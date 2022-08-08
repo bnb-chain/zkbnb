@@ -7,7 +7,6 @@ import (
 
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/tx"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
@@ -16,7 +15,6 @@ type GetTxsListLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
-	tx     tx.Model
 }
 
 func NewGetTxsListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTxsListLogic {
@@ -24,12 +22,11 @@ func NewGetTxsListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTxs
 		Logger: logx.WithContext(ctx),
 		ctx:    ctx,
 		svcCtx: svcCtx,
-		tx:     tx.New(svcCtx),
 	}
 }
 
 func (l *GetTxsListLogic) GetTxsList(req *types.ReqGetTxsList) (resp *types.RespGetTxsList, err error) {
-	count, err := l.tx.GetTxsTotalCount(l.ctx)
+	count, err := l.svcCtx.TxModel.GetTxsTotalCount()
 	if err != nil {
 		if err != errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrInternal
@@ -37,7 +34,7 @@ func (l *GetTxsListLogic) GetTxsList(req *types.ReqGetTxsList) (resp *types.Resp
 	}
 	txs := make([]*types.Tx, 0)
 	if count > 0 {
-		list, err := l.tx.GetTxsList(l.ctx, int64(req.Limit), int64(req.Offset))
+		list, err := l.svcCtx.TxModel.GetTxsList(int64(req.Limit), int64(req.Offset))
 		if err != nil {
 			return nil, errorcode.AppErrInternal
 		}

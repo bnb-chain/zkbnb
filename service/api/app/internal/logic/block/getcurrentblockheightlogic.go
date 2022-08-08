@@ -6,7 +6,6 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/errorcode"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/block"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
@@ -15,7 +14,6 @@ type GetCurrentBlockHeightLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
-	block  block.Block
 }
 
 func NewGetCurrentBlockHeightLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetCurrentBlockHeightLogic {
@@ -23,20 +21,18 @@ func NewGetCurrentBlockHeightLogic(ctx context.Context, svcCtx *svc.ServiceConte
 		Logger: logx.WithContext(ctx),
 		ctx:    ctx,
 		svcCtx: svcCtx,
-		block:  block.New(svcCtx),
 	}
 }
 
 func (l *GetCurrentBlockHeightLogic) GetCurrentBlockHeight() (resp *types.RespCurrentBlockHeight, err error) {
-	height, err := l.block.GetCurrentBlockHeight(l.ctx)
+	resp = &types.RespCurrentBlockHeight{}
+	height, err := l.svcCtx.BlockModel.GetCurrentBlockHeight()
 	if err != nil {
-		logx.Errorf("[GetBlockWithTxsByBlockHeight] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrNotFound
+			return resp, nil
 		}
 		return nil, errorcode.AppErrInternal
 	}
-	return &types.RespCurrentBlockHeight{
-		Height: height,
-	}, nil
+	resp.Height = height
+	return resp, nil
 }

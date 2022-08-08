@@ -5,8 +5,8 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/common/checker"
 	"github.com/bnb-chain/zkbas/errorcode"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/globalrpc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
@@ -29,13 +29,13 @@ func NewGetLPValueLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetLPV
 }
 
 func (l *GetLPValueLogic) GetLPValue(req *types.ReqGetLPValue) (resp *types.RespGetLPValue, err error) {
-	if checker.CheckPairIndex(req.PairIndex) {
-		logx.Errorf("[CheckPairIndex] param: %d", req.PairIndex)
+	if !utils.ValidatePairIndex(req.PairIndex) {
+		logx.Errorf("invalid PairIndex: %d", req.PairIndex)
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid PairIndex")
 	}
 	lpValue, err := l.globalRPC.GetLpValue(l.ctx, req.PairIndex, req.LpAmount)
 	if err != nil {
-		logx.Errorf("[GetLpValue] err: %s", err.Error())
+		logx.Errorf("fail to get lp from rpc for pair: %d, err: %s", req.PairIndex, err.Error())
 		if err == errorcode.RpcErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}

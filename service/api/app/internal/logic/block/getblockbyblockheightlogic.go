@@ -7,7 +7,6 @@ import (
 
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/block"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
@@ -16,7 +15,6 @@ type GetBlockByBlockHeightLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
-	block  block.Block
 }
 
 func NewGetBlockByBlockHeightLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetBlockByBlockHeightLogic {
@@ -24,14 +22,12 @@ func NewGetBlockByBlockHeightLogic(ctx context.Context, svcCtx *svc.ServiceConte
 		Logger: logx.WithContext(ctx),
 		ctx:    ctx,
 		svcCtx: svcCtx,
-		block:  block.New(svcCtx),
 	}
 }
 
 func (l *GetBlockByBlockHeightLogic) GetBlockByBlockHeight(req *types.ReqGetBlockByBlockHeight) (*types.RespGetBlockByBlockHeight, error) {
-	block, err := l.block.GetBlockWithTxsByBlockHeight(l.ctx, int64(req.BlockHeight))
+	block, err := l.svcCtx.BlockModel.GetBlockByBlockHeight(int64(req.BlockHeight))
 	if err != nil {
-		logx.Errorf("[GetBlockWithTxsByBlockHeight] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
