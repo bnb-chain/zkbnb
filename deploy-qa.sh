@@ -87,6 +87,7 @@ go run .
 cd ~/zkbas-deploy/zkbas/
 make app && make globalRPCProto
 
+sleep 30s
 
 echo "7. run prover"
 
