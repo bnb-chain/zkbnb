@@ -162,8 +162,8 @@ type (
 // GetBlocks
 type (
 	ReqGetBlocks {
-		Offset uint16 `form:"offset"`
-		Limit  uint16 `form:"limit"`
+		Offset uint16 `form:"offset,range=[0:100000]"`
+		Limit  uint16 `form:"limit,range=[1:50]"`
 	}
 	RespGetBlocks {
 		Total  uint32   `json:"total"`
@@ -220,15 +220,19 @@ service app-api {
 type (
 	ReqGetLayer2BasicInfo {
 	}
+	ContractAddress {
+		Name    string `json:"name"`
+		Address string `json:"address"`
+	}
 	RespGetLayer2BasicInfo {
-		BlockCommitted             int64    `json:"block_committed"`
-		BlockVerified              int64    `json:"block_verified"`
-		TotalTransactions          int64    `json:"total_transactions"`
-		TransactionsCountYesterday int64    `json:"transactions_count_yesterday"`
-		TransactionsCountToday     int64    `json:"transactions_count_today"`
-		DauYesterday               int64    `json:"dau_yesterday"`
-		DauToday                   int64    `json:"dau_today"`
-		ContractAddresses          []string `json:"contract_addresses"`
+		BlockCommitted             int64             `json:"block_committed"`
+		BlockVerified              int64             `json:"block_verified"`
+		TotalTransactions          int64             `json:"total_transactions"`
+		TransactionsCountYesterday int64             `json:"transactions_count_yesterday"`
+		TransactionsCountToday     int64             `json:"transactions_count_today"`
+		DauYesterday               int64             `json:"dau_yesterday"`
+		DauToday                   int64             `json:"dau_today"`
+		ContractAddresses          []ContractAddress `json:"contract_addresses"`
 	}
 )
 
@@ -306,8 +310,8 @@ type (
 // GetAccounts
 type (
 	ReqGetAccounts {
-		Offset uint16 `form:"offset" validator:"min=0"`
-		Limit  uint16 `form:"limit" validator:"min=0,max=50"`
+		Offset uint16 `form:"offset,range=[0:100000]"`
+		Limit  uint16 `form:"limit,range=[1:50]"`
 	}
 	Accounts {
 		AccountIndex uint32 `json:"account_index"`
@@ -508,8 +512,8 @@ type TxAccount {
 // GetTxsList
 type (
 	ReqGetTxsList {
-		Limit  uint16 `form:"limit"`
-		Offset uint16 `form:"offset"`
+		Limit  uint16 `form:"limit,range=[1:50]"`
+		Offset uint16 `form:"offset,range=[0:100000]"`
 	}
 	RespGetTxsList {
 		Total uint32 `json:"total"`
@@ -521,8 +525,8 @@ type (
 type (
 	ReqGetTxsListByBlockHeight {
 		BlockHeight uint64 `form:"block_height"`
-		Limit       uint16 `form:"limit"`
-		Offset      uint16 `form:"offset"`
+		Limit       uint16 `form:"limit,range=[1:50]"`
+		Offset      uint16 `form:"offset,range=[0:100000]"`
 	}
 	RespGetTxsListByBlockHeight {
 		Total uint32 `json:"total"`
@@ -534,8 +538,8 @@ type (
 type (
 	ReqGetTxsListByAccountIndex {
 		AccountIndex uint32 `form:"account_index"`
-		Offset       uint16 `form:"offset"`
-		Limit        uint16 `form:"limit"`
+		Offset       uint16 `form:"offset,range=[0:100000]"`
+		Limit        uint16 `form:"limit,range=[1:50]"`
 	}
 	RespGetTxsListByAccountIndex {
 		Total uint32 `json:"total"`
@@ -548,8 +552,8 @@ type (
 	ReqGetTxsByAccountIndexAndTxType {
 		AccountIndex uint32 `form:"account_index"`
 		TxType       uint32 `form:"tx_type"`
-		Offset       uint32 `form:"offset"`
-		Limit        uint32 `form:"limit"`
+		Offset       uint32 `form:"offset,range=[0:100000]"`
+		Limit        uint32 `form:"limit,range=[1:50]"`
 	}
 	RespGetTxsByAccountIndexAndTxType {
 		Total uint32 `json:"total"`
@@ -561,8 +565,8 @@ type (
 type (
 	ReqGetTxsByAccountName {
 		AccountName string `form:"account_name"`
-		Offset      uint32 `form:"offset"`
-		Limit       uint32 `form:"limit"`
+		Offset      uint32 `form:"offset,range=[0:100000]"`
+		Limit       uint32 `form:"limit,range=[1:50]"`
 	}
 	RespGetTxsByAccountName {
 		Total uint32 `json:"total"`
@@ -574,8 +578,8 @@ type (
 type (
 	ReqGetTxsByPubKey {
 		AccountPk string `form:"account_pk"`
-		Offset    uint32 `form:"offset"`
-		Limit     uint32 `form:"limit"`
+		Offset    uint32 `form:"offset,range=[0:100000]"`
+		Limit     uint32 `form:"limit,range=[1:50]"`
 	}
 	RespGetTxsByPubKey {
 		Total uint32 `json:"total"`
@@ -618,8 +622,8 @@ type (
 // GetMempoolTxs
 type (
 	ReqGetMempoolTxs {
-		Offset uint32 `form:"offset"`
-		Limit  uint32 `form:"limit"`
+		Offset uint32 `form:"offset,range=[0:100000]"`
+		Limit  uint32 `form:"limit,range=[1:50]"`
 	}
 	RespGetMempoolTxs {
 		Total      uint32 `json:"total"`
@@ -857,8 +861,8 @@ type (
 type (
 	ReqGetAccountNftList {
 		AccountIndex int64  `form:"account_index"`
-		Offset       uint16 `form:"offset"`
-		Limit        uint16 `form:"limit"`
+		Offset       uint16 `form:"offset,range=[0:100000]"`
+		Limit        uint16 `form:"limit,range=[1:50]"`
 	}
 	RespGetAccountNftList {
 		Total int64  `json:"total"`

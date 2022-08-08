@@ -26,10 +26,8 @@ func NewGetBlockByCommitmentLogic(ctx context.Context, svcCtx *svc.ServiceContex
 }
 
 func (l *GetBlockByCommitmentLogic) GetBlockByCommitment(req *types.ReqGetBlockByCommitment) (*types.RespGetBlockByCommitment, error) {
-	// query basic block info
 	block, err := l.svcCtx.BlockModel.GetBlockByCommitment(req.BlockCommitment)
 	if err != nil {
-		logx.Errorf("[GetBlockWithTxsByCommitment] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}

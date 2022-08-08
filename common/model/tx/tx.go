@@ -60,6 +60,7 @@ type (
 		GetTxByTxId(id int64) (tx *Tx, err error)
 		GetTxsListGreaterThanBlockHeight(blockHeight int64) (txs []*Tx, err error)
 		GetTxsTotalCountBetween(from, to time.Time) (count int64, err error)
+		GetDistinctAccountCountBetween(from, to time.Time) (count int64, err error)
 	}
 
 	defaultTxModel struct {
@@ -707,6 +708,17 @@ func (m *defaultTxModel) GetTxsTotalCountBetween(from, to time.Time) (count int6
 	dbTx := m.DB.Table(m.table).Where("created_at BETWEEN ? AND ?", from, to).Count(&count)
 	if dbTx.Error != nil {
 		logx.Errorf("fail to get tx by time range: %d-%d, error: %s", from.Unix(), to.Unix(), dbTx.Error.Error())
+		return 0, errorcode.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	return count, nil
+}
+
+func (m *defaultTxModel) GetDistinctAccountCountBetween(from, to time.Time) (count int64, err error) {
+	dbTx := m.DB.Raw("SELECT account_index FROM tx WHERE created_at BETWEEN ? AND ? AND account_index != -1 GROUP BY account_index", from, to).Count(&count)
+	if dbTx.Error != nil {
+		logx.Errorf("fail to get dau by time range: %d-%d, error: %s", from.Unix(), to.Unix(), dbTx.Error.Error())
 		return 0, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return 0, nil

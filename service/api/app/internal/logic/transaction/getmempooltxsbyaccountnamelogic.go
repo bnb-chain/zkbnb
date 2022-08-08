@@ -26,10 +26,17 @@ func NewGetmempoolTxsByAccountNameLogic(ctx context.Context, svcCtx *svc.Service
 }
 
 func (l *GetmempoolTxsByAccountNameLogic) GetmempoolTxsByAccountName(req *types.ReqGetmempoolTxsByAccountName) (*types.RespGetmempoolTxsByAccountName, error) {
-	//TODO: check AccountName
+	if utils.CheckAccountName(req.AccountName) {
+		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountName")
+	}
+	accountName := utils.FormatAccountName(req.AccountName)
+	if utils.CheckFormatAccountName(accountName) {
+		logx.Errorf("invalid AccountName: %s", accountName)
+		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountName")
+	}
+
 	account, err := l.svcCtx.AccountModel.GetAccountByAccountName(req.AccountName)
 	if err != nil {
-		logx.Errorf("[GetAccountByAccountName] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
@@ -37,7 +44,6 @@ func (l *GetmempoolTxsByAccountNameLogic) GetmempoolTxsByAccountName(req *types.
 	}
 	mempoolTxDetails, err := l.svcCtx.MempoolDetailModel.GetMempoolTxDetailsByAccountIndex(account.AccountIndex)
 	if err != nil {
-		logx.Errorf("[GetMemPoolTxDetailByAccountIndex] AccountIndex: %d err: %s", account.AccountIndex, err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
@@ -50,7 +56,6 @@ func (l *GetmempoolTxsByAccountNameLogic) GetmempoolTxsByAccountName(req *types.
 	for _, d := range mempoolTxDetails {
 		tx, err := l.svcCtx.MempoolModel.GetMempoolTxByTxId(d.TxId)
 		if err != nil {
-			logx.Errorf("[GetMempoolTxByTxID] TxId: %d, err: %s", d.TxId, err.Error())
 			continue
 		}
 		resp.Txs = append(resp.Txs, utils.MempoolTx2Tx(tx))

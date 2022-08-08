@@ -31,7 +31,6 @@ func main() {
 	flag.Parse()
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
-	logx.Severef("[config] err:%v", c)
 	logx.DisableStat()
 	ctx := svc.NewServiceContext(c)
 	ctx.CodeVersion = CodeVersion

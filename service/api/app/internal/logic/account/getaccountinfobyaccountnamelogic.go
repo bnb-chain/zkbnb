@@ -5,8 +5,8 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/common/checker"
 	"github.com/bnb-chain/zkbas/errorcode"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/globalrpc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
@@ -29,18 +29,17 @@ func NewGetAccountInfoByAccountNameLogic(ctx context.Context, svcCtx *svc.Servic
 }
 
 func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *types.ReqGetAccountInfoByAccountName) (*types.RespGetAccountInfoByAccountName, error) {
-	if checker.CheckAccountName(req.AccountName) {
-		logx.Errorf("[CheckAccountName] req.AccountName: %s", req.AccountName)
+	if utils.CheckAccountName(req.AccountName) {
+		logx.Errorf("invalid AccountName: %s", req.AccountName)
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountName")
 	}
-	accountName := checker.FormatSting(req.AccountName)
-	if checker.CheckFormatAccountName(accountName) {
-		logx.Errorf("[CheckFormatAccountName] accountName: %s", accountName)
+	accountName := utils.FormatAccountName(req.AccountName)
+	if utils.CheckFormatAccountName(accountName) {
+		logx.Errorf("invalid AccountName: %s", accountName)
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountName")
 	}
 	info, err := l.svcCtx.AccountModel.GetAccountByAccountName(accountName)
 	if err != nil {
-		logx.Errorf("[GetAccountByAccountName] accountName: %s, err: %s", accountName, err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
@@ -48,10 +47,7 @@ func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *type
 	}
 	account, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(l.ctx, info.AccountIndex)
 	if err != nil {
-		logx.Errorf("[GetLatestAccountInfoByAccountIndex] err: %s", err.Error())
-		if err == errorcode.RpcErrNotFound {
-			return nil, errorcode.AppErrNotFound
-		}
+		logx.Errorf("fail to get account info: %d from rpc, err: %s", info.AccountIndex, err.Error())
 		return nil, errorcode.AppErrInternal
 	}
 	resp := &types.RespGetAccountInfoByAccountName{

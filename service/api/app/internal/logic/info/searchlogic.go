@@ -4,6 +4,8 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/bnb-chain/zkbas/errorcode"
+
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/util"
@@ -30,8 +32,10 @@ func (l *SearchLogic) Search(req *types.ReqSearch) (*types.RespSearch, error) {
 	blockHeight, err := strconv.ParseInt(req.Info, 10, 64)
 	if err == nil {
 		if _, err = l.svcCtx.BlockModel.GetBlockByBlockHeight(blockHeight); err != nil {
-			logx.Errorf("[GetBlockByBlockHeight] err: %s", err.Error())
-			return nil, err
+			if err == errorcode.DbErrNotFound {
+				return nil, errorcode.AppErrNotFound
+			}
+			return nil, errorcode.AppErrInternal
 		}
 		resp.DataType = util.TypeBlockHeight
 		return resp, nil
@@ -42,8 +46,10 @@ func (l *SearchLogic) Search(req *types.ReqSearch) (*types.RespSearch, error) {
 		return resp, nil
 	}
 	if _, err = l.svcCtx.AccountModel.GetAccountByAccountName(req.Info); err != nil {
-		logx.Errorf("[GetAccountByAccountName] err: %s", err.Error())
-		return nil, err
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
 	}
 	resp.DataType = util.TypeAccountName
 	return resp, nil

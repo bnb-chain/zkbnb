@@ -6,6 +6,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/errorcode"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/globalrpc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
@@ -28,10 +29,13 @@ func NewGetAccountInfoByPubKeyLogic(ctx context.Context, svcCtx *svc.ServiceCont
 }
 
 func (l *GetAccountInfoByPubKeyLogic) GetAccountInfoByPubKey(req *types.ReqGetAccountInfoByPubKey) (*types.RespGetAccountInfoByPubKey, error) {
-	//TODO: check AccountPk
+	if utils.CheckAccountPk(req.AccountPk) {
+		logx.Errorf("invalid AccountPk: %s", req.AccountPk)
+		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountPk")
+	}
+
 	info, err := l.svcCtx.AccountModel.GetAccountByPk(req.AccountPk)
 	if err != nil {
-		logx.Errorf("[GetAccountByPk] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
@@ -39,7 +43,7 @@ func (l *GetAccountInfoByPubKeyLogic) GetAccountInfoByPubKey(req *types.ReqGetAc
 	}
 	account, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(l.ctx, info.AccountIndex)
 	if err != nil {
-		logx.Errorf("[GetLatestAccountInfoByAccountIndex] err: %s", err.Error())
+		logx.Errorf("fail to get account info: %d from rpc, err: %s", info.AccountIndex, err.Error())
 		if err == errorcode.RpcErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}

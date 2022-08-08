@@ -27,7 +27,6 @@ func NewGetAccountNftListLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 func (l *GetAccountNftListLogic) GetAccountNftList(req *types.ReqGetAccountNftList) (*types.RespGetAccountNftList, error) {
 	total, err := l.svcCtx.NftModel.GetAccountNftTotalCount(req.AccountIndex)
 	if err != nil {
-		logx.Errorf("[GetAccountNftList] get account nft total count error: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
@@ -44,10 +43,6 @@ func (l *GetAccountNftListLogic) GetAccountNftList(req *types.ReqGetAccountNftLi
 
 	nftList, err := l.svcCtx.NftModel.GetNftListByAccountIndex(req.AccountIndex, int64(req.Limit), int64(req.Offset))
 	if err != nil {
-		logx.Errorf("[GetAccountNftList] get nft list by account error: %s", err.Error())
-		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrNotFound
-		}
 		return nil, errorcode.AppErrInternal
 	}
 

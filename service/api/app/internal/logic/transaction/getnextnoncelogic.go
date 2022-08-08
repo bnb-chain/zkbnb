@@ -30,7 +30,7 @@ func NewGetNextNonceLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetN
 func (l *GetNextNonceLogic) GetNextNonce(req *types.ReqGetNextNonce) (*types.RespGetNextNonce, error) {
 	nonce, err := l.globalRpc.GetNextNonce(l.ctx, req.AccountIndex)
 	if err != nil {
-		logx.Errorf("[GetNextNonce] err: %s", err.Error())
+		logx.Errorf("fail to get nonce from rpc for account: %d, err: %s", req.AccountIndex, err.Error())
 		if err == errorcode.RpcErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}

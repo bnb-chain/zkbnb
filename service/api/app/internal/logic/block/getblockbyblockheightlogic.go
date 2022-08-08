@@ -28,7 +28,6 @@ func NewGetBlockByBlockHeightLogic(ctx context.Context, svcCtx *svc.ServiceConte
 func (l *GetBlockByBlockHeightLogic) GetBlockByBlockHeight(req *types.ReqGetBlockByBlockHeight) (*types.RespGetBlockByBlockHeight, error) {
 	block, err := l.svcCtx.BlockModel.GetBlockByBlockHeight(int64(req.BlockHeight))
 	if err != nil {
-		logx.Errorf("[GetBlockWithTxsByBlockHeight] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}

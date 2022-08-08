@@ -5,7 +5,6 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/common/checker"
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/globalrpc"
@@ -30,10 +29,13 @@ func NewGetTxsByPubKeyLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 }
 
 func (l *GetTxsByPubKeyLogic) GetTxsByPubKey(req *types.ReqGetTxsByPubKey) (*types.RespGetTxsByPubKey, error) {
-	//TODO: check pubkey
+	if utils.CheckAccountPk(req.AccountPk) {
+		logx.Errorf("invalid AccountPk: %s", req.AccountPk)
+		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountPk")
+	}
+
 	account, err := l.svcCtx.AccountModel.GetAccountByPk(req.AccountPk)
 	if err != nil {
-		logx.Errorf("[GetAccountByPk] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
@@ -41,7 +43,6 @@ func (l *GetTxsByPubKeyLogic) GetTxsByPubKey(req *types.ReqGetTxsByPubKey) (*typ
 	}
 	txIds, err := l.svcCtx.TxDetailModel.GetTxIdsByAccountIndex(account.AccountIndex)
 	if err != nil {
-		logx.Errorf("[GetTxDetailByAccountIndex] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
@@ -51,8 +52,8 @@ func (l *GetTxsByPubKeyLogic) GetTxsByPubKey(req *types.ReqGetTxsByPubKey) (*typ
 		Total: uint32(len(txIds)),
 		Txs:   make([]*types.Tx, 0),
 	}
-	if checker.CheckOffset(req.Offset, resp.Total) {
-		return nil, errorcode.AppErrInvalidParam
+	if req.Offset > resp.Total {
+		return resp, nil
 	}
 	end := req.Offset + req.Limit
 	if resp.Total < (req.Offset + req.Limit) {

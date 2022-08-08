@@ -25,24 +25,22 @@ func NewGetMempoolTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 	}
 }
 func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (*types.RespGetMempoolTxs, error) {
+	resp := &types.RespGetMempoolTxs{
+		MempoolTxs: make([]*types.Tx, 0),
+	}
 	count, err := l.svcCtx.MempoolModel.GetMempoolTxsTotalCount()
 	if err != nil {
-		logx.Errorf("[GetMempoolTxsTotalCount] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrNotFound
+			return resp, nil
 		}
 		return nil, errorcode.AppErrInternal
 	}
-	resp := &types.RespGetMempoolTxs{
-		MempoolTxs: make([]*types.Tx, 0),
-		Total:      uint32(count),
-	}
+
 	if count == 0 {
 		return resp, nil
 	}
 	mempoolTxs, err := l.svcCtx.MempoolModel.GetMempoolTxsList(int64(req.Offset), int64(req.Limit))
 	if err != nil {
-		logx.Errorf("[GetMempoolTxs] err: %s", err.Error())
 		return nil, errorcode.AppErrInternal
 	}
 	for _, mempoolTx := range mempoolTxs {

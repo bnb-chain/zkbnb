@@ -38,7 +38,6 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (*types.RespGe
 		}
 		memppolTx, err := l.svcCtx.MempoolModel.GetMempoolTxByTxHash(req.TxHash)
 		if err != nil {
-			logx.Errorf("[GetMempoolTxByTxHash]: %s", err.Error())
 			if err == errorcode.DbErrNotFound {
 				return nil, errorcode.AppErrNotFound
 			}
@@ -49,7 +48,6 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (*types.RespGe
 	if resp.Tx.TxType == commonTx.TxTypeSwap {
 		txInfo, err := commonTx.ParseSwapTxInfo(tx.TxInfo)
 		if err != nil {
-			logx.Errorf("[ParseSwapTxInfo]: %s", err.Error())
 			return nil, errorcode.AppErrInternal
 		}
 		resp.AssetAId = txInfo.AssetAId

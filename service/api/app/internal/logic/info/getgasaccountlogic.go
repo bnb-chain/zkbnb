@@ -29,7 +29,6 @@ func NewGetGasAccountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 func (l *GetGasAccountLogic) GetGasAccount(req *types.ReqGetGasAccount) (resp *types.RespGetGasAccount, err error) {
 	accountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
 	if err != nil {
-		logx.Errorf("[GetGasAccountLogic] get sys config error: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
@@ -38,13 +37,12 @@ func (l *GetGasAccountLogic) GetGasAccount(req *types.ReqGetGasAccount) (resp *t
 
 	accountIndex, err := strconv.ParseInt(accountIndexConfig.Value, 10, 64)
 	if err != nil {
-		logx.Errorf("[GetGasAccountLogic] invalid account index: %s", accountIndexConfig.Value)
+		logx.Errorf("invalid account index: %s", accountIndexConfig.Value)
 		return nil, errorcode.AppErrInternal
 	}
 
 	accountModel, err := l.svcCtx.AccountModel.GetAccountByAccountIndex(accountIndex)
 	if err != nil {
-		logx.Errorf("[GetGasAccountLogic] get account error, index: %d, err: %s", accountIndex, err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}

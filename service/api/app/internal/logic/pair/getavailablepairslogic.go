@@ -25,30 +25,22 @@ func NewGetAvailablePairsLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 func (l *GetAvailablePairsLogic) GetAvailablePairs(_ *types.ReqGetAvailablePairs) (*types.RespGetAvailablePairs, error) {
+	resp := &types.RespGetAvailablePairs{}
 	liquidityAssets, err := l.svcCtx.LiquidityModel.GetAllLiquidityAssets()
 	if err != nil {
-		logx.Errorf("[GetAllLiquidityAssets] error: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrNotFound
+			return resp, nil
 		}
 		return nil, errorcode.AppErrInternal
 	}
-	resp := &types.RespGetAvailablePairs{}
+
 	for _, asset := range liquidityAssets {
 		assetA, err := l.svcCtx.L2AssetModel.GetSimpleAssetInfoByAssetId(asset.AssetAId)
 		if err != nil {
-			logx.Errorf("[GetSimpleL2AssetInfoByAssetId] err: %s", err.Error())
-			if err == errorcode.DbErrNotFound {
-				return nil, errorcode.AppErrNotFound
-			}
 			return nil, errorcode.AppErrInternal
 		}
 		assetB, err := l.svcCtx.L2AssetModel.GetSimpleAssetInfoByAssetId(asset.AssetBId)
 		if err != nil {
-			logx.Errorf("[GetSimpleL2AssetInfoByAssetId] err: %s", err.Error())
-			if err == errorcode.DbErrNotFound {
-				return nil, errorcode.AppErrNotFound
-			}
 			return nil, errorcode.AppErrInternal
 		}
 		resp.Pairs = append(resp.Pairs, &types.Pair{

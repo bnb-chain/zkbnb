@@ -31,7 +31,6 @@ func NewGetTxsByAccountIndexAndTxTypeLogic(ctx context.Context, svcCtx *svc.Serv
 func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *types.ReqGetTxsByAccountIndexAndTxType) (*types.RespGetTxsByAccountIndexAndTxType, error) {
 	txDetails, err := l.svcCtx.TxDetailModel.GetTxDetailByAccountIndex(int64(req.AccountIndex))
 	if err != nil {
-		logx.Errorf("[GetTxDetailByAccountIndex] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
@@ -43,7 +42,6 @@ func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *
 	for _, txDetail := range txDetails {
 		tx, err := l.svcCtx.TxModel.GetTxByTxId(txDetail.TxId)
 		if err != nil {
-			logx.Errorf("[GetTxByTxID] err: %s", err.Error())
 			return nil, err
 		}
 		if tx.TxType == int64(req.TxType) {
@@ -53,13 +51,11 @@ func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *
 	}
 	memPoolTxDetails, err := l.svcCtx.MempoolDetailModel.GetMempoolTxDetailsByAccountIndex(int64(req.AccountIndex))
 	if err != nil {
-		logx.Errorf("[GetMemPoolTxDetailByAccountIndex] err: %s", err.Error())
 		return nil, err
 	}
 	for _, txDetail := range memPoolTxDetails {
 		tx, err := l.svcCtx.MempoolModel.GetMempoolTxByTxId(txDetail.TxId)
 		if err != nil {
-			logx.Errorf("[GetMempoolTxByTxId] err: %s", err.Error())
 			return nil, err
 		}
 		if tx.TxType == int64(req.TxType) {

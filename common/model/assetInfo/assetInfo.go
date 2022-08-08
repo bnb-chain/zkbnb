@@ -244,7 +244,7 @@ func (m *defaultAssetInfoModel) GetAssetIdCount() (res int64, err error) {
 	Description: get l2 asset info by l2 symbol
 */
 func (m *defaultAssetInfoModel) GetAssetInfoBySymbol(symbol string) (res *AssetInfo, err error) {
-	dbTx := m.DB.Table(m.table).Where("l2_symbol = ?", symbol).Find(&res)
+	dbTx := m.DB.Table(m.table).Where("asset_symbol = ?", symbol).Find(&res)
 	if dbTx.Error != nil {
 		errInfo := fmt.Sprintf("[l2asset.GetL2AssetInfoBySymbol] %s", dbTx.Error)
 		logx.Error(errInfo)

@@ -3,10 +3,12 @@ package info
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/errorcode"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/price"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
@@ -29,20 +31,23 @@ func NewGetCurrencyPriceBySymbolLogic(ctx context.Context, svcCtx *svc.ServiceCo
 }
 
 func (l *GetCurrencyPriceBySymbolLogic) GetCurrencyPriceBySymbol(req *types.ReqGetCurrencyPriceBySymbol) (*types.RespGetCurrencyPriceBySymbol, error) {
-	//TODO: check symbol
-	price, err := l.price.GetCurrencyPrice(l.ctx, req.Symbol)
+	if utils.CheckSymbol(req.Symbol) {
+		logx.Errorf("invalid Symbol: %s", req.Symbol)
+		return nil, errorcode.AppErrInvalidParam.RefineError("invalid Symbol")
+	}
+	symbol := strings.ToUpper(req.Symbol)
+
+	l2Asset, err := l.svcCtx.L2AssetModel.GetAssetInfoBySymbol(symbol)
 	if err != nil {
-		logx.Errorf("[GetCurrencyPrice] err: %s", err.Error())
-		if err == errorcode.AppErrQuoteNotExist {
-			return nil, err
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
 		}
 		return nil, errorcode.AppErrInternal
 	}
-	l2Asset, err := l.svcCtx.L2AssetModel.GetAssetInfoBySymbol(req.Symbol)
+	price, err := l.price.GetCurrencyPrice(l.ctx, symbol)
 	if err != nil {
-		logx.Errorf("[GetL2AssetInfoBySymbol] err: %s", err.Error())
-		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrNotFound
+		if err == errorcode.AppErrQuoteNotExist {
+			return nil, err
 		}
 		return nil, errorcode.AppErrInternal
 	}

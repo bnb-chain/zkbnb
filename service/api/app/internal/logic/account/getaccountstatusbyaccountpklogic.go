@@ -6,6 +6,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/errorcode"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
@@ -25,10 +26,13 @@ func NewGetAccountStatusByAccountPkLogic(ctx context.Context, svcCtx *svc.Servic
 }
 
 func (l *GetAccountStatusByAccountPkLogic) GetAccountStatusByAccountPk(req *types.ReqGetAccountStatusByAccountPk) (*types.RespGetAccountStatusByAccountPk, error) {
-	//TODO: check pk
+	if utils.CheckAccountPk(req.AccountPk) {
+		logx.Errorf("invalid AccountPk: %s", req.AccountPk)
+		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountPk")
+	}
+
 	account, err := l.svcCtx.AccountModel.GetAccountByPk(req.AccountPk)
 	if err != nil {
-		logx.Errorf("[GetBasicAccountByAccountPk] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}

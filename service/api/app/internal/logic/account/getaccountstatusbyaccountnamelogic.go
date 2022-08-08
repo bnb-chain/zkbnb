@@ -5,8 +5,8 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/common/checker"
 	"github.com/bnb-chain/zkbas/errorcode"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
@@ -26,13 +26,16 @@ func NewGetAccountStatusByAccountNameLogic(ctx context.Context, svcCtx *svc.Serv
 }
 
 func (l *GetAccountStatusByAccountNameLogic) GetAccountStatusByAccountName(req *types.ReqGetAccountStatusByAccountName) (resp *types.RespGetAccountStatusByAccountName, err error) {
-	if checker.CheckAccountName(req.AccountName) {
-		logx.Errorf("[CheckAccountIndex] param: %s", req.AccountName)
+	if utils.CheckAccountName(req.AccountName) {
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountName")
 	}
-	account, err := l.svcCtx.AccountModel.GetAccountByAccountName(req.AccountName)
+	accountName := utils.FormatAccountName(req.AccountName)
+	if utils.CheckFormatAccountName(accountName) {
+		logx.Errorf("invalid AccountName: %s", accountName)
+		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountName")
+	}
+	account, err := l.svcCtx.AccountModel.GetAccountByAccountName(accountName)
 	if err != nil {
-		logx.Errorf("[GetBasicAccountByAccountName] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
