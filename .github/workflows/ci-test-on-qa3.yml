@@ -1,0 +1,69 @@
+name: Integration
+
+on:
+  push:
+    branches:
+      - qa3
+  pull_request:
+    branches:
+      - qa3
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: get slack webhook
+        run: |
+          export SLACK_WEBHOOK_URL=`sudo cat /home/ec2-user/actions-runner/slack-config.json | jq -r '.slack'`
+
+#      - name: deploy new zkbas
+#        run: |
+#          echo 'fetch zkbas repo'
+#          export PR_NUMBER=$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
+#          echo 'Pull requests/$PR_NUMBER'
+#
+#          cd ~
+#          rm -rf ./zkbas
+#          git clone --branch develop https://github.com/bnb-chain/zkbas.git
+#          cd ./zkbas
+#          git fetch origin pull/$PR_NUMBER/head:local-deploy-tmp
+#          git checkout local-deploy-tmp
+#          sudo cp -rf ./deploy-local.sh /tmp
+#
+#          echo "start deploy new zkbas"
+#          sudo bash -x /tmp/deploy-local.sh new
+#          echo "end deploy"
+#
+#      - name: run integration test
+#        run: |
+#          export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
+#          export ZkBas=`sudo cat /root/zkbas-deploy/zkbas-contract/info/addresses.json  | jq -r '.zkbasProxy'`
+#          export AssetGov=`sudo cat /root/zkbas-deploy/zkbas-contract/info/addresses.json  | jq -r '.assetGovernance'`
+#          export TestLogLevel=2
+#          export L1EndPoint=https://data-seed-prebsc-1-s1.binance.org:8545
+#          export L2EndPoint=http://127.0.0.1:8888
+#
+#          cd /tmp && sudo rm -rf ./zkbas-integration-test
+#          git clone --branch main https://github.com/bnb-chain/zkbas-integration-test.git
+#          cd ./zkbas-integration-test/tests
+#
+#          echo '1. start TestSetupSuite'
+#          go test -v -run TestSetupSuite -timeout 30m
+#
+#          echo '2. start L1 test'
+#          go test -v -run TestL1Suite -timeout 30m
+#
+#          echo '3. start L2 test'
+#          go test -v -run TestL2Suite -timeout 30m
+
+      - name: Notification via Slack
+        if: cancelled() == false
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          fields: message,commit,author,action,eventName,ref,workflow,job,took,pullRequest # selectable (default: repo,message)
+#        env:
+#          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }} # required
