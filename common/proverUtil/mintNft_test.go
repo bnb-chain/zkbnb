@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/bnb-chain/bas-smt/database/memory"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 
-	"github.com/bnb-chain/bas-smt/database/memory"
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/basic"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"

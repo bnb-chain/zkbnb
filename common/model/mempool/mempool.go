@@ -521,11 +521,11 @@ func (m *defaultMempoolModel) CreateBatchedMempoolTxs(mempoolTxs []*MempoolTx) e
 	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
 		dbTx := tx.Table(m.table).Create(mempoolTxs)
 		if dbTx.Error != nil {
-			logx.Errorf("[mempool.CreateMempoolTxs] %s", dbTx.Error)
+			logx.Errorf("[CreateBatchedMempoolTxs] %s", dbTx.Error)
 			return dbTx.Error
 		}
 		if dbTx.RowsAffected == 0 {
-			logx.Errorf("[mempool.CreateMempoolTxs] Create Invalid Mempool Tx")
+			logx.Errorf("[CreateBatchedMempoolTxs] Create Invalid Mempool Tx")
 			return errorcode.DbErrFailToCreateMempoolTx
 		}
 		return nil

@@ -24,7 +24,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
 	"github.com/bnb-chain/zkbas/common/model/block"
@@ -40,14 +39,12 @@ type (
 	ProviderClient = _rpc.ProviderClient
 	AuthClient     = _rpc.AuthClient
 
-	L1BlockMonitorModel      = l1BlockMonitor.L1BlockMonitorModel
-	L2TxEventMonitorModel    = l2TxEventMonitor.L2TxEventMonitorModel
-	L2BlockEventMonitorModel = l2BlockEventMonitor.L2BlockEventMonitorModel
-	SysconfigModel           = sysconfig.SysconfigModel
-	MempoolModel             = mempool.MempoolModel
-	BlockModel               = block.BlockModel
-	L2AssetInfoModel         = asset.AssetInfoModel
-	L1TxSenderModel          = l1TxSender.L1TxSenderModel
+	L1BlockMonitorModel = l1BlockMonitor.L1BlockMonitorModel
+	SysconfigModel      = sysconfig.SysconfigModel
+	MempoolModel        = mempool.MempoolModel
+	BlockModel          = block.BlockModel
+	L2AssetInfoModel    = asset.AssetInfoModel
+	L1TxSenderModel     = l1TxSender.L1TxSenderModel
 
 	L2AssetInfo         = asset.AssetInfo
 	Sysconfig           = sysconfig.Sysconfig
@@ -73,6 +70,7 @@ const (
 	EventTypeCommittedBlock     = l2BlockEventMonitor.CommittedBlockEventType
 	EventTypeVerifiedBlock      = l2BlockEventMonitor.VerifiedBlockEventType
 	EventTypeRevertedBlock      = l2BlockEventMonitor.RevertedBlockEventType
+
 	// status
 	PendingStatusL2BlockEventMonitor = l2BlockEventMonitor.PendingStatus
 
@@ -100,8 +98,6 @@ const (
 	TxTypeDepositNft     = commonTx.TxTypeDepositNft
 	TxTypeFullExit       = commonTx.TxTypeFullExit
 	TxTypeFullExitNft    = commonTx.TxTypeFullExitNft
-
-	GeneralAssetType = commonAsset.GeneralAssetType
 
 	BlockVerifiedStatus = block.StatusVerifiedAndExecuted
 
@@ -139,8 +135,4 @@ var (
 	governanceLogNewAssetGovernanceSigHash    = crypto.Keccak256Hash(governanceLogNewAssetGovernanceSig)
 	governanceLogValidatorStatusUpdateSigHash = crypto.Keccak256Hash(governanceLogValidatorStatusUpdateSig)
 	governanceLogAssetPausedUpdateSigHash     = crypto.Keccak256Hash(governanceLogAssetPausedUpdateSig)
-)
-
-const (
-	ZeroBigIntString = "0"
 )
