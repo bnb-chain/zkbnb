@@ -7,24 +7,21 @@ import (
 
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/globalrpc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
 type GetTxsByPubKeyLogic struct {
 	logx.Logger
-	ctx       context.Context
-	svcCtx    *svc.ServiceContext
-	globalRpc globalrpc.GlobalRPC
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
 }
 
 func NewGetTxsByPubKeyLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTxsByPubKeyLogic {
 	return &GetTxsByPubKeyLogic{
-		Logger:    logx.WithContext(ctx),
-		ctx:       ctx,
-		svcCtx:    svcCtx,
-		globalRpc: globalrpc.New(svcCtx, ctx),
+		Logger: logx.WithContext(ctx),
+		ctx:    ctx,
+		svcCtx: svcCtx,
 	}
 }
 
@@ -62,8 +59,7 @@ func (l *GetTxsByPubKeyLogic) GetTxsByPubKey(req *types.ReqGetTxsByPubKey) (*typ
 	for _, id := range txIds[req.Offset:end] {
 		tx, err := l.svcCtx.TxModel.GetTxByTxId(id)
 		if err != nil {
-			logx.Errorf("[GetTxByTxID] err: %s", err.Error())
-			return nil, err
+			return nil, errorcode.AppErrInternal
 		}
 		resp.Txs = append(resp.Txs, utils.GormTx2Tx(tx))
 	}

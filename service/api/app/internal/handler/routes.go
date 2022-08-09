@@ -224,61 +224,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/api/v1/tx/sendTx",
 				Handler: transaction.SendTxHandler(serverCtx),
 			},
-			{
-				Method:  http.MethodPost,
-				Path:    "/api/v1/tx/sendCreateCollectionTx",
-				Handler: transaction.SendCreateCollectionTxHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodPost,
-				Path:    "/api/v1/tx/sendMintNftTx",
-				Handler: transaction.SendMintNftTxHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodPost,
-				Path:    "/api/v1/tx/sendAddLiquidityTx",
-				Handler: transaction.SendAddLiquidityTxHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodPost,
-				Path:    "/api/v1/tx/sendAtomicMatchTx",
-				Handler: transaction.SendAtomicMatchTxHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodPost,
-				Path:    "/api/v1/tx/sendCancelOfferTx",
-				Handler: transaction.SendCancelOfferTxHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodPost,
-				Path:    "/api/v1/tx/sendRemoveLiquidityTx",
-				Handler: transaction.SendRemoveLiquidityTxHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodPost,
-				Path:    "/api/v1/tx/sendSwapTx",
-				Handler: transaction.SendSwapTxHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodPost,
-				Path:    "/api/v1/tx/sendTransferNftTx",
-				Handler: transaction.SendTransferNftTxHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodPost,
-				Path:    "/api/v1/tx/sendTransferTx",
-				Handler: transaction.SendTransferTxHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodPost,
-				Path:    "/api/v1/tx/sendWithdrawNftTx",
-				Handler: transaction.SendWithdrawNftTxHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodPost,
-				Path:    "/api/v1/tx/sendWithdrawTx",
-				Handler: transaction.SendWithdrawTxHandler(serverCtx),
-			},
 		},
 	)
 

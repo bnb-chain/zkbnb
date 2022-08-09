@@ -7,24 +7,24 @@ import (
 
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/globalrpc"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/commglobalmap"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
 type GetAccountInfoByPubKeyLogic struct {
 	logx.Logger
-	ctx       context.Context
-	svcCtx    *svc.ServiceContext
-	globalRPC globalrpc.GlobalRPC
+	ctx           context.Context
+	svcCtx        *svc.ServiceContext
+	commglobalmap commglobalmap.Commglobalmap
 }
 
 func NewGetAccountInfoByPubKeyLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAccountInfoByPubKeyLogic {
 	return &GetAccountInfoByPubKeyLogic{
-		Logger:    logx.WithContext(ctx),
-		ctx:       ctx,
-		svcCtx:    svcCtx,
-		globalRPC: globalrpc.New(svcCtx, ctx),
+		Logger:        logx.WithContext(ctx),
+		ctx:           ctx,
+		svcCtx:        svcCtx,
+		commglobalmap: commglobalmap.New(svcCtx),
 	}
 }
 
@@ -41,10 +41,10 @@ func (l *GetAccountInfoByPubKeyLogic) GetAccountInfoByPubKey(req *types.ReqGetAc
 		}
 		return nil, errorcode.AppErrInternal
 	}
-	account, err := l.globalRPC.GetLatestAccountInfoByAccountIndex(l.ctx, info.AccountIndex)
+	account, err := l.commglobalmap.GetLatestAccountInfo(l.ctx, info.AccountIndex)
 	if err != nil {
-		logx.Errorf("fail to get account info: %d from rpc, err: %s", info.AccountIndex, err.Error())
-		if err == errorcode.RpcErrNotFound {
+		logx.Errorf("fail to get account info: %d, err: %s", info.AccountIndex, err.Error())
+		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
 		return nil, errorcode.AppErrInternal
@@ -56,12 +56,12 @@ func (l *GetAccountInfoByPubKeyLogic) GetAccountInfoByPubKey(req *types.ReqGetAc
 		Nonce:         account.Nonce,
 		Assets:        make([]*types.AccountAsset, 0),
 	}
-	for _, asset := range account.AccountAsset {
+	for _, asset := range account.AssetInfo {
 		resp.Assets = append(resp.Assets, &types.AccountAsset{
-			AssetId:                  asset.AssetId,
-			Balance:                  asset.Balance,
-			LpAmount:                 asset.LpAmount,
-			OfferCanceledOrFinalized: asset.OfferCanceledOrFinalized,
+			AssetId:                  uint32(asset.AssetId),
+			Balance:                  asset.Balance.String(),
+			LpAmount:                 asset.LpAmount.String(),
+			OfferCanceledOrFinalized: asset.OfferCanceledOrFinalized.String(),
 		})
 	}
 	return resp, nil
