@@ -27,6 +27,7 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 
+	"github.com/bnb-chain/zkbas/common/options"
 	"github.com/bnb-chain/zkbas/errorcode"
 )
 
@@ -45,7 +46,7 @@ type (
 		GetAccountsList(limit int, offset int64) (accounts []*AccountHistory, err error)
 		GetAccountsTotalCount() (count int64, err error)
 		GetLatestAccountIndex() (accountIndex int64, err error)
-		GetValidAccounts(height int64) (rowsAffected int64, accounts []*AccountHistory, err error)
+		GetValidAccounts(height int64, opts ...options.QueryOption) (rowsAffected int64, accounts []*AccountHistory, err error)
 		GetValidAccountNums(height int64) (accounts int64, err error)
 		GetLatestAccountInfoByAccountIndex(accountIndex int64) (account *AccountHistory, err error)
 	}
@@ -304,14 +305,19 @@ func (m *defaultAccountHistoryModel) CreateNewAccount(nAccount *AccountHistory) 
 	return nil
 }
 
-func (m *defaultAccountHistoryModel) GetValidAccounts(height int64) (rowsAffected int64, accounts []*AccountHistory, err error) {
+func (m *defaultAccountHistoryModel) GetValidAccounts(height int64, opts ...options.QueryOption) (rowsAffected int64, accounts []*AccountHistory, err error) {
+	subQuery := m.DB.Table(m.table).Select("*").
+		Where("account_index = a.account_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height AND l2_block_height != -1", height)
 
-	dbTx := m.DB.Table(m.table).
-		Raw("SELECT a.* FROM account_history a WHERE NOT EXISTS"+
-			"(SELECT * FROM account_history WHERE account_index = a.account_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height AND l2_block_height != -1) "+
-			"AND l2_block_height <= ? AND l2_block_height != -1 ORDER BY account_index", height, height).
-		Find(&accounts)
-	if dbTx.Error != nil {
+	dbTx := m.DB.Table(m.table+" as a").Select("*").
+		Where("NOT EXISTS (?) AND l2_block_height <= ? AND l2_block_height != -1", subQuery, height).
+		Order("account_index")
+
+	for _, opt := range opts {
+		opt(dbTx)
+	}
+
+	if dbTx.Find(&accounts).Error != nil {
 		logx.Errorf("[GetValidAccounts] unable to get related accounts: %s", dbTx.Error.Error())
 		return 0, nil, dbTx.Error
 	}
@@ -319,22 +325,18 @@ func (m *defaultAccountHistoryModel) GetValidAccounts(height int64) (rowsAffecte
 
 }
 
-type countResult struct {
-	Count int `json:"count"`
-}
+func (m *defaultAccountHistoryModel) GetValidAccountNums(height int64) (count int64, err error) {
+	subQuery := m.DB.Table(m.table).Select("*").
+		Where("account_index = a.account_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height AND l2_block_height != -1", height)
 
-func (m *defaultAccountHistoryModel) GetValidAccountNums(height int64) (accounts int64, err error) {
-	var countResult countResult
-	dbTx := m.DB.Table(m.table).
-		Raw("SELECT count(a.*) FROM account_history a WHERE NOT EXISTS"+
-			"(SELECT * FROM account_history WHERE account_index = a.account_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height AND l2_block_height != -1) "+
-			"AND l2_block_height <= ? AND l2_block_height != -1", height, height).
-		Scan(&countResult)
-	if dbTx.Error != nil {
+	dbTx := m.DB.Table(m.table+" as a").
+		Where("NOT EXISTS (?) AND l2_block_height <= ? AND l2_block_height != -1", subQuery, height)
+
+	if dbTx.Count(&count).Error != nil {
 		logx.Errorf("[GetValidAccountNums] unable to get related accounts: %s", dbTx.Error.Error())
 		return 0, dbTx.Error
 	}
-	return int64(countResult.Count), nil
+	return count, nil
 }
 
 func (m *defaultAccountHistoryModel) GetLatestAccountInfoByAccountIndex(accountIndex int64) (account *AccountHistory, err error) {

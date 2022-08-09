@@ -22,6 +22,7 @@ import (
 	"github.com/bnb-chain/zkbas-crypto/hash/bn254/zmimc"
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbas/common/options"
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/pkg/treedb"
 )
@@ -44,27 +45,16 @@ func InitLiquidityTree(
 	}
 
 	if ctx.IsLoad() {
-		liquidityAssets, err := liquidityHistoryModel.GetLatestLiquidityByBlockHeight(blockHeight)
+		nums, err := liquidityHistoryModel.GetLatestLiquidityNumsByBlockHeight(blockHeight)
 		if err != nil {
-			if err != errorcode.DbErrNotFound {
-				logx.Errorf("[InitLiquidityTree] unable to get latest nft assets: %s", err.Error())
-				return nil, err
-			}
+			logx.Errorf("[InitLiquidityTree] unable to get latest liquidity assets: %s", err.Error())
+			return nil, err
 		}
-		for _, liquidityAsset := range liquidityAssets {
-			pairIndex := liquidityAsset.PairIndex
-			hashVal, err := LiquidityAssetToNode(
-				liquidityAsset.AssetAId, liquidityAsset.AssetA,
-				liquidityAsset.AssetBId, liquidityAsset.AssetB,
-				liquidityAsset.LpAmount, liquidityAsset.KLast,
-				liquidityAsset.FeeRate, liquidityAsset.TreasuryAccountIndex, liquidityAsset.TreasuryRate)
+		for i := 0; i < int(nums); i += ctx.BatchReloadSize() {
+			err := loadLiquidityTreeFromRDB(
+				liquidityHistoryModel, blockHeight,
+				i, i+ctx.BatchReloadSize(), liquidityTree)
 			if err != nil {
-				logx.Errorf("[InitLiquidityTree] unable to convert liquidity asset to node: %s", err.Error())
-				return nil, err
-			}
-			err = liquidityTree.Set(uint64(pairIndex), hashVal)
-			if err != nil {
-				logx.Errorf("[InitLiquidityTree] unable to write liquidity asset to tree: %s", err.Error())
 				return nil, err
 			}
 			_, err = liquidityTree.Commit(nil)
@@ -73,9 +63,14 @@ func InitLiquidityTree(
 				return nil, err
 			}
 		}
-	} else if liquidityTree.LatestVersion() > bsmt.Version(blockHeight) && !liquidityTree.IsEmpty() {
+
+		return liquidityTree, nil
+	}
+
+	// It's not loading from RDB, need to check tree version
+	if liquidityTree.LatestVersion() > bsmt.Version(blockHeight) && !liquidityTree.IsEmpty() {
+		logx.Infof("[InitLiquidityTree] liquidity tree version [%d] is higher than block, rollback to %d", liquidityTree.LatestVersion(), blockHeight)
 		err := liquidityTree.Rollback(bsmt.Version(blockHeight))
-		logx.Infof("[InitLiquidityTree] liquidity tree version [%d] if higher than block, rollback to %d", liquidityTree.LatestVersion(), blockHeight)
 		if err != nil {
 			logx.Errorf("[InitLiquidityTree] unable to rollback liquidity tree: %s, version: %d", err.Error(), blockHeight)
 			return nil, err
@@ -83,6 +78,40 @@ func InitLiquidityTree(
 	}
 
 	return liquidityTree, nil
+}
+
+func loadLiquidityTreeFromRDB(
+	liquidityHistoryModel LiquidityHistoryModel,
+	blockHeight int64,
+	offset, limit int,
+	liquidityTree bsmt.SparseMerkleTree,
+) error {
+	liquidityAssets, err := liquidityHistoryModel.GetLatestLiquidityByBlockHeight(blockHeight,
+		options.Offset(offset), options.Limit(limit))
+	if err != nil {
+		if err != errorcode.DbErrNotFound {
+			logx.Errorf("[InitLiquidityTree] unable to get latest liquidity assets: %s", err.Error())
+			return err
+		}
+	}
+	for _, liquidityAsset := range liquidityAssets {
+		pairIndex := liquidityAsset.PairIndex
+		hashVal, err := LiquidityAssetToNode(
+			liquidityAsset.AssetAId, liquidityAsset.AssetA,
+			liquidityAsset.AssetBId, liquidityAsset.AssetB,
+			liquidityAsset.LpAmount, liquidityAsset.KLast,
+			liquidityAsset.FeeRate, liquidityAsset.TreasuryAccountIndex, liquidityAsset.TreasuryRate)
+		if err != nil {
+			logx.Errorf("[InitLiquidityTree] unable to convert liquidity asset to node: %s", err.Error())
+			return err
+		}
+		err = liquidityTree.Set(uint64(pairIndex), hashVal)
+		if err != nil {
+			logx.Errorf("[InitLiquidityTree] unable to write liquidity asset to tree: %s", err.Error())
+			return err
+		}
+	}
+	return nil
 }
 
 func LiquidityAssetToNode(

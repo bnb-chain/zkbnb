@@ -22,6 +22,7 @@ import (
 	"github.com/bnb-chain/zkbas-crypto/hash/bn254/zmimc"
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbas/common/options"
 	"github.com/bnb-chain/zkbas/pkg/treedb"
 )
 
@@ -42,39 +43,66 @@ func InitNftTree(
 	}
 
 	if ctx.IsLoad() {
-		_, nftAssets, err := nftHistoryModel.GetLatestNftAssetsByBlockHeight(blockHeight)
+		nums, err := nftHistoryModel.GetLatestNftAssetNumsByBlockHeight(blockHeight)
 		if err != nil {
 			logx.Errorf("[InitNftTree] unable to get latest nft assets: %s", err.Error())
 			return nil, err
 		}
-		for _, nftAsset := range nftAssets {
-			nftIndex := nftAsset.NftIndex
-			hashVal, err := NftAssetToNode(nftAsset)
+		for i := 0; i < int(nums); i += ctx.BatchReloadSize() {
+			err := loadNftTreeFromRDB(
+				nftHistoryModel, blockHeight,
+				i, i+ctx.BatchReloadSize(), nftTree)
 			if err != nil {
-				logx.Errorf("[InitNftTree] unable to convert nft asset to node: %s", err.Error())
-				return nil, err
-			}
-
-			err = nftTree.Set(uint64(nftIndex), hashVal)
-			if err != nil {
-				logx.Errorf("[InitNftTree] unable to write nft asset to tree: %s", err.Error())
-				return nil, err
-			}
-			_, err = nftTree.Commit(nil)
-			if err != nil {
-				logx.Errorf("[InitNftTree] unable to commit nft tree: %s", err.Error())
 				return nil, err
 			}
 		}
-	} else if nftTree.LatestVersion() > bsmt.Version(blockHeight) && !nftTree.IsEmpty() {
+		_, err = nftTree.Commit(nil)
+		if err != nil {
+			logx.Errorf("[InitNftTree] unable to commit nft tree: %s", err.Error())
+			return nil, err
+		}
+		return nftTree, nil
+	}
+
+	// It's not loading from RDB, need to check tree version
+	if nftTree.LatestVersion() > bsmt.Version(blockHeight) && !nftTree.IsEmpty() {
+		logx.Infof("[InitNftTree] nft tree version [%d] is higher than block, rollback to %d", nftTree.LatestVersion(), blockHeight)
 		err := nftTree.Rollback(bsmt.Version(blockHeight))
-		logx.Infof("[InitNftTree] nft tree version [%d] if higher than block, rollback to %d", nftTree.LatestVersion(), blockHeight)
 		if err != nil {
 			logx.Errorf("[InitNftTree] unable to rollback nft tree: %s, version: %d", err.Error(), blockHeight)
 			return nil, err
 		}
 	}
 	return nftTree, nil
+}
+
+func loadNftTreeFromRDB(
+	nftHistoryModel L2NftHistoryModel,
+	blockHeight int64,
+	offset, limit int,
+	nftTree bsmt.SparseMerkleTree,
+) error {
+	_, nftAssets, err := nftHistoryModel.GetLatestNftAssetsByBlockHeight(blockHeight,
+		options.Offset(offset), options.Limit(limit))
+	if err != nil {
+		logx.Errorf("[InitNftTree] unable to get latest nft assets: %s", err.Error())
+		return err
+	}
+	for _, nftAsset := range nftAssets {
+		nftIndex := nftAsset.NftIndex
+		hashVal, err := NftAssetToNode(nftAsset)
+		if err != nil {
+			logx.Errorf("[InitNftTree] unable to convert nft asset to node: %s", err.Error())
+			return err
+		}
+
+		err = nftTree.Set(uint64(nftIndex), hashVal)
+		if err != nil {
+			logx.Errorf("[InitNftTree] unable to write nft asset to tree: %s", err.Error())
+			return err
+		}
+	}
+	return nil
 }
 
 func NftAssetToNode(nftAsset *AccountL2NftHistory) (hashVal []byte, err error) {
