@@ -23,16 +23,16 @@ func main() {
 	ctx := svc.NewServiceContext(c)
 	ZkbasRollupAddress, err := ctx.SysConfigModel.GetSysconfigByName(c.ChainConfig.ZkbasContractAddrSysConfigName)
 	if err != nil {
-		logx.Errorf("[main] GetSysconfigByName err: %s", err.Error())
+		logx.Errorf("GetSysconfigByName err: %s", err.Error())
 		panic(err)
 	}
 	NetworkRpc, err := ctx.SysConfigModel.GetSysconfigByName(c.ChainConfig.NetworkRPCSysConfigName)
 	if err != nil {
-		logx.Severef("[monitor] fatal error, cannot fetch NetworkRPC from sysConfig, err: %s, SysConfigName: %s",
+		logx.Severef("fatal error, cannot fetch NetworkRPC from sysConfig, err: %s, SysConfigName: %s",
 			err.Error(), c.ChainConfig.NetworkRPCSysConfigName)
 		panic(err)
 	}
-	logx.Infof("[monitor] ChainName: %s, ZkbasRollupAddress: %s, NetworkRpc: %s", c.ChainConfig.ZkbasContractAddrSysConfigName, ZkbasRollupAddress.Value, NetworkRpc.Value)
+	logx.Infof("ChainName: %s, ZkbasRollupAddress: %s, NetworkRpc: %s", c.ChainConfig.ZkbasContractAddrSysConfigName, ZkbasRollupAddress.Value, NetworkRpc.Value)
 	zkbasRpcCli, err := _rpc.NewClient(NetworkRpc.Value)
 	if err != nil {
 		panic(err)
@@ -74,7 +74,7 @@ func main() {
 	// governance monitor
 	GovernanceContractAddress, err := ctx.SysConfigModel.GetSysconfigByName(c.ChainConfig.GovernanceContractAddrSysConfigName)
 	if err != nil {
-		logx.Severef("[monitor] fatal error, cannot fetch ZkbasContractAddr from sysConfig, err: %s, SysConfigName: %s",
+		logx.Severef("fatal error, cannot fetch ZkbasContractAddr from sysConfig, err: %s, SysConfigName: %s",
 			err.Error(), c.ChainConfig.GovernanceContractAddrSysConfigName)
 		panic(err)
 	}

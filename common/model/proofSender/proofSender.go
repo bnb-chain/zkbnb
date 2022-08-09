@@ -29,7 +29,6 @@ type (
 		DropProofSenderTable() error
 		CreateProof(row *ProofSender) error
 		GetProofsByBlockRange(start int64, end int64, maxProofsCount int) (proofs []*ProofSender, err error)
-		GetProofStartBlockNumber() (num int64, err error)
 		GetLatestConfirmedProof() (p *ProofSender, err error)
 		GetProofByBlockNumber(num int64) (p *ProofSender, err error)
 	}
@@ -90,11 +89,10 @@ func (m *defaultProofSenderModel) DropProofSenderTable() error {
 func (m *defaultProofSenderModel) CreateProof(row *ProofSender) error {
 	dbTx := m.DB.Table(m.table).Create(row)
 	if dbTx.Error != nil {
-		logx.Errorf("[proofSender.CreateProof] %s", dbTx.Error)
+		logx.Errorf("create proof error, err: %s", dbTx.Error)
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
-		logx.Errorf("[proofSender.CreateProof] Create Invalid Proof")
 		return errorcode.DbErrFailToCreateProof
 	}
 	return nil
@@ -108,7 +106,6 @@ func (m *defaultProofSenderModel) CreateProof(row *ProofSender) error {
 */
 
 func (m *defaultProofSenderModel) GetProofsByBlockRange(start int64, end int64, maxProofsCount int) (proofs []*ProofSender, err error) {
-
 	dbTx := m.DB.Debug().Table(m.table).Where("block_number >= ? AND block_number <= ? AND status = ?",
 		start,
 		end,
@@ -118,35 +115,13 @@ func (m *defaultProofSenderModel) GetProofsByBlockRange(start int64, end int64, 
 		Find(&proofs)
 
 	if dbTx.Error != nil {
-		logx.Errorf("[proofSender.GetProofsByBlockRange] %s", dbTx.Error.Error())
-		return proofs, dbTx.Error
+		logx.Errorf("get proofs error, err: %s", dbTx.Error.Error())
+		return proofs, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		logx.Error("[proofSender.GetProofsByBlockRange] error not found")
 		return proofs, errorcode.DbErrNotFound
 	}
 
 	return proofs, err
-}
-
-/*
-	Func: GetStartProofBlockNumber
-	Params:
-	Return: err error
-	Description: Get the latest proof block number. It is used to support the prover hub to handle crypto blocks; the result will determine the start range.
-*/
-
-func (m *defaultProofSenderModel) GetProofStartBlockNumber() (num int64, err error) {
-	var row *ProofSender
-	dbTx := m.DB.Table(m.table).Order("block_number desc").Limit(1).Find(&row)
-	if dbTx.Error != nil {
-		logx.Errorf("[proofSender.GetProofStartBlockNumber] %s", dbTx.Error.Error())
-		return num, dbTx.Error
-	} else if dbTx.RowsAffected == 0 {
-		logx.Errorf("[proofSender.GetProofStartBlockNumber] not found")
-		return num, errorcode.DbErrNotFound
-	} else {
-		return row.BlockNumber, nil
-	}
 }
 
 /*
@@ -160,10 +135,9 @@ func (m *defaultProofSenderModel) GetLatestConfirmedProof() (p *ProofSender, err
 	var row *ProofSender
 	dbTx := m.DB.Table(m.table).Where("status >= ?", NotConfirmed).Order("block_number desc").Limit(1).Find(&row)
 	if dbTx.Error != nil {
-		logx.Errorf("[proofSender.GetLatestSentProof] %s", dbTx.Error.Error())
+		logx.Errorf("get confirmed proof error, err; %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		logx.Errorf("[proofSender.GetLatestSentProof] not found")
 		return nil, errorcode.DbErrNotFound
 	} else {
 		return row, nil
@@ -181,10 +155,9 @@ func (m *defaultProofSenderModel) GetProofByBlockNumber(num int64) (p *ProofSend
 	var row *ProofSender
 	dbTx := m.DB.Table(m.table).Where("block_number = ?", num).Find(&row)
 	if dbTx.Error != nil {
-		logx.Errorf("[proofSender.GetProofByBlockNumber] %s", dbTx.Error.Error())
+		logx.Errorf("get proof sender error, err: %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		logx.Errorf("[proofSender.GetProofByBlockNumber] not found")
 		return nil, errorcode.DbErrNotFound
 	} else {
 		return row, nil

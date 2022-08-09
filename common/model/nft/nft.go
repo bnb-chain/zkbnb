@@ -90,10 +90,9 @@ func (m *defaultL2NftModel) DropL2NftTable() error {
 func (m *defaultL2NftModel) GetNftAsset(nftIndex int64) (nftAsset *L2Nft, err error) {
 	dbTx := m.DB.Table(m.table).Where("nft_index = ?", nftIndex).Find(&nftAsset)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetNftAsset] unable to get nft asset: %s", dbTx.Error.Error())
+		logx.Errorf("unable to get nft asset: %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		logx.Errorf("[GetNftAsset] no such info")
 		return nil, errorcode.DbErrNotFound
 	}
 	return nftAsset, nil
@@ -103,7 +102,7 @@ func (m *defaultL2NftModel) GetLatestNftIndex() (nftIndex int64, err error) {
 	var nftInfo *L2Nft
 	dbTx := m.DB.Table(m.table).Order("nft_index desc").Find(&nftInfo)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetLatestNftIndex] unable to get latest nft info: %s", dbTx.Error.Error())
+		logx.Errorf("unable to get latest nft info: %s", dbTx.Error.Error())
 		return -1, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		return -1, nil

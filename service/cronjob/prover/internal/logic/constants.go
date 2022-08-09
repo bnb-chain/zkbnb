@@ -17,13 +17,8 @@
 package logic
 
 import (
-	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/frontend"
-)
-
-type (
-	CryptoBlock = cryptoBlock.Block
 )
 
 const RedisLockKey = "prover_mutex_key"

@@ -33,13 +33,9 @@ type (
 	AssetInfoModel interface {
 		CreateAssetInfoTable() error
 		DropAssetInfoTable() error
-		CreateAssetInfo(l2AssetInfo *AssetInfo) (bool, error)
 		CreateAssetsInfoInBatches(l2AssetsInfo []*AssetInfo) (rowsAffected int64, err error)
-		GetAssetsCount() (assetCount uint32, err error)
 		GetAssetsList() (res []*AssetInfo, err error)
-		GetAssetsListWithoutL1AssetsInfo() (res []*AssetInfo, err error)
 		GetSimpleAssetInfoByAssetId(assetId int64) (res *AssetInfo, err error)
-		GetAssetIdCount() (res int64, err error)
 		GetAssetInfoBySymbol(symbol string) (res *AssetInfo, err error)
 		GetAssetByAddress(address string) (info *AssetInfo, err error)
 	}
@@ -116,48 +112,6 @@ func (m *defaultAssetInfoModel) GetAssetsList() (res []*AssetInfo, err error) {
 }
 
 /*
-	Func: GetL2AssetsListWithoutL1AssetsInfo
-	Params:
-	Return: err error
-	Description: GetL2AssetsListWithoutL1AssetsInfo
-*/
-func (m *defaultAssetInfoModel) GetAssetsListWithoutL1AssetsInfo() (res []*AssetInfo, err error) {
-	dbTx := m.DB.Table(m.table).Find(&res)
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[l2asset.GetL2AssetsList] %s", dbTx.Error)
-		logx.Error(err)
-		return nil, errorcode.DbErrSqlOperation
-	}
-	if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l2asset.GetL2AssetsList] %s", errorcode.DbErrNotFound)
-		logx.Error(err)
-		return nil, errorcode.DbErrNotFound
-	}
-	return res, nil
-}
-
-/*
-	Func: CreateL2AssetInfo
-	Params: l2AssetInfo *L2AssetInfo
-	Return: bool, error
-	Description: create L2AssetsInfo batches
-*/
-func (m *defaultAssetInfoModel) CreateAssetInfo(l2AssetInfo *AssetInfo) (bool, error) {
-	dbTx := m.DB.Table(m.table).Create(l2AssetInfo)
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[l2asset.CreateL2AssetInfo] %s", dbTx.Error)
-		logx.Error(err)
-		return false, dbTx.Error
-	}
-	if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l2asset.CreateL2AssetInfo] %s", errorcode.DbErrFailToCreateAssetInfo)
-		logx.Error(err)
-		return false, errorcode.DbErrFailToCreateAssetInfo
-	}
-	return true, nil
-}
-
-/*
 	Func: CreateL2AssetsInfoInBatches
 	Params: []*L2AssetInfo
 	Return: rowsAffected int64, err error
@@ -174,28 +128,6 @@ func (m *defaultAssetInfoModel) CreateAssetsInfoInBatches(l2AssetsInfo []*AssetI
 		return 0, nil
 	}
 	return dbTx.RowsAffected, nil
-}
-
-/*
-	Func: GetL2AssetsCount
-	Params:
-	Return: latestHeight int64, err error
-	Description: get latest l1asset id to active accounts
-*/
-func (m *defaultAssetInfoModel) GetAssetsCount() (assetCount uint32, err error) {
-	var asset *AssetInfo
-	dbTx := m.DB.Table(m.table).Order("l2_asset_id desc").First(&asset)
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[l2asset.GetL2AssetsCount] %s", dbTx.Error)
-		logx.Error(err)
-		return 0, dbTx.Error
-	}
-	if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l2asset.GetL2AssetsCount] %s", errorcode.DbErrNotFound)
-		logx.Error(err)
-		return 0, errorcode.DbErrNotFound
-	}
-	return asset.AssetId + 1, nil
 }
 
 /*
@@ -217,24 +149,6 @@ func (m *defaultAssetInfoModel) GetSimpleAssetInfoByAssetId(assetId int64) (res 
 		return nil, errorcode.DbErrNotFound
 	}
 	return res, nil
-}
-
-/*
-	Func: GetAssetIdCount
-	Params:
-	Return: res int64, err error
-	Description: get l2 asset id count
-*/
-func (m *defaultAssetInfoModel) GetAssetIdCount() (res int64, err error) {
-	dbTx := m.DB.Table(m.table).Where("deleted_at is NULL").Count(&res)
-	if dbTx.Error != nil {
-		errInfo := fmt.Sprintf("[l2asset.GetAssetIdCount] %s", dbTx.Error)
-		logx.Error(errInfo)
-		// TODO : to be modified
-		return 0, dbTx.Error
-	} else {
-		return res, nil
-	}
 }
 
 /*

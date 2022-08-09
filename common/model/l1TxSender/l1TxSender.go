@@ -39,14 +39,9 @@ type (
 		CreateL1TxSenderTable() error
 		DropL1TxSenderTable() error
 		CreateL1TxSender(tx *L1TxSender) (bool, error)
-		CreateL1TxSendersInBatches(txs []*L1TxSender) (rowsAffected int64, err error)
-		GetL1TxSenders() (txs []*L1TxSender, err error)
 		GetLatestHandledBlock(txType int64) (txSender *L1TxSender, err error)
-		GetLatestL1TxSender() (blockInfo *L1TxSender, err error)
 		GetLatestPendingBlock(txType int64) (txSender *L1TxSender, err error)
 		GetL1TxSendersByTxStatus(txStatus int) (txs []*L1TxSender, err error)
-		GetL1TxSendersByTxTypeAndStatus(txType uint8, txStatus int) (rowsAffected int64, txs []*L1TxSender, err error)
-		GetL1TxSendersByTxHashAndTxType(txHash string, txType uint8) (rowsAffected int64, txs []*L1TxSender, err error)
 		DeleteL1TxSender(sender *L1TxSender) error
 		UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 			pendingUpdateBlocks []*block.Block,
@@ -116,71 +111,12 @@ func (m *defaultL1TxSenderModel) DropL1TxSenderTable() error {
 func (m *defaultL1TxSenderModel) CreateL1TxSender(tx *L1TxSender) (bool, error) {
 	dbTx := m.DB.Table(m.table).Create(tx)
 	if dbTx.Error != nil {
-		err := fmt.Sprintf("[l1TxSender.CreateL1TxSender] %s", dbTx.Error)
-		logx.Error(err)
+		logx.Error("create l1 tx sender error, err: %s", dbTx.Error.Error())
 		return false, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		ErrInvalidL1TxSender := errors.New("invalid l1TxSender")
-		err := fmt.Sprintf("[l1TxSender.CreateL1TxSender] %s", ErrInvalidL1TxSender)
-		logx.Error(err)
-		return false, ErrInvalidL1TxSender
+		return false, errors.New("invalid l1TxSender")
 	}
 	return true, nil
-}
-
-/*
-	Func: CreateL1TxSendersInBatches
-	Params: []*L1TxSender
-	Return: rowsAffected int64, err error
-	Description: create L1TxSender batches
-*/
-func (m *defaultL1TxSenderModel) CreateL1TxSendersInBatches(txs []*L1TxSender) (rowsAffected int64, err error) {
-	dbTx := m.DB.Table(m.table).CreateInBatches(txs, len(txs))
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[l1TxSender.CreateL1TxSendersInBatches] %s", dbTx.Error)
-		logx.Error(err)
-		return 0, dbTx.Error
-	}
-	if dbTx.RowsAffected == 0 {
-		return 0, nil
-	}
-	return dbTx.RowsAffected, nil
-}
-
-/*
-	GetL1TxSenders: get all L1TxSenders
-*/
-func (m *defaultL1TxSenderModel) GetL1TxSenders() (txs []*L1TxSender, err error) {
-	dbTx := m.DB.Table(m.table).Find(&txs)
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[l1TxSender.GetL1TxSenders] %s", dbTx.Error)
-		logx.Error(err)
-		return nil, errorcode.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l1TxSender.GetL1TxSenders] %s", errorcode.DbErrNotFound)
-		logx.Error(err)
-		return nil, errorcode.DbErrNotFound
-	}
-	return txs, dbTx.Error
-}
-
-/*
-	Func: GetLatestL1TxSender
-	Return: txVerification []*L1TxSender, err error
-	Description: get latest l1 block monitor info
-*/
-func (m *defaultL1TxSenderModel) GetLatestL1TxSender() (blockInfo *L1TxSender, err error) {
-	dbTx := m.DB.Table(m.table).First(&blockInfo)
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[l1TxSender.GetLatestL1TxSender] %s", dbTx.Error)
-		logx.Error(err)
-		return nil, errorcode.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l1TxSender.GetLatestL1TxSender] %s", errorcode.DbErrNotFound)
-		logx.Error(err)
-		return nil, errorcode.DbErrNotFound
-	}
-	return blockInfo, nil
 }
 
 /*
@@ -191,52 +127,23 @@ func (m *defaultL1TxSenderModel) GetLatestL1TxSender() (blockInfo *L1TxSender, e
 func (m *defaultL1TxSenderModel) GetL1TxSendersByTxStatus(txStatus int) (txs []*L1TxSender, err error) {
 	dbTx := m.DB.Table(m.table).Where("tx_status = ?", txStatus).Order("l2_block_height, tx_type").Find(&txs)
 	if dbTx.Error != nil {
-		err := fmt.Sprintf("[l1TxSender.GetL1TxSendersByTxStatus] %s", dbTx.Error)
-		logx.Error(err)
+		logx.Errorf("get l1 tx senders by status error, err: %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l1TxSender.GetL1TxSendersByTxStatus] %s", errorcode.DbErrNotFound)
-		logx.Error(err)
 		return nil, errorcode.DbErrNotFound
 	}
 	return txs, nil
-}
-
-/*
-	Func: GetL1TxSendersByTxStatus
-	Return: txVerification []*L1TxSender, err error
-	Description: get L1TxSender by txVerification type and status
-*/
-func (m *defaultL1TxSenderModel) GetL1TxSendersByTxTypeAndStatus(txType uint8, txStatus int) (rowsAffected int64, txs []*L1TxSender, err error) {
-	dbTx := m.DB.Table(m.table).Where("tx_type = ? AND tx_status = ?", txType, txStatus).Find(&txs)
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[l1TxSender.GetL1TxSendersByTxTypeAndStatus] %s", dbTx.Error)
-		logx.Error(err)
-		return 0, nil, dbTx.Error
-	}
-	return dbTx.RowsAffected, txs, nil
-}
-
-func (m *defaultL1TxSenderModel) GetL1TxSendersByTxHashAndTxType(txHash string, txType uint8) (rowsAffected int64, txs []*L1TxSender, err error) {
-	dbTx := m.DB.Table(m.table).Where("l1_tx_hash = ? AND tx_type = ?", txHash, txType).Find(&txs)
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[l1TxSender.GetL1TxSendersByTxHashAndTxType] %s", dbTx.Error)
-		logx.Error(err)
-		return 0, nil, dbTx.Error
-	}
-	return dbTx.RowsAffected, txs, nil
 }
 
 func (m *defaultL1TxSenderModel) DeleteL1TxSender(sender *L1TxSender) error {
 	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
 		dbTx := tx.Table(m.table).Where("id = ?", sender.ID).Delete(&sender)
 		if dbTx.Error != nil {
-			logx.Errorf("[l1TxSender.DeleteL1TxSender] %s", dbTx.Error.Error())
+			logx.Errorf("delete l1 tx sender error, err: %s", dbTx.Error.Error())
 			return dbTx.Error
 		}
 		if dbTx.RowsAffected == 0 {
-			logx.Error("[l1TxSender.DeleteL1TxSender] Delete invalid sender")
-			return errors.New("[l1TxSender.DeleteL1TxSender] delete invalid sender")
+			return errors.New("delete invalid sender")
 		}
 		return nil
 	})
@@ -259,19 +166,17 @@ func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 				Select("*").
 				Updates(&pendingUpdateBlock)
 			if dbTx.Error != nil {
-				err := fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] %s", dbTx.Error)
-				logx.Error(err)
+				logx.Errorf("update block error, err: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
 				blocksInfo, err := json.Marshal(pendingUpdateBlocks)
 				if err != nil {
-					res := fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] %s", err)
-					logx.Error(res)
+					logx.Errorf("marshal block error, err: %s", err.Error())
 					return err
 				}
-				logx.Error("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Invalid block:  " + string(blocksInfo))
-				return errors.New("Invalid blocks:  " + string(blocksInfo))
+				logx.Errorf("invalid block:  %s", string(blocksInfo))
+				return errors.New("invalid block")
 			}
 		}
 		// update sender
@@ -280,19 +185,17 @@ func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 				Select("*").
 				Updates(&pendingUpdateSender)
 			if dbTx.Error != nil {
-				err := fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] %s", dbTx.Error)
-				logx.Error(err)
+				logx.Errorf("update tx sender error, err: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
 				senderInfo, err := json.Marshal(pendingUpdateSender)
 				if err != nil {
-					res := fmt.Sprintf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] %s", err)
-					logx.Error(res)
+					logx.Errorf("marshal tx sender error, err: %s", err.Error())
 					return err
 				}
-				logx.Error("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] %s" + "Invalid sender:  " + string(senderInfo))
-				return errors.New("Invalid sender:  " + string(senderInfo))
+				logx.Errorf("invalid sender:  %s", string(senderInfo))
+				return errors.New("invalid sender")
 			}
 		}
 		// delete mempool txs
@@ -300,22 +203,20 @@ func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 			for _, detail := range pendingDeleteMempoolTx.MempoolDetails {
 				dbTx := tx.Table(mempool.DetailTableName).Where("id = ?", detail.ID).Delete(&detail)
 				if dbTx.Error != nil {
-					logx.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] %s", dbTx.Error)
+					logx.Errorf("delete tx detail error, err: %s", dbTx.Error.Error())
 					return dbTx.Error
 				}
 				if dbTx.RowsAffected == 0 {
-					logx.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Delete Invalid Mempool Tx")
-					return errors.New("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Delete Invalid Mempool Tx")
+					return errors.New("delete invalid mempool tx")
 				}
 			}
 			dbTx := tx.Table(mempool.MempoolTableName).Where("id = ?", pendingDeleteMempoolTx.ID).Delete(&pendingDeleteMempoolTx)
 			if dbTx.Error != nil {
-				logx.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] %s", dbTx.Error)
+				logx.Errorf("delete mempool tx error, err: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
-				logx.Error("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Delete Invalid Mempool Tx")
-				return errors.New("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Delete Invalid Mempool Tx")
+				return errors.New("delete invalid mempool tx")
 			}
 		}
 		// modify proofSender Status
@@ -323,23 +224,21 @@ func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 			var row *proofSender.ProofSender
 			dbTx := tx.Table(proofSender.TableName).Where("block_number = ?", blockHeight).Find(&row)
 			if dbTx.Error != nil {
-				logx.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] %s", dbTx.Error)
+				logx.Errorf("update proof sender error, err: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
-				logx.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] No such proof. Height: %d", blockHeight)
-				return fmt.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] No such proof. Height: %d", blockHeight)
+				return fmt.Errorf("no such proof. height: %d", blockHeight)
 			}
 			dbTx = tx.Model(&row).
 				Select("status").
 				Updates(&proofSender.ProofSender{Status: int64(newStatus)})
 			if dbTx.Error != nil {
-				logx.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] %s", dbTx.Error)
+				logx.Errorf("update proof sender error, err: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
-				logx.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Update No Proof: %d", row.BlockNumber)
-				return fmt.Errorf("[UpdateRelatedEventsAndResetRelatedAssetsAndTxs] Update No Proof: %d", row.BlockNumber)
+				return fmt.Errorf("update no proof: %d", row.BlockNumber)
 			}
 		}
 		return nil
@@ -350,7 +249,7 @@ func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 func (m *defaultL1TxSenderModel) GetLatestHandledBlock(txType int64) (txSender *L1TxSender, err error) {
 	dbTx := m.DB.Table(m.table).Where("tx_type = ? AND tx_status = ?", txType, HandledStatus).Order("l2_block_height desc").Find(&txSender)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetLatestHandledBlock] unable to get latest handled block: %s", dbTx.Error.Error())
+		logx.Errorf("unable to get latest handled block: %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, errorcode.DbErrNotFound
@@ -361,7 +260,7 @@ func (m *defaultL1TxSenderModel) GetLatestHandledBlock(txType int64) (txSender *
 func (m *defaultL1TxSenderModel) GetLatestPendingBlock(txType int64) (txSender *L1TxSender, err error) {
 	dbTx := m.DB.Table(m.table).Where("tx_type = ? AND tx_status = ?", txType, PendingStatus).Find(&txSender)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetLatestHandledBlock] unable to get latest pending block: %s", dbTx.Error.Error())
+		logx.Errorf("unable to get latest pending block: %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, errorcode.DbErrNotFound

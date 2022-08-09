@@ -36,7 +36,7 @@ func MonitorL2BlockEvents(
 	logx.Errorf("========== start MonitorL2BlockEvents ==========")
 	pendingSenders, err := l1TxSenderModel.GetL1TxSendersByTxStatus(L1TxSenderPendingStatus)
 	if err != nil {
-		logx.Errorf("[MonitorL2BlockEvents] unable to get l1 tx senders by tx status: %s", err.Error())
+		logx.Errorf("unable to get l1 tx senders by tx status: %s", err.Error())
 		return err
 	}
 	var (
@@ -49,7 +49,7 @@ func MonitorL2BlockEvents(
 		// check if the status of tx is success
 		_, isPending, err := bscCli.GetTransactionByHash(txHash)
 		if err != nil {
-			logx.Errorf("[MonitorL2BlockEvents] GetTransactionByHash err: %s", err.Error())
+			logx.Errorf("GetTransactionByHash err: %s", err.Error())
 			continue
 		}
 		if isPending {
@@ -57,13 +57,13 @@ func MonitorL2BlockEvents(
 		}
 		receipt, err := bscCli.GetTransactionReceipt(txHash)
 		if err != nil {
-			logx.Errorf("[MonitorL2BlockEvents] GetTransactionReceipt err: %s", err.Error())
+			logx.Errorf("GetTransactionReceipt err: %s", err.Error())
 			continue
 		}
 		// get latest l1 block height(latest height - pendingBlocksCount)
 		latestHeight, err := bscCli.GetHeight()
 		if err != nil {
-			logx.Errorf("[MonitorL2BlockEvents] GetHeight err: %s", err.Error())
+			logx.Errorf("GetHeight err: %s", err.Error())
 			return err
 		}
 		if latestHeight < receipt.BlockNumber.Uint64()+bscPendingBlocksCount {
@@ -77,7 +77,7 @@ func MonitorL2BlockEvents(
 			if isQueriedBlockHash[vlog.BlockHash.Hex()] == 0 {
 				onChainBlockInfo, err := bscCli.GetBlockHeaderByHash(vlog.BlockHash.Hex())
 				if err != nil {
-					logx.Errorf("[MonitorL2BlockEvents] GetBlockHeaderByHash err: %s", err.Error())
+					logx.Errorf("GetBlockHeaderByHash err: %s", err.Error())
 					return err
 				}
 				isQueriedBlockHash[vlog.BlockHash.Hex()] = int64(onChainBlockInfo.Time)
@@ -87,14 +87,14 @@ func MonitorL2BlockEvents(
 			case zkbasLogBlockCommitSigHash.Hex():
 				var event ZkbasBlockCommit
 				if err = ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlockCommit, vlog.Data); err != nil {
-					logx.Errorf("[MonitorL2BlockEvents] UnpackIntoInterface err: %s", err.Error())
+					logx.Errorf("UnpackIntoInterface err: %s", err.Error())
 					return err
 				}
 				blockHeight := int64(event.BlockNumber)
 				if relatedBlocks[blockHeight] == nil {
 					relatedBlocks[blockHeight], err = blockModel.GetBlockByBlockHeightWithoutTx(blockHeight)
 					if err != nil {
-						logx.Errorf("[MonitorL2BlockEvents] GetBlockByBlockHeightWithoutTx err: %s", err.Error())
+						logx.Errorf("GetBlockByBlockHeightWithoutTx err: %s", err.Error())
 						return err
 					}
 				}
@@ -107,14 +107,14 @@ func MonitorL2BlockEvents(
 			case zkbasLogBlockVerificationSigHash.Hex():
 				var event ZkbasBlockVerification
 				if err = ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlockVerification, vlog.Data); err != nil {
-					logx.Errorf("[MonitorL2BlockEvents] UnpackIntoInterface err: %s", err.Error())
+					logx.Errorf("UnpackIntoInterface err: %s", err.Error())
 					return err
 				}
 				blockHeight := int64(event.BlockNumber)
 				if relatedBlocks[blockHeight] == nil {
 					relatedBlocks[blockHeight], err = blockModel.GetBlockByBlockHeightWithoutTx(blockHeight)
 					if err != nil {
-						logx.Errorf("[MonitorL2BlockEvents] GetBlockByBlockHeightWithoutTx err: %s", err.Error())
+						logx.Errorf("GetBlockByBlockHeightWithoutTx err: %s", err.Error())
 						return err
 					}
 				}
@@ -150,7 +150,7 @@ func MonitorL2BlockEvents(
 		if pendingUpdateBlock.BlockStatus == BlockVerifiedStatus {
 			_, pendingDeleteMempoolTxs, err := mempoolModel.GetMempoolTxsByBlockHeight(pendingUpdateBlock.BlockHeight)
 			if err != nil {
-				logx.Errorf("[MonitorL2BlockEvents] GetMempoolTxsByBlockHeight err: %s", err.Error())
+				logx.Errorf("GetMempoolTxsByBlockHeight err: %s", err.Error())
 				return err
 			}
 			if len(pendingDeleteMempoolTxs) == 0 {
@@ -163,13 +163,13 @@ func MonitorL2BlockEvents(
 	// delete mempool txs
 	if err = l1TxSenderModel.UpdateRelatedEventsAndResetRelatedAssetsAndTxs(pendingUpdateBlocks,
 		pendingUpdateSenders, pendingUpdateMempoolTxs, pendingUpdateProofSenderStatus); err != nil {
-		logx.Errorf("[MonitorL2BlockEvents] UpdateRelatedEventsAndResetRelatedAssetsAndTxs err: %s", err.Error())
+		logx.Errorf("UpdateRelatedEventsAndResetRelatedAssetsAndTxs err: %s", err.Error())
 		return err
 	}
 
-	logx.Errorf("[MonitorL2BlockEvents] update blocks count: %d", len(pendingUpdateBlocks))
-	logx.Errorf("[MonitorL2BlockEvents] update senders count: %d", len(pendingUpdateSenders))
-	logx.Errorf("[MonitorL2BlockEvents] update mempool txs count: %d", len(pendingUpdateMempoolTxs))
+	logx.Errorf("update blocks count: %d", len(pendingUpdateBlocks))
+	logx.Errorf("update senders count: %d", len(pendingUpdateSenders))
+	logx.Errorf("update mempool txs count: %d", len(pendingUpdateMempoolTxs))
 	logx.Errorf("========== end MonitorL2BlockEvents ==========")
 	return nil
 }

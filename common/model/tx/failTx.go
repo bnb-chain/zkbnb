@@ -98,11 +98,10 @@ func (m *defaultFailTxModel) DropFailTxTable() error {
 func (m *defaultFailTxModel) CreateFailTx(failTx *FailTx) error {
 	dbTx := m.DB.Table(m.table).Create(failTx)
 	if dbTx.Error != nil {
-		logx.Errorf("[txVerification.CreateFailTx] %s", dbTx.Error.Error())
+		logx.Errorf("create fail tx error, err: %s", dbTx.Error.Error())
 		return errorcode.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {
-		logx.Error("[txVerification.CreateFailTx] Create Invalid Fail Tx")
 		return errorcode.DbErrFailToCreateFailTx
 	}
 	return nil

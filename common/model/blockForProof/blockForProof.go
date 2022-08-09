@@ -94,8 +94,8 @@ func (m *defaultBlockForProofModel) GetLatestUnprovedBlockHeight() (blockNumber 
 	var row *BlockForProof
 	dbTx := m.DB.Table(m.table).Order("block_height desc").Limit(1).Find(&row)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetLatestUnprovedBlockHeight] unable to get latest unproved block: %s", dbTx.Error.Error())
-		return 0, dbTx.Error
+		logx.Errorf("unable to get latest unproved block: %s", dbTx.Error.Error())
+		return 0, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return 0, errorcode.DbErrNotFound
 	}
@@ -107,7 +107,7 @@ func (m *defaultBlockForProofModel) GetUnprovedCryptoBlockByMode(mode int64) (bl
 	case util.COO_MODE:
 		dbTx := m.DB.Table(m.table).Where("status = ?", StatusPublished).Order("block_height asc").Limit(1).Find(&block)
 		if dbTx.Error != nil {
-			logx.Errorf("[GetUnprovedCryptoBlockByMode] unable to get unproved block: %s", dbTx.Error.Error())
+			logx.Errorf("unable to get unproved block: %s", dbTx.Error.Error())
 			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			return nil, errorcode.DbErrNotFound
@@ -116,7 +116,7 @@ func (m *defaultBlockForProofModel) GetUnprovedCryptoBlockByMode(mode int64) (bl
 	case util.COM_MODE:
 		dbTx := m.DB.Table(m.table).Where("status <= ?", StatusReceived).Order("block_height asc").Limit(1).Find(&block)
 		if dbTx.Error != nil {
-			logx.Errorf("[GetUnprovedCryptoBlockByMode] unable to get unproved block: %s", dbTx.Error.Error())
+			logx.Errorf("unable to get unproved block: %s", dbTx.Error.Error())
 			return nil, errorcode.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			return nil, errorcode.DbErrNotFound
@@ -130,7 +130,7 @@ func (m *defaultBlockForProofModel) GetUnprovedCryptoBlockByMode(mode int64) (bl
 func (m *defaultBlockForProofModel) GetUnprovedCryptoBlockByBlockNumber(height int64) (block *BlockForProof, err error) {
 	dbTx := m.DB.Table(m.table).Where("block_height = ?", height).Limit(1).Find(&block)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetUnprovedCryptoBlockByBlockNumber] unable to get unproved block: %s", dbTx.Error.Error())
+		logx.Errorf("unable to get unproved block: %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, errorcode.DbErrNotFound
@@ -142,15 +142,15 @@ func (m *defaultBlockForProofModel) CreateConsecutiveUnprovedCryptoBlock(block *
 	if block.BlockHeight > 1 {
 		_, err := m.GetUnprovedCryptoBlockByBlockNumber(block.BlockHeight - 1)
 		if err != nil {
-			logx.Infof("[CreateConsecutiveUnprovedCryptoBlock] block exist: %s", err.Error())
+			logx.Infof("get unproved block error, err: %s", err.Error())
 			return fmt.Errorf("previous block does not exist")
 		}
 	}
 
 	dbTx := m.DB.Table(m.table).Create(block)
 	if dbTx.Error != nil {
-		logx.Errorf("[CreateConsecutiveUnprovedCryptoBlock] create block error: %s", dbTx.Error.Error())
-		return dbTx.Error
+		logx.Errorf("create block error, err: %s", dbTx.Error.Error())
+		return errorcode.DbErrSqlOperation
 	}
 	return nil
 }
@@ -160,8 +160,8 @@ func (m *defaultBlockForProofModel) UpdateUnprovedCryptoBlockStatus(block *Block
 	block.UpdatedAt = time.Now()
 	dbTx := m.DB.Table(m.table).Save(block)
 	if dbTx.Error != nil {
-		logx.Errorf("[UpdateUnprovedCryptoBlockStatus] update block status error: %s", dbTx.Error.Error())
-		return dbTx.Error
+		logx.Errorf("update block status error: %s", dbTx.Error.Error())
+		return errorcode.DbErrSqlOperation
 	}
 	return nil
 }

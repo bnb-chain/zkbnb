@@ -37,7 +37,6 @@ import (
 
 type (
 	ProviderClient = _rpc.ProviderClient
-	AuthClient     = _rpc.AuthClient
 
 	L1BlockMonitorModel = l1BlockMonitor.L1BlockMonitorModel
 	SysconfigModel      = sysconfig.SysconfigModel

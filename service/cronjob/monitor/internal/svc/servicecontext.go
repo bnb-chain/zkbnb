@@ -7,7 +7,6 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas/common/model/account"
 	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/l1BlockMonitor"
@@ -20,7 +19,6 @@ import (
 
 type ServiceContext struct {
 	BlockModel            block.BlockModel
-	AccountModel          account.AccountModel
 	MempoolModel          mempool.MempoolModel
 	SysConfigModel        sysconfig.SysconfigModel
 	L1TxSenderModel       l1TxSender.L1TxSenderModel
@@ -39,7 +37,7 @@ func WithRedis(redisType string, redisPass string) redis.Option {
 func NewServiceContext(c config.Config) *ServiceContext {
 	gormPointer, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
 	if err != nil {
-		logx.Errorf("gorm connect db error, err = %s", err.Error())
+		logx.Errorf("gorm connect db error, err: %s", err.Error())
 	}
 	conn := sqlx.NewSqlConn("postgres", c.Postgres.DataSource)
 	redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))

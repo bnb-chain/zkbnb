@@ -18,20 +18,16 @@
 package nft
 
 import (
-	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
-
-	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type (
 	L2NftWithdrawHistoryModel interface {
 		CreateL2NftWithdrawHistoryTable() error
 		DropL2NftWithdrawHistoryTable() error
-		GetNftAsset(nftIndex int64) (nftAsset *L2NftWithdrawHistory, err error)
 	}
 	defaultL2NftWithdrawHistoryModel struct {
 		sqlc.CachedConn
@@ -82,16 +78,4 @@ func (m *defaultL2NftWithdrawHistoryModel) CreateL2NftWithdrawHistoryTable() err
 */
 func (m *defaultL2NftWithdrawHistoryModel) DropL2NftWithdrawHistoryTable() error {
 	return m.DB.Migrator().DropTable(m.table)
-}
-
-func (m *defaultL2NftWithdrawHistoryModel) GetNftAsset(nftIndex int64) (nftAsset *L2NftWithdrawHistory, err error) {
-	dbTx := m.DB.Table(m.table).Where("nft_index = ?", nftIndex).Find(&nftAsset)
-	if dbTx.Error != nil {
-		logx.Errorf("[GetNftAsset] unable to get nft asset: %s", dbTx.Error.Error())
-		return nil, errorcode.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		logx.Errorf("[GetNftAsset] no such info")
-		return nil, errorcode.DbErrNotFound
-	}
-	return nftAsset, nil
 }

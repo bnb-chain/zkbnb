@@ -18,8 +18,6 @@
 package liquidity
 
 import (
-	"fmt"
-
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
@@ -33,8 +31,6 @@ type (
 	LiquidityModel interface {
 		CreateLiquidityTable() error
 		DropLiquidityTable() error
-		CreateLiquidity(liquidity *Liquidity) error
-		CreateLiquidityInBatches(entities []*Liquidity) error
 		GetLiquidityByPairIndex(pairIndex int64) (entity *Liquidity, err error)
 		GetAllLiquidityAssets() (liquidityList []*Liquidity, err error)
 	}
@@ -93,48 +89,6 @@ func (m *defaultLiquidityModel) DropLiquidityTable() error {
 }
 
 /*
-	Func: CreateAccountLiquidity
-	Params: liquidity *Liquidity
-	Return: err error
-	Description: create account liquidity entity
-*/
-func (m *defaultLiquidityModel) CreateLiquidity(liquidity *Liquidity) error {
-	dbTx := m.DB.Table(m.table).Create(liquidity)
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[liquidity.CreateLiquidity] %s", dbTx.Error)
-		logx.Error(err)
-		return dbTx.Error
-	}
-	if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[liquidity.CreateLiquidity] %s", errorcode.DbErrFailToCreateLiquidity)
-		logx.Error(err)
-		return errorcode.DbErrFailToCreateLiquidity
-	}
-	return nil
-}
-
-/*
-	Func: CreateAccountLiquidityInBatches
-	Params: entities []*Liquidity
-	Return: err error
-	Description: create account liquidity entities
-*/
-func (m *defaultLiquidityModel) CreateLiquidityInBatches(entities []*Liquidity) error {
-	dbTx := m.DB.Table(m.table).CreateInBatches(entities, len(entities))
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[liquidity.CreateLiquidityInBatches] %s", dbTx.Error)
-		logx.Error(err)
-		return dbTx.Error
-	}
-	if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[liquidity.CreateLiquidityInBatches] %s", errorcode.DbErrFailToCreateLiquidity)
-		logx.Error(err)
-		return errorcode.DbErrFailToCreateLiquidity
-	}
-	return nil
-}
-
-/*
 	Func: GetAccountLiquidityByPairIndex
 	Params: pairIndex int64
 	Return: entities []*Liquidity, err error
@@ -143,12 +97,9 @@ func (m *defaultLiquidityModel) CreateLiquidityInBatches(entities []*Liquidity) 
 func (m *defaultLiquidityModel) GetLiquidityByPairIndex(pairIndex int64) (entity *Liquidity, err error) {
 	dbTx := m.DB.Table(m.table).Where("pair_index = ?", pairIndex).Find(&entity)
 	if dbTx.Error != nil {
-		err := fmt.Sprintf("[liquidity.GetLiquidityByPairIndex] %s", dbTx.Error)
-		logx.Error(err)
+		logx.Errorf("get liquidity by pair index error, err: %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[liquidity.GetLiquidityByPairIndex] %s", errorcode.DbErrNotFound)
-		logx.Error(err)
 		return nil, errorcode.DbErrNotFound
 	}
 	return entity, nil
