@@ -103,7 +103,7 @@ func (m *defaultSysconfigModel) CreateSysconfigInBatches(configs []*Sysconfig) (
 	dbTx := m.DB.Table(m.table).CreateInBatches(configs, len(configs))
 	if dbTx.Error != nil {
 		logx.Errorf("create sys configs error, err: %s", dbTx.Error.Error())
-		return 0, dbTx.Error
+		return 0, errorcode.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {
 		return 0, errorcode.DbErrFailToCreateSysconfig

@@ -93,7 +93,7 @@ func (m *defaultOfferModel) GetLatestOfferId(accountIndex int64) (offerId int64,
 	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex).Order("offer_id desc").Find(&offer)
 	if dbTx.Error != nil {
 		logx.Errorf("[GetLatestOfferId] unable to get latest offer info: %s", dbTx.Error.Error())
-		return -1, dbTx.Error
+		return -1, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return -1, errorcode.DbErrNotFound
 	}

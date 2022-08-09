@@ -94,7 +94,7 @@ func (m *defaultAccountHistoryModel) DropAccountHistoryTable() error {
 func (m *defaultAccountHistoryModel) CreateNewAccount(nAccount *AccountHistory) (err error) {
 	dbTx := m.DB.Table(m.table).Create(&nAccount)
 	if dbTx.Error != nil {
-		logx.Error("create new account error, err: %s", dbTx.Error.Error())
+		logx.Errorf("create new account error, err: %s", dbTx.Error.Error())
 		return errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return errors.New("create new account no rows affected")

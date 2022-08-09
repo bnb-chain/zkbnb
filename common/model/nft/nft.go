@@ -103,7 +103,7 @@ func (m *defaultL2NftModel) GetLatestNftIndex() (nftIndex int64, err error) {
 	dbTx := m.DB.Table(m.table).Order("nft_index desc").Find(&nftInfo)
 	if dbTx.Error != nil {
 		logx.Errorf("unable to get latest nft info: %s", dbTx.Error.Error())
-		return -1, dbTx.Error
+		return -1, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return -1, nil
 	}

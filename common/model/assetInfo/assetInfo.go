@@ -18,8 +18,6 @@
 package assetInfo
 
 import (
-	"fmt"
-
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
@@ -99,13 +97,10 @@ func (m *defaultAssetInfoModel) DropAssetInfoTable() error {
 func (m *defaultAssetInfoModel) GetAssetsList() (res []*AssetInfo, err error) {
 	dbTx := m.DB.Table(m.table).Find(&res)
 	if dbTx.Error != nil {
-		err := fmt.Sprintf("[l2asset.GetL2AssetsList] %s", dbTx.Error)
-		logx.Error(err)
+		logx.Errorf("get assets error, err: %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l2asset.GetL2AssetsList] %s", errorcode.DbErrNotFound)
-		logx.Error(err)
 		return nil, errorcode.DbErrNotFound
 	}
 	return res, nil
@@ -120,9 +115,8 @@ func (m *defaultAssetInfoModel) GetAssetsList() (res []*AssetInfo, err error) {
 func (m *defaultAssetInfoModel) CreateAssetsInfoInBatches(l2AssetsInfo []*AssetInfo) (rowsAffected int64, err error) {
 	dbTx := m.DB.Table(m.table).CreateInBatches(l2AssetsInfo, len(l2AssetsInfo))
 	if dbTx.Error != nil {
-		err := fmt.Sprintf("[l2asset.CreateL2AssetsInfoInBatches] %s", dbTx.Error)
-		logx.Error(err)
-		return 0, dbTx.Error
+		logx.Errorf("create assets error, err: %s", dbTx.Error.Error())
+		return 0, errorcode.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {
 		return 0, nil
@@ -139,13 +133,10 @@ func (m *defaultAssetInfoModel) CreateAssetsInfoInBatches(l2AssetsInfo []*AssetI
 func (m *defaultAssetInfoModel) GetSimpleAssetInfoByAssetId(assetId int64) (res *AssetInfo, err error) {
 	dbTx := m.DB.Table(m.table).Where("asset_id = ?", assetId).Find(&res)
 	if dbTx.Error != nil {
-		errInfo := fmt.Sprintf("[l2asset.GetL2AssetInfoByAssetId] %s", dbTx.Error)
-		logx.Error(errInfo)
+		logx.Errorf("get asset error, err: %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {
-		errInfo := fmt.Sprintf("[l2asset.GetL2AssetInfoByAssetId] %s", errorcode.DbErrNotFound)
-		logx.Error(errInfo)
 		return nil, errorcode.DbErrNotFound
 	}
 	return res, nil
@@ -160,13 +151,10 @@ func (m *defaultAssetInfoModel) GetSimpleAssetInfoByAssetId(assetId int64) (res 
 func (m *defaultAssetInfoModel) GetAssetInfoBySymbol(symbol string) (res *AssetInfo, err error) {
 	dbTx := m.DB.Table(m.table).Where("asset_symbol = ?", symbol).Find(&res)
 	if dbTx.Error != nil {
-		errInfo := fmt.Sprintf("[l2asset.GetL2AssetInfoBySymbol] %s", dbTx.Error)
-		logx.Error(errInfo)
+		logx.Errorf("get asset error, err: %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {
-		errInfo := fmt.Sprintf("[l2asset.GetL2AssetInfoBySymbol] %s", errorcode.DbErrNotFound)
-		logx.Error(errInfo)
 		return nil, errorcode.DbErrNotFound
 	}
 	return res, nil

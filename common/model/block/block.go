@@ -293,7 +293,7 @@ func (m *defaultBlockModel) GetBlockByCommitment(blockCommitment string) (block 
 		return block.Txs[i].TxIndex < block.Txs[j].TxIndex
 	})
 	if err != nil {
-		logx.Error("get associate txs error, err: %s", err.Error())
+		logx.Errorf("get associate txs error, err: %s", err.Error())
 		return nil, err
 	}
 	return block, nil
@@ -432,7 +432,6 @@ func (m *defaultBlockModel) CreateGenesisBlock(block *Block) error {
 		return errorcode.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {
-		logx.Error("[block.CreateBlock] Create Invalid Block")
 		return errorcode.DbErrFailToCreateBlock
 	}
 	return nil
@@ -677,7 +676,7 @@ func (m *defaultBlockModel) GetLatestVerifiedBlockHeight() (height int64, err er
 		Limit(1).
 		First(&block)
 	if dbTx.Error != nil {
-		logx.Errorf("unable to get block: %s", dbTx.Error)
+		logx.Errorf("unable to get block: %s", dbTx.Error.Error())
 		return 0, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return 0, errorcode.DbErrNotFound

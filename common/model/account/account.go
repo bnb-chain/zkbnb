@@ -109,12 +109,9 @@ func (m *defaultAccountModel) DropAccountTable() error {
 func (m *defaultAccountModel) GetAccountByAccountIndex(accountIndex int64) (account *Account, err error) {
 	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex).Find(&account)
 	if dbTx.Error != nil {
-		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", dbTx.Error)
-		logx.Error(err)
+		logx.Errorf("get account by index error, err: %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[account.GetAccountByAccountIndex] %s", errorcode.DbErrNotFound)
-		logx.Error(err)
 		return nil, errorcode.DbErrNotFound
 	}
 	return account, nil
@@ -130,7 +127,7 @@ func (m *defaultAccountModel) GetAccountByAccountIndex(accountIndex int64) (acco
 func (m *defaultAccountModel) GetAccountByPk(pk string) (account *Account, err error) {
 	dbTx := m.DB.Table(m.table).Where("public_key = ?", pk).Find(&account)
 	if dbTx.Error != nil {
-		err := fmt.Sprintf("[account.GetAccountByPk] %s", dbTx.Error)
+		err := fmt.Sprintf("[account.GetAccountByPk] %s", dbTx.Error.Error())
 		logx.Error(err)
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {

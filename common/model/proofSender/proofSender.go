@@ -89,7 +89,7 @@ func (m *defaultProofSenderModel) DropProofSenderTable() error {
 func (m *defaultProofSenderModel) CreateProof(row *ProofSender) error {
 	dbTx := m.DB.Table(m.table).Create(row)
 	if dbTx.Error != nil {
-		logx.Errorf("create proof error, err: %s", dbTx.Error)
+		logx.Errorf("create proof error, err: %s", dbTx.Error.Error())
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {

@@ -111,7 +111,7 @@ func (m *defaultL1TxSenderModel) DropL1TxSenderTable() error {
 func (m *defaultL1TxSenderModel) CreateL1TxSender(tx *L1TxSender) (bool, error) {
 	dbTx := m.DB.Table(m.table).Create(tx)
 	if dbTx.Error != nil {
-		logx.Error("create l1 tx sender error, err: %s", dbTx.Error.Error())
+		logx.Errorf("create l1 tx sender error, err: %s", dbTx.Error.Error())
 		return false, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		return false, errors.New("invalid l1TxSender")

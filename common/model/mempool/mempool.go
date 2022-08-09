@@ -160,7 +160,7 @@ func (m *defaultMempoolModel) GetMempoolTxsByBlockHeight(l2BlockHeight int64) (r
 	dbTx := m.DB.Table(m.table).Where("l2_block_height = ?", l2BlockHeight).Find(&mempoolTxs)
 	if dbTx.Error != nil {
 		logx.Errorf("get mempool tx errors, err: %s", dbTx.Error.Error())
-		return 0, nil, dbTx.Error
+		return 0, nil, errorcode.DbErrSqlOperation
 	}
 	// TODO: cache operation
 	for _, mempoolTx := range mempoolTxs {
@@ -206,7 +206,7 @@ func (m *defaultMempoolModel) GetMempoolTxsTotalCount() (count int64, err error)
 	dbTx := m.DB.Table(m.table).Where("status = ? and deleted_at is NULL", PendingTxStatus).Count(&count)
 	if dbTx.Error != nil {
 		logx.Errorf("get mempool tx count error, err: %s", dbTx.Error.Error())
-		return 0, dbTx.Error
+		return 0, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return 0, nil
 	}

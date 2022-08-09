@@ -201,7 +201,7 @@ func (m *defaultL1BlockMonitorModel) CreateGovernanceMonitorInfo(
 func (m *defaultL1BlockMonitorModel) GetLatestL1BlockMonitorByBlock() (blockInfo *L1BlockMonitor, err error) {
 	dbTx := m.DB.Table(m.table).Where("monitor_type = ?", MonitorTypeBlock).Order("l1_block_height desc").Find(&blockInfo)
 	if dbTx.Error != nil {
-		logx.Error("get monitor blocks error, err: %s", err.Error())
+		logx.Errorf("get monitor blocks error, err: %s", err.Error())
 		return nil, errorcode.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {

@@ -124,7 +124,6 @@ func (m *defaultTxModel) DropTxTable() error {
 	Description: used for counting total transactions for explorer dashboard
 */
 func (m *defaultTxModel) GetTxsTotalCount() (count int64, err error) {
-
 	key := fmt.Sprintf("%s", cacheZkbasTxTxCountPrefix)
 	val, err := m.RedisConn.Get(key)
 	if err != nil {
@@ -138,7 +137,7 @@ func (m *defaultTxModel) GetTxsTotalCount() (count int64, err error) {
 				return 0, nil
 			}
 			logx.Errorf("get Tx count error, err: %s", dbTx.Error.Error())
-			return 0, dbTx.Error
+			return 0, errorcode.DbErrSqlOperation
 		}
 
 		err = m.RedisConn.Setex(key, strconv.FormatInt(count, 10), 120)

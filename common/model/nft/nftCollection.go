@@ -86,7 +86,7 @@ func (m *defaultL2NftCollectionModel) IfCollectionExistsByCollectionId(collectio
 	dbTx := m.DB.Table(m.table).Where("collection_id = ? and deleted_at is NULL", collectionId).Count(&res)
 
 	if dbTx.Error != nil {
-		logx.Error("get collection count error, err: %s", dbTx.Error)
+		logx.Errorf("get collection count error, err: %s", dbTx.Error.Error())
 		return true, errorcode.DbErrSqlOperation
 	} else if res == 0 {
 		return false, nil
