@@ -30,11 +30,10 @@ func NewGetMaxOfferIdLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 func (l *GetMaxOfferIdLogic) GetMaxOfferId(req *types.ReqGetMaxOfferId) (resp *types.RespGetMaxOfferId, err error) {
 	nftIndex, err := l.commglobalmap.GetLatestOfferIdForWrite(l.ctx, int64(req.AccountIndex))
 	if err != nil {
-		logx.Errorf("[GetLatestAccountInfo] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.RpcErrNotFound
+			return nil, errorcode.AppErrNotFound
 		}
-		return nil, errorcode.RpcErrInternal
+		return nil, errorcode.AppErrInternal
 	}
 	return &types.RespGetMaxOfferId{
 		OfferId: uint64(nftIndex),

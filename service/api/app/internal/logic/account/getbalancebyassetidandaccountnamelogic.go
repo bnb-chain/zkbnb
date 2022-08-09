@@ -48,13 +48,12 @@ func (l *GetBalanceByAssetIdAndAccountNameLogic) GetBalanceByAssetIdAndAccountNa
 	}
 
 	resp := &types.RespGetBlanceInfoByAssetIdAndAccountName{}
-	accountInfo, err := l.commglobalmap.GetLatestAccountInfoWithCache(l.ctx, int64(account.AccountIndex))
+	accountInfo, err := l.commglobalmap.GetLatestAccountInfoWithCache(l.ctx, account.AccountIndex)
 	if err != nil {
-		logx.Errorf("[GetLatestAccountInfo] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.RpcErrNotFound
+			return nil, errorcode.AppErrNotFound
 		}
-		return nil, errorcode.RpcErrInternal
+		return nil, errorcode.AppErrInternal
 	}
 
 	for _, asset := range accountInfo.AssetInfo {

@@ -40,7 +40,7 @@ func (l *GetTxsListByAccountIndexLogic) GetTxsListByAccountIndex(req *types.ReqG
 	for _, d := range txDetails {
 		tx, err := l.svcCtx.TxModel.GetTxByTxId(d.TxId)
 		if err != nil {
-			return nil, err
+			return nil, errorcode.AppErrInternal
 		}
 		resp.Txs = append(resp.Txs, utils.GormTx2Tx(tx))
 	}

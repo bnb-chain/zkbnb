@@ -34,28 +34,15 @@ var (
 
 	IoErrFailToRead = errors.New("ioutil.ReadAll err")
 
-	//TODO: more error code, parameter check, transaction check
-
-	//global rpc
-
-	RpcErrInvalidTx      = New(20001, "invalid tx: cannot parse tx")
-	RpcErrInvalidTxType  = New(20002, "invalid tx type ")
-	RpcErrInvalidTxField = New(20003, "invalid tx field: ")
-	RpcErrVerification   = New(20004, "tx verification failed: ")
-
-	RpcErrInvalidParam                = New(20005, "invalid param: ")
-	RpcErrLiquidityInvalidAssetAmount = New(20006, "invalid liquidity asset amount")
-	RpcErrLiquidityInvalidAssetID     = New(20007, "invalid liquidity asset id")
-
-	RpcErrNotFound = New(24404, "not found")
-	RpcErrInternal = New(24500, "internal server error")
-
-	//app service
-
-	AppErrInvalidParam    = New(25001, "invalid param:")
-	AppErrQuoteNotExist   = New(25002, "quote asset does not exist")
-	AppErrInvalidGasAsset = New(25003, "invalid gas asset")
-
-	AppErrNotFound = New(29404, "not found")
-	AppErrInternal = New(29500, "internal server error")
+	AppErrInvalidParam                = New(20001, "invalid param:")
+	AppErrInvalidTx                   = New(20002, "invalid tx: cannot parse tx")
+	AppErrInvalidTxType               = New(20003, "invalid tx type ")
+	AppErrInvalidTxField              = New(20004, "invalid tx field: ")
+	AppErrVerification                = New(20005, "tx verification failed: ")
+	AppErrInvalidGasAsset             = New(25006, "invalid gas asset")
+	AppErrLiquidityInvalidAssetAmount = New(20007, "invalid liquidity asset amount")
+	AppErrLiquidityInvalidAssetID     = New(20008, "invalid liquidity asset id")
+	AppErrQuoteNotExist               = New(25009, "quote asset does not exist")
+	AppErrNotFound                    = New(29404, "not found")
+	AppErrInternal                    = New(29500, "internal server error")
 )

@@ -25,12 +25,12 @@ func SendMintNftTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalma
 	txInfo, err := commonTx.ParseMintNftTxInfo(rawTxInfo)
 	if err != nil {
 		logx.Errorf("cannot parse tx err: %s", err.Error())
-		return "", errorcode.RpcErrInvalidTx
+		return "", errorcode.AppErrInvalidTx
 	}
 
 	if err := legendTxTypes.ValidateMintNftTxInfo(txInfo); err != nil {
 		logx.Errorf("cannot pass static check, err: %s", err.Error())
-		return "", errorcode.RpcErrInvalidTxField.RefineError(err)
+		return "", errorcode.AppErrInvalidTxField.RefineError(err)
 	}
 
 	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, svcCtx.SysConfigModel); err != nil {
@@ -46,39 +46,39 @@ func SendMintNftTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalma
 	accountInfoMap[txInfo.CreatorAccountIndex], err = commglobalmap.GetLatestAccountInfo(ctx, txInfo.CreatorAccountIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
-			return "", errorcode.RpcErrInvalidTxField.RefineError("invalid FromAccountIndex")
+			return "", errorcode.AppErrInvalidTxField.RefineError("invalid FromAccountIndex")
 		}
 		logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.CreatorAccountIndex, err.Error())
-		return "", errorcode.RpcErrInternal
+		return "", errorcode.AppErrInternal
 	}
 	if accountInfoMap[txInfo.CreatorAccountIndex].CollectionNonce < txInfo.NftCollectionId {
 		logx.Errorf("collection id %d is greater than collection nonce %d",
 			txInfo.NftCollectionId, accountInfoMap[txInfo.CreatorAccountIndex].CollectionNonce)
-		return "", errorcode.RpcErrInvalidTxField.RefineError("invalid NftCollectionId")
+		return "", errorcode.AppErrInvalidTxField.RefineError("invalid NftCollectionId")
 	}
 
 	if accountInfoMap[txInfo.ToAccountIndex] == nil {
 		accountInfoMap[txInfo.ToAccountIndex], err = commglobalmap.GetBasicAccountInfo(ctx, txInfo.ToAccountIndex)
 		if err != nil {
 			if err == errorcode.DbErrNotFound {
-				return "", errorcode.RpcErrInvalidTxField.RefineError("invalid ToAccountIndex")
+				return "", errorcode.AppErrInvalidTxField.RefineError("invalid ToAccountIndex")
 			}
 			logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.ToAccountIndex, err.Error())
-			return "", errorcode.RpcErrInternal
+			return "", errorcode.AppErrInternal
 		}
 	}
 	if accountInfoMap[txInfo.ToAccountIndex].AccountNameHash != txInfo.ToAccountNameHash {
 		logx.Errorf("invalid account name hash, expected: %s, actual: %s", accountInfoMap[txInfo.ToAccountIndex].AccountNameHash, txInfo.ToAccountNameHash)
-		return "", errorcode.RpcErrInvalidTxField.RefineError("invalid ToAccountNameHash")
+		return "", errorcode.AppErrInvalidTxField.RefineError("invalid ToAccountNameHash")
 	}
 	if accountInfoMap[txInfo.GasAccountIndex] == nil {
 		accountInfoMap[txInfo.GasAccountIndex], err = commglobalmap.GetBasicAccountInfo(ctx, txInfo.GasAccountIndex)
 		if err != nil {
 			if err == errorcode.DbErrNotFound {
-				return "", errorcode.RpcErrInvalidTxField.RefineError("invalid GasAccountIndex")
+				return "", errorcode.AppErrInvalidTxField.RefineError("invalid GasAccountIndex")
 			}
 			logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.GasAccountIndex, err.Error())
-			return "", errorcode.RpcErrInternal
+			return "", errorcode.AppErrInternal
 		}
 	}
 
@@ -98,7 +98,7 @@ func SendMintNftTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalma
 		txInfo,
 	)
 	if err != nil {
-		return "", errorcode.RpcErrVerification.RefineError(err)
+		return "", errorcode.AppErrVerification.RefineError(err)
 	}
 
 	// construct nft info
@@ -117,13 +117,13 @@ func SendMintNftTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalma
 	_, err = svcCtx.RedisConn.Del(key)
 	if err != nil {
 		logx.Errorf("[sendMintNftTx] unable to delete key from redis: %s", err.Error())
-		return "", errorcode.RpcErrInternal
+		return "", errorcode.AppErrInternal
 	}
 	// write into mempool
 	txInfoBytes, err := json.Marshal(txInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
-		return "", errorcode.RpcErrInternal
+		return "", errorcode.AppErrInternal
 	}
 	txId, mempoolTx := ConstructMempoolTx(
 		commonTx.TxTypeMintNft,
@@ -145,7 +145,7 @@ func SendMintNftTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalma
 	if err := svcCtx.MempoolModel.CreateMempoolTxAndL2Nft(mempoolTx, nftInfo); err != nil {
 		logx.Errorf("fail to create mempool tx: %v, err: %s", mempoolTx, err.Error())
 		_ = CreateFailTx(svcCtx.FailTxModel, commonTx.TxTypeMintNft, txInfo, err)
-		return "", errorcode.RpcErrInternal
+		return "", errorcode.AppErrInternal
 	}
 
 	// update redis

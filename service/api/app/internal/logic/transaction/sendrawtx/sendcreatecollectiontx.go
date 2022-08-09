@@ -23,12 +23,12 @@ func SendCreateCollectionTx(ctx context.Context, svcCtx *svc.ServiceContext, com
 	txInfo, err := commonTx.ParseCreateCollectionTxInfo(rawTxInfo)
 	if err != nil {
 		logx.Errorf("cannot parse tx err: %s", err.Error())
-		return "", errorcode.RpcErrInvalidTx
+		return "", errorcode.AppErrInvalidTx
 	}
 
 	if err := legendTxTypes.ValidateCreateCollectionTxInfo(txInfo); err != nil {
 		logx.Errorf("cannot pass static check, err: %s", err.Error())
-		return "", errorcode.RpcErrInvalidTxField.RefineError(err)
+		return "", errorcode.AppErrInvalidTxField.RefineError(err)
 	}
 
 	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, svcCtx.SysConfigModel); err != nil {
@@ -41,19 +41,19 @@ func SendCreateCollectionTx(ctx context.Context, svcCtx *svc.ServiceContext, com
 	accountInfoMap[txInfo.AccountIndex], err = commglobalmap.GetLatestAccountInfo(ctx, txInfo.AccountIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
-			return "", errorcode.RpcErrInvalidTxField.RefineError("invalid FromAccountIndex")
+			return "", errorcode.AppErrInvalidTxField.RefineError("invalid FromAccountIndex")
 		}
 		logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.AccountIndex, err.Error())
-		return "", errorcode.RpcErrInternal
+		return "", errorcode.AppErrInternal
 	}
 	if accountInfoMap[txInfo.GasAccountIndex] == nil {
 		accountInfoMap[txInfo.GasAccountIndex], err = commglobalmap.GetBasicAccountInfo(ctx, txInfo.GasAccountIndex)
 		if err != nil {
 			if err == errorcode.DbErrNotFound {
-				return "", errorcode.RpcErrInvalidTxField.RefineError("invalid GasAccountIndex")
+				return "", errorcode.AppErrInvalidTxField.RefineError("invalid GasAccountIndex")
 			}
 			logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.GasAccountIndex, err.Error())
-			return "", errorcode.RpcErrInternal
+			return "", errorcode.AppErrInternal
 		}
 	}
 
@@ -64,14 +64,14 @@ func SendCreateCollectionTx(ctx context.Context, svcCtx *svc.ServiceContext, com
 	)
 	txDetails, err = txVerification.VerifyCreateCollectionTxInfo(accountInfoMap, txInfo)
 	if err != nil {
-		return "", errorcode.RpcErrVerification.RefineError(err)
+		return "", errorcode.AppErrVerification.RefineError(err)
 	}
 
 	// write into mempool
 	txInfoBytes, err := json.Marshal(txInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
-		return "", errorcode.RpcErrInternal
+		return "", errorcode.AppErrInternal
 	}
 	txId, mempoolTx := ConstructMempoolTx(
 		commonTx.TxTypeCreateCollection,
@@ -100,7 +100,7 @@ func SendCreateCollectionTx(ctx context.Context, svcCtx *svc.ServiceContext, com
 	if err = createMempoolTxForCreateCollection(nftCollectionInfo, mempoolTx, svcCtx); err != nil {
 		logx.Errorf("fail to create mempool tx: %v, err: %s", mempoolTx, err.Error())
 		_ = CreateFailTx(svcCtx.FailTxModel, commonTx.TxTypeCreateCollection, txInfo, err)
-		return "", errorcode.RpcErrInternal
+		return "", errorcode.AppErrInternal
 	}
 	return txId, nil
 }

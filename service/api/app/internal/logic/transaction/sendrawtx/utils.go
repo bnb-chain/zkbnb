@@ -21,16 +21,16 @@ func CheckGasAccountIndex(txGasAccountIndex int64, sysConfigModel sysconfig.Sysc
 	gasAccountIndexConfig, err := sysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
 	if err != nil {
 		logx.Errorf("fail to get config: %s, err: %s", sysconfigName.GasAccountIndex, err.Error())
-		return errorcode.RpcErrInternal
+		return errorcode.AppErrInternal
 	}
 	gasAccountIndex, err := strconv.ParseInt(gasAccountIndexConfig.Value, 10, 64)
 	if err != nil {
 		logx.Errorf("cannot parse int :%s, err: %s", gasAccountIndexConfig.Value, err.Error())
-		return errorcode.RpcErrInternal
+		return errorcode.AppErrInternal
 	}
 	if gasAccountIndex != txGasAccountIndex {
 		logx.Errorf("invalid gas account index, expected: %d, actual: %d", gasAccountIndex, txGasAccountIndex)
-		return errorcode.RpcErrInvalidTxField.RefineError("invalid GasAccountIndex")
+		return errorcode.AppErrInvalidTxField.RefineError("invalid GasAccountIndex")
 	}
 	return nil
 }

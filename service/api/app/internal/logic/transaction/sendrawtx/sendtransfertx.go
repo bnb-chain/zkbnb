@@ -21,12 +21,12 @@ func SendTransferTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalm
 	txInfo, err := commonTx.ParseTransferTxInfo(rawTxInfo)
 	if err != nil {
 		logx.Errorf("cannot parse tx err: %s", err.Error())
-		return "", errorcode.RpcErrInvalidTx
+		return "", errorcode.AppErrInvalidTx
 	}
 
 	if err := legendTxTypes.ValidateTransferTxInfo(txInfo); err != nil {
 		logx.Errorf("cannot pass static check, err: %s", err.Error())
-		return "", errorcode.RpcErrInvalidTxField.RefineError(err)
+		return "", errorcode.AppErrInvalidTxField.RefineError(err)
 	}
 
 	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, svcCtx.SysConfigModel); err != nil {
@@ -37,34 +37,34 @@ func SendTransferTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalm
 	accountInfoMap[txInfo.FromAccountIndex], err = commglobalmap.GetLatestAccountInfo(ctx, txInfo.FromAccountIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
-			return "", errorcode.RpcErrInvalidTxField.RefineError("invalid FromAccountIndex")
+			return "", errorcode.AppErrInvalidTxField.RefineError("invalid FromAccountIndex")
 		}
 		logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.FromAccountIndex, err.Error())
-		return "", errorcode.RpcErrInternal
+		return "", errorcode.AppErrInternal
 	}
 
 	if accountInfoMap[txInfo.ToAccountIndex] == nil {
 		accountInfoMap[txInfo.ToAccountIndex], err = commglobalmap.GetBasicAccountInfo(ctx, txInfo.ToAccountIndex)
 		if err != nil {
 			if err == errorcode.DbErrNotFound {
-				return "", errorcode.RpcErrInvalidTxField.RefineError("invalid ToAccountIndex")
+				return "", errorcode.AppErrInvalidTxField.RefineError("invalid ToAccountIndex")
 			}
 			logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.ToAccountIndex, err.Error())
-			return "", errorcode.RpcErrInternal
+			return "", errorcode.AppErrInternal
 		}
 	}
 	if accountInfoMap[txInfo.ToAccountIndex].AccountNameHash != txInfo.ToAccountNameHash {
 		logx.Errorf("invalid account name hash, expected: %s, actual: %s", accountInfoMap[txInfo.ToAccountIndex].AccountNameHash, txInfo.ToAccountNameHash)
-		return "", errorcode.RpcErrInvalidTxField.RefineError("invalid ToAccountNameHash")
+		return "", errorcode.AppErrInvalidTxField.RefineError("invalid ToAccountNameHash")
 	}
 	if accountInfoMap[txInfo.GasAccountIndex] == nil {
 		accountInfoMap[txInfo.GasAccountIndex], err = commglobalmap.GetBasicAccountInfo(ctx, txInfo.GasAccountIndex)
 		if err != nil {
 			if err == errorcode.DbErrNotFound {
-				return "", errorcode.RpcErrInvalidTxField.RefineError("invalid GasAccountIndex")
+				return "", errorcode.AppErrInvalidTxField.RefineError("invalid GasAccountIndex")
 			}
 			logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.GasAccountIndex, err.Error())
-			return "", errorcode.RpcErrInternal
+			return "", errorcode.AppErrInternal
 		}
 	}
 
@@ -77,14 +77,14 @@ func SendTransferTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalm
 		txInfo,
 	)
 	if err != nil {
-		return "", errorcode.RpcErrVerification.RefineError(err)
+		return "", errorcode.AppErrVerification.RefineError(err)
 	}
 
 	// write into mempool
 	txInfoBytes, err := json.Marshal(txInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
-		return "", errorcode.RpcErrInternal
+		return "", errorcode.AppErrInternal
 	}
 	txId, mempoolTx := ConstructMempoolTx(
 		commonTx.TxTypeTransfer,
@@ -104,7 +104,7 @@ func SendTransferTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalm
 	)
 	if err := svcCtx.MempoolModel.CreateBatchedMempoolTxs([]*mempool.MempoolTx{mempoolTx}); err != nil {
 		_ = CreateFailTx(svcCtx.FailTxModel, commonTx.TxTypeTransfer, txInfo, err)
-		return "", errorcode.RpcErrInternal
+		return "", errorcode.AppErrInternal
 	}
 	if err := commglobalmap.SetLatestAccountInfoInToCache(ctx, txInfo.FromAccountIndex); err != nil {
 		logx.Errorf("unable to set account info in cache: %s", err.Error())

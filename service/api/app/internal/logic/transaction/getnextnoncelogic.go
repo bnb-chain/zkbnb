@@ -30,11 +30,10 @@ func NewGetNextNonceLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetN
 func (l *GetNextNonceLogic) GetNextNonce(req *types.ReqGetNextNonce) (*types.RespGetNextNonce, error) {
 	accountInfo, err := l.commglobalmap.GetLatestAccountInfo(l.ctx, int64(req.AccountIndex))
 	if err != nil {
-		logx.Errorf("[GetLatestAccountInfo] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.RpcErrNotFound
+			return nil, errorcode.AppErrNotFound
 		}
-		return nil, errorcode.RpcErrInternal
+		return nil, errorcode.AppErrInternal
 	}
 	return &types.RespGetNextNonce{
 		Nonce: uint64(accountInfo.Nonce),

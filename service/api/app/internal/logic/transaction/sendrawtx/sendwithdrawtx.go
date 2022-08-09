@@ -21,12 +21,12 @@ func SendWithdrawTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalm
 	txInfo, err := commonTx.ParseWithdrawTxInfo(rawTxInfo)
 	if err != nil {
 		logx.Errorf("cannot parse tx err: %s", err.Error())
-		return "", errorcode.RpcErrInvalidTx
+		return "", errorcode.AppErrInvalidTx
 	}
 
 	if err := legendTxTypes.ValidateWithdrawTxInfo(txInfo); err != nil {
 		logx.Errorf("cannot pass static check, err: %s", err.Error())
-		return "", errorcode.RpcErrInvalidTxField.RefineError(err)
+		return "", errorcode.AppErrInvalidTxField.RefineError(err)
 	}
 
 	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, svcCtx.SysConfigModel); err != nil {
@@ -39,19 +39,19 @@ func SendWithdrawTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalm
 	accountInfoMap[txInfo.FromAccountIndex], err = commglobalmap.GetLatestAccountInfo(ctx, txInfo.FromAccountIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
-			return "", errorcode.RpcErrInvalidTxField.RefineError("invalid FromAccountIndex")
+			return "", errorcode.AppErrInvalidTxField.RefineError("invalid FromAccountIndex")
 		}
 		logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.FromAccountIndex, err.Error())
-		return "", errorcode.RpcErrInternal
+		return "", errorcode.AppErrInternal
 	}
 	if accountInfoMap[txInfo.GasAccountIndex] == nil {
 		accountInfoMap[txInfo.GasAccountIndex], err = commglobalmap.GetBasicAccountInfo(ctx, txInfo.GasAccountIndex)
 		if err != nil {
 			if err == errorcode.DbErrNotFound {
-				return "", errorcode.RpcErrInvalidTxField.RefineError("invalid GasAccountIndex")
+				return "", errorcode.AppErrInvalidTxField.RefineError("invalid GasAccountIndex")
 			}
 			logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.GasAccountIndex, err.Error())
-			return "", errorcode.RpcErrInternal
+			return "", errorcode.AppErrInternal
 		}
 	}
 
@@ -63,14 +63,14 @@ func SendWithdrawTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalm
 		txInfo,
 	)
 	if err != nil {
-		return "", errorcode.RpcErrVerification.RefineError(err)
+		return "", errorcode.AppErrVerification.RefineError(err)
 	}
 
 	// write into mempool
 	txInfoBytes, err := json.Marshal(txInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
-		return "", errorcode.RpcErrInternal
+		return "", errorcode.AppErrInternal
 	}
 	txId, mempoolTx := ConstructMempoolTx(
 		commonTx.TxTypeWithdraw,
@@ -91,7 +91,7 @@ func SendWithdrawTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalm
 	if err := svcCtx.MempoolModel.CreateBatchedMempoolTxs([]*mempool.MempoolTx{mempoolTx}); err != nil {
 		logx.Errorf("fail to create mempool tx: %v, err: %s", mempoolTx, err.Error())
 		_ = CreateFailTx(svcCtx.FailTxModel, commonTx.TxTypeWithdraw, txInfo, err)
-		return "", errorcode.RpcErrInternal
+		return "", errorcode.AppErrInternal
 	}
 	return txId, nil
 }

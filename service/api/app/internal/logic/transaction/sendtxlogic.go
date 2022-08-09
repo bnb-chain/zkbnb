@@ -87,10 +87,10 @@ func (l *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.RespSendTx, err 
 			return nil, err
 		}
 	case commonTx.TxTypeOffer:
-		return nil, errorcode.RpcErrInvalidTxType
+		return nil, errorcode.AppErrInvalidTxType
 	default:
 		logx.Errorf("[sendtxlogic] invalid tx type: %s", req.TxType)
-		return nil, errorcode.RpcErrInvalidTxType
+		return nil, errorcode.AppErrInvalidTxType
 	}
 	return resp, err
 }

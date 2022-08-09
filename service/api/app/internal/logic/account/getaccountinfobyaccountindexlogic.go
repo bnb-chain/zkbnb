@@ -30,8 +30,8 @@ func NewGetAccountInfoByAccountIndexLogic(ctx context.Context, svcCtx *svc.Servi
 func (l *GetAccountInfoByAccountIndexLogic) GetAccountInfoByAccountIndex(req *types.ReqGetAccountInfoByAccountIndex) (*types.RespGetAccountInfoByAccountIndex, error) {
 	account, err := l.commglobalmap.GetLatestAccountInfo(l.ctx, req.AccountIndex)
 	if err != nil {
-		logx.Errorf("fail to get account info: %d from rpc, err: %s", req.AccountIndex, err.Error())
-		if err == errorcode.RpcErrNotFound {
+		logx.Errorf("fail to get account info: %d, err: %s", req.AccountIndex, err.Error())
+		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
 		return nil, errorcode.AppErrInternal

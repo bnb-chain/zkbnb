@@ -43,7 +43,7 @@ func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *type
 	}
 	account, err := l.commglobalmap.GetLatestAccountInfo(l.ctx, info.AccountIndex)
 	if err != nil {
-		logx.Errorf("fail to get account info: %d from rpc, err: %s", info.AccountIndex, err.Error())
+		logx.Errorf("fail to get account info: %d, err: %s", info.AccountIndex, err.Error())
 		return nil, errorcode.AppErrInternal
 	}
 	resp := &types.RespGetAccountInfoByAccountName{

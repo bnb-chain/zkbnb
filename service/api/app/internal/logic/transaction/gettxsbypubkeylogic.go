@@ -59,8 +59,7 @@ func (l *GetTxsByPubKeyLogic) GetTxsByPubKey(req *types.ReqGetTxsByPubKey) (*typ
 	for _, id := range txIds[req.Offset:end] {
 		tx, err := l.svcCtx.TxModel.GetTxByTxId(id)
 		if err != nil {
-			logx.Errorf("[GetTxByTxID] err: %s", err.Error())
-			return nil, err
+			return nil, errorcode.AppErrInternal
 		}
 		resp.Txs = append(resp.Txs, utils.GormTx2Tx(tx))
 	}

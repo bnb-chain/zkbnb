@@ -36,8 +36,8 @@ func (l *GetPairInfoLogic) GetPairInfo(req *types.ReqGetPairInfo) (*types.RespGe
 
 	pair, err := l.commglobalmap.GetLatestLiquidityInfoForReadWithCache(l.ctx, int64(req.PairIndex))
 	if err != nil {
-		logx.Errorf("fail to get pair info from rpc for pair: %d, err: %s", req.PairIndex, err.Error())
-		if err == errorcode.RpcErrNotFound {
+		logx.Errorf("fail to get pair info: %d, err: %s", req.PairIndex, err.Error())
+		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
 		return nil, errorcode.AppErrInternal

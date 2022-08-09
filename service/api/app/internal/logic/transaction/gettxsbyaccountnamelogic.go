@@ -59,7 +59,7 @@ func (l *GetTxsByAccountNameLogic) GetTxsByAccountName(req *types.ReqGetTxsByAcc
 	for _, id := range txIds[req.Offset:end] {
 		tx, err := l.svcCtx.TxModel.GetTxByTxId(id)
 		if err != nil {
-			return nil, err
+			return nil, errorcode.AppErrInternal
 		}
 		resp.Txs = append(resp.Txs, utils.GormTx2Tx(tx))
 	}

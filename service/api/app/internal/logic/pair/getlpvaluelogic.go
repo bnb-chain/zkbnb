@@ -37,22 +37,21 @@ func (l *GetLPValueLogic) GetLPValue(req *types.ReqGetLPValue) (resp *types.Resp
 	}
 	amount, isTure := new(big.Int).SetString(req.LpAmount, 10)
 	if !isTure {
-		logx.Errorf("[SetString] err: %s", req.LpAmount)
-		return nil, errorcode.RpcErrInvalidParam
+		logx.Errorf("fail to convert string: %s to int", req.LpAmount)
+		return nil, errorcode.AppErrInvalidParam.RefineError("invalid LpAmount")
 	}
 
 	liquidity, err := l.commglobalmap.GetLatestLiquidityInfoForReadWithCache(l.ctx, int64(req.PairIndex))
 	if err != nil {
-		logx.Errorf("[GetLatestLiquidityInfoForReadWithCache] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.RpcErrNotFound
+			return nil, errorcode.AppErrNotFound
 		}
-		return nil, errorcode.RpcErrInternal
+		return nil, errorcode.AppErrInternal
 	}
 	assetAAmount, assetBAmount, err := util.ComputeRemoveLiquidityAmount(liquidity, amount)
 	if err != nil {
-		logx.Errorf("[ComputeRemoveLiquidityAmount] err: %s", err.Error())
-		return nil, errorcode.RpcErrInternal
+		logx.Errorf("fail to compute liquidity amount, err: %s", err.Error())
+		return nil, errorcode.AppErrInternal
 	}
 	resp = &types.RespGetLPValue{
 		AssetAId:     uint32(liquidity.AssetAId),

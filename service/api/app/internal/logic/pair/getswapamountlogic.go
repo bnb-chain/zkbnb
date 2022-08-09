@@ -42,41 +42,36 @@ func (l *GetSwapAmountLogic) GetSwapAmount(req *types.ReqGetSwapAmount) (*types.
 
 	deltaAmount, isTure := new(big.Int).SetString(req.AssetAmount, 10)
 	if !isTure {
-		logx.Errorf("[SetString] err, AssetAmount: %s", req.AssetAmount)
-		return nil, errorcode.RpcErrInvalidParam
+		logx.Errorf("fail to convert string: %s to int", req.AssetAmount)
+		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AssetAmount")
 	}
 
 	liquidity, err := l.commglobalmap.GetLatestLiquidityInfoForReadWithCache(l.ctx, int64(req.PairIndex))
 	if err != nil {
-		logx.Errorf("[GetLatestLiquidityInfoForReadWithCache] err: %s", err.Error())
 		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.RpcErrNotFound
+			return nil, errorcode.AppErrNotFound
 		}
-		return nil, errorcode.RpcErrInternal
+		return nil, errorcode.AppErrInternal
 	}
 	if liquidity.AssetA == nil || liquidity.AssetA.Cmp(big.NewInt(0)) == 0 ||
 		liquidity.AssetB == nil || liquidity.AssetB.Cmp(big.NewInt(0)) == 0 {
-		logx.Errorf("liquidity: %v, err: %s", liquidity, errorcode.RpcErrLiquidityInvalidAssetAmount.Error())
-		return nil, errorcode.RpcErrLiquidityInvalidAssetAmount
+		logx.Errorf("invalid liquidity asset amount: %v, err: %s", liquidity, errorcode.AppErrLiquidityInvalidAssetAmount.Error())
+		return nil, errorcode.AppErrLiquidityInvalidAssetAmount
 	}
 
 	if int64(req.AssetId) != liquidity.AssetAId && int64(req.AssetId) != liquidity.AssetBId {
-		logx.Errorf("input:%v,liquidity: %v, err: %s", req, liquidity, errorcode.RpcErrLiquidityInvalidAssetAmount.Error())
-		return nil, errorcode.RpcErrLiquidityInvalidAssetID
+		logx.Errorf("invalid liquidity asset id: %v, err: %s", liquidity, errorcode.AppErrLiquidityInvalidAssetAmount.Error())
+		return nil, errorcode.AppErrLiquidityInvalidAssetID
 	}
-	logx.Errorf("[ComputeDelta] liquidity: %v", liquidity)
-	logx.Errorf("[ComputeDelta] in: %v", req)
-	logx.Errorf("[ComputeDelta] deltaAmount: %v", deltaAmount)
 
 	var assetAmount *big.Int
 	var toAssetId int64
 	assetAmount, toAssetId, err = util.ComputeDelta(liquidity.AssetA, liquidity.AssetB, liquidity.AssetAId, liquidity.AssetBId,
 		int64(req.AssetId), req.IsFrom, deltaAmount, liquidity.FeeRate)
 	if err != nil {
-		logx.Errorf("[ComputeDelta] err: %s", err.Error())
-		return nil, errorcode.RpcErrInternal
+		logx.Errorf("fail to compute delta, err: %s", err.Error())
+		return nil, errorcode.AppErrInternal
 	}
-	logx.Errorf("[ComputeDelta] assetAmount:%v", assetAmount)
 	return &types.RespGetSwapAmount{
 		ResAssetAmount: assetAmount.String(),
 		ResAssetId:     uint32(toAssetId),

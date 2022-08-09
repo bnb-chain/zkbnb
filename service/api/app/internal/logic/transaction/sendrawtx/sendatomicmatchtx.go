@@ -26,12 +26,12 @@ func SendAtomicMatchTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 	txInfo, err := commonTx.ParseAtomicMatchTxInfo(rawTxInfo)
 	if err != nil {
 		logx.Errorf("cannot parse tx err: %s", err.Error())
-		return "", errorcode.RpcErrInvalidTx
+		return "", errorcode.AppErrInvalidTx
 	}
 
 	if err := legendTxTypes.ValidateAtomicMatchTxInfo(txInfo); err != nil {
 		logx.Errorf("cannot pass static check, err: %s", err.Error())
-		return "", errorcode.RpcErrInvalidTxField.RefineError(err)
+		return "", errorcode.AppErrInvalidTxField.RefineError(err)
 	}
 
 	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, svcCtx.SysConfigModel); err != nil {
@@ -41,13 +41,13 @@ func SendAtomicMatchTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 	now := time.Now().UnixMilli()
 	if txInfo.BuyOffer.ExpiredAt < now || txInfo.SellOffer.ExpiredAt < now {
 		logx.Errorf("[sendAtomicMatchTx] invalid time stamp")
-		return "", errorcode.RpcErrInvalidTxField.RefineError("invalid ExpiredAt of BuyOffer or SellOffer")
+		return "", errorcode.AppErrInvalidTxField.RefineError("invalid ExpiredAt of BuyOffer or SellOffer")
 	}
 	if txInfo.BuyOffer.NftIndex != txInfo.SellOffer.NftIndex ||
 		txInfo.BuyOffer.AssetId != txInfo.SellOffer.AssetId ||
 		txInfo.BuyOffer.AssetAmount.String() != txInfo.SellOffer.AssetAmount.String() ||
 		txInfo.BuyOffer.TreasuryRate != txInfo.SellOffer.TreasuryRate {
-		return "", errorcode.RpcErrInvalidTxField.RefineError("mismatch between BuyOffer and SellOffer")
+		return "", errorcode.AppErrInvalidTxField.RefineError("mismatch between BuyOffer and SellOffer")
 	}
 	var (
 		accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
@@ -55,53 +55,53 @@ func SendAtomicMatchTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 	accountInfoMap[txInfo.AccountIndex], err = commglobalmap.GetLatestAccountInfo(ctx, txInfo.AccountIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
-			return "", errorcode.RpcErrInvalidTxField.RefineError("invalid FromAccountIndex")
+			return "", errorcode.AppErrInvalidTxField.RefineError("invalid FromAccountIndex")
 		}
 		logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.AccountIndex, err.Error())
-		return "", errorcode.RpcErrInternal
+		return "", errorcode.AppErrInternal
 	}
 	if accountInfoMap[txInfo.BuyOffer.AccountIndex] == nil {
 		accountInfoMap[txInfo.BuyOffer.AccountIndex], err = commglobalmap.GetBasicAccountInfo(ctx, txInfo.BuyOffer.AccountIndex)
 		if err != nil {
 			if err == errorcode.DbErrNotFound {
-				return "", errorcode.RpcErrInvalidTxField.RefineError("invalid BuyOffer.AccountIndex")
+				return "", errorcode.AppErrInvalidTxField.RefineError("invalid BuyOffer.AccountIndex")
 			}
 			logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.BuyOffer.AccountIndex, err.Error())
-			return "", errorcode.RpcErrInternal
+			return "", errorcode.AppErrInternal
 		}
 	}
 	if accountInfoMap[txInfo.SellOffer.AccountIndex] == nil {
 		accountInfoMap[txInfo.SellOffer.AccountIndex], err = commglobalmap.GetBasicAccountInfo(ctx, txInfo.SellOffer.AccountIndex)
 		if err != nil {
 			if err == errorcode.DbErrNotFound {
-				return "", errorcode.RpcErrInvalidTxField.RefineError("invalid SellOffer.AccountIndex")
+				return "", errorcode.AppErrInvalidTxField.RefineError("invalid SellOffer.AccountIndex")
 			}
 			logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.SellOffer.AccountIndex, err.Error())
-			return "", errorcode.RpcErrInternal
+			return "", errorcode.AppErrInternal
 		}
 	}
 	if accountInfoMap[txInfo.GasAccountIndex] == nil {
 		accountInfoMap[txInfo.GasAccountIndex], err = commglobalmap.GetBasicAccountInfo(ctx, txInfo.GasAccountIndex)
 		if err != nil {
 			if err == errorcode.DbErrNotFound {
-				return "", errorcode.RpcErrInvalidTxField.RefineError("invalid GasAccountIndex")
+				return "", errorcode.AppErrInvalidTxField.RefineError("invalid GasAccountIndex")
 			}
 			logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.GasAccountIndex, err.Error())
-			return "", errorcode.RpcErrInternal
+			return "", errorcode.AppErrInternal
 		}
 	}
 
 	nftInfo, err := commglobalmap.GetLatestNftInfoForRead(ctx, txInfo.BuyOffer.NftIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
-			return "", errorcode.RpcErrInvalidTxField.RefineError("invalid BuyOffer.NftIndex")
+			return "", errorcode.AppErrInvalidTxField.RefineError("invalid BuyOffer.NftIndex")
 		}
 		logx.Errorf("fail to get nft info: %d, err: %s", txInfo.BuyOffer.NftIndex, err.Error())
 		return "", err
 	}
 	if nftInfo.OwnerAccountIndex != txInfo.SellOffer.AccountIndex {
 		logx.Errorf("not owner, owner: %d, seller: %d", nftInfo.OwnerAccountIndex, txInfo.SellOffer.AccountIndex)
-		return "", errorcode.RpcErrInvalidTxField.RefineError("seller is not nft owner")
+		return "", errorcode.AppErrInvalidTxField.RefineError("seller is not nft owner")
 	}
 
 	var (
@@ -113,18 +113,18 @@ func SendAtomicMatchTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 		txInfo,
 	)
 	if err != nil {
-		return "", errorcode.RpcErrVerification.RefineError(err)
+		return "", errorcode.AppErrVerification.RefineError(err)
 	}
 	key := util.GetNftKeyForRead(txInfo.BuyOffer.NftIndex)
 	_, err = svcCtx.RedisConn.Del(key)
 	if err != nil {
 		logx.Errorf("unable to delete key from redis: %s", err.Error())
-		return "", errorcode.RpcErrInternal
+		return "", errorcode.AppErrInternal
 	}
 	txInfoBytes, err := json.Marshal(txInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
-		return "", errorcode.RpcErrInternal
+		return "", errorcode.AppErrInternal
 	}
 	txId, mempoolTx := ConstructMempoolTx(
 		commonTx.TxTypeAtomicMatch,

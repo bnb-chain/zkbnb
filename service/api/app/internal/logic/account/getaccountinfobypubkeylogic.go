@@ -43,8 +43,8 @@ func (l *GetAccountInfoByPubKeyLogic) GetAccountInfoByPubKey(req *types.ReqGetAc
 	}
 	account, err := l.commglobalmap.GetLatestAccountInfo(l.ctx, info.AccountIndex)
 	if err != nil {
-		logx.Errorf("fail to get account info: %d from rpc, err: %s", info.AccountIndex, err.Error())
-		if err == errorcode.RpcErrNotFound {
+		logx.Errorf("fail to get account info: %d, err: %s", info.AccountIndex, err.Error())
+		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
 		return nil, errorcode.AppErrInternal

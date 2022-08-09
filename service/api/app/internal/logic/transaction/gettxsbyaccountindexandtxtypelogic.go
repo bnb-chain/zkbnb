@@ -39,7 +39,7 @@ func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *
 	for _, txDetail := range txDetails {
 		tx, err := l.svcCtx.TxModel.GetTxByTxId(txDetail.TxId)
 		if err != nil {
-			return nil, err
+			return nil, errorcode.AppErrInternal
 		}
 		if tx.TxType == int64(req.TxType) {
 			resp.Total = resp.Total + 1
@@ -48,12 +48,12 @@ func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *
 	}
 	memPoolTxDetails, err := l.svcCtx.MempoolDetailModel.GetMempoolTxDetailsByAccountIndex(int64(req.AccountIndex))
 	if err != nil {
-		return nil, err
+		return nil, errorcode.AppErrInternal
 	}
 	for _, txDetail := range memPoolTxDetails {
 		tx, err := l.svcCtx.MempoolModel.GetMempoolTxByTxId(txDetail.TxId)
 		if err != nil {
-			return nil, err
+			return nil, errorcode.AppErrInternal
 		}
 		if tx.TxType == int64(req.TxType) {
 			resp.Total = resp.Total + 1
