@@ -149,7 +149,7 @@ type (
 		StateRoot                       string `json:"state_root"`
 		PriorityOperations              int64  `json:"priority_operations"`
 		PendingOnChainOperationsHash    string `json:"pending_on_chain_operations_hash"`
-		PendingOnChainOperationsPubData string `json:"pending_on_chain_operations_hub_data"`
+		PendingOnChainOperationsPubData string `json:"pending_on_chain_operations_pub_data"`
 		CommittedTxHash                 string `json:"committed_tx_hash"`
 		CommittedAt                     int64  `json:"committed_at"`
 		VerifiedTxHash                  string `json:"verified_tx_hash"`
