@@ -7,24 +7,24 @@ import (
 
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/globalrpc"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/commglobalmap"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
 type GetBalanceByAssetIdAndAccountNameLogic struct {
 	logx.Logger
-	ctx       context.Context
-	svcCtx    *svc.ServiceContext
-	globalRPC globalrpc.GlobalRPC
+	ctx           context.Context
+	svcCtx        *svc.ServiceContext
+	commglobalmap commglobalmap.Commglobalmap
 }
 
 func NewGetBalanceByAssetIdAndAccountNameLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetBalanceByAssetIdAndAccountNameLogic {
 	return &GetBalanceByAssetIdAndAccountNameLogic{
-		Logger:    logx.WithContext(ctx),
-		ctx:       ctx,
-		svcCtx:    svcCtx,
-		globalRPC: globalrpc.New(svcCtx, ctx),
+		Logger:        logx.WithContext(ctx),
+		ctx:           ctx,
+		svcCtx:        svcCtx,
+		commglobalmap: commglobalmap.New(svcCtx),
 	}
 }
 
@@ -48,18 +48,18 @@ func (l *GetBalanceByAssetIdAndAccountNameLogic) GetBalanceByAssetIdAndAccountNa
 	}
 
 	resp := &types.RespGetBlanceInfoByAssetIdAndAccountName{}
-	assets, err := l.globalRPC.GetLatestAssetsListByAccountIndex(l.ctx, uint32(account.AccountIndex))
+	accountInfo, err := l.commglobalmap.GetLatestAccountInfoWithCache(l.ctx, int64(account.AccountIndex))
 	if err != nil {
-		logx.Errorf("fail to get asset info for account: %d from rpc, err: %s", account.AccountIndex, err.Error())
-		if err == errorcode.RpcErrNotFound {
-			return resp, nil
+		logx.Errorf("[GetLatestAccountInfo] err: %s", err.Error())
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.RpcErrNotFound
 		}
-		return nil, errorcode.AppErrInternal
+		return nil, errorcode.RpcErrInternal
 	}
 
-	for _, asset := range assets {
-		if req.AssetId == asset.AssetId {
-			resp.Balance = asset.Balance
+	for _, asset := range accountInfo.AssetInfo {
+		if req.AssetId == uint32(asset.AssetId) {
+			resp.Balance = asset.Balance.String()
 		}
 	}
 	return resp, nil

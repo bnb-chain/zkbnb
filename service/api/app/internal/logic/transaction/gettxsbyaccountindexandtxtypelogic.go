@@ -7,24 +7,21 @@ import (
 
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/globalrpc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
 type GetTxsByAccountIndexAndTxTypeLogic struct {
 	logx.Logger
-	ctx       context.Context
-	svcCtx    *svc.ServiceContext
-	globalRPC globalrpc.GlobalRPC
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
 }
 
 func NewGetTxsByAccountIndexAndTxTypeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTxsByAccountIndexAndTxTypeLogic {
 	return &GetTxsByAccountIndexAndTxTypeLogic{
-		Logger:    logx.WithContext(ctx),
-		ctx:       ctx,
-		svcCtx:    svcCtx,
-		globalRPC: globalrpc.New(svcCtx, ctx),
+		Logger: logx.WithContext(ctx),
+		ctx:    ctx,
+		svcCtx: svcCtx,
 	}
 }
 

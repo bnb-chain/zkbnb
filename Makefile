@@ -9,19 +9,10 @@
 .PHONY: zkbas-windows zkbas-windows-386 zkbas-windows-amd64
 
 APP = ./service/api/app
-EXPLORE = ./service/api/explorer
-
-globalRPCProtoPath = ./service/rpc/globalRPC
 
 app:
 	cd $(APP) && goctl api go -api app.api -dir .;
 	@echo "Done generate app api";
-
-
-globalRPCProto:
-	cd $(globalRPCProtoPath) && goctl rpc protoc globalRPC.proto --go_out=. --go-grpc_out=. --zrpc_out=.;
-	@echo "Done generate globalRPCProto";
-
 
 deploy:
 	sudo bash -x ./deploy-local.sh new
