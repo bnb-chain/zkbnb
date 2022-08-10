@@ -18,9 +18,9 @@
 package commonTx
 
 const (
-	TxTypeEmpty       = iota //0
-	TxTypeRegisterZns        //1
-	TxTypeCreatePair         //2
+	TxTypeEmpty = iota
+	TxTypeRegisterZns
+	TxTypeCreatePair
 	TxTypeUpdatePairRate
 	TxTypeDeposit
 	TxTypeDepositNft

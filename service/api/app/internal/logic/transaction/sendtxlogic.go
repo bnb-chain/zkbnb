@@ -86,7 +86,7 @@ func (l *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.RespSendTx, err 
 			logx.Errorf("sendWithdrawNftTx err: %s", err.Error())
 			return nil, err
 		}
-	case commonTx.TxTypeCreatePair:
+	case commonTx.TxTypeCreateCollection:
 		resp.TxId, err = sendrawtx.SendCreateCollectionTx(l.ctx, l.svcCtx, l.commglobalmap, req.TxInfo)
 		if err != nil {
 			logx.Errorf("sendCreateCollectionTx err: %s", err.Error())
@@ -99,10 +99,10 @@ func (l *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.RespSendTx, err 
 			return nil, err
 		}
 	case commonTx.TxTypeOffer:
-		logx.Errorf("invalid tx type: %s", req.TxType)
+		logx.Errorf("invalid tx type: %d", req.TxType)
 		return nil, errorcode.AppErrInvalidTxType
 	default:
-		logx.Errorf("invalid tx type: %s", req.TxType)
+		logx.Errorf("invalid tx type: %d", req.TxType)
 		return nil, errorcode.AppErrInvalidTxType
 	}
 	return resp, err

@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
-
 	"github.com/stretchr/testify/assert"
+
+	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
 func (s *AppSuite) TestGetPairInfo() {

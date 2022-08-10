@@ -35,7 +35,7 @@ func (s *AppSuite) SetupSuite() {
 	ctx := svc.NewServiceContext(c)
 
 	s.url = fmt.Sprintf("http://%s:%d", c.Host, c.Port)
-	//s.url = "http://172.22.41.67:8888"
+	//s.url = "http://172.22.41.67:8888" //use external service for test
 	s.server = rest.MustNewServer(c.RestConf, rest.WithCors())
 
 	handler.RegisterHandlers(s.server, ctx)
