@@ -19,6 +19,7 @@ package block
 
 const (
 	_ = iota
+	StatusProposing
 	StatusPending
 	StatusCommitted
 	StatusVerifiedAndExecuted
