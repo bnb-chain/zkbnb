@@ -42,7 +42,7 @@ func InitNftTree(
 	}
 
 	if ctx.IsLoad() {
-		nums, err := nftHistoryModel.GetLatestNftAssetNumsByBlockHeight(blockHeight)
+		nums, err := nftHistoryModel.GetLatestNftAssetCountByBlockHeight(blockHeight)
 		if err != nil {
 			logx.Errorf("unable to get latest nft assets: %s", err.Error())
 			return nil, err

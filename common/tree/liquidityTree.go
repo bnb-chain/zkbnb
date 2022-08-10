@@ -44,7 +44,7 @@ func InitLiquidityTree(
 	}
 
 	if ctx.IsLoad() {
-		nums, err := liquidityHistoryModel.GetLatestLiquidityNumsByBlockHeight(blockHeight)
+		nums, err := liquidityHistoryModel.GetLatestLiquidityCountByBlockHeight(blockHeight)
 		if err != nil {
 			logx.Errorf("unable to get latest liquidity assets: %s", err.Error())
 			return nil, err

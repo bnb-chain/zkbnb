@@ -36,7 +36,7 @@ type (
 		CreateLiquidityHistory(liquidity *LiquidityHistory) error
 		CreateLiquidityHistoryInBatches(entities []*LiquidityHistory) error
 		GetAccountLiquidityHistoryByPairIndex(pairIndex int64) (entities []*LiquidityHistory, err error)
-		GetLatestLiquidityNumsByBlockHeight(blockHeight int64) (count int64, err error)
+		GetLatestLiquidityCountByBlockHeight(blockHeight int64) (count int64, err error)
 		GetLatestLiquidityByBlockHeight(blockHeight int64, limit int, offset int) (entities []*LiquidityHistory, err error)
 		GetLatestLiquidityByPairIndex(pairIndex int64) (entity *LiquidityHistory, err error)
 	}
@@ -157,7 +157,7 @@ func (m *defaultLiquidityHistoryModel) GetAccountLiquidityHistoryByPairIndex(pai
 	return entities, nil
 }
 
-func (m *defaultLiquidityHistoryModel) GetLatestLiquidityNumsByBlockHeight(blockHeight int64) (count int64, err error) {
+func (m *defaultLiquidityHistoryModel) GetLatestLiquidityCountByBlockHeight(blockHeight int64) (count int64, err error) {
 	subQuery := m.DB.Table(m.table).Select("*").
 		Where("pair_index = a.pair_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height", blockHeight)
 
@@ -165,7 +165,7 @@ func (m *defaultLiquidityHistoryModel) GetLatestLiquidityNumsByBlockHeight(block
 		Where("NOT EXISTS (?) AND l2_block_height <= ?", subQuery, blockHeight)
 
 	if dbTx.Count(&count).Error != nil {
-		logx.Errorf("[GetLatestLiquidityNumsByBlockHeight] unable to get related accounts: %s", dbTx.Error.Error())
+		logx.Errorf("[GetLatestLiquidityCountByBlockHeight] unable to get related accounts: %s", dbTx.Error.Error())
 		return 0, dbTx.Error
 	}
 	return count, nil

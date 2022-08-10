@@ -46,7 +46,7 @@ func InitAccountTree(
 	accountTree bsmt.SparseMerkleTree, accountAssetTrees []bsmt.SparseMerkleTree, err error,
 ) {
 	// TODO: If there are too many accounts, it may cause reading too long, which can be optimized again
-	accountNums, err := accountHistoryModel.GetValidAccountNums(blockHeight)
+	accountNums, err := accountHistoryModel.GetValidAccountCount(blockHeight)
 	if err != nil {
 		logx.Errorf("unable to get all accountNums")
 		return nil, nil, err

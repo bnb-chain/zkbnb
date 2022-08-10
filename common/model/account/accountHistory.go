@@ -46,7 +46,7 @@ type (
 		GetAccountsTotalCount() (count int64, err error)
 		GetLatestAccountIndex() (accountIndex int64, err error)
 		GetValidAccounts(height int64, limit int, offset int) (rowsAffected int64, accounts []*AccountHistory, err error)
-		GetValidAccountNums(height int64) (accounts int64, err error)
+		GetValidAccountCount(height int64) (accounts int64, err error)
 		GetLatestAccountInfoByAccountIndex(accountIndex int64) (account *AccountHistory, err error)
 	}
 
@@ -321,7 +321,7 @@ func (m *defaultAccountHistoryModel) GetValidAccounts(height int64, limit int, o
 
 }
 
-func (m *defaultAccountHistoryModel) GetValidAccountNums(height int64) (count int64, err error) {
+func (m *defaultAccountHistoryModel) GetValidAccountCount(height int64) (count int64, err error) {
 	subQuery := m.DB.Table(m.table).Select("*").
 		Where("account_index = a.account_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height AND l2_block_height != -1", height)
 
@@ -329,7 +329,7 @@ func (m *defaultAccountHistoryModel) GetValidAccountNums(height int64) (count in
 		Where("NOT EXISTS (?) AND l2_block_height <= ? AND l2_block_height != -1", subQuery, height)
 
 	if dbTx.Count(&count).Error != nil {
-		logx.Errorf("[GetValidAccountNums] unable to get related accounts: %s", dbTx.Error.Error())
+		logx.Errorf("[GetValidAccountCount] unable to get related accounts: %s", dbTx.Error.Error())
 		return 0, dbTx.Error
 	}
 	return count, nil

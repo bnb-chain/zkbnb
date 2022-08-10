@@ -33,7 +33,7 @@ type (
 	L2NftHistoryModel interface {
 		CreateL2NftHistoryTable() error
 		DropL2NftHistoryTable() error
-		GetLatestNftAssetNumsByBlockHeight(height int64) (
+		GetLatestNftAssetCountByBlockHeight(height int64) (
 			count int64, err error,
 		)
 		GetLatestNftAssetsByBlockHeight(height int64, limit int, offset int) (
@@ -97,7 +97,7 @@ func (m *defaultL2NftHistoryModel) DropL2NftHistoryTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-func (m *defaultL2NftHistoryModel) GetLatestNftAssetNumsByBlockHeight(height int64) (
+func (m *defaultL2NftHistoryModel) GetLatestNftAssetCountByBlockHeight(height int64) (
 	count int64, err error,
 ) {
 	subQuery := m.DB.Table(m.table).Select("*").
@@ -107,7 +107,7 @@ func (m *defaultL2NftHistoryModel) GetLatestNftAssetNumsByBlockHeight(height int
 		Where("NOT EXISTS (?) AND l2_block_height <= ?", subQuery, height)
 
 	if dbTx.Count(&count).Error != nil {
-		logx.Errorf("[GetLatestNftAssetNumsByBlockHeight] unable to get related nft assets: %s", dbTx.Error.Error())
+		logx.Errorf("[GetLatestNftAssetCountByBlockHeight] unable to get related nft assets: %s", dbTx.Error.Error())
 		return 0, dbTx.Error
 	}
 
