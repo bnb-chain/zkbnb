@@ -30,10 +30,9 @@ func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (*types.
 	}
 	count, err := l.svcCtx.MempoolModel.GetMempoolTxsTotalCount()
 	if err != nil {
-		if err == errorcode.DbErrNotFound {
-			return resp, nil
+		if err != errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrInternal
 		}
-		return nil, errorcode.AppErrInternal
 	}
 
 	if count == 0 {

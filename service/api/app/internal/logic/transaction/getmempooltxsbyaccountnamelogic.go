@@ -39,21 +39,20 @@ func (l *GetmempoolTxsByAccountNameLogic) GetmempoolTxsByAccountName(req *types.
 	}
 	mempoolTxDetails, err := l.svcCtx.MempoolDetailModel.GetMempoolTxDetailsByAccountIndex(account.AccountIndex)
 	if err != nil {
-		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrNotFound
+		if err != errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrInternal
 		}
-		return nil, errorcode.AppErrInternal
 	}
 
 	resp := &types.RespGetmempoolTxsByAccountName{
-		Txs: make([]*types.Tx, 0),
+		MempoolTxs: make([]*types.Tx, 0),
 	}
 	for _, d := range mempoolTxDetails {
 		tx, err := l.svcCtx.MempoolModel.GetMempoolTxByTxId(d.TxId)
 		if err != nil {
 			continue
 		}
-		resp.Txs = append(resp.Txs, utils.MempoolTx2Tx(tx))
+		resp.MempoolTxs = append(resp.MempoolTxs, utils.MempoolTx2Tx(tx))
 	}
 	return resp, nil
 }

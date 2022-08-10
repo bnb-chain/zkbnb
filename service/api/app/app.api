@@ -631,8 +631,8 @@ type (
 		AccountName string `form:"account_name"`
 	}
 	RespGetmempoolTxsByAccountName {
-		Total uint32 `json:"total"`
-		Txs   []*Tx  `json:"mempool_txs"`
+		Total      uint32 `json:"total"`
+		MempoolTxs []*Tx  `json:"mempool_txs"`
 	}
 )
 

@@ -28,10 +28,9 @@ func NewGetTxsByAccountIndexAndTxTypeLogic(ctx context.Context, svcCtx *svc.Serv
 func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *types.ReqGetTxsByAccountIndexAndTxType) (*types.RespGetTxsByAccountIndexAndTxType, error) {
 	txDetails, err := l.svcCtx.TxDetailModel.GetTxDetailByAccountIndex(int64(req.AccountIndex))
 	if err != nil {
-		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrNotFound
+		if err != errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrInternal
 		}
-		return nil, errorcode.AppErrInternal
 	}
 	resp := &types.RespGetTxsByAccountIndexAndTxType{
 		Txs: make([]*types.Tx, 0),
@@ -48,7 +47,9 @@ func (l *GetTxsByAccountIndexAndTxTypeLogic) GetTxsByAccountIndexAndTxType(req *
 	}
 	memPoolTxDetails, err := l.svcCtx.MempoolDetailModel.GetMempoolTxDetailsByAccountIndex(int64(req.AccountIndex))
 	if err != nil {
-		return nil, errorcode.AppErrInternal
+		if err != errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrInternal
+		}
 	}
 	for _, txDetail := range memPoolTxDetails {
 		tx, err := l.svcCtx.MempoolModel.GetMempoolTxByTxId(txDetail.TxId)
