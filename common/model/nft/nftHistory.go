@@ -26,7 +26,6 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas/common/options"
 	"github.com/bnb-chain/zkbas/errorcode"
 )
 
@@ -37,7 +36,7 @@ type (
 		GetLatestNftAssetNumsByBlockHeight(height int64) (
 			count int64, err error,
 		)
-		GetLatestNftAssetsByBlockHeight(height int64, opts ...options.QueryOption) (
+		GetLatestNftAssetsByBlockHeight(height int64, limit int, offset int) (
 			rowsAffected int64, nftAssets []*L2NftHistory, err error,
 		)
 		GetLatestNftAsset(nftIndex int64) (
@@ -115,7 +114,7 @@ func (m *defaultL2NftHistoryModel) GetLatestNftAssetNumsByBlockHeight(height int
 	return count, nil
 }
 
-func (m *defaultL2NftHistoryModel) GetLatestNftAssetsByBlockHeight(height int64, opts ...options.QueryOption) (
+func (m *defaultL2NftHistoryModel) GetLatestNftAssetsByBlockHeight(height int64, limit int, offset int) (
 	rowsAffected int64, accountNftAssets []*L2NftHistory, err error,
 ) {
 	subQuery := m.DB.Table(m.table).Select("*").
@@ -123,11 +122,8 @@ func (m *defaultL2NftHistoryModel) GetLatestNftAssetsByBlockHeight(height int64,
 
 	dbTx := m.DB.Table(m.table+" as a").Select("*").
 		Where("NOT EXISTS (?) AND l2_block_height <= ?", subQuery, height).
+		Limit(limit).Offset(offset).
 		Order("nft_index")
-
-	for _, opt := range opts {
-		opt(dbTx)
-	}
 
 	if dbTx.Find(&accountNftAssets).Error != nil {
 		logx.Errorf("[GetLatestNftAssetsByBlockHeight] unable to get related nft assets: %s", dbTx.Error.Error())

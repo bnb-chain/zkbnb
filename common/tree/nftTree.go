@@ -22,7 +22,6 @@ import (
 	"github.com/bnb-chain/zkbas-crypto/hash/bn254/zmimc"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/common/options"
 	"github.com/bnb-chain/zkbas/pkg/treedb"
 )
 
@@ -83,7 +82,7 @@ func loadNftTreeFromRDB(
 	nftTree bsmt.SparseMerkleTree,
 ) error {
 	_, nftAssets, err := nftHistoryModel.GetLatestNftAssetsByBlockHeight(blockHeight,
-		options.Offset(offset), options.Limit(limit))
+		limit, offset)
 	if err != nil {
 		logx.Errorf("unable to get latest nft assets: %s", err.Error())
 		return err

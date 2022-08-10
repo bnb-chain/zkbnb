@@ -22,7 +22,6 @@ import (
 	"github.com/bnb-chain/zkbas-crypto/hash/bn254/zmimc"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/common/options"
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/pkg/treedb"
 )
@@ -87,7 +86,7 @@ func loadLiquidityTreeFromRDB(
 	liquidityTree bsmt.SparseMerkleTree,
 ) error {
 	liquidityAssets, err := liquidityHistoryModel.GetLatestLiquidityByBlockHeight(blockHeight,
-		options.Offset(offset), options.Limit(limit))
+		limit, offset)
 	if err != nil {
 		if err != errorcode.DbErrNotFound {
 			logx.Errorf("unable to get latest liquidity assets: %s", err.Error())

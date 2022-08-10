@@ -29,7 +29,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/model/account"
-	"github.com/bnb-chain/zkbas/common/options"
 	"github.com/bnb-chain/zkbas/pkg/treedb"
 )
 
@@ -139,7 +138,7 @@ func reloadAccountTreeFromRDB(
 	accountAssetTrees []bsmt.SparseMerkleTree,
 ) error {
 	_, accountHistories, err := accountHistoryModel.GetValidAccounts(blockHeight,
-		options.Offset(offset), options.Limit(limit))
+		limit, offset)
 	if err != nil {
 		logx.Errorf("unable to get all accountHistories")
 		return err
