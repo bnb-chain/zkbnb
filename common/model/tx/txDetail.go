@@ -33,10 +33,8 @@ type (
 	TxDetailModel interface {
 		CreateTxDetailTable() error
 		DropTxDetailTable() error
-		GetTxDetailsByAccountName(name string) (txDetails []*TxDetail, err error)
 		GetTxDetailByAccountIndex(accountIndex int64) (txDetails []*TxDetail, err error)
 		GetTxIdsByAccountIndex(accountIndex int64) (txIds []int64, err error)
-		UpdateTxDetail(detail *TxDetail) error
 	}
 
 	defaultTxDetailModel struct {
@@ -93,23 +91,6 @@ func (m *defaultTxDetailModel) DropTxDetailTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-/*
-	Func: GetTxDetailsByAccountName
-	Params: name string
-	Return: txDetails []*TxDetail, err error
-	Description: GetTxDetailsByAccountName
-*/
-func (m *defaultTxDetailModel) GetTxDetailsByAccountName(name string) (txDetails []*TxDetail, err error) {
-	dbTx := m.DB.Table(m.table).Where("account_name = ?", name).Find(&txDetails)
-	if dbTx.Error != nil {
-		logx.Errorf("fail to get tx by account: %s, error: %s", name, dbTx.Error.Error())
-		return nil, errorcode.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		return nil, errorcode.DbErrNotFound
-	}
-	return txDetails, nil
-}
-
 func (m *defaultTxDetailModel) GetTxDetailByAccountIndex(accountIndex int64) (txDetails []*TxDetail, err error) {
 	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex).Find(&txDetails)
 	if dbTx.Error != nil {
@@ -133,17 +114,4 @@ func (m *defaultTxDetailModel) GetTxIdsByAccountIndex(accountIndex int64) (txIds
 		return txIds[i] > txIds[j]
 	})
 	return txIds, nil
-}
-
-func (m *defaultTxDetailModel) UpdateTxDetail(detail *TxDetail) error {
-	dbTx := m.DB.Save(&detail)
-	if dbTx.Error != nil {
-		if dbTx.Error == errorcode.DbErrNotFound {
-			return nil
-		} else {
-			return dbTx.Error
-		}
-	} else {
-		return nil
-	}
 }

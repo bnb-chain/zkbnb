@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/model/blockForProof"
@@ -50,7 +51,7 @@ func ProveBlock(ctx *svc.ServiceContext) error {
 	}
 
 	// parse CryptoBlock
-	var cryptoBlock *CryptoBlock
+	var cryptoBlock *block.Block
 	err = json.Unmarshal([]byte(unprovedBlock.BlockData), &cryptoBlock)
 	if err != nil {
 		return errors.New("[ProveBlock] json.Unmarshal Error")

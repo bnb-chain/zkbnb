@@ -20,9 +20,7 @@ import (
 	"time"
 
 	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
-	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 
-	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/blockForProof"
 )
 
@@ -33,11 +31,9 @@ const (
 )
 
 type (
-	Block                  = block.Block
-	CryptoTx               = cryptoBlock.Tx
-	CryptoBlock            = cryptoBlock.Block
-	BlockForProof          = blockForProof.BlockForProof
-	StorageStoredBlockInfo = zkbas.StorageStoredBlockInfo
+	CryptoTx      = cryptoBlock.Tx
+	CryptoBlock   = cryptoBlock.Block
+	BlockForProof = blockForProof.BlockForProof
 )
 
 type CryptoBlockInfo struct {

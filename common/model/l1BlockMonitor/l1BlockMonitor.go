@@ -19,7 +19,6 @@ package l1BlockMonitor
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
@@ -38,8 +37,6 @@ type (
 	L1BlockMonitorModel interface {
 		CreateL1BlockMonitorTable() error
 		DropL1BlockMonitorTable() error
-		CreateL1BlockMonitor(tx *L1BlockMonitor) (bool, error)
-		CreateL1BlockMonitorsInBatches(blockInfos []*L1BlockMonitor) (rowsAffected int64, err error)
 		CreateMonitorsInfo(blockInfo *L1BlockMonitor, txEventMonitors []*l2TxEventMonitor.L2TxEventMonitor, blockEventMonitors []*l2BlockEventMonitor.L2BlockEventMonitor) (err error)
 		CreateGovernanceMonitorInfo(
 			blockInfo *L1BlockMonitor,
@@ -48,7 +45,6 @@ type (
 			pendingNewSysconfigInfos []*sysconfig.Sysconfig,
 			pendingUpdateSysconfigInfos []*sysconfig.Sysconfig,
 		) (err error)
-		GetL1BlockMonitors() (blockInfos []*L1BlockMonitor, err error)
 		GetLatestL1BlockMonitorByBlock() (blockInfo *L1BlockMonitor, err error)
 		GetLatestL1BlockMonitorByGovernance() (blockInfo *L1BlockMonitor, err error)
 	}
@@ -101,46 +97,6 @@ func (m *defaultL1BlockMonitorModel) DropL1BlockMonitorTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-/*
-	Func: CreateL1BlockMonitor
-	Params: asset *L1BlockMonitor
-	Return: bool, error
-	Description: create L1BlockMonitor txVerification
-*/
-func (m *defaultL1BlockMonitorModel) CreateL1BlockMonitor(tx *L1BlockMonitor) (bool, error) {
-	dbTx := m.DB.Table(m.table).Create(tx)
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[l1BlockMonitor.CreateL1BlockMonitor] %s", dbTx.Error)
-		logx.Error(err)
-		return false, dbTx.Error
-	} else if dbTx.RowsAffected == 0 {
-		ErrInvalidL1BlockMonitor := errors.New("invalid l1BlockMonitor")
-		err := fmt.Sprintf("[l1BlockMonitor.CreateL1BlockMonitor] %s", ErrInvalidL1BlockMonitor)
-		logx.Error(err)
-		return false, ErrInvalidL1BlockMonitor
-	}
-	return true, nil
-}
-
-/*
-	Func: CreateL1BlockMonitorsInBatches
-	Params: []*L1BlockMonitor
-	Return: rowsAffected int64, err error
-	Description: create L1BlockMonitor batches
-*/
-func (m *defaultL1BlockMonitorModel) CreateL1BlockMonitorsInBatches(blockInfos []*L1BlockMonitor) (rowsAffected int64, err error) {
-	dbTx := m.DB.Table(m.table).CreateInBatches(blockInfos, len(blockInfos))
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[l1BlockMonitor.CreateL1AssetsMonitorInBatches] %s", dbTx.Error)
-		logx.Error(err)
-		return 0, dbTx.Error
-	}
-	if dbTx.RowsAffected == 0 {
-		return 0, nil
-	}
-	return dbTx.RowsAffected, nil
-}
-
 func (m *defaultL1BlockMonitorModel) CreateMonitorsInfo(
 	blockInfo *L1BlockMonitor,
 	txEventMonitors []*l2TxEventMonitor.L2TxEventMonitor,
@@ -154,7 +110,7 @@ func (m *defaultL1BlockMonitorModel) CreateMonitorsInfo(
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
-				return errors.New("[CreateMonitorsInfo] unable to create l1 block info")
+				return errors.New("unable to create l1 block info")
 			}
 			// create data in batches for l2 txVerification event monitor
 			dbTx = tx.Table(l2TxEventMonitor.TableName).CreateInBatches(txEventMonitors, len(txEventMonitors))
@@ -162,7 +118,7 @@ func (m *defaultL1BlockMonitorModel) CreateMonitorsInfo(
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected != int64(len(txEventMonitors)) {
-				return errors.New("[CreateMonitorsInfo] unable to create l2 txVerification event monitors")
+				return errors.New("unable to create l2 txVerification event monitors")
 			}
 			// create data in batches for l2 block event monitor
 			dbTx = tx.Table(l2BlockEventMonitor.TableName).CreateInBatches(blockEventMonitors, len(blockEventMonitors))
@@ -170,7 +126,7 @@ func (m *defaultL1BlockMonitorModel) CreateMonitorsInfo(
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected != int64(len(blockEventMonitors)) {
-				return errors.New("[CreateMonitorsInfo] unable to create l2 block event monitors")
+				return errors.New("unable to create l2 block event monitors")
 			}
 			return nil
 		},
@@ -193,7 +149,7 @@ func (m *defaultL1BlockMonitorModel) CreateGovernanceMonitorInfo(
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
-				return errors.New("[CreateGovernanceMonitorInfo] unable to create l1 block info")
+				return errors.New("unable to create l1 block info")
 			}
 			// create l2 asset info
 			if len(pendingNewL2AssetInfos) != 0 {
@@ -202,8 +158,8 @@ func (m *defaultL1BlockMonitorModel) CreateGovernanceMonitorInfo(
 					return dbTx.Error
 				}
 				if dbTx.RowsAffected != int64(len(pendingNewL2AssetInfos)) {
-					logx.Errorf("[CreateGovernanceMonitorInfo] invalid l2 asset info")
-					return errors.New("[CreateGovernanceMonitorInfo] invalid l2 asset info")
+					logx.Errorf("the length of created rows doesn't match, created=%d, toCreate=%s", dbTx.RowsAffected, len(pendingNewL2AssetInfos))
+					return errors.New("invalid l2 asset info")
 				}
 			}
 			// update l2 asset info
@@ -220,8 +176,8 @@ func (m *defaultL1BlockMonitorModel) CreateGovernanceMonitorInfo(
 					return dbTx.Error
 				}
 				if dbTx.RowsAffected != int64(len(pendingNewSysconfigInfos)) {
-					logx.Errorf("[CreateGovernanceMonitorInfo] invalid sys config info")
-					return errors.New("[CreateGovernanceMonitorInfo] invalid sys config info")
+					logx.Errorf("the length of created rows doesn't match, created=%d, toCreate=%s", dbTx.RowsAffected, len(pendingNewSysconfigInfos))
+					return errors.New("invalid sys config info")
 				}
 			}
 			// update sys config
@@ -238,23 +194,6 @@ func (m *defaultL1BlockMonitorModel) CreateGovernanceMonitorInfo(
 }
 
 /*
-	GetL1BlockMonitors: get all L1BlockMonitors
-*/
-func (m *defaultL1BlockMonitorModel) GetL1BlockMonitors() (blockInfos []*L1BlockMonitor, err error) {
-	dbTx := m.DB.Table(m.table).Find(&blockInfos).Order("l1_block_height")
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[l1BlockMonitor.GetL1BlockMonitors] %s", dbTx.Error)
-		logx.Error(err)
-		return nil, errorcode.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l1BlockMonitor.GetL1BlockMonitors] %s", errorcode.DbErrNotFound)
-		logx.Error(err)
-		return nil, errorcode.DbErrNotFound
-	}
-	return blockInfos, dbTx.Error
-}
-
-/*
 	Func: GetLatestL1BlockMonitor
 	Return: blockInfos []*L1BlockMonitor, err error
 	Description: get latest l1 block monitor info
@@ -262,13 +201,10 @@ func (m *defaultL1BlockMonitorModel) GetL1BlockMonitors() (blockInfos []*L1Block
 func (m *defaultL1BlockMonitorModel) GetLatestL1BlockMonitorByBlock() (blockInfo *L1BlockMonitor, err error) {
 	dbTx := m.DB.Table(m.table).Where("monitor_type = ?", MonitorTypeBlock).Order("l1_block_height desc").Find(&blockInfo)
 	if dbTx.Error != nil {
-		err := fmt.Sprintf("[l1BlockMonitor.GetLatestL1BlockMonitorByBlock] %s", dbTx.Error)
-		logx.Error(err)
+		logx.Errorf("get monitor blocks error, err: %s", err.Error())
 		return nil, errorcode.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l1BlockMonitor.GetLatestL1BlockMonitorByBlock] %s", errorcode.DbErrNotFound)
-		logx.Error(err)
 		return nil, errorcode.DbErrNotFound
 	}
 	return blockInfo, nil
@@ -277,13 +213,10 @@ func (m *defaultL1BlockMonitorModel) GetLatestL1BlockMonitorByBlock() (blockInfo
 func (m *defaultL1BlockMonitorModel) GetLatestL1BlockMonitorByGovernance() (blockInfo *L1BlockMonitor, err error) {
 	dbTx := m.DB.Table(m.table).Where("monitor_type = ?", MonitorTypeGovernance).Order("l1_block_height desc").Find(&blockInfo)
 	if dbTx.Error != nil {
-		err := fmt.Sprintf("[l1BlockMonitor.GetLatestL1BlockMonitorByGovernance] %s", dbTx.Error)
-		logx.Error(err)
+		logx.Errorf("get governance blocks error, err: %s", err.Error())
 		return nil, errorcode.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[l1BlockMonitor.GetLatestL1BlockMonitorByGovernance] %s", errorcode.DbErrNotFound)
-		logx.Error(err)
 		return nil, errorcode.DbErrNotFound
 	}
 	return blockInfo, nil

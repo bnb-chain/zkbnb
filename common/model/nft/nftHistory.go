@@ -18,8 +18,6 @@
 package nft
 
 import (
-	"fmt"
-
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
@@ -36,10 +34,6 @@ type (
 		GetLatestNftAssetsByBlockHeight(height int64) (
 			rowsAffected int64, nftAssets []*L2NftHistory, err error,
 		)
-		GetLatestNftAsset(nftIndex int64) (
-			nftAsset *L2NftHistory, err error,
-		)
-		GetNftAssetsByBlockHeight(l2BlockHeight int64) (rowsAffected int64, nftAssets []*L2NftHistory, err error)
 	}
 	defaultL2NftHistoryModel struct {
 		sqlc.CachedConn
@@ -104,33 +98,8 @@ func (m *defaultL2NftHistoryModel) GetLatestNftAssetsByBlockHeight(height int64)
 			"AND l2_block_height <= ? ORDER BY nft_index", height, height).
 		Find(&accountNftAssets)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetLatestNftAssetsByBlockHeight] unable to get related nft assets: %s", dbTx.Error.Error())
-		return 0, nil, dbTx.Error
+		logx.Errorf("unable to get related nft assets: %s", dbTx.Error.Error())
+		return 0, nil, errorcode.DbErrSqlOperation
 	}
 	return dbTx.RowsAffected, accountNftAssets, nil
-}
-
-func (m *defaultL2NftHistoryModel) GetLatestNftAsset(nftIndex int64) (
-	nftAsset *L2NftHistory, err error,
-) {
-	dbTx := m.DB.Table(m.table).Where("nft_index = ?", nftIndex).Order("l2_block_height desc").First(&nftAsset)
-
-	if dbTx.Error != nil {
-		logx.Errorf("[GetLatestNftAsset] unable to get related nft asset: %s", dbTx.Error.Error())
-		return nil, errorcode.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		logx.Errorf("[GetLatestNftAsset] no such info")
-		return nil, errorcode.DbErrNotFound
-	}
-	return nftAsset, nil
-}
-
-func (m *defaultL2NftHistoryModel) GetNftAssetsByBlockHeight(l2BlockHeight int64) (rowsAffected int64, nftAssets []*L2NftHistory, err error) {
-	dbTx := m.DB.Table(m.table).Where("l2_block_height = ?", l2BlockHeight).Find(&nftAssets)
-	if dbTx.Error != nil {
-		errInfo := fmt.Sprintf("[GetLiquidityAssetsByBlockHeight] unable to get related assets: %s", err.Error())
-		logx.Error(errInfo)
-		return 0, nil, dbTx.Error
-	}
-	return dbTx.RowsAffected, nftAssets, nil
 }

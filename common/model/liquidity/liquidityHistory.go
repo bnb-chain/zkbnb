@@ -18,8 +18,6 @@
 package liquidity
 
 import (
-	"fmt"
-
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
@@ -33,11 +31,7 @@ type (
 	LiquidityHistoryModel interface {
 		CreateLiquidityHistoryTable() error
 		DropLiquidityHistoryTable() error
-		CreateLiquidityHistory(liquidity *LiquidityHistory) error
-		CreateLiquidityHistoryInBatches(entities []*LiquidityHistory) error
-		GetAccountLiquidityHistoryByPairIndex(pairIndex int64) (entities []*LiquidityHistory, err error)
 		GetLatestLiquidityByBlockHeight(blockHeight int64) (entities []*LiquidityHistory, err error)
-		GetLatestLiquidityByPairIndex(pairIndex int64) (entity *LiquidityHistory, err error)
 	}
 
 	defaultLiquidityHistoryModel struct {
@@ -94,68 +88,6 @@ func (m *defaultLiquidityHistoryModel) DropLiquidityHistoryTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-/*
-	Func: CreateAccountLiquidityHistory
-	Params: liquidity *LiquidityHistory
-	Return: err error
-	Description: create account liquidity entity
-*/
-func (m *defaultLiquidityHistoryModel) CreateLiquidityHistory(liquidity *LiquidityHistory) error {
-	dbTx := m.DB.Table(m.table).Create(liquidity)
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[liquidity.CreateLiquidityHistory] %s", dbTx.Error)
-		logx.Error(err)
-		return dbTx.Error
-	}
-	if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[liquidity.CreateLiquidityHistory] %s", errorcode.DbErrFailToCreateLiquidity)
-		logx.Error(err)
-		return errorcode.DbErrFailToCreateLiquidity
-	}
-	return nil
-}
-
-/*
-	Func: CreateAccountLiquidityHistoryInBatches
-	Params: entities []*LiquidityHistory
-	Return: err error
-	Description: create account liquidity entities
-*/
-func (m *defaultLiquidityHistoryModel) CreateLiquidityHistoryInBatches(entities []*LiquidityHistory) error {
-	dbTx := m.DB.Table(m.table).CreateInBatches(entities, len(entities))
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[liquidity.CreateLiquidityHistoryInBatches] %s", dbTx.Error)
-		logx.Error(err)
-		return dbTx.Error
-	}
-	if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[liquidity.CreateLiquidityHistoryInBatches] %s", errorcode.DbErrFailToCreateLiquidity)
-		logx.Error(err)
-		return errorcode.DbErrFailToCreateLiquidity
-	}
-	return nil
-}
-
-/*
-	Func: GetAccountLiquidityHistoryByPairIndex
-	Params: pairIndex int64
-	Return: entities []*LiquidityHistory, err error
-	Description: get account liquidity entities by account index
-*/
-func (m *defaultLiquidityHistoryModel) GetAccountLiquidityHistoryByPairIndex(pairIndex int64) (entities []*LiquidityHistory, err error) {
-	dbTx := m.DB.Table(m.table).Where("pair_index = ?", pairIndex).Find(&entities)
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[liquidity.GetAccountLiquidityHistoryByPairIndex] %s", dbTx.Error)
-		logx.Error(err)
-		return nil, errorcode.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[liquidity.GetAccountLiquidityHistoryByPairIndex] %s", errorcode.DbErrNotFound)
-		logx.Error(err)
-		return nil, errorcode.DbErrNotFound
-	}
-	return entities, nil
-}
-
 func (m *defaultLiquidityHistoryModel) GetLatestLiquidityByBlockHeight(blockHeight int64) (entities []*LiquidityHistory, err error) {
 	dbTx := m.DB.Table(m.table).
 		Raw("SELECT a.* FROM liquidity_history a WHERE NOT EXISTS"+
@@ -163,21 +95,10 @@ func (m *defaultLiquidityHistoryModel) GetLatestLiquidityByBlockHeight(blockHeig
 			"AND l2_block_height <= ? ORDER BY pair_index", blockHeight, blockHeight).
 		Find(&entities)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetValidAccounts] unable to get related accounts: %s", dbTx.Error.Error())
+		logx.Errorf("unable to get related accounts: %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, errorcode.DbErrNotFound
 	}
 	return entities, nil
-}
-
-func (m *defaultLiquidityHistoryModel) GetLatestLiquidityByPairIndex(pairIndex int64) (entity *LiquidityHistory, err error) {
-	dbTx := m.DB.Table(m.table).Where("pair_index = ?", pairIndex).Order("l2_block_height desc").Find(&entity)
-	if dbTx.Error != nil {
-		logx.Errorf("[GetLatestLiquidityByPairIndex] unable to get related liquidity: %s", dbTx.Error.Error())
-		return nil, errorcode.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		return nil, errorcode.DbErrNotFound
-	}
-	return entity, nil
 }

@@ -31,7 +31,6 @@ type (
 	BlockForCommitModel interface {
 		CreateBlockForCommitTable() error
 		DropBlockForCommitTable() error
-		GetBlockForCommitByHeight(height int64) (blockForCommit *BlockForCommit, err error)
 		GetBlockForCommitBetween(start, end int64) (blocksForCommit []*BlockForCommit, err error)
 	}
 
@@ -86,21 +85,10 @@ func (m *defaultBlockForCommitModel) DropBlockForCommitTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-func (m *defaultBlockForCommitModel) GetBlockForCommitByHeight(height int64) (blockForCommit *BlockForCommit, err error) {
-	dbTx := m.DB.Table(m.table).Where("block_height = ?", height).Find(&blockForCommit)
-	if dbTx.Error != nil {
-		logx.Errorf("[GetBlockForCommitBetween] unable to get block for commit by height: %s", dbTx.Error.Error())
-		return nil, errorcode.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		return nil, errorcode.DbErrNotFound
-	}
-	return blockForCommit, nil
-}
-
 func (m *defaultBlockForCommitModel) GetBlockForCommitBetween(start, end int64) (blocksForCommit []*BlockForCommit, err error) {
 	dbTx := m.DB.Table(m.table).Where("block_height >= ? AND block_height <= ?", start, end).Find(&blocksForCommit)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetBlockForCommitBetween] unable to get block for commit between: %s", dbTx.Error.Error())
+		logx.Errorf("unable to get block for commit between: %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, errorcode.DbErrNotFound

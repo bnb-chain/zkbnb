@@ -21,26 +21,20 @@ import (
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas/errorcode"
+
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
-
-	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type (
 	MempoolTxDetailModel interface {
 		CreateMempoolDetailTable() error
 		DropMempoolDetailTable() error
-		GetLatestMempoolDetail(accountIndex int64, assetId int64, assetType int64) (mempoolTxDetail *MempoolTxDetail, err error)
-		GetAccountAssetsMempoolDetails(accountIndex int64, assetType int64) (mempoolTxDetails []*MempoolTxDetail, err error)
-		GetAccountMempoolDetails(accountIndex int64) (mempoolTxDetails []*MempoolTxDetail, err error)
 		GetMempoolTxDetailsByAccountIndex(accountIndex int64) (mempoolTxDetails []*MempoolTxDetail, err error)
-		GetAccountAssetMempoolDetails(accountIndex int64, assetId int64, assetType int64) (mempoolTxDetails []*MempoolTxDetail, err error)
-		GetLatestAccountAssetMempoolDetail(accountIndex int64, assetId int64, assetType int64) (mempoolTxDetail *MempoolTxDetail, err error)
-		GetMempoolTxDetailsByAssetType(assetType int) (mempoolTxDetails []*MempoolTxDetail, err error)
-		GetMempoolTxDetailsByAssetIdAndAssetType(assetId int64, assetType int) (mempoolTxDetails []*MempoolTxDetail, err error)
 	}
 
 	defaultMempoolDetailModel struct {
@@ -101,135 +95,11 @@ func (m *defaultMempoolDetailModel) DropMempoolDetailTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-/*
-	Func: GetLatestMempoolDetail
-	Params:	AccountIndex int64, AssetId int64, AssetType int64
-	Return: err error
-	Description: get latest(create_at desc) mempool detail info from mempool_detail table by accountIndex, assetId and assetType.
-				It will be used to check if the value in Balance global map is valid.
-*/
-func (m *defaultMempoolDetailModel) GetLatestMempoolDetail(accountIndex int64, assetId int64, assetType int64) (mempoolTxDetail *MempoolTxDetail, err error) {
-	dbTx := m.DB.Table(m.table).Where(
-		"account_index = ? and asset_id = ? and asset_type = ?", accountIndex, assetId, assetType).
-		Order("created_at desc, id desc").Limit(1).Find(&mempoolTxDetail)
-	if dbTx.Error != nil {
-		logx.Errorf("[mempoolDetail.GetLatestMempoolDetail] %s", dbTx.Error.Error())
-		return nil, errorcode.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		logx.Errorf("[mempoolDetail.GetLatestMempoolDetail] Get MempoolTxDetail Error")
-		return nil, errorcode.DbErrNotFound
-	}
-	return mempoolTxDetail, nil
-}
-
-/*
-	Func: GetAccountAssetsMempoolDetails
-	Params:	accountIndex int64, assetType int64
-	Return: mempoolTxDetails []*MempoolTxDetail, err error
-	Description: used for get globalmap data source
-*/
-func (m *defaultMempoolDetailModel) GetAccountAssetsMempoolDetails(accountIndex int64, assetType int64) (mempoolTxDetails []*MempoolTxDetail, err error) {
-	var dbTx *gorm.DB
-	dbTx = m.DB.Table(m.table).Where("account_index = ? and asset_type = ? and chain_id != -1", accountIndex, assetType).
-		Order("created_at, id").Find(&mempoolTxDetails)
-	if dbTx.Error != nil {
-		logx.Errorf("[mempoolDetail.GetAccountAssetsMempoolDetails] error: %s", dbTx.Error.Error())
-		return nil, errorcode.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		logx.Error("[mempoolDetail.GetAccountAssetsMempoolDetails] Get MempoolTxDetails Error")
-		return nil, errorcode.DbErrNotFound
-	}
-	return mempoolTxDetails, nil
-}
-
-/*
-	Func: GetAccountAssetMempoolDetails
-	Params:	AccountIndex int64, AssetId int64, AssetType int64
-	Return: err error
-	Description: used for get globalmap data source
-*/
-func (m *defaultMempoolDetailModel) GetAccountAssetMempoolDetails(accountIndex int64, assetId int64, assetType int64) (mempoolTxDetails []*MempoolTxDetail, err error) {
-	var dbTx *gorm.DB
-	dbTx = m.DB.Table(m.table).Where("account_index = ? and asset_id = ? and asset_type = ? ", accountIndex, assetId, assetType).
-		Order("created_at, id").Find(&mempoolTxDetails)
-	if dbTx.Error != nil {
-		logx.Errorf("[mempoolDetail.GetAccountAssetMempoolDetails] %s", dbTx.Error.Error())
-		return nil, errorcode.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		logx.Errorf("[mempoolDetail.GetAccountAssetMempoolDetails] Get MempoolTxDetails Error")
-		return nil, errorcode.DbErrNotFound
-	}
-	return mempoolTxDetails, nil
-}
-
-func (m *defaultMempoolDetailModel) GetLatestAccountAssetMempoolDetail(
-	accountIndex int64, assetId int64, assetType int64,
-) (mempoolTxDetail *MempoolTxDetail, err error) {
-	var dbTx *gorm.DB
-	dbTx = m.DB.Table(m.table).Where("account_index = ? and asset_id = ? and asset_type = ? ",
-		accountIndex, assetId, assetType).
-		Order("created_at desc, id desc").Find(&mempoolTxDetail)
-	if dbTx.Error != nil {
-		logx.Errorf("[mempoolDetail.GetAccountAssetMempoolDetails] %s", dbTx.Error.Error())
-		return nil, errorcode.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		logx.Errorf("[mempoolDetail.GetAccountAssetMempoolDetails] no related mempool tx detail")
-		return nil, errorcode.DbErrNotFound
-	}
-	return mempoolTxDetail, nil
-}
-
-func (m *defaultMempoolDetailModel) GetAccountMempoolDetails(accountIndex int64) (mempoolTxDetails []*MempoolTxDetail, err error) {
-	var dbTx *gorm.DB
-	dbTx = m.DB.Table(m.table).Where("account_index = ?", accountIndex).
-		Order("created_at").Find(&mempoolTxDetails)
-	if dbTx.Error != nil {
-		logx.Errorf("[mempoolDetail.GetAccountMempoolDetails] %s", dbTx.Error.Error())
-		return nil, errorcode.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		logx.Errorf("[mempoolDetail.GetAccountMempoolDetails] no related mempool tx details")
-		return nil, errorcode.DbErrNotFound
-	}
-	return mempoolTxDetails, nil
-}
-
-func (m *defaultMempoolDetailModel) GetMempoolTxDetailsByAssetType(assetType int) (mempoolTxDetails []*MempoolTxDetail, err error) {
-	var dbTx *gorm.DB
-	dbTx = m.DB.Table(m.table).Where("asset_type = ?", assetType).
-		Order("created_at").Find(&mempoolTxDetails)
-	if dbTx.Error != nil {
-		logx.Errorf("[mempoolDetail.GetAccountMempoolDetails] %s", dbTx.Error.Error())
-		return nil, errorcode.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		logx.Errorf("[mempoolDetail.GetAccountMempoolDetails] no related mempool tx details")
-		return nil, errorcode.DbErrNotFound
-	}
-	return mempoolTxDetails, nil
-}
-
-func (m *defaultMempoolDetailModel) GetMempoolTxDetailsByAssetIdAndAssetType(
-	assetId int64,
-	assetType int,
-) (
-	mempoolTxDetails []*MempoolTxDetail, err error) {
-	var dbTx *gorm.DB
-	dbTx = m.DB.Table(m.table).Where("asset_id = ? AND asset_type = ?", assetId, assetType).
-		Order("created_at").Find(&mempoolTxDetails)
-	if dbTx.Error != nil {
-		logx.Errorf("[mempoolDetail.GetAccountMempoolDetails] %s", dbTx.Error.Error())
-		return nil, errorcode.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		logx.Errorf("[mempoolDetail.GetAccountMempoolDetails] no related mempool tx details")
-		return nil, errorcode.DbErrNotFound
-	}
-	return mempoolTxDetails, nil
-}
-
 func (m *defaultMempoolDetailModel) GetMempoolTxDetailsByAccountIndex(accountIndex int64) (mempoolTxDetails []*MempoolTxDetail, err error) {
 	var dbTx *gorm.DB
 	dbTx = m.DB.Table(m.table).Where("account_index = ?", accountIndex).Find(&mempoolTxDetails)
 	if dbTx.Error != nil {
-		logx.Errorf("[GetMempoolTxDetailsByAccountIndex] unable to get by account index: %s", dbTx.Error.Error())
+		logx.Errorf("unable to get by account index: %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, errorcode.DbErrNotFound

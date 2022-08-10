@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math/big"
 
 	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
@@ -46,7 +45,7 @@ func MonitorBlocks(cli *ProviderClient, startHeight int64, pendingBlocksCount ui
 		if err == errorcode.DbErrNotFound {
 			handledHeight = startHeight
 		} else {
-			logx.Errorf("[l1BlockMonitorModel.GetLatestL1BlockMonitorByBlock]: %s", err.Error())
+			logx.Errorf("get latest l1 monitor block error, err: %s", err.Error())
 			return err
 		}
 	} else {
@@ -55,26 +54,27 @@ func MonitorBlocks(cli *ProviderClient, startHeight int64, pendingBlocksCount ui
 	// get latest l1 block height(latest height - pendingBlocksCount)
 	latestHeight, err := cli.GetHeight()
 	if err != nil {
-		logx.Errorf("[blockMoniter.MonitorBlocks]<=>[cli.GetHeight] %s", err.Error())
+		logx.Errorf("get l1 height error, err: %s", err.Error())
 		return err
 	}
 	safeHeight := latestHeight - pendingBlocksCount
 	safeHeight = uint64(util.MinInt64(int64(safeHeight), handledHeight+maxHandledBlocksCount))
 	if safeHeight <= uint64(handledHeight) {
-		logx.Error("[l2BlockMonitor.MonitorBlocks] no new blocks need to be handled")
+		logx.Info("no new blocks need to be handled")
 		return nil
 	}
+	logx.Infof("fromBlock: %d, toBlock: %d", big.NewInt(handledHeight+1), big.NewInt(int64(safeHeight)))
+
 	contractAddress := common.HexToAddress(zkbasContract)
-	logx.Infof("[MonitorBlocks] fromBlock: %d, toBlock: %d", big.NewInt(handledHeight+1), big.NewInt(int64(safeHeight)))
 	zkbasInstance, err := zkbas.LoadZkbasInstance(cli, zkbasContract)
 	if err != nil {
-		logx.Errorf("[MonitorBlocks] unable to load zkbas instance")
+		logx.Errorf("unable to load zkbas instance")
 		return err
 	}
 	priorityRequests, err := zkbasInstance.ZkbasFilterer.
 		FilterNewPriorityRequest(&bind.FilterOpts{Start: uint64(handledHeight + 1), End: &safeHeight})
 	if err != nil {
-		logx.Errorf("[MonitorBlocks] unable to filter deposit or lock events: %s", err.Error())
+		logx.Errorf("unable to filter deposit or lock events: %s", err.Error())
 		return err
 	}
 	priorityRequestCount, priorityRequestCountCheck := 0, 0
@@ -88,8 +88,7 @@ func MonitorBlocks(cli *ProviderClient, startHeight int64, pendingBlocksCount ui
 	}
 	logs, err := cli.FilterLogs(context.Background(), query)
 	if err != nil {
-		errInfo := fmt.Sprintf("[blockMoniter.MonitorBlocks]<=>[cli.FilterLogs] %s", err.Error())
-		logx.Error(errInfo)
+		logx.Error("filter logs error, err: %s", err.Error())
 		return err
 	}
 	var (
@@ -106,7 +105,7 @@ func MonitorBlocks(cli *ProviderClient, startHeight int64, pendingBlocksCount ui
 			priorityRequestCountCheck++
 			var event zkbas.ZkbasNewPriorityRequest
 			if err = ZkbasContractAbi.UnpackIntoInterface(&event, EventNameNewPriorityRequest, vlog.Data); err != nil {
-				logx.Errorf("[blockMoniter.MonitorBlocks]<=>[ZkbasContractAbi.UnpackIntoInterface] err: %s", err.Error())
+				logx.Errorf("unpack ZkbasNewPriorityRequest err: %s", err.Error())
 				return err
 			}
 			l1EventInfo.EventType = EventTypeNewPriorityRequest
@@ -126,8 +125,7 @@ func MonitorBlocks(cli *ProviderClient, startHeight int64, pendingBlocksCount ui
 		case zkbasLogBlockCommitSigHash.Hex():
 			var event zkbas.ZkbasBlockCommit
 			if err = ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlockCommit, vlog.Data); err != nil {
-				errInfo := fmt.Sprintf("[blockMoniter.MonitorBlocks]<=>[ZkbasContractAbi.UnpackIntoInterface] %s", err.Error())
-				logx.Error(errInfo)
+				logx.Errorf("unpack ZkbasBlockCommit err: %s", err.Error())
 				return err
 			}
 			l1EventInfo.EventType = EventTypeCommittedBlock
@@ -142,8 +140,7 @@ func MonitorBlocks(cli *ProviderClient, startHeight int64, pendingBlocksCount ui
 		case zkbasLogBlockVerificationSigHash.Hex():
 			var event zkbas.ZkbasBlockVerification
 			if err = ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlockVerification, vlog.Data); err != nil {
-				errInfo := fmt.Sprintf("[blockMoniter.MonitorBlocks]<=>[ZkbasContractAbi.UnpackIntoInterface] %s", err.Error())
-				logx.Error(errInfo)
+				logx.Errorf("unpack ZkbasBlockVerification err: %s", err.Error())
 				return err
 			}
 			l1EventInfo.EventType = EventTypeVerifiedBlock
@@ -158,8 +155,7 @@ func MonitorBlocks(cli *ProviderClient, startHeight int64, pendingBlocksCount ui
 		case zkbasLogBlocksRevertSigHash.Hex():
 			var event zkbas.ZkbasBlocksRevert
 			if err = ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlocksRevert, vlog.Data); err != nil {
-				errInfo := fmt.Sprintf("[blockMoniter.MonitorBlocks]<=>[ZkbasContractAbi.UnpackIntoInterface] %s", err.Error())
-				logx.Error(errInfo)
+				logx.Errorf("unpack ZkbasBlocksRevert err: %s", err.Error())
 				return err
 			}
 			l1EventInfo.EventType = EventTypeRevertedBlock
@@ -176,12 +172,12 @@ func MonitorBlocks(cli *ProviderClient, startHeight int64, pendingBlocksCount ui
 		l1EventInfos = append(l1EventInfos, l1EventInfo)
 	}
 	if priorityRequestCount != priorityRequestCountCheck {
-		logx.Errorf("[MonitorBlocks] new priority requests events not match, try it again")
-		return errors.New("[MonitorBlocks] new priority requests events not match, try it again")
+		logx.Errorf("new priority requests events not match, try it again")
+		return errors.New("new priority requests events not match, try it again")
 	}
 	eventInfosBytes, err := json.Marshal(l1EventInfos)
 	if err != nil {
-		logx.Errorf("[blockMoniter.MonitorBlocks]<=>[json.Marshal] %s", err.Error())
+		logx.Errorf("marshal l1 events error, err: %s", err.Error())
 		return err
 	}
 	l1BlockMonitorInfo := &l1BlockMonitor.L1BlockMonitor{
@@ -190,12 +186,11 @@ func MonitorBlocks(cli *ProviderClient, startHeight int64, pendingBlocksCount ui
 		MonitorType:   l1BlockMonitor.MonitorTypeBlock,
 	}
 	if err = l1BlockMonitorModel.CreateMonitorsInfo(l1BlockMonitorInfo, l2TxEventMonitors, l2BlockEventMonitors); err != nil {
-		errInfo := fmt.Sprintf("[l1BlockMonitorModel.CreateMonitorsInfo] %s", err.Error())
-		logx.Error(errInfo)
+		logx.Error("store monitor info error, err: %s", err.Error())
 		return err
 	}
-	logx.Info("[MonitorBlocks] create txs count:", len(l2TxEventMonitors))
-	logx.Info("[MonitorBlocks] create blocks events count:", len(l2BlockEventMonitors))
+	logx.Info("create txs count:", len(l2TxEventMonitors))
+	logx.Info("create blocks events count:", len(l2BlockEventMonitors))
 	logx.Errorf("========== end MonitorBlocks ==========")
 	return nil
 }

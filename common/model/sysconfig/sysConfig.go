@@ -18,8 +18,6 @@
 package sysconfig
 
 import (
-	"fmt"
-
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
@@ -34,9 +32,7 @@ type (
 		CreateSysconfigTable() error
 		DropSysconfigTable() error
 		GetSysconfigByName(name string) (info *Sysconfig, err error)
-		CreateSysconfig(config *Sysconfig) error
 		CreateSysconfigInBatches(configs []*Sysconfig) (rowsAffected int64, err error)
-		UpdateSysconfig(config *Sysconfig) error
 	}
 
 	defaultSysconfigModel struct {
@@ -95,66 +91,22 @@ func (m *defaultSysconfigModel) DropSysconfigTable() error {
 func (m *defaultSysconfigModel) GetSysconfigByName(name string) (config *Sysconfig, err error) {
 	dbTx := m.DB.Table(m.table).Where("name = ?", name).Find(&config)
 	if dbTx.Error != nil {
-		err := fmt.Sprintf("[sysconfig.GetSysconfigByName] %s", dbTx.Error)
-		logx.Error(err)
+		logx.Errorf("get sys config by name error, err: %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[sysconfig.GetSysconfigByName] %s", errorcode.DbErrNotFound)
-		logx.Error(err)
 		return nil, errorcode.DbErrNotFound
 	}
 	return config, nil
 }
 
-/*
-	Func: CreateSysconfig
-	Params: config *Sysconfig
-	Return: error
-	Description: Insert New Sysconfig
-*/
-func (m *defaultSysconfigModel) CreateSysconfig(config *Sysconfig) error {
-	dbTx := m.DB.Table(m.table).Create(config)
-	if dbTx.Error != nil {
-		logx.Errorf("[sysconfig.sysconfig] %s", dbTx.Error.Error())
-		return dbTx.Error
-	}
-	if dbTx.RowsAffected == 0 {
-		logx.Error("[sysconfig.sysconfig] Create Invalid Sysconfig")
-		return errorcode.DbErrFailToCreateSysconfig
-	}
-	return nil
-}
-
 func (m *defaultSysconfigModel) CreateSysconfigInBatches(configs []*Sysconfig) (rowsAffected int64, err error) {
 	dbTx := m.DB.Table(m.table).CreateInBatches(configs, len(configs))
 	if dbTx.Error != nil {
-		logx.Errorf("[sysconfig.CreateSysconfigInBatches] %s", dbTx.Error.Error())
-		return 0, dbTx.Error
+		logx.Errorf("create sys configs error, err: %s", dbTx.Error.Error())
+		return 0, errorcode.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {
-		logx.Error("[sysconfig.CreateSysconfigInBatches] Create Invalid Sysconfig Batches")
 		return 0, errorcode.DbErrFailToCreateSysconfig
 	}
 	return dbTx.RowsAffected, nil
-}
-
-/*
-	Func: UpdateSysconfigByName
-	Params: config *Sysconfig
-	Return: err error
-	Description: update sysconfig by config name
-*/
-func (m *defaultSysconfigModel) UpdateSysconfig(config *Sysconfig) error {
-	dbTx := m.DB.Table(m.table).Where("name = ?", config.Name).Select(NameColumn, ValueColumn, ValueTypeColumn, CommentColumn).
-		Updates(config)
-	if dbTx.Error != nil {
-		err := fmt.Sprintf("[sysconfig.UpdateSysconfig] %s", dbTx.Error)
-		logx.Error(err)
-		return dbTx.Error
-	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[sysconfig.UpdateSysconfig] %s", errorcode.DbErrNotFound)
-		logx.Error(err)
-		return errorcode.DbErrNotFound
-	}
-	return nil
 }

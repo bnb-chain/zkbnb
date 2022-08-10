@@ -22,17 +22,13 @@ import (
 	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
 	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 
-	"github.com/bnb-chain/zkbas/common/model/assetInfo"
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/blockForCommit"
 	"github.com/bnb-chain/zkbas/common/model/l1TxSender"
 	"github.com/bnb-chain/zkbas/common/model/proofSender"
-	"github.com/bnb-chain/zkbas/common/model/tx"
 )
 
 type (
-	Tx                  = tx.Tx
-	TxDetail            = tx.TxDetail
 	Block               = block.Block
 	BlockForCommit      = blockForCommit.BlockForCommit
 	L1TxSenderModel     = l1TxSender.L1TxSenderModel
@@ -47,8 +43,6 @@ type (
 	ZkbasCommitBlockInfo   = zkbas.OldZkbasCommitBlockInfo
 	ZkbasVerifyBlockInfo   = zkbas.OldZkbasVerifyAndExecuteBlockInfo
 	StorageStoredBlockInfo = zkbas.StorageStoredBlockInfo
-
-	L2AssetInfoModel = assetInfo.AssetInfoModel
 
 	ProofSenderModel = proofSender.ProofSenderModel
 )

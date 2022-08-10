@@ -56,7 +56,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 	// get latest l1 block height(latest height - pendingBlocksCount)
 	latestHeight, err := cli.GetHeight()
 	if err != nil {
-		logx.Errorf("[MonitorGovernanceContract] GetHeight err: %s", err.Error())
+		logx.Errorf("get l1 block height err: %s", err.Error())
 		return err
 	}
 	// compute safe height
@@ -67,7 +67,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 		return nil
 	}
 	contractAddress := common.HexToAddress(governanceContract)
-	logx.Infof("[MonitorGovernanceContract] fromBlock: %d, toBlock: %d", big.NewInt(handledHeight+1), big.NewInt(int64(safeHeight)))
+	logx.Infof("fromBlock: %d, toBlock: %d", big.NewInt(handledHeight+1), big.NewInt(int64(safeHeight)))
 	query := ethereum.FilterQuery{
 		FromBlock: big.NewInt(handledHeight + 1),
 		ToBlock:   big.NewInt(int64(safeHeight)),
@@ -75,7 +75,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 	}
 	logs, err := cli.FilterLogs(context.Background(), query)
 	if err != nil {
-		logx.Errorf("[MonitorGovernanceContract] FilterLogs err: %s", err.Error())
+		logx.Errorf("FilterLogs err: %s", err.Error())
 		return err
 	}
 	var (
@@ -90,7 +90,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 		case governanceLogNewAssetSigHash.Hex():
 			var event zkbas.GovernanceNewAsset
 			if err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameNewAsset, vlog.Data); err != nil {
-				logx.Errorf("[MonitorGovernanceContract] UnpackIntoInterface err: %s", err.Error())
+				logx.Errorf("UnpackIntoInterface err: %s", err.Error())
 				return err
 			}
 			l1EventInfo := &L1EventInfo{
@@ -100,22 +100,22 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 			// get asset info by contract address
 			erc20Instance, err := zkbas.LoadERC20(cli, event.AssetAddress.Hex())
 			if err != nil {
-				logx.Errorf("[MonitorGovernanceContract] LoadERC20 err: %s", err.Error())
+				logx.Errorf("LoadERC20 err: %s", err.Error())
 				return err
 			}
 			name, err := erc20Instance.Name(basic.EmptyCallOpts())
 			if err != nil {
-				logx.Errorf("[MonitorGovernanceContract] erc20Instance.Name err: %s", err.Error())
+				logx.Errorf("erc20Instance.Name err: %s", err.Error())
 				return err
 			}
 			symbol, err := erc20Instance.Symbol(basic.EmptyCallOpts())
 			if err != nil {
-				logx.Errorf("[MonitorGovernanceContract] erc20Instance.Symbol err: %s", err.Error())
+				logx.Errorf("erc20Instance.Symbol err: %s", err.Error())
 				return err
 			}
 			decimals, err := erc20Instance.Decimals(basic.EmptyCallOpts())
 			if err != nil {
-				logx.Errorf("[MonitorGovernanceContract] erc20Instance.Decimals err: %s", err.Error())
+				logx.Errorf("erc20Instance.Decimals err: %s", err.Error())
 				return err
 			}
 			l2AssetInfo := &L2AssetInfo{
@@ -132,7 +132,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 			// parse event info
 			var event zkbas.GovernanceNewGovernor
 			if err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameNewGovernor, vlog.Data); err != nil {
-				logx.Errorf("[MonitorGovernanceContract] UnpackIntoInterface err: %s", err.Error())
+				logx.Errorf("UnpackIntoInterface err: %s", err.Error())
 				return err
 			}
 			// set up database info
@@ -154,7 +154,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 			var event zkbas.GovernanceNewAssetGovernance
 			err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameNewAssetGovernance, vlog.Data)
 			if err != nil {
-				logx.Errorf("[MonitorGovernanceContract] UnpackIntoInterface err: %s", err.Error())
+				logx.Errorf("UnpackIntoInterface err: %s", err.Error())
 				return err
 			}
 			l1EventInfo := &L1EventInfo{
@@ -174,7 +174,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 			// parse event info
 			var event zkbas.GovernanceValidatorStatusUpdate
 			if err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameValidatorStatusUpdate, vlog.Data); err != nil {
-				logx.Errorf("[blockMoniter.MonitorGovernanceContract]<=>[GovernanceContractAbi.UnpackIntoInterface] %s", err.Error())
+				logx.Errorf("unpack GovernanceValidatorStatusUpdate error, err: %s", err.Error())
 				return err
 			}
 			// set up database info
@@ -192,7 +192,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 				var validators map[string]*ValidatorInfo
 				err = json.Unmarshal([]byte(configInfo.Value), &validators)
 				if err != nil {
-					logx.Errorf("[MonitorGovernanceContract] unable to unmarshal: %s", err.Error())
+					logx.Errorf("unable to unmarshal: %s", err.Error())
 					return err
 				}
 				if validators[event.ValidatorAddress.Hex()] == nil {
@@ -205,7 +205,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 				}
 				validatorBytes, err := json.Marshal(validators)
 				if err != nil {
-					logx.Errorf("[MonitorGovernanceContract] unable to marshal: %s", err.Error())
+					logx.Errorf("unable to marshal validators: %s", err.Error())
 					return err
 				}
 				pendingNewSysconfigInfoMap[sysconfigName.Validators].Value = string(validatorBytes)
@@ -213,7 +213,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 				configInfo, err := sysconfigModel.GetSysconfigByName(sysconfigName.Validators)
 				if err != nil {
 					if err != errorcode.DbErrNotFound {
-						logx.Errorf("[MonitorGovernanceContract] unable to get sysconfig by name: %s", err.Error())
+						logx.Errorf("unable to get sys config by name: %s", err.Error())
 						return err
 					} else {
 						validators := make(map[string]*ValidatorInfo)
@@ -223,7 +223,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 						}
 						validatorsBytes, err := json.Marshal(validators)
 						if err != nil {
-							logx.Errorf("[MonitorGovernanceContract] unable to marshal: %s", err.Error())
+							logx.Errorf("unable to marshal validators: %s", err.Error())
 							return err
 						}
 						pendingNewSysconfigInfoMap[sysconfigName.Validators] = &Sysconfig{
@@ -237,7 +237,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 					var validators map[string]*ValidatorInfo
 					err = json.Unmarshal([]byte(configInfo.Value), &validators)
 					if err != nil {
-						logx.Errorf("[MonitorGovernanceContract] unable to unmarshal: %s", err.Error())
+						logx.Errorf("unable to unmarshal validators: %s", err.Error())
 						return err
 					}
 					if validators[event.ValidatorAddress.Hex()] == nil {
@@ -251,7 +251,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 					// reset into map
 					validatorBytes, err := json.Marshal(validators)
 					if err != nil {
-						logx.Errorf("[MonitorGovernanceContract] unable to marshal: %s", err.Error())
+						logx.Errorf("unable to marshal validators: %s", err.Error())
 						return err
 					}
 					pendingUpdateSysconfigInfoMap[sysconfigName.Validators].Value = string(validatorBytes)
@@ -264,7 +264,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 			var event zkbas.GovernanceAssetPausedUpdate
 			err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameAssetPausedUpdate, vlog.Data)
 			if err != nil {
-				logx.Errorf("[blockMoniter.MonitorGovernanceContract]<=>[GovernanceContractAbi.UnpackIntoInterface] %s", err.Error())
+				logx.Errorf("unpack GovernanceAssetPausedUpdate error, err: %s", err.Error())
 				return err
 			}
 			// set up database info
@@ -278,7 +278,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 			} else {
 				assetInfo, err = l2AssetInfoModel.GetAssetByAddress(event.Token.Hex())
 				if err != nil {
-					logx.Errorf("[MonitorGovernanceContract] unable to get l2 asset by address: %s", err.Error())
+					logx.Errorf("unable to get l2 asset by address, err: %s", err.Error())
 					return err
 				}
 				pendingUpdateL2AssetInfoMap[event.Token.Hex()] = assetInfo
@@ -300,7 +300,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 	// serialize into block info
 	eventInfosBytes, err := json.Marshal(l1EventInfos)
 	if err != nil {
-		logx.Errorf("[MonitorGovernanceContract] Marshal err: %s", err.Error())
+		logx.Errorf("marshal l1 events error, err: %s", err.Error())
 		return err
 	}
 	l1BlockMonitorInfo := &l1BlockMonitor.L1BlockMonitor{
@@ -326,14 +326,14 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 	for _, pendingUpdateSysconfigInfo := range pendingUpdateSysconfigInfoMap {
 		pendingUpdateSysconfigInfos = append(pendingUpdateSysconfigInfos, pendingUpdateSysconfigInfo)
 	}
-	logx.Infof("[MonitorGovernanceContract] l1 block info height: %v, l2 asset info size: %v, pending update l2 asset info size: %v",
+	logx.Infof("l1 block info height: %v, l2 asset info size: %v, pending update l2 asset info size: %v",
 		l1BlockMonitorInfo.L1BlockHeight,
 		len(l2AssetInfos),
 		len(pendingUpdateL2AssetInfos),
 	)
 	if err = l1BlockMonitorModel.CreateGovernanceMonitorInfo(l1BlockMonitorInfo, l2AssetInfos,
 		pendingUpdateL2AssetInfos, pendingNewSysconfigInfos, pendingUpdateSysconfigInfos); err != nil {
-		logx.Errorf("[MonitorGovernanceContract] CreateGovernanceMonitorInfo err: %s", err.Error())
+		logx.Errorf("store governance monitor info error, err: %s", err.Error())
 		return err
 	}
 	logx.Info("========================= end MonitorGovernanceContract =========================")
