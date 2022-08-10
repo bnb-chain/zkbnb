@@ -40,14 +40,14 @@ func InitLiquidityTree(
 		treedb.SetNamespace(ctx, LiquidityPrefix), LiquidityTreeHeight, NilLiquidityNodeHash,
 		ctx.Options(blockHeight)...)
 	if err != nil {
-		logx.Errorf("[InitLiquidityTree] unable to create tree from db: %s", err.Error())
+		logx.Errorf("unable to create tree from db: %s", err.Error())
 		return nil, err
 	}
 
 	if ctx.IsLoad() {
 		nums, err := liquidityHistoryModel.GetLatestLiquidityNumsByBlockHeight(blockHeight)
 		if err != nil {
-			logx.Errorf("[InitLiquidityTree] unable to get latest liquidity assets: %s", err.Error())
+			logx.Errorf("unable to get latest liquidity assets: %s", err.Error())
 			return nil, err
 		}
 		for i := 0; i < int(nums); i += ctx.BatchReloadSize() {
@@ -59,7 +59,7 @@ func InitLiquidityTree(
 			}
 			_, err = liquidityTree.Commit(nil)
 			if err != nil {
-				logx.Errorf("[InitLiquidityTree] unable to commit liquidity tree: %s", err.Error())
+				logx.Errorf("unable to commit liquidity tree: %s", err.Error())
 				return nil, err
 			}
 		}
@@ -69,10 +69,10 @@ func InitLiquidityTree(
 
 	// It's not loading from RDB, need to check tree version
 	if liquidityTree.LatestVersion() > bsmt.Version(blockHeight) && !liquidityTree.IsEmpty() {
-		logx.Infof("[InitLiquidityTree] liquidity tree version [%d] is higher than block, rollback to %d", liquidityTree.LatestVersion(), blockHeight)
+		logx.Infof("liquidity tree version [%d] is higher than block, rollback to %d", liquidityTree.LatestVersion(), blockHeight)
 		err := liquidityTree.Rollback(bsmt.Version(blockHeight))
 		if err != nil {
-			logx.Errorf("[InitLiquidityTree] unable to rollback liquidity tree: %s, version: %d", err.Error(), blockHeight)
+			logx.Errorf("unable to rollback liquidity tree: %s, version: %d", err.Error(), blockHeight)
 			return nil, err
 		}
 	}
@@ -90,7 +90,7 @@ func loadLiquidityTreeFromRDB(
 		options.Offset(offset), options.Limit(limit))
 	if err != nil {
 		if err != errorcode.DbErrNotFound {
-			logx.Errorf("[InitLiquidityTree] unable to get latest liquidity assets: %s", err.Error())
+			logx.Errorf("unable to get latest liquidity assets: %s", err.Error())
 			return err
 		}
 	}
@@ -102,12 +102,12 @@ func loadLiquidityTreeFromRDB(
 			liquidityAsset.LpAmount, liquidityAsset.KLast,
 			liquidityAsset.FeeRate, liquidityAsset.TreasuryAccountIndex, liquidityAsset.TreasuryRate)
 		if err != nil {
-			logx.Errorf("[InitLiquidityTree] unable to convert liquidity asset to node: %s", err.Error())
+			logx.Errorf("unable to convert liquidity asset to node: %s", err.Error())
 			return err
 		}
 		err = liquidityTree.Set(uint64(pairIndex), hashVal)
 		if err != nil {
-			logx.Errorf("[InitLiquidityTree] unable to write liquidity asset to tree: %s", err.Error())
+			logx.Errorf("unable to write liquidity asset to tree: %s", err.Error())
 			return err
 		}
 	}
@@ -135,7 +135,7 @@ func LiquidityAssetToNode(
 		treasuryFeeRate,
 	)
 	if err != nil {
-		logx.Errorf("[AccountToNode] unable to compute liquidity asset leaf hash: %s", err.Error())
+		logx.Errorf("unable to compute liquidity asset leaf hash: %s", err.Error())
 		return nil, err
 	}
 	return hashVal, nil

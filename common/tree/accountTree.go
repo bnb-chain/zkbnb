@@ -49,7 +49,7 @@ func InitAccountTree(
 	// TODO: If there are too many accounts, it may cause reading too long, which can be optimized again
 	accountNums, err := accountHistoryModel.GetValidAccountNums(blockHeight)
 	if err != nil {
-		logx.Errorf("[InitAccountTree] unable to get all accountNums")
+		logx.Errorf("unable to get all accountNums")
 		return nil, nil, err
 	}
 
@@ -63,7 +63,7 @@ func InitAccountTree(
 			treedb.SetNamespace(ctx, accountAssetNamespace(index)), AssetTreeHeight, NilAccountAssetNodeHash,
 			opts...)
 		if err != nil {
-			logx.Errorf("[InitAccountTree] unable to create new tree by assets: %s", err.Error())
+			logx.Errorf("unable to create new tree by assets: %s", err.Error())
 			return nil, nil, err
 		}
 	}
@@ -71,7 +71,7 @@ func InitAccountTree(
 		treedb.SetNamespace(ctx, AccountPrefix), AccountTreeHeight, NilAccountNodeHash,
 		opts...)
 	if err != nil {
-		logx.Errorf("[InitAccountTree] unable to create new account tree: %s", err.Error())
+		logx.Errorf("unable to create new account tree: %s", err.Error())
 		return nil, nil, err
 	}
 
@@ -93,14 +93,14 @@ func InitAccountTree(
 		for i := range accountAssetTrees {
 			_, err := accountAssetTrees[i].Commit(nil)
 			if err != nil {
-				logx.Errorf("[InitAccountTree] unable to set asset to tree: %s", err.Error())
+				logx.Errorf("unable to set asset to tree: %s", err.Error())
 				return nil, nil, err
 			}
 		}
 
 		_, err = accountTree.Commit(nil)
 		if err != nil {
-			logx.Errorf("[InitAccountTree] unable to commit account tree: %s", err.Error())
+			logx.Errorf("unable to commit account tree: %s", err.Error())
 			return nil, nil, err
 		}
 		return accountTree, accountAssetTrees, nil
@@ -108,20 +108,20 @@ func InitAccountTree(
 
 	// It's not loading from RDB, need to check tree version
 	if accountTree.LatestVersion() > bsmt.Version(blockHeight) && !accountTree.IsEmpty() {
-		logx.Infof("[InitAccountTree] account tree version [%d] is higher than block, rollback to %d", accountTree.LatestVersion(), blockHeight)
+		logx.Infof("account tree version [%d] is higher than block, rollback to %d", accountTree.LatestVersion(), blockHeight)
 		err := accountTree.Rollback(bsmt.Version(blockHeight))
 		if err != nil {
-			logx.Errorf("[InitAccountTree] unable to rollback account tree: %s, version: %d", err.Error(), blockHeight)
+			logx.Errorf("unable to rollback account tree: %s, version: %d", err.Error(), blockHeight)
 			return nil, nil, err
 		}
 	}
 
 	for i := range accountAssetTrees {
 		if accountAssetTrees[i].LatestVersion() > bsmt.Version(blockHeight) && !accountAssetTrees[i].IsEmpty() {
-			logx.Infof("[InitAccountTree] asset tree %d version [%d] is higher than block, rollback to %d", i, accountAssetTrees[i].LatestVersion(), blockHeight)
+			logx.Infof("asset tree %d version [%d] is higher than block, rollback to %d", i, accountAssetTrees[i].LatestVersion(), blockHeight)
 			err := accountAssetTrees[i].Rollback(bsmt.Version(blockHeight))
 			if err != nil {
-				logx.Errorf("[InitAccountTree] unable to rollback asset [%d] tree: %s, version: %d", i, err.Error(), blockHeight)
+				logx.Errorf("unable to rollback asset [%d] tree: %s, version: %d", i, err.Error(), blockHeight)
 				return nil, nil, err
 			}
 		}
@@ -141,7 +141,7 @@ func reloadAccountTreeFromRDB(
 	_, accountHistories, err := accountHistoryModel.GetValidAccounts(blockHeight,
 		options.Offset(offset), options.Limit(limit))
 	if err != nil {
-		logx.Errorf("[InitAccountTree] unable to get all accountHistories")
+		logx.Errorf("unable to get all accountHistories")
 		return err
 	}
 
@@ -153,7 +153,7 @@ func reloadAccountTreeFromRDB(
 		if accountInfoMap[accountHistory.AccountIndex] == nil {
 			accountInfo, err := accountModel.GetAccountByAccountIndex(accountHistory.AccountIndex)
 			if err != nil {
-				logx.Errorf("[InitAccountTree] unable to get account by account index: %s", err.Error())
+				logx.Errorf("unable to get account by account index: %s", err.Error())
 				return err
 			}
 			accountInfoMap[accountHistory.AccountIndex] = &account.Account{
@@ -181,13 +181,13 @@ func reloadAccountTreeFromRDB(
 	for i := int64(0); i < int64(len(accountHistories)); i++ {
 		accountIndex := accountHistories[i].AccountIndex
 		if accountInfoMap[accountIndex] == nil {
-			logx.Errorf("[InitAccountTree] invalid account index")
-			return errors.New("[InitAccountTree] invalid account index")
+			logx.Errorf("invalid account index")
+			return errors.New("invalid account index")
 		}
 		oAccountInfo := accountInfoMap[accountIndex]
 		accountInfo, err := commonAsset.ToFormatAccountInfo(oAccountInfo)
 		if err != nil {
-			logx.Errorf("[InitAccountTree] unable to convert to format account info: %s", err.Error())
+			logx.Errorf("unable to convert to format account info: %s", err.Error())
 			return err
 		}
 		// create account assets node
@@ -198,12 +198,12 @@ func reloadAccountTreeFromRDB(
 				assetInfo.OfferCanceledOrFinalized.String(),
 			)
 			if err != nil {
-				logx.Errorf("[InitAccountTree] unable to convert asset to node: %s", err.Error())
+				logx.Errorf("unable to convert asset to node: %s", err.Error())
 				return err
 			}
 			err = accountAssetTrees[accountIndex].Set(uint64(assetId), hashVal)
 			if err != nil {
-				logx.Errorf("[InitAccountTree] unable to set asset to tree: %s", err.Error())
+				logx.Errorf("unable to set asset to tree: %s", err.Error())
 				return err
 			}
 		}
@@ -215,12 +215,12 @@ func reloadAccountTreeFromRDB(
 			accountAssetTrees[accountIndex].Root(),
 		)
 		if err != nil {
-			logx.Errorf("[InitAccountTree] unable to convert account to node: %s", err.Error())
+			logx.Errorf("unable to convert account to node: %s", err.Error())
 			return err
 		}
 		err = accountTree.Set(uint64(accountIndex), accountHashVal)
 		if err != nil {
-			logx.Errorf("[InitAccountTree] unable to set account to tree: %s", err.Error())
+			logx.Errorf("unable to set account to tree: %s", err.Error())
 			return err
 		}
 	}
@@ -231,7 +231,7 @@ func reloadAccountTreeFromRDB(
 func AssetToNode(balance string, lpAmount string, offerCanceledOrFinalized string) (hashVal []byte, err error) {
 	hashVal, err = ComputeAccountAssetLeafHash(balance, lpAmount, offerCanceledOrFinalized)
 	if err != nil {
-		logx.Errorf("[AccountToNode] unable to compute asset leaf hash: %s", err.Error())
+		logx.Errorf("unable to compute asset leaf hash: %s", err.Error())
 		return nil, err
 	}
 
@@ -252,7 +252,7 @@ func AccountToNode(
 		collectionNonce,
 		assetRoot)
 	if err != nil {
-		logx.Errorf("[AccountToNode] unable to compute account leaf hash: %s", err.Error())
+		logx.Errorf("unable to compute account leaf hash: %s", err.Error())
 		return nil, err
 	}
 
