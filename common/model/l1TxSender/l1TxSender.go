@@ -28,8 +28,6 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas/common/model/block"
-	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/proofSender"
 	"github.com/bnb-chain/zkbas/errorcode"
 )
@@ -43,10 +41,8 @@ type (
 		GetLatestPendingBlock(txType int64) (txSender *L1TxSender, err error)
 		GetL1TxSendersByTxStatus(txStatus int) (txs []*L1TxSender, err error)
 		DeleteL1TxSender(sender *L1TxSender) error
-		UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
-			pendingUpdateBlocks []*block.Block,
+		UpdateSentTxs(
 			pendingUpdateSenders []*L1TxSender,
-			pendingUpdateMempoolTxs []*mempool.MempoolTx,
 			pendingUpdateProofSenderStatus map[int64]int,
 		) (err error)
 	}
@@ -149,36 +145,14 @@ func (m *defaultL1TxSenderModel) DeleteL1TxSender(sender *L1TxSender) error {
 	})
 }
 
-func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
-	pendingUpdateBlocks []*block.Block,
+func (m *defaultL1TxSenderModel) UpdateSentTxs(
 	pendingUpdateSenders []*L1TxSender,
-	pendingUpdateMempoolTxs []*mempool.MempoolTx,
 	pendingUpdateProofSenderStatus map[int64]int,
 ) (err error) {
 	const (
 		Txs = "Txs"
 	)
 	err = m.DB.Transaction(func(tx *gorm.DB) error {
-		// update blocks
-		for _, pendingUpdateBlock := range pendingUpdateBlocks {
-			dbTx := tx.Table(block.BlockTableName).Where("id = ?", pendingUpdateBlock.ID).
-				Omit(Txs).
-				Select("*").
-				Updates(&pendingUpdateBlock)
-			if dbTx.Error != nil {
-				logx.Errorf("update block error, err: %s", dbTx.Error.Error())
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				blocksInfo, err := json.Marshal(pendingUpdateBlocks)
-				if err != nil {
-					logx.Errorf("marshal block error, err: %s", err.Error())
-					return err
-				}
-				logx.Errorf("invalid block:  %s", string(blocksInfo))
-				return errors.New("invalid block")
-			}
-		}
 		// update sender
 		for _, pendingUpdateSender := range pendingUpdateSenders {
 			dbTx := tx.Table(TableName).Where("id = ?", pendingUpdateSender.ID).
@@ -196,27 +170,6 @@ func (m *defaultL1TxSenderModel) UpdateRelatedEventsAndResetRelatedAssetsAndTxs(
 				}
 				logx.Errorf("invalid sender:  %s", string(senderInfo))
 				return errors.New("invalid sender")
-			}
-		}
-		// delete mempool txs
-		for _, pendingDeleteMempoolTx := range pendingUpdateMempoolTxs {
-			for _, detail := range pendingDeleteMempoolTx.MempoolDetails {
-				dbTx := tx.Table(mempool.DetailTableName).Where("id = ?", detail.ID).Delete(&detail)
-				if dbTx.Error != nil {
-					logx.Errorf("delete tx detail error, err: %s", dbTx.Error.Error())
-					return dbTx.Error
-				}
-				if dbTx.RowsAffected == 0 {
-					return errors.New("delete invalid mempool tx")
-				}
-			}
-			dbTx := tx.Table(mempool.MempoolTableName).Where("id = ?", pendingDeleteMempoolTx.ID).Delete(&pendingDeleteMempoolTx)
-			if dbTx.Error != nil {
-				logx.Errorf("delete mempool tx error, err: %s", dbTx.Error.Error())
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				return errors.New("delete invalid mempool tx")
 			}
 		}
 		// modify proofSender Status

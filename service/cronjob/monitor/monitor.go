@@ -8,6 +8,7 @@ import (
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbas/common/sysconfigName"
 	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/config"
 	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/logic"
 	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/svc"
@@ -21,19 +22,19 @@ func main() {
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
 	ctx := svc.NewServiceContext(c)
-	ZkbasRollupAddress, err := ctx.SysConfigModel.GetSysconfigByName(c.ChainConfig.ZkbasContractAddrSysConfigName)
+	zkbasRollupAddress, err := ctx.SysConfigModel.GetSysconfigByName(sysconfigName.ZkbasContract)
 	if err != nil {
 		logx.Errorf("GetSysconfigByName err: %s", err.Error())
 		panic(err)
 	}
-	NetworkRpc, err := ctx.SysConfigModel.GetSysconfigByName(c.ChainConfig.NetworkRPCSysConfigName)
+	networkRpc, err := ctx.SysConfigModel.GetSysconfigByName(c.ChainConfig.NetworkRPCSysConfigName)
 	if err != nil {
 		logx.Severef("fatal error, cannot fetch NetworkRPC from sysConfig, err: %s, SysConfigName: %s",
 			err.Error(), c.ChainConfig.NetworkRPCSysConfigName)
 		panic(err)
 	}
-	logx.Infof("ChainName: %s, ZkbasRollupAddress: %s, NetworkRpc: %s", c.ChainConfig.ZkbasContractAddrSysConfigName, ZkbasRollupAddress.Value, NetworkRpc.Value)
-	zkbasRpcCli, err := _rpc.NewClient(NetworkRpc.Value)
+	logx.Infof("ChainName: %s, zkbasRollupAddress: %s, networkRpc: %s", c.ChainConfig.NetworkRPCSysConfigName, zkbasRollupAddress.Value, networkRpc.Value)
+	bscRpcCli, err := _rpc.NewClient(networkRpc.Value)
 	if err != nil {
 		panic(err)
 	}
@@ -43,8 +44,8 @@ func main() {
 
 	// block monitor
 	if _, err = cronjob.AddFunc("@every 10s", func() {
-		err := logic.MonitorBlocks(zkbasRpcCli, c.ChainConfig.StartL1BlockHeight, c.ChainConfig.PendingBlocksCount,
-			c.ChainConfig.MaxHandledBlocksCount, ZkbasRollupAddress.Value, ctx.L1BlockMonitorModel)
+		err := logic.MonitorBlocks(bscRpcCli, c.ChainConfig.StartL1BlockHeight, c.ChainConfig.PendingBlocksCount,
+			c.ChainConfig.MaxHandledBlocksCount, zkbasRollupAddress.Value, ctx.L1BlockMonitorModel, ctx.BlockModel, ctx.MempoolModel)
 		if err != nil {
 			logx.Errorf("monitor blocks error, err=%s", err.Error())
 		}
@@ -62,27 +63,18 @@ func main() {
 		panic(err)
 	}
 
-	// l2 block monitor
-	if _, err = cronjob.AddFunc("@every 10s", func() {
-		err := logic.MonitorL2BlockEvents(zkbasRpcCli, c.ChainConfig.PendingBlocksCount, ctx.MempoolModel, ctx.BlockModel, ctx.L1TxSenderModel)
-		if err != nil {
-			logx.Errorf("monitor l2 block events error, err=%s", err.Error())
-		}
-	}); err != nil {
-		panic(err)
-	}
 	// governance monitor
-	GovernanceContractAddress, err := ctx.SysConfigModel.GetSysconfigByName(c.ChainConfig.GovernanceContractAddrSysConfigName)
+	governanceContractAddress, err := ctx.SysConfigModel.GetSysconfigByName(sysconfigName.GovernanceContract)
 	if err != nil {
-		logx.Severef("fatal error, cannot fetch ZkbasContractAddr from sysConfig, err: %s, SysConfigName: %s",
-			err.Error(), c.ChainConfig.GovernanceContractAddrSysConfigName)
+		logx.Severef("fatal error, cannot fetch governance contract from sysConfig, err: %s, SysConfigName: %s",
+			err.Error(), sysconfigName.GovernanceContract)
 		panic(err)
 	}
 
 	// governance monitor
 	if _, err = cronjob.AddFunc("@every 10s", func() {
-		err := logic.MonitorGovernanceContract(zkbasRpcCli, c.ChainConfig.StartL1BlockHeight, c.ChainConfig.PendingBlocksCount, c.ChainConfig.MaxHandledBlocksCount,
-			GovernanceContractAddress.Value, ctx.L1BlockMonitorModel, ctx.SysConfigModel, ctx.L2AssetInfoModel,
+		err := logic.MonitorGovernanceContract(bscRpcCli, c.ChainConfig.StartL1BlockHeight, c.ChainConfig.PendingBlocksCount, c.ChainConfig.MaxHandledBlocksCount,
+			governanceContractAddress.Value, ctx.L1BlockMonitorModel, ctx.SysConfigModel, ctx.L2AssetInfoModel,
 		)
 		if err != nil {
 			logx.Errorf("monitor governance contracts events error, err=%s", err.Error())

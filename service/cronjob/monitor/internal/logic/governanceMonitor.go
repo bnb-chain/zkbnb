@@ -21,6 +21,9 @@ import (
 	"encoding/json"
 	"math/big"
 
+	"github.com/bnb-chain/zkbas/common/model/sysconfig"
+
+	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
 	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/zero/basic"
 	"github.com/ethereum/go-ethereum"
@@ -37,8 +40,8 @@ import (
 /*
 	MonitorGovernanceContract: monitor layer-1 governance related events
 */
-func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBlocksCount uint64, maxHandledBlocksCount int64,
-	governanceContract string, l1BlockMonitorModel L1BlockMonitorModel, sysconfigModel SysconfigModel, l2AssetInfoModel L2AssetInfoModel) (err error) {
+func MonitorGovernanceContract(cli *_rpc.ProviderClient, startHeight int64, pendingBlocksCount uint64, maxHandledBlocksCount int64,
+	governanceContract string, l1BlockMonitorModel l1BlockMonitor.L1BlockMonitorModel, sysconfigModel sysconfig.SysconfigModel, l2AssetInfoModel asset.AssetInfoModel) (err error) {
 	logx.Info("========================= start MonitorGovernanceContract =========================")
 	// get latest handled l1 block from database by chain id
 	latestHandledBlock, err := l1BlockMonitorModel.GetLatestL1BlockMonitorByGovernance()
@@ -80,10 +83,10 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 	}
 	var (
 		l1EventInfos                  []*L1EventInfo
-		l2AssetInfoMap                = make(map[string]*L2AssetInfo)
-		pendingUpdateL2AssetInfoMap   = make(map[string]*L2AssetInfo)
-		pendingNewSysconfigInfoMap    = make(map[string]*Sysconfig)
-		pendingUpdateSysconfigInfoMap = make(map[string]*Sysconfig)
+		l2AssetInfoMap                = make(map[string]*asset.AssetInfo)
+		pendingUpdateL2AssetInfoMap   = make(map[string]*asset.AssetInfo)
+		pendingNewSysconfigInfoMap    = make(map[string]*sysconfig.Sysconfig)
+		pendingUpdateSysconfigInfoMap = make(map[string]*sysconfig.Sysconfig)
 	)
 	for _, vlog := range logs {
 		switch vlog.Topics[0].Hex() {
@@ -118,7 +121,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 				logx.Errorf("erc20Instance.Decimals err: %s", err.Error())
 				return err
 			}
-			l2AssetInfo := &L2AssetInfo{
+			l2AssetInfo := &asset.AssetInfo{
 				AssetId:     uint32(event.AssetId),
 				L1Address:   event.AssetAddress.Hex(),
 				AssetName:   name,
@@ -140,7 +143,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 				EventType: EventTypeNewGovernor,
 				TxHash:    vlog.TxHash.Hex(),
 			}
-			configInfo := &Sysconfig{
+			configInfo := &sysconfig.Sysconfig{
 				Name:      sysconfigName.Governor,
 				Value:     event.NewGovernor.Hex(),
 				ValueType: "string",
@@ -161,7 +164,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 				EventType: EventTypeNewAssetGovernance,
 				TxHash:    vlog.TxHash.Hex(),
 			}
-			configInfo := &Sysconfig{
+			configInfo := &sysconfig.Sysconfig{
 				Name:      sysconfigName.AssetGovernanceContract,
 				Value:     event.NewAssetGovernance.Hex(),
 				ValueType: "string",
@@ -226,7 +229,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 							logx.Errorf("unable to marshal validators: %s", err.Error())
 							return err
 						}
-						pendingNewSysconfigInfoMap[sysconfigName.Validators] = &Sysconfig{
+						pendingNewSysconfigInfoMap[sysconfigName.Validators] = &sysconfig.Sysconfig{
 							Name:      sysconfigName.Validators,
 							Value:     string(validatorsBytes),
 							ValueType: "map[string]*ValidatorInfo",
@@ -272,7 +275,7 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 				EventType: EventTypeAssetPausedUpdate,
 				TxHash:    vlog.TxHash.Hex(),
 			}
-			var assetInfo *L2AssetInfo
+			var assetInfo *asset.AssetInfo
 			if l2AssetInfoMap[event.Token.Hex()] != nil {
 				assetInfo = l2AssetInfoMap[event.Token.Hex()]
 			} else {
@@ -309,10 +312,10 @@ func MonitorGovernanceContract(cli *ProviderClient, startHeight int64, pendingBl
 		MonitorType:   l1BlockMonitor.MonitorTypeGovernance,
 	}
 	var (
-		l2AssetInfos                []*L2AssetInfo
-		pendingUpdateL2AssetInfos   []*L2AssetInfo
-		pendingNewSysconfigInfos    []*Sysconfig
-		pendingUpdateSysconfigInfos []*Sysconfig
+		l2AssetInfos                []*asset.AssetInfo
+		pendingUpdateL2AssetInfos   []*asset.AssetInfo
+		pendingNewSysconfigInfos    []*sysconfig.Sysconfig
+		pendingUpdateSysconfigInfos []*sysconfig.Sysconfig
 	)
 	for _, l2AssetInfo := range l2AssetInfoMap {
 		l2AssetInfos = append(l2AssetInfos, l2AssetInfo)

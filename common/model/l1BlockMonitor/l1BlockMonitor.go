@@ -18,6 +18,7 @@
 package l1BlockMonitor
 
 import (
+	"encoding/json"
 	"errors"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -27,8 +28,10 @@ import (
 	"gorm.io/gorm"
 
 	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
+	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/l2BlockEventMonitor"
 	"github.com/bnb-chain/zkbas/common/model/l2TxEventMonitor"
+	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/sysconfig"
 	"github.com/bnb-chain/zkbas/errorcode"
 )
@@ -37,7 +40,13 @@ type (
 	L1BlockMonitorModel interface {
 		CreateL1BlockMonitorTable() error
 		DropL1BlockMonitorTable() error
-		CreateMonitorsInfo(blockInfo *L1BlockMonitor, txEventMonitors []*l2TxEventMonitor.L2TxEventMonitor, blockEventMonitors []*l2BlockEventMonitor.L2BlockEventMonitor) (err error)
+		CreateMonitorsInfoAndUpdateBlocksAndTxs(
+			blockInfo *L1BlockMonitor,
+			txEventMonitors []*l2TxEventMonitor.L2TxEventMonitor,
+			blockEventMonitors []*l2BlockEventMonitor.L2BlockEventMonitor,
+			pendingUpdateBlocks []*block.Block,
+			pendingUpdateMempoolTxs []*mempool.MempoolTx,
+		) (err error)
 		CreateGovernanceMonitorInfo(
 			blockInfo *L1BlockMonitor,
 			l2AssetInfos []*asset.AssetInfo,
@@ -97,11 +106,17 @@ func (m *defaultL1BlockMonitorModel) DropL1BlockMonitorTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-func (m *defaultL1BlockMonitorModel) CreateMonitorsInfo(
+func (m *defaultL1BlockMonitorModel) CreateMonitorsInfoAndUpdateBlocksAndTxs(
 	blockInfo *L1BlockMonitor,
 	txEventMonitors []*l2TxEventMonitor.L2TxEventMonitor,
 	blockEventMonitors []*l2BlockEventMonitor.L2BlockEventMonitor,
+	pendingUpdateBlocks []*block.Block,
+	pendingUpdateMempoolTxs []*mempool.MempoolTx,
 ) (err error) {
+	const (
+		Txs = "Txs"
+	)
+
 	err = m.DB.Transaction(
 		func(tx *gorm.DB) error { // transact
 			// create data for l1 block info
@@ -127,6 +142,49 @@ func (m *defaultL1BlockMonitorModel) CreateMonitorsInfo(
 			}
 			if dbTx.RowsAffected != int64(len(blockEventMonitors)) {
 				return errors.New("unable to create l2 block event monitors")
+			}
+
+			// update blocks
+			for _, pendingUpdateBlock := range pendingUpdateBlocks {
+				dbTx := tx.Table(block.BlockTableName).Where("id = ?", pendingUpdateBlock.ID).
+					Omit(Txs).
+					Select("*").
+					Updates(&pendingUpdateBlock)
+				if dbTx.Error != nil {
+					logx.Errorf("update block error, err: %s", dbTx.Error.Error())
+					return dbTx.Error
+				}
+				if dbTx.RowsAffected == 0 {
+					blocksInfo, err := json.Marshal(pendingUpdateBlocks)
+					if err != nil {
+						logx.Errorf("marshal block error, err: %s", err.Error())
+						return err
+					}
+					logx.Errorf("invalid block:  %s", string(blocksInfo))
+					return errors.New("invalid block")
+				}
+			}
+
+			// delete mempool txs
+			for _, pendingDeleteMempoolTx := range pendingUpdateMempoolTxs {
+				for _, detail := range pendingDeleteMempoolTx.MempoolDetails {
+					dbTx := tx.Table(mempool.DetailTableName).Where("id = ?", detail.ID).Delete(&detail)
+					if dbTx.Error != nil {
+						logx.Errorf("delete tx detail error, err: %s", dbTx.Error.Error())
+						return dbTx.Error
+					}
+					if dbTx.RowsAffected == 0 {
+						return errors.New("delete invalid mempool tx")
+					}
+				}
+				dbTx := tx.Table(mempool.MempoolTableName).Where("id = ?", pendingDeleteMempoolTx.ID).Delete(&pendingDeleteMempoolTx)
+				if dbTx.Error != nil {
+					logx.Errorf("delete mempool tx error, err: %s", dbTx.Error.Error())
+					return dbTx.Error
+				}
+				if dbTx.RowsAffected == 0 {
+					return errors.New("delete invalid mempool tx")
+				}
 			}
 			return nil
 		},

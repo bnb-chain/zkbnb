@@ -19,42 +19,14 @@ package logic
 import (
 	"strings"
 
-	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
 	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/bnb-chain/zkbas/common/commonTx"
-	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
 	"github.com/bnb-chain/zkbas/common/model/block"
-	"github.com/bnb-chain/zkbas/common/model/l1BlockMonitor"
-	"github.com/bnb-chain/zkbas/common/model/l1TxSender"
 	"github.com/bnb-chain/zkbas/common/model/l2BlockEventMonitor"
 	"github.com/bnb-chain/zkbas/common/model/l2TxEventMonitor"
-	"github.com/bnb-chain/zkbas/common/model/mempool"
-	"github.com/bnb-chain/zkbas/common/model/sysconfig"
-)
-
-type (
-	ProviderClient = _rpc.ProviderClient
-
-	L1BlockMonitorModel = l1BlockMonitor.L1BlockMonitorModel
-	SysconfigModel      = sysconfig.SysconfigModel
-	MempoolModel        = mempool.MempoolModel
-	BlockModel          = block.BlockModel
-	L2AssetInfoModel    = asset.AssetInfoModel
-	L1TxSenderModel     = l1TxSender.L1TxSenderModel
-
-	L2AssetInfo         = asset.AssetInfo
-	Sysconfig           = sysconfig.Sysconfig
-	L2TxEventMonitor    = l2TxEventMonitor.L2TxEventMonitor
-	L2BlockEventMonitor = l2BlockEventMonitor.L2BlockEventMonitor
-	Block               = block.Block
-	L1TxSender          = l1TxSender.L1TxSender
-	MempoolTx           = mempool.MempoolTx
-
-	ZkbasBlockCommit       = zkbas.ZkbasBlockCommit
-	ZkbasBlockVerification = zkbas.ZkbasBlockVerification
 )
 
 const (
@@ -99,9 +71,6 @@ const (
 	TxTypeFullExitNft    = commonTx.TxTypeFullExitNft
 
 	BlockVerifiedStatus = block.StatusVerifiedAndExecuted
-
-	L1TxSenderPendingStatus = l1TxSender.PendingStatus
-	L1TxSenderHandledStatus = l1TxSender.HandledStatus
 )
 
 var (
