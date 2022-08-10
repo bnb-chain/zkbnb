@@ -88,7 +88,7 @@ func (s *ServiceContext) Run() {
 	}
 }
 func (s *ServiceContext) InitMerkleTree() (err error) {
-	accounts, err := s.AccountModel.GetAllAccounts()
+	accounts, err := s.accountModel.GetAllAccounts()
 	if err != nil {
 		return err
 	}

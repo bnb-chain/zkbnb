@@ -14,20 +14,14 @@
  * limitations under the License.
  */
 
-package logic
+package svc
 
 import (
-	"time"
+	"encoding/json"
+	"errors"
 
 	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
-
 	"github.com/bnb-chain/zkbas/common/model/blockForProof"
-)
-
-const (
-	UnprovedBlockReceivedTimeout = 10 * time.Minute
-
-	BlockProcessDelta = 10
 )
 
 type (
@@ -39,4 +33,23 @@ type (
 type CryptoBlockInfo struct {
 	BlockInfo *CryptoBlock
 	Status    int64
+}
+
+func CryptoBlockInfoToBlockForProof(cryptoBlock *CryptoBlockInfo) (*BlockForProof, error) {
+	if cryptoBlock == nil {
+		return nil, errors.New("crypto block is nil")
+	}
+
+	blockInfo, err := json.Marshal(cryptoBlock.BlockInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	blockModel := blockForProof.BlockForProof{
+		BlockHeight: cryptoBlock.BlockInfo.BlockNumber,
+		BlockData:   string(blockInfo),
+		Status:      cryptoBlock.Status,
+	}
+
+	return &blockModel, nil
 }

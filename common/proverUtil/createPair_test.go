@@ -64,14 +64,12 @@ func TestConstructCreatePairCryptoTxFirst(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cryptoTx, err := ConstructCreatePairCryptoTx(
-		txInfo,
-		ctx, 0,
-		accountTree, &accountAssetTrees,
+	cryptoTx, err := NewWitnessHelper(ctx,
+		accountTree,
 		liquidityTree,
 		nftTree,
-		accountModel,
-	)
+		&accountAssetTrees,
+		accountModel).constructCryptoTx(txInfo, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
