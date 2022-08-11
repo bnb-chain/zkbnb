@@ -18,16 +18,16 @@ func main() {
 
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
-	prover := prover.NewProver(c)
+	p := prover.NewProver(c)
 	logx.DisableStat()
 
 	cronJob := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))
 	_, err := cronJob.AddFunc("@every 10s", func() {
-		logx.Info("start prover job......")
+		logx.Info("start p job......")
 		// cron job for receiving cryptoBlock and handling
-		err := prover.ProveBlock()
+		err := p.ProveBlock()
 		if err != nil {
 			logx.Error("Prove Error: ", err.Error())
 		}
@@ -37,6 +37,6 @@ func main() {
 	}
 	cronJob.Start()
 
-	logx.Info("prover cronjob is starting......")
+	logx.Info("p cronjob is starting......")
 	select {}
 }

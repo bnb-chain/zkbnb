@@ -33,7 +33,7 @@ type ServiceContext struct {
 	TxModel            tx.TxModel
 	BlockModel         block.BlockModel
 	MempoolDetailModel mempool.MempoolTxDetailModel
-	MempoolModel       mempool.MempoolModel
+	MempoolModel       mempool.MemPoolModel
 	L2AssetModel       asset.AssetModel
 
 	SysConfigModel sysconfig.SysConfigModel
@@ -74,9 +74,9 @@ func NewServiceContext(c config.Config) *ServiceContext {
 
 /*
 func (s *ServiceContext) Run() {
-	mempoolTxs, err := s.MempoolModel.GetAllMempoolTxsList()
+	mempoolTxs, err := s.MemPoolModel.GetAllMempoolTxsList()
 	if err != nil {
-		errInfo := fmt.Sprintf("[CommitterTask] => [MempoolModel.GetAllMempoolTxsList] mempool query error:%s", err.Error())
+		errInfo := fmt.Sprintf("[CommitterTask] => [MemPoolModel.GetAllMempoolTxsList] mempool query error:%s", err.Error())
 		logx.Error(errInfo)
 		return
 	}

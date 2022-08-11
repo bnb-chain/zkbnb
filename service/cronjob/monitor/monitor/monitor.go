@@ -44,7 +44,7 @@ type Monitor struct {
 	governanceContractAddress string
 
 	BlockModel           block.BlockModel
-	MempoolModel         mempool.MempoolModel
+	MempoolModel         mempool.MemPoolModel
 	SysConfigModel       sysconfig.SysConfigModel
 	L1RollupTxModel      l1RollupTx.L1RollupTxModel
 	L2AssetModel         asset.AssetModel

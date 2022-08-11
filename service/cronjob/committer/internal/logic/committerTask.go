@@ -24,7 +24,7 @@ import (
 	"strconv"
 	"time"
 
-	bsmt "github.com/bnb-chain/bas-smt"
+	smt "github.com/bnb-chain/bas-smt"
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
@@ -52,10 +52,10 @@ func CommitterTask(
 	ctx *svc.ServiceContext,
 	lastCommitTimeStamp *time.Time,
 	treeCtx *treedb.Context,
-	accountTree bsmt.SparseMerkleTree,
-	liquidityTree bsmt.SparseMerkleTree,
-	nftTree bsmt.SparseMerkleTree,
-	accountAssetTrees *[]bsmt.SparseMerkleTree,
+	accountTree smt.SparseMerkleTree,
+	liquidityTree smt.SparseMerkleTree,
+	nftTree smt.SparseMerkleTree,
+	accountAssetTrees *[]smt.SparseMerkleTree,
 	finalityBlockNr uint64,
 ) error {
 	// Get Txs from Mempool
@@ -731,7 +731,7 @@ func CommitterTask(
 			}
 		}
 
-		err = tree.CommitTrees(uint64(finalityBlockNr), accountTree, accountAssetTrees, liquidityTree, nftTree)
+		err = tree.CommitTrees(finalityBlockNr, accountTree, accountAssetTrees, liquidityTree, nftTree)
 		if err != nil {
 			logx.Errorf("[CommitterTask] unable to commit trees after txs is executed", err)
 			return err

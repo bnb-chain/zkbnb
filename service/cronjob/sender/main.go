@@ -19,7 +19,7 @@ func main() {
 
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
-	sender := sender.NewSender(c)
+	s := sender.NewSender(c)
 	logx.DisableStat()
 
 	// new cron
@@ -28,12 +28,12 @@ func main() {
 	))
 
 	_, err := cronJob.AddFunc("@every 10s", func() {
-		logx.Info("========================= start sender commit task =========================")
-		err := sender.CommitBlocks()
+		logx.Info("========================= start s commit task =========================")
+		err := s.CommitBlocks()
 		if err != nil {
-			logx.Errorf("[sender.CommitBlocks] unable to run: %", err)
+			logx.Errorf("[s.CommitBlocks] unable to run: %", err)
 		} else {
-			logx.Info("========================= end sender commit task =========================")
+			logx.Info("========================= end s commit task =========================")
 		}
 	})
 	if err != nil {
@@ -41,18 +41,18 @@ func main() {
 	}
 
 	_, err = cronJob.AddFunc("@every 10s", func() {
-		logx.Info("========================= start sender verify task =========================")
-		err = sender.VerifyAndExecuteBlocks()
+		logx.Info("========================= start s verify task =========================")
+		err = s.VerifyAndExecuteBlocks()
 		if err != nil {
-			logx.Errorf("[sender.VerifyAndExecuteBlocks] unable to run: %v", err)
+			logx.Errorf("[s.VerifyAndExecuteBlocks] unable to run: %v", err)
 		} else {
-			logx.Info("========================= end sender verify task =========================")
+			logx.Info("========================= end s verify task =========================")
 		}
 	})
 
 	_, err = cronJob.AddFunc("@every 10s", func() {
 		logx.Info("========================= start update sent txs task =========================")
-		err = sender.UpdateSentTxs()
+		err = s.UpdateSentTxs()
 		if err != nil {
 			logx.Info("update sent txs error, err:", err)
 		}
@@ -67,6 +67,6 @@ func main() {
 	}
 	cronJob.Start()
 
-	logx.Info("sender cronjob is starting......")
+	logx.Info("s cronjob is starting......")
 	select {}
 }

@@ -1,0 +1,14 @@
+Name: prover.cronjob
+
+Postgres:
+  DataSource: host=127.0.0.1 user=postgres password=ZecreyProtocolDB@123 dbname=zkbas port=5432 sslmode=disable
+
+CacheRedis:
+  - Host: 127.0.0.1:6379
+    Type: node
+
+KeyPath:
+  ProvingKeyPath: [/Users/Documents/git/bnb-chain/zkbas/zkbas1.pk, /Users/Documents/git/bnb-chain/zkbas/zkbas10.pk]
+  VerifyingKeyPath: [/Users/Documents/git/bnb-chain/zkbas/zkbas1.vk, /Users/Documents/git/bnb-chain/zkbas/zkbas10.vk]
+  KeyTxCounts:    [1, 10]
+

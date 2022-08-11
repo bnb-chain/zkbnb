@@ -15,7 +15,7 @@ import (
 )
 
 type model struct {
-	mempoolModel         mempool.MempoolModel
+	mempoolModel         mempool.MemPoolModel
 	mempoolTxDetailModel mempool.MempoolTxDetailModel
 	accountModel         account.AccountModel
 	liquidityModel       liquidity.LiquidityModel

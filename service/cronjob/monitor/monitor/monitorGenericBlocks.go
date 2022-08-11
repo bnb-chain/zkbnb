@@ -197,7 +197,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 	return nil
 }
 
-func getMempoolTxsToDelete(blocks []*block.Block, mempoolModel mempool.MempoolModel) ([]*mempool.MempoolTx, error) {
+func getMempoolTxsToDelete(blocks []*block.Block, mempoolModel mempool.MemPoolModel) ([]*mempool.MempoolTx, error) {
 	var toDeleteMempoolTxs []*mempool.MempoolTx
 	for _, pendingUpdateBlock := range blocks {
 		if pendingUpdateBlock.BlockStatus == BlockVerifiedStatus {

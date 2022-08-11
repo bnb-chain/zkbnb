@@ -18,43 +18,43 @@ func main() {
 	flag.Parse()
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
-	monitor := monitor.NewMonitor(c)
+	m := monitor.NewMonitor(c)
 
 	cronjob := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))
 
-	// monitor generic blocks
+	// m generic blocks
 	if _, err := cronjob.AddFunc("@every 10s", func() {
-		err := monitor.MonitorGenericBlocks()
+		err := m.MonitorGenericBlocks()
 		if err != nil {
-			logx.Errorf("monitor blocks error, err=%s", err.Error())
+			logx.Errorf("m blocks error, err=%s", err.Error())
 		}
 	}); err != nil {
 		panic(err)
 	}
 
-	// monitor priority requests
+	// m priority requests
 	if _, err := cronjob.AddFunc("@every 10s", func() {
-		err := monitor.MonitorPriorityRequests()
+		err := m.MonitorPriorityRequests()
 		if err != nil {
-			logx.Errorf("monitor priority requests error, err=%s", err.Error())
+			logx.Errorf("m priority requests error, err=%s", err.Error())
 		}
 	}); err != nil {
 		panic(err)
 	}
 
-	// monitor governance blocks
+	// m governance blocks
 	if _, err := cronjob.AddFunc("@every 10s", func() {
-		err := monitor.MonitorGovernanceBlocks()
+		err := m.MonitorGovernanceBlocks()
 		if err != nil {
-			logx.Errorf("monitor governance blocks error, err=%s", err.Error())
+			logx.Errorf("m governance blocks error, err=%s", err.Error())
 		}
 
 	}); err != nil {
 		panic(err)
 	}
 	cronjob.Start()
-	logx.Info("Starting monitor cronjob ...")
+	logx.Info("Starting m cronjob ...")
 	select {}
 }

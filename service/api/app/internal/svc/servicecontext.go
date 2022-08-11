@@ -28,7 +28,7 @@ type ServiceContext struct {
 	CodeVersion   string
 	GitCommitHash string
 
-	MempoolModel          mempool.MempoolModel
+	MempoolModel          mempool.MemPoolModel
 	MempoolDetailModel    mempool.MempoolTxDetailModel
 	AccountModel          account.AccountModel
 	AccountHistoryModel   account.AccountHistoryModel

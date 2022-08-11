@@ -13,7 +13,7 @@ COPY --from=builder /usr/share/zoneinfo/Asia/Shanghai /usr/share/zoneinfo/Asia/S
 ENV TZ Asia/Shanghai
 
 WORKDIR /app
-COPY bin/witnessgenerator /app/witnessgenerator
+COPY bin/witness /app/witness
 COPY configyaml /app/etc
 
 RUN apk --no-cache add ca-certificates openssl libstdc++ && update-ca-certificates

@@ -20,7 +20,7 @@ deploy:
 test:
 	sudo bash -x ./local-test.sh
 
-all:
+build: app
 	go build -o build/app ./service/api/app/app.go
 	go build -o build/committer ./service/cronjob/committer/committer.go
 	go build -o build/monitor ./service/cronjob/monitor/main.go

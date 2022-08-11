@@ -21,7 +21,6 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
 	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -50,16 +49,6 @@ var (
 	zkbasLogBlockVerificationSigHash = crypto.Keccak256Hash(zkbasLogBlockVerificationSig)
 	zkbasLogBlocksRevertSigHash      = crypto.Keccak256Hash(zkbasLogBlocksRevertSig)
 )
-
-type SenderParam struct {
-	Cli            *_rpc.ProviderClient
-	AuthCli        *_rpc.AuthClient
-	ZkbasInstance  *zkbas.Zkbas
-	MaxWaitingTime int64
-	MaxBlocksCount int
-	GasPrice       *big.Int
-	GasLimit       uint64
-}
 
 func DefaultBlockHeader() zkbas.StorageStoredBlockInfo {
 	var (
