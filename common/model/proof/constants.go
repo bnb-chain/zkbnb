@@ -12,14 +12,16 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
-package l1BlockMonitor
+package proof
 
 const (
-	TableName = "l1_block_monitor"
+	TableName = "proof"
+)
 
-	MonitorTypeBlock      = 0
-	MonitorTypeGovernance = 1
+const (
+	NotSent = iota
+	NotConfirmed
+	Confirmed
 )

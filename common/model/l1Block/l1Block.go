@@ -15,7 +15,7 @@
  *
  */
 
-package l1BlockMonitor
+package l1Block
 
 import (
 	"encoding/json"
@@ -29,33 +29,31 @@ import (
 
 	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
 	"github.com/bnb-chain/zkbas/common/model/block"
-	"github.com/bnb-chain/zkbas/common/model/l2BlockEventMonitor"
-	"github.com/bnb-chain/zkbas/common/model/l2TxEventMonitor"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
+	"github.com/bnb-chain/zkbas/common/model/priorityRequest"
 	"github.com/bnb-chain/zkbas/common/model/sysconfig"
 	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type (
-	L1BlockMonitorModel interface {
-		CreateL1BlockMonitorTable() error
-		DropL1BlockMonitorTable() error
+	L1BlockModel interface {
+		CreateL1BlockTable() error
+		DropL1BlockTable() error
 		CreateMonitorsInfoAndUpdateBlocksAndTxs(
-			blockInfo *L1BlockMonitor,
-			txEventMonitors []*l2TxEventMonitor.L2TxEventMonitor,
-			blockEventMonitors []*l2BlockEventMonitor.L2BlockEventMonitor,
+			blockInfo *L1Block,
+			txEventMonitors []*priorityRequest.PriorityRequest,
 			pendingUpdateBlocks []*block.Block,
 			pendingUpdateMempoolTxs []*mempool.MempoolTx,
 		) (err error)
 		CreateGovernanceMonitorInfo(
-			blockInfo *L1BlockMonitor,
+			blockInfo *L1Block,
 			l2AssetInfos []*asset.AssetInfo,
 			pendingUpdateL2AssetInfos []*asset.AssetInfo,
 			pendingNewSysconfigInfos []*sysconfig.Sysconfig,
 			pendingUpdateSysconfigInfos []*sysconfig.Sysconfig,
 		) (err error)
-		GetLatestL1BlockMonitorByBlock() (blockInfo *L1BlockMonitor, err error)
-		GetLatestL1BlockMonitorByGovernance() (blockInfo *L1BlockMonitor, err error)
+		GetLatestL1BlockByType(blockType int) (blockInfo *L1Block, err error)
+		GetLatestL1BlockMonitorByGovernance() (blockInfo *L1Block, err error)
 	}
 
 	defaultL1BlockMonitorModel struct {
@@ -64,21 +62,21 @@ type (
 		DB    *gorm.DB
 	}
 
-	L1BlockMonitor struct {
+	L1Block struct {
 		gorm.Model
 		// l1 block height
 		L1BlockHeight int64
 		// block info, array of hashes
-		BlockInfo   string
-		MonitorType int
+		BlockInfo string
+		Type      int
 	}
 )
 
-func (*L1BlockMonitor) TableName() string {
+func (*L1Block) TableName() string {
 	return TableName
 }
 
-func NewL1BlockMonitorModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) L1BlockMonitorModel {
+func NewL1BlockModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) L1BlockModel {
 	return &defaultL1BlockMonitorModel{
 		CachedConn: sqlc.NewConn(conn, c),
 		table:      TableName,
@@ -86,30 +84,17 @@ func NewL1BlockMonitorModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) L
 	}
 }
 
-/*
-	Func: CreateL1BlockMonitorTable
-	Params:
-	Return: err error
-	Description: create l2 txVerification event monitor table
-*/
-func (m *defaultL1BlockMonitorModel) CreateL1BlockMonitorTable() error {
-	return m.DB.AutoMigrate(L1BlockMonitor{})
+func (m *defaultL1BlockMonitorModel) CreateL1BlockTable() error {
+	return m.DB.AutoMigrate(L1Block{})
 }
 
-/*
-	Func: DropL1BlockMonitorTable
-	Params:
-	Return: err error
-	Description: drop l2 txVerification event monitor table
-*/
-func (m *defaultL1BlockMonitorModel) DropL1BlockMonitorTable() error {
+func (m *defaultL1BlockMonitorModel) DropL1BlockTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
 func (m *defaultL1BlockMonitorModel) CreateMonitorsInfoAndUpdateBlocksAndTxs(
-	blockInfo *L1BlockMonitor,
-	txEventMonitors []*l2TxEventMonitor.L2TxEventMonitor,
-	blockEventMonitors []*l2BlockEventMonitor.L2BlockEventMonitor,
+	blockInfo *L1Block,
+	txEventMonitors []*priorityRequest.PriorityRequest,
 	pendingUpdateBlocks []*block.Block,
 	pendingUpdateMempoolTxs []*mempool.MempoolTx,
 ) (err error) {
@@ -128,20 +113,12 @@ func (m *defaultL1BlockMonitorModel) CreateMonitorsInfoAndUpdateBlocksAndTxs(
 				return errors.New("unable to create l1 block info")
 			}
 			// create data in batches for l2 txVerification event monitor
-			dbTx = tx.Table(l2TxEventMonitor.TableName).CreateInBatches(txEventMonitors, len(txEventMonitors))
+			dbTx = tx.Table(priorityRequest.TableName).CreateInBatches(txEventMonitors, len(txEventMonitors))
 			if dbTx.Error != nil {
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected != int64(len(txEventMonitors)) {
 				return errors.New("unable to create l2 txVerification event monitors")
-			}
-			// create data in batches for l2 block event monitor
-			dbTx = tx.Table(l2BlockEventMonitor.TableName).CreateInBatches(blockEventMonitors, len(blockEventMonitors))
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected != int64(len(blockEventMonitors)) {
-				return errors.New("unable to create l2 block event monitors")
 			}
 
 			// update blocks
@@ -193,7 +170,7 @@ func (m *defaultL1BlockMonitorModel) CreateMonitorsInfoAndUpdateBlocksAndTxs(
 }
 
 func (m *defaultL1BlockMonitorModel) CreateGovernanceMonitorInfo(
-	blockInfo *L1BlockMonitor,
+	blockInfo *L1Block,
 	pendingNewL2AssetInfos []*asset.AssetInfo,
 	pendingUpdateL2AssetInfos []*asset.AssetInfo,
 	pendingNewSysconfigInfos []*sysconfig.Sysconfig,
@@ -251,13 +228,8 @@ func (m *defaultL1BlockMonitorModel) CreateGovernanceMonitorInfo(
 	return err
 }
 
-/*
-	Func: GetLatestL1BlockMonitor
-	Return: blockInfos []*L1BlockMonitor, err error
-	Description: get latest l1 block monitor info
-*/
-func (m *defaultL1BlockMonitorModel) GetLatestL1BlockMonitorByBlock() (blockInfo *L1BlockMonitor, err error) {
-	dbTx := m.DB.Table(m.table).Where("monitor_type = ?", MonitorTypeBlock).Order("l1_block_height desc").Find(&blockInfo)
+func (m *defaultL1BlockMonitorModel) GetLatestL1BlockByType(blockType int) (blockInfo *L1Block, err error) {
+	dbTx := m.DB.Table(m.table).Where("type = ?", blockType).Order("l1_block_height desc").Find(&blockInfo)
 	if dbTx.Error != nil {
 		logx.Errorf("get monitor blocks error, err: %s", err.Error())
 		return nil, errorcode.DbErrSqlOperation
@@ -268,8 +240,8 @@ func (m *defaultL1BlockMonitorModel) GetLatestL1BlockMonitorByBlock() (blockInfo
 	return blockInfo, nil
 }
 
-func (m *defaultL1BlockMonitorModel) GetLatestL1BlockMonitorByGovernance() (blockInfo *L1BlockMonitor, err error) {
-	dbTx := m.DB.Table(m.table).Where("monitor_type = ?", MonitorTypeGovernance).Order("l1_block_height desc").Find(&blockInfo)
+func (m *defaultL1BlockMonitorModel) GetLatestL1BlockMonitorByGovernance() (blockInfo *L1Block, err error) {
+	dbTx := m.DB.Table(m.table).Where("type = ?", MonitorTypeGovernance).Order("l1_block_height desc").Find(&blockInfo)
 	if dbTx.Error != nil {
 		logx.Errorf("get governance blocks error, err: %s", err.Error())
 		return nil, errorcode.DbErrSqlOperation

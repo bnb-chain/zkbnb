@@ -32,7 +32,7 @@ import (
 
 func MonitorMempool(svcCtx *svc.ServiceContext) error {
 	logx.Info("========== start MonitorMempool ==========")
-	txs, err := svcCtx.L2TxEventMonitorModel.GetL2TxEventMonitorsByStatus(PendingStatus)
+	txs, err := svcCtx.L2TxEventMonitorModel.GetPriorityRequestsByStatus(PendingStatus)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			logx.Info("no l2 oTx event monitors")

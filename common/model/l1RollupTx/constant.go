@@ -15,11 +15,17 @@
  *
  */
 
-package l2TxEventMonitor
+package l1RollupTx
 
 const (
-	TableName = "l2_tx_event_monitor"
+	TableName = "l1_rollup_tx"
 
-	PendingStatus = 1
-	HandledStatus = 2
+	// status
+	StatusPending = 1
+	StatusHandled = 2
+
+	// txVerification type
+	TxTypeCommit           = 1
+	TxTypeVerifyAndExecute = 2
+	RevertTxType           = 3
 )

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package proofSender
+package proof
 
 import (
 	"github.com/zeromicro/go-zero/core/logx"
@@ -24,21 +24,21 @@ import (
 )
 
 type (
-	ProofSenderModel interface {
-		CreateProofSenderTable() error
-		DropProofSenderTable() error
-		CreateProof(row *ProofSender) error
-		GetProofsByBlockRange(start int64, end int64, maxProofsCount int) (proofs []*ProofSender, err error)
-		GetLatestConfirmedProof() (p *ProofSender, err error)
-		GetProofByBlockNumber(num int64) (p *ProofSender, err error)
+	ProofModel interface {
+		CreateProofTable() error
+		DropProofTable() error
+		CreateProof(row *Proof) error
+		GetProofsByBlockRange(start int64, end int64, maxProofsCount int) (proofs []*Proof, err error)
+		GetLatestConfirmedProof() (p *Proof, err error)
+		GetProofByBlockNumber(num int64) (p *Proof, err error)
 	}
 
-	defaultProofSenderModel struct {
+	defaultProofModel struct {
 		table string
 		DB    *gorm.DB
 	}
 
-	ProofSender struct {
+	Proof struct {
 		gorm.Model
 		ProofInfo   string
 		BlockNumber int64 `gorm:"index:idx_number,unique"`
@@ -46,47 +46,26 @@ type (
 	}
 )
 
-func (*ProofSender) TableName() string {
+func (*Proof) TableName() string {
 	return TableName
 }
 
-func NewProofSenderModel(db *gorm.DB) ProofSenderModel {
-	return &defaultProofSenderModel{
+func NewProofModel(db *gorm.DB) ProofModel {
+	return &defaultProofModel{
 		table: TableName,
 		DB:    db,
 	}
 }
 
-/*
-	Func: CreateProofSenderTable
-	Params:
-	Return: err error
-	Description: create proofSender table
-*/
-
-func (m *defaultProofSenderModel) CreateProofSenderTable() error {
-	return m.DB.AutoMigrate(ProofSender{})
+func (m *defaultProofModel) CreateProofTable() error {
+	return m.DB.AutoMigrate(Proof{})
 }
 
-/*
-	Func: DropProofSenderTable
-	Params:
-	Return: err error
-	Description: drop proofSender table
-*/
-
-func (m *defaultProofSenderModel) DropProofSenderTable() error {
+func (m *defaultProofModel) DropProofTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-/*
-	Func: InsertProof
-	Params:
-	Return: err error
-	Description: insert proof and block info in proofSender Table
-*/
-
-func (m *defaultProofSenderModel) CreateProof(row *ProofSender) error {
+func (m *defaultProofModel) CreateProof(row *Proof) error {
 	dbTx := m.DB.Table(m.table).Create(row)
 	if dbTx.Error != nil {
 		logx.Errorf("create proof error, err: %s", dbTx.Error.Error())
@@ -98,14 +77,7 @@ func (m *defaultProofSenderModel) CreateProof(row *ProofSender) error {
 	return nil
 }
 
-/*
-	Func: GetProof
-	Params:
-	Return: err error
-	Description: getProofsByBlockRange
-*/
-
-func (m *defaultProofSenderModel) GetProofsByBlockRange(start int64, end int64, maxProofsCount int) (proofs []*ProofSender, err error) {
+func (m *defaultProofModel) GetProofsByBlockRange(start int64, end int64, maxProofsCount int) (proofs []*Proof, err error) {
 	dbTx := m.DB.Debug().Table(m.table).Where("block_number >= ? AND block_number <= ? AND status = ?",
 		start,
 		end,
@@ -124,15 +96,8 @@ func (m *defaultProofSenderModel) GetProofsByBlockRange(start int64, end int64, 
 	return proofs, err
 }
 
-/*
-	Func: GetLatestSentProof
-	Params:
-	Return: p *ProofSender, err error
-	Description: get latest sent proof block number,
-		it used to support prover hub to init merkle tree.
-*/
-func (m *defaultProofSenderModel) GetLatestConfirmedProof() (p *ProofSender, err error) {
-	var row *ProofSender
+func (m *defaultProofModel) GetLatestConfirmedProof() (p *Proof, err error) {
+	var row *Proof
 	dbTx := m.DB.Table(m.table).Where("status >= ?", NotConfirmed).Order("block_number desc").Limit(1).Find(&row)
 	if dbTx.Error != nil {
 		logx.Errorf("get confirmed proof error, err; %s", dbTx.Error.Error())
@@ -144,18 +109,11 @@ func (m *defaultProofSenderModel) GetLatestConfirmedProof() (p *ProofSender, err
 	}
 }
 
-/*
-	Func: GetProofByBlockNumber
-	Params:
-	Return: p *ProofSender, err error
-	Description: get certain blockNumber proof
-		it used to support prover hub to init unproved block.
-*/
-func (m *defaultProofSenderModel) GetProofByBlockNumber(num int64) (p *ProofSender, err error) {
-	var row *ProofSender
+func (m *defaultProofModel) GetProofByBlockNumber(num int64) (p *Proof, err error) {
+	var row *Proof
 	dbTx := m.DB.Table(m.table).Where("block_number = ?", num).Find(&row)
 	if dbTx.Error != nil {
-		logx.Errorf("get proof sender error, err: %s", dbTx.Error.Error())
+		logx.Errorf("get proof error, err: %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, errorcode.DbErrNotFound

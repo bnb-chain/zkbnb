@@ -15,17 +15,11 @@
  *
  */
 
-package l1TxSender
+package l1Block
 
 const (
-	TableName = "l1_tx_sender"
+	TableName = "l1_block"
 
-	// status
-	PendingStatus = 1
-	HandledStatus = 2
-
-	// txVerification type
-	CommitTxType           = 1
-	VerifyAndExecuteTxType = 2
-	RevertTxType           = 3
+	MonitorTypeBlock      int = 0
+	MonitorTypeGovernance int = 1
 )

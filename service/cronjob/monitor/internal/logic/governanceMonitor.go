@@ -21,8 +21,6 @@ import (
 	"encoding/json"
 	"math/big"
 
-	"github.com/bnb-chain/zkbas/common/model/sysconfig"
-
 	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
 	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/zero/basic"
@@ -31,7 +29,8 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
-	"github.com/bnb-chain/zkbas/common/model/l1BlockMonitor"
+	"github.com/bnb-chain/zkbas/common/model/l1Block"
+	"github.com/bnb-chain/zkbas/common/model/sysconfig"
 	"github.com/bnb-chain/zkbas/common/sysconfigName"
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/errorcode"
@@ -41,16 +40,16 @@ import (
 	MonitorGovernanceContract: monitor layer-1 governance related events
 */
 func MonitorGovernanceContract(cli *_rpc.ProviderClient, startHeight int64, pendingBlocksCount uint64, maxHandledBlocksCount int64,
-	governanceContract string, l1BlockMonitorModel l1BlockMonitor.L1BlockMonitorModel, sysconfigModel sysconfig.SysconfigModel, l2AssetInfoModel asset.AssetInfoModel) (err error) {
+	governanceContract string, l1BlockMonitorModel l1Block.L1BlockModel, sysconfigModel sysconfig.SysconfigModel, l2AssetInfoModel asset.AssetInfoModel) (err error) {
 	logx.Info("========================= start MonitorGovernanceContract =========================")
 	// get latest handled l1 block from database by chain id
-	latestHandledBlock, err := l1BlockMonitorModel.GetLatestL1BlockMonitorByGovernance()
+	latestHandledBlock, err := l1BlockMonitorModel.GetLatestL1BlockByType(l1Block.MonitorTypeGovernance)
 	var handledHeight int64
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			handledHeight = startHeight
 		} else {
-			logx.Errorf("[l1BlockMonitorModel.GetLatestL1BlockMonitorByBlock]: %s", err.Error())
+			logx.Errorf("[l1BlockMonitorModel.GetLatestL1BlockByType]: %s", err.Error())
 			return err
 		}
 	} else {
@@ -306,10 +305,10 @@ func MonitorGovernanceContract(cli *_rpc.ProviderClient, startHeight int64, pend
 		logx.Errorf("marshal l1 events error, err: %s", err.Error())
 		return err
 	}
-	l1BlockMonitorInfo := &l1BlockMonitor.L1BlockMonitor{
+	l1BlockMonitorInfo := &l1Block.L1Block{
 		L1BlockHeight: int64(safeHeight),
 		BlockInfo:     string(eventInfosBytes),
-		MonitorType:   l1BlockMonitor.MonitorTypeGovernance,
+		Type:          l1Block.MonitorTypeGovernance,
 	}
 	var (
 		l2AssetInfos                []*asset.AssetInfo

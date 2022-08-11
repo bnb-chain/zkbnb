@@ -21,6 +21,12 @@ import (
 	"encoding/json"
 	"flag"
 
+	"github.com/bnb-chain/zkbas/common/model/proof"
+
+	"github.com/bnb-chain/zkbas/common/model/l1RollupTx"
+
+	"github.com/bnb-chain/zkbas/common/model/priorityRequest"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/zeromicro/go-zero/core/conf"
@@ -33,14 +39,10 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/blockForCommit"
 	"github.com/bnb-chain/zkbas/common/model/blockForProof"
-	"github.com/bnb-chain/zkbas/common/model/l1BlockMonitor"
-	"github.com/bnb-chain/zkbas/common/model/l1TxSender"
-	"github.com/bnb-chain/zkbas/common/model/l2BlockEventMonitor"
-	"github.com/bnb-chain/zkbas/common/model/l2TxEventMonitor"
+	"github.com/bnb-chain/zkbas/common/model/l1Block"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
-	"github.com/bnb-chain/zkbas/common/model/proofSender"
 	"github.com/bnb-chain/zkbas/common/model/sysconfig"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/sysconfigName"
@@ -176,30 +178,29 @@ var (
 	redisConn      = redis.New(basic.CacheConf[0].Host, WithRedis(basic.CacheConf[0].Type, basic.CacheConf[0].Pass))
 	sysconfigModel = sysconfig.NewSysconfigModel(basic.Connection, basic.CacheConf, basic.DB)
 	//priceModel = price.NewPriceModel(basic.Connection, basic.CacheConf, basic.DB)
-	accountModel             = account.NewAccountModel(basic.Connection, basic.CacheConf, basic.DB)
-	accountHistoryModel      = account.NewAccountHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
-	assetInfoModel           = asset.NewAssetInfoModel(basic.Connection, basic.CacheConf, basic.DB)
-	mempoolDetailModel       = mempool.NewMempoolDetailModel(basic.Connection, basic.CacheConf, basic.DB)
-	mempoolModel             = mempool.NewMempoolModel(basic.Connection, basic.CacheConf, basic.DB)
-	failTxModel              = tx.NewFailTxModel(basic.Connection, basic.CacheConf, basic.DB)
-	txDetailModel            = tx.NewTxDetailModel(basic.Connection, basic.CacheConf, basic.DB)
-	txModel                  = tx.NewTxModel(basic.Connection, basic.CacheConf, basic.DB, redisConn)
-	blockModel               = block.NewBlockModel(basic.Connection, basic.CacheConf, basic.DB, redisConn)
-	blockForCommitModel      = blockForCommit.NewBlockForCommitModel(basic.Connection, basic.CacheConf, basic.DB)
-	blockForProofModel       = blockForProof.NewBlockForProofModel(basic.Connection, basic.CacheConf, basic.DB)
-	proofSenderModel         = proofSender.NewProofSenderModel(basic.DB)
-	l1BlockMonitorModel      = l1BlockMonitor.NewL1BlockMonitorModel(basic.Connection, basic.CacheConf, basic.DB)
-	l2TxEventMonitorModel    = l2TxEventMonitor.NewL2TxEventMonitorModel(basic.Connection, basic.CacheConf, basic.DB)
-	l2BlockEventMonitorModel = l2BlockEventMonitor.NewL2BlockEventMonitorModel(basic.Connection, basic.CacheConf, basic.DB)
-	l1TxSenderModel          = l1TxSender.NewL1TxSenderModel(basic.Connection, basic.CacheConf, basic.DB)
-	liquidityModel           = liquidity.NewLiquidityModel(basic.Connection, basic.CacheConf, basic.DB)
-	liquidityHistoryModel    = liquidity.NewLiquidityHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
-	nftModel                 = nft.NewL2NftModel(basic.Connection, basic.CacheConf, basic.DB)
-	offerModel               = nft.NewOfferModel(basic.Connection, basic.CacheConf, basic.DB)
-	nftHistoryModel          = nft.NewL2NftHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
-	nftExchangeModel         = nft.NewL2NftExchangeModel(basic.Connection, basic.CacheConf, basic.DB)
-	nftCollectionModel       = nft.NewL2NftCollectionModel(basic.Connection, basic.CacheConf, basic.DB)
-	nftWithdrawHistoryModel  = nft.NewL2NftWithdrawHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
+	accountModel            = account.NewAccountModel(basic.Connection, basic.CacheConf, basic.DB)
+	accountHistoryModel     = account.NewAccountHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
+	assetInfoModel          = asset.NewAssetInfoModel(basic.Connection, basic.CacheConf, basic.DB)
+	mempoolDetailModel      = mempool.NewMempoolDetailModel(basic.Connection, basic.CacheConf, basic.DB)
+	mempoolModel            = mempool.NewMempoolModel(basic.Connection, basic.CacheConf, basic.DB)
+	failTxModel             = tx.NewFailTxModel(basic.Connection, basic.CacheConf, basic.DB)
+	txDetailModel           = tx.NewTxDetailModel(basic.Connection, basic.CacheConf, basic.DB)
+	txModel                 = tx.NewTxModel(basic.Connection, basic.CacheConf, basic.DB, redisConn)
+	blockModel              = block.NewBlockModel(basic.Connection, basic.CacheConf, basic.DB, redisConn)
+	blockForCommitModel     = blockForCommit.NewBlockForCommitModel(basic.Connection, basic.CacheConf, basic.DB)
+	blockForProofModel      = blockForProof.NewBlockForProofModel(basic.Connection, basic.CacheConf, basic.DB)
+	proofSenderModel        = proof.NewProofModel(basic.DB)
+	l1BlockMonitorModel     = l1Block.NewL1BlockModel(basic.Connection, basic.CacheConf, basic.DB)
+	priorityRequestModel    = priorityRequest.NewPriorityRequestModel(basic.Connection, basic.CacheConf, basic.DB)
+	l1TxSenderModel         = l1RollupTx.NewL1RollupTxModel(basic.Connection, basic.CacheConf, basic.DB)
+	liquidityModel          = liquidity.NewLiquidityModel(basic.Connection, basic.CacheConf, basic.DB)
+	liquidityHistoryModel   = liquidity.NewLiquidityHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
+	nftModel                = nft.NewL2NftModel(basic.Connection, basic.CacheConf, basic.DB)
+	offerModel              = nft.NewOfferModel(basic.Connection, basic.CacheConf, basic.DB)
+	nftHistoryModel         = nft.NewL2NftHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
+	nftExchangeModel        = nft.NewL2NftExchangeModel(basic.Connection, basic.CacheConf, basic.DB)
+	nftCollectionModel      = nft.NewL2NftCollectionModel(basic.Connection, basic.CacheConf, basic.DB)
+	nftWithdrawHistoryModel = nft.NewL2NftWithdrawHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
 )
 
 func dropTables() {
@@ -215,11 +216,10 @@ func dropTables() {
 	assert.Nil(nil, blockModel.DropBlockTable())
 	assert.Nil(nil, blockForCommitModel.DropBlockForCommitTable())
 	assert.Nil(nil, blockForProofModel.DropBlockForProofTable())
-	assert.Nil(nil, proofSenderModel.DropProofSenderTable())
-	assert.Nil(nil, l1BlockMonitorModel.DropL1BlockMonitorTable())
-	assert.Nil(nil, l2TxEventMonitorModel.DropL2TxEventMonitorTable())
-	assert.Nil(nil, l2BlockEventMonitorModel.DropL2BlockEventMonitorTable())
-	assert.Nil(nil, l1TxSenderModel.DropL1TxSenderTable())
+	assert.Nil(nil, proofSenderModel.DropProofTable())
+	assert.Nil(nil, l1BlockMonitorModel.DropL1BlockTable())
+	assert.Nil(nil, priorityRequestModel.DropPriorityRequestTable())
+	assert.Nil(nil, l1TxSenderModel.DropL1RollupTxTable())
 	assert.Nil(nil, liquidityModel.DropLiquidityTable())
 	assert.Nil(nil, liquidityHistoryModel.DropLiquidityHistoryTable())
 	assert.Nil(nil, nftModel.DropL2NftTable())
@@ -243,11 +243,10 @@ func initTable() {
 	assert.Nil(nil, txDetailModel.CreateTxDetailTable())
 	assert.Nil(nil, blockForCommitModel.CreateBlockForCommitTable())
 	assert.Nil(nil, blockForProofModel.CreateBlockForProofTable())
-	assert.Nil(nil, proofSenderModel.CreateProofSenderTable())
-	assert.Nil(nil, l1BlockMonitorModel.CreateL1BlockMonitorTable())
-	assert.Nil(nil, l2TxEventMonitorModel.CreateL2TxEventMonitorTable())
-	assert.Nil(nil, l2BlockEventMonitorModel.CreateL2BlockEventMonitorTable())
-	assert.Nil(nil, l1TxSenderModel.CreateL1TxSenderTable())
+	assert.Nil(nil, proofSenderModel.CreateProofTable())
+	assert.Nil(nil, l1BlockMonitorModel.CreateL1BlockTable())
+	assert.Nil(nil, priorityRequestModel.CreatePriorityRequestTable())
+	assert.Nil(nil, l1TxSenderModel.CreateL1RollupTxTable())
 	assert.Nil(nil, liquidityModel.CreateLiquidityTable())
 	assert.Nil(nil, liquidityHistoryModel.CreateLiquidityHistoryTable())
 	assert.Nil(nil, nftModel.CreateL2NftTable())

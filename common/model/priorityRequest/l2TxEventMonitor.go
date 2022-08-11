@@ -15,7 +15,7 @@
  *
  */
 
-package l2TxEventMonitor
+package priorityRequest
 
 import (
 	"errors"
@@ -31,21 +31,21 @@ import (
 )
 
 type (
-	L2TxEventMonitorModel interface {
-		CreateL2TxEventMonitorTable() error
-		DropL2TxEventMonitorTable() error
-		GetL2TxEventMonitorsByStatus(status int) (txs []*L2TxEventMonitor, err error)
-		CreateMempoolTxsAndUpdateL2Events(pendingNewMempoolTxs []*mempool.MempoolTx, pendingUpdateL2Events []*L2TxEventMonitor) (err error)
+	PriorityRequestModel interface {
+		CreatePriorityRequestTable() error
+		DropPriorityRequestTable() error
+		GetPriorityRequestsByStatus(status int) (txs []*PriorityRequest, err error)
+		CreateMempoolTxsAndUpdateL2Events(pendingNewMempoolTxs []*mempool.MempoolTx, pendingUpdateL2Events []*PriorityRequest) (err error)
 		GetLastHandledRequestId() (requestId int64, err error)
 	}
 
-	defaultL2TxEventMonitorModel struct {
+	defaultPriorityRequestModel struct {
 		sqlc.CachedConn
 		table string
 		DB    *gorm.DB
 	}
 
-	L2TxEventMonitor struct {
+	PriorityRequest struct {
 		gorm.Model
 		// related txVerification hash
 		L1TxHash string
@@ -66,42 +66,27 @@ type (
 	}
 )
 
-func (*L2TxEventMonitor) TableName() string {
+func (*PriorityRequest) TableName() string {
 	return TableName
 }
 
-func NewL2TxEventMonitorModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) L2TxEventMonitorModel {
-	return &defaultL2TxEventMonitorModel{
+func NewPriorityRequestModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) PriorityRequestModel {
+	return &defaultPriorityRequestModel{
 		CachedConn: sqlc.NewConn(conn, c),
 		table:      TableName,
 		DB:         db,
 	}
 }
 
-/*
-	Func: CreateL2TxEventMonitorTable
-	Params:
-	Return: err error
-	Description: create l2 txVerification event monitor table
-*/
-func (m *defaultL2TxEventMonitorModel) CreateL2TxEventMonitorTable() error {
-	return m.DB.AutoMigrate(L2TxEventMonitor{})
+func (m *defaultPriorityRequestModel) CreatePriorityRequestTable() error {
+	return m.DB.AutoMigrate(PriorityRequest{})
 }
 
-/*
-	Func: DropL2TxEventMonitorTable
-	Params:
-	Return: err error
-	Description: drop l2 txVerification event monitor table
-*/
-func (m *defaultL2TxEventMonitorModel) DropL2TxEventMonitorTable() error {
+func (m *defaultPriorityRequestModel) DropPriorityRequestTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-/*
-	GetL2TxEventMonitors: get all L2TxEventMonitors
-*/
-func (m *defaultL2TxEventMonitorModel) GetL2TxEventMonitors() (txs []*L2TxEventMonitor, err error) {
+func (m *defaultPriorityRequestModel) GetL2TxEventMonitors() (txs []*PriorityRequest, err error) {
 	dbTx := m.DB.Table(m.table).Find(&txs).Order("l1_block_height")
 	if dbTx.Error != nil {
 		logx.Errorf("find l2 tx events error,  err=%s", dbTx.Error.Error())
@@ -112,12 +97,7 @@ func (m *defaultL2TxEventMonitorModel) GetL2TxEventMonitors() (txs []*L2TxEventM
 	return txs, dbTx.Error
 }
 
-/*
-	Func: GetPendingL2TxEventMonitors
-	Return: txVerification []*L2TxEventMonitor, err error
-	Description: get pending l2TxEventMonitors
-*/
-func (m *defaultL2TxEventMonitorModel) GetL2TxEventMonitorsByStatus(status int) (txs []*L2TxEventMonitor, err error) {
+func (m *defaultPriorityRequestModel) GetPriorityRequestsByStatus(status int) (txs []*PriorityRequest, err error) {
 	// todo order id
 	dbTx := m.DB.Table(m.table).Where("status = ?", status).Order("request_id").Find(&txs)
 	if dbTx.Error != nil {
@@ -129,7 +109,7 @@ func (m *defaultL2TxEventMonitorModel) GetL2TxEventMonitorsByStatus(status int) 
 	return txs, nil
 }
 
-func (m *defaultL2TxEventMonitorModel) CreateMempoolTxsAndUpdateL2Events(newMempoolTxs []*mempool.MempoolTx, toUpdateL2Events []*L2TxEventMonitor) (err error) {
+func (m *defaultPriorityRequestModel) CreateMempoolTxsAndUpdateL2Events(newMempoolTxs []*mempool.MempoolTx, toUpdateL2Events []*PriorityRequest) (err error) {
 	err = m.DB.Transaction(
 		func(tx *gorm.DB) error {
 			dbTx := tx.Table(mempool.MempoolTableName).CreateInBatches(newMempoolTxs, len(newMempoolTxs))
@@ -162,8 +142,8 @@ func (m *defaultL2TxEventMonitorModel) CreateMempoolTxsAndUpdateL2Events(newMemp
 	return err
 }
 
-func (m *defaultL2TxEventMonitorModel) GetLastHandledRequestId() (requestId int64, err error) {
-	var event *L2TxEventMonitor
+func (m *defaultPriorityRequestModel) GetLastHandledRequestId() (requestId int64, err error) {
+	var event *PriorityRequest
 	dbTx := m.DB.Table(m.table).Where("status = ?", HandledStatus).Order("request_id desc").Find(&event)
 	if dbTx.Error != nil {
 		logx.Errorf("unable to get last handled request id: %s", dbTx.Error.Error())

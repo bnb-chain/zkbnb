@@ -15,17 +15,11 @@
  *
  */
 
-package l2BlockEventMonitor
+package priorityRequest
 
 const (
-	TableName = "l2_block_event_monitor"
+	TableName = "priority_request"
 
-	// status
 	PendingStatus = 1
 	HandledStatus = 2
-
-	// block event type
-	CommittedBlockEventType = 1
-	VerifiedBlockEventType  = 2
-	RevertedBlockEventType  = 3
 )

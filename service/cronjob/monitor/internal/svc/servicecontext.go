@@ -7,11 +7,13 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
+	"github.com/bnb-chain/zkbas/common/model/l1RollupTx"
+
+	"github.com/bnb-chain/zkbas/common/model/l1Block"
+	"github.com/bnb-chain/zkbas/common/model/priorityRequest"
+
 	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
 	"github.com/bnb-chain/zkbas/common/model/block"
-	"github.com/bnb-chain/zkbas/common/model/l1BlockMonitor"
-	"github.com/bnb-chain/zkbas/common/model/l1TxSender"
-	"github.com/bnb-chain/zkbas/common/model/l2TxEventMonitor"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/sysconfig"
 	"github.com/bnb-chain/zkbas/service/cronjob/monitor/internal/config"
@@ -21,10 +23,10 @@ type ServiceContext struct {
 	BlockModel            block.BlockModel
 	MempoolModel          mempool.MempoolModel
 	SysConfigModel        sysconfig.SysconfigModel
-	L1TxSenderModel       l1TxSender.L1TxSenderModel
+	L1RollupTxModel       l1RollupTx.L1RollupTxModel
 	L2AssetInfoModel      asset.AssetInfoModel
-	L2TxEventMonitorModel l2TxEventMonitor.L2TxEventMonitorModel
-	L1BlockMonitorModel   l1BlockMonitor.L1BlockMonitorModel
+	L2TxEventMonitorModel priorityRequest.PriorityRequestModel
+	L1BlockMonitorModel   l1Block.L1BlockModel
 }
 
 func WithRedis(redisType string, redisPass string) redis.Option {
@@ -42,11 +44,11 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	conn := sqlx.NewSqlConn("postgres", c.Postgres.DataSource)
 	redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
 	return &ServiceContext{
-		L2TxEventMonitorModel: l2TxEventMonitor.NewL2TxEventMonitorModel(conn, c.CacheRedis, gormPointer),
+		L2TxEventMonitorModel: priorityRequest.NewPriorityRequestModel(conn, c.CacheRedis, gormPointer),
 		MempoolModel:          mempool.NewMempoolModel(conn, c.CacheRedis, gormPointer),
 		BlockModel:            block.NewBlockModel(conn, c.CacheRedis, gormPointer, redisConn),
-		L1TxSenderModel:       l1TxSender.NewL1TxSenderModel(conn, c.CacheRedis, gormPointer),
-		L1BlockMonitorModel:   l1BlockMonitor.NewL1BlockMonitorModel(conn, c.CacheRedis, gormPointer),
+		L1RollupTxModel:       l1RollupTx.NewL1RollupTxModel(conn, c.CacheRedis, gormPointer),
+		L1BlockMonitorModel:   l1Block.NewL1BlockModel(conn, c.CacheRedis, gormPointer),
 		L2AssetInfoModel:      asset.NewAssetInfoModel(conn, c.CacheRedis, gormPointer),
 		SysConfigModel:        sysconfig.NewSysconfigModel(conn, c.CacheRedis, gormPointer),
 	}

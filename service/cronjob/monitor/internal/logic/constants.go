@@ -25,8 +25,7 @@ import (
 
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/model/block"
-	"github.com/bnb-chain/zkbas/common/model/l2BlockEventMonitor"
-	"github.com/bnb-chain/zkbas/common/model/l2TxEventMonitor"
+	"github.com/bnb-chain/zkbas/common/model/priorityRequest"
 )
 
 const (
@@ -36,14 +35,15 @@ const (
 	EventNameBlockVerification  = "BlockVerification"
 	EventNameBlocksRevert       = "BlocksRevert"
 
+	CommittedBlockEventType = 1
+	VerifiedBlockEventType  = 2
+	RevertedBlockEventType  = 3
+
 	// tx type for l2 block event monitors
 	EventTypeNewPriorityRequest = 0
-	EventTypeCommittedBlock     = l2BlockEventMonitor.CommittedBlockEventType
-	EventTypeVerifiedBlock      = l2BlockEventMonitor.VerifiedBlockEventType
-	EventTypeRevertedBlock      = l2BlockEventMonitor.RevertedBlockEventType
-
-	// status
-	PendingStatusL2BlockEventMonitor = l2BlockEventMonitor.PendingStatus
+	EventTypeCommittedBlock     = 1
+	EventTypeVerifiedBlock      = 2
+	EventTypeRevertedBlock      = 3
 
 	// governance event name
 	EventNameNewAsset              = "NewAsset"
@@ -59,7 +59,7 @@ const (
 	EventTypeAssetPausedUpdate     = 8
 
 	// event status
-	PendingStatus = l2TxEventMonitor.PendingStatus
+	PendingStatus = priorityRequest.PendingStatus
 
 	// tx type
 	TxTypeRegisterZns    = commonTx.TxTypeRegisterZns

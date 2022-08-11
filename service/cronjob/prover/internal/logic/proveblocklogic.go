@@ -25,7 +25,6 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/model/blockForProof"
-	"github.com/bnb-chain/zkbas/common/model/proofSender"
 	"github.com/bnb-chain/zkbas/common/util"
 	lockUtil "github.com/bnb-chain/zkbas/common/util/globalmapHandler"
 	"github.com/bnb-chain/zkbas/service/cronjob/prover/internal/svc"
@@ -93,10 +92,10 @@ func ProveBlock(ctx *svc.ServiceContext) error {
 		return fmt.Errorf("[ProveBlock] proof of current height exists")
 	}
 
-	var row = &proofSender.ProofSender{
+	var row = &proof.Proof{
 		ProofInfo:   string(proofBytes),
 		BlockNumber: unprovedBlock.BlockHeight,
-		Status:      proofSender.NotSent,
+		Status:      proof.NotSent,
 	}
 	err = ctx.ProofSenderModel.CreateProof(row)
 	if err != nil {

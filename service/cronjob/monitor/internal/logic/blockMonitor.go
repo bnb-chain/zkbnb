@@ -22,10 +22,6 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/bnb-chain/zkbas/common/model/l2BlockEventMonitor"
-
-	"github.com/bnb-chain/zkbas/common/model/mempool"
-
 	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
 	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/ethereum/go-ethereum"
@@ -35,8 +31,9 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/model/block"
-	"github.com/bnb-chain/zkbas/common/model/l1BlockMonitor"
-	"github.com/bnb-chain/zkbas/common/model/l2TxEventMonitor"
+	"github.com/bnb-chain/zkbas/common/model/l1Block"
+	"github.com/bnb-chain/zkbas/common/model/mempool"
+	"github.com/bnb-chain/zkbas/common/model/priorityRequest"
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/errorcode"
 )
@@ -50,11 +47,11 @@ func MonitorBlocks(
 	pendingBlocksCount uint64,
 	maxHandledBlocksCount int64,
 	zkbasContract string,
-	l1BlockMonitorModel l1BlockMonitor.L1BlockMonitorModel,
+	l1BlockMonitorModel l1Block.L1BlockModel,
 	blockModel block.BlockModel,
 	mempoolModel mempool.MempoolModel,
 ) (err error) {
-	latestHandledBlock, err := l1BlockMonitorModel.GetLatestL1BlockMonitorByBlock()
+	latestHandledBlock, err := l1BlockMonitorModel.GetLatestL1BlockByType(l1Block.MonitorTypeBlock)
 	logx.Info("========== start MonitorBlocks ==========")
 	var handledHeight int64
 	if err != nil {
@@ -95,9 +92,8 @@ func MonitorBlocks(
 		return err
 	}
 	var (
-		l1EventInfos         []*L1EventInfo
-		l2TxEventMonitors    []*l2TxEventMonitor.L2TxEventMonitor
-		l2BlockEventMonitors []*l2BlockEventMonitor.L2BlockEventMonitor
+		l1EventInfos      []*L1EventInfo
+		l2TxEventMonitors []*priorityRequest.PriorityRequest
 
 		priorityRequestCountCheck = 0
 
@@ -130,15 +126,14 @@ func MonitorBlocks(
 		case zkbasLogBlockCommitSigHash.Hex():
 			l1EventInfo.EventType = EventTypeCommittedBlock
 
-			l2BlockEventMonitorInfo, err := convertLogToBlockCommitEvent(vlog)
-			if err != nil {
-				logx.Errorf("convert CommittedBlock log error, err: %s", err.Error())
+			var event zkbas.ZkbasBlockCommit
+			if err := ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlockCommit, vlog.Data); err != nil {
+				logx.Errorf("unpack ZkbasBlockCommit event err: %s", err.Error())
 				return err
 			}
-			l2BlockEventMonitors = append(l2BlockEventMonitors, l2BlockEventMonitorInfo)
 
 			// update block status
-			blockHeight := l2BlockEventMonitorInfo.L2BlockHeight
+			blockHeight := int64(event.BlockNumber)
 			if relatedBlocks[blockHeight] == nil {
 				relatedBlocks[blockHeight], err = blockModel.GetBlockByBlockHeightWithoutTx(blockHeight)
 				if err != nil {
@@ -152,15 +147,14 @@ func MonitorBlocks(
 		case zkbasLogBlockVerificationSigHash.Hex():
 			l1EventInfo.EventType = EventTypeVerifiedBlock
 
-			l2BlockEventMonitorInfo, err := convertLogToBlockVerificationEvent(vlog)
-			if err != nil {
-				logx.Errorf("convert TypeVerifiedBlock log error, err: %s", err.Error())
+			var event zkbas.ZkbasBlockVerification
+			if err := ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlockVerification, vlog.Data); err != nil {
+				logx.Errorf("unpack ZkbasBlockVerification err: %s", err.Error())
 				return err
 			}
-			l2BlockEventMonitors = append(l2BlockEventMonitors, l2BlockEventMonitorInfo)
 
 			// update block status
-			blockHeight := l2BlockEventMonitorInfo.L2BlockHeight
+			blockHeight := int64(event.BlockNumber)
 			if relatedBlocks[blockHeight] == nil {
 				relatedBlocks[blockHeight], err = blockModel.GetBlockByBlockHeightWithoutTx(blockHeight)
 				if err != nil {
@@ -172,13 +166,6 @@ func MonitorBlocks(
 			relatedBlocks[blockHeight].VerifiedAt = int64(logBlock.Time)
 			relatedBlocks[blockHeight].BlockStatus = block.StatusVerifiedAndExecuted
 		case zkbasLogBlocksRevertSigHash.Hex():
-			l1EventInfo.EventType = EventTypeRevertedBlock
-			l2BlockEventMonitorInfo, err := convertLogToBlocksRevertEvent(vlog)
-			if err != nil {
-				logx.Errorf("convert RevertedBlock log error, err: %s", err.Error())
-				return err
-			}
-			l2BlockEventMonitors = append(l2BlockEventMonitors, l2BlockEventMonitorInfo)
 		default:
 		}
 
@@ -194,10 +181,10 @@ func MonitorBlocks(
 		logx.Errorf("marshal l1 events error, err: %s", err.Error())
 		return err
 	}
-	l1BlockMonitorInfo := &l1BlockMonitor.L1BlockMonitor{
+	l1BlockMonitorInfo := &l1Block.L1Block{
 		L1BlockHeight: int64(safeHeight),
 		BlockInfo:     string(eventInfosBytes),
-		MonitorType:   l1BlockMonitor.MonitorTypeBlock,
+		Type:          l1Block.MonitorTypeBlock,
 	}
 
 	// get pending update blocks
@@ -214,12 +201,11 @@ func MonitorBlocks(
 	}
 
 	if err = l1BlockMonitorModel.CreateMonitorsInfoAndUpdateBlocksAndTxs(l1BlockMonitorInfo, l2TxEventMonitors,
-		l2BlockEventMonitors, pendingUpdateBlocks, pendingDeleteMempoolTxs); err != nil {
+		pendingUpdateBlocks, pendingDeleteMempoolTxs); err != nil {
 		logx.Error("store monitor info error, err: %s", err.Error())
 		return err
 	}
 	logx.Info("create txs count:", len(l2TxEventMonitors))
-	logx.Info("create blocks events count:", len(l2BlockEventMonitors))
 	logx.Info("========== end MonitorBlocks ==========")
 	return nil
 }
@@ -275,13 +261,13 @@ func getPriorityRequestCount(cli *_rpc.ProviderClient, zkbasContract string, sta
 	return priorityRequestCount, nil
 }
 
-func convertLogToNewPriorityRequestEvent(log types.Log) (*l2TxEventMonitor.L2TxEventMonitor, error) {
+func convertLogToNewPriorityRequestEvent(log types.Log) (*priorityRequest.PriorityRequest, error) {
 	var event zkbas.ZkbasNewPriorityRequest
 	if err := ZkbasContractAbi.UnpackIntoInterface(&event, EventNameNewPriorityRequest, log.Data); err != nil {
 		logx.Errorf("unpack ZkbasNewPriorityRequest err: %s", err.Error())
 		return nil, err
 	}
-	l2TxEventMonitorInfo := &l2TxEventMonitor.L2TxEventMonitor{
+	l2TxEventMonitorInfo := &priorityRequest.PriorityRequest{
 		L1TxHash:        log.TxHash.Hex(),
 		L1BlockHeight:   int64(log.BlockNumber),
 		SenderAddress:   event.Sender.Hex(),
@@ -289,55 +275,7 @@ func convertLogToNewPriorityRequestEvent(log types.Log) (*l2TxEventMonitor.L2TxE
 		TxType:          int64(event.TxType),
 		Pubdata:         common.Bytes2Hex(event.PubData),
 		ExpirationBlock: event.ExpirationBlock.Int64(),
-		Status:          l2TxEventMonitor.PendingStatus,
+		Status:          priorityRequest.PendingStatus,
 	}
 	return l2TxEventMonitorInfo, nil
-}
-
-func convertLogToBlockCommitEvent(log types.Log) (*l2BlockEventMonitor.L2BlockEventMonitor, error) {
-	var event zkbas.ZkbasBlockCommit
-	if err := ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlockCommit, log.Data); err != nil {
-		logx.Errorf("unpack ZkbasBlockCommit err: %s", err.Error())
-		return nil, err
-	}
-	l2BlockEventMonitorInfo := &l2BlockEventMonitor.L2BlockEventMonitor{
-		BlockEventType: EventTypeCommittedBlock,
-		L1BlockHeight:  int64(log.BlockNumber),
-		L1TxHash:       log.TxHash.Hex(),
-		L2BlockHeight:  int64(event.BlockNumber),
-		Status:         PendingStatusL2BlockEventMonitor,
-	}
-	return l2BlockEventMonitorInfo, nil
-}
-
-func convertLogToBlockVerificationEvent(log types.Log) (*l2BlockEventMonitor.L2BlockEventMonitor, error) {
-	var event zkbas.ZkbasBlockVerification
-	if err := ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlockVerification, log.Data); err != nil {
-		logx.Errorf("unpack ZkbasBlockVerification err: %s", err.Error())
-		return nil, err
-	}
-	l2BlockEventMonitorInfo := &l2BlockEventMonitor.L2BlockEventMonitor{
-		BlockEventType: EventTypeVerifiedBlock,
-		L1BlockHeight:  int64(log.BlockNumber),
-		L1TxHash:       log.TxHash.Hex(),
-		L2BlockHeight:  int64(event.BlockNumber),
-		Status:         PendingStatusL2BlockEventMonitor,
-	}
-	return l2BlockEventMonitorInfo, nil
-}
-
-func convertLogToBlocksRevertEvent(log types.Log) (*l2BlockEventMonitor.L2BlockEventMonitor, error) {
-	var event zkbas.ZkbasBlocksRevert
-	if err := ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlocksRevert, log.Data); err != nil {
-		logx.Errorf("unpack ZkbasBlocksRevert err: %s", err.Error())
-		return nil, err
-	}
-	l2BlockEventMonitorInfo := &l2BlockEventMonitor.L2BlockEventMonitor{
-		BlockEventType: EventTypeRevertedBlock,
-		L1BlockHeight:  int64(log.BlockNumber),
-		L1TxHash:       log.TxHash.Hex(),
-		L2BlockHeight:  int64(event.TotalBlocksCommitted),
-		Status:         PendingStatusL2BlockEventMonitor,
-	}
-	return l2BlockEventMonitorInfo, nil
 }

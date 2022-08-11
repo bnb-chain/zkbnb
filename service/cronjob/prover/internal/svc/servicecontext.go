@@ -8,7 +8,6 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/common/model/blockForProof"
-	"github.com/bnb-chain/zkbas/common/model/proofSender"
 	"github.com/bnb-chain/zkbas/service/cronjob/prover/internal/config"
 )
 
@@ -17,7 +16,7 @@ type ServiceContext struct {
 
 	RedisConn *redis.Redis
 
-	ProofSenderModel   proofSender.ProofSenderModel
+	ProofSenderModel   proof.ProofModel
 	BlockForProofModel blockForProof.BlockForProofModel
 }
 
@@ -38,6 +37,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		Config:             c,
 		RedisConn:          redisConn,
 		BlockForProofModel: blockForProof.NewBlockForProofModel(conn, c.CacheRedis, gormPointer),
-		ProofSenderModel:   proofSender.NewProofSenderModel(gormPointer),
+		ProofSenderModel:   proof.NewProofModel(gormPointer),
 	}
 }
