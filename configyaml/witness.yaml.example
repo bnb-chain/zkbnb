@@ -9,3 +9,10 @@ CacheRedis:
 
 TreeDB:
   Driver: memorydb
+
+LogConf:
+  ServiceName: witnessgenerator
+  Mode: console
+  Path: ./log/witnessgenerator
+  StackCooldownMillis: 500
+  Level: error

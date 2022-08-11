@@ -22,6 +22,12 @@ ChainConfig:
   ConfirmBlocksCount: 0
   MaxHandledBlocksCount: 100000
 
+LogConf:
+  ServiceName: monitor
+  Mode: console
+  Path: ./log/monitor
+  StackCooldownMillis: 500
+  Level: error
 
 
 

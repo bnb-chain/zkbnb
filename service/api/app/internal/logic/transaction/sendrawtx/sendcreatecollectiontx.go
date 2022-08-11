@@ -111,7 +111,7 @@ func createMempoolTxForCreateCollection(
 	svcCtx *svc.ServiceContext,
 ) (err error) {
 	// check collectionId exist
-	exist, err := svcCtx.CollectionModel.IfCollectionExistsByCollectionId(nftCollectionInfo.CollectionId)
+	exist, err := svcCtx.CollectionModel.IfCollectionExistsByCollectionId(nftCollectionInfo.AccountIndex, nftCollectionInfo.CollectionId)
 	if err != nil {
 		return err
 	}

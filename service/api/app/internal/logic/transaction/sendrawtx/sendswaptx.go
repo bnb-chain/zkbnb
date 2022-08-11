@@ -46,7 +46,7 @@ func SendSwapTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalmap c
 	// check params
 	if liquidityInfo.AssetA == nil || liquidityInfo.AssetA.Cmp(big.NewInt(0)) == 0 ||
 		liquidityInfo.AssetB == nil || liquidityInfo.AssetB.Cmp(big.NewInt(0)) == 0 {
-		logx.Errorf("invalid params")
+		logx.Errorf("liquidity pool %d is empty", liquidityInfo.PairIndex)
 		return "", errorcode.AppErrInternal
 	}
 

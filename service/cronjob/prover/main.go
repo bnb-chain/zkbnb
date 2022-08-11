@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/zeromicro/go-zero/core/proc"
 
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
@@ -19,7 +20,11 @@ func main() {
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
 	p := prover.NewProver(c)
+	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
+	proc.AddShutdownListener(func() {
+		logx.Close()
+	})
 
 	cronJob := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DiscardLogger),

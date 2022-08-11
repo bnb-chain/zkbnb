@@ -31,7 +31,7 @@ type (
 	L2NftCollectionModel interface {
 		CreateL2NftCollectionTable() error
 		DropL2NftCollectionTable() error
-		IfCollectionExistsByCollectionId(collectionId int64) (bool, error)
+		IfCollectionExistsByCollectionId(accountIndex, collectionId int64) (bool, error)
 	}
 	defaultL2NftCollectionModel struct {
 		sqlc.CachedConn
@@ -80,10 +80,9 @@ func (m *defaultL2NftCollectionModel) CreateL2NftCollectionTable() error {
 func (m *defaultL2NftCollectionModel) DropL2NftCollectionTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
-
-func (m *defaultL2NftCollectionModel) IfCollectionExistsByCollectionId(collectionId int64) (bool, error) {
+func (m *defaultL2NftCollectionModel) IfCollectionExistsByCollectionId(accountIndex, collectionId int64) (bool, error) {
 	var res int64
-	dbTx := m.DB.Table(m.table).Where("collection_id = ? and deleted_at is NULL", collectionId).Count(&res)
+	dbTx := m.DB.Table(m.table).Where("account_index = ? and collection_id = ? and deleted_at is NULL", accountIndex, collectionId).Count(&res)
 
 	if dbTx.Error != nil {
 		logx.Errorf("get collection count error, err: %s", dbTx.Error.Error())

@@ -31,8 +31,10 @@ func main() {
 	flag.Parse()
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
-	logx.DisableStat()
 	ctx := svc.NewServiceContext(c)
+	logx.MustSetup(c.LogConf)
+	logx.DisableStat()
+
 	ctx.CodeVersion = CodeVersion
 	ctx.GitCommitHash = GitCommitHash
 	server := rest.MustNewServer(c.RestConf, rest.WithCors())

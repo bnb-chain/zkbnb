@@ -21,20 +21,18 @@ rm -rf ~/zkbas-deploy-bak && mv ~/zkbas-deploy ~/zkbas-deploy-bak
 mkdir zkbas-deploy && cd zkbas-deploy
 git clone --branch develop  https://github.com/bnb-chain/zkbas-contract.git
 git clone --branch develop https://github.com/bnb-chain/zkbas-crypto.git
-mv /home/ec2-user/zkbas ~/zkbas-deploy
 
+# mv /home/ec2-user/zkbas ~/zkbas-deploy
+branch=$1
+git clone --branch $branch https://github.com/bnb-chain/zkbas.git
 
-flag=$1
-if [ $flag = "new" ]; then
-  echo "new crypto env"
-  echo '2. start generate zkbas.vk and zkbas.pk'
-  cd ~/zkbas-deploy
-  cd zkbas-crypto && go test ./legend/circuit/bn254/solidity -timeout 99999s -run TestExportSol
-  cd ~/zkbas-deploy
-  sudo mkdir /home/.zkbas
-  cp -r ./zkbas-crypto/legend/circuit/bn254/solidity/* /home/.zkbas
-fi
-
+echo "new crypto env"
+echo '2. start generate zkbas.vk and zkbas.pk'
+cd ~/zkbas-deploy
+cd zkbas-crypto && go test ./legend/circuit/bn254/solidity -timeout 99999s -run TestExportSol
+cd ~/zkbas-deploy
+sudo mkdir /home/.zkbas
+cp -r ./zkbas-crypto/legend/circuit/bn254/solidity/* /home/.zkbas
 
 
 echo '3. start verify_parse for ZkbasVerifier'
@@ -89,9 +87,7 @@ go run .
 cd ~/zkbas-deploy/zkbas/
 make app && make globalRPCProto
 
-
 sleep 30s
-
 
 echo "7. run prover"
 
@@ -111,18 +107,18 @@ KeyPath:
 
 TreeDB:
   Driver: memorydb
-" > ~/zkbas-deploy/zkbas/service/cronjob/prover/etc/config.yaml
+" > ~/zkbas-deploy/zkbas/service/cronjob/prover/etc/prover.yaml
 
 cd ~/zkbas-deploy/zkbas/service/cronjob/prover/
-pm2 start --name prover "go run ./main.go"
+pm2 start --name prover "go run ./prover.go"
 
 
 
 
-echo "8. run witness"
+echo "8. run witnessGenerator"
 
 echo -e "
-Name: witness.cronjob
+Name: witnessGenerator.cronjob
 
 Postgres:
   DataSource: host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable
@@ -133,10 +129,14 @@ CacheRedis:
 
 TreeDB:
   Driver: memorydb
-" > ~/zkbas-deploy/zkbas/service/cronjob/witness/etc/config.yaml
+" > ~/zkbas-deploy/zkbas/service/cronjob/witnessGenerator/etc/witnessGenerator.yaml
 
-cd ~/zkbas-deploy/zkbas/service/cronjob/witness/
-pm2 start --name witness "go run ./main.go"
+cd ~/zkbas-deploy/zkbas/service/cronjob/witnessGenerator/
+pm2 start --name witnessGenerator "go run ./witnessgenerator.go"
+
+
+
+
 
 
 echo "9. run monitor"
@@ -157,15 +157,15 @@ ChainConfig:
   ZkbasContractAddrSysConfigName: "ZkbasContract"
   GovernanceContractAddrSysConfigName: "GovernanceContract"
   StartL1BlockHeight: $blockNumber
-  ConfirmBlocksCount: 0
+  PendingBlocksCount: 0
   MaxHandledBlocksCount: 5000
 
 TreeDB:
   Driver: memorydb
-" > ~/zkbas-deploy/zkbas/service/cronjob/monitor/etc/config.yaml
+" > ~/zkbas-deploy/zkbas/service/cronjob/monitor/etc/monitor.yaml
 
 cd ~/zkbas-deploy/zkbas/service/cronjob/monitor/
-pm2 start --name monitor "go run ./main.go"
+pm2 start --name monitor "go run ./monitor.go"
 
 
 
@@ -186,10 +186,12 @@ KeyPath:
 
 TreeDB:
   Driver: memorydb
-" >> ~/zkbas-deploy/zkbas/service/cronjob/committer/etc/config.yaml
+" >> ~/zkbas-deploy/zkbas/service/cronjob/committer/etc/committer.yaml
 
 cd ~/zkbas-deploy/zkbas/service/cronjob/committer/
-pm2 start --name committer "go run ./main.go"
+pm2 start --name committer "go run ./committer.go"
+
+
 
 
 echo "11. run sender"
@@ -208,7 +210,6 @@ ChainConfig:
   NetworkRPCSysConfigName: "BscTestNetworkRpc"
   #NetworkRPCSysConfigName: "LocalTestNetworkRpc"
   ZkbasContractAddrSysConfigName: "ZkbasContract"
-  ConfirmBlocksCount: 0
   MaxWaitingTime: 120
   MaxBlockCount: 4
   Sk: "acbaa269bd7573ff12361be4b97201aef019776ea13384681d4e5ba6a88367d9"
@@ -217,13 +218,44 @@ ChainConfig:
 
 TreeDB:
   Driver: memorydb
-" > ~/zkbas-deploy/zkbas/service/cronjob/sender/etc/config.yaml
+" > ~/zkbas-deploy/zkbas/service/cronjob/sender/etc/sender.yaml
 
 cd ~/zkbas-deploy/zkbas/service/cronjob/sender/
-pm2 start --name sender "go run ./main.go"
+pm2 start --name sender "go run ./sender.go"
 
 
-echo "12. run app"
+
+
+
+echo "12. run globalRPC"
+
+echo -e "
+Name: global.rpc
+ListenOn: 127.0.0.1:8080
+
+Postgres:
+  DataSource: host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable
+
+CacheRedis:
+  - Host: 127.0.0.1:6379
+    Type: node
+
+LogConf:
+  ServiceName: global.rpc
+  Mode: console
+  Path: ./log/globalrpc
+  StackCooldownMillis: 500
+
+TreeDB:
+  Driver: memorydb
+" > ~/zkbas-deploy/zkbas/service/rpc/globalRPC/etc/config.yaml
+
+cd ~/zkbas-deploy/zkbas/service/rpc/globalRPC/
+pm2 start --name globalRPC "go run ./globalrpc.go"
+
+
+
+echo "13. run app"
 
 echo -e "
 Name: appService-api

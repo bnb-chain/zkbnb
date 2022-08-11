@@ -61,6 +61,9 @@ func SendAddLiquidityTx(ctx context.Context, svcCtx *svc.ServiceContext, commglo
 		}
 	}
 
+	txInfo.AssetAId = liquidityInfo.AssetAId
+	txInfo.AssetBId = liquidityInfo.AssetBId
+
 	var (
 		accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
 	)
