@@ -15,8 +15,11 @@
  *
  */
 
-package sysconfig
+package l1SyncedBlock
 
 const (
-	TableName = `sys_config`
+	TableName = "l1_synced_block"
+
+	TypeGeneric    int = 0
+	TypeGovernance int = 1
 )

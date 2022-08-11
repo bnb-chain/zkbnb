@@ -17,10 +17,10 @@ import (
 	"github.com/bnb-chain/zkbas/errorcode"
 )
 
-func CheckGasAccountIndex(txGasAccountIndex int64, sysConfigModel sysconfig.SysconfigModel) error {
-	gasAccountIndexConfig, err := sysConfigModel.GetSysconfigByName(sysconfigName.GasAccountIndex)
+func CheckGasAccountIndex(txGasAccountIndex int64, sysConfigModel sysconfig.SysConfigModel) error {
+	gasAccountIndexConfig, err := sysConfigModel.GetSysConfigByName(sysConfigName.GasAccountIndex)
 	if err != nil {
-		logx.Errorf("fail to get config: %s, err: %s", sysconfigName.GasAccountIndex, err.Error())
+		logx.Errorf("fail to get config: %s, err: %s", sysConfigName.GasAccountIndex, err.Error())
 		return errorcode.AppErrInternal
 	}
 	gasAccountIndex, err := strconv.ParseInt(gasAccountIndexConfig.Value, 10, 64)

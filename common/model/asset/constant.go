@@ -15,8 +15,17 @@
  *
  */
 
-package sysconfig
+package asset
 
 const (
-	TableName = `sys_config`
+	AssetTableName = `asset`
+
+	StatusActive   uint32 = 0
+	StatusInactive uint32 = 1
+)
+
+// flag: asset could be used as gasfee or not
+const (
+	NotGasAsset = 0
+	IsGasAsset  = 1
 )

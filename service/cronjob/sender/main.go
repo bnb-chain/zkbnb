@@ -2,11 +2,12 @@ package main
 
 import (
 	"flag"
-	"github.com/bnb-chain/zkbas/service/cronjob/sender/config"
-	"github.com/bnb-chain/zkbas/service/cronjob/sender/svc"
+
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas/service/cronjob/sender/config"
 )
 
 var configFile = flag.String("f",
@@ -17,7 +18,7 @@ func main() {
 
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
-	sender := svc.NewSender(c)
+	sender := sender.NewSender(c)
 	logx.DisableStat()
 
 	// new cron
@@ -27,9 +28,9 @@ func main() {
 
 	_, err := cronJob.AddFunc("@every 10s", func() {
 		logx.Info("========================= start sender commit task =========================")
-		err := sender.CommittedBlocks()
+		err := sender.CommitBlocks()
 		if err != nil {
-			logx.Errorf("[sender.CommittedBlocks] unable to run: %", err)
+			logx.Errorf("[sender.CommitBlocks] unable to run: %", err)
 		} else {
 			logx.Info("========================= end sender commit task =========================")
 		}
@@ -47,6 +48,19 @@ func main() {
 			logx.Info("========================= end sender verify task =========================")
 		}
 	})
+
+	_, err = cronJob.AddFunc("@every 10s", func() {
+		logx.Info("========================= start update sent txs task =========================")
+		err = sender.UpdateSentTxs(c.ChainConfig.PendingBlocksCount)
+		if err != nil {
+			logx.Info("update sent txs error, err:", err)
+		}
+		logx.Info("========================= end update sent txs task =========================")
+	})
+	if err != nil {
+		panic(err)
+	}
+
 	if err != nil {
 		panic(err)
 	}

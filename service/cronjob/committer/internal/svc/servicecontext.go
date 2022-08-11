@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/common/model/account"
-	"github.com/bnb-chain/zkbas/common/model/assetInfo"
+	"github.com/bnb-chain/zkbas/common/model/asset"
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
@@ -34,9 +34,9 @@ type ServiceContext struct {
 	BlockModel         block.BlockModel
 	MempoolDetailModel mempool.MempoolTxDetailModel
 	MempoolModel       mempool.MempoolModel
-	L2AssetInfoModel   assetInfo.AssetInfoModel
+	L2AssetModel       asset.AssetModel
 
-	SysConfigModel sysconfig.SysconfigModel
+	SysConfigModel sysconfig.SysConfigModel
 }
 
 func WithRedis(redisType string, redisPass string) redis.Option {
@@ -67,8 +67,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		BlockModel:            block.NewBlockModel(conn, c.CacheRedis, gormPointer, redisConn),
 		MempoolDetailModel:    mempool.NewMempoolDetailModel(conn, c.CacheRedis, gormPointer),
 		MempoolModel:          mempool.NewMempoolModel(conn, c.CacheRedis, gormPointer),
-		L2AssetInfoModel:      assetInfo.NewAssetInfoModel(conn, c.CacheRedis, gormPointer),
-		SysConfigModel:        sysconfig.NewSysconfigModel(conn, c.CacheRedis, gormPointer),
+		L2AssetModel:          asset.NewAssetModel(conn, c.CacheRedis, gormPointer),
+		SysConfigModel:        sysconfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
 	}
 }
 

@@ -12,11 +12,21 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
-package sysconfig
+package monitor
 
-const (
-	TableName = `sys_config`
+import (
+	"encoding/base64"
+	"strconv"
+
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"github.com/ethereum/go-ethereum/common"
 )
+
+func ComputeL1TxTxHash(requestId int64, txHash string) string {
+	hFunc := mimc.NewMiMC()
+	hFunc.Write([]byte(strconv.FormatInt(requestId, 10)))
+	hFunc.Write(common.FromHex(txHash))
+	return base64.StdEncoding.EncodeToString(hFunc.Sum(nil))
+}

@@ -6,7 +6,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/model/account"
-	"github.com/bnb-chain/zkbas/common/model/assetInfo"
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/blockForCommit"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
@@ -40,11 +39,9 @@ type (
 	Liquidity        = liquidity.Liquidity
 	LiquidityHistory = liquidity.LiquidityHistory
 
-	SysconfigModel = sysconfig.SysconfigModel
+	SysconfigModel = sysconfig.SysConfigModel
 	MempoolModel   = mempool.MempoolModel
 	BlockModel     = block.BlockModel
-	AssetInfoModel = assetInfo.AssetInfoModel
-	AssetInfo      = assetInfo.AssetInfo
 
 	L2NftModel        = nft.L2NftModel
 	L2NftHistoryModel = nft.L2NftHistoryModel

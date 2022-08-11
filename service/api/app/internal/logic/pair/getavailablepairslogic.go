@@ -35,11 +35,11 @@ func (l *GetAvailablePairsLogic) GetAvailablePairs(_ *types.ReqGetAvailablePairs
 	}
 
 	for _, asset := range liquidityAssets {
-		assetA, err := l.svcCtx.L2AssetModel.GetSimpleAssetInfoByAssetId(asset.AssetAId)
+		assetA, err := l.svcCtx.L2AssetModel.GetAssetByAssetId(asset.AssetAId)
 		if err != nil {
 			return nil, errorcode.AppErrInternal
 		}
-		assetB, err := l.svcCtx.L2AssetModel.GetSimpleAssetInfoByAssetId(asset.AssetBId)
+		assetB, err := l.svcCtx.L2AssetModel.GetAssetByAssetId(asset.AssetBId)
 		if err != nil {
 			return nil, errorcode.AppErrInternal
 		}

@@ -15,8 +15,19 @@
  *
  */
 
-package sysconfig
+package sysConfigName
 
 const (
-	TableName = `sys_config`
+	TreasuryAccountIndex    = "TreasuryAccountIndex"
+	GasAccountIndex         = "GasAccountIndex"
+	BscTestNetworkRpc       = "BscTestNetworkRpc"
+	LocalTestNetworkRpc     = "LocalTestNetworkRpc"
+	SysGasFee               = "SysGasFee"
+	ZkbasContract           = "ZkbasContract"
+	GovernanceContract      = "GovernanceContract"
+	AssetGovernanceContract = "AssetGovernanceContract"
+	Validators              = "Validators"
+
+	Governor       = "Governor"
+	ZnsPriceOracle = "ZnsPriceOracle"
 )
