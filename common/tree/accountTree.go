@@ -46,9 +46,9 @@ func InitAccountTree(
 	accountTree bsmt.SparseMerkleTree, accountAssetTrees []bsmt.SparseMerkleTree, err error,
 ) {
 	// TODO: If there are too many accounts, it may cause reading too long, which can be optimized again
-	accountNums, err := accountHistoryModel.GetValidAccountNums(blockHeight)
+	accountNums, err := accountHistoryModel.GetValidAccountCount(blockHeight)
 	if err != nil {
-		logx.Errorf("[InitAccountTree] unable to get all accountNums")
+		logx.Errorf("unable to get all accountNums")
 		return nil, nil, err
 	}
 
@@ -62,7 +62,7 @@ func InitAccountTree(
 			treedb.SetNamespace(ctx, accountAssetNamespace(index)), AssetTreeHeight, NilAccountAssetNodeHash,
 			opts...)
 		if err != nil {
-			logx.Errorf("[InitAccountTree] unable to create new tree by assets: %s", err.Error())
+			logx.Errorf("unable to create new tree by assets: %s", err.Error())
 			return nil, nil, err
 		}
 	}
@@ -70,7 +70,7 @@ func InitAccountTree(
 		treedb.SetNamespace(ctx, AccountPrefix), AccountTreeHeight, NilAccountNodeHash,
 		opts...)
 	if err != nil {
-		logx.Errorf("[InitAccountTree] unable to create new account tree: %s", err.Error())
+		logx.Errorf("unable to create new account tree: %s", err.Error())
 		return nil, nil, err
 	}
 
@@ -79,118 +79,49 @@ func InitAccountTree(
 	}
 
 	if ctx.IsLoad() {
-		_, accountHistories, err := accountHistoryModel.GetValidAccounts(blockHeight)
+		for i := 0; i < int(accountNums); i += ctx.BatchReloadSize() {
+			err := reloadAccountTreeFromRDB(
+				accountModel, accountHistoryModel, blockHeight,
+				i, i+ctx.BatchReloadSize(),
+				accountTree, accountAssetTrees)
+			if err != nil {
+				return nil, nil, err
+			}
+		}
+
+		for i := range accountAssetTrees {
+			_, err := accountAssetTrees[i].Commit(nil)
+			if err != nil {
+				logx.Errorf("unable to set asset to tree: %s", err.Error())
+				return nil, nil, err
+			}
+		}
+
+		_, err = accountTree.Commit(nil)
 		if err != nil {
-			logx.Errorf("[InitAccountTree] unable to get all accountHistories")
+			logx.Errorf("unable to commit account tree: %s", err.Error())
 			return nil, nil, err
 		}
+		return accountTree, accountAssetTrees, nil
+	}
 
-		var (
-			accountInfoMap = make(map[int64]*account.Account)
-		)
-
-		for _, accountHistory := range accountHistories {
-			if accountInfoMap[accountHistory.AccountIndex] == nil {
-				accountInfo, err := accountModel.GetAccountByAccountIndex(accountHistory.AccountIndex)
-				if err != nil {
-					logx.Errorf("[InitAccountTree] unable to get account by account index: %s", err.Error())
-					return nil, nil, err
-				}
-				accountInfoMap[accountHistory.AccountIndex] = &account.Account{
-					AccountIndex:    accountInfo.AccountIndex,
-					AccountName:     accountInfo.AccountName,
-					PublicKey:       accountInfo.PublicKey,
-					AccountNameHash: accountInfo.AccountNameHash,
-					L1Address:       accountInfo.L1Address,
-					Nonce:           0,
-					CollectionNonce: 0,
-					Status:          account.AccountStatusConfirmed,
-				}
-			}
-			if accountHistory.Nonce != commonConstant.NilNonce {
-				accountInfoMap[accountHistory.AccountIndex].Nonce = accountHistory.Nonce
-			}
-			if accountHistory.CollectionNonce != commonConstant.NilNonce {
-				accountInfoMap[accountHistory.AccountIndex].CollectionNonce = accountHistory.CollectionNonce
-			}
-			accountInfoMap[accountHistory.AccountIndex].AssetInfo = accountHistory.AssetInfo
-			accountInfoMap[accountHistory.AccountIndex].AssetRoot = accountHistory.AssetRoot
+	// It's not loading from RDB, need to check tree version
+	if accountTree.LatestVersion() > bsmt.Version(blockHeight) && !accountTree.IsEmpty() {
+		logx.Infof("account tree version [%d] is higher than block, rollback to %d", accountTree.LatestVersion(), blockHeight)
+		err := accountTree.Rollback(bsmt.Version(blockHeight))
+		if err != nil {
+			logx.Errorf("unable to rollback account tree: %s, version: %d", err.Error(), blockHeight)
+			return nil, nil, err
 		}
+	}
 
-		// get related account info
-		for accountIndex := int64(0); accountIndex < int64(len(accountHistories)); accountIndex++ {
-			if accountInfoMap[accountIndex] == nil {
-				logx.Errorf("[InitAccountTree] invalid account index")
-				return nil, nil, errors.New("[InitAccountTree] invalid account index")
-			}
-			oAccountInfo := accountInfoMap[accountIndex]
-			accountInfo, err := commonAsset.ToFormatAccountInfo(oAccountInfo)
+	for i := range accountAssetTrees {
+		if accountAssetTrees[i].LatestVersion() > bsmt.Version(blockHeight) && !accountAssetTrees[i].IsEmpty() {
+			logx.Infof("asset tree %d version [%d] is higher than block, rollback to %d", i, accountAssetTrees[i].LatestVersion(), blockHeight)
+			err := accountAssetTrees[i].Rollback(bsmt.Version(blockHeight))
 			if err != nil {
-				logx.Errorf("[InitAccountTree] unable to convert to format account info: %s", err.Error())
+				logx.Errorf("unable to rollback asset [%d] tree: %s, version: %d", i, err.Error(), blockHeight)
 				return nil, nil, err
-			}
-			// create account assets node
-			for assetId, assetInfo := range accountInfo.AssetInfo {
-				hashVal, err := AssetToNode(
-					assetInfo.Balance.String(),
-					assetInfo.LpAmount.String(),
-					assetInfo.OfferCanceledOrFinalized.String(),
-				)
-				if err != nil {
-					logx.Errorf("[InitAccountTree] unable to convert asset to node: %s", err.Error())
-					return nil, nil, err
-				}
-				err = accountAssetTrees[accountIndex].Set(uint64(assetId), hashVal)
-				if err != nil {
-					logx.Errorf("[InitAccountTree] unable to set asset to tree: %s", err.Error())
-					return nil, nil, err
-				}
-				_, err = accountAssetTrees[accountIndex].Commit(nil)
-				if err != nil {
-					logx.Errorf("[InitAccountTree] unable to commit asset tree: %s", err.Error())
-					return nil, nil, err
-				}
-			}
-			accountHashVal, err := AccountToNode(
-				accountInfoMap[accountIndex].AccountNameHash,
-				accountInfoMap[accountIndex].PublicKey,
-				accountInfoMap[accountIndex].Nonce,
-				accountInfoMap[accountIndex].CollectionNonce,
-				accountAssetTrees[accountIndex].Root(),
-			)
-			if err != nil {
-				logx.Errorf("[InitAccountTree] unable to convert account to node: %s", err.Error())
-				return nil, nil, err
-			}
-			err = accountTree.Set(uint64(accountIndex), accountHashVal)
-			if err != nil {
-				logx.Errorf("[InitAccountTree] unable to set account to tree: %s", err.Error())
-				return nil, nil, err
-			}
-			_, err = accountTree.Commit(nil)
-			if err != nil {
-				logx.Errorf("[InitAccountTree] unable to commit account tree: %s", err.Error())
-				return nil, nil, err
-			}
-		}
-	} else {
-		if accountTree.LatestVersion() > bsmt.Version(blockHeight) && !accountTree.IsEmpty() {
-			err := accountTree.Rollback(bsmt.Version(blockHeight))
-			logx.Infof("[InitAccountTree] account tree version [%d] if higher than block, rollback to %d", accountTree.LatestVersion(), blockHeight)
-			if err != nil {
-				logx.Errorf("[InitAccountTree] unable to rollback account tree: %s, version: %d", err.Error(), blockHeight)
-				return nil, nil, err
-			}
-		}
-
-		for i, assetTree := range accountAssetTrees {
-			if assetTree.LatestVersion() > bsmt.Version(blockHeight) && !assetTree.IsEmpty() {
-				err := assetTree.Rollback(bsmt.Version(blockHeight))
-				logx.Infof("[InitAccountTree] asset tree %d version [%d] if higher than block, rollback to %d", i, assetTree.LatestVersion(), blockHeight)
-				if err != nil {
-					logx.Errorf("[InitAccountTree] unable to rollback asset [%d] tree: %s, version: %d", i, err.Error(), blockHeight)
-					return nil, nil, err
-				}
 			}
 		}
 	}
@@ -198,10 +129,108 @@ func InitAccountTree(
 	return accountTree, accountAssetTrees, nil
 }
 
+func reloadAccountTreeFromRDB(
+	accountModel AccountModel,
+	accountHistoryModel AccountHistoryModel,
+	blockHeight int64,
+	offset, limit int,
+	accountTree bsmt.SparseMerkleTree,
+	accountAssetTrees []bsmt.SparseMerkleTree,
+) error {
+	_, accountHistories, err := accountHistoryModel.GetValidAccounts(blockHeight,
+		limit, offset)
+	if err != nil {
+		logx.Errorf("unable to get all accountHistories")
+		return err
+	}
+
+	var (
+		accountInfoMap = make(map[int64]*account.Account)
+	)
+
+	for _, accountHistory := range accountHistories {
+		if accountInfoMap[accountHistory.AccountIndex] == nil {
+			accountInfo, err := accountModel.GetAccountByAccountIndex(accountHistory.AccountIndex)
+			if err != nil {
+				logx.Errorf("unable to get account by account index: %s", err.Error())
+				return err
+			}
+			accountInfoMap[accountHistory.AccountIndex] = &account.Account{
+				AccountIndex:    accountInfo.AccountIndex,
+				AccountName:     accountInfo.AccountName,
+				PublicKey:       accountInfo.PublicKey,
+				AccountNameHash: accountInfo.AccountNameHash,
+				L1Address:       accountInfo.L1Address,
+				Nonce:           0,
+				CollectionNonce: 0,
+				Status:          account.AccountStatusConfirmed,
+			}
+		}
+		if accountHistory.Nonce != commonConstant.NilNonce {
+			accountInfoMap[accountHistory.AccountIndex].Nonce = accountHistory.Nonce
+		}
+		if accountHistory.CollectionNonce != commonConstant.NilNonce {
+			accountInfoMap[accountHistory.AccountIndex].CollectionNonce = accountHistory.CollectionNonce
+		}
+		accountInfoMap[accountHistory.AccountIndex].AssetInfo = accountHistory.AssetInfo
+		accountInfoMap[accountHistory.AccountIndex].AssetRoot = accountHistory.AssetRoot
+	}
+
+	// get related account info
+	for i := int64(0); i < int64(len(accountHistories)); i++ {
+		accountIndex := accountHistories[i].AccountIndex
+		if accountInfoMap[accountIndex] == nil {
+			logx.Errorf("invalid account index")
+			return errors.New("invalid account index")
+		}
+		oAccountInfo := accountInfoMap[accountIndex]
+		accountInfo, err := commonAsset.ToFormatAccountInfo(oAccountInfo)
+		if err != nil {
+			logx.Errorf("unable to convert to format account info: %s", err.Error())
+			return err
+		}
+		// create account assets node
+		for assetId, assetInfo := range accountInfo.AssetInfo {
+			hashVal, err := AssetToNode(
+				assetInfo.Balance.String(),
+				assetInfo.LpAmount.String(),
+				assetInfo.OfferCanceledOrFinalized.String(),
+			)
+			if err != nil {
+				logx.Errorf("unable to convert asset to node: %s", err.Error())
+				return err
+			}
+			err = accountAssetTrees[accountIndex].Set(uint64(assetId), hashVal)
+			if err != nil {
+				logx.Errorf("unable to set asset to tree: %s", err.Error())
+				return err
+			}
+		}
+		accountHashVal, err := AccountToNode(
+			accountInfoMap[accountIndex].AccountNameHash,
+			accountInfoMap[accountIndex].PublicKey,
+			accountInfoMap[accountIndex].Nonce,
+			accountInfoMap[accountIndex].CollectionNonce,
+			accountAssetTrees[accountIndex].Root(),
+		)
+		if err != nil {
+			logx.Errorf("unable to convert account to node: %s", err.Error())
+			return err
+		}
+		err = accountTree.Set(uint64(accountIndex), accountHashVal)
+		if err != nil {
+			logx.Errorf("unable to set account to tree: %s", err.Error())
+			return err
+		}
+	}
+
+	return nil
+}
+
 func AssetToNode(balance string, lpAmount string, offerCanceledOrFinalized string) (hashVal []byte, err error) {
 	hashVal, err = ComputeAccountAssetLeafHash(balance, lpAmount, offerCanceledOrFinalized)
 	if err != nil {
-		logx.Errorf("[AccountToNode] unable to compute asset leaf hash: %s", err.Error())
+		logx.Errorf("unable to compute asset leaf hash: %s", err.Error())
 		return nil, err
 	}
 
@@ -222,7 +251,7 @@ func AccountToNode(
 		collectionNonce,
 		assetRoot)
 	if err != nil {
-		logx.Errorf("[AccountToNode] unable to compute account leaf hash: %s", err.Error())
+		logx.Errorf("unable to compute account leaf hash: %s", err.Error())
 		return nil, err
 	}
 
