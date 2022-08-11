@@ -21,6 +21,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/bnb-chain/zkbas/common/model/proof"
+
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -68,14 +70,14 @@ func ProveBlock(ctx *svc.ServiceContext) error {
 	}
 
 	// Generate Proof
-	proof, err := util.GenerateProof(R1cs[keyIndex], ProvingKeys[keyIndex], VerifyingKeys[keyIndex], cryptoBlock)
+	blockProof, err := util.GenerateProof(R1cs[keyIndex], ProvingKeys[keyIndex], VerifyingKeys[keyIndex], cryptoBlock)
 	if err != nil {
 		return errors.New("[ProveBlock] GenerateProof Error")
 	}
 
-	formattedProof, err := util.FormatProof(proof, cryptoBlock.OldStateRoot, cryptoBlock.NewStateRoot, cryptoBlock.BlockCommitment)
+	formattedProof, err := util.FormatProof(blockProof, cryptoBlock.OldStateRoot, cryptoBlock.NewStateRoot, cryptoBlock.BlockCommitment)
 	if err != nil {
-		logx.Errorf("[ProveBlock] unable to format proof: %s", err.Error())
+		logx.Errorf("[ProveBlock] unable to format blockProof: %s", err.Error())
 		return err
 	}
 
@@ -86,10 +88,10 @@ func ProveBlock(ctx *svc.ServiceContext) error {
 		return err
 	}
 
-	// check the existence of proof
+	// check the existence of blockProof
 	_, err = ctx.ProofSenderModel.GetProofByBlockNumber(unprovedBlock.BlockHeight)
 	if err == nil {
-		return fmt.Errorf("[ProveBlock] proof of current height exists")
+		return fmt.Errorf("[ProveBlock] blockProof of current height exists")
 	}
 
 	var row = &proof.Proof{
@@ -100,7 +102,7 @@ func ProveBlock(ctx *svc.ServiceContext) error {
 	err = ctx.ProofSenderModel.CreateProof(row)
 	if err != nil {
 		_ = ctx.BlockForProofModel.UpdateUnprovedCryptoBlockStatus(unprovedBlock, blockForProof.StatusPublished)
-		return fmt.Errorf("[ProveBlock] create proof error, err=%s", err.Error())
+		return fmt.Errorf("[ProveBlock] create blockProof error, err=%s", err.Error())
 	}
 	return nil
 }

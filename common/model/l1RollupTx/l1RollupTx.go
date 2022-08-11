@@ -28,6 +28,7 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 
+	"github.com/bnb-chain/zkbas/common/model/proof"
 	"github.com/bnb-chain/zkbas/errorcode"
 )
 

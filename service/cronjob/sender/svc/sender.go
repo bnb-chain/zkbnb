@@ -7,6 +7,12 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/bnb-chain/zkbas/common/sysconfigName"
+
+	"github.com/bnb-chain/zkbas/common/model/proof"
+
+	"github.com/bnb-chain/zkbas/common/model/l1RollupTx"
+
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -15,10 +21,9 @@ import (
 
 	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
 	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
+
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/blockForCommit"
-	"github.com/bnb-chain/zkbas/common/model/l1TxSender"
-	"github.com/bnb-chain/zkbas/common/model/proofSender"
 	"github.com/bnb-chain/zkbas/common/model/sysconfig"
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/errorcode"
@@ -26,9 +31,9 @@ import (
 )
 
 const (
-	PendingStatus          = l1TxSender.PendingStatus
-	CommitTxType           = l1TxSender.CommitTxType
-	VerifyAndExecuteTxType = l1TxSender.VerifyAndExecuteTxType
+	PendingStatus          = l1RollupTx.StatusPending
+	CommitTxType           = l1RollupTx.TxTypeCommit
+	VerifyAndExecuteTxType = l1RollupTx.TxTypeVerifyAndExecute
 )
 
 type Sender struct {
@@ -42,9 +47,9 @@ type Sender struct {
 	// Data access objects
 	blockModel          block.BlockModel
 	blockForCommitModel blockForCommit.BlockForCommitModel
-	l1TxSenderModel     l1TxSender.L1TxSenderModel
+	l1TxSenderModel     l1RollupTx.L1RollupTxModel
 	sysConfigModel      sysconfig.SysconfigModel
-	proofSenderModel    proofSender.ProofSenderModel
+	proofSenderModel    proof.ProofModel
 }
 
 func WithRedis(redisType string, redisPass string) redis.Option {
@@ -66,9 +71,9 @@ func NewSender(c config.Config) *Sender {
 		Config:              c,
 		blockModel:          block.NewBlockModel(conn, c.CacheRedis, gormPointer, redisConn),
 		blockForCommitModel: blockForCommit.NewBlockForCommitModel(conn, c.CacheRedis, gormPointer),
-		l1TxSenderModel:     l1TxSender.NewL1TxSenderModel(conn, c.CacheRedis, gormPointer),
+		l1TxSenderModel:     l1RollupTx.NewL1RollupTxModel(conn, c.CacheRedis, gormPointer),
 		sysConfigModel:      sysconfig.NewSysconfigModel(conn, c.CacheRedis, gormPointer),
-		proofSenderModel:    proofSender.NewProofSenderModel(gormPointer),
+		proofSenderModel:    proof.NewProofModel(gormPointer),
 	}
 
 	l1RPCEndpoint, err := s.sysConfigModel.GetSysconfigByName(c.ChainConfig.NetworkRPCSysConfigName)
@@ -77,10 +82,10 @@ func NewSender(c config.Config) *Sender {
 			err, c.ChainConfig.NetworkRPCSysConfigName)
 		panic(err)
 	}
-	rollupAddress, err := s.sysConfigModel.GetSysconfigByName(c.ChainConfig.ZkbasContractAddrSysConfigName)
+	rollupAddress, err := s.sysConfigModel.GetSysconfigByName(sysconfigName.ZkbasContract)
 	if err != nil {
 		logx.Severef("[sender] fatal error, cannot fetch rollupAddress from sysConfig, err: %v, SysConfigName: %s",
-			err, c.ChainConfig.ZkbasContractAddrSysConfigName)
+			err, sysconfigName.ZkbasContract)
 		panic(err)
 	}
 
@@ -122,13 +127,13 @@ func (s *Sender) CommittedBlocks() (err error) {
 		zkbasInstance = s.zkbasInstance
 	)
 	// scan l1 tx sender table for handled committed height
-	lastHandledBlock, getHandleErr := s.l1TxSenderModel.GetLatestHandledBlock(CommitTxType)
+	lastHandledBlock, getHandleErr := s.l1TxSenderModel.GetLatestHandledTx(CommitTxType)
 	if getHandleErr != nil && getHandleErr != errorcode.DbErrNotFound {
 		logx.Errorf("[SendVerifiedAndExecutedBlocks] GetLatestHandledBlock err: %v", getHandleErr)
 		return getHandleErr
 	}
 	// scan l1 tx sender table for pending committed height that higher than the latest handled height
-	pendingSender, getPendingErr := s.l1TxSenderModel.GetLatestPendingBlock(CommitTxType)
+	pendingSender, getPendingErr := s.l1TxSenderModel.GetLatestPendingTx(CommitTxType)
 	if getPendingErr != nil {
 		if getPendingErr != errorcode.DbErrNotFound {
 			logx.Errorf("[SendVerifiedAndExecutedBlocks] GetLatestPendingBlock err: %v", getPendingErr)
@@ -145,7 +150,7 @@ func (s *Sender) CommittedBlocks() (err error) {
 			lastUpdatedAt := pendingSender.UpdatedAt.UnixMilli()
 			now := time.Now().UnixMilli()
 			if now-lastUpdatedAt > s.Config.ChainConfig.MaxWaitingTime*time.Second.Milliseconds() {
-				err := s.l1TxSenderModel.DeleteL1TxSender(pendingSender)
+				err := s.l1TxSenderModel.DeleteL1RollupTx(pendingSender)
 				if err != nil {
 					logx.Errorf("[SendCommittedBlocks] unable to delete l1 tx sender: %v", err)
 					return err
@@ -181,7 +186,7 @@ func (s *Sender) CommittedBlocks() (err error) {
 			now := time.Now().UnixMilli()
 			if now-lastUpdatedAt > s.Config.ChainConfig.MaxWaitingTime*time.Second.Milliseconds() {
 				// drop the record
-				err := s.l1TxSenderModel.DeleteL1TxSender(pendingSender)
+				err := s.l1TxSenderModel.DeleteL1RollupTx(pendingSender)
 				if err != nil {
 					logx.Errorf("[SendCommittedBlocks] unable to delete l1 tx sender: %v", err)
 					return err
@@ -266,14 +271,13 @@ func (s *Sender) CommittedBlocks() (err error) {
 		for _, pendingCommittedBlock := range pendingCommitBlocks {
 			logx.Infof("[SendCommittedBlocks] commit blocks: %v", pendingCommittedBlock.BlockNumber)
 		}
-		// update l1 tx sender table records
-		newSender := &L1TxSender{
+		newRollupTx := &l1RollupTx.L1RollupTx{
 			L1TxHash:      txHash,
 			TxStatus:      PendingStatus,
 			TxType:        CommitTxType,
 			L2BlockHeight: int64(pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber),
 		}
-		isValid, err := s.l1TxSenderModel.CreateL1TxSender(newSender)
+		isValid, err := s.l1TxSenderModel.CreateL1RollupTx(newRollupTx)
 		if err != nil {
 			logx.Errorf("[SendCommittedBlocks] unable to create l1 tx sender")
 			return err
@@ -282,7 +286,7 @@ func (s *Sender) CommittedBlocks() (err error) {
 			logx.Errorf("[SendCommittedBlocks] cannot create new senders")
 			return errors.New("[SendCommittedBlocks] cannot create new senders")
 		}
-		logx.Infof("[SendCommittedBlocks] new blocks have been committed(height): %v", newSender.L2BlockHeight)
+		logx.Infof("[SendCommittedBlocks] new blocks have been committed(height): %v", newRollupTx.L2BlockHeight)
 		return nil
 	}
 	return nil
@@ -295,13 +299,13 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		zkbasInstance = s.zkbasInstance
 	)
 	// scan l1 tx sender table for handled verified and executed height
-	lastHandledBlock, getHandleErr := s.l1TxSenderModel.GetLatestHandledBlock(VerifyAndExecuteTxType)
+	lastHandledBlock, getHandleErr := s.l1TxSenderModel.GetLatestHandledTx(VerifyAndExecuteTxType)
 	if getHandleErr != nil && getHandleErr != errorcode.DbErrNotFound {
 		logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get latest handled block: %v", getHandleErr)
 		return getHandleErr
 	}
 	// scan l1 tx sender table for pending verified and executed height that higher than the latest handled height
-	pendingSender, getPendingErr := s.l1TxSenderModel.GetLatestPendingBlock(VerifyAndExecuteTxType)
+	pendingSender, getPendingErr := s.l1TxSenderModel.GetLatestPendingTx(VerifyAndExecuteTxType)
 	if getPendingErr != nil && getPendingErr != errorcode.DbErrNotFound {
 		logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get latest pending blocks: %v", getPendingErr)
 		return getPendingErr
@@ -316,7 +320,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 			now := time.Now().UnixMilli()
 			if now-lastUpdatedAt > s.Config.ChainConfig.MaxWaitingTime*time.Second.Milliseconds() {
 				// drop the record
-				err := s.l1TxSenderModel.DeleteL1TxSender(pendingSender)
+				err := s.l1TxSenderModel.DeleteL1RollupTx(pendingSender)
 				if err != nil {
 					logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to delete l1 tx sender: %v", err)
 					return err
@@ -351,7 +355,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 			lastUpdatedAt := pendingSender.UpdatedAt.UnixMilli()
 			if time.Now().UnixMilli()-lastUpdatedAt > s.Config.ChainConfig.MaxWaitingTime*time.Second.Milliseconds() {
 				// drop the record
-				if err := s.l1TxSenderModel.DeleteL1TxSender(pendingSender); err != nil {
+				if err := s.l1TxSenderModel.DeleteL1RollupTx(pendingSender); err != nil {
 					logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to delete l1 tx sender: %v", err)
 					return err
 				}
@@ -398,25 +402,19 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		}
 		start = lastHandledBlock.L2BlockHeight + 1
 	}
-	// TODO: for test
-	/*
-		if len(blocks) < maxBlockCount {
-			logx.Errorf("current pending verify blocks %d is less than %d", len(blocks), maxBlockCount)
-			return err
-		}
-	*/
-	proofSenders, err := s.proofSenderModel.GetProofsByBlockRange(start, blocks[len(blocks)-1].BlockHeight,
+
+	blockProofs, err := s.proofSenderModel.GetProofsByBlockRange(start, blocks[len(blocks)-1].BlockHeight,
 		s.Config.ChainConfig.MaxBlockCount)
 	if err != nil {
 		logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get proofs: %v", err)
 		return err
 	}
-	if len(proofSenders) != len(blocks) {
+	if len(blockProofs) != len(blocks) {
 		logx.Errorf("[SendVerifiedAndExecutedBlocks] we haven't generated related proofs, please wait")
 		return errors.New("[SendVerifiedAndExecutedBlocks] we haven't generated related proofs, please wait")
 	}
 	var proofs []*big.Int
-	for _, proof := range proofSenders {
+	for _, proof := range blockProofs {
 		var proofInfo *util.FormattedProof
 		err = json.Unmarshal([]byte(proof.ProofInfo), &proofInfo)
 		if err != nil {
@@ -441,14 +439,14 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 			logx.Errorf("[SendVerifiedAndExecutedBlocks] VerifyAndExecuteBlocks err: %v", err)
 			return err
 		}
-		// update l1 tx sender table records
-		newSender := &L1TxSender{
+
+		newRollupTx := &l1RollupTx.L1RollupTx{
 			L1TxHash:      txHash,
 			TxStatus:      PendingStatus,
 			TxType:        VerifyAndExecuteTxType,
 			L2BlockHeight: int64(pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber),
 		}
-		isValid, err := s.l1TxSenderModel.CreateL1TxSender(newSender)
+		isValid, err := s.l1TxSenderModel.CreateL1RollupTx(newRollupTx)
 		if err != nil {
 			logx.Errorf("[SendVerifiedAndExecutedBlocks] CreateL1TxSender err: %v", err)
 			return err
@@ -457,7 +455,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 			logx.Errorf("[SendVerifiedAndExecutedBlocks] cannot create new senders")
 			return errors.New("[SendVerifiedAndExecutedBlocks] cannot create new senders")
 		}
-		logx.Errorf("[SendVerifiedAndExecutedBlocks] new blocks have been verified and executed(height): %d", newSender.L2BlockHeight)
+		logx.Errorf("[SendVerifiedAndExecutedBlocks] new blocks have been verified and executed(height): %d", newRollupTx.L2BlockHeight)
 		return nil
 	}
 	return nil

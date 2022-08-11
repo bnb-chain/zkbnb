@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	smt "github.com/bnb-chain/bas-smt"
+	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
@@ -12,14 +14,13 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	smt "github.com/bnb-chain/bas-smt"
-	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
+	"github.com/bnb-chain/zkbas/common/model/proof"
+
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/blockForProof"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/nft"
-	"github.com/bnb-chain/zkbas/common/model/proofSender"
 	"github.com/bnb-chain/zkbas/common/proverUtil"
 	"github.com/bnb-chain/zkbas/common/tree"
 	"github.com/bnb-chain/zkbas/errorcode"
@@ -51,7 +52,7 @@ type Witness struct {
 	accountHistoryModel   account.AccountHistoryModel
 	liquidityHistoryModel liquidity.LiquidityHistoryModel
 	nftHistoryModel       nft.L2NftHistoryModel
-	proofSenderModel      proofSender.ProofSenderModel
+	proofSenderModel      proof.ProofModel
 	blockForProofModel    blockForProof.BlockForProofModel
 }
 
@@ -79,7 +80,7 @@ func NewWitness(c config.Config) *Witness {
 		accountHistoryModel:   account.NewAccountHistoryModel(conn, c.CacheRedis, dbInstance),
 		liquidityHistoryModel: liquidity.NewLiquidityHistoryModel(conn, c.CacheRedis, dbInstance),
 		nftHistoryModel:       nft.NewL2NftHistoryModel(conn, c.CacheRedis, dbInstance),
-		proofSenderModel:      proofSender.NewProofSenderModel(dbInstance),
+		proofSenderModel:      proof.NewProofModel(dbInstance),
 	}
 	w.initState()
 	return w
@@ -92,7 +93,7 @@ func (w *Witness) initState() {
 			logx.Error("[prover] => GetLatestConfirmedProof error:", err)
 			return
 		} else {
-			p = &proofSender.ProofSender{
+			p = &proof.Proof{
 				BlockNumber: 0,
 			}
 		}

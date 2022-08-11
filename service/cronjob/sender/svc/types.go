@@ -20,15 +20,13 @@ import (
 	"encoding/json"
 	"math/big"
 
+	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
+	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
-	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/blockForCommit"
-	"github.com/bnb-chain/zkbas/common/model/l1TxSender"
-	"github.com/bnb-chain/zkbas/common/model/proofSender"
 	"github.com/bnb-chain/zkbas/common/tree"
 	"github.com/bnb-chain/zkbas/common/util"
 )
@@ -36,8 +34,6 @@ import (
 type (
 	Block               = block.Block
 	BlockForCommit      = blockForCommit.BlockForCommit
-	L1TxSenderModel     = l1TxSender.L1TxSenderModel
-	L1TxSender          = l1TxSender.L1TxSender
 	BlockModel          = block.BlockModel
 	BlockForCommitModel = blockForCommit.BlockForCommitModel
 
@@ -48,8 +44,6 @@ type (
 	ZkbasCommitBlockInfo   = zkbas.OldZkbasCommitBlockInfo
 	ZkbasVerifyBlockInfo   = zkbas.OldZkbasVerifyAndExecuteBlockInfo
 	StorageStoredBlockInfo = zkbas.StorageStoredBlockInfo
-
-	ProofSenderModel = proofSender.ProofSenderModel
 )
 
 type SenderParam struct {

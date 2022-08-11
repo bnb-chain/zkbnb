@@ -22,9 +22,9 @@ test:
 
 
 all:
-	go build ./service/api/app/app.go
-	go build ./service/cronjob/committer/committer.go
-	go build ./service/cronjob/monitor/monitor.go
-	go build ./service/cronjob/prover/prover.go
-	go build ./service/cronjob/sender/sender.go
-	go build ./service/cronjob/witnessGenerator/witnessGenerator.go
+	go build  -o build/app ./service/api/app/app.go
+	go build -o build/committer ./service/cronjob/committer/committer.go
+	go build -o build/monitor ./service/cronjob/monitor/monitor.go
+	go build -o build/prover ./service/cronjob/prover/prover.go
+	go build -o build/sender ./service/cronjob/sender/main.go
+	go build -o build/witnessGenerator ./service/cronjob/witness/main.go

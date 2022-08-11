@@ -7,6 +7,8 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
+	"github.com/bnb-chain/zkbas/common/model/proof"
+
 	"github.com/bnb-chain/zkbas/common/model/blockForProof"
 	"github.com/bnb-chain/zkbas/service/cronjob/prover/internal/config"
 )
