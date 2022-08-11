@@ -39,15 +39,15 @@ func SendSwapTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalmap c
 
 	liquidityInfo, err := commglobalmap.GetLatestLiquidityInfoForWrite(ctx, txInfo.PairIndex)
 	if err != nil {
-		logx.Errorf("[sendSwapTx] unable to get latest liquidity info for write: %s", err.Error())
+		logx.Errorf("unable to get latest liquidity info for write: %s", err.Error())
 		return "", errorcode.RpcErrInternal
 	}
 
 	// check params
 	if liquidityInfo.AssetA == nil || liquidityInfo.AssetA.Cmp(big.NewInt(0)) == 0 ||
 		liquidityInfo.AssetB == nil || liquidityInfo.AssetB.Cmp(big.NewInt(0)) == 0 {
-		logx.Errorf("invalid params")
-		return "", errorcode.RpcErrInternal
+		logx.Errorf("liquidity pool %d is empty", liquidityInfo.PairIndex)
+		return "", errorcode.AppErrInvalidParam.RefineError("liquidity pool is empty")
 	}
 
 	// compute delta
