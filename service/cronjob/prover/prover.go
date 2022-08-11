@@ -18,7 +18,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/cronjob/prover/internal/svc"
 )
 
-var configFile = flag.String("f", "./etc/prover.yaml", "the config file")
+var configFile = flag.String("f", "./etc/connfig.yaml", "the path of config file")
 
 func main() {
 	flag.Parse()
