@@ -66,7 +66,7 @@ func NewWitness(c config.Config) *Witness {
 	datasource := c.Postgres.DataSource
 	dbInstance, err := gorm.Open(postgres.Open(datasource))
 	if err != nil {
-		logx.Errorf("gorm connect db error, err = %s", err.Error())
+		logx.Errorf("gorm connect db error, err: %v", err)
 	}
 	conn := sqlx.NewSqlConn("postgres", datasource)
 	redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
@@ -143,7 +143,7 @@ func (w *Witness) GenerateBlockWitness() {
 		logx.Errorf("generate block witness error: %v", err)
 	}
 
-	w.updateTimeoutUnprovedBlock()
+	w.rescheduleUnprovedBlock()
 }
 
 func (w *Witness) generateUnprovedBlockWitness(deltaHeight int64) error {
@@ -170,65 +170,48 @@ func (w *Witness) generateUnprovedBlockWitness(deltaHeight int64) error {
 	// scan each block
 	for _, oBlock := range blocks {
 		var (
-			oldStateRoot    []byte
-			newStateRoot    []byte
-			blockCommitment []byte
-			isFirst         bool
-		)
-		var (
-			cryptoTxs []*cryptoBlock.Tx
+			cryptoTxs                  []*cryptoBlock.Tx
+			oldStateRoot, newStateRoot []byte
 		)
 		// scan each transaction
-		for _, oTx := range oBlock.Txs {
-			var (
-				cryptoTx *cryptoBlock.Tx
-			)
-			cryptoTx, err = w.helper.ConstructCryptoTx(oTx, uint64(latestVerifiedBlockNr))
+		for idx, tx := range oBlock.Txs {
+			cryptoTx, err := w.helper.ConstructCryptoTx(tx, uint64(latestVerifiedBlockNr))
 			if err != nil {
 				return err
 			}
-			if !isFirst {
-				oldStateRoot = cryptoTx.StateRootBefore
-				isFirst = true
-			}
-			newStateRoot = cryptoTx.StateRootAfter
 			cryptoTxs = append(cryptoTxs, cryptoTx)
+
+			// if it is the first tx of the block
+			if idx == 0 {
+				oldStateRoot = cryptoTx.StateRootBefore
+			}
+			// if it is the last tx of the block
+			if idx == len(oBlock.Txs)-1 {
+				newStateRoot = cryptoTx.StateRootAfter
+			}
 		}
 
 		emptyTxCount := int(oBlock.BlockSize) - len(oBlock.Txs)
 		for i := 0; i < emptyTxCount; i++ {
 			cryptoTxs = append(cryptoTxs, cryptoBlock.EmptyTx())
 		}
-		blockCommitment = common.FromHex(oBlock.BlockCommitment)
 		if common.Bytes2Hex(newStateRoot) != oBlock.StateRoot {
-			logx.Info("error: new root:", common.Bytes2Hex(newStateRoot))
-			logx.Info("error: BlockCommitment:", common.Bytes2Hex(blockCommitment))
+			logx.Errorf("block %d state root mismatch, expect %s, get %s", oBlock.BlockHeight,
+				common.Bytes2Hex(newStateRoot), oBlock.StateRoot)
 			return errors.New("state root doesn't match")
 		}
 
-		blockInfo, err := proverUtil.BlockToCryptoBlock(oBlock, oldStateRoot, newStateRoot, cryptoTxs)
+		unprovedCryptoBlockModel, err := ConstructBlockForProof(oBlock, oldStateRoot,
+			newStateRoot, cryptoTxs, blockForProof.StatusPublished)
 		if err != nil {
-			logx.Errorf("unable to convert block to crypto block")
-			return err
-		}
-		var nCryptoBlockInfo = &CryptoBlockInfo{
-			BlockInfo: blockInfo,
-			Status:    blockForProof.StatusPublished,
-		}
-		logx.Info("new root:", common.Bytes2Hex(nCryptoBlockInfo.BlockInfo.NewStateRoot))
-		logx.Info("BlockCommitment:", common.Bytes2Hex(nCryptoBlockInfo.BlockInfo.BlockCommitment))
-
-		// insert crypto blocks array
-		unprovedCryptoBlockModel, err := CryptoBlockInfoToBlockForProof(nCryptoBlockInfo)
-		if err != nil {
-			logx.Errorf("marshal crypto block info error, err=%s", err.Error())
+			logx.Errorf("marshal crypto block info error, err=%v", err)
 			return err
 		}
 
 		// commit trees
 		err = tree.CommitTrees(uint64(latestVerifiedBlockNr), w.accountTree, &w.assetTrees, w.liquidityTree, w.nftTree)
 		if err != nil {
-			logx.Errorf("unable to commit trees after txs is executed", err.Error())
+			logx.Errorf("unable to commit trees after txs is executed, %v", err)
 			return err
 		}
 
@@ -239,7 +222,7 @@ func (w *Witness) generateUnprovedBlockWitness(deltaHeight int64) error {
 			if err != nil {
 				logx.Errorf("unable to rollback trees", err)
 			}
-			logx.Errorf("create unproved crypto block error, err=%s", err.Error())
+			logx.Errorf("create unproved crypto block error, err=%v", err)
 			return err
 		}
 
@@ -247,7 +230,7 @@ func (w *Witness) generateUnprovedBlockWitness(deltaHeight int64) error {
 	return nil
 }
 
-func (w *Witness) updateTimeoutUnprovedBlock() {
+func (w *Witness) rescheduleUnprovedBlock() {
 	latestConfirmedProof, err := w.proofModel.GetLatestConfirmedProof()
 	if err != nil && err != errorcode.DbErrNotFound {
 		return
@@ -279,7 +262,7 @@ func (w *Witness) updateTimeoutUnprovedBlock() {
 	if time.Now().After(nextUnprovedBlock.UpdatedAt.Add(UnprovedBlockReceivedTimeout)) {
 		err := w.blockForProofModel.UpdateUnprovedCryptoBlockStatus(nextUnprovedBlock, blockForProof.StatusPublished)
 		if err != nil {
-			logx.Errorf("update unproved block status error, err=%s", err.Error())
+			logx.Errorf("update unproved block status error, err: %v", err)
 			return
 		}
 	}

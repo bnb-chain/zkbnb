@@ -20,7 +20,6 @@ package blockForProof
 const (
 	StatusPublished = iota
 	StatusReceived
-	StatusVerified
 )
 
 const (

@@ -18,33 +18,31 @@ package witness
 
 import (
 	"encoding/json"
-	"errors"
+	"github.com/bnb-chain/zkbas/common/model/block"
+	"github.com/ethereum/go-ethereum/common"
 
 	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
-
 	"github.com/bnb-chain/zkbas/common/model/blockForProof"
 )
 
-type CryptoBlockInfo struct {
-	BlockInfo *cryptoBlock.Block
-	Status    int64
-}
-
-func CryptoBlockInfoToBlockForProof(cryptoBlock *CryptoBlockInfo) (*blockForProof.BlockForProof, error) {
-	if cryptoBlock == nil {
-		return nil, errors.New("crypto block is nil")
+func ConstructBlockForProof(block *block.Block, oldStateRoot, newStateRoot []byte,
+	cryptoTxs []*cryptoBlock.Tx, status int64) (*blockForProof.BlockForProof, error) {
+	b := &cryptoBlock.Block{
+		BlockNumber:     block.BlockHeight,
+		CreatedAt:       block.CreatedAt.UnixMilli(),
+		OldStateRoot:    oldStateRoot,
+		NewStateRoot:    newStateRoot,
+		BlockCommitment: common.FromHex(block.BlockCommitment),
+		Txs:             cryptoTxs,
 	}
-
-	blockInfo, err := json.Marshal(cryptoBlock.BlockInfo)
+	bz, err := json.Marshal(b)
 	if err != nil {
 		return nil, err
 	}
-
 	blockModel := blockForProof.BlockForProof{
-		BlockHeight: cryptoBlock.BlockInfo.BlockNumber,
-		BlockData:   string(blockInfo),
-		Status:      cryptoBlock.Status,
+		BlockHeight: block.BlockHeight,
+		BlockData:   string(bz),
+		Status:      status,
 	}
-
 	return &blockModel, nil
 }
