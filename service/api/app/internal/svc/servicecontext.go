@@ -3,9 +3,6 @@ package svc
 import (
 	"time"
 
-	"github.com/bnb-chain/zkbas/service/api/app/internal/fetcher/price"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/fetcher/state"
-
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
@@ -22,6 +19,8 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/sysconfig"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/config"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/fetcher/price"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/fetcher/state"
 )
 
 const cacheDefaultExpiration = time.Millisecond * 500

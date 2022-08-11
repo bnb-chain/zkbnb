@@ -27,7 +27,7 @@ type Fetcher interface {
 	GetBasicAccountInfo(ctx context.Context, accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error)
 	GetLatestAccountInfo(ctx context.Context, accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error)
 	GetLatestLiquidityInfo(ctx context.Context, pairIndex int64) (liquidityInfo *commonAsset.LiquidityInfo, err error)
-	GetLatestOfferId(ctx context.Context, accountIndex int64) (nftIndex int64, err error)
+	GetLatestOfferId(ctx context.Context, accountIndex int64) (offerId int64, err error)
 	GetLatestNftInfo(ctx context.Context, nftIndex int64) (*commonAsset.NftInfo, error)
 }
 
