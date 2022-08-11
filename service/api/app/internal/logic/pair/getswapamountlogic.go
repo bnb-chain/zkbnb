@@ -9,24 +9,21 @@ import (
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/commglobalmap"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
 type GetSwapAmountLogic struct {
 	logx.Logger
-	ctx           context.Context
-	svcCtx        *svc.ServiceContext
-	commglobalmap commglobalmap.Commglobalmap
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
 }
 
 func NewGetSwapAmountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetSwapAmountLogic {
 	return &GetSwapAmountLogic{
-		Logger:        logx.WithContext(ctx),
-		ctx:           ctx,
-		svcCtx:        svcCtx,
-		commglobalmap: commglobalmap.New(svcCtx),
+		Logger: logx.WithContext(ctx),
+		ctx:    ctx,
+		svcCtx: svcCtx,
 	}
 }
 
@@ -46,7 +43,7 @@ func (l *GetSwapAmountLogic) GetSwapAmount(req *types.ReqGetSwapAmount) (*types.
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AssetAmount")
 	}
 
-	liquidity, err := l.commglobalmap.GetLatestLiquidityInfoForReadWithCache(l.ctx, int64(req.PairIndex))
+	liquidity, err := l.svcCtx.StateFetcher.GetLatestLiquidityInfo(l.ctx, int64(req.PairIndex))
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound

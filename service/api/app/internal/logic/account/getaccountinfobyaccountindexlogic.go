@@ -6,29 +6,26 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/errorcode"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/commglobalmap"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
 type GetAccountInfoByAccountIndexLogic struct {
 	logx.Logger
-	ctx           context.Context
-	svcCtx        *svc.ServiceContext
-	commglobalmap commglobalmap.Commglobalmap
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
 }
 
 func NewGetAccountInfoByAccountIndexLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAccountInfoByAccountIndexLogic {
 	return &GetAccountInfoByAccountIndexLogic{
-		Logger:        logx.WithContext(ctx),
-		ctx:           ctx,
-		svcCtx:        svcCtx,
-		commglobalmap: commglobalmap.New(svcCtx),
+		Logger: logx.WithContext(ctx),
+		ctx:    ctx,
+		svcCtx: svcCtx,
 	}
 }
 
 func (l *GetAccountInfoByAccountIndexLogic) GetAccountInfoByAccountIndex(req *types.ReqGetAccountInfoByAccountIndex) (*types.RespGetAccountInfoByAccountIndex, error) {
-	account, err := l.commglobalmap.GetLatestAccountInfo(l.ctx, req.AccountIndex)
+	account, err := l.svcCtx.StateFetcher.GetLatestAccountInfo(l.ctx, req.AccountIndex)
 	if err != nil {
 		logx.Errorf("fail to get account info: %d, err: %s", req.AccountIndex, err.Error())
 		if err == errorcode.DbErrNotFound {

@@ -9,7 +9,6 @@ import (
 
 	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/price"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
@@ -18,7 +17,6 @@ type GetCurrencyPriceBySymbolLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
-	price  price.Price
 }
 
 func NewGetCurrencyPriceBySymbolLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetCurrencyPriceBySymbolLogic {
@@ -26,7 +24,6 @@ func NewGetCurrencyPriceBySymbolLogic(ctx context.Context, svcCtx *svc.ServiceCo
 		Logger: logx.WithContext(ctx),
 		ctx:    ctx,
 		svcCtx: svcCtx,
-		price:  price.New(svcCtx),
 	}
 }
 
@@ -44,7 +41,7 @@ func (l *GetCurrencyPriceBySymbolLogic) GetCurrencyPriceBySymbol(req *types.ReqG
 		}
 		return nil, errorcode.AppErrInternal
 	}
-	price, err := l.price.GetCurrencyPrice(l.ctx, symbol)
+	price, err := l.svcCtx.PriceFetcher.GetCurrencyPrice(l.ctx, symbol)
 	if err != nil {
 		if err == errorcode.AppErrQuoteNotExist {
 			return nil, err

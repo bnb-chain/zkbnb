@@ -20,13 +20,10 @@ package block
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sort"
-	"strconv"
 
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
-	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
@@ -38,15 +35,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/errorcode"
-)
-
-var (
-	cacheBlockIdPrefix = "cache::block:id:"
-
-	CacheBlockStatusPrefix         = "cache::block:blockStatus:"
-	cacheBlockListLimitPrefix      = "cache::block:blockList:"
-	cacheBlockCommittedCountPrefix = "cache::block:committed_count"
-	cacheBlockVerifiedCountPrefix  = "cache::block:verified_count"
 )
 
 type (
@@ -82,9 +70,8 @@ type (
 
 	defaultBlockModel struct {
 		sqlc.CachedConn
-		table     string
-		DB        *gorm.DB
-		RedisConn *redis.Redis
+		table string
+		DB    *gorm.DB
 	}
 
 	Block struct {
@@ -106,12 +93,11 @@ type (
 	}
 )
 
-func NewBlockModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB, redisConn *redis.Redis) BlockModel {
+func NewBlockModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) BlockModel {
 	return &defaultBlockModel{
 		CachedConn: sqlc.NewConn(conn, c),
 		table:      BlockTableName,
 		DB:         db,
-		RedisConn:  redisConn,
 	}
 }
 
@@ -152,81 +138,24 @@ func (m *defaultBlockModel) GetBlocksList(limit int64, offset int64) (blocks []*
 	var (
 		txForeignKeyColumn = `Txs`
 	)
-	key := fmt.Sprintf("%s%v:%v", cacheBlockListLimitPrefix, limit, offset)
-	cacheBlockListLimitVal, err := m.RedisConn.Get(key)
 
-	if err != nil {
-		logx.Errorf("get redis error: %s, key:%s", err.Error(), key)
-		return nil, err
-	} else if cacheBlockListLimitVal == "" {
-		dbTx := m.DB.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("block_height desc").Find(&blocks)
-		if dbTx.Error != nil {
-			logx.Errorf("get blocks error, err: %s", dbTx.Error.Error())
+	dbTx := m.DB.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("block_height desc").Find(&blocks)
+	if dbTx.Error != nil {
+		logx.Errorf("get blocks error, err: %s", dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, errorcode.DbErrNotFound
+	}
+
+	for _, block := range blocks {
+		err = m.DB.Model(&block).Association(txForeignKeyColumn).Find(&block.Txs)
+		if err != nil {
+			logx.Errorf("get associate txs error, err: %s", err.Error())
 			return nil, errorcode.DbErrSqlOperation
-		} else if dbTx.RowsAffected == 0 {
-			return nil, errorcode.DbErrNotFound
 		}
-
-		for _, block := range blocks {
-			cacheBlockIdKey := fmt.Sprintf("%s%v", cacheBlockIdPrefix, block.ID)
-			cacheBlockIdVal, err := m.RedisConn.Get(cacheBlockIdKey)
-			if err != nil {
-				errInfo := fmt.Sprintf("get redis error: %s, key:%s", err.Error(), key)
-				logx.Errorf(errInfo)
-				return nil, err
-			} else if cacheBlockIdVal == "" {
-				txLength := m.DB.Model(&block).Association(txForeignKeyColumn).Count()
-				block.Txs = make([]*tx.Tx, txLength)
-
-				// json string
-				jsonString, err := json.Marshal(block)
-				if err != nil {
-					logx.Errorf("json.Marshal Error: %s, value: %v", err.Error(), block)
-					return nil, err
-				}
-				// todo
-				err = m.RedisConn.Setex(key, string(jsonString), 60)
-				if err != nil {
-					logx.Errorf("redis set error: %s", err.Error())
-					return nil, err
-				}
-			} else {
-				// json string unmarshal
-				var (
-					nBlock *Block
-				)
-				err = json.Unmarshal([]byte(cacheBlockIdVal), &nBlock)
-				if err != nil {
-					logx.Errorf("json.Unmarshal error: %s, value : %s", err.Error(), cacheBlockIdVal)
-					return nil, err
-				}
-				block = nBlock
-			}
-		}
-		// json string
-		jsonString, err := json.Marshal(blocks)
-		if err != nil {
-			logx.Errorf("json.Marshal Error: %s, value: %v", err.Error(), blocks)
-			return nil, err
-		}
-		// todo
-		err = m.RedisConn.Setex(key, string(jsonString), 30)
-		if err != nil {
-			logx.Errorf("redis set error: %s", err.Error())
-			return nil, err
-		}
-
-	} else {
-		// json string unmarshal
-		var (
-			nBlocks []*Block
-		)
-		err = json.Unmarshal([]byte(cacheBlockListLimitVal), &nBlocks)
-		if err != nil {
-			logx.Errorf("json.Unmarshal error: %s, value : %s", err.Error(), cacheBlockListLimitVal)
-			return nil, err
-		}
-		blocks = nBlocks
+		sort.Slice(block.Txs, func(i, j int) bool {
+			return block.Txs[i].TxIndex < block.Txs[j].TxIndex
+		})
 	}
 
 	return blocks, nil
@@ -251,7 +180,7 @@ func (m *defaultBlockModel) GetBlocksBetween(start int64, end int64) (blocks []*
 		err = m.DB.Model(&block).Association(txForeignKeyColumn).Find(&block.Txs)
 		if err != nil {
 			logx.Errorf("get associate txs error, err: %s", err.Error())
-			return nil, err
+			return nil, errorcode.DbErrSqlOperation
 		}
 		sort.Slice(block.Txs, func(i, j int) bool {
 			return block.Txs[i].TxIndex < block.Txs[j].TxIndex
@@ -261,7 +190,7 @@ func (m *defaultBlockModel) GetBlocksBetween(start int64, end int64) (blocks []*
 			err = m.DB.Model(&txInfo).Association(txDetailsForeignKeyColumn).Find(&txInfo.TxDetails)
 			if err != nil {
 				logx.Errorf("get associate tx details error, err: %s", err.Error())
-				return nil, err
+				return nil, errorcode.DbErrSqlOperation
 			}
 			sort.Slice(txInfo.TxDetails, func(i, j int) bool {
 				return txInfo.TxDetails[i].Order < txInfo.TxDetails[j].Order
@@ -294,7 +223,7 @@ func (m *defaultBlockModel) GetBlockByCommitment(blockCommitment string) (block 
 	})
 	if err != nil {
 		logx.Errorf("get associate txs error, err: %s", err.Error())
-		return nil, err
+		return nil, errorcode.DbErrSqlOperation
 	}
 	return block, nil
 }
@@ -322,7 +251,7 @@ func (m *defaultBlockModel) GetBlockByBlockHeight(blockHeight int64) (block *Blo
 	})
 	if err != nil {
 		logx.Errorf("get associate txs error, err: %s", err.Error())
-		return nil, err
+		return nil, errorcode.DbErrSqlOperation
 	}
 
 	return block, nil
@@ -352,37 +281,16 @@ func (m *defaultBlockModel) GetBlockByBlockHeightWithoutTx(blockHeight int64) (b
 	Description:  For API /api/v1/info/getLayer2BasicInfo
 */
 func (m *defaultBlockModel) GetCommittedBlocksCount() (count int64, err error) {
-	key := fmt.Sprintf("%s", cacheBlockCommittedCountPrefix)
-	val, err := m.RedisConn.Get(key)
-	if err != nil {
-		logx.Errorf("get redis error: %s, key:%s", err.Error(), key)
-		return 0, err
-
-	} else if val == "" {
-		dbTx := m.DB.Table(m.table).Where("block_status >= ? and deleted_at is NULL", StatusCommitted).Count(&count)
-		if dbTx.Error != nil {
-			if dbTx.Error == errorcode.DbErrNotFound {
-				return 0, nil
-			}
-			logx.Errorf("get block count error, err: %s", dbTx.Error.Error())
-			return 0, errorcode.DbErrSqlOperation
+	dbTx := m.DB.Table(m.table).Where("block_status >= ? and deleted_at is NULL", StatusCommitted).Count(&count)
+	if dbTx.Error != nil {
+		if dbTx.Error == errorcode.DbErrNotFound {
+			return 0, nil
 		}
-
-		err = m.RedisConn.Setex(key, strconv.FormatInt(count, 10), 120)
-		if err != nil {
-			logx.Errorf("redis set error: %s", err.Error())
-			return 0, err
-		}
-	} else {
-		count, err = strconv.ParseInt(val, 10, 64)
-		if err != nil {
-			logx.Errorf("strconv.ParseInt error: %s, value : %s", err.Error(), val)
-			return 0, err
-		}
+		logx.Errorf("get committed block count error, err: %s", dbTx.Error.Error())
+		return 0, errorcode.DbErrSqlOperation
 	}
 
 	return count, nil
-
 }
 
 /*
@@ -392,35 +300,14 @@ func (m *defaultBlockModel) GetCommittedBlocksCount() (count int64, err error) {
 	Description:  For API /api/v1/info/getLayer2BasicInfo
 */
 func (m *defaultBlockModel) GetVerifiedBlocksCount() (count int64, err error) {
-	key := fmt.Sprintf("%s", cacheBlockVerifiedCountPrefix)
-	val, err := m.RedisConn.Get(key)
-	if err != nil {
-		logx.Errorf("get redis error: %s, key:%s", err.Error(), key)
-		return 0, err
-
-	} else if val == "" {
-		dbTx := m.DB.Table(m.table).Where("block_status = ? and deleted_at is NULL", StatusVerifiedAndExecuted).Count(&count)
-		if dbTx.Error != nil {
-			if dbTx.Error == errorcode.DbErrNotFound {
-				return 0, nil
-			}
-			logx.Errorf("get block count error, err: %s", dbTx.Error.Error())
-			return 0, errorcode.DbErrSqlOperation
+	dbTx := m.DB.Table(m.table).Where("block_status = ? and deleted_at is NULL", StatusVerifiedAndExecuted).Count(&count)
+	if dbTx.Error != nil {
+		if dbTx.Error == errorcode.DbErrNotFound {
+			return 0, nil
 		}
-
-		err = m.RedisConn.Setex(key, strconv.FormatInt(count, 10), 120)
-		if err != nil {
-			logx.Errorf("redis set error: %s", err.Error())
-			return 0, err
-		}
-	} else {
-		count, err = strconv.ParseInt(val, 10, 64)
-		if err != nil {
-			logx.Errorf("strconv.ParseInt error: %s, value : %s", err.Error(), val)
-			return 0, err
-		}
+		logx.Errorf("get verified block count error, err: %s", dbTx.Error.Error())
+		return 0, errorcode.DbErrSqlOperation
 	}
-
 	return count, nil
 }
 
