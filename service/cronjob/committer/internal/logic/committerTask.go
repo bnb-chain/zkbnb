@@ -59,7 +59,7 @@ func CommitterTask(
 	finalityBlockNr uint64,
 ) error {
 	// Get Txs from Mempool
-	mempoolTxs, err := ctx.MempoolModel.GetMempoolTxsListForCommitter()
+	mempoolTxs, err := ctx.MempoolModel.GetPendingMempoolTxs()
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil

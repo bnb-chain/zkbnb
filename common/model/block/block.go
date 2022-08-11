@@ -53,6 +53,7 @@ type (
 		GetBlocksTotalCount() (count int64, err error)
 		CreateGenesisBlock(block *Block) error
 		GetCurrentBlockHeight() (blockHeight int64, err error)
+		CreateNewBlock(oBlock *Block) (err error)
 		CreateBlockForCommitter(
 			oBlock *Block,
 			oBlockForCommit *blockForCommit.BlockForCommit,
@@ -541,6 +542,34 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 		return nil
 	})
 	return err
+}
+
+func (m *defaultBlockModel) CreateNewBlock(oBlock *Block) (err error) {
+	if oBlock == nil {
+		return errors.New("nil block")
+	}
+	if oBlock.BlockStatus != StatusProposing {
+		return errors.New("new block status isn't proposing")
+	}
+
+	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
+		dbTx := tx.Table(m.table).Create(oBlock)
+		if dbTx.Error != nil {
+			logx.Errorf("unable to create block: %s", dbTx.Error.Error())
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			blockInfo, err := json.Marshal(oBlock)
+			if err != nil {
+				logx.Errorf("unable to marshal block, err: %s", err.Error())
+				return err
+			}
+			logx.Errorf("invalid block info: %s", string(blockInfo))
+			return errors.New("invalid block info")
+		}
+
+		return nil
+	})
 }
 
 func (m *defaultBlockModel) GetBlocksForProverBetween(start, end int64) (blocks []*Block, err error) {
