@@ -20,10 +20,12 @@ package util
 import (
 	"bytes"
 	"errors"
+	"math/big"
 	"strings"
 	"unicode"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 func LowerCase(s string) string {
@@ -52,20 +54,10 @@ func SerializeAccountName(a []byte) string {
 	return string(bytes.Trim(a[:], "\x00")) + ".legend"
 }
 
-//func AccountNameHash(accountName string) (res string, err error) {
-//	words := strings.Split(accountName, ".")
-//	if len(words) != 2 {
-//		return "", errors.New("[AccountNameHash] invalid account name")
-//	}
-//	hFunc := mimc.NewMiMC()
-//	buf := make([]byte, 32)
-//	label := MiMCHash(hFunc, []byte(words[0]))
-//	res = common.Bytes2Hex(
-//		MiMCHash(hFunc, append(
-//			MiMCHash(hFunc, append(buf,
-//				MiMCHash(hFunc, []byte(words[1]))...)), label...)))
-//	return res, nil
-//}
+func keccakHash(value []byte) []byte {
+	hashVal := crypto.Keccak256Hash(value)
+	return hashVal[:]
+}
 
 func AccountNameHash(accountName string) (res string, err error) {
 	// TODO Keccak256
@@ -73,11 +65,23 @@ func AccountNameHash(accountName string) (res string, err error) {
 	if len(words) != 2 {
 		return "", errors.New("[AccountNameHash] invalid account name")
 	}
-	buf := make([]byte, 32)
-	label := KeccakHash([]byte(words[0]))
-	res = common.Bytes2Hex(
-		KeccakHash(append(
-			KeccakHash(append(buf,
-				KeccakHash([]byte(words[1]))...)), label...)))
+
+	q, _ := big.NewInt(0).SetString("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10)
+
+	rootNode := make([]byte, 32)
+	hashOfBaseNode := keccakHash(append(rootNode, keccakHash([]byte(words[1]))...))
+
+	baseNode := big.NewInt(0).Mod(big.NewInt(0).SetBytes(hashOfBaseNode), q)
+	baseNodeBytes := make([]byte, 32)
+	baseNode.FillBytes(baseNodeBytes)
+
+	nameHash := keccakHash([]byte(words[0]))
+	subNameHash := keccakHash(append(baseNodeBytes, nameHash...))
+
+	subNode := big.NewInt(0).Mod(big.NewInt(0).SetBytes(subNameHash), q)
+	subNodeBytes := make([]byte, 32)
+	subNode.FillBytes(subNodeBytes)
+
+	res = common.Bytes2Hex(subNodeBytes)
 	return res, nil
 }

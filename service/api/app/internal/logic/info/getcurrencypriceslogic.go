@@ -38,22 +38,25 @@ func (l *GetCurrencyPricesLogic) GetCurrencyPrices(req *types.ReqGetCurrencyPric
 	}
 
 	//TODO: performance issue here
+	//TODO: why use cmc here?
 	resp := &types.RespGetCurrencyPrices{}
 	for _, asset := range l2Assets {
-		price, err := l.price.GetCurrencyPrice(l.ctx, asset.AssetSymbol)
-		if err != nil {
-			logx.Errorf("fail to get price for symbol: %s, err: %s", asset.AssetSymbol, err.Error())
-			if err == errorcode.AppErrQuoteNotExist {
-				return nil, err
-			}
-			return nil, errorcode.AppErrInternal
-		}
+		price := 0.0
 		if asset.AssetSymbol == "LEG" {
 			price = 1.0
-		}
-		if asset.AssetSymbol == "REY" {
+		} else if asset.AssetSymbol == "REY" {
 			price = 0.5
+		} else {
+			price, err = l.price.GetCurrencyPrice(l.ctx, asset.AssetSymbol)
+			if err != nil {
+				logx.Errorf("fail to get price for symbol: %s, err: %s", asset.AssetSymbol, err.Error())
+				if err == errorcode.AppErrQuoteNotExist {
+					continue
+				}
+				return nil, errorcode.AppErrInternal
+			}
 		}
+
 		resp.Data = append(resp.Data, &types.DataCurrencyPrices{
 			Pair:    asset.AssetSymbol + "/" + "USDT",
 			AssetId: asset.AssetId,

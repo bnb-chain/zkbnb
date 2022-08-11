@@ -48,11 +48,15 @@ func (l *GetLPValueLogic) GetLPValue(req *types.ReqGetLPValue) (resp *types.Resp
 		}
 		return nil, errorcode.AppErrInternal
 	}
-	assetAAmount, assetBAmount, err := util.ComputeRemoveLiquidityAmount(liquidity, amount)
-	if err != nil {
-		logx.Errorf("fail to compute liquidity amount, err: %s", err.Error())
-		return nil, errorcode.AppErrInternal
+	assetAAmount, assetBAmount := big.NewInt(0), big.NewInt(0)
+	if liquidity.LpAmount.Cmp(big.NewInt(0)) > 0 {
+		assetAAmount, assetBAmount, err = util.ComputeRemoveLiquidityAmount(liquidity, amount)
+		if err != nil {
+			logx.Errorf("fail to compute liquidity amount, err: %s", err.Error())
+			return nil, errorcode.AppErrInternal
+		}
 	}
+
 	resp = &types.RespGetLPValue{
 		AssetAId:     uint32(liquidity.AssetAId),
 		AssetAAmount: assetAAmount.String(),

@@ -40,10 +40,9 @@ func (l *GetTxsByPubKeyLogic) GetTxsByPubKey(req *types.ReqGetTxsByPubKey) (*typ
 	}
 	txIds, err := l.svcCtx.TxDetailModel.GetTxIdsByAccountIndex(account.AccountIndex)
 	if err != nil {
-		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrNotFound
+		if err != errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrInternal
 		}
-		return nil, errorcode.AppErrInternal
 	}
 	resp := &types.RespGetTxsByPubKey{
 		Total: uint32(len(txIds)),

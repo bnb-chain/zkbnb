@@ -28,10 +28,9 @@ func NewGetTxsListByAccountIndexLogic(ctx context.Context, svcCtx *svc.ServiceCo
 func (l *GetTxsListByAccountIndexLogic) GetTxsListByAccountIndex(req *types.ReqGetTxsListByAccountIndex) (*types.RespGetTxsListByAccountIndex, error) {
 	txDetails, err := l.svcCtx.TxDetailModel.GetTxDetailByAccountIndex(int64(req.AccountIndex))
 	if err != nil {
-		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrNotFound
+		if err != errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrInternal
 		}
-		return nil, errorcode.AppErrInternal
 	}
 
 	resp := &types.RespGetTxsListByAccountIndex{
