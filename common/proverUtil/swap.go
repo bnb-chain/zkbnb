@@ -18,35 +18,14 @@
 package proverUtil
 
 import (
-	"errors"
-
-	bsmt "github.com/bnb-chain/bas-smt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/bnb-chain/zkbas/pkg/treedb"
 )
 
-func ConstructSwapCryptoTx(
-	oTx *Tx,
-	treeCtx *treedb.Context,
-	finalityBlockNr uint64,
-	accountTree bsmt.SparseMerkleTree,
-	accountAssetsTree *[]bsmt.SparseMerkleTree,
-	liquidityTree bsmt.SparseMerkleTree,
-	nftTree bsmt.SparseMerkleTree,
-	accountModel AccountModel,
-) (cryptoTx *CryptoTx, err error) {
-	if oTx.TxType != commonTx.TxTypeSwap {
-		logx.Errorf("[ConstructSwapCryptoTx] invalid tx type")
-		return nil, errors.New("[ConstructSwapCryptoTx] invalid tx type")
-	}
-	if oTx == nil || accountTree == nil || accountAssetsTree == nil || liquidityTree == nil || nftTree == nil {
-		logx.Errorf("[ConstructSwapCryptoTx] invalid params")
-		return nil, errors.New("[ConstructSwapCryptoTx] invalid params")
-	}
+func (w *WitnessHelper) constructSwapCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*CryptoTx, error) {
 	txInfo, err := commonTx.ParseSwapTxInfo(oTx.TxInfo)
 	if err != nil {
 		logx.Errorf("[ConstructSwapCryptoTx] unable to parse register zns tx info:%s", err.Error())
@@ -57,32 +36,7 @@ func ConstructSwapCryptoTx(
 		logx.Errorf("[ConstructSwapCryptoTx] unable to convert to crypto register zns tx: %s", err.Error())
 		return nil, err
 	}
-	accountKeys, proverAccounts, proverLiquidityInfo, proverNftInfo, err := ConstructProverInfo(oTx, accountModel)
-	if err != nil {
-		logx.Errorf("[ConstructSwapCryptoTx] unable to construct prover info: %s", err.Error())
-		return nil, err
-	}
-	cryptoTx, err = ConstructWitnessInfo(
-		oTx,
-		accountModel,
-		treeCtx,
-		finalityBlockNr,
-		accountTree,
-		accountAssetsTree,
-		liquidityTree,
-		nftTree,
-		accountKeys,
-		proverAccounts,
-		proverLiquidityInfo,
-		proverNftInfo,
-	)
-	if err != nil {
-		logx.Errorf("[ConstructSwapCryptoTx] unable to construct witness info: %s", err.Error())
-		return nil, err
-	}
-	cryptoTx.TxType = uint8(oTx.TxType)
 	cryptoTx.SwapTxInfo = cryptoTxInfo
-	cryptoTx.Nonce = oTx.Nonce
 	cryptoTx.ExpiredAt = txInfo.ExpiredAt
 	cryptoTx.Signature = new(eddsa.Signature)
 	_, err = cryptoTx.Signature.SetBytes(txInfo.Sig)

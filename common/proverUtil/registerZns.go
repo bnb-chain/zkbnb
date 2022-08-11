@@ -18,36 +18,16 @@
 package proverUtil
 
 import (
-	"errors"
+	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	"strings"
 
-	bsmt "github.com/bnb-chain/bas-smt"
-	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/bnb-chain/zkbas/pkg/treedb"
 )
 
-func ConstructRegisterZnsCryptoTx(
-	oTx *Tx,
-	treeCtx *treedb.Context,
-	finalityBlockNr uint64,
-	accountTree bsmt.SparseMerkleTree,
-	accountAssetsTree *[]bsmt.SparseMerkleTree,
-	liquidityTree bsmt.SparseMerkleTree,
-	nftTree bsmt.SparseMerkleTree,
-	accountModel AccountModel,
-) (cryptoTx *CryptoTx, err error) {
-	if oTx.TxType != commonTx.TxTypeRegisterZns {
-		logx.Errorf("[ConstructCreatePairCryptoTx] invalid tx type")
-		return nil, errors.New("[ConstructCreatePairCryptoTx] invalid tx type")
-	}
-	if oTx == nil || accountTree == nil || accountAssetsTree == nil || liquidityTree == nil || nftTree == nil {
-		logx.Errorf("[ConstructRegisterZnsCryptoTx] invalid params")
-		return nil, errors.New("[ConstructRegisterZnsCryptoTx] invalid params")
-	}
+func (w *WitnessHelper) constructRegisterZnsCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*CryptoTx, error) {
 	txInfo, err := commonTx.ParseRegisterZnsTxInfo(oTx.TxInfo)
 	if err != nil {
 		logx.Errorf("[ConstructRegisterZnsCryptoTx] unable to parse register zns tx info:%s", err.Error())
@@ -58,33 +38,8 @@ func ConstructRegisterZnsCryptoTx(
 		logx.Errorf("[ConstructRegisterZnsCryptoTx] unable to convert to crypto register zns tx: %s", err.Error())
 		return nil, err
 	}
-	accountKeys, proverAccounts, proverLiquidityInfo, proverNftInfo, err := ConstructProverInfo(oTx, accountModel)
-	if err != nil {
-		logx.Errorf("[ConstructRegisterZnsCryptoTx] unable to construct prover info: %s", err.Error())
-		return nil, err
-	}
-	cryptoTx, err = ConstructWitnessInfo(
-		oTx,
-		accountModel,
-		treeCtx,
-		finalityBlockNr,
-		accountTree,
-		accountAssetsTree,
-		liquidityTree,
-		nftTree,
-		accountKeys,
-		proverAccounts,
-		proverLiquidityInfo,
-		proverNftInfo,
-	)
-	if err != nil {
-		logx.Errorf("[ConstructRegisterZnsCryptoTx] unable to construct witness info: %s", err.Error())
-		return nil, err
-	}
-	cryptoTx.TxType = uint8(oTx.TxType)
-	cryptoTx.RegisterZnsTxInfo = cryptoTxInfo
-	cryptoTx.Nonce = oTx.Nonce
 	cryptoTx.Signature = std.EmptySignature()
+	cryptoTx.RegisterZnsTxInfo = cryptoTxInfo
 	return cryptoTx, nil
 }
 
