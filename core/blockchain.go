@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/bnb-chain/zkbas/common/util"
 
@@ -21,9 +22,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/assetInfo"
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
-	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
-	"github.com/bnb-chain/zkbas/common/model/sysconfig"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/tree"
 	"github.com/bnb-chain/zkbas/pkg/treedb"
@@ -36,9 +35,6 @@ var (
 type ChainConfig struct {
 	Postgres struct {
 		DataSource string
-	}
-	KeyPath struct {
-		KeyTxCounts []int
 	}
 	CacheRedis cache.CacheConf
 	TreeDB     struct {
@@ -102,6 +98,10 @@ func NewStateCache(blockNumber int64) *StateCache {
 	}
 }
 
+func (s *StateCache) GetTxs() []*tx.Tx {
+	return s.txs
+}
+
 type BlockChain struct {
 	AccountMap   map[int64]*commonAsset.AccountInfo
 	LiquidityMap map[int64]*liquidity.Liquidity
@@ -112,8 +112,6 @@ type BlockChain struct {
 	nftTree           bsmt.SparseMerkleTree
 	accountAssetTrees []bsmt.SparseMerkleTree
 
-	SysConfigModel        sysconfig.SysconfigModel
-	MempoolModel          mempool.MempoolModel
 	BlockModel            block.BlockModel
 	TxModel               tx.TxModel
 	TxDetailModel         tx.TxDetailModel
@@ -145,8 +143,6 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		LiquidityMap: make(map[int64]*liquidity.Liquidity),
 		NftMap:       make(map[int64]*nft.L2Nft),
 
-		SysConfigModel:        sysconfig.NewSysconfigModel(conn, config.CacheRedis, gormPointer),
-		MempoolModel:          mempool.NewMempoolModel(conn, config.CacheRedis, gormPointer),
 		BlockModel:            block.NewBlockModel(conn, config.CacheRedis, gormPointer, redisConn),
 		TxModel:               tx.NewTxModel(conn, config.CacheRedis, gormPointer, redisConn),
 		TxDetailModel:         tx.NewTxDetailModel(conn, config.CacheRedis, gormPointer),
@@ -218,6 +214,25 @@ func (bc *BlockChain) ApplyTransaction(tx *tx.Tx, stateCache *StateCache) (*tx.T
 func (bc *BlockChain) SyncCache(stateCache *StateCache) error {
 	// Iterate pending state, sync them to the cache.
 	return nil
+}
+
+func (bc *BlockChain) ProposeNewBlock() (*block.Block, error) {
+	createdAt := time.Now().UnixMilli()
+	newBlock := &block.Block{
+		Model: gorm.Model{
+			CreatedAt: time.UnixMilli(createdAt),
+		},
+		BlockHeight: bc.currentBlock + 1,
+		BlockStatus: block.StatusProposing,
+	}
+
+	err := bc.BlockModel.CreateNewBlock(newBlock)
+	if err != nil {
+		return nil, err
+	}
+
+	bc.currentBlock++
+	return newBlock, nil
 }
 
 func (bc *BlockChain) CommitNewBlock(stateCache *StateCache) error {

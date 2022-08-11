@@ -24,6 +24,7 @@ const (
 
 const (
 	PendingTxStatus = iota
+	ExecutedTxStatus
 	SuccessTxStatus
 	FailTxStatus
 )
