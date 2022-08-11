@@ -18,7 +18,7 @@ import (
 )
 
 var configFile = flag.String("f",
-	"./etc/committer.yaml", "the config file")
+	"./etc/config.yaml", "the path of config file")
 
 func main() {
 	flag.Parse()

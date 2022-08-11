@@ -11,7 +11,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/cronjob/witness/svc"
 )
 
-var configFile = flag.String("f", "./etc/config.yaml", "the config file")
+var configFile = flag.String("f", "./etc/config.yaml", "the path of config file")
 
 func main() {
 	flag.Parse()
