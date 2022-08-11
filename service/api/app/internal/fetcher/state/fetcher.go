@@ -8,15 +8,14 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 
-	"github.com/bnb-chain/zkbas/common/commonConstant"
-	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/bnb-chain/zkbas/errorcode"
-
 	"github.com/bnb-chain/zkbas/common/commonAsset"
+	"github.com/bnb-chain/zkbas/common/commonConstant"
+	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
+	"github.com/bnb-chain/zkbas/common/util"
 )
 
 //go:generate mockgen -source api.go -destination api_mock.go -package state
@@ -32,7 +31,7 @@ type Fetcher interface {
 }
 
 func NewFetcher(redisConn *redis.Redis,
-	mempoolModel mempool.MempoolModel,
+	mempoolModel mempool.MemPoolModel,
 	mempoolDetailModel mempool.MempoolTxDetailModel,
 	accountModel account.AccountModel,
 	liquidityModel liquidity.LiquidityModel,
@@ -51,7 +50,7 @@ func NewFetcher(redisConn *redis.Redis,
 
 type fetcher struct {
 	redisConnection      *redis.Redis
-	mempoolModel         mempool.MempoolModel
+	mempoolModel         mempool.MemPoolModel
 	mempoolTxDetailModel mempool.MempoolTxDetailModel
 	accountModel         account.AccountModel
 	liquidityModel       liquidity.LiquidityModel

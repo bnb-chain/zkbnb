@@ -121,12 +121,12 @@ func CommitTrees(version uint64,
 	if err != nil {
 		return errors.Wrapf(err, "unable to commit account tree, tree ver: %d, prune ver: %d", ver, accPrunedVersion)
 	}
-	for idx, assetTree := range *assetTrees {
+	for idx := range *assetTrees {
 		assetPrunedVersion := bsmt.Version(version)
-		if assetTree.LatestVersion() < assetPrunedVersion {
-			assetPrunedVersion = assetTree.LatestVersion()
+		if (*assetTrees)[idx].LatestVersion() < assetPrunedVersion {
+			assetPrunedVersion = (*assetTrees)[idx].LatestVersion()
 		}
-		ver, err := assetTree.Commit(&assetPrunedVersion)
+		ver, err := (*assetTrees)[idx].Commit(&assetPrunedVersion)
 		if err != nil {
 			return errors.Wrapf(err, "unable to commit asset tree [%d], tree ver: %d, prune ver: %d", idx, ver, assetPrunedVersion)
 		}

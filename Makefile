@@ -19,3 +19,11 @@ deploy:
 
 test:
 	sudo bash -x ./local-test.sh
+
+build: app
+	go build -o build/app ./service/api/app/app.go
+	go build -o build/committer ./service/cronjob/committer/committer.go
+	go build -o build/monitor ./service/cronjob/monitor/main.go
+	go build -o build/prover ./service/cronjob/prover/main.go
+	go build -o build/sender ./service/cronjob/sender/main.go
+	go build -o build/witness ./service/cronjob/witness/main.go

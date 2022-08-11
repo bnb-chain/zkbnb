@@ -18,9 +18,5 @@
 package sysconfig
 
 const (
-	TableName       = `sys_config`
-	NameColumn      = "name"
-	ValueColumn     = "value"
-	ValueTypeColumn = "value_type"
-	CommentColumn   = "comment"
+	TableName = `sys_config`
 )

@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/common/model/account"
-	"github.com/bnb-chain/zkbas/common/model/assetInfo"
+	"github.com/bnb-chain/zkbas/common/model/asset"
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
@@ -33,10 +33,10 @@ type ServiceContext struct {
 	TxModel            tx.TxModel
 	BlockModel         block.BlockModel
 	MempoolDetailModel mempool.MempoolTxDetailModel
-	MempoolModel       mempool.MempoolModel
-	L2AssetInfoModel   assetInfo.AssetInfoModel
+	MempoolModel       mempool.MemPoolModel
+	L2AssetModel       asset.AssetModel
 
-	SysConfigModel sysconfig.SysconfigModel
+	SysConfigModel sysconfig.SysConfigModel
 }
 
 func WithRedis(redisType string, redisPass string) redis.Option {
@@ -52,7 +52,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		logx.Errorf("gorm connect db error, err = %s", err.Error())
 	}
 	conn := sqlx.NewSqlConn("postgres", c.Postgres.DataSource)
-	redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
+	//redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
 
 	return &ServiceContext{
 		Config:                c,
@@ -63,55 +63,11 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		LiquidityHistoryModel: liquidity.NewLiquidityHistoryModel(conn, c.CacheRedis, gormPointer),
 		L2NftHistoryModel:     nft.NewL2NftHistoryModel(conn, c.CacheRedis, gormPointer),
 		TxDetailModel:         tx.NewTxDetailModel(conn, c.CacheRedis, gormPointer),
-		TxModel:               tx.NewTxModel(conn, c.CacheRedis, gormPointer, redisConn),
-		BlockModel:            block.NewBlockModel(conn, c.CacheRedis, gormPointer, redisConn),
+		TxModel:               tx.NewTxModel(conn, c.CacheRedis, gormPointer),
+		BlockModel:            block.NewBlockModel(conn, c.CacheRedis, gormPointer),
 		MempoolDetailModel:    mempool.NewMempoolDetailModel(conn, c.CacheRedis, gormPointer),
 		MempoolModel:          mempool.NewMempoolModel(conn, c.CacheRedis, gormPointer),
-		L2AssetInfoModel:      assetInfo.NewAssetInfoModel(conn, c.CacheRedis, gormPointer),
-		SysConfigModel:        sysconfig.NewSysconfigModel(conn, c.CacheRedis, gormPointer),
+		L2AssetModel:          asset.NewAssetModel(conn, c.CacheRedis, gormPointer),
+		SysConfigModel:        sysconfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
 	}
 }
-
-/*
-func (s *ServiceContext) Run() {
-	mempoolTxs, err := s.MempoolModel.GetAllMempoolTxsList()
-	if err != nil {
-		errInfo := fmt.Sprintf("[CommitterTask] => [MempoolModel.GetAllMempoolTxsList] mempool query error:%s", err.Error())
-		logx.Error(errInfo)
-		return
-	}
-	if len(mempoolTxs) == 0 {
-		logx.Info("[CommitterTask] No new mempool transactions")
-		return
-	} else {
-		s.CommitterTask(mempoolTxs)
-	}
-}
-func (s *ServiceContext) InitMerkleTree() (err error) {
-	accounts, err := s.accountModel.GetAllAccounts()
-	if err != nil {
-		return err
-	}
-	generalAssets, err := s.AccountAssetModel.GetAllAccountAssets()
-	if err != nil {
-		return err
-	}
-	liquidityAssets, err := s.LiquidityAssetModel.GetAllLiquidityAssets()
-	if err != nil {
-		return err
-	}
-	lockAssets, err := s.LockAssetModel.GetAllLockedAssets()
-	if err != nil {
-		return err
-	}
-	s.GlobalState, err = smt.ConstructGlobalState(accounts, generalAssets, liquidityAssets, lockAssets)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-func (s *ServiceContext) CommitterTask(mempoolTxs []*mempool.MempoolTx) {
-	//
-	logx.Info("CommitterTask")
-}
-*/

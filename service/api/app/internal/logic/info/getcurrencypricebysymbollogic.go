@@ -7,7 +7,7 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/errorcode"
+	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
@@ -34,7 +34,7 @@ func (l *GetCurrencyPriceBySymbolLogic) GetCurrencyPriceBySymbol(req *types.ReqG
 	}
 	symbol := strings.ToUpper(req.Symbol)
 
-	l2Asset, err := l.svcCtx.L2AssetModel.GetAssetInfoBySymbol(symbol)
+	l2Asset, err := l.svcCtx.L2AssetModel.GetAssetBySymbol(symbol)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound

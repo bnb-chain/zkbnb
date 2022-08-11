@@ -28,7 +28,7 @@ import (
 )
 
 type (
-	SysconfigModel        = sysconfig.SysconfigModel
+	SysconfigModel        = sysconfig.SysConfigModel
 	AccountModel          = account.AccountModel
 	AccountHistoryModel   = account.AccountHistoryModel
 	L2NftHistoryModel     = nft.L2NftHistoryModel

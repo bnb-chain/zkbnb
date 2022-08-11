@@ -11,7 +11,7 @@ import (
 
 	gocache "github.com/patrickmn/go-cache"
 
-	"github.com/bnb-chain/zkbas/errorcode"
+	"github.com/bnb-chain/zkbas/common/errorcode"
 )
 
 const cacheKey = "p:"

@@ -24,14 +24,17 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas/errorcode"
+	"github.com/bnb-chain/zkbas/common/errorcode"
 )
 
 type (
 	L2NftHistoryModel interface {
 		CreateL2NftHistoryTable() error
 		DropL2NftHistoryTable() error
-		GetLatestNftAssetsByBlockHeight(height int64) (
+		GetLatestNftAssetCountByBlockHeight(height int64) (
+			count int64, err error,
+		)
+		GetLatestNftAssetsByBlockHeight(height int64, limit int, offset int) (
 			rowsAffected int64, nftAssets []*L2NftHistory, err error,
 		)
 	}
@@ -88,18 +91,37 @@ func (m *defaultL2NftHistoryModel) DropL2NftHistoryTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-func (m *defaultL2NftHistoryModel) GetLatestNftAssetsByBlockHeight(height int64) (
+func (m *defaultL2NftHistoryModel) GetLatestNftAssetCountByBlockHeight(height int64) (
+	count int64, err error,
+) {
+	subQuery := m.DB.Table(m.table).Select("*").
+		Where("nft_index = a.nft_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height", height)
+
+	dbTx := m.DB.Table(m.table+" as a").
+		Where("NOT EXISTS (?) AND l2_block_height <= ?", subQuery, height)
+
+	if dbTx.Count(&count).Error != nil {
+		logx.Errorf("[GetLatestNftAssetCountByBlockHeight] unable to get related nft assets: %s", dbTx.Error.Error())
+		return 0, errorcode.DbErrSqlOperation
+	}
+
+	return count, nil
+}
+
+func (m *defaultL2NftHistoryModel) GetLatestNftAssetsByBlockHeight(height int64, limit int, offset int) (
 	rowsAffected int64, accountNftAssets []*L2NftHistory, err error,
 ) {
-	// TODO sql
-	dbTx := m.DB.Table(m.table).
-		Raw("SELECT a.* FROM l2_nft_history a WHERE NOT EXISTS"+
-			"(SELECT * FROM l2_nft_history WHERE nft_index = a.nft_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height) "+
-			"AND l2_block_height <= ? ORDER BY nft_index", height, height).
-		Find(&accountNftAssets)
-	if dbTx.Error != nil {
-		logx.Errorf("unable to get related nft assets: %s", dbTx.Error.Error())
-		return 0, nil, errorcode.DbErrSqlOperation
+	subQuery := m.DB.Table(m.table).Select("*").
+		Where("nft_index = a.nft_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height", height)
+
+	dbTx := m.DB.Table(m.table+" as a").Select("*").
+		Where("NOT EXISTS (?) AND l2_block_height <= ?", subQuery, height).
+		Limit(limit).Offset(offset).
+		Order("nft_index")
+
+	if dbTx.Find(&accountNftAssets).Error != nil {
+		logx.Errorf("[GetLatestNftAssetsByBlockHeight] unable to get related nft assets: %s", dbTx.Error.Error())
+		return 0, nil,  errorcode.DbErrSqlOperation
 	}
 	return dbTx.RowsAffected, accountNftAssets, nil
 }

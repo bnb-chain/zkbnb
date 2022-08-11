@@ -21,13 +21,12 @@ import (
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
-
-	"github.com/bnb-chain/zkbas/errorcode"
-
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
+
+	"github.com/bnb-chain/zkbas/common/errorcode"
 )
 
 type (

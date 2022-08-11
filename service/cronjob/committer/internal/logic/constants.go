@@ -6,7 +6,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/model/account"
-	"github.com/bnb-chain/zkbas/common/model/assetInfo"
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/blockForCommit"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
@@ -17,20 +16,18 @@ import (
 )
 
 type (
-	// tx
 	Tx       = tx.Tx
 	TxDetail = tx.TxDetail
-	// block
+
 	Block          = block.Block
 	BlockForCommit = blockForCommit.BlockForCommit
-	// mempool
+
 	MempoolTx       = mempool.MempoolTx
 	MempoolTxDetail = mempool.MempoolTxDetail
-	// assets
-	L2Nft = nft.L2Nft
-	// assets history
+
+	L2Nft        = nft.L2Nft
 	L2NftHistory = nft.L2NftHistory
-	// account history
+
 	Account        = account.Account
 	AccountHistory = account.AccountHistory
 
@@ -40,11 +37,9 @@ type (
 	Liquidity        = liquidity.Liquidity
 	LiquidityHistory = liquidity.LiquidityHistory
 
-	SysconfigModel = sysconfig.SysconfigModel
-	MempoolModel   = mempool.MempoolModel
+	SysConfigModel = sysconfig.SysConfigModel
+	MemPoolModel   = mempool.MemPoolModel
 	BlockModel     = block.BlockModel
-	AssetInfoModel = assetInfo.AssetInfoModel
-	AssetInfo      = assetInfo.AssetInfo
 
 	L2NftModel        = nft.L2NftModel
 	L2NftHistoryModel = nft.L2NftHistoryModel
@@ -53,9 +48,8 @@ type (
 )
 
 const (
-	// tx status
 	TxStatusPending = tx.StatusPending
-	// asset type
+
 	GeneralAssetType         = commonAsset.GeneralAssetType
 	LiquidityAssetType       = commonAsset.LiquidityAssetType
 	NftAssetType             = commonAsset.NftAssetType
@@ -82,7 +76,6 @@ const (
 )
 
 const (
-	// 15 minutes
 	MaxCommitterInterval = 60 * 1
 )
 

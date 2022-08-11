@@ -5,7 +5,7 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/errorcode"
+	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
@@ -35,11 +35,11 @@ func (l *GetAvailablePairsLogic) GetAvailablePairs(_ *types.ReqGetAvailablePairs
 	}
 
 	for _, asset := range liquidityAssets {
-		assetA, err := l.svcCtx.L2AssetModel.GetSimpleAssetInfoByAssetId(asset.AssetAId)
+		assetA, err := l.svcCtx.L2AssetModel.GetAssetByAssetId(asset.AssetAId)
 		if err != nil {
 			return nil, errorcode.AppErrInternal
 		}
-		assetB, err := l.svcCtx.L2AssetModel.GetSimpleAssetInfoByAssetId(asset.AssetBId)
+		assetB, err := l.svcCtx.L2AssetModel.GetAssetByAssetId(asset.AssetBId)
 		if err != nil {
 			return nil, errorcode.AppErrInternal
 		}

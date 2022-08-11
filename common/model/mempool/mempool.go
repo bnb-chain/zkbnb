@@ -27,12 +27,12 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/common/commonConstant"
+	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/common/model/nft"
-	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type (
-	MempoolModel interface {
+	MemPoolModel interface {
 		CreateMempoolTxTable() error
 		DropMempoolTxTable() error
 		GetMempoolTxByTxId(id int64) (mempoolTx *MempoolTx, err error)
@@ -83,7 +83,7 @@ type (
 	}
 )
 
-func NewMempoolModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) MempoolModel {
+func NewMempoolModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) MemPoolModel {
 	return &defaultMempoolModel{
 		CachedConn: sqlc.NewConn(conn, c),
 		table:      MempoolTableName,
@@ -96,20 +96,20 @@ func (*MempoolTx) TableName() string {
 }
 
 /*
-	Func: CreateMempoolTxTable
-	Params:
-	Return: err error
-	Description: create MempoolTx table
+Func: CreateMempoolTxTable
+Params:
+Return: err error
+Description: create MempoolTx table
 */
 func (m *defaultMempoolModel) CreateMempoolTxTable() error {
 	return m.DB.AutoMigrate(MempoolTx{})
 }
 
 /*
-	Func: DropMempoolTxTable
-	Params:
-	Return: err error
-	Description: drop MempoolTx table
+Func: DropMempoolTxTable
+Params:
+Return: err error
+Description: drop MempoolTx table
 */
 func (m *defaultMempoolModel) DropMempoolTxTable() error {
 	return m.DB.Migrator().DropTable(m.table)
@@ -134,10 +134,10 @@ func (m *defaultMempoolModel) OrderMempoolTxDetails(tx *MempoolTx) (err error) {
 }
 
 /*
-	Func: GetMempoolTxsList
-	Params: limit int, offset int
-	Return: []*MempoolTx, err error
-	Description: used for /api/v1/txVerification/getMempoolTxsList
+Func: GetMempoolTxsList
+Params: limit int, offset int
+Return: []*MempoolTx, err error
+Description: used for /api/v1/txVerification/getMempoolTxsList
 */
 func (m *defaultMempoolModel) GetMempoolTxsList(limit int64, offset int64) (mempoolTxs []*MempoolTx, err error) {
 	dbTx := m.DB.Table(m.table).Where("status = ?", PendingTxStatus).Limit(int(limit)).Offset(int(offset)).Order("created_at desc, id desc").Find(&mempoolTxs)
@@ -197,10 +197,10 @@ func (m *defaultMempoolModel) GetMempoolTxsListForCommitter() (mempoolTxs []*Mem
 }
 
 /*
-	Func: GetMempoolTxsTotalCount
-	Params:
-	Return: count int64, err error
-	Description: used for counting total transactions in mempool for explorer dashboard
+Func: GetMempoolTxsTotalCount
+Params:
+Return: count int64, err error
+Description: used for counting total transactions in mempool for explorer dashboard
 */
 func (m *defaultMempoolModel) GetMempoolTxsTotalCount() (count int64, err error) {
 	dbTx := m.DB.Table(m.table).Where("status = ? and deleted_at is NULL", PendingTxStatus).Count(&count)
@@ -214,10 +214,10 @@ func (m *defaultMempoolModel) GetMempoolTxsTotalCount() (count int64, err error)
 }
 
 /*
-	Func: GetMempoolTxByTxHash
-	Params: hash string
-	Return: mempoolTxs *MempoolTx, err error
-	Description: used for get  transactions in mempool by txVerification hash
+Func: GetMempoolTxByTxHash
+Params: hash string
+Return: mempoolTxs *MempoolTx, err error
+Description: used for get  transactions in mempool by txVerification hash
 */
 func (m *defaultMempoolModel) GetMempoolTxByTxHash(hash string) (mempoolTx *MempoolTx, err error) {
 	dbTx := m.DB.Table(m.table).Where("status = ? and tx_hash = ?", PendingTxStatus, hash).Find(&mempoolTx)
@@ -261,10 +261,10 @@ func (m *defaultMempoolModel) CreateBatchedMempoolTxs(mempoolTxs []*MempoolTx) e
 }
 
 /*
-	Func: GetMempoolTxIdsListByL2BlockHeight
-	Params: blockHeight
-	Return: []*MempoolTx, err error
-	Description: used for verifier get txIds from Mempool and deleting the transaction in mempool table after
+Func: GetMempoolTxIdsListByL2BlockHeight
+Params: blockHeight
+Return: []*MempoolTx, err error
+Description: used for verifier get txIds from Mempool and deleting the transaction in mempool table after
 */
 func (m *defaultMempoolModel) GetMempoolTxsListByL2BlockHeight(blockHeight int64) (mempoolTxs []*MempoolTx, err error) {
 	dbTx := m.DB.Table(m.table).Where("status = ? and l2_block_height <= ?", SuccessTxStatus, blockHeight).Find(&mempoolTxs)

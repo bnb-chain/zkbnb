@@ -28,19 +28,18 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/redis"
 
 	"github.com/bnb-chain/zkbas/common/model/account"
-	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
+	"github.com/bnb-chain/zkbas/common/model/asset"
 	"github.com/bnb-chain/zkbas/common/model/basic"
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/blockForCommit"
 	"github.com/bnb-chain/zkbas/common/model/blockForProof"
-	"github.com/bnb-chain/zkbas/common/model/l1BlockMonitor"
-	"github.com/bnb-chain/zkbas/common/model/l1TxSender"
-	"github.com/bnb-chain/zkbas/common/model/l2BlockEventMonitor"
-	"github.com/bnb-chain/zkbas/common/model/l2TxEventMonitor"
+	"github.com/bnb-chain/zkbas/common/model/l1RollupTx"
+	"github.com/bnb-chain/zkbas/common/model/l1SyncedBlock"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
-	"github.com/bnb-chain/zkbas/common/model/proofSender"
+	"github.com/bnb-chain/zkbas/common/model/priorityRequest"
+	"github.com/bnb-chain/zkbas/common/model/proof"
 	"github.com/bnb-chain/zkbas/common/model/sysconfig"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/sysconfigName"
@@ -65,71 +64,54 @@ func main() {
 	initTable()
 }
 
-func initSysConfig() []*sysconfig.Sysconfig {
-	return []*sysconfig.Sysconfig{
+func initSysConfig() []*sysconfig.SysConfig {
+	return []*sysconfig.SysConfig{
 		{
-			Name:      sysconfigName.SysGasFee,
+			Name:      sysConfigName.SysGasFee,
 			Value:     "100000000000000",
 			ValueType: "string",
 			Comment:   "based on BNB",
 		},
 		{
-			Name:      sysconfigName.TreasuryAccountIndex,
+			Name:      sysConfigName.TreasuryAccountIndex,
 			Value:     "0",
 			ValueType: "int",
 			Comment:   "treasury index",
 		},
 		{
-			Name:      sysconfigName.GasAccountIndex,
+			Name:      sysConfigName.GasAccountIndex,
 			Value:     "1",
 			ValueType: "int",
 			Comment:   "gas index",
 		},
 		{
-			Name:      sysconfigName.ZkbasContract,
+			Name:      sysConfigName.ZkbasContract,
 			Value:     svrConf.ZkbasProxy,
 			ValueType: "string",
 			Comment:   "Zkbas contract on BSC",
 		},
 		// Governance Contract
 		{
-			Name:      sysconfigName.GovernanceContract,
+			Name:      sysConfigName.GovernanceContract,
 			Value:     svrConf.Governance,
 			ValueType: "string",
 			Comment:   "Governance contract on BSC",
 		},
-
-		// Asset_Governance Contract
-		//{
-		//	Name:      sysconfigName.AssetGovernanceContract,
-		//	Value:     AssetGovernanceContractAddr,
-		//	ValueType: "string",
-		//	Comment:   "Asset_Governance contract on BSC",
-		//},
-
-		// Verifier Contract
-		//{
-		//	Name:      sysconfigName.VerifierContract,
-		//	Value:     VerifierContractAddr,
-		//	ValueType: "string",
-		//	Comment:   "Verifier contract on BSC",
-		//},
 		// network rpc
 		{
-			Name:      sysconfigName.BscTestNetworkRpc,
+			Name:      sysConfigName.BscTestNetworkRpc,
 			Value:     BSC_Test_Network_RPC,
 			ValueType: "string",
 			Comment:   "BSC network rpc",
 		},
-		// TODO
 		{
-			Name:      sysconfigName.LocalTestNetworkRpc,
+			Name:      sysConfigName.LocalTestNetworkRpc,
 			Value:     Local_Test_Network_RPC,
 			ValueType: "string",
 			Comment:   "Local network rpc",
 		},
 		{
-			Name:      sysconfigName.ZnsPriceOracle,
+			Name:      sysConfigName.ZnsPriceOracle,
 			Value:     svrConf.ZnsPriceOracle,
 			ValueType: "string",
 			Comment:   "Zns Price Oracle",
@@ -137,8 +119,8 @@ func initSysConfig() []*sysconfig.Sysconfig {
 	}
 }
 
-func initAssetsInfo() []*asset.AssetInfo {
-	return []*asset.AssetInfo{
+func initAssetsInfo() []*asset.Asset {
+	return []*asset.Asset{
 		{
 			AssetId:     0,
 			L1Address:   "0x00",
@@ -148,20 +130,6 @@ func initAssetsInfo() []*asset.AssetInfo {
 			Status:      0,
 			IsGasAsset:  asset.IsGasAsset,
 		},
-		//{
-		//	AssetId:     1,
-		//	AssetName:   "LEG",
-		//	AssetSymbol: "LEG",
-		//	Decimals:    18,
-		//	Status:      0,
-		//},
-		//{
-		//	AssetId:     2,
-		//	AssetName:   "REY",
-		//	AssetSymbol: "REY",
-		//	Decimals:    18,
-		//	Status:      0,
-		//},
 	}
 }
 
@@ -173,40 +141,38 @@ func WithRedis(redisType string, redisPass string) redis.Option {
 }
 
 var (
-	redisConn      = redis.New(basic.CacheConf[0].Host, WithRedis(basic.CacheConf[0].Type, basic.CacheConf[0].Pass))
-	sysconfigModel = sysconfig.NewSysconfigModel(basic.Connection, basic.CacheConf, basic.DB)
-	//priceModel = price.NewPriceModel(basic.Connection, basic.CacheConf, basic.DB)
-	accountModel             = account.NewAccountModel(basic.Connection, basic.CacheConf, basic.DB)
-	accountHistoryModel      = account.NewAccountHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
-	assetInfoModel           = asset.NewAssetInfoModel(basic.Connection, basic.CacheConf, basic.DB)
-	mempoolDetailModel       = mempool.NewMempoolDetailModel(basic.Connection, basic.CacheConf, basic.DB)
-	mempoolModel             = mempool.NewMempoolModel(basic.Connection, basic.CacheConf, basic.DB)
-	failTxModel              = tx.NewFailTxModel(basic.Connection, basic.CacheConf, basic.DB)
-	txDetailModel            = tx.NewTxDetailModel(basic.Connection, basic.CacheConf, basic.DB)
-	txModel                  = tx.NewTxModel(basic.Connection, basic.CacheConf, basic.DB, redisConn)
-	blockModel               = block.NewBlockModel(basic.Connection, basic.CacheConf, basic.DB, redisConn)
-	blockForCommitModel      = blockForCommit.NewBlockForCommitModel(basic.Connection, basic.CacheConf, basic.DB)
-	blockForProofModel       = blockForProof.NewBlockForProofModel(basic.Connection, basic.CacheConf, basic.DB)
-	proofSenderModel         = proofSender.NewProofSenderModel(basic.DB)
-	l1BlockMonitorModel      = l1BlockMonitor.NewL1BlockMonitorModel(basic.Connection, basic.CacheConf, basic.DB)
-	l2TxEventMonitorModel    = l2TxEventMonitor.NewL2TxEventMonitorModel(basic.Connection, basic.CacheConf, basic.DB)
-	l2BlockEventMonitorModel = l2BlockEventMonitor.NewL2BlockEventMonitorModel(basic.Connection, basic.CacheConf, basic.DB)
-	l1TxSenderModel          = l1TxSender.NewL1TxSenderModel(basic.Connection, basic.CacheConf, basic.DB)
-	liquidityModel           = liquidity.NewLiquidityModel(basic.Connection, basic.CacheConf, basic.DB)
-	liquidityHistoryModel    = liquidity.NewLiquidityHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
-	nftModel                 = nft.NewL2NftModel(basic.Connection, basic.CacheConf, basic.DB)
-	offerModel               = nft.NewOfferModel(basic.Connection, basic.CacheConf, basic.DB)
-	nftHistoryModel          = nft.NewL2NftHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
-	nftExchangeModel         = nft.NewL2NftExchangeModel(basic.Connection, basic.CacheConf, basic.DB)
-	nftCollectionModel       = nft.NewL2NftCollectionModel(basic.Connection, basic.CacheConf, basic.DB)
-	nftWithdrawHistoryModel  = nft.NewL2NftWithdrawHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
+	redisConn               = redis.New(basic.CacheConf[0].Host, WithRedis(basic.CacheConf[0].Type, basic.CacheConf[0].Pass))
+	sysConfigModel          = sysconfig.NewSysConfigModel(basic.Connection, basic.CacheConf, basic.DB)
+	accountModel            = account.NewAccountModel(basic.Connection, basic.CacheConf, basic.DB)
+	accountHistoryModel     = account.NewAccountHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
+	assetModel              = asset.NewAssetModel(basic.Connection, basic.CacheConf, basic.DB)
+	mempoolDetailModel      = mempool.NewMempoolDetailModel(basic.Connection, basic.CacheConf, basic.DB)
+	mempoolModel            = mempool.NewMempoolModel(basic.Connection, basic.CacheConf, basic.DB)
+	failTxModel             = tx.NewFailTxModel(basic.Connection, basic.CacheConf, basic.DB)
+	txDetailModel           = tx.NewTxDetailModel(basic.Connection, basic.CacheConf, basic.DB)
+	txModel                 = tx.NewTxModel(basic.Connection, basic.CacheConf, basic.DB, redisConn)
+	blockModel              = block.NewBlockModel(basic.Connection, basic.CacheConf, basic.DB, redisConn)
+	blockForCommitModel     = blockForCommit.NewBlockForCommitModel(basic.Connection, basic.CacheConf, basic.DB)
+	blockForProofModel      = blockForProof.NewBlockForProofModel(basic.Connection, basic.CacheConf, basic.DB)
+	proofModel              = proof.NewProofModel(basic.DB)
+	l1SyncedBlockModel      = l1SyncedBlock.NewL1SyncedBlockModel(basic.Connection, basic.CacheConf, basic.DB)
+	priorityRequestModel    = priorityRequest.NewPriorityRequestModel(basic.Connection, basic.CacheConf, basic.DB)
+	l1RollupTModel          = l1RollupTx.NewL1RollupTxModel(basic.Connection, basic.CacheConf, basic.DB)
+	liquidityModel          = liquidity.NewLiquidityModel(basic.Connection, basic.CacheConf, basic.DB)
+	liquidityHistoryModel   = liquidity.NewLiquidityHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
+	nftModel                = nft.NewL2NftModel(basic.Connection, basic.CacheConf, basic.DB)
+	offerModel              = nft.NewOfferModel(basic.Connection, basic.CacheConf, basic.DB)
+	nftHistoryModel         = nft.NewL2NftHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
+	nftExchangeModel        = nft.NewL2NftExchangeModel(basic.Connection, basic.CacheConf, basic.DB)
+	nftCollectionModel      = nft.NewL2NftCollectionModel(basic.Connection, basic.CacheConf, basic.DB)
+	nftWithdrawHistoryModel = nft.NewL2NftWithdrawHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
 )
 
 func dropTables() {
-	assert.Nil(nil, sysconfigModel.DropSysconfigTable())
+	assert.Nil(nil, sysConfigModel.DropSysConfigTable())
 	assert.Nil(nil, accountModel.DropAccountTable())
 	assert.Nil(nil, accountHistoryModel.DropAccountHistoryTable())
-	assert.Nil(nil, assetInfoModel.DropAssetInfoTable())
+	assert.Nil(nil, assetModel.DropAssetTable())
 	assert.Nil(nil, mempoolDetailModel.DropMempoolDetailTable())
 	assert.Nil(nil, mempoolModel.DropMempoolTxTable())
 	assert.Nil(nil, failTxModel.DropFailTxTable())
@@ -215,11 +181,10 @@ func dropTables() {
 	assert.Nil(nil, blockModel.DropBlockTable())
 	assert.Nil(nil, blockForCommitModel.DropBlockForCommitTable())
 	assert.Nil(nil, blockForProofModel.DropBlockForProofTable())
-	assert.Nil(nil, proofSenderModel.DropProofSenderTable())
-	assert.Nil(nil, l1BlockMonitorModel.DropL1BlockMonitorTable())
-	assert.Nil(nil, l2TxEventMonitorModel.DropL2TxEventMonitorTable())
-	assert.Nil(nil, l2BlockEventMonitorModel.DropL2BlockEventMonitorTable())
-	assert.Nil(nil, l1TxSenderModel.DropL1TxSenderTable())
+	assert.Nil(nil, proofModel.DropProofTable())
+	assert.Nil(nil, l1SyncedBlockModel.DropL1SyncedBlockTable())
+	assert.Nil(nil, priorityRequestModel.DropPriorityRequestTable())
+	assert.Nil(nil, l1RollupTModel.DropL1RollupTxTable())
 	assert.Nil(nil, liquidityModel.DropLiquidityTable())
 	assert.Nil(nil, liquidityHistoryModel.DropLiquidityHistoryTable())
 	assert.Nil(nil, nftModel.DropL2NftTable())
@@ -231,10 +196,10 @@ func dropTables() {
 }
 
 func initTable() {
-	assert.Nil(nil, sysconfigModel.CreateSysconfigTable())
+	assert.Nil(nil, sysConfigModel.CreateSysConfigTable())
 	assert.Nil(nil, accountModel.CreateAccountTable())
 	assert.Nil(nil, accountHistoryModel.CreateAccountHistoryTable())
-	assert.Nil(nil, assetInfoModel.CreateAssetInfoTable())
+	assert.Nil(nil, assetModel.CreateAssetTable())
 	assert.Nil(nil, mempoolModel.CreateMempoolTxTable())
 	assert.Nil(nil, mempoolDetailModel.CreateMempoolDetailTable())
 	assert.Nil(nil, failTxModel.CreateFailTxTable())
@@ -243,11 +208,10 @@ func initTable() {
 	assert.Nil(nil, txDetailModel.CreateTxDetailTable())
 	assert.Nil(nil, blockForCommitModel.CreateBlockForCommitTable())
 	assert.Nil(nil, blockForProofModel.CreateBlockForProofTable())
-	assert.Nil(nil, proofSenderModel.CreateProofSenderTable())
-	assert.Nil(nil, l1BlockMonitorModel.CreateL1BlockMonitorTable())
-	assert.Nil(nil, l2TxEventMonitorModel.CreateL2TxEventMonitorTable())
-	assert.Nil(nil, l2BlockEventMonitorModel.CreateL2BlockEventMonitorTable())
-	assert.Nil(nil, l1TxSenderModel.CreateL1TxSenderTable())
+	assert.Nil(nil, proofModel.CreateProofTable())
+	assert.Nil(nil, l1SyncedBlockModel.CreateL1SyncedBlockTable())
+	assert.Nil(nil, priorityRequestModel.CreatePriorityRequestTable())
+	assert.Nil(nil, l1RollupTModel.CreateL1RollupTxTable())
 	assert.Nil(nil, liquidityModel.CreateLiquidityTable())
 	assert.Nil(nil, liquidityHistoryModel.CreateLiquidityHistoryTable())
 	assert.Nil(nil, nftModel.CreateL2NftTable())
@@ -256,12 +220,12 @@ func initTable() {
 	assert.Nil(nil, nftExchangeModel.CreateL2NftExchangeTable())
 	assert.Nil(nil, nftCollectionModel.CreateL2NftCollectionTable())
 	assert.Nil(nil, nftWithdrawHistoryModel.CreateL2NftWithdrawHistoryTable())
-	rowsAffected, err := assetInfoModel.CreateAssetsInfoInBatches(initAssetsInfo())
+	rowsAffected, err := assetModel.CreateAssetsInBatch(initAssetsInfo())
 	if err != nil {
 		panic(err)
 	}
 	logx.Infof("l2 assets info rows affected: %d", rowsAffected)
-	rowsAffected, err = sysconfigModel.CreateSysconfigInBatches(initSysConfig())
+	rowsAffected, err = sysConfigModel.CreateSysConfigInBatches(initSysConfig())
 	if err != nil {
 		panic(err)
 	}

@@ -15,3 +15,10 @@ CacheRedis:
 
 TreeDB:
   Driver: memorydb
+
+LogConf:
+  ServiceName: committer
+  Mode: console
+  Path: ./log/committer
+  StackCooldownMillis: 500
+  Level: error

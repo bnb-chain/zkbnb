@@ -24,24 +24,24 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas/errorcode"
+	"github.com/bnb-chain/zkbas/common/errorcode"
 )
 
 type (
-	SysconfigModel interface {
-		CreateSysconfigTable() error
-		DropSysconfigTable() error
-		GetSysconfigByName(name string) (info *Sysconfig, err error)
-		CreateSysconfigInBatches(configs []*Sysconfig) (rowsAffected int64, err error)
+	SysConfigModel interface {
+		CreateSysConfigTable() error
+		DropSysConfigTable() error
+		GetSysConfigByName(name string) (info *SysConfig, err error)
+		CreateSysConfigInBatches(configs []*SysConfig) (rowsAffected int64, err error)
 	}
 
-	defaultSysconfigModel struct {
+	defaultSysConfigModel struct {
 		sqlc.CachedConn
 		table string
 		DB    *gorm.DB
 	}
 
-	Sysconfig struct {
+	SysConfig struct {
 		gorm.Model
 		Name      string
 		Value     string
@@ -50,45 +50,27 @@ type (
 	}
 )
 
-func NewSysconfigModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) SysconfigModel {
-	return &defaultSysconfigModel{
+func NewSysConfigModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) SysConfigModel {
+	return &defaultSysConfigModel{
 		CachedConn: sqlc.NewConn(conn, c),
 		table:      TableName,
 		DB:         db,
 	}
 }
 
-func (*Sysconfig) TableName() string {
+func (*SysConfig) TableName() string {
 	return TableName
 }
 
-/*
-	Func: CreateSysconfigTable
-	Params:
-	Return: err error
-	Description: create Sysconfig table
-*/
-func (m *defaultSysconfigModel) CreateSysconfigTable() error {
-	return m.DB.AutoMigrate(Sysconfig{})
+func (m *defaultSysConfigModel) CreateSysConfigTable() error {
+	return m.DB.AutoMigrate(SysConfig{})
 }
 
-/*
-	Func: DropSysconfigTable
-	Params:
-	Return: err error
-	Description: drop Sysconfig table
-*/
-func (m *defaultSysconfigModel) DropSysconfigTable() error {
+func (m *defaultSysConfigModel) DropSysConfigTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-/*
-	Func: GetSysconfigByName
-	Params: name string
-	Return: info *Sysconfig, err error
-	Description: get sysconfig by config name
-*/
-func (m *defaultSysconfigModel) GetSysconfigByName(name string) (config *Sysconfig, err error) {
+func (m *defaultSysConfigModel) GetSysConfigByName(name string) (config *SysConfig, err error) {
 	dbTx := m.DB.Table(m.table).Where("name = ?", name).Find(&config)
 	if dbTx.Error != nil {
 		logx.Errorf("get sys config by name error, err: %s", dbTx.Error.Error())
@@ -99,7 +81,7 @@ func (m *defaultSysconfigModel) GetSysconfigByName(name string) (config *Sysconf
 	return config, nil
 }
 
-func (m *defaultSysconfigModel) CreateSysconfigInBatches(configs []*Sysconfig) (rowsAffected int64, err error) {
+func (m *defaultSysConfigModel) CreateSysConfigInBatches(configs []*SysConfig) (rowsAffected int64, err error) {
 	dbTx := m.DB.Table(m.table).CreateInBatches(configs, len(configs))
 	if dbTx.Error != nil {
 		logx.Errorf("create sys configs error, err: %s", dbTx.Error.Error())

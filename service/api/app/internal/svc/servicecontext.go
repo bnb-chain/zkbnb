@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/common/model/account"
-	asset "github.com/bnb-chain/zkbas/common/model/assetInfo"
+	"github.com/bnb-chain/zkbas/common/model/asset"
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
@@ -35,7 +35,7 @@ type ServiceContext struct {
 	CodeVersion   string
 	GitCommitHash string
 
-	MempoolModel          mempool.MempoolModel
+	MempoolModel          mempool.MemPoolModel
 	MempoolDetailModel    mempool.MempoolTxDetailModel
 	AccountModel          account.AccountModel
 	AccountHistoryModel   account.AccountHistoryModel
@@ -48,8 +48,8 @@ type ServiceContext struct {
 	NftModel              nft.L2NftModel
 	CollectionModel       nft.L2NftCollectionModel
 	OfferModel            nft.OfferModel
-	L2AssetModel          asset.AssetInfoModel
-	SysConfigModel        sysconfig.SysconfigModel
+	L2AssetModel          asset.AssetModel
+	SysConfigModel        sysconfig.SysConfigModel
 
 	PriceFetcher price.Fetcher
 	StateFetcher state.Fetcher
@@ -91,8 +91,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		NftModel:              nftModel,
 		CollectionModel:       nft.NewL2NftCollectionModel(conn, c.CacheRedis, gormPointer),
 		OfferModel:            offerModel,
-		L2AssetModel:          asset.NewAssetInfoModel(conn, c.CacheRedis, gormPointer),
-		SysConfigModel:        sysconfig.NewSysconfigModel(conn, c.CacheRedis, gormPointer),
+		L2AssetModel:          asset.NewAssetModel(conn, c.CacheRedis, gormPointer),
+		SysConfigModel:        sysconfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
 
 		PriceFetcher: price.NewFetcher(cache),
 		StateFetcher: state.NewFetcher(redisConn, mempoolModel, mempoolDetailModel, accountModel,

@@ -2,11 +2,14 @@ package main
 
 import (
 	"flag"
-	"github.com/bnb-chain/zkbas/service/cronjob/sender/config"
-	"github.com/bnb-chain/zkbas/service/cronjob/sender/svc"
+	"github.com/zeromicro/go-zero/core/proc"
+
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas/service/cronjob/sender/config"
+	"github.com/bnb-chain/zkbas/service/cronjob/sender/sender"
 )
 
 var configFile = flag.String("f",
@@ -17,8 +20,12 @@ func main() {
 
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
-	sender := svc.NewSender(c)
+	s := sender.NewSender(c)
+	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
+	proc.AddShutdownListener(func() {
+		logx.Close()
+	})
 
 	// new cron
 	cronJob := cron.New(cron.WithChain(
@@ -26,12 +33,12 @@ func main() {
 	))
 
 	_, err := cronJob.AddFunc("@every 10s", func() {
-		logx.Info("========================= start sender commit task =========================")
-		err := sender.CommittedBlocks()
+		logx.Info("========================= start s commit task =========================")
+		err := s.CommitBlocks()
 		if err != nil {
-			logx.Errorf("[sender.CommittedBlocks] unable to run: %", err)
+			logx.Errorf("[s.CommitBlocks] unable to run: %", err)
 		} else {
-			logx.Info("========================= end sender commit task =========================")
+			logx.Info("========================= end s commit task =========================")
 		}
 	})
 	if err != nil {
@@ -39,19 +46,32 @@ func main() {
 	}
 
 	_, err = cronJob.AddFunc("@every 10s", func() {
-		logx.Info("========================= start sender verify task =========================")
-		err = sender.VerifyAndExecuteBlocks()
+		logx.Info("========================= start s verify task =========================")
+		err = s.VerifyAndExecuteBlocks()
 		if err != nil {
-			logx.Errorf("[sender.VerifyAndExecuteBlocks] unable to run: %v", err)
+			logx.Errorf("[s.VerifyAndExecuteBlocks] unable to run: %v", err)
 		} else {
-			logx.Info("========================= end sender verify task =========================")
+			logx.Info("========================= end s verify task =========================")
 		}
 	})
+
+	_, err = cronJob.AddFunc("@every 10s", func() {
+		logx.Info("========================= start update sent txs task =========================")
+		err = s.UpdateSentTxs()
+		if err != nil {
+			logx.Info("update sent txs error, err:", err)
+		}
+		logx.Info("========================= end update sent txs task =========================")
+	})
+	if err != nil {
+		panic(err)
+	}
+
 	if err != nil {
 		panic(err)
 	}
 	cronJob.Start()
 
-	logx.Info("sender cronjob is starting......")
+	logx.Info("s cronjob is starting......")
 	select {}
 }

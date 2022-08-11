@@ -18,9 +18,9 @@
 package proverUtil
 
 import (
-	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	"strings"
 
+	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonTx"

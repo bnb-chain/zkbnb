@@ -8,9 +8,9 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonConstant"
-	"github.com/bnb-chain/zkbas/common/sysconfigName"
+	"github.com/bnb-chain/zkbas/common/errorcode"
+	sysConfigName "github.com/bnb-chain/zkbas/common/sysconfigName"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/bnb-chain/zkbas/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
@@ -32,7 +32,7 @@ func NewGetWithdrawGasFeeLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 func (l *GetWithdrawGasFeeLogic) GetWithdrawGasFee(req *types.ReqGetWithdrawGasFee) (*types.RespGetWithdrawGasFee, error) {
 	resp := &types.RespGetWithdrawGasFee{}
 
-	assetInfo, err := l.svcCtx.L2AssetModel.GetSimpleAssetInfoByAssetId(int64(req.AssetId))
+	assetInfo, err := l.svcCtx.L2AssetModel.GetAssetByAssetId(int64(req.AssetId))
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
@@ -43,7 +43,7 @@ func (l *GetWithdrawGasFeeLogic) GetWithdrawGasFee(req *types.ReqGetWithdrawGasF
 		logx.Errorf("not gas asset id: %d", assetInfo.AssetId)
 		return nil, errorcode.AppErrInvalidGasAsset
 	}
-	sysGasFee, err := l.svcCtx.SysConfigModel.GetSysconfigByName(sysconfigName.SysGasFee)
+	sysGasFee, err := l.svcCtx.SysConfigModel.GetSysConfigByName(sysConfigName.SysGasFee)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound

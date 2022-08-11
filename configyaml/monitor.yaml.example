@@ -1,6 +1,5 @@
 Name: monitor.cronjob
 
-
 Prometheus:
   Host: 0.0.0.0
   Port: 9091
@@ -20,9 +19,15 @@ ChainConfig:
   GovernanceContractAddrSysConfigName: "GovernanceContract"
   StartL1BlockHeight: 26770000
   # StartL1BlockHeight: 0
-  PendingBlocksCount: 0
+  ConfirmBlocksCount: 0
   MaxHandledBlocksCount: 100000
 
+LogConf:
+  ServiceName: monitor
+  Mode: console
+  Path: ./log/monitor
+  StackCooldownMillis: 500
+  Level: error
 
 
 

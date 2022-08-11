@@ -24,14 +24,15 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas/errorcode"
+	"github.com/bnb-chain/zkbas/common/errorcode"
 )
 
 type (
 	LiquidityHistoryModel interface {
 		CreateLiquidityHistoryTable() error
 		DropLiquidityHistoryTable() error
-		GetLatestLiquidityByBlockHeight(blockHeight int64) (entities []*LiquidityHistory, err error)
+		GetLatestLiquidityByBlockHeight(blockHeight int64, limit int, offset int) (entities []*LiquidityHistory, err error)
+		GetLatestLiquidityCountByBlockHeight(blockHeight int64) (count int64, err error)
 	}
 
 	defaultLiquidityHistoryModel struct {
@@ -69,36 +70,53 @@ func (*LiquidityHistory) TableName() string {
 }
 
 /*
-	Func: CreateAccountLiquidityHistoryTable
-	Params:
-	Return: err error
-	Description: create account liquidity table
+Func: CreateAccountLiquidityHistoryTable
+Params:
+Return: err error
+Description: create account liquidity table
 */
 func (m *defaultLiquidityHistoryModel) CreateLiquidityHistoryTable() error {
 	return m.DB.AutoMigrate(LiquidityHistory{})
 }
 
 /*
-	Func: DropAccountLiquidityHistoryTable
-	Params:
-	Return: err error
-	Description: drop account liquidity table
+Func: DropAccountLiquidityHistoryTable
+Params:
+Return: err error
+Description: drop account liquidity table
 */
 func (m *defaultLiquidityHistoryModel) DropLiquidityHistoryTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-func (m *defaultLiquidityHistoryModel) GetLatestLiquidityByBlockHeight(blockHeight int64) (entities []*LiquidityHistory, err error) {
-	dbTx := m.DB.Table(m.table).
-		Raw("SELECT a.* FROM liquidity_history a WHERE NOT EXISTS"+
-			"(SELECT * FROM liquidity_history WHERE pair_index = a.pair_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height) "+
-			"AND l2_block_height <= ? ORDER BY pair_index", blockHeight, blockHeight).
-		Find(&entities)
-	if dbTx.Error != nil {
+func (m *defaultLiquidityHistoryModel) GetLatestLiquidityByBlockHeight(blockHeight int64, limit int, offset int) (entities []*LiquidityHistory, err error) {
+	subQuery := m.DB.Table(m.table).Select("*").
+		Where("pair_index = a.pair_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height", blockHeight)
+
+	dbTx := m.DB.Table(m.table+" as a").Select("*").
+		Where("NOT EXISTS (?) AND l2_block_height <= ?", subQuery, blockHeight).
+		Limit(limit).Offset(offset).
+		Order("pair_index")
+
+	if dbTx.Find(&entities).Error != nil {
 		logx.Errorf("unable to get related accounts: %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, errorcode.DbErrNotFound
 	}
 	return entities, nil
+}
+
+func (m *defaultLiquidityHistoryModel) GetLatestLiquidityCountByBlockHeight(blockHeight int64) (count int64, err error) {
+	subQuery := m.DB.Table(m.table).Select("*").
+		Where("pair_index = a.pair_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height", blockHeight)
+
+	dbTx := m.DB.Table(m.table+" as a").
+		Where("NOT EXISTS (?) AND l2_block_height <= ?", subQuery, blockHeight)
+
+	if dbTx.Count(&count).Error != nil {
+		logx.Errorf("[GetLatestLiquidityCountByBlockHeight] unable to get related accounts: %s", dbTx.Error.Error())
+		return 0, dbTx.Error
+	}
+	return count, nil
 }

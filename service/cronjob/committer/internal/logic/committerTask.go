@@ -24,7 +24,7 @@ import (
 	"strconv"
 	"time"
 
-	bsmt "github.com/bnb-chain/bas-smt"
+	smt "github.com/bnb-chain/bas-smt"
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
@@ -35,6 +35,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/commonTx"
+	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/blockForCommit"
@@ -42,9 +43,8 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/tree"
+	"github.com/bnb-chain/zkbas/common/treedb"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/bnb-chain/zkbas/errorcode"
-	"github.com/bnb-chain/zkbas/pkg/treedb"
 	"github.com/bnb-chain/zkbas/service/cronjob/committer/internal/svc"
 )
 
@@ -52,10 +52,10 @@ func CommitterTask(
 	ctx *svc.ServiceContext,
 	lastCommitTimeStamp *time.Time,
 	treeCtx *treedb.Context,
-	accountTree bsmt.SparseMerkleTree,
-	liquidityTree bsmt.SparseMerkleTree,
-	nftTree bsmt.SparseMerkleTree,
-	accountAssetTrees *[]bsmt.SparseMerkleTree,
+	accountTree smt.SparseMerkleTree,
+	liquidityTree smt.SparseMerkleTree,
+	nftTree smt.SparseMerkleTree,
+	accountAssetTrees *[]smt.SparseMerkleTree,
 	finalityBlockNr uint64,
 ) error {
 	// Get Txs from Mempool
@@ -731,7 +731,7 @@ func CommitterTask(
 			}
 		}
 
-		err = tree.CommitTrees(uint64(finalityBlockNr), accountTree, accountAssetTrees, liquidityTree, nftTree)
+		err = tree.CommitTrees(finalityBlockNr, accountTree, accountAssetTrees, liquidityTree, nftTree)
 		if err != nil {
 			logx.Errorf("[CommitterTask] unable to commit trees after txs is executed", err)
 			return err

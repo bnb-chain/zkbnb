@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 )
 
@@ -10,12 +11,13 @@ type Config struct {
 	}
 	CacheRedis  cache.CacheConf
 	ChainConfig struct {
-		NetworkRPCSysConfigName        string
-		ZkbasContractAddrSysConfigName string
-		MaxWaitingTime                 int64
-		MaxBlockCount                  int
-		Sk                             string
-		GasLimit                       uint64
-		L1ChainId                      string
+		NetworkRPCSysConfigName string
+		MaxWaitingTime          int64
+		MaxBlockCount           int
+		ConfirmBlocksCount      uint64
+		Sk                      string
+		GasLimit                uint64
+		L1ChainId               string
 	}
+	LogConf logx.LogConf
 }
