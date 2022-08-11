@@ -13,14 +13,8 @@ import (
 var (
 	DbErrNotFound                  = sqlx.ErrNotFound
 	DbErrSqlOperation              = errors.New("unknown sql operation error")
-	DbErrDuplicatedAccountName     = errors.New("duplicated account name")
-	DbErrDuplicatedAccountIndex    = errors.New("duplicated account index")
 	DbErrDuplicatedCollectionIndex = errors.New("duplicated collection index")
 	DbErrFailToCreateBlock         = errors.New("fail to create block")
-	DbErrFailToCreateAssetInfo     = errors.New("fail to create asset info")
-	DbErrFailToCreateVolume        = errors.New("fail to create volume")
-	DbErrFailToCreateTVL           = errors.New("fail to create tvl")
-	DbErrFailToCreateLiquidity     = errors.New("fail to create liquidity")
 	DbErrFailToCreateMempoolTx     = errors.New("fail to create mempool tx")
 	DbErrFailToCreateProof         = errors.New("fail to create proof")
 	DbErrFailToCreateFailTx        = errors.New("fail to create fail tx")

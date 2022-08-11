@@ -27,12 +27,12 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 
+	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/common/model/asset"
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/priorityRequest"
 	"github.com/bnb-chain/zkbas/common/model/sysconfig"
-	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type (

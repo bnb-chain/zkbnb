@@ -8,6 +8,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/service/cronjob/monitor/config"
+	"github.com/bnb-chain/zkbas/service/cronjob/monitor/monitor"
 )
 
 var configFile = flag.String("f",

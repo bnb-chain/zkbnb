@@ -29,7 +29,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/model/account"
-	"github.com/bnb-chain/zkbas/pkg/treedb"
+	"github.com/bnb-chain/zkbas/common/treedb"
 )
 
 func accountAssetNamespace(index int64) string {

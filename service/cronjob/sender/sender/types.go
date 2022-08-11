@@ -34,21 +34,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/util"
 )
 
-type (
-	Block               = block.Block
-	BlockForCommit      = blockForCommit.BlockForCommit
-	BlockModel          = block.BlockModel
-	BlockForCommitModel = blockForCommit.BlockForCommitModel
-
-	ProviderClient = _rpc.ProviderClient
-	AuthClient     = _rpc.AuthClient
-	Zkbas          = zkbas.Zkbas
-
-	ZkbasCommitBlockInfo   = zkbas.OldZkbasCommitBlockInfo
-	ZkbasVerifyBlockInfo   = zkbas.OldZkbasVerifyAndExecuteBlockInfo
-	StorageStoredBlockInfo = zkbas.StorageStoredBlockInfo
-)
-
 const (
 	EventNameBlockCommit       = "BlockCommit"
 	EventNameBlockVerification = "BlockVerification"
@@ -67,16 +52,16 @@ var (
 )
 
 type SenderParam struct {
-	Cli            *ProviderClient
-	AuthCli        *AuthClient
-	ZkbasInstance  *Zkbas
+	Cli            *_rpc.ProviderClient
+	AuthCli        *_rpc.AuthClient
+	ZkbasInstance  *zkbas.Zkbas
 	MaxWaitingTime int64
 	MaxBlocksCount int
 	GasPrice       *big.Int
 	GasLimit       uint64
 }
 
-func DefaultBlockHeader() StorageStoredBlockInfo {
+func DefaultBlockHeader() zkbas.StorageStoredBlockInfo {
 	var (
 		pendingOnChainOperationsHash [32]byte
 		stateRoot                    [32]byte
@@ -85,7 +70,7 @@ func DefaultBlockHeader() StorageStoredBlockInfo {
 	copy(pendingOnChainOperationsHash[:], common.FromHex(util.EmptyStringKeccak)[:])
 	copy(stateRoot[:], tree.NilStateRoot[:])
 	copy(commitment[:], common.FromHex("0x0000000000000000000000000000000000000000000000000000000000000000")[:])
-	return StorageStoredBlockInfo{
+	return zkbas.StorageStoredBlockInfo{
 		BlockSize:                    0,
 		BlockNumber:                  0,
 		PriorityOperations:           0,
@@ -96,7 +81,7 @@ func DefaultBlockHeader() StorageStoredBlockInfo {
 	}
 }
 
-func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*BlockForCommit) (commitBlocks []ZkbasCommitBlockInfo, err error) {
+func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*blockForCommit.BlockForCommit) (commitBlocks []zkbas.OldZkbasCommitBlockInfo, err error) {
 	for _, oBlock := range oBlocks {
 		var newStateRoot [32]byte
 		var pubDataOffsets []uint32
@@ -106,7 +91,7 @@ func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*BlockForCommit) (commit
 			logx.Errorf("[ConvertBlocksForCommitToCommitBlockInfos] unable to unmarshal: %s", err.Error())
 			return nil, err
 		}
-		commitBlock := ZkbasCommitBlockInfo{
+		commitBlock := zkbas.OldZkbasCommitBlockInfo{
 			NewStateRoot:      newStateRoot,
 			PublicData:        common.FromHex(oBlock.PublicData),
 			Timestamp:         big.NewInt(oBlock.Timestamp),
@@ -119,7 +104,7 @@ func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*BlockForCommit) (commit
 	return commitBlocks, nil
 }
 
-func ConvertBlocksToVerifyAndExecuteBlockInfos(oBlocks []*Block) (verifyAndExecuteBlocks []ZkbasVerifyBlockInfo, err error) {
+func ConvertBlocksToVerifyAndExecuteBlockInfos(oBlocks []*block.Block) (verifyAndExecuteBlocks []zkbas.OldZkbasVerifyAndExecuteBlockInfo, err error) {
 	for _, oBlock := range oBlocks {
 		var pendingOnChainOpsPubData [][]byte
 		if oBlock.PendingOnChainOperationsPubData != "" {
@@ -129,7 +114,7 @@ func ConvertBlocksToVerifyAndExecuteBlockInfos(oBlocks []*Block) (verifyAndExecu
 				return nil, err
 			}
 		}
-		verifyAndExecuteBlock := ZkbasVerifyBlockInfo{
+		verifyAndExecuteBlock := zkbas.OldZkbasVerifyAndExecuteBlockInfo{
 			BlockHeader:              util.ConstructStoredBlockInfo(oBlock),
 			PendingOnchainOpsPubData: pendingOnChainOpsPubData,
 		}

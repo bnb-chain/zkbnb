@@ -24,7 +24,7 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas/errorcode"
+	"github.com/bnb-chain/zkbas/common/errorcode"
 )
 
 type (

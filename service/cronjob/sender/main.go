@@ -8,6 +8,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/service/cronjob/sender/config"
+	"github.com/bnb-chain/zkbas/service/cronjob/sender/sender"
 )
 
 var configFile = flag.String("f",
@@ -51,7 +52,7 @@ func main() {
 
 	_, err = cronJob.AddFunc("@every 10s", func() {
 		logx.Info("========================= start update sent txs task =========================")
-		err = sender.UpdateSentTxs(c.ChainConfig.PendingBlocksCount)
+		err = sender.UpdateSentTxs()
 		if err != nil {
 			logx.Info("update sent txs error, err:", err)
 		}

@@ -22,8 +22,8 @@ import (
 	"github.com/bnb-chain/zkbas-crypto/hash/bn254/zmimc"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/errorcode"
-	"github.com/bnb-chain/zkbas/pkg/treedb"
+	"github.com/bnb-chain/zkbas/common/errorcode"
+	"github.com/bnb-chain/zkbas/common/treedb"
 )
 
 // TODO replace history as liquidity + liquidityHistory

@@ -1,4 +1,4 @@
-Name: witnessGenerator.cronjob
+Name: witness.cronjob
 
 Postgres:
   DataSource: host=34.122.163.215 user=postgres password=zkbasTest dbname=zkbas port=5432 sslmode=disable

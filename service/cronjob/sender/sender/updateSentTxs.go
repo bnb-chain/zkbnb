@@ -24,7 +24,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/proof"
 )
 
-func (s *Sender) UpdateSentTxs(bscPendingBlocksCount uint64) (err error) {
+func (s *Sender) UpdateSentTxs() (err error) {
 	pendingSenders, err := s.l1RollupTxModel.GetL1RollupTxsByStatus(l1RollupTx.StatusPending)
 	if err != nil {
 		logx.Errorf("unable to get l1 tx senders by tx status: %s", err.Error())
@@ -59,7 +59,7 @@ func (s *Sender) UpdateSentTxs(bscPendingBlocksCount uint64) (err error) {
 			continue
 		}
 
-		if latestHeight < receipt.BlockNumber.Uint64()+bscPendingBlocksCount {
+		if latestHeight < receipt.BlockNumber.Uint64()+s.Config.ChainConfig.ConfirmBlocksCount {
 			continue
 		}
 		var (

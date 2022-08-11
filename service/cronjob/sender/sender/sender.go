@@ -47,9 +47,9 @@ type Sender struct {
 	Config config.Config
 
 	// Client
-	cli           *ProviderClient
-	authCli       *AuthClient
-	zkbasInstance *Zkbas
+	cli           *_rpc.ProviderClient
+	authCli       *_rpc.AuthClient
+	zkbasInstance *zkbas.Zkbas
 
 	// Data access objects
 	blockModel          block.BlockModel
@@ -85,13 +85,13 @@ func NewSender(c config.Config) *Sender {
 
 	l1RPCEndpoint, err := s.sysConfigModel.GetSysConfigByName(c.ChainConfig.NetworkRPCSysConfigName)
 	if err != nil {
-		logx.Severef("[sender] fatal error, cannot fetch l1RPCEndpoint from sysConfig, err: %v, SysConfigName: %s",
+		logx.Severef("fatal error, cannot fetch l1RPCEndpoint from sysConfig, err: %v, SysConfigName: %s",
 			err, c.ChainConfig.NetworkRPCSysConfigName)
 		panic(err)
 	}
 	rollupAddress, err := s.sysConfigModel.GetSysConfigByName(sysConfigName.ZkbasContract)
 	if err != nil {
-		logx.Severef("[sender] fatal error, cannot fetch rollupAddress from sysConfig, err: %v, SysConfigName: %s",
+		logx.Severef("fatal error, cannot fetch rollupAddress from sysConfig, err: %v, SysConfigName: %s",
 			err, sysConfigName.ZkbasContract)
 		panic(err)
 	}

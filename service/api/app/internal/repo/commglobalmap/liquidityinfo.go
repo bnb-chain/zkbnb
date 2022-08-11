@@ -7,9 +7,9 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
+	"github.com/bnb-chain/zkbas/common/errorcode"
+	"github.com/bnb-chain/zkbas/common/multcache"
 	commGlobalmapHandler "github.com/bnb-chain/zkbas/common/util/globalmapHandler"
-	"github.com/bnb-chain/zkbas/errorcode"
-	"github.com/bnb-chain/zkbas/pkg/multcache"
 )
 
 func (m *model) GetLatestLiquidityInfoForReadWithCache(ctx context.Context, pairIndex int64) (*commGlobalmapHandler.LiquidityInfo, error) {

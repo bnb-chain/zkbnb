@@ -14,6 +14,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
+	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/blockForProof"
@@ -22,8 +23,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/proof"
 	"github.com/bnb-chain/zkbas/common/proverUtil"
 	"github.com/bnb-chain/zkbas/common/tree"
-	"github.com/bnb-chain/zkbas/errorcode"
-	"github.com/bnb-chain/zkbas/pkg/treedb"
+	"github.com/bnb-chain/zkbas/common/treedb"
 	"github.com/bnb-chain/zkbas/service/cronjob/witness/config"
 )
 
@@ -89,7 +89,7 @@ func (w *Witness) initState() {
 	p, err := w.proofModel.GetLatestConfirmedProof()
 	if err != nil {
 		if err != errorcode.DbErrNotFound {
-			logx.Error("[prover] => GetLatestConfirmedProof error:", err)
+			logx.Error("=> GetLatestConfirmedProof error:", err)
 			return
 		} else {
 			p = &proof.Proof{
@@ -118,20 +118,20 @@ func (w *Witness) initState() {
 	)
 	// the blockHeight depends on the proof start position
 	if err != nil {
-		logx.Errorf("[prover] => InitMerkleTree error: %v", err)
+		logx.Errorf("InitMerkleTree error: %v", err)
 		return
 	}
 
 	w.liquidityTree, err = tree.InitLiquidityTree(w.liquidityHistoryModel, p.BlockNumber,
 		treeCtx)
 	if err != nil {
-		logx.Errorf("[prover] InitLiquidityTree error: %v", err)
+		logx.Errorf("InitLiquidityTree error: %v", err)
 		return
 	}
 	w.nftTree, err = tree.InitNftTree(w.nftHistoryModel, p.BlockNumber,
 		treeCtx)
 	if err != nil {
-		logx.Errorf("[prover] InitNftTree error: %v", err)
+		logx.Errorf("InitNftTree error: %v", err)
 		return
 	}
 	w.helper = proverUtil.NewWitnessHelper(w.treeCtx, w.accountTree, w.liquidityTree, w.nftTree, &w.assetTrees, w.accountModel)
@@ -176,12 +176,12 @@ func (w *Witness) generateUnprovedBlockWitness(deltaHeight int64) error {
 			isFirst         bool
 		)
 		var (
-			cryptoTxs []*CryptoTx
+			cryptoTxs []*cryptoBlock.Tx
 		)
 		// scan each transaction
 		for _, oTx := range oBlock.Txs {
 			var (
-				cryptoTx *CryptoTx
+				cryptoTx *cryptoBlock.Tx
 			)
 			cryptoTx, err = w.helper.ConstructCryptoTx(oTx, uint64(latestVerifiedBlockNr))
 			if err != nil {
@@ -208,7 +208,7 @@ func (w *Witness) generateUnprovedBlockWitness(deltaHeight int64) error {
 
 		blockInfo, err := proverUtil.BlockToCryptoBlock(oBlock, oldStateRoot, newStateRoot, cryptoTxs)
 		if err != nil {
-			logx.Errorf("[prover] unable to convert block to crypto block")
+			logx.Errorf("unable to convert block to crypto block")
 			return err
 		}
 		var nCryptoBlockInfo = &CryptoBlockInfo{
@@ -221,14 +221,14 @@ func (w *Witness) generateUnprovedBlockWitness(deltaHeight int64) error {
 		// insert crypto blocks array
 		unprovedCryptoBlockModel, err := CryptoBlockInfoToBlockForProof(nCryptoBlockInfo)
 		if err != nil {
-			logx.Errorf("[prover] marshal crypto block info error, err=%s", err.Error())
+			logx.Errorf("marshal crypto block info error, err=%s", err.Error())
 			return err
 		}
 
 		// commit trees
 		err = tree.CommitTrees(uint64(latestVerifiedBlockNr), w.accountTree, &w.assetTrees, w.liquidityTree, w.nftTree)
 		if err != nil {
-			logx.Errorf("[prover] unable to commit trees after txs is executed", err.Error())
+			logx.Errorf("unable to commit trees after txs is executed", err.Error())
 			return err
 		}
 
@@ -237,9 +237,9 @@ func (w *Witness) generateUnprovedBlockWitness(deltaHeight int64) error {
 			// rollback trees
 			err = tree.RollBackTrees(uint64(oBlock.BlockHeight)-1, w.accountTree, &w.assetTrees, w.liquidityTree, w.nftTree)
 			if err != nil {
-				logx.Errorf("[prover] unable to rollback trees", err)
+				logx.Errorf("unable to rollback trees", err)
 			}
-			logx.Errorf("[prover] create unproved crypto block error, err=%s", err.Error())
+			logx.Errorf("create unproved crypto block error, err=%s", err.Error())
 			return err
 		}
 

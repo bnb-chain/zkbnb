@@ -27,12 +27,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/common/model/asset"
 	"github.com/bnb-chain/zkbas/common/model/l1SyncedBlock"
 	"github.com/bnb-chain/zkbas/common/model/sysconfig"
-	"github.com/bnb-chain/zkbas/common/sysconfigName"
+	"github.com/bnb-chain/zkbas/common/sysConfigName"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 func (m *Monitor) MonitorGovernanceBlocks() (err error) {
@@ -56,7 +56,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 		return err
 	}
 	// compute safe height
-	safeHeight := latestHeight - m.Config.ChainConfig.PendingBlocksCount
+	safeHeight := latestHeight - m.Config.ChainConfig.ConfirmBlocksCount
 	safeHeight = uint64(util.MinInt64(int64(safeHeight), handledHeight+m.Config.ChainConfig.MaxHandledBlocksCount))
 	// check if safe height > handledHeight
 	if safeHeight <= uint64(handledHeight) {

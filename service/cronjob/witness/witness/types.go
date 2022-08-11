@@ -25,18 +25,12 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/blockForProof"
 )
 
-type (
-	CryptoTx      = cryptoBlock.Tx
-	CryptoBlock   = cryptoBlock.Block
-	BlockForProof = blockForProof.BlockForProof
-)
-
 type CryptoBlockInfo struct {
-	BlockInfo *CryptoBlock
+	BlockInfo *cryptoBlock.Block
 	Status    int64
 }
 
-func CryptoBlockInfoToBlockForProof(cryptoBlock *CryptoBlockInfo) (*BlockForProof, error) {
+func CryptoBlockInfoToBlockForProof(cryptoBlock *CryptoBlockInfo) (*blockForProof.BlockForProof, error) {
 	if cryptoBlock == nil {
 		return nil, errors.New("crypto block is nil")
 	}

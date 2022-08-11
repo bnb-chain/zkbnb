@@ -13,6 +13,6 @@ ChainConfig:
   NetworkRPCSysConfigName: "LocalTestNetworkRpc"
   # StartL1BlockHeight: 520000
   StartL1BlockHeight: 0
-  PendingBlocksCount: 0
+  ConfirmBlocksCount: 0
   MaxHandledBlocksCount: 100000
 

@@ -12,7 +12,7 @@ type Config struct {
 	ChainConfig struct {
 		NetworkRPCSysConfigName string
 		StartL1BlockHeight      int64
-		PendingBlocksCount      uint64
+		ConfirmBlocksCount      uint64
 		MaxHandledBlocksCount   int64
 	}
 }

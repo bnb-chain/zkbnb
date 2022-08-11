@@ -25,19 +25,19 @@ func (p *Prover) ProveBlock() error {
 	// fetch unproved block
 	unprovedBlock, err := p.BlockForProofModel.GetUnprovedCryptoBlockByMode(util.COO_MODE)
 	if err != nil {
-		return fmt.Errorf("[ProveBlock] GetUnprovedBlock Error: err: %v", err)
+		return fmt.Errorf("GetUnprovedBlock Error: err: %v", err)
 	}
 	// update status of block
 	err = p.BlockForProofModel.UpdateUnprovedCryptoBlockStatus(unprovedBlock, blockForProof.StatusReceived)
 	if err != nil {
-		return fmt.Errorf("[ProveBlock] update block status error, err=%s", err.Error())
+		return fmt.Errorf("update block status error, err=%s", err.Error())
 	}
 
 	// parse CryptoBlock
 	var cryptoBlock *block.Block
 	err = json.Unmarshal([]byte(unprovedBlock.BlockData), &cryptoBlock)
 	if err != nil {
-		return errors.New("[ProveBlock] json.Unmarshal Error")
+		return errors.New("json.Unmarshal Error")
 	}
 
 	var keyIndex int
@@ -47,33 +47,33 @@ func (p *Prover) ProveBlock() error {
 		}
 	}
 	if keyIndex == len(p.KeyTxCounts) {
-		logx.Errorf("[ProveBlock] Can't find correct vk/pk")
+		logx.Errorf("Can't find correct vk/pk")
 		return err
 	}
 
 	// Generate Proof
 	blockProof, err := util.GenerateProof(p.R1cs[keyIndex], p.ProvingKeys[keyIndex], p.VerifyingKeys[keyIndex], cryptoBlock)
 	if err != nil {
-		return errors.New("[ProveBlock] GenerateProof Error")
+		return errors.New("GenerateProof Error")
 	}
 
 	formattedProof, err := util.FormatProof(blockProof, cryptoBlock.OldStateRoot, cryptoBlock.NewStateRoot, cryptoBlock.BlockCommitment)
 	if err != nil {
-		logx.Errorf("[ProveBlock] unable to format blockProof: %s", err.Error())
+		logx.Errorf("unable to format blockProof: %s", err.Error())
 		return err
 	}
 
 	// marshal formattedProof
 	proofBytes, err := json.Marshal(formattedProof)
 	if err != nil {
-		logx.Errorf("[ProveBlock] formattedProof json.Marshal error: %s", err.Error())
+		logx.Errorf("formattedProof json.Marshal error: %s", err.Error())
 		return err
 	}
 
 	// check the existence of blockProof
 	_, err = p.ProofSenderModel.GetProofByBlockNumber(unprovedBlock.BlockHeight)
 	if err == nil {
-		return fmt.Errorf("[ProveBlock] blockProof of current height exists")
+		return fmt.Errorf("blockProof of current height exists")
 	}
 
 	var row = &proof.Proof{
@@ -84,7 +84,7 @@ func (p *Prover) ProveBlock() error {
 	err = p.ProofSenderModel.CreateProof(row)
 	if err != nil {
 		_ = p.BlockForProofModel.UpdateUnprovedCryptoBlockStatus(unprovedBlock, blockForProof.StatusPublished)
-		return fmt.Errorf("[ProveBlock] create blockProof error, err=%s", err.Error())
+		return fmt.Errorf("create blockProof error, err=%s", err.Error())
 	}
 	return nil
 }

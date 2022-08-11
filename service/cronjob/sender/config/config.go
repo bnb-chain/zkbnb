@@ -13,7 +13,7 @@ type Config struct {
 		NetworkRPCSysConfigName string
 		MaxWaitingTime          int64
 		MaxBlockCount           int
-		PendingBlocksCount      uint64
+		ConfirmBlocksCount      uint64
 		Sk                      string
 		GasLimit                uint64
 		L1ChainId               string

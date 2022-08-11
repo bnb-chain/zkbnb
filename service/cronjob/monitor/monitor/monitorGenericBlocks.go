@@ -30,12 +30,12 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/l1SyncedBlock"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/priorityRequest"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 func (m *Monitor) MonitorGenericBlocks() (err error) {
@@ -59,7 +59,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		return err
 	}
 
-	safeHeight := latestHeight - m.Config.ChainConfig.PendingBlocksCount
+	safeHeight := latestHeight - m.Config.ChainConfig.ConfirmBlocksCount
 	safeHeight = uint64(util.MinInt64(int64(safeHeight), handledHeight+m.Config.ChainConfig.MaxHandledBlocksCount))
 	if safeHeight <= uint64(handledHeight) {
 		logx.Info("no new blocks need to be handled")

@@ -26,10 +26,10 @@ import (
 	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/l1RollupTx"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 func (s *Sender) VerifyAndExecuteBlocks() (err error) {
@@ -111,7 +111,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	var (
 		start                         int64
 		blocks                        []*block.Block
-		pendingVerifyAndExecuteBlocks []ZkbasVerifyBlockInfo
+		pendingVerifyAndExecuteBlocks []zkbas.OldZkbasVerifyAndExecuteBlockInfo
 	)
 	if getHandleErr == errorcode.DbErrNotFound && getPendingErr == errorcode.DbErrNotFound {
 		// get blocks from block table

@@ -3,7 +3,7 @@ package config
 import (
 	"github.com/zeromicro/go-zero/core/stores/cache"
 
-	"github.com/bnb-chain/zkbas/pkg/treedb"
+	"github.com/bnb-chain/zkbas/common/treedb"
 )
 
 type Config struct {

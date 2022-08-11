@@ -27,8 +27,8 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/common/commonConstant"
+	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/common/model/nft"
-	"github.com/bnb-chain/zkbas/errorcode"
 )
 
 type (
