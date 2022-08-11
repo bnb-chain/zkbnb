@@ -26,7 +26,7 @@ func NewGetCurrencyPricesLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 func (l *GetCurrencyPricesLogic) GetCurrencyPrices(req *types.ReqGetCurrencyPrices) (*types.RespGetCurrencyPrices, error) {
-	l2Assets, err := l.svcCtx.L2AssetModel.GetAssetsList()
+	l2Assets, err := l.svcCtx.AssetModel.GetAssetsList()
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound

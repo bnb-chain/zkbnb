@@ -38,8 +38,8 @@ type fetcher struct {
 /*
 	Func: GetCurrencyPrice
 	Params: currency string
-	Return: fetcher float64, err error
-	Description: get currency fetcher cache by currency symbol
+	Return: price float64, err error
+	Description: get currency price, cached by currency symbol
 */
 func (f *fetcher) GetCurrencyPrice(ctx context.Context, l2Symbol string) (float64, error) {
 	var price float64

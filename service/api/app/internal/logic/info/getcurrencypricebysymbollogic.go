@@ -34,7 +34,7 @@ func (l *GetCurrencyPriceBySymbolLogic) GetCurrencyPriceBySymbol(req *types.ReqG
 	}
 	symbol := strings.ToUpper(req.Symbol)
 
-	l2Asset, err := l.svcCtx.L2AssetModel.GetAssetBySymbol(symbol)
+	l2Asset, err := l.svcCtx.AssetModel.GetAssetBySymbol(symbol)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound

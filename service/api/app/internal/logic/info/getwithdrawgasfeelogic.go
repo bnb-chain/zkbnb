@@ -32,7 +32,7 @@ func NewGetWithdrawGasFeeLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 func (l *GetWithdrawGasFeeLogic) GetWithdrawGasFee(req *types.ReqGetWithdrawGasFee) (*types.RespGetWithdrawGasFee, error) {
 	resp := &types.RespGetWithdrawGasFee{}
 
-	assetInfo, err := l.svcCtx.L2AssetModel.GetAssetByAssetId(int64(req.AssetId))
+	assetInfo, err := l.svcCtx.AssetModel.GetAssetByAssetId(int64(req.AssetId))
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound

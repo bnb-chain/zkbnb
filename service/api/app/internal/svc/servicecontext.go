@@ -48,7 +48,7 @@ type ServiceContext struct {
 	NftModel              nft.L2NftModel
 	CollectionModel       nft.L2NftCollectionModel
 	OfferModel            nft.OfferModel
-	L2AssetModel          asset.AssetModel
+	AssetModel            asset.AssetModel
 	SysConfigModel        sysconfig.SysConfigModel
 
 	PriceFetcher price.Fetcher
@@ -91,7 +91,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		NftModel:              nftModel,
 		CollectionModel:       nft.NewL2NftCollectionModel(conn, c.CacheRedis, gormPointer),
 		OfferModel:            offerModel,
-		L2AssetModel:          asset.NewAssetModel(conn, c.CacheRedis, gormPointer),
+		AssetModel:            asset.NewAssetModel(conn, c.CacheRedis, gormPointer),
 		SysConfigModel:        sysconfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
 
 		PriceFetcher: price.NewFetcher(cache),

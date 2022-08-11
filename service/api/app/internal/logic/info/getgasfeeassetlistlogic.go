@@ -26,7 +26,7 @@ func NewGetGasFeeAssetListLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 
 func (l *GetGasFeeAssetListLogic) GetGasFeeAssetList(req *types.ReqGetGasFeeAssetList) (*types.RespGetGasFeeAssetList, error) {
-	assets, err := l.svcCtx.L2AssetModel.GetAssetsList()
+	assets, err := l.svcCtx.AssetModel.GetAssetsList()
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
