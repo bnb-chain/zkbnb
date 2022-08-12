@@ -10,23 +10,22 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
-	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
 	bsmt "github.com/bnb-chain/bas-smt"
 	"github.com/bnb-chain/zkbas/common/commonAsset"
+	"github.com/bnb-chain/zkbas/common/dbcache"
 	"github.com/bnb-chain/zkbas/common/model/account"
-	"github.com/bnb-chain/zkbas/common/model/assetInfo"
+	"github.com/bnb-chain/zkbas/common/model/asset"
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/tree"
+	"github.com/bnb-chain/zkbas/common/treedb"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/bnb-chain/zkbas/pkg/dbcache"
-	"github.com/bnb-chain/zkbas/pkg/treedb"
 )
 
 var (
@@ -42,13 +41,6 @@ type ChainConfig struct {
 		Driver        treedb.Driver
 		LevelDBOption treedb.LevelDBOption `json:",optional"`
 		RedisDBOption treedb.RedisDBOption `json:",optional"`
-	}
-}
-
-func WithRedis(redisType string, redisPass string) redis.Option {
-	return func(p *redis.Redis) {
-		p.Type = redisType
-		p.Pass = redisPass
 	}
 }
 
@@ -109,7 +101,7 @@ type BlockChain struct {
 	TxDetailModel         tx.TxDetailModel
 	AccountModel          account.AccountModel
 	AccountHistoryModel   account.AccountHistoryModel
-	L2AssetInfoModel      assetInfo.AssetInfoModel
+	L2AssetInfoModel      asset.AssetModel
 	LiquidityModel        liquidity.LiquidityModel
 	LiquidityHistoryModel liquidity.LiquidityHistoryModel
 	L2NftModel            nft.L2NftModel
@@ -137,19 +129,18 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		return nil, err
 	}
 	conn := sqlx.NewSqlConn("postgres", config.Postgres.DataSource)
-	redisConn := redis.New(config.CacheRedis[0].Host, WithRedis(config.CacheRedis[0].Type, config.CacheRedis[0].Pass))
 
 	bc := &BlockChain{
 		accountMap:   make(map[int64]*commonAsset.AccountInfo),
 		liquidityMap: make(map[int64]*liquidity.Liquidity),
 		nftMap:       make(map[int64]*nft.L2Nft),
 
-		BlockModel:            block.NewBlockModel(conn, config.CacheRedis, gormPointer, redisConn),
-		TxModel:               tx.NewTxModel(conn, config.CacheRedis, gormPointer, redisConn),
+		BlockModel:            block.NewBlockModel(conn, config.CacheRedis, gormPointer),
+		TxModel:               tx.NewTxModel(conn, config.CacheRedis, gormPointer),
 		TxDetailModel:         tx.NewTxDetailModel(conn, config.CacheRedis, gormPointer),
 		AccountModel:          account.NewAccountModel(conn, config.CacheRedis, gormPointer),
 		AccountHistoryModel:   account.NewAccountHistoryModel(conn, config.CacheRedis, gormPointer),
-		L2AssetInfoModel:      assetInfo.NewAssetInfoModel(conn, config.CacheRedis, gormPointer),
+		L2AssetInfoModel:      asset.NewAssetModel(conn, config.CacheRedis, gormPointer),
 		LiquidityModel:        liquidity.NewLiquidityModel(conn, config.CacheRedis, gormPointer),
 		LiquidityHistoryModel: liquidity.NewLiquidityHistoryModel(conn, config.CacheRedis, gormPointer),
 		L2NftModel:            nft.NewL2NftModel(conn, config.CacheRedis, gormPointer),
