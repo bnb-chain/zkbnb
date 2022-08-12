@@ -34,13 +34,16 @@ func (l *GetCurrencyPriceBySymbolLogic) GetCurrencyPriceBySymbol(req *types.ReqG
 	}
 	symbol := strings.ToUpper(req.Symbol)
 
-	l2Asset, err := l.svcCtx.AssetModel.GetAssetBySymbol(symbol)
+	asset, err := l.svcCtx.MemCache.GetAssetBySymbolWithFallback(symbol, func() (interface{}, error) {
+		return l.svcCtx.AssetModel.GetAssetBySymbol(symbol)
+	})
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
 		return nil, errorcode.AppErrInternal
 	}
+
 	price, err := l.svcCtx.PriceFetcher.GetCurrencyPrice(l.ctx, symbol)
 	if err != nil {
 		if err == errorcode.AppErrQuoteNotExist {
@@ -50,7 +53,7 @@ func (l *GetCurrencyPriceBySymbolLogic) GetCurrencyPriceBySymbol(req *types.ReqG
 	}
 	resp := &types.RespGetCurrencyPriceBySymbol{
 		Price:   strconv.FormatFloat(price, 'E', -1, 64),
-		AssetId: uint32(l2Asset.ID),
+		AssetId: uint32(asset.ID),
 	}
 	return resp, nil
 }

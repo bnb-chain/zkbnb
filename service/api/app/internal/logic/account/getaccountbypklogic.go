@@ -32,21 +32,24 @@ func (l *GetAccountByPkLogic) GetAccountByPk(req *types.ReqGetAccountByPk) (resp
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountPk")
 	}
 
-	info, err := l.svcCtx.AccountModel.GetAccountByPk(req.AccountPk)
+	accountIndex, err := l.svcCtx.MemCache.GetAccountIndexByPk(req.AccountPk)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
 		return nil, errorcode.AppErrInternal
 	}
-	account, err := l.svcCtx.StateFetcher.GetLatestAccountInfo(l.ctx, info.AccountIndex)
+
+	account, err := l.svcCtx.MemCache.GetLatestAccountWithFallback(accountIndex, func() (interface{}, error) {
+		return l.svcCtx.StateFetcher.GetLatestAccountInfo(l.ctx, accountIndex)
+	})
 	if err != nil {
-		logx.Errorf("fail to get account info: %d, err: %s", info.AccountIndex, err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
 		return nil, errorcode.AppErrInternal
 	}
+
 	resp = &types.RespGetAccountByPk{
 		AccountStatus: uint32(account.Status),
 		AccountName:   account.AccountName,

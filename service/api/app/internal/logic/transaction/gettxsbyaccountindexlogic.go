@@ -38,12 +38,15 @@ func (l *GetTxsByAccountIndexLogic) GetTxsByAccountIndex(req *types.ReqGetTxsByA
 				return nil, errorcode.AppErrInternal
 			}
 		}
-		if total > 0 && int64(req.Offset) >= total {
-			txs, err = l.svcCtx.TxModel.GetTxsListByAccountIndexTxType(int64(req.AccountIndex), int64(req.TxType), int64(req.Limit), int64(req.Offset))
-			if err != nil {
-				if err != errorcode.DbErrNotFound {
-					return nil, errorcode.AppErrInternal
-				}
+		resp.Total = uint32(total)
+		if total == 0 || total <= int64(req.Offset) {
+			return resp, nil
+		}
+
+		txs, err = l.svcCtx.TxModel.GetTxsListByAccountIndexTxType(int64(req.AccountIndex), int64(req.TxType), int64(req.Limit), int64(req.Offset))
+		if err != nil {
+			if err != errorcode.DbErrNotFound {
+				return nil, errorcode.AppErrInternal
 			}
 		}
 	} else {
@@ -53,12 +56,16 @@ func (l *GetTxsByAccountIndexLogic) GetTxsByAccountIndex(req *types.ReqGetTxsByA
 				return nil, errorcode.AppErrInternal
 			}
 		}
-		if total > 0 && int64(req.Offset) >= total {
-			txs, err = l.svcCtx.TxModel.GetTxsListByAccountIndex(int64(req.AccountIndex), int64(req.Limit), int64(req.Offset))
-			if err != nil {
-				if err != errorcode.DbErrNotFound {
-					return nil, errorcode.AppErrInternal
-				}
+
+		resp.Total = uint32(total)
+		if total == 0 || total <= int64(req.Offset) {
+			return resp, nil
+		}
+
+		txs, err = l.svcCtx.TxModel.GetTxsListByAccountIndex(int64(req.AccountIndex), int64(req.Limit), int64(req.Offset))
+		if err != nil {
+			if err != errorcode.DbErrNotFound {
+				return nil, errorcode.AppErrInternal
 			}
 		}
 	}
@@ -67,11 +74,10 @@ func (l *GetTxsByAccountIndexLogic) GetTxsByAccountIndex(req *types.ReqGetTxsByA
 		Total: uint32(total),
 		Txs:   make([]*types.Tx, 0),
 	}
-	for _, tx := range txs {
-		if err != nil {
-			return nil, errorcode.AppErrInternal
-		}
-		resp.Txs = append(resp.Txs, utils.GormTx2Tx(tx))
+	for _, t := range txs {
+		tx := utils.DbTx2Tx(t)
+		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
+		resp.Txs = append(resp.Txs, tx)
 	}
 	return resp, nil
 }

@@ -28,22 +28,25 @@ func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (*types.
 	resp := &types.RespGetMempoolTxs{
 		MempoolTxs: make([]*types.Tx, 0),
 	}
-	count, err := l.svcCtx.MempoolModel.GetMempoolTxsTotalCount()
+	total, err := l.svcCtx.MempoolModel.GetMempoolTxsTotalCount()
 	if err != nil {
 		if err != errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrInternal
 		}
 	}
-
-	if count == 0 {
+	if total == 0 {
 		return resp, nil
 	}
+
+	resp.Total = uint32(total)
 	mempoolTxs, err := l.svcCtx.MempoolModel.GetMempoolTxsList(int64(req.Offset), int64(req.Limit))
 	if err != nil {
 		return nil, errorcode.AppErrInternal
 	}
-	for _, mempoolTx := range mempoolTxs {
-		resp.MempoolTxs = append(resp.MempoolTxs, utils.MempoolTx2Tx(mempoolTx))
+	for _, t := range mempoolTxs {
+		tx := utils.DbMempoolTx2Tx(t)
+		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
+		resp.MempoolTxs = append(resp.MempoolTxs, tx)
 	}
 	return resp, nil
 }

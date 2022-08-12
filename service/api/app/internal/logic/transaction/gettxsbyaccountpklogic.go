@@ -34,7 +34,7 @@ func (l *GetTxsByAccountPkLogic) GetTxsByAccountPk(req *types.ReqGetTxsByAccount
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountPk")
 	}
 
-	account, err := l.svcCtx.AccountModel.GetAccountByPk(req.AccountPk)
+	accountIndex, err := l.svcCtx.MemCache.GetAccountIndexByName(req.AccountPk)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
@@ -43,18 +43,22 @@ func (l *GetTxsByAccountPkLogic) GetTxsByAccountPk(req *types.ReqGetTxsByAccount
 	}
 
 	txs := make([]*tx.Tx, 0)
-	total, err := l.svcCtx.TxModel.GetTxsCountByAccountIndex(account.AccountIndex)
+	total, err := l.svcCtx.TxModel.GetTxsCountByAccountIndex(accountIndex)
 	if err != nil {
 		if err != errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrInternal
 		}
 	}
-	if total > 0 && int64(req.Offset) >= total {
-		txs, err = l.svcCtx.TxModel.GetTxsListByAccountIndex(account.AccountIndex, int64(req.Limit), int64(req.Offset))
-		if err != nil {
-			if err != errorcode.DbErrNotFound {
-				return nil, errorcode.AppErrInternal
-			}
+
+	resp.Total = uint32(total)
+	if total == 0 || total <= int64(req.Offset) {
+		return resp, nil
+	}
+
+	txs, err = l.svcCtx.TxModel.GetTxsListByAccountIndex(accountIndex, int64(req.Limit), int64(req.Offset))
+	if err != nil {
+		if err != errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrInternal
 		}
 	}
 
@@ -62,11 +66,10 @@ func (l *GetTxsByAccountPkLogic) GetTxsByAccountPk(req *types.ReqGetTxsByAccount
 		Total: uint32(total),
 		Txs:   make([]*types.Tx, 0),
 	}
-	for _, tx := range txs {
-		if err != nil {
-			return nil, errorcode.AppErrInternal
-		}
-		resp.Txs = append(resp.Txs, utils.GormTx2Tx(tx))
+	for _, t := range txs {
+		tx := utils.DbTx2Tx(t)
+		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
+		resp.Txs = append(resp.Txs, tx)
 	}
 	return resp, nil
 }

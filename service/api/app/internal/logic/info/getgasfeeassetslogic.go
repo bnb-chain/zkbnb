@@ -27,11 +27,10 @@ func NewGetGasFeeAssetsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *G
 }
 
 func (l *GetGasFeeAssetsLogic) GetGasFeeAssets() (resp *types.RespGetGasFeeAssets, err error) {
-	assets, err := l.svcCtx.AssetModel.GetAssetsList()
+	assets, err := l.svcCtx.MemCache.GetAssetsWithFallback(func() (interface{}, error) {
+		return l.svcCtx.AssetModel.GetAssetsList()
+	})
 	if err != nil {
-		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrNotFound
-		}
 		return nil, errorcode.AppErrInternal
 	}
 

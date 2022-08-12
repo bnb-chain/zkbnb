@@ -26,20 +26,25 @@ func NewGetBlocksLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetBloc
 }
 
 func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetBlocks) (*types.RespGetBlocks, error) {
+	resp := &types.RespGetBlocks{
+		Blocks: make([]*types.Block, 0),
+	}
+
+	total, err := l.svcCtx.MemCache.GetBlockTotalCountWithFallback(func() (interface{}, error) {
+		return l.svcCtx.BlockModel.GetBlocksTotalCount()
+	})
+	if err != nil {
+		return nil, errorcode.AppErrInternal
+	}
+
+	resp.Total = uint32(total)
+	if total == 0 || total <= int64(req.Offset) {
+		return resp, nil
+	}
+
 	blocks, err := l.svcCtx.BlockModel.GetBlocksList(int64(req.Limit), int64(req.Offset))
 	if err != nil {
-		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrNotFound
-		}
 		return nil, errorcode.AppErrInternal
-	}
-	total, err := l.svcCtx.BlockModel.GetBlocksTotalCount()
-	if err != nil {
-		return nil, errorcode.AppErrInternal
-	}
-	resp := &types.RespGetBlocks{
-		Total:  uint32(total),
-		Blocks: make([]*types.Block, 0),
 	}
 	for _, b := range blocks {
 		block := &types.Block{
@@ -56,7 +61,8 @@ func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetBlocks) (*types.RespGetBlock
 			BlockStatus:                     b.BlockStatus,
 		}
 		for _, t := range b.Txs {
-			tx := utils.GormTx2Tx(t)
+			tx := utils.DbTx2Tx(t)
+			tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
 			block.Txs = append(block.Txs, tx)
 		}
 		resp.Blocks = append(resp.Blocks, block)

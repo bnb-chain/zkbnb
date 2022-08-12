@@ -26,14 +26,16 @@ func NewGetAccountByIndexLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 func (l *GetAccountByIndexLogic) GetAccountByIndex(req *types.ReqGetAccountByIndex) (resp *types.RespGetAccountByIndex, err error) {
-	account, err := l.svcCtx.StateFetcher.GetLatestAccountInfo(l.ctx, req.AccountIndex)
+	account, err := l.svcCtx.MemCache.GetLatestAccountWithFallback(req.AccountIndex, func() (interface{}, error) {
+		return l.svcCtx.StateFetcher.GetLatestAccountInfo(l.ctx, req.AccountIndex)
+	})
 	if err != nil {
-		logx.Errorf("fail to get account info: %d, err: %s", req.AccountIndex, err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
 		return nil, errorcode.AppErrInternal
 	}
+
 	resp = &types.RespGetAccountByIndex{
 		AccountStatus: uint32(account.Status),
 		AccountName:   account.AccountName,

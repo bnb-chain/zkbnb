@@ -6,7 +6,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-func GormTx2Tx(tx *tx.Tx) *types.Tx {
+func DbTx2Tx(tx *tx.Tx) *types.Tx {
 	return &types.Tx{
 		TxHash:        tx.TxHash,
 		TxType:        tx.TxType,
@@ -31,7 +31,7 @@ func GormTx2Tx(tx *tx.Tx) *types.Tx {
 	}
 }
 
-func MempoolTx2Tx(tx *mempool.MempoolTx) *types.Tx {
+func DbMempoolTx2Tx(tx *mempool.MempoolTx) *types.Tx {
 	return &types.Tx{
 		TxHash:        tx.TxHash,
 		TxType:        tx.TxType,

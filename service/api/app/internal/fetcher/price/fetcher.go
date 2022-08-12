@@ -7,22 +7,18 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"time"
-
-	gocache "github.com/patrickmn/go-cache"
 
 	"github.com/bnb-chain/zkbas/common/errorcode"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/cache"
 )
-
-const cacheKey = "p:"
 
 type Fetcher interface {
 	GetCurrencyPrice(ctx context.Context, l2Symbol string) (price float64, err error)
 }
 
-func NewFetcher(cache *gocache.Cache) Fetcher {
+func NewFetcher(memCache *cache.MemCache) Fetcher {
 	return &fetcher{
-		cache: cache,
+		memCache: memCache,
 		//todo: put into config files
 		cmcUrl:   "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=",
 		cmcToken: "cfce503f-dd3d-4847-9570-bbab5257dac8",
@@ -30,7 +26,7 @@ func NewFetcher(cache *gocache.Cache) Fetcher {
 }
 
 type fetcher struct {
-	cache    *gocache.Cache
+	memCache *cache.MemCache
 	cmcUrl   string
 	cmcToken string
 }
@@ -41,30 +37,24 @@ type fetcher struct {
 	Return: price float64, err error
 	Description: get currency price, cached by currency symbol
 */
-func (f *fetcher) GetCurrencyPrice(ctx context.Context, l2Symbol string) (float64, error) {
-	var price float64
-	cached, hit := f.cache.Get(cacheKey + l2Symbol)
-	if hit {
-		price = cached.(float64)
-		return price, nil
-	}
-
-	quoteMap, err := f.getLatestQuotes(l2Symbol)
-	if err != nil {
-		return 0, err
-	}
-	q, ok := quoteMap[l2Symbol]
-	if !ok {
-		return 0, errorcode.AppErrQuoteNotExist
-	}
-	price = q.Quote["USD"].Price
-	f.cache.Set(cacheKey+l2Symbol, price, time.Millisecond*500)
-	return price, nil
+func (f *fetcher) GetCurrencyPrice(ctx context.Context, symbol string) (float64, error) {
+	return f.memCache.GetPriceWithFallback(symbol, func() (interface{}, error) {
+		quoteMap, err := f.getLatestQuotes(symbol)
+		if err != nil {
+			return 0, err
+		}
+		q, ok := quoteMap[symbol]
+		if !ok {
+			return 0, errorcode.AppErrQuoteNotExist
+		}
+		price := q.Quote["USD"].Price
+		return price, err
+	})
 }
 
-func (f *fetcher) getLatestQuotes(l2Symbol string) (map[string]QuoteLatest, error) {
+func (f *fetcher) getLatestQuotes(symbol string) (map[string]QuoteLatest, error) {
 	client := &http.Client{}
-	url := fmt.Sprintf("%s%s", f.cmcUrl, l2Symbol)
+	url := fmt.Sprintf("%s%s", f.cmcUrl, symbol)
 	reqest, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, errorcode.HttpErrFailToRequest

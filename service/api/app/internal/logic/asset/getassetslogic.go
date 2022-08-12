@@ -26,14 +26,17 @@ func NewGetAssetsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAsse
 }
 
 func (l *GetAssetsLogic) GetAssets() (resp *types.RespGetAssets, err error) {
-	assets, err := l.svcCtx.AssetModel.GetAssetsList()
+	assets, err := l.svcCtx.MemCache.GetAssetsWithFallback(func() (interface{}, error) {
+		return l.svcCtx.AssetModel.GetAssetsList()
+	})
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
 		return nil, errorcode.AppErrInternal
 	}
-	resp.Assets = []*types.Asset{}
+
+	resp.Assets = make([]*types.Asset, 0)
 	for _, asset := range assets {
 		resp.Assets = append(resp.Assets, &types.Asset{
 			AssetId:       asset.AssetId,

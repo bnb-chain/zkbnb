@@ -27,13 +27,16 @@ func NewGetBlockByHeightLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *GetBlockByHeightLogic) GetBlockByHeight(req *types.ReqGetBlockByHeight) (resp *types.RespGetBlockByHeight, err error) {
-	block, err := l.svcCtx.BlockModel.GetBlockByBlockHeight(int64(req.BlockHeight))
+	block, err := l.svcCtx.MemCache.GetBlockByHeightWithFallback(int64(req.BlockHeight), func() (interface{}, error) {
+		return l.svcCtx.BlockModel.GetBlockByBlockHeight(int64(req.BlockHeight))
+	})
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
 		return nil, errorcode.AppErrInternal
 	}
+
 	resp = &types.RespGetBlockByHeight{
 		Block: types.Block{
 			BlockCommitment:                 block.BlockCommitment,
@@ -50,7 +53,8 @@ func (l *GetBlockByHeightLogic) GetBlockByHeight(req *types.ReqGetBlockByHeight)
 		},
 	}
 	for _, t := range block.Txs {
-		tx := utils.GormTx2Tx(t)
+		tx := utils.DbTx2Tx(t)
+		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
 		resp.Block.Txs = append(resp.Block.Txs, tx)
 	}
 	return resp, nil

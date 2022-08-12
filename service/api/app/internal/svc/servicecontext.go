@@ -1,9 +1,8 @@
 package svc
 
 import (
-	"time"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/cache"
 
-	gocache "github.com/patrickmn/go-cache"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -23,15 +22,12 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/fetcher/state"
 )
 
-const cacheDefaultExpiration = time.Millisecond * 500
-const cacheDefaultPurgeInterval = time.Second * 60
-
 type ServiceContext struct {
 	Config      config.Config
 	Conn        sqlx.SqlConn
 	GormPointer *gorm.DB
 	RedisConn   *redis.Redis
-	Cache       *gocache.Cache
+	MemCache    *cache.MemCache
 
 	MempoolModel          mempool.MemPoolModel
 	MempoolDetailModel    mempool.MempoolTxDetailModel
@@ -63,19 +59,20 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		p.Type = c.CacheRedis[0].Type
 		p.Pass = c.CacheRedis[0].Pass
 	})
-	cache := gocache.New(cacheDefaultExpiration, cacheDefaultPurgeInterval)
+
 	mempoolModel := mempool.NewMempoolModel(conn, c.CacheRedis, gormPointer)
 	mempoolDetailModel := mempool.NewMempoolDetailModel(conn, c.CacheRedis, gormPointer)
 	accountModel := account.NewAccountModel(conn, c.CacheRedis, gormPointer)
 	liquidityModel := liquidity.NewLiquidityModel(conn, c.CacheRedis, gormPointer)
 	nftModel := nft.NewL2NftModel(conn, c.CacheRedis, gormPointer)
 	offerModel := nft.NewOfferModel(conn, c.CacheRedis, gormPointer)
+	memCache := cache.NewMemCache(accountModel)
 	return &ServiceContext{
 		Config:                c,
 		Conn:                  conn,
 		GormPointer:           gormPointer,
 		RedisConn:             redisConn,
-		Cache:                 cache,
+		MemCache:              memCache,
 		MempoolModel:          mempoolModel,
 		MempoolDetailModel:    mempoolDetailModel,
 		AccountModel:          accountModel,
@@ -92,7 +89,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		AssetModel:            asset.NewAssetModel(conn, c.CacheRedis, gormPointer),
 		SysConfigModel:        sysconfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
 
-		PriceFetcher: price.NewFetcher(cache),
+		PriceFetcher: price.NewFetcher(memCache),
 		StateFetcher: state.NewFetcher(redisConn, mempoolModel, mempoolDetailModel, accountModel,
 			liquidityModel, nftModel, offerModel),
 	}

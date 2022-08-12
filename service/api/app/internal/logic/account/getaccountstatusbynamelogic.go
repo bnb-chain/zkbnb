@@ -31,13 +31,21 @@ func (l *GetAccountStatusByNameLogic) GetAccountStatusByName(req *types.ReqGetAc
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountName")
 	}
 
-	account, err := l.svcCtx.AccountModel.GetAccountByAccountName(req.AccountName)
+	accountIndex, err := l.svcCtx.MemCache.GetAccountIndexByName(req.AccountName)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
 		return nil, errorcode.AppErrInternal
 	}
+
+	account, err := l.svcCtx.MemCache.GetAccountWithFallback(accountIndex, func() (interface{}, error) {
+		return l.svcCtx.AccountModel.GetAccountByAccountIndex(accountIndex)
+	})
+	if err != nil {
+		return nil, errorcode.AppErrInternal
+	}
+
 	resp = &types.RespGetAccountStatusByName{
 		AccountStatus: uint32(account.Status),
 		AccountPk:     account.PublicKey,

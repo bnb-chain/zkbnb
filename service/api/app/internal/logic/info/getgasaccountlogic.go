@@ -27,11 +27,10 @@ func NewGetGasAccountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 }
 
 func (l *GetGasAccountLogic) GetGasAccount() (resp *types.RespGetGasAccount, err error) {
-	accountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysConfigByName(sysConfigName.GasAccountIndex)
+	accountIndexConfig, err := l.svcCtx.MemCache.GetSysConfigWithFallback(sysConfigName.GasAccountIndex, func() (interface{}, error) {
+		return l.svcCtx.SysConfigModel.GetSysConfigByName(sysConfigName.GasAccountIndex)
+	})
 	if err != nil {
-		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrNotFound
-		}
 		return nil, errorcode.AppErrInternal
 	}
 
@@ -41,18 +40,17 @@ func (l *GetGasAccountLogic) GetGasAccount() (resp *types.RespGetGasAccount, err
 		return nil, errorcode.AppErrInternal
 	}
 
-	accountModel, err := l.svcCtx.AccountModel.GetAccountByAccountIndex(accountIndex)
+	account, err := l.svcCtx.MemCache.GetAccountWithFallback(accountIndex, func() (interface{}, error) {
+		return l.svcCtx.AccountModel.GetAccountByAccountIndex(accountIndex)
+	})
 	if err != nil {
-		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrNotFound
-		}
 		return nil, errorcode.AppErrInternal
 	}
 
 	resp = &types.RespGetGasAccount{
-		AccountStatus: int64(accountModel.Status),
-		AccountIndex:  accountModel.AccountIndex,
-		AccountName:   accountModel.AccountName,
+		AccountStatus: int64(account.Status),
+		AccountIndex:  account.AccountIndex,
+		AccountName:   account.AccountName,
 	}
 	return resp, nil
 }

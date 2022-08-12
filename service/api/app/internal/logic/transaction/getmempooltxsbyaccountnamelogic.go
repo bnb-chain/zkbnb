@@ -30,14 +30,15 @@ func (l *GetmempoolTxsByAccountNameLogic) GetmempoolTxsByAccountName(req *types.
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountName")
 	}
 
-	account, err := l.svcCtx.AccountModel.GetAccountByAccountName(req.AccountName)
+	accountIndex, err := l.svcCtx.MemCache.GetAccountIndexByName(req.AccountName)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
 		return nil, errorcode.AppErrInternal
 	}
-	mempoolTxDetails, err := l.svcCtx.MempoolDetailModel.GetMempoolTxDetailsByAccountIndex(account.AccountIndex)
+
+	mempoolTxs, err := l.svcCtx.MempoolModel.GetPendingMempoolTxsByAccountIndex(accountIndex)
 	if err != nil {
 		if err != errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrInternal
@@ -45,14 +46,13 @@ func (l *GetmempoolTxsByAccountNameLogic) GetmempoolTxsByAccountName(req *types.
 	}
 
 	resp := &types.RespGetmempoolTxsByAccountName{
+		Total:      uint32(len(mempoolTxs)),
 		MempoolTxs: make([]*types.Tx, 0),
 	}
-	for _, d := range mempoolTxDetails {
-		tx, err := l.svcCtx.MempoolModel.GetMempoolTxByTxId(d.TxId)
-		if err != nil {
-			continue
-		}
-		resp.MempoolTxs = append(resp.MempoolTxs, utils.MempoolTx2Tx(tx))
+	for _, t := range mempoolTxs {
+		tx := utils.DbMempoolTx2Tx(t)
+		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
+		resp.MempoolTxs = append(resp.MempoolTxs, tx)
 	}
 	return resp, nil
 }

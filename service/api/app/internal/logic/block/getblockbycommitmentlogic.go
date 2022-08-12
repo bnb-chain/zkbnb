@@ -26,7 +26,9 @@ func NewGetBlockByCommitmentLogic(ctx context.Context, svcCtx *svc.ServiceContex
 }
 
 func (l *GetBlockByCommitmentLogic) GetBlockByCommitment(req *types.ReqGetBlockByCommitment) (*types.RespGetBlockByCommitment, error) {
-	block, err := l.svcCtx.BlockModel.GetBlockByCommitment(req.BlockCommitment)
+	block, err := l.svcCtx.MemCache.GetBlockByCommitmentWithFallback(req.BlockCommitment, func() (interface{}, error) {
+		return l.svcCtx.BlockModel.GetBlockByCommitment(req.BlockCommitment)
+	})
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
@@ -49,7 +51,8 @@ func (l *GetBlockByCommitmentLogic) GetBlockByCommitment(req *types.ReqGetBlockB
 		},
 	}
 	for _, t := range block.Txs {
-		tx := utils.GormTx2Tx(t)
+		tx := utils.DbTx2Tx(t)
+		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
 		resp.Block.Txs = append(resp.Block.Txs, tx)
 	}
 	return resp, nil

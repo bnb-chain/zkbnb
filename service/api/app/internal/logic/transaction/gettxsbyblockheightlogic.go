@@ -27,7 +27,9 @@ func NewGetTxsByBlockHeightLogic(ctx context.Context, svcCtx *svc.ServiceContext
 }
 
 func (l *GetTxsByBlockHeightLogic) GetTxsByBlockHeight(req *types.ReqGetTxsByBlockHeight) (resp *types.RespGetTxsByBlockHeight, err error) {
-	block, err := l.svcCtx.BlockModel.GetBlockByBlockHeight(int64(req.BlockHeight))
+	block, err := l.svcCtx.MemCache.GetBlockByHeightWithFallback(int64(req.BlockHeight), func() (interface{}, error) {
+		return l.svcCtx.BlockModel.GetBlockByBlockHeight(int64(req.BlockHeight))
+	})
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
@@ -39,9 +41,9 @@ func (l *GetTxsByBlockHeightLogic) GetTxsByBlockHeight(req *types.ReqGetTxsByBlo
 		Total: uint32(len(block.Txs)),
 		Txs:   make([]*types.Tx, 0),
 	}
-
 	for _, t := range block.Txs {
-		tx := utils.GormTx2Tx(t)
+		tx := utils.DbTx2Tx(t)
+		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
 		resp.Txs = append(resp.Txs, tx)
 	}
 	return resp, nil

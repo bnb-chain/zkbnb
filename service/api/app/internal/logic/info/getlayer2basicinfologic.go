@@ -49,7 +49,9 @@ func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo() (*types.RespGetLayer2Basi
 			return nil, errorcode.AppErrInternal
 		}
 	}
-	resp.TotalTransactions, err = l.svcCtx.TxModel.GetTxsTotalCount()
+	resp.TotalTransactions, err = l.svcCtx.MemCache.GetTxTotalCountWithFallback(func() (interface{}, error) {
+		return l.svcCtx.TxModel.GetTxsTotalCount()
+	})
 	if err != nil {
 		if err != errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrInternal
@@ -84,7 +86,9 @@ func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo() (*types.RespGetLayer2Basi
 		}
 	}
 	for _, contractName := range contractNames {
-		contract, err := l.svcCtx.SysConfigModel.GetSysConfigByName(contractName)
+		contract, err := l.svcCtx.MemCache.GetSysConfigWithFallback(contractName, func() (interface{}, error) {
+			return l.svcCtx.SysConfigModel.GetSysConfigByName(contractName)
+		})
 		if err != nil {
 			if err != errorcode.DbErrNotFound {
 				return nil, errorcode.AppErrInternal

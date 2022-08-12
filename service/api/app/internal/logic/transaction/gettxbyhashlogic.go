@@ -28,11 +28,21 @@ func NewGetTxByHashLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTx
 
 func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (*types.RespGetTxByHash, error) {
 	resp := &types.RespGetTxByHash{}
-	tx, err := l.svcCtx.TxModel.GetTxByTxHash(req.TxHash)
+	tx, err := l.svcCtx.MemCache.GetTxByHashWithFallback(req.TxHash, func() (interface{}, error) {
+		return l.svcCtx.TxModel.GetTxByTxHash(req.TxHash)
+	})
 	if err == nil {
-		resp.Tx = *utils.GormTx2Tx(tx)
-	}
-	if err != nil {
+		resp.Tx = *utils.DbTx2Tx(tx)
+		resp.Tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
+		block, err := l.svcCtx.MemCache.GetBlockByHeightWithFallback(tx.BlockHeight, func() (interface{}, error) {
+			return l.svcCtx.BlockModel.GetBlockByBlockHeight(resp.Tx.BlockHeight)
+		})
+		if err == nil {
+			resp.CommittedAt = block.CommittedAt
+			resp.ExecutedAt = block.CreatedAt.Unix()
+			resp.VerifiedAt = block.VerifiedAt
+		}
+	} else {
 		if err != errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrInternal
 		}
@@ -43,7 +53,8 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (*types.RespGe
 			}
 			return nil, errorcode.AppErrInternal
 		}
-		resp.Tx = *utils.MempoolTx2Tx(memppolTx)
+		resp.Tx = *utils.DbMempoolTx2Tx(memppolTx)
+		resp.Tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
 	}
 	if resp.Tx.TxType == commonTx.TxTypeSwap {
 		txInfo, err := commonTx.ParseSwapTxInfo(tx.TxInfo)
@@ -53,11 +64,6 @@ func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (*types.RespGe
 		resp.AssetAId = txInfo.AssetAId
 		resp.AssetBId = txInfo.AssetBId
 	}
-	block, err := l.svcCtx.BlockModel.GetBlockByBlockHeight(resp.Tx.BlockHeight)
-	if err == nil {
-		resp.CommittedAt = block.CommittedAt
-		resp.ExecutedAt = block.CreatedAt.Unix()
-		resp.VerifiedAt = block.VerifiedAt
-	}
+
 	return resp, nil
 }
