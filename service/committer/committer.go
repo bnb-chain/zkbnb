@@ -120,9 +120,9 @@ func (c *Committer) loop() {
 			pendingUpdateMempoolTxs = append(pendingUpdateMempoolTxs, mempoolTx)
 		}
 
-		err = c.bc.SyncCache(stateCache)
+		err = c.bc.SyncToCache(stateCache)
 		if err != nil {
-			panic("sync redis cache failed: " + err.Error())
+			panic("sync redis dbcache failed: " + err.Error())
 		}
 
 		err = c.mempoolModel.UpdateMempoolTxs(pendingUpdateMempoolTxs, pendingDeleteMempoolTxs)

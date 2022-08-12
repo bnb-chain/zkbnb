@@ -1,11 +1,10 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"time"
-
-	"github.com/bnb-chain/zkbas/common/util"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
@@ -25,6 +24,8 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/tree"
+	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/pkg/dbcache"
 	"github.com/bnb-chain/zkbas/pkg/treedb"
 )
 
@@ -103,15 +104,6 @@ func (s *StateCache) GetTxs() []*tx.Tx {
 }
 
 type BlockChain struct {
-	AccountMap   map[int64]*commonAsset.AccountInfo
-	LiquidityMap map[int64]*liquidity.Liquidity
-	NftMap       map[int64]*nft.L2Nft
-
-	accountTree       bsmt.SparseMerkleTree
-	liquidityTree     bsmt.SparseMerkleTree
-	nftTree           bsmt.SparseMerkleTree
-	accountAssetTrees []bsmt.SparseMerkleTree
-
 	BlockModel            block.BlockModel
 	TxModel               tx.TxModel
 	TxDetailModel         tx.TxDetailModel
@@ -123,10 +115,19 @@ type BlockChain struct {
 	L2NftModel            nft.L2NftModel
 	L2NftHistoryModel     nft.L2NftHistoryModel
 
-	currentBlock int64
+	accountMap        map[int64]*commonAsset.AccountInfo
+	liquidityMap      map[int64]*liquidity.Liquidity
+	nftMap            map[int64]*nft.L2Nft
+	accountTree       bsmt.SparseMerkleTree
+	liquidityTree     bsmt.SparseMerkleTree
+	nftTree           bsmt.SparseMerkleTree
+	accountAssetTrees []bsmt.SparseMerkleTree
 
 	chainConfig *ChainConfig
+	redisCache  dbcache.Cache
 	processor   Processor
+
+	currentBlock *block.Block
 }
 
 func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) {
@@ -139,9 +140,9 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	redisConn := redis.New(config.CacheRedis[0].Host, WithRedis(config.CacheRedis[0].Type, config.CacheRedis[0].Pass))
 
 	bc := &BlockChain{
-		AccountMap:   make(map[int64]*commonAsset.AccountInfo),
-		LiquidityMap: make(map[int64]*liquidity.Liquidity),
-		NftMap:       make(map[int64]*nft.L2Nft),
+		accountMap:   make(map[int64]*commonAsset.AccountInfo),
+		liquidityMap: make(map[int64]*liquidity.Liquidity),
+		nftMap:       make(map[int64]*nft.L2Nft),
 
 		BlockModel:            block.NewBlockModel(conn, config.CacheRedis, gormPointer, redisConn),
 		TxModel:               tx.NewTxModel(conn, config.CacheRedis, gormPointer, redisConn),
@@ -155,12 +156,20 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		L2NftHistoryModel:     nft.NewL2NftHistoryModel(conn, config.CacheRedis, gormPointer),
 
 		chainConfig: config,
+		redisCache:  dbcache.NewRedisCache(config.CacheRedis[0].Host, config.CacheRedis[0].Pass, 15*time.Minute),
 	}
 
-	bc.currentBlock, err = bc.BlockModel.GetCurrentBlockHeight()
+	curHeight, err := bc.BlockModel.GetCurrentBlockHeight()
 	if err != nil {
 		logx.Error("get current block failed: ", err)
 		return nil, err
+	}
+	bc.currentBlock, err = bc.BlockModel.GetBlockByBlockHeight(curHeight)
+	if err != nil {
+		return nil, err
+	}
+	if bc.currentBlock.BlockStatus == block.StatusProposing {
+		curHeight--
 	}
 
 	treeCtx := &treedb.Context{
@@ -177,7 +186,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	bc.accountTree, bc.accountAssetTrees, err = tree.InitAccountTree(
 		bc.AccountModel,
 		bc.AccountHistoryModel,
-		bc.currentBlock,
+		curHeight,
 		treeCtx,
 	)
 	if err != nil {
@@ -186,7 +195,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	}
 	bc.liquidityTree, err = tree.InitLiquidityTree(
 		bc.LiquidityHistoryModel,
-		bc.currentBlock,
+		curHeight,
 		treeCtx,
 	)
 	if err != nil {
@@ -195,7 +204,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	}
 	bc.nftTree, err = tree.InitNftTree(
 		bc.L2NftHistoryModel,
-		bc.currentBlock,
+		curHeight,
 		treeCtx,
 	)
 	if err != nil {
@@ -211,8 +220,77 @@ func (bc *BlockChain) ApplyTransaction(tx *tx.Tx, stateCache *StateCache) (*tx.T
 	return bc.processor.Process(tx, stateCache)
 }
 
-func (bc *BlockChain) SyncCache(stateCache *StateCache) error {
-	// Iterate pending state, sync them to the cache.
+func (bc *BlockChain) SyncToCache(stateCache *StateCache) error {
+	// Sync new create to cache.
+	for accountIndex, status := range stateCache.pendingNewAccountIndexMap {
+		if status != StateCachePending {
+			continue
+		}
+
+		err := bc.redisCache.Set(context.Background(), dbcache.AccountKeyByIndex(accountIndex), bc.accountMap[accountIndex])
+		if err != nil {
+			return fmt.Errorf("cache to redis failed: %v", err)
+		}
+		stateCache.pendingNewAccountIndexMap[accountIndex] = StateCacheCached
+	}
+	for liquidityIndex, status := range stateCache.pendingNewLiquidityIndexMap {
+		if status != StateCachePending {
+			continue
+		}
+
+		err := bc.redisCache.Set(context.Background(), dbcache.LiquidityKeyByIndex(liquidityIndex), bc.liquidityMap[liquidityIndex])
+		if err != nil {
+			return fmt.Errorf("cache to redis failed: %v", err)
+		}
+		stateCache.pendingNewLiquidityIndexMap[liquidityIndex] = StateCacheCached
+	}
+	for nftIndex, status := range stateCache.pendingNewNftIndexMap {
+		if status != StateCachePending {
+			continue
+		}
+
+		err := bc.redisCache.Set(context.Background(), dbcache.NftKeyByIndex(nftIndex), bc.nftMap[nftIndex])
+		if err != nil {
+			return fmt.Errorf("cache to redis failed: %v", err)
+		}
+		stateCache.pendingNewNftIndexMap[nftIndex] = StateCacheCached
+	}
+
+	// Sync pending update to cache.
+	for accountIndex, status := range stateCache.pendingUpdateAccountIndexMap {
+		if status != StateCachePending {
+			continue
+		}
+
+		err := bc.redisCache.Set(context.Background(), dbcache.AccountKeyByIndex(accountIndex), bc.accountMap[accountIndex])
+		if err != nil {
+			return fmt.Errorf("cache to redis failed: %v", err)
+		}
+		stateCache.pendingUpdateAccountIndexMap[accountIndex] = StateCacheCached
+	}
+	for liquidityIndex, status := range stateCache.pendingUpdateLiquidityIndexMap {
+		if status != StateCachePending {
+			continue
+		}
+
+		err := bc.redisCache.Set(context.Background(), dbcache.LiquidityKeyByIndex(liquidityIndex), bc.liquidityMap[liquidityIndex])
+		if err != nil {
+			return fmt.Errorf("cache to redis failed: %v", err)
+		}
+		stateCache.pendingUpdateLiquidityIndexMap[liquidityIndex] = StateCacheCached
+	}
+	for nftIndex, status := range stateCache.pendingUpdateNftIndexMap {
+		if status != StateCachePending {
+			continue
+		}
+
+		err := bc.redisCache.Set(context.Background(), dbcache.NftKeyByIndex(nftIndex), bc.nftMap[nftIndex])
+		if err != nil {
+			return fmt.Errorf("cache to redis failed: %v", err)
+		}
+		stateCache.pendingUpdateNftIndexMap[nftIndex] = StateCacheCached
+	}
+
 	return nil
 }
 
@@ -222,7 +300,7 @@ func (bc *BlockChain) ProposeNewBlock() (*block.Block, error) {
 		Model: gorm.Model{
 			CreatedAt: time.UnixMilli(createdAt),
 		},
-		BlockHeight: bc.currentBlock + 1,
+		BlockHeight: bc.currentBlock.BlockHeight + 1,
 		BlockStatus: block.StatusProposing,
 	}
 
@@ -231,7 +309,7 @@ func (bc *BlockChain) ProposeNewBlock() (*block.Block, error) {
 		return nil, err
 	}
 
-	bc.currentBlock++
+	bc.currentBlock = newBlock
 	return newBlock, nil
 }
 
@@ -241,22 +319,22 @@ func (bc *BlockChain) CommitNewBlock(stateCache *StateCache) error {
 
 func (bc *BlockChain) prepareAccountsAndAssets(accounts []int64, assets []int64) error {
 	for _, accountIndex := range accounts {
-		if bc.AccountMap[accountIndex] == nil {
+		if bc.accountMap[accountIndex] == nil {
 			accountInfo, err := bc.AccountModel.GetAccountByAccountIndex(accountIndex)
 			if err != nil {
 				return err
 			}
-			bc.AccountMap[accountIndex], err = commonAsset.ToFormatAccountInfo(accountInfo)
+			bc.accountMap[accountIndex], err = commonAsset.ToFormatAccountInfo(accountInfo)
 			if err != nil {
 				return fmt.Errorf("convert to format account info failed: %v", err)
 			}
 		}
-		if bc.AccountMap[accountIndex].AssetInfo == nil {
-			bc.AccountMap[accountIndex].AssetInfo = make(map[int64]*commonAsset.AccountAsset)
+		if bc.accountMap[accountIndex].AssetInfo == nil {
+			bc.accountMap[accountIndex].AssetInfo = make(map[int64]*commonAsset.AccountAsset)
 		}
 		for _, assetId := range assets {
-			if bc.AccountMap[accountIndex].AssetInfo[assetId] == nil {
-				bc.AccountMap[accountIndex].AssetInfo[assetId] = &commonAsset.AccountAsset{
+			if bc.accountMap[accountIndex].AssetInfo[assetId] == nil {
+				bc.accountMap[accountIndex].AssetInfo[assetId] = &commonAsset.AccountAsset{
 					AssetId:                  assetId,
 					Balance:                  ZeroBigInt,
 					LpAmount:                 ZeroBigInt,
@@ -270,23 +348,23 @@ func (bc *BlockChain) prepareAccountsAndAssets(accounts []int64, assets []int64)
 }
 
 func (bc *BlockChain) prepareLiquidity(pairIndex int64) error {
-	if bc.LiquidityMap[pairIndex] == nil {
+	if bc.liquidityMap[pairIndex] == nil {
 		liquidityInfo, err := bc.LiquidityModel.GetLiquidityByPairIndex(pairIndex)
 		if err != nil {
 			return err
 		}
-		bc.LiquidityMap[pairIndex] = liquidityInfo
+		bc.liquidityMap[pairIndex] = liquidityInfo
 	}
 	return nil
 }
 
 func (bc *BlockChain) prepareNft(nftIndex int64) error {
-	if bc.NftMap[nftIndex] == nil {
+	if bc.nftMap[nftIndex] == nil {
 		nftAsset, err := bc.L2NftModel.GetNftAsset(nftIndex)
 		if err != nil {
 			return err
 		}
-		bc.NftMap[nftIndex] = nftAsset
+		bc.nftMap[nftIndex] = nftAsset
 	}
 	return nil
 }
@@ -295,9 +373,9 @@ func (bc *BlockChain) updateAccountTree(accounts []int64, assets []int64) error 
 	for _, accountIndex := range accounts {
 		for _, assetId := range assets {
 			assetLeaf, err := tree.ComputeAccountAssetLeafHash(
-				bc.AccountMap[accountIndex].AssetInfo[assetId].Balance.String(),
-				bc.AccountMap[accountIndex].AssetInfo[assetId].LpAmount.String(),
-				bc.AccountMap[accountIndex].AssetInfo[assetId].OfferCanceledOrFinalized.String(),
+				bc.accountMap[accountIndex].AssetInfo[assetId].Balance.String(),
+				bc.accountMap[accountIndex].AssetInfo[assetId].LpAmount.String(),
+				bc.accountMap[accountIndex].AssetInfo[assetId].OfferCanceledOrFinalized.String(),
 			)
 			if err != nil {
 				return fmt.Errorf("compute new account asset leaf failed: %v", err)
@@ -308,12 +386,12 @@ func (bc *BlockChain) updateAccountTree(accounts []int64, assets []int64) error 
 			}
 		}
 
-		bc.AccountMap[accountIndex].AssetRoot = common.Bytes2Hex(bc.accountAssetTrees[accountIndex].Root())
+		bc.accountMap[accountIndex].AssetRoot = common.Bytes2Hex(bc.accountAssetTrees[accountIndex].Root())
 		nAccountLeafHash, err := tree.ComputeAccountLeafHash(
-			bc.AccountMap[accountIndex].AccountNameHash,
-			bc.AccountMap[accountIndex].PublicKey,
-			bc.AccountMap[accountIndex].Nonce,
-			bc.AccountMap[accountIndex].CollectionNonce,
+			bc.accountMap[accountIndex].AccountNameHash,
+			bc.accountMap[accountIndex].PublicKey,
+			bc.accountMap[accountIndex].Nonce,
+			bc.accountMap[accountIndex].CollectionNonce,
 			bc.accountAssetTrees[accountIndex].Root(),
 		)
 		if err != nil {
@@ -330,15 +408,15 @@ func (bc *BlockChain) updateAccountTree(accounts []int64, assets []int64) error 
 
 func (bc *BlockChain) updateLiquidityTree(pairIndex int64) error {
 	nLiquidityAssetLeaf, err := tree.ComputeLiquidityAssetLeafHash(
-		bc.LiquidityMap[pairIndex].AssetAId,
-		bc.LiquidityMap[pairIndex].AssetA,
-		bc.LiquidityMap[pairIndex].AssetBId,
-		bc.LiquidityMap[pairIndex].AssetB,
-		bc.LiquidityMap[pairIndex].LpAmount,
-		bc.LiquidityMap[pairIndex].KLast,
-		bc.LiquidityMap[pairIndex].FeeRate,
-		bc.LiquidityMap[pairIndex].TreasuryAccountIndex,
-		bc.LiquidityMap[pairIndex].TreasuryRate,
+		bc.liquidityMap[pairIndex].AssetAId,
+		bc.liquidityMap[pairIndex].AssetA,
+		bc.liquidityMap[pairIndex].AssetBId,
+		bc.liquidityMap[pairIndex].AssetB,
+		bc.liquidityMap[pairIndex].LpAmount,
+		bc.liquidityMap[pairIndex].KLast,
+		bc.liquidityMap[pairIndex].FeeRate,
+		bc.liquidityMap[pairIndex].TreasuryAccountIndex,
+		bc.liquidityMap[pairIndex].TreasuryRate,
 	)
 	if err != nil {
 		return fmt.Errorf("unable to compute liquidity leaf: %v", err)
@@ -353,13 +431,13 @@ func (bc *BlockChain) updateLiquidityTree(pairIndex int64) error {
 
 func (bc *BlockChain) updateNftTree(nftIndex int64) error {
 	nftAssetLeaf, err := tree.ComputeNftAssetLeafHash(
-		bc.NftMap[nftIndex].CreatorAccountIndex,
-		bc.NftMap[nftIndex].OwnerAccountIndex,
-		bc.NftMap[nftIndex].NftContentHash,
-		bc.NftMap[nftIndex].NftL1Address,
-		bc.NftMap[nftIndex].NftL1TokenId,
-		bc.NftMap[nftIndex].CreatorTreasuryRate,
-		bc.NftMap[nftIndex].CollectionId,
+		bc.nftMap[nftIndex].CreatorAccountIndex,
+		bc.nftMap[nftIndex].OwnerAccountIndex,
+		bc.nftMap[nftIndex].NftContentHash,
+		bc.nftMap[nftIndex].NftL1Address,
+		bc.nftMap[nftIndex].NftL1TokenId,
+		bc.nftMap[nftIndex].CreatorTreasuryRate,
+		bc.nftMap[nftIndex].CollectionId,
 	)
 	if err != nil {
 		return fmt.Errorf("unable to compute nft leaf: %v", err)
