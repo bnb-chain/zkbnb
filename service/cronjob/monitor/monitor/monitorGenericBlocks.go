@@ -154,6 +154,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			relatedBlocks[blockHeight].BlockStatus = block.StatusVerifiedAndExecuted
 		case zkbasLogBlocksRevertSigHash.Hex():
 			l1EventInfo.EventType = EventTypeRevertedBlock
+			// TODO revert
 		default:
 		}
 
