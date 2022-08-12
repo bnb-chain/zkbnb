@@ -4,15 +4,15 @@ import (
 	"bytes"
 	"encoding/json"
 
-	"github.com/bnb-chain/zkbas/common/util"
-
-	"github.com/bnb-chain/zkbas/common/commonAsset"
-
-	"github.com/bnb-chain/zkbas-crypto/ffmath"
-	"github.com/bnb-chain/zkbas/common/commonTx"
-	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas-crypto/ffmath"
+	"github.com/bnb-chain/zkbas/common/commonAsset"
+	"github.com/bnb-chain/zkbas/common/commonConstant"
+	"github.com/bnb-chain/zkbas/common/commonTx"
+	"github.com/bnb-chain/zkbas/common/model/tx"
+	"github.com/bnb-chain/zkbas/common/util"
 )
 
 type TransferExecutor struct {
@@ -50,7 +50,15 @@ func (e *TransferExecutor) Prepare() error {
 func (e *TransferExecutor) VerifyInputs() error {
 	bc := e.bc
 	txInfo := e.txInfo
-	fromAccountInfo := bc.AccountMap[txInfo.FromAccountIndex]
+	fromAccountInfo := bc.accountMap[txInfo.FromAccountIndex]
+
+	if txInfo.ExpiredAt != commonConstant.NilExpiredAt && txInfo.ExpiredAt < bc.currentBlock.CreatedAt.UnixMilli() {
+		return errors.New("expired tx")
+	}
+
+	if txInfo.Nonce != fromAccountInfo.Nonce {
+		return errors.New("invalid nonce")
+	}
 
 	if txInfo.AssetAmount.Cmp(ZeroBigInt) <= 0 ||
 		txInfo.GasFeeAssetAmount.Cmp(ZeroBigInt) <= 0 ||
@@ -59,19 +67,15 @@ func (e *TransferExecutor) VerifyInputs() error {
 		return errors.New("invalid params")
 	}
 
-	if txInfo.Nonce != fromAccountInfo.Nonce {
-		return errors.New("invalid nonce")
-	}
-
 	return nil
 }
 
 func (e *TransferExecutor) ApplyTransaction(stateCache *StateCache) (*StateCache, error) {
 	bc := e.bc
 	txInfo := e.txInfo
-	fromAccountInfo := bc.AccountMap[txInfo.FromAccountIndex]
-	toAccountInfo := bc.AccountMap[txInfo.ToAccountIndex]
-	gasAccountInfo := bc.AccountMap[txInfo.GasAccountIndex]
+	fromAccountInfo := bc.accountMap[txInfo.FromAccountIndex]
+	toAccountInfo := bc.accountMap[txInfo.ToAccountIndex]
+	gasAccountInfo := bc.accountMap[txInfo.GasAccountIndex]
 
 	fromAccountInfo.AssetInfo[txInfo.AssetId].Balance = ffmath.Sub(fromAccountInfo.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
 	fromAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
@@ -134,7 +138,7 @@ func (e *TransferExecutor) GetExecutedTx() (*tx.Tx, error) {
 		return nil, errors.New("unmarshal tx failed")
 	}
 	stateRoot := bc.getStateRoot()
-	e.tx.BlockHeight = bc.currentBlock
+	e.tx.BlockHeight = bc.currentBlock.BlockHeight
 	e.tx.StateRoot = stateRoot
 	e.tx.TxInfo = string(txInfoBytes)
 	e.tx.TxStatus = tx.StatusPending
@@ -153,7 +157,7 @@ func (e *TransferExecutor) GenerateTxDetails() []*tx.TxDetail {
 		AssetId:      txInfo.AssetId,
 		AssetType:    commonAsset.GeneralAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
-		AccountName:  bc.AccountMap[txInfo.FromAccountIndex].AccountName,
+		AccountName:  bc.accountMap[txInfo.FromAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.AssetId, ffmath.Neg(txInfo.AssetAmount), ZeroBigInt, ZeroBigInt).String(),
 		Order:        order,
@@ -165,7 +169,7 @@ func (e *TransferExecutor) GenerateTxDetails() []*tx.TxDetail {
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    commonAsset.GeneralAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
-		AccountName:  bc.AccountMap[txInfo.FromAccountIndex].AccountName,
+		AccountName:  bc.accountMap[txInfo.FromAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), ZeroBigInt, ZeroBigInt).String(),
 		Order:        order,
@@ -178,7 +182,7 @@ func (e *TransferExecutor) GenerateTxDetails() []*tx.TxDetail {
 		AssetId:      txInfo.AssetId,
 		AssetType:    commonAsset.GeneralAssetType,
 		AccountIndex: txInfo.ToAccountIndex,
-		AccountName:  bc.AccountMap[txInfo.ToAccountIndex].AccountName,
+		AccountName:  bc.accountMap[txInfo.ToAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.AssetId, txInfo.AssetAmount, ZeroBigInt, ZeroBigInt).String(),
 		Order:        order,
@@ -191,7 +195,7 @@ func (e *TransferExecutor) GenerateTxDetails() []*tx.TxDetail {
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    commonAsset.GeneralAssetType,
 		AccountIndex: txInfo.GasAccountIndex,
-		AccountName:  bc.AccountMap[txInfo.GasAccountIndex].AccountName,
+		AccountName:  bc.accountMap[txInfo.GasAccountIndex].AccountName,
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, ZeroBigInt, ZeroBigInt).String(),
 		Order:        order,
