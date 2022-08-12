@@ -13,7 +13,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-func (s *AppSuite) TestGetTxsListByBlockHeight() {
+func (s *AppSuite) TestGetTxsByBlockHeight() {
 
 	type args struct {
 		blockHeight int
@@ -31,7 +31,7 @@ func (s *AppSuite) TestGetTxsListByBlockHeight() {
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetTxsListByBlockHeight(s, tt.args.blockHeight, tt.args.offset, tt.args.limit)
+			httpCode, result := GetTxsByBlockHeight(s, tt.args.blockHeight, tt.args.offset, tt.args.limit)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				if tt.args.offset < int(result.Total) {
@@ -50,7 +50,7 @@ func (s *AppSuite) TestGetTxsListByBlockHeight() {
 
 }
 
-func GetTxsListByBlockHeight(s *AppSuite, blockHeight, offset, limit int) (int, *types.RespGetTxsListByBlockHeight) {
+func GetTxsByBlockHeight(s *AppSuite, blockHeight, offset, limit int) (int, *types.RespGetTxsByBlockHeight) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/tx/getTxsListByBlockHeight?block_height=%d&offset=%d&limit=%d", s.url, blockHeight, offset, limit))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
@@ -61,7 +61,7 @@ func GetTxsListByBlockHeight(s *AppSuite, blockHeight, offset, limit int) (int, 
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetTxsListByBlockHeight{}
+	result := types.RespGetTxsByBlockHeight{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }
