@@ -131,7 +131,8 @@ func (c *Committer) loop() {
 		}
 
 		if c.shouldCommit(curBlock, stateCache) {
-			c.bc.CommitNewBlock(stateCache)
+			err := c.commitNewBlock(curBlock, stateCache, pendingUpdateMempoolTxs)
+			panic("commit new block failed: " + err.Error())
 		}
 	}
 }
@@ -178,6 +179,35 @@ func (c *Committer) shouldCommit(curBlock *block.Block, stateCache *core.StateCa
 	}
 
 	return false
+}
+
+func (c *Committer) commitNewBlock(curBlock *block.Block, stateCache *core.StateCache, successTxs []*mempool.MempoolTx) error {
+	for _, tx := range successTxs {
+		tx.Status = mempool.SuccessTxStatus
+	}
+
+	blockSize := c.computeCurrentBlockSize(stateCache)
+	newBlock, newBlockForCommit,
+		pendingNewAccount, pendingUpdateAccount, pendingNewAccountHistoy,
+		pendingNewLiquidity, pendingUpdateLiquidity, pendingNewLiquidityHistory,
+		pendingNewNft, pendingUpdateNft, pendingNewNftHistory, pendingNewNftWithdrawHisoty,
+		err := c.bc.CommitNewBlock(stateCache, blockSize, curBlock.CreatedAt.UnixMilli())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Committer) computeCurrentBlockSize(stateCache *core.StateCache) int {
+	var blockSize int
+	for i := 0; i < len(c.keyTxCounts); i++ {
+		if len(stateCache.GetTxs()) <= c.keyTxCounts[i] {
+			blockSize = c.keyTxCounts[i]
+			break
+		}
+	}
+	return blockSize
 }
 
 func convertMempoolTxToTx(mempoolTx *mempool.MempoolTx) *tx.Tx {

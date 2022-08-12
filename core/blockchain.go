@@ -2,6 +2,8 @@ package core
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"time"
@@ -20,6 +22,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/asset"
 	"github.com/bnb-chain/zkbas/common/model/block"
+	"github.com/bnb-chain/zkbas/common/model/blockForCommit"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/tx"
@@ -52,6 +55,7 @@ const (
 
 type StateCache struct {
 	blockNumber int64
+	stateRoot   string
 	txs         []*tx.Tx
 
 	// Updated in executor's ApplyTransaction method.
@@ -292,6 +296,7 @@ func (bc *BlockChain) ProposeNewBlock() (*block.Block, error) {
 			CreatedAt: time.UnixMilli(createdAt),
 		},
 		BlockHeight: bc.currentBlock.BlockHeight + 1,
+		StateRoot:   bc.currentBlock.StateRoot,
 		BlockStatus: block.StatusProposing,
 	}
 
@@ -304,8 +309,244 @@ func (bc *BlockChain) ProposeNewBlock() (*block.Block, error) {
 	return newBlock, nil
 }
 
-func (bc *BlockChain) CommitNewBlock(stateCache *StateCache) error {
-	return nil
+func (bc *BlockChain) CommitNewBlock(stateCache *StateCache, blockSize int, createdAt int64) (
+	*block.Block, *blockForCommit.BlockForCommit,
+	[]*account.Account, []*account.Account, []*account.AccountHistory,
+	[]*liquidity.Liquidity, []*liquidity.Liquidity, []*liquidity.LiquidityHistory,
+	[]*nft.L2Nft, []*nft.L2Nft, []*nft.L2NftHistory, []*nft.L2NftWithdrawHistory,
+	error) {
+
+	newBlock, newBlockForCommit, err := bc.commitNewBlock(stateCache, blockSize, createdAt)
+	if err != nil {
+		return nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, err
+	}
+
+	pendingNewAccount, pendingUpdateAccount, pendingNewAccountHistory, err := bc.getPendingAccount(stateCache)
+	if err != nil {
+		return nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, err
+	}
+
+	pendingNewLiquidity, pendingUpdateLiquidity, pendingNewLiquidityHistory, err := bc.getPendingLiquidity(stateCache)
+	if err != nil {
+		return nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, err
+	}
+
+	pendingNewNft, pendingUpdateNft, pendingNewNftHistory, err := bc.getPendingNft(stateCache)
+	if err != nil {
+		return nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, err
+	}
+
+	return newBlock, newBlockForCommit,
+		pendingNewAccount, pendingUpdateAccount, pendingNewAccountHistory,
+		pendingNewLiquidity, pendingUpdateLiquidity, pendingNewLiquidityHistory,
+		pendingNewNft, pendingUpdateNft, pendingNewNftHistory, stateCache.pendingNewNftWithdrawHistory, nil
+}
+
+func (bc *BlockChain) commitNewBlock(stateCache *StateCache, blockSize int, createdAt int64) (*block.Block, *blockForCommit.BlockForCommit, error) {
+	if blockSize < len(stateCache.txs) {
+		return nil, nil, errors.New("block size too small")
+	}
+
+	newBlock := bc.currentBlock
+	if newBlock.BlockStatus != block.StatusProposing {
+		newBlock = &block.Block{
+			Model: gorm.Model{
+				CreatedAt: time.UnixMilli(createdAt),
+			},
+			BlockHeight: bc.currentBlock.BlockHeight + 1,
+			StateRoot:   bc.currentBlock.StateRoot,
+			BlockStatus: block.StatusProposing,
+		}
+	}
+
+	commitment := util.CreateBlockCommitment(newBlock.BlockHeight, newBlock.CreatedAt.UnixMilli(),
+		common.FromHex(newBlock.StateRoot), common.FromHex(stateCache.stateRoot),
+		stateCache.pubData, int64(len(stateCache.pubDataOffset)))
+	newBlock.BlockSize = uint16(blockSize)
+	newBlock.BlockCommitment = commitment
+	newBlock.StateRoot = stateCache.stateRoot
+	newBlock.PriorityOperations = stateCache.priorityOperations
+	newBlock.PendingOnChainOperationsHash = common.Bytes2Hex(stateCache.pendingOnChainOperationsHash)
+	newBlock.Txs = stateCache.txs
+	newBlock.BlockStatus = block.StatusPending
+	if stateCache.pendingOnChainOperationsPubData != nil {
+		onChainOperationsPubDataBytes, err := json.Marshal(stateCache.pendingOnChainOperationsPubData)
+		if err != nil {
+			return nil, nil, fmt.Errorf("marshal pending onChain operation pubData failed: %v", err)
+		}
+		newBlock.PendingOnChainOperationsPubData = string(onChainOperationsPubDataBytes)
+	}
+
+	offsetBytes, err := json.Marshal(stateCache.pubDataOffset)
+	if err != nil {
+		return nil, nil, fmt.Errorf("marshal pubData offset failed: %v", err)
+	}
+	newBlockForCommit := &blockForCommit.BlockForCommit{
+		BlockSize:         uint16(blockSize),
+		BlockHeight:       newBlock.BlockHeight,
+		StateRoot:         newBlock.StateRoot,
+		PublicData:        common.Bytes2Hex(stateCache.pubData),
+		Timestamp:         newBlock.CreatedAt.UnixMilli(),
+		PublicDataOffsets: string(offsetBytes),
+	}
+
+	bc.currentBlock = newBlock
+	return newBlock, newBlockForCommit, nil
+}
+
+func (bc *BlockChain) getPendingAccount(stateCache *StateCache) ([]*account.Account, []*account.Account, []*account.AccountHistory, error) {
+	pendingNewAccount := make([]*account.Account, 0)
+	pendingUpdateAccount := make([]*account.Account, 0)
+	pendingNewAccountHistory := make([]*account.AccountHistory, 0)
+
+	for index, status := range stateCache.pendingNewAccountIndexMap {
+		if status < StateCachePending {
+			logx.Errorf("unexpected 0 status in state cache")
+			continue
+		}
+
+		newAccount, err := commonAsset.FromFormatAccountInfo(bc.accountMap[index])
+		if err != nil {
+			return nil, nil, nil, err
+		}
+
+		pendingNewAccount = append(pendingNewAccount, newAccount)
+		pendingNewAccountHistory = append(pendingNewAccountHistory, &account.AccountHistory{
+			AccountIndex:    newAccount.AccountIndex,
+			Nonce:           newAccount.Nonce,
+			CollectionNonce: newAccount.CollectionNonce,
+			AssetInfo:       newAccount.AssetInfo,
+			AssetRoot:       newAccount.AssetRoot,
+			L2BlockHeight:   bc.currentBlock.BlockHeight, // TODO: ensure this should be the new block's height.
+		})
+	}
+
+	for index, status := range stateCache.pendingUpdateAccountIndexMap {
+		if status < StateCachePending {
+			logx.Errorf("unexpected 0 status in state cache")
+			continue
+		}
+
+		newAccount, err := commonAsset.FromFormatAccountInfo(bc.accountMap[index])
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		pendingUpdateAccount = append(pendingUpdateAccount, newAccount)
+		pendingNewAccountHistory = append(pendingNewAccountHistory, &account.AccountHistory{
+			AccountIndex:    newAccount.AccountIndex,
+			Nonce:           newAccount.Nonce,
+			CollectionNonce: newAccount.CollectionNonce,
+			AssetInfo:       newAccount.AssetInfo,
+			AssetRoot:       newAccount.AssetRoot,
+			L2BlockHeight:   bc.currentBlock.BlockHeight, // TODO: ensure this should be the new block's height.
+		})
+	}
+
+	return pendingNewAccount, pendingUpdateAccount, pendingNewAccountHistory, nil
+}
+
+func (bc *BlockChain) getPendingLiquidity(stateCache *StateCache) ([]*liquidity.Liquidity, []*liquidity.Liquidity, []*liquidity.LiquidityHistory, error) {
+	pendingNewLiquidity := make([]*liquidity.Liquidity, 0)
+	pendingUpdateLiquidity := make([]*liquidity.Liquidity, 0)
+	pendingNewLiquidityHistory := make([]*liquidity.LiquidityHistory, 0)
+
+	for index, status := range stateCache.pendingNewLiquidityIndexMap {
+		if status < StateCachePending {
+			logx.Errorf("unexpected 0 status in state cache")
+			continue
+		}
+
+		newLiquidity := bc.liquidityMap[index]
+		pendingNewLiquidity = append(pendingNewLiquidity, newLiquidity)
+		pendingNewLiquidityHistory = append(pendingNewLiquidityHistory, &liquidity.LiquidityHistory{
+			PairIndex:            newLiquidity.PairIndex,
+			AssetAId:             newLiquidity.AssetAId,
+			AssetA:               newLiquidity.AssetA,
+			AssetBId:             newLiquidity.AssetBId,
+			AssetB:               newLiquidity.AssetB,
+			LpAmount:             newLiquidity.LpAmount,
+			KLast:                newLiquidity.KLast,
+			FeeRate:              newLiquidity.FeeRate,
+			TreasuryAccountIndex: newLiquidity.TreasuryAccountIndex,
+			TreasuryRate:         newLiquidity.TreasuryRate,
+			L2BlockHeight:        bc.currentBlock.BlockHeight,
+		})
+	}
+
+	for index, status := range stateCache.pendingUpdateLiquidityIndexMap {
+		if status < StateCachePending {
+			logx.Errorf("unexpected 0 status in state cache")
+			continue
+		}
+
+		newLiquidity := bc.liquidityMap[index]
+		pendingUpdateLiquidity = append(pendingUpdateLiquidity, newLiquidity)
+		pendingNewLiquidityHistory = append(pendingNewLiquidityHistory, &liquidity.LiquidityHistory{
+			PairIndex:            newLiquidity.PairIndex,
+			AssetAId:             newLiquidity.AssetAId,
+			AssetA:               newLiquidity.AssetA,
+			AssetBId:             newLiquidity.AssetBId,
+			AssetB:               newLiquidity.AssetB,
+			LpAmount:             newLiquidity.LpAmount,
+			KLast:                newLiquidity.KLast,
+			FeeRate:              newLiquidity.FeeRate,
+			TreasuryAccountIndex: newLiquidity.TreasuryAccountIndex,
+			TreasuryRate:         newLiquidity.TreasuryRate,
+			L2BlockHeight:        bc.currentBlock.BlockHeight,
+		})
+	}
+
+	return pendingNewLiquidity, pendingUpdateLiquidity, pendingNewLiquidityHistory, nil
+}
+
+func (bc *BlockChain) getPendingNft(stateCache *StateCache) ([]*nft.L2Nft, []*nft.L2Nft, []*nft.L2NftHistory, error) {
+	pendingNewNft := make([]*nft.L2Nft, 0)
+	pendingUpdateNft := make([]*nft.L2Nft, 0)
+	pendingNewNftHistory := make([]*nft.L2NftHistory, 0)
+
+	for index, status := range stateCache.pendingNewNftIndexMap {
+		if status < StateCachePending {
+			logx.Errorf("unexpected 0 status in state cache")
+			continue
+		}
+
+		newNft := bc.nftMap[index]
+		pendingNewNft = append(pendingNewNft, newNft)
+		pendingNewNftHistory = append(pendingNewNftHistory, &nft.L2NftHistory{
+			NftIndex:            newNft.NftIndex,
+			CreatorAccountIndex: newNft.CreatorAccountIndex,
+			OwnerAccountIndex:   newNft.OwnerAccountIndex,
+			NftContentHash:      newNft.NftContentHash,
+			NftL1Address:        newNft.NftL1Address,
+			NftL1TokenId:        newNft.NftL1TokenId,
+			CreatorTreasuryRate: newNft.CreatorTreasuryRate,
+			CollectionId:        newNft.CollectionId,
+			L2BlockHeight:       bc.currentBlock.BlockHeight,
+		})
+	}
+
+	for index, status := range stateCache.pendingUpdateNftIndexMap {
+		if status < StateCachePending {
+			logx.Errorf("unexpected 0 status in state cache")
+			continue
+		}
+
+		newNft := bc.nftMap[index]
+		pendingUpdateNft = append(pendingUpdateNft, newNft)
+		pendingNewNftHistory = append(pendingNewNftHistory, &nft.L2NftHistory{
+			NftIndex:            newNft.NftIndex,
+			CreatorAccountIndex: newNft.CreatorAccountIndex,
+			OwnerAccountIndex:   newNft.OwnerAccountIndex,
+			NftContentHash:      newNft.NftContentHash,
+			NftL1Address:        newNft.NftL1Address,
+			NftL1TokenId:        newNft.NftL1TokenId,
+			CreatorTreasuryRate: newNft.CreatorTreasuryRate,
+			CollectionId:        newNft.CollectionId,
+			L2BlockHeight:       bc.currentBlock.BlockHeight,
+		})
+	}
+
+	return pendingNewNft, pendingUpdateNft, pendingNewNftHistory, nil
 }
 
 func (bc *BlockChain) prepareAccountsAndAssets(accounts []int64, assets []int64) error {
