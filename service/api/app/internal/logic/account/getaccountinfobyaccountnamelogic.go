@@ -7,24 +7,21 @@ import (
 
 	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/commglobalmap"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
 type GetAccountInfoByAccountNameLogic struct {
 	logx.Logger
-	ctx           context.Context
-	svcCtx        *svc.ServiceContext
-	commglobalmap commglobalmap.Commglobalmap
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
 }
 
 func NewGetAccountInfoByAccountNameLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAccountInfoByAccountNameLogic {
 	return &GetAccountInfoByAccountNameLogic{
-		Logger:        logx.WithContext(ctx),
-		ctx:           ctx,
-		svcCtx:        svcCtx,
-		commglobalmap: commglobalmap.New(svcCtx),
+		Logger: logx.WithContext(ctx),
+		ctx:    ctx,
+		svcCtx: svcCtx,
 	}
 }
 
@@ -41,7 +38,7 @@ func (l *GetAccountInfoByAccountNameLogic) GetAccountInfoByAccountName(req *type
 		}
 		return nil, errorcode.AppErrInternal
 	}
-	account, err := l.commglobalmap.GetLatestAccountInfo(l.ctx, info.AccountIndex)
+	account, err := l.svcCtx.StateFetcher.GetLatestAccountInfo(l.ctx, info.AccountIndex)
 	if err != nil {
 		logx.Errorf("fail to get account info: %d, err: %s", info.AccountIndex, err.Error())
 		return nil, errorcode.AppErrInternal

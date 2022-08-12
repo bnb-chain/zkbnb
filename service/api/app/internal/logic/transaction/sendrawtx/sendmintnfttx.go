@@ -17,11 +17,11 @@ import (
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/common/util/globalmapHandler"
 	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/commglobalmap"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/fetcher/state"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 )
 
-func SendMintNftTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalmap commglobalmap.Commglobalmap, rawTxInfo string) (txId string, err error) {
+func SendMintNftTx(ctx context.Context, svcCtx *svc.ServiceContext, stateFetcher state.Fetcher, rawTxInfo string) (txId string, err error) {
 	txInfo, err := commonTx.ParseMintNftTxInfo(rawTxInfo)
 	if err != nil {
 		logx.Errorf("cannot parse tx err: %s", err.Error())
@@ -43,7 +43,7 @@ func SendMintNftTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalma
 		redisLock      *redis.RedisLock
 	)
 
-	accountInfoMap[txInfo.CreatorAccountIndex], err = commglobalmap.GetLatestAccountInfo(ctx, txInfo.CreatorAccountIndex)
+	accountInfoMap[txInfo.CreatorAccountIndex], err = stateFetcher.GetLatestAccountInfo(ctx, txInfo.CreatorAccountIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return "", errorcode.AppErrInvalidTxField.RefineError("invalid FromAccountIndex")
@@ -58,7 +58,7 @@ func SendMintNftTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalma
 	}
 
 	if accountInfoMap[txInfo.ToAccountIndex] == nil {
-		accountInfoMap[txInfo.ToAccountIndex], err = commglobalmap.GetBasicAccountInfo(ctx, txInfo.ToAccountIndex)
+		accountInfoMap[txInfo.ToAccountIndex], err = stateFetcher.GetBasicAccountInfo(ctx, txInfo.ToAccountIndex)
 		if err != nil {
 			if err == errorcode.DbErrNotFound {
 				return "", errorcode.AppErrInvalidTxField.RefineError("invalid ToAccountIndex")
@@ -72,7 +72,7 @@ func SendMintNftTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalma
 		return "", errorcode.AppErrInvalidTxField.RefineError("invalid ToAccountNameHash")
 	}
 	if accountInfoMap[txInfo.GasAccountIndex] == nil {
-		accountInfoMap[txInfo.GasAccountIndex], err = commglobalmap.GetBasicAccountInfo(ctx, txInfo.GasAccountIndex)
+		accountInfoMap[txInfo.GasAccountIndex], err = stateFetcher.GetBasicAccountInfo(ctx, txInfo.GasAccountIndex)
 		if err != nil {
 			if err == errorcode.DbErrNotFound {
 				return "", errorcode.AppErrInvalidTxField.RefineError("invalid GasAccountIndex")

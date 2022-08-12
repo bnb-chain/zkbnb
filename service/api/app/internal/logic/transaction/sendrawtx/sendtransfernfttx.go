@@ -13,11 +13,11 @@ import (
 	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/commglobalmap"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/fetcher/state"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 )
 
-func SendTransferNftTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalmap commglobalmap.Commglobalmap, rawTxInfo string) (txId string, err error) {
+func SendTransferNftTx(ctx context.Context, svcCtx *svc.ServiceContext, stateFetcher state.Fetcher, rawTxInfo string) (txId string, err error) {
 	txInfo, err := commonTx.ParseTransferNftTxInfo(rawTxInfo)
 	if err != nil {
 		logx.Errorf("cannot parse tx err: %s", err.Error())
@@ -36,7 +36,7 @@ func SendTransferNftTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 	var (
 		accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
 	)
-	accountInfoMap[txInfo.FromAccountIndex], err = commglobalmap.GetLatestAccountInfo(ctx, txInfo.FromAccountIndex)
+	accountInfoMap[txInfo.FromAccountIndex], err = stateFetcher.GetLatestAccountInfo(ctx, txInfo.FromAccountIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return "", errorcode.AppErrInvalidTxField.RefineError("invalid FromAccountIndex")
@@ -45,7 +45,7 @@ func SendTransferNftTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 		return "", errorcode.AppErrInternal
 	}
 	if accountInfoMap[txInfo.ToAccountIndex] == nil {
-		accountInfoMap[txInfo.ToAccountIndex], err = commglobalmap.GetBasicAccountInfo(ctx, txInfo.ToAccountIndex)
+		accountInfoMap[txInfo.ToAccountIndex], err = stateFetcher.GetBasicAccountInfo(ctx, txInfo.ToAccountIndex)
 		if err != nil {
 			if err == errorcode.DbErrNotFound {
 				return "", errorcode.AppErrInvalidTxField.RefineError("invalid ToAccountIndex")
@@ -59,7 +59,7 @@ func SendTransferNftTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 		return "", errorcode.AppErrInvalidTxField.RefineError("invalid ToAccountNameHash")
 	}
 	if accountInfoMap[txInfo.GasAccountIndex] == nil {
-		accountInfoMap[txInfo.GasAccountIndex], err = commglobalmap.GetBasicAccountInfo(ctx, txInfo.GasAccountIndex)
+		accountInfoMap[txInfo.GasAccountIndex], err = stateFetcher.GetBasicAccountInfo(ctx, txInfo.GasAccountIndex)
 		if err != nil {
 			if err == errorcode.DbErrNotFound {
 				return "", errorcode.AppErrInvalidTxField.RefineError("invalid GasAccountIndex")
@@ -69,7 +69,7 @@ func SendTransferNftTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 		}
 	}
 
-	nftInfo, err := commglobalmap.GetLatestNftInfoForRead(ctx, txInfo.NftIndex)
+	nftInfo, err := stateFetcher.GetLatestNftInfo(ctx, txInfo.NftIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return "", errorcode.AppErrInvalidTxField.RefineError("invalid NftIndex")
@@ -117,18 +117,10 @@ func SendTransferNftTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 		txDetails,
 	)
 
-	if err := commglobalmap.DeleteLatestNftInfoForReadInCache(ctx, txInfo.NftIndex); err != nil {
-		logx.Errorf("[DeleteLatestNftInfoForReadInCache] param: %d, err: %s", txInfo.NftIndex, err.Error())
-		return "", err
-	}
 	if err := svcCtx.MempoolModel.CreateBatchedMempoolTxs([]*mempool.MempoolTx{mempoolTx}); err != nil {
 		logx.Errorf("fail to create mempool tx: %v, err: %s", mempoolTx, err.Error())
 		_ = CreateFailTx(svcCtx.FailTxModel, commonTx.TxTypeTransferNft, txInfo, err)
 		return "", errorcode.AppErrInternal
-	}
-	// update cache, not key logic
-	if err := commglobalmap.SetLatestNftInfoForReadInCache(ctx, txInfo.NftIndex); err != nil {
-		logx.Errorf("[SetLatestNftInfoForReadInCache] param: %d, err: %s", txInfo.NftIndex, err.Error())
 	}
 	return txId, nil
 }

@@ -7,24 +7,21 @@ import (
 
 	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/commglobalmap"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
 type GetBalanceByAssetIdAndAccountNameLogic struct {
 	logx.Logger
-	ctx           context.Context
-	svcCtx        *svc.ServiceContext
-	commglobalmap commglobalmap.Commglobalmap
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
 }
 
 func NewGetBalanceByAssetIdAndAccountNameLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetBalanceByAssetIdAndAccountNameLogic {
 	return &GetBalanceByAssetIdAndAccountNameLogic{
-		Logger:        logx.WithContext(ctx),
-		ctx:           ctx,
-		svcCtx:        svcCtx,
-		commglobalmap: commglobalmap.New(svcCtx),
+		Logger: logx.WithContext(ctx),
+		ctx:    ctx,
+		svcCtx: svcCtx,
 	}
 }
 
@@ -48,7 +45,7 @@ func (l *GetBalanceByAssetIdAndAccountNameLogic) GetBalanceByAssetIdAndAccountNa
 	}
 
 	resp := &types.RespGetBlanceInfoByAssetIdAndAccountName{}
-	accountInfo, err := l.commglobalmap.GetLatestAccountInfoWithCache(l.ctx, account.AccountIndex)
+	accountInfo, err := l.svcCtx.StateFetcher.GetLatestAccountInfo(l.ctx, account.AccountIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound

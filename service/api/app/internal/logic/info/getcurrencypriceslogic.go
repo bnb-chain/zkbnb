@@ -7,7 +7,6 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/errorcode"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/price"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
@@ -16,7 +15,6 @@ type GetCurrencyPricesLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
-	price  price.Price
 }
 
 func NewGetCurrencyPricesLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetCurrencyPricesLogic {
@@ -24,12 +22,11 @@ func NewGetCurrencyPricesLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 		Logger: logx.WithContext(ctx),
 		ctx:    ctx,
 		svcCtx: svcCtx,
-		price:  price.New(svcCtx),
 	}
 }
 
 func (l *GetCurrencyPricesLogic) GetCurrencyPrices(req *types.ReqGetCurrencyPrices) (*types.RespGetCurrencyPrices, error) {
-	l2Assets, err := l.svcCtx.L2AssetModel.GetAssetsList()
+	l2Assets, err := l.svcCtx.AssetModel.GetAssetsList()
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
@@ -47,7 +44,7 @@ func (l *GetCurrencyPricesLogic) GetCurrencyPrices(req *types.ReqGetCurrencyPric
 		} else if asset.AssetSymbol == "REY" {
 			price = 0.5
 		} else {
-			price, err = l.price.GetCurrencyPrice(l.ctx, asset.AssetSymbol)
+			price, err = l.svcCtx.PriceFetcher.GetCurrencyPrice(l.ctx, asset.AssetSymbol)
 			if err != nil {
 				logx.Errorf("fail to get price for symbol: %s, err: %s", asset.AssetSymbol, err.Error())
 				if err == errorcode.AppErrQuoteNotExist {

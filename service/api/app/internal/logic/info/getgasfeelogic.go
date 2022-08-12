@@ -9,9 +9,8 @@ import (
 
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/errorcode"
-	"github.com/bnb-chain/zkbas/common/sysconfigName"
+	"github.com/bnb-chain/zkbas/common/sysConfigName"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/price"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
@@ -20,7 +19,6 @@ type GetGasFeeLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
-	price  price.Price
 }
 
 func NewGetGasFeeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetGasFeeLogic {
@@ -28,14 +26,13 @@ func NewGetGasFeeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetGasF
 		Logger: logx.WithContext(ctx),
 		ctx:    ctx,
 		svcCtx: svcCtx,
-		price:  price.New(svcCtx),
 	}
 }
 
 func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.RespGetGasFee, error) {
 	resp := &types.RespGetGasFee{}
 
-	assetInfo, err := l.svcCtx.L2AssetModel.GetAssetByAssetId(int64(req.AssetId))
+	assetInfo, err := l.svcCtx.AssetModel.GetAssetByAssetId(int64(req.AssetId))
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
@@ -64,11 +61,11 @@ func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.RespGetGasFe
 		return resp, nil
 	}
 	// if not, try to compute the gas amount based on USD
-	assetPrice, err := l.price.GetCurrencyPrice(l.ctx, assetInfo.AssetSymbol)
+	assetPrice, err := l.svcCtx.PriceFetcher.GetCurrencyPrice(l.ctx, assetInfo.AssetSymbol)
 	if err != nil {
 		return nil, errorcode.AppErrInternal
 	}
-	bnbPrice, err := l.price.GetCurrencyPrice(l.ctx, "BNB")
+	bnbPrice, err := l.svcCtx.PriceFetcher.GetCurrencyPrice(l.ctx, "BNB")
 	if err != nil {
 		return nil, errorcode.AppErrInternal
 	}
