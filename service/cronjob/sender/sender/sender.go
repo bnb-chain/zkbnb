@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -38,7 +37,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/l1RollupTx"
 	"github.com/bnb-chain/zkbas/common/model/proof"
 	"github.com/bnb-chain/zkbas/common/model/sysconfig"
-	sysConfigName "github.com/bnb-chain/zkbas/common/sysconfigName"
+	"github.com/bnb-chain/zkbas/common/sysConfigName"
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/service/cronjob/sender/config"
 )
@@ -65,20 +64,12 @@ type Sender struct {
 	proofModel          proof.ProofModel
 }
 
-func WithRedis(redisType string, redisPass string) redis.Option {
-	return func(p *redis.Redis) {
-		p.Type = redisType
-		p.Pass = redisPass
-	}
-}
-
 func NewSender(c config.Config) *Sender {
 	gormPointer, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
 	if err != nil {
 		logx.Errorf("gorm connect db error, err = %v", err)
 	}
 	conn := sqlx.NewSqlConn("postgres", c.Postgres.DataSource)
-	//redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
 
 	s := &Sender{
 		Config:              c,
