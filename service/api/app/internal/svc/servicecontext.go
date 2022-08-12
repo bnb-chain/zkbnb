@@ -27,13 +27,11 @@ const cacheDefaultExpiration = time.Millisecond * 500
 const cacheDefaultPurgeInterval = time.Second * 60
 
 type ServiceContext struct {
-	Config        config.Config
-	Conn          sqlx.SqlConn
-	GormPointer   *gorm.DB
-	RedisConn     *redis.Redis
-	Cache         *gocache.Cache
-	CodeVersion   string
-	GitCommitHash string
+	Config      config.Config
+	Conn        sqlx.SqlConn
+	GormPointer *gorm.DB
+	RedisConn   *redis.Redis
+	Cache       *gocache.Cache
 
 	MempoolModel          mempool.MemPoolModel
 	MempoolDetailModel    mempool.MempoolTxDetailModel

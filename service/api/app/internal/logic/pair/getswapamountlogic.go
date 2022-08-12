@@ -70,7 +70,7 @@ func (l *GetSwapAmountLogic) GetSwapAmount(req *types.ReqGetSwapAmount) (*types.
 		return nil, errorcode.AppErrInternal
 	}
 	return &types.RespGetSwapAmount{
-		ResAssetAmount: assetAmount.String(),
-		ResAssetId:     uint32(toAssetId),
+		AssetId:     uint32(toAssetId),
+		AssetAmount: assetAmount.String(),
 	}, nil
 }

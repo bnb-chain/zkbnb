@@ -12,7 +12,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-func (s *AppSuite) TestGetAccountStatusByAccountPk() {
+func (s *AppSuite) TestGetAccountStatusByPk() {
 	type args struct {
 		pubKey string
 	}
@@ -27,7 +27,7 @@ func (s *AppSuite) TestGetAccountStatusByAccountPk() {
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetAccountStatusByAccountPk(s, tt.args.pubKey)
+			httpCode, result := GetAccountStatusByPk(s, tt.args.pubKey)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.NotNil(t, result.AccountName)
@@ -40,8 +40,8 @@ func (s *AppSuite) TestGetAccountStatusByAccountPk() {
 
 }
 
-func GetAccountStatusByAccountPk(s *AppSuite, accountPk string) (int, *types.RespGetAccountStatusByAccountPk) {
-	resp, err := http.Get(s.url + "/api/v1/account/getAccountStatusByAccountPk?account_pk=" + accountPk)
+func GetAccountStatusByPk(s *AppSuite, accountPk string) (int, *types.RespGetAccountStatusByPk) {
+	resp, err := http.Get(s.url + "/api/v1/account/getAccountStatusByPk?account_pk=" + accountPk)
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -51,7 +51,7 @@ func GetAccountStatusByAccountPk(s *AppSuite, accountPk string) (int, *types.Res
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetAccountStatusByAccountPk{}
+	result := types.RespGetAccountStatusByPk{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

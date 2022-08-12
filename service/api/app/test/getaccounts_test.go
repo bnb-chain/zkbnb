@@ -47,7 +47,7 @@ func (s *AppSuite) TestGetAccounts() {
 }
 
 func GetAccounts(s *AppSuite, offset, limit int) (int, *types.RespGetAccounts) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/info/getAccounts?offset=%d&limit=%d", s.url, offset, limit))
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/account/getAccounts?offset=%d&limit=%d", s.url, offset, limit))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 

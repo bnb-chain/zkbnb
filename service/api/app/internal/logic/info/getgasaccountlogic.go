@@ -26,7 +26,7 @@ func NewGetGasAccountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 	}
 }
 
-func (l *GetGasAccountLogic) GetGasAccount(req *types.ReqGetGasAccount) (resp *types.RespGetGasAccount, err error) {
+func (l *GetGasAccountLogic) GetGasAccount() (resp *types.RespGetGasAccount, err error) {
 	accountIndexConfig, err := l.svcCtx.SysConfigModel.GetSysConfigByName(sysConfigName.GasAccountIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {

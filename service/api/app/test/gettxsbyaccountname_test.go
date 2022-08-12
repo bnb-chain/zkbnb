@@ -50,8 +50,8 @@ func (s *AppSuite) TestGetTxsByAccountName() {
 
 }
 
-func GetTxsByAccountName(s *AppSuite, accountName string, offset, limit int) (int, *types.RespGetTxsListByBlockHeight) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/tx/getTxsListByBlockHeight?account_name=%s&offset=%d&limit=%d", s.url, accountName, offset, limit))
+func GetTxsByAccountName(s *AppSuite, accountName string, offset, limit int) (int, *types.RespGetTxsByAccountName) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/tx/getTxsByAccountName?account_name=%s&offset=%d&limit=%d", s.url, accountName, offset, limit))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -61,7 +61,7 @@ func GetTxsByAccountName(s *AppSuite, accountName string, offset, limit int) (in
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetTxsListByBlockHeight{}
+	result := types.RespGetTxsByAccountName{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

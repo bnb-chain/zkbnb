@@ -10,15 +10,15 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-func GetLPValueHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func GetLpValueHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.ReqGetLPValue
+		var req types.ReqGetLpValue
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.Error(w, err)
 			return
 		}
 
-		l := pair.NewGetLPValueLogic(r.Context(), svcCtx)
+		l := pair.NewGetLpValueLogic(r.Context(), svcCtx)
 		resp, err := l.GetLPValue(&req)
 		if err != nil {
 			httpx.Error(w, err)

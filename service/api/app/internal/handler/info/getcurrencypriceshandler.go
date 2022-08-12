@@ -7,19 +7,12 @@ import (
 
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/info"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
 func GetCurrencyPricesHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.ReqGetCurrencyPrices
-		if err := httpx.Parse(r, &req); err != nil {
-			httpx.Error(w, err)
-			return
-		}
-
 		l := info.NewGetCurrencyPricesLogic(r.Context(), svcCtx)
-		resp, err := l.GetCurrencyPrices(&req)
+		resp, err := l.GetCurrencyPrices()
 		if err != nil {
 			httpx.Error(w, err)
 		} else {

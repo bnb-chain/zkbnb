@@ -7,25 +7,6 @@ import (
 )
 
 func GormTx2Tx(tx *tx.Tx) *types.Tx {
-	details := make([]*types.TxDetail, 0)
-	if tx.TxDetails != nil {
-		for _, detail := range tx.TxDetails {
-			d := &types.TxDetail{
-				TxId:            detail.TxId,
-				AssetId:         detail.AssetId,
-				AssetType:       detail.AssetType,
-				AccountIndex:    detail.AccountIndex,
-				AccountName:     detail.AccountName,
-				AccountBalance:  detail.Balance,
-				AccountDelta:    detail.BalanceDelta,
-				Order:           detail.Order,
-				AccountOrder:    detail.AccountOrder,
-				Nonce:           detail.Nonce,
-				CollectionNonce: detail.CollectionNonce,
-			}
-			details = append(details, d)
-		}
-	}
 	return &types.Tx{
 		TxHash:        tx.TxHash,
 		TxType:        tx.TxType,
@@ -41,7 +22,6 @@ func GormTx2Tx(tx *tx.Tx) *types.Tx {
 		TxAmount:      tx.TxAmount,
 		NativeAddress: tx.NativeAddress,
 		TxInfo:        tx.TxInfo,
-		TxDetails:     details,
 		ExtraInfo:     tx.ExtraInfo,
 		Memo:          tx.Memo,
 		AccountIndex:  tx.AccountIndex,
@@ -52,20 +32,6 @@ func GormTx2Tx(tx *tx.Tx) *types.Tx {
 }
 
 func MempoolTx2Tx(tx *mempool.MempoolTx) *types.Tx {
-	details := make([]*types.TxDetail, 0)
-	for _, detail := range tx.MempoolDetails {
-		d := &types.TxDetail{
-			TxId:           detail.TxId,
-			AssetId:        detail.AssetId,
-			AssetType:      detail.AssetType,
-			AccountIndex:   detail.AccountIndex,
-			AccountName:    detail.AccountName,
-			AccountBalance: detail.BalanceDelta,
-			Order:          detail.Order,
-			AccountOrder:   detail.AccountOrder,
-		}
-		details = append(details, d)
-	}
 	return &types.Tx{
 		TxHash:        tx.TxHash,
 		TxType:        tx.TxType,
@@ -79,7 +45,6 @@ func MempoolTx2Tx(tx *mempool.MempoolTx) *types.Tx {
 		TxAmount:      tx.TxAmount,
 		NativeAddress: tx.NativeAddress,
 		TxInfo:        tx.TxInfo,
-		TxDetails:     details,
 		ExtraInfo:     tx.ExtraInfo,
 		Memo:          tx.Memo,
 		AccountIndex:  tx.AccountIndex,

@@ -25,7 +25,7 @@ func NewGetCurrencyPricesLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 	}
 }
 
-func (l *GetCurrencyPricesLogic) GetCurrencyPrices(req *types.ReqGetCurrencyPrices) (*types.RespGetCurrencyPrices, error) {
+func (l *GetCurrencyPricesLogic) GetCurrencyPrices() (*types.RespGetCurrencyPrices, error) {
 	l2Assets, err := l.svcCtx.AssetModel.GetAssetsList()
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
@@ -36,7 +36,9 @@ func (l *GetCurrencyPricesLogic) GetCurrencyPrices(req *types.ReqGetCurrencyPric
 
 	//TODO: performance issue here
 	//TODO: why use cmc here?
-	resp := &types.RespGetCurrencyPrices{}
+	resp := &types.RespGetCurrencyPrices{
+		CurrencyPrices: make([]*types.CurrencyPrice, 0),
+	}
 	for _, asset := range l2Assets {
 		price := 0.0
 		if asset.AssetSymbol == "LEG" {
@@ -54,7 +56,7 @@ func (l *GetCurrencyPricesLogic) GetCurrencyPrices(req *types.ReqGetCurrencyPric
 			}
 		}
 
-		resp.Data = append(resp.Data, &types.DataCurrencyPrices{
+		resp.CurrencyPrices = append(resp.CurrencyPrices, &types.CurrencyPrice{
 			Pair:    asset.AssetSymbol + "/" + "USDT",
 			AssetId: asset.AssetId,
 			Price:   strconv.FormatFloat(price, 'E', -1, 64),

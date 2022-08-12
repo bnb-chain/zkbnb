@@ -13,7 +13,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-func (s *AppSuite) TestGetAccountInfoByAccountIndex() {
+func (s *AppSuite) TestGetAccountByIndex() {
 	type args struct {
 		accountIndex int
 	}
@@ -28,7 +28,7 @@ func (s *AppSuite) TestGetAccountInfoByAccountIndex() {
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetAccountInfoByAccountIndex(s, tt.args.accountIndex)
+			httpCode, result := GetAccountByIndex(s, tt.args.accountIndex)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.NotNil(t, result.AccountPk)
@@ -42,8 +42,8 @@ func (s *AppSuite) TestGetAccountInfoByAccountIndex() {
 
 }
 
-func GetAccountInfoByAccountIndex(s *AppSuite, accountIndex int) (int, *types.RespGetAccountInfoByAccountIndex) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/account/getAccountInfoByAccountIndex?account_index=%d", s.url, accountIndex))
+func GetAccountByIndex(s *AppSuite, accountIndex int) (int, *types.RespGetAccountByIndex) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/account/getAccountByIndex?account_index=%d", s.url, accountIndex))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -53,7 +53,7 @@ func GetAccountInfoByAccountIndex(s *AppSuite, accountIndex int) (int, *types.Re
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetAccountInfoByAccountIndex{}
+	result := types.RespGetAccountByIndex{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

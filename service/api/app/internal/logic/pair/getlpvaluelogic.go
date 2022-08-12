@@ -13,21 +13,21 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-type GetLPValueLogic struct {
+type GetLpValueLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
 }
 
-func NewGetLPValueLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetLPValueLogic {
-	return &GetLPValueLogic{
+func NewGetLpValueLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetLpValueLogic {
+	return &GetLpValueLogic{
 		Logger: logx.WithContext(ctx),
 		ctx:    ctx,
 		svcCtx: svcCtx,
 	}
 }
 
-func (l *GetLPValueLogic) GetLPValue(req *types.ReqGetLPValue) (resp *types.RespGetLPValue, err error) {
+func (l *GetLpValueLogic) GetLPValue(req *types.ReqGetLpValue) (resp *types.RespGetLpValue, err error) {
 	if !utils.ValidatePairIndex(req.PairIndex) {
 		logx.Errorf("invalid PairIndex: %d", req.PairIndex)
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid PairIndex")
@@ -54,7 +54,7 @@ func (l *GetLPValueLogic) GetLPValue(req *types.ReqGetLPValue) (resp *types.Resp
 		}
 	}
 
-	resp = &types.RespGetLPValue{
+	resp = &types.RespGetLpValue{
 		AssetAId:     uint32(liquidity.AssetAId),
 		AssetAAmount: assetAAmount.String(),
 		AssetBId:     uint32(liquidity.AssetBId),

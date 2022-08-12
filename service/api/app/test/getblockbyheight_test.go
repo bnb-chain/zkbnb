@@ -13,7 +13,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-func (s *AppSuite) TestGetBlockByBlockHeight() {
+func (s *AppSuite) TestGetBlockByHeight() {
 
 	type args struct {
 		blockHeight int
@@ -29,7 +29,7 @@ func (s *AppSuite) TestGetBlockByBlockHeight() {
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetBlockByBlockHeight(s, tt.args.blockHeight)
+			httpCode, result := GetBlockByHeight(s, tt.args.blockHeight)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.NotNil(t, result.Block.BlockHeight)
@@ -44,8 +44,8 @@ func (s *AppSuite) TestGetBlockByBlockHeight() {
 
 }
 
-func GetBlockByBlockHeight(s *AppSuite, blockHeight int) (int, *types.RespGetBlockByBlockHeight) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/block/getBlockByBlockHeight?block_height=%d", s.url, blockHeight))
+func GetBlockByHeight(s *AppSuite, blockHeight int) (int, *types.RespGetBlockByHeight) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/block/getBlockByHeight?block_height=%d", s.url, blockHeight))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -55,7 +55,7 @@ func GetBlockByBlockHeight(s *AppSuite, blockHeight int) (int, *types.RespGetBlo
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetBlockByBlockHeight{}
+	result := types.RespGetBlockByHeight{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

@@ -13,7 +13,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-func (s *AppSuite) TestGetTxsList() {
+func (s *AppSuite) TestGetTxs() {
 
 	type args struct {
 		offset int
@@ -30,7 +30,7 @@ func (s *AppSuite) TestGetTxsList() {
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetTxsList(s, tt.args.offset, tt.args.limit)
+			httpCode, result := GetTxs(s, tt.args.offset, tt.args.limit)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				if tt.args.offset < int(result.Total) {
@@ -49,8 +49,8 @@ func (s *AppSuite) TestGetTxsList() {
 
 }
 
-func GetTxsList(s *AppSuite, offset, limit int) (int, *types.RespGetTxsList) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/tx/getTxsList?offset=%d&limit=%d", s.url, offset, limit))
+func GetTxs(s *AppSuite, offset, limit int) (int, *types.RespGetTxs) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/tx/getTxs?offset=%d&limit=%d", s.url, offset, limit))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -60,7 +60,7 @@ func GetTxsList(s *AppSuite, offset, limit int) (int, *types.RespGetTxsList) {
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetTxsList{}
+	result := types.RespGetTxs{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

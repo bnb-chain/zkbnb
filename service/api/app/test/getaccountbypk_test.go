@@ -12,7 +12,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-func (s *AppSuite) TestGetAccountInfoByPubKey() {
+func (s *AppSuite) TestGetAccountByPk() {
 	type args struct {
 		pubKey string
 	}
@@ -27,7 +27,7 @@ func (s *AppSuite) TestGetAccountInfoByPubKey() {
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetLatestAccountInfoByPubKey(s, tt.args.pubKey)
+			httpCode, result := GetAccountByPk(s, tt.args.pubKey)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.NotNil(t, result.AccountName)
@@ -41,8 +41,8 @@ func (s *AppSuite) TestGetAccountInfoByPubKey() {
 
 }
 
-func GetLatestAccountInfoByPubKey(s *AppSuite, pubKey string) (int, *types.RespGetAccountInfoByPubKey) {
-	resp, err := http.Get(s.url + "/api/v1/account/getAccountInfoByPubKey?account_pk=" + pubKey)
+func GetAccountByPk(s *AppSuite, pubKey string) (int, *types.RespGetAccountByPk) {
+	resp, err := http.Get(s.url + "/api/v1/account/getAccountByPk?account_pk=" + pubKey)
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -52,7 +52,7 @@ func GetLatestAccountInfoByPubKey(s *AppSuite, pubKey string) (int, *types.RespG
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetAccountInfoByPubKey{}
+	result := types.RespGetAccountByPk{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

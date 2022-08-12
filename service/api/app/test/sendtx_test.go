@@ -82,7 +82,7 @@ func SendTx(s *AppSuite, txType int, txInfo string) (int, *types.RespSendTx) {
 }
 
 func getAccountIndex(s *AppSuite, accountName string) int64 {
-	httpCode, accountResp := GetAccountInfoByAccountName(s, accountName)
+	httpCode, accountResp := GetAccountByName(s, accountName)
 	if httpCode != http.StatusOK {
 		panic("cannot get account: " + accountName)
 	}

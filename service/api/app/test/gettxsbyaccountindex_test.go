@@ -12,7 +12,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-func (s *AppSuite) TestGetTxsListByAccountIndex() {
+func (s *AppSuite) TestGetTxsByAccountIndex() {
 
 	type args struct {
 		accountIndex int
@@ -29,7 +29,7 @@ func (s *AppSuite) TestGetTxsListByAccountIndex() {
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetTxsListByAccountIndex(s, tt.args.accountIndex, tt.args.offset, tt.args.limit)
+			httpCode, result := GetTxsByAccountIndex(s, tt.args.accountIndex, tt.args.offset, tt.args.limit)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				if tt.args.offset < int(result.Total) {
@@ -48,7 +48,7 @@ func (s *AppSuite) TestGetTxsListByAccountIndex() {
 
 }
 
-func GetTxsListByAccountIndex(s *AppSuite, accountIndex, offset, limit int) (int, *types.RespGetTxsListByAccountIndex) {
+func GetTxsByAccountIndex(s *AppSuite, accountIndex, offset, limit int) (int, *types.RespGetTxsByAccountIndex) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/tx/getTxsListByAccountIndex?account_index=%d&offset=%d&limit=%d", s.url, accountIndex, offset, limit))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
@@ -59,7 +59,7 @@ func GetTxsListByAccountIndex(s *AppSuite, accountIndex, offset, limit int) (int
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetTxsListByAccountIndex{}
+	result := types.RespGetTxsByAccountIndex{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

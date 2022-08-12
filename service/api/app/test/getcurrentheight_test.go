@@ -12,7 +12,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-func (s *AppSuite) TestGetCurrentBlockHeight() {
+func (s *AppSuite) TestGetCurrentHeight() {
 	type args struct {
 	}
 	tests := []struct {
@@ -25,7 +25,7 @@ func (s *AppSuite) TestGetCurrentBlockHeight() {
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetGetCurrentBlockHeight(s)
+			httpCode, result := GetCurrentHeight(s)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.NotNil(t, result.Height)
@@ -37,8 +37,8 @@ func (s *AppSuite) TestGetCurrentBlockHeight() {
 
 }
 
-func GetGetCurrentBlockHeight(s *AppSuite) (int, *types.RespCurrentBlockHeight) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/block/getCurrentBlockHeight", s.url))
+func GetCurrentHeight(s *AppSuite) (int, *types.RespCurrentHeight) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/block/getCurrentHeight", s.url))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -48,7 +48,7 @@ func GetGetCurrentBlockHeight(s *AppSuite) (int, *types.RespCurrentBlockHeight) 
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespCurrentBlockHeight{}
+	result := types.RespCurrentHeight{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

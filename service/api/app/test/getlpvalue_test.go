@@ -13,7 +13,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-func (s *AppSuite) TestGetLPValue() {
+func (s *AppSuite) TestGetLpValue() {
 
 	type args struct {
 		pairIndex int
@@ -30,7 +30,7 @@ func (s *AppSuite) TestGetLPValue() {
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetLPValue(s, tt.args.pairIndex, tt.args.lpAmount)
+			httpCode, result := GetLpValue(s, tt.args.pairIndex, tt.args.lpAmount)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.NotNil(t, result.AssetAId)
@@ -46,8 +46,8 @@ func (s *AppSuite) TestGetLPValue() {
 
 }
 
-func GetLPValue(s *AppSuite, pairIndex int, lpAmount string) (int, *types.RespGetLPValue) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/pair/getLPValue?pair_index=%d&lp_amount=%s", s.url, pairIndex, lpAmount))
+func GetLpValue(s *AppSuite, pairIndex int, lpAmount string) (int, *types.RespGetLpValue) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/pair/getLpValue?pair_index=%d&lp_amount=%s", s.url, pairIndex, lpAmount))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -57,7 +57,7 @@ func GetLPValue(s *AppSuite, pairIndex int, lpAmount string) (int, *types.RespGe
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetLPValue{}
+	result := types.RespGetLpValue{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

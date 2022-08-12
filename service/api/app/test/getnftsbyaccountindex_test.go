@@ -29,7 +29,7 @@ func (s *AppSuite) TestGetAccountNftList() {
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetAccountNftList(s, tt.args.accountIndex, tt.args.offset, tt.args.limit)
+			httpCode, result := GetNftsByAccountIndex(s, tt.args.accountIndex, tt.args.offset, tt.args.limit)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				if tt.args.offset < int(result.Total) {
@@ -47,8 +47,8 @@ func (s *AppSuite) TestGetAccountNftList() {
 
 }
 
-func GetAccountNftList(s *AppSuite, accountIndex, offset, limit int) (int, *types.RespGetAccountNftList) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/nft/getAccountNftList?account_index=%d&offset=%d&limit=%d", s.url, accountIndex, offset, limit))
+func GetNftsByAccountIndex(s *AppSuite, accountIndex, offset, limit int) (int, *types.RespGetNftsByAccountIndex) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/nft/getNftsByAccountIndex?account_index=%d&offset=%d&limit=%d", s.url, accountIndex, offset, limit))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -58,7 +58,7 @@ func GetAccountNftList(s *AppSuite, accountIndex, offset, limit int) (int, *type
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetAccountNftList{}
+	result := types.RespGetNftsByAccountIndex{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

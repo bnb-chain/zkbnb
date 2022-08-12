@@ -28,9 +28,9 @@ var (
 
 	IoErrFailToRead = errors.New("ioutil.ReadAll err")
 
-	AppErrInvalidParam                = New(20001, "invalid param:")
+	AppErrInvalidParam                = New(20001, "invalid param: ")
 	AppErrInvalidTx                   = New(20002, "invalid tx: cannot parse tx")
-	AppErrInvalidTxType               = New(20003, "invalid tx type ")
+	AppErrInvalidTxType               = New(20003, "invalid tx type")
 	AppErrInvalidTxField              = New(20004, "invalid tx field: ")
 	AppErrVerification                = New(20005, "tx verification failed: ")
 	AppErrInvalidGasAsset             = New(25006, "invalid gas asset")

@@ -12,7 +12,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-func (s *AppSuite) TestGetGasFeeAssetList() {
+func (s *AppSuite) TestGetGasFeeAssets() {
 
 	type args struct {
 	}
@@ -26,7 +26,7 @@ func (s *AppSuite) TestGetGasFeeAssetList() {
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetGasFeeAssetList(s)
+			httpCode, result := GetGasFeeAssets(s)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.NotNil(t, result.Assets)
@@ -42,8 +42,8 @@ func (s *AppSuite) TestGetGasFeeAssetList() {
 
 }
 
-func GetGasFeeAssetList(s *AppSuite) (int, *types.RespGetGasFeeAssetList) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/info/getGasFeeAssetList", s.url))
+func GetGasFeeAssets(s *AppSuite) (int, *types.RespGetGasFeeAssets) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/info/getGasFeeAssets", s.url))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -53,7 +53,7 @@ func GetGasFeeAssetList(s *AppSuite) (int, *types.RespGetGasFeeAssetList) {
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetGasFeeAssetList{}
+	result := types.RespGetGasFeeAssets{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

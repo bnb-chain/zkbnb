@@ -32,7 +32,7 @@ var (
 	}
 )
 
-func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo(_ *types.ReqGetLayer2BasicInfo) (*types.RespGetLayer2BasicInfo, error) {
+func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo() (*types.RespGetLayer2BasicInfo, error) {
 	resp := &types.RespGetLayer2BasicInfo{
 		ContractAddresses: make([]types.ContractAddress, 0),
 	}

@@ -12,7 +12,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-func (s *AppSuite) TestGetAvailablePairs() {
+func (s *AppSuite) TestGetPairs() {
 
 	type args struct {
 	}
@@ -26,7 +26,7 @@ func (s *AppSuite) TestGetAvailablePairs() {
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetAvailablePairs(s)
+			httpCode, result := GetPairs(s)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.NotNil(t, result.Pairs)
@@ -46,7 +46,7 @@ func (s *AppSuite) TestGetAvailablePairs() {
 
 }
 
-func GetAvailablePairs(s *AppSuite) (int, *types.RespGetAvailablePairs) {
+func GetPairs(s *AppSuite) (int, *types.RespGetPairs) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/pair/getAvailablePairs", s.url))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
@@ -57,7 +57,7 @@ func GetAvailablePairs(s *AppSuite) (int, *types.RespGetAvailablePairs) {
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetAvailablePairs{}
+	result := types.RespGetPairs{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }
