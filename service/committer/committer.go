@@ -35,7 +35,7 @@ type CommitterConfig struct {
 type Committer struct {
 	config         *CommitterConfig
 	bc             *core.BlockChain
-	mempoolModel   mempool.MempoolModel
+	mempoolModel   mempool.MemPoolModel
 	keyTxCounts    []int
 	maxTxsPerBlock int
 }
