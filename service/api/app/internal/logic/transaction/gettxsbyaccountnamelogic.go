@@ -3,8 +3,6 @@ package transaction
 import (
 	"context"
 
-	"github.com/bnb-chain/zkbas/common/model/tx"
-
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/errorcode"
@@ -41,20 +39,7 @@ func (l *GetTxsByAccountNameLogic) GetTxsByAccountName(req *types.ReqGetTxsByAcc
 		return nil, errorcode.AppErrInternal
 	}
 
-	txs := make([]*tx.Tx, 0)
 	total, err := l.svcCtx.TxModel.GetTxsCountByAccountIndex(accountIndex)
-	if err != nil {
-		if err != errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrInternal
-		}
-	}
-
-	resp.Total = uint32(total)
-	if total == 0 || total <= int64(req.Offset) {
-		return resp, nil
-	}
-
-	txs, err = l.svcCtx.TxModel.GetTxsListByAccountIndex(accountIndex, int64(req.Limit), int64(req.Offset))
 	if err != nil {
 		if err != errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrInternal
@@ -65,6 +50,17 @@ func (l *GetTxsByAccountNameLogic) GetTxsByAccountName(req *types.ReqGetTxsByAcc
 		Total: uint32(total),
 		Txs:   make([]*types.Tx, 0),
 	}
+	if total == 0 || total <= int64(req.Offset) {
+		return resp, nil
+	}
+
+	txs, err := l.svcCtx.TxModel.GetTxsListByAccountIndex(accountIndex, int64(req.Limit), int64(req.Offset))
+	if err != nil {
+		if err != errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrInternal
+		}
+	}
+
 	for _, t := range txs {
 		tx := utils.DbTx2Tx(t)
 		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)

@@ -66,7 +66,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	liquidityModel := liquidity.NewLiquidityModel(conn, c.CacheRedis, gormPointer)
 	nftModel := nft.NewL2NftModel(conn, c.CacheRedis, gormPointer)
 	offerModel := nft.NewOfferModel(conn, c.CacheRedis, gormPointer)
-	memCache := cache.NewMemCache(accountModel)
+	memCache := cache.NewMemCache(accountModel, c.MemCache.AccountExpiration, c.MemCache.BlockExpiration,
+		c.MemCache.TxExpiration, c.MemCache.AssetExpiration, c.MemCache.PriceExpiration)
 	return &ServiceContext{
 		Config:                c,
 		Conn:                  conn,
@@ -89,7 +90,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		AssetModel:            asset.NewAssetModel(conn, c.CacheRedis, gormPointer),
 		SysConfigModel:        sysconfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
 
-		PriceFetcher: price.NewFetcher(memCache),
+		PriceFetcher: price.NewFetcher(memCache, c.CoinMarketCap.Url, c.CoinMarketCap.Token),
 		StateFetcher: state.NewFetcher(redisConn, mempoolModel, mempoolDetailModel, accountModel,
 			liquidityModel, nftModel, offerModel),
 	}

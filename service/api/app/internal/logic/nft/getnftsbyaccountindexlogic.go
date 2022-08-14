@@ -38,7 +38,6 @@ func (l *GetNftsByAccountIndexLogic) GetNftsByAccountIndex(req *types.ReqGetNfts
 		Total: total,
 		Nfts:  make([]*types.Nft, 0),
 	}
-
 	if total == 0 || total <= int64(req.Offset) {
 		return resp, nil
 	}

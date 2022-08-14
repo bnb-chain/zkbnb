@@ -34,14 +34,12 @@ func (l *GetTxsLogic) GetTxs(req *types.ReqGetTxs) (resp *types.RespGetTxs, err 
 		return nil, errorcode.AppErrInternal
 	}
 
-	resp.Total = uint32(total)
-	if total == 0 || total <= int64(req.Offset) {
-		return resp, nil
-	}
-
 	resp = &types.RespGetTxs{
 		Total: uint32(total),
 		Txs:   make([]*types.Tx, 0),
+	}
+	if total == 0 || total <= int64(req.Offset) {
+		return resp, nil
 	}
 
 	txs, err := l.svcCtx.TxModel.GetTxsList(int64(req.Limit), int64(req.Offset))

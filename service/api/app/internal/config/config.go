@@ -11,6 +11,17 @@ type Config struct {
 	Postgres struct {
 		DataSource string
 	}
-	CacheRedis cache.CacheConf
-	LogConf    logx.LogConf
+	CacheRedis    cache.CacheConf
+	LogConf       logx.LogConf
+	CoinMarketCap struct {
+		Url   string
+		Token string
+	}
+	MemCache struct {
+		AccountExpiration int
+		AssetExpiration   int
+		BlockExpiration   int
+		TxExpiration      int
+		PriceExpiration   int
+	}
 }

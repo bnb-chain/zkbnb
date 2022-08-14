@@ -16,12 +16,11 @@ type Fetcher interface {
 	GetCurrencyPrice(ctx context.Context, l2Symbol string) (price float64, err error)
 }
 
-func NewFetcher(memCache *cache.MemCache) Fetcher {
+func NewFetcher(memCache *cache.MemCache, cmcUrl, cmcToken string) Fetcher {
 	return &fetcher{
 		memCache: memCache,
-		//todo: put into config files
-		cmcUrl:   "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=",
-		cmcToken: "cfce503f-dd3d-4847-9570-bbab5257dac8",
+		cmcUrl:   cmcUrl,
+		cmcToken: cmcToken,
 	}
 }
 

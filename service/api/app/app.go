@@ -22,6 +22,8 @@ func main() {
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 
+	ctx.MemCache.PreloadAccounts()
+
 	server := rest.MustNewServer(c.RestConf, rest.WithCors())
 	defer server.Stop()
 	handler.RegisterHandlers(server, ctx)

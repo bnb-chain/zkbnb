@@ -26,10 +26,6 @@ func NewGetBlocksLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetBloc
 }
 
 func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetBlocks) (*types.RespGetBlocks, error) {
-	resp := &types.RespGetBlocks{
-		Blocks: make([]*types.Block, 0),
-	}
-
 	total, err := l.svcCtx.MemCache.GetBlockTotalCountWithFallback(func() (interface{}, error) {
 		return l.svcCtx.BlockModel.GetBlocksTotalCount()
 	})
@@ -37,7 +33,10 @@ func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetBlocks) (*types.RespGetBlock
 		return nil, errorcode.AppErrInternal
 	}
 
-	resp.Total = uint32(total)
+	resp := &types.RespGetBlocks{
+		Blocks: make([]*types.Block, 0),
+		Total:  uint32(total),
+	}
 	if total == 0 || total <= int64(req.Offset) {
 		return resp, nil
 	}

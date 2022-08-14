@@ -26,10 +26,6 @@ func NewGetAccountsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAc
 }
 
 func (l *GetAccountsLogic) GetAccounts(req *types.ReqGetAccounts) (resp *types.RespGetAccounts, err error) {
-	resp = &types.RespGetAccounts{
-		Accounts: make([]*types.Accounts, 0),
-	}
-
 	total, err := l.svcCtx.MemCache.GetAccountTotalCountWiltFallback(func() (interface{}, error) {
 		return l.svcCtx.AccountModel.GetAccountsTotalCount()
 	})
@@ -37,7 +33,11 @@ func (l *GetAccountsLogic) GetAccounts(req *types.ReqGetAccounts) (resp *types.R
 		return nil, errorcode.AppErrInternal
 	}
 
-	resp.Total = uint32(total)
+	resp = &types.RespGetAccounts{
+		Accounts: make([]*types.Accounts, 0),
+		Total:    uint32(total),
+	}
+
 	if total == 0 || total <= int64(req.Offset) {
 		return resp, nil
 	}

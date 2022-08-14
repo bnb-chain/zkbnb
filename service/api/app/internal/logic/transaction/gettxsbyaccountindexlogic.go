@@ -29,6 +29,10 @@ func NewGetTxsByAccountIndexLogic(ctx context.Context, svcCtx *svc.ServiceContex
 }
 
 func (l *GetTxsByAccountIndexLogic) GetTxsByAccountIndex(req *types.ReqGetTxsByAccountIndex) (resp *types.RespGetTxsByAccountIndex, err error) {
+	resp = &types.RespGetTxsByAccountIndex{
+		Txs: make([]*types.Tx, 0),
+	}
+
 	total := int64(0)
 	txs := make([]*tx.Tx, 0)
 	if req.TxType > 0 {
@@ -70,10 +74,6 @@ func (l *GetTxsByAccountIndexLogic) GetTxsByAccountIndex(req *types.ReqGetTxsByA
 		}
 	}
 
-	resp = &types.RespGetTxsByAccountIndex{
-		Total: uint32(total),
-		Txs:   make([]*types.Tx, 0),
-	}
 	for _, t := range txs {
 		tx := utils.DbTx2Tx(t)
 		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)

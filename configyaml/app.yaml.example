@@ -23,3 +23,14 @@ LogConf:
   Path: ./log/appService
   StackCooldownMillis: 500
   Level: error
+
+CoinMarketCap:
+  Url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=
+  Token: cfce503f-fake-fake-fake-bbab5257dac8
+
+MemCache:
+  AccountExpiration: 200
+  AssetExpiration:   600
+  BlockExpiration:   400
+  TxExpiration:      400
+  PriceExpiration:   200
