@@ -43,5 +43,8 @@ func (p *CommitProcessor) Process(tx *tx.Tx, stateCache *StateCache) (*tx.Tx, *S
 		panic(err)
 	}
 
+	stateCache.txs = append(stateCache.txs, tx)
+	stateCache.stateRoot = tx.StateRoot
+
 	return tx, stateCache, nil
 }
