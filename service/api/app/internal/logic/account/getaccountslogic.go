@@ -34,7 +34,7 @@ func (l *GetAccountsLogic) GetAccounts(req *types.ReqGetAccounts) (resp *types.R
 	}
 
 	resp = &types.RespGetAccounts{
-		Accounts: make([]*types.Accounts, 0),
+		Accounts: make([]*types.Account, 0),
 		Total:    uint32(total),
 	}
 
@@ -47,7 +47,7 @@ func (l *GetAccountsLogic) GetAccounts(req *types.ReqGetAccounts) (resp *types.R
 		return nil, errorcode.AppErrInternal
 	}
 	for _, a := range accounts {
-		resp.Accounts = append(resp.Accounts, &types.Accounts{
+		resp.Accounts = append(resp.Accounts, &types.Account{
 			AccountIndex: uint32(a.AccountIndex),
 			AccountName:  a.AccountName,
 			PublicKey:    a.PublicKey,

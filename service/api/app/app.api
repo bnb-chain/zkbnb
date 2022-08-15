@@ -30,14 +30,14 @@ type (
 		Offset uint16 `form:"offset,range=[0:100000]"`
 		Limit  uint16 `form:"limit,range=[1:50]"`
 	}
-	Accounts {
+	Account {
 		AccountIndex uint32 `json:"account_index"`
 		AccountName  string `json:"account_name"`
 		PublicKey    string `json:"public_key"`
 	}
 	RespGetAccounts {
-		Total    uint32      `json:"total"`
-		Accounts []*Accounts `json:"accounts"`
+		Total    uint32     `json:"total"`
+		Accounts []*Account `json:"accounts"`
 	}
 )
 
