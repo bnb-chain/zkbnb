@@ -65,14 +65,21 @@ func (e *TransferExecutor) VerifyInputs() error {
 	if txInfo.Nonce != fromAccount.Nonce {
 		return errors.New("invalid nonce")
 	}
-	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
-		return errors.New("invalid gas asset amount")
-	}
-	if fromAccount.AssetInfo[txInfo.AssetId].Balance.Cmp(txInfo.AssetAmount) < 0 {
-		return errors.New("invalid asset amount")
-	}
 	if txInfo.ToAccountNameHash != toAccount.AccountNameHash {
 		return errors.New("invalid to account name hash")
+	}
+	if txInfo.GasFeeAssetId != txInfo.AssetId {
+		if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
+			return errors.New("invalid gas asset amount")
+		}
+		if fromAccount.AssetInfo[txInfo.AssetId].Balance.Cmp(txInfo.AssetAmount) < 0 {
+			return errors.New("invalid asset amount")
+		}
+	} else {
+		deltaBalance := ffmath.Add(txInfo.AssetAmount, txInfo.GasFeeAssetAmount)
+		if fromAccount.AssetInfo[txInfo.AssetId].Balance.Cmp(deltaBalance) < 0 {
+			return errors.New("invalid asset amount")
+		}
 	}
 
 	err = txInfo.VerifySignature(fromAccount.PublicKey)
