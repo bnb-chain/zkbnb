@@ -12,7 +12,7 @@ import (
 	"github.com/bnb-chain/zkbas/cmd/recovery/internal/config"
 	"github.com/bnb-chain/zkbas/cmd/recovery/internal/svc"
 	"github.com/bnb-chain/zkbas/common/tree"
-	"github.com/bnb-chain/zkbas/pkg/treedb"
+	"github.com/bnb-chain/zkbas/common/treedb"
 )
 
 var (
