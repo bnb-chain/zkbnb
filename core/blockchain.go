@@ -572,6 +572,28 @@ func (bc *BlockChain) getPendingNft(stateCache *StateCache) ([]*nft.L2Nft, []*nf
 	return pendingNewNft, pendingUpdateNft, pendingNewNftHistory, nil
 }
 
+func (bc *BlockChain) getNextAccountIndex() int64 {
+	return int64(len(bc.accountAssetTrees)) + 1
+}
+
+func (bc *BlockChain) getNextNftIndex(stateCache *StateCache) (int64, error) {
+	if stateCache == nil || len(stateCache.pendingNewNftIndexMap) == 0 {
+		maxNftIndex, err := bc.L2NftModel.GetLatestNftIndex()
+		if err != nil {
+			return -1, err
+		}
+		return maxNftIndex + 1, nil
+	}
+
+	maxNftIndex := int64(-1)
+	for index, status := range stateCache.pendingNewNftIndexMap {
+		if status >= StateCachePending && index > maxNftIndex {
+			maxNftIndex = index
+		}
+	}
+	return maxNftIndex + 1, nil
+}
+
 func (bc *BlockChain) prepareAccountsAndAssets(accounts []int64, assets []int64) error {
 	for _, accountIndex := range accounts {
 		if bc.accountMap[accountIndex] == nil {
