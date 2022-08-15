@@ -70,7 +70,7 @@ func (e *TransferExecutor) VerifyInputs() error {
 	return nil
 }
 
-func (e *TransferExecutor) ApplyTransaction(stateCache *StateCache) (*StateCache, error) {
+func (e *TransferExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
 	fromAccountInfo := bc.accountMap[txInfo.FromAccountIndex]
@@ -83,13 +83,14 @@ func (e *TransferExecutor) ApplyTransaction(stateCache *StateCache) (*StateCache
 	gasAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	fromAccountInfo.Nonce++
 
+	stateCache := e.bc.stateCache
 	stateCache.pendingUpdateAccountIndexMap[txInfo.FromAccountIndex] = StateCachePending
 	stateCache.pendingUpdateAccountIndexMap[txInfo.ToAccountIndex] = StateCachePending
 	stateCache.pendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = StateCachePending
-	return stateCache, nil
+	return nil
 }
 
-func (e *TransferExecutor) GeneratePubData(stateCache *StateCache) (*StateCache, error) {
+func (e *TransferExecutor) GeneratePubData() error {
 	txInfo := e.txInfo
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(commonTx.TxTypeTransfer))
@@ -98,14 +99,14 @@ func (e *TransferExecutor) GeneratePubData(stateCache *StateCache) (*StateCache,
 	buf.Write(util.Uint16ToBytes(uint16(txInfo.AssetId)))
 	packedAmountBytes, err := util.AmountToPackedAmountBytes(txInfo.AssetAmount)
 	if err != nil {
-		return stateCache, err
+		return err
 	}
 	buf.Write(packedAmountBytes)
 	buf.Write(util.Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
 	buf.Write(util.Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
 	packedFeeBytes, err := util.FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
 	if err != nil {
-		return stateCache, err
+		return err
 	}
 	buf.Write(packedFeeBytes)
 	chunk := util.SuffixPaddingBufToChunkSize(buf.Bytes())
@@ -117,8 +118,10 @@ func (e *TransferExecutor) GeneratePubData(stateCache *StateCache) (*StateCache,
 	buf.Write(util.PrefixPaddingBufToChunkSize([]byte{}))
 	buf.Write(util.PrefixPaddingBufToChunkSize([]byte{}))
 	pubData := buf.Bytes()
+
+	stateCache := e.bc.stateCache
 	stateCache.pubData = append(stateCache.pubData, pubData...)
-	return stateCache, nil
+	return nil
 }
 
 func (e *TransferExecutor) UpdateTrees() error {

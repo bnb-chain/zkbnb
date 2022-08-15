@@ -16,21 +16,21 @@ func NewCommitProcessor(bc *BlockChain) Processor {
 	}
 }
 
-func (p *CommitProcessor) Process(tx *tx.Tx, stateCache *StateCache) (*tx.Tx, *StateCache, error) {
+func (p *CommitProcessor) Process(tx *tx.Tx) (*tx.Tx, error) {
 	executor, err := NewTxExecutor(p.bc, tx)
 	if err != nil {
-		return tx, stateCache, fmt.Errorf("new tx executor failed: %v", err)
+		return tx, fmt.Errorf("new tx executor failed: %v", err)
 	}
 
 	err = executor.Prepare()
 	if err != nil {
-		return tx, stateCache, err
+		return tx, err
 	}
 	err = executor.VerifyInputs()
 	if err != nil {
-		return tx, stateCache, err
+		return tx, err
 	}
-	stateCache, err = executor.ApplyTransaction(stateCache)
+	err = executor.ApplyTransaction()
 	if err != nil {
 		panic(err)
 	}
@@ -43,8 +43,8 @@ func (p *CommitProcessor) Process(tx *tx.Tx, stateCache *StateCache) (*tx.Tx, *S
 		panic(err)
 	}
 
-	stateCache.txs = append(stateCache.txs, tx)
-	stateCache.stateRoot = tx.StateRoot
+	p.bc.stateCache.txs = append(p.bc.stateCache.txs, tx)
+	p.bc.stateCache.stateRoot = tx.StateRoot
 
-	return tx, stateCache, nil
+	return tx, nil
 }

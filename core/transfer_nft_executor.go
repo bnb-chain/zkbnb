@@ -83,7 +83,7 @@ func (e *TransferNftExecutor) VerifyInputs() error {
 	return nil
 }
 
-func (e *TransferNftExecutor) ApplyTransaction(stateCache *StateCache) (*StateCache, error) {
+func (e *TransferNftExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
@@ -98,13 +98,14 @@ func (e *TransferNftExecutor) ApplyTransaction(stateCache *StateCache) (*StateCa
 	fromAccount.Nonce++
 	nft.OwnerAccountIndex = txInfo.ToAccountIndex
 
+	stateCache := e.bc.stateCache
 	stateCache.pendingUpdateAccountIndexMap[txInfo.FromAccountIndex] = StateCachePending
 	stateCache.pendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = StateCachePending
 	stateCache.pendingUpdateNftIndexMap[txInfo.NftIndex] = StateCachePending
-	return stateCache, nil
+	return nil
 }
 
-func (e *TransferNftExecutor) GeneratePubData(stateCache *StateCache) (*StateCache, error) {
+func (e *TransferNftExecutor) GeneratePubData() error {
 	txInfo := e.txInfo
 
 	var buf bytes.Buffer
@@ -116,7 +117,7 @@ func (e *TransferNftExecutor) GeneratePubData(stateCache *StateCache) (*StateCac
 	buf.Write(util.Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
 	packedFeeBytes, err := util.FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
 	if err != nil {
-		return stateCache, err
+		return err
 	}
 	buf.Write(packedFeeBytes)
 	chunk := util.SuffixPaddingBufToChunkSize(buf.Bytes())
@@ -127,10 +128,11 @@ func (e *TransferNftExecutor) GeneratePubData(stateCache *StateCache) (*StateCac
 	buf.Write(util.PrefixPaddingBufToChunkSize([]byte{}))
 	buf.Write(util.PrefixPaddingBufToChunkSize([]byte{}))
 	buf.Write(util.PrefixPaddingBufToChunkSize([]byte{}))
-
 	pubData := buf.Bytes()
+
+	stateCache := e.bc.stateCache
 	stateCache.pubData = append(stateCache.pubData, pubData...)
-	return stateCache, nil
+	return nil
 }
 
 func (e *TransferNftExecutor) UpdateTrees() error {
