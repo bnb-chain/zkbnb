@@ -8,6 +8,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/commonTx"
@@ -18,7 +19,7 @@ import (
 type TransferExecutor struct {
 	bc     *BlockChain
 	tx     *tx.Tx
-	txInfo *TransferTxInfo
+	txInfo *legendTxTypes.TransferTxInfo
 }
 
 func NewTransferExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
@@ -50,21 +51,33 @@ func (e *TransferExecutor) Prepare() error {
 func (e *TransferExecutor) VerifyInputs() error {
 	bc := e.bc
 	txInfo := e.txInfo
-	fromAccountInfo := bc.accountMap[txInfo.FromAccountIndex]
 
+	err := txInfo.Validate()
+	if err != nil {
+		return err
+	}
+
+	fromAccount := bc.accountMap[txInfo.FromAccountIndex]
+	toAccount := bc.accountMap[txInfo.ToAccountIndex]
 	if txInfo.ExpiredAt != commonConstant.NilExpiredAt && txInfo.ExpiredAt < bc.currentBlock.CreatedAt.UnixMilli() {
 		return errors.New("expired tx")
 	}
-
-	if txInfo.Nonce != fromAccountInfo.Nonce {
+	if txInfo.Nonce != fromAccount.Nonce {
 		return errors.New("invalid nonce")
 	}
+	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
+		return errors.New("invalid gas asset amount")
+	}
+	if fromAccount.AssetInfo[txInfo.AssetId].Balance.Cmp(txInfo.AssetAmount) < 0 {
+		return errors.New("invalid asset amount")
+	}
+	if txInfo.ToAccountNameHash != toAccount.AccountNameHash {
+		return errors.New("invalid to account name hash")
+	}
 
-	if txInfo.AssetAmount.Cmp(ZeroBigInt) <= 0 ||
-		txInfo.GasFeeAssetAmount.Cmp(ZeroBigInt) <= 0 ||
-		fromAccountInfo.AssetInfo[txInfo.AssetId].Balance.Cmp(txInfo.AssetAmount) < 0 ||
-		fromAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
-		return errors.New("invalid params")
+	err = txInfo.VerifySignature(fromAccount.PublicKey)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -73,6 +86,9 @@ func (e *TransferExecutor) VerifyInputs() error {
 func (e *TransferExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
+
+	e.tx.TxDetails = e.GenerateTxDetails()
+
 	fromAccountInfo := bc.accountMap[txInfo.FromAccountIndex]
 	toAccountInfo := bc.accountMap[txInfo.ToAccountIndex]
 	gasAccountInfo := bc.accountMap[txInfo.GasAccountIndex]
@@ -145,13 +161,15 @@ func (e *TransferExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.StateRoot = stateRoot
 	e.tx.TxInfo = string(txInfoBytes)
 	e.tx.TxStatus = tx.StatusPending
-	e.tx.TxDetails = e.GenerateTxDetails()
 	return e.tx, nil
 }
 
 func (e *TransferExecutor) GenerateTxDetails() []*tx.TxDetail {
-	bc := e.bc
 	txInfo := e.txInfo
+	fromAccount := e.bc.accountMap[txInfo.FromAccountIndex]
+	toAccount := e.bc.accountMap[txInfo.ToAccountIndex]
+	gasAccount := e.bc.accountMap[txInfo.GasAccountIndex]
+
 	txDetails := make([]*tx.TxDetail, 0, 4)
 	// from account asset A
 	order := int64(0)
@@ -160,23 +178,37 @@ func (e *TransferExecutor) GenerateTxDetails() []*tx.TxDetail {
 		AssetId:      txInfo.AssetId,
 		AssetType:    commonAsset.GeneralAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
-		AccountName:  bc.accountMap[txInfo.FromAccountIndex].AccountName,
+		AccountName:  fromAccount.AccountName,
+		Balance:      fromAccount.AssetInfo[txInfo.AssetId].String(),
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.AssetId, ffmath.Neg(txInfo.AssetAmount), ZeroBigInt, ZeroBigInt).String(),
-		Order:        order,
-		AccountOrder: accountOrder,
+		Order:           order,
+		AccountOrder:    accountOrder,
+		Nonce:           fromAccount.Nonce,
+		CollectionNonce: fromAccount.CollectionNonce,
 	})
 	order++
 	// from account asset gas
+	baseBalance := fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance
+	if txInfo.GasFeeAssetId == txInfo.AssetId {
+		baseBalance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.AssetAmount)
+	}
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    commonAsset.GeneralAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
-		AccountName:  bc.accountMap[txInfo.FromAccountIndex].AccountName,
+		AccountName:  fromAccount.AccountName,
+		Balance: commonAsset.ConstructAccountAsset(
+			txInfo.GasFeeAssetId,
+			baseBalance,
+			fromAccount.AssetInfo[txInfo.AssetId].LpAmount,
+			fromAccount.AssetInfo[txInfo.AssetId].OfferCanceledOrFinalized).String(),
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), ZeroBigInt, ZeroBigInt).String(),
-		Order:        order,
-		AccountOrder: accountOrder,
+		Order:           order,
+		AccountOrder:    accountOrder,
+		Nonce:           fromAccount.Nonce,
+		CollectionNonce: fromAccount.CollectionNonce,
 	})
 	// to account asset a
 	order++
@@ -185,11 +217,14 @@ func (e *TransferExecutor) GenerateTxDetails() []*tx.TxDetail {
 		AssetId:      txInfo.AssetId,
 		AssetType:    commonAsset.GeneralAssetType,
 		AccountIndex: txInfo.ToAccountIndex,
-		AccountName:  bc.accountMap[txInfo.ToAccountIndex].AccountName,
+		AccountName:  toAccount.AccountName,
+		Balance:      toAccount.AssetInfo[txInfo.AssetId].String(),
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.AssetId, txInfo.AssetAmount, ZeroBigInt, ZeroBigInt).String(),
-		Order:        order,
-		AccountOrder: accountOrder,
+		Order:           order,
+		AccountOrder:    accountOrder,
+		Nonce:           toAccount.Nonce,
+		CollectionNonce: toAccount.CollectionNonce,
 	})
 	// gas account asset gas
 	order++
@@ -198,11 +233,14 @@ func (e *TransferExecutor) GenerateTxDetails() []*tx.TxDetail {
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    commonAsset.GeneralAssetType,
 		AccountIndex: txInfo.GasAccountIndex,
-		AccountName:  bc.accountMap[txInfo.GasAccountIndex].AccountName,
+		AccountName:  gasAccount.AccountName,
+		Balance:      gasAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, ZeroBigInt, ZeroBigInt).String(),
-		Order:        order,
-		AccountOrder: accountOrder,
+		Order:           order,
+		AccountOrder:    accountOrder,
+		Nonce:           gasAccount.Nonce,
+		CollectionNonce: gasAccount.CollectionNonce,
 	})
 	return txDetails
 }
