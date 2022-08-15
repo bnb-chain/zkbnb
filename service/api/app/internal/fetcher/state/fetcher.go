@@ -31,7 +31,7 @@ type Fetcher interface {
 }
 
 func NewFetcher(redisConn *redis.Redis,
-	mempoolModel mempool.MemPoolModel,
+	mempoolModel mempool.MempoolModel,
 	mempoolDetailModel mempool.MempoolTxDetailModel,
 	accountModel account.AccountModel,
 	liquidityModel liquidity.LiquidityModel,
@@ -50,7 +50,7 @@ func NewFetcher(redisConn *redis.Redis,
 
 type fetcher struct {
 	redisConnection      *redis.Redis
-	mempoolModel         mempool.MemPoolModel
+	mempoolModel         mempool.MempoolModel
 	mempoolTxDetailModel mempool.MempoolTxDetailModel
 	accountModel         account.AccountModel
 	liquidityModel       liquidity.LiquidityModel

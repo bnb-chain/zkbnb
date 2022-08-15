@@ -32,7 +32,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/priorityRequest"
-	"github.com/bnb-chain/zkbas/common/model/sysconfig"
+	"github.com/bnb-chain/zkbas/common/model/sysConfig"
 )
 
 type (
@@ -50,8 +50,8 @@ type (
 			block *L1SyncedBlock,
 			l2Assets []*asset.Asset,
 			pendingUpdateL2Assets []*asset.Asset,
-			pendingNewSysConfigs []*sysconfig.SysConfig,
-			pendingUpdateSysConfigs []*sysconfig.SysConfig,
+			pendingNewSysConfigs []*sysConfig.SysConfig,
+			pendingUpdateSysConfigs []*sysConfig.SysConfig,
 		) (err error)
 		GetLatestL1BlockByType(blockType int) (blockInfo *L1SyncedBlock, err error)
 	}
@@ -172,8 +172,8 @@ func (m *defaultL1EventModel) CreateGovernanceBlock(
 	block *L1SyncedBlock,
 	pendingNewL2Assets []*asset.Asset,
 	pendingUpdateL2Assets []*asset.Asset,
-	pendingNewSysConfigs []*sysconfig.SysConfig,
-	pendingUpdateSysConfigs []*sysconfig.SysConfig,
+	pendingNewSysConfigs []*sysConfig.SysConfig,
+	pendingUpdateSysConfigs []*sysConfig.SysConfig,
 ) (err error) {
 	err = m.DB.Transaction(
 		func(tx *gorm.DB) error {
@@ -205,7 +205,7 @@ func (m *defaultL1EventModel) CreateGovernanceBlock(
 			}
 			// create new sys config
 			if len(pendingNewSysConfigs) != 0 {
-				dbTx = tx.Table(sysconfig.TableName).CreateInBatches(pendingNewSysConfigs, len(pendingNewSysConfigs))
+				dbTx = tx.Table(sysConfig.TableName).CreateInBatches(pendingNewSysConfigs, len(pendingNewSysConfigs))
 				if dbTx.Error != nil {
 					return dbTx.Error
 				}
@@ -216,7 +216,7 @@ func (m *defaultL1EventModel) CreateGovernanceBlock(
 			}
 			// update sys config
 			for _, pendingUpdateSysConfig := range pendingUpdateSysConfigs {
-				dbTx = tx.Table(sysconfig.TableName).Where("id = ?", pendingUpdateSysConfig.ID).Select("*").Updates(&pendingUpdateSysConfig)
+				dbTx = tx.Table(sysConfig.TableName).Where("id = ?", pendingUpdateSysConfig.ID).Select("*").Updates(&pendingUpdateSysConfig)
 				if dbTx.Error != nil {
 					return dbTx.Error
 				}

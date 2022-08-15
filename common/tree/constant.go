@@ -24,11 +24,11 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/nft"
-	"github.com/bnb-chain/zkbas/common/model/sysconfig"
+	"github.com/bnb-chain/zkbas/common/model/sysConfig"
 )
 
 type (
-	SysconfigModel        = sysconfig.SysConfigModel
+	SysconfigModel        = sysConfig.SysConfigModel
 	AccountModel          = account.AccountModel
 	AccountHistoryModel   = account.AccountHistoryModel
 	L2NftHistoryModel     = nft.L2NftHistoryModel

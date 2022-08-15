@@ -20,11 +20,7 @@ package proverUtil
 import (
 	"errors"
 
-	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
-
-	"github.com/bnb-chain/zkbas/common/model/block"
 )
 
 func SetFixedAccountArray(proof [][]byte) (res [AccountMerkleLevels][]byte, err error) {
@@ -61,22 +57,4 @@ func SetFixedNftArray(proof [][]byte) (res [NftMerkleLevels][]byte, err error) {
 	}
 	copy(res[:], proof[:])
 	return res, nil
-}
-
-func BlockToCryptoBlock(
-	oBlock *block.Block,
-	oldStateRoot, newStateRoot []byte,
-	cryptoTxs []*cryptoBlock.Tx,
-) (cBlock *cryptoBlock.Block, err error) {
-	cBlock = &cryptoBlock.Block{
-		BlockNumber:     oBlock.BlockHeight,
-		CreatedAt:       oBlock.CreatedAt.UnixMilli(),
-		OldStateRoot:    oldStateRoot,
-		NewStateRoot:    newStateRoot,
-		BlockCommitment: common.FromHex(oBlock.BlockCommitment),
-	}
-	for i := 0; i < len(cryptoTxs); i++ {
-		cBlock.Txs = append(cBlock.Txs, cryptoTxs[i])
-	}
-	return cBlock, nil
 }

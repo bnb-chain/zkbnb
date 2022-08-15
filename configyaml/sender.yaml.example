@@ -21,7 +21,6 @@ ChainConfig:
   MaxBlockCount: 3
   Sk: "107f9d2a50ce2d8337e0c5220574e9fcf2bf60002da5acf07718f4d531ea3faa"
   GasLimit: 20000000
-  L1ChainId: "5777"
 
 LogConf:
   ServiceName: sender

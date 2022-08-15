@@ -12,7 +12,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
-	"github.com/bnb-chain/zkbas/common/model/sysconfig"
+	"github.com/bnb-chain/zkbas/common/model/sysConfig"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/service/cronjob/committer/internal/config"
 )
@@ -32,10 +32,10 @@ type ServiceContext struct {
 	TxModel            tx.TxModel
 	BlockModel         block.BlockModel
 	MempoolDetailModel mempool.MempoolTxDetailModel
-	MempoolModel       mempool.MemPoolModel
+	MempoolModel       mempool.MempoolModel
 	L2AssetModel       asset.AssetModel
 
-	SysConfigModel sysconfig.SysConfigModel
+	SysConfigModel sysConfig.SysConfigModel
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -59,6 +59,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		MempoolDetailModel:    mempool.NewMempoolDetailModel(conn, c.CacheRedis, gormPointer),
 		MempoolModel:          mempool.NewMempoolModel(conn, c.CacheRedis, gormPointer),
 		L2AssetModel:          asset.NewAssetModel(conn, c.CacheRedis, gormPointer),
-		SysConfigModel:        sysconfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
+		SysConfigModel:        sysConfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
 	}
 }

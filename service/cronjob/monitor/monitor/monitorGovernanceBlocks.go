@@ -30,7 +30,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/common/model/asset"
 	"github.com/bnb-chain/zkbas/common/model/l1SyncedBlock"
-	"github.com/bnb-chain/zkbas/common/model/sysconfig"
+	"github.com/bnb-chain/zkbas/common/model/sysConfig"
 	"github.com/bnb-chain/zkbas/common/sysConfigName"
 	"github.com/bnb-chain/zkbas/common/util"
 )
@@ -78,8 +78,8 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 		l1EventInfos              []*L1EventInfo
 		l2AssetInfoMap            = make(map[string]*asset.Asset)
 		pendingUpdateL2AssetMap   = make(map[string]*asset.Asset)
-		pendingNewSysConfigMap    = make(map[string]*sysconfig.SysConfig)
-		pendingUpdateSysConfigMap = make(map[string]*sysconfig.SysConfig)
+		pendingNewSysConfigMap    = make(map[string]*sysConfig.SysConfig)
+		pendingUpdateSysConfigMap = make(map[string]*sysConfig.SysConfig)
 	)
 	for _, vlog := range logs {
 		switch vlog.Topics[0].Hex() {
@@ -136,7 +136,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 				EventType: EventTypeNewGovernor,
 				TxHash:    vlog.TxHash.Hex(),
 			}
-			configInfo := &sysconfig.SysConfig{
+			configInfo := &sysConfig.SysConfig{
 				Name:      sysConfigName.Governor,
 				Value:     event.NewGovernor.Hex(),
 				ValueType: "string",
@@ -157,7 +157,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 				EventType: EventTypeNewAssetGovernance,
 				TxHash:    vlog.TxHash.Hex(),
 			}
-			configInfo := &sysconfig.SysConfig{
+			configInfo := &sysConfig.SysConfig{
 				Name:      sysConfigName.AssetGovernanceContract,
 				Value:     event.NewAssetGovernance.Hex(),
 				ValueType: "string",
@@ -222,7 +222,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 							logx.Errorf("unable to marshal validators: %s", err.Error())
 							return err
 						}
-						pendingNewSysConfigMap[sysConfigName.Validators] = &sysconfig.SysConfig{
+						pendingNewSysConfigMap[sysConfigName.Validators] = &sysConfig.SysConfig{
 							Name:      sysConfigName.Validators,
 							Value:     string(validatorsBytes),
 							ValueType: "map[string]*ValidatorInfo",
@@ -304,8 +304,8 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 	var (
 		l2AssetInfos                []*asset.Asset
 		pendingUpdateL2AssetInfos   []*asset.Asset
-		pendingNewSysconfigInfos    []*sysconfig.SysConfig
-		pendingUpdateSysconfigInfos []*sysconfig.SysConfig
+		pendingNewSysconfigInfos    []*sysConfig.SysConfig
+		pendingUpdateSysconfigInfos []*sysConfig.SysConfig
 	)
 	for _, l2AssetInfo := range l2AssetInfoMap {
 		l2AssetInfos = append(l2AssetInfos, l2AssetInfo)
