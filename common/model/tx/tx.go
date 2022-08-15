@@ -18,25 +18,16 @@
 package tx
 
 import (
-	"fmt"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
-	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/common/errorcode"
-)
-
-var (
-	cacheZkbasTxIdPrefix = "cache:zkbas:txVerification:id:"
-
-	cacheZkbasTxTxCountPrefix = "cache:zkbas:txVerification:txCount"
 )
 
 type (
@@ -53,9 +44,8 @@ type (
 
 	defaultTxModel struct {
 		sqlc.CachedConn
-		table     string
-		DB        *gorm.DB
-		RedisConn *redis.Redis
+		table string
+		DB    *gorm.DB
 	}
 
 	Tx struct {
@@ -84,12 +74,11 @@ type (
 	}
 )
 
-func NewTxModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB, redisConn *redis.Redis) TxModel {
+func NewTxModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) TxModel {
 	return &defaultTxModel{
 		CachedConn: sqlc.NewConn(conn, c),
 		table:      TxTableName,
 		DB:         db,
-		RedisConn:  redisConn,
 	}
 }
 
@@ -124,35 +113,14 @@ func (m *defaultTxModel) DropTxTable() error {
 	Description: used for counting total transactions for explorer dashboard
 */
 func (m *defaultTxModel) GetTxsTotalCount() (count int64, err error) {
-	key := fmt.Sprintf("%s", cacheZkbasTxTxCountPrefix)
-	val, err := m.RedisConn.Get(key)
-	if err != nil {
-		logx.Errorf("get redis error: %s, key:%s", err.Error(), key)
-		return 0, err
-
-	} else if val == "" {
-		dbTx := m.DB.Table(m.table).Where("deleted_at is NULL").Count(&count)
-		if dbTx.Error != nil {
-			if dbTx.Error == errorcode.DbErrNotFound {
-				return 0, nil
-			}
-			logx.Errorf("get Tx count error, err: %s", dbTx.Error.Error())
-			return 0, errorcode.DbErrSqlOperation
+	dbTx := m.DB.Table(m.table).Where("deleted_at is NULL").Count(&count)
+	if dbTx.Error != nil {
+		if dbTx.Error == errorcode.DbErrNotFound {
+			return 0, nil
 		}
-
-		err = m.RedisConn.Setex(key, strconv.FormatInt(count, 10), 120)
-		if err != nil {
-			logx.Errorf("redis set error: %s", err.Error())
-			return 0, err
-		}
-	} else {
-		count, err = strconv.ParseInt(val, 10, 64)
-		if err != nil {
-			logx.Errorf("strconv.ParseInt error: %s, value : %s", err.Error(), val)
-			return 0, err
-		}
+		logx.Errorf("get tx total count error, err: %s", dbTx.Error.Error())
+		return 0, errorcode.DbErrSqlOperation
 	}
-
 	return count, nil
 }
 

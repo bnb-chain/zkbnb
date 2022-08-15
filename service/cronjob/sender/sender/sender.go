@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -37,7 +36,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/l1RollupTx"
 	"github.com/bnb-chain/zkbas/common/model/proof"
 	"github.com/bnb-chain/zkbas/common/model/sysConfig"
-	"github.com/bnb-chain/zkbas/common/sysconfigName"
+	"github.com/bnb-chain/zkbas/common/sysConfigName"
 	"github.com/bnb-chain/zkbas/common/util"
 	sconfig "github.com/bnb-chain/zkbas/service/cronjob/sender/config"
 )
@@ -64,11 +63,10 @@ func NewSender(c sconfig.Config) *Sender {
 		logx.Errorf("gorm connect db error, err = %v", err)
 	}
 	conn := sqlx.NewSqlConn("postgres", c.Postgres.DataSource)
-	redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
 
 	s := &Sender{
 		config:              c,
-		blockModel:          block.NewBlockModel(conn, c.CacheRedis, gormPointer, redisConn),
+		blockModel:          block.NewBlockModel(conn, c.CacheRedis, gormPointer),
 		blockForCommitModel: blockForCommit.NewBlockForCommitModel(conn, c.CacheRedis, gormPointer),
 		l1RollupTxModel:     l1RollupTx.NewL1RollupTxModel(conn, c.CacheRedis, gormPointer),
 		sysConfigModel:      sysConfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
@@ -507,11 +505,4 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		return nil
 	}
 	return nil
-}
-
-func WithRedis(redisType string, redisPass string) redis.Option {
-	return func(p *redis.Redis) {
-		p.Type = redisType
-		p.Pass = redisPass
-	}
 }

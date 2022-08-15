@@ -13,7 +13,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/sysConfig"
 	"github.com/bnb-chain/zkbas/common/model/tx"
-	"github.com/bnb-chain/zkbas/common/sysconfigName"
+	"github.com/bnb-chain/zkbas/common/sysConfigName"
 	"github.com/bnb-chain/zkbas/common/util"
 )
 

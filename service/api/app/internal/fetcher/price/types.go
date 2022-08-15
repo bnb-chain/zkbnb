@@ -1,9 +1,5 @@
 package price
 
-var (
-	coinMarketCap = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol="
-)
-
 type status struct {
 	Timestamp    string  `json:"timestamp"`
 	ErrorCode    int     `json:"error_code"`
@@ -13,7 +9,7 @@ type status struct {
 }
 
 type Quote struct {
-	Price            float64 `json:"price"`
+	Price            float64 `json:"fetcher"`
 	Volume24H        float64 `json:"volume_24h"`
 	PercentChange1H  float64 `json:"percent_change_1h"`
 	PercentChange24H float64 `json:"percent_change_24h"`

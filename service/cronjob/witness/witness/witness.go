@@ -8,7 +8,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -56,13 +55,6 @@ type Witness struct {
 	blockWitnessModel     blockwitness.BlockWitnessModel
 }
 
-func WithRedis(redisType string, redisPass string) redis.Option {
-	return func(p *redis.Redis) {
-		p.Type = redisType
-		p.Pass = redisPass
-	}
-}
-
 func NewWitness(c config.Config) *Witness {
 	datasource := c.Postgres.DataSource
 	dbInstance, err := gorm.Open(postgres.Open(datasource))
@@ -70,12 +62,11 @@ func NewWitness(c config.Config) *Witness {
 		logx.Errorf("gorm connect db error, err: %v", err)
 	}
 	conn := sqlx.NewSqlConn("postgres", datasource)
-	redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
 
 	w := &Witness{
 		config:                c,
-		blockModel:            block.NewBlockModel(conn, c.CacheRedis, dbInstance, redisConn),
-		blockWitnessModel:     blockwitness.NewBlockWitnessModel(conn, c.CacheRedis, dbInstance),
+		blockModel:            block.NewBlockModel(conn, c.CacheRedis, dbInstance),
+		blockWitnessModel:    blockwitness.NewBlockWitnessModel(conn, c.CacheRedis, dbInstance),
 		accountModel:          account.NewAccountModel(conn, c.CacheRedis, dbInstance),
 		accountHistoryModel:   account.NewAccountHistoryModel(conn, c.CacheRedis, dbInstance),
 		liquidityHistoryModel: liquidity.NewLiquidityHistoryModel(conn, c.CacheRedis, dbInstance),

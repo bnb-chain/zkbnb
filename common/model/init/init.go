@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/redis"
 
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/asset"
@@ -42,7 +41,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/proof"
 	"github.com/bnb-chain/zkbas/common/model/sysConfig"
 	"github.com/bnb-chain/zkbas/common/model/tx"
-	"github.com/bnb-chain/zkbas/common/sysconfigName"
+	"github.com/bnb-chain/zkbas/common/sysConfigName"
 	"github.com/bnb-chain/zkbas/common/tree"
 )
 
@@ -133,15 +132,7 @@ func initAssetsInfo() []*asset.Asset {
 	}
 }
 
-func WithRedis(redisType string, redisPass string) redis.Option {
-	return func(p *redis.Redis) {
-		p.Type = redisType
-		p.Pass = redisPass
-	}
-}
-
 var (
-	redisConn               = redis.New(basic.CacheConf[0].Host, WithRedis(basic.CacheConf[0].Type, basic.CacheConf[0].Pass))
 	sysConfigModel          = sysConfig.NewSysConfigModel(basic.Connection, basic.CacheConf, basic.DB)
 	accountModel            = account.NewAccountModel(basic.Connection, basic.CacheConf, basic.DB)
 	accountHistoryModel     = account.NewAccountHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
@@ -150,8 +141,8 @@ var (
 	mempoolModel            = mempool.NewMempoolModel(basic.Connection, basic.CacheConf, basic.DB)
 	failTxModel             = tx.NewFailTxModel(basic.Connection, basic.CacheConf, basic.DB)
 	txDetailModel           = tx.NewTxDetailModel(basic.Connection, basic.CacheConf, basic.DB)
-	txModel                 = tx.NewTxModel(basic.Connection, basic.CacheConf, basic.DB, redisConn)
-	blockModel              = block.NewBlockModel(basic.Connection, basic.CacheConf, basic.DB, redisConn)
+	txModel                 = tx.NewTxModel(basic.Connection, basic.CacheConf, basic.DB)
+	blockModel              = block.NewBlockModel(basic.Connection, basic.CacheConf, basic.DB)
 	blockForCommitModel     = blockForCommit.NewBlockForCommitModel(basic.Connection, basic.CacheConf, basic.DB)
 	blockWitnessModel       = blockwitness.NewBlockWitnessModel(basic.Connection, basic.CacheConf, basic.DB)
 	proofModel              = proof.NewProofModel(basic.DB)

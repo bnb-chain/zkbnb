@@ -18,11 +18,11 @@ import (
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/common/util/globalmapHandler"
 	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/commglobalmap"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/fetcher/state"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 )
 
-func SendAtomicMatchTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalmap commglobalmap.Commglobalmap, rawTxInfo string) (txId string, err error) {
+func SendAtomicMatchTx(ctx context.Context, svcCtx *svc.ServiceContext, stateFetcher state.Fetcher, rawTxInfo string) (txId string, err error) {
 	txInfo, err := commonTx.ParseAtomicMatchTxInfo(rawTxInfo)
 	if err != nil {
 		logx.Errorf("cannot parse tx err: %s", err.Error())
@@ -52,7 +52,7 @@ func SendAtomicMatchTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 	var (
 		accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
 	)
-	accountInfoMap[txInfo.AccountIndex], err = commglobalmap.GetLatestAccountInfo(ctx, txInfo.AccountIndex)
+	accountInfoMap[txInfo.AccountIndex], err = stateFetcher.GetLatestAccountInfo(ctx, txInfo.AccountIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return "", errorcode.AppErrInvalidTxField.RefineError("invalid FromAccountIndex")
@@ -61,7 +61,7 @@ func SendAtomicMatchTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 		return "", errorcode.AppErrInternal
 	}
 	if accountInfoMap[txInfo.BuyOffer.AccountIndex] == nil {
-		accountInfoMap[txInfo.BuyOffer.AccountIndex], err = commglobalmap.GetBasicAccountInfo(ctx, txInfo.BuyOffer.AccountIndex)
+		accountInfoMap[txInfo.BuyOffer.AccountIndex], err = stateFetcher.GetBasicAccountInfo(ctx, txInfo.BuyOffer.AccountIndex)
 		if err != nil {
 			if err == errorcode.DbErrNotFound {
 				return "", errorcode.AppErrInvalidTxField.RefineError("invalid BuyOffer.AccountIndex")
@@ -71,7 +71,7 @@ func SendAtomicMatchTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 		}
 	}
 	if accountInfoMap[txInfo.SellOffer.AccountIndex] == nil {
-		accountInfoMap[txInfo.SellOffer.AccountIndex], err = commglobalmap.GetBasicAccountInfo(ctx, txInfo.SellOffer.AccountIndex)
+		accountInfoMap[txInfo.SellOffer.AccountIndex], err = stateFetcher.GetBasicAccountInfo(ctx, txInfo.SellOffer.AccountIndex)
 		if err != nil {
 			if err == errorcode.DbErrNotFound {
 				return "", errorcode.AppErrInvalidTxField.RefineError("invalid SellOffer.AccountIndex")
@@ -81,7 +81,7 @@ func SendAtomicMatchTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 		}
 	}
 	if accountInfoMap[txInfo.GasAccountIndex] == nil {
-		accountInfoMap[txInfo.GasAccountIndex], err = commglobalmap.GetBasicAccountInfo(ctx, txInfo.GasAccountIndex)
+		accountInfoMap[txInfo.GasAccountIndex], err = stateFetcher.GetBasicAccountInfo(ctx, txInfo.GasAccountIndex)
 		if err != nil {
 			if err == errorcode.DbErrNotFound {
 				return "", errorcode.AppErrInvalidTxField.RefineError("invalid GasAccountIndex")
@@ -91,7 +91,7 @@ func SendAtomicMatchTx(ctx context.Context, svcCtx *svc.ServiceContext, commglob
 		}
 	}
 
-	nftInfo, err := commglobalmap.GetLatestNftInfoForRead(ctx, txInfo.BuyOffer.NftIndex)
+	nftInfo, err := stateFetcher.GetLatestNftInfo(ctx, txInfo.BuyOffer.NftIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return "", errorcode.AppErrInvalidTxField.RefineError("invalid BuyOffer.NftIndex")

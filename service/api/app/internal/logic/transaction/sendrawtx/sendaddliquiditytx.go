@@ -15,11 +15,11 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/util"
 	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/repo/commglobalmap"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/fetcher/state"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 )
 
-func SendAddLiquidityTx(ctx context.Context, svcCtx *svc.ServiceContext, commglobalmap commglobalmap.Commglobalmap, rawTxInfo string) (txId string, err error) {
+func SendAddLiquidityTx(ctx context.Context, svcCtx *svc.ServiceContext, stateFetcher state.Fetcher, rawTxInfo string) (txId string, err error) {
 	txInfo, err := commonTx.ParseAddLiquidityTxInfo(rawTxInfo)
 	if err != nil {
 		logx.Errorf("cannot parse tx err: %s", err.Error())
@@ -35,7 +35,7 @@ func SendAddLiquidityTx(ctx context.Context, svcCtx *svc.ServiceContext, commglo
 		return txId, err
 	}
 
-	liquidityInfo, err := commglobalmap.GetLatestLiquidityInfoForWrite(ctx, txInfo.PairIndex)
+	liquidityInfo, err := stateFetcher.GetLatestLiquidityInfo(ctx, txInfo.PairIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return "", errorcode.AppErrInvalidTxField.RefineError("invalid PairIndex")
@@ -61,13 +61,10 @@ func SendAddLiquidityTx(ctx context.Context, svcCtx *svc.ServiceContext, commglo
 		}
 	}
 
-	txInfo.AssetAId = liquidityInfo.AssetAId
-	txInfo.AssetBId = liquidityInfo.AssetBId
-
 	var (
 		accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
 	)
-	accountInfoMap[txInfo.FromAccountIndex], err = commglobalmap.GetLatestAccountInfo(ctx, txInfo.FromAccountIndex)
+	accountInfoMap[txInfo.FromAccountIndex], err = stateFetcher.GetLatestAccountInfo(ctx, txInfo.FromAccountIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return "", errorcode.AppErrInvalidTxField.RefineError("invalid FromAccountIndex")
@@ -76,7 +73,7 @@ func SendAddLiquidityTx(ctx context.Context, svcCtx *svc.ServiceContext, commglo
 		return "", errorcode.AppErrInternal
 	}
 	if accountInfoMap[txInfo.GasAccountIndex] == nil {
-		accountInfoMap[txInfo.GasAccountIndex], err = commglobalmap.GetBasicAccountInfo(ctx, txInfo.GasAccountIndex)
+		accountInfoMap[txInfo.GasAccountIndex], err = stateFetcher.GetBasicAccountInfo(ctx, txInfo.GasAccountIndex)
 		if err != nil {
 			if err == errorcode.DbErrNotFound {
 				return txId, errorcode.AppErrInvalidTxField.RefineError("invalid GasAccountIndex")
@@ -86,7 +83,7 @@ func SendAddLiquidityTx(ctx context.Context, svcCtx *svc.ServiceContext, commglo
 		}
 	}
 	if accountInfoMap[liquidityInfo.TreasuryAccountIndex] == nil {
-		accountInfoMap[liquidityInfo.TreasuryAccountIndex], err = commglobalmap.GetBasicAccountInfo(ctx, liquidityInfo.TreasuryAccountIndex)
+		accountInfoMap[liquidityInfo.TreasuryAccountIndex], err = stateFetcher.GetBasicAccountInfo(ctx, liquidityInfo.TreasuryAccountIndex)
 		if err != nil {
 			if err == errorcode.DbErrNotFound {
 				return txId, errorcode.AppErrInvalidTxField.RefineError("invalid liquidity")
@@ -130,18 +127,10 @@ func SendAddLiquidityTx(ctx context.Context, svcCtx *svc.ServiceContext, commglo
 		txInfo.ExpiredAt,
 		txDetails,
 	)
-	if err := commglobalmap.DeleteLatestLiquidityInfoForWriteInCache(ctx, txInfo.PairIndex); err != nil {
-		logx.Errorf("fail to delete liquidity info: %d, err: %s", txInfo.PairIndex, err.Error())
-		return "", errorcode.AppErrInternal
-	}
 	if err := svcCtx.MempoolModel.CreateBatchedMempoolTxs([]*mempool.MempoolTx{mempoolTx}); err != nil {
 		logx.Errorf("fail to create mempool tx: %v, err: %s", mempoolTx, err.Error())
 		_ = CreateFailTx(svcCtx.FailTxModel, commonTx.TxTypeAddLiquidity, txInfo, err)
 		return "", err
-	}
-	// update cache, not key logic
-	if err := commglobalmap.SetLatestLiquidityInfoForWrite(ctx, txInfo.PairIndex); err != nil {
-		logx.Errorf("[SetLatestLiquidityInfoForWrite] param: %d, err: %s", txInfo.PairIndex, err.Error())
 	}
 	return txId, nil
 }

@@ -7,51 +7,69 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
+
+	gocache "github.com/patrickmn/go-cache"
 
 	"github.com/bnb-chain/zkbas/common/errorcode"
-	"github.com/bnb-chain/zkbas/common/multcache"
 )
 
-type price struct {
-	cache multcache.MultCache
+const cacheKey = "p:"
+
+type Fetcher interface {
+	GetCurrencyPrice(ctx context.Context, l2Symbol string) (price float64, err error)
+}
+
+func NewFetcher(cache *gocache.Cache) Fetcher {
+	return &fetcher{
+		cache: cache,
+		//todo: put into config files
+		cmcUrl:   "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=",
+		cmcToken: "cfce503f-dd3d-4847-9570-bbab5257dac8",
+	}
+}
+
+type fetcher struct {
+	cache    *gocache.Cache
+	cmcUrl   string
+	cmcToken string
 }
 
 /*
 	Func: GetCurrencyPrice
 	Params: currency string
 	Return: price float64, err error
-	Description: get currency price cache by currency symbol
+	Description: get currency price, cached by currency symbol
 */
-func (m *price) GetCurrencyPrice(ctx context.Context, l2Symbol string) (float64, error) {
-	f := func() (interface{}, error) {
-		quoteMap, err := getQuotesLatest(l2Symbol)
-		if err != nil {
-			return 0, err
-		}
-		return &quoteMap, nil
+func (f *fetcher) GetCurrencyPrice(ctx context.Context, l2Symbol string) (float64, error) {
+	var price float64
+	cached, hit := f.cache.Get(cacheKey + l2Symbol)
+	if hit {
+		price = cached.(float64)
+		return price, nil
 	}
-	var quoteType map[string]QuoteLatest
-	value, err := m.cache.GetWithSet(ctx, multcache.SpliceCacheKeyCurrencyPrice(), &quoteType, multcache.PriceTtl, f)
+
+	quoteMap, err := f.getLatestQuotes(l2Symbol)
 	if err != nil {
 		return 0, err
 	}
-	res, _ := value.(*map[string]QuoteLatest)
-	quoteMap := *res
 	q, ok := quoteMap[l2Symbol]
 	if !ok {
 		return 0, errorcode.AppErrQuoteNotExist
 	}
-	return q.Quote["USD"].Price, nil
+	price = q.Quote["USD"].Price
+	f.cache.Set(cacheKey+l2Symbol, price, time.Millisecond*500)
+	return price, nil
 }
 
-func getQuotesLatest(l2Symbol string) (map[string]QuoteLatest, error) {
+func (f *fetcher) getLatestQuotes(l2Symbol string) (map[string]QuoteLatest, error) {
 	client := &http.Client{}
-	url := fmt.Sprintf("%s%s", coinMarketCap, l2Symbol)
+	url := fmt.Sprintf("%s%s", f.cmcUrl, l2Symbol)
 	reqest, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, errorcode.HttpErrFailToRequest
 	}
-	reqest.Header.Add("X-CMC_PRO_API_KEY", "cfce503f-dd3d-4847-9570-bbab5257dac8")
+	reqest.Header.Add("X-CMC_PRO_API_KEY", f.cmcToken)
 	reqest.Header.Add("Accept", "application/json")
 	resp, err := client.Do(reqest)
 	if err != nil {
