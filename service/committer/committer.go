@@ -38,6 +38,8 @@ type Committer struct {
 	mempoolModel   mempool.MemPoolModel
 	keyTxCounts    []int
 	maxTxsPerBlock int
+
+	pendingUpdateMempoolTxs []*mempool.MempoolTx
 }
 
 func NewCommitter(config *CommitterConfig) (*Committer, error) {
@@ -57,11 +59,12 @@ func NewCommitter(config *CommitterConfig) (*Committer, error) {
 	}
 	conn := sqlx.NewSqlConn("postgres", config.Postgres.DataSource)
 	committer := &Committer{
-		config:         config,
-		bc:             bc,
-		mempoolModel:   mempool.NewMempoolModel(conn, config.CacheRedis, gormPointer),
-		keyTxCounts:    config.KeyPath.KeyTxCounts,
-		maxTxsPerBlock: config.KeyPath.KeyTxCounts[len(config.KeyPath.KeyTxCounts)-1],
+		config:                  config,
+		bc:                      bc,
+		mempoolModel:            mempool.NewMempoolModel(conn, config.CacheRedis, gormPointer),
+		keyTxCounts:             config.KeyPath.KeyTxCounts,
+		maxTxsPerBlock:          config.KeyPath.KeyTxCounts[len(config.KeyPath.KeyTxCounts)-1],
+		pendingUpdateMempoolTxs: make([]*mempool.MempoolTx, 0),
 	}
 
 	go committer.loop()
@@ -69,7 +72,7 @@ func NewCommitter(config *CommitterConfig) (*Committer, error) {
 }
 
 func (c *Committer) loop() {
-	curBlock, stateCache, err := c.restoreExecutedTxs()
+	curBlock, err := c.restoreExecutedTxs()
 	if err != nil {
 		panic("restore executed tx failed: " + err.Error())
 	}
@@ -80,7 +83,6 @@ func (c *Committer) loop() {
 			if err != nil {
 				panic("propose new block failed: " + err.Error())
 			}
-			stateCache = core.NewStateCache(curBlock.BlockHeight)
 		}
 
 		// Read pending transactions from mempool_tx table.
@@ -90,7 +92,7 @@ func (c *Committer) loop() {
 			return
 		}
 		for len(pendingTxs) == 0 {
-			if c.shouldCommit(curBlock, stateCache) {
+			if c.shouldCommit(curBlock) {
 				break
 			}
 
@@ -105,12 +107,12 @@ func (c *Committer) loop() {
 		pendingUpdateMempoolTxs := make([]*mempool.MempoolTx, 0, len(pendingTxs))
 		pendingDeleteMempoolTxs := make([]*mempool.MempoolTx, 0, len(pendingTxs))
 		for _, mempoolTx := range pendingTxs {
-			if c.shouldCommit(curBlock, stateCache) {
+			if c.shouldCommit(curBlock) {
 				break
 			}
 
 			tx := convertMempoolTxToTx(mempoolTx)
-			tx, stateCache, err = c.bc.ApplyTransaction(tx, stateCache)
+			tx, err = c.bc.ApplyTransaction(tx)
 			if err != nil {
 				mempoolTx.Status = mempool.FailTxStatus
 				pendingDeleteMempoolTxs = append(pendingDeleteMempoolTxs, mempoolTx)
@@ -120,7 +122,7 @@ func (c *Committer) loop() {
 			pendingUpdateMempoolTxs = append(pendingUpdateMempoolTxs, mempoolTx)
 		}
 
-		err = c.bc.SyncToCache(stateCache)
+		err = c.bc.SyncStateCacheToRedis()
 		if err != nil {
 			panic("sync redis dbcache failed: " + err.Error())
 		}
@@ -129,79 +131,81 @@ func (c *Committer) loop() {
 		if err != nil {
 			panic("update mempool failed: " + err.Error())
 		}
+		c.pendingUpdateMempoolTxs = append(c.pendingUpdateMempoolTxs, pendingUpdateMempoolTxs...)
 
-		if c.shouldCommit(curBlock, stateCache) {
-			err := c.commitNewBlock(curBlock, stateCache, pendingUpdateMempoolTxs)
+		if c.shouldCommit(curBlock) {
+			curBlock, err = c.commitNewBlock(curBlock)
 			panic("commit new block failed: " + err.Error())
 		}
 	}
 }
 
-func (c *Committer) restoreExecutedTxs() (*block.Block, *core.StateCache, error) {
+func (c *Committer) restoreExecutedTxs() (*block.Block, error) {
 	bc := c.bc
 	curHeight, err := bc.BlockModel.GetCurrentBlockHeight()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	curBlock, err := bc.BlockModel.GetBlockByBlockHeight(curHeight)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	executedTxs, err := c.mempoolModel.GetExecutedMempoolTxs()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	if curBlock.BlockStatus > block.StatusProposing {
 		if len(executedTxs) != 0 {
-			return nil, nil, errors.New("no proposing block but exist executed txs")
+			return nil, errors.New("no proposing block but exist executed txs")
 		}
-		return curBlock, nil, nil
+		return curBlock, nil
 	}
 
-	stateCache := core.NewStateCache(curHeight)
 	for _, mempoolTx := range executedTxs {
 		tx := convertMempoolTxToTx(mempoolTx)
-		tx, stateCache, err = c.bc.ApplyTransaction(tx, stateCache)
+		tx, err = c.bc.ApplyTransaction(tx)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
+		c.pendingUpdateMempoolTxs = append(c.pendingUpdateMempoolTxs, mempoolTx)
 	}
 
-	return curBlock, stateCache, nil
+	return curBlock, nil
 }
 
-func (c *Committer) shouldCommit(curBlock *block.Block, stateCache *core.StateCache) bool {
+func (c *Committer) shouldCommit(curBlock *block.Block) bool {
 	var now = time.Now()
-	if now.Unix()-curBlock.CreatedAt.Unix() >= MaxCommitterInterval || len(stateCache.GetTxs()) >= c.maxTxsPerBlock {
+	if now.Unix()-curBlock.CreatedAt.Unix() >= MaxCommitterInterval || len(c.bc.GetPendingTxs()) >= c.maxTxsPerBlock {
 		return true
 	}
 
 	return false
 }
 
-func (c *Committer) commitNewBlock(curBlock *block.Block, stateCache *core.StateCache, successTxs []*mempool.MempoolTx) error {
-	for _, tx := range successTxs {
+func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) {
+	for _, tx := range c.pendingUpdateMempoolTxs {
 		tx.Status = mempool.SuccessTxStatus
 	}
 
-	blockSize := c.computeCurrentBlockSize(stateCache)
-	_, err := c.bc.CommitNewBlock(stateCache, blockSize, curBlock.CreatedAt.UnixMilli())
+	blockSize := c.computeCurrentBlockSize()
+	statesToCommit, err := c.bc.CommitNewBlock(blockSize, curBlock.CreatedAt.UnixMilli())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Update database in a transaction.
 	//err = c.bc.BlockModel.CreateBlockForCommitter()
 
-	return nil
+	c.pendingUpdateMempoolTxs = make([]*mempool.MempoolTx, 0)
+	return statesToCommit.Block, nil
 }
 
-func (c *Committer) computeCurrentBlockSize(stateCache *core.StateCache) int {
+func (c *Committer) computeCurrentBlockSize() int {
 	var blockSize int
 	for i := 0; i < len(c.keyTxCounts); i++ {
-		if len(stateCache.GetTxs()) <= c.keyTxCounts[i] {
+		if len(c.bc.GetPendingTxs()) <= c.keyTxCounts[i] {
 			blockSize = c.keyTxCounts[i]
 			break
 		}

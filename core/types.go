@@ -25,14 +25,14 @@ type (
 )
 
 type Processor interface {
-	Process(tx *tx.Tx, stateCache *StateCache) (*tx.Tx, *StateCache, error)
+	Process(tx *tx.Tx) (*tx.Tx, error)
 }
 
 type TxExecutor interface {
 	Prepare() error
 	VerifyInputs() error
-	ApplyTransaction(stateCache *StateCache) (*StateCache, error)
-	GeneratePubData(stateCache *StateCache) (*StateCache, error)
+	ApplyTransaction() error
+	GeneratePubData() error
 	UpdateTrees() error
 	GetExecutedTx() (*tx.Tx, error)
 	GenerateTxDetails() []*tx.TxDetail
