@@ -30,7 +30,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/l1SyncedBlock"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/priorityRequest"
-	"github.com/bnb-chain/zkbas/common/model/sysconfig"
+	"github.com/bnb-chain/zkbas/common/model/sysConfig"
 	"github.com/bnb-chain/zkbas/common/sysConfigName"
 	"github.com/bnb-chain/zkbas/service/cronjob/monitor/config"
 )
@@ -44,8 +44,8 @@ type Monitor struct {
 	governanceContractAddress string
 
 	BlockModel           block.BlockModel
-	MempoolModel         mempool.MemPoolModel
-	SysConfigModel       sysconfig.SysConfigModel
+	MempoolModel         mempool.MempoolModel
+	SysConfigModel       sysConfig.SysConfigModel
 	L1RollupTxModel      l1RollupTx.L1RollupTxModel
 	L2AssetModel         asset.AssetModel
 	PriorityRequestModel priorityRequest.PriorityRequestModel
@@ -74,7 +74,7 @@ func NewMonitor(c config.Config) *Monitor {
 		L1RollupTxModel:      l1RollupTx.NewL1RollupTxModel(conn, c.CacheRedis, gormPointer),
 		L1SyncedBlockModel:   l1SyncedBlock.NewL1SyncedBlockModel(conn, c.CacheRedis, gormPointer),
 		L2AssetModel:         asset.NewAssetModel(conn, c.CacheRedis, gormPointer),
-		SysConfigModel:       sysconfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
+		SysConfigModel:       sysConfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
 	}
 
 	zkbasAddressConfig, err := monitor.SysConfigModel.GetSysConfigByName(sysConfigName.ZkbasContract)

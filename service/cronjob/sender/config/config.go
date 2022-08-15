@@ -17,7 +17,6 @@ type Config struct {
 		ConfirmBlocksCount      uint64
 		Sk                      string
 		GasLimit                uint64
-		L1ChainId               string
 	}
 	LogConf logx.LogConf
 }

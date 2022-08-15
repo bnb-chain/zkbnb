@@ -16,7 +16,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
-	"github.com/bnb-chain/zkbas/common/model/blockForProof"
+	"github.com/bnb-chain/zkbas/common/model/blockwitness"
 	"github.com/bnb-chain/zkbas/common/model/proof"
 	"github.com/bnb-chain/zkbas/common/util"
 	lockUtil "github.com/bnb-chain/zkbas/common/util/globalmapHandler"
@@ -28,8 +28,8 @@ type Prover struct {
 
 	RedisConn *redis.Redis
 
-	ProofSenderModel   proof.ProofModel
-	BlockForProofModel blockForProof.BlockForProofModel
+	ProofSenderModel  proof.ProofModel
+	BlockWitnessModel blockwitness.BlockWitnessModel
 
 	VerifyingKeys []groth16.VerifyingKey
 	ProvingKeys   []groth16.ProvingKey
@@ -51,10 +51,10 @@ func NewProver(c config.Config) *Prover {
 	conn := sqlx.NewSqlConn("postgres", c.Postgres.DataSource)
 	redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
 	prover := &Prover{
-		Config:             c,
-		RedisConn:          redisConn,
-		BlockForProofModel: blockForProof.NewBlockForProofModel(conn, c.CacheRedis, gormPointer),
-		ProofSenderModel:   proof.NewProofModel(gormPointer),
+		Config:            c,
+		RedisConn:         redisConn,
+		BlockWitnessModel: blockwitness.NewBlockWitnessModel(conn, c.CacheRedis, gormPointer),
+		ProofSenderModel:  proof.NewProofModel(gormPointer),
 	}
 
 	prover.KeyTxCounts = c.KeyPath.KeyTxCounts
@@ -98,19 +98,19 @@ func (p *Prover) ProveBlock() error {
 	defer lock.Release()
 
 	// fetch unproved block
-	unprovedBlock, err := p.BlockForProofModel.GetUnprovedCryptoBlockByMode(util.COO_MODE)
+	blockWitness, err := p.BlockWitnessModel.GetBlockWitnessByMode(util.COO_MODE)
 	if err != nil {
 		return fmt.Errorf("GetUnprovedBlock Error: err: %v", err)
 	}
 	// update status of block
-	err = p.BlockForProofModel.UpdateUnprovedCryptoBlockStatus(unprovedBlock, blockForProof.StatusReceived)
+	err = p.BlockWitnessModel.UpdateBlockWitnessStatus(blockWitness, blockwitness.StatusReceived)
 	if err != nil {
 		return fmt.Errorf("update block status error, err=%v", err)
 	}
 
 	// parse CryptoBlock
 	var cryptoBlock *block.Block
-	err = json.Unmarshal([]byte(unprovedBlock.BlockData), &cryptoBlock)
+	err = json.Unmarshal([]byte(blockWitness.WitnessData), &cryptoBlock)
 	if err != nil {
 		return errors.New("json.Unmarshal Error")
 	}
@@ -146,19 +146,19 @@ func (p *Prover) ProveBlock() error {
 	}
 
 	// check the existence of blockProof
-	_, err = p.ProofSenderModel.GetProofByBlockNumber(unprovedBlock.BlockHeight)
+	_, err = p.ProofSenderModel.GetProofByBlockNumber(blockWitness.Height)
 	if err == nil {
 		return fmt.Errorf("blockProof of current height exists")
 	}
 
 	var row = &proof.Proof{
 		ProofInfo:   string(proofBytes),
-		BlockNumber: unprovedBlock.BlockHeight,
+		BlockNumber: blockWitness.Height,
 		Status:      proof.NotSent,
 	}
 	err = p.ProofSenderModel.CreateProof(row)
 	if err != nil {
-		_ = p.BlockForProofModel.UpdateUnprovedCryptoBlockStatus(unprovedBlock, blockForProof.StatusPublished)
+		_ = p.BlockWitnessModel.UpdateBlockWitnessStatus(blockWitness, blockwitness.StatusPublished)
 		return fmt.Errorf("create blockProof error, err=%v", err)
 	}
 	return nil

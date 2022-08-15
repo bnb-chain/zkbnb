@@ -15,34 +15,3 @@
  */
 
 package witness
-
-import (
-	"encoding/json"
-	"github.com/bnb-chain/zkbas/common/model/block"
-	"github.com/ethereum/go-ethereum/common"
-
-	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
-	"github.com/bnb-chain/zkbas/common/model/blockForProof"
-)
-
-func ConstructBlockForProof(block *block.Block, oldStateRoot, newStateRoot []byte,
-	cryptoTxs []*cryptoBlock.Tx, status int64) (*blockForProof.BlockForProof, error) {
-	b := &cryptoBlock.Block{
-		BlockNumber:     block.BlockHeight,
-		CreatedAt:       block.CreatedAt.UnixMilli(),
-		OldStateRoot:    oldStateRoot,
-		NewStateRoot:    newStateRoot,
-		BlockCommitment: common.FromHex(block.BlockCommitment),
-		Txs:             cryptoTxs,
-	}
-	bz, err := json.Marshal(b)
-	if err != nil {
-		return nil, err
-	}
-	blockModel := blockForProof.BlockForProof{
-		BlockHeight: block.BlockHeight,
-		BlockData:   string(bz),
-		Status:      status,
-	}
-	return &blockModel, nil
-}

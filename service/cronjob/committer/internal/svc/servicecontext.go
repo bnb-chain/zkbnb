@@ -13,7 +13,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
-	"github.com/bnb-chain/zkbas/common/model/sysconfig"
+	"github.com/bnb-chain/zkbas/common/model/sysConfig"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/service/cronjob/committer/internal/config"
 )
@@ -33,10 +33,10 @@ type ServiceContext struct {
 	TxModel            tx.TxModel
 	BlockModel         block.BlockModel
 	MempoolDetailModel mempool.MempoolTxDetailModel
-	MempoolModel       mempool.MemPoolModel
+	MempoolModel       mempool.MempoolModel
 	L2AssetModel       asset.AssetModel
 
-	SysConfigModel sysconfig.SysConfigModel
+	SysConfigModel sysConfig.SysConfigModel
 }
 
 func WithRedis(redisType string, redisPass string) redis.Option {
@@ -68,15 +68,15 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		MempoolDetailModel:    mempool.NewMempoolDetailModel(conn, c.CacheRedis, gormPointer),
 		MempoolModel:          mempool.NewMempoolModel(conn, c.CacheRedis, gormPointer),
 		L2AssetModel:          asset.NewAssetModel(conn, c.CacheRedis, gormPointer),
-		SysConfigModel:        sysconfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
+		SysConfigModel:        sysConfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
 	}
 }
 
 /*
 func (s *ServiceContext) Run() {
-	mempoolTxs, err := s.MemPoolModel.GetAllMempoolTxsList()
+	mempoolTxs, err := s.MempoolModel.GetAllMempoolTxsList()
 	if err != nil {
-		errInfo := fmt.Sprintf("[CommitterTask] => [MemPoolModel.GetAllMempoolTxsList] mempool query error:%s", err.Error())
+		errInfo := fmt.Sprintf("[CommitterTask] => [MempoolModel.GetAllMempoolTxsList] mempool query error:%s", err.Error())
 		logx.Error(errInfo)
 		return
 	}

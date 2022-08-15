@@ -32,7 +32,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/basic"
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/blockForCommit"
-	"github.com/bnb-chain/zkbas/common/model/blockForProof"
+	"github.com/bnb-chain/zkbas/common/model/blockwitness"
 	"github.com/bnb-chain/zkbas/common/model/l1RollupTx"
 	"github.com/bnb-chain/zkbas/common/model/l1SyncedBlock"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
@@ -40,7 +40,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/priorityRequest"
 	"github.com/bnb-chain/zkbas/common/model/proof"
-	"github.com/bnb-chain/zkbas/common/model/sysconfig"
+	"github.com/bnb-chain/zkbas/common/model/sysConfig"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/sysconfigName"
 	"github.com/bnb-chain/zkbas/common/tree"
@@ -64,8 +64,8 @@ func main() {
 	initTable()
 }
 
-func initSysConfig() []*sysconfig.SysConfig {
-	return []*sysconfig.SysConfig{
+func initSysConfig() []*sysConfig.SysConfig {
+	return []*sysConfig.SysConfig{
 		{
 			Name:      sysConfigName.SysGasFee,
 			Value:     "100000000000000",
@@ -142,7 +142,7 @@ func WithRedis(redisType string, redisPass string) redis.Option {
 
 var (
 	redisConn               = redis.New(basic.CacheConf[0].Host, WithRedis(basic.CacheConf[0].Type, basic.CacheConf[0].Pass))
-	sysConfigModel          = sysconfig.NewSysConfigModel(basic.Connection, basic.CacheConf, basic.DB)
+	sysConfigModel          = sysConfig.NewSysConfigModel(basic.Connection, basic.CacheConf, basic.DB)
 	accountModel            = account.NewAccountModel(basic.Connection, basic.CacheConf, basic.DB)
 	accountHistoryModel     = account.NewAccountHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
 	assetModel              = asset.NewAssetModel(basic.Connection, basic.CacheConf, basic.DB)
@@ -153,7 +153,7 @@ var (
 	txModel                 = tx.NewTxModel(basic.Connection, basic.CacheConf, basic.DB, redisConn)
 	blockModel              = block.NewBlockModel(basic.Connection, basic.CacheConf, basic.DB, redisConn)
 	blockForCommitModel     = blockForCommit.NewBlockForCommitModel(basic.Connection, basic.CacheConf, basic.DB)
-	blockForProofModel      = blockForProof.NewBlockForProofModel(basic.Connection, basic.CacheConf, basic.DB)
+	blockWitnessModel       = blockwitness.NewBlockWitnessModel(basic.Connection, basic.CacheConf, basic.DB)
 	proofModel              = proof.NewProofModel(basic.DB)
 	l1SyncedBlockModel      = l1SyncedBlock.NewL1SyncedBlockModel(basic.Connection, basic.CacheConf, basic.DB)
 	priorityRequestModel    = priorityRequest.NewPriorityRequestModel(basic.Connection, basic.CacheConf, basic.DB)
@@ -180,7 +180,7 @@ func dropTables() {
 	assert.Nil(nil, txModel.DropTxTable())
 	assert.Nil(nil, blockModel.DropBlockTable())
 	assert.Nil(nil, blockForCommitModel.DropBlockForCommitTable())
-	assert.Nil(nil, blockForProofModel.DropBlockForProofTable())
+	assert.Nil(nil, blockWitnessModel.DropBlockWitnessTable())
 	assert.Nil(nil, proofModel.DropProofTable())
 	assert.Nil(nil, l1SyncedBlockModel.DropL1SyncedBlockTable())
 	assert.Nil(nil, priorityRequestModel.DropPriorityRequestTable())
@@ -207,7 +207,7 @@ func initTable() {
 	assert.Nil(nil, txModel.CreateTxTable())
 	assert.Nil(nil, txDetailModel.CreateTxDetailTable())
 	assert.Nil(nil, blockForCommitModel.CreateBlockForCommitTable())
-	assert.Nil(nil, blockForProofModel.CreateBlockForProofTable())
+	assert.Nil(nil, blockWitnessModel.CreateBlockWitnessTable())
 	assert.Nil(nil, proofModel.CreateProofTable())
 	assert.Nil(nil, l1SyncedBlockModel.CreateL1SyncedBlockTable())
 	assert.Nil(nil, priorityRequestModel.CreatePriorityRequestTable())

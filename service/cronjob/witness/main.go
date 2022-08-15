@@ -30,10 +30,14 @@ func main() {
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))
 	_, err := cronJob.AddFunc("@every 2s", func() {
-		// cron job for creating cryptoBlock
 		logx.Info("==========start generate block witness==========")
-		w.GenerateBlockWitness()
-		logx.Info("==========end generate block witness==========")
+		err := w.GenerateBlockWitness()
+		if err != nil {
+			logx.Errorf("==========failed to generate block witness %v==========", err)
+		} else {
+			logx.Info("==========success generate block witness==========")
+		}
+		w.RescheduleBlockWitness()
 	})
 	if err != nil {
 		panic(err)
@@ -41,6 +45,5 @@ func main() {
 	cronJob.Start()
 
 	logx.Info("witness cronjob is starting......")
-
 	select {}
 }

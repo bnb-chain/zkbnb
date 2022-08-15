@@ -27,5 +27,5 @@ const (
 
 	DauTtl = 5000 * time.Millisecond //cache ttl of dau
 
-	SysconfigTtl = 10000 * time.Millisecond //cache ttl of sysconfig
+	SysconfigTtl = 10000 * time.Millisecond //cache ttl of sysConfig
 )

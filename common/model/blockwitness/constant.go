@@ -15,8 +15,13 @@
  *
  */
 
-package sysconfig
+package blockwitness
 
 const (
-	TableName = `sys_config`
+	StatusPublished = iota
+	StatusReceived
+)
+
+const (
+	TableName = `block_witness`
 )

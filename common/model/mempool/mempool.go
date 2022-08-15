@@ -32,7 +32,7 @@ import (
 )
 
 type (
-	MemPoolModel interface {
+	MempoolModel interface {
 		CreateMempoolTxTable() error
 		DropMempoolTxTable() error
 		GetMempoolTxByTxId(id int64) (mempoolTx *MempoolTx, err error)
@@ -83,7 +83,7 @@ type (
 	}
 )
 
-func NewMempoolModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) MemPoolModel {
+func NewMempoolModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) MempoolModel {
 	return &defaultMempoolModel{
 		CachedConn: sqlc.NewConn(conn, c),
 		table:      MempoolTableName,
