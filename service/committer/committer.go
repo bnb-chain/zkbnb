@@ -187,14 +187,13 @@ func (c *Committer) commitNewBlock(curBlock *block.Block, stateCache *core.State
 	}
 
 	blockSize := c.computeCurrentBlockSize(stateCache)
-	newBlock, newBlockForCommit,
-		pendingNewAccount, pendingUpdateAccount, pendingNewAccountHistoy,
-		pendingNewLiquidity, pendingUpdateLiquidity, pendingNewLiquidityHistory,
-		pendingNewNft, pendingUpdateNft, pendingNewNftHistory, pendingNewNftWithdrawHisoty,
-		err := c.bc.CommitNewBlock(stateCache, blockSize, curBlock.CreatedAt.UnixMilli())
+	_, err := c.bc.CommitNewBlock(stateCache, blockSize, curBlock.CreatedAt.UnixMilli())
 	if err != nil {
 		return err
 	}
+
+	// Update database in a transaction.
+	//err = c.bc.BlockModel.CreateBlockForCommitter()
 
 	return nil
 }

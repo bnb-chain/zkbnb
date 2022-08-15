@@ -99,6 +99,21 @@ func (s *StateCache) GetTxs() []*tx.Tx {
 	return s.txs
 }
 
+type StatesToCommit struct {
+	Block                        *block.Block
+	BlockForCommit               *blockForCommit.BlockForCommit
+	PendingNewAccount            []*account.Account
+	PendingUpdateAccount         []*account.Account
+	PendingNewAccountHistory     []*account.AccountHistory
+	PendingNewLiquidity          []*liquidity.Liquidity
+	PendingUpdateLiquidity       []*liquidity.Liquidity
+	PendingNewLiquidityHistory   []*liquidity.LiquidityHistory
+	PendingNewNft                []*nft.L2Nft
+	PendingUpdateNft             []*nft.L2Nft
+	PendingNewNftHistory         []*nft.L2NftHistory
+	PendingNewNftWithdrawHistory []*nft.L2NftWithdrawHistory
+}
+
 type BlockChain struct {
 	BlockModel            block.BlockModel
 	TxModel               tx.TxModel
@@ -309,37 +324,45 @@ func (bc *BlockChain) ProposeNewBlock() (*block.Block, error) {
 	return newBlock, nil
 }
 
-func (bc *BlockChain) CommitNewBlock(stateCache *StateCache, blockSize int, createdAt int64) (
-	*block.Block, *blockForCommit.BlockForCommit,
-	[]*account.Account, []*account.Account, []*account.AccountHistory,
-	[]*liquidity.Liquidity, []*liquidity.Liquidity, []*liquidity.LiquidityHistory,
-	[]*nft.L2Nft, []*nft.L2Nft, []*nft.L2NftHistory, []*nft.L2NftWithdrawHistory,
-	error) {
+func (bc *BlockChain) CommitNewBlock(stateCache *StateCache, blockSize int, createdAt int64) (*StatesToCommit, error) {
+	if stateCache == nil {
+		return nil, errors.New("nil state cache")
+	}
 
 	newBlock, newBlockForCommit, err := bc.commitNewBlock(stateCache, blockSize, createdAt)
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, err
+		return nil, err
 	}
 
 	pendingNewAccount, pendingUpdateAccount, pendingNewAccountHistory, err := bc.getPendingAccount(stateCache)
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, err
+		return nil, err
 	}
 
 	pendingNewLiquidity, pendingUpdateLiquidity, pendingNewLiquidityHistory, err := bc.getPendingLiquidity(stateCache)
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, err
+		return nil, err
 	}
 
 	pendingNewNft, pendingUpdateNft, pendingNewNftHistory, err := bc.getPendingNft(stateCache)
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, err
+		return nil, err
 	}
 
-	return newBlock, newBlockForCommit,
-		pendingNewAccount, pendingUpdateAccount, pendingNewAccountHistory,
-		pendingNewLiquidity, pendingUpdateLiquidity, pendingNewLiquidityHistory,
-		pendingNewNft, pendingUpdateNft, pendingNewNftHistory, stateCache.pendingNewNftWithdrawHistory, nil
+	return &StatesToCommit{
+		Block:                        newBlock,
+		BlockForCommit:               newBlockForCommit,
+		PendingNewAccount:            pendingNewAccount,
+		PendingUpdateAccount:         pendingUpdateAccount,
+		PendingNewAccountHistory:     pendingNewAccountHistory,
+		PendingNewLiquidity:          pendingNewLiquidity,
+		PendingUpdateLiquidity:       pendingUpdateLiquidity,
+		PendingNewLiquidityHistory:   pendingNewLiquidityHistory,
+		PendingNewNft:                pendingNewNft,
+		PendingUpdateNft:             pendingUpdateNft,
+		PendingNewNftHistory:         pendingNewNftHistory,
+		PendingNewNftWithdrawHistory: stateCache.pendingNewNftWithdrawHistory,
+	}, nil
 }
 
 func (bc *BlockChain) commitNewBlock(stateCache *StateCache, blockSize int, createdAt int64) (*block.Block, *blockForCommit.BlockForCommit, error) {
