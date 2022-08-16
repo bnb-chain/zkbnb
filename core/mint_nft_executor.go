@@ -6,37 +6,39 @@ import (
 
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/commonTx"
+	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/util"
 )
 
-type TransferNftExecutor struct {
+type MintNftExecutor struct {
 	bc     *BlockChain
 	tx     *tx.Tx
-	txInfo *legendTxTypes.TransferNftTxInfo
+	txInfo *legendTxTypes.MintNftTxInfo
 }
 
-func NewTransferNftExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
-	return &TransferNftExecutor{
+func NewMintNftExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+	return &MintNftExecutor{
 		bc: bc,
 		tx: tx,
 	}, nil
 }
 
-func (e *TransferNftExecutor) Prepare() error {
-	txInfo, err := commonTx.ParseTransferNftTxInfo(e.tx.TxInfo)
+func (e *MintNftExecutor) Prepare() error {
+	txInfo, err := commonTx.ParseMintNftTxInfo(e.tx.TxInfo)
 	if err != nil {
 		logx.Errorf("parse transfer tx failed: %s", err.Error())
 		return errors.New("invalid tx info")
 	}
 
-	accounts := []int64{txInfo.FromAccountIndex, txInfo.ToAccountIndex, txInfo.GasAccountIndex}
+	accounts := []int64{txInfo.CreatorAccountIndex, txInfo.ToAccountIndex, txInfo.GasAccountIndex}
 	assets := []int64{txInfo.GasFeeAssetId}
 	err = e.bc.prepareAccountsAndAssets(accounts, assets)
 	if err != nil {
@@ -44,17 +46,11 @@ func (e *TransferNftExecutor) Prepare() error {
 		return err
 	}
 
-	err = e.bc.prepareNft(txInfo.NftIndex)
-	if err != nil {
-		logx.Errorf("prepare nft failed")
-		return err
-	}
-
 	e.txInfo = txInfo
 	return nil
 }
 
-func (e *TransferNftExecutor) VerifyInputs() error {
+func (e *MintNftExecutor) VerifyInputs() error {
 	txInfo := e.txInfo
 
 	err := txInfo.Validate()
@@ -66,12 +62,16 @@ func (e *TransferNftExecutor) VerifyInputs() error {
 		return errors.New("tx expired")
 	}
 
-	fromAccount := e.bc.accountMap[txInfo.FromAccountIndex]
-	if txInfo.Nonce != fromAccount.Nonce {
+	creatorAccount := e.bc.accountMap[txInfo.CreatorAccountIndex]
+	if txInfo.Nonce != creatorAccount.Nonce {
 		return errors.New("invalid nonce")
 	}
 
-	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
+	if creatorAccount.CollectionNonce < txInfo.NftCollectionId {
+		return errors.New("nft collection id is less than account collection nonce")
+	}
+
+	if creatorAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
 		return errors.New("balance is not enough")
 	}
 
@@ -80,64 +80,80 @@ func (e *TransferNftExecutor) VerifyInputs() error {
 		return errors.New("invalid ToAccountNameHash")
 	}
 
-	nft := e.bc.nftMap[txInfo.NftIndex]
-	if nft.OwnerAccountIndex != txInfo.FromAccountIndex {
-		return errors.New("account is not owner of the nft")
-	}
-
-	err = txInfo.VerifySignature(fromAccount.PublicKey)
+	err = txInfo.VerifySignature(creatorAccount.PublicKey)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
-func (e *TransferNftExecutor) ApplyTransaction() error {
+func (e *MintNftExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
+	// add nft index to tx info
+	nextNftIndex, err := e.bc.getNextNftIndex()
+	if err != nil {
+		return err
+	}
+	txInfo.NftIndex = nextNftIndex
+
+	// generate tx details
 	e.tx.TxDetails = e.GenerateTxDetails()
 
-	fromAccount := bc.accountMap[txInfo.FromAccountIndex]
+	// apply changes
+	creatorAccount := bc.accountMap[txInfo.CreatorAccountIndex]
 	gasAccount := bc.accountMap[txInfo.GasAccountIndex]
-	nft := bc.nftMap[txInfo.NftIndex]
 
-	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
+	creatorAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(creatorAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-	fromAccount.Nonce++
-	nft.OwnerAccountIndex = txInfo.ToAccountIndex
+	creatorAccount.Nonce++
+
+	bc.nftMap[txInfo.NftIndex] = &nft.L2Nft{
+		NftIndex:            txInfo.NftIndex,
+		CreatorAccountIndex: txInfo.CreatorAccountIndex,
+		OwnerAccountIndex:   txInfo.ToAccountIndex,
+		NftContentHash:      txInfo.NftContentHash,
+		NftL1Address:        commonConstant.NilL1Address,
+		NftL1TokenId:        commonConstant.NilL1TokenId,
+		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
+		CollectionId:        txInfo.NftCollectionId,
+	}
 
 	stateCache := e.bc.stateCache
-	stateCache.pendingUpdateAccountIndexMap[txInfo.FromAccountIndex] = StateCachePending
+	stateCache.pendingUpdateAccountIndexMap[txInfo.CreatorAccountIndex] = StateCachePending
 	stateCache.pendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = StateCachePending
-	stateCache.pendingUpdateNftIndexMap[txInfo.NftIndex] = StateCachePending
+	stateCache.pendingNewNftIndexMap[txInfo.NftIndex] = StateCachePending
 	return nil
 }
 
-func (e *TransferNftExecutor) GeneratePubData() error {
+func (e *MintNftExecutor) GeneratePubData() error {
 	txInfo := e.txInfo
 
 	var buf bytes.Buffer
-	buf.WriteByte(uint8(commonTx.TxTypeTransferNft))
-	buf.Write(util.Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
+	buf.WriteByte(uint8(commonTx.TxTypeMintNft))
+	buf.Write(util.Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
 	buf.Write(util.Uint32ToBytes(uint32(txInfo.ToAccountIndex)))
 	buf.Write(util.Uint40ToBytes(txInfo.NftIndex))
 	buf.Write(util.Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
 	buf.Write(util.Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
 	packedFeeBytes, err := util.FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
 	if err != nil {
+		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed fee amount: %s", err.Error())
 		return err
 	}
 	buf.Write(packedFeeBytes)
+	buf.Write(util.Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
+	buf.Write(util.Uint16ToBytes(uint16(txInfo.NftCollectionId)))
 	chunk := util.SuffixPaddingBufToChunkSize(buf.Bytes())
 	buf.Reset()
 	buf.Write(chunk)
-	buf.Write(util.PrefixPaddingBufToChunkSize(txInfo.CallDataHash))
+	buf.Write(util.PrefixPaddingBufToChunkSize(common.FromHex(txInfo.NftContentHash)))
 	buf.Write(util.PrefixPaddingBufToChunkSize([]byte{}))
 	buf.Write(util.PrefixPaddingBufToChunkSize([]byte{}))
 	buf.Write(util.PrefixPaddingBufToChunkSize([]byte{}))
 	buf.Write(util.PrefixPaddingBufToChunkSize([]byte{}))
+
 	pubData := buf.Bytes()
 
 	stateCache := e.bc.stateCache
@@ -145,10 +161,10 @@ func (e *TransferNftExecutor) GeneratePubData() error {
 	return nil
 }
 
-func (e *TransferNftExecutor) UpdateTrees() error {
+func (e *MintNftExecutor) UpdateTrees() error {
 	txInfo := e.txInfo
 
-	accounts := []int64{txInfo.FromAccountIndex, txInfo.ToAccountIndex, txInfo.GasAccountIndex}
+	accounts := []int64{txInfo.CreatorAccountIndex, txInfo.ToAccountIndex, txInfo.GasAccountIndex}
 	assets := []int64{txInfo.GasFeeAssetId}
 
 	err := e.bc.updateAccountTree(accounts, assets)
@@ -165,7 +181,7 @@ func (e *TransferNftExecutor) UpdateTrees() error {
 	return nil
 }
 
-func (e *TransferNftExecutor) GetExecutedTx() (*tx.Tx, error) {
+func (e *MintNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 	txInfoBytes, err := json.Marshal(e.txInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
@@ -180,10 +196,9 @@ func (e *TransferNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 	return e.tx, nil
 }
 
-func (e *TransferNftExecutor) GenerateTxDetails() []*tx.TxDetail {
+func (e *MintNftExecutor) GenerateTxDetails() []*tx.TxDetail {
 	txInfo := e.txInfo
-	nftModel := e.bc.nftMap[txInfo.NftIndex]
-	fromAccount := e.bc.accountMap[txInfo.FromAccountIndex]
+	creatorAccount := e.bc.accountMap[txInfo.CreatorAccountIndex]
 	toAccount := e.bc.accountMap[txInfo.ToAccountIndex]
 	gasAccount := e.bc.accountMap[txInfo.GasAccountIndex]
 
@@ -195,9 +210,9 @@ func (e *TransferNftExecutor) GenerateTxDetails() []*tx.TxDetail {
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    commonAsset.GeneralAssetType,
-		AccountIndex: txInfo.FromAccountIndex,
-		AccountName:  fromAccount.AccountName,
-		Balance:      fromAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
+		AccountIndex: txInfo.CreatorAccountIndex,
+		AccountName:  creatorAccount.AccountName,
+		Balance:      creatorAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId,
 			ffmath.Neg(txInfo.GasFeeAssetAmount),
@@ -205,9 +220,9 @@ func (e *TransferNftExecutor) GenerateTxDetails() []*tx.TxDetail {
 			ZeroBigInt,
 		).String(),
 		Order:           order,
-		Nonce:           fromAccount.Nonce,
+		Nonce:           creatorAccount.Nonce,
 		AccountOrder:    accountOrder,
-		CollectionNonce: fromAccount.CollectionNonce,
+		CollectionNonce: creatorAccount.CollectionNonce,
 	})
 
 	// to account empty delta
@@ -232,25 +247,16 @@ func (e *TransferNftExecutor) GenerateTxDetails() []*tx.TxDetail {
 	})
 
 	// to account nft delta
-	oldNftInfo := &commonAsset.NftInfo{
-		NftIndex:            nftModel.NftIndex,
-		CreatorAccountIndex: nftModel.CreatorAccountIndex,
-		OwnerAccountIndex:   nftModel.OwnerAccountIndex,
-		NftContentHash:      nftModel.NftContentHash,
-		NftL1TokenId:        nftModel.NftL1TokenId,
-		NftL1Address:        nftModel.NftL1Address,
-		CreatorTreasuryRate: nftModel.CreatorTreasuryRate,
-		CollectionId:        nftModel.CollectionId,
-	}
+	oldNftInfo := commonAsset.EmptyNftInfo(txInfo.NftIndex)
 	newNftInfo := &commonAsset.NftInfo{
-		NftIndex:            nftModel.NftIndex,
-		CreatorAccountIndex: nftModel.CreatorAccountIndex,
+		NftIndex:            txInfo.NftIndex,
+		CreatorAccountIndex: txInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   txInfo.ToAccountIndex,
-		NftContentHash:      nftModel.NftContentHash,
-		NftL1TokenId:        nftModel.NftL1TokenId,
-		NftL1Address:        nftModel.NftL1Address,
-		CreatorTreasuryRate: nftModel.CreatorTreasuryRate,
-		CollectionId:        nftModel.CollectionId,
+		NftContentHash:      txInfo.NftContentHash,
+		NftL1TokenId:        commonConstant.NilL1TokenId,
+		NftL1Address:        commonConstant.NilL1Address,
+		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
+		CollectionId:        txInfo.NftCollectionId,
 	}
 	order++
 	txDetails = append(txDetails, &tx.TxDetail{
