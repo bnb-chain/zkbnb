@@ -32,7 +32,8 @@ import (
 )
 
 var (
-	ZeroBigInt = big.NewInt(0)
+	ZeroBigInt       = big.NewInt(0)
+	ZeroBigIntString = "0"
 )
 
 type ChainConfig struct {
@@ -128,6 +129,7 @@ type BlockChain struct {
 	liquidityTree     bsmt.SparseMerkleTree
 	nftTree           bsmt.SparseMerkleTree
 	accountAssetTrees []bsmt.SparseMerkleTree
+	treeCtx           *treedb.Context
 
 	chainConfig *ChainConfig
 	redisCache  dbcache.Cache
@@ -190,6 +192,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		logx.Error("setup tree db failed: ", err)
 		return nil, err
 	}
+	bc.treeCtx = treeCtx
 	bc.accountTree, bc.accountAssetTrees, err = tree.InitAccountTree(
 		bc.AccountModel,
 		bc.AccountHistoryModel,
@@ -580,14 +583,14 @@ func (bc *BlockChain) getNextAccountIndex() int64 {
 	return int64(len(bc.accountAssetTrees)) + 1
 }
 
-func (bc *BlockChain) getNextNftIndex() (int64, error) {
+func (bc *BlockChain) getNextNftIndex() int64 {
 	stateCache := bc.stateCache
 	if stateCache == nil || len(stateCache.pendingNewNftIndexMap) == 0 {
 		maxNftIndex, err := bc.L2NftModel.GetLatestNftIndex()
 		if err != nil {
-			return -1, err
+			panic("get latest nft index error: " + err.Error())
 		}
-		return maxNftIndex + 1, nil
+		return maxNftIndex + 1
 	}
 
 	maxNftIndex := int64(-1)
@@ -596,7 +599,7 @@ func (bc *BlockChain) getNextNftIndex() (int64, error) {
 			maxNftIndex = index
 		}
 	}
-	return maxNftIndex + 1, nil
+	return maxNftIndex + 1
 }
 
 func (bc *BlockChain) prepareAccountsAndAssets(accounts []int64, assets []int64) error {

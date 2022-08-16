@@ -82,12 +82,7 @@ func (e *TransferExecutor) VerifyInputs() error {
 		}
 	}
 
-	err = txInfo.VerifySignature(fromAccount.PublicKey)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return txInfo.VerifySignature(fromAccount.PublicKey)
 }
 
 func (e *TransferExecutor) ApplyTransaction() error {
@@ -96,15 +91,15 @@ func (e *TransferExecutor) ApplyTransaction() error {
 
 	e.tx.TxDetails = e.GenerateTxDetails()
 
-	fromAccountInfo := bc.accountMap[txInfo.FromAccountIndex]
-	toAccountInfo := bc.accountMap[txInfo.ToAccountIndex]
-	gasAccountInfo := bc.accountMap[txInfo.GasAccountIndex]
+	fromAccount := bc.accountMap[txInfo.FromAccountIndex]
+	toAccount := bc.accountMap[txInfo.ToAccountIndex]
+	gasAccount := bc.accountMap[txInfo.GasAccountIndex]
 
-	fromAccountInfo.AssetInfo[txInfo.AssetId].Balance = ffmath.Sub(fromAccountInfo.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
-	fromAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-	toAccountInfo.AssetInfo[txInfo.AssetId].Balance = ffmath.Add(toAccountInfo.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
-	gasAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-	fromAccountInfo.Nonce++
+	fromAccount.AssetInfo[txInfo.AssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
+	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
+	toAccount.AssetInfo[txInfo.AssetId].Balance = ffmath.Add(toAccount.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
+	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
+	fromAccount.Nonce++
 
 	stateCache := e.bc.stateCache
 	stateCache.pendingUpdateAccountIndexMap[txInfo.FromAccountIndex] = StateCachePending
@@ -156,16 +151,14 @@ func (e *TransferExecutor) UpdateTrees() error {
 }
 
 func (e *TransferExecutor) GetExecutedTx() (*tx.Tx, error) {
-	bc := e.bc
-	txInfo := e.txInfo
-	txInfoBytes, err := json.Marshal(txInfo)
+	txInfoBytes, err := json.Marshal(e.txInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
 		return nil, errors.New("unmarshal tx failed")
 	}
-	stateRoot := bc.getStateRoot()
-	e.tx.BlockHeight = bc.currentBlock.BlockHeight
-	e.tx.StateRoot = stateRoot
+
+	e.tx.BlockHeight = e.bc.currentBlock.BlockHeight
+	e.tx.StateRoot = e.bc.getStateRoot()
 	e.tx.TxInfo = string(txInfoBytes)
 	e.tx.TxStatus = tx.StatusPending
 	return e.tx, nil

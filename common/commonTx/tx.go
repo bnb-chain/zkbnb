@@ -41,7 +41,9 @@ type (
 )
 
 type RegisterZnsTxInfo struct {
-	TxType          uint8
+	TxType uint8
+
+	// Get from layer1 events.
 	AccountIndex    int64
 	AccountName     string
 	AccountNameHash []byte
@@ -58,7 +60,9 @@ func ParseRegisterZnsTxInfo(txInfoStr string) (txInfo *RegisterZnsTxInfo, err er
 }
 
 type CreatePairTxInfo struct {
-	TxType               uint8
+	TxType uint8
+
+	// Get from layer1 events.
 	PairIndex            int64
 	AssetAId             int64
 	AssetBId             int64
@@ -77,7 +81,9 @@ func ParseCreatePairTxInfo(txInfoStr string) (txInfo *CreatePairTxInfo, err erro
 }
 
 type UpdatePairRateTxInfo struct {
-	TxType               uint8
+	TxType uint8
+
+	// Get from layer1 events.
 	PairIndex            int64
 	FeeRate              int64
 	TreasuryAccountIndex int64
@@ -94,11 +100,15 @@ func ParseUpdatePairRateTxInfo(txInfoStr string) (txInfo *UpdatePairRateTxInfo, 
 }
 
 type DepositTxInfo struct {
-	TxType          uint8
-	AccountIndex    int64
+	TxType uint8
+
+	// Get from layer1 events.
 	AccountNameHash []byte
 	AssetId         int64
 	AssetAmount     *big.Int
+
+	// Set by layer2.
+	AccountIndex int64
 }
 
 func ParseDepositTxInfo(txInfoStr string) (txInfo *DepositTxInfo, err error) {
@@ -111,16 +121,22 @@ func ParseDepositTxInfo(txInfoStr string) (txInfo *DepositTxInfo, err error) {
 }
 
 type DepositNftTxInfo struct {
-	TxType              uint8
-	AccountIndex        int64
-	NftIndex            int64
-	NftL1Address        string
+	TxType uint8
+
+	// Get from layer1 events.
+	AccountNameHash     []byte
 	CreatorAccountIndex int64
 	CreatorTreasuryRate int64
-	NftContentHash      []byte
+	NftL1Address        string
 	NftL1TokenId        *big.Int
-	AccountNameHash     []byte
+	NftContentHash      []byte
 	CollectionId        int64
+
+	// New nft set by layer2, otherwise get from layer1.
+	NftIndex int64
+
+	// Set by layer2.
+	AccountIndex int64
 }
 
 func ParseDepositNftTxInfo(txInfoStr string) (txInfo *DepositNftTxInfo, err error) {
@@ -133,11 +149,15 @@ func ParseDepositNftTxInfo(txInfoStr string) (txInfo *DepositNftTxInfo, err erro
 }
 
 type FullExitTxInfo struct {
-	TxType          uint8
-	AccountIndex    int64
+	TxType uint8
+
+	// Get from layer1 events.
 	AccountNameHash []byte
 	AssetId         int64
-	AssetAmount     *big.Int
+
+	// Set by layer2.
+	AccountIndex int64
+	AssetAmount  *big.Int
 }
 
 func ParseFullExitTxInfo(txInfoStr string) (txInfo *FullExitTxInfo, err error) {
@@ -150,17 +170,21 @@ func ParseFullExitTxInfo(txInfoStr string) (txInfo *FullExitTxInfo, err error) {
 }
 
 type FullExitNftTxInfo struct {
-	TxType                 uint8
+	TxType uint8
+
+	// Get from layer1 events.
+	NftIndex        int64
+	AccountNameHash []byte
+
+	// Set by layer2.
 	AccountIndex           int64
 	CreatorAccountIndex    int64
 	CreatorTreasuryRate    int64
-	NftIndex               int64
-	CollectionId           int64
-	NftL1Address           string
-	AccountNameHash        []byte
 	CreatorAccountNameHash []byte
-	NftContentHash         []byte
+	NftL1Address           string
 	NftL1TokenId           *big.Int
+	NftContentHash         []byte
+	CollectionId           int64
 }
 
 func ParseFullExitNftTxInfo(txInfoStr string) (txInfo *FullExitNftTxInfo, err error) {
