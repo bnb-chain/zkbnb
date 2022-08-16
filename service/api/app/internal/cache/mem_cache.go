@@ -10,7 +10,6 @@ import (
 
 	gocache "github.com/patrickmn/go-cache"
 
-	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/asset"
 	"github.com/bnb-chain/zkbas/common/model/block"
@@ -21,22 +20,22 @@ const (
 	cacheDefaultExpiration    = time.Millisecond * 500 //gocache default expiration
 	cacheDefaultPurgeInterval = time.Second * 60       // gocache purge interval
 
-	AccountIndexKeyPrefix      = "i:" //key for cache: accountIndex -> accountName
-	AccountNameKeyPrefix       = "n:" //key for cache: accountName -> accountIndex
-	AccountPkKeyPrefix         = "k:" //key for cache: accountPk -> accountIndex
-	LatestAccountKeyPrefix     = "l:" //key for cache: accountIndex -> latest account (considering remove it)
-	AccountByIndexKeyPrefix    = "a:" //key for cache: accountIndex -> account
-	AccountCountKeyPrefix      = "ac" //key for cache: total account count
-	BlockByHeightKeyPrefix     = "h:" //key for cache: blockHeight -> block
-	BlockByCommitmentKeyPrefix = "c:" //key for cache: blockCommitment -> block
-	BlockCountKeyPrefix        = "bc" //key for cache: total block count
-	TxByHashKeyPrefix          = "h:" //key for cache: txHash -> tx
-	TxCountKeyPrefix           = "tc" //key for cache: total tx count
-	AssetCountKeyKeyPrefix     = "AC" //key for cache: total asset count
-	AssetByIdKeyPrefix         = "I:" //key for cache: assetId -> asset
-	AssetBySymbolKeyPrefix     = "S:" //key for cache: assetSymbol -> asset
-	PriceKeyPrefix             = "p:" //key for cache: symbol -> price
-	SysConfigKeyPrefix         = "s:" //key for cache: configName -> sysConfig
+	AccountIndexNameKeyPrefix  = "in:" //key for cache: accountIndex -> accountName
+	AccountIndexPkKeyPrefix    = "ip:" //key for cache: accountIndex -> accountPk
+	AccountNameKeyPrefix       = "n:"  //key for cache: accountName -> accountIndex
+	AccountPkKeyPrefix         = "k:"  //key for cache: accountPk -> accountIndex
+	AccountByIndexKeyPrefix    = "a:"  //key for cache: accountIndex -> account
+	AccountCountKeyPrefix      = "ac"  //key for cache: total account count
+	BlockByHeightKeyPrefix     = "h:"  //key for cache: blockHeight -> block
+	BlockByCommitmentKeyPrefix = "c:"  //key for cache: blockCommitment -> block
+	BlockCountKeyPrefix        = "bc"  //key for cache: total block count
+	TxByHashKeyPrefix          = "h:"  //key for cache: txHash -> tx
+	TxCountKeyPrefix           = "tc"  //key for cache: total tx count
+	AssetCountKeyKeyPrefix     = "AC"  //key for cache: total asset count
+	AssetByIdKeyPrefix         = "I:"  //key for cache: assetId -> asset
+	AssetBySymbolKeyPrefix     = "S:"  //key for cache: assetSymbol -> asset
+	PriceKeyPrefix             = "p:"  //key for cache: symbol -> price
+	SysConfigKeyPrefix         = "s:"  //key for cache: configName -> sysConfig
 )
 
 type fallback func() (interface{}, error)
@@ -79,7 +78,8 @@ func (m *MemCache) getWithSet(key string, duration time.Duration, f fallback) (i
 }
 
 func (m *MemCache) setAccount(accountIndex int64, accountName, accountPk string) {
-	m.goCache.Set(fmt.Sprintf("%s%d", AccountIndexKeyPrefix, accountIndex), accountName, gocache.NoExpiration)
+	m.goCache.Set(fmt.Sprintf("%s%d", AccountIndexNameKeyPrefix, accountIndex), accountName, gocache.NoExpiration)
+	m.goCache.Set(fmt.Sprintf("%s%d", AccountIndexPkKeyPrefix, accountIndex), accountPk, gocache.NoExpiration)
 	m.goCache.Set(fmt.Sprintf("%s%s", AccountNameKeyPrefix, accountName), accountIndex, gocache.NoExpiration)
 	m.goCache.Set(fmt.Sprintf("%s%s", AccountPkKeyPrefix, accountPk), accountIndex, gocache.NoExpiration)
 }
@@ -130,7 +130,7 @@ func (m *MemCache) GetAccountIndexByPk(accountPk string) (int64, error) {
 }
 
 func (m *MemCache) GetAccountNameByIndex(accountIndex int64) (string, error) {
-	name, found := m.goCache.Get(fmt.Sprintf("%s%d", AccountIndexKeyPrefix, accountIndex))
+	name, found := m.goCache.Get(fmt.Sprintf("%s%d", AccountIndexNameKeyPrefix, accountIndex))
 	if found {
 		return name.(string), nil
 	}
@@ -142,13 +142,17 @@ func (m *MemCache) GetAccountNameByIndex(accountIndex int64) (string, error) {
 	return account.AccountName, nil
 }
 
-func (m *MemCache) GetLatestAccountWithFallback(accountIndex int64, f fallback) (*commonAsset.AccountInfo, error) {
-	key := fmt.Sprintf("%s%d", LatestAccountKeyPrefix, accountIndex)
-	a, err := m.getWithSet(key, m.accountExpiration, f)
-	if err != nil {
-		return nil, err
+func (m *MemCache) GetAccountPkByIndex(accountIndex int64) (string, error) {
+	pk, found := m.goCache.Get(fmt.Sprintf("%s%d", AccountIndexPkKeyPrefix, accountIndex))
+	if found {
+		return pk.(string), nil
 	}
-	return a.(*commonAsset.AccountInfo), nil
+	account, err := m.accountModel.GetAccountByAccountIndex(accountIndex)
+	if err != nil {
+		return "", err
+	}
+	m.setAccount(account.AccountIndex, account.AccountName, account.PublicKey)
+	return account.PublicKey, nil
 }
 
 func (m *MemCache) GetAccountWithFallback(accountIndex int64, f fallback) (*account.Account, error) {
