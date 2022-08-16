@@ -44,7 +44,7 @@ func (s *cancelOfferTxSender) SendTx(rawTxInfo string) (txId string, err error) 
 		return "", errorcode.AppErrInvalidTx
 	}
 
-	if err := legendTxTypes.ValidateCancelOfferTxInfo(txInfo); err != nil {
+	if err := txInfo.Validate(); err != nil {
 		logx.Errorf("cannot pass static check, err: %s", err.Error())
 		return "", errorcode.AppErrInvalidTxField.RefineError(err)
 	}
@@ -56,7 +56,19 @@ func (s *cancelOfferTxSender) SendTx(rawTxInfo string) (txId string, err error) 
 		return "", errorcode.AppErrInvalidTxField.RefineError("invalid ExpiredAt")
 	}
 
-	//TODO: check signature
+	//check signature
+	accountPk, err := s.svcCtx.MemCache.GetAccountPkByIndex(txInfo.AccountIndex)
+	if err != nil {
+		if err != nil {
+			if err == errorcode.DbErrNotFound {
+				return "", errorcode.AppErrInvalidTxField.RefineError("unknown AccountIndex")
+			}
+			return "", errorcode.AppErrInternal
+		}
+	}
+	if err := txInfo.VerifySignature(accountPk); err != nil {
+		return "", errorcode.AppErrInvalidTxField.RefineError("invalid Signature")
+	}
 
 	fromAccount, err := s.svcCtx.StateFetcher.GetLatestAccount(s.ctx, txInfo.AccountIndex)
 	if err != nil {

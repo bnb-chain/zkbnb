@@ -2,7 +2,9 @@ package state
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -19,6 +21,25 @@ import (
 )
 
 //go:generate mockgen -source api.go -destination api_mock.go -package state
+
+//TODO: replace with committer code when merge
+const (
+	AccountKeyPrefix   = "cache:account_"
+	LiquidityKeyPrefix = "cache:liquidity_"
+	NftKeyPrefix       = "cache:nft_"
+)
+
+func AccountKeyByIndex(accountIndex int64) string {
+	return AccountKeyPrefix + fmt.Sprintf("%d", accountIndex)
+}
+
+func LiquidityKeyByIndex(pairIndex int64) string {
+	return LiquidityKeyPrefix + fmt.Sprintf("%d", pairIndex)
+}
+
+func NftKeyByIndex(nftIndex int64) string {
+	return NftKeyPrefix + fmt.Sprintf("%d", nftIndex)
+}
 
 // Fetcher will fetch the latest states (account,nft,liquidity) from redis, which is written by committer;
 // and if the required data cannot be found then database will be used.
@@ -57,22 +78,33 @@ type fetcher struct {
 	nftModel             nft.L2NftModel
 }
 
-func (m *fetcher) GetLatestAccount(ctx context.Context, accountIndex int64) (*commonAsset.AccountInfo, error) {
-	oAccountInfo, err := m.accountModel.GetAccountByAccountIndex(accountIndex)
+func (f *fetcher) GetLatestAccount(ctx context.Context, accountIndex int64) (*commonAsset.AccountInfo, error) {
+	var formatAccount *commonAsset.AccountInfo
+
+	redisAccount, err := f.redisConnection.Get(AccountKeyByIndex(accountIndex))
 	if err != nil {
-		return nil, err
+		account, err := f.accountModel.GetAccountByAccountIndex(accountIndex)
+		if err != nil {
+			return nil, err
+		}
+		formatAccount, err = commonAsset.ToFormatAccountInfo(account)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		err = json.Unmarshal([]byte(redisAccount), &formatAccount)
+		if err != nil {
+			return nil, err
+		}
 	}
-	accountInfo, err := commonAsset.ToFormatAccountInfo(oAccountInfo)
-	if err != nil {
-		return nil, err
-	}
-	mempoolTxs, err := m.mempoolModel.GetPendingMempoolTxsByAccountIndex(accountIndex)
+
+	mempoolTxs, err := f.mempoolModel.GetPendingMempoolTxsByAccountIndex(accountIndex)
 	if err != nil && err != errorcode.DbErrNotFound {
 		return nil, err
 	}
 	for _, mempoolTx := range mempoolTxs {
 		if mempoolTx.Nonce != commonConstant.NilNonce {
-			accountInfo.Nonce = mempoolTx.Nonce
+			formatAccount.Nonce = mempoolTx.Nonce
 		}
 		for _, mempoolTxDetail := range mempoolTx.MempoolDetails {
 			if mempoolTxDetail.AccountIndex != accountIndex {
@@ -80,8 +112,8 @@ func (m *fetcher) GetLatestAccount(ctx context.Context, accountIndex int64) (*co
 			}
 			switch mempoolTxDetail.AssetType {
 			case commonAsset.GeneralAssetType:
-				if accountInfo.AssetInfo[mempoolTxDetail.AssetId] == nil {
-					accountInfo.AssetInfo[mempoolTxDetail.AssetId] = &commonAsset.AccountAsset{
+				if formatAccount.AssetInfo[mempoolTxDetail.AssetId] == nil {
+					formatAccount.AssetInfo[mempoolTxDetail.AssetId] = &commonAsset.AccountAsset{
 						AssetId:                  mempoolTxDetail.AssetId,
 						Balance:                  util.ZeroBigInt,
 						LpAmount:                 util.ZeroBigInt,
@@ -89,16 +121,16 @@ func (m *fetcher) GetLatestAccount(ctx context.Context, accountIndex int64) (*co
 					}
 				}
 				nBalance, err := commonAsset.ComputeNewBalance(commonAsset.GeneralAssetType,
-					accountInfo.AssetInfo[mempoolTxDetail.AssetId].String(), mempoolTxDetail.BalanceDelta)
+					formatAccount.AssetInfo[mempoolTxDetail.AssetId].String(), mempoolTxDetail.BalanceDelta)
 				if err != nil {
 					return nil, err
 				}
-				accountInfo.AssetInfo[mempoolTxDetail.AssetId], err = commonAsset.ParseAccountAsset(nBalance)
+				formatAccount.AssetInfo[mempoolTxDetail.AssetId], err = commonAsset.ParseAccountAsset(nBalance)
 				if err != nil {
 					return nil, err
 				}
 			case commonAsset.CollectionNonceAssetType:
-				accountInfo.CollectionNonce, err = strconv.ParseInt(mempoolTxDetail.BalanceDelta, 10, 64)
+				formatAccount.CollectionNonce, err = strconv.ParseInt(mempoolTxDetail.BalanceDelta, 10, 64)
 				if err != nil {
 					return nil, err
 				}
@@ -109,33 +141,42 @@ func (m *fetcher) GetLatestAccount(ctx context.Context, accountIndex int64) (*co
 			}
 		}
 	}
-	accountInfo.Nonce = accountInfo.Nonce + 1
-	accountInfo.CollectionNonce = accountInfo.CollectionNonce + 1
-	return accountInfo, nil
-
-	//TODO: from redis
+	formatAccount.Nonce = formatAccount.Nonce + 1
+	formatAccount.CollectionNonce = formatAccount.CollectionNonce + 1
+	return formatAccount, nil
 }
 
-func (m *fetcher) GetLatestLiquidity(ctx context.Context, pairIndex int64) (liquidityInfo *commonAsset.LiquidityInfo, err error) {
-	dbLiquidityInfo, err := m.liquidityModel.GetLiquidityByPairIndex(pairIndex)
+func (f *fetcher) GetLatestLiquidity(ctx context.Context, pairIndex int64) (liquidityInfo *commonAsset.LiquidityInfo, err error) {
+	var liquidity *liquidity.Liquidity
+
+	redisLiquidity, err := f.redisConnection.Get(LiquidityKeyByIndex(pairIndex))
 	if err != nil {
-		return nil, err
+		liquidity, err = f.liquidityModel.GetLiquidityByPairIndex(pairIndex)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		err = json.Unmarshal([]byte(redisLiquidity), &liquidity)
+		if err != nil {
+			return nil, err
+		}
 	}
-	mempoolTxs, err := m.mempoolModel.GetPendingLiquidityTxs()
+
+	mempoolTxs, err := f.mempoolModel.GetPendingLiquidityTxs()
 	if err != nil && err != errorcode.DbErrNotFound {
 		return nil, err
 	}
 	liquidityInfo, err = commonAsset.ConstructLiquidityInfo(
 		pairIndex,
-		dbLiquidityInfo.AssetAId,
-		dbLiquidityInfo.AssetA,
-		dbLiquidityInfo.AssetBId,
-		dbLiquidityInfo.AssetB,
-		dbLiquidityInfo.LpAmount,
-		dbLiquidityInfo.KLast,
-		dbLiquidityInfo.FeeRate,
-		dbLiquidityInfo.TreasuryAccountIndex,
-		dbLiquidityInfo.TreasuryRate,
+		liquidity.AssetAId,
+		liquidity.AssetA,
+		liquidity.AssetBId,
+		liquidity.AssetB,
+		liquidity.LpAmount,
+		liquidity.KLast,
+		liquidity.FeeRate,
+		liquidity.TreasuryAccountIndex,
+		liquidity.TreasuryRate,
 	)
 	if err != nil {
 		logx.Errorf("[ConstructLiquidityInfo] err: %s", err.Error())
@@ -157,20 +198,30 @@ func (m *fetcher) GetLatestLiquidity(ctx context.Context, pairIndex int64) (liqu
 		}
 	}
 	return liquidityInfo, nil
-	//TODO: from redis
 }
 
-func (m *fetcher) GetLatestNft(ctx context.Context, nftIndex int64) (*commonAsset.NftInfo, error) {
-	dbNftInfo, err := m.nftModel.GetNftAsset(nftIndex)
+func (f *fetcher) GetLatestNft(ctx context.Context, nftIndex int64) (*commonAsset.NftInfo, error) {
+	var nft *nft.L2Nft
+
+	redisNft, err := f.redisConnection.Get(NftKeyByIndex(nftIndex))
 	if err != nil {
-		return nil, err
+		nft, err = f.nftModel.GetNftAsset(nftIndex)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		err = json.Unmarshal([]byte(redisNft), &nft)
+		if err != nil {
+			return nil, err
+		}
 	}
-	mempoolTxs, err := m.mempoolModel.GetPendingNftTxs()
+
+	mempoolTxs, err := f.mempoolModel.GetPendingNftTxs()
 	if err != nil && err != errorcode.DbErrNotFound {
 		return nil, err
 	}
-	nftInfo := commonAsset.ConstructNftInfo(nftIndex, dbNftInfo.CreatorAccountIndex, dbNftInfo.OwnerAccountIndex, dbNftInfo.NftContentHash,
-		dbNftInfo.NftL1TokenId, dbNftInfo.NftL1Address, dbNftInfo.CreatorTreasuryRate, dbNftInfo.CollectionId)
+	nftInfo := commonAsset.ConstructNftInfo(nftIndex, nft.CreatorAccountIndex, nft.OwnerAccountIndex, nft.NftContentHash,
+		nft.NftL1TokenId, nft.NftL1Address, nft.CreatorTreasuryRate, nft.CollectionId)
 	for _, mempoolTx := range mempoolTxs {
 		for _, txDetail := range mempoolTx.MempoolDetails {
 			if txDetail.AssetType != commonAsset.NftAssetType || txDetail.AssetId != nftInfo.NftIndex {
@@ -190,8 +241,8 @@ func (m *fetcher) GetLatestNft(ctx context.Context, nftIndex int64) (*commonAsse
 	//TODO: from redis
 }
 
-func (m *fetcher) GetLatestOfferId(ctx context.Context, accountIndex int64) (int64, error) {
-	lastOfferId, err := m.offerModel.GetLatestOfferId(accountIndex)
+func (f *fetcher) GetLatestOfferId(ctx context.Context, accountIndex int64) (int64, error) {
+	lastOfferId, err := f.offerModel.GetLatestOfferId(accountIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return 0, nil

@@ -35,27 +35,20 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 		}
 	case "name":
 		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByName(req.Value)
-		if err != nil {
-			if err == errorcode.DbErrNotFound {
-				return nil, errorcode.AppErrNotFound
-			}
-			return nil, errorcode.AppErrInternal
-		}
 	case "pk":
 		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByPk(req.Value)
-		if err != nil {
-			if err == errorcode.DbErrNotFound {
-				return nil, errorcode.AppErrNotFound
-			}
-			return nil, errorcode.AppErrInternal
-		}
 	default:
 		return nil, errorcode.AppErrInvalidParam.RefineError("param by should be index|name|pk")
 	}
 
-	account, err := l.svcCtx.MemCache.GetLatestAccountWithFallback(accountIndex, func() (interface{}, error) {
-		return l.svcCtx.StateFetcher.GetLatestAccount(l.ctx, accountIndex)
-	})
+	if err != nil {
+		if err == errorcode.DbErrNotFound {
+			return nil, errorcode.AppErrNotFound
+		}
+		return nil, errorcode.AppErrInternal
+	}
+
+	account, err := l.svcCtx.StateFetcher.GetLatestAccount(l.ctx, accountIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound

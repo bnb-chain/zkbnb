@@ -42,7 +42,7 @@ func (s *atomicMatchTxSender) SendTx(rawTxInfo string) (txId string, err error) 
 		return "", errorcode.AppErrInvalidTx
 	}
 
-	if err := legendTxTypes.ValidateAtomicMatchTxInfo(txInfo); err != nil {
+	if err := txInfo.Validate(); err != nil {
 		logx.Errorf("cannot pass static check, err: %s", err.Error())
 		return "", errorcode.AppErrInvalidTxField.RefineError(err)
 	}
@@ -54,7 +54,46 @@ func (s *atomicMatchTxSender) SendTx(rawTxInfo string) (txId string, err error) 
 		return "", errorcode.AppErrInvalidTxField.RefineError("invalid ExpiredAt")
 	}
 
-	//TODO: check signature
+	//check signature
+	accountPk, err := s.svcCtx.MemCache.GetAccountPkByIndex(txInfo.AccountIndex)
+	if err != nil {
+		if err != nil {
+			if err == errorcode.DbErrNotFound {
+				return "", errorcode.AppErrInvalidTxField.RefineError("unknown FromAccountIndex")
+			}
+			return "", errorcode.AppErrInternal
+		}
+	}
+	if err := txInfo.VerifySignature(accountPk); err != nil {
+		logx.Errorf("cannot pass static check, err: %s", err.Error())
+		return "", errorcode.AppErrInvalidTxField.RefineError(err)
+	}
+
+	buyerPk, err := s.svcCtx.MemCache.GetAccountPkByIndex(txInfo.BuyOffer.AccountIndex)
+	if err != nil {
+		if err != nil {
+			if err == errorcode.DbErrNotFound {
+				return "", errorcode.AppErrInvalidTxField.RefineError("unknown AccountIndex of BuyOffer")
+			}
+			return "", errorcode.AppErrInternal
+		}
+	}
+	if err := txInfo.BuyOffer.VerifySignature(buyerPk); err != nil {
+		return "", errorcode.AppErrInvalidTxField.RefineError("invalid Signature for BuyOffer")
+	}
+
+	sellerPk, err := s.svcCtx.MemCache.GetAccountPkByIndex(txInfo.SellOffer.AccountIndex)
+	if err != nil {
+		if err != nil {
+			if err == errorcode.DbErrNotFound {
+				return "", errorcode.AppErrInvalidTxField.RefineError("unknown AccountIndex of SellOffer")
+			}
+			return "", errorcode.AppErrInternal
+		}
+	}
+	if err := txInfo.SellOffer.VerifySignature(sellerPk); err != nil {
+		return "", errorcode.AppErrInvalidTxField.RefineError("invalid Signature for SellOffer")
+	}
 
 	//check buy offer and sell offer
 	if txInfo.BuyOffer.ExpiredAt < now || txInfo.SellOffer.ExpiredAt < now {
