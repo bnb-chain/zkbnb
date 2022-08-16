@@ -11,7 +11,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
-	"github.com/bnb-chain/zkbas/common/model/sysconfig"
+	"github.com/bnb-chain/zkbas/common/model/sysConfig"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 )
 
@@ -37,8 +37,8 @@ type (
 	Liquidity        = liquidity.Liquidity
 	LiquidityHistory = liquidity.LiquidityHistory
 
-	SysConfigModel = sysconfig.SysConfigModel
-	MemPoolModel   = mempool.MemPoolModel
+	SysConfigModel = sysConfig.SysConfigModel
+	MemPoolModel   = mempool.MempoolModel
 	BlockModel     = block.BlockModel
 
 	L2NftModel        = nft.L2NftModel

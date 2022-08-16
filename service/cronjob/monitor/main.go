@@ -33,7 +33,7 @@ func main() {
 	if _, err := cronjob.AddFunc("@every 10s", func() {
 		err := m.MonitorGenericBlocks()
 		if err != nil {
-			logx.Errorf("m blocks error, err=%s", err.Error())
+			logx.Errorf("monitor blocks error, err=%s", err.Error())
 		}
 	}); err != nil {
 		panic(err)
@@ -43,7 +43,7 @@ func main() {
 	if _, err := cronjob.AddFunc("@every 10s", func() {
 		err := m.MonitorPriorityRequests()
 		if err != nil {
-			logx.Errorf("m priority requests error, err=%s", err.Error())
+			logx.Errorf("monitor priority requests error, err=%s", err.Error())
 		}
 	}); err != nil {
 		panic(err)
@@ -53,13 +53,13 @@ func main() {
 	if _, err := cronjob.AddFunc("@every 10s", func() {
 		err := m.MonitorGovernanceBlocks()
 		if err != nil {
-			logx.Errorf("m governance blocks error, err=%s", err.Error())
+			logx.Errorf("monitor governance blocks error, err=%s", err.Error())
 		}
 
 	}); err != nil {
 		panic(err)
 	}
 	cronjob.Start()
-	logx.Info("Starting m cronjob ...")
+	logx.Info("Starting monitor cronjob ...")
 	select {}
 }

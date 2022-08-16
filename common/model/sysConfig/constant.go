@@ -15,14 +15,8 @@
  *
  */
 
-package blockForProof
+package sysConfig
 
 const (
-	StatusPublished = iota
-	StatusReceived
-	StatusVerified
-)
-
-const (
-	BlockForProofTableName = `block_for_proof`
+	TableName = `sys_config`
 )
