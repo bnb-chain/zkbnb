@@ -41,7 +41,7 @@ func (l *GetAccountByNameLogic) GetAccountByName(req *types.ReqGetAccountByName)
 	}
 
 	account, err := l.svcCtx.MemCache.GetLatestAccountWithFallback(accountIndex, func() (interface{}, error) {
-		return l.svcCtx.StateFetcher.GetLatestAccountInfo(l.ctx, accountIndex)
+		return l.svcCtx.StateFetcher.GetLatestAccount(l.ctx, accountIndex)
 	})
 	if err != nil {
 		if err == errorcode.DbErrNotFound {

@@ -2,22 +2,40 @@ package sendrawtx
 
 import (
 	"context"
-	"encoding/json"
+	"time"
 
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
-	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/fetcher/state"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 )
 
-func SendTransferNftTx(ctx context.Context, svcCtx *svc.ServiceContext, stateFetcher state.Fetcher, rawTxInfo string) (txId string, err error) {
+type transferNftTxSender struct {
+	txType          int
+	ctx             context.Context
+	svcCtx          *svc.ServiceContext
+	gasChecker      GasChecker
+	nonceChecker    NonceChecker
+	mempoolTxSender MempoolTxSender
+}
+
+func NewTransferNftTxSender(ctx context.Context, svcCtx *svc.ServiceContext,
+	gasChecker *gasChecker, nonceChecker *nonceChecker, sender *mempoolTxSender) *transferNftTxSender {
+	return &transferNftTxSender{
+		txType:          commonTx.TxTypeTransferNft,
+		ctx:             ctx,
+		svcCtx:          svcCtx,
+		gasChecker:      gasChecker,
+		nonceChecker:    nonceChecker,
+		mempoolTxSender: sender,
+	}
+}
+func (s *transferNftTxSender) SendTx(rawTxInfo string) (txId string, err error) {
 	txInfo, err := commonTx.ParseTransferNftTxInfo(rawTxInfo)
 	if err != nil {
 		logx.Errorf("cannot parse tx err: %s", err.Error())
@@ -29,14 +47,33 @@ func SendTransferNftTx(ctx context.Context, svcCtx *svc.ServiceContext, stateFet
 		return "", errorcode.AppErrInvalidTxField.RefineError(err)
 	}
 
-	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, svcCtx.SysConfigModel); err != nil {
-		return "", err
+	//check expire time
+	now := time.Now().UnixMilli()
+	if txInfo.ExpiredAt < now {
+		logx.Errorf("invalid ExpiredAt")
+		return "", errorcode.AppErrInvalidTxField.RefineError("invalid ExpiredAt")
 	}
 
-	var (
-		accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
-	)
-	accountInfoMap[txInfo.FromAccountIndex], err = stateFetcher.GetLatestAccountInfo(ctx, txInfo.FromAccountIndex)
+	//TODO: check signature
+
+	// check to account
+	toAccount, err := s.svcCtx.MemCache.GetAccountWithFallback(txInfo.ToAccountIndex, func() (interface{}, error) {
+		return s.svcCtx.AccountModel.GetAccountByAccountIndex(txInfo.ToAccountIndex)
+	})
+	if err != nil {
+		if err == errorcode.DbErrNotFound {
+			return "", errorcode.AppErrInvalidTxField.RefineError("invalid ToAccountIndex")
+		}
+		logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.ToAccountIndex, err.Error())
+		return "", errorcode.AppErrInternal
+	}
+	if toAccount.AccountNameHash != txInfo.ToAccountNameHash {
+		logx.Errorf("invalid account name hash, expected: %s, actual: %s", toAccount.AccountNameHash, txInfo.ToAccountNameHash)
+		return "", errorcode.AppErrInvalidTxField.RefineError("invalid ToAccountNameHash")
+	}
+
+	// check from account
+	fromAccount, err := s.svcCtx.StateFetcher.GetLatestAccount(s.ctx, txInfo.FromAccountIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return "", errorcode.AppErrInvalidTxField.RefineError("invalid FromAccountIndex")
@@ -44,32 +81,8 @@ func SendTransferNftTx(ctx context.Context, svcCtx *svc.ServiceContext, stateFet
 		logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.FromAccountIndex, err.Error())
 		return "", errorcode.AppErrInternal
 	}
-	if accountInfoMap[txInfo.ToAccountIndex] == nil {
-		accountInfoMap[txInfo.ToAccountIndex], err = stateFetcher.GetBasicAccountInfo(ctx, txInfo.ToAccountIndex)
-		if err != nil {
-			if err == errorcode.DbErrNotFound {
-				return "", errorcode.AppErrInvalidTxField.RefineError("invalid ToAccountIndex")
-			}
-			logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.ToAccountIndex, err.Error())
-			return "", errorcode.AppErrInternal
-		}
-	}
-	if accountInfoMap[txInfo.ToAccountIndex].AccountNameHash != txInfo.ToAccountNameHash {
-		logx.Errorf("invalid account name hash, expected: %s, actual: %s", accountInfoMap[txInfo.ToAccountIndex].AccountNameHash, txInfo.ToAccountNameHash)
-		return "", errorcode.AppErrInvalidTxField.RefineError("invalid ToAccountNameHash")
-	}
-	if accountInfoMap[txInfo.GasAccountIndex] == nil {
-		accountInfoMap[txInfo.GasAccountIndex], err = stateFetcher.GetBasicAccountInfo(ctx, txInfo.GasAccountIndex)
-		if err != nil {
-			if err == errorcode.DbErrNotFound {
-				return "", errorcode.AppErrInvalidTxField.RefineError("invalid GasAccountIndex")
-			}
-			logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.GasAccountIndex, err.Error())
-			return "", errorcode.AppErrInternal
-		}
-	}
 
-	nftInfo, err := stateFetcher.GetLatestNftInfo(ctx, txInfo.NftIndex)
+	nft, err := s.svcCtx.StateFetcher.GetLatestNft(s.ctx, txInfo.NftIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return "", errorcode.AppErrInvalidTxField.RefineError("invalid NftIndex")
@@ -77,50 +90,38 @@ func SendTransferNftTx(ctx context.Context, svcCtx *svc.ServiceContext, stateFet
 		logx.Errorf("fail to get nft info: %d, err: %s", txInfo.NftIndex, err.Error())
 		return "", err
 	}
-	if nftInfo.OwnerAccountIndex != txInfo.FromAccountIndex {
+	if nft.OwnerAccountIndex != txInfo.FromAccountIndex {
 		logx.Errorf("not nft owner")
 		return "", errorcode.AppErrInvalidTxField.RefineError("not nft owner")
 	}
 
-	var (
-		txDetails []*mempool.MempoolTxDetail
-	)
-	// verify tx
-	txDetails, err = txVerification.VerifyTransferNftTxInfo(
-		accountInfoMap,
-		nftInfo,
-		txInfo,
-	)
-	if err != nil {
-		return "", errorcode.AppErrVerification.RefineError(err)
+	//check gas
+	if err := s.gasChecker.CheckGas(fromAccount, txInfo.GasAccountIndex, txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount); err != nil {
+		return "", errorcode.AppErrInvalidTxField.RefineError(err.Error())
 	}
 
-	txInfoBytes, err := json.Marshal(txInfo)
-	if err != nil {
-		logx.Errorf("unable to marshal tx, err: %s", err.Error())
-		return "", errorcode.AppErrInternal
+	//check nonce
+	if err := s.nonceChecker.CheckNonce(fromAccount, txInfo.Nonce); err != nil {
+		return "", errorcode.AppErrInvalidTxField.RefineError(err.Error())
 	}
-	txId, mempoolTx := ConstructMempoolTx(
-		commonTx.TxTypeTransferNft,
-		txInfo.GasFeeAssetId,
-		txInfo.GasFeeAssetAmount.String(),
-		txInfo.NftIndex,
-		commonConstant.NilPairIndex,
-		commonConstant.NilAssetId,
-		commonConstant.NilAssetAmountStr,
-		"",
-		string(txInfoBytes),
-		"",
-		txInfo.FromAccountIndex,
-		txInfo.Nonce,
-		txInfo.ExpiredAt,
-		txDetails,
-	)
 
-	if err := svcCtx.MempoolModel.CreateBatchedMempoolTxs([]*mempool.MempoolTx{mempoolTx}); err != nil {
-		logx.Errorf("fail to create mempool tx: %v, err: %s", mempoolTx, err.Error())
-		_ = CreateFailTx(svcCtx.FailTxModel, commonTx.TxTypeTransferNft, txInfo, err)
-		return "", errorcode.AppErrInternal
+	//send mempool tx
+	mempoolTx := &mempool.MempoolTx{
+		TxType:        int64(s.txType),
+		GasFeeAssetId: txInfo.GasFeeAssetId,
+		GasFee:        txInfo.GasFeeAssetAmount.String(),
+		NftIndex:      txInfo.NftIndex,
+		PairIndex:     commonConstant.NilPairIndex,
+		AssetId:       commonConstant.NilAssetId,
+		TxAmount:      commonConstant.NilAssetAmountStr,
+		Memo:          "",
+		AccountIndex:  txInfo.FromAccountIndex,
+		Nonce:         txInfo.Nonce,
+		ExpiredAt:     txInfo.ExpiredAt,
 	}
-	return txId, nil
+	txId, err = s.mempoolTxSender.SendMempoolTx(func(txInfo interface{}) ([]byte, error) {
+		return legendTxTypes.ComputeTransferNftMsgHash(txInfo.(*legendTxTypes.TransferNftTxInfo), mimc.NewMiMC())
+	}, txInfo, mempoolTx)
+
+	return txId, err
 }

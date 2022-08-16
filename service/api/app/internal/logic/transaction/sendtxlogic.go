@@ -14,93 +14,47 @@ import (
 
 type SendTxLogic struct {
 	logx.Logger
-	ctx    context.Context
-	svcCtx *svc.ServiceContext
+	ctx       context.Context
+	svcCtx    *svc.ServiceContext
+	txSenders map[int]sendrawtx.TxSender
 }
 
 func NewSendTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendTxLogic {
+	gasChecker := sendrawtx.NewGasChecker(svcCtx.SysConfigModel)
+	nonceChecker := sendrawtx.NewNonceChecker()
+	mempoolTxSender := sendrawtx.NewMempoolTxSender(svcCtx.MempoolModel, svcCtx.FailTxModel)
+
+	txSenders := make(map[int]sendrawtx.TxSender)
+	txSenders[commonTx.TxTypeAddLiquidity] = sendrawtx.NewAddLiquidityTxSender(ctx, svcCtx, gasChecker, nonceChecker, mempoolTxSender)
+	txSenders[commonTx.TxTypeAtomicMatch] = sendrawtx.NewAtomicMatchTxSender(ctx, svcCtx, gasChecker, nonceChecker, mempoolTxSender)
+	txSenders[commonTx.TxTypeCancelOffer] = sendrawtx.NewCancelTxSender(ctx, svcCtx, gasChecker, nonceChecker, mempoolTxSender)
+	txSenders[commonTx.TxTypeCreateCollection] = sendrawtx.NewCreateCollectionTxSender(ctx, svcCtx, gasChecker, nonceChecker, mempoolTxSender)
+	txSenders[commonTx.TxTypeMintNft] = sendrawtx.NewMintNftTxSender(ctx, svcCtx, gasChecker, nonceChecker, mempoolTxSender)
+	txSenders[commonTx.TxTypeRemoveLiquidity] = sendrawtx.NewRemoveLiquidityTxSender(ctx, svcCtx, gasChecker, nonceChecker, mempoolTxSender)
+	txSenders[commonTx.TxTypeSwap] = sendrawtx.NewSwapTxSender(ctx, svcCtx, gasChecker, nonceChecker, mempoolTxSender)
+	txSenders[commonTx.TxTypeTransferNft] = sendrawtx.NewTransferNftTxSender(ctx, svcCtx, gasChecker, nonceChecker, mempoolTxSender)
+	txSenders[commonTx.TxTypeTransfer] = sendrawtx.NewTransferTxSender(ctx, svcCtx, gasChecker, nonceChecker, mempoolTxSender)
+	txSenders[commonTx.TxTypeWithdrawNft] = sendrawtx.NewWithdrawNftTxSender(ctx, svcCtx, gasChecker, nonceChecker, mempoolTxSender)
+	txSenders[commonTx.TxTypeWithdraw] = sendrawtx.NewWithdrawTxSender(ctx, svcCtx, gasChecker, nonceChecker, mempoolTxSender)
+
 	return &SendTxLogic{
-		Logger: logx.WithContext(ctx),
-		ctx:    ctx,
-		svcCtx: svcCtx,
+		Logger:    logx.WithContext(ctx),
+		ctx:       ctx,
+		svcCtx:    svcCtx,
+		txSenders: txSenders,
 	}
 }
 
 func (l *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.RespSendTx, err error) {
 	resp = &types.RespSendTx{}
-	switch req.TxType {
-	case commonTx.TxTypeTransfer:
-		resp.TxId, err = sendrawtx.SendTransferTx(l.ctx, l.svcCtx, l.svcCtx.StateFetcher, req.TxInfo)
-		if err != nil {
-			logx.Errorf("sendTransferTx err: %s", err.Error())
-			return nil, err
-		}
-	case commonTx.TxTypeSwap:
-		resp.TxId, err = sendrawtx.SendSwapTx(l.ctx, l.svcCtx, l.svcCtx.StateFetcher, req.TxInfo)
-		if err != nil {
-			logx.Errorf("sendSwapTx err: %s", err.Error())
-			return nil, err
-		}
-	case commonTx.TxTypeAddLiquidity:
-		resp.TxId, err = sendrawtx.SendAddLiquidityTx(l.ctx, l.svcCtx, l.svcCtx.StateFetcher, req.TxInfo)
-		if err != nil {
-			logx.Errorf("sendAddLiquidityTx err: %s", err.Error())
-			return nil, err
-		}
-	case commonTx.TxTypeRemoveLiquidity:
-		resp.TxId, err = sendrawtx.SendRemoveLiquidityTx(l.ctx, l.svcCtx, l.svcCtx.StateFetcher, req.TxInfo)
-		if err != nil {
-			logx.Errorf("sendRemoveLiquidityTx err: %s", err.Error())
-			return nil, err
-		}
-	case commonTx.TxTypeWithdraw:
-		resp.TxId, err = sendrawtx.SendWithdrawTx(l.ctx, l.svcCtx, l.svcCtx.StateFetcher, req.TxInfo)
-		if err != nil {
-			logx.Errorf("sendWithdrawTx err: %s", err.Error())
-			return nil, err
-		}
-	case commonTx.TxTypeTransferNft:
-		resp.TxId, err = sendrawtx.SendTransferNftTx(l.ctx, l.svcCtx, l.svcCtx.StateFetcher, req.TxInfo)
-		if err != nil {
-			logx.Errorf("sendTransferNftTX err: %s", err.Error())
-			return nil, err
-		}
-	case commonTx.TxTypeAtomicMatch:
-		resp.TxId, err = sendrawtx.SendAtomicMatchTx(l.ctx, l.svcCtx, l.svcCtx.StateFetcher, req.TxInfo)
-		if err != nil {
-			logx.Errorf("sendAtomicMatchTx err: %s", err.Error())
-			return nil, err
-		}
-	case commonTx.TxTypeCancelOffer:
-		resp.TxId, err = sendrawtx.SendCancelOfferTx(l.ctx, l.svcCtx, l.svcCtx.StateFetcher, req.TxInfo)
-		if err != nil {
-			logx.Errorf("sendCancelOfferTx err: %s", err.Error())
-			return nil, err
-		}
-	case commonTx.TxTypeWithdrawNft:
-		resp.TxId, err = sendrawtx.SendWithdrawNftTx(l.ctx, l.svcCtx, l.svcCtx.StateFetcher, req.TxInfo)
-		if err != nil {
-			logx.Errorf("sendWithdrawNftTx err: %s", err.Error())
-			return nil, err
-		}
-	case commonTx.TxTypeCreateCollection:
-		resp.TxId, err = sendrawtx.SendCreateCollectionTx(l.ctx, l.svcCtx, l.svcCtx.StateFetcher, req.TxInfo)
-		if err != nil {
-			logx.Errorf("sendCreateCollectionTx err: %s", err.Error())
-			return nil, err
-		}
-	case commonTx.TxTypeMintNft:
-		resp.TxId, err = sendrawtx.SendMintNftTx(l.ctx, l.svcCtx, l.svcCtx.StateFetcher, req.TxInfo)
-		if err != nil {
-			logx.Errorf("sendMintNftTx err: %s", err.Error())
-			return nil, err
-		}
-	case commonTx.TxTypeOffer:
+	sender, ok := l.txSenders[int(req.TxType)]
+	if !ok {
 		logx.Errorf("invalid tx type: %d", req.TxType)
 		return nil, errorcode.AppErrInvalidTxType
-	default:
-		logx.Errorf("invalid tx type: %d", req.TxType)
-		return nil, errorcode.AppErrInvalidTxType
+	}
+	resp.TxId, err = sender.SendTx(req.TxInfo)
+	if err != nil {
+		return nil, err
 	}
 	return resp, err
 }

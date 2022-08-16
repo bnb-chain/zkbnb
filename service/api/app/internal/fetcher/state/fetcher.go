@@ -23,11 +23,10 @@ import (
 // Fetcher will fetch the latest states (account,nft,liquidity) from redis, which is written by committer;
 // and if the required data cannot be found then database will be used.
 type Fetcher interface {
-	GetBasicAccountInfo(ctx context.Context, accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error)
-	GetLatestAccountInfo(ctx context.Context, accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error)
-	GetLatestLiquidityInfo(ctx context.Context, pairIndex int64) (liquidityInfo *commonAsset.LiquidityInfo, err error)
+	GetLatestAccount(ctx context.Context, accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error)
+	GetLatestLiquidity(ctx context.Context, pairIndex int64) (liquidityInfo *commonAsset.LiquidityInfo, err error)
 	GetLatestOfferId(ctx context.Context, accountIndex int64) (offerId int64, err error)
-	GetLatestNftInfo(ctx context.Context, nftIndex int64) (*commonAsset.NftInfo, error)
+	GetLatestNft(ctx context.Context, nftIndex int64) (*commonAsset.NftInfo, error)
 }
 
 func NewFetcher(redisConn *redis.Redis,
@@ -58,19 +57,7 @@ type fetcher struct {
 	nftModel             nft.L2NftModel
 }
 
-func (m *fetcher) GetBasicAccountInfo(ctx context.Context, accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error) {
-	oAccountInfo, err := m.accountModel.GetAccountByAccountIndex(accountIndex)
-	if err != nil {
-		return nil, err
-	}
-	accountInfo, err = commonAsset.ToFormatAccountInfo(oAccountInfo)
-	if err != nil {
-		return nil, err
-	}
-	return accountInfo, nil
-}
-
-func (m *fetcher) GetLatestAccountInfo(ctx context.Context, accountIndex int64) (*commonAsset.AccountInfo, error) {
+func (m *fetcher) GetLatestAccount(ctx context.Context, accountIndex int64) (*commonAsset.AccountInfo, error) {
 	oAccountInfo, err := m.accountModel.GetAccountByAccountIndex(accountIndex)
 	if err != nil {
 		return nil, err
@@ -125,9 +112,11 @@ func (m *fetcher) GetLatestAccountInfo(ctx context.Context, accountIndex int64) 
 	accountInfo.Nonce = accountInfo.Nonce + 1
 	accountInfo.CollectionNonce = accountInfo.CollectionNonce + 1
 	return accountInfo, nil
+
+	//TODO: from redis
 }
 
-func (m *fetcher) GetLatestLiquidityInfo(ctx context.Context, pairIndex int64) (liquidityInfo *commonAsset.LiquidityInfo, err error) {
+func (m *fetcher) GetLatestLiquidity(ctx context.Context, pairIndex int64) (liquidityInfo *commonAsset.LiquidityInfo, err error) {
 	dbLiquidityInfo, err := m.liquidityModel.GetLiquidityByPairIndex(pairIndex)
 	if err != nil {
 		return nil, err
@@ -168,9 +157,10 @@ func (m *fetcher) GetLatestLiquidityInfo(ctx context.Context, pairIndex int64) (
 		}
 	}
 	return liquidityInfo, nil
+	//TODO: from redis
 }
 
-func (m *fetcher) GetLatestNftInfo(ctx context.Context, nftIndex int64) (*commonAsset.NftInfo, error) {
+func (m *fetcher) GetLatestNft(ctx context.Context, nftIndex int64) (*commonAsset.NftInfo, error) {
 	dbNftInfo, err := m.nftModel.GetNftAsset(nftIndex)
 	if err != nil {
 		return nil, err
@@ -197,6 +187,7 @@ func (m *fetcher) GetLatestNftInfo(ctx context.Context, nftIndex int64) (*common
 		}
 	}
 	return nftInfo, nil
+	//TODO: from redis
 }
 
 func (m *fetcher) GetLatestOfferId(ctx context.Context, accountIndex int64) (int64, error) {

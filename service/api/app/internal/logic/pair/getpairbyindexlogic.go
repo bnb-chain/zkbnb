@@ -32,7 +32,7 @@ func (l *GetPairByIndexLogic) GetPairByIndex(req *types.ReqGetPairByIndex) (resp
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid PairIndex")
 	}
 
-	pair, err := l.svcCtx.StateFetcher.GetLatestLiquidityInfo(l.ctx, int64(req.PairIndex))
+	pair, err := l.svcCtx.StateFetcher.GetLatestLiquidity(l.ctx, int64(req.PairIndex))
 	if err != nil {
 		logx.Errorf("fail to get pair info: %d, err: %s", req.PairIndex, err.Error())
 		if err == errorcode.DbErrNotFound {

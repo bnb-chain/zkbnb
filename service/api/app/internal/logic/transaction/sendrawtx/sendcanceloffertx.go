@@ -2,10 +2,11 @@ package sendrawtx
 
 import (
 	"context"
-	"encoding/json"
 	"math/big"
+	"time"
 
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
@@ -13,13 +14,30 @@ import (
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
-	"github.com/bnb-chain/zkbas/common/model/nft"
-	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/fetcher/state"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 )
 
-func SendCancelOfferTx(ctx context.Context, svcCtx *svc.ServiceContext, stateFetcher state.Fetcher, rawTxInfo string) (txId string, err error) {
+type cancelOfferTxSender struct {
+	txType          int
+	ctx             context.Context
+	svcCtx          *svc.ServiceContext
+	gasChecker      GasChecker
+	nonceChecker    NonceChecker
+	mempoolTxSender MempoolTxSender
+}
+
+func NewCancelTxSender(ctx context.Context, svcCtx *svc.ServiceContext,
+	gasChecker *gasChecker, nonceChecker *nonceChecker, sender *mempoolTxSender) *cancelOfferTxSender {
+	return &cancelOfferTxSender{
+		txType:          commonTx.TxTypeCancelOffer,
+		ctx:             ctx,
+		svcCtx:          svcCtx,
+		gasChecker:      gasChecker,
+		nonceChecker:    nonceChecker,
+		mempoolTxSender: sender,
+	}
+}
+func (s *cancelOfferTxSender) SendTx(rawTxInfo string) (txId string, err error) {
 	txInfo, err := commonTx.ParseCancelOfferTxInfo(rawTxInfo)
 	if err != nil {
 		logx.Errorf("cannot parse tx err: %s", err.Error())
@@ -31,14 +49,16 @@ func SendCancelOfferTx(ctx context.Context, svcCtx *svc.ServiceContext, stateFet
 		return "", errorcode.AppErrInvalidTxField.RefineError(err)
 	}
 
-	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, svcCtx.SysConfigModel); err != nil {
-		return "", err
+	//check expire time
+	now := time.Now().UnixMilli()
+	if txInfo.ExpiredAt < now {
+		logx.Errorf("invalid ExpiredAt")
+		return "", errorcode.AppErrInvalidTxField.RefineError("invalid ExpiredAt")
 	}
 
-	var (
-		accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
-	)
-	accountInfoMap[txInfo.AccountIndex], err = stateFetcher.GetLatestAccountInfo(ctx, txInfo.AccountIndex)
+	//TODO: check signature
+
+	fromAccount, err := s.svcCtx.StateFetcher.GetLatestAccount(s.ctx, txInfo.AccountIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return "", errorcode.AppErrInvalidTxField.RefineError("invalid AccountIndex")
@@ -46,94 +66,51 @@ func SendCancelOfferTx(ctx context.Context, svcCtx *svc.ServiceContext, stateFet
 		logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.AccountIndex, err.Error())
 		return "", errorcode.AppErrInternal
 	}
-	if accountInfoMap[txInfo.GasAccountIndex] == nil {
-		accountInfoMap[txInfo.GasAccountIndex], err = stateFetcher.GetBasicAccountInfo(ctx, txInfo.GasAccountIndex)
-		if err != nil {
-			if err == errorcode.DbErrNotFound {
-				return "", errorcode.AppErrInvalidTxField.RefineError("invalid GasAccountIndex")
-			}
-			logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.GasAccountIndex, err.Error())
-			return "", errorcode.AppErrInternal
-		}
-	}
 
 	offerAssetId := txInfo.OfferId / 128
 	offerIndex := txInfo.OfferId % 128
-	if accountInfoMap[txInfo.AccountIndex].AssetInfo[offerAssetId] == nil {
-		accountInfoMap[txInfo.AccountIndex].AssetInfo[offerAssetId] = &commonAsset.AccountAsset{
+	if fromAccount.AssetInfo[offerAssetId] == nil {
+		fromAccount.AssetInfo[offerAssetId] = &commonAsset.AccountAsset{
 			AssetId:                  offerAssetId,
 			Balance:                  big.NewInt(0),
 			LpAmount:                 big.NewInt(0),
 			OfferCanceledOrFinalized: big.NewInt(0),
 		}
 	} else {
-		offerInfo := accountInfoMap[txInfo.AccountIndex].AssetInfo[offerAssetId].OfferCanceledOrFinalized
-		xBit := offerInfo.Bit(int(offerIndex))
-		if xBit == 1 {
+		offer := fromAccount.AssetInfo[offerAssetId].OfferCanceledOrFinalized
+		if offer.Bit(int(offerIndex)) == 1 {
 			logx.Errorf("offer is already confirmed or canceled")
 			return "", errorcode.AppErrInvalidTxField.RefineError("invalid OfferId, already confirmed or canceled")
 		}
 	}
 
-	var (
-		txDetails []*mempool.MempoolTxDetail
-	)
-	// verify tx
-	txDetails, err = txVerification.VerifyCancelOfferTxInfo(
-		accountInfoMap,
-		txInfo,
-	)
-	if err != nil {
-		return "", errorcode.AppErrVerification.RefineError(err)
+	//check gas
+	if err := s.gasChecker.CheckGas(fromAccount, txInfo.GasAccountIndex, txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount); err != nil {
+		return "", errorcode.AppErrInvalidTxField.RefineError(err.Error())
 	}
 
-	// write into mempool
-	txInfoBytes, err := json.Marshal(txInfo)
-	if err != nil {
-		logx.Errorf("unable to marshal tx, err: %s", err.Error())
-		return "", errorcode.AppErrInternal
-	}
-	txId, mempoolTx := ConstructMempoolTx(
-		commonTx.TxTypeCancelOffer,
-		txInfo.GasFeeAssetId,
-		txInfo.GasFeeAssetAmount.String(),
-		commonConstant.NilTxNftIndex,
-		commonConstant.NilPairIndex,
-		commonConstant.NilAssetId,
-		accountInfoMap[txInfo.AccountIndex].AccountName,
-		commonConstant.NilL1Address,
-		string(txInfoBytes),
-		"",
-		txInfo.AccountIndex,
-		txInfo.Nonce,
-		txInfo.ExpiredAt,
-		txDetails,
-	)
-	var isUpdate bool
-	offerInfo, err := svcCtx.OfferModel.GetOfferByAccountIndexAndOfferId(txInfo.AccountIndex, txInfo.OfferId)
-	if err == errorcode.DbErrNotFound {
-		offerInfo = &nft.Offer{
-			OfferType:    0,
-			OfferId:      txInfo.OfferId,
-			AccountIndex: txInfo.AccountIndex,
-			NftIndex:     0,
-			AssetId:      0,
-			AssetAmount:  "0",
-			ListedAt:     0,
-			ExpiredAt:    0,
-			TreasuryRate: 0,
-			Sig:          "",
-			Status:       nft.OfferFinishedStatus,
-		}
-	} else {
-		offerInfo.Status = nft.OfferFinishedStatus
-		isUpdate = true
+	//check nonce
+	if err := s.nonceChecker.CheckNonce(fromAccount, txInfo.Nonce); err != nil {
+		return "", errorcode.AppErrInvalidTxField.RefineError(err.Error())
 	}
 
-	if err := svcCtx.MempoolModel.CreateMempoolTxAndUpdateOffer(mempoolTx, offerInfo, isUpdate); err != nil {
-		logx.Errorf("fail to create mempool tx: %v, err: %s", mempoolTx, err.Error())
-		_ = CreateFailTx(svcCtx.FailTxModel, commonTx.TxTypeCancelOffer, txInfo, err)
-		return "", errorcode.AppErrInternal
+	//send mempool tx
+	mempoolTx := &mempool.MempoolTx{
+		TxType:        int64(s.txType),
+		GasFeeAssetId: txInfo.GasFeeAssetId,
+		GasFee:        txInfo.GasFeeAssetAmount.String(),
+		NftIndex:      commonConstant.NilTxNftIndex,
+		PairIndex:     commonConstant.NilPairIndex,
+		AssetId:       commonConstant.NilAssetId,
+		TxAmount:      "",
+		Memo:          "",
+		AccountIndex:  txInfo.AccountIndex,
+		Nonce:         txInfo.Nonce,
+		ExpiredAt:     txInfo.ExpiredAt,
 	}
-	return txId, nil
+	txId, err = s.mempoolTxSender.SendMempoolTx(func(txInfo interface{}) ([]byte, error) {
+		return legendTxTypes.ComputeAtomicMatchMsgHash(txInfo.(*legendTxTypes.AtomicMatchTxInfo), mimc.NewMiMC())
+	}, txInfo, mempoolTx)
+
+	return txId, err
 }
