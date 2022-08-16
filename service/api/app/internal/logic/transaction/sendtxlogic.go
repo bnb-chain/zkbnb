@@ -45,14 +45,14 @@ func NewSendTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendTxLogi
 	}
 }
 
-func (l *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.RespSendTx, err error) {
-	resp = &types.RespSendTx{}
+func (l *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err error) {
+	resp = &types.TxHash{}
 	sender, ok := l.txSenders[int(req.TxType)]
 	if !ok {
 		logx.Errorf("invalid tx type: %d", req.TxType)
 		return nil, errorcode.AppErrInvalidTxType
 	}
-	resp.TxId, err = sender.SendTx(req.TxInfo)
+	resp.TxHash, err = sender.SendTx(req.TxInfo)
 	if err != nil {
 		return nil, err
 	}

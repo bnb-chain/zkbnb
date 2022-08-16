@@ -32,7 +32,7 @@ const (
 	BlockCountKeyPrefix        = "bc" //key for cache: total block count
 	TxByHashKeyPrefix          = "h:" //key for cache: txHash -> tx
 	TxCountKeyPrefix           = "tc" //key for cache: total tx count
-	AssetsKeyPrefix            = "AS" //key for cache: all assets
+	AssetCountKeyKeyPrefix     = "AC" //key for cache: total asset count
 	AssetByIdKeyPrefix         = "I:" //key for cache: assetId -> asset
 	AssetBySymbolKeyPrefix     = "S:" //key for cache: assetSymbol -> asset
 	PriceKeyPrefix             = "p:" //key for cache: symbol -> price
@@ -222,21 +222,12 @@ func (m *MemCache) GetTxTotalCountWithFallback(f fallback) (int64, error) {
 	return count.(int64), nil
 }
 
-func (m *MemCache) GetAssetsWithFallback(f fallback) ([]*asset.Asset, error) {
-	key := fmt.Sprintf("%s", AssetsKeyPrefix)
-	t, err := m.getWithSet(key, m.assetExpiration, f)
+func (m *MemCache) GetAssetTotalCountWithFallback(f fallback) (int64, error) {
+	count, err := m.getWithSet(AssetCountKeyKeyPrefix, m.txExpiration, f)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
-
-	assets := t.([]*asset.Asset)
-	for _, asset := range assets {
-		keyForId := fmt.Sprintf("%s%d", AssetByIdKeyPrefix, asset.AssetId)
-		m.goCache.Set(keyForId, asset, m.assetExpiration)
-		keyForSymbol := fmt.Sprintf("%s%s", AssetBySymbolKeyPrefix, asset.AssetSymbol)
-		m.goCache.Set(keyForSymbol, asset, m.assetExpiration)
-	}
-	return assets, nil
+	return count.(int64), nil
 }
 
 func (m *MemCache) GetAssetByIdWithFallback(assetId int64, f fallback) (*asset.Asset, error) {

@@ -1,25 +1,25 @@
-package block
+package transaction
 
 import (
 	"net/http"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
 
-	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/block"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/transaction"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-func GetBlockByCommitmentHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func GetTxsByAccountHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.ReqGetBlockByCommitment
+		var req types.ReqGetAccountTxs
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.Error(w, err)
 			return
 		}
 
-		l := block.NewGetBlockByCommitmentLogic(r.Context(), svcCtx)
-		resp, err := l.GetBlockByCommitment(&req)
+		l := transaction.NewGetAccountTxsLogic(r.Context(), svcCtx)
+		resp, err := l.GetAccountTxs(&req)
 		if err != nil {
 			httpx.Error(w, err)
 		} else {

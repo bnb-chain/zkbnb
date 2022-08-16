@@ -12,22 +12,22 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-type GetTxByHashLogic struct {
+type GetTxLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
 }
 
-func NewGetTxByHashLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTxByHashLogic {
-	return &GetTxByHashLogic{
+func NewGetTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTxLogic {
+	return &GetTxLogic{
 		Logger: logx.WithContext(ctx),
 		ctx:    ctx,
 		svcCtx: svcCtx,
 	}
 }
 
-func (l *GetTxByHashLogic) GetTxByHash(req *types.ReqGetTxByHash) (*types.RespGetTxByHash, error) {
-	resp := &types.RespGetTxByHash{}
+func (l *GetTxLogic) GetTx(req *types.ReqGetTx) (resp *types.EnrichedTx, err error) {
+	resp = &types.EnrichedTx{}
 	tx, err := l.svcCtx.MemCache.GetTxByHashWithFallback(req.TxHash, func() (interface{}, error) {
 		return l.svcCtx.TxModel.GetTxByTxHash(req.TxHash)
 	})

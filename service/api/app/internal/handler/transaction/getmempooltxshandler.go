@@ -12,7 +12,7 @@ import (
 
 func GetMempoolTxsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.ReqGetMempoolTxs
+		var req types.ReqGetAll
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.Error(w, err)
 			return

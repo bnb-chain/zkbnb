@@ -23,8 +23,8 @@ func NewGetStatusLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetStat
 	}
 }
 
-func (l *GetStatusLogic) GetStatus() (resp *types.RespGetStatus, err error) {
-	return &types.RespGetStatus{
+func (l *GetStatusLogic) GetStatus() (resp *types.Status, err error) {
+	return &types.Status{
 		Status:    200,
 		NetworkId: 1,
 	}, nil

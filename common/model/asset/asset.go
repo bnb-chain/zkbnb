@@ -31,11 +31,13 @@ type (
 	AssetModel interface {
 		CreateAssetTable() error
 		DropAssetTable() error
-		CreateAssetsInBatch(l2Assets []*Asset) (rowsAffected int64, err error)
-		GetAssetsList() (res []*Asset, err error)
-		GetAssetByAssetId(assetId int64) (res *Asset, err error)
-		GetAssetBySymbol(symbol string) (res *Asset, err error)
+		CreateAssetsInBatch(assets []*Asset) (rowsAffected int64, err error)
+		GetAssetsTotalCount() (count int64, err error)
+		GetAssetsList(limit int64, offset int64) (assets []*Asset, err error)
+		GetAssetByAssetId(assetId int64) (asset *Asset, err error)
+		GetAssetBySymbol(symbol string) (asset *Asset, err error)
 		GetAssetByAddress(address string) (asset *Asset, err error)
+		GetGasAssets() (assets []*Asset, err error)
 	}
 
 	defaultAssetModel struct {
@@ -76,8 +78,19 @@ func (m *defaultAssetModel) DropAssetTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-func (m *defaultAssetModel) GetAssetsList() (res []*Asset, err error) {
-	dbTx := m.DB.Table(m.table).Find(&res)
+func (m *defaultAssetModel) GetAssetsTotalCount() (count int64, err error) {
+	dbTx := m.DB.Table(m.table).Where("deleted_at is NULL").Count(&count)
+	if dbTx.Error != nil {
+		logx.Errorf("get total asset count error, err: %s", dbTx.Error.Error())
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	return count, nil
+}
+
+func (m *defaultAssetModel) GetAssetsList(limit int64, offset int64) (res []*Asset, err error) {
+	dbTx := m.DB.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("id asc").Find(&res)
 	if dbTx.Error != nil {
 		logx.Errorf("get assets error, err: %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
@@ -133,4 +146,15 @@ func (m *defaultAssetModel) GetAssetByAddress(address string) (asset *Asset, err
 		return nil, errorcode.DbErrNotFound
 	}
 	return asset, nil
+}
+
+func (m *defaultAssetModel) GetGasAssets() (assets []*Asset, err error) {
+	dbTx := m.DB.Table(m.table).Where("is_gas_asset = ?", IsGasAsset).Find(&assets)
+	if dbTx.Error != nil {
+		logx.Errorf("fail to get gas assets, error: %s", dbTx.Error.Error())
+		return nil, errorcode.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, errorcode.DbErrNotFound
+	}
+	return assets, nil
 }

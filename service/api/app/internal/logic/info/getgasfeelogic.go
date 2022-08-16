@@ -29,8 +29,8 @@ func NewGetGasFeeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetGasF
 	}
 }
 
-func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.RespGetGasFee, error) {
-	resp := &types.RespGetGasFee{}
+func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.GasFee, error) {
+	resp := &types.GasFee{}
 
 	asset, err := l.svcCtx.MemCache.GetAssetByIdWithFallback(int64(req.AssetId), func() (interface{}, error) {
 		return l.svcCtx.AssetModel.GetAssetByAssetId(int64(req.AssetId))

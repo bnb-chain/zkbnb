@@ -44,7 +44,7 @@ func (f *fetcher) GetCurrencyPrice(ctx context.Context, symbol string) (float64,
 		}
 		q, ok := quoteMap[symbol]
 		if !ok {
-			return 0, errorcode.AppErrQuoteNotExist
+			return 0, nil
 		}
 		price := q.Quote["USD"].Price
 		return price, err

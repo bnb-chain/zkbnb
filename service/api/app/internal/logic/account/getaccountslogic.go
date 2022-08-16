@@ -3,12 +3,11 @@ package account
 import (
 	"context"
 
-	"github.com/bnb-chain/zkbas/common/errorcode"
+	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
-
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type GetAccountsLogic struct {
@@ -25,7 +24,7 @@ func NewGetAccountsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAc
 	}
 }
 
-func (l *GetAccountsLogic) GetAccounts(req *types.ReqGetAccounts) (resp *types.RespGetAccounts, err error) {
+func (l *GetAccountsLogic) GetAccounts(req *types.ReqGetAll) (resp *types.Accounts, err error) {
 	total, err := l.svcCtx.MemCache.GetAccountTotalCountWiltFallback(func() (interface{}, error) {
 		return l.svcCtx.AccountModel.GetAccountsTotalCount()
 	})
@@ -33,8 +32,8 @@ func (l *GetAccountsLogic) GetAccounts(req *types.ReqGetAccounts) (resp *types.R
 		return nil, errorcode.AppErrInternal
 	}
 
-	resp = &types.RespGetAccounts{
-		Accounts: make([]*types.Account, 0),
+	resp = &types.Accounts{
+		Accounts: make([]*types.SimpleAccount, 0),
 		Total:    uint32(total),
 	}
 
@@ -47,10 +46,10 @@ func (l *GetAccountsLogic) GetAccounts(req *types.ReqGetAccounts) (resp *types.R
 		return nil, errorcode.AppErrInternal
 	}
 	for _, a := range accounts {
-		resp.Accounts = append(resp.Accounts, &types.Account{
-			AccountIndex: uint32(a.AccountIndex),
+		resp.Accounts = append(resp.Accounts, &types.SimpleAccount{
+			AccountIndex: a.AccountIndex,
 			AccountName:  a.AccountName,
-			PublicKey:    a.PublicKey,
+			AccountPk:    a.PublicKey,
 		})
 	}
 	return resp, nil

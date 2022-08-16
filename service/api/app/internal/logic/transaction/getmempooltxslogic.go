@@ -24,8 +24,8 @@ func NewGetMempoolTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 		svcCtx: svcCtx,
 	}
 }
-func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (*types.RespGetMempoolTxs, error) {
-	resp := &types.RespGetMempoolTxs{
+func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetAll) (*types.MempoolTxs, error) {
+	resp := &types.MempoolTxs{
 		MempoolTxs: make([]*types.Tx, 0),
 	}
 	total, err := l.svcCtx.MempoolModel.GetMempoolTxsTotalCount()

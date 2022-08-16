@@ -13,26 +13,32 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-type GetCurrencyPriceBySymbolLogic struct {
+type GetCurrencyPriceLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
 }
 
-func NewGetCurrencyPriceBySymbolLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetCurrencyPriceBySymbolLogic {
-	return &GetCurrencyPriceBySymbolLogic{
+func NewGetCurrencyPriceLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetCurrencyPriceLogic {
+	return &GetCurrencyPriceLogic{
 		Logger: logx.WithContext(ctx),
 		ctx:    ctx,
 		svcCtx: svcCtx,
 	}
 }
 
-func (l *GetCurrencyPriceBySymbolLogic) GetCurrencyPriceBySymbol(req *types.ReqGetCurrencyPriceBySymbol) (*types.RespGetCurrencyPriceBySymbol, error) {
-	if !utils.ValidateSymbol(req.Symbol) {
-		logx.Errorf("invalid Symbol: %s", req.Symbol)
-		return nil, errorcode.AppErrInvalidParam.RefineError("invalid Symbol")
+func (l *GetCurrencyPriceLogic) GetCurrencyPrice(req *types.ReqGetCurrencyPrice) (resp *types.CurrencyPrice, err error) {
+	symbol := ""
+	switch req.By {
+	case "symbol":
+		if !utils.ValidateSymbol(req.Value) {
+			logx.Errorf("invalid Symbol: %s", req.Value)
+			return nil, errorcode.AppErrInvalidParam.RefineError("invalid symbol")
+		}
+		symbol = strings.ToUpper(req.Value)
+	default:
+		return nil, errorcode.AppErrInvalidParam.RefineError("param by should be symbol")
 	}
-	symbol := strings.ToUpper(req.Symbol)
 
 	asset, err := l.svcCtx.MemCache.GetAssetBySymbolWithFallback(symbol, func() (interface{}, error) {
 		return l.svcCtx.AssetModel.GetAssetBySymbol(symbol)
@@ -51,7 +57,8 @@ func (l *GetCurrencyPriceBySymbolLogic) GetCurrencyPriceBySymbol(req *types.ReqG
 		}
 		return nil, errorcode.AppErrInternal
 	}
-	resp := &types.RespGetCurrencyPriceBySymbol{
+	resp = &types.CurrencyPrice{
+		Pair:    asset.AssetSymbol + "/" + "USDT",
 		Price:   strconv.FormatFloat(price, 'E', -1, 64),
 		AssetId: uint32(asset.ID),
 	}

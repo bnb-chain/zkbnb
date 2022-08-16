@@ -9,7 +9,7 @@ info(
 /* ========================= root =========================*/
 
 type (
-	RespGetStatus {
+	Status {
 		Status    uint32 `json:"status"`
 		NetworkId uint32 `json:"network_id"`
 	}
@@ -20,91 +20,49 @@ type (
 )
 service app-api {
 	@handler GetStatus
-	get / returns (RespGetStatus)
+	get / returns (Status)
+}
+
+type ReqGetAll {
+	Offset uint16 `form:"offset,range=[0:100000]"`
+	Limit  uint16 `form:"limit,range=[1:50]"`
 }
 
 /* ========================= Account =========================*/
 
 type (
-	ReqGetAccounts {
-		Offset uint16 `form:"offset,range=[0:100000]"`
-		Limit  uint16 `form:"limit,range=[1:50]"`
+	AccountAsset {
+		AssetId                  uint32 `json:"asset_id"`
+		Balance                  string `json:"balance"`
+		LpAmount                 string `json:"lp_amount"`
+		OfferCanceledOrFinalized string `json:"offer_canceled_or_finalized"`
 	}
+
 	Account {
-		AccountIndex uint32 `json:"account_index"`
-		AccountName  string `json:"account_name"`
-		PublicKey    string `json:"public_key"`
-	}
-	RespGetAccounts {
-		Total    uint32     `json:"total"`
-		Accounts []*Account `json:"accounts"`
-	}
-)
-
-type AccountAsset {
-	AssetId                  uint32 `json:"asset_id"`
-	Balance                  string `json:"balance"`
-	LpAmount                 string `json:"lp_amount"`
-	OfferCanceledOrFinalized string `json:"offer_canceled_or_finalized"`
-}
-
-type (
-	ReqGetAccountStatusByPk {
-		AccountPk string `form:"account_pk"`
-	}
-	RespGetAccountStatusByPk {
-		AccountStatus int64  `json:"account_status"`
-		AccountIndex  int64  `json:"account_index"`
-		AccountName   string `json:"account_name"`
-	}
-)
-
-type (
-	ReqGetAccountStatusByName {
-		AccountName string `form:"account_name"`
-	}
-	RespGetAccountStatusByName {
-		AccountStatus uint32 `json:"account_status"`
-		AccountIndex  uint32 `json:"account_index"`
-		AccountPk     string `json:"account_pk"`
-	}
-)
-
-type (
-	ReqGetAccountByPk {
-		AccountPk string `form:"account_pk"`
-	}
-	RespGetAccountByPk {
 		AccountStatus uint32          `json:"account_status"`
-		AccountName   string          `json:"account_name"`
 		AccountIndex  int64           `json:"account_index"`
-		Nonce         int64           `json:"nonce"`
-		Assets        []*AccountAsset `json:"assets"`
-	}
-)
-
-type (
-	ReqGetAccountByIndex {
-		AccountIndex int64 `form:"account_index"`
-	}
-	RespGetAccountByIndex {
-		AccountStatus uint32          `json:"account_status"`
 		AccountName   string          `json:"account_name"`
 		AccountPk     string          `json:"account_pk"`
 		Nonce         int64           `json:"nonce"`
 		Assets        []*AccountAsset `json:"assets"`
 	}
+
+	SimpleAccount {
+		AccountIndex int64  `json:"account_index"`
+		AccountName  string `json:"account_name"`
+		AccountPk    string `json:"account_pk"`
+	}
+
+	Accounts {
+		Total    uint32           `json:"total"`
+		Accounts []*SimpleAccount `json:"accounts"`
+	}
 )
 
 type (
-	ReqGetAccountByName {
-		AccountName string `form:"account_name"`
-	}
-	RespGetAccountByName {
-		AccountIndex uint32          `json:"account_index"`
-		AccountPk    string          `json:"account_pk"`
-		Nonce        int64           `json:"nonce"`
-		Assets       []*AccountAsset `json:"assets"`
+	ReqGetAccount {
+		By    string `form:"by,options=index|name|pk"`
+		Value string `form:"value"`
 	}
 )
 
@@ -114,22 +72,10 @@ type (
 
 service app-api {
 	@handler GetAccounts
-	get /api/v1/account/getAccounts (ReqGetAccounts) returns (RespGetAccounts)
+	get /api/v1/accounts (ReqGetAll) returns (Accounts)
 	
-	@handler GetAccountStatusByPk
-	get /api/v1/account/getAccountStatusByPk (ReqGetAccountStatusByPk) returns (RespGetAccountStatusByPk)
-	
-	@handler GetAccountStatusByName
-	get /api/v1/account/getAccountStatusByName (ReqGetAccountStatusByName) returns (RespGetAccountStatusByName)
-	
-	@handler GetAccountByPk
-	get /api/v1/account/getAccountByPk (ReqGetAccountByPk) returns (RespGetAccountByPk)
-	
-	@handler GetAccountByIndex
-	get /api/v1/account/getAccountByIndex (ReqGetAccountByIndex) returns (RespGetAccountByIndex)
-	
-	@handler GetAccountByName
-	get /api/v1/account/getAccountByName (ReqGetAccountByName) returns (RespGetAccountByName)
+	@handler GetAccount
+	get /api/v1/account (ReqGetAccount) returns (Account)
 }
 
 /* ========================= Asset =========================*/
@@ -143,7 +89,9 @@ type (
 		AssetAddress  string `json:"asset_address"`
 		IsGasAsset    uint32 `json:"is_gas_asset"`
 	}
-	RespGetAssets {
+
+	Assets {
+		Total  uint32   `json:"total"`
 		Assets []*Asset `json:"assets"`
 	}
 )
@@ -154,16 +102,12 @@ type (
 
 service app-api {
 	@handler GetAssets
-	get /api/v1/asset/getAssets returns (RespGetAssets)
+	get /api/v1/assets (ReqGetAll) returns (Assets)
 }
 
 /* ========================= Block =========================*/
 
 type (
-	TxHash {
-		TxHash    string `json:"tx_hash"`
-		CreatedAt int64  `json:"created_at"`
-	}
 	Block {
 		BlockCommitment                 string `json:"block_commitment"`
 		BlockHeight                     int64  `json:"block_height"`
@@ -178,40 +122,21 @@ type (
 		Txs                             []*Tx  `json:"txs"`
 		BlockStatus                     int64  `json:"block_status"`
 	}
-)
 
-type (
-	ReqGetBlocks {
-		Offset uint16 `form:"offset,range=[0:100000]"`
-		Limit  uint16 `form:"limit,range=[1:50]"`
-	}
-	RespGetBlocks {
+	Blocks {
 		Total  uint32   `json:"total"`
 		Blocks []*Block `json:"blocks"`
 	}
-)
 
-type (
-	ReqGetBlockByCommitment {
-		BlockCommitment string `form:"block_commitment"`
-	}
-	RespGetBlockByCommitment {
-		Block Block `json:"block"`
-	}
-)
-
-type (
-	ReqGetBlockByHeight {
-		BlockHeight uint64 `form:"block_height"`
-	}
-	RespGetBlockByHeight {
-		Block Block `json:"block"`
-	}
-)
-
-type (
-	RespCurrentHeight {
+	CurrentHeight {
 		Height int64 `json:"height"`
+	}
+)
+
+type (
+	ReqGetBlock {
+		By    string `form:"by,options=commitment|height"`
+		Value string `form:"value"`
 	}
 )
 
@@ -220,16 +145,13 @@ type (
 )
 service app-api {
 	@handler GetBlocks
-	get /api/v1/block/getBlocks (ReqGetBlocks) returns (RespGetBlocks)
+	get /api/v1/blocks (ReqGetAll) returns (Blocks)
 	
-	@handler GetBlockByCommitment
-	get /api/v1/block/getBlockByCommitment (ReqGetBlockByCommitment) returns (RespGetBlockByCommitment)
-	
-	@handler GetBlockByHeight
-	get /api/v1/block/getBlockByHeight (ReqGetBlockByHeight) returns (RespGetBlockByHeight)
+	@handler GetBlock
+	get /api/v1/block (ReqGetBlock) returns (Block)
 	
 	@handler GetCurrentHeight
-	get /api/v1/block/getCurrentHeight returns (RespCurrentHeight)
+	get /api/v1/currentHeight returns (CurrentHeight)
 }
 
 /* ========================= Info =========================*/
@@ -239,7 +161,8 @@ type (
 		Name    string `json:"name"`
 		Address string `json:"address"`
 	}
-	RespGetLayer2BasicInfo {
+
+	Layer2BasicInfo {
 		BlockCommitted             int64             `json:"block_committed"`
 		BlockVerified              int64             `json:"block_verified"`
 		TotalTransactions          int64             `json:"total_transactions"`
@@ -249,67 +172,53 @@ type (
 		DauToday                   int64             `json:"dau_today"`
 		ContractAddresses          []ContractAddress `json:"contract_addresses"`
 	}
-)
 
-type (
-	ReqGetCurrencyPriceBySymbol {
-		Symbol string `form:"symbol"`
-	}
-	RespGetCurrencyPriceBySymbol {
-		AssetId uint32 `json:"asset_id"`
-		Price   string `json:"price"`
-	}
-)
-
-type (
 	CurrencyPrice {
 		Pair    string `json:"pair"`
 		AssetId uint32 `json:"asset_id"`
 		Price   string `json:"price"`
 	}
-	RespGetCurrencyPrices {
+
+	CurrencyPrices {
+		Total          uint32           `json:"total"`
 		CurrencyPrices []*CurrencyPrice `json:"currency_prices"`
 	}
-)
 
-type (
-	ReqGetGasFee {
-		AssetId uint32 `form:"asset_id"`
-	}
-	RespGetGasFee {
+	GasFee {
 		GasFee string `json:"gas_fee"`
 	}
-)
 
-type (
-	ReqGetWithdrawGasFee {
-		AssetId uint32 `form:"asset_id"`
+	GasAccount {
+		AccountStatus int64  `json:"account_status"`
+		AccountIndex  int64  `json:"account_index"`
+		AccountName   string `json:"account_name"`
 	}
-	RespGetWithdrawGasFee {
-		GasFee string `json:"gas_fee"`
-	}
-)
 
-type (
-	RespGetGasFeeAssets {
+	GasFeeAssets {
 		Assets []Asset `json:"assets"`
 	}
-)
 
-type (
-	ReqSearch {
-		Info string `form:"info"`
-	}
-	RespSearch {
+	Search {
 		DataType int32 `json:"data_type"`
 	}
 )
 
 type (
-	RespGetGasAccount {
-		AccountStatus int64  `json:"account_status"`
-		AccountIndex  int64  `json:"account_index"`
-		AccountName   string `json:"account_name"`
+	ReqGetCurrencyPrice {
+		By    string `form:"by,options=symbol, default=symbol"`
+		Value string `form:"value"`
+	}
+
+	ReqGetGasFee {
+		AssetId uint32 `form:"asset_id"`
+	}
+
+	ReqGetWithdrawGasFee {
+		AssetId uint32 `form:"asset_id"`
+	}
+
+	ReqSearch {
+		Keyword string `form:"keyword"`
 	}
 )
 
@@ -318,31 +227,63 @@ type (
 )
 service app-api {
 	@handler GetLayer2BasicInfo
-	get /api/v1/info/getLayer2BasicInfo returns (RespGetLayer2BasicInfo)
+	get /api/v1/layer2BasicInfo returns (Layer2BasicInfo)
 	
-	@handler GetCurrencyPriceBySymbol
-	get /api/v1/info/getCurrencyPriceBySymbol (ReqGetCurrencyPriceBySymbol) returns (RespGetCurrencyPriceBySymbol)
+	@handler GetCurrencyPrice
+	get /api/v1/currencyPrice (ReqGetCurrencyPrice) returns (CurrencyPrice)
 	
 	@handler GetCurrencyPrices
-	get /api/v1/info/getCurrencyPrices returns (RespGetCurrencyPrices)
+	get /api/v1/currencyPrices (ReqGetAll) returns (CurrencyPrices)
 	
 	@handler GetGasFee
-	get /api/v1/info/getGasFee (ReqGetGasFee) returns (RespGetGasFee)
+	get /api/v1/gasFee (ReqGetGasFee) returns (GasFee)
 	
 	@handler GetWithdrawGasFee
-	get /api/v1/info/getWithdrawGasFee (ReqGetWithdrawGasFee) returns (RespGetWithdrawGasFee)
+	get /api/v1/withdrawGasFee (ReqGetWithdrawGasFee) returns (GasFee)
 	
 	@handler GetGasFeeAssets
-	get /api/v1/info/getGasFeeAssets returns (RespGetGasFeeAssets)
+	get /api/v1/gasFeeAssets returns (GasFeeAssets)
 	
 	@handler GetGasAccount
-	get /api/v1/info/getGasAccount returns (RespGetGasAccount)
+	get /api/v1/gasAccount returns (GasAccount)
 	
 	@handler Search
-	get /api/v1/info/search (ReqSearch) returns (RespSearch)
+	get /api/v1/search (ReqSearch) returns (Search)
 }
 
 /* =========================== Pair ==========================*/
+
+type (
+	SwapAmount {
+		AssetId     uint32 `json:"asset_id"`
+		AssetAmount string `json:"asset_amount"`
+	}
+
+	Pair {
+		PairIndex     uint32 `json:"pair_index"`
+		AssetAId      uint32 `json:"asset_a_id"`
+		AssetAName    string `json:"asset_a_name"`
+		AssetAAmount  string `json:"asset_a_amount"`
+		AssetBId      uint32 `json:"asset_b_id"`
+		AssetBName    string `json:"asset_b_name"`
+		AssetBAmount  string `json:"asset_b_amount"`
+		FeeRate       int64  `json:"fee_rate"`
+		TreasuryRate  int64  `json:"treasury_rate"`
+		TotalLpAmount string `json:"total_lp_amount"`
+	}
+	Pairs {
+		Pairs []*Pair `json:"pairs"`
+	}
+
+	LpValue {
+		AssetAId     uint32 `json:"asset_a_id"`
+		AssetAName   string `json:"asset_a_name"`
+		AssetAAmount string `json:"asset_a_amount"`
+		AssetBId     uint32 `json:"asset_b_id"`
+		AssetBName   string `json:"asset_b_name"`
+		AssetBAmount string `json:"asset_b_amount"`
+	}
+)
 
 type (
 	ReqGetSwapAmount {
@@ -351,54 +292,15 @@ type (
 		AssetAmount string `form:"asset_amount"`
 		IsFrom      bool   `form:"is_from"`
 	}
-	RespGetSwapAmount {
-		AssetId     uint32 `json:"asset_id"`
-		AssetAmount string `json:"asset_amount"`
-	}
-)
 
-type (
-	Pair {
-		PairIndex    uint32 `json:"pair_index"`
-		AssetAId     uint32 `json:"asset_a_id"`
-		AssetAName   string `json:"asset_a_name"`
-		AssetAAmount string `json:"asset_a_amount"`
-		AssetBId     uint32 `json:"asset_b_id"`
-		AssetBName   string `json:"asset_b_name"`
-		AssetBAmount string `json:"asset_b_amount"`
-		FeeRate      int64  `json:"fee_rate"`
-		TreasuryRate int64  `json:"treasury_rate"`
-	}
-	RespGetPairs {
-		Pairs []*Pair `json:"pairs"`
-	}
-)
-
-type (
 	ReqGetLpValue {
 		PairIndex uint32 `form:"pair_index"`
 		LpAmount  string `form:"lp_amount"`
 	}
-	RespGetLpValue {
-		AssetAId     uint32 `json:"asset_a_id"`
-		AssetAName   string `json:"asset_a_name"`
-		AssetAAmount string `json:"asset_a_amount"`
-		AssetBId     uint32 `json:"asset_b_id"`
-		AssetBName   string `json:"asset_b_name"`
-		AssetBAmount string `json:"asset_b_amount"`
-	}
-)
 
-type (
-	ReqGetPairByIndex {
-		PairIndex uint32 `form:"pair_index"`
-	}
-	RespGetPairByIndex {
-		AssetAId      uint32 `json:"asset_a_id"`
-		AssetAAmount  string `json:"asset_a_amount"`
-		AssetBId      uint32 `json:"asset_b_id"`
-		AssetBAmount  string `json:"asset_b_amount"`
-		TotalLpAmount string `json:"total_lp_amount"`
+	ReqGetPair {
+		By    string `form:"by,options=index, default=index"`
+		Value string `form:"value"`
 	}
 )
 
@@ -407,111 +309,66 @@ type (
 )
 service app-api {
 	@handler GetSwapAmount
-	get /api/v1/pair/getSwapAmount (ReqGetSwapAmount) returns (RespGetSwapAmount)
+	get /api/v1/swapAmount (ReqGetSwapAmount) returns (SwapAmount)
 	
 	@handler GetPairs
-	get /api/v1/pair/getPairs returns (RespGetPairs)
+	get /api/v1/pairs returns (Pairs)
 	
 	@handler GetLpValue
-	get /api/v1/pair/getLpValue (ReqGetLpValue) returns (RespGetLpValue)
+	get /api/v1/lpValue (ReqGetLpValue) returns (LpValue)
 	
-	@handler GetPairByIndex
-	get /api/v1/pair/getPairByIndex (ReqGetPairByIndex) returns (RespGetPairByIndex)
+	@handler GetPair
+	get /api/v1/pair (ReqGetPair) returns (Pair)
 }
 
 /* ======================= Transaction =======================*/
 
-type Tx {
-	TxHash        string `json:"tx_hash"`
-	TxType        int64  `json:"tx_type,range=[1:64]"`
-	TxAmount      string `json:"tx_amount"`
-	TxInfo        string `json:"tx_info"`
-	TxStatus      int64  `json:"tx_status"`
-	GasFeeAssetId int64  `json:"gas_fee_asset_id"`
-	GasFee        string `json:"gas_fee"`
-	NftIndex      int64  `json:"nft_index"`
-	PairIndex     int64  `json:"pair_index"`
-	AssetId       int64  `json:"asset_id"`
-	NativeAddress string `json:"native_adress"`
-	ExtraInfo     string `json:"extra_info"`
-	Memo          string `json:"memo"`
-	AccountIndex  int64  `json:"account_index"`
-	AccountName   string `json:"account_name"`
-	Nonce         int64  `json:"nonce"`
-	ExpiredAt     int64  `json:"expire_at"`
-	Status        int64  `json:"status,options=0|1|2"`
-	BlockId       int64  `json:"block_id"`
-	BlockHeight   int64  `json:"block_height"`
-	CreatedAt     int64  `json:"created_at"`
-	StateRoot     string `json:"state_root"`
-}
-
 type (
-	ReqGetTxs {
-		Limit  uint16 `form:"limit,range=[1:50]"`
-		Offset uint16 `form:"offset,range=[0:100000]"`
+	Tx {
+		TxHash        string `json:"tx_hash"`
+		TxType        int64  `json:"tx_type,range=[1:64]"`
+		TxAmount      string `json:"tx_amount"`
+		TxInfo        string `json:"tx_info"`
+		TxStatus      int64  `json:"tx_status"`
+		GasFeeAssetId int64  `json:"gas_fee_asset_id"`
+		GasFee        string `json:"gas_fee"`
+		NftIndex      int64  `json:"nft_index"`
+		PairIndex     int64  `json:"pair_index"`
+		AssetId       int64  `json:"asset_id"`
+		NativeAddress string `json:"native_adress"`
+		ExtraInfo     string `json:"extra_info"`
+		Memo          string `json:"memo"`
+		AccountIndex  int64  `json:"account_index"`
+		AccountName   string `json:"account_name"`
+		Nonce         int64  `json:"nonce"`
+		ExpiredAt     int64  `json:"expire_at"`
+		Status        int64  `json:"status,options=0|1|2"`
+		BlockId       int64  `json:"block_id"`
+		BlockHeight   int64  `json:"block_height"`
+		CreatedAt     int64  `json:"created_at"`
+		StateRoot     string `json:"state_root"`
 	}
-	RespGetTxs {
+
+	Txs {
 		Total uint32 `json:"total"`
 		Txs   []*Tx  `json:"txs"`
 	}
-)
 
-type (
-	ReqGetTxsByBlockHeight {
-		BlockHeight uint64 `form:"block_height"`
-		Limit       uint16 `form:"limit,range=[1:50]"`
-		Offset      uint16 `form:"offset,range=[0:100000]"`
+	MempoolTxs {
+		Total      uint32 `json:"total"`
+		MempoolTxs []*Tx  `json:"mempool_txs"`
 	}
-	RespGetTxsByBlockHeight {
-		Total uint32 `json:"total"`
-		Txs   []*Tx  `json:"txs"`
-	}
-)
 
-type (
-	ReqGetTxsByAccountIndex {
-		AccountIndex uint32 `form:"account_index"`
-		TxType       uint32 `form:"tx_type,optional,default=0"`
-		Offset       uint16 `form:"offset,range=[0:100000]"`
-		Limit        uint16 `form:"limit,range=[1:50]"`
+	TxHash {
+		TxHash string `json:"tx_hash"`
 	}
-	RespGetTxsByAccountIndex {
-		Total uint32 `json:"total"`
-		Txs   []*Tx  `json:"txs"`
-	}
-)
 
-type (
-	ReqGetTxsByAccountName {
-		AccountName string `form:"account_name"`
-		Offset      uint32 `form:"offset,range=[0:100000]"`
-		Limit       uint32 `form:"limit,range=[1:50]"`
+	NextNonce {
+		Nonce uint64 `json:"nonce"`
 	}
-	RespGetTxsByAccountName {
-		Total uint32 `json:"total"`
-		Txs   []*Tx  `json:"txs"`
-	}
-)
 
-type (
-	ReqGetTxsByAccountPk {
-		AccountPk string `form:"account_pk"`
-		Offset    uint32 `form:"offset,range=[0:100000]"`
-		Limit     uint32 `form:"limit,range=[1:50]"`
-	}
-	RespGetTxsByAccountPk {
-		Total uint32 `json:"total"`
-		Txs   []*Tx  `json:"txs"`
-	}
-)
-
-type (
-	ReqGetTxByHash {
-		TxHash string `form:"tx_hash"`
-	}
-	RespGetTxByHash {
-		Tx          Tx    `json:"result"`
+	EnrichedTx {
+		Tx          Tx    `json:"tx"`
 		CommittedAt int64 `json:"committed_at"`
 		VerifiedAt  int64 `json:"verified_at"`
 		ExecutedAt  int64 `json:"executed_at"`
@@ -521,42 +378,36 @@ type (
 )
 
 type (
+	ReqGetBlockTxs {
+		By     string `form:"by,options=block_height|block_commitment"`
+		Value  string `form:"value"`
+		Limit  uint16 `form:"limit,range=[1:50]"`
+		Offset uint16 `form:"offset,range=[0:100000]"`
+	}
+
+	ReqGetAccountTxs {
+		By     string `form:"by,options=account_index|account_name|account_pk"`
+		Value  string `form:"value"`
+		Offset uint16 `form:"offset,range=[0:100000]"`
+		Limit  uint16 `form:"limit,range=[1:50]"`
+	}
+
+	ReqGetTx {
+		TxHash string `form:"tx_hash"`
+	}
+
 	ReqSendTx {
 		TxType uint32 `form:"tx_type"`
 		TxInfo string `form:"tx_info"`
 	}
-	RespSendTx {
-		TxId string `json:"tx_id"`
-	}
-)
 
-type (
-	ReqGetMempoolTxs {
-		Offset uint32 `form:"offset,range=[0:100000]"`
-		Limit  uint32 `form:"limit,range=[1:50]"`
+	ReqGetAccountMempoolTxs {
+		By    string `form:"by,options=account_index|account_name|account_pk"`
+		Value string `form:"value"`
 	}
-	RespGetMempoolTxs {
-		Total      uint32 `json:"total"`
-		MempoolTxs []*Tx  `json:"mempool_txs"`
-	}
-)
 
-type (
-	ReqGetmempoolTxsByAccountName {
-		AccountName string `form:"account_name"`
-	}
-	RespGetmempoolTxsByAccountName {
-		Total      uint32 `json:"total"`
-		MempoolTxs []*Tx  `json:"mempool_txs"`
-	}
-)
-
-type (
 	ReqGetNextNonce {
 		AccountIndex uint32 `form:"account_index"`
-	}
-	RespGetNextNonce {
-		Nonce uint64 `json:"nonce"`
 	}
 )
 
@@ -565,48 +416,37 @@ type (
 )
 service app-api {
 	@handler GetTxs
-	get /api/v1/tx/getTxs (ReqGetTxs) returns (RespGetTxs)
+	get /api/v1/txs (ReqGetAll) returns (Txs)
 	
-	@handler GetTxsByBlockHeight
-	get /api/v1/tx/getTxsByBlockHeight (ReqGetTxsByBlockHeight) returns (RespGetTxsByBlockHeight)
+	@handler GetBlockTxs
+	get /api/v1/blockTxs (ReqGetBlockTxs) returns (Txs)
 	
-	@handler GetTxsByAccountIndex
-	get /api/v1/tx/getTxsByAccountIndex (ReqGetTxsByAccountIndex) returns (RespGetTxsByAccountIndex)
+	@handler GetAccountTxs
+	get /api/v1/tx/accountTxs (ReqGetAccountTxs) returns (Txs)
 	
-	@handler GetTxsByAccountName
-	get /api/v1/tx/getTxsByAccountName (ReqGetTxsByAccountName) returns (RespGetTxsByAccountName)
-	
-	@handler GetTxsByAccountPk
-	get /api/v1/tx/getTxsByAccountPk (ReqGetTxsByAccountPk) returns (RespGetTxsByAccountPk)
-	
-	@handler GetTxByHash
-	get /api/v1/tx/getTxByHash (ReqGetTxByHash) returns (RespGetTxByHash)
+	@handler GetTx
+	get /api/v1/tx (ReqGetTx) returns (EnrichedTx)
 	
 	@handler GetMempoolTxs
-	get /api/v1/tx/getMempoolTxs (ReqGetMempoolTxs) returns (RespGetMempoolTxs)
+	get /api/v1/mempoolTxs (ReqGetAll) returns (MempoolTxs)
 	
-	@handler GetmempoolTxsByAccountName
-	get /api/v1/tx/getmempoolTxsByAccountName (ReqGetmempoolTxsByAccountName) returns (RespGetmempoolTxsByAccountName)
+	@handler GetAccountMempoolTxs
+	get /api/v1/accountMempoolTxs (ReqGetAccountMempoolTxs) returns (MempoolTxs)
 	
 	@handler GetNextNonce
-	get /api/v1/tx/getNextNonce (ReqGetNextNonce) returns (RespGetNextNonce)
+	get /api/v1/nextNonce (ReqGetNextNonce) returns (NextNonce)
 	
 	@handler SendTx
-	post /api/v1/tx/sendTx (ReqSendTx) returns (RespSendTx)
+	post /api/v1/tx/sendTx (ReqSendTx) returns (TxHash)
 }
 
 /* ========================= Nft =========================*/
 
 type (
-	ReqGetMaxOfferId {
-		AccountIndex uint32 `form:"account_index"`
-	}
-	RespGetMaxOfferId {
+	MaxOfferId {
 		OfferId uint64 `json:"offer_id"`
 	}
-)
 
-type (
 	Nft {
 		NftIndex            int64  `json:"nft_index"`
 		CreatorAccountIndex int64  `json:"creator_account_index"`
@@ -617,17 +457,24 @@ type (
 		CreatorTreasuryRate int64  `json:"creator_treasury_rate"`
 		CollectionId        int64  `json:"collection_id"`
 	}
+	Nfts {
+		Total int64  `json:"total"`
+		Nfts  []*Nft `json:"nfts"`
+	}
 )
 
 type (
-	ReqGetNftsByAccountIndex {
-		AccountIndex int64  `form:"account_index"`
-		Offset       uint16 `form:"offset,range=[0:100000]"`
-		Limit        uint16 `form:"limit,range=[1:50]"`
+	ReqGetMaxOfferId {
+		AccountIndex uint32 `form:"account_index"`
 	}
-	RespGetNftsByAccountIndex {
-		Total int64  `json:"total"`
-		Nfts  []*Nft `json:"nfts"`
+)
+
+type (
+	ReqGetAccountNfts {
+		By     string `form:"by,options=account_index|account_name|account_pk"`
+		Value  string `form:"value"`
+		Offset uint16 `form:"offset,range=[0:100000]"`
+		Limit  uint16 `form:"limit,range=[1:50]"`
 	}
 )
 
@@ -636,8 +483,8 @@ type (
 )
 service app-api {
 	@handler GetMaxOfferId
-	get /api/v1/nft/getMaxOfferId (ReqGetMaxOfferId) returns (RespGetMaxOfferId)
+	get /api/v1/maxOfferId (ReqGetMaxOfferId) returns (MaxOfferId)
 	
-	@handler GetNftsByAccountIndex
-	get /api/v1/nft/getNftsByAccountIndex (ReqGetNftsByAccountIndex) returns (RespGetNftsByAccountIndex)
+	@handler GetAccountNfts
+	get /api/v1/accountNfts (ReqGetAccountNfts) returns (Nfts)
 }

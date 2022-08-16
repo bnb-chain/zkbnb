@@ -25,20 +25,27 @@ func NewGetCurrencyPricesLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 	}
 }
 
-func (l *GetCurrencyPricesLogic) GetCurrencyPrices() (*types.RespGetCurrencyPrices, error) {
-	assets, err := l.svcCtx.MemCache.GetAssetsWithFallback(func() (interface{}, error) {
-		return l.svcCtx.AssetModel.GetAssetsList()
+func (l *GetCurrencyPricesLogic) GetCurrencyPrices(req *types.ReqGetAll) (resp *types.CurrencyPrices, err error) {
+	total, err := l.svcCtx.MemCache.GetAssetTotalCountWithFallback(func() (interface{}, error) {
+		return l.svcCtx.AssetModel.GetAssetsTotalCount()
 	})
 	if err != nil {
-		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrNotFound
-		}
 		return nil, errorcode.AppErrInternal
 	}
 
-	resp := &types.RespGetCurrencyPrices{
+	resp = &types.CurrencyPrices{
 		CurrencyPrices: make([]*types.CurrencyPrice, 0),
+		Total:          uint32(total),
 	}
+	if total == 0 || total <= int64(req.Offset) {
+		return resp, nil
+	}
+
+	assets, err := l.svcCtx.AssetModel.GetAssetsList(int64(req.Limit), int64(req.Offset))
+	if err != nil {
+		return nil, errorcode.AppErrInternal
+	}
+
 	for _, asset := range assets {
 		price := 0.0
 		if asset.AssetSymbol == "LEG" {
@@ -49,9 +56,6 @@ func (l *GetCurrencyPricesLogic) GetCurrencyPrices() (*types.RespGetCurrencyPric
 			price, err = l.svcCtx.PriceFetcher.GetCurrencyPrice(l.ctx, asset.AssetSymbol)
 			if err != nil {
 				logx.Errorf("fail to get price for symbol: %s, err: %s", asset.AssetSymbol, err.Error())
-				if err == errorcode.AppErrQuoteNotExist {
-					continue
-				}
 				return nil, errorcode.AppErrInternal
 			}
 		}

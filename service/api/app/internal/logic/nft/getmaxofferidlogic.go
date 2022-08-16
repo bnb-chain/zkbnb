@@ -24,7 +24,7 @@ func NewGetMaxOfferIdLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 	}
 }
 
-func (l *GetMaxOfferIdLogic) GetMaxOfferId(req *types.ReqGetMaxOfferId) (resp *types.RespGetMaxOfferId, err error) {
+func (l *GetMaxOfferIdLogic) GetMaxOfferId(req *types.ReqGetMaxOfferId) (resp *types.MaxOfferId, err error) {
 	nftIndex, err := l.svcCtx.StateFetcher.GetLatestOfferId(l.ctx, int64(req.AccountIndex))
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
@@ -32,7 +32,7 @@ func (l *GetMaxOfferIdLogic) GetMaxOfferId(req *types.ReqGetMaxOfferId) (resp *t
 		}
 		return nil, errorcode.AppErrInternal
 	}
-	return &types.RespGetMaxOfferId{
+	return &types.MaxOfferId{
 		OfferId: uint64(nftIndex),
 	}, nil
 }

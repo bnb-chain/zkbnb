@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -11,26 +12,36 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-type GetmempoolTxsByAccountNameLogic struct {
+type GetAccountMempoolTxsLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
 }
 
-func NewGetmempoolTxsByAccountNameLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetmempoolTxsByAccountNameLogic {
-	return &GetmempoolTxsByAccountNameLogic{
+func NewGetAccountMempoolTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAccountMempoolTxsLogic {
+	return &GetAccountMempoolTxsLogic{
 		Logger: logx.WithContext(ctx),
 		ctx:    ctx,
 		svcCtx: svcCtx,
 	}
 }
 
-func (l *GetmempoolTxsByAccountNameLogic) GetmempoolTxsByAccountName(req *types.ReqGetmempoolTxsByAccountName) (*types.RespGetmempoolTxsByAccountName, error) {
-	if !utils.ValidateAccountName(req.AccountName) {
-		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AccountName")
+func (l *GetAccountMempoolTxsLogic) GetAccountMempoolTxs(req *types.ReqGetAccountMempoolTxs) (resp *types.MempoolTxs, err error) {
+	accountIndex := int64(0)
+	switch req.By {
+	case "account_index":
+		accountIndex, err = strconv.ParseInt(req.Value, 10, 64)
+		if err != nil {
+			return nil, errorcode.AppErrInvalidParam.RefineError("invalid value for account_index")
+		}
+	case "account_name":
+		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByName(req.Value)
+	case "account_pk":
+		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByPk(req.Value)
+	default:
+		return nil, errorcode.AppErrInvalidParam.RefineError("param by should be account_index|account_name|account_pk")
 	}
 
-	accountIndex, err := l.svcCtx.MemCache.GetAccountIndexByName(req.AccountName)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
@@ -45,7 +56,7 @@ func (l *GetmempoolTxsByAccountNameLogic) GetmempoolTxsByAccountName(req *types.
 		}
 	}
 
-	resp := &types.RespGetmempoolTxsByAccountName{
+	resp = &types.MempoolTxs{
 		Total:      uint32(len(mempoolTxs)),
 		MempoolTxs: make([]*types.Tx, 0),
 	}

@@ -3,13 +3,12 @@ package transaction
 import (
 	"context"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
-
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
-
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type GetTxsLogic struct {
@@ -26,7 +25,7 @@ func NewGetTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTxsLogi
 	}
 }
 
-func (l *GetTxsLogic) GetTxs(req *types.ReqGetTxs) (resp *types.RespGetTxs, err error) {
+func (l *GetTxsLogic) GetTxs(req *types.ReqGetAll) (resp *types.Txs, err error) {
 	total, err := l.svcCtx.MemCache.GetTxTotalCountWithFallback(func() (interface{}, error) {
 		return l.svcCtx.TxModel.GetTxsTotalCount()
 	})
@@ -34,7 +33,7 @@ func (l *GetTxsLogic) GetTxs(req *types.ReqGetTxs) (resp *types.RespGetTxs, err 
 		return nil, errorcode.AppErrInternal
 	}
 
-	resp = &types.RespGetTxs{
+	resp = &types.Txs{
 		Total: uint32(total),
 		Txs:   make([]*types.Tx, 0),
 	}

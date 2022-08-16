@@ -26,7 +26,7 @@ func NewGetGasAccountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 	}
 }
 
-func (l *GetGasAccountLogic) GetGasAccount() (resp *types.RespGetGasAccount, err error) {
+func (l *GetGasAccountLogic) GetGasAccount() (resp *types.GasAccount, err error) {
 	accountIndexConfig, err := l.svcCtx.MemCache.GetSysConfigWithFallback(sysConfigName.GasAccountIndex, func() (interface{}, error) {
 		return l.svcCtx.SysConfigModel.GetSysConfigByName(sysConfigName.GasAccountIndex)
 	})
@@ -47,7 +47,7 @@ func (l *GetGasAccountLogic) GetGasAccount() (resp *types.RespGetGasAccount, err
 		return nil, errorcode.AppErrInternal
 	}
 
-	resp = &types.RespGetGasAccount{
+	resp = &types.GasAccount{
 		AccountStatus: int64(account.Status),
 		AccountIndex:  account.AccountIndex,
 		AccountName:   account.AccountName,

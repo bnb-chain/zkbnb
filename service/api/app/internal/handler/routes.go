@@ -32,33 +32,13 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		[]rest.Route{
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/account/getAccounts",
+				Path:    "/api/v1/accounts",
 				Handler: account.GetAccountsHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/account/getAccountStatusByPk",
-				Handler: account.GetAccountStatusByPkHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodGet,
-				Path:    "/api/v1/account/getAccountStatusByName",
-				Handler: account.GetAccountStatusByNameHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodGet,
-				Path:    "/api/v1/account/getAccountByPk",
-				Handler: account.GetAccountByPkHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodGet,
-				Path:    "/api/v1/account/getAccountByIndex",
-				Handler: account.GetAccountByIndexHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodGet,
-				Path:    "/api/v1/account/getAccountByName",
-				Handler: account.GetAccountByNameHandler(serverCtx),
+				Path:    "/api/v1/account",
+				Handler: account.GetAccountHandler(serverCtx),
 			},
 		},
 	)
@@ -67,7 +47,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		[]rest.Route{
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/asset/getAssets",
+				Path:    "/api/v1/assets",
 				Handler: asset.GetAssetsHandler(serverCtx),
 			},
 		},
@@ -77,22 +57,17 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		[]rest.Route{
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/block/getBlocks",
+				Path:    "/api/v1/blocks",
 				Handler: block.GetBlocksHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/block/getBlockByCommitment",
-				Handler: block.GetBlockByCommitmentHandler(serverCtx),
+				Path:    "/api/v1/block",
+				Handler: block.GetBlockHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/block/getBlockByHeight",
-				Handler: block.GetBlockByHeightHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodGet,
-				Path:    "/api/v1/block/getCurrentHeight",
+				Path:    "/api/v1/currentHeight",
 				Handler: block.GetCurrentHeightHandler(serverCtx),
 			},
 		},
@@ -102,42 +77,42 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		[]rest.Route{
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/info/getLayer2BasicInfo",
+				Path:    "/api/v1/layer2BasicInfo",
 				Handler: info.GetLayer2BasicInfoHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/info/getCurrencyPriceBySymbol",
-				Handler: info.GetCurrencyPriceBySymbolHandler(serverCtx),
+				Path:    "/api/v1/currencyPrice",
+				Handler: info.GetCurrencyPriceHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/info/getCurrencyPrices",
+				Path:    "/api/v1/currencyPrices",
 				Handler: info.GetCurrencyPricesHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/info/getGasFee",
+				Path:    "/api/v1/gasFee",
 				Handler: info.GetGasFeeHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/info/getWithdrawGasFee",
+				Path:    "/api/v1/withdrawGasFee",
 				Handler: info.GetWithdrawGasFeeHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/info/getGasFeeAssets",
+				Path:    "/api/v1/gasFeeAssets",
 				Handler: info.GetGasFeeAssetsHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/info/getGasAccount",
+				Path:    "/api/v1/gasAccount",
 				Handler: info.GetGasAccountHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/info/search",
+				Path:    "/api/v1/search",
 				Handler: info.SearchHandler(serverCtx),
 			},
 		},
@@ -147,23 +122,23 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		[]rest.Route{
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/pair/getSwapAmount",
+				Path:    "/api/v1/swapAmount",
 				Handler: pair.GetSwapAmountHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/pair/getPairs",
+				Path:    "/api/v1/pairs",
 				Handler: pair.GetPairsHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/pair/getLpValue",
+				Path:    "/api/v1/lpValue",
 				Handler: pair.GetLpValueHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/pair/getPairByIndex",
-				Handler: pair.GetPairByIndexHandler(serverCtx),
+				Path:    "/api/v1/pair",
+				Handler: pair.GetPairHandler(serverCtx),
 			},
 		},
 	)
@@ -172,47 +147,37 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		[]rest.Route{
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/tx/getTxs",
+				Path:    "/api/v1/txs",
 				Handler: transaction.GetTxsHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/tx/getTxsByBlockHeight",
-				Handler: transaction.GetTxsByBlockHeightHandler(serverCtx),
+				Path:    "/api/v1/blockTxs",
+				Handler: transaction.GetBlockTxsHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/tx/getTxsByAccountIndex",
-				Handler: transaction.GetTxsByAccountIndexHandler(serverCtx),
+				Path:    "/api/v1/tx/accountTxs",
+				Handler: transaction.GetAccountTxsHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/tx/getTxsByAccountName",
-				Handler: transaction.GetTxsByAccountNameHandler(serverCtx),
+				Path:    "/api/v1/tx",
+				Handler: transaction.GetTxHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/tx/getTxsByAccountPk",
-				Handler: transaction.GetTxsByAccountPkHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodGet,
-				Path:    "/api/v1/tx/getTxByHash",
-				Handler: transaction.GetTxByHashHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodGet,
-				Path:    "/api/v1/tx/getMempoolTxs",
+				Path:    "/api/v1/mempoolTxs",
 				Handler: transaction.GetMempoolTxsHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/tx/getmempoolTxsByAccountName",
-				Handler: transaction.GetmempoolTxsByAccountNameHandler(serverCtx),
+				Path:    "/api/v1/accountMempoolTxs",
+				Handler: transaction.GetAccountMempoolTxsHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/tx/getNextNonce",
+				Path:    "/api/v1/nextNonce",
 				Handler: transaction.GetNextNonceHandler(serverCtx),
 			},
 			{
@@ -227,13 +192,13 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		[]rest.Route{
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/nft/getMaxOfferId",
+				Path:    "/api/v1/maxOfferId",
 				Handler: nft.GetMaxOfferIdHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/nft/getNftsByAccountIndex",
-				Handler: nft.GetNftsByAccountIndexHandler(serverCtx),
+				Path:    "/api/v1/accountNfts",
+				Handler: nft.GetAccountNftsHandler(serverCtx),
 			},
 		},
 	)

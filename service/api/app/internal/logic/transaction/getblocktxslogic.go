@@ -2,33 +2,44 @@ package transaction
 
 import (
 	"context"
+	"strconv"
+
+	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
-
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
-
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
-type GetTxsByBlockHeightLogic struct {
+type GetBlockTxsLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
 }
 
-func NewGetTxsByBlockHeightLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTxsByBlockHeightLogic {
-	return &GetTxsByBlockHeightLogic{
+func NewGetBlockTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetBlockTxsLogic {
+	return &GetBlockTxsLogic{
 		Logger: logx.WithContext(ctx),
 		ctx:    ctx,
 		svcCtx: svcCtx,
 	}
 }
 
-func (l *GetTxsByBlockHeightLogic) GetTxsByBlockHeight(req *types.ReqGetTxsByBlockHeight) (resp *types.RespGetTxsByBlockHeight, err error) {
-	block, err := l.svcCtx.MemCache.GetBlockByHeightWithFallback(int64(req.BlockHeight), func() (interface{}, error) {
-		return l.svcCtx.BlockModel.GetBlockByBlockHeight(int64(req.BlockHeight))
+func (l *GetBlockTxsLogic) GetBlockTxs(req *types.ReqGetBlockTxs) (resp *types.Txs, err error) {
+	blockHeight := int64(0)
+	switch req.By {
+	case "height":
+		blockHeight, err = strconv.ParseInt(req.Value, 10, 64)
+		if err != nil {
+			return nil, errorcode.AppErrInvalidParam.RefineError("invalid value for block_height")
+		}
+	default:
+		return nil, errorcode.AppErrInvalidParam.RefineError("param by should be block_height")
+	}
+
+	block, err := l.svcCtx.MemCache.GetBlockByHeightWithFallback(blockHeight, func() (interface{}, error) {
+		return l.svcCtx.BlockModel.GetBlockByBlockHeight(blockHeight)
 	})
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
@@ -37,7 +48,7 @@ func (l *GetTxsByBlockHeightLogic) GetTxsByBlockHeight(req *types.ReqGetTxsByBlo
 		return nil, errorcode.AppErrInternal
 	}
 
-	resp = &types.RespGetTxsByBlockHeight{
+	resp = &types.Txs{
 		Total: uint32(len(block.Txs)),
 		Txs:   make([]*types.Tx, 0),
 	}

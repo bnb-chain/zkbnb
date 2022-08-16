@@ -27,7 +27,7 @@ func NewGetLpValueLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetLpV
 	}
 }
 
-func (l *GetLpValueLogic) GetLPValue(req *types.ReqGetLpValue) (resp *types.RespGetLpValue, err error) {
+func (l *GetLpValueLogic) GetLPValue(req *types.ReqGetLpValue) (resp *types.LpValue, err error) {
 	if !utils.ValidatePairIndex(req.PairIndex) {
 		logx.Errorf("invalid PairIndex: %d", req.PairIndex)
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid PairIndex")
@@ -54,7 +54,7 @@ func (l *GetLpValueLogic) GetLPValue(req *types.ReqGetLpValue) (resp *types.Resp
 		}
 	}
 
-	resp = &types.RespGetLpValue{
+	resp = &types.LpValue{
 		AssetAId:     uint32(liquidity.AssetAId),
 		AssetAAmount: assetAAmount.String(),
 		AssetBId:     uint32(liquidity.AssetBId),

@@ -10,16 +10,16 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-func GetTxsByAccountIndexHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func GetAccountMempoolTxsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.ReqGetTxsByAccountIndex
+		var req types.ReqGetAccountMempoolTxs
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.Error(w, err)
 			return
 		}
 
-		l := transaction.NewGetTxsByAccountIndexLogic(r.Context(), svcCtx)
-		resp, err := l.GetTxsByAccountIndex(&req)
+		l := transaction.NewGetAccountMempoolTxsLogic(r.Context(), svcCtx)
+		resp, err := l.GetAccountMempoolTxs(&req)
 		if err != nil {
 			httpx.Error(w, err)
 		} else {

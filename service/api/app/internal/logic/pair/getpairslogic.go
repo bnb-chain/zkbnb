@@ -3,12 +3,11 @@ package pair
 import (
 	"context"
 
-	"github.com/bnb-chain/zkbas/common/errorcode"
+	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
-
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type GetPairsLogic struct {
@@ -25,7 +24,7 @@ func NewGetPairsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPairs
 	}
 }
 
-func (l *GetPairsLogic) GetPairs() (resp *types.RespGetPairs, err error) {
+func (l *GetPairsLogic) GetPairs() (resp *types.Pairs, err error) {
 	liquidityAssets, err := l.svcCtx.LiquidityModel.GetAllLiquidityAssets()
 	if err != nil {
 		if err == errorcode.DbErrNotFound {

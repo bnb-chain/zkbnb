@@ -27,7 +27,7 @@ func NewGetSwapAmountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 	}
 }
 
-func (l *GetSwapAmountLogic) GetSwapAmount(req *types.ReqGetSwapAmount) (*types.RespGetSwapAmount, error) {
+func (l *GetSwapAmountLogic) GetSwapAmount(req *types.ReqGetSwapAmount) (*types.SwapAmount, error) {
 	if !utils.ValidatePairIndex(req.PairIndex) {
 		logx.Errorf("invalid PairIndex: %d", req.PairIndex)
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid PairIndex")
@@ -69,7 +69,7 @@ func (l *GetSwapAmountLogic) GetSwapAmount(req *types.ReqGetSwapAmount) (*types.
 		logx.Errorf("fail to compute delta, err: %s", err.Error())
 		return nil, errorcode.AppErrInternal
 	}
-	return &types.RespGetSwapAmount{
+	return &types.SwapAmount{
 		AssetId:     uint32(toAssetId),
 		AssetAmount: assetAmount.String(),
 	}, nil

@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"github.com/bnb-chain/zkbas/common/errorcode"
-	table "github.com/bnb-chain/zkbas/common/model/asset"
-
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 
@@ -26,19 +24,14 @@ func NewGetGasFeeAssetsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *G
 	}
 }
 
-func (l *GetGasFeeAssetsLogic) GetGasFeeAssets() (resp *types.RespGetGasFeeAssets, err error) {
-	assets, err := l.svcCtx.MemCache.GetAssetsWithFallback(func() (interface{}, error) {
-		return l.svcCtx.AssetModel.GetAssetsList()
-	})
+func (l *GetGasFeeAssetsLogic) GetGasFeeAssets() (resp *types.GasFeeAssets, err error) {
+	assets, err := l.svcCtx.AssetModel.GetGasAssets()
 	if err != nil {
 		return nil, errorcode.AppErrInternal
 	}
 
 	resp.Assets = make([]types.Asset, 0)
 	for _, asset := range assets {
-		if asset.IsGasAsset != table.IsGasAsset {
-			continue
-		}
 		resp.Assets = append(resp.Assets, types.Asset{
 			AssetId:       asset.AssetId,
 			AssetName:     asset.AssetName,
