@@ -25,7 +25,7 @@ func NewGetNextNonceLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetN
 }
 
 func (l *GetNextNonceLogic) GetNextNonce(req *types.ReqGetNextNonce) (*types.NextNonce, error) {
-	accountInfo, err := l.svcCtx.StateFetcher.GetLatestAccount(l.ctx, int64(req.AccountIndex))
+	nonce, err := l.svcCtx.StateFetcher.GetPendingNonce(int64(req.AccountIndex))
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
@@ -33,6 +33,6 @@ func (l *GetNextNonceLogic) GetNextNonce(req *types.ReqGetNextNonce) (*types.Nex
 		return nil, errorcode.AppErrInternal
 	}
 	return &types.NextNonce{
-		Nonce: uint64(accountInfo.Nonce),
+		Nonce: uint64(nonce),
 	}, nil
 }

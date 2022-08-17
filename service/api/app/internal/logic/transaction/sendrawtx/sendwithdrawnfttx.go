@@ -69,7 +69,7 @@ func (s *withdrawNftTxSender) SendTx(rawTxInfo string) (txId string, err error) 
 	}
 
 	// check from account
-	fromAccount, err := s.svcCtx.StateFetcher.GetLatestAccount(s.ctx, txInfo.AccountIndex)
+	fromAccount, err := s.svcCtx.StateFetcher.GetLatestAccount(txInfo.AccountIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return "", errorcode.AppErrInvalidTxField.RefineError("invalid AccountIndex")
@@ -78,7 +78,7 @@ func (s *withdrawNftTxSender) SendTx(rawTxInfo string) (txId string, err error) 
 		return "", errorcode.AppErrInternal
 	}
 
-	nft, err := s.svcCtx.StateFetcher.GetLatestNft(s.ctx, txInfo.NftIndex)
+	nft, err := s.svcCtx.StateFetcher.GetLatestNft(txInfo.NftIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return "", errorcode.AppErrInvalidTxField.RefineError("invalid NftIndex")
@@ -97,7 +97,7 @@ func (s *withdrawNftTxSender) SendTx(rawTxInfo string) (txId string, err error) 
 	}
 
 	//check nonce
-	if err := s.nonceChecker.CheckNonce(fromAccount, txInfo.Nonce); err != nil {
+	if err := s.nonceChecker.CheckNonce(fromAccount.AccountIndex, txInfo.Nonce); err != nil {
 		return "", errorcode.AppErrInvalidTxField.RefineError(err.Error())
 	}
 

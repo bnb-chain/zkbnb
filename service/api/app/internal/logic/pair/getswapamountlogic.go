@@ -43,7 +43,7 @@ func (l *GetSwapAmountLogic) GetSwapAmount(req *types.ReqGetSwapAmount) (*types.
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AssetAmount")
 	}
 
-	liquidity, err := l.svcCtx.StateFetcher.GetLatestLiquidity(l.ctx, int64(req.PairIndex))
+	liquidity, err := l.svcCtx.StateFetcher.GetLatestLiquidity(int64(req.PairIndex))
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound

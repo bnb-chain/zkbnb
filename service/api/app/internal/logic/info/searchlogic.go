@@ -3,6 +3,7 @@ package info
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -39,17 +40,27 @@ func (l *SearchLogic) Search(req *types.ReqSearch) (*types.Search, error) {
 		resp.DataType = util.TypeBlockHeight
 		return resp, nil
 	}
-	// TODO: prevent sql slow query, bloom Filter
+
+	if strings.Contains(req.Keyword, ".") {
+		if _, err = l.svcCtx.MemCache.GetAccountIndexByName(req.Keyword); err != nil {
+			if err == errorcode.DbErrNotFound {
+				return nil, errorcode.AppErrNotFound
+			}
+			return nil, errorcode.AppErrInternal
+		}
+		resp.DataType = util.TypeAccountName
+		return resp, nil
+	}
+
+	if _, err = l.svcCtx.MemCache.GetAccountIndexByPk(req.Keyword); err == nil {
+		resp.DataType = util.TypeAccountPk
+		return resp, nil
+	}
+
 	if _, err = l.svcCtx.TxModel.GetTxByTxHash(req.Keyword); err == nil {
 		resp.DataType = util.TypeTxType
 		return resp, nil
 	}
-	if _, err = l.svcCtx.AccountModel.GetAccountByAccountName(req.Keyword); err != nil {
-		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrNotFound
-		}
-		return nil, errorcode.AppErrInternal
-	}
-	resp.DataType = util.TypeAccountName
-	return resp, nil
+
+	return resp, errorcode.AppErrNotFound
 }

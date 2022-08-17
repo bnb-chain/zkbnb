@@ -131,7 +131,7 @@ func (s *atomicMatchTxSender) SendTx(rawTxInfo string) (txId string, err error) 
 	}
 
 	//check from account
-	fromAccount, err := s.svcCtx.StateFetcher.GetLatestAccount(s.ctx, txInfo.AccountIndex)
+	fromAccount, err := s.svcCtx.StateFetcher.GetLatestAccount(txInfo.AccountIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return "", errorcode.AppErrInvalidTxField.RefineError("invalid FromAccountIndex")
@@ -140,7 +140,7 @@ func (s *atomicMatchTxSender) SendTx(rawTxInfo string) (txId string, err error) 
 		return "", errorcode.AppErrInternal
 	}
 
-	nftInfo, err := s.svcCtx.StateFetcher.GetLatestNft(s.ctx, txInfo.BuyOffer.NftIndex)
+	nftInfo, err := s.svcCtx.StateFetcher.GetLatestNft(txInfo.BuyOffer.NftIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return "", errorcode.AppErrInvalidTxField.RefineError("invalid BuyOffer.NftIndex")
@@ -159,7 +159,7 @@ func (s *atomicMatchTxSender) SendTx(rawTxInfo string) (txId string, err error) 
 	}
 
 	//check nonce
-	if err := s.nonceChecker.CheckNonce(fromAccount, txInfo.Nonce); err != nil {
+	if err := s.nonceChecker.CheckNonce(fromAccount.AccountIndex, txInfo.Nonce); err != nil {
 		return "", errorcode.AppErrInvalidTxField.RefineError(err.Error())
 	}
 

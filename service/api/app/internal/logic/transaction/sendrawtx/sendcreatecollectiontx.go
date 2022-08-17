@@ -69,7 +69,7 @@ func (s *createCollectionTxSender) SendTx(rawTxInfo string) (txId string, err er
 	}
 
 	//check from account
-	fromAccount, err := s.svcCtx.StateFetcher.GetLatestAccount(s.ctx, txInfo.AccountIndex)
+	fromAccount, err := s.svcCtx.StateFetcher.GetLatestAccount(txInfo.AccountIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return "", errorcode.AppErrInvalidTxField.RefineError("invalid FromAccountIndex")
@@ -84,7 +84,7 @@ func (s *createCollectionTxSender) SendTx(rawTxInfo string) (txId string, err er
 	}
 
 	//check nonce
-	if err := s.nonceChecker.CheckNonce(fromAccount, txInfo.Nonce); err != nil {
+	if err := s.nonceChecker.CheckNonce(fromAccount.AccountIndex, txInfo.Nonce); err != nil {
 		return "", errorcode.AppErrInvalidTxField.RefineError(err.Error())
 	}
 

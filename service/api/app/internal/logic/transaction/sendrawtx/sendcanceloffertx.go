@@ -70,7 +70,7 @@ func (s *cancelOfferTxSender) SendTx(rawTxInfo string) (txId string, err error) 
 		return "", errorcode.AppErrInvalidTxField.RefineError("invalid Signature")
 	}
 
-	fromAccount, err := s.svcCtx.StateFetcher.GetLatestAccount(s.ctx, txInfo.AccountIndex)
+	fromAccount, err := s.svcCtx.StateFetcher.GetLatestAccount(txInfo.AccountIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return "", errorcode.AppErrInvalidTxField.RefineError("invalid AccountIndex")
@@ -102,7 +102,7 @@ func (s *cancelOfferTxSender) SendTx(rawTxInfo string) (txId string, err error) 
 	}
 
 	//check nonce
-	if err := s.nonceChecker.CheckNonce(fromAccount, txInfo.Nonce); err != nil {
+	if err := s.nonceChecker.CheckNonce(fromAccount.AccountIndex, txInfo.Nonce); err != nil {
 		return "", errorcode.AppErrInvalidTxField.RefineError(err.Error())
 	}
 

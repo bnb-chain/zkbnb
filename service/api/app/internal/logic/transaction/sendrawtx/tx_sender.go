@@ -6,18 +6,17 @@ import (
 	"math/big"
 	"strconv"
 
+	"github.com/bnb-chain/zkbas/service/api/app/internal/fetcher/state"
+
 	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/bnb-chain/zkbas/common/commonConstant"
-	"github.com/bnb-chain/zkbas/common/errorcode"
-
-	"github.com/bnb-chain/zkbas/common/model/mempool"
-	"github.com/bnb-chain/zkbas/common/model/tx"
-
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
-	"github.com/bnb-chain/zkbas/common/model/sysconfig"
+	"github.com/bnb-chain/zkbas/common/commonConstant"
+	"github.com/bnb-chain/zkbas/common/errorcode"
+	"github.com/bnb-chain/zkbas/common/model/mempool"
+	"github.com/bnb-chain/zkbas/common/model/sysConfig"
+	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/sysConfigName"
 )
 
@@ -29,7 +28,7 @@ type gasChecker struct {
 	gasAccountIndex int64
 }
 
-func NewGasChecker(sysConfigModel sysconfig.SysConfigModel) *gasChecker {
+func NewGasChecker(sysConfigModel sysConfig.SysConfigModel) *gasChecker {
 	gasAccountIndexConfig, err := sysConfigModel.GetSysConfigByName(sysConfigName.GasAccountIndex)
 	if err != nil {
 		logx.Errorf("fail to get config: %s, err: %s", sysConfigName.GasAccountIndex, err.Error())
@@ -57,18 +56,23 @@ func (c *gasChecker) CheckGas(account *commonAsset.AccountInfo, txGasAccountInde
 }
 
 type NonceChecker interface {
-	CheckNonce(account *commonAsset.AccountInfo, txNonce int64) error
+	CheckNonce(accountIndex int64, txNonce int64) error
 }
 
 type nonceChecker struct {
+	stateFetcher state.Fetcher
 }
 
-func NewNonceChecker() *nonceChecker {
-	return &nonceChecker{}
+func NewNonceChecker(fetcher state.Fetcher) *nonceChecker {
+	return &nonceChecker{stateFetcher: fetcher}
 }
 
-func (c *nonceChecker) CheckNonce(account *commonAsset.AccountInfo, txNonce int64) error {
-	if account.Nonce != txNonce {
+func (c *nonceChecker) CheckNonce(accountIndex int64, txNonce int64) error {
+	pendingNonce, err := c.stateFetcher.GetPendingNonce(accountIndex)
+	if err != nil {
+		return errors.New("cannot verify Nonce")
+	}
+	if pendingNonce != txNonce {
 		return errors.New("invalid Nonce")
 	}
 	return nil
@@ -81,11 +85,11 @@ type MempoolTxSender interface {
 }
 
 type mempoolTxSender struct {
-	mempoolTxModel mempool.MemPoolModel
+	mempoolTxModel mempool.MempoolModel
 	failTxModel    tx.FailTxModel
 }
 
-func NewMempoolTxSender(mempoolTxModel mempool.MemPoolModel,
+func NewMempoolTxSender(mempoolTxModel mempool.MempoolModel,
 	failTxModel tx.FailTxModel) *mempoolTxSender {
 	return &mempoolTxSender{
 		mempoolTxModel: mempoolTxModel,

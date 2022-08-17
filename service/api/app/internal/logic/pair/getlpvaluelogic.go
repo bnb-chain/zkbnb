@@ -38,7 +38,7 @@ func (l *GetLpValueLogic) GetLPValue(req *types.ReqGetLpValue) (resp *types.LpVa
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid LpAmount")
 	}
 
-	liquidity, err := l.svcCtx.StateFetcher.GetLatestLiquidity(l.ctx, int64(req.PairIndex))
+	liquidity, err := l.svcCtx.StateFetcher.GetLatestLiquidity(int64(req.PairIndex))
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound

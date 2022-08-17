@@ -4,15 +4,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bnb-chain/zkbas/common/model/sysconfig"
-
-	"github.com/zeromicro/go-zero/core/logx"
-
 	gocache "github.com/patrickmn/go-cache"
+	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/asset"
 	"github.com/bnb-chain/zkbas/common/model/block"
+	"github.com/bnb-chain/zkbas/common/model/sysConfig"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 )
 
@@ -269,11 +267,11 @@ func (m *MemCache) GetPriceWithFallback(symbol string, f fallback) (float64, err
 	return price.(float64), nil
 }
 
-func (m *MemCache) GetSysConfigWithFallback(configName string, f fallback) (*sysconfig.SysConfig, error) {
+func (m *MemCache) GetSysConfigWithFallback(configName string, f fallback) (*sysConfig.SysConfig, error) {
 	key := fmt.Sprintf("%s%s", SysConfigKeyPrefix, configName)
 	c, err := m.getWithSet(key, gocache.NoExpiration, f)
 	if err != nil {
 		return nil, err
 	}
-	return c.(*sysconfig.SysConfig), nil
+	return c.(*sysConfig.SysConfig), nil
 }

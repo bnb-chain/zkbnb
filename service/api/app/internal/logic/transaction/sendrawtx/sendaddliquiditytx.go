@@ -69,7 +69,7 @@ func (s *addLiquidityTxSender) SendTx(rawTxInfo string) (txId string, err error)
 		return "", errorcode.AppErrInvalidTxField.RefineError("invalid Signature")
 	}
 
-	liquidity, err := s.svcCtx.StateFetcher.GetLatestLiquidity(s.ctx, txInfo.PairIndex)
+	liquidity, err := s.svcCtx.StateFetcher.GetLatestLiquidity(txInfo.PairIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return "", errorcode.AppErrInvalidTxField.RefineError("invalid PairIndex")
@@ -83,7 +83,7 @@ func (s *addLiquidityTxSender) SendTx(rawTxInfo string) (txId string, err error)
 	}
 
 	//check from account
-	fromAccount, err := s.svcCtx.StateFetcher.GetLatestAccount(s.ctx, txInfo.FromAccountIndex)
+	fromAccount, err := s.svcCtx.StateFetcher.GetLatestAccount(txInfo.FromAccountIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return "", errorcode.AppErrInvalidTxField.RefineError("invalid FromAccountIndex")
@@ -110,7 +110,7 @@ func (s *addLiquidityTxSender) SendTx(rawTxInfo string) (txId string, err error)
 	}
 
 	//check nonce
-	if err := s.nonceChecker.CheckNonce(fromAccount, txInfo.Nonce); err != nil {
+	if err := s.nonceChecker.CheckNonce(fromAccount.AccountIndex, txInfo.Nonce); err != nil {
 		return "", errorcode.AppErrInvalidTxField.RefineError(err.Error())
 	}
 

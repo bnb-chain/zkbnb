@@ -85,7 +85,7 @@ func (s *mintNftTxSender) SendTx(rawTxInfo string) (txId string, err error) {
 	}
 
 	//check creator account
-	creatorAccount, err := s.svcCtx.StateFetcher.GetLatestAccount(s.ctx, txInfo.CreatorAccountIndex)
+	creatorAccount, err := s.svcCtx.StateFetcher.GetLatestAccount(txInfo.CreatorAccountIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return "", errorcode.AppErrInvalidTxField.RefineError("invalid FromAccountIndex")
@@ -105,7 +105,7 @@ func (s *mintNftTxSender) SendTx(rawTxInfo string) (txId string, err error) {
 	}
 
 	//check nonce
-	if err := s.nonceChecker.CheckNonce(creatorAccount, txInfo.Nonce); err != nil {
+	if err := s.nonceChecker.CheckNonce(creatorAccount.AccountIndex, txInfo.Nonce); err != nil {
 		return "", errorcode.AppErrInvalidTxField.RefineError(err.Error())
 	}
 

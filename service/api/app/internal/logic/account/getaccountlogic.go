@@ -48,7 +48,7 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 		return nil, errorcode.AppErrInternal
 	}
 
-	account, err := l.svcCtx.StateFetcher.GetLatestAccount(l.ctx, accountIndex)
+	account, err := l.svcCtx.StateFetcher.GetLatestAccount(accountIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound

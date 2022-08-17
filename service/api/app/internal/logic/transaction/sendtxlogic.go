@@ -21,7 +21,7 @@ type SendTxLogic struct {
 
 func NewSendTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendTxLogic {
 	gasChecker := sendrawtx.NewGasChecker(svcCtx.SysConfigModel)
-	nonceChecker := sendrawtx.NewNonceChecker()
+	nonceChecker := sendrawtx.NewNonceChecker(svcCtx.StateFetcher)
 	mempoolTxSender := sendrawtx.NewMempoolTxSender(svcCtx.MempoolModel, svcCtx.FailTxModel)
 
 	txSenders := make(map[int]sendrawtx.TxSender)
