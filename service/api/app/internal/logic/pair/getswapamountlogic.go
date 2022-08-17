@@ -50,15 +50,20 @@ func (l *GetSwapAmountLogic) GetSwapAmount(req *types.ReqGetSwapAmount) (*types.
 		}
 		return nil, errorcode.AppErrInternal
 	}
-	if liquidity.AssetA == nil || liquidity.AssetA.Cmp(big.NewInt(0)) == 0 ||
-		liquidity.AssetB == nil || liquidity.AssetB.Cmp(big.NewInt(0)) == 0 {
-		logx.Errorf("invalid liquidity asset amount: %v, err: %s", liquidity, errorcode.AppErrLiquidityInvalidAssetAmount.Error())
-		return nil, errorcode.AppErrLiquidityInvalidAssetAmount
+
+	if liquidity.AssetA == nil || liquidity.AssetB == nil {
+		logx.Errorf("invalid liquidity: %v", liquidity)
+		return nil, errorcode.AppErrInternal
 	}
 
 	if int64(req.AssetId) != liquidity.AssetAId && int64(req.AssetId) != liquidity.AssetBId {
-		logx.Errorf("invalid liquidity asset id: %v, err: %s", liquidity, errorcode.AppErrLiquidityInvalidAssetAmount.Error())
-		return nil, errorcode.AppErrLiquidityInvalidAssetID
+		logx.Errorf("invalid liquidity asset ids: %v", liquidity)
+		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AssetId")
+	}
+
+	if liquidity.AssetA.Cmp(big.NewInt(0)) == 0 || liquidity.AssetB.Cmp(big.NewInt(0)) == 0 {
+		logx.Errorf("invalid liquidity asset amount: %v", liquidity)
+		return nil, errorcode.AppErrInvalidParam.RefineError("invalid PairIndex, empty liquidity or invalid pair")
 	}
 
 	var assetAmount *big.Int

@@ -381,10 +381,8 @@ type (
 
 type (
 	ReqGetBlockTxs {
-		By     string `form:"by,options=block_height|block_commitment"`
-		Value  string `form:"value"`
-		Limit  uint16 `form:"limit,range=[1:50]"`
-		Offset uint16 `form:"offset,range=[0:100000]"`
+		By    string `form:"by,options=block_height|block_commitment"`
+		Value string `form:"value"`
 	}
 
 	ReqGetAccountTxs {

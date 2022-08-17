@@ -52,9 +52,6 @@ func (l *GetCurrencyPriceLogic) GetCurrencyPrice(req *types.ReqGetCurrencyPrice)
 
 	price, err := l.svcCtx.PriceFetcher.GetCurrencyPrice(l.ctx, symbol)
 	if err != nil {
-		if err == errorcode.AppErrQuoteNotExist {
-			return nil, err
-		}
 		return nil, errorcode.AppErrInternal
 	}
 	resp = &types.CurrencyPrice{
