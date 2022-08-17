@@ -47,6 +47,7 @@ func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetAll) (*types.Mempool
 	for _, t := range mempoolTxs {
 		tx := utils.DbMempoolTx2Tx(t)
 		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
+		tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
 		resp.MempoolTxs = append(resp.MempoolTxs, tx)
 	}
 	return resp, nil

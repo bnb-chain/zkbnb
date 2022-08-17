@@ -34,6 +34,7 @@ func (l *GetTxLogic) GetTx(req *types.ReqGetTx) (resp *types.EnrichedTx, err err
 	if err == nil {
 		resp.Tx = *utils.DbTx2Tx(tx)
 		resp.Tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
+		resp.Tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
 		block, err := l.svcCtx.MemCache.GetBlockByHeightWithFallback(tx.BlockHeight, func() (interface{}, error) {
 			return l.svcCtx.BlockModel.GetBlockByBlockHeight(resp.Tx.BlockHeight)
 		})
@@ -55,6 +56,7 @@ func (l *GetTxLogic) GetTx(req *types.ReqGetTx) (resp *types.EnrichedTx, err err
 		}
 		resp.Tx = *utils.DbMempoolTx2Tx(memppolTx)
 		resp.Tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
+		resp.Tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
 	}
 	if resp.Tx.TxType == commonTx.TxTypeSwap {
 		txInfo, err := commonTx.ParseSwapTxInfo(tx.TxInfo)

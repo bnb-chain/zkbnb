@@ -64,8 +64,10 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 		Assets:        make([]*types.AccountAsset, 0),
 	}
 	for _, asset := range account.AssetInfo {
+		assetName, _ := l.svcCtx.MemCache.GetAssetNameById(asset.AssetId)
 		resp.Assets = append(resp.Assets, &types.AccountAsset{
 			AssetId:                  uint32(asset.AssetId),
+			AssetName:                assetName,
 			Balance:                  asset.Balance.String(),
 			LpAmount:                 asset.LpAmount.String(),
 			OfferCanceledOrFinalized: asset.OfferCanceledOrFinalized.String(),

@@ -63,6 +63,7 @@ func (l *GetBlockTxsLogic) GetBlockTxs(req *types.ReqGetBlockTxs) (resp *types.T
 	for _, t := range block.Txs {
 		tx := utils.DbTx2Tx(t)
 		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
+		tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
 		resp.Txs = append(resp.Txs, tx)
 	}
 	return resp, nil

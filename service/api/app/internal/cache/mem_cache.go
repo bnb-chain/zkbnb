@@ -30,6 +30,7 @@ const (
 	TxByHashKeyPrefix          = "h:"  //key for cache: txHash -> tx
 	TxCountKeyPrefix           = "tc"  //key for cache: total tx count
 	AssetCountKeyKeyPrefix     = "AC"  //key for cache: total asset count
+	AssetIdNameKeyPrefix       = "IN:" //key for cache: assetId -> assetName
 	AssetByIdKeyPrefix         = "I:"  //key for cache: assetId -> asset
 	AssetBySymbolKeyPrefix     = "S:"  //key for cache: assetSymbol -> asset
 	PriceKeyPrefix             = "p:"  //key for cache: symbol -> price
@@ -41,6 +42,7 @@ type fallback func() (interface{}, error)
 type MemCache struct {
 	goCache           *gocache.Cache
 	accountModel      account.AccountModel
+	assetModel        asset.AssetModel
 	accountExpiration time.Duration
 	blockExpiration   time.Duration
 	txExpiration      time.Duration
@@ -48,11 +50,13 @@ type MemCache struct {
 	priceExpiration   time.Duration
 }
 
-func NewMemCache(accountModel account.AccountModel, accountExpiration, blockExpiration, txExpiration,
+func NewMemCache(accountModel account.AccountModel, assetModel asset.AssetModel,
+	accountExpiration, blockExpiration, txExpiration,
 	assetExpiration, priceExpiration int) *MemCache {
 	memCache := &MemCache{
 		goCache:           gocache.New(cacheDefaultExpiration, cacheDefaultPurgeInterval),
 		accountModel:      accountModel,
+		assetModel:        assetModel,
 		accountExpiration: time.Duration(accountExpiration) * time.Millisecond,
 		blockExpiration:   time.Duration(blockExpiration) * time.Millisecond,
 		txExpiration:      time.Duration(txExpiration) * time.Millisecond,
@@ -256,6 +260,21 @@ func (m *MemCache) GetAssetBySymbolWithFallback(assetSymbol string, f fallback) 
 	key = fmt.Sprintf("%s%d", AssetByIdKeyPrefix, asset.AssetId)
 	m.goCache.Set(key, asset, m.assetExpiration)
 	return asset, nil
+}
+
+func (m *MemCache) GetAssetNameById(assetId int64) (string, error) {
+	key := fmt.Sprintf("%s%d", AssetIdNameKeyPrefix, assetId)
+	name, found := m.goCache.Get(key)
+	if found {
+		return name.(string), nil
+	}
+	asset, err := m.assetModel.GetAssetByAssetId(assetId)
+	if err != nil {
+		return "", err
+	}
+
+	m.goCache.Set(key, asset.AssetName, gocache.NoExpiration)
+	return asset.AssetName, nil
 }
 
 func (m *MemCache) GetPriceWithFallback(symbol string, f fallback) (float64, error) {

@@ -33,6 +33,7 @@ type ReqGetAll {
 type (
 	AccountAsset {
 		AssetId                  uint32 `json:"asset_id"`
+		AssetName                string `json:"asset_name"`
 		Balance                  string `json:"balance"`
 		LpAmount                 string `json:"lp_amount"`
 		OfferCanceledOrFinalized string `json:"offer_canceled_or_finalized"`
@@ -256,6 +257,7 @@ service app-api {
 type (
 	SwapAmount {
 		AssetId     uint32 `json:"asset_id"`
+		AssetName   string `json:"asset_name"`
 		AssetAmount string `json:"asset_amount"`
 	}
 
@@ -334,6 +336,7 @@ type (
 		NftIndex      int64  `json:"nft_index"`
 		PairIndex     int64  `json:"pair_index"`
 		AssetId       int64  `json:"asset_id"`
+		AssetName     string `json:"asset_name"`
 		NativeAddress string `json:"native_adress"`
 		ExtraInfo     string `json:"extra_info"`
 		Memo          string `json:"memo"`
