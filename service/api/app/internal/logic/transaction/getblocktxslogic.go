@@ -7,6 +7,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/errorcode"
+	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
@@ -27,20 +28,27 @@ func NewGetBlockTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetBl
 }
 
 func (l *GetBlockTxsLogic) GetBlockTxs(req *types.ReqGetBlockTxs) (resp *types.Txs, err error) {
-	blockHeight := int64(0)
+	var block *block.Block
 	switch req.By {
-	case "height":
-		blockHeight, err = strconv.ParseInt(req.Value, 10, 64)
+	case "block_height":
+		blockHeight, err := strconv.ParseInt(req.Value, 10, 64)
 		if err != nil {
-			return nil, errorcode.AppErrInvalidParam.RefineError("invalid value for block_height")
+			return nil, errorcode.AppErrInvalidParam.RefineError("invalid value for block height")
 		}
+		if blockHeight <= 0 {
+			return nil, errorcode.AppErrInvalidParam.RefineError("invalid value for block height")
+		}
+		block, err = l.svcCtx.MemCache.GetBlockByHeightWithFallback(blockHeight, func() (interface{}, error) {
+			return l.svcCtx.BlockModel.GetBlockByBlockHeight(blockHeight)
+		})
+	case "block_commitment":
+		block, err = l.svcCtx.MemCache.GetBlockByCommitmentWithFallback(req.Value, func() (interface{}, error) {
+			return l.svcCtx.BlockModel.GetBlockByCommitment(req.Value)
+		})
 	default:
-		return nil, errorcode.AppErrInvalidParam.RefineError("param by should be block_height")
+		return nil, errorcode.AppErrInvalidParam.RefineError("param by should be height|commitment")
 	}
 
-	block, err := l.svcCtx.MemCache.GetBlockByHeightWithFallback(blockHeight, func() (interface{}, error) {
-		return l.svcCtx.BlockModel.GetBlockByBlockHeight(blockHeight)
-	})
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound

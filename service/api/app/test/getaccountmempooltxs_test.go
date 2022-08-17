@@ -12,23 +12,24 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-func (s *AppSuite) TestGetmempoolTxsByAccountName() {
+func (s *AppSuite) TestGetAccountMempoolTxs() {
 
 	type args struct {
-		accountName string
+		by    string
+		value string
 	}
 	tests := []struct {
 		name     string
 		args     args
 		httpCode int
 	}{
-		{"found", args{"sher.legend"}, 200},
-		{"not found", args{"notexists.legend"}, 400},
+		{"found", args{"account_name", "sher.legend"}, 200},
+		{"not found", args{"account_pk", "notexists.legend"}, 400},
 	}
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetmempoolTxsByAccountName(s, tt.args.accountName)
+			httpCode, result := GetAccountMempoolTxs(s, tt.args.by, tt.args.value)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				if result.Total > 0 {
@@ -47,8 +48,8 @@ func (s *AppSuite) TestGetmempoolTxsByAccountName() {
 
 }
 
-func GetmempoolTxsByAccountName(s *AppSuite, accountName string) (int, *types.RespGetmempoolTxsByAccountName) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/tx/getmempoolTxsByAccountName?account_name=%s", s.url, accountName))
+func GetAccountMempoolTxs(s *AppSuite, by, value string) (int, *types.MempoolTxs) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/accountMempoolTxs?by=%s&value=%s", s.url, by, value))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -58,7 +59,7 @@ func GetmempoolTxsByAccountName(s *AppSuite, accountName string) (int, *types.Re
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetmempoolTxsByAccountName{}
+	result := types.MempoolTxs{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

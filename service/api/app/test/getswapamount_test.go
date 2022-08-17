@@ -43,8 +43,8 @@ func (s *AppSuite) TestGetSwapAmount() {
 
 }
 
-func GetSwapAmount(s *AppSuite, pairIndex int) (int, *types.RespGetSwapAmount) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/pair/getSwapAmount?pair_index=%d", s.url, pairIndex))
+func GetSwapAmount(s *AppSuite, pairIndex int) (int, *types.SwapAmount) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/swapAmount?pair_index=%d", s.url, pairIndex))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -54,7 +54,7 @@ func GetSwapAmount(s *AppSuite, pairIndex int) (int, *types.RespGetSwapAmount) {
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetSwapAmount{}
+	result := types.SwapAmount{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

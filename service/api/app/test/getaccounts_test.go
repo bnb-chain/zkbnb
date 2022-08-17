@@ -37,7 +37,7 @@ func (s *AppSuite) TestGetAccounts() {
 					assert.True(t, len(result.Accounts) > 0)
 					assert.NotNil(t, result.Accounts[0].AccountName)
 					assert.NotNil(t, result.Accounts[0].AccountIndex)
-					assert.NotNil(t, result.Accounts[0].PublicKey)
+					assert.NotNil(t, result.Accounts[0].AccountPk)
 				}
 				fmt.Printf("result: %+v \n", result)
 			}
@@ -46,8 +46,8 @@ func (s *AppSuite) TestGetAccounts() {
 
 }
 
-func GetAccounts(s *AppSuite, offset, limit int) (int, *types.RespGetAccounts) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/account/getAccounts?offset=%d&limit=%d", s.url, offset, limit))
+func GetAccounts(s *AppSuite, offset, limit int) (int, *types.Accounts) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/accounts?offset=%d&limit=%d", s.url, offset, limit))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -57,7 +57,7 @@ func GetAccounts(s *AppSuite, offset, limit int) (int, *types.RespGetAccounts) {
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetAccounts{}
+	result := types.Accounts{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

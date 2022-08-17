@@ -15,18 +15,20 @@ import (
 func (s *AppSuite) TestGetPairs() {
 
 	type args struct {
+		offset int
+		limit  int
 	}
 	tests := []struct {
 		name     string
 		args     args
 		httpCode int
 	}{
-		{"found", args{}, 200},
+		{"found", args{0, 10}, 200},
 	}
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetPairs(s)
+			httpCode, result := GetPairs(s, tt.args.offset, tt.args.limit)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.NotNil(t, result.Pairs)
@@ -46,8 +48,8 @@ func (s *AppSuite) TestGetPairs() {
 
 }
 
-func GetPairs(s *AppSuite) (int, *types.RespGetPairs) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/pair/getAvailablePairs", s.url))
+func GetPairs(s *AppSuite, offset, limit int) (int, *types.Pairs) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/pairs?offset=%d&limit=%d", s.url, offset, limit))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -57,7 +59,7 @@ func GetPairs(s *AppSuite) (int, *types.RespGetPairs) {
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetPairs{}
+	result := types.Pairs{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

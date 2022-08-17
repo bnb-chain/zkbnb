@@ -37,8 +37,8 @@ func (s *AppSuite) TestGetCurrentHeight() {
 
 }
 
-func GetCurrentHeight(s *AppSuite) (int, *types.RespCurrentHeight) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/block/getCurrentHeight", s.url))
+func GetCurrentHeight(s *AppSuite) (int, *types.CurrentHeight) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/currentHeight", s.url))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -48,7 +48,7 @@ func GetCurrentHeight(s *AppSuite) (int, *types.RespCurrentHeight) {
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespCurrentHeight{}
+	result := types.CurrentHeight{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

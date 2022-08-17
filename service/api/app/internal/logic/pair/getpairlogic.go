@@ -2,7 +2,6 @@ package pair
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -27,24 +26,13 @@ func NewGetPairLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPairLo
 }
 
 func (l *GetPairLogic) GetPair(req *types.ReqGetPair) (resp *types.Pair, err error) {
-	pairIndex := int64(0)
-	switch req.By {
-	case "index":
-		pairIndex, err = strconv.ParseInt(req.Value, 10, 64)
-		if err != nil {
-			return nil, errorcode.AppErrInvalidParam.RefineError("invalid value for pair index")
-		}
-		if !utils.ValidatePairIndex(uint32(pairIndex)) {
-			logx.Errorf("invalid PairIndex: %d", pairIndex)
-			return nil, errorcode.AppErrInvalidParam.RefineError("invalid value for pair index")
-		}
-	default:
-		return nil, errorcode.AppErrInvalidParam.RefineError("param by should be index")
+	if !utils.ValidatePairIndex(req.PairIndex) {
+		return nil, errorcode.AppErrInvalidParam.RefineError("invalid PairIndex")
 	}
 
-	pair, err := l.svcCtx.StateFetcher.GetLatestLiquidity(pairIndex)
+	pair, err := l.svcCtx.StateFetcher.GetLatestLiquidity(int64(req.PairIndex))
 	if err != nil {
-		logx.Errorf("fail to get pair info: %d, err: %s", pairIndex, err.Error())
+		logx.Errorf("fail to get pair info: %d, err: %s", req.PairIndex, err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}

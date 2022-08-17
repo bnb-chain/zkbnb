@@ -49,7 +49,10 @@ func (l *GetAccountTxsLogic) GetAccountTxs(req *types.ReqGetAccountTxs) (resp *t
 		}
 	}
 
-	resp.Total = uint32(total)
+	resp = &types.Txs{
+		Total: uint32(total),
+		Txs:   make([]*types.Tx, 0),
+	}
 	if total == 0 || total <= int64(req.Offset) {
 		return resp, nil
 	}

@@ -12,29 +12,31 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-func (s *AppSuite) TestGetBlockByCommitment() {
+func (s *AppSuite) TestGetBlock() {
 
 	type args struct {
-		blockCommitment string
+		by    string
+		value string
 	}
 	tests := []struct {
 		name     string
 		args     args
 		httpCode int
 	}{
-		{"found", args{"0000000000000000000000000000000000000000000000000000000000000000"}, 200},
-		{"not found", args{"notexist"}, 400},
+		{"found", args{"height", "1"}, 200},
+		{"found", args{"commitment", "0000000000000000000000000000000000000000000000000000000000000000"}, 200},
+		{"not found", args{"invalidby", ""}, 400},
 	}
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetBlockByCommitment(s, tt.args.blockCommitment)
+			httpCode, result := GetBlock(s, tt.args.by, tt.args.value)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
-				assert.NotNil(t, result.Block.BlockHeight)
-				assert.NotNil(t, result.Block.BlockCommitment)
-				assert.NotNil(t, result.Block.BlockStatus)
-				assert.NotNil(t, result.Block.StateRoot)
+				assert.NotNil(t, result.BlockHeight)
+				assert.NotNil(t, result.BlockCommitment)
+				assert.NotNil(t, result.BlockStatus)
+				assert.NotNil(t, result.StateRoot)
 				fmt.Printf("result: %+v \n", result)
 			}
 		})
@@ -42,8 +44,8 @@ func (s *AppSuite) TestGetBlockByCommitment() {
 
 }
 
-func GetBlockByCommitment(s *AppSuite, blockCommitment string) (int, *types.RespGetBlockByCommitment) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/block/getBlockByCommitment?block_commitment=%s", s.url, blockCommitment))
+func GetBlock(s *AppSuite, by, value string) (int, *types.Block) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/block?by=%s&value=%s", s.url, by, value))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -53,7 +55,7 @@ func GetBlockByCommitment(s *AppSuite, blockCommitment string) (int, *types.Resp
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetBlockByCommitment{}
+	result := types.Block{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

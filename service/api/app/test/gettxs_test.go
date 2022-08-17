@@ -49,8 +49,8 @@ func (s *AppSuite) TestGetTxs() {
 
 }
 
-func GetTxs(s *AppSuite, offset, limit int) (int, *types.RespGetTxs) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/tx/getTxs?offset=%d&limit=%d", s.url, offset, limit))
+func GetTxs(s *AppSuite, offset, limit int) (int, *types.Txs) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/txs?offset=%d&limit=%d", s.url, offset, limit))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -60,7 +60,7 @@ func GetTxs(s *AppSuite, offset, limit int) (int, *types.RespGetTxs) {
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetTxs{}
+	result := types.Txs{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

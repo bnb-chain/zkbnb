@@ -15,6 +15,8 @@ import (
 func (s *AppSuite) TestGetAssets() {
 
 	type args struct {
+		offset int
+		limit  int
 	}
 	tests := []struct {
 		name     string
@@ -26,7 +28,7 @@ func (s *AppSuite) TestGetAssets() {
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetAssets(s)
+			httpCode, result := GetAssets(s, tt.args.offset, tt.args.limit)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.True(t, len(result.Assets) > 0)
@@ -41,8 +43,8 @@ func (s *AppSuite) TestGetAssets() {
 
 }
 
-func GetAssets(s *AppSuite) (int, *types.RespGetAssets) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/asset/getAssets", s.url))
+func GetAssets(s *AppSuite, offset, limit int) (int, *types.Assets) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/assets?offset=%d&limit=%d", s.url, offset, limit))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -52,7 +54,7 @@ func GetAssets(s *AppSuite) (int, *types.RespGetAssets) {
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetAssets{}
+	result := types.Assets{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

@@ -44,8 +44,8 @@ func (s *AppSuite) TestGetLayer2BasicInfo() {
 
 }
 
-func GetLayer2BasicInfo(s *AppSuite) (int, *types.RespGetLayer2BasicInfo) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/info/getLayer2BasicInfo", s.url))
+func GetLayer2BasicInfo(s *AppSuite) (int, *types.Layer2BasicInfo) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/layer2BasicInfo", s.url))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -55,7 +55,7 @@ func GetLayer2BasicInfo(s *AppSuite) (int, *types.RespGetLayer2BasicInfo) {
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetLayer2BasicInfo{}
+	result := types.Layer2BasicInfo{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"testing"
 
@@ -12,24 +13,26 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-func (s *AppSuite) TestGetTxsByAccountIndex() {
+func (s *AppSuite) TestGetBlockTxs() {
 
 	type args struct {
-		accountIndex int
-		offset       int
-		limit        int
+		by     string
+		value  string
+		offset int
+		limit  int
 	}
 	tests := []struct {
 		name     string
 		args     args
 		httpCode int
 	}{
-		{"found", args{2, 0, 10}, 200},
+		{"found", args{"block_height", "1", 0, 10}, 200},
+		{"not found", args{"block_height", "-100", math.MaxInt, 10}, 400},
 	}
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetTxsByAccountIndex(s, tt.args.accountIndex, tt.args.offset, tt.args.limit)
+			httpCode, result := GetBlockTxs(s, tt.args.by, tt.args.value, tt.args.offset, tt.args.limit)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				if tt.args.offset < int(result.Total) {
@@ -48,8 +51,8 @@ func (s *AppSuite) TestGetTxsByAccountIndex() {
 
 }
 
-func GetTxsByAccountIndex(s *AppSuite, accountIndex, offset, limit int) (int, *types.RespGetTxsByAccountIndex) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/tx/getTxsListByAccountIndex?account_index=%d&offset=%d&limit=%d", s.url, accountIndex, offset, limit))
+func GetBlockTxs(s *AppSuite, by, value string, offset, limit int) (int, *types.Txs) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/blockTxs?by=%s&value=%s&offset=%d&limit=%d", s.url, by, value, offset, limit))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -59,7 +62,7 @@ func GetTxsByAccountIndex(s *AppSuite, accountIndex, offset, limit int) (int, *t
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetTxsByAccountIndex{}
+	result := types.Txs{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

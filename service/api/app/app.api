@@ -299,8 +299,7 @@ type (
 	}
 
 	ReqGetPair {
-		By    string `form:"by,options=index, default=index"`
-		Value string `form:"value"`
+		PairIndex uint32 `form:"pair_index"`
 	}
 )
 
@@ -422,7 +421,7 @@ service app-api {
 	get /api/v1/blockTxs (ReqGetBlockTxs) returns (Txs)
 	
 	@handler GetAccountTxs
-	get /api/v1/tx/accountTxs (ReqGetAccountTxs) returns (Txs)
+	get /api/v1/accountTxs (ReqGetAccountTxs) returns (Txs)
 	
 	@handler GetTx
 	get /api/v1/tx (ReqGetTx) returns (EnrichedTx)
@@ -437,7 +436,7 @@ service app-api {
 	get /api/v1/nextNonce (ReqGetNextNonce) returns (NextNonce)
 	
 	@handler SendTx
-	post /api/v1/tx/sendTx (ReqSendTx) returns (TxHash)
+	post /api/v1/sendTx (ReqSendTx) returns (TxHash)
 }
 
 /* ========================= Nft =========================*/

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math"
 	"net/http"
 	"testing"
 
@@ -13,25 +12,27 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-func (s *AppSuite) TestGetTxsByBlockHeight() {
+func (s *AppSuite) TestGetAccountTxs() {
 
 	type args struct {
-		blockHeight int
-		offset      int
-		limit       int
+		by     string
+		value  string
+		offset int
+		limit  int
 	}
 	tests := []struct {
 		name     string
 		args     args
 		httpCode int
 	}{
-		{"found", args{1, 0, 10}, 200},
-		{"not found", args{math.MaxInt, math.MaxInt, 10}, 400},
+		{"found", args{"account_index", "2", 0, 10}, 200},
+		{"found", args{"account_name", "sher.legend", 0, 10}, 200},
+		{"found", args{"account_pk", "fcb8470d33c59a5cbf5e10df426eb97c2773ab890c3364f4162ba782a56ca998", 0, 10}, 200},
 	}
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetTxsByBlockHeight(s, tt.args.blockHeight, tt.args.offset, tt.args.limit)
+			httpCode, result := GetAccountTxs(s, tt.args.by, tt.args.value, tt.args.offset, tt.args.limit)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				if tt.args.offset < int(result.Total) {
@@ -50,8 +51,8 @@ func (s *AppSuite) TestGetTxsByBlockHeight() {
 
 }
 
-func GetTxsByBlockHeight(s *AppSuite, blockHeight, offset, limit int) (int, *types.RespGetTxsByBlockHeight) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/tx/getTxsListByBlockHeight?block_height=%d&offset=%d&limit=%d", s.url, blockHeight, offset, limit))
+func GetAccountTxs(s *AppSuite, by, value string, offset, limit int) (int, *types.Txs) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/accountTxs?by=%s&value=%s&offset=%d&limit=%d", s.url, by, value, offset, limit))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -61,7 +62,7 @@ func GetTxsByBlockHeight(s *AppSuite, blockHeight, offset, limit int) (int, *typ
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetTxsByBlockHeight{}
+	result := types.Txs{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

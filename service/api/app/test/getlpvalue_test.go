@@ -46,8 +46,8 @@ func (s *AppSuite) TestGetLpValue() {
 
 }
 
-func GetLpValue(s *AppSuite, pairIndex int, lpAmount string) (int, *types.RespGetLpValue) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/pair/getLpValue?pair_index=%d&lp_amount=%s", s.url, pairIndex, lpAmount))
+func GetLpValue(s *AppSuite, pairIndex int, lpAmount string) (int, *types.LpValue) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/lpValue?pair_index=%d&lp_amount=%s", s.url, pairIndex, lpAmount))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -57,7 +57,7 @@ func GetLpValue(s *AppSuite, pairIndex int, lpAmount string) (int, *types.RespGe
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetLpValue{}
+	result := types.LpValue{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

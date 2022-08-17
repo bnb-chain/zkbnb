@@ -13,7 +13,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-func (s *AppSuite) TestGetPairByIndex() {
+func (s *AppSuite) TestGetPair() {
 	type args struct {
 		pairIndex int
 	}
@@ -28,7 +28,7 @@ func (s *AppSuite) TestGetPairByIndex() {
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetPairByIndex(s, tt.args.pairIndex)
+			httpCode, result := GetPair(s, tt.args.pairIndex)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.NotNil(t, result.AssetAId)
@@ -43,8 +43,8 @@ func (s *AppSuite) TestGetPairByIndex() {
 
 }
 
-func GetPairByIndex(s *AppSuite, pairIndex int) (int, *types.RespGetPairByIndex) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/pair/getPair?pair_index=%d", s.url, pairIndex))
+func GetPair(s *AppSuite, pairIndex int) (int, *types.Pair) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/pair?pair_index=%d", s.url, pairIndex))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -54,7 +54,7 @@ func GetPairByIndex(s *AppSuite, pairIndex int) (int, *types.RespGetPairByIndex)
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetPairByIndex{}
+	result := types.Pair{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

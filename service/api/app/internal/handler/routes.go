@@ -157,7 +157,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/tx/accountTxs",
+				Path:    "/api/v1/accountTxs",
 				Handler: transaction.GetAccountTxsHandler(serverCtx),
 			},
 			{
@@ -182,7 +182,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 			{
 				Method:  http.MethodPost,
-				Path:    "/api/v1/tx/sendTx",
+				Path:    "/api/v1/sendTx",
 				Handler: transaction.SendTxHandler(serverCtx),
 			},
 		},

@@ -12,22 +12,23 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-func (s *AppSuite) TestGetCurrencyPriceBySymbol() {
+func (s *AppSuite) TestGetCurrencyPrice() {
 	type args struct {
-		symbol string
+		by    string
+		value string
 	}
 	tests := []struct {
 		name     string
 		args     args
 		httpCode int
 	}{
-		{"found", args{"BNB"}, 200},
-		{"not found", args{"notfound.legend"}, 400},
+		{"found", args{"symbol", "BNB"}, 200},
+		{"not found", args{"symbol", "notfound"}, 400},
 	}
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetCurrencyPriceBySymbol(s, tt.args.symbol)
+			httpCode, result := GetCurrencyPrice(s, tt.args.by, tt.args.value)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.NotNil(t, result.AssetId)
@@ -39,8 +40,8 @@ func (s *AppSuite) TestGetCurrencyPriceBySymbol() {
 
 }
 
-func GetCurrencyPriceBySymbol(s *AppSuite, symbol string) (int, *types.RespGetCurrencyPriceBySymbol) {
-	resp, err := http.Get(s.url + "/api/v1/info/getCurrencyPriceBySymbol?symbol=" + symbol)
+func GetCurrencyPrice(s *AppSuite, by, value string) (int, *types.CurrencyPrice) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/currencyPrice?by=%s&value=%s", s.url, by, value))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -50,7 +51,7 @@ func GetCurrencyPriceBySymbol(s *AppSuite, symbol string) (int, *types.RespGetCu
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetCurrencyPriceBySymbol{}
+	result := types.CurrencyPrice{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

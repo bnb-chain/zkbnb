@@ -82,7 +82,7 @@ func (f *fetcher) GetLatestAccount(accountIndex int64) (*commonAsset.AccountInfo
 	var formatAccount *commonAsset.AccountInfo
 
 	redisAccount, err := f.redisConnection.Get(AccountKeyByIndex(accountIndex))
-	if err == nil {
+	if err == nil && redisAccount != "" {
 		err = json.Unmarshal([]byte(redisAccount), &formatAccount)
 		if err != nil {
 			return nil, err
@@ -104,7 +104,7 @@ func (f *fetcher) GetLatestLiquidity(pairIndex int64) (liquidityInfo *commonAsse
 	var liquidity *liquidity.Liquidity
 
 	redisLiquidity, err := f.redisConnection.Get(LiquidityKeyByIndex(pairIndex))
-	if err == nil {
+	if err == nil && redisLiquidity != "" {
 		err = json.Unmarshal([]byte(redisLiquidity), &liquidity)
 		if err != nil {
 			return nil, err
@@ -134,7 +134,7 @@ func (f *fetcher) GetLatestNft(nftIndex int64) (*commonAsset.NftInfo, error) {
 	var nft *nft.L2Nft
 
 	redisNft, err := f.redisConnection.Get(NftKeyByIndex(nftIndex))
-	if err == nil {
+	if err == nil && redisNft != "" {
 		err = json.Unmarshal([]byte(redisNft), &nft)
 		if err != nil {
 			return nil, err
@@ -160,7 +160,7 @@ func (f *fetcher) GetLatestOfferId(accountIndex int64) (int64, error) {
 	lastOfferId := int64(0)
 
 	redisOfferId, err := f.redisConnection.Get(OfferIdKeyByIndex(accountIndex))
-	if err == nil {
+	if err == nil && redisOfferId != "" {
 		err = json.Unmarshal([]byte(redisOfferId), &lastOfferId)
 		if err != nil {
 			return -1, err
