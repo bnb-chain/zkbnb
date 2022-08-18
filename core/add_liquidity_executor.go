@@ -42,10 +42,9 @@ func (e *AddLiquidityExecutor) Prepare() error {
 	err = e.bc.prepareLiquidity(txInfo.PairIndex)
 	if err != nil {
 		logx.Errorf("prepare liquidity failed: %s", err.Error())
-		return err
+		return errors.New("internal error")
 	}
 
-	//extract prepare liquidity function, so dry run model can fetch different data?
 	liquidityModel := e.bc.liquidityMap[txInfo.PairIndex]
 
 	accounts := []int64{txInfo.FromAccountIndex, liquidityModel.TreasuryAccountIndex, txInfo.GasAccountIndex}
@@ -53,7 +52,7 @@ func (e *AddLiquidityExecutor) Prepare() error {
 	err = e.bc.prepareAccountsAndAssets(accounts, assets)
 	if err != nil {
 		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
-		return err
+		return errors.New("internal error")
 	}
 
 	e.txInfo = txInfo
@@ -69,13 +68,14 @@ func (e *AddLiquidityExecutor) VerifyInputs() error {
 		return err
 	}
 
-	fromAccount := bc.accountMap[txInfo.FromAccountIndex]
-	if txInfo.ExpiredAt < bc.currentBlock.CreatedAt.UnixMilli() {
-		return errors.New("expired tx")
+	if err := e.bc.verifyExpiredAt(txInfo.ExpiredAt); err != nil {
+		return err
 	}
 
-	if txInfo.Nonce != fromAccount.Nonce {
-		return errors.New("invalid nonce")
+	fromAccount := bc.accountMap[txInfo.FromAccountIndex]
+
+	if err := e.bc.verifyNonce(fromAccount.AccountIndex, txInfo.Nonce); err != nil {
+		return err
 	}
 
 	if txInfo.GasFeeAssetId == txInfo.AssetAId {

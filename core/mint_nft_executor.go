@@ -43,7 +43,7 @@ func (e *MintNftExecutor) Prepare() error {
 	err = e.bc.prepareAccountsAndAssets(accounts, assets)
 	if err != nil {
 		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
-		return err
+		return errors.New("internal error")
 	}
 
 	e.txInfo = txInfo
@@ -58,13 +58,14 @@ func (e *MintNftExecutor) VerifyInputs() error {
 		return err
 	}
 
-	if txInfo.ExpiredAt < e.bc.currentBlock.CreatedAt.UnixMilli() {
-		return errors.New("tx expired")
+	if err := e.bc.verifyExpiredAt(txInfo.ExpiredAt); err != nil {
+		return err
 	}
 
 	creatorAccount := e.bc.accountMap[txInfo.CreatorAccountIndex]
-	if txInfo.Nonce != creatorAccount.Nonce {
-		return errors.New("invalid nonce")
+
+	if err := e.bc.verifyNonce(creatorAccount.AccountIndex, txInfo.Nonce); err != nil {
+		return err
 	}
 
 	if creatorAccount.CollectionNonce < txInfo.NftCollectionId {

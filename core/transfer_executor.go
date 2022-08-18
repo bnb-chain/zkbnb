@@ -3,7 +3,6 @@ package core
 import (
 	"bytes"
 	"encoding/json"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -12,7 +11,6 @@ import (
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
-	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/util"
@@ -43,40 +41,10 @@ func (e *TransferExecutor) Prepare() error {
 	err = e.bc.prepareAccountsAndAssets(accounts, assets)
 	if err != nil {
 		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
-		return err
+		return errors.New("internal error")
 	}
 
 	e.txInfo = txInfo
-	return nil
-}
-
-func (e *TransferExecutor) verifyExpiredAt() error {
-	if !e.bc.dryRun {
-		if e.txInfo.ExpiredAt != commonConstant.NilExpiredAt && e.txInfo.ExpiredAt < e.bc.currentBlock.CreatedAt.UnixMilli() {
-			return errors.New("invalid ExpiredAt")
-		}
-	} else {
-		if e.txInfo.ExpiredAt < time.Now().UnixMilli() {
-			return errors.New("invalid ExpiredAt")
-		}
-	}
-	return nil
-}
-
-func (e *TransferExecutor) verifyNonce(accountIndex int64) error {
-	if !e.bc.dryRun {
-		if e.txInfo.Nonce != e.bc.accountMap[accountIndex].Nonce {
-			return errors.New("invalid Nonce")
-		}
-	} else {
-		nonce, err := e.bc.getPendingNonce(accountIndex)
-		if err != nil {
-			return errors.New("cannot verify nonce")
-		}
-		if e.txInfo.Nonce != nonce {
-			return errors.New("invalid Nonce")
-		}
-	}
 	return nil
 }
 
@@ -89,14 +57,14 @@ func (e *TransferExecutor) VerifyInputs() error {
 		return err
 	}
 
-	fromAccount := bc.accountMap[txInfo.FromAccountIndex]
-	toAccount := bc.accountMap[txInfo.ToAccountIndex]
-
-	if err := e.verifyExpiredAt(); err != nil {
+	if err := e.bc.verifyExpiredAt(txInfo.ExpiredAt); err != nil {
 		return err
 	}
 
-	if err := e.verifyNonce(fromAccount.AccountIndex); err != nil {
+	fromAccount := bc.accountMap[txInfo.FromAccountIndex]
+	toAccount := bc.accountMap[txInfo.ToAccountIndex]
+
+	if err := e.bc.verifyNonce(fromAccount.AccountIndex, txInfo.Nonce); err != nil {
 		return err
 	}
 

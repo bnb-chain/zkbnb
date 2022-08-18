@@ -8,6 +8,8 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/bnb-chain/zkbas/common/commonConstant"
+
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -229,7 +231,8 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	return bc, nil
 }
 
-//NewBlockChainForDryRun - for dry run mode, we can reuse existing models, e.g., for sending tx, we can create block chain for each request
+//NewBlockChainForDryRun - for dry run mode, we can reuse existing models for quick creation
+//, e.g., for sending tx, we can create blockchain for each request quickly
 func NewBlockChainForDryRun(accountModel account.AccountModel, liquidityModel liquidity.LiquidityModel,
 	nftModel nft.L2NftModel, redisCache dbcache.Cache) *BlockChain {
 	bc := &BlockChain{
@@ -625,42 +628,15 @@ func (bc *BlockChain) getNextNftIndex() int64 {
 }
 
 func (bc *BlockChain) prepareAccountsAndAssets(accounts []int64, assets []int64) error {
-	if bc.dryRun {
-		for _, accountIndex := range accounts {
+	for _, accountIndex := range accounts {
+		if bc.dryRun {
 			var formatAccount *commonAsset.AccountInfo
-			// why Get function need to pass value parameter?
-			redisAccount, err := bc.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex), formatAccount)
+			redisAccount, err := bc.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex))
 			if err == nil {
 				formatAccount = redisAccount.(*commonAsset.AccountInfo)
-			} else {
-				account, err := bc.AccountModel.GetAccountByAccountIndex(accountIndex)
-				if err != nil {
-					return err
-				}
-				formatAccount, err = commonAsset.ToFormatAccountInfo(account)
-				if err != nil {
-					return err
-				}
 			}
 			bc.accountMap[accountIndex] = formatAccount
-			if bc.accountMap[accountIndex].AssetInfo == nil {
-				bc.accountMap[accountIndex].AssetInfo = make(map[int64]*commonAsset.AccountAsset)
-			}
-			for _, assetId := range assets {
-				if bc.accountMap[accountIndex].AssetInfo[assetId] == nil {
-					bc.accountMap[accountIndex].AssetInfo[assetId] = &commonAsset.AccountAsset{
-						AssetId:                  assetId,
-						Balance:                  ZeroBigInt,
-						LpAmount:                 ZeroBigInt,
-						OfferCanceledOrFinalized: ZeroBigInt,
-					}
-				}
-			}
 		}
-		return nil
-	}
-
-	for _, accountIndex := range accounts {
 		if bc.accountMap[accountIndex] == nil {
 			accountInfo, err := bc.AccountModel.GetAccountByAccountIndex(accountIndex)
 			if err != nil {
@@ -690,6 +666,15 @@ func (bc *BlockChain) prepareAccountsAndAssets(accounts []int64, assets []int64)
 }
 
 func (bc *BlockChain) prepareLiquidity(pairIndex int64) error {
+	if bc.dryRun {
+		var l *liquidity.Liquidity
+		redisLiquidity, err := bc.redisCache.Get(context.Background(), dbcache.LiquidityKeyByIndex(pairIndex))
+		if err == nil {
+			l = redisLiquidity.(*liquidity.Liquidity)
+		}
+		bc.liquidityMap[pairIndex] = l
+	}
+
 	if bc.liquidityMap[pairIndex] == nil {
 		liquidityInfo, err := bc.LiquidityModel.GetLiquidityByPairIndex(pairIndex)
 		if err != nil {
@@ -701,6 +686,15 @@ func (bc *BlockChain) prepareLiquidity(pairIndex int64) error {
 }
 
 func (bc *BlockChain) prepareNft(nftIndex int64) error {
+	if bc.dryRun {
+		var n *nft.L2Nft
+		redisNft, err := bc.redisCache.Get(context.Background(), dbcache.NftKeyByIndex(nftIndex))
+		if err == nil {
+			n = redisNft.(*nft.L2Nft)
+		}
+		bc.nftMap[nftIndex] = n
+	}
+
 	if bc.nftMap[nftIndex] == nil {
 		nftAsset, err := bc.L2NftModel.GetNftAsset(nftIndex)
 		if err != nil {
@@ -802,4 +796,34 @@ func (bc *BlockChain) getStateRoot() string {
 
 func (bc *BlockChain) getPendingNonce(accountIndex int64) (int64, error) {
 	return 0, nil //code in another branch, need merge
+}
+
+func (bc *BlockChain) verifyExpiredAt(expiredAt int64) error {
+	if !bc.dryRun {
+		if expiredAt != commonConstant.NilExpiredAt && expiredAt < bc.currentBlock.CreatedAt.UnixMilli() {
+			return errors.New("invalid ExpiredAt")
+		}
+	} else {
+		if expiredAt < time.Now().UnixMilli() {
+			return errors.New("invalid ExpiredAt")
+		}
+	}
+	return nil
+}
+
+func (bc *BlockChain) verifyNonce(accountIndex int64, nonce int64) error {
+	if !bc.dryRun {
+		if nonce != bc.accountMap[accountIndex].Nonce {
+			return errors.New("invalid Nonce")
+		}
+	} else {
+		pendingNonce, err := bc.getPendingNonce(accountIndex)
+		if err != nil {
+			return errors.New("cannot verify nonce")
+		}
+		if pendingNonce != nonce {
+			return errors.New("invalid Nonce")
+		}
+	}
+	return nil
 }
