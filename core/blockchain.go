@@ -657,6 +657,7 @@ func (bc *BlockChain) prepareAccountsAndAssets(accounts []int64, assets []int64)
 				}
 			}
 		}
+		return nil
 	}
 
 	for _, accountIndex := range accounts {
