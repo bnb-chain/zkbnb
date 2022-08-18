@@ -92,14 +92,9 @@ func (e *MintNftExecutor) ApplyTransaction() error {
 	txInfo := e.txInfo
 
 	// add nft index to tx info
-	nextNftIndex, err := e.bc.getNextNftIndex()
-	if err != nil {
-		return err
-	}
-	txInfo.NftIndex = nextNftIndex
+	nextNftIndex := e.bc.getNextNftIndex()
 
-	// generate tx details
-	e.tx.TxDetails = e.GenerateTxDetails()
+	txInfo.NftIndex = nextNftIndex
 
 	// apply changes
 	creatorAccount := bc.accountMap[txInfo.CreatorAccountIndex]
@@ -196,7 +191,7 @@ func (e *MintNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 	return e.tx, nil
 }
 
-func (e *MintNftExecutor) GenerateTxDetails() []*tx.TxDetail {
+func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
 	creatorAccount := e.bc.accountMap[txInfo.CreatorAccountIndex]
 	toAccount := e.bc.accountMap[txInfo.ToAccountIndex]
@@ -292,5 +287,5 @@ func (e *MintNftExecutor) GenerateTxDetails() []*tx.TxDetail {
 		AccountOrder:    accountOrder,
 		CollectionNonce: gasAccount.CollectionNonce,
 	})
-	return txDetails
+	return txDetails, nil
 }

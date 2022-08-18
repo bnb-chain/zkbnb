@@ -24,7 +24,7 @@ type CreateCollectionExecutor struct {
 }
 
 func NewCreateCollectionExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
-	return &TransferNftExecutor{
+	return &CreateCollectionExecutor{
 		bc: bc,
 		tx: tx,
 	}, nil
@@ -86,9 +86,6 @@ func (e *CreateCollectionExecutor) ApplyTransaction() error {
 
 	// add collection nonce to tx info
 	txInfo.CollectionId = fromAccount.CollectionNonce + 1
-
-	// generate tx details
-	e.tx.TxDetails = e.GenerateTxDetails()
 
 	// apply changes
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
@@ -162,7 +159,7 @@ func (e *CreateCollectionExecutor) GetExecutedTx() (*tx.Tx, error) {
 	return e.tx, nil
 }
 
-func (e *CreateCollectionExecutor) GenerateTxDetails() []*tx.TxDetail {
+func (e *CreateCollectionExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
 	fromAccount := e.bc.accountMap[txInfo.AccountIndex]
 	gasAccount := e.bc.accountMap[txInfo.GasAccountIndex]
@@ -224,5 +221,5 @@ func (e *CreateCollectionExecutor) GenerateTxDetails() []*tx.TxDetail {
 		Nonce:        gasAccount.Nonce,
 		AccountOrder: accountOrder,
 	})
-	return txDetails
+	return txDetails, nil
 }

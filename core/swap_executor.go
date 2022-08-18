@@ -144,9 +144,6 @@ func (e *SwapExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	// generate tx details
-	e.tx.TxDetails = e.GenerateTxDetails()
-
 	// apply changes
 	fromAccountInfo := bc.accountMap[txInfo.FromAccountIndex]
 	gasAccountInfo := bc.accountMap[txInfo.GasAccountIndex]
@@ -309,7 +306,7 @@ func (e *SwapExecutor) GetExecutedTx() (*tx.Tx, error) {
 	return e.tx, nil
 }
 
-func (e *SwapExecutor) GenerateTxDetails() []*tx.TxDetail {
+func (e *SwapExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
 
 	fromAccount := e.bc.accountMap[txInfo.FromAccountIndex]
@@ -318,7 +315,7 @@ func (e *SwapExecutor) GenerateTxDetails() []*tx.TxDetail {
 	liquidityInfo, err := constructLiquidityInfo(liquidityModel)
 	if err != nil {
 		logx.Errorf("construct liquidity info error, err: ", err.Error())
-		panic(err)
+		return nil, err
 	}
 
 	txDetails := make([]*tx.TxDetail, 0, 4)
@@ -439,20 +436,18 @@ func (e *SwapExecutor) GenerateTxDetails() []*tx.TxDetail {
 	)
 	if err != nil {
 		logx.Errorf("construct liquidity error, err: %s", err.Error())
-		panic(err)
+		return nil, err
 	}
 
 	newPool, err := commonAsset.ComputeNewBalance(
 		commonAsset.LiquidityAssetType, basePool.String(), poolDelta.String())
 	if err != nil {
-		// todo return error
-		return nil
+		return nil, err
 	}
 
 	nPoolInfo, err := commonAsset.ParseLiquidityInfo(newPool)
 	if err != nil {
-		// todo return error
-		return nil
+		return nil, err
 	}
 	e.newPoolInfo = nPoolInfo
 
@@ -490,5 +485,5 @@ func (e *SwapExecutor) GenerateTxDetails() []*tx.TxDetail {
 		Nonce:           gasAccount.Nonce,
 		CollectionNonce: gasAccount.CollectionNonce,
 	})
-	return txDetails
+	return txDetails, nil
 }

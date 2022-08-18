@@ -107,8 +107,6 @@ func (e *DepositNftExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	e.tx.TxDetails = e.GenerateTxDetails()
-
 	bc.nftMap[txInfo.NftIndex] = &nft.L2Nft{
 		NftIndex:            txInfo.NftIndex,
 		CreatorAccountIndex: txInfo.CreatorAccountIndex,
@@ -181,7 +179,7 @@ func (e *DepositNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 	return e.tx, nil
 }
 
-func (e *DepositNftExecutor) GenerateTxDetails() []*tx.TxDetail {
+func (e *DepositNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
 	depositAccount := e.bc.accountMap[txInfo.AccountIndex]
 	txDetails := make([]*tx.TxDetail, 0, 2)
@@ -230,5 +228,5 @@ func (e *DepositNftExecutor) GenerateTxDetails() []*tx.TxDetail {
 		Order:        order,
 	})
 
-	return txDetails
+	return txDetails, nil
 }

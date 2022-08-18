@@ -93,9 +93,6 @@ func (e *WithdrawExecutor) ApplyTransaction() error {
 	fromAccount := bc.accountMap[txInfo.FromAccountIndex]
 	gasAccount := bc.accountMap[txInfo.GasAccountIndex]
 
-	// generate tx details
-	e.tx.TxDetails = e.GenerateTxDetails()
-
 	// apply changes
 	fromAccount.AssetInfo[txInfo.AssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
@@ -177,7 +174,7 @@ func (e *WithdrawExecutor) GetExecutedTx() (*tx.Tx, error) {
 	return e.tx, nil
 }
 
-func (e *WithdrawExecutor) GenerateTxDetails() []*tx.TxDetail {
+func (e *WithdrawExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
 	fromAccount := e.bc.accountMap[txInfo.FromAccountIndex]
 	gasAccount := e.bc.accountMap[txInfo.GasAccountIndex]
@@ -239,5 +236,5 @@ func (e *WithdrawExecutor) GenerateTxDetails() []*tx.TxDetail {
 		Nonce:           gasAccount.Nonce,
 		CollectionNonce: gasAccount.CollectionNonce,
 	})
-	return txDetails
+	return txDetails, nil
 }

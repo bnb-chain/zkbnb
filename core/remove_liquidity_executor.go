@@ -161,9 +161,6 @@ func (e *RemoveLiquidityExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	// generate tx details
-	e.tx.TxDetails = e.GenerateTxDetails()
-
 	// apply changes
 	fromAccountInfo := bc.accountMap[txInfo.FromAccountIndex]
 	gasAccountInfo := bc.accountMap[txInfo.GasAccountIndex]
@@ -300,7 +297,7 @@ func (e *RemoveLiquidityExecutor) GetExecutedTx() (*tx.Tx, error) {
 	return e.tx, nil
 }
 
-func (e *RemoveLiquidityExecutor) GenerateTxDetails() []*tx.TxDetail {
+func (e *RemoveLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
 
 	fromAccount := e.bc.accountMap[txInfo.FromAccountIndex]
@@ -310,8 +307,7 @@ func (e *RemoveLiquidityExecutor) GenerateTxDetails() []*tx.TxDetail {
 	liquidityInfo, err := constructLiquidityInfo(liquidityModel)
 	if err != nil {
 		logx.Errorf("construct liquidity info error, err: ", err.Error())
-		// todo return error
-		return nil
+		return nil, err
 	}
 	treasuryAccount := e.bc.accountMap[liquidityInfo.TreasuryAccountIndex]
 
@@ -440,8 +436,7 @@ func (e *RemoveLiquidityExecutor) GenerateTxDetails() []*tx.TxDetail {
 		e.bc.liquidityMap[txInfo.PairIndex].TreasuryRate,
 	)
 	if err != nil {
-		// todo return error
-		return nil
+		return nil, err
 	}
 
 	finalPoolA := ffmath.Add(liquidityInfo.AssetA, ffmath.Neg(txInfo.AssetAAmountDelta))
@@ -461,14 +456,12 @@ func (e *RemoveLiquidityExecutor) GenerateTxDetails() []*tx.TxDetail {
 	newPool, err := commonAsset.ComputeNewBalance(
 		commonAsset.LiquidityAssetType, basePool.String(), poolDeltaForToAccount.String())
 	if err != nil {
-		// todo return error
-		return nil
+		return nil, err
 	}
 
 	newPoolInfo, err := commonAsset.ParseLiquidityInfo(newPool)
 	if err != nil {
-		// todo return error
-		return nil
+		return nil, err
 	}
 	e.newPoolInfo = newPoolInfo
 
@@ -506,5 +499,5 @@ func (e *RemoveLiquidityExecutor) GenerateTxDetails() []*tx.TxDetail {
 		Nonce:           gasAccount.Nonce,
 		CollectionNonce: gasAccount.CollectionNonce,
 	})
-	return txDetails
+	return txDetails, nil
 }

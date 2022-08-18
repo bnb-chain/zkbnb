@@ -18,7 +18,7 @@ type TxExecutor interface {
 	GeneratePubData() error
 	UpdateTrees() error
 	GetExecutedTx() (*tx.Tx, error)
-	GenerateTxDetails() []*tx.TxDetail
+	GenerateTxDetails() ([]*tx.TxDetail, error)
 }
 
 func NewTxExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {

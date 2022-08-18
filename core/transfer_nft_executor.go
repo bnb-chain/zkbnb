@@ -97,8 +97,6 @@ func (e *TransferNftExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	e.tx.TxDetails = e.GenerateTxDetails()
-
 	fromAccount := bc.accountMap[txInfo.FromAccountIndex]
 	gasAccount := bc.accountMap[txInfo.GasAccountIndex]
 	nft := bc.nftMap[txInfo.NftIndex]
@@ -180,7 +178,7 @@ func (e *TransferNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 	return e.tx, nil
 }
 
-func (e *TransferNftExecutor) GenerateTxDetails() []*tx.TxDetail {
+func (e *TransferNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
 	nftModel := e.bc.nftMap[txInfo.NftIndex]
 	fromAccount := e.bc.accountMap[txInfo.FromAccountIndex]
@@ -286,5 +284,5 @@ func (e *TransferNftExecutor) GenerateTxDetails() []*tx.TxDetail {
 		AccountOrder:    accountOrder,
 		CollectionNonce: gasAccount.CollectionNonce,
 	})
-	return txDetails
+	return txDetails, nil
 }

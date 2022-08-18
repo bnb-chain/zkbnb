@@ -80,8 +80,6 @@ func (e *FullExitExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	e.tx.TxDetails = e.GenerateTxDetails()
-
 	exitAccount := bc.accountMap[txInfo.AccountIndex]
 	exitAccount.AssetInfo[txInfo.AssetId].Balance = ffmath.Sub(exitAccount.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
 
@@ -139,7 +137,7 @@ func (e *FullExitExecutor) GetExecutedTx() (*tx.Tx, error) {
 	return e.tx, nil
 }
 
-func (e *FullExitExecutor) GenerateTxDetails() []*tx.TxDetail {
+func (e *FullExitExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
 	exitAccount := e.bc.accountMap[txInfo.AccountIndex]
 	baseBalance := exitAccount.AssetInfo[txInfo.AssetId]
@@ -159,5 +157,5 @@ func (e *FullExitExecutor) GenerateTxDetails() []*tx.TxDetail {
 		Order:        0,
 		AccountOrder: 0,
 	}
-	return []*tx.TxDetail{txDetail}
+	return []*tx.TxDetail{txDetail}, nil
 }
