@@ -243,8 +243,8 @@ func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountOrder: accountOrder,
 		Order:        order,
 	})
-	order++
 	// nft info
+	order++
 	newNft := commonAsset.EmptyNftInfo(txInfo.NftIndex)
 	if bc.nftMap[txInfo.NftIndex] != nil && txInfo.AccountIndex != bc.nftMap[txInfo.NftIndex].OwnerAccountIndex {
 		newNft = commonAsset.ConstructNftInfo(
