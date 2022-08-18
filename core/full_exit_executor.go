@@ -17,16 +17,18 @@ import (
 )
 
 type FullExitExecutor struct {
-	bc     *BlockChain
-	tx     *tx.Tx
+	BaseExecutor
+
 	txInfo *commonTx.FullExitTxInfo
 }
 
-func NewFullExitExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+func NewFullExitExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
 	return &FullExitExecutor{
-		bc: bc,
-		tx: tx,
-	}, nil
+		BaseExecutor: BaseExecutor{
+			bc: bc,
+			tx: tx,
+		},
+	}
 }
 
 func (e *FullExitExecutor) Prepare() error {
@@ -129,11 +131,8 @@ func (e *FullExitExecutor) GetExecutedTx() (*tx.Tx, error) {
 		return nil, errors.New("unmarshal tx failed")
 	}
 
-	e.tx.BlockHeight = e.bc.currentBlock.BlockHeight
-	e.tx.StateRoot = e.bc.getStateRoot()
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.TxStatus = tx.StatusPending
-	return e.tx, nil
+	return e.BaseExecutor.GetExecutedTx()
 }
 
 func (e *FullExitExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {

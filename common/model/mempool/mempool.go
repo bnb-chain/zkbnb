@@ -37,11 +37,10 @@ type (
 		CreateMempoolTxTable() error
 		DropMempoolTxTable() error
 		GetMempoolTxByTxId(id int64) (mempoolTx *MempoolTx, err error)
-		GetPendingMempoolTxs() (mempoolTxs []*MempoolTx, err error)
-		GetExecutedMempoolTxs() (mempoolTxs []*MempoolTx, err error)
 		GetMempoolTxsList(limit int64, offset int64) (mempoolTxs []*MempoolTx, err error)
 		GetMempoolTxsTotalCount() (count int64, err error)
 		GetMempoolTxByTxHash(hash string) (mempoolTxs *MempoolTx, err error)
+		GetMempoolTxsByStatus(status int) (mempoolTxs []*MempoolTx, err error)
 		GetMempoolTxsByBlockHeight(l2BlockHeight int64) (rowsAffected int64, mempoolTxs []*MempoolTx, err error)
 		GetPendingLiquidityTxs() (mempoolTxs []*MempoolTx, err error)
 		GetPendingNftTxs() (mempoolTxs []*MempoolTx, err error)
@@ -176,31 +175,8 @@ func (m *defaultMempoolModel) GetMempoolTxsByBlockHeight(l2BlockHeight int64) (r
 	return dbTx.RowsAffected, mempoolTxs, nil
 }
 
-/*
-	Func: GetPendingMempoolTxs
-	Return: []*MempoolTx, err error
-	Description: query unhandled mempool txVerification
-*/
-
-func (m *defaultMempoolModel) GetPendingMempoolTxs() (mempoolTxs []*MempoolTx, err error) {
-	dbTx := m.DB.Table(m.table).Where("status = ?", PendingTxStatus).Order("created_at, id").Find(&mempoolTxs)
-	if dbTx.Error != nil {
-		logx.Errorf("get mempool tx errors, err: %s", dbTx.Error.Error())
-		return nil, errorcode.DbErrSqlOperation
-	}
-	// TODO: cache operation
-	for _, mempoolTx := range mempoolTxs {
-		err := m.OrderMempoolTxDetails(mempoolTx)
-		if err != nil {
-			logx.Errorf("get associate mempool details error, err: %s", err.Error())
-			return nil, err
-		}
-	}
-	return mempoolTxs, nil
-}
-
-func (m *defaultMempoolModel) GetExecutedMempoolTxs() (mempoolTxs []*MempoolTx, err error) {
-	dbTx := m.DB.Table(m.table).Where("status = ?", ExecutedTxStatus).Order("created_at, id").Find(&mempoolTxs)
+func (m *defaultMempoolModel) GetMempoolTxsByStatus(status int) (mempoolTxs []*MempoolTx, err error) {
+	dbTx := m.DB.Table(m.table).Where("status = ?", status).Order("created_at, id").Find(&mempoolTxs)
 	if dbTx.Error != nil {
 		logx.Errorf("get mempool tx errors, err: %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation

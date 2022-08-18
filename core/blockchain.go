@@ -117,10 +117,13 @@ type StatesToCommit struct {
 	PendingNewL2NftExchange      []*nft.L2NftExchange
 }
 
-type BlockChain struct {
-	BlockModel            block.BlockModel
-	TxModel               tx.TxModel
-	TxDetailModel         tx.TxDetailModel
+type ChainDB struct {
+	// Block Chain data
+	BlockModel    block.BlockModel
+	TxModel       tx.TxModel
+	TxDetailModel tx.TxDetailModel
+
+	// State DB
 	AccountModel          account.AccountModel
 	AccountHistoryModel   account.AccountHistoryModel
 	L2AssetInfoModel      asset.AssetModel
@@ -130,6 +133,12 @@ type BlockChain struct {
 	OfferModel            nft.OfferModel
 	L2NftExchangeModel    nft.L2NftExchangeModel
 	L2NftHistoryModel     nft.L2NftHistoryModel
+}
+
+type BlockChain struct {
+	ChainDB
+	chainConfig *ChainConfig
+	dryRun      bool //dryRun mode is used for verifying user inputs, is not for execution
 
 	accountMap   map[int64]*commonAsset.AccountInfo
 	liquidityMap map[int64]*liquidity.Liquidity
@@ -142,14 +151,11 @@ type BlockChain struct {
 	accountAssetTrees []bsmt.SparseMerkleTree
 	treeCtx           *treedb.Context
 
-	chainConfig *ChainConfig
-	redisCache  dbcache.Cache
-	processor   Processor
-
 	currentBlock *block.Block
 	stateCache   *StateCache // Cache for current block changes.
 
-	dryRun bool //dryRun mode is used for verifying user inputs, is not for execution
+	redisCache dbcache.Cache
+	processor  Processor
 }
 
 func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) {
@@ -161,22 +167,25 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	conn := sqlx.NewSqlConn("postgres", config.Postgres.DataSource)
 
 	bc := &BlockChain{
+		ChainDB: ChainDB{
+			BlockModel:    block.NewBlockModel(conn, config.CacheRedis, gormPointer),
+			TxModel:       tx.NewTxModel(conn, config.CacheRedis, gormPointer),
+			TxDetailModel: tx.NewTxDetailModel(conn, config.CacheRedis, gormPointer),
+
+			AccountModel:          account.NewAccountModel(conn, config.CacheRedis, gormPointer),
+			AccountHistoryModel:   account.NewAccountHistoryModel(conn, config.CacheRedis, gormPointer),
+			L2AssetInfoModel:      asset.NewAssetModel(conn, config.CacheRedis, gormPointer),
+			LiquidityModel:        liquidity.NewLiquidityModel(conn, config.CacheRedis, gormPointer),
+			LiquidityHistoryModel: liquidity.NewLiquidityHistoryModel(conn, config.CacheRedis, gormPointer),
+			L2NftModel:            nft.NewL2NftModel(conn, config.CacheRedis, gormPointer),
+			OfferModel:            nft.NewOfferModel(conn, config.CacheRedis, gormPointer),
+			L2NftExchangeModel:    nft.NewL2NftExchangeModel(conn, config.CacheRedis, gormPointer),
+			L2NftHistoryModel:     nft.NewL2NftHistoryModel(conn, config.CacheRedis, gormPointer),
+		},
+
 		accountMap:   make(map[int64]*commonAsset.AccountInfo),
 		liquidityMap: make(map[int64]*liquidity.Liquidity),
 		nftMap:       make(map[int64]*nft.L2Nft),
-
-		BlockModel:            block.NewBlockModel(conn, config.CacheRedis, gormPointer),
-		TxModel:               tx.NewTxModel(conn, config.CacheRedis, gormPointer),
-		TxDetailModel:         tx.NewTxDetailModel(conn, config.CacheRedis, gormPointer),
-		AccountModel:          account.NewAccountModel(conn, config.CacheRedis, gormPointer),
-		AccountHistoryModel:   account.NewAccountHistoryModel(conn, config.CacheRedis, gormPointer),
-		L2AssetInfoModel:      asset.NewAssetModel(conn, config.CacheRedis, gormPointer),
-		LiquidityModel:        liquidity.NewLiquidityModel(conn, config.CacheRedis, gormPointer),
-		LiquidityHistoryModel: liquidity.NewLiquidityHistoryModel(conn, config.CacheRedis, gormPointer),
-		L2NftModel:            nft.NewL2NftModel(conn, config.CacheRedis, gormPointer),
-		OfferModel:            nft.NewOfferModel(conn, config.CacheRedis, gormPointer),
-		L2NftExchangeModel:    nft.NewL2NftExchangeModel(conn, config.CacheRedis, gormPointer),
-		L2NftHistoryModel:     nft.NewL2NftHistoryModel(conn, config.CacheRedis, gormPointer),
 
 		chainConfig: config,
 		redisCache:  dbcache.NewRedisCache(config.CacheRedis[0].Host, config.CacheRedis[0].Pass, 15*time.Minute),
@@ -246,15 +255,17 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 func NewBlockChainForDryRun(accountModel account.AccountModel, liquidityModel liquidity.LiquidityModel,
 	nftModel nft.L2NftModel, redisCache dbcache.Cache) *BlockChain {
 	bc := &BlockChain{
+		ChainDB: ChainDB{
+			AccountModel:   accountModel,
+			LiquidityModel: liquidityModel,
+			L2NftModel:     nftModel,
+		},
+
 		dryRun: true,
 
 		accountMap:   make(map[int64]*commonAsset.AccountInfo),
 		liquidityMap: make(map[int64]*liquidity.Liquidity),
 		nftMap:       make(map[int64]*nft.L2Nft),
-
-		AccountModel:   accountModel,
-		LiquidityModel: liquidityModel,
-		L2NftModel:     nftModel,
 
 		redisCache: redisCache,
 	}
@@ -265,81 +276,67 @@ func (bc *BlockChain) GetPendingTxs() []*tx.Tx {
 	return bc.stateCache.txs
 }
 
-func (bc *BlockChain) ApplyTransaction(tx *tx.Tx) (*tx.Tx, error) {
+func (bc *BlockChain) ApplyTransaction(tx *tx.Tx) error {
 	return bc.processor.Process(tx)
+}
+
+func (bc *BlockChain) getAccount(accountIndex int64) interface{} {
+	return bc.accountMap[accountIndex]
+}
+
+func (bc *BlockChain) getLiquidity(pairIndex int64) interface{} {
+	return bc.liquidityMap[pairIndex]
+}
+
+func (bc *BlockChain) getNft(nftIndex int64) interface{} {
+	return bc.nftMap[nftIndex]
+}
+
+func (bc *BlockChain) syncPendingStateToRedis(pendingMap map[int64]int, getKey func(int64) string, getValue func(int64) interface{}) error {
+	for index, status := range pendingMap {
+		if status != StateCachePending {
+			continue
+		}
+
+		err := bc.redisCache.Set(context.Background(), getKey(index), getValue(index))
+		if err != nil {
+			return fmt.Errorf("cache to redis failed: %v", err)
+		}
+		pendingMap[index] = StateCacheCached
+	}
+
+	return nil
 }
 
 func (bc *BlockChain) SyncStateCacheToRedis() error {
 	stateCache := bc.stateCache
 
 	// Sync new create to cache.
-	for accountIndex, status := range stateCache.pendingNewAccountIndexMap {
-		if status != StateCachePending {
-			continue
-		}
-
-		err := bc.redisCache.Set(context.Background(), dbcache.AccountKeyByIndex(accountIndex), bc.accountMap[accountIndex])
-		if err != nil {
-			return fmt.Errorf("cache to redis failed: %v", err)
-		}
-		stateCache.pendingNewAccountIndexMap[accountIndex] = StateCacheCached
+	err := bc.syncPendingStateToRedis(stateCache.pendingNewAccountIndexMap, dbcache.AccountKeyByIndex, bc.getAccount)
+	if err != nil {
+		return err
 	}
-	for liquidityIndex, status := range stateCache.pendingNewLiquidityIndexMap {
-		if status != StateCachePending {
-			continue
-		}
-
-		err := bc.redisCache.Set(context.Background(), dbcache.LiquidityKeyByIndex(liquidityIndex), bc.liquidityMap[liquidityIndex])
-		if err != nil {
-			return fmt.Errorf("cache to redis failed: %v", err)
-		}
-		stateCache.pendingNewLiquidityIndexMap[liquidityIndex] = StateCacheCached
+	err = bc.syncPendingStateToRedis(stateCache.pendingNewLiquidityIndexMap, dbcache.AccountKeyByIndex, bc.getLiquidity)
+	if err != nil {
+		return err
 	}
-	for nftIndex, status := range stateCache.pendingNewNftIndexMap {
-		if status != StateCachePending {
-			continue
-		}
-
-		err := bc.redisCache.Set(context.Background(), dbcache.NftKeyByIndex(nftIndex), bc.nftMap[nftIndex])
-		if err != nil {
-			return fmt.Errorf("cache to redis failed: %v", err)
-		}
-		stateCache.pendingNewNftIndexMap[nftIndex] = StateCacheCached
+	err = bc.syncPendingStateToRedis(stateCache.pendingNewNftIndexMap, dbcache.AccountKeyByIndex, bc.getNft)
+	if err != nil {
+		return err
 	}
 
 	// Sync pending update to cache.
-	for accountIndex, status := range stateCache.pendingUpdateAccountIndexMap {
-		if status != StateCachePending {
-			continue
-		}
-
-		err := bc.redisCache.Set(context.Background(), dbcache.AccountKeyByIndex(accountIndex), bc.accountMap[accountIndex])
-		if err != nil {
-			return fmt.Errorf("cache to redis failed: %v", err)
-		}
-		stateCache.pendingUpdateAccountIndexMap[accountIndex] = StateCacheCached
+	err = bc.syncPendingStateToRedis(stateCache.pendingUpdateAccountIndexMap, dbcache.AccountKeyByIndex, bc.getAccount)
+	if err != nil {
+		return err
 	}
-	for liquidityIndex, status := range stateCache.pendingUpdateLiquidityIndexMap {
-		if status != StateCachePending {
-			continue
-		}
-
-		err := bc.redisCache.Set(context.Background(), dbcache.LiquidityKeyByIndex(liquidityIndex), bc.liquidityMap[liquidityIndex])
-		if err != nil {
-			return fmt.Errorf("cache to redis failed: %v", err)
-		}
-		stateCache.pendingUpdateLiquidityIndexMap[liquidityIndex] = StateCacheCached
+	err = bc.syncPendingStateToRedis(stateCache.pendingUpdateLiquidityIndexMap, dbcache.AccountKeyByIndex, bc.getLiquidity)
+	if err != nil {
+		return err
 	}
-	for nftIndex, status := range stateCache.pendingUpdateNftIndexMap {
-		if status != StateCachePending {
-			continue
-		}
-
-		err := bc.redisCache.Set(context.Background(), dbcache.NftKeyByIndex(nftIndex), bc.nftMap[nftIndex])
-		if err != nil {
-			return fmt.Errorf("cache to redis failed: %v", err)
-		}
-		stateCache.pendingUpdateNftIndexMap[nftIndex] = StateCacheCached
+	err = bc.syncPendingStateToRedis(stateCache.pendingUpdateNftIndexMap, dbcache.AccountKeyByIndex, bc.getNft)
+	if err != nil {
+		return err
 	}
 
 	return nil

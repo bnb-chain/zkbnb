@@ -19,17 +19,19 @@ import (
 )
 
 type RemoveLiquidityExecutor struct {
-	bc          *BlockChain
-	tx          *tx.Tx
+	BaseExecutor
+
 	newPoolInfo *commonAsset.LiquidityInfo
 	txInfo      *legendTxTypes.RemoveLiquidityTxInfo
 }
 
-func NewRemoveLiquidityExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+func NewRemoveLiquidityExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
 	return &RemoveLiquidityExecutor{
-		bc: bc,
-		tx: tx,
-	}, nil
+		BaseExecutor: BaseExecutor{
+			bc: bc,
+			tx: tx,
+		},
+	}
 }
 
 func (e *RemoveLiquidityExecutor) Prepare() error {
@@ -281,19 +283,14 @@ func (e *RemoveLiquidityExecutor) UpdateTrees() error {
 }
 
 func (e *RemoveLiquidityExecutor) GetExecutedTx() (*tx.Tx, error) {
-	bc := e.bc
-	txInfo := e.txInfo
-	txInfoBytes, err := json.Marshal(txInfo)
+	txInfoBytes, err := json.Marshal(e.txInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
 		return nil, errors.New("unmarshal tx failed")
 	}
-	stateRoot := bc.getStateRoot()
-	e.tx.BlockHeight = bc.currentBlock.BlockHeight
-	e.tx.StateRoot = stateRoot
+
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.TxStatus = tx.StatusPending
-	return e.tx, nil
+	return e.BaseExecutor.GetExecutedTx()
 }
 
 func (e *RemoveLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {

@@ -17,16 +17,18 @@ import (
 )
 
 type DepositExecutor struct {
-	bc     *BlockChain
-	tx     *tx.Tx
+	BaseExecutor
+
 	txInfo *commonTx.DepositTxInfo
 }
 
-func NewDepositExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+func NewDepositExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
 	return &DepositExecutor{
-		bc: bc,
-		tx: tx,
-	}, nil
+		BaseExecutor: BaseExecutor{
+			bc: bc,
+			tx: tx,
+		},
+	}
 }
 
 func (e *DepositExecutor) Prepare() error {
@@ -130,11 +132,8 @@ func (e *DepositExecutor) GetExecutedTx() (*tx.Tx, error) {
 		return nil, errors.New("unmarshal tx failed")
 	}
 
-	e.tx.BlockHeight = e.bc.currentBlock.BlockHeight
-	e.tx.StateRoot = e.bc.getStateRoot()
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.TxStatus = tx.StatusPending
-	return e.tx, nil
+	return e.BaseExecutor.GetExecutedTx()
 }
 
 func (e *DepositExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {

@@ -18,16 +18,18 @@ import (
 )
 
 type CreatePairExecutor struct {
-	bc     *BlockChain
-	tx     *tx.Tx
+	BaseExecutor
+
 	txInfo *commonTx.CreatePairTxInfo
 }
 
-func NewCreatePairExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+func NewCreatePairExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
 	return &CreatePairExecutor{
-		bc: bc,
-		tx: tx,
-	}, nil
+		BaseExecutor: BaseExecutor{
+			bc: bc,
+			tx: tx,
+		},
+	}
 }
 
 func (e *CreatePairExecutor) Prepare() error {
@@ -123,11 +125,8 @@ func (e *CreatePairExecutor) GetExecutedTx() (*tx.Tx, error) {
 		return nil, errors.New("unmarshal tx failed")
 	}
 
-	e.tx.BlockHeight = e.bc.currentBlock.BlockHeight
-	e.tx.StateRoot = e.bc.getStateRoot()
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.TxStatus = tx.StatusPending
-	return e.tx, nil
+	return e.BaseExecutor.GetExecutedTx()
 }
 
 func (e *CreatePairExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {

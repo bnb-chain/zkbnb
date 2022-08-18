@@ -17,16 +17,18 @@ import (
 )
 
 type WithdrawExecutor struct {
-	bc     *BlockChain
-	tx     *tx.Tx
+	BaseExecutor
+
 	txInfo *legendTxTypes.WithdrawTxInfo
 }
 
-func NewWithdrawExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+func NewWithdrawExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
 	return &WithdrawExecutor{
-		bc: bc,
-		tx: tx,
-	}, nil
+		BaseExecutor: BaseExecutor{
+			bc: bc,
+			tx: tx,
+		},
+	}
 }
 
 func (e *WithdrawExecutor) Prepare() error {
@@ -167,12 +169,8 @@ func (e *WithdrawExecutor) GetExecutedTx() (*tx.Tx, error) {
 		return nil, errors.New("unmarshal tx failed")
 	}
 
-	e.tx.BlockHeight = e.bc.currentBlock.BlockHeight
-	e.tx.StateRoot = e.bc.getStateRoot()
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.TxStatus = tx.StatusPending
-
-	return e.tx, nil
+	return e.BaseExecutor.GetExecutedTx()
 }
 
 func (e *WithdrawExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {

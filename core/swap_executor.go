@@ -20,17 +20,19 @@ import (
 )
 
 type SwapExecutor struct {
-	bc          *BlockChain
-	tx          *tx.Tx
+	BaseExecutor
+
 	newPoolInfo *commonAsset.LiquidityInfo
 	txInfo      *legendTxTypes.SwapTxInfo
 }
 
-func NewSwapExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+func NewSwapExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
 	return &SwapExecutor{
-		bc: bc,
-		tx: tx,
-	}, nil
+		BaseExecutor: BaseExecutor{
+			bc: bc,
+			tx: tx,
+		},
+	}
 }
 
 func (e *SwapExecutor) Prepare() error {
@@ -287,19 +289,14 @@ func (e *SwapExecutor) UpdateTrees() error {
 }
 
 func (e *SwapExecutor) GetExecutedTx() (*tx.Tx, error) {
-	bc := e.bc
-	txInfo := e.txInfo
-	txInfoBytes, err := json.Marshal(txInfo)
+	txInfoBytes, err := json.Marshal(e.txInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
 		return nil, errors.New("unmarshal tx failed")
 	}
-	stateRoot := bc.getStateRoot()
-	e.tx.BlockHeight = bc.currentBlock.BlockHeight
-	e.tx.StateRoot = stateRoot
+
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.TxStatus = tx.StatusPending
-	return e.tx, nil
+	return e.BaseExecutor.GetExecutedTx()
 }
 
 func (e *SwapExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {

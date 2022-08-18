@@ -25,25 +25,27 @@ const (
 var configFile = flag.String("f",
 	"./etc/committer.yaml", "the config file")
 
-type CommitterConfig struct {
+type Config struct {
 	core.ChainConfig
-	KeyPath struct {
-		KeyTxCounts []int
+
+	BlockConfig struct {
+		OptionalBlockSizes []int
 	}
 }
 
 type Committer struct {
-	config         *CommitterConfig
-	bc             *core.BlockChain
-	mempoolModel   mempool.MemPoolModel
-	keyTxCounts    []int
-	maxTxsPerBlock int
+	config             *Config
+	maxTxsPerBlock     int
+	optionalBlockSizes []int
 
-	pendingUpdateMempoolTxs []*mempool.MempoolTx
+	bc *core.BlockChain
+
+	memPoolModel       mempool.MemPoolModel
+	executedMemPoolTxs []*mempool.MempoolTx
 }
 
-func NewCommitter(config *CommitterConfig) (*Committer, error) {
-	if len(config.KeyPath.KeyTxCounts) == 0 {
+func NewCommitter(config *Config) (*Committer, error) {
+	if len(config.BlockConfig.OptionalBlockSizes) == 0 {
 		return nil, errors.New("nil key tx counts")
 	}
 
@@ -58,20 +60,21 @@ func NewCommitter(config *CommitterConfig) (*Committer, error) {
 		return nil, err
 	}
 	conn := sqlx.NewSqlConn("postgres", config.Postgres.DataSource)
-	committer := &Committer{
-		config:                  config,
-		bc:                      bc,
-		mempoolModel:            mempool.NewMempoolModel(conn, config.CacheRedis, gormPointer),
-		keyTxCounts:             config.KeyPath.KeyTxCounts,
-		maxTxsPerBlock:          config.KeyPath.KeyTxCounts[len(config.KeyPath.KeyTxCounts)-1],
-		pendingUpdateMempoolTxs: make([]*mempool.MempoolTx, 0),
-	}
 
-	go committer.loop()
+	committer := &Committer{
+		config:             config,
+		maxTxsPerBlock:     config.BlockConfig.OptionalBlockSizes[len(config.BlockConfig.OptionalBlockSizes)-1],
+		optionalBlockSizes: config.BlockConfig.OptionalBlockSizes,
+
+		bc: bc,
+
+		memPoolModel:       mempool.NewMempoolModel(conn, config.CacheRedis, gormPointer),
+		executedMemPoolTxs: make([]*mempool.MempoolTx, 0),
+	}
 	return committer, nil
 }
 
-func (c *Committer) loop() {
+func (c *Committer) Run() {
 	curBlock, err := c.restoreExecutedTxs()
 	if err != nil {
 		panic("restore executed tx failed: " + err.Error())
@@ -86,7 +89,7 @@ func (c *Committer) loop() {
 		}
 
 		// Read pending transactions from mempool_tx table.
-		pendingTxs, err := c.mempoolModel.GetPendingMempoolTxs()
+		pendingTxs, err := c.memPoolModel.GetMempoolTxsByStatus(mempool.PendingTxStatus)
 		if err != nil {
 			logx.Error("get pending transactions from mempool failed:", err)
 			return
@@ -97,7 +100,7 @@ func (c *Committer) loop() {
 			}
 
 			time.Sleep(100 * time.Millisecond)
-			pendingTxs, err = c.mempoolModel.GetPendingMempoolTxs()
+			pendingTxs, err = c.memPoolModel.GetMempoolTxsByStatus(mempool.PendingTxStatus)
 			if err != nil {
 				logx.Error("get pending transactions from mempool failed:", err)
 				return
@@ -112,7 +115,7 @@ func (c *Committer) loop() {
 			}
 
 			tx := convertMempoolTxToTx(mempoolTx)
-			tx, err = c.bc.ApplyTransaction(tx)
+			err = c.bc.ApplyTransaction(tx)
 			if err != nil {
 				mempoolTx.Status = mempool.FailTxStatus
 				pendingDeleteMempoolTxs = append(pendingDeleteMempoolTxs, mempoolTx)
@@ -124,14 +127,14 @@ func (c *Committer) loop() {
 
 		err = c.bc.SyncStateCacheToRedis()
 		if err != nil {
-			panic("sync redis dbcache failed: " + err.Error())
+			panic("sync redis cache failed: " + err.Error())
 		}
 
-		err = c.mempoolModel.UpdateMempoolTxs(pendingUpdateMempoolTxs, pendingDeleteMempoolTxs)
+		err = c.memPoolModel.UpdateMempoolTxs(pendingUpdateMempoolTxs, pendingDeleteMempoolTxs)
 		if err != nil {
 			panic("update mempool failed: " + err.Error())
 		}
-		c.pendingUpdateMempoolTxs = append(c.pendingUpdateMempoolTxs, pendingUpdateMempoolTxs...)
+		c.executedMemPoolTxs = append(c.executedMemPoolTxs, pendingUpdateMempoolTxs...)
 
 		if c.shouldCommit(curBlock) {
 			curBlock, err = c.commitNewBlock(curBlock)
@@ -151,7 +154,7 @@ func (c *Committer) restoreExecutedTxs() (*block.Block, error) {
 		return nil, err
 	}
 
-	executedTxs, err := c.mempoolModel.GetExecutedMempoolTxs()
+	executedTxs, err := c.memPoolModel.GetMempoolTxsByStatus(mempool.ExecutedTxStatus)
 	if err != nil {
 		return nil, err
 	}
@@ -165,13 +168,13 @@ func (c *Committer) restoreExecutedTxs() (*block.Block, error) {
 
 	for _, mempoolTx := range executedTxs {
 		tx := convertMempoolTxToTx(mempoolTx)
-		tx, err = c.bc.ApplyTransaction(tx)
+		err = c.bc.ApplyTransaction(tx)
 		if err != nil {
 			return nil, err
 		}
-		c.pendingUpdateMempoolTxs = append(c.pendingUpdateMempoolTxs, mempoolTx)
 	}
 
+	c.executedMemPoolTxs = append(c.executedMemPoolTxs, executedTxs...)
 	return curBlock, nil
 }
 
@@ -185,7 +188,7 @@ func (c *Committer) shouldCommit(curBlock *block.Block) bool {
 }
 
 func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) {
-	for _, tx := range c.pendingUpdateMempoolTxs {
+	for _, tx := range c.executedMemPoolTxs {
 		tx.Status = mempool.SuccessTxStatus
 	}
 
@@ -198,15 +201,15 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 	// Update database in a transaction.
 	//err = c.bc.BlockModel.CreateBlockForCommitter()
 
-	c.pendingUpdateMempoolTxs = make([]*mempool.MempoolTx, 0)
+	c.executedMemPoolTxs = make([]*mempool.MempoolTx, 0)
 	return statesToCommit.Block, nil
 }
 
 func (c *Committer) computeCurrentBlockSize() int {
 	var blockSize int
-	for i := 0; i < len(c.keyTxCounts); i++ {
-		if len(c.bc.GetPendingTxs()) <= c.keyTxCounts[i] {
-			blockSize = c.keyTxCounts[i]
+	for i := 0; i < len(c.optionalBlockSizes); i++ {
+		if len(c.bc.GetPendingTxs()) <= c.optionalBlockSizes[i] {
+			blockSize = c.optionalBlockSizes[i]
 			break
 		}
 	}
@@ -229,16 +232,14 @@ func convertMempoolTxToTx(mempoolTx *mempool.MempoolTx) *tx.Tx {
 
 func main() {
 	flag.Parse()
-	var config CommitterConfig
+	var config Config
 	conf.MustLoad(*configFile, &config)
 
-	_, err := NewCommitter(&config)
+	committer, err := NewCommitter(&config)
 	if err != nil {
 		logx.Error("new committer failed:", err)
 		return
 	}
 
-	for {
-		time.Sleep(1 * time.Second)
-	}
+	committer.Run()
 }

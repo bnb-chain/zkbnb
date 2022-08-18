@@ -1,14 +1,12 @@
 package core
 
 import (
-	"fmt"
-
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 )
 
 type Processor interface {
-	Process(tx *tx.Tx) (*tx.Tx, error)
+	Process(tx *tx.Tx) error
 }
 
 type TxExecutor interface {
@@ -21,11 +19,11 @@ type TxExecutor interface {
 	GenerateTxDetails() ([]*tx.TxDetail, error)
 }
 
-func NewTxExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+func NewTxExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
 	switch tx.TxType {
 	case commonTx.TxTypeTransfer:
 		return NewTransferExecutor(bc, tx)
 	}
 
-	return nil, fmt.Errorf("unknow tx type")
+	return nil
 }

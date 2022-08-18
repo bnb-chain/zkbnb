@@ -20,16 +20,18 @@ import (
 )
 
 type MintNftExecutor struct {
-	bc     *BlockChain
-	tx     *tx.Tx
+	BaseExecutor
+
 	txInfo *legendTxTypes.MintNftTxInfo
 }
 
-func NewMintNftExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+func NewMintNftExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
 	return &MintNftExecutor{
-		bc: bc,
-		tx: tx,
-	}, nil
+		BaseExecutor: BaseExecutor{
+			bc: bc,
+			tx: tx,
+		},
+	}
 }
 
 func (e *MintNftExecutor) Prepare() error {
@@ -184,12 +186,8 @@ func (e *MintNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 		return nil, errors.New("unmarshal tx failed")
 	}
 
-	e.tx.BlockHeight = e.bc.currentBlock.BlockHeight
-	e.tx.StateRoot = e.bc.getStateRoot()
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.TxStatus = tx.StatusPending
-
-	return e.tx, nil
+	return e.BaseExecutor.GetExecutedTx()
 }
 
 func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {

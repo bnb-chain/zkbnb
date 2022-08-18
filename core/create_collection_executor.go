@@ -19,16 +19,18 @@ import (
 )
 
 type CreateCollectionExecutor struct {
-	bc     *BlockChain
-	tx     *tx.Tx
+	BaseExecutor
+
 	txInfo *legendTxTypes.CreateCollectionTxInfo
 }
 
-func NewCreateCollectionExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+func NewCreateCollectionExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
 	return &CreateCollectionExecutor{
-		bc: bc,
-		tx: tx,
-	}, nil
+		BaseExecutor: BaseExecutor{
+			bc: bc,
+			tx: tx,
+		},
+	}
 }
 
 func (e *CreateCollectionExecutor) Prepare() error {
@@ -154,12 +156,8 @@ func (e *CreateCollectionExecutor) GetExecutedTx() (*tx.Tx, error) {
 		return nil, errors.New("unmarshal tx failed")
 	}
 
-	e.tx.BlockHeight = e.bc.currentBlock.BlockHeight
-	e.tx.StateRoot = e.bc.getStateRoot()
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.TxStatus = tx.StatusPending
-
-	return e.tx, nil
+	return e.BaseExecutor.GetExecutedTx()
 }
 
 func (e *CreateCollectionExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
