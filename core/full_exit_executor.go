@@ -6,16 +6,14 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/bnb-chain/zkbas/common/util"
-
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/model/tx"
+	"github.com/bnb-chain/zkbas/common/util"
 )
 
 type FullExitExecutor struct {
