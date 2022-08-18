@@ -6,16 +6,15 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/bnb-chain/zkbas/common/util"
-
-	"github.com/bnb-chain/zkbas/common/commonConstant"
-	"github.com/bnb-chain/zkbas/common/model/nft"
-
-	"github.com/bnb-chain/zkbas/common/commonAsset"
-	"github.com/bnb-chain/zkbas/common/commonTx"
-	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas/common/commonAsset"
+	"github.com/bnb-chain/zkbas/common/commonConstant"
+	"github.com/bnb-chain/zkbas/common/commonTx"
+	"github.com/bnb-chain/zkbas/common/model/nft"
+	"github.com/bnb-chain/zkbas/common/model/tx"
+	"github.com/bnb-chain/zkbas/common/util"
 )
 
 type FullExitNftExecutor struct {
@@ -84,7 +83,7 @@ func (e *FullExitNftExecutor) Prepare() error {
 	err = e.bc.prepareAccountsAndAssets(accounts, assets)
 	if err != nil {
 		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
-		return err
+		return errors.New("internal error")
 	}
 
 	// Set the right tx info.

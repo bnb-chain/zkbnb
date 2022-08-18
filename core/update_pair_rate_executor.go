@@ -6,14 +6,13 @@ import (
 	"errors"
 	"math/big"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
-
-	"github.com/bnb-chain/zkbas/common/util"
-
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/model/tx"
-	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/bnb-chain/zkbas/common/util"
 )
 
 type UpdatePairRateExecutor struct {

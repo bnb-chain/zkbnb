@@ -5,24 +5,19 @@ import (
 	"encoding/json"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/bnb-chain/zkbas/common/model/nft"
-
-	"github.com/bnb-chain/zkbas/common/commonConstant"
-
-	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
-
-	"github.com/bnb-chain/zkbas/common/util"
-
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
+	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/commonTx"
+	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/tx"
+	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
 )
 
 type AtomicMatchExecutor struct {
@@ -62,7 +57,7 @@ func (e *AtomicMatchExecutor) Prepare() error {
 	err = e.bc.prepareNft(txInfo.SellOffer.NftIndex)
 	if err != nil {
 		logx.Errorf("prepare nft failed")
-		return err
+		return errors.New("internal error")
 	}
 
 	matchNft := e.bc.nftMap[txInfo.SellOffer.NftIndex]
@@ -81,7 +76,7 @@ func (e *AtomicMatchExecutor) Prepare() error {
 	err = e.bc.prepareAccountsAndAssets(accounts, assets)
 	if err != nil {
 		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
-		return err
+		return errors.New("internal error")
 	}
 
 	// Set the right treasury and creator treasury amount.
@@ -115,23 +110,22 @@ func (e *AtomicMatchExecutor) VerifyInputs() error {
 	}
 
 	// Check expired time.
-	if txInfo.ExpiredAt < bc.currentBlock.CreatedAt.UnixMilli() {
-		return errors.New("tx expired")
+	if err := e.bc.verifyExpiredAt(txInfo.ExpiredAt); err != nil {
+		return err
 	}
-	if txInfo.SellOffer.ExpiredAt < bc.currentBlock.CreatedAt.UnixMilli() {
-		return errors.New("sell offer expired")
+	if err := e.bc.verifyExpiredAt(txInfo.BuyOffer.ExpiredAt); err != nil {
+		return errors.New("invalid BuyOffer.ExpiredAt")
 	}
-	if txInfo.BuyOffer.ExpiredAt < bc.currentBlock.CreatedAt.UnixMilli() {
-		return errors.New("buy offer expired")
+	if err := e.bc.verifyExpiredAt(txInfo.SellOffer.ExpiredAt); err != nil {
+		return errors.New("invalid SellOffer.ExpiredAt")
 	}
 
 	fromAccount := bc.accountMap[txInfo.AccountIndex]
 	buyAccount := bc.accountMap[txInfo.BuyOffer.AccountIndex]
 	sellAccount := bc.accountMap[txInfo.SellOffer.AccountIndex]
 
-	// Check from account's nonce.
-	if txInfo.Nonce != fromAccount.Nonce {
-		return errors.New("invalid nonce")
+	if err := e.bc.verifyNonce(fromAccount.AccountIndex, txInfo.Nonce); err != nil {
+		return err
 	}
 
 	// Check sender's gas balance and buyer's asset balance.

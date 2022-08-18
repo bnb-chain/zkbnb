@@ -42,13 +42,13 @@ func (e *TransferNftExecutor) Prepare() error {
 	err = e.bc.prepareAccountsAndAssets(accounts, assets)
 	if err != nil {
 		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
-		return err
+		return errors.New("internal error")
 	}
 
 	err = e.bc.prepareNft(txInfo.NftIndex)
 	if err != nil {
 		logx.Errorf("prepare nft failed")
-		return err
+		return errors.New("internal error")
 	}
 
 	e.txInfo = txInfo
@@ -63,13 +63,14 @@ func (e *TransferNftExecutor) VerifyInputs() error {
 		return err
 	}
 
-	if txInfo.ExpiredAt < e.bc.currentBlock.CreatedAt.UnixMilli() {
-		return errors.New("tx expired")
+	if err := e.bc.verifyExpiredAt(txInfo.ExpiredAt); err != nil {
+		return err
 	}
 
 	fromAccount := e.bc.accountMap[txInfo.FromAccountIndex]
-	if txInfo.Nonce != fromAccount.Nonce {
-		return errors.New("invalid nonce")
+
+	if err := e.bc.verifyNonce(fromAccount.AccountIndex, txInfo.Nonce); err != nil {
+		return err
 	}
 
 	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {

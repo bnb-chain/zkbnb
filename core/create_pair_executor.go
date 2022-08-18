@@ -6,16 +6,15 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/bnb-chain/zkbas/common/commonAsset"
-	"github.com/bnb-chain/zkbas/common/commonConstant"
-
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 
+	"github.com/bnb-chain/zkbas/common/commonAsset"
+	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type CreatePairExecutor struct {
