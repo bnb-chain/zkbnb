@@ -56,6 +56,12 @@ func (e *AddLiquidityExecutor) Prepare() error {
 		return err
 	}
 
+	// add details to tx info
+	err = e.fillTxInfo()
+	if err != nil {
+		return err
+	}
+
 	e.txInfo = txInfo
 	return nil
 }
@@ -128,12 +134,6 @@ func (e *AddLiquidityExecutor) VerifyInputs() error {
 func (e *AddLiquidityExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
-
-	// add details to tx info
-	err := e.fillTxInfo()
-	if err != nil {
-		return err
-	}
 
 	// apply changes
 	fromAccount := bc.accountMap[txInfo.FromAccountIndex]
@@ -322,16 +322,21 @@ func (e *AddLiquidityExecutor) GetExecutedTx() (*tx.Tx, error) {
 func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
 
-	fromAccount := e.bc.accountMap[txInfo.FromAccountIndex]
-	gasAccount := e.bc.accountMap[txInfo.GasAccountIndex]
-
 	liquidityModel := e.bc.liquidityMap[txInfo.PairIndex]
 	liquidityInfo, err := constructLiquidityInfo(liquidityModel)
 	if err != nil {
 		logx.Errorf("construct liquidity info error, err: ", err.Error())
 		return nil, err
 	}
-	treasuryAccount := e.bc.accountMap[liquidityInfo.TreasuryAccountIndex]
+
+	copiedAccounts, err := e.bc.deepCopyAccounts([]int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex, liquidityInfo.TreasuryAccountIndex})
+	if err != nil {
+		return nil, err
+	}
+
+	fromAccount := copiedAccounts[txInfo.FromAccountIndex]
+	gasAccount := copiedAccounts[txInfo.GasAccountIndex]
+	treasuryAccount := copiedAccounts[liquidityInfo.TreasuryAccountIndex]
 
 	txDetails := make([]*tx.TxDetail, 0, 4)
 	// from account asset A
@@ -355,6 +360,11 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
 
+	fromAccount.AssetInfo[txInfo.AssetAId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.AssetAId].Balance, txInfo.AssetAAmount)
+	if fromAccount.AssetInfo[txInfo.AssetAId].Balance.Cmp(big.NewInt(0)) < 0 {
+		return nil, errors.New("insufficient asset a balance")
+	}
+
 	// from account asset B
 	order++
 	txDetails = append(txDetails, &tx.TxDetail{
@@ -375,25 +385,19 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
 
-	// from account asset gas
-	baseBalance := fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance
-	if txInfo.GasFeeAssetId == txInfo.AssetAId {
-		baseBalance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.AssetAAmount)
-	} else if txInfo.GasFeeAssetId == txInfo.AssetBId {
-		baseBalance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.AssetBAmount)
+	fromAccount.AssetInfo[txInfo.AssetBId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.AssetBId].Balance, txInfo.AssetBAmount)
+	if fromAccount.AssetInfo[txInfo.AssetBId].Balance.Cmp(big.NewInt(0)) < 0 {
+		return nil, errors.New("insufficient asset b balance")
 	}
+
+	// from account asset gas
 	order++
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    commonAsset.GeneralAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
 		AccountName:  fromAccount.AccountName,
-		Balance: commonAsset.ConstructAccountAsset(
-			txInfo.GasFeeAssetId,
-			baseBalance,
-			fromAccount.AssetInfo[txInfo.GasFeeAssetId].LpAmount,
-			fromAccount.AssetInfo[txInfo.GasFeeAssetId].OfferCanceledOrFinalized,
-		).String(),
+		Balance:      fromAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId,
 			ffmath.Neg(txInfo.GasFeeAssetAmount),
@@ -405,6 +409,11 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Nonce:           fromAccount.Nonce,
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
+
+	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
+	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(big.NewInt(0)) < 0 {
+		return nil, errors.New("insufficient gas fee balance")
+	}
 
 	// from account lp
 	poolLp := ffmath.Sub(liquidityInfo.LpAmount, txInfo.TreasuryAmount)
@@ -442,6 +451,7 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
 	e.lpDeltaForFromAccount = lpDeltaForFromAccount
+	fromAccount.AssetInfo[txInfo.PairIndex].LpAmount = ffmath.Add(fromAccount.AssetInfo[txInfo.PairIndex].LpAmount, lpDeltaForFromAccount)
 
 	// pool info
 	basePool, err := commonAsset.ConstructLiquidityInfo(
@@ -474,8 +484,7 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		TreasuryAccountIndex: liquidityInfo.TreasuryAccountIndex,
 		TreasuryRate:         liquidityInfo.TreasuryRate,
 	}
-	newPool, err := commonAsset.ComputeNewBalance(
-		commonAsset.LiquidityAssetType, basePool.String(), poolDeltaForToAccount.String())
+	newPool, err := commonAsset.ComputeNewBalance(commonAsset.LiquidityAssetType, basePool.String(), poolDeltaForToAccount.String())
 	if err != nil {
 		return nil, err
 	}
@@ -517,6 +526,7 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountOrder:    accountOrder,
 		CollectionNonce: treasuryAccount.CollectionNonce,
 	})
+	treasuryAccount.AssetInfo[txInfo.PairIndex].LpAmount = ffmath.Add(treasuryAccount.AssetInfo[txInfo.PairIndex].LpAmount, txInfo.TreasuryAmount)
 
 	// gas account asset gas
 	order++
