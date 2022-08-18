@@ -318,54 +318,17 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	bc := e.bc
 	txInfo := e.txInfo
 	matchNft := bc.nftMap[txInfo.SellOffer.NftIndex]
-	fromAccount, err := bc.accountMap[txInfo.AccountIndex].DeepCopy()
+
+	copiedAccounts, err := e.bc.deepCopyAccounts([]int64{txInfo.AccountIndex, txInfo.GasAccountIndex,
+		txInfo.SellOffer.AccountIndex, txInfo.BuyOffer.AccountIndex, matchNft.CreatorAccountIndex})
 	if err != nil {
 		return nil, err
 	}
-	gasAccount := fromAccount
-	if txInfo.GasAccountIndex != txInfo.AccountIndex {
-		gasAccount, err = bc.accountMap[txInfo.GasAccountIndex].DeepCopy()
-		if err != nil {
-			return nil, err
-		}
-	}
-	buyAccount := fromAccount
-	if txInfo.BuyOffer.AccountIndex != txInfo.AccountIndex {
-		if txInfo.BuyOffer.AccountIndex == txInfo.GasAccountIndex {
-			buyAccount = gasAccount
-		} else {
-			buyAccount, err = bc.accountMap[txInfo.BuyOffer.AccountIndex].DeepCopy()
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-	sellAccount := fromAccount
-	if txInfo.SellOffer.AccountIndex != txInfo.AccountIndex {
-		if txInfo.BuyOffer.AccountIndex == txInfo.GasAccountIndex {
-			sellAccount = gasAccount
-		} else {
-			sellAccount, err = bc.accountMap[txInfo.SellOffer.AccountIndex].DeepCopy()
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-	creatorAccount := fromAccount
-	if matchNft.CreatorAccountIndex != txInfo.AccountIndex {
-		if matchNft.CreatorAccountIndex == txInfo.GasAccountIndex {
-			creatorAccount = gasAccount
-		} else if matchNft.CreatorAccountIndex == txInfo.BuyOffer.AccountIndex {
-			creatorAccount = buyAccount
-		} else if matchNft.CreatorAccountIndex == txInfo.SellOffer.AccountIndex {
-			creatorAccount = sellAccount
-		} else {
-			creatorAccount, err = bc.accountMap[matchNft.CreatorAccountIndex].DeepCopy()
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
+	fromAccount := copiedAccounts[txInfo.AccountIndex]
+	buyAccount := copiedAccounts[txInfo.BuyOffer.AccountIndex]
+	sellAccount := copiedAccounts[txInfo.SellOffer.AccountIndex]
+	creatorAccount := copiedAccounts[matchNft.CreatorAccountIndex]
+	gasAccount := copiedAccounts[txInfo.GasAccountIndex]
 
 	txDetails := make([]*tx.TxDetail, 0, 9)
 

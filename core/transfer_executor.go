@@ -163,33 +163,18 @@ func (e *TransferExecutor) GetExecutedTx() (*tx.Tx, error) {
 }
 
 func (e *TransferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
-	bc := e.bc
 	txInfo := e.txInfo
 
-	fromAccount, err := bc.accountMap[txInfo.FromAccountIndex].DeepCopy()
+	copiedAccounts, err := e.bc.deepCopyAccounts([]int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex, txInfo.ToAccountIndex})
 	if err != nil {
 		return nil, err
 	}
-	gasAccount := fromAccount
-	if txInfo.GasAccountIndex != txInfo.FromAccountIndex {
-		gasAccount, err = bc.accountMap[txInfo.GasAccountIndex].DeepCopy()
-		if err != nil {
-			return nil, err
-		}
-	}
-	toAccount := fromAccount
-	if txInfo.ToAccountIndex != txInfo.FromAccountIndex {
-		if txInfo.ToAccountIndex == txInfo.GasAccountIndex {
-			toAccount = gasAccount
-		} else {
-			toAccount, err = e.bc.accountMap[txInfo.ToAccountIndex].DeepCopy()
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
+	fromAccount := copiedAccounts[txInfo.FromAccountIndex]
+	gasAccount := copiedAccounts[txInfo.GasAccountIndex]
+	toAccount := copiedAccounts[txInfo.ToAccountIndex]
 
 	txDetails := make([]*tx.TxDetail, 0, 4)
+
 	// from account asset A
 	order := int64(0)
 	accountOrder := int64(0)
@@ -257,5 +242,6 @@ func (e *TransferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		CollectionNonce: gasAccount.CollectionNonce,
 	})
 	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
+
 	return txDetails, nil
 }
