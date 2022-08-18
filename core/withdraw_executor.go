@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"encoding/json"
+	"math/big"
 
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
@@ -176,8 +177,13 @@ func (e *WithdrawExecutor) GetExecutedTx() (*tx.Tx, error) {
 
 func (e *WithdrawExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
-	fromAccount := e.bc.accountMap[txInfo.FromAccountIndex]
-	gasAccount := e.bc.accountMap[txInfo.GasAccountIndex]
+
+	copiedAccounts, err := e.bc.deepCopyAccounts([]int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex})
+	if err != nil {
+		return nil, err
+	}
+	fromAccount := copiedAccounts[txInfo.FromAccountIndex]
+	gasAccount := copiedAccounts[txInfo.GasAccountIndex]
 
 	txDetails := make([]*tx.TxDetail, 0, 4)
 	// from account asset A
@@ -196,22 +202,19 @@ func (e *WithdrawExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Nonce:           fromAccount.Nonce,
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
+	fromAccount.AssetInfo[txInfo.AssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
+	if fromAccount.AssetInfo[txInfo.AssetId].Balance.Cmp(big.NewInt(0)) < 0 {
+		return nil, errors.New("insufficient asset a balance")
+	}
+
 	order++
 	// from account asset gas
-	baseBalance := fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance
-	if txInfo.GasFeeAssetId == txInfo.AssetId {
-		baseBalance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.AssetAmount)
-	}
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    commonAsset.GeneralAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
 		AccountName:  fromAccount.AccountName,
-		Balance: commonAsset.ConstructAccountAsset(
-			txInfo.GasFeeAssetId,
-			baseBalance,
-			fromAccount.AssetInfo[txInfo.AssetId].LpAmount,
-			fromAccount.AssetInfo[txInfo.AssetId].OfferCanceledOrFinalized).String(),
+		Balance:      fromAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), ZeroBigInt, ZeroBigInt).String(),
 		Order:           order,
@@ -219,6 +222,10 @@ func (e *WithdrawExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Nonce:           fromAccount.Nonce,
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
+	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.AssetAmount)
+	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(big.NewInt(0)) < 0 {
+		return nil, errors.New("insufficient gas balance")
+	}
 
 	// gas account asset gas
 	order++
