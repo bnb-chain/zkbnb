@@ -17,6 +17,7 @@ import (
 	"gorm.io/gorm"
 
 	bsmt "github.com/bnb-chain/bas-smt"
+
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/dbcache"
 	"github.com/bnb-chain/zkbas/common/model/account"
@@ -600,6 +601,27 @@ func (bc *BlockChain) getNextNftIndex() int64 {
 		}
 	}
 	return maxNftIndex + 1
+}
+
+func (bc *BlockChain) deepCopyAccounts(accountIds []int64) (map[int64]*commonAsset.AccountInfo, error) {
+	accounts := make(map[int64]*commonAsset.AccountInfo)
+	if len(accountIds) == 0 {
+		return accounts, nil
+	}
+
+	for _, accountId := range accountIds {
+		if _, ok := accounts[accountId]; ok {
+			continue
+		}
+
+		accountCopy, err := bc.accountMap[accountId].DeepCopy()
+		if err != nil {
+			return nil, err
+		}
+		accounts[accountId] = accountCopy
+	}
+
+	return accounts, nil
 }
 
 func (bc *BlockChain) prepareAccountsAndAssets(accounts []int64, assets []int64) error {
