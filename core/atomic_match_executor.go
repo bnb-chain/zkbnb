@@ -21,8 +21,8 @@ import (
 )
 
 type AtomicMatchExecutor struct {
-	bc     *BlockChain
-	tx     *tx.Tx
+	BaseExecutor
+
 	txInfo *legendTxTypes.AtomicMatchTxInfo
 
 	buyOfferAssetId  int64
@@ -34,11 +34,13 @@ type AtomicMatchExecutor struct {
 	isAssetGas  bool // True when the gas asset is the same to the buyer's asset.
 }
 
-func NewAtomicMatchExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+func NewAtomicMatchExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
 	return &AtomicMatchExecutor{
-		bc: bc,
-		tx: tx,
-	}, nil
+		BaseExecutor: BaseExecutor{
+			bc: bc,
+			tx: tx,
+		},
+	}
 }
 
 func (e *AtomicMatchExecutor) Prepare() error {
@@ -340,12 +342,8 @@ func (e *AtomicMatchExecutor) GetExecutedTx() (*tx.Tx, error) {
 		return nil, errors.New("unmarshal tx failed")
 	}
 
-	e.tx.BlockHeight = e.bc.currentBlock.BlockHeight
-	e.tx.StateRoot = e.bc.getStateRoot()
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.TxStatus = tx.StatusPending
-
-	return e.tx, nil
+	return e.BaseExecutor.GetExecutedTx()
 }
 
 func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {

@@ -18,16 +18,18 @@ import (
 )
 
 type TransferNftExecutor struct {
-	bc     *BlockChain
-	tx     *tx.Tx
+	BaseExecutor
+
 	txInfo *legendTxTypes.TransferNftTxInfo
 }
 
-func NewTransferNftExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+func NewTransferNftExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
 	return &TransferNftExecutor{
-		bc: bc,
-		tx: tx,
-	}, nil
+		BaseExecutor: BaseExecutor{
+			bc: bc,
+			tx: tx,
+		},
+	}
 }
 
 func (e *TransferNftExecutor) Prepare() error {
@@ -172,12 +174,8 @@ func (e *TransferNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 		return nil, errors.New("unmarshal tx failed")
 	}
 
-	e.tx.BlockHeight = e.bc.currentBlock.BlockHeight
-	e.tx.StateRoot = e.bc.getStateRoot()
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.TxStatus = tx.StatusPending
-
-	return e.tx, nil
+	return e.BaseExecutor.GetExecutedTx()
 }
 
 func (e *TransferNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {

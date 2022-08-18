@@ -18,17 +18,19 @@ import (
 )
 
 type FullExitNftExecutor struct {
-	bc      *BlockChain
-	tx      *tx.Tx
+	BaseExecutor
+
 	txInfo  *commonTx.FullExitNftTxInfo
 	exitNft *nft.L2Nft
 }
 
-func NewFullExitNftExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+func NewFullExitNftExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
 	return &FullExitNftExecutor{
-		bc: bc,
-		tx: tx,
-	}, nil
+		BaseExecutor: BaseExecutor{
+			bc: bc,
+			tx: tx,
+		},
+	}
 }
 
 func (e *FullExitNftExecutor) Prepare() error {
@@ -209,11 +211,8 @@ func (e *FullExitNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 		return nil, errors.New("unmarshal tx failed")
 	}
 
-	e.tx.BlockHeight = e.bc.currentBlock.BlockHeight
-	e.tx.StateRoot = e.bc.getStateRoot()
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.TxStatus = tx.StatusPending
-	return e.tx, nil
+	return e.BaseExecutor.GetExecutedTx()
 }
 
 func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {

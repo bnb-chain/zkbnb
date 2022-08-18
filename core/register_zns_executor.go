@@ -22,16 +22,18 @@ import (
 )
 
 type RegisterZnsExecutor struct {
-	bc     *BlockChain
-	tx     *tx.Tx
+	BaseExecutor
+
 	txInfo *commonTx.RegisterZnsTxInfo
 }
 
-func NewRegisterZnsExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+func NewRegisterZnsExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
 	return &RegisterZnsExecutor{
-		bc: bc,
-		tx: tx,
-	}, nil
+		BaseExecutor: BaseExecutor{
+			bc: bc,
+			tx: tx,
+		},
+	}
 }
 
 func (e *RegisterZnsExecutor) Prepare() error {
@@ -145,11 +147,8 @@ func (e *RegisterZnsExecutor) GetExecutedTx() (*tx.Tx, error) {
 		return nil, errors.New("unmarshal tx failed")
 	}
 
-	e.tx.BlockHeight = e.bc.currentBlock.BlockHeight
-	e.tx.StateRoot = e.bc.getStateRoot()
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.TxStatus = tx.StatusPending
-	return e.tx, nil
+	return e.BaseExecutor.GetExecutedTx()
 }
 
 func (e *RegisterZnsExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {

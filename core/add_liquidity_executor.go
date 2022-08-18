@@ -19,18 +19,20 @@ import (
 )
 
 type AddLiquidityExecutor struct {
-	bc                    *BlockChain
-	tx                    *tx.Tx
+	BaseExecutor
+
 	newPoolInfo           *commonAsset.LiquidityInfo
 	lpDeltaForFromAccount *big.Int
 	txInfo                *legendTxTypes.AddLiquidityTxInfo
 }
 
-func NewAddLiquidityExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+func NewAddLiquidityExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
 	return &AddLiquidityExecutor{
-		bc: bc,
-		tx: tx,
-	}, nil
+		BaseExecutor: BaseExecutor{
+			bc: bc,
+			tx: tx,
+		},
+	}
 }
 
 func (e *AddLiquidityExecutor) Prepare() error {
@@ -304,19 +306,14 @@ func (e *AddLiquidityExecutor) UpdateTrees() error {
 }
 
 func (e *AddLiquidityExecutor) GetExecutedTx() (*tx.Tx, error) {
-	bc := e.bc
-	txInfo := e.txInfo
-	txInfoBytes, err := json.Marshal(txInfo)
+	txInfoBytes, err := json.Marshal(e.txInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
 		return nil, errors.New("unmarshal tx failed")
 	}
-	stateRoot := bc.getStateRoot()
-	e.tx.BlockHeight = bc.currentBlock.BlockHeight
-	e.tx.StateRoot = stateRoot
+
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.TxStatus = tx.StatusPending
-	return e.tx, nil
+	return e.BaseExecutor.GetExecutedTx()
 }
 
 func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {

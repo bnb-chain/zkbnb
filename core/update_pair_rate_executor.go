@@ -16,16 +16,18 @@ import (
 )
 
 type UpdatePairRateExecutor struct {
-	bc     *BlockChain
-	tx     *tx.Tx
+	BaseExecutor
+
 	txInfo *commonTx.UpdatePairRateTxInfo
 }
 
-func NewUpdatePairRateExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+func NewUpdatePairRateExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
 	return &UpdatePairRateExecutor{
-		bc: bc,
-		tx: tx,
-	}, nil
+		BaseExecutor: BaseExecutor{
+			bc: bc,
+			tx: tx,
+		},
+	}
 }
 
 func (e *UpdatePairRateExecutor) Prepare() error {
@@ -102,11 +104,8 @@ func (e *UpdatePairRateExecutor) GetExecutedTx() (*tx.Tx, error) {
 		return nil, errors.New("unmarshal tx failed")
 	}
 
-	e.tx.BlockHeight = e.bc.currentBlock.BlockHeight
-	e.tx.StateRoot = e.bc.getStateRoot()
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.TxStatus = tx.StatusPending
-	return e.tx, nil
+	return e.BaseExecutor.GetExecutedTx()
 }
 
 func (e *UpdatePairRateExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
