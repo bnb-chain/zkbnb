@@ -37,7 +37,7 @@ type (
 
 	L2NftWithdrawHistory struct {
 		gorm.Model
-		NftIndex            int64 `gorm:"uniqueIndex"`
+		NftIndex            int64
 		CreatorAccountIndex int64
 		OwnerAccountIndex   int64
 		NftContentHash      string
