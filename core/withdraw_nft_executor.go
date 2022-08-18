@@ -53,6 +53,18 @@ func (e *WithdrawNftExecutor) Prepare() error {
 		return errors.New("internal error")
 	}
 
+	nftInfo := e.bc.nftMap[txInfo.NftIndex]
+	creatorAccount := e.bc.accountMap[txInfo.CreatorAccountIndex]
+
+	// add details to tx info
+	txInfo.CreatorAccountIndex = nftInfo.CreatorAccountIndex
+	txInfo.CreatorAccountNameHash = common.FromHex(creatorAccount.AccountNameHash)
+	txInfo.CreatorTreasuryRate = nftInfo.CreatorTreasuryRate
+	txInfo.NftContentHash = common.FromHex(nftInfo.NftContentHash)
+	txInfo.NftL1Address = nftInfo.NftL1Address
+	txInfo.NftL1TokenId, _ = new(big.Int).SetString(nftInfo.NftL1TokenId, 10)
+	txInfo.CollectionId = nftInfo.CollectionId
+
 	e.txInfo = txInfo
 	return nil
 }
@@ -98,20 +110,7 @@ func (e *WithdrawNftExecutor) ApplyTransaction() error {
 
 	oldNft := bc.nftMap[txInfo.NftIndex]
 	fromAccount := bc.accountMap[txInfo.AccountIndex]
-	creatorAccount := bc.accountMap[txInfo.CreatorAccountIndex]
 	gasAccount := bc.accountMap[txInfo.GasAccountIndex]
-
-	// add details to tx info
-	txInfo.CreatorAccountIndex = oldNft.CreatorAccountIndex
-	txInfo.CreatorAccountNameHash = common.FromHex(creatorAccount.AccountNameHash)
-	txInfo.CreatorTreasuryRate = oldNft.CreatorTreasuryRate
-	txInfo.NftContentHash = common.FromHex(oldNft.NftContentHash)
-	txInfo.NftL1Address = oldNft.NftL1Address
-	txInfo.NftL1TokenId, _ = new(big.Int).SetString(oldNft.NftL1TokenId, 10)
-	txInfo.CollectionId = oldNft.CollectionId
-
-	// generate tx details
-	e.tx.TxDetails = e.GenerateTxDetails()
 
 	// apply changes
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
@@ -227,12 +226,18 @@ func (e *WithdrawNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 	return e.tx, nil
 }
 
-func (e *WithdrawNftExecutor) GenerateTxDetails() []*tx.TxDetail {
+func (e *WithdrawNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
 	nftModel := e.bc.nftMap[txInfo.NftIndex]
-	fromAccount := e.bc.accountMap[txInfo.AccountIndex]
-	creatorAccount := e.bc.accountMap[txInfo.CreatorAccountIndex]
-	gasAccount := e.bc.accountMap[txInfo.GasAccountIndex]
+
+	copiedAccounts, err := e.bc.deepCopyAccounts([]int64{txInfo.AccountIndex, txInfo.CreatorAccountIndex, txInfo.GasAccountIndex})
+	if err != nil {
+		return nil, err
+	}
+
+	fromAccount := copiedAccounts[txInfo.AccountIndex]
+	creatorAccount := copiedAccounts[txInfo.CreatorAccountIndex]
+	gasAccount := copiedAccounts[txInfo.GasAccountIndex]
 
 	txDetails := make([]*tx.TxDetail, 0, 4)
 
@@ -256,6 +261,10 @@ func (e *WithdrawNftExecutor) GenerateTxDetails() []*tx.TxDetail {
 		AccountOrder:    accountOrder,
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
+	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
+	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(big.NewInt(0)) < 0 {
+		return nil, errors.New("insufficient gas fee balance")
+	}
 
 	// nft delta
 	order++
@@ -322,5 +331,5 @@ func (e *WithdrawNftExecutor) GenerateTxDetails() []*tx.TxDetail {
 		AccountOrder:    accountOrder,
 		CollectionNonce: gasAccount.CollectionNonce,
 	})
-	return txDetails
+	return txDetails, nil
 }

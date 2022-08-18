@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"encoding/json"
+	"math/big"
 
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
@@ -98,8 +99,6 @@ func (e *TransferNftExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	e.tx.TxDetails = e.GenerateTxDetails()
-
 	fromAccount := bc.accountMap[txInfo.FromAccountIndex]
 	gasAccount := bc.accountMap[txInfo.GasAccountIndex]
 	nft := bc.nftMap[txInfo.NftIndex]
@@ -181,12 +180,17 @@ func (e *TransferNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 	return e.tx, nil
 }
 
-func (e *TransferNftExecutor) GenerateTxDetails() []*tx.TxDetail {
+func (e *TransferNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
 	nftModel := e.bc.nftMap[txInfo.NftIndex]
-	fromAccount := e.bc.accountMap[txInfo.FromAccountIndex]
-	toAccount := e.bc.accountMap[txInfo.ToAccountIndex]
-	gasAccount := e.bc.accountMap[txInfo.GasAccountIndex]
+
+	copiedAccounts, err := e.bc.deepCopyAccounts([]int64{txInfo.FromAccountIndex, txInfo.ToAccountIndex, txInfo.GasAccountIndex})
+	if err != nil {
+		return nil, err
+	}
+	fromAccount := copiedAccounts[txInfo.FromAccountIndex]
+	toAccount := copiedAccounts[txInfo.ToAccountIndex]
+	gasAccount := copiedAccounts[txInfo.GasAccountIndex]
 
 	txDetails := make([]*tx.TxDetail, 0, 4)
 
@@ -210,6 +214,10 @@ func (e *TransferNftExecutor) GenerateTxDetails() []*tx.TxDetail {
 		AccountOrder:    accountOrder,
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
+	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
+	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(big.NewInt(0)) < 0 {
+		return nil, errors.New("insufficient gas fee balance")
+	}
 
 	// to account empty delta
 	order++
@@ -287,5 +295,5 @@ func (e *TransferNftExecutor) GenerateTxDetails() []*tx.TxDetail {
 		AccountOrder:    accountOrder,
 		CollectionNonce: gasAccount.CollectionNonce,
 	})
-	return txDetails
+	return txDetails, nil
 }

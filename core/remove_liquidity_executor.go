@@ -18,23 +18,22 @@ import (
 	"github.com/bnb-chain/zkbas/common/util"
 )
 
-type AddLiquidityExecutor struct {
-	bc                    *BlockChain
-	tx                    *tx.Tx
-	newPoolInfo           *commonAsset.LiquidityInfo
-	lpDeltaForFromAccount *big.Int
-	txInfo                *legendTxTypes.AddLiquidityTxInfo
+type RemoveLiquidityExecutor struct {
+	bc          *BlockChain
+	tx          *tx.Tx
+	newPoolInfo *commonAsset.LiquidityInfo
+	txInfo      *legendTxTypes.RemoveLiquidityTxInfo
 }
 
-func NewAddLiquidityExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
-	return &AddLiquidityExecutor{
+func NewRemoveLiquidityExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+	return &RemoveLiquidityExecutor{
 		bc: bc,
 		tx: tx,
 	}, nil
 }
 
-func (e *AddLiquidityExecutor) Prepare() error {
-	txInfo, err := commonTx.ParseAddLiquidityTxInfo(e.tx.TxInfo)
+func (e *RemoveLiquidityExecutor) Prepare() error {
+	txInfo, err := commonTx.ParseRemoveLiquidityTxInfo(e.tx.TxInfo)
 	if err != nil {
 		logx.Errorf("parse transfer tx failed: %s", err.Error())
 		return errors.New("invalid tx info")
@@ -43,7 +42,7 @@ func (e *AddLiquidityExecutor) Prepare() error {
 	err = e.bc.prepareLiquidity(txInfo.PairIndex)
 	if err != nil {
 		logx.Errorf("prepare liquidity failed: %s", err.Error())
-		return errors.New("internal error")
+		return err
 	}
 
 	liquidityModel := e.bc.liquidityMap[txInfo.PairIndex]
@@ -53,10 +52,9 @@ func (e *AddLiquidityExecutor) Prepare() error {
 	err = e.bc.prepareAccountsAndAssets(accounts, assets)
 	if err != nil {
 		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
-		return errors.New("internal error")
+		return err
 	}
 
-	// add details to tx info
 	err = e.fillTxInfo()
 	if err != nil {
 		return err
@@ -65,7 +63,7 @@ func (e *AddLiquidityExecutor) Prepare() error {
 	return nil
 }
 
-func (e *AddLiquidityExecutor) VerifyInputs() error {
+func (e *RemoveLiquidityExecutor) VerifyInputs() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
@@ -74,42 +72,17 @@ func (e *AddLiquidityExecutor) VerifyInputs() error {
 		return err
 	}
 
-	if err := e.bc.verifyExpiredAt(txInfo.ExpiredAt); err != nil {
-		return err
-	}
-
 	fromAccount := bc.accountMap[txInfo.FromAccountIndex]
-
-	if err := e.bc.verifyNonce(fromAccount.AccountIndex, txInfo.Nonce); err != nil {
-		return err
+	if txInfo.ExpiredAt < bc.currentBlock.CreatedAt.UnixMilli() {
+		return errors.New("expired tx")
 	}
 
-	if txInfo.GasFeeAssetId == txInfo.AssetAId {
-		deltaBalance := ffmath.Add(txInfo.AssetAAmount, txInfo.GasFeeAssetAmount)
-		if fromAccount.AssetInfo[txInfo.AssetAId].Balance.Cmp(deltaBalance) < 0 {
-			return errors.New("invalid asset amount")
-		}
-		if fromAccount.AssetInfo[txInfo.AssetBId].Balance.Cmp(txInfo.AssetBAmount) < 0 {
-			return errors.New("invalid asset amount")
-		}
-	} else if txInfo.GasFeeAssetId == txInfo.AssetBId {
-		deltaBalance := ffmath.Add(txInfo.AssetBAmount, txInfo.GasFeeAssetAmount)
-		if fromAccount.AssetInfo[txInfo.AssetBId].Balance.Cmp(deltaBalance) < 0 {
-			return errors.New("invalid asset amount")
-		}
-		if fromAccount.AssetInfo[txInfo.AssetAId].Balance.Cmp(txInfo.AssetAAmount) < 0 {
-			return errors.New("invalid asset amount")
-		}
-	} else {
-		if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
-			return errors.New("invalid gas asset amount")
-		}
-		if fromAccount.AssetInfo[txInfo.AssetAId].Balance.Cmp(txInfo.AssetAAmount) < 0 {
-			return errors.New("invalid asset amount")
-		}
-		if fromAccount.AssetInfo[txInfo.AssetBId].Balance.Cmp(txInfo.AssetBAmount) < 0 {
-			return errors.New("invalid asset amount")
-		}
+	if txInfo.Nonce != fromAccount.Nonce {
+		return errors.New("invalid nonce")
+	}
+
+	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
+		return errors.New("invalid gas asset amount")
 	}
 
 	liquidityModel := bc.liquidityMap[txInfo.PairIndex]
@@ -119,8 +92,10 @@ func (e *AddLiquidityExecutor) VerifyInputs() error {
 		return err
 	}
 
-	if liquidityInfo.AssetA == nil || liquidityInfo.AssetB == nil {
-		return errors.New("invalid liquidity")
+	if liquidityInfo.AssetA == nil || liquidityInfo.AssetA.Cmp(big.NewInt(0)) == 0 ||
+		liquidityInfo.AssetB == nil || liquidityInfo.AssetB.Cmp(big.NewInt(0)) == 0 ||
+		liquidityInfo.LpAmount == nil || liquidityInfo.LpAmount.Cmp(big.NewInt(0)) == 0 {
+		return errors.New("invalid pool liquidity")
 	}
 
 	err = txInfo.VerifySignature(fromAccount.PublicKey)
@@ -131,23 +106,73 @@ func (e *AddLiquidityExecutor) VerifyInputs() error {
 	return nil
 }
 
-func (e *AddLiquidityExecutor) ApplyTransaction() error {
+func (e *RemoveLiquidityExecutor) fillTxInfo() error {
+	bc := e.bc
+	txInfo := e.txInfo
+
+	fromAccount := bc.accountMap[txInfo.FromAccountIndex]
+	liquidityModel := bc.liquidityMap[txInfo.PairIndex]
+
+	liquidityInfo, err := constructLiquidityInfo(liquidityModel)
+	if err != nil {
+		logx.Errorf("construct liquidity info error, err: ", err.Error())
+		return err
+	}
+
+	assetAAmount, assetBAmount, err := util.ComputeRemoveLiquidityAmount(liquidityInfo, txInfo.LpAmount)
+	if err != nil {
+		return err
+	}
+
+	if assetAAmount.Cmp(txInfo.AssetAMinAmount) < 0 || assetBAmount.Cmp(txInfo.AssetBMinAmount) < 0 {
+		return errors.New("invalid asset min amount")
+	}
+
+	if fromAccount.AssetInfo[txInfo.PairIndex].LpAmount.Cmp(txInfo.LpAmount) < 0 {
+		return errors.New("invalid lp amount")
+	}
+
+	txInfo.AssetAAmountDelta = assetAAmount
+	txInfo.AssetBAmountDelta = assetBAmount
+	txInfo.AssetAId = liquidityInfo.AssetAId
+	txInfo.AssetBId = liquidityInfo.AssetBId
+
+	poolAssetADelta := ffmath.Neg(txInfo.AssetAAmountDelta)
+	poolAssetBDelta := ffmath.Neg(txInfo.AssetBAmountDelta)
+	finalPoolA := ffmath.Add(liquidityInfo.AssetA, poolAssetADelta)
+	finalPoolB := ffmath.Add(liquidityInfo.AssetB, poolAssetBDelta)
+	lpDeltaForTreasuryAccount, err := util.ComputeSLp(liquidityInfo.AssetA, liquidityInfo.AssetB, liquidityInfo.KLast, liquidityInfo.FeeRate, liquidityInfo.TreasuryRate)
+	if err != nil {
+		return err
+	}
+
+	// set tx info
+	txInfo.KLast, err = util.CleanPackedAmount(ffmath.Multiply(finalPoolA, finalPoolB))
+	if err != nil {
+		return err
+	}
+	txInfo.TreasuryAmount = lpDeltaForTreasuryAccount
+
+	return nil
+}
+
+func (e *RemoveLiquidityExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
 	// apply changes
-	fromAccount := bc.accountMap[txInfo.FromAccountIndex]
-	gasAccount := bc.accountMap[txInfo.GasAccountIndex]
+	fromAccountInfo := bc.accountMap[txInfo.FromAccountIndex]
+	gasAccountInfo := bc.accountMap[txInfo.GasAccountIndex]
 	liquidityModel := bc.liquidityMap[txInfo.PairIndex]
 	treasuryAccount := bc.accountMap[liquidityModel.TreasuryAccountIndex]
 
-	fromAccount.AssetInfo[txInfo.AssetAId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.AssetAId].Balance, txInfo.AssetAAmount)
-	fromAccount.AssetInfo[txInfo.AssetBId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.AssetBId].Balance, txInfo.AssetBAmount)
-	fromAccount.AssetInfo[txInfo.PairIndex].LpAmount = ffmath.Add(fromAccount.AssetInfo[txInfo.PairIndex].LpAmount, e.lpDeltaForFromAccount)
-	treasuryAccount.AssetInfo[txInfo.PairIndex].LpAmount = ffmath.Add(treasuryAccount.AssetInfo[txInfo.PairIndex].LpAmount, txInfo.TreasuryAmount)
-	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-	fromAccount.Nonce++
+	fromAccountInfo.AssetInfo[txInfo.AssetAId].Balance = ffmath.Add(fromAccountInfo.AssetInfo[txInfo.AssetAId].Balance, txInfo.AssetAAmountDelta)
+	fromAccountInfo.AssetInfo[txInfo.AssetBId].Balance = ffmath.Add(fromAccountInfo.AssetInfo[txInfo.AssetBId].Balance, txInfo.AssetBAmountDelta)
+	fromAccountInfo.AssetInfo[txInfo.PairIndex].LpAmount = ffmath.Sub(treasuryAccount.AssetInfo[txInfo.PairIndex].LpAmount, txInfo.LpAmount)
+	treasuryAccount.AssetInfo[txInfo.PairIndex].LpAmount = ffmath.Sub(treasuryAccount.AssetInfo[txInfo.PairIndex].LpAmount, txInfo.TreasuryAmount)
+	fromAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
+	gasAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
+	fromAccountInfo.Nonce++
 
 	bc.liquidityMap[txInfo.PairIndex] = &liquidity.Liquidity{
 		Model:                liquidityModel.Model,
@@ -171,68 +196,20 @@ func (e *AddLiquidityExecutor) ApplyTransaction() error {
 	return nil
 }
 
-func (e *AddLiquidityExecutor) fillTxInfo() error {
-	bc := e.bc
-	txInfo := e.txInfo
-
-	liquidityModel := bc.liquidityMap[txInfo.PairIndex]
-
-	liquidityInfo, err := constructLiquidityInfo(liquidityModel)
-	if err != nil {
-		logx.Errorf("construct liquidity info error, err: ", err.Error())
-		return err
-	}
-
-	if liquidityInfo.AssetA.Cmp(big.NewInt(0)) == 0 {
-		txInfo.LpAmount, err = util.ComputeEmptyLpAmount(txInfo.AssetAAmount, txInfo.AssetBAmount)
-		if err != nil {
-			logx.Errorf("[ComputeEmptyLpAmount] : %v", err)
-			return err
-		}
-	} else {
-		txInfo.LpAmount, err = util.ComputeLpAmount(liquidityInfo, txInfo.AssetAAmount)
-		if err != nil {
-			return err
-		}
-	}
-
-	txInfo.AssetAId = liquidityInfo.AssetAId
-	txInfo.AssetBId = liquidityInfo.AssetBId
-
-	lpDeltaForTreasuryAccount, err := util.ComputeSLp(liquidityInfo.AssetA,
-		liquidityInfo.AssetB, liquidityInfo.KLast, liquidityInfo.FeeRate, liquidityInfo.TreasuryRate)
-	if err != nil {
-		logx.Errorf("[ComputeSLp] err: %v", err)
-		return err
-	}
-
-	// pool account pool info
-	finalPoolA := ffmath.Add(liquidityInfo.AssetA, txInfo.AssetAAmount)
-	finalPoolB := ffmath.Add(liquidityInfo.AssetB, txInfo.AssetBAmount)
-
-	txInfo.TreasuryAmount = lpDeltaForTreasuryAccount
-	txInfo.KLast, err = util.CleanPackedAmount(ffmath.Multiply(finalPoolA, finalPoolB))
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (e *AddLiquidityExecutor) GeneratePubData() error {
+func (e *RemoveLiquidityExecutor) GeneratePubData() error {
 	txInfo := e.txInfo
 
 	var buf bytes.Buffer
-	buf.WriteByte(uint8(commonTx.TxTypeAddLiquidity))
+	buf.WriteByte(uint8(commonTx.TxTypeRemoveLiquidity))
 	buf.Write(util.Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
 	buf.Write(util.Uint16ToBytes(uint16(txInfo.PairIndex)))
-	packedAssetAAmountBytes, err := util.AmountToPackedAmountBytes(txInfo.AssetAAmount)
+	packedAssetAAmountBytes, err := util.AmountToPackedAmountBytes(txInfo.AssetAAmountDelta)
 	if err != nil {
 		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
 		return err
 	}
 	buf.Write(packedAssetAAmountBytes)
-	packedAssetBAmountBytes, err := util.AmountToPackedAmountBytes(txInfo.AssetBAmount)
+	packedAssetBAmountBytes, err := util.AmountToPackedAmountBytes(txInfo.AssetBAmountDelta)
 	if err != nil {
 		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
 		return err
@@ -246,7 +223,7 @@ func (e *AddLiquidityExecutor) GeneratePubData() error {
 	buf.Write(LpAmountBytes)
 	KLastBytes, err := util.AmountToPackedAmountBytes(txInfo.KLast)
 	if err != nil {
-		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
+		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
 		return err
 	}
 	buf.Write(KLastBytes)
@@ -281,7 +258,7 @@ func (e *AddLiquidityExecutor) GeneratePubData() error {
 	return nil
 }
 
-func (e *AddLiquidityExecutor) UpdateTrees() error {
+func (e *RemoveLiquidityExecutor) UpdateTrees() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
@@ -303,7 +280,7 @@ func (e *AddLiquidityExecutor) UpdateTrees() error {
 	return nil
 }
 
-func (e *AddLiquidityExecutor) GetExecutedTx() (*tx.Tx, error) {
+func (e *RemoveLiquidityExecutor) GetExecutedTx() (*tx.Tx, error) {
 	bc := e.bc
 	txInfo := e.txInfo
 	txInfoBytes, err := json.Marshal(txInfo)
@@ -319,7 +296,7 @@ func (e *AddLiquidityExecutor) GetExecutedTx() (*tx.Tx, error) {
 	return e.tx, nil
 }
 
-func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
+func (e *RemoveLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
 
 	liquidityModel := e.bc.liquidityMap[txInfo.PairIndex]
@@ -350,7 +327,7 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Balance:      fromAccount.AssetInfo[txInfo.AssetAId].String(),
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.AssetAId,
-			ffmath.Neg(txInfo.AssetAAmount),
+			txInfo.AssetAAmountDelta,
 			ZeroBigInt,
 			ZeroBigInt,
 		).String(),
@@ -359,7 +336,7 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Nonce:           fromAccount.Nonce,
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
-	fromAccount.AssetInfo[txInfo.AssetAId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.AssetAId].Balance, txInfo.AssetAAmount)
+	fromAccount.AssetInfo[txInfo.AssetAId].Balance = ffmath.Add(fromAccount.AssetInfo[txInfo.AssetAId].Balance, txInfo.AssetAAmountDelta)
 	if fromAccount.AssetInfo[txInfo.AssetAId].Balance.Cmp(big.NewInt(0)) < 0 {
 		return nil, errors.New("insufficient asset a balance")
 	}
@@ -374,7 +351,7 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Balance:      fromAccount.AssetInfo[txInfo.AssetBId].String(),
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.AssetBId,
-			ffmath.Neg(txInfo.AssetBAmount),
+			txInfo.AssetBAmountDelta,
 			ZeroBigInt,
 			ZeroBigInt,
 		).String(),
@@ -383,8 +360,7 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Nonce:           fromAccount.Nonce,
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
-
-	fromAccount.AssetInfo[txInfo.AssetBId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.AssetBId].Balance, txInfo.AssetBAmount)
+	fromAccount.AssetInfo[txInfo.AssetBId].Balance = ffmath.Add(fromAccount.AssetInfo[txInfo.AssetBId].Balance, txInfo.AssetBAmountDelta)
 	if fromAccount.AssetInfo[txInfo.AssetBId].Balance.Cmp(big.NewInt(0)) < 0 {
 		return nil, errors.New("insufficient asset b balance")
 	}
@@ -409,28 +385,7 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
 
-	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(big.NewInt(0)) < 0 {
-		return nil, errors.New("insufficient gas fee balance")
-	}
-
 	// from account lp
-	poolLp := ffmath.Sub(liquidityInfo.LpAmount, txInfo.TreasuryAmount)
-	var lpDeltaForFromAccount *big.Int
-	if liquidityInfo.AssetA.Cmp(ZeroBigInt) == 0 {
-		lpDeltaForFromAccount, err = util.CleanPackedAmount(new(big.Int).Sqrt(ffmath.Multiply(txInfo.AssetAAmount, txInfo.AssetBAmount)))
-		if err != nil {
-			logx.Errorf("unable to compute lp delta: %s", err.Error())
-			return nil, err
-		}
-	} else {
-		lpDeltaForFromAccount, err = util.CleanPackedAmount(ffmath.Div(ffmath.Multiply(txInfo.AssetAAmount, poolLp), liquidityInfo.AssetA))
-		if err != nil {
-			logx.Errorf(" unable to compute lp delta: %s", err.Error())
-			return nil, err
-		}
-	}
-
 	order++
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.PairIndex,
@@ -441,7 +396,7 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.PairIndex,
 			ZeroBigInt,
-			lpDeltaForFromAccount,
+			ffmath.Neg(txInfo.LpAmount),
 			ZeroBigInt,
 		).String(),
 		Order:           order,
@@ -449,64 +404,10 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Nonce:           fromAccount.Nonce,
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
-	e.lpDeltaForFromAccount = lpDeltaForFromAccount
-	fromAccount.AssetInfo[txInfo.PairIndex].LpAmount = ffmath.Add(fromAccount.AssetInfo[txInfo.PairIndex].LpAmount, lpDeltaForFromAccount)
-
-	// pool info
-	basePool, err := commonAsset.ConstructLiquidityInfo(
-		e.bc.liquidityMap[txInfo.PairIndex].PairIndex,
-		e.bc.liquidityMap[txInfo.PairIndex].AssetAId,
-		e.bc.liquidityMap[txInfo.PairIndex].AssetA,
-		e.bc.liquidityMap[txInfo.PairIndex].AssetBId,
-		e.bc.liquidityMap[txInfo.PairIndex].AssetB,
-		e.bc.liquidityMap[txInfo.PairIndex].LpAmount,
-		e.bc.liquidityMap[txInfo.PairIndex].KLast,
-		e.bc.liquidityMap[txInfo.PairIndex].FeeRate,
-		e.bc.liquidityMap[txInfo.PairIndex].TreasuryAccountIndex,
-		e.bc.liquidityMap[txInfo.PairIndex].TreasuryRate,
-	)
-	if err != nil {
-		return nil, err
+	fromAccount.AssetInfo[txInfo.PairIndex].LpAmount = ffmath.Sub(fromAccount.AssetInfo[txInfo.PairIndex].LpAmount, txInfo.LpAmount)
+	if fromAccount.AssetInfo[txInfo.PairIndex].LpAmount.Cmp(big.NewInt(0)) < 0 {
+		return nil, errors.New("insufficient lp amount")
 	}
-
-	finalPoolA := ffmath.Add(liquidityInfo.AssetA, txInfo.AssetAAmount)
-	finalPoolB := ffmath.Add(liquidityInfo.AssetB, txInfo.AssetBAmount)
-	poolDeltaForToAccount := &commonAsset.LiquidityInfo{
-		PairIndex:            txInfo.PairIndex,
-		AssetAId:             txInfo.AssetAId,
-		AssetA:               txInfo.AssetAAmount,
-		AssetBId:             txInfo.AssetBId,
-		AssetB:               txInfo.AssetAAmount,
-		LpAmount:             lpDeltaForFromAccount,
-		KLast:                ffmath.Multiply(finalPoolA, finalPoolB),
-		FeeRate:              liquidityInfo.FeeRate,
-		TreasuryAccountIndex: liquidityInfo.TreasuryAccountIndex,
-		TreasuryRate:         liquidityInfo.TreasuryRate,
-	}
-	newPool, err := commonAsset.ComputeNewBalance(commonAsset.LiquidityAssetType, basePool.String(), poolDeltaForToAccount.String())
-	if err != nil {
-		return nil, err
-	}
-
-	newPoolInfo, err := commonAsset.ParseLiquidityInfo(newPool)
-	if err != nil {
-		return nil, err
-	}
-	e.newPoolInfo = newPoolInfo
-
-	order++
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:         txInfo.PairIndex,
-		AssetType:       commonAsset.LiquidityAssetType,
-		AccountIndex:    commonConstant.NilAccountIndex,
-		AccountName:     commonConstant.NilAccountName,
-		Balance:         basePool.String(),
-		BalanceDelta:    poolDeltaForToAccount.String(),
-		Order:           order,
-		Nonce:           0,
-		AccountOrder:    commonConstant.NilAccountOrder,
-		CollectionNonce: 0,
-	})
 
 	// treasury account
 	order++
@@ -526,6 +427,68 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		CollectionNonce: treasuryAccount.CollectionNonce,
 	})
 	treasuryAccount.AssetInfo[txInfo.PairIndex].LpAmount = ffmath.Add(treasuryAccount.AssetInfo[txInfo.PairIndex].LpAmount, txInfo.TreasuryAmount)
+
+	// pool account info
+	basePool, err := commonAsset.ConstructLiquidityInfo(
+		e.bc.liquidityMap[txInfo.PairIndex].PairIndex,
+		e.bc.liquidityMap[txInfo.PairIndex].AssetAId,
+		e.bc.liquidityMap[txInfo.PairIndex].AssetA,
+		e.bc.liquidityMap[txInfo.PairIndex].AssetBId,
+		e.bc.liquidityMap[txInfo.PairIndex].AssetB,
+		e.bc.liquidityMap[txInfo.PairIndex].LpAmount,
+		e.bc.liquidityMap[txInfo.PairIndex].KLast,
+		e.bc.liquidityMap[txInfo.PairIndex].FeeRate,
+		e.bc.liquidityMap[txInfo.PairIndex].TreasuryAccountIndex,
+		e.bc.liquidityMap[txInfo.PairIndex].TreasuryRate,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	finalPoolA := ffmath.Add(liquidityInfo.AssetA, ffmath.Neg(txInfo.AssetAAmountDelta))
+	finalPoolB := ffmath.Add(liquidityInfo.AssetB, ffmath.Neg(txInfo.AssetBAmountDelta))
+	poolDeltaForToAccount := &commonAsset.LiquidityInfo{
+		PairIndex:            txInfo.PairIndex,
+		AssetAId:             txInfo.AssetAId,
+		AssetA:               ffmath.Neg(txInfo.AssetAAmountDelta),
+		AssetBId:             txInfo.AssetBId,
+		AssetB:               ffmath.Neg(txInfo.AssetBAmountDelta),
+		LpAmount:             ffmath.Neg(txInfo.LpAmount),
+		KLast:                ffmath.Multiply(finalPoolA, finalPoolB),
+		FeeRate:              liquidityInfo.FeeRate,
+		TreasuryAccountIndex: liquidityInfo.TreasuryAccountIndex,
+		TreasuryRate:         liquidityInfo.TreasuryRate,
+	}
+	newPool, err := commonAsset.ComputeNewBalance(commonAsset.LiquidityAssetType, basePool.String(), poolDeltaForToAccount.String())
+	if err != nil {
+		return nil, err
+	}
+
+	newPoolInfo, err := commonAsset.ParseLiquidityInfo(newPool)
+	if err != nil {
+		return nil, err
+	}
+	e.newPoolInfo = newPoolInfo
+	if newPoolInfo.AssetA.Cmp(big.NewInt(0)) <= 0 ||
+		newPoolInfo.AssetB.Cmp(big.NewInt(0)) <= 0 ||
+		newPoolInfo.LpAmount.Cmp(big.NewInt(0)) < 0 ||
+		newPoolInfo.KLast.Cmp(big.NewInt(0)) <= 0 {
+		return nil, errors.New("invalid new pool")
+	}
+
+	order++
+	txDetails = append(txDetails, &tx.TxDetail{
+		AssetId:         txInfo.PairIndex,
+		AssetType:       commonAsset.LiquidityAssetType,
+		AccountIndex:    commonConstant.NilAccountIndex,
+		AccountName:     commonConstant.NilAccountName,
+		Balance:         basePool.String(),
+		BalanceDelta:    poolDeltaForToAccount.String(),
+		Order:           order,
+		Nonce:           0,
+		AccountOrder:    commonConstant.NilAccountOrder,
+		CollectionNonce: 0,
+	})
 
 	// gas account asset gas
 	order++

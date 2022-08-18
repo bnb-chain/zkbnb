@@ -54,8 +54,6 @@ func (e *UpdatePairRateExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	e.tx.TxDetails = e.GenerateTxDetails()
-
 	liquidity := bc.liquidityMap[txInfo.PairIndex]
 	liquidity.FeeRate = txInfo.FeeRate
 	liquidity.TreasuryAccountIndex = txInfo.TreasuryAccountIndex
@@ -112,7 +110,7 @@ func (e *UpdatePairRateExecutor) GetExecutedTx() (*tx.Tx, error) {
 	return e.tx, nil
 }
 
-func (e *UpdatePairRateExecutor) GenerateTxDetails() []*tx.TxDetail {
+func (e *UpdatePairRateExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	bc := e.bc
 	txInfo := e.txInfo
 	liquidity := bc.liquidityMap[txInfo.PairIndex]
@@ -129,7 +127,7 @@ func (e *UpdatePairRateExecutor) GenerateTxDetails() []*tx.TxDetail {
 		liquidity.TreasuryRate,
 	)
 	if err != nil {
-		panic("construct liquidity info failed: " + err.Error())
+		return nil, err
 	}
 	deltaLiquidity := &commonAsset.LiquidityInfo{
 		PairIndex:            baseLiquidity.PairIndex,
@@ -155,5 +153,5 @@ func (e *UpdatePairRateExecutor) GenerateTxDetails() []*tx.TxDetail {
 		AccountOrder: commonConstant.NilAccountOrder,
 	}
 
-	return []*tx.TxDetail{txDetail}
+	return []*tx.TxDetail{txDetail}, nil
 }

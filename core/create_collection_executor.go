@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"encoding/json"
+	"math/big"
 	"strconv"
 
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
@@ -24,7 +25,7 @@ type CreateCollectionExecutor struct {
 }
 
 func NewCreateCollectionExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
-	return &TransferNftExecutor{
+	return &CreateCollectionExecutor{
 		bc: bc,
 		tx: tx,
 	}, nil
@@ -44,6 +45,10 @@ func (e *CreateCollectionExecutor) Prepare() error {
 		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
 		return errors.New("internal error")
 	}
+
+	fromAccount := e.bc.accountMap[txInfo.AccountIndex]
+	// add collection nonce to tx info
+	txInfo.CollectionId = fromAccount.CollectionNonce + 1
 
 	e.txInfo = txInfo
 	return nil
@@ -84,12 +89,6 @@ func (e *CreateCollectionExecutor) ApplyTransaction() error {
 
 	fromAccount := bc.accountMap[txInfo.AccountIndex]
 	gasAccount := bc.accountMap[txInfo.GasAccountIndex]
-
-	// add collection nonce to tx info
-	txInfo.CollectionId = fromAccount.CollectionNonce + 1
-
-	// generate tx details
-	e.tx.TxDetails = e.GenerateTxDetails()
 
 	// apply changes
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
@@ -163,10 +162,16 @@ func (e *CreateCollectionExecutor) GetExecutedTx() (*tx.Tx, error) {
 	return e.tx, nil
 }
 
-func (e *CreateCollectionExecutor) GenerateTxDetails() []*tx.TxDetail {
+func (e *CreateCollectionExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
-	fromAccount := e.bc.accountMap[txInfo.AccountIndex]
-	gasAccount := e.bc.accountMap[txInfo.GasAccountIndex]
+
+	copiedAccounts, err := e.bc.deepCopyAccounts([]int64{txInfo.AccountIndex, txInfo.GasAccountIndex})
+	if err != nil {
+		return nil, err
+	}
+
+	fromAccount := copiedAccounts[txInfo.AccountIndex]
+	gasAccount := copiedAccounts[txInfo.GasAccountIndex]
 
 	txDetails := make([]*tx.TxDetail, 0, 4)
 
@@ -205,6 +210,10 @@ func (e *CreateCollectionExecutor) GenerateTxDetails() []*tx.TxDetail {
 		AccountOrder:    accountOrder,
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
+	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
+	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(big.NewInt(0)) < 0 {
+		return nil, errors.New("insufficient gas fee balance")
+	}
 
 	// gas account gas asset
 	order++
@@ -225,5 +234,5 @@ func (e *CreateCollectionExecutor) GenerateTxDetails() []*tx.TxDetail {
 		Nonce:        gasAccount.Nonce,
 		AccountOrder: accountOrder,
 	})
-	return txDetails
+	return txDetails, nil
 }

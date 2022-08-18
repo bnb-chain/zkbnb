@@ -73,6 +73,33 @@ type AccountInfo struct {
 	Status    int
 }
 
+func (ai *AccountInfo) DeepCopy() (*AccountInfo, error) {
+	assetInfoBytes, err := json.Marshal(ai.AssetInfo)
+	if err != nil {
+		return nil, errorcode.JsonErrMarshal
+	}
+
+	var assetInfo map[int64]*AccountAsset
+	err = json.Unmarshal(assetInfoBytes, &assetInfo)
+	if err != nil {
+		return nil, errorcode.JsonErrUnmarshal
+	}
+	newAccountInfo := &AccountInfo{
+		AccountId:       ai.AccountId,
+		AccountIndex:    ai.AccountIndex,
+		AccountName:     ai.AccountName,
+		PublicKey:       ai.PublicKey,
+		AccountNameHash: ai.AccountNameHash,
+		L1Address:       ai.L1Address,
+		Nonce:           ai.Nonce,
+		CollectionNonce: ai.CollectionNonce,
+		AssetInfo:       assetInfo,
+		AssetRoot:       ai.AssetRoot,
+		Status:          ai.Status,
+	}
+	return newAccountInfo, nil
+}
+
 func FromFormatAccountInfo(formatAccountInfo *AccountInfo) (accountInfo *account.Account, err error) {
 	assetInfoBytes, err := json.Marshal(formatAccountInfo.AssetInfo)
 	if err != nil {

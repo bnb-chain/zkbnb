@@ -72,8 +72,6 @@ func (e *RegisterZnsExecutor) ApplyTransaction() error {
 	txInfo := e.txInfo
 	var err error
 
-	e.tx.TxDetails = e.GenerateTxDetails()
-
 	newAccount := &account.Account{
 		AccountIndex:    txInfo.AccountIndex,
 		AccountName:     txInfo.AccountName,
@@ -154,6 +152,6 @@ func (e *RegisterZnsExecutor) GetExecutedTx() (*tx.Tx, error) {
 	return e.tx, nil
 }
 
-func (e *RegisterZnsExecutor) GenerateTxDetails() []*tx.TxDetail {
-	return nil
+func (e *RegisterZnsExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
+	return nil, nil
 }
