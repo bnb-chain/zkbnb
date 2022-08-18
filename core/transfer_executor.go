@@ -3,12 +3,14 @@ package core
 import (
 	"bytes"
 	"encoding/json"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/commonTx"
@@ -48,6 +50,36 @@ func (e *TransferExecutor) Prepare() error {
 	return nil
 }
 
+func (e *TransferExecutor) verifyExpiredAt() error {
+	if !e.bc.dryRun {
+		if e.txInfo.ExpiredAt != commonConstant.NilExpiredAt && e.txInfo.ExpiredAt < e.bc.currentBlock.CreatedAt.UnixMilli() {
+			return errors.New("invalid ExpiredAt")
+		}
+	} else {
+		if e.txInfo.ExpiredAt < time.Now().UnixMilli() {
+			return errors.New("invalid ExpiredAt")
+		}
+	}
+	return nil
+}
+
+func (e *TransferExecutor) verifyNonce(accountIndex int64) error {
+	if !e.bc.dryRun {
+		if e.txInfo.Nonce != e.bc.accountMap[accountIndex].Nonce {
+			return errors.New("invalid Nonce")
+		}
+	} else {
+		nonce, err := e.bc.getPendingNonce(accountIndex)
+		if err != nil {
+			return errors.New("cannot verify nonce")
+		}
+		if e.txInfo.Nonce != nonce {
+			return errors.New("invalid Nonce")
+		}
+	}
+	return nil
+}
+
 func (e *TransferExecutor) VerifyInputs() error {
 	bc := e.bc
 	txInfo := e.txInfo
@@ -59,12 +91,15 @@ func (e *TransferExecutor) VerifyInputs() error {
 
 	fromAccount := bc.accountMap[txInfo.FromAccountIndex]
 	toAccount := bc.accountMap[txInfo.ToAccountIndex]
-	if txInfo.ExpiredAt != commonConstant.NilExpiredAt && txInfo.ExpiredAt < bc.currentBlock.CreatedAt.UnixMilli() {
-		return errors.New("expired tx")
+
+	if err := e.verifyExpiredAt(); err != nil {
+		return err
 	}
-	if txInfo.Nonce != fromAccount.Nonce {
-		return errors.New("invalid nonce")
+
+	if err := e.verifyNonce(fromAccount.AccountIndex); err != nil {
+		return err
 	}
+
 	if txInfo.ToAccountNameHash != toAccount.AccountNameHash {
 		return errors.New("invalid to account name hash")
 	}

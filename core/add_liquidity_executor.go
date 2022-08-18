@@ -45,6 +45,7 @@ func (e *AddLiquidityExecutor) Prepare() error {
 		return err
 	}
 
+	//extract prepare liquidity function, so dry run model can fetch different data?
 	liquidityModel := e.bc.liquidityMap[txInfo.PairIndex]
 
 	accounts := []int64{txInfo.FromAccountIndex, liquidityModel.TreasuryAccountIndex, txInfo.GasAccountIndex}

@@ -17,6 +17,7 @@ import (
 	"gorm.io/gorm"
 
 	bsmt "github.com/bnb-chain/bas-smt"
+
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/dbcache"
 	"github.com/bnb-chain/zkbas/common/model/account"
@@ -137,6 +138,8 @@ type BlockChain struct {
 
 	currentBlock *block.Block
 	stateCache   *StateCache // Cache for current block changes.
+
+	dryRun bool //dryRun mode is used for verifying user inputs, is not for execution
 }
 
 func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) {
@@ -224,6 +227,10 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 
 	bc.processor = NewCommitProcessor(bc)
 	return bc, nil
+}
+
+func (bc *BlockChain) DryRun() {
+	bc.dryRun = true
 }
 
 func (bc *BlockChain) GetPendingTxs() []*tx.Tx {
@@ -603,6 +610,40 @@ func (bc *BlockChain) getNextNftIndex() int64 {
 }
 
 func (bc *BlockChain) prepareAccountsAndAssets(accounts []int64, assets []int64) error {
+	if bc.dryRun {
+		for _, accountIndex := range accounts {
+			var formatAccount *commonAsset.AccountInfo
+			// why Get function need to pass value parameter?
+			redisAccount, err := bc.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex), formatAccount)
+			if err == nil {
+				formatAccount = redisAccount.(*commonAsset.AccountInfo)
+			} else {
+				account, err := bc.AccountModel.GetAccountByAccountIndex(accountIndex)
+				if err != nil {
+					return err
+				}
+				formatAccount, err = commonAsset.ToFormatAccountInfo(account)
+				if err != nil {
+					return err
+				}
+			}
+			bc.accountMap[accountIndex] = formatAccount
+			if bc.accountMap[accountIndex].AssetInfo == nil {
+				bc.accountMap[accountIndex].AssetInfo = make(map[int64]*commonAsset.AccountAsset)
+			}
+			for _, assetId := range assets {
+				if bc.accountMap[accountIndex].AssetInfo[assetId] == nil {
+					bc.accountMap[accountIndex].AssetInfo[assetId] = &commonAsset.AccountAsset{
+						AssetId:                  assetId,
+						Balance:                  ZeroBigInt,
+						LpAmount:                 ZeroBigInt,
+						OfferCanceledOrFinalized: ZeroBigInt,
+					}
+				}
+			}
+		}
+	}
+
 	for _, accountIndex := range accounts {
 		if bc.accountMap[accountIndex] == nil {
 			accountInfo, err := bc.AccountModel.GetAccountByAccountIndex(accountIndex)
@@ -741,4 +782,8 @@ func (bc *BlockChain) getStateRoot() string {
 	hFunc.Write(bc.liquidityTree.Root())
 	hFunc.Write(bc.nftTree.Root())
 	return common.Bytes2Hex(hFunc.Sum(nil))
+}
+
+func (bc *BlockChain) getPendingNonce(accountIndex int64) (int64, error) {
+	return 0, nil //code in another branch, need merge
 }
