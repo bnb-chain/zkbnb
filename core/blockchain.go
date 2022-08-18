@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"time"
 
+	bsmt "github.com/bnb-chain/bas-smt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -15,8 +16,6 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-
-	bsmt "github.com/bnb-chain/bas-smt"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/dbcache"
@@ -68,6 +67,10 @@ type StateCache struct {
 	pendingUpdateNftIndexMap       map[int64]int
 	pendingNewNftWithdrawHistory   []*nft.L2NftWithdrawHistory
 
+	// Offers to update or create
+	pendingNewOffer         []*nft.Offer
+	pendingNewL2NftExchange []*nft.L2NftExchange
+
 	// Updated in executor's GeneratePubData method.
 	pubData                         []byte
 	priorityOperations              int64
@@ -109,6 +112,8 @@ type StatesToCommit struct {
 	PendingUpdateNft             []*nft.L2Nft
 	PendingNewNftHistory         []*nft.L2NftHistory
 	PendingNewNftWithdrawHistory []*nft.L2NftWithdrawHistory
+	PendingNewOffer              []*nft.Offer
+	PendingNewL2NftExchange      []*nft.L2NftExchange
 }
 
 type BlockChain struct {
@@ -121,11 +126,15 @@ type BlockChain struct {
 	LiquidityModel        liquidity.LiquidityModel
 	LiquidityHistoryModel liquidity.LiquidityHistoryModel
 	L2NftModel            nft.L2NftModel
+	OfferModel            nft.OfferModel
+	L2NftExchangeModel    nft.L2NftExchangeModel
 	L2NftHistoryModel     nft.L2NftHistoryModel
 
-	accountMap        map[int64]*commonAsset.AccountInfo
-	liquidityMap      map[int64]*liquidity.Liquidity
-	nftMap            map[int64]*nft.L2Nft
+	accountMap   map[int64]*commonAsset.AccountInfo
+	liquidityMap map[int64]*liquidity.Liquidity
+	nftMap       map[int64]*nft.L2Nft
+	offerMap     map[string]*nft.Offer
+
 	accountTree       bsmt.SparseMerkleTree
 	liquidityTree     bsmt.SparseMerkleTree
 	nftTree           bsmt.SparseMerkleTree
@@ -162,6 +171,8 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		LiquidityModel:        liquidity.NewLiquidityModel(conn, config.CacheRedis, gormPointer),
 		LiquidityHistoryModel: liquidity.NewLiquidityHistoryModel(conn, config.CacheRedis, gormPointer),
 		L2NftModel:            nft.NewL2NftModel(conn, config.CacheRedis, gormPointer),
+		OfferModel:            nft.NewOfferModel(conn, config.CacheRedis, gormPointer),
+		L2NftExchangeModel:    nft.NewL2NftExchangeModel(conn, config.CacheRedis, gormPointer),
 		L2NftHistoryModel:     nft.NewL2NftHistoryModel(conn, config.CacheRedis, gormPointer),
 
 		chainConfig: config,
@@ -366,6 +377,8 @@ func (bc *BlockChain) CommitNewBlock(blockSize int, createdAt int64) (*StatesToC
 		PendingUpdateNft:             pendingUpdateNft,
 		PendingNewNftHistory:         pendingNewNftHistory,
 		PendingNewNftWithdrawHistory: bc.stateCache.pendingNewNftWithdrawHistory,
+		PendingNewOffer:              bc.stateCache.pendingNewOffer,
+		PendingNewL2NftExchange:      bc.stateCache.pendingNewL2NftExchange,
 	}, nil
 }
 

@@ -62,7 +62,6 @@ func (e *AddLiquidityExecutor) Prepare() error {
 		return err
 	}
 
-	e.txInfo = txInfo
 	return nil
 }
 
@@ -359,7 +358,6 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Nonce:           fromAccount.Nonce,
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
-
 	fromAccount.AssetInfo[txInfo.AssetAId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.AssetAId].Balance, txInfo.AssetAAmount)
 	if fromAccount.AssetInfo[txInfo.AssetAId].Balance.Cmp(big.NewInt(0)) < 0 {
 		return nil, errors.New("insufficient asset a balance")

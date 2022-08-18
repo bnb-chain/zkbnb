@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"encoding/json"
+	"math/big"
 
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
@@ -45,6 +46,10 @@ func (e *MintNftExecutor) Prepare() error {
 		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
 		return err
 	}
+
+	// add nft index to tx info
+	nextNftIndex := e.bc.getNextNftIndex()
+	txInfo.NftIndex = nextNftIndex
 
 	e.txInfo = txInfo
 	return nil
@@ -90,11 +95,6 @@ func (e *MintNftExecutor) VerifyInputs() error {
 func (e *MintNftExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
-
-	// add nft index to tx info
-	nextNftIndex := e.bc.getNextNftIndex()
-
-	txInfo.NftIndex = nextNftIndex
 
 	// apply changes
 	creatorAccount := bc.accountMap[txInfo.CreatorAccountIndex]
@@ -193,9 +193,15 @@ func (e *MintNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 
 func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
-	creatorAccount := e.bc.accountMap[txInfo.CreatorAccountIndex]
-	toAccount := e.bc.accountMap[txInfo.ToAccountIndex]
-	gasAccount := e.bc.accountMap[txInfo.GasAccountIndex]
+
+	copiedAccounts, err := e.bc.deepCopyAccounts([]int64{txInfo.CreatorAccountIndex, txInfo.ToAccountIndex, txInfo.GasAccountIndex})
+	if err != nil {
+		return nil, err
+	}
+
+	creatorAccount := copiedAccounts[txInfo.CreatorAccountIndex]
+	toAccount := copiedAccounts[txInfo.ToAccountIndex]
+	gasAccount := copiedAccounts[txInfo.GasAccountIndex]
 
 	txDetails := make([]*tx.TxDetail, 0, 4)
 
@@ -219,6 +225,10 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountOrder:    accountOrder,
 		CollectionNonce: creatorAccount.CollectionNonce,
 	})
+	creatorAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(creatorAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
+	if creatorAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(big.NewInt(0)) < 0 {
+		return nil, errors.New("insufficient gas fee balance")
+	}
 
 	// to account empty delta
 	order++
