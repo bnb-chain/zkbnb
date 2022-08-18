@@ -26,7 +26,7 @@ type CancelOfferExecutor struct {
 }
 
 func NewCancelOfferExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
-	return &MintNftExecutor{
+	return &CancelOfferExecutor{
 		bc: bc,
 		tx: tx,
 	}, nil
@@ -87,9 +87,6 @@ func (e *CancelOfferExecutor) VerifyInputs() error {
 func (e *CancelOfferExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
-
-	// generate tx details
-	e.tx.TxDetails = e.GenerateTxDetails()
 
 	// apply changes
 	fromAccount := bc.accountMap[txInfo.AccountIndex]
@@ -172,7 +169,7 @@ func (e *CancelOfferExecutor) GetExecutedTx() (*tx.Tx, error) {
 	return e.tx, nil
 }
 
-func (e *CancelOfferExecutor) GenerateTxDetails() []*tx.TxDetail {
+func (e *CancelOfferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
 	fromAccount := e.bc.accountMap[txInfo.AccountIndex]
 	gasAccount := e.bc.accountMap[txInfo.GasAccountIndex]
@@ -207,8 +204,7 @@ func (e *CancelOfferExecutor) GenerateTxDetails() []*tx.TxDetail {
 	// verify whether account offer id is valid for use
 	if oOffer.Bit(int(offerIndex)) == 1 {
 		logx.Errorf("account %d offer index %d is already in use", txInfo.AccountIndex, offerIndex)
-		// TODO return error
-		return nil
+		return nil, errors.New("unexpected err")
 	}
 	nOffer := new(big.Int).SetBit(oOffer, int(offerIndex), 1)
 
@@ -251,5 +247,5 @@ func (e *CancelOfferExecutor) GenerateTxDetails() []*tx.TxDetail {
 		AccountOrder:    accountOrder,
 		CollectionNonce: gasAccount.CollectionNonce,
 	})
-	return txDetails
+	return txDetails, nil
 }

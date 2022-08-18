@@ -30,6 +30,11 @@ func (p *CommitProcessor) Process(tx *tx.Tx) (*tx.Tx, error) {
 	if err != nil {
 		return tx, err
 	}
+	txDetails, err := executor.GenerateTxDetails()
+	if err != nil {
+		return tx, err
+	}
+	tx.TxDetails = txDetails
 	err = executor.ApplyTransaction()
 	if err != nil {
 		panic(err)

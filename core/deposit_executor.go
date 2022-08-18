@@ -85,8 +85,6 @@ func (e *DepositExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	e.tx.TxDetails = e.GenerateTxDetails()
-
 	depositAccount := bc.accountMap[txInfo.AccountIndex]
 	depositAccount.AssetInfo[txInfo.AssetId].Balance = ffmath.Add(depositAccount.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
 
@@ -142,7 +140,7 @@ func (e *DepositExecutor) GetExecutedTx() (*tx.Tx, error) {
 	return e.tx, nil
 }
 
-func (e *DepositExecutor) GenerateTxDetails() []*tx.TxDetail {
+func (e *DepositExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
 	depositAccount := e.bc.accountMap[txInfo.AccountIndex]
 	baseBalance := depositAccount.AssetInfo[txInfo.AssetId]
@@ -162,5 +160,5 @@ func (e *DepositExecutor) GenerateTxDetails() []*tx.TxDetail {
 		Order:        0,
 		AccountOrder: 0,
 	}
-	return []*tx.TxDetail{txDetail}
+	return []*tx.TxDetail{txDetail}, nil
 }

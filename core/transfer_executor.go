@@ -89,8 +89,6 @@ func (e *TransferExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	e.tx.TxDetails = e.GenerateTxDetails()
-
 	fromAccount := bc.accountMap[txInfo.FromAccountIndex]
 	toAccount := bc.accountMap[txInfo.ToAccountIndex]
 	gasAccount := bc.accountMap[txInfo.GasAccountIndex]
@@ -164,7 +162,7 @@ func (e *TransferExecutor) GetExecutedTx() (*tx.Tx, error) {
 	return e.tx, nil
 }
 
-func (e *TransferExecutor) GenerateTxDetails() []*tx.TxDetail {
+func (e *TransferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
 	fromAccount := e.bc.accountMap[txInfo.FromAccountIndex]
 	toAccount := e.bc.accountMap[txInfo.ToAccountIndex]
@@ -242,5 +240,5 @@ func (e *TransferExecutor) GenerateTxDetails() []*tx.TxDetail {
 		Nonce:           gasAccount.Nonce,
 		CollectionNonce: gasAccount.CollectionNonce,
 	})
-	return txDetails
+	return txDetails, nil
 }

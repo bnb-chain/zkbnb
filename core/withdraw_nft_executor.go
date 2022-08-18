@@ -109,9 +109,6 @@ func (e *WithdrawNftExecutor) ApplyTransaction() error {
 	txInfo.NftL1TokenId, _ = new(big.Int).SetString(oldNft.NftL1TokenId, 10)
 	txInfo.CollectionId = oldNft.CollectionId
 
-	// generate tx details
-	e.tx.TxDetails = e.GenerateTxDetails()
-
 	// apply changes
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
@@ -226,7 +223,7 @@ func (e *WithdrawNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 	return e.tx, nil
 }
 
-func (e *WithdrawNftExecutor) GenerateTxDetails() []*tx.TxDetail {
+func (e *WithdrawNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
 	nftModel := e.bc.nftMap[txInfo.NftIndex]
 	fromAccount := e.bc.accountMap[txInfo.AccountIndex]
@@ -321,5 +318,5 @@ func (e *WithdrawNftExecutor) GenerateTxDetails() []*tx.TxDetail {
 		AccountOrder:    accountOrder,
 		CollectionNonce: gasAccount.CollectionNonce,
 	})
-	return txDetails
+	return txDetails, nil
 }

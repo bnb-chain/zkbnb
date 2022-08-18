@@ -124,8 +124,6 @@ func (e *FullExitNftExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	e.tx.TxDetails = e.GenerateTxDetails()
-
 	if bc.nftMap[txInfo.NftIndex] == nil || txInfo.AccountIndex != bc.nftMap[txInfo.NftIndex].OwnerAccountIndex {
 		// Do nothing.
 		return nil
@@ -219,7 +217,7 @@ func (e *FullExitNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 	return e.tx, nil
 }
 
-func (e *FullExitNftExecutor) GenerateTxDetails() []*tx.TxDetail {
+func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	bc := e.bc
 	txInfo := e.txInfo
 	exitAccount := e.bc.accountMap[txInfo.AccountIndex]
@@ -272,5 +270,5 @@ func (e *FullExitNftExecutor) GenerateTxDetails() []*tx.TxDetail {
 		Order:        order,
 	})
 
-	return txDetails
+	return txDetails, nil
 }

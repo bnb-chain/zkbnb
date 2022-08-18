@@ -64,8 +64,6 @@ func (e *CreatePairExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	e.tx.TxDetails = e.GenerateTxDetails()
-
 	newLiquidity := &liquidity.Liquidity{
 		PairIndex:            txInfo.PairIndex,
 		AssetAId:             txInfo.AssetAId,
@@ -133,7 +131,7 @@ func (e *CreatePairExecutor) GetExecutedTx() (*tx.Tx, error) {
 	return e.tx, nil
 }
 
-func (e *CreatePairExecutor) GenerateTxDetails() []*tx.TxDetail {
+func (e *CreatePairExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
 	baseLiquidity := commonAsset.EmptyLiquidityInfo(txInfo.PairIndex)
 	deltaLiquidity := &commonAsset.LiquidityInfo{
@@ -160,5 +158,5 @@ func (e *CreatePairExecutor) GenerateTxDetails() []*tx.TxDetail {
 		AccountOrder: commonConstant.NilAccountOrder,
 	}
 
-	return []*tx.TxDetail{txDetail}
+	return []*tx.TxDetail{txDetail}, nil
 }

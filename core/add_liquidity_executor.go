@@ -135,9 +135,6 @@ func (e *AddLiquidityExecutor) ApplyTransaction() error {
 		return err
 	}
 
-	// generate tx details
-	e.tx.TxDetails = e.GenerateTxDetails()
-
 	// apply changes
 	fromAccount := bc.accountMap[txInfo.FromAccountIndex]
 	gasAccount := bc.accountMap[txInfo.GasAccountIndex]
@@ -322,7 +319,7 @@ func (e *AddLiquidityExecutor) GetExecutedTx() (*tx.Tx, error) {
 	return e.tx, nil
 }
 
-func (e *AddLiquidityExecutor) GenerateTxDetails() []*tx.TxDetail {
+func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
 
 	fromAccount := e.bc.accountMap[txInfo.FromAccountIndex]
@@ -332,8 +329,7 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() []*tx.TxDetail {
 	liquidityInfo, err := constructLiquidityInfo(liquidityModel)
 	if err != nil {
 		logx.Errorf("construct liquidity info error, err: ", err.Error())
-		// todo return error
-		return nil
+		return nil, err
 	}
 	treasuryAccount := e.bc.accountMap[liquidityInfo.TreasuryAccountIndex]
 
@@ -417,15 +413,13 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() []*tx.TxDetail {
 		lpDeltaForFromAccount, err = util.CleanPackedAmount(new(big.Int).Sqrt(ffmath.Multiply(txInfo.AssetAAmount, txInfo.AssetBAmount)))
 		if err != nil {
 			logx.Errorf("unable to compute lp delta: %s", err.Error())
-			// todo return error
-			return nil
+			return nil, err
 		}
 	} else {
 		lpDeltaForFromAccount, err = util.CleanPackedAmount(ffmath.Div(ffmath.Multiply(txInfo.AssetAAmount, poolLp), liquidityInfo.AssetA))
 		if err != nil {
 			logx.Errorf(" unable to compute lp delta: %s", err.Error())
-			// todo return error
-			return nil
+			return nil, err
 		}
 	}
 
@@ -463,8 +457,7 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() []*tx.TxDetail {
 		e.bc.liquidityMap[txInfo.PairIndex].TreasuryRate,
 	)
 	if err != nil {
-		// todo return error
-		return nil
+		return nil, err
 	}
 
 	finalPoolA := ffmath.Add(liquidityInfo.AssetA, txInfo.AssetAAmount)
@@ -484,14 +477,12 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() []*tx.TxDetail {
 	newPool, err := commonAsset.ComputeNewBalance(
 		commonAsset.LiquidityAssetType, basePool.String(), poolDeltaForToAccount.String())
 	if err != nil {
-		// todo return error
-		return nil
+		return nil, err
 	}
 
 	newPoolInfo, err := commonAsset.ParseLiquidityInfo(newPool)
 	if err != nil {
-		// todo return error
-		return nil
+		return nil, err
 	}
 	e.newPoolInfo = newPoolInfo
 
@@ -547,5 +538,5 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() []*tx.TxDetail {
 		Nonce:           gasAccount.Nonce,
 		CollectionNonce: gasAccount.CollectionNonce,
 	})
-	return txDetails
+	return txDetails, nil
 }
