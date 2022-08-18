@@ -142,13 +142,31 @@ type BlockChain struct {
 	dryRun bool //dryRun mode is used for verifying user inputs, is not for execution
 }
 
-func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) {
+func NewBlockChain(config *ChainConfig, moduleName string, dryRun bool) (*BlockChain, error) {
 	gormPointer, err := gorm.Open(postgres.Open(config.Postgres.DataSource))
 	if err != nil {
 		logx.Error("gorm connect db failed: ", err)
 		return nil, err
 	}
 	conn := sqlx.NewSqlConn("postgres", config.Postgres.DataSource)
+
+	if dryRun { //in app, if we need to create blockchain for every sendtx request, we can create another constructor to reuse models
+		bc := &BlockChain{
+			dryRun: true,
+
+			accountMap:   make(map[int64]*commonAsset.AccountInfo),
+			liquidityMap: make(map[int64]*liquidity.Liquidity),
+			nftMap:       make(map[int64]*nft.L2Nft),
+
+			AccountModel:   account.NewAccountModel(conn, config.CacheRedis, gormPointer),
+			LiquidityModel: liquidity.NewLiquidityModel(conn, config.CacheRedis, gormPointer),
+			L2NftModel:     nft.NewL2NftModel(conn, config.CacheRedis, gormPointer),
+
+			chainConfig: config,
+			redisCache:  dbcache.NewRedisCache(config.CacheRedis[0].Host, config.CacheRedis[0].Pass, 15*time.Minute),
+		}
+		return bc, err
+	}
 
 	bc := &BlockChain{
 		accountMap:   make(map[int64]*commonAsset.AccountInfo),
@@ -229,8 +247,23 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	return bc, nil
 }
 
-func (bc *BlockChain) DryRun() {
-	bc.dryRun = true
+//NewBlockChainForDryRun - for dry run mode, we can reuse existing models, e.g., for sending tx, we can create block chain for each request
+func NewBlockChainForDryRun(accountModel account.AccountModel, liquidityModel liquidity.LiquidityModel,
+	nftModel nft.L2NftModel, redisCache dbcache.Cache) *BlockChain {
+	bc := &BlockChain{
+		dryRun: true,
+
+		accountMap:   make(map[int64]*commonAsset.AccountInfo),
+		liquidityMap: make(map[int64]*liquidity.Liquidity),
+		nftMap:       make(map[int64]*nft.L2Nft),
+
+		AccountModel:   accountModel,
+		LiquidityModel: liquidityModel,
+		L2NftModel:     nftModel,
+
+		redisCache: redisCache,
+	}
+	return bc
 }
 
 func (bc *BlockChain) GetPendingTxs() []*tx.Tx {
