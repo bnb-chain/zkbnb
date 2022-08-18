@@ -318,12 +318,12 @@ func (e *AtomicMatchExecutor) GetExecutedTx() (*tx.Tx, error) {
 func (e *AtomicMatchExecutor) GenerateTxDetails() []*tx.TxDetail {
 	bc := e.bc
 	txInfo := e.txInfo
-	matchNft := bc.nftMap[txInfo.SellOffer.NftIndex]
+	//matchNft := bc.nftMap[txInfo.SellOffer.NftIndex]
 	fromAccount := bc.accountMap[txInfo.AccountIndex]
-	gasAccount := bc.accountMap[txInfo.GasAccountIndex]
+	//gasAccount := bc.accountMap[txInfo.GasAccountIndex]
 	buyAccount := bc.accountMap[txInfo.BuyOffer.AccountIndex]
 	sellAccount := bc.accountMap[txInfo.SellOffer.AccountIndex]
-	creatorAccount := bc.accountMap[matchNft.CreatorAccountIndex]
+	//creatorAccount := bc.accountMap[matchNft.CreatorAccountIndex]
 
 	txDetails := make([]*tx.TxDetail, 0, 9)
 
