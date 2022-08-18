@@ -24,6 +24,18 @@ ZkBAS achieves the following goals:
 ZkBAS starts its development based on [Zecrey](https://github.com/bnb-chain/zecrey-legend), special thanks to 
 [Zecrey](https://www.zecrey.com/) team.
 
+## Framework
+![Framework](./docs/assets/Frame_work.png)
+
+- **committer**. Committer executes transactions and produce consecutive blocks.
+- **monitor**. Monitor tracks events on BSC, and translates them into **transactions** on zkBAS.
+- **witness**. Witness re-executes the transactions within the block and generates witness materials.
+- **prover**. Prover generates cryptographic proof based on the witness materials.
+- **sender**. The sender rollups the compressed l2 blocks to L1, and submit proof to verify it.
+- **api server**. The api server is the access endpoints for most users, it provides rich data, including
+  digital assets, blocks, transactions, swap info, gas fees.
+- **recovery**. A tool to recover the sparse merkle tree in kv-rocks based on the state world in postgresql.
+
 ## Key Features
 
 ### Digital Asset Management
@@ -93,16 +105,6 @@ snapshottable (immutable) sparse tree for persistent data. BAS-SMT is the key fa
 the ZK-rollup node has enough transactions, it aggregates them into a batch and compiles inputs for the proving circuit 
 to compile into a succinct zk-proof.
 
-## Components
-
-- **committer**. Committer executes transactions and produce consecutive blocks.
-- **monitor**. Monitor tracks events on BSC, and translates them into **transactions** on zkBAS.
-- **witness**. Witness re-executes the transactions within the block and generates witness materials.
-- **prover**. Prover generates cryptographic proof based on the witness materials.
-- **sender**. The sender rollups the compressed l2 blocks to L1, and submit proof to verify it.
-- **api server**. The api server is the access endpoints for most users, it provides rich data, including 
-digital assets, blocks, transactions, swap info, gas fees. 
-- **recovery**. A tool to recover the sparse merkle tree in kv-rocks based on the state world in postgresql.
 
 ## Building from Source
 
@@ -121,7 +123,7 @@ We are preparing to set up the whole system using docker composer, it is coming 
 
 ## Testnet(coming soon)
 
-### Contribution
+## Contribution
 Thank you for considering to help out with the source code! We welcome contributions from anyone on the internet, 
 and are grateful for even the smallest of fixes!
 
