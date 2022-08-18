@@ -5,10 +5,6 @@ import (
 	"encoding/json"
 	"math/big"
 
-	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
-
-	"github.com/bnb-chain/zkbas/common/util"
-
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/pkg/errors"
@@ -16,7 +12,10 @@ import (
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonTx"
+	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/tx"
+	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
 )
 
 type CancelOfferExecutor struct {
@@ -79,8 +78,6 @@ func (e *CancelOfferExecutor) VerifyInputs() error {
 		return err
 	}
 
-	// TODO what if offer is not exist in database
-
 	return nil
 }
 
@@ -105,6 +102,21 @@ func (e *CancelOfferExecutor) ApplyTransaction() error {
 	stateCache := e.bc.stateCache
 	stateCache.pendingUpdateAccountIndexMap[txInfo.AccountIndex] = StateCachePending
 	stateCache.pendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = StateCachePending
+
+	stateCache.pendingNewOffer = append(stateCache.pendingNewOffer, &nft.Offer{
+		OfferType:    0,
+		OfferId:      txInfo.OfferId,
+		AccountIndex: txInfo.AccountIndex,
+		NftIndex:     0,
+		AssetId:      0,
+		AssetAmount:  "0",
+		ListedAt:     0,
+		ExpiredAt:    0,
+		TreasuryRate: 0,
+		Sig:          "",
+		Status:       nft.OfferFinishedStatus,
+	})
+
 	return nil
 }
 
@@ -171,8 +183,13 @@ func (e *CancelOfferExecutor) GetExecutedTx() (*tx.Tx, error) {
 
 func (e *CancelOfferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
-	fromAccount := e.bc.accountMap[txInfo.AccountIndex]
-	gasAccount := e.bc.accountMap[txInfo.GasAccountIndex]
+
+	copiedAccounts, err := e.bc.deepCopyAccounts([]int64{txInfo.AccountIndex, txInfo.GasAccountIndex})
+	if err != nil {
+		return nil, err
+	}
+	fromAccount := copiedAccounts[txInfo.AccountIndex]
+	gasAccount := copiedAccounts[txInfo.GasAccountIndex]
 
 	txDetails := make([]*tx.TxDetail, 0, 4)
 
@@ -196,17 +213,21 @@ func (e *CancelOfferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountOrder:    accountOrder,
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
+	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
+	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(big.NewInt(0)) < 0 {
+		return nil, errors.New("insufficient gas fee balance")
+	}
 
 	// from account offer id
 	offerAssetId := txInfo.OfferId / txVerification.OfferPerAsset
 	offerIndex := txInfo.OfferId % txVerification.OfferPerAsset
-	oOffer := fromAccount.AssetInfo[offerAssetId].OfferCanceledOrFinalized
+	oldOffer := fromAccount.AssetInfo[offerAssetId].OfferCanceledOrFinalized
 	// verify whether account offer id is valid for use
-	if oOffer.Bit(int(offerIndex)) == 1 {
+	if oldOffer.Bit(int(offerIndex)) == 1 {
 		logx.Errorf("account %d offer index %d is already in use", txInfo.AccountIndex, offerIndex)
 		return nil, errors.New("unexpected err")
 	}
-	nOffer := new(big.Int).SetBit(oOffer, int(offerIndex), 1)
+	nOffer := new(big.Int).SetBit(oldOffer, int(offerIndex), 1)
 
 	order++
 	txDetails = append(txDetails, &tx.TxDetail{
@@ -226,6 +247,7 @@ func (e *CancelOfferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountOrder:    accountOrder,
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
+	fromAccount.AssetInfo[offerAssetId].OfferCanceledOrFinalized = nOffer
 
 	// gas account gas asset
 	order++

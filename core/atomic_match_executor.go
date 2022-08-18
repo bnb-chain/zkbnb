@@ -5,6 +5,10 @@ import (
 	"encoding/json"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/bnb-chain/zkbas/common/model/nft"
+
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 
 	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
@@ -215,6 +219,42 @@ func (e *AtomicMatchExecutor) ApplyTransaction() error {
 	stateCache.pendingUpdateAccountIndexMap[matchNft.CreatorAccountIndex] = StateCachePending
 	stateCache.pendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = StateCachePending
 	stateCache.pendingUpdateNftIndexMap[txInfo.SellOffer.NftIndex] = StateCachePending
+
+	stateCache.pendingNewOffer = append(stateCache.pendingNewOffer, &nft.Offer{
+		OfferType:    txInfo.BuyOffer.Type,
+		OfferId:      txInfo.BuyOffer.OfferId,
+		AccountIndex: txInfo.BuyOffer.AccountIndex,
+		NftIndex:     txInfo.BuyOffer.NftIndex,
+		AssetId:      txInfo.BuyOffer.AssetId,
+		AssetAmount:  txInfo.BuyOffer.AssetAmount.String(),
+		ListedAt:     txInfo.BuyOffer.ListedAt,
+		ExpiredAt:    txInfo.BuyOffer.ExpiredAt,
+		TreasuryRate: txInfo.BuyOffer.TreasuryRate,
+		Sig:          common.Bytes2Hex(txInfo.BuyOffer.Sig),
+		Status:       nft.OfferFinishedStatus,
+	})
+	stateCache.pendingNewOffer = append(stateCache.pendingNewOffer, &nft.Offer{
+		OfferType:    txInfo.SellOffer.Type,
+		OfferId:      txInfo.SellOffer.OfferId,
+		AccountIndex: txInfo.SellOffer.AccountIndex,
+		NftIndex:     txInfo.SellOffer.NftIndex,
+		AssetId:      txInfo.SellOffer.AssetId,
+		AssetAmount:  txInfo.SellOffer.AssetAmount.String(),
+		ListedAt:     txInfo.SellOffer.ListedAt,
+		ExpiredAt:    txInfo.SellOffer.ExpiredAt,
+		TreasuryRate: txInfo.SellOffer.TreasuryRate,
+		Sig:          common.Bytes2Hex(txInfo.SellOffer.Sig),
+		Status:       nft.OfferFinishedStatus,
+	})
+
+	stateCache.pendingNewL2NftExchange = append(stateCache.pendingNewL2NftExchange, &nft.L2NftExchange{
+		BuyerAccountIndex: txInfo.BuyOffer.AccountIndex,
+		OwnerAccountIndex: txInfo.SellOffer.AccountIndex,
+		NftIndex:          txInfo.BuyOffer.NftIndex,
+		AssetId:           txInfo.BuyOffer.AssetId,
+		AssetAmount:       txInfo.BuyOffer.AssetAmount.String(),
+	})
+
 	return nil
 }
 
