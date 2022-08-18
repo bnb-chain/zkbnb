@@ -163,10 +163,31 @@ func (e *TransferExecutor) GetExecutedTx() (*tx.Tx, error) {
 }
 
 func (e *TransferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
+	bc := e.bc
 	txInfo := e.txInfo
-	fromAccount := e.bc.accountMap[txInfo.FromAccountIndex]
-	toAccount := e.bc.accountMap[txInfo.ToAccountIndex]
-	gasAccount := e.bc.accountMap[txInfo.GasAccountIndex]
+
+	fromAccount, err := bc.accountMap[txInfo.FromAccountIndex].DeepCopy()
+	if err != nil {
+		return nil, err
+	}
+	gasAccount := fromAccount
+	if txInfo.GasAccountIndex != txInfo.FromAccountIndex {
+		gasAccount, err = bc.accountMap[txInfo.GasAccountIndex].DeepCopy()
+		if err != nil {
+			return nil, err
+		}
+	}
+	toAccount := fromAccount
+	if txInfo.ToAccountIndex != txInfo.FromAccountIndex {
+		if txInfo.ToAccountIndex == txInfo.GasAccountIndex {
+			toAccount = gasAccount
+		} else {
+			toAccount, err = e.bc.accountMap[txInfo.ToAccountIndex].DeepCopy()
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
 
 	txDetails := make([]*tx.TxDetail, 0, 4)
 	// from account asset A
@@ -185,22 +206,15 @@ func (e *TransferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Nonce:           fromAccount.Nonce,
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
-	order++
+	fromAccount.AssetInfo[txInfo.AssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
 	// from account asset gas
-	baseBalance := fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance
-	if txInfo.GasFeeAssetId == txInfo.AssetId {
-		baseBalance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.AssetAmount)
-	}
+	order++
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    commonAsset.GeneralAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
 		AccountName:  fromAccount.AccountName,
-		Balance: commonAsset.ConstructAccountAsset(
-			txInfo.GasFeeAssetId,
-			baseBalance,
-			fromAccount.AssetInfo[txInfo.AssetId].LpAmount,
-			fromAccount.AssetInfo[txInfo.AssetId].OfferCanceledOrFinalized).String(),
+		Balance:      fromAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: commonAsset.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), ZeroBigInt, ZeroBigInt).String(),
 		Order:           order,
@@ -208,6 +222,7 @@ func (e *TransferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Nonce:           fromAccount.Nonce,
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
+	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	// to account asset a
 	order++
 	accountOrder++
@@ -224,6 +239,7 @@ func (e *TransferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Nonce:           toAccount.Nonce,
 		CollectionNonce: toAccount.CollectionNonce,
 	})
+	toAccount.AssetInfo[txInfo.AssetId].Balance = ffmath.Add(toAccount.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
 	// gas account asset gas
 	order++
 	accountOrder++
@@ -240,5 +256,6 @@ func (e *TransferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Nonce:           gasAccount.Nonce,
 		CollectionNonce: gasAccount.CollectionNonce,
 	})
+	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	return txDetails, nil
 }

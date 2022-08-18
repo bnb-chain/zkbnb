@@ -204,8 +204,8 @@ func (e *DepositNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountOrder: accountOrder,
 		Order:        order,
 	})
-	order++
 	// nft info
+	order++
 	baseNft := commonAsset.EmptyNftInfo(txInfo.NftIndex)
 	newNft := commonAsset.ConstructNftInfo(
 		txInfo.NftIndex,

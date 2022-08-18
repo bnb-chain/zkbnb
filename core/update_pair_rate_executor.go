@@ -127,7 +127,7 @@ func (e *UpdatePairRateExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		liquidity.TreasuryRate,
 	)
 	if err != nil {
-		panic("construct liquidity info failed: " + err.Error())
+		return nil, err
 	}
 	deltaLiquidity := &commonAsset.LiquidityInfo{
 		PairIndex:            baseLiquidity.PairIndex,
