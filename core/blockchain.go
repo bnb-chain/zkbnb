@@ -18,6 +18,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
+	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/dbcache"
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/asset"
@@ -147,6 +148,8 @@ type BlockChain struct {
 
 	currentBlock *block.Block
 	stateCache   *StateCache // Cache for current block changes.
+
+	dryRun bool //dryRun mode is used for verifying user inputs, is not for execution
 }
 
 func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) {
@@ -236,6 +239,26 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 
 	bc.processor = NewCommitProcessor(bc)
 	return bc, nil
+}
+
+//NewBlockChainForDryRun - for dry run mode, we can reuse existing models for quick creation
+//, e.g., for sending tx, we can create blockchain for each request quickly
+func NewBlockChainForDryRun(accountModel account.AccountModel, liquidityModel liquidity.LiquidityModel,
+	nftModel nft.L2NftModel, redisCache dbcache.Cache) *BlockChain {
+	bc := &BlockChain{
+		dryRun: true,
+
+		accountMap:   make(map[int64]*commonAsset.AccountInfo),
+		liquidityMap: make(map[int64]*liquidity.Liquidity),
+		nftMap:       make(map[int64]*nft.L2Nft),
+
+		AccountModel:   accountModel,
+		LiquidityModel: liquidityModel,
+		L2NftModel:     nftModel,
+
+		redisCache: redisCache,
+	}
+	return bc
 }
 
 func (bc *BlockChain) GetPendingTxs() []*tx.Tx {
@@ -639,6 +662,14 @@ func (bc *BlockChain) deepCopyAccounts(accountIds []int64) (map[int64]*commonAss
 
 func (bc *BlockChain) prepareAccountsAndAssets(accounts []int64, assets []int64) error {
 	for _, accountIndex := range accounts {
+		if bc.dryRun {
+			var formatAccount *commonAsset.AccountInfo
+			redisAccount, err := bc.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex))
+			if err == nil {
+				formatAccount = redisAccount.(*commonAsset.AccountInfo)
+			}
+			bc.accountMap[accountIndex] = formatAccount
+		}
 		if bc.accountMap[accountIndex] == nil {
 			accountInfo, err := bc.AccountModel.GetAccountByAccountIndex(accountIndex)
 			if err != nil {
@@ -668,6 +699,15 @@ func (bc *BlockChain) prepareAccountsAndAssets(accounts []int64, assets []int64)
 }
 
 func (bc *BlockChain) prepareLiquidity(pairIndex int64) error {
+	if bc.dryRun {
+		var l *liquidity.Liquidity
+		redisLiquidity, err := bc.redisCache.Get(context.Background(), dbcache.LiquidityKeyByIndex(pairIndex))
+		if err == nil {
+			l = redisLiquidity.(*liquidity.Liquidity)
+		}
+		bc.liquidityMap[pairIndex] = l
+	}
+
 	if bc.liquidityMap[pairIndex] == nil {
 		liquidityInfo, err := bc.LiquidityModel.GetLiquidityByPairIndex(pairIndex)
 		if err != nil {
@@ -679,6 +719,15 @@ func (bc *BlockChain) prepareLiquidity(pairIndex int64) error {
 }
 
 func (bc *BlockChain) prepareNft(nftIndex int64) error {
+	if bc.dryRun {
+		var n *nft.L2Nft
+		redisNft, err := bc.redisCache.Get(context.Background(), dbcache.NftKeyByIndex(nftIndex))
+		if err == nil {
+			n = redisNft.(*nft.L2Nft)
+		}
+		bc.nftMap[nftIndex] = n
+	}
+
 	if bc.nftMap[nftIndex] == nil {
 		nftAsset, err := bc.L2NftModel.GetNftAsset(nftIndex)
 		if err != nil {
@@ -776,4 +825,38 @@ func (bc *BlockChain) getStateRoot() string {
 	hFunc.Write(bc.liquidityTree.Root())
 	hFunc.Write(bc.nftTree.Root())
 	return common.Bytes2Hex(hFunc.Sum(nil))
+}
+
+func (bc *BlockChain) getPendingNonce(accountIndex int64) (int64, error) {
+	return 0, nil //code in another branch, need merge
+}
+
+func (bc *BlockChain) verifyExpiredAt(expiredAt int64) error {
+	if !bc.dryRun {
+		if expiredAt != commonConstant.NilExpiredAt && expiredAt < bc.currentBlock.CreatedAt.UnixMilli() {
+			return errors.New("invalid ExpiredAt")
+		}
+	} else {
+		if expiredAt < time.Now().UnixMilli() {
+			return errors.New("invalid ExpiredAt")
+		}
+	}
+	return nil
+}
+
+func (bc *BlockChain) verifyNonce(accountIndex int64, nonce int64) error {
+	if !bc.dryRun {
+		if nonce != bc.accountMap[accountIndex].Nonce {
+			return errors.New("invalid Nonce")
+		}
+	} else {
+		pendingNonce, err := bc.getPendingNonce(accountIndex)
+		if err != nil {
+			return errors.New("cannot verify nonce")
+		}
+		if pendingNonce != nonce {
+			return errors.New("invalid Nonce")
+		}
+	}
+	return nil
 }

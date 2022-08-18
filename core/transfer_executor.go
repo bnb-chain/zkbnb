@@ -10,7 +10,6 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
-	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/util"
@@ -41,7 +40,7 @@ func (e *TransferExecutor) Prepare() error {
 	err = e.bc.prepareAccountsAndAssets(accounts, assets)
 	if err != nil {
 		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
-		return err
+		return errors.New("internal error")
 	}
 
 	e.txInfo = txInfo
@@ -57,14 +56,17 @@ func (e *TransferExecutor) VerifyInputs() error {
 		return err
 	}
 
+	if err := e.bc.verifyExpiredAt(txInfo.ExpiredAt); err != nil {
+		return err
+	}
+
 	fromAccount := bc.accountMap[txInfo.FromAccountIndex]
 	toAccount := bc.accountMap[txInfo.ToAccountIndex]
-	if txInfo.ExpiredAt != commonConstant.NilExpiredAt && txInfo.ExpiredAt < bc.currentBlock.CreatedAt.UnixMilli() {
-		return errors.New("expired tx")
+
+	if err := e.bc.verifyNonce(fromAccount.AccountIndex, txInfo.Nonce); err != nil {
+		return err
 	}
-	if txInfo.Nonce != fromAccount.Nonce {
-		return errors.New("invalid nonce")
-	}
+
 	if txInfo.ToAccountNameHash != toAccount.AccountNameHash {
 		return errors.New("invalid to account name hash")
 	}

@@ -43,7 +43,7 @@ func (e *CreateCollectionExecutor) Prepare() error {
 	err = e.bc.prepareAccountsAndAssets(accounts, assets)
 	if err != nil {
 		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
-		return err
+		return errors.New("internal error")
 	}
 
 	fromAccount := e.bc.accountMap[txInfo.AccountIndex]
@@ -62,13 +62,14 @@ func (e *CreateCollectionExecutor) VerifyInputs() error {
 		return err
 	}
 
-	if txInfo.ExpiredAt < e.bc.currentBlock.CreatedAt.UnixMilli() {
-		return errors.New("tx expired")
+	if err := e.bc.verifyExpiredAt(txInfo.ExpiredAt); err != nil {
+		return err
 	}
 
 	fromAccount := e.bc.accountMap[txInfo.AccountIndex]
-	if txInfo.Nonce != fromAccount.Nonce {
-		return errors.New("invalid nonce")
+
+	if err := e.bc.verifyNonce(fromAccount.AccountIndex, txInfo.Nonce); err != nil {
+		return err
 	}
 
 	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
