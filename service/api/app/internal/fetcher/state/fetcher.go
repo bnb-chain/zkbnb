@@ -88,7 +88,7 @@ func (f *fetcher) GetLatestAccount(accountIndex int64) (*commonAsset.AccountInfo
 			return nil, err
 		}
 	} else {
-		account, err := f.accountModel.GetAccountByAccountIndex(accountIndex)
+		account, err := f.accountModel.GetAccountByIndex(accountIndex)
 		if err != nil {
 			return nil, err
 		}
@@ -192,7 +192,7 @@ func (f *fetcher) GetPendingNonce(accountIndex int64) (nonce int64, err error) {
 		}
 		return formatAccount.Nonce, nil
 	}
-	dbAccount, err := f.accountModel.GetAccountByAccountIndex(accountIndex)
+	dbAccount, err := f.accountModel.GetAccountByIndex(accountIndex)
 	if err != nil {
 		return dbAccount.Nonce + 1, nil
 	}

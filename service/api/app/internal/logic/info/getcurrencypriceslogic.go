@@ -25,7 +25,7 @@ func NewGetCurrencyPricesLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 	}
 }
 
-func (l *GetCurrencyPricesLogic) GetCurrencyPrices(req *types.ReqGetAll) (resp *types.CurrencyPrices, err error) {
+func (l *GetCurrencyPricesLogic) GetCurrencyPrices(req *types.ReqGetRange) (resp *types.CurrencyPrices, err error) {
 	total, err := l.svcCtx.MemCache.GetAssetTotalCountWithFallback(func() (interface{}, error) {
 		return l.svcCtx.AssetModel.GetAssetsTotalCount()
 	})

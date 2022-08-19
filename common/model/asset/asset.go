@@ -34,7 +34,7 @@ type (
 		CreateAssetsInBatch(assets []*Asset) (rowsAffected int64, err error)
 		GetAssetsTotalCount() (count int64, err error)
 		GetAssetsList(limit int64, offset int64) (assets []*Asset, err error)
-		GetAssetByAssetId(assetId int64) (asset *Asset, err error)
+		GetAssetById(assetId int64) (asset *Asset, err error)
 		GetAssetBySymbol(symbol string) (asset *Asset, err error)
 		GetAssetByAddress(address string) (asset *Asset, err error)
 		GetGasAssets() (assets []*Asset, err error)
@@ -113,7 +113,7 @@ func (m *defaultAssetModel) CreateAssetsInBatch(l2Assets []*Asset) (rowsAffected
 	return dbTx.RowsAffected, nil
 }
 
-func (m *defaultAssetModel) GetAssetByAssetId(assetId int64) (res *Asset, err error) {
+func (m *defaultAssetModel) GetAssetById(assetId int64) (res *Asset, err error) {
 	dbTx := m.DB.Table(m.table).Where("asset_id = ?", assetId).Find(&res)
 	if dbTx.Error != nil {
 		logx.Errorf("get asset error, err: %s", dbTx.Error.Error())

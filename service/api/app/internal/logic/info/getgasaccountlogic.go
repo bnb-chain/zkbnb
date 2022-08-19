@@ -41,16 +41,16 @@ func (l *GetGasAccountLogic) GetGasAccount() (resp *types.GasAccount, err error)
 	}
 
 	account, err := l.svcCtx.MemCache.GetAccountWithFallback(accountIndex, func() (interface{}, error) {
-		return l.svcCtx.AccountModel.GetAccountByAccountIndex(accountIndex)
+		return l.svcCtx.AccountModel.GetAccountByIndex(accountIndex)
 	})
 	if err != nil {
 		return nil, errorcode.AppErrInternal
 	}
 
 	resp = &types.GasAccount{
-		AccountStatus: int64(account.Status),
-		AccountIndex:  account.AccountIndex,
-		AccountName:   account.AccountName,
+		Status: int64(account.Status),
+		Index:  account.AccountIndex,
+		Name:   account.AccountName,
 	}
 	return resp, nil
 }

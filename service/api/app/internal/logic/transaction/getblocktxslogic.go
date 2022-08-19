@@ -39,7 +39,7 @@ func (l *GetBlockTxsLogic) GetBlockTxs(req *types.ReqGetBlockTxs) (resp *types.T
 			return nil, errorcode.AppErrInvalidParam.RefineError("invalid value for block height")
 		}
 		block, err = l.svcCtx.MemCache.GetBlockByHeightWithFallback(blockHeight, func() (interface{}, error) {
-			return l.svcCtx.BlockModel.GetBlockByBlockHeight(blockHeight)
+			return l.svcCtx.BlockModel.GetBlockByHeight(blockHeight)
 		})
 	case "block_commitment":
 		block, err = l.svcCtx.MemCache.GetBlockByCommitmentWithFallback(req.Value, func() (interface{}, error) {

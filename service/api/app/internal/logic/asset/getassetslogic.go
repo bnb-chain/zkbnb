@@ -24,7 +24,7 @@ func NewGetAssetsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAsse
 	}
 }
 
-func (l *GetAssetsLogic) GetAssets(req *types.ReqGetAll) (resp *types.Assets, err error) {
+func (l *GetAssetsLogic) GetAssets(req *types.ReqGetRange) (resp *types.Assets, err error) {
 	total, err := l.svcCtx.MemCache.GetAssetTotalCountWithFallback(func() (interface{}, error) {
 		return l.svcCtx.AssetModel.GetAssetsTotalCount()
 	})

@@ -33,7 +33,7 @@ func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.GasFee, erro
 	resp := &types.GasFee{}
 
 	asset, err := l.svcCtx.MemCache.GetAssetByIdWithFallback(int64(req.AssetId), func() (interface{}, error) {
-		return l.svcCtx.AssetModel.GetAssetByAssetId(int64(req.AssetId))
+		return l.svcCtx.AssetModel.GetAssetById(int64(req.AssetId))
 	})
 	if err != nil {
 		if err == errorcode.DbErrNotFound {

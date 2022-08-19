@@ -40,10 +40,10 @@ type (
 		GetTxsCountByAccountIndex(accountIndex int64) (count int64, err error)
 		GetTxsListByAccountIndexTxType(accountIndex int64, txType int64, limit int64, offset int64) (txList []*Tx, err error)
 		GetTxsCountByAccountIndexTxType(accountIndex int64, txType int64) (count int64, err error)
-		GetTxByTxHash(txHash string) (tx *Tx, err error)
-		GetTxByTxId(id int64) (tx *Tx, err error)
+		GetTxByHash(txHash string) (tx *Tx, err error)
+		GetTxById(id int64) (tx *Tx, err error)
 		GetTxsTotalCountBetween(from, to time.Time) (count int64, err error)
-		GetDistinctAccountCountBetween(from, to time.Time) (count int64, err error)
+		GetDistinctAccountsCountBetween(from, to time.Time) (count int64, err error)
 	}
 
 	defaultTxModel struct {
@@ -196,7 +196,7 @@ func (m *defaultTxModel) GetTxsCountByAccountIndexTxType(accountIndex int64, txT
 	Return: txVerification Tx, err error
 	Description: used for /api/v1/txVerification/getTxByHash
 */
-func (m *defaultTxModel) GetTxByTxHash(txHash string) (tx *Tx, err error) {
+func (m *defaultTxModel) GetTxByHash(txHash string) (tx *Tx, err error) {
 	var txForeignKeyColumn = `TxDetails`
 
 	dbTx := m.DB.Table(m.table).Where("tx_hash = ?", txHash).Find(&tx)
@@ -219,7 +219,7 @@ func (m *defaultTxModel) GetTxByTxHash(txHash string) (tx *Tx, err error) {
 	return tx, nil
 }
 
-func (m *defaultTxModel) GetTxByTxId(id int64) (tx *Tx, err error) {
+func (m *defaultTxModel) GetTxById(id int64) (tx *Tx, err error) {
 	var txForeignKeyColumn = `TxDetails`
 
 	dbTx := m.DB.Table(m.table).Where("id = ?", id).Find(&tx)
@@ -253,7 +253,7 @@ func (m *defaultTxModel) GetTxsTotalCountBetween(from, to time.Time) (count int6
 	return count, nil
 }
 
-func (m *defaultTxModel) GetDistinctAccountCountBetween(from, to time.Time) (count int64, err error) {
+func (m *defaultTxModel) GetDistinctAccountsCountBetween(from, to time.Time) (count int64, err error) {
 	dbTx := m.DB.Raw("SELECT account_index FROM tx WHERE created_at BETWEEN ? AND ? AND account_index != -1 GROUP BY account_index", from, to).Count(&count)
 	if dbTx.Error != nil {
 		logx.Errorf("fail to get dau by time range: %d-%d, error: %s", from.Unix(), to.Unix(), dbTx.Error.Error())

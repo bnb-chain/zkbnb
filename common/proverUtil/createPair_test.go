@@ -47,7 +47,7 @@ func TestConstructCreatePairCryptoTxFirst(t *testing.T) {
 		Driver: treedb.MemoryDB,
 		TreeDB: memory.NewMemoryDB(),
 	}
-	txInfo, err := txModel.GetTxByTxId(9)
+	txInfo, err := txModel.GetTxById(9)
 	if err != nil {
 		t.Fatal(err)
 	}

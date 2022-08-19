@@ -25,9 +25,9 @@ func NewGetBlocksLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetBloc
 	}
 }
 
-func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetAll) (*types.Blocks, error) {
+func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetRange) (*types.Blocks, error) {
 	total, err := l.svcCtx.MemCache.GetBlockTotalCountWithFallback(func() (interface{}, error) {
-		return l.svcCtx.BlockModel.GetCurrentBlockHeight()
+		return l.svcCtx.BlockModel.GetCurrentHeight()
 	})
 	if err != nil {
 		return nil, errorcode.AppErrInternal
@@ -47,8 +47,8 @@ func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetAll) (*types.Blocks, error) 
 	}
 	for _, b := range blocks {
 		block := &types.Block{
-			BlockCommitment:                 b.BlockCommitment,
-			BlockHeight:                     b.BlockHeight,
+			Commitment:                      b.BlockCommitment,
+			Height:                          b.BlockHeight,
 			StateRoot:                       b.StateRoot,
 			PriorityOperations:              b.PriorityOperations,
 			PendingOnChainOperationsHash:    b.PendingOnChainOperationsHash,
@@ -57,7 +57,7 @@ func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetAll) (*types.Blocks, error) 
 			CommittedAt:                     b.CommittedAt,
 			VerifiedTxHash:                  b.VerifiedTxHash,
 			VerifiedAt:                      b.VerifiedAt,
-			BlockStatus:                     b.BlockStatus,
+			Status:                          b.BlockStatus,
 		}
 		for _, t := range b.Txs {
 			tx := utils.DbTx2Tx(t)

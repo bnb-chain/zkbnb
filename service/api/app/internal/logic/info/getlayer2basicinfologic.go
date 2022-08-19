@@ -49,7 +49,7 @@ func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo() (*types.Layer2BasicInfo, 
 			return nil, errorcode.AppErrInternal
 		}
 	}
-	resp.TotalTransactions, err = l.svcCtx.MemCache.GetTxTotalCountWithFallback(func() (interface{}, error) {
+	resp.TotalTransactionCount, err = l.svcCtx.MemCache.GetTxTotalCountWithFallback(func() (interface{}, error) {
 		return l.svcCtx.TxModel.GetTxsTotalCount()
 	})
 	if err != nil {
@@ -61,25 +61,25 @@ func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo() (*types.Layer2BasicInfo, 
 	now := time.Now()
 	today := now.Round(24 * time.Hour).Add(-8 * time.Hour)
 
-	resp.TransactionsCountYesterday, err = l.svcCtx.TxModel.GetTxsTotalCountBetween(today.Add(-24*time.Hour), today)
+	resp.TransactionCountYesterday, err = l.svcCtx.TxModel.GetTxsTotalCountBetween(today.Add(-24*time.Hour), today)
 	if err != nil {
 		if err != errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrInternal
 		}
 	}
-	resp.TransactionsCountToday, err = l.svcCtx.TxModel.GetTxsTotalCountBetween(today, now)
+	resp.TransactionCountToday, err = l.svcCtx.TxModel.GetTxsTotalCountBetween(today, now)
 	if err != nil {
 		if err != errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrInternal
 		}
 	}
-	resp.DauYesterday, err = l.svcCtx.TxModel.GetDistinctAccountCountBetween(today.Add(-24*time.Hour), today)
+	resp.DauYesterday, err = l.svcCtx.TxModel.GetDistinctAccountsCountBetween(today.Add(-24*time.Hour), today)
 	if err != nil {
 		if err != errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrInternal
 		}
 	}
-	resp.DauToday, err = l.svcCtx.TxModel.GetDistinctAccountCountBetween(today, now)
+	resp.DauToday, err = l.svcCtx.TxModel.GetDistinctAccountsCountBetween(today, now)
 	if err != nil {
 		if err != errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrInternal

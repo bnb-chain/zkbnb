@@ -30,6 +30,7 @@ import (
 
 	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
 	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
+
 	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/blockForCommit"
@@ -222,7 +223,7 @@ func (s *Sender) CommitBlocks() (err error) {
 			return err
 		}
 		// get last block info
-		lastHandledBlockInfo, err := s.blockModel.GetBlockByBlockHeight(lastHandledTx.L2BlockHeight)
+		lastHandledBlockInfo, err := s.blockModel.GetBlockByHeight(lastHandledTx.L2BlockHeight)
 		if err != nil && err != errorcode.DbErrNotFound {
 			logx.Errorf("unable to get last handled block info: %v", err)
 			return err

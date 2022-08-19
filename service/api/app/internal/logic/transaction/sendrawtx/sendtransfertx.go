@@ -71,7 +71,7 @@ func (s *transferTxSender) SendTx(rawTxInfo string) (txId string, err error) {
 
 	// check to account
 	toAccount, err := s.svcCtx.MemCache.GetAccountWithFallback(txInfo.ToAccountIndex, func() (interface{}, error) {
-		return s.svcCtx.AccountModel.GetAccountByAccountIndex(txInfo.ToAccountIndex)
+		return s.svcCtx.AccountModel.GetAccountByIndex(txInfo.ToAccountIndex)
 	})
 	if err != nil {
 		if err == errorcode.DbErrNotFound {

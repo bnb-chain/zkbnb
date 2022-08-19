@@ -66,7 +66,7 @@ func NewWitness(c config.Config) *Witness {
 	w := &Witness{
 		config:                c,
 		blockModel:            block.NewBlockModel(conn, c.CacheRedis, dbInstance),
-		blockWitnessModel:    blockwitness.NewBlockWitnessModel(conn, c.CacheRedis, dbInstance),
+		blockWitnessModel:     blockwitness.NewBlockWitnessModel(conn, c.CacheRedis, dbInstance),
 		accountModel:          account.NewAccountModel(conn, c.CacheRedis, dbInstance),
 		accountHistoryModel:   account.NewAccountHistoryModel(conn, c.CacheRedis, dbInstance),
 		liquidityHistoryModel: liquidity.NewLiquidityHistoryModel(conn, c.CacheRedis, dbInstance),
@@ -141,7 +141,7 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 		return err
 	}
 	// get latestVerifiedBlockNr
-	latestVerifiedBlockNr, err := w.blockModel.GetLatestVerifiedBlockHeight()
+	latestVerifiedBlockNr, err := w.blockModel.GetLatestVerifiedHeight()
 	if err != nil {
 		return err
 	}

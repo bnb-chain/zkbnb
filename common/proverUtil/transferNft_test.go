@@ -47,7 +47,7 @@ func TestConstructTransferNftCryptoTxFirst(t *testing.T) {
 		Driver: treedb.MemoryDB,
 		TreeDB: memory.NewMemoryDB(),
 	}
-	txInfo, err := txModel.GetTxByTxId(23)
+	txInfo, err := txModel.GetTxById(23)
 	if err != nil {
 		t.Fatal(err)
 	}

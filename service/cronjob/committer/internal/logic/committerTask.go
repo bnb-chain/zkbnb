@@ -72,13 +72,13 @@ func CommitterTask(
 	logx.Infof("[CommitterTask] Mempool txs number : %d", nTxs)
 
 	// get current block height
-	currentBlockHeight, err := ctx.BlockModel.GetCurrentBlockHeight()
+	currentBlockHeight, err := ctx.BlockModel.GetCurrentHeight()
 	if err != nil && err != errorcode.DbErrNotFound {
 		logx.Error("[CommitterTask] err when get current block height")
 		return err
 	}
 	// get last block info
-	lastBlock, err := ctx.BlockModel.GetBlockByBlockHeight(currentBlockHeight)
+	lastBlock, err := ctx.BlockModel.GetBlockByHeight(currentBlockHeight)
 	if err != nil {
 		logx.Errorf("[CommitterTask] unable to get block by height: %s", err.Error())
 		return err
@@ -168,7 +168,7 @@ func CommitterTask(
 			// get related account info
 			if mempoolTx.AccountIndex != commonConstant.NilTxAccountIndex {
 				if accountMap[mempoolTx.AccountIndex] == nil {
-					accountInfo, err := ctx.AccountModel.GetAccountByAccountIndex(mempoolTx.AccountIndex)
+					accountInfo, err := ctx.AccountModel.GetAccountByIndex(mempoolTx.AccountIndex)
 					if err != nil {
 						logx.Errorf("[CommitterTask] get account by account index: %s", err.Error())
 						return err
@@ -250,7 +250,7 @@ func CommitterTask(
 				if mempoolTxDetail.AccountIndex != commonConstant.NilTxAccountIndex {
 					pendingUpdateAccountIndexMap[mempoolTxDetail.AccountIndex] = true
 					if accountMap[mempoolTxDetail.AccountIndex] == nil {
-						accountInfo, err := ctx.AccountModel.GetAccountByAccountIndex(mempoolTxDetail.AccountIndex)
+						accountInfo, err := ctx.AccountModel.GetAccountByIndex(mempoolTxDetail.AccountIndex)
 						if err != nil {
 							logx.Errorf("[CommitterTask] get account by account index: %s", err.Error())
 							return err

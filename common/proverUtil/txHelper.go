@@ -52,7 +52,7 @@ func ConstructProverInfo(
 		case commonAsset.GeneralAssetType:
 			// get account info
 			if accountMap[txDetail.AccountIndex] == nil {
-				accountInfo, err := accountModel.GetConfirmedAccountByAccountIndex(txDetail.AccountIndex)
+				accountInfo, err := accountModel.GetConfirmedAccountByIndex(txDetail.AccountIndex)
 				if err != nil {
 					logx.Errorf("[ConstructProverInfo] unable to get valid account by index: %s", err.Error())
 					return nil, nil, nil, nil, err
@@ -153,7 +153,7 @@ func ConstructProverInfo(
 		case commonAsset.CollectionNonceAssetType:
 			// get account info
 			if accountMap[txDetail.AccountIndex] == nil {
-				accountInfo, err := accountModel.GetConfirmedAccountByAccountIndex(txDetail.AccountIndex)
+				accountInfo, err := accountModel.GetConfirmedAccountByIndex(txDetail.AccountIndex)
 				if err != nil {
 					logx.Errorf("[ConstructProverInfo] unable to get valid account by index: %s", err.Error())
 					return nil, nil, nil, nil, err

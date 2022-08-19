@@ -24,7 +24,7 @@ func NewGetAccountsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAc
 	}
 }
 
-func (l *GetAccountsLogic) GetAccounts(req *types.ReqGetAll) (resp *types.Accounts, err error) {
+func (l *GetAccountsLogic) GetAccounts(req *types.ReqGetRange) (resp *types.Accounts, err error) {
 	total, err := l.svcCtx.MemCache.GetAccountTotalCountWiltFallback(func() (interface{}, error) {
 		return l.svcCtx.AccountModel.GetAccountsTotalCount()
 	})

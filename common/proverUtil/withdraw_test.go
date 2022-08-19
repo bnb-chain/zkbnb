@@ -47,7 +47,7 @@ func TestConstructWithdrawCryptoTxFirst(t *testing.T) {
 		Driver: treedb.MemoryDB,
 		TreeDB: memory.NewMemoryDB(),
 	}
-	txInfo, err := txModel.GetTxByTxId(17)
+	txInfo, err := txModel.GetTxById(17)
 	if err != nil {
 		t.Fatal(err)
 	}

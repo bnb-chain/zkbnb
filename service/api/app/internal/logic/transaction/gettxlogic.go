@@ -5,7 +5,6 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
@@ -29,14 +28,14 @@ func NewGetTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTxLogic 
 func (l *GetTxLogic) GetTx(req *types.ReqGetTx) (resp *types.EnrichedTx, err error) {
 	resp = &types.EnrichedTx{}
 	tx, err := l.svcCtx.MemCache.GetTxByHashWithFallback(req.TxHash, func() (interface{}, error) {
-		return l.svcCtx.TxModel.GetTxByTxHash(req.TxHash)
+		return l.svcCtx.TxModel.GetTxByHash(req.TxHash)
 	})
 	if err == nil {
 		resp.Tx = *utils.DbTx2Tx(tx)
 		resp.Tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
 		resp.Tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
 		block, err := l.svcCtx.MemCache.GetBlockByHeightWithFallback(tx.BlockHeight, func() (interface{}, error) {
-			return l.svcCtx.BlockModel.GetBlockByBlockHeight(resp.Tx.BlockHeight)
+			return l.svcCtx.BlockModel.GetBlockByHeight(resp.Tx.BlockHeight)
 		})
 		if err == nil {
 			resp.CommittedAt = block.CommittedAt
@@ -57,14 +56,6 @@ func (l *GetTxLogic) GetTx(req *types.ReqGetTx) (resp *types.EnrichedTx, err err
 		resp.Tx = *utils.DbMempoolTx2Tx(memppolTx)
 		resp.Tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
 		resp.Tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
-	}
-	if resp.Tx.TxType == commonTx.TxTypeSwap {
-		txInfo, err := commonTx.ParseSwapTxInfo(tx.TxInfo)
-		if err != nil {
-			return nil, errorcode.AppErrInternal
-		}
-		resp.AssetAId = txInfo.AssetAId
-		resp.AssetBId = txInfo.AssetBId
 	}
 
 	return resp, nil

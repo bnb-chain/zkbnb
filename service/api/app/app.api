@@ -1,7 +1,6 @@
 syntax = "v1"
 
 info(
-	author: "Gavin Gao, Tao Zhu, Wenki Wu"
 	date: "2022-5-1"
 	desc: "App API"
 )
@@ -23,20 +22,19 @@ service app-api {
 	get / returns (Status)
 }
 
-type ReqGetAll {
+type ReqGetRange {
 	Offset uint16 `form:"offset,range=[0:100000]"`
-	Limit  uint16 `form:"limit,range=[1:50]"`
+	Limit  uint16 `form:"limit,range=[1:100]"`
 }
 
 /* ========================= Account =========================*/
 
 type (
 	AccountAsset {
-		AssetId                  uint32 `json:"asset_id"`
-		AssetName                string `json:"asset_name"`
-		Balance                  string `json:"balance"`
-		LpAmount                 string `json:"lp_amount"`
-		OfferCanceledOrFinalized string `json:"offer_canceled_or_finalized"`
+		AssetId   uint32 `json:"asset_id"`
+		AssetName string `json:"asset_name"`
+		Balance   string `json:"balance"`
+		LpAmount  string `json:"lp_amount"`
 	}
 
 	Account {
@@ -73,7 +71,7 @@ type (
 
 service app-api {
 	@handler GetAccounts
-	get /api/v1/accounts (ReqGetAll) returns (Accounts)
+	get /api/v1/accounts (ReqGetRange) returns (Accounts)
 	
 	@handler GetAccount
 	get /api/v1/account (ReqGetAccount) returns (Account)
@@ -103,15 +101,15 @@ type (
 
 service app-api {
 	@handler GetAssets
-	get /api/v1/assets (ReqGetAll) returns (Assets)
+	get /api/v1/assets (ReqGetRange) returns (Assets)
 }
 
 /* ========================= Block =========================*/
 
 type (
 	Block {
-		BlockCommitment                 string `json:"block_commitment"`
-		BlockHeight                     int64  `json:"block_height"`
+		Commitment                      string `json:"commitment"`
+		Height                          int64  `json:"height"`
 		StateRoot                       string `json:"state_root"`
 		PriorityOperations              int64  `json:"priority_operations"`
 		PendingOnChainOperationsHash    string `json:"pending_on_chain_operations_hash"`
@@ -121,7 +119,7 @@ type (
 		VerifiedTxHash                  string `json:"verified_tx_hash"`
 		VerifiedAt                      int64  `json:"verified_at"`
 		Txs                             []*Tx  `json:"txs"`
-		BlockStatus                     int64  `json:"block_status"`
+		Status                          int64  `json:"status"`
 	}
 
 	Blocks {
@@ -146,7 +144,7 @@ type (
 )
 service app-api {
 	@handler GetBlocks
-	get /api/v1/blocks (ReqGetAll) returns (Blocks)
+	get /api/v1/blocks (ReqGetRange) returns (Blocks)
 	
 	@handler GetBlock
 	get /api/v1/block (ReqGetBlock) returns (Block)
@@ -164,14 +162,14 @@ type (
 	}
 
 	Layer2BasicInfo {
-		BlockCommitted             int64             `json:"block_committed"`
-		BlockVerified              int64             `json:"block_verified"`
-		TotalTransactions          int64             `json:"total_transactions"`
-		TransactionsCountYesterday int64             `json:"transactions_count_yesterday"`
-		TransactionsCountToday     int64             `json:"transactions_count_today"`
-		DauYesterday               int64             `json:"dau_yesterday"`
-		DauToday                   int64             `json:"dau_today"`
-		ContractAddresses          []ContractAddress `json:"contract_addresses"`
+		BlockCommitted            int64             `json:"block_committed"`
+		BlockVerified             int64             `json:"block_verified"`
+		TotalTransactionCount     int64             `json:"total_transaction_count"`
+		TransactionCountYesterday int64             `json:"transaction_count_yesterday"`
+		TransactionCountToday     int64             `json:"transaction_count_today"`
+		DauYesterday              int64             `json:"dau_yesterday"`
+		DauToday                  int64             `json:"dau_today"`
+		ContractAddresses         []ContractAddress `json:"contract_addresses"`
 	}
 
 	CurrencyPrice {
@@ -190,9 +188,9 @@ type (
 	}
 
 	GasAccount {
-		AccountStatus int64  `json:"account_status"`
-		AccountIndex  int64  `json:"account_index"`
-		AccountName   string `json:"account_name"`
+		Status int64  `json:"status"`
+		Index  int64  `json:"index"`
+		Name   string `json:"name"`
 	}
 
 	GasFeeAssets {
@@ -234,7 +232,7 @@ service app-api {
 	get /api/v1/currencyPrice (ReqGetCurrencyPrice) returns (CurrencyPrice)
 	
 	@handler GetCurrencyPrices
-	get /api/v1/currencyPrices (ReqGetAll) returns (CurrencyPrices)
+	get /api/v1/currencyPrices (ReqGetRange) returns (CurrencyPrices)
 	
 	@handler GetGasFee
 	get /api/v1/gasFee (ReqGetGasFee) returns (GasFee)
@@ -326,11 +324,11 @@ service app-api {
 
 type (
 	Tx {
-		TxHash        string `json:"tx_hash"`
-		TxType        int64  `json:"tx_type,range=[1:64]"`
-		TxAmount      string `json:"tx_amount"`
-		TxInfo        string `json:"tx_info"`
-		TxStatus      int64  `json:"tx_status"`
+		Hash          string `json:"hash"`
+		Type          int64  `json:"type,range=[1:64]"`
+		Amount        string `json:"amount"`
+		Info          string `json:"info"`
+		Status        int64  `json:"status"`
 		GasFeeAssetId int64  `json:"gas_fee_asset_id"`
 		GasFee        string `json:"gas_fee"`
 		NftIndex      int64  `json:"nft_index"`
@@ -344,8 +342,6 @@ type (
 		AccountName   string `json:"account_name"`
 		Nonce         int64  `json:"nonce"`
 		ExpiredAt     int64  `json:"expire_at"`
-		Status        int64  `json:"status,options=0|1|2"`
-		BlockId       int64  `json:"block_id"`
 		BlockHeight   int64  `json:"block_height"`
 		CreatedAt     int64  `json:"created_at"`
 		StateRoot     string `json:"state_root"`
@@ -370,12 +366,10 @@ type (
 	}
 
 	EnrichedTx {
-		Tx          Tx    `json:"tx"`
+		Tx
 		CommittedAt int64 `json:"committed_at"`
 		VerifiedAt  int64 `json:"verified_at"`
 		ExecutedAt  int64 `json:"executed_at"`
-		AssetAId    int64 `json:"asset_a_id"`
-		AssetBId    int64 `json:"asset_b_id"`
 	}
 )
 
@@ -416,7 +410,7 @@ type (
 )
 service app-api {
 	@handler GetTxs
-	get /api/v1/txs (ReqGetAll) returns (Txs)
+	get /api/v1/txs (ReqGetRange) returns (Txs)
 	
 	@handler GetBlockTxs
 	get /api/v1/blockTxs (ReqGetBlockTxs) returns (Txs)
@@ -428,7 +422,7 @@ service app-api {
 	get /api/v1/tx (ReqGetTx) returns (EnrichedTx)
 	
 	@handler GetMempoolTxs
-	get /api/v1/mempoolTxs (ReqGetAll) returns (MempoolTxs)
+	get /api/v1/mempoolTxs (ReqGetRange) returns (MempoolTxs)
 	
 	@handler GetAccountMempoolTxs
 	get /api/v1/accountMempoolTxs (ReqGetAccountMempoolTxs) returns (MempoolTxs)

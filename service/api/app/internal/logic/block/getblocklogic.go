@@ -39,7 +39,7 @@ func (l *GetBlockLogic) GetBlock(req *types.ReqGetBlock) (resp *types.Block, err
 			return nil, errorcode.AppErrInvalidParam.RefineError("invalid value for block height")
 		}
 		block, err = l.svcCtx.MemCache.GetBlockByHeightWithFallback(blockHeight, func() (interface{}, error) {
-			return l.svcCtx.BlockModel.GetBlockByBlockHeight(blockHeight)
+			return l.svcCtx.BlockModel.GetBlockByHeight(blockHeight)
 		})
 	case "commitment":
 		block, err = l.svcCtx.MemCache.GetBlockByCommitmentWithFallback(req.Value, func() (interface{}, error) {
@@ -50,8 +50,8 @@ func (l *GetBlockLogic) GetBlock(req *types.ReqGetBlock) (resp *types.Block, err
 	}
 
 	resp = &types.Block{
-		BlockCommitment:                 block.BlockCommitment,
-		BlockHeight:                     block.BlockHeight,
+		Commitment:                      block.BlockCommitment,
+		Height:                          block.BlockHeight,
 		StateRoot:                       block.StateRoot,
 		PriorityOperations:              block.PriorityOperations,
 		PendingOnChainOperationsHash:    block.PendingOnChainOperationsHash,
@@ -60,7 +60,7 @@ func (l *GetBlockLogic) GetBlock(req *types.ReqGetBlock) (resp *types.Block, err
 		CommittedAt:                     block.CommittedAt,
 		VerifiedTxHash:                  block.VerifiedTxHash,
 		VerifiedAt:                      block.VerifiedAt,
-		BlockStatus:                     block.BlockStatus,
+		Status:                          block.BlockStatus,
 	}
 	for _, t := range block.Txs {
 		tx := utils.DbTx2Tx(t)

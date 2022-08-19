@@ -25,7 +25,7 @@ func NewGetTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTxsLogi
 	}
 }
 
-func (l *GetTxsLogic) GetTxs(req *types.ReqGetAll) (resp *types.Txs, err error) {
+func (l *GetTxsLogic) GetTxs(req *types.ReqGetRange) (resp *types.Txs, err error) {
 	total, err := l.svcCtx.MemCache.GetTxTotalCountWithFallback(func() (interface{}, error) {
 		return l.svcCtx.TxModel.GetTxsTotalCount()
 	})

@@ -42,11 +42,11 @@ func main() {
 		nftTree           bsmt.SparseMerkleTree
 	)
 	// get latest account
-	h, err := ctx.BlockModel.GetCurrentBlockHeight()
+	h, err := ctx.BlockModel.GetCurrentHeight()
 	if err != nil {
 		panic(err)
 	}
-	latestVerifiedBlockNr, err := ctx.BlockModel.GetLatestVerifiedBlockHeight()
+	latestVerifiedBlockNr, err := ctx.BlockModel.GetLatestVerifiedHeight()
 	if err != nil {
 		panic(err)
 	}

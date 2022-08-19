@@ -31,7 +31,7 @@ func (l *SearchLogic) Search(req *types.ReqSearch) (*types.Search, error) {
 	resp := &types.Search{}
 	blockHeight, err := strconv.ParseInt(req.Keyword, 10, 64)
 	if err == nil {
-		if _, err = l.svcCtx.BlockModel.GetBlockByBlockHeight(blockHeight); err != nil {
+		if _, err = l.svcCtx.BlockModel.GetBlockByHeight(blockHeight); err != nil {
 			if err == errorcode.DbErrNotFound {
 				return nil, errorcode.AppErrNotFound
 			}
@@ -57,7 +57,7 @@ func (l *SearchLogic) Search(req *types.ReqSearch) (*types.Search, error) {
 		return resp, nil
 	}
 
-	if _, err = l.svcCtx.TxModel.GetTxByTxHash(req.Keyword); err == nil {
+	if _, err = l.svcCtx.TxModel.GetTxByHash(req.Keyword); err == nil {
 		resp.DataType = util.TypeTxType
 		return resp, nil
 	}

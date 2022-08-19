@@ -24,7 +24,7 @@ func NewGetMempoolTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 		svcCtx: svcCtx,
 	}
 }
-func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetAll) (*types.MempoolTxs, error) {
+func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetRange) (*types.MempoolTxs, error) {
 	total, err := l.svcCtx.MempoolModel.GetMempoolTxsTotalCount()
 	if err != nil {
 		if err != errorcode.DbErrNotFound {

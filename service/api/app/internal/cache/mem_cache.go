@@ -90,7 +90,7 @@ func (m *MemCache) GetAccountIndexByName(accountName string) (int64, error) {
 	if found {
 		return index.(int64), nil
 	}
-	account, err := m.accountModel.GetAccountByAccountName(accountName)
+	account, err := m.accountModel.GetAccountByName(accountName)
 	if err != nil {
 		return 0, err
 	}
@@ -116,7 +116,7 @@ func (m *MemCache) GetAccountNameByIndex(accountIndex int64) (string, error) {
 	if found {
 		return name.(string), nil
 	}
-	account, err := m.accountModel.GetAccountByAccountIndex(accountIndex)
+	account, err := m.accountModel.GetAccountByIndex(accountIndex)
 	if err != nil {
 		return "", err
 	}
@@ -129,7 +129,7 @@ func (m *MemCache) GetAccountPkByIndex(accountIndex int64) (string, error) {
 	if found {
 		return pk.(string), nil
 	}
-	account, err := m.accountModel.GetAccountByAccountIndex(accountIndex)
+	account, err := m.accountModel.GetAccountByIndex(accountIndex)
 	if err != nil {
 		return "", err
 	}
@@ -254,7 +254,7 @@ func (m *MemCache) GetAssetNameById(assetId int64) (string, error) {
 	if found {
 		return name.(string), nil
 	}
-	asset, err := m.assetModel.GetAssetByAssetId(assetId)
+	asset, err := m.assetModel.GetAssetById(assetId)
 	if err != nil {
 		return "", err
 	}

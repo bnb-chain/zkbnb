@@ -109,7 +109,7 @@ func (s *atomicMatchTxSender) SendTx(rawTxInfo string) (txId string, err error) 
 
 	// check buyer and seller
 	_, err = s.svcCtx.MemCache.GetAccountWithFallback(txInfo.BuyOffer.AccountIndex, func() (interface{}, error) {
-		return s.svcCtx.AccountModel.GetAccountByAccountIndex(txInfo.BuyOffer.AccountIndex)
+		return s.svcCtx.AccountModel.GetAccountByIndex(txInfo.BuyOffer.AccountIndex)
 	})
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
@@ -120,7 +120,7 @@ func (s *atomicMatchTxSender) SendTx(rawTxInfo string) (txId string, err error) 
 	}
 
 	_, err = s.svcCtx.MemCache.GetAccountWithFallback(txInfo.SellOffer.AccountIndex, func() (interface{}, error) {
-		return s.svcCtx.AccountModel.GetAccountByAccountIndex(txInfo.SellOffer.AccountIndex)
+		return s.svcCtx.AccountModel.GetAccountByIndex(txInfo.SellOffer.AccountIndex)
 	})
 	if err != nil {
 		if err == errorcode.DbErrNotFound {

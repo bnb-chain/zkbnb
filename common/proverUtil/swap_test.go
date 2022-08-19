@@ -47,7 +47,7 @@ func TestConstructSwapCryptoTxFirst(t *testing.T) {
 		Driver: treedb.MemoryDB,
 		TreeDB: memory.NewMemoryDB(),
 	}
-	txInfo, err := txModel.GetTxByTxId(19)
+	txInfo, err := txModel.GetTxById(19)
 	if err != nil {
 		t.Fatal(err)
 	}
