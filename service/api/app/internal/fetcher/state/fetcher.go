@@ -7,7 +7,6 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/redis"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
-	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
@@ -36,16 +35,11 @@ func NftKeyByIndex(nftIndex int64) string {
 	return NftKeyPrefix + fmt.Sprintf("%d", nftIndex)
 }
 
-func OfferIdKeyByIndex(nftIndex int64) string {
-	return OfferIdKeyPrefix + fmt.Sprintf("%d", nftIndex)
-}
-
 // Fetcher will fetch the latest states (account,nft,liquidity) from redis, which is written by committer;
 // and if the required data cannot be found then database will be used.
 type Fetcher interface {
 	GetLatestAccount(accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error)
 	GetLatestLiquidity(pairIndex int64) (liquidityInfo *commonAsset.LiquidityInfo, err error)
-	GetLatestOfferId(accountIndex int64) (offerId int64, err error)
 	GetLatestNft(nftIndex int64) (*commonAsset.NftInfo, error)
 	GetPendingNonce(accountIndex int64) (nonce int64, err error)
 }
@@ -55,8 +49,7 @@ func NewFetcher(redisConn *redis.Redis,
 	mempoolDetailModel mempool.MempoolTxDetailModel,
 	accountModel account.AccountModel,
 	liquidityModel liquidity.LiquidityModel,
-	nftModel nft.L2NftModel,
-	offerModel nft.OfferModel) Fetcher {
+	nftModel nft.L2NftModel) Fetcher {
 	return &fetcher{
 		redisConnection:      redisConn,
 		mempoolModel:         mempoolModel,
@@ -64,7 +57,6 @@ func NewFetcher(redisConn *redis.Redis,
 		accountModel:         accountModel,
 		liquidityModel:       liquidityModel,
 		nftModel:             nftModel,
-		offerModel:           offerModel,
 	}
 }
 
@@ -74,7 +66,6 @@ type fetcher struct {
 	mempoolTxDetailModel mempool.MempoolTxDetailModel
 	accountModel         account.AccountModel
 	liquidityModel       liquidity.LiquidityModel
-	offerModel           nft.OfferModel
 	nftModel             nft.L2NftModel
 }
 
@@ -154,28 +145,6 @@ func (f *fetcher) GetLatestNft(nftIndex int64) (*commonAsset.NftInfo, error) {
 		nft.NftL1Address,
 		nft.CreatorTreasuryRate,
 		nft.CollectionId), nil
-}
-
-func (f *fetcher) GetLatestOfferId(accountIndex int64) (int64, error) {
-	lastOfferId := int64(0)
-
-	redisOfferId, err := f.redisConnection.Get(OfferIdKeyByIndex(accountIndex))
-	if err == nil && redisOfferId != "" {
-		err = json.Unmarshal([]byte(redisOfferId), &lastOfferId)
-		if err != nil {
-			return -1, err
-		}
-	} else {
-		lastOfferId, err = f.offerModel.GetLatestOfferId(accountIndex)
-		if err != nil {
-			if err == errorcode.DbErrNotFound {
-				return 0, nil
-			}
-			return -1, err
-		}
-	}
-
-	return lastOfferId, nil
 }
 
 func (f *fetcher) GetPendingNonce(accountIndex int64) (nonce int64, err error) {

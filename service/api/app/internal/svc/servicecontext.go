@@ -92,6 +92,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 
 		PriceFetcher: price.NewFetcher(memCache, c.CoinMarketCap.Url, c.CoinMarketCap.Token),
 		StateFetcher: state.NewFetcher(redisConn, mempoolModel, mempoolDetailModel, accountModel,
-			liquidityModel, nftModel, offerModel),
+			liquidityModel, nftModel),
 	}
 }

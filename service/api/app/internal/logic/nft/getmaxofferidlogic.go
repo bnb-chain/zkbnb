@@ -5,7 +5,9 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/errorcode"
+	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
@@ -25,14 +27,43 @@ func NewGetMaxOfferIdLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 }
 
 func (l *GetMaxOfferIdLogic) GetMaxOfferId(req *types.ReqGetMaxOfferId) (resp *types.MaxOfferId, err error) {
-	nftIndex, err := l.svcCtx.StateFetcher.GetLatestOfferId(int64(req.AccountIndex))
+	account, err := l.svcCtx.StateFetcher.GetLatestAccount(int64(req.AccountIndex))
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}
 		return nil, errorcode.AppErrInternal
 	}
+
+	maxAssetId, err := l.svcCtx.AssetModel.GetMaxId()
+	if err != nil {
+		return nil, errorcode.AppErrInternal
+	}
+
+	maxOfferId := int64(0)
+	var maxOfferIdAsset *commonAsset.AccountAsset
+	for _, asset := range account.AssetInfo {
+		if asset.AssetId > maxAssetId {
+			if maxOfferIdAsset == nil || asset.AssetId > maxOfferIdAsset.AssetId {
+				maxOfferIdAsset = asset
+			}
+		}
+	}
+
+	if maxOfferIdAsset != nil {
+		offerCancelOrFinalized := int64(0)
+		bitLen := maxOfferIdAsset.OfferCanceledOrFinalized.BitLen()
+		for i := bitLen; i >= 0; i-- {
+			if maxOfferIdAsset.OfferCanceledOrFinalized.Bit(i) == 1 {
+				offerCancelOrFinalized = int64(i)
+				break
+			}
+		}
+		maxOfferId = maxOfferIdAsset.AssetId * txVerification.OfferPerAsset
+		maxOfferId = maxOfferId + offerCancelOrFinalized
+	}
+
 	return &types.MaxOfferId{
-		OfferId: uint64(nftIndex),
+		OfferId: uint64(maxOfferId),
 	}, nil
 }
