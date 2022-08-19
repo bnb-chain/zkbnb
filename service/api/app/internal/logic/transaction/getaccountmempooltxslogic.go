@@ -29,14 +29,14 @@ func NewGetAccountMempoolTxsLogic(ctx context.Context, svcCtx *svc.ServiceContex
 func (l *GetAccountMempoolTxsLogic) GetAccountMempoolTxs(req *types.ReqGetAccountMempoolTxs) (resp *types.MempoolTxs, err error) {
 	accountIndex := int64(0)
 	switch req.By {
-	case "account_index":
+	case queryByAccountIndex:
 		accountIndex, err = strconv.ParseInt(req.Value, 10, 64)
 		if err != nil {
 			return nil, errorcode.AppErrInvalidParam.RefineError("invalid value for account_index")
 		}
-	case "account_name":
+	case queryByAccountName:
 		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByName(req.Value)
-	case "account_pk":
+	case queryByAccountPk:
 		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByPk(req.Value)
 	default:
 		return nil, errorcode.AppErrInvalidParam.RefineError("param by should be account_index|account_name|account_pk")
