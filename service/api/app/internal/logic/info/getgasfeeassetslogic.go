@@ -33,12 +33,12 @@ func (l *GetGasFeeAssetsLogic) GetGasFeeAssets() (resp *types.GasFeeAssets, err 
 	resp.Assets = make([]types.Asset, 0)
 	for _, asset := range assets {
 		resp.Assets = append(resp.Assets, types.Asset{
-			AssetId:       asset.AssetId,
-			AssetName:     asset.AssetName,
-			AssetDecimals: asset.Decimals,
-			AssetSymbol:   asset.AssetSymbol,
-			AssetAddress:  asset.L1Address,
-			IsGasAsset:    asset.IsGasAsset,
+			Id:         asset.AssetId,
+			Name:       asset.AssetName,
+			Decimals:   asset.Decimals,
+			Symbol:     asset.AssetSymbol,
+			Address:    asset.L1Address,
+			IsGasAsset: asset.IsGasAsset,
 		})
 	}
 	return resp, nil

@@ -43,7 +43,7 @@ func (l *GetPairsLogic) GetPairs() (resp *types.Pairs, err error) {
 			return nil, errorcode.AppErrInternal
 		}
 		resp.Pairs = append(resp.Pairs, &types.Pair{
-			PairIndex:    uint32(asset.PairIndex),
+			Index:        uint32(asset.PairIndex),
 			AssetAId:     uint32(asset.AssetAId),
 			AssetAName:   assetA.AssetName,
 			AssetAAmount: asset.AssetA,

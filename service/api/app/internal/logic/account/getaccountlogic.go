@@ -63,11 +63,11 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 	}
 
 	resp = &types.Account{
-		AccountStatus: uint32(account.Status),
-		AccountName:   account.AccountName,
-		AccountPk:     account.PublicKey,
-		Nonce:         account.Nonce,
-		Assets:        make([]*types.AccountAsset, 0),
+		Status: uint32(account.Status),
+		Name:   account.AccountName,
+		Pk:     account.PublicKey,
+		Nonce:  account.Nonce,
+		Assets: make([]*types.AccountAsset, 0),
 	}
 	for _, asset := range account.AssetInfo {
 		if asset.AssetId > maxAssetId {
@@ -75,15 +75,15 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 		}
 		assetName, _ := l.svcCtx.MemCache.GetAssetNameById(asset.AssetId)
 		resp.Assets = append(resp.Assets, &types.AccountAsset{
-			AssetId:   uint32(asset.AssetId),
-			AssetName: assetName,
-			Balance:   asset.Balance.String(),
-			LpAmount:  asset.LpAmount.String(),
+			Id:       uint32(asset.AssetId),
+			Name:     assetName,
+			Balance:  asset.Balance.String(),
+			LpAmount: asset.LpAmount.String(),
 		})
 	}
 
 	sort.Slice(resp.Assets, func(i, j int) bool {
-		return resp.Assets[i].AssetId < resp.Assets[j].AssetId
+		return resp.Assets[i].Id < resp.Assets[j].Id
 	})
 
 	return resp, nil

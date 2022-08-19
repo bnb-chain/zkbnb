@@ -71,12 +71,12 @@ func (l *GetAccountNftsLogic) GetAccountNfts(req *types.ReqGetAccountNfts) (resp
 
 	for _, nftItem := range nftList {
 		resp.Nfts = append(resp.Nfts, &types.Nft{
-			NftIndex:            nftItem.NftIndex,
+			Index:               nftItem.NftIndex,
 			CreatorAccountIndex: nftItem.CreatorAccountIndex,
 			OwnerAccountIndex:   nftItem.OwnerAccountIndex,
-			NftContentHash:      nftItem.NftContentHash,
-			NftL1Address:        nftItem.NftL1Address,
-			NftL1TokenId:        nftItem.NftL1TokenId,
+			ContentHash:         nftItem.NftContentHash,
+			L1Address:           nftItem.NftL1Address,
+			L1TokenId:           nftItem.NftL1TokenId,
 			CreatorTreasuryRate: nftItem.CreatorTreasuryRate,
 			CollectionId:        nftItem.CollectionId,
 		})

@@ -61,25 +61,25 @@ func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo() (*types.Layer2BasicInfo, 
 	now := time.Now()
 	today := now.Round(24 * time.Hour).Add(-8 * time.Hour)
 
-	resp.TransactionCountYesterday, err = l.svcCtx.TxModel.GetTxsTotalCountBetween(today.Add(-24*time.Hour), today)
+	resp.YesterdayTransactionCount, err = l.svcCtx.TxModel.GetTxsTotalCountBetween(today.Add(-24*time.Hour), today)
 	if err != nil {
 		if err != errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrInternal
 		}
 	}
-	resp.TransactionCountToday, err = l.svcCtx.TxModel.GetTxsTotalCountBetween(today, now)
+	resp.TodayTransactionCount, err = l.svcCtx.TxModel.GetTxsTotalCountBetween(today, now)
 	if err != nil {
 		if err != errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrInternal
 		}
 	}
-	resp.DauYesterday, err = l.svcCtx.TxModel.GetDistinctAccountsCountBetween(today.Add(-24*time.Hour), today)
+	resp.YesterdayActiveUserCount, err = l.svcCtx.TxModel.GetDistinctAccountsCountBetween(today.Add(-24*time.Hour), today)
 	if err != nil {
 		if err != errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrInternal
 		}
 	}
-	resp.DauToday, err = l.svcCtx.TxModel.GetDistinctAccountsCountBetween(today, now)
+	resp.TodayActiveUserCount, err = l.svcCtx.TxModel.GetDistinctAccountsCountBetween(today, now)
 	if err != nil {
 		if err != errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrInternal

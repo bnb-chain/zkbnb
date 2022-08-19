@@ -31,25 +31,25 @@ type ReqGetRange {
 
 type (
 	AccountAsset {
-		AssetId   uint32 `json:"asset_id"`
-		AssetName string `json:"asset_name"`
-		Balance   string `json:"balance"`
-		LpAmount  string `json:"lp_amount"`
+		Id       uint32 `json:"id"`
+		Name     string `json:"name"`
+		Balance  string `json:"balance"`
+		LpAmount string `json:"lp_amount"`
 	}
 
 	Account {
-		AccountStatus uint32          `json:"account_status"`
-		AccountIndex  int64           `json:"account_index"`
-		AccountName   string          `json:"account_name"`
-		AccountPk     string          `json:"account_pk"`
-		Nonce         int64           `json:"nonce"`
-		Assets        []*AccountAsset `json:"assets"`
+		Status uint32          `json:"status"`
+		Index  int64           `json:"index"`
+		Name   string          `json:"ame"`
+		Pk     string          `json:"pk"`
+		Nonce  int64           `json:"nonce"`
+		Assets []*AccountAsset `json:"assets"`
 	}
 
 	SimpleAccount {
-		AccountIndex int64  `json:"account_index"`
-		AccountName  string `json:"account_name"`
-		AccountPk    string `json:"account_pk"`
+		Index int64  `json:"index"`
+		Name  string `json:"name"`
+		Pk    string `json:"pk"`
 	}
 
 	Accounts {
@@ -81,12 +81,12 @@ service app-api {
 
 type (
 	Asset {
-		AssetId       uint32 `json:"asset_id"`
-		AssetName     string `json:"asset_name"`
-		AssetDecimals uint32 `json:"asset_decimals"`
-		AssetSymbol   string `json:"asset_symbol"`
-		AssetAddress  string `json:"asset_address"`
-		IsGasAsset    uint32 `json:"is_gas_asset"`
+		Id         uint32 `json:"asset_id"`
+		Name       string `json:"asset_name"`
+		Decimals   uint32 `json:"asset_decimals"`
+		Symbol     string `json:"asset_symbol"`
+		Address    string `json:"asset_address"`
+		IsGasAsset uint32 `json:"is_gas_asset"`
 	}
 
 	Assets {
@@ -165,10 +165,10 @@ type (
 		BlockCommitted            int64             `json:"block_committed"`
 		BlockVerified             int64             `json:"block_verified"`
 		TotalTransactionCount     int64             `json:"total_transaction_count"`
-		TransactionCountYesterday int64             `json:"transaction_count_yesterday"`
-		TransactionCountToday     int64             `json:"transaction_count_today"`
-		DauYesterday              int64             `json:"dau_yesterday"`
-		DauToday                  int64             `json:"dau_today"`
+		YesterdayTransactionCount int64             `json:"yesterday_transaction_count"`
+		TodayTransactionCount     int64             `json:"today_transaction_count"`
+		YesterdayActiveUserCount  int64             `json:"yesterday_active_user_count"`
+		TodayActiveUserCount      int64             `json:"today_active_user_Count"`
 		ContractAddresses         []ContractAddress `json:"contract_addresses"`
 	}
 
@@ -260,7 +260,7 @@ type (
 	}
 
 	Pair {
-		PairIndex     uint32 `json:"pair_index"`
+		Index         uint32 `json:"index"`
 		AssetAId      uint32 `json:"asset_a_id"`
 		AssetAName    string `json:"asset_a_name"`
 		AssetAAmount  string `json:"asset_a_amount"`
@@ -299,7 +299,7 @@ type (
 	}
 
 	ReqGetPair {
-		PairIndex uint32 `form:"pair_index"`
+		Index uint32 `form:"index"`
 	}
 )
 
@@ -388,7 +388,7 @@ type (
 	}
 
 	ReqGetTx {
-		TxHash string `form:"tx_hash"`
+		Hash string `form:"hash"`
 	}
 
 	ReqSendTx {
@@ -443,12 +443,12 @@ type (
 	}
 
 	Nft {
-		NftIndex            int64  `json:"nft_index"`
+		Index               int64  `json:"index"`
 		CreatorAccountIndex int64  `json:"creator_account_index"`
 		OwnerAccountIndex   int64  `json:"owner_account_index"`
-		NftContentHash      string `json:"nft_content_hash"`
-		NftL1Address        string `json:"nft_l1_address"`
-		NftL1TokenId        string `json:"nft_l1_token_id"`
+		ContentHash         string `json:"content_hash"`
+		L1Address           string `json:"l1_address"`
+		L1TokenId           string `json:"l1_token_id"`
 		CreatorTreasuryRate int64  `json:"creator_treasury_rate"`
 		CollectionId        int64  `json:"collection_id"`
 	}

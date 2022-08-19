@@ -27,8 +27,8 @@ func NewGetTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetTxLogic 
 
 func (l *GetTxLogic) GetTx(req *types.ReqGetTx) (resp *types.EnrichedTx, err error) {
 	resp = &types.EnrichedTx{}
-	tx, err := l.svcCtx.MemCache.GetTxByHashWithFallback(req.TxHash, func() (interface{}, error) {
-		return l.svcCtx.TxModel.GetTxByHash(req.TxHash)
+	tx, err := l.svcCtx.MemCache.GetTxByHashWithFallback(req.Hash, func() (interface{}, error) {
+		return l.svcCtx.TxModel.GetTxByHash(req.Hash)
 	})
 	if err == nil {
 		resp.Tx = *utils.DbTx2Tx(tx)
@@ -46,7 +46,7 @@ func (l *GetTxLogic) GetTx(req *types.ReqGetTx) (resp *types.EnrichedTx, err err
 		if err != errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrInternal
 		}
-		memppolTx, err := l.svcCtx.MempoolModel.GetMempoolTxByTxHash(req.TxHash)
+		memppolTx, err := l.svcCtx.MempoolModel.GetMempoolTxByTxHash(req.Hash)
 		if err != nil {
 			if err == errorcode.DbErrNotFound {
 				return nil, errorcode.AppErrNotFound

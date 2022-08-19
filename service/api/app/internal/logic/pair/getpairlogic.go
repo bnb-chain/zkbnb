@@ -26,13 +26,13 @@ func NewGetPairLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPairLo
 }
 
 func (l *GetPairLogic) GetPair(req *types.ReqGetPair) (resp *types.Pair, err error) {
-	if !utils.ValidatePairIndex(req.PairIndex) {
+	if !utils.ValidatePairIndex(req.Index) {
 		return nil, errorcode.AppErrInvalidParam.RefineError("invalid PairIndex")
 	}
 
-	pair, err := l.svcCtx.StateFetcher.GetLatestLiquidity(int64(req.PairIndex))
+	pair, err := l.svcCtx.StateFetcher.GetLatestLiquidity(int64(req.Index))
 	if err != nil {
-		logx.Errorf("fail to get pair info: %d, err: %s", req.PairIndex, err.Error())
+		logx.Errorf("fail to get pair info: %d, err: %s", req.Index, err.Error())
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
 		}

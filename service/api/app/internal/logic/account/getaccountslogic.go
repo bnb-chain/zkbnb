@@ -47,9 +47,9 @@ func (l *GetAccountsLogic) GetAccounts(req *types.ReqGetRange) (resp *types.Acco
 	}
 	for _, a := range accounts {
 		resp.Accounts = append(resp.Accounts, &types.SimpleAccount{
-			AccountIndex: a.AccountIndex,
-			AccountName:  a.AccountName,
-			AccountPk:    a.PublicKey,
+			Index: a.AccountIndex,
+			Name:  a.AccountName,
+			Pk:    a.PublicKey,
 		})
 	}
 	return resp, nil
