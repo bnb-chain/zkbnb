@@ -38,6 +38,7 @@ type (
 		GetAssetBySymbol(symbol string) (asset *Asset, err error)
 		GetAssetByAddress(address string) (asset *Asset, err error)
 		GetGasAssets() (assets []*Asset, err error)
+		GetMaxId() (max int64, err error)
 	}
 
 	defaultAssetModel struct {
@@ -157,4 +158,15 @@ func (m *defaultAssetModel) GetGasAssets() (assets []*Asset, err error) {
 		return nil, errorcode.DbErrNotFound
 	}
 	return assets, nil
+}
+
+func (m *defaultAssetModel) GetMaxId() (max int64, err error) {
+	dbTx := m.DB.Table(m.table).Select("id").Order("id desc").Limit(1).Find(&max)
+	if dbTx.Error != nil {
+		logx.Errorf("get max asset id error, err: %s", dbTx.Error.Error())
+		return 0, errorcode.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return 0, errorcode.DbErrNotFound
+	}
+	return max, nil
 }

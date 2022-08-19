@@ -13,6 +13,7 @@ func DbTx2Tx(tx *tx.Tx) *types.Tx {
 		GasFee:        tx.GasFee,
 		GasFeeAssetId: tx.GasFeeAssetId,
 		Status:        tx.TxStatus,
+		Index:         tx.TxIndex,
 		BlockHeight:   tx.BlockHeight,
 		StateRoot:     tx.StateRoot,
 		NftIndex:      tx.NftIndex,

@@ -329,6 +329,7 @@ type (
 		Amount        string `json:"amount"`
 		Info          string `json:"info"`
 		Status        int64  `json:"status"`
+		Index         int64  `json:"index"`
 		GasFeeAssetId int64  `json:"gas_fee_asset_id"`
 		GasFee        string `json:"gas_fee"`
 		NftIndex      int64  `json:"nft_index"`

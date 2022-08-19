@@ -2,6 +2,7 @@ package account
 
 import (
 	"context"
+	"sort"
 	"strconv"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -56,6 +57,11 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 		return nil, errorcode.AppErrInternal
 	}
 
+	maxAssetId, err := l.svcCtx.AssetModel.GetMaxId()
+	if err != nil {
+		return nil, errorcode.AppErrInternal
+	}
+
 	resp = &types.Account{
 		AccountStatus: uint32(account.Status),
 		AccountName:   account.AccountName,
@@ -64,6 +70,9 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 		Assets:        make([]*types.AccountAsset, 0),
 	}
 	for _, asset := range account.AssetInfo {
+		if asset.AssetId > maxAssetId {
+			continue //it is used for offer related
+		}
 		assetName, _ := l.svcCtx.MemCache.GetAssetNameById(asset.AssetId)
 		resp.Assets = append(resp.Assets, &types.AccountAsset{
 			AssetId:   uint32(asset.AssetId),
@@ -72,6 +81,10 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 			LpAmount:  asset.LpAmount.String(),
 		})
 	}
+
+	sort.Slice(resp.Assets, func(i, j int) bool {
+		return resp.Assets[i].AssetId < resp.Assets[j].AssetId
+	})
 
 	return resp, nil
 }
