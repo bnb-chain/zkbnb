@@ -383,7 +383,7 @@ type (
 		By     string `form:"by,options=account_index|account_name|account_pk"`
 		Value  string `form:"value"`
 		Offset uint16 `form:"offset,range=[0:100000]"`
-		Limit  uint16 `form:"limit,range=[1:50]"`
+		Limit  uint16 `form:"limit,range=[1:100]"`
 	}
 
 	ReqGetTx {
@@ -468,7 +468,7 @@ type (
 		By     string `form:"by,options=account_index|account_name|account_pk"`
 		Value  string `form:"value"`
 		Offset uint16 `form:"offset,range=[0:100000]"`
-		Limit  uint16 `form:"limit,range=[1:50]"`
+		Limit  uint16 `form:"limit,range=[1:100]"`
 	}
 )
 
