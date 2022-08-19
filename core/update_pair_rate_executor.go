@@ -6,6 +6,8 @@ import (
 	"errors"
 	"math/big"
 
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
@@ -18,32 +20,35 @@ import (
 type UpdatePairRateExecutor struct {
 	BaseExecutor
 
-	txInfo *commonTx.UpdatePairRateTxInfo
+	txInfo *legendTxTypes.UpdatePairRateTxInfo
 }
 
-func NewUpdatePairRateExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
+func NewUpdatePairRateExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+	txInfo, err := commonTx.ParseUpdatePairRateTxInfo(tx.TxInfo)
+	if err != nil {
+		logx.Errorf("parse update pair rate tx failed: %s", err.Error())
+		return nil, errors.New("invalid tx info")
+	}
+
 	return &UpdatePairRateExecutor{
 		BaseExecutor: BaseExecutor{
-			bc: bc,
-			tx: tx,
+			bc:      bc,
+			tx:      tx,
+			iTxInfo: txInfo,
 		},
-	}
+		txInfo: txInfo,
+	}, nil
 }
 
 func (e *UpdatePairRateExecutor) Prepare() error {
-	txInfo, err := commonTx.ParseUpdatePairRateTxInfo(e.tx.TxInfo)
-	if err != nil {
-		logx.Errorf("parse update pair rate tx failed: %s", err.Error())
-		return errors.New("invalid tx info")
-	}
+	txInfo := e.txInfo
 
-	err = e.bc.prepareLiquidity(txInfo.PairIndex)
+	err := e.bc.prepareLiquidity(txInfo.PairIndex)
 	if err != nil {
 		logx.Errorf("prepare liquidity failed: %s", err.Error())
 		return err
 	}
 
-	e.txInfo = txInfo
 	return nil
 }
 

@@ -22,51 +22,46 @@ type WithdrawExecutor struct {
 	txInfo *legendTxTypes.WithdrawTxInfo
 }
 
-func NewWithdrawExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
+func NewWithdrawExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+	txInfo, err := commonTx.ParseWithdrawTxInfo(tx.TxInfo)
+	if err != nil {
+		logx.Errorf("parse transfer tx failed: %s", err.Error())
+		return nil, errors.New("invalid tx info")
+	}
+
 	return &WithdrawExecutor{
 		BaseExecutor: BaseExecutor{
-			bc: bc,
-			tx: tx,
+			bc:      bc,
+			tx:      tx,
+			iTxInfo: txInfo,
 		},
-	}
+		txInfo: txInfo,
+	}, nil
 }
 
 func (e *WithdrawExecutor) Prepare() error {
-	txInfo, err := commonTx.ParseWithdrawTxInfo(e.tx.TxInfo)
-	if err != nil {
-		logx.Errorf("parse transfer tx failed: %s", err.Error())
-		return errors.New("invalid tx info")
-	}
+	txInfo := e.txInfo
 
 	accounts := []int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex}
 	assets := []int64{txInfo.AssetId, txInfo.GasFeeAssetId}
-	err = e.bc.prepareAccountsAndAssets(accounts, assets)
+	err := e.bc.prepareAccountsAndAssets(accounts, assets)
 	if err != nil {
 		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
 		return err
 	}
 
-	e.txInfo = txInfo
 	return nil
 }
 
 func (e *WithdrawExecutor) VerifyInputs() error {
 	txInfo := e.txInfo
 
-	err := txInfo.Validate()
+	err := e.BaseExecutor.VerifyInputs()
 	if err != nil {
 		return err
 	}
 
-	if txInfo.ExpiredAt < e.bc.currentBlock.CreatedAt.UnixMilli() {
-		return errors.New("tx expired")
-	}
-
 	fromAccount := e.bc.accountMap[txInfo.FromAccountIndex]
-	if txInfo.Nonce != fromAccount.Nonce {
-		return errors.New("invalid nonce")
-	}
-
 	if txInfo.GasFeeAssetId != txInfo.AssetId {
 		if fromAccount.AssetInfo[txInfo.AssetId].Balance.Cmp(txInfo.AssetAmount) < 0 {
 			return errors.New("invalid asset amount")
@@ -79,11 +74,6 @@ func (e *WithdrawExecutor) VerifyInputs() error {
 		if fromAccount.AssetInfo[txInfo.AssetId].Balance.Cmp(deltaBalance) < 0 {
 			return errors.New("invalid asset amount")
 		}
-	}
-
-	err = txInfo.VerifySignature(fromAccount.PublicKey)
-	if err != nil {
-		return err
 	}
 
 	return nil

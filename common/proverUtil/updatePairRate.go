@@ -19,6 +19,7 @@ package proverUtil
 
 import (
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonTx"
@@ -40,7 +41,7 @@ func (w *WitnessHelper) constructUpdatePairRateCryptoTx(cryptoTx *CryptoTx, oTx 
 	return cryptoTx, nil
 }
 
-func ToCryptoUpdatePairRateTx(txInfo *commonTx.UpdatePairRateTxInfo) (info *CryptoUpdatePairRateTx, err error) {
+func ToCryptoUpdatePairRateTx(txInfo *legendTxTypes.UpdatePairRateTxInfo) (info *CryptoUpdatePairRateTx, err error) {
 	info = &CryptoUpdatePairRateTx{
 		PairIndex:            txInfo.PairIndex,
 		FeeRate:              txInfo.FeeRate,

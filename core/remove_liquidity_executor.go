@@ -21,27 +21,32 @@ import (
 type RemoveLiquidityExecutor struct {
 	BaseExecutor
 
+	txInfo *legendTxTypes.RemoveLiquidityTxInfo
+
 	newPoolInfo *commonAsset.LiquidityInfo
-	txInfo      *legendTxTypes.RemoveLiquidityTxInfo
 }
 
-func NewRemoveLiquidityExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
+func NewRemoveLiquidityExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+	txInfo, err := commonTx.ParseRemoveLiquidityTxInfo(tx.TxInfo)
+	if err != nil {
+		logx.Errorf("parse transfer tx failed: %s", err.Error())
+		return nil, errors.New("invalid tx info")
+	}
+
 	return &RemoveLiquidityExecutor{
 		BaseExecutor: BaseExecutor{
-			bc: bc,
-			tx: tx,
+			bc:      bc,
+			tx:      tx,
+			iTxInfo: txInfo,
 		},
-	}
+		txInfo: txInfo,
+	}, nil
 }
 
 func (e *RemoveLiquidityExecutor) Prepare() error {
-	txInfo, err := commonTx.ParseRemoveLiquidityTxInfo(e.tx.TxInfo)
-	if err != nil {
-		logx.Errorf("parse transfer tx failed: %s", err.Error())
-		return errors.New("invalid tx info")
-	}
+	txInfo := e.txInfo
 
-	err = e.bc.prepareLiquidity(txInfo.PairIndex)
+	err := e.bc.prepareLiquidity(txInfo.PairIndex)
 	if err != nil {
 		logx.Errorf("prepare liquidity failed: %s", err.Error())
 		return err
@@ -69,20 +74,12 @@ func (e *RemoveLiquidityExecutor) VerifyInputs() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	err := txInfo.Validate()
+	err := e.BaseExecutor.VerifyInputs()
 	if err != nil {
 		return err
 	}
 
 	fromAccount := bc.accountMap[txInfo.FromAccountIndex]
-	if txInfo.ExpiredAt < bc.currentBlock.CreatedAt.UnixMilli() {
-		return errors.New("expired tx")
-	}
-
-	if txInfo.Nonce != fromAccount.Nonce {
-		return errors.New("invalid nonce")
-	}
-
 	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
 		return errors.New("invalid gas asset amount")
 	}
@@ -93,16 +90,10 @@ func (e *RemoveLiquidityExecutor) VerifyInputs() error {
 		logx.Errorf("construct liquidity info error, err: ", err.Error())
 		return err
 	}
-
 	if liquidityInfo.AssetA == nil || liquidityInfo.AssetA.Cmp(big.NewInt(0)) == 0 ||
 		liquidityInfo.AssetB == nil || liquidityInfo.AssetB.Cmp(big.NewInt(0)) == 0 ||
 		liquidityInfo.LpAmount == nil || liquidityInfo.LpAmount.Cmp(big.NewInt(0)) == 0 {
 		return errors.New("invalid pool liquidity")
-	}
-
-	err = txInfo.VerifySignature(fromAccount.PublicKey)
-	if err != nil {
-		return err
 	}
 
 	return nil

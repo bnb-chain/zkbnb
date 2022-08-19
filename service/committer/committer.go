@@ -40,7 +40,7 @@ type Committer struct {
 
 	bc *core.BlockChain
 
-	memPoolModel       mempool.MemPoolModel
+	memPoolModel       mempool.MempoolModel
 	executedMemPoolTxs []*mempool.MempoolTx
 }
 
@@ -145,11 +145,11 @@ func (c *Committer) Run() {
 
 func (c *Committer) restoreExecutedTxs() (*block.Block, error) {
 	bc := c.bc
-	curHeight, err := bc.BlockModel.GetCurrentBlockHeight()
+	curHeight, err := bc.BlockModel.GetCurrentHeight()
 	if err != nil {
 		return nil, err
 	}
-	curBlock, err := bc.BlockModel.GetBlockByBlockHeight(curHeight)
+	curBlock, err := bc.BlockModel.GetBlockByHeight(curHeight)
 	if err != nil {
 		return nil, err
 	}

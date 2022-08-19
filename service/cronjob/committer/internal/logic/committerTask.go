@@ -38,7 +38,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/block"
-	"github.com/bnb-chain/zkbas/common/model/blockForCommit"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/tx"
@@ -691,8 +690,8 @@ func CommitterTask(
 		// construct block
 		createAtTime := time.UnixMilli(createdAt)
 		var (
-			oBlock          *block.Block
-			oBlockForCommit *blockForCommit.BlockForCommit
+			oBlock *block.Block
+			//oBlockForCommit *blockForCommit.BlockForCommit
 		)
 		if len(txs) != 0 {
 			oBlock = &Block{
@@ -716,19 +715,19 @@ func CommitterTask(
 				}
 				oBlock.PendingOnChainOperationsPubData = string(onChainOperationsPubDataBytes)
 			}
-			offsetBytes, err := json.Marshal(pubDataOffset)
-			if err != nil {
-				logx.Errorf("[CommitterTask] unable to marshal pub data: %s", err.Error())
-				return err
-			}
-			oBlockForCommit = &BlockForCommit{
-				BlockSize:         uint16(realTxsAmountPerBlock),
-				BlockHeight:       currentBlockHeight,
-				StateRoot:         finalStateRoot,
-				PublicData:        common.Bytes2Hex(pubData),
-				Timestamp:         createdAt,
-				PublicDataOffsets: string(offsetBytes),
-			}
+			//offsetBytes, err := json.Marshal(pubDataOffset)
+			//if err != nil {
+			//	logx.Errorf("[CommitterTask] unable to marshal pub data: %s", err.Error())
+			//	return err
+			//}
+			//oBlockForCommit = &BlockForCommit{
+			//	BlockSize:         uint16(realTxsAmountPerBlock),
+			//	BlockHeight:       currentBlockHeight,
+			//	StateRoot:         finalStateRoot,
+			//	PublicData:        common.Bytes2Hex(pubData),
+			//	Timestamp:         createdAt,
+			//	PublicDataOffsets: string(offsetBytes),
+			//}
 		}
 
 		err = tree.CommitTrees(finalityBlockNr, accountTree, accountAssetTrees, liquidityTree, nftTree)
@@ -739,19 +738,19 @@ func CommitterTask(
 
 		// create block for committer
 		// create block, history, update mempool txs, create new l1 amount infos
-		err = ctx.BlockModel.CreateBlockForCommitter(
-			oBlock,
-			oBlockForCommit,
-			pendingMempoolTxs,
-			pendingDeleteMempoolTxs,
-			pendingUpdateAccounts,
-			pendingNewAccountHistory,
-			pendingUpdateLiquidity,
-			pendingNewLiquidityHistory,
-			pendingUpdateNft,
-			pendingNewNftHistory,
-			pendingNewNftWithdrawHistory,
-		)
+		//err = ctx.BlockModel.CreateBlockForCommitter(
+		//	oBlock,
+		//	oBlockForCommit,
+		//	pendingMempoolTxs,
+		//	pendingDeleteMempoolTxs,
+		//	pendingUpdateAccounts,
+		//	pendingNewAccountHistory,
+		//	pendingUpdateLiquidity,
+		//	pendingNewLiquidityHistory,
+		//	pendingUpdateNft,
+		//	pendingNewNftHistory,
+		//	pendingNewNftWithdrawHistory,
+		//)
 		if err != nil {
 			logx.Errorf("[CommitterTask] unable to create block for committer: %s", err.Error())
 			// rollback trees

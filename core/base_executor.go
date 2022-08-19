@@ -1,17 +1,15 @@
 package core
 
-import "github.com/bnb-chain/zkbas/common/model/tx"
+import (
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+	"github.com/bnb-chain/zkbas/common/commonConstant"
+	"github.com/bnb-chain/zkbas/common/model/tx"
+)
 
 type BaseExecutor struct {
-	bc *BlockChain
-	tx *tx.Tx
-}
-
-func NewBaseExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
-	return &BaseExecutor{
-		bc: bc,
-		tx: tx,
-	}
+	bc      *BlockChain
+	tx      *tx.Tx
+	iTxInfo legendTxTypes.TxInfo
 }
 
 func (e *BaseExecutor) Prepare() error {
@@ -19,6 +17,30 @@ func (e *BaseExecutor) Prepare() error {
 }
 
 func (e *BaseExecutor) VerifyInputs() error {
+	txInfo := e.iTxInfo
+
+	err := txInfo.Validate()
+	if err != nil {
+		return err
+	}
+	err = e.bc.verifyExpiredAt(txInfo.GetExpiredAt())
+	if err != nil {
+		return err
+	}
+
+	from := txInfo.GetFromAccountIndex()
+	if from != commonConstant.NilTxAccountIndex {
+		err = e.bc.verifyNonce(from, txInfo.GetNonce())
+		if err != nil {
+			return err
+		}
+
+		err = txInfo.VerifySignature(e.bc.accountMap[from].PublicKey)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

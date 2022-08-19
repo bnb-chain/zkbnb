@@ -6,6 +6,8 @@ import (
 	"errors"
 	"math/big"
 
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -19,25 +21,29 @@ import (
 type DepositExecutor struct {
 	BaseExecutor
 
-	txInfo *commonTx.DepositTxInfo
+	txInfo *legendTxTypes.DepositTxInfo
 }
 
-func NewDepositExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
+func NewDepositExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+	txInfo, err := commonTx.ParseDepositTxInfo(tx.TxInfo)
+	if err != nil {
+		logx.Errorf("parse deposit tx failed: %s", err.Error())
+		return nil, errors.New("invalid tx info")
+	}
+
 	return &DepositExecutor{
 		BaseExecutor: BaseExecutor{
-			bc: bc,
-			tx: tx,
+			bc:      bc,
+			tx:      tx,
+			iTxInfo: txInfo,
 		},
-	}
+		txInfo: txInfo,
+	}, nil
 }
 
 func (e *DepositExecutor) Prepare() error {
 	bc := e.bc
-	txInfo, err := commonTx.ParseDepositTxInfo(e.tx.TxInfo)
-	if err != nil {
-		logx.Errorf("parse deposit tx failed: %s", err.Error())
-		return errors.New("invalid tx info")
-	}
+	txInfo := e.txInfo
 
 	// The account index from txInfo isn't true, find account by account name hash.
 	accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
@@ -66,7 +72,6 @@ func (e *DepositExecutor) Prepare() error {
 		return err
 	}
 
-	e.txInfo = txInfo
 	return nil
 }
 

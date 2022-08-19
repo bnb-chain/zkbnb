@@ -22,29 +22,34 @@ import (
 type SwapExecutor struct {
 	BaseExecutor
 
+	txInfo *legendTxTypes.SwapTxInfo
+
 	newPoolInfo *commonAsset.LiquidityInfo
-	txInfo      *legendTxTypes.SwapTxInfo
 }
 
-func NewSwapExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
+func NewSwapExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+	txInfo, err := commonTx.ParseSwapTxInfo(tx.TxInfo)
+	if err != nil {
+		logx.Errorf("parse transfer tx failed: %s", err.Error())
+		return nil, errors.New("invalid tx info")
+	}
+
 	return &SwapExecutor{
 		BaseExecutor: BaseExecutor{
-			bc: bc,
-			tx: tx,
+			bc:      bc,
+			tx:      tx,
+			iTxInfo: txInfo,
 		},
-	}
+		txInfo: txInfo,
+	}, nil
 }
 
 func (e *SwapExecutor) Prepare() error {
-	txInfo, err := commonTx.ParseSwapTxInfo(e.tx.TxInfo)
-	if err != nil {
-		logx.Errorf("parse transfer tx failed: %s", err.Error())
-		return errors.New("invalid tx info")
-	}
+	txInfo := e.txInfo
 
 	accounts := []int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex}
 	assets := []int64{txInfo.AssetAId, txInfo.AssetBId, txInfo.GasFeeAssetId}
-	err = e.bc.prepareAccountsAndAssets(accounts, assets)
+	err := e.bc.prepareAccountsAndAssets(accounts, assets)
 	if err != nil {
 		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
 		return errors.New("internal error")
@@ -69,21 +74,12 @@ func (e *SwapExecutor) VerifyInputs() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	err := txInfo.Validate()
+	err := e.BaseExecutor.VerifyInputs()
 	if err != nil {
 		return err
 	}
 
-	if err := e.bc.verifyExpiredAt(txInfo.ExpiredAt); err != nil {
-		return err
-	}
-
 	fromAccount := bc.accountMap[txInfo.FromAccountIndex]
-
-	if err := e.bc.verifyNonce(fromAccount.AccountIndex, txInfo.Nonce); err != nil {
-		return err
-	}
-
 	if txInfo.GasFeeAssetId != txInfo.AssetAId {
 		if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
 			return errors.New("invalid gas asset amount")
@@ -104,20 +100,13 @@ func (e *SwapExecutor) VerifyInputs() error {
 		logx.Errorf("construct liquidity info error, err: ", err.Error())
 		return err
 	}
-
 	if !((liquidityModel.AssetAId == txInfo.AssetAId && liquidityModel.AssetBId == txInfo.AssetBId) ||
 		(liquidityModel.AssetAId == txInfo.AssetBId && liquidityModel.AssetBId == txInfo.AssetAId)) {
 		return errors.New("invalid asset ids")
 	}
-
 	if liquidityInfo.AssetA == nil || liquidityInfo.AssetA.Cmp(big.NewInt(0)) == 0 ||
 		liquidityInfo.AssetB == nil || liquidityInfo.AssetB.Cmp(big.NewInt(0)) == 0 {
 		return errors.New("liquidity is empty")
-	}
-
-	err = txInfo.VerifySignature(fromAccount.PublicKey)
-	if err != nil {
-		return err
 	}
 
 	return nil

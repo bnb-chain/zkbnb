@@ -6,6 +6,8 @@ import (
 	"errors"
 	"math/big"
 
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -20,26 +22,31 @@ import (
 type FullExitNftExecutor struct {
 	BaseExecutor
 
-	txInfo  *commonTx.FullExitNftTxInfo
+	txInfo *legendTxTypes.FullExitNftTxInfo
+
 	exitNft *nft.L2Nft
 }
 
-func NewFullExitNftExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
+func NewFullExitNftExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+	txInfo, err := commonTx.ParseFullExitNftTxInfo(tx.TxInfo)
+	if err != nil {
+		logx.Errorf("parse full exit nft tx failed: %s", err.Error())
+		return nil, errors.New("invalid tx info")
+	}
+
 	return &FullExitNftExecutor{
 		BaseExecutor: BaseExecutor{
-			bc: bc,
-			tx: tx,
+			bc:      bc,
+			tx:      tx,
+			iTxInfo: txInfo,
 		},
-	}
+		txInfo: txInfo,
+	}, nil
 }
 
 func (e *FullExitNftExecutor) Prepare() error {
 	bc := e.bc
-	txInfo, err := commonTx.ParseFullExitNftTxInfo(e.tx.TxInfo)
-	if err != nil {
-		logx.Errorf("parse full exit nft tx failed: %s", err.Error())
-		return errors.New("invalid tx info")
-	}
+	txInfo := e.txInfo
 
 	// The account index from txInfo isn't true, find account by account name hash.
 	accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
@@ -97,7 +104,6 @@ func (e *FullExitNftExecutor) Prepare() error {
 	txInfo.NftContentHash = common.FromHex(exitNft.NftContentHash)
 	txInfo.CollectionId = exitNft.CollectionId
 
-	e.txInfo = txInfo
 	e.exitNft = exitNft
 	return nil
 }

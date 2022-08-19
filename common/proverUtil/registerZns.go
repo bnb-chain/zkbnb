@@ -20,6 +20,8 @@ package proverUtil
 import (
 	"strings"
 
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -43,7 +45,7 @@ func (w *WitnessHelper) constructRegisterZnsCryptoTx(cryptoTx *CryptoTx, oTx *Tx
 	return cryptoTx, nil
 }
 
-func ToCryptoRegisterZnsTx(txInfo *commonTx.RegisterZnsTxInfo) (info *CryptoRegisterZnsTx, err error) {
+func ToCryptoRegisterZnsTx(txInfo *legendTxTypes.RegisterZnsTxInfo) (info *CryptoRegisterZnsTx, err error) {
 	accountName := make([]byte, 32)
 	AccountNameSuffix := ".legend"
 	realName := strings.Split(txInfo.AccountName, AccountNameSuffix)[0]

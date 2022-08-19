@@ -22,8 +22,6 @@ import (
 	"errors"
 	"sort"
 
-	"github.com/bnb-chain/zkbas/core/types"
-
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
@@ -56,7 +54,7 @@ type (
 		CreateGenesisBlock(block *Block) error
 		GetCurrentHeight() (blockHeight int64, err error)
 		CreateNewBlock(oBlock *Block) (err error)
-		CreateBlockForCommitter(pendingMempoolTxs []*mempool.MempoolTx, blockStates *types.BlockStates) error
+		CreateBlockForCommitter(pendingMempoolTxs []*mempool.MempoolTx, blockStates *BlockStates) error
 	}
 
 	defaultBlockModel struct {
@@ -81,6 +79,25 @@ type (
 		VerifiedAt                      int64
 		Txs                             []*tx.Tx `gorm:"foreignKey:BlockId"`
 		BlockStatus                     int64
+	}
+
+	BlockStates struct {
+		Block          *Block
+		BlockForCommit *blockForCommit.BlockForCommit
+
+		PendingNewAccount            []*account.Account
+		PendingUpdateAccount         []*account.Account
+		PendingNewAccountHistory     []*account.AccountHistory
+		PendingNewLiquidity          []*liquidity.Liquidity
+		PendingUpdateLiquidity       []*liquidity.Liquidity
+		PendingNewLiquidityHistory   []*liquidity.LiquidityHistory
+		PendingNewNft                []*nft.L2Nft
+		PendingUpdateNft             []*nft.L2Nft
+		PendingNewNftHistory         []*nft.L2NftHistory
+		PendingNewNftWithdrawHistory []*nft.L2NftWithdrawHistory
+
+		PendingNewOffer         []*nft.Offer
+		PendingNewL2NftExchange []*nft.L2NftExchange
 	}
 )
 
@@ -362,7 +379,7 @@ type BlockStatusInfo struct {
 	VerifiedAt  int64
 }
 
-func (m *defaultBlockModel) CreateBlockForCommitter(pendingMempoolTxs []*mempool.MempoolTx, blockStates *types.BlockStates) error {
+func (m *defaultBlockModel) CreateBlockForCommitter(pendingMempoolTxs []*mempool.MempoolTx, blockStates *BlockStates) error {
 	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
 		// update mempool
 		for _, mempoolTx := range pendingMempoolTxs {
