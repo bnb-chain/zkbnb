@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"math/big"
 
-	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+
+	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -21,28 +22,33 @@ import (
 type AddLiquidityExecutor struct {
 	BaseExecutor
 
+	txInfo *legendTxTypes.AddLiquidityTxInfo
+
 	newPoolInfo           *commonAsset.LiquidityInfo
 	lpDeltaForFromAccount *big.Int
-	txInfo                *legendTxTypes.AddLiquidityTxInfo
 }
 
-func NewAddLiquidityExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
+func NewAddLiquidityExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+	txInfo, err := commonTx.ParseAddLiquidityTxInfo(tx.TxInfo)
+	if err != nil {
+		logx.Errorf("parse transfer tx failed: %s", err.Error())
+		return nil, errors.New("invalid tx info")
+	}
+
 	return &AddLiquidityExecutor{
 		BaseExecutor: BaseExecutor{
-			bc: bc,
-			tx: tx,
+			bc:      bc,
+			tx:      tx,
+			iTxInfo: txInfo,
 		},
-	}
+		txInfo: txInfo,
+	}, nil
 }
 
 func (e *AddLiquidityExecutor) Prepare() error {
-	txInfo, err := commonTx.ParseAddLiquidityTxInfo(e.tx.TxInfo)
-	if err != nil {
-		logx.Errorf("parse transfer tx failed: %s", err.Error())
-		return errors.New("invalid tx info")
-	}
+	txInfo := e.txInfo
 
-	err = e.bc.prepareLiquidity(txInfo.PairIndex)
+	err := e.bc.prepareLiquidity(txInfo.PairIndex)
 	if err != nil {
 		logx.Errorf("prepare liquidity failed: %s", err.Error())
 		return errors.New("internal error")
@@ -71,21 +77,12 @@ func (e *AddLiquidityExecutor) VerifyInputs() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	err := txInfo.Validate()
+	err := e.BaseExecutor.VerifyInputs()
 	if err != nil {
 		return err
 	}
 
-	if err := e.bc.verifyExpiredAt(txInfo.ExpiredAt); err != nil {
-		return err
-	}
-
 	fromAccount := bc.accountMap[txInfo.FromAccountIndex]
-
-	if err := e.bc.verifyNonce(fromAccount.AccountIndex, txInfo.Nonce); err != nil {
-		return err
-	}
-
 	if txInfo.GasFeeAssetId == txInfo.AssetAId {
 		deltaBalance := ffmath.Add(txInfo.AssetAAmount, txInfo.GasFeeAssetAmount)
 		if fromAccount.AssetInfo[txInfo.AssetAId].Balance.Cmp(deltaBalance) < 0 {
@@ -123,11 +120,6 @@ func (e *AddLiquidityExecutor) VerifyInputs() error {
 
 	if liquidityInfo.AssetA == nil || liquidityInfo.AssetB == nil {
 		return errors.New("invalid liquidity")
-	}
-
-	err = txInfo.VerifySignature(fromAccount.PublicKey)
-	if err != nil {
-		return err
 	}
 
 	return nil

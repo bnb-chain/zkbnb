@@ -25,25 +25,29 @@ type WithdrawNftExecutor struct {
 	txInfo *legendTxTypes.WithdrawNftTxInfo
 }
 
-func NewWithdrawNftExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
+func NewWithdrawNftExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+	txInfo, err := commonTx.ParseWithdrawNftTxInfo(tx.TxInfo)
+	if err != nil {
+		logx.Errorf("parse transfer tx failed: %s", err.Error())
+		return nil, errors.New("invalid tx info")
+	}
+
 	return &WithdrawNftExecutor{
 		BaseExecutor: BaseExecutor{
-			bc: bc,
-			tx: tx,
+			bc:      bc,
+			tx:      tx,
+			iTxInfo: txInfo,
 		},
-	}
+		txInfo: txInfo,
+	}, nil
 }
 
 func (e *WithdrawNftExecutor) Prepare() error {
-	txInfo, err := commonTx.ParseWithdrawNftTxInfo(e.tx.TxInfo)
-	if err != nil {
-		logx.Errorf("parse transfer tx failed: %s", err.Error())
-		return errors.New("invalid tx info")
-	}
+	txInfo := e.txInfo
 
 	accounts := []int64{txInfo.AccountIndex, txInfo.CreatorAccountIndex, txInfo.GasAccountIndex}
 	assets := []int64{txInfo.GasFeeAssetId}
-	err = e.bc.prepareAccountsAndAssets(accounts, assets)
+	err := e.bc.prepareAccountsAndAssets(accounts, assets)
 	if err != nil {
 		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
 		return errors.New("internal error")
@@ -67,28 +71,18 @@ func (e *WithdrawNftExecutor) Prepare() error {
 	txInfo.NftL1TokenId, _ = new(big.Int).SetString(nftInfo.NftL1TokenId, 10)
 	txInfo.CollectionId = nftInfo.CollectionId
 
-	e.txInfo = txInfo
 	return nil
 }
 
 func (e *WithdrawNftExecutor) VerifyInputs() error {
 	txInfo := e.txInfo
 
-	err := txInfo.Validate()
+	err := e.BaseExecutor.VerifyInputs()
 	if err != nil {
 		return err
 	}
 
-	if err := e.bc.verifyExpiredAt(txInfo.ExpiredAt); err != nil {
-		return err
-	}
-
 	fromAccount := e.bc.accountMap[txInfo.AccountIndex]
-
-	if err := e.bc.verifyNonce(fromAccount.AccountIndex, txInfo.Nonce); err != nil {
-		return err
-	}
-
 	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
 		return errors.New("balance is not enough")
 	}
@@ -96,11 +90,6 @@ func (e *WithdrawNftExecutor) VerifyInputs() error {
 	nftInfo := e.bc.nftMap[txInfo.NftIndex]
 	if nftInfo.OwnerAccountIndex != txInfo.AccountIndex {
 		return errors.New("account is not owner of the nft")
-	}
-
-	err = txInfo.VerifySignature(fromAccount.PublicKey)
-	if err != nil {
-		return err
 	}
 
 	return nil

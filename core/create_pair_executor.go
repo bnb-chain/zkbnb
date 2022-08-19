@@ -6,6 +6,8 @@ import (
 	"errors"
 	"math/big"
 
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 
@@ -20,26 +22,27 @@ import (
 type CreatePairExecutor struct {
 	BaseExecutor
 
-	txInfo *commonTx.CreatePairTxInfo
+	txInfo *legendTxTypes.CreatePairTxInfo
 }
 
-func NewCreatePairExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
+func NewCreatePairExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+	txInfo, err := commonTx.ParseCreatePairTxInfo(tx.TxInfo)
+	if err != nil {
+		logx.Errorf("parse create pair tx failed: %s", err.Error())
+		return nil, errors.New("invalid tx info")
+	}
+
 	return &CreatePairExecutor{
 		BaseExecutor: BaseExecutor{
-			bc: bc,
-			tx: tx,
+			bc:      bc,
+			tx:      tx,
+			iTxInfo: txInfo,
 		},
-	}
+		txInfo: txInfo,
+	}, nil
 }
 
 func (e *CreatePairExecutor) Prepare() error {
-	txInfo, err := commonTx.ParseCreatePairTxInfo(e.tx.TxInfo)
-	if err != nil {
-		logx.Errorf("parse create pair tx failed: %s", err.Error())
-		return errors.New("invalid tx info")
-	}
-
-	e.txInfo = txInfo
 	return nil
 }
 

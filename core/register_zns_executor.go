@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+
 	"github.com/bnb-chain/zkbas/common/util"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
@@ -24,26 +26,27 @@ import (
 type RegisterZnsExecutor struct {
 	BaseExecutor
 
-	txInfo *commonTx.RegisterZnsTxInfo
+	txInfo *legendTxTypes.RegisterZnsTxInfo
 }
 
-func NewRegisterZnsExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
+func NewRegisterZnsExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+	txInfo, err := commonTx.ParseRegisterZnsTxInfo(tx.TxInfo)
+	if err != nil {
+		logx.Errorf("parse register tx failed: %s", err.Error())
+		return nil, errors.New("invalid tx info")
+	}
+
 	return &RegisterZnsExecutor{
 		BaseExecutor: BaseExecutor{
-			bc: bc,
-			tx: tx,
+			bc:      bc,
+			tx:      tx,
+			iTxInfo: txInfo,
 		},
-	}
+		txInfo: txInfo,
+	}, nil
 }
 
 func (e *RegisterZnsExecutor) Prepare() error {
-	txInfo, err := commonTx.ParseRegisterZnsTxInfo(e.tx.TxInfo)
-	if err != nil {
-		logx.Errorf("parse register tx failed: %s", err.Error())
-		return errors.New("invalid tx info")
-	}
-
-	e.txInfo = txInfo
 	return nil
 }
 

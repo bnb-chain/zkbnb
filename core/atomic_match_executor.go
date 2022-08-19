@@ -34,21 +34,25 @@ type AtomicMatchExecutor struct {
 	isAssetGas  bool // True when the gas asset is the same to the buyer's asset.
 }
 
-func NewAtomicMatchExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
+func NewAtomicMatchExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+	txInfo, err := commonTx.ParseAtomicMatchTxInfo(tx.TxInfo)
+	if err != nil {
+		logx.Errorf("parse atomic match tx failed: %s", err.Error())
+		return nil, errors.New("invalid tx info")
+	}
+
 	return &AtomicMatchExecutor{
 		BaseExecutor: BaseExecutor{
-			bc: bc,
-			tx: tx,
+			bc:      bc,
+			tx:      tx,
+			iTxInfo: txInfo,
 		},
-	}
+		txInfo: txInfo,
+	}, nil
 }
 
 func (e *AtomicMatchExecutor) Prepare() error {
-	txInfo, err := commonTx.ParseAtomicMatchTxInfo(e.tx.TxInfo)
-	if err != nil {
-		logx.Errorf("parse atomic match tx failed: %s", err.Error())
-		return errors.New("invalid tx info")
-	}
+	txInfo := e.txInfo
 
 	e.buyOfferAssetId = txInfo.BuyOffer.OfferId / txVerification.OfferPerAsset
 	e.buyOfferIndex = txInfo.BuyOffer.OfferId % txVerification.OfferPerAsset
@@ -56,7 +60,7 @@ func (e *AtomicMatchExecutor) Prepare() error {
 	e.sellOfferIndex = txInfo.SellOffer.OfferId % txVerification.OfferPerAsset
 
 	// Prepare seller's asset and nft, if the buyer's asset or nft isn't the same, it will be failed in the verify step.
-	err = e.bc.prepareNft(txInfo.SellOffer.NftIndex)
+	err := e.bc.prepareNft(txInfo.SellOffer.NftIndex)
 	if err != nil {
 		logx.Errorf("prepare nft failed")
 		return errors.New("internal error")
@@ -85,7 +89,6 @@ func (e *AtomicMatchExecutor) Prepare() error {
 	txInfo.TreasuryAmount = ffmath.Div(ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(txInfo.SellOffer.TreasuryRate)), big.NewInt(txVerification.TenThousand))
 	txInfo.CreatorAmount = ffmath.Div(ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(matchNft.CreatorTreasuryRate)), big.NewInt(txVerification.TenThousand))
 
-	e.txInfo = txInfo
 	return nil
 }
 
@@ -93,10 +96,11 @@ func (e *AtomicMatchExecutor) VerifyInputs() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	err := txInfo.Validate()
+	err := e.BaseExecutor.VerifyInputs()
 	if err != nil {
 		return err
 	}
+
 	if txInfo.BuyOffer.Type != commonAsset.BuyOfferType ||
 		txInfo.SellOffer.Type != commonAsset.SellOfferType {
 		return errors.New("invalid offer type")
@@ -111,10 +115,7 @@ func (e *AtomicMatchExecutor) VerifyInputs() error {
 		return errors.New("buy offer mismatches sell offer")
 	}
 
-	// Check expired time.
-	if err := e.bc.verifyExpiredAt(txInfo.ExpiredAt); err != nil {
-		return err
-	}
+	// Check offer expired time.
 	if err := e.bc.verifyExpiredAt(txInfo.BuyOffer.ExpiredAt); err != nil {
 		return errors.New("invalid BuyOffer.ExpiredAt")
 	}
@@ -125,10 +126,6 @@ func (e *AtomicMatchExecutor) VerifyInputs() error {
 	fromAccount := bc.accountMap[txInfo.AccountIndex]
 	buyAccount := bc.accountMap[txInfo.BuyOffer.AccountIndex]
 	sellAccount := bc.accountMap[txInfo.SellOffer.AccountIndex]
-
-	if err := e.bc.verifyNonce(fromAccount.AccountIndex, txInfo.Nonce); err != nil {
-		return err
-	}
 
 	// Check sender's gas balance and buyer's asset balance.
 	if e.isFromBuyer && e.isAssetGas {
@@ -161,15 +158,12 @@ func (e *AtomicMatchExecutor) VerifyInputs() error {
 		return errors.New("seller is not owner")
 	}
 
+	// Verify offer signature.
 	err = txInfo.BuyOffer.VerifySignature(buyAccount.PublicKey)
 	if err != nil {
 		return err
 	}
 	err = txInfo.SellOffer.VerifySignature(sellAccount.PublicKey)
-	if err != nil {
-		return err
-	}
-	err = txInfo.VerifySignature(fromAccount.PublicKey)
 	if err != nil {
 		return err
 	}

@@ -19,6 +19,7 @@ package proverUtil
 
 import (
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonTx"
@@ -40,7 +41,7 @@ func (w *WitnessHelper) constructFullExitCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (
 	return cryptoTx, nil
 }
 
-func ToCryptoFullExitTx(txInfo *commonTx.FullExitTxInfo) (info *CryptoFullExitTx, err error) {
+func ToCryptoFullExitTx(txInfo *legendTxTypes.FullExitTxInfo) (info *CryptoFullExitTx, err error) {
 	info = &CryptoFullExitTx{
 		AccountIndex:    txInfo.AccountIndex,
 		AssetId:         txInfo.AssetId,

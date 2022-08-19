@@ -18,17 +18,17 @@
 package util
 
 import (
-	"github.com/bnb-chain/zkbas/common/commonTx"
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 )
 
 type (
-	RegisterZnsTxInfo    = commonTx.RegisterZnsTxInfo
-	CreatePairTxInfo     = commonTx.CreatePairTxInfo
-	UpdatePairRateTxInfo = commonTx.UpdatePairRateTxInfo
-	DepositTxInfo        = commonTx.DepositTxInfo
-	DepositNftTxInfo     = commonTx.DepositNftTxInfo
-	FullExitTxInfo       = commonTx.FullExitTxInfo
-	FullExitNftTxInfo    = commonTx.FullExitNftTxInfo
+	RegisterZnsTxInfo    = legendTxTypes.RegisterZnsTxInfo
+	CreatePairTxInfo     = legendTxTypes.CreatePairTxInfo
+	UpdatePairRateTxInfo = legendTxTypes.UpdatePairRateTxInfo
+	DepositTxInfo        = legendTxTypes.DepositTxInfo
+	DepositNftTxInfo     = legendTxTypes.DepositNftTxInfo
+	FullExitTxInfo       = legendTxTypes.FullExitTxInfo
+	FullExitNftTxInfo    = legendTxTypes.FullExitNftTxInfo
 )
 
 const (

@@ -6,6 +6,8 @@ import (
 	"errors"
 	"math/big"
 
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -20,26 +22,31 @@ import (
 type DepositNftExecutor struct {
 	BaseExecutor
 
-	txInfo   *commonTx.DepositNftTxInfo
+	txInfo *legendTxTypes.DepositNftTxInfo
+
 	isNewNft bool
 }
 
-func NewDepositNftExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
+func NewDepositNftExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+	txInfo, err := commonTx.ParseDepositNftTxInfo(tx.TxInfo)
+	if err != nil {
+		logx.Errorf("parse deposit nft tx failed: %s", err.Error())
+		return nil, errors.New("invalid tx info")
+	}
+
 	return &DepositNftExecutor{
 		BaseExecutor: BaseExecutor{
-			bc: bc,
-			tx: tx,
+			bc:      bc,
+			tx:      tx,
+			iTxInfo: txInfo,
 		},
-	}
+		txInfo: txInfo,
+	}, nil
 }
 
 func (e *DepositNftExecutor) Prepare() error {
 	bc := e.bc
-	txInfo, err := commonTx.ParseDepositNftTxInfo(e.tx.TxInfo)
-	if err != nil {
-		logx.Errorf("parse deposit nft tx failed: %s", err.Error())
-		return errors.New("invalid tx info")
-	}
+	txInfo := e.txInfo
 
 	// The account index from txInfo isn't true, find account by account name hash.
 	accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
@@ -81,7 +88,6 @@ func (e *DepositNftExecutor) Prepare() error {
 		}
 	}
 
-	e.txInfo = txInfo
 	return nil
 }
 

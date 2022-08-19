@@ -17,12 +17,12 @@ func NewCommitProcessor(bc *BlockChain) Processor {
 }
 
 func (p *CommitProcessor) Process(tx *tx.Tx) error {
-	executor := NewTxExecutor(p.bc, tx)
-	if executor == nil {
+	executor, err := NewTxExecutor(p.bc, tx)
+	if err != nil {
 		return fmt.Errorf("new tx executor failed")
 	}
 
-	err := executor.Prepare()
+	err = executor.Prepare()
 	if err != nil {
 		return err
 	}

@@ -24,61 +24,49 @@ type CancelOfferExecutor struct {
 	txInfo *legendTxTypes.CancelOfferTxInfo
 }
 
-func NewCancelOfferExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
+func NewCancelOfferExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+	txInfo, err := commonTx.ParseCancelOfferTxInfo(tx.TxInfo)
+	if err != nil {
+		logx.Errorf("parse transfer tx failed: %s", err.Error())
+		return nil, errors.New("invalid tx info")
+	}
+
 	return &CancelOfferExecutor{
 		BaseExecutor: BaseExecutor{
-			bc: bc,
-			tx: tx,
+			bc:      bc,
+			tx:      tx,
+			iTxInfo: txInfo,
 		},
-	}
+		txInfo: txInfo,
+	}, nil
 }
 
 func (e *CancelOfferExecutor) Prepare() error {
-	txInfo, err := commonTx.ParseCancelOfferTxInfo(e.tx.TxInfo)
-	if err != nil {
-		logx.Errorf("parse transfer tx failed: %s", err.Error())
-		return errors.New("invalid tx info")
-	}
-
-	offerAssetId := txInfo.OfferId / txVerification.OfferPerAsset
+	txInfo := e.txInfo
 
 	accounts := []int64{txInfo.AccountIndex, txInfo.GasAccountIndex}
+	offerAssetId := txInfo.OfferId / txVerification.OfferPerAsset
 	assets := []int64{offerAssetId, txInfo.GasFeeAssetId}
-	err = e.bc.prepareAccountsAndAssets(accounts, assets)
+	err := e.bc.prepareAccountsAndAssets(accounts, assets)
 	if err != nil {
 		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
 		return errors.New("internal error")
 	}
 
-	e.txInfo = txInfo
 	return nil
 }
 
 func (e *CancelOfferExecutor) VerifyInputs() error {
 	txInfo := e.txInfo
 
-	err := txInfo.Validate()
+	err := e.BaseExecutor.VerifyInputs()
 	if err != nil {
-		return err
-	}
-
-	if err := e.bc.verifyExpiredAt(txInfo.ExpiredAt); err != nil {
 		return err
 	}
 
 	fromAccount := e.bc.accountMap[txInfo.AccountIndex]
-
-	if err := e.bc.verifyNonce(fromAccount.AccountIndex, txInfo.Nonce); err != nil {
-		return err
-	}
-
 	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
 		return errors.New("balance is not enough")
-	}
-
-	err = txInfo.VerifySignature(fromAccount.PublicKey)
-	if err != nil {
-		return err
 	}
 
 	return nil

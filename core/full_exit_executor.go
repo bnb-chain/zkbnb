@@ -6,6 +6,8 @@ import (
 	"errors"
 	"math/big"
 
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -19,25 +21,29 @@ import (
 type FullExitExecutor struct {
 	BaseExecutor
 
-	txInfo *commonTx.FullExitTxInfo
+	txInfo *legendTxTypes.FullExitTxInfo
 }
 
-func NewFullExitExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
+func NewFullExitExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+	txInfo, err := commonTx.ParseFullExitTxInfo(tx.TxInfo)
+	if err != nil {
+		logx.Errorf("parse full exit tx failed: %s", err.Error())
+		return nil, errors.New("invalid tx info")
+	}
+
 	return &FullExitExecutor{
 		BaseExecutor: BaseExecutor{
-			bc: bc,
-			tx: tx,
+			bc:      bc,
+			tx:      tx,
+			iTxInfo: txInfo,
 		},
-	}
+		txInfo: txInfo,
+	}, nil
 }
 
 func (e *FullExitExecutor) Prepare() error {
 	bc := e.bc
-	txInfo, err := commonTx.ParseFullExitTxInfo(e.tx.TxInfo)
-	if err != nil {
-		logx.Errorf("parse full exit tx failed: %s", err.Error())
-		return errors.New("invalid tx info")
-	}
+	txInfo := e.txInfo
 
 	// The account index from txInfo isn't true, find account by account name hash.
 	accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
@@ -69,7 +75,6 @@ func (e *FullExitExecutor) Prepare() error {
 	// Set the right asset amount.
 	txInfo.AssetAmount = bc.accountMap[txInfo.AccountIndex].AssetInfo[txInfo.AssetId].Balance
 
-	e.txInfo = txInfo
 	return nil
 }
 

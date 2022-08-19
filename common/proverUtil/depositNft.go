@@ -19,6 +19,7 @@ package proverUtil
 
 import (
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/commonTx"
@@ -40,7 +41,7 @@ func (w *WitnessHelper) constructDepositNftCryptoTx(cryptoTx *CryptoTx, oTx *Tx)
 	return cryptoTx, nil
 }
 
-func ToCryptoDepositNftTx(txInfo *commonTx.DepositNftTxInfo) (info *CryptoDepositNftTx, err error) {
+func ToCryptoDepositNftTx(txInfo *legendTxTypes.DepositNftTxInfo) (info *CryptoDepositNftTx, err error) {
 	info = &CryptoDepositNftTx{
 		AccountIndex:        txInfo.AccountIndex,
 		NftIndex:            txInfo.NftIndex,

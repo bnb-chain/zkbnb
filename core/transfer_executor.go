@@ -21,31 +21,34 @@ type TransferExecutor struct {
 	txInfo *legendTxTypes.TransferTxInfo
 }
 
-func NewTransferExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
+func NewTransferExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
+	txInfo, err := commonTx.ParseTransferTxInfo(tx.TxInfo)
+	if err != nil {
+		logx.Errorf("parse transfer tx failed: %s", err.Error())
+		return nil, errors.New("invalid tx info")
+	}
+
 	return &TransferExecutor{
 		BaseExecutor: BaseExecutor{
-			bc: bc,
-			tx: tx,
+			bc:      bc,
+			tx:      tx,
+			iTxInfo: txInfo,
 		},
-	}
+		txInfo: txInfo,
+	}, nil
 }
 
 func (e *TransferExecutor) Prepare() error {
-	txInfo, err := commonTx.ParseTransferTxInfo(e.tx.TxInfo)
-	if err != nil {
-		logx.Errorf("parse transfer tx failed: %s", err.Error())
-		return errors.New("invalid tx info")
-	}
+	txInfo := e.txInfo
 
 	accounts := []int64{txInfo.FromAccountIndex, txInfo.ToAccountIndex, txInfo.GasAccountIndex}
 	assets := []int64{txInfo.AssetId, txInfo.GasFeeAssetId}
-	err = e.bc.prepareAccountsAndAssets(accounts, assets)
+	err := e.bc.prepareAccountsAndAssets(accounts, assets)
 	if err != nil {
 		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
 		return errors.New("internal error")
 	}
 
-	e.txInfo = txInfo
 	return nil
 }
 
@@ -53,22 +56,13 @@ func (e *TransferExecutor) VerifyInputs() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	err := txInfo.Validate()
+	err := e.BaseExecutor.VerifyInputs()
 	if err != nil {
-		return err
-	}
-
-	if err := e.bc.verifyExpiredAt(txInfo.ExpiredAt); err != nil {
 		return err
 	}
 
 	fromAccount := bc.accountMap[txInfo.FromAccountIndex]
 	toAccount := bc.accountMap[txInfo.ToAccountIndex]
-
-	if err := e.bc.verifyNonce(fromAccount.AccountIndex, txInfo.Nonce); err != nil {
-		return err
-	}
-
 	if txInfo.ToAccountNameHash != toAccount.AccountNameHash {
 		return errors.New("invalid to account name hash")
 	}
@@ -86,7 +80,7 @@ func (e *TransferExecutor) VerifyInputs() error {
 		}
 	}
 
-	return txInfo.VerifySignature(fromAccount.PublicKey)
+	return nil
 }
 
 func (e *TransferExecutor) ApplyTransaction() error {

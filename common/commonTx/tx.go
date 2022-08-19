@@ -19,7 +19,6 @@ package commonTx
 
 import (
 	"encoding/json"
-	"math/big"
 
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -40,17 +39,7 @@ type (
 	WithdrawNftTxInfo      = legendTxTypes.WithdrawNftTxInfo
 )
 
-type RegisterZnsTxInfo struct {
-	TxType uint8
-
-	// Get from layer1 events.
-	AccountIndex    int64
-	AccountName     string
-	AccountNameHash []byte
-	PubKey          string
-}
-
-func ParseRegisterZnsTxInfo(txInfoStr string) (txInfo *RegisterZnsTxInfo, err error) {
+func ParseRegisterZnsTxInfo(txInfoStr string) (txInfo *legendTxTypes.RegisterZnsTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
 		logx.Errorf("[ParseRegisterZnsTxInfo] unable to parse tx info: %s", err.Error())
@@ -59,19 +48,7 @@ func ParseRegisterZnsTxInfo(txInfoStr string) (txInfo *RegisterZnsTxInfo, err er
 	return txInfo, nil
 }
 
-type CreatePairTxInfo struct {
-	TxType uint8
-
-	// Get from layer1 events.
-	PairIndex            int64
-	AssetAId             int64
-	AssetBId             int64
-	FeeRate              int64
-	TreasuryAccountIndex int64
-	TreasuryRate         int64
-}
-
-func ParseCreatePairTxInfo(txInfoStr string) (txInfo *CreatePairTxInfo, err error) {
+func ParseCreatePairTxInfo(txInfoStr string) (txInfo *legendTxTypes.CreatePairTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
 		logx.Errorf("[ParseCreatePairTxInfo] unable to parse tx info: %s", err.Error())
@@ -80,17 +57,7 @@ func ParseCreatePairTxInfo(txInfoStr string) (txInfo *CreatePairTxInfo, err erro
 	return txInfo, nil
 }
 
-type UpdatePairRateTxInfo struct {
-	TxType uint8
-
-	// Get from layer1 events.
-	PairIndex            int64
-	FeeRate              int64
-	TreasuryAccountIndex int64
-	TreasuryRate         int64
-}
-
-func ParseUpdatePairRateTxInfo(txInfoStr string) (txInfo *UpdatePairRateTxInfo, err error) {
+func ParseUpdatePairRateTxInfo(txInfoStr string) (txInfo *legendTxTypes.UpdatePairRateTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
 		logx.Errorf("[ParseUpdatePairRateTxInfo] unable to parse tx info: %s", err.Error())
@@ -99,19 +66,7 @@ func ParseUpdatePairRateTxInfo(txInfoStr string) (txInfo *UpdatePairRateTxInfo, 
 	return txInfo, nil
 }
 
-type DepositTxInfo struct {
-	TxType uint8
-
-	// Get from layer1 events.
-	AccountNameHash []byte
-	AssetId         int64
-	AssetAmount     *big.Int
-
-	// Set by layer2.
-	AccountIndex int64
-}
-
-func ParseDepositTxInfo(txInfoStr string) (txInfo *DepositTxInfo, err error) {
+func ParseDepositTxInfo(txInfoStr string) (txInfo *legendTxTypes.DepositTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
 		logx.Errorf("[ParseDepositTxInfo] unable to parse tx info: %s", err.Error())
@@ -120,26 +75,7 @@ func ParseDepositTxInfo(txInfoStr string) (txInfo *DepositTxInfo, err error) {
 	return txInfo, nil
 }
 
-type DepositNftTxInfo struct {
-	TxType uint8
-
-	// Get from layer1 events.
-	AccountNameHash     []byte
-	CreatorAccountIndex int64
-	CreatorTreasuryRate int64
-	NftL1Address        string
-	NftL1TokenId        *big.Int
-	NftContentHash      []byte
-	CollectionId        int64
-
-	// New nft set by layer2, otherwise get from layer1.
-	NftIndex int64
-
-	// Set by layer2.
-	AccountIndex int64
-}
-
-func ParseDepositNftTxInfo(txInfoStr string) (txInfo *DepositNftTxInfo, err error) {
+func ParseDepositNftTxInfo(txInfoStr string) (txInfo *legendTxTypes.DepositNftTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
 		logx.Errorf("[ParseDepositNftTxInfo] unable to parse tx info: %s", err.Error())
@@ -148,19 +84,7 @@ func ParseDepositNftTxInfo(txInfoStr string) (txInfo *DepositNftTxInfo, err erro
 	return txInfo, nil
 }
 
-type FullExitTxInfo struct {
-	TxType uint8
-
-	// Get from layer1 events.
-	AccountNameHash []byte
-	AssetId         int64
-
-	// Set by layer2.
-	AccountIndex int64
-	AssetAmount  *big.Int
-}
-
-func ParseFullExitTxInfo(txInfoStr string) (txInfo *FullExitTxInfo, err error) {
+func ParseFullExitTxInfo(txInfoStr string) (txInfo *legendTxTypes.FullExitTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
 		logx.Errorf("[ParseFullExitTxInfo] unable to parse tx info: %s", err.Error())
@@ -169,25 +93,7 @@ func ParseFullExitTxInfo(txInfoStr string) (txInfo *FullExitTxInfo, err error) {
 	return txInfo, nil
 }
 
-type FullExitNftTxInfo struct {
-	TxType uint8
-
-	// Get from layer1 events.
-	NftIndex        int64
-	AccountNameHash []byte
-
-	// Set by layer2.
-	AccountIndex           int64
-	CreatorAccountIndex    int64
-	CreatorTreasuryRate    int64
-	CreatorAccountNameHash []byte
-	NftL1Address           string
-	NftL1TokenId           *big.Int
-	NftContentHash         []byte
-	CollectionId           int64
-}
-
-func ParseFullExitNftTxInfo(txInfoStr string) (txInfo *FullExitNftTxInfo, err error) {
+func ParseFullExitNftTxInfo(txInfoStr string) (txInfo *legendTxTypes.FullExitNftTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
 		logx.Errorf("[ParseFullExitNftTxInfo] unable to parse tx info: %s", err.Error())

@@ -8,8 +8,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/bnb-chain/zkbas/core/types"
-
 	bsmt "github.com/bnb-chain/bas-smt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
@@ -348,7 +346,7 @@ func (bc *BlockChain) ProposeNewBlock() (*block.Block, error) {
 	return newBlock, nil
 }
 
-func (bc *BlockChain) CommitNewBlock(blockSize int, createdAt int64) (*types.BlockStates, error) {
+func (bc *BlockChain) CommitNewBlock(blockSize int, createdAt int64) (*block.BlockStates, error) {
 	newBlock, newBlockForCommit, err := bc.commitNewBlock(blockSize, createdAt)
 	if err != nil {
 		return nil, err
@@ -369,7 +367,7 @@ func (bc *BlockChain) CommitNewBlock(blockSize int, createdAt int64) (*types.Blo
 		return nil, err
 	}
 
-	return &types.BlockStates{
+	return &block.BlockStates{
 		Block:                        newBlock,
 		BlockForCommit:               newBlockForCommit,
 		PendingNewAccount:            pendingNewAccount,
@@ -819,7 +817,7 @@ func (bc *BlockChain) verifyExpiredAt(expiredAt int64) error {
 			return errors.New("invalid ExpiredAt")
 		}
 	} else {
-		if expiredAt < time.Now().UnixMilli() {
+		if expiredAt != commonConstant.NilExpiredAt && expiredAt < time.Now().UnixMilli() {
 			return errors.New("invalid ExpiredAt")
 		}
 	}

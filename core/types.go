@@ -1,6 +1,8 @@
 package core
 
 import (
+	"errors"
+
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 )
@@ -19,7 +21,7 @@ type TxExecutor interface {
 	GenerateTxDetails() ([]*tx.TxDetail, error)
 }
 
-func NewTxExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
+func NewTxExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
 	switch tx.TxType {
 	case commonTx.TxTypeRegisterZns:
 		return NewRegisterZnsExecutor(bc, tx)
@@ -59,5 +61,5 @@ func NewTxExecutor(bc *BlockChain, tx *tx.Tx) TxExecutor {
 		return NewFullExitNftExecutor(bc, tx)
 	}
 
-	return nil
+	return nil, errors.New("unsupported tx type")
 }
