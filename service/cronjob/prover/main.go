@@ -2,11 +2,11 @@ package main
 
 import (
 	"flag"
-	"github.com/zeromicro/go-zero/core/proc"
 
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/proc"
 
 	"github.com/bnb-chain/zkbas/service/cronjob/prover/config"
 	"github.com/bnb-chain/zkbas/service/cronjob/prover/prover"

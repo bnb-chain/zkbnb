@@ -121,7 +121,7 @@ func (m *defaultL2NftHistoryModel) GetLatestNftAssetsByBlockHeight(height int64,
 
 	if dbTx.Find(&accountNftAssets).Error != nil {
 		logx.Errorf("[GetLatestNftAssetsByBlockHeight] unable to get related nft assets: %s", dbTx.Error.Error())
-		return 0, nil,  errorcode.DbErrSqlOperation
+		return 0, nil, errorcode.DbErrSqlOperation
 	}
 	return dbTx.RowsAffected, accountNftAssets, nil
 }

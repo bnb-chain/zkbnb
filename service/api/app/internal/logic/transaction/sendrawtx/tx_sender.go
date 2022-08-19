@@ -6,8 +6,6 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/bnb-chain/zkbas/service/api/app/internal/fetcher/state"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -18,6 +16,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/sysConfig"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/sysConfigName"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/fetcher/state"
 )
 
 type GasChecker interface {

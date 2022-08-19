@@ -3,9 +3,10 @@ package root
 import (
 	"net/http"
 
+	"github.com/zeromicro/go-zero/rest/httpx"
+
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/root"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 func GetStatusHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {

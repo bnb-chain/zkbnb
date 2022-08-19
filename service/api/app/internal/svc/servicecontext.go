@@ -1,8 +1,6 @@
 package svc
 
 import (
-	"github.com/bnb-chain/zkbas/service/api/app/internal/cache"
-
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -17,6 +15,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/sysConfig"
 	"github.com/bnb-chain/zkbas/common/model/tx"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/cache"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/config"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/fetcher/price"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/fetcher/state"
