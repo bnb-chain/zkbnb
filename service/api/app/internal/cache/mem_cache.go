@@ -5,7 +5,6 @@ import (
 	"time"
 
 	gocache "github.com/patrickmn/go-cache"
-	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/asset"
@@ -15,8 +14,8 @@ import (
 )
 
 const (
-	cacheDefaultExpiration    = time.Millisecond * 500 //gocache default expiration
-	cacheDefaultPurgeInterval = time.Second * 60       // gocache purge interval
+	cacheDefaultExpiration    = time.Hour * 1   //gocache default expiration
+	cacheDefaultPurgeInterval = time.Minute * 5 // gocache purge interval
 
 	AccountIndexNameKeyPrefix  = "in:" //key for cache: accountIndex -> accountName
 	AccountIndexPkKeyPrefix    = "ip:" //key for cache: accountIndex -> accountPk
@@ -80,29 +79,10 @@ func (m *MemCache) getWithSet(key string, duration time.Duration, f fallback) (i
 }
 
 func (m *MemCache) setAccount(accountIndex int64, accountName, accountPk string) {
-	m.goCache.Set(fmt.Sprintf("%s%d", AccountIndexNameKeyPrefix, accountIndex), accountName, gocache.NoExpiration)
-	m.goCache.Set(fmt.Sprintf("%s%d", AccountIndexPkKeyPrefix, accountIndex), accountPk, gocache.NoExpiration)
-	m.goCache.Set(fmt.Sprintf("%s%s", AccountNameKeyPrefix, accountName), accountIndex, gocache.NoExpiration)
-	m.goCache.Set(fmt.Sprintf("%s%s", AccountPkKeyPrefix, accountPk), accountIndex, gocache.NoExpiration)
-}
-
-func (m *MemCache) PreloadAccounts() {
-	offset := 0
-	limit := 2000
-	for {
-		logx.Infof("preloading accounts, offset: %d, limit: %d", offset, limit)
-		accounts, err := m.accountModel.GetAccountsList(limit, int64(offset))
-		if err != nil {
-			logx.Errorf("fail to preload accounts, offset: %d, limit: %d, err: %s", offset, limit, err.Error())
-		}
-		for _, acc := range accounts {
-			m.setAccount(acc.AccountIndex, acc.AccountName, acc.PublicKey)
-		}
-		if len(accounts) < limit {
-			break
-		}
-		offset += limit
-	}
+	m.goCache.Set(fmt.Sprintf("%s%d", AccountIndexNameKeyPrefix, accountIndex), accountName, gocache.DefaultExpiration)
+	m.goCache.Set(fmt.Sprintf("%s%d", AccountIndexPkKeyPrefix, accountIndex), accountPk, gocache.DefaultExpiration)
+	m.goCache.Set(fmt.Sprintf("%s%s", AccountNameKeyPrefix, accountName), accountIndex, gocache.DefaultExpiration)
+	m.goCache.Set(fmt.Sprintf("%s%s", AccountPkKeyPrefix, accountPk), accountIndex, gocache.DefaultExpiration)
 }
 
 func (m *MemCache) GetAccountIndexByName(accountName string) (int64, error) {
@@ -246,6 +226,9 @@ func (m *MemCache) GetAssetByIdWithFallback(assetId int64, f fallback) (*asset.A
 	asset := a.(*asset.Asset)
 	key = fmt.Sprintf("%s%s", AssetBySymbolKeyPrefix, asset.AssetSymbol)
 	m.goCache.Set(key, asset, m.assetExpiration)
+
+	key = fmt.Sprintf("%s%d", AssetIdNameKeyPrefix, assetId)
+	m.goCache.Set(key, asset.AssetName, gocache.DefaultExpiration)
 	return asset, nil
 }
 
@@ -259,6 +242,9 @@ func (m *MemCache) GetAssetBySymbolWithFallback(assetSymbol string, f fallback) 
 	asset := a.(*asset.Asset)
 	key = fmt.Sprintf("%s%d", AssetByIdKeyPrefix, asset.AssetId)
 	m.goCache.Set(key, asset, m.assetExpiration)
+
+	key = fmt.Sprintf("%s%d", AssetIdNameKeyPrefix, asset.AssetId)
+	m.goCache.Set(key, asset.AssetName, gocache.DefaultExpiration)
 	return asset, nil
 }
 
@@ -273,7 +259,7 @@ func (m *MemCache) GetAssetNameById(assetId int64) (string, error) {
 		return "", err
 	}
 
-	m.goCache.Set(key, asset.AssetName, gocache.NoExpiration)
+	m.goCache.Set(key, asset.AssetName, gocache.DefaultExpiration)
 	return asset.AssetName, nil
 }
 
@@ -288,7 +274,7 @@ func (m *MemCache) GetPriceWithFallback(symbol string, f fallback) (float64, err
 
 func (m *MemCache) GetSysConfigWithFallback(configName string, f fallback) (*sysConfig.SysConfig, error) {
 	key := fmt.Sprintf("%s%s", SysConfigKeyPrefix, configName)
-	c, err := m.getWithSet(key, gocache.NoExpiration, f)
+	c, err := m.getWithSet(key, gocache.DefaultExpiration, f)
 	if err != nil {
 		return nil, err
 	}
