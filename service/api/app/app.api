@@ -81,11 +81,11 @@ service app-api {
 
 type (
 	Asset {
-		Id         uint32 `json:"asset_id"`
-		Name       string `json:"asset_name"`
-		Decimals   uint32 `json:"asset_decimals"`
-		Symbol     string `json:"asset_symbol"`
-		Address    string `json:"asset_address"`
+		Id         uint32 `json:"id"`
+		Name       string `json:"name"`
+		Decimals   uint32 `json:"decimals"`
+		Symbol     string `json:"symbol"`
+		Address    string `json:"address"`
 		IsGasAsset uint32 `json:"is_gas_asset"`
 	}
 
