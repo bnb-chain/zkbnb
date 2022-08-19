@@ -46,7 +46,7 @@ type Committer struct {
 
 func NewCommitter(config *Config) (*Committer, error) {
 	if len(config.BlockConfig.OptionalBlockSizes) == 0 {
-		return nil, errors.New("nil key tx counts")
+		return nil, errors.New("nil optional block sizes")
 	}
 
 	bc, err := core.NewBlockChain(&config.ChainConfig, "committer")
@@ -193,16 +193,19 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 	}
 
 	blockSize := c.computeCurrentBlockSize()
-	statesToCommit, err := c.bc.CommitNewBlock(blockSize, curBlock.CreatedAt.UnixMilli())
+	blockStates, err := c.bc.CommitNewBlock(blockSize, curBlock.CreatedAt.UnixMilli())
 	if err != nil {
 		return nil, err
 	}
 
 	// Update database in a transaction.
-	//err = c.bc.BlockModel.CreateBlockForCommitter()
+	err = c.bc.BlockModel.CreateBlockForCommitter(c.executedMemPoolTxs, blockStates)
+	if err != nil {
+		return nil, err
+	}
 
 	c.executedMemPoolTxs = make([]*mempool.MempoolTx, 0)
-	return statesToCommit.Block, nil
+	return blockStates.Block, nil
 }
 
 func (c *Committer) computeCurrentBlockSize() int {

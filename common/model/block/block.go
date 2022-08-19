@@ -22,6 +22,8 @@ import (
 	"errors"
 	"sort"
 
+	"github.com/bnb-chain/zkbas/core/types"
+
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
@@ -54,20 +56,7 @@ type (
 		CreateGenesisBlock(block *Block) error
 		GetCurrentHeight() (blockHeight int64, err error)
 		CreateNewBlock(oBlock *Block) (err error)
-
-		CreateBlockForCommitter(
-			oBlock *Block,
-			oBlockForCommit *blockForCommit.BlockForCommit,
-			pendingMempoolTxs []*mempool.MempoolTx,
-			pendingDeleteMempoolTxs []*mempool.MempoolTx,
-			pendingUpdateAccounts []*account.Account,
-			pendingNewAccountHistories []*account.AccountHistory,
-			pendingUpdateLiquidity []*liquidity.Liquidity,
-			pendingNewLiquidityHistories []*liquidity.LiquidityHistory,
-			pendingUpdateNft []*nft.L2Nft,
-			pendingNewNftHistories []*nft.L2NftHistory,
-			pendingNewNftWithdrawHistories []*nft.L2NftWithdrawHistory,
-		) (err error)
+		CreateBlockForCommitter(pendingMempoolTxs []*mempool.MempoolTx, blockStates *types.BlockStates) error
 	}
 
 	defaultBlockModel struct {
@@ -373,54 +362,8 @@ type BlockStatusInfo struct {
 	VerifiedAt  int64
 }
 
-func (m *defaultBlockModel) CreateBlockForCommitter(
-	oBlock *Block,
-	oBlockForCommit *blockForCommit.BlockForCommit,
-	pendingMempoolTxs []*mempool.MempoolTx,
-	pendingDeleteMempoolTxs []*mempool.MempoolTx,
-	pendingUpdateAccounts []*account.Account,
-	pendingNewAccountHistories []*account.AccountHistory,
-	pendingUpdateLiquiditys []*liquidity.Liquidity,
-	pendingNewLiquidityHistories []*liquidity.LiquidityHistory,
-	pendingUpdateNfts []*nft.L2Nft,
-	pendingNewNftHistories []*nft.L2NftHistory,
-	pendingNewNftWithdrawHistory []*nft.L2NftWithdrawHistory,
-) (err error) {
-	err = m.DB.Transaction(func(tx *gorm.DB) error { // transact
-		// create block
-		if oBlock != nil {
-			dbTx := tx.Table(m.table).Create(oBlock)
-			if dbTx.Error != nil {
-				logx.Errorf("unable to create block: %s", dbTx.Error.Error())
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				blockInfo, err := json.Marshal(oBlock)
-				if err != nil {
-					logx.Errorf("unable to marshal block, err: %s", err.Error())
-					return err
-				}
-				logx.Errorf("invalid block info: %s", string(blockInfo))
-				return errors.New("invalid block info")
-			}
-		}
-		if oBlockForCommit != nil {
-			// create block for commit
-			dbTx := tx.Table(blockForCommit.BlockForCommitTableName).Create(oBlockForCommit)
-			if dbTx.Error != nil {
-				logx.Errorf("unable to create block for commit: %s", dbTx.Error.Error())
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				blockInfo, err := json.Marshal(oBlockForCommit)
-				if err != nil {
-					logx.Errorf("unable to marshal block for commit, err=%s", err.Error())
-					return err
-				}
-				logx.Errorf("invalid block for commit info: %s", string(blockInfo))
-				return errors.New("invalid block for commit info")
-			}
-		}
+func (m *defaultBlockModel) CreateBlockForCommitter(pendingMempoolTxs []*mempool.MempoolTx, blockStates *types.BlockStates) error {
+	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
 		// update mempool
 		for _, mempoolTx := range pendingMempoolTxs {
 			dbTx := tx.Table(mempool.MempoolTableName).Where("id = ?", mempoolTx.ID).
@@ -434,31 +377,56 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 				return errors.New("no new mempoolTx")
 			}
 		}
-		for _, pendingDeleteMempoolTx := range pendingDeleteMempoolTxs {
-			for _, detail := range pendingDeleteMempoolTx.MempoolDetails {
-				dbTx := tx.Table(mempool.DetailTableName).Where("id = ?", detail.ID).Delete(&detail)
-				if dbTx.Error != nil {
-					logx.Errorf("delete tx detail error, err: %s", dbTx.Error.Error())
-					return dbTx.Error
-				}
-				if dbTx.RowsAffected == 0 {
-					return errors.New("delete invalid mempool tx")
-				}
-			}
-			dbTx := tx.Table(mempool.MempoolTableName).Where("id = ?", pendingDeleteMempoolTx.ID).Delete(&pendingDeleteMempoolTx)
+		// create block
+		if blockStates.Block != nil {
+			dbTx := tx.Table(m.table).Create(blockStates.Block)
 			if dbTx.Error != nil {
-				logx.Errorf("delete mempool tx error, err; %s", dbTx.Error.Error())
+				logx.Errorf("unable to create block: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
-				return errors.New("delete invalid mempool tx")
+				blockInfo, err := json.Marshal(blockStates.Block)
+				if err != nil {
+					logx.Errorf("unable to marshal block, err: %s", err.Error())
+					return err
+				}
+				logx.Errorf("invalid block info: %s", string(blockInfo))
+				return errors.New("invalid block info")
+			}
+		}
+		// create block for commit
+		if blockStates.BlockForCommit != nil {
+			dbTx := tx.Table(blockForCommit.BlockForCommitTableName).Create(blockStates.BlockForCommit)
+			if dbTx.Error != nil {
+				logx.Errorf("unable to create block for commit: %s", dbTx.Error.Error())
+				return dbTx.Error
+			}
+			if dbTx.RowsAffected == 0 {
+				commitInfo, err := json.Marshal(blockStates.BlockForCommit)
+				if err != nil {
+					logx.Errorf("unable to marshal block for commit, err=%s", err.Error())
+					return err
+				}
+				logx.Errorf("invalid block for commit info: %s", string(commitInfo))
+				return errors.New("invalid block for commit info")
+			}
+		}
+		// create new account
+		if len(blockStates.PendingNewAccount) != 0 {
+			dbTx := tx.Table(account.AccountTableName).CreateInBatches(blockStates.PendingNewAccount, len(blockStates.PendingNewAccount))
+			if dbTx.Error != nil {
+				return dbTx.Error
+			}
+			if dbTx.RowsAffected != int64(len(blockStates.PendingNewAccount)) {
+				logx.Errorf("unable to create new account, rowsAffected=%d, rowsCreated=%d", dbTx.RowsAffected, len(blockStates.PendingNewAccount))
+				return errors.New("unable to create new account")
 			}
 		}
 		// update account
-		for _, pendignUpdateAccount := range pendingUpdateAccounts {
-			dbTx := tx.Table(account.AccountTableName).Where("id = ?", pendignUpdateAccount.ID).
+		for _, pendingAccount := range blockStates.PendingUpdateAccount {
+			dbTx := tx.Table(account.AccountTableName).Where("id = ?", pendingAccount.ID).
 				Select("*").
-				Updates(&pendignUpdateAccount)
+				Updates(&pendingAccount)
 			if dbTx.Error != nil {
 				logx.Errorf("unable to update account: %s", dbTx.Error.Error())
 				return dbTx.Error
@@ -468,21 +436,32 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 			}
 		}
 		// create new account history
-		if len(pendingNewAccountHistories) != 0 {
-			dbTx := tx.Table(account.AccountHistoryTableName).CreateInBatches(pendingNewAccountHistories, len(pendingNewAccountHistories))
+		if len(blockStates.PendingNewAccountHistory) != 0 {
+			dbTx := tx.Table(account.AccountHistoryTableName).CreateInBatches(blockStates.PendingNewAccountHistory, len(blockStates.PendingNewAccountHistory))
 			if dbTx.Error != nil {
 				return dbTx.Error
 			}
-			if dbTx.RowsAffected != int64(len(pendingNewAccountHistories)) {
-				logx.Errorf("unable to create new account history, rowsAffected=%d, rowsCreated=%d", dbTx.RowsAffected, len(pendingNewAccountHistories))
+			if dbTx.RowsAffected != int64(len(blockStates.PendingNewAccountHistory)) {
+				logx.Errorf("unable to create new account history, rowsAffected=%d, rowsCreated=%d", dbTx.RowsAffected, len(blockStates.PendingNewAccountHistory))
 				return errors.New("unable to create new account history")
 			}
 		}
+		// create new liquidity
+		if len(blockStates.PendingNewLiquidity) != 0 {
+			dbTx := tx.Table(liquidity.LiquidityTable).CreateInBatches(blockStates.PendingNewLiquidity, len(blockStates.PendingNewLiquidity))
+			if dbTx.Error != nil {
+				return dbTx.Error
+			}
+			if dbTx.RowsAffected != int64(len(blockStates.PendingNewLiquidity)) {
+				logx.Errorf("unable to create new liquidity, rowsAffected=%d, rowsCreated=%d", dbTx.RowsAffected, len(blockStates.PendingNewLiquidity))
+				return errors.New("unable to create new liquidity")
+			}
+		}
 		// update liquidity
-		for _, entity := range pendingUpdateLiquiditys {
-			dbTx := tx.Table(liquidity.LiquidityTable).Where("id = ?", entity.ID).
+		for _, pendingLiquidity := range blockStates.PendingUpdateLiquidity {
+			dbTx := tx.Table(liquidity.LiquidityTable).Where("id = ?", pendingLiquidity.ID).
 				Select("*").
-				Updates(&entity)
+				Updates(&pendingLiquidity)
 			if dbTx.Error != nil {
 				logx.Errorf("unable to update liquidity: %s", dbTx.Error.Error())
 				return dbTx.Error
@@ -492,34 +471,34 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 			}
 		}
 		// create new liquidity history
-		if len(pendingNewLiquidityHistories) != 0 {
-			dbTx := tx.Table(liquidity.LiquidityHistoryTable).CreateInBatches(pendingNewLiquidityHistories, len(pendingNewLiquidityHistories))
+		if len(blockStates.PendingNewLiquidityHistory) != 0 {
+			dbTx := tx.Table(liquidity.LiquidityHistoryTable).CreateInBatches(blockStates.PendingNewLiquidityHistory, len(blockStates.PendingNewLiquidityHistory))
 			if dbTx.Error != nil {
 				logx.Errorf("create liquidity history error, err: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
-			if dbTx.RowsAffected != int64(len(pendingNewLiquidityHistories)) {
+			if dbTx.RowsAffected != int64(len(blockStates.PendingNewLiquidityHistory)) {
 				logx.Errorf("unable to create new liquidity history, rowsAffected=%d, rowsToCreate=%d",
-					dbTx.RowsAffected, len(pendingNewLiquidityHistories))
+					dbTx.RowsAffected, len(blockStates.PendingNewLiquidityHistory))
 				return errors.New("unable to create new liquidity history")
 			}
 		}
-		// new nft
-		if len(pendingNewNftWithdrawHistory) != 0 {
-			dbTx := tx.Table(nft.L2NftWithdrawHistoryTableName).CreateInBatches(pendingNewNftWithdrawHistory, len(pendingNewNftWithdrawHistory))
+		// create new nft
+		if len(blockStates.PendingNewNft) != 0 {
+			dbTx := tx.Table(nft.L2NftTableName).CreateInBatches(blockStates.PendingNewNft, len(blockStates.PendingNewNft))
 			if dbTx.Error != nil {
-				logx.Errorf("create nft withdraw history error, err: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
-			if dbTx.RowsAffected != int64(len(pendingNewNftWithdrawHistory)) {
-				return errors.New("unable to create new nft withdraw")
+			if dbTx.RowsAffected != int64(len(blockStates.PendingNewNft)) {
+				logx.Errorf("unable to create new nft, rowsAffected=%d, rowsCreated=%d", dbTx.RowsAffected, len(blockStates.PendingNewNft))
+				return errors.New("unable to create new nft")
 			}
 		}
 		// update nft
-		for _, entity := range pendingUpdateNfts {
-			dbTx := tx.Table(nft.L2NftTableName).Where("id = ?", entity.ID).
+		for _, pendingNft := range blockStates.PendingUpdateNft {
+			dbTx := tx.Table(nft.L2NftTableName).Where("id = ?", pendingNft.ID).
 				Select("*").
-				Updates(&entity)
+				Updates(&pendingNft)
 			if dbTx.Error != nil {
 				logx.Errorf("unable to update nft: %s", dbTx.Error.Error())
 				return dbTx.Error
@@ -529,20 +508,52 @@ func (m *defaultBlockModel) CreateBlockForCommitter(
 			}
 		}
 		// new nft history
-		if len(pendingNewNftHistories) != 0 {
-			dbTx := tx.Table(nft.L2NftHistoryTableName).CreateInBatches(pendingNewNftHistories, len(pendingNewNftHistories))
+		if len(blockStates.PendingNewNftHistory) != 0 {
+			dbTx := tx.Table(nft.L2NftHistoryTableName).CreateInBatches(blockStates.PendingNewNftHistory, len(blockStates.PendingNewNftHistory))
 			if dbTx.Error != nil {
 				return dbTx.Error
 			}
-			if dbTx.RowsAffected != int64(len(pendingNewNftHistories)) {
+			if dbTx.RowsAffected != int64(len(blockStates.PendingNewNftHistory)) {
 				logx.Errorf("unable to create new nft history, rowsAffected=%d, rowsToCreate=%d",
-					dbTx.RowsAffected, len(pendingNewNftHistories))
+					dbTx.RowsAffected, len(blockStates.PendingNewNftHistory))
 				return errors.New("unable to create new nft history")
+			}
+		}
+		// new nft withdraw history
+		if len(blockStates.PendingNewNftWithdrawHistory) != 0 {
+			dbTx := tx.Table(nft.L2NftWithdrawHistoryTableName).CreateInBatches(blockStates.PendingNewNftWithdrawHistory, len(blockStates.PendingNewNftWithdrawHistory))
+			if dbTx.Error != nil {
+				logx.Errorf("create nft withdraw history error, err: %s", dbTx.Error.Error())
+				return dbTx.Error
+			}
+			if dbTx.RowsAffected != int64(len(blockStates.PendingNewNftWithdrawHistory)) {
+				return errors.New("unable to create new nft withdraw")
+			}
+		}
+		// new offer
+		if len(blockStates.PendingNewOffer) != 0 {
+			dbTx := tx.Table(nft.OfferTableName).CreateInBatches(blockStates.PendingNewOffer, len(blockStates.PendingNewOffer))
+			if dbTx.Error != nil {
+				logx.Errorf("create new offer error, err: %s", dbTx.Error.Error())
+				return dbTx.Error
+			}
+			if dbTx.RowsAffected != int64(len(blockStates.PendingNewOffer)) {
+				return errors.New("unable to create new offer")
+			}
+		}
+		// new nft exchange
+		if len(blockStates.PendingNewL2NftExchange) != 0 {
+			dbTx := tx.Table(nft.L2NftExchangeTableName).CreateInBatches(blockStates.PendingNewL2NftExchange, len(blockStates.PendingNewL2NftExchange))
+			if dbTx.Error != nil {
+				logx.Errorf("create new nft exchange error, err: %s", dbTx.Error.Error())
+				return dbTx.Error
+			}
+			if dbTx.RowsAffected != int64(len(blockStates.PendingNewL2NftExchange)) {
+				return errors.New("unable to create new nft exchange")
 			}
 		}
 		return nil
 	})
-	return err
 }
 
 func (m *defaultBlockModel) CreateNewBlock(oBlock *Block) (err error) {

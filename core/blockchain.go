@@ -8,6 +8,8 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/bnb-chain/zkbas/core/types"
+
 	bsmt "github.com/bnb-chain/bas-smt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
@@ -98,23 +100,6 @@ func NewStateCache(stateRoot string) *StateCache {
 		pendingOnChainOperationsPubData: make([][]byte, 0),
 		pendingOnChainOperationsHash:    common.FromHex(util.EmptyStringKeccak),
 	}
-}
-
-type StatesToCommit struct {
-	Block                        *block.Block
-	BlockForCommit               *blockForCommit.BlockForCommit
-	PendingNewAccount            []*account.Account
-	PendingUpdateAccount         []*account.Account
-	PendingNewAccountHistory     []*account.AccountHistory
-	PendingNewLiquidity          []*liquidity.Liquidity
-	PendingUpdateLiquidity       []*liquidity.Liquidity
-	PendingNewLiquidityHistory   []*liquidity.LiquidityHistory
-	PendingNewNft                []*nft.L2Nft
-	PendingUpdateNft             []*nft.L2Nft
-	PendingNewNftHistory         []*nft.L2NftHistory
-	PendingNewNftWithdrawHistory []*nft.L2NftWithdrawHistory
-	PendingNewOffer              []*nft.Offer
-	PendingNewL2NftExchange      []*nft.L2NftExchange
 }
 
 type ChainDB struct {
@@ -363,7 +348,7 @@ func (bc *BlockChain) ProposeNewBlock() (*block.Block, error) {
 	return newBlock, nil
 }
 
-func (bc *BlockChain) CommitNewBlock(blockSize int, createdAt int64) (*StatesToCommit, error) {
+func (bc *BlockChain) CommitNewBlock(blockSize int, createdAt int64) (*types.BlockStates, error) {
 	newBlock, newBlockForCommit, err := bc.commitNewBlock(blockSize, createdAt)
 	if err != nil {
 		return nil, err
@@ -384,7 +369,7 @@ func (bc *BlockChain) CommitNewBlock(blockSize int, createdAt int64) (*StatesToC
 		return nil, err
 	}
 
-	return &StatesToCommit{
+	return &types.BlockStates{
 		Block:                        newBlock,
 		BlockForCommit:               newBlockForCommit,
 		PendingNewAccount:            pendingNewAccount,
