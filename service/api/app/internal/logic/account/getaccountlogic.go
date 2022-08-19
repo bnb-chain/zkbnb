@@ -12,6 +12,12 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
+const (
+	queryByIndex = "index"
+	queryByName  = "name"
+	queryByPk    = "pk"
+)
+
 type GetAccountLogic struct {
 	logx.Logger
 	ctx    context.Context
@@ -29,14 +35,14 @@ func NewGetAccountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAcc
 func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Account, err error) {
 	accountIndex := int64(0)
 	switch req.By {
-	case "index":
+	case queryByIndex:
 		accountIndex, err = strconv.ParseInt(req.Value, 10, 64)
 		if err != nil {
 			return nil, errorcode.AppErrInvalidParam.RefineError("invalid value for account index")
 		}
-	case "name":
+	case queryByName:
 		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByName(req.Value)
-	case "pk":
+	case queryByPk:
 		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByPk(req.Value)
 	default:
 		return nil, errorcode.AppErrInvalidParam.RefineError("param by should be index|name|pk")

@@ -13,6 +13,11 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
+const (
+	queryByHeight     = "height"
+	queryByCommitment = "commitment"
+)
+
 type GetBlockLogic struct {
 	logx.Logger
 	ctx    context.Context
@@ -30,7 +35,7 @@ func NewGetBlockLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetBlock
 func (l *GetBlockLogic) GetBlock(req *types.ReqGetBlock) (resp *types.Block, err error) {
 	var block *block.Block
 	switch req.By {
-	case "height":
+	case queryByHeight:
 		blockHeight, err := strconv.ParseInt(req.Value, 10, 64)
 		if err != nil {
 			return nil, errorcode.AppErrInvalidParam.RefineError("invalid value for block height")
@@ -41,7 +46,7 @@ func (l *GetBlockLogic) GetBlock(req *types.ReqGetBlock) (resp *types.Block, err
 		block, err = l.svcCtx.MemCache.GetBlockByHeightWithFallback(blockHeight, func() (interface{}, error) {
 			return l.svcCtx.BlockModel.GetBlockByHeight(blockHeight)
 		})
-	case "commitment":
+	case queryByCommitment:
 		block, err = l.svcCtx.MemCache.GetBlockByCommitmentWithFallback(req.Value, func() (interface{}, error) {
 			return l.svcCtx.BlockModel.GetBlockByCommitment(req.Value)
 		})

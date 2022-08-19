@@ -13,6 +13,10 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
+const (
+	queryBySymbol = "symbol"
+)
+
 type GetCurrencyPriceLogic struct {
 	logx.Logger
 	ctx    context.Context
@@ -30,7 +34,7 @@ func NewGetCurrencyPriceLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 func (l *GetCurrencyPriceLogic) GetCurrencyPrice(req *types.ReqGetCurrencyPrice) (resp *types.CurrencyPrice, err error) {
 	symbol := ""
 	switch req.By {
-	case "symbol":
+	case queryBySymbol:
 		if !utils.ValidateSymbol(req.Value) {
 			logx.Errorf("invalid Symbol: %s", req.Value)
 			return nil, errorcode.AppErrInvalidParam.RefineError("invalid symbol")
