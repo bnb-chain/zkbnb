@@ -1,39 +1,41 @@
-
-
-# Zkbas Layer-2 Design
-
-## Table of contents
+# ZkBAS Protocol Design
 
 ## Glossary
 
-- **L1**: layer-1 blockchain(BNB Chain)
-- **Rollup**: layer-2 network (Zkbas)
-- **Owner**: a user who controls some assets in L2.
-- **Operator**: entity operating the rollup.
+- **L1**: layer 1 blockchain, it is BNB Smart Chain.
+- **Rollup**: Zk Rollup based layer-2 network, it is ZkBAS.
+- **Owner**: A user get a L2 account.
+- **Committer**: Entity executing transactions and producing consecutive blocks on L2.
 - **Eventually**: happening within finite time.
-- **Assets in rollup**: assets in L2 smart contract controlled by owners.
-- **Rollup key**: owner's private key used to control deposited assets.
-- **MiMC signature**: the result of signing the owner's message, using his private key, used in rollup internal transactions.
+- **Assets in L2**: Assets in L2 smart contract controlled by owners.
+- **L2 Key**: Owner's private key used to send transaction on L2.
+- **MiMC Signature**: The result of signing the owner's message, 
+using his private key, used in L2 internal transactions.
+
+The current implementation we still use EDDSA as the signature scheme, we will soon support
+switch to EDCSA.
 
 ## Design
 
 ### Overview
 
-Zkbas implements a ZK rollup protocol (in short "rollup" below) for:
+ZkBAS implements a ZK rollup protocol (in short "rollup" below) for:
 
 - BNB and BEP20 fungible token deposit and transfer
 - AMM-based fungible token swap on L2
-- BEP721 and BEP1155 non-fungible token deposit and transfer
-- mint BEP721 or BEP1155 non-fungible tokens on L2
+- BEP721 non-fungible token deposit and transfer
+- mint BEP721 non-fungible tokens on L2
 - NFT-marketplace on L2
 
 General rollup workflow is as follows:
 
 - Users can become owners in rollup by calling registerZNS in L1 to register a short name for L2;
 - Owners can transfer assets to each other, mint NFT on L2 or make a swap on L2;
-- Owners can withdraw assets under their control to an L1 address.
+- Owners can withdraw assets under their control to any L1 address.
 
-Rollup operation requires the assistance of an operator, who rolls transactions together, computes a zero-knowledge proof of the correct state transition, and affects the state transition by interacting with the rollup contract.
+Rollup operation requires the assistance of a committer, who rolls transactions together, also a prover who computes
+a zero-knowledge proof of the correct state transition, and affects the state transition by interacting with the 
+rollup contract.
 
 ## Data format
 
@@ -49,13 +51,13 @@ We assume that 1 `Chunk` = 32 bytes.
 | PackedFee      | 2          | uint16   | Packed fees must be represented with 2 bytes: 5 bit for exponent, 11 bit for mantissa. |
 | StateAmount    | 16         | *big.Int | State amount is represented as uint128 with a range from 0 to ~3.4 × 10^38. It allows to represent up to 3.4 × 10^20 "units" if standard Ethereum's 18 decimal symbols are used. This should be a sufficient range. |
 | Nonce          | 4          | uint32   | Nonce is the total number of executed transactions of the account. In order to apply the update of this state, it is necessary to indicate the current account nonce in the corresponding transaction, after which it will be automatically incremented. If you specify the wrong nonce, the changes will not occur. |
-| EthAddress     | 20         | string   | To make an BNB Chain address from the BNB Chain's public key, all we need to do is to apply Keccak-256 hash function to the key and then take the last 20 bytes of the result. |
+| EthAddress     | 20         | string   | To make an BNB Smart Chain address from the BNB Smart Chain's public key, all we need to do is to apply Keccak-256 hash function to the key and then take the last 20 bytes of the result. |
 | Signature      | 64         | []byte   | Based on eddsa                                               |
 | HashValue      | 32         | string   | hash value based on MiMC                                     |
 
 ### Amount packing
 
-Mantissa and exponent parameters used in Zkbas:
+Mantissa and exponent parameters used in ZkBAS:
 
 `amount = mantissa * radix^{exponent}`
 
@@ -66,7 +68,8 @@ Mantissa and exponent parameters used in Zkbas:
 
 ### State Merkle Tree(height)
 
-We have 3 unique trees: `AccountTree(32)`, `LiquidityTree(16)`, `NftTree(40)` and one sub tree `AssetTree(16)` which belongs to `AccountTree(32)`. The empty leaf for all of the trees is just set every attribute as `0` for every node.
+We have 3 unique trees: `AccountTree(32)`, `LiquidityTree(16)`, `NftTree(40)` and one sub tree `AssetTree(16)` which 
+belongs to `AccountTree(32)`. The empty leaf for all of the trees is just set every attribute as `0` for every node.
 
 #### AccountTree
 
@@ -290,9 +293,9 @@ func ComputeStateRootHash(
 }
 ```
 
-## Zkbas Transactions
+## ZkBAS Transactions
 
-Zkbas transactions are divided into Rollup transactions (initiated inside Rollup by a Rollup account) and Priority operations (initiated on the mainchain by an BNB Chain account).
+ZkBAS transactions are divided into Rollup transactions (initiated inside Rollup by a Rollup account) and Priority operations (initiated on the mainchain by an BNB Smart Chain account).
 
 Rollup transactions:
 
@@ -322,9 +325,11 @@ Priority operations:
 ### Rollup transaction lifecycle
 
 1. User creates a `Transaction` or a `Priority operation`.
-2. After processing this request, operator creates a `Rollup operation` and adds it to the block.
-3. Once the block is complete, operator submits it to the Zkbas smart contract as a block commitment. Part of the logic of some `Rollup transaction` is checked by the smart contract.
-4. The proof for the block is submitted to the Zkbas smart contract as the block verification. If the verification succeeds, the new state is considered finalized.
+2. After processing this request, committer creates a `Rollup operation` and adds it to the block.
+3. Once the block is complete, sender submits it to the ZkBAS smart contract as a block commitment. 
+   Part of the logic of some `Rollup transaction` is checked by the smart contract.
+4. The proof for the block is submitted to the ZkBAS smart contract as the block verification. 
+   If the verification succeeds, the new state is considered finalized.
 
 ### EmptyTx
 
@@ -2520,8 +2525,8 @@ function registerZNS(string calldata _name, address _owner, bytes32 _zkbasPubKey
 
 - `_name`: your favor account name
 - `_owner`: account name layer-1 owner address
-- `_zkbasPubKeyX`: zkbas layer-2 public key X
-- `_zkbasPubKeyY`: zkbas layer-2 public key Y
+- `_zkbasPubKeyX`: ZkBAS layer-2 public key X
+- `_zkbasPubKeyY`: ZkBAS layer-2 public key Y
 
 #### CreatePair
 
@@ -2667,7 +2672,7 @@ function commitBlocks(
 external
 ```
 
-`StoredBlockInfo`: block data that we store on BNB Chain. We store hash of this structure in storage and pass it in tx arguments every time we need to access any of its field.
+`StoredBlockInfo`: block data that we store on BNB Smart Chain. We store hash of this structure in storage and pass it in tx arguments every time we need to access any of its field.
 
 - `blockNumber`: rollup block number
 - `priorityOperations`: priority operations count
@@ -2714,7 +2719,7 @@ function verifyAndExecuteBlocks(VerifyAndExecuteBlockInfo[] memory _blocks, uint
 
 #### Desert mode trigger
 
-Checks if Desert mode must be entered. Desert mode must be entered in case of current BNB Chain block number is higher than the oldest of existed priority requests expiration block number.
+Checks if Desert mode must be entered. Desert mode must be entered in case of current BNB Smart Chain block number is higher than the oldest of existed priority requests expiration block number.
 
 ```js
 function activateDesertMode() public returns (bool)
@@ -2722,8 +2727,7 @@ function activateDesertMode() public returns (bool)
 
 #### Revert blocks
 
-Revert blocks that were not verified before deadline determined by `EXPECT_VERIFICATION_IN` constant. The caller must be valid operator.
-
+Revert blocks that were not verified before deadline determined by `EXPECT_VERIFICATION_IN` constant.
 ```js
 function revertBlocks(StoredBlockInfo[] memory _blocksToRevert) external
 ```

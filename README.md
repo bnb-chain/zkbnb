@@ -132,6 +132,12 @@ and merge into the main code base. If you wish to submit more complex changes th
 [new issues](https://github.com/bnb-chain/zkbas/issues) and [BEPs](https://github.com/bnb-chain/BEPs). 
 If you are looking for something interesting or if you have something in your mind, there is a chance it had been discussed.
 
+## Related Projects
+
+- [ZkBAS Rollup Contracts](https://github.com/bnb-chain/zkbas-contract).
+- [ZkBAS Crypto](https://github.com/bnb-chain/zkbas-crypto).
+- [ZkBAS Eth RPC](https://github.com/bnb-chain/zkbas-eth-rpc).
+- [ZkBAS Go SDK](https://github.com/bnb-chain/zkbas-go-sdk).
 
 ## Outlook
 We believe that zk-Rollup Sooner or later L2 The best of the track — This is a very cheap and safe first-class 
