@@ -17,8 +17,11 @@ app:
 deploy:
 	sudo bash -x ./deploy-local.sh new
 
-test:
+integration-test:
 	sudo bash -x ./local-test.sh
+
+tools:
+	go install github.com/zeromicro/go-zero/tools/goctl@v1.4.0
 
 build: app
 	go build -o build/app ./service/api/app/app.go
