@@ -91,6 +91,10 @@ func NewStateCache(stateRoot string) *StateCache {
 		pendingUpdateAccountIndexMap:   make(map[int64]int, 0),
 		pendingUpdateLiquidityIndexMap: make(map[int64]int, 0),
 		pendingUpdateNftIndexMap:       make(map[int64]int, 0),
+		pendingNewNftWithdrawHistory:   make([]*nft.L2NftWithdrawHistory, 0),
+
+		pendingNewOffer:         make([]*nft.Offer, 0),
+		pendingNewL2NftExchange: make([]*nft.L2NftExchange, 0),
 
 		pubData:                         make([]byte, 0),
 		priorityOperations:              0,
