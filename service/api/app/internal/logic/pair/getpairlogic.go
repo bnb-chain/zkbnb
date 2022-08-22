@@ -6,7 +6,6 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/errorcode"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
@@ -26,10 +25,6 @@ func NewGetPairLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPairLo
 }
 
 func (l *GetPairLogic) GetPair(req *types.ReqGetPair) (resp *types.Pair, err error) {
-	if !utils.ValidatePairIndex(req.Index) {
-		return nil, errorcode.AppErrInvalidParam.RefineError("invalid PairIndex")
-	}
-
 	pair, err := l.svcCtx.StateFetcher.GetLatestLiquidity(int64(req.Index))
 	if err != nil {
 		logx.Errorf("fail to get pair info: %d, err: %s", req.Index, err.Error())

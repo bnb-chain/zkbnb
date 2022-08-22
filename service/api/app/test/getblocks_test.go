@@ -48,6 +48,7 @@ func (s *AppSuite) TestGetBlocks() {
 
 }
 
+//goland:noinspection ALL
 func GetBlocks(s *AppSuite, offset, limit int) (int, *types.Blocks) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/blocks?offset=%d&limit=%d", s.url, offset, limit))
 	assert.NoError(s.T(), err)

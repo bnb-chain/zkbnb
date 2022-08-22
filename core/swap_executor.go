@@ -16,7 +16,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
 )
 
 type SwapExecutor struct {
@@ -386,8 +385,8 @@ func (e *SwapExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 			AssetA:               txInfo.AssetAAmount,
 			AssetBId:             txInfo.AssetBId,
 			AssetB:               poolAssetBDelta,
-			LpAmount:             txVerification.ZeroBigInt,
-			KLast:                txVerification.ZeroBigInt,
+			LpAmount:             ZeroBigInt,
+			KLast:                ZeroBigInt,
 			FeeRate:              liquidityInfo.FeeRate,
 			TreasuryAccountIndex: liquidityInfo.TreasuryAccountIndex,
 			TreasuryRate:         liquidityInfo.TreasuryRate,
@@ -399,8 +398,8 @@ func (e *SwapExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 			AssetA:               poolAssetBDelta,
 			AssetBId:             txInfo.AssetAId,
 			AssetB:               txInfo.AssetAAmount,
-			LpAmount:             txVerification.ZeroBigInt,
-			KLast:                txVerification.ZeroBigInt,
+			LpAmount:             ZeroBigInt,
+			KLast:                ZeroBigInt,
 			FeeRate:              liquidityInfo.FeeRate,
 			TreasuryAccountIndex: liquidityInfo.TreasuryAccountIndex,
 			TreasuryRate:         liquidityInfo.TreasuryRate,

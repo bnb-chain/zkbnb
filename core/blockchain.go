@@ -237,8 +237,8 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	return bc, nil
 }
 
-//NewBlockChainForDryRun - for dry run mode, we can reuse existing models for quick creation
-//, e.g., for sending tx, we can create blockchain for each request quickly
+// NewBlockChainForDryRun - for dry run mode, we can reuse existing models for quick creation
+// , e.g., for sending tx, we can create blockchain for each request quickly
 func NewBlockChainForDryRun(accountModel account.AccountModel, liquidityModel liquidity.LiquidityModel,
 	nftModel nft.L2NftModel, redisCache dbcache.Cache) *BlockChain {
 	bc := &BlockChain{

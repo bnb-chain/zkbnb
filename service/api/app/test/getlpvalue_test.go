@@ -46,6 +46,7 @@ func (s *AppSuite) TestGetLpValue() {
 
 }
 
+//goland:noinspection GoUnhandledErrorResult
 func GetLpValue(s *AppSuite, pairIndex int, lpAmount string) (int, *types.LpValue) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/lpValue?pair_index=%d&lp_amount=%s", s.url, pairIndex, lpAmount))
 	assert.NoError(s.T(), err)

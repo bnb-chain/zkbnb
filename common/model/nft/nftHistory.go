@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,20 +72,20 @@ func (*L2NftHistory) TableName() string {
 }
 
 /*
-	Func: CreateL2NftHistoryTable
-	Params:
-	Return: err error
-	Description: create account l2 nft table
+Func: CreateL2NftHistoryTable
+Params:
+Return: err error
+Description: create account l2 nft table
 */
 func (m *defaultL2NftHistoryModel) CreateL2NftHistoryTable() error {
 	return m.DB.AutoMigrate(L2NftHistory{})
 }
 
 /*
-	Func: DropL2NftHistoryTable
-	Params:
-	Return: err error
-	Description: drop account l2 nft history table
+Func: DropL2NftHistoryTable
+Params:
+Return: err error
+Description: drop account l2 nft history table
 */
 func (m *defaultL2NftHistoryModel) DropL2NftHistoryTable() error {
 	return m.DB.Migrator().DropTable(m.table)

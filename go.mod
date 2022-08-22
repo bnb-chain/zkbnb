@@ -26,8 +26,6 @@ require (
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
 	golang.org/x/sys v0.0.0-20220808155132-1c4a2a72c664 // indirect
 	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
-	google.golang.org/grpc v1.46.2
-	google.golang.org/protobuf v1.28.0
 	gopkg.in/yaml.v3 v3.0.0-20220512140231-539c8e751b99 // indirect
 	gorm.io/driver/postgres v1.3.6
 	k8s.io/apimachinery v0.24.1 // indirect

@@ -48,6 +48,7 @@ func (s *AppSuite) TestGetPairs() {
 
 }
 
+//goland:noinspection GoUnhandledErrorResult
 func GetPairs(s *AppSuite, offset, limit int) (int, *types.Pairs) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/pairs?offset=%d&limit=%d", s.url, offset, limit))
 	assert.NoError(s.T(), err)

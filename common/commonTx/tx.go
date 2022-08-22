@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,7 +111,6 @@ func ParseCreateCollectionTxInfo(txInfoStr string) (txInfo *CreateCollectionTxIn
 	return txInfo, nil
 }
 
-// layer-2 transactions
 func ParseTransferTxInfo(txInfoStr string) (txInfo *TransferTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,12 @@
 
 package asset
 
+//goland:noinspection GoNameStartsWithPackageName
 const (
 	AssetTableName = `asset`
 
 	StatusActive   uint32 = 0
 	StatusInactive uint32 = 1
-)
 
-// flag: asset could be used as gasfee or not
-const (
-	NotGasAsset = 0
-	IsGasAsset  = 1
+	IsGasAsset = 1
 )

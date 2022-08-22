@@ -46,6 +46,7 @@ func (s *AppSuite) TestGetAccounts() {
 
 }
 
+//goland:noinspection GoUnhandledErrorResult
 func GetAccounts(s *AppSuite, offset, limit int) (int, *types.Accounts) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/accounts?offset=%d&limit=%d", s.url, offset, limit))
 	assert.NoError(s.T(), err)

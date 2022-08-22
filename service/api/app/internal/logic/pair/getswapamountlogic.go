@@ -8,7 +8,6 @@ import (
 
 	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
@@ -28,15 +27,6 @@ func NewGetSwapAmountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 }
 
 func (l *GetSwapAmountLogic) GetSwapAmount(req *types.ReqGetSwapAmount) (*types.SwapAmount, error) {
-	if !utils.ValidatePairIndex(req.PairIndex) {
-		logx.Errorf("invalid PairIndex: %d", req.PairIndex)
-		return nil, errorcode.AppErrInvalidParam.RefineError("invalid PairIndex")
-	}
-	if !utils.ValidateAssetId(req.AssetId) {
-		logx.Errorf("invalid AssetId: %d", req.AssetId)
-		return nil, errorcode.AppErrInvalidParam.RefineError("invalid AssetId")
-	}
-
 	deltaAmount, isTure := new(big.Int).SetString(req.AssetAmount, 10)
 	if !isTure {
 		logx.Errorf("fail to convert string: %s to int", req.AssetAmount)

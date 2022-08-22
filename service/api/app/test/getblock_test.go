@@ -44,6 +44,7 @@ func (s *AppSuite) TestGetBlock() {
 
 }
 
+//goland:noinspection ALL
 func GetBlock(s *AppSuite, by, value string) (int, *types.Block) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/block?by=%s&value=%s", s.url, by, value))
 	assert.NoError(s.T(), err)

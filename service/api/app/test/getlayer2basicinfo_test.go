@@ -44,6 +44,7 @@ func (s *AppSuite) TestGetLayer2BasicInfo() {
 
 }
 
+//goland:noinspection GoUnhandledErrorResult
 func GetLayer2BasicInfo(s *AppSuite) (int, *types.Layer2BasicInfo) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/layer2BasicInfo", s.url))
 	assert.NoError(s.T(), err)

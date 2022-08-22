@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/errorcode"
 )
 
+//goland:noinspection GoNameStartsWithPackageName
 type (
 	TxModel interface {
 		CreateTxTable() error
@@ -90,32 +91,14 @@ func (*Tx) TableName() string {
 	return TxTableName
 }
 
-/*
-	Func: CreateTxTable
-	Params:
-	Return: err error
-	Description: create txVerification table
-*/
 func (m *defaultTxModel) CreateTxTable() error {
 	return m.DB.AutoMigrate(Tx{})
 }
 
-/*
-	Func: DropTxTable
-	Params:
-	Return: err error
-	Description: drop txVerification table
-*/
 func (m *defaultTxModel) DropTxTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-/*
-	Func: GetTxsTotalCount
-	Params:
-	Return: count int64, err error
-	Description: used for counting total transactions for explorer dashboard
-*/
 func (m *defaultTxModel) GetTxsTotalCount() (count int64, err error) {
 	dbTx := m.DB.Table(m.table).Where("deleted_at is NULL").Count(&count)
 	if dbTx.Error != nil {
@@ -127,13 +110,6 @@ func (m *defaultTxModel) GetTxsTotalCount() (count int64, err error) {
 	}
 	return count, nil
 }
-
-/*
-	Func: GetTxsList
-	Params:
-	Return: list of txs, err error
-	Description: used for showing transactions for explorer
-*/
 
 func (m *defaultTxModel) GetTxsList(limit int64, offset int64) (txList []*Tx, err error) {
 	dbTx := m.DB.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("created_at desc").Find(&txList)
@@ -190,12 +166,6 @@ func (m *defaultTxModel) GetTxsCountByAccountIndexTxType(accountIndex int64, txT
 	return count, nil
 }
 
-/*
-	Func: GetTxByTxHash
-	Params: txHash string
-	Return: txVerification Tx, err error
-	Description: used for /api/v1/txVerification/getTxByHash
-*/
 func (m *defaultTxModel) GetTxByHash(txHash string) (tx *Tx, err error) {
 	var txForeignKeyColumn = `TxDetails`
 

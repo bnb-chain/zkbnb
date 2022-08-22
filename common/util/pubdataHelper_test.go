@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,26 +28,7 @@ import (
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/bnb-chain/zkbas/common/model/basic"
-	"github.com/bnb-chain/zkbas/common/model/mempool"
 )
-
-var (
-	mempoolModel = mempool.NewMempoolModel(basic.Connection, basic.CacheConf, basic.DB)
-)
-
-func TestConvertTxToRegisterZNSPubData(t *testing.T) {
-	txInfo, err := mempoolModel.GetMempoolTxByTxId(1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	pubData, err := ConvertTxToRegisterZNSPubData(txInfo)
-	if err != nil {
-		t.Fatal(err)
-	}
-	log.Println(common.Bytes2Hex(pubData))
-}
 
 func TestPubDataComputation(t *testing.T) {
 

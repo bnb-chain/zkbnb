@@ -63,6 +63,7 @@ func (s *AppSuite) TestSendTx() {
 
 }
 
+//goland:noinspection GoUnhandledErrorResult
 func SendTx(s *AppSuite, txType int, txInfo string) (int, *types.TxHash) {
 	resp, err := http.PostForm(s.url+"/api/v1/sendTx",
 		url.Values{"tx_type": {strconv.Itoa(txType)}, "tx_info": {txInfo}})

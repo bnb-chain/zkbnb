@@ -11,13 +11,6 @@ import (
 	"github.com/bnb-chain/bas-smt/database/redis"
 )
 
-const (
-	NFTPrefix          = "nft:"
-	LiquidityPrefix    = "liquidity:"
-	AccountPrefix      = "account:"
-	AccountAssetPrefix = "account_asset:"
-)
-
 type Driver string
 
 type LevelDBOption struct {

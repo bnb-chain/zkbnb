@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	COO_MODE = 1
-	COM_MODE = 2
+	CooMode = 1
+	ComMode = 2
 )
 
 func LoadProvingKey(filepath string) (pk groth16.ProvingKey, err error) {
@@ -92,42 +92,6 @@ func GenerateProof(
 	return proof, nil
 }
 
-func VerifyProof(
-	proof groth16.Proof,
-	vk groth16.VerifyingKey,
-	cBlock *cryptoBlock.Block,
-) error {
-	// verify CryptoBlock
-	blockWitness, err := cryptoBlock.SetBlockWitness(cBlock)
-	if err != nil {
-		logx.Errorf("[VerifyProof] unable to set block witness: %s", err.Error())
-		return err
-	}
-
-	var verifyWitness cryptoBlock.BlockConstraints
-	verifyWitness.OldStateRoot = cBlock.OldStateRoot
-	verifyWitness.NewStateRoot = cBlock.NewStateRoot
-	verifyWitness.BlockCommitment = cBlock.BlockCommitment
-	_, err = frontend.NewWitness(&blockWitness, ecc.BN254)
-	if err != nil {
-		logx.Errorf("[VerifyProof] unable to generate new witness: %s", err.Error())
-		return err
-	}
-
-	vWitness, err := frontend.NewWitness(&verifyWitness, ecc.BN254, frontend.PublicOnly())
-	if err != nil {
-		logx.Errorf("[VerifyProof] unable to generate new witness: %s", err.Error())
-		return err
-	}
-
-	err = groth16.Verify(proof, vk, vWitness)
-	if err != nil {
-		logx.Errorf("[VerifyProof] invalid block proof: %s", err.Error())
-		return err
-	}
-	return nil
-}
-
 type FormattedProof struct {
 	A      [2]*big.Int
 	B      [2][2]*big.Int
@@ -160,44 +124,4 @@ func FormatProof(oProof groth16.Proof, oldRoot, newRoot, commitment []byte) (pro
 	proof.Inputs[1] = new(big.Int).SetBytes(newRoot)
 	proof.Inputs[2] = new(big.Int).SetBytes(commitment)
 	return proof, nil
-}
-
-func UnformatProof(proof *FormattedProof) (oProof groth16.Proof, err error) {
-	var buf bytes.Buffer
-	// write bytes to buffer
-	buf.Write(proof.A[0].Bytes())
-	buf.Write(proof.A[1].Bytes())
-	buf.Write(proof.B[0][0].Bytes())
-	buf.Write(proof.B[0][1].Bytes())
-	buf.Write(proof.B[1][0].Bytes())
-	buf.Write(proof.B[1][1].Bytes())
-	buf.Write(proof.C[0].Bytes())
-	buf.Write(proof.C[1].Bytes())
-
-	// init oProof
-	oProof = groth16.NewProof(ecc.BN254)
-
-	// read buffer
-	_, err = oProof.ReadFrom(bytes.NewReader(buf.Bytes()))
-	if err != nil {
-		logx.Errorf("[UnformatProof] unable to ReadFrom proof buffer: %s", err.Error())
-		return oProof, err
-	}
-
-	return oProof, nil
-}
-
-func CompactProofs(proofs []*FormattedProof) []*big.Int {
-	var res []*big.Int
-	for _, proof := range proofs {
-		res = append(res, proof.A[0])
-		res = append(res, proof.A[1])
-		res = append(res, proof.B[0][0])
-		res = append(res, proof.B[0][1])
-		res = append(res, proof.B[1][0])
-		res = append(res, proof.B[1][1])
-		res = append(res, proof.C[0])
-		res = append(res, proof.C[1])
-	}
-	return res
 }

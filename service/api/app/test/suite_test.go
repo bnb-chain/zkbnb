@@ -34,6 +34,7 @@ func (s *AppSuite) SetupSuite() {
 	c.Port += 1000
 	ctx := svc.NewServiceContext(c)
 
+	//goland:noinspection HttpUrlsUsage
 	s.url = fmt.Sprintf("http://%s:%d", c.Host, c.Port)
 	//s.url = "http://172.22.41.67:8888" //use external service for test
 	s.server = rest.MustNewServer(c.RestConf, rest.WithCors())

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import (
 )
 
 /*
-	ToPackedAmount: convert big int to 40 bit, 5 bits for 10^x, 35 bits for a * 10^x
+ToPackedAmount: convert big int to 40 bit, 5 bits for 10^x, 35 bits for a * 10^x
 */
 func ToPackedAmount(amount *big.Int) (res int64, err error) {
 	return util.ToPackedAmount(amount)
@@ -35,7 +35,7 @@ func CleanPackedAmount(amount *big.Int) (nAmount *big.Int, err error) {
 }
 
 /*
-	ToPackedFee: convert big int to 16 bit, 5 bits for 10^x, 11 bits for a * 10^x
+ToPackedFee: convert big int to 16 bit, 5 bits for 10^x, 11 bits for a * 10^x
 */
 func ToPackedFee(amount *big.Int) (res int64, err error) {
 	return util.ToPackedFee(amount)

@@ -2,7 +2,6 @@ package svc
 
 import (
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -20,13 +19,6 @@ type ServiceContext struct {
 	AccountHistoryModel   account.AccountHistoryModel
 	LiquidityHistoryModel liquidity.LiquidityHistoryModel
 	NftHistoryModel       nft.L2NftHistoryModel
-}
-
-func WithRedis(redisType string, redisPass string) redis.Option {
-	return func(p *redis.Redis) {
-		p.Type = redisType
-		p.Pass = redisPass
-	}
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {

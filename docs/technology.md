@@ -34,10 +34,10 @@ operations cannot be reversed once finalized on L1.
 
 ZkBAS provides relative fast finality speed within 10 minutes.
 
-## Instant confirmationsion ZkBS
+## Instant confirmation ZkBS
 Even though time to finality is about 10 minutes, it does not affect the usability of the network. The state transition
 happens immediately once the block been proposed on ZkBAS. The rollup operations are totally transparent to most users, 
-users can make further transfers without waitting.
+users can make further transfers without waiting.
 
 ## Censorship resistance
 Committer will execute transactions, produce batches. While this ensures efficiency, it increases the risk of censorship
@@ -45,4 +45,4 @@ Committer will execute transactions, produce batches. While this ensures efficie
 
 As a security measure, ZkBAS allow users to submit transactions directly to the rollup contract on Mainnet if 
 they think they are being censored by the operator. This allows users to force an exit from the ZK-rollup to BSC without 
-having to rely on the committer's permission.
+having to rely on the commiter's permission.

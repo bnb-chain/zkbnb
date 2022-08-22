@@ -8,7 +8,6 @@ import (
 
 	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
@@ -28,10 +27,6 @@ func NewGetLpValueLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetLpV
 }
 
 func (l *GetLpValueLogic) GetLPValue(req *types.ReqGetLpValue) (resp *types.LpValue, err error) {
-	if !utils.ValidatePairIndex(req.PairIndex) {
-		logx.Errorf("invalid PairIndex: %d", req.PairIndex)
-		return nil, errorcode.AppErrInvalidParam.RefineError("invalid PairIndex")
-	}
 	amount, isTure := new(big.Int).SetString(req.LpAmount, 10)
 	if !isTure {
 		logx.Errorf("fail to convert string: %s to int", req.LpAmount)

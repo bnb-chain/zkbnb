@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,4 @@ const (
 	OfferTableName = `offer`
 
 	OfferFinishedStatus = 1
-
-	CollectionPending = 0 // create collection request received by api
-	CollectionCreated = 1 // collection created in l2
 )

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/errorcode"
 )
 
+//goland:noinspection GoNameStartsWithPackageName,GoNameStartsWithPackageName
 type (
 	AccountHistoryModel interface {
 		CreateAccountHistoryTable() error
@@ -65,32 +66,14 @@ func (*AccountHistory) TableName() string {
 	return AccountHistoryTableName
 }
 
-/*
-	Func: CreateAccountHistoryTable
-	Params:
-	Return: err error
-	Description: create account history table
-*/
 func (m *defaultAccountHistoryModel) CreateAccountHistoryTable() error {
 	return m.DB.AutoMigrate(AccountHistory{})
 }
 
-/*
-	Func: DropAccountHistoryTable
-	Params:
-	Return: err error
-	Description: drop account history table
-*/
 func (m *defaultAccountHistoryModel) DropAccountHistoryTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-/*
-	Func: CreateNewAccount
-	Params: nAccount *AccountHistory
-	Return: err error
-	Description:
-*/
 func (m *defaultAccountHistoryModel) CreateNewAccount(nAccount *AccountHistory) (err error) {
 	dbTx := m.DB.Table(m.table).Create(&nAccount)
 	if dbTx.Error != nil {

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -124,7 +124,7 @@ func ComputeDelta(
 */
 
 /*
-	InputPrice = （9970 * deltaX * y) / (10000 * x + 9970 * deltaX)
+InputPrice = （9970 * deltaX * y) / (10000 * x + 9970 * deltaX)
 */
 func ComputeInputPrice(x *big.Int, y *big.Int, inputX *big.Int, feeRate int64) (*big.Int, error) {
 	rFeeR := big.NewInt(FeeRateBase - feeRate)
@@ -136,7 +136,7 @@ func ComputeInputPrice(x *big.Int, y *big.Int, inputX *big.Int, feeRate int64) (
 }
 
 /*
-	OutputPrice = （10000 * x * deltaY) / (9970 * (y - deltaY)) + 1
+OutputPrice = （10000 * x * deltaY) / (9970 * (y - deltaY)) + 1
 */
 func ComputeOutputPrice(x *big.Int, y *big.Int, inputY *big.Int, feeRate int64) (*big.Int, error) {
 	rFeeR := big.NewInt(FeeRateBase - feeRate)

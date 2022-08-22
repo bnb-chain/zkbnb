@@ -40,6 +40,7 @@ func (s *AppSuite) TestGetWithdrawGasFee() {
 
 }
 
+//goland:noinspection GoUnhandledErrorResult
 func GetWithdrawGasFee(s *AppSuite, assetId int) (int, *types.GasFee) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/withdrawGasFee?asset_id=%d", s.url, assetId))
 	assert.NoError(s.T(), err)

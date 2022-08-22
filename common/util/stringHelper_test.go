@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,7 @@ func WithRedis(redisType string, redisPass string) redis.Option {
 	}
 }
 
+//goland:noinspection GoUnhandledErrorResult
 func TestRedis(t *testing.T) {
 	r := redis.New("127.0.0.1:6379", WithRedis("node", "myredis"))
 	_ = r.Set("key", "123")

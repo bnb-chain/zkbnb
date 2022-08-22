@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,19 +29,15 @@ import (
 )
 
 const (
-	// zkbas event name
 	EventNameNewPriorityRequest = "NewPriorityRequest"
 	EventNameBlockCommit        = "BlockCommit"
 	EventNameBlockVerification  = "BlockVerification"
-	EventNameBlocksRevert       = "BlocksRevert"
 
-	// tx type for l2 block event monitors
 	EventTypeNewPriorityRequest = 0
 	EventTypeCommittedBlock     = 1
 	EventTypeVerifiedBlock      = 2
 	EventTypeRevertedBlock      = 3
 
-	// governance event name
 	EventNameNewAsset              = "NewAsset"
 	EventNameNewGovernor           = "NewGovernor"
 	EventNameNewAssetGovernance    = "NewAssetGovernance"
@@ -54,10 +50,8 @@ const (
 	EventTypeValidatorStatusUpdate = 7
 	EventTypeAssetPausedUpdate     = 8
 
-	// event status
 	PendingStatus = priorityRequest.PendingStatus
 
-	// tx type
 	TxTypeRegisterZns    = commonTx.TxTypeRegisterZns
 	TxTypeCreatePair     = commonTx.TxTypeCreatePair
 	TxTypeUpdatePairRate = commonTx.TxTypeUpdatePairRate
@@ -70,7 +64,7 @@ const (
 )
 
 var (
-	ZkbasContractAbi, _ = abi.JSON(strings.NewReader(zkbas.ZkbasABI))
+	ZkbasContractAbi, _ = abi.JSON(strings.NewReader(zkbas.ZkbasMetaData.ABI))
 	// Zkbas contract logs sig
 	zkbasLogNewPriorityRequestSig = []byte("NewPriorityRequest(address,uint64,uint8,bytes,uint256)")
 	zkbasLogWithdrawalSig         = []byte("Withdrawal(uint16,uint128)")
@@ -86,7 +80,7 @@ var (
 	zkbasLogBlockVerificationSigHash  = crypto.Keccak256Hash(zkbasLogBlockVerificationSig)
 	zkbasLogBlocksRevertSigHash       = crypto.Keccak256Hash(zkbasLogBlocksRevertSig)
 
-	GovernanceContractAbi, _ = abi.JSON(strings.NewReader(zkbas.GovernanceABI))
+	GovernanceContractAbi, _ = abi.JSON(strings.NewReader(zkbas.GovernanceMetaData.ABI))
 
 	governanceLogNewAssetSig              = []byte("NewAsset(address,uint16)")
 	governanceLogNewGovernorSig           = []byte("NewGovernor(address)")

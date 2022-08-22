@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/sysConfig"
 )
 
+//goland:noinspection GoNameStartsWithPackageName
 type (
 	L1SyncedBlockModel interface {
 		CreateL1SyncedBlockTable() error

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,9 @@ package l1RollupTx
 const (
 	TableName = "l1_rollup_tx"
 
-	// status
 	StatusPending = 1
 	StatusHandled = 2
 
-	// txVerification type
 	TxTypeCommit           = 1
 	TxTypeVerifyAndExecute = 2
-	RevertTxType           = 3
 )

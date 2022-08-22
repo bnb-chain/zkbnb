@@ -43,6 +43,7 @@ func (s *AppSuite) TestGetAssets() {
 
 }
 
+//goland:noinspection GoUnhandledErrorResult
 func GetAssets(s *AppSuite, offset, limit int) (int, *types.Assets) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/assets?offset=%d&limit=%d", s.url, offset, limit))
 	assert.NoError(s.T(), err)

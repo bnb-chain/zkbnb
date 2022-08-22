@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ type (
 )
 
 const (
-	Base        = 10
 	AddressSize = 20
 
 	FeeRateBase = 10000
@@ -41,41 +40,38 @@ const (
 )
 
 const (
-	CHUNK_BYTES_SIZE           = 32
-	TXTYPE_BYTES_SIZE          = 1
-	NFTTYPE_BYTES_SIZE         = 1
-	ADDRESS_BYTES_SIZE         = 20
-	ACCOUNTINDEX_BYTES_SIZE    = 4
-	ACCOUNTNAME_BYTES_SIZE     = 32
-	ACCOUNTNAMEHASH_BYTES_SIZE = 32
-	PUBKEY_BYTES_SIZE          = 32
-	ASSETID_BYTES_SIZE         = 2
-	PAIRINDEX_BYTES_SIZE       = 2
-	PACKEDAMOUNT_BYTES_SIZE    = 5
-	STATEAMOUNT_BYTES_SIZE     = 16
-	NFTINDEX_BYTES_SIZE        = 5
-	NFTTOKENID_BYTES_SIZE      = 32
-	NFTCONTENTHASH_BYTES_SIZE  = 32
-	FEERATE_BYTES_SIZE         = 2
-	COLLECTIONID_BYTES_SIZE    = 2
+	TxTypeBytesSize          = 1
+	AddressBytesSize         = 20
+	AccountIndexBytesSize    = 4
+	AccountNameBytesSize     = 32
+	AccountNameHashBytesSize = 32
+	PubkeyBytesSize          = 32
+	AssetIdBytesSize         = 2
+	PairIndexBytesSize       = 2
+	StateAmountBytesSize     = 16
+	NftIndexBytesSize        = 5
+	NftTokenIdBytesSize      = 32
+	NftContentHashBytesSize  = 32
+	FeeRateBytesSize         = 2
+	CollectionIdBytesSize    = 2
 
-	RegisterZnsPubDataSize = TXTYPE_BYTES_SIZE + ACCOUNTINDEX_BYTES_SIZE + ACCOUNTNAME_BYTES_SIZE +
-		ACCOUNTNAMEHASH_BYTES_SIZE + PUBKEY_BYTES_SIZE + PUBKEY_BYTES_SIZE
-	CreatePairPubDataSize = TXTYPE_BYTES_SIZE + PAIRINDEX_BYTES_SIZE +
-		ASSETID_BYTES_SIZE + ASSETID_BYTES_SIZE + FEERATE_BYTES_SIZE + ACCOUNTINDEX_BYTES_SIZE + FEERATE_BYTES_SIZE
-	UpdatePairRatePubdataSize = TXTYPE_BYTES_SIZE + PAIRINDEX_BYTES_SIZE +
-		FEERATE_BYTES_SIZE + ACCOUNTINDEX_BYTES_SIZE + FEERATE_BYTES_SIZE
-	DepositPubDataSize = TXTYPE_BYTES_SIZE + ACCOUNTINDEX_BYTES_SIZE +
-		ACCOUNTNAMEHASH_BYTES_SIZE + ASSETID_BYTES_SIZE + STATEAMOUNT_BYTES_SIZE
-	DepositNftPubDataSize = TXTYPE_BYTES_SIZE + ACCOUNTINDEX_BYTES_SIZE + NFTINDEX_BYTES_SIZE + ADDRESS_BYTES_SIZE +
-		ACCOUNTINDEX_BYTES_SIZE + FEERATE_BYTES_SIZE + NFTCONTENTHASH_BYTES_SIZE + NFTTOKENID_BYTES_SIZE +
-		ACCOUNTNAMEHASH_BYTES_SIZE + COLLECTIONID_BYTES_SIZE
-	FullExitPubDataSize = TXTYPE_BYTES_SIZE + ACCOUNTINDEX_BYTES_SIZE +
-		ACCOUNTNAMEHASH_BYTES_SIZE + ASSETID_BYTES_SIZE + STATEAMOUNT_BYTES_SIZE
-	FullExitNftPubDataSize = TXTYPE_BYTES_SIZE + ACCOUNTINDEX_BYTES_SIZE + ACCOUNTINDEX_BYTES_SIZE + FEERATE_BYTES_SIZE +
-		NFTINDEX_BYTES_SIZE + COLLECTIONID_BYTES_SIZE + ADDRESS_BYTES_SIZE +
-		ACCOUNTNAMEHASH_BYTES_SIZE + ACCOUNTNAMEHASH_BYTES_SIZE +
-		NFTCONTENTHASH_BYTES_SIZE + NFTTOKENID_BYTES_SIZE
+	RegisterZnsPubDataSize = TxTypeBytesSize + AccountIndexBytesSize + AccountNameBytesSize +
+		AccountNameHashBytesSize + PubkeyBytesSize + PubkeyBytesSize
+	CreatePairPubDataSize = TxTypeBytesSize + PairIndexBytesSize +
+		AssetIdBytesSize + AssetIdBytesSize + FeeRateBytesSize + AccountIndexBytesSize + FeeRateBytesSize
+	UpdatePairRatePubdataSize = TxTypeBytesSize + PairIndexBytesSize +
+		FeeRateBytesSize + AccountIndexBytesSize + FeeRateBytesSize
+	DepositPubDataSize = TxTypeBytesSize + AccountIndexBytesSize +
+		AccountNameHashBytesSize + AssetIdBytesSize + StateAmountBytesSize
+	DepositNftPubDataSize = TxTypeBytesSize + AccountIndexBytesSize + NftIndexBytesSize + AddressBytesSize +
+		AccountIndexBytesSize + FeeRateBytesSize + NftContentHashBytesSize + NftTokenIdBytesSize +
+		AccountNameHashBytesSize + CollectionIdBytesSize
+	FullExitPubDataSize = TxTypeBytesSize + AccountIndexBytesSize +
+		AccountNameHashBytesSize + AssetIdBytesSize + StateAmountBytesSize
+	FullExitNftPubDataSize = TxTypeBytesSize + AccountIndexBytesSize + AccountIndexBytesSize + FeeRateBytesSize +
+		NftIndexBytesSize + CollectionIdBytesSize + AddressBytesSize +
+		AccountNameHashBytesSize + AccountNameHashBytesSize +
+		NftContentHashBytesSize + NftTokenIdBytesSize
 )
 
 const (

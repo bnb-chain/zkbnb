@@ -42,6 +42,7 @@ func (s *AppSuite) TestGetCurrencyPrices() {
 
 }
 
+//goland:noinspection GoUnhandledErrorResult
 func GetCurrencyPrices(s *AppSuite, offset, limit int) (int, *types.CurrencyPrices) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/currencyPrices?offset=%d&limit=%d", s.url, offset, limit))
 	assert.NoError(s.T(), err)

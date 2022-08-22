@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/errorcode"
 )
 
+//goland:noinspection GoNameStartsWithPackageName
 type (
 	LiquidityModel interface {
 		CreateLiquidityTable() error
@@ -68,32 +69,14 @@ func (*Liquidity) TableName() string {
 	return LiquidityTable
 }
 
-/*
-	Func: CreateAccountLiquidityTable
-	Params:
-	Return: err error
-	Description: create account liquidity table
-*/
 func (m *defaultLiquidityModel) CreateLiquidityTable() error {
 	return m.DB.AutoMigrate(Liquidity{})
 }
 
-/*
-	Func: DropAccountLiquidityTable
-	Params:
-	Return: err error
-	Description: drop account liquidity table
-*/
 func (m *defaultLiquidityModel) DropLiquidityTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-/*
-	Func: GetAccountLiquidityByPairIndex
-	Params: pairIndex int64
-	Return: entities []*Liquidity, err error
-	Description: get account liquidity entities by account index
-*/
 func (m *defaultLiquidityModel) GetLiquidityByPairIndex(pairIndex int64) (entity *Liquidity, err error) {
 	dbTx := m.DB.Table(m.table).Where("pair_index = ?", pairIndex).Find(&entity)
 	if dbTx.Error != nil {

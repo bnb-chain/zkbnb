@@ -14,7 +14,7 @@ import (
 
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
-	"github.com/bnb-chain/zkbas/common/model/tx"
+	txdao "github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/core"
 )
 
@@ -219,8 +219,8 @@ func (c *Committer) computeCurrentBlockSize() int {
 	return blockSize
 }
 
-func convertMempoolTxToTx(mempoolTx *mempool.MempoolTx) *tx.Tx {
-	tx := &tx.Tx{
+func convertMempoolTxToTx(mempoolTx *mempool.MempoolTx) *txdao.Tx {
+	tx := &txdao.Tx{
 		TxHash:        mempoolTx.TxHash,
 		TxType:        mempoolTx.TxType,
 		NativeAddress: mempoolTx.NativeAddress,

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 
 package mempool
 
+//goland:noinspection GoNameStartsWithPackageName
 const (
 	MempoolTableName = `mempool_tx`
 	DetailTableName  = `mempool_tx_detail`

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,30 +70,30 @@ func (*FailTx) TableName() string {
 }
 
 /*
-	Func: CreateFailTxTable
-	Params:
-	Return: err error
-	Description: create txVerification fail table
+Func: CreateFailTxTable
+Params:
+Return: err error
+Description: create txVerification fail table
 */
 func (m *defaultFailTxModel) CreateFailTxTable() error {
 	return m.DB.AutoMigrate(FailTx{})
 }
 
 /*
-	Func: DropFailTxTable
-	Params:
-	Return: err error
-	Description: drop txVerification fail table
+Func: DropFailTxTable
+Params:
+Return: err error
+Description: drop txVerification fail table
 */
 func (m *defaultFailTxModel) DropFailTxTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
 /*
-	Func: CreateFailTx
-	Params: failTx *FailTx
-	Return: err error
-	Description: create fail txVerification
+Func: CreateFailTx
+Params: failTx *FailTx
+Return: err error
+Description: create fail txVerification
 */
 func (m *defaultFailTxModel) CreateFailTx(failTx *FailTx) error {
 	dbTx := m.DB.Table(m.table).Create(failTx)

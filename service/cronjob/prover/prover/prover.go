@@ -95,10 +95,11 @@ func (p *Prover) ProveBlock() error {
 	if err != nil {
 		return fmt.Errorf("acquire lock error, err=%s", err.Error())
 	}
+	//goland:noinspection GoUnhandledErrorResult
 	defer lock.Release()
 
 	// fetch unproved block
-	blockWitness, err := p.BlockWitnessModel.GetBlockWitnessByMode(util.COO_MODE)
+	blockWitness, err := p.BlockWitnessModel.GetBlockWitnessByMode(util.CooMode)
 	if err != nil {
 		return fmt.Errorf("GetUnprovedBlock Error: err: %v", err)
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import (
 )
 
 /*
-	ComputeNewBalance: helper function for computing new balance for different asset types
+ComputeNewBalance: helper function for computing new balance for different asset types
 */
 func ComputeNewBalance(assetType int64, balance string, balanceDelta string) (newBalance string, err error) {
 	switch assetType {
