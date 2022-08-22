@@ -47,7 +47,7 @@ func (e *DepositExecutor) Prepare() error {
 
 	// The account index from txInfo isn't true, find account by account name hash.
 	accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
-	account, err := bc.AccountModel.GetAccountByAccountNameHash(accountNameHash)
+	account, err := bc.AccountModel.GetAccountByNameHash(accountNameHash)
 	if err != nil {
 		for index, _ := range bc.stateCache.pendingNewAccountIndexMap {
 			if accountNameHash == bc.accountMap[index].AccountNameHash {
