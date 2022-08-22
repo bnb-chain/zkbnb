@@ -35,6 +35,15 @@ type AccountAsset struct {
 	OfferCanceledOrFinalized *big.Int
 }
 
+func (asset *AccountAsset) DeepCopy() *AccountAsset {
+	return &AccountAsset{
+		AssetId:                  asset.AssetId,
+		Balance:                  big.NewInt(0).Set(asset.Balance),
+		LpAmount:                 big.NewInt(0).Set(asset.LpAmount),
+		OfferCanceledOrFinalized: big.NewInt(0).Set(asset.OfferCanceledOrFinalized),
+	}
+}
+
 func ConstructAccountAsset(assetId int64, balance *big.Int, lpAmount *big.Int, offerCanceledOrFinalized *big.Int) *AccountAsset {
 	return &AccountAsset{
 		assetId,
@@ -74,16 +83,11 @@ type AccountInfo struct {
 }
 
 func (ai *AccountInfo) DeepCopy() (*AccountInfo, error) {
-	assetInfoBytes, err := json.Marshal(ai.AssetInfo)
-	if err != nil {
-		return nil, errorcode.JsonErrMarshal
+	var assetInfo map[int64]*AccountAsset
+	for assetId, asset := range ai.AssetInfo {
+		assetInfo[assetId] = asset.DeepCopy()
 	}
 
-	var assetInfo map[int64]*AccountAsset
-	err = json.Unmarshal(assetInfoBytes, &assetInfo)
-	if err != nil {
-		return nil, errorcode.JsonErrUnmarshal
-	}
 	newAccountInfo := &AccountInfo{
 		AccountId:       ai.AccountId,
 		AccountIndex:    ai.AccountIndex,

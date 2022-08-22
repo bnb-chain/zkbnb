@@ -36,8 +36,8 @@ type (
 		GetAccountByIndex(accountIndex int64) (account *Account, err error)
 		GetConfirmedAccountByIndex(accountIndex int64) (account *Account, err error)
 		GetAccountByPk(pk string) (account *Account, err error)
-		GetAccountByName(accountName string) (account *Account, err error)
-		GetAccountByAccountNameHash(accountNameHash string) (account *Account, err error)
+		GetAccountByName(name string) (account *Account, err error)
+		GetAccountByNameHash(nameHash string) (account *Account, err error)
 		GetAccountsList(limit int, offset int64) (accounts []*Account, err error)
 		GetAccountsTotalCount() (count int64, err error)
 	}
@@ -157,7 +157,7 @@ func (m *defaultAccountModel) GetAccountByName(accountName string) (account *Acc
 	return account, nil
 }
 
-func (m *defaultAccountModel) GetAccountByAccountNameHash(accountNameHash string) (account *Account, err error) {
+func (m *defaultAccountModel) GetAccountByNameHash(accountNameHash string) (account *Account, err error) {
 	dbTx := m.DB.Table(m.table).Where("account_name_hash = ?", accountNameHash).Find(&account)
 	if dbTx.Error != nil {
 		logx.Errorf("get account by account name hash error, err: %s", dbTx.Error.Error())
