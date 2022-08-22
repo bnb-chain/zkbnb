@@ -22,8 +22,7 @@ const (
 	MaxCommitterInterval = 60 * 1
 )
 
-var configFile = flag.String("f",
-	"./etc/committer.yaml", "the config file")
+var configFile = flag.String("f", "./etc/committer.yaml", "the config file")
 
 type Config struct {
 	core.ChainConfig

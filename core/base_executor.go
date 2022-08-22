@@ -2,6 +2,7 @@ package core
 
 import (
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 )

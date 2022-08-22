@@ -21,7 +21,6 @@ import (
 	"errors"
 
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
-
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"

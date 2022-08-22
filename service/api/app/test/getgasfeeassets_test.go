@@ -30,10 +30,10 @@ func (s *AppSuite) TestGetGasFeeAssets() {
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.NotNil(t, result.Assets)
-				assert.NotNil(t, result.Assets[0].AssetId)
-				assert.NotNil(t, result.Assets[0].AssetSymbol)
-				assert.NotNil(t, result.Assets[0].AssetName)
-				assert.NotNil(t, result.Assets[0].AssetAddress)
+				assert.NotNil(t, result.Assets[0].Id)
+				assert.NotNil(t, result.Assets[0].Symbol)
+				assert.NotNil(t, result.Assets[0].Name)
+				assert.NotNil(t, result.Assets[0].Address)
 				assert.NotNil(t, result.Assets[0].IsGasAsset)
 				fmt.Printf("result: %+v \n", result)
 			}

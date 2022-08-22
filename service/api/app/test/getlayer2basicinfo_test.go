@@ -29,14 +29,14 @@ func (s *AppSuite) TestGetLayer2BasicInfo() {
 			httpCode, result := GetLayer2BasicInfo(s)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
-				assert.NotNil(t, result.TotalTransactions)
+				assert.NotNil(t, result.TotalTransactionCount)
 				assert.NotNil(t, result.BlockCommitted)
 				assert.NotNil(t, result.BlockVerified)
 				assert.NotNil(t, result.ContractAddresses[0])
 				assert.NotNil(t, result.ContractAddresses[1])
-				assert.NotNil(t, result.TransactionsCountYesterday)
-				assert.NotNil(t, result.DauToday)
-				assert.NotNil(t, result.DauYesterday)
+				assert.NotNil(t, result.YesterdayTransactionCount)
+				assert.NotNil(t, result.TodayActiveUserCount)
+				assert.NotNil(t, result.YesterdayActiveUserCount)
 				fmt.Printf("result: %+v \n", result)
 			}
 		})

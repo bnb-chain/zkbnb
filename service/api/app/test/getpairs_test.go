@@ -32,7 +32,7 @@ func (s *AppSuite) TestGetPairs() {
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.NotNil(t, result.Pairs)
-				assert.NotNil(t, result.Pairs[0].PairIndex)
+				assert.NotNil(t, result.Pairs[0].Index)
 				assert.NotNil(t, result.Pairs[0].AssetAName)
 				assert.NotNil(t, result.Pairs[0].AssetBName)
 				assert.NotNil(t, result.Pairs[0].AssetAId)

@@ -15,7 +15,6 @@ import (
 
 //go:generate mockgen -source api.go -destination api_mock.go -package state
 
-// TODO: replace with committer code when merge
 const (
 	AccountKeyPrefix   = "cache:account_"
 	LiquidityKeyPrefix = "cache:liquidity_"
