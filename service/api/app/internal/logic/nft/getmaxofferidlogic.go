@@ -2,6 +2,7 @@ package nft
 
 import (
 	"context"
+	"math/big"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -35,15 +36,10 @@ func (l *GetMaxOfferIdLogic) GetMaxOfferId(req *types.ReqGetMaxOfferId) (resp *t
 		return nil, errorcode.AppErrInternal
 	}
 
-	maxAssetId, err := l.svcCtx.AssetModel.GetMaxId()
-	if err != nil {
-		return nil, errorcode.AppErrInternal
-	}
-
 	maxOfferId := int64(0)
 	var maxOfferIdAsset *commonAsset.AccountAsset
 	for _, asset := range account.AssetInfo {
-		if asset.AssetId > maxAssetId {
+		if asset.OfferCanceledOrFinalized != nil && asset.OfferCanceledOrFinalized.Cmp(big.NewInt(0)) > 0 {
 			if maxOfferIdAsset == nil || asset.AssetId > maxOfferIdAsset.AssetId {
 				maxOfferIdAsset = asset
 			}
