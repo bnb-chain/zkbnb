@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,22 +71,10 @@ func (*TxDetail) TableName() string {
 	return TxDetailTableName
 }
 
-/*
-	Func: CreateTxDetailTable
-	Params:
-	Return: err error
-	Description: create txVerification detail table
-*/
 func (m *defaultTxDetailModel) CreateTxDetailTable() error {
 	return m.DB.AutoMigrate(TxDetail{})
 }
 
-/*
-	Func: DropTxDetailTable
-	Params:
-	Return: err error
-	Description: drop txVerification detail table
-*/
 func (m *defaultTxDetailModel) DropTxDetailTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }

@@ -7,6 +7,11 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/tx"
 )
 
+const (
+	OfferPerAsset = 128
+	TenThousand   = 10000
+)
+
 type BaseExecutor struct {
 	bc      *BlockChain
 	tx      *tx.Tx

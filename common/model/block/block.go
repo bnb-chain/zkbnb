@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,35 +113,14 @@ func (*Block) TableName() string {
 	return BlockTableName
 }
 
-/*
-	Func: CreateBlockTable
-	Params:
-	Return: err error
-	Description: create Block table
-*/
-
 func (m *defaultBlockModel) CreateBlockTable() error {
 	return m.DB.AutoMigrate(Block{})
 }
-
-/*
-	Func: DropBlockTable
-	Params:
-	Return: err error
-	Description: drop block table
-*/
 
 func (m *defaultBlockModel) DropBlockTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-/*
-	Func: GetBlocksList
-	Params: limit int64, offset int64
-	Return: err error
-	Description:  For API /api/v1/block/getBlocksList
-
-*/
 func (m *defaultBlockModel) GetBlocksList(limit int64, offset int64) (blocks []*Block, err error) {
 	var (
 		txForeignKeyColumn = `Txs`
@@ -208,12 +187,6 @@ func (m *defaultBlockModel) GetBlocksBetween(start int64, end int64) (blocks []*
 	return blocks, nil
 }
 
-/*
-	Func: GetBlockByCommitment
-	Params: blockCommitment string
-	Return: err error
-	Description:  For API /api/v1/block/getBlockByCommitment
-*/
 func (m *defaultBlockModel) GetBlockByCommitment(blockCommitment string) (block *Block, err error) {
 	var (
 		txForeignKeyColumn = `Txs`
@@ -236,12 +209,6 @@ func (m *defaultBlockModel) GetBlockByCommitment(blockCommitment string) (block 
 	return block, nil
 }
 
-/*
-	Func: GetBlockByBlockHeight
-	Params: blockHeight int64
-	Return: err error
-	Description:  For API /api/v1/block/getBlockByBlockHeight
-*/
 func (m *defaultBlockModel) GetBlockByHeight(blockHeight int64) (block *Block, err error) {
 	var (
 		txForeignKeyColumn = `Txs`
@@ -265,12 +232,6 @@ func (m *defaultBlockModel) GetBlockByHeight(blockHeight int64) (block *Block, e
 	return block, nil
 }
 
-/*
-	Func: GetBlockByBlockHeightWithoutTx
-	Params: blockHeight int64
-	Return: err error
-	Description:  For API /api/v1/block/getBlockByBlockHeight
-*/
 func (m *defaultBlockModel) GetBlockByHeightWithoutTx(blockHeight int64) (block *Block, err error) {
 	dbTx := m.DB.Table(m.table).Where("block_height = ?", blockHeight).Find(&block)
 	if dbTx.Error != nil {
@@ -282,12 +243,6 @@ func (m *defaultBlockModel) GetBlockByHeightWithoutTx(blockHeight int64) (block 
 	return block, nil
 }
 
-/*
-	Func: GetCommitedBlocksCount
-	Params:
-	Return: count int64, err error
-	Description:  For API /api/v1/info/getLayer2BasicInfo
-*/
 func (m *defaultBlockModel) GetCommittedBlocksCount() (count int64, err error) {
 	dbTx := m.DB.Table(m.table).Where("block_status >= ? and deleted_at is NULL", StatusCommitted).Count(&count)
 	if dbTx.Error != nil {
@@ -301,12 +256,6 @@ func (m *defaultBlockModel) GetCommittedBlocksCount() (count int64, err error) {
 	return count, nil
 }
 
-/*
-	Func: GetVerifiedBlocksCount
-	Params:
-	Return: count int64, err error
-	Description:  For API /api/v1/info/getLayer2BasicInfo
-*/
 func (m *defaultBlockModel) GetVerifiedBlocksCount() (count int64, err error) {
 	dbTx := m.DB.Table(m.table).Where("block_status = ? and deleted_at is NULL", StatusVerifiedAndExecuted).Count(&count)
 	if dbTx.Error != nil {
@@ -332,12 +281,6 @@ func (m *defaultBlockModel) CreateGenesisBlock(block *Block) error {
 	return nil
 }
 
-/*
-	Func: GetCurrentBlockHeight
-	Params:
-	Return: blockHeight int64, err error
-	Description: get latest block height
-*/
 func (m *defaultBlockModel) GetCurrentHeight() (blockHeight int64, err error) {
 	dbTx := m.DB.Table(m.table).Select("block_height").Order("block_height desc").Limit(1).Find(&blockHeight)
 	if dbTx.Error != nil {
@@ -349,12 +292,6 @@ func (m *defaultBlockModel) GetCurrentHeight() (blockHeight int64, err error) {
 	return blockHeight, nil
 }
 
-/*
-	Func: GetBlocksTotalCount
-	Params:
-	Return: count int64, err error
-	Description: used for counting total blocks for explorer dashboard
-*/
 func (m *defaultBlockModel) GetBlocksTotalCount() (count int64, err error) {
 	dbTx := m.DB.Table(m.table).Where("deleted_at is NULL").Count(&count)
 	if dbTx.Error != nil {
@@ -365,13 +302,6 @@ func (m *defaultBlockModel) GetBlocksTotalCount() (count int64, err error) {
 	}
 	return count, nil
 }
-
-/*
-	Func: GetBlockStatusCacheByBlockHeight
-	Params: blockHeight int64
-	Return: blockStatus int64, err
-	Description: get blockStatus cache by blockHeight
-*/
 
 type BlockStatusInfo struct {
 	BlockStatus int64

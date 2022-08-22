@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,8 +49,8 @@ var configFile = flag.String("f", "./contractaddr.yaml", "the config file")
 var svrConf config
 
 const (
-	BSC_Test_Network_RPC   = "http://tf-dex-preview-validator-nlb-6fd109ac8b9d390a.elb.ap-northeast-1.amazonaws.com:8545"
-	Local_Test_Network_RPC = "http://127.0.0.1:8545/"
+	BSCTestNetworkRPC   = "http://tf-dex-preview-validator-nlb-6fd109ac8b9d390a.elb.ap-northeast-1.amazonaws.com:8545"
+	LocalTestNetworkRPC = "http://127.0.0.1:8545/"
 )
 
 func main() {
@@ -99,13 +99,13 @@ func initSysConfig() []*sysConfig.SysConfig {
 		// network rpc
 		{
 			Name:      sysConfigName.BscTestNetworkRpc,
-			Value:     BSC_Test_Network_RPC,
+			Value:     BSCTestNetworkRPC,
 			ValueType: "string",
 			Comment:   "BSC network rpc",
 		},
 		{
 			Name:      sysConfigName.LocalTestNetworkRpc,
-			Value:     Local_Test_Network_RPC,
+			Value:     LocalTestNetworkRPC,
 			ValueType: "string",
 			Comment:   "Local network rpc",
 		},

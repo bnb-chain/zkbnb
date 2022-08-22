@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,32 +80,13 @@ func (*Account) TableName() string {
 	return AccountTableName
 }
 
-/*
-	Func: CreateAccountTable
-	Params:
-	Return: err error
-	Description: create account table
-*/
 func (m *defaultAccountModel) CreateAccountTable() error {
 	return m.DB.AutoMigrate(Account{})
 }
 
-/*
-	Func: DropAccountTable
-	Params:
-	Return: err error
-	Description: drop account table
-*/
 func (m *defaultAccountModel) DropAccountTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
-
-/*
-	Func: GetAccountByIndex
-	Params: accountIndex int64
-	Return: account Account, err error
-	Description: get account info by index
-*/
 
 func (m *defaultAccountModel) GetAccountByIndex(accountIndex int64) (account *Account, err error) {
 	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex).Find(&account)
@@ -117,13 +98,6 @@ func (m *defaultAccountModel) GetAccountByIndex(accountIndex int64) (account *Ac
 	}
 	return account, nil
 }
-
-/*
-	Func: GetAccountByPk
-	Params: pk string
-	Return: account Account, err error
-	Description: get account info by public key
-*/
 
 func (m *defaultAccountModel) GetAccountByPk(pk string) (account *Account, err error) {
 	dbTx := m.DB.Table(m.table).Where("public_key = ?", pk).Find(&account)
@@ -138,13 +112,6 @@ func (m *defaultAccountModel) GetAccountByPk(pk string) (account *Account, err e
 	}
 	return account, nil
 }
-
-/*
-	Func: GetAccountByName
-	Params: accountName string
-	Return: account Account, err error
-	Description: get account info by account name
-*/
 
 func (m *defaultAccountModel) GetAccountByName(accountName string) (account *Account, err error) {
 	dbTx := m.DB.Table(m.table).Where("account_name = ?", accountName).Find(&account)
@@ -168,13 +135,6 @@ func (m *defaultAccountModel) GetAccountByNameHash(accountNameHash string) (acco
 	return account, nil
 }
 
-/*
-	Func: GetAccountsList
-	Params: limit int, offset int64
-	Return: err error
-	Description:  For API /api/v1/info/getAccountsList
-
-*/
 func (m *defaultAccountModel) GetAccountsList(limit int, offset int64) (accounts []*Account, err error) {
 	dbTx := m.DB.Table(m.table).Limit(limit).Offset(int(offset)).Order("account_index desc").Find(&accounts)
 	if dbTx.Error != nil {
@@ -186,12 +146,6 @@ func (m *defaultAccountModel) GetAccountsList(limit int, offset int64) (accounts
 	return accounts, nil
 }
 
-/*
-	Func: GetAccountsTotalCount
-	Params:
-	Return: count int64, err error
-	Description: used for counting total accounts for explorer dashboard
-*/
 func (m *defaultAccountModel) GetAccountsTotalCount() (count int64, err error) {
 	dbTx := m.DB.Table(m.table).Where("deleted_at is NULL").Count(&count)
 	if dbTx.Error != nil {

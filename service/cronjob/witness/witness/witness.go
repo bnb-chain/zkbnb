@@ -16,7 +16,7 @@ import (
 
 	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/common/model/account"
-	"github.com/bnb-chain/zkbas/common/model/block"
+	blockdao "github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/blockwitness"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/nft"
@@ -46,7 +46,7 @@ type Witness struct {
 	nftTree       smt.SparseMerkleTree
 
 	// The data access object
-	blockModel            block.BlockModel
+	blockModel            blockdao.BlockModel
 	accountModel          account.AccountModel
 	accountHistoryModel   account.AccountHistoryModel
 	liquidityHistoryModel liquidity.LiquidityHistoryModel
@@ -65,7 +65,7 @@ func NewWitness(c config.Config) *Witness {
 
 	w := &Witness{
 		config:                c,
-		blockModel:            block.NewBlockModel(conn, c.CacheRedis, dbInstance),
+		blockModel:            blockdao.NewBlockModel(conn, c.CacheRedis, dbInstance),
 		blockWitnessModel:     blockwitness.NewBlockWitnessModel(conn, c.CacheRedis, dbInstance),
 		accountModel:          account.NewAccountModel(conn, c.CacheRedis, dbInstance),
 		accountHistoryModel:   account.NewAccountHistoryModel(conn, c.CacheRedis, dbInstance),
@@ -175,10 +175,11 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 	return nil
 }
 
-func (w *Witness) RescheduleBlockWitness() error {
+func (w *Witness) RescheduleBlockWitness() {
 	latestConfirmedProof, err := w.proofModel.GetLatestConfirmedProof()
 	if err != nil && err != errorcode.DbErrNotFound {
-		return err
+		logx.Errorf("failed to get latest confirmed proof, err: %v", err)
+		return
 	}
 
 	var nextBlockNumber int64 = 1
@@ -188,19 +189,20 @@ func (w *Witness) RescheduleBlockWitness() error {
 
 	nextBlockWitness, err := w.blockWitnessModel.GetBlockWitnessByNumber(nextBlockNumber)
 	if err != nil {
-		return err
+		logx.Errorf("failed to get latest block witness, err: %v", err)
+		return
 	}
 
 	// skip if next block is not processed
 	if nextBlockWitness.Status == blockwitness.StatusPublished {
-		return nil
+		return
 	}
 
 	// skip if the next block proof exists
 	// if the proof is not submitted and verified in L1, there should be another alerts
 	_, err = w.proofModel.GetProofByBlockNumber(nextBlockNumber)
 	if err == nil {
-		return nil
+		return
 	}
 
 	// update block status to Published if it's timeout
@@ -208,13 +210,13 @@ func (w *Witness) RescheduleBlockWitness() error {
 		err := w.blockWitnessModel.UpdateBlockWitnessStatus(nextBlockWitness, blockwitness.StatusPublished)
 		if err != nil {
 			logx.Errorf("update unproved block status error, err: %v", err)
-			return err
+			return
 		}
 	}
-	return nil
+	return
 }
 
-func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockNr int64) (*blockwitness.BlockWitness, error) {
+func (w *Witness) constructBlockWitness(block *blockdao.Block, latestVerifiedBlockNr int64) (*blockwitness.BlockWitness, error) {
 	var oldStateRoot, newStateRoot []byte
 	cryptoTxs := make([]*cryptoBlock.Tx, 0, block.BlockSize)
 	// scan each transaction

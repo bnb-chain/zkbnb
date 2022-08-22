@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ const (
 )
 
 var (
-	ZkbasContractAbi, _ = abi.JSON(strings.NewReader(zkbas.ZkbasABI))
+	ZkbasContractAbi, _ = abi.JSON(strings.NewReader(zkbas.ZkbasMetaData.ABI))
 
 	zkbasLogBlockCommitSig       = []byte("BlockCommit(uint32)")
 	zkbasLogBlockVerificationSig = []byte("BlockVerification(uint32)")

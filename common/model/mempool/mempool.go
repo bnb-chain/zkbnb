@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,32 +97,13 @@ func (*MempoolTx) TableName() string {
 	return MempoolTableName
 }
 
-/*
-Func: CreateMempoolTxTable
-Params:
-Return: err error
-Description: create MempoolTx table
-*/
 func (m *defaultMempoolModel) CreateMempoolTxTable() error {
 	return m.DB.AutoMigrate(MempoolTx{})
 }
 
-/*
-Func: DropMempoolTxTable
-Params:
-Return: err error
-Description: drop MempoolTx table
-*/
 func (m *defaultMempoolModel) DropMempoolTxTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
-
-/*
-	Func: GetAllMempoolTxsList
-	Params:
-	Return: []*MempoolTx, err error
-	Description: used for Init globalMap
-*/
 
 func (m *defaultMempoolModel) OrderMempoolTxDetails(tx *MempoolTx) (err error) {
 	var mempoolForeignKeyColumn = `MempoolDetails`
@@ -135,12 +116,6 @@ func (m *defaultMempoolModel) OrderMempoolTxDetails(tx *MempoolTx) (err error) {
 	return err
 }
 
-/*
-Func: GetMempoolTxsList
-Params: limit int, offset int
-Return: []*MempoolTx, err error
-Description: used for /api/v1/txVerification/getMempoolTxsList
-*/
 func (m *defaultMempoolModel) GetMempoolTxsList(limit int64, offset int64) (mempoolTxs []*MempoolTx, err error) {
 	dbTx := m.DB.Table(m.table).Where("status = ?", PendingTxStatus).Limit(int(limit)).Offset(int(offset)).Order("created_at desc, id desc").Find(&mempoolTxs)
 	if dbTx.Error != nil {
@@ -192,12 +167,6 @@ func (m *defaultMempoolModel) GetMempoolTxsByStatus(status int) (mempoolTxs []*M
 	return mempoolTxs, nil
 }
 
-/*
-Func: GetMempoolTxsTotalCount
-Params:
-Return: count int64, err error
-Description: used for counting total transactions in mempool for explorer dashboard
-*/
 func (m *defaultMempoolModel) GetMempoolTxsTotalCount() (count int64, err error) {
 	dbTx := m.DB.Table(m.table).Where("status = ? and deleted_at is NULL", PendingTxStatus).Count(&count)
 	if dbTx.Error != nil {
@@ -209,12 +178,6 @@ func (m *defaultMempoolModel) GetMempoolTxsTotalCount() (count int64, err error)
 	return count, nil
 }
 
-/*
-Func: GetMempoolTxByTxHash
-Params: hash string
-Return: mempoolTxs *MempoolTx, err error
-Description: used for get  transactions in mempool by txVerification hash
-*/
 func (m *defaultMempoolModel) GetMempoolTxByTxHash(hash string) (mempoolTx *MempoolTx, err error) {
 	dbTx := m.DB.Table(m.table).Where("status = ? and tx_hash = ?", PendingTxStatus, hash).Find(&mempoolTx)
 	if dbTx.Error != nil {
@@ -235,13 +198,6 @@ func (m *defaultMempoolModel) GetMempoolTxByTxHash(hash string) (mempoolTx *Memp
 	return mempoolTx, nil
 }
 
-/*
-	Func: CreateBatchedMempoolTxs
-	Params: []*MempoolTx
-	Return: error
-	Description: Insert MempoolTxs when sendTx request.
-*/
-
 func (m *defaultMempoolModel) CreateBatchedMempoolTxs(mempoolTxs []*MempoolTx) error {
 	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
 		dbTx := tx.Table(m.table).Create(mempoolTxs)
@@ -256,12 +212,6 @@ func (m *defaultMempoolModel) CreateBatchedMempoolTxs(mempoolTxs []*MempoolTx) e
 	})
 }
 
-/*
-Func: GetMempoolTxIdsListByL2BlockHeight
-Params: blockHeight
-Return: []*MempoolTx, err error
-Description: used for verifier get txIds from Mempool and deleting the transaction in mempool table after
-*/
 func (m *defaultMempoolModel) GetMempoolTxsListByL2BlockHeight(blockHeight int64) (mempoolTxs []*MempoolTx, err error) {
 	dbTx := m.DB.Table(m.table).Where("status = ? and l2_block_height <= ?", SuccessTxStatus, blockHeight).Find(&mempoolTxs)
 	if dbTx.Error != nil {

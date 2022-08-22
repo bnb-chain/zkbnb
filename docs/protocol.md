@@ -43,17 +43,17 @@ rollup contract.
 
 We assume that 1 `Chunk` = 32 bytes.
 
-| Type           | Size(Byte) | Type     | Comment                                                      |
-| -------------- | ---------- | -------- | ------------------------------------------------------------ |
-| AccountIndex   | 4          | uint32   | Incremented number of accounts in Rollup. New account will have the next free id. Max value is 2^32 - 1 = 4.294967295 × 10^9 |
-| AssetId        | 2          | uint16   | Incremented number of tokens in Rollup, max value is 65535   |
-| PackedTxAmount | 5          | int64    | Packed transactions amounts are represented with 40 bit (5 byte) values, encoded as mantissa × 10^exponent where mantissa is represented with 35 bits, exponent is represented with 5 bits. This gives a range from 0 to 34359738368 × 10^31, providing 10 full decimal digit precision. |
-| PackedFee      | 2          | uint16   | Packed fees must be represented with 2 bytes: 5 bit for exponent, 11 bit for mantissa. |
-| StateAmount    | 16         | *big.Int | State amount is represented as uint128 with a range from 0 to ~3.4 × 10^38. It allows to represent up to 3.4 × 10^20 "units" if standard Ethereum's 18 decimal symbols are used. This should be a sufficient range. |
+| Type           | Size(Byte) | Type     | Comment                                                                                                                                                                                                                                                                                                              |
+|----------------|------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| AccountIndex   | 4          | uint32   | Incremented number of accounts in Rollup. New account will have the next free id. Max value is 2^32 - 1 = 4.294967295 × 10^9                                                                                                                                                                                         |
+| AssetId        | 2          | uint16   | Incremented number of tokens in Rollup, max value is 65535                                                                                                                                                                                                                                                           |
+| PackedTxAmount | 5          | int64    | Packed transactions amounts are represented with 40 bit (5 byte) values, encoded as mantissa × 10^exponent where mantissa is represented with 35 bits, exponent is represented with 5 bits. This gives a range from 0 to 34359738368 × 10^31, providing 10 full decimal digit precision.                             |
+| PackedFee      | 2          | uint16   | Packed fees must be represented with 2 bytes: 5 bit for exponent, 11 bit for mantissa.                                                                                                                                                                                                                               |
+| StateAmount    | 16         | *big.Int | State amount is represented as uint128 with a range from 0 to ~3.4 × 10^38. It allows to represent up to 3.4 × 10^20 "units" if standard Ethereum's 18 decimal symbols are used. This should be a sufficient range.                                                                                                  |
 | Nonce          | 4          | uint32   | Nonce is the total number of executed transactions of the account. In order to apply the update of this state, it is necessary to indicate the current account nonce in the corresponding transaction, after which it will be automatically incremented. If you specify the wrong nonce, the changes will not occur. |
-| EthAddress     | 20         | string   | To make an BNB Smart Chain address from the BNB Smart Chain's public key, all we need to do is to apply Keccak-256 hash function to the key and then take the last 20 bytes of the result. |
-| Signature      | 64         | []byte   | Based on eddsa                                               |
-| HashValue      | 32         | string   | hash value based on MiMC                                     |
+| EthAddress     | 20         | string   | To make an BNB Smart Chain address from the BNB Smart Chain's public key, all we need to do is to apply Keccak-256 hash function to the key and then take the last 20 bytes of the result.                                                                                                                           |
+| Signature      | 64         | []byte   | Based on EDDSA.                                                                                                                                                                                                                                                                                                      |
+| HashValue      | 32         | string   | hash value based on MiMC                                                                                                                                                                                                                                                                                             |
 
 ### Amount packing
 
@@ -62,14 +62,14 @@ Mantissa and exponent parameters used in ZkBAS:
 `amount = mantissa * radix^{exponent}`
 
 | Type           | Exponent bit width | Mantissa bit width | Radix |
-| -------------- | ------------------ | ------------------ | ----- |
+|----------------|--------------------|--------------------|-------|
 | PackedTxAmount | 5                  | 35                 | 10    |
 | PackedFee      | 5                  | 11                 | 10    |
 
 ### State Merkle Tree(height)
 
-We have 3 unique trees: `AccountTree(32)`, `LiquidityTree(16)`, `NftTree(40)` and one sub tree `AssetTree(16)` which 
-belongs to `AccountTree(32)`. The empty leaf for all of the trees is just set every attribute as `0` for every node.
+We have 3 unique trees: `AccountTree(32)`, `LiquidityTree(16)`, `NftTree(40)` and one sub-tree `AssetTree(16)` which 
+belongs to `AccountTree(32)`. The empty leaf for all the trees is just set every attribute as `0` for every node.
 
 #### AccountTree
 
@@ -115,7 +115,7 @@ func ComputeAccountLeafHash(
 
 ##### AssetTree
 
-`AssetTree` is a sub tree of `AccountTree` and it stores all of the assets `balance`, `lpAmount` and `offerCanceledOrFinalized`. The node of asset tree is:
+`AssetTree` is sub-tree of `AccountTree` and it stores all the assets `balance`, `lpAmount` and `offerCanceledOrFinalized`. The node of asset tree is:
 
 ```go
 type AssetNode struct {
@@ -157,7 +157,7 @@ func ComputeAccountAssetLeafHash(
 
 #### LiquidityTree
 
-`LiquidityTree` is used for storing all of the liquidities info and the node of the liquidity tree is:
+`LiquidityTree` is used for storing all the liquidity info and the node of the liquidity tree is:
 
 ```go
 type LiquidityNode struct {
@@ -224,7 +224,7 @@ func ComputeLiquidityAssetLeafHash(
 
 #### NftTree
 
-`NftTree` is used for storing all of the nfts and the node info is:
+`NftTree` is used for storing all the NFTs and the node info is:
 
 ```go
 type NftNode struct {
@@ -295,7 +295,7 @@ func ComputeStateRootHash(
 
 ## ZkBAS Transactions
 
-ZkBAS transactions are divided into Rollup transactions (initiated inside Rollup by a Rollup account) and Priority operations (initiated on the mainchain by an BNB Smart Chain account).
+ZkBAS transactions are divided into Rollup transactions (initiated inside Rollup by a Rollup account) and Priority operations (initiated on the BSC by an BNB Smart Chain account).
 
 Rollup transactions:
 
@@ -337,18 +337,18 @@ Priority operations:
 
 No effects.
 
-#### Onchain operation
+#### On-Chain operation
 
 ##### Size
 
 | Chunks | Significant bytes |
-| ------ | ----------------- |
+|--------|-------------------|
 | 1      | 1                 |
 
 ##### Structure
 
 | Field  | Size(byte) | Value/type | Description      |
-| ------ | ---------- | ---------- | ---------------- |
+|--------|------------|------------|------------------|
 | TxType | 1          | `0x00`     | Transaction type |
 
 #### User transaction
@@ -361,7 +361,7 @@ No user transaction
 
 This is a layer-1 transaction and a user needs to call this method first to register a layer-2 account.
 
-#### Onchain operation
+#### On-Chain operation
 
 ##### Size
 
@@ -372,7 +372,7 @@ This is a layer-1 transaction and a user needs to call this method first to regi
 ##### Structure
 
 | Name            | Size(byte) | Comment                        |
-| --------------- | ---------- | ------------------------------ |
+|-----------------|------------|--------------------------------|
 | TxType          | 1          | transaction type               |
 | AccountIndex    | 4          | unique account index           |
 | AccountName     | 32         | account name                   |
@@ -441,7 +441,7 @@ func VerifyRegisterZNSTx(
 
 This is a layer-1 transaction and is used for creating a trading pair for L2.
 
-#### Onchain operation
+#### On-Chain operation
 
 ##### Size
 
@@ -522,7 +522,7 @@ func VerifyCreatePairTx(
 
 This is a layer-1 transaction and is used for updating a trading pair for L2.
 
-#### Onchain operation
+#### On-Chain operation
 
 ##### Size
 
@@ -602,7 +602,7 @@ func VerifyUpdatePairRateTx(
 
 This is a layer-1 transaction and is used for depositing assets into the layer-2 account.
 
-#### Onchain operation
+#### On-Chain operation
 
 ##### Size
 
@@ -686,9 +686,9 @@ func VerifyDepositTx(
 
 #### Description
 
-This is a layer-1 transaction and is used for depositing nfts into the layer-2 account.
+This is a layer-1 transaction and is used for depositing NFTs into the layer-2 account.
 
-#### Onchain operation
+#### On-Chain operation
 
 ##### Size
 
@@ -779,9 +779,9 @@ func VerifyDepositNftTx(
 
 #### Description
 
-This is a layer-2 transaction and is used for transfering assets in the layer-2 network.
+This is a layer-2 transaction and is used for transferring assets in the layer-2 network.
 
-#### Onchain operation
+#### On-Chain operation
 
 ##### Size
 
@@ -876,7 +876,7 @@ func VerifyTransferTx(
 	tx *TransferTxConstraints,
 	accountsBefore [NbAccountsPerTx]AccountConstraints,
 ) (pubData [PubDataSizePerTx]Variable) {
-	// collect pubdata
+	// collect pub-data
 	pubData = CollectPubDataFromTransfer(api, *tx)
 	// verify params
 	// account index
@@ -907,7 +907,7 @@ func VerifyTransferTx(
 
 This is a layer-2 transaction and is used for making a swap for assets in the layer-2 network.
 
-#### Onchain operation
+#### On-Chain operation
 
 ##### Size
 
@@ -1071,7 +1071,7 @@ func VerifySwapTx(
 
 This is a layer-2 transaction and is used for adding liquidity for a trading pair in the layer-2 network.
 
-#### Onchain operation
+#### On-Chain operation
 
 ##### Size
 
@@ -1247,7 +1247,7 @@ func VerifyAddLiquidityTx(
 
 This is a layer-2 transaction and is used for removing liquidity for a trading pair in the layer-2 network.
 
-#### Onchain operation
+#### On-Chain operation
 
 ##### Size
 
@@ -1420,7 +1420,7 @@ func VerifyRemoveLiquidityTx(
 
 This is a layer-2 transaction and is used for withdrawing assets from the layer-2 to the layer-1.
 
-#### Onchain operation
+#### On-Chain operation
 
 ##### Size
 
@@ -1529,7 +1529,7 @@ func VerifyWithdrawTx(
 
 This is a layer-2 transaction and is used for creating a new collection
 
-#### Onchain operation
+#### On-Chain operation
 
 ##### Size
 
@@ -1631,9 +1631,9 @@ func VerifyCreateCollectionTx(
 
 #### Description
 
-This is a layer-2 transaction and is used for minting nfts in the layer-2 network.
+This is a layer-2 transaction and is used for minting NFTs in the layer-2 network.
 
-#### Onchain operation
+#### On-Chain operation
 
 ##### Size
 
@@ -1644,9 +1644,9 @@ This is a layer-2 transaction and is used for minting nfts in the layer-2 networ
 ##### Structure
 
 | Name                | Size(byte) | Comment                |
-| ------------------- | ---------- | ---------------------- |
+|---------------------| ---------- | ---------------------- |
 | TxType              | 1          | transaction type       |
-| CraetorAccountIndex | 4          | creator account index  |
+| CreatorAccountIndex | 4          | creator account index  |
 | ToAccountIndex      | 4          | receiver account index |
 | NftIndex            | 5          | unique nft index       |
 | GasFeeAccountIndex  | 4          | gas fee account index  |
@@ -1750,9 +1750,9 @@ func VerifyMintNftTx(
 
 #### Description
 
-This is a layer-2 transaction and is used for transfering nfts to others in the layer-2 network.
+This is a layer-2 transaction and is used for transferring NFTs to others in the layer-2 network.
 
-#### Onchain operation
+#### On-Chain operation
 
 ##### Size
 
@@ -1866,7 +1866,7 @@ func VerifyTransferNftTx(
 
 This is a layer-2 transaction that will be used for buying or selling Nft in the layer-2 network.
 
-#### Onchain operation
+#### On-Chain operation
 
 ##### Size
 
@@ -1889,7 +1889,7 @@ This is a layer-2 transaction that will be used for buying or selling Nft in the
 | ExpiredAt    | 8          | timestamp after which the order is invalid                   |
 | Sig          | 64         | signature generated by buyer/seller_account_index's private key |
 
-`AtomicMatch`(**below is the only info that will be uploaded onchain**):
+`AtomicMatch`(**below is the only info that will be uploaded on-chain**):
 
 | Name                  | Size(byte) | Comment                    |
 | --------------------- | ---------- | -------------------------- |
@@ -2099,7 +2099,7 @@ func VerifyAtomicMatchTx(
 
 This is a layer-2 transaction and is used for canceling nft offer.
 
-#### Onchain operation
+#### On-Chain operation
 
 ##### Size
 
@@ -2199,7 +2199,7 @@ func VerifyCancelOfferTx(
 
 This is a layer-2 transaction and is used for withdrawing nft from the layer-2 to the layer-1.
 
-#### Onchain operation
+#### On-Chain operation
 
 ##### Size
 
@@ -2338,7 +2338,7 @@ func VerifyWithdrawNftTx(
 
 This is a layer-1 transaction and is used for full exit assets from the layer-2 to the layer-1.
 
-#### Onchain operation
+#### On-Chain operation
 
 ##### Size
 
@@ -2414,9 +2414,9 @@ func VerifyFullExitTx(
 
 #### Description
 
-This is a layer-1 transaction and is used for full exit nfts from the layer-2 to the layer-1.
+This is a layer-1 transaction and is used for full exit NFTs from the layer-2 to the layer-1.
 
-#### Onchain operation
+#### On-Chain operation
 
 ##### Size
 
@@ -2645,7 +2645,7 @@ Withdraws token from Rollup to L1 in case of desert mode. User must provide proo
 
 ##### Commit block
 
-Submit committed block data. Only active validator can make it. Onchain operations will be checked on contract and fulfilled on block verification.
+Submit committed block data. Only active validator can make it. On-chain operations will be checked on contract and fulfilled on block verification.
 
 ```js
 struct StoredBlockInfo {
@@ -2676,7 +2676,7 @@ external
 
 - `blockNumber`: rollup block number
 - `priorityOperations`: priority operations count
-- `pendingOnchainOperationsHash`: hash of all onchain operations that have to be processed when block is finalized (verified)
+- `pendingOnchainOperationsHash`: hash of all on-chain operations that have to be processed when block is finalized (verified)
 - `timestamp`: block timestamp
 - `stateRoot`: root hash of the rollup tree state
 - `commitment`: rollup block commitment
@@ -2686,17 +2686,17 @@ external
 - `newStateRoot`: new layer-2 root hash
 - `publicData`: public data of the executed rollup operations
 - `timestamp`: block timestamp
-- `publicDataOffsets`: list of onchain operations offset
+- `publicDataOffsets`: list of on-chain operations offset
 - `blockNumber`: rollup block number
 
-`commitBlocks` and `commitOneBlock` are used for committing layer-2 transactions data onchain.
+`commitBlocks` and `commitOneBlock` are used for committing layer-2 transactions data on-chain.
 
 - `_lastCommittedBlockData`: last committed block header
 - `_newBlocksData`: pending commit blocks
 
 ##### Verify and execute blocks
 
-Submit proofs of blocks and make it verified onchain. Only active validator can make it. This block onchain operations will be fulfilled.
+Submit proofs of blocks and make it verified on-chain. Only active validator can make it. This block on-chain operations will be fulfilled.
 
 ```js
 struct VerifyAndExecuteBlockInfo {
@@ -2710,7 +2710,7 @@ function verifyAndExecuteBlocks(VerifyAndExecuteBlockInfo[] memory _blocks, uint
 `VerifyAndExecuteBlockInfo`: block data that is used for verifying blocks
 
 - `blockHeader`: related block header
-- `pendingOnchainOpsPubdata`: public data of pending onchain operations
+- `pendingOnchainOpsPubdata`: public data of pending on-chain operations
 
 `verifyBlocks`: is used for verifying block data and proofs
 
@@ -2793,7 +2793,7 @@ function addAsset(address _asset) external
 
 #### Set asset paused
 
-Set asset status as paused or actived. The caller must be current governor. Its impossible to create deposits of the paused assets.
+Set asset status as paused or active. The caller must be current governor. It is impossible to create deposits of the paused assets.
 
 ```js
 function setAssetPaused(address _assetAddress, bool _assetPaused) external
@@ -2854,7 +2854,7 @@ Returns: asset id.
 
 #### Add asset
 
-Collects fees for adding a asset and passes the call to the `addAsset` function in the governance contract.
+Collecting fees for adding an asset and passing the call to the `addAsset` function in the governance contract.
 
 ```js
 function addAsset(address _assetAddress) external

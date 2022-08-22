@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,23 +68,9 @@ func (*BlockWitness) TableName() string {
 	return TableName
 }
 
-/*
-	Func: CreateBlockWitnessTable
-	Params:
-	Return: err error
-	Description: create BlockWitness table
-*/
-
 func (m *defaultBlockWitnessModel) CreateBlockWitnessTable() error {
 	return m.DB.AutoMigrate(BlockWitness{})
 }
-
-/*
-	Func: DropBlockWitnessTable
-	Params:
-	Return: err error
-	Description: drop blockWitness table
-*/
 
 func (m *defaultBlockWitnessModel) DropBlockWitnessTable() error {
 	return m.DB.Migrator().DropTable(m.table)
@@ -104,7 +90,7 @@ func (m *defaultBlockWitnessModel) GetLatestBlockWitnessHeight() (blockNumber in
 
 func (m *defaultBlockWitnessModel) GetBlockWitnessByMode(mode int64) (witness *BlockWitness, err error) {
 	switch mode {
-	case util.COO_MODE:
+	case util.CooMode:
 		dbTx := m.DB.Table(m.table).Where("status = ?", StatusPublished).Order("height asc").Limit(1).Find(&witness)
 		if dbTx.Error != nil {
 			logx.Errorf("unable to get witness: %s", dbTx.Error.Error())
@@ -113,7 +99,7 @@ func (m *defaultBlockWitnessModel) GetBlockWitnessByMode(mode int64) (witness *B
 			return nil, errorcode.DbErrNotFound
 		}
 		return witness, nil
-	case util.COM_MODE:
+	case util.ComMode:
 		dbTx := m.DB.Table(m.table).Where("status <= ?", StatusReceived).Order("height asc").Limit(1).Find(&witness)
 		if dbTx.Error != nil {
 			logx.Errorf("unable to get witness: %s", dbTx.Error.Error())
