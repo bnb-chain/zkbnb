@@ -32,11 +32,11 @@ func (s *AppSuite) TestGetTx() {
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.NotNil(t, result.Tx.BlockHeight)
-				assert.NotNil(t, result.Tx.TxHash)
-				assert.NotNil(t, result.Tx.TxType)
+				assert.NotNil(t, result.Tx.Hash)
+				assert.NotNil(t, result.Tx.Type)
 				assert.NotNil(t, result.Tx.StateRoot)
-				assert.NotNil(t, result.Tx.TxInfo)
-				assert.NotNil(t, result.Tx.TxStatus)
+				assert.NotNil(t, result.Tx.Info)
+				assert.NotNil(t, result.Tx.Status)
 				fmt.Printf("result: %+v \n", result)
 			}
 		})

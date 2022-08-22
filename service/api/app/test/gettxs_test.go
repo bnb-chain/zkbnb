@@ -36,11 +36,11 @@ func (s *AppSuite) TestGetTxs() {
 				if tt.args.offset < int(result.Total) {
 					assert.True(t, len(result.Txs) > 0)
 					assert.NotNil(t, result.Txs[0].BlockHeight)
-					assert.NotNil(t, result.Txs[0].TxHash)
-					assert.NotNil(t, result.Txs[0].TxType)
+					assert.NotNil(t, result.Txs[0].Hash)
+					assert.NotNil(t, result.Txs[0].Type)
 					assert.NotNil(t, result.Txs[0].StateRoot)
-					assert.NotNil(t, result.Txs[0].TxInfo)
-					assert.NotNil(t, result.Txs[0].TxStatus)
+					assert.NotNil(t, result.Txs[0].Info)
+					assert.NotNil(t, result.Txs[0].Status)
 				}
 				fmt.Printf("result: %+v \n", result)
 			}

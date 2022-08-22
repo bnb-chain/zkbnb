@@ -86,7 +86,7 @@ func getAccountIndex(s *AppSuite, accountName string) int64 {
 	if httpCode != http.StatusOK {
 		panic("cannot get account: " + accountName)
 	}
-	return int64(accountResp.AccountIndex)
+	return accountResp.Index
 }
 
 func getNextNonce(s *AppSuite, accountName string) int64 {

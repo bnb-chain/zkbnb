@@ -6,9 +6,8 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
-
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 

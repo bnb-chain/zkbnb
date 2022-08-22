@@ -35,8 +35,8 @@ func (s *AppSuite) TestGetAccountNftList() {
 			if httpCode == http.StatusOK {
 				if tt.args.offset < int(result.Total) {
 					assert.True(t, len(result.Nfts) > 0)
-					assert.NotNil(t, result.Nfts[0].NftIndex)
-					assert.NotNil(t, result.Nfts[0].NftContentHash)
+					assert.NotNil(t, result.Nfts[0].Index)
+					assert.NotNil(t, result.Nfts[0].ContentHash)
 					assert.NotNil(t, result.Nfts[0].OwnerAccountIndex)
 					assert.NotNil(t, result.Nfts[0].CollectionId)
 					assert.NotNil(t, result.Nfts[0].CreatorTreasuryRate)
