@@ -13,6 +13,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/commonTx"
+	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/util"
@@ -230,4 +231,8 @@ func (e *DepositNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	})
 
 	return txDetails, nil
+}
+
+func (e *DepositNftExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
+	return nil, nil
 }

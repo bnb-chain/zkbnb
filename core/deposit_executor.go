@@ -13,6 +13,7 @@ import (
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonTx"
+	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/util"
 )
@@ -161,4 +162,8 @@ func (e *DepositExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountOrder: 0,
 	}
 	return []*tx.TxDetail{txDetail}, nil
+}
+
+func (e *DepositExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
+	return nil, nil
 }

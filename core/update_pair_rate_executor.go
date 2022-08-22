@@ -12,6 +12,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/commonTx"
+	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/util"
 )
@@ -156,4 +157,8 @@ func (e *UpdatePairRateExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	}
 
 	return []*tx.TxDetail{txDetail}, nil
+}
+
+func (e *UpdatePairRateExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
+	return nil, nil
 }

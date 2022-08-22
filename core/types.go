@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/bnb-chain/zkbas/common/commonTx"
+	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 )
 
@@ -19,6 +20,7 @@ type TxExecutor interface {
 	UpdateTrees() error
 	GetExecutedTx() (*tx.Tx, error)
 	GenerateTxDetails() ([]*tx.TxDetail, error)
+	GenerateMempoolTx() (*mempool.MempoolTx, error)
 }
 
 func NewTxExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {

@@ -14,6 +14,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/model/account"
+	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/tree"
 	"github.com/bnb-chain/zkbas/common/util"
@@ -151,5 +152,9 @@ func (e *RegisterZnsExecutor) GetExecutedTx() (*tx.Tx, error) {
 }
 
 func (e *RegisterZnsExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
+	return nil, nil
+}
+
+func (e *RegisterZnsExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
 	return nil, nil
 }
