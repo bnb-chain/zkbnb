@@ -35,9 +35,9 @@ func (s *AppSuite) TestGetAccounts() {
 			if httpCode == http.StatusOK {
 				if tt.args.offset < int(result.Total) {
 					assert.True(t, len(result.Accounts) > 0)
-					assert.NotNil(t, result.Accounts[0].AccountName)
-					assert.NotNil(t, result.Accounts[0].AccountIndex)
-					assert.NotNil(t, result.Accounts[0].AccountPk)
+					assert.NotNil(t, result.Accounts[0].Name)
+					assert.NotNil(t, result.Accounts[0].Index)
+					assert.NotNil(t, result.Accounts[0].Pk)
 				}
 				fmt.Printf("result: %+v \n", result)
 			}

@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/bnb-chain/bas-smt/database/memory"
-	"github.com/zeromicro/go-zero/core/stores/redis"
 
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/basic"
@@ -35,8 +34,7 @@ import (
 )
 
 func TestConstructDepositNftCryptoTxFirst(t *testing.T) {
-	redisConn := redis.New(basic.CacheConf[0].Host, WithRedis(basic.CacheConf[0].Type, basic.CacheConf[0].Pass))
-	txModel := tx.NewTxModel(basic.Connection, basic.CacheConf, basic.DB, redisConn)
+	txModel := tx.NewTxModel(basic.Connection, basic.CacheConf, basic.DB)
 	accountModel := account.NewAccountModel(basic.Connection, basic.CacheConf, basic.DB)
 	accountHistoryModel := account.NewAccountHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
 	//liquidityModel := liquidity.NewLiquidityModel(basic.Connection, basic.CacheConf, basic.DB)
