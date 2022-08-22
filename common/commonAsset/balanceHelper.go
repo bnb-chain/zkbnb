@@ -26,9 +26,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 )
 
-/*
-ComputeNewBalance: helper function for computing new balance for different asset types
-*/
 func ComputeNewBalance(assetType int64, balance string, balanceDelta string) (newBalance string, err error) {
 	switch assetType {
 	case GeneralAssetType:

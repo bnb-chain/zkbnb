@@ -72,23 +72,9 @@ func (*MempoolTxDetail) TableName() string {
 	return DetailTableName
 }
 
-/*
-	Func: CreateMempoolDetailTable
-	Params:
-	Return: err error
-	Description: create mempool detail table
-*/
-
 func (m *defaultMempoolDetailModel) CreateMempoolDetailTable() error {
 	return m.DB.AutoMigrate(MempoolTxDetail{})
 }
-
-/*
-	Func: DropMempoolDetailTable
-	Params:
-	Return: err error
-	Description: drop MempoolDetail table
-*/
 
 func (m *defaultMempoolDetailModel) DropMempoolDetailTable() error {
 	return m.DB.Migrator().DropTable(m.table)

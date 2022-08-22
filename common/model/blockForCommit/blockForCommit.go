@@ -63,23 +63,9 @@ func (*BlockForCommit) TableName() string {
 	return BlockForCommitTableName
 }
 
-/*
-	Func: CreateBlockForCommitTable
-	Params:
-	Return: err error
-	Description: create Block table
-*/
-
 func (m *defaultBlockForCommitModel) CreateBlockForCommitTable() error {
 	return m.DB.AutoMigrate(BlockForCommit{})
 }
-
-/*
-	Func: DropBlockForCommitTable
-	Params:
-	Return: err error
-	Description: drop block table
-*/
 
 func (m *defaultBlockForCommitModel) DropBlockForCommitTable() error {
 	return m.DB.Migrator().DropTable(m.table)

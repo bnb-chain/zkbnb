@@ -68,22 +68,10 @@ func (*Offer) TableName() string {
 	return OfferTableName
 }
 
-/*
-Func: CreateOfferTable
-Params:
-Return: err error
-Description: create account l2 nft table
-*/
 func (m *defaultOfferModel) CreateOfferTable() error {
 	return m.DB.AutoMigrate(Offer{})
 }
 
-/*
-Func: DropOfferTable
-Params:
-Return: err error
-Description: drop account l2 nft history table
-*/
 func (m *defaultOfferModel) DropOfferTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }

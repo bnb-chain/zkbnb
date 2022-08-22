@@ -67,22 +67,10 @@ func (*L2Nft) TableName() string {
 	return L2NftTableName
 }
 
-/*
-Func: CreateL2NftTable
-Params:
-Return: err error
-Description: create account l2 nft table
-*/
 func (m *defaultL2NftModel) CreateL2NftTable() error {
 	return m.DB.AutoMigrate(L2Nft{})
 }
 
-/*
-Func: DropL2NftTable
-Params:
-Return: err error
-Description: drop account l2 nft table
-*/
 func (m *defaultL2NftModel) DropL2NftTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }

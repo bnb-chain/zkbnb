@@ -61,25 +61,14 @@ func (*L2NftCollection) TableName() string {
 	return L2NftCollectionTableName
 }
 
-/*
-Func: CreateL2NftCollectionTable
-Params:
-Return: err error
-Description: create account l2 nft table
-*/
 func (m *defaultL2NftCollectionModel) CreateL2NftCollectionTable() error {
 	return m.DB.AutoMigrate(L2NftCollection{})
 }
 
-/*
-Func: DropL2NftCollectionTable
-Params:
-Return: err error
-Description: drop account nft collection table
-*/
 func (m *defaultL2NftCollectionModel) DropL2NftCollectionTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
+
 func (m *defaultL2NftCollectionModel) IfCollectionExistsByCollectionId(accountIndex, collectionId int64) (bool, error) {
 	var res int64
 	dbTx := m.DB.Table(m.table).Where("account_index = ? and collection_id = ? and deleted_at is NULL", accountIndex, collectionId).Count(&res)

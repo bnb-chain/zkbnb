@@ -69,32 +69,14 @@ func (*FailTx) TableName() string {
 	return `fail_tx`
 }
 
-/*
-Func: CreateFailTxTable
-Params:
-Return: err error
-Description: create txVerification fail table
-*/
 func (m *defaultFailTxModel) CreateFailTxTable() error {
 	return m.DB.AutoMigrate(FailTx{})
 }
 
-/*
-Func: DropFailTxTable
-Params:
-Return: err error
-Description: drop txVerification fail table
-*/
 func (m *defaultFailTxModel) DropFailTxTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-/*
-Func: CreateFailTx
-Params: failTx *FailTx
-Return: err error
-Description: create fail txVerification
-*/
 func (m *defaultFailTxModel) CreateFailTx(failTx *FailTx) error {
 	dbTx := m.DB.Table(m.table).Create(failTx)
 	if dbTx.Error != nil {

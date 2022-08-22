@@ -113,23 +113,9 @@ func (*Block) TableName() string {
 	return BlockTableName
 }
 
-/*
-	Func: CreateBlockTable
-	Params:
-	Return: err error
-	Description: create Block table
-*/
-
 func (m *defaultBlockModel) CreateBlockTable() error {
 	return m.DB.AutoMigrate(Block{})
 }
-
-/*
-	Func: DropBlockTable
-	Params:
-	Return: err error
-	Description: drop block table
-*/
 
 func (m *defaultBlockModel) DropBlockTable() error {
 	return m.DB.Migrator().DropTable(m.table)
@@ -316,13 +302,6 @@ func (m *defaultBlockModel) GetBlocksTotalCount() (count int64, err error) {
 	}
 	return count, nil
 }
-
-/*
-	Func: GetBlockStatusCacheByBlockHeight
-	Params: blockHeight int64
-	Return: blockStatus int64, err
-	Description: get blockStatus cache by blockHeight
-*/
 
 type BlockStatusInfo struct {
 	BlockStatus int64

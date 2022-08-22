@@ -60,22 +60,10 @@ func (*L2NftWithdrawHistory) TableName() string {
 	return L2NftWithdrawHistoryTableName
 }
 
-/*
-Func: CreateL2NftWithdrawHistoryTable
-Params:
-Return: err error
-Description: create account l2 nft table
-*/
 func (m *defaultL2NftWithdrawHistoryModel) CreateL2NftWithdrawHistoryTable() error {
 	return m.DB.AutoMigrate(L2NftWithdrawHistory{})
 }
 
-/*
-Func: DropL2NftWithdrawHistoryTable
-Params:
-Return: err error
-Description: drop account l2 nft table
-*/
 func (m *defaultL2NftWithdrawHistoryModel) DropL2NftWithdrawHistoryTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }

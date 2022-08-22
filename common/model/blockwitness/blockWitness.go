@@ -68,23 +68,9 @@ func (*BlockWitness) TableName() string {
 	return TableName
 }
 
-/*
-	Func: CreateBlockWitnessTable
-	Params:
-	Return: err error
-	Description: create BlockWitness table
-*/
-
 func (m *defaultBlockWitnessModel) CreateBlockWitnessTable() error {
 	return m.DB.AutoMigrate(BlockWitness{})
 }
-
-/*
-	Func: DropBlockWitnessTable
-	Params:
-	Return: err error
-	Description: drop blockWitness table
-*/
 
 func (m *defaultBlockWitnessModel) DropBlockWitnessTable() error {
 	return m.DB.Migrator().DropTable(m.table)
