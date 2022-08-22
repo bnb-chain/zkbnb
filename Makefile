@@ -23,7 +23,7 @@ integration-test:
 tools:
 	go install github.com/zeromicro/go-zero/tools/goctl@v1.4.0
 
-build:
+build: app
 	go build -o build/app ./service/api/app/app.go
 	go build -o build/committer ./service/committer/committer.go
 	go build -o build/monitor ./service/cronjob/monitor/main.go
