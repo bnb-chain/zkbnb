@@ -1,12 +1,14 @@
 package svc
 
 import (
+	"time"
+
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
+	"github.com/bnb-chain/zkbas/common/dbcache"
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/asset"
 	"github.com/bnb-chain/zkbas/common/model/block"
@@ -25,7 +27,7 @@ type ServiceContext struct {
 	Config      config.Config
 	Conn        sqlx.SqlConn
 	GormPointer *gorm.DB
-	RedisConn   *redis.Redis
+	RedisCache  dbcache.Cache
 	MemCache    *cache.MemCache
 
 	MempoolModel          mempool.MempoolModel
@@ -54,10 +56,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		logx.Must(err)
 	}
 	conn := sqlx.NewSqlConn("postgres", c.Postgres.DataSource)
-	redisConn := redis.New(c.CacheRedis[0].Host, func(p *redis.Redis) {
-		p.Type = c.CacheRedis[0].Type
-		p.Pass = c.CacheRedis[0].Pass
-	})
+	redisCache := dbcache.NewRedisCache(c.CacheRedis[0].Host, c.CacheRedis[0].Pass, 15*time.Minute)
 
 	mempoolModel := mempool.NewMempoolModel(conn, c.CacheRedis, gormPointer)
 	mempoolDetailModel := mempool.NewMempoolDetailModel(conn, c.CacheRedis, gormPointer)
@@ -72,7 +71,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		Config:                c,
 		Conn:                  conn,
 		GormPointer:           gormPointer,
-		RedisConn:             redisConn,
+		RedisCache:            redisCache,
 		MemCache:              memCache,
 		MempoolModel:          mempoolModel,
 		MempoolDetailModel:    mempoolDetailModel,
@@ -91,7 +90,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		SysConfigModel:        sysConfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
 
 		PriceFetcher: price.NewFetcher(memCache, c.CoinMarketCap.Url, c.CoinMarketCap.Token),
-		StateFetcher: state.NewFetcher(redisConn, mempoolModel, mempoolDetailModel, accountModel,
-			liquidityModel, nftModel),
+		StateFetcher: state.NewFetcher(redisCache, accountModel, liquidityModel, nftModel),
 	}
 }

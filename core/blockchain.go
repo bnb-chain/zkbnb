@@ -25,6 +25,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/common/model/blockForCommit"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
+	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/tree"
@@ -120,6 +121,7 @@ type ChainDB struct {
 	OfferModel            nft.OfferModel
 	L2NftExchangeModel    nft.L2NftExchangeModel
 	L2NftHistoryModel     nft.L2NftHistoryModel
+	MempoolModel          mempool.MempoolModel
 }
 
 type BlockChain struct {
@@ -168,6 +170,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 			OfferModel:            nft.NewOfferModel(conn, config.CacheRedis, gormPointer),
 			L2NftExchangeModel:    nft.NewL2NftExchangeModel(conn, config.CacheRedis, gormPointer),
 			L2NftHistoryModel:     nft.NewL2NftHistoryModel(conn, config.CacheRedis, gormPointer),
+			MempoolModel:          mempool.NewMempoolModel(conn, config.CacheRedis, gormPointer),
 		},
 
 		accountMap:   make(map[int64]*commonAsset.AccountInfo),
@@ -240,12 +243,13 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 //NewBlockChainForDryRun - for dry run mode, we can reuse existing models for quick creation
 //, e.g., for sending tx, we can create blockchain for each request quickly
 func NewBlockChainForDryRun(accountModel account.AccountModel, liquidityModel liquidity.LiquidityModel,
-	nftModel nft.L2NftModel, redisCache dbcache.Cache) *BlockChain {
+	nftModel nft.L2NftModel, mempoolModel mempool.MempoolModel, redisCache dbcache.Cache) *BlockChain {
 	bc := &BlockChain{
 		ChainDB: ChainDB{
 			AccountModel:   accountModel,
 			LiquidityModel: liquidityModel,
 			L2NftModel:     nftModel,
+			MempoolModel:   mempoolModel,
 		},
 
 		dryRun: true,
@@ -811,8 +815,21 @@ func (bc *BlockChain) getStateRoot() string {
 	return common.Bytes2Hex(hFunc.Sum(nil))
 }
 
-func (bc *BlockChain) getPendingNonce(accountIndex int64) (int64, error) {
-	return 0, nil //code in another branch, need merge
+func (bc *BlockChain) GetPendingNonce(accountIndex int64) (int64, error) {
+	nonce, err := bc.MempoolModel.GetMaxNonceByAccountIndex(accountIndex)
+	if err == nil {
+		return nonce + 1, nil
+	}
+	redisAccount, err := bc.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex))
+	if err == nil {
+		formatAccount := redisAccount.(*commonAsset.AccountInfo)
+		return formatAccount.Nonce + 1, nil
+	}
+	dbAccount, err := bc.AccountModel.GetAccountByIndex(accountIndex)
+	if err != nil {
+		return dbAccount.Nonce + 1, nil
+	}
+	return 0, err
 }
 
 func (bc *BlockChain) verifyExpiredAt(expiredAt int64) error {
@@ -834,7 +851,7 @@ func (bc *BlockChain) verifyNonce(accountIndex int64, nonce int64) error {
 			return errors.New("invalid Nonce")
 		}
 	} else {
-		pendingNonce, err := bc.getPendingNonce(accountIndex)
+		pendingNonce, err := bc.GetPendingNonce(accountIndex)
 		if err != nil {
 			return errors.New("cannot verify nonce")
 		}

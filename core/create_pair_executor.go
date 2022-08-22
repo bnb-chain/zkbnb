@@ -7,7 +7,6 @@ import (
 	"math/big"
 
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
-
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 
@@ -15,6 +14,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
+	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/util"
 )
@@ -160,4 +160,8 @@ func (e *CreatePairExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	}
 
 	return []*tx.TxDetail{txDetail}, nil
+}
+
+func (e *CreatePairExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
+	return nil, nil
 }

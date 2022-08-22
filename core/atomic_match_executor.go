@@ -7,6 +7,7 @@ import (
 
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -14,6 +15,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/commonTx"
+	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/util"
@@ -501,4 +503,31 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 
 	return txDetails, nil
+}
+
+func (e *AtomicMatchExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
+	hash, err := legendTxTypes.ComputeAtomicMatchMsgHash(e.txInfo, mimc.NewMiMC())
+	if err != nil {
+		return nil, err
+	}
+	txHash := common.Bytes2Hex(hash)
+
+	mempoolTx := &mempool.MempoolTx{
+		TxHash:        txHash,
+		TxType:        e.tx.TxType,
+		GasFeeAssetId: e.txInfo.GasFeeAssetId,
+		GasFee:        e.txInfo.GasFeeAssetAmount.String(),
+		NftIndex:      commonConstant.NilTxNftIndex,
+		PairIndex:     commonConstant.NilPairIndex,
+		AssetId:       e.txInfo.BuyOffer.AssetId,
+		TxAmount:      e.txInfo.BuyOffer.AssetAmount.String(),
+		Memo:          "",
+		AccountIndex:  e.txInfo.AccountIndex,
+		Nonce:         e.txInfo.Nonce,
+		ExpiredAt:     e.txInfo.ExpiredAt,
+		L2BlockHeight: commonConstant.NilBlockHeight,
+		Status:        mempool.PendingTxStatus,
+		TxInfo:        e.tx.TxInfo,
+	}
+	return mempoolTx, nil
 }
