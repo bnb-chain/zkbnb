@@ -159,7 +159,7 @@ func (f *fetcher) GetPendingNonce(accountIndex int64) (nonce int64, err error) {
 		if err != nil {
 			return 0, err
 		}
-		return formatAccount.Nonce, nil
+		return formatAccount.Nonce + 1, nil
 	}
 	dbAccount, err := f.accountModel.GetAccountByIndex(accountIndex)
 	if err != nil {
