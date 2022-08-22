@@ -17,7 +17,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
 )
 
 type AtomicMatchExecutor struct {
@@ -54,10 +53,10 @@ func NewAtomicMatchExecutor(bc *BlockChain, tx *tx.Tx) (TxExecutor, error) {
 func (e *AtomicMatchExecutor) Prepare() error {
 	txInfo := e.txInfo
 
-	e.buyOfferAssetId = txInfo.BuyOffer.OfferId / txVerification.OfferPerAsset
-	e.buyOfferIndex = txInfo.BuyOffer.OfferId % txVerification.OfferPerAsset
-	e.sellOfferAssetId = txInfo.SellOffer.OfferId / txVerification.OfferPerAsset
-	e.sellOfferIndex = txInfo.SellOffer.OfferId % txVerification.OfferPerAsset
+	e.buyOfferAssetId = txInfo.BuyOffer.OfferId / OfferPerAsset
+	e.buyOfferIndex = txInfo.BuyOffer.OfferId % OfferPerAsset
+	e.sellOfferAssetId = txInfo.SellOffer.OfferId / OfferPerAsset
+	e.sellOfferIndex = txInfo.SellOffer.OfferId % OfferPerAsset
 
 	// Prepare seller's asset and nft, if the buyer's asset or nft isn't the same, it will be failed in the verify step.
 	err := e.bc.prepareNft(txInfo.SellOffer.NftIndex)
@@ -86,8 +85,8 @@ func (e *AtomicMatchExecutor) Prepare() error {
 	}
 
 	// Set the right treasury and creator treasury amount.
-	txInfo.TreasuryAmount = ffmath.Div(ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(txInfo.SellOffer.TreasuryRate)), big.NewInt(txVerification.TenThousand))
-	txInfo.CreatorAmount = ffmath.Div(ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(matchNft.CreatorTreasuryRate)), big.NewInt(txVerification.TenThousand))
+	txInfo.TreasuryAmount = ffmath.Div(ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(txInfo.SellOffer.TreasuryRate)), big.NewInt(TenThousand))
+	txInfo.CreatorAmount = ffmath.Div(ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(matchNft.CreatorTreasuryRate)), big.NewInt(TenThousand))
 
 	return nil
 }
