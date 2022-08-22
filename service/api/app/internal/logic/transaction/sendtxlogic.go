@@ -39,7 +39,7 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 		return resp, err
 	}
 	if err := executor.VerifyInputs(); err != nil {
-		return resp, err
+		return resp, errorcode.AppErrInvalidTxField.RefineError(err.Error())
 	}
 
 	mempoolTx, err := executor.GenerateMempoolTx()
