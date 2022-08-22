@@ -32,8 +32,8 @@ var (
 	}
 )
 
-func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo(_ *types.ReqGetLayer2BasicInfo) (*types.RespGetLayer2BasicInfo, error) {
-	resp := &types.RespGetLayer2BasicInfo{
+func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo() (*types.Layer2BasicInfo, error) {
+	resp := &types.Layer2BasicInfo{
 		ContractAddresses: make([]types.ContractAddress, 0),
 	}
 	var err error
@@ -49,7 +49,9 @@ func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo(_ *types.ReqGetLayer2BasicI
 			return nil, errorcode.AppErrInternal
 		}
 	}
-	resp.TotalTransactions, err = l.svcCtx.TxModel.GetTxsTotalCount()
+	resp.TotalTransactionCount, err = l.svcCtx.MemCache.GetTxTotalCountWithFallback(func() (interface{}, error) {
+		return l.svcCtx.TxModel.GetTxsTotalCount()
+	})
 	if err != nil {
 		if err != errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrInternal
@@ -59,32 +61,34 @@ func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo(_ *types.ReqGetLayer2BasicI
 	now := time.Now()
 	today := now.Round(24 * time.Hour).Add(-8 * time.Hour)
 
-	resp.TransactionsCountYesterday, err = l.svcCtx.TxModel.GetTxsTotalCountBetween(today.Add(-24*time.Hour), today)
+	resp.YesterdayTransactionCount, err = l.svcCtx.TxModel.GetTxsTotalCountBetween(today.Add(-24*time.Hour), today)
 	if err != nil {
 		if err != errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrInternal
 		}
 	}
-	resp.TransactionsCountToday, err = l.svcCtx.TxModel.GetTxsTotalCountBetween(today, now)
+	resp.TodayTransactionCount, err = l.svcCtx.TxModel.GetTxsTotalCountBetween(today, now)
 	if err != nil {
 		if err != errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrInternal
 		}
 	}
-	resp.DauYesterday, err = l.svcCtx.TxModel.GetDistinctAccountCountBetween(today.Add(-24*time.Hour), today)
+	resp.YesterdayActiveUserCount, err = l.svcCtx.TxModel.GetDistinctAccountsCountBetween(today.Add(-24*time.Hour), today)
 	if err != nil {
 		if err != errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrInternal
 		}
 	}
-	resp.DauToday, err = l.svcCtx.TxModel.GetDistinctAccountCountBetween(today, now)
+	resp.TodayActiveUserCount, err = l.svcCtx.TxModel.GetDistinctAccountsCountBetween(today, now)
 	if err != nil {
 		if err != errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrInternal
 		}
 	}
 	for _, contractName := range contractNames {
-		contract, err := l.svcCtx.SysConfigModel.GetSysConfigByName(contractName)
+		contract, err := l.svcCtx.MemCache.GetSysConfigWithFallback(contractName, func() (interface{}, error) {
+			return l.svcCtx.SysConfigModel.GetSysConfigByName(contractName)
+		})
 		if err != nil {
 			if err != errorcode.DbErrNotFound {
 				return nil, errorcode.AppErrInternal

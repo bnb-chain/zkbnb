@@ -2,106 +2,132 @@ package sendrawtx
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"math/big"
+	"time"
 
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/commonConstant"
 	"github.com/bnb-chain/zkbas/common/commonTx"
 	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/bnb-chain/zkbas/common/util/globalmapHandler"
-	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
-	"github.com/bnb-chain/zkbas/service/api/app/internal/fetcher/state"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 )
 
-func SendSwapTx(ctx context.Context, svcCtx *svc.ServiceContext, stateFetcher state.Fetcher, rawTxInfo string) (txId string, err error) {
+type swapTxSender struct {
+	txType          int
+	ctx             context.Context
+	svcCtx          *svc.ServiceContext
+	gasChecker      GasChecker
+	nonceChecker    NonceChecker
+	mempoolTxSender MempoolTxSender
+}
+
+func NewSwapTxSender(ctx context.Context, svcCtx *svc.ServiceContext,
+	gasChecker *gasChecker, nonceChecker *nonceChecker, sender *mempoolTxSender) *swapTxSender {
+	return &swapTxSender{
+		txType:          commonTx.TxTypeSwap,
+		ctx:             ctx,
+		svcCtx:          svcCtx,
+		gasChecker:      gasChecker,
+		nonceChecker:    nonceChecker,
+		mempoolTxSender: sender,
+	}
+}
+func (s *swapTxSender) SendTx(rawTxInfo string) (txId string, err error) {
 	txInfo, err := commonTx.ParseSwapTxInfo(rawTxInfo)
 	if err != nil {
 		logx.Errorf("cannot parse tx err: %s", err.Error())
 		return "", errorcode.AppErrInvalidTx
 	}
 
-	if err := legendTxTypes.ValidateSwapTxInfo(txInfo); err != nil {
+	if err := txInfo.Validate(); err != nil {
 		logx.Errorf("cannot pass static check, err: %s", err.Error())
 		return "", errorcode.AppErrInvalidTxField.RefineError(err)
 	}
 
-	if err := CheckGasAccountIndex(txInfo.GasAccountIndex, svcCtx.SysConfigModel); err != nil {
-		return "", err
+	//check expire time
+	now := time.Now().UnixMilli()
+	if txInfo.ExpiredAt < now {
+		logx.Errorf("invalid ExpiredAt")
+		return "", errorcode.AppErrInvalidTxField.RefineError("invalid ExpiredAt")
 	}
 
-	liquidityInfo, err := stateFetcher.GetLatestLiquidityInfo(ctx, txInfo.PairIndex)
+	//check signature
+	accountPk, err := s.svcCtx.MemCache.GetAccountPkByIndex(txInfo.FromAccountIndex)
 	if err != nil {
-		logx.Errorf("[sendSwapTx] unable to get latest liquidity info for write: %s", err.Error())
+		if err != nil {
+			if err == errorcode.DbErrNotFound {
+				return "", errorcode.AppErrInvalidTxField.RefineError("unknown FromAccountIndex")
+			}
+			return "", errorcode.AppErrInternal
+		}
+	}
+	if err := txInfo.VerifySignature(accountPk); err != nil {
+		return "", errorcode.AppErrInvalidTxField.RefineError("invalid Signature")
+	}
+
+	liquidity, err := s.svcCtx.StateFetcher.GetLatestLiquidity(txInfo.PairIndex)
+	if err != nil {
+		logx.Errorf(" unable to get latest liquidity info for write: %s", err.Error())
 		return "", errorcode.AppErrInternal
 	}
 
 	// check params
-	if liquidityInfo.AssetA == nil || liquidityInfo.AssetA.Cmp(big.NewInt(0)) == 0 ||
-		liquidityInfo.AssetB == nil || liquidityInfo.AssetB.Cmp(big.NewInt(0)) == 0 {
-		logx.Errorf("invalid params")
-		return "", errorcode.AppErrInternal
+	if liquidity.AssetA == nil || liquidity.AssetA.Cmp(big.NewInt(0)) == 0 ||
+		liquidity.AssetB == nil || liquidity.AssetB.Cmp(big.NewInt(0)) == 0 {
+		logx.Errorf("liquidity pool %d is empty", liquidity.PairIndex)
+		return "", errorcode.AppErrInvalidParam.RefineError("liquidity pool is empty")
 	}
 
 	// compute delta
 	var (
 		toDelta *big.Int
 	)
-	if liquidityInfo.AssetAId == txInfo.AssetAId &&
-		liquidityInfo.AssetBId == txInfo.AssetBId {
+	if liquidity.AssetAId == txInfo.AssetAId &&
+		liquidity.AssetBId == txInfo.AssetBId {
 		toDelta, _, err = util.ComputeDelta(
-			liquidityInfo.AssetA,
-			liquidityInfo.AssetB,
-			liquidityInfo.AssetAId,
-			liquidityInfo.AssetBId,
+			liquidity.AssetA,
+			liquidity.AssetB,
+			liquidity.AssetAId,
+			liquidity.AssetBId,
 			txInfo.AssetAId,
 			true,
 			txInfo.AssetAAmount,
-			liquidityInfo.FeeRate,
+			liquidity.FeeRate,
 		)
-	} else if liquidityInfo.AssetAId == txInfo.AssetBId &&
-		liquidityInfo.AssetBId == txInfo.AssetAId {
+	} else if liquidity.AssetAId == txInfo.AssetBId &&
+		liquidity.AssetBId == txInfo.AssetAId {
 		toDelta, _, err = util.ComputeDelta(
-			liquidityInfo.AssetA,
-			liquidityInfo.AssetB,
-			liquidityInfo.AssetAId,
-			liquidityInfo.AssetBId,
+			liquidity.AssetA,
+			liquidity.AssetB,
+			liquidity.AssetAId,
+			liquidity.AssetBId,
 			txInfo.AssetBId,
 			true,
 			txInfo.AssetAAmount,
-			liquidityInfo.FeeRate,
+			liquidity.FeeRate,
 		)
 	} else {
-		err = errors.New("invalid pair assetIds")
-	}
-	if err != nil {
 		logx.Errorf("invalid AssetIds: %d %d %d, err: %s",
 			txInfo.AssetAId,
-			uint32(liquidityInfo.AssetAId),
-			uint32(liquidityInfo.AssetBId),
+			uint32(liquidity.AssetAId),
+			uint32(liquidity.AssetBId),
 			err.Error())
-		return "", errorcode.AppErrInternal
+		return "", errorcode.AppErrInvalidTxField.RefineError("invalid AssetAId/AssetBId")
 	}
-	// check if toDelta is less than minToAmount
+
+	// check amount
 	if toDelta.Cmp(txInfo.AssetBMinAmount) < 0 {
-		logx.Errorf("minToAmount is bigger than toDelta: %s, %s",
-			txInfo.AssetBMinAmount.String(), toDelta.String())
+		logx.Errorf("received amount: %s is less than min amount: %s", txInfo.AssetBMinAmount.String(), toDelta.String())
 		return "", errorcode.AppErrInvalidTxField.RefineError("invalid AssetBMinAmount")
 	}
-	// complete tx info
-	txInfo.AssetBAmountDelta = toDelta
 
-	var (
-		accountInfoMap = make(map[int64]*commonAsset.AccountInfo)
-	)
-	accountInfoMap[txInfo.FromAccountIndex], err = stateFetcher.GetLatestAccountInfo(ctx, txInfo.FromAccountIndex)
+	//check from account
+	fromAccount, err := s.svcCtx.StateFetcher.GetLatestAccount(txInfo.FromAccountIndex)
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return "", errorcode.AppErrInvalidTxField.RefineError("invalid FromAccountIndex")
@@ -109,91 +135,34 @@ func SendSwapTx(ctx context.Context, svcCtx *svc.ServiceContext, stateFetcher st
 		logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.FromAccountIndex, err.Error())
 		return "", errorcode.AppErrInternal
 	}
-	if accountInfoMap[txInfo.GasAccountIndex] == nil {
-		accountInfoMap[txInfo.GasAccountIndex], err = stateFetcher.GetBasicAccountInfo(ctx, txInfo.GasAccountIndex)
-		if err != nil {
-			if err == errorcode.DbErrNotFound {
-				return "", errorcode.AppErrInvalidTxField.RefineError("invalid GasAccountIndex")
-			}
-			logx.Errorf("unable to get account info by index: %d, err: %s", txInfo.GasAccountIndex, err.Error())
-			return "", errorcode.AppErrInternal
-		}
+
+	//check gas
+	if err := s.gasChecker.CheckGas(fromAccount, txInfo.GasAccountIndex, txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount); err != nil {
+		return "", errorcode.AppErrInvalidTxField.RefineError(err.Error())
 	}
 
-	var (
-		txDetails []*mempool.MempoolTxDetail
-	)
-	// verify  tx
-	txDetails, err = txVerification.VerifySwapTxInfo(
-		accountInfoMap,
-		liquidityInfo,
-		txInfo)
-	if err != nil {
-		return "", errorcode.AppErrVerification.RefineError(err)
+	//check nonce
+	if err := s.nonceChecker.CheckNonce(fromAccount.AccountIndex, txInfo.Nonce); err != nil {
+		return "", errorcode.AppErrInvalidTxField.RefineError(err.Error())
 	}
 
-	// write into mempool
-	txInfoBytes, err := json.Marshal(txInfo)
-	if err != nil {
-		logx.Errorf("unable to marshal tx, err: %s", err.Error())
-		return "", errorcode.AppErrInternal
+	//send mempool tx
+	mempoolTx := &mempool.MempoolTx{
+		TxType:        int64(s.txType),
+		GasFeeAssetId: txInfo.GasFeeAssetId,
+		GasFee:        txInfo.GasFeeAssetAmount.String(),
+		NftIndex:      commonConstant.NilTxNftIndex,
+		PairIndex:     txInfo.PairIndex,
+		AssetId:       commonConstant.NilAssetId,
+		TxAmount:      txInfo.AssetAAmount.String(),
+		Memo:          "",
+		AccountIndex:  txInfo.FromAccountIndex,
+		Nonce:         txInfo.Nonce,
+		ExpiredAt:     txInfo.ExpiredAt,
 	}
-	txId, mempoolTx := ConstructMempoolTx(
-		commonTx.TxTypeSwap,
-		txInfo.GasFeeAssetId,
-		txInfo.GasFeeAssetAmount.String(),
-		commonConstant.NilTxNftIndex,
-		txInfo.PairIndex,
-		commonConstant.NilAssetId,
-		txInfo.AssetAAmount.String(),
-		"",
-		string(txInfoBytes),
-		"",
-		txInfo.FromAccountIndex,
-		txInfo.Nonce,
-		txInfo.ExpiredAt,
-		txDetails,
-	)
-	// delete key
-	keyW := util.GetLiquidityKeyForWrite(txInfo.PairIndex)
-	keyR := util.GetLiquidityKeyForRead(txInfo.PairIndex)
-	_, err = svcCtx.RedisConn.Del(keyW)
-	if err != nil {
-		logx.Errorf("unable to delete key from redis, key: %s, err: %s", keyW, err.Error())
-		return "", errorcode.AppErrInternal
-	}
-	_, err = svcCtx.RedisConn.Del(keyR)
-	if err != nil {
-		logx.Errorf("unable to delete key from redis, key: %s, err: %s", keyR, err.Error())
-		return "", errorcode.AppErrInternal
-	}
-	// insert into mempool
-	if err := svcCtx.MempoolModel.CreateBatchedMempoolTxs([]*mempool.MempoolTx{mempoolTx}); err != nil {
-		logx.Errorf("fail to create mempool tx: %v, err: %s", mempoolTx, err.Error())
-		_ = CreateFailTx(svcCtx.FailTxModel, commonTx.TxTypeSwap, txInfo, err)
-		return "", errorcode.AppErrInternal
-	}
-	// update redis
-	// get latest liquidity info
-	for _, txDetail := range txDetails {
-		if txDetail.AssetType == commonAsset.LiquidityAssetType {
-			nBalance, err := commonAsset.ComputeNewBalance(commonAsset.LiquidityAssetType, liquidityInfo.String(), txDetail.BalanceDelta)
-			if err != nil {
-				logx.Errorf("unable to compute new balance: %s", err.Error())
-				return txId, errorcode.AppErrInternal
-			}
-			liquidityInfo, err = commonAsset.ParseLiquidityInfo(nBalance)
-			if err != nil {
-				logx.Errorf("unable to parse liquidity info: %s", err.Error())
-				return txId, errorcode.AppErrInternal
-			}
-		}
-	}
-	liquidityInfoBytes, err := json.Marshal(liquidityInfo)
-	if err != nil {
-		logx.Errorf("unable to marshal tx, err: %s", err.Error())
-		return txId, errorcode.AppErrInternal
-	}
-	_ = svcCtx.RedisConn.Setex(keyW, string(liquidityInfoBytes), globalmapHandler.LiquidityExpiryTime)
-	return txId, nil
+	txId, err = s.mempoolTxSender.SendMempoolTx(func(txInfo interface{}) ([]byte, error) {
+		return legendTxTypes.ComputeSwapMsgHash(txInfo.(*legendTxTypes.SwapTxInfo), mimc.NewMiMC())
+	}, txInfo, mempoolTx)
+
+	return txId, err
 }

@@ -122,9 +122,9 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			// update block status
 			blockHeight := int64(event.BlockNumber)
 			if relatedBlocks[blockHeight] == nil {
-				relatedBlocks[blockHeight], err = m.BlockModel.GetBlockByBlockHeightWithoutTx(blockHeight)
+				relatedBlocks[blockHeight], err = m.BlockModel.GetBlockByHeightWithoutTx(blockHeight)
 				if err != nil {
-					logx.Errorf("GetBlockByBlockHeightWithoutTx err: %s", err.Error())
+					logx.Errorf("GetBlockByHeightWithoutTx err: %s", err.Error())
 					return err
 				}
 			}
@@ -143,9 +143,9 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			// update block status
 			blockHeight := int64(event.BlockNumber)
 			if relatedBlocks[blockHeight] == nil {
-				relatedBlocks[blockHeight], err = m.BlockModel.GetBlockByBlockHeightWithoutTx(blockHeight)
+				relatedBlocks[blockHeight], err = m.BlockModel.GetBlockByHeightWithoutTx(blockHeight)
 				if err != nil {
-					logx.Errorf("GetBlockByBlockHeightWithoutTx err: %s", err.Error())
+					logx.Errorf("GetBlockByHeightWithoutTx err: %s", err.Error())
 					return err
 				}
 			}

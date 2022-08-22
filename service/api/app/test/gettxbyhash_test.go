@@ -12,7 +12,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
 
-func (s *AppSuite) TestGetTxByHash() {
+func (s *AppSuite) TestGetTx() {
 
 	type args struct {
 		txHash string
@@ -28,7 +28,7 @@ func (s *AppSuite) TestGetTxByHash() {
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetTxByHash(s, tt.args.txHash)
+			httpCode, result := GetTx(s, tt.args.txHash)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.NotNil(t, result.Tx.BlockHeight)
@@ -44,8 +44,8 @@ func (s *AppSuite) TestGetTxByHash() {
 
 }
 
-func GetTxByHash(s *AppSuite, txHash string) (int, *types.RespGetTxByHash) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/tx/getTxByHash?tx_hash=%s", s.url, txHash))
+func GetTx(s *AppSuite, txHash string) (int, *types.EnrichedTx) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/tx?tx_hash=%s", s.url, txHash))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -55,7 +55,7 @@ func GetTxByHash(s *AppSuite, txHash string) (int, *types.RespGetTxByHash) {
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetTxByHash{}
+	result := types.EnrichedTx{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

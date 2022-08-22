@@ -47,7 +47,7 @@ func TestConstructDepositNftCryptoTxFirst(t *testing.T) {
 		Driver: treedb.MemoryDB,
 		TreeDB: memory.NewMemoryDB(),
 	}
-	txInfo, err := txModel.GetTxByTxId(13)
+	txInfo, err := txModel.GetTxById(13)
 	if err != nil {
 		t.Fatal(err)
 	}

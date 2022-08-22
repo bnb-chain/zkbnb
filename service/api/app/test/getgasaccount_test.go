@@ -39,8 +39,8 @@ func (s *AppSuite) TestGetGasAccount() {
 
 }
 
-func GetGasAccount(s *AppSuite) (int, *types.RespGetGasAccount) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/info/getGasAccount", s.url))
+func GetGasAccount(s *AppSuite) (int, *types.GasAccount) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/gasAccount", s.url))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -50,7 +50,7 @@ func GetGasAccount(s *AppSuite) (int, *types.RespGetGasAccount) {
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetGasAccount{}
+	result := types.GasAccount{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

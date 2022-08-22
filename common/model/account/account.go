@@ -33,10 +33,10 @@ type (
 	AccountModel interface {
 		CreateAccountTable() error
 		DropAccountTable() error
-		GetAccountByAccountIndex(accountIndex int64) (account *Account, err error)
-		GetConfirmedAccountByAccountIndex(accountIndex int64) (account *Account, err error)
+		GetAccountByIndex(accountIndex int64) (account *Account, err error)
+		GetConfirmedAccountByIndex(accountIndex int64) (account *Account, err error)
 		GetAccountByPk(pk string) (account *Account, err error)
-		GetAccountByAccountName(accountName string) (account *Account, err error)
+		GetAccountByName(accountName string) (account *Account, err error)
 		GetAccountsList(limit int, offset int64) (accounts []*Account, err error)
 		GetAccountsTotalCount() (count int64, err error)
 	}
@@ -100,13 +100,13 @@ func (m *defaultAccountModel) DropAccountTable() error {
 }
 
 /*
-	Func: GetAccountByAccountIndex
+	Func: GetAccountByIndex
 	Params: accountIndex int64
 	Return: account Account, err error
 	Description: get account info by index
 */
 
-func (m *defaultAccountModel) GetAccountByAccountIndex(accountIndex int64) (account *Account, err error) {
+func (m *defaultAccountModel) GetAccountByIndex(accountIndex int64) (account *Account, err error) {
 	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex).Find(&account)
 	if dbTx.Error != nil {
 		logx.Errorf("get account by index error, err: %s", dbTx.Error.Error())
@@ -139,13 +139,13 @@ func (m *defaultAccountModel) GetAccountByPk(pk string) (account *Account, err e
 }
 
 /*
-	Func: GetAccountByAccountName
+	Func: GetAccountByName
 	Params: accountName string
 	Return: account Account, err error
 	Description: get account info by account name
 */
 
-func (m *defaultAccountModel) GetAccountByAccountName(accountName string) (account *Account, err error) {
+func (m *defaultAccountModel) GetAccountByName(accountName string) (account *Account, err error) {
 	dbTx := m.DB.Table(m.table).Where("account_name = ?", accountName).Find(&account)
 	if dbTx.Error != nil {
 		logx.Errorf("get account by account name error, err: %s", dbTx.Error.Error())
@@ -191,7 +191,7 @@ func (m *defaultAccountModel) GetAccountsTotalCount() (count int64, err error) {
 	return count, nil
 }
 
-func (m *defaultAccountModel) GetConfirmedAccountByAccountIndex(accountIndex int64) (account *Account, err error) {
+func (m *defaultAccountModel) GetConfirmedAccountByIndex(accountIndex int64) (account *Account, err error) {
 	dbTx := m.DB.Table(m.table).Where("account_index = ? and status = ?", accountIndex, AccountStatusConfirmed).Find(&account)
 	if dbTx.Error != nil {
 		logx.Errorf("get confirmed account by account index error, err: %s", dbTx.Error.Error())

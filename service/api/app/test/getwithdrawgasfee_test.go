@@ -40,8 +40,8 @@ func (s *AppSuite) TestGetWithdrawGasFee() {
 
 }
 
-func GetWithdrawGasFee(s *AppSuite, assetId int) (int, *types.RespGetWithdrawGasFee) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/info/getWithdrawGasFee?asset_id=%d", s.url, assetId))
+func GetWithdrawGasFee(s *AppSuite, assetId int) (int, *types.GasFee) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/withdrawGasFee?asset_id=%d", s.url, assetId))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -51,7 +51,7 @@ func GetWithdrawGasFee(s *AppSuite, assetId int) (int, *types.RespGetWithdrawGas
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetWithdrawGasFee{}
+	result := types.GasFee{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

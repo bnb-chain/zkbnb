@@ -48,8 +48,8 @@ func (s *AppSuite) TestGetBlocks() {
 
 }
 
-func GetBlocks(s *AppSuite, offset, limit int) (int, *types.RespGetBlocks) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/block/getBlocks?offset=%d&limit=%d", s.url, offset, limit))
+func GetBlocks(s *AppSuite, offset, limit int) (int, *types.Blocks) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/blocks?offset=%d&limit=%d", s.url, offset, limit))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -59,7 +59,7 @@ func GetBlocks(s *AppSuite, offset, limit int) (int, *types.RespGetBlocks) {
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetBlocks{}
+	result := types.Blocks{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

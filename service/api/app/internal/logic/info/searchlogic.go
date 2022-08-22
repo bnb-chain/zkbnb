@@ -3,6 +3,7 @@ package info
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -26,11 +27,11 @@ func NewSearchLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SearchLogi
 	}
 }
 
-func (l *SearchLogic) Search(req *types.ReqSearch) (*types.RespSearch, error) {
-	resp := &types.RespSearch{}
-	blockHeight, err := strconv.ParseInt(req.Info, 10, 64)
+func (l *SearchLogic) Search(req *types.ReqSearch) (*types.Search, error) {
+	resp := &types.Search{}
+	blockHeight, err := strconv.ParseInt(req.Keyword, 10, 64)
 	if err == nil {
-		if _, err = l.svcCtx.BlockModel.GetBlockByBlockHeight(blockHeight); err != nil {
+		if _, err = l.svcCtx.BlockModel.GetBlockByHeight(blockHeight); err != nil {
 			if err == errorcode.DbErrNotFound {
 				return nil, errorcode.AppErrNotFound
 			}
@@ -39,17 +40,27 @@ func (l *SearchLogic) Search(req *types.ReqSearch) (*types.RespSearch, error) {
 		resp.DataType = util.TypeBlockHeight
 		return resp, nil
 	}
-	// TODO: prevent sql slow query, bloom Filter
-	if _, err = l.svcCtx.TxModel.GetTxByTxHash(req.Info); err == nil {
+
+	if strings.Contains(req.Keyword, ".") {
+		if _, err = l.svcCtx.MemCache.GetAccountIndexByName(req.Keyword); err != nil {
+			if err == errorcode.DbErrNotFound {
+				return nil, errorcode.AppErrNotFound
+			}
+			return nil, errorcode.AppErrInternal
+		}
+		resp.DataType = util.TypeAccountName
+		return resp, nil
+	}
+
+	if _, err = l.svcCtx.MemCache.GetAccountIndexByPk(req.Keyword); err == nil {
+		resp.DataType = util.TypeAccountPk
+		return resp, nil
+	}
+
+	if _, err = l.svcCtx.TxModel.GetTxByHash(req.Keyword); err == nil {
 		resp.DataType = util.TypeTxType
 		return resp, nil
 	}
-	if _, err = l.svcCtx.AccountModel.GetAccountByAccountName(req.Info); err != nil {
-		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrNotFound
-		}
-		return nil, errorcode.AppErrInternal
-	}
-	resp.DataType = util.TypeAccountName
-	return resp, nil
+
+	return resp, errorcode.AppErrNotFound
 }

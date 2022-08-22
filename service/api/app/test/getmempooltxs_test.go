@@ -47,8 +47,8 @@ func (s *AppSuite) TestGetMempoolTxs() {
 
 }
 
-func GetMempoolTxs(s *AppSuite, offset, limit int) (int, *types.RespGetMempoolTxs) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/tx/getMempoolTxs?offset=%d&limit=%d", s.url, offset, limit))
+func GetMempoolTxs(s *AppSuite, offset, limit int) (int, *types.MempoolTxs) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/mempoolTxs?offset=%d&limit=%d", s.url, offset, limit))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -58,7 +58,7 @@ func GetMempoolTxs(s *AppSuite, offset, limit int) (int, *types.RespGetMempoolTx
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetMempoolTxs{}
+	result := types.MempoolTxs{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

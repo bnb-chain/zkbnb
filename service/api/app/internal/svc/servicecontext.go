@@ -1,9 +1,6 @@
 package svc
 
 import (
-	"time"
-
-	gocache "github.com/patrickmn/go-cache"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -18,22 +15,18 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/sysConfig"
 	"github.com/bnb-chain/zkbas/common/model/tx"
+	"github.com/bnb-chain/zkbas/service/api/app/internal/cache"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/config"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/fetcher/price"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/fetcher/state"
 )
 
-const cacheDefaultExpiration = time.Millisecond * 500
-const cacheDefaultPurgeInterval = time.Second * 60
-
 type ServiceContext struct {
-	Config        config.Config
-	Conn          sqlx.SqlConn
-	GormPointer   *gorm.DB
-	RedisConn     *redis.Redis
-	Cache         *gocache.Cache
-	CodeVersion   string
-	GitCommitHash string
+	Config      config.Config
+	Conn        sqlx.SqlConn
+	GormPointer *gorm.DB
+	RedisConn   *redis.Redis
+	MemCache    *cache.MemCache
 
 	MempoolModel          mempool.MempoolModel
 	MempoolDetailModel    mempool.MempoolTxDetailModel
@@ -65,19 +58,22 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		p.Type = c.CacheRedis[0].Type
 		p.Pass = c.CacheRedis[0].Pass
 	})
-	cache := gocache.New(cacheDefaultExpiration, cacheDefaultPurgeInterval)
+
 	mempoolModel := mempool.NewMempoolModel(conn, c.CacheRedis, gormPointer)
 	mempoolDetailModel := mempool.NewMempoolDetailModel(conn, c.CacheRedis, gormPointer)
 	accountModel := account.NewAccountModel(conn, c.CacheRedis, gormPointer)
 	liquidityModel := liquidity.NewLiquidityModel(conn, c.CacheRedis, gormPointer)
 	nftModel := nft.NewL2NftModel(conn, c.CacheRedis, gormPointer)
 	offerModel := nft.NewOfferModel(conn, c.CacheRedis, gormPointer)
+	assetModel := asset.NewAssetModel(conn, c.CacheRedis, gormPointer)
+	memCache := cache.NewMemCache(accountModel, assetModel, c.MemCache.AccountExpiration, c.MemCache.BlockExpiration,
+		c.MemCache.TxExpiration, c.MemCache.AssetExpiration, c.MemCache.PriceExpiration)
 	return &ServiceContext{
 		Config:                c,
 		Conn:                  conn,
 		GormPointer:           gormPointer,
 		RedisConn:             redisConn,
-		Cache:                 cache,
+		MemCache:              memCache,
 		MempoolModel:          mempoolModel,
 		MempoolDetailModel:    mempoolDetailModel,
 		AccountModel:          accountModel,
@@ -91,11 +87,11 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		NftModel:              nftModel,
 		CollectionModel:       nft.NewL2NftCollectionModel(conn, c.CacheRedis, gormPointer),
 		OfferModel:            offerModel,
-		AssetModel:            asset.NewAssetModel(conn, c.CacheRedis, gormPointer),
+		AssetModel:            assetModel,
 		SysConfigModel:        sysConfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
 
-		PriceFetcher: price.NewFetcher(cache),
+		PriceFetcher: price.NewFetcher(memCache, c.CoinMarketCap.Url, c.CoinMarketCap.Token),
 		StateFetcher: state.NewFetcher(redisConn, mempoolModel, mempoolDetailModel, accountModel,
-			liquidityModel, nftModel, offerModel),
+			liquidityModel, nftModel),
 	}
 }

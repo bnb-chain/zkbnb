@@ -48,9 +48,9 @@ type (
 		CreateMempoolTxAndL2Nft(mempoolTx *MempoolTx, nftInfo *nft.L2Nft) error
 		CreateMempoolTxAndL2NftExchange(mempoolTx *MempoolTx, offers []*nft.Offer, nftExchange *nft.L2NftExchange) error
 		CreateMempoolTxAndUpdateOffer(mempoolTx *MempoolTx, offer *nft.Offer, isUpdate bool) error
-
 		GetPendingMempoolTxsByAccountIndex(accountIndex int64) (mempoolTxs []*MempoolTx, err error)
 		GetLatestL2MempoolTxByAccountIndex(accountIndex int64) (mempoolTx *MempoolTx, err error)
+		GetMaxNonceByAccountIndex(accountIndex int64) (nonce int64, err error)
 	}
 
 	defaultMempoolModel struct {
@@ -473,4 +473,15 @@ func (m *defaultMempoolModel) GetMempoolTxByTxId(id int64) (mempoolTx *MempoolTx
 		return nil, err
 	}
 	return mempoolTx, nil
+}
+
+func (m *defaultMempoolModel) GetMaxNonceByAccountIndex(accountIndex int64) (nonce int64, err error) {
+	dbTx := m.DB.Table(m.table).Select("nonce").Where("account_index = ?", accountIndex).Order("nonce desc").Limit(1).Find(&nonce)
+	if dbTx.Error != nil {
+		logx.Errorf("get max nonce error, err: %s", dbTx.Error.Error())
+		return 0, errorcode.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return 0, errorcode.DbErrNotFound
+	}
+	return nonce, nil
 }

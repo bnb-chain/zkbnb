@@ -10,7 +10,7 @@ require (
 
 require (
 	github.com/AanZee/goimportssort v0.0.0-20200826100315-f4e155b80708 // indirect
-	github.com/bnb-chain/zkbas-crypto v0.0.2
+	github.com/bnb-chain/zkbas-crypto v0.0.4-0.20220816064029-c9a56fc976f8
 	github.com/bnb-chain/zkbas-eth-rpc v0.0.1
 	github.com/consensys/gnark v0.7.0
 	github.com/consensys/gnark-crypto v0.7.0
@@ -25,6 +25,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/stretchr/testify v1.7.1
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
+	golang.org/x/mobile v0.0.0-20220518205345-8578da9835fd // indirect
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
 	golang.org/x/sys v0.0.0-20220808155132-1c4a2a72c664 // indirect

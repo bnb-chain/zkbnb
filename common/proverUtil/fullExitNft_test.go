@@ -47,7 +47,7 @@ func TestConstructFullExitNftNftCryptoTxFirst(t *testing.T) {
 		Driver: treedb.MemoryDB,
 		TreeDB: memory.NewMemoryDB(),
 	}
-	txInfo, err := txModel.GetTxByTxId(15)
+	txInfo, err := txModel.GetTxById(15)
 	if err != nil {
 		t.Fatal(err)
 	}

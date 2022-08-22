@@ -15,6 +15,8 @@ import (
 func (s *AppSuite) TestGetCurrencyPrices() {
 
 	type args struct {
+		offset int
+		limit  int
 	}
 	tests := []struct {
 		name     string
@@ -26,13 +28,13 @@ func (s *AppSuite) TestGetCurrencyPrices() {
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetCurrencyPrices(s)
+			httpCode, result := GetCurrencyPrices(s, tt.args.offset, tt.args.limit)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
-				assert.NotNil(t, result.Data)
-				assert.NotNil(t, result.Data[0].Price)
-				assert.NotNil(t, result.Data[0].AssetId)
-				assert.NotNil(t, result.Data[0].Pair)
+				assert.NotNil(t, result.CurrencyPrices)
+				assert.NotNil(t, result.CurrencyPrices[0].Price)
+				assert.NotNil(t, result.CurrencyPrices[0].AssetId)
+				assert.NotNil(t, result.CurrencyPrices[0].Pair)
 				fmt.Printf("result: %+v \n", result)
 			}
 		})
@@ -40,8 +42,8 @@ func (s *AppSuite) TestGetCurrencyPrices() {
 
 }
 
-func GetCurrencyPrices(s *AppSuite) (int, *types.RespGetCurrencyPrices) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/info/getCurrencyPrices", s.url))
+func GetCurrencyPrices(s *AppSuite, offset, limit int) (int, *types.CurrencyPrices) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/currencyPrices?offset=%d&limit=%d", s.url, offset, limit))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -51,7 +53,7 @@ func GetCurrencyPrices(s *AppSuite) (int, *types.RespGetCurrencyPrices) {
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetCurrencyPrices{}
+	result := types.CurrencyPrices{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

@@ -37,8 +37,8 @@ func (s *AppSuite) TestGetMaxOfferId() {
 
 }
 
-func GetMaxOfferId(s *AppSuite, accountIndex int) (int, *types.RespGetMaxOfferId) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/nft/getMaxOfferId?account_index=%d", s.url, accountIndex))
+func GetMaxOfferId(s *AppSuite, accountIndex int) (int, *types.MaxOfferId) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/maxOfferId?account_index=%d", s.url, accountIndex))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -48,7 +48,7 @@ func GetMaxOfferId(s *AppSuite, accountIndex int) (int, *types.RespGetMaxOfferId
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetMaxOfferId{}
+	result := types.MaxOfferId{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

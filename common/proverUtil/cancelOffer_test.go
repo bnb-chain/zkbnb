@@ -47,7 +47,7 @@ func TestConstructCancelOfferCryptoTxFirst(t *testing.T) {
 		Driver: treedb.MemoryDB,
 		TreeDB: memory.NewMemoryDB(),
 	}
-	txInfo, err := txModel.GetTxByTxId(25)
+	txInfo, err := txModel.GetTxById(25)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -15,7 +15,7 @@ import (
 
 func (s *AppSuite) TestSearch() {
 	type args struct {
-		info string
+		keyword string
 	}
 	tests := []struct {
 		name     string
@@ -30,7 +30,7 @@ func (s *AppSuite) TestSearch() {
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := Search(s, tt.args.info)
+			httpCode, result := Search(s, tt.args.keyword)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.NotNil(t, result.DataType)
@@ -42,8 +42,8 @@ func (s *AppSuite) TestSearch() {
 
 }
 
-func Search(s *AppSuite, info string) (int, *types.RespSearch) {
-	resp, err := http.Get(s.url + "/api/v1/info/search?info=" + info)
+func Search(s *AppSuite, keyword string) (int, *types.Search) {
+	resp, err := http.Get(s.url + "/api/v1/search?keyword=" + keyword)
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -53,7 +53,7 @@ func Search(s *AppSuite, info string) (int, *types.RespSearch) {
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespSearch{}
+	result := types.Search{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

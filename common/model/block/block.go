@@ -43,16 +43,16 @@ type (
 		DropBlockTable() error
 		GetBlocksList(limit int64, offset int64) (blocks []*Block, err error)
 		GetBlocksBetween(start int64, end int64) (blocks []*Block, err error)
-		GetBlockByBlockHeight(blockHeight int64) (block *Block, err error)
-		GetBlockByBlockHeightWithoutTx(blockHeight int64) (block *Block, err error)
+		GetBlockByHeight(blockHeight int64) (block *Block, err error)
+		GetBlockByHeightWithoutTx(blockHeight int64) (block *Block, err error)
 		GetCommittedBlocksCount() (count int64, err error)
 		GetVerifiedBlocksCount() (count int64, err error)
-		GetLatestVerifiedBlockHeight() (height int64, err error)
+		GetLatestVerifiedHeight() (height int64, err error)
 		GetBlockByCommitment(blockCommitment string) (block *Block, err error)
 		GetBlocksForProverBetween(start, end int64) (blocks []*Block, err error)
 		GetBlocksTotalCount() (count int64, err error)
 		CreateGenesisBlock(block *Block) error
-		GetCurrentBlockHeight() (blockHeight int64, err error)
+		GetCurrentHeight() (blockHeight int64, err error)
 		CreateBlockForCommitter(
 			oBlock *Block,
 			oBlockForCommit *blockForCommit.BlockForCommit,
@@ -234,7 +234,7 @@ func (m *defaultBlockModel) GetBlockByCommitment(blockCommitment string) (block 
 	Return: err error
 	Description:  For API /api/v1/block/getBlockByBlockHeight
 */
-func (m *defaultBlockModel) GetBlockByBlockHeight(blockHeight int64) (block *Block, err error) {
+func (m *defaultBlockModel) GetBlockByHeight(blockHeight int64) (block *Block, err error) {
 	var (
 		txForeignKeyColumn = `Txs`
 	)
@@ -263,7 +263,7 @@ func (m *defaultBlockModel) GetBlockByBlockHeight(blockHeight int64) (block *Blo
 	Return: err error
 	Description:  For API /api/v1/block/getBlockByBlockHeight
 */
-func (m *defaultBlockModel) GetBlockByBlockHeightWithoutTx(blockHeight int64) (block *Block, err error) {
+func (m *defaultBlockModel) GetBlockByHeightWithoutTx(blockHeight int64) (block *Block, err error) {
 	dbTx := m.DB.Table(m.table).Where("block_height = ?", blockHeight).Find(&block)
 	if dbTx.Error != nil {
 		logx.Errorf("get block by height error, err: %s", dbTx.Error.Error())
@@ -330,7 +330,7 @@ func (m *defaultBlockModel) CreateGenesisBlock(block *Block) error {
 	Return: blockHeight int64, err error
 	Description: get latest block height
 */
-func (m *defaultBlockModel) GetCurrentBlockHeight() (blockHeight int64, err error) {
+func (m *defaultBlockModel) GetCurrentHeight() (blockHeight int64, err error) {
 	dbTx := m.DB.Table(m.table).Select("block_height").Order("block_height desc").Limit(1).Find(&blockHeight)
 	if dbTx.Error != nil {
 		logx.Errorf("get current block error, err: %s", dbTx.Error.Error())
@@ -556,7 +556,7 @@ func (m *defaultBlockModel) GetBlocksForProverBetween(start, end int64) (blocks 
 	return blocks, nil
 }
 
-func (m *defaultBlockModel) GetLatestVerifiedBlockHeight() (height int64, err error) {
+func (m *defaultBlockModel) GetLatestVerifiedHeight() (height int64, err error) {
 	block := &Block{}
 	dbTx := m.DB.Table(m.table).Where("block_status = ?", StatusVerifiedAndExecuted).
 		Order("block_height DESC").

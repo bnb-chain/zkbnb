@@ -47,7 +47,7 @@ func TestConstructCreateCollectionCryptoTxFirst(t *testing.T) {
 		Driver: treedb.MemoryDB,
 		TreeDB: memory.NewMemoryDB(),
 	}
-	txInfo, err := txModel.GetTxByTxId(21)
+	txInfo, err := txModel.GetTxById(21)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -236,7 +236,7 @@ func (w *WitnessHelper) constructAccountWitness(
 			*w.assetTrees = append(*w.assetTrees, emptyAccountAssetTree)
 			cryptoAccount = std.EmptyAccount(accountKey, tree.NilAccountAssetRoot)
 			// update account info
-			accountInfo, err := w.accountModel.GetConfirmedAccountByAccountIndex(accountKey)
+			accountInfo, err := w.accountModel.GetConfirmedAccountByIndex(accountKey)
 			if err != nil {
 				logx.Errorf("[ConstructAccountWitness] unable to get confirmed account by account index: %s", err.Error())
 				return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err

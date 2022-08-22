@@ -37,8 +37,8 @@ func (s *AppSuite) TestGeNextNonce() {
 
 }
 
-func GetNextNonce(s *AppSuite, accountIndex int) (int, *types.RespGetNextNonce) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/tx/getNextNonce?account_index=%d", s.url, accountIndex))
+func GetNextNonce(s *AppSuite, accountIndex int) (int, *types.NextNonce) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/nextNonce?account_index=%d", s.url, accountIndex))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -48,7 +48,7 @@ func GetNextNonce(s *AppSuite, accountIndex int) (int, *types.RespGetNextNonce) 
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespGetNextNonce{}
+	result := types.NextNonce{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

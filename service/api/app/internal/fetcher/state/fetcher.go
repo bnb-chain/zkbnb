@@ -1,33 +1,47 @@
 package state
 
 import (
-	"context"
-	"errors"
-	"strconv"
+	"encoding/json"
+	"fmt"
 
-	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
-	"github.com/bnb-chain/zkbas/common/commonConstant"
-	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/liquidity"
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 	"github.com/bnb-chain/zkbas/common/model/nft"
-	"github.com/bnb-chain/zkbas/common/util"
 )
 
 //go:generate mockgen -source api.go -destination api_mock.go -package state
 
+//TODO: replace with committer code when merge
+const (
+	AccountKeyPrefix   = "cache:account_"
+	LiquidityKeyPrefix = "cache:liquidity_"
+	NftKeyPrefix       = "cache:nft_"
+	OfferIdKeyPrefix   = "cache:offerId_"
+)
+
+func AccountKeyByIndex(accountIndex int64) string {
+	return AccountKeyPrefix + fmt.Sprintf("%d", accountIndex)
+}
+
+func LiquidityKeyByIndex(pairIndex int64) string {
+	return LiquidityKeyPrefix + fmt.Sprintf("%d", pairIndex)
+}
+
+func NftKeyByIndex(nftIndex int64) string {
+	return NftKeyPrefix + fmt.Sprintf("%d", nftIndex)
+}
+
 // Fetcher will fetch the latest states (account,nft,liquidity) from redis, which is written by committer;
 // and if the required data cannot be found then database will be used.
 type Fetcher interface {
-	GetBasicAccountInfo(ctx context.Context, accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error)
-	GetLatestAccountInfo(ctx context.Context, accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error)
-	GetLatestLiquidityInfo(ctx context.Context, pairIndex int64) (liquidityInfo *commonAsset.LiquidityInfo, err error)
-	GetLatestOfferId(ctx context.Context, accountIndex int64) (offerId int64, err error)
-	GetLatestNftInfo(ctx context.Context, nftIndex int64) (*commonAsset.NftInfo, error)
+	GetLatestAccount(accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error)
+	GetLatestLiquidity(pairIndex int64) (liquidityInfo *commonAsset.LiquidityInfo, err error)
+	GetLatestNft(nftIndex int64) (*commonAsset.NftInfo, error)
+	GetPendingNonce(accountIndex int64) (nonce int64, err error)
 }
 
 func NewFetcher(redisConn *redis.Redis,
@@ -35,8 +49,7 @@ func NewFetcher(redisConn *redis.Redis,
 	mempoolDetailModel mempool.MempoolTxDetailModel,
 	accountModel account.AccountModel,
 	liquidityModel liquidity.LiquidityModel,
-	nftModel nft.L2NftModel,
-	offerModel nft.OfferModel) Fetcher {
+	nftModel nft.L2NftModel) Fetcher {
 	return &fetcher{
 		redisConnection:      redisConn,
 		mempoolModel:         mempoolModel,
@@ -44,7 +57,6 @@ func NewFetcher(redisConn *redis.Redis,
 		accountModel:         accountModel,
 		liquidityModel:       liquidityModel,
 		nftModel:             nftModel,
-		offerModel:           offerModel,
 	}
 }
 
@@ -54,158 +66,104 @@ type fetcher struct {
 	mempoolTxDetailModel mempool.MempoolTxDetailModel
 	accountModel         account.AccountModel
 	liquidityModel       liquidity.LiquidityModel
-	offerModel           nft.OfferModel
 	nftModel             nft.L2NftModel
 }
 
-func (m *fetcher) GetBasicAccountInfo(ctx context.Context, accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error) {
-	oAccountInfo, err := m.accountModel.GetAccountByAccountIndex(accountIndex)
-	if err != nil {
-		return nil, err
-	}
-	accountInfo, err = commonAsset.ToFormatAccountInfo(oAccountInfo)
-	if err != nil {
-		return nil, err
-	}
-	return accountInfo, nil
-}
+func (f *fetcher) GetLatestAccount(accountIndex int64) (*commonAsset.AccountInfo, error) {
+	var formatAccount *commonAsset.AccountInfo
 
-func (m *fetcher) GetLatestAccountInfo(ctx context.Context, accountIndex int64) (*commonAsset.AccountInfo, error) {
-	oAccountInfo, err := m.accountModel.GetAccountByAccountIndex(accountIndex)
-	if err != nil {
-		return nil, err
-	}
-	accountInfo, err := commonAsset.ToFormatAccountInfo(oAccountInfo)
-	if err != nil {
-		return nil, err
-	}
-	mempoolTxs, err := m.mempoolModel.GetPendingMempoolTxsByAccountIndex(accountIndex)
-	if err != nil && err != errorcode.DbErrNotFound {
-		return nil, err
-	}
-	for _, mempoolTx := range mempoolTxs {
-		if mempoolTx.Nonce != commonConstant.NilNonce {
-			accountInfo.Nonce = mempoolTx.Nonce
+	redisAccount, err := f.redisConnection.Get(AccountKeyByIndex(accountIndex))
+	if err == nil && redisAccount != "" {
+		err = json.Unmarshal([]byte(redisAccount), &formatAccount)
+		if err != nil {
+			return nil, err
 		}
-		for _, mempoolTxDetail := range mempoolTx.MempoolDetails {
-			if mempoolTxDetail.AccountIndex != accountIndex {
-				continue
-			}
-			switch mempoolTxDetail.AssetType {
-			case commonAsset.GeneralAssetType:
-				if accountInfo.AssetInfo[mempoolTxDetail.AssetId] == nil {
-					accountInfo.AssetInfo[mempoolTxDetail.AssetId] = &commonAsset.AccountAsset{
-						AssetId:                  mempoolTxDetail.AssetId,
-						Balance:                  util.ZeroBigInt,
-						LpAmount:                 util.ZeroBigInt,
-						OfferCanceledOrFinalized: util.ZeroBigInt,
-					}
-				}
-				nBalance, err := commonAsset.ComputeNewBalance(commonAsset.GeneralAssetType,
-					accountInfo.AssetInfo[mempoolTxDetail.AssetId].String(), mempoolTxDetail.BalanceDelta)
-				if err != nil {
-					return nil, err
-				}
-				accountInfo.AssetInfo[mempoolTxDetail.AssetId], err = commonAsset.ParseAccountAsset(nBalance)
-				if err != nil {
-					return nil, err
-				}
-			case commonAsset.CollectionNonceAssetType:
-				accountInfo.CollectionNonce, err = strconv.ParseInt(mempoolTxDetail.BalanceDelta, 10, 64)
-				if err != nil {
-					return nil, err
-				}
-			case commonAsset.LiquidityAssetType:
-			case commonAsset.NftAssetType:
-			default:
-				return nil, errors.New("invalid asset type")
-			}
+	} else {
+		account, err := f.accountModel.GetAccountByIndex(accountIndex)
+		if err != nil {
+			return nil, err
+		}
+		formatAccount, err = commonAsset.ToFormatAccountInfo(account)
+		if err != nil {
+			return nil, err
 		}
 	}
-	accountInfo.Nonce = accountInfo.Nonce + 1
-	accountInfo.CollectionNonce = accountInfo.CollectionNonce + 1
-	return accountInfo, nil
+	return formatAccount, nil
 }
 
-func (m *fetcher) GetLatestLiquidityInfo(ctx context.Context, pairIndex int64) (liquidityInfo *commonAsset.LiquidityInfo, err error) {
-	dbLiquidityInfo, err := m.liquidityModel.GetLiquidityByPairIndex(pairIndex)
-	if err != nil {
-		return nil, err
+func (f *fetcher) GetLatestLiquidity(pairIndex int64) (liquidityInfo *commonAsset.LiquidityInfo, err error) {
+	var liquidity *liquidity.Liquidity
+
+	redisLiquidity, err := f.redisConnection.Get(LiquidityKeyByIndex(pairIndex))
+	if err == nil && redisLiquidity != "" {
+		err = json.Unmarshal([]byte(redisLiquidity), &liquidity)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		liquidity, err = f.liquidityModel.GetLiquidityByPairIndex(pairIndex)
+		if err != nil {
+			return nil, err
+		}
 	}
-	mempoolTxs, err := m.mempoolModel.GetPendingLiquidityTxs()
-	if err != nil && err != errorcode.DbErrNotFound {
-		return nil, err
-	}
-	liquidityInfo, err = commonAsset.ConstructLiquidityInfo(
+
+	return commonAsset.ConstructLiquidityInfo(
 		pairIndex,
-		dbLiquidityInfo.AssetAId,
-		dbLiquidityInfo.AssetA,
-		dbLiquidityInfo.AssetBId,
-		dbLiquidityInfo.AssetB,
-		dbLiquidityInfo.LpAmount,
-		dbLiquidityInfo.KLast,
-		dbLiquidityInfo.FeeRate,
-		dbLiquidityInfo.TreasuryAccountIndex,
-		dbLiquidityInfo.TreasuryRate,
+		liquidity.AssetAId,
+		liquidity.AssetA,
+		liquidity.AssetBId,
+		liquidity.AssetB,
+		liquidity.LpAmount,
+		liquidity.KLast,
+		liquidity.FeeRate,
+		liquidity.TreasuryAccountIndex,
+		liquidity.TreasuryRate,
 	)
-	if err != nil {
-		logx.Errorf("[ConstructLiquidityInfo] err: %s", err.Error())
-		return nil, err
-	}
-	for _, mempoolTx := range mempoolTxs {
-		for _, txDetail := range mempoolTx.MempoolDetails {
-			if txDetail.AssetType != commonAsset.LiquidityAssetType || liquidityInfo.PairIndex != txDetail.AssetId {
-				continue
-			}
-			nBalance, err := commonAsset.ComputeNewBalance(commonAsset.LiquidityAssetType, liquidityInfo.String(), txDetail.BalanceDelta)
-			if err != nil {
-				return nil, err
-			}
-			liquidityInfo, err = commonAsset.ParseLiquidityInfo(nBalance)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-	return liquidityInfo, nil
 }
 
-func (m *fetcher) GetLatestNftInfo(ctx context.Context, nftIndex int64) (*commonAsset.NftInfo, error) {
-	dbNftInfo, err := m.nftModel.GetNftAsset(nftIndex)
-	if err != nil {
-		return nil, err
-	}
-	mempoolTxs, err := m.mempoolModel.GetPendingNftTxs()
-	if err != nil && err != errorcode.DbErrNotFound {
-		return nil, err
-	}
-	nftInfo := commonAsset.ConstructNftInfo(nftIndex, dbNftInfo.CreatorAccountIndex, dbNftInfo.OwnerAccountIndex, dbNftInfo.NftContentHash,
-		dbNftInfo.NftL1TokenId, dbNftInfo.NftL1Address, dbNftInfo.CreatorTreasuryRate, dbNftInfo.CollectionId)
-	for _, mempoolTx := range mempoolTxs {
-		for _, txDetail := range mempoolTx.MempoolDetails {
-			if txDetail.AssetType != commonAsset.NftAssetType || txDetail.AssetId != nftInfo.NftIndex {
-				continue
-			}
-			nBalance, err := commonAsset.ComputeNewBalance(commonAsset.NftAssetType, nftInfo.String(), txDetail.BalanceDelta)
-			if err != nil {
-				return nil, err
-			}
-			nftInfo, err = commonAsset.ParseNftInfo(nBalance)
-			if err != nil {
-				return nil, err
-			}
+func (f *fetcher) GetLatestNft(nftIndex int64) (*commonAsset.NftInfo, error) {
+	var nft *nft.L2Nft
+
+	redisNft, err := f.redisConnection.Get(NftKeyByIndex(nftIndex))
+	if err == nil && redisNft != "" {
+		err = json.Unmarshal([]byte(redisNft), &nft)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		nft, err = f.nftModel.GetNftAsset(nftIndex)
+		if err != nil {
+			return nil, err
 		}
 	}
-	return nftInfo, nil
+
+	return commonAsset.ConstructNftInfo(nftIndex,
+		nft.CreatorAccountIndex,
+		nft.OwnerAccountIndex,
+		nft.NftContentHash,
+		nft.NftL1TokenId,
+		nft.NftL1Address,
+		nft.CreatorTreasuryRate,
+		nft.CollectionId), nil
 }
 
-func (m *fetcher) GetLatestOfferId(ctx context.Context, accountIndex int64) (int64, error) {
-	lastOfferId, err := m.offerModel.GetLatestOfferId(accountIndex)
-	if err != nil {
-		if err == errorcode.DbErrNotFound {
-			return 0, nil
-		}
-		return -1, err
+func (f *fetcher) GetPendingNonce(accountIndex int64) (nonce int64, err error) {
+	nonce, err = f.mempoolModel.GetMaxNonceByAccountIndex(accountIndex)
+	if err == nil {
+		return nonce + 1, nil
 	}
-	return lastOfferId, nil
+	redisAccount, err := f.redisConnection.Get(AccountKeyByIndex(accountIndex))
+	if err == nil {
+		var formatAccount *commonAsset.AccountInfo
+		err = json.Unmarshal([]byte(redisAccount), &formatAccount)
+		if err != nil {
+			return 0, err
+		}
+		return formatAccount.Nonce + 1, nil
+	}
+	dbAccount, err := f.accountModel.GetAccountByIndex(accountIndex)
+	if err != nil {
+		return dbAccount.Nonce + 1, nil
+	}
+	return 0, err
 }

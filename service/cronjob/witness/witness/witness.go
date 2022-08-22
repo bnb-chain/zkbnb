@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"time"
 
+	smt "github.com/bnb-chain/bas-smt"
+	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	smt "github.com/bnb-chain/bas-smt"
-	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/bnb-chain/zkbas/common/errorcode"
 	"github.com/bnb-chain/zkbas/common/model/account"
 	"github.com/bnb-chain/zkbas/common/model/block"
@@ -66,7 +66,7 @@ func NewWitness(c config.Config) *Witness {
 	w := &Witness{
 		config:                c,
 		blockModel:            block.NewBlockModel(conn, c.CacheRedis, dbInstance),
-		blockWitnessModel:    blockwitness.NewBlockWitnessModel(conn, c.CacheRedis, dbInstance),
+		blockWitnessModel:     blockwitness.NewBlockWitnessModel(conn, c.CacheRedis, dbInstance),
 		accountModel:          account.NewAccountModel(conn, c.CacheRedis, dbInstance),
 		accountHistoryModel:   account.NewAccountHistoryModel(conn, c.CacheRedis, dbInstance),
 		liquidityHistoryModel: liquidity.NewLiquidityHistoryModel(conn, c.CacheRedis, dbInstance),
@@ -141,7 +141,7 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 		return err
 	}
 	// get latestVerifiedBlockNr
-	latestVerifiedBlockNr, err := w.blockModel.GetLatestVerifiedBlockHeight()
+	latestVerifiedBlockNr, err := w.blockModel.GetLatestVerifiedHeight()
 	if err != nil {
 		return err
 	}

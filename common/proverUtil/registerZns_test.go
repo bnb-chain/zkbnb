@@ -49,7 +49,7 @@ func TestConstructRegisterZnsCryptoTxFirst(t *testing.T) {
 		Driver: treedb.MemoryDB,
 		TreeDB: memory.NewMemoryDB(),
 	}
-	txInfo, err := txModel.GetTxByTxId(3)
+	txInfo, err := txModel.GetTxById(3)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +97,7 @@ func TestConstructRegisterZnsCryptoTxNotFirst(t *testing.T) {
 		Driver: treedb.MemoryDB,
 		TreeDB: memory.NewMemoryDB(),
 	}
-	txInfo, err := txModel.GetTxByTxHash("e5d6dd7c-da46-11ec-8abf-7cb27d9ca483")
+	txInfo, err := txModel.GetTxByHash("e5d6dd7c-da46-11ec-8abf-7cb27d9ca483")
 	if err != nil {
 		t.Fatal(err)
 	}

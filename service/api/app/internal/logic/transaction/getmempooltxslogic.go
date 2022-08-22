@@ -24,26 +24,31 @@ func NewGetMempoolTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 		svcCtx: svcCtx,
 	}
 }
-func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetMempoolTxs) (*types.RespGetMempoolTxs, error) {
-	resp := &types.RespGetMempoolTxs{
-		MempoolTxs: make([]*types.Tx, 0),
-	}
-	count, err := l.svcCtx.MempoolModel.GetMempoolTxsTotalCount()
+func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetRange) (*types.MempoolTxs, error) {
+	total, err := l.svcCtx.MempoolModel.GetMempoolTxsTotalCount()
 	if err != nil {
 		if err != errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrInternal
 		}
 	}
 
-	if count == 0 {
+	resp := &types.MempoolTxs{
+		MempoolTxs: make([]*types.Tx, 0),
+		Total:      uint32(total),
+	}
+	if total == 0 {
 		return resp, nil
 	}
-	mempoolTxs, err := l.svcCtx.MempoolModel.GetMempoolTxsList(int64(req.Offset), int64(req.Limit))
+
+	mempoolTxs, err := l.svcCtx.MempoolModel.GetMempoolTxsList(int64(req.Limit), int64(req.Offset))
 	if err != nil {
 		return nil, errorcode.AppErrInternal
 	}
-	for _, mempoolTx := range mempoolTxs {
-		resp.MempoolTxs = append(resp.MempoolTxs, utils.MempoolTx2Tx(mempoolTx))
+	for _, t := range mempoolTxs {
+		tx := utils.DbMempoolTx2Tx(t)
+		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
+		tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
+		resp.MempoolTxs = append(resp.MempoolTxs, tx)
 	}
 	return resp, nil
 }

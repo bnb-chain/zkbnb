@@ -47,7 +47,7 @@ func TestConstructAddLiquidityCryptoTxFirst(t *testing.T) {
 		Driver: treedb.MemoryDB,
 		TreeDB: memory.NewMemoryDB(),
 	}
-	txInfo, err := txModel.GetTxByTxId(18)
+	txInfo, err := txModel.GetTxById(18)
 	if err != nil {
 		t.Fatal(err)
 	}

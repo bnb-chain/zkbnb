@@ -47,7 +47,7 @@ func TestConstructDepositCryptoTxFirst(t *testing.T) {
 		Driver: treedb.MemoryDB,
 		TreeDB: memory.NewMemoryDB(),
 	}
-	txInfo, err := txModel.GetTxByTxId(5)
+	txInfo, err := txModel.GetTxById(5)
 	if err != nil {
 		t.Fatal(err)
 	}

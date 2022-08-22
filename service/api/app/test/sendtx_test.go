@@ -56,15 +56,15 @@ func (s *AppSuite) TestSendTx() {
 		httpCode, result := SendTx(s, tt.args.txType, tt.args.txInfo)
 		assert.Equal(s.T(), tt.httpCode, httpCode)
 		if httpCode == http.StatusOK {
-			assert.NotNil(s.T(), result.TxId)
+			assert.NotNil(s.T(), result.TxHash)
 			fmt.Printf("result: %+v \n", result)
 		}
 	}
 
 }
 
-func SendTx(s *AppSuite, txType int, txInfo string) (int, *types.RespSendTx) {
-	resp, err := http.PostForm(s.url+"/api/v1/tx/sendTx",
+func SendTx(s *AppSuite, txType int, txInfo string) (int, *types.TxHash) {
+	resp, err := http.PostForm(s.url+"/api/v1/sendTx",
 		url.Values{"tx_type": {strconv.Itoa(txType)}, "tx_info": {txInfo}})
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
@@ -76,13 +76,13 @@ func SendTx(s *AppSuite, txType int, txInfo string) (int, *types.RespSendTx) {
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.RespSendTx{}
+	result := types.TxHash{}
 	err = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }
 
 func getAccountIndex(s *AppSuite, accountName string) int64 {
-	httpCode, accountResp := GetAccountInfoByAccountName(s, accountName)
+	httpCode, accountResp := GetAccount(s, "name", accountName)
 	if httpCode != http.StatusOK {
 		panic("cannot get account: " + accountName)
 	}
