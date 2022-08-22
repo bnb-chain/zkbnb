@@ -3,6 +3,8 @@ package transaction
 import (
 	"context"
 
+	"github.com/bnb-chain/zkbas/core"
+
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/errorcode"
@@ -25,7 +27,9 @@ func NewGetNextNonceLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetN
 }
 
 func (l *GetNextNonceLogic) GetNextNonce(req *types.ReqGetNextNonce) (*types.NextNonce, error) {
-	nonce, err := l.svcCtx.StateFetcher.GetPendingNonce(int64(req.AccountIndex))
+	bc := core.NewBlockChainForDryRun(l.svcCtx.AccountModel, l.svcCtx.LiquidityModel, l.svcCtx.NftModel, l.svcCtx.MempoolModel,
+		l.svcCtx.RedisCache)
+	nonce, err := bc.GetPendingNonce(int64(req.AccountIndex))
 	if err != nil {
 		if err == errorcode.DbErrNotFound {
 			return nil, errorcode.AppErrNotFound
