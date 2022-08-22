@@ -64,6 +64,11 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 		return nil, errorcode.AppErrInternal
 	}
 
+	maxAssetId, err := l.svcCtx.AssetModel.GetMaxId()
+	if err != nil {
+		return nil, errorcode.AppErrInternal
+	}
+
 	resp = &types.Account{
 		Status: uint32(account.Status),
 		Name:   account.AccountName,
@@ -72,8 +77,8 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 		Assets: make([]*types.AccountAsset, 0),
 	}
 	for _, asset := range account.AssetInfo {
-		if asset.OfferCanceledOrFinalized != nil && asset.OfferCanceledOrFinalized.Cmp(big.NewInt(0)) > 0 {
-			continue //it is used for offer related
+		if asset.AssetId > maxAssetId || asset.Balance == nil || asset.Balance.Cmp(big.NewInt(0)) == 0 {
+			continue //it is used for offer related, or empty balance
 		}
 		assetName, _ := l.svcCtx.MemCache.GetAssetNameById(asset.AssetId)
 		resp.Assets = append(resp.Assets, &types.AccountAsset{
