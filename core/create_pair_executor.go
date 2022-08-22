@@ -54,7 +54,7 @@ func (e *CreatePairExecutor) VerifyInputs() error {
 		return errors.New("invalid pair index, already registered")
 	}
 
-	for index, _ := range bc.stateCache.pendingNewLiquidityIndexMap {
+	for index := range bc.stateCache.pendingNewLiquidityIndexMap {
 		if txInfo.PairIndex == index {
 			return errors.New("invalid pair index, already registered")
 		}

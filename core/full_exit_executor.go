@@ -48,7 +48,7 @@ func (e *FullExitExecutor) Prepare() error {
 	accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
 	account, err := bc.AccountModel.GetAccountByNameHash(accountNameHash)
 	if err != nil {
-		for index, _ := range bc.stateCache.pendingNewAccountIndexMap {
+		for index := range bc.stateCache.pendingNewAccountIndexMap {
 			if accountNameHash == bc.accountMap[index].AccountNameHash {
 				account, err = commonAsset.FromFormatAccountInfo(bc.accountMap[index])
 				break

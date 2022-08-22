@@ -15,12 +15,10 @@ import (
 
 //go:generate mockgen -source api.go -destination api_mock.go -package state
 
-//TODO: replace with committer code when merge
 const (
 	AccountKeyPrefix   = "cache:account_"
 	LiquidityKeyPrefix = "cache:liquidity_"
 	NftKeyPrefix       = "cache:nft_"
-	OfferIdKeyPrefix   = "cache:offerId_"
 )
 
 func AccountKeyByIndex(accountIndex int64) string {
