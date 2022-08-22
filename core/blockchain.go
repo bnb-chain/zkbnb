@@ -174,12 +174,12 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		redisCache:  dbcache.NewRedisCache(config.CacheRedis[0].Host, config.CacheRedis[0].Pass, 15*time.Minute),
 	}
 
-	curHeight, err := bc.BlockModel.GetCurrentBlockHeight()
+	curHeight, err := bc.BlockModel.GetCurrentHeight()
 	if err != nil {
 		logx.Error("get current block failed: ", err)
 		return nil, err
 	}
-	bc.currentBlock, err = bc.BlockModel.GetBlockByBlockHeight(curHeight)
+	bc.currentBlock, err = bc.BlockModel.GetBlockByHeight(curHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -651,7 +651,7 @@ func (bc *BlockChain) prepareAccountsAndAssets(accounts []int64, assets []int64)
 			bc.accountMap[accountIndex] = formatAccount
 		}
 		if bc.accountMap[accountIndex] == nil {
-			accountInfo, err := bc.AccountModel.GetAccountByAccountIndex(accountIndex)
+			accountInfo, err := bc.AccountModel.GetAccountByIndex(accountIndex)
 			if err != nil {
 				return err
 			}
