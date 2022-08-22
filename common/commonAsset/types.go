@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,15 @@ type AccountAsset struct {
 	Balance                  *big.Int
 	LpAmount                 *big.Int
 	OfferCanceledOrFinalized *big.Int
+}
+
+func (asset *AccountAsset) DeepCopy() *AccountAsset {
+	return &AccountAsset{
+		AssetId:                  asset.AssetId,
+		Balance:                  big.NewInt(0).Set(asset.Balance),
+		LpAmount:                 big.NewInt(0).Set(asset.LpAmount),
+		OfferCanceledOrFinalized: big.NewInt(0).Set(asset.OfferCanceledOrFinalized),
+	}
 }
 
 func ConstructAccountAsset(assetId int64, balance *big.Int, lpAmount *big.Int, offerCanceledOrFinalized *big.Int) *AccountAsset {
@@ -71,6 +80,28 @@ type AccountInfo struct {
 	AssetInfo map[int64]*AccountAsset // key: index, value: balance
 	AssetRoot string
 	Status    int
+}
+
+func (ai *AccountInfo) DeepCopy() (*AccountInfo, error) {
+	var assetInfo map[int64]*AccountAsset
+	for assetId, asset := range ai.AssetInfo {
+		assetInfo[assetId] = asset.DeepCopy()
+	}
+
+	newAccountInfo := &AccountInfo{
+		AccountId:       ai.AccountId,
+		AccountIndex:    ai.AccountIndex,
+		AccountName:     ai.AccountName,
+		PublicKey:       ai.PublicKey,
+		AccountNameHash: ai.AccountNameHash,
+		L1Address:       ai.L1Address,
+		Nonce:           ai.Nonce,
+		CollectionNonce: ai.CollectionNonce,
+		AssetInfo:       assetInfo,
+		AssetRoot:       ai.AssetRoot,
+		Status:          ai.Status,
+	}
+	return newAccountInfo, nil
 }
 
 func FromFormatAccountInfo(formatAccountInfo *AccountInfo) (accountInfo *account.Account, err error) {

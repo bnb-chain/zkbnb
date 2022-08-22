@@ -29,9 +29,9 @@ func (s *AppSuite) TestGetGasAccount() {
 			httpCode, result := GetGasAccount(s)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
-				assert.NotNil(t, result.AccountIndex)
-				assert.NotNil(t, result.AccountName)
-				assert.NotNil(t, result.AccountStatus)
+				assert.NotNil(t, result.Index)
+				assert.NotNil(t, result.Name)
+				assert.NotNil(t, result.Status)
 				fmt.Printf("result: %+v \n", result)
 			}
 		})

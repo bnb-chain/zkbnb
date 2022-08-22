@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import (
 )
 
 /*
-	GetRandomUUID: get random value
+GetRandomUUID: get random value
 */
 func RandomUUID() string {
 	u := uuid.New()

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 package mempool
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -36,10 +37,10 @@ type (
 		CreateMempoolTxTable() error
 		DropMempoolTxTable() error
 		GetMempoolTxByTxId(id int64) (mempoolTx *MempoolTx, err error)
-		GetMempoolTxsListForCommitter() (mempoolTxs []*MempoolTx, err error)
 		GetMempoolTxsList(limit int64, offset int64) (mempoolTxs []*MempoolTx, err error)
 		GetMempoolTxsTotalCount() (count int64, err error)
 		GetMempoolTxByTxHash(hash string) (mempoolTxs *MempoolTx, err error)
+		GetMempoolTxsByStatus(status int) (mempoolTxs []*MempoolTx, err error)
 		GetMempoolTxsByBlockHeight(l2BlockHeight int64) (rowsAffected int64, mempoolTxs []*MempoolTx, err error)
 		GetPendingLiquidityTxs() (mempoolTxs []*MempoolTx, err error)
 		GetPendingNftTxs() (mempoolTxs []*MempoolTx, err error)
@@ -51,6 +52,7 @@ type (
 		GetPendingMempoolTxsByAccountIndex(accountIndex int64) (mempoolTxs []*MempoolTx, err error)
 		GetLatestL2MempoolTxByAccountIndex(accountIndex int64) (mempoolTx *MempoolTx, err error)
 		GetMaxNonceByAccountIndex(accountIndex int64) (nonce int64, err error)
+		UpdateMempoolTxs(pendingUpdateMempoolTxs []*MempoolTx, pendingDeleteMempoolTxs []*MempoolTx) error
 	}
 
 	defaultMempoolModel struct {
@@ -95,32 +97,13 @@ func (*MempoolTx) TableName() string {
 	return MempoolTableName
 }
 
-/*
-Func: CreateMempoolTxTable
-Params:
-Return: err error
-Description: create MempoolTx table
-*/
 func (m *defaultMempoolModel) CreateMempoolTxTable() error {
 	return m.DB.AutoMigrate(MempoolTx{})
 }
 
-/*
-Func: DropMempoolTxTable
-Params:
-Return: err error
-Description: drop MempoolTx table
-*/
 func (m *defaultMempoolModel) DropMempoolTxTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
-
-/*
-	Func: GetAllMempoolTxsList
-	Params:
-	Return: []*MempoolTx, err error
-	Description: used for Init globalMap
-*/
 
 func (m *defaultMempoolModel) OrderMempoolTxDetails(tx *MempoolTx) (err error) {
 	var mempoolForeignKeyColumn = `MempoolDetails`
@@ -133,12 +116,6 @@ func (m *defaultMempoolModel) OrderMempoolTxDetails(tx *MempoolTx) (err error) {
 	return err
 }
 
-/*
-Func: GetMempoolTxsList
-Params: limit int, offset int
-Return: []*MempoolTx, err error
-Description: used for /api/v1/txVerification/getMempoolTxsList
-*/
 func (m *defaultMempoolModel) GetMempoolTxsList(limit int64, offset int64) (mempoolTxs []*MempoolTx, err error) {
 	dbTx := m.DB.Table(m.table).Where("status = ?", PendingTxStatus).Limit(int(limit)).Offset(int(offset)).Order("created_at desc, id desc").Find(&mempoolTxs)
 	if dbTx.Error != nil {
@@ -173,14 +150,8 @@ func (m *defaultMempoolModel) GetMempoolTxsByBlockHeight(l2BlockHeight int64) (r
 	return dbTx.RowsAffected, mempoolTxs, nil
 }
 
-/*
-	Func: GetMempoolTxsListForCommitter
-	Return: []*MempoolTx, err error
-	Description: query unhandled mempool txVerification
-*/
-
-func (m *defaultMempoolModel) GetMempoolTxsListForCommitter() (mempoolTxs []*MempoolTx, err error) {
-	dbTx := m.DB.Table(m.table).Where("status = ?", PendingTxStatus).Order("created_at, id").Find(&mempoolTxs)
+func (m *defaultMempoolModel) GetMempoolTxsByStatus(status int) (mempoolTxs []*MempoolTx, err error) {
+	dbTx := m.DB.Table(m.table).Where("status = ?", status).Order("created_at, id").Find(&mempoolTxs)
 	if dbTx.Error != nil {
 		logx.Errorf("get mempool tx errors, err: %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
@@ -196,12 +167,6 @@ func (m *defaultMempoolModel) GetMempoolTxsListForCommitter() (mempoolTxs []*Mem
 	return mempoolTxs, nil
 }
 
-/*
-Func: GetMempoolTxsTotalCount
-Params:
-Return: count int64, err error
-Description: used for counting total transactions in mempool for explorer dashboard
-*/
 func (m *defaultMempoolModel) GetMempoolTxsTotalCount() (count int64, err error) {
 	dbTx := m.DB.Table(m.table).Where("status = ? and deleted_at is NULL", PendingTxStatus).Count(&count)
 	if dbTx.Error != nil {
@@ -213,12 +178,6 @@ func (m *defaultMempoolModel) GetMempoolTxsTotalCount() (count int64, err error)
 	return count, nil
 }
 
-/*
-Func: GetMempoolTxByTxHash
-Params: hash string
-Return: mempoolTxs *MempoolTx, err error
-Description: used for get  transactions in mempool by txVerification hash
-*/
 func (m *defaultMempoolModel) GetMempoolTxByTxHash(hash string) (mempoolTx *MempoolTx, err error) {
 	dbTx := m.DB.Table(m.table).Where("status = ? and tx_hash = ?", PendingTxStatus, hash).Find(&mempoolTx)
 	if dbTx.Error != nil {
@@ -239,13 +198,6 @@ func (m *defaultMempoolModel) GetMempoolTxByTxHash(hash string) (mempoolTx *Memp
 	return mempoolTx, nil
 }
 
-/*
-	Func: CreateBatchedMempoolTxs
-	Params: []*MempoolTx
-	Return: error
-	Description: Insert MempoolTxs when sendTx request.
-*/
-
 func (m *defaultMempoolModel) CreateBatchedMempoolTxs(mempoolTxs []*MempoolTx) error {
 	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
 		dbTx := tx.Table(m.table).Create(mempoolTxs)
@@ -260,12 +212,6 @@ func (m *defaultMempoolModel) CreateBatchedMempoolTxs(mempoolTxs []*MempoolTx) e
 	})
 }
 
-/*
-Func: GetMempoolTxIdsListByL2BlockHeight
-Params: blockHeight
-Return: []*MempoolTx, err error
-Description: used for verifier get txIds from Mempool and deleting the transaction in mempool table after
-*/
 func (m *defaultMempoolModel) GetMempoolTxsListByL2BlockHeight(blockHeight int64) (mempoolTxs []*MempoolTx, err error) {
 	dbTx := m.DB.Table(m.table).Where("status = ? and l2_block_height <= ?", SuccessTxStatus, blockHeight).Find(&mempoolTxs)
 	if dbTx.Error != nil {
@@ -484,4 +430,35 @@ func (m *defaultMempoolModel) GetMaxNonceByAccountIndex(accountIndex int64) (non
 		return 0, errorcode.DbErrNotFound
 	}
 	return nonce, nil
+}
+
+func (m *defaultMempoolModel) UpdateMempoolTxs(pendingUpdateMempoolTxs []*MempoolTx, pendingDeleteMempoolTxs []*MempoolTx) (err error) {
+	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
+
+		// update mempool
+		for _, mempoolTx := range pendingUpdateMempoolTxs {
+			dbTx := tx.Table(MempoolTableName).Where("id = ?", mempoolTx.ID).
+				Select("*").
+				Updates(&mempoolTx)
+			if dbTx.Error != nil {
+				logx.Errorf("unable to update mempool tx: %s", dbTx.Error.Error())
+				return dbTx.Error
+			}
+			if dbTx.RowsAffected == 0 {
+				return errors.New("no new mempoolTx")
+			}
+		}
+		for _, pendingDeleteMempoolTx := range pendingDeleteMempoolTxs {
+			dbTx := tx.Table(MempoolTableName).Where("id = ?", pendingDeleteMempoolTx.ID).Delete(&pendingDeleteMempoolTx)
+			if dbTx.Error != nil {
+				logx.Errorf("delete mempool tx error, err; %s", dbTx.Error.Error())
+				return dbTx.Error
+			}
+			if dbTx.RowsAffected == 0 {
+				return errors.New("delete invalid mempool tx")
+			}
+		}
+
+		return nil
+	})
 }

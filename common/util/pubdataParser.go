@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,10 @@ package util
 import (
 	"errors"
 
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
-
-	"github.com/bnb-chain/zkbas/common/commonTx"
 )
 
 func ParseRegisterZnsPubData(pubData []byte) (tx *RegisterZnsTxInfo, err error) {
@@ -189,7 +188,7 @@ func ParseFullExitPubData(pubData []byte) (tx *FullExitTxInfo, err error) {
 	return tx, nil
 }
 
-func ParseFullExitNftPubData(pubData []byte) (tx *commonTx.FullExitNftTxInfo, err error) {
+func ParseFullExitNftPubData(pubData []byte) (tx *legendTxTypes.FullExitNftTxInfo, err error) {
 	if len(pubData) != FullExitNftPubDataSize {
 		logx.Errorf("[ParseFullExitNftPubData] invalid size")
 		return nil, errors.New("[ParseFullExitNftPubData] invalid size")

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,14 +118,7 @@ func ComputeDelta(
 	}
 }
 
-/*
-	Implementation Reference:
-	https://github.com/runtimeverification/verified-smart-contracts/blob/master/uniswap/x-y-k.pdf
-*/
-
-/*
-	InputPrice = （9970 * deltaX * y) / (10000 * x + 9970 * deltaX)
-*/
+// InputPrice = （9970 * deltaX * y) / (10000 * x + 9970 * deltaX)
 func ComputeInputPrice(x *big.Int, y *big.Int, inputX *big.Int, feeRate int64) (*big.Int, error) {
 	rFeeR := big.NewInt(FeeRateBase - feeRate)
 	res, err := util.CleanPackedAmount(ffmath.Div(ffmath.Multiply(rFeeR, ffmath.Multiply(inputX, y)), ffmath.Add(ffmath.Multiply(big.NewInt(FeeRateBase), x), ffmath.Multiply(rFeeR, inputX))))
@@ -135,9 +128,7 @@ func ComputeInputPrice(x *big.Int, y *big.Int, inputX *big.Int, feeRate int64) (
 	return res, nil
 }
 
-/*
-	OutputPrice = （10000 * x * deltaY) / (9970 * (y - deltaY)) + 1
-*/
+// OutputPrice = （10000 * x * deltaY) / (9970 * (y - deltaY)) + 1
 func ComputeOutputPrice(x *big.Int, y *big.Int, inputY *big.Int, feeRate int64) (*big.Int, error) {
 	rFeeR := big.NewInt(FeeRateBase - feeRate)
 	res, err := CleanPackedAmount(ffmath.Add(ffmath.Div(ffmath.Multiply(big.NewInt(FeeRateBase), ffmath.Multiply(x, inputY)), ffmath.Multiply(rFeeR, ffmath.Sub(y, inputY))), big.NewInt(1)))

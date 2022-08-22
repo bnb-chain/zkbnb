@@ -7,7 +7,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common/errorcode"
-	"github.com/bnb-chain/zkbas/common/model/block"
+	blockdao "github.com/bnb-chain/zkbas/common/model/block"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
@@ -33,7 +33,7 @@ func NewGetBlockTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetBl
 }
 
 func (l *GetBlockTxsLogic) GetBlockTxs(req *types.ReqGetBlockTxs) (resp *types.Txs, err error) {
-	var block *block.Block
+	var block *blockdao.Block
 	switch req.By {
 	case queryByBlockHeight:
 		blockHeight, err := strconv.ParseInt(req.Value, 10, 64)

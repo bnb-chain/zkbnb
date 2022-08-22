@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/bnb-chain/zkbas/common/errorcode"
@@ -30,13 +30,7 @@ type fetcher struct {
 	cmcToken string
 }
 
-/*
-	Func: GetCurrencyPrice
-	Params: currency string
-	Return: price float64, err error
-	Description: get currency price, cached by currency symbol
-*/
-func (f *fetcher) GetCurrencyPrice(ctx context.Context, symbol string) (float64, error) {
+func (f *fetcher) GetCurrencyPrice(_ context.Context, symbol string) (float64, error) {
 	return f.memCache.GetPriceWithFallback(symbol, func() (interface{}, error) {
 		quoteMap, err := f.getLatestQuotes(symbol)
 		if err != nil {
@@ -65,7 +59,7 @@ func (f *fetcher) getLatestQuotes(symbol string) (map[string]QuoteLatest, error)
 		return nil, errorcode.HttpErrClientDo
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, errorcode.IoErrFailToRead
 	}

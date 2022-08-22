@@ -60,7 +60,7 @@ their account, they can start transacting by sending transactions to the committ
 User can **transfer** any amount of funds to any existed accounts on ZkBAS by sending a signed transaction to the 
 network.
 
-**Withdrawing** from ZkBAS to BSC is straightforward. The user initiates the withdraw transaction, the fund will be 
+**Withdrawing** from ZkBAS to BSC is straightforward. The user initiates the withdrawal transaction, the fund will be 
 burned on ZkBAS. Once the transaction in the next batch been rolluped, a related amount of token will be unlocked from 
 rollup contract to target account. 
 

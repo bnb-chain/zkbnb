@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,22 +69,10 @@ func (*LiquidityHistory) TableName() string {
 	return LiquidityHistoryTable
 }
 
-/*
-Func: CreateAccountLiquidityHistoryTable
-Params:
-Return: err error
-Description: create account liquidity table
-*/
 func (m *defaultLiquidityHistoryModel) CreateLiquidityHistoryTable() error {
 	return m.DB.AutoMigrate(LiquidityHistory{})
 }
 
-/*
-Func: DropAccountLiquidityHistoryTable
-Params:
-Return: err error
-Description: drop account liquidity table
-*/
 func (m *defaultLiquidityHistoryModel) DropLiquidityHistoryTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@
 package util
 
 import (
-	"encoding/hex"
 	"math/big"
 	"strings"
 
@@ -91,15 +90,4 @@ func FeeToPackedFeeBytes(a *big.Int) (res []byte, err error) {
 		return nil, err
 	}
 	return Uint16ToBytes(uint16(packedFee)), nil
-}
-
-func FromHex(s string) ([]byte, error) {
-	if len(s) >= 2 && s[0] == '0' && (s[1] == 'x' || s[1] == 'X') {
-		s = s[2:]
-	}
-
-	if len(s)%2 == 1 {
-		s = "0" + s
-	}
-	return hex.DecodeString(s)
 }

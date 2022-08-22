@@ -7,32 +7,32 @@ import (
 type Error interface {
 	Error() string
 	Code() int32
-	RefineError(err ...interface{}) *error
+	RefineError(err ...interface{}) Error
 }
 
 func New(code int32, msg string) Error {
-	return new(code, msg)
+	return newError(code, msg)
 }
 
-type error struct {
+type commonError struct {
 	code    int32
 	message string
 }
 
-func (e *error) Error() string {
+func (e *commonError) Error() string {
 	return fmt.Sprintf("%d: %s", e.code, e.message)
 }
 
-func (e *error) Code() int32 {
+func (e *commonError) Code() int32 {
 	return e.code
 }
 
-func (e *error) RefineError(err ...interface{}) *error {
-	return new(e.Code(), e.message+fmt.Sprint(err...))
+func (e *commonError) RefineError(err ...interface{}) Error {
+	return newError(e.Code(), e.message+fmt.Sprint(err...))
 }
 
-func new(code int32, msg string) *error {
-	return &error{
+func newError(code int32, msg string) Error {
+	return &commonError{
 		code:    code,
 		message: msg,
 	}

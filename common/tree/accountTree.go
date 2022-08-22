@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ func accountAssetNamespace(index int64) string {
 	return AccountAssetPrefix + strconv.Itoa(int(index)) + ":"
 }
 
-// TODO optimize, bad performance
 func InitAccountTree(
 	accountModel AccountModel,
 	accountHistoryModel AccountHistoryModel,
@@ -45,7 +44,6 @@ func InitAccountTree(
 ) (
 	accountTree bsmt.SparseMerkleTree, accountAssetTrees []bsmt.SparseMerkleTree, err error,
 ) {
-	// TODO: If there are too many accounts, it may cause reading too long, which can be optimized again
 	accountNums, err := accountHistoryModel.GetValidAccountCount(blockHeight)
 	if err != nil {
 		logx.Errorf("unable to get all accountNums")
@@ -56,7 +54,7 @@ func InitAccountTree(
 
 	// init account state trees
 	accountAssetTrees = make([]bsmt.SparseMerkleTree, accountNums)
-	for index := int64(0); index < int64(accountNums); index++ {
+	for index := int64(0); index < accountNums; index++ {
 		// create account assets tree
 		accountAssetTrees[index], err = bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(zmimc.Hmimc),
 			treedb.SetNamespace(ctx, accountAssetNamespace(index)), AssetTreeHeight, NilAccountAssetNodeHash,

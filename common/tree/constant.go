@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 Zkbas Protocol
+ * Copyright © 2021 ZkBAS Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,9 +53,16 @@ const (
 )
 
 var (
-	NilHash                                                                           = merkleTree.NilHash
-	NilAccountAssetRoot, NilStateRoot, NilAccountRoot, NilLiquidityRoot, NilNftRoot   []byte
-	NilAccountAssetNodeHash, NilAccountNodeHash, NilLiquidityNodeHash, NilNftNodeHash []byte
+	NilHash                 = merkleTree.NilHash
+	NilStateRoot            []byte
+	NilAccountRoot          []byte
+	NilLiquidityRoot        []byte
+	NilNftRoot              []byte
+	NilAccountAssetRoot     []byte
+	NilAccountNodeHash      []byte
+	NilLiquidityNodeHash    []byte
+	NilNftNodeHash          []byte
+	NilAccountAssetNodeHash []byte
 )
 
 func init() {
