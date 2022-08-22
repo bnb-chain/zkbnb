@@ -16,34 +16,3 @@
  */
 
 package globalmapHandler
-
-import (
-	"github.com/zeromicro/go-zero/core/logx"
-
-	"github.com/bnb-chain/zkbas/common/util"
-)
-
-func GetLatestNftIndexForWrite(
-	nftModel NftModel,
-	redisConnection *Redis,
-) (
-	redisLock *RedisLock,
-	nftIndex int64,
-	err error,
-) {
-	key := util.GetNftIndexKeyForWrite()
-	lockKey := util.GetLockKey(key)
-	redisLock = GetRedisLockByKey(redisConnection, lockKey)
-	err = TryAcquireLock(redisLock)
-	if err != nil {
-		logx.Errorf("[GetLatestNftIndexForWrite] unable to get lock: %s", err.Error())
-		return nil, -1, err
-	}
-	lastNftIndex, err := nftModel.GetLatestNftIndex()
-	if err != nil {
-		redisLock.Release()
-		logx.Errorf("[GetLatestNftIndexForWrite] unable to get latest nft index: %s", err.Error())
-		return nil, -1, err
-	}
-	return redisLock, lastNftIndex + 1, nil
-}

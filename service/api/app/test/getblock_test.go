@@ -33,9 +33,9 @@ func (s *AppSuite) TestGetBlock() {
 			httpCode, result := GetBlock(s, tt.args.by, tt.args.value)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
-				assert.NotNil(t, result.BlockHeight)
-				assert.NotNil(t, result.BlockCommitment)
-				assert.NotNil(t, result.BlockStatus)
+				assert.NotNil(t, result.Height)
+				assert.NotNil(t, result.Commitment)
+				assert.NotNil(t, result.Status)
 				assert.NotNil(t, result.StateRoot)
 				fmt.Printf("result: %+v \n", result)
 			}

@@ -6,11 +6,10 @@ import (
 	"time"
 
 	"github.com/eko/gocache/v2/cache"
+	"github.com/eko/gocache/v2/marshaler"
 	"github.com/eko/gocache/v2/metrics"
 	"github.com/eko/gocache/v2/store"
 	"github.com/go-redis/redis/v8"
-
-	"github.com/eko/gocache/v2/marshaler"
 )
 
 var (

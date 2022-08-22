@@ -19,7 +19,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/nft"
 	"github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/common/util"
-	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
 )
 
 type CancelOfferExecutor struct {
@@ -49,7 +48,7 @@ func (e *CancelOfferExecutor) Prepare() error {
 	txInfo := e.txInfo
 
 	accounts := []int64{txInfo.AccountIndex, txInfo.GasAccountIndex}
-	offerAssetId := txInfo.OfferId / txVerification.OfferPerAsset
+	offerAssetId := txInfo.OfferId / OfferPerAsset
 	assets := []int64{offerAssetId, txInfo.GasFeeAssetId}
 	err := e.bc.prepareAccountsAndAssets(accounts, assets)
 	if err != nil {
@@ -88,8 +87,8 @@ func (e *CancelOfferExecutor) ApplyTransaction() error {
 	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	fromAccount.Nonce++
 
-	offerAssetId := txInfo.OfferId / txVerification.OfferPerAsset
-	offerIndex := txInfo.OfferId % txVerification.OfferPerAsset
+	offerAssetId := txInfo.OfferId / OfferPerAsset
+	offerIndex := txInfo.OfferId % OfferPerAsset
 	oOffer := fromAccount.AssetInfo[offerAssetId].OfferCanceledOrFinalized
 	nOffer := new(big.Int).SetBit(oOffer, int(offerIndex), 1)
 	fromAccount.AssetInfo[offerAssetId].OfferCanceledOrFinalized = nOffer
@@ -148,7 +147,7 @@ func (e *CancelOfferExecutor) GeneratePubData() error {
 func (e *CancelOfferExecutor) UpdateTrees() error {
 	txInfo := e.txInfo
 
-	offerAssetId := txInfo.OfferId / txVerification.OfferPerAsset
+	offerAssetId := txInfo.OfferId / OfferPerAsset
 	accounts := []int64{txInfo.AccountIndex, txInfo.GasAccountIndex}
 	assets := []int64{offerAssetId, txInfo.GasFeeAssetId}
 
@@ -210,8 +209,8 @@ func (e *CancelOfferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	}
 
 	// from account offer id
-	offerAssetId := txInfo.OfferId / txVerification.OfferPerAsset
-	offerIndex := txInfo.OfferId % txVerification.OfferPerAsset
+	offerAssetId := txInfo.OfferId / OfferPerAsset
+	offerIndex := txInfo.OfferId % OfferPerAsset
 	oldOffer := fromAccount.AssetInfo[offerAssetId].OfferCanceledOrFinalized
 	// verify whether account offer id is valid for use
 	if oldOffer.Bit(int(offerIndex)) == 1 {

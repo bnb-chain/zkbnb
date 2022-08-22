@@ -35,9 +35,9 @@ func (s *AppSuite) TestGetBlocks() {
 			if httpCode == http.StatusOK {
 				if tt.args.offset < int(result.Total) {
 					assert.True(t, len(result.Blocks) > 0)
-					assert.NotNil(t, result.Blocks[0].BlockHeight)
-					assert.NotNil(t, result.Blocks[0].BlockCommitment)
-					assert.NotNil(t, result.Blocks[0].BlockStatus)
+					assert.NotNil(t, result.Blocks[0].Height)
+					assert.NotNil(t, result.Blocks[0].Commitment)
+					assert.NotNil(t, result.Blocks[0].Status)
 					assert.NotNil(t, result.Blocks[0].StateRoot)
 					assert.NotNil(t, result.Blocks[0].Txs)
 				}

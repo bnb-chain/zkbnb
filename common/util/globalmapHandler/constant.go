@@ -37,7 +37,4 @@ const (
 	LockExpiryTime = 10 // seconds
 	RetryInterval  = 500 * time.Millisecond
 	MaxRetryTimes  = 3
-
-	LiquidityExpiryTime = 30 // seconds
-	NftExpiryTime       = 30 // seconds
 )

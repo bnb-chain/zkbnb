@@ -8,7 +8,7 @@ import (
 
 	"github.com/bnb-chain/zkbas/common/commonAsset"
 	"github.com/bnb-chain/zkbas/common/errorcode"
-	"github.com/bnb-chain/zkbas/common/zcrypto/txVerification"
+	"github.com/bnb-chain/zkbas/core"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/svc"
 	"github.com/bnb-chain/zkbas/service/api/app/internal/types"
 )
@@ -55,7 +55,7 @@ func (l *GetMaxOfferIdLogic) GetMaxOfferId(req *types.ReqGetMaxOfferId) (resp *t
 				break
 			}
 		}
-		maxOfferId = maxOfferIdAsset.AssetId * txVerification.OfferPerAsset
+		maxOfferId = maxOfferIdAsset.AssetId * core.OfferPerAsset
 		maxOfferId = maxOfferId + offerCancelOrFinalized
 	}
 
