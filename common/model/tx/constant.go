@@ -17,7 +17,6 @@
 
 package tx
 
-//goland:noinspection GoNameStartsWithPackageName,GoNameStartsWithPackageName
 const (
 	TxDetailTableName = `tx_detail`
 	TxTableName       = `tx`

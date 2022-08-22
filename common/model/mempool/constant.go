@@ -17,7 +17,6 @@
 
 package mempool
 
-//goland:noinspection GoNameStartsWithPackageName
 const (
 	MempoolTableName = `mempool_tx`
 	DetailTableName  = `mempool_tx_detail`

@@ -35,7 +35,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/sysConfig"
 )
 
-//goland:noinspection GoNameStartsWithPackageName
 type (
 	L1SyncedBlockModel interface {
 		CreateL1SyncedBlockTable() error

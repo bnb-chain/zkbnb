@@ -30,7 +30,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/mempool"
 )
 
-//goland:noinspection GoNameStartsWithPackageName
 type (
 	PriorityRequestModel interface {
 		CreatePriorityRequestTable() error

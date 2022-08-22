@@ -43,7 +43,6 @@ func (s *AppSuite) TestGetSwapAmount() {
 
 }
 
-//goland:noinspection GoUnhandledErrorResult
 func GetSwapAmount(s *AppSuite, pairIndex int) (int, *types.SwapAmount) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/swapAmount?pair_index=%d", s.url, pairIndex))
 	assert.NoError(s.T(), err)

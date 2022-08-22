@@ -44,7 +44,6 @@ func (s *AppSuite) TestGetTx() {
 
 }
 
-//goland:noinspection GoUnhandledErrorResult
 func GetTx(s *AppSuite, txHash string) (int, *types.EnrichedTx) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/tx?tx_hash=%s", s.url, txHash))
 	assert.NoError(s.T(), err)

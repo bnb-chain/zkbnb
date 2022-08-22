@@ -95,7 +95,6 @@ func (p *Prover) ProveBlock() error {
 	if err != nil {
 		return fmt.Errorf("acquire lock error, err=%s", err.Error())
 	}
-	//goland:noinspection GoUnhandledErrorResult
 	defer lock.Release()
 
 	// fetch unproved block

@@ -32,7 +32,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/nft"
 )
 
-//goland:noinspection GoNameStartsWithPackageName,GoNameStartsWithPackageName
 type (
 	MempoolModel interface {
 		CreateMempoolTxTable() error

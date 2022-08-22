@@ -17,7 +17,6 @@
 
 package asset
 
-//goland:noinspection GoNameStartsWithPackageName
 const (
 	AssetTableName = `asset`
 

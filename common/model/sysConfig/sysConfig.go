@@ -27,7 +27,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/errorcode"
 )
 
-//goland:noinspection GoNameStartsWithPackageName
 type (
 	SysConfigModel interface {
 		CreateSysConfigTable() error

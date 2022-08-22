@@ -37,7 +37,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/tx"
 )
 
-//goland:noinspection GoNameStartsWithPackageName,GoNameStartsWithPackageName
 type (
 	BlockModel interface {
 		CreateBlockTable() error
@@ -325,7 +324,6 @@ func (m *defaultBlockModel) GetBlocksTotalCount() (count int64, err error) {
 	Description: get blockStatus cache by blockHeight
 */
 
-//goland:noinspection GoNameStartsWithPackageName
 type BlockStatusInfo struct {
 	BlockStatus int64
 	CommittedAt int64

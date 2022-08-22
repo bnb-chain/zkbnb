@@ -58,7 +58,6 @@ func (f *fetcher) getLatestQuotes(symbol string) (map[string]QuoteLatest, error)
 	if err != nil {
 		return nil, errorcode.HttpErrClientDo
 	}
-	//goland:noinspection GoUnhandledErrorResult
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

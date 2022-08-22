@@ -39,7 +39,6 @@ func (s *AppSuite) TestGetGasAccount() {
 
 }
 
-//goland:noinspection GoUnhandledErrorResult
 func GetGasAccount(s *AppSuite) (int, *types.GasAccount) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/gasAccount", s.url))
 	assert.NoError(s.T(), err)

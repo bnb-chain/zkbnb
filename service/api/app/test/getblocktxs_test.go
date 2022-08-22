@@ -51,7 +51,6 @@ func (s *AppSuite) TestGetBlockTxs() {
 
 }
 
-//goland:noinspection GoUnhandledErrorResult
 func GetBlockTxs(s *AppSuite, by, value string, offset, limit int) (int, *types.Txs) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/blockTxs?by=%s&value=%s&offset=%d&limit=%d", s.url, by, value, offset, limit))
 	assert.NoError(s.T(), err)

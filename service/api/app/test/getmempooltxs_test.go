@@ -47,7 +47,6 @@ func (s *AppSuite) TestGetMempoolTxs() {
 
 }
 
-//goland:noinspection GoUnhandledErrorResult
 func GetMempoolTxs(s *AppSuite, offset, limit int) (int, *types.MempoolTxs) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/mempoolTxs?offset=%d&limit=%d", s.url, offset, limit))
 	assert.NoError(s.T(), err)

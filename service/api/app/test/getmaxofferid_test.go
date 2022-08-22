@@ -37,7 +37,6 @@ func (s *AppSuite) TestGetMaxOfferId() {
 
 }
 
-//goland:noinspection GoUnhandledErrorResult
 func GetMaxOfferId(s *AppSuite, accountIndex int) (int, *types.MaxOfferId) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/maxOfferId?account_index=%d", s.url, accountIndex))
 	assert.NoError(s.T(), err)

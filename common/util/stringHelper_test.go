@@ -54,7 +54,6 @@ func WithRedis(redisType string, redisPass string) redis.Option {
 	}
 }
 
-//goland:noinspection GoUnhandledErrorResult
 func TestRedis(t *testing.T) {
 	r := redis.New("127.0.0.1:6379", WithRedis("node", "myredis"))
 	_ = r.Set("key", "123")

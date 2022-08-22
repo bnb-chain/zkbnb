@@ -17,13 +17,11 @@
 
 package account
 
-//goland:noinspection GoNameStartsWithPackageName,GoNameStartsWithPackageName
 const (
 	AccountTableName        = `account`
 	AccountHistoryTableName = `account_history`
 )
 
-//goland:noinspection GoNameStartsWithPackageName,GoNameStartsWithPackageName,GoNameStartsWithPackageName
 const (
 	AccountStatusPending = iota
 	AccountStatusConfirmed

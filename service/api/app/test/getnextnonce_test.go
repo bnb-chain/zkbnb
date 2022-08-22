@@ -37,7 +37,6 @@ func (s *AppSuite) TestGeNextNonce() {
 
 }
 
-//goland:noinspection ALL
 func GetNextNonce(s *AppSuite, accountIndex int) (int, *types.NextNonce) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/nextNonce?account_index=%d", s.url, accountIndex))
 	assert.NoError(s.T(), err)

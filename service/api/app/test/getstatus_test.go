@@ -38,7 +38,6 @@ func (s *AppSuite) TestGetStatus() {
 
 }
 
-//goland:noinspection GoUnhandledErrorResult
 func GetStatus(s *AppSuite) (int, *types.Status) {
 	resp, err := http.Get(fmt.Sprintf("%s/", s.url))
 	assert.NoError(s.T(), err)

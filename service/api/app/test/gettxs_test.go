@@ -49,7 +49,6 @@ func (s *AppSuite) TestGetTxs() {
 
 }
 
-//goland:noinspection GoUnhandledErrorResult
 func GetTxs(s *AppSuite, offset, limit int) (int, *types.Txs) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/txs?offset=%d&limit=%d", s.url, offset, limit))
 	assert.NoError(s.T(), err)

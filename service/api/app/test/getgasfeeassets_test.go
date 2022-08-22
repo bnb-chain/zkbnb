@@ -42,7 +42,6 @@ func (s *AppSuite) TestGetGasFeeAssets() {
 
 }
 
-//goland:noinspection GoUnhandledErrorResult
 func GetGasFeeAssets(s *AppSuite) (int, *types.GasFeeAssets) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/gasFeeAssets", s.url))
 	assert.NoError(s.T(), err)

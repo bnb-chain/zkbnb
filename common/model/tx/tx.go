@@ -30,7 +30,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/errorcode"
 )
 
-//goland:noinspection GoNameStartsWithPackageName
 type (
 	TxModel interface {
 		CreateTxTable() error

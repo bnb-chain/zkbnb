@@ -29,7 +29,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/errorcode"
 )
 
-//goland:noinspection GoNameStartsWithPackageName,GoNameStartsWithPackageName
 type (
 	TxDetailModel interface {
 		CreateTxDetailTable() error

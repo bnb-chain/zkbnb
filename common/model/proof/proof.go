@@ -23,7 +23,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/errorcode"
 )
 
-//goland:noinspection GoNameStartsWithPackageName
 type (
 	ProofModel interface {
 		CreateProofTable() error

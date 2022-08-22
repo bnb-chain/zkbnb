@@ -31,7 +31,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/util"
 )
 
-//goland:noinspection GoNameStartsWithPackageName
 type (
 	BlockWitnessModel interface {
 		CreateBlockWitnessTable() error

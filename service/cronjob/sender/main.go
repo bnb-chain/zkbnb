@@ -24,7 +24,6 @@ func main() {
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 	proc.AddShutdownListener(func() {
-		//goland:noinspection GoUnhandledErrorResult
 		logx.Close()
 	})
 

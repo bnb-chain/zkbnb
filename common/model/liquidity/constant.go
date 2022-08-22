@@ -17,7 +17,6 @@
 
 package liquidity
 
-//goland:noinspection GoNameStartsWithPackageName,GoNameStartsWithPackageName
 const (
 	LiquidityTable        = `liquidity`
 	LiquidityHistoryTable = `liquidity_history`

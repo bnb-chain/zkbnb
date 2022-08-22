@@ -27,7 +27,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/errorcode"
 )
 
-//goland:noinspection GoNameStartsWithPackageName
 type (
 	AssetModel interface {
 		CreateAssetTable() error

@@ -42,7 +42,6 @@ func (s *AppSuite) TestSearch() {
 
 }
 
-//goland:noinspection GoUnhandledErrorResult
 func Search(s *AppSuite, keyword string) (int, *types.Search) {
 	resp, err := http.Get(s.url + "/api/v1/search?keyword=" + keyword)
 	assert.NoError(s.T(), err)

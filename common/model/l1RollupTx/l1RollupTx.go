@@ -32,7 +32,6 @@ import (
 	"github.com/bnb-chain/zkbas/common/model/proof"
 )
 
-//goland:noinspection GoNameStartsWithPackageName
 type (
 	L1RollupTxModel interface {
 		CreateL1RollupTxTable() error

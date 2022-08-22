@@ -37,7 +37,6 @@ func (s *AppSuite) TestGetCurrentHeight() {
 
 }
 
-//goland:noinspection GoUnhandledErrorResult
 func GetCurrentHeight(s *AppSuite) (int, *types.CurrentHeight) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/currentHeight", s.url))
 	assert.NoError(s.T(), err)

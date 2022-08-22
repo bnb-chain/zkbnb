@@ -25,7 +25,6 @@ const (
 	StatusVerifiedAndExecuted
 )
 
-//goland:noinspection GoNameStartsWithPackageName
 const (
 	BlockTableName = `block`
 )

@@ -48,7 +48,6 @@ func (s *AppSuite) TestGetAccountNftList() {
 
 }
 
-//goland:noinspection ALL
 func GetAccountNfts(s *AppSuite, by, value string, offset, limit int) (int, *types.Nfts) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/accountNfts?by=%s&value=%s&offset=%d&limit=%d", s.url, by, value, offset, limit))
 	assert.NoError(s.T(), err)

@@ -17,7 +17,6 @@
 
 package blockForCommit
 
-//goland:noinspection GoNameStartsWithPackageName
 const (
 	BlockForCommitTableName = `block_for_commit`
 )
