@@ -1,4 +1,8 @@
 # ZkRollup BNB Application Side Chain
+
+![banner](./docs/assets/banner.png)
+
+
 The ZkRollup BNB Application Side Chain(ZkBAS) is an infrastructure for developers that helps them to build large scale 
 BSC-based apps with higher throughput and much lower or even zero transaction fees. 
 
