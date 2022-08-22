@@ -34,8 +34,8 @@ func (s *AppSuite) TestGetAccount() {
 			httpCode, result := GetAccount(s, tt.args.by, tt.args.value)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
-				assert.NotNil(t, result.AccountPk)
-				assert.NotNil(t, result.AccountName)
+				assert.NotNil(t, result.Pk)
+				assert.NotNil(t, result.Name)
 				assert.True(t, result.Nonce >= 0)
 				assert.NotNil(t, result.Assets)
 				fmt.Printf("result: %+v \n", result)

@@ -56,7 +56,7 @@ func (e *RegisterZnsExecutor) VerifyInputs() error {
 		return errors.New("invalid account name, already registered")
 	}
 
-	for index, _ := range bc.stateCache.pendingNewAccountIndexMap {
+	for index := range bc.stateCache.pendingNewAccountIndexMap {
 		if txInfo.AccountName == bc.accountMap[index].AccountName {
 			return errors.New("invalid account name, already registered")
 		}

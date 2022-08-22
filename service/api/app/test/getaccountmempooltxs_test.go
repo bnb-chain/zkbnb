@@ -35,11 +35,11 @@ func (s *AppSuite) TestGetAccountMempoolTxs() {
 				if result.Total > 0 {
 					assert.True(t, len(result.MempoolTxs) > 0)
 					assert.NotNil(t, result.MempoolTxs[0].BlockHeight)
-					assert.NotNil(t, result.MempoolTxs[0].TxHash)
-					assert.NotNil(t, result.MempoolTxs[0].TxType)
+					assert.NotNil(t, result.MempoolTxs[0].Hash)
+					assert.NotNil(t, result.MempoolTxs[0].Type)
 					assert.NotNil(t, result.MempoolTxs[0].StateRoot)
-					assert.NotNil(t, result.MempoolTxs[0].TxInfo)
-					assert.NotNil(t, result.MempoolTxs[0].TxStatus)
+					assert.NotNil(t, result.MempoolTxs[0].Info)
+					assert.NotNil(t, result.MempoolTxs[0].Status)
 				}
 				fmt.Printf("result: %+v \n", result)
 			}

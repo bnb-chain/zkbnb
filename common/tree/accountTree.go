@@ -56,7 +56,7 @@ func InitAccountTree(
 
 	// init account state trees
 	accountAssetTrees = make([]bsmt.SparseMerkleTree, accountNums)
-	for index := int64(0); index < int64(accountNums); index++ {
+	for index := int64(0); index < accountNums; index++ {
 		// create account assets tree
 		accountAssetTrees[index], err = bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(zmimc.Hmimc),
 			treedb.SetNamespace(ctx, accountAssetNamespace(index)), AssetTreeHeight, NilAccountAssetNodeHash,
