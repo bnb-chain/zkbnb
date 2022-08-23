@@ -13,4 +13,3 @@ BlockConfig:
 
 TreeDB:
   Driver: memorydb
-
