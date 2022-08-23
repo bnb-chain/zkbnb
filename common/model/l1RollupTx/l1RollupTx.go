@@ -173,23 +173,27 @@ func (m *defaultL1RollupTxModel) UpdateL1RollupTxs(
 }
 
 func (m *defaultL1RollupTxModel) GetLatestHandledTx(txType int64) (tx *L1RollupTx, err error) {
+	tx = &L1RollupTx{}
+
 	dbTx := m.DB.Table(m.table).Where("tx_type = ? AND tx_status = ?", txType, StatusHandled).Order("l2_block_height desc").Find(&tx)
 	if dbTx.Error != nil {
 		logx.Errorf("unable to get latest handled tx: %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, errorcode.DbErrNotFound
+		return tx, errorcode.DbErrNotFound
 	}
 	return tx, nil
 }
 
 func (m *defaultL1RollupTxModel) GetLatestPendingTx(txType int64) (tx *L1RollupTx, err error) {
+	tx = &L1RollupTx{}
+
 	dbTx := m.DB.Table(m.table).Where("tx_type = ? AND tx_status = ?", txType, StatusPending).Find(&tx)
 	if dbTx.Error != nil {
 		logx.Errorf("unable to get latest pending tx: %s", dbTx.Error.Error())
 		return nil, errorcode.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, errorcode.DbErrNotFound
+		return tx, errorcode.DbErrNotFound
 	}
 	return tx, nil
 }

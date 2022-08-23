@@ -12,8 +12,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/cronjob/sender/sender"
 )
 
-var configFile = flag.String("f",
-	"./etc/config.yaml", "the path of config file")
+var configFile = flag.String("f", "./etc/config.yaml", "the path of config file")
 
 func main() {
 	flag.Parse()
@@ -36,7 +35,7 @@ func main() {
 		logx.Info("========================= start s commit task =========================")
 		err := s.CommitBlocks()
 		if err != nil {
-			logx.Errorf("[s.CommitBlocks] unable to run: %", err)
+			logx.Errorf("[s.CommitBlocks] unable to run: %s", err.Error())
 		} else {
 			logx.Info("========================= end s commit task =========================")
 		}
@@ -49,7 +48,7 @@ func main() {
 		logx.Info("========================= start s verify task =========================")
 		err = s.VerifyAndExecuteBlocks()
 		if err != nil {
-			logx.Errorf("[s.VerifyAndExecuteBlocks] unable to run: %v", err)
+			logx.Errorf("[s.VerifyAndExecuteBlocks] unable to run: %s", err.Error())
 		} else {
 			logx.Info("========================= end s verify task =========================")
 		}
@@ -59,7 +58,7 @@ func main() {
 		logx.Info("========================= start update sent txs task =========================")
 		err = s.UpdateSentTxs()
 		if err != nil {
-			logx.Info("update sent txs error, err:", err)
+			logx.Errorf("update sent txs error, err: %S", err.Error())
 		}
 		logx.Info("========================= end update sent txs task =========================")
 	})
