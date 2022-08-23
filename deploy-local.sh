@@ -3,8 +3,10 @@
 # config
 # GOBIN=/usr/local/bin/ go install  github.com/zeromicro/go-zero/tools/goctl@latest
 
+# Attention: Set the following variables to the right one before running!!!
 DEPLOY_PATH=~/zkbas-deploy
 KEY_PATH=/Users/user/.zkbas
+CMC_TOKEN=cfce503f-fake-fake-fake-bbab5257dac8
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
 echo '0. stop old database/redis and docker run new database/redis'
@@ -110,7 +112,9 @@ CacheRedis:
 KeyPath:
   ProvingKeyPath: [${KEY_PATH}/zkbas1.pk, ${KEY_PATH}/zkbas10.pk]
   VerifyingKeyPath: [${KEY_PATH}/zkbas1.vk, ${KEY_PATH}/zkbas10.vk]
-  KeyTxCounts:    [1, 10]
+
+BlockConfig:
+  OptionalBlockSizes: [1, 10]
 
 TreeDB:
   Driver: memorydb
@@ -157,8 +161,6 @@ CacheRedis:
 ChainConfig:
   NetworkRPCSysConfigName: "BscTestNetworkRpc"
   #NetworkRPCSysConfigName: "LocalTestNetworkRpc"
-  ZkbasContractAddrSysConfigName: "ZkbasContract"
-  GovernanceContractAddrSysConfigName: "GovernanceContract"
   StartL1BlockHeight: $blockNumber
   ConfirmBlocksCount: 0
   MaxHandledBlocksCount: 5000
@@ -210,7 +212,6 @@ CacheRedis:
 ChainConfig:
   NetworkRPCSysConfigName: "BscTestNetworkRpc"
   #NetworkRPCSysConfigName: "LocalTestNetworkRpc"
-  ZkbasContractAddrSysConfigName: "ZkbasContract"
   ConfirmBlocksCount: 0
   MaxWaitingTime: 120
   MaxBlockCount: 4
@@ -231,6 +232,12 @@ echo -e "
 Name: appService-api
 Host: 0.0.0.0
 Port: 8888
+
+Prometheus:
+  Host: 0.0.0.0
+  Port: 9091
+  Path: /metrics
+
 Postgres:
   DataSource: host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable
 
@@ -238,19 +245,24 @@ CacheRedis:
   - Host: 127.0.0.1:6379
     Type: node
 
-GlobalRpc:
-  Endpoints:
-    - 127.0.0.1:8080
-
 LogConf:
   ServiceName: appservice
   Mode: console
   Path: ./log/appService
   StackCooldownMillis: 500
+  Level: error
 
-TreeDB:
-  Driver: memorydb
-  " > ${DEPLOY_PATH}/zkbas/service/api/app/etc/app.yaml
+CoinMarketCap:
+  Url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=
+  Token: ${CMC_TOKEN}
+
+MemCache:
+  AccountExpiration: 200
+  AssetExpiration:   600
+  BlockExpiration:   400
+  TxExpiration:      400
+  PriceExpiration:   200
+  " > ${DEPLOY_PATH}/zkbas/service/api/app/etc/config.yaml
 
 cd ${DEPLOY_PATH}/zkbas/service/api/app
 pm2 start --name app "go run ./app.go"

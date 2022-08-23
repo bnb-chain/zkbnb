@@ -6,14 +6,16 @@ import (
 )
 
 type Config struct {
-	KeyPath struct {
-		ProvingKeyPath   []string
-		VerifyingKeyPath []string
-		KeyTxCounts      []int
-	}
 	Postgres struct {
 		DataSource string
 	}
 	CacheRedis cache.CacheConf
 	LogConf    logx.LogConf
+	KeyPath    struct {
+		ProvingKeyPath   []string
+		VerifyingKeyPath []string
+	}
+	BlockConfig struct {
+		OptionalBlockSizes []int
+	}
 }

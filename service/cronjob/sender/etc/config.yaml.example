@@ -1,20 +1,29 @@
 Name: sender.cronjob
 
+Prometheus:
+  Host: 0.0.0.0
+  Port: 9091
+  Path: /metrics
+
 Postgres:
-  DataSource: host=127.0.0.1 user=postgres password=ZecreyProtocolDB@123 dbname=zkbas port=5432 sslmode=disable
+  DataSource: host=127.0.0.1 user=postgres password=pw dbname=zkbas port=5432 sslmode=disable
 
 CacheRedis:
-  - Host: 127.0.0.1:6379
-    Pass: myredis
+  - Host: redis:6379
     Type: node
 
 ChainConfig:
-  #  NetworkRPCSysConfigName: "BscTestNetworkRpc"
-  NetworkRPCSysConfigName: "LocalTestNetworkRpc"
+  NetworkRPCSysConfigName: "BscTestNetworkRpc"
+  #NetworkRPCSysConfigName: "LocalTestNetworkRpc"
   MaxWaitingTime: 120
   ConfirmBlocksCount: 0
   MaxBlockCount: 3
-  #  Sk: "107f9d2a50ce2d8337e0c5220574e9fcf2bf60002da5acf07718f4d531ea3faa"
-  Sk: "08e504b8a5fd5bbc41e953f6e9cbe3371661c0010767c09315ace07e5a1e938e"
-  GasLimit: 5000000
+  Sk: "107f9d2a50ce2d8337e0c5220574e9fcf2bf60002da5acf07718f4d531ea3faa"
+  GasLimit: 20000000
 
+LogConf:
+  ServiceName: sender
+  Mode: console
+  Path: ./log/sender
+  StackCooldownMillis: 500
+  Level: error

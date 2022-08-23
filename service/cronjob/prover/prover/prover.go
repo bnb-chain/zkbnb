@@ -31,10 +31,10 @@ type Prover struct {
 	ProofSenderModel  proof.ProofModel
 	BlockWitnessModel blockwitness.BlockWitnessModel
 
-	VerifyingKeys []groth16.VerifyingKey
-	ProvingKeys   []groth16.ProvingKey
-	KeyTxCounts   []int
-	R1cs          []frontend.CompiledConstraintSystem
+	VerifyingKeys      []groth16.VerifyingKey
+	ProvingKeys        []groth16.ProvingKey
+	OptionalBlockSizes []int
+	R1cs               []frontend.CompiledConstraintSystem
 }
 
 func WithRedis(redisType string, redisPass string) redis.Option {
@@ -57,13 +57,13 @@ func NewProver(c config.Config) *Prover {
 		ProofSenderModel:  proof.NewProofModel(gormPointer),
 	}
 
-	prover.KeyTxCounts = c.KeyPath.KeyTxCounts
-	prover.ProvingKeys = make([]groth16.ProvingKey, len(prover.KeyTxCounts))
-	prover.VerifyingKeys = make([]groth16.VerifyingKey, len(prover.KeyTxCounts))
-	prover.R1cs = make([]frontend.CompiledConstraintSystem, len(prover.KeyTxCounts))
-	for i := 0; i < len(prover.KeyTxCounts); i++ {
+	prover.OptionalBlockSizes = c.BlockConfig.OptionalBlockSizes
+	prover.ProvingKeys = make([]groth16.ProvingKey, len(prover.OptionalBlockSizes))
+	prover.VerifyingKeys = make([]groth16.VerifyingKey, len(prover.OptionalBlockSizes))
+	prover.R1cs = make([]frontend.CompiledConstraintSystem, len(prover.OptionalBlockSizes))
+	for i := 0; i < len(prover.OptionalBlockSizes); i++ {
 		var circuit block.BlockConstraints
-		circuit.TxsCount = prover.KeyTxCounts[i]
+		circuit.TxsCount = prover.OptionalBlockSizes[i]
 		circuit.Txs = make([]block.TxConstraints, circuit.TxsCount)
 		for i := 0; i < circuit.TxsCount; i++ {
 			circuit.Txs[i] = block.GetZeroTxConstraint()
@@ -116,12 +116,12 @@ func (p *Prover) ProveBlock() error {
 	}
 
 	var keyIndex int
-	for ; keyIndex < len(p.KeyTxCounts); keyIndex++ {
-		if len(cryptoBlock.Txs) == p.KeyTxCounts[keyIndex] {
+	for ; keyIndex < len(p.OptionalBlockSizes); keyIndex++ {
+		if len(cryptoBlock.Txs) == p.OptionalBlockSizes[keyIndex] {
 			break
 		}
 	}
-	if keyIndex == len(p.KeyTxCounts) {
+	if keyIndex == len(p.OptionalBlockSizes) {
 		logx.Errorf("Can't find correct vk/pk")
 		return err
 	}
