@@ -22,7 +22,7 @@ const (
 	MaxCommitterInterval = 60 * 1
 )
 
-var configFile = flag.String("f", "./etc/committer.yaml", "the config file")
+var configFile = flag.String("f", "./etc/config.yaml", "the config file")
 
 type Config struct {
 	core.ChainConfig
@@ -137,7 +137,9 @@ func (c *Committer) Run() {
 
 		if c.shouldCommit(curBlock) {
 			curBlock, err = c.commitNewBlock(curBlock)
-			panic("commit new block failed: " + err.Error())
+			if err != nil {
+				panic("commit new block failed: " + err.Error())
+			}
 		}
 	}
 }
