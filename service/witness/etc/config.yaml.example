@@ -1,4 +1,4 @@
-Name: committer
+Name: witness
 
 Postgres:
   DataSource: host=127.0.0.1 user=postgres password=pw dbname=zkbas port=5432 sslmode=disable
@@ -7,8 +7,12 @@ CacheRedis:
   - Host: redis:6379
     Type: node
 
-BlockConfig:
-  OptionalBlockSizes: [1, 10]
-
 TreeDB:
   Driver: memorydb
+
+LogConf:
+  ServiceName: witness
+  Mode: console
+  Path: ./log/witness
+  StackCooldownMillis: 500
+  Level: error

@@ -6,6 +6,7 @@
 # Attention: Set the following variables to the right one before running!!!
 DEPLOY_PATH=~/zkbas-deploy
 KEY_PATH=/Users/user/.zkbas
+ZKBAS_REPO_PATH=/home/ec2-user/zkbas
 CMC_TOKEN=cfce503f-fake-fake-fake-bbab5257dac8
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
@@ -26,7 +27,7 @@ rm -rf ${DEPLOY_PATH}-bak && mv ${DEPLOY_PATH} ${DEPLOY_PATH}-bak
 mkdir -p ${DEPLOY_PATH} && cd ${DEPLOY_PATH}
 git clone --branch develop  https://github.com/bnb-chain/zkbas-contract.git
 git clone --branch develop https://github.com/bnb-chain/zkbas-crypto.git
-mv /home/ec2-user/zkbas ${DEPLOY_PATH}
+cp -r ${ZKBAS_REPO_PATH} ${DEPLOY_PATH}
 
 
 flag=$1
@@ -43,7 +44,7 @@ fi
 
 
 echo '3. start verify_parse for ZkbasVerifier'
-cd ${DEPLOY_PATH}/zkbas/service/cronjob/prover/
+cd ${DEPLOY_PATH}/zkbas/service/prover/
 python3 verifier_parse.py ${KEY_PATH}/ZkbasVerifier1.sol,${KEY_PATH}/ZkbasVerifier10.sol 1,10 ${DEPLOY_PATH}/zkbas-contract/contracts/ZkbasVerifier.sol
 
 
@@ -75,12 +76,12 @@ sed -i -e "s/ZkbasProxy: .*/ZkbasProxy: ${ZkbasContractAddr}/" ${DEPLOY_PATH}/zk
 GovernanceContractAddr=`cat ${DEPLOY_PATH}/zkbas-contract/info/addresses.json  | jq -r '.governance'`
 sed -i -e "s/Governance: .*/Governance: ${GovernanceContractAddr}/" ${DEPLOY_PATH}/zkbas/common/model/init/contractaddr.yaml
 
-sed -i -e "s/BSC_Test_Network_RPC *= .*/BSC_Test_Network_RPC   = \"https\:\/\/data-seed-prebsc-1-s1.binance.org:8545\"/" ${DEPLOY_PATH}/zkbas/common/model/init/init.go
+sed -i -e "s/BSCTestNetworkRPC *= .*/BSCTestNetworkRPC   = \"https\:\/\/data-seed-prebsc-1-s1.binance.org:8545\"/" ${DEPLOY_PATH}/zkbas/common/model/init/init.go
 
 
 
 cd ${DEPLOY_PATH}/zkbas/
-make app
+make api-server
 cd ${DEPLOY_PATH}/zkbas && go mod tidy
 
 
@@ -92,7 +93,7 @@ go run .
 
 
 cd ${DEPLOY_PATH}/zkbas/
-make app
+make api-server
 
 
 sleep 30s
@@ -101,7 +102,7 @@ sleep 30s
 echo "7. run prover"
 
 echo -e "
-Name: prover.cronjob
+Name: prover
 Postgres:
   DataSource: host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable
 
@@ -118,9 +119,9 @@ BlockConfig:
 
 TreeDB:
   Driver: memorydb
-" > ${DEPLOY_PATH}/zkbas/service/cronjob/prover/etc/config.yaml
+" > ${DEPLOY_PATH}/zkbas/service/prover/etc/config.yaml
 
-cd ${DEPLOY_PATH}/zkbas/service/cronjob/prover/
+cd ${DEPLOY_PATH}/zkbas/service/prover/
 pm2 start --name prover "go run ./main.go"
 
 
@@ -129,7 +130,7 @@ pm2 start --name prover "go run ./main.go"
 echo "8. run witness"
 
 echo -e "
-Name: witness.cronjob
+Name: witness
 
 Postgres:
   DataSource: host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable
@@ -140,16 +141,16 @@ CacheRedis:
 
 TreeDB:
   Driver: memorydb
-" > ${DEPLOY_PATH}/zkbas/service/cronjob/witness/etc/config.yaml
+" > ${DEPLOY_PATH}/zkbas/service/witness/etc/config.yaml
 
-cd ${DEPLOY_PATH}/zkbas/service/cronjob/witness/
+cd ${DEPLOY_PATH}/zkbas/service/witness/
 pm2 start --name witness "go run ./main.go"
 
 
 echo "9. run monitor"
 
 echo -e "
-Name: monitor.cronjob
+Name: monitor
 
 Postgres:
   DataSource: host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable
@@ -167,9 +168,9 @@ ChainConfig:
 
 TreeDB:
   Driver: memorydb
-" > ${DEPLOY_PATH}/zkbas/service/cronjob/monitor/etc/config.yaml
+" > ${DEPLOY_PATH}/zkbas/service/monitor/etc/config.yaml
 
-cd ${DEPLOY_PATH}/zkbas/service/cronjob/monitor/
+cd ${DEPLOY_PATH}/zkbas/service/monitor/
 pm2 start --name monitor "go run ./main.go"
 
 
@@ -194,13 +195,13 @@ TreeDB:
 " > ${DEPLOY_PATH}/zkbas/service/committer/etc/config.yaml
 
 cd ${DEPLOY_PATH}/zkbas/service/committer/
-pm2 start --name committer "go run ./committer.go"
+pm2 start --name committer "go run ./main.go"
 
 
 echo "11. run sender"
 
 echo -e "
-Name: sender.cronjob
+Name: sender
 
 Postgres:
   DataSource: host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable
@@ -220,16 +221,16 @@ ChainConfig:
 
 TreeDB:
   Driver: memorydb
-" > ${DEPLOY_PATH}/zkbas/service/cronjob/sender/etc/config.yaml
+" > ${DEPLOY_PATH}/zkbas/service/sender/etc/config.yaml
 
-cd ${DEPLOY_PATH}/zkbas/service/cronjob/sender/
+cd ${DEPLOY_PATH}/zkbas/service/sender/
 pm2 start --name sender "go run ./main.go"
 
 
-echo "12. run app"
+echo "12. run api-server"
 
 echo -e "
-Name: appService-api
+Name: api-server
 Host: 0.0.0.0
 Port: 8888
 
@@ -246,9 +247,9 @@ CacheRedis:
     Type: node
 
 LogConf:
-  ServiceName: appservice
+  ServiceName: api-server
   Mode: console
-  Path: ./log/appService
+  Path: ./log/api-server
   StackCooldownMillis: 500
   Level: error
 
@@ -262,7 +263,7 @@ MemCache:
   BlockExpiration:   400
   TxExpiration:      400
   PriceExpiration:   200
-  " > ${DEPLOY_PATH}/zkbas/service/api/app/etc/config.yaml
+  " > ${DEPLOY_PATH}/zkbas/service/apiserver/etc/config.yaml
 
-cd ${DEPLOY_PATH}/zkbas/service/api/app
-pm2 start --name app "go run ./app.go"
+cd ${DEPLOY_PATH}/zkbas/service/apiserver
+pm2 start --name api-server "go run ./server.go"
