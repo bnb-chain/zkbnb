@@ -8,11 +8,11 @@
 .PHONY: zkbas-darwin zkbas-darwin-386 zkbas-darwin-amd64
 .PHONY: zkbas-windows zkbas-windows-386 zkbas-windows-amd64
 
-APP = ./service/api/app
+API_SERVER = ./service/apiserver/
 
-app:
-	cd $(APP) && goctl api go -api app.api -dir .;
-	@echo "Done generate app api";
+api-server:
+	cd $(API_SERVER) && goctl api go -api server.api -dir .;
+	@echo "Done generate server api";
 
 deploy:
 	sudo bash -x ./deploy-local.sh new
@@ -23,10 +23,10 @@ integration-test:
 tools:
 	go install github.com/zeromicro/go-zero/tools/goctl@v1.4.0
 
-build: app
-	go build -o build/app ./service/api/app/app.go
-	go build -o build/committer ./service/committer/committer.go
-	go build -o build/monitor ./service/cronjob/monitor/main.go
-	go build -o build/prover ./service/cronjob/prover/main.go
-	go build -o build/sender ./service/cronjob/sender/main.go
-	go build -o build/witness ./service/cronjob/witness/main.go
+build: api-server
+	go build -o build/api-server ./service/apiserver/server.go
+	go build -o build/committer ./service/committer/main.go
+	go build -o build/monitor ./service/monitor/main.go
+	go build -o build/prover ./service/prover/main.go
+	go build -o build/sender ./service/sender/main.go
+	go build -o build/witness ./service/witness/main.go
