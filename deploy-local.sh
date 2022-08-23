@@ -1,7 +1,9 @@
 #!/bin/bash
 
-# config
+# Preparation: Install following tools when you first run this script!!!
 # GOBIN=/usr/local/bin/ go install  github.com/zeromicro/go-zero/tools/goctl@latest
+# yum install jq -y
+# npm install pm2 -g
 
 # Attention: Set the following variables to the right one before running!!!
 DEPLOY_PATH=~/zkbas-deploy
@@ -19,8 +21,6 @@ docker run --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=Zkbas@123 -e POSTGR
 
 
 echo '1. basic config and git clone repos'
-#yum install jq -y
-#npm install pm2 -g
 export PATH=$PATH:/usr/local/go/bin/
 cd ~
 rm -rf ${DEPLOY_PATH}-bak && mv ${DEPLOY_PATH} ${DEPLOY_PATH}-bak
@@ -263,7 +263,7 @@ MemCache:
   BlockExpiration:   400
   TxExpiration:      400
   PriceExpiration:   200
-  " > ${DEPLOY_PATH}/zkbas/service/apiserver/etc/config.yaml
+  " > ${DEPLOY_PATH}/zkbas/service/apiserver/etc/server-api.yaml
 
 cd ${DEPLOY_PATH}/zkbas/service/apiserver
 pm2 start --name api-server "go run ./server.go"
