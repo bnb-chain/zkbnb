@@ -326,9 +326,11 @@ func (m *defaultBlockModel) CreateBlockForCommitter(pendingMempoolTxs []*mempool
 		}
 		// create block
 		if blockStates.Block != nil {
-			dbTx := tx.Table(m.table).Create(blockStates.Block)
+			dbTx := tx.Table(m.table).Where("id = ?", blockStates.Block.ID).
+				Select("*").
+				Updates(&blockStates.Block)
 			if dbTx.Error != nil {
-				logx.Errorf("unable to create block: %s", dbTx.Error.Error())
+				logx.Errorf("unable to update block: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
