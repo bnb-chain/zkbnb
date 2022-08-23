@@ -250,6 +250,9 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 						logx.Errorf("unable to marshal validators: %s", err.Error())
 						return err
 					}
+					if pendingUpdateSysConfigMap[sysConfigName.Validators] == nil {
+						pendingUpdateSysConfigMap[sysConfigName.Validators] = configInfo
+					}
 					pendingUpdateSysConfigMap[sysConfigName.Validators].Value = string(validatorBytes)
 				}
 			}
