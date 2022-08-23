@@ -4,12 +4,11 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
-
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/common/errorcode"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
+	types2 "github.com/bnb-chain/zkbas/types"
 )
 
 type GetCurrencyPricesLogic struct {
@@ -31,7 +30,7 @@ func (l *GetCurrencyPricesLogic) GetCurrencyPrices(req *types.ReqGetRange) (resp
 		return l.svcCtx.AssetModel.GetAssetsTotalCount()
 	})
 	if err != nil {
-		return nil, errorcode.AppErrInternal
+		return nil, types2.AppErrInternal
 	}
 
 	resp = &types.CurrencyPrices{
@@ -44,7 +43,7 @@ func (l *GetCurrencyPricesLogic) GetCurrencyPrices(req *types.ReqGetRange) (resp
 
 	assets, err := l.svcCtx.AssetModel.GetAssetsList(int64(req.Limit), int64(req.Offset))
 	if err != nil {
-		return nil, errorcode.AppErrInternal
+		return nil, types2.AppErrInternal
 	}
 
 	for _, asset := range assets {
@@ -57,7 +56,7 @@ func (l *GetCurrencyPricesLogic) GetCurrencyPrices(req *types.ReqGetRange) (resp
 			price, err = l.svcCtx.PriceFetcher.GetCurrencyPrice(l.ctx, asset.AssetSymbol)
 			if err != nil {
 				logx.Errorf("fail to get price for symbol: %s, err: %s", asset.AssetSymbol, err.Error())
-				return nil, errorcode.AppErrInternal
+				return nil, types2.AppErrInternal
 			}
 		}
 

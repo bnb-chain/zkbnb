@@ -10,18 +10,17 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
-
-	curve "github.com/bnb-chain/zkbas-crypto/ecc/ztwistededwards/tebn254"
-	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/bnb-chain/zkbas/common/commonAsset"
-	"github.com/bnb-chain/zkbas/common/commonTx"
-	"github.com/bnb-chain/zkbas/common/tree"
-	"github.com/bnb-chain/zkbas/common/util"
+	curve "github.com/bnb-chain/zkbas-crypto/ecc/ztwistededwards/tebn254"
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+	common2 "github.com/bnb-chain/zkbas/common"
+	"github.com/bnb-chain/zkbas/common/chain"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
+	"github.com/bnb-chain/zkbas/tree"
+	types2 "github.com/bnb-chain/zkbas/types"
 )
 
 const accountName = "sher.legend"
@@ -38,18 +37,18 @@ func (s *AppSuite) TestSendTx() {
 		args     args
 		httpCode int
 	}{
-		{"add liquidity", args{commonTx.TxTypeAddLiquidity, constructAddLiquidityTxInfo(s)}, 200},
-		{"remove liquidity", args{commonTx.TxTypeRemoveLiquidity, constructRemoveLiquidityTxInfo(s)}, 200},
-		{"create collection", args{commonTx.TxTypeCreateCollection, constructCreateCollectionTxInfo(s)}, 200},
-		{"mint nft", args{commonTx.TxTypeMintNft, constructMintNftTxInfo(s)}, 200},
-		{"transfer nft", args{commonTx.TxTypeTransferNft, constructTransferNftTxInfo(s)}, 200},
-		{"withdraw nft", args{commonTx.TxTypeWithdraw, constructSendNftTxInfo(s)}, 200},
-		{"cancel offer", args{commonTx.TxTypeCancelOffer, constructCancelOfferTxInfo(s)}, 200},
-		{"atomic match", args{commonTx.TxTypeAtomicMatch, constructAtomicMatchTxInfo(s)}, 200},
-		{"transfer", args{commonTx.TxTypeTransfer, constructTransferTxInfo(s)}, 200},
-		{"swap", args{commonTx.TxTypeSwap, constructSwapTxInfo(s)}, 200},
-		{"withdraw", args{commonTx.TxTypeWithdraw, constructWithdrawTxInfo(s)}, 200},
-		{"offer", args{commonTx.TxTypeOffer, "invalid"}, 400},
+		{"add liquidity", args{types2.TxTypeAddLiquidity, constructAddLiquidityTxInfo(s)}, 200},
+		{"remove liquidity", args{types2.TxTypeRemoveLiquidity, constructRemoveLiquidityTxInfo(s)}, 200},
+		{"create collection", args{types2.TxTypeCreateCollection, constructCreateCollectionTxInfo(s)}, 200},
+		{"mint nft", args{types2.TxTypeMintNft, constructMintNftTxInfo(s)}, 200},
+		{"transfer nft", args{types2.TxTypeTransferNft, constructTransferNftTxInfo(s)}, 200},
+		{"withdraw nft", args{types2.TxTypeWithdraw, constructSendNftTxInfo(s)}, 200},
+		{"cancel offer", args{types2.TxTypeCancelOffer, constructCancelOfferTxInfo(s)}, 200},
+		{"atomic match", args{types2.TxTypeAtomicMatch, constructAtomicMatchTxInfo(s)}, 200},
+		{"transfer", args{types2.TxTypeTransfer, constructTransferTxInfo(s)}, 200},
+		{"swap", args{types2.TxTypeSwap, constructSwapTxInfo(s)}, 200},
+		{"withdraw", args{types2.TxTypeWithdraw, constructWithdrawTxInfo(s)}, 200},
+		{"offer", args{types2.TxTypeOffer, "invalid"}, 400},
 		{"invalid tx type", args{100, "invalid"}, 400},
 	}
 
@@ -113,12 +112,12 @@ func constructAddLiquidityTxInfo(s *AppSuite) string {
 	}
 	assetAAmount := big.NewInt(100000)
 	assetBAmount := big.NewInt(100000)
-	lpAmount, err := util.ComputeEmptyLpAmount(assetAAmount, assetBAmount)
+	lpAmount, err := chain.ComputeEmptyLpAmount(assetAAmount, assetBAmount)
 	if err != nil {
 		panic(err)
 	}
 	expiredAt := time.Now().Add(time.Hour * 2).UnixMilli()
-	txInfo := &commonTx.AddLiquidityTxInfo{
+	txInfo := &types2.AddLiquidityTxInfo{
 		FromAccountIndex:  getAccountIndex(s, accountName),
 		PairIndex:         0,
 		AssetAId:          0,
@@ -163,8 +162,8 @@ func constructAtomicMatchTxInfo(s *AppSuite) string {
 	}
 	listedAt := time.Now().UnixMilli()
 	expiredAt := time.Now().Add(time.Hour * 2).UnixMilli()
-	buyOffer := &commonTx.OfferTxInfo{
-		Type:         commonAsset.BuyOfferType,
+	buyOffer := &types2.OfferTxInfo{
+		Type:         types2.BuyOfferType,
 		OfferId:      getNextOfferId(s, "gavin.legend"),
 		AccountIndex: getAccountIndex(s, "gavin.legend"),
 		NftIndex:     1,
@@ -186,8 +185,8 @@ func constructAtomicMatchTxInfo(s *AppSuite) string {
 		panic(err)
 	}
 	buyOffer.Sig = buySig
-	sellOffer := &commonTx.OfferTxInfo{
-		Type:         commonAsset.SellOfferType,
+	sellOffer := &types2.OfferTxInfo{
+		Type:         types2.SellOfferType,
 		OfferId:      getNextOfferId(s, accountName),
 		AccountIndex: getAccountIndex(s, accountName),
 		NftIndex:     1,
@@ -209,7 +208,7 @@ func constructAtomicMatchTxInfo(s *AppSuite) string {
 		panic(err)
 	}
 	sellOffer.Sig = sellSig
-	txInfo := &commonTx.AtomicMatchTxInfo{
+	txInfo := &types2.AtomicMatchTxInfo{
 		AccountIndex:      getAccountIndex(s, accountName),
 		BuyOffer:          buyOffer,
 		SellOffer:         sellOffer,
@@ -244,7 +243,7 @@ func constructCancelOfferTxInfo(s *AppSuite) string {
 		panic(err)
 	}
 	expiredAt := time.Now().Add(time.Hour * 2).UnixMilli()
-	txInfo := &commonTx.CancelOfferTxInfo{
+	txInfo := &types2.CancelOfferTxInfo{
 		AccountIndex:      getAccountIndex(s, accountName),
 		OfferId:           getNextOfferId(s, accountName),
 		GasAccountIndex:   1,
@@ -278,7 +277,7 @@ func constructCreateCollectionTxInfo(s *AppSuite) string {
 		panic(err)
 	}
 	expiredAt := time.Now().Add(time.Hour * 2).UnixMilli()
-	txInfo := &commonTx.CreateCollectionTxInfo{
+	txInfo := &types2.CreateCollectionTxInfo{
 		AccountIndex:      getAccountIndex(s, accountName),
 		CollectionId:      0,
 		Name:              "Zkbas Collection",
@@ -313,15 +312,15 @@ func constructMintNftTxInfo(s *AppSuite) string {
 	if err != nil {
 		panic(err)
 	}
-	nameHash, err := util.AccountNameHash("gavin.legend")
+	nameHash, err := common2.AccountNameHash("gavin.legend")
 	if err != nil {
 		panic(err)
 	}
 	hFunc := mimc.NewMiMC()
-	hFunc.Write([]byte(util.RandomUUID()))
+	hFunc.Write([]byte(common2.RandomUUID()))
 	contentHash := hFunc.Sum(nil)
 	expiredAt := time.Now().Add(time.Hour * 2).UnixMilli()
-	txInfo := &commonTx.MintNftTxInfo{
+	txInfo := &types2.MintNftTxInfo{
 		CreatorAccountIndex: getAccountIndex(s, accountName),
 		ToAccountIndex:      3,
 		ToAccountNameHash:   nameHash,
@@ -362,7 +361,7 @@ func constructRemoveLiquidityTxInfo(s *AppSuite) string {
 	assetBMinAmount := big.NewInt(99)
 	lpAmount := big.NewInt(100)
 	expiredAt := time.Now().Add(time.Hour * 2).UnixMilli()
-	txInfo := &commonTx.RemoveLiquidityTxInfo{
+	txInfo := &types2.RemoveLiquidityTxInfo{
 		FromAccountIndex:  getAccountIndex(s, accountName),
 		PairIndex:         0,
 		AssetAId:          0,
@@ -405,7 +404,7 @@ func constructSwapTxInfo(s *AppSuite) string {
 	assetAAmount := big.NewInt(100)
 	assetBAmount := big.NewInt(98)
 	expiredAt := time.Now().Add(time.Hour * 2).UnixMilli()
-	txInfo := &commonTx.SwapTxInfo{
+	txInfo := &types2.SwapTxInfo{
 		FromAccountIndex:  getAccountIndex(s, accountName),
 		PairIndex:         0,
 		AssetAId:          2,
@@ -444,12 +443,12 @@ func constructTransferNftTxInfo(s *AppSuite) string {
 	if err != nil {
 		panic(err)
 	}
-	nameHash, err := util.AccountNameHash("sher.legend")
+	nameHash, err := common2.AccountNameHash("sher.legend")
 	if err != nil {
 		panic(err)
 	}
 	expiredAt := time.Now().Add(time.Hour * 2).UnixMilli()
-	txInfo := &commonTx.TransferNftTxInfo{
+	txInfo := &types2.TransferNftTxInfo{
 		FromAccountIndex:  getAccountIndex(s, "gavin.legend"),
 		ToAccountIndex:    getAccountIndex(s, accountName),
 		ToAccountNameHash: nameHash,
@@ -490,12 +489,12 @@ func constructTransferTxInfo(s *AppSuite) string {
 	if err != nil {
 		panic(err)
 	}
-	nameHash, err := util.AccountNameHash("gavin.legend")
+	nameHash, err := common2.AccountNameHash("gavin.legend")
 	if err != nil {
 		panic(err)
 	}
 	expiredAt := time.Now().Add(time.Hour * 2).UnixMilli()
-	txInfo := &commonTx.TransferTxInfo{
+	txInfo := &types2.TransferTxInfo{
 		FromAccountIndex:  getAccountIndex(s, accountName),
 		ToAccountIndex:    getAccountIndex(s, "gavin.legend"),
 		ToAccountNameHash: nameHash,
@@ -539,7 +538,7 @@ func constructSendNftTxInfo(s *AppSuite) string {
 		panic(err)
 	}
 	expiredAt := time.Now().Add(time.Hour * 2).UnixMilli()
-	txInfo := &commonTx.WithdrawNftTxInfo{
+	txInfo := &types2.WithdrawNftTxInfo{
 		AccountIndex:      getAccountIndex(s, accountName),
 		NftIndex:          1,
 		ToAddress:         "0xd5Aa3B56a2E2139DB315CdFE3b34149c8ed09171",
@@ -574,7 +573,7 @@ func constructWithdrawTxInfo(s *AppSuite) string {
 		panic(err)
 	}
 	expiredAt := time.Now().Add(time.Hour * 2).UnixMilli()
-	txInfo := &commonTx.WithdrawTxInfo{
+	txInfo := &types2.WithdrawTxInfo{
 		FromAccountIndex:  getAccountIndex(s, accountName),
 		AssetId:           0,
 		AssetAmount:       big.NewInt(10000000),

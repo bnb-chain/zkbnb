@@ -3,8 +3,13 @@ package core
 import (
 	"fmt"
 
-	"github.com/bnb-chain/zkbas/common/model/tx"
+	"github.com/bnb-chain/zkbas/core/executor"
+	"github.com/bnb-chain/zkbas/dao/tx"
 )
+
+type Processor interface {
+	Process(tx *tx.Tx) error
+}
 
 type CommitProcessor struct {
 	bc *BlockChain
@@ -17,7 +22,7 @@ func NewCommitProcessor(bc *BlockChain) Processor {
 }
 
 func (p *CommitProcessor) Process(tx *tx.Tx) error {
-	executor, err := NewTxExecutor(p.bc, tx)
+	executor, err := executor.NewTxExecutor(p.bc, tx)
 	if err != nil {
 		return fmt.Errorf("new tx executor failed")
 	}
@@ -48,8 +53,8 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 		panic(err)
 	}
 
-	p.bc.stateCache.txs = append(p.bc.stateCache.txs, tx)
-	p.bc.stateCache.stateRoot = tx.StateRoot
+	p.bc.Statedb.Txs = append(p.bc.Statedb.Txs, tx)
+	p.bc.Statedb.StateRoot = tx.StateRoot
 
 	return nil
 }

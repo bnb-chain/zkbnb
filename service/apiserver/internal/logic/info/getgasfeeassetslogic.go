@@ -3,12 +3,11 @@ package info
 import (
 	"context"
 
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
-
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/common/errorcode"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
+	types2 "github.com/bnb-chain/zkbas/types"
 )
 
 type GetGasFeeAssetsLogic struct {
@@ -28,7 +27,7 @@ func NewGetGasFeeAssetsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *G
 func (l *GetGasFeeAssetsLogic) GetGasFeeAssets() (resp *types.GasFeeAssets, err error) {
 	assets, err := l.svcCtx.AssetModel.GetGasAssets()
 	if err != nil {
-		return nil, errorcode.AppErrInternal
+		return nil, types2.AppErrInternal
 	}
 
 	resp.Assets = make([]types.Asset, 0)

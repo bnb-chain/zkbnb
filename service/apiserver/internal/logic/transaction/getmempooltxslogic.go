@@ -3,13 +3,12 @@ package transaction
 import (
 	"context"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
-
-	"github.com/zeromicro/go-zero/core/logx"
-
-	"github.com/bnb-chain/zkbas/common/errorcode"
+	types2 "github.com/bnb-chain/zkbas/types"
 )
 
 type GetMempoolTxsLogic struct {
@@ -28,8 +27,8 @@ func NewGetMempoolTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetRange) (*types.MempoolTxs, error) {
 	total, err := l.svcCtx.MempoolModel.GetMempoolTxsTotalCount()
 	if err != nil {
-		if err != errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrInternal
+		if err != types2.DbErrNotFound {
+			return nil, types2.AppErrInternal
 		}
 	}
 
@@ -43,10 +42,10 @@ func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetRange) (*types.Mempo
 
 	mempoolTxs, err := l.svcCtx.MempoolModel.GetMempoolTxsList(int64(req.Limit), int64(req.Offset))
 	if err != nil {
-		return nil, errorcode.AppErrInternal
+		return nil, types2.AppErrInternal
 	}
 	for _, t := range mempoolTxs {
-		tx := utils.DbMempoolTx2Tx(t)
+		tx := utils.DbMempooltxTx(t)
 		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
 		tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
 		resp.MempoolTxs = append(resp.MempoolTxs, tx)

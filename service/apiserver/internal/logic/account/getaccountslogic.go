@@ -3,12 +3,11 @@ package account
 import (
 	"context"
 
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
-
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/common/errorcode"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
+	types2 "github.com/bnb-chain/zkbas/types"
 )
 
 type GetAccountsLogic struct {
@@ -30,7 +29,7 @@ func (l *GetAccountsLogic) GetAccounts(req *types.ReqGetRange) (resp *types.Acco
 		return l.svcCtx.AccountModel.GetAccountsTotalCount()
 	})
 	if err != nil {
-		return nil, errorcode.AppErrInternal
+		return nil, types2.AppErrInternal
 	}
 
 	resp = &types.Accounts{
@@ -44,7 +43,7 @@ func (l *GetAccountsLogic) GetAccounts(req *types.ReqGetRange) (resp *types.Acco
 
 	accounts, err := l.svcCtx.AccountModel.GetAccountsList(int(req.Limit), int64(req.Offset))
 	if err != nil {
-		return nil, errorcode.AppErrInternal
+		return nil, types2.AppErrInternal
 	}
 	for _, a := range accounts {
 		resp.Accounts = append(resp.Accounts, &types.SimpleAccount{

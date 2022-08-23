@@ -4,13 +4,11 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
-
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/common/errorcode"
-	"github.com/bnb-chain/zkbas/common/sysConfigName"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
+	types2 "github.com/bnb-chain/zkbas/types"
 )
 
 type GetGasAccountLogic struct {
@@ -28,24 +26,24 @@ func NewGetGasAccountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 }
 
 func (l *GetGasAccountLogic) GetGasAccount() (resp *types.GasAccount, err error) {
-	accountIndexConfig, err := l.svcCtx.MemCache.GetSysConfigWithFallback(sysConfigName.GasAccountIndex, func() (interface{}, error) {
-		return l.svcCtx.SysConfigModel.GetSysConfigByName(sysConfigName.GasAccountIndex)
+	accountIndexConfig, err := l.svcCtx.MemCache.GetSysConfigWithFallback(types2.GasAccountIndex, func() (interface{}, error) {
+		return l.svcCtx.SysConfigModel.GetSysConfigByName(types2.GasAccountIndex)
 	})
 	if err != nil {
-		return nil, errorcode.AppErrInternal
+		return nil, types2.AppErrInternal
 	}
 
 	accountIndex, err := strconv.ParseInt(accountIndexConfig.Value, 10, 64)
 	if err != nil {
 		logx.Errorf("invalid account index: %s", accountIndexConfig.Value)
-		return nil, errorcode.AppErrInternal
+		return nil, types2.AppErrInternal
 	}
 
 	account, err := l.svcCtx.MemCache.GetAccountWithFallback(accountIndex, func() (interface{}, error) {
 		return l.svcCtx.AccountModel.GetAccountByIndex(accountIndex)
 	})
 	if err != nil {
-		return nil, errorcode.AppErrInternal
+		return nil, types2.AppErrInternal
 	}
 
 	resp = &types.GasAccount{

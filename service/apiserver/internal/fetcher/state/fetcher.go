@@ -3,11 +3,12 @@ package state
 import (
 	"context"
 
-	"github.com/bnb-chain/zkbas/common/commonAsset"
-	"github.com/bnb-chain/zkbas/common/dbcache"
-	accdao "github.com/bnb-chain/zkbas/common/model/account"
-	liqdao "github.com/bnb-chain/zkbas/common/model/liquidity"
-	nftdao "github.com/bnb-chain/zkbas/common/model/nft"
+	"github.com/bnb-chain/zkbas/common/chain"
+	accdao "github.com/bnb-chain/zkbas/dao/account"
+	"github.com/bnb-chain/zkbas/dao/dbcache"
+	liqdao "github.com/bnb-chain/zkbas/dao/liquidity"
+	nftdao "github.com/bnb-chain/zkbas/dao/nft"
+	"github.com/bnb-chain/zkbas/types"
 )
 
 //go:generate mockgen -source api.go -destination api_mock.go -package state
@@ -15,9 +16,9 @@ import (
 // Fetcher will fetch the latest states (account,nft,liquidity) from redis, which is written by committer;
 // and if the required data cannot be found then database will be used.
 type Fetcher interface {
-	GetLatestAccount(accountIndex int64) (accountInfo *commonAsset.AccountInfo, err error)
-	GetLatestLiquidity(pairIndex int64) (liquidityInfo *commonAsset.LiquidityInfo, err error)
-	GetLatestNft(nftIndex int64) (*commonAsset.NftInfo, error)
+	GetLatestAccount(accountIndex int64) (accountInfo *types.AccountInfo, err error)
+	GetLatestLiquidity(pairIndex int64) (liquidityInfo *types.LiquidityInfo, err error)
+	GetLatestNft(nftIndex int64) (*types.NftInfo, error)
 }
 
 func NewFetcher(redisCache dbcache.Cache,
@@ -39,18 +40,18 @@ type fetcher struct {
 	nftModel       nftdao.L2NftModel
 }
 
-func (f *fetcher) GetLatestAccount(accountIndex int64) (*commonAsset.AccountInfo, error) {
-	var fa *commonAsset.AccountInfo
+func (f *fetcher) GetLatestAccount(accountIndex int64) (*types.AccountInfo, error) {
+	var fa *types.AccountInfo
 
 	redisAccount, err := f.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex))
 	if err == nil && redisAccount != nil {
-		fa = redisAccount.(*commonAsset.AccountInfo)
+		fa = redisAccount.(*types.AccountInfo)
 	} else {
 		account, err := f.accountModel.GetAccountByIndex(accountIndex)
 		if err != nil {
 			return nil, err
 		}
-		fa, err = commonAsset.ToFormatAccountInfo(account)
+		fa, err = chain.ToFormatAccountInfo(account)
 		if err != nil {
 			return nil, err
 		}
@@ -58,7 +59,7 @@ func (f *fetcher) GetLatestAccount(accountIndex int64) (*commonAsset.AccountInfo
 	return fa, nil
 }
 
-func (f *fetcher) GetLatestLiquidity(pairIndex int64) (liquidityInfo *commonAsset.LiquidityInfo, err error) {
+func (f *fetcher) GetLatestLiquidity(pairIndex int64) (liquidityInfo *types.LiquidityInfo, err error) {
 	var l *liqdao.Liquidity
 
 	redisLiquidity, err := f.redisCache.Get(context.Background(), dbcache.LiquidityKeyByIndex(pairIndex))
@@ -71,7 +72,7 @@ func (f *fetcher) GetLatestLiquidity(pairIndex int64) (liquidityInfo *commonAsse
 		}
 	}
 
-	return commonAsset.ConstructLiquidityInfo(
+	return types.ConstructLiquidityInfo(
 		pairIndex,
 		l.AssetAId,
 		l.AssetA,
@@ -85,7 +86,7 @@ func (f *fetcher) GetLatestLiquidity(pairIndex int64) (liquidityInfo *commonAsse
 	)
 }
 
-func (f *fetcher) GetLatestNft(nftIndex int64) (*commonAsset.NftInfo, error) {
+func (f *fetcher) GetLatestNft(nftIndex int64) (*types.NftInfo, error) {
 	var n *nftdao.L2Nft
 
 	redisNft, err := f.redisCache.Get(context.Background(), dbcache.NftKeyByIndex(nftIndex))
@@ -98,7 +99,7 @@ func (f *fetcher) GetLatestNft(nftIndex int64) (*commonAsset.NftInfo, error) {
 		}
 	}
 
-	return commonAsset.ConstructNftInfo(nftIndex,
+	return types.ConstructNftInfo(nftIndex,
 		n.CreatorAccountIndex,
 		n.OwnerAccountIndex,
 		n.NftContentHash,

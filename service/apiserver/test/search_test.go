@@ -7,11 +7,10 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
-
 	"github.com/stretchr/testify/assert"
 
-	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
+	types2 "github.com/bnb-chain/zkbas/types"
 )
 
 func (s *AppSuite) TestSearch() {
@@ -24,8 +23,8 @@ func (s *AppSuite) TestSearch() {
 		httpCode int
 		dataType int32
 	}{
-		{"search block", args{"1"}, 200, util.TypeBlockHeight},
-		{"search account", args{"gas.legend"}, 200, util.TypeAccountName},
+		{"search block", args{"1"}, 200, types2.TypeBlockHeight},
+		{"search account", args{"gas.legend"}, 200, types2.TypeAccountName},
 		{"not found", args{"notexist"}, 400, 0},
 	}
 

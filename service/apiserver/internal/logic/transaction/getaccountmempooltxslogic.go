@@ -4,13 +4,12 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
-
-	"github.com/zeromicro/go-zero/core/logx"
-
-	"github.com/bnb-chain/zkbas/common/errorcode"
+	types2 "github.com/bnb-chain/zkbas/types"
 )
 
 type GetAccountMempoolTxsLogic struct {
@@ -33,27 +32,27 @@ func (l *GetAccountMempoolTxsLogic) GetAccountMempoolTxs(req *types.ReqGetAccoun
 	case queryByAccountIndex:
 		accountIndex, err = strconv.ParseInt(req.Value, 10, 64)
 		if err != nil {
-			return nil, errorcode.AppErrInvalidParam.RefineError("invalid value for account_index")
+			return nil, types2.AppErrInvalidParam.RefineError("invalid value for account_index")
 		}
 	case queryByAccountName:
 		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByName(req.Value)
 	case queryByAccountPk:
 		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByPk(req.Value)
 	default:
-		return nil, errorcode.AppErrInvalidParam.RefineError("param by should be account_index|account_name|account_pk")
+		return nil, types2.AppErrInvalidParam.RefineError("param by should be account_index|account_name|account_pk")
 	}
 
 	if err != nil {
-		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrNotFound
+		if err == types2.DbErrNotFound {
+			return nil, types2.AppErrNotFound
 		}
-		return nil, errorcode.AppErrInternal
+		return nil, types2.AppErrInternal
 	}
 
 	mempoolTxs, err := l.svcCtx.MempoolModel.GetPendingMempoolTxsByAccountIndex(accountIndex)
 	if err != nil {
-		if err != errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrInternal
+		if err != types2.DbErrNotFound {
+			return nil, types2.AppErrInternal
 		}
 	}
 
@@ -62,7 +61,7 @@ func (l *GetAccountMempoolTxsLogic) GetAccountMempoolTxs(req *types.ReqGetAccoun
 		MempoolTxs: make([]*types.Tx, 0),
 	}
 	for _, t := range mempoolTxs {
-		tx := utils.DbMempoolTx2Tx(t)
+		tx := utils.DbMempooltxTx(t)
 		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
 		tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
 		resp.MempoolTxs = append(resp.MempoolTxs, tx)

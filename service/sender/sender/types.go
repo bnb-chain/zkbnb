@@ -21,16 +21,17 @@ import (
 	"math/big"
 	"strings"
 
-	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/common/model/block"
-	"github.com/bnb-chain/zkbas/common/model/blockForCommit"
-	"github.com/bnb-chain/zkbas/common/tree"
-	"github.com/bnb-chain/zkbas/common/util"
+	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
+	"github.com/bnb-chain/zkbas/common/chain"
+	"github.com/bnb-chain/zkbas/dao/block"
+	"github.com/bnb-chain/zkbas/dao/blockforcommit"
+	"github.com/bnb-chain/zkbas/tree"
+	"github.com/bnb-chain/zkbas/types"
 )
 
 const (
@@ -56,7 +57,7 @@ func DefaultBlockHeader() zkbas.StorageStoredBlockInfo {
 		stateRoot                    [32]byte
 		commitment                   [32]byte
 	)
-	copy(pendingOnChainOperationsHash[:], common.FromHex(util.EmptyStringKeccak)[:])
+	copy(pendingOnChainOperationsHash[:], common.FromHex(types.EmptyStringKeccak)[:])
 	copy(stateRoot[:], tree.NilStateRoot[:])
 	copy(commitment[:], common.FromHex("0x0000000000000000000000000000000000000000000000000000000000000000")[:])
 	return zkbas.StorageStoredBlockInfo{
@@ -70,7 +71,7 @@ func DefaultBlockHeader() zkbas.StorageStoredBlockInfo {
 	}
 }
 
-func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*blockForCommit.BlockForCommit) (commitBlocks []zkbas.OldZkbasCommitBlockInfo, err error) {
+func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*blockforcommit.BlockForCommit) (commitBlocks []zkbas.OldZkbasCommitBlockInfo, err error) {
 	for _, oBlock := range oBlocks {
 		var newStateRoot [32]byte
 		var pubDataOffsets []uint32
@@ -104,7 +105,7 @@ func ConvertBlocksToVerifyAndExecuteBlockInfos(oBlocks []*block.Block) (verifyAn
 			}
 		}
 		verifyAndExecuteBlock := zkbas.OldZkbasVerifyAndExecuteBlockInfo{
-			BlockHeader:              util.ConstructStoredBlockInfo(oBlock),
+			BlockHeader:              chain.ConstructStoredBlockInfo(oBlock),
 			PendingOnchainOpsPubData: pendingOnChainOpsPubData,
 		}
 		verifyAndExecuteBlocks = append(verifyAndExecuteBlocks, verifyAndExecuteBlock)

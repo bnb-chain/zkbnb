@@ -3,9 +3,10 @@ package main
 import (
 	"flag"
 
-	"github.com/bnb-chain/zkbas/service/committer/committer"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
+
+	"github.com/bnb-chain/zkbas/service/committer/committer"
 )
 
 var configFile = flag.String("f", "./etc/config.yaml", "the config file")

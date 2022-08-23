@@ -5,13 +5,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
-
-	"github.com/zeromicro/go-zero/core/logx"
-
-	"github.com/bnb-chain/zkbas/common/errorcode"
+	types2 "github.com/bnb-chain/zkbas/types"
 )
 
 const (
@@ -38,26 +37,26 @@ func (l *GetCurrencyPriceLogic) GetCurrencyPrice(req *types.ReqGetCurrencyPrice)
 	case queryBySymbol:
 		if !utils.ValidateSymbol(req.Value) {
 			logx.Errorf("invalid Symbol: %s", req.Value)
-			return nil, errorcode.AppErrInvalidParam.RefineError("invalid symbol")
+			return nil, types2.AppErrInvalidParam.RefineError("invalid symbol")
 		}
 		symbol = strings.ToUpper(req.Value)
 	default:
-		return nil, errorcode.AppErrInvalidParam.RefineError("param by should be symbol")
+		return nil, types2.AppErrInvalidParam.RefineError("param by should be symbol")
 	}
 
 	asset, err := l.svcCtx.MemCache.GetAssetBySymbolWithFallback(symbol, func() (interface{}, error) {
 		return l.svcCtx.AssetModel.GetAssetBySymbol(symbol)
 	})
 	if err != nil {
-		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrNotFound
+		if err == types2.DbErrNotFound {
+			return nil, types2.AppErrNotFound
 		}
-		return nil, errorcode.AppErrInternal
+		return nil, types2.AppErrInternal
 	}
 
 	price, err := l.svcCtx.PriceFetcher.GetCurrencyPrice(l.ctx, symbol)
 	if err != nil {
-		return nil, errorcode.AppErrInternal
+		return nil, types2.AppErrInternal
 	}
 	resp = &types.CurrencyPrice{
 		Pair:    asset.AssetSymbol + "/" + "USDT",

@@ -5,14 +5,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/config"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/handler"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
-
 	"github.com/stretchr/testify/suite"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/rest"
+
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/config"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/handler"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
 )
 
 type AppSuite struct {

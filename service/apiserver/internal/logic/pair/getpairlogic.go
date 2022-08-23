@@ -3,12 +3,11 @@ package pair
 import (
 	"context"
 
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
-
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/common/errorcode"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
+	types2 "github.com/bnb-chain/zkbas/types"
 )
 
 type GetPairLogic struct {
@@ -29,10 +28,10 @@ func (l *GetPairLogic) GetPair(req *types.ReqGetPair) (resp *types.Pair, err err
 	pair, err := l.svcCtx.StateFetcher.GetLatestLiquidity(int64(req.Index))
 	if err != nil {
 		logx.Errorf("fail to get pair info: %d, err: %s", req.Index, err.Error())
-		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrNotFound
+		if err == types2.DbErrNotFound {
+			return nil, types2.AppErrNotFound
 		}
-		return nil, errorcode.AppErrInternal
+		return nil, types2.AppErrInternal
 	}
 	resp = &types.Pair{
 		AssetAId:      uint32(pair.AssetAId),

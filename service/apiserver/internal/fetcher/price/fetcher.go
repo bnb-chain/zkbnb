@@ -9,8 +9,7 @@ import (
 	"net/http"
 
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/cache"
-
-	"github.com/bnb-chain/zkbas/common/errorcode"
+	"github.com/bnb-chain/zkbas/types"
 )
 
 type Fetcher interface {
@@ -51,22 +50,22 @@ func (f *fetcher) getLatestQuotes(symbol string) (map[string]QuoteLatest, error)
 	url := fmt.Sprintf("%s%s", f.cmcUrl, symbol)
 	reqest, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return nil, errorcode.HttpErrFailToRequest
+		return nil, types.HttpErrFailToRequest
 	}
 	reqest.Header.Add("X-CMC_PRO_API_KEY", f.cmcToken)
 	reqest.Header.Add("Accept", "application/json")
 	resp, err := client.Do(reqest)
 	if err != nil {
-		return nil, errorcode.HttpErrClientDo
+		return nil, types.HttpErrClientDo
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, errorcode.IoErrFailToRead
+		return nil, types.IoErrFailToRead
 	}
 	currencyPrice := &currencyPrice{}
 	if err = json.Unmarshal(body, &currencyPrice); err != nil {
-		return nil, errorcode.JsonErrUnmarshal
+		return nil, types.JsonErrUnmarshal
 	}
 	ifcs, ok := currencyPrice.Data.(interface{})
 	if !ok {
@@ -76,12 +75,12 @@ func (f *fetcher) getLatestQuotes(symbol string) (map[string]QuoteLatest, error)
 	for _, coinObj := range ifcs.(map[string]interface{}) {
 		b, err := json.Marshal(coinObj)
 		if err != nil {
-			return nil, errorcode.JsonErrMarshal
+			return nil, types.JsonErrMarshal
 		}
 		quoteLatest := &QuoteLatest{}
 		err = json.Unmarshal(b, quoteLatest)
 		if err != nil {
-			return nil, errorcode.JsonErrUnmarshal
+			return nil, types.JsonErrUnmarshal
 		}
 		quotesLatest[quoteLatest.Symbol] = *quoteLatest
 	}

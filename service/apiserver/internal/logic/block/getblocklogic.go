@@ -4,14 +4,13 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
+	blockdao "github.com/bnb-chain/zkbas/dao/block"
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
-
-	"github.com/zeromicro/go-zero/core/logx"
-
-	"github.com/bnb-chain/zkbas/common/errorcode"
-	blockdao "github.com/bnb-chain/zkbas/common/model/block"
+	types2 "github.com/bnb-chain/zkbas/types"
 )
 
 const (
@@ -39,10 +38,10 @@ func (l *GetBlockLogic) GetBlock(req *types.ReqGetBlock) (resp *types.Block, err
 	case queryByHeight:
 		blockHeight, err := strconv.ParseInt(req.Value, 10, 64)
 		if err != nil {
-			return nil, errorcode.AppErrInvalidParam.RefineError("invalid value for block height")
+			return nil, types2.AppErrInvalidParam.RefineError("invalid value for block height")
 		}
 		if blockHeight <= 0 {
-			return nil, errorcode.AppErrInvalidParam.RefineError("invalid value for block height")
+			return nil, types2.AppErrInvalidParam.RefineError("invalid value for block height")
 		}
 		block, err = l.svcCtx.MemCache.GetBlockByHeightWithFallback(blockHeight, func() (interface{}, error) {
 			return l.svcCtx.BlockModel.GetBlockByHeight(blockHeight)
@@ -52,7 +51,7 @@ func (l *GetBlockLogic) GetBlock(req *types.ReqGetBlock) (resp *types.Block, err
 			return l.svcCtx.BlockModel.GetBlockByCommitment(req.Value)
 		})
 	default:
-		return nil, errorcode.AppErrInvalidParam.RefineError("param by should be height|commitment")
+		return nil, types2.AppErrInvalidParam.RefineError("param by should be height|commitment")
 	}
 
 	resp = &types.Block{
@@ -69,7 +68,7 @@ func (l *GetBlockLogic) GetBlock(req *types.ReqGetBlock) (resp *types.Block, err
 		Status:                          block.BlockStatus,
 	}
 	for _, t := range block.Txs {
-		tx := utils.DbTx2Tx(t)
+		tx := utils.DbtxTx(t)
 		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
 		resp.Txs = append(resp.Txs, tx)
 	}
