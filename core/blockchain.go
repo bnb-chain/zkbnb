@@ -195,9 +195,13 @@ func (bc *BlockChain) commitNewBlock(blockSize int, createdAt int64) (*block.Blo
 		}
 	}
 
+	// Align pub data.
+	s.AlignPubData(blockSize)
+
 	commitment := chain.CreateBlockCommitment(newBlock.BlockHeight, newBlock.CreatedAt.UnixMilli(),
 		common.FromHex(newBlock.StateRoot), common.FromHex(s.StateRoot),
 		s.PubData, int64(len(s.PubDataOffset)))
+
 	newBlock.BlockSize = uint16(blockSize)
 	newBlock.BlockCommitment = commitment
 	newBlock.StateRoot = s.StateRoot
