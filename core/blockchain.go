@@ -605,7 +605,7 @@ func (bc *BlockChain) getPendingNft() ([]*nft.L2Nft, []*nft.L2Nft, []*nft.L2NftH
 }
 
 func (bc *BlockChain) getNextAccountIndex() int64 {
-	return int64(len(bc.accountAssetTrees)) + 1
+	return int64(len(bc.accountAssetTrees))
 }
 
 func (bc *BlockChain) getNextNftIndex() int64 {
