@@ -15,8 +15,6 @@ CacheRedis:
 ChainConfig:
   NetworkRPCSysConfigName: "BscTestNetworkRpc"
   # NetworkRPCSysConfigName: "LocalTestNetworkRpc"
-  ZkbasContractAddrSysConfigName: "ZkbasContract"
-  GovernanceContractAddrSysConfigName: "GovernanceContract"
   StartL1BlockHeight: 26770000
   # StartL1BlockHeight: 0
   ConfirmBlocksCount: 0

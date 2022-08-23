@@ -161,8 +161,6 @@ CacheRedis:
 ChainConfig:
   NetworkRPCSysConfigName: "BscTestNetworkRpc"
   #NetworkRPCSysConfigName: "LocalTestNetworkRpc"
-  ZkbasContractAddrSysConfigName: "ZkbasContract"
-  GovernanceContractAddrSysConfigName: "GovernanceContract"
   StartL1BlockHeight: $blockNumber
   ConfirmBlocksCount: 0
   MaxHandledBlocksCount: 5000
@@ -214,7 +212,6 @@ CacheRedis:
 ChainConfig:
   NetworkRPCSysConfigName: "BscTestNetworkRpc"
   #NetworkRPCSysConfigName: "LocalTestNetworkRpc"
-  ZkbasContractAddrSysConfigName: "ZkbasContract"
   ConfirmBlocksCount: 0
   MaxWaitingTime: 120
   MaxBlockCount: 4

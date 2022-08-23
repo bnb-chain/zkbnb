@@ -15,7 +15,6 @@ CacheRedis:
 ChainConfig:
   NetworkRPCSysConfigName: "BscTestNetworkRpc"
   #NetworkRPCSysConfigName: "LocalTestNetworkRpc"
-  ZkbasContractAddrSysConfigName: "ZkbasContract"
   MaxWaitingTime: 120
   ConfirmBlocksCount: 0
   MaxBlockCount: 3
