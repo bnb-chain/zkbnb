@@ -2,7 +2,8 @@ syntax = "v1"
 
 info(
 	date: "2022-5-1"
-	desc: "App API"
+	desc: "Public APIs for zkbas"
+	version: "1.0"
 )
 
 /* ========================= root =========================*/
@@ -18,13 +19,14 @@ type (
 	group: root
 )
 service app-api {
+	@doc "Get status of zkbas"
 	@handler GetStatus
 	get / returns (Status)
 }
 
 type ReqGetRange {
-	Offset uint16 `form:"offset,range=[0:100000]"`
-	Limit  uint16 `form:"limit,range=[1:100]"`
+	Offset uint32 `form:"offset,range=[0:100000]"`
+	Limit  uint32 `form:"limit,range=[1:100]"`
 }
 
 /* ========================= Account =========================*/
@@ -40,7 +42,7 @@ type (
 	Account {
 		Status uint32          `json:"status"`
 		Index  int64           `json:"index"`
-		Name   string          `json:"ame"`
+		Name   string          `json:"name"`
 		Pk     string          `json:"pk"`
 		Nonce  int64           `json:"nonce"`
 		Assets []*AccountAsset `json:"assets"`
@@ -70,9 +72,11 @@ type (
 )
 
 service app-api {
+    @doc "Get accounts"
 	@handler GetAccounts
 	get /api/v1/accounts (ReqGetRange) returns (Accounts)
-	
+
+	@doc "Get account by account's name, index or pk"
 	@handler GetAccount
 	get /api/v1/account (ReqGetAccount) returns (Account)
 }
@@ -100,6 +104,7 @@ type (
 )
 
 service app-api {
+    @doc "Get assets"
 	@handler GetAssets
 	get /api/v1/assets (ReqGetRange) returns (Assets)
 }
@@ -143,9 +148,11 @@ type (
 	group: block
 )
 service app-api {
+    @doc "Get blocks"
 	@handler GetBlocks
 	get /api/v1/blocks (ReqGetRange) returns (Blocks)
-	
+
+    @doc "Get block by its height or commitment"
 	@handler GetBlock
 	get /api/v1/block (ReqGetBlock) returns (Block)
 	
@@ -225,27 +232,35 @@ type (
 	group: info
 )
 service app-api {
+    @doc "Get zkbas general info, including contract address, and count of transactions and active users"
 	@handler GetLayer2BasicInfo
 	get /api/v1/layer2BasicInfo returns (Layer2BasicInfo)
-	
+
+    @doc "Get asset price by its symbol"
 	@handler GetCurrencyPrice
 	get /api/v1/currencyPrice (ReqGetCurrencyPrice) returns (CurrencyPrice)
-	
+
+	@doc "Get assets' prices"
 	@handler GetCurrencyPrices
 	get /api/v1/currencyPrices (ReqGetRange) returns (CurrencyPrices)
-	
+
+	@doc "Get gas fee amount for using a specific asset as gas asset"
 	@handler GetGasFee
 	get /api/v1/gasFee (ReqGetGasFee) returns (GasFee)
-	
+
+	@doc "Get withdraw gas fee amount for using a specific asset as gas asset"
 	@handler GetWithdrawGasFee
 	get /api/v1/withdrawGasFee (ReqGetWithdrawGasFee) returns (GasFee)
-	
+
+	@doc "Get supported gas fee assets"
 	@handler GetGasFeeAssets
 	get /api/v1/gasFeeAssets returns (GasFeeAssets)
-	
+
+	@doc "Get gas account, who will charge gas fees for transactions"
 	@handler GetGasAccount
 	get /api/v1/gasAccount returns (GasAccount)
-	
+
+    @doc "Search with a specific keyword"
 	@handler Search
 	get /api/v1/search (ReqSearch) returns (Search)
 }
@@ -307,15 +322,19 @@ type (
 	group: pair
 )
 service app-api {
+    @doc "Get swap amount for a specific liquidity pair and in asset amount"
 	@handler GetSwapAmount
 	get /api/v1/swapAmount (ReqGetSwapAmount) returns (SwapAmount)
-	
+
+    @doc "Get liqudity pairs"
 	@handler GetPairs
 	get /api/v1/pairs returns (Pairs)
-	
+
+    @doc "Get liquidity pool amount for a specific liduidity pair"
 	@handler GetLpValue
 	get /api/v1/lpValue (ReqGetLpValue) returns (LpValue)
-	
+
+    @doc "Get liqudity pool info by its index"
 	@handler GetPair
 	get /api/v1/pair (ReqGetPair) returns (Pair)
 }
@@ -410,27 +429,35 @@ type (
 	group: transaction
 )
 service app-api {
+    @doc "Get transactions"
 	@handler GetTxs
 	get /api/v1/txs (ReqGetRange) returns (Txs)
-	
+
+	@doc "Get transactions in a block"
 	@handler GetBlockTxs
 	get /api/v1/blockTxs (ReqGetBlockTxs) returns (Txs)
-	
+
+	@doc "Get transactions of a speific account"
 	@handler GetAccountTxs
 	get /api/v1/accountTxs (ReqGetAccountTxs) returns (Txs)
-	
+
+	@doc "Get transaction by hash"
 	@handler GetTx
 	get /api/v1/tx (ReqGetTx) returns (EnrichedTx)
-	
+
+	@doc "Get mempool transactions"
 	@handler GetMempoolTxs
 	get /api/v1/mempoolTxs (ReqGetRange) returns (MempoolTxs)
-	
+
+	@doc "Get mempool transactions of a specific account"
 	@handler GetAccountMempoolTxs
 	get /api/v1/accountMempoolTxs (ReqGetAccountMempoolTxs) returns (MempoolTxs)
-	
+
+	@doc "Get next nonce"
 	@handler GetNextNonce
 	get /api/v1/nextNonce (ReqGetNextNonce) returns (NextNonce)
-	
+
+	@doc "Send raw transaction"
 	@handler SendTx
 	post /api/v1/sendTx (ReqSendTx) returns (TxHash)
 }
@@ -477,9 +504,11 @@ type (
 	group: nft
 )
 service app-api {
+	@doc "Get max nft offer id for a specific account"
 	@handler GetMaxOfferId
 	get /api/v1/maxOfferId (ReqGetMaxOfferId) returns (MaxOfferId)
-	
+
+	@doc "Get nfts of a specific account"
 	@handler GetAccountNfts
 	get /api/v1/accountNfts (ReqGetAccountNfts) returns (Nfts)
 }
