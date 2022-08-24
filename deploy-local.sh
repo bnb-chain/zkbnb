@@ -263,7 +263,7 @@ MemCache:
   BlockExpiration:   400
   TxExpiration:      400
   PriceExpiration:   200
-  " > ${DEPLOY_PATH}/zkbas/service/apiserver/etc/server-api.yaml
+  " > ${DEPLOY_PATH}/zkbas/service/apiserver/etc/config.yaml
 
 cd ${DEPLOY_PATH}/zkbas/service/apiserver
-pm2 start --name api-server "go run ./server.go"
+pm2 start --name api-server "go run ./main.go"

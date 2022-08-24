@@ -32,9 +32,11 @@ func (s *AppSuite) TestGetCurrencyPrices() {
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.NotNil(t, result.CurrencyPrices)
-				assert.NotNil(t, result.CurrencyPrices[0].Price)
-				assert.NotNil(t, result.CurrencyPrices[0].AssetId)
-				assert.NotNil(t, result.CurrencyPrices[0].Pair)
+				if len(result.CurrencyPrices) > 0 {
+					assert.NotNil(t, result.CurrencyPrices[0].Price)
+					assert.NotNil(t, result.CurrencyPrices[0].AssetId)
+					assert.NotNil(t, result.CurrencyPrices[0].Pair)
+				}
 				fmt.Printf("result: %+v \n", result)
 			}
 		})

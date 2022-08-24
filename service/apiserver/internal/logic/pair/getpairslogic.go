@@ -25,6 +25,8 @@ func NewGetPairsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPairs
 }
 
 func (l *GetPairsLogic) GetPairs() (resp *types.Pairs, err error) {
+	resp = &types.Pairs{Pairs: make([]*types.Pair, 0)}
+
 	liquidityAssets, err := l.svcCtx.LiquidityModel.GetAllLiquidityAssets()
 	if err != nil {
 		if err == types2.DbErrNotFound {

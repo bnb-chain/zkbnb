@@ -23,7 +23,7 @@ func (s *AppSuite) TestGetAssets() {
 		args     args
 		httpCode int
 	}{
-		{"found", args{}, 200},
+		{"found", args{0, 10}, 200},
 	}
 
 	for _, tt := range tests {

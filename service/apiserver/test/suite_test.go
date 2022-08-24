@@ -25,8 +25,9 @@ func TestAppSuite(t *testing.T) {
 	suite.Run(t, new(AppSuite))
 
 }
+
 func (s *AppSuite) SetupSuite() {
-	configFile := "app.yaml"
+	configFile := "../etc/config.yaml"
 	var c config.Config
 	conf.MustLoad(configFile, &c)
 	logx.DisableStat()
@@ -43,6 +44,7 @@ func (s *AppSuite) SetupSuite() {
 	go s.server.Start()
 	time.Sleep(1 * time.Second)
 }
+
 func (s *AppSuite) TearDownSuite() {
 	logx.Infof("Shutting down server at %s", s.url)
 	s.server.Stop()

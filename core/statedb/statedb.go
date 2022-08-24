@@ -526,7 +526,7 @@ func (s *StateDB) GetPendingNonce(accountIndex int64) (int64, error) {
 		return formatAccount.Nonce + 1, nil
 	}
 	dbAccount, err := s.chainDb.AccountModel.GetAccountByIndex(accountIndex)
-	if err != nil {
+	if err == nil {
 		return dbAccount.Nonce + 1, nil
 	}
 	return 0, err

@@ -12,7 +12,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
 )
 
-var configFile = flag.String("f", "etc/server-api.yaml", "the config file")
+var configFile = flag.String("f", "./etc/config.yaml", "the config file")
 
 func main() {
 	flag.Parse()
