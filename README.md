@@ -28,6 +28,27 @@ ZkBAS achieves the following goals:
 ZkBAS starts its development based on [Zecrey](https://github.com/bnb-chain/zecrey-legend), special thanks to 
 [Zecrey](https://www.zecrey.com/) team.
 
+<!--ts-->
+- [Framework](#Framework)
+- [Document](#Document)
+- [Key Features](#Key Features)
+  + [Digital Asset Management](#Digital Asset Management)
+  + [NFT Management and Marketplace](#NFT Management and Marketplace)
+  + [AMM Exchange](#AMM Exchange)
+  + [Native Name Service](#Native Name Service)
+  + [Seamless L1 Wallet Management](#Seamless L1 Wallet Management)
+
+- [Key Tech](#Key Tech)
+  + [Sparse Merkle Tree K-V Store](#Sparse Merkle Tree KV Store)
+  + [Circuit Model](#Circuit Model)
+- [Building from Source](#Building from Source)
+- [Dev Network Setup](#Dev Network Setup)
+- [Testnet(coming soon)](#Testnet(coming soon))
+- [Contribution](#Contribution)
+- [Related Projects](#Related Projects)
+- [Outlook](#Outlook)
+<!--te-->
+
 ## Framework
 ![Framework](./docs/assets/Frame_work.png)
 
@@ -39,6 +60,10 @@ ZkBAS starts its development based on [Zecrey](https://github.com/bnb-chain/zecr
 - **api server**. The api server is the access endpoints for most users, it provides rich data, including
   digital assets, blocks, transactions, swap info, gas fees.
 - **recovery**. A tool to recover the sparse merkle tree in kv-rocks based on the state world in postgresql.
+
+
+## Document
+The `./docs` directory includes a lot of useful documentation. You can find detail design and tutorial [there](docs/over_view.md).
 
 ## Key Features
 
@@ -64,7 +89,7 @@ network.
 burned on ZkBAS. Once the transaction in the next batch been rolluped, a related amount of token will be unlocked from 
 rollup contract to target account. 
 
-### NFT Management && Marketplace
+### NFT Management and Marketplace
 We target to provide an opensource NFT marketplace for users to browse, buy, sell or create their own NFT. 
 The meta-data of NFT on ZkBAS sticks to the [BSC standard](https://docs.bnbchain.org/docs/nft-metadata-standard/).
 The ERC721 standard NFT can be seamlessly deposited on ZkBAS, or in reverse. 
@@ -100,7 +125,7 @@ users to leverage ZkBAS.
 
 ## Key Tech
 
-### Sparse Merkle Tree K-V Store 
+### Sparse Merkle Tree KV Store 
 Unlike most rollup solution to put the state tree in memory, [BAS-SMT](https://github.com/bnb-chain/bas-smt/) is a versioned, 
 snapshottable (immutable) sparse tree for persistent data. BAS-SMT is the key factor for the massive adoption of ZkBAS.
 
