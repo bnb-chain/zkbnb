@@ -99,6 +99,8 @@ func (w *Witness) initState() {
 	if err != nil {
 		panic(fmt.Sprintf("Init tree database failed %v", err))
 	}
+	w.treeCtx = treeCtx
+
 	// init accountTree and accountStateTrees
 	// the init block number use the latest sent block
 	w.accountTree, w.assetTrees, err = tree.InitAccountTree(
