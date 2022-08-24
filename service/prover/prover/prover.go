@@ -97,18 +97,29 @@ func (p *Prover) ProveBlock() error {
 	}
 	defer lock.Release()
 
-	// fetch unproved block
+	// Fetch unproved block witness.
 	blockWitness, err := p.BlockWitnessModel.GetBlockWitnessByMode(prove.CooMode)
 	if err != nil {
 		return fmt.Errorf("GetUnprovedBlock Error: err: %v", err)
 	}
-	// update status of block
+	// Update status of block witness.
 	err = p.BlockWitnessModel.UpdateBlockWitnessStatus(blockWitness, blockwitness.StatusReceived)
 	if err != nil {
 		return fmt.Errorf("update block status error, err=%v", err)
 	}
+	defer func() {
+		if err == nil {
+			return
+		}
 
-	// parse CryptoBlock
+		// Recover block witness status.
+		res := p.BlockWitnessModel.UpdateBlockWitnessStatus(blockWitness, blockwitness.StatusPublished)
+		if res != nil {
+			logx.Errorf("update block witness status failed: ", res)
+		}
+	}()
+
+	// Parse crypto block.
 	var cryptoBlock *block.Block
 	err = json.Unmarshal([]byte(blockWitness.WitnessData), &cryptoBlock)
 	if err != nil {
@@ -126,7 +137,7 @@ func (p *Prover) ProveBlock() error {
 		return err
 	}
 
-	// Generate Proof
+	// Generate proof.
 	blockProof, err := prove.GenerateProof(p.R1cs[keyIndex], p.ProvingKeys[keyIndex], p.VerifyingKeys[keyIndex], cryptoBlock)
 	if err != nil {
 		return errors.New("GenerateProof Error")
@@ -138,14 +149,14 @@ func (p *Prover) ProveBlock() error {
 		return err
 	}
 
-	// marshal formattedProof
+	// Marshal formatted proof.
 	proofBytes, err := json.Marshal(formattedProof)
 	if err != nil {
 		logx.Errorf("formattedProof json.Marshal error: %v", err)
 		return err
 	}
 
-	// check the existence of blockProof
+	// Check the existence of block proof.
 	_, err = p.ProofSenderModel.GetProofByBlockNumber(blockWitness.Height)
 	if err == nil {
 		return fmt.Errorf("blockProof of current height exists")
@@ -156,10 +167,5 @@ func (p *Prover) ProveBlock() error {
 		BlockNumber: blockWitness.Height,
 		Status:      proof.NotSent,
 	}
-	err = p.ProofSenderModel.CreateProof(row)
-	if err != nil {
-		_ = p.BlockWitnessModel.UpdateBlockWitnessStatus(blockWitness, blockwitness.StatusPublished)
-		return fmt.Errorf("create blockProof error, err=%v", err)
-	}
-	return nil
+	return p.ProofSenderModel.CreateProof(row)
 }

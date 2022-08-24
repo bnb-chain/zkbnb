@@ -175,7 +175,13 @@ func (m *defaultBlockModel) GetBlocksBetween(start int64, end int64) (blocks []*
 		return nil, types.DbErrNotFound
 	}
 
-	for _, block := range blocks {
+	for index, block := range blocks {
+		// If the last block is proposing, skip it.
+		if index == len(blocks)-1 && block.BlockStatus <= StatusProposing {
+			blocks = blocks[:len(blocks)-1]
+			break
+		}
+
 		err = m.DB.Model(&block).Association(txForeignKeyColumn).Find(&block.Txs)
 		if err != nil {
 			logx.Errorf("get associate txs error, err: %s", err.Error())
