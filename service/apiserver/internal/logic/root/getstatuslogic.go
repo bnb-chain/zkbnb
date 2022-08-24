@@ -3,10 +3,10 @@ package root
 import (
 	"context"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
-
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type GetStatusLogic struct {

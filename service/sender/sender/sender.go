@@ -23,23 +23,22 @@ import (
 	"math/big"
 	"time"
 
-	sconfig "github.com/bnb-chain/zkbas/service/sender/config"
-
-	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
-	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas/common/errorcode"
-	"github.com/bnb-chain/zkbas/common/model/block"
-	"github.com/bnb-chain/zkbas/common/model/blockForCommit"
-	"github.com/bnb-chain/zkbas/common/model/l1RollupTx"
-	"github.com/bnb-chain/zkbas/common/model/proof"
-	"github.com/bnb-chain/zkbas/common/model/sysConfig"
-	"github.com/bnb-chain/zkbas/common/sysConfigName"
-	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
+	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
+	"github.com/bnb-chain/zkbas/common/chain"
+	"github.com/bnb-chain/zkbas/common/prove"
+	"github.com/bnb-chain/zkbas/dao/block"
+	"github.com/bnb-chain/zkbas/dao/blockforcommit"
+	"github.com/bnb-chain/zkbas/dao/l1rolluptx"
+	"github.com/bnb-chain/zkbas/dao/proof"
+	"github.com/bnb-chain/zkbas/dao/sysconfig"
+	sconfig "github.com/bnb-chain/zkbas/service/sender/config"
+	"github.com/bnb-chain/zkbas/types"
 )
 
 type Sender struct {
@@ -52,9 +51,9 @@ type Sender struct {
 
 	// Data access objects
 	blockModel          block.BlockModel
-	blockForCommitModel blockForCommit.BlockForCommitModel
-	l1RollupTxModel     l1RollupTx.L1RollupTxModel
-	sysConfigModel      sysConfig.SysConfigModel
+	blockForCommitModel blockforcommit.BlockForCommitModel
+	l1RollupTxModel     l1rolluptx.L1RollupTxModel
+	sysConfigModel      sysconfig.SysConfigModel
 	proofModel          proof.ProofModel
 }
 
@@ -68,22 +67,22 @@ func NewSender(c sconfig.Config) *Sender {
 	s := &Sender{
 		config:              c,
 		blockModel:          block.NewBlockModel(conn, c.CacheRedis, gormPointer),
-		blockForCommitModel: blockForCommit.NewBlockForCommitModel(conn, c.CacheRedis, gormPointer),
-		l1RollupTxModel:     l1RollupTx.NewL1RollupTxModel(conn, c.CacheRedis, gormPointer),
-		sysConfigModel:      sysConfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
+		blockForCommitModel: blockforcommit.NewBlockForCommitModel(conn, c.CacheRedis, gormPointer),
+		l1RollupTxModel:     l1rolluptx.NewL1RollupTxModel(conn, c.CacheRedis, gormPointer),
+		sysConfigModel:      sysconfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
 		proofModel:          proof.NewProofModel(gormPointer),
 	}
 
 	l1RPCEndpoint, err := s.sysConfigModel.GetSysConfigByName(c.ChainConfig.NetworkRPCSysConfigName)
 	if err != nil {
-		logx.Severef("fatal error, cannot fetch l1RPCEndpoint from sysConfig, err: %v, SysConfigName: %s",
+		logx.Severef("fatal error, cannot fetch l1RPCEndpoint from sysconfig, err: %v, SysConfigName: %s",
 			err, c.ChainConfig.NetworkRPCSysConfigName)
 		panic(err)
 	}
-	rollupAddress, err := s.sysConfigModel.GetSysConfigByName(sysConfigName.ZkbasContract)
+	rollupAddress, err := s.sysConfigModel.GetSysConfigByName(types.ZkbasContract)
 	if err != nil {
-		logx.Severef("fatal error, cannot fetch rollupAddress from sysConfig, err: %v, SysConfigName: %s",
-			err, sysConfigName.ZkbasContract)
+		logx.Severef("fatal error, cannot fetch rollupAddress from sysconfig, err: %v, SysConfigName: %s",
+			err, types.ZkbasContract)
 		panic(err)
 	}
 
@@ -113,20 +112,20 @@ func (s *Sender) CommitBlocks() (err error) {
 		zkbasInstance = s.zkbasInstance
 	)
 	// scan rollup tx table for handled committed height
-	lastHandledTx, handledErr := s.l1RollupTxModel.GetLatestHandledTx(l1RollupTx.TxTypeCommit)
-	if handledErr != nil && handledErr != errorcode.DbErrNotFound {
+	lastHandledTx, handledErr := s.l1RollupTxModel.GetLatestHandledTx(l1rolluptx.TxTypeCommit)
+	if handledErr != nil && handledErr != types.DbErrNotFound {
 		logx.Errorf("GetLatestHandledTx err: %v", handledErr)
 		return handledErr
 	}
 	// scan rollup tx table for pending committed height that higher than the latest handled height
-	latestPendingTx, pendingErr := s.l1RollupTxModel.GetLatestPendingTx(l1RollupTx.TxTypeCommit)
-	if pendingErr != nil && pendingErr != errorcode.DbErrNotFound {
+	latestPendingTx, pendingErr := s.l1RollupTxModel.GetLatestPendingTx(l1rolluptx.TxTypeCommit)
+	if pendingErr != nil && pendingErr != types.DbErrNotFound {
 		logx.Errorf("GetLatestPendingTx err: %v", pendingErr)
 		return pendingErr
 	}
 
 	// case 1:
-	if handledErr == errorcode.DbErrNotFound && pendingErr == nil {
+	if handledErr == types.DbErrNotFound && pendingErr == nil {
 		_, isPending, err := cli.GetTransactionByHash(latestPendingTx.L1TxHash)
 		if err != nil {
 			// if we cannot get it from rpc and the time over 1 min
@@ -190,8 +189,8 @@ func (s *Sender) CommitBlocks() (err error) {
 	var pendingCommitBlocks []zkbas.OldZkbasCommitBlockInfo
 	// if lastHandledTx == nil, means we haven't committed any blocks, just start from 0
 	// if errorcode.DbErrNotFound, means we haven't committed new blocks, just start to commit
-	if handledErr == errorcode.DbErrNotFound && pendingErr == errorcode.DbErrNotFound {
-		var blocks []*blockForCommit.BlockForCommit
+	if handledErr == types.DbErrNotFound && pendingErr == types.DbErrNotFound {
+		var blocks []*blockforcommit.BlockForCommit
 		blocks, handledErr = s.blockForCommitModel.GetBlockForCommitBetween(1, int64(s.config.ChainConfig.MaxBlockCount))
 		if handledErr != nil {
 			logx.Errorf("GetBlockForCommitBetween err: %v, maxBlockCount: %d",
@@ -206,10 +205,10 @@ func (s *Sender) CommitBlocks() (err error) {
 		// set stored block header to default 0
 		lastStoredBlockInfo = DefaultBlockHeader()
 	}
-	if handledErr == nil && pendingErr == errorcode.DbErrNotFound {
+	if handledErr == nil && pendingErr == types.DbErrNotFound {
 		// if errorcode.DbErrNotFound, means we haven't committed new blocks, just start to commit
 		// get blocks higher than last handled blocks
-		var blocks []*blockForCommit.BlockForCommit
+		var blocks []*blockforcommit.BlockForCommit
 		// commit new blocks
 		blocks, err := s.blockForCommitModel.GetBlockForCommitBetween(lastHandledTx.L2BlockHeight+1,
 			lastHandledTx.L2BlockHeight+int64(s.config.ChainConfig.MaxBlockCount))
@@ -224,12 +223,12 @@ func (s *Sender) CommitBlocks() (err error) {
 		}
 		// get last block info
 		lastHandledBlockInfo, err := s.blockModel.GetBlockByHeight(lastHandledTx.L2BlockHeight)
-		if err != nil && err != errorcode.DbErrNotFound {
+		if err != nil && err != types.DbErrNotFound {
 			logx.Errorf("unable to get last handled block info: %v", err)
 			return err
 		}
 		// construct last stored block header
-		lastStoredBlockInfo = util.ConstructStoredBlockInfo(lastHandledBlockInfo)
+		lastStoredBlockInfo = chain.ConstructStoredBlockInfo(lastHandledBlockInfo)
 	}
 	gasPrice, err := s.cli.SuggestGasPrice(context.Background())
 	if err != nil {
@@ -252,10 +251,10 @@ func (s *Sender) CommitBlocks() (err error) {
 		for _, pendingCommittedBlock := range pendingCommitBlocks {
 			logx.Infof("commit blocks: %v", pendingCommittedBlock.BlockNumber)
 		}
-		newRollupTx := &l1RollupTx.L1RollupTx{
+		newRollupTx := &l1rolluptx.L1RollupTx{
 			L1TxHash:      txHash,
-			TxStatus:      l1RollupTx.StatusPending,
-			TxType:        l1RollupTx.TxTypeCommit,
+			TxStatus:      l1rolluptx.StatusPending,
+			TxType:        l1rolluptx.TxTypeCommit,
 			L2BlockHeight: int64(pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber),
 		}
 		isValid, err := s.l1RollupTxModel.CreateL1RollupTx(newRollupTx)
@@ -274,7 +273,7 @@ func (s *Sender) CommitBlocks() (err error) {
 }
 
 func (s *Sender) UpdateSentTxs() (err error) {
-	pendingTxs, err := s.l1RollupTxModel.GetL1RollupTxsByStatus(l1RollupTx.StatusPending)
+	pendingTxs, err := s.l1RollupTxModel.GetL1RollupTxsByStatus(l1rolluptx.StatusPending)
 	if err != nil {
 		logx.Errorf("unable to get l1 tx senders by tx status: %v", err)
 		return err
@@ -287,7 +286,7 @@ func (s *Sender) UpdateSentTxs() (err error) {
 	}
 
 	var (
-		pendingUpdateRxs         []*l1RollupTx.L1RollupTx
+		pendingUpdateRxs         []*l1rolluptx.L1RollupTx
 		pendingUpdateProofStatus = make(map[int64]int)
 	)
 	for _, pendingTx := range pendingTxs {
@@ -327,7 +326,7 @@ func (s *Sender) UpdateSentTxs() (err error) {
 		}
 
 		if validTx {
-			pendingTx.TxStatus = l1RollupTx.StatusHandled
+			pendingTx.TxStatus = l1rolluptx.StatusHandled
 			pendingUpdateRxs = append(pendingUpdateRxs, pendingTx)
 		}
 	}
@@ -347,19 +346,19 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		zkbasInstance = s.zkbasInstance
 	)
 	// scan l1 tx sender table for handled verified and executed height
-	lastHandledBlock, getHandleErr := s.l1RollupTxModel.GetLatestHandledTx(l1RollupTx.TxTypeVerifyAndExecute)
-	if getHandleErr != nil && getHandleErr != errorcode.DbErrNotFound {
+	lastHandledBlock, getHandleErr := s.l1RollupTxModel.GetLatestHandledTx(l1rolluptx.TxTypeVerifyAndExecute)
+	if getHandleErr != nil && getHandleErr != types.DbErrNotFound {
 		logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get latest handled block: %v", getHandleErr)
 		return getHandleErr
 	}
 	// scan l1 tx sender table for pending verified and executed height that higher than the latest handled height
-	pendingSender, getPendingErr := s.l1RollupTxModel.GetLatestPendingTx(l1RollupTx.TxTypeVerifyAndExecute)
-	if getPendingErr != nil && getPendingErr != errorcode.DbErrNotFound {
+	pendingSender, getPendingErr := s.l1RollupTxModel.GetLatestPendingTx(l1rolluptx.TxTypeVerifyAndExecute)
+	if getPendingErr != nil && getPendingErr != types.DbErrNotFound {
 		logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get latest pending blocks: %v", getPendingErr)
 		return getPendingErr
 	}
 	// case 1: check tx status on L1
-	if getHandleErr == errorcode.DbErrNotFound && getPendingErr == nil {
+	if getHandleErr == types.DbErrNotFound && getPendingErr == nil {
 		_, isPending, err := cli.GetTransactionByHash(pendingSender.L1TxHash)
 		// if err != nil, means we cannot get this tx by hash
 		if err != nil {
@@ -420,7 +419,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		blocks                        []*block.Block
 		pendingVerifyAndExecuteBlocks []zkbas.OldZkbasVerifyAndExecuteBlockInfo
 	)
-	if getHandleErr == errorcode.DbErrNotFound && getPendingErr == errorcode.DbErrNotFound {
+	if getHandleErr == types.DbErrNotFound && getPendingErr == types.DbErrNotFound {
 		// get blocks from block table
 		blocks, err = s.blockModel.GetBlocksForProverBetween(1, int64(s.config.ChainConfig.MaxBlockCount))
 		if err != nil {
@@ -435,7 +434,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		}
 		start = int64(1)
 	}
-	if getHandleErr == nil && getPendingErr == errorcode.DbErrNotFound {
+	if getHandleErr == nil && getPendingErr == types.DbErrNotFound {
 		blocks, err = s.blockModel.GetBlocksForProverBetween(lastHandledBlock.L2BlockHeight+1,
 			lastHandledBlock.L2BlockHeight+int64(s.config.ChainConfig.MaxBlockCount))
 		if err != nil {
@@ -462,7 +461,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	}
 	var proofs []*big.Int
 	for _, bProof := range blockProofs {
-		var proofInfo *util.FormattedProof
+		var proofInfo *prove.FormattedProof
 		err = json.Unmarshal([]byte(bProof.ProofInfo), &proofInfo)
 		if err != nil {
 			logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to unmarshal proof info: %v", err)
@@ -487,10 +486,10 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 			return err
 		}
 
-		newRollupTx := &l1RollupTx.L1RollupTx{
+		newRollupTx := &l1rolluptx.L1RollupTx{
 			L1TxHash:      txHash,
-			TxStatus:      l1RollupTx.StatusPending,
-			TxType:        l1RollupTx.TxTypeVerifyAndExecute,
+			TxStatus:      l1rolluptx.StatusPending,
+			TxType:        l1rolluptx.TxTypeVerifyAndExecute,
 			L2BlockHeight: int64(pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber),
 		}
 		isValid, err := s.l1RollupTxModel.CreateL1RollupTx(newRollupTx)

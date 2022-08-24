@@ -6,26 +6,24 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bnb-chain/zkbas/service/witness/config"
-
-	smt "github.com/bnb-chain/bas-smt"
-	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas/common/errorcode"
-	"github.com/bnb-chain/zkbas/common/model/account"
-	blockdao "github.com/bnb-chain/zkbas/common/model/block"
-	"github.com/bnb-chain/zkbas/common/model/blockwitness"
-	"github.com/bnb-chain/zkbas/common/model/liquidity"
-	"github.com/bnb-chain/zkbas/common/model/nft"
-	"github.com/bnb-chain/zkbas/common/model/proof"
-	utils "github.com/bnb-chain/zkbas/common/proverUtil"
-	"github.com/bnb-chain/zkbas/common/tree"
-	"github.com/bnb-chain/zkbas/common/treedb"
+	smt "github.com/bnb-chain/bas-smt"
+	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
+	utils "github.com/bnb-chain/zkbas/common/prove"
+	"github.com/bnb-chain/zkbas/dao/account"
+	"github.com/bnb-chain/zkbas/dao/block"
+	"github.com/bnb-chain/zkbas/dao/blockwitness"
+	"github.com/bnb-chain/zkbas/dao/liquidity"
+	"github.com/bnb-chain/zkbas/dao/nft"
+	"github.com/bnb-chain/zkbas/dao/proof"
+	"github.com/bnb-chain/zkbas/service/witness/config"
+	"github.com/bnb-chain/zkbas/tree"
+	"github.com/bnb-chain/zkbas/types"
 )
 
 const (
@@ -40,14 +38,14 @@ type Witness struct {
 	helper *utils.WitnessHelper
 
 	// Trees
-	treeCtx       *treedb.Context
+	treeCtx       *tree.Context
 	accountTree   smt.SparseMerkleTree
 	assetTrees    []smt.SparseMerkleTree
 	liquidityTree smt.SparseMerkleTree
 	nftTree       smt.SparseMerkleTree
 
 	// The data access object
-	blockModel            blockdao.BlockModel
+	blockModel            block.BlockModel
 	accountModel          account.AccountModel
 	accountHistoryModel   account.AccountHistoryModel
 	liquidityHistoryModel liquidity.LiquidityHistoryModel
@@ -66,7 +64,7 @@ func NewWitness(c config.Config) *Witness {
 
 	w := &Witness{
 		config:                c,
-		blockModel:            blockdao.NewBlockModel(conn, c.CacheRedis, dbInstance),
+		blockModel:            block.NewBlockModel(conn, c.CacheRedis, dbInstance),
 		blockWitnessModel:     blockwitness.NewBlockWitnessModel(conn, c.CacheRedis, dbInstance),
 		accountModel:          account.NewAccountModel(conn, c.CacheRedis, dbInstance),
 		accountHistoryModel:   account.NewAccountHistoryModel(conn, c.CacheRedis, dbInstance),
@@ -81,7 +79,7 @@ func NewWitness(c config.Config) *Witness {
 func (w *Witness) initState() {
 	p, err := w.proofModel.GetLatestConfirmedProof()
 	if err != nil {
-		if err != errorcode.DbErrNotFound {
+		if err != types.DbErrNotFound {
 			logx.Error("=> GetLatestConfirmedProof error:", err)
 			return
 		} else {
@@ -91,13 +89,13 @@ func (w *Witness) initState() {
 		}
 	}
 	// init tree database
-	treeCtx := &treedb.Context{
+	treeCtx := &tree.Context{
 		Name:          "witness",
 		Driver:        w.config.TreeDB.Driver,
 		LevelDBOption: &w.config.TreeDB.LevelDBOption,
 		RedisDBOption: &w.config.TreeDB.RedisDBOption,
 	}
-	err = treedb.SetupTreeDB(treeCtx)
+	err = tree.SetupTreeDB(treeCtx)
 	if err != nil {
 		panic(fmt.Sprintf("Init tree database failed %v", err))
 	}
@@ -133,7 +131,7 @@ func (w *Witness) initState() {
 func (w *Witness) GenerateBlockWitness() (err error) {
 	var latestWitnessHeight int64
 	latestWitnessHeight, err = w.blockWitnessModel.GetLatestBlockWitnessHeight()
-	if err != nil && err != errorcode.DbErrNotFound {
+	if err != nil && err != types.DbErrNotFound {
 		return err
 	}
 	// get next batch of blocks
@@ -178,13 +176,13 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 
 func (w *Witness) RescheduleBlockWitness() {
 	latestConfirmedProof, err := w.proofModel.GetLatestConfirmedProof()
-	if err != nil && err != errorcode.DbErrNotFound {
+	if err != nil && err != types.DbErrNotFound {
 		logx.Errorf("failed to get latest confirmed proof, err: %v", err)
 		return
 	}
 
 	var nextBlockNumber int64 = 1
-	if err != errorcode.DbErrNotFound {
+	if err != types.DbErrNotFound {
 		nextBlockNumber = latestConfirmedProof.BlockNumber + 1
 	}
 
@@ -217,7 +215,7 @@ func (w *Witness) RescheduleBlockWitness() {
 	return
 }
 
-func (w *Witness) constructBlockWitness(block *blockdao.Block, latestVerifiedBlockNr int64) (*blockwitness.BlockWitness, error) {
+func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockNr int64) (*blockwitness.BlockWitness, error) {
 	var oldStateRoot, newStateRoot []byte
 	cryptoTxs := make([]*cryptoBlock.Tx, 0, block.BlockSize)
 	// scan each transaction

@@ -4,14 +4,12 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
-
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/common/commonAsset"
-	"github.com/bnb-chain/zkbas/common/errorcode"
-	"github.com/bnb-chain/zkbas/core"
+	"github.com/bnb-chain/zkbas/core/executor"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
+	types2 "github.com/bnb-chain/zkbas/types"
 )
 
 type GetMaxOfferIdLogic struct {
@@ -31,14 +29,14 @@ func NewGetMaxOfferIdLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 func (l *GetMaxOfferIdLogic) GetMaxOfferId(req *types.ReqGetMaxOfferId) (resp *types.MaxOfferId, err error) {
 	account, err := l.svcCtx.StateFetcher.GetLatestAccount(int64(req.AccountIndex))
 	if err != nil {
-		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrNotFound
+		if err == types2.DbErrNotFound {
+			return nil, types2.AppErrNotFound
 		}
-		return nil, errorcode.AppErrInternal
+		return nil, types2.AppErrInternal
 	}
 
 	maxOfferId := int64(0)
-	var maxOfferIdAsset *commonAsset.AccountAsset
+	var maxOfferIdAsset *types2.AccountAsset
 	for _, asset := range account.AssetInfo {
 		if asset.OfferCanceledOrFinalized != nil && asset.OfferCanceledOrFinalized.Cmp(big.NewInt(0)) > 0 {
 			if maxOfferIdAsset == nil || asset.AssetId > maxOfferIdAsset.AssetId {
@@ -56,7 +54,7 @@ func (l *GetMaxOfferIdLogic) GetMaxOfferId(req *types.ReqGetMaxOfferId) (resp *t
 				break
 			}
 		}
-		maxOfferId = maxOfferIdAsset.AssetId * core.OfferPerAsset
+		maxOfferId = maxOfferIdAsset.AssetId * executor.OfferPerAsset
 		maxOfferId = maxOfferId + offerCancelOrFinalized
 	}
 

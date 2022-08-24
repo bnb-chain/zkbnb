@@ -19,13 +19,13 @@ package monitor
 import (
 	"strings"
 
-	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"github.com/bnb-chain/zkbas/common/commonTx"
-	"github.com/bnb-chain/zkbas/common/model/block"
-	"github.com/bnb-chain/zkbas/common/model/priorityRequest"
+	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
+	"github.com/bnb-chain/zkbas/dao/block"
+	"github.com/bnb-chain/zkbas/dao/priorityrequest"
+	"github.com/bnb-chain/zkbas/types"
 )
 
 const (
@@ -50,15 +50,15 @@ const (
 	EventTypeValidatorStatusUpdate = 7
 	EventTypeAssetPausedUpdate     = 8
 
-	PendingStatus = priorityRequest.PendingStatus
+	PendingStatus = priorityrequest.PendingStatus
 
-	TxTypeRegisterZns    = commonTx.TxTypeRegisterZns
-	TxTypeCreatePair     = commonTx.TxTypeCreatePair
-	TxTypeUpdatePairRate = commonTx.TxTypeUpdatePairRate
-	TxTypeDeposit        = commonTx.TxTypeDeposit
-	TxTypeDepositNft     = commonTx.TxTypeDepositNft
-	TxTypeFullExit       = commonTx.TxTypeFullExit
-	TxTypeFullExitNft    = commonTx.TxTypeFullExitNft
+	TxTypeRegisterZns    = types.TxTypeRegisterZns
+	TxTypeCreatePair     = types.TxTypeCreatePair
+	TxTypeUpdatePairRate = types.TxTypeUpdatePairRate
+	TxTypeDeposit        = types.TxTypeDeposit
+	TxTypeDepositNft     = types.TxTypeDepositNft
+	TxTypeFullExit       = types.TxTypeFullExit
+	TxTypeFullExitNft    = types.TxTypeFullExitNft
 
 	BlockVerifiedStatus = block.StatusVerifiedAndExecuted
 )

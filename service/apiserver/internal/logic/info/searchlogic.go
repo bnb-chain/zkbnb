@@ -5,13 +5,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
-
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/common/errorcode"
-	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
+	types2 "github.com/bnb-chain/zkbas/types"
 )
 
 type SearchLogic struct {
@@ -33,35 +31,35 @@ func (l *SearchLogic) Search(req *types.ReqSearch) (*types.Search, error) {
 	blockHeight, err := strconv.ParseInt(req.Keyword, 10, 64)
 	if err == nil {
 		if _, err = l.svcCtx.BlockModel.GetBlockByHeight(blockHeight); err != nil {
-			if err == errorcode.DbErrNotFound {
-				return nil, errorcode.AppErrNotFound
+			if err == types2.DbErrNotFound {
+				return nil, types2.AppErrNotFound
 			}
-			return nil, errorcode.AppErrInternal
+			return nil, types2.AppErrInternal
 		}
-		resp.DataType = util.TypeBlockHeight
+		resp.DataType = types2.TypeBlockHeight
 		return resp, nil
 	}
 
 	if strings.Contains(req.Keyword, ".") {
 		if _, err = l.svcCtx.MemCache.GetAccountIndexByName(req.Keyword); err != nil {
-			if err == errorcode.DbErrNotFound {
-				return nil, errorcode.AppErrNotFound
+			if err == types2.DbErrNotFound {
+				return nil, types2.AppErrNotFound
 			}
-			return nil, errorcode.AppErrInternal
+			return nil, types2.AppErrInternal
 		}
-		resp.DataType = util.TypeAccountName
+		resp.DataType = types2.TypeAccountName
 		return resp, nil
 	}
 
 	if _, err = l.svcCtx.MemCache.GetAccountIndexByPk(req.Keyword); err == nil {
-		resp.DataType = util.TypeAccountPk
+		resp.DataType = types2.TypeAccountPk
 		return resp, nil
 	}
 
 	if _, err = l.svcCtx.TxModel.GetTxByHash(req.Keyword); err == nil {
-		resp.DataType = util.TypeTxType
+		resp.DataType = types2.TypeTxType
 		return resp, nil
 	}
 
-	return resp, errorcode.AppErrNotFound
+	return resp, types2.AppErrNotFound
 }

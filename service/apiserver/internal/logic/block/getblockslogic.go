@@ -3,13 +3,12 @@ package block
 import (
 	"context"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
-
-	"github.com/zeromicro/go-zero/core/logx"
-
-	"github.com/bnb-chain/zkbas/common/errorcode"
+	types2 "github.com/bnb-chain/zkbas/types"
 )
 
 type GetBlocksLogic struct {
@@ -31,7 +30,7 @@ func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetRange) (*types.Blocks, error
 		return l.svcCtx.BlockModel.GetCurrentHeight()
 	})
 	if err != nil {
-		return nil, errorcode.AppErrInternal
+		return nil, types2.AppErrInternal
 	}
 
 	resp := &types.Blocks{
@@ -44,7 +43,7 @@ func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetRange) (*types.Blocks, error
 
 	blocks, err := l.svcCtx.BlockModel.GetBlocksList(int64(req.Limit), int64(req.Offset))
 	if err != nil {
-		return nil, errorcode.AppErrInternal
+		return nil, types2.AppErrInternal
 	}
 	for _, b := range blocks {
 		block := &types.Block{
@@ -61,7 +60,7 @@ func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetRange) (*types.Blocks, error
 			Status:                          b.BlockStatus,
 		}
 		for _, t := range b.Txs {
-			tx := utils.DbTx2Tx(t)
+			tx := utils.DbtxTx(t)
 			tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
 			block.Txs = append(block.Txs, tx)
 		}

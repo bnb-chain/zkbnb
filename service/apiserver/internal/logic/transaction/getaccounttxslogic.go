@@ -4,13 +4,12 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
-
-	"github.com/zeromicro/go-zero/core/logx"
-
-	"github.com/bnb-chain/zkbas/common/errorcode"
+	types2 "github.com/bnb-chain/zkbas/types"
 )
 
 const (
@@ -39,20 +38,20 @@ func (l *GetAccountTxsLogic) GetAccountTxs(req *types.ReqGetAccountTxs) (resp *t
 	case queryByAccountIndex:
 		accountIndex, err = strconv.ParseInt(req.Value, 10, 64)
 		if err != nil {
-			return nil, errorcode.AppErrInvalidParam.RefineError("invalid value for account_index")
+			return nil, types2.AppErrInvalidParam.RefineError("invalid value for account_index")
 		}
 	case queryByAccountName:
 		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByName(req.Value)
 	case queryByAccountPk:
 		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByPk(req.Value)
 	default:
-		return nil, errorcode.AppErrInvalidParam.RefineError("param by should be account_index|account_name|account_pk")
+		return nil, types2.AppErrInvalidParam.RefineError("param by should be account_index|account_name|account_pk")
 	}
 
 	total, err := l.svcCtx.TxModel.GetTxsCountByAccountIndex(accountIndex)
 	if err != nil {
-		if err != errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrInternal
+		if err != types2.DbErrNotFound {
+			return nil, types2.AppErrInternal
 		}
 	}
 
@@ -66,11 +65,11 @@ func (l *GetAccountTxsLogic) GetAccountTxs(req *types.ReqGetAccountTxs) (resp *t
 
 	txs, err := l.svcCtx.TxModel.GetTxsListByAccountIndex(accountIndex, int64(req.Limit), int64(req.Offset))
 	if err != nil {
-		return nil, errorcode.AppErrInternal
+		return nil, types2.AppErrInternal
 	}
 
 	for _, t := range txs {
-		tx := utils.DbTx2Tx(t)
+		tx := utils.DbtxTx(t)
 		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
 		tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
 		resp.Txs = append(resp.Txs, tx)

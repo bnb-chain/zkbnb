@@ -17,21 +17,21 @@
 package monitor
 
 import (
-	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
-	"github.com/bnb-chain/zkbas/service/monitor/config"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas/common/model/asset"
-	"github.com/bnb-chain/zkbas/common/model/block"
-	"github.com/bnb-chain/zkbas/common/model/l1RollupTx"
-	"github.com/bnb-chain/zkbas/common/model/l1SyncedBlock"
-	"github.com/bnb-chain/zkbas/common/model/mempool"
-	"github.com/bnb-chain/zkbas/common/model/priorityRequest"
-	"github.com/bnb-chain/zkbas/common/model/sysConfig"
-	"github.com/bnb-chain/zkbas/common/sysConfigName"
+	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
+	"github.com/bnb-chain/zkbas/dao/asset"
+	"github.com/bnb-chain/zkbas/dao/block"
+	"github.com/bnb-chain/zkbas/dao/l1rolluptx"
+	"github.com/bnb-chain/zkbas/dao/l1syncedblock"
+	"github.com/bnb-chain/zkbas/dao/mempool"
+	"github.com/bnb-chain/zkbas/dao/priorityrequest"
+	"github.com/bnb-chain/zkbas/dao/sysconfig"
+	"github.com/bnb-chain/zkbas/service/monitor/config"
+	"github.com/bnb-chain/zkbas/types"
 )
 
 type Monitor struct {
@@ -44,11 +44,11 @@ type Monitor struct {
 
 	BlockModel           block.BlockModel
 	MempoolModel         mempool.MempoolModel
-	SysConfigModel       sysConfig.SysConfigModel
-	L1RollupTxModel      l1RollupTx.L1RollupTxModel
+	SysConfigModel       sysconfig.SysConfigModel
+	L1RollupTxModel      l1rolluptx.L1RollupTxModel
 	L2AssetModel         asset.AssetModel
-	PriorityRequestModel priorityRequest.PriorityRequestModel
-	L1SyncedBlockModel   l1SyncedBlock.L1SyncedBlockModel
+	PriorityRequestModel priorityrequest.PriorityRequestModel
+	L1SyncedBlockModel   l1syncedblock.L1SyncedBlockModel
 }
 
 func NewMonitor(c config.Config) *Monitor {
@@ -60,31 +60,31 @@ func NewMonitor(c config.Config) *Monitor {
 
 	monitor := &Monitor{
 		Config:               c,
-		PriorityRequestModel: priorityRequest.NewPriorityRequestModel(conn, c.CacheRedis, gormPointer),
+		PriorityRequestModel: priorityrequest.NewPriorityRequestModel(conn, c.CacheRedis, gormPointer),
 		MempoolModel:         mempool.NewMempoolModel(conn, c.CacheRedis, gormPointer),
 		BlockModel:           block.NewBlockModel(conn, c.CacheRedis, gormPointer),
-		L1RollupTxModel:      l1RollupTx.NewL1RollupTxModel(conn, c.CacheRedis, gormPointer),
-		L1SyncedBlockModel:   l1SyncedBlock.NewL1SyncedBlockModel(conn, c.CacheRedis, gormPointer),
+		L1RollupTxModel:      l1rolluptx.NewL1RollupTxModel(conn, c.CacheRedis, gormPointer),
+		L1SyncedBlockModel:   l1syncedblock.NewL1SyncedBlockModel(conn, c.CacheRedis, gormPointer),
 		L2AssetModel:         asset.NewAssetModel(conn, c.CacheRedis, gormPointer),
-		SysConfigModel:       sysConfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
+		SysConfigModel:       sysconfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
 	}
 
-	zkbasAddressConfig, err := monitor.SysConfigModel.GetSysConfigByName(sysConfigName.ZkbasContract)
+	zkbasAddressConfig, err := monitor.SysConfigModel.GetSysConfigByName(types.ZkbasContract)
 	if err != nil {
 		logx.Errorf("GetSysConfigByName err: %s", err.Error())
 		panic(err)
 	}
 
-	governanceAddressConfig, err := monitor.SysConfigModel.GetSysConfigByName(sysConfigName.GovernanceContract)
+	governanceAddressConfig, err := monitor.SysConfigModel.GetSysConfigByName(types.GovernanceContract)
 	if err != nil {
-		logx.Severef("fatal error, cannot fetch governance contract from sysConfig, err: %s, SysConfigName: %s",
-			err.Error(), sysConfigName.GovernanceContract)
+		logx.Severef("fatal error, cannot fetch governance contract from sysconfig, err: %s, SysConfigName: %s",
+			err.Error(), types.GovernanceContract)
 		panic(err)
 	}
 
 	networkRpc, err := monitor.SysConfigModel.GetSysConfigByName(c.ChainConfig.NetworkRPCSysConfigName)
 	if err != nil {
-		logx.Severef("fatal error, cannot fetch NetworkRPC from sysConfig, err: %s, SysConfigName: %s",
+		logx.Severef("fatal error, cannot fetch NetworkRPC from sysconfig, err: %s, SysConfigName: %s",
 			err.Error(), c.ChainConfig.NetworkRPCSysConfigName)
 		panic(err)
 	}

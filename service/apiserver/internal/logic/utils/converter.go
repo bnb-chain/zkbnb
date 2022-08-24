@@ -1,12 +1,12 @@
 package utils
 
 import (
-	"github.com/bnb-chain/zkbas/common/model/mempool"
-	"github.com/bnb-chain/zkbas/common/model/tx"
+	"github.com/bnb-chain/zkbas/dao/mempool"
+	"github.com/bnb-chain/zkbas/dao/tx"
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
 )
 
-func DbTx2Tx(tx *tx.Tx) *types.Tx {
+func DbtxTx(tx *tx.Tx) *types.Tx {
 	return &types.Tx{
 		Hash:          tx.TxHash,
 		Type:          tx.TxType,
@@ -31,7 +31,7 @@ func DbTx2Tx(tx *tx.Tx) *types.Tx {
 	}
 }
 
-func DbMempoolTx2Tx(tx *mempool.MempoolTx) *types.Tx {
+func DbMempooltxTx(tx *mempool.MempoolTx) *types.Tx {
 	return &types.Tx{
 		Hash:          tx.TxHash,
 		Type:          tx.TxType,

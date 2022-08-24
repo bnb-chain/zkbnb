@@ -4,12 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
-
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/common/errorcode"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
+	types2 "github.com/bnb-chain/zkbas/types"
 )
 
 type GetLayer2BasicInfoLogic struct {
@@ -40,22 +39,22 @@ func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo() (*types.Layer2BasicInfo, 
 	var err error
 	resp.BlockCommitted, err = l.svcCtx.BlockModel.GetCommittedBlocksCount()
 	if err != nil {
-		if err != errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrInternal
+		if err != types2.DbErrNotFound {
+			return nil, types2.AppErrInternal
 		}
 	}
 	resp.BlockVerified, err = l.svcCtx.BlockModel.GetVerifiedBlocksCount()
 	if err != nil {
-		if err != errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrInternal
+		if err != types2.DbErrNotFound {
+			return nil, types2.AppErrInternal
 		}
 	}
 	resp.TotalTransactionCount, err = l.svcCtx.MemCache.GetTxTotalCountWithFallback(func() (interface{}, error) {
 		return l.svcCtx.TxModel.GetTxsTotalCount()
 	})
 	if err != nil {
-		if err != errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrInternal
+		if err != types2.DbErrNotFound {
+			return nil, types2.AppErrInternal
 		}
 	}
 
@@ -64,26 +63,26 @@ func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo() (*types.Layer2BasicInfo, 
 
 	resp.YesterdayTransactionCount, err = l.svcCtx.TxModel.GetTxsTotalCountBetween(today.Add(-24*time.Hour), today)
 	if err != nil {
-		if err != errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrInternal
+		if err != types2.DbErrNotFound {
+			return nil, types2.AppErrInternal
 		}
 	}
 	resp.TodayTransactionCount, err = l.svcCtx.TxModel.GetTxsTotalCountBetween(today, now)
 	if err != nil {
-		if err != errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrInternal
+		if err != types2.DbErrNotFound {
+			return nil, types2.AppErrInternal
 		}
 	}
 	resp.YesterdayActiveUserCount, err = l.svcCtx.TxModel.GetDistinctAccountsCountBetween(today.Add(-24*time.Hour), today)
 	if err != nil {
-		if err != errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrInternal
+		if err != types2.DbErrNotFound {
+			return nil, types2.AppErrInternal
 		}
 	}
 	resp.TodayActiveUserCount, err = l.svcCtx.TxModel.GetDistinctAccountsCountBetween(today, now)
 	if err != nil {
-		if err != errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrInternal
+		if err != types2.DbErrNotFound {
+			return nil, types2.AppErrInternal
 		}
 	}
 	for _, contractName := range contractNames {
@@ -91,8 +90,8 @@ func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo() (*types.Layer2BasicInfo, 
 			return l.svcCtx.SysConfigModel.GetSysConfigByName(contractName)
 		})
 		if err != nil {
-			if err != errorcode.DbErrNotFound {
-				return nil, errorcode.AppErrInternal
+			if err != types2.DbErrNotFound {
+				return nil, types2.AppErrInternal
 			}
 		}
 		resp.ContractAddresses = append(resp.ContractAddresses,

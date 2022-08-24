@@ -3,25 +3,24 @@ package svc
 import (
 	"time"
 
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/cache"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/config"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/fetcher/price"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/fetcher/state"
-
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas/common/dbcache"
-	"github.com/bnb-chain/zkbas/common/model/account"
-	"github.com/bnb-chain/zkbas/common/model/asset"
-	"github.com/bnb-chain/zkbas/common/model/block"
-	"github.com/bnb-chain/zkbas/common/model/liquidity"
-	"github.com/bnb-chain/zkbas/common/model/mempool"
-	"github.com/bnb-chain/zkbas/common/model/nft"
-	"github.com/bnb-chain/zkbas/common/model/sysConfig"
-	"github.com/bnb-chain/zkbas/common/model/tx"
+	"github.com/bnb-chain/zkbas/dao/account"
+	"github.com/bnb-chain/zkbas/dao/asset"
+	"github.com/bnb-chain/zkbas/dao/block"
+	"github.com/bnb-chain/zkbas/dao/dbcache"
+	"github.com/bnb-chain/zkbas/dao/liquidity"
+	"github.com/bnb-chain/zkbas/dao/mempool"
+	"github.com/bnb-chain/zkbas/dao/nft"
+	"github.com/bnb-chain/zkbas/dao/sysconfig"
+	"github.com/bnb-chain/zkbas/dao/tx"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/cache"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/config"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/fetcher/price"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/fetcher/state"
 )
 
 type ServiceContext struct {
@@ -45,7 +44,7 @@ type ServiceContext struct {
 	CollectionModel       nft.L2NftCollectionModel
 	OfferModel            nft.OfferModel
 	AssetModel            asset.AssetModel
-	SysConfigModel        sysConfig.SysConfigModel
+	SysConfigModel        sysconfig.SysConfigModel
 
 	PriceFetcher price.Fetcher
 	StateFetcher state.Fetcher
@@ -88,7 +87,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		CollectionModel:       nft.NewL2NftCollectionModel(conn, c.CacheRedis, gormPointer),
 		OfferModel:            offerModel,
 		AssetModel:            assetModel,
-		SysConfigModel:        sysConfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
+		SysConfigModel:        sysconfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
 
 		PriceFetcher: price.NewFetcher(memCache, c.CoinMarketCap.Url, c.CoinMarketCap.Token),
 		StateFetcher: state.NewFetcher(redisCache, accountModel, liquidityModel, nftModel),

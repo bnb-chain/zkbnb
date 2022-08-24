@@ -10,10 +10,10 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas/common/model/block"
-	"github.com/bnb-chain/zkbas/common/model/mempool"
-	txdao "github.com/bnb-chain/zkbas/common/model/tx"
 	"github.com/bnb-chain/zkbas/core"
+	"github.com/bnb-chain/zkbas/dao/block"
+	"github.com/bnb-chain/zkbas/dao/mempool"
+	"github.com/bnb-chain/zkbas/dao/tx"
 )
 
 const (
@@ -120,7 +120,7 @@ func (c *Committer) Run() {
 			pendingUpdateMempoolTxs = append(pendingUpdateMempoolTxs, mempoolTx)
 		}
 
-		err = c.bc.SyncStateCacheToRedis()
+		err = c.bc.StateDB().SyncStateCacheToRedis()
 		if err != nil {
 			panic("sync redis cache failed: " + err.Error())
 		}
@@ -177,7 +177,7 @@ func (c *Committer) restoreExecutedTxs() (*block.Block, error) {
 
 func (c *Committer) shouldCommit(curBlock *block.Block) bool {
 	var now = time.Now()
-	if now.Unix()-curBlock.CreatedAt.Unix() >= MaxCommitterInterval || len(c.bc.GetPendingTxs()) >= c.maxTxsPerBlock {
+	if now.Unix()-curBlock.CreatedAt.Unix() >= MaxCommitterInterval || len(c.bc.Statedb.Txs) >= c.maxTxsPerBlock {
 		return true
 	}
 
@@ -208,7 +208,7 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 func (c *Committer) computeCurrentBlockSize() int {
 	var blockSize int
 	for i := 0; i < len(c.optionalBlockSizes); i++ {
-		if len(c.bc.GetPendingTxs()) <= c.optionalBlockSizes[i] {
+		if len(c.bc.Statedb.Txs) <= c.optionalBlockSizes[i] {
 			blockSize = c.optionalBlockSizes[i]
 			break
 		}
@@ -216,8 +216,8 @@ func (c *Committer) computeCurrentBlockSize() int {
 	return blockSize
 }
 
-func convertMempoolTxToTx(mempoolTx *mempool.MempoolTx) *txdao.Tx {
-	tx := &txdao.Tx{
+func convertMempoolTxToTx(mempoolTx *mempool.MempoolTx) *tx.Tx {
+	tx := &tx.Tx{
 		TxHash:        mempoolTx.TxHash,
 		TxType:        mempoolTx.TxType,
 		NativeAddress: mempoolTx.NativeAddress,

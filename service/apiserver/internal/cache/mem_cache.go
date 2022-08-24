@@ -6,11 +6,11 @@ import (
 
 	gocache "github.com/patrickmn/go-cache"
 
-	accdao "github.com/bnb-chain/zkbas/common/model/account"
-	assetdao "github.com/bnb-chain/zkbas/common/model/asset"
-	blockdao "github.com/bnb-chain/zkbas/common/model/block"
-	"github.com/bnb-chain/zkbas/common/model/sysConfig"
-	"github.com/bnb-chain/zkbas/common/model/tx"
+	accdao "github.com/bnb-chain/zkbas/dao/account"
+	assetdao "github.com/bnb-chain/zkbas/dao/asset"
+	blockdao "github.com/bnb-chain/zkbas/dao/block"
+	"github.com/bnb-chain/zkbas/dao/sysconfig"
+	"github.com/bnb-chain/zkbas/dao/tx"
 )
 
 const (
@@ -33,7 +33,7 @@ const (
 	AssetByIdKeyPrefix         = "I:"  //key for cache: assetId -> asset
 	AssetBySymbolKeyPrefix     = "S:"  //key for cache: assetSymbol -> asset
 	PriceKeyPrefix             = "p:"  //key for cache: symbol -> price
-	SysConfigKeyPrefix         = "s:"  //key for cache: configName -> sysConfig
+	SysConfigKeyPrefix         = "s:"  //key for cache: configName -> sysconfig
 )
 
 type fallback func() (interface{}, error)
@@ -272,11 +272,11 @@ func (m *MemCache) GetPriceWithFallback(symbol string, f fallback) (float64, err
 	return price.(float64), nil
 }
 
-func (m *MemCache) GetSysConfigWithFallback(configName string, f fallback) (*sysConfig.SysConfig, error) {
+func (m *MemCache) GetSysConfigWithFallback(configName string, f fallback) (*sysconfig.SysConfig, error) {
 	key := fmt.Sprintf("%s%s", SysConfigKeyPrefix, configName)
 	c, err := m.getWithSet(key, gocache.DefaultExpiration, f)
 	if err != nil {
 		return nil, err
 	}
-	return c.(*sysConfig.SysConfig), nil
+	return c.(*sysconfig.SysConfig), nil
 }

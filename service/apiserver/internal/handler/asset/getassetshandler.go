@@ -3,11 +3,11 @@ package asset
 import (
 	"net/http"
 
+	"github.com/zeromicro/go-zero/rest/httpx"
+
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/logic/asset"
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
-
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 func GetAssetsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {

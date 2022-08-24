@@ -6,12 +6,11 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
-
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/common/errorcode"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
+	types2 "github.com/bnb-chain/zkbas/types"
 )
 
 const (
@@ -40,34 +39,34 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 	case queryByIndex:
 		accountIndex, err = strconv.ParseInt(req.Value, 10, 64)
 		if err != nil {
-			return nil, errorcode.AppErrInvalidParam.RefineError("invalid value for account index")
+			return nil, types2.AppErrInvalidParam.RefineError("invalid value for account index")
 		}
 	case queryByName:
 		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByName(req.Value)
 	case queryByPk:
 		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByPk(req.Value)
 	default:
-		return nil, errorcode.AppErrInvalidParam.RefineError("param by should be index|name|pk")
+		return nil, types2.AppErrInvalidParam.RefineError("param by should be index|name|pk")
 	}
 
 	if err != nil {
-		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrNotFound
+		if err == types2.DbErrNotFound {
+			return nil, types2.AppErrNotFound
 		}
-		return nil, errorcode.AppErrInternal
+		return nil, types2.AppErrInternal
 	}
 
 	account, err := l.svcCtx.StateFetcher.GetLatestAccount(accountIndex)
 	if err != nil {
-		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrNotFound
+		if err == types2.DbErrNotFound {
+			return nil, types2.AppErrNotFound
 		}
-		return nil, errorcode.AppErrInternal
+		return nil, types2.AppErrInternal
 	}
 
 	maxAssetId, err := l.svcCtx.AssetModel.GetMaxId()
 	if err != nil {
-		return nil, errorcode.AppErrInternal
+		return nil, types2.AppErrInternal
 	}
 
 	resp = &types.Account{

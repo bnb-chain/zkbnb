@@ -4,13 +4,12 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
-
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/common/errorcode"
-	"github.com/bnb-chain/zkbas/common/util"
+	"github.com/bnb-chain/zkbas/common/chain"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
+	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
+	types2 "github.com/bnb-chain/zkbas/types"
 )
 
 type GetLpValueLogic struct {
@@ -31,22 +30,22 @@ func (l *GetLpValueLogic) GetLPValue(req *types.ReqGetLpValue) (resp *types.LpVa
 	amount, isTure := new(big.Int).SetString(req.LpAmount, 10)
 	if !isTure {
 		logx.Errorf("fail to convert string: %s to int", req.LpAmount)
-		return nil, errorcode.AppErrInvalidParam.RefineError("invalid LpAmount")
+		return nil, types2.AppErrInvalidParam.RefineError("invalid LpAmount")
 	}
 
 	liquidity, err := l.svcCtx.StateFetcher.GetLatestLiquidity(int64(req.PairIndex))
 	if err != nil {
-		if err == errorcode.DbErrNotFound {
-			return nil, errorcode.AppErrNotFound
+		if err == types2.DbErrNotFound {
+			return nil, types2.AppErrNotFound
 		}
-		return nil, errorcode.AppErrInternal
+		return nil, types2.AppErrInternal
 	}
 	assetAAmount, assetBAmount := big.NewInt(0), big.NewInt(0)
 	if liquidity.LpAmount.Cmp(big.NewInt(0)) > 0 {
-		assetAAmount, assetBAmount, err = util.ComputeRemoveLiquidityAmount(liquidity, amount)
+		assetAAmount, assetBAmount, err = chain.ComputeRemoveLiquidityAmount(liquidity, amount)
 		if err != nil {
 			logx.Errorf("fail to compute liquidity amount, err: %s", err.Error())
-			return nil, errorcode.AppErrInternal
+			return nil, types2.AppErrInternal
 		}
 	}
 
