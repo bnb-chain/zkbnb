@@ -67,16 +67,16 @@ npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deposit.js
 
 
 echo '5. modify deployed contracts into zkbas config'
-cd ${DEPLOY_PATH}/zkbas/common/model/init/
+cd ${DEPLOY_PATH}/zkbas/dao/init/
 cp -r ./contractaddr.yaml.example ./contractaddr.yaml
 
 ZkbasContractAddr=`cat ${DEPLOY_PATH}/zkbas-contract/info/addresses.json  | jq -r '.zkbasProxy'`
-sed -i -e "s/ZkbasProxy: .*/ZkbasProxy: ${ZkbasContractAddr}/" ${DEPLOY_PATH}/zkbas/common/model/init/contractaddr.yaml
+sed -i -e "s/ZkbasProxy: .*/ZkbasProxy: ${ZkbasContractAddr}/" ${DEPLOY_PATH}/zkbas/dao/init/contractaddr.yaml
 
 GovernanceContractAddr=`cat ${DEPLOY_PATH}/zkbas-contract/info/addresses.json  | jq -r '.governance'`
-sed -i -e "s/Governance: .*/Governance: ${GovernanceContractAddr}/" ${DEPLOY_PATH}/zkbas/common/model/init/contractaddr.yaml
+sed -i -e "s/Governance: .*/Governance: ${GovernanceContractAddr}/" ${DEPLOY_PATH}/zkbas/dao/init/contractaddr.yaml
 
-sed -i -e "s/BSCTestNetworkRPC *= .*/BSCTestNetworkRPC   = \"https\:\/\/data-seed-prebsc-1-s1.binance.org:8545\"/" ${DEPLOY_PATH}/zkbas/common/model/init/init.go
+sed -i -e "s/BSCTestNetworkRPC *= .*/BSCTestNetworkRPC   = \"https\:\/\/data-seed-prebsc-1-s1.binance.org:8545\"/" ${DEPLOY_PATH}/zkbas/dao/init/init.go
 
 
 
@@ -87,8 +87,8 @@ cd ${DEPLOY_PATH}/zkbas && go mod tidy
 
 
 echo "6. init tables on database"
-sed -i -e "s/password=.* dbname/password=Zkbas@123 dbname/" ${DEPLOY_PATH}/zkbas/common/model/basic/connection.go
-cd ${DEPLOY_PATH}/zkbas/common/model/init/
+sed -i -e "s/password=.* dbname/password=Zkbas@123 dbname/" ${DEPLOY_PATH}/zkbas/dao/basic/connection.go
+cd ${DEPLOY_PATH}/zkbas/dao/init/
 go run .
 
 
