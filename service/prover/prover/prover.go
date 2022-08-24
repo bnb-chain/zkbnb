@@ -17,6 +17,7 @@ import (
 
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/bnb-chain/zkbas/common/prove"
+	"github.com/bnb-chain/zkbas/common/redislock"
 	"github.com/bnb-chain/zkbas/dao/blockwitness"
 	"github.com/bnb-chain/zkbas/dao/proof"
 	"github.com/bnb-chain/zkbas/service/prover/config"
@@ -89,6 +90,13 @@ func NewProver(c config.Config) *Prover {
 }
 
 func (p *Prover) ProveBlock() error {
+	lock := redislock.GetRedisLockByKey(p.RedisConn, RedisLockKey)
+	err := redislock.TryAcquireLock(lock)
+	if err != nil {
+		return fmt.Errorf("acquire lock error, err=%s", err.Error())
+	}
+	defer lock.Release()
+
 	// Fetch unproved block witness.
 	blockWitness, err := p.BlockWitnessModel.GetBlockWitnessByMode(prove.CooMode)
 	if err != nil {
