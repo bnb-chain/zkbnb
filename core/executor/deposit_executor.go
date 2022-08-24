@@ -139,6 +139,9 @@ func (e *DepositExecutor) GetExecutedTx() (*tx.Tx, error) {
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
+	e.tx.AssetId = e.txInfo.AssetId
+	e.tx.TxAmount = e.txInfo.AssetAmount.String()
+	e.tx.AccountIndex = e.txInfo.AccountIndex
 	return e.BaseExecutor.GetExecutedTx()
 }
 

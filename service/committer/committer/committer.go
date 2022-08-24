@@ -233,10 +233,18 @@ func convertMempoolTxToTx(mempoolTx *mempool.MempoolTx) *tx.Tx {
 	tx := &tx.Tx{
 		TxHash:        mempoolTx.TxHash,
 		TxType:        mempoolTx.TxType,
+		GasFee:        mempoolTx.GasFee,
+		GasFeeAssetId: mempoolTx.GasFeeAssetId,
+		TxStatus:      tx.StatusPending,
+		NftIndex:      mempoolTx.NftIndex,
+		PairIndex:     mempoolTx.PairIndex,
+		AssetId:       mempoolTx.AssetId,
+		TxAmount:      mempoolTx.TxAmount,
 		NativeAddress: mempoolTx.NativeAddress,
 		TxInfo:        mempoolTx.TxInfo,
 		ExtraInfo:     mempoolTx.ExtraInfo,
 		Memo:          mempoolTx.Memo,
+		AccountIndex:  mempoolTx.AccountIndex,
 		Nonce:         mempoolTx.Nonce,
 		ExpiredAt:     mempoolTx.ExpiredAt,
 	}

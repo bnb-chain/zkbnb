@@ -204,7 +204,7 @@ func (bc *BlockChain) commitNewBlock(blockSize int, createdAt int64) (*block.Blo
 	newBlock.PendingOnChainOperationsHash = common.Bytes2Hex(s.PendingOnChainOperationsHash)
 	newBlock.Txs = s.Txs
 	newBlock.BlockStatus = block.StatusPending
-	if s.PendingOnChainOperationsPubData != nil {
+	if len(s.PendingOnChainOperationsPubData) > 0 {
 		onChainOperationsPubDataBytes, err := json.Marshal(s.PendingOnChainOperationsPubData)
 		if err != nil {
 			return nil, nil, fmt.Errorf("marshal pending onChain operation pubData failed: %v", err)
