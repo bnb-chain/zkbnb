@@ -21,12 +21,12 @@ import (
 	"math/big"
 	"strings"
 
+	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/bnb-chain/zkbas/common/chain"
 	"github.com/bnb-chain/zkbas/dao/block"
 	"github.com/bnb-chain/zkbas/dao/blockforcommit"

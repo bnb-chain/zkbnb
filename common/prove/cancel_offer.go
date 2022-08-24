@@ -28,12 +28,12 @@ import (
 func (w *WitnessHelper) constructCancelOfferCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*CryptoTx, error) {
 	txInfo, err := types.ParseCancelOfferTxInfo(oTx.TxInfo)
 	if err != nil {
-		logx.Errorf("[ConstructCancelOfferCryptoTx] unable to parse register zns tx info:%s", err.Error())
+		logx.Errorf("unable to parse cancel offer tx info:%s", err.Error())
 		return nil, err
 	}
 	cryptoTxInfo, err := ToCryptoCancelOfferTx(txInfo)
 	if err != nil {
-		logx.Errorf("[ConstructCancelOfferCryptoTx] unable to convert to crypto register zns tx: %s", err.Error())
+		logx.Errorf("unable to convert to crypto cancel offer tx: %s", err.Error())
 		return nil, err
 	}
 	cryptoTx.CancelOfferTxInfo = cryptoTxInfo
@@ -41,7 +41,7 @@ func (w *WitnessHelper) constructCancelOfferCryptoTx(cryptoTx *CryptoTx, oTx *Tx
 	cryptoTx.Signature = new(eddsa.Signature)
 	_, err = cryptoTx.Signature.SetBytes(txInfo.Sig)
 	if err != nil {
-		logx.Errorf("[ConstructCancelOfferCryptoTx] invalid sig bytes: %s", err.Error())
+		logx.Errorf("invalid sig bytes: %s", err.Error())
 		return nil, err
 	}
 	return cryptoTx, nil
@@ -50,7 +50,7 @@ func (w *WitnessHelper) constructCancelOfferCryptoTx(cryptoTx *CryptoTx, oTx *Tx
 func ToCryptoCancelOfferTx(txInfo *types.CancelOfferTxInfo) (info *CryptoCancelOfferTx, err error) {
 	packedFee, err := common.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
-		logx.Errorf("[ToCryptoSwapTx] unable to convert to packed fee: %s", err.Error())
+		logx.Errorf("unable to convert to packed fee: %s", err.Error())
 		return nil, err
 	}
 	info = &CryptoCancelOfferTx{

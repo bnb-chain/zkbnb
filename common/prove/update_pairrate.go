@@ -18,22 +18,22 @@
 package prove
 
 import (
-	"github.com/zeromicro/go-zero/core/logx"
-
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/types"
 )
 
 func (w *WitnessHelper) constructUpdatePairRateCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*CryptoTx, error) {
 	txInfo, err := types.ParseUpdatePairRateTxInfo(oTx.TxInfo)
 	if err != nil {
-		logx.Errorf("[ConstructUpdatePairRateCryptoTx] unable to parse register zns tx info:%s", err.Error())
+		logx.Errorf("unable to parse update pair rate tx info:%s", err.Error())
 		return nil, err
 	}
 	cryptoTxInfo, err := ToCryptoUpdatePairRateTx(txInfo)
 	if err != nil {
-		logx.Errorf("[ConstructUpdatePairRateCryptoTx] unable to convert to crypto register zns tx: %s", err.Error())
+		logx.Errorf("unable to convert to crypto update pair rate tx: %s", err.Error())
 		return nil, err
 	}
 	cryptoTx.UpdatePairRateTxInfo = cryptoTxInfo

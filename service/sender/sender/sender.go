@@ -23,13 +23,13 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
+	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
-	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/bnb-chain/zkbas/common/chain"
 	"github.com/bnb-chain/zkbas/common/prove"
 	"github.com/bnb-chain/zkbas/dao/block"

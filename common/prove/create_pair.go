@@ -18,22 +18,22 @@
 package prove
 
 import (
-	"github.com/zeromicro/go-zero/core/logx"
-
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/types"
 )
 
 func (w *WitnessHelper) constructCreatePairCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*CryptoTx, error) {
 	txInfo, err := types.ParseCreatePairTxInfo(oTx.TxInfo)
 	if err != nil {
-		logx.Errorf("[ConstructCreatePairCryptoTx] unable to parse register zns tx info:%s", err.Error())
+		logx.Errorf("unable to parse create pair tx info:%s", err.Error())
 		return nil, err
 	}
 	cryptoTxInfo, err := ToCryptoCreatePairTx(txInfo)
 	if err != nil {
-		logx.Errorf("[ConstructCreatePairCryptoTx] unable to convert to crypto register zns tx: %s", err.Error())
+		logx.Errorf("unable to convert to crypto create pair tx: %s", err.Error())
 		return nil, err
 	}
 	cryptoTx.CreatePairTxInfo = cryptoTxInfo

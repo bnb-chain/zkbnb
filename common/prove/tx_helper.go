@@ -54,7 +54,7 @@ func ConstructProverInfo(
 			if accountMap[txDetail.AccountIndex] == nil {
 				accountInfo, err := accountModel.GetConfirmedAccountByIndex(txDetail.AccountIndex)
 				if err != nil {
-					logx.Errorf("[ConstructProverInfo] unable to get valid account by index: %s", err.Error())
+					logx.Errorf("unable to get valid account by index: %s", err.Error())
 					return nil, nil, nil, nil, err
 				}
 				// get current nonce
@@ -93,7 +93,7 @@ func ConstructProverInfo(
 				// set account before info
 				oAsset, err := types.ParseAccountAsset(txDetail.Balance)
 				if err != nil {
-					logx.Errorf("[ConstructProverInfo] unable to parse account asset:%s", err.Error())
+					logx.Errorf("unable to parse account asset:%s", err.Error())
 					return nil, nil, nil, nil, err
 				}
 				proverAccounts[accountCount].AccountAssets = append(
@@ -120,12 +120,12 @@ func ConstructProverInfo(
 			// update asset info
 			newBalance, err := chain.ComputeNewBalance(txDetail.AssetType, txDetail.Balance, txDetail.BalanceDelta)
 			if err != nil {
-				logx.Errorf("[ConstructProverInfo] unable to compute new balance: %s", err.Error())
+				logx.Errorf("unable to compute new balance: %s", err.Error())
 				return nil, nil, nil, nil, err
 			}
 			nAsset, err := types.ParseAccountAsset(newBalance)
 			if err != nil {
-				logx.Errorf("[ConstructProverInfo] unable to parse account asset:%s", err.Error())
+				logx.Errorf("unable to parse account asset:%s", err.Error())
 				return nil, nil, nil, nil, err
 			}
 			accountAssetMap[txDetail.AccountIndex][txDetail.AssetId] = nAsset
@@ -135,7 +135,7 @@ func ConstructProverInfo(
 			proverLiquidityInfo.LiquidityRelatedTxDetail = txDetail
 			poolInfo, err := types.ParseLiquidityInfo(txDetail.Balance)
 			if err != nil {
-				logx.Errorf("[ConstructProverInfo] unable to parse pool info: %s", err.Error())
+				logx.Errorf("unable to parse pool info: %s", err.Error())
 				return nil, nil, nil, nil, err
 			}
 			proverLiquidityInfo.LiquidityInfo = poolInfo
@@ -145,7 +145,7 @@ func ConstructProverInfo(
 			proverNftInfo.NftRelatedTxDetail = txDetail
 			nftInfo, err := types.ParseNftInfo(txDetail.Balance)
 			if err != nil {
-				logx.Errorf("[ConstructProverInfo] unable to parse nft info: %s", err.Error())
+				logx.Errorf("unable to parse nft info: %s", err.Error())
 				return nil, nil, nil, nil, err
 			}
 			proverNftInfo.NftInfo = nftInfo
@@ -155,7 +155,7 @@ func ConstructProverInfo(
 			if accountMap[txDetail.AccountIndex] == nil {
 				accountInfo, err := accountModel.GetConfirmedAccountByIndex(txDetail.AccountIndex)
 				if err != nil {
-					logx.Errorf("[ConstructProverInfo] unable to get valid account by index: %s", err.Error())
+					logx.Errorf("unable to get valid account by index: %s", err.Error())
 					return nil, nil, nil, nil, err
 				}
 				// get current nonce
@@ -187,9 +187,9 @@ func ConstructProverInfo(
 			}
 			break
 		default:
-			logx.Errorf("[ConstructProverInfo] invalid asset type")
+			logx.Errorf("invalid asset type")
 			return nil, nil, nil, nil,
-				errors.New("[ConstructProverInfo] invalid asset type")
+				errors.New("invalid asset type")
 		}
 	}
 	return accountKeys, proverAccounts, proverLiquidityInfo, proverNftInfo, nil

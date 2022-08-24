@@ -18,22 +18,22 @@
 package prove
 
 import (
-	"github.com/zeromicro/go-zero/core/logx"
-
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/types"
 )
 
 func (w *WitnessHelper) constructDepositNftCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*CryptoTx, error) {
 	txInfo, err := types.ParseDepositNftTxInfo(oTx.TxInfo)
 	if err != nil {
-		logx.Errorf("[ConstructDepositNftCryptoTx] unable to parse register zns tx info:%s", err.Error())
+		logx.Errorf("unable to parse deposit nft tx info:%s", err.Error())
 		return nil, err
 	}
 	cryptoTxInfo, err := ToCryptoDepositNftTx(txInfo)
 	if err != nil {
-		logx.Errorf("[ConstructDepositNftCryptoTx] unable to convert to crypto register zns tx: %s", err.Error())
+		logx.Errorf("unable to convert to crypto deposit nft tx: %s", err.Error())
 		return nil, err
 	}
 	cryptoTx.DepositNftTxInfo = cryptoTxInfo

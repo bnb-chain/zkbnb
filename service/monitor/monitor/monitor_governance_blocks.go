@@ -21,12 +21,12 @@ import (
 	"encoding/json"
 	"math/big"
 
+	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
+	"github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/zero/basic"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
-	"github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/zero/basic"
 	common2 "github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/dao/asset"
 	"github.com/bnb-chain/zkbas/dao/l1syncedblock"

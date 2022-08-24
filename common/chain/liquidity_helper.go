@@ -21,10 +21,10 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/zeromicro/go-zero/core/logx"
-
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas-crypto/util"
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/types"
 )

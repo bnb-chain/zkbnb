@@ -28,12 +28,12 @@ import (
 func (w *WitnessHelper) constructCreateCollectionCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*CryptoTx, error) {
 	txInfo, err := types.ParseCreateCollectionTxInfo(oTx.TxInfo)
 	if err != nil {
-		logx.Errorf("[ConstructCreateCollectionCryptoTx] unable to parse register zns tx info:%s", err.Error())
+		logx.Errorf("unable to parse create collection tx info:%s", err.Error())
 		return nil, err
 	}
 	cryptoTxInfo, err := ToCryptoCreateCollectionTx(txInfo)
 	if err != nil {
-		logx.Errorf("[ConstructCreateCollectionCryptoTx] unable to convert to crypto register zns tx: %s", err.Error())
+		logx.Errorf("unable to convert to crypto create collection tx: %s", err.Error())
 		return nil, err
 	}
 	cryptoTx.CreateCollectionTxInfo = cryptoTxInfo
@@ -41,7 +41,7 @@ func (w *WitnessHelper) constructCreateCollectionCryptoTx(cryptoTx *CryptoTx, oT
 	cryptoTx.Signature = new(eddsa.Signature)
 	_, err = cryptoTx.Signature.SetBytes(txInfo.Sig)
 	if err != nil {
-		logx.Errorf("[ConstructCreateCollectionCryptoTx] invalid sig bytes: %s", err.Error())
+		logx.Errorf("invalid sig bytes: %s", err.Error())
 		return nil, err
 	}
 	return cryptoTx, nil
@@ -50,7 +50,7 @@ func (w *WitnessHelper) constructCreateCollectionCryptoTx(cryptoTx *CryptoTx, oT
 func ToCryptoCreateCollectionTx(txInfo *types.CreateCollectionTxInfo) (info *CryptoCreateCollectionTx, err error) {
 	packedFee, err := common.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
-		logx.Errorf("[ToCryptoSwapTx] unable to convert to packed fee: %s", err.Error())
+		logx.Errorf("unable to convert to packed fee: %s", err.Error())
 		return nil, err
 	}
 	info = &CryptoCreateCollectionTx{

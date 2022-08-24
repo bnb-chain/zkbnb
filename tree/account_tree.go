@@ -21,11 +21,11 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/zeromicro/go-zero/core/logx"
-
 	bsmt "github.com/bnb-chain/bas-smt"
 	"github.com/bnb-chain/bas-smt/database/memory"
 	"github.com/bnb-chain/zkbas-crypto/hash/bn254/zmimc"
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbas/common/chain"
 	"github.com/bnb-chain/zkbas/dao/account"
 	"github.com/bnb-chain/zkbas/types"

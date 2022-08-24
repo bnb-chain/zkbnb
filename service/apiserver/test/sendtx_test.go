@@ -10,12 +10,12 @@ import (
 	"strconv"
 	"time"
 
+	curve "github.com/bnb-chain/zkbas-crypto/ecc/ztwistededwards/tebn254"
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 
-	curve "github.com/bnb-chain/zkbas-crypto/ecc/ztwistededwards/tebn254"
-	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	common2 "github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/common/chain"
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"

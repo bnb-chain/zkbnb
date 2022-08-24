@@ -22,14 +22,14 @@ import (
 	"errors"
 	"math/big"
 
+	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
+	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
-	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	common2 "github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/dao/block"
 	"github.com/bnb-chain/zkbas/dao/l1syncedblock"

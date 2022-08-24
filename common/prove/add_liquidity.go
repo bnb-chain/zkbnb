@@ -28,12 +28,12 @@ import (
 func (w *WitnessHelper) constructAddLiquidityCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*CryptoTx, error) {
 	txInfo, err := types.ParseAddLiquidityTxInfo(oTx.TxInfo)
 	if err != nil {
-		logx.Errorf("[ConstructAddLiquidityCryptoTx] unable to parse register zns tx info:%s", err.Error())
+		logx.Errorf("unable to parse add liquidity tx info:%s", err.Error())
 		return nil, err
 	}
 	cryptoTxInfo, err := ToCryptoAddLiquidityTx(txInfo)
 	if err != nil {
-		logx.Errorf("[ConstructAddLiquidityCryptoTx] unable to convert to crypto register zns tx: %s", err.Error())
+		logx.Errorf("unable to convert to crypto add liquidity tx: %s", err.Error())
 		return nil, err
 	}
 	cryptoTx.AddLiquidityTxInfo = cryptoTxInfo
@@ -41,7 +41,7 @@ func (w *WitnessHelper) constructAddLiquidityCryptoTx(cryptoTx *CryptoTx, oTx *T
 	cryptoTx.Signature = new(eddsa.Signature)
 	_, err = cryptoTx.Signature.SetBytes(txInfo.Sig)
 	if err != nil {
-		logx.Errorf("[ConstructAddLiquidityCryptoTx] invalid sig bytes: %s", err.Error())
+		logx.Errorf("invalid sig bytes: %s", err.Error())
 		return nil, err
 	}
 	return cryptoTx, nil
@@ -50,32 +50,32 @@ func (w *WitnessHelper) constructAddLiquidityCryptoTx(cryptoTx *CryptoTx, oTx *T
 func ToCryptoAddLiquidityTx(txInfo *types.AddLiquidityTxInfo) (info *CryptoAddLiquidityTx, err error) {
 	packedAAmount, err := common.ToPackedAmount(txInfo.AssetAAmount)
 	if err != nil {
-		logx.Errorf("[ToCryptoAddLiquidityTx] unable to convert to packed amount: %s", err.Error())
+		logx.Errorf("unable to convert to packed amount: %s", err.Error())
 		return nil, err
 	}
 	packedBAmount, err := common.ToPackedAmount(txInfo.AssetBAmount)
 	if err != nil {
-		logx.Errorf("[ToCryptoAddLiquidityTx] unable to convert to packed amount: %s", err.Error())
+		logx.Errorf("unable to convert to packed amount: %s", err.Error())
 		return nil, err
 	}
 	packedLpAmount, err := common.ToPackedAmount(txInfo.LpAmount)
 	if err != nil {
-		logx.Errorf("[ToCryptoAddLiquidityTx] unable to convert to packed amount: %s", err.Error())
+		logx.Errorf("unable to convert to packed amount: %s", err.Error())
 		return nil, err
 	}
 	packedTreasuryAmount, err := common.ToPackedAmount(txInfo.TreasuryAmount)
 	if err != nil {
-		logx.Errorf("[ToCryptoAddLiquidityTx] unable to convert to packed amount: %s", err.Error())
+		logx.Errorf("unable to convert to packed amount: %s", err.Error())
 		return nil, err
 	}
 	packedKLast, err := common.ToPackedAmount(txInfo.KLast)
 	if err != nil {
-		logx.Errorf("[ToCryptoAddLiquidityTx] unable to convert to packed amount: %s", err.Error())
+		logx.Errorf("unable to convert to packed amount: %s", err.Error())
 		return nil, err
 	}
 	packedFee, err := common.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
-		logx.Errorf("[ToCryptoAddLiquidityTx] unable to convert to packed fee: %s", err.Error())
+		logx.Errorf("unable to convert to packed fee: %s", err.Error())
 		return nil, err
 	}
 	info = &CryptoAddLiquidityTx{

@@ -29,12 +29,12 @@ import (
 func (w *WitnessHelper) constructMintNftCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*CryptoTx, error) {
 	txInfo, err := types.ParseMintNftTxInfo(oTx.TxInfo)
 	if err != nil {
-		logx.Errorf("[ConstructMintNftCryptoTx] unable to parse register zns tx info:%s", err.Error())
+		logx.Errorf("unable to parse mint nft tx info:%s", err.Error())
 		return nil, err
 	}
 	cryptoTxInfo, err := ToCryptoMintNftTx(txInfo)
 	if err != nil {
-		logx.Errorf("[ConstructMintNftCryptoTx] unable to convert to crypto register zns tx: %s", err.Error())
+		logx.Errorf("unable to convert to crypto mint nft tx: %s", err.Error())
 		return nil, err
 	}
 	cryptoTx.MintNftTxInfo = cryptoTxInfo
@@ -42,7 +42,7 @@ func (w *WitnessHelper) constructMintNftCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*
 	cryptoTx.Signature = new(eddsa.Signature)
 	_, err = cryptoTx.Signature.SetBytes(txInfo.Sig)
 	if err != nil {
-		logx.Errorf("[ConstructMintNftCryptoTx] invalid sig bytes: %s", err.Error())
+		logx.Errorf("invalid sig bytes: %s", err.Error())
 		return nil, err
 	}
 	return cryptoTx, nil
@@ -51,7 +51,7 @@ func (w *WitnessHelper) constructMintNftCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*
 func ToCryptoMintNftTx(txInfo *types.MintNftTxInfo) (info *CryptoMintNftTx, err error) {
 	packedFee, err := common2.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
-		logx.Errorf("[ToCryptoSwapTx] unable to convert to packed fee: %s", err.Error())
+		logx.Errorf("unable to convert to packed fee: %s", err.Error())
 		return nil, err
 	}
 	info = &CryptoMintNftTx{

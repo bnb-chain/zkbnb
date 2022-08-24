@@ -19,10 +19,10 @@ package monitor
 import (
 	"strings"
 
+	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/bnb-chain/zkbas/dao/block"
 	"github.com/bnb-chain/zkbas/dao/priorityrequest"
 	"github.com/bnb-chain/zkbas/types"
