@@ -6,11 +6,11 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/bnb-chain/zkbas-crypto/ffmath"
-	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbas-crypto/ffmath"
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	common2 "github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/common/chain"
 	"github.com/bnb-chain/zkbas/core/statedb"

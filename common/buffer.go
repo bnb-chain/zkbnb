@@ -23,9 +23,9 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/bnb-chain/zkbas-crypto/zero/twistededwards/tebn254/zero"
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbas-crypto/zero/twistededwards/tebn254/zero"
 	"github.com/bnb-chain/zkbas/types"
 )
 

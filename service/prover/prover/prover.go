@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/frontend"
@@ -16,6 +15,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
+	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/bnb-chain/zkbas/common/prove"
 	"github.com/bnb-chain/zkbas/common/redislock"
 	"github.com/bnb-chain/zkbas/dao/blockwitness"

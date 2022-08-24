@@ -6,10 +6,10 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/core/statedb"
 	"github.com/bnb-chain/zkbas/dao/liquidity"

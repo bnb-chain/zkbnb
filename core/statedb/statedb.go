@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	bsmt "github.com/bnb-chain/bas-smt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
+	bsmt "github.com/bnb-chain/bas-smt"
 	"github.com/bnb-chain/zkbas/common/chain"
 	"github.com/bnb-chain/zkbas/dao/account"
 	"github.com/bnb-chain/zkbas/dao/dbcache"

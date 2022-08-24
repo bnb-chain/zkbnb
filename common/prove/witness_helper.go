@@ -21,11 +21,11 @@ import (
 	"errors"
 	"math/big"
 
-	bsmt "github.com/bnb-chain/bas-smt"
-	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
+	bsmt "github.com/bnb-chain/bas-smt"
+	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	common2 "github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/common/chain"
 	"github.com/bnb-chain/zkbas/tree"

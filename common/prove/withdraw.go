@@ -20,10 +20,10 @@ package prove
 import (
 	"math/big"
 
-	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/types"
 )

@@ -18,9 +18,9 @@
 package tree
 
 import (
-	"github.com/bnb-chain/zkbas-crypto/accumulators/merkleTree"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 
+	"github.com/bnb-chain/zkbas-crypto/accumulators/merkleTree"
 	"github.com/bnb-chain/zkbas/dao/account"
 	"github.com/bnb-chain/zkbas/dao/liquidity"
 	"github.com/bnb-chain/zkbas/dao/nft"

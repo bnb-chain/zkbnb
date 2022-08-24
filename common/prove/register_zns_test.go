@@ -23,9 +23,9 @@ import (
 	"log"
 	"testing"
 
-	"github.com/bnb-chain/bas-smt/database/memory"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/bnb-chain/bas-smt/database/memory"
 	"github.com/bnb-chain/zkbas/dao/account"
 	"github.com/bnb-chain/zkbas/dao/basic"
 	"github.com/bnb-chain/zkbas/dao/liquidity"

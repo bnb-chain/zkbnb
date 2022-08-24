@@ -17,12 +17,12 @@
 package monitor
 
 import (
-	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
+	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
 	"github.com/bnb-chain/zkbas/dao/asset"
 	"github.com/bnb-chain/zkbas/dao/block"
 	"github.com/bnb-chain/zkbas/dao/l1rolluptx"

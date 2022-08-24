@@ -22,10 +22,10 @@ import (
 	"testing"
 	"time"
 
-	curve "github.com/bnb-chain/zkbas-crypto/ecc/ztwistededwards/tebn254"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 
+	curve "github.com/bnb-chain/zkbas-crypto/ecc/ztwistededwards/tebn254"
 	"github.com/bnb-chain/zkbas/dao/basic"
 )
 

@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"time"
 
-	smt "github.com/bnb-chain/bas-smt"
-	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
+	smt "github.com/bnb-chain/bas-smt"
+	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	utils "github.com/bnb-chain/zkbas/common/prove"
 	"github.com/bnb-chain/zkbas/dao/account"
 	"github.com/bnb-chain/zkbas/dao/block"

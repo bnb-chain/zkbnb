@@ -18,9 +18,10 @@
 package tree
 
 import (
+	"github.com/zeromicro/go-zero/core/logx"
+
 	bsmt "github.com/bnb-chain/bas-smt"
 	"github.com/bnb-chain/zkbas-crypto/hash/bn254/zmimc"
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 func InitNftTree(

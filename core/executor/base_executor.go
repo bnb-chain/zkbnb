@@ -2,7 +2,6 @@ package executor
 
 import (
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
-
 	"github.com/bnb-chain/zkbas/dao/tx"
 	"github.com/bnb-chain/zkbas/types"
 )

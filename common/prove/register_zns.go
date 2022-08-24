@@ -20,10 +20,10 @@ package prove
 import (
 	"strings"
 
-	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
-	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/types"
 )

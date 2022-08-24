@@ -21,11 +21,11 @@ import (
 	"bytes"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	curve "github.com/bnb-chain/zkbas-crypto/ecc/ztwistededwards/tebn254"
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
-	"github.com/ethereum/go-ethereum/common"
-
 	common2 "github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/dao/block"
 )

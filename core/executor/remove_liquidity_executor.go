@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"math/big"
 
-	"github.com/bnb-chain/zkbas-crypto/ffmath"
-	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbas-crypto/ffmath"
+	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	common2 "github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/common/chain"
 	"github.com/bnb-chain/zkbas/core/statedb"
