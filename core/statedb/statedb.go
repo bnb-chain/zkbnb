@@ -197,6 +197,10 @@ func (s *StateDB) GetPendingAccount(blockHeight int64) ([]*account.Account, []*a
 			continue
 		}
 
+		if _, exist := s.PendingNewAccountIndexMap[index]; exist {
+			continue
+		}
+
 		newAccount, err := chain.FromFormatAccountInfo(s.AccountMap[index])
 		if err != nil {
 			return nil, nil, nil, err
@@ -249,6 +253,10 @@ func (s *StateDB) GetPendingLiquidity(blockHeight int64) ([]*liquidity.Liquidity
 			continue
 		}
 
+		if _, exist := s.PendingNewLiquidityIndexMap[index]; exist {
+			continue
+		}
+
 		newLiquidity := s.LiquidityMap[index]
 		pendingUpdateLiquidity = append(pendingUpdateLiquidity, newLiquidity)
 		pendingNewLiquidityHistory = append(pendingNewLiquidityHistory, &liquidity.LiquidityHistory{
@@ -298,6 +306,10 @@ func (s *StateDB) GetPendingNft(blockHeight int64) ([]*nft.L2Nft, []*nft.L2Nft, 
 	for index, status := range s.PendingUpdateNftIndexMap {
 		if status < StateCachePending {
 			logx.Errorf("unexpected 0 status in Statedb cache")
+			continue
+		}
+
+		if _, exist := s.PendingNewNftIndexMap[index]; exist {
 			continue
 		}
 

@@ -22,6 +22,9 @@ func NewCommitProcessor(bc *BlockChain) Processor {
 }
 
 func (p *CommitProcessor) Process(tx *tx.Tx) error {
+	p.bc.setCurrentBlockTimeStamp()
+	defer p.bc.resetCurrentBlockTimeStamp()
+
 	executor, err := executor.NewTxExecutor(p.bc, tx)
 	if err != nil {
 		return fmt.Errorf("new tx executor failed")

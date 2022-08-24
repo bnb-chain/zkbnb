@@ -1,6 +1,7 @@
 package statedb
 
 import (
+	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/bnb-chain/zkbas/dao/nft"
@@ -59,4 +60,9 @@ func NewStateCache(stateRoot string) *StateCache {
 		PendingOnChainOperationsPubData: make([][]byte, 0),
 		PendingOnChainOperationsHash:    common.FromHex(types.EmptyStringKeccak),
 	}
+}
+
+func (c *StateCache) AlignPubData(blockSize int) {
+	emptyPubdata := make([]byte, (blockSize-len(c.Txs))*32*std.PubDataSizePerTx)
+	c.PubData = append(c.PubData, emptyPubdata...)
 }
