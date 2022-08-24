@@ -118,6 +118,14 @@ func (c *Committer) Run() {
 			}
 			mempoolTx.Status = mempool.ExecutedTxStatus
 			pendingUpdateMempoolTxs = append(pendingUpdateMempoolTxs, mempoolTx)
+
+			// Write the proposed block into database when the first transaction executed.
+			if len(c.bc.Statedb.Txs) == 1 {
+				err = c.createNewBlock(curBlock)
+				if err != nil {
+					panic("create new block failed" + err.Error())
+				}
+			}
 		}
 
 		err = c.bc.StateDB().SyncStateCacheToRedis()
@@ -175,9 +183,14 @@ func (c *Committer) restoreExecutedTxs() (*block.Block, error) {
 	return curBlock, nil
 }
 
+func (c *Committer) createNewBlock(curBlock *block.Block) error {
+	return c.bc.BlockModel.CreateNewBlock(curBlock)
+}
+
 func (c *Committer) shouldCommit(curBlock *block.Block) bool {
 	var now = time.Now()
-	if now.Unix()-curBlock.CreatedAt.Unix() >= MaxCommitterInterval || len(c.bc.Statedb.Txs) >= c.maxTxsPerBlock {
+	if (len(c.bc.Statedb.Txs) > 0 && now.Unix()-curBlock.CreatedAt.Unix() >= MaxCommitterInterval) ||
+		len(c.bc.Statedb.Txs) >= c.maxTxsPerBlock {
 		return true
 	}
 

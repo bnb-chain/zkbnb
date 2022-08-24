@@ -113,19 +113,14 @@ func (bc *BlockChain) ApplyTransaction(tx *tx.Tx) error {
 }
 
 func (bc *BlockChain) ProposeNewBlock() (*block.Block, error) {
-	createdAt := time.Now().UnixMilli()
 	newBlock := &block.Block{
 		Model: gorm.Model{
-			CreatedAt: time.UnixMilli(createdAt),
+			// The block timestamp will be set when the first transaction executed.
+			CreatedAt: time.Time{},
 		},
 		BlockHeight: bc.currentBlock.BlockHeight + 1,
 		StateRoot:   bc.currentBlock.StateRoot,
 		BlockStatus: block.StatusProposing,
-	}
-
-	err := bc.BlockModel.CreateNewBlock(newBlock)
-	if err != nil {
-		return nil, err
 	}
 
 	bc.currentBlock = newBlock
@@ -274,4 +269,19 @@ func (bc *BlockChain) StateDB() *sdb.StateDB {
 
 func (bc *BlockChain) DB() *sdb.ChainDB {
 	return bc.DB()
+}
+
+func (bc *BlockChain) setCurrentBlockTimeStamp() {
+	if bc.currentBlock.CreatedAt.IsZero() && len(bc.Statedb.Txs) == 0 {
+		creatAt := time.Now().UnixMilli()
+		bc.currentBlock.CreatedAt = time.UnixMilli(creatAt)
+	}
+}
+
+func (bc *BlockChain) resetCurrentBlockTimeStamp() {
+	if len(bc.Statedb.Txs) > 0 {
+		return
+	}
+
+	bc.currentBlock.CreatedAt = time.Time{}
 }
