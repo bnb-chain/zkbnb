@@ -28,24 +28,25 @@ ZkBAS achieves the following goals:
 ZkBAS starts its development based on [Zecrey](https://github.com/bnb-chain/zecrey-legend), special thanks to 
 [Zecrey](https://www.zecrey.com/) team.
 
+## Table of Content
 <!--ts-->
 - [Framework](#Framework)
 - [Document](#Document)
-- [Key Features](#Key Features)
-  + [Digital Asset Management](#Digital Asset Management)
-  + [NFT Management and Marketplace](#NFT Management and Marketplace)
-  + [AMM Exchange](#AMM Exchange)
-  + [Native Name Service](#Native Name Service)
-  + [Seamless L1 Wallet Management](#Seamless L1 Wallet Management)
+- [Key Features](#Key-Features)
+  + [Digital Asset Management](#Digital-Asset-Management)
+  + [NFT Management and Marketplace](#NFT-Management-and-Marketplace)
+  + [AMM Exchange](#AMM-Exchange)
+  + [Native Name Service](#Native-Name-Service)
+  + [Seamless L1 Wallet Management](#Seamless-L1-Wallet-Management)
 
-- [Key Tech](#Key Tech)
-  + [Sparse Merkle Tree K-V Store](#Sparse Merkle Tree KV Store)
-  + [Circuit Model](#Circuit Model)
-- [Building from Source](#Building from Source)
-- [Dev Network Setup](#Dev Network Setup)
-- [Testnet(coming soon)](#Testnet(coming soon))
+- [Key Tech](#Key-Tech)
+  + [Sparse Merkle Tree K-V Store](#Sparse-Merkle-Tree-KV-Store)
+  + [Circuit Model](#Circuit-Model)
+- [Building from Source](#Building-from-Source)
+- [Dev Network Setup](#Dev-Network-Setup)
+- [Testnet(coming soon)](#Testnet(coming-soon))
 - [Contribution](#Contribution)
-- [Related Projects](#Related Projects)
+- [Related Projects](#Related-Projects)
 - [Outlook](#Outlook)
 <!--te-->
 

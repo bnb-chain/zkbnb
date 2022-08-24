@@ -35,7 +35,7 @@ ZkBAS implement the following features so far:
 
 ## Find More
 <!--ts-->
-- [ZkBAS Protocol Design](./technology.md)
+- [ZkBAS Technology](./technology.md)
 - [ZkBAS Protocol Design](./protocol.md)
 - [Quick Start Tutorial](./tutorial.md)
 - [Tokenomics](./tokenomics.md)
