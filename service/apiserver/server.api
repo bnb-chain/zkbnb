@@ -330,15 +330,15 @@ service server-api {
 	@handler GetSwapAmount
 	get /api/v1/swapAmount (ReqGetSwapAmount) returns (SwapAmount)
 	
-	@doc "Get liqudity pairs"
+	@doc "Get liquidity pairs"
 	@handler GetPairs
 	get /api/v1/pairs returns (Pairs)
 	
-	@doc "Get liquidity pool amount for a specific liduidity pair"
+	@doc "Get liquidity pool amount for a specific liquidity pair"
 	@handler GetLpValue
 	get /api/v1/lpValue (ReqGetLpValue) returns (LpValue)
 	
-	@doc "Get liqudity pool info by its index"
+	@doc "Get liquidity pool info by its index"
 	@handler GetPair
 	get /api/v1/pair (ReqGetPair) returns (Pair)
 }
@@ -442,7 +442,7 @@ service server-api {
 	@handler GetBlockTxs
 	get /api/v1/blockTxs (ReqGetBlockTxs) returns (Txs)
 	
-	@doc "Get transactions of a speific account"
+	@doc "Get transactions of a specific account"
 	@handler GetAccountTxs
 	get /api/v1/accountTxs (ReqGetAccountTxs) returns (Txs)
 	
