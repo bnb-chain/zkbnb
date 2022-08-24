@@ -222,7 +222,7 @@ func (w *WitnessHelper) constructAccountWitness(
 		// it means this is a registerZNS tx
 		if proverAccounts == nil {
 			if accountKey != int64(len(*w.assetTrees)) {
-				logx.Errorf("invalid key")
+				logx.Errorf("invalid account key, accountKey=%d, assetTrees=%d", accountKey, len(*w.assetTrees))
 				return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore,
 					errors.New("invalid key")
 			}
