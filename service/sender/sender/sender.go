@@ -191,11 +191,11 @@ func (s *Sender) CommitBlocks() (err error) {
 	// if errorcode.DbErrNotFound, means we haven't committed new blocks, just start to commit
 	if handledErr == types.DbErrNotFound && pendingErr == types.DbErrNotFound {
 		var blocks []*blockforcommit.BlockForCommit
-		blocks, handledErr = s.blockForCommitModel.GetBlockForCommitBetween(1, int64(s.config.ChainConfig.MaxBlockCount))
-		if handledErr != nil {
+		blocks, err = s.blockForCommitModel.GetBlockForCommitBetween(1, int64(s.config.ChainConfig.MaxBlockCount))
+		if err != nil {
 			logx.Errorf("GetBlockForCommitBetween err: %v, maxBlockCount: %d",
-				handledErr, s.config.ChainConfig.MaxBlockCount)
-			return handledErr
+				err, s.config.ChainConfig.MaxBlockCount)
+			return err
 		}
 		pendingCommitBlocks, err = ConvertBlocksForCommitToCommitBlockInfos(blocks)
 		if err != nil {
