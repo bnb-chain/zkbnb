@@ -47,6 +47,10 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 	if err != nil {
 		panic(err)
 	}
+	err = executor.GeneratePubData()
+	if err != nil {
+		panic(err)
+	}
 	err = executor.UpdateTrees()
 	if err != nil {
 		panic(err)
