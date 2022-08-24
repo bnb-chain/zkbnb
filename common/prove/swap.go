@@ -28,12 +28,12 @@ import (
 func (w *WitnessHelper) constructSwapCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*CryptoTx, error) {
 	txInfo, err := types.ParseSwapTxInfo(oTx.TxInfo)
 	if err != nil {
-		logx.Errorf("[ConstructSwapCryptoTx] unable to parse register zns tx info:%s", err.Error())
+		logx.Errorf("unable to parse swap tx info:%s", err.Error())
 		return nil, err
 	}
 	cryptoTxInfo, err := ToCryptoSwapTx(txInfo)
 	if err != nil {
-		logx.Errorf("[ConstructSwapCryptoTx] unable to convert to crypto register zns tx: %s", err.Error())
+		logx.Errorf("unable to convert to crypto swap tx: %s", err.Error())
 		return nil, err
 	}
 	cryptoTx.SwapTxInfo = cryptoTxInfo
@@ -41,7 +41,7 @@ func (w *WitnessHelper) constructSwapCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*Cry
 	cryptoTx.Signature = new(eddsa.Signature)
 	_, err = cryptoTx.Signature.SetBytes(txInfo.Sig)
 	if err != nil {
-		logx.Errorf("[ConstructSwapCryptoTx] invalid sig bytes: %s", err.Error())
+		logx.Errorf("invalid sig bytes: %s", err.Error())
 		return nil, err
 	}
 	return cryptoTx, nil
@@ -50,22 +50,22 @@ func (w *WitnessHelper) constructSwapCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*Cry
 func ToCryptoSwapTx(txInfo *types.SwapTxInfo) (info *CryptoSwapTx, err error) {
 	packedAAmount, err := common.ToPackedAmount(txInfo.AssetAAmount)
 	if err != nil {
-		logx.Errorf("[ToCryptoSwapTx] unable to convert to packed amount: %s", err.Error())
+		logx.Errorf("unable to convert to packed amount: %s", err.Error())
 		return nil, err
 	}
 	packedBMinAmount, err := common.ToPackedAmount(txInfo.AssetBMinAmount)
 	if err != nil {
-		logx.Errorf("[ToCryptoSwapTx] unable to convert to packed amount: %s", err.Error())
+		logx.Errorf("unable to convert to packed amount: %s", err.Error())
 		return nil, err
 	}
 	packedBAmount, err := common.ToPackedAmount(txInfo.AssetBAmountDelta)
 	if err != nil {
-		logx.Errorf("[ToCryptoSwapTx] unable to convert to packed amount: %s", err.Error())
+		logx.Errorf("unable to convert to packed amount: %s", err.Error())
 		return nil, err
 	}
 	packedFee, err := common.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
-		logx.Errorf("[ToCryptoSwapTx] unable to convert to packed fee: %s", err.Error())
+		logx.Errorf("unable to convert to packed fee: %s", err.Error())
 		return nil, err
 	}
 	info = &CryptoSwapTx{

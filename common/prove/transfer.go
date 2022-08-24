@@ -29,12 +29,12 @@ import (
 func (w *WitnessHelper) constructTransferCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*CryptoTx, error) {
 	txInfo, err := types.ParseTransferTxInfo(oTx.TxInfo)
 	if err != nil {
-		logx.Errorf("[ConstructTransferCryptoTx] unable to parse register zns tx info:%s", err.Error())
+		logx.Errorf("unable to parse transfer tx info:%s", err.Error())
 		return nil, err
 	}
 	cryptoTxInfo, err := ToCryptoTransferTx(txInfo)
 	if err != nil {
-		logx.Errorf("[ConstructTransferCryptoTx] unable to convert to crypto register zns tx: %s", err.Error())
+		logx.Errorf("unable to convert to crypto transfer tx: %s", err.Error())
 		return nil, err
 	}
 	cryptoTx.TransferTxInfo = cryptoTxInfo
@@ -42,7 +42,7 @@ func (w *WitnessHelper) constructTransferCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (
 	cryptoTx.Signature = new(eddsa.Signature)
 	_, err = cryptoTx.Signature.SetBytes(txInfo.Sig)
 	if err != nil {
-		logx.Errorf("[ConstructTransferCryptoTx] invalid sig bytes: %s", err.Error())
+		logx.Errorf("invalid sig bytes: %s", err.Error())
 		return nil, err
 	}
 	return cryptoTx, nil
@@ -51,12 +51,12 @@ func (w *WitnessHelper) constructTransferCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (
 func ToCryptoTransferTx(txInfo *types.TransferTxInfo) (info *CryptoTransferTx, err error) {
 	packedAmount, err := common2.ToPackedAmount(txInfo.AssetAmount)
 	if err != nil {
-		logx.Errorf("[ToCryptoTransferTx] unable to convert to packed amount: %s", err.Error())
+		logx.Errorf("unable to convert to packed amount: %s", err.Error())
 		return nil, err
 	}
 	packedFee, err := common2.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
-		logx.Errorf("[ToCryptoTransferTx] unable to convert to packed fee: %s", err.Error())
+		logx.Errorf("unable to convert to packed fee: %s", err.Error())
 		return nil, err
 	}
 	info = &CryptoTransferTx{
