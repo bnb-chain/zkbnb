@@ -29,6 +29,10 @@ import (
 	"github.com/bnb-chain/zkbas/types"
 )
 
+const (
+	DetailTableName = `mempool_tx_detail`
+)
+
 type (
 	MempoolTxDetailModel interface {
 		CreateMempoolDetailTable() error

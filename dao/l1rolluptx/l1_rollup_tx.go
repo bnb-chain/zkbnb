@@ -32,6 +32,16 @@ import (
 	"github.com/bnb-chain/zkbas/types"
 )
 
+const (
+	TableName = "l1_rollup_tx"
+
+	StatusPending = 1
+	StatusHandled = 2
+
+	TxTypeCommit           = 1
+	TxTypeVerifyAndExecute = 2
+)
+
 type (
 	L1RollupTxModel interface {
 		CreateL1RollupTxTable() error

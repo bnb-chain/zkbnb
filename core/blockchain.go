@@ -17,7 +17,7 @@ import (
 	sdb "github.com/bnb-chain/zkbas/core/statedb"
 	"github.com/bnb-chain/zkbas/dao/account"
 	"github.com/bnb-chain/zkbas/dao/block"
-	"github.com/bnb-chain/zkbas/dao/blockforcommit"
+	"github.com/bnb-chain/zkbas/dao/compressedblock"
 	"github.com/bnb-chain/zkbas/dao/dbcache"
 	"github.com/bnb-chain/zkbas/dao/liquidity"
 	"github.com/bnb-chain/zkbas/dao/mempool"
@@ -133,7 +133,7 @@ func (bc *BlockChain) CurrentBlock() *block.Block {
 }
 
 func (bc *BlockChain) CommitNewBlock(blockSize int, createdAt int64) (*block.BlockStates, error) {
-	newBlock, newBlockForCommit, err := bc.commitNewBlock(blockSize, createdAt)
+	newBlock, compressedBlock, err := bc.commitNewBlock(blockSize, createdAt)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +156,7 @@ func (bc *BlockChain) CommitNewBlock(blockSize int, createdAt int64) (*block.Blo
 
 	return &block.BlockStates{
 		Block:                        newBlock,
-		BlockForCommit:               newBlockForCommit,
+		CompressedBlock:              compressedBlock,
 		PendingNewAccount:            pendingNewAccount,
 		PendingUpdateAccount:         pendingUpdateAccount,
 		PendingNewAccountHistory:     pendingNewAccountHistory,
@@ -172,7 +172,7 @@ func (bc *BlockChain) CommitNewBlock(blockSize int, createdAt int64) (*block.Blo
 	}, nil
 }
 
-func (bc *BlockChain) commitNewBlock(blockSize int, createdAt int64) (*block.Block, *blockforcommit.BlockForCommit, error) {
+func (bc *BlockChain) commitNewBlock(blockSize int, createdAt int64) (*block.Block, *compressedblock.CompressedBlock, error) {
 	s := bc.Statedb
 	if blockSize < len(s.Txs) {
 		return nil, nil, errors.New("block size too small")
@@ -216,7 +216,7 @@ func (bc *BlockChain) commitNewBlock(blockSize int, createdAt int64) (*block.Blo
 	if err != nil {
 		return nil, nil, fmt.Errorf("marshal pubData offset failed: %v", err)
 	}
-	newBlockForCommit := &blockforcommit.BlockForCommit{
+	newCompressedBlock := &compressedblock.CompressedBlock{
 		BlockSize:         uint16(blockSize),
 		BlockHeight:       newBlock.BlockHeight,
 		StateRoot:         newBlock.StateRoot,
@@ -226,7 +226,7 @@ func (bc *BlockChain) commitNewBlock(blockSize int, createdAt int64) (*block.Blo
 	}
 
 	bc.currentBlock = newBlock
-	return newBlock, newBlockForCommit, nil
+	return newBlock, newCompressedBlock, nil
 }
 
 func (bc *BlockChain) VerifyExpiredAt(expiredAt int64) error {

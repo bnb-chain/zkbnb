@@ -27,6 +27,10 @@ import (
 	"github.com/bnb-chain/zkbas/types"
 )
 
+const (
+	L2NftHistoryTableName = `l2_nft_history`
+)
+
 type (
 	L2NftHistoryModel interface {
 		CreateL2NftHistoryTable() error

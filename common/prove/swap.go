@@ -31,7 +31,7 @@ func (w *WitnessHelper) constructSwapCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*Cry
 		logx.Errorf("unable to parse swap tx info:%s", err.Error())
 		return nil, err
 	}
-	cryptoTxInfo, err := ToCryptoSwapTx(txInfo)
+	cryptoTxInfo, err := toCryptoSwapTx(txInfo)
 	if err != nil {
 		logx.Errorf("unable to convert to crypto swap tx: %s", err.Error())
 		return nil, err
@@ -47,7 +47,7 @@ func (w *WitnessHelper) constructSwapCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*Cry
 	return cryptoTx, nil
 }
 
-func ToCryptoSwapTx(txInfo *types.SwapTxInfo) (info *CryptoSwapTx, err error) {
+func toCryptoSwapTx(txInfo *types.SwapTxInfo) (info *CryptoSwapTx, err error) {
 	packedAAmount, err := common.ToPackedAmount(txInfo.AssetAAmount)
 	if err != nil {
 		logx.Errorf("unable to convert to packed amount: %s", err.Error())

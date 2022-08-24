@@ -363,7 +363,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	accountOrder := int64(0)
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
-		AssetType:    types.GeneralAssetType,
+		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.AccountIndex,
 		AccountName:  fromAccount.AccountName,
 		Balance:      fromAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
@@ -380,7 +380,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	accountOrder++
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.BuyOffer.AssetId,
-		AssetType:    types.GeneralAssetType,
+		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.BuyOffer.AccountIndex,
 		AccountName:  buyAccount.AccountName,
 		Balance:      buyAccount.AssetInfo[txInfo.BuyOffer.AssetId].String(),
@@ -397,7 +397,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	buyOffer = new(big.Int).SetBit(buyOffer, int(e.sellOfferIndex), 1)
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      e.buyOfferAssetId,
-		AssetType:    types.GeneralAssetType,
+		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.BuyOffer.AccountIndex,
 		AccountName:  buyAccount.AccountName,
 		Balance:      buyAccount.AssetInfo[e.buyOfferAssetId].String(),
@@ -413,7 +413,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	sellDeltaAmount := ffmath.Sub(txInfo.SellOffer.AssetAmount, ffmath.Add(txInfo.TreasuryAmount, txInfo.CreatorAmount))
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.SellOffer.AssetId,
-		AssetType:    types.GeneralAssetType,
+		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.SellOffer.AccountIndex,
 		AccountName:  sellAccount.AccountName,
 		Balance:      sellAccount.AssetInfo[txInfo.SellOffer.AssetId].String(),
@@ -430,7 +430,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	sellOffer = new(big.Int).SetBit(sellOffer, int(e.sellOfferIndex), 1)
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      e.sellOfferAssetId,
-		AssetType:    types.GeneralAssetType,
+		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.SellOffer.AccountIndex,
 		AccountName:  sellAccount.AccountName,
 		Balance:      sellAccount.AssetInfo[e.sellOfferAssetId].String(),
@@ -445,7 +445,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	accountOrder++
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.BuyOffer.AssetId,
-		AssetType:    types.GeneralAssetType,
+		AssetType:    types.FungibleAssetType,
 		AccountIndex: matchNft.CreatorAccountIndex,
 		AccountName:  creatorAccount.AccountName,
 		Balance:      creatorAccount.AssetInfo[txInfo.BuyOffer.AssetId].String(),
@@ -475,7 +475,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	accountOrder++
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.BuyOffer.AssetId,
-		AssetType:    types.GeneralAssetType,
+		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.GasAccountIndex,
 		AccountName:  gasAccount.AccountName,
 		Balance:      gasAccount.AssetInfo[txInfo.BuyOffer.AssetId].String(),
@@ -489,7 +489,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	order++
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
-		AssetType:    types.GeneralAssetType,
+		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.GasAccountIndex,
 		AccountName:  gasAccount.AccountName,
 		Balance:      gasAccount.AssetInfo[txInfo.GasFeeAssetId].String(),

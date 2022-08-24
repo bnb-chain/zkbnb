@@ -24,7 +24,6 @@ import (
 
 	"github.com/bnb-chain/bas-smt/database/memory"
 	"github.com/bnb-chain/zkbas/dao/account"
-	"github.com/bnb-chain/zkbas/dao/basic"
 	"github.com/bnb-chain/zkbas/dao/liquidity"
 	"github.com/bnb-chain/zkbas/dao/nft"
 	"github.com/bnb-chain/zkbas/dao/tx"
@@ -32,13 +31,13 @@ import (
 )
 
 func TestConstructRemoveLiquidityCryptoTxFirst(t *testing.T) {
-	txModel := tx.NewTxModel(basic.Connection, basic.CacheConf, basic.DB)
-	accountModel := account.NewAccountModel(basic.Connection, basic.CacheConf, basic.DB)
-	accountHistoryModel := account.NewAccountHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
-	//liquidityModel := liquidity.NewLiquidityModel(basic.Connection, basic.CacheConf, basic.DB)
-	liquidityHistoryModel := liquidity.NewLiquidityHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
-	//nftModel := nft.NewL2NftModel(basic.Connection, basic.CacheConf, basic.DB)
-	nftHistoryModel := nft.NewL2NftHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
+	txModel := tx.NewTxModel(connection, cacheConf, db)
+	accountModel := account.NewAccountModel(connection, cacheConf, db)
+	accountHistoryModel := account.NewAccountHistoryModel(connection, cacheConf, db)
+	//liquidityModel := liquidity.NewLiquidityModel(basic.connection, basic.cacheConf, basic.db)
+	liquidityHistoryModel := liquidity.NewLiquidityHistoryModel(connection, cacheConf, db)
+	//nftModel := nft.NewL2NftModel(basic.connection, basic.cacheConf, basic.db)
+	nftHistoryModel := nft.NewL2NftHistoryModel(connection, cacheConf, db)
 	ctx := &tree.Context{
 		Driver: tree.MemoryDB,
 		TreeDB: memory.NewMemoryDB(),

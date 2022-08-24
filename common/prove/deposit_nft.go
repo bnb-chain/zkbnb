@@ -31,7 +31,7 @@ func (w *WitnessHelper) constructDepositNftCryptoTx(cryptoTx *CryptoTx, oTx *Tx)
 		logx.Errorf("unable to parse deposit nft tx info:%s", err.Error())
 		return nil, err
 	}
-	cryptoTxInfo, err := ToCryptoDepositNftTx(txInfo)
+	cryptoTxInfo, err := toCryptoDepositNftTx(txInfo)
 	if err != nil {
 		logx.Errorf("unable to convert to crypto deposit nft tx: %s", err.Error())
 		return nil, err
@@ -41,7 +41,7 @@ func (w *WitnessHelper) constructDepositNftCryptoTx(cryptoTx *CryptoTx, oTx *Tx)
 	return cryptoTx, nil
 }
 
-func ToCryptoDepositNftTx(txInfo *legendTxTypes.DepositNftTxInfo) (info *CryptoDepositNftTx, err error) {
+func toCryptoDepositNftTx(txInfo *legendTxTypes.DepositNftTxInfo) (info *CryptoDepositNftTx, err error) {
 	info = &CryptoDepositNftTx{
 		AccountIndex:        txInfo.AccountIndex,
 		NftIndex:            txInfo.NftIndex,

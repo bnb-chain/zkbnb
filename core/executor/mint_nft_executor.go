@@ -199,7 +199,7 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	accountOrder := int64(0)
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
-		AssetType:    types.GeneralAssetType,
+		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.CreatorAccountIndex,
 		AccountName:  creatorAccount.AccountName,
 		Balance:      creatorAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
@@ -224,7 +224,7 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	accountOrder++
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
-		AssetType:    types.GeneralAssetType,
+		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.ToAccountIndex,
 		AccountName:  toAccount.AccountName,
 		Balance:      toAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
@@ -271,7 +271,7 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	accountOrder++
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
-		AssetType:    types.GeneralAssetType,
+		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.GasAccountIndex,
 		AccountName:  gasAccount.AccountName,
 		Balance:      gasAccount.AssetInfo[txInfo.GasFeeAssetId].String(),

@@ -51,7 +51,7 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB, redisCache dbcache.Cach
 		treeCtx,
 	)
 	if err != nil {
-		logx.Error("init account tree failed:", err)
+		logx.Error("dbinitializer account tree failed:", err)
 		return nil, err
 	}
 	liquidityTree, err := tree.InitLiquidityTree(
@@ -60,7 +60,7 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB, redisCache dbcache.Cach
 		treeCtx,
 	)
 	if err != nil {
-		logx.Error("init liquidity tree failed:", err)
+		logx.Error("dbinitializer liquidity tree failed:", err)
 		return nil, err
 	}
 	nftTree, err := tree.InitNftTree(
@@ -69,7 +69,7 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB, redisCache dbcache.Cach
 		treeCtx,
 	)
 	if err != nil {
-		logx.Error("init nft tree failed:", err)
+		logx.Error("dbinitializer nft tree failed:", err)
 		return nil, err
 	}
 	return &StateDB{

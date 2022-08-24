@@ -29,7 +29,7 @@ import (
 	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/bnb-chain/zkbas/common/chain"
 	"github.com/bnb-chain/zkbas/dao/block"
-	"github.com/bnb-chain/zkbas/dao/blockforcommit"
+	"github.com/bnb-chain/zkbas/dao/compressedblock"
 	"github.com/bnb-chain/zkbas/tree"
 	"github.com/bnb-chain/zkbas/types"
 )
@@ -71,7 +71,7 @@ func DefaultBlockHeader() zkbas.StorageStoredBlockInfo {
 	}
 }
 
-func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*blockforcommit.BlockForCommit) (commitBlocks []zkbas.OldZkbasCommitBlockInfo, err error) {
+func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*compressedblock.CompressedBlock) (commitBlocks []zkbas.OldZkbasCommitBlockInfo, err error) {
 	for _, oBlock := range oBlocks {
 		var newStateRoot [32]byte
 		var pubDataOffsets []uint32

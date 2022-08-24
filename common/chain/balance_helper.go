@@ -28,7 +28,7 @@ import (
 
 func ComputeNewBalance(assetType int64, balance string, balanceDelta string) (newBalance string, err error) {
 	switch assetType {
-	case types.GeneralAssetType:
+	case types.FungibleAssetType:
 		assetInfo, err := types.ParseAccountAsset(balance)
 		if err != nil {
 			logx.Errorf("[ComputeNewBalance] unable to parse account asset: %s", err.Error())

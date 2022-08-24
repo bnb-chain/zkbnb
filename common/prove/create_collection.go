@@ -31,7 +31,7 @@ func (w *WitnessHelper) constructCreateCollectionCryptoTx(cryptoTx *CryptoTx, oT
 		logx.Errorf("unable to parse create collection tx info:%s", err.Error())
 		return nil, err
 	}
-	cryptoTxInfo, err := ToCryptoCreateCollectionTx(txInfo)
+	cryptoTxInfo, err := toCryptoCreateCollectionTx(txInfo)
 	if err != nil {
 		logx.Errorf("unable to convert to crypto create collection tx: %s", err.Error())
 		return nil, err
@@ -47,7 +47,7 @@ func (w *WitnessHelper) constructCreateCollectionCryptoTx(cryptoTx *CryptoTx, oT
 	return cryptoTx, nil
 }
 
-func ToCryptoCreateCollectionTx(txInfo *types.CreateCollectionTxInfo) (info *CryptoCreateCollectionTx, err error) {
+func toCryptoCreateCollectionTx(txInfo *types.CreateCollectionTxInfo) (info *CryptoCreateCollectionTx, err error) {
 	packedFee, err := common.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
 		logx.Errorf("unable to convert to packed fee: %s", err.Error())

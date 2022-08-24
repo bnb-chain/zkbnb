@@ -88,7 +88,7 @@ func (w *Witness) initState() {
 			}
 		}
 	}
-	// init tree database
+	// dbinitializer tree database
 	treeCtx := &tree.Context{
 		Name:          "witness",
 		Driver:        w.config.TreeDB.Driver,
@@ -101,8 +101,8 @@ func (w *Witness) initState() {
 	}
 	w.treeCtx = treeCtx
 
-	// init accountTree and accountStateTrees
-	// the init block number use the latest sent block
+	// dbinitializer accountTree and accountStateTrees
+	// the dbinitializer block number use the latest sent block
 	w.accountTree, w.assetTrees, err = tree.InitAccountTree(
 		w.accountModel,
 		w.accountHistoryModel,

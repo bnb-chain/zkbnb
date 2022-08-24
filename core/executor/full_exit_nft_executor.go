@@ -239,7 +239,7 @@ func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	}
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      0,
-		AssetType:    types.GeneralAssetType,
+		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.AccountIndex,
 		AccountName:  exitAccount.AccountName,
 		Balance:      baseBalance.String(),

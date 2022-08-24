@@ -31,7 +31,7 @@ func (w *WitnessHelper) constructCreatePairCryptoTx(cryptoTx *CryptoTx, oTx *Tx)
 		logx.Errorf("unable to parse create pair tx info:%s", err.Error())
 		return nil, err
 	}
-	cryptoTxInfo, err := ToCryptoCreatePairTx(txInfo)
+	cryptoTxInfo, err := toCryptoCreatePairTx(txInfo)
 	if err != nil {
 		logx.Errorf("unable to convert to crypto create pair tx: %s", err.Error())
 		return nil, err
@@ -41,7 +41,7 @@ func (w *WitnessHelper) constructCreatePairCryptoTx(cryptoTx *CryptoTx, oTx *Tx)
 	return cryptoTx, nil
 }
 
-func ToCryptoCreatePairTx(txInfo *legendTxTypes.CreatePairTxInfo) (info *CryptoCreatePairTx, err error) {
+func toCryptoCreatePairTx(txInfo *legendTxTypes.CreatePairTxInfo) (info *CryptoCreatePairTx, err error) {
 	info = &CryptoCreatePairTx{
 		PairIndex:            txInfo.PairIndex,
 		AssetAId:             txInfo.AssetAId,

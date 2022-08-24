@@ -53,16 +53,3 @@ func ToFormatAccountInfo(accountInfo *account.Account) (formatAccountInfo *types
 	}
 	return formatAccountInfo, nil
 }
-
-type FormatAccountHistoryInfo struct {
-	AccountId       uint
-	AccountIndex    int64
-	Nonce           int64
-	CollectionNonce int64
-	// map[int64]*AccountAsset
-	AssetInfo map[int64]*types.AccountAsset
-	AssetRoot string
-	// map[int64]*Liquidity
-	L2BlockHeight int64
-	Status        int
-}

@@ -34,7 +34,7 @@ func (w *WitnessHelper) constructRegisterZnsCryptoTx(cryptoTx *CryptoTx, oTx *Tx
 		logx.Errorf("unable to parse register zns tx info:%s", err.Error())
 		return nil, err
 	}
-	cryptoTxInfo, err := ToCryptoRegisterZnsTx(txInfo)
+	cryptoTxInfo, err := toCryptoRegisterZnsTx(txInfo)
 	if err != nil {
 		logx.Errorf("unable to convert to crypto register zns tx: %s", err.Error())
 		return nil, err
@@ -44,10 +44,9 @@ func (w *WitnessHelper) constructRegisterZnsCryptoTx(cryptoTx *CryptoTx, oTx *Tx
 	return cryptoTx, nil
 }
 
-func ToCryptoRegisterZnsTx(txInfo *legendTxTypes.RegisterZnsTxInfo) (info *CryptoRegisterZnsTx, err error) {
+func toCryptoRegisterZnsTx(txInfo *legendTxTypes.RegisterZnsTxInfo) (info *CryptoRegisterZnsTx, err error) {
 	accountName := make([]byte, 32)
-	AccountNameSuffix := ".legend"
-	realName := strings.Split(txInfo.AccountName, AccountNameSuffix)[0]
+	realName := strings.Split(txInfo.AccountName, types.AccountNameSuffix)[0]
 	copy(accountName[:], realName)
 	pk, err := common.ParsePubKey(txInfo.PubKey)
 	if err != nil {

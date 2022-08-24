@@ -91,3 +91,19 @@ const (
 	LastPairIndex      = 65535
 	LastNftIndex       = 1099511627775
 )
+
+type AccountWitnessInfo struct {
+	AccountInfo            *Account
+	AccountAssets          []*AccountAsset
+	AssetsRelatedTxDetails []*TxDetail
+}
+
+type LiquidityWitnessInfo struct {
+	LiquidityInfo            *PoolInfo
+	LiquidityRelatedTxDetail *TxDetail
+}
+
+type NftWitnessInfo struct {
+	NftInfo            *NftInfo
+	NftRelatedTxDetail *TxDetail
+}

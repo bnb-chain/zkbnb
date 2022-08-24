@@ -76,19 +76,7 @@ func (w *WitnessHelper) constructCryptoTx(oTx *Tx, finalityBlockNr uint64) (cryp
 		logx.Errorf("failed because of nil tx or tree")
 		return nil, errors.New("failed because of nil tx or tree")
 	}
-	accountKeys, proverAccounts, proverLiquidityInfo, proverNftInfo, err := ConstructProverInfo(oTx, w.accountModel)
-	if err != nil {
-		logx.Errorf("unable to construct prover info: %s", err.Error())
-		return nil, err
-	}
-	cryptoTx, err = w.constructWitnessInfo(
-		oTx,
-		finalityBlockNr,
-		accountKeys,
-		proverAccounts,
-		proverLiquidityInfo,
-		proverNftInfo,
-	)
+	cryptoTx, err = w.constructWitnessInfo(oTx, finalityBlockNr)
 	if err != nil {
 		logx.Errorf("unable to construct witness info: %s", err.Error())
 		return nil, err
@@ -140,49 +128,50 @@ func (w *WitnessHelper) constructCryptoTx(oTx *Tx, finalityBlockNr uint64) (cryp
 func (w *WitnessHelper) constructWitnessInfo(
 	oTx *Tx,
 	finalityBlockNr uint64,
-	accountKeys []int64,
-	proverAccounts []*ProverAccountInfo,
-	proverLiquidityInfo *ProverLiquidityInfo,
-	proverNftInfo *ProverNftInfo,
 ) (
 	cryptoTx *CryptoTx,
 	err error,
 ) {
+	accountKeys, proverAccounts, proverLiquidityInfo, proverNftInfo, err := w.constructSimpleWitnessInfo(oTx)
+	if err != nil {
+		logx.Errorf("unable to construct prover info: %s", err.Error())
+		return nil, err
+	}
 	// construct account witness
-	AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err :=
+	accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err :=
 		w.constructAccountWitness(oTx, finalityBlockNr, accountKeys, proverAccounts)
 	if err != nil {
 		logx.Errorf("unable to construct account witness: %s", err.Error())
 		return nil, err
 	}
 	// construct liquidity witness
-	LiquidityRootBefore, LiquidityBefore, MerkleProofsLiquidityBefore, err :=
+	liquidityRootBefore, liquidityBefore, merkleProofsLiquidityBefore, err :=
 		w.constructLiquidityWitness(proverLiquidityInfo)
 	if err != nil {
 		logx.Errorf("unable to construct liquidity witness: %s", err.Error())
 		return nil, err
 	}
 	// construct nft witness
-	NftRootBefore, NftBefore, MerkleProofsNftBefore, err :=
-		w.ConstructNftWitness(proverNftInfo)
+	nftRootBefore, nftBefore, merkleProofsNftBefore, err :=
+		w.constructNftWitness(proverNftInfo)
 	if err != nil {
 		logx.Errorf("unable to construct nft witness: %s", err.Error())
 		return nil, err
 	}
-	stateRootBefore := tree.ComputeStateRootHash(AccountRootBefore, LiquidityRootBefore, NftRootBefore)
+	stateRootBefore := tree.ComputeStateRootHash(accountRootBefore, liquidityRootBefore, nftRootBefore)
 	stateRootAfter := tree.ComputeStateRootHash(w.accountTree.Root(), w.liquidityTree.Root(), w.nftTree.Root())
 	cryptoTx = &CryptoTx{
-		AccountRootBefore:               AccountRootBefore,
-		AccountsInfoBefore:              AccountsInfoBefore,
-		LiquidityRootBefore:             LiquidityRootBefore,
-		LiquidityBefore:                 LiquidityBefore,
-		NftRootBefore:                   NftRootBefore,
-		NftBefore:                       NftBefore,
+		AccountRootBefore:               accountRootBefore,
+		AccountsInfoBefore:              accountsInfoBefore,
+		LiquidityRootBefore:             liquidityRootBefore,
+		LiquidityBefore:                 liquidityBefore,
+		NftRootBefore:                   nftRootBefore,
+		NftBefore:                       nftBefore,
 		StateRootBefore:                 stateRootBefore,
-		MerkleProofsAccountAssetsBefore: MerkleProofsAccountAssetsBefore,
-		MerkleProofsAccountBefore:       MerkleProofsAccountBefore,
-		MerkleProofsLiquidityBefore:     MerkleProofsLiquidityBefore,
-		MerkleProofsNftBefore:           MerkleProofsNftBefore,
+		MerkleProofsAccountAssetsBefore: merkleProofsAccountAssetsBefore,
+		MerkleProofsAccountBefore:       merkleProofsAccountBefore,
+		MerkleProofsLiquidityBefore:     merkleProofsLiquidityBefore,
+		MerkleProofsNftBefore:           merkleProofsNftBefore,
 		StateRootAfter:                  stateRootAfter,
 	}
 	return cryptoTx, nil
@@ -192,18 +181,18 @@ func (w *WitnessHelper) constructAccountWitness(
 	oTx *Tx,
 	finalityBlockNr uint64,
 	accountKeys []int64,
-	proverAccounts []*ProverAccountInfo,
+	proverAccounts []*AccountWitnessInfo,
 ) (
-	AccountRootBefore []byte,
+	accountRootBefore []byte,
 	// account before info, size is 5
-	AccountsInfoBefore [NbAccountsPerTx]*CryptoAccount,
+	accountsInfoBefore [NbAccountsPerTx]*CryptoAccount,
 	// before account asset merkle proof
-	MerkleProofsAccountAssetsBefore [NbAccountsPerTx][NbAccountAssetsPerAccount][AssetMerkleLevels][]byte,
+	merkleProofsAccountAssetsBefore [NbAccountsPerTx][NbAccountAssetsPerAccount][AssetMerkleLevels][]byte,
 	// before account merkle proof
-	MerkleProofsAccountBefore [NbAccountsPerTx][AccountMerkleLevels][]byte,
+	merkleProofsAccountBefore [NbAccountsPerTx][AccountMerkleLevels][]byte,
 	err error,
 ) {
-	AccountRootBefore = w.accountTree.Root()
+	accountRootBefore = w.accountTree.Root()
 	var (
 		accountCount = 0
 	)
@@ -217,19 +206,19 @@ func (w *WitnessHelper) constructAccountWitness(
 		accountMerkleProofs, err := w.accountTree.GetProof(uint64(accountKey))
 		if err != nil {
 			logx.Errorf("unable to build merkle proofs: %s", err.Error())
-			return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+			return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 		}
 		// it means this is a registerZNS tx
 		if proverAccounts == nil {
 			if accountKey != int64(len(*w.assetTrees)) {
 				logx.Errorf("invalid account key, accountKey=%d, assetTrees=%d", accountKey, len(*w.assetTrees))
-				return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore,
+				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore,
 					errors.New("invalid key")
 			}
 			emptyAccountAssetTree, err := tree.NewEmptyAccountAssetTree(w.treeCtx, accountKey, finalityBlockNr)
 			if err != nil {
 				logx.Errorf("unable to create empty account asset tree: %s", err.Error())
-				return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 			}
 			*w.assetTrees = append(*w.assetTrees, emptyAccountAssetTree)
 			cryptoAccount = std.EmptyAccount(accountKey, tree.NilAccountAssetRoot)
@@ -237,9 +226,9 @@ func (w *WitnessHelper) constructAccountWitness(
 			accountInfo, err := w.accountModel.GetConfirmedAccountByIndex(accountKey)
 			if err != nil {
 				logx.Errorf("unable to get confirmed account by account index: %s", err.Error())
-				return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 			}
-			proverAccounts = append(proverAccounts, &ProverAccountInfo{
+			proverAccounts = append(proverAccounts, &AccountWitnessInfo{
 				AccountInfo: &Account{
 					AccountIndex:    accountInfo.AccountIndex,
 					AccountName:     accountInfo.AccountName,
@@ -258,7 +247,7 @@ func (w *WitnessHelper) constructAccountWitness(
 			pk, err := common2.ParsePubKey(proverAccountInfo.AccountInfo.PublicKey)
 			if err != nil {
 				logx.Errorf("unable to parse pub key: %s", err.Error())
-				return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 			}
 			cryptoAccount = &CryptoAccount{
 				AccountIndex:    accountKey,
@@ -272,7 +261,7 @@ func (w *WitnessHelper) constructAccountWitness(
 				assetMerkleProof, err := (*w.assetTrees)[accountKey].GetProof(uint64(accountAsset.AssetId))
 				if err != nil {
 					logx.Errorf("unable to build merkle proofs: %s", err.Error())
-					return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+					return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 				}
 				// set crypto account asset
 				cryptoAccount.AssetsInfo[assetCount] = &CryptoAccountAsset{
@@ -283,10 +272,10 @@ func (w *WitnessHelper) constructAccountWitness(
 				}
 
 				// set merkle proof
-				MerkleProofsAccountAssetsBefore[accountCount][assetCount], err = SetFixedAccountAssetArray(assetMerkleProof)
+				merkleProofsAccountAssetsBefore[accountCount][assetCount], err = SetFixedAccountAssetArray(assetMerkleProof)
 				if err != nil {
 					logx.Errorf("unable to set fixed merkle proof: %s", err.Error())
-					return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+					return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 				}
 				// update asset merkle tree
 				nBalance, err := chain.ComputeNewBalance(
@@ -296,29 +285,29 @@ func (w *WitnessHelper) constructAccountWitness(
 				)
 				if err != nil {
 					logx.Errorf("unable to compute new balance: %s", err.Error())
-					return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+					return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 				}
 				nAsset, err := types.ParseAccountAsset(nBalance)
 				if err != nil {
 					logx.Errorf("unable to parse account asset: %s", err.Error())
-					return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+					return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 				}
 				nAssetHash, err := tree.ComputeAccountAssetLeafHash(nAsset.Balance.String(), nAsset.LpAmount.String(), nAsset.OfferCanceledOrFinalized.String())
 				if err != nil {
 					logx.Errorf("unable to compute account asset leaf hash: %s", err.Error())
-					return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+					return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 				}
 				err = (*w.assetTrees)[accountKey].Set(uint64(accountAsset.AssetId), nAssetHash)
 				if err != nil {
 					logx.Errorf("unable to update asset tree: %s", err.Error())
-					return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+					return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 				}
 
 				assetCount++
 			}
 			if err != nil {
 				logx.Errorf("unable to commit asset tree: %s", err.Error())
-				return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 			}
 		}
 		// padding empty account asset
@@ -327,20 +316,20 @@ func (w *WitnessHelper) constructAccountWitness(
 			assetMerkleProof, err := (*w.assetTrees)[accountKey].GetProof(LastAccountAssetId)
 			if err != nil {
 				logx.Errorf("unable to build merkle proofs: %s", err.Error())
-				return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 			}
-			MerkleProofsAccountAssetsBefore[accountCount][assetCount], err = SetFixedAccountAssetArray(assetMerkleProof)
+			merkleProofsAccountAssetsBefore[accountCount][assetCount], err = SetFixedAccountAssetArray(assetMerkleProof)
 			if err != nil {
 				logx.Errorf("unable to set fixed merkle proof: %s", err.Error())
-				return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 			}
 			assetCount++
 		}
 		// set account merkle proof
-		MerkleProofsAccountBefore[accountCount], err = SetFixedAccountArray(accountMerkleProofs)
+		merkleProofsAccountBefore[accountCount], err = SetFixedAccountArray(accountMerkleProofs)
 		if err != nil {
 			logx.Errorf("unable to set fixed merkle proof: %s", err.Error())
-			return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+			return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 		}
 		// update account merkle tree
 		nonce := cryptoAccount.Nonce
@@ -360,62 +349,62 @@ func (w *WitnessHelper) constructAccountWitness(
 		)
 		if err != nil {
 			logx.Errorf("unable to compute account leaf hash: %s", err.Error())
-			return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+			return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 		}
 		err = w.accountTree.Set(uint64(accountKey), nAccountHash)
 		if err != nil {
 			logx.Errorf("unable to update account tree: %s", err.Error())
-			return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+			return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 		}
 		// set account info before
-		AccountsInfoBefore[accountCount] = cryptoAccount
+		accountsInfoBefore[accountCount] = cryptoAccount
 		// add count
 		accountCount++
 	}
 	if err != nil {
 		logx.Errorf("unable to commit account tree: %s", err.Error())
-		return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+		return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 	}
 	// padding empty account
 	emptyAssetTree, err := tree.NewMemAccountAssetTree()
 	if err != nil {
 		logx.Errorf("unable to new empty account asset tree: %s", err.Error())
-		return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+		return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 	}
 	for accountCount < NbAccountsPerTx {
-		AccountsInfoBefore[accountCount] = std.EmptyAccount(LastAccountIndex, tree.NilAccountAssetRoot)
+		accountsInfoBefore[accountCount] = std.EmptyAccount(LastAccountIndex, tree.NilAccountAssetRoot)
 		// get account before
 		accountMerkleProofs, err := w.accountTree.GetProof(LastAccountIndex)
 		if err != nil {
 			logx.Errorf("unable to build merkle proofs: %s", err.Error())
-			return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+			return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 		}
 		// set account merkle proof
-		MerkleProofsAccountBefore[accountCount], err = SetFixedAccountArray(accountMerkleProofs)
+		merkleProofsAccountBefore[accountCount], err = SetFixedAccountArray(accountMerkleProofs)
 		if err != nil {
 			logx.Errorf("unable to set fixed merkle proof: %s", err.Error())
-			return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+			return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 		}
 		for i := 0; i < NbAccountAssetsPerAccount; i++ {
 			assetMerkleProof, err := emptyAssetTree.GetProof(0)
 			if err != nil {
 				logx.Errorf("unable to build merkle proofs: %s", err.Error())
-				return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 			}
-			MerkleProofsAccountAssetsBefore[accountCount][i], err = SetFixedAccountAssetArray(assetMerkleProof)
+			merkleProofsAccountAssetsBefore[accountCount][i], err = SetFixedAccountAssetArray(assetMerkleProof)
 			if err != nil {
 				logx.Errorf("unable to set fixed merkle proof: %s", err.Error())
-				return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, err
+				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 			}
 		}
 		accountCount++
 
 	}
-	return AccountRootBefore, AccountsInfoBefore, MerkleProofsAccountAssetsBefore, MerkleProofsAccountBefore, nil
+	return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, nil
 }
 
 func (w *WitnessHelper) constructLiquidityWitness(
-	proverLiquidityInfo *ProverLiquidityInfo,
+	proverLiquidityInfo *LiquidityWitnessInfo,
 ) (
 	// liquidity root before
 	LiquidityRootBefore []byte,
@@ -500,48 +489,48 @@ func (w *WitnessHelper) constructLiquidityWitness(
 	return LiquidityRootBefore, LiquidityBefore, MerkleProofsLiquidityBefore, nil
 }
 
-func (w *WitnessHelper) ConstructNftWitness(
-	proverNftInfo *ProverNftInfo,
+func (w *WitnessHelper) constructNftWitness(
+	proverNftInfo *NftWitnessInfo,
 ) (
 	// nft root before
-	NftRootBefore []byte,
+	nftRootBefore []byte,
 	// nft before
-	NftBefore *CryptoNft,
+	nftBefore *CryptoNft,
 	// before nft tree merkle proof
-	MerkleProofsNftBefore [NftMerkleLevels][]byte,
+	merkleProofsNftBefore [NftMerkleLevels][]byte,
 	err error,
 ) {
-	NftRootBefore = w.nftTree.Root()
+	nftRootBefore = w.nftTree.Root()
 	if proverNftInfo == nil {
 		liquidityMerkleProofs, err := w.nftTree.GetProof(LastNftIndex)
 		if err != nil {
 			logx.Errorf("unable to build merkle proofs: %s", err.Error())
-			return NftRootBefore, NftBefore, MerkleProofsNftBefore, err
+			return nftRootBefore, nftBefore, merkleProofsNftBefore, err
 		}
-		MerkleProofsNftBefore, err = SetFixedNftArray(liquidityMerkleProofs)
+		merkleProofsNftBefore, err = SetFixedNftArray(liquidityMerkleProofs)
 		if err != nil {
 			logx.Errorf("unable to set fixed nft array: %s", err.Error())
-			return NftRootBefore, NftBefore, MerkleProofsNftBefore, err
+			return nftRootBefore, nftBefore, merkleProofsNftBefore, err
 		}
-		NftBefore = std.EmptyNft(LastNftIndex)
-		return NftRootBefore, NftBefore, MerkleProofsNftBefore, nil
+		nftBefore = std.EmptyNft(LastNftIndex)
+		return nftRootBefore, nftBefore, merkleProofsNftBefore, nil
 	}
 	nftMerkleProofs, err := w.nftTree.GetProof(uint64(proverNftInfo.NftInfo.NftIndex))
 	if err != nil {
 		logx.Errorf("unable to build merkle proofs: %s", err.Error())
-		return NftRootBefore, NftBefore, MerkleProofsNftBefore, err
+		return nftRootBefore, nftBefore, merkleProofsNftBefore, err
 	}
-	MerkleProofsNftBefore, err = SetFixedNftArray(nftMerkleProofs)
+	merkleProofsNftBefore, err = SetFixedNftArray(nftMerkleProofs)
 	if err != nil {
 		logx.Errorf("unable to set fixed liquidity array: %s", err.Error())
-		return NftRootBefore, NftBefore, MerkleProofsNftBefore, err
+		return nftRootBefore, nftBefore, merkleProofsNftBefore, err
 	}
 	nftL1TokenId, isValid := new(big.Int).SetString(proverNftInfo.NftInfo.NftL1TokenId, 10)
 	if !isValid {
 		logx.Errorf("unable to parse big int")
-		return NftRootBefore, NftBefore, MerkleProofsNftBefore, errors.New("unable to parse big int")
+		return nftRootBefore, nftBefore, merkleProofsNftBefore, errors.New("unable to parse big int")
 	}
-	NftBefore = &CryptoNft{
+	nftBefore = &CryptoNft{
 		NftIndex:            proverNftInfo.NftInfo.NftIndex,
 		NftContentHash:      common.FromHex(proverNftInfo.NftInfo.NftContentHash),
 		CreatorAccountIndex: proverNftInfo.NftInfo.CreatorAccountIndex,
@@ -559,12 +548,12 @@ func (w *WitnessHelper) ConstructNftWitness(
 	)
 	if err != nil {
 		logx.Errorf("unable to compute new balance: %s", err.Error())
-		return NftRootBefore, NftBefore, MerkleProofsNftBefore, err
+		return nftRootBefore, nftBefore, merkleProofsNftBefore, err
 	}
 	nNftInfo, err := types.ParseNftInfo(nBalance)
 	if err != nil {
 		logx.Errorf("unable to parse pool info: %s", err.Error())
-		return NftRootBefore, NftBefore, MerkleProofsNftBefore, err
+		return nftRootBefore, nftBefore, merkleProofsNftBefore, err
 	}
 	nNftHash, err := tree.ComputeNftAssetLeafHash(
 		nNftInfo.CreatorAccountIndex,
@@ -578,18 +567,18 @@ func (w *WitnessHelper) ConstructNftWitness(
 
 	if err != nil {
 		logx.Errorf("unable to compute liquidity node hash: %s", err.Error())
-		return NftRootBefore, NftBefore, MerkleProofsNftBefore, err
+		return nftRootBefore, nftBefore, merkleProofsNftBefore, err
 	}
 	err = w.nftTree.Set(uint64(proverNftInfo.NftInfo.NftIndex), nNftHash)
 	if err != nil {
 		logx.Errorf("unable to update liquidity tree: %s", err.Error())
-		return NftRootBefore, NftBefore, MerkleProofsNftBefore, err
+		return nftRootBefore, nftBefore, merkleProofsNftBefore, err
 	}
 	if err != nil {
 		logx.Errorf("unable to commit liquidity tree: %s", err.Error())
-		return NftRootBefore, NftBefore, MerkleProofsNftBefore, err
+		return nftRootBefore, nftBefore, merkleProofsNftBefore, err
 	}
-	return NftRootBefore, NftBefore, MerkleProofsNftBefore, nil
+	return nftRootBefore, nftBefore, merkleProofsNftBefore, nil
 }
 
 func SetFixedAccountArray(proof [][]byte) (res [AccountMerkleLevels][]byte, err error) {
@@ -626,4 +615,170 @@ func SetFixedNftArray(proof [][]byte) (res [NftMerkleLevels][]byte, err error) {
 	}
 	copy(res[:], proof[:])
 	return res, nil
+}
+
+func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *Tx) (
+	accountKeys []int64,
+	accountWitnessInfo []*AccountWitnessInfo,
+	liquidityWitnessInfo *LiquidityWitnessInfo,
+	nftWitnessInfo *NftWitnessInfo,
+	err error,
+) {
+	var (
+		// dbinitializer account asset map, because if we have the same asset detail, the before will be the after of the last one
+		accountAssetMap  = make(map[int64]map[int64]*AccountAsset)
+		accountMap       = make(map[int64]*Account)
+		lastAccountOrder = int64(-2)
+		accountCount     = -1
+	)
+	// dbinitializer prover account map
+	if oTx.TxType == types.TxTypeRegisterZns {
+		accountKeys = append(accountKeys, oTx.AccountIndex)
+	}
+	for _, txDetail := range oTx.TxDetails {
+		switch txDetail.AssetType {
+		case types.FungibleAssetType:
+			// get account info
+			if accountMap[txDetail.AccountIndex] == nil {
+				accountInfo, err := w.accountModel.GetConfirmedAccountByIndex(txDetail.AccountIndex)
+				if err != nil {
+					logx.Errorf("unable to get valid account by index: %s", err.Error())
+					return nil, nil, nil, nil, err
+				}
+				// get current nonce
+				accountInfo.Nonce = txDetail.Nonce
+				accountMap[txDetail.AccountIndex] = accountInfo
+			} else {
+				if lastAccountOrder != txDetail.AccountOrder {
+					if oTx.AccountIndex == txDetail.AccountIndex {
+						accountMap[txDetail.AccountIndex].Nonce = oTx.Nonce
+					}
+				}
+			}
+			if lastAccountOrder != txDetail.AccountOrder {
+				accountKeys = append(accountKeys, txDetail.AccountIndex)
+				lastAccountOrder = txDetail.AccountOrder
+				accountWitnessInfo = append(accountWitnessInfo, &AccountWitnessInfo{
+					AccountInfo: &Account{
+						AccountIndex:    accountMap[txDetail.AccountIndex].AccountIndex,
+						AccountName:     accountMap[txDetail.AccountIndex].AccountName,
+						PublicKey:       accountMap[txDetail.AccountIndex].PublicKey,
+						AccountNameHash: accountMap[txDetail.AccountIndex].AccountNameHash,
+						L1Address:       accountMap[txDetail.AccountIndex].L1Address,
+						Nonce:           accountMap[txDetail.AccountIndex].Nonce,
+						CollectionNonce: txDetail.CollectionNonce,
+						AssetInfo:       accountMap[txDetail.AccountIndex].AssetInfo,
+						AssetRoot:       accountMap[txDetail.AccountIndex].AssetRoot,
+						Status:          accountMap[txDetail.AccountIndex].Status,
+					},
+				})
+				accountCount++
+			}
+			if accountAssetMap[txDetail.AccountIndex] == nil {
+				accountAssetMap[txDetail.AccountIndex] = make(map[int64]*AccountAsset)
+			}
+			if accountAssetMap[txDetail.AccountIndex][txDetail.AssetId] == nil {
+				// set account before info
+				oAsset, err := types.ParseAccountAsset(txDetail.Balance)
+				if err != nil {
+					logx.Errorf("unable to parse account asset:%s", err.Error())
+					return nil, nil, nil, nil, err
+				}
+				accountWitnessInfo[accountCount].AccountAssets = append(
+					accountWitnessInfo[accountCount].AccountAssets,
+					oAsset,
+				)
+			} else {
+				// set account before info
+				accountWitnessInfo[accountCount].AccountAssets = append(
+					accountWitnessInfo[accountCount].AccountAssets,
+					&AccountAsset{
+						AssetId:                  accountAssetMap[txDetail.AccountIndex][txDetail.AssetId].AssetId,
+						Balance:                  accountAssetMap[txDetail.AccountIndex][txDetail.AssetId].Balance,
+						LpAmount:                 accountAssetMap[txDetail.AccountIndex][txDetail.AssetId].LpAmount,
+						OfferCanceledOrFinalized: accountAssetMap[txDetail.AccountIndex][txDetail.AssetId].OfferCanceledOrFinalized,
+					},
+				)
+			}
+			// set tx detail
+			accountWitnessInfo[accountCount].AssetsRelatedTxDetails = append(
+				accountWitnessInfo[accountCount].AssetsRelatedTxDetails,
+				txDetail,
+			)
+			// update asset info
+			newBalance, err := chain.ComputeNewBalance(txDetail.AssetType, txDetail.Balance, txDetail.BalanceDelta)
+			if err != nil {
+				logx.Errorf("unable to compute new balance: %s", err.Error())
+				return nil, nil, nil, nil, err
+			}
+			nAsset, err := types.ParseAccountAsset(newBalance)
+			if err != nil {
+				logx.Errorf("unable to parse account asset:%s", err.Error())
+				return nil, nil, nil, nil, err
+			}
+			accountAssetMap[txDetail.AccountIndex][txDetail.AssetId] = nAsset
+			break
+		case types.LiquidityAssetType:
+			liquidityWitnessInfo = new(LiquidityWitnessInfo)
+			liquidityWitnessInfo.LiquidityRelatedTxDetail = txDetail
+			poolInfo, err := types.ParseLiquidityInfo(txDetail.Balance)
+			if err != nil {
+				logx.Errorf("unable to parse pool info: %s", err.Error())
+				return nil, nil, nil, nil, err
+			}
+			liquidityWitnessInfo.LiquidityInfo = poolInfo
+			break
+		case types.NftAssetType:
+			nftWitnessInfo = new(NftWitnessInfo)
+			nftWitnessInfo.NftRelatedTxDetail = txDetail
+			nftInfo, err := types.ParseNftInfo(txDetail.Balance)
+			if err != nil {
+				logx.Errorf("unable to parse nft info: %s", err.Error())
+				return nil, nil, nil, nil, err
+			}
+			nftWitnessInfo.NftInfo = nftInfo
+			break
+		case types.CollectionNonceAssetType:
+			// get account info
+			if accountMap[txDetail.AccountIndex] == nil {
+				accountInfo, err := w.accountModel.GetConfirmedAccountByIndex(txDetail.AccountIndex)
+				if err != nil {
+					logx.Errorf("unable to get valid account by index: %s", err.Error())
+					return nil, nil, nil, nil, err
+				}
+				// get current nonce
+				accountInfo.Nonce = txDetail.Nonce
+				accountInfo.CollectionNonce = txDetail.CollectionNonce
+				accountMap[txDetail.AccountIndex] = accountInfo
+				if lastAccountOrder != txDetail.AccountOrder {
+					accountKeys = append(accountKeys, txDetail.AccountIndex)
+					lastAccountOrder = txDetail.AccountOrder
+					accountWitnessInfo = append(accountWitnessInfo, &AccountWitnessInfo{
+						AccountInfo: &Account{
+							AccountIndex:    accountMap[txDetail.AccountIndex].AccountIndex,
+							AccountName:     accountMap[txDetail.AccountIndex].AccountName,
+							PublicKey:       accountMap[txDetail.AccountIndex].PublicKey,
+							AccountNameHash: accountMap[txDetail.AccountIndex].AccountNameHash,
+							L1Address:       accountMap[txDetail.AccountIndex].L1Address,
+							Nonce:           accountMap[txDetail.AccountIndex].Nonce,
+							CollectionNonce: txDetail.CollectionNonce,
+							AssetInfo:       accountMap[txDetail.AccountIndex].AssetInfo,
+							AssetRoot:       accountMap[txDetail.AccountIndex].AssetRoot,
+							Status:          accountMap[txDetail.AccountIndex].Status,
+						},
+					})
+					accountCount++
+				}
+			} else {
+				accountMap[txDetail.AccountIndex].Nonce = txDetail.Nonce
+				accountMap[txDetail.AccountIndex].CollectionNonce = txDetail.CollectionNonce
+			}
+			break
+		default:
+			logx.Errorf("invalid asset type")
+			return nil, nil, nil, nil,
+				errors.New("invalid asset type")
+		}
+	}
+	return accountKeys, accountWitnessInfo, liquidityWitnessInfo, nftWitnessInfo, nil
 }

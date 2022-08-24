@@ -28,6 +28,10 @@ import (
 	"github.com/bnb-chain/zkbas/types"
 )
 
+const (
+	AccountHistoryTableName = `account_history`
+)
+
 type (
 	AccountHistoryModel interface {
 		CreateAccountHistoryTable() error

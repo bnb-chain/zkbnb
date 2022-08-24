@@ -27,6 +27,10 @@ import (
 	"github.com/bnb-chain/zkbas/types"
 )
 
+const (
+	FailTxTableName = `fail_tx`
+)
+
 type (
 	FailTxModel interface {
 		CreateFailTxTable() error
@@ -60,13 +64,13 @@ type (
 func NewFailTxModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) FailTxModel {
 	return &defaultFailTxModel{
 		CachedConn: sqlc.NewConn(conn, c),
-		table:      `fail_tx`,
+		table:      FailTxTableName,
 		DB:         db,
 	}
 }
 
 func (*FailTx) TableName() string {
-	return `fail_tx`
+	return FailTxTableName
 }
 
 func (m *defaultFailTxModel) CreateFailTxTable() error {

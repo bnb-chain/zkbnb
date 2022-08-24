@@ -51,7 +51,7 @@ func main() {
 		return
 	}
 
-	// init tree database
+	// dbinitializer tree database
 	treeCtx := &tree2.Context{
 		Name:          *serviceName,
 		Driver:        c.TreeDB.Driver,
@@ -67,7 +67,7 @@ func main() {
 		return
 	}
 
-	// init accountTree and accountStateTrees
+	// dbinitializer accountTree and accountStateTrees
 	_, _, err = tree2.InitAccountTree(
 		ctx.AccountModel,
 		ctx.AccountHistoryModel,
@@ -78,7 +78,7 @@ func main() {
 		logx.Error("InitMerkleTree error:", err)
 		return
 	}
-	// init liquidityTree
+	// dbinitializer liquidityTree
 	_, err = tree2.InitLiquidityTree(
 		ctx.LiquidityHistoryModel,
 		*blockHeight,
@@ -87,7 +87,7 @@ func main() {
 		logx.Errorf("InitLiquidityTree error: %s", err.Error())
 		return
 	}
-	// init nftTree
+	// dbinitializer nftTree
 	_, err = tree2.InitNftTree(
 		ctx.NftHistoryModel,
 		*blockHeight,

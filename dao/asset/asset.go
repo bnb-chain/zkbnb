@@ -27,6 +27,15 @@ import (
 	"github.com/bnb-chain/zkbas/types"
 )
 
+const (
+	AssetTableName = `asset`
+
+	StatusActive   uint32 = 0
+	StatusInactive uint32 = 1
+
+	IsGasAsset = 1
+)
+
 type (
 	AssetModel interface {
 		CreateAssetTable() error

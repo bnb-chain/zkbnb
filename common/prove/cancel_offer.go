@@ -31,7 +31,7 @@ func (w *WitnessHelper) constructCancelOfferCryptoTx(cryptoTx *CryptoTx, oTx *Tx
 		logx.Errorf("unable to parse cancel offer tx info:%s", err.Error())
 		return nil, err
 	}
-	cryptoTxInfo, err := ToCryptoCancelOfferTx(txInfo)
+	cryptoTxInfo, err := toCryptoCancelOfferTx(txInfo)
 	if err != nil {
 		logx.Errorf("unable to convert to crypto cancel offer tx: %s", err.Error())
 		return nil, err
@@ -47,7 +47,7 @@ func (w *WitnessHelper) constructCancelOfferCryptoTx(cryptoTx *CryptoTx, oTx *Tx
 	return cryptoTx, nil
 }
 
-func ToCryptoCancelOfferTx(txInfo *types.CancelOfferTxInfo) (info *CryptoCancelOfferTx, err error) {
+func toCryptoCancelOfferTx(txInfo *types.CancelOfferTxInfo) (info *CryptoCancelOfferTx, err error) {
 	packedFee, err := common.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
 		logx.Errorf("unable to convert to packed fee: %s", err.Error())

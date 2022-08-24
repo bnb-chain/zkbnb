@@ -335,7 +335,7 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	accountOrder := int64(0)
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.AssetAId,
-		AssetType:    types.GeneralAssetType,
+		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
 		AccountName:  fromAccount.AccountName,
 		Balance:      fromAccount.AssetInfo[txInfo.AssetAId].String(),
@@ -359,7 +359,7 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	order++
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.AssetBId,
-		AssetType:    types.GeneralAssetType,
+		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
 		AccountName:  fromAccount.AccountName,
 		Balance:      fromAccount.AssetInfo[txInfo.AssetBId].String(),
@@ -384,7 +384,7 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	order++
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
-		AssetType:    types.GeneralAssetType,
+		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
 		AccountName:  fromAccount.AccountName,
 		Balance:      fromAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
@@ -425,7 +425,7 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	order++
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.PairIndex,
-		AssetType:    types.GeneralAssetType,
+		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
 		AccountName:  fromAccount.AccountName,
 		Balance:      fromAccount.AssetInfo[txInfo.PairIndex].String(),
@@ -504,7 +504,7 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	accountOrder++
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.PairIndex,
-		AssetType:    types.GeneralAssetType,
+		AssetType:    types.FungibleAssetType,
 		AccountIndex: treasuryAccount.AccountIndex,
 		AccountName:  treasuryAccount.AccountNameHash,
 		Balance:      treasuryAccount.AssetInfo[txInfo.PairIndex].String(),
@@ -523,7 +523,7 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	accountOrder++
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
-		AssetType:    types.GeneralAssetType,
+		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.GasAccountIndex,
 		AccountName:  gasAccount.AccountName,
 		Balance:      gasAccount.AssetInfo[txInfo.GasFeeAssetId].String(),

@@ -33,7 +33,7 @@ import (
 	"github.com/bnb-chain/zkbas/common/chain"
 	"github.com/bnb-chain/zkbas/common/prove"
 	"github.com/bnb-chain/zkbas/dao/block"
-	"github.com/bnb-chain/zkbas/dao/blockforcommit"
+	"github.com/bnb-chain/zkbas/dao/compressedblock"
 	"github.com/bnb-chain/zkbas/dao/l1rolluptx"
 	"github.com/bnb-chain/zkbas/dao/proof"
 	"github.com/bnb-chain/zkbas/dao/sysconfig"
@@ -50,11 +50,11 @@ type Sender struct {
 	zkbasInstance *zkbas.Zkbas
 
 	// Data access objects
-	blockModel          block.BlockModel
-	blockForCommitModel blockforcommit.BlockForCommitModel
-	l1RollupTxModel     l1rolluptx.L1RollupTxModel
-	sysConfigModel      sysconfig.SysConfigModel
-	proofModel          proof.ProofModel
+	blockModel           block.BlockModel
+	compressedBlockModel compressedblock.CompressedBlockModel
+	l1RollupTxModel      l1rolluptx.L1RollupTxModel
+	sysConfigModel       sysconfig.SysConfigModel
+	proofModel           proof.ProofModel
 }
 
 func NewSender(c sconfig.Config) *Sender {
@@ -65,12 +65,12 @@ func NewSender(c sconfig.Config) *Sender {
 	conn := sqlx.NewSqlConn("postgres", c.Postgres.DataSource)
 
 	s := &Sender{
-		config:              c,
-		blockModel:          block.NewBlockModel(conn, c.CacheRedis, gormPointer),
-		blockForCommitModel: blockforcommit.NewBlockForCommitModel(conn, c.CacheRedis, gormPointer),
-		l1RollupTxModel:     l1rolluptx.NewL1RollupTxModel(conn, c.CacheRedis, gormPointer),
-		sysConfigModel:      sysconfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
-		proofModel:          proof.NewProofModel(gormPointer),
+		config:               c,
+		blockModel:           block.NewBlockModel(conn, c.CacheRedis, gormPointer),
+		compressedBlockModel: compressedblock.NewCompressedBlockModel(conn, c.CacheRedis, gormPointer),
+		l1RollupTxModel:      l1rolluptx.NewL1RollupTxModel(conn, c.CacheRedis, gormPointer),
+		sysConfigModel:       sysconfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
+		proofModel:           proof.NewProofModel(gormPointer),
 	}
 
 	l1RPCEndpoint, err := s.sysConfigModel.GetSysConfigByName(c.ChainConfig.NetworkRPCSysConfigName)
@@ -190,10 +190,10 @@ func (s *Sender) CommitBlocks() (err error) {
 	// if lastHandledTx == nil, means we haven't committed any blocks, just start from 0
 	// if errorcode.DbErrNotFound, means we haven't committed new blocks, just start to commit
 	if handledErr == types.DbErrNotFound && pendingErr == types.DbErrNotFound {
-		var blocks []*blockforcommit.BlockForCommit
-		blocks, err = s.blockForCommitModel.GetBlockForCommitBetween(1, int64(s.config.ChainConfig.MaxBlockCount))
+		var blocks []*compressedblock.CompressedBlock
+		blocks, err = s.compressedBlockModel.GetCompressedBlockBetween(1, int64(s.config.ChainConfig.MaxBlockCount))
 		if err != nil {
-			logx.Errorf("GetBlockForCommitBetween err: %v, maxBlockCount: %d",
+			logx.Errorf("GetCompressedBlockBetween err: %v, maxBlockCount: %d",
 				err, s.config.ChainConfig.MaxBlockCount)
 			return err
 		}
@@ -208,9 +208,9 @@ func (s *Sender) CommitBlocks() (err error) {
 	if handledErr == nil && pendingErr == types.DbErrNotFound {
 		// if errorcode.DbErrNotFound, means we haven't committed new blocks, just start to commit
 		// get blocks higher than last handled blocks
-		var blocks []*blockforcommit.BlockForCommit
+		var blocks []*compressedblock.CompressedBlock
 		// commit new blocks
-		blocks, err := s.blockForCommitModel.GetBlockForCommitBetween(lastHandledTx.L2BlockHeight+1,
+		blocks, err := s.compressedBlockModel.GetCompressedBlockBetween(lastHandledTx.L2BlockHeight+1,
 			lastHandledTx.L2BlockHeight+int64(s.config.ChainConfig.MaxBlockCount))
 		if err != nil {
 			logx.Errorf("unable to get sender new blocks: %v", err)
