@@ -31,6 +31,17 @@ import (
 	"github.com/bnb-chain/zkbas/types"
 )
 
+const (
+	MempoolTableName = `mempool_tx`
+)
+
+const (
+	PendingTxStatus = iota
+	ExecutedTxStatus
+	SuccessTxStatus
+	FailTxStatus
+)
+
 type (
 	MempoolModel interface {
 		CreateMempoolTxTable() error

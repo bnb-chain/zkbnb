@@ -24,7 +24,7 @@ tools:
 	go install github.com/zeromicro/go-zero/tools/goctl@v1.4.0
 
 build: api-server
-	go build -o build/api-server ./service/apiserver/server.go
+	go build -o build/api-server ./service/apiserver/main.go
 	go build -o build/committer ./service/committer/main.go
 	go build -o build/monitor ./service/monitor/main.go
 	go build -o build/prover ./service/prover/main.go

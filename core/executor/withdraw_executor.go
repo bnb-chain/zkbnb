@@ -182,7 +182,7 @@ func (e *WithdrawExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	accountOrder := int64(0)
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.AssetId,
-		AssetType:    types.GeneralAssetType,
+		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
 		AccountName:  fromAccount.AccountName,
 		Balance:      fromAccount.AssetInfo[txInfo.AssetId].String(),
@@ -202,7 +202,7 @@ func (e *WithdrawExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	// from account asset gas
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
-		AssetType:    types.GeneralAssetType,
+		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
 		AccountName:  fromAccount.AccountName,
 		Balance:      fromAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
@@ -223,7 +223,7 @@ func (e *WithdrawExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	accountOrder++
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.GasFeeAssetId,
-		AssetType:    types.GeneralAssetType,
+		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.GasAccountIndex,
 		AccountName:  gasAccount.AccountName,
 		Balance:      gasAccount.AssetInfo[txInfo.GasFeeAssetId].String(),

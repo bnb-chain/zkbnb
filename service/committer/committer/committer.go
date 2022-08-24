@@ -209,7 +209,7 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 	}
 
 	// Update database in a transaction.
-	err = c.bc.BlockModel.CreateBlockForCommitter(c.executedMemPoolTxs, blockStates)
+	err = c.bc.BlockModel.CreateCompressedBlock(c.executedMemPoolTxs, blockStates)
 	if err != nil {
 		return nil, err
 	}

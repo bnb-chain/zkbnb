@@ -31,7 +31,7 @@ func (w *WitnessHelper) constructAddLiquidityCryptoTx(cryptoTx *CryptoTx, oTx *T
 		logx.Errorf("unable to parse add liquidity tx info:%s", err.Error())
 		return nil, err
 	}
-	cryptoTxInfo, err := ToCryptoAddLiquidityTx(txInfo)
+	cryptoTxInfo, err := toCryptoAddLiquidityTx(txInfo)
 	if err != nil {
 		logx.Errorf("unable to convert to crypto add liquidity tx: %s", err.Error())
 		return nil, err
@@ -47,7 +47,7 @@ func (w *WitnessHelper) constructAddLiquidityCryptoTx(cryptoTx *CryptoTx, oTx *T
 	return cryptoTx, nil
 }
 
-func ToCryptoAddLiquidityTx(txInfo *types.AddLiquidityTxInfo) (info *CryptoAddLiquidityTx, err error) {
+func toCryptoAddLiquidityTx(txInfo *types.AddLiquidityTxInfo) (info *CryptoAddLiquidityTx, err error) {
 	packedAAmount, err := common.ToPackedAmount(txInfo.AssetAAmount)
 	if err != nil {
 		logx.Errorf("unable to convert to packed amount: %s", err.Error())

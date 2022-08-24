@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	GeneralAssetType         = 1
+	FungibleAssetType        = 1
 	LiquidityAssetType       = 2
 	NftAssetType             = 3
 	CollectionNonceAssetType = 4

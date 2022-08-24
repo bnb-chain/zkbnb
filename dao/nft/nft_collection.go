@@ -27,6 +27,10 @@ import (
 	"github.com/bnb-chain/zkbas/types"
 )
 
+const (
+	L2NftCollectionTableName = `l2_nft_collection`
+)
+
 type (
 	L2NftCollectionModel interface {
 		CreateL2NftCollectionTable() error

@@ -27,6 +27,12 @@ import (
 	"github.com/bnb-chain/zkbas/types"
 )
 
+const (
+	OfferTableName = `offer`
+
+	OfferFinishedStatus = 1
+)
+
 type (
 	OfferModel interface {
 		CreateOfferTable() error

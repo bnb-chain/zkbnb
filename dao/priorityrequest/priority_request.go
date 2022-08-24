@@ -30,6 +30,13 @@ import (
 	"github.com/bnb-chain/zkbas/types"
 )
 
+const (
+	TableName = "priority_request"
+
+	PendingStatus = 1
+	HandledStatus = 2
+)
+
 type (
 	PriorityRequestModel interface {
 		CreatePriorityRequestTable() error

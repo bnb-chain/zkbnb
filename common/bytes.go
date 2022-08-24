@@ -24,10 +24,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
-)
 
-const (
-	AccountNameSuffix = ".legend"
+	"github.com/bnb-chain/zkbas/types"
 )
 
 func ReadUint8(buf []byte, offset int) (newOffset int, res uint8) {
@@ -78,7 +76,7 @@ func SuffixPaddingBufToChunkSize(buf []byte) []byte {
 }
 
 func AccountNameToBytes32(accountName string) []byte {
-	realName := strings.Split(accountName, AccountNameSuffix)[0]
+	realName := strings.Split(accountName, types.AccountNameSuffix)[0]
 	buf := make([]byte, 32)
 	copy(buf[:], realName)
 	return buf

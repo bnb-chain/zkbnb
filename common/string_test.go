@@ -19,6 +19,7 @@ package common
 
 import (
 	"fmt"
+	"github.com/bnb-chain/zkbas/tools/dbinitializer"
 	"testing"
 	"time"
 
@@ -26,7 +27,6 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/redis"
 
 	curve "github.com/bnb-chain/zkbas-crypto/ecc/ztwistededwards/tebn254"
-	"github.com/bnb-chain/zkbas/dao/basic"
 )
 
 func TestAccountNameHash(t *testing.T) {
@@ -106,7 +106,7 @@ func updateColors(colors map[string]*Color) {
 }
 
 func TestRedisOperations(t *testing.T) {
-	redisConn := redis.New(basic.CacheConf[0].Host, WithRedis(basic.CacheConf[0].Type, basic.CacheConf[0].Pass))
+	redisConn := redis.New(main.main.CacheConf[0].Host, WithRedis(main.CacheConf[0].Type, main.CacheConf[0].Pass))
 	delInt, err := redisConn.Del("1")
 	if err != nil {
 		panic(err)

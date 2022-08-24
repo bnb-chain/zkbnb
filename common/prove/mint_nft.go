@@ -32,7 +32,7 @@ func (w *WitnessHelper) constructMintNftCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*
 		logx.Errorf("unable to parse mint nft tx info:%s", err.Error())
 		return nil, err
 	}
-	cryptoTxInfo, err := ToCryptoMintNftTx(txInfo)
+	cryptoTxInfo, err := toCryptoMintNftTx(txInfo)
 	if err != nil {
 		logx.Errorf("unable to convert to crypto mint nft tx: %s", err.Error())
 		return nil, err
@@ -48,7 +48,7 @@ func (w *WitnessHelper) constructMintNftCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*
 	return cryptoTx, nil
 }
 
-func ToCryptoMintNftTx(txInfo *types.MintNftTxInfo) (info *CryptoMintNftTx, err error) {
+func toCryptoMintNftTx(txInfo *types.MintNftTxInfo) (info *CryptoMintNftTx, err error) {
 	packedFee, err := common2.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
 		logx.Errorf("unable to convert to packed fee: %s", err.Error())

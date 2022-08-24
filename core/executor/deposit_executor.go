@@ -157,7 +157,7 @@ func (e *DepositExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	}
 	txDetail := &tx.TxDetail{
 		AssetId:      txInfo.AssetId,
-		AssetType:    types.GeneralAssetType,
+		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.AccountIndex,
 		AccountName:  depositAccount.AccountName,
 		Balance:      baseBalance.String(),

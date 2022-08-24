@@ -31,7 +31,7 @@ func (w *WitnessHelper) constructUpdatePairRateCryptoTx(cryptoTx *CryptoTx, oTx 
 		logx.Errorf("unable to parse update pair rate tx info:%s", err.Error())
 		return nil, err
 	}
-	cryptoTxInfo, err := ToCryptoUpdatePairRateTx(txInfo)
+	cryptoTxInfo, err := toCryptoUpdatePairRateTx(txInfo)
 	if err != nil {
 		logx.Errorf("unable to convert to crypto update pair rate tx: %s", err.Error())
 		return nil, err
@@ -41,7 +41,7 @@ func (w *WitnessHelper) constructUpdatePairRateCryptoTx(cryptoTx *CryptoTx, oTx 
 	return cryptoTx, nil
 }
 
-func ToCryptoUpdatePairRateTx(txInfo *legendTxTypes.UpdatePairRateTxInfo) (info *CryptoUpdatePairRateTx, err error) {
+func toCryptoUpdatePairRateTx(txInfo *legendTxTypes.UpdatePairRateTxInfo) (info *CryptoUpdatePairRateTx, err error) {
 	info = &CryptoUpdatePairRateTx{
 		PairIndex:            txInfo.PairIndex,
 		FeeRate:              txInfo.FeeRate,

@@ -29,12 +29,24 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/dao/account"
-	"github.com/bnb-chain/zkbas/dao/blockforcommit"
+	"github.com/bnb-chain/zkbas/dao/compressedblock"
 	"github.com/bnb-chain/zkbas/dao/liquidity"
 	"github.com/bnb-chain/zkbas/dao/mempool"
 	"github.com/bnb-chain/zkbas/dao/nft"
 	"github.com/bnb-chain/zkbas/dao/tx"
 	"github.com/bnb-chain/zkbas/types"
+)
+
+const (
+	_ = iota
+	StatusProposing
+	StatusPending
+	StatusCommitted
+	StatusVerifiedAndExecuted
+)
+
+const (
+	BlockTableName = `block`
 )
 
 type (
@@ -54,7 +66,7 @@ type (
 		CreateGenesisBlock(block *Block) error
 		GetCurrentHeight() (blockHeight int64, err error)
 		CreateNewBlock(oBlock *Block) (err error)
-		CreateBlockForCommitter(pendingMempoolTxs []*mempool.MempoolTx, blockStates *BlockStates) error
+		CreateCompressedBlock(pendingMempoolTxs []*mempool.MempoolTx, blockStates *BlockStates) error
 	}
 
 	defaultBlockModel struct {
@@ -82,8 +94,8 @@ type (
 	}
 
 	BlockStates struct {
-		Block          *Block
-		BlockForCommit *blockforcommit.BlockForCommit
+		Block           *Block
+		CompressedBlock *compressedblock.CompressedBlock
 
 		PendingNewAccount            []*account.Account
 		PendingUpdateAccount         []*account.Account
@@ -309,7 +321,7 @@ type BlockStatusInfo struct {
 	VerifiedAt  int64
 }
 
-func (m *defaultBlockModel) CreateBlockForCommitter(pendingMempoolTxs []*mempool.MempoolTx, blockStates *BlockStates) error {
+func (m *defaultBlockModel) CreateCompressedBlock(pendingMempoolTxs []*mempool.MempoolTx, blockStates *BlockStates) error {
 	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
 		// update mempool
 		for _, mempoolTx := range pendingMempoolTxs {
@@ -344,14 +356,14 @@ func (m *defaultBlockModel) CreateBlockForCommitter(pendingMempoolTxs []*mempool
 			}
 		}
 		// create block for commit
-		if blockStates.BlockForCommit != nil {
-			dbTx := tx.Table(blockforcommit.BlockForCommitTableName).Create(blockStates.BlockForCommit)
+		if blockStates.CompressedBlock != nil {
+			dbTx := tx.Table(compressedblock.CompressedBlockTableName).Create(blockStates.CompressedBlock)
 			if dbTx.Error != nil {
 				logx.Errorf("unable to create block for commit: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
-				commitInfo, err := json.Marshal(blockStates.BlockForCommit)
+				commitInfo, err := json.Marshal(blockStates.CompressedBlock)
 				if err != nil {
 					logx.Errorf("unable to marshal block for commit, err=%s", err.Error())
 					return err

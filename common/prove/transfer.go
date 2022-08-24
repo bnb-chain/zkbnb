@@ -32,7 +32,7 @@ func (w *WitnessHelper) constructTransferCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (
 		logx.Errorf("unable to parse transfer tx info:%s", err.Error())
 		return nil, err
 	}
-	cryptoTxInfo, err := ToCryptoTransferTx(txInfo)
+	cryptoTxInfo, err := toCryptoTransferTx(txInfo)
 	if err != nil {
 		logx.Errorf("unable to convert to crypto transfer tx: %s", err.Error())
 		return nil, err
@@ -48,7 +48,7 @@ func (w *WitnessHelper) constructTransferCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (
 	return cryptoTx, nil
 }
 
-func ToCryptoTransferTx(txInfo *types.TransferTxInfo) (info *CryptoTransferTx, err error) {
+func toCryptoTransferTx(txInfo *types.TransferTxInfo) (info *CryptoTransferTx, err error) {
 	packedAmount, err := common2.ToPackedAmount(txInfo.AssetAmount)
 	if err != nil {
 		logx.Errorf("unable to convert to packed amount: %s", err.Error())

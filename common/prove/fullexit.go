@@ -31,7 +31,7 @@ func (w *WitnessHelper) constructFullExitCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (
 		logx.Errorf("unable to parse register zns tx info:%s", err.Error())
 		return nil, err
 	}
-	cryptoTxInfo, err := ToCryptoFullExitTx(txInfo)
+	cryptoTxInfo, err := toCryptoFullExitTx(txInfo)
 	if err != nil {
 		logx.Errorf("unable to convert to crypto register zns tx: %s", err.Error())
 		return nil, err
@@ -41,7 +41,7 @@ func (w *WitnessHelper) constructFullExitCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (
 	return cryptoTx, nil
 }
 
-func ToCryptoFullExitTx(txInfo *legendTxTypes.FullExitTxInfo) (info *CryptoFullExitTx, err error) {
+func toCryptoFullExitTx(txInfo *legendTxTypes.FullExitTxInfo) (info *CryptoFullExitTx, err error) {
 	info = &CryptoFullExitTx{
 		AccountIndex:    txInfo.AccountIndex,
 		AssetId:         txInfo.AssetId,

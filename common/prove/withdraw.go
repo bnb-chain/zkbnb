@@ -34,7 +34,7 @@ func (w *WitnessHelper) constructWithdrawCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (
 		logx.Errorf("unable to parse withdraw tx info:%s", err.Error())
 		return nil, err
 	}
-	cryptoTxInfo, err := ToCryptoWithdrawTx(txInfo)
+	cryptoTxInfo, err := toCryptoWithdrawTx(txInfo)
 	if err != nil {
 		logx.Errorf("unable to convert to crypto withdraw tx: %s", err.Error())
 		return nil, err
@@ -50,7 +50,7 @@ func (w *WitnessHelper) constructWithdrawCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (
 	return cryptoTx, nil
 }
 
-func ToCryptoWithdrawTx(txInfo *types.WithdrawTxInfo) (info *CryptoWithdrawTx, err error) {
+func toCryptoWithdrawTx(txInfo *types.WithdrawTxInfo) (info *CryptoWithdrawTx, err error) {
 	packedFee, err := common.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
 		logx.Errorf("unable to convert to packed fee: %s", err.Error())

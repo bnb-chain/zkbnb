@@ -27,6 +27,10 @@ import (
 	"github.com/bnb-chain/zkbas/types"
 )
 
+const (
+	LiquidityHistoryTable = `liquidity_history`
+)
+
 type (
 	LiquidityHistoryModel interface {
 		CreateLiquidityHistoryTable() error

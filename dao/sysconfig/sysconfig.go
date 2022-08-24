@@ -27,6 +27,10 @@ import (
 	"github.com/bnb-chain/zkbas/types"
 )
 
+const (
+	TableName = `sys_config`
+)
+
 type (
 	SysConfigModel interface {
 		CreateSysConfigTable() error

@@ -31,7 +31,7 @@ func (w *WitnessHelper) constructAtomicMatchCryptoTx(cryptoTx *CryptoTx, oTx *Tx
 		logx.Errorf("unable to parse atomic match tx info:%s", err.Error())
 		return nil, err
 	}
-	cryptoTxInfo, err := ToCryptoAtomicMatchTx(txInfo)
+	cryptoTxInfo, err := toCryptoAtomicMatchTx(txInfo)
 	if err != nil {
 		logx.Errorf("unable to convert to crypto atomic match tx: %s", err.Error())
 		return nil, err
@@ -47,7 +47,7 @@ func (w *WitnessHelper) constructAtomicMatchCryptoTx(cryptoTx *CryptoTx, oTx *Tx
 	return cryptoTx, nil
 }
 
-func ToCryptoAtomicMatchTx(txInfo *types.AtomicMatchTxInfo) (info *CryptoAtomicMatchTx, err error) {
+func toCryptoAtomicMatchTx(txInfo *types.AtomicMatchTxInfo) (info *CryptoAtomicMatchTx, err error) {
 	packedFee, err := common.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
 		logx.Errorf("unable to convert to packed fee: %s", err.Error())

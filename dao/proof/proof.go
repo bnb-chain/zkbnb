@@ -23,6 +23,16 @@ import (
 	"github.com/bnb-chain/zkbas/types"
 )
 
+const (
+	TableName = "proof"
+)
+
+const (
+	NotSent = iota
+	NotConfirmed
+	Confirmed
+)
+
 type (
 	ProofModel interface {
 		CreateProofTable() error

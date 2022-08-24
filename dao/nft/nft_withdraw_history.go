@@ -24,6 +24,10 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	L2NftWithdrawHistoryTableName = `l2_nft_withdraw_history`
+)
+
 type (
 	L2NftWithdrawHistoryModel interface {
 		CreateL2NftWithdrawHistoryTable() error

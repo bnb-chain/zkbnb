@@ -15,7 +15,7 @@
  *
  */
 
-package blockforcommit
+package compressedblock
 
 import (
 	"github.com/zeromicro/go-zero/core/logx"
@@ -27,20 +27,24 @@ import (
 	"github.com/bnb-chain/zkbas/types"
 )
 
+const (
+	CompressedBlockTableName = `compressed_block`
+)
+
 type (
-	BlockForCommitModel interface {
-		CreateBlockForCommitTable() error
-		DropBlockForCommitTable() error
-		GetBlockForCommitBetween(start, end int64) (blocksForCommit []*BlockForCommit, err error)
+	CompressedBlockModel interface {
+		CreateCompressedBlockTable() error
+		DropCompressedBlockTable() error
+		GetCompressedBlockBetween(start, end int64) (blocksForCommit []*CompressedBlock, err error)
 	}
 
-	defaultBlockForCommitModel struct {
+	defaultCompressedBlockModel struct {
 		sqlc.CachedConn
 		table string
 		DB    *gorm.DB
 	}
 
-	BlockForCommit struct {
+	CompressedBlock struct {
 		gorm.Model
 		BlockSize         uint16
 		BlockHeight       int64
@@ -51,27 +55,27 @@ type (
 	}
 )
 
-func NewBlockForCommitModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) BlockForCommitModel {
-	return &defaultBlockForCommitModel{
+func NewCompressedBlockModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) CompressedBlockModel {
+	return &defaultCompressedBlockModel{
 		CachedConn: sqlc.NewConn(conn, c),
-		table:      BlockForCommitTableName,
+		table:      CompressedBlockTableName,
 		DB:         db,
 	}
 }
 
-func (*BlockForCommit) TableName() string {
-	return BlockForCommitTableName
+func (*CompressedBlock) TableName() string {
+	return CompressedBlockTableName
 }
 
-func (m *defaultBlockForCommitModel) CreateBlockForCommitTable() error {
-	return m.DB.AutoMigrate(BlockForCommit{})
+func (m *defaultCompressedBlockModel) CreateCompressedBlockTable() error {
+	return m.DB.AutoMigrate(CompressedBlock{})
 }
 
-func (m *defaultBlockForCommitModel) DropBlockForCommitTable() error {
+func (m *defaultCompressedBlockModel) DropCompressedBlockTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-func (m *defaultBlockForCommitModel) GetBlockForCommitBetween(start, end int64) (blocksForCommit []*BlockForCommit, err error) {
+func (m *defaultCompressedBlockModel) GetCompressedBlockBetween(start, end int64) (blocksForCommit []*CompressedBlock, err error) {
 	dbTx := m.DB.Table(m.table).Where("block_height >= ? AND block_height <= ?", start, end).Find(&blocksForCommit)
 	if dbTx.Error != nil {
 		logx.Errorf("unable to get block for commit between: %s", dbTx.Error.Error())

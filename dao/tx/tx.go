@@ -30,6 +30,17 @@ import (
 	"github.com/bnb-chain/zkbas/types"
 )
 
+const (
+	TxTableName = `tx`
+)
+
+const (
+	_ = iota
+	StatusPending
+	StatusSuccess
+	StatusFail
+)
+
 type (
 	TxModel interface {
 		CreateTxTable() error

@@ -29,6 +29,16 @@ import (
 	"github.com/bnb-chain/zkbas/types"
 )
 
+const (
+	AccountTableName = `account`
+)
+
+const (
+	AccountStatusPending = iota
+	AccountStatusConfirmed
+	AccountStatusVerified
+)
+
 type (
 	AccountModel interface {
 		CreateAccountTable() error

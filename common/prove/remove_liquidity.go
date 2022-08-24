@@ -31,7 +31,7 @@ func (w *WitnessHelper) constructRemoveLiquidityCryptoTx(cryptoTx *CryptoTx, oTx
 		logx.Errorf("unable to parse register zns tx info:%s", err.Error())
 		return nil, err
 	}
-	cryptoTxInfo, err := ToCryptoRemoveLiquidityTx(txInfo)
+	cryptoTxInfo, err := toCryptoRemoveLiquidityTx(txInfo)
 	if err != nil {
 		logx.Errorf("unable to convert to crypto register zns tx: %s", err.Error())
 		return nil, err
@@ -47,7 +47,7 @@ func (w *WitnessHelper) constructRemoveLiquidityCryptoTx(cryptoTx *CryptoTx, oTx
 	return cryptoTx, nil
 }
 
-func ToCryptoRemoveLiquidityTx(txInfo *types.RemoveLiquidityTxInfo) (info *CryptoRemoveLiquidityTx, err error) {
+func toCryptoRemoveLiquidityTx(txInfo *types.RemoveLiquidityTxInfo) (info *CryptoRemoveLiquidityTx, err error) {
 	packedAMinAmount, err := common.ToPackedAmount(txInfo.AssetAMinAmount)
 	if err != nil {
 		logx.Errorf("unable to convert to packed amount: %s", err.Error())

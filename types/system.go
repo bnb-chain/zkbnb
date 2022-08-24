@@ -34,6 +34,8 @@ const (
 
 	Governor       = "Governor"
 	ZnsPriceOracle = "ZnsPriceOracle"
+
+	AccountNameSuffix = ".legend"
 )
 
 var (

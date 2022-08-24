@@ -35,6 +35,13 @@ import (
 	"github.com/bnb-chain/zkbas/types"
 )
 
+const (
+	TableName = "l1_synced_block"
+
+	TypeGeneric    int = 0
+	TypeGovernance int = 1
+)
+
 type (
 	L1SyncedBlockModel interface {
 		CreateL1SyncedBlockTable() error

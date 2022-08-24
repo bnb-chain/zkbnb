@@ -29,6 +29,8 @@ import (
 	"github.com/bnb-chain/zkbas/types"
 )
 
+const TxDetailTableName = `tx_detail`
+
 type (
 	TxDetailModel interface {
 		CreateTxDetailTable() error

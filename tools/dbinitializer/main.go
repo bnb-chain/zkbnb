@@ -20,6 +20,11 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"github.com/zeromicro/go-zero/core/stores/cache"
+	"github.com/zeromicro/go-zero/core/stores/redis"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
@@ -28,10 +33,9 @@ import (
 
 	"github.com/bnb-chain/zkbas/dao/account"
 	"github.com/bnb-chain/zkbas/dao/asset"
-	"github.com/bnb-chain/zkbas/dao/basic"
 	"github.com/bnb-chain/zkbas/dao/block"
-	"github.com/bnb-chain/zkbas/dao/blockforcommit"
 	"github.com/bnb-chain/zkbas/dao/blockwitness"
+	"github.com/bnb-chain/zkbas/dao/compressedblock"
 	"github.com/bnb-chain/zkbas/dao/l1rolluptx"
 	"github.com/bnb-chain/zkbas/dao/l1syncedblock"
 	"github.com/bnb-chain/zkbas/dao/liquidity"
@@ -43,6 +47,21 @@ import (
 	"github.com/bnb-chain/zkbas/dao/tx"
 	"github.com/bnb-chain/zkbas/tree"
 	"github.com/bnb-chain/zkbas/types"
+)
+
+var (
+	dsn        = "host=localhost user=postgres password=ZecreyProtocolDB@123 dbname=zkbas port=5432 sslmode=disable"
+	DB, _      = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	DbInfo, _  = DB.DB()
+	Connection = sqlx.NewSqlConnFromDB(DbInfo)
+	CacheConf  = []cache.NodeConf{{
+		RedisConf: redis.RedisConf{
+			Host: "127.0.0.1:6379",
+			Type: "node",
+			Pass: "myredis",
+		},
+		Weight: 10,
+	}}
 )
 
 var configFile = flag.String("f", "./contractaddr.yaml", "the config file")
@@ -133,30 +152,30 @@ func initAssetsInfo() []*asset.Asset {
 }
 
 var (
-	sysConfigModel          = sysconfig.NewSysConfigModel(basic.Connection, basic.CacheConf, basic.DB)
-	accountModel            = account.NewAccountModel(basic.Connection, basic.CacheConf, basic.DB)
-	accountHistoryModel     = account.NewAccountHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
-	assetModel              = asset.NewAssetModel(basic.Connection, basic.CacheConf, basic.DB)
-	mempoolDetailModel      = mempool.NewMempoolDetailModel(basic.Connection, basic.CacheConf, basic.DB)
-	mempoolModel            = mempool.NewMempoolModel(basic.Connection, basic.CacheConf, basic.DB)
-	failTxModel             = tx.NewFailTxModel(basic.Connection, basic.CacheConf, basic.DB)
-	txDetailModel           = tx.NewTxDetailModel(basic.Connection, basic.CacheConf, basic.DB)
-	txModel                 = tx.NewTxModel(basic.Connection, basic.CacheConf, basic.DB)
-	blockModel              = block.NewBlockModel(basic.Connection, basic.CacheConf, basic.DB)
-	blockForCommitModel     = blockforcommit.NewBlockForCommitModel(basic.Connection, basic.CacheConf, basic.DB)
-	blockWitnessModel       = blockwitness.NewBlockWitnessModel(basic.Connection, basic.CacheConf, basic.DB)
-	proofModel              = proof.NewProofModel(basic.DB)
-	l1SyncedBlockModel      = l1syncedblock.NewL1SyncedBlockModel(basic.Connection, basic.CacheConf, basic.DB)
-	priorityRequestModel    = priorityrequest.NewPriorityRequestModel(basic.Connection, basic.CacheConf, basic.DB)
-	l1RollupTModel          = l1rolluptx.NewL1RollupTxModel(basic.Connection, basic.CacheConf, basic.DB)
-	liquidityModel          = liquidity.NewLiquidityModel(basic.Connection, basic.CacheConf, basic.DB)
-	liquidityHistoryModel   = liquidity.NewLiquidityHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
-	nftModel                = nft.NewL2NftModel(basic.Connection, basic.CacheConf, basic.DB)
-	offerModel              = nft.NewOfferModel(basic.Connection, basic.CacheConf, basic.DB)
-	nftHistoryModel         = nft.NewL2NftHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
-	nftExchangeModel        = nft.NewL2NftExchangeModel(basic.Connection, basic.CacheConf, basic.DB)
-	nftCollectionModel      = nft.NewL2NftCollectionModel(basic.Connection, basic.CacheConf, basic.DB)
-	nftWithdrawHistoryModel = nft.NewL2NftWithdrawHistoryModel(basic.Connection, basic.CacheConf, basic.DB)
+	sysConfigModel          = sysconfig.NewSysConfigModel(Connection, CacheConf, DB)
+	accountModel            = account.NewAccountModel(Connection, CacheConf, DB)
+	accountHistoryModel     = account.NewAccountHistoryModel(Connection, CacheConf, DB)
+	assetModel              = asset.NewAssetModel(Connection, CacheConf, DB)
+	mempoolDetailModel      = mempool.NewMempoolDetailModel(Connection, CacheConf, DB)
+	mempoolModel            = mempool.NewMempoolModel(Connection, CacheConf, DB)
+	failTxModel             = tx.NewFailTxModel(Connection, CacheConf, DB)
+	txDetailModel           = tx.NewTxDetailModel(Connection, CacheConf, DB)
+	txModel                 = tx.NewTxModel(Connection, CacheConf, DB)
+	blockModel              = block.NewBlockModel(Connection, CacheConf, DB)
+	compressedBlockModel    = compressedblock.NewCompressedBlockModel(Connection, CacheConf, DB)
+	blockWitnessModel       = blockwitness.NewBlockWitnessModel(Connection, CacheConf, DB)
+	proofModel              = proof.NewProofModel(DB)
+	l1SyncedBlockModel      = l1syncedblock.NewL1SyncedBlockModel(Connection, CacheConf, DB)
+	priorityRequestModel    = priorityrequest.NewPriorityRequestModel(Connection, CacheConf, DB)
+	l1RollupTModel          = l1rolluptx.NewL1RollupTxModel(Connection, CacheConf, DB)
+	liquidityModel          = liquidity.NewLiquidityModel(Connection, CacheConf, DB)
+	liquidityHistoryModel   = liquidity.NewLiquidityHistoryModel(Connection, CacheConf, DB)
+	nftModel                = nft.NewL2NftModel(Connection, CacheConf, DB)
+	offerModel              = nft.NewOfferModel(Connection, CacheConf, DB)
+	nftHistoryModel         = nft.NewL2NftHistoryModel(Connection, CacheConf, DB)
+	nftExchangeModel        = nft.NewL2NftExchangeModel(Connection, CacheConf, DB)
+	nftCollectionModel      = nft.NewL2NftCollectionModel(Connection, CacheConf, DB)
+	nftWithdrawHistoryModel = nft.NewL2NftWithdrawHistoryModel(Connection, CacheConf, DB)
 )
 
 func dropTables() {
@@ -170,7 +189,7 @@ func dropTables() {
 	assert.Nil(nil, txDetailModel.DropTxDetailTable())
 	assert.Nil(nil, txModel.DropTxTable())
 	assert.Nil(nil, blockModel.DropBlockTable())
-	assert.Nil(nil, blockForCommitModel.DropBlockForCommitTable())
+	assert.Nil(nil, compressedBlockModel.DropCompressedBlockTable())
 	assert.Nil(nil, blockWitnessModel.DropBlockWitnessTable())
 	assert.Nil(nil, proofModel.DropProofTable())
 	assert.Nil(nil, l1SyncedBlockModel.DropL1SyncedBlockTable())
@@ -197,7 +216,7 @@ func initTable() {
 	assert.Nil(nil, blockModel.CreateBlockTable())
 	assert.Nil(nil, txModel.CreateTxTable())
 	assert.Nil(nil, txDetailModel.CreateTxDetailTable())
-	assert.Nil(nil, blockForCommitModel.CreateBlockForCommitTable())
+	assert.Nil(nil, compressedBlockModel.CreateCompressedBlockTable())
 	assert.Nil(nil, blockWitnessModel.CreateBlockWitnessTable())
 	assert.Nil(nil, proofModel.CreateProofTable())
 	assert.Nil(nil, l1SyncedBlockModel.CreateL1SyncedBlockTable())

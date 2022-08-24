@@ -24,6 +24,10 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	L2NftExchangeTableName = `l2_nft_exchange`
+)
+
 type (
 	L2NftExchangeModel interface {
 		CreateL2NftExchangeTable() error
