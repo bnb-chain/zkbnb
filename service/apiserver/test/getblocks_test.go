@@ -39,7 +39,7 @@ func (s *AppSuite) TestGetBlocks() {
 					assert.NotNil(t, result.Blocks[0].Commitment)
 					assert.NotNil(t, result.Blocks[0].Status)
 					assert.NotNil(t, result.Blocks[0].StateRoot)
-					assert.NotNil(t, result.Blocks[0].Txs)
+					//assert.NotNil(t, result.Blocks[0].Txs)
 				}
 				fmt.Printf("result: %+v \n", result)
 			}
