@@ -268,7 +268,7 @@ func (bc *BlockChain) StateDB() *sdb.StateDB {
 }
 
 func (bc *BlockChain) DB() *sdb.ChainDB {
-	return bc.DB()
+	return bc.ChainDB
 }
 
 func (bc *BlockChain) setCurrentBlockTimeStamp() {
