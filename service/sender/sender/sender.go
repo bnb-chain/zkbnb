@@ -348,13 +348,13 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	// scan l1 tx sender table for handled verified and executed height
 	lastHandledBlock, getHandleErr := s.l1RollupTxModel.GetLatestHandledTx(l1rolluptx.TxTypeVerifyAndExecute)
 	if getHandleErr != nil && getHandleErr != types.DbErrNotFound {
-		logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get latest handled block: %v", getHandleErr)
+		logx.Errorf("unable to get latest handled block: %v", getHandleErr)
 		return getHandleErr
 	}
 	// scan l1 tx sender table for pending verified and executed height that higher than the latest handled height
 	pendingSender, getPendingErr := s.l1RollupTxModel.GetLatestPendingTx(l1rolluptx.TxTypeVerifyAndExecute)
 	if getPendingErr != nil && getPendingErr != types.DbErrNotFound {
-		logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get latest pending blocks: %v", getPendingErr)
+		logx.Errorf("unable to get latest pending blocks: %v", getPendingErr)
 		return getPendingErr
 	}
 	// case 1: check tx status on L1
@@ -368,7 +368,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 				// drop the record
 				err := s.l1RollupTxModel.DeleteL1RollupTx(pendingSender)
 				if err != nil {
-					logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to delete l1 tx sender: %v", err)
+					logx.Errorf("unable to delete l1 tx sender: %v", err)
 					return err
 				}
 				return nil
@@ -378,16 +378,16 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		}
 		// if it is pending, still waiting
 		if isPending {
-			logx.Infof("[SendVerifiedAndExecutedBlocks] tx is still pending, no need to work for anything tx hash: %s", pendingSender.L1TxHash)
+			logx.Infof("tx is still pending, no need to work for anything tx hash: %s", pendingSender.L1TxHash)
 			return nil
 		} else {
 			receipt, err := cli.GetTransactionReceipt(pendingSender.L1TxHash)
 			if err != nil {
-				logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get transaction receipt: %v", err)
+				logx.Errorf("unable to get transaction receipt: %v", err)
 				return err
 			}
 			if receipt.Status == 0 {
-				logx.Infof("[SendVerifiedAndExecutedBlocks] the transaction is failure, please check: %s", pendingSender.L1TxHash)
+				logx.Infof("the transaction is failure, please check: %s", pendingSender.L1TxHash)
 				return nil
 			}
 		}
@@ -402,7 +402,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 			if time.Now().After(lastUpdatedAt.Add(time.Duration(s.config.ChainConfig.MaxWaitingTime) * time.Second)) {
 				// drop the record
 				if err := s.l1RollupTxModel.DeleteL1RollupTx(pendingSender); err != nil {
-					logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to delete l1 tx sender: %v", err)
+					logx.Errorf("unable to delete l1 tx sender: %v", err)
 					return err
 				}
 			}
@@ -423,13 +423,13 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		// get blocks from block table
 		blocks, err = s.blockModel.GetBlocksForProverBetween(1, int64(s.config.ChainConfig.MaxBlockCount))
 		if err != nil {
-			logx.Errorf("[SendVerifiedAndExecutedBlocks] GetBlocksForProverBetween err: %v, maxBlockCount: %d",
+			logx.Errorf("GetBlocksForProverBetween err: %v, maxBlockCount: %d",
 				err, s.config.ChainConfig.MaxBlockCount)
 			return err
 		}
 		pendingVerifyAndExecuteBlocks, err = ConvertBlocksToVerifyAndExecuteBlockInfos(blocks)
 		if err != nil {
-			logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to convert blocks to verify and execute block infos: %v", err)
+			logx.Errorf("unable to convert blocks to verify and execute block infos: %v", err)
 			return err
 		}
 		start = int64(1)
@@ -438,12 +438,12 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		blocks, err = s.blockModel.GetBlocksForProverBetween(lastHandledBlock.L2BlockHeight+1,
 			lastHandledBlock.L2BlockHeight+int64(s.config.ChainConfig.MaxBlockCount))
 		if err != nil {
-			logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get sender new blocks: %v", err)
+			logx.Errorf("unable to get sender new blocks: %v", err)
 			return err
 		}
 		pendingVerifyAndExecuteBlocks, err = ConvertBlocksToVerifyAndExecuteBlockInfos(blocks)
 		if err != nil {
-			logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to convert blocks to commit block infos: %v", err)
+			logx.Errorf("unable to convert blocks to commit block infos: %v", err)
 			return err
 		}
 		start = lastHandledBlock.L2BlockHeight + 1
@@ -452,19 +452,19 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	blockProofs, err := s.proofModel.GetProofsByBlockRange(start, blocks[len(blocks)-1].BlockHeight,
 		s.config.ChainConfig.MaxBlockCount)
 	if err != nil {
-		logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to get proofs: %v", err)
+		logx.Errorf("unable to get proofs: %v", err)
 		return err
 	}
 	if len(blockProofs) != len(blocks) {
-		logx.Errorf("[SendVerifiedAndExecutedBlocks] we haven't generated related proofs, please wait")
-		return errors.New("[SendVerifiedAndExecutedBlocks] we haven't generated related proofs, please wait")
+		logx.Errorf("we haven't generated related proofs, please wait")
+		return errors.New("we haven't generated related proofs, please wait")
 	}
 	var proofs []*big.Int
 	for _, bProof := range blockProofs {
 		var proofInfo *prove.FormattedProof
 		err = json.Unmarshal([]byte(bProof.ProofInfo), &proofInfo)
 		if err != nil {
-			logx.Errorf("[SendVerifiedAndExecutedBlocks] unable to unmarshal proof info: %v", err)
+			logx.Errorf("unable to unmarshal proof info: %v", err)
 			return err
 		}
 		proofs = append(proofs, proofInfo.A[:]...)
@@ -474,7 +474,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	}
 	gasPrice, err := s.cli.SuggestGasPrice(context.Background())
 	if err != nil {
-		logx.Errorf("[SendVerifiedAndExecutedBlocks] failed to fetch gas price err: %v", err)
+		logx.Errorf("failed to fetch gas price err: %v", err)
 		return err
 	}
 	// commit blocks on-chain
@@ -482,7 +482,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		txHash, err := zkbas.VerifyAndExecuteBlocks(cli, authCli, zkbasInstance,
 			pendingVerifyAndExecuteBlocks, proofs, gasPrice, s.config.ChainConfig.GasLimit)
 		if err != nil {
-			logx.Errorf("[SendVerifiedAndExecutedBlocks] VerifyAndExecuteBlocks err: %v", err)
+			logx.Errorf("VerifyAndExecuteBlocks err: %v", err)
 			return err
 		}
 
@@ -494,14 +494,14 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		}
 		isValid, err := s.l1RollupTxModel.CreateL1RollupTx(newRollupTx)
 		if err != nil {
-			logx.Errorf("[SendVerifiedAndExecutedBlocks] CreateL1TxSender err: %v", err)
+			logx.Errorf("CreateL1TxSender err: %v", err)
 			return err
 		}
 		if !isValid {
-			logx.Errorf("[SendVerifiedAndExecutedBlocks] cannot create new senders")
-			return errors.New("[SendVerifiedAndExecutedBlocks] cannot create new senders")
+			logx.Errorf("cannot create new senders")
+			return errors.New("cannot create new senders")
 		}
-		logx.Errorf("[SendVerifiedAndExecutedBlocks] new blocks have been verified and executed(height): %d", newRollupTx.L2BlockHeight)
+		logx.Errorf("new blocks have been verified and executed(height): %d", newRollupTx.L2BlockHeight)
 		return nil
 	}
 	return nil

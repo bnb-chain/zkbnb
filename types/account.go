@@ -89,7 +89,7 @@ type AccountInfo struct {
 }
 
 func (ai *AccountInfo) DeepCopy() (*AccountInfo, error) {
-	var assetInfo map[int64]*AccountAsset
+	assetInfo := make(map[int64]*AccountAsset)
 	for assetId, asset := range ai.AssetInfo {
 		assetInfo[assetId] = asset.DeepCopy()
 	}
