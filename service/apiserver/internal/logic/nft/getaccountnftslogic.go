@@ -32,6 +32,10 @@ func NewGetAccountNftsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 }
 
 func (l *GetAccountNftsLogic) GetAccountNfts(req *types.ReqGetAccountNfts) (resp *types.Nfts, err error) {
+	resp = &types.Nfts{
+		Nfts: make([]*types.Nft, 0),
+	}
+
 	accountIndex := int64(0)
 	switch req.By {
 	case queryByAccountIndex:
@@ -49,23 +53,19 @@ func (l *GetAccountNftsLogic) GetAccountNfts(req *types.ReqGetAccountNfts) (resp
 
 	if err != nil {
 		if err == types2.DbErrNotFound {
-			return nil, types2.AppErrNotFound
+			return resp, nil
 		}
 		return nil, types2.AppErrInternal
 	}
 
 	total, err := l.svcCtx.NftModel.GetAccountNftTotalCount(accountIndex)
 	if err != nil {
-		if err == types2.DbErrNotFound {
-			return nil, types2.AppErrNotFound
+		if err != types2.DbErrNotFound {
+			return nil, types2.AppErrInternal
 		}
-		return nil, types2.AppErrInternal
 	}
 
-	resp = &types.Nfts{
-		Total: total,
-		Nfts:  make([]*types.Nft, 0),
-	}
+	resp.Total = total
 	if total == 0 || total <= int64(req.Offset) {
 		return resp, nil
 	}

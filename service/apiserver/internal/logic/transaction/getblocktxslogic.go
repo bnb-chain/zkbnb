@@ -33,14 +33,19 @@ func NewGetBlockTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetBl
 }
 
 func (l *GetBlockTxsLogic) GetBlockTxs(req *types.ReqGetBlockTxs) (resp *types.Txs, err error) {
+	resp = &types.Txs{
+		Txs: make([]*types.Tx, 0),
+	}
+
+	blockHeight := int64(0)
 	var block *blockdao.Block
 	switch req.By {
 	case queryByBlockHeight:
-		blockHeight, err := strconv.ParseInt(req.Value, 10, 64)
+		blockHeight, err = strconv.ParseInt(req.Value, 10, 64)
 		if err != nil {
 			return nil, types2.AppErrInvalidParam.RefineError("invalid value for block height")
 		}
-		if blockHeight <= 0 {
+		if blockHeight < 0 {
 			return nil, types2.AppErrInvalidParam.RefineError("invalid value for block height")
 		}
 		block, err = l.svcCtx.MemCache.GetBlockByHeightWithFallback(blockHeight, func() (interface{}, error) {
@@ -56,15 +61,12 @@ func (l *GetBlockTxsLogic) GetBlockTxs(req *types.ReqGetBlockTxs) (resp *types.T
 
 	if err != nil {
 		if err == types2.DbErrNotFound {
-			return nil, types2.AppErrNotFound
+			return resp, nil
 		}
 		return nil, types2.AppErrInternal
 	}
 
-	resp = &types.Txs{
-		Total: uint32(len(block.Txs)),
-		Txs:   make([]*types.Tx, 0),
-	}
+	resp.Total = uint32(len(block.Txs))
 	for _, t := range block.Txs {
 		tx := utils.DbtxTx(t)
 		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)

@@ -90,6 +90,8 @@ func (s *SendTxLogic) getExecutor(txType int, txInfo string) (executor.TxExecuto
 		return executor.NewCancelOfferExecutor(bc, t)
 	case types2.TxTypeWithdrawNft:
 		return executor.NewWithdrawNftExecutor(bc, t)
+	case types2.TxTypeCreateCollection:
+		return executor.NewCreateCollectionExecutor(bc, t)
 	default:
 		logx.Errorf("invalid tx type: %s", txType)
 		return nil, types2.AppErrInvalidTxType

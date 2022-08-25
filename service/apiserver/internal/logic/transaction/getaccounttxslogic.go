@@ -33,6 +33,10 @@ func NewGetAccountTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 }
 
 func (l *GetAccountTxsLogic) GetAccountTxs(req *types.ReqGetAccountTxs) (resp *types.Txs, err error) {
+	resp = &types.Txs{
+		Txs: make([]*types.Tx, 0),
+	}
+
 	accountIndex := int64(0)
 	switch req.By {
 	case queryByAccountIndex:
@@ -48,6 +52,13 @@ func (l *GetAccountTxsLogic) GetAccountTxs(req *types.ReqGetAccountTxs) (resp *t
 		return nil, types2.AppErrInvalidParam.RefineError("param by should be account_index|account_name|account_pk")
 	}
 
+	if err != nil {
+		if err == types2.DbErrNotFound {
+			return resp, nil
+		}
+		return nil, types2.AppErrInternal
+	}
+
 	total, err := l.svcCtx.TxModel.GetTxsCountByAccountIndex(accountIndex)
 	if err != nil {
 		if err != types2.DbErrNotFound {
@@ -55,10 +66,7 @@ func (l *GetAccountTxsLogic) GetAccountTxs(req *types.ReqGetAccountTxs) (resp *t
 		}
 	}
 
-	resp = &types.Txs{
-		Total: uint32(total),
-		Txs:   make([]*types.Tx, 0),
-	}
+	resp.Total = uint32(total)
 	if total == 0 || total <= int64(req.Offset) {
 		return resp, nil
 	}
