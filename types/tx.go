@@ -48,6 +48,25 @@ const (
 	TxTypeOffer
 )
 
+func IsL2Tx(txType int64) bool {
+	if txType == TxTypeTransfer ||
+		txType == TxTypeSwap ||
+		txType == TxTypeAddLiquidity ||
+		txType == TxTypeRemoveLiquidity ||
+		txType == TxTypeWithdraw ||
+		txType == TxTypeCreateCollection ||
+		txType == TxTypeMintNft ||
+		txType == TxTypeTransferNft ||
+		txType == TxTypeAtomicMatch ||
+		txType == TxTypeCancelOffer ||
+		txType == TxTypeWithdrawNft ||
+		txType == TxTypeFullExit ||
+		txType == TxTypeFullExitNft {
+		return true
+	}
+	return false
+}
+
 type (
 	RegisterZnsTxInfo    = legendTxTypes.RegisterZnsTxInfo
 	CreatePairTxInfo     = legendTxTypes.CreatePairTxInfo
