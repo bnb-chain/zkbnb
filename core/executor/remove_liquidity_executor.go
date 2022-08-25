@@ -58,7 +58,7 @@ func (e *RemoveLiquidityExecutor) Prepare() error {
 	liquidityModel := e.bc.StateDB().LiquidityMap[txInfo.PairIndex]
 
 	accounts := []int64{txInfo.FromAccountIndex, liquidityModel.TreasuryAccountIndex, txInfo.GasAccountIndex}
-	assets := []int64{txInfo.AssetAId, txInfo.AssetBId, txInfo.PairIndex, txInfo.GasFeeAssetId}
+	assets := []int64{liquidityModel.AssetAId, liquidityModel.AssetBId, txInfo.AssetAId, txInfo.AssetBId, txInfo.PairIndex, txInfo.GasFeeAssetId}
 	err = e.bc.StateDB().PrepareAccountsAndAssets(accounts, assets)
 	if err != nil {
 		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
