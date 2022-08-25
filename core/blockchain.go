@@ -24,7 +24,6 @@ import (
 	"github.com/bnb-chain/zkbas/dao/nft"
 	"github.com/bnb-chain/zkbas/dao/tx"
 	"github.com/bnb-chain/zkbas/tree"
-	"github.com/bnb-chain/zkbas/types"
 )
 
 type ChainConfig struct {
@@ -231,11 +230,11 @@ func (bc *BlockChain) commitNewBlock(blockSize int, createdAt int64) (*block.Blo
 
 func (bc *BlockChain) VerifyExpiredAt(expiredAt int64) error {
 	if !bc.dryRun {
-		if expiredAt != types.NilExpiredAt && expiredAt < bc.currentBlock.CreatedAt.UnixMilli() {
+		if expiredAt < bc.currentBlock.CreatedAt.UnixMilli() {
 			return errors.New("invalid ExpiredAt")
 		}
 	} else {
-		if expiredAt != types.NilExpiredAt && expiredAt < time.Now().UnixMilli() {
+		if expiredAt < time.Now().UnixMilli() {
 			return errors.New("invalid ExpiredAt")
 		}
 	}

@@ -18,6 +18,7 @@
 package types
 
 import (
+	"math"
 	"math/big"
 )
 
@@ -30,7 +31,7 @@ const (
 	NilAssetInfo      = "{}"
 	NilAccountName    = ""
 	NilAccountOrder   = -1
-	NilExpiredAt      = 0
+	NilExpiredAt      = math.MaxInt64
 	NilCollectionId   = int64(0)
 	NilAccountIndex   = int64(0)
 	NilTxNftIndex     = int64(-1)
