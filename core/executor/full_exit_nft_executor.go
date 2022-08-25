@@ -218,6 +218,8 @@ func (e *FullExitNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
+	e.tx.NftIndex = e.txInfo.NftIndex
+	e.tx.AccountIndex = e.txInfo.AccountIndex
 	return e.BaseExecutor.GetExecutedTx()
 }
 

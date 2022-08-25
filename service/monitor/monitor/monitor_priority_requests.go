@@ -98,7 +98,6 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			}
 
 			mempoolTx.TxType = int64(txInfo.TxType)
-			mempoolTx.PairIndex = txInfo.PairIndex
 			mempoolTx.TxInfo = string(txInfoBytes)
 
 			pendingNewMempoolTxs = append(pendingNewMempoolTxs, mempoolTx)
@@ -130,9 +129,6 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			}
 
 			mempoolTx.TxType = int64(txInfo.TxType)
-			mempoolTx.AssetId = txInfo.AssetId
-			mempoolTx.TxAmount = txInfo.AssetAmount.String()
-			mempoolTx.AccountIndex = txInfo.AccountIndex
 			mempoolTx.TxInfo = string(txInfoBytes)
 
 			pendingNewMempoolTxs = append(pendingNewMempoolTxs, mempoolTx)
@@ -148,7 +144,6 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			}
 
 			mempoolTx.TxType = int64(txInfo.TxType)
-			mempoolTx.AccountIndex = txInfo.AccountIndex
 			mempoolTx.TxInfo = string(txInfoBytes)
 
 			pendingNewMempoolTxs = append(pendingNewMempoolTxs, mempoolTx)
@@ -164,8 +159,6 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			}
 
 			mempoolTx.TxType = int64(txInfo.TxType)
-			mempoolTx.AssetId = txInfo.AssetId
-			mempoolTx.TxAmount = txInfo.AssetAmount.String()
 			mempoolTx.TxInfo = string(txInfoBytes)
 
 			pendingNewMempoolTxs = append(pendingNewMempoolTxs, mempoolTx)
@@ -181,9 +174,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			}
 
 			mempoolTx.TxType = int64(txInfo.TxType)
-			mempoolTx.NftIndex = txInfo.NftIndex
 			mempoolTx.TxInfo = string(txInfoBytes)
-			mempoolTx.AccountIndex = txInfo.AccountIndex
 
 			pendingNewMempoolTxs = append(pendingNewMempoolTxs, mempoolTx)
 		default:
