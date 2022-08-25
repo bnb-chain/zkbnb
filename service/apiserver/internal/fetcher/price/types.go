@@ -9,7 +9,7 @@ type status struct {
 }
 
 type Quote struct {
-	Price            float64 `json:"fetcher"`
+	Price            float64 `json:"price"`
 	Volume24H        float64 `json:"volume_24h"`
 	PercentChange1H  float64 `json:"percent_change_1h"`
 	PercentChange24H float64 `json:"percent_change_24h"`

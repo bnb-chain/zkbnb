@@ -70,6 +70,7 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 	}
 
 	resp = &types.Account{
+		Index:  account.AccountIndex,
 		Status: uint32(account.Status),
 		Name:   account.AccountName,
 		Pk:     account.PublicKey,

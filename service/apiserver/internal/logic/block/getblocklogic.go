@@ -40,7 +40,7 @@ func (l *GetBlockLogic) GetBlock(req *types.ReqGetBlock) (resp *types.Block, err
 		if err != nil {
 			return nil, types2.AppErrInvalidParam.RefineError("invalid value for block height")
 		}
-		if blockHeight <= 0 {
+		if blockHeight < 0 {
 			return nil, types2.AppErrInvalidParam.RefineError("invalid value for block height")
 		}
 		block, err = l.svcCtx.MemCache.GetBlockByHeightWithFallback(blockHeight, func() (interface{}, error) {

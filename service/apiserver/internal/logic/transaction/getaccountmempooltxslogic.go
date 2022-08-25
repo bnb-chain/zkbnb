@@ -27,6 +27,10 @@ func NewGetAccountMempoolTxsLogic(ctx context.Context, svcCtx *svc.ServiceContex
 }
 
 func (l *GetAccountMempoolTxsLogic) GetAccountMempoolTxs(req *types.ReqGetAccountMempoolTxs) (resp *types.MempoolTxs, err error) {
+	resp = &types.MempoolTxs{
+		MempoolTxs: make([]*types.Tx, 0),
+	}
+
 	accountIndex := int64(0)
 	switch req.By {
 	case queryByAccountIndex:
@@ -44,7 +48,7 @@ func (l *GetAccountMempoolTxsLogic) GetAccountMempoolTxs(req *types.ReqGetAccoun
 
 	if err != nil {
 		if err == types2.DbErrNotFound {
-			return nil, types2.AppErrNotFound
+			return resp, nil
 		}
 		return nil, types2.AppErrInternal
 	}
@@ -56,10 +60,7 @@ func (l *GetAccountMempoolTxsLogic) GetAccountMempoolTxs(req *types.ReqGetAccoun
 		}
 	}
 
-	resp = &types.MempoolTxs{
-		Total:      uint32(len(mempoolTxs)),
-		MempoolTxs: make([]*types.Tx, 0),
-	}
+	resp.Total = uint32(len(mempoolTxs))
 	for _, t := range mempoolTxs {
 		tx := utils.DbMempooltxTx(t)
 		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
