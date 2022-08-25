@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -111,178 +112,89 @@ func (s *Sender) CommitBlocks() (err error) {
 		authCli       = s.authCli
 		zkbasInstance = s.zkbasInstance
 	)
-	// scan rollup tx table for handled committed height
-	lastHandledTx, handledErr := s.l1RollupTxModel.GetLatestHandledTx(l1rolluptx.TxTypeCommit)
-	if handledErr != nil && handledErr != types.DbErrNotFound {
-		logx.Errorf("GetLatestHandledTx err: %v", handledErr)
-		return handledErr
+	pendingTx, err := s.l1RollupTxModel.GetLatestPendingTx(l1rolluptx.TxTypeCommit)
+	if err != nil && err != types.DbErrNotFound {
+		return err
 	}
-	// scan rollup tx table for pending committed height that higher than the latest handled height
-	latestPendingTx, pendingErr := s.l1RollupTxModel.GetLatestPendingTx(l1rolluptx.TxTypeCommit)
-	if pendingErr != nil && pendingErr != types.DbErrNotFound {
-		logx.Errorf("GetLatestPendingTx err: %v", pendingErr)
-		return pendingErr
+	// No need to submit new transaction if there is any pending commit txs.
+	if pendingTx != nil {
+		return nil
 	}
 
-	// case 1:
-	if handledErr == types.DbErrNotFound && pendingErr == nil {
-		_, isPending, err := cli.GetTransactionByHash(latestPendingTx.L1TxHash)
-		if err != nil {
-			// if we cannot get it from rpc and the time over 1 min
-			lastUpdatedAt := latestPendingTx.UpdatedAt
-			if time.Now().After(lastUpdatedAt.Add(time.Duration(s.config.ChainConfig.MaxWaitingTime) * time.Second)) {
-				err := s.l1RollupTxModel.DeleteL1RollupTx(latestPendingTx)
-				if err != nil {
-					logx.Errorf("unable to delete l1 tx sender: %v", err)
-					return err
-				}
-				return nil
-			} else {
-				return nil
-			}
-		}
-		// if it is pending, still waiting
-		if isPending {
-			logx.Infof("tx is still pending, no need to work for anything tx hash: %s", latestPendingTx.L1TxHash)
-			return nil
-		} else {
-			receipt, err := cli.GetTransactionReceipt(latestPendingTx.L1TxHash)
-			if err != nil {
-				logx.Errorf("unable to get transaction receipt: %v", err)
-				return err
-			}
-			if receipt.Status == 0 {
-				logx.Infof("the transaction is failure, please check: %s", latestPendingTx.L1TxHash)
-				return nil
-			}
-		}
+	lastHandledTx, err := s.l1RollupTxModel.GetLatestHandledTx(l1rolluptx.TxTypeCommit)
+	if err != nil && err != types.DbErrNotFound {
+		return err
 	}
-	// case 2:
-	if handledErr == nil && pendingErr == nil {
-		isSuccess, err := cli.WaitingTransactionStatus(latestPendingTx.L1TxHash)
-		// if err != nil, means we cannot get this tx by hash
-		if err != nil {
-			// if we cannot get it from rpc and the time over 1 min
-			lastUpdatedAt := latestPendingTx.UpdatedAt
-			if time.Now().After(lastUpdatedAt.Add(time.Duration(s.config.ChainConfig.MaxWaitingTime) * time.Second)) {
-				// drop the record
-				err := s.l1RollupTxModel.DeleteL1RollupTx(latestPendingTx)
-				if err != nil {
-					logx.Errorf("unable to delete l1 tx sender: %v", err)
-					return err
-				}
-				return nil
-			} else {
-				logx.Infof("tx cannot be found, but not exceed time limit: %s", latestPendingTx.L1TxHash)
-				return nil
-			}
-		}
-		// if it is pending, still waiting
-		if !isSuccess {
-			logx.Infof("tx is still pending, no need to work for anything tx hash: %s", latestPendingTx.L1TxHash)
-			return nil
-		}
+	start := int64(1)
+	if lastHandledTx != nil {
+		start = lastHandledTx.L2BlockHeight + 1
 	}
-
-	// case 3:
-	var lastStoredBlockInfo zkbas.StorageStoredBlockInfo
-	var pendingCommitBlocks []zkbas.OldZkbasCommitBlockInfo
-	// if lastHandledTx == nil, means we haven't committed any blocks, just start from 0
-	// if errorcode.DbErrNotFound, means we haven't committed new blocks, just start to commit
-	if handledErr == types.DbErrNotFound && pendingErr == types.DbErrNotFound {
-		var blocks []*compressedblock.CompressedBlock
-		blocks, err = s.compressedBlockModel.GetCompressedBlockBetween(1, int64(s.config.ChainConfig.MaxBlockCount))
-		if err != nil {
-			logx.Errorf("GetCompressedBlockBetween err: %v, maxBlockCount: %d",
-				err, s.config.ChainConfig.MaxBlockCount)
-			return err
-		}
-		pendingCommitBlocks, err = ConvertBlocksForCommitToCommitBlockInfos(blocks)
-		if err != nil {
-			logx.Errorf("unable to convert blocks to commit block infos: %vv", err)
-			return err
-		}
-		// set stored block header to default 0
-		lastStoredBlockInfo = DefaultBlockHeader()
+	// commit new blocks
+	blocks, err := s.compressedBlockModel.GetCompressedBlockBetween(start,
+		start+int64(s.config.ChainConfig.MaxBlockCount))
+	if err != nil && err != types.DbErrNotFound {
+		return fmt.Errorf("failed to get compress block err: %v", err)
 	}
-	if handledErr == nil && pendingErr == types.DbErrNotFound {
-		// if errorcode.DbErrNotFound, means we haven't committed new blocks, just start to commit
-		// get blocks higher than last handled blocks
-		var blocks []*compressedblock.CompressedBlock
-		// commit new blocks
-		blocks, err := s.compressedBlockModel.GetCompressedBlockBetween(lastHandledTx.L2BlockHeight+1,
-			lastHandledTx.L2BlockHeight+int64(s.config.ChainConfig.MaxBlockCount))
-		if err != nil {
-			logx.Errorf("unable to get sender new blocks: %v", err)
-			return err
-		}
-		pendingCommitBlocks, err = ConvertBlocksForCommitToCommitBlockInfos(blocks)
-		if err != nil {
-			logx.Errorf("unable to convert blocks to commit block infos: %v", err)
-			return err
-		}
-		// get last block info
+	if len(blocks) == 0 {
+		return nil
+	}
+	pendingCommitBlocks, err := ConvertBlocksForCommitToCommitBlockInfos(blocks)
+	if err != nil {
+		return fmt.Errorf("failed to get commit block info, err: %v", err)
+	}
+	// get last block info
+	lastStoredBlockInfo := defaultBlockHeader()
+	if lastHandledTx != nil {
 		lastHandledBlockInfo, err := s.blockModel.GetBlockByHeight(lastHandledTx.L2BlockHeight)
-		if err != nil && err != types.DbErrNotFound {
-			logx.Errorf("unable to get last handled block info: %v", err)
-			return err
+		if err != nil {
+			return fmt.Errorf("failed to get block info, err: %v", err)
 		}
 		// construct last stored block header
 		lastStoredBlockInfo = chain.ConstructStoredBlockInfo(lastHandledBlockInfo)
 	}
+
 	gasPrice, err := s.cli.SuggestGasPrice(context.Background())
 	if err != nil {
 		logx.Errorf("failed to fetch gas price: %v", err)
 		return err
 	}
 	// commit blocks on-chain
-	if len(pendingCommitBlocks) != 0 {
-		txHash, err := zkbas.CommitBlocks(
-			cli, authCli,
-			zkbasInstance,
-			lastStoredBlockInfo,
-			pendingCommitBlocks,
-			gasPrice,
-			s.config.ChainConfig.GasLimit)
-		if err != nil {
-			logx.Errorf("unable to commit blocks: %v", err)
-			return err
-		}
-		for _, pendingCommittedBlock := range pendingCommitBlocks {
-			logx.Infof("commit blocks: %v", pendingCommittedBlock.BlockNumber)
-		}
-		newRollupTx := &l1rolluptx.L1RollupTx{
-			L1TxHash:      txHash,
-			TxStatus:      l1rolluptx.StatusPending,
-			TxType:        l1rolluptx.TxTypeCommit,
-			L2BlockHeight: int64(pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber),
-		}
-		isValid, err := s.l1RollupTxModel.CreateL1RollupTx(newRollupTx)
-		if err != nil {
-			logx.Errorf("unable to create l1 tx sender")
-			return err
-		}
-		if !isValid {
-			logx.Errorf("cannot create new senders")
-			return errors.New("cannot create new senders")
-		}
-		logx.Infof("new blocks have been committed(height): %v", newRollupTx.L2BlockHeight)
-		return nil
+	txHash, err := zkbas.CommitBlocks(
+		cli, authCli,
+		zkbasInstance,
+		lastStoredBlockInfo,
+		pendingCommitBlocks,
+		gasPrice,
+		s.config.ChainConfig.GasLimit)
+	if err != nil {
+		return fmt.Errorf("failed to send commit tx, errL %v", err)
 	}
+	newRollupTx := &l1rolluptx.L1RollupTx{
+		L1TxHash:      txHash,
+		TxStatus:      l1rolluptx.StatusPending,
+		TxType:        l1rolluptx.TxTypeCommit,
+		L2BlockHeight: int64(pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber),
+	}
+	err = s.l1RollupTxModel.CreateL1RollupTx(newRollupTx)
+	if err != nil {
+		return fmt.Errorf("failed to create tx in database, err: %v", err)
+	}
+	logx.Infof("new blocks have been committed(height): %v", newRollupTx.L2BlockHeight)
 	return nil
 }
 
 func (s *Sender) UpdateSentTxs() (err error) {
 	pendingTxs, err := s.l1RollupTxModel.GetL1RollupTxsByStatus(l1rolluptx.StatusPending)
 	if err != nil {
-		logx.Errorf("unable to get l1 tx senders by tx status: %v", err)
-		return err
+		if err == types.DbErrNotFound {
+			return nil
+		}
+		return fmt.Errorf("failed to get pending txs, err: %v", err)
 	}
 
 	latestL1Height, err := s.cli.GetHeight()
 	if err != nil {
-		logx.Errorf("Get L1 height err: %v", err)
-		return err
+		return fmt.Errorf("failed to get l1 block height, err: %v", err)
 	}
 
 	var (
@@ -293,8 +205,16 @@ func (s *Sender) UpdateSentTxs() (err error) {
 		txHash := pendingTx.L1TxHash
 		receipt, err := s.cli.GetTransactionReceipt(txHash)
 		if err != nil {
-			logx.Errorf("GetTransactionReceipt %s err: %v", txHash, err)
+			logx.Errorf("query transaction receipt %s failed, err: %v", txHash, err)
+			if time.Now().After(pendingTx.UpdatedAt.Add(time.Duration(s.config.ChainConfig.MaxWaitingTime) * time.Second)) {
+				// No need to check the response, do best effort.
+				s.l1RollupTxModel.DeleteL1RollupTx(pendingTx)
+			}
 			continue
+		}
+		if receipt.Status == 0 {
+			// It is critical to have any failed transactions
+			panic(fmt.Sprintf("unexpected failed tx: %v", txHash))
 		}
 
 		// not finalized yet
@@ -307,14 +227,12 @@ func (s *Sender) UpdateSentTxs() (err error) {
 			case zkbasLogBlockCommitSigHash.Hex():
 				var event zkbas.ZkbasBlockCommit
 				if err = ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlockCommit, vlog.Data); err != nil {
-					logx.Errorf("UnpackIntoInterface err: %v", err)
 					return err
 				}
 				validTx = int64(event.BlockNumber) == pendingTx.L2BlockHeight
 			case zkbasLogBlockVerificationSigHash.Hex():
 				var event zkbas.ZkbasBlockVerification
 				if err = ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlockVerification, vlog.Data); err != nil {
-					logx.Errorf("UnpackIntoInterface err: %v", err)
 					return err
 				}
 				validTx = int64(event.BlockNumber) == pendingTx.L2BlockHeight
@@ -333,8 +251,7 @@ func (s *Sender) UpdateSentTxs() (err error) {
 
 	if err = s.l1RollupTxModel.UpdateL1RollupTxs(pendingUpdateRxs,
 		pendingUpdateProofStatus); err != nil {
-		logx.Errorf("update sent txs error, err: %v", err)
-		return err
+		return fmt.Errorf("failed to updte rollup txs, err:%v", err)
 	}
 	return nil
 }
@@ -345,126 +262,49 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		authCli       = s.authCli
 		zkbasInstance = s.zkbasInstance
 	)
-	// scan l1 tx sender table for handled verified and executed height
-	lastHandledBlock, getHandleErr := s.l1RollupTxModel.GetLatestHandledTx(l1rolluptx.TxTypeVerifyAndExecute)
-	if getHandleErr != nil && getHandleErr != types.DbErrNotFound {
-		logx.Errorf("unable to get latest handled block: %v", getHandleErr)
-		return getHandleErr
-	}
-	// scan l1 tx sender table for pending verified and executed height that higher than the latest handled height
-	pendingSender, getPendingErr := s.l1RollupTxModel.GetLatestPendingTx(l1rolluptx.TxTypeVerifyAndExecute)
-	if getPendingErr != nil && getPendingErr != types.DbErrNotFound {
-		logx.Errorf("unable to get latest pending blocks: %v", getPendingErr)
-		return getPendingErr
-	}
-	// case 1: check tx status on L1
-	if getHandleErr == types.DbErrNotFound && getPendingErr == nil {
-		_, isPending, err := cli.GetTransactionByHash(pendingSender.L1TxHash)
-		// if err != nil, means we cannot get this tx by hash
-		if err != nil {
-			// if we cannot get it from rpc and the time over 1 min
-			lastUpdatedAt := pendingSender.UpdatedAt
-			if time.Now().After(lastUpdatedAt.Add(time.Duration(s.config.ChainConfig.MaxWaitingTime) * time.Second)) {
-				// drop the record
-				err := s.l1RollupTxModel.DeleteL1RollupTx(pendingSender)
-				if err != nil {
-					logx.Errorf("unable to delete l1 tx sender: %v", err)
-					return err
-				}
-				return nil
-			} else {
-				return nil
-			}
-		}
-		// if it is pending, still waiting
-		if isPending {
-			logx.Infof("tx is still pending, no need to work for anything tx hash: %s", pendingSender.L1TxHash)
-			return nil
-		} else {
-			receipt, err := cli.GetTransactionReceipt(pendingSender.L1TxHash)
-			if err != nil {
-				logx.Errorf("unable to get transaction receipt: %v", err)
-				return err
-			}
-			if receipt.Status == 0 {
-				logx.Infof("the transaction is failure, please check: %s", pendingSender.L1TxHash)
-				return nil
-			}
-		}
-	}
-	// case 2:
-	if getHandleErr == nil && getPendingErr == nil {
-		isSuccess, err := cli.WaitingTransactionStatus(pendingSender.L1TxHash)
-		// if err != nil, means we cannot get this tx by hash
-		if err != nil {
-			// if we cannot get it from rpc and the time over 1 min
-			lastUpdatedAt := pendingSender.UpdatedAt
-			if time.Now().After(lastUpdatedAt.Add(time.Duration(s.config.ChainConfig.MaxWaitingTime) * time.Second)) {
-				// drop the record
-				if err := s.l1RollupTxModel.DeleteL1RollupTx(pendingSender); err != nil {
-					logx.Errorf("unable to delete l1 tx sender: %v", err)
-					return err
-				}
-			}
-			return nil
-		}
-		// if it is pending, still waiting
-		if !isSuccess {
-			return nil
-		}
-	}
-	// case 3:  means we haven't verified and executed new blocks, just start to commit
-	var (
-		start                         int64
-		blocks                        []*block.Block
-		pendingVerifyAndExecuteBlocks []zkbas.OldZkbasVerifyAndExecuteBlockInfo
-	)
-	if getHandleErr == types.DbErrNotFound && getPendingErr == types.DbErrNotFound {
-		// get blocks from block table
-		blocks, err = s.blockModel.GetBlocksForProverBetween(1, int64(s.config.ChainConfig.MaxBlockCount))
-		if err != nil {
-			logx.Errorf("GetBlocksForProverBetween err: %v, maxBlockCount: %d",
-				err, s.config.ChainConfig.MaxBlockCount)
-			return err
-		}
-		pendingVerifyAndExecuteBlocks, err = ConvertBlocksToVerifyAndExecuteBlockInfos(blocks)
-		if err != nil {
-			logx.Errorf("unable to convert blocks to verify and execute block infos: %v", err)
-			return err
-		}
-		start = int64(1)
-	}
-	if getHandleErr == nil && getPendingErr == types.DbErrNotFound {
-		blocks, err = s.blockModel.GetBlocksForProverBetween(lastHandledBlock.L2BlockHeight+1,
-			lastHandledBlock.L2BlockHeight+int64(s.config.ChainConfig.MaxBlockCount))
-		if err != nil {
-			logx.Errorf("unable to get sender new blocks: %v", err)
-			return err
-		}
-		pendingVerifyAndExecuteBlocks, err = ConvertBlocksToVerifyAndExecuteBlockInfos(blocks)
-		if err != nil {
-			logx.Errorf("unable to convert blocks to commit block infos: %v", err)
-			return err
-		}
-		start = lastHandledBlock.L2BlockHeight + 1
-	}
-
-	blockProofs, err := s.proofModel.GetProofsByBlockRange(start, blocks[len(blocks)-1].BlockHeight,
-		s.config.ChainConfig.MaxBlockCount)
-	if err != nil {
-		logx.Errorf("unable to get proofs: %v", err)
+	pendingTx, err := s.l1RollupTxModel.GetLatestPendingTx(l1rolluptx.TxTypeVerifyAndExecute)
+	if err != nil && err != types.DbErrNotFound {
 		return err
 	}
+	// No need to submit new transaction if there is any pending verification txs.
+	if pendingTx != nil {
+		return nil
+	}
+
+	lastHandledTx, err := s.l1RollupTxModel.GetLatestHandledTx(l1rolluptx.TxTypeVerifyAndExecute)
+	if err != nil && err != types.DbErrNotFound {
+		return err
+	}
+
+	start := int64(1)
+	if lastHandledTx != nil {
+		start = lastHandledTx.L2BlockHeight + 1
+	}
+	blocks, err := s.blockModel.GetCommittedBlocksBetween(start,
+		start+int64(s.config.ChainConfig.MaxBlockCount))
+	if err != nil && err != types.DbErrNotFound {
+		return fmt.Errorf("unable to get blocks to prove, err: %v", err)
+	}
+	if len(blocks) == 0 {
+		return nil
+	}
+	pendingVerifyAndExecuteBlocks, err := ConvertBlocksToVerifyAndExecuteBlockInfos(blocks)
+	if err != nil {
+		return fmt.Errorf("unable to convert blocks to commit block infos: %v", err)
+	}
+
+	blockProofs, err := s.proofModel.GetProofsBetween(start, start+int64(len(blocks))-1)
+	if err != nil {
+		return fmt.Errorf("unable to get proofs, err: %v", err)
+	}
 	if len(blockProofs) != len(blocks) {
-		logx.Errorf("we haven't generated related proofs, please wait")
-		return errors.New("we haven't generated related proofs, please wait")
+		return errors.New("related proofs not ready")
 	}
 	var proofs []*big.Int
 	for _, bProof := range blockProofs {
 		var proofInfo *prove.FormattedProof
 		err = json.Unmarshal([]byte(bProof.ProofInfo), &proofInfo)
 		if err != nil {
-			logx.Errorf("unable to unmarshal proof info: %v", err)
 			return err
 		}
 		proofs = append(proofs, proofInfo.A[:]...)
@@ -474,35 +314,25 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	}
 	gasPrice, err := s.cli.SuggestGasPrice(context.Background())
 	if err != nil {
-		logx.Errorf("failed to fetch gas price err: %v", err)
 		return err
 	}
-	// commit blocks on-chain
-	if len(pendingVerifyAndExecuteBlocks) != 0 {
-		txHash, err := zkbas.VerifyAndExecuteBlocks(cli, authCli, zkbasInstance,
-			pendingVerifyAndExecuteBlocks, proofs, gasPrice, s.config.ChainConfig.GasLimit)
-		if err != nil {
-			logx.Errorf("VerifyAndExecuteBlocks err: %v", err)
-			return err
-		}
-
-		newRollupTx := &l1rolluptx.L1RollupTx{
-			L1TxHash:      txHash,
-			TxStatus:      l1rolluptx.StatusPending,
-			TxType:        l1rolluptx.TxTypeVerifyAndExecute,
-			L2BlockHeight: int64(pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber),
-		}
-		isValid, err := s.l1RollupTxModel.CreateL1RollupTx(newRollupTx)
-		if err != nil {
-			logx.Errorf("CreateL1TxSender err: %v", err)
-			return err
-		}
-		if !isValid {
-			logx.Errorf("cannot create new senders")
-			return errors.New("cannot create new senders")
-		}
-		logx.Errorf("new blocks have been verified and executed(height): %d", newRollupTx.L2BlockHeight)
-		return nil
+	// Verify blocks on-chain
+	txHash, err := zkbas.VerifyAndExecuteBlocks(cli, authCli, zkbasInstance,
+		pendingVerifyAndExecuteBlocks, proofs, gasPrice, s.config.ChainConfig.GasLimit)
+	if err != nil {
+		return fmt.Errorf("failed to send verify tx: %v", err)
 	}
+
+	newRollupTx := &l1rolluptx.L1RollupTx{
+		L1TxHash:      txHash,
+		TxStatus:      l1rolluptx.StatusPending,
+		TxType:        l1rolluptx.TxTypeVerifyAndExecute,
+		L2BlockHeight: int64(pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber),
+	}
+	err = s.l1RollupTxModel.CreateL1RollupTx(newRollupTx)
+	if err != nil {
+		return fmt.Errorf(fmt.Sprintf("failed to create rollup tx in db %v", err))
+	}
+	logx.Infof("new blocks have been verified and executed(height): %d", newRollupTx.L2BlockHeight)
 	return nil
 }

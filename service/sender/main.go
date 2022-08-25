@@ -32,12 +32,10 @@ func main() {
 	))
 
 	_, err := cronJob.AddFunc("@every 10s", func() {
-		logx.Info("========================= start s commit task =========================")
+		logx.Info("========================= start commit task =========================")
 		err := s.CommitBlocks()
 		if err != nil {
-			logx.Errorf("[s.CommitBlocks] unable to run: %s", err.Error())
-		} else {
-			logx.Info("========================= end s commit task =========================")
+			logx.Errorf("failed to rollup blocks: %v", err)
 		}
 	})
 	if err != nil {
@@ -45,32 +43,29 @@ func main() {
 	}
 
 	_, err = cronJob.AddFunc("@every 10s", func() {
-		logx.Info("========================= start s verify task =========================")
+		logx.Info("========================= start verify task =========================")
 		err = s.VerifyAndExecuteBlocks()
 		if err != nil {
-			logx.Errorf("[s.VerifyAndExecuteBlocks] unable to run: %s", err.Error())
-		} else {
-			logx.Info("========================= end s verify task =========================")
+			logx.Errorf("failed to send verify transaction %v", err)
 		}
 	})
+	if err != nil {
+		panic(err)
+	}
 
 	_, err = cronJob.AddFunc("@every 10s", func() {
-		logx.Info("========================= start update sent txs task =========================")
+		logx.Info("========================= start update txs task =========================")
 		err = s.UpdateSentTxs()
 		if err != nil {
-			logx.Errorf("update sent txs error, err: %S", err.Error())
+			logx.Errorf("failed to update update tx status, err: %v", err)
 		}
-		logx.Info("========================= end update sent txs task =========================")
 	})
 	if err != nil {
 		panic(err)
 	}
 
-	if err != nil {
-		panic(err)
-	}
 	cronJob.Start()
 
-	logx.Info("s cronjob is starting......")
+	logx.Info("cronjob is starting......")
 	select {}
 }
