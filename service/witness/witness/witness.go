@@ -243,7 +243,7 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 	}
 	if common.Bytes2Hex(newStateRoot) != block.StateRoot {
 		logx.Errorf("block %d state root mismatch, expect %s, get %s", block.BlockHeight,
-			common.Bytes2Hex(newStateRoot), block.StateRoot)
+			block.StateRoot, common.Bytes2Hex(newStateRoot))
 		return nil, errors.New("state root doesn't match")
 	}
 

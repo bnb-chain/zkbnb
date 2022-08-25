@@ -334,8 +334,8 @@ func (w *WitnessHelper) constructAccountWitness(
 		// update account merkle tree
 		nonce := cryptoAccount.Nonce
 		collectionNonce := cryptoAccount.CollectionNonce
-		if oTx.AccountIndex == accountKey && oTx.Nonce != types.NilNonce {
-			nonce = oTx.Nonce
+		if oTx.AccountIndex == accountKey && types.IsL2Tx(oTx.TxType) {
+			nonce = nonce + 1 // increase nonce if tx is initiated in l2
 		}
 		if oTx.AccountIndex == accountKey && oTx.TxType == types.TxTypeCreateCollection {
 			collectionNonce++
