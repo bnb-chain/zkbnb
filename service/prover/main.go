@@ -30,7 +30,7 @@ func main() {
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))
 	_, err := cronJob.AddFunc("@every 10s", func() {
-		logx.Info("start p job......")
+		logx.Info("start prover job......")
 		// cron job for receiving cryptoBlock and handling
 		err := p.ProveBlock()
 		if err != nil {
