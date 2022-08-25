@@ -59,9 +59,7 @@ func IsL2Tx(txType int64) bool {
 		txType == TxTypeTransferNft ||
 		txType == TxTypeAtomicMatch ||
 		txType == TxTypeCancelOffer ||
-		txType == TxTypeWithdrawNft ||
-		txType == TxTypeFullExit ||
-		txType == TxTypeFullExitNft {
+		txType == TxTypeWithdrawNft {
 		return true
 	}
 	return false

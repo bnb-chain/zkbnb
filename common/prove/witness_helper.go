@@ -335,7 +335,7 @@ func (w *WitnessHelper) constructAccountWitness(
 		nonce := cryptoAccount.Nonce
 		collectionNonce := cryptoAccount.CollectionNonce
 		if oTx.AccountIndex == accountKey && types.IsL2Tx(oTx.TxType) {
-			nonce = nonce + 1 // increase nonce if tx is initiated in l2
+			nonce = oTx.Nonce + 1 // increase nonce if tx is initiated in l2
 		}
 		if oTx.AccountIndex == accountKey && oTx.TxType == types.TxTypeCreateCollection {
 			collectionNonce++
@@ -651,7 +651,7 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *Tx) (
 			} else {
 				if lastAccountOrder != txDetail.AccountOrder {
 					if oTx.AccountIndex == txDetail.AccountIndex {
-						accountMap[txDetail.AccountIndex].Nonce = oTx.Nonce
+						accountMap[txDetail.AccountIndex].Nonce = oTx.Nonce + 1
 					}
 				}
 			}
