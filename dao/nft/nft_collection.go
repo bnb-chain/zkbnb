@@ -18,7 +18,6 @@
 package nft
 
 import (
-	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -78,7 +77,6 @@ func (m *defaultL2NftCollectionModel) IfCollectionExistsByCollectionId(accountIn
 	dbTx := m.DB.Table(m.table).Where("account_index = ? and collection_id = ? and deleted_at is NULL", accountIndex, collectionId).Count(&res)
 
 	if dbTx.Error != nil {
-		logx.Errorf("get collection count error, err: %s", dbTx.Error.Error())
 		return true, types.DbErrSqlOperation
 	} else if res == 0 {
 		return false, nil

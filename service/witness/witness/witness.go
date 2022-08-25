@@ -54,11 +54,11 @@ type Witness struct {
 	blockWitnessModel     blockwitness.BlockWitnessModel
 }
 
-func NewWitness(c config.Config) *Witness {
+func NewWitness(c config.Config) (*Witness, error) {
 	datasource := c.Postgres.DataSource
 	dbInstance, err := gorm.Open(postgres.Open(datasource))
 	if err != nil {
-		logx.Errorf("gorm connect db error, err: %v", err)
+		return nil, fmt.Errorf("gorm connect db error, err: %v", err)
 	}
 	conn := sqlx.NewSqlConn("postgres", datasource)
 
@@ -72,16 +72,15 @@ func NewWitness(c config.Config) *Witness {
 		nftHistoryModel:       nft.NewL2NftHistoryModel(conn, c.CacheRedis, dbInstance),
 		proofModel:            proof.NewProofModel(dbInstance),
 	}
-	w.initState()
-	return w
+	err = w.initState()
+	return w, err
 }
 
-func (w *Witness) initState() {
+func (w *Witness) initState() error {
 	p, err := w.proofModel.GetLatestConfirmedProof()
 	if err != nil {
 		if err != types.DbErrNotFound {
-			logx.Error("=> GetLatestConfirmedProof error:", err)
-			return
+			return fmt.Errorf("GetLatestConfirmedProof error: %v", err)
 		} else {
 			p = &proof.Proof{
 				BlockNumber: 0,
@@ -97,7 +96,7 @@ func (w *Witness) initState() {
 	}
 	err = tree.SetupTreeDB(treeCtx)
 	if err != nil {
-		panic(fmt.Sprintf("Init tree database failed %v", err))
+		return fmt.Errorf("init tree database failed %v", err)
 	}
 	w.treeCtx = treeCtx
 
@@ -111,23 +110,21 @@ func (w *Witness) initState() {
 	)
 	// the blockHeight depends on the proof start position
 	if err != nil {
-		logx.Errorf("InitMerkleTree error: %v", err)
-		return
+		return fmt.Errorf("initMerkleTree error: %v", err)
 	}
 
 	w.liquidityTree, err = tree.InitLiquidityTree(w.liquidityHistoryModel, p.BlockNumber,
 		treeCtx)
 	if err != nil {
-		logx.Errorf("InitLiquidityTree error: %v", err)
-		return
+		return fmt.Errorf("initLiquidityTree error: %v", err)
 	}
 	w.nftTree, err = tree.InitNftTree(w.nftHistoryModel, p.BlockNumber,
 		treeCtx)
 	if err != nil {
-		logx.Errorf("InitNftTree error: %v", err)
-		return
+		return fmt.Errorf("initNftTree error: %v", err)
 	}
 	w.helper = utils.NewWitnessHelper(w.treeCtx, w.accountTree, w.liquidityTree, w.nftTree, &w.assetTrees, w.accountModel)
+	return nil
 }
 
 func (w *Witness) GenerateBlockWitness() (err error) {
@@ -139,7 +136,10 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 	// get next batch of blocks
 	blocks, err := w.blockModel.GetBlocksBetween(latestWitnessHeight+1, latestWitnessHeight+BlockProcessDelta)
 	if err != nil {
-		return err
+		if err != types.DbErrNotFound {
+			return err
+		}
+		return nil
 	}
 	// get latestVerifiedBlockNr
 	latestVerifiedBlockNr, err := w.blockModel.GetLatestVerifiedHeight()
@@ -152,14 +152,12 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 		// Step1: construct witness
 		blockWitness, err := w.constructBlockWitness(block, latestVerifiedBlockNr)
 		if err != nil {
-			logx.Errorf("failed to construct block witness, err: %v", err)
-			return err
+			return fmt.Errorf("failed to construct block witness, err: %v", err)
 		}
 		// Step2: commit trees for witness
 		err = tree.CommitTrees(uint64(latestVerifiedBlockNr), w.accountTree, &w.assetTrees, w.liquidityTree, w.nftTree)
 		if err != nil {
-			logx.Errorf("unable to commit trees after txs is executed, error: %v", err)
-			return err
+			return fmt.Errorf("unable to commit trees after txs is executed, error: %v", err)
 		}
 		// Step3: insert witness into database
 		err = w.blockWitnessModel.CreateBlockWitness(blockWitness)
@@ -169,8 +167,7 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 			if rollBackErr != nil {
 				logx.Errorf("unable to rollback trees %v", rollBackErr)
 			}
-			logx.Errorf("create unproved crypto block error, err: %v", err)
-			return err
+			return fmt.Errorf("create unproved crypto block error, err: %v", err)
 		}
 	}
 	return nil
@@ -242,8 +239,6 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 		cryptoTxs = append(cryptoTxs, cryptoBlock.EmptyTx())
 	}
 	if common.Bytes2Hex(newStateRoot) != block.StateRoot {
-		logx.Errorf("block %d state root mismatch, expect %s, get %s", block.BlockHeight,
-			block.StateRoot, common.Bytes2Hex(newStateRoot))
 		return nil, errors.New("state root doesn't match")
 	}
 

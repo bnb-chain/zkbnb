@@ -18,11 +18,9 @@
 package block
 
 import (
-	"encoding/json"
 	"errors"
 	"sort"
 
-	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -140,7 +138,6 @@ func (m *defaultBlockModel) GetBlocksList(limit int64, offset int64) (blocks []*
 
 	dbTx := m.DB.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("block_height desc").Find(&blocks)
 	if dbTx.Error != nil {
-		logx.Errorf("get blocks error, err: %s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
@@ -149,7 +146,6 @@ func (m *defaultBlockModel) GetBlocksList(limit int64, offset int64) (blocks []*
 	for _, block := range blocks {
 		err = m.DB.Model(&block).Association(txForeignKeyColumn).Find(&block.Txs)
 		if err != nil {
-			logx.Errorf("get associate txs error, err: %s", err.Error())
 			return nil, types.DbErrSqlOperation
 		}
 		sort.Slice(block.Txs, func(i, j int) bool {
@@ -169,7 +165,6 @@ func (m *defaultBlockModel) GetBlocksBetween(start int64, end int64) (blocks []*
 		Order("block_height").
 		Find(&blocks)
 	if dbTx.Error != nil {
-		logx.Errorf("get bocks error, err: %s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
@@ -184,7 +179,6 @@ func (m *defaultBlockModel) GetBlocksBetween(start int64, end int64) (blocks []*
 
 		err = m.DB.Model(&block).Association(txForeignKeyColumn).Find(&block.Txs)
 		if err != nil {
-			logx.Errorf("get associate txs error, err: %s", err.Error())
 			return nil, types.DbErrSqlOperation
 		}
 		sort.Slice(block.Txs, func(i, j int) bool {
@@ -194,7 +188,6 @@ func (m *defaultBlockModel) GetBlocksBetween(start int64, end int64) (blocks []*
 		for _, txInfo := range block.Txs {
 			err = m.DB.Model(&txInfo).Association(txDetailsForeignKeyColumn).Find(&txInfo.TxDetails)
 			if err != nil {
-				logx.Errorf("get associate tx details error, err: %s", err.Error())
 				return nil, types.DbErrSqlOperation
 			}
 			sort.Slice(txInfo.TxDetails, func(i, j int) bool {
@@ -211,7 +204,6 @@ func (m *defaultBlockModel) GetBlockByCommitment(blockCommitment string) (block 
 	)
 	dbTx := m.DB.Table(m.table).Where("block_commitment = ?", blockCommitment).Find(&block)
 	if dbTx.Error != nil {
-		logx.Errorf("get block by commitment error, err: %s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
@@ -221,7 +213,6 @@ func (m *defaultBlockModel) GetBlockByCommitment(blockCommitment string) (block 
 		return block.Txs[i].TxIndex < block.Txs[j].TxIndex
 	})
 	if err != nil {
-		logx.Errorf("get associate txs error, err: %s", err.Error())
 		return nil, types.DbErrSqlOperation
 	}
 	return block, nil
@@ -233,7 +224,6 @@ func (m *defaultBlockModel) GetBlockByHeight(blockHeight int64) (block *Block, e
 	)
 	dbTx := m.DB.Table(m.table).Where("block_height = ?", blockHeight).Find(&block)
 	if dbTx.Error != nil {
-		logx.Errorf("get block by height error, err: %s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
@@ -243,7 +233,6 @@ func (m *defaultBlockModel) GetBlockByHeight(blockHeight int64) (block *Block, e
 		return block.Txs[i].TxIndex < block.Txs[j].TxIndex
 	})
 	if err != nil {
-		logx.Errorf("get associate txs error, err: %s", err.Error())
 		return nil, types.DbErrSqlOperation
 	}
 
@@ -253,7 +242,6 @@ func (m *defaultBlockModel) GetBlockByHeight(blockHeight int64) (block *Block, e
 func (m *defaultBlockModel) GetBlockByHeightWithoutTx(blockHeight int64) (block *Block, err error) {
 	dbTx := m.DB.Table(m.table).Where("block_height = ?", blockHeight).Find(&block)
 	if dbTx.Error != nil {
-		logx.Errorf("get block by height error, err: %s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
@@ -267,7 +255,6 @@ func (m *defaultBlockModel) GetCommittedBlocksCount() (count int64, err error) {
 		if dbTx.Error == types.DbErrNotFound {
 			return 0, nil
 		}
-		logx.Errorf("get committed block count error, err: %s", dbTx.Error.Error())
 		return 0, types.DbErrSqlOperation
 	}
 
@@ -280,7 +267,6 @@ func (m *defaultBlockModel) GetVerifiedBlocksCount() (count int64, err error) {
 		if dbTx.Error == types.DbErrNotFound {
 			return 0, nil
 		}
-		logx.Errorf("get verified block count error, err: %s", dbTx.Error.Error())
 		return 0, types.DbErrSqlOperation
 	}
 	return count, nil
@@ -290,7 +276,6 @@ func (m *defaultBlockModel) CreateGenesisBlock(block *Block) error {
 	dbTx := m.DB.Table(m.table).Omit("BlockDetails").Omit("Txs").Create(block)
 
 	if dbTx.Error != nil {
-		logx.Errorf("create genesis block error, err: %s", dbTx.Error.Error())
 		return types.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {
@@ -302,7 +287,6 @@ func (m *defaultBlockModel) CreateGenesisBlock(block *Block) error {
 func (m *defaultBlockModel) GetCurrentHeight() (blockHeight int64, err error) {
 	dbTx := m.DB.Table(m.table).Select("block_height").Order("block_height desc").Limit(1).Find(&blockHeight)
 	if dbTx.Error != nil {
-		logx.Errorf("get current block error, err: %s", dbTx.Error.Error())
 		return 0, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return 0, types.DbErrNotFound
@@ -313,7 +297,6 @@ func (m *defaultBlockModel) GetCurrentHeight() (blockHeight int64, err error) {
 func (m *defaultBlockModel) GetBlocksTotalCount() (count int64, err error) {
 	dbTx := m.DB.Table(m.table).Where("deleted_at is NULL").Count(&count)
 	if dbTx.Error != nil {
-		logx.Errorf("get total block count error, err: %s", dbTx.Error.Error())
 		return 0, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		return 0, nil
@@ -335,7 +318,6 @@ func (m *defaultBlockModel) CreateCompressedBlock(pendingMempoolTxs []*mempool.M
 				Select("*").
 				Updates(&mempoolTx)
 			if dbTx.Error != nil {
-				logx.Errorf("unable to update mempool tx: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
@@ -348,16 +330,9 @@ func (m *defaultBlockModel) CreateCompressedBlock(pendingMempoolTxs []*mempool.M
 				Select("*").
 				Updates(&blockStates.Block)
 			if dbTx.Error != nil {
-				logx.Errorf("unable to update block: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
-				blockInfo, err := json.Marshal(blockStates.Block)
-				if err != nil {
-					logx.Errorf("unable to marshal block, err: %s", err.Error())
-					return err
-				}
-				logx.Errorf("invalid block info: %s", string(blockInfo))
 				return errors.New("invalid block info")
 			}
 		}
@@ -365,16 +340,9 @@ func (m *defaultBlockModel) CreateCompressedBlock(pendingMempoolTxs []*mempool.M
 		if blockStates.CompressedBlock != nil {
 			dbTx := tx.Table(compressedblock.CompressedBlockTableName).Create(blockStates.CompressedBlock)
 			if dbTx.Error != nil {
-				logx.Errorf("unable to create block for commit: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
-				commitInfo, err := json.Marshal(blockStates.CompressedBlock)
-				if err != nil {
-					logx.Errorf("unable to marshal block for commit, err=%s", err.Error())
-					return err
-				}
-				logx.Errorf("invalid block for commit info: %s", string(commitInfo))
 				return errors.New("invalid block for commit info")
 			}
 		}
@@ -385,7 +353,6 @@ func (m *defaultBlockModel) CreateCompressedBlock(pendingMempoolTxs []*mempool.M
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected != int64(len(blockStates.PendingNewAccount)) {
-				logx.Errorf("unable to create new account, rowsAffected=%d, rowsCreated=%d", dbTx.RowsAffected, len(blockStates.PendingNewAccount))
 				return errors.New("unable to create new account")
 			}
 		}
@@ -395,7 +362,6 @@ func (m *defaultBlockModel) CreateCompressedBlock(pendingMempoolTxs []*mempool.M
 				Select("*").
 				Updates(&pendingAccount)
 			if dbTx.Error != nil {
-				logx.Errorf("unable to update account: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
@@ -409,7 +375,6 @@ func (m *defaultBlockModel) CreateCompressedBlock(pendingMempoolTxs []*mempool.M
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected != int64(len(blockStates.PendingNewAccountHistory)) {
-				logx.Errorf("unable to create new account history, rowsAffected=%d, rowsCreated=%d", dbTx.RowsAffected, len(blockStates.PendingNewAccountHistory))
 				return errors.New("unable to create new account history")
 			}
 		}
@@ -420,7 +385,6 @@ func (m *defaultBlockModel) CreateCompressedBlock(pendingMempoolTxs []*mempool.M
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected != int64(len(blockStates.PendingNewLiquidity)) {
-				logx.Errorf("unable to create new liquidity, rowsAffected=%d, rowsCreated=%d", dbTx.RowsAffected, len(blockStates.PendingNewLiquidity))
 				return errors.New("unable to create new liquidity")
 			}
 		}
@@ -430,7 +394,6 @@ func (m *defaultBlockModel) CreateCompressedBlock(pendingMempoolTxs []*mempool.M
 				Select("*").
 				Updates(&pendingLiquidity)
 			if dbTx.Error != nil {
-				logx.Errorf("unable to update liquidity: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
@@ -441,12 +404,9 @@ func (m *defaultBlockModel) CreateCompressedBlock(pendingMempoolTxs []*mempool.M
 		if len(blockStates.PendingNewLiquidityHistory) != 0 {
 			dbTx := tx.Table(liquidity.LiquidityHistoryTable).CreateInBatches(blockStates.PendingNewLiquidityHistory, len(blockStates.PendingNewLiquidityHistory))
 			if dbTx.Error != nil {
-				logx.Errorf("create liquidity history error, err: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected != int64(len(blockStates.PendingNewLiquidityHistory)) {
-				logx.Errorf("unable to create new liquidity history, rowsAffected=%d, rowsToCreate=%d",
-					dbTx.RowsAffected, len(blockStates.PendingNewLiquidityHistory))
 				return errors.New("unable to create new liquidity history")
 			}
 		}
@@ -457,7 +417,6 @@ func (m *defaultBlockModel) CreateCompressedBlock(pendingMempoolTxs []*mempool.M
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected != int64(len(blockStates.PendingNewNft)) {
-				logx.Errorf("unable to create new nft, rowsAffected=%d, rowsCreated=%d", dbTx.RowsAffected, len(blockStates.PendingNewNft))
 				return errors.New("unable to create new nft")
 			}
 		}
@@ -467,7 +426,6 @@ func (m *defaultBlockModel) CreateCompressedBlock(pendingMempoolTxs []*mempool.M
 				Select("*").
 				Updates(&pendingNft)
 			if dbTx.Error != nil {
-				logx.Errorf("unable to update nft: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
@@ -481,8 +439,6 @@ func (m *defaultBlockModel) CreateCompressedBlock(pendingMempoolTxs []*mempool.M
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected != int64(len(blockStates.PendingNewNftHistory)) {
-				logx.Errorf("unable to create new nft history, rowsAffected=%d, rowsToCreate=%d",
-					dbTx.RowsAffected, len(blockStates.PendingNewNftHistory))
 				return errors.New("unable to create new nft history")
 			}
 		}
@@ -490,7 +446,6 @@ func (m *defaultBlockModel) CreateCompressedBlock(pendingMempoolTxs []*mempool.M
 		if len(blockStates.PendingNewNftWithdrawHistory) != 0 {
 			dbTx := tx.Table(nft.L2NftWithdrawHistoryTableName).CreateInBatches(blockStates.PendingNewNftWithdrawHistory, len(blockStates.PendingNewNftWithdrawHistory))
 			if dbTx.Error != nil {
-				logx.Errorf("create nft withdraw history error, err: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected != int64(len(blockStates.PendingNewNftWithdrawHistory)) {
@@ -501,7 +456,6 @@ func (m *defaultBlockModel) CreateCompressedBlock(pendingMempoolTxs []*mempool.M
 		if len(blockStates.PendingNewOffer) != 0 {
 			dbTx := tx.Table(nft.OfferTableName).CreateInBatches(blockStates.PendingNewOffer, len(blockStates.PendingNewOffer))
 			if dbTx.Error != nil {
-				logx.Errorf("create new offer error, err: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected != int64(len(blockStates.PendingNewOffer)) {
@@ -512,7 +466,6 @@ func (m *defaultBlockModel) CreateCompressedBlock(pendingMempoolTxs []*mempool.M
 		if len(blockStates.PendingNewL2NftExchange) != 0 {
 			dbTx := tx.Table(nft.L2NftExchangeTableName).CreateInBatches(blockStates.PendingNewL2NftExchange, len(blockStates.PendingNewL2NftExchange))
 			if dbTx.Error != nil {
-				logx.Errorf("create new nft exchange error, err: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected != int64(len(blockStates.PendingNewL2NftExchange)) {
@@ -534,16 +487,12 @@ func (m *defaultBlockModel) CreateNewBlock(oBlock *Block) (err error) {
 	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
 		dbTx := tx.Table(m.table).Create(oBlock)
 		if dbTx.Error != nil {
-			logx.Errorf("unable to create block: %s", dbTx.Error.Error())
 			return dbTx.Error
 		}
 		if dbTx.RowsAffected == 0 {
-			blockInfo, err := json.Marshal(oBlock)
 			if err != nil {
-				logx.Errorf("unable to marshal block, err: %s", err.Error())
 				return err
 			}
-			logx.Errorf("invalid block info: %s", string(blockInfo))
 			return errors.New("invalid block info")
 		}
 
@@ -556,7 +505,6 @@ func (m *defaultBlockModel) GetCommittedBlocksBetween(start, end int64) (blocks 
 		Order("block_height").
 		Find(&blocks)
 	if dbTx.Error != nil {
-		logx.Errorf("unable to get blocks, err: %s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
@@ -571,7 +519,6 @@ func (m *defaultBlockModel) GetLatestVerifiedHeight() (height int64, err error) 
 		Limit(1).
 		First(&block)
 	if dbTx.Error != nil {
-		logx.Errorf("unable to get block: %s", dbTx.Error.Error())
 		return 0, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return 0, types.DbErrNotFound

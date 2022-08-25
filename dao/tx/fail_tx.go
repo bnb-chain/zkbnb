@@ -18,7 +18,6 @@
 package tx
 
 import (
-	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -84,7 +83,6 @@ func (m *defaultFailTxModel) DropFailTxTable() error {
 func (m *defaultFailTxModel) CreateFailTx(failTx *FailTx) error {
 	dbTx := m.DB.Table(m.table).Create(failTx)
 	if dbTx.Error != nil {
-		logx.Errorf("create fail tx error, err: %s", dbTx.Error.Error())
 		return types.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {

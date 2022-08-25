@@ -19,6 +19,7 @@ package monitor
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
@@ -42,8 +43,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 		if err == types.DbErrNotFound {
 			handledHeight = m.Config.ChainConfig.StartL1BlockHeight
 		} else {
-			logx.Errorf("[l1SyncedBlockModel.GetLatestL1BlockByType]: %s", err.Error())
-			return err
+			return fmt.Errorf("failed to get l1 block: %v", err)
 		}
 	} else {
 		handledHeight = latestHandledBlock.L1BlockHeight
@@ -51,8 +51,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 	// get latest l1 block height(latest height - pendingBlocksCount)
 	latestHeight, err := m.cli.GetHeight()
 	if err != nil {
-		logx.Errorf("get l1 block height err: %s", err.Error())
-		return err
+		return fmt.Errorf("failed to get latest l1 block through rpc client: %v", err)
 	}
 	// compute safe height
 	safeHeight := latestHeight - m.Config.ChainConfig.ConfirmBlocksCount
@@ -70,8 +69,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 	}
 	logs, err := m.cli.FilterLogs(context.Background(), query)
 	if err != nil {
-		logx.Errorf("FilterLogs err: %s", err.Error())
-		return err
+		return fmt.Errorf("failed to query logs through rpc client: %v", err)
 	}
 	var (
 		l1EventInfos              []*L1EventInfo
@@ -85,8 +83,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 		case governanceLogNewAssetSigHash.Hex():
 			var event zkbas.GovernanceNewAsset
 			if err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameNewAsset, vlog.Data); err != nil {
-				logx.Errorf("UnpackIntoInterface err: %s", err.Error())
-				return err
+				return fmt.Errorf("unpackIntoInterface err: %v", err)
 			}
 			l1EventInfo := &L1EventInfo{
 				EventType: EventTypeAddAsset,
@@ -95,22 +92,18 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 			// get asset info by contract address
 			erc20Instance, err := zkbas.LoadERC20(m.cli, event.AssetAddress.Hex())
 			if err != nil {
-				logx.Errorf("LoadERC20 err: %s", err.Error())
 				return err
 			}
 			name, err := erc20Instance.Name(basic.EmptyCallOpts())
 			if err != nil {
-				logx.Errorf("erc20Instance.Name err: %s", err.Error())
 				return err
 			}
 			symbol, err := erc20Instance.Symbol(basic.EmptyCallOpts())
 			if err != nil {
-				logx.Errorf("erc20Instance.Symbol err: %s", err.Error())
 				return err
 			}
 			decimals, err := erc20Instance.Decimals(basic.EmptyCallOpts())
 			if err != nil {
-				logx.Errorf("erc20Instance.Decimals err: %s", err.Error())
 				return err
 			}
 			l2AssetInfo := &asset.Asset{
@@ -127,8 +120,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 			// parse event info
 			var event zkbas.GovernanceNewGovernor
 			if err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameNewGovernor, vlog.Data); err != nil {
-				logx.Errorf("UnpackIntoInterface err: %s", err.Error())
-				return err
+				return fmt.Errorf("unpackIntoInterface err: %v", err)
 			}
 			// set up database info
 			l1EventInfo := &L1EventInfo{
@@ -149,8 +141,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 			var event zkbas.GovernanceNewAssetGovernance
 			err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameNewAssetGovernance, vlog.Data)
 			if err != nil {
-				logx.Errorf("UnpackIntoInterface err: %s", err.Error())
-				return err
+				return fmt.Errorf("unpackIntoInterface err: %v", err)
 			}
 			l1EventInfo := &L1EventInfo{
 				EventType: EventTypeNewAssetGovernance,
@@ -169,8 +160,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 			// parse event info
 			var event zkbas.GovernanceValidatorStatusUpdate
 			if err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameValidatorStatusUpdate, vlog.Data); err != nil {
-				logx.Errorf("unpack GovernanceValidatorStatusUpdate error, err: %s", err.Error())
-				return err
+				return fmt.Errorf("unpack GovernanceValidatorStatusUpdate, err: %v", err)
 			}
 			// set up database info
 			l1EventInfo := &L1EventInfo{
@@ -187,7 +177,6 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 				var validators map[string]*ValidatorInfo
 				err = json.Unmarshal([]byte(configInfo.Value), &validators)
 				if err != nil {
-					logx.Errorf("unable to unmarshal: %s", err.Error())
 					return err
 				}
 				if validators[event.ValidatorAddress.Hex()] == nil {
@@ -200,7 +189,6 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 				}
 				validatorBytes, err := json.Marshal(validators)
 				if err != nil {
-					logx.Errorf("unable to marshal validators: %s", err.Error())
 					return err
 				}
 				pendingNewSysConfigMap[types.Validators].Value = string(validatorBytes)
@@ -208,8 +196,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 				configInfo, err := m.SysConfigModel.GetSysConfigByName(types.Validators)
 				if err != nil {
 					if err != types.DbErrNotFound {
-						logx.Errorf("unable to get sys config by name: %s", err.Error())
-						return err
+						return fmt.Errorf("unable to get sys config by name: %v", err)
 					} else {
 						validators := make(map[string]*ValidatorInfo)
 						validators[event.ValidatorAddress.Hex()] = &ValidatorInfo{
@@ -218,8 +205,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 						}
 						validatorsBytes, err := json.Marshal(validators)
 						if err != nil {
-							logx.Errorf("unable to marshal validators: %s", err.Error())
-							return err
+							return fmt.Errorf("unable to marshal validators: %v", err)
 						}
 						pendingNewSysConfigMap[types.Validators] = &sysconfig.SysConfig{
 							Name:      types.Validators,
@@ -232,7 +218,6 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 					var validators map[string]*ValidatorInfo
 					err = json.Unmarshal([]byte(configInfo.Value), &validators)
 					if err != nil {
-						logx.Errorf("unable to unmarshal validators: %s", err.Error())
 						return err
 					}
 					if validators[event.ValidatorAddress.Hex()] == nil {
@@ -246,7 +231,6 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 					// reset into map
 					validatorBytes, err := json.Marshal(validators)
 					if err != nil {
-						logx.Errorf("unable to marshal validators: %s", err.Error())
 						return err
 					}
 					if pendingUpdateSysConfigMap[types.Validators] == nil {
@@ -261,8 +245,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 			var event zkbas.GovernanceAssetPausedUpdate
 			err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameAssetPausedUpdate, vlog.Data)
 			if err != nil {
-				logx.Errorf("unpack GovernanceAssetPausedUpdate error, err: %s", err.Error())
-				return err
+				return fmt.Errorf("unpack GovernanceAssetPausedUpdate failed, err: %v", err)
 			}
 			// set up database info
 			l1EventInfo := &L1EventInfo{
@@ -275,8 +258,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 			} else {
 				assetInfo, err = m.L2AssetModel.GetAssetByAddress(event.Token.Hex())
 				if err != nil {
-					logx.Errorf("unable to get l2 asset by address, err: %s", err.Error())
-					return err
+					return fmt.Errorf("unable to get l2 asset by address, err: %v", err)
 				}
 				pendingUpdateL2AssetMap[event.Token.Hex()] = assetInfo
 			}
@@ -295,7 +277,6 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 	// serialize into block info
 	eventInfosBytes, err := json.Marshal(l1EventInfos)
 	if err != nil {
-		logx.Errorf("marshal l1 events error, err: %s", err.Error())
 		return err
 	}
 	syncedBlock := &l1syncedblock.L1SyncedBlock{
@@ -321,15 +302,16 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 	for _, pendingUpdateSysconfigInfo := range pendingUpdateSysConfigMap {
 		pendingUpdateSysconfigInfos = append(pendingUpdateSysconfigInfos, pendingUpdateSysconfigInfo)
 	}
-	logx.Infof("l1 block info height: %v, l2 asset info size: %v, pending update l2 asset info size: %v",
-		syncedBlock.L1BlockHeight,
-		len(l2AssetInfos),
-		len(pendingUpdateL2AssetInfos),
-	)
+	if len(l2AssetInfos) > 0 || len(pendingUpdateL2AssetInfos) > 0 {
+		logx.Infof("l1 block info height: %v, l2 asset info size: %v, pending update l2 asset info size: %v",
+			syncedBlock.L1BlockHeight,
+			len(l2AssetInfos),
+			len(pendingUpdateL2AssetInfos),
+		)
+	}
 	if err = m.L1SyncedBlockModel.CreateGovernanceBlock(syncedBlock, l2AssetInfos,
 		pendingUpdateL2AssetInfos, pendingNewSysconfigInfos, pendingUpdateSysconfigInfos); err != nil {
-		logx.Errorf("store governance monitor info error, err: %s", err.Error())
-		return err
+		return fmt.Errorf("store governance monitor info error, err: %v", err)
 	}
 	return nil
 }

@@ -20,7 +20,6 @@ package mempool
 import (
 	"time"
 
-	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -88,7 +87,6 @@ func (m *defaultMempoolDetailModel) GetMempoolTxDetailsByAccountIndex(accountInd
 	var dbTx *gorm.DB
 	dbTx = m.DB.Table(m.table).Where("account_index = ?", accountIndex).Find(&mempoolTxDetails)
 	if dbTx.Error != nil {
-		logx.Errorf("unable to get by account index: %s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound

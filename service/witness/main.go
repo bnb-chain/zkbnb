@@ -19,7 +19,10 @@ func main() {
 
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
-	w := witness.NewWitness(c)
+	w, err := witness.NewWitness(c)
+	if err != nil {
+		panic(err)
+	}
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 	proc.AddShutdownListener(func() {
@@ -29,13 +32,11 @@ func main() {
 	cronJob := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))
-	_, err := cronJob.AddFunc("@every 2s", func() {
+	_, err = cronJob.AddFunc("@every 2s", func() {
 		logx.Info("==========start generate block witness==========")
 		err := w.GenerateBlockWitness()
 		if err != nil {
-			logx.Errorf("==========failed to generate block witness %v==========", err)
-		} else {
-			logx.Info("==========success generate block witness==========")
+			logx.Errorf("failed to generate block witness, %v", err)
 		}
 		w.RescheduleBlockWitness()
 	})

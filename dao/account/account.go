@@ -18,9 +18,6 @@
 package account
 
 import (
-	"fmt"
-
-	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -101,7 +98,6 @@ func (m *defaultAccountModel) DropAccountTable() error {
 func (m *defaultAccountModel) GetAccountByIndex(accountIndex int64) (account *Account, err error) {
 	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex).Find(&account)
 	if dbTx.Error != nil {
-		logx.Errorf("get account by index error, err: %s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
@@ -112,12 +108,8 @@ func (m *defaultAccountModel) GetAccountByIndex(accountIndex int64) (account *Ac
 func (m *defaultAccountModel) GetAccountByPk(pk string) (account *Account, err error) {
 	dbTx := m.DB.Table(m.table).Where("public_key = ?", pk).Find(&account)
 	if dbTx.Error != nil {
-		err := fmt.Sprintf("[account.GetAccountByPk] %s", dbTx.Error.Error())
-		logx.Error(err)
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		err := fmt.Sprintf("[account.GetAccountByPk] %s", types.DbErrNotFound)
-		logx.Error(err)
 		return nil, types.DbErrNotFound
 	}
 	return account, nil
@@ -126,7 +118,6 @@ func (m *defaultAccountModel) GetAccountByPk(pk string) (account *Account, err e
 func (m *defaultAccountModel) GetAccountByName(accountName string) (account *Account, err error) {
 	dbTx := m.DB.Table(m.table).Where("account_name = ?", accountName).Find(&account)
 	if dbTx.Error != nil {
-		logx.Errorf("get account by account name error, err: %s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
@@ -137,7 +128,6 @@ func (m *defaultAccountModel) GetAccountByName(accountName string) (account *Acc
 func (m *defaultAccountModel) GetAccountByNameHash(accountNameHash string) (account *Account, err error) {
 	dbTx := m.DB.Table(m.table).Where("account_name_hash = ?", accountNameHash).Find(&account)
 	if dbTx.Error != nil {
-		logx.Errorf("get account by account name hash error, err: %s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
@@ -148,7 +138,6 @@ func (m *defaultAccountModel) GetAccountByNameHash(accountNameHash string) (acco
 func (m *defaultAccountModel) GetAccountsList(limit int, offset int64) (accounts []*Account, err error) {
 	dbTx := m.DB.Table(m.table).Limit(limit).Offset(int(offset)).Order("account_index desc").Find(&accounts)
 	if dbTx.Error != nil {
-		logx.Errorf("get account list error, err: %s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
@@ -159,7 +148,6 @@ func (m *defaultAccountModel) GetAccountsList(limit int, offset int64) (accounts
 func (m *defaultAccountModel) GetAccountsTotalCount() (count int64, err error) {
 	dbTx := m.DB.Table(m.table).Where("deleted_at is NULL").Count(&count)
 	if dbTx.Error != nil {
-		logx.Errorf("get account count error, error: %s", dbTx.Error.Error())
 		return 0, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return 0, nil
@@ -170,7 +158,6 @@ func (m *defaultAccountModel) GetAccountsTotalCount() (count int64, err error) {
 func (m *defaultAccountModel) GetConfirmedAccountByIndex(accountIndex int64) (account *Account, err error) {
 	dbTx := m.DB.Table(m.table).Where("account_index = ? and status = ?", accountIndex, AccountStatusConfirmed).Find(&account)
 	if dbTx.Error != nil {
-		logx.Errorf("get confirmed account by account index error, err: %s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound

@@ -34,14 +34,12 @@ func main() {
 		// cron job for receiving cryptoBlock and handling
 		err := p.ProveBlock()
 		if err != nil {
-			logx.Error("Prove Error: ", err.Error())
+			logx.Errorf("failed to generate proof, %v", err)
 		}
 	})
 	if err != nil {
 		panic(err)
 	}
 	cronJob.Start()
-
-	logx.Info("p cronjob is starting......")
 	select {}
 }

@@ -35,7 +35,7 @@ func main() {
 		logx.Info("========================= start commit task =========================")
 		err := s.CommitBlocks()
 		if err != nil {
-			logx.Errorf("failed to rollup blocks: %v", err)
+			logx.Errorf("failed to rollup block, %v", err)
 		}
 	})
 	if err != nil {
@@ -46,7 +46,7 @@ func main() {
 		logx.Info("========================= start verify task =========================")
 		err = s.VerifyAndExecuteBlocks()
 		if err != nil {
-			logx.Errorf("failed to send verify transaction %v", err)
+			logx.Errorf("failed to send verify transaction, %v", err)
 		}
 	})
 	if err != nil {
@@ -57,7 +57,7 @@ func main() {
 		logx.Info("========================= start update txs task =========================")
 		err = s.UpdateSentTxs()
 		if err != nil {
-			logx.Errorf("failed to update update tx status, err: %v", err)
+			logx.Errorf("failed to update update tx status, %v", err)
 		}
 	})
 	if err != nil {
