@@ -2,7 +2,6 @@ package prover
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/consensys/gnark-crypto/ecc"
@@ -29,7 +28,7 @@ type Prover struct {
 
 	RedisConn *redis.Redis
 
-	ProofSenderModel  proof.ProofModel
+	ProofModel        proof.ProofModel
 	BlockWitnessModel blockwitness.BlockWitnessModel
 
 	VerifyingKeys      []groth16.VerifyingKey
@@ -55,7 +54,7 @@ func NewProver(c config.Config) *Prover {
 		Config:            c,
 		RedisConn:         redisConn,
 		BlockWitnessModel: blockwitness.NewBlockWitnessModel(conn, c.CacheRedis, gormPointer),
-		ProofSenderModel:  proof.NewProofModel(gormPointer),
+		ProofModel:        proof.NewProofModel(gormPointer),
 	}
 
 	prover.OptionalBlockSizes = c.BlockConfig.OptionalBlockSizes
@@ -113,7 +112,6 @@ func (p *Prover) ProveBlock() error {
 	}()
 	if err != nil {
 		if err == types.DbErrNotFound {
-			logx.Info("no unapproved block")
 			return nil
 		}
 		return err
@@ -126,7 +124,7 @@ func (p *Prover) ProveBlock() error {
 		// Recover block witness status.
 		res := p.BlockWitnessModel.UpdateBlockWitnessStatus(blockWitness, blockwitness.StatusPublished)
 		if res != nil {
-			logx.Errorf("update block witness status failed: ", res)
+			logx.Errorf("revert block witness status failed, err %v", res)
 		}
 	}()
 
@@ -134,7 +132,7 @@ func (p *Prover) ProveBlock() error {
 	var cryptoBlock *block.Block
 	err = json.Unmarshal([]byte(blockWitness.WitnessData), &cryptoBlock)
 	if err != nil {
-		return errors.New("json.Unmarshal Error")
+		return err
 	}
 
 	var keyIndex int
@@ -144,31 +142,28 @@ func (p *Prover) ProveBlock() error {
 		}
 	}
 	if keyIndex == len(p.OptionalBlockSizes) {
-		logx.Errorf("Can't find correct vk/pk")
-		return err
+		return fmt.Errorf("can't find correct vk/pk")
 	}
 
 	// Generate proof.
 	blockProof, err := prove.GenerateProof(p.R1cs[keyIndex], p.ProvingKeys[keyIndex], p.VerifyingKeys[keyIndex], cryptoBlock)
 	if err != nil {
-		return errors.New("GenerateProof Error")
+		return fmt.Errorf("failed to generateProof, err: %v", err)
 	}
 
 	formattedProof, err := prove.FormatProof(blockProof, cryptoBlock.OldStateRoot, cryptoBlock.NewStateRoot, cryptoBlock.BlockCommitment)
 	if err != nil {
-		logx.Errorf("unable to format blockProof: %v", err)
-		return err
+		return fmt.Errorf("unable to format blockProof: %v", err)
 	}
 
 	// Marshal formatted proof.
 	proofBytes, err := json.Marshal(formattedProof)
 	if err != nil {
-		logx.Errorf("formattedProof json.Marshal error: %v", err)
 		return err
 	}
 
 	// Check the existence of block proof.
-	_, err = p.ProofSenderModel.GetProofByBlockNumber(blockWitness.Height)
+	_, err = p.ProofModel.GetProofByBlockNumber(blockWitness.Height)
 	if err == nil {
 		return fmt.Errorf("blockProof of current height exists")
 	}
@@ -178,5 +173,5 @@ func (p *Prover) ProveBlock() error {
 		BlockNumber: blockWitness.Height,
 		Status:      proof.NotSent,
 	}
-	return p.ProofSenderModel.CreateProof(row)
+	return p.ProofModel.CreateProof(row)
 }

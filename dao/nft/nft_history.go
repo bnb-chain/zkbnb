@@ -18,7 +18,6 @@
 package nft
 
 import (
-	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -93,7 +92,6 @@ func (m *defaultL2NftHistoryModel) GetLatestNftAssetCountByBlockHeight(height in
 		Where("NOT EXISTS (?) AND l2_block_height <= ?", subQuery, height)
 
 	if dbTx.Count(&count).Error != nil {
-		logx.Errorf("[GetLatestNftAssetCountByBlockHeight] unable to get related nft assets: %s", dbTx.Error.Error())
 		return 0, types.DbErrSqlOperation
 	}
 
@@ -112,7 +110,6 @@ func (m *defaultL2NftHistoryModel) GetLatestNftAssetsByBlockHeight(height int64,
 		Order("nft_index")
 
 	if dbTx.Find(&accountNftAssets).Error != nil {
-		logx.Errorf("[GetLatestNftAssetsByBlockHeight] unable to get related nft assets: %s", dbTx.Error.Error())
 		return 0, nil, types.DbErrSqlOperation
 	}
 	return dbTx.RowsAffected, accountNftAssets, nil

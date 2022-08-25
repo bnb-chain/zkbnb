@@ -21,7 +21,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -115,7 +114,6 @@ func (m *defaultTxModel) GetTxsTotalCount() (count int64, err error) {
 		if dbTx.Error == types.DbErrNotFound {
 			return 0, nil
 		}
-		logx.Errorf("get tx total count error, err: %s", dbTx.Error.Error())
 		return 0, types.DbErrSqlOperation
 	}
 	return count, nil
@@ -124,7 +122,6 @@ func (m *defaultTxModel) GetTxsTotalCount() (count int64, err error) {
 func (m *defaultTxModel) GetTxsList(limit int64, offset int64) (txList []*Tx, err error) {
 	dbTx := m.DB.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("created_at desc").Find(&txList)
 	if dbTx.Error != nil {
-		logx.Errorf("fail to get txs, offset: %d, limit: %d, error: %s", offset, limit, dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
@@ -135,7 +132,6 @@ func (m *defaultTxModel) GetTxsList(limit int64, offset int64) (txList []*Tx, er
 func (m *defaultTxModel) GetTxsListByAccountIndex(accountIndex int64, limit int64, offset int64) (txList []*Tx, err error) {
 	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex).Limit(int(limit)).Offset(int(offset)).Order("created_at desc").Find(&txList)
 	if dbTx.Error != nil {
-		logx.Errorf("fail to get txs by account index: %d, offset: %d, limit: %d, error: %s", accountIndex, offset, limit, dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
@@ -146,7 +142,6 @@ func (m *defaultTxModel) GetTxsListByAccountIndex(accountIndex int64, limit int6
 func (m *defaultTxModel) GetTxsCountByAccountIndex(accountIndex int64) (count int64, err error) {
 	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex).Count(&count)
 	if dbTx.Error != nil {
-		logx.Errorf("fail to get tx count by account: %d, error: %s", accountIndex, dbTx.Error.Error())
 		return 0, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return 0, nil
@@ -157,7 +152,6 @@ func (m *defaultTxModel) GetTxsCountByAccountIndex(accountIndex int64) (count in
 func (m *defaultTxModel) GetTxsListByAccountIndexTxType(accountIndex int64, txType int64, limit int64, offset int64) (txList []*Tx, err error) {
 	dbTx := m.DB.Table(m.table).Where("account_index = ? and tx_type = ?", accountIndex, txType).Limit(int(limit)).Offset(int(offset)).Order("created_at desc").Find(&txList)
 	if dbTx.Error != nil {
-		logx.Errorf("fail to get txs by account index: %d, tx type:%d, offset: %d, limit: %d, error: %s", accountIndex, txType, offset, limit, dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
@@ -168,7 +162,6 @@ func (m *defaultTxModel) GetTxsListByAccountIndexTxType(accountIndex int64, txTy
 func (m *defaultTxModel) GetTxsCountByAccountIndexTxType(accountIndex int64, txType int64) (count int64, err error) {
 	dbTx := m.DB.Table(m.table).Where("account_index = ? and tx_type = ?", accountIndex, txType).Count(&count)
 	if dbTx.Error != nil {
-		logx.Errorf("fail to get tx count by account: %d, tx type: %d, error: %s", accountIndex, txType, dbTx.Error.Error())
 		return 0, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return 0, nil
@@ -181,14 +174,12 @@ func (m *defaultTxModel) GetTxByHash(txHash string) (tx *Tx, err error) {
 
 	dbTx := m.DB.Table(m.table).Where("tx_hash = ?", txHash).Find(&tx)
 	if dbTx.Error != nil {
-		logx.Errorf("get tx by hash error, err: %s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
 	}
 	err = m.DB.Model(&tx).Association(txForeignKeyColumn).Find(&tx.TxDetails)
 	if err != nil {
-		logx.Errorf("get associate tx details error, err: %s", err.Error())
 		return nil, err
 	}
 	// re-order tx details
@@ -204,14 +195,12 @@ func (m *defaultTxModel) GetTxById(id int64) (tx *Tx, err error) {
 
 	dbTx := m.DB.Table(m.table).Where("id = ?", id).Find(&tx)
 	if dbTx.Error != nil {
-		logx.Errorf("get tx by id error, err: %s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
 	}
 	err = m.DB.Model(&tx).Association(txForeignKeyColumn).Find(&tx.TxDetails)
 	if err != nil {
-		logx.Errorf("get associate tx details error, err: %s", err.Error())
 		return nil, err
 	}
 	// re-order tx details
@@ -225,7 +214,6 @@ func (m *defaultTxModel) GetTxById(id int64) (tx *Tx, err error) {
 func (m *defaultTxModel) GetTxsTotalCountBetween(from, to time.Time) (count int64, err error) {
 	dbTx := m.DB.Table(m.table).Where("created_at BETWEEN ? AND ?", from, to).Count(&count)
 	if dbTx.Error != nil {
-		logx.Errorf("fail to get tx by time range: %d-%d, error: %s", from.Unix(), to.Unix(), dbTx.Error.Error())
 		return 0, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return 0, nil
@@ -236,7 +224,6 @@ func (m *defaultTxModel) GetTxsTotalCountBetween(from, to time.Time) (count int6
 func (m *defaultTxModel) GetDistinctAccountsCountBetween(from, to time.Time) (count int64, err error) {
 	dbTx := m.DB.Raw("SELECT account_index FROM tx WHERE created_at BETWEEN ? AND ? AND account_index != -1 GROUP BY account_index", from, to).Count(&count)
 	if dbTx.Error != nil {
-		logx.Errorf("fail to get dau by time range: %d-%d, error: %s", from.Unix(), to.Unix(), dbTx.Error.Error())
 		return 0, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return 0, nil

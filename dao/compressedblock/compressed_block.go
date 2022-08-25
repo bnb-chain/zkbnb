@@ -18,7 +18,6 @@
 package compressedblock
 
 import (
-	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -78,7 +77,6 @@ func (m *defaultCompressedBlockModel) DropCompressedBlockTable() error {
 func (m *defaultCompressedBlockModel) GetCompressedBlockBetween(start, end int64) (blocksForCommit []*CompressedBlock, err error) {
 	dbTx := m.DB.Table(m.table).Where("block_height >= ? AND block_height <= ?", start, end).Find(&blocksForCommit)
 	if dbTx.Error != nil {
-		logx.Errorf("unable to get block for commit between: %s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound

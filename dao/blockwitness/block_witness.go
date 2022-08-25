@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -80,7 +79,6 @@ func (m *defaultBlockWitnessModel) GetLatestBlockWitnessHeight() (blockNumber in
 	var row *BlockWitness
 	dbTx := m.DB.Table(m.table).Order("height desc").Limit(1).Find(&row)
 	if dbTx.Error != nil {
-		logx.Errorf("unable to get latest witness: %s", dbTx.Error.Error())
 		return 0, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return 0, types.DbErrNotFound
@@ -93,7 +91,6 @@ func (m *defaultBlockWitnessModel) GetBlockWitnessByMode(mode int64) (witness *B
 	case prove.CooMode:
 		dbTx := m.DB.Table(m.table).Where("status = ?", StatusPublished).Order("height asc").Limit(1).Find(&witness)
 		if dbTx.Error != nil {
-			logx.Errorf("unable to get witness: %s", dbTx.Error.Error())
 			return nil, types.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			return nil, types.DbErrNotFound
@@ -102,7 +99,6 @@ func (m *defaultBlockWitnessModel) GetBlockWitnessByMode(mode int64) (witness *B
 	case prove.ComMode:
 		dbTx := m.DB.Table(m.table).Where("status <= ?", StatusReceived).Order("height asc").Limit(1).Find(&witness)
 		if dbTx.Error != nil {
-			logx.Errorf("unable to get witness: %s", dbTx.Error.Error())
 			return nil, types.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
 			return nil, types.DbErrNotFound
@@ -116,7 +112,6 @@ func (m *defaultBlockWitnessModel) GetBlockWitnessByMode(mode int64) (witness *B
 func (m *defaultBlockWitnessModel) GetBlockWitnessByNumber(height int64) (witness *BlockWitness, err error) {
 	dbTx := m.DB.Table(m.table).Where("height = ?", height).Limit(1).Find(&witness)
 	if dbTx.Error != nil {
-		logx.Errorf("unable to get witness: %s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
@@ -128,14 +123,12 @@ func (m *defaultBlockWitnessModel) CreateBlockWitness(witness *BlockWitness) err
 	if witness.Height > 1 {
 		_, err := m.GetBlockWitnessByNumber(witness.Height - 1)
 		if err != nil {
-			logx.Infof("get witness error, err: %s", err.Error())
 			return fmt.Errorf("previous witness does not exist")
 		}
 	}
 
 	dbTx := m.DB.Table(m.table).Create(witness)
 	if dbTx.Error != nil {
-		logx.Errorf("create witness error, err: %s", dbTx.Error.Error())
 		return types.DbErrSqlOperation
 	}
 	return nil
@@ -146,7 +139,6 @@ func (m *defaultBlockWitnessModel) UpdateBlockWitnessStatus(witness *BlockWitnes
 	witness.UpdatedAt = time.Now()
 	dbTx := m.DB.Table(m.table).Save(witness)
 	if dbTx.Error != nil {
-		logx.Errorf("update witness status error: %s", dbTx.Error.Error())
 		return types.DbErrSqlOperation
 	}
 	return nil

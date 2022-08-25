@@ -18,10 +18,8 @@
 package l1syncedblock
 
 import (
-	"encoding/json"
 	"errors"
 
-	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -134,16 +132,12 @@ func (m *defaultL1EventModel) CreateGenericBlock(
 					Select("*").
 					Updates(&pendingUpdateBlock)
 				if dbTx.Error != nil {
-					logx.Errorf("update block error, err: %s", dbTx.Error.Error())
 					return dbTx.Error
 				}
 				if dbTx.RowsAffected == 0 {
-					blocksInfo, err := json.Marshal(pendingUpdateBlocks)
 					if err != nil {
-						logx.Errorf("marshal block error, err: %s", err.Error())
 						return err
 					}
-					logx.Errorf("invalid block:  %s", string(blocksInfo))
 					return errors.New("invalid block")
 				}
 			}
@@ -153,7 +147,6 @@ func (m *defaultL1EventModel) CreateGenericBlock(
 				for _, detail := range pendingDeleteMempoolTx.MempoolDetails {
 					dbTx := tx.Table(mempool.DetailTableName).Where("id = ?", detail.ID).Delete(&detail)
 					if dbTx.Error != nil {
-						logx.Errorf("delete tx detail error, err: %s", dbTx.Error.Error())
 						return dbTx.Error
 					}
 					if dbTx.RowsAffected == 0 {
@@ -162,7 +155,6 @@ func (m *defaultL1EventModel) CreateGenericBlock(
 				}
 				dbTx := tx.Table(mempool.MempoolTableName).Where("id = ?", pendingDeleteMempoolTx.ID).Delete(&pendingDeleteMempoolTx)
 				if dbTx.Error != nil {
-					logx.Errorf("delete mempool tx error, err: %s", dbTx.Error.Error())
 					return dbTx.Error
 				}
 				if dbTx.RowsAffected == 0 {
@@ -199,7 +191,6 @@ func (m *defaultL1EventModel) CreateGovernanceBlock(
 					return dbTx.Error
 				}
 				if dbTx.RowsAffected != int64(len(pendingNewL2Assets)) {
-					logx.Errorf("the length of created rows doesn't match, created=%d, toCreate=%s", dbTx.RowsAffected, len(pendingNewL2Assets))
 					return errors.New("invalid l2 asset info")
 				}
 			}
@@ -217,7 +208,6 @@ func (m *defaultL1EventModel) CreateGovernanceBlock(
 					return dbTx.Error
 				}
 				if dbTx.RowsAffected != int64(len(pendingNewSysConfigs)) {
-					logx.Errorf("the length of created rows doesn't match, created=%d, toCreate=%s", dbTx.RowsAffected, len(pendingNewSysConfigs))
 					return errors.New("invalid sys config info")
 				}
 			}
@@ -237,7 +227,6 @@ func (m *defaultL1EventModel) CreateGovernanceBlock(
 func (m *defaultL1EventModel) GetLatestL1BlockByType(blockType int) (blockInfo *L1SyncedBlock, err error) {
 	dbTx := m.DB.Table(m.table).Where("type = ?", blockType).Order("l1_block_height desc").Find(&blockInfo)
 	if dbTx.Error != nil {
-		logx.Errorf("get synced blocks error, err: %s", err.Error())
 		return nil, types.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {

@@ -19,7 +19,7 @@ package monitor
 import (
 	"context"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
@@ -45,8 +45,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		if err == types2.DbErrNotFound {
 			handledHeight = m.Config.ChainConfig.StartL1BlockHeight
 		} else {
-			logx.Errorf("get latest l1 monitor block error, err: %s", err.Error())
-			return err
+			return fmt.Errorf("failed to get latest l1 monitor block, err: %v", err)
 		}
 	} else {
 		handledHeight = latestHandledBlock.L1BlockHeight
@@ -55,28 +54,25 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 	// get latest l1 block height(latest height - pendingBlocksCount)
 	latestHeight, err := m.cli.GetHeight()
 	if err != nil {
-		logx.Errorf("get l1 height error, err: %s", err.Error())
-		return err
+		return fmt.Errorf("failed to get l1 height, err: %v", err)
 	}
 
 	safeHeight := latestHeight - m.Config.ChainConfig.ConfirmBlocksCount
 	safeHeight = uint64(common2.MinInt64(int64(safeHeight), handledHeight+m.Config.ChainConfig.MaxHandledBlocksCount))
 	if safeHeight <= uint64(handledHeight) {
-		logx.Info("no new blocks need to be handled")
 		return nil
 	}
-	logx.Infof("fromBlock: %d, toBlock: %d", big.NewInt(handledHeight+1), big.NewInt(int64(safeHeight)))
+
+	logx.Infof("syncing l1 blocks from %d to %d", big.NewInt(handledHeight+1), big.NewInt(int64(safeHeight)))
 
 	priorityRequestCount, err := getPriorityRequestCount(m.cli, m.zkbasContractAddress, uint64(handledHeight+1), safeHeight)
 	if err != nil {
-		logx.Errorf("get priority request count error, err: %s", err.Error())
-		return err
+		return fmt.Errorf("failed to get priority request count, err: %v", err)
 	}
 
 	logs, err := getZkbasContractLogs(m.cli, m.zkbasContractAddress, uint64(handledHeight+1), safeHeight)
 	if err != nil {
-		logx.Error("get contract logs error, err: %s", err.Error())
-		return err
+		return fmt.Errorf("failed to get contract logs, err: %v", err)
 	}
 	var (
 		l1EventInfos     []*L1EventInfo
@@ -93,8 +89,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 
 		logBlock, err := m.cli.GetBlockHeaderByNumber(big.NewInt(int64(vlog.BlockNumber)))
 		if err != nil {
-			logx.Errorf("get block header error, err: %s", err.Error())
-			return err
+			return fmt.Errorf("failed to get block header, err: %v", err)
 		}
 
 		switch vlog.Topics[0].Hex() {
@@ -104,8 +99,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 
 			l2TxEventMonitorInfo, err := convertLogToNewPriorityRequestEvent(vlog)
 			if err != nil {
-				logx.Errorf("convert NewPriorityRequest log error, err: %s", err.Error())
-				return err
+				return fmt.Errorf("failed to convert NewPriorityRequest log, err: %v", err)
 			}
 			priorityRequests = append(priorityRequests, l2TxEventMonitorInfo)
 		case zkbasLogWithdrawalSigHash.Hex():
@@ -115,8 +109,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 
 			var event zkbas.ZkbasBlockCommit
 			if err := ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlockCommit, vlog.Data); err != nil {
-				logx.Errorf("unpack ZkbasBlockCommit event err: %s", err.Error())
-				return err
+				return fmt.Errorf("failed to unpack ZkbasBlockCommit event, err: %v", err)
 			}
 
 			// update block status
@@ -124,8 +117,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			if relatedBlocks[blockHeight] == nil {
 				relatedBlocks[blockHeight], err = m.BlockModel.GetBlockByHeightWithoutTx(blockHeight)
 				if err != nil {
-					logx.Errorf("GetBlockByHeightWithoutTx err: %s", err.Error())
-					return err
+					return fmt.Errorf("GetBlockByHeightWithoutTx err: %v", err)
 				}
 			}
 			relatedBlocks[blockHeight].CommittedTxHash = vlog.TxHash.Hex()
@@ -136,8 +128,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 
 			var event zkbas.ZkbasBlockVerification
 			if err := ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlockVerification, vlog.Data); err != nil {
-				logx.Errorf("unpack ZkbasBlockVerification err: %s", err.Error())
-				return err
+				return fmt.Errorf("failed to unpack ZkbasBlockVerification err: %v", err)
 			}
 
 			// update block status
@@ -145,8 +136,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			if relatedBlocks[blockHeight] == nil {
 				relatedBlocks[blockHeight], err = m.BlockModel.GetBlockByHeightWithoutTx(blockHeight)
 				if err != nil {
-					logx.Errorf("GetBlockByHeightWithoutTx err: %s", err.Error())
-					return err
+					return fmt.Errorf("failed to GetBlockByHeightWithoutTx: %v", err)
 				}
 			}
 			relatedBlocks[blockHeight].VerifiedTxHash = vlog.TxHash.Hex()
@@ -160,13 +150,11 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		l1EventInfos = append(l1EventInfos, l1EventInfo)
 	}
 	if priorityRequestCount != priorityRequestCountCheck {
-		logx.Errorf("new priority requests events not match, try it again")
-		return errors.New("new priority requests events not match, try it again")
+		return fmt.Errorf("new priority requests events not match, try it again")
 	}
 
 	eventInfosBytes, err := json.Marshal(l1EventInfos)
 	if err != nil {
-		logx.Errorf("marshal l1 events error, err: %s", err.Error())
 		return err
 	}
 	l1BlockMonitorInfo := &l1syncedblock.L1SyncedBlock{
@@ -184,14 +172,12 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 	// get mempool txs to delete
 	pendingDeleteMempoolTxs, err := getMempoolTxsToDelete(pendingUpdateBlocks, m.MempoolModel)
 	if err != nil {
-		logx.Errorf("get mempool txs to delete error, err: %s", err.Error())
-		return err
+		return fmt.Errorf("failed to get mempool txs to delete, err: %v", err)
 	}
 
 	if err = m.L1SyncedBlockModel.CreateGenericBlock(l1BlockMonitorInfo, priorityRequests,
 		pendingUpdateBlocks, pendingDeleteMempoolTxs); err != nil {
-		logx.Error("store monitor info error, err: %s", err.Error())
-		return err
+		return fmt.Errorf("failed to store monitor info, err: %v", err)
 	}
 	logx.Info("create txs count:", len(priorityRequests))
 	return nil
@@ -223,7 +209,6 @@ func getZkbasContractLogs(cli *_rpc.ProviderClient, zkbasContract string, startH
 	}
 	logs, err := cli.FilterLogs(context.Background(), query)
 	if err != nil {
-		logx.Error("filter logs error, err: %s", err.Error())
 		return nil, err
 	}
 	return logs, nil
@@ -232,13 +217,11 @@ func getZkbasContractLogs(cli *_rpc.ProviderClient, zkbasContract string, startH
 func getPriorityRequestCount(cli *_rpc.ProviderClient, zkbasContract string, startHeight, endHeight uint64) (int, error) {
 	zkbasInstance, err := zkbas.LoadZkbasInstance(cli, zkbasContract)
 	if err != nil {
-		logx.Errorf("unable to load zkbas instance")
 		return 0, err
 	}
 	priorityRequests, err := zkbasInstance.ZkbasFilterer.
 		FilterNewPriorityRequest(&bind.FilterOpts{Start: startHeight, End: &endHeight})
 	if err != nil {
-		logx.Errorf("unable to filter deposit or lock events: %s", err.Error())
 		return 0, err
 	}
 	priorityRequestCount := 0
@@ -251,7 +234,6 @@ func getPriorityRequestCount(cli *_rpc.ProviderClient, zkbasContract string, sta
 func convertLogToNewPriorityRequestEvent(log types.Log) (*priorityrequest.PriorityRequest, error) {
 	var event zkbas.ZkbasNewPriorityRequest
 	if err := ZkbasContractAbi.UnpackIntoInterface(&event, EventNameNewPriorityRequest, log.Data); err != nil {
-		logx.Errorf("unpack ZkbasNewPriorityRequest err: %s", err.Error())
 		return nil, err
 	}
 	request := &priorityrequest.PriorityRequest{

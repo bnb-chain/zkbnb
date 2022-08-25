@@ -18,7 +18,6 @@
 package sysconfig
 
 import (
-	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -77,7 +76,6 @@ func (m *defaultSysConfigModel) DropSysConfigTable() error {
 func (m *defaultSysConfigModel) GetSysConfigByName(name string) (config *SysConfig, err error) {
 	dbTx := m.DB.Table(m.table).Where("name = ?", name).Find(&config)
 	if dbTx.Error != nil {
-		logx.Errorf("get sys config by name error, err: %s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
@@ -88,7 +86,6 @@ func (m *defaultSysConfigModel) GetSysConfigByName(name string) (config *SysConf
 func (m *defaultSysConfigModel) CreateSysConfigInBatches(configs []*SysConfig) (rowsAffected int64, err error) {
 	dbTx := m.DB.Table(m.table).CreateInBatches(configs, len(configs))
 	if dbTx.Error != nil {
-		logx.Errorf("create sys configs error, err: %s", dbTx.Error.Error())
 		return 0, types.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {

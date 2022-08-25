@@ -20,7 +20,6 @@ package priorityrequest
 import (
 	"errors"
 
-	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -96,7 +95,6 @@ func (m *defaultPriorityRequestModel) DropPriorityRequestTable() error {
 func (m *defaultPriorityRequestModel) GetL2TxEventMonitors() (txs []*PriorityRequest, err error) {
 	dbTx := m.DB.Table(m.table).Find(&txs).Order("l1_block_height")
 	if dbTx.Error != nil {
-		logx.Errorf("find l2 tx events error,  err=%s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
@@ -108,7 +106,6 @@ func (m *defaultPriorityRequestModel) GetPriorityRequestsByStatus(status int) (t
 	// todo order id
 	dbTx := m.DB.Table(m.table).Where("status = ?", status).Order("request_id").Find(&txs)
 	if dbTx.Error != nil {
-		logx.Errorf("find l2 tx events error,  err=%s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
@@ -121,12 +118,9 @@ func (m *defaultPriorityRequestModel) CreateMempoolTxsAndUpdateRequests(newMempo
 		func(tx *gorm.DB) error {
 			dbTx := tx.Table(mempool.MempoolTableName).CreateInBatches(newMempoolTxs, len(newMempoolTxs))
 			if dbTx.Error != nil {
-				logx.Errorf("unable to create pending new mempool txs: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected != int64(len(newMempoolTxs)) {
-				logx.Errorf("create mempool txs error, rowsToCreate=%d, rowsCreated=%d",
-					len(newMempoolTxs), dbTx.RowsAffected)
 				return errors.New("create mempool txs error")
 			}
 
@@ -136,12 +130,9 @@ func (m *defaultPriorityRequestModel) CreateMempoolTxsAndUpdateRequests(newMempo
 			}
 			dbTx = tx.Table(m.table).Where("id in ?", eventIds).Update("status", HandledStatus)
 			if dbTx.Error != nil {
-				logx.Errorf("unable to update l2 tx event: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected != int64(len(eventIds)) {
-				logx.Errorf("update l2 events error, rowsToUpdate=%d, rowsUpdated=%d",
-					len(eventIds), dbTx.RowsAffected)
 				return errors.New("update l2 events error")
 			}
 			return nil
@@ -153,7 +144,6 @@ func (m *defaultPriorityRequestModel) GetLatestHandledRequestId() (requestId int
 	var event *PriorityRequest
 	dbTx := m.DB.Table(m.table).Where("status = ?", HandledStatus).Order("request_id desc").Find(&event)
 	if dbTx.Error != nil {
-		logx.Errorf("unable to get latest handled request id: %s", dbTx.Error.Error())
 		return -1, dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {

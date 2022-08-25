@@ -18,7 +18,6 @@
 package nft
 
 import (
-	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -82,7 +81,6 @@ func (m *defaultL2NftModel) DropL2NftTable() error {
 func (m *defaultL2NftModel) GetNftAsset(nftIndex int64) (nftAsset *L2Nft, err error) {
 	dbTx := m.DB.Table(m.table).Where("nft_index = ?", nftIndex).Find(&nftAsset)
 	if dbTx.Error != nil {
-		logx.Errorf("unable to get nft asset: %s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
@@ -94,7 +92,6 @@ func (m *defaultL2NftModel) GetLatestNftIndex() (nftIndex int64, err error) {
 	var nftInfo *L2Nft
 	dbTx := m.DB.Table(m.table).Order("nft_index desc").Find(&nftInfo)
 	if dbTx.Error != nil {
-		logx.Errorf("unable to get latest nft info: %s", dbTx.Error.Error())
 		return -1, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return -1, nil
@@ -106,7 +103,6 @@ func (m *defaultL2NftModel) GetNftListByAccountIndex(accountIndex, limit, offset
 	dbTx := m.DB.Table(m.table).Where("owner_account_index = ? and deleted_at is NULL", accountIndex).
 		Limit(int(limit)).Offset(int(offset)).Order("nft_index desc").Find(&nftList)
 	if dbTx.Error != nil {
-		logx.Errorf("fail to get nfts by account: %d, offset: %d, limit: %d, error: %s", accountIndex, offset, limit, dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
@@ -118,7 +114,6 @@ func (m *defaultL2NftModel) GetAccountNftTotalCount(accountIndex int64) (int64, 
 	var count int64
 	dbTx := m.DB.Table(m.table).Where("owner_account_index = ? and deleted_at is NULL", accountIndex).Count(&count)
 	if dbTx.Error != nil {
-		logx.Errorf("fail to get nft count by account: %d, error: %s", accountIndex, dbTx.Error.Error())
 		return 0, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return 0, types.DbErrNotFound

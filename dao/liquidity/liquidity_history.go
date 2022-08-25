@@ -18,7 +18,6 @@
 package liquidity
 
 import (
-	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -91,7 +90,6 @@ func (m *defaultLiquidityHistoryModel) GetLatestLiquidityByBlockHeight(blockHeig
 		Order("pair_index")
 
 	if dbTx.Find(&entities).Error != nil {
-		logx.Errorf("unable to get related accounts: %s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
@@ -107,7 +105,6 @@ func (m *defaultLiquidityHistoryModel) GetLatestLiquidityCountByBlockHeight(bloc
 		Where("NOT EXISTS (?) AND l2_block_height <= ?", subQuery, blockHeight)
 
 	if dbTx.Count(&count).Error != nil {
-		logx.Errorf("[GetLatestLiquidityCountByBlockHeight] unable to get related accounts: %s", dbTx.Error.Error())
 		return 0, dbTx.Error
 	}
 	return count, nil

@@ -19,7 +19,6 @@ package account
 import (
 	"errors"
 
-	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -80,7 +79,6 @@ func (m *defaultAccountHistoryModel) DropAccountHistoryTable() error {
 func (m *defaultAccountHistoryModel) CreateNewAccount(nAccount *AccountHistory) (err error) {
 	dbTx := m.DB.Table(m.table).Create(&nAccount)
 	if dbTx.Error != nil {
-		logx.Errorf("create new account error, err: %s", dbTx.Error.Error())
 		return types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return errors.New("create new account no rows affected")
@@ -99,7 +97,6 @@ func (m *defaultAccountHistoryModel) GetValidAccounts(height int64, limit int, o
 		Order("account_index")
 
 	if dbTx.Find(&accounts).Error != nil {
-		logx.Errorf("[GetValidAccounts] unable to get related accounts: %s", dbTx.Error.Error())
 		return 0, nil, types.DbErrSqlOperation
 	}
 	return dbTx.RowsAffected, accounts, nil
@@ -114,7 +111,6 @@ func (m *defaultAccountHistoryModel) GetValidAccountCount(height int64) (count i
 		Where("NOT EXISTS (?) AND l2_block_height <= ? AND l2_block_height != -1", subQuery, height)
 
 	if dbTx.Count(&count).Error != nil {
-		logx.Errorf("[GetValidAccountCount] unable to get related accounts: %s", dbTx.Error.Error())
 		return 0, types.DbErrSqlOperation
 	}
 	return count, nil

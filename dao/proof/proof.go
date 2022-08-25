@@ -17,7 +17,6 @@
 package proof
 
 import (
-	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -78,7 +77,6 @@ func (m *defaultProofModel) DropProofTable() error {
 func (m *defaultProofModel) CreateProof(row *Proof) error {
 	dbTx := m.DB.Table(m.table).Create(row)
 	if dbTx.Error != nil {
-		logx.Errorf("create proof error, err: %s", dbTx.Error.Error())
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
@@ -96,7 +94,6 @@ func (m *defaultProofModel) GetProofsBetween(start int64, end int64) (proofs []*
 		Find(&proofs)
 
 	if dbTx.Error != nil {
-		logx.Errorf("get proofs error, err: %s", dbTx.Error.Error())
 		return proofs, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
@@ -109,7 +106,6 @@ func (m *defaultProofModel) GetLatestConfirmedProof() (p *Proof, err error) {
 	var row *Proof
 	dbTx := m.DB.Table(m.table).Where("status >= ?", NotConfirmed).Order("block_number desc").Limit(1).Find(&row)
 	if dbTx.Error != nil {
-		logx.Errorf("get confirmed proof error, err; %s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
@@ -122,7 +118,6 @@ func (m *defaultProofModel) GetProofByBlockNumber(num int64) (p *Proof, err erro
 	var row *Proof
 	dbTx := m.DB.Table(m.table).Where("block_number = ?", num).Find(&row)
 	if dbTx.Error != nil {
-		logx.Errorf("get proof error, err: %s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
