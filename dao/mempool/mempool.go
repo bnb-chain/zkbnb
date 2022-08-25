@@ -432,7 +432,7 @@ func (m *defaultMempoolModel) GetMempoolTxByTxId(id int64) (mempoolTx *MempoolTx
 }
 
 func (m *defaultMempoolModel) GetMaxNonceByAccountIndex(accountIndex int64) (nonce int64, err error) {
-	dbTx := m.DB.Table(m.table).Select("nonce").Where("account_index = ?", accountIndex).Order("nonce desc").Limit(1).Find(&nonce)
+	dbTx := m.DB.Table(m.table).Select("nonce").Where("deleted_at is null and account_index = ?", accountIndex).Order("nonce desc").Limit(1).Find(&nonce)
 	if dbTx.Error != nil {
 		logx.Errorf("get max nonce error, err: %s", dbTx.Error.Error())
 		return 0, types.DbErrSqlOperation

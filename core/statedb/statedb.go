@@ -535,11 +535,11 @@ func (s *StateDB) GetPendingNonce(accountIndex int64) (int64, error) {
 	redisAccount, err := s.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex))
 	if err == nil {
 		formatAccount := redisAccount.(*types.AccountInfo)
-		return formatAccount.Nonce + 1, nil
+		return formatAccount.Nonce, nil
 	}
 	dbAccount, err := s.chainDb.AccountModel.GetAccountByIndex(accountIndex)
 	if err == nil {
-		return dbAccount.Nonce + 1, nil
+		return dbAccount.Nonce, nil
 	}
 	return 0, err
 }
