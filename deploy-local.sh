@@ -266,4 +266,4 @@ MemCache:
   " > ${DEPLOY_PATH}/zkbas/service/apiserver/etc/config.yaml
 
 cd ${DEPLOY_PATH}/zkbas/service/apiserver
-pm2 start --name api-server "go run ./main.go"
+pm2 start --name api-server "go run ./server.go"

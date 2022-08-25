@@ -21,6 +21,7 @@ import (
 	"github.com/bnb-chain/zkbas/dao/blockwitness"
 	"github.com/bnb-chain/zkbas/dao/proof"
 	"github.com/bnb-chain/zkbas/service/prover/config"
+	"github.com/bnb-chain/zkbas/types"
 )
 
 type Prover struct {
@@ -90,22 +91,32 @@ func NewProver(c config.Config) *Prover {
 }
 
 func (p *Prover) ProveBlock() error {
-	lock := redislock.GetRedisLockByKey(p.RedisConn, RedisLockKey)
-	err := redislock.TryAcquireLock(lock)
-	if err != nil {
-		return fmt.Errorf("acquire lock error, err=%s", err.Error())
-	}
-	defer lock.Release()
+	blockWitness, err := func() (*blockwitness.BlockWitness, error) {
+		lock := redislock.GetRedisLockByKey(p.RedisConn, RedisLockKey)
+		err := redislock.TryAcquireLock(lock)
+		if err != nil {
+			return nil, err
+		}
+		defer lock.Release()
 
-	// Fetch unproved block witness.
-	blockWitness, err := p.BlockWitnessModel.GetBlockWitnessByMode(prove.CooMode)
+		// Fetch unproved block witness.
+		blockWitness, err := p.BlockWitnessModel.GetBlockWitnessByMode(prove.CooMode)
+		if err != nil {
+			return nil, err
+		}
+		// Update status of block witness.
+		err = p.BlockWitnessModel.UpdateBlockWitnessStatus(blockWitness, blockwitness.StatusReceived)
+		if err != nil {
+			return nil, err
+		}
+		return blockWitness, nil
+	}()
 	if err != nil {
-		return fmt.Errorf("GetUnprovedBlock Error: err: %v", err)
-	}
-	// Update status of block witness.
-	err = p.BlockWitnessModel.UpdateBlockWitnessStatus(blockWitness, blockwitness.StatusReceived)
-	if err != nil {
-		return fmt.Errorf("update block status error, err=%v", err)
+		if err == types.DbErrNotFound {
+			logx.Info("no unapproved block")
+			return nil
+		}
+		return err
 	}
 	defer func() {
 		if err == nil {
