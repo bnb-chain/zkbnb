@@ -4,6 +4,7 @@
 # GOBIN=/usr/local/bin/ go install  github.com/zeromicro/go-zero/tools/goctl@latest
 # yum install jq -y
 # npm install pm2 -g
+# You should install nodejs above v14
 
 # Attention: Set the following variables to the right one before running!!!
 DEPLOY_PATH=~/zkbas-deploy

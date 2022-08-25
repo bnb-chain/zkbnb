@@ -61,7 +61,7 @@ type (
 		GetVerifiedBlocksCount() (count int64, err error)
 		GetLatestVerifiedHeight() (height int64, err error)
 		GetBlockByCommitment(blockCommitment string) (block *Block, err error)
-		GetBlocksForProverBetween(start, end int64) (blocks []*Block, err error)
+		GetCommittedBlocksBetween(start, end int64) (blocks []*Block, err error)
 		GetBlocksTotalCount() (count int64, err error)
 		CreateGenesisBlock(block *Block) error
 		GetCurrentHeight() (blockHeight int64, err error)
@@ -551,7 +551,7 @@ func (m *defaultBlockModel) CreateNewBlock(oBlock *Block) (err error) {
 	})
 }
 
-func (m *defaultBlockModel) GetBlocksForProverBetween(start, end int64) (blocks []*Block, err error) {
+func (m *defaultBlockModel) GetCommittedBlocksBetween(start, end int64) (blocks []*Block, err error) {
 	dbTx := m.DB.Table(m.table).Where("block_status = ? AND block_height >= ? AND block_height <= ?", StatusCommitted, start, end).
 		Order("block_height").
 		Find(&blocks)

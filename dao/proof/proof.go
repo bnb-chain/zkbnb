@@ -38,7 +38,7 @@ type (
 		CreateProofTable() error
 		DropProofTable() error
 		CreateProof(row *Proof) error
-		GetProofsByBlockRange(start int64, end int64, maxProofsCount int) (proofs []*Proof, err error)
+		GetProofsBetween(start int64, end int64) (proofs []*Proof, err error)
 		GetLatestConfirmedProof() (p *Proof, err error)
 		GetProofByBlockNumber(num int64) (p *Proof, err error)
 	}
@@ -87,20 +87,19 @@ func (m *defaultProofModel) CreateProof(row *Proof) error {
 	return nil
 }
 
-func (m *defaultProofModel) GetProofsByBlockRange(start int64, end int64, maxProofsCount int) (proofs []*Proof, err error) {
+func (m *defaultProofModel) GetProofsBetween(start int64, end int64) (proofs []*Proof, err error) {
 	dbTx := m.DB.Debug().Table(m.table).Where("block_number >= ? AND block_number <= ? AND status = ?",
 		start,
 		end,
 		NotSent).
 		Order("block_number").
-		Limit(maxProofsCount).
 		Find(&proofs)
 
 	if dbTx.Error != nil {
 		logx.Errorf("get proofs error, err: %s", dbTx.Error.Error())
 		return proofs, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return proofs, types.DbErrNotFound
+		return nil, types.DbErrNotFound
 	}
 
 	return proofs, err

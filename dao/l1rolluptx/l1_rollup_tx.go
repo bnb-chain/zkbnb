@@ -18,11 +18,9 @@
 package l1rolluptx
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 
-	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlc"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -46,7 +44,7 @@ type (
 	L1RollupTxModel interface {
 		CreateL1RollupTxTable() error
 		DropL1RollupTxTable() error
-		CreateL1RollupTx(tx *L1RollupTx) (bool, error)
+		CreateL1RollupTx(tx *L1RollupTx) error
 		GetLatestHandledTx(txType int64) (tx *L1RollupTx, err error)
 		GetLatestPendingTx(txType int64) (tx *L1RollupTx, err error)
 		GetL1RollupTxsByStatus(txStatus int) (txs []*L1RollupTx, err error)
@@ -96,21 +94,19 @@ func (m *defaultL1RollupTxModel) DropL1RollupTxTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-func (m *defaultL1RollupTxModel) CreateL1RollupTx(tx *L1RollupTx) (bool, error) {
+func (m *defaultL1RollupTxModel) CreateL1RollupTx(tx *L1RollupTx) error {
 	dbTx := m.DB.Table(m.table).Create(tx)
 	if dbTx.Error != nil {
-		logx.Errorf("create l1 rollup tx error, err: %s", dbTx.Error.Error())
-		return false, dbTx.Error
+		return dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		return false, errors.New("invalid rollup tx")
+		return errors.New("invalid rollup tx")
 	}
-	return true, nil
+	return nil
 }
 
 func (m *defaultL1RollupTxModel) GetL1RollupTxsByStatus(txStatus int) (txs []*L1RollupTx, err error) {
 	dbTx := m.DB.Table(m.table).Where("tx_status = ?", txStatus).Order("l2_block_height, tx_type").Find(&txs)
 	if dbTx.Error != nil {
-		logx.Errorf("get l1 rollup txs by status error, err: %s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
@@ -122,7 +118,6 @@ func (m *defaultL1RollupTxModel) DeleteL1RollupTx(rollupTx *L1RollupTx) error {
 	return m.DB.Transaction(func(tx *gorm.DB) error {
 		dbTx := tx.Table(m.table).Where("id = ?", rollupTx.ID).Delete(&rollupTx)
 		if dbTx.Error != nil {
-			logx.Errorf("delete l1 rollup tx error, err: %s", dbTx.Error.Error())
 			return dbTx.Error
 		}
 		if dbTx.RowsAffected == 0 {
@@ -142,16 +137,12 @@ func (m *defaultL1RollupTxModel) UpdateL1RollupTxs(
 				Select("*").
 				Updates(&pendingUpdateTx)
 			if dbTx.Error != nil {
-				logx.Errorf("update rollup tx error, err: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
-				txInfo, err := json.Marshal(pendingUpdateTx)
 				if err != nil {
-					logx.Errorf("marshal rollup tx error, err: %s", err.Error())
 					return err
 				}
-				logx.Errorf("invalid rollup tx:  %s", string(txInfo))
 				return errors.New("invalid rollup tx")
 			}
 		}
@@ -160,7 +151,6 @@ func (m *defaultL1RollupTxModel) UpdateL1RollupTxs(
 			var row *proof.Proof
 			dbTx := tx.Table(proof.TableName).Where("block_number = ?", blockHeight).Find(&row)
 			if dbTx.Error != nil {
-				logx.Errorf("update proof error, err: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
@@ -170,7 +160,6 @@ func (m *defaultL1RollupTxModel) UpdateL1RollupTxs(
 				Select("status").
 				Updates(&proof.Proof{Status: int64(newStatus)})
 			if dbTx.Error != nil {
-				logx.Errorf("update proof error, err: %s", dbTx.Error.Error())
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
@@ -187,10 +176,9 @@ func (m *defaultL1RollupTxModel) GetLatestHandledTx(txType int64) (tx *L1RollupT
 
 	dbTx := m.DB.Table(m.table).Where("tx_type = ? AND tx_status = ?", txType, StatusHandled).Order("l2_block_height desc").Find(&tx)
 	if dbTx.Error != nil {
-		logx.Errorf("unable to get latest handled tx: %s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return tx, types.DbErrNotFound
+		return nil, types.DbErrNotFound
 	}
 	return tx, nil
 }
@@ -200,10 +188,9 @@ func (m *defaultL1RollupTxModel) GetLatestPendingTx(txType int64) (tx *L1RollupT
 
 	dbTx := m.DB.Table(m.table).Where("tx_type = ? AND tx_status = ?", txType, StatusPending).Find(&tx)
 	if dbTx.Error != nil {
-		logx.Errorf("unable to get latest pending tx: %s", dbTx.Error.Error())
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return tx, types.DbErrNotFound
+		return nil, types.DbErrNotFound
 	}
 	return tx, nil
 }
