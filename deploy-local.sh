@@ -7,8 +7,8 @@
 
 # Attention: Set the following variables to the right one before running!!!
 DEPLOY_PATH=~/zkbas-deploy
-KEY_PATH=/Users/user/.zkbas
-ZKBAS_REPO_PATH=/home/ec2-user/zkbas
+KEY_PATH=~/.zkbas
+ZKBAS_REPO_PATH=$(cd `dirname $0`; pwd)
 CMC_TOKEN=cfce503f-fake-fake-fake-bbab5257dac8
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
@@ -58,7 +58,7 @@ echo 'latest block number = ' $blockNumber
 
 echo '4-2. deploy contracts, register and deposit on BSC Testnet'
 cd ${DEPLOY_PATH}
-cd ./zkbas-contract && sudo npm install
+cd ./zkbas-contract &&  npm install
 npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deploy.js
 echo 'Recorded latest contract addresses into ${DEPLOY_PATH}/zkbas-contract/info/addresses.json'
 
