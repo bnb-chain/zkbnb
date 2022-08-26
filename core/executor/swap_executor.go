@@ -100,7 +100,7 @@ func (e *SwapExecutor) VerifyInputs() error {
 	liquidityInfo, err := constructLiquidityInfo(liquidityModel)
 	if err != nil {
 		logx.Errorf("construct liquidity info error, err: ", err.Error())
-		return err
+		return errors.New("internal error")
 	}
 	if !((liquidityModel.AssetAId == txInfo.AssetAId && liquidityModel.AssetBId == txInfo.AssetBId) ||
 		(liquidityModel.AssetAId == txInfo.AssetBId && liquidityModel.AssetBId == txInfo.AssetAId)) {
