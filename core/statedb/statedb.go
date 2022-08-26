@@ -96,6 +96,7 @@ func NewStateDBForDryRun(redisCache dbcache.Cache, chainDb *ChainDB) *StateDB {
 		AccountMap:   make(map[int64]*types.AccountInfo),
 		LiquidityMap: make(map[int64]*liquidity.Liquidity),
 		NftMap:       make(map[int64]*nft.L2Nft),
+		StateCache:   NewStateCache(""),
 	}
 }
 
