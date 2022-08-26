@@ -56,7 +56,7 @@ func (e *CreateCollectionExecutor) Prepare() error {
 
 	fromAccount := e.bc.StateDB().AccountMap[txInfo.AccountIndex]
 	// add collection nonce to tx info
-	txInfo.CollectionId = fromAccount.CollectionNonce + 1
+	txInfo.CollectionId = fromAccount.CollectionNonce
 
 	return nil
 }
@@ -88,7 +88,7 @@ func (e *CreateCollectionExecutor) ApplyTransaction() error {
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	fromAccount.Nonce++
-	fromAccount.CollectionNonce = txInfo.CollectionId
+	fromAccount.CollectionNonce++
 
 	stateCache := e.bc.StateDB()
 	stateCache.PendingUpdateAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
@@ -174,12 +174,13 @@ func (e *CreateCollectionExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountIndex:    txInfo.AccountIndex,
 		AccountName:     fromAccount.AccountName,
 		Balance:         strconv.FormatInt(fromAccount.CollectionNonce, 10),
-		BalanceDelta:    strconv.FormatInt(txInfo.CollectionId, 10),
+		BalanceDelta:    strconv.FormatInt(fromAccount.CollectionNonce+1, 10),
 		Order:           order,
 		Nonce:           fromAccount.Nonce,
 		AccountOrder:    accountOrder,
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
+	fromAccount.CollectionNonce = fromAccount.CollectionNonce + 1
 
 	// from account gas
 	order++
