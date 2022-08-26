@@ -126,8 +126,7 @@ func (e *WithdrawNftExecutor) ApplyTransaction() error {
 	stateCache.PendingUpdateAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateNftIndexMap[txInfo.NftIndex] = statedb.StateCachePending
-	stateCache.PriorityOperations++
-	stateCache.PendingNewNftWithdrawHistory[txInfo.NftIndex] = &nft.L2NftWithdrawHistory{
+	stateCache.PendingNewNftWithdrawHistory = append(stateCache.PendingNewNftWithdrawHistory, &nft.L2NftWithdrawHistory{
 		NftIndex:            oldNft.NftIndex,
 		CreatorAccountIndex: oldNft.CreatorAccountIndex,
 		OwnerAccountIndex:   oldNft.OwnerAccountIndex,
@@ -136,7 +135,7 @@ func (e *WithdrawNftExecutor) ApplyTransaction() error {
 		NftL1TokenId:        oldNft.NftL1TokenId,
 		CreatorTreasuryRate: oldNft.CreatorTreasuryRate,
 		CollectionId:        oldNft.CollectionId,
-	}
+	})
 
 	return nil
 }
@@ -245,8 +244,8 @@ func (e *WithdrawNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 			types.ZeroBigInt,
 		).String(),
 		Order:           order,
-		Nonce:           fromAccount.Nonce,
 		AccountOrder:    accountOrder,
+		Nonce:           fromAccount.Nonce,
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
@@ -273,9 +272,9 @@ func (e *WithdrawNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		).String(),
 		BalanceDelta:    types.EmptyNftInfo(txInfo.NftIndex).String(),
 		Order:           order,
-		Nonce:           0,
 		AccountOrder:    types.NilAccountOrder,
-		CollectionNonce: 0,
+		Nonce:           fromAccount.Nonce,
+		CollectionNonce: fromAccount.CollectionNonce,
 	})
 
 	// create account empty delta
@@ -294,8 +293,8 @@ func (e *WithdrawNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 			types.ZeroBigInt,
 		).String(),
 		Order:           order,
-		Nonce:           creatorAccount.Nonce,
 		AccountOrder:    accountOrder,
+		Nonce:           creatorAccount.Nonce,
 		CollectionNonce: creatorAccount.CollectionNonce,
 	})
 
@@ -315,8 +314,8 @@ func (e *WithdrawNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 			types.ZeroBigInt,
 		).String(),
 		Order:           order,
-		Nonce:           gasAccount.Nonce,
 		AccountOrder:    accountOrder,
+		Nonce:           gasAccount.Nonce,
 		CollectionNonce: gasAccount.CollectionNonce,
 	})
 	return txDetails, nil

@@ -156,14 +156,16 @@ func (e *DepositExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		OfferCanceledOrFinalized: big.NewInt(0),
 	}
 	txDetail := &tx.TxDetail{
-		AssetId:      txInfo.AssetId,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: txInfo.AccountIndex,
-		AccountName:  depositAccount.AccountName,
-		Balance:      baseBalance.String(),
-		BalanceDelta: deltaBalance.String(),
-		Order:        0,
-		AccountOrder: 0,
+		AssetId:         txInfo.AssetId,
+		AssetType:       types.FungibleAssetType,
+		AccountIndex:    txInfo.AccountIndex,
+		AccountName:     depositAccount.AccountName,
+		Balance:         baseBalance.String(),
+		BalanceDelta:    deltaBalance.String(),
+		Order:           0,
+		AccountOrder:    0,
+		Nonce:           depositAccount.Nonce,
+		CollectionNonce: depositAccount.CollectionNonce,
 	}
 	return []*tx.TxDetail{txDetail}, nil
 }

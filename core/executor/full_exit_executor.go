@@ -157,14 +157,16 @@ func (e *FullExitExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		OfferCanceledOrFinalized: big.NewInt(0),
 	}
 	txDetail := &tx.TxDetail{
-		AssetId:      txInfo.AssetId,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: txInfo.AccountIndex,
-		AccountName:  exitAccount.AccountName,
-		Balance:      baseBalance.String(),
-		BalanceDelta: deltaBalance.String(),
-		Order:        0,
-		AccountOrder: 0,
+		AssetId:         txInfo.AssetId,
+		AssetType:       types.FungibleAssetType,
+		AccountIndex:    txInfo.AccountIndex,
+		AccountName:     exitAccount.AccountName,
+		Balance:         baseBalance.String(),
+		BalanceDelta:    deltaBalance.String(),
+		Order:           0,
+		AccountOrder:    0,
+		Nonce:           exitAccount.Nonce,
+		CollectionNonce: exitAccount.CollectionNonce,
 	}
 	return []*tx.TxDetail{txDetail}, nil
 }
