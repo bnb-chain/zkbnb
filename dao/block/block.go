@@ -364,9 +364,9 @@ func (m *defaultBlockModel) CreateCompressedBlock(pendingMempoolTxs []*mempool.M
 			if dbTx.Error != nil {
 				return dbTx.Error
 			}
-			//if dbTx.RowsAffected == 0 {
-			//	return errors.New("no new account")
-			//}
+			if dbTx.RowsAffected == 0 {
+				return errors.New("no updated account")
+			}
 		}
 		// create new account history
 		if len(blockStates.PendingNewAccountHistory) != 0 {
