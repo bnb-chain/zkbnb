@@ -42,6 +42,7 @@ const (
 var (
 	NilAssetAmountStr           = "0"
 	NilNftContentHash           = "0"
+	NilAccountNameHash          = "0"
 	NilL1TokenId                = "0"
 	NilL1Address                = "0"
 	NilOfferCanceledOrFinalized = big.NewInt(0)
