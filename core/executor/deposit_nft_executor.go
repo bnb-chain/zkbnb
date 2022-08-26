@@ -199,14 +199,16 @@ func (e *DepositNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		OfferCanceledOrFinalized: big.NewInt(0),
 	}
 	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      0,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: txInfo.AccountIndex,
-		AccountName:  depositAccount.AccountName,
-		Balance:      baseBalance.String(),
-		BalanceDelta: deltaBalance.String(),
-		AccountOrder: accountOrder,
-		Order:        order,
+		AssetId:         0,
+		AssetType:       types.FungibleAssetType,
+		AccountIndex:    txInfo.AccountIndex,
+		AccountName:     depositAccount.AccountName,
+		Balance:         baseBalance.String(),
+		BalanceDelta:    deltaBalance.String(),
+		AccountOrder:    accountOrder,
+		Order:           order,
+		Nonce:           depositAccount.Nonce,
+		CollectionNonce: depositAccount.CollectionNonce,
 	})
 	// nft info
 	order++
@@ -222,14 +224,16 @@ func (e *DepositNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		txInfo.CollectionId,
 	)
 	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      txInfo.NftIndex,
-		AssetType:    types.NftAssetType,
-		AccountIndex: txInfo.AccountIndex,
-		AccountName:  depositAccount.AccountName,
-		Balance:      baseNft.String(),
-		BalanceDelta: newNft.String(),
-		AccountOrder: types.NilAccountOrder,
-		Order:        order,
+		AssetId:         txInfo.NftIndex,
+		AssetType:       types.NftAssetType,
+		AccountIndex:    txInfo.AccountIndex,
+		AccountName:     depositAccount.AccountName,
+		Balance:         baseNft.String(),
+		BalanceDelta:    newNft.String(),
+		AccountOrder:    types.NilAccountOrder,
+		Order:           order,
+		Nonce:           depositAccount.Nonce,
+		CollectionNonce: depositAccount.CollectionNonce,
 	})
 
 	return txDetails, nil

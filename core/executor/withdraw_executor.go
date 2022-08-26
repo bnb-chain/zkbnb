@@ -98,7 +98,6 @@ func (e *WithdrawExecutor) ApplyTransaction() error {
 	stateCache := e.bc.StateDB()
 	stateCache.PendingUpdateAccountIndexMap[txInfo.FromAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
-	stateCache.PriorityOperations++
 
 	return nil
 }
@@ -107,7 +106,7 @@ func (e *WithdrawExecutor) GeneratePubData() error {
 	txInfo := e.txInfo
 
 	var buf bytes.Buffer
-	buf.WriteByte(uint8(types.TxTypeWithdrawNft))
+	buf.WriteByte(uint8(types.TxTypeWithdraw))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
 	buf.Write(common2.AddressStrToBytes(txInfo.ToAddress))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.AssetId)))
@@ -176,7 +175,7 @@ func (e *WithdrawExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	fromAccount := copiedAccounts[txInfo.FromAccountIndex]
 	gasAccount := copiedAccounts[txInfo.GasAccountIndex]
 
-	txDetails := make([]*tx.TxDetail, 0, 4)
+	txDetails := make([]*tx.TxDetail, 0, 3)
 	// from account asset A
 	order := int64(0)
 	accountOrder := int64(0)
@@ -251,8 +250,8 @@ func (e *WithdrawExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
 		GasFee:        e.txInfo.GasFeeAssetAmount.String(),
 		NftIndex:      types.NilTxNftIndex,
 		PairIndex:     types.NilPairIndex,
-		AssetId:       types.NilAssetId,
-		TxAmount:      types.NilAssetAmountStr,
+		AssetId:       e.txInfo.AssetId,
+		TxAmount:      e.txInfo.AssetAmount.String(),
 		Memo:          "",
 		NativeAddress: e.txInfo.ToAddress,
 		AccountIndex:  e.txInfo.FromAccountIndex,

@@ -149,14 +149,16 @@ func (e *CreatePairExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	}
 
 	txDetail := &tx.TxDetail{
-		AssetId:      txInfo.PairIndex,
-		AssetType:    types.LiquidityAssetType,
-		AccountIndex: types.NilTxAccountIndex,
-		AccountName:  types.NilAccountName,
-		Balance:      baseLiquidity.String(),
-		BalanceDelta: deltaLiquidity.String(),
-		Order:        0,
-		AccountOrder: types.NilAccountOrder,
+		AssetId:         txInfo.PairIndex,
+		AssetType:       types.LiquidityAssetType,
+		AccountIndex:    types.NilTxAccountIndex,
+		AccountName:     types.NilAccountName,
+		Balance:         baseLiquidity.String(),
+		BalanceDelta:    deltaLiquidity.String(),
+		Order:           0,
+		AccountOrder:    types.NilAccountOrder,
+		Nonce:           types.NilNonce,
+		CollectionNonce: types.NilNonce,
 	}
 
 	return []*tx.TxDetail{txDetail}, nil

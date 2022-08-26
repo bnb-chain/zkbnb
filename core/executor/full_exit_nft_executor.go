@@ -246,20 +246,24 @@ func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		OfferCanceledOrFinalized: big.NewInt(0),
 	}
 	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      0,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: txInfo.AccountIndex,
-		AccountName:  exitAccount.AccountName,
-		Balance:      baseBalance.String(),
-		BalanceDelta: emptyDelta.String(),
-		AccountOrder: accountOrder,
-		Order:        order,
+		AssetId:         0,
+		AssetType:       types.FungibleAssetType,
+		AccountIndex:    txInfo.AccountIndex,
+		AccountName:     exitAccount.AccountName,
+		Balance:         baseBalance.String(),
+		BalanceDelta:    emptyDelta.String(),
+		AccountOrder:    accountOrder,
+		Order:           order,
+		Nonce:           exitAccount.Nonce,
+		CollectionNonce: exitAccount.CollectionNonce,
 	})
 	// nft info
 	order++
-	newNft := types.EmptyNftInfo(txInfo.NftIndex)
-	if bc.StateDB().NftMap[txInfo.NftIndex] != nil && txInfo.AccountIndex != bc.StateDB().NftMap[txInfo.NftIndex].OwnerAccountIndex {
-		newNft = types.ConstructNftInfo(
+	emptyNft := types.EmptyNftInfo(txInfo.NftIndex)
+	baseNft := emptyNft
+	newNft := emptyNft
+	if bc.StateDB().NftMap[txInfo.NftIndex] != nil {
+		baseNft = types.ConstructNftInfo(
 			bc.StateDB().NftMap[txInfo.NftIndex].NftIndex,
 			bc.StateDB().NftMap[txInfo.NftIndex].CreatorAccountIndex,
 			bc.StateDB().NftMap[txInfo.NftIndex].OwnerAccountIndex,
@@ -269,17 +273,22 @@ func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 			bc.StateDB().NftMap[txInfo.NftIndex].CreatorTreasuryRate,
 			bc.StateDB().NftMap[txInfo.NftIndex].CollectionId,
 		)
+		if txInfo.AccountIndex != bc.StateDB().NftMap[txInfo.NftIndex].OwnerAccountIndex {
+			newNft = baseNft
+		}
 	}
 
 	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      txInfo.NftIndex,
-		AssetType:    types.NftAssetType,
-		AccountIndex: txInfo.AccountIndex,
-		AccountName:  exitAccount.AccountName,
-		//Balance:      baseNft.String(), // Ignore base balance.
-		BalanceDelta: newNft.String(),
-		AccountOrder: types.NilAccountOrder,
-		Order:        order,
+		AssetId:         txInfo.NftIndex,
+		AssetType:       types.NftAssetType,
+		AccountIndex:    txInfo.AccountIndex,
+		AccountName:     exitAccount.AccountName,
+		Balance:         baseNft.String(),
+		BalanceDelta:    newNft.String(),
+		AccountOrder:    types.NilAccountOrder,
+		Order:           order,
+		Nonce:           exitAccount.Nonce,
+		CollectionNonce: exitAccount.CollectionNonce,
 	})
 
 	return txDetails, nil
