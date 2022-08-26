@@ -358,14 +358,14 @@ func (m *defaultBlockModel) CreateCompressedBlock(pendingMempoolTxs []*mempool.M
 		}
 		// update account
 		for _, pendingAccount := range blockStates.PendingUpdateAccount {
-			dbTx := tx.Table(account.AccountTableName).Where("id = ?", pendingAccount.ID).
+			dbTx := tx.Table(account.AccountTableName).Where("account_index = ?", pendingAccount.AccountIndex).
 				Select("*").
 				Updates(&pendingAccount)
 			if dbTx.Error != nil {
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
-				return errors.New("no new account")
+				return errors.New("no updated account")
 			}
 		}
 		// create new account history
