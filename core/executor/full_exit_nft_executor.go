@@ -87,7 +87,10 @@ func (e *FullExitNftExecutor) Prepare() error {
 		exitNft = bc.StateDB().NftMap[txInfo.NftIndex]
 	}
 
-	accounts := []int64{account.AccountIndex, exitNft.CreatorAccountIndex}
+	accounts := []int64{account.AccountIndex}
+	if exitNft.CreatorAccountIndex != types.NilAccountIndex {
+		accounts = append(accounts, exitNft.CreatorAccountIndex)
+	}
 	assets := []int64{0} // Just used for generate an empty tx detail.
 	err = e.bc.StateDB().PrepareAccountsAndAssets(accounts, assets)
 	if err != nil {
@@ -98,7 +101,10 @@ func (e *FullExitNftExecutor) Prepare() error {
 	// Set the right tx info.
 	txInfo.CreatorAccountIndex = exitNft.CreatorAccountIndex
 	txInfo.CreatorTreasuryRate = exitNft.CreatorTreasuryRate
-	txInfo.CreatorAccountNameHash = common.FromHex(bc.StateDB().AccountMap[exitNft.CreatorAccountIndex].AccountNameHash)
+	txInfo.CreatorAccountNameHash = common.FromHex(types.NilAccountNameHash)
+	if exitNft.CreatorAccountIndex != types.NilAccountIndex {
+		txInfo.CreatorAccountNameHash = common.FromHex(bc.StateDB().AccountMap[exitNft.CreatorAccountIndex].AccountNameHash)
+	}
 	txInfo.NftL1Address = exitNft.NftL1Address
 	txInfo.NftL1TokenId, _ = new(big.Int).SetString(exitNft.NftL1TokenId, 10)
 	txInfo.NftContentHash = common.FromHex(exitNft.NftContentHash)
@@ -114,12 +120,12 @@ func (e *FullExitNftExecutor) VerifyInputs() error {
 
 	if bc.StateDB().NftMap[txInfo.NftIndex] == nil || txInfo.AccountIndex != bc.StateDB().NftMap[txInfo.NftIndex].OwnerAccountIndex {
 		// The check is not fully enough, just avoid explicit error.
-		if common.Bytes2Hex(txInfo.NftContentHash) != types.NilNftContentHash {
+		if !bytes.Equal(txInfo.NftContentHash, common.FromHex(types.NilNftContentHash)) {
 			return errors.New("invalid nft content hash")
 		}
 	} else {
 		// The check is not fully enough, just avoid explicit error.
-		if common.Bytes2Hex(txInfo.NftContentHash) != bc.StateDB().NftMap[txInfo.NftIndex].NftContentHash {
+		if !bytes.Equal(txInfo.NftContentHash, common.FromHex(bc.StateDB().NftMap[txInfo.NftIndex].NftContentHash)) {
 			return errors.New("invalid nft content hash")
 		}
 	}
@@ -218,6 +224,8 @@ func (e *FullExitNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
+	e.tx.NftIndex = e.txInfo.NftIndex
+	e.tx.AccountIndex = e.txInfo.AccountIndex
 	return e.BaseExecutor.GetExecutedTx()
 }
 

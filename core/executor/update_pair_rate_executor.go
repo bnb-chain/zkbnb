@@ -52,6 +52,16 @@ func (e *UpdatePairRateExecutor) Prepare() error {
 }
 
 func (e *UpdatePairRateExecutor) VerifyInputs() error {
+	bc := e.bc
+	txInfo := e.txInfo
+	liquidity := bc.StateDB().LiquidityMap[txInfo.PairIndex]
+
+	if liquidity.FeeRate == txInfo.FeeRate &&
+		liquidity.TreasuryAccountIndex == txInfo.TreasuryAccountIndex &&
+		liquidity.TreasuryRate == txInfo.TreasuryRate {
+		return errors.New("invalid update, the same to old")
+	}
+
 	return nil
 }
 
@@ -109,6 +119,7 @@ func (e *UpdatePairRateExecutor) GetExecutedTx() (*tx.Tx, error) {
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
+	e.tx.PairIndex = e.txInfo.PairIndex
 	return e.BaseExecutor.GetExecutedTx()
 }
 

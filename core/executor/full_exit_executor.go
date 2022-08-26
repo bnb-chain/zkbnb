@@ -90,8 +90,10 @@ func (e *FullExitExecutor) ApplyTransaction() error {
 	exitAccount := bc.StateDB().AccountMap[txInfo.AccountIndex]
 	exitAccount.AssetInfo[txInfo.AssetId].Balance = ffmath.Sub(exitAccount.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
 
-	stateCache := e.bc.StateDB()
-	stateCache.PendingUpdateAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
+	if txInfo.AssetAmount.Cmp(types.ZeroBigInt) != 0 {
+		stateCache := e.bc.StateDB()
+		stateCache.PendingUpdateAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
+	}
 	return nil
 }
 
@@ -138,6 +140,9 @@ func (e *FullExitExecutor) GetExecutedTx() (*tx.Tx, error) {
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
+	e.tx.AssetId = e.txInfo.AssetId
+	e.tx.TxAmount = e.txInfo.AssetAmount.String()
+	e.tx.AccountIndex = e.txInfo.AccountIndex
 	return e.BaseExecutor.GetExecutedTx()
 }
 
