@@ -390,14 +390,14 @@ func (m *defaultBlockModel) CreateCompressedBlock(pendingMempoolTxs []*mempool.M
 		}
 		// update liquidity
 		for _, pendingLiquidity := range blockStates.PendingUpdateLiquidity {
-			dbTx := tx.Table(liquidity.LiquidityTable).Where("id = ?", pendingLiquidity.ID).
+			dbTx := tx.Table(liquidity.LiquidityTable).Where("pair_index = ?", pendingLiquidity.PairIndex).
 				Select("*").
 				Updates(&pendingLiquidity)
 			if dbTx.Error != nil {
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
-				return errors.New("no new liquidity")
+				return errors.New("no updated liquidity")
 			}
 		}
 		// create new liquidity history
@@ -422,14 +422,14 @@ func (m *defaultBlockModel) CreateCompressedBlock(pendingMempoolTxs []*mempool.M
 		}
 		// update nft
 		for _, pendingNft := range blockStates.PendingUpdateNft {
-			dbTx := tx.Table(nft.L2NftTableName).Where("id = ?", pendingNft.ID).
+			dbTx := tx.Table(nft.L2NftTableName).Where("nft_index = ?", pendingNft.NftIndex).
 				Select("*").
 				Updates(&pendingNft)
 			if dbTx.Error != nil {
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
-				return errors.New("no new nft")
+				return errors.New("no updated nft")
 			}
 		}
 		// new nft history
