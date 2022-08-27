@@ -442,7 +442,7 @@ func (e *SwapExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:         txInfo.PairIndex,
 		AssetType:       types.LiquidityAssetType,
-		AccountIndex:    types.NilAccountIndex,
+		AccountIndex:    types.NilTxAccountIndex,
 		AccountName:     types.NilAccountName,
 		Balance:         basePool.String(),
 		BalanceDelta:    poolDelta.String(),

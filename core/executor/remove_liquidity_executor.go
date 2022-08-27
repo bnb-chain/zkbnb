@@ -407,7 +407,7 @@ func (e *RemoveLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.PairIndex,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: treasuryAccount.AccountIndex,
-		AccountName:  treasuryAccount.AccountNameHash,
+		AccountName:  treasuryAccount.AccountName,
 		Balance:      treasuryAccount.AssetInfo[txInfo.PairIndex].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.PairIndex, types.ZeroBigInt, txInfo.TreasuryAmount, types.ZeroBigInt,
@@ -471,14 +471,14 @@ func (e *RemoveLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:         txInfo.PairIndex,
 		AssetType:       types.LiquidityAssetType,
-		AccountIndex:    types.NilAccountIndex,
+		AccountIndex:    types.NilTxAccountIndex,
 		AccountName:     types.NilAccountName,
 		Balance:         basePool.String(),
 		BalanceDelta:    poolDeltaForToAccount.String(),
 		Order:           order,
-		Nonce:           0,
+		Nonce:           types.NilNonce,
 		AccountOrder:    types.NilAccountOrder,
-		CollectionNonce: 0,
+		CollectionNonce: types.NilNonce,
 	})
 
 	// gas account asset gas
