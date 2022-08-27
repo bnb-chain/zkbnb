@@ -409,25 +409,8 @@ func (e *SwapExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		}
 	}
 
-	basePool, err := types.ConstructLiquidityInfo(
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].PairIndex,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].AssetAId,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].AssetA,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].AssetBId,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].AssetB,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].LpAmount,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].KLast,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].FeeRate,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].TreasuryAccountIndex,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].TreasuryRate,
-	)
-	if err != nil {
-		logx.Errorf("construct liquidity error, err: %s", err.Error())
-		return nil, err
-	}
-
 	newPool, err := chain.ComputeNewBalance(
-		types.LiquidityAssetType, basePool.String(), poolDelta.String())
+		types.LiquidityAssetType, liquidityInfo.String(), poolDelta.String())
 	if err != nil {
 		return nil, err
 	}
@@ -444,7 +427,7 @@ func (e *SwapExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetType:       types.LiquidityAssetType,
 		AccountIndex:    types.NilTxAccountIndex,
 		AccountName:     types.NilAccountName,
-		Balance:         basePool.String(),
+		Balance:         liquidityInfo.String(),
 		BalanceDelta:    poolDelta.String(),
 		Order:           order,
 		Nonce:           0,
