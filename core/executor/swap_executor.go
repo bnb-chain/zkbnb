@@ -224,12 +224,14 @@ func (e *SwapExecutor) GeneratePubData() error {
 	buf.WriteByte(uint8(types.TxTypeSwap))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.PairIndex)))
+	buf.Write(common2.Uint16ToBytes(uint16(txInfo.AssetAId)))
 	packedAssetAAmountBytes, err := common2.AmountToPackedAmountBytes(txInfo.AssetAAmount)
 	if err != nil {
 		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
 		return err
 	}
 	buf.Write(packedAssetAAmountBytes)
+	buf.Write(common2.Uint16ToBytes(uint16(txInfo.AssetBId)))
 	packedAssetBAmountDeltaBytes, err := common2.AmountToPackedAmountBytes(txInfo.AssetBAmountDelta)
 	if err != nil {
 		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
