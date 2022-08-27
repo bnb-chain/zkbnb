@@ -165,7 +165,7 @@ func (e *RemoveLiquidityExecutor) ApplyTransaction() error {
 	fromAccountInfo.AssetInfo[txInfo.AssetAId].Balance = ffmath.Add(fromAccountInfo.AssetInfo[txInfo.AssetAId].Balance, txInfo.AssetAAmountDelta)
 	fromAccountInfo.AssetInfo[txInfo.AssetBId].Balance = ffmath.Add(fromAccountInfo.AssetInfo[txInfo.AssetBId].Balance, txInfo.AssetBAmountDelta)
 	fromAccountInfo.AssetInfo[txInfo.PairIndex].LpAmount = ffmath.Sub(fromAccountInfo.AssetInfo[txInfo.PairIndex].LpAmount, txInfo.LpAmount)
-	treasuryAccount.AssetInfo[txInfo.PairIndex].LpAmount = ffmath.Sub(treasuryAccount.AssetInfo[txInfo.PairIndex].LpAmount, txInfo.TreasuryAmount)
+	treasuryAccount.AssetInfo[txInfo.PairIndex].LpAmount = ffmath.Add(treasuryAccount.AssetInfo[txInfo.PairIndex].LpAmount, txInfo.TreasuryAmount)
 	fromAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	gasAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	fromAccountInfo.Nonce++
