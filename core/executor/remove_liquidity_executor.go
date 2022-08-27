@@ -164,7 +164,7 @@ func (e *RemoveLiquidityExecutor) ApplyTransaction() error {
 
 	fromAccountInfo.AssetInfo[txInfo.AssetAId].Balance = ffmath.Add(fromAccountInfo.AssetInfo[txInfo.AssetAId].Balance, txInfo.AssetAAmountDelta)
 	fromAccountInfo.AssetInfo[txInfo.AssetBId].Balance = ffmath.Add(fromAccountInfo.AssetInfo[txInfo.AssetBId].Balance, txInfo.AssetBAmountDelta)
-	fromAccountInfo.AssetInfo[txInfo.PairIndex].LpAmount = ffmath.Sub(treasuryAccount.AssetInfo[txInfo.PairIndex].LpAmount, txInfo.LpAmount)
+	fromAccountInfo.AssetInfo[txInfo.PairIndex].LpAmount = ffmath.Sub(fromAccountInfo.AssetInfo[txInfo.PairIndex].LpAmount, txInfo.LpAmount)
 	treasuryAccount.AssetInfo[txInfo.PairIndex].LpAmount = ffmath.Sub(treasuryAccount.AssetInfo[txInfo.PairIndex].LpAmount, txInfo.TreasuryAmount)
 	fromAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	gasAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
@@ -519,7 +519,7 @@ func (e *RemoveLiquidityExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error
 		NftIndex:      types.NilTxNftIndex,
 		PairIndex:     e.txInfo.PairIndex,
 		AssetId:       types.NilAssetId,
-		TxAmount:      "",
+		TxAmount:      e.txInfo.LpAmount.String(),
 		Memo:          "",
 		AccountIndex:  e.txInfo.FromAccountIndex,
 		Nonce:         e.txInfo.Nonce,

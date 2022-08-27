@@ -226,13 +226,13 @@ func (e *SwapExecutor) GeneratePubData() error {
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.PairIndex)))
 	packedAssetAAmountBytes, err := common2.AmountToPackedAmountBytes(txInfo.AssetAAmount)
 	if err != nil {
-		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
+		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
 		return err
 	}
 	buf.Write(packedAssetAAmountBytes)
 	packedAssetBAmountDeltaBytes, err := common2.AmountToPackedAmountBytes(txInfo.AssetBAmountDelta)
 	if err != nil {
-		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
+		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
 		return err
 	}
 	buf.Write(packedAssetBAmountDeltaBytes)
@@ -240,7 +240,7 @@ func (e *SwapExecutor) GeneratePubData() error {
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
 	packedFeeBytes, err := common2.FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
 	if err != nil {
-		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed fee amount: %s", err.Error())
+		logx.Errorf("unable to convert amount to packed fee amount: %s", err.Error())
 		return err
 	}
 	buf.Write(packedFeeBytes)
