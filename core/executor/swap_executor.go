@@ -50,7 +50,7 @@ func (e *SwapExecutor) Prepare() error {
 	txInfo := e.txInfo
 
 	accounts := []int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex}
-	assets := []int64{txInfo.AssetAId, txInfo.AssetBId, txInfo.GasFeeAssetId}
+	assets := []int64{txInfo.AssetAId, txInfo.AssetBId, txInfo.PairIndex, txInfo.GasFeeAssetId}
 	err := e.bc.StateDB().PrepareAccountsAndAssets(accounts, assets)
 	if err != nil {
 		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
