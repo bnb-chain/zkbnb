@@ -492,7 +492,7 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:         txInfo.PairIndex,
 		AssetType:       types.LiquidityAssetType,
-		AccountIndex:    types.NilAccountIndex,
+		AccountIndex:    types.NilTxAccountIndex,
 		AccountName:     types.NilAccountName,
 		Balance:         basePool.String(),
 		BalanceDelta:    poolDeltaForToAccount.String(),
@@ -509,7 +509,7 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.PairIndex,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: treasuryAccount.AccountIndex,
-		AccountName:  treasuryAccount.AccountNameHash,
+		AccountName:  treasuryAccount.AccountName,
 		Balance:      treasuryAccount.AssetInfo[txInfo.PairIndex].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.PairIndex, types.ZeroBigInt, txInfo.TreasuryAmount, types.ZeroBigInt,

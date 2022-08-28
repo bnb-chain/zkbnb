@@ -50,7 +50,7 @@ func (e *SwapExecutor) Prepare() error {
 	txInfo := e.txInfo
 
 	accounts := []int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex}
-	assets := []int64{txInfo.AssetAId, txInfo.AssetBId, txInfo.GasFeeAssetId}
+	assets := []int64{txInfo.AssetAId, txInfo.AssetBId, txInfo.PairIndex, txInfo.GasFeeAssetId}
 	err := e.bc.StateDB().PrepareAccountsAndAssets(accounts, assets)
 	if err != nil {
 		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
@@ -224,15 +224,17 @@ func (e *SwapExecutor) GeneratePubData() error {
 	buf.WriteByte(uint8(types.TxTypeSwap))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.PairIndex)))
+	buf.Write(common2.Uint16ToBytes(uint16(txInfo.AssetAId)))
 	packedAssetAAmountBytes, err := common2.AmountToPackedAmountBytes(txInfo.AssetAAmount)
 	if err != nil {
-		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
+		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
 		return err
 	}
 	buf.Write(packedAssetAAmountBytes)
+	buf.Write(common2.Uint16ToBytes(uint16(txInfo.AssetBId)))
 	packedAssetBAmountDeltaBytes, err := common2.AmountToPackedAmountBytes(txInfo.AssetBAmountDelta)
 	if err != nil {
-		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed amount: %s", err.Error())
+		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
 		return err
 	}
 	buf.Write(packedAssetBAmountDeltaBytes)
@@ -240,7 +242,7 @@ func (e *SwapExecutor) GeneratePubData() error {
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
 	packedFeeBytes, err := common2.FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
 	if err != nil {
-		logx.Errorf("[ConvertTxToDepositPubData] unable to convert amount to packed fee amount: %s", err.Error())
+		logx.Errorf("unable to convert amount to packed fee amount: %s", err.Error())
 		return err
 	}
 	buf.Write(packedFeeBytes)
@@ -409,25 +411,8 @@ func (e *SwapExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		}
 	}
 
-	basePool, err := types.ConstructLiquidityInfo(
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].PairIndex,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].AssetAId,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].AssetA,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].AssetBId,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].AssetB,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].LpAmount,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].KLast,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].FeeRate,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].TreasuryAccountIndex,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].TreasuryRate,
-	)
-	if err != nil {
-		logx.Errorf("construct liquidity error, err: %s", err.Error())
-		return nil, err
-	}
-
 	newPool, err := chain.ComputeNewBalance(
-		types.LiquidityAssetType, basePool.String(), poolDelta.String())
+		types.LiquidityAssetType, liquidityInfo.String(), poolDelta.String())
 	if err != nil {
 		return nil, err
 	}
@@ -442,9 +427,9 @@ func (e *SwapExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:         txInfo.PairIndex,
 		AssetType:       types.LiquidityAssetType,
-		AccountIndex:    types.NilAccountIndex,
+		AccountIndex:    types.NilTxAccountIndex,
 		AccountName:     types.NilAccountName,
-		Balance:         basePool.String(),
+		Balance:         liquidityInfo.String(),
 		BalanceDelta:    poolDelta.String(),
 		Order:           order,
 		Nonce:           0,

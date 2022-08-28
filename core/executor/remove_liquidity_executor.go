@@ -164,8 +164,8 @@ func (e *RemoveLiquidityExecutor) ApplyTransaction() error {
 
 	fromAccountInfo.AssetInfo[txInfo.AssetAId].Balance = ffmath.Add(fromAccountInfo.AssetInfo[txInfo.AssetAId].Balance, txInfo.AssetAAmountDelta)
 	fromAccountInfo.AssetInfo[txInfo.AssetBId].Balance = ffmath.Add(fromAccountInfo.AssetInfo[txInfo.AssetBId].Balance, txInfo.AssetBAmountDelta)
-	fromAccountInfo.AssetInfo[txInfo.PairIndex].LpAmount = ffmath.Sub(treasuryAccount.AssetInfo[txInfo.PairIndex].LpAmount, txInfo.LpAmount)
-	treasuryAccount.AssetInfo[txInfo.PairIndex].LpAmount = ffmath.Sub(treasuryAccount.AssetInfo[txInfo.PairIndex].LpAmount, txInfo.TreasuryAmount)
+	fromAccountInfo.AssetInfo[txInfo.PairIndex].LpAmount = ffmath.Sub(fromAccountInfo.AssetInfo[txInfo.PairIndex].LpAmount, txInfo.LpAmount)
+	treasuryAccount.AssetInfo[txInfo.PairIndex].LpAmount = ffmath.Add(treasuryAccount.AssetInfo[txInfo.PairIndex].LpAmount, txInfo.TreasuryAmount)
 	fromAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	gasAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	fromAccountInfo.Nonce++
@@ -375,6 +375,10 @@ func (e *RemoveLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Nonce:           fromAccount.Nonce,
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
+	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
+	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(big.NewInt(0)) < 0 {
+		return nil, errors.New("insufficient gas asset balance")
+	}
 
 	// from account lp
 	order++
@@ -407,7 +411,7 @@ func (e *RemoveLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.PairIndex,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: treasuryAccount.AccountIndex,
-		AccountName:  treasuryAccount.AccountNameHash,
+		AccountName:  treasuryAccount.AccountName,
 		Balance:      treasuryAccount.AssetInfo[txInfo.PairIndex].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.PairIndex, types.ZeroBigInt, txInfo.TreasuryAmount, types.ZeroBigInt,
@@ -471,14 +475,14 @@ func (e *RemoveLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:         txInfo.PairIndex,
 		AssetType:       types.LiquidityAssetType,
-		AccountIndex:    types.NilAccountIndex,
+		AccountIndex:    types.NilTxAccountIndex,
 		AccountName:     types.NilAccountName,
 		Balance:         basePool.String(),
 		BalanceDelta:    poolDeltaForToAccount.String(),
 		Order:           order,
-		Nonce:           0,
+		Nonce:           types.NilNonce,
 		AccountOrder:    types.NilAccountOrder,
-		CollectionNonce: 0,
+		CollectionNonce: types.NilNonce,
 	})
 
 	// gas account asset gas
@@ -519,7 +523,7 @@ func (e *RemoveLiquidityExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error
 		NftIndex:      types.NilTxNftIndex,
 		PairIndex:     e.txInfo.PairIndex,
 		AssetId:       types.NilAssetId,
-		TxAmount:      "",
+		TxAmount:      e.txInfo.LpAmount.String(),
 		Memo:          "",
 		AccountIndex:  e.txInfo.FromAccountIndex,
 		Nonce:         e.txInfo.Nonce,
