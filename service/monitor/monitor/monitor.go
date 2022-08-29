@@ -18,7 +18,6 @@ package monitor
 
 import (
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -52,21 +51,19 @@ type Monitor struct {
 }
 
 func NewMonitor(c config.Config) *Monitor {
-	gormPointer, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
+	db, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
 	if err != nil {
 		logx.Errorf("gorm connect db error, err: %s", err.Error())
 	}
-	conn := sqlx.NewSqlConn("postgres", c.Postgres.DataSource)
-
 	monitor := &Monitor{
 		Config:               c,
-		PriorityRequestModel: priorityrequest.NewPriorityRequestModel(conn, c.CacheRedis, gormPointer),
-		MempoolModel:         mempool.NewMempoolModel(conn, c.CacheRedis, gormPointer),
-		BlockModel:           block.NewBlockModel(conn, c.CacheRedis, gormPointer),
-		L1RollupTxModel:      l1rolluptx.NewL1RollupTxModel(conn, c.CacheRedis, gormPointer),
-		L1SyncedBlockModel:   l1syncedblock.NewL1SyncedBlockModel(conn, c.CacheRedis, gormPointer),
-		L2AssetModel:         asset.NewAssetModel(conn, c.CacheRedis, gormPointer),
-		SysConfigModel:       sysconfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
+		PriorityRequestModel: priorityrequest.NewPriorityRequestModel(db),
+		MempoolModel:         mempool.NewMempoolModel(db),
+		BlockModel:           block.NewBlockModel(db),
+		L1RollupTxModel:      l1rolluptx.NewL1RollupTxModel(db),
+		L1SyncedBlockModel:   l1syncedblock.NewL1SyncedBlockModel(db),
+		L2AssetModel:         asset.NewAssetModel(db),
+		SysConfigModel:       sysconfig.NewSysConfigModel(db),
 	}
 
 	zkbasAddressConfig, err := monitor.SysConfigModel.GetSysConfigByName(types.ZkbasContract)

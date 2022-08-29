@@ -51,7 +51,7 @@ type (
 	NftModel        = nft.L2NftModel
 	NftHistoryModel = nft.L2NftHistoryModel
 
-	CryptoTx = block.Tx
+	TxWitness = block.Tx
 
 	CryptoAccount            = std.Account
 	CryptoAccountAsset       = std.AccountAsset

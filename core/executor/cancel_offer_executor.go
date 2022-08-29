@@ -15,7 +15,6 @@ import (
 	common2 "github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/core/statedb"
 	"github.com/bnb-chain/zkbas/dao/mempool"
-	"github.com/bnb-chain/zkbas/dao/nft"
 	"github.com/bnb-chain/zkbas/dao/tx"
 	"github.com/bnb-chain/zkbas/types"
 )
@@ -95,20 +94,6 @@ func (e *CancelOfferExecutor) ApplyTransaction() error {
 	stateCache := e.bc.StateDB()
 	stateCache.PendingUpdateAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
-
-	stateCache.PendingNewOffer = append(stateCache.PendingNewOffer, &nft.Offer{
-		OfferType:    0,
-		OfferId:      txInfo.OfferId,
-		AccountIndex: txInfo.AccountIndex,
-		NftIndex:     0,
-		AssetId:      0,
-		AssetAmount:  "0",
-		ListedAt:     0,
-		ExpiredAt:    0,
-		TreasuryRate: 0,
-		Sig:          "",
-		Status:       nft.OfferFinishedStatus,
-	})
 
 	return nil
 }

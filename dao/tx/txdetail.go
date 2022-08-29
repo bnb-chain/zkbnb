@@ -20,9 +20,6 @@ package tx
 import (
 	"sort"
 
-	"github.com/zeromicro/go-zero/core/stores/cache"
-	"github.com/zeromicro/go-zero/core/stores/sqlc"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -39,7 +36,6 @@ type (
 	}
 
 	defaultTxDetailModel struct {
-		sqlc.CachedConn
 		table string
 		DB    *gorm.DB
 	}
@@ -60,11 +56,10 @@ type (
 	}
 )
 
-func NewTxDetailModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) TxDetailModel {
+func NewTxDetailModel(db *gorm.DB) TxDetailModel {
 	return &defaultTxDetailModel{
-		CachedConn: sqlc.NewConn(conn, c),
-		table:      TxDetailTableName,
-		DB:         db,
+		table: TxDetailTableName,
+		DB:    db,
 	}
 }
 

@@ -20,23 +20,19 @@ package prove
 import (
 	"strings"
 
-	"github.com/zeromicro/go-zero/core/logx"
-
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/types"
 )
 
-func (w *WitnessHelper) constructRegisterZnsCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*CryptoTx, error) {
+func (w *WitnessHelper) constructRegisterZnsTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseRegisterZnsTxInfo(oTx.TxInfo)
 	if err != nil {
-		logx.Errorf("unable to parse register zns tx info:%s", err.Error())
 		return nil, err
 	}
 	cryptoTxInfo, err := toCryptoRegisterZnsTx(txInfo)
 	if err != nil {
-		logx.Errorf("unable to convert to crypto register zns tx: %s", err.Error())
 		return nil, err
 	}
 	cryptoTx.Signature = std.EmptySignature()
@@ -50,7 +46,6 @@ func toCryptoRegisterZnsTx(txInfo *legendTxTypes.RegisterZnsTxInfo) (info *Crypt
 	copy(accountName[:], realName)
 	pk, err := common.ParsePubKey(txInfo.PubKey)
 	if err != nil {
-		logx.Errorf("unable to parse pub key:%s", err.Error())
 		return nil, err
 	}
 	info = &CryptoRegisterZnsTx{

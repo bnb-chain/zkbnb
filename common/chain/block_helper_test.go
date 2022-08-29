@@ -19,8 +19,7 @@ package chain
 
 import (
 	"bytes"
-	"fmt"
-	"log"
+	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
 
@@ -43,8 +42,8 @@ func TestPubDataComputation(t *testing.T) {
 	pubData5, _ := new(big.Int).SetString("8734016109108763008334396672504977758060680100901855772709016788881531390238", 10)
 	pubData6, _ := new(big.Int).SetString("0", 10)
 
-	fmt.Println(common.Bytes2Hex(oldStateRoot.FillBytes(make([]byte, 32))))
-	fmt.Println(common.Bytes2Hex(newStateRoot.FillBytes(make([]byte, 32))))
+	assert.Equal(t, common.Bytes2Hex(oldStateRoot.FillBytes(make([]byte, 32))), "21422f9bebac15af8ddc504da0dbb88020c1a4de7e7b6722fe00acb0ed968942")
+	assert.Equal(t, common.Bytes2Hex(newStateRoot.FillBytes(make([]byte, 32))), "1b2ff4ae0d507a971fb267849af6a28000b1d483865c5a610cc47db6f196c672")
 
 	var buf bytes.Buffer
 	buf.Write(pubData1.FillBytes(make([]byte, 32)))
@@ -53,50 +52,33 @@ func TestPubDataComputation(t *testing.T) {
 	buf.Write(pubData4.FillBytes(make([]byte, 32)))
 	buf.Write(pubData5.FillBytes(make([]byte, 32)))
 	buf.Write(pubData6.FillBytes(make([]byte, 32)))
-	fmt.Println(common.Bytes2Hex(buf.Bytes()))
+	assert.Equal(t, common.Bytes2Hex(buf.Bytes()), "01000000010000000000000000000000000000000000000000000000000000000698d61a3d9cbfac8f5f7492fcfd4f45af982f6f0c8d1edd783c14d81ffffffe0a48e9892a45a04d0c5b0f235a3aeb07b92137ba71a59b9c457774bafde959832c24415b75651673b0d7bbf145ac8d7cb744ba6926963d1d014836336df1317a134f4726b89983a8e7babbf6973e7ee16311e24328edf987bb0fbe7a494ec91e0000000000000000000000000000000000000000000000000000000000000000")
 
 	commitment, _ := new(big.Int).SetString("2001904096268940627870837110796902048094724981649621731904769518577628368633", 10)
-	fmt.Println(common.Bytes2Hex(commitment.FillBytes(make([]byte, 32))))
+	assert.Equal(t, common.Bytes2Hex(commitment.FillBytes(make([]byte, 32))), "046d099ddea2c1ef130f85916df7e73d761454bd847cee12bb5919227c9a4ef9")
 }
 
 func TestPubData2(t *testing.T) {
 	var buf bytes.Buffer
-	//bytesType, _ := abi.NewType("bytes", "", nil)
-	//uint32Type, _ := abi.NewType("uint32", "", nil)
-	//uint64Type, _ := abi.NewType("uint64", "", nil)
-	//bytes32Type, _ := abi.NewType("bytes32", "", nil)
 	buf.Write(new(big.Int).SetInt64(1).FillBytes(make([]byte, 32)))
 	buf.Write(new(big.Int).SetInt64(1654843322039).FillBytes(make([]byte, 32)))
 	buf.Write(common.FromHex("14e4e8ad4848558d7200530337052e1ad30f5385b3c7187c80ad85f48547b74f"))
 	buf.Write(common.FromHex("21422f9bebac15af8ddc504da0dbb88020c1a4de7e7b6722fe00acb0ed968942"))
 	buf.Write(common.FromHex("01000000000000000000000000000000000000000000000000000000000000007472656173757279000000000000000000000000000000000000000000000000167c5363088a40a4839912a872f43164270740c7e986ec55397b2d583317ab4a2005db7af2bdcfae1fa8d28833ae2f1995e9a8e0825377cff121db64b0db21b718a96ca582a72b16f464330c89ab73277cb96e42df105ebf5c9ac5330d47b8fc0000000000000000000000000000000000000000000000000000000000000000"))
 	buf.Write(new(big.Int).SetInt64(1).FillBytes(make([]byte, 32)))
-	//hFunc.Write(buf.Bytes())
-	//hashVal := hFunc.Sum(nil)
 	hFunc := mimc.NewMiMC()
-	//arguments := abi.Arguments{{Type: uint64Type}, {Type: uint64Type}, {Type: bytes32Type}, {Type: bytes32Type}, {Type: bytesType}, {Type: uint32Type}}
-	//info, _ := arguments.Pack(
-	//	uint64(1),
-	//	uint64(1654843322039),
-	//	common.FromHex("14e4e8ad4848558d7200530337052e1ad30f5385b3c7187c80ad85f48547b74f"),
-	//	common.FromHex("21422f9bebac15af8ddc504da0dbb88020c1a4de7e7b6722fe00acb0ed968942"),
-	//	common.FromHex("01000000000000000000000000000000000000000000000000000000000000007472656173757279000000000000000000000000000000000000000000000000167c5363088a40a4839912a872f43164270740c7e986ec55397b2d583317ab4a2005db7af2bdcfae1fa8d28833ae2f1995e9a8e0825377cff121db64b0db21b718a96ca582a72b16f464330c89ab73277cb96e42df105ebf5c9ac5330d47b8fc0000000000000000000000000000000000000000000000000000000000000000"),
-	//	uint32(1),
-	//)
-	//log.Println(common.Bytes2Hex(info))
-	log.Println(common.Bytes2Hex(buf.Bytes()))
-	//hashVal := KeccakHash(info)
+	assert.Equal(t, common.Bytes2Hex(buf.Bytes()), "0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000001814c592eb714e4e8ad4848558d7200530337052e1ad30f5385b3c7187c80ad85f48547b74f21422f9bebac15af8ddc504da0dbb88020c1a4de7e7b6722fe00acb0ed96894201000000000000000000000000000000000000000000000000000000000000007472656173757279000000000000000000000000000000000000000000000000167c5363088a40a4839912a872f43164270740c7e986ec55397b2d583317ab4a2005db7af2bdcfae1fa8d28833ae2f1995e9a8e0825377cff121db64b0db21b718a96ca582a72b16f464330c89ab73277cb96e42df105ebf5c9ac5330d47b8fc00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")
 	hFunc.Write(buf.Bytes())
 	hashVal := hFunc.Sum(nil)
-	fmt.Println(common.Bytes2Hex(hashVal))
+	assert.Equal(t, common.Bytes2Hex(hashVal), "0e4df6d7053619400d712319012c47b2cb7dcb2d83c203391547148b4f17741a")
 }
 
 func TestMiMCHash(t *testing.T) {
 	hFunc := mimc.NewMiMC()
 	hFunc.Write(new(big.Int).SetInt64(123123123).FillBytes(make([]byte, 32)))
 	a := hFunc.Sum(nil)
-	fmt.Println(new(big.Int).SetBytes(a).String())
-	fmt.Println(common.Bytes2Hex(curve.Modulus.Bytes()))
+	assert.Equal(t, new(big.Int).SetBytes(a).String(), "6158863128777714998435927227085268531294199267913818508594792142833376806078")
+	assert.Equal(t, common.Bytes2Hex(curve.Modulus.Bytes()), "30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001")
 }
 
 func TestParsePubKey(t *testing.T) {
@@ -106,10 +88,10 @@ func TestParsePubKey(t *testing.T) {
 	}
 	a := curve.ScalarBaseMul(big.NewInt(2))
 	f, _ := new(big.Int).SetString("15527681003928902128179717624703512672403908117992798440346960750464748824729", 10)
-	log.Println(ffmath.DivMod(new(big.Int).SetBytes(a.X.Marshal()), f, curve.Modulus).String())
-	log.Println(a.Y.String())
-	log.Println(pk.A.IsOnCurve())
-	log.Println(pk.A.X.String())
-	log.Println(pk.A.Y.String())
-	log.Println(pk.Bytes())
+	assert.Equal(t, ffmath.DivMod(new(big.Int).SetBytes(a.X.Marshal()), f, curve.Modulus).Int64(), int64(0))
+	assert.Equal(t, a.Y.String(), "633281375905621697187330766174974863687049529291089048651929454608812697683")
+	assert.True(t, pk.A.IsOnCurve())
+	assert.Equal(t, pk.A.X.String(), "15824650925573404919778443019341920124666294571462377929750266189082392233365")
+	assert.Equal(t, pk.A.Y.String(), "4610393480717259196086276896776664313868698522523751289329834907930790335320")
+	assert.Equal(t, common.Bytes2Hex(pk.Bytes()), "58130e24cd20d9de8a110a20751f0a9b36089400ac0f20ca1993c28ee663318a")
 }

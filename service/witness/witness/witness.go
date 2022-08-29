@@ -8,7 +8,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -56,21 +55,20 @@ type Witness struct {
 
 func NewWitness(c config.Config) (*Witness, error) {
 	datasource := c.Postgres.DataSource
-	dbInstance, err := gorm.Open(postgres.Open(datasource))
+	db, err := gorm.Open(postgres.Open(datasource))
 	if err != nil {
 		return nil, fmt.Errorf("gorm connect db error, err: %v", err)
 	}
-	conn := sqlx.NewSqlConn("postgres", datasource)
 
 	w := &Witness{
 		config:                c,
-		blockModel:            block.NewBlockModel(conn, c.CacheRedis, dbInstance),
-		blockWitnessModel:     blockwitness.NewBlockWitnessModel(conn, c.CacheRedis, dbInstance),
-		accountModel:          account.NewAccountModel(conn, c.CacheRedis, dbInstance),
-		accountHistoryModel:   account.NewAccountHistoryModel(conn, c.CacheRedis, dbInstance),
-		liquidityHistoryModel: liquidity.NewLiquidityHistoryModel(conn, c.CacheRedis, dbInstance),
-		nftHistoryModel:       nft.NewL2NftHistoryModel(conn, c.CacheRedis, dbInstance),
-		proofModel:            proof.NewProofModel(dbInstance),
+		blockModel:            block.NewBlockModel(db),
+		blockWitnessModel:     blockwitness.NewBlockWitnessModel(db),
+		accountModel:          account.NewAccountModel(db),
+		accountHistoryModel:   account.NewAccountHistoryModel(db),
+		liquidityHistoryModel: liquidity.NewLiquidityHistoryModel(db),
+		nftHistoryModel:       nft.NewL2NftHistoryModel(db),
+		proofModel:            proof.NewProofModel(db),
 	}
 	err = w.initState()
 	return w, err
@@ -219,18 +217,18 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 	cryptoTxs := make([]*cryptoBlock.Tx, 0, block.BlockSize)
 	// scan each transaction
 	for idx, tx := range block.Txs {
-		cryptoTx, err := w.helper.ConstructCryptoTx(tx, uint64(latestVerifiedBlockNr))
+		txWitness, err := w.helper.ConstructTxWitness(tx, uint64(latestVerifiedBlockNr))
 		if err != nil {
 			return nil, err
 		}
-		cryptoTxs = append(cryptoTxs, cryptoTx)
+		cryptoTxs = append(cryptoTxs, txWitness)
 		// if it is the first tx of the block
 		if idx == 0 {
-			oldStateRoot = cryptoTx.StateRootBefore
+			oldStateRoot = txWitness.StateRootBefore
 		}
 		// if it is the last tx of the block
 		if idx == len(block.Txs)-1 {
-			newStateRoot = cryptoTx.StateRootAfter
+			newStateRoot = txWitness.StateRootAfter
 		}
 	}
 

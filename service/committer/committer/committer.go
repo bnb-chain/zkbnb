@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -49,12 +48,11 @@ func NewCommitter(config *Config) (*Committer, error) {
 		return nil, fmt.Errorf("new blockchain error: %v", err)
 	}
 
-	gormPointer, err := gorm.Open(postgres.Open(config.Postgres.DataSource))
+	db, err := gorm.Open(postgres.Open(config.Postgres.DataSource))
 	if err != nil {
 		logx.Error("gorm connect db failed: ", err)
 		return nil, err
 	}
-	conn := sqlx.NewSqlConn("postgres", config.Postgres.DataSource)
 
 	committer := &Committer{
 		config:             config,
@@ -63,7 +61,7 @@ func NewCommitter(config *Config) (*Committer, error) {
 
 		bc: bc,
 
-		memPoolModel:       mempool.NewMempoolModel(conn, config.CacheRedis, gormPointer),
+		memPoolModel:       mempool.NewMempoolModel(db),
 		executedMemPoolTxs: make([]*mempool.MempoolTx, 0),
 	}
 	return committer, nil
@@ -112,7 +110,7 @@ func (c *Committer) Run() {
 			tx := convertMempoolTxToTx(mempoolTx)
 			err = c.bc.ApplyTransaction(tx)
 			if err != nil {
-				logx.Errorf("Apply mempool tx (ID: ", mempoolTx.ID, ") failed: ", err)
+				logx.Errorf("apply mempool tx ID: %d failed, err %v ", mempoolTx.ID, err)
 				mempoolTx.Status = mempool.FailTxStatus
 				pendingDeleteMempoolTxs = append(pendingDeleteMempoolTxs, mempoolTx)
 				continue

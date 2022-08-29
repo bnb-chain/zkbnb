@@ -116,7 +116,7 @@ func (e *AddLiquidityExecutor) VerifyInputs() error {
 	liquidityModel := bc.StateDB().LiquidityMap[txInfo.PairIndex]
 	liquidityInfo, err := constructLiquidityInfo(liquidityModel)
 	if err != nil {
-		logx.Errorf("construct liquidity info error, err: ", err.Error())
+		logx.Errorf("construct liquidity info error, err: %v", err)
 		return err
 	}
 
@@ -175,7 +175,7 @@ func (e *AddLiquidityExecutor) fillTxInfo() error {
 
 	liquidityInfo, err := constructLiquidityInfo(liquidityModel)
 	if err != nil {
-		logx.Errorf("construct liquidity info error, err: ", err.Error())
+		logx.Errorf("construct liquidity info error, err: %v", err)
 		return err
 	}
 
@@ -319,7 +319,7 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	liquidityModel := e.bc.StateDB().LiquidityMap[txInfo.PairIndex]
 	liquidityInfo, err := constructLiquidityInfo(liquidityModel)
 	if err != nil {
-		logx.Errorf("construct liquidity info error, err: ", err.Error())
+		logx.Errorf("construct liquidity info error, err: %v", err)
 		return nil, err
 	}
 

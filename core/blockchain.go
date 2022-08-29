@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -50,14 +49,13 @@ type BlockChain struct {
 }
 
 func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) {
-	gormPointer, err := gorm.Open(postgres.Open(config.Postgres.DataSource))
+	db, err := gorm.Open(postgres.Open(config.Postgres.DataSource))
 	if err != nil {
 		logx.Error("gorm connect db failed: ", err)
 		return nil, err
 	}
-	conn := sqlx.NewSqlConn("postgres", config.Postgres.DataSource)
 	bc := &BlockChain{
-		ChainDB:     sdb.NewChainDB(conn, config.CacheRedis, gormPointer),
+		ChainDB:     sdb.NewChainDB(db),
 		chainConfig: config,
 	}
 
@@ -166,8 +164,6 @@ func (bc *BlockChain) CommitNewBlock(blockSize int, createdAt int64) (*block.Blo
 		PendingUpdateNft:             pendingUpdateNft,
 		PendingNewNftHistory:         pendingNewNftHistory,
 		PendingNewNftWithdrawHistory: bc.Statedb.PendingNewNftWithdrawHistory,
-		PendingNewOffer:              bc.Statedb.PendingNewOffer,
-		PendingNewL2NftExchange:      bc.Statedb.PendingNewL2NftExchange,
 	}, nil
 }
 

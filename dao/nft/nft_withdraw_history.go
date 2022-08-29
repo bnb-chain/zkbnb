@@ -18,9 +18,6 @@
 package nft
 
 import (
-	"github.com/zeromicro/go-zero/core/stores/cache"
-	"github.com/zeromicro/go-zero/core/stores/sqlc"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 )
 
@@ -34,7 +31,6 @@ type (
 		DropL2NftWithdrawHistoryTable() error
 	}
 	defaultL2NftWithdrawHistoryModel struct {
-		sqlc.CachedConn
 		table string
 		DB    *gorm.DB
 	}
@@ -52,11 +48,10 @@ type (
 	}
 )
 
-func NewL2NftWithdrawHistoryModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) L2NftWithdrawHistoryModel {
+func NewL2NftWithdrawHistoryModel(db *gorm.DB) L2NftWithdrawHistoryModel {
 	return &defaultL2NftWithdrawHistoryModel{
-		CachedConn: sqlc.NewConn(conn, c),
-		table:      L2NftWithdrawHistoryTableName,
-		DB:         db,
+		table: L2NftWithdrawHistoryTableName,
+		DB:    db,
 	}
 }
 

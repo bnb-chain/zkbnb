@@ -220,7 +220,6 @@ func ParseCreateCollectionTxInfo(txInfoStr string) (txInfo *legendTxTypes.Create
 	return txInfo, nil
 }
 
-// layer-2 transactions
 func ParseTransferTxInfo(txInfoStr string) (txInfo *legendTxTypes.TransferTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {

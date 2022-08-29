@@ -18,25 +18,22 @@
 package common
 
 import (
-	"fmt"
 	"math/big"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestToPackedAmount(t *testing.T) {
 	a, _ := new(big.Int).SetString("34359738361", 10)
 	amount, err := ToPackedAmount(a)
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println(amount)
+	assert.NoError(t, err)
+	assert.Equal(t, amount, int64(1099511627552))
 }
 
 func TestToPackedFee(t *testing.T) {
 	amount, _ := new(big.Int).SetString("100000000000000", 10)
 	fee, err := ToPackedFee(amount)
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println(fee)
+	assert.NoError(t, err)
+	assert.Equal(t, fee, int64(32011))
 }

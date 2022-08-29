@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -59,19 +58,17 @@ type Sender struct {
 }
 
 func NewSender(c sconfig.Config) *Sender {
-	gormPointer, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
+	db, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
 	if err != nil {
 		logx.Errorf("gorm connect db error, err = %v", err)
 	}
-	conn := sqlx.NewSqlConn("postgres", c.Postgres.DataSource)
-
 	s := &Sender{
 		config:               c,
-		blockModel:           block.NewBlockModel(conn, c.CacheRedis, gormPointer),
-		compressedBlockModel: compressedblock.NewCompressedBlockModel(conn, c.CacheRedis, gormPointer),
-		l1RollupTxModel:      l1rolluptx.NewL1RollupTxModel(conn, c.CacheRedis, gormPointer),
-		sysConfigModel:       sysconfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
-		proofModel:           proof.NewProofModel(gormPointer),
+		blockModel:           block.NewBlockModel(db),
+		compressedBlockModel: compressedblock.NewCompressedBlockModel(db),
+		l1RollupTxModel:      l1rolluptx.NewL1RollupTxModel(db),
+		sysConfigModel:       sysconfig.NewSysConfigModel(db),
+		proofModel:           proof.NewProofModel(db),
 	}
 
 	l1RPCEndpoint, err := s.sysConfigModel.GetSysConfigByName(c.ChainConfig.NetworkRPCSysConfigName)

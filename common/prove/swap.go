@@ -18,22 +18,18 @@
 package prove
 
 import (
-	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
-	"github.com/zeromicro/go-zero/core/logx"
-
 	"github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/types"
+	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 )
 
-func (w *WitnessHelper) constructSwapCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*CryptoTx, error) {
+func (w *WitnessHelper) constructSwapTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseSwapTxInfo(oTx.TxInfo)
 	if err != nil {
-		logx.Errorf("unable to parse swap tx info:%s", err.Error())
 		return nil, err
 	}
 	cryptoTxInfo, err := toCryptoSwapTx(txInfo)
 	if err != nil {
-		logx.Errorf("unable to convert to crypto swap tx: %s", err.Error())
 		return nil, err
 	}
 	cryptoTx.SwapTxInfo = cryptoTxInfo
@@ -41,7 +37,6 @@ func (w *WitnessHelper) constructSwapCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*Cry
 	cryptoTx.Signature = new(eddsa.Signature)
 	_, err = cryptoTx.Signature.SetBytes(txInfo.Sig)
 	if err != nil {
-		logx.Errorf("invalid sig bytes: %s", err.Error())
 		return nil, err
 	}
 	return cryptoTx, nil
@@ -50,22 +45,18 @@ func (w *WitnessHelper) constructSwapCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*Cry
 func toCryptoSwapTx(txInfo *types.SwapTxInfo) (info *CryptoSwapTx, err error) {
 	packedAAmount, err := common.ToPackedAmount(txInfo.AssetAAmount)
 	if err != nil {
-		logx.Errorf("unable to convert to packed amount: %s", err.Error())
 		return nil, err
 	}
 	packedBMinAmount, err := common.ToPackedAmount(txInfo.AssetBMinAmount)
 	if err != nil {
-		logx.Errorf("unable to convert to packed amount: %s", err.Error())
 		return nil, err
 	}
 	packedBAmount, err := common.ToPackedAmount(txInfo.AssetBAmountDelta)
 	if err != nil {
-		logx.Errorf("unable to convert to packed amount: %s", err.Error())
 		return nil, err
 	}
 	packedFee, err := common.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
-		logx.Errorf("unable to convert to packed fee: %s", err.Error())
 		return nil, err
 	}
 	info = &CryptoSwapTx{

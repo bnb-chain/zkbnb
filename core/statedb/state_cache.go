@@ -34,8 +34,6 @@ type StateCache struct {
 	PendingUpdateNftIndexMap       map[int64]int
 
 	PendingNewNftWithdrawHistory []*nft.L2NftWithdrawHistory
-	PendingNewOffer              []*nft.Offer
-	PendingNewL2NftExchange      []*nft.L2NftExchange
 }
 
 func NewStateCache(stateRoot string) *StateCache {
@@ -51,8 +49,6 @@ func NewStateCache(stateRoot string) *StateCache {
 		PendingUpdateNftIndexMap:       make(map[int64]int, 0),
 
 		PendingNewNftWithdrawHistory: make([]*nft.L2NftWithdrawHistory, 0),
-		PendingNewOffer:              make([]*nft.Offer, 0),
-		PendingNewL2NftExchange:      make([]*nft.L2NftExchange, 0),
 
 		PubData:                         make([]byte, 0),
 		PriorityOperations:              0,

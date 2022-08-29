@@ -19,9 +19,6 @@ package mempool
 
 import (
 	"errors"
-	"github.com/zeromicro/go-zero/core/stores/cache"
-	"github.com/zeromicro/go-zero/core/stores/sqlc"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/dao/nft"
@@ -54,8 +51,6 @@ type (
 		CreateBatchedMempoolTxs(mempoolTxs []*MempoolTx) error
 		CreateMempoolTxAndL2CollectionAndNonce(mempoolTx *MempoolTx, nftInfo *nft.L2NftCollection) error
 		CreateMempoolTxAndL2Nft(mempoolTx *MempoolTx, nftInfo *nft.L2Nft) error
-		CreateMempoolTxAndL2NftExchange(mempoolTx *MempoolTx, offers []*nft.Offer, nftExchange *nft.L2NftExchange) error
-		CreateMempoolTxAndUpdateOffer(mempoolTx *MempoolTx, offer *nft.Offer, isUpdate bool) error
 		GetPendingMempoolTxsByAccountIndex(accountIndex int64) (mempoolTxs []*MempoolTx, err error)
 		GetLatestL2MempoolTxByAccountIndex(accountIndex int64) (mempoolTx *MempoolTx, err error)
 		GetMaxNonceByAccountIndex(accountIndex int64) (nonce int64, err error)
@@ -63,7 +58,6 @@ type (
 	}
 
 	defaultMempoolModel struct {
-		sqlc.CachedConn
 		table string
 		DB    *gorm.DB
 	}
@@ -92,11 +86,10 @@ type (
 	}
 )
 
-func NewMempoolModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) MempoolModel {
+func NewMempoolModel(db *gorm.DB) MempoolModel {
 	return &defaultMempoolModel{
-		CachedConn: sqlc.NewConn(conn, c),
-		table:      MempoolTableName,
-		DB:         db,
+		table: MempoolTableName,
+		DB:    db,
 	}
 }
 
@@ -317,65 +310,6 @@ func (m *defaultMempoolModel) CreateMempoolTxAndL2Nft(mempoolTx *MempoolTx, nftI
 		}
 		if dbTx.RowsAffected == 0 {
 			return types.DbErrFailToCreateMempoolTx
-		}
-		return nil
-	})
-}
-
-func (m *defaultMempoolModel) CreateMempoolTxAndL2NftExchange(mempoolTx *MempoolTx, offers []*nft.Offer, nftExchange *nft.L2NftExchange) error {
-	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
-		dbTx := tx.Table(m.table).Create(mempoolTx)
-		if dbTx.Error != nil {
-			return dbTx.Error
-		}
-		if dbTx.RowsAffected == 0 {
-			return types.DbErrFailToCreateMempoolTx
-		}
-		if len(offers) != 0 {
-			dbTx = tx.Table(nft.OfferTableName).CreateInBatches(offers, len(offers))
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				return types.DbErrFailToCreateMempoolTx
-			}
-		}
-		dbTx = tx.Table(nft.L2NftExchangeTableName).Create(nftExchange)
-		if dbTx.Error != nil {
-			return dbTx.Error
-		}
-		if dbTx.RowsAffected == 0 {
-			return types.DbErrFailToCreateMempoolTx
-		}
-		return nil
-	})
-}
-
-func (m *defaultMempoolModel) CreateMempoolTxAndUpdateOffer(mempoolTx *MempoolTx, offer *nft.Offer, isUpdate bool) error {
-	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
-		dbTx := tx.Table(m.table).Create(mempoolTx)
-		if dbTx.Error != nil {
-			return dbTx.Error
-		}
-		if dbTx.RowsAffected == 0 {
-			return types.DbErrFailToCreateMempoolTx
-		}
-		if isUpdate {
-			dbTx = tx.Table(nft.OfferTableName).Where("id = ?", offer.ID).Select("*").Updates(&offer)
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				return types.DbErrFailToCreateMempoolTx
-			}
-		} else {
-			dbTx = tx.Table(nft.OfferTableName).Create(offer)
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				return types.DbErrFailToCreateMempoolTx
-			}
 		}
 		return nil
 	})

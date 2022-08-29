@@ -21,9 +21,6 @@ import (
 	"errors"
 	"sort"
 
-	"github.com/zeromicro/go-zero/core/stores/cache"
-	"github.com/zeromicro/go-zero/core/stores/sqlc"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/dao/account"
@@ -68,7 +65,6 @@ type (
 	}
 
 	defaultBlockModel struct {
-		sqlc.CachedConn
 		table string
 		DB    *gorm.DB
 	}
@@ -105,17 +101,13 @@ type (
 		PendingUpdateNft             []*nft.L2Nft
 		PendingNewNftHistory         []*nft.L2NftHistory
 		PendingNewNftWithdrawHistory []*nft.L2NftWithdrawHistory
-
-		PendingNewOffer         []*nft.Offer
-		PendingNewL2NftExchange []*nft.L2NftExchange
 	}
 )
 
-func NewBlockModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) BlockModel {
+func NewBlockModel(db *gorm.DB) BlockModel {
 	return &defaultBlockModel{
-		CachedConn: sqlc.NewConn(conn, c),
-		table:      BlockTableName,
-		DB:         db,
+		table: BlockTableName,
+		DB:    db,
 	}
 }
 
@@ -450,26 +442,6 @@ func (m *defaultBlockModel) CreateCompressedBlock(pendingMempoolTxs []*mempool.M
 			}
 			if dbTx.RowsAffected != int64(len(blockStates.PendingNewNftWithdrawHistory)) {
 				return errors.New("unable to create new nft withdraw")
-			}
-		}
-		// new offer
-		if len(blockStates.PendingNewOffer) != 0 {
-			dbTx := tx.Table(nft.OfferTableName).CreateInBatches(blockStates.PendingNewOffer, len(blockStates.PendingNewOffer))
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected != int64(len(blockStates.PendingNewOffer)) {
-				return errors.New("unable to create new offer")
-			}
-		}
-		// new nft exchange
-		if len(blockStates.PendingNewL2NftExchange) != 0 {
-			dbTx := tx.Table(nft.L2NftExchangeTableName).CreateInBatches(blockStates.PendingNewL2NftExchange, len(blockStates.PendingNewL2NftExchange))
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected != int64(len(blockStates.PendingNewL2NftExchange)) {
-				return errors.New("unable to create new nft exchange")
 			}
 		}
 		return nil

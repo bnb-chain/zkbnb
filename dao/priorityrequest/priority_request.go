@@ -20,9 +20,6 @@ package priorityrequest
 import (
 	"errors"
 
-	"github.com/zeromicro/go-zero/core/stores/cache"
-	"github.com/zeromicro/go-zero/core/stores/sqlc"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/dao/mempool"
@@ -46,7 +43,6 @@ type (
 	}
 
 	defaultPriorityRequestModel struct {
-		sqlc.CachedConn
 		table string
 		DB    *gorm.DB
 	}
@@ -76,11 +72,10 @@ func (*PriorityRequest) TableName() string {
 	return TableName
 }
 
-func NewPriorityRequestModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) PriorityRequestModel {
+func NewPriorityRequestModel(db *gorm.DB) PriorityRequestModel {
 	return &defaultPriorityRequestModel{
-		CachedConn: sqlc.NewConn(conn, c),
-		table:      TableName,
-		DB:         db,
+		table: TableName,
+		DB:    db,
 	}
 }
 

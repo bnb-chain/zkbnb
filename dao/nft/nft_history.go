@@ -18,9 +18,6 @@
 package nft
 
 import (
-	"github.com/zeromicro/go-zero/core/stores/cache"
-	"github.com/zeromicro/go-zero/core/stores/sqlc"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -42,7 +39,6 @@ type (
 		)
 	}
 	defaultL2NftHistoryModel struct {
-		sqlc.CachedConn
 		table string
 		DB    *gorm.DB
 	}
@@ -62,11 +58,10 @@ type (
 	}
 )
 
-func NewL2NftHistoryModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) L2NftHistoryModel {
+func NewL2NftHistoryModel(db *gorm.DB) L2NftHistoryModel {
 	return &defaultL2NftHistoryModel{
-		CachedConn: sqlc.NewConn(conn, c),
-		table:      L2NftHistoryTableName,
-		DB:         db,
+		table: L2NftHistoryTableName,
+		DB:    db,
 	}
 }
 
