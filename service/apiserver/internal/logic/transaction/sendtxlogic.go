@@ -93,7 +93,7 @@ func (s *SendTxLogic) getExecutor(txType int, txInfo string) (executor.TxExecuto
 	case types2.TxTypeCreateCollection:
 		return executor.NewCreateCollectionExecutor(bc, t)
 	case types2.TxTypeMintNft:
-		return executor.NewCreateCollectionExecutor(bc, t)
+		return executor.NewMintNftExecutor(bc, t)
 	default:
 		logx.Errorf("invalid tx type: %s", txType)
 		return nil, types2.AppErrInvalidTxType
