@@ -17,7 +17,7 @@
 package monitor
 
 import (
-	"encoding/base64"
+	"encoding/hex"
 	"strconv"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
@@ -28,5 +28,5 @@ func ComputeL1TxTxHash(requestId int64, txHash string) string {
 	hFunc := mimc.NewMiMC()
 	hFunc.Write([]byte(strconv.FormatInt(requestId, 10)))
 	hFunc.Write(common.FromHex(txHash))
-	return base64.StdEncoding.EncodeToString(hFunc.Sum(nil))
+	return hex.EncodeToString(hFunc.Sum(nil))
 }
