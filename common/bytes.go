@@ -22,10 +22,8 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/zeromicro/go-zero/core/logx"
-
 	"github.com/bnb-chain/zkbas/types"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func ReadUint8(buf []byte, offset int) (newOffset int, res uint8) {
@@ -113,7 +111,6 @@ func Uint256ToBytes(a *big.Int) []byte {
 func AmountToPackedAmountBytes(a *big.Int) (res []byte, err error) {
 	packedAmount, err := ToPackedAmount(a)
 	if err != nil {
-		logx.Errorf("[AmountToPackedAmountBytes] invalid amount: %s", err.Error())
 		return nil, err
 	}
 	return Uint40ToBytes(packedAmount), nil
@@ -122,7 +119,6 @@ func AmountToPackedAmountBytes(a *big.Int) (res []byte, err error) {
 func FeeToPackedFeeBytes(a *big.Int) (res []byte, err error) {
 	packedFee, err := ToPackedFee(a)
 	if err != nil {
-		logx.Errorf("[FeeToPackedFeeBytes] invalid fee amount: %s", err.Error())
 		return nil, err
 	}
 	return Uint16ToBytes(uint16(packedFee)), nil

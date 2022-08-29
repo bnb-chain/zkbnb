@@ -20,7 +20,6 @@ package common
 import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 func ParsePubKey(pkStr string) (pk *eddsa.PublicKey, err error) {
@@ -28,7 +27,6 @@ func ParsePubKey(pkStr string) (pk *eddsa.PublicKey, err error) {
 	pk = new(eddsa.PublicKey)
 	_, err = pk.A.SetBytes(pkBytes)
 	if err != nil {
-		logx.Errorf("[ParsePubKey] unable to set pk bytes: %s", err.Error())
 		return nil, err
 	}
 	return pk, nil

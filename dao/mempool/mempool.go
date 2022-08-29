@@ -19,6 +19,7 @@ package mempool
 
 import (
 	"errors"
+
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"

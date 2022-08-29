@@ -2,6 +2,7 @@ package state
 
 import (
 	"context"
+
 	"github.com/bnb-chain/zkbas/common/chain"
 	accdao "github.com/bnb-chain/zkbas/dao/account"
 	"github.com/bnb-chain/zkbas/dao/dbcache"

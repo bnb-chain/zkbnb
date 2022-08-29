@@ -18,9 +18,10 @@
 package prove
 
 import (
+	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
+
 	"github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/types"
-	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 )
 
 func (w *WitnessHelper) constructSwapTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {

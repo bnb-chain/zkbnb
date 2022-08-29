@@ -20,10 +20,11 @@ package prove
 import (
 	"math/big"
 
+	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
+
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/types"
-	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 )
 
 func (w *WitnessHelper) constructWithdrawTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {

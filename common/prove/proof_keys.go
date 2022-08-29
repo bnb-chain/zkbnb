@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"math/big"
 	"os"
-	"time"
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/frontend"
-	"github.com/zeromicro/go-zero/core/logx"
 
 	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
@@ -65,15 +63,10 @@ func GenerateProof(
 	if err != nil {
 		return proof, err
 	}
-	elapse := time.Now()
-	logx.Info("start proving")
 	proof, err = groth16.Prove(r1cs, provingKey, witness, backend.WithHints(std.Keccak256, std.ComputeSLp))
 	if err != nil {
 		return proof, err
 	}
-	fmt.Println("finish proving: ", time.Since(elapse))
-	elapse = time.Now()
-	logx.Info("start verifying")
 	err = groth16.Verify(proof, verifyingKey, vWitness)
 	if err != nil {
 		return proof, err

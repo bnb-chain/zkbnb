@@ -21,13 +21,14 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	bsmt "github.com/bnb-chain/bas-smt"
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	common2 "github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/common/chain"
 	"github.com/bnb-chain/zkbas/tree"
 	"github.com/bnb-chain/zkbas/types"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 type WitnessHelper struct {

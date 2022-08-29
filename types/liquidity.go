@@ -21,8 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"math/big"
-
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type LiquidityInfo struct {
@@ -62,22 +60,18 @@ func ConstructLiquidityInfo(pairIndex int64, assetAId int64, assetAAmount string
 	lpAmount string, kLast string, feeRate int64, treasuryAccountIndex int64, treasuryRate int64) (info *LiquidityInfo, err error) {
 	assetA, isValid := new(big.Int).SetString(assetAAmount, 10)
 	if !isValid {
-		logx.Errorf("[ConstructLiquidityInfo] invalid big int")
 		return nil, errors.New("[ConstructLiquidityInfo] invalid bit int")
 	}
 	assetB, isValid := new(big.Int).SetString(assetBAmount, 10)
 	if !isValid {
-		logx.Errorf("[ConstructLiquidityInfo] invalid big int")
 		return nil, errors.New("[ConstructLiquidityInfo] invalid bit int")
 	}
 	lp, isValid := new(big.Int).SetString(lpAmount, 10)
 	if !isValid {
-		logx.Errorf("[ConstructLiquidityInfo] invalid big int")
 		return nil, errors.New("[ConstructLiquidityInfo] invalid bit int")
 	}
 	kLastInt, isValid := new(big.Int).SetString(kLast, 10)
 	if !isValid {
-		logx.Errorf("[ConstructLiquidityInfo] invalid big int")
 		return nil, errors.New("[ConstructLiquidityInfo] invalid bit int")
 	}
 	info = &LiquidityInfo{

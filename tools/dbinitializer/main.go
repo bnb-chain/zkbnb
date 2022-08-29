@@ -21,13 +21,12 @@ import (
 	"encoding/json"
 	"flag"
 
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/dao/account"
 	"github.com/bnb-chain/zkbas/dao/asset"
@@ -140,25 +139,25 @@ func initAssetsInfo() []*asset.Asset {
 }
 
 var (
-	sysConfigModel          = sysconfig.NewSysConfigModel(DB)
-	accountModel            = account.NewAccountModel(DB)
-	accountHistoryModel     = account.NewAccountHistoryModel(DB)
-	assetModel              = asset.NewAssetModel(DB)
-	mempoolModel            = mempool.NewMempoolModel(DB)
-	failTxModel             = tx.NewFailTxModel(DB)
-	txDetailModel           = tx.NewTxDetailModel(DB)
-	txModel                 = tx.NewTxModel(DB)
-	blockModel              = block.NewBlockModel(DB)
-	compressedBlockModel    = compressedblock.NewCompressedBlockModel(DB)
-	blockWitnessModel       = blockwitness.NewBlockWitnessModel(DB)
-	proofModel              = proof.NewProofModel(DB)
-	l1SyncedBlockModel      = l1syncedblock.NewL1SyncedBlockModel(DB)
-	priorityRequestModel    = priorityrequest.NewPriorityRequestModel(DB)
-	l1RollupTModel          = l1rolluptx.NewL1RollupTxModel(DB)
-	liquidityModel          = liquidity.NewLiquidityModel(DB)
-	liquidityHistoryModel   = liquidity.NewLiquidityHistoryModel(DB)
-	nftModel                = nft.NewL2NftModel(DB)
-	nftHistoryModel         = nft.NewL2NftHistoryModel(DB)
+	sysConfigModel        = sysconfig.NewSysConfigModel(DB)
+	accountModel          = account.NewAccountModel(DB)
+	accountHistoryModel   = account.NewAccountHistoryModel(DB)
+	assetModel            = asset.NewAssetModel(DB)
+	mempoolModel          = mempool.NewMempoolModel(DB)
+	failTxModel           = tx.NewFailTxModel(DB)
+	txDetailModel         = tx.NewTxDetailModel(DB)
+	txModel               = tx.NewTxModel(DB)
+	blockModel            = block.NewBlockModel(DB)
+	compressedBlockModel  = compressedblock.NewCompressedBlockModel(DB)
+	blockWitnessModel     = blockwitness.NewBlockWitnessModel(DB)
+	proofModel            = proof.NewProofModel(DB)
+	l1SyncedBlockModel    = l1syncedblock.NewL1SyncedBlockModel(DB)
+	priorityRequestModel  = priorityrequest.NewPriorityRequestModel(DB)
+	l1RollupTModel        = l1rolluptx.NewL1RollupTxModel(DB)
+	liquidityModel        = liquidity.NewLiquidityModel(DB)
+	liquidityHistoryModel = liquidity.NewLiquidityHistoryModel(DB)
+	nftModel              = nft.NewL2NftModel(DB)
+	nftHistoryModel       = nft.NewL2NftHistoryModel(DB)
 )
 
 func dropTables() {

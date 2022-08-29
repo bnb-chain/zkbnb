@@ -18,10 +18,11 @@
 package prove
 
 import (
-	common2 "github.com/bnb-chain/zkbas/common"
-	"github.com/bnb-chain/zkbas/types"
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/ethereum/go-ethereum/common"
+
+	common2 "github.com/bnb-chain/zkbas/common"
+	"github.com/bnb-chain/zkbas/types"
 )
 
 func (w *WitnessHelper) constructTransferTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {

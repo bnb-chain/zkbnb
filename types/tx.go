@@ -20,8 +20,6 @@ package types
 import (
 	"encoding/json"
 
-	"github.com/zeromicro/go-zero/core/logx"
-
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 )
 
@@ -151,7 +149,6 @@ const (
 func ParseRegisterZnsTxInfo(txInfoStr string) (txInfo *legendTxTypes.RegisterZnsTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
-		logx.Errorf("[ParseRegisterZnsTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil
@@ -160,7 +157,6 @@ func ParseRegisterZnsTxInfo(txInfoStr string) (txInfo *legendTxTypes.RegisterZns
 func ParseCreatePairTxInfo(txInfoStr string) (txInfo *legendTxTypes.CreatePairTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
-		logx.Errorf("[ParseCreatePairTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil
@@ -169,7 +165,6 @@ func ParseCreatePairTxInfo(txInfoStr string) (txInfo *legendTxTypes.CreatePairTx
 func ParseUpdatePairRateTxInfo(txInfoStr string) (txInfo *legendTxTypes.UpdatePairRateTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
-		logx.Errorf("[ParseUpdatePairRateTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil
@@ -178,7 +173,6 @@ func ParseUpdatePairRateTxInfo(txInfoStr string) (txInfo *legendTxTypes.UpdatePa
 func ParseDepositTxInfo(txInfoStr string) (txInfo *legendTxTypes.DepositTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
-		logx.Errorf("[ParseDepositTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil
@@ -187,7 +181,6 @@ func ParseDepositTxInfo(txInfoStr string) (txInfo *legendTxTypes.DepositTxInfo, 
 func ParseDepositNftTxInfo(txInfoStr string) (txInfo *legendTxTypes.DepositNftTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
-		logx.Errorf("[ParseDepositNftTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil
@@ -196,7 +189,6 @@ func ParseDepositNftTxInfo(txInfoStr string) (txInfo *legendTxTypes.DepositNftTx
 func ParseFullExitTxInfo(txInfoStr string) (txInfo *legendTxTypes.FullExitTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
-		logx.Errorf("[ParseFullExitTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil
@@ -205,7 +197,6 @@ func ParseFullExitTxInfo(txInfoStr string) (txInfo *legendTxTypes.FullExitTxInfo
 func ParseFullExitNftTxInfo(txInfoStr string) (txInfo *legendTxTypes.FullExitNftTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
-		logx.Errorf("[ParseFullExitNftTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil
@@ -214,7 +205,6 @@ func ParseFullExitNftTxInfo(txInfoStr string) (txInfo *legendTxTypes.FullExitNft
 func ParseCreateCollectionTxInfo(txInfoStr string) (txInfo *legendTxTypes.CreateCollectionTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
-		logx.Errorf("[ParseCreateCollectionTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil
@@ -223,7 +213,6 @@ func ParseCreateCollectionTxInfo(txInfoStr string) (txInfo *legendTxTypes.Create
 func ParseTransferTxInfo(txInfoStr string) (txInfo *legendTxTypes.TransferTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
-		logx.Errorf("[ParseTransferTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil
@@ -232,7 +221,6 @@ func ParseTransferTxInfo(txInfoStr string) (txInfo *legendTxTypes.TransferTxInfo
 func ParseSwapTxInfo(txInfoStr string) (txInfo *legendTxTypes.SwapTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
-		logx.Errorf("[ParseSwapTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil
@@ -241,7 +229,6 @@ func ParseSwapTxInfo(txInfoStr string) (txInfo *legendTxTypes.SwapTxInfo, err er
 func ParseAddLiquidityTxInfo(txInfoStr string) (txInfo *legendTxTypes.AddLiquidityTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
-		logx.Errorf("[ParseAddLiquidityTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil
@@ -250,7 +237,6 @@ func ParseAddLiquidityTxInfo(txInfoStr string) (txInfo *legendTxTypes.AddLiquidi
 func ParseRemoveLiquidityTxInfo(txInfoStr string) (txInfo *legendTxTypes.RemoveLiquidityTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
-		logx.Errorf("[ParseRemoveLiquidityTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil
@@ -259,7 +245,6 @@ func ParseRemoveLiquidityTxInfo(txInfoStr string) (txInfo *legendTxTypes.RemoveL
 func ParseMintNftTxInfo(txInfoStr string) (txInfo *legendTxTypes.MintNftTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
-		logx.Errorf("[ParseMintNftTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil
@@ -268,7 +253,6 @@ func ParseMintNftTxInfo(txInfoStr string) (txInfo *legendTxTypes.MintNftTxInfo, 
 func ParseTransferNftTxInfo(txInfoStr string) (txInfo *legendTxTypes.TransferNftTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
-		logx.Errorf("[ParseTransferNftTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil
@@ -277,7 +261,6 @@ func ParseTransferNftTxInfo(txInfoStr string) (txInfo *legendTxTypes.TransferNft
 func ParseAtomicMatchTxInfo(txInfoStr string) (txInfo *legendTxTypes.AtomicMatchTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
-		logx.Errorf("[ParseAtomicMatchTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil
@@ -286,7 +269,6 @@ func ParseAtomicMatchTxInfo(txInfoStr string) (txInfo *legendTxTypes.AtomicMatch
 func ParseCancelOfferTxInfo(txInfoStr string) (txInfo *legendTxTypes.CancelOfferTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
-		logx.Errorf("[ParseCancelOfferTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil
@@ -295,7 +277,6 @@ func ParseCancelOfferTxInfo(txInfoStr string) (txInfo *legendTxTypes.CancelOffer
 func ParseWithdrawTxInfo(txInfoStr string) (txInfo *legendTxTypes.WithdrawTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
-		logx.Errorf("[ParseWithdrawTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil
@@ -304,7 +285,6 @@ func ParseWithdrawTxInfo(txInfoStr string) (txInfo *legendTxTypes.WithdrawTxInfo
 func ParseWithdrawNftTxInfo(txInfoStr string) (txInfo *legendTxTypes.WithdrawNftTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
-		logx.Errorf("[ParseWithdrawNftTxInfo] unable to parse tx info: %s", err.Error())
 		return nil, err
 	}
 	return txInfo, nil
