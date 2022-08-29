@@ -29,6 +29,7 @@ var (
 	contractNames = []string{
 		"ZkbasContract",
 		"ZnsPriceOracle",
+		"AssetGovernanceContract",
 	}
 )
 

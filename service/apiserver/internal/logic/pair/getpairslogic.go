@@ -35,25 +35,26 @@ func (l *GetPairsLogic) GetPairs() (resp *types.Pairs, err error) {
 		return nil, types2.AppErrInternal
 	}
 
-	for _, asset := range liquidityAssets {
-		assetA, err := l.svcCtx.AssetModel.GetAssetById(asset.AssetAId)
+	for _, liquidity := range liquidityAssets {
+		assetA, err := l.svcCtx.AssetModel.GetAssetById(liquidity.AssetAId)
 		if err != nil {
 			return nil, types2.AppErrInternal
 		}
-		assetB, err := l.svcCtx.AssetModel.GetAssetById(asset.AssetBId)
+		assetB, err := l.svcCtx.AssetModel.GetAssetById(liquidity.AssetBId)
 		if err != nil {
 			return nil, types2.AppErrInternal
 		}
 		resp.Pairs = append(resp.Pairs, &types.Pair{
-			Index:        uint32(asset.PairIndex),
-			AssetAId:     uint32(asset.AssetAId),
-			AssetAName:   assetA.AssetName,
-			AssetAAmount: asset.AssetA,
-			AssetBId:     uint32(asset.AssetBId),
-			AssetBName:   assetB.AssetName,
-			AssetBAmount: asset.AssetB,
-			FeeRate:      asset.FeeRate,
-			TreasuryRate: asset.TreasuryRate,
+			Index:         uint32(liquidity.PairIndex),
+			AssetAId:      uint32(liquidity.AssetAId),
+			AssetAName:    assetA.AssetName,
+			AssetAAmount:  liquidity.AssetA,
+			AssetBId:      uint32(liquidity.AssetBId),
+			AssetBName:    assetB.AssetName,
+			AssetBAmount:  liquidity.AssetB,
+			FeeRate:       liquidity.FeeRate,
+			TreasuryRate:  liquidity.TreasuryRate,
+			TotalLpAmount: liquidity.LpAmount,
 		})
 	}
 	return resp, nil
