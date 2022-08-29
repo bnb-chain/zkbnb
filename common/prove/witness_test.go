@@ -19,23 +19,29 @@ package prove
 
 import (
 	"encoding/json"
+	"errors"
+	"os/exec"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/bas-smt/database/memory"
+	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/bnb-chain/zkbas/dao/account"
+	"github.com/bnb-chain/zkbas/dao/block"
+	"github.com/bnb-chain/zkbas/dao/blockwitness"
 	"github.com/bnb-chain/zkbas/dao/liquidity"
 	"github.com/bnb-chain/zkbas/dao/nft"
-	"github.com/bnb-chain/zkbas/dao/tx"
 	"github.com/bnb-chain/zkbas/tree"
 )
 
 var (
 	dsn                   = "host=localhost user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable"
-	txModel               tx.TxModel
+	blockModel            block.BlockModel
+	witnessModel          blockwitness.BlockWitnessModel
 	accountModel          account.AccountModel
 	accountHistoryModel   account.AccountHistoryModel
 	liquidityHistoryModel liquidity.LiquidityHistoryModel
@@ -43,36 +49,35 @@ var (
 )
 
 func TestConstructTxWitness(t *testing.T) {
-	testDbSetup()
-
-	allExampleTxCases := []struct {
-		txId            int64
-		expectedWitness string
-	}{
-		// TODO add more tx example once we get the full data
-		{1, ""},
-		{2, ""},
-	}
-
-	for _, example := range allExampleTxCases {
-		witness, err := constructTxWitness(example.txId)
+	testDBSetup()
+	defer testDBShutdown()
+	// TODO: add more block height
+	testBlockHeight := []int64{1}
+	for _, h := range testBlockHeight {
+		witnessHelper, err := getWitnessHelper(h - 1)
 		assert.NoError(t, err)
-		txBytes, err := json.Marshal(witness)
+		b, err := blockModel.GetBlockByHeight(h)
 		assert.NoError(t, err)
-		assert.Equal(t, string(txBytes), example.expectedWitness)
+		w, err := witnessModel.GetBlockWitnessByNumber(h)
+		assert.NoError(t, err)
+		var cBlock cryptoBlock.Block
+		err = json.Unmarshal([]byte(w.WitnessData), &cBlock)
+		assert.NoError(t, err)
+		for idx, tx := range b.Txs {
+			txWitness, err := witnessHelper.ConstructTxWitness(tx, uint64(0))
+			assert.NoError(t, err)
+			expectedBz, _ := json.Marshal(cBlock.Txs[idx])
+			actualBz, _ := json.Marshal(txWitness)
+			assert.Equal(t, string(actualBz), string(expectedBz))
+		}
 	}
 }
 
-func constructTxWitness(txId int64) (*TxWitness, error) {
+func getWitnessHelper(blockHeight int64) (*WitnessHelper, error) {
 	ctx := &tree.Context{
 		Driver: tree.MemoryDB,
 		TreeDB: memory.NewMemoryDB(),
 	}
-	txInfo, err := txModel.GetTxById(txId)
-	if err != nil {
-		return nil, err
-	}
-	blockHeight := txInfo.BlockHeight
 	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, accountHistoryModel, blockHeight, ctx)
 	if err != nil {
 		return nil, err
@@ -90,14 +95,34 @@ func constructTxWitness(txId int64) (*TxWitness, error) {
 		liquidityTree,
 		nftTree,
 		&accountAssetTrees,
-		accountModel).constructTxWitness(txInfo, 0)
+		accountModel), nil
 }
 
-func testDbSetup() {
+func testDBSetup() {
+	testDBShutdown()
+	cmd := exec.Command("docker", "run", "--name", "postgres-ut", "-p", "5432:5432",
+		"-e", "POSTGRES_PASSWORD=Zkbas@123", "-e", "POSTGRES_USER=postgres", "-e", "POSTGRES_DB=zkbas",
+		"-e", "PGDATA=/var/lib/postgresql/pgdata", "-d", "ghcr.io/bnb-chain/zkbas/zkbas-ut-postgres:latest")
+	if errors.Is(cmd.Err, exec.ErrDot) {
+		cmd.Err = nil
+	}
+	if err := cmd.Run(); err != nil {
+		panic(err)
+	}
+	time.Sleep(5 * time.Second)
 	db, _ := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	txModel = tx.NewTxModel(db)
+	blockModel = block.NewBlockModel(db)
+	witnessModel = blockwitness.NewBlockWitnessModel(db)
 	accountModel = account.NewAccountModel(db)
 	accountHistoryModel = account.NewAccountHistoryModel(db)
 	liquidityHistoryModel = liquidity.NewLiquidityHistoryModel(db)
 	nftHistoryModel = nft.NewL2NftHistoryModel(db)
+}
+
+func testDBShutdown() {
+	cmd := exec.Command("docker", "kill", "postgres-ut")
+	cmd.Run()
+	time.Sleep(time.Second)
+	cmd = exec.Command("docker", "rm", "postgres-ut")
+	cmd.Run()
 }

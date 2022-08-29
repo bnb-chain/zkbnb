@@ -23,7 +23,6 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas/common/prove"
 	"github.com/bnb-chain/zkbas/types"
 )
 
@@ -83,7 +82,7 @@ func (m *defaultBlockWitnessModel) GetLatestBlockWitnessHeight() (blockNumber in
 
 func (m *defaultBlockWitnessModel) GetBlockWitnessByMode(mode int64) (witness *BlockWitness, err error) {
 	switch mode {
-	case prove.CooMode:
+	case types.CooMode:
 		dbTx := m.DB.Table(m.table).Where("status = ?", StatusPublished).Order("height asc").Limit(1).Find(&witness)
 		if dbTx.Error != nil {
 			return nil, types.DbErrSqlOperation
@@ -91,7 +90,7 @@ func (m *defaultBlockWitnessModel) GetBlockWitnessByMode(mode int64) (witness *B
 			return nil, types.DbErrNotFound
 		}
 		return witness, nil
-	case prove.ComMode:
+	case types.ComMode:
 		dbTx := m.DB.Table(m.table).Where("status <= ?", StatusReceived).Order("height asc").Limit(1).Find(&witness)
 		if dbTx.Error != nil {
 			return nil, types.DbErrSqlOperation

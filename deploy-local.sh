@@ -18,7 +18,7 @@ pm2 delete all
 docker kill $(docker ps -q)
 docker rm $(docker ps -a -q)
 docker run -d --name zkbasredis -p 6379:6379 redis
-docker run --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=Zkbas@123 -e POSTGRES_USER=postgres -e POSTGRES_DB=zkbas -d postgres
+docker run --name postgres -p 5432:5432 -e PGDATA=/var/lib/postgresql/pgdata  -e POSTGRES_PASSWORD=Zkbas@123 -e POSTGRES_USER=postgres -e POSTGRES_DB=zkbas -d postgres
 
 
 echo '1. basic config and git clone repos'
