@@ -365,7 +365,7 @@ func (s *StateDB) PrepareAccountsAndAssets(accounts []int64, assets []int64) err
 			redisAccount, err := s.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex), account)
 			if err == nil && redisAccount != nil {
 				formatAccount, err := chain.ToFormatAccountInfo(account)
-				if err != nil {
+				if err == nil {
 					s.AccountMap[accountIndex] = formatAccount
 				}
 			}

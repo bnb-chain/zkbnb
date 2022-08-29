@@ -46,7 +46,7 @@ func (f *fetcher) GetLatestAccount(accountIndex int64) (*types.AccountInfo, erro
 	redisAccount, err := f.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex), account)
 	if err == nil && redisAccount != nil {
 		fa, err = chain.ToFormatAccountInfo(account)
-		if err != nil {
+		if err == nil {
 			return fa, nil
 		}
 	} else {
