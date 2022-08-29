@@ -2,7 +2,6 @@ package state
 
 import (
 	"context"
-
 	"github.com/bnb-chain/zkbas/common/chain"
 	accdao "github.com/bnb-chain/zkbas/dao/account"
 	"github.com/bnb-chain/zkbas/dao/dbcache"
@@ -41,16 +40,21 @@ type fetcher struct {
 }
 
 func (f *fetcher) GetLatestAccount(accountIndex int64) (*types.AccountInfo, error) {
-	fa := &types.AccountInfo{}
+	var fa *types.AccountInfo
+	account := &accdao.Account{}
 
-	redisAccount, err := f.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex), fa)
+	redisAccount, err := f.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex), account)
 	if err == nil && redisAccount != nil {
+		fa, err = chain.ToFormatAccountInfo(account)
+		if err != nil {
+			return fa, nil
+		}
 	} else {
-		account, err := f.accountModel.GetAccountByIndex(accountIndex)
+		dbAccount, err := f.accountModel.GetAccountByIndex(accountIndex)
 		if err != nil {
 			return nil, err
 		}
-		fa, err = chain.ToFormatAccountInfo(account)
+		fa, err = chain.ToFormatAccountInfo(dbAccount)
 		if err != nil {
 			return nil, err
 		}
