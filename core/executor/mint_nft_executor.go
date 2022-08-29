@@ -177,6 +177,8 @@ func (e *MintNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
+	e.tx.NftIndex = e.txInfo.NftIndex
+
 	return e.BaseExecutor.GetExecutedTx()
 }
 
