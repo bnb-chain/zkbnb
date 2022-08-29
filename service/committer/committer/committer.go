@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	MaxCommitterInterval = 1
+	MaxCommitterInterval = 60 * 1
 )
 
 type Config struct {
