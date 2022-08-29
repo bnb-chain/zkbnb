@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -24,11 +23,9 @@ import (
 )
 
 type ServiceContext struct {
-	Config      config.Config
-	Conn        sqlx.SqlConn
-	GormPointer *gorm.DB
-	RedisCache  dbcache.Cache
-	MemCache    *cache.MemCache
+	Config     config.Config
+	RedisCache dbcache.Cache
+	MemCache   *cache.MemCache
 
 	MempoolModel          mempool.MempoolModel
 	AccountModel          account.AccountModel
@@ -52,34 +49,31 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	if err != nil {
 		logx.Must(err)
 	}
-	conn := sqlx.NewSqlConn("postgres", c.Postgres.DataSource)
 	redisCache := dbcache.NewRedisCache(c.CacheRedis[0].Host, c.CacheRedis[0].Pass, 15*time.Minute)
 
-	mempoolModel := mempool.NewMempoolModel(conn, c.CacheRedis, gormPointer)
-	accountModel := account.NewAccountModel(conn, c.CacheRedis, gormPointer)
-	liquidityModel := liquidity.NewLiquidityModel(conn, c.CacheRedis, gormPointer)
-	nftModel := nft.NewL2NftModel(conn, c.CacheRedis, gormPointer)
-	assetModel := asset.NewAssetModel(conn, c.CacheRedis, gormPointer)
+	mempoolModel := mempool.NewMempoolModel(gormPointer)
+	accountModel := account.NewAccountModel(gormPointer)
+	liquidityModel := liquidity.NewLiquidityModel(gormPointer)
+	nftModel := nft.NewL2NftModel(gormPointer)
+	assetModel := asset.NewAssetModel(gormPointer)
 	memCache := cache.NewMemCache(accountModel, assetModel, c.MemCache.AccountExpiration, c.MemCache.BlockExpiration,
 		c.MemCache.TxExpiration, c.MemCache.AssetExpiration, c.MemCache.PriceExpiration)
 	return &ServiceContext{
 		Config:                c,
-		Conn:                  conn,
-		GormPointer:           gormPointer,
 		RedisCache:            redisCache,
 		MemCache:              memCache,
 		MempoolModel:          mempoolModel,
 		AccountModel:          accountModel,
-		AccountHistoryModel:   account.NewAccountHistoryModel(conn, c.CacheRedis, gormPointer),
-		TxModel:               tx.NewTxModel(conn, c.CacheRedis, gormPointer),
-		TxDetailModel:         tx.NewTxDetailModel(conn, c.CacheRedis, gormPointer),
-		FailTxModel:           tx.NewFailTxModel(conn, c.CacheRedis, gormPointer),
+		AccountHistoryModel:   account.NewAccountHistoryModel(gormPointer),
+		TxModel:               tx.NewTxModel(gormPointer),
+		TxDetailModel:         tx.NewTxDetailModel(gormPointer),
+		FailTxModel:           tx.NewFailTxModel(gormPointer),
 		LiquidityModel:        liquidityModel,
-		LiquidityHistoryModel: liquidity.NewLiquidityHistoryModel(conn, c.CacheRedis, gormPointer),
-		BlockModel:            block.NewBlockModel(conn, c.CacheRedis, gormPointer),
+		LiquidityHistoryModel: liquidity.NewLiquidityHistoryModel(gormPointer),
+		BlockModel:            block.NewBlockModel(gormPointer),
 		NftModel:              nftModel,
 		AssetModel:            assetModel,
-		SysConfigModel:        sysconfig.NewSysConfigModel(conn, c.CacheRedis, gormPointer),
+		SysConfigModel:        sysconfig.NewSysConfigModel(gormPointer),
 
 		PriceFetcher: price.NewFetcher(memCache, c.CoinMarketCap.Url, c.CoinMarketCap.Token),
 		StateFetcher: state.NewFetcher(redisCache, accountModel, liquidityModel, nftModel),

@@ -18,22 +18,18 @@
 package prove
 
 import (
-	"github.com/zeromicro/go-zero/core/logx"
-
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/bnb-chain/zkbas/types"
 )
 
-func (w *WitnessHelper) constructFullExitCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*CryptoTx, error) {
+func (w *WitnessHelper) constructFullExitTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseFullExitTxInfo(oTx.TxInfo)
 	if err != nil {
-		logx.Errorf("unable to parse register zns tx info:%s", err.Error())
 		return nil, err
 	}
 	cryptoTxInfo, err := toCryptoFullExitTx(txInfo)
 	if err != nil {
-		logx.Errorf("unable to convert to crypto register zns tx: %s", err.Error())
 		return nil, err
 	}
 	cryptoTx.FullExitTxInfo = cryptoTxInfo

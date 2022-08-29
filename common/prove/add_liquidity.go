@@ -19,63 +19,53 @@ package prove
 
 import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
-	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/types"
 )
 
-func (w *WitnessHelper) constructAddLiquidityCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*CryptoTx, error) {
+func (w *WitnessHelper) constructAddLiquidityTxWitness(witness *TxWitness, oTx *Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseAddLiquidityTxInfo(oTx.TxInfo)
 	if err != nil {
-		logx.Errorf("unable to parse add liquidity tx info:%s", err.Error())
 		return nil, err
 	}
 	cryptoTxInfo, err := toCryptoAddLiquidityTx(txInfo)
 	if err != nil {
-		logx.Errorf("unable to convert to crypto add liquidity tx: %s", err.Error())
 		return nil, err
 	}
-	cryptoTx.AddLiquidityTxInfo = cryptoTxInfo
-	cryptoTx.ExpiredAt = txInfo.ExpiredAt
-	cryptoTx.Signature = new(eddsa.Signature)
-	_, err = cryptoTx.Signature.SetBytes(txInfo.Sig)
+	witness.AddLiquidityTxInfo = cryptoTxInfo
+	witness.ExpiredAt = txInfo.ExpiredAt
+	witness.Signature = new(eddsa.Signature)
+	_, err = witness.Signature.SetBytes(txInfo.Sig)
 	if err != nil {
-		logx.Errorf("invalid sig bytes: %s", err.Error())
 		return nil, err
 	}
-	return cryptoTx, nil
+	return witness, nil
 }
 
 func toCryptoAddLiquidityTx(txInfo *types.AddLiquidityTxInfo) (info *CryptoAddLiquidityTx, err error) {
 	packedAAmount, err := common.ToPackedAmount(txInfo.AssetAAmount)
 	if err != nil {
-		logx.Errorf("unable to convert to packed amount: %s", err.Error())
 		return nil, err
 	}
 	packedBAmount, err := common.ToPackedAmount(txInfo.AssetBAmount)
 	if err != nil {
-		logx.Errorf("unable to convert to packed amount: %s", err.Error())
 		return nil, err
 	}
 	packedLpAmount, err := common.ToPackedAmount(txInfo.LpAmount)
 	if err != nil {
-		logx.Errorf("unable to convert to packed amount: %s", err.Error())
 		return nil, err
 	}
 	packedTreasuryAmount, err := common.ToPackedAmount(txInfo.TreasuryAmount)
 	if err != nil {
-		logx.Errorf("unable to convert to packed amount: %s", err.Error())
 		return nil, err
 	}
 	packedKLast, err := common.ToPackedAmount(txInfo.KLast)
 	if err != nil {
-		logx.Errorf("unable to convert to packed amount: %s", err.Error())
 		return nil, err
 	}
 	packedFee, err := common.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
-		logx.Errorf("unable to convert to packed fee: %s", err.Error())
 		return nil, err
 	}
 	info = &CryptoAddLiquidityTx{

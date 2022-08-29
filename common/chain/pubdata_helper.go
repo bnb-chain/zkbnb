@@ -20,13 +20,11 @@ package chain
 import (
 	"errors"
 
-	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/zeromicro/go-zero/core/logx"
-
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	common2 "github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/types"
+	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func ParseRegisterZnsPubData(pubData []byte) (tx *types.RegisterZnsTxInfo, err error) {
@@ -40,7 +38,6 @@ func ParseRegisterZnsPubData(pubData []byte) (tx *types.RegisterZnsTxInfo, err e
 		}
 	*/
 	if len(pubData) != types.RegisterZnsPubDataSize {
-		logx.Errorf("[ParseRegisterZnsPubData] invalid size")
 		return nil, errors.New("[ParseRegisterZnsPubData] invalid size")
 	}
 	offset := 0
@@ -65,7 +62,6 @@ func ParseRegisterZnsPubData(pubData []byte) (tx *types.RegisterZnsTxInfo, err e
 
 func ParseCreatePairPubData(pubData []byte) (tx *types.CreatePairTxInfo, err error) {
 	if len(pubData) != types.CreatePairPubDataSize {
-		logx.Errorf("[ParseCreatePairPubData] invalid size")
 		return nil, errors.New("[ParseCreatePairPubData] invalid size")
 	}
 	offset := 0
@@ -90,7 +86,6 @@ func ParseCreatePairPubData(pubData []byte) (tx *types.CreatePairTxInfo, err err
 
 func ParseUpdatePairRatePubData(pubData []byte) (tx *types.UpdatePairRateTxInfo, err error) {
 	if len(pubData) != types.UpdatePairRatePubdataSize {
-		logx.Errorf("[ParseUpdatePairRatePubData] invalid size")
 		return nil, errors.New("[ParseUpdatePairRatePubData] invalid size")
 	}
 	offset := 0
@@ -120,7 +115,6 @@ func ParseDepositPubData(pubData []byte) (tx *types.DepositTxInfo, err error) {
 		}
 	*/
 	if len(pubData) != types.DepositPubDataSize {
-		logx.Errorf("[ParseDepositPubData] invalid size")
 		return nil, errors.New("[ParseDepositPubData] invalid size")
 	}
 	offset := 0
@@ -141,7 +135,6 @@ func ParseDepositPubData(pubData []byte) (tx *types.DepositTxInfo, err error) {
 
 func ParseDepositNftPubData(pubData []byte) (tx *types.DepositNftTxInfo, err error) {
 	if len(pubData) != types.DepositNftPubDataSize {
-		logx.Errorf("[ParseDepositNftPubData] invalid size")
 		return nil, errors.New("[ParseDepositNftPubData] invalid size")
 	}
 	offset := 0
@@ -172,7 +165,6 @@ func ParseDepositNftPubData(pubData []byte) (tx *types.DepositNftTxInfo, err err
 
 func ParseFullExitPubData(pubData []byte) (tx *types.FullExitTxInfo, err error) {
 	if len(pubData) != types.FullExitPubDataSize {
-		logx.Errorf("[ParseFullExitPubData] invalid size")
 		return nil, errors.New("[ParseFullExitPubData] invalid size")
 	}
 	offset := 0
@@ -193,7 +185,6 @@ func ParseFullExitPubData(pubData []byte) (tx *types.FullExitTxInfo, err error) 
 
 func ParseFullExitNftPubData(pubData []byte) (tx *legendTxTypes.FullExitNftTxInfo, err error) {
 	if len(pubData) != types.FullExitNftPubDataSize {
-		logx.Errorf("[ParseFullExitNftPubData] invalid size")
 		return nil, errors.New("[ParseFullExitNftPubData] invalid size")
 	}
 	offset := 0

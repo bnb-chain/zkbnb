@@ -2,7 +2,6 @@ package svc
 
 import (
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -22,17 +21,15 @@ type ServiceContext struct {
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
-	gormPointer, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
+	db, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
 	if err != nil {
 		logx.Errorf("gorm connect db error, err = %s", err.Error())
 	}
-	conn := sqlx.NewSqlConn("postgres", c.Postgres.DataSource)
-
 	return &ServiceContext{
 		Config:                c,
-		AccountModel:          account.NewAccountModel(conn, c.CacheRedis, gormPointer),
-		AccountHistoryModel:   account.NewAccountHistoryModel(conn, c.CacheRedis, gormPointer),
-		LiquidityHistoryModel: liquidity.NewLiquidityHistoryModel(conn, c.CacheRedis, gormPointer),
-		NftHistoryModel:       nft.NewL2NftHistoryModel(conn, c.CacheRedis, gormPointer),
+		AccountModel:          account.NewAccountModel(db),
+		AccountHistoryModel:   account.NewAccountHistoryModel(db),
+		LiquidityHistoryModel: liquidity.NewLiquidityHistoryModel(db),
+		NftHistoryModel:       nft.NewL2NftHistoryModel(db),
 	}
 }

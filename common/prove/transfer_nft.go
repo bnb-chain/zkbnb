@@ -20,21 +20,18 @@ package prove
 import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/zeromicro/go-zero/core/logx"
 
 	common2 "github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/types"
 )
 
-func (w *WitnessHelper) constructTransferNftCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*CryptoTx, error) {
+func (w *WitnessHelper) constructTransferNftTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseTransferNftTxInfo(oTx.TxInfo)
 	if err != nil {
-		logx.Errorf("unable to parse transfer nft tx info:%s", err.Error())
 		return nil, err
 	}
 	cryptoTxInfo, err := toCryptoTransferNftTx(txInfo)
 	if err != nil {
-		logx.Errorf("unable to convert to crypto transfer nft tx: %s", err.Error())
 		return nil, err
 	}
 	cryptoTx.TransferNftTxInfo = cryptoTxInfo
@@ -42,7 +39,6 @@ func (w *WitnessHelper) constructTransferNftCryptoTx(cryptoTx *CryptoTx, oTx *Tx
 	cryptoTx.Signature = new(eddsa.Signature)
 	_, err = cryptoTx.Signature.SetBytes(txInfo.Sig)
 	if err != nil {
-		logx.Errorf("invalid sig bytes: %s", err.Error())
 		return nil, err
 	}
 	return cryptoTx, nil
@@ -51,7 +47,6 @@ func (w *WitnessHelper) constructTransferNftCryptoTx(cryptoTx *CryptoTx, oTx *Tx
 func toCryptoTransferNftTx(txInfo *types.TransferNftTxInfo) (info *CryptoTransferNftTx, err error) {
 	packedFee, err := common2.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
-		logx.Errorf("unable to convert to packed fee: %s", err.Error())
 		return nil, err
 	}
 	info = &CryptoTransferNftTx{

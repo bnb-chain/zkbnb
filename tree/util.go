@@ -21,15 +21,13 @@ import (
 	"bytes"
 	"math/big"
 
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/pkg/errors"
-	"github.com/zeromicro/go-zero/core/logx"
-
 	bsmt "github.com/bnb-chain/bas-smt"
 	curve "github.com/bnb-chain/zkbas-crypto/ecc/ztwistededwards/tebn254"
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	common2 "github.com/bnb-chain/zkbas/common"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/pkg/errors"
 )
 
 func EmptyAccountNodeHash() []byte {
@@ -208,7 +206,6 @@ func ComputeAccountLeafHash(
 	buf.Write(common.FromHex(accountNameHash))
 	err = common2.PaddingPkIntoBuf(&buf, pk)
 	if err != nil {
-		logx.Errorf("[ComputeAccountAssetLeafHash] unable to write pk into buf: %s", err.Error())
 		return nil, err
 	}
 	common2.PaddingInt64IntoBuf(&buf, nonce)
@@ -229,17 +226,14 @@ func ComputeAccountAssetLeafHash(
 	var buf bytes.Buffer
 	err = common2.PaddingStringBigIntIntoBuf(&buf, balance)
 	if err != nil {
-		logx.Errorf("[ComputeAccountAssetLeafHash] invalid balance: %s", err.Error())
 		return nil, err
 	}
 	err = common2.PaddingStringBigIntIntoBuf(&buf, lpAmount)
 	if err != nil {
-		logx.Errorf("[ComputeAccountAssetLeafHash] invalid balance: %s", err.Error())
 		return nil, err
 	}
 	err = common2.PaddingStringBigIntIntoBuf(&buf, offerCanceledOrFinalized)
 	if err != nil {
-		logx.Errorf("[ComputeAccountAssetLeafHash] invalid balance: %s", err.Error())
 		return nil, err
 	}
 	hFunc.Write(buf.Bytes())
@@ -262,23 +256,19 @@ func ComputeLiquidityAssetLeafHash(
 	common2.PaddingInt64IntoBuf(&buf, assetAId)
 	err = common2.PaddingStringBigIntIntoBuf(&buf, assetA)
 	if err != nil {
-		logx.Errorf("[ComputeLiquidityAssetLeafHash] unable to write big int to buf: %s", err.Error())
 		return nil, err
 	}
 	common2.PaddingInt64IntoBuf(&buf, assetBId)
 	err = common2.PaddingStringBigIntIntoBuf(&buf, assetB)
 	if err != nil {
-		logx.Errorf("[ComputeLiquidityAssetLeafHash] unable to write big int to buf: %s", err.Error())
 		return nil, err
 	}
 	err = common2.PaddingStringBigIntIntoBuf(&buf, lpAmount)
 	if err != nil {
-		logx.Errorf("[ComputeLiquidityAssetLeafHash] unable to write big int to buf: %s", err.Error())
 		return nil, err
 	}
 	err = common2.PaddingStringBigIntIntoBuf(&buf, kLast)
 	if err != nil {
-		logx.Errorf("[ComputeLiquidityAssetLeafHash] unable to write big int to buf: %s", err.Error())
 		return nil, err
 	}
 	common2.PaddingInt64IntoBuf(&buf, feeRate)
@@ -305,12 +295,10 @@ func ComputeNftAssetLeafHash(
 	buf.Write(ffmath.Mod(new(big.Int).SetBytes(common.FromHex(nftContentHash)), curve.Modulus).FillBytes(make([]byte, 32)))
 	err = common2.PaddingAddressIntoBuf(&buf, nftL1Address)
 	if err != nil {
-		logx.Errorf("[ComputeNftAssetLeafHash] unable to write address to buf: %s", err.Error())
 		return nil, err
 	}
 	err = common2.PaddingStringBigIntIntoBuf(&buf, nftL1TokenId)
 	if err != nil {
-		logx.Errorf("[ComputeNftAssetLeafHash] unable to write big int to buf: %s", err.Error())
 		return nil, err
 	}
 	common2.PaddingInt64IntoBuf(&buf, creatorTreasuryRate)

@@ -100,7 +100,7 @@ func (c *Committer) Run() {
 			tx := convertMempoolTxToTx(mempoolTx)
 			err = c.bc.ApplyTransaction(tx)
 			if err != nil {
-				logx.Errorf("Apply mempool tx (ID: ", mempoolTx.ID, ") failed: ", err)
+				logx.Errorf("apply mempool tx ID: %d failed, err %v ", mempoolTx.ID, err)
 				mempoolTx.Status = mempool.FailTxStatus
 				pendingDeleteMempoolTxs = append(pendingDeleteMempoolTxs, mempoolTx)
 				continue

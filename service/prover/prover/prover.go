@@ -10,7 +10,6 @@ import (
 	"github.com/consensys/gnark/frontend/cs/r1cs"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -44,17 +43,16 @@ func WithRedis(redisType string, redisPass string) redis.Option {
 	}
 }
 func NewProver(c config.Config) *Prover {
-	gormPointer, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
+	db, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
 	if err != nil {
 		logx.Errorf("gorm connect db error, err = %s", err.Error())
 	}
-	conn := sqlx.NewSqlConn("postgres", c.Postgres.DataSource)
 	redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
 	prover := &Prover{
 		Config:            c,
 		RedisConn:         redisConn,
-		BlockWitnessModel: blockwitness.NewBlockWitnessModel(conn, c.CacheRedis, gormPointer),
-		ProofModel:        proof.NewProofModel(gormPointer),
+		BlockWitnessModel: blockwitness.NewBlockWitnessModel(db),
+		ProofModel:        proof.NewProofModel(db),
 	}
 
 	prover.OptionalBlockSizes = c.BlockConfig.OptionalBlockSizes

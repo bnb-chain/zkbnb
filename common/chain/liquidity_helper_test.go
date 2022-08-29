@@ -18,10 +18,10 @@
 package chain
 
 import (
-	"fmt"
-	"log"
 	"math/big"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/bnb-chain/zkbas/types"
 )
@@ -37,7 +37,8 @@ func TestComputeDeltaY(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(deltaY.String(), assetId)
+	assert.Equal(t, deltaY.String(), "1004")
+	assert.Equal(t, assetId, int64(2))
 }
 
 func TestComputeRemoveLiquidityAmount(t *testing.T) {
@@ -57,8 +58,8 @@ func TestComputeRemoveLiquidityAmount(t *testing.T) {
 		liquidityInfo,
 		big.NewInt(100),
 	)
-	fmt.Println(aAmount.String())
-	fmt.Println(bAmount.String())
+	assert.Equal(t, aAmount.Int64(), int64(99))
+	assert.Equal(t, bAmount.Int64(), int64(100))
 }
 
 func TestComputeInputPrice(t *testing.T) {
@@ -68,16 +69,7 @@ func TestComputeInputPrice(t *testing.T) {
 		poolA, poolB,
 		big.NewInt(500), 30,
 	)
-	fmt.Println(deltaY.String())
-}
-
-func TestComputeInputPriceS(t *testing.T) {
-	X := 1000
-	Y := 1000
-	inputX := 500
-
-	output := (9970 * inputX * Y) / (10000*X + 9970*inputX)
-	log.Println(output)
+	assert.Equal(t, deltaY.Int64(), int64(332))
 }
 
 func TestComputeOutputPrice(t *testing.T) {
@@ -87,5 +79,5 @@ func TestComputeOutputPrice(t *testing.T) {
 		poolA, poolB,
 		big.NewInt(500), 30,
 	)
-	fmt.Println(deltaY.String())
+	assert.Equal(t, deltaY.Int64(), int64(1004))
 }

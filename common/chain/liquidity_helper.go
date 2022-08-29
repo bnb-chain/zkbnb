@@ -21,8 +21,6 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/zeromicro/go-zero/core/logx"
-
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas-crypto/util"
 	"github.com/bnb-chain/zkbas/common"
@@ -37,7 +35,6 @@ func ComputeEmptyLpAmount(
 	lpFloat := ffmath.FloatSqrt(ffmath.IntToFloat(lpSquare))
 	lpAmount, err = common.CleanPackedAmount(ffmath.FloatToInt(lpFloat))
 	if err != nil {
-		logx.Errorf("[ComputeEmptyLpAmount] unable to compute lp amount: %s", err.Error())
 		return nil, err
 	}
 	return lpAmount, nil
@@ -96,7 +93,6 @@ func ComputeDelta(
 			}
 			return delta, assetAId, nil
 		} else {
-			logx.Errorf("[ComputeDelta] invalid asset id")
 			return types.ZeroBigInt, 0, errors.New("[ComputeDelta]: invalid asset id")
 		}
 	} else {
@@ -113,7 +109,6 @@ func ComputeDelta(
 			}
 			return delta, assetAId, nil
 		} else {
-			logx.Errorf("[ComputeDelta] invalid asset id")
 			return types.ZeroBigInt, 0, errors.New("[ComputeDelta]: invalid asset id")
 		}
 	}

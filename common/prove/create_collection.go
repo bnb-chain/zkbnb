@@ -19,21 +19,18 @@ package prove
 
 import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
-	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/types"
 )
 
-func (w *WitnessHelper) constructCreateCollectionCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*CryptoTx, error) {
+func (w *WitnessHelper) constructCreateCollectionTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseCreateCollectionTxInfo(oTx.TxInfo)
 	if err != nil {
-		logx.Errorf("unable to parse create collection tx info:%s", err.Error())
 		return nil, err
 	}
 	cryptoTxInfo, err := toCryptoCreateCollectionTx(txInfo)
 	if err != nil {
-		logx.Errorf("unable to convert to crypto create collection tx: %s", err.Error())
 		return nil, err
 	}
 	cryptoTx.CreateCollectionTxInfo = cryptoTxInfo
@@ -41,7 +38,6 @@ func (w *WitnessHelper) constructCreateCollectionCryptoTx(cryptoTx *CryptoTx, oT
 	cryptoTx.Signature = new(eddsa.Signature)
 	_, err = cryptoTx.Signature.SetBytes(txInfo.Sig)
 	if err != nil {
-		logx.Errorf("invalid sig bytes: %s", err.Error())
 		return nil, err
 	}
 	return cryptoTx, nil
@@ -50,7 +46,6 @@ func (w *WitnessHelper) constructCreateCollectionCryptoTx(cryptoTx *CryptoTx, oT
 func toCryptoCreateCollectionTx(txInfo *types.CreateCollectionTxInfo) (info *CryptoCreateCollectionTx, err error) {
 	packedFee, err := common.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
-		logx.Errorf("unable to convert to packed fee: %s", err.Error())
 		return nil, err
 	}
 	info = &CryptoCreateCollectionTx{

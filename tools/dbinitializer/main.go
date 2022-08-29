@@ -21,16 +21,12 @@ import (
 	"encoding/json"
 	"flag"
 
-	"github.com/zeromicro/go-zero/core/stores/cache"
-	"github.com/zeromicro/go-zero/core/stores/redis"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/dao/account"
 	"github.com/bnb-chain/zkbas/dao/asset"
@@ -51,18 +47,8 @@ import (
 )
 
 var (
-	dsn        = "host=localhost user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable"
-	DB, _      = gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	DbInfo, _  = DB.DB()
-	Connection = sqlx.NewSqlConnFromDB(DbInfo)
-	CacheConf  = []cache.NodeConf{{
-		RedisConf: redis.RedisConf{
-			Host: "127.0.0.1:6379",
-			Type: "node",
-			Pass: "myredis",
-		},
-		Weight: 10,
-	}}
+	dsn   = "host=localhost user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable"
+	DB, _ = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 )
 
 var configFile = flag.String("f", "./contractaddr.yaml", "the config file")
@@ -153,25 +139,25 @@ func initAssetsInfo() []*asset.Asset {
 }
 
 var (
-	sysConfigModel        = sysconfig.NewSysConfigModel(Connection, CacheConf, DB)
-	accountModel          = account.NewAccountModel(Connection, CacheConf, DB)
-	accountHistoryModel   = account.NewAccountHistoryModel(Connection, CacheConf, DB)
-	assetModel            = asset.NewAssetModel(Connection, CacheConf, DB)
-	mempoolModel          = mempool.NewMempoolModel(Connection, CacheConf, DB)
-	failTxModel           = tx.NewFailTxModel(Connection, CacheConf, DB)
-	txDetailModel         = tx.NewTxDetailModel(Connection, CacheConf, DB)
-	txModel               = tx.NewTxModel(Connection, CacheConf, DB)
-	blockModel            = block.NewBlockModel(Connection, CacheConf, DB)
-	compressedBlockModel  = compressedblock.NewCompressedBlockModel(Connection, CacheConf, DB)
-	blockWitnessModel     = blockwitness.NewBlockWitnessModel(Connection, CacheConf, DB)
+	sysConfigModel        = sysconfig.NewSysConfigModel(DB)
+	accountModel          = account.NewAccountModel(DB)
+	accountHistoryModel   = account.NewAccountHistoryModel(DB)
+	assetModel            = asset.NewAssetModel(DB)
+	mempoolModel          = mempool.NewMempoolModel(DB)
+	failTxModel           = tx.NewFailTxModel(DB)
+	txDetailModel         = tx.NewTxDetailModel(DB)
+	txModel               = tx.NewTxModel(DB)
+	blockModel            = block.NewBlockModel(DB)
+	compressedBlockModel  = compressedblock.NewCompressedBlockModel(DB)
+	blockWitnessModel     = blockwitness.NewBlockWitnessModel(DB)
 	proofModel            = proof.NewProofModel(DB)
-	l1SyncedBlockModel    = l1syncedblock.NewL1SyncedBlockModel(Connection, CacheConf, DB)
-	priorityRequestModel  = priorityrequest.NewPriorityRequestModel(Connection, CacheConf, DB)
-	l1RollupTModel        = l1rolluptx.NewL1RollupTxModel(Connection, CacheConf, DB)
-	liquidityModel        = liquidity.NewLiquidityModel(Connection, CacheConf, DB)
-	liquidityHistoryModel = liquidity.NewLiquidityHistoryModel(Connection, CacheConf, DB)
-	nftModel              = nft.NewL2NftModel(Connection, CacheConf, DB)
-	nftHistoryModel       = nft.NewL2NftHistoryModel(Connection, CacheConf, DB)
+	l1SyncedBlockModel    = l1syncedblock.NewL1SyncedBlockModel(DB)
+	priorityRequestModel  = priorityrequest.NewPriorityRequestModel(DB)
+	l1RollupTModel        = l1rolluptx.NewL1RollupTxModel(DB)
+	liquidityModel        = liquidity.NewLiquidityModel(DB)
+	liquidityHistoryModel = liquidity.NewLiquidityHistoryModel(DB)
+	nftModel              = nft.NewL2NftModel(DB)
+	nftHistoryModel       = nft.NewL2NftHistoryModel(DB)
 )
 
 func dropTables() {

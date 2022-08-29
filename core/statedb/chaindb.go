@@ -1,8 +1,6 @@
 package statedb
 
 import (
-	"github.com/zeromicro/go-zero/core/stores/cache"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/dao/account"
@@ -31,19 +29,19 @@ type ChainDB struct {
 	MempoolModel          mempool.MempoolModel
 }
 
-func NewChainDB(conn sqlx.SqlConn, config cache.CacheConf, gormPointer *gorm.DB) *ChainDB {
+func NewChainDB(db *gorm.DB) *ChainDB {
 	return &ChainDB{
-		BlockModel:    block.NewBlockModel(conn, config, gormPointer),
-		TxModel:       tx.NewTxModel(conn, config, gormPointer),
-		TxDetailModel: tx.NewTxDetailModel(conn, config, gormPointer),
+		BlockModel:    block.NewBlockModel(db),
+		TxModel:       tx.NewTxModel(db),
+		TxDetailModel: tx.NewTxDetailModel(db),
 
-		AccountModel:          account.NewAccountModel(conn, config, gormPointer),
-		AccountHistoryModel:   account.NewAccountHistoryModel(conn, config, gormPointer),
-		L2AssetInfoModel:      asset.NewAssetModel(conn, config, gormPointer),
-		LiquidityModel:        liquidity.NewLiquidityModel(conn, config, gormPointer),
-		LiquidityHistoryModel: liquidity.NewLiquidityHistoryModel(conn, config, gormPointer),
-		L2NftModel:            nft.NewL2NftModel(conn, config, gormPointer),
-		L2NftHistoryModel:     nft.NewL2NftHistoryModel(conn, config, gormPointer),
-		MempoolModel:          mempool.NewMempoolModel(conn, config, gormPointer),
+		AccountModel:          account.NewAccountModel(db),
+		AccountHistoryModel:   account.NewAccountHistoryModel(db),
+		L2AssetInfoModel:      asset.NewAssetModel(db),
+		LiquidityModel:        liquidity.NewLiquidityModel(db),
+		LiquidityHistoryModel: liquidity.NewLiquidityHistoryModel(db),
+		L2NftModel:            nft.NewL2NftModel(db),
+		L2NftHistoryModel:     nft.NewL2NftHistoryModel(db),
+		MempoolModel:          mempool.NewMempoolModel(db),
 	}
 }

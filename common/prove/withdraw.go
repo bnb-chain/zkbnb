@@ -21,22 +21,19 @@ import (
 	"math/big"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
-	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/types"
 )
 
-func (w *WitnessHelper) constructWithdrawCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*CryptoTx, error) {
+func (w *WitnessHelper) constructWithdrawTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseWithdrawTxInfo(oTx.TxInfo)
 	if err != nil {
-		logx.Errorf("unable to parse withdraw tx info:%s", err.Error())
 		return nil, err
 	}
 	cryptoTxInfo, err := toCryptoWithdrawTx(txInfo)
 	if err != nil {
-		logx.Errorf("unable to convert to crypto withdraw tx: %s", err.Error())
 		return nil, err
 	}
 	cryptoTx.WithdrawTxInfo = cryptoTxInfo
@@ -44,7 +41,6 @@ func (w *WitnessHelper) constructWithdrawCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (
 	cryptoTx.Signature = new(eddsa.Signature)
 	_, err = cryptoTx.Signature.SetBytes(txInfo.Sig)
 	if err != nil {
-		logx.Errorf("invalid sig bytes: %s", err.Error())
 		return nil, err
 	}
 	return cryptoTx, nil
@@ -53,7 +49,6 @@ func (w *WitnessHelper) constructWithdrawCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (
 func toCryptoWithdrawTx(txInfo *types.WithdrawTxInfo) (info *CryptoWithdrawTx, err error) {
 	packedFee, err := common.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
-		logx.Errorf("unable to convert to packed fee: %s", err.Error())
 		return nil, err
 	}
 	addrBytes := legendTxTypes.PaddingAddressToBytes32(txInfo.ToAddress)

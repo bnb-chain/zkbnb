@@ -20,9 +20,6 @@ package mempool
 import (
 	"errors"
 
-	"github.com/zeromicro/go-zero/core/stores/cache"
-	"github.com/zeromicro/go-zero/core/stores/sqlc"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -55,7 +52,6 @@ type (
 	}
 
 	defaultMempoolModel struct {
-		sqlc.CachedConn
 		table string
 		DB    *gorm.DB
 	}
@@ -82,11 +78,10 @@ type (
 	}
 )
 
-func NewMempoolModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) MempoolModel {
+func NewMempoolModel(db *gorm.DB) MempoolModel {
 	return &defaultMempoolModel{
-		CachedConn: sqlc.NewConn(conn, c),
-		table:      MempoolTableName,
-		DB:         db,
+		table: MempoolTableName,
+		DB:    db,
 	}
 }
 

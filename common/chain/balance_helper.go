@@ -20,8 +20,6 @@ package chain
 import (
 	"errors"
 
-	"github.com/zeromicro/go-zero/core/logx"
-
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
 	"github.com/bnb-chain/zkbas/types"
 )
@@ -31,12 +29,10 @@ func ComputeNewBalance(assetType int64, balance string, balanceDelta string) (ne
 	case types.FungibleAssetType:
 		assetInfo, err := types.ParseAccountAsset(balance)
 		if err != nil {
-			logx.Errorf("[ComputeNewBalance] unable to parse account asset: %s", err.Error())
 			return "", err
 		}
 		assetDelta, err := types.ParseAccountAsset(balanceDelta)
 		if err != nil {
-			logx.Errorf("[ComputeNewBalance] unable to parse account asset: %s", err.Error())
 			return "", err
 		}
 		assetInfo.Balance = ffmath.Add(assetInfo.Balance, assetDelta.Balance)
@@ -53,12 +49,10 @@ func ComputeNewBalance(assetType int64, balance string, balanceDelta string) (ne
 		// balance: LiquidityInfo
 		liquidityInfo, err := types.ParseLiquidityInfo(balance)
 		if err != nil {
-			logx.Errorf("[ComputeNewBalance] unable to parse liquidity info: %s", err.Error())
 			return "", err
 		}
 		deltaLiquidity, err := types.ParseLiquidityInfo(balanceDelta)
 		if err != nil {
-			logx.Errorf("[ComputeNewBalance] unable to parse liquidity info: %s", err.Error())
 			return "", err
 		}
 		liquidityInfo.AssetAId = deltaLiquidity.AssetAId

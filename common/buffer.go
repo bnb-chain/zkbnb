@@ -23,8 +23,6 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/zeromicro/go-zero/core/logx"
-
 	"github.com/bnb-chain/zkbas-crypto/zero/twistededwards/tebn254/zero"
 	"github.com/bnb-chain/zkbas/types"
 )
@@ -32,7 +30,6 @@ import (
 func PaddingStringBigIntIntoBuf(buf *bytes.Buffer, aStr string) error {
 	a, isValid := new(big.Int).SetString(aStr, 10)
 	if !isValid {
-		logx.Errorf("[PaddingStringBigIntIntoBuf] invalid string")
 		return errors.New("[PaddingStringBigIntIntoBuf] invalid string")
 	}
 	buf.Write(a.FillBytes(make([]byte, zero.PointSize)))
@@ -46,7 +43,6 @@ func PaddingAddressIntoBuf(buf *bytes.Buffer, address string) (err error) {
 	}
 	addrBytes, err := DecodeAddress(address)
 	if err != nil {
-		logx.Errorf("[PaddingAddressIntoBuf] invalid addr: %s, err: %s", address, err.Error())
 		return err
 	}
 	buf.Write(new(big.Int).SetBytes(addrBytes).FillBytes(make([]byte, zero.PointSize)))
@@ -62,7 +58,6 @@ func DecodeAddress(addr string) ([]byte, error) {
 		return nil, err
 	}
 	if len(addrBytes) != types.AddressSize {
-		logx.Errorf("[DecodeAddress] invalid address: %s, err: %s", addr, err.Error())
 		return nil, errors.New("[DecodeAddress] invalid address")
 	}
 	return addrBytes, nil
@@ -75,7 +70,6 @@ func PaddingInt64IntoBuf(buf *bytes.Buffer, a int64) {
 func PaddingPkIntoBuf(buf *bytes.Buffer, pkStr string) (err error) {
 	pk, err := ParsePubKey(pkStr)
 	if err != nil {
-		logx.Errorf("[WriteEncIntoBuf] unable to parse pk: %s", err.Error())
 		return err
 	}
 	writePointIntoBuf(buf, &pk.A)

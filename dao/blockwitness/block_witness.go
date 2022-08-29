@@ -21,9 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/zeromicro/go-zero/core/stores/cache"
-	"github.com/zeromicro/go-zero/core/stores/sqlc"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/common/prove"
@@ -42,7 +39,6 @@ type (
 	}
 
 	defaultBlockWitnessModel struct {
-		sqlc.CachedConn
 		table string
 		DB    *gorm.DB
 	}
@@ -55,11 +51,10 @@ type (
 	}
 )
 
-func NewBlockWitnessModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) BlockWitnessModel {
+func NewBlockWitnessModel(db *gorm.DB) BlockWitnessModel {
 	return &defaultBlockWitnessModel{
-		CachedConn: sqlc.NewConn(conn, c),
-		table:      TableName,
-		DB:         db,
+		table: TableName,
+		DB:    db,
 	}
 }
 

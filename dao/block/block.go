@@ -21,9 +21,6 @@ import (
 	"errors"
 	"sort"
 
-	"github.com/zeromicro/go-zero/core/stores/cache"
-	"github.com/zeromicro/go-zero/core/stores/sqlc"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/dao/account"
@@ -68,7 +65,6 @@ type (
 	}
 
 	defaultBlockModel struct {
-		sqlc.CachedConn
 		table string
 		DB    *gorm.DB
 	}
@@ -107,11 +103,10 @@ type (
 	}
 )
 
-func NewBlockModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) BlockModel {
+func NewBlockModel(db *gorm.DB) BlockModel {
 	return &defaultBlockModel{
-		CachedConn: sqlc.NewConn(conn, c),
-		table:      BlockTableName,
-		DB:         db,
+		table: BlockTableName,
+		DB:    db,
 	}
 }
 

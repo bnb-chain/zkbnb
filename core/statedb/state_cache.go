@@ -4,7 +4,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
-
 	"github.com/bnb-chain/zkbas/dao/tx"
 	"github.com/bnb-chain/zkbas/types"
 )

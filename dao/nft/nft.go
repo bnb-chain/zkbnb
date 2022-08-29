@@ -18,9 +18,6 @@
 package nft
 
 import (
-	"github.com/zeromicro/go-zero/core/stores/cache"
-	"github.com/zeromicro/go-zero/core/stores/sqlc"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -40,7 +37,6 @@ type (
 		GetAccountNftTotalCount(accountIndex int64) (int64, error)
 	}
 	defaultL2NftModel struct {
-		sqlc.CachedConn
 		table string
 		DB    *gorm.DB
 	}
@@ -58,11 +54,10 @@ type (
 	}
 )
 
-func NewL2NftModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) L2NftModel {
+func NewL2NftModel(db *gorm.DB) L2NftModel {
 	return &defaultL2NftModel{
-		CachedConn: sqlc.NewConn(conn, c),
-		table:      L2NftTableName,
-		DB:         db,
+		table: L2NftTableName,
+		DB:    db,
 	}
 }
 

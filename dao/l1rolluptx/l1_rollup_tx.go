@@ -21,9 +21,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/zeromicro/go-zero/core/stores/cache"
-	"github.com/zeromicro/go-zero/core/stores/sqlc"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/dao/proof"
@@ -56,7 +53,6 @@ type (
 	}
 
 	defaultL1RollupTxModel struct {
-		sqlc.CachedConn
 		table string
 		DB    *gorm.DB
 	}
@@ -78,11 +74,10 @@ func (*L1RollupTx) TableName() string {
 	return TableName
 }
 
-func NewL1RollupTxModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) L1RollupTxModel {
+func NewL1RollupTxModel(db *gorm.DB) L1RollupTxModel {
 	return &defaultL1RollupTxModel{
-		CachedConn: sqlc.NewConn(conn, c),
-		table:      TableName,
-		DB:         db,
+		table: TableName,
+		DB:    db,
 	}
 }
 

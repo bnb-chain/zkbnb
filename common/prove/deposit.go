@@ -18,22 +18,18 @@
 package prove
 
 import (
-	"github.com/zeromicro/go-zero/core/logx"
-
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/bnb-chain/zkbas/types"
 )
 
-func (w *WitnessHelper) constructDepositCryptoTx(cryptoTx *CryptoTx, oTx *Tx) (*CryptoTx, error) {
+func (w *WitnessHelper) constructDepositTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseDepositTxInfo(oTx.TxInfo)
 	if err != nil {
-		logx.Errorf("unable to parse deposit tx info:%s", err.Error())
 		return nil, err
 	}
 	cryptoTxInfo, err := toCryptoDepositTx(txInfo)
 	if err != nil {
-		logx.Errorf("unable to convert to crypto deposit tx: %s", err.Error())
 		return nil, err
 	}
 	cryptoTx.DepositTxInfo = cryptoTxInfo

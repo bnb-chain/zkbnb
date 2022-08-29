@@ -99,7 +99,7 @@ func (e *SwapExecutor) VerifyInputs() error {
 	liquidityModel := bc.StateDB().LiquidityMap[txInfo.PairIndex]
 	liquidityInfo, err := constructLiquidityInfo(liquidityModel)
 	if err != nil {
-		logx.Errorf("construct liquidity info error, err: ", err.Error())
+		logx.Errorf("construct liquidity info error, err: %v", err)
 		return errors.New("internal error")
 	}
 	if !((liquidityModel.AssetAId == txInfo.AssetAId && liquidityModel.AssetBId == txInfo.AssetBId) ||
@@ -173,7 +173,7 @@ func (e *SwapExecutor) fillTxInfo() error {
 
 	liquidityInfo, err := constructLiquidityInfo(liquidityModel)
 	if err != nil {
-		logx.Errorf("construct liquidity info error, err: ", err.Error())
+		logx.Errorf("construct liquidity info error, err: %v", err)
 		return err
 	}
 
@@ -305,7 +305,7 @@ func (e *SwapExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	liquidityModel := e.bc.StateDB().LiquidityMap[txInfo.PairIndex]
 	liquidityInfo, err := constructLiquidityInfo(liquidityModel)
 	if err != nil {
-		logx.Errorf("construct liquidity info error, err: ", err.Error())
+		logx.Errorf("construct liquidity info error, err: %v", err)
 		return nil, err
 	}
 

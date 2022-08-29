@@ -20,8 +20,6 @@ package types
 import (
 	"encoding/json"
 	"math/big"
-
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 const (
@@ -62,7 +60,6 @@ func ConstructAccountAsset(assetId int64, balance *big.Int, lpAmount *big.Int, o
 func ParseAccountAsset(balance string) (asset *AccountAsset, err error) {
 	err = json.Unmarshal([]byte(balance), &asset)
 	if err != nil {
-		logx.Errorf("[ParseAccountAsset] unable to parse account asset")
 		return nil, JsonErrUnmarshal
 	}
 	return asset, nil

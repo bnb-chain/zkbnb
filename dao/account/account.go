@@ -18,9 +18,6 @@
 package account
 
 import (
-	"github.com/zeromicro/go-zero/core/stores/cache"
-	"github.com/zeromicro/go-zero/core/stores/sqlc"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -50,7 +47,6 @@ type (
 	}
 
 	defaultAccountModel struct {
-		sqlc.CachedConn
 		table string
 		DB    *gorm.DB
 	}
@@ -75,11 +71,10 @@ type (
 	}
 )
 
-func NewAccountModel(conn sqlx.SqlConn, c cache.CacheConf, db *gorm.DB) AccountModel {
+func NewAccountModel(db *gorm.DB) AccountModel {
 	return &defaultAccountModel{
-		CachedConn: sqlc.NewConn(conn, c),
-		table:      AccountTableName,
-		DB:         db,
+		table: AccountTableName,
+		DB:    db,
 	}
 }
 
