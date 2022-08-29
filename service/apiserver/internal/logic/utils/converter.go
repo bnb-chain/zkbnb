@@ -18,6 +18,7 @@ func DbtxTx(tx *tx.Tx) *types.Tx {
 		StateRoot:     tx.StateRoot,
 		NftIndex:      tx.NftIndex,
 		PairIndex:     tx.PairIndex,
+		CollectionId:  tx.CollectionId,
 		AssetId:       tx.AssetId,
 		Amount:        tx.TxAmount,
 		NativeAddress: tx.NativeAddress,
