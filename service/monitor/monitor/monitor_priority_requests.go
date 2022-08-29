@@ -119,8 +119,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 		case TxTypeDeposit:
 			txInfo, err := chain.ParseDepositPubData(common.FromHex(request.Pubdata))
 			if err != nil {
-				fmt.Errorf("unable to parse deposit pub data: %v", err)
-				return err
+				return fmt.Errorf("unable to parse deposit pub data: %v", err)
 			}
 
 			txInfoBytes, err := json.Marshal(txInfo)
