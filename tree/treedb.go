@@ -97,8 +97,8 @@ type RedisDBOption struct {
 	// Should be less than server's timeout.
 	// Default is 5 minutes. -1 disables idle timeout check.
 	IdleTimeout time.Duration `json:",optional"`
-	// Frequency of idle checks made by idle connections reaper.
-	// Default is 1 minute. -1 disables idle connections reaper,
+	// Frequency of idle checks made by idle connection reaper.
+	// Default is 1 minute. -1 disables idle connection reaper,
 	// but idle connections are still discarded by the client
 	// if IdleTimeout is set.
 	IdleCheckFrequency time.Duration `json:",optional"`
