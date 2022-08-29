@@ -20,6 +20,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
+
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -50,7 +51,7 @@ import (
 )
 
 var (
-	dsn        = "host=localhost user=postgres password=ZecreyProtocolDB@123 dbname=zkbas port=5432 sslmode=disable"
+	dsn        = "host=localhost user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable"
 	DB, _      = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	DbInfo, _  = DB.DB()
 	Connection = sqlx.NewSqlConnFromDB(DbInfo)
