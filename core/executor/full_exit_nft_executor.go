@@ -158,17 +158,6 @@ func (e *FullExitNftExecutor) ApplyTransaction() error {
 
 	stateCache := e.bc.StateDB()
 	stateCache.PendingUpdateNftIndexMap[txInfo.NftIndex] = statedb.StateCachePending
-	stateCache.PendingNewNftWithdrawHistory = append(stateCache.PendingNewNftWithdrawHistory, &nft.L2NftWithdrawHistory{
-		NftIndex:            bc.StateDB().NftMap[txInfo.NftIndex].NftIndex,
-		CreatorAccountIndex: bc.StateDB().NftMap[txInfo.NftIndex].CreatorAccountIndex,
-		OwnerAccountIndex:   bc.StateDB().NftMap[txInfo.NftIndex].OwnerAccountIndex,
-		NftContentHash:      bc.StateDB().NftMap[txInfo.NftIndex].NftContentHash,
-		NftL1Address:        bc.StateDB().NftMap[txInfo.NftIndex].NftL1Address,
-		NftL1TokenId:        bc.StateDB().NftMap[txInfo.NftIndex].NftL1TokenId,
-		CreatorTreasuryRate: bc.StateDB().NftMap[txInfo.NftIndex].CreatorTreasuryRate,
-		CollectionId:        bc.StateDB().NftMap[txInfo.NftIndex].CollectionId,
-	})
-
 	return nil
 }
 

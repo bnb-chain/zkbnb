@@ -15,7 +15,6 @@ import (
 	common2 "github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/core/statedb"
 	"github.com/bnb-chain/zkbas/dao/mempool"
-	"github.com/bnb-chain/zkbas/dao/nft"
 	"github.com/bnb-chain/zkbas/dao/tx"
 	"github.com/bnb-chain/zkbas/types"
 )
@@ -209,41 +208,6 @@ func (e *AtomicMatchExecutor) ApplyTransaction() error {
 	stateCache.PendingUpdateAccountIndexMap[matchNft.CreatorAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateNftIndexMap[txInfo.SellOffer.NftIndex] = statedb.StateCachePending
-
-	stateCache.PendingNewOffer = append(stateCache.PendingNewOffer, &nft.Offer{
-		OfferType:    txInfo.BuyOffer.Type,
-		OfferId:      txInfo.BuyOffer.OfferId,
-		AccountIndex: txInfo.BuyOffer.AccountIndex,
-		NftIndex:     txInfo.BuyOffer.NftIndex,
-		AssetId:      txInfo.BuyOffer.AssetId,
-		AssetAmount:  txInfo.BuyOffer.AssetAmount.String(),
-		ListedAt:     txInfo.BuyOffer.ListedAt,
-		ExpiredAt:    txInfo.BuyOffer.ExpiredAt,
-		TreasuryRate: txInfo.BuyOffer.TreasuryRate,
-		Sig:          common.Bytes2Hex(txInfo.BuyOffer.Sig),
-		Status:       nft.OfferFinishedStatus,
-	})
-	stateCache.PendingNewOffer = append(stateCache.PendingNewOffer, &nft.Offer{
-		OfferType:    txInfo.SellOffer.Type,
-		OfferId:      txInfo.SellOffer.OfferId,
-		AccountIndex: txInfo.SellOffer.AccountIndex,
-		NftIndex:     txInfo.SellOffer.NftIndex,
-		AssetId:      txInfo.SellOffer.AssetId,
-		AssetAmount:  txInfo.SellOffer.AssetAmount.String(),
-		ListedAt:     txInfo.SellOffer.ListedAt,
-		ExpiredAt:    txInfo.SellOffer.ExpiredAt,
-		TreasuryRate: txInfo.SellOffer.TreasuryRate,
-		Sig:          common.Bytes2Hex(txInfo.SellOffer.Sig),
-		Status:       nft.OfferFinishedStatus,
-	})
-
-	stateCache.PendingNewL2NftExchange = append(stateCache.PendingNewL2NftExchange, &nft.L2NftExchange{
-		BuyerAccountIndex: txInfo.BuyOffer.AccountIndex,
-		OwnerAccountIndex: txInfo.SellOffer.AccountIndex,
-		NftIndex:          txInfo.BuyOffer.NftIndex,
-		AssetId:           txInfo.BuyOffer.AssetId,
-		AssetAmount:       txInfo.BuyOffer.AssetAmount.String(),
-	})
 
 	return nil
 }

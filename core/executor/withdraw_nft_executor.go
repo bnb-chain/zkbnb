@@ -126,16 +126,6 @@ func (e *WithdrawNftExecutor) ApplyTransaction() error {
 	stateCache.PendingUpdateAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateNftIndexMap[txInfo.NftIndex] = statedb.StateCachePending
-	stateCache.PendingNewNftWithdrawHistory = append(stateCache.PendingNewNftWithdrawHistory, &nft.L2NftWithdrawHistory{
-		NftIndex:            oldNft.NftIndex,
-		CreatorAccountIndex: oldNft.CreatorAccountIndex,
-		OwnerAccountIndex:   oldNft.OwnerAccountIndex,
-		NftContentHash:      oldNft.NftContentHash,
-		NftL1Address:        oldNft.NftL1Address,
-		NftL1TokenId:        oldNft.NftL1TokenId,
-		CreatorTreasuryRate: oldNft.CreatorTreasuryRate,
-		CollectionId:        oldNft.CollectionId,
-	})
 
 	return nil
 }
