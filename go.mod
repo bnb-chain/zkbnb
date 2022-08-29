@@ -9,7 +9,7 @@ require (
 )
 
 require (
-	github.com/bnb-chain/zkbas-crypto v0.0.4-0.20220828071249-980e9a41f367
+	github.com/bnb-chain/zkbas-crypto v0.0.4-0.20220829084705-bc3a4d19ea25
 	github.com/bnb-chain/zkbas-eth-rpc v0.0.1
 	github.com/consensys/gnark v0.7.0
 	github.com/consensys/gnark-crypto v0.7.0
