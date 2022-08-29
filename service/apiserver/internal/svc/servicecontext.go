@@ -28,7 +28,6 @@ type ServiceContext struct {
 	MemCache   *cache.MemCache
 
 	MempoolModel          mempool.MempoolModel
-	MempoolDetailModel    mempool.MempoolTxDetailModel
 	AccountModel          account.AccountModel
 	AccountHistoryModel   account.AccountHistoryModel
 	TxModel               tx.TxModel
@@ -38,7 +37,6 @@ type ServiceContext struct {
 	LiquidityHistoryModel liquidity.LiquidityHistoryModel
 	BlockModel            block.BlockModel
 	NftModel              nft.L2NftModel
-	CollectionModel       nft.L2NftCollectionModel
 	AssetModel            asset.AssetModel
 	SysConfigModel        sysconfig.SysConfigModel
 
@@ -54,7 +52,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	redisCache := dbcache.NewRedisCache(c.CacheRedis[0].Host, c.CacheRedis[0].Pass, 15*time.Minute)
 
 	mempoolModel := mempool.NewMempoolModel(gormPointer)
-	mempoolDetailModel := mempool.NewMempoolDetailModel(gormPointer)
 	accountModel := account.NewAccountModel(gormPointer)
 	liquidityModel := liquidity.NewLiquidityModel(gormPointer)
 	nftModel := nft.NewL2NftModel(gormPointer)
@@ -66,7 +63,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		RedisCache:            redisCache,
 		MemCache:              memCache,
 		MempoolModel:          mempoolModel,
-		MempoolDetailModel:    mempoolDetailModel,
 		AccountModel:          accountModel,
 		AccountHistoryModel:   account.NewAccountHistoryModel(gormPointer),
 		TxModel:               tx.NewTxModel(gormPointer),
@@ -76,7 +72,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		LiquidityHistoryModel: liquidity.NewLiquidityHistoryModel(gormPointer),
 		BlockModel:            block.NewBlockModel(gormPointer),
 		NftModel:              nftModel,
-		CollectionModel:       nft.NewL2NftCollectionModel(gormPointer),
 		AssetModel:            assetModel,
 		SysConfigModel:        sysconfig.NewSysConfigModel(gormPointer),
 

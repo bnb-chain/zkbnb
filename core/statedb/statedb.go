@@ -101,7 +101,12 @@ func NewStateDBForDryRun(redisCache dbcache.Cache, chainDb *ChainDB) *StateDB {
 }
 
 func (s *StateDB) GetAccount(accountIndex int64) interface{} {
-	return s.AccountMap[accountIndex]
+	// to save account to cache, we need to convert it
+	account, err := chain.FromFormatAccountInfo(s.AccountMap[accountIndex])
+	if err != nil {
+		return nil
+	}
+	return account
 }
 
 func (s *StateDB) GetLiquidity(pairIndex int64) interface{} {
@@ -356,10 +361,13 @@ func (s *StateDB) DeepCopyAccounts(accountIds []int64) (map[int64]*types.Account
 func (s *StateDB) PrepareAccountsAndAssets(accounts []int64, assets []int64) error {
 	for _, accountIndex := range accounts {
 		if s.dryRun {
-			formatAccount := &types.AccountInfo{}
-			redisAccount, err := s.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex), formatAccount)
+			account := &account.Account{}
+			redisAccount, err := s.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex), account)
 			if err == nil && redisAccount != nil {
-				s.AccountMap[accountIndex] = formatAccount
+				formatAccount, err := chain.ToFormatAccountInfo(account)
+				if err == nil {
+					s.AccountMap[accountIndex] = formatAccount
+				}
 			}
 		}
 
@@ -531,11 +539,10 @@ func (s *StateDB) GetPendingNonce(accountIndex int64) (int64, error) {
 	if err == nil {
 		return nonce + 1, nil
 	}
-	formatAccount := &types.AccountInfo{}
-	redisAccount, err := s.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex), formatAccount)
+	account := &account.Account{}
+	redisAccount, err := s.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex), account)
 	if err == nil && redisAccount != nil {
-		formatAccount := redisAccount.(*types.AccountInfo)
-		return formatAccount.Nonce, nil
+		return account.Nonce, nil
 	}
 	dbAccount, err := s.chainDb.AccountModel.GetAccountByIndex(accountIndex)
 	if err == nil {

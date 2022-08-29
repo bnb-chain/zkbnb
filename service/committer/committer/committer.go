@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/core"
 	"github.com/bnb-chain/zkbas/dao/block"
@@ -34,7 +32,6 @@ type Committer struct {
 
 	bc *core.BlockChain
 
-	memPoolModel       mempool.MempoolModel
 	executedMemPoolTxs []*mempool.MempoolTx
 }
 
@@ -48,12 +45,6 @@ func NewCommitter(config *Config) (*Committer, error) {
 		return nil, fmt.Errorf("new blockchain error: %v", err)
 	}
 
-	db, err := gorm.Open(postgres.Open(config.Postgres.DataSource))
-	if err != nil {
-		logx.Error("gorm connect db failed: ", err)
-		return nil, err
-	}
-
 	committer := &Committer{
 		config:             config,
 		maxTxsPerBlock:     config.BlockConfig.OptionalBlockSizes[len(config.BlockConfig.OptionalBlockSizes)-1],
@@ -61,7 +52,6 @@ func NewCommitter(config *Config) (*Committer, error) {
 
 		bc: bc,
 
-		memPoolModel:       mempool.NewMempoolModel(db),
 		executedMemPoolTxs: make([]*mempool.MempoolTx, 0),
 	}
 	return committer, nil
@@ -82,7 +72,7 @@ func (c *Committer) Run() {
 		}
 
 		// Read pending transactions from mempool_tx table.
-		pendingTxs, err := c.memPoolModel.GetMempoolTxsByStatus(mempool.PendingTxStatus)
+		pendingTxs, err := c.bc.MempoolModel.GetMempoolTxsByStatus(mempool.PendingTxStatus)
 		if err != nil {
 			logx.Error("get pending transactions from mempool failed:", err)
 			return
@@ -93,7 +83,7 @@ func (c *Committer) Run() {
 			}
 
 			time.Sleep(100 * time.Millisecond)
-			pendingTxs, err = c.memPoolModel.GetMempoolTxsByStatus(mempool.PendingTxStatus)
+			pendingTxs, err = c.bc.MempoolModel.GetMempoolTxsByStatus(mempool.PendingTxStatus)
 			if err != nil {
 				logx.Error("get pending transactions from mempool failed:", err)
 				return
@@ -132,7 +122,7 @@ func (c *Committer) Run() {
 			panic("sync redis cache failed: " + err.Error())
 		}
 
-		err = c.memPoolModel.UpdateMempoolTxs(pendingUpdateMempoolTxs, pendingDeleteMempoolTxs)
+		err = c.bc.MempoolModel.UpdateMempoolTxs(pendingUpdateMempoolTxs, pendingDeleteMempoolTxs)
 		if err != nil {
 			panic("update mempool failed: " + err.Error())
 		}
@@ -158,7 +148,7 @@ func (c *Committer) restoreExecutedTxs() (*block.Block, error) {
 		return nil, err
 	}
 
-	executedTxs, err := c.memPoolModel.GetMempoolTxsByStatus(mempool.ExecutedTxStatus)
+	executedTxs, err := c.bc.MempoolModel.GetMempoolTxsByStatus(mempool.ExecutedTxStatus)
 	if err != nil {
 		return nil, err
 	}

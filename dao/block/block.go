@@ -91,16 +91,15 @@ type (
 		Block           *Block
 		CompressedBlock *compressedblock.CompressedBlock
 
-		PendingNewAccount            []*account.Account
-		PendingUpdateAccount         []*account.Account
-		PendingNewAccountHistory     []*account.AccountHistory
-		PendingNewLiquidity          []*liquidity.Liquidity
-		PendingUpdateLiquidity       []*liquidity.Liquidity
-		PendingNewLiquidityHistory   []*liquidity.LiquidityHistory
-		PendingNewNft                []*nft.L2Nft
-		PendingUpdateNft             []*nft.L2Nft
-		PendingNewNftHistory         []*nft.L2NftHistory
-		PendingNewNftWithdrawHistory []*nft.L2NftWithdrawHistory
+		PendingNewAccount          []*account.Account
+		PendingUpdateAccount       []*account.Account
+		PendingNewAccountHistory   []*account.AccountHistory
+		PendingNewLiquidity        []*liquidity.Liquidity
+		PendingUpdateLiquidity     []*liquidity.Liquidity
+		PendingNewLiquidityHistory []*liquidity.LiquidityHistory
+		PendingNewNft              []*nft.L2Nft
+		PendingUpdateNft           []*nft.L2Nft
+		PendingNewNftHistory       []*nft.L2NftHistory
 	}
 )
 
@@ -432,16 +431,6 @@ func (m *defaultBlockModel) CreateCompressedBlock(pendingMempoolTxs []*mempool.M
 			}
 			if dbTx.RowsAffected != int64(len(blockStates.PendingNewNftHistory)) {
 				return errors.New("unable to create new nft history")
-			}
-		}
-		// new nft withdraw history
-		if len(blockStates.PendingNewNftWithdrawHistory) != 0 {
-			dbTx := tx.Table(nft.L2NftWithdrawHistoryTableName).CreateInBatches(blockStates.PendingNewNftWithdrawHistory, len(blockStates.PendingNewNftWithdrawHistory))
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected != int64(len(blockStates.PendingNewNftWithdrawHistory)) {
-				return errors.New("unable to create new nft withdraw")
 			}
 		}
 		return nil

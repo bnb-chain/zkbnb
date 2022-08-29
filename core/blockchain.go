@@ -152,18 +152,17 @@ func (bc *BlockChain) CommitNewBlock(blockSize int, createdAt int64) (*block.Blo
 	}
 
 	return &block.BlockStates{
-		Block:                        newBlock,
-		CompressedBlock:              compressedBlock,
-		PendingNewAccount:            pendingNewAccount,
-		PendingUpdateAccount:         pendingUpdateAccount,
-		PendingNewAccountHistory:     pendingNewAccountHistory,
-		PendingNewLiquidity:          pendingNewLiquidity,
-		PendingUpdateLiquidity:       pendingUpdateLiquidity,
-		PendingNewLiquidityHistory:   pendingNewLiquidityHistory,
-		PendingNewNft:                pendingNewNft,
-		PendingUpdateNft:             pendingUpdateNft,
-		PendingNewNftHistory:         pendingNewNftHistory,
-		PendingNewNftWithdrawHistory: bc.Statedb.PendingNewNftWithdrawHistory,
+		Block:                      newBlock,
+		CompressedBlock:            compressedBlock,
+		PendingNewAccount:          pendingNewAccount,
+		PendingUpdateAccount:       pendingUpdateAccount,
+		PendingNewAccountHistory:   pendingNewAccountHistory,
+		PendingNewLiquidity:        pendingNewLiquidity,
+		PendingUpdateLiquidity:     pendingUpdateLiquidity,
+		PendingNewLiquidityHistory: pendingNewLiquidityHistory,
+		PendingNewNft:              pendingNewNft,
+		PendingUpdateNft:           pendingUpdateNft,
+		PendingNewNftHistory:       pendingNewNftHistory,
 	}, nil
 }
 

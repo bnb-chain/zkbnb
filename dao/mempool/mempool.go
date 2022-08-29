@@ -21,7 +21,6 @@ import (
 	"errors"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas/dao/nft"
 	"github.com/bnb-chain/zkbas/types"
 )
 
@@ -40,19 +39,13 @@ type (
 	MempoolModel interface {
 		CreateMempoolTxTable() error
 		DropMempoolTxTable() error
-		GetMempoolTxByTxId(id int64) (mempoolTx *MempoolTx, err error)
 		GetMempoolTxsList(limit int64, offset int64) (mempoolTxs []*MempoolTx, err error)
 		GetMempoolTxsTotalCount() (count int64, err error)
 		GetMempoolTxByTxHash(hash string) (mempoolTxs *MempoolTx, err error)
 		GetMempoolTxsByStatus(status int) (mempoolTxs []*MempoolTx, err error)
 		GetMempoolTxsByBlockHeight(l2BlockHeight int64) (rowsAffected int64, mempoolTxs []*MempoolTx, err error)
-		GetPendingLiquidityTxs() (mempoolTxs []*MempoolTx, err error)
-		GetPendingNftTxs() (mempoolTxs []*MempoolTx, err error)
 		CreateBatchedMempoolTxs(mempoolTxs []*MempoolTx) error
-		CreateMempoolTxAndL2CollectionAndNonce(mempoolTx *MempoolTx, nftInfo *nft.L2NftCollection) error
-		CreateMempoolTxAndL2Nft(mempoolTx *MempoolTx, nftInfo *nft.L2Nft) error
 		GetPendingMempoolTxsByAccountIndex(accountIndex int64) (mempoolTxs []*MempoolTx, err error)
-		GetLatestL2MempoolTxByAccountIndex(accountIndex int64) (mempoolTx *MempoolTx, err error)
 		GetMaxNonceByAccountIndex(accountIndex int64) (nonce int64, err error)
 		UpdateMempoolTxs(pendingUpdateMempoolTxs []*MempoolTx, pendingDeleteMempoolTxs []*MempoolTx) error
 	}
@@ -81,8 +74,6 @@ type (
 		ExpiredAt     int64
 		L2BlockHeight int64
 		Status        int `gorm:"index"` // 0: pending tx; 1: committed tx; 2: verified tx;
-
-		MempoolDetails []*MempoolTxDetail `json:"mempool_details" gorm:"foreignKey:TxId"`
 	}
 )
 
@@ -105,28 +96,10 @@ func (m *defaultMempoolModel) DropMempoolTxTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-func (m *defaultMempoolModel) OrderMempoolTxDetails(tx *MempoolTx) (err error) {
-	var mempoolForeignKeyColumn = `MempoolDetails`
-	var tmpMempoolTxDetails []*MempoolTxDetail
-	err = m.DB.Model(&tx).Association(mempoolForeignKeyColumn).Find(&tmpMempoolTxDetails)
-	tx.MempoolDetails = make([]*MempoolTxDetail, len(tmpMempoolTxDetails))
-	for i := 0; i < len(tmpMempoolTxDetails); i++ {
-		tx.MempoolDetails[tmpMempoolTxDetails[i].Order] = tmpMempoolTxDetails[i]
-	}
-	return err
-}
-
 func (m *defaultMempoolModel) GetMempoolTxsList(limit int64, offset int64) (mempoolTxs []*MempoolTx, err error) {
 	dbTx := m.DB.Table(m.table).Where("status = ?", PendingTxStatus).Limit(int(limit)).Offset(int(offset)).Order("created_at desc, id desc").Find(&mempoolTxs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
-	}
-	// TODO: cache operation
-	for _, mempoolTx := range mempoolTxs {
-		err := m.OrderMempoolTxDetails(mempoolTx)
-		if err != nil {
-			return nil, err
-		}
 	}
 	return mempoolTxs, nil
 }
@@ -136,13 +109,6 @@ func (m *defaultMempoolModel) GetMempoolTxsByBlockHeight(l2BlockHeight int64) (r
 	if dbTx.Error != nil {
 		return 0, nil, types.DbErrSqlOperation
 	}
-	// TODO: cache operation
-	for _, mempoolTx := range mempoolTxs {
-		err := m.OrderMempoolTxDetails(mempoolTx)
-		if err != nil {
-			return 0, nil, err
-		}
-	}
 	return dbTx.RowsAffected, mempoolTxs, nil
 }
 
@@ -150,13 +116,6 @@ func (m *defaultMempoolModel) GetMempoolTxsByStatus(status int) (mempoolTxs []*M
 	dbTx := m.DB.Table(m.table).Where("status = ?", status).Order("created_at, id").Find(&mempoolTxs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
-	}
-	// TODO: cache operation
-	for _, mempoolTx := range mempoolTxs {
-		err := m.OrderMempoolTxDetails(mempoolTx)
-		if err != nil {
-			return nil, err
-		}
 	}
 	return mempoolTxs, nil
 }
@@ -181,10 +140,6 @@ func (m *defaultMempoolModel) GetMempoolTxByTxHash(hash string) (mempoolTx *Memp
 		}
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
-	}
-	err = m.OrderMempoolTxDetails(mempoolTx)
-	if err != nil {
-		return nil, err
 	}
 	return mempoolTx, nil
 }
@@ -213,17 +168,6 @@ func (m *defaultMempoolModel) GetMempoolTxsListByL2BlockHeight(blockHeight int64
 	return mempoolTxs, nil
 }
 
-func (m *defaultMempoolModel) GetLatestL2MempoolTxByAccountIndex(accountIndex int64) (mempoolTx *MempoolTx, err error) {
-	dbTx := m.DB.Table(m.table).Where("account_index = ? and nonce != -1", accountIndex).
-		Order("created_at desc, id desc").Find(&mempoolTx)
-	if dbTx.Error != nil {
-		return nil, types.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		return nil, types.DbErrNotFound
-	}
-	return mempoolTx, nil
-}
-
 func (m *defaultMempoolModel) GetPendingMempoolTxsByAccountIndex(accountIndex int64) (mempoolTxs []*MempoolTx, err error) {
 	dbTx := m.DB.Table(m.table).Where("status = ? AND account_index = ?", PendingTxStatus, accountIndex).
 		Order("created_at, id").Find(&mempoolTxs)
@@ -232,102 +176,7 @@ func (m *defaultMempoolModel) GetPendingMempoolTxsByAccountIndex(accountIndex in
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
 	}
-	for _, mempoolTx := range mempoolTxs {
-		err = m.OrderMempoolTxDetails(mempoolTx)
-		if err != nil {
-			return nil, err
-		}
-	}
 	return mempoolTxs, nil
-}
-
-func (m *defaultMempoolModel) GetPendingLiquidityTxs() (mempoolTxs []*MempoolTx, err error) {
-	dbTx := m.DB.Table(m.table).Where("status = ? and pair_index != ?", PendingTxStatus, types.NilPairIndex).
-		Find(&mempoolTxs)
-	if dbTx.Error != nil {
-		return nil, types.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		return nil, types.DbErrNotFound
-	}
-	for _, mempoolTx := range mempoolTxs {
-		err = m.OrderMempoolTxDetails(mempoolTx)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return mempoolTxs, nil
-}
-
-func (m *defaultMempoolModel) GetPendingNftTxs() (mempoolTxs []*MempoolTx, err error) {
-	dbTx := m.DB.Table(m.table).Where("status = ? and nft_index != ?", PendingTxStatus, types.NilTxNftIndex).
-		Find(&mempoolTxs)
-	if dbTx.Error != nil {
-		return nil, types.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		return nil, types.DbErrNotFound
-	}
-	for _, mempoolTx := range mempoolTxs {
-		err = m.OrderMempoolTxDetails(mempoolTx)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return mempoolTxs, nil
-}
-
-func (m *defaultMempoolModel) CreateMempoolTxAndL2CollectionAndNonce(mempoolTx *MempoolTx, nftCollectionInfo *nft.L2NftCollection) error {
-	return m.DB.Transaction(func(db *gorm.DB) error { // transact
-		dbTx := db.Table(m.table).Create(mempoolTx)
-		if dbTx.Error != nil {
-			return types.DbErrSqlOperation
-		}
-		if dbTx.RowsAffected == 0 {
-			return types.DbErrFailToCreateMempoolTx
-		}
-		dbTx = db.Table(nft.L2NftCollectionTableName).Create(nftCollectionInfo)
-		if dbTx.Error != nil {
-			return types.DbErrSqlOperation
-		}
-		if dbTx.RowsAffected == 0 {
-			return types.DbErrFailToCreateMempoolTx
-		}
-		return nil
-	})
-}
-
-func (m *defaultMempoolModel) CreateMempoolTxAndL2Nft(mempoolTx *MempoolTx, nftInfo *nft.L2Nft) error {
-	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
-		dbTx := tx.Table(m.table).Create(mempoolTx)
-		if dbTx.Error != nil {
-			return types.DbErrSqlOperation
-		}
-		if dbTx.RowsAffected == 0 {
-			return types.DbErrFailToCreateMempoolTx
-		}
-		dbTx = tx.Table(nft.L2NftTableName).Create(nftInfo)
-		if dbTx.Error != nil {
-			return types.DbErrSqlOperation
-		}
-		if dbTx.RowsAffected == 0 {
-			return types.DbErrFailToCreateMempoolTx
-		}
-		return nil
-	})
-}
-
-func (m *defaultMempoolModel) GetMempoolTxByTxId(id int64) (mempoolTx *MempoolTx, err error) {
-	dbTx := m.DB.Table(m.table).Where("id = ?", id).
-		Find(&mempoolTx)
-	if dbTx.Error != nil {
-		return nil, types.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		return nil, types.DbErrNotFound
-	}
-	err = m.OrderMempoolTxDetails(mempoolTx)
-	if err != nil {
-		return nil, err
-	}
-	return mempoolTx, nil
 }
 
 func (m *defaultMempoolModel) GetMaxNonceByAccountIndex(accountIndex int64) (nonce int64, err error) {

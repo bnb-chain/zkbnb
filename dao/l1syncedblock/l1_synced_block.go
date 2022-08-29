@@ -139,15 +139,6 @@ func (m *defaultL1EventModel) CreateGenericBlock(
 
 			// delete mempool txs
 			for _, pendingDeleteMempoolTx := range pendingUpdateMempoolTxs {
-				for _, detail := range pendingDeleteMempoolTx.MempoolDetails {
-					dbTx := tx.Table(mempool.DetailTableName).Where("id = ?", detail.ID).Delete(&detail)
-					if dbTx.Error != nil {
-						return dbTx.Error
-					}
-					if dbTx.RowsAffected == 0 {
-						return errors.New("delete invalid mempool tx")
-					}
-				}
 				dbTx := tx.Table(mempool.MempoolTableName).Where("id = ?", pendingDeleteMempoolTx.ID).Delete(&pendingDeleteMempoolTx)
 				if dbTx.Error != nil {
 					return dbTx.Error

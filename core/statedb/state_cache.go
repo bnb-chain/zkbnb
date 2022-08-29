@@ -1,10 +1,10 @@
 package statedb
 
 import (
-	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/bnb-chain/zkbas/dao/nft"
+	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
+
 	"github.com/bnb-chain/zkbas/dao/tx"
 	"github.com/bnb-chain/zkbas/types"
 )
@@ -32,8 +32,6 @@ type StateCache struct {
 	PendingUpdateAccountIndexMap   map[int64]int
 	PendingUpdateLiquidityIndexMap map[int64]int
 	PendingUpdateNftIndexMap       map[int64]int
-
-	PendingNewNftWithdrawHistory []*nft.L2NftWithdrawHistory
 }
 
 func NewStateCache(stateRoot string) *StateCache {
@@ -47,8 +45,6 @@ func NewStateCache(stateRoot string) *StateCache {
 		PendingUpdateAccountIndexMap:   make(map[int64]int, 0),
 		PendingUpdateLiquidityIndexMap: make(map[int64]int, 0),
 		PendingUpdateNftIndexMap:       make(map[int64]int, 0),
-
-		PendingNewNftWithdrawHistory: make([]*nft.L2NftWithdrawHistory, 0),
 
 		PubData:                         make([]byte, 0),
 		PriorityOperations:              0,

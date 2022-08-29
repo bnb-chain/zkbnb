@@ -144,7 +144,6 @@ var (
 	accountModel            = account.NewAccountModel(DB)
 	accountHistoryModel     = account.NewAccountHistoryModel(DB)
 	assetModel              = asset.NewAssetModel(DB)
-	mempoolDetailModel      = mempool.NewMempoolDetailModel(DB)
 	mempoolModel            = mempool.NewMempoolModel(DB)
 	failTxModel             = tx.NewFailTxModel(DB)
 	txDetailModel           = tx.NewTxDetailModel(DB)
@@ -160,8 +159,6 @@ var (
 	liquidityHistoryModel   = liquidity.NewLiquidityHistoryModel(DB)
 	nftModel                = nft.NewL2NftModel(DB)
 	nftHistoryModel         = nft.NewL2NftHistoryModel(DB)
-	nftCollectionModel      = nft.NewL2NftCollectionModel(DB)
-	nftWithdrawHistoryModel = nft.NewL2NftWithdrawHistoryModel(DB)
 )
 
 func dropTables() {
@@ -169,7 +166,6 @@ func dropTables() {
 	assert.Nil(nil, accountModel.DropAccountTable())
 	assert.Nil(nil, accountHistoryModel.DropAccountHistoryTable())
 	assert.Nil(nil, assetModel.DropAssetTable())
-	assert.Nil(nil, mempoolDetailModel.DropMempoolDetailTable())
 	assert.Nil(nil, mempoolModel.DropMempoolTxTable())
 	assert.Nil(nil, failTxModel.DropFailTxTable())
 	assert.Nil(nil, txDetailModel.DropTxDetailTable())
@@ -185,8 +181,6 @@ func dropTables() {
 	assert.Nil(nil, liquidityHistoryModel.DropLiquidityHistoryTable())
 	assert.Nil(nil, nftModel.DropL2NftTable())
 	assert.Nil(nil, nftHistoryModel.DropL2NftHistoryTable())
-	assert.Nil(nil, nftCollectionModel.DropL2NftCollectionTable())
-	assert.Nil(nil, nftWithdrawHistoryModel.DropL2NftWithdrawHistoryTable())
 }
 
 func initTable() {
@@ -195,7 +189,6 @@ func initTable() {
 	assert.Nil(nil, accountHistoryModel.CreateAccountHistoryTable())
 	assert.Nil(nil, assetModel.CreateAssetTable())
 	assert.Nil(nil, mempoolModel.CreateMempoolTxTable())
-	assert.Nil(nil, mempoolDetailModel.CreateMempoolDetailTable())
 	assert.Nil(nil, failTxModel.CreateFailTxTable())
 	assert.Nil(nil, blockModel.CreateBlockTable())
 	assert.Nil(nil, txModel.CreateTxTable())
@@ -210,8 +203,6 @@ func initTable() {
 	assert.Nil(nil, liquidityHistoryModel.CreateLiquidityHistoryTable())
 	assert.Nil(nil, nftModel.CreateL2NftTable())
 	assert.Nil(nil, nftHistoryModel.CreateL2NftHistoryTable())
-	assert.Nil(nil, nftCollectionModel.CreateL2NftCollectionTable())
-	assert.Nil(nil, nftWithdrawHistoryModel.CreateL2NftWithdrawHistoryTable())
 	rowsAffected, err := assetModel.CreateAssetsInBatch(initAssetsInfo())
 	if err != nil {
 		panic(err)
