@@ -356,13 +356,13 @@ func (s *StateDB) DeepCopyAccounts(accountIds []int64) (map[int64]*types.Account
 func (s *StateDB) PrepareAccountsAndAssets(accounts []int64, assets []int64) error {
 	for _, accountIndex := range accounts {
 		if s.dryRun {
-			var formatAccount *types.AccountInfo
-			redisAccount, err := s.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex))
-			if err == nil {
-				formatAccount = redisAccount.(*types.AccountInfo)
+			formatAccount := &types.AccountInfo{}
+			redisAccount, err := s.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex), formatAccount)
+			if err == nil && redisAccount != nil {
+				s.AccountMap[accountIndex] = formatAccount
 			}
-			s.AccountMap[accountIndex] = formatAccount
 		}
+
 		if s.AccountMap[accountIndex] == nil {
 			accountInfo, err := s.chainDb.AccountModel.GetAccountByIndex(accountIndex)
 			if err != nil {
@@ -393,12 +393,11 @@ func (s *StateDB) PrepareAccountsAndAssets(accounts []int64, assets []int64) err
 
 func (s *StateDB) PrepareLiquidity(pairIndex int64) error {
 	if s.dryRun {
-		var l *liquidity.Liquidity
-		redisLiquidity, err := s.redisCache.Get(context.Background(), dbcache.LiquidityKeyByIndex(pairIndex))
-		if err == nil {
-			l = redisLiquidity.(*liquidity.Liquidity)
+		l := &liquidity.Liquidity{}
+		redisLiquidity, err := s.redisCache.Get(context.Background(), dbcache.LiquidityKeyByIndex(pairIndex), l)
+		if err == nil && redisLiquidity != nil {
+			s.LiquidityMap[pairIndex] = l
 		}
-		s.LiquidityMap[pairIndex] = l
 	}
 
 	if s.LiquidityMap[pairIndex] == nil {
@@ -413,12 +412,11 @@ func (s *StateDB) PrepareLiquidity(pairIndex int64) error {
 
 func (s *StateDB) PrepareNft(nftIndex int64) error {
 	if s.dryRun {
-		var n *nft.L2Nft
-		redisNft, err := s.redisCache.Get(context.Background(), dbcache.NftKeyByIndex(nftIndex))
-		if err == nil {
-			n = redisNft.(*nft.L2Nft)
+		n := &nft.L2Nft{}
+		redisNft, err := s.redisCache.Get(context.Background(), dbcache.NftKeyByIndex(nftIndex), n)
+		if err == nil && redisNft != nil {
+			s.NftMap[nftIndex] = n
 		}
-		s.NftMap[nftIndex] = n
 	}
 
 	if s.NftMap[nftIndex] == nil {
@@ -533,8 +531,9 @@ func (s *StateDB) GetPendingNonce(accountIndex int64) (int64, error) {
 	if err == nil {
 		return nonce + 1, nil
 	}
-	redisAccount, err := s.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex))
-	if err == nil {
+	formatAccount := &types.AccountInfo{}
+	redisAccount, err := s.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex), formatAccount)
+	if err == nil && redisAccount != nil {
 		formatAccount := redisAccount.(*types.AccountInfo)
 		return formatAccount.Nonce, nil
 	}

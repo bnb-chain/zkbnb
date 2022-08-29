@@ -48,8 +48,7 @@ func (c *RedisCache) GetWithSet(ctx context.Context, key string, valueStruct int
 	return nil, err
 }
 
-func (c *RedisCache) Get(ctx context.Context, key string) (interface{}, error) {
-	var value interface{}
+func (c *RedisCache) Get(ctx context.Context, key string, value interface{}) (interface{}, error) {
 	object, err := c.marshal.Get(ctx, key, value)
 	if err != nil {
 		return nil, err

@@ -41,11 +41,10 @@ type fetcher struct {
 }
 
 func (f *fetcher) GetLatestAccount(accountIndex int64) (*types.AccountInfo, error) {
-	var fa *types.AccountInfo
+	fa := &types.AccountInfo{}
 
-	redisAccount, err := f.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex))
+	redisAccount, err := f.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex), fa)
 	if err == nil && redisAccount != nil {
-		fa = redisAccount.(*types.AccountInfo)
 	} else {
 		account, err := f.accountModel.GetAccountByIndex(accountIndex)
 		if err != nil {
@@ -60,11 +59,10 @@ func (f *fetcher) GetLatestAccount(accountIndex int64) (*types.AccountInfo, erro
 }
 
 func (f *fetcher) GetLatestLiquidity(pairIndex int64) (liquidityInfo *types.LiquidityInfo, err error) {
-	var l *liqdao.Liquidity
+	l := &liqdao.Liquidity{}
 
-	redisLiquidity, err := f.redisCache.Get(context.Background(), dbcache.LiquidityKeyByIndex(pairIndex))
+	redisLiquidity, err := f.redisCache.Get(context.Background(), dbcache.LiquidityKeyByIndex(pairIndex), l)
 	if err == nil && redisLiquidity != "" {
-		l = redisLiquidity.(*liqdao.Liquidity)
 	} else {
 		l, err = f.liquidityModel.GetLiquidityByPairIndex(pairIndex)
 		if err != nil {
@@ -87,11 +85,10 @@ func (f *fetcher) GetLatestLiquidity(pairIndex int64) (liquidityInfo *types.Liqu
 }
 
 func (f *fetcher) GetLatestNft(nftIndex int64) (*types.NftInfo, error) {
-	var n *nftdao.L2Nft
+	n := &nftdao.L2Nft{}
 
-	redisNft, err := f.redisCache.Get(context.Background(), dbcache.NftKeyByIndex(nftIndex))
+	redisNft, err := f.redisCache.Get(context.Background(), dbcache.NftKeyByIndex(nftIndex), n)
 	if err == nil && redisNft != "" {
-		n = redisNft.(*nftdao.L2Nft)
 	} else {
 		n, err = f.nftModel.GetNftAsset(nftIndex)
 		if err != nil {
