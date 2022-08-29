@@ -26,9 +26,9 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/l1rolluptx"
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
-	"github.com/bnb-chain/zkbnb/dao/mempool"
 	"github.com/bnb-chain/zkbnb/dao/priorityrequest"
 	"github.com/bnb-chain/zkbnb/dao/sysconfig"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/service/monitor/config"
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -43,7 +43,7 @@ type Monitor struct {
 
 	db                   *gorm.DB
 	BlockModel           block.BlockModel
-	MempoolModel         mempool.MempoolModel
+	MempoolModel         tx.MempoolModel
 	SysConfigModel       sysconfig.SysConfigModel
 	L1RollupTxModel      l1rolluptx.L1RollupTxModel
 	L2AssetModel         asset.AssetModel
@@ -60,7 +60,7 @@ func NewMonitor(c config.Config) *Monitor {
 		Config:               c,
 		db:                   db,
 		PriorityRequestModel: priorityrequest.NewPriorityRequestModel(db),
-		MempoolModel:         mempool.NewMempoolModel(db),
+		MempoolModel:         tx.NewMempoolModel(db),
 		BlockModel:           block.NewBlockModel(db),
 		L1RollupTxModel:      l1rolluptx.NewL1RollupTxModel(db),
 		L1SyncedBlockModel:   l1syncedblock.NewL1SyncedBlockModel(db),

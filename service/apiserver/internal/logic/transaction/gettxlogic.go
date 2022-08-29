@@ -53,7 +53,7 @@ func (l *GetTxLogic) GetTx(req *types.ReqGetTx) (resp *types.EnrichedTx, err err
 			}
 			return nil, types2.AppErrInternal
 		}
-		resp.Tx = *utils.DbMempooltxTx(memppolTx)
+		resp.Tx = *utils.DbtxTx(memppolTx)
 		resp.Tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
 		resp.Tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
 	}

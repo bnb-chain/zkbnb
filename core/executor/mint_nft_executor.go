@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"math/big"
 
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -14,7 +13,6 @@ import (
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/core/statedb"
-	"github.com/bnb-chain/zkbnb/dao/mempool"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
@@ -150,8 +148,9 @@ func (e *MintNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
+	e.tx.GasFeeAssetId = e.txInfo.GasFeeAssetId
+	e.tx.GasFee = e.txInfo.GasFeeAssetAmount.String()
 	e.tx.NftIndex = e.txInfo.NftIndex
-
 	return e.BaseExecutor.GetExecutedTx()
 }
 
@@ -262,31 +261,4 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		CollectionNonce: gasAccount.CollectionNonce,
 	})
 	return txDetails, nil
-}
-
-func (e *MintNftExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
-	hash, err := e.txInfo.Hash(mimc.NewMiMC())
-	if err != nil {
-		return nil, err
-	}
-	txHash := common.Bytes2Hex(hash)
-
-	mempoolTx := &mempool.MempoolTx{
-		TxHash:        txHash,
-		TxType:        e.tx.TxType,
-		GasFeeAssetId: e.txInfo.GasFeeAssetId,
-		GasFee:        e.txInfo.GasFeeAssetAmount.String(),
-		NftIndex:      types.NilNftIndex,
-		PairIndex:     types.NilPairIndex,
-		AssetId:       types.NilAssetId,
-		TxAmount:      "",
-		Memo:          "",
-		AccountIndex:  e.txInfo.CreatorAccountIndex,
-		Nonce:         e.txInfo.Nonce,
-		ExpiredAt:     e.txInfo.ExpiredAt,
-		L2BlockHeight: types.NilBlockHeight,
-		Status:        mempool.PendingTxStatus,
-		TxInfo:        e.tx.TxInfo,
-	}
-	return mempoolTx, nil
 }

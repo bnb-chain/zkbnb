@@ -1,6 +1,8 @@
 package executor
 
 import (
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -38,12 +40,24 @@ func NewBaseExecutor(bc IBlockchain, tx *tx.Tx, txInfo legendTxTypes.TxInfo) Bas
 }
 
 func (e *BaseExecutor) Prepare() error {
+	// Assign tx related fields.
+	if e.tx.TxHash == types.EmptyTxHash {
+		// Compute tx hash for layer2 transactions.
+		hash, err := e.iTxInfo.Hash(mimc.NewMiMC())
+		if err != nil {
+			return err
+		}
+		e.tx.TxHash = common.Bytes2Hex(hash)
+	}
+	e.tx.AccountIndex = e.iTxInfo.GetFromAccountIndex()
+	e.tx.Nonce = e.iTxInfo.GetNonce()
+	e.tx.ExpiredAt = e.iTxInfo.GetExpiredAt()
+
 	err := e.bc.StateDB().PrepareAccountsAndAssets(e.dirtyAccountsAndAssetsMap)
 	if err != nil {
 		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
 		return errors.New("internal error")
 	}
-
 	return nil
 }
 
@@ -91,9 +105,9 @@ func (e *BaseExecutor) GeneratePubData() error {
 }
 
 func (e *BaseExecutor) GetExecutedTx() (*tx.Tx, error) {
-	e.tx.BlockHeight = e.bc.CurrentBlock().BlockHeight
-	e.tx.TxStatus = tx.StatusSuccess
 	e.tx.TxIndex = int64(len(e.bc.StateDB().Txs))
+	e.tx.BlockHeight = e.bc.CurrentBlock().BlockHeight
+	e.tx.TxStatus = tx.StatusExecuted
 	return e.tx, nil
 }
 

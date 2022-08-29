@@ -35,7 +35,6 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/l1rolluptx"
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
 	"github.com/bnb-chain/zkbnb/dao/liquidity"
-	"github.com/bnb-chain/zkbnb/dao/mempool"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/priorityrequest"
 	"github.com/bnb-chain/zkbnb/dao/proof"
@@ -64,7 +63,7 @@ type dao struct {
 	accountModel          account.AccountModel
 	accountHistoryModel   account.AccountHistoryModel
 	assetModel            asset.AssetModel
-	mempoolModel          mempool.MempoolModel
+	mempoolModel          tx.MempoolModel
 	failTxModel           tx.FailTxModel
 	txDetailModel         tx.TxDetailModel
 	txModel               tx.TxModel
@@ -101,7 +100,7 @@ func Initialize(
 		accountModel:          account.NewAccountModel(db),
 		accountHistoryModel:   account.NewAccountHistoryModel(db),
 		assetModel:            asset.NewAssetModel(db),
-		mempoolModel:          mempool.NewMempoolModel(db),
+		mempoolModel:          tx.NewMempoolModel(db),
 		failTxModel:           tx.NewFailTxModel(db),
 		txDetailModel:         tx.NewTxDetailModel(db),
 		txModel:               tx.NewTxModel(db),

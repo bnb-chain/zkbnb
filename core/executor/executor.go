@@ -5,7 +5,6 @@ import (
 
 	sdb "github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/block"
-	"github.com/bnb-chain/zkbnb/dao/mempool"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -26,7 +25,6 @@ type TxExecutor interface {
 	GeneratePubData() error
 	GetExecutedTx() (*tx.Tx, error)
 	GenerateTxDetails() ([]*tx.TxDetail, error)
-	GenerateMempoolTx() (*mempool.MempoolTx, error)
 }
 
 func NewTxExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {

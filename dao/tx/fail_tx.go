@@ -18,6 +18,8 @@
 package tx
 
 import (
+	"errors"
+
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb/types"
@@ -31,28 +33,12 @@ type (
 	FailTxModel interface {
 		CreateFailTxTable() error
 		DropFailTxTable() error
-		CreateFailTx(failTx *FailTx) error
+		CreateFailTx(tx *Tx) error
 	}
 
 	defaultFailTxModel struct {
 		table string
 		DB    *gorm.DB
-	}
-
-	FailTx struct {
-		gorm.Model
-		TxHash        string `gorm:"uniqueIndex"`
-		TxType        int64
-		GasFee        string
-		GasFeeAssetId int64
-		TxStatus      int64 // tx status, 1 - success(default), 2 - failure
-		AssetAId      int64
-		AssetBId      int64
-		TxAmount      string
-		NativeAddress string
-		TxInfo        string
-		ExtraInfo     string
-		Memo          string
 	}
 )
 
@@ -63,20 +49,20 @@ func NewFailTxModel(db *gorm.DB) FailTxModel {
 	}
 }
 
-func (*FailTx) TableName() string {
-	return FailTxTableName
-}
-
 func (m *defaultFailTxModel) CreateFailTxTable() error {
-	return m.DB.AutoMigrate(FailTx{})
+	return m.DB.AutoMigrate(Tx{})
 }
 
 func (m *defaultFailTxModel) DropFailTxTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-func (m *defaultFailTxModel) CreateFailTx(failTx *FailTx) error {
-	dbTx := m.DB.Table(m.table).Create(failTx)
+func (m *defaultFailTxModel) CreateFailTx(tx *Tx) error {
+	if tx.TxStatus != StatusFailed {
+		return errors.New("tx status is not failed")
+	}
+
+	dbTx := m.DB.Table(m.table).Create(tx)
 	if dbTx.Error != nil {
 		return types.DbErrSqlOperation
 	}

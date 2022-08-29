@@ -62,7 +62,7 @@ func (l *GetAccountMempoolTxsLogic) GetAccountMempoolTxs(req *types.ReqGetAccoun
 
 	resp.Total = uint32(len(mempoolTxs))
 	for _, t := range mempoolTxs {
-		tx := utils.DbMempooltxTx(t)
+		tx := utils.DbtxTx(t)
 		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
 		tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
 		resp.MempoolTxs = append(resp.MempoolTxs, tx)

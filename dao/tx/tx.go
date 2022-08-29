@@ -30,10 +30,12 @@ const (
 )
 
 const (
-	_ = iota
+	StatusFailed = iota
 	StatusPending
-	StatusSuccess
-	StatusFail
+	StatusExecuted
+	StatusPacked
+	StatusCommitted
+	StatusVerified
 )
 
 type (
@@ -56,27 +58,32 @@ type (
 
 	Tx struct {
 		gorm.Model
-		TxHash        string `gorm:"uniqueIndex"`
-		TxType        int64
+
+		// Assigned when created in the mempool.
+		TxHash       string `gorm:"uniqueIndex"`
+		TxType       int64
+		TxInfo       string
+		AccountIndex int64
+		Nonce        int64
+		ExpiredAt    int64
+
+		// Assigned after executed.
 		GasFee        string
 		GasFeeAssetId int64
-		TxStatus      int64
-		BlockHeight   int64 `gorm:"index"`
-		BlockId       int64 `gorm:"index"`
-		NftIndex      int64
 		PairIndex     int64
+		NftIndex      int64
 		CollectionId  int64
 		AssetId       int64
 		TxAmount      string
-		NativeAddress string
-		TxInfo        string
-		TxDetails     []*TxDetail `gorm:"foreignKey:TxId"`
-		ExtraInfo     string
 		Memo          string
-		AccountIndex  int64
-		Nonce         int64
-		ExpiredAt     int64
-		TxIndex       int64
+		ExtraInfo     string
+		NativeAddress string      // a. Priority tx, assigned when created b. Other tx, assigned after executed.
+		TxDetails     []*TxDetail `gorm:"foreignKey:TxId"`
+
+		TxIndex     int64
+		StateRoot   string
+		BlockHeight int64 `gorm:"index"`
+		TxStatus    int   `gorm:"index"`
 	}
 )
 
@@ -87,7 +94,15 @@ func NewTxModel(db *gorm.DB) TxModel {
 	}
 }
 
-func (*Tx) TableName() string {
+func (t *Tx) TableName() string {
+	if t.TxStatus == StatusFailed {
+		return FailTxTableName
+	}
+
+	if t.TxStatus <= StatusExecuted {
+		return MempoolTableName
+	}
+
 	return TxTableName
 }
 

@@ -5,6 +5,7 @@ import (
 
 	"github.com/bnb-chain/zkbnb/core/executor"
 	"github.com/bnb-chain/zkbnb/dao/tx"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 type Processor interface {
@@ -57,6 +58,34 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 	}
 
 	p.bc.Statedb.Txs = append(p.bc.Statedb.Txs, tx)
+
+	return nil
+}
+
+type APIProcessor struct {
+	bc *BlockChain
+}
+
+func NewAPIProcessor(bc *BlockChain) Processor {
+	return &APIProcessor{
+		bc: bc,
+	}
+}
+
+func (p *APIProcessor) Process(tx *tx.Tx) error {
+	executor, err := executor.NewTxExecutor(p.bc, tx)
+	if err != nil {
+		return fmt.Errorf("new tx executor failed")
+	}
+
+	err = executor.Prepare()
+	if err != nil {
+		return err
+	}
+	err = executor.VerifyInputs()
+	if err != nil {
+		return types.AppErrInvalidTxField.RefineError(err.Error())
+	}
 
 	return nil
 }
