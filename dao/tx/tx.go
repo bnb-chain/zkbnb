@@ -74,6 +74,7 @@ type (
 		StateRoot     string
 		NftIndex      int64
 		PairIndex     int64
+		CollectionId  int64
 		AssetId       int64
 		TxAmount      string
 		NativeAddress string

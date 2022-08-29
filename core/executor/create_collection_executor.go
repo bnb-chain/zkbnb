@@ -149,6 +149,8 @@ func (e *CreateCollectionExecutor) GetExecutedTx() (*tx.Tx, error) {
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
+	e.tx.CollectionId = e.txInfo.CollectionId
+
 	return e.BaseExecutor.GetExecutedTx()
 }
 
