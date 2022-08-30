@@ -1,8 +1,6 @@
-package main
+package sender
 
 import (
-	"flag"
-
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -12,13 +10,9 @@ import (
 	"github.com/bnb-chain/zkbas/service/sender/sender"
 )
 
-var configFile = flag.String("f", "./etc/config.yaml", "the path of config file")
-
-func main() {
-	flag.Parse()
-
+func Run(configFile string) error {
 	var c config.Config
-	conf.MustLoad(*configFile, &c)
+	conf.MustLoad(configFile, &c)
 	s := sender.NewSender(c)
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()

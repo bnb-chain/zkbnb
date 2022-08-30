@@ -1,26 +1,22 @@
-package main
+package committer
 
 import (
-	"flag"
-
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas/service/committer/committer"
 )
 
-var configFile = flag.String("f", "./etc/config.yaml", "the config file")
-
-func main() {
-	flag.Parse()
+func Run(configFile string) error {
 	var config committer.Config
-	conf.MustLoad(*configFile, &config)
+	conf.MustLoad(configFile, &config)
 
 	committer, err := committer.NewCommitter(&config)
 	if err != nil {
 		logx.Error("new committer failed:", err)
-		return
+		return err
 	}
 
 	committer.Run()
+	return nil
 }

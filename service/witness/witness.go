@@ -1,8 +1,6 @@
-package main
+package witness
 
 import (
-	"flag"
-
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -12,13 +10,9 @@ import (
 	"github.com/bnb-chain/zkbas/service/witness/witness"
 )
 
-var configFile = flag.String("f", "./etc/config.yaml", "the path of config file")
-
-func main() {
-	flag.Parse()
-
+func Run(configFile string) error {
 	var c config.Config
-	conf.MustLoad(*configFile, &c)
+	conf.MustLoad(configFile, &c)
 	w, err := witness.NewWitness(c)
 	if err != nil {
 		panic(err)

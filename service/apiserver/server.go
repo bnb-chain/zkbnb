@@ -1,7 +1,6 @@
-package main
+package apiserver
 
 import (
-	"flag"
 	"fmt"
 
 	"github.com/zeromicro/go-zero/core/conf"
@@ -12,13 +11,9 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
 )
 
-var configFile = flag.String("f", "./etc/config.yaml", "the config file")
-
-func main() {
-	flag.Parse()
-
+func Run(configFile string) error {
 	var c config.Config
-	conf.MustLoad(*configFile, &c)
+	conf.MustLoad(configFile, &c)
 
 	server := rest.MustNewServer(c.RestConf, rest.WithCors())
 	defer server.Stop()
@@ -28,4 +23,5 @@ func main() {
 
 	fmt.Printf("Starting server at %s:%d...\n", c.Host, c.Port)
 	server.Start()
+	return nil
 }
