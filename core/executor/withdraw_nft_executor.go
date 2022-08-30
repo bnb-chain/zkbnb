@@ -46,22 +46,22 @@ func NewWithdrawNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 func (e *WithdrawNftExecutor) Prepare() error {
 	txInfo := e.txInfo
 
-	accounts := []int64{txInfo.AccountIndex, txInfo.CreatorAccountIndex, txInfo.GasAccountIndex}
+	err := e.bc.StateDB().PrepareNft(txInfo.NftIndex)
+	if err != nil {
+		logx.Errorf("prepare nft failed")
+		return errors.New("internal error")
+	}
+	nftInfo := e.bc.StateDB().NftMap[txInfo.NftIndex]
+
+	accounts := []int64{txInfo.AccountIndex, nftInfo.CreatorAccountIndex, txInfo.GasAccountIndex}
 	assets := []int64{txInfo.GasFeeAssetId}
-	err := e.bc.StateDB().PrepareAccountsAndAssets(accounts, assets)
+	err = e.bc.StateDB().PrepareAccountsAndAssets(accounts, assets)
 	if err != nil {
 		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
 		return errors.New("internal error")
 	}
 
-	err = e.bc.StateDB().PrepareNft(txInfo.NftIndex)
-	if err != nil {
-		logx.Errorf("prepare nft failed")
-		return errors.New("internal error")
-	}
-
-	nftInfo := e.bc.StateDB().NftMap[txInfo.NftIndex]
-	creatorAccount := e.bc.StateDB().AccountMap[txInfo.CreatorAccountIndex]
+	creatorAccount := e.bc.StateDB().AccountMap[nftInfo.CreatorAccountIndex]
 
 	// add details to tx info
 	txInfo.CreatorAccountIndex = nftInfo.CreatorAccountIndex
