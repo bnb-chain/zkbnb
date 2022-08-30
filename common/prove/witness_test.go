@@ -25,7 +25,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/bas-smt/database/memory"
+	"github.com/bnb-chain/zkbas-smt/database/memory"
 	"github.com/bnb-chain/zkbas/dao/account"
 	"github.com/bnb-chain/zkbas/dao/liquidity"
 	"github.com/bnb-chain/zkbas/dao/nft"

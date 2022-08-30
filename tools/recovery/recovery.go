@@ -8,7 +8,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
 
-	bsmt "github.com/bnb-chain/bas-smt"
+	bsmt "github.com/bnb-chain/zkbas-smt"
 	"github.com/bnb-chain/zkbas/tools/recovery/internal/config"
 	"github.com/bnb-chain/zkbas/tools/recovery/internal/svc"
 	tree2 "github.com/bnb-chain/zkbas/tree"

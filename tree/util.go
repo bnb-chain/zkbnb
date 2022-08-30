@@ -21,9 +21,9 @@ import (
 	"bytes"
 	"math/big"
 
-	bsmt "github.com/bnb-chain/bas-smt"
 	curve "github.com/bnb-chain/zkbas-crypto/ecc/ztwistededwards/tebn254"
 	"github.com/bnb-chain/zkbas-crypto/ffmath"
+	bsmt "github.com/bnb-chain/zkbas-smt"
 	common2 "github.com/bnb-chain/zkbas/common"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
