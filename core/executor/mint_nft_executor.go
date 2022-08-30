@@ -70,7 +70,7 @@ func (e *MintNftExecutor) VerifyInputs() error {
 	}
 
 	creatorAccount := e.bc.StateDB().AccountMap[txInfo.CreatorAccountIndex]
-	if creatorAccount.CollectionNonce < txInfo.NftCollectionId {
+	if creatorAccount.CollectionNonce <= txInfo.NftCollectionId {
 		return errors.New("nft collection id is less than account collection nonce")
 	}
 	if creatorAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
