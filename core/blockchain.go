@@ -136,6 +136,11 @@ func (bc *BlockChain) CommitNewBlock(blockSize int, createdAt int64) (*block.Blo
 	}
 
 	currentHeight := bc.currentBlock.BlockHeight
+	err = tree.CommitTrees(uint64(currentHeight), bc.Statedb.AccountTree, &bc.Statedb.AccountAssetTrees, bc.Statedb.LiquidityTree, bc.Statedb.NftTree)
+	if err != nil {
+		return nil, err
+	}
+
 	pendingNewAccount, pendingUpdateAccount, pendingNewAccountHistory, err := bc.Statedb.GetPendingAccount(currentHeight)
 	if err != nil {
 		return nil, err
