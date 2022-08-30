@@ -163,7 +163,8 @@ func (p *Prover) ProveBlock() error {
 	// Check the existence of block proof.
 	_, err = p.ProofModel.GetProofByBlockNumber(blockWitness.Height)
 	if err == nil {
-		return fmt.Errorf("blockProof of current height exists")
+		logx.Infof("blockProof of height %d exists", blockWitness.Height)
+		return nil
 	}
 
 	var row = &proof.Proof{
@@ -171,5 +172,6 @@ func (p *Prover) ProveBlock() error {
 		BlockNumber: blockWitness.Height,
 		Status:      proof.NotSent,
 	}
-	return p.ProofModel.CreateProof(row)
+	err = p.ProofModel.CreateProof(row)
+	return err
 }
