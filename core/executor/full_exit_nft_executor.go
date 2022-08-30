@@ -197,8 +197,8 @@ func (e *FullExitNftExecutor) UpdateTrees() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	if bc.StateDB().NftMap[txInfo.NftIndex] == nil || txInfo.AccountIndex != bc.StateDB().NftMap[txInfo.NftIndex].OwnerAccountIndex {
-		// Do nothing when nft state doesn't change.
+	if bc.StateDB().NftMap[txInfo.NftIndex] == nil {
+		// Do nothing when nft doesn't exist.
 		return nil
 	}
 
