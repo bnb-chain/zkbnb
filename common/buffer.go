@@ -23,8 +23,8 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/bnb-chain/zkbas/types"
 	curve "github.com/bnb-chain/zkbas-crypto/ecc/ztwistededwards/tebn254"
+	"github.com/bnb-chain/zkbas/types"
 )
 
 func PaddingStringBigIntIntoBuf(buf *bytes.Buffer, aStr string) error {

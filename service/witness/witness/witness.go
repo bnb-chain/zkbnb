@@ -214,14 +214,14 @@ func (w *Witness) RescheduleBlockWitness() {
 
 func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockNr int64) (*blockwitness.BlockWitness, error) {
 	var oldStateRoot, newStateRoot []byte
-	cryptoTxs := make([]*cryptoBlock.Tx, 0, block.BlockSize)
+	txsWitness := make([]*utils.TxWitness, 0, block.BlockSize)
 	// scan each transaction
 	for idx, tx := range block.Txs {
 		txWitness, err := w.helper.ConstructTxWitness(tx, uint64(latestVerifiedBlockNr))
 		if err != nil {
 			return nil, err
 		}
-		cryptoTxs = append(cryptoTxs, txWitness)
+		txsWitness = append(txsWitness, txWitness)
 		// if it is the first tx of the block
 		if idx == 0 {
 			oldStateRoot = txWitness.StateRootBefore
@@ -234,7 +234,7 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 
 	emptyTxCount := int(block.BlockSize) - len(block.Txs)
 	for i := 0; i < emptyTxCount; i++ {
-		cryptoTxs = append(cryptoTxs, cryptoBlock.EmptyTx())
+		txsWitness = append(txsWitness, cryptoBlock.EmptyTx())
 	}
 	if common.Bytes2Hex(newStateRoot) != block.StateRoot {
 		return nil, errors.New("state root doesn't match")
@@ -246,7 +246,7 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 		OldStateRoot:    oldStateRoot,
 		NewStateRoot:    newStateRoot,
 		BlockCommitment: common.FromHex(block.BlockCommitment),
-		Txs:             cryptoTxs,
+		Txs:             txsWitness,
 	}
 	bz, err := json.Marshal(b)
 	if err != nil {

@@ -27,11 +27,6 @@ import (
 	"github.com/bnb-chain/zkbas/types"
 )
 
-const (
-	CooMode = 1
-	ComMode = 2
-)
-
 type (
 	Tx       = tx.Tx
 	TxDetail = tx.TxDetail
