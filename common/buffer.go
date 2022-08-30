@@ -23,8 +23,8 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/bnb-chain/zkbas-crypto/zero/twistededwards/tebn254/zero"
 	"github.com/bnb-chain/zkbas/types"
+	curve "github.com/bnb-chain/zkbas-crypto/ecc/ztwistededwards/tebn254"
 )
 
 func PaddingStringBigIntIntoBuf(buf *bytes.Buffer, aStr string) error {
@@ -32,7 +32,7 @@ func PaddingStringBigIntIntoBuf(buf *bytes.Buffer, aStr string) error {
 	if !isValid {
 		return errors.New("[PaddingStringBigIntIntoBuf] invalid string")
 	}
-	buf.Write(a.FillBytes(make([]byte, zero.PointSize)))
+	buf.Write(a.FillBytes(make([]byte, curve.PointSize)))
 	return nil
 }
 
@@ -45,7 +45,7 @@ func PaddingAddressIntoBuf(buf *bytes.Buffer, address string) (err error) {
 	if err != nil {
 		return err
 	}
-	buf.Write(new(big.Int).SetBytes(addrBytes).FillBytes(make([]byte, zero.PointSize)))
+	buf.Write(new(big.Int).SetBytes(addrBytes).FillBytes(make([]byte, curve.PointSize)))
 	return nil
 }
 
@@ -64,7 +64,7 @@ func DecodeAddress(addr string) ([]byte, error) {
 }
 
 func PaddingInt64IntoBuf(buf *bytes.Buffer, a int64) {
-	buf.Write(new(big.Int).SetInt64(a).FillBytes(make([]byte, zero.PointSize)))
+	buf.Write(new(big.Int).SetInt64(a).FillBytes(make([]byte, curve.PointSize)))
 }
 
 func PaddingPkIntoBuf(buf *bytes.Buffer, pkStr string) (err error) {
@@ -76,7 +76,7 @@ func PaddingPkIntoBuf(buf *bytes.Buffer, pkStr string) (err error) {
 	return nil
 }
 
-func writePointIntoBuf(buf *bytes.Buffer, p *zero.Point) {
+func writePointIntoBuf(buf *bytes.Buffer, p *curve.Point) {
 	buf.Write(p.X.Marshal())
 	buf.Write(p.Y.Marshal())
 }
