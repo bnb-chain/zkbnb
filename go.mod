@@ -8,7 +8,7 @@ require (
 )
 
 require (
-	github.com/bnb-chain/zkbas-crypto v0.0.4
+	github.com/bnb-chain/zkbas-crypto v0.0.4-0.20220830155341-6e830ccbd491
 	github.com/bnb-chain/zkbas-eth-rpc v0.0.1
 	github.com/bnb-chain/zkbas-smt v0.0.1
 	github.com/consensys/gnark v0.7.0
@@ -29,3 +29,5 @@ require (
 	gorm.io/driver/postgres v1.3.6
 	k8s.io/apimachinery v0.24.1 // indirect
 )
+
+replace github.com/bnb-chain/zkbas-crypto => /Users/liguo/go/src/github.com/bnb-chain/zkbas-crypto
