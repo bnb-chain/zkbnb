@@ -127,7 +127,7 @@ users to leverage ZkBAS.
 ## Key Tech
 
 ### Sparse Merkle Tree KV Store 
-Unlike most rollup solution to put the state tree in memory, [BAS-SMT](https://github.com/bnb-chain/bas-smt/) is a versioned, 
+Unlike most rollup solution to put the state tree in memory, [BAS-SMT](https://github.com/bnb-chain/zkbas-smt/) is a versioned, 
 snapshottable (immutable) sparse tree for persistent data. BAS-SMT is the key factor for the massive adoption of ZkBAS.
 
 ### Circuit Model
