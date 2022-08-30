@@ -9,6 +9,12 @@
 .PHONY: zkbas-windows zkbas-windows-386 zkbas-windows-amd64
 
 API_SERVER = ./service/apiserver
+PACKAGES = \
+           	./common/... \
+           	./core/... \
+           	./dao/... \
+           	./tree/... \
+           	./types/...
 
 api-server:
 	cd $(API_SERVER) && goctl api go -api server.api -dir .;
@@ -19,6 +25,10 @@ deploy:
 
 integration-test:
 	sudo bash -x ./local-test.sh
+
+test:
+	@echo "--> Running go test"
+	@go test $(PACKAGES)
 
 tools:
 	go install github.com/zeromicro/go-zero/tools/goctl@v1.4.0

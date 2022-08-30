@@ -20,6 +20,7 @@ package prove
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os/exec"
 	"testing"
 	"time"
@@ -28,8 +29,8 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/bas-smt/database/memory"
 	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
+	"github.com/bnb-chain/zkbas-smt/database/memory"
 	"github.com/bnb-chain/zkbas/dao/account"
 	"github.com/bnb-chain/zkbas/dao/block"
 	"github.com/bnb-chain/zkbas/dao/blockwitness"
@@ -51,24 +52,24 @@ var (
 func TestConstructTxWitness(t *testing.T) {
 	testDBSetup()
 	defer testDBShutdown()
-	// TODO: add more block height
+	// TODO add more test blocks when we finish all integration test
 	testBlockHeight := []int64{1}
 	for _, h := range testBlockHeight {
 		witnessHelper, err := getWitnessHelper(h - 1)
 		assert.NoError(t, err)
-		b, err := blockModel.GetBlockByHeight(h)
+		b, err := blockModel.GetBlocksBetween(h, h)
 		assert.NoError(t, err)
 		w, err := witnessModel.GetBlockWitnessByNumber(h)
 		assert.NoError(t, err)
 		var cBlock cryptoBlock.Block
 		err = json.Unmarshal([]byte(w.WitnessData), &cBlock)
 		assert.NoError(t, err)
-		for idx, tx := range b.Txs {
+		for idx, tx := range b[0].Txs {
 			txWitness, err := witnessHelper.ConstructTxWitness(tx, uint64(0))
 			assert.NoError(t, err)
 			expectedBz, _ := json.Marshal(cBlock.Txs[idx])
 			actualBz, _ := json.Marshal(txWitness)
-			assert.Equal(t, string(actualBz), string(expectedBz))
+			assert.Equal(t, string(actualBz), string(expectedBz), fmt.Sprintf("block %d, tx %d generate witness failed, tx type: %d", h, idx, tx.TxType))
 		}
 	}
 }

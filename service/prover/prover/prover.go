@@ -97,7 +97,7 @@ func (p *Prover) ProveBlock() error {
 		defer lock.Release()
 
 		// Fetch unproved block witness.
-		blockWitness, err := p.BlockWitnessModel.GetBlockWitnessByMode(prove.CooMode)
+		blockWitness, err := p.BlockWitnessModel.GetLatestBlockWitness()
 		if err != nil {
 			return nil, err
 		}

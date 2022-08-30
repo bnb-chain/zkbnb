@@ -11,8 +11,8 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	smt "github.com/bnb-chain/bas-smt"
 	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
+	smt "github.com/bnb-chain/zkbas-smt"
 	utils "github.com/bnb-chain/zkbas/common/prove"
 	"github.com/bnb-chain/zkbas/dao/account"
 	"github.com/bnb-chain/zkbas/dao/block"

@@ -33,7 +33,7 @@ type (
 		GetLatestBlockWitnessHeight() (blockNumber int64, err error)
 		GetBlockWitnessByNumber(height int64) (witness *BlockWitness, err error)
 		UpdateBlockWitnessStatus(witness *BlockWitness, status int64) error
-		GetBlockWitnessByMode(mode int64) (witness *BlockWitness, err error)
+		GetLatestBlockWitness() (witness *BlockWitness, err error)
 		CreateBlockWitness(witness *BlockWitness) error
 	}
 
@@ -80,27 +80,14 @@ func (m *defaultBlockWitnessModel) GetLatestBlockWitnessHeight() (blockNumber in
 	return row.Height, nil
 }
 
-func (m *defaultBlockWitnessModel) GetBlockWitnessByMode(mode int64) (witness *BlockWitness, err error) {
-	switch mode {
-	case types.CooMode:
-		dbTx := m.DB.Table(m.table).Where("status = ?", StatusPublished).Order("height asc").Limit(1).Find(&witness)
-		if dbTx.Error != nil {
-			return nil, types.DbErrSqlOperation
-		} else if dbTx.RowsAffected == 0 {
-			return nil, types.DbErrNotFound
-		}
-		return witness, nil
-	case types.ComMode:
-		dbTx := m.DB.Table(m.table).Where("status <= ?", StatusReceived).Order("height asc").Limit(1).Find(&witness)
-		if dbTx.Error != nil {
-			return nil, types.DbErrSqlOperation
-		} else if dbTx.RowsAffected == 0 {
-			return nil, types.DbErrNotFound
-		}
-		return witness, nil
-	default:
-		return nil, nil
+func (m *defaultBlockWitnessModel) GetLatestBlockWitness() (witness *BlockWitness, err error) {
+	dbTx := m.DB.Table(m.table).Where("status = ?", StatusPublished).Order("height asc").Limit(1).Find(&witness)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
 	}
+	return witness, nil
 }
 
 func (m *defaultBlockWitnessModel) GetBlockWitnessByNumber(height int64) (witness *BlockWitness, err error) {

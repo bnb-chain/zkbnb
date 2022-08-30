@@ -24,10 +24,6 @@ import (
 )
 
 const (
-	CooMode = 1
-	ComMode = 2
-)
-const (
 	TxTypeEmpty = iota
 	TxTypeRegisterZns
 	TxTypeCreatePair
