@@ -29,5 +29,3 @@ require (
 	gorm.io/driver/postgres v1.3.6
 	k8s.io/apimachinery v0.24.1 // indirect
 )
-
-replace github.com/bnb-chain/zkbas-crypto => /Users/liguo/go/src/github.com/bnb-chain/zkbas-crypto
