@@ -23,7 +23,7 @@ func (s *AppSuite) TestGetCurrencyPrices() {
 		args     args
 		httpCode int
 	}{
-		{"found", args{}, 200},
+		{"found", args{0, 100}, 200},
 	}
 
 	for _, tt := range tests {

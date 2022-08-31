@@ -14,18 +14,31 @@ import (
 )
 
 func (s *AppSuite) TestGetLpValue() {
-
 	type args struct {
 		pairIndex int
 		lpAmount  string
 	}
-	tests := []struct {
+
+	type testcase struct {
 		name     string
 		args     args
 		httpCode int
-	}{
-		{"found", args{0, "1"}, 200},
+	}
+
+	tests := []testcase{
 		{"not found", args{math.MaxInt, "2"}, 400},
+	}
+
+	statusCode, pairs := GetPairs(s, 0, 100)
+	if statusCode == http.StatusOK && len(pairs.Pairs) > 0 {
+		for _, pair := range pairs.Pairs {
+			if pair.TotalLpAmount != "" && pair.TotalLpAmount != "0" {
+				tests = append(tests, []testcase{
+					{"found by index", args{int(pair.Index), "9000"}, 200},
+				}...)
+				break
+			}
+		}
 	}
 
 	for _, tt := range tests {

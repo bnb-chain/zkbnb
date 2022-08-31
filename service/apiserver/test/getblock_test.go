@@ -23,9 +23,9 @@ func (s *AppSuite) TestGetBlock() {
 		args     args
 		httpCode int
 	}{
-		{"found", args{"height", "1"}, 200},
-		{"found", args{"commitment", "0000000000000000000000000000000000000000000000000000000000000000"}, 200},
-		{"not found", args{"invalidby", ""}, 400},
+		{"found by height", args{"height", "1"}, 200},
+		{"found by commitment", args{"commitment", "0000000000000000000000000000000000000000000000000000000000000000"}, 200},
+		{"invalidby", args{"invalidby", ""}, 400},
 	}
 
 	for _, tt := range tests {

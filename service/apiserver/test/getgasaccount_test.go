@@ -13,15 +13,11 @@ import (
 )
 
 func (s *AppSuite) TestGetGasAccount() {
-
-	type args struct {
-	}
 	tests := []struct {
 		name     string
-		args     args
 		httpCode int
 	}{
-		{"found", args{}, 200},
+		{"found", 200},
 	}
 
 	for _, tt := range tests {

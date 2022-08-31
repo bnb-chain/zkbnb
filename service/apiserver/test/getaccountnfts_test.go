@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,19 +14,33 @@ import (
 )
 
 func (s *AppSuite) TestGetAccountNftList() {
-
 	type args struct {
 		by     string
 		value  string
 		offset int
 		limit  int
 	}
-	tests := []struct {
+
+	type testcase struct {
 		name     string
 		args     args
 		httpCode int
-	}{
-		{"found", args{"account_index", "2", 0, 10}, 200},
+	}
+
+	tests := []testcase{
+		{"not found by index", args{"account_index", "9999999999", 0, 10}, 200},
+		{"not found by name", args{"account_name", "notexistname", 0, 10}, 200},
+		{"not found by pk", args{"account_pk", "notexistpk", 0, 10}, 200},
+		{"invalid by", args{"invalidby", "", 0, 10}, 400},
+	}
+
+	statusCode, accounts := GetAccounts(s, 2, 100)
+	if statusCode == http.StatusOK && len(accounts.Accounts) > 0 {
+		tests = append(tests, []testcase{
+			{"found by index", args{"account_index", strconv.Itoa(int(accounts.Accounts[0].Index)), 0, 10}, 200},
+			{"found by name", args{"account_name", accounts.Accounts[0].Name, 0, 10}, 200},
+			{"found by pk", args{"account_pk", accounts.Accounts[0].Pk, 0, 10}, 200},
+		}...)
 	}
 
 	for _, tt := range tests {

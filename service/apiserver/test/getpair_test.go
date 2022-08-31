@@ -14,21 +14,26 @@ import (
 )
 
 func (s *AppSuite) TestGetPair() {
-	type args struct {
-		pairIndex int
-	}
-	tests := []struct {
+	type testcase struct {
 		name     string
-		args     args
+		args     int //pair index
 		httpCode int
-	}{
-		{"found", args{0}, 200},
-		{"not found", args{math.MaxInt}, 400},
+	}
+
+	tests := []testcase{
+		{"not found", math.MaxInt, 400},
+	}
+
+	statusCode, pairs := GetPairs(s, 0, 100)
+	if statusCode == http.StatusOK && len(pairs.Pairs) > 0 {
+		tests = append(tests, []testcase{
+			{"found by index", int(pairs.Pairs[0].Index), 200},
+		}...)
 	}
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetPair(s, tt.args.pairIndex)
+			httpCode, result := GetPair(s, tt.args)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.NotNil(t, result.AssetAId)

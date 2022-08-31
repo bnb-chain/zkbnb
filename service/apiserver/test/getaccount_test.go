@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,16 +18,27 @@ func (s *AppSuite) TestGetAccount() {
 		by    string
 		value string
 	}
-	tests := []struct {
+
+	type testcase struct {
 		name     string
 		args     args
 		httpCode int
-	}{
-		{"found", args{"index", "0"}, 200},
-		{"found", args{"name", "gas.legend"}, 200},
-		{"found", args{"pk", "fcb8470d33c59a5cbf5e10df426eb97c2773ab890c3364f4162ba782a56ca998"}, 200},
-		{"not found", args{"pk", "not exist pk"}, 400},
-		{"not found", args{"invalidby", ""}, 400},
+	}
+
+	tests := []testcase{
+		{"not found by index", args{"index", "9999999999"}, 400},
+		{"not found by name", args{"name", "not exist name"}, 400},
+		{"not found by pk", args{"pk", "not exist pk"}, 400},
+		{"invalid by", args{"invalidby", ""}, 400},
+	}
+
+	statusCode, accounts := GetAccounts(s, 0, 100)
+	if statusCode == http.StatusOK && len(accounts.Accounts) > 0 {
+		tests = append(tests, []testcase{
+			{"found by index", args{"index", strconv.Itoa(int(accounts.Accounts[0].Index))}, 200},
+			{"found by name", args{"name", accounts.Accounts[0].Name}, 200},
+			{"found by pk", args{"pk", accounts.Accounts[0].Pk}, 200},
+		}...)
 	}
 
 	for _, tt := range tests {

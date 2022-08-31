@@ -24,6 +24,7 @@ func (s *AppSuite) TestGetCurrencyPrice() {
 	}{
 		{"found", args{"symbol", "BNB"}, 200},
 		{"not found", args{"symbol", "notfound"}, 400},
+		{"invalidby", args{"invalidby", ""}, 400},
 	}
 
 	for _, tt := range tests {

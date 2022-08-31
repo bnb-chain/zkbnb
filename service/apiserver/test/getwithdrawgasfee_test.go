@@ -14,22 +14,26 @@ import (
 )
 
 func (s *AppSuite) TestGetWithdrawGasFee() {
-
-	type args struct {
-		assetId int
-	}
-	tests := []struct {
+	type testcase struct {
 		name     string
-		args     args
+		args     int //asset id
 		httpCode int
-	}{
-		{"found", args{0}, 200},
-		{"not found", args{math.MaxInt}, 400},
+	}
+
+	tests := []testcase{
+		{"not found", math.MaxInt, 400},
+	}
+
+	statusCode, assets := GetGasFeeAssets(s)
+	if statusCode == http.StatusOK && len(assets.Assets) > 0 {
+		tests = append(tests, []testcase{
+			{"found by index", int(assets.Assets[0].Id), 200},
+		}...)
 	}
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetWithdrawGasFee(s, tt.args.assetId)
+			httpCode, result := GetWithdrawGasFee(s, tt.args)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.NotNil(t, result.GasFee)
