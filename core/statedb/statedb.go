@@ -140,11 +140,11 @@ func (s *StateDB) SyncStateCacheToRedis() error {
 	if err != nil {
 		return err
 	}
-	err = s.syncPendingStateToRedis(s.PendingNewLiquidityIndexMap, dbcache.AccountKeyByIndex, s.GetLiquidity)
+	err = s.syncPendingStateToRedis(s.PendingNewLiquidityIndexMap, dbcache.LiquidityKeyByIndex, s.GetLiquidity)
 	if err != nil {
 		return err
 	}
-	err = s.syncPendingStateToRedis(s.PendingNewNftIndexMap, dbcache.AccountKeyByIndex, s.GetNft)
+	err = s.syncPendingStateToRedis(s.PendingNewNftIndexMap, dbcache.NftKeyByIndex, s.GetNft)
 	if err != nil {
 		return err
 	}
@@ -154,11 +154,11 @@ func (s *StateDB) SyncStateCacheToRedis() error {
 	if err != nil {
 		return err
 	}
-	err = s.syncPendingStateToRedis(s.PendingUpdateLiquidityIndexMap, dbcache.AccountKeyByIndex, s.GetLiquidity)
+	err = s.syncPendingStateToRedis(s.PendingUpdateLiquidityIndexMap, dbcache.LiquidityKeyByIndex, s.GetLiquidity)
 	if err != nil {
 		return err
 	}
-	err = s.syncPendingStateToRedis(s.PendingUpdateNftIndexMap, dbcache.AccountKeyByIndex, s.GetNft)
+	err = s.syncPendingStateToRedis(s.PendingUpdateNftIndexMap, dbcache.NftKeyByIndex, s.GetNft)
 	if err != nil {
 		return err
 	}
