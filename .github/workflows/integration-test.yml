@@ -41,6 +41,7 @@ jobs:
           make docker-image
           blockNr=$(sudo bash ./deployment/tool/tool.sh blockHeight)
           sudo bash ./deployment/tool/tool.sh all new
+          sudo bash ./deployment/docker-compose/docker-compose.sh down
           sudo bash ./deployment/docker-compose/docker-compose.sh up $blockNr
           echo "end deploy"
 
@@ -65,11 +66,6 @@ jobs:
           
           echo '3. start L2 test'
           go test -v -run TestL2Suite -timeout 30m
-      
-      - name: shutdown zkbas
-        run: |
-          cd ~/zkbas
-          sudo bash ./deployment/docker-compose/docker-compose.sh down
 
       - name: notification via slack
         run: |
