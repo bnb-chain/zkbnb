@@ -13,6 +13,8 @@ ZKBAS_CRYPTO_REPO=https://github.com/bnb-chain/zkbas-crypto.git
 BSC_TESTNET_ENDPOINT=https://data-seed-prebsc-1-s1.binance.org:8545
 ZKBAS_CRYPTO_BRANCH=$(cat $WORKDIR/../go.mod | grep github.com/bnb-chain/zkbas-crypto | awk -F" " '{print $2}')
 
+export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
+
 function prepare() {
     echo 'basic config and git clone repos ...'
     rm -rf ${WORKDIR}/dependency

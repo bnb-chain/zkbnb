@@ -23,12 +23,21 @@ jobs:
       - name: deploy new zkbas on runner
         run: |
           echo 'fetch zkbas repo'
+          export PR_NUMBER=$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
+          echo Pull requests $PR_NUMBER
+          
           cd ~
-          rm -rf ./zkbas
-          git clone --branch $GITHUB_REF_NAME https://github.com/bnb-chain/zkbas.git
+          sudo rm -rf ./zkbas
+          git clone --branch develop https://github.com/bnb-chain/zkbas.git
           
           cd ./zkbas
+          git fetch origin pull/$PR_NUMBER/head:local-deploy-tmp
+          git checkout local-deploy-tmp
+          git rev-parse HEAD
+
           echo "start deploy new zkbas"
+          sudo bash ./deployment/tool/generate_api.sh
+          go mod tidy
           make docker-image
           blockNr=$(sudo bash ./deployment/tool/tool.sh blockHeight)
           sudo bash ./deployment/tool/tool.sh all new

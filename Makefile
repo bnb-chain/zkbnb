@@ -44,6 +44,6 @@ build: api-server build-only
 build-only:
 	go build -o build/bin/zkbas -ldflags="-X main.version=${VERSION} -X main.gitCommit=${GIT_COMMIT} -X main.gitDate=${GIT_COMMIT_DATE}" ./cmd/zkbas
 
-docker-image: api-server
+docker-image:
 	go mod vendor # temporary, should be removed after open source
 	docker build . -t ${IMAGE_NAME}
