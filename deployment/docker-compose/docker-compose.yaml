@@ -1,0 +1,131 @@
+version: '3.4'
+services:
+    initializer:
+        container_name: initializer
+        image: ghcr.io/bnb-chain/zkbas
+        restart: on-failure
+        command: 
+          - db
+          - initialize
+          - --dsn
+          - host=database user=$DATABASE_USER password=$DATABASE_PASS dbname=$DATABASE_NAME port=5432 sslmode=disable
+          - --contractAddr
+          - /server/configs/contractaddr.yaml
+        volumes:
+          - $BASEDIR/configs:/server/configs
+        depends_on:
+          database:
+            condition: service_healthy
+          redis:
+            condition: service_healthy
+    
+    prover:
+        container_name: prover
+        image: ghcr.io/bnb-chain/zkbas
+        restart: always
+        command: 
+          - prover
+          - --config
+          - /server/configs/prover.yaml
+        volumes:
+          - $BASEDIR/configs:/server/configs
+          - $BASEDIR/.zkbas:/server/.zkbas
+        depends_on:
+          - initializer
+    
+    witness:
+        container_name: witness
+        image: ghcr.io/bnb-chain/zkbas
+        restart: always
+        command: 
+          - witness
+          - --config
+          - /server/configs/witness.yaml
+        volumes:
+          - $BASEDIR/configs:/server/configs
+        depends_on:
+          - initializer
+    
+    monitor:
+        container_name: monitor
+        image: ghcr.io/bnb-chain/zkbas
+        restart: always
+        command: 
+          - monitor
+          - --config
+          - /server/configs/monitor.yaml
+        volumes:
+          - $BASEDIR/configs:/server/configs
+        depends_on:
+          - initializer
+    
+    committer:
+        container_name: committer
+        image: ghcr.io/bnb-chain/zkbas
+        restart: always
+        command: 
+          - committer
+          - --config
+          - /server/configs/committer.yaml
+        volumes:
+          - $BASEDIR/configs:/server/configs
+        depends_on:
+          - initializer
+
+    sender:
+        container_name: sender
+        image: $IMAGE_NAME:$IMAGE_VERSION
+        restart: always
+        command: 
+          - sender
+          - --config
+          - /server/configs/sender.yaml
+        volumes:
+          - $BASEDIR/configs:/server/configs
+        depends_on:
+          - initializer
+
+    apiserver:
+        container_name: apiserver
+        image: ghcr.io/bnb-chain/zkbas
+        restart: always
+        command: 
+          - apiserver
+          - --config
+          - /server/configs/apiserver.yaml
+        ports:
+          - 8888:8888
+          - 9091:9091
+        volumes:
+          - $BASEDIR/configs:/server/configs
+        depends_on:
+          - initializer
+
+    database:
+        container_name: database
+        image: $POSTGRES_IMAGE:$POSTGRES_VERSION
+        restart: always
+        healthcheck:
+          test: ["CMD-SHELL", "pg_isready -U postgres"]
+          interval: 10s
+          timeout: 5s
+          retries: 5
+        ports: 
+          - 5432:5432
+        environment:
+          POSTGRES_DB: $DATABASE_NAME
+          POSTGRES_USER: $DATABASE_USER
+          POSTGRES_PASSWORD: $DATABASE_PASS
+
+    redis:
+        container_name: redis
+        image: $REDIS_IMAGE:$REDIS_VERSION
+        restart: always
+        healthcheck:
+          test: ["CMD", "redis-cli","ping"]
+          interval: 3s
+          timeout: 5s
+          retries: 5
+        ports:
+          - 6379:6379
+    

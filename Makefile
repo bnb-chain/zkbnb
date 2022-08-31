@@ -13,6 +13,7 @@ VERSION=$(shell git describe --tags)
 GIT_COMMIT=$(shell git rev-parse HEAD)
 GIT_COMMIT_DATE=$(shell git log -n1 --pretty='format:%cd' --date=format:'%Y%m%d')
 REPO=github.com/bnb-chain/zkbas
+IMAGE_NAME=ghcr.io/bnb-chain/zkbas
 API_SERVER = ./service/apiserver
 PACKAGES = \
            	./common/... \
@@ -45,4 +46,4 @@ build-only:
 
 docker-image: api-server
 	go mod vendor # temporary, should be removed after open source
-	docker build --progress=plain . -t ${REPO}
+	docker build . -t ${IMAGE_NAME}
