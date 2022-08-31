@@ -50,8 +50,7 @@ func main() {
 				},
 				Action: func(cCtx *cli.Context) error {
 					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						cli.ShowSubcommandHelp(cCtx)
-						return nil
+						return cli.ShowSubcommandHelp(cCtx)
 					}
 
 					return prover.Run(cCtx.String(flags.ConfigFlag.Name))
@@ -65,8 +64,7 @@ func main() {
 				},
 				Action: func(cCtx *cli.Context) error {
 					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						cli.ShowSubcommandHelp(cCtx)
-						return nil
+						return cli.ShowSubcommandHelp(cCtx)
 					}
 
 					return witness.Run(cCtx.String(flags.ConfigFlag.Name))
@@ -80,8 +78,7 @@ func main() {
 				},
 				Action: func(cCtx *cli.Context) error {
 					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						cli.ShowSubcommandHelp(cCtx)
-						return nil
+						return cli.ShowSubcommandHelp(cCtx)
 					}
 
 					return monitor.Run(cCtx.String(flags.ConfigFlag.Name))
@@ -95,8 +92,7 @@ func main() {
 				Usage: "Run committer service",
 				Action: func(cCtx *cli.Context) error {
 					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						cli.ShowSubcommandHelp(cCtx)
-						return nil
+						return cli.ShowSubcommandHelp(cCtx)
 					}
 
 					return committer.Run(cCtx.String(flags.ConfigFlag.Name))
@@ -110,8 +106,7 @@ func main() {
 				},
 				Action: func(cCtx *cli.Context) error {
 					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						cli.ShowSubcommandHelp(cCtx)
-						return nil
+						return cli.ShowSubcommandHelp(cCtx)
 					}
 
 					return sender.Run(cCtx.String(flags.ConfigFlag.Name))
@@ -125,8 +120,7 @@ func main() {
 				},
 				Action: func(cCtx *cli.Context) error {
 					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						cli.ShowSubcommandHelp(cCtx)
-						return nil
+						return cli.ShowSubcommandHelp(cCtx)
 					}
 
 					return apiserver.Run(cCtx.String(flags.ConfigFlag.Name))
@@ -149,8 +143,7 @@ func main() {
 						Action: func(cCtx *cli.Context) error {
 							if !cCtx.IsSet(flags.ContractAddrFlag.Name) ||
 								!cCtx.IsSet(flags.DSNFlag.Name) {
-								cli.ShowSubcommandHelp(cCtx)
-								return nil
+								return cli.ShowSubcommandHelp(cCtx)
 							}
 
 							return dbinitializer.Initialize(
@@ -180,8 +173,7 @@ func main() {
 							if !cCtx.IsSet(flags.ServiceNameFlag.Name) ||
 								!cCtx.IsSet(flags.BlockHeightFlag.Name) ||
 								!cCtx.IsSet(flags.ConfigFlag.Name) {
-								cli.ShowSubcommandHelp(cCtx)
-								return nil
+								return cli.ShowSubcommandHelp(cCtx)
 							}
 							recovery.RecoveryTreeDB(
 								cCtx.String(flags.ConfigFlag.Name),
