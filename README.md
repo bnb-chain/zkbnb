@@ -64,7 +64,7 @@ ZkBAS starts its development based on [Zecrey](https://github.com/bnb-chain/zecr
 
 
 ## Document
-The `./docs` directory includes a lot of useful documentation. You can find detail design and tutorial [there](docs/over_view.md).
+The `./docs` directory includes a lot of useful documentation. You can find detail design and tutorial [there](docs/readme.md).
 
 ## Key Features
 
