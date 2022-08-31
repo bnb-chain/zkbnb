@@ -12,7 +12,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
 )
 
-func (s *AppSuite) TestGetAssets() {
+func (s *ApiServerSuite) TestGetAssets() {
 
 	type args struct {
 		offset int
@@ -43,7 +43,7 @@ func (s *AppSuite) TestGetAssets() {
 
 }
 
-func GetAssets(s *AppSuite, offset, limit int) (int, *types.Assets) {
+func GetAssets(s *ApiServerSuite, offset, limit int) (int, *types.Assets) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/assets?offset=%d&limit=%d", s.url, offset, limit))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()

@@ -12,7 +12,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
 )
 
-func (s *AppSuite) TestGetLayer2BasicInfo() {
+func (s *ApiServerSuite) TestGetLayer2BasicInfo() {
 	tests := []struct {
 		name     string
 		httpCode int
@@ -40,7 +40,7 @@ func (s *AppSuite) TestGetLayer2BasicInfo() {
 
 }
 
-func GetLayer2BasicInfo(s *AppSuite) (int, *types.Layer2BasicInfo) {
+func GetLayer2BasicInfo(s *ApiServerSuite) (int, *types.Layer2BasicInfo) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/layer2BasicInfo", s.url))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()

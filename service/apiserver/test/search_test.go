@@ -14,7 +14,7 @@ import (
 	types2 "github.com/bnb-chain/zkbas/types"
 )
 
-func (s *AppSuite) TestSearch() {
+func (s *ApiServerSuite) TestSearch() {
 	type testcase struct {
 		name     string
 		args     string //keyword
@@ -59,7 +59,7 @@ func (s *AppSuite) TestSearch() {
 
 }
 
-func Search(s *AppSuite, keyword string) (int, *types.Search) {
+func Search(s *ApiServerSuite, keyword string) (int, *types.Search) {
 	resp, err := http.Get(s.url + "/api/v1/search?keyword=" + keyword)
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()

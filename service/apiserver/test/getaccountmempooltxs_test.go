@@ -13,7 +13,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
 )
 
-func (s *AppSuite) TestGetAccountMempoolTxs() {
+func (s *ApiServerSuite) TestGetAccountMempoolTxs() {
 	type args struct {
 		by    string
 		value string
@@ -63,7 +63,7 @@ func (s *AppSuite) TestGetAccountMempoolTxs() {
 
 }
 
-func GetAccountMempoolTxs(s *AppSuite, by, value string) (int, *types.MempoolTxs) {
+func GetAccountMempoolTxs(s *ApiServerSuite, by, value string) (int, *types.MempoolTxs) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/accountMempoolTxs?by=%s&value=%s", s.url, by, value))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()

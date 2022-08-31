@@ -12,7 +12,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
 )
 
-func (s *AppSuite) TestGetStatus() {
+func (s *ApiServerSuite) TestGetStatus() {
 
 	type args struct {
 	}
@@ -38,7 +38,7 @@ func (s *AppSuite) TestGetStatus() {
 
 }
 
-func GetStatus(s *AppSuite) (int, *types.Status) {
+func GetStatus(s *ApiServerSuite) (int, *types.Status) {
 	resp, err := http.Get(fmt.Sprintf("%s/", s.url))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()

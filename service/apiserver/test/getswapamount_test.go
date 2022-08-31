@@ -13,7 +13,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
 )
 
-func (s *AppSuite) TestGetSwapAmount() {
+func (s *ApiServerSuite) TestGetSwapAmount() {
 	type args struct {
 		pairIndex   int
 		assetId     uint32
@@ -60,7 +60,7 @@ func (s *AppSuite) TestGetSwapAmount() {
 
 }
 
-func GetSwapAmount(s *AppSuite, pairIndex int) (int, *types.SwapAmount) {
+func GetSwapAmount(s *ApiServerSuite, pairIndex int) (int, *types.SwapAmount) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/swapAmount?pair_index=%d", s.url, pairIndex))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()

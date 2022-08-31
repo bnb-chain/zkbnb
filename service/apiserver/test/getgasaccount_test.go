@@ -12,7 +12,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
 )
 
-func (s *AppSuite) TestGetGasAccount() {
+func (s *ApiServerSuite) TestGetGasAccount() {
 	tests := []struct {
 		name     string
 		httpCode int
@@ -35,7 +35,7 @@ func (s *AppSuite) TestGetGasAccount() {
 
 }
 
-func GetGasAccount(s *AppSuite) (int, *types.GasAccount) {
+func GetGasAccount(s *ApiServerSuite) (int, *types.GasAccount) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/gasAccount", s.url))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()

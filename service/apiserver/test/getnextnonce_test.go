@@ -13,7 +13,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
 )
 
-func (s *AppSuite) TestGeNextNonce() {
+func (s *ApiServerSuite) TestGeNextNonce() {
 	type testcase struct {
 		name     string
 		args     int //accountIndex
@@ -44,7 +44,7 @@ func (s *AppSuite) TestGeNextNonce() {
 
 }
 
-func GetNextNonce(s *AppSuite, accountIndex int) (int, *types.NextNonce) {
+func GetNextNonce(s *ApiServerSuite, accountIndex int) (int, *types.NextNonce) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/nextNonce?account_index=%d", s.url, accountIndex))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()

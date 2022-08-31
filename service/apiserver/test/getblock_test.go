@@ -12,7 +12,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
 )
 
-func (s *AppSuite) TestGetBlock() {
+func (s *ApiServerSuite) TestGetBlock() {
 
 	type args struct {
 		by    string
@@ -44,7 +44,7 @@ func (s *AppSuite) TestGetBlock() {
 
 }
 
-func GetBlock(s *AppSuite, by, value string) (int, *types.Block) {
+func GetBlock(s *ApiServerSuite, by, value string) (int, *types.Block) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/block?by=%s&value=%s", s.url, by, value))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()

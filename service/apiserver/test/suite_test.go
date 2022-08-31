@@ -2,12 +2,15 @@ package test
 
 import (
 	"fmt"
+	"os/exec"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/suite"
-	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/service"
+	"github.com/zeromicro/go-zero/core/stores/cache"
+	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/rest"
 
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/config"
@@ -15,28 +18,57 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
 )
 
-type AppSuite struct {
+type ApiServerSuite struct {
 	suite.Suite
 	server *rest.Server
 	url    string
 }
 
 func TestAppSuite(t *testing.T) {
-	suite.Run(t, new(AppSuite))
-
+	suite.Run(t, new(ApiServerSuite))
 }
 
-func (s *AppSuite) SetupSuite() {
-	configFile := "../etc/config.yaml"
-	var c config.Config
-	conf.MustLoad(configFile, &c)
+func testDBSetup() {
+	testDBShutdown()
+	cmd := exec.Command("docker", "run", "--name", "postgres-ut", "-p", "5432:5432",
+		"-e", "POSTGRES_PASSWORD=Zkbas@123", "-e", "POSTGRES_USER=postgres", "-e", "POSTGRES_DB=zkbas",
+		"-e", "PGDATA=/var/lib/postgresql/pgdata", "-d", "ghcr.io/bnb-chain/zkbas/zkbas-ut-postgres:0.0.2")
+	if err := cmd.Run(); err != nil {
+		panic(err)
+	}
+	time.Sleep(5 * time.Second)
+}
+
+func testDBShutdown() {
+	cmd := exec.Command("docker", "kill", "postgres-ut")
+	cmd.Run()
+	time.Sleep(time.Second)
+	cmd = exec.Command("docker", "rm", "postgres-ut")
+	cmd.Run()
+}
+
+func (s *ApiServerSuite) SetupSuite() {
+	testDBSetup()
+	c := config.Config{
+		RestConf: rest.RestConf{
+			ServiceConf: service.ServiceConf{
+				Name: "api-server",
+			},
+		},
+		CacheRedis: nil,
+		LogConf:    logx.LogConf{},
+	}
+	c.Postgres = struct{ DataSource string }{DataSource: "host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable"}
+	c.CacheRedis = cache.CacheConf{}
+	c.CacheRedis = append(c.CacheRedis, cache.NodeConf{
+		RedisConf: redis.RedisConf{Host: "127.0.0.1"},
+	})
 	logx.DisableStat()
 
 	c.Port += 1000
 	ctx := svc.NewServiceContext(c)
 
 	s.url = fmt.Sprintf("http://%s:%d", c.Host, c.Port)
-	s.url = "http://172.22.41.67:8888/" //use external service for test
 	s.server = rest.MustNewServer(c.RestConf, rest.WithCors())
 
 	handler.RegisterHandlers(s.server, ctx)
@@ -45,7 +77,8 @@ func (s *AppSuite) SetupSuite() {
 	time.Sleep(1 * time.Second)
 }
 
-func (s *AppSuite) TearDownSuite() {
+func (s *ApiServerSuite) TearDownSuite() {
 	logx.Infof("Shutting down server at %s", s.url)
 	s.server.Stop()
+	testDBShutdown()
 }

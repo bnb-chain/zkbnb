@@ -12,7 +12,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
 )
 
-func (s *AppSuite) TestGetCurrentHeight() {
+func (s *ApiServerSuite) TestGetCurrentHeight() {
 	tests := []struct {
 		name     string
 		httpCode int
@@ -34,7 +34,7 @@ func (s *AppSuite) TestGetCurrentHeight() {
 
 }
 
-func GetCurrentHeight(s *AppSuite) (int, *types.CurrentHeight) {
+func GetCurrentHeight(s *ApiServerSuite) (int, *types.CurrentHeight) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/currentHeight", s.url))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()

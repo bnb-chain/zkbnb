@@ -12,7 +12,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
 )
 
-func (s *AppSuite) TestGetTx() {
+func (s *ApiServerSuite) TestGetTx() {
 	type testcase struct {
 		name     string
 		args     string //tx hash
@@ -49,7 +49,7 @@ func (s *AppSuite) TestGetTx() {
 
 }
 
-func GetTx(s *AppSuite, hash string) (int, *types.EnrichedTx) {
+func GetTx(s *ApiServerSuite, hash string) (int, *types.EnrichedTx) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/tx?hash=%s", s.url, hash))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()

@@ -13,7 +13,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
 )
 
-func (s *AppSuite) TestGetPair() {
+func (s *ApiServerSuite) TestGetPair() {
 	type testcase struct {
 		name     string
 		args     int //pair index
@@ -48,7 +48,7 @@ func (s *AppSuite) TestGetPair() {
 
 }
 
-func GetPair(s *AppSuite, pairIndex int) (int, *types.Pair) {
+func GetPair(s *ApiServerSuite, pairIndex int) (int, *types.Pair) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/pair?pair_index=%d", s.url, pairIndex))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()

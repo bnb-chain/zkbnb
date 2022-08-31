@@ -13,7 +13,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
 )
 
-func (s *AppSuite) TestGetMaxOfferId() {
+func (s *ApiServerSuite) TestGetMaxOfferId() {
 	type testcase struct {
 		name     string
 		args     int //accountIndex
@@ -44,7 +44,7 @@ func (s *AppSuite) TestGetMaxOfferId() {
 
 }
 
-func GetMaxOfferId(s *AppSuite, accountIndex int) (int, *types.MaxOfferId) {
+func GetMaxOfferId(s *ApiServerSuite, accountIndex int) (int, *types.MaxOfferId) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/maxOfferId?account_index=%d", s.url, accountIndex))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()

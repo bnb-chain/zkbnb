@@ -13,7 +13,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
 )
 
-func (s *AppSuite) TestGetAccountNftList() {
+func (s *ApiServerSuite) TestGetAccountNftList() {
 	type args struct {
 		by     string
 		value  string
@@ -63,7 +63,7 @@ func (s *AppSuite) TestGetAccountNftList() {
 
 }
 
-func GetAccountNfts(s *AppSuite, by, value string, offset, limit int) (int, *types.Nfts) {
+func GetAccountNfts(s *ApiServerSuite, by, value string, offset, limit int) (int, *types.Nfts) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/accountNfts?by=%s&value=%s&offset=%d&limit=%d", s.url, by, value, offset, limit))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
