@@ -2,10 +2,13 @@
 WORKDIR=$(cd `dirname $0`; pwd)
 export BASEDIR=$WORKDIR/..
 export CONFIG_PATH=$WORKDIR/../configs
+export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin:/usr/local/bin
+
 mkdir -p $CONFIG_PATH
 set -a
 . $WORKDIR/docker.env
 set +a
+
 
 function prepareConfigs() {
 if [ -z $1 ] ; then
