@@ -12,16 +12,12 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
 )
 
-func (s *AppSuite) TestGetGasFeeAssets() {
-
-	type args struct {
-	}
+func (s *ApiServerSuite) TestGetGasFeeAssets() {
 	tests := []struct {
 		name     string
-		args     args
 		httpCode int
 	}{
-		{"found", args{}, 200},
+		{"found", 200},
 	}
 
 	for _, tt := range tests {
@@ -42,7 +38,7 @@ func (s *AppSuite) TestGetGasFeeAssets() {
 
 }
 
-func GetGasFeeAssets(s *AppSuite) (int, *types.GasFeeAssets) {
+func GetGasFeeAssets(s *ApiServerSuite) (int, *types.GasFeeAssets) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/gasFeeAssets", s.url))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()

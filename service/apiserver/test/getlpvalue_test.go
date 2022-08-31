@@ -13,19 +13,32 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
 )
 
-func (s *AppSuite) TestGetLpValue() {
-
+func (s *ApiServerSuite) TestGetLpValue() {
 	type args struct {
 		pairIndex int
 		lpAmount  string
 	}
-	tests := []struct {
+
+	type testcase struct {
 		name     string
 		args     args
 		httpCode int
-	}{
-		{"found", args{0, "1"}, 200},
+	}
+
+	tests := []testcase{
 		{"not found", args{math.MaxInt, "2"}, 400},
+	}
+
+	statusCode, pairs := GetPairs(s, 0, 100)
+	if statusCode == http.StatusOK && len(pairs.Pairs) > 0 {
+		for _, pair := range pairs.Pairs {
+			if pair.TotalLpAmount != "" && pair.TotalLpAmount != "0" {
+				tests = append(tests, []testcase{
+					{"found by index", args{int(pair.Index), "9000"}, 200},
+				}...)
+				break
+			}
+		}
 	}
 
 	for _, tt := range tests {
@@ -46,7 +59,7 @@ func (s *AppSuite) TestGetLpValue() {
 
 }
 
-func GetLpValue(s *AppSuite, pairIndex int, lpAmount string) (int, *types.LpValue) {
+func GetLpValue(s *ApiServerSuite, pairIndex int, lpAmount string) (int, *types.LpValue) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/lpValue?pair_index=%d&lp_amount=%s", s.url, pairIndex, lpAmount))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()

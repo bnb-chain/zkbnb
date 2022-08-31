@@ -54,6 +54,13 @@ func (l *GetBlockLogic) GetBlock(req *types.ReqGetBlock) (resp *types.Block, err
 		return nil, types2.AppErrInvalidParam.RefineError("param by should be height|commitment")
 	}
 
+	if err != nil {
+		if err == types2.DbErrNotFound {
+			return nil, types2.DbErrNotFound
+		}
+		return nil, types2.AppErrInternal
+	}
+
 	resp = &types.Block{
 		Commitment:                      block.BlockCommitment,
 		Height:                          block.BlockHeight,

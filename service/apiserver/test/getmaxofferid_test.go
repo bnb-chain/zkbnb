@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"testing"
 
@@ -12,21 +13,27 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
 )
 
-func (s *AppSuite) TestGetMaxOfferId() {
-	type args struct {
-		accountIndex int
-	}
-	tests := []struct {
+func (s *ApiServerSuite) TestGetMaxOfferId() {
+	type testcase struct {
 		name     string
-		args     args
+		args     int //accountIndex
 		httpCode int
-	}{
-		{"found", args{2}, 200},
+	}
+
+	tests := []testcase{
+		{"not found", math.MaxInt, 400},
+	}
+
+	statusCode, accounts := GetAccounts(s, 0, 100)
+	if statusCode == http.StatusOK && len(accounts.Accounts) > 0 {
+		tests = append(tests, []testcase{
+			{"found", int(accounts.Accounts[0].Index), 200},
+		}...)
 	}
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetMaxOfferId(s, tt.args.accountIndex)
+			httpCode, result := GetMaxOfferId(s, tt.args)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.True(t, result.OfferId >= 0)
@@ -37,7 +44,7 @@ func (s *AppSuite) TestGetMaxOfferId() {
 
 }
 
-func GetMaxOfferId(s *AppSuite, accountIndex int) (int, *types.MaxOfferId) {
+func GetMaxOfferId(s *ApiServerSuite, accountIndex int) (int, *types.MaxOfferId) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/maxOfferId?account_index=%d", s.url, accountIndex))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()

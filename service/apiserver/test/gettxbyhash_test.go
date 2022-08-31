@@ -12,23 +12,28 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
 )
 
-func (s *AppSuite) TestGetTx() {
-
-	type args struct {
-		txHash string
-	}
-	tests := []struct {
+func (s *ApiServerSuite) TestGetTx() {
+	type testcase struct {
 		name     string
-		args     args
+		args     string //tx hash
 		httpCode int
-	}{
-		{"found", args{"Ck9IUvIdohSLz1grisjStIQEsfjoNGebFLU4KO1BQIk="}, 200},
-		{"not found", args{"notexists"}, 400},
+	}
+
+	tests := []testcase{
+		{"not found", "notexistshash", 400},
+	}
+
+	statusCode, txs := GetTxs(s, 0, 100)
+
+	if statusCode == http.StatusOK && len(txs.Txs) > 0 {
+		tests = append(tests, []testcase{
+			{"found", txs.Txs[0].Hash, 200},
+		}...)
 	}
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetTx(s, tt.args.txHash)
+			httpCode, result := GetTx(s, tt.args)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.NotNil(t, result.Tx.BlockHeight)
@@ -44,8 +49,8 @@ func (s *AppSuite) TestGetTx() {
 
 }
 
-func GetTx(s *AppSuite, txHash string) (int, *types.EnrichedTx) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/tx?tx_hash=%s", s.url, txHash))
+func GetTx(s *ApiServerSuite, hash string) (int, *types.EnrichedTx) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/tx?hash=%s", s.url, hash))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 

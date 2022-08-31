@@ -13,20 +13,37 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
 )
 
-func (s *AppSuite) TestGetSwapAmount() {
+func (s *ApiServerSuite) TestGetSwapAmount() {
 	type args struct {
 		pairIndex   int
 		assetId     uint32
 		assetAmount string
 		isFrom      bool
 	}
-	tests := []struct {
+
+	type testcase struct {
 		name     string
 		args     args
 		httpCode int
-	}{
-		{"found", args{1, 0, "1", true}, 200},
+	}
+
+	tests := []testcase{
 		{"not found", args{math.MaxUint32, math.MaxUint32, "1", true}, 400},
+	}
+
+	statusCode, pairs := GetPairs(s, 0, 100)
+	if statusCode == http.StatusOK && len(pairs.Pairs) > 0 {
+		for _, pair := range pairs.Pairs {
+			if pair.TotalLpAmount != "" && pair.TotalLpAmount != "0" {
+				tests = append(tests, []testcase{
+					{"found by index with from is true", args{int(pair.Index), pair.AssetAId, "9000", true}, 200},
+					{"found by index with from is true", args{int(pair.Index), pair.AssetBId, "9000", true}, 200},
+					{"found by index with from is true", args{int(pair.Index), pair.AssetAId, "9000", false}, 200},
+					{"found by index with from is true", args{int(pair.Index), pair.AssetBId, "9000", false}, 200},
+				}...)
+				break
+			}
+		}
 	}
 
 	for _, tt := range tests {
@@ -43,7 +60,7 @@ func (s *AppSuite) TestGetSwapAmount() {
 
 }
 
-func GetSwapAmount(s *AppSuite, pairIndex int) (int, *types.SwapAmount) {
+func GetSwapAmount(s *ApiServerSuite, pairIndex int) (int, *types.SwapAmount) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/swapAmount?pair_index=%d", s.url, pairIndex))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()

@@ -13,23 +13,27 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
 )
 
-func (s *AppSuite) TestGetGasFee() {
-
-	type args struct {
-		assetId int
-	}
-	tests := []struct {
+func (s *ApiServerSuite) TestGetGasFee() {
+	type testcase struct {
 		name     string
-		args     args
+		args     int //asset id
 		httpCode int
-	}{
-		{"found", args{0}, 200},
-		{"not found", args{math.MaxInt}, 400},
+	}
+
+	tests := []testcase{
+		{"not found", math.MaxInt, 400},
+	}
+
+	statusCode, assets := GetGasFeeAssets(s)
+	if statusCode == http.StatusOK && len(assets.Assets) > 0 {
+		tests = append(tests, []testcase{
+			{"found by index", int(assets.Assets[0].Id), 200},
+		}...)
 	}
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetGasFee(s, tt.args.assetId)
+			httpCode, result := GetGasFee(s, tt.args)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.NotNil(t, result.GasFee)
@@ -40,7 +44,7 @@ func (s *AppSuite) TestGetGasFee() {
 
 }
 
-func GetGasFee(s *AppSuite, assetId int) (int, *types.GasFee) {
+func GetGasFee(s *ApiServerSuite, assetId int) (int, *types.GasFee) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/gasFee?asset_id=%d", s.url, assetId))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()

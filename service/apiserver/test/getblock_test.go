@@ -12,7 +12,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
 )
 
-func (s *AppSuite) TestGetBlock() {
+func (s *ApiServerSuite) TestGetBlock() {
 
 	type args struct {
 		by    string
@@ -23,9 +23,9 @@ func (s *AppSuite) TestGetBlock() {
 		args     args
 		httpCode int
 	}{
-		{"found", args{"height", "1"}, 200},
-		{"found", args{"commitment", "0000000000000000000000000000000000000000000000000000000000000000"}, 200},
-		{"not found", args{"invalidby", ""}, 400},
+		{"found by height", args{"height", "1"}, 200},
+		{"found by commitment", args{"commitment", "0000000000000000000000000000000000000000000000000000000000000000"}, 200},
+		{"invalidby", args{"invalidby", ""}, 400},
 	}
 
 	for _, tt := range tests {
@@ -44,7 +44,7 @@ func (s *AppSuite) TestGetBlock() {
 
 }
 
-func GetBlock(s *AppSuite, by, value string) (int, *types.Block) {
+func GetBlock(s *ApiServerSuite, by, value string) (int, *types.Block) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/block?by=%s&value=%s", s.url, by, value))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()

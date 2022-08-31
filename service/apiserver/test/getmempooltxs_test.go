@@ -12,7 +12,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
 )
 
-func (s *AppSuite) TestGetMempoolTxs() {
+func (s *ApiServerSuite) TestGetMempoolTxs() {
 
 	type args struct {
 		offset int
@@ -47,7 +47,7 @@ func (s *AppSuite) TestGetMempoolTxs() {
 
 }
 
-func GetMempoolTxs(s *AppSuite, offset, limit int) (int, *types.MempoolTxs) {
+func GetMempoolTxs(s *ApiServerSuite, offset, limit int) (int, *types.MempoolTxs) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/mempoolTxs?offset=%d&limit=%d", s.url, offset, limit))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()

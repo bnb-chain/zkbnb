@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,22 +13,35 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
 )
 
-func (s *AppSuite) TestGetAccountTxs() {
-
+func (s *ApiServerSuite) TestGetAccountTxs() {
 	type args struct {
 		by     string
 		value  string
 		offset int
 		limit  int
 	}
-	tests := []struct {
+
+	type testcase struct {
 		name     string
 		args     args
 		httpCode int
-	}{
-		{"found", args{"account_index", "2", 0, 10}, 200},
-		{"found", args{"account_name", "sher.legend", 0, 10}, 200},
-		{"found", args{"account_pk", "fcb8470d33c59a5cbf5e10df426eb97c2773ab890c3364f4162ba782a56ca998", 0, 10}, 200},
+	}
+
+	tests := []testcase{
+		{"not found by index", args{"account_index", "99999999", 0, 10}, 200},
+		{"not found by name", args{"account_name", "fakeaccount.legend", 0, 10}, 200},
+		{"not found by pk", args{"account_pk", "fake8470d33c59a5cbf5e10df426eb97c2773ab890c3364f4162ba782a56ca998", 0, 10}, 200},
+		{"invalid by", args{"invalidby", "fake8470d33c59a5cbf5e10df426eb97c2773ab890c3364f4162ba782a56ca998", 0, 10}, 400},
+	}
+
+	statusCode, txs := GetTxs(s, 0, 100)
+	if statusCode == http.StatusOK && len(txs.Txs) > 0 {
+		_, account := GetAccount(s, "name", txs.Txs[len(txs.Txs)-1].AccountName)
+		tests = append(tests, []testcase{
+			{"found by index", args{"account_index", strconv.Itoa(int(account.Index)), 0, 10}, 200},
+			{"found by name", args{"account_name", account.Name, 0, 10}, 200},
+			{"found by pk", args{"account_pk", account.Pk, 0, 10}, 200},
+		}...)
 	}
 
 	for _, tt := range tests {
@@ -51,7 +65,7 @@ func (s *AppSuite) TestGetAccountTxs() {
 
 }
 
-func GetAccountTxs(s *AppSuite, by, value string, offset, limit int) (int, *types.Txs) {
+func GetAccountTxs(s *ApiServerSuite, by, value string, offset, limit int) (int, *types.Txs) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/accountTxs?by=%s&value=%s&offset=%d&limit=%d", s.url, by, value, offset, limit))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()

@@ -10,12 +10,6 @@
 GOBIN?=${GOPATH}/bin
 
 API_SERVER = ./service/apiserver
-PACKAGES = \
-           	./common/... \
-           	./core/... \
-           	./dao/... \
-           	./tree/... \
-           	./types/...
 
 api-server:
 	cd $(API_SERVER) && ${GOBIN}/goctl api go -api server.api -dir .;
@@ -29,7 +23,7 @@ integration-test:
 
 test:
 	@echo "--> Running go test"
-	@go test $(PACKAGES)
+	@go test ./...
 
 tools:
 	go install github.com/zeromicro/go-zero/tools/goctl@v1.4.0

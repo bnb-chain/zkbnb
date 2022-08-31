@@ -12,7 +12,7 @@ import (
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
 )
 
-func (s *AppSuite) TestGetPairs() {
+func (s *ApiServerSuite) TestGetPairs() {
 
 	type args struct {
 		offset int
@@ -32,15 +32,17 @@ func (s *AppSuite) TestGetPairs() {
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.NotNil(t, result.Pairs)
-				assert.NotNil(t, result.Pairs[0].Index)
-				assert.NotNil(t, result.Pairs[0].AssetAName)
-				assert.NotNil(t, result.Pairs[0].AssetBName)
-				assert.NotNil(t, result.Pairs[0].AssetAId)
-				assert.NotNil(t, result.Pairs[0].AssetBId)
-				assert.NotNil(t, result.Pairs[0].AssetAAmount)
-				assert.NotNil(t, result.Pairs[0].AssetBAmount)
-				assert.NotNil(t, result.Pairs[0].FeeRate)
-				assert.NotNil(t, result.Pairs[0].TreasuryRate)
+				if len(result.Pairs) > 0 {
+					assert.NotNil(t, result.Pairs[0].Index)
+					assert.NotNil(t, result.Pairs[0].AssetAName)
+					assert.NotNil(t, result.Pairs[0].AssetBName)
+					assert.NotNil(t, result.Pairs[0].AssetAId)
+					assert.NotNil(t, result.Pairs[0].AssetBId)
+					assert.NotNil(t, result.Pairs[0].AssetAAmount)
+					assert.NotNil(t, result.Pairs[0].AssetBAmount)
+					assert.NotNil(t, result.Pairs[0].FeeRate)
+					assert.NotNil(t, result.Pairs[0].TreasuryRate)
+				}
 				fmt.Printf("result: %+v \n", result)
 			}
 		})
@@ -48,7 +50,7 @@ func (s *AppSuite) TestGetPairs() {
 
 }
 
-func GetPairs(s *AppSuite, offset, limit int) (int, *types.Pairs) {
+func GetPairs(s *ApiServerSuite, offset, limit int) (int, *types.Pairs) {
 	resp, err := http.Get(fmt.Sprintf("%s/api/v1/pairs?offset=%d&limit=%d", s.url, offset, limit))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
