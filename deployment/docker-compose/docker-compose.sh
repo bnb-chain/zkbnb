@@ -143,12 +143,12 @@ MemCache:
 
 function up() {
     cd $WORKDIR
-    docker compose up -d
+    docker-compose up -d
 }
 
 function down() {
     cd $WORKDIR
-    docker compose down
+    docker-compose down
 }
 
 CMD=$1
