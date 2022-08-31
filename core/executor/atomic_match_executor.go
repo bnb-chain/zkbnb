@@ -195,7 +195,7 @@ func (e *AtomicMatchExecutor) ApplyTransaction() error {
 	sellOffer = new(big.Int).SetBit(sellOffer, int(e.sellOfferIndex), 1)
 	sellAccount.AssetInfo[e.sellOfferAssetId].OfferCanceledOrFinalized = sellOffer
 	buyOffer := buyAccount.AssetInfo[e.buyOfferAssetId].OfferCanceledOrFinalized
-	buyOffer = new(big.Int).SetBit(buyOffer, int(e.sellOfferIndex), 1)
+	buyOffer = new(big.Int).SetBit(buyOffer, int(e.buyOfferIndex), 1)
 	buyAccount.AssetInfo[e.buyOfferAssetId].OfferCanceledOrFinalized = buyOffer
 
 	// Change new owner.
@@ -362,7 +362,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	// buy offer
 	order++
 	buyOffer := buyAccount.AssetInfo[e.buyOfferAssetId].OfferCanceledOrFinalized
-	buyOffer = new(big.Int).SetBit(buyOffer, int(e.sellOfferIndex), 1)
+	buyOffer = new(big.Int).SetBit(buyOffer, int(e.buyOfferIndex), 1)
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      e.buyOfferAssetId,
 		AssetType:    types.FungibleAssetType,
