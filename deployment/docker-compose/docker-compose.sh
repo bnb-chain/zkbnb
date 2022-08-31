@@ -146,6 +146,7 @@ MemCache:
 
 function up() {
     cd $WORKDIR
+    docker rm -f $(docker ps -aq)
     docker-compose up -d
 }
 
