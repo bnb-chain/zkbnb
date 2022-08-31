@@ -19,7 +19,6 @@ package prove
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os/exec"
 	"testing"
@@ -52,9 +51,8 @@ var (
 func TestConstructTxWitness(t *testing.T) {
 	testDBSetup()
 	defer testDBShutdown()
-	// TODO add more test blocks when we finish all integration test
-	testBlockHeight := []int64{1}
-	for _, h := range testBlockHeight {
+	maxTestBlockHeight := int64(33)
+	for h := int64(1); h < maxTestBlockHeight; h++ {
 		witnessHelper, err := getWitnessHelper(h - 1)
 		assert.NoError(t, err)
 		b, err := blockModel.GetBlocksBetween(h, h)
@@ -103,10 +101,7 @@ func testDBSetup() {
 	testDBShutdown()
 	cmd := exec.Command("docker", "run", "--name", "postgres-ut", "-p", "5432:5432",
 		"-e", "POSTGRES_PASSWORD=Zkbas@123", "-e", "POSTGRES_USER=postgres", "-e", "POSTGRES_DB=zkbas",
-		"-e", "PGDATA=/var/lib/postgresql/pgdata", "-d", "ghcr.io/bnb-chain/zkbas/zkbas-ut-postgres:latest")
-	if errors.Is(cmd.Err, exec.ErrDot) {
-		cmd.Err = nil
-	}
+		"-e", "PGDATA=/var/lib/postgresql/pgdata", "-d", "ghcr.io/bnb-chain/zkbas/zkbas-ut-postgres:0.0.2")
 	if err := cmd.Run(); err != nil {
 		panic(err)
 	}

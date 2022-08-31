@@ -39,6 +39,7 @@ ZkBAS implement the following features so far:
 - [ZkBAS Protocol Design](./protocol.md)
 - [Quick Start Tutorial](./tutorial.md)
 - [Tokenomics](./tokenomics.md)
+- [API Reference](./api_reference.md)  
 - [Storage Layout](./storage_layout.md)
 - [Wallets](./wallets.md)
 <!--ts-->

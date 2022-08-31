@@ -7,6 +7,7 @@
 .PHONY: zkbas-linux-arm zkbas-linux-arm-5 zkbas-linux-arm-6 zkbas-linux-arm-7 zkbas-linux-arm64
 .PHONY: zkbas-darwin zkbas-darwin-386 zkbas-darwin-amd64
 .PHONY: zkbas-windows zkbas-windows-386 zkbas-windows-amd64
+GOBIN?=${GOPATH}/bin
 
 API_SERVER = ./service/apiserver
 PACKAGES = \
@@ -17,7 +18,7 @@ PACKAGES = \
            	./types/...
 
 api-server:
-	cd $(API_SERVER) && goctl api go -api server.api -dir .;
+	cd $(API_SERVER) && ${GOBIN}/goctl api go -api server.api -dir .;
 	@echo "Done generate server api";
 
 deploy:
