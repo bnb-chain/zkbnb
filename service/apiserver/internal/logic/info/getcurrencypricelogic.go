@@ -7,7 +7,6 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/logic/utils"
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
 	types2 "github.com/bnb-chain/zkbas/types"
@@ -35,10 +34,6 @@ func (l *GetCurrencyPriceLogic) GetCurrencyPrice(req *types.ReqGetCurrencyPrice)
 	symbol := ""
 	switch req.By {
 	case queryBySymbol:
-		if !utils.ValidateSymbol(req.Value) {
-			logx.Errorf("invalid Symbol: %s", req.Value)
-			return nil, types2.AppErrInvalidParam.RefineError("invalid symbol")
-		}
 		symbol = strings.ToUpper(req.Value)
 	default:
 		return nil, types2.AppErrInvalidParam.RefineError("param by should be symbol")

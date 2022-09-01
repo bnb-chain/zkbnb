@@ -37,19 +37,16 @@ func (l *GetBlockTxsLogic) GetBlockTxs(req *types.ReqGetBlockTxs) (resp *types.T
 		Txs: make([]*types.Tx, 0),
 	}
 
-	blockHeight := int64(0)
 	var block *blockdao.Block
 	switch req.By {
 	case queryByBlockHeight:
-		blockHeight, err = strconv.ParseInt(req.Value, 10, 64)
-		if err != nil {
+		height := int64(0)
+		height, err = strconv.ParseInt(req.Value, 10, 64)
+		if err != nil || height < 0 {
 			return nil, types2.AppErrInvalidParam.RefineError("invalid value for block height")
 		}
-		if blockHeight < 0 {
-			return nil, types2.AppErrInvalidParam.RefineError("invalid value for block height")
-		}
-		block, err = l.svcCtx.MemCache.GetBlockByHeightWithFallback(blockHeight, func() (interface{}, error) {
-			return l.svcCtx.BlockModel.GetBlockByHeight(blockHeight)
+		block, err = l.svcCtx.MemCache.GetBlockByHeightWithFallback(height, func() (interface{}, error) {
+			return l.svcCtx.BlockModel.GetBlockByHeight(height)
 		})
 	case queryByBlockCommitment:
 		block, err = l.svcCtx.MemCache.GetBlockByCommitmentWithFallback(req.Value, func() (interface{}, error) {

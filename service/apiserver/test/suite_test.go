@@ -37,7 +37,7 @@ func testDBSetup() {
 	if err := cmd.Run(); err != nil {
 		panic(err)
 	}
-	time.Sleep(10 * time.Second)
+	time.Sleep(5 * time.Second)
 }
 
 func testDBShutdown() {
@@ -45,7 +45,7 @@ func testDBShutdown() {
 	//nolint:errcheck
 	cmd.Run()
 	time.Sleep(time.Second)
-	cmd = exec.Command("docker", "rm", "postgres-ut")
+	cmd = exec.Command("docker", "rm", "postgres-ut-apiserver")
 	//nolint:errcheck
 	cmd.Run()
 }

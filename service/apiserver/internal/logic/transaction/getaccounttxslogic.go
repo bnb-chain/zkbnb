@@ -41,7 +41,7 @@ func (l *GetAccountTxsLogic) GetAccountTxs(req *types.ReqGetAccountTxs) (resp *t
 	switch req.By {
 	case queryByAccountIndex:
 		accountIndex, err = strconv.ParseInt(req.Value, 10, 64)
-		if err != nil {
+		if err != nil || accountIndex < 0 {
 			return nil, types2.AppErrInvalidParam.RefineError("invalid value for account_index")
 		}
 	case queryByAccountName:
