@@ -503,7 +503,7 @@ func (e *AtomicMatchExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
 		TxType:        e.tx.TxType,
 		GasFeeAssetId: e.txInfo.GasFeeAssetId,
 		GasFee:        e.txInfo.GasFeeAssetAmount.String(),
-		NftIndex:      types.NilTxNftIndex,
+		NftIndex:      types.NilNftIndex,
 		PairIndex:     types.NilPairIndex,
 		AssetId:       e.txInfo.BuyOffer.AssetId,
 		TxAmount:      e.txInfo.BuyOffer.AssetAmount.String(),
@@ -511,7 +511,6 @@ func (e *AtomicMatchExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
 		AccountIndex:  e.txInfo.AccountIndex,
 		Nonce:         e.txInfo.Nonce,
 		ExpiredAt:     e.txInfo.ExpiredAt,
-		L2BlockHeight: types.NilBlockHeight,
 		Status:        mempool.PendingTxStatus,
 		TxInfo:        e.tx.TxInfo,
 	}

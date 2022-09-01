@@ -23,27 +23,32 @@ import (
 )
 
 const (
-	BNBAssetId        = 0
-	NilPairIndex      = -1
-	NilAssetId        = 0
-	NilBlockHeight    = -1
-	NilNonce          = 0
-	NilAssetInfo      = "{}"
-	NilAccountName    = ""
-	NilAccountOrder   = -1
-	NilExpiredAt      = math.MaxInt64
-	NilCollectionId   = int64(0)
-	NilAccountIndex   = int64(0)
-	NilTxNftIndex     = int64(-1)
-	NilTxAccountIndex = int64(-1)
-	BNBDecimalsStr    = "1000000000000000000"
+	EmptyNonce            = 0
+	EmptyCollectionNonce  = 0
+	EmptyAccountAssetInfo = "{}"
+	EmptyAccountIndex     = int64(0)
+
+	NilAccountIndex    = int64(0) // todo: change nil account index to max int32
+	NilAccountName     = ""
+	NilPairIndex       = -1
+	NilNftIndex        = int64(-1)
+	NilTxAccountIndex  = int64(-1)
+	NilAssetId         = -1
+	NilAccountOrder    = -1
+	NilNonce           = -1
+	NilCollectionNonce = -1
+	NilExpiredAt       = math.MaxInt64
+
+	BNBAssetId     = 0
+	BNBDecimalsStr = "1000000000000000000"
 )
 
 var (
-	NilAssetAmountStr           = "0"
-	NilNftContentHash           = "0"
-	NilAccountNameHash          = "0"
-	NilL1TokenId                = "0"
-	NilL1Address                = "0"
-	NilOfferCanceledOrFinalized = big.NewInt(0)
+	EmptyNftContentHash           = "0"
+	EmptyAccountNameHash          = "0"
+	EmptyL1TokenId                = "0"
+	EmptyL1Address                = "0"
+	EmptyOfferCanceledOrFinalized = big.NewInt(0)
+
+	NilAssetAmountStr = "0"
 )

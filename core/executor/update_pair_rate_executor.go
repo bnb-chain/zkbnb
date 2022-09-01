@@ -165,7 +165,7 @@ func (e *UpdatePairRateExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Order:           0,
 		AccountOrder:    types.NilAccountOrder,
 		Nonce:           types.NilNonce,
-		CollectionNonce: types.NilNonce,
+		CollectionNonce: types.NilCollectionNonce,
 	}
 
 	return []*tx.TxDetail{txDetail}, nil
