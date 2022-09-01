@@ -31,7 +31,7 @@ func TestAppSuite(t *testing.T) {
 func testDBSetup() {
 	testDBShutdown()
 	time.Sleep(5 * time.Second)
-	cmd := exec.Command("docker", "run", "--name", "postgres-ut", "-p", "5433:5432",
+	cmd := exec.Command("docker", "run", "--name", "postgres-ut-apiserver", "-p", "5433:5432",
 		"-e", "POSTGRES_PASSWORD=Zkbas@123", "-e", "POSTGRES_USER=postgres", "-e", "POSTGRES_DB=zkbas",
 		"-e", "PGDATA=/var/lib/postgresql/pgdata", "-d", "ghcr.io/bnb-chain/zkbas/zkbas-ut-postgres:0.0.2")
 	if err := cmd.Run(); err != nil {
@@ -41,7 +41,7 @@ func testDBSetup() {
 }
 
 func testDBShutdown() {
-	cmd := exec.Command("docker", "kill", "postgres-ut")
+	cmd := exec.Command("docker", "kill", "postgres-ut-apiserver")
 	//nolint:errcheck
 	cmd.Run()
 	time.Sleep(time.Second)
