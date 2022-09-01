@@ -15,7 +15,7 @@ import (
 
 func (s *ApiServerSuite) TestGetSwapAmount() {
 	type args struct {
-		pairIndex   int
+		pairIndex   uint32
 		assetId     uint32
 		assetAmount string
 		isFrom      bool
@@ -36,10 +36,10 @@ func (s *ApiServerSuite) TestGetSwapAmount() {
 		for _, pair := range pairs.Pairs {
 			if pair.TotalLpAmount != "" && pair.TotalLpAmount != "0" {
 				tests = append(tests, []testcase{
-					{"found by index with from is true", args{int(pair.Index), pair.AssetAId, "9000", true}, 200},
-					{"found by index with from is true", args{int(pair.Index), pair.AssetBId, "9000", true}, 200},
-					{"found by index with from is true", args{int(pair.Index), pair.AssetAId, "9000", false}, 200},
-					{"found by index with from is true", args{int(pair.Index), pair.AssetBId, "9000", false}, 200},
+					{"found by index with from is true", args{pair.Index, pair.AssetAId, "9000", true}, 200},
+					{"found by index with from is true", args{pair.Index, pair.AssetBId, "9000", true}, 200},
+					{"found by index with from is false", args{pair.Index, pair.AssetAId, "9000", false}, 200},
+					{"found by index with from is false", args{pair.Index, pair.AssetBId, "9000", false}, 200},
 				}...)
 				break
 			}
@@ -48,7 +48,7 @@ func (s *ApiServerSuite) TestGetSwapAmount() {
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetSwapAmount(s, tt.args.pairIndex)
+			httpCode, result := GetSwapAmount(s, tt.args.pairIndex, tt.args.assetId, tt.args.assetAmount, tt.args.isFrom)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				assert.NotNil(t, result.AssetId)
@@ -60,8 +60,8 @@ func (s *ApiServerSuite) TestGetSwapAmount() {
 
 }
 
-func GetSwapAmount(s *ApiServerSuite, pairIndex int) (int, *types.SwapAmount) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/swapAmount?pair_index=%d", s.url, pairIndex))
+func GetSwapAmount(s *ApiServerSuite, pairIndex, assetId uint32, assetAmount string, isFrom bool) (int, *types.SwapAmount) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/swapAmount?pair_index=%d&asset_id=%d&asset_amount=%s&is_from=%v", s.url, pairIndex, assetId, assetAmount, isFrom))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 

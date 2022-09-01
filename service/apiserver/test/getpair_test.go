@@ -49,7 +49,7 @@ func (s *ApiServerSuite) TestGetPair() {
 }
 
 func GetPair(s *ApiServerSuite, pairIndex int) (int, *types.Pair) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/pair?pair_index=%d", s.url, pairIndex))
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/pair?index=%d", s.url, pairIndex))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
