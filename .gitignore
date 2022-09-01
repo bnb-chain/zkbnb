@@ -30,3 +30,7 @@
 **/main
 
 build
+vendor
+deployment/dependency
+deployment/configs
+deployment/.zkbas

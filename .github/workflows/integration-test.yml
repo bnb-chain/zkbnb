@@ -9,6 +9,9 @@ on:
     branches:
       - master
       - develop
+env:
+  L1_ENDPOINT: https://data-seed-prebsc-1-s1.binance.org:8545
+  L2_ENDPOINT: http://localhost:8888
 
 jobs:
   deploy:
@@ -24,28 +27,32 @@ jobs:
           echo Pull requests $PR_NUMBER
           
           cd ~
-          rm -rf ./zkbas
+          sudo rm -rf ./zkbas
           git clone --branch develop https://github.com/bnb-chain/zkbas.git
           
           cd ./zkbas
           git fetch origin pull/$PR_NUMBER/head:local-deploy-tmp
-
           git checkout local-deploy-tmp
-          
-          sudo cp -rf ./deploy-local.sh /tmp
-          
+          git rev-parse HEAD
+
           echo "start deploy new zkbas"
-          sudo bash -x /tmp/deploy-local.sh new
+          sudo bash ./deployment/tool/generate_api.sh
+          go mod tidy
+          make docker-image
+          blockNr=$(sudo bash ./deployment/tool/tool.sh blockHeight)
+          sudo bash ./deployment/tool/tool.sh all new
+          sudo bash ./deployment/docker-compose/docker-compose.sh down
+          sudo bash ./deployment/docker-compose/docker-compose.sh up $blockNr
           echo "end deploy"
 
       - name: run integration test
         run: |
           export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
-          export ZkBas=`sudo cat /root/zkbas-deploy/zkbas-contract/info/addresses.json  | jq -r '.zkbasProxy'`
-          export AssetGov=`sudo cat /root/zkbas-deploy/zkbas-contract/info/addresses.json  | jq -r '.assetGovernance'`
+          export ZkBas=$(sudo cat ~/zkbas/deployment/dependency/zkbas-contract/info/addresses.json  | jq -r '.zkbasProxy')
+          export AssetGov=$(sudo cat ~/zkbas/deployment/dependency/zkbas-contract/info/addresses.json  | jq -r '.assetGovernance')
           export TestLogLevel=2
-          export L1EndPoint=https://data-seed-prebsc-1-s1.binance.org:8545
-          export L2EndPoint=http://127.0.0.1:8888
+          export L1EndPoint=$L1_ENDPOINT
+          export L2EndPoint=$L2_ENDPOINT
           
           cd /tmp && sudo rm -rf ./zkbas-integration-test
           git clone --branch main https://github.com/bnb-chain/zkbas-integration-test.git
@@ -60,7 +67,7 @@ jobs:
           echo '3. start L2 test'
           go test -v -run TestL2Suite -timeout 30m
 
-      - name: Notification via slack
+      - name: notification via slack
         run: |
           export SLACK_WEBHOOK_URL=`sudo cat /home/ec2-user/actions-runner/slack-config.json | jq -r '.slack'`
           export JOB_STATUS=${{ job.status }}

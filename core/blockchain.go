@@ -31,8 +31,10 @@ type ChainConfig struct {
 	}
 	CacheRedis cache.CacheConf
 	TreeDB     struct {
-		Driver        tree.Driver
+		Driver tree.Driver
+		//nolint:staticcheck
 		LevelDBOption tree.LevelDBOption `json:",optional"`
+		//nolint:staticcheck
 		RedisDBOption tree.RedisDBOption `json:",optional"`
 	}
 }

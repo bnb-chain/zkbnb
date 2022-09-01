@@ -9,6 +9,11 @@
 .PHONY: zkbas-windows zkbas-windows-386 zkbas-windows-amd64
 GOBIN?=${GOPATH}/bin
 
+VERSION=$(shell git describe --tags)
+GIT_COMMIT=$(shell git rev-parse HEAD)
+GIT_COMMIT_DATE=$(shell git log -n1 --pretty='format:%cd' --date=format:'%Y%m%d')
+REPO=github.com/bnb-chain/zkbas
+IMAGE_NAME=ghcr.io/bnb-chain/zkbas
 API_SERVER = ./service/apiserver
 
 api-server:
@@ -26,12 +31,13 @@ test:
 	@go test ./...
 
 tools:
-	go install github.com/zeromicro/go-zero/tools/goctl@v1.4.0
+	go install -u github.com/zeromicro/go-zero/tools/goctl@v1.4.0
 
-build: api-server
-	go build -o build/api-server ./service/apiserver/server.go
-	go build -o build/committer ./service/committer/main.go
-	go build -o build/monitor ./service/monitor/main.go
-	go build -o build/prover ./service/prover/main.go
-	go build -o build/sender ./service/sender/main.go
-	go build -o build/witness ./service/witness/main.go
+build: api-server build-only
+
+build-only:
+	go build -o build/bin/zkbas -ldflags="-X main.version=${VERSION} -X main.gitCommit=${GIT_COMMIT} -X main.gitDate=${GIT_COMMIT_DATE}" ./cmd/zkbas
+
+docker-image:
+	go mod vendor # temporary, should be removed after open source
+	docker build . -t ${IMAGE_NAME}

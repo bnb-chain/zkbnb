@@ -15,11 +15,10 @@
  *
  */
 
-package main
+package dbinitializer
 
 import (
 	"encoding/json"
-	"flag"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
@@ -46,30 +45,86 @@ import (
 	"github.com/bnb-chain/zkbas/types"
 )
 
-var (
-	dsn   = "host=localhost user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable"
-	DB, _ = gorm.Open(postgres.Open(dsn), &gorm.Config{})
-)
+type contractAddr struct {
+	Governance         string
+	AssetGovernance    string
+	VerifierProxy      string
+	ZnsControllerProxy string
+	ZnsResolverProxy   string
+	ZkbasProxy         string
+	UpgradeGateKeeper  string
+	LEGToken           string
+	REYToken           string
+	ERC721             string
+	ZnsPriceOracle     string
+}
 
-var configFile = flag.String("f", "./contractaddr.yaml", "the config file")
-var svrConf config
+type dao struct {
+	sysConfigModel        sysconfig.SysConfigModel
+	accountModel          account.AccountModel
+	accountHistoryModel   account.AccountHistoryModel
+	assetModel            asset.AssetModel
+	mempoolModel          mempool.MempoolModel
+	failTxModel           tx.FailTxModel
+	txDetailModel         tx.TxDetailModel
+	txModel               tx.TxModel
+	blockModel            block.BlockModel
+	compressedBlockModel  compressedblock.CompressedBlockModel
+	blockWitnessModel     blockwitness.BlockWitnessModel
+	proofModel            proof.ProofModel
+	l1SyncedBlockModel    l1syncedblock.L1SyncedBlockModel
+	priorityRequestModel  priorityrequest.PriorityRequestModel
+	l1RollupTModel        l1rolluptx.L1RollupTxModel
+	liquidityModel        liquidity.LiquidityModel
+	liquidityHistoryModel liquidity.LiquidityHistoryModel
+	nftModel              nft.L2NftModel
+	nftHistoryModel       nft.L2NftHistoryModel
+}
 
-const (
-	BSCTestNetworkRPC   = "http://tf-dex-preview-validator-nlb-6fd109ac8b9d390a.elb.ap-northeast-1.amazonaws.com:8545"
-	LocalTestNetworkRPC = "http://127.0.0.1:8545/"
-)
-
-func main() {
-	conf.MustLoad(*configFile, &svrConf)
+func Initialize(
+	dsn string,
+	contractAddrFile string,
+	bscTestNetworkRPC, localTestNetworkRPC string,
+) error {
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		return err
+	}
+	var svrConf contractAddr
+	conf.MustLoad(contractAddrFile, &svrConf)
 
 	unmarshal, _ := json.Marshal(svrConf)
 	logx.Infof("init configs: %s", string(unmarshal))
 
-	dropTables()
-	initTable()
+	dao := &dao{
+		sysConfigModel:        sysconfig.NewSysConfigModel(db),
+		accountModel:          account.NewAccountModel(db),
+		accountHistoryModel:   account.NewAccountHistoryModel(db),
+		assetModel:            asset.NewAssetModel(db),
+		mempoolModel:          mempool.NewMempoolModel(db),
+		failTxModel:           tx.NewFailTxModel(db),
+		txDetailModel:         tx.NewTxDetailModel(db),
+		txModel:               tx.NewTxModel(db),
+		blockModel:            block.NewBlockModel(db),
+		compressedBlockModel:  compressedblock.NewCompressedBlockModel(db),
+		blockWitnessModel:     blockwitness.NewBlockWitnessModel(db),
+		proofModel:            proof.NewProofModel(db),
+		l1SyncedBlockModel:    l1syncedblock.NewL1SyncedBlockModel(db),
+		priorityRequestModel:  priorityrequest.NewPriorityRequestModel(db),
+		l1RollupTModel:        l1rolluptx.NewL1RollupTxModel(db),
+		liquidityModel:        liquidity.NewLiquidityModel(db),
+		liquidityHistoryModel: liquidity.NewLiquidityHistoryModel(db),
+		nftModel:              nft.NewL2NftModel(db),
+		nftHistoryModel:       nft.NewL2NftHistoryModel(db),
+	}
+
+	dropTables(dao, bscTestNetworkRPC, localTestNetworkRPC)
+	initTable(dao, &svrConf, bscTestNetworkRPC, localTestNetworkRPC)
+
+	return nil
 }
 
-func initSysConfig() []*sysconfig.SysConfig {
+func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC string) []*sysconfig.SysConfig {
 	return []*sysconfig.SysConfig{
 		{
 			Name:      types.SysGasFee,
@@ -105,13 +160,13 @@ func initSysConfig() []*sysconfig.SysConfig {
 		// network rpc
 		{
 			Name:      types.BscTestNetworkRpc,
-			Value:     BSCTestNetworkRPC,
+			Value:     bscTestNetworkRPC,
 			ValueType: "string",
 			Comment:   "BSC network rpc",
 		},
 		{
 			Name:      types.LocalTestNetworkRpc,
-			Value:     LocalTestNetworkRPC,
+			Value:     localTestNetworkRPC,
 			ValueType: "string",
 			Comment:   "Local network rpc",
 		},
@@ -138,81 +193,60 @@ func initAssetsInfo() []*asset.Asset {
 	}
 }
 
-var (
-	sysConfigModel        = sysconfig.NewSysConfigModel(DB)
-	accountModel          = account.NewAccountModel(DB)
-	accountHistoryModel   = account.NewAccountHistoryModel(DB)
-	assetModel            = asset.NewAssetModel(DB)
-	mempoolModel          = mempool.NewMempoolModel(DB)
-	failTxModel           = tx.NewFailTxModel(DB)
-	txDetailModel         = tx.NewTxDetailModel(DB)
-	txModel               = tx.NewTxModel(DB)
-	blockModel            = block.NewBlockModel(DB)
-	compressedBlockModel  = compressedblock.NewCompressedBlockModel(DB)
-	blockWitnessModel     = blockwitness.NewBlockWitnessModel(DB)
-	proofModel            = proof.NewProofModel(DB)
-	l1SyncedBlockModel    = l1syncedblock.NewL1SyncedBlockModel(DB)
-	priorityRequestModel  = priorityrequest.NewPriorityRequestModel(DB)
-	l1RollupTModel        = l1rolluptx.NewL1RollupTxModel(DB)
-	liquidityModel        = liquidity.NewLiquidityModel(DB)
-	liquidityHistoryModel = liquidity.NewLiquidityHistoryModel(DB)
-	nftModel              = nft.NewL2NftModel(DB)
-	nftHistoryModel       = nft.NewL2NftHistoryModel(DB)
-)
-
-func dropTables() {
-	assert.Nil(nil, sysConfigModel.DropSysConfigTable())
-	assert.Nil(nil, accountModel.DropAccountTable())
-	assert.Nil(nil, accountHistoryModel.DropAccountHistoryTable())
-	assert.Nil(nil, assetModel.DropAssetTable())
-	assert.Nil(nil, mempoolModel.DropMempoolTxTable())
-	assert.Nil(nil, failTxModel.DropFailTxTable())
-	assert.Nil(nil, txDetailModel.DropTxDetailTable())
-	assert.Nil(nil, txModel.DropTxTable())
-	assert.Nil(nil, blockModel.DropBlockTable())
-	assert.Nil(nil, compressedBlockModel.DropCompressedBlockTable())
-	assert.Nil(nil, blockWitnessModel.DropBlockWitnessTable())
-	assert.Nil(nil, proofModel.DropProofTable())
-	assert.Nil(nil, l1SyncedBlockModel.DropL1SyncedBlockTable())
-	assert.Nil(nil, priorityRequestModel.DropPriorityRequestTable())
-	assert.Nil(nil, l1RollupTModel.DropL1RollupTxTable())
-	assert.Nil(nil, liquidityModel.DropLiquidityTable())
-	assert.Nil(nil, liquidityHistoryModel.DropLiquidityHistoryTable())
-	assert.Nil(nil, nftModel.DropL2NftTable())
-	assert.Nil(nil, nftHistoryModel.DropL2NftHistoryTable())
+func dropTables(
+	dao *dao, bscTestNetworkRPC, localTestNetworkRPC string) {
+	assert.Nil(nil, dao.sysConfigModel.DropSysConfigTable())
+	assert.Nil(nil, dao.accountModel.DropAccountTable())
+	assert.Nil(nil, dao.accountHistoryModel.DropAccountHistoryTable())
+	assert.Nil(nil, dao.assetModel.DropAssetTable())
+	assert.Nil(nil, dao.mempoolModel.DropMempoolTxTable())
+	assert.Nil(nil, dao.failTxModel.DropFailTxTable())
+	assert.Nil(nil, dao.txDetailModel.DropTxDetailTable())
+	assert.Nil(nil, dao.txModel.DropTxTable())
+	assert.Nil(nil, dao.blockModel.DropBlockTable())
+	assert.Nil(nil, dao.compressedBlockModel.DropCompressedBlockTable())
+	assert.Nil(nil, dao.blockWitnessModel.DropBlockWitnessTable())
+	assert.Nil(nil, dao.proofModel.DropProofTable())
+	assert.Nil(nil, dao.l1SyncedBlockModel.DropL1SyncedBlockTable())
+	assert.Nil(nil, dao.priorityRequestModel.DropPriorityRequestTable())
+	assert.Nil(nil, dao.l1RollupTModel.DropL1RollupTxTable())
+	assert.Nil(nil, dao.liquidityModel.DropLiquidityTable())
+	assert.Nil(nil, dao.liquidityHistoryModel.DropLiquidityHistoryTable())
+	assert.Nil(nil, dao.nftModel.DropL2NftTable())
+	assert.Nil(nil, dao.nftHistoryModel.DropL2NftHistoryTable())
 }
 
-func initTable() {
-	assert.Nil(nil, sysConfigModel.CreateSysConfigTable())
-	assert.Nil(nil, accountModel.CreateAccountTable())
-	assert.Nil(nil, accountHistoryModel.CreateAccountHistoryTable())
-	assert.Nil(nil, assetModel.CreateAssetTable())
-	assert.Nil(nil, mempoolModel.CreateMempoolTxTable())
-	assert.Nil(nil, failTxModel.CreateFailTxTable())
-	assert.Nil(nil, blockModel.CreateBlockTable())
-	assert.Nil(nil, txModel.CreateTxTable())
-	assert.Nil(nil, txDetailModel.CreateTxDetailTable())
-	assert.Nil(nil, compressedBlockModel.CreateCompressedBlockTable())
-	assert.Nil(nil, blockWitnessModel.CreateBlockWitnessTable())
-	assert.Nil(nil, proofModel.CreateProofTable())
-	assert.Nil(nil, l1SyncedBlockModel.CreateL1SyncedBlockTable())
-	assert.Nil(nil, priorityRequestModel.CreatePriorityRequestTable())
-	assert.Nil(nil, l1RollupTModel.CreateL1RollupTxTable())
-	assert.Nil(nil, liquidityModel.CreateLiquidityTable())
-	assert.Nil(nil, liquidityHistoryModel.CreateLiquidityHistoryTable())
-	assert.Nil(nil, nftModel.CreateL2NftTable())
-	assert.Nil(nil, nftHistoryModel.CreateL2NftHistoryTable())
-	rowsAffected, err := assetModel.CreateAssetsInBatch(initAssetsInfo())
+func initTable(dao *dao, svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC string) {
+	assert.Nil(nil, dao.sysConfigModel.CreateSysConfigTable())
+	assert.Nil(nil, dao.accountModel.CreateAccountTable())
+	assert.Nil(nil, dao.accountHistoryModel.CreateAccountHistoryTable())
+	assert.Nil(nil, dao.assetModel.CreateAssetTable())
+	assert.Nil(nil, dao.mempoolModel.CreateMempoolTxTable())
+	assert.Nil(nil, dao.failTxModel.CreateFailTxTable())
+	assert.Nil(nil, dao.blockModel.CreateBlockTable())
+	assert.Nil(nil, dao.txModel.CreateTxTable())
+	assert.Nil(nil, dao.txDetailModel.CreateTxDetailTable())
+	assert.Nil(nil, dao.compressedBlockModel.CreateCompressedBlockTable())
+	assert.Nil(nil, dao.blockWitnessModel.CreateBlockWitnessTable())
+	assert.Nil(nil, dao.proofModel.CreateProofTable())
+	assert.Nil(nil, dao.l1SyncedBlockModel.CreateL1SyncedBlockTable())
+	assert.Nil(nil, dao.priorityRequestModel.CreatePriorityRequestTable())
+	assert.Nil(nil, dao.l1RollupTModel.CreateL1RollupTxTable())
+	assert.Nil(nil, dao.liquidityModel.CreateLiquidityTable())
+	assert.Nil(nil, dao.liquidityHistoryModel.CreateLiquidityHistoryTable())
+	assert.Nil(nil, dao.nftModel.CreateL2NftTable())
+	assert.Nil(nil, dao.nftHistoryModel.CreateL2NftHistoryTable())
+	rowsAffected, err := dao.assetModel.CreateAssetsInBatch(initAssetsInfo())
 	if err != nil {
 		panic(err)
 	}
 	logx.Infof("l2 assets info rows affected: %d", rowsAffected)
-	rowsAffected, err = sysConfigModel.CreateSysConfigInBatches(initSysConfig())
+	rowsAffected, err = dao.sysConfigModel.CreateSysConfigInBatches(initSysConfig(svrConf, bscTestNetworkRPC, localTestNetworkRPC))
 	if err != nil {
 		panic(err)
 	}
 	logx.Infof("sys config rows affected: %d", rowsAffected)
-	err = blockModel.CreateGenesisBlock(&block.Block{
+	err = dao.blockModel.CreateGenesisBlock(&block.Block{
 		BlockCommitment:              "0000000000000000000000000000000000000000000000000000000000000000",
 		BlockHeight:                  0,
 		StateRoot:                    common.Bytes2Hex(tree.NilStateRoot),
@@ -227,18 +261,4 @@ func initTable() {
 	if err != nil {
 		panic(err)
 	}
-}
-
-type config struct {
-	Governance         string
-	AssetGovernance    string
-	VerifierProxy      string
-	ZnsControllerProxy string
-	ZnsResolverProxy   string
-	ZkbasProxy         string
-	UpgradeGateKeeper  string
-	LEGToken           string
-	REYToken           string
-	ERC721             string
-	ZnsPriceOracle     string
 }
