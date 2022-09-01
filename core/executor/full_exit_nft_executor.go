@@ -81,14 +81,18 @@ func (e *FullExitNftExecutor) Prepare() error {
 		CreatorTreasuryRate: emptyNftInfo.CreatorTreasuryRate,
 		CollectionId:        emptyNftInfo.CollectionId,
 	}
+
+	var isExitEmptyNft = true
 	err = e.bc.StateDB().PrepareNft(txInfo.NftIndex)
-	if err == nil && bc.StateDB().NftMap[txInfo.NftIndex].OwnerAccountIndex == account.AccountIndex {
+	if err == nil &&
+		bc.StateDB().NftMap[txInfo.NftIndex].OwnerAccountIndex == account.AccountIndex {
 		// Set the right nft if the owner is correct.
 		exitNft = bc.StateDB().NftMap[txInfo.NftIndex]
+		isExitEmptyNft = false
 	}
 
 	accounts := []int64{account.AccountIndex}
-	if exitNft.CreatorAccountIndex != types.NilAccountIndex {
+	if isExitEmptyNft {
 		accounts = append(accounts, exitNft.CreatorAccountIndex)
 	}
 	assets := []int64{0} // Just used for generate an empty tx detail.
@@ -101,8 +105,8 @@ func (e *FullExitNftExecutor) Prepare() error {
 	// Set the right tx info.
 	txInfo.CreatorAccountIndex = exitNft.CreatorAccountIndex
 	txInfo.CreatorTreasuryRate = exitNft.CreatorTreasuryRate
-	txInfo.CreatorAccountNameHash = common.FromHex(types.NilAccountNameHash)
-	if exitNft.CreatorAccountIndex != types.NilAccountIndex {
+	txInfo.CreatorAccountNameHash = common.FromHex(types.EmptyAccountNameHash)
+	if isExitEmptyNft {
 		txInfo.CreatorAccountNameHash = common.FromHex(bc.StateDB().AccountMap[exitNft.CreatorAccountIndex].AccountNameHash)
 	}
 	txInfo.NftL1Address = exitNft.NftL1Address
@@ -120,7 +124,7 @@ func (e *FullExitNftExecutor) VerifyInputs() error {
 
 	if bc.StateDB().NftMap[txInfo.NftIndex] == nil || txInfo.AccountIndex != bc.StateDB().NftMap[txInfo.NftIndex].OwnerAccountIndex {
 		// The check is not fully enough, just avoid explicit error.
-		if !bytes.Equal(txInfo.NftContentHash, common.FromHex(types.NilNftContentHash)) {
+		if !bytes.Equal(txInfo.NftContentHash, common.FromHex(types.EmptyNftContentHash)) {
 			return errors.New("invalid nft content hash")
 		}
 	} else {

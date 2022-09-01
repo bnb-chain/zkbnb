@@ -39,7 +39,6 @@ func DbMempooltxTx(tx *mempool.MempoolTx) *types.Tx {
 		GasFee:        tx.GasFee,
 		GasFeeAssetId: tx.GasFeeAssetId,
 		Status:        int64(tx.Status),
-		BlockHeight:   tx.L2BlockHeight,
 		NftIndex:      tx.NftIndex,
 		PairIndex:     tx.PairIndex,
 		AssetId:       tx.AssetId,

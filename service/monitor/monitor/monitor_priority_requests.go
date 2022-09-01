@@ -57,15 +57,14 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			TxHash:        txHash,
 			GasFeeAssetId: types.NilAssetId,
 			GasFee:        types.NilAssetAmountStr,
-			NftIndex:      types.NilTxNftIndex,
+			NftIndex:      types.NilNftIndex,
 			PairIndex:     types.NilPairIndex,
 			AssetId:       types.NilAssetId,
 			TxAmount:      types.NilAssetAmountStr,
 			NativeAddress: request.SenderAddress,
-			AccountIndex:  types.NilAccountIndex,
+			AccountIndex:  types.NilTxAccountIndex,
 			Nonce:         types.NilNonce,
 			ExpiredAt:     types.NilExpiredAt,
-			L2BlockHeight: types.NilBlockHeight,
 			Status:        mempool.PendingTxStatus,
 		}
 		// handle request based on request type

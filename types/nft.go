@@ -48,13 +48,13 @@ func ParseNftInfo(infoStr string) (info *NftInfo, err error) {
 func EmptyNftInfo(nftIndex int64) (info *NftInfo) {
 	return &NftInfo{
 		NftIndex:            nftIndex,
-		CreatorAccountIndex: NilAccountIndex,
-		OwnerAccountIndex:   NilAccountIndex,
-		NftContentHash:      NilNftContentHash,
-		NftL1TokenId:        NilL1TokenId,
-		NftL1Address:        NilL1Address,
+		CreatorAccountIndex: EmptyAccountIndex,
+		OwnerAccountIndex:   EmptyAccountIndex,
+		NftContentHash:      EmptyNftContentHash,
+		NftL1TokenId:        EmptyL1TokenId,
+		NftL1Address:        EmptyL1Address,
 		CreatorTreasuryRate: 0,
-		CollectionId:        0,
+		CollectionId:        EmptyCollectionNonce,
 	}
 }
 

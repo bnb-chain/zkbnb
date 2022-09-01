@@ -268,7 +268,7 @@ func (e *CancelOfferExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
 		TxType:        e.tx.TxType,
 		GasFeeAssetId: e.txInfo.GasFeeAssetId,
 		GasFee:        e.txInfo.GasFeeAssetAmount.String(),
-		NftIndex:      types.NilTxNftIndex,
+		NftIndex:      types.NilNftIndex,
 		PairIndex:     types.NilPairIndex,
 		AssetId:       types.NilAssetId,
 		TxAmount:      "",
@@ -276,7 +276,6 @@ func (e *CancelOfferExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
 		AccountIndex:  e.txInfo.AccountIndex,
 		Nonce:         e.txInfo.Nonce,
 		ExpiredAt:     e.txInfo.ExpiredAt,
-		L2BlockHeight: types.NilBlockHeight,
 		Status:        mempool.PendingTxStatus,
 		TxInfo:        e.tx.TxInfo,
 	}

@@ -76,7 +76,10 @@ func (e *DepositNftExecutor) Prepare() error {
 	}
 
 	// Check if it is a new nft, or it is a nft previously withdraw from layer2.
-	if txInfo.NftIndex == 0 && txInfo.CollectionId == 0 && txInfo.CreatorAccountIndex == 0 && txInfo.CreatorTreasuryRate == 0 {
+	if txInfo.NftIndex == 0 &&
+		txInfo.CollectionId == 0 &&
+		txInfo.CreatorAccountIndex == 0 &&
+		txInfo.CreatorTreasuryRate == 0 {
 		e.isNewNft = true
 		// Set new nft index for new nft.
 		txInfo.NftIndex = bc.StateDB().GetNextNftIndex()

@@ -256,7 +256,7 @@ func (e *TransferExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
 		TxType:        e.tx.TxType,
 		GasFeeAssetId: e.txInfo.GasFeeAssetId,
 		GasFee:        e.txInfo.GasFeeAssetAmount.String(),
-		NftIndex:      types.NilTxNftIndex,
+		NftIndex:      types.NilNftIndex,
 		PairIndex:     types.NilPairIndex,
 		AssetId:       types.NilAssetId,
 		TxAmount:      e.txInfo.AssetAmount.String(),
@@ -264,7 +264,6 @@ func (e *TransferExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
 		AccountIndex:  e.txInfo.FromAccountIndex,
 		Nonce:         e.txInfo.Nonce,
 		ExpiredAt:     e.txInfo.ExpiredAt,
-		L2BlockHeight: types.NilBlockHeight,
 		Status:        mempool.PendingTxStatus,
 		TxInfo:        e.tx.TxInfo,
 	}
