@@ -33,12 +33,8 @@ func (s *ApiServerSuite) TestGetMaxOfferId() {
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetMaxOfferId(s, tt.args)
+			httpCode, _ := GetMaxOfferId(s, tt.args)
 			assert.Equal(t, tt.httpCode, httpCode)
-			if httpCode == http.StatusOK {
-				assert.True(t, result.OfferId >= 0)
-				fmt.Printf("result: %+v \n", result)
-			}
 		})
 	}
 
@@ -56,6 +52,7 @@ func GetMaxOfferId(s *ApiServerSuite, accountIndex int) (int, *types.MaxOfferId)
 		return resp.StatusCode, nil
 	}
 	result := types.MaxOfferId{}
-	err = json.Unmarshal(body, &result)
+	//nolint: errcheck
+	json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

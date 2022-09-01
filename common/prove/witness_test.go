@@ -117,8 +117,10 @@ func testDBSetup() {
 
 func testDBShutdown() {
 	cmd := exec.Command("docker", "kill", "postgres-ut")
+	//nolint:errcheck
 	cmd.Run()
 	time.Sleep(time.Second)
 	cmd = exec.Command("docker", "rm", "postgres-ut")
+	//nolint:errcheck
 	cmd.Run()
 }

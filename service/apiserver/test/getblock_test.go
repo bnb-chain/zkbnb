@@ -56,6 +56,7 @@ func GetBlock(s *ApiServerSuite, by, value string) (int, *types.Block) {
 		return resp.StatusCode, nil
 	}
 	result := types.Block{}
-	err = json.Unmarshal(body, &result)
+	//nolint:errcheck
+	json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

@@ -71,6 +71,7 @@ func Search(s *ApiServerSuite, keyword string) (int, *types.Search) {
 		return resp.StatusCode, nil
 	}
 	result := types.Search{}
-	err = json.Unmarshal(body, &result)
+	//nolint: errcheck
+	json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

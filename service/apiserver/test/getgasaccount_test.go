@@ -47,6 +47,7 @@ func GetGasAccount(s *ApiServerSuite) (int, *types.GasAccount) {
 		return resp.StatusCode, nil
 	}
 	result := types.GasAccount{}
-	err = json.Unmarshal(body, &result)
+	//nolint: errcheck
+	json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

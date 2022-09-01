@@ -44,7 +44,6 @@ func ComputeNewBalance(assetType int64, balance string, balanceDelta string) (ne
 			assetInfo.OfferCanceledOrFinalized = assetDelta.OfferCanceledOrFinalized
 		}
 		newBalance = assetInfo.String()
-		break
 	case types.LiquidityAssetType:
 		// balance: LiquidityInfo
 		liquidityInfo, err := types.ParseLiquidityInfo(balance)
@@ -67,11 +66,9 @@ func ComputeNewBalance(assetType int64, balance string, balanceDelta string) (ne
 		liquidityInfo.TreasuryAccountIndex = deltaLiquidity.TreasuryAccountIndex
 		liquidityInfo.TreasuryRate = deltaLiquidity.TreasuryRate
 		newBalance = liquidityInfo.String()
-		break
 	case types.NftAssetType:
 		// just set the old one as the new one
 		newBalance = balanceDelta
-		break
 	default:
 		return "", errors.New("[ComputeNewBalance] invalid asset type")
 	}

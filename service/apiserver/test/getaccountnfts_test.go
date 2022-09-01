@@ -75,6 +75,7 @@ func GetAccountNfts(s *ApiServerSuite, by, value string, offset, limit int) (int
 		return resp.StatusCode, nil
 	}
 	result := types.Nfts{}
-	err = json.Unmarshal(body, &result)
+	//nolint:errcheck
+	json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

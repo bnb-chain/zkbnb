@@ -75,6 +75,6 @@ func GetAccountMempoolTxs(s *ApiServerSuite, by, value string) (int, *types.Memp
 		return resp.StatusCode, nil
 	}
 	result := types.MempoolTxs{}
-	err = json.Unmarshal(body, &result)
+	_ = json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

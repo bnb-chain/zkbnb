@@ -61,6 +61,7 @@ func GetTx(s *ApiServerSuite, hash string) (int, *types.EnrichedTx) {
 		return resp.StatusCode, nil
 	}
 	result := types.EnrichedTx{}
-	err = json.Unmarshal(body, &result)
+	//nolint: errcheck
+	json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

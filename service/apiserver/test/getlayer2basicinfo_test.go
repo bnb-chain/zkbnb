@@ -52,6 +52,7 @@ func GetLayer2BasicInfo(s *ApiServerSuite) (int, *types.Layer2BasicInfo) {
 		return resp.StatusCode, nil
 	}
 	result := types.Layer2BasicInfo{}
-	err = json.Unmarshal(body, &result)
+	//nolint: errcheck
+	json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

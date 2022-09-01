@@ -3,7 +3,6 @@ package price
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -67,12 +66,8 @@ func (f *fetcher) getLatestQuotes(symbol string) (map[string]QuoteLatest, error)
 	if err = json.Unmarshal(body, &currencyPrice); err != nil {
 		return nil, types.JsonErrUnmarshal
 	}
-	ifcs, ok := currencyPrice.Data.(interface{})
-	if !ok {
-		return nil, errors.New("type conversion error")
-	}
 	quotesLatest := make(map[string]QuoteLatest, 0)
-	for _, coinObj := range ifcs.(map[string]interface{}) {
+	for _, coinObj := range currencyPrice.Data.(map[string]interface{}) {
 		b, err := json.Marshal(coinObj)
 		if err != nil {
 			return nil, types.JsonErrMarshal

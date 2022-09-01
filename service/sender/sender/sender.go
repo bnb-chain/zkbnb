@@ -205,6 +205,7 @@ func (s *Sender) UpdateSentTxs() (err error) {
 			logx.Errorf("query transaction receipt %s failed, err: %v", txHash, err)
 			if time.Now().After(pendingTx.UpdatedAt.Add(time.Duration(s.config.ChainConfig.MaxWaitingTime) * time.Second)) {
 				// No need to check the response, do best effort.
+				//nolint:errcheck
 				s.l1RollupTxModel.DeleteL1RollupTx(pendingTx)
 			}
 			continue

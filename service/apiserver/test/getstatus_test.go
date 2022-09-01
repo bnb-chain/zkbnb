@@ -50,6 +50,7 @@ func GetStatus(s *ApiServerSuite) (int, *types.Status) {
 		return resp.StatusCode, nil
 	}
 	result := types.Status{}
-	err = json.Unmarshal(body, &result)
+	//nolint: errcheck
+	json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }
