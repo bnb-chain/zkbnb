@@ -30,11 +30,11 @@ function prepare() {
         go test ./legend/circuit/bn254/solidity -timeout 99999s -run TestExportSol
         mkdir -p $KEY_PATH
         cp -r ./legend/circuit/bn254/solidity/* $KEY_PATH/
-
-        echo 'start verify_parse for ZkbasVerifier ...'
-        cd ${WORKDIR}/../service/prover/
-        python3 verifier_parse.py ${KEY_PATH}/ZkbasVerifier1.sol,${KEY_PATH}/ZkbasVerifier10.sol 1,10 ${WORKDIR}/dependency/zkbas-contract/contracts/ZkbasVerifier.sol
     fi
+
+    echo 'start verify_parse for ZkbasVerifier ...'
+    cd ${WORKDIR}/../service/prover/
+    python3 verifier_parse.py ${KEY_PATH}/ZkbasVerifier1.sol,${KEY_PATH}/ZkbasVerifier10.sol 1,10 ${WORKDIR}/dependency/zkbas-contract/contracts/ZkbasVerifier.sol
 }
 
 function getLatestBlockHeight() {
