@@ -26,7 +26,7 @@ deploy:
 integration-test:
 	sudo bash -x ./local-test.sh
 
-test:
+test: api-server
 	@echo "--> Running go test"
 	@go test ./...
 

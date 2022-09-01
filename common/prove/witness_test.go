@@ -30,6 +30,7 @@ import (
 
 	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
 	"github.com/bnb-chain/zkbas-smt/database/memory"
+
 	"github.com/bnb-chain/zkbas/dao/account"
 	"github.com/bnb-chain/zkbas/dao/block"
 	"github.com/bnb-chain/zkbas/dao/blockwitness"
@@ -39,7 +40,7 @@ import (
 )
 
 var (
-	dsn                   = "host=localhost user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable"
+	dsn                   = "host=localhost user=postgres password=Zkbas@123 dbname=zkbas port=5434 sslmode=disable"
 	blockModel            block.BlockModel
 	witnessModel          blockwitness.BlockWitnessModel
 	accountModel          account.AccountModel
@@ -99,7 +100,8 @@ func getWitnessHelper(blockHeight int64) (*WitnessHelper, error) {
 
 func testDBSetup() {
 	testDBShutdown()
-	cmd := exec.Command("docker", "run", "--name", "postgres-ut", "-p", "5432:5432",
+	time.Sleep(5 * time.Second)
+	cmd := exec.Command("docker", "run", "--name", "postgres-ut-witness", "-p", "5434:5432",
 		"-e", "POSTGRES_PASSWORD=Zkbas@123", "-e", "POSTGRES_USER=postgres", "-e", "POSTGRES_DB=zkbas",
 		"-e", "PGDATA=/var/lib/postgresql/pgdata", "-d", "ghcr.io/bnb-chain/zkbas/zkbas-ut-postgres:0.0.2")
 	if err := cmd.Run(); err != nil {
@@ -116,7 +118,7 @@ func testDBSetup() {
 }
 
 func testDBShutdown() {
-	cmd := exec.Command("docker", "kill", "postgres-ut")
+	cmd := exec.Command("docker", "kill", "postgres-ut-witness")
 	//nolint:errcheck
 	cmd.Run()
 	time.Sleep(time.Second)
