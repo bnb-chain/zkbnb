@@ -59,16 +59,16 @@ npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deposit.js
 
 
 echo '5. modify deployed contracts into zkbas config'
-cd ~/zkbas-deploy/zkbas/common/model/init/
+cd ~/zkbas-deploy/zkbas/tools/dbinitializer/
 cp -r ./contractaddr.yaml.example ./contractaddr.yaml
 
 ZkbasContractAddr=`cat ~/zkbas-deploy/zkbas-contract/info/addresses.json  | jq -r '.zkbasProxy'`
-sed -i "s/ZkbasProxy: .*/ZkbasProxy: ${ZkbasContractAddr}/" ~/zkbas-deploy/zkbas/common/model/init/contractaddr.yaml
+sed -i "s/ZkbasProxy: .*/ZkbasProxy: ${ZkbasContractAddr}/" ~/zkbas-deploy/zkbas/tools/dbinitializer/contractaddr.yaml
 
 GovernanceContractAddr=`cat ~/zkbas-deploy/zkbas-contract/info/addresses.json  | jq -r '.governance'`
-sed -i "s/Governance: .*/Governance: ${GovernanceContractAddr}/" ~/zkbas-deploy/zkbas/common/model/init/contractaddr.yaml
+sed -i "s/Governance: .*/Governance: ${GovernanceContractAddr}/" ~/zkbas-deploy/zkbas/tools/dbinitializer/contractaddr.yaml
 
-sed -i "s/BSC_Test_Network_RPC *= .*/BSC_Test_Network_RPC   = \"https\:\/\/data-seed-prebsc-1-s1.binance.org:8545\"/" ~/zkbas-deploy/zkbas/common/model/init/init.go
+sed -i "s/BSC_Test_Network_RPC *= .*/BSC_Test_Network_RPC   = \"https\:\/\/data-seed-prebsc-1-s1.binance.org:8545\"/" ~/zkbas-deploy/zkbas/tools/dbinitializer/main.go
 
 
 
@@ -79,8 +79,8 @@ cd ~/zkbas-deploy/zkbas && go mod tidy
 
 
 echo "6. init tables on database"
-sed -i "s/password=.* dbname/password=Zkbas@123 dbname/" ~/zkbas-deploy/zkbas/common/model/basic/connection.go
-cd ~/zkbas-deploy/zkbas/common/model/init/
+sed -i "s/password=.* dbname/password=Zkbas@123 dbname/" ~/zkbas-deploy/zkbas/tools/dbinitializer/main.go
+cd ~/zkbas-deploy/zkbas/tools/dbinitializer/
 go run .
 
 
@@ -214,7 +214,6 @@ ChainConfig:
   MaxBlockCount: 4
   Sk: "acbaa269bd7573ff12361be4b97201aef019776ea13384681d4e5ba6a88367d9"
   GasLimit: 5000000
-  L1ChainId: \"97\"
 
 TreeDB:
   Driver: memorydb

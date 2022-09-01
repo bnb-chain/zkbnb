@@ -7,24 +7,37 @@
 .PHONY: zkbas-linux-arm zkbas-linux-arm-5 zkbas-linux-arm-6 zkbas-linux-arm-7 zkbas-linux-arm64
 .PHONY: zkbas-darwin zkbas-darwin-386 zkbas-darwin-amd64
 .PHONY: zkbas-windows zkbas-windows-386 zkbas-windows-amd64
+GOBIN?=${GOPATH}/bin
 
-APP = ./service/api/app
-EXPLORE = ./service/api/explorer
+VERSION=$(shell git describe --tags)
+GIT_COMMIT=$(shell git rev-parse HEAD)
+GIT_COMMIT_DATE=$(shell git log -n1 --pretty='format:%cd' --date=format:'%Y%m%d')
+REPO=github.com/bnb-chain/zkbas
+IMAGE_NAME=ghcr.io/bnb-chain/zkbas
+API_SERVER = ./service/apiserver
 
-globalRPCProtoPath = ./service/rpc/globalRPC
-
-app:
-	cd $(APP) && goctl api go -api app.api -dir .;
-	@echo "Done generate app api";
-
-
-globalRPCProto:
-	cd $(globalRPCProtoPath) && goctl rpc protoc globalRPC.proto --go_out=. --go-grpc_out=. --zrpc_out=.;
-	@echo "Done generate globalRPCProto";
-
+api-server:
+	cd $(API_SERVER) && ${GOBIN}/goctl api go -api server.api -dir .;
+	@echo "Done generate server api";
 
 deploy:
 	sudo bash -x ./deploy-local.sh new
 
-test:
+integration-test:
 	sudo bash -x ./local-test.sh
+
+test:
+	@echo "--> Running go test"
+	@go test ./...
+
+tools:
+	go install -u github.com/zeromicro/go-zero/tools/goctl@v1.4.0
+
+build: api-server build-only
+
+build-only:
+	go build -o build/bin/zkbas -ldflags="-X main.version=${VERSION} -X main.gitCommit=${GIT_COMMIT} -X main.gitDate=${GIT_COMMIT_DATE}" ./cmd/zkbas
+
+docker-image:
+	go mod vendor # temporary, should be removed after open source
+	docker build . -t ${IMAGE_NAME}
