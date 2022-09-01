@@ -30,6 +30,7 @@ func TestAppSuite(t *testing.T) {
 
 func testDBSetup() {
 	testDBShutdown()
+	time.Sleep(time.Second)
 	cmd := exec.Command("docker", "run", "--name", "postgres-ut", "-p", "5432:5432",
 		"-e", "POSTGRES_PASSWORD=Zkbas@123", "-e", "POSTGRES_USER=postgres", "-e", "POSTGRES_DB=zkbas",
 		"-e", "PGDATA=/var/lib/postgresql/pgdata", "-d", "ghcr.io/bnb-chain/zkbas/zkbas-ut-postgres:0.0.2")
