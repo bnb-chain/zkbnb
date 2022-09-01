@@ -38,11 +38,16 @@ jobs:
           echo "start deploy new zkbas"
           sudo bash ./deployment/tool/generate_api.sh
           go mod tidy
+          docker image prune -f
           make docker-image
+          cp -r /server/test.keyfile ./deployment/
+          mv ./deployment/test.keyfile ./deployment/.zkbas
           blockNr=$(sudo bash ./deployment/tool/tool.sh blockHeight)
-          sudo bash ./deployment/tool/tool.sh all new
+          sudo bash ./deployment/tool/tool.sh all
           sudo bash ./deployment/docker-compose/docker-compose.sh down
           sudo bash ./deployment/docker-compose/docker-compose.sh up $blockNr
+          echo "Waiting 5m for the initialization tx to be verified"
+          sleep 5m # Waiting for the initialization tx to be verified
           echo "end deploy"
 
       - name: run integration test
