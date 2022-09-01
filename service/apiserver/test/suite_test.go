@@ -30,8 +30,8 @@ func TestAppSuite(t *testing.T) {
 
 func testDBSetup() {
 	testDBShutdown()
-	time.Sleep(time.Second)
-	cmd := exec.Command("docker", "run", "--name", "postgres-ut", "-p", "5432:5432",
+	time.Sleep(5 * time.Second)
+	cmd := exec.Command("docker", "run", "--name", "postgres-ut", "-p", "5433:5432",
 		"-e", "POSTGRES_PASSWORD=Zkbas@123", "-e", "POSTGRES_USER=postgres", "-e", "POSTGRES_DB=zkbas",
 		"-e", "PGDATA=/var/lib/postgresql/pgdata", "-d", "ghcr.io/bnb-chain/zkbas/zkbas-ut-postgres:0.0.2")
 	if err := cmd.Run(); err != nil {
@@ -61,7 +61,7 @@ func (s *ApiServerSuite) SetupSuite() {
 		CacheRedis: nil,
 		LogConf:    logx.LogConf{},
 	}
-	c.Postgres = struct{ DataSource string }{DataSource: "host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable"}
+	c.Postgres = struct{ DataSource string }{DataSource: "host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5433 sslmode=disable"}
 	c.CacheRedis = cache.CacheConf{}
 	c.CacheRedis = append(c.CacheRedis, cache.NodeConf{
 		RedisConf: redis.RedisConf{Host: "127.0.0.1"},
@@ -71,7 +71,7 @@ func (s *ApiServerSuite) SetupSuite() {
 	c.Port += 1000
 	ctx := svc.NewServiceContext(c)
 
-	s.url = fmt.Sprintf("http://%s:%d", c.Host, c.Port)
+	s.url = fmt.Sprintf("http://127.0.0.1:%d", c.Port)
 	s.server = rest.MustNewServer(c.RestConf, rest.WithCors())
 
 	handler.RegisterHandlers(s.server, ctx)
