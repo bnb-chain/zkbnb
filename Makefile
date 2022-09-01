@@ -35,6 +35,9 @@ tools:
 
 build: api-server build-only
 
+lint:
+	golangci-lint run ./...
+
 build-only:
 	go build -o build/bin/zkbas -ldflags="-X main.version=${VERSION} -X main.gitCommit=${GIT_COMMIT} -X main.gitDate=${GIT_COMMIT_DATE}" ./cmd/zkbas
 

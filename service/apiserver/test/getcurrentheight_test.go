@@ -46,6 +46,7 @@ func GetCurrentHeight(s *ApiServerSuite) (int, *types.CurrentHeight) {
 		return resp.StatusCode, nil
 	}
 	result := types.CurrentHeight{}
-	err = json.Unmarshal(body, &result)
+	//nolint: errcheck
+	json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

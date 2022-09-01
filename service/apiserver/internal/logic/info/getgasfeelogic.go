@@ -2,6 +2,7 @@ package info
 
 import (
 	"context"
+	asset2 "github.com/bnb-chain/zkbas/dao/asset"
 	"math/big"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -40,7 +41,7 @@ func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.GasFee, erro
 		return nil, types2.AppErrInternal
 	}
 
-	if asset.IsGasAsset != asset.IsGasAsset {
+	if asset.IsGasAsset != asset2.IsGasAsset {
 		logx.Errorf("not gas asset id: %d", asset.AssetId)
 		return nil, types2.AppErrInvalidGasAsset
 	}

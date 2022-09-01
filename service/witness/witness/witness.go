@@ -209,7 +209,6 @@ func (w *Witness) RescheduleBlockWitness() {
 			return
 		}
 	}
-	return
 }
 
 func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockNr int64) (*blockwitness.BlockWitness, error) {

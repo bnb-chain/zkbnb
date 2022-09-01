@@ -33,12 +33,8 @@ func (s *ApiServerSuite) TestGeNextNonce() {
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetNextNonce(s, tt.args)
+			httpCode, _ := GetNextNonce(s, tt.args)
 			assert.Equal(t, tt.httpCode, httpCode)
-			if httpCode == http.StatusOK {
-				assert.True(t, result.Nonce >= 0)
-				fmt.Printf("result: %+v \n", result)
-			}
 		})
 	}
 
@@ -56,6 +52,7 @@ func GetNextNonce(s *ApiServerSuite, accountIndex int) (int, *types.NextNonce) {
 		return resp.StatusCode, nil
 	}
 	result := types.NextNonce{}
-	err = json.Unmarshal(body, &result)
+	//nolint: errcheck
+	json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

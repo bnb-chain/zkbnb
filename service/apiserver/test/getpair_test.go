@@ -60,6 +60,7 @@ func GetPair(s *ApiServerSuite, pairIndex int) (int, *types.Pair) {
 		return resp.StatusCode, nil
 	}
 	result := types.Pair{}
-	err = json.Unmarshal(body, &result)
+	//nolint: errcheck
+	json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

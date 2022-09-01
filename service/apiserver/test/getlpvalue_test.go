@@ -71,6 +71,7 @@ func GetLpValue(s *ApiServerSuite, pairIndex int, lpAmount string) (int, *types.
 		return resp.StatusCode, nil
 	}
 	result := types.LpValue{}
-	err = json.Unmarshal(body, &result)
+	//nolint: errcheck
+	json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

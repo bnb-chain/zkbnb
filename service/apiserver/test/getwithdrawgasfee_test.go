@@ -56,6 +56,7 @@ func GetWithdrawGasFee(s *ApiServerSuite, assetId int) (int, *types.GasFee) {
 		return resp.StatusCode, nil
 	}
 	result := types.GasFee{}
-	err = json.Unmarshal(body, &result)
+	//nolint: errcheck
+	json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

@@ -59,6 +59,7 @@ func GetMempoolTxs(s *ApiServerSuite, offset, limit int) (int, *types.MempoolTxs
 		return resp.StatusCode, nil
 	}
 	result := types.MempoolTxs{}
-	err = json.Unmarshal(body, &result)
+	//nolint: errcheck
+	json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

@@ -77,6 +77,7 @@ func GetAccountTxs(s *ApiServerSuite, by, value string, offset, limit int) (int,
 		return resp.StatusCode, nil
 	}
 	result := types.Txs{}
-	err = json.Unmarshal(body, &result)
+	//nolint:errcheck
+	json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

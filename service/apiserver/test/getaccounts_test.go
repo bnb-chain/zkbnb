@@ -58,6 +58,7 @@ func GetAccounts(s *ApiServerSuite, offset, limit int) (int, *types.Accounts) {
 		return resp.StatusCode, nil
 	}
 	result := types.Accounts{}
-	err = json.Unmarshal(body, &result)
+	//nolint:errcheck
+	json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

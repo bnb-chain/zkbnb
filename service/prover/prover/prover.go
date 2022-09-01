@@ -94,6 +94,7 @@ func (p *Prover) ProveBlock() error {
 		if err != nil {
 			return nil, err
 		}
+		//nolint:errcheck
 		defer lock.Release()
 
 		// Fetch unproved block witness.

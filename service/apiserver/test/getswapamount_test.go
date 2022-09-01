@@ -72,6 +72,7 @@ func GetSwapAmount(s *ApiServerSuite, pairIndex int) (int, *types.SwapAmount) {
 		return resp.StatusCode, nil
 	}
 	result := types.SwapAmount{}
-	err = json.Unmarshal(body, &result)
+	//nolint: errcheck
+	json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

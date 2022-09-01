@@ -55,6 +55,7 @@ func GetAssets(s *ApiServerSuite, offset, limit int) (int, *types.Assets) {
 		return resp.StatusCode, nil
 	}
 	result := types.Assets{}
-	err = json.Unmarshal(body, &result)
+	//nolint: errcheck
+	json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

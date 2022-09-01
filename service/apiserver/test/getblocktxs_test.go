@@ -71,6 +71,7 @@ func GetBlockTxs(s *ApiServerSuite, by, value string) (int, *types.Txs) {
 		return resp.StatusCode, nil
 	}
 	result := types.Txs{}
-	err = json.Unmarshal(body, &result)
+	//nolint: errcheck
+	json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
 }

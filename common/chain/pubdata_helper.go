@@ -46,7 +46,7 @@ func ParseRegisterZnsPubData(pubData []byte) (tx *types.RegisterZnsTxInfo, err e
 	offset, accountName := common2.ReadBytes32(pubData, offset)
 	offset, accountNameHash := common2.ReadBytes32(pubData, offset)
 	offset, pubKeyX := common2.ReadBytes32(pubData, offset)
-	offset, pubKeyY := common2.ReadBytes32(pubData, offset)
+	_, pubKeyY := common2.ReadBytes32(pubData, offset)
 	pk := new(eddsa.PublicKey)
 	pk.A.X.SetBytes(pubKeyX)
 	pk.A.Y.SetBytes(pubKeyY)
@@ -71,7 +71,7 @@ func ParseCreatePairPubData(pubData []byte) (tx *types.CreatePairTxInfo, err err
 	offset, assetBId := common2.ReadUint16(pubData, offset)
 	offset, feeRate := common2.ReadUint16(pubData, offset)
 	offset, treasuryAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, treasuryRate := common2.ReadUint16(pubData, offset)
+	_, treasuryRate := common2.ReadUint16(pubData, offset)
 	tx = &types.CreatePairTxInfo{
 		TxType:               txType,
 		PairIndex:            int64(pairIndex),
@@ -93,7 +93,7 @@ func ParseUpdatePairRatePubData(pubData []byte) (tx *types.UpdatePairRateTxInfo,
 	offset, pairIndex := common2.ReadUint16(pubData, offset)
 	offset, feeRate := common2.ReadUint16(pubData, offset)
 	offset, treasuryAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, treasuryRate := common2.ReadUint16(pubData, offset)
+	_, treasuryRate := common2.ReadUint16(pubData, offset)
 	tx = &types.UpdatePairRateTxInfo{
 		TxType:               txType,
 		PairIndex:            int64(pairIndex),
@@ -122,7 +122,7 @@ func ParseDepositPubData(pubData []byte) (tx *types.DepositTxInfo, err error) {
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
 	offset, accountNameHash := common2.ReadBytes32(pubData, offset)
 	offset, assetId := common2.ReadUint16(pubData, offset)
-	offset, amount := common2.ReadUint128(pubData, offset)
+	_, amount := common2.ReadUint128(pubData, offset)
 	tx = &types.DepositTxInfo{
 		TxType:          txType,
 		AccountIndex:    int64(accountIndex),
@@ -147,7 +147,7 @@ func ParseDepositNftPubData(pubData []byte) (tx *types.DepositNftTxInfo, err err
 	offset, nftContentHash := common2.ReadBytes32(pubData, offset)
 	offset, nftL1TokenId := common2.ReadUint256(pubData, offset)
 	offset, accountNameHash := common2.ReadBytes32(pubData, offset)
-	offset, collectionId := common2.ReadUint16(pubData, offset)
+	_, collectionId := common2.ReadUint16(pubData, offset)
 	tx = &types.DepositNftTxInfo{
 		TxType:              txType,
 		AccountIndex:        int64(accountIndex),
@@ -172,7 +172,7 @@ func ParseFullExitPubData(pubData []byte) (tx *types.FullExitTxInfo, err error) 
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
 	offset, assetId := common2.ReadUint16(pubData, offset)
 	offset, assetAmount := common2.ReadUint128(pubData, offset)
-	offset, accountNameHash := common2.ReadBytes32(pubData, offset)
+	_, accountNameHash := common2.ReadBytes32(pubData, offset)
 	tx = &types.FullExitTxInfo{
 		TxType:          txType,
 		AccountIndex:    int64(accountIndex),
@@ -198,7 +198,7 @@ func ParseFullExitNftPubData(pubData []byte) (tx *legendTxTypes.FullExitNftTxInf
 	offset, accountNameHash := common2.ReadBytes32(pubData, offset)
 	offset, creatorAccountNameHash := common2.ReadBytes32(pubData, offset)
 	offset, nftContentHash := common2.ReadBytes32(pubData, offset)
-	offset, nftL1TokenId := common2.ReadUint256(pubData, offset)
+	_, nftL1TokenId := common2.ReadUint256(pubData, offset)
 	tx = &types.FullExitNftTxInfo{
 		TxType:                 txType,
 		AccountIndex:           int64(accountIndex),

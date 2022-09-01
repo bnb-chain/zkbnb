@@ -660,7 +660,6 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *Tx) (
 				return nil, nil, nil, nil, err
 			}
 			accountAssetMap[txDetail.AccountIndex][txDetail.AssetId] = nAsset
-			break
 		case types.LiquidityAssetType:
 			liquidityWitnessInfo = new(LiquidityWitnessInfo)
 			liquidityWitnessInfo.LiquidityRelatedTxDetail = txDetail
@@ -669,7 +668,6 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *Tx) (
 				return nil, nil, nil, nil, err
 			}
 			liquidityWitnessInfo.LiquidityInfo = poolInfo
-			break
 		case types.NftAssetType:
 			nftWitnessInfo = new(NftWitnessInfo)
 			nftWitnessInfo.NftRelatedTxDetail = txDetail
@@ -678,7 +676,6 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *Tx) (
 				return nil, nil, nil, nil, err
 			}
 			nftWitnessInfo.NftInfo = nftInfo
-			break
 		case types.CollectionNonceAssetType:
 			// get account info
 			if accountMap[txDetail.AccountIndex] == nil {
@@ -713,7 +710,6 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *Tx) (
 				accountMap[txDetail.AccountIndex].Nonce = txDetail.Nonce
 				accountMap[txDetail.AccountIndex].CollectionNonce = txDetail.CollectionNonce
 			}
-			break
 		default:
 			return nil, nil, nil, nil,
 				fmt.Errorf("invalid asset type")
