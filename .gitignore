@@ -24,10 +24,10 @@
 
 ***/types/types.go
 
-*.vk
-*.pk
-
 **/main
+
+*.pk
+*.vk
 
 build
 vendor
