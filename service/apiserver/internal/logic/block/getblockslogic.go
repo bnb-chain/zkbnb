@@ -27,7 +27,11 @@ func NewGetBlocksLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetBloc
 
 func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetRange) (*types.Blocks, error) {
 	total, err := l.svcCtx.MemCache.GetBlockTotalCountWithFallback(func() (interface{}, error) {
-		return l.svcCtx.BlockModel.GetCurrentHeight()
+		currentHeight, err := l.svcCtx.BlockModel.GetCurrentHeight()
+		if err != nil {
+			return nil, err
+		}
+		return currentHeight + 1, nil //block height starts from 0
 	})
 	if err != nil {
 		return nil, types2.AppErrInternal
