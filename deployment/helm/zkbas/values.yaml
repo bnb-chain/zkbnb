@@ -91,7 +91,7 @@ configs:
   postgres:
     DataSource: host=postgres user=postgres password=*** dbname=zkbas port=5432 sslmode=disable
   redisCache: 
-    - Host: redis:6379
+    - Host: redis
       Type: node
   startL1BlockHeight: 0
   networkRPCSysConfigName: BscTestNetworkRpc
@@ -112,4 +112,3 @@ configs:
     TxExpiration:      400
     PriceExpiration:   200
   logLevel: info
-
