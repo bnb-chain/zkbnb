@@ -1,9 +1,17 @@
-name: Integration
+name: Integration Test on Runner
 
 on:
   push:
     branches:
       - develop
+      - master
+  pull_request:
+    branches:
+      - master
+      - develop
+env:
+  L1_ENDPOINT: https://data-seed-prebsc-1-s1.binance.org:8545
+  L2_ENDPOINT: http://localhost:8888
 
 jobs:
   deploy:
@@ -12,19 +20,63 @@ jobs:
       issues: write
       pull-requests: write
     steps:
-      - name: deploy new zkbas
+      - name: deploy new zkbas on runner
         run: |
-          cd /tmp
+          echo 'fetch zkbas repo'
+          export PR_NUMBER=$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
+          echo Pull requests $PR_NUMBER
+          
+          cd ~
           sudo rm -rf ./zkbas
-          git clone --branch github-action https://github.com/bnb-chain/zkbas.git
+          git clone --branch develop https://github.com/bnb-chain/zkbas.git
+          
+          cd ./zkbas
+          git fetch origin pull/$PR_NUMBER/head:local-deploy-tmp
+          git checkout local-deploy-tmp
+          git rev-parse HEAD
+
           echo "start deploy new zkbas"
-          sudo bash -x ./zkbas/deploy-local.sh new
+          sudo bash ./deployment/tool/generate_api.sh
+          go mod tidy
+          docker image prune -f
+          make docker-image
+          cp -r /server/test.keyfile ./deployment/
+          mv ./deployment/test.keyfile ./deployment/.zkbas
+          blockNr=$(sudo bash ./deployment/tool/tool.sh blockHeight)
+          sudo bash ./deployment/tool/tool.sh all
+          sudo bash ./deployment/docker-compose/docker-compose.sh down
+          sudo bash ./deployment/docker-compose/docker-compose.sh up $blockNr
+          echo "Waiting 10m for the initialization tx to be verified"
+          sleep 10m # Waiting for the initialization tx to be verified
           echo "end deploy"
 
       - name: run integration test
         run: |
-          echo "start integration test"
-          cd /tmp
-          sudo bash -x ./zkbas/local-test.sh
-          echo "end integration test"
+          export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
+          export ZkBas=$(sudo cat ~/zkbas/deployment/dependency/zkbas-contract/info/addresses.json  | jq -r '.zkbasProxy')
+          export AssetGov=$(sudo cat ~/zkbas/deployment/dependency/zkbas-contract/info/addresses.json  | jq -r '.assetGovernance')
+          export TestLogLevel=2
+          export L1EndPoint=$L1_ENDPOINT
+          export L2EndPoint=$L2_ENDPOINT
+          
+          cd /tmp && sudo rm -rf ./zkbas-integration-test
+          git clone --branch main https://github.com/bnb-chain/zkbas-integration-test.git
+          cd ./zkbas-integration-test/tests
+          
+          echo '1. start TestSetupSuite'
+          go test -v -run TestSetupSuite -timeout 30m
+          
+          echo '2. start L1 test'
+          go test -v -run TestL1Suite -timeout 30m
+          
+          echo '3. start L2 test'
+          go test -v -run TestL2Suite -timeout 30m
 
+      - name: notification via slack
+        run: |
+          export SLACK_WEBHOOK_URL=`sudo cat /home/ec2-user/actions-runner/slack-config.json | jq -r '.slack'`
+          export JOB_STATUS=${{ job.status }}
+          export ZkBas=`sudo cat /root/zkbas-deploy/zkbas-contract/info/addresses.json  | jq -r '.zkbasProxy'`
+          export AssetGov=`sudo cat /root/zkbas-deploy/zkbas-contract/info/addresses.json  | jq -r '.assetGovernance'`
+          curl -X POST $SLACK_WEBHOOK_URL --header 'Content-Type: application/json' \
+          --data-raw '{ "author": "@'$GITHUB_ACTOR'", "status": "'$JOB_STATUS'", "ref": "'$GITHUB_REF'", "event": "'$GITHUB_EVENT_NAME'", "url": "'$GITHUB_SERVER_URL'/'$GITHUB_REPOSITORY'/commit/'$GITHUB_SHA'/checks", "ZkbasContract": "'$ZkBas'", "AssetGovContract": "'$AssetGov'" }'

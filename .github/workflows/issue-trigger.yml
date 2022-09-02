@@ -1,0 +1,25 @@
+name: Issue Trigger
+
+on:
+  pull_request:
+    types: [opened, edited, closed]
+  issue_comment:                                     
+    types: [created, edited, deleted]
+
+jobs:
+  trigger:
+    runs-on: self-hosted
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: update-integration-keyfile
+        if: contains(github.event.pull_request.body, '/update-integration-keyfile')   # check the comment if it contains the keywords
+        run: |
+          cd /server
+          sudo rm -rf ./zkbas
+          sudo git clone --branch develop https://github.com/bnb-chain/zkbas.git
+          cd ./zkbas
+          sudo bash ./deployment/tool/tool.sh prepare new
+          sudo rm -rf /server/test.keyfile
+          sudo cp -r ./deployment/.zkbas /server/test.keyfile

@@ -1,7 +1,16 @@
 #!/bin/bash
 
-# config
+# Preparation: Install following tools when you first run this script!!!
 # GOBIN=/usr/local/bin/ go install  github.com/zeromicro/go-zero/tools/goctl@latest
+# yum install jq -y
+# npm install pm2 -g
+# You should install nodejs above v14
+
+# Attention: Set the following variables to the right one before running!!!
+DEPLOY_PATH=~/zkbas-deploy
+KEY_PATH=~/.zkbas
+ZKBAS_REPO_PATH=$(cd `dirname $0`; pwd)
+CMC_TOKEN=cfce503f-fake-fake-fake-bbab5257dac8
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
 echo '0. stop old database/redis and docker run new database/redis'
@@ -9,37 +18,35 @@ pm2 delete all
 docker kill $(docker ps -q)
 docker rm $(docker ps -a -q)
 docker run -d --name zkbasredis -p 6379:6379 redis
-docker run --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=Zkbas@123 -e POSTGRES_USER=postgres -e POSTGRES_DB=zkbas -d postgres
+docker run --name postgres -p 5432:5432 -e PGDATA=/var/lib/postgresql/pgdata  -e POSTGRES_PASSWORD=Zkbas@123 -e POSTGRES_USER=postgres -e POSTGRES_DB=zkbas -d postgres
 
 
 echo '1. basic config and git clone repos'
-#yum install jq -y
-#npm install pm2 -g
 export PATH=$PATH:/usr/local/go/bin/
 cd ~
-rm -rf ~/zkbas-deploy-bak && mv ~/zkbas-deploy ~/zkbas-deploy-bak
-mkdir zkbas-deploy && cd zkbas-deploy
-git clone --branch develop https://github.com/bnb-chain/zkbas.git
+rm -rf ${DEPLOY_PATH}-bak && mv ${DEPLOY_PATH} ${DEPLOY_PATH}-bak
+mkdir -p ${DEPLOY_PATH} && cd ${DEPLOY_PATH}
 git clone --branch develop  https://github.com/bnb-chain/zkbas-contract.git
 git clone --branch develop https://github.com/bnb-chain/zkbas-crypto.git
+cp -r ${ZKBAS_REPO_PATH} ${DEPLOY_PATH}
 
 
 flag=$1
 if [ $flag = "new" ]; then
   echo "new crypto env"
   echo '2. start generate zkbas.vk and zkbas.pk'
-  cd ~/zkbas-deploy
+  cd ${DEPLOY_PATH}
   cd zkbas-crypto && go test ./legend/circuit/bn254/solidity -timeout 99999s -run TestExportSol
-  cd ~/zkbas-deploy
-  sudo mkdir /home/.zkbas
-  cp -r ./zkbas-crypto/legend/circuit/bn254/solidity/* /home/.zkbas
+  cd ${DEPLOY_PATH}
+  mkdir -p $KEY_PATH
+  cp -r ./zkbas-crypto/legend/circuit/bn254/solidity/* $KEY_PATH
 fi
 
 
 
 echo '3. start verify_parse for ZkbasVerifier'
-cd ~/zkbas-deploy/zkbas/service/cronjob/prover/
-python3 verifier_parse.py /home/.zkbas/ZkbasVerifier1.sol,/home/.zkbas/ZkbasVerifier10.sol 1,10 ~/zkbas-deploy/zkbas-contract/contracts/ZkbasVerifier.sol
+cd ${DEPLOY_PATH}/zkbas/service/prover/
+python3 verifier_parse.py ${KEY_PATH}/ZkbasVerifier1.sol,${KEY_PATH}/ZkbasVerifier10.sol 1,10 ${DEPLOY_PATH}/zkbas-contract/contracts/ZkbasVerifier.sol
 
 
 
@@ -51,49 +58,52 @@ echo 'latest block number = ' $blockNumber
 
 
 echo '4-2. deploy contracts, register and deposit on BSC Testnet'
-cd ~/zkbas-deploy
-cd ./zkbas-contract && sudo npm install
+cd ${DEPLOY_PATH}
+cd ./zkbas-contract &&  npm install
 npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deploy.js
-echo 'Recorded latest contract addresses into ~/zkbas-deploy/zkbas-contract/info/addresses.json'
+echo 'Recorded latest contract addresses into ${DEPLOY_PATH}/zkbas-contract/info/addresses.json'
 
 npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/register.js
 npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deposit.js
 
 
 echo '5. modify deployed contracts into zkbas config'
-cd ~/zkbas-deploy/zkbas/common/model/init/
+cd ${DEPLOY_PATH}/zkbas/tools/dbinitializer/
 cp -r ./contractaddr.yaml.example ./contractaddr.yaml
 
-ZkbasContractAddr=`cat ~/zkbas-deploy/zkbas-contract/info/addresses.json  | jq -r '.zkbasProxy'`
-sed -i "s/ZkbasProxy: .*/ZkbasProxy: ${ZkbasContractAddr}/" ~/zkbas-deploy/zkbas/common/model/init/contractaddr.yaml
+ZkbasContractAddr=`cat ${DEPLOY_PATH}/zkbas-contract/info/addresses.json  | jq -r '.zkbasProxy'`
+sed -i -e "s/ZkbasProxy: .*/ZkbasProxy: ${ZkbasContractAddr}/" ${DEPLOY_PATH}/zkbas/tools/dbinitializer/contractaddr.yaml
 
-GovernanceContractAddr=`cat ~/zkbas-deploy/zkbas-contract/info/addresses.json  | jq -r '.governance'`
-sed -i "s/Governance: .*/Governance: ${GovernanceContractAddr}/" ~/zkbas-deploy/zkbas/common/model/init/contractaddr.yaml
+GovernanceContractAddr=`cat ${DEPLOY_PATH}/zkbas-contract/info/addresses.json  | jq -r '.governance'`
+sed -i -e "s/Governance: .*/Governance: ${GovernanceContractAddr}/" ${DEPLOY_PATH}/zkbas/tools/dbinitializer/contractaddr.yaml
 
-sed -i "s/BSC_Test_Network_RPC *= .*/BSC_Test_Network_RPC   = \"https\:\/\/data-seed-prebsc-1-s1.binance.org:8545\"/" ~/zkbas-deploy/zkbas/common/model/init/init.go
+sed -i -e "s/BSCTestNetworkRPC *= .*/BSCTestNetworkRPC   = \"https\:\/\/data-seed-prebsc-1-s1.binance.org:8545\"/" ${DEPLOY_PATH}/zkbas/tools/dbinitializer/main.go
 
 
 
-cd ~/zkbas-deploy/zkbas/
-make app && make globalRPCProto
-cd ~/zkbas-deploy/zkbas && go mod tidy
+cd ${DEPLOY_PATH}/zkbas/
+make api-server
+cd ${DEPLOY_PATH}/zkbas && go mod tidy
 
 
 
 echo "6. init tables on database"
-sed -i "s/password=.* dbname/password=Zkbas@123 dbname/" ~/zkbas-deploy/zkbas/common/model/basic/connection.go
-cd ~/zkbas-deploy/zkbas/common/model/init/
+sed -i -e "s/password=.* dbname/password=Zkbas@123 dbname/" ${DEPLOY_PATH}/zkbas/tools/dbinitializer/main.go
+cd ${DEPLOY_PATH}/zkbas/tools/dbinitializer/
 go run .
 
 
-cd ~/zkbas-deploy/zkbas/
-make app && make globalRPCProto
+cd ${DEPLOY_PATH}/zkbas/
+make api-server
+
+
+sleep 30s
 
 
 echo "7. run prover"
 
 echo -e "
-Name: prover.cronjob
+Name: prover
 Postgres:
   DataSource: host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable
 
@@ -102,24 +112,26 @@ CacheRedis:
     Type: node
 
 KeyPath:
-  ProvingKeyPath: [/home/.zkbas/zkbas1.pk, /home/.zkbas/zkbas10.pk]
-  VerifyingKeyPath: [/home/.zkbas/zkbas1.vk, /home/.zkbas/zkbas10.vk]
-  KeyTxCounts:    [1, 10]
+  ProvingKeyPath: [${KEY_PATH}/zkbas1.pk, ${KEY_PATH}/zkbas10.pk]
+  VerifyingKeyPath: [${KEY_PATH}/zkbas1.vk, ${KEY_PATH}/zkbas10.vk]
+
+BlockConfig:
+  OptionalBlockSizes: [1, 10]
 
 TreeDB:
   Driver: memorydb
-" > ~/zkbas-deploy/zkbas/service/cronjob/prover/etc/prover.yaml
+" > ${DEPLOY_PATH}/zkbas/service/prover/etc/config.yaml
 
-cd ~/zkbas-deploy/zkbas/service/cronjob/prover/
-pm2 start --name prover "go run ./prover.go"
-
-
+cd ${DEPLOY_PATH}/zkbas/service/prover/
+pm2 start --name prover "go run ./main.go"
 
 
-echo "8. run witnessGenerator"
+
+
+echo "8. run witness"
 
 echo -e "
-Name: witnessGenerator.cronjob
+Name: witness
 
 Postgres:
   DataSource: host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable
@@ -130,20 +142,16 @@ CacheRedis:
 
 TreeDB:
   Driver: memorydb
-" > ~/zkbas-deploy/zkbas/service/cronjob/witnessGenerator/etc/witnessGenerator.yaml
+" > ${DEPLOY_PATH}/zkbas/service/witness/etc/config.yaml
 
-cd ~/zkbas-deploy/zkbas/service/cronjob/witnessGenerator/
-pm2 start --name witnessGenerator "go run ./witnessgenerator.go"
-
-
-
-
+cd ${DEPLOY_PATH}/zkbas/service/witness/
+pm2 start --name witness "go run ./main.go"
 
 
 echo "9. run monitor"
 
 echo -e "
-Name: monitor.cronjob
+Name: monitor
 
 Postgres:
   DataSource: host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable
@@ -155,25 +163,23 @@ CacheRedis:
 ChainConfig:
   NetworkRPCSysConfigName: "BscTestNetworkRpc"
   #NetworkRPCSysConfigName: "LocalTestNetworkRpc"
-  ZkbasContractAddrSysConfigName: "ZkbasContract"
-  GovernanceContractAddrSysConfigName: "GovernanceContract"
   StartL1BlockHeight: $blockNumber
-  PendingBlocksCount: 0
+  ConfirmBlocksCount: 0
   MaxHandledBlocksCount: 5000
 
 TreeDB:
   Driver: memorydb
-" > ~/zkbas-deploy/zkbas/service/cronjob/monitor/etc/monitor.yaml
+" > ${DEPLOY_PATH}/zkbas/service/monitor/etc/config.yaml
 
-cd ~/zkbas-deploy/zkbas/service/cronjob/monitor/
-pm2 start --name monitor "go run ./monitor.go"
+cd ${DEPLOY_PATH}/zkbas/service/monitor/
+pm2 start --name monitor "go run ./main.go"
 
 
 
 echo "10. run committer"
 
 echo -e "
-Name: committer.cronjob
+Name: committer
 
 Postgres:
   DataSource: host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable
@@ -182,23 +188,21 @@ CacheRedis:
   - Host: 127.0.0.1:6379
     Type: node
 
-KeyPath:
-  KeyTxCounts: [1, 10]
+BlockConfig:
+  OptionalBlockSizes: [1, 10]
 
 TreeDB:
   Driver: memorydb
-" >> ~/zkbas-deploy/zkbas/service/cronjob/committer/etc/committer.yaml
+" > ${DEPLOY_PATH}/zkbas/service/committer/etc/config.yaml
 
-cd ~/zkbas-deploy/zkbas/service/cronjob/committer/
-pm2 start --name committer "go run ./committer.go"
-
-
+cd ${DEPLOY_PATH}/zkbas/service/committer/
+pm2 start --name committer "go run ./main.go"
 
 
 echo "11. run sender"
 
 echo -e "
-Name: sender.cronjob
+Name: sender
 
 Postgres:
   DataSource: host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable
@@ -210,58 +214,32 @@ CacheRedis:
 ChainConfig:
   NetworkRPCSysConfigName: "BscTestNetworkRpc"
   #NetworkRPCSysConfigName: "LocalTestNetworkRpc"
-  ZkbasContractAddrSysConfigName: "ZkbasContract"
+  ConfirmBlocksCount: 0
   MaxWaitingTime: 120
   MaxBlockCount: 4
   Sk: "acbaa269bd7573ff12361be4b97201aef019776ea13384681d4e5ba6a88367d9"
   GasLimit: 5000000
-  L1ChainId: \"97\"
 
 TreeDB:
   Driver: memorydb
-" > ~/zkbas-deploy/zkbas/service/cronjob/sender/etc/sender.yaml
+" > ${DEPLOY_PATH}/zkbas/service/sender/etc/config.yaml
 
-cd ~/zkbas-deploy/zkbas/service/cronjob/sender/
-pm2 start --name sender "go run ./sender.go"
-
-
+cd ${DEPLOY_PATH}/zkbas/service/sender/
+pm2 start --name sender "go run ./main.go"
 
 
-
-echo "12. run globalRPC"
+echo "12. run api-server"
 
 echo -e "
-Name: global.rpc
-ListenOn: 127.0.0.1:8080
-
-Postgres:
-  DataSource: host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable
-
-CacheRedis:
-  - Host: 127.0.0.1:6379
-    Type: node
-
-LogConf:
-  ServiceName: global.rpc
-  Mode: console
-  Path: ./log/globalrpc
-  StackCooldownMillis: 500
-
-TreeDB:
-  Driver: memorydb
-" > ~/zkbas-deploy/zkbas/service/rpc/globalRPC/etc/config.yaml
-
-cd ~/zkbas-deploy/zkbas/service/rpc/globalRPC/
-pm2 start --name globalRPC "go run ./globalrpc.go"
-
-
-
-echo "13. run app"
-
-echo -e "
-Name: appService-api
+Name: api-server
 Host: 0.0.0.0
 Port: 8888
+
+Prometheus:
+  Host: 0.0.0.0
+  Port: 9091
+  Path: /metrics
+
 Postgres:
   DataSource: host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable
 
@@ -269,19 +247,24 @@ CacheRedis:
   - Host: 127.0.0.1:6379
     Type: node
 
-GlobalRpc:
-  Endpoints:
-    - 127.0.0.1:8080
-
 LogConf:
-  ServiceName: appservice
+  ServiceName: api-server
   Mode: console
-  Path: ./log/appService
+  Path: ./log/api-server
   StackCooldownMillis: 500
+  Level: error
 
-TreeDB:
-  Driver: memorydb
-  " > ~/zkbas-deploy/zkbas/service/api/app/etc/app.yaml
+CoinMarketCap:
+  Url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=
+  Token: ${CMC_TOKEN}
 
-cd ~/zkbas-deploy/zkbas/service/api/app
-pm2 start --name app "go run ./app.go"
+MemCache:
+  AccountExpiration: 200
+  AssetExpiration:   600
+  BlockExpiration:   400
+  TxExpiration:      400
+  PriceExpiration:   200
+  " > ${DEPLOY_PATH}/zkbas/service/apiserver/etc/config.yaml
+
+cd ${DEPLOY_PATH}/zkbas/service/apiserver
+pm2 start --name api-server "go run ./server.go"

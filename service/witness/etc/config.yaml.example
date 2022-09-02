@@ -1,0 +1,14 @@
+Name: witness
+
+Postgres:
+  DataSource: host=127.0.0.1 user=postgres password=pw dbname=zkbas port=5432 sslmode=disable
+
+TreeDB:
+  Driver: memorydb
+
+LogConf:
+  ServiceName: witness
+  Mode: console
+  Path: ./log/witness
+  StackCooldownMillis: 500
+  Level: error

@@ -1,0 +1,14 @@
+Name: monitor
+
+Postgres:
+  DataSource: host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable
+
+ChainConfig:
+  NetworkRPCSysConfigName: "BscTestNetworkRpc"
+  #NetworkRPCSysConfigName: "LocalTestNetworkRpc"
+  StartL1BlockHeight: $blockNumber
+  ConfirmBlocksCount: 0
+  MaxHandledBlocksCount: 5000
+
+TreeDB:
+  Driver: memorydb
