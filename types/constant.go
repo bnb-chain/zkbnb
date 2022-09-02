@@ -27,8 +27,11 @@ const (
 	EmptyCollectionNonce  = 0
 	EmptyAccountAssetInfo = "{}"
 	EmptyAccountIndex     = int64(0)
+	EmptyNftContentHash   = "0"
+	EmptyAccountNameHash  = "0"
+	EmptyL1TokenId        = "0"
+	EmptyL1Address        = "0"
 
-	NilAccountIndex    = int64(0) // todo: change nil account index to max int32
 	NilAccountName     = ""
 	NilPairIndex       = -1
 	NilNftIndex        = int64(-1)
@@ -38,17 +41,12 @@ const (
 	NilNonce           = -1
 	NilCollectionNonce = -1
 	NilExpiredAt       = math.MaxInt64
+	NilAssetAmount     = "0"
 
-	BNBAssetId     = 0
-	BNBDecimalsStr = "1000000000000000000"
+	BNBAssetId  = 0
+	BNBDecimals = "1000000000000000000"
 )
 
 var (
-	EmptyNftContentHash           = "0"
-	EmptyAccountNameHash          = "0"
-	EmptyL1TokenId                = "0"
-	EmptyL1Address                = "0"
 	EmptyOfferCanceledOrFinalized = big.NewInt(0)
-
-	NilAssetAmountStr = "0"
 )

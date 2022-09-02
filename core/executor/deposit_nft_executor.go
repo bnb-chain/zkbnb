@@ -75,11 +75,9 @@ func (e *DepositNftExecutor) Prepare() error {
 		return err
 	}
 
+	calculatedNftContent := common2.CalcNftContentHash(txInfo.NftL1Address, txInfo.NftL1TokenId)
 	// Check if it is a new nft, or it is a nft previously withdraw from layer2.
-	if txInfo.NftIndex == 0 &&
-		txInfo.CollectionId == 0 &&
-		txInfo.CreatorAccountIndex == 0 &&
-		txInfo.CreatorTreasuryRate == 0 {
+	if bytes.Compare(calculatedNftContent, txInfo.NftContentHash) == 0 {
 		e.isNewNft = true
 		// Set new nft index for new nft.
 		txInfo.NftIndex = bc.StateDB().GetNextNftIndex()
@@ -103,7 +101,7 @@ func (e *DepositNftExecutor) VerifyInputs() error {
 			return errors.New("invalid nft index, already exist")
 		}
 	} else {
-		if bc.StateDB().NftMap[txInfo.NftIndex].OwnerAccountIndex != types.NilAccountIndex {
+		if bc.StateDB().NftMap[txInfo.NftIndex].NftContentHash != types.EmptyNftContentHash {
 			return errors.New("invalid nft index, already exist")
 		}
 	}
