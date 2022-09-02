@@ -78,7 +78,7 @@ CacheRedis:
     Type: node
 
 BlockConfig:
-  OptionalBlockSizes: [1, 10]
+  OptionalBlockSizes: [1]
 
 TreeDB:
   Driver: memorydb
