@@ -46,8 +46,8 @@ jobs:
           sudo bash ./deployment/tool/tool.sh all
           sudo bash ./deployment/docker-compose/docker-compose.sh down
           sudo bash ./deployment/docker-compose/docker-compose.sh up $blockNr
-          echo "Waiting 10m for the initialization tx to be verified"
-          sleep 10m # Waiting for the initialization tx to be verified
+          echo "Waiting 3m for the initialization tx to be verified"
+          sleep 3m # Waiting for the initialization tx to be verified
           echo "end deploy"
 
       - name: run integration test
