@@ -70,6 +70,16 @@ func (e *CancelOfferExecutor) VerifyInputs() error {
 		return errors.New("balance is not enough")
 	}
 
+	offerAssetId := txInfo.OfferId / 128
+	offerIndex := txInfo.OfferId % 128
+	offerAsset := e.bc.StateDB().AccountMap[txInfo.AccountIndex].AssetInfo[offerAssetId]
+	if offerAsset != nil && offerAsset.OfferCanceledOrFinalized != nil {
+		xBit := offerAsset.OfferCanceledOrFinalized.Bit(int(offerIndex))
+		if xBit == 1 {
+			return errors.New("invalid offer id, already confirmed or canceled")
+		}
+	}
+
 	return nil
 }
 
