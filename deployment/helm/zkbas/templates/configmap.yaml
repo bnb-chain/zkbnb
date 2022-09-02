@@ -1,0 +1,105 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "zkbas.fullname" . }}
+  labels:
+    {{- include "zkbas.labels" . | nindent 4 }}
+data:
+  prover.yaml: | 
+    Name: prover
+    Postgres:
+      {{- toYaml .Values.configs.postgres | nindent 6 }}
+
+    CacheRedis:
+      {{- toYaml .Values.configs.redisCache | nindent 6 }}
+
+    KeyPath:
+      ProvingKeyPath: [/server/.zkbas/zkbas1.pk, /server/.zkbas/zkbas10.pk]
+      VerifyingKeyPath: [/server/.zkbas/zkbas1.vk, /server/.zkbas/zkbas10.vk]
+
+    BlockConfig:
+      OptionalBlockSizes: [1, 10]
+  witness.yaml: |
+    Name: witness
+
+    Postgres:
+      {{- toYaml .Values.configs.postgres | nindent 6 }}
+
+    CacheRedis:
+      {{- toYaml .Values.configs.redisCache | nindent 6 }}
+
+    TreeDB:
+      {{- toYaml .Values.configs.treedb | nindent 6 }}
+  monitor.yaml: |
+    Name: monitor
+
+    Postgres:
+      {{- toYaml .Values.configs.postgres | nindent 6 }}
+
+    CacheRedis:
+      {{- toYaml .Values.configs.redisCache | nindent 6 }}
+
+    ChainConfig:
+      NetworkRPCSysConfigName: "{{ .Values.configs.networkRPCSysConfigName }}"
+      StartL1BlockHeight: {{ .Values.configs.startL1BlockHeight }}
+      ConfirmBlocksCount: {{ .Values.configs.confirmBlocksCount }}
+      MaxHandledBlocksCount: {{ .Values.configs.maxHandledBlocksCount }}
+  committer.yaml: |
+    Name: committer
+
+    Postgres:
+      {{- toYaml .Values.configs.postgres | nindent 6 }}
+
+    CacheRedis:
+      {{- toYaml .Values.configs.redisCache | nindent 6 }}
+
+    BlockConfig:
+      OptionalBlockSizes: [1, 10]
+
+    TreeDB:
+      {{- toYaml .Values.configs.treedb | nindent 6 }}
+  sender.yaml: |
+    Name: sender
+
+    Postgres:
+      {{- toYaml .Values.configs.postgres | nindent 6 }}
+
+    CacheRedis:
+      {{- toYaml .Values.configs.redisCache | nindent 6 }}
+
+    ChainConfig:
+      NetworkRPCSysConfigName: "{{ .Values.configs.networkRPCSysConfigName }}"
+      ConfirmBlocksCount: {{ .Values.configs.confirmBlocksCount }}
+      MaxWaitingTime: {{ .Values.configs.maxWaitingTime }}
+      MaxBlockCount: {{ .Values.configs.maxBlockCount }}
+      Sk: "{{ .Values.configs.SK }}"
+      GasLimit: {{ .Values.configs.gasLimit }}
+  apiserver.yaml: |
+    Name: api-server
+    Host: 0.0.0.0
+    Port: 8888
+
+    Prometheus:
+      Host: 0.0.0.0
+      Port: 9091
+      Path: /metrics
+
+    Postgres:
+      {{- toYaml .Values.configs.postgres | nindent 6 }}
+
+    CacheRedis:
+      {{- toYaml .Values.configs.redisCache | nindent 6 }}
+
+    LogConf:
+      ServiceName: api-server
+      Mode: console
+      Path: ./log/api-server
+      StackCooldownMillis: 500
+      Level: {{ .Values.configs.logLevel }}
+
+    CoinMarketCap:
+      Url: {{ .Values.configs.cmcURL }}
+      Token: {{ .Values.configs.cmcToken }}
+
+    MemCache:
+      {{- toYaml .Values.configs.memCache | nindent 6 }}
