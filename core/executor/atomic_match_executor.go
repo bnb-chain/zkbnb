@@ -28,9 +28,6 @@ type AtomicMatchExecutor struct {
 	buyOfferIndex    int64
 	sellOfferAssetId int64
 	sellOfferIndex   int64
-
-	isFromBuyer bool // True when the sender's account is the same to buyer's account.
-	isAssetGas  bool // True when the gas asset is the same to the buyer's asset.
 }
 
 func NewAtomicMatchExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
@@ -41,12 +38,8 @@ func NewAtomicMatchExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}
 
 	return &AtomicMatchExecutor{
-		BaseExecutor: BaseExecutor{
-			bc:      bc,
-			tx:      tx,
-			iTxInfo: txInfo,
-		},
-		txInfo: txInfo,
+		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
+		txInfo:       txInfo,
 	}, nil
 }
 
@@ -65,30 +58,19 @@ func (e *AtomicMatchExecutor) Prepare() error {
 		return errors.New("internal error")
 	}
 
-	matchNft := e.bc.StateDB().NftMap[txInfo.SellOffer.NftIndex]
-	e.isFromBuyer = true
-	accounts := []int64{txInfo.AccountIndex, txInfo.GasAccountIndex, txInfo.SellOffer.AccountIndex, matchNft.CreatorAccountIndex}
-	if txInfo.AccountIndex != txInfo.BuyOffer.AccountIndex {
-		e.isFromBuyer = false
-		accounts = append(accounts, txInfo.BuyOffer.AccountIndex)
-	}
-	e.isAssetGas = true
-	assets := []int64{txInfo.GasFeeAssetId, e.buyOfferAssetId, e.sellOfferAssetId}
-	if txInfo.GasFeeAssetId != txInfo.SellOffer.AssetId {
-		e.isAssetGas = false
-		assets = append(assets, txInfo.SellOffer.AssetId)
-	}
-	err = e.bc.StateDB().PrepareAccountsAndAssets(accounts, assets)
-	if err != nil {
-		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
-		return errors.New("internal error")
-	}
-
 	// Set the right treasury and creator treasury amount.
+	matchNft := e.bc.StateDB().NftMap[txInfo.SellOffer.NftIndex]
 	txInfo.TreasuryAmount = ffmath.Div(ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(txInfo.SellOffer.TreasuryRate)), big.NewInt(TenThousand))
 	txInfo.CreatorAmount = ffmath.Div(ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(matchNft.CreatorTreasuryRate)), big.NewInt(TenThousand))
 
-	return nil
+	// Mark the tree states that would be affected in this executor.
+	e.MarkNftDirty(txInfo.SellOffer.NftIndex)
+	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{txInfo.GasFeeAssetId})
+	e.MarkAccountAssetsDirty(txInfo.BuyOffer.AccountIndex, []int64{txInfo.BuyOffer.AssetId, e.buyOfferAssetId})
+	e.MarkAccountAssetsDirty(txInfo.SellOffer.AccountIndex, []int64{txInfo.SellOffer.AssetId, e.sellOfferAssetId})
+	e.MarkAccountAssetsDirty(matchNft.CreatorAccountIndex, []int64{txInfo.BuyOffer.AssetId})
+	e.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.BuyOffer.AssetId, txInfo.GasFeeAssetId})
+	return e.BaseExecutor.Prepare()
 }
 
 func (e *AtomicMatchExecutor) VerifyInputs() error {
@@ -127,7 +109,7 @@ func (e *AtomicMatchExecutor) VerifyInputs() error {
 	sellAccount := bc.StateDB().AccountMap[txInfo.SellOffer.AccountIndex]
 
 	// Check sender's gas balance and buyer's asset balance.
-	if e.isFromBuyer && e.isAssetGas {
+	if txInfo.AccountIndex == txInfo.BuyOffer.AccountIndex && txInfo.GasFeeAssetId == txInfo.SellOffer.AssetId {
 		totalBalance := ffmath.Add(txInfo.GasFeeAssetAmount, txInfo.BuyOffer.AssetAmount)
 		if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(totalBalance) < 0 {
 			return errors.New("sender balance is not enough")
@@ -208,12 +190,7 @@ func (e *AtomicMatchExecutor) ApplyTransaction() error {
 	stateCache.PendingUpdateAccountIndexMap[matchNft.CreatorAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateNftIndexMap[txInfo.SellOffer.NftIndex] = statedb.StateCachePending
-	stateCache.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{txInfo.GasFeeAssetId})
-	stateCache.MarkAccountAssetsDirty(txInfo.BuyOffer.AccountIndex, []int64{txInfo.BuyOffer.AssetId, e.buyOfferAssetId})
-	stateCache.MarkAccountAssetsDirty(txInfo.SellOffer.AccountIndex, []int64{txInfo.SellOffer.AssetId, e.sellOfferAssetId})
-	stateCache.MarkAccountAssetsDirty(matchNft.CreatorAccountIndex, []int64{txInfo.BuyOffer.AssetId})
-	stateCache.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.BuyOffer.AssetId, txInfo.GasFeeAssetId})
-	stateCache.MarkNftDirty(txInfo.SellOffer.NftIndex)
+	e.SyncDirtyToStateCache()
 	return nil
 }
 

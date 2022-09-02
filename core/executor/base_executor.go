@@ -4,6 +4,8 @@ import (
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
+	"github.com/pkg/errors"
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 const (
@@ -15,9 +17,32 @@ type BaseExecutor struct {
 	bc      IBlockchain
 	tx      *tx.Tx
 	iTxInfo legendTxTypes.TxInfo
+
+	// Affected states.
+	dirtyAccountsAndAssetsMap map[int64]map[int64]bool
+	dirtyLiquidityMap         map[int64]bool
+	dirtyNftMap               map[int64]bool
+}
+
+func NewBaseExecutor(bc IBlockchain, tx *tx.Tx, txInfo legendTxTypes.TxInfo) BaseExecutor {
+	return BaseExecutor{
+		bc:      bc,
+		tx:      tx,
+		iTxInfo: txInfo,
+
+		dirtyAccountsAndAssetsMap: make(map[int64]map[int64]bool, 0),
+		dirtyLiquidityMap:         make(map[int64]bool, 0),
+		dirtyNftMap:               make(map[int64]bool, 0),
+	}
 }
 
 func (e *BaseExecutor) Prepare() error {
+	err := e.bc.StateDB().PrepareAccountsAndAssets(e.dirtyAccountsAndAssetsMap)
+	if err != nil {
+		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
+		return errors.New("internal error")
+	}
+
 	return nil
 }
 
@@ -66,4 +91,49 @@ func (e *BaseExecutor) GetExecutedTx() (*tx.Tx, error) {
 
 func (e *BaseExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	return nil, nil
+}
+
+func (e *BaseExecutor) MarkAccountAssetsDirty(accountIndex int64, assets []int64) {
+	if accountIndex < 0 {
+		return
+	}
+
+	_, ok := e.dirtyAccountsAndAssetsMap[accountIndex]
+	if !ok {
+		e.dirtyAccountsAndAssetsMap[accountIndex] = make(map[int64]bool, 0)
+	}
+
+	for _, assetIndex := range assets {
+		// Should never happen, but protect here.
+		if assetIndex < 0 {
+			continue
+		}
+		e.dirtyAccountsAndAssetsMap[accountIndex][assetIndex] = true
+	}
+}
+
+func (e *BaseExecutor) MarkLiquidityDirty(pairIndex int64) {
+	e.dirtyLiquidityMap[pairIndex] = true
+}
+
+func (e *BaseExecutor) MarkNftDirty(nftIndex int64) {
+	e.dirtyNftMap[nftIndex] = true
+}
+
+func (e *BaseExecutor) SyncDirtyToStateCache() {
+	for accountIndex, assetsMap := range e.dirtyAccountsAndAssetsMap {
+		assets := make([]int64, 0, len(assetsMap))
+		for assetIndex := range assetsMap {
+			assets = append(assets, assetIndex)
+		}
+		e.bc.StateDB().MarkAccountAssetsDirty(accountIndex, assets)
+	}
+
+	for pairIndex := range e.dirtyLiquidityMap {
+		e.bc.StateDB().MarkLiquidityDirty(pairIndex)
+	}
+
+	for nftIndex := range e.dirtyNftMap {
+		e.bc.StateDB().MarkNftDirty(nftIndex)
+	}
 }

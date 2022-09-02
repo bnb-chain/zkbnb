@@ -358,8 +358,8 @@ func (s *StateDB) DeepCopyAccounts(accountIds []int64) (map[int64]*types.Account
 	return accounts, nil
 }
 
-func (s *StateDB) PrepareAccountsAndAssets(accounts []int64, assets []int64) error {
-	for _, accountIndex := range accounts {
+func (s *StateDB) PrepareAccountsAndAssets(accountAssetsMap map[int64]map[int64]bool) error {
+	for accountIndex, assets := range accountAssetsMap {
 		if s.dryRun {
 			account := &account.Account{}
 			redisAccount, err := s.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex), account)
@@ -384,7 +384,7 @@ func (s *StateDB) PrepareAccountsAndAssets(accounts []int64, assets []int64) err
 		if s.AccountMap[accountIndex].AssetInfo == nil {
 			s.AccountMap[accountIndex].AssetInfo = make(map[int64]*types.AccountAsset)
 		}
-		for _, assetId := range assets {
+		for assetId := range assets {
 			if s.AccountMap[accountIndex].AssetInfo[assetId] == nil {
 				s.AccountMap[accountIndex].AssetInfo[assetId] = &types.AccountAsset{
 					AssetId:                  assetId,

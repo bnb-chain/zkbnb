@@ -37,12 +37,8 @@ func NewRemoveLiquidityExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}
 
 	return &RemoveLiquidityExecutor{
-		BaseExecutor: BaseExecutor{
-			bc:      bc,
-			tx:      tx,
-			iTxInfo: txInfo,
-		},
-		txInfo: txInfo,
+		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
+		txInfo:       txInfo,
 	}, nil
 }
 
@@ -55,22 +51,18 @@ func (e *RemoveLiquidityExecutor) Prepare() error {
 		return err
 	}
 
-	liquidityModel := e.bc.StateDB().LiquidityMap[txInfo.PairIndex]
-
-	accounts := []int64{txInfo.FromAccountIndex, liquidityModel.TreasuryAccountIndex, txInfo.GasAccountIndex}
-	assets := []int64{liquidityModel.AssetAId, liquidityModel.AssetBId, txInfo.AssetAId, txInfo.AssetBId, txInfo.PairIndex, txInfo.GasFeeAssetId}
-	err = e.bc.StateDB().PrepareAccountsAndAssets(accounts, assets)
-	if err != nil {
-		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
-		return err
-	}
-
-	err = e.fillTxInfo()
+	// Mark the tree states that would be affected in this executor.
+	e.MarkLiquidityDirty(txInfo.PairIndex)
+	e.MarkAccountAssetsDirty(txInfo.FromAccountIndex, []int64{txInfo.GasFeeAssetId, txInfo.AssetAId, txInfo.AssetBId, txInfo.PairIndex})
+	liquidity := e.bc.StateDB().LiquidityMap[txInfo.PairIndex]
+	e.MarkAccountAssetsDirty(liquidity.TreasuryAccountIndex, []int64{txInfo.PairIndex})
+	e.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
+	err = e.BaseExecutor.Prepare()
 	if err != nil {
 		return err
 	}
 
-	return nil
+	return e.fillTxInfo()
 }
 
 func (e *RemoveLiquidityExecutor) VerifyInputs() error {
@@ -189,10 +181,7 @@ func (e *RemoveLiquidityExecutor) ApplyTransaction() error {
 	stateCache.PendingUpdateAccountIndexMap[treasuryAccount.AccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateLiquidityIndexMap[txInfo.PairIndex] = statedb.StateCachePending
-	stateCache.MarkAccountAssetsDirty(txInfo.FromAccountIndex, []int64{txInfo.GasFeeAssetId, txInfo.AssetAId, txInfo.AssetBId, txInfo.PairIndex})
-	stateCache.MarkAccountAssetsDirty(treasuryAccount.AccountIndex, []int64{txInfo.PairIndex})
-	stateCache.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
-	stateCache.MarkLiquidityDirty(txInfo.PairIndex)
+	e.SyncDirtyToStateCache()
 	return nil
 }
 

@@ -30,12 +30,8 @@ func NewUpdatePairRateExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}
 
 	return &UpdatePairRateExecutor{
-		BaseExecutor: BaseExecutor{
-			bc:      bc,
-			tx:      tx,
-			iTxInfo: txInfo,
-		},
-		txInfo: txInfo,
+		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
+		txInfo:       txInfo,
 	}, nil
 }
 
@@ -47,6 +43,9 @@ func (e *UpdatePairRateExecutor) Prepare() error {
 		logx.Errorf("prepare liquidity failed: %s", err.Error())
 		return err
 	}
+
+	// Mark the tree states that would be affected in this executor.
+	e.MarkLiquidityDirty(txInfo.PairIndex)
 
 	return nil
 }
@@ -76,7 +75,7 @@ func (e *UpdatePairRateExecutor) ApplyTransaction() error {
 
 	stateCache := e.bc.StateDB()
 	stateCache.PendingUpdateLiquidityIndexMap[txInfo.PairIndex] = statedb.StateCachePending
-	stateCache.MarkLiquidityDirty(txInfo.PairIndex)
+	e.SyncDirtyToStateCache()
 	return nil
 }
 

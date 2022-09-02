@@ -34,16 +34,14 @@ func NewRegisterZnsExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}
 
 	return &RegisterZnsExecutor{
-		BaseExecutor: BaseExecutor{
-			bc:      bc,
-			tx:      tx,
-			iTxInfo: txInfo,
-		},
-		txInfo: txInfo,
+		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
+		txInfo:       txInfo,
 	}, nil
 }
 
 func (e *RegisterZnsExecutor) Prepare() error {
+	// Mark the tree states that would be affected in this executor.
+	e.MarkAccountAssetsDirty(e.txInfo.AccountIndex, []int64{})
 	return nil
 }
 
@@ -100,7 +98,7 @@ func (e *RegisterZnsExecutor) ApplyTransaction() error {
 
 	stateCache := e.bc.StateDB()
 	stateCache.PendingNewAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
-	stateCache.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{})
+	e.SyncDirtyToStateCache()
 	return nil
 }
 

@@ -33,28 +33,19 @@ func NewCancelOfferExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}
 
 	return &CancelOfferExecutor{
-		BaseExecutor: BaseExecutor{
-			bc:      bc,
-			tx:      tx,
-			iTxInfo: txInfo,
-		},
-		txInfo: txInfo,
+		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
+		txInfo:       txInfo,
 	}, nil
 }
 
 func (e *CancelOfferExecutor) Prepare() error {
 	txInfo := e.txInfo
 
-	accounts := []int64{txInfo.AccountIndex, txInfo.GasAccountIndex}
+	// Mark the tree states that would be affected in this executor.
 	offerAssetId := txInfo.OfferId / OfferPerAsset
-	assets := []int64{offerAssetId, txInfo.GasFeeAssetId}
-	err := e.bc.StateDB().PrepareAccountsAndAssets(accounts, assets)
-	if err != nil {
-		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
-		return errors.New("internal error")
-	}
-
-	return nil
+	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{txInfo.GasFeeAssetId, offerAssetId})
+	e.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
+	return e.BaseExecutor.Prepare()
 }
 
 func (e *CancelOfferExecutor) VerifyInputs() error {
@@ -104,8 +95,7 @@ func (e *CancelOfferExecutor) ApplyTransaction() error {
 	stateCache := e.bc.StateDB()
 	stateCache.PendingUpdateAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
-	stateCache.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{txInfo.GasFeeAssetId, offerAssetId})
-	stateCache.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
+	e.SyncDirtyToStateCache()
 	return nil
 }
 

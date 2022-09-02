@@ -34,31 +34,24 @@ func NewMintNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}
 
 	return &MintNftExecutor{
-		BaseExecutor: BaseExecutor{
-			bc:      bc,
-			tx:      tx,
-			iTxInfo: txInfo,
-		},
-		txInfo: txInfo,
+		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
+		txInfo:       txInfo,
 	}, nil
 }
 
 func (e *MintNftExecutor) Prepare() error {
 	txInfo := e.txInfo
 
-	accounts := []int64{txInfo.CreatorAccountIndex, txInfo.ToAccountIndex, txInfo.GasAccountIndex}
-	assets := []int64{txInfo.GasFeeAssetId}
-	err := e.bc.StateDB().PrepareAccountsAndAssets(accounts, assets)
-	if err != nil {
-		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
-		return errors.New("internal error")
-	}
-
-	// add nft index to tx info
+	// Set the right nft index for tx info.
 	nextNftIndex := e.bc.StateDB().GetNextNftIndex()
 	txInfo.NftIndex = nextNftIndex
 
-	return nil
+	// Mark the tree states that would be affected in this executor.
+	e.MarkNftDirty(txInfo.NftIndex)
+	e.MarkAccountAssetsDirty(txInfo.CreatorAccountIndex, []int64{txInfo.GasFeeAssetId})
+	e.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
+	e.MarkAccountAssetsDirty(txInfo.ToAccountIndex, []int64{})
+	return e.BaseExecutor.Prepare()
 }
 
 func (e *MintNftExecutor) VerifyInputs() error {
@@ -112,9 +105,7 @@ func (e *MintNftExecutor) ApplyTransaction() error {
 	stateCache.PendingUpdateAccountIndexMap[txInfo.CreatorAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
 	stateCache.PendingNewNftIndexMap[txInfo.NftIndex] = statedb.StateCachePending
-	stateCache.MarkAccountAssetsDirty(txInfo.CreatorAccountIndex, []int64{txInfo.GasFeeAssetId})
-	stateCache.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
-	stateCache.MarkNftDirty(txInfo.NftIndex)
+	e.SyncDirtyToStateCache()
 	return nil
 }
 

@@ -35,12 +35,8 @@ func NewDepositNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}
 
 	return &DepositNftExecutor{
-		BaseExecutor: BaseExecutor{
-			bc:      bc,
-			tx:      tx,
-			iTxInfo: txInfo,
-		},
-		txInfo: txInfo,
+		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
+		txInfo:       txInfo,
 	}, nil
 }
 
@@ -67,14 +63,6 @@ func (e *DepositNftExecutor) Prepare() error {
 	// Set the right account index.
 	txInfo.AccountIndex = account.AccountIndex
 
-	accounts := []int64{txInfo.AccountIndex}
-	assets := []int64{0} // Just used for generate an empty tx detail.
-	err = e.bc.StateDB().PrepareAccountsAndAssets(accounts, assets)
-	if err != nil {
-		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
-		return err
-	}
-
 	// Check if it is a new nft, or it is a nft previously withdraw from layer2.
 	if txInfo.IsNewNft == 1 {
 		e.isNewNft = true
@@ -88,7 +76,10 @@ func (e *DepositNftExecutor) Prepare() error {
 		}
 	}
 
-	return nil
+	// Mark the tree states that would be affected in this executor.
+	e.MarkNftDirty(txInfo.NftIndex)
+	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{0}) // Prepare asset 0 for generate an empty tx detail.
+	return e.BaseExecutor.Prepare()
 }
 
 func (e *DepositNftExecutor) VerifyInputs() error {
@@ -129,7 +120,7 @@ func (e *DepositNftExecutor) ApplyTransaction() error {
 	} else {
 		stateCache.PendingUpdateNftIndexMap[txInfo.NftIndex] = statedb.StateCachePending
 	}
-	stateCache.MarkNftDirty(txInfo.NftIndex)
+	e.SyncDirtyToStateCache()
 	return nil
 }
 

@@ -35,12 +35,8 @@ func NewFullExitNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}
 
 	return &FullExitNftExecutor{
-		BaseExecutor: BaseExecutor{
-			bc:      bc,
-			tx:      tx,
-			iTxInfo: txInfo,
-		},
-		txInfo: txInfo,
+		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
+		txInfo:       txInfo,
 	}, nil
 }
 
@@ -91,15 +87,15 @@ func (e *FullExitNftExecutor) Prepare() error {
 		isExitEmptyNft = false
 	}
 
-	accounts := []int64{account.AccountIndex}
-	if isExitEmptyNft {
-		accounts = append(accounts, exitNft.CreatorAccountIndex)
+	// Mark the tree states that would be affected in this executor.
+	e.MarkNftDirty(txInfo.NftIndex)
+	if exitNft.CreatorAccountIndex != types.NilAccountIndex {
+		e.MarkAccountAssetsDirty(exitNft.CreatorAccountIndex, []int64{})
 	}
-	assets := []int64{0} // Just used for generate an empty tx detail.
-	err = e.bc.StateDB().PrepareAccountsAndAssets(accounts, assets)
+	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{0}) // Prepare asset 0 for generate an empty tx detail.
+	err = e.BaseExecutor.Prepare()
 	if err != nil {
-		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
-		return errors.New("internal error")
+		return err
 	}
 
 	// Set the right tx info.
@@ -162,7 +158,7 @@ func (e *FullExitNftExecutor) ApplyTransaction() error {
 
 	stateCache := e.bc.StateDB()
 	stateCache.PendingUpdateNftIndexMap[txInfo.NftIndex] = statedb.StateCachePending
-	stateCache.MarkNftDirty(txInfo.NftIndex)
+	e.SyncDirtyToStateCache()
 	return nil
 }
 
