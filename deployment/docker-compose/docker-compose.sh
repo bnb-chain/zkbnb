@@ -28,11 +28,11 @@ CacheRedis:
     Type: node
 
 KeyPath:
-  ProvingKeyPath: [/server/.zkbas/zkbas1.pk, /server/.zkbas/zkbas10.pk]
-  VerifyingKeyPath: [/server/.zkbas/zkbas1.vk, /server/.zkbas/zkbas10.vk]
+  ProvingKeyPath: [/server/.zkbas/zkbas1.pk]
+  VerifyingKeyPath: [/server/.zkbas/zkbas1.vk]
 
 BlockConfig:
-  OptionalBlockSizes: [1, 10]
+  OptionalBlockSizes: [1]
 " > ${CONFIG_PATH}/prover.yaml
 
 echo -e "
@@ -78,7 +78,7 @@ CacheRedis:
     Type: node
 
 BlockConfig:
-  OptionalBlockSizes: [1, 10]
+  OptionalBlockSizes: [1]
 
 TreeDB:
   Driver: memorydb
