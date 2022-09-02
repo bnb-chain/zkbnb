@@ -70,7 +70,7 @@ func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.GasFee, erro
 	if err != nil {
 		return nil, types2.AppErrInternal
 	}
-	bnbDecimals, _ := new(big.Int).SetString(types2.BNBDecimalsStr, 10)
+	bnbDecimals, _ := new(big.Int).SetString(types2.BNBDecimals, 10)
 	assetDecimals := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(asset.Decimals)), nil)
 	// bnbPrice * bnbAmount * assetDecimals / (10^18 * assetPrice)
 	left := ffmath.FloatMul(ffmath.FloatMul(big.NewFloat(bnbPrice), ffmath.IntToFloat(sysGasFeeBigInt)), ffmath.IntToFloat(assetDecimals))

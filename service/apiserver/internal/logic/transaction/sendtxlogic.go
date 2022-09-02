@@ -53,7 +53,7 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 			TxStatus:  tx.StatusFail,
 			AssetAId:  types2.NilAssetId,
 			AssetBId:  types2.NilAssetId,
-			TxAmount:  types2.NilAssetAmountStr,
+			TxAmount:  types2.NilAssetAmount,
 			TxInfo:    req.TxInfo,
 			ExtraInfo: err.Error(),
 			Memo:      "",

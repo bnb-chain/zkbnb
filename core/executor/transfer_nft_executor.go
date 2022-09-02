@@ -302,7 +302,7 @@ func (e *TransferNftExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
 		NftIndex:      e.txInfo.NftIndex,
 		PairIndex:     types.NilPairIndex,
 		AssetId:       types.NilAssetId,
-		TxAmount:      types.NilAssetAmountStr,
+		TxAmount:      types.NilAssetAmount,
 		Memo:          "",
 		AccountIndex:  e.txInfo.FromAccountIndex,
 		Nonce:         e.txInfo.Nonce,
