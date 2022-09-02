@@ -23,19 +23,20 @@ import (
 )
 
 const (
-	EmptyNonce            = 0
-	EmptyCollectionNonce  = 0
-	EmptyAccountAssetInfo = "{}"
-	EmptyAccountIndex     = int64(0)
-	EmptyNftContentHash   = "0"
-	EmptyAccountNameHash  = "0"
-	EmptyL1TokenId        = "0"
-	EmptyL1Address        = "0"
+	EmptyNonce               = 0
+	EmptyCollectionNonce     = 0
+	EmptyAccountAssetInfo    = "{}"
+	EmptyAccountIndex        = int64(0)
+	EmptyNftContentHash      = "0"
+	EmptyAccountNameHash     = "0"
+	EmptyL1TokenId           = "0"
+	EmptyL1Address           = "0"
+	EmptyCreatorTreasuryRate = 0
 
 	NilAccountName     = ""
 	NilPairIndex       = -1
 	NilNftIndex        = int64(-1)
-	NilTxAccountIndex  = int64(-1)
+	NilAccountIndex    = int64(-1)
 	NilAssetId         = -1
 	NilAccountOrder    = -1
 	NilNonce           = -1

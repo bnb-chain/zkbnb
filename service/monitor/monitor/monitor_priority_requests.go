@@ -62,7 +62,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			AssetId:       types.NilAssetId,
 			TxAmount:      types.NilAssetAmount,
 			NativeAddress: request.SenderAddress,
-			AccountIndex:  types.NilTxAccountIndex,
+			AccountIndex:  types.NilAccountIndex,
 			Nonce:         types.NilNonce,
 			ExpiredAt:     types.NilExpiredAt,
 			Status:        mempool.PendingTxStatus,

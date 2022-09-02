@@ -151,7 +151,7 @@ func (e *CreatePairExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txDetail := &tx.TxDetail{
 		AssetId:         txInfo.PairIndex,
 		AssetType:       types.LiquidityAssetType,
-		AccountIndex:    types.NilTxAccountIndex,
+		AccountIndex:    types.NilAccountIndex,
 		AccountName:     types.NilAccountName,
 		Balance:         baseLiquidity.String(),
 		BalanceDelta:    deltaLiquidity.String(),

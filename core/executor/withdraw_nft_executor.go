@@ -248,7 +248,7 @@ func (e *WithdrawNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.NftIndex,
 		AssetType:    types.NftAssetType,
-		AccountIndex: types.NilTxAccountIndex,
+		AccountIndex: types.NilAccountIndex,
 		AccountName:  types.NilAccountName,
 		Balance: types.ConstructNftInfo(
 			nftModel.NftIndex,
