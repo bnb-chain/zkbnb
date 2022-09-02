@@ -437,44 +437,86 @@ func (s *StateDB) PrepareNft(nftIndex int64) error {
 	return nil
 }
 
-func (s *StateDB) UpdateAccountTree(accounts []int64, assets []int64) error {
-	for _, accountIndex := range accounts {
-		for _, assetId := range assets {
-			assetLeaf, err := tree.ComputeAccountAssetLeafHash(
-				s.AccountMap[accountIndex].AssetInfo[assetId].Balance.String(),
-				s.AccountMap[accountIndex].AssetInfo[assetId].LpAmount.String(),
-				s.AccountMap[accountIndex].AssetInfo[assetId].OfferCanceledOrFinalized.String(),
-			)
-			if err != nil {
-				return fmt.Errorf("compute new account asset leaf failed: %v", err)
+func (s *StateDB) IntermediateRoot() error {
+	for accountIndex, assetsMap := range s.DirtyAccountsAndAssetsMap {
+		assets := make([]int64, 0, len(assetsMap))
+		for assetIndex, isDirty := range assetsMap {
+			if !isDirty {
+				continue
 			}
-			err = s.AccountAssetTrees[accountIndex].Set(uint64(assetId), assetLeaf)
-			if err != nil {
-				return fmt.Errorf("update asset tree failed: %v", err)
-			}
+			assets = append(assets, assetIndex)
 		}
 
-		s.AccountMap[accountIndex].AssetRoot = common.Bytes2Hex(s.AccountAssetTrees[accountIndex].Root())
-		nAccountLeafHash, err := tree.ComputeAccountLeafHash(
-			s.AccountMap[accountIndex].AccountNameHash,
-			s.AccountMap[accountIndex].PublicKey,
-			s.AccountMap[accountIndex].Nonce,
-			s.AccountMap[accountIndex].CollectionNonce,
-			s.AccountAssetTrees[accountIndex].Root(),
+		err := s.accountIntermediateRoot(accountIndex, assets)
+		if err != nil {
+			return err
+		}
+	}
+
+	for pairIndex, isDirty := range s.DirtyLiquidityMap {
+		if !isDirty {
+			continue
+		}
+		err := s.liquidityIntermediateRoot(pairIndex)
+		if err != nil {
+			return err
+		}
+	}
+
+	for nftIndex, isDirty := range s.DirtyNftMap {
+		if !isDirty {
+			continue
+		}
+		err := s.nftIntermediateRoot(nftIndex)
+		if err != nil {
+			return err
+		}
+	}
+
+	hFunc := mimc.NewMiMC()
+	hFunc.Write(s.AccountTree.Root())
+	hFunc.Write(s.LiquidityTree.Root())
+	hFunc.Write(s.NftTree.Root())
+	s.StateRoot = common.Bytes2Hex(hFunc.Sum(nil))
+	return nil
+}
+
+func (s *StateDB) accountIntermediateRoot(accountIndex int64, assets []int64) error {
+	for _, assetId := range assets {
+		assetLeaf, err := tree.ComputeAccountAssetLeafHash(
+			s.AccountMap[accountIndex].AssetInfo[assetId].Balance.String(),
+			s.AccountMap[accountIndex].AssetInfo[assetId].LpAmount.String(),
+			s.AccountMap[accountIndex].AssetInfo[assetId].OfferCanceledOrFinalized.String(),
 		)
 		if err != nil {
-			return fmt.Errorf("unable to compute account leaf: %v", err)
+			return fmt.Errorf("compute new account asset leaf failed: %v", err)
 		}
-		err = s.AccountTree.Set(uint64(accountIndex), nAccountLeafHash)
+		err = s.AccountAssetTrees[accountIndex].Set(uint64(assetId), assetLeaf)
 		if err != nil {
-			return fmt.Errorf("unable to update account tree: %v", err)
+			return fmt.Errorf("update asset tree failed: %v", err)
 		}
+	}
+
+	s.AccountMap[accountIndex].AssetRoot = common.Bytes2Hex(s.AccountAssetTrees[accountIndex].Root())
+	nAccountLeafHash, err := tree.ComputeAccountLeafHash(
+		s.AccountMap[accountIndex].AccountNameHash,
+		s.AccountMap[accountIndex].PublicKey,
+		s.AccountMap[accountIndex].Nonce,
+		s.AccountMap[accountIndex].CollectionNonce,
+		s.AccountAssetTrees[accountIndex].Root(),
+	)
+	if err != nil {
+		return fmt.Errorf("unable to compute account leaf: %v", err)
+	}
+	err = s.AccountTree.Set(uint64(accountIndex), nAccountLeafHash)
+	if err != nil {
+		return fmt.Errorf("unable to update account tree: %v", err)
 	}
 
 	return nil
 }
 
-func (s *StateDB) UpdateLiquidityTree(pairIndex int64) error {
+func (s *StateDB) liquidityIntermediateRoot(pairIndex int64) error {
 	nLiquidityAssetLeaf, err := tree.ComputeLiquidityAssetLeafHash(
 		s.LiquidityMap[pairIndex].AssetAId,
 		s.LiquidityMap[pairIndex].AssetA,
@@ -497,7 +539,7 @@ func (s *StateDB) UpdateLiquidityTree(pairIndex int64) error {
 	return nil
 }
 
-func (s *StateDB) UpdateNftTree(nftIndex int64) error {
+func (s *StateDB) nftIntermediateRoot(nftIndex int64) error {
 	nftAssetLeaf, err := tree.ComputeNftAssetLeafHash(
 		s.NftMap[nftIndex].CreatorAccountIndex,
 		s.NftMap[nftIndex].OwnerAccountIndex,
@@ -516,14 +558,6 @@ func (s *StateDB) UpdateNftTree(nftIndex int64) error {
 	}
 
 	return nil
-}
-
-func (s *StateDB) GetStateRoot() string {
-	hFunc := mimc.NewMiMC()
-	hFunc.Write(s.AccountTree.Root())
-	hFunc.Write(s.LiquidityTree.Root())
-	hFunc.Write(s.NftTree.Root())
-	return common.Bytes2Hex(hFunc.Sum(nil))
 }
 
 func (s *StateDB) GetCommittedNonce(accountIndex int64) (int64, error) {

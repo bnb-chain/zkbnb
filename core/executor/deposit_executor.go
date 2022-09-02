@@ -95,6 +95,7 @@ func (e *DepositExecutor) ApplyTransaction() error {
 
 	stateCache := e.bc.StateDB()
 	stateCache.PendingUpdateAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
+	stateCache.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{txInfo.AssetId})
 	return nil
 }
 
@@ -121,14 +122,6 @@ func (e *DepositExecutor) GeneratePubData() error {
 	stateCache.PubDataOffset = append(stateCache.PubDataOffset, uint32(len(stateCache.PubData)))
 	stateCache.PubData = append(stateCache.PubData, pubData...)
 	return nil
-}
-
-func (e *DepositExecutor) UpdateTrees() error {
-	bc := e.bc
-	txInfo := e.txInfo
-	accounts := []int64{txInfo.AccountIndex}
-	assets := []int64{txInfo.AssetId}
-	return bc.StateDB().UpdateAccountTree(accounts, assets)
 }
 
 func (e *DepositExecutor) GetExecutedTx() (*tx.Tx, error) {

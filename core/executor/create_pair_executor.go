@@ -83,6 +83,7 @@ func (e *CreatePairExecutor) ApplyTransaction() error {
 
 	stateCache := e.bc.StateDB()
 	stateCache.PendingNewLiquidityIndexMap[txInfo.PairIndex] = statedb.StateCachePending
+	stateCache.MarkLiquidityDirty(txInfo.PairIndex)
 	return nil
 }
 
@@ -112,12 +113,6 @@ func (e *CreatePairExecutor) GeneratePubData() error {
 	stateCache.PubDataOffset = append(stateCache.PubDataOffset, uint32(len(stateCache.PubData)))
 	stateCache.PubData = append(stateCache.PubData, pubData...)
 	return nil
-}
-
-func (e *CreatePairExecutor) UpdateTrees() error {
-	bc := e.bc
-	txInfo := e.txInfo
-	return bc.StateDB().UpdateLiquidityTree(txInfo.PairIndex)
 }
 
 func (e *CreatePairExecutor) GetExecutedTx() (*tx.Tx, error) {

@@ -93,6 +93,8 @@ func (e *CreateCollectionExecutor) ApplyTransaction() error {
 	stateCache := e.bc.StateDB()
 	stateCache.PendingUpdateAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
+	stateCache.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{txInfo.GasFeeAssetId})
+	stateCache.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
 	return nil
 }
 
@@ -123,21 +125,6 @@ func (e *CreateCollectionExecutor) GeneratePubData() error {
 
 	stateCache := e.bc.StateDB()
 	stateCache.PubData = append(stateCache.PubData, pubData...)
-	return nil
-}
-
-func (e *CreateCollectionExecutor) UpdateTrees() error {
-	txInfo := e.txInfo
-
-	accounts := []int64{txInfo.AccountIndex, txInfo.GasAccountIndex}
-	assets := []int64{txInfo.GasFeeAssetId}
-
-	err := e.bc.StateDB().UpdateAccountTree(accounts, assets)
-	if err != nil {
-		logx.Errorf("update account tree error, err: %s", err.Error())
-		return err
-	}
-
 	return nil
 }
 

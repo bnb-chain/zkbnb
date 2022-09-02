@@ -129,7 +129,7 @@ func (e *DepositNftExecutor) ApplyTransaction() error {
 	} else {
 		stateCache.PendingUpdateNftIndexMap[txInfo.NftIndex] = statedb.StateCachePending
 	}
-
+	stateCache.MarkNftDirty(txInfo.NftIndex)
 	return nil
 }
 
@@ -162,13 +162,6 @@ func (e *DepositNftExecutor) GeneratePubData() error {
 	stateCache.PubDataOffset = append(stateCache.PubDataOffset, uint32(len(stateCache.PubData)))
 	stateCache.PubData = append(stateCache.PubData, pubData...)
 	return nil
-}
-
-func (e *DepositNftExecutor) UpdateTrees() error {
-	bc := e.bc
-	txInfo := e.txInfo
-
-	return bc.StateDB().UpdateNftTree(txInfo.NftIndex)
 }
 
 func (e *DepositNftExecutor) GetExecutedTx() (*tx.Tx, error) {

@@ -24,13 +24,18 @@ type StateCache struct {
 	PendingOnChainOperationsHash    []byte
 	Txs                             []*tx.Tx
 
-	// Updated in executor's ApplyTransaction method.
+	// Record the flat states that should be updated.
 	PendingNewAccountIndexMap      map[int64]int
 	PendingNewLiquidityIndexMap    map[int64]int
 	PendingNewNftIndexMap          map[int64]int
 	PendingUpdateAccountIndexMap   map[int64]int
 	PendingUpdateLiquidityIndexMap map[int64]int
 	PendingUpdateNftIndexMap       map[int64]int
+
+	// Record the tree states that should be updated.
+	DirtyAccountsAndAssetsMap map[int64]map[int64]bool
+	DirtyLiquidityMap         map[int64]bool
+	DirtyNftMap               map[int64]bool
 }
 
 func NewStateCache(stateRoot string) *StateCache {
@@ -50,10 +55,41 @@ func NewStateCache(stateRoot string) *StateCache {
 		PubDataOffset:                   make([]uint32, 0),
 		PendingOnChainOperationsPubData: make([][]byte, 0),
 		PendingOnChainOperationsHash:    common.FromHex(types.EmptyStringKeccak),
+
+		DirtyAccountsAndAssetsMap: make(map[int64]map[int64]bool, 0),
+		DirtyLiquidityMap:         make(map[int64]bool, 0),
+		DirtyNftMap:               make(map[int64]bool, 0),
 	}
 }
 
 func (c *StateCache) AlignPubData(blockSize int) {
 	emptyPubdata := make([]byte, (blockSize-len(c.Txs))*32*std.PubDataSizePerTx)
 	c.PubData = append(c.PubData, emptyPubdata...)
+}
+
+func (c *StateCache) MarkAccountAssetsDirty(accountIndex int64, assets []int64) {
+	if accountIndex < 0 {
+		return
+	}
+
+	_, ok := c.DirtyAccountsAndAssetsMap[accountIndex]
+	if !ok {
+		c.DirtyAccountsAndAssetsMap[accountIndex] = make(map[int64]bool, 0)
+	}
+
+	for _, assetIndex := range assets {
+		// Should never happen, but protect here.
+		if assetIndex < 0 {
+			continue
+		}
+		c.DirtyAccountsAndAssetsMap[accountIndex][assetIndex] = true
+	}
+}
+
+func (c *StateCache) MarkLiquidityDirty(pairIndex int64) {
+	c.DirtyLiquidityMap[pairIndex] = true
+}
+
+func (c *StateCache) MarkNftDirty(nftIndex int64) {
+	c.DirtyNftMap[nftIndex] = true
 }

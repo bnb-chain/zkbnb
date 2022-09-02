@@ -208,7 +208,12 @@ func (e *AtomicMatchExecutor) ApplyTransaction() error {
 	stateCache.PendingUpdateAccountIndexMap[matchNft.CreatorAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateNftIndexMap[txInfo.SellOffer.NftIndex] = statedb.StateCachePending
-
+	stateCache.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{txInfo.GasFeeAssetId})
+	stateCache.MarkAccountAssetsDirty(txInfo.BuyOffer.AccountIndex, []int64{txInfo.BuyOffer.AssetId, e.buyOfferAssetId})
+	stateCache.MarkAccountAssetsDirty(txInfo.SellOffer.AccountIndex, []int64{txInfo.SellOffer.AssetId, e.sellOfferAssetId})
+	stateCache.MarkAccountAssetsDirty(matchNft.CreatorAccountIndex, []int64{txInfo.BuyOffer.AssetId})
+	stateCache.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.BuyOffer.AssetId, txInfo.GasFeeAssetId})
+	stateCache.MarkNftDirty(txInfo.SellOffer.NftIndex)
 	return nil
 }
 
@@ -264,32 +269,6 @@ func (e *AtomicMatchExecutor) GeneratePubData() error {
 
 	stateCache := e.bc.StateDB()
 	stateCache.PubData = append(stateCache.PubData, pubData...)
-	return nil
-}
-
-func (e *AtomicMatchExecutor) UpdateTrees() error {
-	txInfo := e.txInfo
-
-	matchNft := e.bc.StateDB().NftMap[txInfo.SellOffer.NftIndex]
-	accounts := []int64{txInfo.AccountIndex, txInfo.GasAccountIndex, txInfo.SellOffer.AccountIndex, matchNft.CreatorAccountIndex}
-	if !e.isFromBuyer {
-		accounts = append(accounts, txInfo.BuyOffer.AccountIndex)
-	}
-	assets := []int64{txInfo.GasFeeAssetId, e.buyOfferAssetId, e.sellOfferAssetId}
-	if !e.isAssetGas {
-		assets = append(assets, txInfo.SellOffer.AssetId)
-	}
-	err := e.bc.StateDB().UpdateAccountTree(accounts, assets)
-	if err != nil {
-		logx.Errorf("update account tree error, err: %s", err.Error())
-		return err
-	}
-
-	err = e.bc.StateDB().UpdateNftTree(txInfo.SellOffer.NftIndex)
-	if err != nil {
-		logx.Errorf("update nft tree error, err: %s", err.Error())
-		return err
-	}
 	return nil
 }
 

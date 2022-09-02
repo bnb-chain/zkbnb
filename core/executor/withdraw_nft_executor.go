@@ -126,7 +126,9 @@ func (e *WithdrawNftExecutor) ApplyTransaction() error {
 	stateCache.PendingUpdateAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateNftIndexMap[txInfo.NftIndex] = statedb.StateCachePending
-
+	stateCache.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{txInfo.GasFeeAssetId})
+	stateCache.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
+	stateCache.MarkNftDirty(txInfo.NftIndex)
 	return nil
 }
 
@@ -169,26 +171,6 @@ func (e *WithdrawNftExecutor) GeneratePubData() error {
 	stateCache.PendingOnChainOperationsPubData = append(stateCache.PendingOnChainOperationsPubData, pubData)
 	stateCache.PendingOnChainOperationsHash = common2.ConcatKeccakHash(stateCache.PendingOnChainOperationsHash, pubData)
 	stateCache.PubData = append(stateCache.PubData, pubData...)
-	return nil
-}
-
-func (e *WithdrawNftExecutor) UpdateTrees() error {
-	txInfo := e.txInfo
-
-	accounts := []int64{txInfo.AccountIndex, txInfo.GasAccountIndex}
-	assets := []int64{txInfo.GasFeeAssetId}
-
-	err := e.bc.StateDB().UpdateAccountTree(accounts, assets)
-	if err != nil {
-		logx.Errorf("update account tree error, err: %s", err.Error())
-		return err
-	}
-
-	err = e.bc.StateDB().UpdateNftTree(txInfo.NftIndex)
-	if err != nil {
-		logx.Errorf("update nft tree error, err: %s", err.Error())
-		return err
-	}
 	return nil
 }
 

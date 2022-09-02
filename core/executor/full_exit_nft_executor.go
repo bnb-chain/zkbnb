@@ -162,6 +162,7 @@ func (e *FullExitNftExecutor) ApplyTransaction() error {
 
 	stateCache := e.bc.StateDB()
 	stateCache.PendingUpdateNftIndexMap[txInfo.NftIndex] = statedb.StateCachePending
+	stateCache.MarkNftDirty(txInfo.NftIndex)
 	return nil
 }
 
@@ -195,18 +196,6 @@ func (e *FullExitNftExecutor) GeneratePubData() error {
 	stateCache.PendingOnChainOperationsHash = common2.ConcatKeccakHash(stateCache.PendingOnChainOperationsHash, pubData)
 	stateCache.PubData = append(stateCache.PubData, pubData...)
 	return nil
-}
-
-func (e *FullExitNftExecutor) UpdateTrees() error {
-	bc := e.bc
-	txInfo := e.txInfo
-
-	if bc.StateDB().NftMap[txInfo.NftIndex] == nil {
-		// Do nothing when nft doesn't exist.
-		return nil
-	}
-
-	return bc.StateDB().UpdateNftTree(txInfo.NftIndex)
 }
 
 func (e *FullExitNftExecutor) GetExecutedTx() (*tx.Tx, error) {

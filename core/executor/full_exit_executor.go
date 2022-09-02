@@ -93,6 +93,7 @@ func (e *FullExitExecutor) ApplyTransaction() error {
 	if txInfo.AssetAmount.Cmp(types.ZeroBigInt) != 0 {
 		stateCache := e.bc.StateDB()
 		stateCache.PendingUpdateAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
+		stateCache.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{txInfo.AssetId})
 	}
 	return nil
 }
@@ -122,14 +123,6 @@ func (e *FullExitExecutor) GeneratePubData() error {
 	stateCache.PendingOnChainOperationsHash = common2.ConcatKeccakHash(stateCache.PendingOnChainOperationsHash, pubData)
 	stateCache.PubData = append(stateCache.PubData, pubData...)
 	return nil
-}
-
-func (e *FullExitExecutor) UpdateTrees() error {
-	bc := e.bc
-	txInfo := e.txInfo
-	accounts := []int64{txInfo.AccountIndex}
-	assets := []int64{txInfo.AssetId}
-	return bc.StateDB().UpdateAccountTree(accounts, assets)
 }
 
 func (e *FullExitExecutor) GetExecutedTx() (*tx.Tx, error) {

@@ -15,7 +15,6 @@ func DbtxTx(tx *tx.Tx) *types.Tx {
 		Status:        tx.TxStatus,
 		Index:         tx.TxIndex,
 		BlockHeight:   tx.BlockHeight,
-		StateRoot:     tx.StateRoot,
 		NftIndex:      tx.NftIndex,
 		PairIndex:     tx.PairIndex,
 		CollectionId:  tx.CollectionId,

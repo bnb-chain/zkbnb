@@ -164,6 +164,10 @@ func (e *AddLiquidityExecutor) ApplyTransaction() error {
 	stateCache.PendingUpdateAccountIndexMap[treasuryAccount.AccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateLiquidityIndexMap[txInfo.PairIndex] = statedb.StateCachePending
+	stateCache.MarkAccountAssetsDirty(txInfo.FromAccountIndex, []int64{txInfo.GasFeeAssetId, txInfo.AssetAId, txInfo.AssetBId, txInfo.PairIndex})
+	stateCache.MarkAccountAssetsDirty(treasuryAccount.AccountIndex, []int64{txInfo.PairIndex})
+	stateCache.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
+	stateCache.MarkLiquidityDirty(txInfo.PairIndex)
 	return nil
 }
 
@@ -277,28 +281,6 @@ func (e *AddLiquidityExecutor) GeneratePubData() error {
 
 	stateCache := e.bc.StateDB()
 	stateCache.PubData = append(stateCache.PubData, pubData...)
-	return nil
-}
-
-func (e *AddLiquidityExecutor) UpdateTrees() error {
-	bc := e.bc
-	txInfo := e.txInfo
-
-	liquidityModel := bc.StateDB().LiquidityMap[txInfo.PairIndex]
-
-	accounts := []int64{txInfo.FromAccountIndex, liquidityModel.TreasuryAccountIndex, txInfo.GasAccountIndex}
-	assets := []int64{txInfo.AssetAId, txInfo.AssetBId, txInfo.PairIndex, txInfo.GasFeeAssetId}
-
-	err := bc.StateDB().UpdateAccountTree(accounts, assets)
-	if err != nil {
-		return err
-	}
-
-	err = bc.StateDB().UpdateLiquidityTree(txInfo.PairIndex)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 

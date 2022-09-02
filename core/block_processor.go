@@ -51,17 +51,12 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 	if err != nil {
 		panic(err)
 	}
-	err = executor.UpdateTrees()
-	if err != nil {
-		panic(err)
-	}
 	tx, err = executor.GetExecutedTx()
 	if err != nil {
 		panic(err)
 	}
 
 	p.bc.Statedb.Txs = append(p.bc.Statedb.Txs, tx)
-	p.bc.Statedb.StateRoot = tx.StateRoot
 
 	return nil
 }

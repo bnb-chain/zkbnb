@@ -134,14 +134,14 @@ func (e *SwapExecutor) ApplyTransaction() error {
 	txInfo := e.txInfo
 
 	// apply changes
-	fromAccountInfo := bc.StateDB().AccountMap[txInfo.FromAccountIndex]
-	gasAccountInfo := bc.StateDB().AccountMap[txInfo.GasAccountIndex]
+	fromAccount := bc.StateDB().AccountMap[txInfo.FromAccountIndex]
+	gasAccount := bc.StateDB().AccountMap[txInfo.GasAccountIndex]
 
-	fromAccountInfo.AssetInfo[txInfo.AssetAId].Balance = ffmath.Sub(fromAccountInfo.AssetInfo[txInfo.AssetAId].Balance, txInfo.AssetAAmount)
-	fromAccountInfo.AssetInfo[txInfo.AssetBId].Balance = ffmath.Add(fromAccountInfo.AssetInfo[txInfo.AssetBId].Balance, txInfo.AssetBAmountDelta)
-	fromAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-	gasAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccountInfo.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-	fromAccountInfo.Nonce++
+	fromAccount.AssetInfo[txInfo.AssetAId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.AssetAId].Balance, txInfo.AssetAAmount)
+	fromAccount.AssetInfo[txInfo.AssetBId].Balance = ffmath.Add(fromAccount.AssetInfo[txInfo.AssetBId].Balance, txInfo.AssetBAmountDelta)
+	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
+	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
+	fromAccount.Nonce++
 
 	liquidityModel := bc.StateDB().LiquidityMap[txInfo.PairIndex]
 	bc.StateDB().LiquidityMap[txInfo.PairIndex] = &liquidity.Liquidity{
@@ -162,6 +162,9 @@ func (e *SwapExecutor) ApplyTransaction() error {
 	stateCache.PendingUpdateAccountIndexMap[txInfo.FromAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateLiquidityIndexMap[txInfo.PairIndex] = statedb.StateCachePending
+	stateCache.MarkAccountAssetsDirty(txInfo.FromAccountIndex, []int64{txInfo.GasFeeAssetId, txInfo.AssetAId, txInfo.AssetBId})
+	stateCache.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
+	stateCache.MarkLiquidityDirty(txInfo.PairIndex)
 	return nil
 }
 
@@ -258,26 +261,6 @@ func (e *SwapExecutor) GeneratePubData() error {
 
 	stateCache := e.bc.StateDB()
 	stateCache.PubData = append(stateCache.PubData, pubData...)
-	return nil
-}
-
-func (e *SwapExecutor) UpdateTrees() error {
-	bc := e.bc
-	txInfo := e.txInfo
-
-	accounts := []int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex}
-	assets := []int64{txInfo.AssetAId, txInfo.AssetBId, txInfo.GasFeeAssetId}
-
-	err := bc.StateDB().UpdateAccountTree(accounts, assets)
-	if err != nil {
-		return err
-	}
-
-	err = bc.StateDB().UpdateLiquidityTree(txInfo.PairIndex)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 

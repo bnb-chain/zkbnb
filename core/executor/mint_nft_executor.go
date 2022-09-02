@@ -112,6 +112,9 @@ func (e *MintNftExecutor) ApplyTransaction() error {
 	stateCache.PendingUpdateAccountIndexMap[txInfo.CreatorAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
 	stateCache.PendingNewNftIndexMap[txInfo.NftIndex] = statedb.StateCachePending
+	stateCache.MarkAccountAssetsDirty(txInfo.CreatorAccountIndex, []int64{txInfo.GasFeeAssetId})
+	stateCache.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
+	stateCache.MarkNftDirty(txInfo.NftIndex)
 	return nil
 }
 
@@ -146,26 +149,6 @@ func (e *MintNftExecutor) GeneratePubData() error {
 
 	stateCache := e.bc.StateDB()
 	stateCache.PubData = append(stateCache.PubData, pubData...)
-	return nil
-}
-
-func (e *MintNftExecutor) UpdateTrees() error {
-	txInfo := e.txInfo
-
-	accounts := []int64{txInfo.CreatorAccountIndex, txInfo.ToAccountIndex, txInfo.GasAccountIndex}
-	assets := []int64{txInfo.GasFeeAssetId}
-
-	err := e.bc.StateDB().UpdateAccountTree(accounts, assets)
-	if err != nil {
-		logx.Errorf("update account tree error, err: %s", err.Error())
-		return err
-	}
-
-	err = e.bc.StateDB().UpdateNftTree(txInfo.NftIndex)
-	if err != nil {
-		logx.Errorf("update nft tree error, err: %s", err.Error())
-		return err
-	}
 	return nil
 }
 

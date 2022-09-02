@@ -91,8 +91,16 @@ func (e *RegisterZnsExecutor) ApplyTransaction() error {
 		return err
 	}
 
+	emptyAssetTree, err := tree.NewEmptyAccountAssetTree(bc.StateDB().TreeCtx, txInfo.AccountIndex, uint64(bc.CurrentBlock().BlockHeight))
+	if err != nil {
+		logx.Errorf("new empty account asset tree failed: %s", err.Error())
+		return err
+	}
+	bc.StateDB().AccountAssetTrees = append(bc.StateDB().AccountAssetTrees, emptyAssetTree)
+
 	stateCache := e.bc.StateDB()
 	stateCache.PendingNewAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
+	stateCache.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{})
 	return nil
 }
 
@@ -123,21 +131,6 @@ func (e *RegisterZnsExecutor) GeneratePubData() error {
 	stateCache.PubDataOffset = append(stateCache.PubDataOffset, uint32(len(stateCache.PubData)))
 	stateCache.PubData = append(stateCache.PubData, pubData...)
 	return nil
-}
-
-func (e *RegisterZnsExecutor) UpdateTrees() error {
-	bc := e.bc
-	txInfo := e.txInfo
-	accounts := []int64{txInfo.AccountIndex}
-
-	emptyAssetTree, err := tree.NewEmptyAccountAssetTree(bc.StateDB().TreeCtx, txInfo.AccountIndex, uint64(bc.CurrentBlock().BlockHeight))
-	if err != nil {
-		logx.Errorf("new empty account asset tree failed: %s", err.Error())
-		return err
-	}
-	bc.StateDB().AccountAssetTrees = append(bc.StateDB().AccountAssetTrees, emptyAssetTree)
-
-	return bc.StateDB().UpdateAccountTree(accounts, nil)
 }
 
 func (e *RegisterZnsExecutor) GetExecutedTx() (*tx.Tx, error) {

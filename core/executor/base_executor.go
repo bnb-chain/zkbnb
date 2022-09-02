@@ -57,14 +57,10 @@ func (e *BaseExecutor) GeneratePubData() error {
 	return nil
 }
 
-func (e *BaseExecutor) UpdateTrees() error {
-	return nil
-}
-
 func (e *BaseExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.BlockHeight = e.bc.CurrentBlock().BlockHeight
-	e.tx.StateRoot = e.bc.StateDB().GetStateRoot()
-	e.tx.TxStatus = tx.StatusPending
+	e.tx.TxStatus = tx.StatusSuccess
+	e.tx.TxIndex = int64(len(e.bc.StateDB().Txs))
 	return e.tx, nil
 }
 

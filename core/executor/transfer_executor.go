@@ -104,6 +104,9 @@ func (e *TransferExecutor) ApplyTransaction() error {
 	stateCache.PendingUpdateAccountIndexMap[txInfo.FromAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.ToAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
+	stateCache.MarkAccountAssetsDirty(txInfo.FromAccountIndex, []int64{txInfo.GasFeeAssetId, txInfo.AssetId})
+	stateCache.MarkAccountAssetsDirty(txInfo.ToAccountIndex, []int64{txInfo.AssetId})
+	stateCache.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
 	return nil
 }
 
@@ -139,14 +142,6 @@ func (e *TransferExecutor) GeneratePubData() error {
 	stateCache := e.bc.StateDB()
 	stateCache.PubData = append(stateCache.PubData, pubData...)
 	return nil
-}
-
-func (e *TransferExecutor) UpdateTrees() error {
-	bc := e.bc
-	txInfo := e.txInfo
-	accounts := []int64{txInfo.FromAccountIndex, txInfo.ToAccountIndex, txInfo.GasAccountIndex}
-	assets := []int64{txInfo.AssetId, txInfo.GasFeeAssetId}
-	return bc.StateDB().UpdateAccountTree(accounts, assets)
 }
 
 func (e *TransferExecutor) GetExecutedTx() (*tx.Tx, error) {
