@@ -77,8 +77,6 @@ sed -i -e "s/ZkbasProxy: .*/ZkbasProxy: ${ZkbasContractAddr}/" ${DEPLOY_PATH}/zk
 GovernanceContractAddr=`cat ${DEPLOY_PATH}/zkbas-contract/info/addresses.json  | jq -r '.governance'`
 sed -i -e "s/Governance: .*/Governance: ${GovernanceContractAddr}/" ${DEPLOY_PATH}/zkbas/tools/dbinitializer/contractaddr.yaml
 
-sed -i -e "s/BSCTestNetworkRPC *= .*/BSCTestNetworkRPC   = \"https\:\/\/data-seed-prebsc-1-s1.binance.org:8545\"/" ${DEPLOY_PATH}/zkbas/tools/dbinitializer/main.go
-
 
 
 cd ${DEPLOY_PATH}/zkbas/
@@ -86,11 +84,8 @@ make api-server
 cd ${DEPLOY_PATH}/zkbas && go mod tidy
 
 
-
 echo "6. init tables on database"
-sed -i -e "s/password=.* dbname/password=Zkbas@123 dbname/" ${DEPLOY_PATH}/zkbas/tools/dbinitializer/main.go
-cd ${DEPLOY_PATH}/zkbas/tools/dbinitializer/
-go run .
+go run ./cmd/zkbas/main.go db initialize --dsn "host=localhost user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable" --contractAddr ${DEPLOY_PATH}/zkbas/tools/dbinitializer/contractaddr.yaml
 
 
 cd ${DEPLOY_PATH}/zkbas/
@@ -122,8 +117,11 @@ TreeDB:
   Driver: memorydb
 " > ${DEPLOY_PATH}/zkbas/service/prover/etc/config.yaml
 
-cd ${DEPLOY_PATH}/zkbas/service/prover/
-pm2 start --name prover "go run ./main.go"
+echo -e "
+go run ./cmd/zkbas/main.go prover --config ${DEPLOY_PATH}/zkbas/service/prover/etc/config.yaml
+" > run_prover.sh
+pm2 start --name prover "./run_prover.sh"
+
 
 
 
@@ -144,8 +142,10 @@ TreeDB:
   Driver: memorydb
 " > ${DEPLOY_PATH}/zkbas/service/witness/etc/config.yaml
 
-cd ${DEPLOY_PATH}/zkbas/service/witness/
-pm2 start --name witness "go run ./main.go"
+echo -e "
+go run ./cmd/zkbas/main.go witness --config ${DEPLOY_PATH}/zkbas/service/witness/etc/config.yaml
+" > run_witness.sh
+pm2 start --name witness "./run_witness.sh"
 
 
 echo "9. run monitor"
@@ -171,9 +171,10 @@ TreeDB:
   Driver: memorydb
 " > ${DEPLOY_PATH}/zkbas/service/monitor/etc/config.yaml
 
-cd ${DEPLOY_PATH}/zkbas/service/monitor/
-pm2 start --name monitor "go run ./main.go"
-
+echo -e "
+go run ./cmd/zkbas/main.go monitor --config ${DEPLOY_PATH}/zkbas/service/monitor/etc/config.yaml
+" > run_monitor.sh
+pm2 start --name monitor "./run_monitor.sh"
 
 
 echo "10. run committer"
@@ -195,8 +196,10 @@ TreeDB:
   Driver: memorydb
 " > ${DEPLOY_PATH}/zkbas/service/committer/etc/config.yaml
 
-cd ${DEPLOY_PATH}/zkbas/service/committer/
-pm2 start --name committer "go run ./main.go"
+echo -e "
+go run ./cmd/zkbas/main.go committer --config ${DEPLOY_PATH}/zkbas/service/committer/etc/config.yaml
+" > run_committer.sh
+pm2 start --name committer "./run_committer.sh"
 
 
 echo "11. run sender"
@@ -224,8 +227,10 @@ TreeDB:
   Driver: memorydb
 " > ${DEPLOY_PATH}/zkbas/service/sender/etc/config.yaml
 
-cd ${DEPLOY_PATH}/zkbas/service/sender/
-pm2 start --name sender "go run ./main.go"
+echo -e "
+go run ./cmd/zkbas/main.go sender --config ${DEPLOY_PATH}/zkbas/service/sender/etc/config.yaml
+" > run_sender.sh
+pm2 start --name sender "./run_sender.sh"
 
 
 echo "12. run api-server"
@@ -266,5 +271,7 @@ MemCache:
   PriceExpiration:   200
   " > ${DEPLOY_PATH}/zkbas/service/apiserver/etc/config.yaml
 
-cd ${DEPLOY_PATH}/zkbas/service/apiserver
-pm2 start --name api-server "go run ./server.go"
+echo -e "
+go run ./cmd/zkbas/main.go apiserver --config ${DEPLOY_PATH}/zkbas/service/apiserver/etc/config.yaml
+" > run_apiserver.sh
+pm2 start --name apiserver "./run_apiserver.sh"
