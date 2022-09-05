@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"strings"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -28,6 +29,7 @@ import (
 
 	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/zero/basic"
+
 	common2 "github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/dao/asset"
 	"github.com/bnb-chain/zkbas/dao/l1syncedblock"
@@ -110,7 +112,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 				AssetId:     uint32(event.AssetId),
 				L1Address:   event.AssetAddress.Hex(),
 				AssetName:   name,
-				AssetSymbol: symbol,
+				AssetSymbol: strings.ToUpper(symbol),
 				Decimals:    uint32(decimals),
 				Status:      asset.StatusActive,
 			}

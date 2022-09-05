@@ -34,17 +34,17 @@ func NewGetAccountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAcc
 }
 
 func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Account, err error) {
-	accountIndex := int64(0)
+	index := int64(0)
 	switch req.By {
 	case queryByIndex:
-		accountIndex, err = strconv.ParseInt(req.Value, 10, 64)
-		if err != nil {
+		index, err = strconv.ParseInt(req.Value, 10, 64)
+		if err != nil || index < 0 {
 			return nil, types2.AppErrInvalidParam.RefineError("invalid value for account index")
 		}
 	case queryByName:
-		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByName(req.Value)
+		index, err = l.svcCtx.MemCache.GetAccountIndexByName(req.Value)
 	case queryByPk:
-		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByPk(req.Value)
+		index, err = l.svcCtx.MemCache.GetAccountIndexByPk(req.Value)
 	default:
 		return nil, types2.AppErrInvalidParam.RefineError("param by should be index|name|pk")
 	}
@@ -56,7 +56,7 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 		return nil, types2.AppErrInternal
 	}
 
-	account, err := l.svcCtx.StateFetcher.GetLatestAccount(accountIndex)
+	account, err := l.svcCtx.StateFetcher.GetLatestAccount(index)
 	if err != nil {
 		if err == types2.DbErrNotFound {
 			return nil, types2.AppErrNotFound

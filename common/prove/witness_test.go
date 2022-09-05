@@ -122,7 +122,7 @@ func testDBShutdown() {
 	//nolint:errcheck
 	cmd.Run()
 	time.Sleep(time.Second)
-	cmd = exec.Command("docker", "rm", "postgres-ut")
+	cmd = exec.Command("docker", "rm", "postgres-ut-witness")
 	//nolint:errcheck
 	cmd.Run()
 }

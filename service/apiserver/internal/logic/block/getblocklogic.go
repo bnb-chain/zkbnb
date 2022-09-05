@@ -36,15 +36,13 @@ func (l *GetBlockLogic) GetBlock(req *types.ReqGetBlock) (resp *types.Block, err
 	var block *blockdao.Block
 	switch req.By {
 	case queryByHeight:
-		blockHeight, err := strconv.ParseInt(req.Value, 10, 64)
-		if err != nil {
+		var height int64
+		height, err = strconv.ParseInt(req.Value, 10, 64)
+		if err != nil || height < 0 {
 			return nil, types2.AppErrInvalidParam.RefineError("invalid value for block height")
 		}
-		if blockHeight < 0 {
-			return nil, types2.AppErrInvalidParam.RefineError("invalid value for block height")
-		}
-		block, _ = l.svcCtx.MemCache.GetBlockByHeightWithFallback(blockHeight, func() (interface{}, error) {
-			return l.svcCtx.BlockModel.GetBlockByHeight(blockHeight)
+		block, _ = l.svcCtx.MemCache.GetBlockByHeightWithFallback(height, func() (interface{}, error) {
+			return l.svcCtx.BlockModel.GetBlockByHeight(height)
 		})
 	case queryByCommitment:
 		block, err = l.svcCtx.MemCache.GetBlockByCommitmentWithFallback(req.Value, func() (interface{}, error) {
@@ -56,7 +54,7 @@ func (l *GetBlockLogic) GetBlock(req *types.ReqGetBlock) (resp *types.Block, err
 
 	if err != nil {
 		if err == types2.DbErrNotFound {
-			return nil, types2.DbErrNotFound
+			return nil, types2.AppErrNotFound
 		}
 		return nil, types2.AppErrInternal
 	}
