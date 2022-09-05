@@ -33,6 +33,9 @@ func (f *fetcher) GetCurrencyPrice(_ context.Context, symbol string) (float64, e
 	return f.memCache.GetPriceWithFallback(symbol, func() (interface{}, error) {
 		quoteMap, err := f.getLatestQuotes(symbol)
 		if err != nil {
+			if err == types.CmcNotListedErr {
+				return 0.0, nil
+			}
 			return 0.0, err
 		}
 		q, ok := quoteMap[symbol]
@@ -66,8 +69,12 @@ func (f *fetcher) getLatestQuotes(symbol string) (map[string]QuoteLatest, error)
 	if err = json.Unmarshal(body, &currencyPrice); err != nil {
 		return nil, types.JsonErrUnmarshal
 	}
+	dataMap, ok := currencyPrice.Data.(map[string]interface{})
+	if !ok { //the currency not listed on cmc
+		return nil, types.CmcNotListedErr
+	}
 	quotesLatest := make(map[string]QuoteLatest, 0)
-	for _, coinObj := range currencyPrice.Data.(map[string]interface{}) {
+	for _, coinObj := range dataMap {
 		b, err := json.Marshal(coinObj)
 		if err != nil {
 			return nil, types.JsonErrMarshal

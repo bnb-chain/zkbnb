@@ -28,6 +28,8 @@ var (
 
 	IoErrFailToRead = errors.New("ioutil.ReadAll err")
 
+	CmcNotListedErr = errors.New("cmc not listed")
+
 	AppErrInvalidParam    = New(20001, "invalid param: ")
 	AppErrInvalidTx       = New(20002, "invalid tx: cannot parse tx")
 	AppErrInvalidTxType   = New(20003, "invalid tx type")

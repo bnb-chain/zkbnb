@@ -78,8 +78,12 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 		Assets: make([]*types.AccountAsset, 0),
 	}
 	for _, asset := range account.AssetInfo {
-		if asset.AssetId > maxAssetId || asset.Balance == nil || asset.Balance.Cmp(big.NewInt(0)) == 0 {
-			continue //it is used for offer related, or empty balance
+		if asset.AssetId > maxAssetId {
+			continue //it is used for offer related, or empty balance; max ip id should be less than max asset id
+		}
+		if (asset.Balance == nil || asset.Balance.Cmp(big.NewInt(0)) == 0) &&
+			(asset.LpAmount == nil || asset.LpAmount.Cmp(big.NewInt(0)) == 0) {
+			continue
 		}
 		assetName, _ := l.svcCtx.MemCache.GetAssetNameById(asset.AssetId)
 		resp.Assets = append(resp.Assets, &types.AccountAsset{
