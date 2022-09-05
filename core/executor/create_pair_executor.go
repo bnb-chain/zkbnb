@@ -49,7 +49,7 @@ func (e *CreatePairExecutor) VerifyInputs() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	_, err := bc.DB().LiquidityModel.GetLiquidityByPairIndex(txInfo.PairIndex)
+	_, err := bc.DB().LiquidityModel.GetLiquidityByIndex(txInfo.PairIndex)
 	if err != sqlx.ErrNotFound {
 		return errors.New("invalid pair index, already registered")
 	}

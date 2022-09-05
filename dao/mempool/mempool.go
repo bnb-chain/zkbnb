@@ -40,12 +40,12 @@ type (
 	MempoolModel interface {
 		CreateMempoolTxTable() error
 		DropMempoolTxTable() error
-		GetMempoolTxsList(limit int64, offset int64) (mempoolTxs []*MempoolTx, err error)
+		GetMempoolTxs(limit int64, offset int64) (mempoolTxs []*MempoolTx, err error)
 		GetMempoolTxsTotalCount() (count int64, err error)
 		GetMempoolTxByTxHash(hash string) (mempoolTxs *MempoolTx, err error)
 		GetMempoolTxsByStatus(status int) (mempoolTxs []*MempoolTx, err error)
 		GetMempoolTxsByBlockHeight(l2BlockHeight int64) (rowsAffected int64, mempoolTxs []*MempoolTx, err error)
-		CreateBatchedMempoolTxs(mempoolTxs []*MempoolTx) error
+		CreateMempoolTxs(mempoolTxs []*MempoolTx) error
 		GetPendingMempoolTxsByAccountIndex(accountIndex int64) (mempoolTxs []*MempoolTx, err error)
 		GetMaxNonceByAccountIndex(accountIndex int64) (nonce int64, err error)
 		UpdateMempoolTxs(pendingUpdateMempoolTxs []*MempoolTx, pendingDeleteMempoolTxs []*MempoolTx) error
@@ -97,7 +97,7 @@ func (m *defaultMempoolModel) DropMempoolTxTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-func (m *defaultMempoolModel) GetMempoolTxsList(limit int64, offset int64) (mempoolTxs []*MempoolTx, err error) {
+func (m *defaultMempoolModel) GetMempoolTxs(limit int64, offset int64) (mempoolTxs []*MempoolTx, err error) {
 	dbTx := m.DB.Table(m.table).Where("status = ?", PendingTxStatus).Limit(int(limit)).Offset(int(offset)).Order("created_at desc, id desc").Find(&mempoolTxs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
@@ -145,7 +145,7 @@ func (m *defaultMempoolModel) GetMempoolTxByTxHash(hash string) (mempoolTx *Memp
 	return mempoolTx, nil
 }
 
-func (m *defaultMempoolModel) CreateBatchedMempoolTxs(mempoolTxs []*MempoolTx) error {
+func (m *defaultMempoolModel) CreateMempoolTxs(mempoolTxs []*MempoolTx) error {
 	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
 		dbTx := tx.Table(m.table).Create(mempoolTxs)
 		if dbTx.Error != nil {

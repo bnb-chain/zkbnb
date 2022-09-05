@@ -139,7 +139,7 @@ func (c *Committer) Run() {
 
 func (c *Committer) restoreExecutedTxs() (*block.Block, error) {
 	bc := c.bc
-	curHeight, err := bc.BlockModel.GetCurrentHeight()
+	curHeight, err := bc.BlockModel.GetCurrentBlockHeight()
 	if err != nil {
 		return nil, err
 	}

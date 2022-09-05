@@ -69,7 +69,7 @@ func (f *fetcher) GetLatestLiquidity(pairIndex int64) (liquidityInfo *types.Liqu
 	redisLiquidity, err := f.redisCache.Get(context.Background(), dbcache.LiquidityKeyByIndex(pairIndex), l)
 	if err == nil && redisLiquidity != "" {
 	} else {
-		l, err = f.liquidityModel.GetLiquidityByPairIndex(pairIndex)
+		l, err = f.liquidityModel.GetLiquidityByIndex(pairIndex)
 		if err != nil {
 			return nil, err
 		}
@@ -95,7 +95,7 @@ func (f *fetcher) GetLatestNft(nftIndex int64) (*types.NftInfo, error) {
 	redisNft, err := f.redisCache.Get(context.Background(), dbcache.NftKeyByIndex(nftIndex), n)
 	if err == nil && redisNft != "" {
 	} else {
-		n, err = f.nftModel.GetNftAsset(nftIndex)
+		n, err = f.nftModel.GetNft(nftIndex)
 		if err != nil {
 			return nil, err
 		}

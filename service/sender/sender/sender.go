@@ -127,7 +127,7 @@ func (s *Sender) CommitBlocks() (err error) {
 		start = lastHandledTx.L2BlockHeight + 1
 	}
 	// commit new blocks
-	blocks, err := s.compressedBlockModel.GetCompressedBlockBetween(start,
+	blocks, err := s.compressedBlockModel.GetCompressedBlocksBetween(start,
 		start+int64(s.config.ChainConfig.MaxBlockCount))
 	if err != nil && err != types.DbErrNotFound {
 		return fmt.Errorf("failed to get compress block err: %v", err)

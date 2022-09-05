@@ -64,7 +64,7 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 		return nil, types2.AppErrInternal
 	}
 
-	maxAssetId, err := l.svcCtx.AssetModel.GetMaxId()
+	maxAssetId, err := l.svcCtx.AssetModel.GetMaxAssetId()
 	if err != nil {
 		return nil, types2.AppErrInternal
 	}

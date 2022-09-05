@@ -42,7 +42,7 @@ type (
 		GetAccountByPk(pk string) (account *Account, err error)
 		GetAccountByName(name string) (account *Account, err error)
 		GetAccountByNameHash(nameHash string) (account *Account, err error)
-		GetAccountsList(limit int, offset int64) (accounts []*Account, err error)
+		GetAccounts(limit int, offset int64) (accounts []*Account, err error)
 		GetAccountsTotalCount() (count int64, err error)
 	}
 
@@ -130,7 +130,7 @@ func (m *defaultAccountModel) GetAccountByNameHash(accountNameHash string) (acco
 	return account, nil
 }
 
-func (m *defaultAccountModel) GetAccountsList(limit int, offset int64) (accounts []*Account, err error) {
+func (m *defaultAccountModel) GetAccounts(limit int, offset int64) (accounts []*Account, err error) {
 	dbTx := m.DB.Table(m.table).Limit(limit).Offset(int(offset)).Order("account_index desc").Find(&accounts)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation

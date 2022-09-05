@@ -48,7 +48,7 @@ type (
 	BlockModel interface {
 		CreateBlockTable() error
 		DropBlockTable() error
-		GetBlocksList(limit int64, offset int64) (blocks []*Block, err error)
+		GetBlocks(limit int64, offset int64) (blocks []*Block, err error)
 		GetBlocksBetween(start int64, end int64) (blocks []*Block, err error)
 		GetBlockByHeight(blockHeight int64) (block *Block, err error)
 		GetBlockByHeightWithoutTx(blockHeight int64) (block *Block, err error)
@@ -59,7 +59,7 @@ type (
 		GetCommittedBlocksBetween(start, end int64) (blocks []*Block, err error)
 		GetBlocksTotalCount() (count int64, err error)
 		CreateGenesisBlock(block *Block) error
-		GetCurrentHeight() (blockHeight int64, err error)
+		GetCurrentBlockHeight() (blockHeight int64, err error)
 		CreateNewBlock(oBlock *Block) (err error)
 		CreateCompressedBlock(pendingMempoolTxs []*mempool.MempoolTx, blockStates *BlockStates) error
 	}
@@ -122,7 +122,7 @@ func (m *defaultBlockModel) DropBlockTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-func (m *defaultBlockModel) GetBlocksList(limit int64, offset int64) (blocks []*Block, err error) {
+func (m *defaultBlockModel) GetBlocks(limit int64, offset int64) (blocks []*Block, err error) {
 	var (
 		txForeignKeyColumn = `Txs`
 	)
@@ -275,7 +275,7 @@ func (m *defaultBlockModel) CreateGenesisBlock(block *Block) error {
 	return nil
 }
 
-func (m *defaultBlockModel) GetCurrentHeight() (blockHeight int64, err error) {
+func (m *defaultBlockModel) GetCurrentBlockHeight() (blockHeight int64, err error) {
 	dbTx := m.DB.Table(m.table).Select("block_height").Order("block_height desc").Limit(1).Find(&blockHeight)
 	if dbTx.Error != nil {
 		return 0, types.DbErrSqlOperation

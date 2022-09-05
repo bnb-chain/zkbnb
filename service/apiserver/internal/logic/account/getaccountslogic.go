@@ -41,7 +41,7 @@ func (l *GetAccountsLogic) GetAccounts(req *types.ReqGetRange) (resp *types.Acco
 		return resp, nil
 	}
 
-	accounts, err := l.svcCtx.AccountModel.GetAccountsList(int(req.Limit), int64(req.Offset))
+	accounts, err := l.svcCtx.AccountModel.GetAccounts(int(req.Limit), int64(req.Offset))
 	if err != nil {
 		return nil, types2.AppErrInternal
 	}

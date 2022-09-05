@@ -36,14 +36,14 @@ type (
 	AssetModel interface {
 		CreateAssetTable() error
 		DropAssetTable() error
-		CreateAssetsInBatch(assets []*Asset) (rowsAffected int64, err error)
+		CreateAssets(assets []*Asset) (rowsAffected int64, err error)
 		GetAssetsTotalCount() (count int64, err error)
-		GetAssetsList(limit int64, offset int64) (assets []*Asset, err error)
+		GetAssets(limit int64, offset int64) (assets []*Asset, err error)
 		GetAssetById(assetId int64) (asset *Asset, err error)
 		GetAssetBySymbol(symbol string) (asset *Asset, err error)
 		GetAssetByAddress(address string) (asset *Asset, err error)
 		GetGasAssets() (assets []*Asset, err error)
-		GetMaxId() (max int64, err error)
+		GetMaxAssetId() (max int64, err error)
 	}
 
 	defaultAssetModel struct {
@@ -92,7 +92,7 @@ func (m *defaultAssetModel) GetAssetsTotalCount() (count int64, err error) {
 	return count, nil
 }
 
-func (m *defaultAssetModel) GetAssetsList(limit int64, offset int64) (res []*Asset, err error) {
+func (m *defaultAssetModel) GetAssets(limit int64, offset int64) (res []*Asset, err error) {
 	dbTx := m.DB.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("id asc").Find(&res)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
@@ -103,7 +103,7 @@ func (m *defaultAssetModel) GetAssetsList(limit int64, offset int64) (res []*Ass
 	return res, nil
 }
 
-func (m *defaultAssetModel) CreateAssetsInBatch(l2Assets []*Asset) (rowsAffected int64, err error) {
+func (m *defaultAssetModel) CreateAssets(l2Assets []*Asset) (rowsAffected int64, err error) {
 	dbTx := m.DB.Table(m.table).CreateInBatches(l2Assets, len(l2Assets))
 	if dbTx.Error != nil {
 		return 0, types.DbErrSqlOperation
@@ -156,7 +156,7 @@ func (m *defaultAssetModel) GetGasAssets() (assets []*Asset, err error) {
 	return assets, nil
 }
 
-func (m *defaultAssetModel) GetMaxId() (max int64, err error) {
+func (m *defaultAssetModel) GetMaxAssetId() (max int64, err error) {
 	dbTx := m.DB.Table(m.table).Select("id").Order("id desc").Limit(1).Find(&max)
 	if dbTx.Error != nil {
 		return 0, types.DbErrSqlOperation

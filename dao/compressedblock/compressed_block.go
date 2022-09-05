@@ -31,7 +31,7 @@ type (
 	CompressedBlockModel interface {
 		CreateCompressedBlockTable() error
 		DropCompressedBlockTable() error
-		GetCompressedBlockBetween(start, end int64) (blocksForCommit []*CompressedBlock, err error)
+		GetCompressedBlocksBetween(start, end int64) (blocksForCommit []*CompressedBlock, err error)
 	}
 
 	defaultCompressedBlockModel struct {
@@ -69,7 +69,7 @@ func (m *defaultCompressedBlockModel) DropCompressedBlockTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-func (m *defaultCompressedBlockModel) GetCompressedBlockBetween(start, end int64) (blocksForCommit []*CompressedBlock, err error) {
+func (m *defaultCompressedBlockModel) GetCompressedBlocksBetween(start, end int64) (blocksForCommit []*CompressedBlock, err error) {
 	dbTx := m.DB.Table(m.table).Where("block_height >= ? AND block_height <= ?", start, end).Find(&blocksForCommit)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation

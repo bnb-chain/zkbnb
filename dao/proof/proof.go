@@ -39,7 +39,7 @@ type (
 		CreateProof(row *Proof) error
 		GetProofsBetween(start int64, end int64) (proofs []*Proof, err error)
 		GetLatestConfirmedProof() (p *Proof, err error)
-		GetProofByBlockNumber(num int64) (p *Proof, err error)
+		GetProofByBlockHeight(height int64) (p *Proof, err error)
 	}
 
 	defaultProofModel struct {
@@ -114,7 +114,7 @@ func (m *defaultProofModel) GetLatestConfirmedProof() (p *Proof, err error) {
 	}
 }
 
-func (m *defaultProofModel) GetProofByBlockNumber(num int64) (p *Proof, err error) {
+func (m *defaultProofModel) GetProofByBlockHeight(num int64) (p *Proof, err error) {
 	var row *Proof
 	dbTx := m.DB.Table(m.table).Where("block_number = ?", num).Find(&row)
 	if dbTx.Error != nil {

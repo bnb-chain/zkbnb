@@ -31,10 +31,10 @@ type (
 	L2NftModel interface {
 		CreateL2NftTable() error
 		DropL2NftTable() error
-		GetNftAsset(nftIndex int64) (nftAsset *L2Nft, err error)
+		GetNft(nftIndex int64) (nftAsset *L2Nft, err error)
 		GetLatestNftIndex() (nftIndex int64, err error)
-		GetNftListByAccountIndex(accountIndex, limit, offset int64) (nfts []*L2Nft, err error)
-		GetAccountNftTotalCount(accountIndex int64) (int64, error)
+		GetNftsByAccountIndex(accountIndex, limit, offset int64) (nfts []*L2Nft, err error)
+		GetNftsCountByAccountIndex(accountIndex int64) (int64, error)
 	}
 	defaultL2NftModel struct {
 		table string
@@ -73,7 +73,7 @@ func (m *defaultL2NftModel) DropL2NftTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-func (m *defaultL2NftModel) GetNftAsset(nftIndex int64) (nftAsset *L2Nft, err error) {
+func (m *defaultL2NftModel) GetNft(nftIndex int64) (nftAsset *L2Nft, err error) {
 	dbTx := m.DB.Table(m.table).Where("nft_index = ?", nftIndex).Find(&nftAsset)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
@@ -94,7 +94,7 @@ func (m *defaultL2NftModel) GetLatestNftIndex() (nftIndex int64, err error) {
 	return nftInfo.NftIndex, nil
 }
 
-func (m *defaultL2NftModel) GetNftListByAccountIndex(accountIndex, limit, offset int64) (nftList []*L2Nft, err error) {
+func (m *defaultL2NftModel) GetNftsByAccountIndex(accountIndex, limit, offset int64) (nftList []*L2Nft, err error) {
 	dbTx := m.DB.Table(m.table).Where("owner_account_index = ? and deleted_at is NULL", accountIndex).
 		Limit(int(limit)).Offset(int(offset)).Order("nft_index desc").Find(&nftList)
 	if dbTx.Error != nil {
@@ -105,7 +105,7 @@ func (m *defaultL2NftModel) GetNftListByAccountIndex(accountIndex, limit, offset
 	return nftList, nil
 }
 
-func (m *defaultL2NftModel) GetAccountNftTotalCount(accountIndex int64) (int64, error) {
+func (m *defaultL2NftModel) GetNftsCountByAccountIndex(accountIndex int64) (int64, error) {
 	var count int64
 	dbTx := m.DB.Table(m.table).Where("owner_account_index = ? and deleted_at is NULL", accountIndex).Count(&count)
 	if dbTx.Error != nil {

@@ -32,7 +32,7 @@ type (
 		CreateSysConfigTable() error
 		DropSysConfigTable() error
 		GetSysConfigByName(name string) (info *SysConfig, err error)
-		CreateSysConfigInBatches(configs []*SysConfig) (rowsAffected int64, err error)
+		CreateSysConfigs(configs []*SysConfig) (rowsAffected int64, err error)
 	}
 
 	defaultSysConfigModel struct {
@@ -78,7 +78,7 @@ func (m *defaultSysConfigModel) GetSysConfigByName(name string) (config *SysConf
 	return config, nil
 }
 
-func (m *defaultSysConfigModel) CreateSysConfigInBatches(configs []*SysConfig) (rowsAffected int64, err error) {
+func (m *defaultSysConfigModel) CreateSysConfigs(configs []*SysConfig) (rowsAffected int64, err error) {
 	dbTx := m.DB.Table(m.table).CreateInBatches(configs, len(configs))
 	if dbTx.Error != nil {
 		return 0, types.DbErrSqlOperation

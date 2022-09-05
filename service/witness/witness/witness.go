@@ -183,7 +183,7 @@ func (w *Witness) RescheduleBlockWitness() {
 		nextBlockNumber = latestConfirmedProof.BlockNumber + 1
 	}
 
-	nextBlockWitness, err := w.blockWitnessModel.GetBlockWitnessByNumber(nextBlockNumber)
+	nextBlockWitness, err := w.blockWitnessModel.GetBlockWitnessByHeight(nextBlockNumber)
 	if err != nil {
 		logx.Errorf("failed to get latest block witness, err: %v", err)
 		return
@@ -196,7 +196,7 @@ func (w *Witness) RescheduleBlockWitness() {
 
 	// skip if the next block proof exists
 	// if the proof is not submitted and verified in L1, there should be another alerts
-	_, err = w.proofModel.GetProofByBlockNumber(nextBlockNumber)
+	_, err = w.proofModel.GetProofByBlockHeight(nextBlockNumber)
 	if err == nil {
 		return
 	}
