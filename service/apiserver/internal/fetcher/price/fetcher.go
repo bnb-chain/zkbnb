@@ -33,14 +33,14 @@ func (f *fetcher) GetCurrencyPrice(_ context.Context, symbol string) (float64, e
 	return f.memCache.GetPriceWithFallback(symbol, func() (interface{}, error) {
 		quoteMap, err := f.getLatestQuotes(symbol)
 		if err != nil {
-			return 0, err
+			return 0.0, err
 		}
 		q, ok := quoteMap[symbol]
 		if !ok {
-			return 0, nil
+			return 0.0, nil
 		}
 		price := q.Quote["USD"].Price
-		return price, err
+		return price, nil
 	})
 }
 
