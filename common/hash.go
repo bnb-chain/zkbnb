@@ -18,9 +18,6 @@
 package common
 
 import (
-	"math/big"
-
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -32,11 +29,4 @@ func ConcatKeccakHash(oldHash, paddingValue []byte) []byte {
 func KeccakHash(value []byte) []byte {
 	hashVal := crypto.Keccak256Hash(value)
 	return hashVal[:]
-}
-
-func CalcNftContentHash(l1Address string, l1TokenId *big.Int) []byte {
-	encodedContent := make([]byte, 0)
-	encodedContent = append(encodedContent, common.LeftPadBytes(common.HexToAddress(l1Address).Bytes(), 32)...)
-	encodedContent = append(encodedContent, common.LeftPadBytes(l1TokenId.Bytes(), 32)...)
-	return crypto.Keccak256(encodedContent)
 }

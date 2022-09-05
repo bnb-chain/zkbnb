@@ -75,9 +75,8 @@ func (e *DepositNftExecutor) Prepare() error {
 		return err
 	}
 
-	calculatedNftContent := common2.CalcNftContentHash(txInfo.NftL1Address, txInfo.NftL1TokenId)
 	// Check if it is a new nft, or it is a nft previously withdraw from layer2.
-	if bytes.Compare(calculatedNftContent, txInfo.NftContentHash) == 0 {
+	if txInfo.NftIndex == types.MaxNftIndex {
 		e.isNewNft = true
 		// Set new nft index for new nft.
 		txInfo.NftIndex = bc.StateDB().GetNextNftIndex()
