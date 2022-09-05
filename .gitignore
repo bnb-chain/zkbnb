@@ -34,3 +34,4 @@ vendor
 deployment/dependency
 deployment/configs
 deployment/.zkbas
+run_*.sh
