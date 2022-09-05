@@ -295,12 +295,6 @@ func (m *defaultBlockModel) GetBlocksTotalCount() (count int64, err error) {
 	return count, nil
 }
 
-type BlockStatusInfo struct {
-	BlockStatus int64
-	CommittedAt int64
-	VerifiedAt  int64
-}
-
 func (m *defaultBlockModel) CreateCompressedBlock(pendingMempoolTxs []*mempool.MempoolTx, blockStates *BlockStates) error {
 	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
 		// update mempool

@@ -14,9 +14,8 @@ import (
 
 type ChainDB struct {
 	// Block Chain data
-	BlockModel    block.BlockModel
-	TxModel       tx.TxModel
-	TxDetailModel tx.TxDetailModel
+	BlockModel block.BlockModel
+	TxModel    tx.TxModel
 
 	// State DB
 	AccountModel          account.AccountModel
@@ -31,9 +30,8 @@ type ChainDB struct {
 
 func NewChainDB(db *gorm.DB) *ChainDB {
 	return &ChainDB{
-		BlockModel:    block.NewBlockModel(db),
-		TxModel:       tx.NewTxModel(db),
-		TxDetailModel: tx.NewTxDetailModel(db),
+		BlockModel: block.NewBlockModel(db),
+		TxModel:    tx.NewTxModel(db),
 
 		AccountModel:          account.NewAccountModel(db),
 		AccountHistoryModel:   account.NewAccountHistoryModel(db),
