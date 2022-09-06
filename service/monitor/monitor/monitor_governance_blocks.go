@@ -321,22 +321,30 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 			return err
 		}
 		//create assets
-		err = m.L2AssetModel.CreateAssetsInTransact(tx, pendingNewAssets)
-		if err != nil {
-			return err
+		if len(pendingNewAssets) > 0 {
+			err = m.L2AssetModel.CreateAssetsInTransact(tx, pendingNewAssets)
+			if err != nil {
+				return err
+			}
 		}
 		//update assets
-		err = m.L2AssetModel.UpdateAssetsInTransact(tx, pendingUpdateAssets)
-		if err != nil {
-			return err
+		if len(pendingUpdateAssets) > 0 {
+			err = m.L2AssetModel.UpdateAssetsInTransact(tx, pendingUpdateAssets)
+			if err != nil {
+				return err
+			}
 		}
 		//create sysconfigs
-		err = m.SysConfigModel.CreateSysConfigsInTransact(tx, pendingNewSysConfigs)
-		if err != nil {
-			return err
+		if len(pendingNewSysConfigs) > 0 {
+			err = m.SysConfigModel.CreateSysConfigsInTransact(tx, pendingNewSysConfigs)
+			if err != nil {
+				return err
+			}
 		}
 		//update sysconfigs
-		err = m.SysConfigModel.UpdateSysConfigsInTransact(tx, pendingUpdateSysConfigs)
+		if len(pendingUpdateSysConfigs) > 0 {
+			err = m.SysConfigModel.UpdateSysConfigsInTransact(tx, pendingUpdateSysConfigs)
+		}
 		return err
 	})
 
