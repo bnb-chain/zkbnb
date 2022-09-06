@@ -70,21 +70,25 @@ func (l *GetAccountNftsLogic) GetAccountNfts(req *types.ReqGetAccountNfts) (resp
 		return resp, nil
 	}
 
-	nftList, err := l.svcCtx.NftModel.GetNftsByAccountIndex(accountIndex, int64(req.Limit), int64(req.Offset))
+	nfts, err := l.svcCtx.NftModel.GetNftsByAccountIndex(accountIndex, int64(req.Limit), int64(req.Offset))
 	if err != nil {
 		return nil, types2.AppErrInternal
 	}
 
-	for _, nftItem := range nftList {
+	for _, nft := range nfts {
+		creatorName, _ := l.svcCtx.MemCache.GetAccountNameByIndex(nft.CreatorAccountIndex)
+		ownerName, _ := l.svcCtx.MemCache.GetAccountNameByIndex(nft.OwnerAccountIndex)
 		resp.Nfts = append(resp.Nfts, &types.Nft{
-			Index:               nftItem.NftIndex,
-			CreatorAccountIndex: nftItem.CreatorAccountIndex,
-			OwnerAccountIndex:   nftItem.OwnerAccountIndex,
-			ContentHash:         nftItem.NftContentHash,
-			L1Address:           nftItem.NftL1Address,
-			L1TokenId:           nftItem.NftL1TokenId,
-			CreatorTreasuryRate: nftItem.CreatorTreasuryRate,
-			CollectionId:        nftItem.CollectionId,
+			Index:               nft.NftIndex,
+			CreatorAccountIndex: nft.CreatorAccountIndex,
+			CreatorAccountName:  creatorName,
+			OwnerAccountIndex:   nft.OwnerAccountIndex,
+			OwnerAccountName:    ownerName,
+			ContentHash:         nft.NftContentHash,
+			L1Address:           nft.NftL1Address,
+			L1TokenId:           nft.NftL1TokenId,
+			CreatorTreasuryRate: nft.CreatorTreasuryRate,
+			CollectionId:        nft.CollectionId,
 		})
 	}
 	return resp, nil
