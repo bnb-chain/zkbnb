@@ -65,6 +65,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			AccountIndex:  types.NilAccountIndex,
 			Nonce:         types.NilNonce,
 			ExpiredAt:     types.NilExpiredAt,
+			L2BlockHeight: types.NilBlockHeight,
 			Status:        mempool.PendingTxStatus,
 		}
 		// handle request based on request type

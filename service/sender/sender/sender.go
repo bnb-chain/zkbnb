@@ -234,7 +234,7 @@ func (s *Sender) UpdateSentTxs() (err error) {
 					return err
 				}
 				validTx = int64(event.BlockNumber) == pendingTx.L2BlockHeight
-				pendingUpdateProofStatus[pendingTx.L2BlockHeight] = proof.Confirmed
+				pendingUpdateProofStatus[int64(event.BlockNumber)] = proof.Confirmed
 			case zkbasLogBlocksRevertSigHash.Hex():
 				// TODO revert
 			default:

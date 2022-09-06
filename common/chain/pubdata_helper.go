@@ -18,13 +18,16 @@
 package chain
 
 import (
+	"encoding/hex"
 	"errors"
+
+	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	common2 "github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/types"
-	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 func ParseRegisterZnsPubData(pubData []byte) (tx *types.RegisterZnsTxInfo, err error) {
@@ -135,10 +138,13 @@ func ParseDepositPubData(pubData []byte) (tx *types.DepositTxInfo, err error) {
 
 func ParseDepositNftPubData(pubData []byte) (tx *types.DepositNftTxInfo, err error) {
 	if len(pubData) != types.DepositNftPubDataSize {
+		logx.Infof("len of pub data: %d, expected: %d", len(pubData), types.DepositPubDataSize)
+		logx.Infof(hex.EncodeToString(pubData))
 		return nil, errors.New("[ParseDepositNftPubData] invalid size")
 	}
 	offset := 0
 	offset, txType := common2.ReadUint8(pubData, offset)
+	offset, isNewNft := common2.ReadUint8(pubData, offset)
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
 	offset, nftIndex := common2.ReadUint40(pubData, offset)
 	offset, nftL1Address := common2.ReadAddress(pubData, offset)
@@ -150,6 +156,7 @@ func ParseDepositNftPubData(pubData []byte) (tx *types.DepositNftTxInfo, err err
 	_, collectionId := common2.ReadUint16(pubData, offset)
 	tx = &types.DepositNftTxInfo{
 		TxType:              txType,
+		IsNewNft:            isNewNft,
 		AccountIndex:        int64(accountIndex),
 		NftIndex:            nftIndex,
 		NftL1Address:        nftL1Address,

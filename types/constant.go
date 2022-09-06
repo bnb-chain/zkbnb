@@ -37,6 +37,7 @@ const (
 	NilPairIndex       = -1
 	NilNftIndex        = int64(-1)
 	NilAccountIndex    = int64(-1)
+	NilBlockHeight     = -1
 	NilAssetId         = -1
 	NilAccountOrder    = -1
 	NilNonce           = -1

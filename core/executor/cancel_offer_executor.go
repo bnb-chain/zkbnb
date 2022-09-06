@@ -276,6 +276,7 @@ func (e *CancelOfferExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
 		AccountIndex:  e.txInfo.AccountIndex,
 		Nonce:         e.txInfo.Nonce,
 		ExpiredAt:     e.txInfo.ExpiredAt,
+		L2BlockHeight: types.NilBlockHeight,
 		Status:        mempool.PendingTxStatus,
 		TxInfo:        e.tx.TxInfo,
 	}
