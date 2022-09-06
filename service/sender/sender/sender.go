@@ -50,6 +50,7 @@ type Sender struct {
 	zkbasInstance *zkbas.Zkbas
 
 	// Data access objects
+	db                   *gorm.DB
 	blockModel           block.BlockModel
 	compressedBlockModel compressedblock.CompressedBlockModel
 	l1RollupTxModel      l1rolluptx.L1RollupTxModel
@@ -64,6 +65,7 @@ func NewSender(c sconfig.Config) *Sender {
 	}
 	s := &Sender{
 		config:               c,
+		db:                   db,
 		blockModel:           block.NewBlockModel(db),
 		compressedBlockModel: compressedblock.NewCompressedBlockModel(db),
 		l1RollupTxModel:      l1rolluptx.NewL1RollupTxModel(db),
@@ -247,8 +249,18 @@ func (s *Sender) UpdateSentTxs() (err error) {
 		}
 	}
 
-	if err = s.l1RollupTxModel.UpdateL1RollupTxs(pendingUpdateRxs,
-		pendingUpdateProofStatus); err != nil {
+	//update db
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		//update l1 rollup txs
+		err := s.l1RollupTxModel.UpdateL1RollupTxsInTransact(tx, pendingUpdateRxs)
+		if err != nil {
+			return err
+		}
+		//update proof status
+		err = s.proofModel.UpdateProofsInTransact(tx, pendingUpdateProofStatus)
+		return err
+	})
+	if err != nil {
 		return fmt.Errorf("failed to updte rollup txs, err:%v", err)
 	}
 	return nil

@@ -23,7 +23,6 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas/dao/proof"
 	"github.com/bnb-chain/zkbas/types"
 )
 
@@ -46,10 +45,7 @@ type (
 		GetLatestPendingTx(txType int64) (tx *L1RollupTx, err error)
 		GetL1RollupTxsByStatus(txStatus int) (txs []*L1RollupTx, err error)
 		DeleteL1RollupTx(tx *L1RollupTx) error
-		UpdateL1RollupTxs(
-			pendingUpdateTxs []*L1RollupTx,
-			pendingUpdateProofStatus map[int64]int,
-		) (err error)
+		UpdateL1RollupTxsInTransact(tx *gorm.DB, txs []*L1RollupTx) error
 	}
 
 	defaultL1RollupTxModel struct {
@@ -122,50 +118,6 @@ func (m *defaultL1RollupTxModel) DeleteL1RollupTx(rollupTx *L1RollupTx) error {
 	})
 }
 
-func (m *defaultL1RollupTxModel) UpdateL1RollupTxs(
-	pendingUpdateTxs []*L1RollupTx,
-	pendingUpdateProofStatus map[int64]int,
-) (err error) {
-	err = m.DB.Transaction(func(tx *gorm.DB) error {
-		for _, pendingUpdateTx := range pendingUpdateTxs {
-			dbTx := tx.Table(TableName).Where("id = ?", pendingUpdateTx.ID).
-				Select("*").
-				Updates(&pendingUpdateTx)
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				if err != nil {
-					return err
-				}
-				return errors.New("invalid rollup tx")
-			}
-		}
-
-		for blockHeight, newStatus := range pendingUpdateProofStatus {
-			var row *proof.Proof
-			dbTx := tx.Table(proof.TableName).Where("block_number = ?", blockHeight).Find(&row)
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				return fmt.Errorf("no such proof. height: %d", blockHeight)
-			}
-			dbTx = tx.Model(&row).
-				Select("status").
-				Updates(&proof.Proof{Status: int64(newStatus)})
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				return fmt.Errorf("update no proof: %d", row.BlockNumber)
-			}
-		}
-		return nil
-	})
-	return err
-}
-
 func (m *defaultL1RollupTxModel) GetLatestHandledTx(txType int64) (tx *L1RollupTx, err error) {
 	tx = &L1RollupTx{}
 
@@ -188,4 +140,19 @@ func (m *defaultL1RollupTxModel) GetLatestPendingTx(txType int64) (tx *L1RollupT
 		return nil, types.DbErrNotFound
 	}
 	return tx, nil
+}
+
+func (m *defaultL1RollupTxModel) UpdateL1RollupTxsInTransact(tx *gorm.DB, txs []*L1RollupTx) error {
+	for _, pendingUpdateTx := range txs {
+		dbTx := tx.Table(TableName).Where("id = ?", pendingUpdateTx.ID).
+			Select("*").
+			Updates(&pendingUpdateTx)
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			return fmt.Errorf("invalid rollup tx: %d", pendingUpdateTx.ID)
+		}
+	}
+	return nil
 }

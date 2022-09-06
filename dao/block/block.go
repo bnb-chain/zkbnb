@@ -26,7 +26,6 @@ import (
 	"github.com/bnb-chain/zkbas/dao/account"
 	"github.com/bnb-chain/zkbas/dao/compressedblock"
 	"github.com/bnb-chain/zkbas/dao/liquidity"
-	"github.com/bnb-chain/zkbas/dao/mempool"
 	"github.com/bnb-chain/zkbas/dao/nft"
 	"github.com/bnb-chain/zkbas/dao/tx"
 	"github.com/bnb-chain/zkbas/types"
@@ -61,7 +60,7 @@ type (
 		CreateGenesisBlock(block *Block) error
 		GetCurrentBlockHeight() (blockHeight int64, err error)
 		CreateNewBlock(oBlock *Block) (err error)
-		CreateCompressedBlock(pendingMempoolTxs []*mempool.MempoolTx, blockStates *BlockStates) error
+		UpdateBlocksInTransact(tx *gorm.DB, blocks []*Block) (err error)
 	}
 
 	defaultBlockModel struct {
@@ -295,142 +294,6 @@ func (m *defaultBlockModel) GetBlocksTotalCount() (count int64, err error) {
 	return count, nil
 }
 
-func (m *defaultBlockModel) CreateCompressedBlock(pendingMempoolTxs []*mempool.MempoolTx, blockStates *BlockStates) error {
-	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
-		// update mempool
-		for _, mempoolTx := range pendingMempoolTxs {
-			dbTx := tx.Table(mempool.MempoolTableName).Where("id = ?", mempoolTx.ID).
-				Select("*").
-				Updates(&mempoolTx)
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				return errors.New("no new mempoolTx")
-			}
-		}
-		// create block
-		if blockStates.Block != nil {
-			dbTx := tx.Table(m.table).Where("id = ?", blockStates.Block.ID).
-				Select("*").
-				Updates(&blockStates.Block)
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				return errors.New("invalid block info")
-			}
-		}
-		// create block for commit
-		if blockStates.CompressedBlock != nil {
-			dbTx := tx.Table(compressedblock.CompressedBlockTableName).Create(blockStates.CompressedBlock)
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				return errors.New("invalid block for commit info")
-			}
-		}
-		// create new account
-		if len(blockStates.PendingNewAccount) != 0 {
-			dbTx := tx.Table(account.AccountTableName).CreateInBatches(blockStates.PendingNewAccount, len(blockStates.PendingNewAccount))
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected != int64(len(blockStates.PendingNewAccount)) {
-				return errors.New("unable to create new account")
-			}
-		}
-		// update account
-		for _, pendingAccount := range blockStates.PendingUpdateAccount {
-			dbTx := tx.Table(account.AccountTableName).Where("account_index = ?", pendingAccount.AccountIndex).
-				Select("*").
-				Updates(&pendingAccount)
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				return errors.New("no updated account")
-			}
-		}
-		// create new account history
-		if len(blockStates.PendingNewAccountHistory) != 0 {
-			dbTx := tx.Table(account.AccountHistoryTableName).CreateInBatches(blockStates.PendingNewAccountHistory, len(blockStates.PendingNewAccountHistory))
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected != int64(len(blockStates.PendingNewAccountHistory)) {
-				return errors.New("unable to create new account history")
-			}
-		}
-		// create new liquidity
-		if len(blockStates.PendingNewLiquidity) != 0 {
-			dbTx := tx.Table(liquidity.LiquidityTable).CreateInBatches(blockStates.PendingNewLiquidity, len(blockStates.PendingNewLiquidity))
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected != int64(len(blockStates.PendingNewLiquidity)) {
-				return errors.New("unable to create new liquidity")
-			}
-		}
-		// update liquidity
-		for _, pendingLiquidity := range blockStates.PendingUpdateLiquidity {
-			dbTx := tx.Table(liquidity.LiquidityTable).Where("pair_index = ?", pendingLiquidity.PairIndex).
-				Select("*").
-				Updates(&pendingLiquidity)
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				return errors.New("no updated liquidity")
-			}
-		}
-		// create new liquidity history
-		if len(blockStates.PendingNewLiquidityHistory) != 0 {
-			dbTx := tx.Table(liquidity.LiquidityHistoryTable).CreateInBatches(blockStates.PendingNewLiquidityHistory, len(blockStates.PendingNewLiquidityHistory))
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected != int64(len(blockStates.PendingNewLiquidityHistory)) {
-				return errors.New("unable to create new liquidity history")
-			}
-		}
-		// create new nft
-		if len(blockStates.PendingNewNft) != 0 {
-			dbTx := tx.Table(nft.L2NftTableName).CreateInBatches(blockStates.PendingNewNft, len(blockStates.PendingNewNft))
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected != int64(len(blockStates.PendingNewNft)) {
-				return errors.New("unable to create new nft")
-			}
-		}
-		// update nft
-		for _, pendingNft := range blockStates.PendingUpdateNft {
-			dbTx := tx.Table(nft.L2NftTableName).Where("nft_index = ?", pendingNft.NftIndex).
-				Select("*").
-				Updates(&pendingNft)
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				return errors.New("no updated nft")
-			}
-		}
-		// new nft history
-		if len(blockStates.PendingNewNftHistory) != 0 {
-			dbTx := tx.Table(nft.L2NftHistoryTableName).CreateInBatches(blockStates.PendingNewNftHistory, len(blockStates.PendingNewNftHistory))
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected != int64(len(blockStates.PendingNewNftHistory)) {
-				return errors.New("unable to create new nft history")
-			}
-		}
-		return nil
-	})
-}
-
 func (m *defaultBlockModel) CreateNewBlock(oBlock *Block) (err error) {
 	if oBlock == nil {
 		return errors.New("nil block")
@@ -479,4 +342,25 @@ func (m *defaultBlockModel) GetLatestVerifiedHeight() (height int64, err error) 
 		return 0, types.DbErrNotFound
 	}
 	return block.BlockHeight, nil
+}
+
+func (m *defaultBlockModel) UpdateBlocksInTransact(tx *gorm.DB, blocks []*Block) (err error) {
+	const Txs = "Txs"
+
+	for _, block := range blocks {
+		dbTx := tx.Table(m.table).Where("id = ?", block.ID).
+			Omit(Txs).
+			Select("*").
+			Updates(&block)
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			if err != nil {
+				return err
+			}
+			return errors.New("invalid block")
+		}
+	}
+	return nil
 }

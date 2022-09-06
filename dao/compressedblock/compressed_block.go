@@ -18,6 +18,7 @@
 package compressedblock
 
 import (
+	"errors"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -32,6 +33,7 @@ type (
 		CreateCompressedBlockTable() error
 		DropCompressedBlockTable() error
 		GetCompressedBlocksBetween(start, end int64) (blocksForCommit []*CompressedBlock, err error)
+		CreateCompressedBlockInTransact(tx *gorm.DB, block *CompressedBlock) error
 	}
 
 	defaultCompressedBlockModel struct {
@@ -77,4 +79,15 @@ func (m *defaultCompressedBlockModel) GetCompressedBlocksBetween(start, end int6
 		return nil, types.DbErrNotFound
 	}
 	return blocksForCommit, nil
+}
+
+func (m *defaultCompressedBlockModel) CreateCompressedBlockInTransact(tx *gorm.DB, block *CompressedBlock) error {
+	dbTx := tx.Table(m.table).Create(block)
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		return errors.New("invalid block for commit info")
+	}
+	return nil
 }

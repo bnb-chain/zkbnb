@@ -49,6 +49,9 @@ type (
 		GetPendingMempoolTxsByAccountIndex(accountIndex int64) (mempoolTxs []*MempoolTx, err error)
 		GetMaxNonceByAccountIndex(accountIndex int64) (nonce int64, err error)
 		UpdateMempoolTxs(pendingUpdateMempoolTxs []*MempoolTx, pendingDeleteMempoolTxs []*MempoolTx) error
+		CreateMempoolTxsInTransact(tx *gorm.DB, mempoolTxs []*MempoolTx) error
+		UpdateMempoolTxsInTransact(tx *gorm.DB, mempoolTxs []*MempoolTx) error
+		DeleteMempoolTxsInTransact(tx *gorm.DB, mempoolTxs []*MempoolTx) error
 	}
 
 	defaultMempoolModel struct {
@@ -217,4 +220,43 @@ func (m *defaultMempoolModel) UpdateMempoolTxs(pendingUpdateMempoolTxs []*Mempoo
 
 		return nil
 	})
+}
+
+func (m *defaultMempoolModel) CreateMempoolTxsInTransact(tx *gorm.DB, mempoolTxs []*MempoolTx) error {
+	dbTx := tx.Table(m.table).CreateInBatches(mempoolTxs, len(mempoolTxs))
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		return types.DbErrFailToCreateMempoolTx
+	}
+	return nil
+}
+
+func (m *defaultMempoolModel) UpdateMempoolTxsInTransact(tx *gorm.DB, mempoolTxs []*MempoolTx) error {
+	for _, mempoolTx := range mempoolTxs {
+		dbTx := tx.Table(m.table).Where("id = ?", mempoolTx.ID).
+			Select("*").
+			Updates(&mempoolTx)
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			return errors.New("no new mempoolTx")
+		}
+	}
+	return nil
+}
+
+func (m *defaultMempoolModel) DeleteMempoolTxsInTransact(tx *gorm.DB, mempoolTxs []*MempoolTx) error {
+	for _, mempoolTx := range mempoolTxs {
+		dbTx := tx.Table(m.table).Where("id = ?", mempoolTx.ID).Delete(&mempoolTx)
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			return errors.New("delete invalid mempool tx")
+		}
+	}
+	return nil
 }

@@ -22,7 +22,6 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas/dao/mempool"
 	"github.com/bnb-chain/zkbas/types"
 )
 
@@ -38,8 +37,9 @@ type (
 		CreatePriorityRequestTable() error
 		DropPriorityRequestTable() error
 		GetPriorityRequestsByStatus(status int) (txs []*PriorityRequest, err error)
-		CreateMempoolTxsAndUpdateRequests(pendingNewMempoolTxs []*mempool.MempoolTx, pendingUpdateRequests []*PriorityRequest) (err error)
 		GetLatestHandledRequestId() (requestId int64, err error)
+		UpdatePriorityRequestsInTransact(tx *gorm.DB, requests []*PriorityRequest) (err error)
+		CreatePriorityRequestsInTransact(tx *gorm.DB, requests []*PriorityRequest) (err error)
 	}
 
 	defaultPriorityRequestModel struct {
@@ -108,33 +108,6 @@ func (m *defaultPriorityRequestModel) GetPriorityRequestsByStatus(status int) (t
 	return txs, nil
 }
 
-func (m *defaultPriorityRequestModel) CreateMempoolTxsAndUpdateRequests(newMempoolTxs []*mempool.MempoolTx, toUpdateL2Events []*PriorityRequest) (err error) {
-	err = m.DB.Transaction(
-		func(tx *gorm.DB) error {
-			dbTx := tx.Table(mempool.MempoolTableName).CreateInBatches(newMempoolTxs, len(newMempoolTxs))
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected != int64(len(newMempoolTxs)) {
-				return errors.New("create mempool txs error")
-			}
-
-			eventIds := make([]uint, 0, len(toUpdateL2Events))
-			for _, l2Event := range toUpdateL2Events {
-				eventIds = append(eventIds, l2Event.ID)
-			}
-			dbTx = tx.Table(m.table).Where("id in ?", eventIds).Update("status", HandledStatus)
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected != int64(len(eventIds)) {
-				return errors.New("update l2 events error")
-			}
-			return nil
-		})
-	return err
-}
-
 func (m *defaultPriorityRequestModel) GetLatestHandledRequestId() (requestId int64, err error) {
 	var event *PriorityRequest
 	dbTx := m.DB.Table(m.table).Where("status = ?", HandledStatus).Order("request_id desc").Find(&event)
@@ -145,4 +118,30 @@ func (m *defaultPriorityRequestModel) GetLatestHandledRequestId() (requestId int
 		return -1, nil
 	}
 	return event.RequestId, nil
+}
+
+func (m *defaultPriorityRequestModel) UpdatePriorityRequestsInTransact(tx *gorm.DB, requests []*PriorityRequest) (err error) {
+	eventIds := make([]uint, 0, len(requests))
+	for _, l2Event := range requests {
+		eventIds = append(eventIds, l2Event.ID)
+	}
+	dbTx := tx.Table(m.table).Where("id in ?", eventIds).Update("status", HandledStatus)
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected != int64(len(eventIds)) {
+		return errors.New("update l2 events error")
+	}
+	return nil
+}
+
+func (m *defaultPriorityRequestModel) CreatePriorityRequestsInTransact(tx *gorm.DB, requests []*PriorityRequest) (err error) {
+	dbTx := tx.Table(m.table).CreateInBatches(requests, len(requests))
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected != int64(len(requests)) {
+		return errors.New("unable to create priority requests")
+	}
+	return nil
 }

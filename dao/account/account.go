@@ -18,6 +18,7 @@
 package account
 
 import (
+	"errors"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -44,6 +45,8 @@ type (
 		GetAccountByNameHash(nameHash string) (account *Account, err error)
 		GetAccounts(limit int, offset int64) (accounts []*Account, err error)
 		GetAccountsTotalCount() (count int64, err error)
+		CreateAccountsInTransact(tx *gorm.DB, accounts []*Account) error
+		UpdateAccountsInTransact(tx *gorm.DB, accounts []*Account) error
 	}
 
 	defaultAccountModel struct {
@@ -158,4 +161,30 @@ func (m *defaultAccountModel) GetConfirmedAccountByIndex(accountIndex int64) (ac
 		return nil, types.DbErrNotFound
 	}
 	return account, nil
+}
+
+func (m *defaultAccountModel) CreateAccountsInTransact(tx *gorm.DB, accounts []*Account) error {
+	dbTx := tx.Table(m.table).CreateInBatches(accounts, len(accounts))
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected != int64(len(accounts)) {
+		return errors.New("unable to create new account")
+	}
+	return nil
+}
+
+func (m *defaultAccountModel) UpdateAccountsInTransact(tx *gorm.DB, accounts []*Account) error {
+	for _, account := range accounts {
+		dbTx := tx.Table(m.table).Where("account_index = ?", account.AccountIndex).
+			Select("*").
+			Updates(&account)
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			return errors.New("no updated account")
+		}
+	}
+	return nil
 }

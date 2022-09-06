@@ -41,6 +41,7 @@ type Monitor struct {
 	zkbasContractAddress      string
 	governanceContractAddress string
 
+	db                   *gorm.DB
 	BlockModel           block.BlockModel
 	MempoolModel         mempool.MempoolModel
 	SysConfigModel       sysconfig.SysConfigModel
@@ -57,6 +58,7 @@ func NewMonitor(c config.Config) *Monitor {
 	}
 	monitor := &Monitor{
 		Config:               c,
+		db:                   db,
 		PriorityRequestModel: priorityrequest.NewPriorityRequestModel(db),
 		MempoolModel:         mempool.NewMempoolModel(db),
 		BlockModel:           block.NewBlockModel(db),

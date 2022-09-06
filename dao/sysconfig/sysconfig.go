@@ -18,6 +18,7 @@
 package sysconfig
 
 import (
+	"errors"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -33,6 +34,8 @@ type (
 		DropSysConfigTable() error
 		GetSysConfigByName(name string) (info *SysConfig, err error)
 		CreateSysConfigs(configs []*SysConfig) (rowsAffected int64, err error)
+		CreateSysConfigsInTransact(tx *gorm.DB, configs []*SysConfig) error
+		UpdateSysConfigsInTransact(tx *gorm.DB, configs []*SysConfig) error
 	}
 
 	defaultSysConfigModel struct {
@@ -84,7 +87,31 @@ func (m *defaultSysConfigModel) CreateSysConfigs(configs []*SysConfig) (rowsAffe
 		return 0, types.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {
-		return 0, types.DbErrFailToCreateSysconfig
+		return 0, types.DbErrFailToCreateSysConfig
 	}
 	return dbTx.RowsAffected, nil
+}
+
+func (m *defaultSysConfigModel) CreateSysConfigsInTransact(tx *gorm.DB, configs []*SysConfig) error {
+	dbTx := tx.Table(m.table).CreateInBatches(configs, len(configs))
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		return types.DbErrFailToCreateAsset
+	}
+	return nil
+}
+
+func (m *defaultSysConfigModel) UpdateSysConfigsInTransact(tx *gorm.DB, configs []*SysConfig) error {
+	for _, config := range configs {
+		dbTx := tx.Table(m.table).Where("id = ?", config.ID).Delete(&config)
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			return errors.New("invalid sysconfigs")
+		}
+	}
+	return nil
 }

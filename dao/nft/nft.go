@@ -18,6 +18,8 @@
 package nft
 
 import (
+	"errors"
+
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -35,6 +37,8 @@ type (
 		GetLatestNftIndex() (nftIndex int64, err error)
 		GetNftsByAccountIndex(accountIndex, limit, offset int64) (nfts []*L2Nft, err error)
 		GetNftsCountByAccountIndex(accountIndex int64) (int64, error)
+		CreateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) error
+		UpdateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) error
 	}
 	defaultL2NftModel struct {
 		table string
@@ -114,4 +118,30 @@ func (m *defaultL2NftModel) GetNftsCountByAccountIndex(accountIndex int64) (int6
 		return 0, types.DbErrNotFound
 	}
 	return count, nil
+}
+
+func (m *defaultL2NftModel) CreateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) error {
+	dbTx := tx.Table(m.table).CreateInBatches(nfts, len(nfts))
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected != int64(len(nfts)) {
+		return errors.New("unable to create new nft")
+	}
+	return nil
+}
+
+func (m *defaultL2NftModel) UpdateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) error {
+	for _, pendingNft := range nfts {
+		dbTx := tx.Table(m.table).Where("nft_index = ?", pendingNft.NftIndex).
+			Select("*").
+			Updates(&pendingNft)
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			return errors.New("no updated nft")
+		}
+	}
+	return nil
 }

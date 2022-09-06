@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
+	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/common/chain"
 	"github.com/bnb-chain/zkbas/dao/mempool"
@@ -182,7 +183,18 @@ func (m *Monitor) MonitorPriorityRequests() error {
 	}
 
 	// update db
-	if err = m.PriorityRequestModel.CreateMempoolTxsAndUpdateRequests(pendingNewMempoolTxs, pendingRequests); err != nil {
+	err = m.db.Transaction(func(tx *gorm.DB) error {
+		err := m.PriorityRequestModel.UpdatePriorityRequestsInTransact(tx, pendingRequests)
+		if err != nil {
+			return err
+		}
+		err = m.MempoolModel.CreateMempoolTxsInTransact(tx, pendingNewMempoolTxs)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
 		return fmt.Errorf("unable to create mempool pendingRequests and update priority requests, error: %v", err)
 	}
 	return nil

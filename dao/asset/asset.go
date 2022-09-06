@@ -18,6 +18,7 @@
 package asset
 
 import (
+	"errors"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -44,6 +45,8 @@ type (
 		GetAssetByAddress(address string) (asset *Asset, err error)
 		GetGasAssets() (assets []*Asset, err error)
 		GetMaxAssetId() (max int64, err error)
+		CreateAssetsInTransact(tx *gorm.DB, assets []*Asset) error
+		UpdateAssetsInTransact(tx *gorm.DB, assets []*Asset) error
 	}
 
 	defaultAssetModel struct {
@@ -164,4 +167,28 @@ func (m *defaultAssetModel) GetMaxAssetId() (max int64, err error) {
 		return 0, types.DbErrNotFound
 	}
 	return max, nil
+}
+
+func (m *defaultAssetModel) CreateAssetsInTransact(tx *gorm.DB, assets []*Asset) error {
+	dbTx := tx.Table(m.table).CreateInBatches(assets, len(assets))
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		return types.DbErrFailToCreateAsset
+	}
+	return nil
+}
+
+func (m *defaultAssetModel) UpdateAssetsInTransact(tx *gorm.DB, assets []*Asset) error {
+	for _, asset := range assets {
+		dbTx := tx.Table(m.table).Where("id = ?", asset.ID).Delete(&asset)
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			return errors.New("invalid assets")
+		}
+	}
+	return nil
 }

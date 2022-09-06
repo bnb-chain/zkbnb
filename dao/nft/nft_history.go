@@ -18,6 +18,7 @@
 package nft
 
 import (
+	"errors"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -31,12 +32,11 @@ type (
 	L2NftHistoryModel interface {
 		CreateL2NftHistoryTable() error
 		DropL2NftHistoryTable() error
-		GetLatestNftsCountByBlockHeight(height int64) (
-			count int64, err error,
-		)
+		GetLatestNftsCountByBlockHeight(height int64) (count int64, err error)
 		GetLatestNftsByBlockHeight(height int64, limit int, offset int) (
 			rowsAffected int64, nftAssets []*L2NftHistory, err error,
 		)
+		CreateNftHistoriesInTransact(tx *gorm.DB, histories []*L2NftHistory) error
 	}
 	defaultL2NftHistoryModel struct {
 		table string
@@ -108,4 +108,15 @@ func (m *defaultL2NftHistoryModel) GetLatestNftsByBlockHeight(height int64, limi
 		return 0, nil, types.DbErrSqlOperation
 	}
 	return dbTx.RowsAffected, accountNftAssets, nil
+}
+
+func (m *defaultL2NftHistoryModel) CreateNftHistoriesInTransact(tx *gorm.DB, histories []*L2NftHistory) error {
+	dbTx := tx.Table(m.table).CreateInBatches(histories, len(histories))
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected != int64(len(histories)) {
+		return errors.New("unable to create new nft history")
+	}
+	return nil
 }

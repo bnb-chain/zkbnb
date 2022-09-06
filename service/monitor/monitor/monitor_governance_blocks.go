@@ -26,6 +26,7 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 
 	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
 	"github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/zero/basic"
@@ -287,32 +288,59 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 		Type:          l1syncedblock.TypeGovernance,
 	}
 	var (
-		l2AssetInfos                []*asset.Asset
-		pendingUpdateL2AssetInfos   []*asset.Asset
-		pendingNewSysconfigInfos    []*sysconfig.SysConfig
-		pendingUpdateSysconfigInfos []*sysconfig.SysConfig
+		pendingNewAssets        []*asset.Asset
+		pendingUpdateAssets     []*asset.Asset
+		pendingNewSysConfigs    []*sysconfig.SysConfig
+		pendingUpdateSysConfigs []*sysconfig.SysConfig
 	)
 	for _, l2AssetInfo := range l2AssetInfoMap {
-		l2AssetInfos = append(l2AssetInfos, l2AssetInfo)
+		pendingNewAssets = append(pendingNewAssets, l2AssetInfo)
 	}
 	for _, pendingUpdateL2AssetInfo := range pendingUpdateL2AssetMap {
-		pendingUpdateL2AssetInfos = append(pendingUpdateL2AssetInfos, pendingUpdateL2AssetInfo)
+		pendingUpdateAssets = append(pendingUpdateAssets, pendingUpdateL2AssetInfo)
 	}
 	for _, pendingNewSysconfigInfo := range pendingNewSysConfigMap {
-		pendingNewSysconfigInfos = append(pendingNewSysconfigInfos, pendingNewSysconfigInfo)
+		pendingNewSysConfigs = append(pendingNewSysConfigs, pendingNewSysconfigInfo)
 	}
 	for _, pendingUpdateSysconfigInfo := range pendingUpdateSysConfigMap {
-		pendingUpdateSysconfigInfos = append(pendingUpdateSysconfigInfos, pendingUpdateSysconfigInfo)
+		pendingUpdateSysConfigs = append(pendingUpdateSysConfigs, pendingUpdateSysconfigInfo)
 	}
-	if len(l2AssetInfos) > 0 || len(pendingUpdateL2AssetInfos) > 0 {
+	if len(pendingNewAssets) > 0 || len(pendingUpdateAssets) > 0 {
 		logx.Infof("l1 block info height: %v, l2 asset info size: %v, pending update l2 asset info size: %v",
 			syncedBlock.L1BlockHeight,
-			len(l2AssetInfos),
-			len(pendingUpdateL2AssetInfos),
+			len(pendingNewAssets),
+			len(pendingUpdateAssets),
 		)
 	}
-	if err = m.L1SyncedBlockModel.CreateGovernanceBlock(syncedBlock, l2AssetInfos,
-		pendingUpdateL2AssetInfos, pendingNewSysconfigInfos, pendingUpdateSysconfigInfos); err != nil {
+
+	//update db
+	err = m.db.Transaction(func(tx *gorm.DB) error {
+		//create l1 synced block
+		err := m.L1SyncedBlockModel.CreateL1SyncedBlockInTransact(tx, syncedBlock)
+		if err != nil {
+			return err
+		}
+		//create assets
+		err = m.L2AssetModel.CreateAssetsInTransact(tx, pendingNewAssets)
+		if err != nil {
+			return err
+		}
+		//update assets
+		err = m.L2AssetModel.UpdateAssetsInTransact(tx, pendingUpdateAssets)
+		if err != nil {
+			return err
+		}
+		//create sysconfigs
+		err = m.SysConfigModel.CreateSysConfigsInTransact(tx, pendingNewSysConfigs)
+		if err != nil {
+			return err
+		}
+		//update sysconfigs
+		err = m.SysConfigModel.UpdateSysConfigsInTransact(tx, pendingUpdateSysConfigs)
+		return err
+	})
+
+	if err != nil {
 		return fmt.Errorf("store governance monitor info error, err: %v", err)
 	}
 	return nil

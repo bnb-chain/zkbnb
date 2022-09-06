@@ -18,6 +18,7 @@
 package liquidity
 
 import (
+	"errors"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -33,6 +34,8 @@ type (
 		DropLiquidityTable() error
 		GetLiquidityByIndex(index int64) (entity *Liquidity, err error)
 		GetAllLiquidity() (liquidityList []*Liquidity, err error)
+		CreateLiquidityInTransact(tx *gorm.DB, liquidity []*Liquidity) error
+		UpdateLiquidityInTransact(tx *gorm.DB, liquidity []*Liquidity) error
 	}
 
 	defaultLiquidityModel struct {
@@ -92,4 +95,30 @@ func (m *defaultLiquidityModel) GetAllLiquidity() (liquidityList []*Liquidity, e
 		return nil, types.DbErrNotFound
 	}
 	return liquidityList, nil
+}
+
+func (m *defaultLiquidityModel) CreateLiquidityInTransact(tx *gorm.DB, liquidity []*Liquidity) error {
+	dbTx := tx.Table(m.table).CreateInBatches(liquidity, len(liquidity))
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected != int64(len(liquidity)) {
+		return errors.New("unable to create new liquidity")
+	}
+	return nil
+}
+
+func (m *defaultLiquidityModel) UpdateLiquidityInTransact(tx *gorm.DB, liquidity []*Liquidity) error {
+	for _, pendingLiquidity := range liquidity {
+		dbTx := tx.Table(m.table).Where("pair_index = ?", pendingLiquidity.PairIndex).
+			Select("*").
+			Updates(&pendingLiquidity)
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			return errors.New("no updated liquidity")
+		}
+	}
+	return nil
 }
