@@ -5,10 +5,10 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas/dao/account"
-	"github.com/bnb-chain/zkbas/dao/liquidity"
-	"github.com/bnb-chain/zkbas/dao/nft"
-	"github.com/bnb-chain/zkbas/tools/recovery/internal/config"
+	"github.com/bnb-chain/zkbnb/dao/account"
+	"github.com/bnb-chain/zkbnb/dao/liquidity"
+	"github.com/bnb-chain/zkbnb/dao/nft"
+	"github.com/bnb-chain/zkbnb/tools/recovery/internal/config"
 )
 
 type ServiceContext struct {

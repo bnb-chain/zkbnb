@@ -33,5 +33,5 @@ build
 vendor
 deployment/dependency
 deployment/configs
-deployment/.zkbas
+deployment/.zkbnb
 run_*.sh

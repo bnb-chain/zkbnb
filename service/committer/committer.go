@@ -4,7 +4,7 @@ import (
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/service/committer/committer"
+	"github.com/bnb-chain/zkbnb/service/committer/committer"
 )
 
 func Run(configFile string) error {

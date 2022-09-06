@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 ZkBAS Protocol
+ * Copyright © 2021 ZkBNB Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,12 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas-crypto/hash/bn254/zmimc"
-	bsmt "github.com/bnb-chain/zkbas-smt"
-	"github.com/bnb-chain/zkbas-smt/database/memory"
-	"github.com/bnb-chain/zkbas/common/chain"
-	"github.com/bnb-chain/zkbas/dao/account"
-	"github.com/bnb-chain/zkbas/types"
+	"github.com/bnb-chain/zkbnb-crypto/hash/bn254/zmimc"
+	bsmt "github.com/bnb-chain/zkbnb-smt"
+	"github.com/bnb-chain/zkbnb-smt/database/memory"
+	"github.com/bnb-chain/zkbnb/common/chain"
+	"github.com/bnb-chain/zkbnb/dao/account"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 func accountAssetNamespace(index int64) string {

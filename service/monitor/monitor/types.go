@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 ZkBAS Protocol
+ * Copyright © 2021 ZkBNB Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,10 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
-	"github.com/bnb-chain/zkbas/dao/block"
-	"github.com/bnb-chain/zkbas/dao/priorityrequest"
-	"github.com/bnb-chain/zkbas/types"
+	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/zkbnb/core/legend"
+	"github.com/bnb-chain/zkbnb/dao/block"
+	"github.com/bnb-chain/zkbnb/dao/priorityrequest"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 const (
@@ -64,23 +64,23 @@ const (
 )
 
 var (
-	ZkbasContractAbi, _ = abi.JSON(strings.NewReader(zkbas.ZkbasMetaData.ABI))
-	// Zkbas contract logs sig
-	zkbasLogNewPriorityRequestSig = []byte("NewPriorityRequest(address,uint64,uint8,bytes,uint256)")
-	zkbasLogWithdrawalSig         = []byte("Withdrawal(uint16,uint128)")
-	zkbasLogWithdrawalPendingSig  = []byte("WithdrawalPending(uint16,uint128)")
-	zkbasLogBlockCommitSig        = []byte("BlockCommit(uint32)")
-	zkbasLogBlockVerificationSig  = []byte("BlockVerification(uint32)")
-	zkbasLogBlocksRevertSig       = []byte("BlocksRevert(uint32,uint32)")
+	ZkBNBContractAbi, _ = abi.JSON(strings.NewReader(zkbnb.ZkBNBMetaData.ABI))
+	// ZkBNB contract logs sig
+	zkbnbLogNewPriorityRequestSig = []byte("NewPriorityRequest(address,uint64,uint8,bytes,uint256)")
+	zkbnbLogWithdrawalSig         = []byte("Withdrawal(uint16,uint128)")
+	zkbnbLogWithdrawalPendingSig  = []byte("WithdrawalPending(uint16,uint128)")
+	zkbnbLogBlockCommitSig        = []byte("BlockCommit(uint32)")
+	zkbnbLogBlockVerificationSig  = []byte("BlockVerification(uint32)")
+	zkbnbLogBlocksRevertSig       = []byte("BlocksRevert(uint32,uint32)")
 
-	zkbasLogNewPriorityRequestSigHash = crypto.Keccak256Hash(zkbasLogNewPriorityRequestSig)
-	zkbasLogWithdrawalSigHash         = crypto.Keccak256Hash(zkbasLogWithdrawalSig)
-	zkbasLogWithdrawalPendingSigHash  = crypto.Keccak256Hash(zkbasLogWithdrawalPendingSig)
-	zkbasLogBlockCommitSigHash        = crypto.Keccak256Hash(zkbasLogBlockCommitSig)
-	zkbasLogBlockVerificationSigHash  = crypto.Keccak256Hash(zkbasLogBlockVerificationSig)
-	zkbasLogBlocksRevertSigHash       = crypto.Keccak256Hash(zkbasLogBlocksRevertSig)
+	zkbnbLogNewPriorityRequestSigHash = crypto.Keccak256Hash(zkbnbLogNewPriorityRequestSig)
+	zkbnbLogWithdrawalSigHash         = crypto.Keccak256Hash(zkbnbLogWithdrawalSig)
+	zkbnbLogWithdrawalPendingSigHash  = crypto.Keccak256Hash(zkbnbLogWithdrawalPendingSig)
+	zkbnbLogBlockCommitSigHash        = crypto.Keccak256Hash(zkbnbLogBlockCommitSig)
+	zkbnbLogBlockVerificationSigHash  = crypto.Keccak256Hash(zkbnbLogBlockVerificationSig)
+	zkbnbLogBlocksRevertSigHash       = crypto.Keccak256Hash(zkbnbLogBlocksRevertSig)
 
-	GovernanceContractAbi, _ = abi.JSON(strings.NewReader(zkbas.GovernanceMetaData.ABI))
+	GovernanceContractAbi, _ = abi.JSON(strings.NewReader(zkbnb.GovernanceMetaData.ABI))
 
 	governanceLogNewAssetSig              = []byte("NewAsset(address,uint16)")
 	governanceLogNewGovernorSig           = []byte("NewGovernor(address)")

@@ -3,7 +3,7 @@ package common
 import (
 	"math/big"
 
-	"github.com/bnb-chain/zkbas-crypto/util"
+	"github.com/bnb-chain/zkbnb-crypto/util"
 )
 
 // ToPackedAmount : convert big int to 40 bit, 5 bits for 10^x, 35 bits for a * 10^x

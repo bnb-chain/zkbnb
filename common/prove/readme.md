@@ -10,9 +10,9 @@ image and reuse it.
 
 After you have run the integration test, while the `postgres` container is not deleted:
 
-`docker commit -m 'add zkbas mock data' postgres   zkbas-ut-postgres`
-`docker tag zkbas-ut-postgres ghcr.io/bnb-chain/zkbas/zkbas-ut-postgres:latest`
-`docker push ghcr.io/bnb-chain/zkbas/zkbas-ut-postgres:latest`
+`docker commit -m 'add zkbnb mock data' postgres   zkbnb-ut-postgres`
+`docker tag zkbnb-ut-postgres ghcr.io/bnb-chain/zkbnb/zkbnb-ut-postgres:latest`
+`docker push ghcr.io/bnb-chain/zkbnb/zkbnb-ut-postgres:latest`
 
 Note: you need login the docker registry before pushing.
 ```shell

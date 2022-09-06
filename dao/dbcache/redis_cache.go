@@ -25,7 +25,7 @@ func NewRedisCache(redisAdd, password string, expiration time.Duration) Cache {
 	client := redis.NewClient(&redis.Options{Addr: redisAdd, Password: password})
 	redisInstance := store.NewRedis(client, &store.Options{Expiration: expiration})
 	redisCacheManager := cache.New(redisInstance)
-	promMetrics := metrics.NewPrometheus("zkbas")
+	promMetrics := metrics.NewPrometheus("zkbnb")
 	cacheManager := cache.NewMetric(promMetrics, redisCacheManager)
 	return &RedisCache{
 		marshal:    marshaler.New(cacheManager),

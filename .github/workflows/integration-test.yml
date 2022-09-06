@@ -20,28 +20,28 @@ jobs:
       issues: write
       pull-requests: write
     steps:
-      - name: deploy new zkbas on runner
+      - name: deploy new zkbnb on runner
         run: |
-          echo 'fetch zkbas repo'
+          echo 'fetch zkbnb repo'
           export PR_NUMBER=$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
           echo Pull requests $PR_NUMBER
           
           cd ~
-          sudo rm -rf ./zkbas
-          git clone --branch develop https://github.com/bnb-chain/zkbas.git
+          sudo rm -rf ./zkbnb
+          git clone --branch develop https://github.com/bnb-chain/zkbnb.git
           
-          cd ./zkbas
+          cd ./zkbnb
           git fetch origin pull/$PR_NUMBER/head:local-deploy-tmp
           git checkout local-deploy-tmp
           git rev-parse HEAD
 
-          echo "start deploy new zkbas"
+          echo "start deploy new zkbnb"
           sudo bash ./deployment/tool/generate_api.sh
           go mod tidy
           docker image prune -f
           make docker-image
-          sudo mkdir -p ./deployment/.zkbas
-          sudo cp /server/test.keyfile/* ./deployment/.zkbas
+          sudo mkdir -p ./deployment/.zkbnb
+          sudo cp /server/test.keyfile/* ./deployment/.zkbnb
           blockNr=$(sudo bash ./deployment/tool/tool.sh blockHeight)
           sudo bash ./deployment/tool/tool.sh all
           sudo bash ./deployment/docker-compose/docker-compose.sh down
@@ -53,15 +53,15 @@ jobs:
       - name: run integration test
         run: |
           export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
-          export ZkBas=$(sudo cat ~/zkbas/deployment/dependency/zkbas-contract/info/addresses.json  | jq -r '.zkbasProxy')
-          export AssetGov=$(sudo cat ~/zkbas/deployment/dependency/zkbas-contract/info/addresses.json  | jq -r '.assetGovernance')
+          export ZkBNB=$(sudo cat ~/zkbnb/deployment/dependency/zkbnb-contract/info/addresses.json  | jq -r '.zkbnbProxy')
+          export AssetGov=$(sudo cat ~/zkbnb/deployment/dependency/zkbnb-contract/info/addresses.json  | jq -r '.assetGovernance')
           export TestLogLevel=2
           export L1EndPoint=$L1_ENDPOINT
           export L2EndPoint=$L2_ENDPOINT
           
-          cd /tmp && sudo rm -rf ./zkbas-integration-test
-          git clone --branch main https://github.com/bnb-chain/zkbas-integration-test.git
-          cd ./zkbas-integration-test/tests
+          cd /tmp && sudo rm -rf ./zkbnb-integration-test
+          git clone --branch main https://github.com/bnb-chain/zkbnb-integration-test.git
+          cd ./zkbnb-integration-test/tests
           
           echo '1. start TestSetupSuite'
           go test -v -run TestSetupSuite -timeout 30m
@@ -76,7 +76,7 @@ jobs:
         run: |
           export SLACK_WEBHOOK_URL=`sudo cat /home/ec2-user/actions-runner/slack-config.json | jq -r '.slack'`
           export JOB_STATUS=${{ job.status }}
-          export ZkBas=`sudo cat /root/zkbas-deploy/zkbas-contract/info/addresses.json  | jq -r '.zkbasProxy'`
-          export AssetGov=`sudo cat /root/zkbas-deploy/zkbas-contract/info/addresses.json  | jq -r '.assetGovernance'`
+          export ZkBNB=`sudo cat /root/zkbnb-deploy/zkbnb-contract/info/addresses.json  | jq -r '.zkbnbProxy'`
+          export AssetGov=`sudo cat /root/zkbnb-deploy/zkbnb-contract/info/addresses.json  | jq -r '.assetGovernance'`
           curl -X POST $SLACK_WEBHOOK_URL --header 'Content-Type: application/json' \
-          --data-raw '{ "author": "@'$GITHUB_ACTOR'", "status": "'$JOB_STATUS'", "ref": "'$GITHUB_REF'", "event": "'$GITHUB_EVENT_NAME'", "url": "'$GITHUB_SERVER_URL'/'$GITHUB_REPOSITORY'/commit/'$GITHUB_SHA'/checks", "ZkbasContract": "'$ZkBas'", "AssetGovContract": "'$AssetGov'" }'
+          --data-raw '{ "author": "@'$GITHUB_ACTOR'", "status": "'$JOB_STATUS'", "ref": "'$GITHUB_REF'", "event": "'$GITHUB_EVENT_NAME'", "url": "'$GITHUB_SERVER_URL'/'$GITHUB_REPOSITORY'/commit/'$GITHUB_SHA'/checks", "ZkBNBContract": "'$ZkBNB'", "AssetGovContract": "'$AssetGov'" }'

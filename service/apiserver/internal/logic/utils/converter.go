@@ -1,9 +1,9 @@
 package utils
 
 import (
-	"github.com/bnb-chain/zkbas/dao/mempool"
-	"github.com/bnb-chain/zkbas/dao/tx"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
+	"github.com/bnb-chain/zkbnb/dao/mempool"
+	"github.com/bnb-chain/zkbnb/dao/tx"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/types"
 )
 
 func DbtxTx(tx *tx.Tx) *types.Tx {

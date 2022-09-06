@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 ZkBAS Protocol
+ * Copyright © 2021 ZkBNB Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,10 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/bnb-chain/zkbas-crypto/ffmath"
-	"github.com/bnb-chain/zkbas-crypto/util"
-	"github.com/bnb-chain/zkbas/common"
-	"github.com/bnb-chain/zkbas/types"
+	"github.com/bnb-chain/zkbnb-crypto/ffmath"
+	"github.com/bnb-chain/zkbnb-crypto/util"
+	"github.com/bnb-chain/zkbnb/common"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 func ComputeEmptyLpAmount(

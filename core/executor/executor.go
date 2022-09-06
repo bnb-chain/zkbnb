@@ -3,11 +3,11 @@ package executor
 import (
 	"errors"
 
-	sdb "github.com/bnb-chain/zkbas/core/statedb"
-	"github.com/bnb-chain/zkbas/dao/block"
-	"github.com/bnb-chain/zkbas/dao/mempool"
-	"github.com/bnb-chain/zkbas/dao/tx"
-	"github.com/bnb-chain/zkbas/types"
+	sdb "github.com/bnb-chain/zkbnb/core/statedb"
+	"github.com/bnb-chain/zkbnb/dao/block"
+	"github.com/bnb-chain/zkbnb/dao/mempool"
+	"github.com/bnb-chain/zkbnb/dao/tx"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 type IBlockchain interface {

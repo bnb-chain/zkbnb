@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	bsmt "github.com/bnb-chain/zkbas-smt"
-	"github.com/bnb-chain/zkbas-smt/database"
-	"github.com/bnb-chain/zkbas-smt/database/leveldb"
-	"github.com/bnb-chain/zkbas-smt/database/memory"
-	"github.com/bnb-chain/zkbas-smt/database/redis"
+	bsmt "github.com/bnb-chain/zkbnb-smt"
+	"github.com/bnb-chain/zkbnb-smt/database"
+	"github.com/bnb-chain/zkbnb-smt/database/leveldb"
+	"github.com/bnb-chain/zkbnb-smt/database/memory"
+	"github.com/bnb-chain/zkbnb-smt/database/redis"
 )
 
 const defaultBatchReloadSize = 1000

@@ -45,21 +45,21 @@ export POSTGRES_PASSWORD=$(kubectl get secret --namespace postgres postgresql -o
 ## initialize database
 kubectl port-forward --namespace postgres svc/postgresql 5432:5432
 
-./build/bin/zkbas db initialize --dsn "host=localhost user=postgres password=${POSTGRES_PASSWORD} dbname=zkbas port=5432 sslmode=disable" --contractAddr ./deployment/configs/contractaddr.yaml
+./build/bin/zkbnb db initialize --dsn "host=localhost user=postgres password=${POSTGRES_PASSWORD} dbname=zkbnb port=5432 sslmode=disable" --contractAddr ./deployment/configs/contractaddr.yaml
 
 ## deploy application
-export KEY_FILE_PATH=$(pwd)/deployment/.zkbas
-helm install zkbas \
+export KEY_FILE_PATH=$(pwd)/deployment/.zkbnb
+helm install zkbnb \
     -f ./deployment/helm/local-value/values.yaml \
     --post-renderer ./deployment/helm/local-value/post-render.sh \
-    --namespace zkbas --create-namespace \
-    ./deployment/helm/zkbas
+    --namespace zkbnb --create-namespace \
+    ./deployment/helm/zkbnb
 
 ```
 
 3. Uninstall
 ```bash
-helm uninstall zkbas -n zkbas
+helm uninstall zkbnb -n zkbnb
 helm uninstall postgresql -n postgres
 # kubectl delete pvc --all -n postgres
 helm uninstall redis -n redis

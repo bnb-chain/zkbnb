@@ -8,7 +8,7 @@ When stored tree data is accidentally lost, this tool can help recover tree data
 1. Prepare a config.yaml to set the RDB, Redis, and target tree sources you want to restore.
 ```yaml
 Postgres:
-  DataSource: host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable
+  DataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
 
 CacheRedis:
   - Host: 127.0.0.1:6379

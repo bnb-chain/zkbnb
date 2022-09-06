@@ -6,10 +6,10 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/common/chain"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
-	types2 "github.com/bnb-chain/zkbas/types"
+	"github.com/bnb-chain/zkbnb/common/chain"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/types"
+	types2 "github.com/bnb-chain/zkbnb/types"
 )
 
 type GetSwapAmountLogic struct {

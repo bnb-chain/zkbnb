@@ -11,8 +11,8 @@ import (
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/frontend"
 
-	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
-	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
+	cryptoBlock "github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/block"
+	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
 )
 
 func LoadProvingKey(filepath string) (pk groth16.ProvingKey, err error) {

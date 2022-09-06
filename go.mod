@@ -1,4 +1,4 @@
-module github.com/bnb-chain/zkbas
+module github.com/bnb-chain/zkbnb
 
 go 1.17
 
@@ -85,9 +85,9 @@ require (
 )
 
 require (
-	github.com/bnb-chain/zkbas-crypto v0.0.5
-	github.com/bnb-chain/zkbas-eth-rpc v0.0.1
-	github.com/bnb-chain/zkbas-smt v0.0.1
+	github.com/bnb-chain/zkbnb-crypto v0.0.5
+	github.com/bnb-chain/zkbnb-eth-rpc v0.0.1
+	github.com/bnb-chain/zkbnb-smt v0.0.1
 	github.com/consensys/gnark v0.7.0
 	github.com/consensys/gnark-crypto v0.7.0
 	github.com/eko/gocache/v2 v2.3.1
@@ -109,3 +109,9 @@ require (
 	gorm.io/driver/postgres v1.3.6
 	k8s.io/apimachinery v0.24.1 // indirect
 )
+
+
+replace github.com/bnb-chain/zkbnb-crypto => ../zkbnb-crypto
+replace github.com/bnb-chain/zkbnb-eth-rpc => ../zkbnb-eth-rpc
+replace github.com/bnb-chain/zkbnb-smt => ../zkbnb-smt
+

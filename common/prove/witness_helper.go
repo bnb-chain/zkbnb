@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 ZkBAS Protocol
+ * Copyright © 2021 ZkBNB Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
-	bsmt "github.com/bnb-chain/zkbas-smt"
-	common2 "github.com/bnb-chain/zkbas/common"
-	"github.com/bnb-chain/zkbas/common/chain"
-	"github.com/bnb-chain/zkbas/tree"
-	"github.com/bnb-chain/zkbas/types"
+	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
+	bsmt "github.com/bnb-chain/zkbnb-smt"
+	common2 "github.com/bnb-chain/zkbnb/common"
+	"github.com/bnb-chain/zkbnb/common/chain"
+	"github.com/bnb-chain/zkbnb/tree"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 type WitnessHelper struct {

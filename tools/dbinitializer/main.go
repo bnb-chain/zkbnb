@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 ZkBAS Protocol
+ * Copyright © 2021 ZkBNB Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,22 +27,22 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas/dao/account"
-	"github.com/bnb-chain/zkbas/dao/asset"
-	"github.com/bnb-chain/zkbas/dao/block"
-	"github.com/bnb-chain/zkbas/dao/blockwitness"
-	"github.com/bnb-chain/zkbas/dao/compressedblock"
-	"github.com/bnb-chain/zkbas/dao/l1rolluptx"
-	"github.com/bnb-chain/zkbas/dao/l1syncedblock"
-	"github.com/bnb-chain/zkbas/dao/liquidity"
-	"github.com/bnb-chain/zkbas/dao/mempool"
-	"github.com/bnb-chain/zkbas/dao/nft"
-	"github.com/bnb-chain/zkbas/dao/priorityrequest"
-	"github.com/bnb-chain/zkbas/dao/proof"
-	"github.com/bnb-chain/zkbas/dao/sysconfig"
-	"github.com/bnb-chain/zkbas/dao/tx"
-	"github.com/bnb-chain/zkbas/tree"
-	"github.com/bnb-chain/zkbas/types"
+	"github.com/bnb-chain/zkbnb/dao/account"
+	"github.com/bnb-chain/zkbnb/dao/asset"
+	"github.com/bnb-chain/zkbnb/dao/block"
+	"github.com/bnb-chain/zkbnb/dao/blockwitness"
+	"github.com/bnb-chain/zkbnb/dao/compressedblock"
+	"github.com/bnb-chain/zkbnb/dao/l1rolluptx"
+	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
+	"github.com/bnb-chain/zkbnb/dao/liquidity"
+	"github.com/bnb-chain/zkbnb/dao/mempool"
+	"github.com/bnb-chain/zkbnb/dao/nft"
+	"github.com/bnb-chain/zkbnb/dao/priorityrequest"
+	"github.com/bnb-chain/zkbnb/dao/proof"
+	"github.com/bnb-chain/zkbnb/dao/sysconfig"
+	"github.com/bnb-chain/zkbnb/dao/tx"
+	"github.com/bnb-chain/zkbnb/tree"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 type contractAddr struct {
@@ -51,7 +51,7 @@ type contractAddr struct {
 	VerifierProxy      string
 	ZnsControllerProxy string
 	ZnsResolverProxy   string
-	ZkbasProxy         string
+	ZkBNBProxy         string
 	UpgradeGateKeeper  string
 	LEGToken           string
 	REYToken           string
@@ -145,10 +145,10 @@ func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC
 			Comment:   "gas index",
 		},
 		{
-			Name:      types.ZkbasContract,
-			Value:     svrConf.ZkbasProxy,
+			Name:      types.ZkBNBContract,
+			Value:     svrConf.ZkBNBProxy,
 			ValueType: "string",
-			Comment:   "Zkbas contract on BSC",
+			Comment:   "ZkBNB contract on BSC",
 		},
 		// Governance Contract
 		{

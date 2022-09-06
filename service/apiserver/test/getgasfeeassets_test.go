@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/types"
 )
 
 func (s *ApiServerSuite) TestGetGasFeeAssets() {

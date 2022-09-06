@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "zkbas.fullname" . }}-apiserver
+  name: {{ include "zkbnb.fullname" . }}-apiserver
   labels:
-    {{- include "zkbas.labels" . | nindent 4 }}
+    {{- include "zkbnb.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "zkbas.selectorLabels" . | nindent 6 }}
+      {{- include "zkbnb.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -18,14 +18,14 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        zkbas.api: {{ include "zkbas.fullname" . }}-apiserver
-        {{- include "zkbas.selectorLabels" . | nindent 8 }}
+        zkbnb.api: {{ include "zkbnb.fullname" . }}-apiserver
+        {{- include "zkbnb.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "zkbas.serviceAccountName" . }}
+      serviceAccountName: {{ include "zkbnb.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -58,7 +58,7 @@ spec:
       volumes:
         - name: config-volume
           configMap:
-            name: {{ include "zkbas.fullname" . }}
+            name: {{ include "zkbnb.fullname" . }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -75,16 +75,16 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "zkbas.fullname" . }}-prover
+  name: {{ include "zkbnb.fullname" . }}-prover
   labels:
-    {{- include "zkbas.labels" . | nindent 4 }}
+    {{- include "zkbnb.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "zkbas.selectorLabels" . | nindent 6 }}
+      {{- include "zkbnb.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -92,13 +92,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "zkbas.selectorLabels" . | nindent 8 }}
+        {{- include "zkbnb.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "zkbas.serviceAccountName" . }}
+      serviceAccountName: {{ include "zkbnb.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -116,14 +116,14 @@ spec:
               mountPath: /server/configs
             {{- with (first .Values.keyfileVolume) }}
             - name: {{ .name }}
-              mountPath: /server/.zkbas
+              mountPath: /server/.zkbnb
             {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
         - name: config-volume
           configMap:
-            name: {{ include "zkbas.fullname" . }}
+            name: {{ include "zkbnb.fullname" . }}
         {{- toYaml .Values.keyfileVolume | nindent 8 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
@@ -141,16 +141,16 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "zkbas.fullname" . }}-witness
+  name: {{ include "zkbnb.fullname" . }}-witness
   labels:
-    {{- include "zkbas.labels" . | nindent 4 }}
+    {{- include "zkbnb.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "zkbas.selectorLabels" . | nindent 6 }}
+      {{- include "zkbnb.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -158,13 +158,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "zkbas.selectorLabels" . | nindent 8 }}
+        {{- include "zkbnb.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "zkbas.serviceAccountName" . }}
+      serviceAccountName: {{ include "zkbnb.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -185,7 +185,7 @@ spec:
       volumes:
         - name: config-volume
           configMap:
-            name: {{ include "zkbas.fullname" . }}
+            name: {{ include "zkbnb.fullname" . }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -202,16 +202,16 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "zkbas.fullname" . }}-monitor
+  name: {{ include "zkbnb.fullname" . }}-monitor
   labels:
-    {{- include "zkbas.labels" . | nindent 4 }}
+    {{- include "zkbnb.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "zkbas.selectorLabels" . | nindent 6 }}
+      {{- include "zkbnb.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -219,13 +219,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "zkbas.selectorLabels" . | nindent 8 }}
+        {{- include "zkbnb.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "zkbas.serviceAccountName" . }}
+      serviceAccountName: {{ include "zkbnb.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -246,7 +246,7 @@ spec:
       volumes:
         - name: config-volume
           configMap:
-            name: {{ include "zkbas.fullname" . }}
+            name: {{ include "zkbnb.fullname" . }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -263,16 +263,16 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "zkbas.fullname" . }}-committer
+  name: {{ include "zkbnb.fullname" . }}-committer
   labels:
-    {{- include "zkbas.labels" . | nindent 4 }}
+    {{- include "zkbnb.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "zkbas.selectorLabels" . | nindent 6 }}
+      {{- include "zkbnb.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -280,13 +280,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "zkbas.selectorLabels" . | nindent 8 }}
+        {{- include "zkbnb.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "zkbas.serviceAccountName" . }}
+      serviceAccountName: {{ include "zkbnb.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -304,14 +304,14 @@ spec:
               mountPath: /server/configs
             {{- with (first .Values.keyfileVolume) }}
             - name: {{ .name }}
-              mountPath: /server/.zkbas
+              mountPath: /server/.zkbnb
             {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
         - name: config-volume
           configMap:
-            name: {{ include "zkbas.fullname" . }}
+            name: {{ include "zkbnb.fullname" . }}
         {{- toYaml .Values.keyfileVolume | nindent 8 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
@@ -329,16 +329,16 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "zkbas.fullname" . }}-sender
+  name: {{ include "zkbnb.fullname" . }}-sender
   labels:
-    {{- include "zkbas.labels" . | nindent 4 }}
+    {{- include "zkbnb.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "zkbas.selectorLabels" . | nindent 6 }}
+      {{- include "zkbnb.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -346,13 +346,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "zkbas.selectorLabels" . | nindent 8 }}
+        {{- include "zkbnb.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "zkbas.serviceAccountName" . }}
+      serviceAccountName: {{ include "zkbnb.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -373,7 +373,7 @@ spec:
       volumes:
         - name: config-volume
           configMap:
-            name: {{ include "zkbas.fullname" . }}
+            name: {{ include "zkbnb.fullname" . }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

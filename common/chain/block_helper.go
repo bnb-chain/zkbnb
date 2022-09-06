@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 ZkBAS Protocol
+ * Copyright © 2021 ZkBNB Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	curve "github.com/bnb-chain/zkbas-crypto/ecc/ztwistededwards/tebn254"
-	"github.com/bnb-chain/zkbas-crypto/ffmath"
-	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
-	common2 "github.com/bnb-chain/zkbas/common"
-	"github.com/bnb-chain/zkbas/dao/block"
+	curve "github.com/bnb-chain/zkbnb-crypto/ecc/ztwistededwards/tebn254"
+	"github.com/bnb-chain/zkbnb-crypto/ffmath"
+	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/zkbnb/core/legend"
+	common2 "github.com/bnb-chain/zkbnb/common"
+	"github.com/bnb-chain/zkbnb/dao/block"
 )
 
 func CreateBlockCommitment(
@@ -53,7 +53,7 @@ func CreateBlockCommitment(
 	return common.Bytes2Hex(commitment)
 }
 
-func ConstructStoredBlockInfo(oBlock *block.Block) zkbas.StorageStoredBlockInfo {
+func ConstructStoredBlockInfo(oBlock *block.Block) zkbnb.StorageStoredBlockInfo {
 	var (
 		PendingOnchainOperationsHash [32]byte
 		StateRoot                    [32]byte
@@ -62,7 +62,7 @@ func ConstructStoredBlockInfo(oBlock *block.Block) zkbas.StorageStoredBlockInfo 
 	copy(PendingOnchainOperationsHash[:], common.FromHex(oBlock.PendingOnChainOperationsHash)[:])
 	copy(StateRoot[:], common.FromHex(oBlock.StateRoot)[:])
 	copy(Commitment[:], common.FromHex(oBlock.BlockCommitment)[:])
-	return zkbas.StorageStoredBlockInfo{
+	return zkbnb.StorageStoredBlockInfo{
 		BlockNumber:                  uint32(oBlock.BlockHeight),
 		PriorityOperations:           uint64(oBlock.PriorityOperations),
 		PendingOnchainOperationsHash: PendingOnchainOperationsHash,

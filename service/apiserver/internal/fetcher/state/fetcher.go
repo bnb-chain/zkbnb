@@ -3,12 +3,12 @@ package state
 import (
 	"context"
 
-	"github.com/bnb-chain/zkbas/common/chain"
-	accdao "github.com/bnb-chain/zkbas/dao/account"
-	"github.com/bnb-chain/zkbas/dao/dbcache"
-	liqdao "github.com/bnb-chain/zkbas/dao/liquidity"
-	nftdao "github.com/bnb-chain/zkbas/dao/nft"
-	"github.com/bnb-chain/zkbas/types"
+	"github.com/bnb-chain/zkbnb/common/chain"
+	accdao "github.com/bnb-chain/zkbnb/dao/account"
+	"github.com/bnb-chain/zkbnb/dao/dbcache"
+	liqdao "github.com/bnb-chain/zkbnb/dao/liquidity"
+	nftdao "github.com/bnb-chain/zkbnb/dao/nft"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 //go:generate mockgen -source api.go -destination api_mock.go -package state

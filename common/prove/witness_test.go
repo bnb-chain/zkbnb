@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 ZkBAS Protocol
+ * Copyright © 2021 ZkBNB Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,19 +28,19 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	cryptoBlock "github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
-	"github.com/bnb-chain/zkbas-smt/database/memory"
+	cryptoBlock "github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/block"
+	"github.com/bnb-chain/zkbnb-smt/database/memory"
 
-	"github.com/bnb-chain/zkbas/dao/account"
-	"github.com/bnb-chain/zkbas/dao/block"
-	"github.com/bnb-chain/zkbas/dao/blockwitness"
-	"github.com/bnb-chain/zkbas/dao/liquidity"
-	"github.com/bnb-chain/zkbas/dao/nft"
-	"github.com/bnb-chain/zkbas/tree"
+	"github.com/bnb-chain/zkbnb/dao/account"
+	"github.com/bnb-chain/zkbnb/dao/block"
+	"github.com/bnb-chain/zkbnb/dao/blockwitness"
+	"github.com/bnb-chain/zkbnb/dao/liquidity"
+	"github.com/bnb-chain/zkbnb/dao/nft"
+	"github.com/bnb-chain/zkbnb/tree"
 )
 
 var (
-	dsn                   = "host=localhost user=postgres password=Zkbas@123 dbname=zkbas port=5434 sslmode=disable"
+	dsn                   = "host=localhost user=postgres password=ZkBNB@123 dbname=zkbnb port=5434 sslmode=disable"
 	blockModel            block.BlockModel
 	witnessModel          blockwitness.BlockWitnessModel
 	accountModel          account.AccountModel
@@ -102,8 +102,8 @@ func testDBSetup() {
 	testDBShutdown()
 	time.Sleep(5 * time.Second)
 	cmd := exec.Command("docker", "run", "--name", "postgres-ut-witness", "-p", "5434:5432",
-		"-e", "POSTGRES_PASSWORD=Zkbas@123", "-e", "POSTGRES_USER=postgres", "-e", "POSTGRES_DB=zkbas",
-		"-e", "PGDATA=/var/lib/postgresql/pgdata", "-d", "ghcr.io/bnb-chain/zkbas/zkbas-ut-postgres:0.0.2")
+		"-e", "POSTGRES_PASSWORD=ZkBNB@123", "-e", "POSTGRES_USER=postgres", "-e", "POSTGRES_DB=zkbnb",
+		"-e", "PGDATA=/var/lib/postgresql/pgdata", "-d", "ghcr.io/bnb-chain/zkbnb/zkbnb-ut-postgres:0.0.2")
 	if err := cmd.Run(); err != nil {
 		panic(err)
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 ZkBAS Protocol
+ * Copyright © 2021 ZkBNB Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,17 +28,17 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
-	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
-	"github.com/bnb-chain/zkbas/common/chain"
-	"github.com/bnb-chain/zkbas/common/prove"
-	"github.com/bnb-chain/zkbas/dao/block"
-	"github.com/bnb-chain/zkbas/dao/compressedblock"
-	"github.com/bnb-chain/zkbas/dao/l1rolluptx"
-	"github.com/bnb-chain/zkbas/dao/proof"
-	"github.com/bnb-chain/zkbas/dao/sysconfig"
-	sconfig "github.com/bnb-chain/zkbas/service/sender/config"
-	"github.com/bnb-chain/zkbas/types"
+	"github.com/bnb-chain/zkbnb-eth-rpc/_rpc"
+	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/zkbnb/core/legend"
+	"github.com/bnb-chain/zkbnb/common/chain"
+	"github.com/bnb-chain/zkbnb/common/prove"
+	"github.com/bnb-chain/zkbnb/dao/block"
+	"github.com/bnb-chain/zkbnb/dao/compressedblock"
+	"github.com/bnb-chain/zkbnb/dao/l1rolluptx"
+	"github.com/bnb-chain/zkbnb/dao/proof"
+	"github.com/bnb-chain/zkbnb/dao/sysconfig"
+	sconfig "github.com/bnb-chain/zkbnb/service/sender/config"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 type Sender struct {
@@ -47,7 +47,7 @@ type Sender struct {
 	// Client
 	cli           *_rpc.ProviderClient
 	authCli       *_rpc.AuthClient
-	zkbasInstance *zkbas.Zkbas
+	zkbnbInstance *zkbnb.ZkBNB
 
 	// Data access objects
 	blockModel           block.BlockModel
@@ -77,10 +77,10 @@ func NewSender(c sconfig.Config) *Sender {
 			err, c.ChainConfig.NetworkRPCSysConfigName)
 		panic(err)
 	}
-	rollupAddress, err := s.sysConfigModel.GetSysConfigByName(types.ZkbasContract)
+	rollupAddress, err := s.sysConfigModel.GetSysConfigByName(types.ZkBNBContract)
 	if err != nil {
 		logx.Severef("fatal error, cannot fetch rollupAddress from sysconfig, err: %v, SysConfigName: %s",
-			err, types.ZkbasContract)
+			err, types.ZkBNBContract)
 		panic(err)
 	}
 
@@ -96,7 +96,7 @@ func NewSender(c sconfig.Config) *Sender {
 	if err != nil {
 		panic(err)
 	}
-	s.zkbasInstance, err = zkbas.LoadZkbasInstance(s.cli, rollupAddress.Value)
+	s.zkbnbInstance, err = zkbnb.LoadZkBNBInstance(s.cli, rollupAddress.Value)
 	if err != nil {
 		panic(err)
 	}
@@ -107,7 +107,7 @@ func (s *Sender) CommitBlocks() (err error) {
 	var (
 		cli           = s.cli
 		authCli       = s.authCli
-		zkbasInstance = s.zkbasInstance
+		zkbnbInstance = s.zkbnbInstance
 	)
 	pendingTx, err := s.l1RollupTxModel.GetLatestPendingTx(l1rolluptx.TxTypeCommit)
 	if err != nil && err != types.DbErrNotFound {
@@ -156,9 +156,9 @@ func (s *Sender) CommitBlocks() (err error) {
 		return err
 	}
 	// commit blocks on-chain
-	txHash, err := zkbas.CommitBlocks(
+	txHash, err := zkbnb.CommitBlocks(
 		cli, authCli,
-		zkbasInstance,
+		zkbnbInstance,
 		lastStoredBlockInfo,
 		pendingCommitBlocks,
 		gasPrice,
@@ -222,20 +222,20 @@ func (s *Sender) UpdateSentTxs() (err error) {
 		var validTx bool
 		for _, vlog := range receipt.Logs {
 			switch vlog.Topics[0].Hex() {
-			case zkbasLogBlockCommitSigHash.Hex():
-				var event zkbas.ZkbasBlockCommit
-				if err = ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlockCommit, vlog.Data); err != nil {
+			case zkbnbLogBlockCommitSigHash.Hex():
+				var event zkbnb.ZkBNBBlockCommit
+				if err = ZkBNBContractAbi.UnpackIntoInterface(&event, EventNameBlockCommit, vlog.Data); err != nil {
 					return err
 				}
 				validTx = int64(event.BlockNumber) == pendingTx.L2BlockHeight
-			case zkbasLogBlockVerificationSigHash.Hex():
-				var event zkbas.ZkbasBlockVerification
-				if err = ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlockVerification, vlog.Data); err != nil {
+			case zkbnbLogBlockVerificationSigHash.Hex():
+				var event zkbnb.ZkBNBBlockVerification
+				if err = ZkBNBContractAbi.UnpackIntoInterface(&event, EventNameBlockVerification, vlog.Data); err != nil {
 					return err
 				}
 				validTx = int64(event.BlockNumber) == pendingTx.L2BlockHeight
 				pendingUpdateProofStatus[pendingTx.L2BlockHeight] = proof.Confirmed
-			case zkbasLogBlocksRevertSigHash.Hex():
+			case zkbnbLogBlocksRevertSigHash.Hex():
 				// TODO revert
 			default:
 			}
@@ -258,7 +258,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	var (
 		cli           = s.cli
 		authCli       = s.authCli
-		zkbasInstance = s.zkbasInstance
+		zkbnbInstance = s.zkbnbInstance
 	)
 	pendingTx, err := s.l1RollupTxModel.GetLatestPendingTx(l1rolluptx.TxTypeVerifyAndExecute)
 	if err != nil && err != types.DbErrNotFound {
@@ -315,7 +315,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		return err
 	}
 	// Verify blocks on-chain
-	txHash, err := zkbas.VerifyAndExecuteBlocks(cli, authCli, zkbasInstance,
+	txHash, err := zkbnb.VerifyAndExecuteBlocks(cli, authCli, zkbnbInstance,
 		pendingVerifyAndExecuteBlocks, proofs, gasPrice, s.config.ChainConfig.GasLimit)
 	if err != nil {
 		return fmt.Errorf("failed to send verify tx: %v", err)

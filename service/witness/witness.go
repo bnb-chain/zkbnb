@@ -6,8 +6,8 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
 
-	"github.com/bnb-chain/zkbas/service/witness/config"
-	"github.com/bnb-chain/zkbas/service/witness/witness"
+	"github.com/bnb-chain/zkbnb/service/witness/config"
+	"github.com/bnb-chain/zkbnb/service/witness/witness"
 )
 
 func Run(configFile string) error {

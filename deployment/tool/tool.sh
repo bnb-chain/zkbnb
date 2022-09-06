@@ -7,11 +7,11 @@
 
 # Attention: Set the following variables to the right one before running!!!
 WORKDIR=$(cd `dirname $0`/..; pwd)
-KEY_PATH=${WORKDIR}/.zkbas
-ZKBAS_CONTRACT_REPO=https://github.com/bnb-chain/zkbas-contract.git
-ZKBAS_CRYPTO_REPO=https://github.com/bnb-chain/zkbas-crypto.git
+KEY_PATH=${WORKDIR}/.zkbnb
+ZkBNB_CONTRACT_REPO=https://github.com/bnb-chain/zkbnb-contract.git
+ZkBNB_CRYPTO_REPO=https://github.com/bnb-chain/zkbnb-crypto.git
 BSC_TESTNET_ENDPOINT=https://data-seed-prebsc-1-s1.binance.org:8545
-ZKBAS_CRYPTO_BRANCH=$(cat $WORKDIR/../go.mod | grep github.com/bnb-chain/zkbas-crypto | awk -F" " '{print $2}')
+ZkBNB_CRYPTO_BRANCH=$(cat $WORKDIR/../go.mod | grep github.com/bnb-chain/zkbnb-crypto | awk -F" " '{print $2}')
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
 
@@ -20,21 +20,21 @@ function prepare() {
     rm -rf ${WORKDIR}/dependency
     mkdir -p ${WORKDIR}/dependency && cd ${WORKDIR}/dependency
 
-    git clone --branch develop ${ZKBAS_CONTRACT_REPO}
-    git clone --branch ${ZKBAS_CRYPTO_BRANCH} ${ZKBAS_CRYPTO_REPO}
+    git clone --branch develop ${ZkBNB_CONTRACT_REPO}
+    git clone --branch ${ZkBNB_CRYPTO_BRANCH} ${ZkBNB_CRYPTO_REPO}
 
     if [ ! -z $1 ] && [ "$1" = "new" ]; then
         echo "new crypto env"
-        echo 'start generate zkbas.vk and zkbas.pk ...'
-        cd ${WORKDIR}/dependency/zkbas-crypto
+        echo 'start generate zkbnb.vk and zkbnb.pk ...'
+        cd ${WORKDIR}/dependency/zkbnb-crypto
         go test ./legend/circuit/bn254/solidity -timeout 99999s -run TestExportSol
         mkdir -p $KEY_PATH
         cp -r ./legend/circuit/bn254/solidity/* $KEY_PATH/
     fi
 
-    echo 'start verify_parse for ZkbasVerifier ...'
+    echo 'start verify_parse for ZkBNBVerifier ...'
     cd ${WORKDIR}/../service/prover/
-    python3 verifier_parse.py ${KEY_PATH}/ZkbasVerifier1.sol,${KEY_PATH}/ZkbasVerifier10.sol 1,10 ${WORKDIR}/dependency/zkbas-contract/contracts/ZkbasVerifier.sol
+    python3 verifier_parse.py ${KEY_PATH}/ZkBNBVerifier1.sol,${KEY_PATH}/ZkBNBVerifier10.sol 1,10 ${WORKDIR}/dependency/zkbnb-contract/contracts/ZkBNBVerifier.sol
 }
 
 function getLatestBlockHeight() {
@@ -46,20 +46,20 @@ function getLatestBlockHeight() {
 
 function deployContracts() {
     echo 'deploy contracts, register and deposit on BSC Testnet'
-    cd ${WORKDIR}/dependency/zkbas-contract && npm install
+    cd ${WORKDIR}/dependency/zkbnb-contract && npm install
     npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deploy.js
-    echo "Recorded latest contract addresses into ${WORKDIR}/dependency/zkbas-contract/info/addresses.json"
+    echo "Recorded latest contract addresses into ${WORKDIR}/dependency/zkbnb-contract/info/addresses.json"
     npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/register.js
     npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deposit.js
 
     mkdir -p ${WORKDIR}/configs/
-    echo 'modify deployed contracts into zkbas config ...'
+    echo 'modify deployed contracts into zkbnb config ...'
     cp -r ${WORKDIR}/../tools/dbinitializer/contractaddr.yaml.example ${WORKDIR}/configs/contractaddr.yaml
 
-    ZkbasContractAddr=`cat ${WORKDIR}/dependency/zkbas-contract/info/addresses.json  | jq -r '.zkbasProxy'`
-    sed -i -e "s/ZkbasProxy: .*/ZkbasProxy: ${ZkbasContractAddr}/" ${WORKDIR}/configs/contractaddr.yaml
+    ZkBNBContractAddr=`cat ${WORKDIR}/dependency/zkbnb-contract/info/addresses.json  | jq -r '.zkbnbProxy'`
+    sed -i -e "s/ZkBNBProxy: .*/ZkBNBProxy: ${ZkBNBContractAddr}/" ${WORKDIR}/configs/contractaddr.yaml
 
-    GovernanceContractAddr=`cat ${WORKDIR}/dependency/zkbas-contract/info/addresses.json  | jq -r '.governance'`
+    GovernanceContractAddr=`cat ${WORKDIR}/dependency/zkbnb-contract/info/addresses.json  | jq -r '.governance'`
     sed -i -e "s/Governance: .*/Governance: ${GovernanceContractAddr}/" ${WORKDIR}/configs/contractaddr.yaml
 }
 
