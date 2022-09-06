@@ -284,6 +284,7 @@ func ParseWithdrawTxInfo(txInfoStr string) (txInfo *legendTxTypes.WithdrawTxInfo
 
 func ParseWithdrawNftTxInfo(txInfoStr string) (txInfo *legendTxTypes.WithdrawNftTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
+
 	if err != nil {
 		return nil, err
 	}
