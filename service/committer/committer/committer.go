@@ -206,7 +206,7 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 			return err
 		}
 		// update block
-		err = c.bc.DB().BlockModel.UpdateBlocksInTransact(tx, []*block.Block{blockStates.Block})
+		err = c.bc.DB().BlockModel.UpdateBlockInTransact(tx, blockStates.Block)
 		if err != nil {
 			return err
 		}

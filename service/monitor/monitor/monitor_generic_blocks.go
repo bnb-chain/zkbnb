@@ -189,7 +189,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			return err
 		}
 		//update blocks
-		err = m.BlockModel.UpdateBlocksInTransact(tx, pendingUpdateBlocks)
+		err = m.BlockModel.UpdateBlocksWithoutTxsInTransact(tx, pendingUpdateBlocks)
 		if err != nil {
 			return err
 		}

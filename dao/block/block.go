@@ -60,7 +60,8 @@ type (
 		CreateGenesisBlock(block *Block) error
 		GetCurrentBlockHeight() (blockHeight int64, err error)
 		CreateNewBlock(oBlock *Block) (err error)
-		UpdateBlocksInTransact(tx *gorm.DB, blocks []*Block) (err error)
+		UpdateBlocksWithoutTxsInTransact(tx *gorm.DB, blocks []*Block) (err error)
+		UpdateBlockInTransact(tx *gorm.DB, block *Block) (err error)
 	}
 
 	defaultBlockModel struct {
@@ -344,7 +345,7 @@ func (m *defaultBlockModel) GetLatestVerifiedHeight() (height int64, err error) 
 	return block.BlockHeight, nil
 }
 
-func (m *defaultBlockModel) UpdateBlocksInTransact(tx *gorm.DB, blocks []*Block) (err error) {
+func (m *defaultBlockModel) UpdateBlocksWithoutTxsInTransact(tx *gorm.DB, blocks []*Block) (err error) {
 	const Txs = "Txs"
 
 	for _, block := range blocks {
@@ -361,6 +362,22 @@ func (m *defaultBlockModel) UpdateBlocksInTransact(tx *gorm.DB, blocks []*Block)
 			}
 			return types.DbErrFailToUpdateBlock
 		}
+	}
+	return nil
+}
+
+func (m *defaultBlockModel) UpdateBlockInTransact(tx *gorm.DB, block *Block) (err error) {
+	dbTx := tx.Table(m.table).Where("id = ?", block.ID).
+		Select("*").
+		Updates(&block)
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		if err != nil {
+			return err
+		}
+		return types.DbErrFailToUpdateBlock
 	}
 	return nil
 }
