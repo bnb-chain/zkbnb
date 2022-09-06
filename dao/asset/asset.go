@@ -18,7 +18,6 @@
 package asset
 
 import (
-	"errors"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -187,7 +186,7 @@ func (m *defaultAssetModel) UpdateAssetsInTransact(tx *gorm.DB, assets []*Asset)
 			return dbTx.Error
 		}
 		if dbTx.RowsAffected == 0 {
-			return errors.New("invalid assets")
+			return types.DbErrFailToUpdateAsset
 		}
 	}
 	return nil

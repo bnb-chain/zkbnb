@@ -18,7 +18,6 @@
 package l1rolluptx
 
 import (
-	"errors"
 	"fmt"
 
 	"gorm.io/gorm"
@@ -90,7 +89,7 @@ func (m *defaultL1RollupTxModel) CreateL1RollupTx(tx *L1RollupTx) error {
 	if dbTx.Error != nil {
 		return dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
-		return errors.New("invalid rollup tx")
+		return types.DbErrFailToCreateL1RollupTx
 	}
 	return nil
 }
@@ -112,7 +111,7 @@ func (m *defaultL1RollupTxModel) DeleteL1RollupTx(rollupTx *L1RollupTx) error {
 			return dbTx.Error
 		}
 		if dbTx.RowsAffected == 0 {
-			return errors.New("delete invalid rollupTx")
+			return types.DbErrFailToDeleteL1RollupTx
 		}
 		return nil
 	})

@@ -18,8 +18,6 @@
 package priorityrequest
 
 import (
-	"errors"
-
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -130,7 +128,7 @@ func (m *defaultPriorityRequestModel) UpdatePriorityRequestsInTransact(tx *gorm.
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected != int64(len(eventIds)) {
-		return errors.New("update l2 events error")
+		return types.DbErrFailToUpdatePriorityRequest
 	}
 	return nil
 }
@@ -141,7 +139,7 @@ func (m *defaultPriorityRequestModel) CreatePriorityRequestsInTransact(tx *gorm.
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected != int64(len(requests)) {
-		return errors.New("unable to create priority requests")
+		return types.DbErrFailToCreatePriorityRequest
 	}
 	return nil
 }

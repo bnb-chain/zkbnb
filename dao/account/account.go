@@ -18,7 +18,6 @@
 package account
 
 import (
-	"errors"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -169,7 +168,7 @@ func (m *defaultAccountModel) CreateAccountsInTransact(tx *gorm.DB, accounts []*
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected != int64(len(accounts)) {
-		return errors.New("unable to create new account")
+		return types.DbErrFailToCreateAccount
 	}
 	return nil
 }
@@ -183,7 +182,7 @@ func (m *defaultAccountModel) UpdateAccountsInTransact(tx *gorm.DB, accounts []*
 			return dbTx.Error
 		}
 		if dbTx.RowsAffected == 0 {
-			return errors.New("no updated account")
+			return types.DbErrFailToUpdateAccount
 		}
 	}
 	return nil

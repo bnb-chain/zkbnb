@@ -145,7 +145,7 @@ func (m *defaultProofModel) UpdateProofsInTransact(tx *gorm.DB, proofs map[int64
 			return dbTx.Error
 		}
 		if dbTx.RowsAffected == 0 {
-			return fmt.Errorf("update no proof: %d", row.BlockNumber)
+			return types.DbErrFailToUpdateProof
 		}
 	}
 	return nil

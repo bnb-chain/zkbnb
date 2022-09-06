@@ -18,7 +18,6 @@
 package nft
 
 import (
-	"errors"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -116,7 +115,7 @@ func (m *defaultL2NftHistoryModel) CreateNftHistoriesInTransact(tx *gorm.DB, his
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected != int64(len(histories)) {
-		return errors.New("unable to create new nft history")
+		return types.DbErrFailToCreateNftHistory
 	}
 	return nil
 }

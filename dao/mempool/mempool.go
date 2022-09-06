@@ -18,8 +18,6 @@
 package mempool
 
 import (
-	"errors"
-
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -205,7 +203,7 @@ func (m *defaultMempoolModel) UpdateMempoolTxs(pendingUpdateMempoolTxs []*Mempoo
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
-				return errors.New("no new mempoolTx")
+				return types.DbErrFailToUpdateMempoolTx
 			}
 		}
 		for _, pendingDeleteMempoolTx := range pendingDeleteMempoolTxs {
@@ -214,7 +212,7 @@ func (m *defaultMempoolModel) UpdateMempoolTxs(pendingUpdateMempoolTxs []*Mempoo
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
-				return errors.New("delete invalid mempool tx")
+				return types.DbErrFailToDeleteMempoolTx
 			}
 		}
 
@@ -242,7 +240,7 @@ func (m *defaultMempoolModel) UpdateMempoolTxsInTransact(tx *gorm.DB, mempoolTxs
 			return dbTx.Error
 		}
 		if dbTx.RowsAffected == 0 {
-			return errors.New("no new mempoolTx")
+			return types.DbErrFailToUpdateMempoolTx
 		}
 	}
 	return nil
@@ -255,7 +253,7 @@ func (m *defaultMempoolModel) DeleteMempoolTxsInTransact(tx *gorm.DB, mempoolTxs
 			return dbTx.Error
 		}
 		if dbTx.RowsAffected == 0 {
-			return errors.New("delete invalid mempool tx")
+			return types.DbErrFailToDeleteMempoolTx
 		}
 	}
 	return nil

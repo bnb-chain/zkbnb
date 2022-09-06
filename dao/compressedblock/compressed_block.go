@@ -18,7 +18,6 @@
 package compressedblock
 
 import (
-	"errors"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -87,7 +86,7 @@ func (m *defaultCompressedBlockModel) CreateCompressedBlockInTransact(tx *gorm.D
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
-		return errors.New("invalid block for commit info")
+		return types.DbErrFailToCreateCompressedBlock
 	}
 	return nil
 }

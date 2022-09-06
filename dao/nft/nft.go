@@ -18,8 +18,6 @@
 package nft
 
 import (
-	"errors"
-
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -126,7 +124,7 @@ func (m *defaultL2NftModel) CreateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) err
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected != int64(len(nfts)) {
-		return errors.New("unable to create new nft")
+		return types.DbErrFailToCreateNft
 	}
 	return nil
 }
@@ -140,7 +138,7 @@ func (m *defaultL2NftModel) UpdateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) err
 			return dbTx.Error
 		}
 		if dbTx.RowsAffected == 0 {
-			return errors.New("no updated nft")
+			return types.DbErrFailToUpdateNft
 		}
 	}
 	return nil

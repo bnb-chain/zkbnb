@@ -18,7 +18,6 @@
 package liquidity
 
 import (
-	"errors"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -103,7 +102,7 @@ func (m *defaultLiquidityModel) CreateLiquidityInTransact(tx *gorm.DB, liquidity
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected != int64(len(liquidity)) {
-		return errors.New("unable to create new liquidity")
+		return types.DbErrFailToCreateLiquidity
 	}
 	return nil
 }
@@ -117,7 +116,7 @@ func (m *defaultLiquidityModel) UpdateLiquidityInTransact(tx *gorm.DB, liquidity
 			return dbTx.Error
 		}
 		if dbTx.RowsAffected == 0 {
-			return errors.New("no updated liquidity")
+			return types.DbErrFailToUpdateLiquidity
 		}
 	}
 	return nil

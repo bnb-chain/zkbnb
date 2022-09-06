@@ -18,8 +18,6 @@
 package l1syncedblock
 
 import (
-	"errors"
-
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -91,7 +89,7 @@ func (m *defaultL1EventModel) CreateL1SyncedBlockInTransact(tx *gorm.DB, block *
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
-		return errors.New("unable to create l1 block info")
+		return types.DbErrFailToL1SyncedBlock
 	}
 	return nil
 }

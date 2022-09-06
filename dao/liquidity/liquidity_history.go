@@ -18,7 +18,6 @@
 package liquidity
 
 import (
-	"errors"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -113,7 +112,7 @@ func (m *defaultLiquidityHistoryModel) CreateLiquidityHistoriesInTransact(tx *go
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected != int64(len(histories)) {
-		return errors.New("unable to create new liquidity history")
+		return types.DbErrFailToCreateLiquidityHistory
 	}
 	return nil
 }

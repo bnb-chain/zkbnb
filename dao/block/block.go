@@ -311,7 +311,7 @@ func (m *defaultBlockModel) CreateNewBlock(oBlock *Block) (err error) {
 			if err != nil {
 				return err
 			}
-			return errors.New("invalid block info")
+			return types.DbErrFailToCreateBlock
 		}
 
 		return nil
@@ -359,7 +359,7 @@ func (m *defaultBlockModel) UpdateBlocksInTransact(tx *gorm.DB, blocks []*Block)
 			if err != nil {
 				return err
 			}
-			return errors.New("invalid block")
+			return types.DbErrFailToUpdateBlock
 		}
 	}
 	return nil

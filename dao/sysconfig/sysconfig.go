@@ -18,7 +18,6 @@
 package sysconfig
 
 import (
-	"errors"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -98,7 +97,7 @@ func (m *defaultSysConfigModel) CreateSysConfigsInTransact(tx *gorm.DB, configs 
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
-		return types.DbErrFailToCreateAsset
+		return types.DbErrFailToCreateSysConfig
 	}
 	return nil
 }
@@ -110,7 +109,7 @@ func (m *defaultSysConfigModel) UpdateSysConfigsInTransact(tx *gorm.DB, configs 
 			return dbTx.Error
 		}
 		if dbTx.RowsAffected == 0 {
-			return errors.New("invalid sysconfigs")
+			return types.DbErrFailToUpdateSysConfig
 		}
 	}
 	return nil
