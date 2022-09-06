@@ -184,14 +184,18 @@ func (m *Monitor) MonitorPriorityRequests() error {
 
 	// update db
 	err = m.db.Transaction(func(tx *gorm.DB) error {
-		err := m.PriorityRequestModel.UpdatePriorityRequestsInTransact(tx, pendingRequests)
-		if err != nil {
-			return err
-		}
+		// create mempool txs
 		err = m.MempoolModel.CreateMempoolTxsInTransact(tx, pendingNewMempoolTxs)
 		if err != nil {
 			return err
 		}
+
+		// update priority request status
+		err := m.PriorityRequestModel.UpdateHandledPriorityRequestsInTransact(tx, pendingRequests)
+		if err != nil {
+			return err
+		}
+
 		return nil
 	})
 	if err != nil {

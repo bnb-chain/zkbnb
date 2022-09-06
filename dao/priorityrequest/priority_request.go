@@ -36,7 +36,7 @@ type (
 		DropPriorityRequestTable() error
 		GetPriorityRequestsByStatus(status int) (txs []*PriorityRequest, err error)
 		GetLatestHandledRequestId() (requestId int64, err error)
-		UpdatePriorityRequestsInTransact(tx *gorm.DB, requests []*PriorityRequest) (err error)
+		UpdateHandledPriorityRequestsInTransact(tx *gorm.DB, requests []*PriorityRequest) (err error)
 		CreatePriorityRequestsInTransact(tx *gorm.DB, requests []*PriorityRequest) (err error)
 	}
 
@@ -118,16 +118,16 @@ func (m *defaultPriorityRequestModel) GetLatestHandledRequestId() (requestId int
 	return event.RequestId, nil
 }
 
-func (m *defaultPriorityRequestModel) UpdatePriorityRequestsInTransact(tx *gorm.DB, requests []*PriorityRequest) (err error) {
-	eventIds := make([]uint, 0, len(requests))
-	for _, l2Event := range requests {
-		eventIds = append(eventIds, l2Event.ID)
+func (m *defaultPriorityRequestModel) UpdateHandledPriorityRequestsInTransact(tx *gorm.DB, requests []*PriorityRequest) (err error) {
+	ids := make([]uint, 0, len(requests))
+	for _, request := range requests {
+		ids = append(ids, request.ID)
 	}
-	dbTx := tx.Table(m.table).Where("id in ?", eventIds).Update("status", HandledStatus)
+	dbTx := tx.Table(m.table).Where("id in ?", ids).Update("status", HandledStatus)
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}
-	if dbTx.RowsAffected != int64(len(eventIds)) {
+	if dbTx.RowsAffected != int64(len(ids)) {
 		return types.DbErrFailToUpdatePriorityRequest
 	}
 	return nil

@@ -226,7 +226,7 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 		}
 		// update account
 		if len(blockStates.PendingUpdateAccount) != 0 {
-			err = c.bc.DB().AccountModel.UpdateAccountsInTransact(tx, blockStates.PendingNewAccount)
+			err = c.bc.DB().AccountModel.UpdateAccountsInTransact(tx, blockStates.PendingUpdateAccount)
 			if err != nil {
 				return err
 			}
@@ -247,7 +247,7 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 		}
 		// update liquidity
 		if len(blockStates.PendingUpdateLiquidity) != 0 {
-			err = c.bc.DB().LiquidityModel.UpdateLiquidityInTransact(tx, blockStates.PendingNewLiquidity)
+			err = c.bc.DB().LiquidityModel.UpdateLiquidityInTransact(tx, blockStates.PendingUpdateLiquidity)
 			if err != nil {
 				return err
 			}
@@ -268,7 +268,7 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 		}
 		// update nft
 		if len(blockStates.PendingUpdateNft) != 0 {
-			err = c.bc.DB().L2NftModel.UpdateNftsInTransact(tx, blockStates.PendingNewNft)
+			err = c.bc.DB().L2NftModel.UpdateNftsInTransact(tx, blockStates.PendingUpdateNft)
 			if err != nil {
 				return err
 			}
