@@ -2,6 +2,7 @@ package executor
 
 import (
 	"errors"
+	"math/big"
 
 	sdb "github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/block"
@@ -13,6 +14,7 @@ import (
 type IBlockchain interface {
 	VerifyExpiredAt(expiredAt int64) error
 	VerifyNonce(accountIndex int64, nonce int64) error
+	VerifyGas(accountIndex, gasAccountIndex, gasFeeAssetId int64, gasFeeAssetAmount *big.Int) error
 	StateDB() *sdb.StateDB
 	DB() *sdb.ChainDB
 	CurrentBlock() *block.Block

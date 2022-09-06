@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"math/big"
+	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -15,6 +18,7 @@ import (
 	"github.com/bnb-chain/zkbnb/common/chain"
 	sdb "github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/account"
+	"github.com/bnb-chain/zkbnb/dao/asset"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/compressedblock"
 	"github.com/bnb-chain/zkbnb/dao/dbcache"
@@ -23,6 +27,7 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/tree"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 type ChainConfig struct {
@@ -239,11 +244,11 @@ func (bc *BlockChain) commitNewBlock(blockSize int, createdAt int64) (*block.Blo
 func (bc *BlockChain) VerifyExpiredAt(expiredAt int64) error {
 	if !bc.dryRun {
 		if expiredAt < bc.currentBlock.CreatedAt.UnixMilli() {
-			return errors.New("invalid ExpiredAt")
+			return errors.New("invalid expired time")
 		}
 	} else {
 		if expiredAt < time.Now().UnixMilli() {
-			return errors.New("invalid ExpiredAt")
+			return errors.New("invalid expired time")
 		}
 	}
 	return nil
@@ -256,7 +261,7 @@ func (bc *BlockChain) VerifyNonce(accountIndex int64, nonce int64) error {
 			return err
 		}
 		if nonce != expectNonce {
-			return errors.New("invalid Nonce")
+			return errors.New("invalid nonce")
 		}
 	} else {
 		pendingNonce, err := bc.Statedb.GetPendingNonce(accountIndex)
@@ -264,8 +269,39 @@ func (bc *BlockChain) VerifyNonce(accountIndex int64, nonce int64) error {
 			return err
 		}
 		if pendingNonce != nonce {
-			return errors.New("invalid Nonce")
+			return errors.New("invalid nonce")
 		}
+	}
+	return nil
+}
+
+func (bc *BlockChain) VerifyGas(accountIndex, gasAccountIndex, gasFeeAssetId int64, gasFeeAssetAmount *big.Int) error {
+	gasAccountConfig, err := bc.ChainDB.SysConfigModel.GetSysConfigByName(types.GasAccountIndex)
+	if err != nil {
+		logx.Errorf("cannot find config for: %s", types.GasAccountIndex)
+		return errors.New("internal error")
+	}
+	index, err := strconv.ParseInt(gasAccountConfig.Value, 10, 64)
+	if err != nil {
+		logx.Errorf("invalid account index: %s", gasAccountConfig.Value)
+		return errors.New("internal error")
+	}
+	if gasAccountIndex != index {
+		return errors.New("invalid gas fee account")
+	}
+
+	gasAssetConfig, err := bc.ChainDB.L2AssetInfoModel.GetAssetById(gasFeeAssetId)
+	if err != nil {
+		logx.Errorf("cannot find gas asset: %s", err.Error())
+		return errors.New("invalid gas fee asset")
+	}
+	if gasAssetConfig.IsGasAsset != asset.IsGasAsset {
+		return errors.New("invalid gas fee asset")
+	}
+
+	accountGasAsset := bc.Statedb.AccountMap[accountIndex].AssetInfo[gasFeeAssetId]
+	if accountGasAsset == nil || accountGasAsset.Balance.Cmp(gasFeeAssetAmount) < 0 {
+		return errors.New("insufficient gas fee balance")
 	}
 	return nil
 }
