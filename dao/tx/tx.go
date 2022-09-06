@@ -95,10 +95,6 @@ func NewTxModel(db *gorm.DB) TxModel {
 }
 
 func (t *Tx) TableName() string {
-	if t.TxStatus == StatusFailed {
-		return FailTxTableName
-	}
-
 	if t.TxStatus <= StatusExecuted {
 		return MempoolTableName
 	}
