@@ -2,9 +2,7 @@ name: Issue Trigger
 
 on:
   pull_request:
-    types: [opened, edited, closed]
-  issue_comment:                                     
-    types: [created, edited, deleted]
+    types: [opened, edited]
 
 jobs:
   trigger:
