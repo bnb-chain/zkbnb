@@ -45,7 +45,7 @@ func WithRedis(redisType string, redisPass string) redis.Option {
 
 func IsBlockSizesSorted(blockSizes []int) bool {
 	for i := 1; i < len(blockSizes); i++ {
-		if blockSizes[i] < blockSizes[i-1] {
+		if blockSizes[i] <= blockSizes[i-1] {
 			return false
 		}
 	}
