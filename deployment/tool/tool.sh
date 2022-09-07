@@ -35,7 +35,7 @@ function prepare() {
 
     echo 'start verify_parse for ZkbasVerifier ...'
     cd ${WORKDIR}/../service/prover/
-    python3 verifier_parse.py ${KEY_PATH}/ZkbasVerifier1.sol,${KEY_PATH}/ZkbasVerifier10.sol 1,10 ${WORKDIR}/dependency/zkbas-contract/contracts/ZkbasVerifier.sol
+    python3 verifier_parse.py ${KEY_PATH}/ZkbasVerifier1.sol 1 ${WORKDIR}/dependency/zkbas-contract/contracts/ZkbasVerifier.sol
 }
 
 function getLatestBlockHeight() {

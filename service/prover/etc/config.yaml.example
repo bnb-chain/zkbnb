@@ -8,11 +8,11 @@ CacheRedis:
     Type: node
 
 KeyPath:
-  ProvingKeyPath: [/app/zkbas1.pk,/app/zkbas10.pk]
-  VerifyingKeyPath: [/app/zkbas1.vk,/app/zkbas10.vk]
+  ProvingKeyPath: [/app/zkbas1.pk]
+  VerifyingKeyPath: [/app/zkbas1.vk]
 
 BlockConfig:
-  OptionalBlockSizes: [1, 10]
+  OptionalBlockSizes: [1]
 
 LogConf:
   ServiceName: prover
