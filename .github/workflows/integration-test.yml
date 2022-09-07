@@ -31,7 +31,7 @@ jobs:
           git clone https://github.com/bnb-chain/zkbas.git
           echo "Integration tests run on commit id: $GITHUB_SHA"
           cd ./zkbas
-          git fetch origin pull/$PR_NUMBER/head:$GITHUB_SHA 2>/dev/null
+          if [[ $PR_NUMBER != "develop" && $PR_NUMBER != "master" ]]; then git fetch origin pull/$PR_NUMBER/head:$GITHUB_SHA; else echo "skip fetch pr branch"; fi
           git checkout $GITHUB_SHA
 
           echo "start deploy new zkbas"
