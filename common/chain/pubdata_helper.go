@@ -18,12 +18,14 @@
 package chain
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"errors"
+	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	common2 "github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/types"
-	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -47,15 +49,16 @@ func ParseRegisterZnsPubData(pubData []byte) (tx *types.RegisterZnsTxInfo, err e
 	offset, accountNameHash := common2.ReadBytes32(pubData, offset)
 	offset, pubKeyX := common2.ReadBytes32(pubData, offset)
 	_, pubKeyY := common2.ReadBytes32(pubData, offset)
-	pk := new(eddsa.PublicKey)
-	pk.A.X.SetBytes(pubKeyX)
-	pk.A.Y.SetBytes(pubKeyY)
+	pk := new(ecdsa.PublicKey)
+	pk.X.SetBytes(pubKeyX)
+	pk.Y.SetBytes(pubKeyY)
+	pkBytes := elliptic.MarshalCompressed(crypto.S256(), pk.X, pk.Y)
 	tx = &types.RegisterZnsTxInfo{
 		TxType:          txType,
 		AccountIndex:    int64(accountIndex),
 		AccountName:     common2.CleanAccountName(common2.SerializeAccountName(accountName)),
 		AccountNameHash: accountNameHash,
-		PubKey:          common.Bytes2Hex(pk.Bytes()),
+		PubKey:          common.Bytes2Hex(pkBytes),
 	}
 	return tx, nil
 }
