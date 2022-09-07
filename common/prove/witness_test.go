@@ -58,7 +58,7 @@ func TestConstructTxWitness(t *testing.T) {
 		assert.NoError(t, err)
 		b, err := blockModel.GetBlocksBetween(h, h)
 		assert.NoError(t, err)
-		w, err := witnessModel.GetBlockWitnessByNumber(h)
+		w, err := witnessModel.GetBlockWitnessByHeight(h)
 		assert.NoError(t, err)
 		var cBlock cryptoBlock.Block
 		err = json.Unmarshal([]byte(w.WitnessData), &cBlock)

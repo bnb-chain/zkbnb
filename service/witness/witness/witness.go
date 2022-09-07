@@ -75,16 +75,15 @@ func NewWitness(c config.Config) (*Witness, error) {
 }
 
 func (w *Witness) initState() error {
-	p, err := w.proofModel.GetLatestConfirmedProof()
+	witness, err := w.blockWitnessModel.GetLatestBlockWitness()
 	if err != nil {
 		if err != types.DbErrNotFound {
-			return fmt.Errorf("GetLatestConfirmedProof error: %v", err)
-		} else {
-			p = &proof.Proof{
-				BlockNumber: 0,
-			}
+			return fmt.Errorf("GetLatestBlockWitness error: %v", err)
 		}
+
+		witness = &blockwitness.BlockWitness{}
 	}
+
 	// dbinitializer tree database
 	treeCtx := &tree.Context{
 		Name:          "witness",
@@ -103,7 +102,7 @@ func (w *Witness) initState() error {
 	w.accountTree, w.assetTrees, err = tree.InitAccountTree(
 		w.accountModel,
 		w.accountHistoryModel,
-		p.BlockNumber,
+		witness.Height,
 		treeCtx,
 	)
 	// the blockHeight depends on the proof start position
@@ -111,12 +110,12 @@ func (w *Witness) initState() error {
 		return fmt.Errorf("initMerkleTree error: %v", err)
 	}
 
-	w.liquidityTree, err = tree.InitLiquidityTree(w.liquidityHistoryModel, p.BlockNumber,
+	w.liquidityTree, err = tree.InitLiquidityTree(w.liquidityHistoryModel, witness.Height,
 		treeCtx)
 	if err != nil {
 		return fmt.Errorf("initLiquidityTree error: %v", err)
 	}
-	w.nftTree, err = tree.InitNftTree(w.nftHistoryModel, p.BlockNumber,
+	w.nftTree, err = tree.InitNftTree(w.nftHistoryModel, witness.Height,
 		treeCtx)
 	if err != nil {
 		return fmt.Errorf("initNftTree error: %v", err)
@@ -183,7 +182,7 @@ func (w *Witness) RescheduleBlockWitness() {
 		nextBlockNumber = latestConfirmedProof.BlockNumber + 1
 	}
 
-	nextBlockWitness, err := w.blockWitnessModel.GetBlockWitnessByNumber(nextBlockNumber)
+	nextBlockWitness, err := w.blockWitnessModel.GetBlockWitnessByHeight(nextBlockNumber)
 	if err != nil {
 		logx.Errorf("failed to get latest block witness, err: %v", err)
 		return
@@ -196,7 +195,7 @@ func (w *Witness) RescheduleBlockWitness() {
 
 	// skip if the next block proof exists
 	// if the proof is not submitted and verified in L1, there should be another alerts
-	_, err = w.proofModel.GetProofByBlockNumber(nextBlockNumber)
+	_, err = w.proofModel.GetProofByBlockHeight(nextBlockNumber)
 	if err == nil {
 		return
 	}

@@ -27,7 +27,7 @@ func NewGetBlocksLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetBloc
 
 func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetRange) (*types.Blocks, error) {
 	total, err := l.svcCtx.MemCache.GetBlockTotalCountWithFallback(func() (interface{}, error) {
-		currentHeight, err := l.svcCtx.BlockModel.GetCurrentHeight()
+		currentHeight, err := l.svcCtx.BlockModel.GetCurrentBlockHeight()
 		if err != nil {
 			return nil, err
 		}
@@ -45,7 +45,7 @@ func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetRange) (*types.Blocks, error
 		return resp, nil
 	}
 
-	blocks, err := l.svcCtx.BlockModel.GetBlocksList(int64(req.Limit), int64(req.Offset))
+	blocks, err := l.svcCtx.BlockModel.GetBlocks(int64(req.Limit), int64(req.Offset))
 	if err != nil {
 		return nil, types2.AppErrInternal
 	}

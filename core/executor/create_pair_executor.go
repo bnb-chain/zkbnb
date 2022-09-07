@@ -49,7 +49,7 @@ func (e *CreatePairExecutor) VerifyInputs() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	_, err := bc.DB().LiquidityModel.GetLiquidityByPairIndex(txInfo.PairIndex)
+	_, err := bc.DB().LiquidityModel.GetLiquidityByIndex(txInfo.PairIndex)
 	if err != sqlx.ErrNotFound {
 		return errors.New("invalid pair index, already registered")
 	}
@@ -151,14 +151,14 @@ func (e *CreatePairExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txDetail := &tx.TxDetail{
 		AssetId:         txInfo.PairIndex,
 		AssetType:       types.LiquidityAssetType,
-		AccountIndex:    types.NilTxAccountIndex,
+		AccountIndex:    types.NilAccountIndex,
 		AccountName:     types.NilAccountName,
 		Balance:         baseLiquidity.String(),
 		BalanceDelta:    deltaLiquidity.String(),
 		Order:           0,
 		AccountOrder:    types.NilAccountOrder,
 		Nonce:           types.NilNonce,
-		CollectionNonce: types.NilNonce,
+		CollectionNonce: types.NilCollectionNonce,
 	}
 
 	return []*tx.TxDetail{txDetail}, nil

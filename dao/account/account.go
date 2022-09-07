@@ -42,8 +42,10 @@ type (
 		GetAccountByPk(pk string) (account *Account, err error)
 		GetAccountByName(name string) (account *Account, err error)
 		GetAccountByNameHash(nameHash string) (account *Account, err error)
-		GetAccountsList(limit int, offset int64) (accounts []*Account, err error)
+		GetAccounts(limit int, offset int64) (accounts []*Account, err error)
 		GetAccountsTotalCount() (count int64, err error)
+		CreateAccountsInTransact(tx *gorm.DB, accounts []*Account) error
+		UpdateAccountsInTransact(tx *gorm.DB, accounts []*Account) error
 	}
 
 	defaultAccountModel struct {
@@ -130,7 +132,7 @@ func (m *defaultAccountModel) GetAccountByNameHash(accountNameHash string) (acco
 	return account, nil
 }
 
-func (m *defaultAccountModel) GetAccountsList(limit int, offset int64) (accounts []*Account, err error) {
+func (m *defaultAccountModel) GetAccounts(limit int, offset int64) (accounts []*Account, err error) {
 	dbTx := m.DB.Table(m.table).Limit(limit).Offset(int(offset)).Order("account_index desc").Find(&accounts)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
@@ -158,4 +160,30 @@ func (m *defaultAccountModel) GetConfirmedAccountByIndex(accountIndex int64) (ac
 		return nil, types.DbErrNotFound
 	}
 	return account, nil
+}
+
+func (m *defaultAccountModel) CreateAccountsInTransact(tx *gorm.DB, accounts []*Account) error {
+	dbTx := tx.Table(m.table).CreateInBatches(accounts, len(accounts))
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected != int64(len(accounts)) {
+		return types.DbErrFailToCreateAccount
+	}
+	return nil
+}
+
+func (m *defaultAccountModel) UpdateAccountsInTransact(tx *gorm.DB, accounts []*Account) error {
+	for _, account := range accounts {
+		dbTx := tx.Table(m.table).Where("account_index = ?", account.AccountIndex).
+			Select("*").
+			Updates(&account)
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			return types.DbErrFailToUpdateAccount
+		}
+	}
+	return nil
 }

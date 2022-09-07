@@ -26,7 +26,6 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/compressedblock"
 	"github.com/bnb-chain/zkbnb/dao/liquidity"
-	"github.com/bnb-chain/zkbnb/dao/mempool"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
@@ -48,7 +47,7 @@ type (
 	BlockModel interface {
 		CreateBlockTable() error
 		DropBlockTable() error
-		GetBlocksList(limit int64, offset int64) (blocks []*Block, err error)
+		GetBlocks(limit int64, offset int64) (blocks []*Block, err error)
 		GetBlocksBetween(start int64, end int64) (blocks []*Block, err error)
 		GetBlockByHeight(blockHeight int64) (block *Block, err error)
 		GetBlockByHeightWithoutTx(blockHeight int64) (block *Block, err error)
@@ -59,9 +58,10 @@ type (
 		GetCommittedBlocksBetween(start, end int64) (blocks []*Block, err error)
 		GetBlocksTotalCount() (count int64, err error)
 		CreateGenesisBlock(block *Block) error
-		GetCurrentHeight() (blockHeight int64, err error)
+		GetCurrentBlockHeight() (blockHeight int64, err error)
 		CreateNewBlock(oBlock *Block) (err error)
-		CreateCompressedBlock(pendingMempoolTxs []*mempool.MempoolTx, blockStates *BlockStates) error
+		UpdateBlocksWithoutTxsInTransact(tx *gorm.DB, blocks []*Block) (err error)
+		UpdateBlockInTransact(tx *gorm.DB, block *Block) (err error)
 	}
 
 	defaultBlockModel struct {
@@ -122,7 +122,7 @@ func (m *defaultBlockModel) DropBlockTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-func (m *defaultBlockModel) GetBlocksList(limit int64, offset int64) (blocks []*Block, err error) {
+func (m *defaultBlockModel) GetBlocks(limit int64, offset int64) (blocks []*Block, err error) {
 	var (
 		txForeignKeyColumn = `Txs`
 	)
@@ -275,7 +275,7 @@ func (m *defaultBlockModel) CreateGenesisBlock(block *Block) error {
 	return nil
 }
 
-func (m *defaultBlockModel) GetCurrentHeight() (blockHeight int64, err error) {
+func (m *defaultBlockModel) GetCurrentBlockHeight() (blockHeight int64, err error) {
 	dbTx := m.DB.Table(m.table).Select("block_height").Order("block_height desc").Limit(1).Find(&blockHeight)
 	if dbTx.Error != nil {
 		return 0, types.DbErrSqlOperation
@@ -295,148 +295,6 @@ func (m *defaultBlockModel) GetBlocksTotalCount() (count int64, err error) {
 	return count, nil
 }
 
-type BlockStatusInfo struct {
-	BlockStatus int64
-	CommittedAt int64
-	VerifiedAt  int64
-}
-
-func (m *defaultBlockModel) CreateCompressedBlock(pendingMempoolTxs []*mempool.MempoolTx, blockStates *BlockStates) error {
-	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
-		// update mempool
-		for _, mempoolTx := range pendingMempoolTxs {
-			dbTx := tx.Table(mempool.MempoolTableName).Where("id = ?", mempoolTx.ID).
-				Select("*").
-				Updates(&mempoolTx)
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				return errors.New("no new mempoolTx")
-			}
-		}
-		// create block
-		if blockStates.Block != nil {
-			dbTx := tx.Table(m.table).Where("id = ?", blockStates.Block.ID).
-				Select("*").
-				Updates(&blockStates.Block)
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				return errors.New("invalid block info")
-			}
-		}
-		// create block for commit
-		if blockStates.CompressedBlock != nil {
-			dbTx := tx.Table(compressedblock.CompressedBlockTableName).Create(blockStates.CompressedBlock)
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				return errors.New("invalid block for commit info")
-			}
-		}
-		// create new account
-		if len(blockStates.PendingNewAccount) != 0 {
-			dbTx := tx.Table(account.AccountTableName).CreateInBatches(blockStates.PendingNewAccount, len(blockStates.PendingNewAccount))
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected != int64(len(blockStates.PendingNewAccount)) {
-				return errors.New("unable to create new account")
-			}
-		}
-		// update account
-		for _, pendingAccount := range blockStates.PendingUpdateAccount {
-			dbTx := tx.Table(account.AccountTableName).Where("account_index = ?", pendingAccount.AccountIndex).
-				Select("*").
-				Updates(&pendingAccount)
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				return errors.New("no updated account")
-			}
-		}
-		// create new account history
-		if len(blockStates.PendingNewAccountHistory) != 0 {
-			dbTx := tx.Table(account.AccountHistoryTableName).CreateInBatches(blockStates.PendingNewAccountHistory, len(blockStates.PendingNewAccountHistory))
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected != int64(len(blockStates.PendingNewAccountHistory)) {
-				return errors.New("unable to create new account history")
-			}
-		}
-		// create new liquidity
-		if len(blockStates.PendingNewLiquidity) != 0 {
-			dbTx := tx.Table(liquidity.LiquidityTable).CreateInBatches(blockStates.PendingNewLiquidity, len(blockStates.PendingNewLiquidity))
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected != int64(len(blockStates.PendingNewLiquidity)) {
-				return errors.New("unable to create new liquidity")
-			}
-		}
-		// update liquidity
-		for _, pendingLiquidity := range blockStates.PendingUpdateLiquidity {
-			dbTx := tx.Table(liquidity.LiquidityTable).Where("pair_index = ?", pendingLiquidity.PairIndex).
-				Select("*").
-				Updates(&pendingLiquidity)
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				return errors.New("no updated liquidity")
-			}
-		}
-		// create new liquidity history
-		if len(blockStates.PendingNewLiquidityHistory) != 0 {
-			dbTx := tx.Table(liquidity.LiquidityHistoryTable).CreateInBatches(blockStates.PendingNewLiquidityHistory, len(blockStates.PendingNewLiquidityHistory))
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected != int64(len(blockStates.PendingNewLiquidityHistory)) {
-				return errors.New("unable to create new liquidity history")
-			}
-		}
-		// create new nft
-		if len(blockStates.PendingNewNft) != 0 {
-			dbTx := tx.Table(nft.L2NftTableName).CreateInBatches(blockStates.PendingNewNft, len(blockStates.PendingNewNft))
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected != int64(len(blockStates.PendingNewNft)) {
-				return errors.New("unable to create new nft")
-			}
-		}
-		// update nft
-		for _, pendingNft := range blockStates.PendingUpdateNft {
-			dbTx := tx.Table(nft.L2NftTableName).Where("nft_index = ?", pendingNft.NftIndex).
-				Select("*").
-				Updates(&pendingNft)
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected == 0 {
-				return errors.New("no updated nft")
-			}
-		}
-		// new nft history
-		if len(blockStates.PendingNewNftHistory) != 0 {
-			dbTx := tx.Table(nft.L2NftHistoryTableName).CreateInBatches(blockStates.PendingNewNftHistory, len(blockStates.PendingNewNftHistory))
-			if dbTx.Error != nil {
-				return dbTx.Error
-			}
-			if dbTx.RowsAffected != int64(len(blockStates.PendingNewNftHistory)) {
-				return errors.New("unable to create new nft history")
-			}
-		}
-		return nil
-	})
-}
-
 func (m *defaultBlockModel) CreateNewBlock(oBlock *Block) (err error) {
 	if oBlock == nil {
 		return errors.New("nil block")
@@ -454,7 +312,7 @@ func (m *defaultBlockModel) CreateNewBlock(oBlock *Block) (err error) {
 			if err != nil {
 				return err
 			}
-			return errors.New("invalid block info")
+			return types.DbErrFailToCreateBlock
 		}
 
 		return nil
@@ -485,4 +343,41 @@ func (m *defaultBlockModel) GetLatestVerifiedHeight() (height int64, err error) 
 		return 0, types.DbErrNotFound
 	}
 	return block.BlockHeight, nil
+}
+
+func (m *defaultBlockModel) UpdateBlocksWithoutTxsInTransact(tx *gorm.DB, blocks []*Block) (err error) {
+	const Txs = "Txs"
+
+	for _, block := range blocks {
+		dbTx := tx.Table(m.table).Where("id = ?", block.ID).
+			Omit(Txs).
+			Select("*").
+			Updates(&block)
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			if err != nil {
+				return err
+			}
+			return types.DbErrFailToUpdateBlock
+		}
+	}
+	return nil
+}
+
+func (m *defaultBlockModel) UpdateBlockInTransact(tx *gorm.DB, block *Block) (err error) {
+	dbTx := tx.Table(m.table).Where("id = ?", block.ID).
+		Select("*").
+		Updates(&block)
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		if err != nil {
+			return err
+		}
+		return types.DbErrFailToUpdateBlock
+	}
+	return nil
 }

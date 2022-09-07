@@ -61,7 +61,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		chainConfig: config,
 	}
 
-	curHeight, err := bc.BlockModel.GetCurrentHeight()
+	curHeight, err := bc.BlockModel.GetCurrentBlockHeight()
 	if err != nil {
 		logx.Error("get current block failed: ", err)
 		return nil, err

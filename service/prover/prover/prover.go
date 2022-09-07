@@ -162,7 +162,7 @@ func (p *Prover) ProveBlock() error {
 	}
 
 	// Check the existence of block proof.
-	_, err = p.ProofModel.GetProofByBlockNumber(blockWitness.Height)
+	_, err = p.ProofModel.GetProofByBlockHeight(blockWitness.Height)
 	if err == nil {
 		logx.Errorf("blockProof of height %d exists", blockWitness.Height)
 		return nil

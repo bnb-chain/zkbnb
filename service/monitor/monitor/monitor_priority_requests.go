@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
+	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/dao/mempool"
@@ -56,11 +57,11 @@ func (m *Monitor) MonitorPriorityRequests() error {
 		mempoolTx := &mempool.MempoolTx{
 			TxHash:        txHash,
 			GasFeeAssetId: types.NilAssetId,
-			GasFee:        types.NilAssetAmountStr,
-			NftIndex:      types.NilTxNftIndex,
+			GasFee:        types.NilAssetAmount,
+			NftIndex:      types.NilNftIndex,
 			PairIndex:     types.NilPairIndex,
 			AssetId:       types.NilAssetId,
-			TxAmount:      types.NilAssetAmountStr,
+			TxAmount:      types.NilAssetAmount,
 			NativeAddress: request.SenderAddress,
 			AccountIndex:  types.NilAccountIndex,
 			Nonce:         types.NilNonce,
@@ -182,7 +183,22 @@ func (m *Monitor) MonitorPriorityRequests() error {
 	}
 
 	// update db
-	if err = m.PriorityRequestModel.CreateMempoolTxsAndUpdateRequests(pendingNewMempoolTxs, pendingRequests); err != nil {
+	err = m.db.Transaction(func(tx *gorm.DB) error {
+		// create mempool txs
+		err = m.MempoolModel.CreateMempoolTxsInTransact(tx, pendingNewMempoolTxs)
+		if err != nil {
+			return err
+		}
+
+		// update priority request status
+		err := m.PriorityRequestModel.UpdateHandledPriorityRequestsInTransact(tx, pendingRequests)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
 		return fmt.Errorf("unable to create mempool pendingRequests and update priority requests, error: %v", err)
 	}
 	return nil

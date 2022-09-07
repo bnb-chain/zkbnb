@@ -237,7 +237,7 @@ func (e *WithdrawExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 }
 
 func (e *WithdrawExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
-	hash, err := legendTxTypes.ComputeWithdrawMsgHash(e.txInfo, mimc.NewMiMC())
+	hash, err := e.txInfo.Hash(mimc.NewMiMC())
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +248,7 @@ func (e *WithdrawExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
 		TxType:        e.tx.TxType,
 		GasFeeAssetId: e.txInfo.GasFeeAssetId,
 		GasFee:        e.txInfo.GasFeeAssetAmount.String(),
-		NftIndex:      types.NilTxNftIndex,
+		NftIndex:      types.NilNftIndex,
 		PairIndex:     types.NilPairIndex,
 		AssetId:       e.txInfo.AssetId,
 		TxAmount:      e.txInfo.AssetAmount.String(),

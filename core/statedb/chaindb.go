@@ -6,6 +6,7 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/asset"
 	"github.com/bnb-chain/zkbnb/dao/block"
+	"github.com/bnb-chain/zkbnb/dao/compressedblock"
 	"github.com/bnb-chain/zkbnb/dao/liquidity"
 	"github.com/bnb-chain/zkbnb/dao/mempool"
 	"github.com/bnb-chain/zkbnb/dao/nft"
@@ -13,10 +14,11 @@ import (
 )
 
 type ChainDB struct {
+	DB *gorm.DB
 	// Block Chain data
-	BlockModel    block.BlockModel
-	TxModel       tx.TxModel
-	TxDetailModel tx.TxDetailModel
+	BlockModel           block.BlockModel
+	CompressedBlockModel compressedblock.CompressedBlockModel
+	TxModel              tx.TxModel
 
 	// State DB
 	AccountModel          account.AccountModel
@@ -31,9 +33,10 @@ type ChainDB struct {
 
 func NewChainDB(db *gorm.DB) *ChainDB {
 	return &ChainDB{
-		BlockModel:    block.NewBlockModel(db),
-		TxModel:       tx.NewTxModel(db),
-		TxDetailModel: tx.NewTxDetailModel(db),
+		DB:                   db,
+		BlockModel:           block.NewBlockModel(db),
+		CompressedBlockModel: compressedblock.NewCompressedBlockModel(db),
+		TxModel:              tx.NewTxModel(db),
 
 		AccountModel:          account.NewAccountModel(db),
 		AccountHistoryModel:   account.NewAccountHistoryModel(db),

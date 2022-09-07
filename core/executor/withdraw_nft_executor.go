@@ -248,7 +248,7 @@ func (e *WithdrawNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.NftIndex,
 		AssetType:    types.NftAssetType,
-		AccountIndex: types.NilTxAccountIndex,
+		AccountIndex: types.NilAccountIndex,
 		AccountName:  types.NilAccountName,
 		Balance: types.ConstructNftInfo(
 			nftModel.NftIndex,
@@ -312,7 +312,7 @@ func (e *WithdrawNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 }
 
 func (e *WithdrawNftExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
-	hash, err := legendTxTypes.ComputeWithdrawNftMsgHash(e.txInfo, mimc.NewMiMC())
+	hash, err := e.txInfo.Hash(mimc.NewMiMC())
 	if err != nil {
 		return nil, err
 	}
@@ -326,7 +326,7 @@ func (e *WithdrawNftExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
 		NftIndex:      e.txInfo.NftIndex,
 		PairIndex:     types.NilPairIndex,
 		AssetId:       types.NilAssetId,
-		TxAmount:      types.NilAssetAmountStr,
+		TxAmount:      types.NilAssetAmount,
 		Memo:          "",
 		NativeAddress: e.txInfo.ToAddress,
 		AccountIndex:  e.txInfo.AccountIndex,

@@ -475,14 +475,14 @@ func (e *RemoveLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:         txInfo.PairIndex,
 		AssetType:       types.LiquidityAssetType,
-		AccountIndex:    types.NilTxAccountIndex,
+		AccountIndex:    types.NilAccountIndex,
 		AccountName:     types.NilAccountName,
 		Balance:         basePool.String(),
 		BalanceDelta:    poolDeltaForToAccount.String(),
 		Order:           order,
 		Nonce:           types.NilNonce,
 		AccountOrder:    types.NilAccountOrder,
-		CollectionNonce: types.NilNonce,
+		CollectionNonce: types.NilCollectionNonce,
 	})
 
 	// gas account asset gas
@@ -509,7 +509,7 @@ func (e *RemoveLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 }
 
 func (e *RemoveLiquidityExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
-	hash, err := legendTxTypes.ComputeRemoveLiquidityMsgHash(e.txInfo, mimc.NewMiMC())
+	hash, err := e.txInfo.Hash(mimc.NewMiMC())
 	if err != nil {
 		return nil, err
 	}
@@ -520,7 +520,7 @@ func (e *RemoveLiquidityExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error
 		TxType:        e.tx.TxType,
 		GasFeeAssetId: e.txInfo.GasFeeAssetId,
 		GasFee:        e.txInfo.GasFeeAssetAmount.String(),
-		NftIndex:      types.NilTxNftIndex,
+		NftIndex:      types.NilNftIndex,
 		PairIndex:     e.txInfo.PairIndex,
 		AssetId:       types.NilAssetId,
 		TxAmount:      e.txInfo.LpAmount.String(),

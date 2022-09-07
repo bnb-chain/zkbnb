@@ -45,7 +45,7 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 	if err != nil {
 		return resp, types2.AppErrInternal
 	}
-	if err := s.svcCtx.MempoolModel.CreateBatchedMempoolTxs([]*mempool.MempoolTx{mempoolTx}); err != nil {
+	if err := s.svcCtx.MempoolModel.CreateMempoolTxs([]*mempool.MempoolTx{mempoolTx}); err != nil {
 		logx.Errorf("fail to create mempool tx: %v, err: %s", mempoolTx, err.Error())
 		failTx := &tx.FailTx{
 			TxHash:    mempoolTx.TxHash,
@@ -53,7 +53,7 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 			TxStatus:  tx.StatusFail,
 			AssetAId:  types2.NilAssetId,
 			AssetBId:  types2.NilAssetId,
-			TxAmount:  types2.NilAssetAmountStr,
+			TxAmount:  types2.NilAssetAmount,
 			TxInfo:    req.TxInfo,
 			ExtraInfo: err.Error(),
 			Memo:      "",

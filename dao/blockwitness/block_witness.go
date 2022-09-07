@@ -26,12 +26,21 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
+const (
+	StatusPublished = iota
+	StatusReceived
+)
+
+const (
+	TableName = `block_witness`
+)
+
 type (
 	BlockWitnessModel interface {
 		CreateBlockWitnessTable() error
 		DropBlockWitnessTable() error
-		GetLatestBlockWitnessHeight() (blockNumber int64, err error)
-		GetBlockWitnessByNumber(height int64) (witness *BlockWitness, err error)
+		GetLatestBlockWitnessHeight() (height int64, err error)
+		GetBlockWitnessByHeight(height int64) (witness *BlockWitness, err error)
 		UpdateBlockWitnessStatus(witness *BlockWitness, status int64) error
 		GetLatestBlockWitness() (witness *BlockWitness, err error)
 		CreateBlockWitness(witness *BlockWitness) error
@@ -90,7 +99,7 @@ func (m *defaultBlockWitnessModel) GetLatestBlockWitness() (witness *BlockWitnes
 	return witness, nil
 }
 
-func (m *defaultBlockWitnessModel) GetBlockWitnessByNumber(height int64) (witness *BlockWitness, err error) {
+func (m *defaultBlockWitnessModel) GetBlockWitnessByHeight(height int64) (witness *BlockWitness, err error) {
 	dbTx := m.DB.Table(m.table).Where("height = ?", height).Limit(1).Find(&witness)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
@@ -102,7 +111,7 @@ func (m *defaultBlockWitnessModel) GetBlockWitnessByNumber(height int64) (witnes
 
 func (m *defaultBlockWitnessModel) CreateBlockWitness(witness *BlockWitness) error {
 	if witness.Height > 1 {
-		_, err := m.GetBlockWitnessByNumber(witness.Height - 1)
+		_, err := m.GetBlockWitnessByHeight(witness.Height - 1)
 		if err != nil {
 			return fmt.Errorf("previous witness does not exist")
 		}

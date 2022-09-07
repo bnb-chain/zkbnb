@@ -41,7 +41,7 @@ func (l *GetTxsLogic) GetTxs(req *types.ReqGetRange) (resp *types.Txs, err error
 		return resp, nil
 	}
 
-	txs, err := l.svcCtx.TxModel.GetTxsList(int64(req.Limit), int64(req.Offset))
+	txs, err := l.svcCtx.TxModel.GetTxs(int64(req.Limit), int64(req.Offset))
 	if err != nil {
 		return nil, types2.AppErrInternal
 	}

@@ -26,7 +26,7 @@ func NewGetCurrentHeightLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 
 func (l *GetCurrentHeightLogic) GetCurrentHeight() (resp *types.CurrentHeight, err error) {
 	resp = &types.CurrentHeight{}
-	height, err := l.svcCtx.BlockModel.GetCurrentHeight()
+	height, err := l.svcCtx.BlockModel.GetCurrentBlockHeight()
 	if err != nil {
 		if err == types2.DbErrNotFound {
 			return resp, nil

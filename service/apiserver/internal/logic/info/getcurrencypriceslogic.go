@@ -41,7 +41,7 @@ func (l *GetCurrencyPricesLogic) GetCurrencyPrices(req *types.ReqGetRange) (resp
 		return resp, nil
 	}
 
-	assets, err := l.svcCtx.AssetModel.GetAssetsList(int64(req.Limit), int64(req.Offset))
+	assets, err := l.svcCtx.AssetModel.GetAssets(int64(req.Limit), int64(req.Offset))
 	if err != nil {
 		return nil, types2.AppErrInternal
 	}

@@ -31,12 +31,11 @@ type (
 	L2NftHistoryModel interface {
 		CreateL2NftHistoryTable() error
 		DropL2NftHistoryTable() error
-		GetLatestNftAssetCountByBlockHeight(height int64) (
-			count int64, err error,
-		)
-		GetLatestNftAssetsByBlockHeight(height int64, limit int, offset int) (
+		GetLatestNftsCountByBlockHeight(height int64) (count int64, err error)
+		GetLatestNftsByBlockHeight(height int64, limit int, offset int) (
 			rowsAffected int64, nftAssets []*L2NftHistory, err error,
 		)
+		CreateNftHistoriesInTransact(tx *gorm.DB, histories []*L2NftHistory) error
 	}
 	defaultL2NftHistoryModel struct {
 		table string
@@ -77,7 +76,7 @@ func (m *defaultL2NftHistoryModel) DropL2NftHistoryTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-func (m *defaultL2NftHistoryModel) GetLatestNftAssetCountByBlockHeight(height int64) (
+func (m *defaultL2NftHistoryModel) GetLatestNftsCountByBlockHeight(height int64) (
 	count int64, err error,
 ) {
 	subQuery := m.DB.Table(m.table).Select("*").
@@ -93,7 +92,7 @@ func (m *defaultL2NftHistoryModel) GetLatestNftAssetCountByBlockHeight(height in
 	return count, nil
 }
 
-func (m *defaultL2NftHistoryModel) GetLatestNftAssetsByBlockHeight(height int64, limit int, offset int) (
+func (m *defaultL2NftHistoryModel) GetLatestNftsByBlockHeight(height int64, limit int, offset int) (
 	rowsAffected int64, accountNftAssets []*L2NftHistory, err error,
 ) {
 	subQuery := m.DB.Table(m.table).Select("*").
@@ -108,4 +107,15 @@ func (m *defaultL2NftHistoryModel) GetLatestNftAssetsByBlockHeight(height int64,
 		return 0, nil, types.DbErrSqlOperation
 	}
 	return dbTx.RowsAffected, accountNftAssets, nil
+}
+
+func (m *defaultL2NftHistoryModel) CreateNftHistoriesInTransact(tx *gorm.DB, histories []*L2NftHistory) error {
+	dbTx := tx.Table(m.table).CreateInBatches(histories, len(histories))
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected != int64(len(histories)) {
+		return types.DbErrFailToCreateNftHistory
+	}
+	return nil
 }

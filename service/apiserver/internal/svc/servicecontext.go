@@ -31,7 +31,6 @@ type ServiceContext struct {
 	AccountModel          account.AccountModel
 	AccountHistoryModel   account.AccountHistoryModel
 	TxModel               tx.TxModel
-	TxDetailModel         tx.TxDetailModel
 	FailTxModel           tx.FailTxModel
 	LiquidityModel        liquidity.LiquidityModel
 	LiquidityHistoryModel liquidity.LiquidityHistoryModel
@@ -66,7 +65,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		AccountModel:          accountModel,
 		AccountHistoryModel:   account.NewAccountHistoryModel(gormPointer),
 		TxModel:               tx.NewTxModel(gormPointer),
-		TxDetailModel:         tx.NewTxDetailModel(gormPointer),
 		FailTxModel:           tx.NewFailTxModel(gormPointer),
 		LiquidityModel:        liquidityModel,
 		LiquidityHistoryModel: liquidity.NewLiquidityHistoryModel(gormPointer),

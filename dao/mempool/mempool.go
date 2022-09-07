@@ -18,8 +18,6 @@
 package mempool
 
 import (
-	"errors"
-
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb/types"
@@ -40,15 +38,18 @@ type (
 	MempoolModel interface {
 		CreateMempoolTxTable() error
 		DropMempoolTxTable() error
-		GetMempoolTxsList(limit int64, offset int64) (mempoolTxs []*MempoolTx, err error)
+		GetMempoolTxs(limit int64, offset int64) (mempoolTxs []*MempoolTx, err error)
 		GetMempoolTxsTotalCount() (count int64, err error)
 		GetMempoolTxByTxHash(hash string) (mempoolTxs *MempoolTx, err error)
 		GetMempoolTxsByStatus(status int) (mempoolTxs []*MempoolTx, err error)
 		GetMempoolTxsByBlockHeight(l2BlockHeight int64) (rowsAffected int64, mempoolTxs []*MempoolTx, err error)
-		CreateBatchedMempoolTxs(mempoolTxs []*MempoolTx) error
+		CreateMempoolTxs(mempoolTxs []*MempoolTx) error
 		GetPendingMempoolTxsByAccountIndex(accountIndex int64) (mempoolTxs []*MempoolTx, err error)
 		GetMaxNonceByAccountIndex(accountIndex int64) (nonce int64, err error)
 		UpdateMempoolTxs(pendingUpdateMempoolTxs []*MempoolTx, pendingDeleteMempoolTxs []*MempoolTx) error
+		CreateMempoolTxsInTransact(tx *gorm.DB, mempoolTxs []*MempoolTx) error
+		UpdateMempoolTxsInTransact(tx *gorm.DB, mempoolTxs []*MempoolTx) error
+		DeleteMempoolTxsInTransact(tx *gorm.DB, mempoolTxs []*MempoolTx) error
 	}
 
 	defaultMempoolModel struct {
@@ -97,7 +98,7 @@ func (m *defaultMempoolModel) DropMempoolTxTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-func (m *defaultMempoolModel) GetMempoolTxsList(limit int64, offset int64) (mempoolTxs []*MempoolTx, err error) {
+func (m *defaultMempoolModel) GetMempoolTxs(limit int64, offset int64) (mempoolTxs []*MempoolTx, err error) {
 	dbTx := m.DB.Table(m.table).Where("status = ?", PendingTxStatus).Limit(int(limit)).Offset(int(offset)).Order("created_at desc, id desc").Find(&mempoolTxs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
@@ -145,7 +146,7 @@ func (m *defaultMempoolModel) GetMempoolTxByTxHash(hash string) (mempoolTx *Memp
 	return mempoolTx, nil
 }
 
-func (m *defaultMempoolModel) CreateBatchedMempoolTxs(mempoolTxs []*MempoolTx) error {
+func (m *defaultMempoolModel) CreateMempoolTxs(mempoolTxs []*MempoolTx) error {
 	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
 		dbTx := tx.Table(m.table).Create(mempoolTxs)
 		if dbTx.Error != nil {
@@ -202,7 +203,7 @@ func (m *defaultMempoolModel) UpdateMempoolTxs(pendingUpdateMempoolTxs []*Mempoo
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
-				return errors.New("no new mempoolTx")
+				return types.DbErrFailToUpdateMempoolTx
 			}
 		}
 		for _, pendingDeleteMempoolTx := range pendingDeleteMempoolTxs {
@@ -211,10 +212,49 @@ func (m *defaultMempoolModel) UpdateMempoolTxs(pendingUpdateMempoolTxs []*Mempoo
 				return dbTx.Error
 			}
 			if dbTx.RowsAffected == 0 {
-				return errors.New("delete invalid mempool tx")
+				return types.DbErrFailToDeleteMempoolTx
 			}
 		}
 
 		return nil
 	})
+}
+
+func (m *defaultMempoolModel) CreateMempoolTxsInTransact(tx *gorm.DB, mempoolTxs []*MempoolTx) error {
+	dbTx := tx.Table(m.table).CreateInBatches(mempoolTxs, len(mempoolTxs))
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		return types.DbErrFailToCreateMempoolTx
+	}
+	return nil
+}
+
+func (m *defaultMempoolModel) UpdateMempoolTxsInTransact(tx *gorm.DB, mempoolTxs []*MempoolTx) error {
+	for _, mempoolTx := range mempoolTxs {
+		dbTx := tx.Table(m.table).Where("id = ?", mempoolTx.ID).
+			Select("*").
+			Updates(&mempoolTx)
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			return types.DbErrFailToUpdateMempoolTx
+		}
+	}
+	return nil
+}
+
+func (m *defaultMempoolModel) DeleteMempoolTxsInTransact(tx *gorm.DB, mempoolTxs []*MempoolTx) error {
+	for _, mempoolTx := range mempoolTxs {
+		dbTx := tx.Table(m.table).Where("id = ?", mempoolTx.ID).Delete(&mempoolTx)
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			return types.DbErrFailToDeleteMempoolTx
+		}
+	}
+	return nil
 }

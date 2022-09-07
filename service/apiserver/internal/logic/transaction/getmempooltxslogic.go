@@ -40,7 +40,7 @@ func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetRange) (*types.Mempo
 		return resp, nil
 	}
 
-	mempoolTxs, err := l.svcCtx.MempoolModel.GetMempoolTxsList(int64(req.Limit), int64(req.Offset))
+	mempoolTxs, err := l.svcCtx.MempoolModel.GetMempoolTxs(int64(req.Limit), int64(req.Offset))
 	if err != nil {
 		return nil, types2.AppErrInternal
 	}

@@ -236,12 +236,12 @@ func initTable(dao *dao, svrConf *contractAddr, bscTestNetworkRPC, localTestNetw
 	assert.Nil(nil, dao.liquidityHistoryModel.CreateLiquidityHistoryTable())
 	assert.Nil(nil, dao.nftModel.CreateL2NftTable())
 	assert.Nil(nil, dao.nftHistoryModel.CreateL2NftHistoryTable())
-	rowsAffected, err := dao.assetModel.CreateAssetsInBatch(initAssetsInfo())
+	rowsAffected, err := dao.assetModel.CreateAssets(initAssetsInfo())
 	if err != nil {
 		panic(err)
 	}
 	logx.Infof("l2 assets info rows affected: %d", rowsAffected)
-	rowsAffected, err = dao.sysConfigModel.CreateSysConfigInBatches(initSysConfig(svrConf, bscTestNetworkRPC, localTestNetworkRPC))
+	rowsAffected, err = dao.sysConfigModel.CreateSysConfigs(initSysConfig(svrConf, bscTestNetworkRPC, localTestNetworkRPC))
 	if err != nil {
 		panic(err)
 	}

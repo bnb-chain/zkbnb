@@ -102,8 +102,8 @@ func (e *MintNftExecutor) ApplyTransaction() error {
 		CreatorAccountIndex: txInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   txInfo.ToAccountIndex,
 		NftContentHash:      txInfo.NftContentHash,
-		NftL1Address:        types.NilL1Address,
-		NftL1TokenId:        types.NilL1TokenId,
+		NftL1Address:        types.EmptyL1Address,
+		NftL1TokenId:        types.EmptyL1TokenId,
 		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
 		CollectionId:        txInfo.NftCollectionId,
 	}
@@ -249,8 +249,8 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		CreatorAccountIndex: txInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   txInfo.ToAccountIndex,
 		NftContentHash:      txInfo.NftContentHash,
-		NftL1TokenId:        types.NilL1TokenId,
-		NftL1Address:        types.NilL1Address,
+		NftL1TokenId:        types.EmptyL1TokenId,
+		NftL1Address:        types.EmptyL1Address,
 		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
 		CollectionId:        txInfo.NftCollectionId,
 	}
@@ -292,7 +292,7 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 }
 
 func (e *MintNftExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
-	hash, err := legendTxTypes.ComputeMintNftMsgHash(e.txInfo, mimc.NewMiMC())
+	hash, err := e.txInfo.Hash(mimc.NewMiMC())
 	if err != nil {
 		return nil, err
 	}
@@ -303,7 +303,7 @@ func (e *MintNftExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
 		TxType:        e.tx.TxType,
 		GasFeeAssetId: e.txInfo.GasFeeAssetId,
 		GasFee:        e.txInfo.GasFeeAssetAmount.String(),
-		NftIndex:      types.NilTxNftIndex,
+		NftIndex:      types.NilNftIndex,
 		PairIndex:     types.NilPairIndex,
 		AssetId:       types.NilAssetId,
 		TxAmount:      "",

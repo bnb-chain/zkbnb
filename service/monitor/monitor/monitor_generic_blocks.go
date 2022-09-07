@@ -27,6 +27,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb-eth-rpc/_rpc"
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/zkbnb/core/legend"
@@ -175,8 +176,28 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		return fmt.Errorf("failed to get mempool txs to delete, err: %v", err)
 	}
 
-	if err = m.L1SyncedBlockModel.CreateGenericBlock(l1BlockMonitorInfo, priorityRequests,
-		pendingUpdateBlocks, pendingDeleteMempoolTxs); err != nil {
+	//update db
+	err = m.db.Transaction(func(tx *gorm.DB) error {
+		//create l1 synced block
+		err := m.L1SyncedBlockModel.CreateL1SyncedBlockInTransact(tx, l1BlockMonitorInfo)
+		if err != nil {
+			return err
+		}
+		//create priority requests
+		err = m.PriorityRequestModel.CreatePriorityRequestsInTransact(tx, priorityRequests)
+		if err != nil {
+			return err
+		}
+		//update blocks
+		err = m.BlockModel.UpdateBlocksWithoutTxsInTransact(tx, pendingUpdateBlocks)
+		if err != nil {
+			return err
+		}
+		//delete mempool txs
+		err = m.MempoolModel.DeleteMempoolTxsInTransact(tx, pendingDeleteMempoolTxs)
+		return err
+	})
+	if err != nil {
 		return fmt.Errorf("failed to store monitor info, err: %v", err)
 	}
 	logx.Info("create txs count:", len(priorityRequests))

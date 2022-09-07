@@ -427,7 +427,7 @@ func (e *SwapExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:         txInfo.PairIndex,
 		AssetType:       types.LiquidityAssetType,
-		AccountIndex:    types.NilTxAccountIndex,
+		AccountIndex:    types.NilAccountIndex,
 		AccountName:     types.NilAccountName,
 		Balance:         liquidityInfo.String(),
 		BalanceDelta:    poolDelta.String(),
@@ -461,7 +461,7 @@ func (e *SwapExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 }
 
 func (e *SwapExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
-	hash, err := legendTxTypes.ComputeSwapMsgHash(e.txInfo, mimc.NewMiMC())
+	hash, err := e.txInfo.Hash(mimc.NewMiMC())
 	if err != nil {
 		return nil, err
 	}
@@ -472,7 +472,7 @@ func (e *SwapExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
 		TxType:        e.tx.TxType,
 		GasFeeAssetId: e.txInfo.GasFeeAssetId,
 		GasFee:        e.txInfo.GasFeeAssetAmount.String(),
-		NftIndex:      types.NilTxNftIndex,
+		NftIndex:      types.NilNftIndex,
 		PairIndex:     e.txInfo.PairIndex,
 		AssetId:       types.NilAssetId,
 		TxAmount:      e.txInfo.AssetAAmount.String(),

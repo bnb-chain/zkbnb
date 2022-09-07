@@ -11,7 +11,7 @@ KEY_PATH=${WORKDIR}/.zkbnb
 ZkBNB_CONTRACT_REPO=https://github.com/bnb-chain/zkbnb-contract.git
 ZkBNB_CRYPTO_REPO=https://github.com/bnb-chain/zkbnb-crypto.git
 BSC_TESTNET_ENDPOINT=https://data-seed-prebsc-1-s1.binance.org:8545
-ZkBNB_CRYPTO_BRANCH=$(cat $WORKDIR/../go.mod | grep github.com/bnb-chain/zkbnb-crypto | awk -F" " '{print $2}')
+ZKBNBCRYPTO_BRANCH=$(cat $WORKDIR/../go.mod | grep github.com/bnb-chain/zkbnb-crypto | awk -F" " '{print $2}' | awk -F"-" '{if ($3 != "") print $3;else print $1;}')
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
 
@@ -20,8 +20,9 @@ function prepare() {
     rm -rf ${WORKDIR}/dependency
     mkdir -p ${WORKDIR}/dependency && cd ${WORKDIR}/dependency
 
-    git clone --branch develop ${ZkBNB_CONTRACT_REPO}
-    git clone --branch ${ZkBNB_CRYPTO_BRANCH} ${ZkBNB_CRYPTO_REPO}
+    git clone --branch develop ${ZKBNB_CONTRACT_REPO}
+    git clone --branch develop ${ZKBNB_CRYPTO_REPO}
+    cd ${WORKDIR}/dependency/zkbnb-crypto && git checkout ${ZKBNB_CRYPTO_BRANCH}
 
     if [ ! -z $1 ] && [ "$1" = "new" ]; then
         echo "new crypto env"
@@ -34,7 +35,7 @@ function prepare() {
 
     echo 'start verify_parse for ZkBNBVerifier ...'
     cd ${WORKDIR}/../service/prover/
-    python3 verifier_parse.py ${KEY_PATH}/ZkBNBVerifier1.sol,${KEY_PATH}/ZkBNBVerifier10.sol 1,10 ${WORKDIR}/dependency/zkbnb-contract/contracts/ZkBNBVerifier.sol
+    python3 verifier_parse.py ${KEY_PATH}/ZkbnbVerifier1.sol 1 ${WORKDIR}/dependency/zkbnb-contract/contracts/ZkbnbVerifier.sol
 }
 
 function getLatestBlockHeight() {

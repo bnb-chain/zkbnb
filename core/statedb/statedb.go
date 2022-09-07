@@ -409,7 +409,7 @@ func (s *StateDB) PrepareLiquidity(pairIndex int64) error {
 	}
 
 	if s.LiquidityMap[pairIndex] == nil {
-		liquidityInfo, err := s.chainDb.LiquidityModel.GetLiquidityByPairIndex(pairIndex)
+		liquidityInfo, err := s.chainDb.LiquidityModel.GetLiquidityByIndex(pairIndex)
 		if err != nil {
 			return err
 		}
@@ -428,7 +428,7 @@ func (s *StateDB) PrepareNft(nftIndex int64) error {
 	}
 
 	if s.NftMap[nftIndex] == nil {
-		nftAsset, err := s.chainDb.L2NftModel.GetNftAsset(nftIndex)
+		nftAsset, err := s.chainDb.L2NftModel.GetNft(nftIndex)
 		if err != nil {
 			return err
 		}

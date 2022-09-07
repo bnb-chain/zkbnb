@@ -1,10 +1,6 @@
 name: Integration Test on Runner
 
 on:
-  push:
-    branches:
-      - develop
-      - master
   pull_request:
     branches:
       - master
@@ -28,12 +24,11 @@ jobs:
           
           cd ~
           sudo rm -rf ./zkbnb
-          git clone --branch develop https://github.com/bnb-chain/zkbnb.git
-          
+          git clone https://github.com/bnb-chain/zkbnb.git
+          echo "Integration tests run on commit id: $GITHUB_SHA"
           cd ./zkbnb
-          git fetch origin pull/$PR_NUMBER/head:local-deploy-tmp
-          git checkout local-deploy-tmp
-          git rev-parse HEAD
+          git fetch origin pull/$PR_NUMBER/head:$GITHUB_SHA
+          git checkout $GITHUB_SHA
 
           echo "start deploy new zkbnb"
           sudo bash ./deployment/tool/generate_api.sh
@@ -46,6 +41,8 @@ jobs:
           sudo bash ./deployment/tool/tool.sh all
           sudo bash ./deployment/docker-compose/docker-compose.sh down
           sudo bash ./deployment/docker-compose/docker-compose.sh up $blockNr
+          echo "Contract addresses"
+          cat ~/zkbnb/deployment/dependency/zkbnb-contract/info/addresses.json
           echo "Waiting 3m for the initialization tx to be verified"
           sleep 3m # Waiting for the initialization tx to be verified
           echo "end deploy"
@@ -64,19 +61,17 @@ jobs:
           cd ./zkbnb-integration-test/tests
           
           echo '1. start TestSetupSuite'
-          go test -v -run TestSetupSuite -timeout 30m
+          go test -v -failfast  -run TestSetupSuite -timeout 30m
           
-          echo '2. start L1 test'
-          go test -v -run TestL1Suite -timeout 30m
-          
-          echo '3. start L2 test'
-          go test -v -run TestL2Suite -timeout 30m
+          echo '2. start L1 && L2 test'
+          go test -v -failfast -parallel 2 -run TestL.*Suite  -timeout 30m
 
       - name: notification via slack
+        if: always()
         run: |
           export SLACK_WEBHOOK_URL=`sudo cat /home/ec2-user/actions-runner/slack-config.json | jq -r '.slack'`
           export JOB_STATUS=${{ job.status }}
-          export ZkBNB=`sudo cat /root/zkbnb-deploy/zkbnb-contract/info/addresses.json  | jq -r '.zkbnbProxy'`
-          export AssetGov=`sudo cat /root/zkbnb-deploy/zkbnb-contract/info/addresses.json  | jq -r '.assetGovernance'`
+          export ZkBNB=`sudo cat /home/ec2-user/zkbnb/deployment/dependency/zkbnb-contract/info/addresses.json | jq -r '.zkbnbProxy'`
+          export AssetGov=`sudo cat /home/ec2-user/zkbnb/deployment/dependency/zkbnb-contract/info/addresses.json | jq -r '.assetGovernance'`
           curl -X POST $SLACK_WEBHOOK_URL --header 'Content-Type: application/json' \
           --data-raw '{ "author": "@'$GITHUB_ACTOR'", "status": "'$JOB_STATUS'", "ref": "'$GITHUB_REF'", "event": "'$GITHUB_EVENT_NAME'", "url": "'$GITHUB_SERVER_URL'/'$GITHUB_REPOSITORY'/commit/'$GITHUB_SHA'/checks", "ZkBNBContract": "'$ZkBNB'", "AssetGovContract": "'$AssetGov'" }'

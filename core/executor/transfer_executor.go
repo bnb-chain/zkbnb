@@ -245,7 +245,7 @@ func (e *TransferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 }
 
 func (e *TransferExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
-	hash, err := legendTxTypes.ComputeTransferMsgHash(e.txInfo, mimc.NewMiMC())
+	hash, err := e.txInfo.Hash(mimc.NewMiMC())
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +256,7 @@ func (e *TransferExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
 		TxType:        e.tx.TxType,
 		GasFeeAssetId: e.txInfo.GasFeeAssetId,
 		GasFee:        e.txInfo.GasFeeAssetAmount.String(),
-		NftIndex:      types.NilTxNftIndex,
+		NftIndex:      types.NilNftIndex,
 		PairIndex:     types.NilPairIndex,
 		AssetId:       types.NilAssetId,
 		TxAmount:      e.txInfo.AssetAmount.String(),

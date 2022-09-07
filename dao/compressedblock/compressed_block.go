@@ -31,7 +31,8 @@ type (
 	CompressedBlockModel interface {
 		CreateCompressedBlockTable() error
 		DropCompressedBlockTable() error
-		GetCompressedBlockBetween(start, end int64) (blocksForCommit []*CompressedBlock, err error)
+		GetCompressedBlocksBetween(start, end int64) (blocksForCommit []*CompressedBlock, err error)
+		CreateCompressedBlockInTransact(tx *gorm.DB, block *CompressedBlock) error
 	}
 
 	defaultCompressedBlockModel struct {
@@ -69,7 +70,7 @@ func (m *defaultCompressedBlockModel) DropCompressedBlockTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-func (m *defaultCompressedBlockModel) GetCompressedBlockBetween(start, end int64) (blocksForCommit []*CompressedBlock, err error) {
+func (m *defaultCompressedBlockModel) GetCompressedBlocksBetween(start, end int64) (blocksForCommit []*CompressedBlock, err error) {
 	dbTx := m.DB.Table(m.table).Where("block_height >= ? AND block_height <= ?", start, end).Find(&blocksForCommit)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
@@ -77,4 +78,15 @@ func (m *defaultCompressedBlockModel) GetCompressedBlockBetween(start, end int64
 		return nil, types.DbErrNotFound
 	}
 	return blocksForCommit, nil
+}
+
+func (m *defaultCompressedBlockModel) CreateCompressedBlockInTransact(tx *gorm.DB, block *CompressedBlock) error {
+	dbTx := tx.Table(m.table).Create(block)
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		return types.DbErrFailToCreateCompressedBlock
+	}
+	return nil
 }

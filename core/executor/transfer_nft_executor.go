@@ -288,7 +288,7 @@ func (e *TransferNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 }
 
 func (e *TransferNftExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
-	hash, err := legendTxTypes.ComputeTransferNftMsgHash(e.txInfo, mimc.NewMiMC())
+	hash, err := e.txInfo.Hash(mimc.NewMiMC())
 	if err != nil {
 		return nil, err
 	}
@@ -302,7 +302,7 @@ func (e *TransferNftExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
 		NftIndex:      e.txInfo.NftIndex,
 		PairIndex:     types.NilPairIndex,
 		AssetId:       types.NilAssetId,
-		TxAmount:      types.NilAssetAmountStr,
+		TxAmount:      types.NilAssetAmount,
 		Memo:          "",
 		AccountIndex:  e.txInfo.FromAccountIndex,
 		Nonce:         e.txInfo.Nonce,

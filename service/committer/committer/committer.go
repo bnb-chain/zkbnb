@@ -3,6 +3,7 @@ package committer
 import (
 	"errors"
 	"fmt"
+	"gorm.io/gorm"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -139,7 +140,7 @@ func (c *Committer) Run() {
 
 func (c *Committer) restoreExecutedTxs() (*block.Block, error) {
 	bc := c.bc
-	curHeight, err := bc.BlockModel.GetCurrentHeight()
+	curHeight, err := bc.BlockModel.GetCurrentBlockHeight()
 	if err != nil {
 		return nil, err
 	}
@@ -197,8 +198,90 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 		return nil, err
 	}
 
-	// Update database in a transaction.
-	err = c.bc.BlockModel.CreateCompressedBlock(c.executedMemPoolTxs, blockStates)
+	// update db
+	err = c.bc.DB().DB.Transaction(func(tx *gorm.DB) error {
+		// update mempool
+		err := c.bc.DB().MempoolModel.UpdateMempoolTxsInTransact(tx, c.executedMemPoolTxs)
+		if err != nil {
+			return err
+		}
+		// update block
+		err = c.bc.DB().BlockModel.UpdateBlockInTransact(tx, blockStates.Block)
+		if err != nil {
+			return err
+		}
+		// create block for commit
+		if blockStates.CompressedBlock != nil {
+			err = c.bc.DB().CompressedBlockModel.CreateCompressedBlockInTransact(tx, blockStates.CompressedBlock)
+			if err != nil {
+				return err
+			}
+		}
+		// create new account
+		if len(blockStates.PendingNewAccount) != 0 {
+			err = c.bc.DB().AccountModel.CreateAccountsInTransact(tx, blockStates.PendingNewAccount)
+			if err != nil {
+				return err
+			}
+		}
+		// update account
+		if len(blockStates.PendingUpdateAccount) != 0 {
+			err = c.bc.DB().AccountModel.UpdateAccountsInTransact(tx, blockStates.PendingUpdateAccount)
+			if err != nil {
+				return err
+			}
+		}
+		// create new account history
+		if len(blockStates.PendingNewAccountHistory) != 0 {
+			err = c.bc.DB().AccountHistoryModel.CreateAccountHistoriesInTransact(tx, blockStates.PendingNewAccountHistory)
+			if err != nil {
+				return err
+			}
+		}
+		// create new liquidity
+		if len(blockStates.PendingNewLiquidity) != 0 {
+			err = c.bc.DB().LiquidityModel.CreateLiquidityInTransact(tx, blockStates.PendingNewLiquidity)
+			if err != nil {
+				return err
+			}
+		}
+		// update liquidity
+		if len(blockStates.PendingUpdateLiquidity) != 0 {
+			err = c.bc.DB().LiquidityModel.UpdateLiquidityInTransact(tx, blockStates.PendingUpdateLiquidity)
+			if err != nil {
+				return err
+			}
+		}
+		// create new liquidity history
+		if len(blockStates.PendingNewLiquidityHistory) != 0 {
+			err = c.bc.DB().LiquidityHistoryModel.CreateLiquidityHistoriesInTransact(tx, blockStates.PendingNewLiquidityHistory)
+			if err != nil {
+				return err
+			}
+		}
+		// create new nft
+		if len(blockStates.PendingNewNft) != 0 {
+			err = c.bc.DB().L2NftModel.CreateNftsInTransact(tx, blockStates.PendingNewNft)
+			if err != nil {
+				return err
+			}
+		}
+		// update nft
+		if len(blockStates.PendingUpdateNft) != 0 {
+			err = c.bc.DB().L2NftModel.UpdateNftsInTransact(tx, blockStates.PendingUpdateNft)
+			if err != nil {
+				return err
+			}
+		}
+		// new nft history
+		if len(blockStates.PendingNewNftHistory) != 0 {
+			err = c.bc.DB().L2NftHistoryModel.CreateNftHistoriesInTransact(tx, blockStates.PendingNewNftHistory)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}

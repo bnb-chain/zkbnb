@@ -32,7 +32,9 @@ type (
 		CreateSysConfigTable() error
 		DropSysConfigTable() error
 		GetSysConfigByName(name string) (info *SysConfig, err error)
-		CreateSysConfigInBatches(configs []*SysConfig) (rowsAffected int64, err error)
+		CreateSysConfigs(configs []*SysConfig) (rowsAffected int64, err error)
+		CreateSysConfigsInTransact(tx *gorm.DB, configs []*SysConfig) error
+		UpdateSysConfigsInTransact(tx *gorm.DB, configs []*SysConfig) error
 	}
 
 	defaultSysConfigModel struct {
@@ -78,13 +80,37 @@ func (m *defaultSysConfigModel) GetSysConfigByName(name string) (config *SysConf
 	return config, nil
 }
 
-func (m *defaultSysConfigModel) CreateSysConfigInBatches(configs []*SysConfig) (rowsAffected int64, err error) {
+func (m *defaultSysConfigModel) CreateSysConfigs(configs []*SysConfig) (rowsAffected int64, err error) {
 	dbTx := m.DB.Table(m.table).CreateInBatches(configs, len(configs))
 	if dbTx.Error != nil {
 		return 0, types.DbErrSqlOperation
 	}
 	if dbTx.RowsAffected == 0 {
-		return 0, types.DbErrFailToCreateSysconfig
+		return 0, types.DbErrFailToCreateSysConfig
 	}
 	return dbTx.RowsAffected, nil
+}
+
+func (m *defaultSysConfigModel) CreateSysConfigsInTransact(tx *gorm.DB, configs []*SysConfig) error {
+	dbTx := tx.Table(m.table).CreateInBatches(configs, len(configs))
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		return types.DbErrFailToCreateSysConfig
+	}
+	return nil
+}
+
+func (m *defaultSysConfigModel) UpdateSysConfigsInTransact(tx *gorm.DB, configs []*SysConfig) error {
+	for _, sysConfig := range configs {
+		dbTx := tx.Table(m.table).Where("id = ?", sysConfig.ID).Select("*").Updates(&sysConfig)
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			return types.DbErrFailToUpdateSysConfig
+		}
+	}
+	return nil
 }
