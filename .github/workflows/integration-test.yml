@@ -28,12 +28,11 @@ jobs:
           
           cd ~
           sudo rm -rf ./zkbas
-          git clone --branch develop https://github.com/bnb-chain/zkbas.git
-          
+          git clone https://github.com/bnb-chain/zkbas.git
+          echo "Integration tests run on commit id: $GITHUB_SHA"
           cd ./zkbas
-          git fetch origin pull/$PR_NUMBER/head:local-deploy-tmp
-          git checkout local-deploy-tmp
-          git rev-parse HEAD
+          git fetch origin pull/$PR_NUMBER/head:$GITHUB_SHA 2>/dev/null
+          git checkout $GITHUB_SHA
 
           echo "start deploy new zkbas"
           sudo bash ./deployment/tool/generate_api.sh
@@ -46,6 +45,8 @@ jobs:
           sudo bash ./deployment/tool/tool.sh all
           sudo bash ./deployment/docker-compose/docker-compose.sh down
           sudo bash ./deployment/docker-compose/docker-compose.sh up $blockNr
+          echo "Contract addresses"
+          cat ~/zkbas/deployment/dependency/zkbas-contract/info/addresses.json
           echo "Waiting 3m for the initialization tx to be verified"
           sleep 3m # Waiting for the initialization tx to be verified
           echo "end deploy"
@@ -74,7 +75,7 @@ jobs:
         run: |
           export SLACK_WEBHOOK_URL=`sudo cat /home/ec2-user/actions-runner/slack-config.json | jq -r '.slack'`
           export JOB_STATUS=${{ job.status }}
-          export ZkBas=`sudo cat /root/zkbas-deploy/zkbas-contract/info/addresses.json  | jq -r '.zkbasProxy'`
-          export AssetGov=`sudo cat /root/zkbas-deploy/zkbas-contract/info/addresses.json  | jq -r '.assetGovernance'`
+          export ZkBas=`sudo cat /home/ec2-user/zkbas/deployment/dependency/zkbas-contract/info/addresses.json | jq -r '.zkbasProxy'`
+          export AssetGov=`sudo cat /home/ec2-user/zkbas/deployment/dependency/zkbas-contract/info/addresses.json | jq -r '.assetGovernance'`
           curl -X POST $SLACK_WEBHOOK_URL --header 'Content-Type: application/json' \
           --data-raw '{ "author": "@'$GITHUB_ACTOR'", "status": "'$JOB_STATUS'", "ref": "'$GITHUB_REF'", "event": "'$GITHUB_EVENT_NAME'", "url": "'$GITHUB_SERVER_URL'/'$GITHUB_REPOSITORY'/commit/'$GITHUB_SHA'/checks", "ZkbasContract": "'$ZkBas'", "AssetGovContract": "'$AssetGov'" }'
