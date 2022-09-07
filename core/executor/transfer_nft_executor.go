@@ -50,6 +50,7 @@ func (e *TransferNftExecutor) Prepare() error {
 	// Mark the tree states that would be affected in this executor.
 	e.MarkNftDirty(txInfo.NftIndex)
 	e.MarkAccountAssetsDirty(txInfo.FromAccountIndex, []int64{txInfo.GasFeeAssetId})
+	e.MarkAccountAssetsDirty(txInfo.ToAccountIndex, []int64{})
 	e.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
 	return e.BaseExecutor.Prepare()
 }
