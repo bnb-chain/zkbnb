@@ -192,7 +192,7 @@ func (bc *BlockChain) commitNewBlock(blockSize int, createdAt int64) (*block.Blo
 	}
 
 	// Intermediate state root.
-	err := s.IntermediateRoot()
+	err := s.IntermediateRoot(false)
 	if err != nil {
 		return nil, nil, err
 	}

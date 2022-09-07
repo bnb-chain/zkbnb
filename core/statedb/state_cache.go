@@ -72,8 +72,7 @@ func (c *StateCache) MarkAccountAssetsDirty(accountIndex int64, assets []int64) 
 		return
 	}
 
-	_, ok := c.DirtyAccountsAndAssetsMap[accountIndex]
-	if !ok {
+	if _, ok := c.DirtyAccountsAndAssetsMap[accountIndex]; !ok {
 		c.DirtyAccountsAndAssetsMap[accountIndex] = make(map[int64]bool, 0)
 	}
 

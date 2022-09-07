@@ -156,8 +156,7 @@ func (e *AddLiquidityExecutor) ApplyTransaction() error {
 	stateCache.PendingUpdateAccountIndexMap[treasuryAccount.AccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateLiquidityIndexMap[txInfo.PairIndex] = statedb.StateCachePending
-	e.SyncDirtyToStateCache()
-	return nil
+	return e.BaseExecutor.ApplyTransaction()
 }
 
 func (e *AddLiquidityExecutor) fillTxInfo() error {

@@ -85,8 +85,7 @@ func (e *DepositExecutor) ApplyTransaction() error {
 
 	stateCache := e.bc.StateDB()
 	stateCache.PendingUpdateAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
-	e.SyncDirtyToStateCache()
-	return nil
+	return e.BaseExecutor.ApplyTransaction()
 }
 
 func (e *DepositExecutor) GeneratePubData() error {

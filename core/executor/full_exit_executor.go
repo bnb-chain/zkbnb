@@ -87,9 +87,8 @@ func (e *FullExitExecutor) ApplyTransaction() error {
 	if txInfo.AssetAmount.Cmp(types.ZeroBigInt) != 0 {
 		stateCache := e.bc.StateDB()
 		stateCache.PendingUpdateAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
-		e.SyncDirtyToStateCache()
 	}
-	return nil
+	return e.BaseExecutor.ApplyTransaction()
 }
 
 func (e *FullExitExecutor) GeneratePubData() error {

@@ -96,8 +96,7 @@ func (e *TransferExecutor) ApplyTransaction() error {
 	stateCache.PendingUpdateAccountIndexMap[txInfo.FromAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.ToAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
-	e.SyncDirtyToStateCache()
-	return nil
+	return e.BaseExecutor.ApplyTransaction()
 }
 
 func (e *TransferExecutor) GeneratePubData() error {

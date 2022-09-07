@@ -89,8 +89,7 @@ func (e *WithdrawExecutor) ApplyTransaction() error {
 	stateCache := e.bc.StateDB()
 	stateCache.PendingUpdateAccountIndexMap[txInfo.FromAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
-	e.SyncDirtyToStateCache()
-	return nil
+	return e.BaseExecutor.ApplyTransaction()
 }
 
 func (e *WithdrawExecutor) GeneratePubData() error {

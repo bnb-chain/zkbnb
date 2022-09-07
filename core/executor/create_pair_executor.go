@@ -81,8 +81,7 @@ func (e *CreatePairExecutor) ApplyTransaction() error {
 
 	stateCache := e.bc.StateDB()
 	stateCache.PendingNewLiquidityIndexMap[txInfo.PairIndex] = statedb.StateCachePending
-	e.SyncDirtyToStateCache()
-	return nil
+	return e.BaseExecutor.ApplyTransaction()
 }
 
 func (e *CreatePairExecutor) GeneratePubData() error {

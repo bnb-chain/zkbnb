@@ -63,7 +63,7 @@ func (e *WithdrawNftExecutor) Prepare() error {
 
 	// Set the right details to tx info.
 	txInfo.CreatorAccountIndex = nftInfo.CreatorAccountIndex
-	txInfo.CreatorAccountNameHash = common.FromHex(types.NilAccountNameHash)
+	txInfo.CreatorAccountNameHash = common.FromHex(types.EmptyAccountNameHash)
 	if nftInfo.CreatorAccountIndex != types.NilAccountIndex {
 		creatorAccount := e.bc.StateDB().AccountMap[nftInfo.CreatorAccountIndex]
 		txInfo.CreatorAccountNameHash = common.FromHex(creatorAccount.AccountNameHash)
@@ -128,8 +128,7 @@ func (e *WithdrawNftExecutor) ApplyTransaction() error {
 	stateCache.PendingUpdateAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateNftIndexMap[txInfo.NftIndex] = statedb.StateCachePending
-	e.SyncDirtyToStateCache()
-	return nil
+	return e.BaseExecutor.ApplyTransaction()
 }
 
 func (e *WithdrawNftExecutor) GeneratePubData() error {

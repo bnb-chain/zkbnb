@@ -1,11 +1,12 @@
 package executor
 
 import (
+	"github.com/pkg/errors"
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
-	"github.com/pkg/errors"
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 const (
@@ -75,6 +76,7 @@ func (e *BaseExecutor) VerifyInputs() error {
 }
 
 func (e *BaseExecutor) ApplyTransaction() error {
+	e.SyncDirtyToStateCache()
 	return nil
 }
 

@@ -98,8 +98,7 @@ func (e *RegisterZnsExecutor) ApplyTransaction() error {
 
 	stateCache := e.bc.StateDB()
 	stateCache.PendingNewAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
-	e.SyncDirtyToStateCache()
-	return nil
+	return e.BaseExecutor.ApplyTransaction()
 }
 
 func (e *RegisterZnsExecutor) GeneratePubData() error {

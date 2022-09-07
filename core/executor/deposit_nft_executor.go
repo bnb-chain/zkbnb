@@ -120,8 +120,7 @@ func (e *DepositNftExecutor) ApplyTransaction() error {
 	} else {
 		stateCache.PendingUpdateNftIndexMap[txInfo.NftIndex] = statedb.StateCachePending
 	}
-	e.SyncDirtyToStateCache()
-	return nil
+	return e.BaseExecutor.ApplyTransaction()
 }
 
 func (e *DepositNftExecutor) GeneratePubData() error {

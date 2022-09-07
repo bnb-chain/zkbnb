@@ -437,7 +437,7 @@ func (s *StateDB) PrepareNft(nftIndex int64) error {
 	return nil
 }
 
-func (s *StateDB) IntermediateRoot() error {
+func (s *StateDB) IntermediateRoot(cleanDirty bool) error {
 	for accountIndex, assetsMap := range s.DirtyAccountsAndAssetsMap {
 		assets := make([]int64, 0, len(assetsMap))
 		for assetIndex, isDirty := range assetsMap {
@@ -447,7 +447,7 @@ func (s *StateDB) IntermediateRoot() error {
 			assets = append(assets, assetIndex)
 		}
 
-		err := s.accountIntermediateRoot(accountIndex, assets)
+		err := s.updateAccountTree(accountIndex, assets)
 		if err != nil {
 			return err
 		}
@@ -457,7 +457,7 @@ func (s *StateDB) IntermediateRoot() error {
 		if !isDirty {
 			continue
 		}
-		err := s.liquidityIntermediateRoot(pairIndex)
+		err := s.updateLiquidityTree(pairIndex)
 		if err != nil {
 			return err
 		}
@@ -467,10 +467,16 @@ func (s *StateDB) IntermediateRoot() error {
 		if !isDirty {
 			continue
 		}
-		err := s.nftIntermediateRoot(nftIndex)
+		err := s.updateNftTree(nftIndex)
 		if err != nil {
 			return err
 		}
+	}
+
+	if cleanDirty {
+		s.DirtyAccountsAndAssetsMap = make(map[int64]map[int64]bool, 0)
+		s.DirtyLiquidityMap = make(map[int64]bool, 0)
+		s.DirtyNftMap = make(map[int64]bool, 0)
 	}
 
 	hFunc := mimc.NewMiMC()
@@ -481,7 +487,7 @@ func (s *StateDB) IntermediateRoot() error {
 	return nil
 }
 
-func (s *StateDB) accountIntermediateRoot(accountIndex int64, assets []int64) error {
+func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64) error {
 	for _, assetId := range assets {
 		assetLeaf, err := tree.ComputeAccountAssetLeafHash(
 			s.AccountMap[accountIndex].AssetInfo[assetId].Balance.String(),
@@ -516,7 +522,7 @@ func (s *StateDB) accountIntermediateRoot(accountIndex int64, assets []int64) er
 	return nil
 }
 
-func (s *StateDB) liquidityIntermediateRoot(pairIndex int64) error {
+func (s *StateDB) updateLiquidityTree(pairIndex int64) error {
 	nLiquidityAssetLeaf, err := tree.ComputeLiquidityAssetLeafHash(
 		s.LiquidityMap[pairIndex].AssetAId,
 		s.LiquidityMap[pairIndex].AssetA,
@@ -539,7 +545,7 @@ func (s *StateDB) liquidityIntermediateRoot(pairIndex int64) error {
 	return nil
 }
 
-func (s *StateDB) nftIntermediateRoot(nftIndex int64) error {
+func (s *StateDB) updateNftTree(nftIndex int64) error {
 	nftAssetLeaf, err := tree.ComputeNftAssetLeafHash(
 		s.NftMap[nftIndex].CreatorAccountIndex,
 		s.NftMap[nftIndex].OwnerAccountIndex,

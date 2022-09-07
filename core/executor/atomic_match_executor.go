@@ -190,8 +190,7 @@ func (e *AtomicMatchExecutor) ApplyTransaction() error {
 	stateCache.PendingUpdateAccountIndexMap[matchNft.CreatorAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateNftIndexMap[txInfo.SellOffer.NftIndex] = statedb.StateCachePending
-	e.SyncDirtyToStateCache()
-	return nil
+	return e.BaseExecutor.ApplyTransaction()
 }
 
 func (e *AtomicMatchExecutor) GeneratePubData() error {
