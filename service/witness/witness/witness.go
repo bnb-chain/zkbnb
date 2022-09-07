@@ -75,16 +75,15 @@ func NewWitness(c config.Config) (*Witness, error) {
 }
 
 func (w *Witness) initState() error {
-	p, err := w.proofModel.GetLatestConfirmedProof()
+	witness, err := w.blockWitnessModel.GetLatestBlockWitness()
 	if err != nil {
 		if err != types.DbErrNotFound {
-			return fmt.Errorf("GetLatestConfirmedProof error: %v", err)
-		} else {
-			p = &proof.Proof{
-				BlockNumber: 0,
-			}
+			return fmt.Errorf("GetLatestBlockWitness error: %v", err)
 		}
+
+		witness = &blockwitness.BlockWitness{}
 	}
+
 	// dbinitializer tree database
 	treeCtx := &tree.Context{
 		Name:          "witness",
@@ -103,7 +102,7 @@ func (w *Witness) initState() error {
 	w.accountTree, w.assetTrees, err = tree.InitAccountTree(
 		w.accountModel,
 		w.accountHistoryModel,
-		p.BlockNumber,
+		witness.Height,
 		treeCtx,
 	)
 	// the blockHeight depends on the proof start position
@@ -111,12 +110,12 @@ func (w *Witness) initState() error {
 		return fmt.Errorf("initMerkleTree error: %v", err)
 	}
 
-	w.liquidityTree, err = tree.InitLiquidityTree(w.liquidityHistoryModel, p.BlockNumber,
+	w.liquidityTree, err = tree.InitLiquidityTree(w.liquidityHistoryModel, witness.Height,
 		treeCtx)
 	if err != nil {
 		return fmt.Errorf("initLiquidityTree error: %v", err)
 	}
-	w.nftTree, err = tree.InitNftTree(w.nftHistoryModel, p.BlockNumber,
+	w.nftTree, err = tree.InitNftTree(w.nftHistoryModel, witness.Height,
 		treeCtx)
 	if err != nil {
 		return fmt.Errorf("initNftTree error: %v", err)
