@@ -1,4 +1,4 @@
-name: Deploy zkbas on qa3
+name: Deploy zkbnb on qa3
 
 on:
   push:
@@ -12,15 +12,15 @@ jobs:
       issues: write
       pull-requests: write
     steps:
-      - name: Deploy new zkbas on qa3
+      - name: Deploy new zkbnb on qa3
         run: |
-          echo 'fetch zkbas repo'
+          echo 'fetch zkbnb repo'
           export BRANCH=$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
 
           cd ~
-          rm -rf ./zkbas
-          git clone --branch qa3 https://github.com/bnb-chain/zkbas.git
-          cd ./zkbas
+          rm -rf ./zkbnb
+          git clone --branch qa3 https://github.com/bnb-chain/zkbnb.git
+          cd ./zkbnb
 
           sudo scp -r ./deploy-qa.sh "qa3:/tmp/"
           sudo ssh qa3 "sudo bash -x /tmp/deploy-qa.sh qa3;exit"
@@ -30,9 +30,9 @@ jobs:
         run: |
           export SLACK_WEBHOOK_URL=`sudo cat /home/ec2-user/actions-runner/slack-config.json | jq -r '.slack'`
           export JOB_STATUS=${{ job.status }}
-          sudo scp -r qa3:/root/zkbas-deploy/zkbas-contract/info/addresses.json ~/addresses.json
-          export ZkBas=`sudo cat ~/addresses.json  | jq -r '.zkbasProxy'`
+          sudo scp -r qa3:/root/zkbnb-deploy/zkbnb-contract/info/addresses.json ~/addresses.json
+          export ZkBNB=`sudo cat ~/addresses.json  | jq -r '.zkbnbProxy'`
           export AssetGov=`sudo cat ~/addresses.json  | jq -r '.assetGovernance'`
           curl -X POST $SLACK_WEBHOOK_URL --header 'Content-Type: application/json' \
-          --data-raw '{ "author": "@'$GITHUB_ACTOR'", "status": "'$JOB_STATUS'", "ref": "'$GITHUB_REF'", "event": "'$GITHUB_EVENT_NAME'", "url": "'$GITHUB_SERVER_URL'/'$GITHUB_REPOSITORY'/commit/'$GITHUB_SHA'/checks", "ZkbasContract": "'$ZkBas'", "AssetGovContract": "'$AssetGov'" }'
+          --data-raw '{ "author": "@'$GITHUB_ACTOR'", "status": "'$JOB_STATUS'", "ref": "'$GITHUB_REF'", "event": "'$GITHUB_EVENT_NAME'", "url": "'$GITHUB_SERVER_URL'/'$GITHUB_REPOSITORY'/commit/'$GITHUB_SHA'/checks", "ZkBNBContract": "'$ZkBNB'", "AssetGovContract": "'$AssetGov'" }'
           

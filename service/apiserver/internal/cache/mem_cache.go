@@ -6,11 +6,11 @@ import (
 
 	gocache "github.com/patrickmn/go-cache"
 
-	accdao "github.com/bnb-chain/zkbas/dao/account"
-	assetdao "github.com/bnb-chain/zkbas/dao/asset"
-	blockdao "github.com/bnb-chain/zkbas/dao/block"
-	"github.com/bnb-chain/zkbas/dao/sysconfig"
-	"github.com/bnb-chain/zkbas/dao/tx"
+	accdao "github.com/bnb-chain/zkbnb/dao/account"
+	assetdao "github.com/bnb-chain/zkbnb/dao/asset"
+	blockdao "github.com/bnb-chain/zkbnb/dao/block"
+	"github.com/bnb-chain/zkbnb/dao/sysconfig"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 )
 
 const (

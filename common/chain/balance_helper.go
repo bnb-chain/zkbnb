@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 ZkBAS Protocol
+ * Copyright © 2021 ZkBNB Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ package chain
 import (
 	"errors"
 
-	"github.com/bnb-chain/zkbas-crypto/ffmath"
-	"github.com/bnb-chain/zkbas/types"
+	"github.com/bnb-chain/zkbnb-crypto/ffmath"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 func ComputeNewBalance(assetType int64, balance string, balanceDelta string) (newBalance string, err error) {

@@ -10,13 +10,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas-crypto/ffmath"
-	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
-	common2 "github.com/bnb-chain/zkbas/common"
-	"github.com/bnb-chain/zkbas/core/statedb"
-	"github.com/bnb-chain/zkbas/dao/mempool"
-	"github.com/bnb-chain/zkbas/dao/tx"
-	"github.com/bnb-chain/zkbas/types"
+	"github.com/bnb-chain/zkbnb-crypto/ffmath"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
+	common2 "github.com/bnb-chain/zkbnb/common"
+	"github.com/bnb-chain/zkbnb/core/statedb"
+	"github.com/bnb-chain/zkbnb/dao/mempool"
+	"github.com/bnb-chain/zkbnb/dao/tx"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 type WithdrawExecutor struct {
@@ -237,7 +237,7 @@ func (e *WithdrawExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 }
 
 func (e *WithdrawExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
-	hash, err := legendTxTypes.ComputeWithdrawMsgHash(e.txInfo, mimc.NewMiMC())
+	hash, err := e.txInfo.Hash(mimc.NewMiMC())
 	if err != nil {
 		return nil, err
 	}

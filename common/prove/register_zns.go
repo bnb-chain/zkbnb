@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 ZkBAS Protocol
+ * Copyright © 2021 ZkBNB Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ package prove
 import (
 	"strings"
 
-	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
-	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
-	"github.com/bnb-chain/zkbas/common"
-	"github.com/bnb-chain/zkbas/types"
+	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
+	"github.com/bnb-chain/zkbnb/common"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 func (w *WitnessHelper) constructRegisterZnsTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {

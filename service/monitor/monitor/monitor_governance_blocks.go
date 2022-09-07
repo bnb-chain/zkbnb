@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 ZkBAS Protocol
+ * Copyright © 2021 ZkBNB Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,14 +28,14 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 
-	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
-	"github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/zero/basic"
+	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/zkbnb/core/legend"
+	"github.com/bnb-chain/zkbnb-eth-rpc/zkbnb/core/zero/basic"
 
-	common2 "github.com/bnb-chain/zkbas/common"
-	"github.com/bnb-chain/zkbas/dao/asset"
-	"github.com/bnb-chain/zkbas/dao/l1syncedblock"
-	"github.com/bnb-chain/zkbas/dao/sysconfig"
-	"github.com/bnb-chain/zkbas/types"
+	common2 "github.com/bnb-chain/zkbnb/common"
+	"github.com/bnb-chain/zkbnb/dao/asset"
+	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
+	"github.com/bnb-chain/zkbnb/dao/sysconfig"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 func (m *Monitor) MonitorGovernanceBlocks() (err error) {
@@ -84,7 +84,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 	for _, vlog := range logs {
 		switch vlog.Topics[0].Hex() {
 		case governanceLogNewAssetSigHash.Hex():
-			var event zkbas.GovernanceNewAsset
+			var event zkbnb.GovernanceNewAsset
 			if err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameNewAsset, vlog.Data); err != nil {
 				return fmt.Errorf("unpackIntoInterface err: %v", err)
 			}
@@ -93,7 +93,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 				TxHash:    vlog.TxHash.Hex(),
 			}
 			// get asset info by contract address
-			erc20Instance, err := zkbas.LoadERC20(m.cli, event.AssetAddress.Hex())
+			erc20Instance, err := zkbnb.LoadERC20(m.cli, event.AssetAddress.Hex())
 			if err != nil {
 				return err
 			}
@@ -121,7 +121,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 			l2AssetInfoMap[event.AssetAddress.Hex()] = l2AssetInfo
 		case governanceLogNewGovernorSigHash.Hex():
 			// parse event info
-			var event zkbas.GovernanceNewGovernor
+			var event zkbnb.GovernanceNewGovernor
 			if err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameNewGovernor, vlog.Data); err != nil {
 				return fmt.Errorf("unpackIntoInterface err: %v", err)
 			}
@@ -141,7 +141,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 			pendingNewSysConfigMap[configInfo.Name] = configInfo
 		case governanceLogNewAssetGovernanceSigHash.Hex():
 			// parse event info
-			var event zkbas.GovernanceNewAssetGovernance
+			var event zkbnb.GovernanceNewAssetGovernance
 			err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameNewAssetGovernance, vlog.Data)
 			if err != nil {
 				return fmt.Errorf("unpackIntoInterface err: %v", err)
@@ -161,7 +161,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 			pendingNewSysConfigMap[configInfo.Name] = configInfo
 		case governanceLogValidatorStatusUpdateSigHash.Hex():
 			// parse event info
-			var event zkbas.GovernanceValidatorStatusUpdate
+			var event zkbnb.GovernanceValidatorStatusUpdate
 			if err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameValidatorStatusUpdate, vlog.Data); err != nil {
 				return fmt.Errorf("unpack GovernanceValidatorStatusUpdate, err: %v", err)
 			}
@@ -245,7 +245,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 			l1EventInfos = append(l1EventInfos, l1EventInfo)
 		case governanceLogAssetPausedUpdateSigHash.Hex():
 			// parse event info
-			var event zkbas.GovernanceAssetPausedUpdate
+			var event zkbnb.GovernanceAssetPausedUpdate
 			err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameAssetPausedUpdate, vlog.Data)
 			if err != nil {
 				return fmt.Errorf("unpack GovernanceAssetPausedUpdate failed, err: %v", err)

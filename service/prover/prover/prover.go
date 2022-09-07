@@ -13,13 +13,13 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/block"
-	"github.com/bnb-chain/zkbas/common/prove"
-	"github.com/bnb-chain/zkbas/common/redislock"
-	"github.com/bnb-chain/zkbas/dao/blockwitness"
-	"github.com/bnb-chain/zkbas/dao/proof"
-	"github.com/bnb-chain/zkbas/service/prover/config"
-	"github.com/bnb-chain/zkbas/types"
+	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/block"
+	"github.com/bnb-chain/zkbnb/common/prove"
+	"github.com/bnb-chain/zkbnb/common/redislock"
+	"github.com/bnb-chain/zkbnb/dao/blockwitness"
+	"github.com/bnb-chain/zkbnb/dao/proof"
+	"github.com/bnb-chain/zkbnb/service/prover/config"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 type Prover struct {

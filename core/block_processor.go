@@ -3,8 +3,8 @@ package core
 import (
 	"fmt"
 
-	"github.com/bnb-chain/zkbas/core/executor"
-	"github.com/bnb-chain/zkbas/dao/tx"
+	"github.com/bnb-chain/zkbnb/core/executor"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 )
 
 type Processor interface {

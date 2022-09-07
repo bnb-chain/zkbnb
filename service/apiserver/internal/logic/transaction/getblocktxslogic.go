@@ -6,11 +6,11 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
-	blockdao "github.com/bnb-chain/zkbas/dao/block"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/logic/utils"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
-	types2 "github.com/bnb-chain/zkbas/types"
+	blockdao "github.com/bnb-chain/zkbnb/dao/block"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/logic/utils"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/types"
+	types2 "github.com/bnb-chain/zkbnb/types"
 )
 
 const (

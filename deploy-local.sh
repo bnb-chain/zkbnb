@@ -7,9 +7,9 @@
 # You should install nodejs above v14
 
 # Attention: Set the following variables to the right one before running!!!
-DEPLOY_PATH=~/zkbas-deploy
-KEY_PATH=~/.zkbas
-ZKBAS_REPO_PATH=$(cd `dirname $0`; pwd)
+DEPLOY_PATH=~/zkbnb-deploy
+KEY_PATH=~/.zkbnb
+ZkBNB_REPO_PATH=$(cd `dirname $0`; pwd)
 CMC_TOKEN=cfce503f-fake-fake-fake-bbab5257dac8
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
@@ -17,8 +17,8 @@ echo '0. stop old database/redis and docker run new database/redis'
 pm2 delete all
 docker kill $(docker ps -q)
 docker rm $(docker ps -a -q)
-docker run -d --name zkbasredis -p 6379:6379 redis
-docker run --name postgres -p 5432:5432 -e PGDATA=/var/lib/postgresql/pgdata  -e POSTGRES_PASSWORD=Zkbas@123 -e POSTGRES_USER=postgres -e POSTGRES_DB=zkbas -d postgres
+docker run -d --name zkbnbredis -p 6379:6379 redis
+docker run --name postgres -p 5432:5432 -e PGDATA=/var/lib/postgresql/pgdata  -e POSTGRES_PASSWORD=ZkBNB@123 -e POSTGRES_USER=postgres -e POSTGRES_DB=zkbnb -d postgres
 
 
 echo '1. basic config and git clone repos'
@@ -26,27 +26,27 @@ export PATH=$PATH:/usr/local/go/bin/
 cd ~
 rm -rf ${DEPLOY_PATH}-bak && mv ${DEPLOY_PATH} ${DEPLOY_PATH}-bak
 mkdir -p ${DEPLOY_PATH} && cd ${DEPLOY_PATH}
-git clone --branch develop  https://github.com/bnb-chain/zkbas-contract.git
-git clone --branch develop https://github.com/bnb-chain/zkbas-crypto.git
-cp -r ${ZKBAS_REPO_PATH} ${DEPLOY_PATH}
+git clone --branch develop  https://github.com/bnb-chain/zkbnb-contract.git
+git clone --branch develop https://github.com/bnb-chain/zkbnb-crypto.git
+cp -r ${ZkBNB_REPO_PATH} ${DEPLOY_PATH}
 
 
 flag=$1
 if [ $flag = "new" ]; then
   echo "new crypto env"
-  echo '2. start generate zkbas.vk and zkbas.pk'
+  echo '2. start generate zkbnb.vk and zkbnb.pk'
   cd ${DEPLOY_PATH}
-  cd zkbas-crypto && go test ./legend/circuit/bn254/solidity -timeout 99999s -run TestExportSol
+  cd zkbnb-crypto && go test ./legend/circuit/bn254/solidity -timeout 99999s -run TestExportSol
   cd ${DEPLOY_PATH}
   mkdir -p $KEY_PATH
-  cp -r ./zkbas-crypto/legend/circuit/bn254/solidity/* $KEY_PATH
+  cp -r ./zkbnb-crypto/legend/circuit/bn254/solidity/* $KEY_PATH
 fi
 
 
 
-echo '3. start verify_parse for ZkbasVerifier'
-cd ${DEPLOY_PATH}/zkbas/service/prover/
-python3 verifier_parse.py ${KEY_PATH}/ZkbasVerifier1.sol,${KEY_PATH}/ZkbasVerifier10.sol 1,10 ${DEPLOY_PATH}/zkbas-contract/contracts/ZkbasVerifier.sol
+echo '3. start verify_parse for ZkBNBVerifier'
+cd ${DEPLOY_PATH}/zkbnb/service/prover/
+python3 verifier_parse.py ${KEY_PATH}/ZkBNBVerifier1.sol,${KEY_PATH}/ZkBNBVerifier10.sol 1,10 ${DEPLOY_PATH}/zkbnb-contract/contracts/ZkBNBVerifier.sol
 
 
 
@@ -59,36 +59,36 @@ echo 'latest block number = ' $blockNumber
 
 echo '4-2. deploy contracts, register and deposit on BSC Testnet'
 cd ${DEPLOY_PATH}
-cd ./zkbas-contract &&  npm install
+cd ./zkbnb-contract &&  yarn install
 npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deploy.js
-echo 'Recorded latest contract addresses into ${DEPLOY_PATH}/zkbas-contract/info/addresses.json'
+echo 'Recorded latest contract addresses into ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json'
 
 npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/register.js
 npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deposit.js
 
 
-echo '5. modify deployed contracts into zkbas config'
-cd ${DEPLOY_PATH}/zkbas/tools/dbinitializer/
+echo '5. modify deployed contracts into zkbnb config'
+cd ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/
 cp -r ./contractaddr.yaml.example ./contractaddr.yaml
 
-ZkbasContractAddr=`cat ${DEPLOY_PATH}/zkbas-contract/info/addresses.json  | jq -r '.zkbasProxy'`
-sed -i -e "s/ZkbasProxy: .*/ZkbasProxy: ${ZkbasContractAddr}/" ${DEPLOY_PATH}/zkbas/tools/dbinitializer/contractaddr.yaml
+ZkBNBContractAddr=`cat ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json  | jq -r '.zkbnbProxy'`
+sed -i -e "s/ZkBNBProxy: .*/ZkBNBProxy: ${ZkBNBContractAddr}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
 
-GovernanceContractAddr=`cat ${DEPLOY_PATH}/zkbas-contract/info/addresses.json  | jq -r '.governance'`
-sed -i -e "s/Governance: .*/Governance: ${GovernanceContractAddr}/" ${DEPLOY_PATH}/zkbas/tools/dbinitializer/contractaddr.yaml
+GovernanceContractAddr=`cat ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json  | jq -r '.governance'`
+sed -i -e "s/Governance: .*/Governance: ${GovernanceContractAddr}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
 
 
 
-cd ${DEPLOY_PATH}/zkbas/
+cd ${DEPLOY_PATH}/zkbnb/
 make api-server
-cd ${DEPLOY_PATH}/zkbas && go mod tidy
+cd ${DEPLOY_PATH}/zkbnb && go mod tidy
 
 
 echo "6. init tables on database"
-go run ./cmd/zkbas/main.go db initialize --dsn "host=localhost user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable" --contractAddr ${DEPLOY_PATH}/zkbas/tools/dbinitializer/contractaddr.yaml
+go run ./cmd/zkbnb/main.go db initialize --dsn "host=localhost user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable" --contractAddr ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
 
 
-cd ${DEPLOY_PATH}/zkbas/
+cd ${DEPLOY_PATH}/zkbnb/
 make api-server
 
 
@@ -100,25 +100,25 @@ echo "7. run prover"
 echo -e "
 Name: prover
 Postgres:
-  DataSource: host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable
+  DataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
 
 CacheRedis:
   - Host: 127.0.0.1:6379
     Type: node
 
 KeyPath:
-  ProvingKeyPath: [${KEY_PATH}/zkbas1.pk, ${KEY_PATH}/zkbas10.pk]
-  VerifyingKeyPath: [${KEY_PATH}/zkbas1.vk, ${KEY_PATH}/zkbas10.vk]
+  ProvingKeyPath: [${KEY_PATH}/zkbnb1.pk, ${KEY_PATH}/zkbnb10.pk]
+  VerifyingKeyPath: [${KEY_PATH}/zkbnb1.vk, ${KEY_PATH}/zkbnb10.vk]
 
 BlockConfig:
   OptionalBlockSizes: [1, 10]
 
 TreeDB:
   Driver: memorydb
-" > ${DEPLOY_PATH}/zkbas/service/prover/etc/config.yaml
+" > ${DEPLOY_PATH}/zkbnb/service/prover/etc/config.yaml
 
 echo -e "
-go run ./cmd/zkbas/main.go prover --config ${DEPLOY_PATH}/zkbas/service/prover/etc/config.yaml
+go run ./cmd/zkbnb/main.go prover --config ${DEPLOY_PATH}/zkbnb/service/prover/etc/config.yaml
 " > run_prover.sh
 pm2 start --name prover "./run_prover.sh"
 
@@ -132,7 +132,7 @@ echo -e "
 Name: witness
 
 Postgres:
-  DataSource: host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable
+  DataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
 
 CacheRedis:
   - Host: 127.0.0.1:6379
@@ -140,10 +140,10 @@ CacheRedis:
 
 TreeDB:
   Driver: memorydb
-" > ${DEPLOY_PATH}/zkbas/service/witness/etc/config.yaml
+" > ${DEPLOY_PATH}/zkbnb/service/witness/etc/config.yaml
 
 echo -e "
-go run ./cmd/zkbas/main.go witness --config ${DEPLOY_PATH}/zkbas/service/witness/etc/config.yaml
+go run ./cmd/zkbnb/main.go witness --config ${DEPLOY_PATH}/zkbnb/service/witness/etc/config.yaml
 " > run_witness.sh
 pm2 start --name witness "./run_witness.sh"
 
@@ -154,7 +154,7 @@ echo -e "
 Name: monitor
 
 Postgres:
-  DataSource: host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable
+  DataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
 
 CacheRedis:
   - Host: 127.0.0.1:6379
@@ -169,10 +169,10 @@ ChainConfig:
 
 TreeDB:
   Driver: memorydb
-" > ${DEPLOY_PATH}/zkbas/service/monitor/etc/config.yaml
+" > ${DEPLOY_PATH}/zkbnb/service/monitor/etc/config.yaml
 
 echo -e "
-go run ./cmd/zkbas/main.go monitor --config ${DEPLOY_PATH}/zkbas/service/monitor/etc/config.yaml
+go run ./cmd/zkbnb/main.go monitor --config ${DEPLOY_PATH}/zkbnb/service/monitor/etc/config.yaml
 " > run_monitor.sh
 pm2 start --name monitor "./run_monitor.sh"
 
@@ -183,7 +183,7 @@ echo -e "
 Name: committer
 
 Postgres:
-  DataSource: host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable
+  DataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
 
 CacheRedis:
   - Host: 127.0.0.1:6379
@@ -194,10 +194,10 @@ BlockConfig:
 
 TreeDB:
   Driver: memorydb
-" > ${DEPLOY_PATH}/zkbas/service/committer/etc/config.yaml
+" > ${DEPLOY_PATH}/zkbnb/service/committer/etc/config.yaml
 
 echo -e "
-go run ./cmd/zkbas/main.go committer --config ${DEPLOY_PATH}/zkbas/service/committer/etc/config.yaml
+go run ./cmd/zkbnb/main.go committer --config ${DEPLOY_PATH}/zkbnb/service/committer/etc/config.yaml
 " > run_committer.sh
 pm2 start --name committer "./run_committer.sh"
 
@@ -208,7 +208,7 @@ echo -e "
 Name: sender
 
 Postgres:
-  DataSource: host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable
+  DataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
 
 CacheRedis:
   - Host: 127.0.0.1:6379
@@ -225,10 +225,10 @@ ChainConfig:
 
 TreeDB:
   Driver: memorydb
-" > ${DEPLOY_PATH}/zkbas/service/sender/etc/config.yaml
+" > ${DEPLOY_PATH}/zkbnb/service/sender/etc/config.yaml
 
 echo -e "
-go run ./cmd/zkbas/main.go sender --config ${DEPLOY_PATH}/zkbas/service/sender/etc/config.yaml
+go run ./cmd/zkbnb/main.go sender --config ${DEPLOY_PATH}/zkbnb/service/sender/etc/config.yaml
 " > run_sender.sh
 pm2 start --name sender "./run_sender.sh"
 
@@ -246,7 +246,7 @@ Prometheus:
   Path: /metrics
 
 Postgres:
-  DataSource: host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5432 sslmode=disable
+  DataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
 
 CacheRedis:
   - Host: 127.0.0.1:6379
@@ -269,9 +269,9 @@ MemCache:
   BlockExpiration:   400
   TxExpiration:      400
   PriceExpiration:   200
-  " > ${DEPLOY_PATH}/zkbas/service/apiserver/etc/config.yaml
+  " > ${DEPLOY_PATH}/zkbnb/service/apiserver/etc/config.yaml
 
 echo -e "
-go run ./cmd/zkbas/main.go apiserver --config ${DEPLOY_PATH}/zkbas/service/apiserver/etc/config.yaml
+go run ./cmd/zkbnb/main.go apiserver --config ${DEPLOY_PATH}/zkbnb/service/apiserver/etc/config.yaml
 " > run_apiserver.sh
 pm2 start --name apiserver "./run_apiserver.sh"

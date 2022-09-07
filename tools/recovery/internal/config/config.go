@@ -4,7 +4,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 
-	"github.com/bnb-chain/zkbas/tree"
+	"github.com/bnb-chain/zkbnb/tree"
 )
 
 type Config struct {

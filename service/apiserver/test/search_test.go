@@ -10,8 +10,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/types"
-	types2 "github.com/bnb-chain/zkbas/types"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/types"
+	types2 "github.com/bnb-chain/zkbnb/types"
 )
 
 func (s *ApiServerSuite) TestSearch() {

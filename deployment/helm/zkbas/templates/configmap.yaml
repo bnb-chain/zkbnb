@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "zkbas.fullname" . }}
+  name: {{ include "zkbnb.fullname" . }}
   labels:
-    {{- include "zkbas.labels" . | nindent 4 }}
+    {{- include "zkbnb.labels" . | nindent 4 }}
 data:
   prover.yaml: | 
     Name: prover
@@ -14,8 +14,8 @@ data:
       {{- toYaml .Values.configs.redisCache | nindent 6 }}
 
     KeyPath:
-      ProvingKeyPath: [/server/.zkbas/zkbas1.pk, /server/.zkbas/zkbas10.pk]
-      VerifyingKeyPath: [/server/.zkbas/zkbas1.vk, /server/.zkbas/zkbas10.vk]
+      ProvingKeyPath: [/server/.zkbnb/zkbnb1.pk, /server/.zkbnb/zkbnb10.pk]
+      VerifyingKeyPath: [/server/.zkbnb/zkbnb1.vk, /server/.zkbnb/zkbnb10.vk]
 
     BlockConfig:
       OptionalBlockSizes: [1, 10]

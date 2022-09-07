@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 ZkBAS Protocol
+ * Copyright © 2021 ZkBNB Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ package types
 import (
 	"encoding/json"
 
-	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 )
 
 const (

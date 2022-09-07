@@ -2,7 +2,7 @@ syntax = "v1"
 
 info(
 	date: "2022-5-1"
-	desc: "Public APIs for zkbas"
+	desc: "Public APIs for zkbnb"
 	version: "1.0"
 )
 
@@ -20,7 +20,7 @@ type (
 )
 
 service server-api {
-	@doc "Get status of zkbas"
+	@doc "Get status of zkbnb"
 	@handler GetStatus
 	get / returns (Status)
 }
@@ -235,7 +235,7 @@ type (
 )
 
 service server-api {
-	@doc "Get zkbas general info, including contract address, and count of transactions and active users"
+	@doc "Get zkbnb general info, including contract address, and count of transactions and active users"
 	@handler GetLayer2BasicInfo
 	get /api/v1/layer2BasicInfo returns (Layer2BasicInfo)
 	

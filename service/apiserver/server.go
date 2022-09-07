@@ -6,9 +6,9 @@ import (
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/rest"
 
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/config"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/handler"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/config"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/handler"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
 )
 
 func Run(configFile string) error {

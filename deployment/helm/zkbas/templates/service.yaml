@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "zkbas.fullname" . }}
+  name: {{ include "zkbnb.fullname" . }}
   labels:
-    {{- include "zkbas.labels" . | nindent 4 }}
+    {{- include "zkbnb.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -12,5 +12,5 @@ spec:
       protocol: TCP
       name: http
   selector:
-    zkbas.api: {{ include "zkbas.fullname" . }}-apiserver
-    {{- include "zkbas.selectorLabels" . | nindent 4 }}
+    zkbnb.api: {{ include "zkbnb.fullname" . }}-apiserver
+    {{- include "zkbnb.selectorLabels" . | nindent 4 }}

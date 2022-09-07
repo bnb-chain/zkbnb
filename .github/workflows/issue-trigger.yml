@@ -15,17 +15,17 @@ jobs:
         if: contains(github.event.pull_request.body, '/update-integration-keyfile') || contains(github.event.comment.body, '/update-integration-keyfile')   # check the comment if it contains the keywords
         run: |
           cd /server
-          sudo rm -rf ./zkbas
-          
-          echo 'fetch zkbas repo'
+          sudo rm -rf ./zkbnb
+
+          echo 'fetch zkbnb repo'
           export PR_NUMBER=$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
           echo Pull requests $PR_NUMBER
-          
-          sudo git clone https://github.com/bnb-chain/zkbas.git
-          cd ./zkbas
+
+          sudo git clone https://github.com/bnb-chain/zkbnb.git
+          cd ./zkbnb
           sudo git fetch origin pull/$PR_NUMBER/head:$GITHUB_SHA 2>/dev/null
           sudo git checkout $GITHUB_SHA
 
           sudo bash ./deployment/tool/tool.sh prepare new
           sudo rm -rf /server/test.keyfile
-          sudo cp -r ./deployment/.zkbas /server/test.keyfile
+          sudo cp -r ./deployment/.zkbnb /server/test.keyfile

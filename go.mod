@@ -1,4 +1,4 @@
-module github.com/bnb-chain/zkbas
+module github.com/bnb-chain/zkbnb
 
 go 1.17
 
@@ -84,9 +84,9 @@ require (
 )
 
 require (
-	github.com/bnb-chain/zkbas-crypto v0.0.4-0.20220907020455-454a471a56d0
-	github.com/bnb-chain/zkbas-eth-rpc v0.0.1
-	github.com/bnb-chain/zkbas-smt v0.0.1
+	github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20220907124239-7cdc9ddd1728
+	github.com/bnb-chain/zkbnb-eth-rpc v0.0.2-0.20220907130157-2311ce3fe6f6
+	github.com/bnb-chain/zkbnb-smt v0.0.2-0.20220907130044-9c7cccbd19fa
 	github.com/consensys/gnark v0.7.0
 	github.com/consensys/gnark-crypto v0.7.0
 	github.com/eko/gocache/v2 v2.3.1

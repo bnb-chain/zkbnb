@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 ZkBAS Protocol
+ * Copyright © 2021 ZkBNB Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,10 @@ import (
 	"bytes"
 	"math/big"
 
-	curve "github.com/bnb-chain/zkbas-crypto/ecc/ztwistededwards/tebn254"
-	"github.com/bnb-chain/zkbas-crypto/ffmath"
-	bsmt "github.com/bnb-chain/zkbas-smt"
-	common2 "github.com/bnb-chain/zkbas/common"
+	curve "github.com/bnb-chain/zkbnb-crypto/ecc/ztwistededwards/tebn254"
+	"github.com/bnb-chain/zkbnb-crypto/ffmath"
+	bsmt "github.com/bnb-chain/zkbnb-smt"
+	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"

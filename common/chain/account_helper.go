@@ -5,8 +5,8 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas/dao/account"
-	"github.com/bnb-chain/zkbas/types"
+	"github.com/bnb-chain/zkbnb/dao/account"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 func FromFormatAccountInfo(formatAccountInfo *types.AccountInfo) (accountInfo *account.Account, err error) {

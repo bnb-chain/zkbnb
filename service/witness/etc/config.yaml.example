@@ -1,7 +1,7 @@
 Name: witness
 
 Postgres:
-  DataSource: host=127.0.0.1 user=postgres password=pw dbname=zkbas port=5432 sslmode=disable
+  DataSource: host=127.0.0.1 user=postgres password=pw dbname=zkbnb port=5432 sslmode=disable
 
 TreeDB:
   Driver: memorydb

@@ -28,8 +28,8 @@ CacheRedis:
     Type: node
 
 KeyPath:
-  ProvingKeyPath: [/server/.zkbas/zkbas1.pk]
-  VerifyingKeyPath: [/server/.zkbas/zkbas1.vk]
+  ProvingKeyPath: [/server/.zkbnb/zkbnb1.pk]
+  VerifyingKeyPath: [/server/.zkbnb/zkbnb1.vk]
 
 BlockConfig:
   OptionalBlockSizes: [1]

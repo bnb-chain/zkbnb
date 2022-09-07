@@ -7,7 +7,7 @@
 #### GET
 ##### Summary
 
-Get status of zkbas
+Get status of zkbnb
 
 ##### Responses
 
@@ -298,7 +298,7 @@ Get supported gas fee assets
 #### GET
 ##### Summary
 
-Get zkbas general info, including contract address, and count of transactions and active users
+Get zkbnb general info, including contract address, and count of transactions and active users
 
 ##### Responses
 

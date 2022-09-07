@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 ZkBAS Protocol
+ * Copyright © 2021 ZkBNB Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,16 +21,16 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
-	"github.com/bnb-chain/zkbas/dao/asset"
-	"github.com/bnb-chain/zkbas/dao/block"
-	"github.com/bnb-chain/zkbas/dao/l1rolluptx"
-	"github.com/bnb-chain/zkbas/dao/l1syncedblock"
-	"github.com/bnb-chain/zkbas/dao/mempool"
-	"github.com/bnb-chain/zkbas/dao/priorityrequest"
-	"github.com/bnb-chain/zkbas/dao/sysconfig"
-	"github.com/bnb-chain/zkbas/service/monitor/config"
-	"github.com/bnb-chain/zkbas/types"
+	"github.com/bnb-chain/zkbnb-eth-rpc/_rpc"
+	"github.com/bnb-chain/zkbnb/dao/asset"
+	"github.com/bnb-chain/zkbnb/dao/block"
+	"github.com/bnb-chain/zkbnb/dao/l1rolluptx"
+	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
+	"github.com/bnb-chain/zkbnb/dao/mempool"
+	"github.com/bnb-chain/zkbnb/dao/priorityrequest"
+	"github.com/bnb-chain/zkbnb/dao/sysconfig"
+	"github.com/bnb-chain/zkbnb/service/monitor/config"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 type Monitor struct {
@@ -38,7 +38,7 @@ type Monitor struct {
 
 	cli *_rpc.ProviderClient
 
-	zkbasContractAddress      string
+	zkbnbContractAddress      string
 	governanceContractAddress string
 
 	db                   *gorm.DB
@@ -68,7 +68,7 @@ func NewMonitor(c config.Config) *Monitor {
 		SysConfigModel:       sysconfig.NewSysConfigModel(db),
 	}
 
-	zkbasAddressConfig, err := monitor.SysConfigModel.GetSysConfigByName(types.ZkbasContract)
+	zkbnbAddressConfig, err := monitor.SysConfigModel.GetSysConfigByName(types.ZkBNBContract)
 	if err != nil {
 		logx.Errorf("GetSysConfigByName err: %s", err.Error())
 		panic(err)
@@ -87,15 +87,15 @@ func NewMonitor(c config.Config) *Monitor {
 			err.Error(), c.ChainConfig.NetworkRPCSysConfigName)
 		panic(err)
 	}
-	logx.Infof("ChainName: %s, zkbasContractAddress: %s, networkRpc: %s",
-		c.ChainConfig.NetworkRPCSysConfigName, zkbasAddressConfig.Value, networkRpc.Value)
+	logx.Infof("ChainName: %s, zkbnbContractAddress: %s, networkRpc: %s",
+		c.ChainConfig.NetworkRPCSysConfigName, zkbnbAddressConfig.Value, networkRpc.Value)
 
 	bscRpcCli, err := _rpc.NewClient(networkRpc.Value)
 	if err != nil {
 		panic(err)
 	}
 
-	monitor.zkbasContractAddress = zkbasAddressConfig.Value
+	monitor.zkbnbContractAddress = zkbnbAddressConfig.Value
 	monitor.governanceContractAddress = governanceAddressConfig.Value
 	monitor.cli = bscRpcCli
 

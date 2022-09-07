@@ -4,15 +4,15 @@ package handler
 import (
 	"net/http"
 
-	account "github.com/bnb-chain/zkbas/service/apiserver/internal/handler/account"
-	asset "github.com/bnb-chain/zkbas/service/apiserver/internal/handler/asset"
-	block "github.com/bnb-chain/zkbas/service/apiserver/internal/handler/block"
-	info "github.com/bnb-chain/zkbas/service/apiserver/internal/handler/info"
-	nft "github.com/bnb-chain/zkbas/service/apiserver/internal/handler/nft"
-	pair "github.com/bnb-chain/zkbas/service/apiserver/internal/handler/pair"
-	root "github.com/bnb-chain/zkbas/service/apiserver/internal/handler/root"
-	transaction "github.com/bnb-chain/zkbas/service/apiserver/internal/handler/transaction"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
+	account "github.com/bnb-chain/zkbnb/service/apiserver/internal/handler/account"
+	asset "github.com/bnb-chain/zkbnb/service/apiserver/internal/handler/asset"
+	block "github.com/bnb-chain/zkbnb/service/apiserver/internal/handler/block"
+	info "github.com/bnb-chain/zkbnb/service/apiserver/internal/handler/info"
+	nft "github.com/bnb-chain/zkbnb/service/apiserver/internal/handler/nft"
+	pair "github.com/bnb-chain/zkbnb/service/apiserver/internal/handler/pair"
+	root "github.com/bnb-chain/zkbnb/service/apiserver/internal/handler/root"
+	transaction "github.com/bnb-chain/zkbnb/service/apiserver/internal/handler/transaction"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest"
 )

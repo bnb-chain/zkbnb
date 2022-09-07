@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 ZkBAS Protocol
+ * Copyright © 2021 ZkBNB Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,14 +29,14 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas-eth-rpc/_rpc"
-	zkbas "github.com/bnb-chain/zkbas-eth-rpc/zkbas/core/legend"
-	common2 "github.com/bnb-chain/zkbas/common"
-	"github.com/bnb-chain/zkbas/dao/block"
-	"github.com/bnb-chain/zkbas/dao/l1syncedblock"
-	"github.com/bnb-chain/zkbas/dao/mempool"
-	"github.com/bnb-chain/zkbas/dao/priorityrequest"
-	types2 "github.com/bnb-chain/zkbas/types"
+	"github.com/bnb-chain/zkbnb-eth-rpc/_rpc"
+	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/zkbnb/core/legend"
+	common2 "github.com/bnb-chain/zkbnb/common"
+	"github.com/bnb-chain/zkbnb/dao/block"
+	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
+	"github.com/bnb-chain/zkbnb/dao/mempool"
+	"github.com/bnb-chain/zkbnb/dao/priorityrequest"
+	types2 "github.com/bnb-chain/zkbnb/types"
 )
 
 func (m *Monitor) MonitorGenericBlocks() (err error) {
@@ -66,12 +66,12 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 
 	logx.Infof("syncing l1 blocks from %d to %d", big.NewInt(handledHeight+1), big.NewInt(int64(safeHeight)))
 
-	priorityRequestCount, err := getPriorityRequestCount(m.cli, m.zkbasContractAddress, uint64(handledHeight+1), safeHeight)
+	priorityRequestCount, err := getPriorityRequestCount(m.cli, m.zkbnbContractAddress, uint64(handledHeight+1), safeHeight)
 	if err != nil {
 		return fmt.Errorf("failed to get priority request count, err: %v", err)
 	}
 
-	logs, err := getZkbasContractLogs(m.cli, m.zkbasContractAddress, uint64(handledHeight+1), safeHeight)
+	logs, err := getZkBNBContractLogs(m.cli, m.zkbnbContractAddress, uint64(handledHeight+1), safeHeight)
 	if err != nil {
 		return fmt.Errorf("failed to get contract logs, err: %v", err)
 	}
@@ -94,7 +94,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		}
 
 		switch vlog.Topics[0].Hex() {
-		case zkbasLogNewPriorityRequestSigHash.Hex():
+		case zkbnbLogNewPriorityRequestSigHash.Hex():
 			priorityRequestCountCheck++
 			l1EventInfo.EventType = EventTypeNewPriorityRequest
 
@@ -103,14 +103,14 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 				return fmt.Errorf("failed to convert NewPriorityRequest log, err: %v", err)
 			}
 			priorityRequests = append(priorityRequests, l2TxEventMonitorInfo)
-		case zkbasLogWithdrawalSigHash.Hex():
-		case zkbasLogWithdrawalPendingSigHash.Hex():
-		case zkbasLogBlockCommitSigHash.Hex():
+		case zkbnbLogWithdrawalSigHash.Hex():
+		case zkbnbLogWithdrawalPendingSigHash.Hex():
+		case zkbnbLogBlockCommitSigHash.Hex():
 			l1EventInfo.EventType = EventTypeCommittedBlock
 
-			var event zkbas.ZkbasBlockCommit
-			if err := ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlockCommit, vlog.Data); err != nil {
-				return fmt.Errorf("failed to unpack ZkbasBlockCommit event, err: %v", err)
+			var event zkbnb.ZkBNBBlockCommit
+			if err := ZkBNBContractAbi.UnpackIntoInterface(&event, EventNameBlockCommit, vlog.Data); err != nil {
+				return fmt.Errorf("failed to unpack ZkBNBBlockCommit event, err: %v", err)
 			}
 
 			// update block status
@@ -124,12 +124,12 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			relatedBlocks[blockHeight].CommittedTxHash = vlog.TxHash.Hex()
 			relatedBlocks[blockHeight].CommittedAt = int64(logBlock.Time)
 			relatedBlocks[blockHeight].BlockStatus = block.StatusCommitted
-		case zkbasLogBlockVerificationSigHash.Hex():
+		case zkbnbLogBlockVerificationSigHash.Hex():
 			l1EventInfo.EventType = EventTypeVerifiedBlock
 
-			var event zkbas.ZkbasBlockVerification
-			if err := ZkbasContractAbi.UnpackIntoInterface(&event, EventNameBlockVerification, vlog.Data); err != nil {
-				return fmt.Errorf("failed to unpack ZkbasBlockVerification err: %v", err)
+			var event zkbnb.ZkBNBBlockVerification
+			if err := ZkBNBContractAbi.UnpackIntoInterface(&event, EventNameBlockVerification, vlog.Data); err != nil {
+				return fmt.Errorf("failed to unpack ZkBNBBlockVerification err: %v", err)
 			}
 
 			// update block status
@@ -143,7 +143,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			relatedBlocks[blockHeight].VerifiedTxHash = vlog.TxHash.Hex()
 			relatedBlocks[blockHeight].VerifiedAt = int64(logBlock.Time)
 			relatedBlocks[blockHeight].BlockStatus = block.StatusVerifiedAndExecuted
-		case zkbasLogBlocksRevertSigHash.Hex():
+		case zkbnbLogBlocksRevertSigHash.Hex():
 			l1EventInfo.EventType = EventTypeRevertedBlock
 		default:
 		}
@@ -222,11 +222,11 @@ func getMempoolTxsToDelete(blocks []*block.Block, mempoolModel mempool.MempoolMo
 	return toDeleteMempoolTxs, nil
 }
 
-func getZkbasContractLogs(cli *_rpc.ProviderClient, zkbasContract string, startHeight, endHeight uint64) ([]types.Log, error) {
+func getZkBNBContractLogs(cli *_rpc.ProviderClient, zkbnbContract string, startHeight, endHeight uint64) ([]types.Log, error) {
 	query := ethereum.FilterQuery{
 		FromBlock: big.NewInt(int64(startHeight)),
 		ToBlock:   big.NewInt(int64(endHeight)),
-		Addresses: []common.Address{common.HexToAddress(zkbasContract)},
+		Addresses: []common.Address{common.HexToAddress(zkbnbContract)},
 	}
 	logs, err := cli.FilterLogs(context.Background(), query)
 	if err != nil {
@@ -235,12 +235,12 @@ func getZkbasContractLogs(cli *_rpc.ProviderClient, zkbasContract string, startH
 	return logs, nil
 }
 
-func getPriorityRequestCount(cli *_rpc.ProviderClient, zkbasContract string, startHeight, endHeight uint64) (int, error) {
-	zkbasInstance, err := zkbas.LoadZkbasInstance(cli, zkbasContract)
+func getPriorityRequestCount(cli *_rpc.ProviderClient, zkbnbContract string, startHeight, endHeight uint64) (int, error) {
+	zkbnbInstance, err := zkbnb.LoadZkBNBInstance(cli, zkbnbContract)
 	if err != nil {
 		return 0, err
 	}
-	priorityRequests, err := zkbasInstance.ZkbasFilterer.
+	priorityRequests, err := zkbnbInstance.ZkBNBFilterer.
 		FilterNewPriorityRequest(&bind.FilterOpts{Start: startHeight, End: &endHeight})
 	if err != nil {
 		return 0, err
@@ -253,8 +253,8 @@ func getPriorityRequestCount(cli *_rpc.ProviderClient, zkbasContract string, sta
 }
 
 func convertLogToNewPriorityRequestEvent(log types.Log) (*priorityrequest.PriorityRequest, error) {
-	var event zkbas.ZkbasNewPriorityRequest
-	if err := ZkbasContractAbi.UnpackIntoInterface(&event, EventNameNewPriorityRequest, log.Data); err != nil {
+	var event zkbnb.ZkBNBNewPriorityRequest
+	if err := ZkBNBContractAbi.UnpackIntoInterface(&event, EventNameNewPriorityRequest, log.Data); err != nil {
 		return nil, err
 	}
 	request := &priorityrequest.PriorityRequest{

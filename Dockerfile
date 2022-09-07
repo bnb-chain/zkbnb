@@ -2,14 +2,14 @@ FROM golang:1.17-alpine as builder
 
 RUN apk add --no-cache make git bash
 
-ADD . /zkbas
+ADD . /zkbnb
 
 ENV CGO_ENABLED=0
 ENV GO111MODULE=on
 
-RUN cd /zkbas && make build-only
+RUN cd /zkbnb && make build-only
 
-# Pull zkBAS into a second stage deploy alpine container
+# Pull ZkBNB into a second stage deploy alpine container
 FROM alpine:3.16.0
 
 ARG USER=bsc
@@ -30,8 +30,8 @@ RUN echo "[ ! -z \"\$TERM\" -a -r /etc/motd ] && cat /etc/motd" >> /etc/bash/bas
 
 WORKDIR ${WORKDIR}
 
-COPY --from=builder /zkbas/build/bin/zkbas ${WORKDIR}/
+COPY --from=builder /zkbnb/build/bin/zkbnb ${WORKDIR}/
 RUN chown -R ${USER_UID}:${USER_GID} ${WORKDIR}
 USER ${USER_UID}:${USER_GID}
 
-ENTRYPOINT ["/server/zkbas"]
+ENTRYPOINT ["/server/zkbnb"]

@@ -7,8 +7,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/cache"
-	"github.com/bnb-chain/zkbas/types"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/cache"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 type Fetcher interface {

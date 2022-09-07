@@ -12,17 +12,17 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas/common/chain"
-	sdb "github.com/bnb-chain/zkbas/core/statedb"
-	"github.com/bnb-chain/zkbas/dao/account"
-	"github.com/bnb-chain/zkbas/dao/block"
-	"github.com/bnb-chain/zkbas/dao/compressedblock"
-	"github.com/bnb-chain/zkbas/dao/dbcache"
-	"github.com/bnb-chain/zkbas/dao/liquidity"
-	"github.com/bnb-chain/zkbas/dao/mempool"
-	"github.com/bnb-chain/zkbas/dao/nft"
-	"github.com/bnb-chain/zkbas/dao/tx"
-	"github.com/bnb-chain/zkbas/tree"
+	"github.com/bnb-chain/zkbnb/common/chain"
+	sdb "github.com/bnb-chain/zkbnb/core/statedb"
+	"github.com/bnb-chain/zkbnb/dao/account"
+	"github.com/bnb-chain/zkbnb/dao/block"
+	"github.com/bnb-chain/zkbnb/dao/compressedblock"
+	"github.com/bnb-chain/zkbnb/dao/dbcache"
+	"github.com/bnb-chain/zkbnb/dao/liquidity"
+	"github.com/bnb-chain/zkbnb/dao/mempool"
+	"github.com/bnb-chain/zkbnb/dao/nft"
+	"github.com/bnb-chain/zkbnb/dao/tx"
+	"github.com/bnb-chain/zkbnb/tree"
 )
 
 type ChainConfig struct {

@@ -1,16 +1,16 @@
 package statedb
 
 import (
-	"github.com/bnb-chain/zkbas/dao/compressedblock"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas/dao/account"
-	"github.com/bnb-chain/zkbas/dao/asset"
-	"github.com/bnb-chain/zkbas/dao/block"
-	"github.com/bnb-chain/zkbas/dao/liquidity"
-	"github.com/bnb-chain/zkbas/dao/mempool"
-	"github.com/bnb-chain/zkbas/dao/nft"
-	"github.com/bnb-chain/zkbas/dao/tx"
+	"github.com/bnb-chain/zkbnb/dao/account"
+	"github.com/bnb-chain/zkbnb/dao/asset"
+	"github.com/bnb-chain/zkbnb/dao/block"
+	"github.com/bnb-chain/zkbnb/dao/compressedblock"
+	"github.com/bnb-chain/zkbnb/dao/liquidity"
+	"github.com/bnb-chain/zkbnb/dao/mempool"
+	"github.com/bnb-chain/zkbnb/dao/nft"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 )
 
 type ChainDB struct {

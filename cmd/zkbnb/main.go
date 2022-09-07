@@ -7,15 +7,15 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/bnb-chain/zkbas/cmd/flags"
-	"github.com/bnb-chain/zkbas/service/apiserver"
-	"github.com/bnb-chain/zkbas/service/committer"
-	"github.com/bnb-chain/zkbas/service/monitor"
-	"github.com/bnb-chain/zkbas/service/prover"
-	"github.com/bnb-chain/zkbas/service/sender"
-	"github.com/bnb-chain/zkbas/service/witness"
-	"github.com/bnb-chain/zkbas/tools/dbinitializer"
-	"github.com/bnb-chain/zkbas/tools/recovery"
+	"github.com/bnb-chain/zkbnb/cmd/flags"
+	"github.com/bnb-chain/zkbnb/service/apiserver"
+	"github.com/bnb-chain/zkbnb/service/committer"
+	"github.com/bnb-chain/zkbnb/service/monitor"
+	"github.com/bnb-chain/zkbnb/service/prover"
+	"github.com/bnb-chain/zkbnb/service/sender"
+	"github.com/bnb-chain/zkbnb/service/witness"
+	"github.com/bnb-chain/zkbnb/tools/dbinitializer"
+	"github.com/bnb-chain/zkbnb/tools/recovery"
 )
 
 // Build Info (set via linker flags)
@@ -36,8 +36,8 @@ func main() {
 	}
 
 	app := &cli.App{
-		Name:        "zkBAS",
-		HelpName:    "zkbas",
+		Name:        "ZkBNB",
+		HelpName:    "zkbnb",
 		Version:     version,
 		Description: "ZkRollup BNB Application Side Chain",
 		Commands: []*cli.Command{

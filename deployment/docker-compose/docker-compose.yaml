@@ -2,7 +2,7 @@ version: '3.4'
 services:
     initializer:
         container_name: initializer
-        image: ghcr.io/bnb-chain/zkbas
+        image: ghcr.io/bnb-chain/zkbnb
         restart: on-failure
         command: 
           - db
@@ -21,7 +21,7 @@ services:
     
     prover:
         container_name: prover
-        image: ghcr.io/bnb-chain/zkbas
+        image: ghcr.io/bnb-chain/zkbnb
         restart: always
         command: 
           - prover
@@ -29,13 +29,13 @@ services:
           - /server/configs/prover.yaml
         volumes:
           - $BASEDIR/configs:/server/configs
-          - $BASEDIR/.zkbas:/server/.zkbas
+          - $BASEDIR/.zkbnb:/server/.zkbnb
         depends_on:
           - initializer
     
     witness:
         container_name: witness
-        image: ghcr.io/bnb-chain/zkbas
+        image: ghcr.io/bnb-chain/zkbnb
         restart: always
         command: 
           - witness
@@ -48,7 +48,7 @@ services:
     
     monitor:
         container_name: monitor
-        image: ghcr.io/bnb-chain/zkbas
+        image: ghcr.io/bnb-chain/zkbnb
         restart: always
         command: 
           - monitor
@@ -61,7 +61,7 @@ services:
     
     committer:
         container_name: committer
-        image: ghcr.io/bnb-chain/zkbas
+        image: ghcr.io/bnb-chain/zkbnb
         restart: always
         command: 
           - committer
@@ -87,7 +87,7 @@ services:
 
     apiserver:
         container_name: apiserver
-        image: ghcr.io/bnb-chain/zkbas
+        image: ghcr.io/bnb-chain/zkbnb
         restart: always
         command: 
           - apiserver

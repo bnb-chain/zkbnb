@@ -8,10 +8,10 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbas/core"
-	"github.com/bnb-chain/zkbas/dao/block"
-	"github.com/bnb-chain/zkbas/dao/mempool"
-	"github.com/bnb-chain/zkbas/dao/tx"
+	"github.com/bnb-chain/zkbnb/core"
+	"github.com/bnb-chain/zkbnb/dao/block"
+	"github.com/bnb-chain/zkbnb/dao/mempool"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 )
 
 const (

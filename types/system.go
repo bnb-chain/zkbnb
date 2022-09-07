@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 ZkBAS Protocol
+ * Copyright © 2021 ZkBNB Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ const (
 	BscTestNetworkRpc       = "BscTestNetworkRpc"
 	LocalTestNetworkRpc     = "LocalTestNetworkRpc"
 	SysGasFee               = "SysGasFee"
-	ZkbasContract           = "ZkbasContract"
+	ZkBNBContract           = "ZkBNBContract"
 	GovernanceContract      = "GovernanceContract"
 	AssetGovernanceContract = "AssetGovernanceContract"
 	Validators              = "Validators"

@@ -1,9 +1,9 @@
-# ZkBAS Protocol Design
+# ZkBNB Protocol Design
 
 ## Glossary
 
 - **L1**: layer 1 blockchain, it is BNB Smart Chain.
-- **Rollup**: Zk Rollup based layer-2 network, it is ZkBAS.
+- **Rollup**: Zk Rollup based layer-2 network, it is ZkBNB.
 - **Owner**: A user get a L2 account.
 - **Committer**: Entity executing transactions and producing consecutive blocks on L2.
 - **Eventually**: happening within finite time.
@@ -19,7 +19,7 @@ switch to EDCSA.
 
 ### Overview
 
-ZkBAS implements a ZK rollup protocol (in short "rollup" below) for:
+ZkBNB implements a ZK rollup protocol (in short "rollup" below) for:
 
 - BNB and BEP20 fungible token deposit and transfer
 - AMM-based fungible token swap on L2
@@ -57,7 +57,7 @@ We assume that 1 `Chunk` = 32 bytes.
 
 ### Amount packing
 
-Mantissa and exponent parameters used in ZkBAS:
+Mantissa and exponent parameters used in ZkBNB:
 
 `amount = mantissa * radix^{exponent}`
 
@@ -293,9 +293,9 @@ func ComputeStateRootHash(
 }
 ```
 
-## ZkBAS Transactions
+## ZkBNB Transactions
 
-ZkBAS transactions are divided into Rollup transactions (initiated inside Rollup by a Rollup account) and Priority operations (initiated on the BSC by an BNB Smart Chain account).
+ZkBNB transactions are divided into Rollup transactions (initiated inside Rollup by a Rollup account) and Priority operations (initiated on the BSC by an BNB Smart Chain account).
 
 Rollup transactions:
 
@@ -326,9 +326,9 @@ Priority operations:
 
 1. User creates a `Transaction` or a `Priority operation`.
 2. After processing this request, committer creates a `Rollup operation` and adds it to the block.
-3. Once the block is complete, sender submits it to the ZkBAS smart contract as a block commitment. 
+3. Once the block is complete, sender submits it to the ZkBNB smart contract as a block commitment.
    Part of the logic of some `Rollup transaction` is checked by the smart contract.
-4. The proof for the block is submitted to the ZkBAS smart contract as the block verification. 
+4. The proof for the block is submitted to the ZkBNB smart contract as the block verification.
    If the verification succeeds, the new state is considered finalized.
 
 ### EmptyTx
@@ -2520,13 +2520,13 @@ func VerifyFullExitNftTx(
 Register an ZNS account which is an ENS like domain for layer-1 and a short account name for your layer-2 account.
 
 ```js
-function registerZNS(string calldata _name, address _owner, bytes32 _zkbasPubKeyX, bytes32 _zkbasPubKeyY) external payable nonReentrant
+function registerZNS(string calldata _name, address _owner, bytes32 _zkbnbPubKeyX, bytes32 _zkbnbPubKeyY) external payable nonReentrant
 ```
 
 - `_name`: your favor account name
 - `_owner`: account name layer-1 owner address
-- `_zkbasPubKeyX`: ZkBAS layer-2 public key X
-- `_zkbasPubKeyY`: ZkBAS layer-2 public key Y
+- `_zkbnbPubKeyX`: ZkBNB layer-2 public key X
+- `_zkbnbPubKeyY`: ZkBNB layer-2 public key Y
 
 #### CreatePair
 

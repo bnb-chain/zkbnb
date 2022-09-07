@@ -8,14 +8,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	bsmt "github.com/bnb-chain/zkbas-smt"
-	"github.com/bnb-chain/zkbas/common/chain"
-	"github.com/bnb-chain/zkbas/dao/account"
-	"github.com/bnb-chain/zkbas/dao/dbcache"
-	"github.com/bnb-chain/zkbas/dao/liquidity"
-	"github.com/bnb-chain/zkbas/dao/nft"
-	"github.com/bnb-chain/zkbas/tree"
-	"github.com/bnb-chain/zkbas/types"
+	bsmt "github.com/bnb-chain/zkbnb-smt"
+	"github.com/bnb-chain/zkbnb/common/chain"
+	"github.com/bnb-chain/zkbnb/dao/account"
+	"github.com/bnb-chain/zkbnb/dao/dbcache"
+	"github.com/bnb-chain/zkbnb/dao/liquidity"
+	"github.com/bnb-chain/zkbnb/dao/nft"
+	"github.com/bnb-chain/zkbnb/tree"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 type StateDB struct {

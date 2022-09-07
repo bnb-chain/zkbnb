@@ -1,5 +1,5 @@
 /*
- * Copyright © 2021 ZkBAS Protocol
+ * Copyright © 2021 ZkBNB Protocol
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,12 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbas/dao/account"
-	"github.com/bnb-chain/zkbas/dao/compressedblock"
-	"github.com/bnb-chain/zkbas/dao/liquidity"
-	"github.com/bnb-chain/zkbas/dao/nft"
-	"github.com/bnb-chain/zkbas/dao/tx"
-	"github.com/bnb-chain/zkbas/types"
+	"github.com/bnb-chain/zkbnb/dao/account"
+	"github.com/bnb-chain/zkbnb/dao/compressedblock"
+	"github.com/bnb-chain/zkbnb/dao/liquidity"
+	"github.com/bnb-chain/zkbnb/dao/nft"
+	"github.com/bnb-chain/zkbnb/dao/tx"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 const (

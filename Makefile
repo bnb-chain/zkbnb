@@ -2,18 +2,18 @@
 # with Go source code. If you know what GOPATH is then you probably
 # don't need to bother with make.
 
-.PHONY: zkbas android ios zkbas-cross evm all test clean
-.PHONY: zkbas-linux zkbas-linux-386 zkbas-linux-amd64 zkbas-linux-mips64 zkbas-linux-mips64le
-.PHONY: zkbas-linux-arm zkbas-linux-arm-5 zkbas-linux-arm-6 zkbas-linux-arm-7 zkbas-linux-arm64
-.PHONY: zkbas-darwin zkbas-darwin-386 zkbas-darwin-amd64
-.PHONY: zkbas-windows zkbas-windows-386 zkbas-windows-amd64
+.PHONY: zkbnb android ios zkbnb-cross evm all test clean
+.PHONY: zkbnb-linux zkbnb-linux-386 zkbnb-linux-amd64 zkbnb-linux-mips64 zkbnb-linux-mips64le
+.PHONY: zkbnb-linux-arm zkbnb-linux-arm-5 zkbnb-linux-arm-6 zkbnb-linux-arm-7 zkbnb-linux-arm64
+.PHONY: zkbnb-darwin zkbnb-darwin-386 zkbnb-darwin-amd64
+.PHONY: zkbnb-windows zkbnb-windows-386 zkbnb-windows-amd64
 GOBIN?=${GOPATH}/bin
 
 VERSION=$(shell git describe --tags)
 GIT_COMMIT=$(shell git rev-parse HEAD)
 GIT_COMMIT_DATE=$(shell git log -n1 --pretty='format:%cd' --date=format:'%Y%m%d')
-REPO=github.com/bnb-chain/zkbas
-IMAGE_NAME=ghcr.io/bnb-chain/zkbas
+REPO=github.com/bnb-chain/zkbnb
+IMAGE_NAME=ghcr.io/bnb-chain/zkbnb
 API_SERVER = ./service/apiserver
 
 api-server:
@@ -39,7 +39,7 @@ lint:
 	golangci-lint run ./...
 
 build-only:
-	go build -o build/bin/zkbas -ldflags="-X main.version=${VERSION} -X main.gitCommit=${GIT_COMMIT} -X main.gitDate=${GIT_COMMIT_DATE}" ./cmd/zkbas
+	go build -o build/bin/zkbnb -ldflags="-X main.version=${VERSION} -X main.gitCommit=${GIT_COMMIT} -X main.gitDate=${GIT_COMMIT_DATE}" ./cmd/zkbnb
 
 docker-image:
 	go mod vendor # temporary, should be removed after open source

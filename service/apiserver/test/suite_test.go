@@ -13,9 +13,9 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/rest"
 
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/config"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/handler"
-	"github.com/bnb-chain/zkbas/service/apiserver/internal/svc"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/config"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/handler"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
 )
 
 type ApiServerSuite struct {
@@ -32,8 +32,8 @@ func testDBSetup() {
 	testDBShutdown()
 	time.Sleep(5 * time.Second)
 	cmd := exec.Command("docker", "run", "--name", "postgres-ut-apiserver", "-p", "5433:5432",
-		"-e", "POSTGRES_PASSWORD=Zkbas@123", "-e", "POSTGRES_USER=postgres", "-e", "POSTGRES_DB=zkbas",
-		"-e", "PGDATA=/var/lib/postgresql/pgdata", "-d", "ghcr.io/bnb-chain/zkbas/zkbas-ut-postgres:0.0.2")
+		"-e", "POSTGRES_PASSWORD=ZkBNB@123", "-e", "POSTGRES_USER=postgres", "-e", "POSTGRES_DB=zkbnb",
+		"-e", "PGDATA=/var/lib/postgresql/pgdata", "-d", "ghcr.io/bnb-chain/zkbnb/zkbnb-ut-postgres:0.0.2")
 	if err := cmd.Run(); err != nil {
 		panic(err)
 	}
@@ -62,7 +62,7 @@ func (s *ApiServerSuite) SetupSuite() {
 		},
 		LogConf: logx.LogConf{},
 	}
-	c.Postgres = struct{ DataSource string }{DataSource: "host=127.0.0.1 user=postgres password=Zkbas@123 dbname=zkbas port=5433 sslmode=disable"}
+	c.Postgres = struct{ DataSource string }{DataSource: "host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5433 sslmode=disable"}
 	c.CacheRedis = cache.CacheConf{}
 	c.CacheRedis = append(c.CacheRedis, cache.NodeConf{
 		RedisConf: redis.RedisConf{Host: "127.0.0.1"},

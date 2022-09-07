@@ -6,8 +6,8 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
 
-	"github.com/bnb-chain/zkbas/service/prover/config"
-	"github.com/bnb-chain/zkbas/service/prover/prover"
+	"github.com/bnb-chain/zkbnb/service/prover/config"
+	"github.com/bnb-chain/zkbnb/service/prover/prover"
 )
 
 func Run(configFile string) error {
