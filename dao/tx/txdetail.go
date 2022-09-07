@@ -18,11 +18,7 @@
 package tx
 
 import (
-	"sort"
-
 	"gorm.io/gorm"
-
-	"github.com/bnb-chain/zkbas/types"
 )
 
 const TxDetailTableName = `tx_detail`
@@ -31,8 +27,6 @@ type (
 	TxDetailModel interface {
 		CreateTxDetailTable() error
 		DropTxDetailTable() error
-		GetTxDetailByAccountIndex(accountIndex int64) (txDetails []*TxDetail, err error)
-		GetTxIdsByAccountIndex(accountIndex int64) (txIds []int64, err error)
 	}
 
 	defaultTxDetailModel struct {
@@ -73,27 +67,4 @@ func (m *defaultTxDetailModel) CreateTxDetailTable() error {
 
 func (m *defaultTxDetailModel) DropTxDetailTable() error {
 	return m.DB.Migrator().DropTable(m.table)
-}
-
-func (m *defaultTxDetailModel) GetTxDetailByAccountIndex(accountIndex int64) (txDetails []*TxDetail, err error) {
-	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex).Find(&txDetails)
-	if dbTx.Error != nil {
-		return nil, types.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		return nil, types.DbErrNotFound
-	}
-	return txDetails, nil
-}
-
-func (m *defaultTxDetailModel) GetTxIdsByAccountIndex(accountIndex int64) (txIds []int64, err error) {
-	dbTx := m.DB.Table(m.table).Select("tx_id").Where("account_index = ?", accountIndex).Group("tx_id").Find(&txIds)
-	if dbTx.Error != nil {
-		return nil, types.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		return nil, types.DbErrNotFound
-	}
-	sort.Slice(txIds, func(i, j int) bool {
-		return txIds[i] > txIds[j]
-	})
-	return txIds, nil
 }

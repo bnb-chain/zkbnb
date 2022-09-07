@@ -17,6 +17,7 @@
 package proof
 
 import (
+	"fmt"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -39,7 +40,8 @@ type (
 		CreateProof(row *Proof) error
 		GetProofsBetween(start int64, end int64) (proofs []*Proof, err error)
 		GetLatestConfirmedProof() (p *Proof, err error)
-		GetProofByBlockNumber(num int64) (p *Proof, err error)
+		GetProofByBlockHeight(height int64) (p *Proof, err error)
+		UpdateProofsInTransact(tx *gorm.DB, m map[int64]int) error
 	}
 
 	defaultProofModel struct {
@@ -114,7 +116,7 @@ func (m *defaultProofModel) GetLatestConfirmedProof() (p *Proof, err error) {
 	}
 }
 
-func (m *defaultProofModel) GetProofByBlockNumber(num int64) (p *Proof, err error) {
+func (m *defaultProofModel) GetProofByBlockHeight(num int64) (p *Proof, err error) {
 	var row *Proof
 	dbTx := m.DB.Table(m.table).Where("block_number = ?", num).Find(&row)
 	if dbTx.Error != nil {
@@ -124,4 +126,27 @@ func (m *defaultProofModel) GetProofByBlockNumber(num int64) (p *Proof, err erro
 	} else {
 		return row, nil
 	}
+}
+
+func (m *defaultProofModel) UpdateProofsInTransact(tx *gorm.DB, proofs map[int64]int) error {
+	for blockHeight, newStatus := range proofs {
+		var row *Proof
+		dbTx := tx.Table(m.table).Where("block_number = ?", blockHeight).Find(&row)
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			return fmt.Errorf("no such proof. height: %d", blockHeight)
+		}
+		dbTx = tx.Model(&row).
+			Select("status").
+			Updates(&Proof{Status: int64(newStatus)})
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			return types.DbErrFailToUpdateProof
+		}
+	}
+	return nil
 }

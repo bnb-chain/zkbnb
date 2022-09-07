@@ -31,8 +31,10 @@ type (
 	LiquidityModel interface {
 		CreateLiquidityTable() error
 		DropLiquidityTable() error
-		GetLiquidityByPairIndex(pairIndex int64) (entity *Liquidity, err error)
-		GetAllLiquidityAssets() (liquidityList []*Liquidity, err error)
+		GetLiquidityByIndex(index int64) (entity *Liquidity, err error)
+		GetAllLiquidity() (liquidityList []*Liquidity, err error)
+		CreateLiquidityInTransact(tx *gorm.DB, liquidity []*Liquidity) error
+		UpdateLiquidityInTransact(tx *gorm.DB, liquidity []*Liquidity) error
 	}
 
 	defaultLiquidityModel struct {
@@ -74,7 +76,7 @@ func (m *defaultLiquidityModel) DropLiquidityTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-func (m *defaultLiquidityModel) GetLiquidityByPairIndex(pairIndex int64) (entity *Liquidity, err error) {
+func (m *defaultLiquidityModel) GetLiquidityByIndex(pairIndex int64) (entity *Liquidity, err error) {
 	dbTx := m.DB.Table(m.table).Where("pair_index = ?", pairIndex).Find(&entity)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
@@ -84,7 +86,7 @@ func (m *defaultLiquidityModel) GetLiquidityByPairIndex(pairIndex int64) (entity
 	return entity, nil
 }
 
-func (m *defaultLiquidityModel) GetAllLiquidityAssets() (liquidityList []*Liquidity, err error) {
+func (m *defaultLiquidityModel) GetAllLiquidity() (liquidityList []*Liquidity, err error) {
 	dbTx := m.DB.Table(m.table).Order("id").Find(&liquidityList)
 	if dbTx.Error != nil {
 		return liquidityList, dbTx.Error
@@ -92,4 +94,30 @@ func (m *defaultLiquidityModel) GetAllLiquidityAssets() (liquidityList []*Liquid
 		return nil, types.DbErrNotFound
 	}
 	return liquidityList, nil
+}
+
+func (m *defaultLiquidityModel) CreateLiquidityInTransact(tx *gorm.DB, liquidity []*Liquidity) error {
+	dbTx := tx.Table(m.table).CreateInBatches(liquidity, len(liquidity))
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected != int64(len(liquidity)) {
+		return types.DbErrFailToCreateLiquidity
+	}
+	return nil
+}
+
+func (m *defaultLiquidityModel) UpdateLiquidityInTransact(tx *gorm.DB, liquidity []*Liquidity) error {
+	for _, pendingLiquidity := range liquidity {
+		dbTx := tx.Table(m.table).Where("pair_index = ?", pendingLiquidity.PairIndex).
+			Select("*").
+			Updates(&pendingLiquidity)
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			return types.DbErrFailToUpdateLiquidity
+		}
+	}
+	return nil
 }

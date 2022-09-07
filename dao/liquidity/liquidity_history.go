@@ -33,6 +33,7 @@ type (
 		DropLiquidityHistoryTable() error
 		GetLatestLiquidityByBlockHeight(blockHeight int64, limit int, offset int) (entities []*LiquidityHistory, err error)
 		GetLatestLiquidityCountByBlockHeight(blockHeight int64) (count int64, err error)
+		CreateLiquidityHistoriesInTransact(tx *gorm.DB, histories []*LiquidityHistory) error
 	}
 
 	defaultLiquidityHistoryModel struct {
@@ -103,4 +104,15 @@ func (m *defaultLiquidityHistoryModel) GetLatestLiquidityCountByBlockHeight(bloc
 		return 0, dbTx.Error
 	}
 	return count, nil
+}
+
+func (m *defaultLiquidityHistoryModel) CreateLiquidityHistoriesInTransact(tx *gorm.DB, histories []*LiquidityHistory) error {
+	dbTx := tx.Table(m.table).CreateInBatches(histories, len(histories))
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected != int64(len(histories)) {
+		return types.DbErrFailToCreateLiquidityHistory
+	}
+	return nil
 }

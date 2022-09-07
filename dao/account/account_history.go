@@ -17,8 +17,6 @@
 package account
 
 import (
-	"errors"
-
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbas/types"
@@ -34,6 +32,7 @@ type (
 		DropAccountHistoryTable() error
 		GetValidAccounts(height int64, limit int, offset int) (rowsAffected int64, accounts []*AccountHistory, err error)
 		GetValidAccountCount(height int64) (accounts int64, err error)
+		CreateAccountHistoriesInTransact(tx *gorm.DB, histories []*AccountHistory) error
 	}
 
 	defaultAccountHistoryModel struct {
@@ -76,7 +75,7 @@ func (m *defaultAccountHistoryModel) CreateNewAccount(nAccount *AccountHistory) 
 	if dbTx.Error != nil {
 		return types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return errors.New("create new account no rows affected")
+		return types.DbErrFailToCreateAccountHistory
 	}
 
 	return nil
@@ -109,4 +108,15 @@ func (m *defaultAccountHistoryModel) GetValidAccountCount(height int64) (count i
 		return 0, types.DbErrSqlOperation
 	}
 	return count, nil
+}
+
+func (m *defaultAccountHistoryModel) CreateAccountHistoriesInTransact(tx *gorm.DB, histories []*AccountHistory) error {
+	dbTx := tx.Table(m.table).CreateInBatches(histories, len(histories))
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected != int64(len(histories)) {
+		return types.DbErrFailToCreateAccountHistory
+	}
+	return nil
 }

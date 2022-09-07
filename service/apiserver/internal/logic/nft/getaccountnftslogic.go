@@ -58,7 +58,7 @@ func (l *GetAccountNftsLogic) GetAccountNfts(req *types.ReqGetAccountNfts) (resp
 		return nil, types2.AppErrInternal
 	}
 
-	total, err := l.svcCtx.NftModel.GetAccountNftTotalCount(accountIndex)
+	total, err := l.svcCtx.NftModel.GetNftsCountByAccountIndex(accountIndex)
 	if err != nil {
 		if err != types2.DbErrNotFound {
 			return nil, types2.AppErrInternal
@@ -70,7 +70,7 @@ func (l *GetAccountNftsLogic) GetAccountNfts(req *types.ReqGetAccountNfts) (resp
 		return resp, nil
 	}
 
-	nftList, err := l.svcCtx.NftModel.GetNftListByAccountIndex(accountIndex, int64(req.Limit), int64(req.Offset))
+	nftList, err := l.svcCtx.NftModel.GetNftsByAccountIndex(accountIndex, int64(req.Limit), int64(req.Offset))
 	if err != nil {
 		return nil, types2.AppErrInternal
 	}
