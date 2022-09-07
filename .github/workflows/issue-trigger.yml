@@ -18,8 +18,16 @@ jobs:
         run: |
           cd /server
           sudo rm -rf ./zkbas
-          sudo git clone --branch develop https://github.com/bnb-chain/zkbas.git
+          
+          echo 'fetch zkbas repo'
+          export PR_NUMBER=$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
+          echo Pull requests $PR_NUMBER
+          
+          sudo git clone https://github.com/bnb-chain/zkbas.git
           cd ./zkbas
+          sudo git fetch origin pull/$PR_NUMBER/head:$GITHUB_SHA 2>/dev/null
+          sudo git checkout $GITHUB_SHA
+
           sudo bash ./deployment/tool/tool.sh prepare new
           sudo rm -rf /server/test.keyfile
           sudo cp -r ./deployment/.zkbas /server/test.keyfile
