@@ -1,12 +1,12 @@
-# ZkRollup BNB Application Side Chain
+# BNB ZkRollup
 
 ![banner](./docs/assets/banner.png)
 
 
-The ZkRollup BNB Application Side Chain(ZkBNB) is an infrastructure for developers that helps them to build large scale
+The BNB ZkRollup(ZkBNB) is an infrastructure for developers that helps them to build large scale
 BSC-based apps with higher throughput and much lower or even zero transaction fees. 
 
-ZkBNB is built on ZK Rollup architecture. ZkBNB bundle (or “roll-up”) hundreds of transactions off-chain and generates
+ZkBNB is built on ZK Rollup architecture. ZkBNB bundle (or "roll-up") hundreds of transactions off-chain and generates
 cryptographic proof. These proofs can come in the form of SNARKs (succinct non-interactive argument of knowledge) which 
 can prove the validity of every single transaction in the Rollup Block. It means all funds are held on the BSC, 
 while computation and storage are performed on BAS with less cost and fast speed.
@@ -26,7 +26,7 @@ ZkBNB achieves the following goals:
   are censored by ZkBNB.
 
 ZkBNB starts its development based on [Zecrey](https://github.com/bnb-chain/zecrey-legend), special thanks to
-[Zecrey](https://www.zecrey.com/) team.
+[Zecrey](https://www.zecrey.com/) team and [Nodereal](https://nodereal.io/) team for their contribution.
 
 ## Table of Content
 <!--ts-->
@@ -172,6 +172,6 @@ If you are looking for something interesting or if you have something in your mi
 ## Outlook
 We believe that zk-Rollup Sooner or later L2 The best of the track — This is a very cheap and safe first-class 
 L2 Expansion solutions. However, ZkBNB is application specific so far, this makes it difficult for developers to
-build custom dApp on that, we will introduce generic programmability in the future... 
+build custom dApp on that, we will introduce generic programability in the future... 
 
 
