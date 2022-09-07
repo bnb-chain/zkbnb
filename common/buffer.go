@@ -37,7 +37,7 @@ func PaddingStringBigIntIntoBuf(buf *bytes.Buffer, aStr string) error {
 }
 
 func PaddingAddressIntoBuf(buf *bytes.Buffer, address string) (err error) {
-	if address == types.NilL1Address {
+	if address == types.EmptyL1Address {
 		buf.Write(new(big.Int).FillBytes(make([]byte, 32)))
 		return nil
 	}

@@ -158,15 +158,15 @@ func reloadAccountTreeFromRDB(
 				PublicKey:       accountInfo.PublicKey,
 				AccountNameHash: accountInfo.AccountNameHash,
 				L1Address:       accountInfo.L1Address,
-				Nonce:           0,
-				CollectionNonce: 0,
+				Nonce:           types.EmptyNonce,
+				CollectionNonce: types.EmptyCollectionNonce,
 				Status:          account.AccountStatusConfirmed,
 			}
 		}
-		if accountHistory.Nonce != types.NilNonce {
+		if accountHistory.Nonce != types.EmptyNonce {
 			accountInfoMap[accountHistory.AccountIndex].Nonce = accountHistory.Nonce
 		}
-		if accountHistory.CollectionNonce != types.NilNonce {
+		if accountHistory.CollectionNonce != types.EmptyCollectionNonce {
 			accountInfoMap[accountHistory.AccountIndex].CollectionNonce = accountHistory.CollectionNonce
 		}
 		accountInfoMap[accountHistory.AccountIndex].AssetInfo = accountHistory.AssetInfo

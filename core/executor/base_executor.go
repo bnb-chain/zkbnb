@@ -34,7 +34,7 @@ func (e *BaseExecutor) VerifyInputs() error {
 	}
 
 	from := txInfo.GetFromAccountIndex()
-	if from != types.NilTxAccountIndex {
+	if from != types.NilAccountIndex {
 		err = e.bc.VerifyNonce(from, txInfo.GetNonce())
 		if err != nil {
 			return err

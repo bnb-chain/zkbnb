@@ -67,7 +67,7 @@ func (e *DepositNftExecutor) Prepare() error {
 	// Set the right account index.
 	txInfo.AccountIndex = account.AccountIndex
 
-	accounts := []int64{txInfo.AccountIndex, txInfo.CreatorAccountIndex}
+	accounts := []int64{txInfo.AccountIndex}
 	assets := []int64{0} // Just used for generate an empty tx detail.
 	err = e.bc.StateDB().PrepareAccountsAndAssets(accounts, assets)
 	if err != nil {
@@ -76,7 +76,7 @@ func (e *DepositNftExecutor) Prepare() error {
 	}
 
 	// Check if it is a new nft, or it is a nft previously withdraw from layer2.
-	if txInfo.NftIndex == 0 && txInfo.CollectionId == 0 && txInfo.CreatorAccountIndex == 0 && txInfo.CreatorTreasuryRate == 0 {
+	if txInfo.IsNewNft == 1 {
 		e.isNewNft = true
 		// Set new nft index for new nft.
 		txInfo.NftIndex = bc.StateDB().GetNextNftIndex()
@@ -100,7 +100,7 @@ func (e *DepositNftExecutor) VerifyInputs() error {
 			return errors.New("invalid nft index, already exist")
 		}
 	} else {
-		if bc.StateDB().NftMap[txInfo.NftIndex].OwnerAccountIndex != types.NilAccountIndex {
+		if bc.StateDB().NftMap[txInfo.NftIndex].NftContentHash != types.EmptyNftContentHash {
 			return errors.New("invalid nft index, already exist")
 		}
 	}
@@ -138,6 +138,7 @@ func (e *DepositNftExecutor) GeneratePubData() error {
 
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(types.TxTypeDepositNft))
+	buf.WriteByte(txInfo.IsNewNft)
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
 	buf.Write(common2.Uint40ToBytes(txInfo.NftIndex))
 	buf.Write(common2.AddressStrToBytes(txInfo.NftL1Address))

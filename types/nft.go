@@ -37,6 +37,19 @@ func (info *NftInfo) String() string {
 	return string(infoBytes)
 }
 
+func (info *NftInfo) IsEmptyNft() bool {
+	if info.CreatorAccountIndex == EmptyAccountIndex &&
+		info.OwnerAccountIndex == EmptyAccountIndex &&
+		info.NftContentHash == EmptyNftContentHash &&
+		info.NftL1TokenId == EmptyL1TokenId &&
+		info.NftL1Address == EmptyL1Address &&
+		info.CreatorTreasuryRate == EmptyCreatorTreasuryRate &&
+		info.CollectionId == EmptyCollectionNonce {
+		return true
+	}
+	return false
+}
+
 func ParseNftInfo(infoStr string) (info *NftInfo, err error) {
 	err = json.Unmarshal([]byte(infoStr), &info)
 	if err != nil {
@@ -48,13 +61,13 @@ func ParseNftInfo(infoStr string) (info *NftInfo, err error) {
 func EmptyNftInfo(nftIndex int64) (info *NftInfo) {
 	return &NftInfo{
 		NftIndex:            nftIndex,
-		CreatorAccountIndex: NilAccountIndex,
-		OwnerAccountIndex:   NilAccountIndex,
-		NftContentHash:      NilNftContentHash,
-		NftL1TokenId:        NilL1TokenId,
-		NftL1Address:        NilL1Address,
-		CreatorTreasuryRate: 0,
-		CollectionId:        0,
+		CreatorAccountIndex: EmptyAccountIndex,
+		OwnerAccountIndex:   EmptyAccountIndex,
+		NftContentHash:      EmptyNftContentHash,
+		NftL1TokenId:        EmptyL1TokenId,
+		NftL1Address:        EmptyL1Address,
+		CreatorTreasuryRate: EmptyCreatorTreasuryRate,
+		CollectionId:        EmptyCollectionNonce,
 	}
 }
 

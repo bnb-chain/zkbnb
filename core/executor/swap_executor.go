@@ -427,7 +427,7 @@ func (e *SwapExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:         txInfo.PairIndex,
 		AssetType:       types.LiquidityAssetType,
-		AccountIndex:    types.NilTxAccountIndex,
+		AccountIndex:    types.NilAccountIndex,
 		AccountName:     types.NilAccountName,
 		Balance:         liquidityInfo.String(),
 		BalanceDelta:    poolDelta.String(),
@@ -472,7 +472,7 @@ func (e *SwapExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
 		TxType:        e.tx.TxType,
 		GasFeeAssetId: e.txInfo.GasFeeAssetId,
 		GasFee:        e.txInfo.GasFeeAssetAmount.String(),
-		NftIndex:      types.NilTxNftIndex,
+		NftIndex:      types.NilNftIndex,
 		PairIndex:     e.txInfo.PairIndex,
 		AssetId:       types.NilAssetId,
 		TxAmount:      e.txInfo.AssetAAmount.String(),

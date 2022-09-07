@@ -80,9 +80,9 @@ func (e *RegisterZnsExecutor) ApplyTransaction() error {
 		PublicKey:       txInfo.PubKey,
 		AccountNameHash: common.Bytes2Hex(txInfo.AccountNameHash),
 		L1Address:       e.tx.NativeAddress,
-		Nonce:           types.NilNonce,
-		CollectionNonce: types.NilNonce,
-		AssetInfo:       types.NilAssetInfo,
+		Nonce:           types.EmptyNonce,
+		CollectionNonce: types.EmptyCollectionNonce,
+		AssetInfo:       types.EmptyAccountAssetInfo,
 		AssetRoot:       common.Bytes2Hex(tree.NilAccountAssetRoot),
 		Status:          account.AccountStatusConfirmed,
 	}

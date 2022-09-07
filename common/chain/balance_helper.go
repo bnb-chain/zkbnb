@@ -40,7 +40,7 @@ func ComputeNewBalance(assetType int64, balance string, balanceDelta string) (ne
 		if assetDelta.OfferCanceledOrFinalized == nil {
 			assetDelta.OfferCanceledOrFinalized = types.ZeroBigInt
 		}
-		if assetDelta.OfferCanceledOrFinalized.Cmp(types.NilOfferCanceledOrFinalized) != 0 {
+		if assetDelta.OfferCanceledOrFinalized.Cmp(types.EmptyOfferCanceledOrFinalized) != 0 {
 			assetInfo.OfferCanceledOrFinalized = assetDelta.OfferCanceledOrFinalized
 		}
 		newBalance = assetInfo.String()

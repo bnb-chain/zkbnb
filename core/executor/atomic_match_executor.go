@@ -441,7 +441,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      matchNft.NftIndex,
 		AssetType:    types.NftAssetType,
-		AccountIndex: types.NilTxAccountIndex,
+		AccountIndex: types.NilAccountIndex,
 		AccountName:  types.NilAccountName,
 		Balance: types.ConstructNftInfo(matchNft.NftIndex, matchNft.CreatorAccountIndex, matchNft.OwnerAccountIndex,
 			matchNft.NftContentHash, matchNft.NftL1TokenId, matchNft.NftL1Address, matchNft.CreatorTreasuryRate, matchNft.CollectionId).String(),
@@ -503,7 +503,7 @@ func (e *AtomicMatchExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
 		TxType:        e.tx.TxType,
 		GasFeeAssetId: e.txInfo.GasFeeAssetId,
 		GasFee:        e.txInfo.GasFeeAssetAmount.String(),
-		NftIndex:      types.NilTxNftIndex,
+		NftIndex:      types.NilNftIndex,
 		PairIndex:     types.NilPairIndex,
 		AssetId:       e.txInfo.BuyOffer.AssetId,
 		TxAmount:      e.txInfo.BuyOffer.AssetAmount.String(),
