@@ -11,7 +11,7 @@ KEY_PATH=${WORKDIR}/.zkbas
 ZKBAS_CONTRACT_REPO=https://github.com/bnb-chain/zkbas-contract.git
 ZKBAS_CRYPTO_REPO=https://github.com/bnb-chain/zkbas-crypto.git
 BSC_TESTNET_ENDPOINT=https://data-seed-prebsc-1-s1.binance.org:8545
-ZKBAS_CRYPTO_BRANCH=$(cat $WORKDIR/../go.mod | grep github.com/bnb-chain/zkbas-crypto | awk -F" " '{print $2}')
+ZKBAS_CRYPTO_BRANCH=$(cat $WORKDIR/../go.mod | grep github.com/bnb-chain/zkbas-crypto | awk -F" " '{print $2}' | awk -F"-" '{if ($3 != "") print $3;else print $1;}')
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
 
@@ -21,7 +21,8 @@ function prepare() {
     mkdir -p ${WORKDIR}/dependency && cd ${WORKDIR}/dependency
 
     git clone --branch develop ${ZKBAS_CONTRACT_REPO}
-    git clone --branch ${ZKBAS_CRYPTO_BRANCH} ${ZKBAS_CRYPTO_REPO}
+    git clone --branch develop ${ZKBAS_CRYPTO_REPO}
+    cd ${WORKDIR}/dependency/zkbas-crypto && git checkout ${ZKBAS_CRYPTO_BRANCH}
 
     if [ ! -z $1 ] && [ "$1" = "new" ]; then
         echo "new crypto env"
