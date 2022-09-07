@@ -61,7 +61,7 @@ jobs:
           export L2EndPoint=$L2_ENDPOINT
           
           cd /tmp && sudo rm -rf ./zkbas-integration-test
-          git clone --branch main https://github.com/bnb-chain/zkbas-integration-test.git
+          git clone --branch parallel https://github.com/bnb-chain/zkbas-integration-test.git
           cd ./zkbas-integration-test/tests
           
           echo '1. start TestSetupSuite'
