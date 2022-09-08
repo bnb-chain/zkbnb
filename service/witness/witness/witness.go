@@ -225,7 +225,7 @@ func (w *Witness) getNextWitnessToCheck() (int64, error) {
 		startToCheck = latestConfirmedProof.BlockNumber + 1
 	}
 
-	for blockHeight := startToCheck; blockHeight <= endToCheck; blockHeight++ {
+	for blockHeight := startToCheck; blockHeight < endToCheck; blockHeight++ {
 		_, err = w.proofModel.GetProofByBlockHeight(blockHeight)
 		if err != nil {
 			return blockHeight, nil
