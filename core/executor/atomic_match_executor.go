@@ -255,6 +255,7 @@ func (e *AtomicMatchExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.TxInfo = string(txInfoBytes)
 	e.tx.GasFeeAssetId = e.txInfo.GasFeeAssetId
 	e.tx.GasFee = e.txInfo.GasFeeAssetAmount.String()
+	e.tx.NftIndex = e.txInfo.SellOffer.NftIndex
 	e.tx.AssetId = e.txInfo.BuyOffer.AssetId
 	e.tx.TxAmount = e.txInfo.BuyOffer.AssetAmount.String()
 	return e.BaseExecutor.GetExecutedTx()

@@ -76,8 +76,8 @@ func (l *GetAccountTxsLogic) GetAccountTxs(req *types.ReqGetAccountTxs) (resp *t
 		return nil, types2.AppErrInternal
 	}
 
-	for _, t := range txs {
-		tx := utils.DbtxTx(t)
+	for _, dbTx := range txs {
+		tx := utils.ConvertDbTx(dbTx)
 		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
 		tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
 		resp.Txs = append(resp.Txs, tx)

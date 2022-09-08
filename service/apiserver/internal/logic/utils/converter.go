@@ -5,7 +5,7 @@ import (
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/types"
 )
 
-func DbtxTx(tx *tx.Tx) *types.Tx {
+func ConvertDbTx(tx *tx.Tx) *types.Tx {
 	return &types.Tx{
 		Hash:          tx.TxHash,
 		Type:          tx.TxType,
