@@ -81,7 +81,6 @@ type (
 		TxDetails     []*TxDetail `gorm:"foreignKey:TxId"`
 
 		TxIndex     int64
-		StateRoot   string
 		BlockHeight int64 `gorm:"index"`
 		BlockId     int64 `gorm:"index"`
 		TxStatus    int   `gorm:"index"`
@@ -95,11 +94,7 @@ func NewTxModel(db *gorm.DB) TxModel {
 	}
 }
 
-func (t *Tx) TableName() string {
-	if t.TxStatus <= StatusExecuted {
-		return MempoolTableName
-	}
-
+func (*Tx) TableName() string {
 	return TxTableName
 }
 

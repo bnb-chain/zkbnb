@@ -18,7 +18,6 @@
 package block
 
 import (
-	"errors"
 	"sort"
 
 	"gorm.io/gorm"
@@ -59,7 +58,7 @@ type (
 		GetBlocksTotalCount() (count int64, err error)
 		CreateGenesisBlock(block *Block) error
 		GetCurrentBlockHeight() (blockHeight int64, err error)
-		CreateNewBlock(oBlock *Block) (err error)
+		CreateBlockInTransact(tx *gorm.DB, oBlock *Block) error
 		UpdateBlocksWithoutTxsInTransact(tx *gorm.DB, blocks []*Block) (err error)
 		UpdateBlockInTransact(tx *gorm.DB, block *Block) (err error)
 	}
@@ -117,6 +116,12 @@ func (*Block) TableName() string {
 func (b *Block) SetTxsStatus(status int) {
 	for _, blockTx := range b.Txs {
 		blockTx.TxStatus = status
+	}
+}
+
+func (b *Block) ClearTxsModel() {
+	for _, blockTx := range b.Txs {
+		blockTx.Model = gorm.Model{}
 	}
 }
 
@@ -301,30 +306,6 @@ func (m *defaultBlockModel) GetBlocksTotalCount() (count int64, err error) {
 	return count, nil
 }
 
-func (m *defaultBlockModel) CreateNewBlock(oBlock *Block) (err error) {
-	if oBlock == nil {
-		return errors.New("nil block")
-	}
-	if oBlock.BlockStatus != StatusProposing {
-		return errors.New("new block status isn't proposing")
-	}
-
-	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
-		dbTx := tx.Table(m.table).Create(oBlock)
-		if dbTx.Error != nil {
-			return dbTx.Error
-		}
-		if dbTx.RowsAffected == 0 {
-			if err != nil {
-				return err
-			}
-			return types.DbErrFailToCreateBlock
-		}
-
-		return nil
-	})
-}
-
 func (m *defaultBlockModel) GetCommittedBlocksBetween(start, end int64) (blocks []*Block, err error) {
 	dbTx := m.DB.Table(m.table).Where("block_status = ? AND block_height >= ? AND block_height <= ?", StatusCommitted, start, end).
 		Order("block_height").
@@ -349,6 +330,21 @@ func (m *defaultBlockModel) GetLatestVerifiedHeight() (height int64, err error) 
 		return 0, types.DbErrNotFound
 	}
 	return block.BlockHeight, nil
+}
+
+func (m *defaultBlockModel) CreateBlockInTransact(tx *gorm.DB, oBlock *Block) (err error) {
+	dbTx := tx.Table(m.table).Create(oBlock)
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		if err != nil {
+			return err
+		}
+		return types.DbErrFailToCreateBlock
+	}
+
+	return nil
 }
 
 func (m *defaultBlockModel) UpdateBlocksWithoutTxsInTransact(tx *gorm.DB, blocks []*Block) (err error) {

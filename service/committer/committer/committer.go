@@ -100,14 +100,15 @@ func (c *Committer) Run() {
 				pendingDeleteMempoolTxs = append(pendingDeleteMempoolTxs, mempoolTx)
 				continue
 			}
-			pendingUpdateMempoolTxs = append(pendingUpdateMempoolTxs, mempoolTx)
 
 			// Write the proposed block into database when the first transaction executed.
 			if len(c.bc.Statedb.Txs) == 1 {
-				err = c.createNewBlock(curBlock)
+				err = c.createNewBlock(curBlock, mempoolTx)
 				if err != nil {
 					panic("create new block failed" + err.Error())
 				}
+			} else {
+				pendingUpdateMempoolTxs = append(pendingUpdateMempoolTxs, mempoolTx)
 			}
 		}
 
@@ -163,8 +164,15 @@ func (c *Committer) restoreExecutedTxs() (*block.Block, error) {
 	return curBlock, nil
 }
 
-func (c *Committer) createNewBlock(curBlock *block.Block) error {
-	return c.bc.BlockModel.CreateNewBlock(curBlock)
+func (c *Committer) createNewBlock(curBlock *block.Block, mempoolTx *tx.Tx) error {
+	return c.bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
+		err := c.bc.MempoolModel.UpdateMempoolTxsInTransact(dbTx, []*tx.Tx{mempoolTx})
+		if err != nil {
+			return err
+		}
+
+		return c.bc.BlockModel.CreateBlockInTransact(dbTx, curBlock)
+	})
 }
 
 func (c *Committer) shouldCommit(curBlock *block.Block) bool {
@@ -186,16 +194,6 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 
 	// update db
 	err = c.bc.DB().DB.Transaction(func(tx *gorm.DB) error {
-		// delete txs from mempool
-		err := c.bc.DB().MempoolModel.DeleteMempoolTxsInTransact(tx, blockStates.Block.Txs)
-		if err != nil {
-			return err
-		}
-		// update block
-		err = c.bc.DB().BlockModel.UpdateBlockInTransact(tx, blockStates.Block)
-		if err != nil {
-			return err
-		}
 		// create block for commit
 		if blockStates.CompressedBlock != nil {
 			err = c.bc.DB().CompressedBlockModel.CreateCompressedBlockInTransact(tx, blockStates.CompressedBlock)
@@ -266,7 +264,14 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 				return err
 			}
 		}
-		return nil
+		// delete txs from mempool
+		err := c.bc.DB().MempoolModel.DeleteMempoolTxsInTransact(tx, blockStates.Block.Txs)
+		if err != nil {
+			return err
+		}
+		// update block
+		blockStates.Block.ClearTxsModel()
+		return c.bc.DB().BlockModel.UpdateBlockInTransact(tx, blockStates.Block)
 	})
 
 	if err != nil {

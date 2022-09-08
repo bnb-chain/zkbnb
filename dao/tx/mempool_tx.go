@@ -48,6 +48,10 @@ type (
 		table string
 		DB    *gorm.DB
 	}
+
+	MempoolTx struct {
+		Tx
+	}
 )
 
 func NewMempoolModel(db *gorm.DB) MempoolModel {
@@ -57,8 +61,12 @@ func NewMempoolModel(db *gorm.DB) MempoolModel {
 	}
 }
 
+func (*MempoolTx) TableName() string {
+	return MempoolTableName
+}
+
 func (m *defaultMempoolModel) CreateMempoolTxTable() error {
-	return m.DB.AutoMigrate(Tx{})
+	return m.DB.AutoMigrate(MempoolTx{})
 }
 
 func (m *defaultMempoolModel) DropMempoolTxTable() error {
@@ -66,7 +74,7 @@ func (m *defaultMempoolModel) DropMempoolTxTable() error {
 }
 
 func (m *defaultMempoolModel) GetMempoolTxs(limit int64, offset int64) (mempoolTxs []*Tx, err error) {
-	dbTx := m.DB.Table(m.table).Where("status = ?", StatusPending).Limit(int(limit)).Offset(int(offset)).Order("created_at desc, id desc").Find(&mempoolTxs)
+	dbTx := m.DB.Table(m.table).Where("tx_status = ?", StatusPending).Limit(int(limit)).Offset(int(offset)).Order("created_at desc, id desc").Find(&mempoolTxs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	}
@@ -74,7 +82,7 @@ func (m *defaultMempoolModel) GetMempoolTxs(limit int64, offset int64) (mempoolT
 }
 
 func (m *defaultMempoolModel) GetMempoolTxsByStatus(status int) (txs []*Tx, err error) {
-	dbTx := m.DB.Table(m.table).Where("status = ?", status).Order("created_at, id").Find(&txs)
+	dbTx := m.DB.Table(m.table).Where("tx_status = ?", status).Order("created_at, id").Find(&txs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	}
@@ -82,7 +90,7 @@ func (m *defaultMempoolModel) GetMempoolTxsByStatus(status int) (txs []*Tx, err 
 }
 
 func (m *defaultMempoolModel) GetMempoolTxsTotalCount() (count int64, err error) {
-	dbTx := m.DB.Table(m.table).Where("status = ? and deleted_at is NULL", StatusPending).Count(&count)
+	dbTx := m.DB.Table(m.table).Where("tx_status = ? and deleted_at is NULL", StatusPending).Count(&count)
 	if dbTx.Error != nil {
 		return 0, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
@@ -119,7 +127,7 @@ func (m *defaultMempoolModel) CreateMempoolTxs(mempoolTxs []*Tx) error {
 }
 
 func (m *defaultMempoolModel) GetPendingMempoolTxsByAccountIndex(accountIndex int64) (txs []*Tx, err error) {
-	dbTx := m.DB.Table(m.table).Where("status = ? AND account_index = ?", StatusPending, accountIndex).
+	dbTx := m.DB.Table(m.table).Where("tx_status = ? AND account_index = ?", StatusPending, accountIndex).
 		Order("created_at, id").Find(&txs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
@@ -144,9 +152,13 @@ func (m *defaultMempoolModel) UpdateMempoolTxs(pendingUpdateTxs []*Tx, pendingDe
 
 		// update mempool
 		for _, mempoolTx := range pendingUpdateTxs {
+			// Don't write tx details when update mempool tx.
+			txDetails := mempoolTx.TxDetails
+			mempoolTx.TxDetails = nil
 			dbTx := tx.Table(MempoolTableName).Where("id = ?", mempoolTx.ID).
 				Select("*").
 				Updates(&mempoolTx)
+			mempoolTx.TxDetails = txDetails
 			if dbTx.Error != nil {
 				return dbTx.Error
 			}
@@ -181,9 +193,13 @@ func (m *defaultMempoolModel) CreateMempoolTxsInTransact(tx *gorm.DB, mempoolTxs
 
 func (m *defaultMempoolModel) UpdateMempoolTxsInTransact(tx *gorm.DB, mempoolTxs []*Tx) error {
 	for _, mempoolTx := range mempoolTxs {
+		// Don't write tx details when update mempool tx.
+		txDetails := mempoolTx.TxDetails
+		mempoolTx.TxDetails = nil
 		dbTx := tx.Table(m.table).Where("id = ?", mempoolTx.ID).
 			Select("*").
 			Updates(&mempoolTx)
+		mempoolTx.TxDetails = txDetails
 		if dbTx.Error != nil {
 			return dbTx.Error
 		}

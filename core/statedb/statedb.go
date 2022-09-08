@@ -440,7 +440,7 @@ func (s *StateDB) PrepareNft(nftIndex int64) error {
 }
 
 func (s *StateDB) IntermediateRoot(cleanDirty bool) error {
-	for accountIndex, assetsMap := range s.DirtyAccountsAndAssetsMap {
+	for accountIndex, assetsMap := range s.dirtyAccountsAndAssetsMap {
 		assets := make([]int64, 0, len(assetsMap))
 		for assetIndex, isDirty := range assetsMap {
 			if !isDirty {
@@ -455,7 +455,7 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool) error {
 		}
 	}
 
-	for pairIndex, isDirty := range s.DirtyLiquidityMap {
+	for pairIndex, isDirty := range s.dirtyLiquidityMap {
 		if !isDirty {
 			continue
 		}
@@ -465,7 +465,7 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool) error {
 		}
 	}
 
-	for nftIndex, isDirty := range s.DirtyNftMap {
+	for nftIndex, isDirty := range s.dirtyNftMap {
 		if !isDirty {
 			continue
 		}
@@ -476,9 +476,9 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool) error {
 	}
 
 	if cleanDirty {
-		s.DirtyAccountsAndAssetsMap = make(map[int64]map[int64]bool, 0)
-		s.DirtyLiquidityMap = make(map[int64]bool, 0)
-		s.DirtyNftMap = make(map[int64]bool, 0)
+		s.dirtyAccountsAndAssetsMap = make(map[int64]map[int64]bool, 0)
+		s.dirtyLiquidityMap = make(map[int64]bool, 0)
+		s.dirtyNftMap = make(map[int64]bool, 0)
 	}
 
 	hFunc := mimc.NewMiMC()
