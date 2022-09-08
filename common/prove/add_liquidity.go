@@ -18,8 +18,6 @@
 package prove
 
 import (
-	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
-
 	"github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/types"
 )
@@ -35,8 +33,7 @@ func (w *WitnessHelper) constructAddLiquidityTxWitness(witness *TxWitness, oTx *
 	}
 	witness.AddLiquidityTxInfo = cryptoTxInfo
 	witness.ExpiredAt = txInfo.ExpiredAt
-	witness.Signature = new(eddsa.Signature)
-	_, err = witness.Signature.SetBytes(txInfo.Sig)
+	witness.Signature = txInfo.Sig
 	if err != nil {
 		return nil, err
 	}

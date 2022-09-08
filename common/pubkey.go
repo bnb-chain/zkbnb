@@ -18,8 +18,10 @@
 package common
 
 import (
+	"crypto/ecdsa"
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 func ParsePubKey(pkStr string) (pk *eddsa.PublicKey, err error) {
@@ -30,4 +32,9 @@ func ParsePubKey(pkStr string) (pk *eddsa.PublicKey, err error) {
 		return nil, err
 	}
 	return pk, nil
+}
+
+func ParseEcdsaPubKey(pkStr string) (pk *ecdsa.PublicKey, err error) {
+	pkBytes := common.FromHex(pkStr)
+	return crypto.UnmarshalPubkey(pkBytes)
 }

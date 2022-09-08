@@ -35,7 +35,7 @@ func (w *WitnessHelper) constructRegisterZnsTxWitness(cryptoTx *TxWitness, oTx *
 	if err != nil {
 		return nil, err
 	}
-	cryptoTx.Signature = std.EmptySignature()
+	cryptoTx.Signature = std.EmptyEcdsaSignature()
 	cryptoTx.RegisterZnsTxInfo = cryptoTxInfo
 	return cryptoTx, nil
 }
@@ -44,7 +44,7 @@ func toCryptoRegisterZnsTx(txInfo *legendTxTypes.RegisterZnsTxInfo) (info *Crypt
 	accountName := make([]byte, 32)
 	realName := strings.Split(txInfo.AccountName, types.AccountNameSuffix)[0]
 	copy(accountName[:], realName)
-	pk, err := common.ParsePubKey(txInfo.PubKey)
+	pk, err := common.ParseEcdsaPubKey(txInfo.PubKey)
 	if err != nil {
 		return nil, err
 	}

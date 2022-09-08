@@ -25,7 +25,6 @@ import (
 
 	"github.com/bnb-chain/zkbas-crypto/legend/circuit/bn254/std"
 	bsmt "github.com/bnb-chain/zkbas-smt"
-	common2 "github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/common/chain"
 	"github.com/bnb-chain/zkbas/tree"
 	"github.com/bnb-chain/zkbas/types"
@@ -232,14 +231,10 @@ func (w *WitnessHelper) constructAccountWitness(
 			})
 		} else {
 			proverAccountInfo := proverAccounts[accountCount]
-			pk, err := common2.ParsePubKey(proverAccountInfo.AccountInfo.PublicKey)
-			if err != nil {
-				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
-			}
 			cryptoAccount = &CryptoAccount{
 				AccountIndex:    accountKey,
 				AccountNameHash: common.FromHex(proverAccountInfo.AccountInfo.AccountNameHash),
-				AccountPk:       pk,
+				AccountPk:       common.FromHex(proverAccountInfo.AccountInfo.PublicKey),
 				Nonce:           proverAccountInfo.AccountInfo.Nonce,
 				CollectionNonce: proverAccountInfo.AccountInfo.CollectionNonce,
 				AssetRoot:       (*w.assetTrees)[accountKey].Root(),

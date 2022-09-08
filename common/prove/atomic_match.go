@@ -18,8 +18,6 @@
 package prove
 
 import (
-	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
-
 	"github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/types"
 )
@@ -35,8 +33,7 @@ func (w *WitnessHelper) constructAtomicMatchTxWitness(cryptoTx *TxWitness, oTx *
 	}
 	cryptoTx.AtomicMatchTxInfo = cryptoTxInfo
 	cryptoTx.ExpiredAt = txInfo.ExpiredAt
-	cryptoTx.Signature = new(eddsa.Signature)
-	_, err = cryptoTx.Signature.SetBytes(txInfo.Sig)
+	cryptoTx.Signature = txInfo.Sig
 	if err != nil {
 		return nil, err
 	}
@@ -60,16 +57,6 @@ func toCryptoAtomicMatchTx(txInfo *types.AtomicMatchTxInfo) (info *CryptoAtomicM
 	if err != nil {
 		return nil, err
 	}
-	buySig := new(eddsa.Signature)
-	_, err = buySig.SetBytes(txInfo.BuyOffer.Sig)
-	if err != nil {
-		return nil, err
-	}
-	sellSig := new(eddsa.Signature)
-	_, err = sellSig.SetBytes(txInfo.SellOffer.Sig)
-	if err != nil {
-		return nil, err
-	}
 	info = &CryptoAtomicMatchTx{
 		AccountIndex: txInfo.AccountIndex,
 		BuyOffer: &CryptoOfferTx{
@@ -82,7 +69,8 @@ func toCryptoAtomicMatchTx(txInfo *types.AtomicMatchTxInfo) (info *CryptoAtomicM
 			ListedAt:     txInfo.BuyOffer.ListedAt,
 			ExpiredAt:    txInfo.BuyOffer.ExpiredAt,
 			TreasuryRate: txInfo.BuyOffer.TreasuryRate,
-			Sig:          buySig,
+			SigR:         txInfo.BuyOffer.Sig[:32],
+			SigS:         txInfo.BuyOffer.Sig[32:64],
 		},
 		SellOffer: &CryptoOfferTx{
 			Type:         txInfo.SellOffer.Type,
@@ -94,7 +82,8 @@ func toCryptoAtomicMatchTx(txInfo *types.AtomicMatchTxInfo) (info *CryptoAtomicM
 			ListedAt:     txInfo.SellOffer.ListedAt,
 			ExpiredAt:    txInfo.SellOffer.ExpiredAt,
 			TreasuryRate: txInfo.SellOffer.TreasuryRate,
-			Sig:          sellSig,
+			SigR:         txInfo.BuyOffer.Sig[:32],
+			SigS:         txInfo.BuyOffer.Sig[32:64],
 		},
 		CreatorAmount:     packedCreatorAmount,
 		TreasuryAmount:    packedTreasuryAmount,

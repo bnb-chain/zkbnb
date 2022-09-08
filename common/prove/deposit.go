@@ -33,7 +33,7 @@ func (w *WitnessHelper) constructDepositTxWitness(cryptoTx *TxWitness, oTx *Tx) 
 		return nil, err
 	}
 	cryptoTx.DepositTxInfo = cryptoTxInfo
-	cryptoTx.Signature = std.EmptySignature()
+	cryptoTx.Signature = std.EmptyEcdsaSignature()
 	return cryptoTx, nil
 }
 

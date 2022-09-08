@@ -33,7 +33,7 @@ func (w *WitnessHelper) constructUpdatePairRateTxWitness(cryptoTx *TxWitness, oT
 		return nil, err
 	}
 	cryptoTx.UpdatePairRateTxInfo = cryptoTxInfo
-	cryptoTx.Signature = std.EmptySignature()
+	cryptoTx.Signature = std.EmptyEcdsaSignature()
 	return cryptoTx, nil
 }
 

@@ -20,8 +20,6 @@ package prove
 import (
 	"math/big"
 
-	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
-
 	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
 	"github.com/bnb-chain/zkbas/common"
 	"github.com/bnb-chain/zkbas/types"
@@ -38,8 +36,7 @@ func (w *WitnessHelper) constructWithdrawTxWitness(cryptoTx *TxWitness, oTx *Tx)
 	}
 	cryptoTx.WithdrawTxInfo = cryptoTxInfo
 	cryptoTx.ExpiredAt = oTx.ExpiredAt
-	cryptoTx.Signature = new(eddsa.Signature)
-	_, err = cryptoTx.Signature.SetBytes(txInfo.Sig)
+	cryptoTx.Signature = txInfo.Sig
 	if err != nil {
 		return nil, err
 	}
