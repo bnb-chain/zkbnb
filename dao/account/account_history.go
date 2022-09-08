@@ -32,7 +32,10 @@ type (
 		DropAccountHistoryTable() error
 		GetValidAccounts(height int64, limit int, offset int) (rowsAffected int64, accounts []*AccountHistory, err error)
 		GetValidAccountCount(height int64) (accounts int64, err error)
+		GetAccountsForRevert(revertTo int64) (accounts []*AccountHistory, err error)
 		CreateAccountHistoriesInTransact(tx *gorm.DB, histories []*AccountHistory) error
+		GetLatestAccountInfoByAccountIndexAndHeight(accountIndex int64, blockHeight int64) (account *AccountHistory, err error)
+		DeleteAccountHistoryInTransact(tx *gorm.DB, histories []*AccountHistory) error
 	}
 
 	defaultAccountHistoryModel struct {
@@ -118,5 +121,48 @@ func (m *defaultAccountHistoryModel) CreateAccountHistoriesInTransact(tx *gorm.D
 	if dbTx.RowsAffected != int64(len(histories)) {
 		return types.DbErrFailToCreateAccountHistory
 	}
+	return nil
+}
+
+func (m *defaultAccountHistoryModel) GetLatestAccountInfoByAccountIndexAndHeight(accountIndex int64, blockHeight int64) (histories *AccountHistory, err error) {
+	dbTx := m.DB.Table(m.table).
+		Where("account_index = ? AND l2_block_height <= ?", accountIndex, blockHeight).
+		Order("l2_block_height desc").Find(histories)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	}
+	if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return histories, nil
+}
+
+func (m *defaultAccountHistoryModel) GetAccountsForRevert(revertTo int64) (histories []*AccountHistory, err error) {
+	dbTx := m.DB.Table(m.table).Where("l2_block_height > ?", revertTo).Find(&histories)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	}
+	if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return histories, nil
+}
+
+func (m *defaultAccountHistoryModel) DeleteAccountHistoryInTransact(tx *gorm.DB, histories []*AccountHistory) error {
+	IDs := make([]uint, len(histories))
+
+	for i, history := range histories {
+		IDs[i] = history.ID
+	}
+
+	dbTx := tx.Table(m.table).Where("id in (?)", IDs).Delete(&AccountHistory{})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+
+	if dbTx.RowsAffected == 0 {
+		return types.DbErrFailToDeleteAccountHistory
+	}
+
 	return nil
 }

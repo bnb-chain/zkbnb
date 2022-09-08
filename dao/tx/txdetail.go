@@ -18,6 +18,7 @@
 package tx
 
 import (
+	"github.com/bnb-chain/zkbnb/types"
 	"gorm.io/gorm"
 )
 
@@ -27,6 +28,7 @@ type (
 	TxDetailModel interface {
 		CreateTxDetailTable() error
 		DropTxDetailTable() error
+		DeleteTxsInTransact(tx *gorm.DB, txDetails []*TxDetail) (err error)
 	}
 
 	defaultTxDetailModel struct {
@@ -67,4 +69,22 @@ func (m *defaultTxDetailModel) CreateTxDetailTable() error {
 
 func (m *defaultTxDetailModel) DropTxDetailTable() error {
 	return m.DB.Migrator().DropTable(m.table)
+}
+
+func (m *defaultTxDetailModel) DeleteTxsInTransact(dbTx *gorm.DB, txDetails []*TxDetail) (err error) {
+	IDs := make([]uint, len(txDetails))
+
+	for i, tx := range txDetails {
+		IDs[i] = tx.ID
+	}
+
+	dbTx = dbTx.Table(m.table).Where("id in (?)", IDs).Delete(&TxDetail{})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+
+	if dbTx.RowsAffected == 0 {
+		return types.DbErrFailToDeleteTxDetail
+	}
+	return nil
 }

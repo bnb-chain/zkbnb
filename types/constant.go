@@ -44,6 +44,7 @@ const (
 	NilCollectionNonce = -1
 	NilExpiredAt       = math.MaxInt64
 	NilAssetAmount     = "0"
+	NilAssetInfo       = "{}"
 
 	MaxNftIndex = 1099511627775 // 2^40-1
 

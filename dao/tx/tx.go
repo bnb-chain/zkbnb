@@ -47,6 +47,7 @@ type (
 		GetTxByHash(txHash string) (tx *Tx, err error)
 		GetTxsTotalCountBetween(from, to time.Time) (count int64, err error)
 		GetDistinctAccountsCountBetween(from, to time.Time) (count int64, err error)
+		DeleteTxsInTransact(tx *gorm.DB, txs []*Tx) (err error)
 	}
 
 	defaultTxModel struct {
@@ -169,4 +170,22 @@ func (m *defaultTxModel) GetDistinctAccountsCountBetween(from, to time.Time) (co
 		return 0, nil
 	}
 	return count, nil
+}
+
+func (m *defaultTxModel) DeleteTxsInTransact(dbTx *gorm.DB, txs []*Tx) (err error) {
+	IDs := make([]uint, len(txs))
+
+	for i, tx := range txs {
+		IDs[i] = tx.ID
+	}
+
+	dbTx = dbTx.Table(m.table).Where("id in (?)", IDs).Delete(&Tx{})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+
+	if dbTx.RowsAffected == 0 {
+		return types.DbErrFailToDeleteTx
+	}
+	return nil
 }

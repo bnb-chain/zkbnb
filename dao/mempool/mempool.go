@@ -44,6 +44,7 @@ type (
 		GetMempoolTxsByStatus(status int) (mempoolTxs []*MempoolTx, err error)
 		GetMempoolTxsByBlockHeight(l2BlockHeight int64) (rowsAffected int64, mempoolTxs []*MempoolTx, err error)
 		CreateMempoolTxs(mempoolTxs []*MempoolTx) error
+		GetMempoolTxsForRevert(revertTo int64) (mempoolTxs []*MempoolTx, err error)
 		GetPendingMempoolTxsByAccountIndex(accountIndex int64) (mempoolTxs []*MempoolTx, err error)
 		GetMaxNonceByAccountIndex(accountIndex int64) (nonce int64, err error)
 		UpdateMempoolTxs(pendingUpdateMempoolTxs []*MempoolTx, pendingDeleteMempoolTxs []*MempoolTx) error
@@ -157,6 +158,16 @@ func (m *defaultMempoolModel) CreateMempoolTxs(mempoolTxs []*MempoolTx) error {
 		}
 		return nil
 	})
+}
+
+func (m *defaultMempoolModel) GetMempoolTxsForRevert(revertTo int64) (mempoolTxs []*MempoolTx, err error) {
+	dbTx := m.DB.Table(m.table).Where("l2_block_height > ?", revertTo).Find(&mempoolTxs)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return mempoolTxs, nil
 }
 
 func (m *defaultMempoolModel) GetMempoolTxsListByL2BlockHeight(blockHeight int64) (mempoolTxs []*MempoolTx, err error) {

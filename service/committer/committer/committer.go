@@ -3,8 +3,9 @@ package committer
 import (
 	"errors"
 	"fmt"
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/gorm"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -70,6 +71,22 @@ func (c *Committer) Run() {
 			if err != nil {
 				panic("propose new block failed: " + err.Error())
 			}
+		}
+		if c.bc.CurrentBlock().BlockHeight > curBlock.BlockHeight {
+			// Revert
+			bc, err := core.NewBlockChain(&c.config.ChainConfig, "committer")
+			if err != nil {
+				logx.Error(fmt.Errorf("new blockchain error: %v", err))
+				return
+			}
+			c.bc = bc
+			c.executedMemPoolTxs = make([]*mempool.MempoolTx, 0)
+			curBlock, err = c.restoreExecutedTxs()
+			if err != nil {
+				logx.Error("restore executed tx failed: " + err.Error())
+				return
+			}
+			continue
 		}
 
 		// Read pending transactions from mempool_tx table.

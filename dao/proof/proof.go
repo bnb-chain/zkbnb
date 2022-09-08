@@ -44,6 +44,7 @@ type (
 		GetLatestConfirmedProof() (p *Proof, err error)
 		GetProofByBlockHeight(height int64) (p *Proof, err error)
 		UpdateProofsInTransact(tx *gorm.DB, m map[int64]int) error
+		DeleteProofOverBlockHeightInTransact(tx *gorm.DB, blockHeight int64) (err error)
 	}
 
 	defaultProofModel struct {
@@ -162,5 +163,14 @@ func (m *defaultProofModel) UpdateProofsInTransact(tx *gorm.DB, proofs map[int64
 			return types.DbErrFailToUpdateProof
 		}
 	}
+	return nil
+}
+
+func (m *defaultProofModel) DeleteProofOverBlockHeightInTransact(tx *gorm.DB, blockHeight int64) (err error) {
+	dbTx := tx.Table(m.table).Where("block_number > ?", blockHeight).Delete(&Proof{})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+
 	return nil
 }

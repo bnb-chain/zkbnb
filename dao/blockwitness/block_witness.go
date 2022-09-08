@@ -44,6 +44,7 @@ type (
 		UpdateBlockWitnessStatus(witness *BlockWitness, status int64) error
 		GetLatestBlockWitness() (witness *BlockWitness, err error)
 		CreateBlockWitness(witness *BlockWitness) error
+		DeleteBlockWitnessOverHeightInTransact(tx *gorm.DB, blockHeight int64) (err error)
 	}
 
 	defaultBlockWitnessModel struct {
@@ -131,5 +132,14 @@ func (m *defaultBlockWitnessModel) UpdateBlockWitnessStatus(witness *BlockWitnes
 	if dbTx.Error != nil {
 		return types.DbErrSqlOperation
 	}
+	return nil
+}
+
+func (m *defaultBlockWitnessModel) DeleteBlockWitnessOverHeightInTransact(tx *gorm.DB, blockHeight int64) (err error) {
+	dbTx := tx.Table(m.table).Where("height > ?", blockHeight).Delete(&BlockWitness{})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+
 	return nil
 }

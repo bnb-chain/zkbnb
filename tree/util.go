@@ -319,3 +319,21 @@ func ComputeStateRootHash(
 	hFunc.Write(nftRoot)
 	return hFunc.Sum(nil)
 }
+
+func MaxVersionOfTree(
+	accountTree bsmt.SparseMerkleTree,
+	liquidityTree bsmt.SparseMerkleTree,
+	nftTree bsmt.SparseMerkleTree,
+) bsmt.Version {
+	maxVersion := bsmt.Version(0)
+	if v := accountTree.LatestVersion(); v > maxVersion {
+		maxVersion = v
+	}
+	if v := liquidityTree.LatestVersion(); v > maxVersion {
+		maxVersion = v
+	}
+	if v := nftTree.LatestVersion(); v > maxVersion {
+		maxVersion = v
+	}
+	return maxVersion
+}

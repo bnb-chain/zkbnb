@@ -37,6 +37,7 @@ type (
 		GetNftsCountByAccountIndex(accountIndex int64) (int64, error)
 		CreateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) error
 		UpdateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) error
+		ResetNftsInTransact(tx *gorm.DB, nfts map[int64]map[string]interface{}) error
 	}
 	defaultL2NftModel struct {
 		table string
@@ -139,6 +140,20 @@ func (m *defaultL2NftModel) UpdateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) err
 		}
 		if dbTx.RowsAffected == 0 {
 			return types.DbErrFailToUpdateNft
+		}
+	}
+	return nil
+}
+
+func (m *defaultL2NftModel) ResetNftsInTransact(tx *gorm.DB, nfts map[int64]map[string]interface{}) error {
+	for nftIndex, updates := range nfts {
+		dbTx := tx.Table(m.table).Where("nft_index = ?", nftIndex).
+			Updates(updates)
+		if dbTx.Error != nil {
+			return types.DbErrSqlOperation
+		}
+		if dbTx.RowsAffected == 0 {
+			return types.DbErrNotFound
 		}
 	}
 	return nil

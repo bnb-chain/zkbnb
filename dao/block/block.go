@@ -49,6 +49,8 @@ type (
 		DropBlockTable() error
 		GetBlocks(limit int64, offset int64) (blocks []*Block, err error)
 		GetBlocksBetween(start int64, end int64) (blocks []*Block, err error)
+		GetBlocksForRevert(revertTo int64) (blocks []*Block, err error)
+		GetBlocksForRevertWithTx(revertTo int64) (blocks []*Block, err error)
 		GetBlockByHeight(blockHeight int64) (block *Block, err error)
 		GetBlockByHeightWithoutTx(blockHeight int64) (block *Block, err error)
 		GetCommittedBlocksCount() (count int64, err error)
@@ -62,6 +64,7 @@ type (
 		CreateNewBlock(oBlock *Block) (err error)
 		UpdateBlocksWithoutTxsInTransact(tx *gorm.DB, blocks []*Block) (err error)
 		UpdateBlockInTransact(tx *gorm.DB, block *Block) (err error)
+		DeleteBlocksInTransact(tx *gorm.DB, blocks []*Block) (err error)
 	}
 
 	defaultBlockModel struct {
@@ -187,6 +190,13 @@ func (m *defaultBlockModel) GetBlocksBetween(start int64, end int64) (blocks []*
 		}
 	}
 	return blocks, nil
+}
+
+func (m *defaultBlockModel) GetBlocksForRevert(revertTo int64) (blocks []*Block, err error) {
+	return nil, nil
+}
+func (m *defaultBlockModel) GetBlocksForRevertWithTx(revertTo int64) (blocks []*Block, err error) {
+	return nil, nil
 }
 
 func (m *defaultBlockModel) GetBlockByCommitment(blockCommitment string) (block *Block, err error) {
@@ -378,6 +388,24 @@ func (m *defaultBlockModel) UpdateBlockInTransact(tx *gorm.DB, block *Block) (er
 			return err
 		}
 		return types.DbErrFailToUpdateBlock
+	}
+	return nil
+}
+
+func (m *defaultBlockModel) DeleteBlocksInTransact(tx *gorm.DB, blocks []*Block) (err error) {
+	IDs := make([]uint, len(blocks))
+
+	for i, block := range blocks {
+		IDs[i] = block.ID
+	}
+
+	dbTx := tx.Table(m.table).Where("id in (?)", IDs).Delete(&Block{})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+
+	if dbTx.RowsAffected == 0 {
+		return types.DbErrFailToDeleteBlock
 	}
 	return nil
 }

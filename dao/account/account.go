@@ -46,6 +46,7 @@ type (
 		GetAccountsTotalCount() (count int64, err error)
 		CreateAccountsInTransact(tx *gorm.DB, accounts []*Account) error
 		UpdateAccountsInTransact(tx *gorm.DB, accounts []*Account) error
+		ResetAccountInTransact(tx *gorm.DB, updates map[int64]map[string]interface{}) error
 	}
 
 	defaultAccountModel struct {
@@ -183,6 +184,20 @@ func (m *defaultAccountModel) UpdateAccountsInTransact(tx *gorm.DB, accounts []*
 		}
 		if dbTx.RowsAffected == 0 {
 			return types.DbErrFailToUpdateAccount
+		}
+	}
+	return nil
+}
+
+func (m *defaultAccountModel) ResetAccountInTransact(tx *gorm.DB, accounts map[int64]map[string]interface{}) error {
+	for accountIndex, accountUpdates := range accounts {
+		dbTx := tx.Table(m.table).Where("account_index = ?", accountIndex).
+			Updates(accountUpdates)
+		if dbTx.Error != nil {
+			return types.DbErrSqlOperation
+		}
+		if dbTx.RowsAffected == 0 {
+			return types.DbErrNotFound
 		}
 	}
 	return nil

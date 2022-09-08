@@ -36,6 +36,11 @@ type (
 			rowsAffected int64, nftAssets []*L2NftHistory, err error,
 		)
 		CreateNftHistoriesInTransact(tx *gorm.DB, histories []*L2NftHistory) error
+		GetNftsForRevert(revertTo int64) (nfts []*L2NftHistory, err error)
+		GetLatestNftAssetByIndexAndHeight(nftIndex int64, blockHeight int64) (
+			nftAsset *L2NftHistory, err error,
+		)
+		DeleteNftHistoriesInTransact(tx *gorm.DB, histories []*L2NftHistory) error
 	}
 	defaultL2NftHistoryModel struct {
 		table string
@@ -117,5 +122,50 @@ func (m *defaultL2NftHistoryModel) CreateNftHistoriesInTransact(tx *gorm.DB, his
 	if dbTx.RowsAffected != int64(len(histories)) {
 		return types.DbErrFailToCreateNftHistory
 	}
+	return nil
+}
+
+func (m *defaultL2NftHistoryModel) GetNftsForRevert(revertTo int64) (nfts []*L2NftHistory, err error) {
+	dbTx := m.DB.Table(m.table).Where("l2_block_height > ?", revertTo).Find(&nfts)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	}
+	if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return nfts, nil
+}
+
+func (m *defaultL2NftHistoryModel) GetLatestNftAssetByIndexAndHeight(nftIndex int64, blockHeight int64) (
+	nftAsset *L2NftHistory, err error,
+) {
+	dbTx := m.DB.Table(m.table).
+		Where("nft_index = ? AND l2_block_height <= ?", nftIndex, blockHeight).
+		Order("l2_block_height desc").Find(nftAsset)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	}
+	if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return nftAsset, nil
+}
+
+func (m *defaultL2NftHistoryModel) DeleteNftHistoriesInTransact(tx *gorm.DB, histories []*L2NftHistory) error {
+	IDs := make([]uint, len(histories))
+
+	for i, history := range histories {
+		IDs[i] = history.ID
+	}
+
+	dbTx := tx.Table(m.table).Where("id in (?)", IDs).Delete(&L2NftHistory{})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+
+	if dbTx.RowsAffected == 0 {
+		return types.DbErrFailToDeleteAccountHistory
+	}
+
 	return nil
 }

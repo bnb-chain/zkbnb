@@ -80,8 +80,6 @@ func (w *Witness) initState() error {
 		if err != types.DbErrNotFound {
 			return fmt.Errorf("GetLatestBlockWitness error: %v", err)
 		}
-
-		witnessHeight = 0
 	}
 
 	// dbinitializer tree database
@@ -130,6 +128,15 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 	if err != nil && err != types.DbErrNotFound {
 		return err
 	}
+
+	if latestWitnessHeight > 0 &&
+		tree.MaxVersionOfTree(w.accountTree, w.liquidityTree, w.nftTree) > smt.Version(latestWitnessHeight) {
+		err := w.revert(latestWitnessHeight)
+		if err != nil {
+			return err
+		}
+	}
+
 	// get next batch of blocks
 	blocks, err := w.blockModel.GetBlocksBetween(latestWitnessHeight+1, latestWitnessHeight+BlockProcessDelta)
 	if err != nil {
@@ -280,4 +287,9 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 		Status:      blockwitness.StatusPublished,
 	}
 	return &blockWitness, nil
+}
+
+func (w *Witness) revert(height int64) error {
+	return tree.RollBackTrees(
+		uint64(height), w.accountTree, &w.assetTrees, w.liquidityTree, w.nftTree)
 }

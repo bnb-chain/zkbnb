@@ -35,6 +35,7 @@ type (
 		GetAllLiquidity() (liquidityList []*Liquidity, err error)
 		CreateLiquidityInTransact(tx *gorm.DB, liquidity []*Liquidity) error
 		UpdateLiquidityInTransact(tx *gorm.DB, liquidity []*Liquidity) error
+		ResetLiquidityInTransact(tx *gorm.DB, liquidities map[int64]map[string]interface{}) error
 	}
 
 	defaultLiquidityModel struct {
@@ -117,6 +118,20 @@ func (m *defaultLiquidityModel) UpdateLiquidityInTransact(tx *gorm.DB, liquidity
 		}
 		if dbTx.RowsAffected == 0 {
 			return types.DbErrFailToUpdateLiquidity
+		}
+	}
+	return nil
+}
+
+func (m *defaultLiquidityModel) ResetLiquidityInTransact(tx *gorm.DB, liquidities map[int64]map[string]interface{}) error {
+	for pairIndex, updates := range liquidities {
+		dbTx := tx.Table(m.table).Where("pair_index = ?", pairIndex).
+			Updates(updates)
+		if dbTx.Error != nil {
+			return types.DbErrSqlOperation
+		}
+		if dbTx.RowsAffected == 0 {
+			return types.DbErrNotFound
 		}
 	}
 	return nil

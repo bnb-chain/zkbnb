@@ -19,6 +19,7 @@ package monitor
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 
@@ -32,10 +33,15 @@ import (
 	"github.com/bnb-chain/zkbnb-eth-rpc/_rpc"
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/zkbnb/core/legend"
 	common2 "github.com/bnb-chain/zkbnb/common"
+	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/block"
+	"github.com/bnb-chain/zkbnb/dao/compressedblock"
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
+	"github.com/bnb-chain/zkbnb/dao/liquidity"
 	"github.com/bnb-chain/zkbnb/dao/mempool"
+	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/priorityrequest"
+	"github.com/bnb-chain/zkbnb/tree"
 	types2 "github.com/bnb-chain/zkbnb/types"
 )
 
@@ -82,6 +88,20 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		priorityRequestCountCheck = 0
 
 		relatedBlocks = make(map[int64]*block.Block)
+
+		// revert
+		revertTo                 int64
+		revertBlocks             []*block.Block
+		revertCompressedBlocks   []*compressedblock.CompressedBlock
+		revertAccountHistories   []*account.AccountHistory
+		revertLiquidityHistories []*liquidity.LiquidityHistory
+		revertNftHistories       []*nft.L2NftHistory
+		revertMempoolTxs         []*mempool.MempoolTx
+
+		pendingResetAccountRegisterIndex []int64
+		pendingResetAccounts             []*account.AccountHistory
+		pendingResetLiquidities          []*liquidity.LiquidityHistory
+		pendingResetNfts                 []*nft.L2NftHistory
 	)
 	for _, vlog := range logs {
 		l1EventInfo := &L1EventInfo{
@@ -144,7 +164,130 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			relatedBlocks[blockHeight].VerifiedAt = int64(logBlock.Time)
 			relatedBlocks[blockHeight].BlockStatus = block.StatusVerifiedAndExecuted
 		case zkbnbLogBlocksRevertSigHash.Hex():
+			var event zkbnb.ZkBNBBlocksRevert
 			l1EventInfo.EventType = EventTypeRevertedBlock
+			if err = ZkBNBContractAbi.UnpackIntoInterface(&event, EventNameBlocksRevert, vlog.Data); err != nil {
+				logx.Errorf("[MonitorL2BlockEvents] UnpackIntoInterface err:%v", err)
+				return err
+			}
+
+			// get revert to height
+			revertTo = int64(event.TotalBlocksCommitted)
+			// get pending delete block & tx info
+			revertBlocks, err = m.BlockModel.GetBlocksForRevertWithTx(revertTo)
+			if err != nil {
+				logx.Errorf("[MonitorL2BlockEvents] unable to get blocks for revert: %s", err.Error())
+				return err
+			}
+			// get pending delete block for commit
+			revertCompressedBlocks, err = m.CompressedBlockModel.GetCompressedBlockForRevert(revertTo)
+			if err != nil {
+				logx.Errorf("[MonitorL2BlockEvents] unable to get blocks for commit for revert: %s", err.Error())
+				return err
+			}
+			// get pending delete account history
+			revertAccountHistories, err = m.AccountHistoryModel.GetAccountsForRevert(revertTo)
+			if err != nil && err != types2.DbErrNotFound {
+				logx.Errorf("[MonitorL2BlockEvents] unable to get accounts for revert: %s", err.Error())
+				return err
+			}
+			// get pending delete liquidity history
+			revertLiquidityHistories, err = m.LiquidityHistoryModel.GetLiquidityForRevert(revertTo)
+			if err != nil && err != types2.DbErrNotFound {
+				logx.Errorf("[MonitorL2BlockEvents] unable to get liquidity for revert: %s", err.Error())
+				return err
+			}
+			// get pending delete nft history
+			revertNftHistories, err = m.L2NftHistoryModel.GetNftsForRevert(revertTo)
+			if err != nil && err != types2.DbErrNotFound {
+				logx.Errorf("[MonitorL2BlockEvents] unable to get nfts for revert: %s", err.Error())
+				return err
+			}
+			// get pending reset mempool tx and tx detail
+			revertMempoolTxs, err = m.MempoolModel.GetMempoolTxsForRevert(revertTo)
+			if err != nil && err != types2.DbErrNotFound {
+				logx.Errorf("[MonitorL2BlockEvents] unable to get mempool txs for revert: %s", err.Error())
+				return err
+			}
+			// reset account / liquidity / nft info
+			var (
+				pendingResetAccountIndexMap   = make(map[int64]bool)
+				pendingResetLiquidityIndexMap = make(map[int64]bool)
+				pendingResetNftIndexMap       = make(map[int64]bool)
+				pendingResetAccountIndex      []int64
+				pendingResetLiquidityIndex    []int64
+				pendingResetNftIndex          []int64
+			)
+			for _, accountHistory := range revertAccountHistories {
+				pendingResetAccountIndexMap[accountHistory.AccountIndex] = true
+			}
+			for _, liquidityHistory := range revertLiquidityHistories {
+				pendingResetLiquidityIndexMap[liquidityHistory.PairIndex] = true
+			}
+			for _, nftHistory := range revertNftHistories {
+				pendingResetNftIndexMap[nftHistory.NftIndex] = true
+			}
+			for index := range pendingResetAccountIndexMap {
+				pendingResetAccountIndex = append(pendingResetAccountIndex, index)
+			}
+			for index := range pendingResetLiquidityIndexMap {
+				pendingResetLiquidityIndex = append(pendingResetLiquidityIndex, index)
+			}
+			for index := range pendingResetNftIndexMap {
+				pendingResetNftIndex = append(pendingResetNftIndex, index)
+			}
+			// get last account history info
+			for _, index := range pendingResetAccountIndex {
+				accountInfo, err := m.AccountHistoryModel.GetLatestAccountInfoByAccountIndexAndHeight(index, revertTo)
+				if err != nil {
+					if !errors.Is(err, types2.DbErrNotFound) {
+						logx.Errorf("unable to get account info : %s", err.Error())
+						return err
+					}
+
+					accountInfo = &account.AccountHistory{
+						AccountIndex:    index,
+						Nonce:           0,
+						CollectionNonce: 0,
+						AssetInfo:       types2.NilAssetInfo,
+						AssetRoot:       common.Bytes2Hex(tree.NilAccountAssetRoot),
+					}
+				}
+				pendingResetAccounts = append(pendingResetAccounts, accountInfo)
+			}
+			// get last liquidity history info
+			for _, index := range pendingResetLiquidityIndex {
+				liquidityInfo, err := m.LiquidityHistoryModel.GetLatestLiquidityInfoByPairIndexAndHeight(index, revertTo)
+				if err != nil {
+					if !errors.Is(err, types2.DbErrNotFound) {
+						logx.Errorf("unable to get liquidity info : %s", err.Error())
+						return err
+					}
+					continue
+				}
+				pendingResetLiquidities = append(pendingResetLiquidities, liquidityInfo)
+			}
+			// get last nft history info
+			for _, index := range pendingResetNftIndex {
+				nftInfo, err := m.L2NftHistoryModel.GetLatestNftAssetByIndexAndHeight(index, revertTo)
+				if err != nil {
+					if !errors.Is(err, types2.DbErrNotFound) {
+						logx.Errorf("unable to get nft info : %s", err.Error())
+						return err
+					}
+					continue
+				}
+				pendingResetNfts = append(pendingResetNfts, nftInfo)
+			}
+			// reset info
+			for _, mempoolTx := range revertMempoolTxs {
+				mempoolTx.L2BlockHeight = types2.NilBlockHeight
+				mempoolTx.Status = mempool.PendingTxStatus
+				// reset account status
+				if mempoolTx.TxType == types2.TxTypeRegisterZns {
+					pendingResetAccountRegisterIndex = append(pendingResetAccountRegisterIndex, mempoolTx.AccountIndex)
+				}
+			}
 		default:
 		}
 
@@ -176,26 +319,144 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		return fmt.Errorf("failed to get mempool txs to delete, err: %v", err)
 	}
 
-	//update db
+	// update db
 	err = m.db.Transaction(func(tx *gorm.DB) error {
-		//create l1 synced block
+		// create l1 synced block
 		err := m.L1SyncedBlockModel.CreateL1SyncedBlockInTransact(tx, l1BlockMonitorInfo)
 		if err != nil {
 			return err
 		}
-		//create priority requests
+		// create priority requests
 		err = m.PriorityRequestModel.CreatePriorityRequestsInTransact(tx, priorityRequests)
 		if err != nil {
 			return err
 		}
-		//update blocks
+		// update blocks
 		err = m.BlockModel.UpdateBlocksWithoutTxsInTransact(tx, pendingUpdateBlocks)
 		if err != nil {
 			return err
 		}
-		//delete mempool txs
+		// delete mempool txs
 		err = m.MempoolModel.DeleteMempoolTxsInTransact(tx, pendingDeleteMempoolTxs)
-		return err
+		if err != nil {
+			return err
+		}
+
+		if len(revertBlocks) == 0 {
+			// skip revert
+			return nil
+		}
+
+		// delete blocks
+		err = m.BlockModel.DeleteBlocksInTransact(tx, revertBlocks)
+		if err != nil {
+			return err
+		}
+		for _, revertBlock := range revertBlocks {
+			for _, revertTx := range revertBlock.Txs {
+				// delete txDetails in tx
+				err = m.TxDetailModel.DeleteTxsInTransact(tx, revertTx.TxDetails)
+				if err != nil {
+					return err
+				}
+			}
+			// delete txs in block
+			err = m.TxModel.DeleteTxsInTransact(tx, revertBlock.Txs)
+			if err != nil {
+				return err
+			}
+		}
+
+		// delete compressedBlocks
+		err = m.CompressedBlockModel.DeleteCompressedBlockInTransact(tx, revertCompressedBlocks)
+		if err != nil {
+			return err
+		}
+		// delete proof
+		err = m.ProofModel.DeleteProofOverBlockHeightInTransact(tx, revertTo)
+		if err != nil {
+			return err
+		}
+		// delete witness
+		err = m.BlockWitnessModel.DeleteBlockWitnessOverHeightInTransact(tx, revertTo)
+		if err != nil {
+			return err
+		}
+		// delete account history
+		err = m.AccountHistoryModel.DeleteAccountHistoryInTransact(tx, revertAccountHistories)
+		if err != nil {
+			return err
+		}
+		// delete liquidity history
+		err = m.LiquidityHistoryModel.DeleteLiquidityHistoriesInTransact(tx, revertLiquidityHistories)
+		if err != nil {
+			return err
+		}
+		// delete nft history
+		err = m.L2NftHistoryModel.DeleteNftHistoriesInTransact(tx, revertNftHistories)
+		if err != nil {
+			return err
+		}
+		// reset mempool tx
+		err = m.MempoolModel.UpdateMempoolTxsInTransact(tx, revertMempoolTxs)
+		if err != nil {
+			return err
+		}
+		// reset account info
+		accountUpdates := make(map[int64]map[string]interface{}, len(pendingResetAccounts))
+		for _, accountInfo := range pendingResetAccounts {
+			accountUpdates[accountInfo.AccountIndex] = map[string]interface{}{
+				"asset_info":       accountInfo.AssetInfo,
+				"asset_root":       accountInfo.AssetRoot,
+				"nonce":            accountInfo.Nonce,
+				"collection_nonce": accountInfo.CollectionNonce,
+			}
+		}
+		// reset account to pending status
+		accountUpdates = make(map[int64]map[string]interface{}, len(pendingResetAccountRegisterIndex))
+		for _, accountIndex := range pendingResetAccountRegisterIndex {
+			accountUpdates[accountIndex] = map[string]interface{}{
+				"status": account.AccountStatusPending,
+			}
+		}
+		err = m.AccountModel.ResetAccountInTransact(tx, accountUpdates)
+		if err != nil {
+			return err
+		}
+		// reset liquidity info
+		liquidityUpdates := make(map[int64]map[string]interface{}, len(pendingResetLiquidities))
+		for _, liquidityInfo := range pendingResetLiquidities {
+			liquidityUpdates[liquidityInfo.PairIndex] = map[string]interface{}{
+				"asset_a":                liquidityInfo.AssetA,
+				"asset_b":                liquidityInfo.AssetB,
+				"lp_amount":              liquidityInfo.LpAmount,
+				"k_last":                 liquidityInfo.KLast,
+				"treasury_account_index": liquidityInfo.TreasuryAccountIndex,
+				"treasury_rate":          liquidityInfo.TreasuryRate,
+			}
+		}
+		err = m.LiquidityModel.ResetLiquidityInTransact(tx, liquidityUpdates)
+		if err != nil {
+			return err
+		}
+		// reset nft info
+		nftUpdates := make(map[int64]map[string]interface{}, len(pendingResetNfts))
+		for _, nftInfo := range pendingResetNfts {
+			nftUpdates[nftInfo.NftIndex] = map[string]interface{}{
+				"creator_account_index": nftInfo.CreatorAccountIndex,
+				"owner_account_index":   nftInfo.OwnerAccountIndex,
+				"nft_content_hash":      nftInfo.NftContentHash,
+				"nft_l1_address":        nftInfo.NftL1Address,
+				"nft_l1_token_id":       nftInfo.NftL1TokenId,
+				"creator_treasury_rate": nftInfo.CreatorTreasuryRate,
+				"collection_id":         nftInfo.CollectionId,
+			}
+		}
+		err = m.L2NftModel.ResetNftsInTransact(tx, nftUpdates)
+		if err != nil {
+			return err
+		}
+		return nil
 	})
 	if err != nil {
 		return fmt.Errorf("failed to store monitor info, err: %v", err)

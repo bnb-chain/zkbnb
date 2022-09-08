@@ -32,6 +32,7 @@ const (
 	EventNameNewPriorityRequest = "NewPriorityRequest"
 	EventNameBlockCommit        = "BlockCommit"
 	EventNameBlockVerification  = "BlockVerification"
+	EventNameBlocksRevert       = "BlocksRevert"
 
 	EventTypeNewPriorityRequest = 0
 	EventTypeCommittedBlock     = 1
