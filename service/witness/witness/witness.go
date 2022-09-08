@@ -171,7 +171,7 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 }
 
 func (w *Witness) RescheduleBlockWitness() {
-	latestConfirmedProof, err := w.proofModel.GetLatestConfirmedProof()
+	latestProof, err := w.proofModel.GetLatestProof()
 	if err != nil && err != types.DbErrNotFound {
 		logx.Errorf("failed to get latest confirmed proof, err: %v", err)
 		return
@@ -179,7 +179,7 @@ func (w *Witness) RescheduleBlockWitness() {
 
 	var nextBlockNumber int64 = 1
 	if err != types.DbErrNotFound {
-		nextBlockNumber = latestConfirmedProof.BlockNumber + 1
+		nextBlockNumber = latestProof.BlockNumber + 1
 	}
 
 	nextBlockWitness, err := w.blockWitnessModel.GetBlockWitnessByHeight(nextBlockNumber)
