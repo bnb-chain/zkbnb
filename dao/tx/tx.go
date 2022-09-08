@@ -83,6 +83,7 @@ type (
 		TxIndex     int64
 		StateRoot   string
 		BlockHeight int64 `gorm:"index"`
+		BlockId     int64 `gorm:"index"`
 		TxStatus    int   `gorm:"index"`
 	}
 )

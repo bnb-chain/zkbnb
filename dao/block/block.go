@@ -114,6 +114,12 @@ func (*Block) TableName() string {
 	return BlockTableName
 }
 
+func (b *Block) SetTxsStatus(status int) {
+	for _, blockTx := range b.Txs {
+		blockTx.TxStatus = status
+	}
+}
+
 func (m *defaultBlockModel) CreateBlockTable() error {
 	return m.DB.AutoMigrate(Block{})
 }
