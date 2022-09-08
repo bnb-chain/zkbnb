@@ -42,6 +42,16 @@ func WithRedis(redisType string, redisPass string) redis.Option {
 		p.Pass = redisPass
 	}
 }
+
+func IsBlockSizesSorted(blockSizes []int) bool {
+	for i := 1; i < len(blockSizes); i++ {
+		if blockSizes[i] <= blockSizes[i-1] {
+			return false
+		}
+	}
+	return true
+}
+
 func NewProver(c config.Config) *Prover {
 	db, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
 	if err != nil {
@@ -53,6 +63,10 @@ func NewProver(c config.Config) *Prover {
 		RedisConn:         redisConn,
 		BlockWitnessModel: blockwitness.NewBlockWitnessModel(db),
 		ProofModel:        proof.NewProofModel(db),
+	}
+
+	if !IsBlockSizesSorted(c.BlockConfig.OptionalBlockSizes) {
+		panic("invalid OptionalBlockSizes")
 	}
 
 	prover.OptionalBlockSizes = c.BlockConfig.OptionalBlockSizes
