@@ -42,5 +42,4 @@ build-only:
 	go build -o build/bin/zkbnb -ldflags="-X main.version=${VERSION} -X main.gitCommit=${GIT_COMMIT} -X main.gitDate=${GIT_COMMIT_DATE}" ./cmd/zkbnb
 
 docker-image:
-	go mod vendor # temporary, should be removed after open source
 	docker build . -t ${IMAGE_NAME}

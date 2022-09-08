@@ -1,2 +1,5 @@
 # ./bin
 build
+deployment/dependency
+deployment/configs
+deployment/.zkbnb
