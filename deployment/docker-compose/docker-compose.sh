@@ -155,6 +155,10 @@ function down() {
     docker-compose down
 }
 
+function restart() {
+    docker-compose restart $1
+}
+
 CMD=$1
 case ${CMD} in
 up)
@@ -163,6 +167,9 @@ up)
     ;;
 down)
     down
+    ;;
+restart)
+    restart $2
     ;;
 *)
     echo "Usage: docker-compose.sh up \$block_number | down"
