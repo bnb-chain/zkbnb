@@ -18,6 +18,7 @@ package proof
 
 import (
 	"fmt"
+
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb/types"
@@ -39,6 +40,7 @@ type (
 		DropProofTable() error
 		CreateProof(row *Proof) error
 		GetProofsBetween(start int64, end int64) (proofs []*Proof, err error)
+		GetLatestProof() (p *Proof, err error)
 		GetLatestConfirmedProof() (p *Proof, err error)
 		GetProofByBlockHeight(height int64) (p *Proof, err error)
 		UpdateProofsInTransact(tx *gorm.DB, m map[int64]int) error
@@ -102,6 +104,18 @@ func (m *defaultProofModel) GetProofsBetween(start int64, end int64) (proofs []*
 	}
 
 	return proofs, err
+}
+
+func (m *defaultProofModel) GetLatestProof() (p *Proof, err error) {
+	var row *Proof
+	dbTx := m.DB.Table(m.table).Order("block_number desc").Limit(1).Find(&row)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	} else {
+		return row, nil
+	}
 }
 
 func (m *defaultProofModel) GetLatestConfirmedProof() (p *Proof, err error) {

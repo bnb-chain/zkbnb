@@ -75,13 +75,13 @@ func NewWitness(c config.Config) (*Witness, error) {
 }
 
 func (w *Witness) initState() error {
-	witness, err := w.blockWitnessModel.GetLatestBlockWitness()
+	witnessHeight, err := w.blockWitnessModel.GetLatestBlockWitnessHeight()
 	if err != nil {
 		if err != types.DbErrNotFound {
 			return fmt.Errorf("GetLatestBlockWitness error: %v", err)
 		}
 
-		witness = &blockwitness.BlockWitness{}
+		witnessHeight = 0
 	}
 
 	// dbinitializer tree database
@@ -102,7 +102,7 @@ func (w *Witness) initState() error {
 	w.accountTree, w.assetTrees, err = tree.InitAccountTree(
 		w.accountModel,
 		w.accountHistoryModel,
-		witness.Height,
+		witnessHeight,
 		treeCtx,
 	)
 	// the blockHeight depends on the proof start position
@@ -110,12 +110,12 @@ func (w *Witness) initState() error {
 		return fmt.Errorf("initMerkleTree error: %v", err)
 	}
 
-	w.liquidityTree, err = tree.InitLiquidityTree(w.liquidityHistoryModel, witness.Height,
+	w.liquidityTree, err = tree.InitLiquidityTree(w.liquidityHistoryModel, witnessHeight,
 		treeCtx)
 	if err != nil {
 		return fmt.Errorf("initLiquidityTree error: %v", err)
 	}
-	w.nftTree, err = tree.InitNftTree(w.nftHistoryModel, witness.Height,
+	w.nftTree, err = tree.InitNftTree(w.nftHistoryModel, witnessHeight,
 		treeCtx)
 	if err != nil {
 		return fmt.Errorf("initNftTree error: %v", err)
@@ -171,20 +171,13 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 }
 
 func (w *Witness) RescheduleBlockWitness() {
-	latestConfirmedProof, err := w.proofModel.GetLatestConfirmedProof()
-	if err != nil && err != types.DbErrNotFound {
-		logx.Errorf("failed to get latest confirmed proof, err: %v", err)
-		return
+	nextBlockNumber, err := w.getNextWitnessToCheck()
+	if err != nil {
+		logx.Errorf("failed to get next witness to check, err: %s", err.Error())
 	}
-
-	var nextBlockNumber int64 = 1
-	if err != types.DbErrNotFound {
-		nextBlockNumber = latestConfirmedProof.BlockNumber + 1
-	}
-
 	nextBlockWitness, err := w.blockWitnessModel.GetBlockWitnessByHeight(nextBlockNumber)
 	if err != nil {
-		logx.Errorf("failed to get latest block witness, err: %v", err)
+		logx.Errorf("failed to get latest block witness, err: %s", err.Error())
 		return
 	}
 
@@ -204,10 +197,41 @@ func (w *Witness) RescheduleBlockWitness() {
 	if time.Now().After(nextBlockWitness.UpdatedAt.Add(UnprovedBlockWitnessTimeout)) {
 		err := w.blockWitnessModel.UpdateBlockWitnessStatus(nextBlockWitness, blockwitness.StatusPublished)
 		if err != nil {
-			logx.Errorf("update unproved block status error, err: %v", err)
+			logx.Errorf("update unproved block status error, err: %s", err.Error())
 			return
 		}
 	}
+}
+
+func (w *Witness) getNextWitnessToCheck() (int64, error) {
+	latestProof, err := w.proofModel.GetLatestProof()
+	if err != nil && err != types.DbErrNotFound {
+		logx.Errorf("failed to get latest proof, err: %s", err.Error())
+		return 0, err
+	}
+
+	if err == types.DbErrNotFound {
+		return 1, nil
+	}
+
+	latestConfirmedProof, err := w.proofModel.GetLatestConfirmedProof()
+	if err != nil && err != types.DbErrNotFound {
+		logx.Errorf("failed to get latest confirmed proof, err: %s", err.Error())
+		return 0, err
+	}
+
+	var startToCheck, endToCheck int64 = 1, latestProof.BlockNumber
+	if err != types.DbErrNotFound {
+		startToCheck = latestConfirmedProof.BlockNumber + 1
+	}
+
+	for blockHeight := startToCheck; blockHeight < endToCheck; blockHeight++ {
+		_, err = w.proofModel.GetProofByBlockHeight(blockHeight)
+		if err != nil {
+			return blockHeight, nil
+		}
+	}
+	return endToCheck + 1, nil
 }
 
 func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockNr int64) (*blockwitness.BlockWitness, error) {
