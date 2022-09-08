@@ -612,3 +612,31 @@ func (s *StateDB) GetNextNftIndex() int64 {
 	}
 	return maxNftIndex + 1
 }
+
+func (s *StateDB) CacheGasAccountIndex(gasAccountIndex int64) {
+	_ = s.redisCache.Set(context.Background(), dbcache.GasAccountKey, gasAccountIndex)
+}
+
+func (s *StateDB) GetGasAccountIndex() (int64, error) {
+	gasAccountIndex := int64(-1)
+	_, err := s.redisCache.Get(context.Background(), dbcache.GasAccountKey, &gasAccountIndex)
+	if err == nil {
+		return gasAccountIndex, nil
+	}
+	logx.Errorf("fail to get gas account from cache, error: %s", err.Error())
+	return -1, err
+}
+
+func (s *StateDB) CacheGasAssetIds(gasAssetIds []uint32) {
+	_ = s.redisCache.Set(context.Background(), dbcache.GasAssetsKey, gasAssetIds)
+}
+
+func (s *StateDB) GetGasAssetIds() ([]uint32, error) {
+	gasAssetIds := make([]uint32, 0)
+	_, err := s.redisCache.Get(context.Background(), dbcache.GasAssetsKey, &gasAssetIds)
+	if err == nil {
+		return gasAssetIds, nil
+	}
+	logx.Errorf("fail to get gas assets from cache, error: %s", err.Error())
+	return nil, err
+}

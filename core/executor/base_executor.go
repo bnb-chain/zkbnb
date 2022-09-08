@@ -1,31 +1,22 @@
 package executor
 
 import (
-<<<<<<< HEAD
+	"reflect"
+
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
-=======
-	"errors"
-	"math/big"
-	"reflect"
-
-	"github.com/bnb-chain/zkbas-crypto/wasm/legend/legendTxTypes"
-	"github.com/bnb-chain/zkbas/dao/tx"
-	"github.com/bnb-chain/zkbas/types"
->>>>>>> core: add gas check for transactions
 )
 
 const (
 	OfferPerAsset = 128
 	TenThousand   = 10000
 
-	GasAccountIndexField   = "GasAccountIndex"
-	GasFeeAssetIdField     = "GasFeeAssetId"
-	GasFeeAssetAmountField = "GasFeeAssetAmount"
+	GasAccountIndexField = "GasAccountIndex"
+	GasFeeAssetIdField   = "GasFeeAssetId"
 )
 
 type BaseExecutor struct {
@@ -61,8 +52,11 @@ func (e *BaseExecutor) Prepare() error {
 	return nil
 }
 
-func (e *BaseExecutor) parseGas() (gasAccountIndex, gasFeeAssetId int64, gasFeeAssetAmount *big.Int, err error) {
+func (e *BaseExecutor) parseGas() (gasAccountIndex, gasFeeAssetId int64, err error) {
 	ref := reflect.ValueOf(e.iTxInfo)
+	if ref.Kind() == reflect.Ptr {
+		ref = ref.Elem()
+	}
 
 	zeroValue := reflect.Value{}
 	f := ref.FieldByName(GasAccountIndexField)
@@ -79,17 +73,6 @@ func (e *BaseExecutor) parseGas() (gasAccountIndex, gasFeeAssetId int64, gasFeeA
 	}
 	gasFeeAssetId = f.Int()
 
-	f = ref.FieldByName(GasFeeAssetAmountField)
-	if f == zeroValue {
-		err = errors.New("fail to parse gas fields")
-		return
-	}
-	amount := f.String()
-	gasFeeAssetAmount = new(big.Int)
-	gasFeeAssetAmount, ok := gasFeeAssetAmount.SetString(amount, 10)
-	if !ok {
-		err = errors.New("fail to parse gas fields")
-	}
 	return
 }
 
@@ -112,11 +95,11 @@ func (e *BaseExecutor) VerifyInputs() error {
 			return err
 		}
 
-		gasAccountIndex, gasFeeAssetId, gasFeeAssetAmount, err := e.parseGas()
+		gasAccountIndex, gasFeeAssetId, err := e.parseGas()
 		if err != nil {
 			return errors.New("internal error")
 		}
-		err = e.bc.VerifyGas(from, gasAccountIndex, gasFeeAssetId, gasFeeAssetAmount)
+		err = e.bc.VerifyGas(gasAccountIndex, gasFeeAssetId)
 		if err != nil {
 			return err
 		}

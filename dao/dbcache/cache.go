@@ -18,6 +18,8 @@ const (
 	AccountKeyPrefix   = "cache:account_"
 	LiquidityKeyPrefix = "cache:liquidity_"
 	NftKeyPrefix       = "cache:nft_"
+	GasAccountKey      = "cache:gasAccount"
+	GasAssetsKey       = "cache:gasAssets"
 )
 
 func AccountKeyByIndex(accountIndex int64) string {
