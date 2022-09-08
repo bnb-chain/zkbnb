@@ -68,7 +68,7 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 
 func (s *SendTxLogic) getExecutor(txType int, txInfo string) (executor.TxExecutor, error) {
 	bc := core.NewBlockChainForDryRun(s.svcCtx.AccountModel, s.svcCtx.LiquidityModel, s.svcCtx.NftModel,
-		s.svcCtx.MempoolModel, s.svcCtx.SysConfigModel, s.svcCtx.RedisCache)
+		s.svcCtx.MempoolModel, s.svcCtx.AssetModel, s.svcCtx.SysConfigModel, s.svcCtx.RedisCache)
 	t := &tx.Tx{TxType: int64(txType), TxInfo: txInfo}
 
 	switch txType {

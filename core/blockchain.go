@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/bnb-chain/zkbnb/dao/asset"
 	"github.com/bnb-chain/zkbnb/dao/sysconfig"
 	"strconv"
 	"time"
@@ -95,14 +96,15 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 // NewBlockChainForDryRun - for dry run mode, we can reuse existing models for quick creation
 // , e.g., for sending tx, we can create blockchain for each request quickly
 func NewBlockChainForDryRun(accountModel account.AccountModel, liquidityModel liquidity.LiquidityModel,
-	nftModel nft.L2NftModel, mempoolModel mempool.MempoolModel, sysConfigModel sysconfig.SysConfigModel,
-	redisCache dbcache.Cache) *BlockChain {
+	nftModel nft.L2NftModel, mempoolModel mempool.MempoolModel, assetModel asset.AssetModel,
+	sysConfigModel sysconfig.SysConfigModel, redisCache dbcache.Cache) *BlockChain {
 	chainDb := &sdb.ChainDB{
-		AccountModel:   accountModel,
-		LiquidityModel: liquidityModel,
-		L2NftModel:     nftModel,
-		MempoolModel:   mempoolModel,
-		SysConfigModel: sysConfigModel,
+		AccountModel:     accountModel,
+		LiquidityModel:   liquidityModel,
+		L2NftModel:       nftModel,
+		MempoolModel:     mempoolModel,
+		L2AssetInfoModel: assetModel,
+		SysConfigModel:   sysConfigModel,
 	}
 	bc := &BlockChain{
 		ChainDB: chainDb,
