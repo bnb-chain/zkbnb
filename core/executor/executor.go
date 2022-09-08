@@ -23,7 +23,6 @@ type TxExecutor interface {
 	VerifyInputs() error
 	ApplyTransaction() error
 	GeneratePubData() error
-	UpdateTrees() error
 	GetExecutedTx() (*tx.Tx, error)
 	GenerateTxDetails() ([]*tx.TxDetail, error)
 	GenerateMempoolTx() (*mempool.MempoolTx, error)

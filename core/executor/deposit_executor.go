@@ -33,12 +33,8 @@ func NewDepositExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}
 
 	return &DepositExecutor{
-		BaseExecutor: BaseExecutor{
-			bc:      bc,
-			tx:      tx,
-			iTxInfo: txInfo,
-		},
-		txInfo: txInfo,
+		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
+		txInfo:       txInfo,
 	}, nil
 }
 
@@ -65,15 +61,9 @@ func (e *DepositExecutor) Prepare() error {
 	// Set the right account index.
 	txInfo.AccountIndex = account.AccountIndex
 
-	accounts := []int64{txInfo.AccountIndex}
-	assets := []int64{txInfo.AssetId}
-	err = e.bc.StateDB().PrepareAccountsAndAssets(accounts, assets)
-	if err != nil {
-		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
-		return err
-	}
-
-	return nil
+	// Mark the tree states that would be affected in this executor.
+	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{txInfo.AssetId})
+	return e.BaseExecutor.Prepare()
 }
 
 func (e *DepositExecutor) VerifyInputs() error {
@@ -95,7 +85,7 @@ func (e *DepositExecutor) ApplyTransaction() error {
 
 	stateCache := e.bc.StateDB()
 	stateCache.PendingUpdateAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
-	return nil
+	return e.BaseExecutor.ApplyTransaction()
 }
 
 func (e *DepositExecutor) GeneratePubData() error {
@@ -121,14 +111,6 @@ func (e *DepositExecutor) GeneratePubData() error {
 	stateCache.PubDataOffset = append(stateCache.PubDataOffset, uint32(len(stateCache.PubData)))
 	stateCache.PubData = append(stateCache.PubData, pubData...)
 	return nil
-}
-
-func (e *DepositExecutor) UpdateTrees() error {
-	bc := e.bc
-	txInfo := e.txInfo
-	accounts := []int64{txInfo.AccountIndex}
-	assets := []int64{txInfo.AssetId}
-	return bc.StateDB().UpdateAccountTree(accounts, assets)
 }
 
 func (e *DepositExecutor) GetExecutedTx() (*tx.Tx, error) {

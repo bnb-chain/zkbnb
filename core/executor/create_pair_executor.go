@@ -32,16 +32,14 @@ func NewCreatePairExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}
 
 	return &CreatePairExecutor{
-		BaseExecutor: BaseExecutor{
-			bc:      bc,
-			tx:      tx,
-			iTxInfo: txInfo,
-		},
-		txInfo: txInfo,
+		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
+		txInfo:       txInfo,
 	}, nil
 }
 
 func (e *CreatePairExecutor) Prepare() error {
+	// Mark the tree states that would be affected in this executor.
+	e.MarkLiquidityDirty(e.txInfo.PairIndex)
 	return nil
 }
 
@@ -83,7 +81,7 @@ func (e *CreatePairExecutor) ApplyTransaction() error {
 
 	stateCache := e.bc.StateDB()
 	stateCache.PendingNewLiquidityIndexMap[txInfo.PairIndex] = statedb.StateCachePending
-	return nil
+	return e.BaseExecutor.ApplyTransaction()
 }
 
 func (e *CreatePairExecutor) GeneratePubData() error {
@@ -112,12 +110,6 @@ func (e *CreatePairExecutor) GeneratePubData() error {
 	stateCache.PubDataOffset = append(stateCache.PubDataOffset, uint32(len(stateCache.PubData)))
 	stateCache.PubData = append(stateCache.PubData, pubData...)
 	return nil
-}
-
-func (e *CreatePairExecutor) UpdateTrees() error {
-	bc := e.bc
-	txInfo := e.txInfo
-	return bc.StateDB().UpdateLiquidityTree(txInfo.PairIndex)
 }
 
 func (e *CreatePairExecutor) GetExecutedTx() (*tx.Tx, error) {

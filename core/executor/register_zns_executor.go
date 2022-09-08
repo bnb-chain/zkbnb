@@ -34,16 +34,14 @@ func NewRegisterZnsExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}
 
 	return &RegisterZnsExecutor{
-		BaseExecutor: BaseExecutor{
-			bc:      bc,
-			tx:      tx,
-			iTxInfo: txInfo,
-		},
-		txInfo: txInfo,
+		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
+		txInfo:       txInfo,
 	}, nil
 }
 
 func (e *RegisterZnsExecutor) Prepare() error {
+	// Mark the tree states that would be affected in this executor.
+	e.MarkAccountAssetsDirty(e.txInfo.AccountIndex, []int64{})
 	return nil
 }
 
@@ -91,9 +89,16 @@ func (e *RegisterZnsExecutor) ApplyTransaction() error {
 		return err
 	}
 
+	emptyAssetTree, err := tree.NewEmptyAccountAssetTree(bc.StateDB().TreeCtx, txInfo.AccountIndex, uint64(bc.CurrentBlock().BlockHeight))
+	if err != nil {
+		logx.Errorf("new empty account asset tree failed: %s", err.Error())
+		return err
+	}
+	bc.StateDB().AccountAssetTrees = append(bc.StateDB().AccountAssetTrees, emptyAssetTree)
+
 	stateCache := e.bc.StateDB()
 	stateCache.PendingNewAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
-	return nil
+	return e.BaseExecutor.ApplyTransaction()
 }
 
 func (e *RegisterZnsExecutor) GeneratePubData() error {
@@ -123,21 +128,6 @@ func (e *RegisterZnsExecutor) GeneratePubData() error {
 	stateCache.PubDataOffset = append(stateCache.PubDataOffset, uint32(len(stateCache.PubData)))
 	stateCache.PubData = append(stateCache.PubData, pubData...)
 	return nil
-}
-
-func (e *RegisterZnsExecutor) UpdateTrees() error {
-	bc := e.bc
-	txInfo := e.txInfo
-	accounts := []int64{txInfo.AccountIndex}
-
-	emptyAssetTree, err := tree.NewEmptyAccountAssetTree(bc.StateDB().TreeCtx, txInfo.AccountIndex, uint64(bc.CurrentBlock().BlockHeight))
-	if err != nil {
-		logx.Errorf("new empty account asset tree failed: %s", err.Error())
-		return err
-	}
-	bc.StateDB().AccountAssetTrees = append(bc.StateDB().AccountAssetTrees, emptyAssetTree)
-
-	return bc.StateDB().UpdateAccountTree(accounts, nil)
 }
 
 func (e *RegisterZnsExecutor) GetExecutedTx() (*tx.Tx, error) {

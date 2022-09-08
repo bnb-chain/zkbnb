@@ -33,12 +33,8 @@ func NewFullExitExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}
 
 	return &FullExitExecutor{
-		BaseExecutor: BaseExecutor{
-			bc:      bc,
-			tx:      tx,
-			iTxInfo: txInfo,
-		},
-		txInfo: txInfo,
+		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
+		txInfo:       txInfo,
 	}, nil
 }
 
@@ -65,17 +61,15 @@ func (e *FullExitExecutor) Prepare() error {
 	// Set the right account index.
 	txInfo.AccountIndex = account.AccountIndex
 
-	accounts := []int64{txInfo.AccountIndex}
-	assets := []int64{txInfo.AssetId}
-	err = e.bc.StateDB().PrepareAccountsAndAssets(accounts, assets)
+	// Mark the tree states that would be affected in this executor.
+	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{txInfo.AssetId})
+	err = e.BaseExecutor.Prepare()
 	if err != nil {
-		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
-		return errors.New("internal error")
+		return err
 	}
 
 	// Set the right asset amount.
 	txInfo.AssetAmount = bc.StateDB().AccountMap[txInfo.AccountIndex].AssetInfo[txInfo.AssetId].Balance
-
 	return nil
 }
 
@@ -94,7 +88,7 @@ func (e *FullExitExecutor) ApplyTransaction() error {
 		stateCache := e.bc.StateDB()
 		stateCache.PendingUpdateAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
 	}
-	return nil
+	return e.BaseExecutor.ApplyTransaction()
 }
 
 func (e *FullExitExecutor) GeneratePubData() error {
@@ -122,14 +116,6 @@ func (e *FullExitExecutor) GeneratePubData() error {
 	stateCache.PendingOnChainOperationsHash = common2.ConcatKeccakHash(stateCache.PendingOnChainOperationsHash, pubData)
 	stateCache.PubData = append(stateCache.PubData, pubData...)
 	return nil
-}
-
-func (e *FullExitExecutor) UpdateTrees() error {
-	bc := e.bc
-	txInfo := e.txInfo
-	accounts := []int64{txInfo.AccountIndex}
-	assets := []int64{txInfo.AssetId}
-	return bc.StateDB().UpdateAccountTree(accounts, assets)
 }
 
 func (e *FullExitExecutor) GetExecutedTx() (*tx.Tx, error) {

@@ -33,28 +33,19 @@ func NewCancelOfferExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}
 
 	return &CancelOfferExecutor{
-		BaseExecutor: BaseExecutor{
-			bc:      bc,
-			tx:      tx,
-			iTxInfo: txInfo,
-		},
-		txInfo: txInfo,
+		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
+		txInfo:       txInfo,
 	}, nil
 }
 
 func (e *CancelOfferExecutor) Prepare() error {
 	txInfo := e.txInfo
 
-	accounts := []int64{txInfo.AccountIndex, txInfo.GasAccountIndex}
+	// Mark the tree states that would be affected in this executor.
 	offerAssetId := txInfo.OfferId / OfferPerAsset
-	assets := []int64{offerAssetId, txInfo.GasFeeAssetId}
-	err := e.bc.StateDB().PrepareAccountsAndAssets(accounts, assets)
-	if err != nil {
-		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
-		return errors.New("internal error")
-	}
-
-	return nil
+	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{txInfo.GasFeeAssetId, offerAssetId})
+	e.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
+	return e.BaseExecutor.Prepare()
 }
 
 func (e *CancelOfferExecutor) VerifyInputs() error {
@@ -104,8 +95,7 @@ func (e *CancelOfferExecutor) ApplyTransaction() error {
 	stateCache := e.bc.StateDB()
 	stateCache.PendingUpdateAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
-
-	return nil
+	return e.BaseExecutor.ApplyTransaction()
 }
 
 func (e *CancelOfferExecutor) GeneratePubData() error {
@@ -135,22 +125,6 @@ func (e *CancelOfferExecutor) GeneratePubData() error {
 
 	stateCache := e.bc.StateDB()
 	stateCache.PubData = append(stateCache.PubData, pubData...)
-	return nil
-}
-
-func (e *CancelOfferExecutor) UpdateTrees() error {
-	txInfo := e.txInfo
-
-	offerAssetId := txInfo.OfferId / OfferPerAsset
-	accounts := []int64{txInfo.AccountIndex, txInfo.GasAccountIndex}
-	assets := []int64{offerAssetId, txInfo.GasFeeAssetId}
-
-	err := e.bc.StateDB().UpdateAccountTree(accounts, assets)
-	if err != nil {
-		logx.Errorf("update account tree error, err: %s", err.Error())
-		return err
-	}
-
 	return nil
 }
 

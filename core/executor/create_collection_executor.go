@@ -34,30 +34,24 @@ func NewCreateCollectionExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) 
 	}
 
 	return &CreateCollectionExecutor{
-		BaseExecutor: BaseExecutor{
-			bc:      bc,
-			tx:      tx,
-			iTxInfo: txInfo,
-		},
-		txInfo: txInfo,
+		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
+		txInfo:       txInfo,
 	}, nil
 }
 
 func (e *CreateCollectionExecutor) Prepare() error {
 	txInfo := e.txInfo
 
-	accounts := []int64{txInfo.AccountIndex, txInfo.GasAccountIndex}
-	assets := []int64{txInfo.GasFeeAssetId}
-	err := e.bc.StateDB().PrepareAccountsAndAssets(accounts, assets)
+	// Mark the tree states that would be affected in this executor.
+	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{txInfo.GasFeeAssetId})
+	e.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
+	err := e.BaseExecutor.Prepare()
 	if err != nil {
-		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
-		return errors.New("internal error")
+		return err
 	}
 
-	fromAccount := e.bc.StateDB().AccountMap[txInfo.AccountIndex]
-	// add collection nonce to tx info
-	txInfo.CollectionId = fromAccount.CollectionNonce
-
+	// Set the right collection nonce to tx info.
+	txInfo.CollectionId = e.bc.StateDB().AccountMap[txInfo.AccountIndex].CollectionNonce
 	return nil
 }
 
@@ -93,7 +87,7 @@ func (e *CreateCollectionExecutor) ApplyTransaction() error {
 	stateCache := e.bc.StateDB()
 	stateCache.PendingUpdateAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
-	return nil
+	return e.BaseExecutor.ApplyTransaction()
 }
 
 func (e *CreateCollectionExecutor) GeneratePubData() error {
@@ -123,21 +117,6 @@ func (e *CreateCollectionExecutor) GeneratePubData() error {
 
 	stateCache := e.bc.StateDB()
 	stateCache.PubData = append(stateCache.PubData, pubData...)
-	return nil
-}
-
-func (e *CreateCollectionExecutor) UpdateTrees() error {
-	txInfo := e.txInfo
-
-	accounts := []int64{txInfo.AccountIndex, txInfo.GasAccountIndex}
-	assets := []int64{txInfo.GasFeeAssetId}
-
-	err := e.bc.StateDB().UpdateAccountTree(accounts, assets)
-	if err != nil {
-		logx.Errorf("update account tree error, err: %s", err.Error())
-		return err
-	}
-
 	return nil
 }
 
