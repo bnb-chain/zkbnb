@@ -6,7 +6,7 @@ on:
       - master
       - develop
 env:
-  L1_ENDPOINT: https://data-seed-prebsc-1-s1.binance.org:8545
+  L1_ENDPOINT: https://localhost:8545
   L2_ENDPOINT: http://localhost:8888
 
 jobs:

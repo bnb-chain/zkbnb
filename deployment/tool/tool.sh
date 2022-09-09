@@ -10,7 +10,7 @@ WORKDIR=$(cd `dirname $0`/..; pwd)
 KEY_PATH=${WORKDIR}/.zkbnb
 ZkBNB_CONTRACT_REPO=https://github.com/bnb-chain/zkbnb-contract.git
 ZkBNB_CRYPTO_REPO=https://github.com/bnb-chain/zkbnb-crypto.git
-BSC_TESTNET_ENDPOINT=https://data-seed-prebsc-1-s1.binance.org:8545
+BSC_TESTNET_ENDPOINT=http://localhost:8545
 ZKBNB_CRYPTO_BRANCH=$(cat $WORKDIR/../go.mod | grep github.com/bnb-chain/zkbnb-crypto | awk -F" " '{print $2}' | awk -F"-" '{if ($3 != "") print $3;else print $1;}')
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
@@ -49,10 +49,10 @@ function deployContracts() {
     echo 'deploy contracts, register and deposit on BSC Testnet'
     cd ${WORKDIR}/dependency/zkbnb-contract && npm install
     cp /server/.env ./
-    npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deploy.js
+    npx hardhat --network local run ./scripts/deploy-keccak256/deploy.js
     echo "Recorded latest contract addresses into ${WORKDIR}/dependency/zkbnb-contract/info/addresses.json"
-    npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/register.js
-    npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deposit.js
+    npx hardhat --network local run ./scripts/deploy-keccak256/register.js
+    npx hardhat --network local run ./scripts/deploy-keccak256/deposit.js
 
     mkdir -p ${WORKDIR}/configs/
     echo 'modify deployed contracts into zkbnb config ...'
