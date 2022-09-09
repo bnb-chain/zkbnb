@@ -24,11 +24,12 @@ import (
 	curve "github.com/bnb-chain/zkbnb-crypto/ecc/ztwistededwards/tebn254"
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
-	common2 "github.com/bnb-chain/zkbnb/common"
-	"github.com/bnb-chain/zkbnb/common/pool"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/panjf2000/ants/v2"
 	"github.com/pkg/errors"
+
+	common2 "github.com/bnb-chain/zkbnb/common"
 )
 
 func EmptyAccountNodeHash() []byte {
@@ -114,7 +115,7 @@ func EmptyNftNodeHash() []byte {
 }
 
 func CommitTrees(
-	pool *pool.Pool,
+	pool *ants.Pool,
 	version uint64,
 	accountTree bsmt.SparseMerkleTree,
 	assetTrees *[]bsmt.SparseMerkleTree,
@@ -125,7 +126,7 @@ func CommitTrees(
 	errChan := make(chan error, totalTask)
 	defer close(errChan)
 
-	pool.Submit(func() {
+	err := pool.Submit(func() {
 		accPrunedVersion := bsmt.Version(version)
 		if accountTree.LatestVersion() < accPrunedVersion {
 			accPrunedVersion = accountTree.LatestVersion()
@@ -137,10 +138,13 @@ func CommitTrees(
 		}
 		errChan <- nil
 	})
+	if err != nil {
+		return err
+	}
 
 	for idx := range *assetTrees {
-		func(i int) {
-			pool.Submit(func() {
+		err := func(i int) error {
+			return pool.Submit(func() {
 				assetPrunedVersion := bsmt.Version(version)
 				if (*assetTrees)[i].LatestVersion() < assetPrunedVersion {
 					assetPrunedVersion = (*assetTrees)[i].LatestVersion()
@@ -153,9 +157,12 @@ func CommitTrees(
 				errChan <- nil
 			})
 		}(idx)
+		if err != nil {
+			return err
+		}
 	}
 
-	pool.Submit(func() {
+	err = pool.Submit(func() {
 		liquidityPrunedVersion := bsmt.Version(version)
 		if liquidityTree.LatestVersion() < liquidityPrunedVersion {
 			liquidityPrunedVersion = liquidityTree.LatestVersion()
@@ -167,8 +174,11 @@ func CommitTrees(
 		}
 		errChan <- nil
 	})
+	if err != nil {
+		return err
+	}
 
-	pool.Submit(func() {
+	err = pool.Submit(func() {
 		nftPrunedVersion := bsmt.Version(version)
 		if nftTree.LatestVersion() < nftPrunedVersion {
 			nftPrunedVersion = nftTree.LatestVersion()
@@ -180,6 +190,9 @@ func CommitTrees(
 		}
 		errChan <- nil
 	})
+	if err != nil {
+		return err
+	}
 
 	for i := 0; i < totalTask; i++ {
 		err := <-errChan
@@ -192,7 +205,7 @@ func CommitTrees(
 }
 
 func RollBackTrees(
-	pool *pool.Pool,
+	pool *ants.Pool,
 	version uint64,
 	accountTree bsmt.SparseMerkleTree,
 	assetTrees *[]bsmt.SparseMerkleTree,
@@ -204,7 +217,7 @@ func RollBackTrees(
 	defer close(errChan)
 
 	ver := bsmt.Version(version)
-	pool.Submit(func() {
+	err := pool.Submit(func() {
 		if accountTree.LatestVersion() > ver && !accountTree.IsEmpty() {
 			err := accountTree.Rollback(ver)
 			if err != nil {
@@ -214,10 +227,13 @@ func RollBackTrees(
 		}
 		errChan <- nil
 	})
+	if err != nil {
+		return err
+	}
 
 	for idx := range *assetTrees {
-		func(i int) {
-			pool.Submit(func() {
+		err := func(i int) error {
+			return pool.Submit(func() {
 				if (*assetTrees)[i].LatestVersion() > ver && !(*assetTrees)[i].IsEmpty() {
 					err := (*assetTrees)[i].Rollback(ver)
 					if err != nil {
@@ -228,9 +244,12 @@ func RollBackTrees(
 				errChan <- nil
 			})
 		}(idx)
+		if err != nil {
+			return err
+		}
 	}
 
-	pool.Submit(func() {
+	err = pool.Submit(func() {
 		if liquidityTree.LatestVersion() > ver && !liquidityTree.IsEmpty() {
 			err := liquidityTree.Rollback(ver)
 			if err != nil {
@@ -240,8 +259,11 @@ func RollBackTrees(
 		}
 		errChan <- nil
 	})
+	if err != nil {
+		return err
+	}
 
-	pool.Submit(func() {
+	err = pool.Submit(func() {
 		if nftTree.LatestVersion() > ver && !nftTree.IsEmpty() {
 			err := nftTree.Rollback(ver)
 			if err != nil {
@@ -251,6 +273,9 @@ func RollBackTrees(
 		}
 		errChan <- nil
 	})
+	if err != nil {
+		return err
+	}
 
 	for i := 0; i < totalTask; i++ {
 		err := <-errChan

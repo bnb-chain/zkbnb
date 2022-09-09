@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/panjf2000/ants/v2"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
 	cryptoBlock "github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/block"
 	smt "github.com/bnb-chain/zkbnb-smt"
-	"github.com/bnb-chain/zkbnb/common/pool"
 	utils "github.com/bnb-chain/zkbnb/common/prove"
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/block"
@@ -45,7 +45,7 @@ type Witness struct {
 	assetTrees    []smt.SparseMerkleTree
 	liquidityTree smt.SparseMerkleTree
 	nftTree       smt.SparseMerkleTree
-	taskPool      *pool.Pool
+	taskPool      *ants.Pool
 
 	// The data access object
 	blockModel            block.BlockModel
@@ -124,8 +124,11 @@ func (w *Witness) initState() error {
 	if err != nil {
 		return fmt.Errorf("initNftTree error: %v", err)
 	}
-	w.taskPool = pool.NewPool(defaultTaskPoolSize)
-	w.taskPool.Start()
+	taskPool, err := ants.NewPool(defaultTaskPoolSize)
+	if err != nil {
+		return err
+	}
+	w.taskPool = taskPool
 	w.helper = utils.NewWitnessHelper(w.treeCtx, w.accountTree, w.liquidityTree, w.nftTree, &w.assetTrees, w.accountModel)
 	return nil
 }

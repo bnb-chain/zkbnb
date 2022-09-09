@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/panjf2000/ants/v2"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb/common/chain"
-	"github.com/bnb-chain/zkbnb/common/pool"
 	sdb "github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/block"
@@ -53,7 +53,7 @@ type BlockChain struct {
 
 	currentBlock *block.Block
 	processor    Processor
-	taskPool     *pool.Pool
+	taskPool     *ants.Pool
 }
 
 func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) {
@@ -92,8 +92,12 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		return nil, err
 	}
 	bc.processor = NewCommitProcessor(bc)
-	bc.taskPool = pool.NewPool(defaultTaskPoolSize)
-	bc.taskPool.Start()
+	taskPool, err := ants.NewPool(defaultTaskPoolSize)
+	if err != nil {
+		return nil, err
+	}
+	bc.taskPool = taskPool
+
 	return bc, nil
 }
 
