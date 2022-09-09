@@ -14,8 +14,9 @@ jobs:
     steps:
       - name: Deploy new zkbnb on qa2
         run: |
+          sudo ssh qa2 "sudo rm -rf /tmp/zkbnb; exit"
           sudo ssh qa2 "cd /tmp && git clone --branch qa2 https://github.com/bnb-chain/zkbnb.git ;exit"
-          sudo ssh qa2 "cd /tmp/zkbnb && sudo bash -x ./deploy-local.sh new kvrocks;exit"
+          sudo ssh qa2 "cd /tmp/zkbnb && sudo bash -x ./deploy-local.sh new kvrocks; exit"
           echo "end deploy on qa2"
 
       - name: Notification via slack
