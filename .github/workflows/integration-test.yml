@@ -6,7 +6,7 @@ on:
       - master
       - develop
 env:
-  L1_ENDPOINT: https://data-seed-prebsc-1-s1.binance.org:8545
+  L1_ENDPOINT: http://localhost:8545
   L2_ENDPOINT: http://localhost:8888
 
 jobs:
@@ -38,10 +38,11 @@ jobs:
           make docker-image
           sudo mkdir -p ./deployment/.zkbnb
           sudo cp /server/test.keyfile/* ./deployment/.zkbnb
-          blockNr=$(sudo bash ./deployment/tool/tool.sh blockHeight)
-          sudo bash ./deployment/tool/tool.sh all
-          sudo bash ./deployment/docker-compose/docker-compose.sh down
-          sudo bash ./deployment/docker-compose/docker-compose.sh up $blockNr
+          blockNr=$(sudo bash ./deployment/tool/tool.sh blockHeight $L1_ENDPOINT)
+          sudo bash ./deployment/tool/tool.sh prepare
+          sudo bash ./deployment/tool/tool.sh deployContracts local
+          sudo env L1_ENDPOINT=http://$(curl http://169.254.169.254/latest/meta-data/local-ipv4):8545 bash ./deployment/docker-compose/docker-compose.sh down
+          sudo env L1_ENDPOINT=http://$(curl http://169.254.169.254/latest/meta-data/local-ipv4):8545 bash ./deployment/docker-compose/docker-compose.sh up $blockNr
           echo "Contract addresses"
           cat ~/zkbnb/deployment/dependency/zkbnb-contract/info/addresses.json
           echo "Waiting 3m for the initialization tx to be verified"

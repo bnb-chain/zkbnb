@@ -60,8 +60,8 @@ CacheRedis:
     Type: node
 
 ChainConfig:
-  NetworkRPCSysConfigName: \"BscTestNetworkRpc\"
-  #NetworkRPCSysConfigName: \"LocalTestNetworkRpc\"
+  #NetworkRPCSysConfigName: \"BscTestNetworkRpc\"
+  NetworkRPCSysConfigName: \"LocalTestNetworkRpc\"
   StartL1BlockHeight: $BLOCK_NUMBER
   ConfirmBlocksCount: 0
   MaxHandledBlocksCount: 5000
@@ -95,8 +95,8 @@ CacheRedis:
     Type: node
 
 ChainConfig:
-  NetworkRPCSysConfigName: \"BscTestNetworkRpc\"
-  #NetworkRPCSysConfigName: \"LocalTestNetworkRpc\"
+  #NetworkRPCSysConfigName: \"BscTestNetworkRpc\"
+  NetworkRPCSysConfigName: \"LocalTestNetworkRpc\"
   ConfirmBlocksCount: 0
   MaxWaitingTime: 120
   MaxBlockCount: 4

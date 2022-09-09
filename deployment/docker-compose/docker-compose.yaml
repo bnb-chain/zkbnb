@@ -11,6 +11,8 @@ services:
           - host=database user=$DATABASE_USER password=$DATABASE_PASS dbname=$DATABASE_NAME port=5432 sslmode=disable
           - --contractAddr
           - /server/configs/contractaddr.yaml
+          - --local
+          - "$L1_ENDPOINT"
         volumes:
           - $BASEDIR/configs:/server/configs
         depends_on:

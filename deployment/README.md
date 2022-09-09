@@ -12,8 +12,9 @@
 Start...
 ```bash
 blockNr=$(bash ./deployment/tool/tool.sh blockHeight)
-bash ./deployment/tool/tool.sh all new
-bash ./deployment/docker-compose/docker-compose.sh up $blockNr
+bash ./deployment/tool/tool.sh prepare new
+bash ./deployment/tool/tool.sh deployContracts
+export L1_ENDPOINT=http://localhost:8545 && bash ./deployment/docker-compose/docker-compose.sh up $blockNr
 ```
 
 Stop...
@@ -26,7 +27,8 @@ bash ./deployment/docker-compose/docker-compose.sh down
 1. Prepare
 ```bash
 export BLOCK_NUMBER=$(bash ./deployment/tool/tool.sh blockHeight)
-bash ./deployment/tool/tool.sh all new
+bash ./deployment/tool/tool.sh prepare new
+bash ./deployment/tool/tool.sh deployContracts
 ```
 
 2. Install

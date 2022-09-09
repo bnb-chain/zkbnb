@@ -39,20 +39,27 @@ function prepare() {
 }
 
 function getLatestBlockHeight() {
-    hexNumber=$(curl -X POST $BSC_TESTNET_ENDPOINT --header 'Content-Type: application/json' --data-raw '{"jsonrpc":"2.0", "method":"eth_blockNumber", "params": [], "id":1 }' | jq -r '.result')
+    endpoint=$BSC_TESTNET_ENDPOINT
+    if [ ! -z $1 ]; then
+        endpoint=$1
+    fi
+    hexNumber=$(curl -X POST $endpoint --header 'Content-Type: application/json' --data-raw '{"jsonrpc":"2.0", "method":"eth_blockNumber", "params": [], "id":1 }' | jq -r '.result')
     blockNumber=`echo $((${hexNumber}))`
     
     echo $blockNumber
 }
 
 function deployContracts() {
+    network="BSCTestnet"
+    if [ ! -z $1 ]; then
+        network="$1"
+    fi 
     echo 'deploy contracts, register and deposit on BSC Testnet'
     cd ${WORKDIR}/dependency/zkbnb-contract && npm install
-    cp /server/.env ./
-    npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deploy.js
+    npx hardhat --network $network run ./scripts/deploy-keccak256/deploy.js
     echo "Recorded latest contract addresses into ${WORKDIR}/dependency/zkbnb-contract/info/addresses.json"
-    npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/register.js
-    npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deposit.js
+    npx hardhat --network $network run ./scripts/deploy-keccak256/register.js
+    npx hardhat --network $network run ./scripts/deploy-keccak256/deposit.js
 
     mkdir -p ${WORKDIR}/configs/
     echo 'modify deployed contracts into zkbnb config ...'
@@ -71,17 +78,13 @@ prepare)
     prepare $2
     ;;
 blockHeight)
-    blockNumber=$(getLatestBlockHeight)
+    blockNumber=$(getLatestBlockHeight $2)
     echo "$blockNumber"
     ;;
 deployContracts)
-    deployContracts
-    ;;
-all)
-    prepare $2
-    deployContracts
+    deployContracts $2
     ;;
 *)
-    echo "Usage: tool.sh prepare | blockHeight | deployContracts | all "
+    echo "Usage: tool.sh prepare | blockHeight | deployContracts "
     ;;
 esac
