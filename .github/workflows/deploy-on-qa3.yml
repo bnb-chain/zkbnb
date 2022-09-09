@@ -14,16 +14,9 @@ jobs:
     steps:
       - name: Deploy new zkbnb on qa3
         run: |
-          echo 'fetch zkbnb repo'
-          export BRANCH=$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
-
-          cd ~
-          rm -rf ./zkbnb
-          git clone --branch qa3 https://github.com/bnb-chain/zkbnb.git
-          cd ./zkbnb
-
-          sudo scp -r ./deploy-qa.sh "qa3:/tmp/"
-          sudo ssh qa3 "sudo bash -x /tmp/deploy-qa.sh qa3;exit"
+          sudo ssh qa3 "sudo rm -rf /tmp/zkbnb; exit"
+          sudo ssh qa3 "cd /tmp && git clone --branch qa3 https://github.com/bnb-chain/zkbnb.git ;exit"
+          sudo ssh qa3 "cd /tmp/zkbnb && sudo bash -x ./deploy-local.sh new; exit"
           echo "end deploy on qa3"
 
       - name: Notification via slack
