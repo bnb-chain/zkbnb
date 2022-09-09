@@ -1,6 +1,8 @@
 package monitor
 
 import (
+	"time"
+
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -10,21 +12,21 @@ import (
 	"github.com/bnb-chain/zkbnb/service/monitor/monitor"
 )
 
+const GracefulShutdownTimeout = 10 * time.Second
+
 func Run(configFile string) error {
 	var c config.Config
 	conf.MustLoad(configFile, &c)
 	m := monitor.NewMonitor(c)
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
-	proc.AddShutdownListener(func() {
-		logx.Close()
-	})
-	cronjob := cron.New(cron.WithChain(
+
+	cronJob := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))
 
 	// monitor generic blocks
-	if _, err := cronjob.AddFunc("@every 10s", func() {
+	if _, err := cronJob.AddFunc("@every 10s", func() {
 		err := m.MonitorGenericBlocks()
 		if err != nil {
 			logx.Errorf("monitor blocks error, %v", err)
@@ -34,7 +36,7 @@ func Run(configFile string) error {
 	}
 
 	// monitor priority requests
-	if _, err := cronjob.AddFunc("@every 10s", func() {
+	if _, err := cronJob.AddFunc("@every 10s", func() {
 		err := m.MonitorPriorityRequests()
 		if err != nil {
 			logx.Errorf("monitor priority requests error, %v", err)
@@ -44,7 +46,7 @@ func Run(configFile string) error {
 	}
 
 	// monitor governance blocks
-	if _, err := cronjob.AddFunc("@every 10s", func() {
+	if _, err := cronJob.AddFunc("@every 10s", func() {
 		err := m.MonitorGovernanceBlocks()
 		if err != nil {
 			logx.Errorf("monitor governance blocks error, %v", err)
@@ -53,7 +55,21 @@ func Run(configFile string) error {
 	}); err != nil {
 		panic(err)
 	}
-	cronjob.Start()
-	logx.Info("Starting monitor cronjob ...")
-	select {}
+	cronJob.Start()
+
+	exit := make(chan struct{})
+	proc.SetTimeToForceQuit(GracefulShutdownTimeout)
+	proc.AddShutdownListener(func() {
+		logx.Info("start to shutdown monitor......")
+		_ = logx.Close()
+		<-cronJob.Stop().Done()
+		exit <- struct{}{}
+	})
+
+	logx.Info("monitor cronjob is starting......")
+	select {
+	case <-exit:
+		break
+	}
+	return nil
 }

@@ -1,14 +1,16 @@
 package witness
 
 import (
+	"github.com/bnb-chain/zkbnb/service/witness/config"
+	"github.com/bnb-chain/zkbnb/service/witness/witness"
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
-
-	"github.com/bnb-chain/zkbnb/service/witness/config"
-	"github.com/bnb-chain/zkbnb/service/witness/witness"
+	"time"
 )
+
+const GracefulShutdownTimeout = 5 * time.Second
 
 func Run(configFile string) error {
 	var c config.Config
@@ -19,9 +21,6 @@ func Run(configFile string) error {
 	}
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
-	proc.AddShutdownListener(func() {
-		logx.Close()
-	})
 
 	cronJob := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DiscardLogger),
@@ -39,6 +38,19 @@ func Run(configFile string) error {
 	}
 	cronJob.Start()
 
+	exit := make(chan struct{})
+	proc.SetTimeToForceQuit(GracefulShutdownTimeout)
+	proc.AddShutdownListener(func() {
+		logx.Info("start to shutdown witness")
+		_ = logx.Close()
+		<-cronJob.Stop().Done()
+		exit <- struct{}{}
+	})
+
 	logx.Info("witness cronjob is starting......")
-	select {}
+	select {
+	case <-exit:
+		break
+	}
+	return nil
 }
