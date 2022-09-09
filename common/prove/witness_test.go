@@ -30,7 +30,6 @@ import (
 
 	cryptoBlock "github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/block"
 	"github.com/bnb-chain/zkbnb-smt/database/memory"
-
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/blockwitness"

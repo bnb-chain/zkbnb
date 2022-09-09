@@ -3,6 +3,7 @@ module github.com/bnb-chain/zkbnb
 go 1.17
 
 require (
+	github.com/panjf2000/ants/v2 v2.5.0
 	github.com/zeromicro/go-zero v1.3.4
 	gorm.io/gorm v1.23.4
 )
@@ -46,7 +47,6 @@ require (
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/mmcloughlin/addchain v0.4.0 // indirect
 	github.com/openzipkin/zipkin-go v0.4.0 // indirect
-	github.com/panjf2000/ants/v2 v2.5.0 // indirect
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58 // indirect
 	github.com/pegasus-kv/thrift v0.13.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.1 // indirect
@@ -93,7 +93,7 @@ require (
 	github.com/eko/gocache/v2 v2.3.1
 	github.com/ethereum/go-ethereum v1.10.23
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/robfig/cron/v3 v3.0.1

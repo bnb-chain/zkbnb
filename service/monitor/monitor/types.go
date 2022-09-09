@@ -95,7 +95,7 @@ var (
 	governanceLogAssetPausedUpdateSigHash     = crypto.Keccak256Hash(governanceLogAssetPausedUpdateSig)
 )
 
-type L1EventInfo struct {
+type L1Event struct {
 	// deposit / lock / committed / verified / reverted
 	EventType uint8
 	// tx hash
