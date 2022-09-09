@@ -24,10 +24,12 @@ import (
 	curve "github.com/bnb-chain/zkbnb-crypto/ecc/ztwistededwards/tebn254"
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
-	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/panjf2000/ants/v2"
 	"github.com/pkg/errors"
+
+	common2 "github.com/bnb-chain/zkbnb/common"
 )
 
 func EmptyAccountNodeHash() []byte {
@@ -112,85 +114,176 @@ func EmptyNftNodeHash() []byte {
 	return hFunc.Sum(nil)
 }
 
-func CommitTrees(version uint64,
+func CommitTrees(
+	pool *ants.Pool,
+	version uint64,
 	accountTree bsmt.SparseMerkleTree,
 	assetTrees *[]bsmt.SparseMerkleTree,
 	liquidityTree bsmt.SparseMerkleTree,
 	nftTree bsmt.SparseMerkleTree) error {
 
-	accPrunedVersion := bsmt.Version(version)
-	if accountTree.LatestVersion() < accPrunedVersion {
-		accPrunedVersion = accountTree.LatestVersion()
-	}
-	ver, err := accountTree.Commit(&accPrunedVersion)
-	if err != nil {
-		return errors.Wrapf(err, "unable to commit account tree, tree ver: %d, prune ver: %d", ver, accPrunedVersion)
-	}
-	for idx := range *assetTrees {
-		assetPrunedVersion := bsmt.Version(version)
-		if (*assetTrees)[idx].LatestVersion() < assetPrunedVersion {
-			assetPrunedVersion = (*assetTrees)[idx].LatestVersion()
+	totalTask := len(*assetTrees) + 3
+	errChan := make(chan error, totalTask)
+	defer close(errChan)
+
+	err := pool.Submit(func() {
+		accPrunedVersion := bsmt.Version(version)
+		if accountTree.LatestVersion() < accPrunedVersion {
+			accPrunedVersion = accountTree.LatestVersion()
 		}
-		ver, err := (*assetTrees)[idx].Commit(&assetPrunedVersion)
+		ver, err := accountTree.Commit(&accPrunedVersion)
 		if err != nil {
-			return errors.Wrapf(err, "unable to commit asset tree [%d], tree ver: %d, prune ver: %d", idx, ver, assetPrunedVersion)
+			errChan <- errors.Wrapf(err, "unable to commit account tree, tree ver: %d, prune ver: %d", ver, accPrunedVersion)
+			return
+		}
+		errChan <- nil
+	})
+	if err != nil {
+		return err
+	}
+
+	for idx := range *assetTrees {
+		err := func(i int) error {
+			return pool.Submit(func() {
+				assetPrunedVersion := bsmt.Version(version)
+				if (*assetTrees)[i].LatestVersion() < assetPrunedVersion {
+					assetPrunedVersion = (*assetTrees)[i].LatestVersion()
+				}
+				ver, err := (*assetTrees)[i].Commit(&assetPrunedVersion)
+				if err != nil {
+					errChan <- errors.Wrapf(err, "unable to commit asset tree [%d], tree ver: %d, prune ver: %d", i, ver, assetPrunedVersion)
+					return
+				}
+				errChan <- nil
+			})
+		}(idx)
+		if err != nil {
+			return err
 		}
 	}
-	liquidityPrunedVersion := bsmt.Version(version)
-	if liquidityTree.LatestVersion() < liquidityPrunedVersion {
-		liquidityPrunedVersion = liquidityTree.LatestVersion()
-	}
-	ver, err = liquidityTree.Commit(&liquidityPrunedVersion)
+
+	err = pool.Submit(func() {
+		liquidityPrunedVersion := bsmt.Version(version)
+		if liquidityTree.LatestVersion() < liquidityPrunedVersion {
+			liquidityPrunedVersion = liquidityTree.LatestVersion()
+		}
+		ver, err := liquidityTree.Commit(&liquidityPrunedVersion)
+		if err != nil {
+			errChan <- errors.Wrapf(err, "unable to commit liquidity tree, tree ver: %d, prune ver: %d", ver, liquidityPrunedVersion)
+			return
+		}
+		errChan <- nil
+	})
 	if err != nil {
-		return errors.Wrapf(err, "unable to commit liquidity tree, tree ver: %d, prune ver: %d", ver, liquidityPrunedVersion)
+		return err
 	}
-	nftPrunedVersion := bsmt.Version(version)
-	if nftTree.LatestVersion() < nftPrunedVersion {
-		nftPrunedVersion = nftTree.LatestVersion()
-	}
-	ver, err = nftTree.Commit(&nftPrunedVersion)
+
+	err = pool.Submit(func() {
+		nftPrunedVersion := bsmt.Version(version)
+		if nftTree.LatestVersion() < nftPrunedVersion {
+			nftPrunedVersion = nftTree.LatestVersion()
+		}
+		ver, err := nftTree.Commit(&nftPrunedVersion)
+		if err != nil {
+			errChan <- errors.Wrapf(err, "unable to commit nft tree, tree ver: %d, prune ver: %d", ver, nftPrunedVersion)
+			return
+		}
+		errChan <- nil
+	})
 	if err != nil {
-		return errors.Wrapf(err, "unable to commit nft tree, tree ver: %d, prune ver: %d", ver, nftPrunedVersion)
+		return err
 	}
+
+	for i := 0; i < totalTask; i++ {
+		err := <-errChan
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
-func RollBackTrees(version uint64,
+func RollBackTrees(
+	pool *ants.Pool,
+	version uint64,
 	accountTree bsmt.SparseMerkleTree,
 	assetTrees *[]bsmt.SparseMerkleTree,
 	liquidityTree bsmt.SparseMerkleTree,
 	nftTree bsmt.SparseMerkleTree) error {
 
-	ver := bsmt.Version(version)
-	if accountTree.LatestVersion() > ver && !accountTree.IsEmpty() {
-		err := accountTree.Rollback(ver)
-		if err != nil {
-			return errors.Wrapf(err, "unable to rollback account tree, ver: %d", ver)
-		}
-	}
+	totalTask := len(*assetTrees) + 3
+	errChan := make(chan error, totalTask)
+	defer close(errChan)
 
-	for idx, assetTree := range *assetTrees {
-		if assetTree.LatestVersion() > ver && !assetTree.IsEmpty() {
-			err := assetTree.Rollback(ver)
+	ver := bsmt.Version(version)
+	err := pool.Submit(func() {
+		if accountTree.LatestVersion() > ver && !accountTree.IsEmpty() {
+			err := accountTree.Rollback(ver)
 			if err != nil {
-				return errors.Wrapf(err, "unable to rollback asset tree [%d], ver: %d", idx, ver)
+				errChan <- errors.Wrapf(err, "unable to rollback account tree, ver: %d", ver)
+				return
 			}
 		}
+		errChan <- nil
+	})
+	if err != nil {
+		return err
 	}
 
-	if liquidityTree.LatestVersion() > ver && !liquidityTree.IsEmpty() {
-		err := liquidityTree.Rollback(ver)
+	for idx := range *assetTrees {
+		err := func(i int) error {
+			return pool.Submit(func() {
+				if (*assetTrees)[i].LatestVersion() > ver && !(*assetTrees)[i].IsEmpty() {
+					err := (*assetTrees)[i].Rollback(ver)
+					if err != nil {
+						errChan <- errors.Wrapf(err, "unable to rollback asset tree [%d], ver: %d", i, ver)
+						return
+					}
+				}
+				errChan <- nil
+			})
+		}(idx)
 		if err != nil {
-			return errors.Wrapf(err, "unable to rollback liquidity tree, ver: %d", ver)
+			return err
 		}
 	}
 
-	if nftTree.LatestVersion() > ver && !nftTree.IsEmpty() {
-		err := nftTree.Rollback(ver)
+	err = pool.Submit(func() {
+		if liquidityTree.LatestVersion() > ver && !liquidityTree.IsEmpty() {
+			err := liquidityTree.Rollback(ver)
+			if err != nil {
+				errChan <- errors.Wrapf(err, "unable to rollback liquidity tree, ver: %d", ver)
+				return
+			}
+		}
+		errChan <- nil
+	})
+	if err != nil {
+		return err
+	}
+
+	err = pool.Submit(func() {
+		if nftTree.LatestVersion() > ver && !nftTree.IsEmpty() {
+			err := nftTree.Rollback(ver)
+			if err != nil {
+				errChan <- errors.Wrapf(err, "unable to rollback nft tree, tree ver: %d", ver)
+				return
+			}
+		}
+		errChan <- nil
+	})
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < totalTask; i++ {
+		err := <-errChan
 		if err != nil {
-			return errors.Wrapf(err, "unable to rollback nft tree, tree ver: %d", ver)
+			return err
 		}
 	}
+
 	return nil
 }
 

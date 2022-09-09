@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/panjf2000/ants/v2"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"gorm.io/driver/postgres"
@@ -23,6 +24,10 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/tree"
+)
+
+const (
+	defaultTaskPoolSize = 1000
 )
 
 type ChainConfig struct {
@@ -48,6 +53,7 @@ type BlockChain struct {
 
 	currentBlock *block.Block
 	processor    Processor
+	taskPool     *ants.Pool
 }
 
 func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) {
@@ -86,6 +92,12 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		return nil, err
 	}
 	bc.processor = NewCommitProcessor(bc)
+	taskPool, err := ants.NewPool(defaultTaskPoolSize)
+	if err != nil {
+		return nil, err
+	}
+	bc.taskPool = taskPool
+
 	return bc, nil
 }
 
@@ -138,7 +150,7 @@ func (bc *BlockChain) CommitNewBlock(blockSize int, createdAt int64) (*block.Blo
 	}
 
 	currentHeight := bc.currentBlock.BlockHeight
-	err = tree.CommitTrees(uint64(currentHeight), bc.Statedb.AccountTree, &bc.Statedb.AccountAssetTrees, bc.Statedb.LiquidityTree, bc.Statedb.NftTree)
+	err = tree.CommitTrees(bc.taskPool, uint64(currentHeight), bc.Statedb.AccountTree, &bc.Statedb.AccountAssetTrees, bc.Statedb.LiquidityTree, bc.Statedb.NftTree)
 	if err != nil {
 		return nil, err
 	}

@@ -21,9 +21,9 @@ import (
 	"errors"
 	"strconv"
 
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbnb-crypto/hash/bn254/zmimc"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 	"github.com/bnb-chain/zkbnb-smt/database/memory"
 	"github.com/bnb-chain/zkbnb/common/chain"
@@ -55,7 +55,7 @@ func InitAccountTree(
 	accountAssetTrees = make([]bsmt.SparseMerkleTree, accountNums)
 	for index := int64(0); index < accountNums; index++ {
 		// create account assets tree
-		accountAssetTrees[index], err = bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(zmimc.Hmimc),
+		accountAssetTrees[index], err = bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(mimc.NewMiMC()),
 			SetNamespace(ctx, accountAssetNamespace(index)), AssetTreeHeight, NilAccountAssetNodeHash,
 			opts...)
 		if err != nil {
@@ -63,7 +63,7 @@ func InitAccountTree(
 			return nil, nil, err
 		}
 	}
-	accountTree, err = bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(zmimc.Hmimc),
+	accountTree, err = bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(mimc.NewMiMC()),
 		SetNamespace(ctx, AccountPrefix), AccountTreeHeight, NilAccountNodeHash,
 		opts...)
 	if err != nil {
@@ -261,13 +261,13 @@ func NewEmptyAccountAssetTree(
 	blockHeight uint64,
 ) (tree bsmt.SparseMerkleTree, err error) {
 	return bsmt.NewBASSparseMerkleTree(
-		bsmt.NewHasher(zmimc.Hmimc),
+		bsmt.NewHasher(mimc.NewMiMC()),
 		SetNamespace(ctx, accountAssetNamespace(index)),
 		AssetTreeHeight, NilAccountAssetNodeHash,
 		ctx.Options(int64(blockHeight))...)
 }
 
 func NewMemAccountAssetTree() (tree bsmt.SparseMerkleTree, err error) {
-	return bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(zmimc.Hmimc),
+	return bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(mimc.NewMiMC()),
 		memory.NewMemoryDB(), AssetTreeHeight, NilAccountAssetNodeHash)
 }
