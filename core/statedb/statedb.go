@@ -2,7 +2,9 @@ package statedb
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
@@ -613,10 +615,6 @@ func (s *StateDB) GetNextNftIndex() int64 {
 	return maxNftIndex + 1
 }
 
-func (s *StateDB) CacheGasAccountIndex(gasAccountIndex int64) {
-	_ = s.redisCache.Set(context.Background(), dbcache.GasAccountKey, gasAccountIndex)
-}
-
 func (s *StateDB) GetGasAccountIndex() (int64, error) {
 	gasAccountIndex := int64(-1)
 	_, err := s.redisCache.Get(context.Background(), dbcache.GasAccountKey, &gasAccountIndex)
@@ -624,11 +622,19 @@ func (s *StateDB) GetGasAccountIndex() (int64, error) {
 		return gasAccountIndex, nil
 	}
 	logx.Errorf("fail to get gas account from cache, error: %s", err.Error())
-	return -1, err
-}
 
-func (s *StateDB) CacheGasAssetIds(gasAssetIds []uint32) {
-	_ = s.redisCache.Set(context.Background(), dbcache.GasAssetsKey, gasAssetIds)
+	gasAccountConfig, err := s.chainDb.SysConfigModel.GetSysConfigByName(types.GasAccountIndex)
+	if err != nil {
+		logx.Errorf("cannot find config for: %s", types.GasAccountIndex)
+		return -1, errors.New("internal error")
+	}
+	gasAccountIndex, err = strconv.ParseInt(gasAccountConfig.Value, 10, 64)
+	if err != nil {
+		logx.Errorf("invalid account index: %s", gasAccountConfig.Value)
+		return -1, errors.New("internal error")
+	}
+	_ = s.redisCache.Set(context.Background(), dbcache.GasAccountKey, gasAccountIndex)
+	return gasAccountIndex, nil
 }
 
 func (s *StateDB) GetGasAssetIds() ([]uint32, error) {
@@ -638,5 +644,17 @@ func (s *StateDB) GetGasAssetIds() ([]uint32, error) {
 		return gasAssetIds, nil
 	}
 	logx.Errorf("fail to get gas assets from cache, error: %s", err.Error())
-	return nil, err
+
+	cfgGasAssets, err := s.chainDb.L2AssetInfoModel.GetGasAssets()
+	if err != nil {
+		logx.Errorf("cannot find gas asset: %s", err.Error())
+		return nil, errors.New("invalid gas fee asset")
+	}
+
+	gasAssetIds = make([]uint32, 0)
+	for _, gasAsset := range cfgGasAssets {
+		gasAssetIds = append(gasAssetIds, gasAsset.AssetId)
+	}
+	_ = s.redisCache.Set(context.Background(), dbcache.GasAssetsKey, gasAssetIds)
+	return gasAssetIds, nil
 }

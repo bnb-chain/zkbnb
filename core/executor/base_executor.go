@@ -1,8 +1,6 @@
 package executor
 
 import (
-	"reflect"
-
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -14,9 +12,6 @@ import (
 const (
 	OfferPerAsset = 128
 	TenThousand   = 10000
-
-	GasAccountIndexField = "GasAccountIndex"
-	GasFeeAssetIdField   = "GasFeeAssetId"
 )
 
 type BaseExecutor struct {
@@ -52,30 +47,6 @@ func (e *BaseExecutor) Prepare() error {
 	return nil
 }
 
-func (e *BaseExecutor) parseGas() (gasAccountIndex, gasFeeAssetId int64, err error) {
-	ref := reflect.ValueOf(e.iTxInfo)
-	if ref.Kind() == reflect.Ptr {
-		ref = ref.Elem()
-	}
-
-	zeroValue := reflect.Value{}
-	f := ref.FieldByName(GasAccountIndexField)
-	if f == zeroValue {
-		err = errors.New("fail to parse gas fields")
-		return
-	}
-	gasAccountIndex = f.Int()
-
-	f = ref.FieldByName(GasFeeAssetIdField)
-	if f == zeroValue {
-		err = errors.New("fail to parse gas fields")
-		return
-	}
-	gasFeeAssetId = f.Int()
-
-	return
-}
-
 func (e *BaseExecutor) VerifyInputs() error {
 	txInfo := e.iTxInfo
 
@@ -95,10 +66,7 @@ func (e *BaseExecutor) VerifyInputs() error {
 			return err
 		}
 
-		gasAccountIndex, gasFeeAssetId, err := e.parseGas()
-		if err != nil {
-			return errors.New("internal error")
-		}
+		gasAccountIndex, gasFeeAssetId, _ := txInfo.GetGas()
 		err = e.bc.VerifyGas(gasAccountIndex, gasFeeAssetId)
 		if err != nil {
 			return err

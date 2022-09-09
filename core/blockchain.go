@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -26,7 +25,6 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/sysconfig"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/tree"
-	"github.com/bnb-chain/zkbnb/types"
 )
 
 type ChainConfig struct {
@@ -280,38 +278,16 @@ func (bc *BlockChain) VerifyNonce(accountIndex int64, nonce int64) error {
 func (bc *BlockChain) VerifyGas(gasAccountIndex, gasFeeAssetId int64) error {
 	cfgGasAccountIndex, err := bc.Statedb.GetGasAccountIndex()
 	if err != nil {
-		gasAccountConfig, err := bc.ChainDB.SysConfigModel.GetSysConfigByName(types.GasAccountIndex)
-		if err != nil {
-			logx.Errorf("cannot find config for: %s", types.GasAccountIndex)
-			return errors.New("internal error")
-		}
-		cfgGasAccountIndex, err = strconv.ParseInt(gasAccountConfig.Value, 10, 64)
-		if err != nil {
-			logx.Errorf("invalid account index: %s", gasAccountConfig.Value)
-			return errors.New("internal error")
-		}
-		bc.Statedb.CacheGasAccountIndex(cfgGasAccountIndex)
+		return err
 	}
-
 	if gasAccountIndex != cfgGasAccountIndex {
 		return errors.New("invalid gas fee account")
 	}
 
 	cfgGasAssetIds, err := bc.Statedb.GetGasAssetIds()
 	if err != nil {
-		cfgGasAssets, err := bc.ChainDB.L2AssetInfoModel.GetGasAssets()
-		if err != nil {
-			logx.Errorf("cannot find gas asset: %s", err.Error())
-			return errors.New("invalid gas fee asset")
-		}
-
-		cfgGasAssetIds = make([]uint32, 0)
-		for _, gasAsset := range cfgGasAssets {
-			cfgGasAssetIds = append(cfgGasAssetIds, gasAsset.AssetId)
-		}
-		bc.Statedb.CacheGasAssetIds(cfgGasAssetIds)
+		return err
 	}
-
 	for _, id := range cfgGasAssetIds {
 		if gasFeeAssetId == int64(id) {
 			return nil
