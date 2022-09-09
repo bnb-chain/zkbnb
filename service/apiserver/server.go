@@ -13,6 +13,8 @@ import (
 func Run(configFile string) error {
 	var c config.Config
 	conf.MustLoad(configFile, &c)
+	logx.MustSetup(c.LogConf)
+	logx.DisableStat()
 
 	server := rest.MustNewServer(c.RestConf, rest.WithCors())
 	defer server.Stop()
