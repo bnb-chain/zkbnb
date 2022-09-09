@@ -43,16 +43,14 @@ func Run(configFile string) error {
 	exit := make(chan struct{})
 	proc.SetTimeToForceQuit(GracefulShutdownTimeout)
 	proc.AddShutdownListener(func() {
-		logx.Info("start to shutdown witness")
+		logx.Info("start to shutdown witness......")
 		_ = logx.Close()
 		<-cronJob.Stop().Done()
 		exit <- struct{}{}
 	})
 
 	logx.Info("witness cronjob is starting......")
-	select {
-	case <-exit:
-		break
-	}
+
+	<-exit
 	return nil
 }

@@ -47,9 +47,7 @@ func Run(configFile string) error {
 	})
 
 	logx.Info("prover cronjob is starting......")
-	select {
-	case <-exit:
-		break
-	}
+
+	<-exit
 	return nil
 }
