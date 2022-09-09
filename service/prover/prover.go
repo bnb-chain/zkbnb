@@ -1,17 +1,18 @@
 package prover
 
 import (
+	"time"
+
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
-	"time"
 
 	"github.com/bnb-chain/zkbnb/service/prover/config"
 	"github.com/bnb-chain/zkbnb/service/prover/prover"
 )
 
-const GracefulShutdownTimeout = 20 * time.Second
+const GracefulShutdownTimeout = 30 * time.Second
 
 func Run(configFile string) error {
 	var c config.Config

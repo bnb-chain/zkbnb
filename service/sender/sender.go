@@ -1,11 +1,12 @@
 package sender
 
 import (
+	"time"
+
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
-	"time"
 
 	"github.com/bnb-chain/zkbnb/service/sender/config"
 	"github.com/bnb-chain/zkbnb/service/sender/sender"

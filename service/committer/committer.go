@@ -1,10 +1,11 @@
 package committer
 
 import (
+	"time"
+
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
-	"time"
 
 	"github.com/bnb-chain/zkbnb/service/committer/committer"
 )
@@ -12,12 +13,12 @@ import (
 const GracefulShutdownTimeout = 2 * time.Second
 
 func Run(configFile string) error {
-	var config committer.Config
-	conf.MustLoad(configFile, &config)
-	logx.MustSetup(config.LogConf)
+	var c committer.Config
+	conf.MustLoad(configFile, &c)
+	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 
-	committer, err := committer.NewCommitter(&config)
+	committer, err := committer.NewCommitter(&c)
 	if err != nil {
 		logx.Error("new committer failed:", err)
 		return err
