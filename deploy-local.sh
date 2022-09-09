@@ -11,6 +11,12 @@ DEPLOY_PATH=~/zkbnb-deploy
 KEY_PATH=~/.zkbnb
 ZkBNB_REPO_PATH=$(cd `dirname $0`; pwd)
 CMC_TOKEN=cfce503f-fake-fake-fake-bbab5257dac8
+CONTRACT_PRIVATE_KEY=/server/.env
+
+setupKVRocks=$2
+if [ -z $setupKVRocks ]; then
+  setupKVRocks=$1
+fi
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
 echo '0. stop old database/redis and docker run new database/redis'
@@ -19,6 +25,10 @@ docker kill $(docker ps -q)
 docker rm $(docker ps -a -q)
 docker run -d --name zkbnbredis -p 6379:6379 redis
 docker run --name postgres -p 5432:5432 -e PGDATA=/var/lib/postgresql/pgdata  -e POSTGRES_PASSWORD=ZkBNB@123 -e POSTGRES_USER=postgres -e POSTGRES_DB=zkbnb -d postgres
+if [ "$setupKVRocks" = "kvrocks" ]; then
+  echo "setup kvrocks"
+  docker run --name kvrocks -p 6666:6666 -d kvrocks/kvrocks
+fi
 
 
 echo '1. basic config and git clone repos'
@@ -60,6 +70,7 @@ echo 'latest block number = ' $blockNumber
 echo '4-2. deploy contracts, register and deposit on BSC Testnet'
 cd ${DEPLOY_PATH}
 cd ./zkbnb-contract &&  yarn install
+cp ${CONTRACT_PRIVATE_KEY} ./
 npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deploy.js
 echo 'Recorded latest contract addresses into ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json'
 
@@ -80,6 +91,7 @@ sed -i -e "s/Governance: .*/Governance: ${GovernanceContractAddr}/" ${DEPLOY_PAT
 
 
 cd ${DEPLOY_PATH}/zkbnb/
+export GOPATH=$(go env GOPATH)
 make api-server
 cd ${DEPLOY_PATH}/zkbnb && go mod tidy
 
@@ -94,6 +106,28 @@ make api-server
 
 sleep 30s
 
+defaultTreeConfig="
+TreeDB:
+  Driver: memorydb
+"
+
+if [ "$setupKVRocks" = "kvrocks" ]; then
+  defaultTreeConfig="
+TreeDB:
+  Driver: redis
+  RedisDBOption:
+    Addr: localhost:6666
+    DialTimeout: 10s
+    ReadTimeout: 10s
+    WriteTimeout: 10s
+    PoolTimeout: 15s
+    IdleTimeout: 5m
+    PoolSize: 100
+    MaxRetries: 3
+    MinRetryBackoff: 8ms
+    MaxRetryBackoff: 512ms
+"
+fi
 
 echo "7. run prover"
 
@@ -112,18 +146,12 @@ KeyPath:
 
 BlockConfig:
   OptionalBlockSizes: [1, 10]
-
-TreeDB:
-  Driver: memorydb
 " > ${DEPLOY_PATH}/zkbnb/service/prover/etc/config.yaml
 
 echo -e "
 go run ./cmd/zkbnb/main.go prover --config ${DEPLOY_PATH}/zkbnb/service/prover/etc/config.yaml
 " > run_prover.sh
 pm2 start --name prover "./run_prover.sh"
-
-
-
 
 
 echo "8. run witness"
@@ -138,8 +166,7 @@ CacheRedis:
   - Host: 127.0.0.1:6379
     Type: node
 
-TreeDB:
-  Driver: memorydb
+$defaultTreeConfig
 " > ${DEPLOY_PATH}/zkbnb/service/witness/etc/config.yaml
 
 echo -e "
@@ -166,9 +193,6 @@ ChainConfig:
   StartL1BlockHeight: $blockNumber
   ConfirmBlocksCount: 0
   MaxHandledBlocksCount: 5000
-
-TreeDB:
-  Driver: memorydb
 " > ${DEPLOY_PATH}/zkbnb/service/monitor/etc/config.yaml
 
 echo -e "
@@ -192,8 +216,7 @@ CacheRedis:
 BlockConfig:
   OptionalBlockSizes: [1, 10]
 
-TreeDB:
-  Driver: memorydb
+$defaultTreeConfig
 " > ${DEPLOY_PATH}/zkbnb/service/committer/etc/config.yaml
 
 echo -e "
@@ -222,9 +245,6 @@ ChainConfig:
   MaxBlockCount: 4
   Sk: "acbaa269bd7573ff12361be4b97201aef019776ea13384681d4e5ba6a88367d9"
   GasLimit: 5000000
-
-TreeDB:
-  Driver: memorydb
 " > ${DEPLOY_PATH}/zkbnb/service/sender/etc/config.yaml
 
 echo -e "
