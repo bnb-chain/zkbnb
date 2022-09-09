@@ -21,7 +21,6 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/compressedblock"
 	"github.com/bnb-chain/zkbnb/dao/dbcache"
 	"github.com/bnb-chain/zkbnb/dao/liquidity"
-	"github.com/bnb-chain/zkbnb/dao/mempool"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/sysconfig"
 	"github.com/bnb-chain/zkbnb/dao/tx"
@@ -106,13 +105,13 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 // NewBlockChainForDryRun - for dry run mode, we can reuse existing models for quick creation
 // , e.g., for sending tx, we can create blockchain for each request quickly
 func NewBlockChainForDryRun(accountModel account.AccountModel, liquidityModel liquidity.LiquidityModel,
-	nftModel nft.L2NftModel, mempoolModel mempool.MempoolModel, assetModel asset.AssetModel,
+	nftModel nft.L2NftModel, txPoolModel tx.TxPoolModel, assetModel asset.AssetModel,
 	sysConfigModel sysconfig.SysConfigModel, redisCache dbcache.Cache) *BlockChain {
 	chainDb := &sdb.ChainDB{
 		AccountModel:     accountModel,
 		LiquidityModel:   liquidityModel,
 		L2NftModel:       nftModel,
-		MempoolModel:     mempoolModel,
+		TxPoolModel:      txPoolModel,
 		L2AssetInfoModel: assetModel,
 		SysConfigModel:   sysConfigModel,
 	}
@@ -121,6 +120,7 @@ func NewBlockChainForDryRun(accountModel account.AccountModel, liquidityModel li
 		dryRun:  true,
 		Statedb: sdb.NewStateDBForDryRun(redisCache, chainDb),
 	}
+	bc.processor = NewAPIProcessor(bc)
 	return bc
 }
 
@@ -227,6 +227,9 @@ func (bc *BlockChain) commitNewBlock(blockSize int, createdAt int64) (*block.Blo
 	newBlock.PriorityOperations = s.PriorityOperations
 	newBlock.PendingOnChainOperationsHash = common.Bytes2Hex(s.PendingOnChainOperationsHash)
 	newBlock.Txs = s.Txs
+	for _, executedTx := range newBlock.Txs {
+		executedTx.TxStatus = tx.StatusPacked
+	}
 	newBlock.BlockStatus = block.StatusPending
 	if len(s.PendingOnChainOperationsPubData) > 0 {
 		onChainOperationsPubDataBytes, err := json.Marshal(s.PendingOnChainOperationsPubData)

@@ -35,12 +35,12 @@ Get account by account's name, index or pk
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [Account](#account) |
 
-### /api/v1/accountMempoolTxs
+### /api/v1/accountPendingTxs
 
 #### GET
 ##### Summary
 
-Get mempool transactions of a specific account
+Get pending transactions of a specific account
 
 ##### Parameters
 
@@ -53,7 +53,7 @@ Get mempool transactions of a specific account
 
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
-| 200 | A successful response. | [MempoolTxs](#mempooltxs) |
+| 200 | A successful response. | [Txs](#txs) |
 
 ### /api/v1/accountNfts
 
@@ -345,12 +345,12 @@ Get max nft offer id for a specific account
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [MaxOfferId](#maxofferid) |
 
-### /api/v1/mempoolTxs
+### /api/v1/pendingTxs
 
 #### GET
 ##### Summary
 
-Get mempool transactions
+Get pending transactions
 
 ##### Parameters
 
@@ -363,7 +363,7 @@ Get mempool transactions
 
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
-| 200 | A successful response. | [MempoolTxs](#mempooltxs) |
+| 200 | A successful response. | [Txs](#txs) |
 
 ### /api/v1/nextNonce
 
@@ -693,13 +693,6 @@ Send raw transaction
 | ---- | ---- | ----------- | -------- |
 | offer_id | long |  | Yes |
 
-#### MempoolTxs
-
-| Name | Type | Description | Required |
-| ---- | ---- | ----------- | -------- |
-| total | integer |  | Yes |
-| mempool_txs | [ [Tx](#tx) ] |  | Yes |
-
 #### NextNonce
 
 | Name | Type | Description | Required |
@@ -754,7 +747,7 @@ Send raw transaction
 | by | string |  | Yes |
 | value | string |  | Yes |
 
-#### ReqGetAccountMempoolTxs
+#### ReqGetAccountPendingTxs
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |

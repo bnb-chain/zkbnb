@@ -24,7 +24,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb/common/chain"
-	"github.com/bnb-chain/zkbnb/dao/mempool"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
 
@@ -37,7 +37,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 		return nil
 	}
 	var (
-		pendingNewMempoolTxs []*mempool.MempoolTx
+		pendingNewPoolTxs []*tx.Tx
 	)
 	// get last handled request id
 	currentRequestId, err := m.PriorityRequestModel.GetLatestHandledRequestId()
@@ -54,22 +54,26 @@ func (m *Monitor) MonitorPriorityRequests() error {
 
 		txHash := ComputeL1TxTxHash(request.RequestId, request.L1TxHash)
 
-		mempoolTx := &mempool.MempoolTx{
-			TxHash:        txHash,
+		poolTx := &tx.Tx{
+			TxHash:       txHash,
+			AccountIndex: types.NilAccountIndex,
+			Nonce:        types.NilNonce,
+			ExpiredAt:    types.NilExpiredAt,
+
 			GasFeeAssetId: types.NilAssetId,
 			GasFee:        types.NilAssetAmount,
-			NftIndex:      types.NilNftIndex,
 			PairIndex:     types.NilPairIndex,
+			NftIndex:      types.NilNftIndex,
+			CollectionId:  types.NilCollectionNonce,
 			AssetId:       types.NilAssetId,
 			TxAmount:      types.NilAssetAmount,
 			NativeAddress: request.SenderAddress,
-			AccountIndex:  types.NilAccountIndex,
-			Nonce:         types.NilNonce,
-			ExpiredAt:     types.NilExpiredAt,
-			L2BlockHeight: types.NilBlockHeight,
-			Status:        mempool.PendingTxStatus,
+
+			BlockHeight: types.NilBlockHeight,
+			TxStatus:    tx.StatusPending,
 		}
 		// handle request based on request type
+		var txInfoBytes []byte
 		switch request.TxType {
 		case TxTypeRegisterZns:
 			// parse request info
@@ -78,114 +82,96 @@ func (m *Monitor) MonitorPriorityRequests() error {
 				return fmt.Errorf("unable to parse registerZNS pub data, err: %v", err)
 			}
 
-			txInfoBytes, err := json.Marshal(txInfo)
+			poolTx.TxType = int64(txInfo.TxType)
+			txInfoBytes, err = json.Marshal(txInfo)
 			if err != nil {
 				return err
 			}
 
-			mempoolTx.TxType = int64(txInfo.TxType)
-			mempoolTx.TxInfo = string(txInfoBytes)
-
-			pendingNewMempoolTxs = append(pendingNewMempoolTxs, mempoolTx)
 		case TxTypeCreatePair:
 			txInfo, err := chain.ParseCreatePairPubData(common.FromHex(request.Pubdata))
 			if err != nil {
 				return fmt.Errorf("unable to parse registerZNS pub data: %v", err)
 			}
 
-			txInfoBytes, err := json.Marshal(txInfo)
+			poolTx.TxType = int64(txInfo.TxType)
+			txInfoBytes, err = json.Marshal(txInfo)
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info : %v", err)
 			}
 
-			mempoolTx.TxType = int64(txInfo.TxType)
-			mempoolTx.TxInfo = string(txInfoBytes)
-
-			pendingNewMempoolTxs = append(pendingNewMempoolTxs, mempoolTx)
 		case TxTypeUpdatePairRate:
 			txInfo, err := chain.ParseUpdatePairRatePubData(common.FromHex(request.Pubdata))
 			if err != nil {
 				return fmt.Errorf("unable to parse update pair rate pub data: %v", err)
 			}
 
-			txInfoBytes, err := json.Marshal(txInfo)
+			poolTx.TxType = int64(txInfo.TxType)
+			txInfoBytes, err = json.Marshal(txInfo)
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info : %v", err)
 			}
 
-			mempoolTx.TxType = int64(txInfo.TxType)
-			mempoolTx.TxInfo = string(txInfoBytes)
-
-			pendingNewMempoolTxs = append(pendingNewMempoolTxs, mempoolTx)
 		case TxTypeDeposit:
 			txInfo, err := chain.ParseDepositPubData(common.FromHex(request.Pubdata))
 			if err != nil {
 				return fmt.Errorf("unable to parse deposit pub data: %v", err)
 			}
 
-			txInfoBytes, err := json.Marshal(txInfo)
+			poolTx.TxType = int64(txInfo.TxType)
+			txInfoBytes, err = json.Marshal(txInfo)
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info : %v", err)
 			}
 
-			mempoolTx.TxType = int64(txInfo.TxType)
-			mempoolTx.TxInfo = string(txInfoBytes)
-
-			pendingNewMempoolTxs = append(pendingNewMempoolTxs, mempoolTx)
 		case TxTypeDepositNft:
 			txInfo, err := chain.ParseDepositNftPubData(common.FromHex(request.Pubdata))
 			if err != nil {
 				return fmt.Errorf("unable to parse deposit nft pub data: %v", err)
 			}
 
-			txInfoBytes, err := json.Marshal(txInfo)
+			poolTx.TxType = int64(txInfo.TxType)
+			txInfoBytes, err = json.Marshal(txInfo)
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info: %v", err)
 			}
 
-			mempoolTx.TxType = int64(txInfo.TxType)
-			mempoolTx.TxInfo = string(txInfoBytes)
-
-			pendingNewMempoolTxs = append(pendingNewMempoolTxs, mempoolTx)
 		case TxTypeFullExit:
 			txInfo, err := chain.ParseFullExitPubData(common.FromHex(request.Pubdata))
 			if err != nil {
 				return fmt.Errorf("unable to parse deposit pub data: %v", err)
 			}
 
-			txInfoBytes, err := json.Marshal(txInfo)
+			poolTx.TxType = int64(txInfo.TxType)
+			txInfoBytes, err = json.Marshal(txInfo)
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info : %v", err)
 			}
 
-			mempoolTx.TxType = int64(txInfo.TxType)
-			mempoolTx.TxInfo = string(txInfoBytes)
-
-			pendingNewMempoolTxs = append(pendingNewMempoolTxs, mempoolTx)
 		case TxTypeFullExitNft:
 			txInfo, err := chain.ParseFullExitNftPubData(common.FromHex(request.Pubdata))
 			if err != nil {
 				return fmt.Errorf("unable to parse deposit nft pub data: %v", err)
 			}
 
-			txInfoBytes, err := json.Marshal(txInfo)
+			poolTx.TxType = int64(txInfo.TxType)
+			txInfoBytes, err = json.Marshal(txInfo)
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info : %v", err)
 			}
 
-			mempoolTx.TxType = int64(txInfo.TxType)
-			mempoolTx.TxInfo = string(txInfoBytes)
-
-			pendingNewMempoolTxs = append(pendingNewMempoolTxs, mempoolTx)
 		default:
 			return fmt.Errorf("invalid request type")
 		}
+
+		poolTx.TxInfo = string(txInfoBytes)
+		pendingNewPoolTxs = append(pendingNewPoolTxs, poolTx)
 	}
 
 	// update db
 	err = m.db.Transaction(func(tx *gorm.DB) error {
-		// create mempool txs
-		err = m.MempoolModel.CreateMempoolTxsInTransact(tx, pendingNewMempoolTxs)
+		// create pool txs
+		err = m.TxPoolModel.CreateTxsInTransact(tx, pendingNewPoolTxs)
 		if err != nil {
 			return err
 		}
@@ -199,7 +185,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("unable to create mempool pendingRequests and update priority requests, error: %v", err)
+		return fmt.Errorf("unable to create pool tx and update priority requests, error: %v", err)
 	}
 	return nil
 }

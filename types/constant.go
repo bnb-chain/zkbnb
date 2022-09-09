@@ -29,6 +29,7 @@ const (
 	EmptyAccountIndex        = int64(0)
 	EmptyNftContentHash      = "0"
 	EmptyAccountNameHash     = "0"
+	EmptyTxHash              = "0"
 	EmptyL1TokenId           = "0"
 	EmptyL1Address           = "0"
 	EmptyCreatorTreasuryRate = 0

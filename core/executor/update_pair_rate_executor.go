@@ -11,7 +11,6 @@ import (
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	"github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/core/statedb"
-	"github.com/bnb-chain/zkbnb/dao/mempool"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -46,8 +45,7 @@ func (e *UpdatePairRateExecutor) Prepare() error {
 
 	// Mark the tree states that would be affected in this executor.
 	e.MarkLiquidityDirty(txInfo.PairIndex)
-
-	return nil
+	return e.BaseExecutor.Prepare()
 }
 
 func (e *UpdatePairRateExecutor) VerifyInputs() error {
@@ -162,8 +160,4 @@ func (e *UpdatePairRateExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	}
 
 	return []*tx.TxDetail{txDetail}, nil
-}
-
-func (e *UpdatePairRateExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
-	return nil, nil
 }

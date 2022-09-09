@@ -381,7 +381,7 @@ This is a layer-1 transaction and a user needs to call this method first to regi
 | PubKeyY         | 32         | layer-2 account's public key Y |
 
 ```go
-func ConvertTxToRegisterZNSPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+func ConvertTxToRegisterZNSPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	if oTx.TxType != commonTx.TxTypeRegisterZns {
 		logx.Errorf("[ConvertTxToRegisterZNSPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToRegisterZNSPubData] invalid tx type")
@@ -462,7 +462,7 @@ This is a layer-1 transaction and is used for creating a trading pair for L2.
 | TreasuryRate         | 2          | treasury rate                 |
 
 ```go
-func ConvertTxToCreatePairPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+func ConvertTxToCreatePairPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	if oTx.TxType != commonTx.TxTypeCreatePair {
 		logx.Errorf("[ConvertTxToCreatePairPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToCreatePairPubData] invalid tx type")
@@ -541,7 +541,7 @@ This is a layer-1 transaction and is used for updating a trading pair for L2.
 | TreasuryRate         | 2          | treasury rate                 |
 
 ```go
-func ConvertTxToUpdatePairRatePubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+func ConvertTxToUpdatePairRatePubData(oTx *tx.Tx) (pubData []byte, err error) {
 	if oTx.TxType != commonTx.TxTypeUpdatePairRate {
 		logx.Errorf("[ConvertTxToUpdatePairRatePubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToUpdatePairRatePubData] invalid tx type")
@@ -621,7 +621,7 @@ This is a layer-1 transaction and is used for depositing assets into the layer-2
 | AccountNameHash | 32         | account name hash |
 
 ```go
-func ConvertTxToDepositPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+func ConvertTxToDepositPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	if oTx.TxType != commonTx.TxTypeDeposit {
 		logx.Errorf("[ConvertTxToDepositPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToDepositPubData] invalid tx type")
@@ -712,7 +712,7 @@ This is a layer-1 transaction and is used for depositing NFTs into the layer-2 a
 | AccountNameHash     | 32         | account name hash     |
 
 ```go
-func ConvertTxToDepositNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+func ConvertTxToDepositNftPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	if oTx.TxType != commonTx.TxTypeDepositNft {
 		logx.Errorf("[ConvertTxToDepositNftPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToDepositNftPubData] invalid tx type")
@@ -804,7 +804,7 @@ This is a layer-2 transaction and is used for transferring assets in the layer-2
 | CallDataHash       | 32         | call data hash         |
 
 ```go
-func ConvertTxToTransferPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+func ConvertTxToTransferPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	if oTx.TxType != commonTx.TxTypeTransfer {
 		logx.Errorf("[ConvertTxToTransferPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToTransferPubData] invalid tx type")
@@ -929,7 +929,7 @@ This is a layer-2 transaction and is used for making a swap for assets in the la
 | GasFeeAssetAmount  | 2          | packed fee amount     |
 
 ```go
-func ConvertTxToSwapPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+func ConvertTxToSwapPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	if oTx.TxType != commonTx.TxTypeSwap {
 		logx.Errorf("[ConvertTxToSwapPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToSwapPubData] invalid tx type")
@@ -1096,7 +1096,7 @@ This is a layer-2 transaction and is used for adding liquidity for a trading pai
 | GasFeeAssetAmount  | 2          | packed fee amount      |
 
 ```go
-func ConvertTxToAddLiquidityPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+func ConvertTxToAddLiquidityPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	if oTx.TxType != commonTx.TxTypeAddLiquidity {
 		logx.Errorf("[ConvertTxToAddLiquidityPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToAddLiquidityPubData] invalid tx type")
@@ -1272,7 +1272,7 @@ This is a layer-2 transaction and is used for removing liquidity for a trading p
 | GasFeeAssetAmount  | 2          | packed fee amount      |
 
 ```go
-func ConvertTxToRemoveLiquidityPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+func ConvertTxToRemoveLiquidityPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	if oTx.TxType != commonTx.TxTypeRemoveLiquidity {
 		logx.Errorf("[ConvertTxToRemoveLiquidityPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToRemoveLiquidityPubData] invalid tx type")
@@ -1442,7 +1442,7 @@ This is a layer-2 transaction and is used for withdrawing assets from the layer-
 | GasFeeAssetAmount  | 2          | packed fee amount        |
 
 ```go
-func ConvertTxToWithdrawPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+func ConvertTxToWithdrawPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	if oTx.TxType != commonTx.TxTypeWithdraw {
 		logx.Errorf("[ConvertTxToWithdrawPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToWithdrawPubData] invalid tx type")
@@ -1549,7 +1549,7 @@ This is a layer-2 transaction and is used for creating a new collection
 | GasFeeAssetAmount | 2          | packed fee amount |
 
 ```go
-func ConvertTxToCreateCollectionPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+func ConvertTxToCreateCollectionPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	if oTx.TxType != commonTx.TxTypeCreateCollection {
 		logx.Errorf("[ConvertTxToCreateCollectionPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToCreateCollectionPubData] invalid tx type")
@@ -1657,7 +1657,7 @@ This is a layer-2 transaction and is used for minting NFTs in the layer-2 networ
 | NftContentHash      | 32         | nft content hash       |
 
 ```go
-func ConvertTxToMintNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+func ConvertTxToMintNftPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	if oTx.TxType != commonTx.TxTypeMintNft {
 		logx.Errorf("[ConvertTxToMintNftPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToMintNftPubData] invalid tx type")
@@ -1774,7 +1774,7 @@ This is a layer-2 transaction and is used for transferring NFTs to others in the
 | CallDataHash       | 32         | call data hash         |
 
 ```go
-func ConvertTxToTransferNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+func ConvertTxToTransferNftPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	if oTx.TxType != commonTx.TxTypeTransferNft {
 		logx.Errorf("[ConvertTxToMintNftPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToMintNftPubData] invalid tx type")
@@ -1908,7 +1908,7 @@ This is a layer-2 transaction that will be used for buying or selling Nft in the
 | GasFeeAssetAmount     | 2          | packed fee amount          |
 
 ```go
-func ConvertTxToAtomicMatchPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+func ConvertTxToAtomicMatchPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	if oTx.TxType != commonTx.TxTypeAtomicMatch {
 		logx.Errorf("[ConvertTxToAtomicMatchPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToAtomicMatchPubData] invalid tx type")
@@ -2119,7 +2119,7 @@ This is a layer-2 transaction and is used for canceling nft offer.
 | GasFeeAssetAmount  | 2          | packed fee amount     |
 
 ```go
-func ConvertTxToCancelOfferPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+func ConvertTxToCancelOfferPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	if oTx.TxType != commonTx.TxTypeCancelOffer {
 		logx.Errorf("[ConvertTxToCancelOfferPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToCancelOfferPubData] invalid tx type")
@@ -2227,7 +2227,7 @@ This is a layer-2 transaction and is used for withdrawing nft from the layer-2 t
 | CreatorAccountNameHash | 32         | creator account name hash |
 
 ```go
-func ConvertTxToWithdrawNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+func ConvertTxToWithdrawNftPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	if oTx.TxType != commonTx.TxTypeWithdrawNft {
 		logx.Errorf("[ConvertTxToWithdrawNftPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToWithdrawNftPubData] invalid tx type")
@@ -2357,7 +2357,7 @@ This is a layer-1 transaction and is used for full exit assets from the layer-2 
 | AccountNameHash | 32         | account name hash  |
 
 ```go
-func ConvertTxToFullExitPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+func ConvertTxToFullExitPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	if oTx.TxType != commonTx.TxTypeFullExit {
 		logx.Errorf("[ConvertTxToFullExitPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToFullExitPubData] invalid tx type")
@@ -2441,7 +2441,7 @@ This is a layer-1 transaction and is used for full exit NFTs from the layer-2 to
 | NftL1TokenId           | 32         | nft layer-1 token id      |
 
 ```go
-func ConvertTxToFullExitNftPubData(oTx *mempool.MempoolTx) (pubData []byte, err error) {
+func ConvertTxToFullExitNftPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	if oTx.TxType != commonTx.TxTypeFullExitNft {
 		logx.Errorf("[ConvertTxToFullExitNftPubData] invalid tx type")
 		return nil, errors.New("[ConvertTxToFullExitNftPubData] invalid tx type")

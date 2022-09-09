@@ -35,7 +35,6 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/l1rolluptx"
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
 	"github.com/bnb-chain/zkbnb/dao/liquidity"
-	"github.com/bnb-chain/zkbnb/dao/mempool"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/priorityrequest"
 	"github.com/bnb-chain/zkbnb/dao/proof"
@@ -64,8 +63,7 @@ type dao struct {
 	accountModel          account.AccountModel
 	accountHistoryModel   account.AccountHistoryModel
 	assetModel            asset.AssetModel
-	mempoolModel          mempool.MempoolModel
-	failTxModel           tx.FailTxModel
+	txPoolModel           tx.TxPoolModel
 	txDetailModel         tx.TxDetailModel
 	txModel               tx.TxModel
 	blockModel            block.BlockModel
@@ -101,8 +99,7 @@ func Initialize(
 		accountModel:          account.NewAccountModel(db),
 		accountHistoryModel:   account.NewAccountHistoryModel(db),
 		assetModel:            asset.NewAssetModel(db),
-		mempoolModel:          mempool.NewMempoolModel(db),
-		failTxModel:           tx.NewFailTxModel(db),
+		txPoolModel:           tx.NewTxPoolModel(db),
 		txDetailModel:         tx.NewTxDetailModel(db),
 		txModel:               tx.NewTxModel(db),
 		blockModel:            block.NewBlockModel(db),
@@ -198,8 +195,7 @@ func dropTables(dao *dao) {
 	assert.Nil(nil, dao.accountModel.DropAccountTable())
 	assert.Nil(nil, dao.accountHistoryModel.DropAccountHistoryTable())
 	assert.Nil(nil, dao.assetModel.DropAssetTable())
-	assert.Nil(nil, dao.mempoolModel.DropMempoolTxTable())
-	assert.Nil(nil, dao.failTxModel.DropFailTxTable())
+	assert.Nil(nil, dao.txPoolModel.DropPoolTxTable())
 	assert.Nil(nil, dao.txDetailModel.DropTxDetailTable())
 	assert.Nil(nil, dao.txModel.DropTxTable())
 	assert.Nil(nil, dao.blockModel.DropBlockTable())
@@ -220,8 +216,7 @@ func initTable(dao *dao, svrConf *contractAddr, bscTestNetworkRPC, localTestNetw
 	assert.Nil(nil, dao.accountModel.CreateAccountTable())
 	assert.Nil(nil, dao.accountHistoryModel.CreateAccountHistoryTable())
 	assert.Nil(nil, dao.assetModel.CreateAssetTable())
-	assert.Nil(nil, dao.mempoolModel.CreateMempoolTxTable())
-	assert.Nil(nil, dao.failTxModel.CreateFailTxTable())
+	assert.Nil(nil, dao.txPoolModel.CreatePoolTxTable())
 	assert.Nil(nil, dao.blockModel.CreateBlockTable())
 	assert.Nil(nil, dao.txModel.CreateTxTable())
 	assert.Nil(nil, dao.txDetailModel.CreateTxDetailTable())

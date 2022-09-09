@@ -14,7 +14,6 @@ import (
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/account"
-	"github.com/bnb-chain/zkbnb/dao/mempool"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/tree"
 	"github.com/bnb-chain/zkbnb/types"
@@ -40,6 +39,11 @@ func NewRegisterZnsExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 }
 
 func (e *RegisterZnsExecutor) Prepare() error {
+	err := e.BaseExecutor.Prepare()
+	if err != nil {
+		return err
+	}
+
 	// Mark the tree states that would be affected in this executor.
 	e.MarkAccountAssetsDirty(e.txInfo.AccountIndex, []int64{})
 	return nil
@@ -143,9 +147,5 @@ func (e *RegisterZnsExecutor) GetExecutedTx() (*tx.Tx, error) {
 }
 
 func (e *RegisterZnsExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
-	return nil, nil
-}
-
-func (e *RegisterZnsExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
 	return nil, nil
 }

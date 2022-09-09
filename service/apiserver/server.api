@@ -377,11 +377,6 @@ type (
 		Txs   []*Tx  `json:"txs"`
 	}
 
-	MempoolTxs {
-		Total      uint32 `json:"total"`
-		MempoolTxs []*Tx  `json:"mempool_txs"`
-	}
-
 	TxHash {
 		TxHash string `json:"tx_hash"`
 	}
@@ -420,7 +415,7 @@ type (
 		TxInfo string `form:"tx_info"`
 	}
 
-	ReqGetAccountMempoolTxs {
+	ReqGetAccountPendingTxs {
 		By    string `form:"by,options=account_index|account_name|account_pk"`
 		Value string `form:"value"`
 	}
@@ -451,13 +446,13 @@ service server-api {
 	@handler GetTx
 	get /api/v1/tx (ReqGetTx) returns (EnrichedTx)
 	
-	@doc "Get mempool transactions"
-	@handler GetMempoolTxs
-	get /api/v1/mempoolTxs (ReqGetRange) returns (MempoolTxs)
+	@doc "Get pending transactions"
+	@handler GetPendingTxs
+	get /api/v1/pendingTxs (ReqGetRange) returns (Txs)
 	
-	@doc "Get mempool transactions of a specific account"
-	@handler GetAccountMempoolTxs
-	get /api/v1/accountMempoolTxs (ReqGetAccountMempoolTxs) returns (MempoolTxs)
+	@doc "Get pending transactions of a specific account"
+	@handler GetAccountPendingTxs
+	get /api/v1/accountPendingTxs (ReqGetAccountPendingTxs) returns (Txs)
 	
 	@doc "Get next nonce"
 	@handler GetNextNonce

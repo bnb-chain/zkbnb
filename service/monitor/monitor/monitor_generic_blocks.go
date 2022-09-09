@@ -34,8 +34,8 @@ import (
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
-	"github.com/bnb-chain/zkbnb/dao/mempool"
 	"github.com/bnb-chain/zkbnb/dao/priorityrequest"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 	types2 "github.com/bnb-chain/zkbnb/types"
 )
 
@@ -124,6 +124,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			relatedBlocks[blockHeight].CommittedTxHash = vlog.TxHash.Hex()
 			relatedBlocks[blockHeight].CommittedAt = int64(logBlock.Time)
 			relatedBlocks[blockHeight].BlockStatus = block.StatusCommitted
+			relatedBlocks[blockHeight].SetTxsStatus(tx.StatusCommitted)
 		case zkbnbLogBlockVerificationSigHash.Hex():
 			l1EventInfo.EventType = EventTypeVerifiedBlock
 
@@ -143,6 +144,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			relatedBlocks[blockHeight].VerifiedTxHash = vlog.TxHash.Hex()
 			relatedBlocks[blockHeight].VerifiedAt = int64(logBlock.Time)
 			relatedBlocks[blockHeight].BlockStatus = block.StatusVerifiedAndExecuted
+			relatedBlocks[blockHeight].SetTxsStatus(tx.StatusVerified)
 		case zkbnbLogBlocksRevertSigHash.Hex():
 			l1EventInfo.EventType = EventTypeRevertedBlock
 		default:
@@ -170,12 +172,6 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		pendingUpdateBlocks = append(pendingUpdateBlocks, pendingUpdateBlock)
 	}
 
-	// get mempool txs to delete
-	pendingDeleteMempoolTxs, err := getMempoolTxsToDelete(pendingUpdateBlocks, m.MempoolModel)
-	if err != nil {
-		return fmt.Errorf("failed to get mempool txs to delete, err: %v", err)
-	}
-
 	//update db
 	err = m.db.Transaction(func(tx *gorm.DB) error {
 		//create l1 synced block
@@ -190,11 +186,6 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		}
 		//update blocks
 		err = m.BlockModel.UpdateBlocksWithoutTxsInTransact(tx, pendingUpdateBlocks)
-		if err != nil {
-			return err
-		}
-		//delete mempool txs
-		err = m.MempoolModel.DeleteMempoolTxsInTransact(tx, pendingDeleteMempoolTxs)
 		return err
 	})
 	if err != nil {
@@ -202,24 +193,6 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 	}
 	logx.Info("create txs count:", len(priorityRequests))
 	return nil
-}
-
-func getMempoolTxsToDelete(blocks []*block.Block, mempoolModel mempool.MempoolModel) ([]*mempool.MempoolTx, error) {
-	var toDeleteMempoolTxs []*mempool.MempoolTx
-	for _, pendingUpdateBlock := range blocks {
-		if pendingUpdateBlock.BlockStatus == BlockVerifiedStatus {
-			_, blockToDleteMempoolTxs, err := mempoolModel.GetMempoolTxsByBlockHeight(pendingUpdateBlock.BlockHeight)
-			if err != nil {
-				logx.Errorf("GetMempoolTxsByBlockHeight err: %s", err.Error())
-				return nil, err
-			}
-			if len(blockToDleteMempoolTxs) == 0 {
-				continue
-			}
-			toDeleteMempoolTxs = append(toDeleteMempoolTxs, blockToDleteMempoolTxs...)
-		}
-	}
-	return toDeleteMempoolTxs, nil
 }
 
 func getZkBNBContractLogs(cli *_rpc.ProviderClient, zkbnbContract string, startHeight, endHeight uint64) ([]types.Log, error) {
