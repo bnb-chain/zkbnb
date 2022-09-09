@@ -76,7 +76,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		return fmt.Errorf("failed to get contract logs, err: %v", err)
 	}
 	var (
-		l1EventInfos     []*L1EventInfo
+		l1Events         []*L1Event
 		priorityRequests []*priorityrequest.PriorityRequest
 
 		priorityRequestCountCheck = 0
@@ -84,7 +84,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		relatedBlocks = make(map[int64]*block.Block)
 	)
 	for _, vlog := range logs {
-		l1EventInfo := &L1EventInfo{
+		l1EventInfo := &L1Event{
 			TxHash: vlog.TxHash.Hex(),
 		}
 
@@ -148,13 +148,13 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		default:
 		}
 
-		l1EventInfos = append(l1EventInfos, l1EventInfo)
+		l1Events = append(l1Events, l1EventInfo)
 	}
 	if priorityRequestCount != priorityRequestCountCheck {
 		return fmt.Errorf("new priority requests events not match, try it again")
 	}
 
-	eventInfosBytes, err := json.Marshal(l1EventInfos)
+	eventInfosBytes, err := json.Marshal(l1Events)
 	if err != nil {
 		return err
 	}

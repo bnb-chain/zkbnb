@@ -3,10 +3,10 @@ package committer
 import (
 	"errors"
 	"fmt"
-	"gorm.io/gorm"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb/core"
 	"github.com/bnb-chain/zkbnb/dao/block"
