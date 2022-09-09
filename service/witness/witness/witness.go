@@ -13,6 +13,7 @@ import (
 
 	cryptoBlock "github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/block"
 	smt "github.com/bnb-chain/zkbnb-smt"
+	"github.com/bnb-chain/zkbnb/common/pool"
 	utils "github.com/bnb-chain/zkbnb/common/prove"
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/block"
@@ -29,6 +30,8 @@ const (
 	UnprovedBlockWitnessTimeout = 10 * time.Minute
 
 	BlockProcessDelta = 10
+
+	defaultTaskPoolSize = 1000
 )
 
 type Witness struct {
@@ -42,6 +45,7 @@ type Witness struct {
 	assetTrees    []smt.SparseMerkleTree
 	liquidityTree smt.SparseMerkleTree
 	nftTree       smt.SparseMerkleTree
+	taskPool      *pool.Pool
 
 	// The data access object
 	blockModel            block.BlockModel
@@ -120,6 +124,8 @@ func (w *Witness) initState() error {
 	if err != nil {
 		return fmt.Errorf("initNftTree error: %v", err)
 	}
+	w.taskPool = pool.NewPool(defaultTaskPoolSize)
+	w.taskPool.Start()
 	w.helper = utils.NewWitnessHelper(w.treeCtx, w.accountTree, w.liquidityTree, w.nftTree, &w.assetTrees, w.accountModel)
 	return nil
 }
@@ -152,7 +158,7 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 			return fmt.Errorf("failed to construct block witness, err: %v", err)
 		}
 		// Step2: commit trees for witness
-		err = tree.CommitTrees(uint64(latestVerifiedBlockNr), w.accountTree, &w.assetTrees, w.liquidityTree, w.nftTree)
+		err = tree.CommitTrees(w.taskPool, uint64(latestVerifiedBlockNr), w.accountTree, &w.assetTrees, w.liquidityTree, w.nftTree)
 		if err != nil {
 			return fmt.Errorf("unable to commit trees after txs is executed, error: %v", err)
 		}
@@ -160,7 +166,7 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 		err = w.blockWitnessModel.CreateBlockWitness(blockWitness)
 		if err != nil {
 			// rollback trees
-			rollBackErr := tree.RollBackTrees(uint64(block.BlockHeight)-1, w.accountTree, &w.assetTrees, w.liquidityTree, w.nftTree)
+			rollBackErr := tree.RollBackTrees(w.taskPool, uint64(block.BlockHeight)-1, w.accountTree, &w.assetTrees, w.liquidityTree, w.nftTree)
 			if rollBackErr != nil {
 				logx.Errorf("unable to rollback trees %v", rollBackErr)
 			}

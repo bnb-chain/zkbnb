@@ -13,6 +13,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb/common/chain"
+	"github.com/bnb-chain/zkbnb/common/pool"
 	sdb "github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/block"
@@ -23,6 +24,10 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/tree"
+)
+
+const (
+	defaultTaskPoolSize = 1000
 )
 
 type ChainConfig struct {
@@ -48,6 +53,7 @@ type BlockChain struct {
 
 	currentBlock *block.Block
 	processor    Processor
+	taskPool     *pool.Pool
 }
 
 func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) {
@@ -86,6 +92,8 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		return nil, err
 	}
 	bc.processor = NewCommitProcessor(bc)
+	bc.taskPool = pool.NewPool(defaultTaskPoolSize)
+	bc.taskPool.Start()
 	return bc, nil
 }
 
@@ -138,7 +146,7 @@ func (bc *BlockChain) CommitNewBlock(blockSize int, createdAt int64) (*block.Blo
 	}
 
 	currentHeight := bc.currentBlock.BlockHeight
-	err = tree.CommitTrees(uint64(currentHeight), bc.Statedb.AccountTree, &bc.Statedb.AccountAssetTrees, bc.Statedb.LiquidityTree, bc.Statedb.NftTree)
+	err = tree.CommitTrees(bc.taskPool, uint64(currentHeight), bc.Statedb.AccountTree, &bc.Statedb.AccountAssetTrees, bc.Statedb.LiquidityTree, bc.Statedb.NftTree)
 	if err != nil {
 		return nil, err
 	}
