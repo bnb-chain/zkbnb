@@ -118,7 +118,7 @@ func Initialize(
 		nftHistoryModel:       nft.NewL2NftHistoryModel(db),
 	}
 
-	dropTables(dao, bscTestNetworkRPC, localTestNetworkRPC)
+	dropTables(dao)
 	initTable(dao, &svrConf, bscTestNetworkRPC, localTestNetworkRPC)
 
 	return nil
@@ -193,8 +193,7 @@ func initAssetsInfo() []*asset.Asset {
 	}
 }
 
-func dropTables(
-	dao *dao, bscTestNetworkRPC, localTestNetworkRPC string) {
+func dropTables(dao *dao) {
 	assert.Nil(nil, dao.sysConfigModel.DropSysConfigTable())
 	assert.Nil(nil, dao.accountModel.DropAccountTable())
 	assert.Nil(nil, dao.accountHistoryModel.DropAccountHistoryTable())
