@@ -45,8 +45,6 @@ const (
 	NilExpiredAt       = math.MaxInt64
 	NilAssetAmount     = "0"
 
-	MaxNftIndex = 1099511627775 // 2^40-1
-
 	BNBAssetId  = 0
 	BNBDecimals = "1000000000000000000"
 )
