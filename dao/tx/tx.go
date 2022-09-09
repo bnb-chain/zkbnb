@@ -59,7 +59,7 @@ type (
 	Tx struct {
 		gorm.Model
 
-		// Assigned when created in the mempool.
+		// Assigned when created in the tx pool.
 		TxHash       string `gorm:"uniqueIndex"`
 		TxType       int64
 		TxInfo       string

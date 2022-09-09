@@ -43,7 +43,7 @@ type Monitor struct {
 
 	db                   *gorm.DB
 	BlockModel           block.BlockModel
-	MempoolModel         tx.MempoolModel
+	TxPoolModel          tx.TxPoolModel
 	SysConfigModel       sysconfig.SysConfigModel
 	L1RollupTxModel      l1rolluptx.L1RollupTxModel
 	L2AssetModel         asset.AssetModel
@@ -60,7 +60,7 @@ func NewMonitor(c config.Config) *Monitor {
 		Config:               c,
 		db:                   db,
 		PriorityRequestModel: priorityrequest.NewPriorityRequestModel(db),
-		MempoolModel:         tx.NewMempoolModel(db),
+		TxPoolModel:          tx.NewTxPoolModel(db),
 		BlockModel:           block.NewBlockModel(db),
 		L1RollupTxModel:      l1rolluptx.NewL1RollupTxModel(db),
 		L1SyncedBlockModel:   l1syncedblock.NewL1SyncedBlockModel(db),

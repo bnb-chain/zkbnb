@@ -37,7 +37,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 		return nil
 	}
 	var (
-		pendingNewMempoolTxs []*tx.Tx
+		pendingNewPoolTxs []*tx.Tx
 	)
 	// get last handled request id
 	currentRequestId, err := m.PriorityRequestModel.GetLatestHandledRequestId()
@@ -54,7 +54,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 
 		txHash := ComputeL1TxTxHash(request.RequestId, request.L1TxHash)
 
-		mempoolTx := &tx.Tx{
+		poolTx := &tx.Tx{
 			TxHash:       txHash,
 			AccountIndex: types.NilAccountIndex,
 			Nonce:        types.NilNonce,
@@ -82,7 +82,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 				return fmt.Errorf("unable to parse registerZNS pub data, err: %v", err)
 			}
 
-			mempoolTx.TxType = int64(txInfo.TxType)
+			poolTx.TxType = int64(txInfo.TxType)
 			txInfoBytes, err = json.Marshal(txInfo)
 			if err != nil {
 				return err
@@ -94,7 +94,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 				return fmt.Errorf("unable to parse registerZNS pub data: %v", err)
 			}
 
-			mempoolTx.TxType = int64(txInfo.TxType)
+			poolTx.TxType = int64(txInfo.TxType)
 			txInfoBytes, err = json.Marshal(txInfo)
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info : %v", err)
@@ -106,7 +106,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 				return fmt.Errorf("unable to parse update pair rate pub data: %v", err)
 			}
 
-			mempoolTx.TxType = int64(txInfo.TxType)
+			poolTx.TxType = int64(txInfo.TxType)
 			txInfoBytes, err = json.Marshal(txInfo)
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info : %v", err)
@@ -118,7 +118,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 				return fmt.Errorf("unable to parse deposit pub data: %v", err)
 			}
 
-			mempoolTx.TxType = int64(txInfo.TxType)
+			poolTx.TxType = int64(txInfo.TxType)
 			txInfoBytes, err = json.Marshal(txInfo)
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info : %v", err)
@@ -130,7 +130,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 				return fmt.Errorf("unable to parse deposit nft pub data: %v", err)
 			}
 
-			mempoolTx.TxType = int64(txInfo.TxType)
+			poolTx.TxType = int64(txInfo.TxType)
 			txInfoBytes, err = json.Marshal(txInfo)
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info: %v", err)
@@ -142,7 +142,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 				return fmt.Errorf("unable to parse deposit pub data: %v", err)
 			}
 
-			mempoolTx.TxType = int64(txInfo.TxType)
+			poolTx.TxType = int64(txInfo.TxType)
 			txInfoBytes, err = json.Marshal(txInfo)
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info : %v", err)
@@ -154,7 +154,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 				return fmt.Errorf("unable to parse deposit nft pub data: %v", err)
 			}
 
-			mempoolTx.TxType = int64(txInfo.TxType)
+			poolTx.TxType = int64(txInfo.TxType)
 			txInfoBytes, err = json.Marshal(txInfo)
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info : %v", err)
@@ -164,14 +164,14 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			return fmt.Errorf("invalid request type")
 		}
 
-		mempoolTx.TxInfo = string(txInfoBytes)
-		pendingNewMempoolTxs = append(pendingNewMempoolTxs, mempoolTx)
+		poolTx.TxInfo = string(txInfoBytes)
+		pendingNewPoolTxs = append(pendingNewPoolTxs, poolTx)
 	}
 
 	// update db
 	err = m.db.Transaction(func(tx *gorm.DB) error {
-		// create mempool txs
-		err = m.MempoolModel.CreateMempoolTxsInTransact(tx, pendingNewMempoolTxs)
+		// create pool txs
+		err = m.TxPoolModel.CreateTxsInTransact(tx, pendingNewPoolTxs)
 		if err != nil {
 			return err
 		}
@@ -185,7 +185,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("unable to create mempool pendingRequests and update priority requests, error: %v", err)
+		return fmt.Errorf("unable to create pool tx and update priority requests, error: %v", err)
 	}
 	return nil
 }

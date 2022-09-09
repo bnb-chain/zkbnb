@@ -28,7 +28,7 @@ type ChainDB struct {
 	LiquidityHistoryModel liquidity.LiquidityHistoryModel
 	L2NftModel            nft.L2NftModel
 	L2NftHistoryModel     nft.L2NftHistoryModel
-	MempoolModel          tx.MempoolModel
+	TxPoolModel           tx.TxPoolModel
 
 	// Sys config
 	SysConfigModel sysconfig.SysConfigModel
@@ -48,7 +48,7 @@ func NewChainDB(db *gorm.DB) *ChainDB {
 		LiquidityHistoryModel: liquidity.NewLiquidityHistoryModel(db),
 		L2NftModel:            nft.NewL2NftModel(db),
 		L2NftHistoryModel:     nft.NewL2NftHistoryModel(db),
-		MempoolModel:          tx.NewMempoolModel(db),
+		TxPoolModel:           tx.NewTxPoolModel(db),
 
 		SysConfigModel: sysconfig.NewSysConfigModel(db),
 	}

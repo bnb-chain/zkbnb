@@ -67,10 +67,10 @@ func (c *Committer) Run() {
 			}
 		}
 
-		// Read pending transactions from mempool_tx table.
-		pendingTxs, err := c.bc.MempoolModel.GetMempoolTxsByStatus(tx.StatusPending)
+		// Read pending transactions from tx pool.
+		pendingTxs, err := c.bc.TxPoolModel.GetTxsByStatus(tx.StatusPending)
 		if err != nil {
-			logx.Error("get pending transactions from mempool failed:", err)
+			logx.Error("get pending transactions from tx pool failed:", err)
 			return
 		}
 		for len(pendingTxs) == 0 {
@@ -79,36 +79,36 @@ func (c *Committer) Run() {
 			}
 
 			time.Sleep(100 * time.Millisecond)
-			pendingTxs, err = c.bc.MempoolModel.GetMempoolTxsByStatus(tx.StatusPending)
+			pendingTxs, err = c.bc.TxPoolModel.GetTxsByStatus(tx.StatusPending)
 			if err != nil {
-				logx.Error("get pending transactions from mempool failed:", err)
+				logx.Error("get pending transactions from tx pool failed:", err)
 				return
 			}
 		}
 
-		pendingUpdateMempoolTxs := make([]*tx.Tx, 0, len(pendingTxs))
-		pendingDeleteMempoolTxs := make([]*tx.Tx, 0, len(pendingTxs))
-		for _, mempoolTx := range pendingTxs {
+		pendingUpdatePoolTxs := make([]*tx.Tx, 0, len(pendingTxs))
+		pendingDeletePoolTxs := make([]*tx.Tx, 0, len(pendingTxs))
+		for _, poolTx := range pendingTxs {
 			if c.shouldCommit(curBlock) {
 				break
 			}
 
-			err = c.bc.ApplyTransaction(mempoolTx)
+			err = c.bc.ApplyTransaction(poolTx)
 			if err != nil {
-				logx.Errorf("apply mempool tx ID: %d failed, err %v ", mempoolTx.ID, err)
-				mempoolTx.TxStatus = tx.StatusFailed
-				pendingDeleteMempoolTxs = append(pendingDeleteMempoolTxs, mempoolTx)
+				logx.Errorf("apply pool tx ID: %d failed, err %v ", poolTx.ID, err)
+				poolTx.TxStatus = tx.StatusFailed
+				pendingDeletePoolTxs = append(pendingDeletePoolTxs, poolTx)
 				continue
 			}
 
 			// Write the proposed block into database when the first transaction executed.
 			if len(c.bc.Statedb.Txs) == 1 {
-				err = c.createNewBlock(curBlock, mempoolTx)
+				err = c.createNewBlock(curBlock, poolTx)
 				if err != nil {
 					panic("create new block failed" + err.Error())
 				}
 			} else {
-				pendingUpdateMempoolTxs = append(pendingUpdateMempoolTxs, mempoolTx)
+				pendingUpdatePoolTxs = append(pendingUpdatePoolTxs, poolTx)
 			}
 		}
 
@@ -117,9 +117,15 @@ func (c *Committer) Run() {
 			panic("sync redis cache failed: " + err.Error())
 		}
 
-		err = c.bc.MempoolModel.UpdateMempoolTxs(pendingUpdateMempoolTxs, pendingDeleteMempoolTxs)
+		err = c.bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
+			err := c.bc.TxPoolModel.UpdateTxsInTransact(dbTx, pendingUpdatePoolTxs)
+			if err != nil {
+				return err
+			}
+			return c.bc.TxPoolModel.DeleteTxsInTransact(dbTx, pendingDeletePoolTxs)
+		})
 		if err != nil {
-			panic("update mempool failed: " + err.Error())
+			panic("update tx pool failed: " + err.Error())
 		}
 
 		if c.shouldCommit(curBlock) {
@@ -142,7 +148,7 @@ func (c *Committer) restoreExecutedTxs() (*block.Block, error) {
 		return nil, err
 	}
 
-	executedTxs, err := c.bc.MempoolModel.GetMempoolTxsByStatus(tx.StatusExecuted)
+	executedTxs, err := c.bc.TxPoolModel.GetTxsByStatus(tx.StatusExecuted)
 	if err != nil {
 		return nil, err
 	}
@@ -154,8 +160,8 @@ func (c *Committer) restoreExecutedTxs() (*block.Block, error) {
 		return curBlock, nil
 	}
 
-	for _, mempoolTx := range executedTxs {
-		err = c.bc.ApplyTransaction(mempoolTx)
+	for _, executedTx := range executedTxs {
+		err = c.bc.ApplyTransaction(executedTx)
 		if err != nil {
 			return nil, err
 		}
@@ -164,9 +170,9 @@ func (c *Committer) restoreExecutedTxs() (*block.Block, error) {
 	return curBlock, nil
 }
 
-func (c *Committer) createNewBlock(curBlock *block.Block, mempoolTx *tx.Tx) error {
+func (c *Committer) createNewBlock(curBlock *block.Block, poolTx *tx.Tx) error {
 	return c.bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
-		err := c.bc.MempoolModel.UpdateMempoolTxsInTransact(dbTx, []*tx.Tx{mempoolTx})
+		err := c.bc.TxPoolModel.UpdateTxsInTransact(dbTx, []*tx.Tx{poolTx})
 		if err != nil {
 			return err
 		}
@@ -264,8 +270,8 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 				return err
 			}
 		}
-		// delete txs from mempool
-		err := c.bc.DB().MempoolModel.DeleteMempoolTxsInTransact(tx, blockStates.Block.Txs)
+		// delete txs from tx pool
+		err := c.bc.DB().TxPoolModel.DeleteTxsInTransact(tx, blockStates.Block.Txs)
 		if err != nil {
 			return err
 		}

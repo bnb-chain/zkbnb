@@ -105,13 +105,13 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 // NewBlockChainForDryRun - for dry run mode, we can reuse existing models for quick creation
 // , e.g., for sending tx, we can create blockchain for each request quickly
 func NewBlockChainForDryRun(accountModel account.AccountModel, liquidityModel liquidity.LiquidityModel,
-	nftModel nft.L2NftModel, mempoolModel tx.MempoolModel, assetModel asset.AssetModel,
+	nftModel nft.L2NftModel, txPoolModel tx.TxPoolModel, assetModel asset.AssetModel,
 	sysConfigModel sysconfig.SysConfigModel, redisCache dbcache.Cache) *BlockChain {
 	chainDb := &sdb.ChainDB{
 		AccountModel:     accountModel,
 		LiquidityModel:   liquidityModel,
 		L2NftModel:       nftModel,
-		MempoolModel:     mempoolModel,
+		TxPoolModel:      txPoolModel,
 		L2AssetInfoModel: assetModel,
 		SysConfigModel:   sysConfigModel,
 	}

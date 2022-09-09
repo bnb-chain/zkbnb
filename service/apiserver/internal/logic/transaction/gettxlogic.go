@@ -31,7 +31,7 @@ func (l *GetTxLogic) GetTx(req *types.ReqGetTx) (resp *types.EnrichedTx, err err
 		return l.svcCtx.TxModel.GetTxByHash(req.Hash)
 	})
 	if err == nil {
-		resp.Tx = *utils.ConvertDbTx(tx)
+		resp.Tx = *utils.ConvertTx(tx)
 		resp.Tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
 		resp.Tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
 		block, err := l.svcCtx.MemCache.GetBlockByHeightWithFallback(tx.BlockHeight, func() (interface{}, error) {
@@ -46,14 +46,14 @@ func (l *GetTxLogic) GetTx(req *types.ReqGetTx) (resp *types.EnrichedTx, err err
 		if err != types2.DbErrNotFound {
 			return nil, types2.AppErrInternal
 		}
-		memppolTx, err := l.svcCtx.MempoolModel.GetMempoolTxByTxHash(req.Hash)
+		poolTx, err := l.svcCtx.TxPoolModel.GetTxByTxHash(req.Hash)
 		if err != nil {
 			if err == types2.DbErrNotFound {
 				return nil, types2.AppErrNotFound
 			}
 			return nil, types2.AppErrInternal
 		}
-		resp.Tx = *utils.ConvertDbTx(memppolTx)
+		resp.Tx = *utils.ConvertTx(poolTx)
 		resp.Tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
 		resp.Tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
 	}

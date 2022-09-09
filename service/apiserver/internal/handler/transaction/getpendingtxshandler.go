@@ -3,23 +3,22 @@ package transaction
 import (
 	"net/http"
 
-	"github.com/zeromicro/go-zero/rest/httpx"
-
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/logic/transaction"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/types"
+	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-func GetAccountMempoolTxsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func GetPendingTxsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.ReqGetAccountMempoolTxs
+		var req types.ReqGetRange
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.Error(w, err)
 			return
 		}
 
-		l := transaction.NewGetAccountMempoolTxsLogic(r.Context(), svcCtx)
-		resp, err := l.GetAccountMempoolTxs(&req)
+		l := transaction.NewGetPendingTxsLogic(r.Context(), svcCtx)
+		resp, err := l.GetPendingTxs(&req)
 		if err != nil {
 			httpx.Error(w, err)
 		} else {

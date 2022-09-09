@@ -26,7 +26,7 @@ type ServiceContext struct {
 	RedisCache dbcache.Cache
 	MemCache   *cache.MemCache
 
-	MempoolModel          tx.MempoolModel
+	TxPoolModel           tx.TxPoolModel
 	AccountModel          account.AccountModel
 	AccountHistoryModel   account.AccountHistoryModel
 	TxModel               tx.TxModel
@@ -48,7 +48,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	}
 	redisCache := dbcache.NewRedisCache(c.CacheRedis[0].Host, c.CacheRedis[0].Pass, 15*time.Minute)
 
-	mempoolModel := tx.NewMempoolModel(gormPointer)
+	txPoolModel := tx.NewTxPoolModel(gormPointer)
 	accountModel := account.NewAccountModel(gormPointer)
 	liquidityModel := liquidity.NewLiquidityModel(gormPointer)
 	nftModel := nft.NewL2NftModel(gormPointer)
@@ -59,7 +59,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		Config:                c,
 		RedisCache:            redisCache,
 		MemCache:              memCache,
-		MempoolModel:          mempoolModel,
+		TxPoolModel:           txPoolModel,
 		AccountModel:          accountModel,
 		AccountHistoryModel:   account.NewAccountHistoryModel(gormPointer),
 		TxModel:               tx.NewTxModel(gormPointer),

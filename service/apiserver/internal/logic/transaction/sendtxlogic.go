@@ -28,7 +28,7 @@ func NewSendTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendTxLogi
 
 func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err error) {
 	resp = &types.TxHash{}
-	bc := core.NewBlockChainForDryRun(s.svcCtx.AccountModel, s.svcCtx.LiquidityModel, s.svcCtx.NftModel, s.svcCtx.MempoolModel,
+	bc := core.NewBlockChainForDryRun(s.svcCtx.AccountModel, s.svcCtx.LiquidityModel, s.svcCtx.NftModel, s.svcCtx.TxPoolModel,
 		s.svcCtx.AssetModel, s.svcCtx.SysConfigModel, s.svcCtx.RedisCache)
 	newTx := &tx.Tx{
 		TxHash: types2.EmptyTxHash, // Would be computed in prepare method of executors.
@@ -52,8 +52,8 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 	if err != nil {
 		return resp, err
 	}
-	if err := s.svcCtx.MempoolModel.CreateMempoolTxs([]*tx.Tx{newTx}); err != nil {
-		logx.Errorf("fail to create mempool tx: %v, err: %s", newTx, err.Error())
+	if err := s.svcCtx.TxPoolModel.CreateTxs([]*tx.Tx{newTx}); err != nil {
+		logx.Errorf("fail to create pool tx: %v, err: %s", newTx, err.Error())
 		return resp, types2.AppErrInternal
 	}
 

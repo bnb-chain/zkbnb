@@ -577,7 +577,7 @@ func (s *StateDB) GetCommittedNonce(accountIndex int64) (int64, error) {
 }
 
 func (s *StateDB) GetPendingNonce(accountIndex int64) (int64, error) {
-	nonce, err := s.chainDb.MempoolModel.GetMaxNonceByAccountIndex(accountIndex)
+	nonce, err := s.chainDb.TxPoolModel.GetMaxNonceByAccountIndex(accountIndex)
 	if err == nil {
 		return nonce + 1, nil
 	}

@@ -11,44 +11,44 @@ import (
 	types2 "github.com/bnb-chain/zkbnb/types"
 )
 
-type GetMempoolTxsLogic struct {
+type GetPendingTxsLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
 }
 
-func NewGetMempoolTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetMempoolTxsLogic {
-	return &GetMempoolTxsLogic{
+func NewGetPendingTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPendingTxsLogic {
+	return &GetPendingTxsLogic{
 		Logger: logx.WithContext(ctx),
 		ctx:    ctx,
 		svcCtx: svcCtx,
 	}
 }
-func (l *GetMempoolTxsLogic) GetMempoolTxs(req *types.ReqGetRange) (*types.MempoolTxs, error) {
-	total, err := l.svcCtx.MempoolModel.GetMempoolTxsTotalCount()
+func (l *GetPendingTxsLogic) GetPendingTxs(req *types.ReqGetRange) (*types.Txs, error) {
+	total, err := l.svcCtx.TxPoolModel.GetTxsTotalCount()
 	if err != nil {
 		if err != types2.DbErrNotFound {
 			return nil, types2.AppErrInternal
 		}
 	}
 
-	resp := &types.MempoolTxs{
-		MempoolTxs: make([]*types.Tx, 0),
-		Total:      uint32(total),
+	resp := &types.Txs{
+		Txs:   make([]*types.Tx, 0),
+		Total: uint32(total),
 	}
 	if total == 0 {
 		return resp, nil
 	}
 
-	mempoolTxs, err := l.svcCtx.MempoolModel.GetMempoolTxs(int64(req.Limit), int64(req.Offset))
+	pendingTxs, err := l.svcCtx.TxPoolModel.GetTxs(int64(req.Limit), int64(req.Offset))
 	if err != nil {
 		return nil, types2.AppErrInternal
 	}
-	for _, mempoolTx := range mempoolTxs {
-		tx := utils.ConvertDbTx(mempoolTx)
+	for _, pendingTx := range pendingTxs {
+		tx := utils.ConvertTx(pendingTx)
 		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
 		tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
-		resp.MempoolTxs = append(resp.MempoolTxs, tx)
+		resp.Txs = append(resp.Txs, tx)
 	}
 	return resp, nil
 }
