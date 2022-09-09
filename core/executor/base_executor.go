@@ -66,6 +66,12 @@ func (e *BaseExecutor) VerifyInputs() error {
 			return err
 		}
 
+		gasAccountIndex, gasFeeAssetId, _ := txInfo.GetGas()
+		err = e.bc.VerifyGas(gasAccountIndex, gasFeeAssetId)
+		if err != nil {
+			return err
+		}
+
 		err = txInfo.VerifySignature(e.bc.StateDB().AccountMap[from].PublicKey)
 		if err != nil {
 			return err

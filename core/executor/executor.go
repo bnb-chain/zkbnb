@@ -13,6 +13,7 @@ import (
 type IBlockchain interface {
 	VerifyExpiredAt(expiredAt int64) error
 	VerifyNonce(accountIndex int64, nonce int64) error
+	VerifyGas(gasAccountIndex, gasFeeAssetId int64) error
 	StateDB() *sdb.StateDB
 	DB() *sdb.ChainDB
 	CurrentBlock() *block.Block

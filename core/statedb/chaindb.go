@@ -10,6 +10,7 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/liquidity"
 	"github.com/bnb-chain/zkbnb/dao/mempool"
 	"github.com/bnb-chain/zkbnb/dao/nft"
+	"github.com/bnb-chain/zkbnb/dao/sysconfig"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 )
 
@@ -29,6 +30,9 @@ type ChainDB struct {
 	L2NftModel            nft.L2NftModel
 	L2NftHistoryModel     nft.L2NftHistoryModel
 	MempoolModel          mempool.MempoolModel
+
+	// Sys config
+	SysConfigModel sysconfig.SysConfigModel
 }
 
 func NewChainDB(db *gorm.DB) *ChainDB {
@@ -46,5 +50,7 @@ func NewChainDB(db *gorm.DB) *ChainDB {
 		L2NftModel:            nft.NewL2NftModel(db),
 		L2NftHistoryModel:     nft.NewL2NftHistoryModel(db),
 		MempoolModel:          mempool.NewMempoolModel(db),
+
+		SysConfigModel: sysconfig.NewSysConfigModel(db),
 	}
 }

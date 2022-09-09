@@ -16,12 +16,14 @@ import (
 	"github.com/bnb-chain/zkbnb/common/chain"
 	sdb "github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/account"
+	"github.com/bnb-chain/zkbnb/dao/asset"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/compressedblock"
 	"github.com/bnb-chain/zkbnb/dao/dbcache"
 	"github.com/bnb-chain/zkbnb/dao/liquidity"
 	"github.com/bnb-chain/zkbnb/dao/mempool"
 	"github.com/bnb-chain/zkbnb/dao/nft"
+	"github.com/bnb-chain/zkbnb/dao/sysconfig"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/tree"
 )
@@ -104,12 +106,15 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 // NewBlockChainForDryRun - for dry run mode, we can reuse existing models for quick creation
 // , e.g., for sending tx, we can create blockchain for each request quickly
 func NewBlockChainForDryRun(accountModel account.AccountModel, liquidityModel liquidity.LiquidityModel,
-	nftModel nft.L2NftModel, mempoolModel mempool.MempoolModel, redisCache dbcache.Cache) *BlockChain {
+	nftModel nft.L2NftModel, mempoolModel mempool.MempoolModel, assetModel asset.AssetModel,
+	sysConfigModel sysconfig.SysConfigModel, redisCache dbcache.Cache) *BlockChain {
 	chainDb := &sdb.ChainDB{
-		AccountModel:   accountModel,
-		LiquidityModel: liquidityModel,
-		L2NftModel:     nftModel,
-		MempoolModel:   mempoolModel,
+		AccountModel:     accountModel,
+		LiquidityModel:   liquidityModel,
+		L2NftModel:       nftModel,
+		MempoolModel:     mempoolModel,
+		L2AssetInfoModel: assetModel,
+		SysConfigModel:   sysConfigModel,
 	}
 	bc := &BlockChain{
 		ChainDB: chainDb,
@@ -251,11 +256,11 @@ func (bc *BlockChain) commitNewBlock(blockSize int, createdAt int64) (*block.Blo
 func (bc *BlockChain) VerifyExpiredAt(expiredAt int64) error {
 	if !bc.dryRun {
 		if expiredAt < bc.currentBlock.CreatedAt.UnixMilli() {
-			return errors.New("invalid ExpiredAt")
+			return errors.New("invalid expired time")
 		}
 	} else {
 		if expiredAt < time.Now().UnixMilli() {
-			return errors.New("invalid ExpiredAt")
+			return errors.New("invalid expired time")
 		}
 	}
 	return nil
@@ -268,7 +273,7 @@ func (bc *BlockChain) VerifyNonce(accountIndex int64, nonce int64) error {
 			return err
 		}
 		if nonce != expectNonce {
-			return errors.New("invalid Nonce")
+			return errors.New("invalid nonce")
 		}
 	} else {
 		pendingNonce, err := bc.Statedb.GetPendingNonce(accountIndex)
@@ -276,10 +281,31 @@ func (bc *BlockChain) VerifyNonce(accountIndex int64, nonce int64) error {
 			return err
 		}
 		if pendingNonce != nonce {
-			return errors.New("invalid Nonce")
+			return errors.New("invalid nonce")
 		}
 	}
 	return nil
+}
+
+func (bc *BlockChain) VerifyGas(gasAccountIndex, gasFeeAssetId int64) error {
+	cfgGasAccountIndex, err := bc.Statedb.GetGasAccountIndex()
+	if err != nil {
+		return err
+	}
+	if gasAccountIndex != cfgGasAccountIndex {
+		return errors.New("invalid gas fee account")
+	}
+
+	cfgGasAssetIds, err := bc.Statedb.GetGasAssetIds()
+	if err != nil {
+		return err
+	}
+	for _, id := range cfgGasAssetIds {
+		if gasFeeAssetId == int64(id) {
+			return nil
+		}
+	}
+	return errors.New("invalid gas fee asset")
 }
 
 func (bc *BlockChain) StateDB() *sdb.StateDB {
