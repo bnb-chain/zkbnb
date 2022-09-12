@@ -149,8 +149,7 @@ func (m *defaultBlockModel) GetBlocks(limit int64, offset int64) (blocks []*Bloc
 
 func (m *defaultBlockModel) GetBlocksBetween(start int64, end int64) (blocks []*Block, err error) {
 	var (
-		txForeignKeyColumn        = `Txs`
-		txDetailsForeignKeyColumn = `TxDetails`
+		txForeignKeyColumn = `Txs`
 	)
 	dbTx := m.DB.Table(m.table).Where("block_height >= ? AND block_height <= ?", start, end).
 		Order("block_height").
@@ -175,16 +174,6 @@ func (m *defaultBlockModel) GetBlocksBetween(start int64, end int64) (blocks []*
 		sort.Slice(block.Txs, func(i, j int) bool {
 			return block.Txs[i].TxIndex < block.Txs[j].TxIndex
 		})
-
-		for _, txInfo := range block.Txs {
-			err = m.DB.Model(&txInfo).Association(txDetailsForeignKeyColumn).Find(&txInfo.TxDetails)
-			if err != nil {
-				return nil, types.DbErrSqlOperation
-			}
-			sort.Slice(txInfo.TxDetails, func(i, j int) bool {
-				return txInfo.TxDetails[i].Order < txInfo.TxDetails[j].Order
-			})
-		}
 	}
 	return blocks, nil
 }

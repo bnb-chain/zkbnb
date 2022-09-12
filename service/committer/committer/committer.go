@@ -1,8 +1,13 @@
 package committer
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	cryptoBlock "github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/block"
+	"github.com/bnb-chain/zkbnb/dao/blockwitness"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/status-im/keycard-go/hexutils"
 	"gorm.io/gorm"
 	"time"
 
@@ -31,7 +36,8 @@ type Committer struct {
 	maxTxsPerBlock     int
 	optionalBlockSizes []int
 
-	bc *core.BlockChain
+	bc    *core.BlockChain
+	trace bool
 
 	executedMemPoolTxs []*mempool.MempoolTx
 }
@@ -51,8 +57,8 @@ func NewCommitter(config *Config) (*Committer, error) {
 		maxTxsPerBlock:     config.BlockConfig.OptionalBlockSizes[len(config.BlockConfig.OptionalBlockSizes)-1],
 		optionalBlockSizes: config.BlockConfig.OptionalBlockSizes,
 
-		bc: bc,
-
+		bc:                 bc,
+		trace:              true, // TODO
 		executedMemPoolTxs: make([]*mempool.MempoolTx, 0),
 	}
 	return committer, nil
@@ -279,6 +285,32 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 			if err != nil {
 				return err
 			}
+		}
+		if c.trace {
+			emptyTxCount := int(curBlock.BlockSize) - len(curBlock.Txs)
+			witness := c.bc.StateDB().Witnesses
+			for i := 0; i < emptyTxCount; i++ {
+				witness = append(witness, cryptoBlock.EmptyTx())
+			}
+
+			b := &cryptoBlock.Block{
+				BlockNumber:     curBlock.BlockHeight,
+				CreatedAt:       curBlock.CreatedAt.UnixMilli(),
+				OldStateRoot:    witness[0].StateRootBefore,
+				NewStateRoot:    hexutils.HexToBytes(curBlock.StateRoot),
+				BlockCommitment: common.FromHex(curBlock.BlockCommitment),
+				Txs:             witness,
+			}
+			bz, err := json.Marshal(b)
+			if err != nil {
+				return err
+			}
+			blockWitness := &blockwitness.BlockWitness{
+				Height:      curBlock.BlockHeight,
+				WitnessData: string(bz),
+				Status:      blockwitness.StatusPublished,
+			}
+			c.bc.DB().BlockWitnessModel.CreateBlockWitness(blockWitness)
 		}
 		return nil
 	})

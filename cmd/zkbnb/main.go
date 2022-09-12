@@ -13,7 +13,6 @@ import (
 	"github.com/bnb-chain/zkbnb/service/monitor"
 	"github.com/bnb-chain/zkbnb/service/prover"
 	"github.com/bnb-chain/zkbnb/service/sender"
-	"github.com/bnb-chain/zkbnb/service/witness"
 	"github.com/bnb-chain/zkbnb/tools/dbinitializer"
 	"github.com/bnb-chain/zkbnb/tools/recovery"
 )
@@ -54,20 +53,6 @@ func main() {
 					}
 
 					return prover.Run(cCtx.String(flags.ConfigFlag.Name))
-				},
-			},
-			{
-				Name:  "witness",
-				Usage: "Run witness service",
-				Flags: []cli.Flag{
-					flags.ConfigFlag,
-				},
-				Action: func(cCtx *cli.Context) error {
-					if !cCtx.IsSet(flags.ConfigFlag.Name) {
-						return cli.ShowSubcommandHelp(cCtx)
-					}
-
-					return witness.Run(cCtx.String(flags.ConfigFlag.Name))
 				},
 			},
 			{

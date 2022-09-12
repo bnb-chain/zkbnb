@@ -2,9 +2,8 @@ package executor
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
-	"math/big"
-
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
@@ -39,12 +38,7 @@ func NewWithdrawExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 }
 
 func (e *WithdrawExecutor) Prepare() error {
-	txInfo := e.txInfo
-
-	// Mark the tree states that would be affected in this executor.
-	e.MarkAccountAssetsDirty(txInfo.FromAccountIndex, []int64{txInfo.GasFeeAssetId, txInfo.AssetId})
-	e.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
-	return e.BaseExecutor.Prepare()
+	return e.BaseExecutor.Prepare(context.Background())
 }
 
 func (e *WithdrawExecutor) VerifyInputs() error {
@@ -138,77 +132,6 @@ func (e *WithdrawExecutor) GetExecutedTx() (*tx.Tx, error) {
 
 	e.tx.TxInfo = string(txInfoBytes)
 	return e.BaseExecutor.GetExecutedTx()
-}
-
-func (e *WithdrawExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
-	txInfo := e.txInfo
-
-	copiedAccounts, err := e.bc.StateDB().DeepCopyAccounts([]int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex})
-	if err != nil {
-		return nil, err
-	}
-	fromAccount := copiedAccounts[txInfo.FromAccountIndex]
-	gasAccount := copiedAccounts[txInfo.GasAccountIndex]
-
-	txDetails := make([]*tx.TxDetail, 0, 3)
-	// from account asset A
-	order := int64(0)
-	accountOrder := int64(0)
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      txInfo.AssetId,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: txInfo.FromAccountIndex,
-		AccountName:  fromAccount.AccountName,
-		Balance:      fromAccount.AssetInfo[txInfo.AssetId].String(),
-		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.AssetId, ffmath.Neg(txInfo.AssetAmount), types.ZeroBigInt, types.ZeroBigInt).String(),
-		Order:           order,
-		AccountOrder:    accountOrder,
-		Nonce:           fromAccount.Nonce,
-		CollectionNonce: fromAccount.CollectionNonce,
-	})
-	fromAccount.AssetInfo[txInfo.AssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
-	if fromAccount.AssetInfo[txInfo.AssetId].Balance.Cmp(big.NewInt(0)) < 0 {
-		return nil, errors.New("insufficient asset a balance")
-	}
-
-	order++
-	// from account asset gas
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      txInfo.GasFeeAssetId,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: txInfo.FromAccountIndex,
-		AccountName:  fromAccount.AccountName,
-		Balance:      fromAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
-		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), types.ZeroBigInt, types.ZeroBigInt).String(),
-		Order:           order,
-		AccountOrder:    accountOrder,
-		Nonce:           fromAccount.Nonce,
-		CollectionNonce: fromAccount.CollectionNonce,
-	})
-	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(big.NewInt(0)) < 0 {
-		return nil, errors.New("insufficient gas balance")
-	}
-
-	// gas account asset gas
-	order++
-	accountOrder++
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      txInfo.GasFeeAssetId,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: txInfo.GasAccountIndex,
-		AccountName:  gasAccount.AccountName,
-		Balance:      gasAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
-		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, types.ZeroBigInt, types.ZeroBigInt).String(),
-		Order:           order,
-		AccountOrder:    accountOrder,
-		Nonce:           gasAccount.Nonce,
-		CollectionNonce: gasAccount.CollectionNonce,
-	})
-	return txDetails, nil
 }
 
 func (e *WithdrawExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {

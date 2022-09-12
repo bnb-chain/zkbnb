@@ -1,6 +1,7 @@
 package statedb
 
 import (
+	"github.com/bnb-chain/zkbnb/dao/blockwitness"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb/dao/account"
@@ -29,6 +30,7 @@ type ChainDB struct {
 	L2NftModel            nft.L2NftModel
 	L2NftHistoryModel     nft.L2NftHistoryModel
 	MempoolModel          mempool.MempoolModel
+	BlockWitnessModel     blockwitness.BlockWitnessModel
 }
 
 func NewChainDB(db *gorm.DB) *ChainDB {
@@ -46,5 +48,6 @@ func NewChainDB(db *gorm.DB) *ChainDB {
 		L2NftModel:            nft.NewL2NftModel(db),
 		L2NftHistoryModel:     nft.NewL2NftHistoryModel(db),
 		MempoolModel:          mempool.NewMempoolModel(db),
+		BlockWitnessModel:     blockwitness.NewBlockWitnessModel(db),
 	}
 }

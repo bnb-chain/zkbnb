@@ -24,7 +24,7 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func (w *WitnessHelper) constructCancelOfferTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
+func constructCancelOfferTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseCancelOfferTxInfo(oTx.TxInfo)
 	if err != nil {
 		return nil, err

@@ -88,17 +88,6 @@ const (
 )
 
 type AccountWitnessInfo struct {
-	AccountInfo            *Account
-	AccountAssets          []*AccountAsset
-	AssetsRelatedTxDetails []*TxDetail
-}
-
-type LiquidityWitnessInfo struct {
-	LiquidityInfo            *PoolInfo
-	LiquidityRelatedTxDetail *TxDetail
-}
-
-type NftWitnessInfo struct {
-	NftInfo            *NftInfo
-	NftRelatedTxDetail *TxDetail
+	AccountInfo   *Account
+	AccountAssets []*AccountAsset
 }

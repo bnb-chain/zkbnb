@@ -25,7 +25,6 @@ import (
 
 	"github.com/bnb-chain/zkbnb-crypto/hash/bn254/zmimc"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
-	"github.com/bnb-chain/zkbnb-smt/database/memory"
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/types"
@@ -258,16 +257,9 @@ func AccountToNode(
 func NewEmptyAccountAssetTree(
 	ctx *Context,
 	index int64,
-	blockHeight uint64,
 ) (tree bsmt.SparseMerkleTree, err error) {
 	return bsmt.NewBASSparseMerkleTree(
 		bsmt.NewHasher(zmimc.Hmimc),
 		SetNamespace(ctx, accountAssetNamespace(index)),
-		AssetTreeHeight, NilAccountAssetNodeHash,
-		ctx.Options(int64(blockHeight))...)
-}
-
-func NewMemAccountAssetTree() (tree bsmt.SparseMerkleTree, err error) {
-	return bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(zmimc.Hmimc),
-		memory.NewMemoryDB(), AssetTreeHeight, NilAccountAssetNodeHash)
+		AssetTreeHeight, NilAccountAssetNodeHash)
 }

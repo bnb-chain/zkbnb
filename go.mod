@@ -3,6 +3,7 @@ module github.com/bnb-chain/zkbnb
 go 1.17
 
 require (
+	github.com/status-im/keycard-go v0.0.0-20190316090335-8537d3370df4
 	github.com/zeromicro/go-zero v1.3.4
 	gorm.io/gorm v1.23.4
 )
@@ -84,7 +85,7 @@ require (
 )
 
 require (
-	github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20220908103029-396eaccd58ff
+	github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20220912074205-7343aebac81c
 	github.com/bnb-chain/zkbnb-eth-rpc v0.0.2-0.20220907130157-2311ce3fe6f6
 	github.com/bnb-chain/zkbnb-smt v0.0.2-0.20220907130044-9c7cccbd19fa
 	github.com/consensys/gnark v0.7.0

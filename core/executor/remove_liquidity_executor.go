@@ -2,6 +2,7 @@ package executor
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"math/big"
 
@@ -51,13 +52,10 @@ func (e *RemoveLiquidityExecutor) Prepare() error {
 		return err
 	}
 
-	// Mark the tree states that would be affected in this executor.
-	e.MarkLiquidityDirty(txInfo.PairIndex)
-	e.MarkAccountAssetsDirty(txInfo.FromAccountIndex, []int64{txInfo.GasFeeAssetId, txInfo.AssetAId, txInfo.AssetBId, txInfo.PairIndex})
 	liquidity := e.bc.StateDB().LiquidityMap[txInfo.PairIndex]
-	e.MarkAccountAssetsDirty(liquidity.TreasuryAccountIndex, []int64{txInfo.PairIndex})
-	e.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
-	err = e.BaseExecutor.Prepare()
+
+	err = e.BaseExecutor.Prepare(context.WithValue(context.Background(),
+		legendTxTypes.TreasuryAccountIndexKey, liquidity.TreasuryAccountIndex))
 	if err != nil {
 		return err
 	}
@@ -255,227 +253,6 @@ func (e *RemoveLiquidityExecutor) GetExecutedTx() (*tx.Tx, error) {
 
 	e.tx.TxInfo = string(txInfoBytes)
 	return e.BaseExecutor.GetExecutedTx()
-}
-
-func (e *RemoveLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
-	txInfo := e.txInfo
-
-	liquidityModel := e.bc.StateDB().LiquidityMap[txInfo.PairIndex]
-	liquidityInfo, err := constructLiquidityInfo(liquidityModel)
-	if err != nil {
-		logx.Errorf("construct liquidity info error, err: %v", err)
-		return nil, err
-	}
-
-	copiedAccounts, err := e.bc.StateDB().DeepCopyAccounts([]int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex, liquidityInfo.TreasuryAccountIndex})
-	if err != nil {
-		return nil, err
-	}
-
-	fromAccount := copiedAccounts[txInfo.FromAccountIndex]
-	gasAccount := copiedAccounts[txInfo.GasAccountIndex]
-	treasuryAccount := copiedAccounts[liquidityInfo.TreasuryAccountIndex]
-
-	txDetails := make([]*tx.TxDetail, 0, 4)
-	// from account asset A
-	order := int64(0)
-	accountOrder := int64(0)
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      txInfo.AssetAId,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: txInfo.FromAccountIndex,
-		AccountName:  fromAccount.AccountName,
-		Balance:      fromAccount.AssetInfo[txInfo.AssetAId].String(),
-		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.AssetAId,
-			txInfo.AssetAAmountDelta,
-			types.ZeroBigInt,
-			types.ZeroBigInt,
-		).String(),
-		Order:           order,
-		AccountOrder:    accountOrder,
-		Nonce:           fromAccount.Nonce,
-		CollectionNonce: fromAccount.CollectionNonce,
-	})
-	fromAccount.AssetInfo[txInfo.AssetAId].Balance = ffmath.Add(fromAccount.AssetInfo[txInfo.AssetAId].Balance, txInfo.AssetAAmountDelta)
-	if fromAccount.AssetInfo[txInfo.AssetAId].Balance.Cmp(big.NewInt(0)) < 0 {
-		return nil, errors.New("insufficient asset a balance")
-	}
-
-	// from account asset B
-	order++
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      txInfo.AssetBId,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: txInfo.FromAccountIndex,
-		AccountName:  fromAccount.AccountName,
-		Balance:      fromAccount.AssetInfo[txInfo.AssetBId].String(),
-		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.AssetBId,
-			txInfo.AssetBAmountDelta,
-			types.ZeroBigInt,
-			types.ZeroBigInt,
-		).String(),
-		Order:           order,
-		AccountOrder:    accountOrder,
-		Nonce:           fromAccount.Nonce,
-		CollectionNonce: fromAccount.CollectionNonce,
-	})
-	fromAccount.AssetInfo[txInfo.AssetBId].Balance = ffmath.Add(fromAccount.AssetInfo[txInfo.AssetBId].Balance, txInfo.AssetBAmountDelta)
-	if fromAccount.AssetInfo[txInfo.AssetBId].Balance.Cmp(big.NewInt(0)) < 0 {
-		return nil, errors.New("insufficient asset b balance")
-	}
-
-	// from account asset gas
-	order++
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      txInfo.GasFeeAssetId,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: txInfo.FromAccountIndex,
-		AccountName:  fromAccount.AccountName,
-		Balance:      fromAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
-		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.GasFeeAssetId,
-			ffmath.Neg(txInfo.GasFeeAssetAmount),
-			types.ZeroBigInt,
-			types.ZeroBigInt,
-		).String(),
-		Order:           order,
-		AccountOrder:    accountOrder,
-		Nonce:           fromAccount.Nonce,
-		CollectionNonce: fromAccount.CollectionNonce,
-	})
-	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(big.NewInt(0)) < 0 {
-		return nil, errors.New("insufficient gas asset balance")
-	}
-
-	// from account lp
-	order++
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      txInfo.PairIndex,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: txInfo.FromAccountIndex,
-		AccountName:  fromAccount.AccountName,
-		Balance:      fromAccount.AssetInfo[txInfo.PairIndex].String(),
-		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.PairIndex,
-			types.ZeroBigInt,
-			ffmath.Neg(txInfo.LpAmount),
-			types.ZeroBigInt,
-		).String(),
-		Order:           order,
-		AccountOrder:    accountOrder,
-		Nonce:           fromAccount.Nonce,
-		CollectionNonce: fromAccount.CollectionNonce,
-	})
-	fromAccount.AssetInfo[txInfo.PairIndex].LpAmount = ffmath.Sub(fromAccount.AssetInfo[txInfo.PairIndex].LpAmount, txInfo.LpAmount)
-	if fromAccount.AssetInfo[txInfo.PairIndex].LpAmount.Cmp(big.NewInt(0)) < 0 {
-		return nil, errors.New("insufficient lp amount")
-	}
-
-	// treasury account
-	order++
-	accountOrder++
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      txInfo.PairIndex,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: treasuryAccount.AccountIndex,
-		AccountName:  treasuryAccount.AccountName,
-		Balance:      treasuryAccount.AssetInfo[txInfo.PairIndex].String(),
-		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.PairIndex, types.ZeroBigInt, txInfo.TreasuryAmount, types.ZeroBigInt,
-		).String(),
-		Order:           order,
-		Nonce:           treasuryAccount.Nonce,
-		AccountOrder:    accountOrder,
-		CollectionNonce: treasuryAccount.CollectionNonce,
-	})
-	treasuryAccount.AssetInfo[txInfo.PairIndex].LpAmount = ffmath.Add(treasuryAccount.AssetInfo[txInfo.PairIndex].LpAmount, txInfo.TreasuryAmount)
-
-	// pool account info
-	basePool, err := types.ConstructLiquidityInfo(
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].PairIndex,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].AssetAId,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].AssetA,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].AssetBId,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].AssetB,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].LpAmount,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].KLast,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].FeeRate,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].TreasuryAccountIndex,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].TreasuryRate,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	finalPoolA := ffmath.Add(liquidityInfo.AssetA, ffmath.Neg(txInfo.AssetAAmountDelta))
-	finalPoolB := ffmath.Add(liquidityInfo.AssetB, ffmath.Neg(txInfo.AssetBAmountDelta))
-	poolDeltaForToAccount := &types.LiquidityInfo{
-		PairIndex:            txInfo.PairIndex,
-		AssetAId:             txInfo.AssetAId,
-		AssetA:               ffmath.Neg(txInfo.AssetAAmountDelta),
-		AssetBId:             txInfo.AssetBId,
-		AssetB:               ffmath.Neg(txInfo.AssetBAmountDelta),
-		LpAmount:             ffmath.Neg(txInfo.LpAmount),
-		KLast:                ffmath.Multiply(finalPoolA, finalPoolB),
-		FeeRate:              liquidityInfo.FeeRate,
-		TreasuryAccountIndex: liquidityInfo.TreasuryAccountIndex,
-		TreasuryRate:         liquidityInfo.TreasuryRate,
-	}
-	newPool, err := chain.ComputeNewBalance(types.LiquidityAssetType, basePool.String(), poolDeltaForToAccount.String())
-	if err != nil {
-		return nil, err
-	}
-
-	newPoolInfo, err := types.ParseLiquidityInfo(newPool)
-	if err != nil {
-		return nil, err
-	}
-	e.newPoolInfo = newPoolInfo
-	if newPoolInfo.AssetA.Cmp(big.NewInt(0)) <= 0 ||
-		newPoolInfo.AssetB.Cmp(big.NewInt(0)) <= 0 ||
-		newPoolInfo.LpAmount.Cmp(big.NewInt(0)) < 0 ||
-		newPoolInfo.KLast.Cmp(big.NewInt(0)) <= 0 {
-		return nil, errors.New("invalid new pool")
-	}
-
-	order++
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:         txInfo.PairIndex,
-		AssetType:       types.LiquidityAssetType,
-		AccountIndex:    types.NilAccountIndex,
-		AccountName:     types.NilAccountName,
-		Balance:         basePool.String(),
-		BalanceDelta:    poolDeltaForToAccount.String(),
-		Order:           order,
-		Nonce:           types.NilNonce,
-		AccountOrder:    types.NilAccountOrder,
-		CollectionNonce: types.NilCollectionNonce,
-	})
-
-	// gas account asset gas
-	order++
-	accountOrder++
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      txInfo.GasFeeAssetId,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: txInfo.GasAccountIndex,
-		AccountName:  gasAccount.AccountName,
-		Balance:      gasAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
-		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.GasFeeAssetId,
-			txInfo.GasFeeAssetAmount,
-			types.ZeroBigInt,
-			types.ZeroBigInt,
-		).String(),
-		Order:           order,
-		AccountOrder:    accountOrder,
-		Nonce:           gasAccount.Nonce,
-		CollectionNonce: gasAccount.CollectionNonce,
-	})
-	return txDetails, nil
 }
 
 func (e *RemoveLiquidityExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {

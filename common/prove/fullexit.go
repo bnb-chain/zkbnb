@@ -23,7 +23,7 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func (w *WitnessHelper) constructFullExitTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
+func constructFullExitTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseFullExitTxInfo(oTx.TxInfo)
 	if err != nil {
 		return nil, err

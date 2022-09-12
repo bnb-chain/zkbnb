@@ -2,9 +2,9 @@ package executor
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -40,9 +40,7 @@ func NewRegisterZnsExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 }
 
 func (e *RegisterZnsExecutor) Prepare() error {
-	// Mark the tree states that would be affected in this executor.
-	e.MarkAccountAssetsDirty(e.txInfo.AccountIndex, []int64{})
-	return nil
+	return e.BaseExecutor.Prepare(context.Background())
 }
 
 func (e *RegisterZnsExecutor) VerifyInputs() error {
@@ -89,7 +87,7 @@ func (e *RegisterZnsExecutor) ApplyTransaction() error {
 		return err
 	}
 
-	emptyAssetTree, err := tree.NewEmptyAccountAssetTree(bc.StateDB().TreeCtx, txInfo.AccountIndex, uint64(bc.CurrentBlock().BlockHeight))
+	emptyAssetTree, err := tree.NewEmptyAccountAssetTree(bc.StateDB().TreeCtx, txInfo.AccountIndex)
 	if err != nil {
 		logx.Errorf("new empty account asset tree failed: %s", err.Error())
 		return err
@@ -112,7 +110,7 @@ func (e *RegisterZnsExecutor) GeneratePubData() error {
 	buf.Write(chunk)
 	buf.Write(common2.PrefixPaddingBufToChunkSize(common2.AccountNameToBytes32(txInfo.AccountName)))
 	buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.AccountNameHash))
-	pk, err := common2.ParsePubKey(txInfo.PubKey)
+	pk, err := types.ParsePubKey(txInfo.PubKey)
 	if err != nil {
 		logx.Errorf("unable to parse pub key: %s", err.Error())
 		return err
@@ -140,10 +138,6 @@ func (e *RegisterZnsExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.TxInfo = string(txInfoBytes)
 	e.tx.AccountIndex = e.txInfo.AccountIndex
 	return e.BaseExecutor.GetExecutedTx()
-}
-
-func (e *RegisterZnsExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
-	return nil, nil
 }
 
 func (e *RegisterZnsExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {

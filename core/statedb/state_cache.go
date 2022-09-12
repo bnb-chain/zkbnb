@@ -1,6 +1,7 @@
 package statedb
 
 import (
+	"github.com/bnb-chain/zkbnb/common/prove"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
@@ -23,6 +24,7 @@ type StateCache struct {
 	PendingOnChainOperationsPubData [][]byte
 	PendingOnChainOperationsHash    []byte
 	Txs                             []*tx.Tx
+	Witnesses                       []*prove.TxWitness
 
 	// Record the flat states that should be updated.
 	PendingNewAccountIndexMap      map[int64]int

@@ -2,10 +2,9 @@ package executor
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
-	"math/big"
-
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 
@@ -39,7 +38,7 @@ func NewCreatePairExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 
 func (e *CreatePairExecutor) Prepare() error {
 	// Mark the tree states that would be affected in this executor.
-	e.MarkLiquidityDirty(e.txInfo.PairIndex)
+	e.BaseExecutor.Prepare(context.Background())
 	return nil
 }
 
@@ -122,38 +121,6 @@ func (e *CreatePairExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.TxInfo = string(txInfoBytes)
 	e.tx.PairIndex = e.txInfo.PairIndex
 	return e.BaseExecutor.GetExecutedTx()
-}
-
-func (e *CreatePairExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
-	txInfo := e.txInfo
-	baseLiquidity := types.EmptyLiquidityInfo(txInfo.PairIndex)
-	deltaLiquidity := &types.LiquidityInfo{
-		PairIndex:            txInfo.PairIndex,
-		AssetAId:             txInfo.AssetAId,
-		AssetA:               big.NewInt(0),
-		AssetBId:             txInfo.AssetBId,
-		AssetB:               big.NewInt(0),
-		LpAmount:             big.NewInt(0),
-		KLast:                big.NewInt(0),
-		FeeRate:              txInfo.FeeRate,
-		TreasuryAccountIndex: txInfo.TreasuryAccountIndex,
-		TreasuryRate:         txInfo.TreasuryRate,
-	}
-
-	txDetail := &tx.TxDetail{
-		AssetId:         txInfo.PairIndex,
-		AssetType:       types.LiquidityAssetType,
-		AccountIndex:    types.NilAccountIndex,
-		AccountName:     types.NilAccountName,
-		Balance:         baseLiquidity.String(),
-		BalanceDelta:    deltaLiquidity.String(),
-		Order:           0,
-		AccountOrder:    types.NilAccountOrder,
-		Nonce:           types.NilNonce,
-		CollectionNonce: types.NilCollectionNonce,
-	}
-
-	return []*tx.TxDetail{txDetail}, nil
 }
 
 func (e *CreatePairExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {

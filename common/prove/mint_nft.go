@@ -25,7 +25,7 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func (w *WitnessHelper) constructMintNftTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
+func constructMintNftTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseMintNftTxInfo(oTx.TxInfo)
 	if err != nil {
 		return nil, err

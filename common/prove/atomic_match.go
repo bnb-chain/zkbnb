@@ -24,7 +24,7 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func (w *WitnessHelper) constructAtomicMatchTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
+func constructAtomicMatchTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseAtomicMatchTxInfo(oTx.TxInfo)
 	if err != nil {
 		return nil, err

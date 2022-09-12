@@ -68,7 +68,7 @@ func PaddingInt64IntoBuf(buf *bytes.Buffer, a int64) {
 }
 
 func PaddingPkIntoBuf(buf *bytes.Buffer, pkStr string) (err error) {
-	pk, err := ParsePubKey(pkStr)
+	pk, err := types.ParsePubKey(pkStr)
 	if err != nil {
 		return err
 	}

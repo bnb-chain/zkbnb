@@ -18,7 +18,9 @@
 package liquidity
 
 import (
+	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
 	"gorm.io/gorm"
+	"math/big"
 
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -120,4 +122,24 @@ func (m *defaultLiquidityModel) UpdateLiquidityInTransact(tx *gorm.DB, liquidity
 		}
 	}
 	return nil
+}
+
+func (n *Liquidity) ToStdLiquidity() *std.Liquidity {
+	kLast, _ := new(big.Int).SetString(n.KLast, 10)
+	assetA, _ := new(big.Int).SetString(n.AssetA, 10)
+	assetB, _ := new(big.Int).SetString(n.AssetB, 10)
+	lpAmount, _ := new(big.Int).SetString(n.LpAmount, 10)
+
+	return &std.Liquidity{
+		PairIndex:            n.PairIndex,
+		AssetAId:             n.AssetAId,
+		AssetA:               assetA,
+		AssetBId:             n.AssetBId,
+		AssetB:               assetB,
+		LpAmount:             lpAmount,
+		KLast:                kLast,
+		FeeRate:              n.FeeRate,
+		TreasuryAccountIndex: n.TreasuryAccountIndex,
+		TreasuryRate:         n.TreasuryRate,
+	}
 }

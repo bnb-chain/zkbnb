@@ -2,6 +2,7 @@ package executor
 
 import (
 	"errors"
+	"github.com/bnb-chain/zkbnb/common/prove"
 
 	sdb "github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/block"
@@ -24,7 +25,7 @@ type TxExecutor interface {
 	ApplyTransaction() error
 	GeneratePubData() error
 	GetExecutedTx() (*tx.Tx, error)
-	GenerateTxDetails() ([]*tx.TxDetail, error)
+	GenerateWitness() (*prove.TxWitness, error)
 	GenerateMempoolTx() (*mempool.MempoolTx, error)
 }
 

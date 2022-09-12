@@ -2,10 +2,9 @@ package executor
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -61,9 +60,7 @@ func (e *FullExitExecutor) Prepare() error {
 	// Set the right account index.
 	txInfo.AccountIndex = account.AccountIndex
 
-	// Mark the tree states that would be affected in this executor.
-	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{txInfo.AssetId})
-	err = e.BaseExecutor.Prepare()
+	err = e.BaseExecutor.Prepare(context.Background())
 	if err != nil {
 		return err
 	}
@@ -130,31 +127,6 @@ func (e *FullExitExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.TxAmount = e.txInfo.AssetAmount.String()
 	e.tx.AccountIndex = e.txInfo.AccountIndex
 	return e.BaseExecutor.GetExecutedTx()
-}
-
-func (e *FullExitExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
-	txInfo := e.txInfo
-	exitAccount := e.bc.StateDB().AccountMap[txInfo.AccountIndex]
-	baseBalance := exitAccount.AssetInfo[txInfo.AssetId]
-	deltaBalance := &types.AccountAsset{
-		AssetId:                  txInfo.AssetId,
-		Balance:                  ffmath.Neg(txInfo.AssetAmount),
-		LpAmount:                 big.NewInt(0),
-		OfferCanceledOrFinalized: big.NewInt(0),
-	}
-	txDetail := &tx.TxDetail{
-		AssetId:         txInfo.AssetId,
-		AssetType:       types.FungibleAssetType,
-		AccountIndex:    txInfo.AccountIndex,
-		AccountName:     exitAccount.AccountName,
-		Balance:         baseBalance.String(),
-		BalanceDelta:    deltaBalance.String(),
-		Order:           0,
-		AccountOrder:    0,
-		Nonce:           exitAccount.Nonce,
-		CollectionNonce: exitAccount.CollectionNonce,
-	}
-	return []*tx.TxDetail{txDetail}, nil
 }
 
 func (e *FullExitExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {

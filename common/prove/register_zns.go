@@ -18,15 +18,14 @@
 package prove
 
 import (
+	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
 	"strings"
 
-	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
-	"github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func (w *WitnessHelper) constructRegisterZnsTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
+func constructRegisterZnsTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseRegisterZnsTxInfo(oTx.TxInfo)
 	if err != nil {
 		return nil, err
@@ -44,7 +43,7 @@ func toCryptoRegisterZnsTx(txInfo *legendTxTypes.RegisterZnsTxInfo) (info *Crypt
 	accountName := make([]byte, 32)
 	realName := strings.Split(txInfo.AccountName, types.AccountNameSuffix)[0]
 	copy(accountName[:], realName)
-	pk, err := common.ParsePubKey(txInfo.PubKey)
+	pk, err := types.ParsePubKey(txInfo.PubKey)
 	if err != nil {
 		return nil, err
 	}

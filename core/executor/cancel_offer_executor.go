@@ -2,6 +2,7 @@ package executor
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"math/big"
 
@@ -39,13 +40,7 @@ func NewCancelOfferExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 }
 
 func (e *CancelOfferExecutor) Prepare() error {
-	txInfo := e.txInfo
-
-	// Mark the tree states that would be affected in this executor.
-	offerAssetId := txInfo.OfferId / OfferPerAsset
-	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{txInfo.GasFeeAssetId, offerAssetId})
-	e.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
-	return e.BaseExecutor.Prepare()
+	return e.BaseExecutor.Prepare(context.Background())
 }
 
 func (e *CancelOfferExecutor) VerifyInputs() error {
@@ -137,97 +132,6 @@ func (e *CancelOfferExecutor) GetExecutedTx() (*tx.Tx, error) {
 
 	e.tx.TxInfo = string(txInfoBytes)
 	return e.BaseExecutor.GetExecutedTx()
-}
-
-func (e *CancelOfferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
-	txInfo := e.txInfo
-
-	copiedAccounts, err := e.bc.StateDB().DeepCopyAccounts([]int64{txInfo.AccountIndex, txInfo.GasAccountIndex})
-	if err != nil {
-		return nil, err
-	}
-	fromAccount := copiedAccounts[txInfo.AccountIndex]
-	gasAccount := copiedAccounts[txInfo.GasAccountIndex]
-
-	txDetails := make([]*tx.TxDetail, 0, 4)
-
-	// from account gas asset
-	order := int64(0)
-	accountOrder := int64(0)
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      txInfo.GasFeeAssetId,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: txInfo.AccountIndex,
-		AccountName:  fromAccount.AccountName,
-		Balance:      fromAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
-		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.GasFeeAssetId,
-			ffmath.Neg(txInfo.GasFeeAssetAmount),
-			types.ZeroBigInt,
-			types.ZeroBigInt,
-		).String(),
-		Order:           order,
-		Nonce:           fromAccount.Nonce,
-		AccountOrder:    accountOrder,
-		CollectionNonce: fromAccount.CollectionNonce,
-	})
-	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(big.NewInt(0)) < 0 {
-		return nil, errors.New("insufficient gas fee balance")
-	}
-
-	// from account offer id
-	offerAssetId := txInfo.OfferId / OfferPerAsset
-	offerIndex := txInfo.OfferId % OfferPerAsset
-	oldOffer := fromAccount.AssetInfo[offerAssetId].OfferCanceledOrFinalized
-	// verify whether account offer id is valid for use
-	if oldOffer.Bit(int(offerIndex)) == 1 {
-		logx.Errorf("account %d offer index %d is already in use", txInfo.AccountIndex, offerIndex)
-		return nil, errors.New("unexpected err")
-	}
-	nOffer := new(big.Int).SetBit(oldOffer, int(offerIndex), 1)
-
-	order++
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      offerAssetId,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: txInfo.AccountIndex,
-		AccountName:  fromAccount.AccountName,
-		Balance:      fromAccount.AssetInfo[offerAssetId].String(),
-		BalanceDelta: types.ConstructAccountAsset(
-			offerAssetId,
-			types.ZeroBigInt,
-			types.ZeroBigInt,
-			nOffer,
-		).String(),
-		Order:           order,
-		Nonce:           fromAccount.Nonce,
-		AccountOrder:    accountOrder,
-		CollectionNonce: fromAccount.CollectionNonce,
-	})
-	fromAccount.AssetInfo[offerAssetId].OfferCanceledOrFinalized = nOffer
-
-	// gas account gas asset
-	order++
-	accountOrder++
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      txInfo.GasFeeAssetId,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: txInfo.GasAccountIndex,
-		AccountName:  gasAccount.AccountName,
-		Balance:      gasAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
-		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.GasFeeAssetId,
-			txInfo.GasFeeAssetAmount,
-			types.ZeroBigInt,
-			types.ZeroBigInt,
-		).String(),
-		Order:           order,
-		Nonce:           gasAccount.Nonce,
-		AccountOrder:    accountOrder,
-		CollectionNonce: gasAccount.CollectionNonce,
-	})
-	return txDetails, nil
 }
 
 func (e *CancelOfferExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {

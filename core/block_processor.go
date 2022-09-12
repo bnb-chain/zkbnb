@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"github.com/status-im/keycard-go/hexutils"
 
 	"github.com/bnb-chain/zkbnb/core/executor"
 	"github.com/bnb-chain/zkbnb/dao/tx"
@@ -13,11 +14,14 @@ type Processor interface {
 
 type CommitProcessor struct {
 	bc *BlockChain
+	// TODO make it as an option
+	trace bool
 }
 
 func NewCommitProcessor(bc *BlockChain) Processor {
 	return &CommitProcessor{
-		bc: bc,
+		bc:    bc,
+		trace: true,
 	}
 }
 
@@ -38,11 +42,13 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 	if err != nil {
 		return err
 	}
-	txDetails, err := executor.GenerateTxDetails()
-	if err != nil {
-		return err
+	if p.trace {
+		witness, err := executor.GenerateWitness()
+		if err != nil {
+			panic(err)
+		}
+		p.bc.Statedb.Witnesses = append(p.bc.Statedb.Witnesses, witness)
 	}
-	tx.TxDetails = txDetails
 	err = executor.ApplyTransaction()
 	if err != nil {
 		panic(err)
@@ -54,6 +60,15 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 	tx, err = executor.GetExecutedTx()
 	if err != nil {
 		panic(err)
+	}
+
+	if p.trace {
+		// Intermediate state root.
+		err := p.bc.Statedb.IntermediateRoot(false)
+		if err != nil {
+			panic(err)
+		}
+		p.bc.Statedb.Witnesses[len(p.bc.Statedb.Witnesses)-1].StateRootAfter = hexutils.HexToBytes(p.bc.Statedb.StateRoot)
 	}
 
 	p.bc.Statedb.Txs = append(p.bc.Statedb.Txs, tx)

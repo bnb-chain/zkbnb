@@ -19,6 +19,9 @@ package types
 
 import (
 	"encoding/json"
+	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
+	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
+	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 )
 
@@ -32,12 +35,7 @@ const (
 	SellOfferType = 1
 )
 
-type AccountAsset struct {
-	AssetId                  int64
-	Balance                  *big.Int
-	LpAmount                 *big.Int
-	OfferCanceledOrFinalized *big.Int
-}
+type AccountAsset std.AccountAsset
 
 func (asset *AccountAsset) DeepCopy() *AccountAsset {
 	return &AccountAsset{
@@ -105,4 +103,29 @@ func (ai *AccountInfo) DeepCopy() (*AccountInfo, error) {
 		Status:          ai.Status,
 	}
 	return newAccountInfo, nil
+}
+
+func (ai *AccountInfo) ToStdAccount() (*std.Account, error) {
+	pk, err := ParsePubKey(ai.PublicKey)
+	if err != nil {
+		return nil, err
+	}
+	return &std.Account{
+		AccountIndex:    ai.AccountIndex,
+		AccountNameHash: common.FromHex(ai.AccountNameHash),
+		AccountPk:       pk,
+		Nonce:           ai.Nonce,
+		CollectionNonce: ai.CollectionNonce,
+		AssetRoot:       common.FromHex(ai.AssetRoot),
+	}, nil
+}
+
+func ParsePubKey(pkStr string) (pk *eddsa.PublicKey, err error) {
+	pkBytes := common.FromHex(pkStr)
+	pk = new(eddsa.PublicKey)
+	_, err = pk.A.SetBytes(pkBytes)
+	if err != nil {
+		return nil, err
+	}
+	return pk, nil
 }

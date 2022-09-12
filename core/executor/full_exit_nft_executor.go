@@ -2,6 +2,7 @@ package executor
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"math/big"
@@ -86,14 +87,7 @@ func (e *FullExitNftExecutor) Prepare() error {
 		exitNft = bc.StateDB().NftMap[txInfo.NftIndex]
 		isExitEmptyNft = false
 	}
-
-	// Mark the tree states that would be affected in this executor.
-	e.MarkNftDirty(txInfo.NftIndex)
-	if exitNft.CreatorAccountIndex != types.NilAccountIndex {
-		e.MarkAccountAssetsDirty(exitNft.CreatorAccountIndex, []int64{})
-	}
-	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{0}) // Prepare asset 0 for generate an empty tx detail.
-	err = e.BaseExecutor.Prepare()
+	err = e.BaseExecutor.Prepare(context.Background())
 	if err != nil {
 		return err
 	}
@@ -204,71 +198,6 @@ func (e *FullExitNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.NftIndex = e.txInfo.NftIndex
 	e.tx.AccountIndex = e.txInfo.AccountIndex
 	return e.BaseExecutor.GetExecutedTx()
-}
-
-func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
-	bc := e.bc
-	txInfo := e.txInfo
-	exitAccount := e.bc.StateDB().AccountMap[txInfo.AccountIndex]
-	txDetails := make([]*tx.TxDetail, 0, 2)
-
-	// user info
-	accountOrder := int64(0)
-	order := int64(0)
-	baseBalance := exitAccount.AssetInfo[0]
-	emptyDelta := &types.AccountAsset{
-		AssetId:                  0,
-		Balance:                  big.NewInt(0),
-		LpAmount:                 big.NewInt(0),
-		OfferCanceledOrFinalized: big.NewInt(0),
-	}
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:         0,
-		AssetType:       types.FungibleAssetType,
-		AccountIndex:    txInfo.AccountIndex,
-		AccountName:     exitAccount.AccountName,
-		Balance:         baseBalance.String(),
-		BalanceDelta:    emptyDelta.String(),
-		AccountOrder:    accountOrder,
-		Order:           order,
-		Nonce:           exitAccount.Nonce,
-		CollectionNonce: exitAccount.CollectionNonce,
-	})
-	// nft info
-	order++
-	emptyNft := types.EmptyNftInfo(txInfo.NftIndex)
-	baseNft := emptyNft
-	newNft := emptyNft
-	if bc.StateDB().NftMap[txInfo.NftIndex] != nil {
-		baseNft = types.ConstructNftInfo(
-			bc.StateDB().NftMap[txInfo.NftIndex].NftIndex,
-			bc.StateDB().NftMap[txInfo.NftIndex].CreatorAccountIndex,
-			bc.StateDB().NftMap[txInfo.NftIndex].OwnerAccountIndex,
-			bc.StateDB().NftMap[txInfo.NftIndex].NftContentHash,
-			bc.StateDB().NftMap[txInfo.NftIndex].NftL1TokenId,
-			bc.StateDB().NftMap[txInfo.NftIndex].NftL1Address,
-			bc.StateDB().NftMap[txInfo.NftIndex].CreatorTreasuryRate,
-			bc.StateDB().NftMap[txInfo.NftIndex].CollectionId,
-		)
-		if txInfo.AccountIndex != bc.StateDB().NftMap[txInfo.NftIndex].OwnerAccountIndex {
-			newNft = baseNft
-		}
-	}
-
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:         txInfo.NftIndex,
-		AssetType:       types.NftAssetType,
-		AccountIndex:    txInfo.AccountIndex,
-		AccountName:     exitAccount.AccountName,
-		Balance:         baseNft.String(),
-		BalanceDelta:    newNft.String(),
-		AccountOrder:    types.NilAccountOrder,
-		Order:           order,
-		Nonce:           exitAccount.Nonce,
-		CollectionNonce: exitAccount.CollectionNonce,
-	})
-
-	return txDetails, nil
 }
 
 func (e *FullExitNftExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {

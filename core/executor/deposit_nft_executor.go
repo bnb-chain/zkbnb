@@ -2,10 +2,9 @@ package executor
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -77,9 +76,7 @@ func (e *DepositNftExecutor) Prepare() error {
 	}
 
 	// Mark the tree states that would be affected in this executor.
-	e.MarkNftDirty(txInfo.NftIndex)
-	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{0}) // Prepare asset 0 for generate an empty tx detail.
-	return e.BaseExecutor.Prepare()
+	return e.BaseExecutor.Prepare(context.Background())
 }
 
 func (e *DepositNftExecutor) VerifyInputs() error {
@@ -165,62 +162,6 @@ func (e *DepositNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.NftIndex = e.txInfo.NftIndex
 	e.tx.AccountIndex = e.txInfo.AccountIndex
 	return e.BaseExecutor.GetExecutedTx()
-}
-
-func (e *DepositNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
-	txInfo := e.txInfo
-	depositAccount := e.bc.StateDB().AccountMap[txInfo.AccountIndex]
-	txDetails := make([]*tx.TxDetail, 0, 2)
-
-	// user info
-	accountOrder := int64(0)
-	order := int64(0)
-	baseBalance := depositAccount.AssetInfo[0]
-	deltaBalance := &types.AccountAsset{
-		AssetId:                  0,
-		Balance:                  big.NewInt(0),
-		LpAmount:                 big.NewInt(0),
-		OfferCanceledOrFinalized: big.NewInt(0),
-	}
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:         0,
-		AssetType:       types.FungibleAssetType,
-		AccountIndex:    txInfo.AccountIndex,
-		AccountName:     depositAccount.AccountName,
-		Balance:         baseBalance.String(),
-		BalanceDelta:    deltaBalance.String(),
-		AccountOrder:    accountOrder,
-		Order:           order,
-		Nonce:           depositAccount.Nonce,
-		CollectionNonce: depositAccount.CollectionNonce,
-	})
-	// nft info
-	order++
-	baseNft := types.EmptyNftInfo(txInfo.NftIndex)
-	newNft := types.ConstructNftInfo(
-		txInfo.NftIndex,
-		txInfo.CreatorAccountIndex,
-		txInfo.AccountIndex,
-		common.Bytes2Hex(txInfo.NftContentHash),
-		txInfo.NftL1TokenId.String(),
-		txInfo.NftL1Address,
-		txInfo.CreatorTreasuryRate,
-		txInfo.CollectionId,
-	)
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:         txInfo.NftIndex,
-		AssetType:       types.NftAssetType,
-		AccountIndex:    txInfo.AccountIndex,
-		AccountName:     depositAccount.AccountName,
-		Balance:         baseNft.String(),
-		BalanceDelta:    newNft.String(),
-		AccountOrder:    types.NilAccountOrder,
-		Order:           order,
-		Nonce:           depositAccount.Nonce,
-		CollectionNonce: depositAccount.CollectionNonce,
-	})
-
-	return txDetails, nil
 }
 
 func (e *DepositNftExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {

@@ -18,7 +18,11 @@
 package nft
 
 import (
+	"fmt"
+	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
+	"github.com/ethereum/go-ethereum/common"
 	"gorm.io/gorm"
+	"math/big"
 
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -142,4 +146,21 @@ func (m *defaultL2NftModel) UpdateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) err
 		}
 	}
 	return nil
+}
+
+func (n *L2Nft) ToStdNFT() (*std.Nft, error) {
+	nftL1TokenId, isValid := new(big.Int).SetString(n.NftL1TokenId, 10)
+	if !isValid {
+		return nil, fmt.Errorf("unable to parse big int")
+	}
+	return &std.Nft{
+		NftIndex:            n.NftIndex,
+		NftContentHash:      common.FromHex(n.NftContentHash),
+		CreatorAccountIndex: n.CreatorAccountIndex,
+		OwnerAccountIndex:   n.OwnerAccountIndex,
+		NftL1Address:        new(big.Int).SetBytes(common.FromHex(n.NftL1Address)),
+		NftL1TokenId:        nftL1TokenId,
+		CreatorTreasuryRate: n.CreatorTreasuryRate,
+		CollectionId:        n.CollectionId,
+	}, nil
 }

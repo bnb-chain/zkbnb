@@ -2,10 +2,9 @@ package executor
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
-	"math/big"
-
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
@@ -44,10 +43,7 @@ func (e *UpdatePairRateExecutor) Prepare() error {
 		return err
 	}
 
-	// Mark the tree states that would be affected in this executor.
-	e.MarkLiquidityDirty(txInfo.PairIndex)
-
-	return nil
+	return e.BaseExecutor.Prepare(context.Background())
 }
 
 func (e *UpdatePairRateExecutor) VerifyInputs() error {
@@ -114,54 +110,6 @@ func (e *UpdatePairRateExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.TxInfo = string(txInfoBytes)
 	e.tx.PairIndex = e.txInfo.PairIndex
 	return e.BaseExecutor.GetExecutedTx()
-}
-
-func (e *UpdatePairRateExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
-	bc := e.bc
-	txInfo := e.txInfo
-	liquidity := bc.StateDB().LiquidityMap[txInfo.PairIndex]
-	baseLiquidity, err := types.ConstructLiquidityInfo(
-		liquidity.PairIndex,
-		liquidity.AssetAId,
-		liquidity.AssetA,
-		liquidity.AssetBId,
-		liquidity.AssetB,
-		liquidity.LpAmount,
-		liquidity.KLast,
-		liquidity.FeeRate,
-		liquidity.TreasuryAccountIndex,
-		liquidity.TreasuryRate,
-	)
-	if err != nil {
-		return nil, err
-	}
-	deltaLiquidity := &types.LiquidityInfo{
-		PairIndex:            baseLiquidity.PairIndex,
-		AssetAId:             baseLiquidity.AssetAId,
-		AssetA:               big.NewInt(0),
-		AssetBId:             baseLiquidity.AssetBId,
-		AssetB:               big.NewInt(0),
-		LpAmount:             big.NewInt(0),
-		KLast:                baseLiquidity.KLast,
-		FeeRate:              txInfo.FeeRate,
-		TreasuryAccountIndex: txInfo.TreasuryAccountIndex,
-		TreasuryRate:         txInfo.TreasuryRate,
-	}
-
-	txDetail := &tx.TxDetail{
-		AssetId:         txInfo.PairIndex,
-		AssetType:       types.LiquidityAssetType,
-		AccountIndex:    types.NilAccountIndex,
-		AccountName:     types.NilAccountName,
-		Balance:         baseLiquidity.String(),
-		BalanceDelta:    deltaLiquidity.String(),
-		Order:           0,
-		AccountOrder:    types.NilAccountOrder,
-		Nonce:           types.NilNonce,
-		CollectionNonce: types.NilCollectionNonce,
-	}
-
-	return []*tx.TxDetail{txDetail}, nil
 }
 
 func (e *UpdatePairRateExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {

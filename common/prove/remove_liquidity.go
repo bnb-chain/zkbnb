@@ -24,7 +24,7 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func (w *WitnessHelper) constructRemoveLiquidityTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
+func constructRemoveLiquidityTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseRemoveLiquidityTxInfo(oTx.TxInfo)
 	if err != nil {
 		return nil, err

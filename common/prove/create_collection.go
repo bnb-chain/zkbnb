@@ -24,7 +24,7 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func (w *WitnessHelper) constructCreateCollectionTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
+func constructCreateCollectionTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseCreateCollectionTxInfo(oTx.TxInfo)
 	if err != nil {
 		return nil, err

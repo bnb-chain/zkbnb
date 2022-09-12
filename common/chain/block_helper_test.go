@@ -28,7 +28,7 @@ import (
 
 	curve "github.com/bnb-chain/zkbnb-crypto/ecc/ztwistededwards/tebn254"
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
-	common2 "github.com/bnb-chain/zkbnb/common"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 func TestPubDataComputation(t *testing.T) {
@@ -82,7 +82,7 @@ func TestMiMCHash(t *testing.T) {
 }
 
 func TestParsePubKey(t *testing.T) {
-	pk, err := common2.ParsePubKey("58130e24cd20d9de8a110a20751f0a9b36089400ac0f20ca1993c28ee663318a")
+	pk, err := types.ParsePubKey("58130e24cd20d9de8a110a20751f0a9b36089400ac0f20ca1993c28ee663318a")
 	if err != nil {
 		t.Fatal(err)
 	}

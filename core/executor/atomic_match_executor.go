@@ -2,6 +2,7 @@ package executor
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"math/big"
 
@@ -57,20 +58,11 @@ func (e *AtomicMatchExecutor) Prepare() error {
 		logx.Errorf("prepare nft failed")
 		return errors.New("internal error")
 	}
-
 	// Set the right treasury and creator treasury amount.
 	matchNft := e.bc.StateDB().NftMap[txInfo.SellOffer.NftIndex]
 	txInfo.TreasuryAmount = ffmath.Div(ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(txInfo.SellOffer.TreasuryRate)), big.NewInt(TenThousand))
 	txInfo.CreatorAmount = ffmath.Div(ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(matchNft.CreatorTreasuryRate)), big.NewInt(TenThousand))
-
-	// Mark the tree states that would be affected in this executor.
-	e.MarkNftDirty(txInfo.SellOffer.NftIndex)
-	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{txInfo.GasFeeAssetId})
-	e.MarkAccountAssetsDirty(txInfo.BuyOffer.AccountIndex, []int64{txInfo.BuyOffer.AssetId, e.buyOfferAssetId})
-	e.MarkAccountAssetsDirty(txInfo.SellOffer.AccountIndex, []int64{txInfo.SellOffer.AssetId, e.sellOfferAssetId})
-	e.MarkAccountAssetsDirty(matchNft.CreatorAccountIndex, []int64{txInfo.BuyOffer.AssetId})
-	e.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.BuyOffer.AssetId, txInfo.GasFeeAssetId})
-	return e.BaseExecutor.Prepare()
+	return e.BaseExecutor.Prepare(context.WithValue(context.Background(), legendTxTypes.CreatorAccountIndexKey, matchNft.CreatorAccountIndex))
 }
 
 func (e *AtomicMatchExecutor) VerifyInputs() error {
@@ -257,193 +249,6 @@ func (e *AtomicMatchExecutor) GetExecutedTx() (*tx.Tx, error) {
 
 	e.tx.TxInfo = string(txInfoBytes)
 	return e.BaseExecutor.GetExecutedTx()
-}
-
-func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
-	bc := e.bc
-	txInfo := e.txInfo
-	matchNft := bc.StateDB().NftMap[txInfo.SellOffer.NftIndex]
-
-	copiedAccounts, err := e.bc.StateDB().DeepCopyAccounts([]int64{txInfo.AccountIndex, txInfo.GasAccountIndex,
-		txInfo.SellOffer.AccountIndex, txInfo.BuyOffer.AccountIndex, matchNft.CreatorAccountIndex})
-	if err != nil {
-		return nil, err
-	}
-	fromAccount := copiedAccounts[txInfo.AccountIndex]
-	buyAccount := copiedAccounts[txInfo.BuyOffer.AccountIndex]
-	sellAccount := copiedAccounts[txInfo.SellOffer.AccountIndex]
-	creatorAccount := copiedAccounts[matchNft.CreatorAccountIndex]
-	gasAccount := copiedAccounts[txInfo.GasAccountIndex]
-
-	txDetails := make([]*tx.TxDetail, 0, 9)
-
-	// from account gas asset
-	order := int64(0)
-	accountOrder := int64(0)
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      txInfo.GasFeeAssetId,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: txInfo.AccountIndex,
-		AccountName:  fromAccount.AccountName,
-		Balance:      fromAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
-		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), types.ZeroBigInt, types.ZeroBigInt).String(),
-		Order:           order,
-		AccountOrder:    accountOrder,
-		Nonce:           fromAccount.Nonce,
-		CollectionNonce: fromAccount.CollectionNonce,
-	})
-	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-
-	// buyer asset A
-	order++
-	accountOrder++
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      txInfo.BuyOffer.AssetId,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: txInfo.BuyOffer.AccountIndex,
-		AccountName:  buyAccount.AccountName,
-		Balance:      buyAccount.AssetInfo[txInfo.BuyOffer.AssetId].String(),
-		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.BuyOffer.AssetId, ffmath.Neg(txInfo.BuyOffer.AssetAmount), types.ZeroBigInt, types.ZeroBigInt,
-		).String(),
-		Order:           order,
-		AccountOrder:    accountOrder,
-		Nonce:           buyAccount.Nonce,
-		CollectionNonce: buyAccount.CollectionNonce,
-	})
-	buyAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance = ffmath.Sub(buyAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance, txInfo.BuyOffer.AssetAmount)
-
-	// buy offer
-	order++
-	buyOffer := buyAccount.AssetInfo[e.buyOfferAssetId].OfferCanceledOrFinalized
-	buyOffer = new(big.Int).SetBit(buyOffer, int(e.buyOfferIndex), 1)
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      e.buyOfferAssetId,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: txInfo.BuyOffer.AccountIndex,
-		AccountName:  buyAccount.AccountName,
-		Balance:      buyAccount.AssetInfo[e.buyOfferAssetId].String(),
-		BalanceDelta: types.ConstructAccountAsset(
-			e.buyOfferAssetId, types.ZeroBigInt, types.ZeroBigInt, buyOffer).String(),
-		Order:           order,
-		AccountOrder:    accountOrder,
-		Nonce:           buyAccount.Nonce,
-		CollectionNonce: buyAccount.CollectionNonce,
-	})
-	buyAccount.AssetInfo[e.buyOfferAssetId].OfferCanceledOrFinalized = buyOffer
-
-	// seller asset A
-	order++
-	accountOrder++
-	sellDeltaAmount := ffmath.Sub(txInfo.SellOffer.AssetAmount, ffmath.Add(txInfo.TreasuryAmount, txInfo.CreatorAmount))
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      txInfo.SellOffer.AssetId,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: txInfo.SellOffer.AccountIndex,
-		AccountName:  sellAccount.AccountName,
-		Balance:      sellAccount.AssetInfo[txInfo.SellOffer.AssetId].String(),
-		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.SellOffer.AssetId, sellDeltaAmount, types.ZeroBigInt, types.ZeroBigInt,
-		).String(),
-		Order:           order,
-		AccountOrder:    accountOrder,
-		Nonce:           sellAccount.Nonce,
-		CollectionNonce: sellAccount.CollectionNonce,
-	})
-	sellAccount.AssetInfo[txInfo.SellOffer.AssetId].Balance = ffmath.Add(sellAccount.AssetInfo[txInfo.SellOffer.AssetId].Balance, sellDeltaAmount)
-
-	// sell offer
-	order++
-	sellOffer := sellAccount.AssetInfo[e.sellOfferAssetId].OfferCanceledOrFinalized
-	sellOffer = new(big.Int).SetBit(sellOffer, int(e.sellOfferIndex), 1)
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      e.sellOfferAssetId,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: txInfo.SellOffer.AccountIndex,
-		AccountName:  sellAccount.AccountName,
-		Balance:      sellAccount.AssetInfo[e.sellOfferAssetId].String(),
-		BalanceDelta: types.ConstructAccountAsset(
-			e.sellOfferAssetId, types.ZeroBigInt, types.ZeroBigInt, sellOffer).String(),
-		Order:           order,
-		AccountOrder:    accountOrder,
-		Nonce:           sellAccount.Nonce,
-		CollectionNonce: sellAccount.CollectionNonce,
-	})
-	sellAccount.AssetInfo[e.sellOfferAssetId].OfferCanceledOrFinalized = sellOffer
-
-	// creator fee
-	order++
-	accountOrder++
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      txInfo.BuyOffer.AssetId,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: matchNft.CreatorAccountIndex,
-		AccountName:  creatorAccount.AccountName,
-		Balance:      creatorAccount.AssetInfo[txInfo.BuyOffer.AssetId].String(),
-		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.BuyOffer.AssetId, txInfo.CreatorAmount, types.ZeroBigInt, types.ZeroBigInt,
-		).String(),
-		Order:           order,
-		AccountOrder:    accountOrder,
-		Nonce:           creatorAccount.Nonce,
-		CollectionNonce: creatorAccount.CollectionNonce,
-	})
-	creatorAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance = ffmath.Add(creatorAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance, txInfo.CreatorAmount)
-
-	// nft info
-	order++
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      matchNft.NftIndex,
-		AssetType:    types.NftAssetType,
-		AccountIndex: types.NilAccountIndex,
-		AccountName:  types.NilAccountName,
-		Balance: types.ConstructNftInfo(matchNft.NftIndex, matchNft.CreatorAccountIndex, matchNft.OwnerAccountIndex,
-			matchNft.NftContentHash, matchNft.NftL1TokenId, matchNft.NftL1Address, matchNft.CreatorTreasuryRate, matchNft.CollectionId).String(),
-		BalanceDelta: types.ConstructNftInfo(matchNft.NftIndex, matchNft.CreatorAccountIndex, txInfo.BuyOffer.AccountIndex,
-			matchNft.NftContentHash, matchNft.NftL1TokenId, matchNft.NftL1Address, matchNft.CreatorTreasuryRate, matchNft.CollectionId).String(),
-		Order:           order,
-		AccountOrder:    types.NilAccountOrder,
-		Nonce:           0,
-		CollectionNonce: 0,
-	})
-
-	// gas account asset A - treasury fee
-	order++
-	accountOrder++
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      txInfo.BuyOffer.AssetId,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: txInfo.GasAccountIndex,
-		AccountName:  gasAccount.AccountName,
-		Balance:      gasAccount.AssetInfo[txInfo.BuyOffer.AssetId].String(),
-		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.BuyOffer.AssetId, txInfo.TreasuryAmount, types.ZeroBigInt, types.ZeroBigInt).String(),
-		Order:           order,
-		AccountOrder:    accountOrder,
-		Nonce:           gasAccount.Nonce,
-		CollectionNonce: gasAccount.CollectionNonce,
-	})
-	gasAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance, txInfo.TreasuryAmount)
-
-	// gas account asset gas
-	order++
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      txInfo.GasFeeAssetId,
-		AssetType:    types.FungibleAssetType,
-		AccountIndex: txInfo.GasAccountIndex,
-		AccountName:  gasAccount.AccountName,
-		Balance:      gasAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
-		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, types.ZeroBigInt, types.ZeroBigInt).String(),
-		Order:           order,
-		AccountOrder:    accountOrder,
-		Nonce:           gasAccount.Nonce,
-		CollectionNonce: gasAccount.CollectionNonce,
-	})
-	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-
-	return txDetails, nil
 }
 
 func (e *AtomicMatchExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
