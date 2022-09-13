@@ -152,11 +152,17 @@ func (s *Sender) CommitBlocks() (err error) {
 		lastStoredBlockInfo = chain.ConstructStoredBlockInfo(lastHandledBlockInfo)
 	}
 
-	gasPrice, err := s.cli.SuggestGasPrice(context.Background())
-	if err != nil {
-		logx.Errorf("failed to fetch gas price: %v", err)
-		return err
+	var gasPrice *big.Int
+	if s.config.ChainConfig.GasPrice > 0 {
+		gasPrice = big.NewInt(int64(s.config.ChainConfig.GasPrice))
+	} else {
+		gasPrice, err = s.cli.SuggestGasPrice(context.Background())
+		if err != nil {
+			logx.Errorf("failed to fetch gas price: %v", err)
+			return err
+		}
 	}
+
 	// commit blocks on-chain
 	txHash, err := zkbnb.CommitBlocks(
 		cli, authCli,
@@ -322,10 +328,18 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		proofs = append(proofs, proofInfo.B[1][0], proofInfo.B[1][1])
 		proofs = append(proofs, proofInfo.C[:]...)
 	}
-	gasPrice, err := s.cli.SuggestGasPrice(context.Background())
-	if err != nil {
-		return err
+
+	var gasPrice *big.Int
+	if s.config.ChainConfig.GasPrice > 0 {
+		gasPrice = big.NewInt(int64(s.config.ChainConfig.GasPrice))
+	} else {
+		gasPrice, err = s.cli.SuggestGasPrice(context.Background())
+		if err != nil {
+			logx.Errorf("failed to fetch gas price: %v", err)
+			return err
+		}
 	}
+	
 	// Verify blocks on-chain
 	txHash, err := zkbnb.VerifyAndExecuteBlocks(cli, authCli, zkbnbInstance,
 		pendingVerifyAndExecuteBlocks, proofs, gasPrice, s.config.ChainConfig.GasLimit)
