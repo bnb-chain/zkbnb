@@ -10,19 +10,27 @@ env:
   L2_ENDPOINT: http://localhost:8888
 
 jobs:
-  deploy:
+  integration-test:
     runs-on: self-hosted
     permissions:
       issues: write
       pull-requests: write
     steps:
       - name: deploy new zkbnb on runner
-        if: !contains(github.event.pull_request.body, '/skip-integration-test')
+        if: "!contains(github.event.pull_request.body, '/skip-integration-test')"
         run: |
           echo 'fetch zkbnb repo'
           export PR_NUMBER=$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
           echo Pull requests $PR_NUMBER
           
+          cd ~
+          sudo rm -rf ./zkbnb
+          git clone https://github.com/bnb-chain/zkbnb.git
+          echo "Integration tests run on commit id: $GITHUB_SHA"
+          cd ./zkbnb
+          git fetch origin pull/$PR_NUMBER/head:$GITHUB_SHA
+          git checkout $GITHUB_SHA
+
           cd ~
           sudo rm -rf ./zkbnb
           git clone https://github.com/bnb-chain/zkbnb.git
@@ -48,26 +56,37 @@ jobs:
           echo "Waiting 3m for the initialization tx to be verified"
           sleep 3m # Waiting for the initialization tx to be verified
           echo "end deploy"
-
       - name: run integration test
         run: |
           export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
           export ZkBNB=$(sudo cat ~/zkbnb/deployment/dependency/zkbnb-contract/info/addresses.json  | jq -r '.zkbnbProxy')
           export AssetGov=$(sudo cat ~/zkbnb/deployment/dependency/zkbnb-contract/info/addresses.json  | jq -r '.assetGovernance')
+          export GovKey="906d5dc5a8ec5050a21987278d42af90852724df53a576e66057990ee48ac269"
+          export LEGToken=$(sudo cat ~/zkbnb/deployment/dependency/zkbnb-contract/info/addresses.json  | jq -r '.LEGToken')
+          export REYToken=$(sudo cat ~/zkbnb/deployment/dependency/zkbnb-contract/info/addresses.json  | jq -r '.REYToken')
+          export ERC721=$(sudo cat ~/zkbnb/deployment/dependency/zkbnb-contract/info/addresses.json  | jq -r '.ERC721')
           export TestLogLevel=2
+          export TestCfgName=qa2.yml
           export L1EndPoint=$L1_ENDPOINT
           export L2EndPoint=$L2_ENDPOINT
-          
+
           cd /tmp && sudo rm -rf ./zkbnb-integration-test
           git clone --branch main https://github.com/bnb-chain/zkbnb-integration-test.git
-          cd ./zkbnb-integration-test/tests
-          
+
+          cd ./zkbnb-integration-test
+          sed -i.bak "s/Bep20A\: .*/Bep20A: $LEGToken/" ./config/qa2.yml
+          sed -i.bak "s/Bep20B\: .*/Bep20B: $REYToken/" ./config/qa2.yml
+          sed -i.bak "s/Bep20AForL1Test\: .*/Bep20AForL1Test: $LEGToken/" ./config/qa2.yml
+          sed -i.bak "s/ERC721\: .*/ERC721: $ERC721/" ./config/qa2.yml
+          sed -i.bak "s/ERC721ForL1\: .*/ERC721ForL1: $ERC721/" ./config/qa2.yml
+
+          cd ./tests
+
           echo '1. start TestSetupSuite'
           go test -v -failfast  -run TestSetupSuite -timeout 30m
-          
+
           echo '2. start L1 && L2 test'
           go test -v -failfast -parallel 2 -run TestL.*Suite  -timeout 30m
-
       - name: notification via slack
         if: always()
         run: |
