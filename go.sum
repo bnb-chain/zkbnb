@@ -119,8 +119,8 @@ github.com/bketelsen/crypt v0.0.4/go.mod h1:aI6NrJ0pMGgvZKL1iVgXLnfIFJtfV+bKCoqO
 github.com/bmizerany/pat v0.0.0-20170815010413-6226ea591a40/go.mod h1:8rLXio+WjiTceGBHIoTvn60HIbs7Hm7bcHjyrSqYB9c=
 github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20220909062002-9d356a13a75c h1:b8rkb7+3lemuBUGBxsDeX/5fhVuqCDNbGeF40u8W8H4=
 github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20220909062002-9d356a13a75c/go.mod h1:+JmfeD/50FbqIS8Fo4xgTDOM8nWIvfsfObQMAKv/7BU=
-github.com/bnb-chain/zkbnb-eth-rpc v0.0.2-0.20220907130157-2311ce3fe6f6 h1:HtlD4s8u3+wviaNf7dr+I6wkFH4fFiBDAHjW4clr2Rk=
-github.com/bnb-chain/zkbnb-eth-rpc v0.0.2-0.20220907130157-2311ce3fe6f6/go.mod h1:Q+fDAJ1ENwEUOxIAuIrjXtXXJuQIWRh1wZCVRPONb7Q=
+github.com/bnb-chain/zkbnb-eth-rpc v0.0.2-0.20220913131900-b3723fd9a82d h1:tE3GJ0bmztqxZ0eB82lAcNV6viF18GSW96TQCAL7nZI=
+github.com/bnb-chain/zkbnb-eth-rpc v0.0.2-0.20220913131900-b3723fd9a82d/go.mod h1:w3x3DxF1Iz1ebep21cdmb73mOyyU1Phd8s10SAgRNHg=
 github.com/bnb-chain/zkbnb-smt v0.0.2-0.20220907130044-9c7cccbd19fa h1:aVqkz6Ge3eW7SKmINYMprpxq2VNpKp4vKQ6dEue8uUE=
 github.com/bnb-chain/zkbnb-smt v0.0.2-0.20220907130044-9c7cccbd19fa/go.mod h1:mGIAve72dt/VOVQ2wu7UjcjnMspnKczi5QACE1NGVec=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
@@ -1197,8 +1197,8 @@ golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8/go.mod h1:oPkhp1MJrh7nUepCBc
 golang.org/x/sys v0.0.0-20220412211240-33da011f77ad/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20220429233432-b5fbb4746d32/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
-golang.org/x/sys v0.0.0-20220823224334-20c2bfdbfe24 h1:TyKJRhyo17yWxOMCTHKWrc5rddHORMlnZ/j57umaUd8=
-golang.org/x/sys v0.0.0-20220823224334-20c2bfdbfe24/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+golang.org/x/sys v0.0.0-20220909162455-aba9fc2a8ff2 h1:wM1k/lXfpc5HdkJJyW9GELpd8ERGdnh8sMGL6Gzq3Ho=
+golang.org/x/sys v0.0.0-20220909162455-aba9fc2a8ff2/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/term v0.0.0-20201117132131-f5c789dd3221/go.mod h1:Nr5EML6q2oocZ2LXRh80K7BxOlk5/8JxuGnuhpl+muw=
 golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1/go.mod h1:bj7SfCRtBDWHUb9snDiAeCFNEtKQo2Wmx5Cou7ajbmo=
 golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d/go.mod h1:bj7SfCRtBDWHUb9snDiAeCFNEtKQo2Wmx5Cou7ajbmo=

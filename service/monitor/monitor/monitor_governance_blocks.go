@@ -24,12 +24,12 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/zkbnb/core/legend"
-	"github.com/bnb-chain/zkbnb-eth-rpc/zkbnb/core/zero/basic"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/asset"
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
@@ -37,21 +37,25 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
+func EmptyCallOpts() *bind.CallOpts {
+	return &bind.CallOpts{}
+}
+
 func (m *Monitor) getNewL2Asset(event zkbnb.GovernanceNewAsset) (*asset.Asset, error) {
 	// get asset info by contract address
 	erc20Instance, err := zkbnb.LoadERC20(m.cli, event.AssetAddress.Hex())
 	if err != nil {
 		return nil, err
 	}
-	name, err := erc20Instance.Name(basic.EmptyCallOpts())
+	name, err := erc20Instance.Name(EmptyCallOpts())
 	if err != nil {
 		return nil, err
 	}
-	symbol, err := erc20Instance.Symbol(basic.EmptyCallOpts())
+	symbol, err := erc20Instance.Symbol(EmptyCallOpts())
 	if err != nil {
 		return nil, err
 	}
-	decimals, err := erc20Instance.Decimals(basic.EmptyCallOpts())
+	decimals, err := erc20Instance.Decimals(EmptyCallOpts())
 	if err != nil {
 		return nil, err
 	}

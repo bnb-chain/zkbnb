@@ -28,7 +28,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbnb-eth-rpc/_rpc"
+	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/zkbnb/core/legend"
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/common/prove"
@@ -45,8 +45,8 @@ type Sender struct {
 	config sconfig.Config
 
 	// Client
-	cli           *_rpc.ProviderClient
-	authCli       *_rpc.AuthClient
+	cli           *rpc.ProviderClient
+	authCli       *rpc.AuthClient
 	zkbnbInstance *zkbnb.ZkBNB
 
 	// Data access objects
@@ -86,7 +86,7 @@ func NewSender(c sconfig.Config) *Sender {
 		panic(err)
 	}
 
-	s.cli, err = _rpc.NewClient(l1RPCEndpoint.Value)
+	s.cli, err = rpc.NewClient(l1RPCEndpoint.Value)
 	if err != nil {
 		panic(err)
 	}
@@ -94,7 +94,7 @@ func NewSender(c sconfig.Config) *Sender {
 	if err != nil {
 		panic(err)
 	}
-	s.authCli, err = _rpc.NewAuthClient(s.cli, c.ChainConfig.Sk, chainId)
+	s.authCli, err = rpc.NewAuthClient(c.ChainConfig.Sk, chainId)
 	if err != nil {
 		panic(err)
 	}
@@ -339,7 +339,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 			return err
 		}
 	}
-	
+
 	// Verify blocks on-chain
 	txHash, err := zkbnb.VerifyAndExecuteBlocks(cli, authCli, zkbnbInstance,
 		pendingVerifyAndExecuteBlocks, proofs, gasPrice, s.config.ChainConfig.GasLimit)
