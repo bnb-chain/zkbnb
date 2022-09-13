@@ -24,23 +24,23 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func constructCancelOfferTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
+func fillCancelOfferTxWitness(cryptoTx *TxWitness, oTx *Tx) error {
 	txInfo, err := types.ParseCancelOfferTxInfo(oTx.TxInfo)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	cryptoTxInfo, err := toCryptoCancelOfferTx(txInfo)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	cryptoTx.CancelOfferTxInfo = cryptoTxInfo
 	cryptoTx.ExpiredAt = txInfo.ExpiredAt
 	cryptoTx.Signature = new(eddsa.Signature)
 	_, err = cryptoTx.Signature.SetBytes(txInfo.Sig)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return cryptoTx, nil
+	return nil
 }
 
 func toCryptoCancelOfferTx(txInfo *types.CancelOfferTxInfo) (info *CryptoCancelOfferTx, err error) {

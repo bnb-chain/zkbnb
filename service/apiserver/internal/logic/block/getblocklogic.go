@@ -72,8 +72,8 @@ func (l *GetBlockLogic) GetBlock(req *types.ReqGetBlock) (resp *types.Block, err
 		VerifiedAt:                      block.VerifiedAt,
 		Status:                          block.BlockStatus,
 	}
-	for _, t := range block.Txs {
-		tx := utils.DbtxTx(t)
+	for _, dbTx := range block.Txs {
+		tx := utils.ConvertTx(dbTx)
 		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
 		resp.Txs = append(resp.Txs, tx)
 	}

@@ -14,7 +14,6 @@ import (
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/account"
-	"github.com/bnb-chain/zkbnb/dao/mempool"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/tree"
 	"github.com/bnb-chain/zkbnb/types"
@@ -40,6 +39,7 @@ func NewRegisterZnsExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 }
 
 func (e *RegisterZnsExecutor) Prepare() error {
+	// TODO not sure wthether it is ok
 	return e.BaseExecutor.Prepare(context.Background())
 }
 
@@ -138,8 +138,4 @@ func (e *RegisterZnsExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.TxInfo = string(txInfoBytes)
 	e.tx.AccountIndex = e.txInfo.AccountIndex
 	return e.BaseExecutor.GetExecutedTx()
-}
-
-func (e *RegisterZnsExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
-	return nil, nil
 }

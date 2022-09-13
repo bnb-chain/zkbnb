@@ -24,23 +24,23 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func constructAtomicMatchTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
+func fillAtomicMatchTxWitness(cryptoTx *TxWitness, oTx *Tx) error {
 	txInfo, err := types.ParseAtomicMatchTxInfo(oTx.TxInfo)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	cryptoTxInfo, err := toCryptoAtomicMatchTx(txInfo)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	cryptoTx.AtomicMatchTxInfo = cryptoTxInfo
 	cryptoTx.ExpiredAt = txInfo.ExpiredAt
 	cryptoTx.Signature = new(eddsa.Signature)
 	_, err = cryptoTx.Signature.SetBytes(txInfo.Sig)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return cryptoTx, nil
+	return nil
 }
 
 func toCryptoAtomicMatchTx(txInfo *types.AtomicMatchTxInfo) (info *CryptoAtomicMatchTx, err error) {

@@ -36,20 +36,6 @@ BlockConfig:
 " > ${CONFIG_PATH}/prover.yaml
 
 echo -e "
-Name: witness
-
-Postgres:
-  DataSource: host=database user=$DATABASE_USER password=$DATABASE_PASS dbname=$DATABASE_NAME port=5432 sslmode=disable
-
-CacheRedis:
-  - Host: redis:6379
-    Type: node
-
-TreeDB:
-  Driver: memorydb
-" > ${CONFIG_PATH}/witness.yaml
-
-echo -e "
 Name: monitor
 
 Postgres:

@@ -23,7 +23,7 @@ func Run(configFile string) error {
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))
 
-	// m generic blocks
+	// monitor generic blocks
 	if _, err := cronjob.AddFunc("@every 10s", func() {
 		err := m.MonitorGenericBlocks()
 		if err != nil {
@@ -33,7 +33,7 @@ func Run(configFile string) error {
 		panic(err)
 	}
 
-	// m priority requests
+	// monitor priority requests
 	if _, err := cronjob.AddFunc("@every 10s", func() {
 		err := m.MonitorPriorityRequests()
 		if err != nil {
@@ -43,7 +43,7 @@ func Run(configFile string) error {
 		panic(err)
 	}
 
-	// m governance blocks
+	// monitor governance blocks
 	if _, err := cronjob.AddFunc("@every 10s", func() {
 		err := m.MonitorGovernanceBlocks()
 		if err != nil {

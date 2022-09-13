@@ -33,19 +33,6 @@ services:
         depends_on:
           - initializer
     
-    witness:
-        container_name: witness
-        image: ghcr.io/bnb-chain/zkbnb
-        restart: always
-        command: 
-          - witness
-          - --config
-          - /server/configs/witness.yaml
-        volumes:
-          - $BASEDIR/configs:/server/configs
-        depends_on:
-          - initializer
-    
     monitor:
         container_name: monitor
         image: ghcr.io/bnb-chain/zkbnb

@@ -10,7 +10,6 @@ import (
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	"github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/core/statedb"
-	"github.com/bnb-chain/zkbnb/dao/mempool"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -112,6 +111,3 @@ func (e *UpdatePairRateExecutor) GetExecutedTx() (*tx.Tx, error) {
 	return e.BaseExecutor.GetExecutedTx()
 }
 
-func (e *UpdatePairRateExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
-	return nil, nil
-}

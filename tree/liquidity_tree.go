@@ -18,9 +18,9 @@
 package tree
 
 import (
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbnb-crypto/hash/bn254/zmimc"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -33,7 +33,7 @@ func InitLiquidityTree(
 	liquidityTree bsmt.SparseMerkleTree, err error,
 ) {
 
-	liquidityTree, err = bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(zmimc.Hmimc),
+	liquidityTree, err = bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(mimc.NewMiMC()),
 		SetNamespace(ctx, LiquidityPrefix), LiquidityTreeHeight, NilLiquidityNodeHash,
 		ctx.Options(blockHeight)...)
 	if err != nil {

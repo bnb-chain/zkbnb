@@ -12,7 +12,6 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/dbcache"
 	"github.com/bnb-chain/zkbnb/dao/liquidity"
-	"github.com/bnb-chain/zkbnb/dao/mempool"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/sysconfig"
 	"github.com/bnb-chain/zkbnb/dao/tx"
@@ -27,11 +26,10 @@ type ServiceContext struct {
 	RedisCache dbcache.Cache
 	MemCache   *cache.MemCache
 
-	MempoolModel          mempool.MempoolModel
+	TxPoolModel           tx.TxPoolModel
 	AccountModel          account.AccountModel
 	AccountHistoryModel   account.AccountHistoryModel
 	TxModel               tx.TxModel
-	FailTxModel           tx.FailTxModel
 	LiquidityModel        liquidity.LiquidityModel
 	LiquidityHistoryModel liquidity.LiquidityHistoryModel
 	BlockModel            block.BlockModel
@@ -50,7 +48,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	}
 	redisCache := dbcache.NewRedisCache(c.CacheRedis[0].Host, c.CacheRedis[0].Pass, 15*time.Minute)
 
-	mempoolModel := mempool.NewMempoolModel(gormPointer)
+	txPoolModel := tx.NewTxPoolModel(gormPointer)
 	accountModel := account.NewAccountModel(gormPointer)
 	liquidityModel := liquidity.NewLiquidityModel(gormPointer)
 	nftModel := nft.NewL2NftModel(gormPointer)
@@ -61,11 +59,10 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		Config:                c,
 		RedisCache:            redisCache,
 		MemCache:              memCache,
-		MempoolModel:          mempoolModel,
+		TxPoolModel:           txPoolModel,
 		AccountModel:          accountModel,
 		AccountHistoryModel:   account.NewAccountHistoryModel(gormPointer),
 		TxModel:               tx.NewTxModel(gormPointer),
-		FailTxModel:           tx.NewFailTxModel(gormPointer),
 		LiquidityModel:        liquidityModel,
 		LiquidityHistoryModel: liquidity.NewLiquidityHistoryModel(gormPointer),
 		BlockModel:            block.NewBlockModel(gormPointer),

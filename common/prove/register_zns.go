@@ -25,18 +25,18 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func constructRegisterZnsTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
+func fillRegisterZnsTxWitness(cryptoTx *TxWitness, oTx *Tx) error {
 	txInfo, err := types.ParseRegisterZnsTxInfo(oTx.TxInfo)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	cryptoTxInfo, err := toCryptoRegisterZnsTx(txInfo)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	cryptoTx.Signature = std.EmptySignature()
 	cryptoTx.RegisterZnsTxInfo = cryptoTxInfo
-	return cryptoTx, nil
+	return nil
 }
 
 func toCryptoRegisterZnsTx(txInfo *legendTxTypes.RegisterZnsTxInfo) (info *CryptoRegisterZnsTx, err error) {

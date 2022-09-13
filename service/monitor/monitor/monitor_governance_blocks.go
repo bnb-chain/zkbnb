@@ -30,13 +30,58 @@ import (
 
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/zkbnb/core/legend"
 	"github.com/bnb-chain/zkbnb-eth-rpc/zkbnb/core/zero/basic"
-
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/asset"
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
 	"github.com/bnb-chain/zkbnb/dao/sysconfig"
 	"github.com/bnb-chain/zkbnb/types"
 )
+
+func (m *Monitor) getNewL2Asset(event zkbnb.GovernanceNewAsset) (*asset.Asset, error) {
+	// get asset info by contract address
+	erc20Instance, err := zkbnb.LoadERC20(m.cli, event.AssetAddress.Hex())
+	if err != nil {
+		return nil, err
+	}
+	name, err := erc20Instance.Name(basic.EmptyCallOpts())
+	if err != nil {
+		return nil, err
+	}
+	symbol, err := erc20Instance.Symbol(basic.EmptyCallOpts())
+	if err != nil {
+		return nil, err
+	}
+	decimals, err := erc20Instance.Decimals(basic.EmptyCallOpts())
+	if err != nil {
+		return nil, err
+	}
+	l2Asset := &asset.Asset{
+		AssetId:     uint32(event.AssetId),
+		L1Address:   event.AssetAddress.Hex(),
+		AssetName:   name,
+		AssetSymbol: strings.ToUpper(symbol),
+		Decimals:    uint32(decimals),
+		Status:      asset.StatusActive,
+	}
+
+	return l2Asset, nil
+}
+
+type GovernancePendingChanges struct {
+	l2AssetMap                map[string]*asset.Asset
+	pendingUpdateL2AssetMap   map[string]*asset.Asset
+	pendingNewSysConfigMap    map[string]*sysconfig.SysConfig
+	pendingUpdateSysConfigMap map[string]*sysconfig.SysConfig
+}
+
+func NewGovernancePendingChanges() *GovernancePendingChanges {
+	return &GovernancePendingChanges{
+		l2AssetMap:                make(map[string]*asset.Asset),
+		pendingUpdateL2AssetMap:   make(map[string]*asset.Asset),
+		pendingNewSysConfigMap:    make(map[string]*sysconfig.SysConfig),
+		pendingUpdateSysConfigMap: make(map[string]*sysconfig.SysConfig),
+	}
+}
 
 func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 	// get latest handled l1 block from database by chain id
@@ -65,6 +110,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 	}
 	contractAddress := common.HexToAddress(m.governanceContractAddress)
 	logx.Infof("fromBlock: %d, toBlock: %d", big.NewInt(handledHeight+1), big.NewInt(int64(safeHeight)))
+
 	query := ethereum.FilterQuery{
 		FromBlock: big.NewInt(handledHeight + 1),
 		ToBlock:   big.NewInt(int64(safeHeight)),
@@ -74,13 +120,10 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to query logs through rpc client: %v", err)
 	}
-	var (
-		l1EventInfos              []*L1EventInfo
-		l2AssetInfoMap            = make(map[string]*asset.Asset)
-		pendingUpdateL2AssetMap   = make(map[string]*asset.Asset)
-		pendingNewSysConfigMap    = make(map[string]*sysconfig.SysConfig)
-		pendingUpdateSysConfigMap = make(map[string]*sysconfig.SysConfig)
-	)
+
+	l1Events := make([]*L1Event, 0, len(logs))
+	pendingChanges := NewGovernancePendingChanges()
+
 	for _, vlog := range logs {
 		switch vlog.Topics[0].Hex() {
 		case governanceLogNewAssetSigHash.Hex():
@@ -88,37 +131,18 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 			if err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameNewAsset, vlog.Data); err != nil {
 				return fmt.Errorf("unpackIntoInterface err: %v", err)
 			}
-			l1EventInfo := &L1EventInfo{
+			l1EventInfo := &L1Event{
 				EventType: EventTypeAddAsset,
 				TxHash:    vlog.TxHash.Hex(),
 			}
-			// get asset info by contract address
-			erc20Instance, err := zkbnb.LoadERC20(m.cli, event.AssetAddress.Hex())
+			newL2Asset, err := m.getNewL2Asset(event)
 			if err != nil {
+				logx.Infof("get new l2 asset error, err: %s", err.Error())
 				return err
 			}
-			name, err := erc20Instance.Name(basic.EmptyCallOpts())
-			if err != nil {
-				return err
-			}
-			symbol, err := erc20Instance.Symbol(basic.EmptyCallOpts())
-			if err != nil {
-				return err
-			}
-			decimals, err := erc20Instance.Decimals(basic.EmptyCallOpts())
-			if err != nil {
-				return err
-			}
-			l2AssetInfo := &asset.Asset{
-				AssetId:     uint32(event.AssetId),
-				L1Address:   event.AssetAddress.Hex(),
-				AssetName:   name,
-				AssetSymbol: strings.ToUpper(symbol),
-				Decimals:    uint32(decimals),
-				Status:      asset.StatusActive,
-			}
-			l1EventInfos = append(l1EventInfos, l1EventInfo)
-			l2AssetInfoMap[event.AssetAddress.Hex()] = l2AssetInfo
+
+			l1Events = append(l1Events, l1EventInfo)
+			pendingChanges.l2AssetMap[event.AssetAddress.Hex()] = newL2Asset
 		case governanceLogNewGovernorSigHash.Hex():
 			// parse event info
 			var event zkbnb.GovernanceNewGovernor
@@ -126,7 +150,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 				return fmt.Errorf("unpackIntoInterface err: %v", err)
 			}
 			// set up database info
-			l1EventInfo := &L1EventInfo{
+			l1EventInfo := &L1Event{
 				EventType: EventTypeNewGovernor,
 				TxHash:    vlog.TxHash.Hex(),
 			}
@@ -137,8 +161,8 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 				Comment:   "governor",
 			}
 			// set into array
-			l1EventInfos = append(l1EventInfos, l1EventInfo)
-			pendingNewSysConfigMap[configInfo.Name] = configInfo
+			l1Events = append(l1Events, l1EventInfo)
+			pendingChanges.pendingNewSysConfigMap[configInfo.Name] = configInfo
 		case governanceLogNewAssetGovernanceSigHash.Hex():
 			// parse event info
 			var event zkbnb.GovernanceNewAssetGovernance
@@ -146,7 +170,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 			if err != nil {
 				return fmt.Errorf("unpackIntoInterface err: %v", err)
 			}
-			l1EventInfo := &L1EventInfo{
+			l1EventInfo := &L1Event{
 				EventType: EventTypeNewAssetGovernance,
 				TxHash:    vlog.TxHash.Hex(),
 			}
@@ -157,8 +181,8 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 				Comment:   "asset governance contract",
 			}
 			// set into array
-			l1EventInfos = append(l1EventInfos, l1EventInfo)
-			pendingNewSysConfigMap[configInfo.Name] = configInfo
+			l1Events = append(l1Events, l1EventInfo)
+			pendingChanges.pendingNewSysConfigMap[configInfo.Name] = configInfo
 		case governanceLogValidatorStatusUpdateSigHash.Hex():
 			// parse event info
 			var event zkbnb.GovernanceValidatorStatusUpdate
@@ -166,83 +190,16 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 				return fmt.Errorf("unpack GovernanceValidatorStatusUpdate, err: %v", err)
 			}
 			// set up database info
-			l1EventInfo := &L1EventInfo{
+			l1EventInfo := &L1Event{
 				EventType: EventTypeValidatorStatusUpdate,
 				TxHash:    vlog.TxHash.Hex(),
 			}
-			type ValidatorInfo struct {
-				Address  string
-				IsActive bool
+			l1Events = append(l1Events, l1EventInfo)
+
+			err = m.processValidatorUpdate(event, pendingChanges)
+			if err != nil {
+				return err
 			}
-			// get data from db
-			if pendingNewSysConfigMap[types.Validators] != nil {
-				configInfo := pendingNewSysConfigMap[types.Validators]
-				var validators map[string]*ValidatorInfo
-				err = json.Unmarshal([]byte(configInfo.Value), &validators)
-				if err != nil {
-					return err
-				}
-				if validators[event.ValidatorAddress.Hex()] == nil {
-					validators[event.ValidatorAddress.Hex()] = &ValidatorInfo{
-						Address:  event.ValidatorAddress.Hex(),
-						IsActive: event.IsActive,
-					}
-				} else {
-					validators[event.ValidatorAddress.Hex()].IsActive = event.IsActive
-				}
-				validatorBytes, err := json.Marshal(validators)
-				if err != nil {
-					return err
-				}
-				pendingNewSysConfigMap[types.Validators].Value = string(validatorBytes)
-			} else {
-				configInfo, err := m.SysConfigModel.GetSysConfigByName(types.Validators)
-				if err != nil {
-					if err != types.DbErrNotFound {
-						return fmt.Errorf("unable to get sys config by name: %v", err)
-					} else {
-						validators := make(map[string]*ValidatorInfo)
-						validators[event.ValidatorAddress.Hex()] = &ValidatorInfo{
-							Address:  event.ValidatorAddress.Hex(),
-							IsActive: event.IsActive,
-						}
-						validatorsBytes, err := json.Marshal(validators)
-						if err != nil {
-							return fmt.Errorf("unable to marshal validators: %v", err)
-						}
-						pendingNewSysConfigMap[types.Validators] = &sysconfig.SysConfig{
-							Name:      types.Validators,
-							Value:     string(validatorsBytes),
-							ValueType: "map[string]*ValidatorInfo",
-							Comment:   "validator info",
-						}
-					}
-				} else {
-					var validators map[string]*ValidatorInfo
-					err = json.Unmarshal([]byte(configInfo.Value), &validators)
-					if err != nil {
-						return err
-					}
-					if validators[event.ValidatorAddress.Hex()] == nil {
-						validators[event.ValidatorAddress.Hex()] = &ValidatorInfo{
-							Address:  event.ValidatorAddress.Hex(),
-							IsActive: event.IsActive,
-						}
-					} else {
-						validators[event.ValidatorAddress.Hex()].IsActive = event.IsActive
-					}
-					// reset into map
-					validatorBytes, err := json.Marshal(validators)
-					if err != nil {
-						return err
-					}
-					if pendingUpdateSysConfigMap[types.Validators] == nil {
-						pendingUpdateSysConfigMap[types.Validators] = configInfo
-					}
-					pendingUpdateSysConfigMap[types.Validators].Value = string(validatorBytes)
-				}
-			}
-			l1EventInfos = append(l1EventInfos, l1EventInfo)
 		case governanceLogAssetPausedUpdateSigHash.Hex():
 			// parse event info
 			var event zkbnb.GovernanceAssetPausedUpdate
@@ -251,34 +208,21 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 				return fmt.Errorf("unpack GovernanceAssetPausedUpdate failed, err: %v", err)
 			}
 			// set up database info
-			l1EventInfo := &L1EventInfo{
+			l1EventInfo := &L1Event{
 				EventType: EventTypeAssetPausedUpdate,
 				TxHash:    vlog.TxHash.Hex(),
 			}
-			var assetInfo *asset.Asset
-			if l2AssetInfoMap[event.Token.Hex()] != nil {
-				assetInfo = l2AssetInfoMap[event.Token.Hex()]
-			} else {
-				assetInfo, err = m.L2AssetModel.GetAssetByAddress(event.Token.Hex())
-				if err != nil {
-					return fmt.Errorf("unable to get l2 asset by address, err: %v", err)
-				}
-				pendingUpdateL2AssetMap[event.Token.Hex()] = assetInfo
+			l1Events = append(l1Events, l1EventInfo)
+
+			err = m.processAssetPausedUpdate(event, pendingChanges)
+			if err != nil {
+				return err
 			}
-			var status uint32
-			if event.Paused {
-				status = asset.StatusInactive
-			} else {
-				status = asset.StatusActive
-			}
-			assetInfo.Status = status
-			// set into array
-			l1EventInfos = append(l1EventInfos, l1EventInfo)
 		default:
 		}
 	}
 	// serialize into block info
-	eventInfosBytes, err := json.Marshal(l1EventInfos)
+	eventInfosBytes, err := json.Marshal(l1Events)
 	if err != nil {
 		return err
 	}
@@ -287,23 +231,127 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 		BlockInfo:     string(eventInfosBytes),
 		Type:          l1syncedblock.TypeGovernance,
 	}
+	return m.storeChanges(syncedBlock, pendingChanges)
+}
+
+func (m *Monitor) processValidatorUpdate(event zkbnb.GovernanceValidatorStatusUpdate, pendingUpdates *GovernancePendingChanges) error {
+	type ValidatorInfo struct {
+		Address  string
+		IsActive bool
+	}
+	// get data from db
+	if pendingUpdates.pendingNewSysConfigMap[types.Validators] != nil {
+		configInfo := pendingUpdates.pendingNewSysConfigMap[types.Validators]
+		var validators map[string]*ValidatorInfo
+		err := json.Unmarshal([]byte(configInfo.Value), &validators)
+		if err != nil {
+			return err
+		}
+		if validators[event.ValidatorAddress.Hex()] == nil {
+			validators[event.ValidatorAddress.Hex()] = &ValidatorInfo{
+				Address:  event.ValidatorAddress.Hex(),
+				IsActive: event.IsActive,
+			}
+		} else {
+			validators[event.ValidatorAddress.Hex()].IsActive = event.IsActive
+		}
+		validatorBytes, err := json.Marshal(validators)
+		if err != nil {
+			return err
+		}
+		pendingUpdates.pendingNewSysConfigMap[types.Validators].Value = string(validatorBytes)
+	} else {
+		configInfo, err := m.SysConfigModel.GetSysConfigByName(types.Validators)
+		if err != nil {
+			if err != types.DbErrNotFound {
+				return fmt.Errorf("unable to get sys config by name: %v", err)
+			}
+
+			validators := make(map[string]*ValidatorInfo)
+			validators[event.ValidatorAddress.Hex()] = &ValidatorInfo{
+				Address:  event.ValidatorAddress.Hex(),
+				IsActive: event.IsActive,
+			}
+			validatorsBytes, err := json.Marshal(validators)
+			if err != nil {
+				return fmt.Errorf("unable to marshal validators: %v", err)
+			}
+			pendingUpdates.pendingNewSysConfigMap[types.Validators] = &sysconfig.SysConfig{
+				Name:      types.Validators,
+				Value:     string(validatorsBytes),
+				ValueType: "map[string]*ValidatorInfo",
+				Comment:   "validator info",
+			}
+		} else {
+			var validators map[string]*ValidatorInfo
+			err = json.Unmarshal([]byte(configInfo.Value), &validators)
+			if err != nil {
+				return err
+			}
+			if validators[event.ValidatorAddress.Hex()] == nil {
+				validators[event.ValidatorAddress.Hex()] = &ValidatorInfo{
+					Address:  event.ValidatorAddress.Hex(),
+					IsActive: event.IsActive,
+				}
+			} else {
+				validators[event.ValidatorAddress.Hex()].IsActive = event.IsActive
+			}
+			// reset into map
+			validatorBytes, err := json.Marshal(validators)
+			if err != nil {
+				return err
+			}
+			if pendingUpdates.pendingUpdateSysConfigMap[types.Validators] == nil {
+				pendingUpdates.pendingUpdateSysConfigMap[types.Validators] = configInfo
+			}
+			pendingUpdates.pendingUpdateSysConfigMap[types.Validators].Value = string(validatorBytes)
+		}
+	}
+	return nil
+}
+
+func (m *Monitor) processAssetPausedUpdate(event zkbnb.GovernanceAssetPausedUpdate, pendingUpdates *GovernancePendingChanges) error {
+	var assetInfo *asset.Asset
+	if pendingUpdates.l2AssetMap[event.Token.Hex()] != nil {
+		assetInfo = pendingUpdates.l2AssetMap[event.Token.Hex()]
+	} else {
+		assetInfo, err := m.L2AssetModel.GetAssetByAddress(event.Token.Hex())
+		if err != nil {
+			return fmt.Errorf("unable to get l2 asset by address, err: %v", err)
+		}
+		pendingUpdates.pendingUpdateL2AssetMap[event.Token.Hex()] = assetInfo
+	}
+	var status uint32
+	if event.Paused {
+		status = asset.StatusInactive
+	} else {
+		status = asset.StatusActive
+	}
+	assetInfo.Status = status
+	return nil
+}
+
+func (m *Monitor) storeChanges(
+	syncedBlock *l1syncedblock.L1SyncedBlock,
+	pendingChanges *GovernancePendingChanges,
+) (err error) {
 	var (
 		pendingNewAssets        []*asset.Asset
 		pendingUpdateAssets     []*asset.Asset
 		pendingNewSysConfigs    []*sysconfig.SysConfig
 		pendingUpdateSysConfigs []*sysconfig.SysConfig
 	)
-	for _, l2AssetInfo := range l2AssetInfoMap {
-		pendingNewAssets = append(pendingNewAssets, l2AssetInfo)
+	for _, l2Asset := range pendingChanges.l2AssetMap {
+		pendingNewAssets = append(pendingNewAssets, l2Asset)
 	}
-	for _, pendingUpdateL2AssetInfo := range pendingUpdateL2AssetMap {
+	for _, pendingUpdateL2AssetInfo := range pendingChanges.pendingUpdateL2AssetMap {
 		pendingUpdateAssets = append(pendingUpdateAssets, pendingUpdateL2AssetInfo)
 	}
-	for _, pendingNewSysconfigInfo := range pendingNewSysConfigMap {
-		pendingNewSysConfigs = append(pendingNewSysConfigs, pendingNewSysconfigInfo)
+	for _, pendingNewSysConfigInfo := range pendingChanges.pendingNewSysConfigMap {
+		pendingNewSysConfigs = append(pendingNewSysConfigs, pendingNewSysConfigInfo)
 	}
-	for _, pendingUpdateSysconfigInfo := range pendingUpdateSysConfigMap {
-		pendingUpdateSysConfigs = append(pendingUpdateSysConfigs, pendingUpdateSysconfigInfo)
+	for _, pendingUpdateSysConfigInfo := range pendingChanges.pendingUpdateSysConfigMap {
+		pendingUpdateSysConfigs = append(pendingUpdateSysConfigs, pendingUpdateSysConfigInfo)
 	}
 	if len(pendingNewAssets) > 0 || len(pendingUpdateAssets) > 0 {
 		logx.Infof("l1 block info height: %v, l2 asset info size: %v, pending update l2 asset info size: %v",
@@ -334,14 +382,14 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 				return err
 			}
 		}
-		//create sysconfigs
+		//create sys configs
 		if len(pendingNewSysConfigs) > 0 {
 			err = m.SysConfigModel.CreateSysConfigsInTransact(tx, pendingNewSysConfigs)
 			if err != nil {
 				return err
 			}
 		}
-		//update sysconfigs
+		//update sys configs
 		if len(pendingUpdateSysConfigs) > 0 {
 			err = m.SysConfigModel.UpdateSysConfigsInTransact(tx, pendingUpdateSysConfigs)
 		}

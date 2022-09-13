@@ -22,8 +22,9 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/bnb-chain/zkbnb/types"
 	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 func ReadUint8(buf []byte, offset int) (newOffset int, res uint8) {

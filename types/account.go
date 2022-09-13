@@ -46,15 +46,6 @@ func (asset *AccountAsset) DeepCopy() *AccountAsset {
 	}
 }
 
-func ConstructAccountAsset(assetId int64, balance *big.Int, lpAmount *big.Int, offerCanceledOrFinalized *big.Int) *AccountAsset {
-	return &AccountAsset{
-		assetId,
-		balance,
-		lpAmount,
-		offerCanceledOrFinalized,
-	}
-}
-
 func ParseAccountAsset(balance string) (asset *AccountAsset, err error) {
 	err = json.Unmarshal([]byte(balance), &asset)
 	if err != nil {

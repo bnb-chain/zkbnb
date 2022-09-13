@@ -1,8 +1,10 @@
 package executor
 
 import (
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
+	"github.com/ethereum/go-ethereum/common"
+
 	"context"
-	"fmt"
 	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/block"
 	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
@@ -46,6 +48,19 @@ func NewBaseExecutor(bc IBlockchain, tx *tx.Tx, txInfo legendTxTypes.TxInfo) Bas
 }
 
 func (e *BaseExecutor) Prepare(ctx context.Context) error {
+	// Assign tx related fields for layer2 transaction from the API.
+	from := e.iTxInfo.GetFromAccountIndex()
+	if from != types.NilAccountIndex && e.tx.TxHash == types.EmptyTxHash {
+		// Compute tx hash for layer2 transactions.
+		hash, err := e.iTxInfo.Hash(mimc.NewMiMC())
+		if err != nil {
+			return err
+		}
+		e.tx.TxHash = common.Bytes2Hex(hash)
+		e.tx.AccountIndex = e.iTxInfo.GetFromAccountIndex()
+		e.tx.Nonce = e.iTxInfo.GetNonce()
+		e.tx.ExpiredAt = e.iTxInfo.GetExpiredAt()
+	}
 	// Mark the tree states that would be affected in this executor.
 	e.witnessKeys = e.iTxInfo.WitnessKeys(ctx)
 
@@ -85,6 +100,12 @@ func (e *BaseExecutor) VerifyInputs() error {
 			return err
 		}
 
+		gasAccountIndex, gasFeeAssetId, _ := txInfo.GetGas()
+		err = e.bc.VerifyGas(gasAccountIndex, gasFeeAssetId)
+		if err != nil {
+			return err
+		}
+
 		err = txInfo.VerifySignature(e.bc.StateDB().AccountMap[from].PublicKey)
 		if err != nil {
 			return err
@@ -104,9 +125,9 @@ func (e *BaseExecutor) GeneratePubData() error {
 }
 
 func (e *BaseExecutor) GetExecutedTx() (*tx.Tx, error) {
-	e.tx.BlockHeight = e.bc.CurrentBlock().BlockHeight
-	e.tx.TxStatus = tx.StatusSuccess
 	e.tx.TxIndex = int64(len(e.bc.StateDB().Txs))
+	e.tx.BlockHeight = e.bc.CurrentBlock().BlockHeight
+	e.tx.TxStatus = tx.StatusExecuted
 	return e.tx, nil
 }
 
@@ -137,7 +158,7 @@ func (e *BaseExecutor) GenerateWitness() (witness *prove.TxWitness, err error) {
 	witness.NftRootBefore = e.bc.StateDB().NftTree.Root()
 
 	// Assign liquidity related
-	witness.LiquidityBefore = std.EmptyLiquidity(legendTxTypes.LastNftIndex)
+	witness.LiquidityBefore = std.EmptyLiquidity(legendTxTypes.LastPairIndex)
 	if keys.PairIndex != legendTxTypes.LastPairIndex {
 		if pair, exist := e.bc.StateDB().LiquidityMap[keys.PairIndex]; exist {
 			witness.LiquidityBefore = pair.ToStdLiquidity()
@@ -160,9 +181,6 @@ func (e *BaseExecutor) GenerateWitness() (witness *prove.TxWitness, err error) {
 		account := e.bc.StateDB().AccountMap[ak.Index]
 		if account == nil {
 			// register zks
-			if ak.Index != int64(len(e.bc.StateDB().AccountAssetTrees)) {
-				return nil, fmt.Errorf("invalid key")
-			}
 			witness.AccountsInfoBefore[index] = std.EmptyAccount(ak.Index, tree.NilAccountAssetRoot)
 		} else {
 			ac, err := account.ToStdAccount()
@@ -192,12 +210,12 @@ func (e *BaseExecutor) GenerateWitness() (witness *prove.TxWitness, err error) {
 		witness.AccountsInfoBefore[index] = std.EmptyAccount(block.LastAccountIndex, tree.NilAccountAssetRoot)
 	}
 
-	for _, ac := range witness.AccountsInfoBefore {
+	for accountIndex, ac := range witness.AccountsInfoBefore {
 		accountMerkleProofs, err := e.bc.StateDB().AccountTree.GetProof(uint64(ac.AccountIndex))
 		if err != nil {
 			return nil, err
 		}
-		witness.MerkleProofsAccountBefore[ac.AccountIndex], err = prove.SetFixedAccountArray(accountMerkleProofs)
+		witness.MerkleProofsAccountBefore[accountIndex], err = prove.SetFixedAccountArray(accountMerkleProofs)
 		if err != nil {
 			return nil, err
 		}
@@ -211,23 +229,27 @@ func (e *BaseExecutor) GenerateWitness() (witness *prove.TxWitness, err error) {
 			assetTree = (e.bc.StateDB().AccountAssetTrees)[ac.AccountIndex]
 		}
 
-		for idx, asset := range ac.AssetsInfo {
+		for assetIndex, asset := range ac.AssetsInfo {
 			assetMerkleProof, err := assetTree.GetProof(uint64(asset.AssetId))
 			if err != nil {
 				return nil, err
 			}
-			witness.MerkleProofsAccountAssetsBefore[ac.AccountIndex][idx], err = prove.SetFixedAccountAssetArray(assetMerkleProof)
+			witness.MerkleProofsAccountAssetsBefore[accountIndex][assetIndex], err = prove.SetFixedAccountAssetArray(assetMerkleProof)
 		}
 		if err != nil {
 			return nil, err
 		}
 	}
-
 	witness.AccountRootBefore = e.bc.StateDB().AccountTree.Root()
+
 	witness.StateRootBefore = tree.ComputeStateRootHash(witness.AccountRootBefore, witness.LiquidityRootBefore, witness.NftRootBefore)
 	witness.TxType = uint8(e.tx.TxType)
 	witness.Nonce = e.tx.Nonce
 	witness.ExpiredAt = e.tx.ExpiredAt
+	err = prove.FillTxWitness(witness, e.tx)
+	if err != nil {
+		return nil, err
+	}
 	return witness, nil
 }
 

@@ -4,8 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
-	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -13,7 +12,6 @@ import (
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/core/statedb"
-	"github.com/bnb-chain/zkbnb/dao/mempool"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -131,33 +129,9 @@ func (e *WithdrawExecutor) GetExecutedTx() (*tx.Tx, error) {
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
+	e.tx.GasFeeAssetId = e.txInfo.GasFeeAssetId
+	e.tx.GasFee = e.txInfo.GasFeeAssetAmount.String()
+	e.tx.AssetId = e.txInfo.AssetId
+	e.tx.TxAmount = e.txInfo.AssetAmount.String()
 	return e.BaseExecutor.GetExecutedTx()
-}
-
-func (e *WithdrawExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
-	hash, err := e.txInfo.Hash(mimc.NewMiMC())
-	if err != nil {
-		return nil, err
-	}
-	txHash := common.Bytes2Hex(hash)
-
-	mempoolTx := &mempool.MempoolTx{
-		TxHash:        txHash,
-		TxType:        e.tx.TxType,
-		GasFeeAssetId: e.txInfo.GasFeeAssetId,
-		GasFee:        e.txInfo.GasFeeAssetAmount.String(),
-		NftIndex:      types.NilNftIndex,
-		PairIndex:     types.NilPairIndex,
-		AssetId:       e.txInfo.AssetId,
-		TxAmount:      e.txInfo.AssetAmount.String(),
-		Memo:          "",
-		NativeAddress: e.txInfo.ToAddress,
-		AccountIndex:  e.txInfo.FromAccountIndex,
-		Nonce:         e.txInfo.Nonce,
-		ExpiredAt:     e.txInfo.ExpiredAt,
-		L2BlockHeight: types.NilBlockHeight,
-		Status:        mempool.PendingTxStatus,
-		TxInfo:        e.tx.TxInfo,
-	}
-	return mempoolTx, nil
 }

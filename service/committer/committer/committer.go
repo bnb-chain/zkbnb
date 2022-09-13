@@ -8,14 +8,13 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/blockwitness"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/status-im/keycard-go/hexutils"
-	"gorm.io/gorm"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb/core"
 	"github.com/bnb-chain/zkbnb/dao/block"
-	"github.com/bnb-chain/zkbnb/dao/mempool"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 )
 
@@ -38,8 +37,6 @@ type Committer struct {
 
 	bc    *core.BlockChain
 	trace bool
-
-	executedMemPoolTxs []*mempool.MempoolTx
 }
 
 func NewCommitter(config *Config) (*Committer, error) {
@@ -57,9 +54,8 @@ func NewCommitter(config *Config) (*Committer, error) {
 		maxTxsPerBlock:     config.BlockConfig.OptionalBlockSizes[len(config.BlockConfig.OptionalBlockSizes)-1],
 		optionalBlockSizes: config.BlockConfig.OptionalBlockSizes,
 
-		bc:                 bc,
-		trace:              true, // TODO
-		executedMemPoolTxs: make([]*mempool.MempoolTx, 0),
+		bc:    bc,
+		trace: true, // TODO
 	}
 	return committer, nil
 }
@@ -78,10 +74,10 @@ func (c *Committer) Run() {
 			}
 		}
 
-		// Read pending transactions from mempool_tx table.
-		pendingTxs, err := c.bc.MempoolModel.GetMempoolTxsByStatus(mempool.PendingTxStatus)
+		// Read pending transactions from tx pool.
+		pendingTxs, err := c.bc.TxPoolModel.GetTxsByStatus(tx.StatusPending)
 		if err != nil {
-			logx.Error("get pending transactions from mempool failed:", err)
+			logx.Error("get pending transactions from tx pool failed:", err)
 			return
 		}
 		for len(pendingTxs) == 0 {
@@ -90,37 +86,36 @@ func (c *Committer) Run() {
 			}
 
 			time.Sleep(100 * time.Millisecond)
-			pendingTxs, err = c.bc.MempoolModel.GetMempoolTxsByStatus(mempool.PendingTxStatus)
+			pendingTxs, err = c.bc.TxPoolModel.GetTxsByStatus(tx.StatusPending)
 			if err != nil {
-				logx.Error("get pending transactions from mempool failed:", err)
+				logx.Error("get pending transactions from tx pool failed:", err)
 				return
 			}
 		}
 
-		pendingUpdateMempoolTxs := make([]*mempool.MempoolTx, 0, len(pendingTxs))
-		pendingDeleteMempoolTxs := make([]*mempool.MempoolTx, 0, len(pendingTxs))
-		for _, mempoolTx := range pendingTxs {
+		pendingUpdatePoolTxs := make([]*tx.Tx, 0, len(pendingTxs))
+		pendingDeletePoolTxs := make([]*tx.Tx, 0, len(pendingTxs))
+		for _, poolTx := range pendingTxs {
 			if c.shouldCommit(curBlock) {
 				break
 			}
 
-			tx := convertMempoolTxToTx(mempoolTx)
-			err = c.bc.ApplyTransaction(tx)
+			err = c.bc.ApplyTransaction(poolTx)
 			if err != nil {
-				logx.Errorf("apply mempool tx ID: %d failed, err %v ", mempoolTx.ID, err)
-				mempoolTx.Status = mempool.FailTxStatus
-				pendingDeleteMempoolTxs = append(pendingDeleteMempoolTxs, mempoolTx)
+				logx.Errorf("apply pool tx ID: %d failed, err %v ", poolTx.ID, err)
+				poolTx.TxStatus = tx.StatusFailed
+				pendingDeletePoolTxs = append(pendingDeletePoolTxs, poolTx)
 				continue
 			}
-			mempoolTx.Status = mempool.ExecutedTxStatus
-			pendingUpdateMempoolTxs = append(pendingUpdateMempoolTxs, mempoolTx)
 
 			// Write the proposed block into database when the first transaction executed.
 			if len(c.bc.Statedb.Txs) == 1 {
-				err = c.createNewBlock(curBlock)
+				err = c.createNewBlock(curBlock, poolTx)
 				if err != nil {
 					panic("create new block failed" + err.Error())
 				}
+			} else {
+				pendingUpdatePoolTxs = append(pendingUpdatePoolTxs, poolTx)
 			}
 		}
 
@@ -129,11 +124,16 @@ func (c *Committer) Run() {
 			panic("sync redis cache failed: " + err.Error())
 		}
 
-		err = c.bc.MempoolModel.UpdateMempoolTxs(pendingUpdateMempoolTxs, pendingDeleteMempoolTxs)
+		err = c.bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
+			err := c.bc.TxPoolModel.UpdateTxsInTransact(dbTx, pendingUpdatePoolTxs)
+			if err != nil {
+				return err
+			}
+			return c.bc.TxPoolModel.DeleteTxsInTransact(dbTx, pendingDeletePoolTxs)
+		})
 		if err != nil {
-			panic("update mempool failed: " + err.Error())
+			panic("update tx pool failed: " + err.Error())
 		}
-		c.executedMemPoolTxs = append(c.executedMemPoolTxs, pendingUpdateMempoolTxs...)
 
 		if c.shouldCommit(curBlock) {
 			curBlock, err = c.commitNewBlock(curBlock)
@@ -155,7 +155,7 @@ func (c *Committer) restoreExecutedTxs() (*block.Block, error) {
 		return nil, err
 	}
 
-	executedTxs, err := c.bc.MempoolModel.GetMempoolTxsByStatus(mempool.ExecutedTxStatus)
+	executedTxs, err := c.bc.TxPoolModel.GetTxsByStatus(tx.StatusExecuted)
 	if err != nil {
 		return nil, err
 	}
@@ -167,20 +167,25 @@ func (c *Committer) restoreExecutedTxs() (*block.Block, error) {
 		return curBlock, nil
 	}
 
-	for _, mempoolTx := range executedTxs {
-		tx := convertMempoolTxToTx(mempoolTx)
-		err = c.bc.ApplyTransaction(tx)
+	for _, executedTx := range executedTxs {
+		err = c.bc.ApplyTransaction(executedTx)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	c.executedMemPoolTxs = append(c.executedMemPoolTxs, executedTxs...)
 	return curBlock, nil
 }
 
-func (c *Committer) createNewBlock(curBlock *block.Block) error {
-	return c.bc.BlockModel.CreateNewBlock(curBlock)
+func (c *Committer) createNewBlock(curBlock *block.Block, poolTx *tx.Tx) error {
+	return c.bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
+		err := c.bc.TxPoolModel.UpdateTxsInTransact(dbTx, []*tx.Tx{poolTx})
+		if err != nil {
+			return err
+		}
+
+		return c.bc.BlockModel.CreateBlockInTransact(dbTx, curBlock)
+	})
 }
 
 func (c *Committer) shouldCommit(curBlock *block.Block) bool {
@@ -194,10 +199,6 @@ func (c *Committer) shouldCommit(curBlock *block.Block) bool {
 }
 
 func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) {
-	for _, tx := range c.executedMemPoolTxs {
-		tx.Status = mempool.SuccessTxStatus
-	}
-
 	blockSize := c.computeCurrentBlockSize()
 	blockStates, err := c.bc.CommitNewBlock(blockSize, curBlock.CreatedAt.UnixMilli())
 	if err != nil {
@@ -206,16 +207,6 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 
 	// update db
 	err = c.bc.DB().DB.Transaction(func(tx *gorm.DB) error {
-		// update mempool
-		err := c.bc.DB().MempoolModel.UpdateMempoolTxsInTransact(tx, c.executedMemPoolTxs)
-		if err != nil {
-			return err
-		}
-		// update block
-		err = c.bc.DB().BlockModel.UpdateBlockInTransact(tx, blockStates.Block)
-		if err != nil {
-			return err
-		}
 		// create block for commit
 		if blockStates.CompressedBlock != nil {
 			err = c.bc.DB().CompressedBlockModel.CreateCompressedBlockInTransact(tx, blockStates.CompressedBlock)
@@ -312,13 +303,20 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 			}
 			c.bc.DB().BlockWitnessModel.CreateBlockWitness(blockWitness)
 		}
-		return nil
+		// delete txs from tx pool
+		err := c.bc.DB().TxPoolModel.DeleteTxsInTransact(tx, blockStates.Block.Txs)
+		if err != nil {
+			return err
+		}
+		// update block
+		blockStates.Block.ClearTxsModel()
+		return c.bc.DB().BlockModel.UpdateBlockInTransact(tx, blockStates.Block)
 	})
+
 	if err != nil {
 		return nil, err
 	}
 
-	c.executedMemPoolTxs = make([]*mempool.MempoolTx, 0)
 	return blockStates.Block, nil
 }
 
@@ -331,26 +329,4 @@ func (c *Committer) computeCurrentBlockSize() int {
 		}
 	}
 	return blockSize
-}
-
-func convertMempoolTxToTx(mempoolTx *mempool.MempoolTx) *tx.Tx {
-	tx := &tx.Tx{
-		TxHash:        mempoolTx.TxHash,
-		TxType:        mempoolTx.TxType,
-		GasFee:        mempoolTx.GasFee,
-		GasFeeAssetId: mempoolTx.GasFeeAssetId,
-		TxStatus:      tx.StatusPending,
-		NftIndex:      mempoolTx.NftIndex,
-		PairIndex:     mempoolTx.PairIndex,
-		AssetId:       mempoolTx.AssetId,
-		TxAmount:      mempoolTx.TxAmount,
-		NativeAddress: mempoolTx.NativeAddress,
-		TxInfo:        mempoolTx.TxInfo,
-		ExtraInfo:     mempoolTx.ExtraInfo,
-		Memo:          mempoolTx.Memo,
-		AccountIndex:  mempoolTx.AccountIndex,
-		Nonce:         mempoolTx.Nonce,
-		ExpiredAt:     mempoolTx.ExpiredAt,
-	}
-	return tx
 }

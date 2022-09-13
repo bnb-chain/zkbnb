@@ -50,13 +50,13 @@ func (f *fetcher) GetCurrencyPrice(_ context.Context, symbol string) (float64, e
 func (f *fetcher) getLatestQuotes(symbol string) (map[string]QuoteLatest, error) {
 	client := &http.Client{}
 	url := fmt.Sprintf("%s%s", f.cmcUrl, symbol)
-	reqest, err := http.NewRequest("GET", url, nil)
+	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, types.HttpErrFailToRequest
 	}
-	reqest.Header.Add("X-CMC_PRO_API_KEY", f.cmcToken)
-	reqest.Header.Add("Accept", "application/json")
-	resp, err := client.Do(reqest)
+	request.Header.Add("X-CMC_PRO_API_KEY", f.cmcToken)
+	request.Header.Add("Accept", "application/json")
+	resp, err := client.Do(request)
 	if err != nil {
 		return nil, types.HttpErrClientDo
 	}

@@ -12,7 +12,6 @@ import (
 	"github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/liquidity"
-	"github.com/bnb-chain/zkbnb/dao/mempool"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -38,8 +37,7 @@ func NewCreatePairExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 
 func (e *CreatePairExecutor) Prepare() error {
 	// Mark the tree states that would be affected in this executor.
-	e.BaseExecutor.Prepare(context.Background())
-	return nil
+	return e.BaseExecutor.Prepare(context.Background())
 }
 
 func (e *CreatePairExecutor) VerifyInputs() error {
@@ -121,8 +119,4 @@ func (e *CreatePairExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.TxInfo = string(txInfoBytes)
 	e.tx.PairIndex = e.txInfo.PairIndex
 	return e.BaseExecutor.GetExecutedTx()
-}
-
-func (e *CreatePairExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
-	return nil, nil
 }
