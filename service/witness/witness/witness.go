@@ -296,8 +296,15 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 
 func (w *Witness) Shutdown() {
 	sqlDB, err := w.db.DB()
-	if err != nil {
-		_ = sqlDB.Close()
+	if err == nil && sqlDB != nil {
+		err = sqlDB.Close()
 	}
-	_ = w.treeCtx.TreeDB.Close()
+	if err != nil {
+		logx.Errorf("close db error: %s", err.Error())
+	}
+
+	err = w.treeCtx.TreeDB.Close()
+	if err != nil {
+		logx.Errorf("close treedb error: %s", err.Error())
+	}
 }

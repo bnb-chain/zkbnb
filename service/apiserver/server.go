@@ -21,16 +21,16 @@ func Run(configFile string) error {
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 
-	server := rest.MustNewServer(c.RestConf, rest.WithCors())
 	ctx := svc.NewServiceContext(c)
-	handler.RegisterHandlers(server, ctx)
-
 	proc.SetTimeToForceQuit(GracefulShutdownTimeout)
 	proc.AddShutdownListener(func() {
-		logx.Info("start to shutdown apiserver......")
-		server.Stop()
-		ctx.Shutdown()
+		if ctx != nil {
+			ctx.Shutdown()
+		}
 	})
+
+	server := rest.MustNewServer(c.RestConf, rest.WithCors())
+	handler.RegisterHandlers(server, ctx)
 
 	logx.Infof("apiserver is starting at %s:%d...\n", c.Host, c.Port)
 	server.Start()

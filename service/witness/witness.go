@@ -44,9 +44,9 @@ func Run(configFile string) error {
 	proc.SetTimeToForceQuit(GracefulShutdownTimeout)
 	proc.AddShutdownListener(func() {
 		logx.Info("start to shutdown witness......")
-		_ = logx.Close()
 		<-cronJob.Stop().Done()
 		w.Shutdown()
+		_ = logx.Close()
 		exit <- struct{}{}
 	})
 

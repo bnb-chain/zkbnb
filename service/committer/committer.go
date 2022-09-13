@@ -10,7 +10,7 @@ import (
 	"github.com/bnb-chain/zkbnb/service/committer/committer"
 )
 
-const GracefulShutdownTimeout = 2 * time.Second
+const GracefulShutdownTimeout = 5 * time.Second
 
 func Run(configFile string) error {
 	var c committer.Config

@@ -364,7 +364,10 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 
 func (s *Sender) Shutdown() {
 	sqlDB, err := s.db.DB()
+	if err == nil && sqlDB != nil {
+		err = sqlDB.Close()
+	}
 	if err != nil {
-		_ = sqlDB.Close()
+		logx.Errorf("close db error: %s", err.Error())
 	}
 }

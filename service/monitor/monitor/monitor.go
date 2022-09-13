@@ -105,7 +105,10 @@ func NewMonitor(c config.Config) *Monitor {
 
 func (m *Monitor) Shutdown() {
 	sqlDB, err := m.db.DB()
+	if err == nil && sqlDB != nil {
+		err = sqlDB.Close()
+	}
 	if err != nil {
-		_ = sqlDB.Close()
+		logx.Errorf("close db error: %s", err.Error())
 	}
 }

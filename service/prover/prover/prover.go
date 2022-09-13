@@ -196,7 +196,10 @@ func (p *Prover) ProveBlock() error {
 
 func (p *Prover) Shutdown() {
 	sqlDB, err := p.DB.DB()
+	if err == nil && sqlDB != nil {
+		err = sqlDB.Close()
+	}
 	if err != nil {
-		_ = sqlDB.Close()
+		logx.Errorf("close db error: %s", err.Error())
 	}
 }

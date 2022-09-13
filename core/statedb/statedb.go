@@ -661,10 +661,21 @@ func (s *StateDB) GetGasAssetIds() ([]uint32, error) {
 }
 
 func (s *StateDB) Close() {
-	_ = s.redisCache.Close()
 	sqlDB, err := s.chainDb.DB.DB()
-	if err != nil {
-		_ = sqlDB.Close()
+	if err == nil && sqlDB != nil {
+		err = sqlDB.Close()
 	}
-	_ = s.TreeCtx.TreeDB.Close()
+	if err != nil {
+		logx.Errorf("close db error: %s", err.Error())
+	}
+
+	err = s.redisCache.Close()
+	if err != nil {
+		logx.Errorf("close redis error: %s", err.Error())
+	}
+
+	err = s.TreeCtx.TreeDB.Close()
+	if err != nil {
+		logx.Errorf("close treedb error: %s", err.Error())
+	}
 }
