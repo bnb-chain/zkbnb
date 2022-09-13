@@ -9,6 +9,7 @@ TreeDB:
 LogConf:
   ServiceName: witness
   Mode: console
+  Encoding: plain
   Path: ./log/witness
   StackCooldownMillis: 500
-  Level: error
+  Level: info
