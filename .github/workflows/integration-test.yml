@@ -47,7 +47,6 @@ jobs:
           echo "Waiting 3m for the initialization tx to be verified"
           sleep 3m # Waiting for the initialization tx to be verified
           echo "end deploy"
-
       - name: run integration test
         run: |
           export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
