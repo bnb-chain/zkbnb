@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"math/big"
 
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -17,7 +15,6 @@ import (
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/liquidity"
-	"github.com/bnb-chain/zkbnb/dao/mempool"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -89,7 +86,22 @@ func (e *RemoveLiquidityExecutor) VerifyInputs() error {
 		return errors.New("invalid pool liquidity")
 	}
 
-	return nil
+	finalPoolA := ffmath.Add(liquidityInfo.AssetA, ffmath.Neg(txInfo.AssetAAmountDelta))
+	finalPoolB := ffmath.Add(liquidityInfo.AssetB, ffmath.Neg(txInfo.AssetBAmountDelta))
+	poolDeltaForToAccount := &types.LiquidityInfo{
+		PairIndex:            txInfo.PairIndex,
+		AssetAId:             txInfo.AssetAId,
+		AssetA:               ffmath.Neg(txInfo.AssetAAmountDelta),
+		AssetBId:             txInfo.AssetBId,
+		AssetB:               ffmath.Neg(txInfo.AssetBAmountDelta),
+		LpAmount:             ffmath.Neg(txInfo.LpAmount),
+		KLast:                ffmath.Multiply(finalPoolA, finalPoolB),
+		FeeRate:              liquidityInfo.FeeRate,
+		TreasuryAccountIndex: liquidityInfo.TreasuryAccountIndex,
+		TreasuryRate:         liquidityInfo.TreasuryRate,
+	}
+	e.newPoolInfo, err = ComputeNewBalance(liquidityInfo, poolDeltaForToAccount)
+	return err
 }
 
 func (e *RemoveLiquidityExecutor) fillTxInfo() error {
@@ -252,32 +264,24 @@ func (e *RemoveLiquidityExecutor) GetExecutedTx() (*tx.Tx, error) {
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
+	e.tx.GasFeeAssetId = e.txInfo.GasFeeAssetId
+	e.tx.GasFee = e.txInfo.GasFeeAssetAmount.String()
+	e.tx.PairIndex = e.txInfo.PairIndex
+	e.tx.TxAmount = e.txInfo.LpAmount.String()
 	return e.BaseExecutor.GetExecutedTx()
 }
 
-func (e *RemoveLiquidityExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
-	hash, err := e.txInfo.Hash(mimc.NewMiMC())
-	if err != nil {
-		return nil, err
+func ComputeNewBalance(liquidityInfo, deltaLiquidity *types.LiquidityInfo) (*types.LiquidityInfo, error) {
+	liquidityInfo.AssetAId = deltaLiquidity.AssetAId
+	liquidityInfo.AssetBId = deltaLiquidity.AssetBId
+	liquidityInfo.AssetA = ffmath.Add(liquidityInfo.AssetA, deltaLiquidity.AssetA)
+	liquidityInfo.AssetB = ffmath.Add(liquidityInfo.AssetB, deltaLiquidity.AssetB)
+	liquidityInfo.LpAmount = ffmath.Add(liquidityInfo.LpAmount, deltaLiquidity.LpAmount)
+	if deltaLiquidity.KLast.Cmp(types.ZeroBigInt) != 0 {
+		liquidityInfo.KLast = deltaLiquidity.KLast
 	}
-	txHash := common.Bytes2Hex(hash)
-
-	mempoolTx := &mempool.MempoolTx{
-		TxHash:        txHash,
-		TxType:        e.tx.TxType,
-		GasFeeAssetId: e.txInfo.GasFeeAssetId,
-		GasFee:        e.txInfo.GasFeeAssetAmount.String(),
-		NftIndex:      types.NilNftIndex,
-		PairIndex:     e.txInfo.PairIndex,
-		AssetId:       types.NilAssetId,
-		TxAmount:      e.txInfo.LpAmount.String(),
-		Memo:          "",
-		AccountIndex:  e.txInfo.FromAccountIndex,
-		Nonce:         e.txInfo.Nonce,
-		ExpiredAt:     e.txInfo.ExpiredAt,
-		L2BlockHeight: types.NilBlockHeight,
-		Status:        mempool.PendingTxStatus,
-		TxInfo:        e.tx.TxInfo,
-	}
-	return mempoolTx, nil
+	liquidityInfo.FeeRate = deltaLiquidity.FeeRate
+	liquidityInfo.TreasuryAccountIndex = deltaLiquidity.TreasuryAccountIndex
+	liquidityInfo.TreasuryRate = deltaLiquidity.TreasuryRate
+	return liquidityInfo, nil
 }

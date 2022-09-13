@@ -25,23 +25,23 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func constructTransferTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
+func fillTransferTxWitness(cryptoTx *TxWitness, oTx *Tx) error {
 	txInfo, err := types.ParseTransferTxInfo(oTx.TxInfo)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	cryptoTxInfo, err := toCryptoTransferTx(txInfo)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	cryptoTx.TransferTxInfo = cryptoTxInfo
 	cryptoTx.ExpiredAt = oTx.ExpiredAt
 	cryptoTx.Signature = new(eddsa.Signature)
 	_, err = cryptoTx.Signature.SetBytes(txInfo.Sig)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return cryptoTx, nil
+	return nil
 }
 
 func toCryptoTransferTx(txInfo *types.TransferTxInfo) (info *CryptoTransferTx, err error) {

@@ -36,6 +36,7 @@ type (
 			rowsAffected int64, nftAssets []*L2NftHistory, err error,
 		)
 		CreateNftHistoriesInTransact(tx *gorm.DB, histories []*L2NftHistory) error
+		GetNft(nftIndex, height int64) (nftAsset *L2NftHistory, err error)
 	}
 	defaultL2NftHistoryModel struct {
 		table string
@@ -118,4 +119,15 @@ func (m *defaultL2NftHistoryModel) CreateNftHistoriesInTransact(tx *gorm.DB, his
 		return types.DbErrFailToCreateNftHistory
 	}
 	return nil
+}
+
+func (m *defaultL2NftHistoryModel) GetNft(nftIndex, height int64) (*L2NftHistory, error) {
+	var nftHistory L2NftHistory
+	dbTx := m.DB.Table(m.table).Where("nft_index = ? AND l2_block_height <= ?", nftIndex, height).Order("l2_block_height desc").Limit(1).Find(&nftHistory)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return &nftHistory, nil
 }

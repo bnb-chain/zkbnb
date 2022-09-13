@@ -117,8 +117,8 @@ github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kB
 github.com/bkaradzic/go-lz4 v1.0.0/go.mod h1:0YdlkowM3VswSROI7qDxhRvJ3sLhlFrRRwjwegp5jy4=
 github.com/bketelsen/crypt v0.0.4/go.mod h1:aI6NrJ0pMGgvZKL1iVgXLnfIFJtfV+bKCoqOes/6LfM=
 github.com/bmizerany/pat v0.0.0-20170815010413-6226ea591a40/go.mod h1:8rLXio+WjiTceGBHIoTvn60HIbs7Hm7bcHjyrSqYB9c=
-github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20220912074205-7343aebac81c h1:vygKPiFfmIlWNvsCxZXArrYNkXJTzXKeCFKMOk2a+QQ=
-github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20220912074205-7343aebac81c/go.mod h1:+JmfeD/50FbqIS8Fo4xgTDOM8nWIvfsfObQMAKv/7BU=
+github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20220914165633-fd23ee359dfb h1:teHVVEYsRESKJ/Pr9RivXq2NPIr/dUke4yyt6KsgR9o=
+github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20220914165633-fd23ee359dfb/go.mod h1:+JmfeD/50FbqIS8Fo4xgTDOM8nWIvfsfObQMAKv/7BU=
 github.com/bnb-chain/zkbnb-eth-rpc v0.0.2-0.20220907130157-2311ce3fe6f6 h1:HtlD4s8u3+wviaNf7dr+I6wkFH4fFiBDAHjW4clr2Rk=
 github.com/bnb-chain/zkbnb-eth-rpc v0.0.2-0.20220907130157-2311ce3fe6f6/go.mod h1:Q+fDAJ1ENwEUOxIAuIrjXtXXJuQIWRh1wZCVRPONb7Q=
 github.com/bnb-chain/zkbnb-smt v0.0.2-0.20220907130044-9c7cccbd19fa h1:aVqkz6Ge3eW7SKmINYMprpxq2VNpKp4vKQ6dEue8uUE=
@@ -702,6 +702,8 @@ github.com/opentracing/opentracing-go v1.0.3-0.20180606204148-bd9c31933947/go.mo
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
 github.com/openzipkin/zipkin-go v0.4.0 h1:CtfRrOVZtbDj8rt1WXjklw0kqqJQwICrCKmlfUuBUUw=
 github.com/openzipkin/zipkin-go v0.4.0/go.mod h1:4c3sLeE8xjNqehmF5RpAFLPLJxXscc0R4l6Zg0P1tTQ=
+github.com/panjf2000/ants/v2 v2.5.0 h1:1rWGWSnxCsQBga+nQbA4/iY6VMeNoOIAM0ZWh9u3q2Q=
+github.com/panjf2000/ants/v2 v2.5.0/go.mod h1:cU93usDlihJZ5CfRGNDYsiBYvoilLvBF5Qp/BT2GNRE=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/patrickmn/go-cache v2.1.0+incompatible h1:HRMgzkcYKYpi3C8ajMPV8OFXaaRUnok+kx1WdO15EQc=
 github.com/patrickmn/go-cache v2.1.0+incompatible/go.mod h1:3Qf8kWWT7OJRJbdiICTKqZju1ZixQ/KpMGzzAfe6+WQ=

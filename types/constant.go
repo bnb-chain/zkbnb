@@ -29,6 +29,7 @@ const (
 	EmptyAccountIndex        = int64(0)
 	EmptyNftContentHash      = "0"
 	EmptyAccountNameHash     = "0"
+	EmptyTxHash              = "0"
 	EmptyL1TokenId           = "0"
 	EmptyL1Address           = "0"
 	EmptyCreatorTreasuryRate = 0
@@ -44,8 +45,6 @@ const (
 	NilCollectionNonce = -1
 	NilExpiredAt       = math.MaxInt64
 	NilAssetAmount     = "0"
-
-	MaxNftIndex = 1099511627775 // 2^40-1
 
 	BNBAssetId  = 0
 	BNBDecimals = "1000000000000000000"

@@ -2,13 +2,13 @@ package info
 
 import (
 	"context"
-	asset2 "github.com/bnb-chain/zkbnb/dao/asset"
 	"math/big"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/bnb-chain/zkbnb/common"
+	asset2 "github.com/bnb-chain/zkbnb/dao/asset"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/types"
 	types2 "github.com/bnb-chain/zkbnb/types"

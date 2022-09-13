@@ -6,7 +6,6 @@ import (
 
 	sdb "github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/block"
-	"github.com/bnb-chain/zkbnb/dao/mempool"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -14,6 +13,7 @@ import (
 type IBlockchain interface {
 	VerifyExpiredAt(expiredAt int64) error
 	VerifyNonce(accountIndex int64, nonce int64) error
+	VerifyGas(gasAccountIndex, gasFeeAssetId int64) error
 	StateDB() *sdb.StateDB
 	DB() *sdb.ChainDB
 	CurrentBlock() *block.Block
@@ -26,7 +26,6 @@ type TxExecutor interface {
 	GeneratePubData() error
 	GetExecutedTx() (*tx.Tx, error)
 	GenerateWitness() (*prove.TxWitness, error)
-	GenerateMempoolTx() (*mempool.MempoolTx, error)
 }
 
 func NewTxExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {

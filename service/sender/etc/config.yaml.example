@@ -20,6 +20,7 @@ ChainConfig:
 LogConf:
   ServiceName: sender
   Mode: console
+  Encoding: plain
   Path: ./log/sender
   StackCooldownMillis: 500
-  Level: error
+  Level: info

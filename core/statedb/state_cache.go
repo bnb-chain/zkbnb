@@ -35,15 +35,16 @@ type StateCache struct {
 	PendingUpdateNftIndexMap       map[int64]int
 
 	// Record the tree states that should be updated.
-	DirtyAccountsAndAssetsMap map[int64]map[int64]bool
-	DirtyLiquidityMap         map[int64]bool
-	DirtyNftMap               map[int64]bool
+	dirtyAccountsAndAssetsMap map[int64]map[int64]bool
+	dirtyLiquidityMap         map[int64]bool
+	dirtyNftMap               map[int64]bool
 }
 
 func NewStateCache(stateRoot string) *StateCache {
 	return &StateCache{
 		StateRoot: stateRoot,
 		Txs:       make([]*tx.Tx, 0),
+		Witnesses: make([]*prove.TxWitness, 0),
 
 		PendingNewAccountIndexMap:      make(map[int64]int, 0),
 		PendingNewLiquidityIndexMap:    make(map[int64]int, 0),
@@ -58,9 +59,9 @@ func NewStateCache(stateRoot string) *StateCache {
 		PendingOnChainOperationsPubData: make([][]byte, 0),
 		PendingOnChainOperationsHash:    common.FromHex(types.EmptyStringKeccak),
 
-		DirtyAccountsAndAssetsMap: make(map[int64]map[int64]bool, 0),
-		DirtyLiquidityMap:         make(map[int64]bool, 0),
-		DirtyNftMap:               make(map[int64]bool, 0),
+		dirtyAccountsAndAssetsMap: make(map[int64]map[int64]bool, 0),
+		dirtyLiquidityMap:         make(map[int64]bool, 0),
+		dirtyNftMap:               make(map[int64]bool, 0),
 	}
 }
 
@@ -74,8 +75,8 @@ func (c *StateCache) MarkAccountAssetsDirty(accountIndex int64, assets []int64) 
 		return
 	}
 
-	if _, ok := c.DirtyAccountsAndAssetsMap[accountIndex]; !ok {
-		c.DirtyAccountsAndAssetsMap[accountIndex] = make(map[int64]bool, 0)
+	if _, ok := c.dirtyAccountsAndAssetsMap[accountIndex]; !ok {
+		c.dirtyAccountsAndAssetsMap[accountIndex] = make(map[int64]bool, 0)
 	}
 
 	for _, assetIndex := range assets {
@@ -83,14 +84,14 @@ func (c *StateCache) MarkAccountAssetsDirty(accountIndex int64, assets []int64) 
 		if assetIndex < 0 {
 			continue
 		}
-		c.DirtyAccountsAndAssetsMap[accountIndex][assetIndex] = true
+		c.dirtyAccountsAndAssetsMap[accountIndex][assetIndex] = true
 	}
 }
 
 func (c *StateCache) MarkLiquidityDirty(pairIndex int64) {
-	c.DirtyLiquidityMap[pairIndex] = true
+	c.dirtyLiquidityMap[pairIndex] = true
 }
 
 func (c *StateCache) MarkNftDirty(nftIndex int64) {
-	c.DirtyNftMap[nftIndex] = true
+	c.dirtyNftMap[nftIndex] = true
 }

@@ -18,9 +18,9 @@
 package tree
 
 import (
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbnb-crypto/hash/bn254/zmimc"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 )
 
@@ -31,7 +31,7 @@ func InitNftTree(
 ) (
 	nftTree bsmt.SparseMerkleTree, err error,
 ) {
-	nftTree, err = bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(zmimc.Hmimc),
+	nftTree, err = bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(mimc.NewMiMC()),
 		SetNamespace(ctx, NFTPrefix), NftTreeHeight, NilNftNodeHash,
 		ctx.Options(blockHeight)...)
 	if err != nil {

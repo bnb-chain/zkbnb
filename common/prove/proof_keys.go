@@ -10,13 +10,14 @@ import (
 	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/frontend"
+	"github.com/zeromicro/go-zero/core/logx"
 
 	cryptoBlock "github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/block"
 	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
 )
 
 func LoadProvingKey(filepath string) (pk groth16.ProvingKey, err error) {
-	fmt.Println("start reading proving key")
+	logx.Info("start reading proving key")
 	pk = groth16.NewProvingKey(ecc.BN254)
 	f, _ := os.Open(filepath)
 	_, err = pk.ReadFrom(f)

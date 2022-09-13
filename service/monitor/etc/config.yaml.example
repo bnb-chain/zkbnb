@@ -10,5 +10,13 @@ ChainConfig:
   ConfirmBlocksCount: 0
   MaxHandledBlocksCount: 5000
 
+LogConf:
+  ServiceName: monitor
+  Mode: console
+  Encoding: plain
+  Path: ./log/monitor
+  StackCooldownMillis: 500
+  Level: info
+
 TreeDB:
   Driver: memorydb

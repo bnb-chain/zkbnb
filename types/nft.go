@@ -50,14 +50,6 @@ func (info *NftInfo) IsEmptyNft() bool {
 	return false
 }
 
-func ParseNftInfo(infoStr string) (info *NftInfo, err error) {
-	err = json.Unmarshal([]byte(infoStr), &info)
-	if err != nil {
-		return nil, JsonErrUnmarshal
-	}
-	return info, nil
-}
-
 func EmptyNftInfo(nftIndex int64) (info *NftInfo) {
 	return &NftInfo{
 		NftIndex:            nftIndex,

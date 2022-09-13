@@ -34,6 +34,7 @@ type (
 		GetLatestLiquidityByBlockHeight(blockHeight int64, limit int, offset int) (entities []*LiquidityHistory, err error)
 		GetLatestLiquidityCountByBlockHeight(blockHeight int64) (count int64, err error)
 		CreateLiquidityHistoriesInTransact(tx *gorm.DB, histories []*LiquidityHistory) error
+		GetLiquidityByIndex(pairIndex, blockHeight int64) (*LiquidityHistory, error)
 	}
 
 	defaultLiquidityHistoryModel struct {
@@ -115,4 +116,16 @@ func (m *defaultLiquidityHistoryModel) CreateLiquidityHistoriesInTransact(tx *go
 		return types.DbErrFailToCreateLiquidityHistory
 	}
 	return nil
+}
+
+func (m *defaultLiquidityHistoryModel) GetLiquidityByIndex(pairIndex, blockHeight int64) (*LiquidityHistory, error) {
+	var history LiquidityHistory
+	dbTx := m.DB.Table(m.table).Where("pair_index = ? AND l2_block_height <= ?", pairIndex, blockHeight).
+		Order("l2_block_height desc").Limit(1).Find(&history)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return &history, nil
 }

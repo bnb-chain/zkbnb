@@ -2,7 +2,9 @@ package statedb
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
@@ -19,7 +21,10 @@ import (
 )
 
 type StateDB struct {
-	dryRun bool
+	dryRun    bool
+	curHeight int64
+	// TODO rename it as an option
+	trace bool
 	// State cache
 	*StateCache
 	chainDb    *ChainDB
@@ -73,6 +78,8 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB, redisCache dbcache.Cach
 		return nil, err
 	}
 	return &StateDB{
+		curHeight:    curHeight,
+		trace:        true,
 		StateCache:   NewStateCache(stateRoot),
 		chainDb:      chainDb,
 		redisCache:   redisCache,
@@ -358,7 +365,7 @@ func (s *StateDB) DeepCopyAccounts(accountIds []int64) (map[int64]*types.Account
 	return accounts, nil
 }
 
-func (s *StateDB) PrepareAccountsAndAssets(accountAssetsMap map[int64]map[int64]bool) error {
+func (s *StateDB) PrepareAccountsAndAssets(accountAssetsMap map[int64]map[int64]bool) (err error) {
 	for accountIndex, assets := range accountAssetsMap {
 		if s.dryRun {
 			account := &account.Account{}
@@ -372,9 +379,20 @@ func (s *StateDB) PrepareAccountsAndAssets(accountAssetsMap map[int64]map[int64]
 		}
 
 		if s.AccountMap[accountIndex] == nil {
+
 			accountInfo, err := s.chainDb.AccountModel.GetAccountByIndex(accountIndex)
 			if err != nil {
 				return err
+			}
+			if s.trace {
+				accountHistory, err := s.chainDb.AccountHistoryModel.GetAccountByIndex(accountIndex, s.curHeight)
+				if err != nil {
+					return err
+				}
+				accountInfo.AssetInfo = accountHistory.AssetInfo
+				accountInfo.AssetRoot = accountHistory.AssetRoot
+				accountInfo.CollectionNonce = accountHistory.CollectionNonce
+				accountInfo.Nonce = accountHistory.Nonce
 			}
 			s.AccountMap[accountIndex], err = chain.ToFormatAccountInfo(accountInfo)
 			if err != nil {
@@ -413,6 +431,18 @@ func (s *StateDB) PrepareLiquidity(pairIndex int64) error {
 		if err != nil {
 			return err
 		}
+		if s.trace {
+			historyLiquidity, err := s.chainDb.LiquidityHistoryModel.GetLiquidityByIndex(pairIndex, s.curHeight)
+			if err != nil {
+				return err
+			}
+			liquidityInfo.LpAmount = historyLiquidity.LpAmount
+			liquidityInfo.KLast = historyLiquidity.KLast
+			liquidityInfo.FeeRate = historyLiquidity.FeeRate
+			liquidityInfo.TreasuryAccountIndex = historyLiquidity.TreasuryAccountIndex
+			liquidityInfo.TreasuryRate = historyLiquidity.TreasuryRate
+		}
+
 		s.LiquidityMap[pairIndex] = liquidityInfo
 	}
 	return nil
@@ -432,13 +462,25 @@ func (s *StateDB) PrepareNft(nftIndex int64) error {
 		if err != nil {
 			return err
 		}
+		if s.trace {
+			nfthistory, err := s.chainDb.L2NftHistoryModel.GetNft(nftIndex, s.curHeight)
+			if err != nil {
+				return err
+			}
+			nftAsset.OwnerAccountIndex = nfthistory.OwnerAccountIndex
+			nftAsset.NftContentHash = nfthistory.NftContentHash
+			nftAsset.NftL1Address = nfthistory.NftL1Address
+			nftAsset.NftL1TokenId = nfthistory.NftL1TokenId
+			nftAsset.CreatorTreasuryRate = nfthistory.CreatorTreasuryRate
+			nftAsset.CollectionId = nfthistory.CollectionId
+		}
 		s.NftMap[nftIndex] = nftAsset
 	}
 	return nil
 }
 
 func (s *StateDB) IntermediateRoot(cleanDirty bool) error {
-	for accountIndex, assetsMap := range s.DirtyAccountsAndAssetsMap {
+	for accountIndex, assetsMap := range s.dirtyAccountsAndAssetsMap {
 		assets := make([]int64, 0, len(assetsMap))
 		for assetIndex, isDirty := range assetsMap {
 			if !isDirty {
@@ -453,7 +495,7 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool) error {
 		}
 	}
 
-	for pairIndex, isDirty := range s.DirtyLiquidityMap {
+	for pairIndex, isDirty := range s.dirtyLiquidityMap {
 		if !isDirty {
 			continue
 		}
@@ -463,7 +505,7 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool) error {
 		}
 	}
 
-	for nftIndex, isDirty := range s.DirtyNftMap {
+	for nftIndex, isDirty := range s.dirtyNftMap {
 		if !isDirty {
 			continue
 		}
@@ -474,9 +516,9 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool) error {
 	}
 
 	if cleanDirty {
-		s.DirtyAccountsAndAssetsMap = make(map[int64]map[int64]bool, 0)
-		s.DirtyLiquidityMap = make(map[int64]bool, 0)
-		s.DirtyNftMap = make(map[int64]bool, 0)
+		s.dirtyAccountsAndAssetsMap = make(map[int64]map[int64]bool, 0)
+		s.dirtyLiquidityMap = make(map[int64]bool, 0)
+		s.dirtyNftMap = make(map[int64]bool, 0)
 	}
 
 	hFunc := mimc.NewMiMC()
@@ -575,7 +617,7 @@ func (s *StateDB) GetCommittedNonce(accountIndex int64) (int64, error) {
 }
 
 func (s *StateDB) GetPendingNonce(accountIndex int64) (int64, error) {
-	nonce, err := s.chainDb.MempoolModel.GetMaxNonceByAccountIndex(accountIndex)
+	nonce, err := s.chainDb.TxPoolModel.GetMaxNonceByAccountIndex(accountIndex)
 	if err == nil {
 		return nonce + 1, nil
 	}
@@ -597,6 +639,13 @@ func (s *StateDB) GetNextAccountIndex() int64 {
 
 func (s *StateDB) GetNextNftIndex() int64 {
 	if len(s.PendingNewNftIndexMap) == 0 {
+		if s.trace {
+			count, err := s.chainDb.L2NftHistoryModel.GetLatestNftsCountByBlockHeight(s.curHeight)
+			if err != nil {
+				panic("get latest nft index error: " + err.Error())
+			}
+			return count
+		}
 		maxNftIndex, err := s.chainDb.L2NftModel.GetLatestNftIndex()
 		if err != nil {
 			panic("get latest nft index error: " + err.Error())
@@ -611,4 +660,47 @@ func (s *StateDB) GetNextNftIndex() int64 {
 		}
 	}
 	return maxNftIndex + 1
+}
+
+func (s *StateDB) GetGasAccountIndex() (int64, error) {
+	gasAccountIndex := int64(-1)
+	_, err := s.redisCache.Get(context.Background(), dbcache.GasAccountKey, &gasAccountIndex)
+	if err == nil {
+		return gasAccountIndex, nil
+	}
+
+	gasAccountConfig, err := s.chainDb.SysConfigModel.GetSysConfigByName(types.GasAccountIndex)
+	if err != nil {
+		logx.Errorf("cannot find config for: %s", types.GasAccountIndex)
+		return -1, errors.New("internal error")
+	}
+	gasAccountIndex, err = strconv.ParseInt(gasAccountConfig.Value, 10, 64)
+	if err != nil {
+		logx.Errorf("invalid account index: %s", gasAccountConfig.Value)
+		return -1, errors.New("internal error")
+	}
+	_ = s.redisCache.Set(context.Background(), dbcache.GasAccountKey, gasAccountIndex)
+	return gasAccountIndex, nil
+}
+
+func (s *StateDB) GetGasAssetIds() ([]uint32, error) {
+	gasAssetIds := make([]uint32, 0)
+	_, err := s.redisCache.Get(context.Background(), dbcache.GasAssetsKey, &gasAssetIds)
+	if err == nil {
+		return gasAssetIds, nil
+	}
+	logx.Errorf("fail to get gas assets from cache, error: %s", err.Error())
+
+	cfgGasAssets, err := s.chainDb.L2AssetInfoModel.GetGasAssets()
+	if err != nil {
+		logx.Errorf("cannot find gas asset: %s", err.Error())
+		return nil, errors.New("invalid gas fee asset")
+	}
+
+	gasAssetIds = make([]uint32, 0)
+	for _, gasAsset := range cfgGasAssets {
+		gasAssetIds = append(gasAssetIds, gasAsset.AssetId)
+	}
+	_ = s.redisCache.Set(context.Background(), dbcache.GasAssetsKey, gasAssetIds)
+	return gasAssetIds, nil
 }

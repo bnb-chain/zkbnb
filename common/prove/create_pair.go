@@ -23,18 +23,18 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func constructCreatePairTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
+func fillCreatePairTxWitness(cryptoTx *TxWitness, oTx *Tx) error {
 	txInfo, err := types.ParseCreatePairTxInfo(oTx.TxInfo)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	cryptoTxInfo, err := toCryptoCreatePairTx(txInfo)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	cryptoTx.CreatePairTxInfo = cryptoTxInfo
 	cryptoTx.Signature = std.EmptySignature()
-	return cryptoTx, nil
+	return nil
 }
 
 func toCryptoCreatePairTx(txInfo *legendTxTypes.CreatePairTxInfo) (info *CryptoCreatePairTx, err error) {

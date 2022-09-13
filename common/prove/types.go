@@ -28,8 +28,7 @@ import (
 )
 
 type (
-	Tx       = tx.Tx
-	TxDetail = tx.TxDetail
+	Tx = tx.Tx
 
 	Account      = account.Account
 	AccountAsset = types.AccountAsset
@@ -74,17 +73,10 @@ type (
 )
 
 const (
-	NbAccountAssetsPerAccount = block.NbAccountAssetsPerAccount
-	NbAccountsPerTx           = block.NbAccountsPerTx
-	AssetMerkleLevels         = block.AssetMerkleLevels
-	LiquidityMerkleLevels     = block.LiquidityMerkleLevels
-	NftMerkleLevels           = block.NftMerkleLevels
-	AccountMerkleLevels       = block.AccountMerkleLevels
-
-	LastAccountIndex   = 4294967295
-	LastAccountAssetId = 65535
-	LastPairIndex      = 65535
-	LastNftIndex       = 1099511627775
+	AssetMerkleLevels     = block.AssetMerkleLevels
+	LiquidityMerkleLevels = block.LiquidityMerkleLevels
+	NftMerkleLevels       = block.NftMerkleLevels
+	AccountMerkleLevels   = block.AccountMerkleLevels
 )
 
 type AccountWitnessInfo struct {

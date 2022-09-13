@@ -5,16 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
-
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	"github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/liquidity"
-	"github.com/bnb-chain/zkbnb/dao/mempool"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type CreatePairExecutor struct {
@@ -38,18 +35,12 @@ func NewCreatePairExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 
 func (e *CreatePairExecutor) Prepare() error {
 	// Mark the tree states that would be affected in this executor.
-	e.BaseExecutor.Prepare(context.Background())
-	return nil
+	return e.BaseExecutor.Prepare(context.Background())
 }
 
 func (e *CreatePairExecutor) VerifyInputs() error {
 	bc := e.bc
 	txInfo := e.txInfo
-
-	_, err := bc.DB().LiquidityModel.GetLiquidityByIndex(txInfo.PairIndex)
-	if err != sqlx.ErrNotFound {
-		return errors.New("invalid pair index, already registered")
-	}
 
 	for index := range bc.StateDB().PendingNewLiquidityIndexMap {
 		if txInfo.PairIndex == index {
@@ -121,8 +112,4 @@ func (e *CreatePairExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.TxInfo = string(txInfoBytes)
 	e.tx.PairIndex = e.txInfo.PairIndex
 	return e.BaseExecutor.GetExecutedTx()
-}
-
-func (e *CreatePairExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
-	return nil, nil
 }

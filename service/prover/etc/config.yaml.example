@@ -17,8 +17,7 @@ BlockConfig:
 LogConf:
   ServiceName: prover
   Mode: console
+  Encoding: plain
   Path: ./log/prover
   StackCooldownMillis: 500
-  Level: error
-
-
+  Level: info

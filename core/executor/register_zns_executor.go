@@ -5,19 +5,16 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
-
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/account"
-	"github.com/bnb-chain/zkbnb/dao/mempool"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/tree"
 	"github.com/bnb-chain/zkbnb/types"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type RegisterZnsExecutor struct {
@@ -40,17 +37,13 @@ func NewRegisterZnsExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 }
 
 func (e *RegisterZnsExecutor) Prepare() error {
+	// TODO not sure wthether it is ok
 	return e.BaseExecutor.Prepare(context.Background())
 }
 
 func (e *RegisterZnsExecutor) VerifyInputs() error {
 	bc := e.bc
 	txInfo := e.txInfo
-
-	_, err := bc.DB().AccountModel.GetAccountByName(txInfo.AccountName)
-	if err != sqlx.ErrNotFound {
-		return errors.New("invalid account name, already registered")
-	}
 
 	for index := range bc.StateDB().PendingNewAccountIndexMap {
 		if txInfo.AccountName == bc.StateDB().AccountMap[index].AccountName {
@@ -138,8 +131,4 @@ func (e *RegisterZnsExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.TxInfo = string(txInfoBytes)
 	e.tx.AccountIndex = e.txInfo.AccountIndex
 	return e.BaseExecutor.GetExecutedTx()
-}
-
-func (e *RegisterZnsExecutor) GenerateMempoolTx() (*mempool.MempoolTx, error) {
-	return nil, nil
 }

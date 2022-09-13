@@ -32,6 +32,7 @@ type (
 		DropAccountHistoryTable() error
 		GetValidAccounts(height int64, limit int, offset int) (rowsAffected int64, accounts []*AccountHistory, err error)
 		GetValidAccountCount(height int64) (accounts int64, err error)
+		GetAccountByIndex(accountIndex int64, height int64) (*AccountHistory, error)
 		CreateAccountHistoriesInTransact(tx *gorm.DB, histories []*AccountHistory) error
 	}
 
@@ -68,17 +69,6 @@ func (m *defaultAccountHistoryModel) CreateAccountHistoryTable() error {
 
 func (m *defaultAccountHistoryModel) DropAccountHistoryTable() error {
 	return m.DB.Migrator().DropTable(m.table)
-}
-
-func (m *defaultAccountHistoryModel) CreateNewAccount(nAccount *AccountHistory) (err error) {
-	dbTx := m.DB.Table(m.table).Create(&nAccount)
-	if dbTx.Error != nil {
-		return types.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		return types.DbErrFailToCreateAccountHistory
-	}
-
-	return nil
 }
 
 func (m *defaultAccountHistoryModel) GetValidAccounts(height int64, limit int, offset int) (rowsAffected int64, accounts []*AccountHistory, err error) {
@@ -119,4 +109,15 @@ func (m *defaultAccountHistoryModel) CreateAccountHistoriesInTransact(tx *gorm.D
 		return types.DbErrFailToCreateAccountHistory
 	}
 	return nil
+}
+
+func (m *defaultAccountHistoryModel) GetAccountByIndex(accountIndex int64, height int64) (*AccountHistory, error) {
+	var accHistory AccountHistory
+	dbTx := m.DB.Table(m.table).Where("account_index = ? AND l2_block_height <= ?", accountIndex, height).Order("l2_block_height desc").Limit(1).Find(&accHistory)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return &accHistory, nil
 }

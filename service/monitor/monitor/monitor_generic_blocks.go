@@ -34,8 +34,8 @@ import (
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
-	"github.com/bnb-chain/zkbnb/dao/mempool"
 	"github.com/bnb-chain/zkbnb/dao/priorityrequest"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 	types2 "github.com/bnb-chain/zkbnb/types"
 )
 
@@ -76,7 +76,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		return fmt.Errorf("failed to get contract logs, err: %v", err)
 	}
 	var (
-		l1EventInfos     []*L1EventInfo
+		l1Events         []*L1Event
 		priorityRequests []*priorityrequest.PriorityRequest
 
 		priorityRequestCountCheck = 0
@@ -84,7 +84,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		relatedBlocks = make(map[int64]*block.Block)
 	)
 	for _, vlog := range logs {
-		l1EventInfo := &L1EventInfo{
+		l1EventInfo := &L1Event{
 			TxHash: vlog.TxHash.Hex(),
 		}
 
@@ -124,6 +124,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			relatedBlocks[blockHeight].CommittedTxHash = vlog.TxHash.Hex()
 			relatedBlocks[blockHeight].CommittedAt = int64(logBlock.Time)
 			relatedBlocks[blockHeight].BlockStatus = block.StatusCommitted
+			relatedBlocks[blockHeight].SetTxsStatus(tx.StatusCommitted)
 		case zkbnbLogBlockVerificationSigHash.Hex():
 			l1EventInfo.EventType = EventTypeVerifiedBlock
 
@@ -143,18 +144,19 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			relatedBlocks[blockHeight].VerifiedTxHash = vlog.TxHash.Hex()
 			relatedBlocks[blockHeight].VerifiedAt = int64(logBlock.Time)
 			relatedBlocks[blockHeight].BlockStatus = block.StatusVerifiedAndExecuted
+			relatedBlocks[blockHeight].SetTxsStatus(tx.StatusVerified)
 		case zkbnbLogBlocksRevertSigHash.Hex():
 			l1EventInfo.EventType = EventTypeRevertedBlock
 		default:
 		}
 
-		l1EventInfos = append(l1EventInfos, l1EventInfo)
+		l1Events = append(l1Events, l1EventInfo)
 	}
 	if priorityRequestCount != priorityRequestCountCheck {
 		return fmt.Errorf("new priority requests events not match, try it again")
 	}
 
-	eventInfosBytes, err := json.Marshal(l1EventInfos)
+	eventInfosBytes, err := json.Marshal(l1Events)
 	if err != nil {
 		return err
 	}
@@ -168,12 +170,6 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 	pendingUpdateBlocks := make([]*block.Block, 0, len(relatedBlocks))
 	for _, pendingUpdateBlock := range relatedBlocks {
 		pendingUpdateBlocks = append(pendingUpdateBlocks, pendingUpdateBlock)
-	}
-
-	// get mempool txs to delete
-	pendingDeleteMempoolTxs, err := getMempoolTxsToDelete(pendingUpdateBlocks, m.MempoolModel)
-	if err != nil {
-		return fmt.Errorf("failed to get mempool txs to delete, err: %v", err)
 	}
 
 	//update db
@@ -190,11 +186,6 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		}
 		//update blocks
 		err = m.BlockModel.UpdateBlocksWithoutTxsInTransact(tx, pendingUpdateBlocks)
-		if err != nil {
-			return err
-		}
-		//delete mempool txs
-		err = m.MempoolModel.DeleteMempoolTxsInTransact(tx, pendingDeleteMempoolTxs)
 		return err
 	})
 	if err != nil {
@@ -202,24 +193,6 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 	}
 	logx.Info("create txs count:", len(priorityRequests))
 	return nil
-}
-
-func getMempoolTxsToDelete(blocks []*block.Block, mempoolModel mempool.MempoolModel) ([]*mempool.MempoolTx, error) {
-	var toDeleteMempoolTxs []*mempool.MempoolTx
-	for _, pendingUpdateBlock := range blocks {
-		if pendingUpdateBlock.BlockStatus == BlockVerifiedStatus {
-			_, blockToDleteMempoolTxs, err := mempoolModel.GetMempoolTxsByBlockHeight(pendingUpdateBlock.BlockHeight)
-			if err != nil {
-				logx.Errorf("GetMempoolTxsByBlockHeight err: %s", err.Error())
-				return nil, err
-			}
-			if len(blockToDleteMempoolTxs) == 0 {
-				continue
-			}
-			toDeleteMempoolTxs = append(toDeleteMempoolTxs, blockToDleteMempoolTxs...)
-		}
-	}
-	return toDeleteMempoolTxs, nil
 }
 
 func getZkBNBContractLogs(cli *_rpc.ProviderClient, zkbnbContract string, startHeight, endHeight uint64) ([]types.Log, error) {

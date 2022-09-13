@@ -3,6 +3,7 @@ module github.com/bnb-chain/zkbnb
 go 1.17
 
 require (
+	github.com/panjf2000/ants/v2 v2.5.0
 	github.com/status-im/keycard-go v0.0.0-20190316090335-8537d3370df4
 	github.com/zeromicro/go-zero v1.3.4
 	gorm.io/gorm v1.23.4
@@ -85,7 +86,7 @@ require (
 )
 
 require (
-	github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20220912074205-7343aebac81c
+	github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20220914165633-fd23ee359dfb
 	github.com/bnb-chain/zkbnb-eth-rpc v0.0.2-0.20220907130157-2311ce3fe6f6
 	github.com/bnb-chain/zkbnb-smt v0.0.2-0.20220907130044-9c7cccbd19fa
 	github.com/consensys/gnark v0.7.0
@@ -93,7 +94,7 @@ require (
 	github.com/eko/gocache/v2 v2.3.1
 	github.com/ethereum/go-ethereum v1.10.23
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/robfig/cron/v3 v3.0.1

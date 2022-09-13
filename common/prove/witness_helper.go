@@ -22,48 +22,46 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func FillInTxWitness(oTx *Tx) (witness *TxWitness, err error) {
-	witness.TxType = uint8(oTx.TxType)
-	witness.Nonce = oTx.Nonce
+func FillTxWitness(witness *TxWitness, oTx *Tx) error {
 	switch oTx.TxType {
 	case types.TxTypeRegisterZns:
-		return constructRegisterZnsTxWitness(witness, oTx)
+		return fillRegisterZnsTxWitness(witness, oTx)
 	case types.TxTypeCreatePair:
-		return constructCreatePairTxWitness(witness, oTx)
+		return fillCreatePairTxWitness(witness, oTx)
 	case types.TxTypeUpdatePairRate:
-		return constructUpdatePairRateTxWitness(witness, oTx)
+		return fillUpdatePairRateTxWitness(witness, oTx)
 	case types.TxTypeDeposit:
-		return constructDepositTxWitness(witness, oTx)
+		return fillDepositTxWitness(witness, oTx)
 	case types.TxTypeDepositNft:
-		return constructDepositNftTxWitness(witness, oTx)
+		return fillDepositNftTxWitness(witness, oTx)
 	case types.TxTypeTransfer:
-		return constructTransferTxWitness(witness, oTx)
+		return fillTransferTxWitness(witness, oTx)
 	case types.TxTypeSwap:
-		return constructSwapTxWitness(witness, oTx)
+		return fillSwapTxWitness(witness, oTx)
 	case types.TxTypeAddLiquidity:
-		return constructAddLiquidityTxWitness(witness, oTx)
+		return fillAddLiquidityTxWitness(witness, oTx)
 	case types.TxTypeRemoveLiquidity:
-		return constructRemoveLiquidityTxWitness(witness, oTx)
+		return fillRemoveLiquidityTxWitness(witness, oTx)
 	case types.TxTypeWithdraw:
-		return constructWithdrawTxWitness(witness, oTx)
+		return fillWithdrawTxWitness(witness, oTx)
 	case types.TxTypeCreateCollection:
-		return constructCreateCollectionTxWitness(witness, oTx)
+		return fillCreateCollectionTxWitness(witness, oTx)
 	case types.TxTypeMintNft:
-		return constructMintNftTxWitness(witness, oTx)
+		return fillMintNftTxWitness(witness, oTx)
 	case types.TxTypeTransferNft:
-		return constructTransferNftTxWitness(witness, oTx)
+		return fillTransferNftTxWitness(witness, oTx)
 	case types.TxTypeAtomicMatch:
-		return constructAtomicMatchTxWitness(witness, oTx)
+		return fillAtomicMatchTxWitness(witness, oTx)
 	case types.TxTypeCancelOffer:
-		return constructCancelOfferTxWitness(witness, oTx)
+		return fillCancelOfferTxWitness(witness, oTx)
 	case types.TxTypeWithdrawNft:
-		return constructWithdrawNftTxWitness(witness, oTx)
+		return fillWithdrawNftTxWitness(witness, oTx)
 	case types.TxTypeFullExit:
-		return constructFullExitTxWitness(witness, oTx)
+		return fillFullExitTxWitness(witness, oTx)
 	case types.TxTypeFullExitNft:
-		return constructFullExitNftTxWitness(witness, oTx)
+		return fillFullExitNftTxWitness(witness, oTx)
 	default:
-		return nil, fmt.Errorf("tx type error")
+		return fmt.Errorf("tx type error")
 	}
 }
 
