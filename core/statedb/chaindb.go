@@ -53,3 +53,10 @@ func NewChainDB(db *gorm.DB) *ChainDB {
 		SysConfigModel: sysconfig.NewSysConfigModel(db),
 	}
 }
+
+func (c *ChainDB) Close() {
+	sqlDB, err := c.DB.DB()
+	if err != nil {
+		_ = sqlDB.Close()
+	}
+}

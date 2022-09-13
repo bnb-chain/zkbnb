@@ -27,8 +27,8 @@ func Run(configFile string) error {
 	proc.SetTimeToForceQuit(GracefulShutdownTimeout)
 	proc.AddShutdownListener(func() {
 		logx.Info("start to shutdown committer......")
-		_ = logx.Close()
 		committer.Shutdown()
+		_ = logx.Close()
 	})
 
 	logx.Info("committer is starting......")

@@ -17,10 +17,10 @@ const GracefulShutdownTimeout = 10 * time.Second
 func Run(configFile string) error {
 	var c config.Config
 	conf.MustLoad(configFile, &c)
-	m := monitor.NewMonitor(c)
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 
+	m := monitor.NewMonitor(c)
 	cronJob := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))
@@ -61,8 +61,9 @@ func Run(configFile string) error {
 	proc.SetTimeToForceQuit(GracefulShutdownTimeout)
 	proc.AddShutdownListener(func() {
 		logx.Info("start to shutdown monitor......")
-		_ = logx.Close()
 		<-cronJob.Stop().Done()
+		m.Shutdown()
+		_ = logx.Close()
 		exit <- struct{}{}
 	})
 

@@ -26,6 +26,7 @@ type ServiceContext struct {
 	RedisCache dbcache.Cache
 	MemCache   *cache.MemCache
 
+	DB                    *gorm.DB
 	TxPoolModel           tx.TxPoolModel
 	AccountModel          account.AccountModel
 	AccountHistoryModel   account.AccountHistoryModel
@@ -42,35 +43,44 @@ type ServiceContext struct {
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
-	gormPointer, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
+	db, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
 	if err != nil {
 		logx.Must(err)
 	}
 	redisCache := dbcache.NewRedisCache(c.CacheRedis[0].Host, c.CacheRedis[0].Pass, 15*time.Minute)
 
-	txPoolModel := tx.NewTxPoolModel(gormPointer)
-	accountModel := account.NewAccountModel(gormPointer)
-	liquidityModel := liquidity.NewLiquidityModel(gormPointer)
-	nftModel := nft.NewL2NftModel(gormPointer)
-	assetModel := asset.NewAssetModel(gormPointer)
+	txPoolModel := tx.NewTxPoolModel(db)
+	accountModel := account.NewAccountModel(db)
+	liquidityModel := liquidity.NewLiquidityModel(db)
+	nftModel := nft.NewL2NftModel(db)
+	assetModel := asset.NewAssetModel(db)
 	memCache := cache.NewMemCache(accountModel, assetModel, c.MemCache.AccountExpiration, c.MemCache.BlockExpiration,
 		c.MemCache.TxExpiration, c.MemCache.AssetExpiration, c.MemCache.PriceExpiration)
 	return &ServiceContext{
 		Config:                c,
 		RedisCache:            redisCache,
 		MemCache:              memCache,
+		DB:                    db,
 		TxPoolModel:           txPoolModel,
 		AccountModel:          accountModel,
-		AccountHistoryModel:   account.NewAccountHistoryModel(gormPointer),
-		TxModel:               tx.NewTxModel(gormPointer),
+		AccountHistoryModel:   account.NewAccountHistoryModel(db),
+		TxModel:               tx.NewTxModel(db),
 		LiquidityModel:        liquidityModel,
-		LiquidityHistoryModel: liquidity.NewLiquidityHistoryModel(gormPointer),
-		BlockModel:            block.NewBlockModel(gormPointer),
+		LiquidityHistoryModel: liquidity.NewLiquidityHistoryModel(db),
+		BlockModel:            block.NewBlockModel(db),
 		NftModel:              nftModel,
 		AssetModel:            assetModel,
-		SysConfigModel:        sysconfig.NewSysConfigModel(gormPointer),
+		SysConfigModel:        sysconfig.NewSysConfigModel(db),
 
 		PriceFetcher: price.NewFetcher(memCache, c.CoinMarketCap.Url, c.CoinMarketCap.Token),
 		StateFetcher: state.NewFetcher(redisCache, accountModel, liquidityModel, nftModel),
 	}
+}
+
+func (s *ServiceContext) Shutdown() {
+	sqlDB, err := s.DB.DB()
+	if err != nil {
+		_ = sqlDB.Close()
+	}
+	_ = s.RedisCache.Close()
 }

@@ -145,6 +145,8 @@ func (c *Committer) Run() {
 
 func (c *Committer) Shutdown() {
 	c.running = false
+	c.bc.Statedb.Close()
+	c.bc.ChainDB.Close()
 }
 
 func (c *Committer) restoreExecutedTxs() (*block.Block, error) {

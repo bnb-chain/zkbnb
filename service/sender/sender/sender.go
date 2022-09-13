@@ -30,6 +30,7 @@ import (
 
 	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/zkbnb/core/legend"
+
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/common/prove"
 	"github.com/bnb-chain/zkbnb/dao/block"
@@ -359,4 +360,11 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	}
 	logx.Infof("new blocks have been verified and executed(height): %d", newRollupTx.L2BlockHeight)
 	return nil
+}
+
+func (s *Sender) Shutdown() {
+	sqlDB, err := s.db.DB()
+	if err != nil {
+		_ = sqlDB.Close()
+	}
 }

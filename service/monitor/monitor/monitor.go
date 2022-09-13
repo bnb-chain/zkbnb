@@ -22,6 +22,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
+
 	"github.com/bnb-chain/zkbnb/dao/asset"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/l1rolluptx"
@@ -100,4 +101,11 @@ func NewMonitor(c config.Config) *Monitor {
 	monitor.cli = bscRpcCli
 
 	return monitor
+}
+
+func (m *Monitor) Shutdown() {
+	sqlDB, err := m.db.DB()
+	if err != nil {
+		_ = sqlDB.Close()
+	}
 }

@@ -17,13 +17,13 @@ const GracefulShutdownTimeout = 5 * time.Second
 func Run(configFile string) error {
 	var c config.Config
 	conf.MustLoad(configFile, &c)
+	logx.MustSetup(c.LogConf)
+	logx.DisableStat()
+
 	w, err := witness.NewWitness(c)
 	if err != nil {
 		panic(err)
 	}
-	logx.MustSetup(c.LogConf)
-	logx.DisableStat()
-
 	cronJob := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))
@@ -46,6 +46,7 @@ func Run(configFile string) error {
 		logx.Info("start to shutdown witness......")
 		_ = logx.Close()
 		<-cronJob.Stop().Done()
+		w.Shutdown()
 		exit <- struct{}{}
 	})
 

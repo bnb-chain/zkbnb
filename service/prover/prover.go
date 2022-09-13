@@ -17,10 +17,10 @@ const GracefulShutdownTimeout = 30 * time.Second
 func Run(configFile string) error {
 	var c config.Config
 	conf.MustLoad(configFile, &c)
-	p := prover.NewProver(c)
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 
+	p := prover.NewProver(c)
 	cronJob := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))
@@ -41,8 +41,9 @@ func Run(configFile string) error {
 	proc.SetTimeToForceQuit(GracefulShutdownTimeout)
 	proc.AddShutdownListener(func() {
 		logx.Info("start to shutdown prover......")
-		_ = logx.Close()
 		<-cronJob.Stop().Done()
+		p.Shutdown()
+		_ = logx.Close()
 		exit <- struct{}{}
 	})
 

@@ -63,3 +63,7 @@ func (c *RedisCache) Set(ctx context.Context, key string, value interface{}) err
 func (c *RedisCache) Delete(ctx context.Context, key string) error {
 	return c.marshal.Delete(ctx, key)
 }
+
+func (c *RedisCache) Close() error {
+	return c.Close()
+}

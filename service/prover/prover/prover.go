@@ -14,6 +14,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/block"
+
 	"github.com/bnb-chain/zkbnb/common/prove"
 	"github.com/bnb-chain/zkbnb/common/redislock"
 	"github.com/bnb-chain/zkbnb/dao/blockwitness"
@@ -27,6 +28,7 @@ type Prover struct {
 
 	RedisConn *redis.Redis
 
+	DB                *gorm.DB
 	ProofModel        proof.ProofModel
 	BlockWitnessModel blockwitness.BlockWitnessModel
 
@@ -61,6 +63,7 @@ func NewProver(c config.Config) *Prover {
 	prover := &Prover{
 		Config:            c,
 		RedisConn:         redisConn,
+		DB:                db,
 		BlockWitnessModel: blockwitness.NewBlockWitnessModel(db),
 		ProofModel:        proof.NewProofModel(db),
 	}
@@ -189,4 +192,11 @@ func (p *Prover) ProveBlock() error {
 	}
 	err = p.ProofModel.CreateProof(row)
 	return err
+}
+
+func (p *Prover) Shutdown() {
+	sqlDB, err := p.DB.DB()
+	if err != nil {
+		_ = sqlDB.Close()
+	}
 }
