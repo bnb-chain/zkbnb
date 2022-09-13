@@ -23,7 +23,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/zkbnb/core/legend"
-	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/priorityrequest"
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -59,8 +58,6 @@ const (
 	TxTypeDepositNft     = types.TxTypeDepositNft
 	TxTypeFullExit       = types.TxTypeFullExit
 	TxTypeFullExitNft    = types.TxTypeFullExitNft
-
-	BlockVerifiedStatus = block.StatusVerifiedAndExecuted
 )
 
 var (

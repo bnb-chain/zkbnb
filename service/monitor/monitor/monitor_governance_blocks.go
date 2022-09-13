@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
@@ -36,10 +35,6 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/sysconfig"
 	"github.com/bnb-chain/zkbnb/types"
 )
-
-func EmptyCallOpts() *bind.CallOpts {
-	return &bind.CallOpts{}
-}
 
 func (m *Monitor) getNewL2Asset(event zkbnb.GovernanceNewAsset) (*asset.Asset, error) {
 	// get asset info by contract address
