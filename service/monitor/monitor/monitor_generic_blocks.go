@@ -83,7 +83,8 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 
 		priorityRequestCountCheck = 0
 
-		relatedBlocks = make(map[int64]*block.Block)
+		relatedBlocks        = make(map[int64]*block.Block)
+		relatedBlockTxStatus = make(map[int64]int)
 	)
 	for _, vlog := range logs {
 		l1EventInfo := &L1Event{
@@ -126,7 +127,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			relatedBlocks[blockHeight].CommittedTxHash = vlog.TxHash.Hex()
 			relatedBlocks[blockHeight].CommittedAt = int64(logBlock.Time)
 			relatedBlocks[blockHeight].BlockStatus = block.StatusCommitted
-			relatedBlocks[blockHeight].SetTxsStatus(tx.StatusCommitted)
+			relatedBlockTxStatus[blockHeight] = tx.StatusCommitted
 		case zkbnbLogBlockVerificationSigHash.Hex():
 			l1EventInfo.EventType = EventTypeVerifiedBlock
 
@@ -146,7 +147,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			relatedBlocks[blockHeight].VerifiedTxHash = vlog.TxHash.Hex()
 			relatedBlocks[blockHeight].VerifiedAt = int64(logBlock.Time)
 			relatedBlocks[blockHeight].BlockStatus = block.StatusVerifiedAndExecuted
-			relatedBlocks[blockHeight].SetTxsStatus(tx.StatusVerified)
+			relatedBlockTxStatus[blockHeight] = tx.StatusVerified
 		case zkbnbLogBlocksRevertSigHash.Hex():
 			l1EventInfo.EventType = EventTypeRevertedBlock
 		default:
@@ -170,10 +171,8 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 
 	// get pending update blocks
 	pendingUpdateBlocks := make([]*block.Block, 0, len(relatedBlocks))
-	pendingUpdateTxs := make([]*tx.Tx, 0)
 	for _, pendingUpdateBlock := range relatedBlocks {
 		pendingUpdateBlocks = append(pendingUpdateBlocks, pendingUpdateBlock)
-		pendingUpdateTxs = append(pendingUpdateTxs, pendingUpdateBlock.Txs...)
 	}
 
 	//update db
@@ -194,7 +193,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			return err
 		}
 		//update tx status
-		err = m.TxModel.UpdateTxsStatusInTransact(tx, pendingUpdateTxs)
+		err = m.TxModel.UpdateTxsStatusInTransact(tx, relatedBlockTxStatus)
 		return err
 	})
 	if err != nil {
