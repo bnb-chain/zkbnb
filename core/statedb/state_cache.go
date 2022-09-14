@@ -10,12 +10,6 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-const (
-	_ = iota
-	StateCachePending
-	StateCacheCached
-)
-
 type StateCache struct {
 	StateRoot string
 	// Updated in executor's GeneratePubData method.
@@ -25,14 +19,6 @@ type StateCache struct {
 	PendingOnChainOperationsPubData [][]byte
 	PendingOnChainOperationsHash    []byte
 	Txs                             []*tx.Tx
-
-	// Record the flat states that should be updated.
-	PendingNewAccountIndexMap      map[int64]int
-	PendingNewLiquidityIndexMap    map[int64]int
-	PendingNewNftIndexMap          map[int64]int
-	PendingUpdateAccountIndexMap   map[int64]int
-	PendingUpdateLiquidityIndexMap map[int64]int
-	PendingUpdateNftIndexMap       map[int64]int
 
 	// Record the flat data that should be updated.
 	PendingNewAccountMap      map[int64]*types.AccountInfo
@@ -52,13 +38,6 @@ func NewStateCache(stateRoot string) *StateCache {
 	return &StateCache{
 		StateRoot: stateRoot,
 		Txs:       make([]*tx.Tx, 0),
-
-		PendingNewAccountIndexMap:      make(map[int64]int, 0),
-		PendingNewLiquidityIndexMap:    make(map[int64]int, 0),
-		PendingNewNftIndexMap:          make(map[int64]int, 0),
-		PendingUpdateAccountIndexMap:   make(map[int64]int, 0),
-		PendingUpdateLiquidityIndexMap: make(map[int64]int, 0),
-		PendingUpdateNftIndexMap:       make(map[int64]int, 0),
 
 		PendingNewAccountMap:      make(map[int64]*types.AccountInfo, 0),
 		PendingNewLiquidityMap:    make(map[int64]*liquidity.Liquidity, 0),

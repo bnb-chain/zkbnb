@@ -11,7 +11,6 @@ import (
 
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
-	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
@@ -47,7 +46,7 @@ func (e *DepositNftExecutor) Prepare() error {
 	account, err := bc.DB().AccountModel.GetAccountByNameHash(accountNameHash)
 	if err != nil {
 		exist := false
-		for index := range bc.StateDB().PendingNewAccountIndexMap {
+		for index := range bc.StateDB().PendingNewAccountMap {
 			tempAccount, err := bc.StateDB().GetAccount(index)
 			if err != nil {
 				continue
@@ -118,10 +117,8 @@ func (e *DepositNftExecutor) ApplyTransaction() error {
 	stateCache := e.bc.StateDB()
 	if e.isNewNft {
 		stateCache.SetPendingNewNft(txInfo.NftIndex, nft)
-		stateCache.PendingNewNftIndexMap[txInfo.NftIndex] = statedb.StateCachePending
 	} else {
 		stateCache.SetPendingUpdateNft(txInfo.NftIndex, nft)
-		stateCache.PendingUpdateNftIndexMap[txInfo.NftIndex] = statedb.StateCachePending
 	}
 	return e.BaseExecutor.ApplyTransaction()
 }

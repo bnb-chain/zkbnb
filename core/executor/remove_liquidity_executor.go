@@ -12,7 +12,6 @@ import (
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/chain"
-	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/liquidity"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
@@ -215,10 +214,6 @@ func (e *RemoveLiquidityExecutor) ApplyTransaction() error {
 		TreasuryAccountIndex: e.newPoolInfo.TreasuryAccountIndex,
 		TreasuryRate:         e.newPoolInfo.TreasuryRate,
 	})
-	stateCache.PendingUpdateAccountIndexMap[txInfo.FromAccountIndex] = statedb.StateCachePending
-	stateCache.PendingUpdateAccountIndexMap[treasuryAccount.AccountIndex] = statedb.StateCachePending
-	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
-	stateCache.PendingUpdateLiquidityIndexMap[txInfo.PairIndex] = statedb.StateCachePending
 	return e.BaseExecutor.ApplyTransaction()
 }
 

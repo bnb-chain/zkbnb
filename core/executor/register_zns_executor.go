@@ -12,7 +12,6 @@ import (
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/chain"
-	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/tree"
@@ -58,7 +57,7 @@ func (e *RegisterZnsExecutor) VerifyInputs() error {
 		return errors.New("invalid account name, already registered")
 	}
 
-	for index := range bc.StateDB().PendingNewAccountIndexMap {
+	for index := range bc.StateDB().PendingNewAccountMap {
 		account, err := bc.StateDB().GetFormatAccount(index)
 		if err != nil {
 			continue
@@ -106,7 +105,6 @@ func (e *RegisterZnsExecutor) ApplyTransaction() error {
 
 	stateCache := e.bc.StateDB()
 	stateCache.SetPendingNewAccount(txInfo.AccountIndex, formatAccount)
-	stateCache.PendingNewAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
 	return e.BaseExecutor.ApplyTransaction()
 }
 

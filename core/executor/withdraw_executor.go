@@ -11,7 +11,6 @@ import (
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
-	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -93,8 +92,8 @@ func (e *WithdrawExecutor) ApplyTransaction() error {
 	fromAccount.Nonce++
 
 	stateCache := e.bc.StateDB()
-	stateCache.PendingUpdateAccountIndexMap[txInfo.FromAccountIndex] = statedb.StateCachePending
-	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
+	stateCache.SetPendingUpdateAccount(txInfo.FromAccountIndex, fromAccount)
+	stateCache.SetPendingUpdateAccount(txInfo.GasAccountIndex, gasAccount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 

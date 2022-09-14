@@ -59,9 +59,9 @@ type StateDB struct {
 	redisCache dbcache.Cache
 
 	// Flat state
-	AccountCache   *lru.Cache //map[int64]*types.AccountInfo
-	LiquidityCache *lru.Cache //map[int64]*liquidity.Liquidity
-	NftCache       *lru.Cache //map[int64]*nft.L2Nft
+	AccountCache   *lru.Cache
+	LiquidityCache *lru.Cache
+	NftCache       *lru.Cache
 
 	// Tree state
 	AccountTree       bsmt.SparseMerkleTree
@@ -256,59 +256,69 @@ func (s *StateDB) GetNft(nftIndex int64) (*nft.L2Nft, error) {
 	return nft, nil
 }
 
-func (s *StateDB) syncPendingStateToRedis(pendingMap map[int64]int, getKey func(int64) string, getValue func(int64) interface{}) error {
-	for index, status := range pendingMap {
-		if status != StateCachePending {
-			continue
+func (s *StateDB) syncPendingAccount(pendingAccount map[int64]*types.AccountInfo) error {
+	for index, formatAccount := range pendingAccount {
+		account, err := chain.FromFormatAccountInfo(formatAccount)
+		if err != nil {
+			return err
 		}
-
-		err := s.redisCache.Set(context.Background(), getKey(index), getValue(index))
+		err = s.redisCache.Set(context.Background(), dbcache.AccountKeyByIndex(index), account)
 		if err != nil {
 			return fmt.Errorf("cache to redis failed: %v", err)
 		}
-		pendingMap[index] = StateCacheCached
+		s.AccountCache.Add(index, formatAccount)
 	}
 
 	return nil
 }
 
+func (s *StateDB) syncPendingLiquidity(pendingLiquidity map[int64]*liquidity.Liquidity) error {
+	for index, liquidity := range pendingLiquidity {
+		err := s.redisCache.Set(context.Background(), dbcache.LiquidityKeyByIndex(index), liquidity)
+		if err != nil {
+			return fmt.Errorf("cache to redis failed: %v", err)
+		}
+		s.LiquidityCache.Add(index, liquidity)
+	}
+	return nil
+}
+
+func (s *StateDB) syncPendingNft(pendingNft map[int64]*nft.L2Nft) error {
+	for index, nft := range pendingNft {
+		err := s.redisCache.Set(context.Background(), dbcache.NftKeyByIndex(index), nft)
+		if err != nil {
+			return fmt.Errorf("cache to redis failed: %v", err)
+		}
+		s.NftCache.Add(index, nft)
+	}
+	return nil
+}
+
 func (s *StateDB) SyncStateCacheToRedis() error {
-	getAccount := func(index int64) interface{} {
-		account, _ := s.GetAccount(index)
-		return account
-	}
-	getLiquidity := func(index int64) interface{} {
-		liquidity, _ := s.GetLiquidity(index)
-		return liquidity
-	}
-	getNft := func(index int64) interface{} {
-		nft, _ := s.GetNft(index)
-		return nft
-	}
 	// Sync new create to cache.
-	err := s.syncPendingStateToRedis(s.PendingNewAccountIndexMap, dbcache.AccountKeyByIndex, getAccount)
+	err := s.syncPendingAccount(s.PendingNewAccountMap)
 	if err != nil {
 		return err
 	}
-	err = s.syncPendingStateToRedis(s.PendingNewLiquidityIndexMap, dbcache.LiquidityKeyByIndex, getLiquidity)
+	err = s.syncPendingLiquidity(s.PendingNewLiquidityMap)
 	if err != nil {
 		return err
 	}
-	err = s.syncPendingStateToRedis(s.PendingNewNftIndexMap, dbcache.NftKeyByIndex, getNft)
+	err = s.syncPendingNft(s.PendingNewNftMap)
 	if err != nil {
 		return err
 	}
 
 	// Sync pending update to cache.
-	err = s.syncPendingStateToRedis(s.PendingUpdateAccountIndexMap, dbcache.AccountKeyByIndex, getAccount)
+	err = s.syncPendingAccount(s.PendingUpdateAccountMap)
 	if err != nil {
 		return err
 	}
-	err = s.syncPendingStateToRedis(s.PendingUpdateLiquidityIndexMap, dbcache.LiquidityKeyByIndex, getLiquidity)
+	err = s.syncPendingLiquidity(s.PendingUpdateLiquidityMap)
 	if err != nil {
 		return err
 	}
-	err = s.syncPendingStateToRedis(s.PendingUpdateNftIndexMap, dbcache.NftKeyByIndex, getNft)
+	err = s.syncPendingNft(s.PendingUpdateNftMap)
 	if err != nil {
 		return err
 	}
@@ -325,13 +335,8 @@ func (s *StateDB) GetPendingAccount(blockHeight int64) ([]*account.Account, []*a
 	pendingUpdateAccount := make([]*account.Account, 0)
 	pendingNewAccountHistory := make([]*account.AccountHistory, 0)
 
-	for index, status := range s.PendingNewAccountIndexMap {
-		if status < StateCachePending {
-			logx.Errorf("unexpected 0 status in Statedb cache")
-			continue
-		}
-
-		newAccount, err := s.GetAccount(index)
+	for _, formatAccount := range s.PendingNewAccountMap {
+		newAccount, err := chain.FromFormatAccountInfo(formatAccount)
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -347,17 +352,12 @@ func (s *StateDB) GetPendingAccount(blockHeight int64) ([]*account.Account, []*a
 		})
 	}
 
-	for index, status := range s.PendingUpdateAccountIndexMap {
-		if status < StateCachePending {
-			logx.Errorf("unexpected 0 status in Statedb cache")
+	for index, formatAccount := range s.PendingUpdateAccountMap {
+		if _, exist := s.PendingNewAccountMap[index]; exist {
 			continue
 		}
 
-		if _, exist := s.PendingNewAccountIndexMap[index]; exist {
-			continue
-		}
-
-		newAccount, err := s.GetAccount(index)
+		newAccount, err := chain.FromFormatAccountInfo(formatAccount)
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -380,17 +380,7 @@ func (s *StateDB) GetPendingLiquidity(blockHeight int64) ([]*liquidity.Liquidity
 	pendingUpdateLiquidity := make([]*liquidity.Liquidity, 0)
 	pendingNewLiquidityHistory := make([]*liquidity.LiquidityHistory, 0)
 
-	for index, status := range s.PendingNewLiquidityIndexMap {
-		if status < StateCachePending {
-			logx.Error("unexpected 0 status in Statedb cache")
-			continue
-		}
-
-		newLiquidity, err := s.GetLiquidity(index)
-		if err != nil {
-			logx.Errorf("get liquidity [%d] fails", index)
-			continue
-		}
+	for _, newLiquidity := range s.PendingNewLiquidityMap {
 		pendingNewLiquidity = append(pendingNewLiquidity, newLiquidity)
 		pendingNewLiquidityHistory = append(pendingNewLiquidityHistory, &liquidity.LiquidityHistory{
 			PairIndex:            newLiquidity.PairIndex,
@@ -407,21 +397,11 @@ func (s *StateDB) GetPendingLiquidity(blockHeight int64) ([]*liquidity.Liquidity
 		})
 	}
 
-	for index, status := range s.PendingUpdateLiquidityIndexMap {
-		if status < StateCachePending {
-			logx.Errorf("unexpected 0 status in Statedb cache")
+	for index, newLiquidity := range s.PendingUpdateLiquidityMap {
+		if _, exist := s.PendingNewLiquidityMap[index]; exist {
 			continue
 		}
 
-		if _, exist := s.PendingNewLiquidityIndexMap[index]; exist {
-			continue
-		}
-
-		newLiquidity, err := s.GetLiquidity(index)
-		if err != nil {
-			logx.Errorf("get liquidity [%d] fails", index)
-			continue
-		}
 		pendingUpdateLiquidity = append(pendingUpdateLiquidity, newLiquidity)
 		pendingNewLiquidityHistory = append(pendingNewLiquidityHistory, &liquidity.LiquidityHistory{
 			PairIndex:            newLiquidity.PairIndex,
@@ -446,16 +426,7 @@ func (s *StateDB) GetPendingNft(blockHeight int64) ([]*nft.L2Nft, []*nft.L2Nft, 
 	pendingUpdateNft := make([]*nft.L2Nft, 0)
 	pendingNewNftHistory := make([]*nft.L2NftHistory, 0)
 
-	for index, status := range s.PendingNewNftIndexMap {
-		if status < StateCachePending {
-			logx.Errorf("unexpected 0 status in Statedb cache")
-			continue
-		}
-		newNft, err := s.GetNft(index)
-		if err != nil {
-			logx.Errorf("get nft [%d] fails", index)
-			continue
-		}
+	for _, newNft := range s.PendingNewNftMap {
 		pendingNewNft = append(pendingNewNft, newNft)
 		pendingNewNftHistory = append(pendingNewNftHistory, &nft.L2NftHistory{
 			NftIndex:            newNft.NftIndex,
@@ -470,19 +441,8 @@ func (s *StateDB) GetPendingNft(blockHeight int64) ([]*nft.L2Nft, []*nft.L2Nft, 
 		})
 	}
 
-	for index, status := range s.PendingUpdateNftIndexMap {
-		if status < StateCachePending {
-			logx.Errorf("unexpected 0 status in Statedb cache")
-			continue
-		}
-
-		if _, exist := s.PendingNewNftIndexMap[index]; exist {
-			continue
-		}
-
-		newNft, err := s.GetNft(index)
-		if err != nil {
-			logx.Errorf("get nft [%d] fails", index)
+	for index, newNft := range s.PendingUpdateNftMap {
+		if _, exist := s.PendingNewNftMap[index]; exist {
 			continue
 		}
 		pendingUpdateNft = append(pendingUpdateNft, newNft)
@@ -761,7 +721,7 @@ func (s *StateDB) GetNextAccountIndex() int64 {
 }
 
 func (s *StateDB) GetNextNftIndex() int64 {
-	if len(s.PendingNewNftIndexMap) == 0 {
+	if len(s.PendingNewNftMap) == 0 {
 		maxNftIndex, err := s.chainDb.L2NftModel.GetLatestNftIndex()
 		if err != nil {
 			panic("get latest nft index error: " + err.Error())
@@ -770,8 +730,8 @@ func (s *StateDB) GetNextNftIndex() int64 {
 	}
 
 	maxNftIndex := int64(-1)
-	for index, status := range s.PendingNewNftIndexMap {
-		if status >= StateCachePending && index > maxNftIndex {
+	for index := range s.PendingNewNftMap {
+		if index > maxNftIndex {
 			maxNftIndex = index
 		}
 	}

@@ -12,7 +12,6 @@ import (
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
-	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
@@ -113,9 +112,6 @@ func (e *MintNftExecutor) ApplyTransaction() error {
 		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
 		CollectionId:        txInfo.NftCollectionId,
 	})
-	stateCache.PendingUpdateAccountIndexMap[txInfo.CreatorAccountIndex] = statedb.StateCachePending
-	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
-	stateCache.PendingNewNftIndexMap[txInfo.NftIndex] = statedb.StateCachePending
 	return e.BaseExecutor.ApplyTransaction()
 }
 
