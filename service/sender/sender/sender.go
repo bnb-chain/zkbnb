@@ -28,7 +28,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbnb-eth-rpc/_rpc"
+	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/zkbnb/core/legend"
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/common/prove"
@@ -45,8 +45,8 @@ type Sender struct {
 	config sconfig.Config
 
 	// Client
-	cli           *_rpc.ProviderClient
-	authCli       *_rpc.AuthClient
+	cli           *rpc.ProviderClient
+	authCli       *rpc.AuthClient
 	zkbnbInstance *zkbnb.ZkBNB
 
 	// Data access objects
@@ -86,7 +86,7 @@ func NewSender(c sconfig.Config) *Sender {
 		panic(err)
 	}
 
-	s.cli, err = _rpc.NewClient(l1RPCEndpoint.Value)
+	s.cli, err = rpc.NewClient(l1RPCEndpoint.Value)
 	if err != nil {
 		panic(err)
 	}
@@ -94,7 +94,7 @@ func NewSender(c sconfig.Config) *Sender {
 	if err != nil {
 		panic(err)
 	}
-	s.authCli, err = _rpc.NewAuthClient(s.cli, c.ChainConfig.Sk, chainId)
+	s.authCli, err = rpc.NewAuthClient(c.ChainConfig.Sk, chainId)
 	if err != nil {
 		panic(err)
 	}
@@ -152,11 +152,17 @@ func (s *Sender) CommitBlocks() (err error) {
 		lastStoredBlockInfo = chain.ConstructStoredBlockInfo(lastHandledBlockInfo)
 	}
 
-	gasPrice, err := s.cli.SuggestGasPrice(context.Background())
-	if err != nil {
-		logx.Errorf("failed to fetch gas price: %v", err)
-		return err
+	var gasPrice *big.Int
+	if s.config.ChainConfig.GasPrice > 0 {
+		gasPrice = big.NewInt(int64(s.config.ChainConfig.GasPrice))
+	} else {
+		gasPrice, err = s.cli.SuggestGasPrice(context.Background())
+		if err != nil {
+			logx.Errorf("failed to fetch gas price: %v", err)
+			return err
+		}
 	}
+
 	// commit blocks on-chain
 	txHash, err := zkbnb.CommitBlocks(
 		cli, authCli,
@@ -322,10 +328,18 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		proofs = append(proofs, proofInfo.B[1][0], proofInfo.B[1][1])
 		proofs = append(proofs, proofInfo.C[:]...)
 	}
-	gasPrice, err := s.cli.SuggestGasPrice(context.Background())
-	if err != nil {
-		return err
+
+	var gasPrice *big.Int
+	if s.config.ChainConfig.GasPrice > 0 {
+		gasPrice = big.NewInt(int64(s.config.ChainConfig.GasPrice))
+	} else {
+		gasPrice, err = s.cli.SuggestGasPrice(context.Background())
+		if err != nil {
+			logx.Errorf("failed to fetch gas price: %v", err)
+			return err
+		}
 	}
+
 	// Verify blocks on-chain
 	txHash, err := zkbnb.VerifyAndExecuteBlocks(cli, authCli, zkbnbInstance,
 		pendingVerifyAndExecuteBlocks, proofs, gasPrice, s.config.ChainConfig.GasLimit)

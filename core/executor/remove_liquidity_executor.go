@@ -48,16 +48,25 @@ func (e *RemoveLiquidityExecutor) Prepare() error {
 		logx.Errorf("prepare liquidity failed: %s", err.Error())
 		return err
 	}
-
-	liquidity := e.bc.StateDB().LiquidityMap[txInfo.PairIndex]
-
-	err = e.BaseExecutor.Prepare(context.WithValue(context.Background(),
-		legendTxTypes.TreasuryAccountIndexKey, liquidity.TreasuryAccountIndex))
+	err = e.bc.StateDB().PrepareAccountsAndAssets(map[int64]map[int64]bool{
+		txInfo.FromAccountIndex: {
+			txInfo.PairIndex: true,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	
+	err = e.fillTxInfo()
 	if err != nil {
 		return err
 	}
 
-	return e.fillTxInfo()
+	liquidity := e.bc.StateDB().LiquidityMap[txInfo.PairIndex]
+
+	return e.BaseExecutor.Prepare(context.WithValue(context.Background(),
+		legendTxTypes.TreasuryAccountIndexKey, liquidity.TreasuryAccountIndex))
+
 }
 
 func (e *RemoveLiquidityExecutor) VerifyInputs() error {

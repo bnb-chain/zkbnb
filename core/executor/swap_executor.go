@@ -48,13 +48,17 @@ func (e *SwapExecutor) Prepare() error {
 		logx.Errorf("prepare liquidity failed: %s", err.Error())
 		return errors.New("internal error")
 	}
+	err = e.fillTxInfo()
+	if err != nil {
+		return err
+	}
 
 	err = e.BaseExecutor.Prepare(context.Background())
 	if err != nil {
 		return err
 	}
 
-	return e.fillTxInfo()
+	return nil
 }
 
 func (e *SwapExecutor) VerifyInputs() error {
@@ -96,7 +100,38 @@ func (e *SwapExecutor) VerifyInputs() error {
 		return errors.New("liquidity is empty")
 	}
 
-	return nil
+	// pool info
+	var poolDelta *types.LiquidityInfo
+	poolAssetBDelta := ffmath.Neg(txInfo.AssetBAmountDelta)
+	if txInfo.AssetAId == liquidityInfo.AssetAId {
+		poolDelta = &types.LiquidityInfo{
+			PairIndex:            txInfo.PairIndex,
+			AssetAId:             txInfo.AssetAId,
+			AssetA:               txInfo.AssetAAmount,
+			AssetBId:             txInfo.AssetBId,
+			AssetB:               poolAssetBDelta,
+			LpAmount:             types.ZeroBigInt,
+			KLast:                types.ZeroBigInt,
+			FeeRate:              liquidityInfo.FeeRate,
+			TreasuryAccountIndex: liquidityInfo.TreasuryAccountIndex,
+			TreasuryRate:         liquidityInfo.TreasuryRate,
+		}
+	} else if txInfo.AssetAId == liquidityInfo.AssetBId {
+		poolDelta = &types.LiquidityInfo{
+			PairIndex:            txInfo.PairIndex,
+			AssetAId:             txInfo.AssetBId,
+			AssetA:               poolAssetBDelta,
+			AssetBId:             txInfo.AssetAId,
+			AssetB:               txInfo.AssetAAmount,
+			LpAmount:             types.ZeroBigInt,
+			KLast:                types.ZeroBigInt,
+			FeeRate:              liquidityInfo.FeeRate,
+			TreasuryAccountIndex: liquidityInfo.TreasuryAccountIndex,
+			TreasuryRate:         liquidityInfo.TreasuryRate,
+		}
+	}
+	e.newPoolInfo, err = ComputeNewBalance(liquidityInfo, poolDelta)
+	return err
 }
 
 func constructLiquidityInfo(liquidity *liquidity.Liquidity) (*types.LiquidityInfo, error) {

@@ -1,7 +1,9 @@
 package core
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/block"
 	sdb "github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/dbcache"
 	"github.com/bnb-chain/zkbnb/tree"
@@ -27,12 +29,28 @@ var config = &ChainConfig{
 func TestImportBlock(t *testing.T) {
 	testDBSetup()
 	defer testDBShutdown()
-	for i := int64(46); i <= 46; i++ {
+	for i := int64(0); i <= 0; i++ {
 		fmt.Println(i)
 		chain, err := NewTestBlockChain(config, "testBlock", i)
+		p1, _ := chain.StateDB().AccountTree.GetProof(uint64(0))
+		bzp1, _ := json.MarshalIndent(p1, "\t", "\t")
+		p2, _ := chain.StateDB().AccountTree.GetProof(uint64(block.LastAccountIndex))
+		bzp2, _ := json.MarshalIndent(p2, "\t", "\t")
+
+		fmt.Println(string(bzp1))
+		fmt.Println(string(bzp2))
+
 		assert.NoError(t, err, fmt.Sprintf("failed to create chain at height %d", i))
 		err = chain.importNextBlock()
 		assert.NoError(t, err, fmt.Sprintf("failed to import block height %d", i+1))
+		w, _ := chain.BlockWitnessModel.GetBlockWitnessByHeight(i + 1)
+		bz1, _ := json.MarshalIndent(chain.StateDB().Witnesses, "\t", "\t")
+		var cryptoBlock *block.Block
+		json.Unmarshal([]byte(w.WitnessData), &cryptoBlock)
+		bz2, _ := json.MarshalIndent(cryptoBlock.Txs, "\t", "\t")
+		assert.Equal(t, string(bz1), string(bz2))
+		fmt.Println(string(bz1))
+		fmt.Println(string(bz2))
 	}
 }
 

@@ -436,6 +436,8 @@ func (s *StateDB) PrepareLiquidity(pairIndex int64) error {
 			if err != nil {
 				return err
 			}
+			liquidityInfo.AssetA = historyLiquidity.AssetA
+			liquidityInfo.AssetB = historyLiquidity.AssetB
 			liquidityInfo.LpAmount = historyLiquidity.LpAmount
 			liquidityInfo.KLast = historyLiquidity.KLast
 			liquidityInfo.FeeRate = historyLiquidity.FeeRate

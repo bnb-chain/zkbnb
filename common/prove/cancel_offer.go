@@ -34,8 +34,8 @@ func fillCancelOfferTxWitness(cryptoTx *TxWitness, oTx *Tx) error {
 		return err
 	}
 	cryptoTx.CancelOfferTxInfo = cryptoTxInfo
-	cryptoTx.ExpiredAt = txInfo.ExpiredAt
 	cryptoTx.Signature = new(eddsa.Signature)
+	cryptoTx.ExpiredAt = txInfo.ExpiredAt
 	_, err = cryptoTx.Signature.SetBytes(txInfo.Sig)
 	if err != nil {
 		return err

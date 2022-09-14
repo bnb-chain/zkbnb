@@ -34,8 +34,8 @@ func fillAddLiquidityTxWitness(witness *TxWitness, oTx *Tx) error {
 		return err
 	}
 	witness.AddLiquidityTxInfo = cryptoTxInfo
-	witness.ExpiredAt = txInfo.ExpiredAt
 	witness.Signature = new(eddsa.Signature)
+	witness.ExpiredAt = txInfo.ExpiredAt
 	_, err = witness.Signature.SetBytes(txInfo.Sig)
 	if err != nil {
 		return err

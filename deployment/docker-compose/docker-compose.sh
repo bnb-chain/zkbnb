@@ -31,6 +31,13 @@ KeyPath:
   ProvingKeyPath: [/server/.zkbnb/zkbnb1.pk]
   VerifyingKeyPath: [/server/.zkbnb/zkbnb1.vk]
 
+LogConf:
+  ServiceName: prover
+  Mode: console
+  Encoding: plain
+  StackCooldownMillis: 500
+  Level: info
+
 BlockConfig:
   OptionalBlockSizes: [1]
 " > ${CONFIG_PATH}/prover.yaml
@@ -44,6 +51,13 @@ Postgres:
 CacheRedis:
   - Host: redis:6379
     Type: node
+
+LogConf:
+  ServiceName: monitor
+  Mode: console
+  Encoding: plain
+  StackCooldownMillis: 500
+  Level: info
 
 ChainConfig:
   NetworkRPCSysConfigName: \"BscTestNetworkRpc\"
@@ -80,6 +94,13 @@ CacheRedis:
   - Host: redis:6379
     Type: node
 
+LogConf:
+  ServiceName: sender
+  Mode: console
+  Encoding: plain
+  StackCooldownMillis: 500
+  Level: info
+
 ChainConfig:
   NetworkRPCSysConfigName: \"BscTestNetworkRpc\"
   #NetworkRPCSysConfigName: \"LocalTestNetworkRpc\"
@@ -88,6 +109,7 @@ ChainConfig:
   MaxBlockCount: 4
   Sk: \"$SK\"
   GasLimit: 5000000
+  GasPrice: 0
 
 " > ${CONFIG_PATH}/sender.yaml
 
@@ -112,8 +134,9 @@ LogConf:
   ServiceName: api-server
   Mode: console
   Path: ./log/api-server
+  Encoding: plain
   StackCooldownMillis: 500
-  Level: error
+  Level: info
 
 CoinMarketCap:
   Url: $CMC_URL

@@ -49,15 +49,18 @@ func (e *AddLiquidityExecutor) Prepare() error {
 		logx.Errorf("prepare liquidity failed: %s", err.Error())
 		return errors.New("internal error")
 	}
-	liquidity := e.bc.StateDB().LiquidityMap[txInfo.PairIndex]
 
-	err = e.BaseExecutor.Prepare(context.WithValue(context.Background(),
-		legendTxTypes.TreasuryAccountIndexKey, liquidity.TreasuryAccountIndex))
+	// Add the right details to tx info.
+	err = e.fillTxInfo()
 	if err != nil {
 		return err
 	}
-	// Add the right details to tx info.
-	return e.fillTxInfo()
+
+	// Mark the tree states that would be affected in this executor.
+	liquidity := e.bc.StateDB().LiquidityMap[txInfo.PairIndex]
+
+	return e.BaseExecutor.Prepare(context.WithValue(context.Background(),
+		legendTxTypes.TreasuryAccountIndexKey, liquidity.TreasuryAccountIndex))
 }
 
 func (e *AddLiquidityExecutor) VerifyInputs() error {

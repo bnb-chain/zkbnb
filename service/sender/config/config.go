@@ -15,6 +15,7 @@ type Config struct {
 		ConfirmBlocksCount      uint64
 		Sk                      string
 		GasLimit                uint64
+		GasPrice                uint64
 	}
 	LogConf logx.LogConf
 }

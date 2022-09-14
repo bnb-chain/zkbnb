@@ -37,8 +37,8 @@ func fillWithdrawTxWitness(cryptoTx *TxWitness, oTx *Tx) error {
 		return err
 	}
 	cryptoTx.WithdrawTxInfo = cryptoTxInfo
-	cryptoTx.ExpiredAt = oTx.ExpiredAt
 	cryptoTx.Signature = new(eddsa.Signature)
+	cryptoTx.ExpiredAt = txInfo.ExpiredAt
 	_, err = cryptoTx.Signature.SetBytes(txInfo.Sig)
 	if err != nil {
 		return err

@@ -35,7 +35,7 @@ func fillTransferTxWitness(cryptoTx *TxWitness, oTx *Tx) error {
 		return err
 	}
 	cryptoTx.TransferTxInfo = cryptoTxInfo
-	cryptoTx.ExpiredAt = oTx.ExpiredAt
+	cryptoTx.ExpiredAt = txInfo.ExpiredAt
 	cryptoTx.Signature = new(eddsa.Signature)
 	_, err = cryptoTx.Signature.SetBytes(txInfo.Sig)
 	if err != nil {

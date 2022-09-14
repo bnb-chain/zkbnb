@@ -183,7 +183,11 @@ func (e *BaseExecutor) GenerateWitness() (witness *prove.TxWitness, err error) {
 		account := e.bc.StateDB().AccountMap[ak.Index]
 		if account == nil {
 			// register zks
-			witness.AccountsInfoBefore[index] = std.EmptyAccount(ak.Index, tree.NilAccountAssetRoot)
+			acc := std.EmptyAccount(ak.Index, tree.NilAccountAssetRoot)
+			for idx := 0; idx < std.NbAccountAssetsPerAccount; idx++ {
+				acc.AssetsInfo[idx] = std.EmptyAccountAsset(block.LastAccountAssetId)
+			}
+			witness.AccountsInfoBefore[index] = acc
 		} else {
 			ac, err := account.ToStdAccount()
 			if err != nil {
@@ -246,8 +250,7 @@ func (e *BaseExecutor) GenerateWitness() (witness *prove.TxWitness, err error) {
 
 	witness.StateRootBefore = tree.ComputeStateRootHash(witness.AccountRootBefore, witness.LiquidityRootBefore, witness.NftRootBefore)
 	witness.TxType = uint8(e.tx.TxType)
-	witness.Nonce = e.tx.Nonce
-	witness.ExpiredAt = e.tx.ExpiredAt
+	witness.Nonce = e.iTxInfo.GetNonce()
 	err = prove.FillTxWitness(witness, e.tx)
 	if err != nil {
 		return nil, err
