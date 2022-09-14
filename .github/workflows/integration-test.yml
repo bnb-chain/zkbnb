@@ -17,7 +17,7 @@ jobs:
       pull-requests: write
     steps:
       - name: deploy new zkbnb on runner
-        if: !contains(github.event.pull_request.body, '/skip-integration-test')
+        if: ${{ !contains(github.event.pull_request.body, '/skip-integration-test') }}
         run: |
           echo 'fetch zkbnb repo'
           export PR_NUMBER=$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
@@ -49,6 +49,7 @@ jobs:
           echo "end deploy"
 
       - name: run integration test
+        if: ${{ !contains(github.event.pull_request.body, '/skip-integration-test') }}
         run: |
           export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
           export ZkBNB=$(sudo cat ~/zkbnb/deployment/dependency/zkbnb-contract/info/addresses.json  | jq -r '.zkbnbProxy')
