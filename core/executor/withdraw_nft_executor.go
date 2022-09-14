@@ -40,12 +40,11 @@ func NewWithdrawNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 func (e *WithdrawNftExecutor) Prepare() error {
 	txInfo := e.txInfo
 
-	err := e.bc.StateDB().PrepareNft(txInfo.NftIndex)
+	nftInfo, err := e.bc.StateDB().PrepareNft(txInfo.NftIndex)
 	if err != nil {
 		logx.Errorf("prepare nft failed")
 		return errors.New("internal error")
 	}
-	nftInfo := e.bc.StateDB().NftMap[txInfo.NftIndex]
 
 	// Mark the tree states that would be affected in this executor.
 	e.MarkNftDirty(txInfo.NftIndex)
@@ -63,7 +62,10 @@ func (e *WithdrawNftExecutor) Prepare() error {
 	txInfo.CreatorAccountIndex = nftInfo.CreatorAccountIndex
 	txInfo.CreatorAccountNameHash = common.FromHex(types.EmptyAccountNameHash)
 	if nftInfo.CreatorAccountIndex != types.NilAccountIndex {
-		creatorAccount := e.bc.StateDB().AccountMap[nftInfo.CreatorAccountIndex]
+		creatorAccount, err := e.bc.StateDB().GetFormatAccount(nftInfo.CreatorAccountIndex)
+		if err != nil {
+			return err
+		}
 		txInfo.CreatorAccountNameHash = common.FromHex(creatorAccount.AccountNameHash)
 	}
 	txInfo.CreatorTreasuryRate = nftInfo.CreatorTreasuryRate
@@ -83,12 +85,18 @@ func (e *WithdrawNftExecutor) VerifyInputs() error {
 		return err
 	}
 
-	fromAccount := e.bc.StateDB().AccountMap[txInfo.AccountIndex]
+	fromAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
+	if err != nil {
+		return err
+	}
 	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
 		return errors.New("balance is not enough")
 	}
 
-	nftInfo := e.bc.StateDB().NftMap[txInfo.NftIndex]
+	nftInfo, err := e.bc.StateDB().GetNft(txInfo.NftIndex)
+	if err != nil {
+		return err
+	}
 	if nftInfo.OwnerAccountIndex != txInfo.AccountIndex {
 		return errors.New("account is not owner of the nft")
 	}
@@ -100,9 +108,18 @@ func (e *WithdrawNftExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	oldNft := bc.StateDB().NftMap[txInfo.NftIndex]
-	fromAccount := bc.StateDB().AccountMap[txInfo.AccountIndex]
-	gasAccount := bc.StateDB().AccountMap[txInfo.GasAccountIndex]
+	oldNft, err := bc.StateDB().GetNft(txInfo.NftIndex)
+	if err != nil {
+		return err
+	}
+	fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
+	if err != nil {
+		return err
+	}
+	gasAccount, err := bc.StateDB().GetFormatAccount(txInfo.GasAccountIndex)
+	if err != nil {
+		return err
+	}
 
 	// apply changes
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
@@ -110,7 +127,10 @@ func (e *WithdrawNftExecutor) ApplyTransaction() error {
 	fromAccount.Nonce++
 
 	newNftInfo := types.EmptyNftInfo(txInfo.NftIndex)
-	bc.StateDB().NftMap[txInfo.NftIndex] = &nft.L2Nft{
+	stateCache := e.bc.StateDB()
+	stateCache.SetPendingUpdateAccount(txInfo.AccountIndex, fromAccount)
+	stateCache.SetPendingUpdateAccount(txInfo.GasAccountIndex, gasAccount)
+	stateCache.SetPendingUpdateNft(txInfo.NftIndex, &nft.L2Nft{
 		Model:               oldNft.Model,
 		NftIndex:            newNftInfo.NftIndex,
 		CreatorAccountIndex: newNftInfo.CreatorAccountIndex,
@@ -120,9 +140,7 @@ func (e *WithdrawNftExecutor) ApplyTransaction() error {
 		NftL1TokenId:        newNftInfo.NftL1TokenId,
 		CreatorTreasuryRate: newNftInfo.CreatorTreasuryRate,
 		CollectionId:        newNftInfo.CollectionId,
-	}
-
-	stateCache := e.bc.StateDB()
+	})
 	stateCache.PendingUpdateAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateNftIndexMap[txInfo.NftIndex] = statedb.StateCachePending
@@ -187,7 +205,10 @@ func (e *WithdrawNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 
 func (e *WithdrawNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
-	nftModel := e.bc.StateDB().NftMap[txInfo.NftIndex]
+	nftModel, err := e.bc.StateDB().GetNft(txInfo.NftIndex)
+	if err != nil {
+		return nil, err
+	}
 
 	copiedAccounts, err := e.bc.StateDB().DeepCopyAccounts([]int64{txInfo.AccountIndex, txInfo.CreatorAccountIndex, txInfo.GasAccountIndex})
 	if err != nil {

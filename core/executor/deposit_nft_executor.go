@@ -11,7 +11,6 @@ import (
 
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
-	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/tx"
@@ -47,14 +46,20 @@ func (e *DepositNftExecutor) Prepare() error {
 	accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
 	account, err := bc.DB().AccountModel.GetAccountByNameHash(accountNameHash)
 	if err != nil {
+		exist := false
 		for index := range bc.StateDB().PendingNewAccountIndexMap {
-			if accountNameHash == bc.StateDB().AccountMap[index].AccountNameHash {
-				account, err = chain.FromFormatAccountInfo(bc.StateDB().AccountMap[index])
+			tempAccount, err := bc.StateDB().GetAccount(index)
+			if err != nil {
+				continue
+			}
+			if accountNameHash == tempAccount.AccountNameHash {
+				account = tempAccount
+				exist = true
 				break
 			}
 		}
 
-		if err != nil {
+		if !exist {
 			return errors.New("invalid account name hash")
 		}
 	}
@@ -68,7 +73,7 @@ func (e *DepositNftExecutor) Prepare() error {
 		// Set new nft index for new nft.
 		txInfo.NftIndex = bc.StateDB().GetNextNftIndex()
 	} else {
-		err = e.bc.StateDB().PrepareNft(txInfo.NftIndex)
+		_, err = e.bc.StateDB().PrepareNft(txInfo.NftIndex)
 		if err != nil {
 			logx.Errorf("prepare nft failed")
 			return err
@@ -85,24 +90,21 @@ func (e *DepositNftExecutor) VerifyInputs() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	if e.isNewNft {
-		if bc.StateDB().NftMap[txInfo.NftIndex] != nil {
-			return errors.New("invalid nft index, already exist")
-		}
-	} else {
-		if bc.StateDB().NftMap[txInfo.NftIndex].NftContentHash != types.EmptyNftContentHash {
-			return errors.New("invalid nft index, already exist")
-		}
+	nft, err := bc.StateDB().GetNft(txInfo.NftIndex)
+	if e.isNewNft && err == nil {
+		return errors.New("invalid nft index, already exist")
+	}
+	if nft.NftContentHash != types.EmptyNftContentHash {
+		return errors.New("invalid nft index, already exist")
 	}
 
 	return nil
 }
 
 func (e *DepositNftExecutor) ApplyTransaction() error {
-	bc := e.bc
 	txInfo := e.txInfo
 
-	bc.StateDB().NftMap[txInfo.NftIndex] = &nft.L2Nft{
+	nft := &nft.L2Nft{
 		NftIndex:            txInfo.NftIndex,
 		CreatorAccountIndex: txInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   txInfo.AccountIndex,
@@ -115,8 +117,10 @@ func (e *DepositNftExecutor) ApplyTransaction() error {
 
 	stateCache := e.bc.StateDB()
 	if e.isNewNft {
+		stateCache.SetPendingNewNft(txInfo.NftIndex, nft)
 		stateCache.PendingNewNftIndexMap[txInfo.NftIndex] = statedb.StateCachePending
 	} else {
+		stateCache.SetPendingUpdateNft(txInfo.NftIndex, nft)
 		stateCache.PendingUpdateNftIndexMap[txInfo.NftIndex] = statedb.StateCachePending
 	}
 	return e.BaseExecutor.ApplyTransaction()
@@ -168,7 +172,10 @@ func (e *DepositNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 
 func (e *DepositNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
-	depositAccount := e.bc.StateDB().AccountMap[txInfo.AccountIndex]
+	depositAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
+	if err != nil {
+		return nil, err
+	}
 	txDetails := make([]*tx.TxDetail, 0, 2)
 
 	// user info

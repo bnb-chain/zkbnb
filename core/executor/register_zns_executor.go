@@ -59,7 +59,11 @@ func (e *RegisterZnsExecutor) VerifyInputs() error {
 	}
 
 	for index := range bc.StateDB().PendingNewAccountIndexMap {
-		if txInfo.AccountName == bc.StateDB().AccountMap[index].AccountName {
+		account, err := bc.StateDB().GetFormatAccount(index)
+		if err != nil {
+			continue
+		}
+		if txInfo.AccountName == account.AccountName {
 			return errors.New("invalid account name, already registered")
 		}
 	}
@@ -88,7 +92,7 @@ func (e *RegisterZnsExecutor) ApplyTransaction() error {
 		AssetRoot:       common.Bytes2Hex(tree.NilAccountAssetRoot),
 		Status:          account.AccountStatusConfirmed,
 	}
-	bc.StateDB().AccountMap[txInfo.AccountIndex], err = chain.ToFormatAccountInfo(newAccount)
+	formatAccount, err := chain.ToFormatAccountInfo(newAccount)
 	if err != nil {
 		return err
 	}
@@ -101,6 +105,7 @@ func (e *RegisterZnsExecutor) ApplyTransaction() error {
 	bc.StateDB().AccountAssetTrees = append(bc.StateDB().AccountAssetTrees, emptyAssetTree)
 
 	stateCache := e.bc.StateDB()
+	stateCache.SetPendingNewAccount(txInfo.AccountIndex, formatAccount)
 	stateCache.PendingNewAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
 	return e.BaseExecutor.ApplyTransaction()
 }

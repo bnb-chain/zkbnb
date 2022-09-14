@@ -11,7 +11,6 @@ import (
 
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
-	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/tx"
@@ -47,14 +46,20 @@ func (e *FullExitNftExecutor) Prepare() error {
 	accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
 	account, err := bc.DB().AccountModel.GetAccountByNameHash(accountNameHash)
 	if err != nil {
+		exist := false
 		for index := range bc.StateDB().PendingNewAccountIndexMap {
-			if accountNameHash == bc.StateDB().AccountMap[index].AccountNameHash {
-				account, err = chain.FromFormatAccountInfo(bc.StateDB().AccountMap[index])
+			tempAccount, err := bc.StateDB().GetAccount(index)
+			if err != nil {
+				continue
+			}
+			if accountNameHash == tempAccount.AccountNameHash {
+				account = tempAccount
+				exist = true
 				break
 			}
 		}
 
-		if err != nil {
+		if !exist {
 			return errors.New("invalid account name hash")
 		}
 	}
@@ -78,11 +83,14 @@ func (e *FullExitNftExecutor) Prepare() error {
 	}
 
 	var isExitEmptyNft = true
-	err = e.bc.StateDB().PrepareNft(txInfo.NftIndex)
-	if err == nil &&
-		bc.StateDB().NftMap[txInfo.NftIndex].OwnerAccountIndex == account.AccountIndex {
+	nft, err := e.bc.StateDB().PrepareNft(txInfo.NftIndex)
+	if err != nil {
+		return err
+	}
+
+	if nft.OwnerAccountIndex == account.AccountIndex {
 		// Set the right nft if the owner is correct.
-		exitNft = bc.StateDB().NftMap[txInfo.NftIndex]
+		exitNft = nft
 		isExitEmptyNft = false
 	}
 
@@ -102,7 +110,11 @@ func (e *FullExitNftExecutor) Prepare() error {
 	txInfo.CreatorTreasuryRate = exitNft.CreatorTreasuryRate
 	txInfo.CreatorAccountNameHash = common.FromHex(types.EmptyAccountNameHash)
 	if isExitEmptyNft {
-		txInfo.CreatorAccountNameHash = common.FromHex(bc.StateDB().AccountMap[exitNft.CreatorAccountIndex].AccountNameHash)
+		creator, err := bc.StateDB().GetFormatAccount(exitNft.CreatorAccountIndex)
+		if err != nil {
+			return err
+		}
+		txInfo.CreatorAccountNameHash = common.FromHex(creator.AccountNameHash)
 	}
 	txInfo.NftL1Address = exitNft.NftL1Address
 	txInfo.NftL1TokenId, _ = new(big.Int).SetString(exitNft.NftL1TokenId, 10)
@@ -117,14 +129,18 @@ func (e *FullExitNftExecutor) VerifyInputs() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	if bc.StateDB().NftMap[txInfo.NftIndex] == nil || txInfo.AccountIndex != bc.StateDB().NftMap[txInfo.NftIndex].OwnerAccountIndex {
+	nft, err := bc.StateDB().GetNft(txInfo.NftIndex)
+	if err != nil {
+		return err
+	}
+	if txInfo.AccountIndex != nft.OwnerAccountIndex {
 		// The check is not fully enough, just avoid explicit error.
 		if !bytes.Equal(txInfo.NftContentHash, common.FromHex(types.EmptyNftContentHash)) {
 			return errors.New("invalid nft content hash")
 		}
 	} else {
 		// The check is not fully enough, just avoid explicit error.
-		if !bytes.Equal(txInfo.NftContentHash, common.FromHex(bc.StateDB().NftMap[txInfo.NftIndex].NftContentHash)) {
+		if !bytes.Equal(txInfo.NftContentHash, common.FromHex(nft.NftContentHash)) {
 			return errors.New("invalid nft content hash")
 		}
 	}
@@ -135,8 +151,11 @@ func (e *FullExitNftExecutor) VerifyInputs() error {
 func (e *FullExitNftExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
-
-	if bc.StateDB().NftMap[txInfo.NftIndex] == nil || txInfo.AccountIndex != bc.StateDB().NftMap[txInfo.NftIndex].OwnerAccountIndex {
+	oldNft, err := bc.StateDB().GetNft(txInfo.NftIndex)
+	if err != nil {
+		return err
+	}
+	if txInfo.AccountIndex != oldNft.OwnerAccountIndex {
 		// Do nothing.
 		return nil
 	}
@@ -153,9 +172,9 @@ func (e *FullExitNftExecutor) ApplyTransaction() error {
 		CreatorTreasuryRate: emptyNftInfo.CreatorTreasuryRate,
 		CollectionId:        emptyNftInfo.CollectionId,
 	}
-	bc.StateDB().NftMap[txInfo.NftIndex] = emptyNft
 
 	stateCache := e.bc.StateDB()
+	stateCache.SetPendingUpdateNft(txInfo.NftIndex, emptyNft)
 	stateCache.PendingUpdateNftIndexMap[txInfo.NftIndex] = statedb.StateCachePending
 	return e.BaseExecutor.ApplyTransaction()
 }
@@ -208,7 +227,10 @@ func (e *FullExitNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	bc := e.bc
 	txInfo := e.txInfo
-	exitAccount := e.bc.StateDB().AccountMap[txInfo.AccountIndex]
+	exitAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
+	if err != nil {
+		return nil, err
+	}
 	txDetails := make([]*tx.TxDetail, 0, 2)
 
 	// user info
@@ -235,21 +257,26 @@ func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	})
 	// nft info
 	order++
+	oldNft, err := bc.StateDB().GetNft(txInfo.NftIndex)
+	if err != nil {
+		return nil, err
+	}
 	emptyNft := types.EmptyNftInfo(txInfo.NftIndex)
 	baseNft := emptyNft
 	newNft := emptyNft
-	if bc.StateDB().NftMap[txInfo.NftIndex] != nil {
+
+	if oldNft != nil {
 		baseNft = types.ConstructNftInfo(
-			bc.StateDB().NftMap[txInfo.NftIndex].NftIndex,
-			bc.StateDB().NftMap[txInfo.NftIndex].CreatorAccountIndex,
-			bc.StateDB().NftMap[txInfo.NftIndex].OwnerAccountIndex,
-			bc.StateDB().NftMap[txInfo.NftIndex].NftContentHash,
-			bc.StateDB().NftMap[txInfo.NftIndex].NftL1TokenId,
-			bc.StateDB().NftMap[txInfo.NftIndex].NftL1Address,
-			bc.StateDB().NftMap[txInfo.NftIndex].CreatorTreasuryRate,
-			bc.StateDB().NftMap[txInfo.NftIndex].CollectionId,
+			oldNft.NftIndex,
+			oldNft.CreatorAccountIndex,
+			oldNft.OwnerAccountIndex,
+			oldNft.NftContentHash,
+			oldNft.NftL1TokenId,
+			oldNft.NftL1Address,
+			oldNft.CreatorTreasuryRate,
+			oldNft.CollectionId,
 		)
-		if txInfo.AccountIndex != bc.StateDB().NftMap[txInfo.NftIndex].OwnerAccountIndex {
+		if txInfo.AccountIndex != oldNft.OwnerAccountIndex {
 			newNft = baseNft
 		}
 	}

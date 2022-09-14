@@ -38,7 +38,7 @@ func NewTransferNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 func (e *TransferNftExecutor) Prepare() error {
 	txInfo := e.txInfo
 
-	err := e.bc.StateDB().PrepareNft(txInfo.NftIndex)
+	_, err := e.bc.StateDB().PrepareNft(txInfo.NftIndex)
 	if err != nil {
 		logx.Errorf("prepare nft failed")
 		return errors.New("internal error")
@@ -60,17 +60,26 @@ func (e *TransferNftExecutor) VerifyInputs() error {
 		return err
 	}
 
-	fromAccount := e.bc.StateDB().AccountMap[txInfo.FromAccountIndex]
+	fromAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.FromAccountIndex)
+	if err != nil {
+		return err
+	}
 	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
 		return errors.New("balance is not enough")
 	}
 
-	toAccount := e.bc.StateDB().AccountMap[txInfo.ToAccountIndex]
+	toAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.ToAccountIndex)
+	if err != nil {
+		return err
+	}
 	if txInfo.ToAccountNameHash != toAccount.AccountNameHash {
 		return errors.New("invalid ToAccountNameHash")
 	}
 
-	nft := e.bc.StateDB().NftMap[txInfo.NftIndex]
+	nft, err := e.bc.StateDB().GetNft(txInfo.NftIndex)
+	if err != nil {
+		return err
+	}
 	if nft.OwnerAccountIndex != txInfo.FromAccountIndex {
 		return errors.New("account is not owner of the nft")
 	}
@@ -82,9 +91,18 @@ func (e *TransferNftExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	fromAccount := bc.StateDB().AccountMap[txInfo.FromAccountIndex]
-	gasAccount := bc.StateDB().AccountMap[txInfo.GasAccountIndex]
-	nft := bc.StateDB().NftMap[txInfo.NftIndex]
+	fromAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.FromAccountIndex)
+	if err != nil {
+		return err
+	}
+	gasAccount, err := bc.StateDB().GetFormatAccount(txInfo.GasAccountIndex)
+	if err != nil {
+		return err
+	}
+	nft, err := e.bc.StateDB().GetNft(txInfo.NftIndex)
+	if err != nil {
+		return err
+	}
 
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
@@ -92,6 +110,9 @@ func (e *TransferNftExecutor) ApplyTransaction() error {
 	nft.OwnerAccountIndex = txInfo.ToAccountIndex
 
 	stateCache := e.bc.StateDB()
+	stateCache.SetPendingUpdateAccount(txInfo.FromAccountIndex, fromAccount)
+	stateCache.SetPendingUpdateAccount(txInfo.GasAccountIndex, gasAccount)
+	stateCache.SetPendingUpdateNft(txInfo.NftIndex, nft)
 	stateCache.PendingUpdateAccountIndexMap[txInfo.FromAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateNftIndexMap[txInfo.NftIndex] = statedb.StateCachePending
@@ -144,7 +165,10 @@ func (e *TransferNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 
 func (e *TransferNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
-	nftModel := e.bc.StateDB().NftMap[txInfo.NftIndex]
+	nftModel, err := e.bc.StateDB().GetNft(txInfo.NftIndex)
+	if err != nil {
+		return nil, err
+	}
 
 	copiedAccounts, err := e.bc.StateDB().DeepCopyAccounts([]int64{txInfo.FromAccountIndex, txInfo.ToAccountIndex, txInfo.GasAccountIndex})
 	if err != nil {

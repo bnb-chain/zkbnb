@@ -87,7 +87,11 @@ func (e *BaseExecutor) VerifyInputs() error {
 			return err
 		}
 
-		err = txInfo.VerifySignature(e.bc.StateDB().AccountMap[from].PublicKey)
+		fromAccount, err := e.bc.StateDB().GetFormatAccount(from)
+		if err != nil {
+			return err
+		}
+		err = txInfo.VerifySignature(fromAccount.PublicKey)
 		if err != nil {
 			return err
 		}

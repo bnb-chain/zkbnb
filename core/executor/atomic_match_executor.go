@@ -49,14 +49,13 @@ func (e *AtomicMatchExecutor) Prepare() error {
 	e.sellOfferIndex = txInfo.SellOffer.OfferId % OfferPerAsset
 
 	// Prepare seller's asset and nft, if the buyer's asset or nft isn't the same, it will be failed in the verify step.
-	err := e.bc.StateDB().PrepareNft(txInfo.SellOffer.NftIndex)
+	matchNft, err := e.bc.StateDB().PrepareNft(txInfo.SellOffer.NftIndex)
 	if err != nil {
 		logx.Errorf("prepare nft failed")
 		return errors.New("internal error")
 	}
 
 	// Set the right treasury and creator treasury amount.
-	matchNft := e.bc.StateDB().NftMap[txInfo.SellOffer.NftIndex]
 	txInfo.TreasuryAmount = ffmath.Div(ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(txInfo.SellOffer.TreasuryRate)), big.NewInt(TenThousand))
 	txInfo.CreatorAmount = ffmath.Div(ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(matchNft.CreatorTreasuryRate)), big.NewInt(TenThousand))
 
@@ -101,9 +100,18 @@ func (e *AtomicMatchExecutor) VerifyInputs() error {
 		return errors.New("invalid SellOffer.ExpiredAt")
 	}
 
-	fromAccount := bc.StateDB().AccountMap[txInfo.AccountIndex]
-	buyAccount := bc.StateDB().AccountMap[txInfo.BuyOffer.AccountIndex]
-	sellAccount := bc.StateDB().AccountMap[txInfo.SellOffer.AccountIndex]
+	fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
+	if err != nil {
+		return err
+	}
+	buyAccount, err := bc.StateDB().GetFormatAccount(txInfo.BuyOffer.AccountIndex)
+	if err != nil {
+		return err
+	}
+	sellAccount, err := bc.StateDB().GetFormatAccount(txInfo.SellOffer.AccountIndex)
+	if err != nil {
+		return err
+	}
 
 	// Check sender's gas balance and buyer's asset balance.
 	if txInfo.AccountIndex == txInfo.BuyOffer.AccountIndex && txInfo.GasFeeAssetId == txInfo.SellOffer.AssetId {
@@ -122,17 +130,21 @@ func (e *AtomicMatchExecutor) VerifyInputs() error {
 	}
 
 	// Check offer canceled or finalized.
-	sellOffer := bc.StateDB().AccountMap[txInfo.SellOffer.AccountIndex].AssetInfo[e.sellOfferAssetId].OfferCanceledOrFinalized
+	sellOffer := sellAccount.AssetInfo[e.sellOfferAssetId].OfferCanceledOrFinalized
 	if sellOffer.Bit(int(e.sellOfferIndex)) == 1 {
 		return errors.New("sell offer canceled or finalized")
 	}
-	buyOffer := bc.StateDB().AccountMap[txInfo.BuyOffer.AccountIndex].AssetInfo[e.buyOfferAssetId].OfferCanceledOrFinalized
+	buyOffer := buyAccount.AssetInfo[e.buyOfferAssetId].OfferCanceledOrFinalized
 	if buyOffer.Bit(int(e.buyOfferIndex)) == 1 {
 		return errors.New("buy offer canceled or finalized")
 	}
 
 	// Check the seller is the owner of the nft.
-	if bc.StateDB().NftMap[txInfo.SellOffer.NftIndex].OwnerAccountIndex != txInfo.SellOffer.AccountIndex {
+	nft, err := bc.StateDB().GetNft(txInfo.SellOffer.NftIndex)
+	if err != nil {
+		return err
+	}
+	if nft.OwnerAccountIndex != txInfo.SellOffer.AccountIndex {
 		return errors.New("seller is not owner")
 	}
 
@@ -154,12 +166,30 @@ func (e *AtomicMatchExecutor) ApplyTransaction() error {
 	txInfo := e.txInfo
 
 	// apply changes
-	matchNft := bc.StateDB().NftMap[txInfo.SellOffer.NftIndex]
-	fromAccount := bc.StateDB().AccountMap[txInfo.AccountIndex]
-	gasAccount := bc.StateDB().AccountMap[txInfo.GasAccountIndex]
-	buyAccount := bc.StateDB().AccountMap[txInfo.BuyOffer.AccountIndex]
-	sellAccount := bc.StateDB().AccountMap[txInfo.SellOffer.AccountIndex]
-	creatorAccount := bc.StateDB().AccountMap[matchNft.CreatorAccountIndex]
+	matchNft, err := bc.StateDB().GetNft(txInfo.SellOffer.NftIndex)
+	if err != nil {
+		return err
+	}
+	fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
+	if err != nil {
+		return err
+	}
+	gasAccount, err := bc.StateDB().GetFormatAccount(txInfo.GasAccountIndex)
+	if err != nil {
+		return err
+	}
+	buyAccount, err := bc.StateDB().GetFormatAccount(txInfo.BuyOffer.AccountIndex)
+	if err != nil {
+		return err
+	}
+	sellAccount, err := bc.StateDB().GetFormatAccount(txInfo.SellOffer.AccountIndex)
+	if err != nil {
+		return err
+	}
+	creatorAccount, err := bc.StateDB().GetFormatAccount(matchNft.CreatorAccountIndex)
+	if err != nil {
+		return err
+	}
 
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	buyAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance = ffmath.Sub(buyAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance, txInfo.BuyOffer.AssetAmount)
@@ -181,6 +211,12 @@ func (e *AtomicMatchExecutor) ApplyTransaction() error {
 	matchNft.OwnerAccountIndex = txInfo.BuyOffer.AccountIndex
 
 	stateCache := e.bc.StateDB()
+	stateCache.SetPendingUpdateAccount(fromAccount.AccountIndex, fromAccount)
+	stateCache.SetPendingUpdateAccount(buyAccount.AccountIndex, buyAccount)
+	stateCache.SetPendingUpdateAccount(sellAccount.AccountIndex, sellAccount)
+	stateCache.SetPendingUpdateAccount(gasAccount.AccountIndex, gasAccount)
+	stateCache.SetPendingUpdateAccount(creatorAccount.AccountIndex, creatorAccount)
+	stateCache.SetPendingUpdateNft(matchNft.NftIndex, matchNft)
 	stateCache.PendingUpdateAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.BuyOffer.AccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.SellOffer.AccountIndex] = statedb.StateCachePending
@@ -264,7 +300,10 @@ func (e *AtomicMatchExecutor) GetExecutedTx() (*tx.Tx, error) {
 func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	bc := e.bc
 	txInfo := e.txInfo
-	matchNft := bc.StateDB().NftMap[txInfo.SellOffer.NftIndex]
+	matchNft, err := bc.StateDB().GetNft(txInfo.SellOffer.NftIndex)
+	if err != nil {
+		return nil, err
+	}
 
 	copiedAccounts, err := e.bc.StateDB().DeepCopyAccounts([]int64{txInfo.AccountIndex, txInfo.GasAccountIndex,
 		txInfo.SellOffer.AccountIndex, txInfo.BuyOffer.AccountIndex, matchNft.CreatorAccountIndex})

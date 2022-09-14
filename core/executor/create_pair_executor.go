@@ -61,7 +61,6 @@ func (e *CreatePairExecutor) VerifyInputs() error {
 }
 
 func (e *CreatePairExecutor) ApplyTransaction() error {
-	bc := e.bc
 	txInfo := e.txInfo
 
 	newLiquidity := &liquidity.Liquidity{
@@ -76,9 +75,9 @@ func (e *CreatePairExecutor) ApplyTransaction() error {
 		FeeRate:              txInfo.FeeRate,
 		TreasuryRate:         txInfo.TreasuryRate,
 	}
-	bc.StateDB().LiquidityMap[txInfo.PairIndex] = newLiquidity
 
 	stateCache := e.bc.StateDB()
+	stateCache.SetPendingNewLiquidity(txInfo.PairIndex, newLiquidity)
 	stateCache.PendingNewLiquidityIndexMap[txInfo.PairIndex] = statedb.StateCachePending
 	return e.BaseExecutor.ApplyTransaction()
 }

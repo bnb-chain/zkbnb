@@ -63,7 +63,10 @@ func (e *RemoveLiquidityExecutor) Prepare() error {
 	// Mark the tree states that would be affected in this executor.
 	e.MarkLiquidityDirty(txInfo.PairIndex)
 	e.MarkAccountAssetsDirty(txInfo.FromAccountIndex, []int64{txInfo.GasFeeAssetId, txInfo.AssetAId, txInfo.AssetBId, txInfo.PairIndex})
-	liquidity := e.bc.StateDB().LiquidityMap[txInfo.PairIndex]
+	liquidity, err := e.bc.StateDB().GetLiquidity(txInfo.PairIndex)
+	if err != nil {
+		return err
+	}
 	e.MarkAccountAssetsDirty(liquidity.TreasuryAccountIndex, []int64{txInfo.PairIndex})
 	e.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
 	err = e.BaseExecutor.Prepare()
@@ -83,12 +86,18 @@ func (e *RemoveLiquidityExecutor) VerifyInputs() error {
 		return err
 	}
 
-	fromAccount := bc.StateDB().AccountMap[txInfo.FromAccountIndex]
+	fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.FromAccountIndex)
+	if err != nil {
+		return err
+	}
 	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
 		return errors.New("invalid gas asset amount")
 	}
 
-	liquidityModel := bc.StateDB().LiquidityMap[txInfo.PairIndex]
+	liquidityModel, err := bc.StateDB().GetLiquidity(txInfo.PairIndex)
+	if err != nil {
+		return err
+	}
 	liquidityInfo, err := constructLiquidityInfo(liquidityModel)
 	if err != nil {
 		logx.Errorf("construct liquidity info error, err: %v", err)
@@ -107,8 +116,14 @@ func (e *RemoveLiquidityExecutor) fillTxInfo() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	fromAccount := bc.StateDB().AccountMap[txInfo.FromAccountIndex]
-	liquidityModel := bc.StateDB().LiquidityMap[txInfo.PairIndex]
+	fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.FromAccountIndex)
+	if err != nil {
+		return err
+	}
+	liquidityModel, err := bc.StateDB().GetLiquidity(txInfo.PairIndex)
+	if err != nil {
+		return err
+	}
 
 	liquidityInfo, err := constructLiquidityInfo(liquidityModel)
 	if err != nil {
@@ -158,10 +173,22 @@ func (e *RemoveLiquidityExecutor) ApplyTransaction() error {
 	txInfo := e.txInfo
 
 	// apply changes
-	fromAccount := bc.StateDB().AccountMap[txInfo.FromAccountIndex]
-	gasAccount := bc.StateDB().AccountMap[txInfo.GasAccountIndex]
-	liquidityModel := bc.StateDB().LiquidityMap[txInfo.PairIndex]
-	treasuryAccount := bc.StateDB().AccountMap[liquidityModel.TreasuryAccountIndex]
+	fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.FromAccountIndex)
+	if err != nil {
+		return err
+	}
+	gasAccount, err := bc.StateDB().GetFormatAccount(txInfo.GasAccountIndex)
+	if err != nil {
+		return err
+	}
+	liquidityModel, err := bc.StateDB().GetLiquidity(txInfo.PairIndex)
+	if err != nil {
+		return err
+	}
+	treasuryAccount, err := bc.StateDB().GetFormatAccount(liquidityModel.TreasuryAccountIndex)
+	if err != nil {
+		return err
+	}
 
 	fromAccount.AssetInfo[txInfo.AssetAId].Balance = ffmath.Add(fromAccount.AssetInfo[txInfo.AssetAId].Balance, txInfo.AssetAAmountDelta)
 	fromAccount.AssetInfo[txInfo.AssetBId].Balance = ffmath.Add(fromAccount.AssetInfo[txInfo.AssetBId].Balance, txInfo.AssetBAmountDelta)
@@ -171,7 +198,11 @@ func (e *RemoveLiquidityExecutor) ApplyTransaction() error {
 	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	fromAccount.Nonce++
 
-	bc.StateDB().LiquidityMap[txInfo.PairIndex] = &liquidity.Liquidity{
+	stateCache := e.bc.StateDB()
+	stateCache.SetPendingUpdateAccount(fromAccount.AccountIndex, fromAccount)
+	stateCache.SetPendingUpdateAccount(treasuryAccount.AccountIndex, treasuryAccount)
+	stateCache.SetPendingUpdateAccount(gasAccount.AccountIndex, gasAccount)
+	stateCache.SetPendingUpdateLiquidity(txInfo.PairIndex, &liquidity.Liquidity{
 		Model:                liquidityModel.Model,
 		PairIndex:            e.newPoolInfo.PairIndex,
 		AssetAId:             liquidityModel.AssetAId,
@@ -183,9 +214,7 @@ func (e *RemoveLiquidityExecutor) ApplyTransaction() error {
 		FeeRate:              e.newPoolInfo.FeeRate,
 		TreasuryAccountIndex: e.newPoolInfo.TreasuryAccountIndex,
 		TreasuryRate:         e.newPoolInfo.TreasuryRate,
-	}
-
-	stateCache := e.bc.StateDB()
+	})
 	stateCache.PendingUpdateAccountIndexMap[txInfo.FromAccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[treasuryAccount.AccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
@@ -273,7 +302,10 @@ func (e *RemoveLiquidityExecutor) GetExecutedTx() (*tx.Tx, error) {
 func (e *RemoveLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
 
-	liquidityModel := e.bc.StateDB().LiquidityMap[txInfo.PairIndex]
+	liquidityModel, err := e.bc.StateDB().GetLiquidity(txInfo.PairIndex)
+	if err != nil {
+		return nil, err
+	}
 	liquidityInfo, err := constructLiquidityInfo(liquidityModel)
 	if err != nil {
 		logx.Errorf("construct liquidity info error, err: %v", err)
@@ -407,17 +439,21 @@ func (e *RemoveLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	treasuryAccount.AssetInfo[txInfo.PairIndex].LpAmount = ffmath.Add(treasuryAccount.AssetInfo[txInfo.PairIndex].LpAmount, txInfo.TreasuryAmount)
 
 	// pool account info
+	liquidity, err := e.bc.StateDB().GetLiquidity(txInfo.PairIndex)
+	if err != nil {
+		return nil, err
+	}
 	basePool, err := types.ConstructLiquidityInfo(
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].PairIndex,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].AssetAId,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].AssetA,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].AssetBId,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].AssetB,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].LpAmount,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].KLast,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].FeeRate,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].TreasuryAccountIndex,
-		e.bc.StateDB().LiquidityMap[txInfo.PairIndex].TreasuryRate,
+		liquidity.PairIndex,
+		liquidity.AssetAId,
+		liquidity.AssetA,
+		liquidity.AssetBId,
+		liquidity.AssetB,
+		liquidity.LpAmount,
+		liquidity.KLast,
+		liquidity.FeeRate,
+		liquidity.TreasuryAccountIndex,
+		liquidity.TreasuryRate,
 	)
 	if err != nil {
 		return nil, err

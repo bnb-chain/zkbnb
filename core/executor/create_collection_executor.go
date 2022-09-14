@@ -48,7 +48,11 @@ func (e *CreateCollectionExecutor) Prepare() error {
 	}
 
 	// Set the right collection nonce to tx info.
-	txInfo.CollectionId = e.bc.StateDB().AccountMap[txInfo.AccountIndex].CollectionNonce
+	account, err := e.bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
+	if err != nil {
+		return err
+	}
+	txInfo.CollectionId = account.CollectionNonce
 	return nil
 }
 
@@ -60,7 +64,10 @@ func (e *CreateCollectionExecutor) VerifyInputs() error {
 		return err
 	}
 
-	fromAccount := e.bc.StateDB().AccountMap[txInfo.AccountIndex]
+	fromAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
+	if err != nil {
+		return err
+	}
 	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
 		return errors.New("balance is not enough")
 	}
@@ -72,8 +79,14 @@ func (e *CreateCollectionExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	fromAccount := bc.StateDB().AccountMap[txInfo.AccountIndex]
-	gasAccount := bc.StateDB().AccountMap[txInfo.GasAccountIndex]
+	fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
+	if err != nil {
+		return err
+	}
+	gasAccount, err := bc.StateDB().GetFormatAccount(txInfo.GasAccountIndex)
+	if err != nil {
+		return err
+	}
 
 	// apply changes
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
@@ -82,6 +95,8 @@ func (e *CreateCollectionExecutor) ApplyTransaction() error {
 	fromAccount.CollectionNonce++
 
 	stateCache := e.bc.StateDB()
+	stateCache.SetPendingUpdateAccount(fromAccount.AccountIndex, fromAccount)
+	stateCache.SetPendingUpdateAccount(gasAccount.AccountIndex, gasAccount)
 	stateCache.PendingUpdateAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
 	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
 	return e.BaseExecutor.ApplyTransaction()

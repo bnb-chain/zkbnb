@@ -51,7 +51,10 @@ func (e *UpdatePairRateExecutor) Prepare() error {
 func (e *UpdatePairRateExecutor) VerifyInputs() error {
 	bc := e.bc
 	txInfo := e.txInfo
-	liquidity := bc.StateDB().LiquidityMap[txInfo.PairIndex]
+	liquidity, err := bc.StateDB().GetLiquidity(txInfo.PairIndex)
+	if err != nil {
+		return err
+	}
 
 	if liquidity.FeeRate == txInfo.FeeRate &&
 		liquidity.TreasuryAccountIndex == txInfo.TreasuryAccountIndex &&
@@ -66,12 +69,16 @@ func (e *UpdatePairRateExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	liquidity := bc.StateDB().LiquidityMap[txInfo.PairIndex]
+	liquidity, err := bc.StateDB().GetLiquidity(txInfo.PairIndex)
+	if err != nil {
+		return err
+	}
 	liquidity.FeeRate = txInfo.FeeRate
 	liquidity.TreasuryAccountIndex = txInfo.TreasuryAccountIndex
 	liquidity.TreasuryRate = txInfo.TreasuryRate
 
 	stateCache := e.bc.StateDB()
+	stateCache.SetPendingUpdateLiquidity(txInfo.PairIndex, liquidity)
 	stateCache.PendingUpdateLiquidityIndexMap[txInfo.PairIndex] = statedb.StateCachePending
 	return e.BaseExecutor.ApplyTransaction()
 }
@@ -117,7 +124,10 @@ func (e *UpdatePairRateExecutor) GetExecutedTx() (*tx.Tx, error) {
 func (e *UpdatePairRateExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	bc := e.bc
 	txInfo := e.txInfo
-	liquidity := bc.StateDB().LiquidityMap[txInfo.PairIndex]
+	liquidity, err := bc.StateDB().GetLiquidity(txInfo.PairIndex)
+	if err != nil {
+		return nil, err
+	}
 	baseLiquidity, err := types.ConstructLiquidityInfo(
 		liquidity.PairIndex,
 		liquidity.AssetAId,

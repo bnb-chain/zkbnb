@@ -52,7 +52,10 @@ func (e *WithdrawExecutor) VerifyInputs() error {
 		return err
 	}
 
-	fromAccount := e.bc.StateDB().AccountMap[txInfo.FromAccountIndex]
+	fromAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.FromAccountIndex)
+	if err != nil {
+		return err
+	}
 	if txInfo.GasFeeAssetId != txInfo.AssetId {
 		if fromAccount.AssetInfo[txInfo.AssetId].Balance.Cmp(txInfo.AssetAmount) < 0 {
 			return errors.New("invalid asset amount")
@@ -74,8 +77,14 @@ func (e *WithdrawExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	fromAccount := bc.StateDB().AccountMap[txInfo.FromAccountIndex]
-	gasAccount := bc.StateDB().AccountMap[txInfo.GasAccountIndex]
+	fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.FromAccountIndex)
+	if err != nil {
+		return err
+	}
+	gasAccount, err := bc.StateDB().GetFormatAccount(txInfo.GasAccountIndex)
+	if err != nil {
+		return err
+	}
 
 	// apply changes
 	fromAccount.AssetInfo[txInfo.AssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)

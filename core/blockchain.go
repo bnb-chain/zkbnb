@@ -14,6 +14,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb/common/chain"
+	"github.com/bnb-chain/zkbnb/core/statedb"
 	sdb "github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/asset"
@@ -36,7 +37,9 @@ type ChainConfig struct {
 		DataSource string
 	}
 	CacheRedis cache.CacheConf
-	TreeDB     struct {
+	//nolint:staticcheck
+	CacheConfig statedb.CacheConfig `json:",optional"`
+	TreeDB      struct {
 		Driver tree.Driver
 		//nolint:staticcheck
 		LevelDBOption tree.LevelDBOption `json:",optional"`
@@ -88,7 +91,8 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		LevelDBOption: &config.TreeDB.LevelDBOption,
 		RedisDBOption: &config.TreeDB.RedisDBOption,
 	}
-	bc.Statedb, err = sdb.NewStateDB(treeCtx, bc.ChainDB, redisCache, bc.currentBlock.StateRoot, curHeight)
+
+	bc.Statedb, err = sdb.NewStateDB(treeCtx, bc.ChainDB, redisCache, &config.CacheConfig, bc.currentBlock.StateRoot, curHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +110,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 // , e.g., for sending tx, we can create blockchain for each request quickly
 func NewBlockChainForDryRun(accountModel account.AccountModel, liquidityModel liquidity.LiquidityModel,
 	nftModel nft.L2NftModel, txPoolModel tx.TxPoolModel, assetModel asset.AssetModel,
-	sysConfigModel sysconfig.SysConfigModel, redisCache dbcache.Cache) *BlockChain {
+	sysConfigModel sysconfig.SysConfigModel, redisCache dbcache.Cache) (*BlockChain, error) {
 	chainDb := &sdb.ChainDB{
 		AccountModel:     accountModel,
 		LiquidityModel:   liquidityModel,
@@ -115,13 +119,17 @@ func NewBlockChainForDryRun(accountModel account.AccountModel, liquidityModel li
 		L2AssetInfoModel: assetModel,
 		SysConfigModel:   sysConfigModel,
 	}
+	statedb, err := sdb.NewStateDBForDryRun(redisCache, &statedb.DefaultCacheConfig, chainDb)
+	if err != nil {
+		return nil, err
+	}
 	bc := &BlockChain{
 		ChainDB: chainDb,
 		dryRun:  true,
-		Statedb: sdb.NewStateDBForDryRun(redisCache, chainDb),
+		Statedb: statedb,
 	}
 	bc.processor = NewAPIProcessor(bc)
-	return bc
+	return bc, nil
 }
 
 func (bc *BlockChain) ApplyTransaction(tx *tx.Tx) error {
