@@ -49,6 +49,7 @@ type (
 		GetTxByHash(txHash string) (tx *Tx, err error)
 		GetTxsTotalCountBetween(from, to time.Time) (count int64, err error)
 		GetDistinctAccountsCountBetween(from, to time.Time) (count int64, err error)
+		UpdateTxsStatusInTransact(tx *gorm.DB, txs []*Tx) error
 	}
 
 	defaultTxModel struct {
@@ -176,4 +177,17 @@ func (m *defaultTxModel) GetDistinctAccountsCountBetween(from, to time.Time) (co
 		return 0, nil
 	}
 	return count, nil
+}
+
+func (m *defaultTxModel) UpdateTxsStatusInTransact(tx *gorm.DB, txs []*Tx) error {
+	for _, item := range txs {
+		dbTx := tx.Table(m.table).Where("id = ?", item.ID).Update("tx_status", item.TxStatus)
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			return types.DbErrFailToUpdateTx
+		}
+	}
+	return nil
 }

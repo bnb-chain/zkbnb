@@ -32,6 +32,7 @@ import (
 
 	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/zkbnb/core/legend"
+
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
@@ -169,8 +170,10 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 
 	// get pending update blocks
 	pendingUpdateBlocks := make([]*block.Block, 0, len(relatedBlocks))
+	pendingUpdateTxs := make([]*tx.Tx, 0)
 	for _, pendingUpdateBlock := range relatedBlocks {
 		pendingUpdateBlocks = append(pendingUpdateBlocks, pendingUpdateBlock)
+		pendingUpdateTxs = append(pendingUpdateTxs, pendingUpdateBlock.Txs...)
 	}
 
 	//update db
@@ -187,6 +190,11 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		}
 		//update blocks
 		err = m.BlockModel.UpdateBlocksWithoutTxsInTransact(tx, pendingUpdateBlocks)
+		if err != nil {
+			return err
+		}
+		//update tx status
+		err = m.TxModel.UpdateTxsStatusInTransact(tx, pendingUpdateTxs)
 		return err
 	})
 	if err != nil {
