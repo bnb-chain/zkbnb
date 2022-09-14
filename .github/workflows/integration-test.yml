@@ -48,6 +48,7 @@ jobs:
           sleep 3m # Waiting for the initialization tx to be verified
           echo "end deploy"
       - name: run integration test
+        if: ${{ !contains(github.event.pull_request.body, '/skip-integration-test') }}
         run: |
           export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
           export ZkBNB=$(sudo cat ~/zkbnb/deployment/dependency/zkbnb-contract/info/addresses.json  | jq -r '.zkbnbProxy')
