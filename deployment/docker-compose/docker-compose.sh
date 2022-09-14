@@ -102,6 +102,7 @@ ChainConfig:
   MaxBlockCount: 4
   Sk: \"$SK\"
   GasLimit: 5000000
+  GasPrice: 0
 
 " > ${CONFIG_PATH}/sender.yaml
 
