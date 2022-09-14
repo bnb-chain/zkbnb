@@ -36,15 +36,15 @@ type CacheConfig struct {
 }
 
 func (c *CacheConfig) sanitize() *CacheConfig {
-	if c.AccountCacheSize == 0 {
+	if c.AccountCacheSize <= 0 {
 		c.AccountCacheSize = DefaultCacheConfig.AccountCacheSize
 	}
 
-	if c.LiquidityCacheSize == 0 {
+	if c.LiquidityCacheSize <= 0 {
 		c.LiquidityCacheSize = DefaultCacheConfig.LiquidityCacheSize
 	}
 
-	if c.NftCacheSize == 0 {
+	if c.NftCacheSize <= 0 {
 		c.NftCacheSize = DefaultCacheConfig.NftCacheSize
 	}
 
