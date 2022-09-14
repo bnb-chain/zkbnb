@@ -48,6 +48,11 @@ func (e *SwapExecutor) Prepare() error {
 		return errors.New("internal error")
 	}
 
+	err = e.fillTxInfo()
+	if err != nil {
+		return err
+	}
+
 	// Mark the tree states that would be affected in this executor.
 	e.MarkLiquidityDirty(txInfo.PairIndex)
 	e.MarkAccountAssetsDirty(txInfo.FromAccountIndex, []int64{txInfo.GasFeeAssetId, txInfo.AssetAId, txInfo.AssetBId})
@@ -57,7 +62,7 @@ func (e *SwapExecutor) Prepare() error {
 		return err
 	}
 
-	return e.fillTxInfo()
+	return nil
 }
 
 func (e *SwapExecutor) VerifyInputs() error {
