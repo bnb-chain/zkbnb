@@ -3,6 +3,7 @@
 ![banner](./docs/assets/banner.png)
 
 
+
 The BNB ZkRollup(ZkBNB) is an infrastructure for developers that helps them to build large scale
 BSC-based apps with higher throughput and much lower or even zero transaction fees. 
 
