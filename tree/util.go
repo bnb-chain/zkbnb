@@ -118,7 +118,7 @@ func CommitTrees(
 	pool *ants.Pool,
 	version uint64,
 	accountTree bsmt.SparseMerkleTree,
-	assetTrees *[]bsmt.SparseMerkleTree,
+	assetTrees *[]LazyTreeWrapper,
 	liquidityTree bsmt.SparseMerkleTree,
 	nftTree bsmt.SparseMerkleTree) error {
 
@@ -208,7 +208,7 @@ func RollBackTrees(
 	pool *ants.Pool,
 	version uint64,
 	accountTree bsmt.SparseMerkleTree,
-	assetTrees *[]bsmt.SparseMerkleTree,
+	assetTrees *[]LazyTreeWrapper,
 	liquidityTree bsmt.SparseMerkleTree,
 	nftTree bsmt.SparseMerkleTree) error {
 

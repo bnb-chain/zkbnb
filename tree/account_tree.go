@@ -41,7 +41,7 @@ func InitAccountTree(
 	blockHeight int64,
 	ctx *Context,
 ) (
-	accountTree bsmt.SparseMerkleTree, accountAssetTrees []bsmt.SparseMerkleTree, err error,
+	accountTree bsmt.SparseMerkleTree, accountAssetTrees []LazyTreeWrapper, err error,
 ) {
 	accountNums, err := accountHistoryModel.GetValidAccountCount(blockHeight)
 	if err != nil {
@@ -52,16 +52,19 @@ func InitAccountTree(
 	opts := ctx.Options(blockHeight)
 
 	// init account state trees
-	accountAssetTrees = make([]bsmt.SparseMerkleTree, accountNums)
+	accountAssetTrees = make([]LazyTreeWrapper, accountNums)
 	for index := int64(0); index < accountNums; index++ {
 		// create account assets tree
-		accountAssetTrees[index], err = bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(mimc.NewMiMC()),
-			SetNamespace(ctx, accountAssetNamespace(index)), AssetTreeHeight, NilAccountAssetNodeHash,
-			opts...)
-		if err != nil {
-			logx.Errorf("unable to create new tree by assets: %s", err.Error())
-			return nil, nil, err
-		}
+		accountAssetTrees[index] = NewLazyTreeWrapper(func() bsmt.SparseMerkleTree {
+			tree, err := bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(mimc.NewMiMC()),
+				SetNamespace(ctx, accountAssetNamespace(index)), AssetTreeHeight, NilAccountAssetNodeHash,
+				opts...)
+			if err != nil {
+				logx.Errorf("unable to create new tree by assets: %s", err.Error())
+				panic(err.Error())
+			}
+			return tree
+		})
 	}
 	accountTree, err = bsmt.NewBASSparseMerkleTree(bsmt.NewHasher(mimc.NewMiMC()),
 		SetNamespace(ctx, AccountPrefix), AccountTreeHeight, NilAccountNodeHash,
@@ -132,7 +135,7 @@ func reloadAccountTreeFromRDB(
 	blockHeight int64,
 	offset, limit int,
 	accountTree bsmt.SparseMerkleTree,
-	accountAssetTrees []bsmt.SparseMerkleTree,
+	accountAssetTrees []LazyTreeWrapper,
 ) error {
 	_, accountHistories, err := accountHistoryModel.GetValidAccounts(blockHeight,
 		limit, offset)
@@ -259,12 +262,15 @@ func NewEmptyAccountAssetTree(
 	ctx *Context,
 	index int64,
 	blockHeight uint64,
-) (tree bsmt.SparseMerkleTree, err error) {
-	return bsmt.NewBASSparseMerkleTree(
-		bsmt.NewHasher(mimc.NewMiMC()),
-		SetNamespace(ctx, accountAssetNamespace(index)),
-		AssetTreeHeight, NilAccountAssetNodeHash,
-		ctx.Options(int64(blockHeight))...)
+) (tree LazyTreeWrapper) {
+	return NewLazyTreeWrapper(func() bsmt.SparseMerkleTree {
+		tree, _ := bsmt.NewBASSparseMerkleTree(
+			bsmt.NewHasher(mimc.NewMiMC()),
+			SetNamespace(ctx, accountAssetNamespace(index)),
+			AssetTreeHeight, NilAccountAssetNodeHash,
+			ctx.Options(int64(blockHeight))...)
+		return tree
+	})
 }
 
 func NewMemAccountAssetTree() (tree bsmt.SparseMerkleTree, err error) {

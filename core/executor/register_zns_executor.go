@@ -96,11 +96,11 @@ func (e *RegisterZnsExecutor) ApplyTransaction() error {
 		return err
 	}
 
-	emptyAssetTree, err := tree.NewEmptyAccountAssetTree(bc.StateDB().TreeCtx, txInfo.AccountIndex, uint64(bc.CurrentBlock().BlockHeight))
-	if err != nil {
-		logx.Errorf("new empty account asset tree failed: %s", err.Error())
-		return err
-	}
+	emptyAssetTree := tree.NewEmptyAccountAssetTree(bc.StateDB().TreeCtx, txInfo.AccountIndex, uint64(bc.CurrentBlock().BlockHeight))
+	// if err != nil {
+	// 	logx.Errorf("new empty account asset tree failed: %s", err.Error())
+	// 	return err
+	// }
 	bc.StateDB().AccountAssetTrees = append(bc.StateDB().AccountAssetTrees, emptyAssetTree)
 
 	stateCache := e.bc.StateDB()

@@ -38,13 +38,13 @@ type WitnessHelper struct {
 
 	// Trees
 	accountTree   bsmt.SparseMerkleTree
-	assetTrees    *[]bsmt.SparseMerkleTree
+	assetTrees    *[]tree.LazyTreeWrapper
 	liquidityTree bsmt.SparseMerkleTree
 	nftTree       bsmt.SparseMerkleTree
 }
 
 func NewWitnessHelper(treeCtx *tree.Context, accountTree, liquidityTree, nftTree bsmt.SparseMerkleTree,
-	assetTrees *[]bsmt.SparseMerkleTree, accountModel AccountModel) *WitnessHelper {
+	assetTrees *[]tree.LazyTreeWrapper, accountModel AccountModel) *WitnessHelper {
 	return &WitnessHelper{
 		treeCtx:       treeCtx,
 		accountModel:  accountModel,
@@ -205,10 +205,10 @@ func (w *WitnessHelper) constructAccountWitness(
 				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore,
 					fmt.Errorf("invalid key")
 			}
-			emptyAccountAssetTree, err := tree.NewEmptyAccountAssetTree(w.treeCtx, accountKey, finalityBlockNr)
-			if err != nil {
-				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
-			}
+			emptyAccountAssetTree := tree.NewEmptyAccountAssetTree(w.treeCtx, accountKey, finalityBlockNr)
+			// if err != nil {
+			// 	return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
+			// }
 			*w.assetTrees = append(*w.assetTrees, emptyAccountAssetTree)
 			cryptoAccount = std.EmptyAccount(accountKey, tree.NilAccountAssetRoot)
 			// update account info

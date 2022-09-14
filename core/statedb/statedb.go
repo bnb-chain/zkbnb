@@ -68,7 +68,7 @@ type StateDB struct {
 	AccountTree       bsmt.SparseMerkleTree
 	LiquidityTree     bsmt.SparseMerkleTree
 	NftTree           bsmt.SparseMerkleTree
-	AccountAssetTrees []bsmt.SparseMerkleTree
+	AccountAssetTrees []tree.LazyTreeWrapper
 	TreeCtx           *tree.Context
 }
 
