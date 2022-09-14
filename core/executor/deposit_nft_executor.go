@@ -90,8 +90,11 @@ func (e *DepositNftExecutor) VerifyInputs() error {
 	txInfo := e.txInfo
 
 	nft, err := bc.StateDB().GetNft(txInfo.NftIndex)
-	if e.isNewNft && err == nil {
-		return errors.New("invalid nft index, already exist")
+	if e.isNewNft && nft == nil {
+		return nil
+	}
+	if err != nil {
+		return err
 	}
 	if nft.NftContentHash != types.EmptyNftContentHash {
 		return errors.New("invalid nft index, already exist")
