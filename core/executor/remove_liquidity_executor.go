@@ -47,6 +47,18 @@ func (e *RemoveLiquidityExecutor) Prepare() error {
 		logx.Errorf("prepare liquidity failed: %s", err.Error())
 		return err
 	}
+	err = e.bc.StateDB().PrepareAccountsAndAssets(map[int64]map[int64]bool{
+		txInfo.FromAccountIndex: {
+			txInfo.PairIndex: true,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	err = e.fillTxInfo()
+	if err != nil {
+		return err
+	}
 
 	// Mark the tree states that would be affected in this executor.
 	e.MarkLiquidityDirty(txInfo.PairIndex)
@@ -59,7 +71,7 @@ func (e *RemoveLiquidityExecutor) Prepare() error {
 		return err
 	}
 
-	return e.fillTxInfo()
+	return nil
 }
 
 func (e *RemoveLiquidityExecutor) VerifyInputs() error {

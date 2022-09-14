@@ -20,6 +20,8 @@ import (
 	"encoding/hex"
 	"strconv"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -29,4 +31,8 @@ func ComputeL1TxTxHash(requestId int64, txHash string) string {
 	hFunc.Write([]byte(strconv.FormatInt(requestId, 10)))
 	hFunc.Write(common.FromHex(txHash))
 	return hex.EncodeToString(hFunc.Sum(nil))
+}
+
+func EmptyCallOpts() *bind.CallOpts {
+	return &bind.CallOpts{}
 }

@@ -21,7 +21,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbnb-eth-rpc/_rpc"
+	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
 	"github.com/bnb-chain/zkbnb/dao/asset"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/l1rolluptx"
@@ -36,7 +36,7 @@ import (
 type Monitor struct {
 	Config config.Config
 
-	cli *_rpc.ProviderClient
+	cli *rpc.ProviderClient
 
 	zkbnbContractAddress      string
 	governanceContractAddress string
@@ -90,7 +90,7 @@ func NewMonitor(c config.Config) *Monitor {
 	logx.Infof("ChainName: %s, zkbnbContractAddress: %s, networkRpc: %s",
 		c.ChainConfig.NetworkRPCSysConfigName, zkbnbAddressConfig.Value, networkRpc.Value)
 
-	bscRpcCli, err := _rpc.NewClient(networkRpc.Value)
+	bscRpcCli, err := rpc.NewClient(networkRpc.Value)
 	if err != nil {
 		panic(err)
 	}

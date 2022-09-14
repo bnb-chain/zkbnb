@@ -49,6 +49,12 @@ func (e *AddLiquidityExecutor) Prepare() error {
 		return errors.New("internal error")
 	}
 
+	// Add the right details to tx info.
+	err = e.fillTxInfo()
+	if err != nil {
+		return err
+	}
+
 	// Mark the tree states that would be affected in this executor.
 	e.MarkLiquidityDirty(txInfo.PairIndex)
 	e.MarkAccountAssetsDirty(txInfo.FromAccountIndex, []int64{txInfo.GasFeeAssetId, txInfo.AssetAId, txInfo.AssetBId, txInfo.PairIndex})
@@ -60,8 +66,7 @@ func (e *AddLiquidityExecutor) Prepare() error {
 		return err
 	}
 
-	// Add the right details to tx info.
-	return e.fillTxInfo()
+	return nil
 }
 
 func (e *AddLiquidityExecutor) VerifyInputs() error {

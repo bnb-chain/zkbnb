@@ -23,13 +23,14 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbnb-eth-rpc/_rpc"
+	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/zkbnb/core/legend"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/block"
@@ -195,7 +196,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 	return nil
 }
 
-func getZkBNBContractLogs(cli *_rpc.ProviderClient, zkbnbContract string, startHeight, endHeight uint64) ([]types.Log, error) {
+func getZkBNBContractLogs(cli *rpc.ProviderClient, zkbnbContract string, startHeight, endHeight uint64) ([]types.Log, error) {
 	query := ethereum.FilterQuery{
 		FromBlock: big.NewInt(int64(startHeight)),
 		ToBlock:   big.NewInt(int64(endHeight)),
@@ -208,7 +209,7 @@ func getZkBNBContractLogs(cli *_rpc.ProviderClient, zkbnbContract string, startH
 	return logs, nil
 }
 
-func getPriorityRequestCount(cli *_rpc.ProviderClient, zkbnbContract string, startHeight, endHeight uint64) (int, error) {
+func getPriorityRequestCount(cli *rpc.ProviderClient, zkbnbContract string, startHeight, endHeight uint64) (int, error) {
 	zkbnbInstance, err := zkbnb.LoadZkBNBInstance(cli, zkbnbContract)
 	if err != nil {
 		return 0, err
