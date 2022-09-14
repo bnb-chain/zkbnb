@@ -59,6 +59,20 @@ func (e *RemoveLiquidityExecutor) Prepare() error {
 		return err
 	}
 
+	err = e.bc.StateDB().PrepareAccountsAndAssets(map[int64]map[int64]bool{
+		txInfo.FromAccountIndex: {
+			txInfo.PairIndex: true,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	err = e.fillTxInfo()
+	if err != nil {
+		return err
+	}
+
 	// Mark the tree states that would be affected in this executor.
 	e.MarkLiquidityDirty(txInfo.PairIndex)
 	e.MarkAccountAssetsDirty(txInfo.FromAccountIndex, []int64{txInfo.GasFeeAssetId, txInfo.AssetAId, txInfo.AssetBId, txInfo.PairIndex})
