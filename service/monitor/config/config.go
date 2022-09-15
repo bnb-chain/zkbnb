@@ -17,3 +17,9 @@ type Config struct {
 	}
 	LogConf logx.LogConf
 }
+
+func (c Config) Validate() {
+	if c.ChainConfig.StartL1BlockHeight <= 0 || c.ChainConfig.MaxHandledBlocksCount <= 0 || c.ChainConfig.KeptHistoryBlocksCount <= 0 {
+		panic("invalid chain config")
+	}
+}

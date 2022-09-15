@@ -17,6 +17,7 @@ const GracefulShutdownTimeout = 10 * time.Second
 func Run(configFile string) error {
 	var c config.Config
 	conf.MustLoad(configFile, &c)
+	c.Validate()
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 
