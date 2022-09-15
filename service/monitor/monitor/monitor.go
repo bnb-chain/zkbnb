@@ -17,12 +17,14 @@
 package monitor
 
 import (
+	"fmt"
+
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
-
+	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/asset"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/l1rolluptx"
@@ -113,4 +115,29 @@ func (m *Monitor) Shutdown() {
 	if err != nil {
 		logx.Errorf("close db error: %s", err.Error())
 	}
+}
+
+func (m *Monitor) getBlockRangeToSync(monitorType int) (int64, int64, error) {
+	latestHandledBlock, err := m.L1SyncedBlockModel.GetLatestL1BlockByType(monitorType)
+	var handledHeight int64
+	if err != nil {
+		if err == types.DbErrNotFound {
+			handledHeight = m.Config.ChainConfig.StartL1BlockHeight
+		} else {
+			return 0, 0, fmt.Errorf("failed to get latest l1 monitor block, err: %v", err)
+		}
+	} else {
+		handledHeight = latestHandledBlock.L1BlockHeight
+	}
+
+	// get latest l1 block height(latest height - pendingBlocksCount)
+	latestHeight, err := m.cli.GetHeight()
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to get l1 height, err: %v", err)
+	}
+
+	safeHeight := latestHeight - m.Config.ChainConfig.ConfirmBlocksCount
+	safeHeight = uint64(common2.MinInt64(int64(safeHeight), handledHeight+m.Config.ChainConfig.MaxHandledBlocksCount))
+
+	return handledHeight + 1, int64(safeHeight), nil
 }

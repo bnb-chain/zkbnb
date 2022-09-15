@@ -23,7 +23,6 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -32,48 +31,31 @@ import (
 
 	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/zkbnb/core/legend"
-
-	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
 	"github.com/bnb-chain/zkbnb/dao/priorityrequest"
 	"github.com/bnb-chain/zkbnb/dao/tx"
-	types2 "github.com/bnb-chain/zkbnb/types"
 )
 
 func (m *Monitor) MonitorGenericBlocks() (err error) {
-	latestHandledBlock, err := m.L1SyncedBlockModel.GetLatestL1BlockByType(l1syncedblock.TypeGeneric)
-	var handledHeight int64
+	startHeight, endHeight, err := m.getBlockRangeToSync(l1syncedblock.TypeGeneric)
 	if err != nil {
-		if err == types2.DbErrNotFound {
-			handledHeight = m.Config.ChainConfig.StartL1BlockHeight
-		} else {
-			return fmt.Errorf("failed to get latest l1 monitor block, err: %v", err)
-		}
-	} else {
-		handledHeight = latestHandledBlock.L1BlockHeight
+		logx.Errorf("get block range to sync error, err: %s", err.Error())
+		return err
 	}
-
-	// get latest l1 block height(latest height - pendingBlocksCount)
-	latestHeight, err := m.cli.GetHeight()
-	if err != nil {
-		return fmt.Errorf("failed to get l1 height, err: %v", err)
-	}
-
-	safeHeight := latestHeight - m.Config.ChainConfig.ConfirmBlocksCount
-	safeHeight = uint64(common2.MinInt64(int64(safeHeight), handledHeight+m.Config.ChainConfig.MaxHandledBlocksCount))
-	if safeHeight <= uint64(handledHeight) {
+	if endHeight < startHeight {
+		logx.Infof("no blocks to sync, startHeight: %d, endHeight: %d", startHeight, endHeight)
 		return nil
 	}
 
-	logx.Infof("syncing l1 blocks from %d to %d", big.NewInt(handledHeight+1), big.NewInt(int64(safeHeight)))
+	logx.Infof("syncing l1 blocks from %d to %d", big.NewInt(startHeight), big.NewInt(endHeight))
 
-	priorityRequestCount, err := getPriorityRequestCount(m.cli, m.zkbnbContractAddress, uint64(handledHeight+1), safeHeight)
+	priorityRequestCount, err := getPriorityRequestCount(m.cli, m.zkbnbContractAddress, uint64(startHeight), uint64(endHeight))
 	if err != nil {
 		return fmt.Errorf("failed to get priority request count, err: %v", err)
 	}
 
-	logs, err := getZkBNBContractLogs(m.cli, m.zkbnbContractAddress, uint64(handledHeight+1), safeHeight)
+	logs, err := getZkBNBContractLogs(m.cli, m.zkbnbContractAddress, uint64(startHeight), uint64(endHeight))
 	if err != nil {
 		return fmt.Errorf("failed to get contract logs, err: %v", err)
 	}
@@ -164,7 +146,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		return err
 	}
 	l1BlockMonitorInfo := &l1syncedblock.L1SyncedBlock{
-		L1BlockHeight: int64(safeHeight),
+		L1BlockHeight: endHeight,
 		BlockInfo:     string(eventInfosBytes),
 		Type:          l1syncedblock.TypeGeneric,
 	}
