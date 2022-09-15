@@ -35,7 +35,7 @@ var (
 
 func (l *GetLayer2BasicInfoLogic) GetLayer2BasicInfo() (*types.Layer2BasicInfo, error) {
 	resp := &types.Layer2BasicInfo{
-		ContractAddresses: make([]types.ContractAddress, 0),
+		ContractAddresses: make([]types.ContractAddress, 0, len(contractNames)),
 	}
 	var err error
 	resp.BlockCommitted, err = l.svcCtx.BlockModel.GetCommittedBlocksCount()

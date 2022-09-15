@@ -35,7 +35,7 @@ func (l *GetTxsLogic) GetTxs(req *types.ReqGetRange) (resp *types.Txs, err error
 
 	resp = &types.Txs{
 		Total: uint32(total),
-		Txs:   make([]*types.Tx, 0),
+		Txs:   make([]*types.Tx, 0, req.Limit),
 	}
 	if total == 0 || total <= int64(req.Offset) {
 		return resp, nil

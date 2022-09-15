@@ -34,7 +34,7 @@ func (l *GetAssetsLogic) GetAssets(req *types.ReqGetRange) (resp *types.Assets, 
 	}
 
 	resp = &types.Assets{
-		Assets: make([]*types.Asset, 0),
+		Assets: make([]*types.Asset, 0, req.Limit),
 		Total:  uint32(total),
 	}
 	if total == 0 || total <= int64(req.Offset) {

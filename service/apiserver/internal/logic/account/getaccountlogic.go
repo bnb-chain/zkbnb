@@ -75,8 +75,8 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 		Name:   account.AccountName,
 		Pk:     account.PublicKey,
 		Nonce:  account.Nonce,
-		Assets: make([]*types.AccountAsset, 0),
-		Lps:    make([]*types.AccountLp, 0),
+		Assets: make([]*types.AccountAsset, 0, len(account.AssetInfo)),
+		Lps:    make([]*types.AccountLp, 0, len(account.AssetInfo)),
 	}
 	for _, asset := range account.AssetInfo {
 		if asset.AssetId > maxAssetId {

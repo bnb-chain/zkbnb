@@ -34,7 +34,7 @@ func NewGetAccountTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 
 func (l *GetAccountTxsLogic) GetAccountTxs(req *types.ReqGetAccountTxs) (resp *types.Txs, err error) {
 	resp = &types.Txs{
-		Txs: make([]*types.Tx, 0),
+		Txs: make([]*types.Tx, 0, req.Limit),
 	}
 
 	accountIndex := int64(0)

@@ -24,14 +24,13 @@ func NewGetGasFeeAssetsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *G
 	}
 }
 
-func (l *GetGasFeeAssetsLogic) GetGasFeeAssets() (resp *types.GasFeeAssets, err error) {
-	resp = &types.GasFeeAssets{Assets: make([]types.Asset, 0)}
-
+func (l *GetGasFeeAssetsLogic) GetGasFeeAssets() (*types.GasFeeAssets, error) {
 	assets, err := l.svcCtx.AssetModel.GetGasAssets()
 	if err != nil {
 		return nil, types2.AppErrInternal
 	}
 
+	resp := &types.GasFeeAssets{Assets: make([]types.Asset, 0, len(assets))}
 	for _, asset := range assets {
 		resp.Assets = append(resp.Assets, types.Asset{
 			Id:         asset.AssetId,

@@ -38,7 +38,7 @@ func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetRange) (*types.Blocks, error
 	}
 
 	resp := &types.Blocks{
-		Blocks: make([]*types.Block, 0),
+		Blocks: make([]*types.Block, 0, req.Limit),
 		Total:  uint32(total),
 	}
 	if total == 0 || total <= int64(req.Offset) {
