@@ -11,7 +11,7 @@ func Run(configFile string) error {
 	var config fullnode.Config
 	conf.MustLoad(configFile, &config)
 
-	fullnode, err := fullnode.Newfullnode(&config)
+	fullnode, err := fullnode.NewFullnode(&config)
 	if err != nil {
 		logx.Error("new fullnode failed:", err)
 		return err
