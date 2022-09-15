@@ -12,7 +12,6 @@ import (
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
-	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
@@ -60,7 +59,10 @@ func (e *MintNftExecutor) VerifyInputs() error {
 		return err
 	}
 
-	creatorAccount := e.bc.StateDB().AccountMap[txInfo.CreatorAccountIndex]
+	creatorAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.CreatorAccountIndex)
+	if err != nil {
+		return err
+	}
 	if creatorAccount.CollectionNonce <= txInfo.NftCollectionId {
 		return errors.New("nft collection id is not less than account collection nonce")
 	}
@@ -68,7 +70,10 @@ func (e *MintNftExecutor) VerifyInputs() error {
 		return errors.New("balance is not enough")
 	}
 
-	toAccount := e.bc.StateDB().AccountMap[txInfo.ToAccountIndex]
+	toAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.ToAccountIndex)
+	if err != nil {
+		return err
+	}
 	if txInfo.ToAccountNameHash != toAccount.AccountNameHash {
 		return errors.New("invalid ToAccountNameHash")
 	}
@@ -81,14 +86,23 @@ func (e *MintNftExecutor) ApplyTransaction() error {
 	txInfo := e.txInfo
 
 	// apply changes
-	creatorAccount := bc.StateDB().AccountMap[txInfo.CreatorAccountIndex]
-	gasAccount := bc.StateDB().AccountMap[txInfo.GasAccountIndex]
+	creatorAccount, err := bc.StateDB().GetFormatAccount(txInfo.CreatorAccountIndex)
+	if err != nil {
+		return err
+	}
+	gasAccount, err := bc.StateDB().GetFormatAccount(txInfo.GasAccountIndex)
+	if err != nil {
+		return err
+	}
 
 	creatorAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(creatorAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	creatorAccount.Nonce++
 
-	bc.StateDB().NftMap[txInfo.NftIndex] = &nft.L2Nft{
+	stateCache := e.bc.StateDB()
+	stateCache.SetPendingUpdateAccount(txInfo.CreatorAccountIndex, creatorAccount)
+	stateCache.SetPendingUpdateAccount(txInfo.GasAccountIndex, gasAccount)
+	stateCache.SetPendingNewNft(txInfo.NftIndex, &nft.L2Nft{
 		NftIndex:            txInfo.NftIndex,
 		CreatorAccountIndex: txInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   txInfo.ToAccountIndex,
@@ -97,12 +111,7 @@ func (e *MintNftExecutor) ApplyTransaction() error {
 		NftL1TokenId:        types.EmptyL1TokenId,
 		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
 		CollectionId:        txInfo.NftCollectionId,
-	}
-
-	stateCache := e.bc.StateDB()
-	stateCache.PendingUpdateAccountIndexMap[txInfo.CreatorAccountIndex] = statedb.StateCachePending
-	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
-	stateCache.PendingNewNftIndexMap[txInfo.NftIndex] = statedb.StateCachePending
+	})
 	return e.BaseExecutor.ApplyTransaction()
 }
 

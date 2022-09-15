@@ -12,8 +12,6 @@ import (
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
-	"github.com/bnb-chain/zkbnb/common/chain"
-	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -45,14 +43,20 @@ func (e *FullExitExecutor) Prepare() error {
 	accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
 	account, err := bc.DB().AccountModel.GetAccountByNameHash(accountNameHash)
 	if err != nil {
-		for index := range bc.StateDB().PendingNewAccountIndexMap {
-			if accountNameHash == bc.StateDB().AccountMap[index].AccountNameHash {
-				account, err = chain.FromFormatAccountInfo(bc.StateDB().AccountMap[index])
+		exist := false
+		for index := range bc.StateDB().PendingNewAccountMap {
+			tempAccount, err := bc.StateDB().GetAccount(index)
+			if err != nil {
+				continue
+			}
+			if accountNameHash == tempAccount.AccountNameHash {
+				account = tempAccount
+				exist = true
 				break
 			}
 		}
 
-		if err != nil {
+		if !exist {
 			return errors.New("invalid account name hash")
 		}
 	}
@@ -68,7 +72,11 @@ func (e *FullExitExecutor) Prepare() error {
 	}
 
 	// Set the right asset amount.
-	txInfo.AssetAmount = bc.StateDB().AccountMap[txInfo.AccountIndex].AssetInfo[txInfo.AssetId].Balance
+	formatAccount, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
+	if err != nil {
+		return err
+	}
+	txInfo.AssetAmount = formatAccount.AssetInfo[txInfo.AssetId].Balance
 	return nil
 }
 
@@ -80,12 +88,15 @@ func (e *FullExitExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	exitAccount := bc.StateDB().AccountMap[txInfo.AccountIndex]
+	exitAccount, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
+	if err != nil {
+		return err
+	}
 	exitAccount.AssetInfo[txInfo.AssetId].Balance = ffmath.Sub(exitAccount.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
 
 	if txInfo.AssetAmount.Cmp(types.ZeroBigInt) != 0 {
 		stateCache := e.bc.StateDB()
-		stateCache.PendingUpdateAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
+		stateCache.SetPendingUpdateAccount(txInfo.AccountIndex, exitAccount)
 	}
 	return e.BaseExecutor.ApplyTransaction()
 }
@@ -133,7 +144,10 @@ func (e *FullExitExecutor) GetExecutedTx() (*tx.Tx, error) {
 
 func (e *FullExitExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
-	exitAccount := e.bc.StateDB().AccountMap[txInfo.AccountIndex]
+	exitAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
+	if err != nil {
+		return nil, err
+	}
 	baseBalance := exitAccount.AssetInfo[txInfo.AssetId]
 	deltaBalance := &types.AccountAsset{
 		AssetId:                  txInfo.AssetId,

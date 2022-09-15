@@ -26,8 +26,11 @@ func NewGetNextNonceLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetN
 }
 
 func (l *GetNextNonceLogic) GetNextNonce(req *types.ReqGetNextNonce) (*types.NextNonce, error) {
-	bc := core.NewBlockChainForDryRun(l.svcCtx.AccountModel, l.svcCtx.LiquidityModel, l.svcCtx.NftModel,
+	bc, err := core.NewBlockChainForDryRun(l.svcCtx.AccountModel, l.svcCtx.LiquidityModel, l.svcCtx.NftModel,
 		l.svcCtx.TxPoolModel, l.svcCtx.AssetModel, l.svcCtx.SysConfigModel, l.svcCtx.RedisCache)
+	if err != nil {
+		return nil, err
+	}
 	nonce, err := bc.StateDB().GetPendingNonce(int64(req.AccountIndex))
 	if err != nil {
 		if err == types2.DbErrNotFound {

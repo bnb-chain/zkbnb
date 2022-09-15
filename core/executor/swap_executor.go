@@ -12,7 +12,6 @@ import (
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/chain"
-	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/liquidity"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
@@ -74,7 +73,10 @@ func (e *SwapExecutor) VerifyInputs() error {
 		return err
 	}
 
-	fromAccount := bc.StateDB().AccountMap[txInfo.FromAccountIndex]
+	fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.FromAccountIndex)
+	if err != nil {
+		return err
+	}
 	if txInfo.GasFeeAssetId != txInfo.AssetAId {
 		if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
 			return errors.New("invalid gas asset amount")
@@ -89,7 +91,10 @@ func (e *SwapExecutor) VerifyInputs() error {
 		}
 	}
 
-	liquidityModel := bc.StateDB().LiquidityMap[txInfo.PairIndex]
+	liquidityModel, err := bc.StateDB().GetLiquidity(txInfo.PairIndex)
+	if err != nil {
+		return err
+	}
 	liquidityInfo, err := constructLiquidityInfo(liquidityModel)
 	if err != nil {
 		logx.Errorf("construct liquidity info error, err: %v", err)
@@ -127,8 +132,14 @@ func (e *SwapExecutor) ApplyTransaction() error {
 	txInfo := e.txInfo
 
 	// apply changes
-	fromAccount := bc.StateDB().AccountMap[txInfo.FromAccountIndex]
-	gasAccount := bc.StateDB().AccountMap[txInfo.GasAccountIndex]
+	fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.FromAccountIndex)
+	if err != nil {
+		return err
+	}
+	gasAccount, err := bc.StateDB().GetFormatAccount(txInfo.GasAccountIndex)
+	if err != nil {
+		return err
+	}
 
 	fromAccount.AssetInfo[txInfo.AssetAId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.AssetAId].Balance, txInfo.AssetAAmount)
 	fromAccount.AssetInfo[txInfo.AssetBId].Balance = ffmath.Add(fromAccount.AssetInfo[txInfo.AssetBId].Balance, txInfo.AssetBAmountDelta)
@@ -136,8 +147,15 @@ func (e *SwapExecutor) ApplyTransaction() error {
 	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	fromAccount.Nonce++
 
-	liquidityModel := bc.StateDB().LiquidityMap[txInfo.PairIndex]
-	bc.StateDB().LiquidityMap[txInfo.PairIndex] = &liquidity.Liquidity{
+	liquidityModel, err := bc.StateDB().GetLiquidity(txInfo.PairIndex)
+	if err != nil {
+		return err
+	}
+
+	stateCache := e.bc.StateDB()
+	stateCache.SetPendingUpdateAccount(txInfo.FromAccountIndex, fromAccount)
+	stateCache.SetPendingUpdateAccount(txInfo.GasAccountIndex, gasAccount)
+	stateCache.SetPendingUpdateLiquidity(txInfo.PairIndex, &liquidity.Liquidity{
 		Model:                liquidityModel.Model,
 		PairIndex:            e.newPoolInfo.PairIndex,
 		AssetAId:             liquidityModel.AssetAId,
@@ -149,12 +167,7 @@ func (e *SwapExecutor) ApplyTransaction() error {
 		FeeRate:              e.newPoolInfo.FeeRate,
 		TreasuryAccountIndex: e.newPoolInfo.TreasuryAccountIndex,
 		TreasuryRate:         e.newPoolInfo.TreasuryRate,
-	}
-
-	stateCache := e.bc.StateDB()
-	stateCache.PendingUpdateAccountIndexMap[txInfo.FromAccountIndex] = statedb.StateCachePending
-	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
-	stateCache.PendingUpdateLiquidityIndexMap[txInfo.PairIndex] = statedb.StateCachePending
+	})
 	return e.BaseExecutor.ApplyTransaction()
 }
 
@@ -162,7 +175,10 @@ func (e *SwapExecutor) fillTxInfo() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	liquidityModel := bc.StateDB().LiquidityMap[txInfo.PairIndex]
+	liquidityModel, err := bc.StateDB().GetLiquidity(txInfo.PairIndex)
+	if err != nil {
+		return err
+	}
 
 	liquidityInfo, err := constructLiquidityInfo(liquidityModel)
 	if err != nil {
@@ -279,7 +295,10 @@ func (e *SwapExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 
 	fromAccount := copiedAccounts[txInfo.FromAccountIndex]
 	gasAccount := copiedAccounts[txInfo.GasAccountIndex]
-	liquidityModel := e.bc.StateDB().LiquidityMap[txInfo.PairIndex]
+	liquidityModel, err := e.bc.StateDB().GetLiquidity(txInfo.PairIndex)
+	if err != nil {
+		return nil, err
+	}
 	liquidityInfo, err := constructLiquidityInfo(liquidityModel)
 	if err != nil {
 		logx.Errorf("construct liquidity info error, err: %v", err)

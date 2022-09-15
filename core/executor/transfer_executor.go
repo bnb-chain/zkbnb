@@ -10,7 +10,6 @@ import (
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
-	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -53,8 +52,14 @@ func (e *TransferExecutor) VerifyInputs() error {
 		return err
 	}
 
-	fromAccount := bc.StateDB().AccountMap[txInfo.FromAccountIndex]
-	toAccount := bc.StateDB().AccountMap[txInfo.ToAccountIndex]
+	fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.FromAccountIndex)
+	if err != nil {
+		return err
+	}
+	toAccount, err := bc.StateDB().GetFormatAccount(txInfo.ToAccountIndex)
+	if err != nil {
+		return err
+	}
 	if txInfo.ToAccountNameHash != toAccount.AccountNameHash {
 		return errors.New("invalid to account name hash")
 	}
@@ -79,9 +84,18 @@ func (e *TransferExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	fromAccount := bc.StateDB().AccountMap[txInfo.FromAccountIndex]
-	toAccount := bc.StateDB().AccountMap[txInfo.ToAccountIndex]
-	gasAccount := bc.StateDB().AccountMap[txInfo.GasAccountIndex]
+	fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.FromAccountIndex)
+	if err != nil {
+		return err
+	}
+	toAccount, err := bc.StateDB().GetFormatAccount(txInfo.ToAccountIndex)
+	if err != nil {
+		return err
+	}
+	gasAccount, err := bc.StateDB().GetFormatAccount(txInfo.GasAccountIndex)
+	if err != nil {
+		return err
+	}
 
 	fromAccount.AssetInfo[txInfo.AssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
@@ -90,9 +104,9 @@ func (e *TransferExecutor) ApplyTransaction() error {
 	fromAccount.Nonce++
 
 	stateCache := e.bc.StateDB()
-	stateCache.PendingUpdateAccountIndexMap[txInfo.FromAccountIndex] = statedb.StateCachePending
-	stateCache.PendingUpdateAccountIndexMap[txInfo.ToAccountIndex] = statedb.StateCachePending
-	stateCache.PendingUpdateAccountIndexMap[txInfo.GasAccountIndex] = statedb.StateCachePending
+	stateCache.SetPendingUpdateAccount(txInfo.FromAccountIndex, fromAccount)
+	stateCache.SetPendingUpdateAccount(txInfo.ToAccountIndex, toAccount)
+	stateCache.SetPendingUpdateAccount(txInfo.GasAccountIndex, gasAccount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 

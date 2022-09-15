@@ -12,8 +12,6 @@ import (
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
-	"github.com/bnb-chain/zkbnb/common/chain"
-	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -45,14 +43,20 @@ func (e *DepositExecutor) Prepare() error {
 	accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
 	account, err := bc.DB().AccountModel.GetAccountByNameHash(accountNameHash)
 	if err != nil {
-		for index := range bc.StateDB().PendingNewAccountIndexMap {
-			if accountNameHash == bc.StateDB().AccountMap[index].AccountNameHash {
-				account, err = chain.FromFormatAccountInfo(bc.StateDB().AccountMap[index])
+		exist := false
+		for index := range bc.StateDB().PendingNewAccountMap {
+			tempAccount, err := bc.StateDB().GetAccount(index)
+			if err != nil {
+				continue
+			}
+			if accountNameHash == tempAccount.AccountNameHash {
+				account = tempAccount
+				exist = true
 				break
 			}
 		}
 
-		if err != nil {
+		if !exist {
 			return errors.New("invalid account name hash")
 		}
 	}
@@ -79,11 +83,14 @@ func (e *DepositExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	depositAccount := bc.StateDB().AccountMap[txInfo.AccountIndex]
+	depositAccount, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
+	if err != nil {
+		return err
+	}
 	depositAccount.AssetInfo[txInfo.AssetId].Balance = ffmath.Add(depositAccount.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
 
 	stateCache := e.bc.StateDB()
-	stateCache.PendingUpdateAccountIndexMap[txInfo.AccountIndex] = statedb.StateCachePending
+	stateCache.SetPendingUpdateAccount(depositAccount.AccountIndex, depositAccount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 
@@ -128,7 +135,10 @@ func (e *DepositExecutor) GetExecutedTx() (*tx.Tx, error) {
 
 func (e *DepositExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.txInfo
-	depositAccount := e.bc.StateDB().AccountMap[txInfo.AccountIndex]
+	depositAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
+	if err != nil {
+		return nil, err
+	}
 	baseBalance := depositAccount.AssetInfo[txInfo.AssetId]
 	deltaBalance := &types.AccountAsset{
 		AssetId:                  txInfo.AssetId,

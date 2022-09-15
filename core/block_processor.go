@@ -6,6 +6,7 @@ import (
 	"github.com/bnb-chain/zkbnb/core/executor"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type Processor interface {
@@ -80,7 +81,8 @@ func (p *APIProcessor) Process(tx *tx.Tx) error {
 
 	err = executor.Prepare()
 	if err != nil {
-		return err
+		logx.Error("fail to prepare:", err)
+		return types.AppErrInternal
 	}
 	err = executor.VerifyInputs()
 	if err != nil {

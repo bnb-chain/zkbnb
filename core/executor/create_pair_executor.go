@@ -11,7 +11,6 @@ import (
 
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	"github.com/bnb-chain/zkbnb/common"
-	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/liquidity"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
@@ -51,7 +50,7 @@ func (e *CreatePairExecutor) VerifyInputs() error {
 		return errors.New("invalid pair index, already registered")
 	}
 
-	for index := range bc.StateDB().PendingNewLiquidityIndexMap {
+	for index := range bc.StateDB().PendingNewLiquidityMap {
 		if txInfo.PairIndex == index {
 			return errors.New("invalid pair index, already registered")
 		}
@@ -61,7 +60,6 @@ func (e *CreatePairExecutor) VerifyInputs() error {
 }
 
 func (e *CreatePairExecutor) ApplyTransaction() error {
-	bc := e.bc
 	txInfo := e.txInfo
 
 	newLiquidity := &liquidity.Liquidity{
@@ -76,10 +74,9 @@ func (e *CreatePairExecutor) ApplyTransaction() error {
 		FeeRate:              txInfo.FeeRate,
 		TreasuryRate:         txInfo.TreasuryRate,
 	}
-	bc.StateDB().LiquidityMap[txInfo.PairIndex] = newLiquidity
 
 	stateCache := e.bc.StateDB()
-	stateCache.PendingNewLiquidityIndexMap[txInfo.PairIndex] = statedb.StateCachePending
+	stateCache.SetPendingNewLiquidity(txInfo.PairIndex, newLiquidity)
 	return e.BaseExecutor.ApplyTransaction()
 }
 
