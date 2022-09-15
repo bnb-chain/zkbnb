@@ -55,6 +55,13 @@ func Run(configFile string) error {
 	}); err != nil {
 		panic(err)
 	}
+
+	// prune database
+	if _, err := cronJob.AddFunc("@every 10s", func() {
+		m.Prune()
+	}); err != nil {
+		panic(err)
+	}
 	cronJob.Start()
 
 	exit := make(chan struct{})

@@ -14,7 +14,6 @@ import (
 
 	cryptoBlock "github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/block"
 	smt "github.com/bnb-chain/zkbnb-smt"
-
 	utils "github.com/bnb-chain/zkbnb/common/prove"
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/block"

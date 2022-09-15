@@ -14,7 +14,6 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/block"
-
 	"github.com/bnb-chain/zkbnb/common/prove"
 	"github.com/bnb-chain/zkbnb/common/redislock"
 	"github.com/bnb-chain/zkbnb/dao/blockwitness"

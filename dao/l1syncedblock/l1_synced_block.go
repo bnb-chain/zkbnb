@@ -34,6 +34,9 @@ type (
 	L1SyncedBlockModel interface {
 		CreateL1SyncedBlockTable() error
 		DropL1SyncedBlockTable() error
+		GetLatestL1Block() (blockInfo *L1SyncedBlock, err error)
+		GetL1BlockById(id uint) (blockInfo *L1SyncedBlock, err error)
+		DeleteL1Block(blockInfo *L1SyncedBlock) (err error)
 		GetLatestL1BlockByType(blockType int) (blockInfo *L1SyncedBlock, err error)
 		CreateL1SyncedBlockInTransact(tx *gorm.DB, block *L1SyncedBlock) error
 	}
@@ -70,6 +73,39 @@ func (m *defaultL1EventModel) CreateL1SyncedBlockTable() error {
 
 func (m *defaultL1EventModel) DropL1SyncedBlockTable() error {
 	return m.DB.Migrator().DropTable(m.table)
+}
+
+func (m *defaultL1EventModel) GetLatestL1Block() (blockInfo *L1SyncedBlock, err error) {
+	dbTx := m.DB.Table(m.table).Order("id desc").Find(&blockInfo)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	}
+	if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return blockInfo, nil
+}
+
+func (m *defaultL1EventModel) GetL1BlockById(id uint) (blockInfo *L1SyncedBlock, err error) {
+	dbTx := m.DB.Table(m.table).Where("id = ?", id).Find(&blockInfo)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	}
+	if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return blockInfo, nil
+}
+
+func (m *defaultL1EventModel) DeleteL1Block(blockInfo *L1SyncedBlock) (err error) {
+	dbTx := m.DB.Table(m.table).Unscoped().Delete(&blockInfo) // delete record permanently
+	if dbTx.Error != nil {
+		return types.DbErrSqlOperation
+	}
+	if dbTx.RowsAffected == 0 {
+		return types.DbErrNotFound
+	}
+	return nil
 }
 
 func (m *defaultL1EventModel) GetLatestL1BlockByType(blockType int) (blockInfo *L1SyncedBlock, err error) {
