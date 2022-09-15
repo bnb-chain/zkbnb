@@ -5,6 +5,7 @@
 ### /
 
 #### GET
+
 ##### Summary
 
 Get status of zkbnb
@@ -18,6 +19,7 @@ Get status of zkbnb
 ### /api/v1/account
 
 #### GET
+
 ##### Summary
 
 Get account by account's name, index or pk
@@ -38,6 +40,7 @@ Get account by account's name, index or pk
 ### /api/v1/accountPendingTxs
 
 #### GET
+
 ##### Summary
 
 Get pending transactions of a specific account
@@ -58,6 +61,7 @@ Get pending transactions of a specific account
 ### /api/v1/accountNfts
 
 #### GET
+
 ##### Summary
 
 Get nfts of a specific account
@@ -80,6 +84,7 @@ Get nfts of a specific account
 ### /api/v1/accountTxs
 
 #### GET
+
 ##### Summary
 
 Get transactions of a specific account
@@ -102,6 +107,7 @@ Get transactions of a specific account
 ### /api/v1/accounts
 
 #### GET
+
 ##### Summary
 
 Get accounts
@@ -119,9 +125,31 @@ Get accounts
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [Accounts](#accounts) |
 
+### /api/v1/asset
+
+#### GET
+
+##### Summary
+
+Get asset
+
+##### Parameters
+
+| Name  | Located in | Description        | Required | Schema  |
+|-------| ---------- |--------------------| -------- |---------|
+| by    | query | id/symbol          | Yes | string  |
+| value | query | value of id/symbol | Yes | string |
+
+##### Responses
+
+| Code | Description | Schema |
+| ---- | ----------- | ------ |
+| 200 | A successful response. | [Asset](#assets) |
+
 ### /api/v1/assets
 
 #### GET
+
 ##### Summary
 
 Get assets
@@ -142,6 +170,7 @@ Get assets
 ### /api/v1/block
 
 #### GET
+
 ##### Summary
 
 Get block by its height or commitment
@@ -162,6 +191,7 @@ Get block by its height or commitment
 ### /api/v1/blockTxs
 
 #### GET
+
 ##### Summary
 
 Get transactions in a block
@@ -182,6 +212,7 @@ Get transactions in a block
 ### /api/v1/blocks
 
 #### GET
+
 ##### Summary
 
 Get blocks
@@ -199,49 +230,10 @@ Get blocks
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [Blocks](#blocks) |
 
-### /api/v1/currencyPrice
-
-#### GET
-##### Summary
-
-Get asset price by its symbol
-
-##### Parameters
-
-| Name | Located in | Description | Required | Schema |
-| ---- | ---------- | ----------- | -------- | ---- |
-| by | query | symbol | Yes | string |
-| value | query | value of symbol | Yes | string |
-
-##### Responses
-
-| Code | Description | Schema |
-| ---- | ----------- | ------ |
-| 200 | A successful response. | [CurrencyPrice](#currencyprice) |
-
-### /api/v1/currencyPrices
-
-#### GET
-##### Summary
-
-Get assets' prices
-
-##### Parameters
-
-| Name | Located in | Description | Required | Schema |
-| ---- | ---------- | ----------- | -------- | ---- |
-| offset | query | offset, min 0 and max 100000 | Yes | integer |
-| limit | query | limit, min 1 and max 100 | Yes | integer |
-
-##### Responses
-
-| Code | Description | Schema |
-| ---- | ----------- | ------ |
-| 200 | A successful response. | [CurrencyPrices](#currencyprices) |
-
 ### /api/v1/currentHeight
 
 #### GET
+
 ##### Responses
 
 | Code | Description | Schema |
@@ -251,6 +243,7 @@ Get assets' prices
 ### /api/v1/gasAccount
 
 #### GET
+
 ##### Summary
 
 Get gas account, who will charge gas fees for transactions
@@ -264,6 +257,7 @@ Get gas account, who will charge gas fees for transactions
 ### /api/v1/gasFee
 
 #### GET
+
 ##### Summary
 
 Get gas fee amount for using a specific asset as gas asset
@@ -283,6 +277,7 @@ Get gas fee amount for using a specific asset as gas asset
 ### /api/v1/gasFeeAssets
 
 #### GET
+
 ##### Summary
 
 Get supported gas fee assets
@@ -296,6 +291,7 @@ Get supported gas fee assets
 ### /api/v1/layer2BasicInfo
 
 #### GET
+
 ##### Summary
 
 Get zkbnb general info, including contract address, and count of transactions and active users
@@ -309,6 +305,7 @@ Get zkbnb general info, including contract address, and count of transactions an
 ### /api/v1/lpValue
 
 #### GET
+
 ##### Summary
 
 Get liquidity pool amount for a specific liquidity pair
@@ -329,6 +326,7 @@ Get liquidity pool amount for a specific liquidity pair
 ### /api/v1/maxOfferId
 
 #### GET
+
 ##### Summary
 
 Get max nft offer id for a specific account
@@ -348,6 +346,7 @@ Get max nft offer id for a specific account
 ### /api/v1/pendingTxs
 
 #### GET
+
 ##### Summary
 
 Get pending transactions
@@ -368,6 +367,7 @@ Get pending transactions
 ### /api/v1/nextNonce
 
 #### GET
+
 ##### Summary
 
 Get next nonce
@@ -387,6 +387,7 @@ Get next nonce
 ### /api/v1/pair
 
 #### GET
+
 ##### Summary
 
 Get liquidity pool info by its index
@@ -406,6 +407,7 @@ Get liquidity pool info by its index
 ### /api/v1/pairs
 
 #### GET
+
 ##### Summary
 
 Get liquidity pairs
@@ -419,6 +421,7 @@ Get liquidity pairs
 ### /api/v1/search
 
 #### GET
+
 ##### Summary
 
 Search with a specific keyword
@@ -435,10 +438,10 @@ Search with a specific keyword
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [Search](#search) |
 
-
 ### /api/v1/swapAmount
 
 #### GET
+
 ##### Summary
 
 Get swap amount for a specific liquidity pair and in asset amount
@@ -461,6 +464,7 @@ Get swap amount for a specific liquidity pair and in asset amount
 ### /api/v1/tx
 
 #### GET
+
 ##### Summary
 
 Get transaction by hash
@@ -480,6 +484,7 @@ Get transaction by hash
 ### /api/v1/txs
 
 #### GET
+
 ##### Summary
 
 Get transactions
@@ -500,6 +505,7 @@ Get transactions
 ### /api/v1/withdrawGasFee
 
 #### GET
+
 ##### Summary
 
 Get withdraw gas fee amount for using a specific asset as gas asset
@@ -519,6 +525,7 @@ Get withdraw gas fee amount for using a specific asset as gas asset
 ### /api/v1/sendTx
 
 #### POST
+
 ##### Summary
 
 Send raw transaction
@@ -539,23 +546,31 @@ Send raw transaction
 
 #### Account
 
-| Name | Type | Description | Required |
-| ---- | ---- | ----------- | -------- |
-| status | integer |  | Yes |
-| index | long |  | Yes |
-| name | string |  | Yes |
-| pk | string |  | Yes |
-| nonce | long |  | Yes |
+| Name   | Type                              | Description | Required |
+|--------|-----------------------------------| ----------- | -------- |
+| status | integer                           |  | Yes |
+| index  | long                              |  | Yes |
+| name   | string                            |  | Yes |
+| pk     | string                            |  | Yes |
+| nonce  | long                              |  | Yes |
 | assets | [ [AccountAsset](#accountasset) ] |  | Yes |
+| lps    | [ [AccountLp](#accountlp) ]       |  | Yes |
 
 #### AccountAsset
 
-| Name | Type | Description | Required |
-| ---- | ---- | ----------- | -------- |
-| id | integer |  | Yes |
-| name | string |  | Yes |
+| Name    | Type | Description | Required |
+|---------| ---- | ----------- | -------- |
+| id      | integer |  | Yes |
+| name    | string |  | Yes |
 | balance | string |  | Yes |
-| lp_amount | string |  | Yes |
+| price   | string |  | Yes |
+
+#### AccountLp
+
+| Name   | Type | Description | Required |
+|--------| ---- | ----------- | -------- |
+| index  | integer |  | Yes |
+| amount | string |  | Yes |
 
 #### Accounts
 
@@ -566,13 +581,14 @@ Send raw transaction
 
 #### Asset
 
-| Name | Type | Description | Required |
-| ---- | ---- | ----------- | -------- |
-| id | integer |  | Yes |
-| name | string |  | Yes |
-| decimals | integer |  | Yes |
-| symbol | string |  | Yes |
-| address | string |  | Yes |
+| Name         | Type | Description | Required |
+|--------------| ---- | ----------- | -------- |
+| id           | integer |  | Yes |
+| name         | string |  | Yes |
+| decimals     | integer |  | Yes |
+| symbol       | string |  | Yes |
+| address      | string |  | Yes |
+| price        | string |  | Yes |
 | is_gas_asset | integer |  | Yes |
 
 #### Assets
@@ -612,21 +628,6 @@ Send raw transaction
 | ---- | ---- | ----------- | -------- |
 | name | string |  | Yes |
 | address | string |  | Yes |
-
-#### CurrencyPrice
-
-| Name | Type | Description | Required |
-| ---- | ---- | ----------- | -------- |
-| pair | string |  | Yes |
-| asset_id | integer |  | Yes |
-| price | string |  | Yes |
-
-#### CurrencyPrices
-
-| Name | Type | Description | Required |
-| ---- | ---- | ----------- | -------- |
-| total | integer |  | Yes |
-| currency_prices | [ [CurrencyPrice](#currencyprice) ] |  | Yes |
 
 #### CurrentHeight
 
@@ -678,14 +679,16 @@ Send raw transaction
 
 #### LpValue
 
-| Name | Type | Description | Required |
-| ---- | ---- | ----------- | -------- |
-| asset_a_id | integer |  | Yes |
-| asset_a_name | string |  | Yes |
+| Name           | Type | Description | Required |
+|----------------| ---- | ----------- | -------- |
+| asset_a_id     | integer |  | Yes |
+| asset_a_name   | string |  | Yes |
 | asset_a_amount | string |  | Yes |
-| asset_b_id | integer |  | Yes |
-| asset_b_name | string |  | Yes |
+| asset_a_price  | string |  | Yes |
+| asset_b_id     | integer |  | Yes |
+| asset_b_name   | string |  | Yes |
 | asset_b_amount | string |  | Yes |
+| asset_b_price  | string |  | Yes |
 
 #### MaxOfferId
 
@@ -721,17 +724,19 @@ Send raw transaction
 
 #### Pair
 
-| Name | Type | Description | Required |
-| ---- | ---- | ----------- | -------- |
-| index | integer |  | Yes |
-| asset_a_id | integer |  | Yes |
-| asset_a_name | string |  | Yes |
-| asset_a_amount | string |  | Yes |
-| asset_b_id | integer |  | Yes |
-| asset_b_name | string |  | Yes |
-| asset_b_amount | string |  | Yes |
-| fee_rate | long |  | Yes |
-| treasury_rate | long |  | Yes |
+| Name            | Type | Description | Required |
+|-----------------| ---- | ----------- | -------- |
+| index           | integer |  | Yes |
+| asset_a_id      | integer |  | Yes |
+| asset_a_name    | string |  | Yes |
+| asset_a_amount  | string |  | Yes |
+| asset_a_price   | string |  | Yes |
+| asset_b_id      | integer |  | Yes |
+| asset_b_name    | string |  | Yes |
+| asset_b_amount  | string |  | Yes |
+| asset_b_price   | string |  | Yes |
+| fee_rate        | long |  | Yes |
+| treasury_rate   | long |  | Yes |
 | total_lp_amount | string |  | Yes |
 
 #### Pairs
@@ -772,6 +777,13 @@ Send raw transaction
 | offset | [uint16](#uint16) |  | Yes |
 | limit | [uint16](#uint16) |  | Yes |
 
+#### ReqGetAsset
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| by | string |  | Yes |
+| value | string |  | Yes |
+
 #### ReqGetBlock
 
 | Name | Type | Description | Required |
@@ -780,13 +792,6 @@ Send raw transaction
 | value | string |  | Yes |
 
 #### ReqGetBlockTxs
-
-| Name | Type | Description | Required |
-| ---- | ---- | ----------- | -------- |
-| by | string |  | Yes |
-| value | string |  | Yes |
-
-#### ReqGetCurrencyPrice
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |

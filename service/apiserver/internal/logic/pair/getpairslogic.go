@@ -2,6 +2,7 @@ package pair
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -24,8 +25,8 @@ func NewGetPairsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPairs
 	}
 }
 
-func (l *GetPairsLogic) GetPairs() (resp *types.Pairs, err error) {
-	resp = &types.Pairs{Pairs: make([]*types.Pair, 0)}
+func (l *GetPairsLogic) GetPairs() (*types.Pairs, error) {
+	resp := &types.Pairs{Pairs: make([]*types.Pair, 0)}
 
 	liquidityAssets, err := l.svcCtx.LiquidityModel.GetAllLiquidity()
 	if err != nil {
@@ -44,14 +45,24 @@ func (l *GetPairsLogic) GetPairs() (resp *types.Pairs, err error) {
 		if err != nil {
 			return nil, types2.AppErrInternal
 		}
+		assetAPrice, err := l.svcCtx.PriceFetcher.GetCurrencyPrice(l.ctx, assetA.AssetSymbol)
+		if err != nil {
+			return nil, types2.AppErrInternal
+		}
+		assetBPrice, err := l.svcCtx.PriceFetcher.GetCurrencyPrice(l.ctx, assetB.AssetSymbol)
+		if err != nil {
+			return nil, types2.AppErrInternal
+		}
 		resp.Pairs = append(resp.Pairs, &types.Pair{
 			Index:         uint32(liquidity.PairIndex),
 			AssetAId:      uint32(liquidity.AssetAId),
 			AssetAName:    assetA.AssetName,
 			AssetAAmount:  liquidity.AssetA,
+			AssetAPrice:   strconv.FormatFloat(assetAPrice, 'E', -1, 64),
 			AssetBId:      uint32(liquidity.AssetBId),
 			AssetBName:    assetB.AssetName,
 			AssetBAmount:  liquidity.AssetB,
+			AssetBPrice:   strconv.FormatFloat(assetBPrice, 'E', -1, 64),
 			FeeRate:       liquidity.FeeRate,
 			TreasuryRate:  liquidity.TreasuryRate,
 			TotalLpAmount: liquidity.LpAmount,

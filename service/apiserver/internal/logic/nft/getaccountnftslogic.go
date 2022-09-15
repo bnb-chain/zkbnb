@@ -33,7 +33,7 @@ func NewGetAccountNftsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 
 func (l *GetAccountNftsLogic) GetAccountNfts(req *types.ReqGetAccountNfts) (resp *types.Nfts, err error) {
 	resp = &types.Nfts{
-		Nfts: make([]*types.Nft, 0),
+		Nfts: make([]*types.Nft, 0, int64(req.Offset)),
 	}
 
 	accountIndex := int64(0)

@@ -33,7 +33,7 @@ func (l *GetAccountsLogic) GetAccounts(req *types.ReqGetRange) (resp *types.Acco
 	}
 
 	resp = &types.Accounts{
-		Accounts: make([]*types.SimpleAccount, 0),
+		Accounts: make([]*types.SimpleAccount, 0, req.Limit),
 		Total:    uint32(total),
 	}
 

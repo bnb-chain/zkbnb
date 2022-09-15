@@ -2,6 +2,7 @@ package pair
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -25,7 +26,7 @@ func NewGetPairLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPairLo
 }
 
 func (l *GetPairLogic) GetPair(req *types.ReqGetPair) (resp *types.Pair, err error) {
-	pair, err := l.svcCtx.StateFetcher.GetLatestLiquidity(int64(req.Index))
+	liquidity, err := l.svcCtx.StateFetcher.GetLatestLiquidity(int64(req.Index))
 	if err != nil {
 		logx.Errorf("fail to get pair info: %d, err: %s", req.Index, err.Error())
 		if err == types2.DbErrNotFound {
@@ -33,12 +34,33 @@ func (l *GetPairLogic) GetPair(req *types.ReqGetPair) (resp *types.Pair, err err
 		}
 		return nil, types2.AppErrInternal
 	}
+	assetA, err := l.svcCtx.AssetModel.GetAssetById(liquidity.AssetAId)
+	if err != nil {
+		return nil, types2.AppErrInternal
+	}
+	assetB, err := l.svcCtx.AssetModel.GetAssetById(liquidity.AssetBId)
+	if err != nil {
+		return nil, types2.AppErrInternal
+	}
+	assetAPrice, err := l.svcCtx.PriceFetcher.GetCurrencyPrice(l.ctx, assetA.AssetSymbol)
+	if err != nil {
+		return nil, types2.AppErrInternal
+	}
+	assetBPrice, err := l.svcCtx.PriceFetcher.GetCurrencyPrice(l.ctx, assetB.AssetSymbol)
+	if err != nil {
+		return nil, types2.AppErrInternal
+	}
 	resp = &types.Pair{
-		AssetAId:      uint32(pair.AssetAId),
-		AssetAAmount:  pair.AssetA.String(),
-		AssetBId:      uint32(pair.AssetBId),
-		AssetBAmount:  pair.AssetB.String(),
-		TotalLpAmount: pair.LpAmount.String(),
+		Index:         uint32(liquidity.PairIndex),
+		AssetAId:      uint32(liquidity.AssetAId),
+		AssetAName:    assetA.AssetName,
+		AssetAAmount:  liquidity.AssetA.String(),
+		AssetAPrice:   strconv.FormatFloat(assetAPrice, 'E', -1, 64),
+		AssetBId:      uint32(liquidity.AssetBId),
+		AssetBName:    assetB.AssetName,
+		AssetBAmount:  liquidity.AssetB.String(),
+		AssetBPrice:   strconv.FormatFloat(assetBPrice, 'E', -1, 64),
+		TotalLpAmount: liquidity.LpAmount.String(),
 	}
 	return resp, nil
 }

@@ -75,7 +75,8 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 		Name:   account.AccountName,
 		Pk:     account.PublicKey,
 		Nonce:  account.Nonce,
-		Assets: make([]*types.AccountAsset, 0),
+		Assets: make([]*types.AccountAsset, 0, len(account.AssetInfo)),
+		Lps:    make([]*types.AccountLp, 0, len(account.AssetInfo)),
 	}
 	for _, asset := range account.AssetInfo {
 		if asset.AssetId > maxAssetId {
@@ -85,13 +86,34 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 			(asset.LpAmount == nil || asset.LpAmount.Cmp(big.NewInt(0)) == 0) {
 			continue
 		}
-		assetName, _ := l.svcCtx.MemCache.GetAssetNameById(asset.AssetId)
-		resp.Assets = append(resp.Assets, &types.AccountAsset{
-			Id:       uint32(asset.AssetId),
-			Name:     assetName,
-			Balance:  asset.Balance.String(),
-			LpAmount: asset.LpAmount.String(),
-		})
+		if asset.Balance != nil && asset.Balance.Cmp(big.NewInt(0)) > 0 {
+			var assetName, assetSymbol string
+			var assetPrice float64
+			assetName, err = l.svcCtx.MemCache.GetAssetNameById(asset.AssetId)
+			if err != nil {
+				return nil, types2.AppErrInternal
+			}
+			assetSymbol, err = l.svcCtx.MemCache.GetAssetSymbolById(asset.AssetId)
+			if err != nil {
+				return nil, types2.AppErrInternal
+			}
+			assetPrice, err = l.svcCtx.PriceFetcher.GetCurrencyPrice(l.ctx, assetSymbol)
+			if err != nil {
+				return nil, types2.AppErrInternal
+			}
+			resp.Assets = append(resp.Assets, &types.AccountAsset{
+				Id:      uint32(asset.AssetId),
+				Name:    assetName,
+				Balance: asset.Balance.String(),
+				Price:   strconv.FormatFloat(assetPrice, 'E', -1, 64),
+			})
+		}
+		if asset.LpAmount != nil && asset.LpAmount.Cmp(big.NewInt(0)) > 0 {
+			resp.Lps = append(resp.Lps, &types.AccountLp{
+				Index:  uint32(asset.AssetId),
+				Amount: asset.LpAmount.String(),
+			})
+		}
 	}
 
 	sort.Slice(resp.Assets, func(i, j int) bool {
