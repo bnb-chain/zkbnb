@@ -250,8 +250,8 @@ func (m *MemCache) GetAssetBySymbolWithFallback(assetSymbol string, f fallback) 
 }
 
 func (m *MemCache) GetAssetNameById(assetId int64) (string, error) {
-	key := fmt.Sprintf("%s%d", AssetIdNameKeyPrefix, assetId)
-	name, found := m.goCache.Get(key)
+	keyForName := fmt.Sprintf("%s%d", AssetIdNameKeyPrefix, assetId)
+	name, found := m.goCache.Get(keyForName)
 	if found {
 		return name.(string), nil
 	}
@@ -260,16 +260,16 @@ func (m *MemCache) GetAssetNameById(assetId int64) (string, error) {
 		return "", err
 	}
 
-	m.goCache.Set(key, asset.AssetName, gocache.DefaultExpiration)
-	key2 := fmt.Sprintf("%s%d", AssetIdSymbolKeyPrefix, assetId)
-	m.goCache.Set(key2, asset.AssetSymbol, gocache.DefaultExpiration)
+	m.goCache.Set(keyForName, asset.AssetName, gocache.DefaultExpiration)
+	keyForSymbol := fmt.Sprintf("%s%d", AssetIdSymbolKeyPrefix, assetId)
+	m.goCache.Set(keyForSymbol, asset.AssetSymbol, gocache.DefaultExpiration)
 
 	return asset.AssetName, nil
 }
 
 func (m *MemCache) GetAssetSymbolById(assetId int64) (string, error) {
-	key := fmt.Sprintf("%s%d", AssetIdSymbolKeyPrefix, assetId)
-	name, found := m.goCache.Get(key)
+	keyForSymbol := fmt.Sprintf("%s%d", AssetIdSymbolKeyPrefix, assetId)
+	name, found := m.goCache.Get(keyForSymbol)
 	if found {
 		return name.(string), nil
 	}
@@ -278,9 +278,9 @@ func (m *MemCache) GetAssetSymbolById(assetId int64) (string, error) {
 		return "", err
 	}
 
-	m.goCache.Set(key, asset.AssetSymbol, gocache.DefaultExpiration)
-	key2 := fmt.Sprintf("%s%d", AssetIdNameKeyPrefix, assetId)
-	m.goCache.Set(key2, asset.AssetName, gocache.DefaultExpiration)
+	m.goCache.Set(keyForSymbol, asset.AssetSymbol, gocache.DefaultExpiration)
+	keyForName := fmt.Sprintf("%s%d", AssetIdNameKeyPrefix, assetId)
+	m.goCache.Set(keyForName, asset.AssetName, gocache.DefaultExpiration)
 
 	return asset.AssetSymbol, nil
 }
