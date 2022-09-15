@@ -32,6 +32,7 @@ import (
 
 	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/zkbnb/core/legend"
+
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
@@ -82,7 +83,8 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 
 		priorityRequestCountCheck = 0
 
-		relatedBlocks = make(map[int64]*block.Block)
+		relatedBlocks        = make(map[int64]*block.Block)
+		relatedBlockTxStatus = make(map[int64]int)
 	)
 	for _, vlog := range logs {
 		l1EventInfo := &L1Event{
@@ -125,7 +127,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			relatedBlocks[blockHeight].CommittedTxHash = vlog.TxHash.Hex()
 			relatedBlocks[blockHeight].CommittedAt = int64(logBlock.Time)
 			relatedBlocks[blockHeight].BlockStatus = block.StatusCommitted
-			relatedBlocks[blockHeight].SetTxsStatus(tx.StatusCommitted)
+			relatedBlockTxStatus[blockHeight] = tx.StatusCommitted
 		case zkbnbLogBlockVerificationSigHash.Hex():
 			l1EventInfo.EventType = EventTypeVerifiedBlock
 
@@ -145,7 +147,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			relatedBlocks[blockHeight].VerifiedTxHash = vlog.TxHash.Hex()
 			relatedBlocks[blockHeight].VerifiedAt = int64(logBlock.Time)
 			relatedBlocks[blockHeight].BlockStatus = block.StatusVerifiedAndExecuted
-			relatedBlocks[blockHeight].SetTxsStatus(tx.StatusVerified)
+			relatedBlockTxStatus[blockHeight] = tx.StatusVerified
 		case zkbnbLogBlocksRevertSigHash.Hex():
 			l1EventInfo.EventType = EventTypeRevertedBlock
 		default:
@@ -187,6 +189,11 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		}
 		//update blocks
 		err = m.BlockModel.UpdateBlocksWithoutTxsInTransact(tx, pendingUpdateBlocks)
+		if err != nil {
+			return err
+		}
+		//update tx status
+		err = m.TxModel.UpdateTxsStatusInTransact(tx, relatedBlockTxStatus)
 		return err
 	})
 	if err != nil {
