@@ -31,7 +31,8 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 	bc, err := core.NewBlockChainForDryRun(s.svcCtx.AccountModel, s.svcCtx.LiquidityModel, s.svcCtx.NftModel, s.svcCtx.TxPoolModel,
 		s.svcCtx.AssetModel, s.svcCtx.SysConfigModel, s.svcCtx.RedisCache)
 	if err != nil {
-		return nil, err
+		logx.Error("fail to init blockchain runner:", err)
+		return nil, types2.AppErrInternal
 	}
 	newTx := &tx.Tx{
 		TxHash: types2.EmptyTxHash, // Would be computed in prepare method of executors.
