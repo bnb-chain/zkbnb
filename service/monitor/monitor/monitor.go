@@ -24,6 +24,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
+
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/asset"
 	"github.com/bnb-chain/zkbnb/dao/block"
@@ -56,6 +57,10 @@ type Monitor struct {
 }
 
 func NewMonitor(c config.Config) *Monitor {
+	if c.ChainConfig.StartL1BlockHeight <= 0 || c.ChainConfig.ConfirmBlocksCount < 0 ||
+		c.ChainConfig.MaxHandledBlocksCount <= 0 || c.ChainConfig.KeptHistoryBlocksCount <= 0 {
+		panic("invalid chain config")
+	}
 	db, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
 	if err != nil {
 		logx.Errorf("gorm connect db error, err: %s", err.Error())
@@ -118,7 +123,7 @@ func (m *Monitor) Shutdown() {
 }
 
 func (m *Monitor) getBlockRangeToSync(monitorType int) (int64, int64, error) {
-	latestHandledBlock, err := m.L1SyncedBlockModel.GetLatestL1BlockByType(monitorType)
+	latestHandledBlock, err := m.L1SyncedBlockModel.GetLatestL1SyncedBlockByType(monitorType)
 	var handledHeight int64
 	if err != nil {
 		if err == types.DbErrNotFound {
