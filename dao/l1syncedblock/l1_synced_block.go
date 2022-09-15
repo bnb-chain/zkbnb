@@ -85,7 +85,7 @@ func (m *defaultL1EventModel) GetLatestL1SyncedBlockByType(blockType int) (block
 }
 
 func (m *defaultL1EventModel) DeleteL1SyncedBlocksForHeightLessThan(height int64) (err error) {
-	dbTx := m.DB.Exec("delete from l1_synced_block where l1_block_height < ?", height)
+	dbTx := m.DB.Table(m.table).Unscoped().Where("l1_block_height < ?", height).Delete(&L1SyncedBlock{})
 	if dbTx.Error != nil {
 		return types.DbErrSqlOperation
 	}
