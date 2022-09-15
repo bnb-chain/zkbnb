@@ -61,6 +61,19 @@ func (s *ApiServerSuite) SetupSuite() {
 			},
 		},
 		LogConf: logx.LogConf{},
+		CoinMarketCap: struct {
+			Url   string
+			Token string
+		}{Url: "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=",
+			Token: "1731a7cc-6e1b-458c-8780-ce8249d4fd3b", //personal token, free plan
+		},
+		MemCache: struct {
+			AccountExpiration int
+			AssetExpiration   int
+			BlockExpiration   int
+			TxExpiration      int
+			PriceExpiration   int
+		}{AccountExpiration: 10000, AssetExpiration: 10000, BlockExpiration: 10000, TxExpiration: 10000, PriceExpiration: 10000},
 	}
 	c.Postgres = struct{ DataSource string }{DataSource: "host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5433 sslmode=disable"}
 	c.CacheRedis = cache.CacheConf{}

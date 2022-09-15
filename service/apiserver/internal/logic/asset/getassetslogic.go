@@ -2,6 +2,7 @@ package asset
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -47,12 +48,17 @@ func (l *GetAssetsLogic) GetAssets(req *types.ReqGetRange) (resp *types.Assets, 
 
 	resp.Assets = make([]*types.Asset, 0)
 	for _, asset := range assets {
+		assetPrice, err := l.svcCtx.PriceFetcher.GetCurrencyPrice(l.ctx, asset.AssetSymbol)
+		if err != nil {
+			return nil, types2.AppErrInternal
+		}
 		resp.Assets = append(resp.Assets, &types.Asset{
 			Id:         asset.AssetId,
 			Name:       asset.AssetName,
 			Decimals:   asset.Decimals,
 			Symbol:     asset.AssetSymbol,
 			Address:    asset.L1Address,
+			Price:      strconv.FormatFloat(assetPrice, 'E', -1, 64),
 			IsGasAsset: asset.IsGasAsset,
 		})
 	}

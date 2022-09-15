@@ -50,6 +50,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/api/v1/assets",
 				Handler: asset.GetAssetsHandler(serverCtx),
 			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/asset",
+				Handler: asset.GetAssetHandler(serverCtx),
+			},
 		},
 	)
 
@@ -79,16 +84,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/api/v1/layer2BasicInfo",
 				Handler: info.GetLayer2BasicInfoHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodGet,
-				Path:    "/api/v1/currencyPrice",
-				Handler: info.GetCurrencyPriceHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodGet,
-				Path:    "/api/v1/currencyPrices",
-				Handler: info.GetCurrencyPricesHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,

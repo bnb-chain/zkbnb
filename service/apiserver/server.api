@@ -34,10 +34,15 @@ type ReqGetRange {
 
 type (
 	AccountAsset {
-		Id       uint32 `json:"id"`
-		Name     string `json:"name"`
-		Balance  string `json:"balance"`
-		LpAmount string `json:"lp_amount"`
+		Id      uint32 `json:"id"`
+		Name    string `json:"name"`
+		Balance string `json:"balance"`
+		Price   string `json:"price"`
+	}
+
+	AccountLp {
+		Index  uint32 `json:"index"`
+		Amount string `json:"amount"`
 	}
 
 	Account {
@@ -47,6 +52,7 @@ type (
 		Pk     string          `json:"pk"`
 		Nonce  int64           `json:"nonce"`
 		Assets []*AccountAsset `json:"assets"`
+		Lps    []*AccountLp    `json:"lps"`
 	}
 
 	SimpleAccount {
@@ -91,12 +97,20 @@ type (
 		Decimals   uint32 `json:"decimals"`
 		Symbol     string `json:"symbol"`
 		Address    string `json:"address"`
+		Price      string `json:"price"`
 		IsGasAsset uint32 `json:"is_gas_asset"`
 	}
 
 	Assets {
 		Total  uint32   `json:"total"`
 		Assets []*Asset `json:"assets"`
+	}
+)
+
+type (
+	ReqGetAsset {
+		By    string `form:"by,options=id|symbol"`
+		Value string `form:"value"`
 	}
 )
 
@@ -108,6 +122,10 @@ service server-api {
 	@doc "Get assets"
 	@handler GetAssets
 	get /api/v1/assets (ReqGetRange) returns (Assets)
+	
+	@doc "Get asset"
+	@handler GetAsset
+	get /api/v1/asset (ReqGetAsset) returns (Asset)
 }
 
 /* ========================= Block =========================*/
@@ -181,17 +199,6 @@ type (
 		ContractAddresses         []ContractAddress `json:"contract_addresses"`
 	}
 
-	CurrencyPrice {
-		Pair    string `json:"pair"`
-		AssetId uint32 `json:"asset_id"`
-		Price   string `json:"price"`
-	}
-
-	CurrencyPrices {
-		Total          uint32           `json:"total"`
-		CurrencyPrices []*CurrencyPrice `json:"currency_prices"`
-	}
-
 	GasFee {
 		GasFee string `json:"gas_fee"`
 	}
@@ -212,11 +219,6 @@ type (
 )
 
 type (
-	ReqGetCurrencyPrice {
-		By    string `form:"by,options=symbol, default=symbol"`
-		Value string `form:"value"`
-	}
-
 	ReqGetGasFee {
 		AssetId uint32 `form:"asset_id"`
 	}
@@ -238,14 +240,6 @@ service server-api {
 	@doc "Get zkbnb general info, including contract address, and count of transactions and active users"
 	@handler GetLayer2BasicInfo
 	get /api/v1/layer2BasicInfo returns (Layer2BasicInfo)
-	
-	@doc "Get asset price by its symbol"
-	@handler GetCurrencyPrice
-	get /api/v1/currencyPrice (ReqGetCurrencyPrice) returns (CurrencyPrice)
-	
-	@doc "Get assets' prices"
-	@handler GetCurrencyPrices
-	get /api/v1/currencyPrices (ReqGetRange) returns (CurrencyPrices)
 	
 	@doc "Get gas fee amount for using a specific asset as gas asset"
 	@handler GetGasFee
@@ -282,8 +276,10 @@ type (
 		AssetAId      uint32 `json:"asset_a_id"`
 		AssetAName    string `json:"asset_a_name"`
 		AssetAAmount  string `json:"asset_a_amount"`
+		AssetAPrice   string `json:"asset_a_price"`
 		AssetBId      uint32 `json:"asset_b_id"`
 		AssetBName    string `json:"asset_b_name"`
+		AssetBPrice   string `json:"asset_b_price"`
 		AssetBAmount  string `json:"asset_b_amount"`
 		FeeRate       int64  `json:"fee_rate"`
 		TreasuryRate  int64  `json:"treasury_rate"`
@@ -296,9 +292,11 @@ type (
 	LpValue {
 		AssetAId     uint32 `json:"asset_a_id"`
 		AssetAName   string `json:"asset_a_name"`
+		AssetAPrice  string `json:"asset_a_price"`
 		AssetAAmount string `json:"asset_a_amount"`
 		AssetBId     uint32 `json:"asset_b_id"`
 		AssetBName   string `json:"asset_b_name"`
+		AssetBPrice  string `json:"asset_b_price"`
 		AssetBAmount string `json:"asset_b_amount"`
 	}
 )

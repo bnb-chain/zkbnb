@@ -30,6 +30,7 @@ const (
 	TxCountKeyPrefix           = "tc"  //key for cache: total tx count
 	AssetCountKeyKeyPrefix     = "AC"  //key for cache: total asset count
 	AssetIdNameKeyPrefix       = "IN:" //key for cache: assetId -> assetName
+	AssetIdSymbolKeyPrefix     = "IS:" //key for cache: assetId -> assetName
 	AssetByIdKeyPrefix         = "I:"  //key for cache: assetId -> asset
 	AssetBySymbolKeyPrefix     = "S:"  //key for cache: assetSymbol -> asset
 	PriceKeyPrefix             = "p:"  //key for cache: symbol -> price
@@ -260,7 +261,28 @@ func (m *MemCache) GetAssetNameById(assetId int64) (string, error) {
 	}
 
 	m.goCache.Set(key, asset.AssetName, gocache.DefaultExpiration)
+	key2 := fmt.Sprintf("%s%d", AssetIdSymbolKeyPrefix, assetId)
+	m.goCache.Set(key2, asset.AssetSymbol, gocache.DefaultExpiration)
+
 	return asset.AssetName, nil
+}
+
+func (m *MemCache) GetAssetSymbolById(assetId int64) (string, error) {
+	key := fmt.Sprintf("%s%d", AssetIdSymbolKeyPrefix, assetId)
+	name, found := m.goCache.Get(key)
+	if found {
+		return name.(string), nil
+	}
+	asset, err := m.assetModel.GetAssetById(assetId)
+	if err != nil {
+		return "", err
+	}
+
+	m.goCache.Set(key, asset.AssetSymbol, gocache.DefaultExpiration)
+	key2 := fmt.Sprintf("%s%d", AssetIdNameKeyPrefix, assetId)
+	m.goCache.Set(key2, asset.AssetName, gocache.DefaultExpiration)
+
+	return asset.AssetSymbol, nil
 }
 
 func (m *MemCache) GetPriceWithFallback(symbol string, f fallback) (float64, error) {

@@ -168,7 +168,7 @@ MemCache:
   AssetExpiration:   600
   BlockExpiration:   400
   TxExpiration:      400
-  PriceExpiration:   200
+  PriceExpiration:   1000
 
 " > ${CONFIG_PATH}/apiserver.yaml
 
