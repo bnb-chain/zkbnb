@@ -25,7 +25,7 @@ type Config struct {
 	}
 
 	ApiServer struct {
-		L2EndPoint string `json:",optional"`
+		L2EndPoint string
 	}
 }
 
