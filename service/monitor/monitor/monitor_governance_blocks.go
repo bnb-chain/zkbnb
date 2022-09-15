@@ -29,7 +29,6 @@ import (
 	"gorm.io/gorm"
 
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/zkbnb/core/legend"
-	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/asset"
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
 	"github.com/bnb-chain/zkbnb/dao/sysconfig"
@@ -83,36 +82,22 @@ func NewGovernancePendingChanges() *GovernancePendingChanges {
 }
 
 func (m *Monitor) MonitorGovernanceBlocks() (err error) {
-	// get latest handled l1 block from database by chain id
-	latestHandledBlock, err := m.L1SyncedBlockModel.GetLatestL1BlockByType(l1syncedblock.TypeGovernance)
-	var handledHeight int64
+	startHeight, endHeight, err := m.getBlockRangeToSync(l1syncedblock.TypeGovernance)
 	if err != nil {
-		if err == types.DbErrNotFound {
-			handledHeight = m.Config.ChainConfig.StartL1BlockHeight
-		} else {
-			return fmt.Errorf("failed to get l1 block: %v", err)
-		}
-	} else {
-		handledHeight = latestHandledBlock.L1BlockHeight
+		logx.Errorf("get block range to sync error, err: %s", err.Error())
+		return err
 	}
-	// get latest l1 block height(latest height - pendingBlocksCount)
-	latestHeight, err := m.cli.GetHeight()
-	if err != nil {
-		return fmt.Errorf("failed to get latest l1 block through rpc client: %v", err)
-	}
-	// compute safe height
-	safeHeight := latestHeight - m.Config.ChainConfig.ConfirmBlocksCount
-	safeHeight = uint64(common2.MinInt64(int64(safeHeight), handledHeight+m.Config.ChainConfig.MaxHandledBlocksCount))
-	// check if safe height > handledHeight
-	if safeHeight <= uint64(handledHeight) {
+	if endHeight < startHeight {
+		logx.Infof("no blocks to sync, startHeight: %d, endHeight: %d", startHeight, endHeight)
 		return nil
 	}
+
 	contractAddress := common.HexToAddress(m.governanceContractAddress)
-	logx.Infof("fromBlock: %d, toBlock: %d", big.NewInt(handledHeight+1), big.NewInt(int64(safeHeight)))
+	logx.Infof("fromBlock: %d, toBlock: %d", big.NewInt(startHeight), big.NewInt(endHeight))
 
 	query := ethereum.FilterQuery{
-		FromBlock: big.NewInt(handledHeight + 1),
-		ToBlock:   big.NewInt(int64(safeHeight)),
+		FromBlock: big.NewInt(startHeight),
+		ToBlock:   big.NewInt(endHeight),
 		Addresses: []common.Address{contractAddress},
 	}
 	logs, err := m.cli.FilterLogs(context.Background(), query)
@@ -226,7 +211,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 		return err
 	}
 	syncedBlock := &l1syncedblock.L1SyncedBlock{
-		L1BlockHeight: int64(safeHeight),
+		L1BlockHeight: int64(endHeight),
 		BlockInfo:     string(eventInfosBytes),
 		Type:          l1syncedblock.TypeGovernance,
 	}
