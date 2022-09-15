@@ -11,6 +11,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	bsmt "github.com/bnb-chain/zkbnb-smt"
+
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/dbcache"
@@ -657,4 +658,24 @@ func (s *StateDB) GetGasAssetIds() ([]uint32, error) {
 	}
 	_ = s.redisCache.Set(context.Background(), dbcache.GasAssetsKey, gasAssetIds)
 	return gasAssetIds, nil
+}
+
+func (s *StateDB) Close() {
+	sqlDB, err := s.chainDb.DB.DB()
+	if err == nil && sqlDB != nil {
+		err = sqlDB.Close()
+	}
+	if err != nil {
+		logx.Errorf("close db error: %s", err.Error())
+	}
+
+	err = s.redisCache.Close()
+	if err != nil {
+		logx.Errorf("close redis error: %s", err.Error())
+	}
+
+	err = s.TreeCtx.TreeDB.Close()
+	if err != nil {
+		logx.Errorf("close treedb error: %s", err.Error())
+	}
 }

@@ -1,6 +1,8 @@
 package prover
 
 import (
+	"time"
+
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -10,16 +12,15 @@ import (
 	"github.com/bnb-chain/zkbnb/service/prover/prover"
 )
 
+const GracefulShutdownTimeout = 30 * time.Second
+
 func Run(configFile string) error {
 	var c config.Config
 	conf.MustLoad(configFile, &c)
-	p := prover.NewProver(c)
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
-	proc.AddShutdownListener(func() {
-		logx.Close()
-	})
 
+	p := prover.NewProver(c)
 	cronJob := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))
@@ -35,5 +36,19 @@ func Run(configFile string) error {
 		panic(err)
 	}
 	cronJob.Start()
-	select {}
+
+	exit := make(chan struct{})
+	proc.SetTimeToForceQuit(GracefulShutdownTimeout)
+	proc.AddShutdownListener(func() {
+		logx.Info("start to shutdown prover......")
+		<-cronJob.Stop().Done()
+		p.Shutdown()
+		_ = logx.Close()
+		exit <- struct{}{}
+	})
+
+	logx.Info("prover cronjob is starting......")
+
+	<-exit
+	return nil
 }

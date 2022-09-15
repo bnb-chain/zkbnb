@@ -1,6 +1,7 @@
 package statedb
 
 import (
+	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb/dao/account"
@@ -51,5 +52,15 @@ func NewChainDB(db *gorm.DB) *ChainDB {
 		TxPoolModel:           tx.NewTxPoolModel(db),
 
 		SysConfigModel: sysconfig.NewSysConfigModel(db),
+	}
+}
+
+func (c *ChainDB) Close() {
+	sqlDB, err := c.DB.DB()
+	if err == nil && sqlDB != nil {
+		err = sqlDB.Close()
+	}
+	if err != nil {
+		logx.Errorf("close db error: %s", err.Error())
 	}
 }

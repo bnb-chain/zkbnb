@@ -17,6 +17,7 @@ var (
 )
 
 type RedisCache struct {
+	clint      *redis.Client
 	marshal    *marshaler.Marshaler
 	expiration time.Duration
 }
@@ -28,6 +29,7 @@ func NewRedisCache(redisAdd, password string, expiration time.Duration) Cache {
 	promMetrics := metrics.NewPrometheus("zkbnb")
 	cacheManager := cache.NewMetric(promMetrics, redisCacheManager)
 	return &RedisCache{
+		clint:      client,
 		marshal:    marshaler.New(cacheManager),
 		expiration: expiration,
 	}
@@ -62,4 +64,8 @@ func (c *RedisCache) Set(ctx context.Context, key string, value interface{}) err
 
 func (c *RedisCache) Delete(ctx context.Context, key string) error {
 	return c.marshal.Delete(ctx, key)
+}
+
+func (c *RedisCache) Close() error {
+	return c.clint.Close()
 }

@@ -1,6 +1,8 @@
 package sender
 
 import (
+	"time"
+
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -10,16 +12,15 @@ import (
 	"github.com/bnb-chain/zkbnb/service/sender/sender"
 )
 
+const GracefulShutdownTimeout = 10 * time.Second
+
 func Run(configFile string) error {
 	var c config.Config
 	conf.MustLoad(configFile, &c)
-	s := sender.NewSender(c)
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
-	proc.AddShutdownListener(func() {
-		logx.Close()
-	})
 
+	s := sender.NewSender(c)
 	// new cron
 	cronJob := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DiscardLogger),
@@ -60,6 +61,18 @@ func Run(configFile string) error {
 
 	cronJob.Start()
 
-	logx.Info("cronjob is starting......")
-	select {}
+	exit := make(chan struct{})
+	proc.SetTimeToForceQuit(GracefulShutdownTimeout)
+	proc.AddShutdownListener(func() {
+		logx.Info("start to shutdown sender......")
+		<-cronJob.Stop().Done()
+		s.Shutdown()
+		_ = logx.Close()
+		exit <- struct{}{}
+	})
+
+	logx.Info("sender cronjob is starting......")
+
+	<-exit
+	return nil
 }

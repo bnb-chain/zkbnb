@@ -23,9 +23,11 @@ type Config struct {
 	BlockConfig struct {
 		OptionalBlockSizes []int
 	}
+	LogConf logx.LogConf
 }
 
 type Committer struct {
+	running            bool
 	config             *Config
 	maxTxsPerBlock     int
 	optionalBlockSizes []int
@@ -44,6 +46,7 @@ func NewCommitter(config *Config) (*Committer, error) {
 	}
 
 	committer := &Committer{
+		running:            true,
 		config:             config,
 		maxTxsPerBlock:     config.BlockConfig.OptionalBlockSizes[len(config.BlockConfig.OptionalBlockSizes)-1],
 		optionalBlockSizes: config.BlockConfig.OptionalBlockSizes,
@@ -60,6 +63,9 @@ func (c *Committer) Run() {
 	}
 
 	for {
+		if !c.running {
+			break
+		}
 		if curBlock.BlockStatus > block.StatusProposing {
 			curBlock, err = c.bc.ProposeNewBlock()
 			if err != nil {
@@ -135,6 +141,12 @@ func (c *Committer) Run() {
 			}
 		}
 	}
+}
+
+func (c *Committer) Shutdown() {
+	c.running = false
+	c.bc.Statedb.Close()
+	c.bc.ChainDB.Close()
 }
 
 func (c *Committer) restoreExecutedTxs() (*block.Block, error) {

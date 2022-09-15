@@ -14,6 +14,7 @@ import (
 
 	cryptoBlock "github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/block"
 	smt "github.com/bnb-chain/zkbnb-smt"
+
 	utils "github.com/bnb-chain/zkbnb/common/prove"
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/block"
@@ -48,6 +49,7 @@ type Witness struct {
 	taskPool      *ants.Pool
 
 	// The data access object
+	db                    *gorm.DB
 	blockModel            block.BlockModel
 	accountModel          account.AccountModel
 	accountHistoryModel   account.AccountHistoryModel
@@ -66,6 +68,7 @@ func NewWitness(c config.Config) (*Witness, error) {
 
 	w := &Witness{
 		config:                c,
+		db:                    db,
 		blockModel:            block.NewBlockModel(db),
 		blockWitnessModel:     blockwitness.NewBlockWitnessModel(db),
 		accountModel:          account.NewAccountModel(db),
@@ -289,4 +292,19 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 		Status:      blockwitness.StatusPublished,
 	}
 	return &blockWitness, nil
+}
+
+func (w *Witness) Shutdown() {
+	sqlDB, err := w.db.DB()
+	if err == nil && sqlDB != nil {
+		err = sqlDB.Close()
+	}
+	if err != nil {
+		logx.Errorf("close db error: %s", err.Error())
+	}
+
+	err = w.treeCtx.TreeDB.Close()
+	if err != nil {
+		logx.Errorf("close treedb error: %s", err.Error())
+	}
 }
