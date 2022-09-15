@@ -55,6 +55,17 @@ func Run(configFile string) error {
 	}); err != nil {
 		panic(err)
 	}
+
+	// prune historical blocks
+	if _, err := cronJob.AddFunc("@every 30s", func() {
+		err := m.CleanHistoryBlocks()
+		if err != nil {
+			logx.Errorf("clean history blocks error, %v", err)
+		}
+	}); err != nil {
+		panic(err)
+	}
+
 	cronJob.Start()
 
 	exit := make(chan struct{})

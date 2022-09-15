@@ -57,8 +57,7 @@ type Monitor struct {
 }
 
 func NewMonitor(c config.Config) *Monitor {
-	if c.ChainConfig.StartL1BlockHeight <= 0 || c.ChainConfig.ConfirmBlocksCount < 0 ||
-		c.ChainConfig.MaxHandledBlocksCount <= 0 || c.ChainConfig.KeptHistoryBlocksCount <= 0 {
+	if c.ChainConfig.StartL1BlockHeight <= 0 || c.ChainConfig.MaxHandledBlocksCount <= 0 || c.ChainConfig.KeptHistoryBlocksCount <= 0 {
 		panic("invalid chain config")
 	}
 	db, err := gorm.Open(postgres.Open(c.Postgres.DataSource))

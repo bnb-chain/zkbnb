@@ -23,11 +23,11 @@ func (m *Monitor) CleanHistoryBlocks() (err error) {
 		return nil
 	}
 
-	logx.Info("start to clean historical synced blocks for height less than: %d", keepHeight)
+	logx.Infof("start to clean historical synced blocks for height less than: %d", keepHeight)
 	err = m.L1SyncedBlockModel.DeleteL1SyncedBlocksForHeightLessThan(keepHeight)
 	if err != nil {
 		return err
 	}
-	logx.Info("finish to clean historical synced blocks for height less than: %d", keepHeight)
+	logx.Infof("finish to clean historical synced blocks for height less than: %d", keepHeight)
 	return nil
 }

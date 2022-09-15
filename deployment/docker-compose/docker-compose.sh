@@ -86,6 +86,7 @@ ChainConfig:
   StartL1BlockHeight: $BLOCK_NUMBER
   ConfirmBlocksCount: 0
   MaxHandledBlocksCount: 5000
+  KeptHistoryBlocksCount: 100000
 " > ${CONFIG_PATH}/monitor.yaml
 
 echo -e "
