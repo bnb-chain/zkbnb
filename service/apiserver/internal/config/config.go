@@ -17,7 +17,8 @@ type Config struct {
 		Url   string
 		Token string
 	}
-	MemCache struct {
+	MaxPendingTxCount int
+	MemCache          struct {
 		AccountExpiration int
 		AssetExpiration   int
 		BlockExpiration   int

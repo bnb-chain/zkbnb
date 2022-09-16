@@ -60,7 +60,8 @@ func (s *ApiServerSuite) SetupSuite() {
 				Name: "api-server",
 			},
 		},
-		LogConf: logx.LogConf{},
+		MaxPendingTxCount: 10000,
+		LogConf:           logx.LogConf{},
 		CoinMarketCap: struct {
 			Url   string
 			Token string

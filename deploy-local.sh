@@ -240,6 +240,7 @@ echo -e "
 Name: api-server
 Host: 0.0.0.0
 Port: 8888
+MaxPendingTxCount: 10000
 
 Prometheus:
   Host: 0.0.0.0
