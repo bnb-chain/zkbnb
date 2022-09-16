@@ -166,6 +166,7 @@ ChainConfig:
   StartL1BlockHeight: $blockNumber
   ConfirmBlocksCount: 0
   MaxHandledBlocksCount: 5000
+  KeptHistoryBlocksCount: 100000
 
 TreeDB:
   Driver: memorydb

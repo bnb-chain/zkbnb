@@ -34,7 +34,8 @@ type (
 	L1SyncedBlockModel interface {
 		CreateL1SyncedBlockTable() error
 		DropL1SyncedBlockTable() error
-		GetLatestL1BlockByType(blockType int) (blockInfo *L1SyncedBlock, err error)
+		GetLatestL1SyncedBlockByType(blockType int) (blockInfo *L1SyncedBlock, err error)
+		DeleteL1SyncedBlocksForHeightLessThan(height int64) (err error)
 		CreateL1SyncedBlockInTransact(tx *gorm.DB, block *L1SyncedBlock) error
 	}
 
@@ -46,10 +47,10 @@ type (
 	L1SyncedBlock struct {
 		gorm.Model
 		// l1 block height
-		L1BlockHeight int64
+		L1BlockHeight int64 `gorm:"index"`
 		// block info, array of hashes
 		BlockInfo string
-		Type      int
+		Type      int `gorm:"index"`
 	}
 )
 
@@ -72,7 +73,7 @@ func (m *defaultL1EventModel) DropL1SyncedBlockTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-func (m *defaultL1EventModel) GetLatestL1BlockByType(blockType int) (blockInfo *L1SyncedBlock, err error) {
+func (m *defaultL1EventModel) GetLatestL1SyncedBlockByType(blockType int) (blockInfo *L1SyncedBlock, err error) {
 	dbTx := m.DB.Table(m.table).Where("type = ?", blockType).Order("l1_block_height desc").Find(&blockInfo)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
@@ -81,6 +82,14 @@ func (m *defaultL1EventModel) GetLatestL1BlockByType(blockType int) (blockInfo *
 		return nil, types.DbErrNotFound
 	}
 	return blockInfo, nil
+}
+
+func (m *defaultL1EventModel) DeleteL1SyncedBlocksForHeightLessThan(height int64) (err error) {
+	dbTx := m.DB.Table(m.table).Unscoped().Where("l1_block_height < ?", height).Delete(&L1SyncedBlock{})
+	if dbTx.Error != nil {
+		return types.DbErrSqlOperation
+	}
+	return nil
 }
 
 func (m *defaultL1EventModel) CreateL1SyncedBlockInTransact(tx *gorm.DB, block *L1SyncedBlock) error {

@@ -17,6 +17,7 @@ const GracefulShutdownTimeout = 10 * time.Second
 func Run(configFile string) error {
 	var c config.Config
 	conf.MustLoad(configFile, &c)
+	c.Validate()
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 
@@ -55,6 +56,17 @@ func Run(configFile string) error {
 	}); err != nil {
 		panic(err)
 	}
+
+	// prune historical blocks
+	if _, err := cronJob.AddFunc("@every 30s", func() {
+		err := m.CleanHistoryBlocks()
+		if err != nil {
+			logx.Errorf("clean history blocks error, %v", err)
+		}
+	}); err != nil {
+		panic(err)
+	}
+
 	cronJob.Start()
 
 	exit := make(chan struct{})

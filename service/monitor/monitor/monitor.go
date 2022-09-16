@@ -24,6 +24,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
+
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/asset"
 	"github.com/bnb-chain/zkbnb/dao/block"
@@ -118,7 +119,7 @@ func (m *Monitor) Shutdown() {
 }
 
 func (m *Monitor) getBlockRangeToSync(monitorType int) (int64, int64, error) {
-	latestHandledBlock, err := m.L1SyncedBlockModel.GetLatestL1BlockByType(monitorType)
+	latestHandledBlock, err := m.L1SyncedBlockModel.GetLatestL1SyncedBlockByType(monitorType)
 	var handledHeight int64
 	if err != nil {
 		if err == types.DbErrNotFound {

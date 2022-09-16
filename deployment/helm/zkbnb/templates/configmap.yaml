@@ -44,6 +44,7 @@ data:
       StartL1BlockHeight: {{ .Values.configs.startL1BlockHeight }}
       ConfirmBlocksCount: {{ .Values.configs.confirmBlocksCount }}
       MaxHandledBlocksCount: {{ .Values.configs.maxHandledBlocksCount }}
+      KeptHistoryBlocksCount: {{ .Values.configs.keptHistoryBlocksCount }}
   committer.yaml: |
     Name: committer
 

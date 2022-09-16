@@ -98,6 +98,7 @@ configs:
   networkRPCSysConfigName: BscTestNetworkRpc
   confirmBlocksCount: 0
   maxHandledBlocksCount: 5000
+  keptHistoryBlocksCount: 100000
   maxWaitingTime: 120
   maxBlockCount: 4
   gasLimit: 5000000
