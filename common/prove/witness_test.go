@@ -93,7 +93,7 @@ func getWitnessHelper(blockHeight int64) (*WitnessHelper, error) {
 		accountTree,
 		liquidityTree,
 		nftTree,
-		&accountAssetTrees,
+		accountAssetTrees,
 		accountModel), nil
 }
 

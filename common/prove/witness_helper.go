@@ -38,13 +38,13 @@ type WitnessHelper struct {
 
 	// Trees
 	accountTree   bsmt.SparseMerkleTree
-	assetTrees    *[]tree.LazyTreeWrapper
+	assetTrees    *tree.LazyTreeCache
 	liquidityTree bsmt.SparseMerkleTree
 	nftTree       bsmt.SparseMerkleTree
 }
 
 func NewWitnessHelper(treeCtx *tree.Context, accountTree, liquidityTree, nftTree bsmt.SparseMerkleTree,
-	assetTrees *[]tree.LazyTreeWrapper, accountModel AccountModel) *WitnessHelper {
+	assetTrees *tree.LazyTreeCache, accountModel AccountModel) *WitnessHelper {
 	return &WitnessHelper{
 		treeCtx:       treeCtx,
 		accountModel:  accountModel,
@@ -201,15 +201,11 @@ func (w *WitnessHelper) constructAccountWitness(
 		}
 		// it means this is a registerZNS tx
 		if proverAccounts == nil {
-			if accountKey != int64(len(*w.assetTrees)) {
+			if accountKey != w.assetTrees.Size() {
 				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore,
 					fmt.Errorf("invalid key")
 			}
-			emptyAccountAssetTree := tree.NewEmptyAccountAssetTree(w.treeCtx, accountKey, finalityBlockNr)
-			// if err != nil {
-			// 	return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
-			// }
-			*w.assetTrees = append(*w.assetTrees, emptyAccountAssetTree)
+			w.assetTrees.Add(tree.NewEmptyAccountAssetTreeFunc(w.treeCtx, accountKey, finalityBlockNr))
 			cryptoAccount = std.EmptyAccount(accountKey, tree.NilAccountAssetRoot)
 			// update account info
 			accountInfo, err := w.accountModel.GetConfirmedAccountByIndex(accountKey)
@@ -242,10 +238,10 @@ func (w *WitnessHelper) constructAccountWitness(
 				AccountPk:       pk,
 				Nonce:           proverAccountInfo.AccountInfo.Nonce,
 				CollectionNonce: proverAccountInfo.AccountInfo.CollectionNonce,
-				AssetRoot:       (*w.assetTrees)[accountKey].Root(),
+				AssetRoot:       w.assetTrees.Get(accountKey).Root(),
 			}
 			for i, accountAsset := range proverAccountInfo.AccountAssets {
-				assetMerkleProof, err := (*w.assetTrees)[accountKey].GetProof(uint64(accountAsset.AssetId))
+				assetMerkleProof, err := w.assetTrees.Get(accountKey).GetProof(uint64(accountAsset.AssetId))
 				if err != nil {
 					return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 				}
@@ -279,7 +275,7 @@ func (w *WitnessHelper) constructAccountWitness(
 				if err != nil {
 					return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 				}
-				err = (*w.assetTrees)[accountKey].Set(uint64(accountAsset.AssetId), nAssetHash)
+				err = w.assetTrees.Get(accountKey).Set(uint64(accountAsset.AssetId), nAssetHash)
 				if err != nil {
 					return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 				}
@@ -293,7 +289,7 @@ func (w *WitnessHelper) constructAccountWitness(
 		// padding empty account asset
 		for assetCount < NbAccountAssetsPerAccount {
 			cryptoAccount.AssetsInfo[assetCount] = std.EmptyAccountAsset(LastAccountAssetId)
-			assetMerkleProof, err := (*w.assetTrees)[accountKey].GetProof(LastAccountAssetId)
+			assetMerkleProof, err := w.assetTrees.Get(accountKey).GetProof(LastAccountAssetId)
 			if err != nil {
 				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 			}
@@ -322,7 +318,7 @@ func (w *WitnessHelper) constructAccountWitness(
 			proverAccounts[accountCount].AccountInfo.PublicKey,
 			nonce,
 			collectionNonce,
-			(*w.assetTrees)[accountKey].Root(),
+			w.assetTrees.Get(accountKey).Root(),
 		)
 		if err != nil {
 			return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
