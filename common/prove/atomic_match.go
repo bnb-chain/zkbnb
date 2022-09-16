@@ -20,11 +20,14 @@ package prove
 import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 
+	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	"github.com/bnb-chain/zkbnb/common"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func (w *WitnessHelper) constructAtomicMatchTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
+func (w *WitnessHelper) constructAtomicMatchTxWitness(cryptoTx *TxWitness, oTx *tx.Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseAtomicMatchTxInfo(oTx.TxInfo)
 	if err != nil {
 		return nil, err
@@ -43,7 +46,7 @@ func (w *WitnessHelper) constructAtomicMatchTxWitness(cryptoTx *TxWitness, oTx *
 	return cryptoTx, nil
 }
 
-func toCryptoAtomicMatchTx(txInfo *types.AtomicMatchTxInfo) (info *CryptoAtomicMatchTx, err error) {
+func toCryptoAtomicMatchTx(txInfo *legendTxTypes.AtomicMatchTxInfo) (info *std.AtomicMatchTx, err error) {
 	packedFee, err := common.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
 		return nil, err
@@ -70,9 +73,9 @@ func toCryptoAtomicMatchTx(txInfo *types.AtomicMatchTxInfo) (info *CryptoAtomicM
 	if err != nil {
 		return nil, err
 	}
-	info = &CryptoAtomicMatchTx{
+	info = &std.AtomicMatchTx{
 		AccountIndex: txInfo.AccountIndex,
-		BuyOffer: &CryptoOfferTx{
+		BuyOffer: &std.OfferTx{
 			Type:         txInfo.BuyOffer.Type,
 			OfferId:      txInfo.BuyOffer.OfferId,
 			AccountIndex: txInfo.BuyOffer.AccountIndex,
@@ -84,7 +87,7 @@ func toCryptoAtomicMatchTx(txInfo *types.AtomicMatchTxInfo) (info *CryptoAtomicM
 			TreasuryRate: txInfo.BuyOffer.TreasuryRate,
 			Sig:          buySig,
 		},
-		SellOffer: &CryptoOfferTx{
+		SellOffer: &std.OfferTx{
 			Type:         txInfo.SellOffer.Type,
 			OfferId:      txInfo.SellOffer.OfferId,
 			AccountIndex: txInfo.SellOffer.AccountIndex,

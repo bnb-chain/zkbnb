@@ -22,12 +22,14 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 
+	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	"github.com/bnb-chain/zkbnb/common"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func (w *WitnessHelper) constructWithdrawTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
+func (w *WitnessHelper) constructWithdrawTxWitness(cryptoTx *TxWitness, oTx *tx.Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseWithdrawTxInfo(oTx.TxInfo)
 	if err != nil {
 		return nil, err
@@ -46,13 +48,13 @@ func (w *WitnessHelper) constructWithdrawTxWitness(cryptoTx *TxWitness, oTx *Tx)
 	return cryptoTx, nil
 }
 
-func toCryptoWithdrawTx(txInfo *types.WithdrawTxInfo) (info *CryptoWithdrawTx, err error) {
+func toCryptoWithdrawTx(txInfo *legendTxTypes.WithdrawTxInfo) (info *std.WithdrawTx, err error) {
 	packedFee, err := common.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
 		return nil, err
 	}
 	addrBytes := legendTxTypes.PaddingAddressToBytes32(txInfo.ToAddress)
-	info = &CryptoWithdrawTx{
+	info = &std.WithdrawTx{
 		FromAccountIndex:  txInfo.FromAccountIndex,
 		AssetId:           txInfo.AssetId,
 		AssetAmount:       txInfo.AssetAmount,

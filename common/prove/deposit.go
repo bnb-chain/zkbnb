@@ -20,10 +20,11 @@ package prove
 import (
 	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func (w *WitnessHelper) constructDepositTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
+func (w *WitnessHelper) constructDepositTxWitness(cryptoTx *TxWitness, oTx *tx.Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseDepositTxInfo(oTx.TxInfo)
 	if err != nil {
 		return nil, err
@@ -37,8 +38,8 @@ func (w *WitnessHelper) constructDepositTxWitness(cryptoTx *TxWitness, oTx *Tx) 
 	return cryptoTx, nil
 }
 
-func toCryptoDepositTx(txInfo *legendTxTypes.DepositTxInfo) (info *CryptoDepositTx, err error) {
-	info = &CryptoDepositTx{
+func toCryptoDepositTx(txInfo *legendTxTypes.DepositTxInfo) (info *std.DepositTx, err error) {
+	info = &std.DepositTx{
 		AccountIndex:    txInfo.AccountIndex,
 		AccountNameHash: txInfo.AccountNameHash,
 		AssetId:         txInfo.AssetId,

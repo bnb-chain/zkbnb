@@ -30,7 +30,6 @@ const (
 const (
 	AccountStatusPending = iota
 	AccountStatusConfirmed
-	AccountStatusVerified
 )
 
 type (

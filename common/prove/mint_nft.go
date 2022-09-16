@@ -21,11 +21,14 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func (w *WitnessHelper) constructMintNftTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
+func (w *WitnessHelper) constructMintNftTxWitness(cryptoTx *TxWitness, oTx *tx.Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseMintNftTxInfo(oTx.TxInfo)
 	if err != nil {
 		return nil, err
@@ -44,12 +47,12 @@ func (w *WitnessHelper) constructMintNftTxWitness(cryptoTx *TxWitness, oTx *Tx) 
 	return cryptoTx, nil
 }
 
-func toCryptoMintNftTx(txInfo *types.MintNftTxInfo) (info *CryptoMintNftTx, err error) {
+func toCryptoMintNftTx(txInfo *legendTxTypes.MintNftTxInfo) (info *std.MintNftTx, err error) {
 	packedFee, err := common2.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
 		return nil, err
 	}
-	info = &CryptoMintNftTx{
+	info = &std.MintNftTx{
 		CreatorAccountIndex: txInfo.CreatorAccountIndex,
 		ToAccountIndex:      txInfo.ToAccountIndex,
 		ToAccountNameHash:   common.FromHex(txInfo.ToAccountNameHash),

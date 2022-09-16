@@ -63,29 +63,6 @@ func IsL2Tx(txType int64) bool {
 	return false
 }
 
-type (
-	RegisterZnsTxInfo    = legendTxTypes.RegisterZnsTxInfo
-	CreatePairTxInfo     = legendTxTypes.CreatePairTxInfo
-	UpdatePairRateTxInfo = legendTxTypes.UpdatePairRateTxInfo
-	DepositTxInfo        = legendTxTypes.DepositTxInfo
-	DepositNftTxInfo     = legendTxTypes.DepositNftTxInfo
-	FullExitTxInfo       = legendTxTypes.FullExitTxInfo
-	FullExitNftTxInfo    = legendTxTypes.FullExitNftTxInfo
-
-	TransferTxInfo         = legendTxTypes.TransferTxInfo
-	SwapTxInfo             = legendTxTypes.SwapTxInfo
-	AddLiquidityTxInfo     = legendTxTypes.AddLiquidityTxInfo
-	RemoveLiquidityTxInfo  = legendTxTypes.RemoveLiquidityTxInfo
-	WithdrawTxInfo         = legendTxTypes.WithdrawTxInfo
-	CreateCollectionTxInfo = legendTxTypes.CreateCollectionTxInfo
-	MintNftTxInfo          = legendTxTypes.MintNftTxInfo
-	TransferNftTxInfo      = legendTxTypes.TransferNftTxInfo
-	OfferTxInfo            = legendTxTypes.OfferTxInfo
-	AtomicMatchTxInfo      = legendTxTypes.AtomicMatchTxInfo
-	CancelOfferTxInfo      = legendTxTypes.CancelOfferTxInfo
-	WithdrawNftTxInfo      = legendTxTypes.WithdrawNftTxInfo
-)
-
 const (
 	TxTypeBytesSize          = 1
 	IsNewNftSize             = 1

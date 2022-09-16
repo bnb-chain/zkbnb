@@ -20,11 +20,14 @@ package prove
 import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 
+	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
 	"github.com/bnb-chain/zkbnb/common"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func (w *WitnessHelper) constructCancelOfferTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
+func (w *WitnessHelper) constructCancelOfferTxWitness(cryptoTx *TxWitness, oTx *tx.Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseCancelOfferTxInfo(oTx.TxInfo)
 	if err != nil {
 		return nil, err
@@ -43,12 +46,12 @@ func (w *WitnessHelper) constructCancelOfferTxWitness(cryptoTx *TxWitness, oTx *
 	return cryptoTx, nil
 }
 
-func toCryptoCancelOfferTx(txInfo *types.CancelOfferTxInfo) (info *CryptoCancelOfferTx, err error) {
+func toCryptoCancelOfferTx(txInfo *legendTxTypes.CancelOfferTxInfo) (info *std.CancelOfferTx, err error) {
 	packedFee, err := common.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
 		return nil, err
 	}
-	info = &CryptoCancelOfferTx{
+	info = &std.CancelOfferTx{
 		AccountIndex:      txInfo.AccountIndex,
 		OfferId:           txInfo.OfferId,
 		GasAccountIndex:   txInfo.GasAccountIndex,

@@ -22,10 +22,11 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	bsmt "github.com/bnb-chain/zkbnb-smt"
+	"github.com/bnb-chain/zkbnb/dao/nft"
 )
 
 func InitNftTree(
-	nftHistoryModel L2NftHistoryModel,
+	nftHistoryModel nft.L2NftHistoryModel,
 	blockHeight int64,
 	ctx *Context,
 ) (
@@ -74,7 +75,7 @@ func InitNftTree(
 }
 
 func loadNftTreeFromRDB(
-	nftHistoryModel L2NftHistoryModel,
+	nftHistoryModel nft.L2NftHistoryModel,
 	blockHeight int64,
 	offset, limit int,
 	nftTree bsmt.SparseMerkleTree,
@@ -102,7 +103,7 @@ func loadNftTreeFromRDB(
 	return nil
 }
 
-func NftAssetToNode(nftAsset *AccountL2NftHistory) (hashVal []byte, err error) {
+func NftAssetToNode(nftAsset *nft.L2NftHistory) (hashVal []byte, err error) {
 	hashVal, err = ComputeNftAssetLeafHash(
 		nftAsset.CreatorAccountIndex,
 		nftAsset.OwnerAccountIndex,
