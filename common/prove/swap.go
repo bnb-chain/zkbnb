@@ -20,8 +20,8 @@ package prove
 import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 
-	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
-	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
+	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/bn254/types"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	"github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
@@ -46,7 +46,7 @@ func (w *WitnessHelper) constructSwapTxWitness(cryptoTx *TxWitness, oTx *tx.Tx) 
 	return cryptoTx, nil
 }
 
-func toCryptoSwapTx(txInfo *legendTxTypes.SwapTxInfo) (info *std.SwapTx, err error) {
+func toCryptoSwapTx(txInfo *txtypes.SwapTxInfo) (info *cryptoTypes.SwapTx, err error) {
 	packedAAmount, err := common.ToPackedAmount(txInfo.AssetAAmount)
 	if err != nil {
 		return nil, err
@@ -63,7 +63,7 @@ func toCryptoSwapTx(txInfo *legendTxTypes.SwapTxInfo) (info *std.SwapTx, err err
 	if err != nil {
 		return nil, err
 	}
-	info = &std.SwapTx{
+	info = &cryptoTypes.SwapTx{
 		FromAccountIndex:  txInfo.FromAccountIndex,
 		PairIndex:         txInfo.PairIndex,
 		AssetAId:          txInfo.AssetAId,

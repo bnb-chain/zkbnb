@@ -20,8 +20,8 @@ package prove
 import (
 	"strings"
 
-	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
-	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
+	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/bn254/types"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	"github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
@@ -36,12 +36,12 @@ func (w *WitnessHelper) constructRegisterZnsTxWitness(cryptoTx *TxWitness, oTx *
 	if err != nil {
 		return nil, err
 	}
-	cryptoTx.Signature = std.EmptySignature()
+	cryptoTx.Signature = cryptoTypes.EmptySignature()
 	cryptoTx.RegisterZnsTxInfo = cryptoTxInfo
 	return cryptoTx, nil
 }
 
-func toCryptoRegisterZnsTx(txInfo *legendTxTypes.RegisterZnsTxInfo) (info *std.RegisterZnsTx, err error) {
+func toCryptoRegisterZnsTx(txInfo *txtypes.RegisterZnsTxInfo) (info *cryptoTypes.RegisterZnsTx, err error) {
 	accountName := make([]byte, 32)
 	realName := strings.Split(txInfo.AccountName, types.AccountNameSuffix)[0]
 	copy(accountName[:], realName)
@@ -49,7 +49,7 @@ func toCryptoRegisterZnsTx(txInfo *legendTxTypes.RegisterZnsTxInfo) (info *std.R
 	if err != nil {
 		return nil, err
 	}
-	info = &std.RegisterZnsTx{
+	info = &cryptoTypes.RegisterZnsTx{
 		AccountIndex:    txInfo.AccountIndex,
 		AccountName:     accountName,
 		AccountNameHash: txInfo.AccountNameHash,

@@ -9,7 +9,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
-	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/dao/liquidity"
@@ -20,7 +20,7 @@ import (
 type SwapExecutor struct {
 	BaseExecutor
 
-	txInfo *legendTxTypes.SwapTxInfo
+	txInfo *txtypes.SwapTxInfo
 
 	newPoolInfo *types.LiquidityInfo
 }

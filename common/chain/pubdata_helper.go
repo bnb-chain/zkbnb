@@ -23,12 +23,12 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func ParseRegisterZnsPubData(pubData []byte) (tx *legendTxTypes.RegisterZnsTxInfo, err error) {
+func ParseRegisterZnsPubData(pubData []byte) (tx *txtypes.RegisterZnsTxInfo, err error) {
 	/*
 		struct RegisterZNS {
 			uint8 txType;
@@ -51,7 +51,7 @@ func ParseRegisterZnsPubData(pubData []byte) (tx *legendTxTypes.RegisterZnsTxInf
 	pk := new(eddsa.PublicKey)
 	pk.A.X.SetBytes(pubKeyX)
 	pk.A.Y.SetBytes(pubKeyY)
-	tx = &legendTxTypes.RegisterZnsTxInfo{
+	tx = &txtypes.RegisterZnsTxInfo{
 		TxType:          txType,
 		AccountIndex:    int64(accountIndex),
 		AccountName:     common2.CleanAccountName(common2.SerializeAccountName(accountName)),
@@ -61,7 +61,7 @@ func ParseRegisterZnsPubData(pubData []byte) (tx *legendTxTypes.RegisterZnsTxInf
 	return tx, nil
 }
 
-func ParseCreatePairPubData(pubData []byte) (tx *legendTxTypes.CreatePairTxInfo, err error) {
+func ParseCreatePairPubData(pubData []byte) (tx *txtypes.CreatePairTxInfo, err error) {
 	if len(pubData) != types.CreatePairPubDataSize {
 		return nil, errors.New("[ParseCreatePairPubData] invalid size")
 	}
@@ -73,7 +73,7 @@ func ParseCreatePairPubData(pubData []byte) (tx *legendTxTypes.CreatePairTxInfo,
 	offset, feeRate := common2.ReadUint16(pubData, offset)
 	offset, treasuryAccountIndex := common2.ReadUint32(pubData, offset)
 	_, treasuryRate := common2.ReadUint16(pubData, offset)
-	tx = &legendTxTypes.CreatePairTxInfo{
+	tx = &txtypes.CreatePairTxInfo{
 		TxType:               txType,
 		PairIndex:            int64(pairIndex),
 		AssetAId:             int64(assetAId),
@@ -85,7 +85,7 @@ func ParseCreatePairPubData(pubData []byte) (tx *legendTxTypes.CreatePairTxInfo,
 	return tx, nil
 }
 
-func ParseUpdatePairRatePubData(pubData []byte) (tx *legendTxTypes.UpdatePairRateTxInfo, err error) {
+func ParseUpdatePairRatePubData(pubData []byte) (tx *txtypes.UpdatePairRateTxInfo, err error) {
 	if len(pubData) != types.UpdatePairRatePubdataSize {
 		return nil, errors.New("[ParseUpdatePairRatePubData] invalid size")
 	}
@@ -95,7 +95,7 @@ func ParseUpdatePairRatePubData(pubData []byte) (tx *legendTxTypes.UpdatePairRat
 	offset, feeRate := common2.ReadUint16(pubData, offset)
 	offset, treasuryAccountIndex := common2.ReadUint32(pubData, offset)
 	_, treasuryRate := common2.ReadUint16(pubData, offset)
-	tx = &legendTxTypes.UpdatePairRateTxInfo{
+	tx = &txtypes.UpdatePairRateTxInfo{
 		TxType:               txType,
 		PairIndex:            int64(pairIndex),
 		FeeRate:              int64(feeRate),
@@ -105,7 +105,7 @@ func ParseUpdatePairRatePubData(pubData []byte) (tx *legendTxTypes.UpdatePairRat
 	return tx, nil
 }
 
-func ParseDepositPubData(pubData []byte) (tx *legendTxTypes.DepositTxInfo, err error) {
+func ParseDepositPubData(pubData []byte) (tx *txtypes.DepositTxInfo, err error) {
 	/*
 		struct Deposit {
 			uint8 txType;
@@ -124,7 +124,7 @@ func ParseDepositPubData(pubData []byte) (tx *legendTxTypes.DepositTxInfo, err e
 	offset, accountNameHash := common2.ReadBytes32(pubData, offset)
 	offset, assetId := common2.ReadUint16(pubData, offset)
 	_, amount := common2.ReadUint128(pubData, offset)
-	tx = &legendTxTypes.DepositTxInfo{
+	tx = &txtypes.DepositTxInfo{
 		TxType:          txType,
 		AccountIndex:    int64(accountIndex),
 		AccountNameHash: accountNameHash,
@@ -134,7 +134,7 @@ func ParseDepositPubData(pubData []byte) (tx *legendTxTypes.DepositTxInfo, err e
 	return tx, nil
 }
 
-func ParseDepositNftPubData(pubData []byte) (tx *legendTxTypes.DepositNftTxInfo, err error) {
+func ParseDepositNftPubData(pubData []byte) (tx *txtypes.DepositNftTxInfo, err error) {
 	if len(pubData) != types.DepositNftPubDataSize {
 		return nil, errors.New("[ParseDepositNftPubData] invalid size")
 	}
@@ -150,7 +150,7 @@ func ParseDepositNftPubData(pubData []byte) (tx *legendTxTypes.DepositNftTxInfo,
 	offset, nftL1TokenId := common2.ReadUint256(pubData, offset)
 	offset, accountNameHash := common2.ReadBytes32(pubData, offset)
 	_, collectionId := common2.ReadUint16(pubData, offset)
-	tx = &legendTxTypes.DepositNftTxInfo{
+	tx = &txtypes.DepositNftTxInfo{
 		TxType:              txType,
 		IsNewNft:            isNewNft,
 		AccountIndex:        int64(accountIndex),
@@ -166,7 +166,7 @@ func ParseDepositNftPubData(pubData []byte) (tx *legendTxTypes.DepositNftTxInfo,
 	return tx, nil
 }
 
-func ParseFullExitPubData(pubData []byte) (tx *legendTxTypes.FullExitTxInfo, err error) {
+func ParseFullExitPubData(pubData []byte) (tx *txtypes.FullExitTxInfo, err error) {
 	if len(pubData) != types.FullExitPubDataSize {
 		return nil, errors.New("[ParseFullExitPubData] invalid size")
 	}
@@ -176,7 +176,7 @@ func ParseFullExitPubData(pubData []byte) (tx *legendTxTypes.FullExitTxInfo, err
 	offset, assetId := common2.ReadUint16(pubData, offset)
 	offset, assetAmount := common2.ReadUint128(pubData, offset)
 	_, accountNameHash := common2.ReadBytes32(pubData, offset)
-	tx = &legendTxTypes.FullExitTxInfo{
+	tx = &txtypes.FullExitTxInfo{
 		TxType:          txType,
 		AccountIndex:    int64(accountIndex),
 		AccountNameHash: accountNameHash,
@@ -186,7 +186,7 @@ func ParseFullExitPubData(pubData []byte) (tx *legendTxTypes.FullExitTxInfo, err
 	return tx, nil
 }
 
-func ParseFullExitNftPubData(pubData []byte) (tx *legendTxTypes.FullExitNftTxInfo, err error) {
+func ParseFullExitNftPubData(pubData []byte) (tx *txtypes.FullExitNftTxInfo, err error) {
 	if len(pubData) != types.FullExitNftPubDataSize {
 		return nil, errors.New("[ParseFullExitNftPubData] invalid size")
 	}
@@ -202,7 +202,7 @@ func ParseFullExitNftPubData(pubData []byte) (tx *legendTxTypes.FullExitNftTxInf
 	offset, creatorAccountNameHash := common2.ReadBytes32(pubData, offset)
 	offset, nftContentHash := common2.ReadBytes32(pubData, offset)
 	_, nftL1TokenId := common2.ReadUint256(pubData, offset)
-	tx = &legendTxTypes.FullExitNftTxInfo{
+	tx = &txtypes.FullExitNftTxInfo{
 		TxType:                 txType,
 		AccountIndex:           int64(accountIndex),
 		CreatorAccountIndex:    int64(creatorAccountIndex),

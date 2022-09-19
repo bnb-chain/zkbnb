@@ -20,8 +20,8 @@ package prove
 import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 
-	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
-	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
+	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/bn254/types"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	"github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
@@ -46,7 +46,7 @@ func (w *WitnessHelper) constructRemoveLiquidityTxWitness(cryptoTx *TxWitness, o
 	return cryptoTx, nil
 }
 
-func toCryptoRemoveLiquidityTx(txInfo *legendTxTypes.RemoveLiquidityTxInfo) (info *std.RemoveLiquidityTx, err error) {
+func toCryptoRemoveLiquidityTx(txInfo *txtypes.RemoveLiquidityTxInfo) (info *cryptoTypes.RemoveLiquidityTx, err error) {
 	packedAMinAmount, err := common.ToPackedAmount(txInfo.AssetAMinAmount)
 	if err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func toCryptoRemoveLiquidityTx(txInfo *legendTxTypes.RemoveLiquidityTxInfo) (inf
 	if err != nil {
 		return nil, err
 	}
-	info = &std.RemoveLiquidityTx{
+	info = &cryptoTypes.RemoveLiquidityTx{
 		FromAccountIndex:  txInfo.FromAccountIndex,
 		PairIndex:         txInfo.PairIndex,
 		AssetAId:          txInfo.AssetAId,

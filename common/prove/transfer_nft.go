@@ -21,8 +21,8 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
-	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
+	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/bn254/types"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
@@ -47,12 +47,12 @@ func (w *WitnessHelper) constructTransferNftTxWitness(cryptoTx *TxWitness, oTx *
 	return cryptoTx, nil
 }
 
-func toCryptoTransferNftTx(txInfo *legendTxTypes.TransferNftTxInfo) (info *std.TransferNftTx, err error) {
+func toCryptoTransferNftTx(txInfo *txtypes.TransferNftTxInfo) (info *cryptoTypes.TransferNftTx, err error) {
 	packedFee, err := common2.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
 		return nil, err
 	}
-	info = &std.TransferNftTx{
+	info = &cryptoTypes.TransferNftTx{
 		FromAccountIndex:  txInfo.FromAccountIndex,
 		ToAccountIndex:    txInfo.ToAccountIndex,
 		ToAccountNameHash: common.FromHex(txInfo.ToAccountNameHash),

@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -19,7 +19,7 @@ const (
 type BaseExecutor struct {
 	bc      IBlockchain
 	tx      *tx.Tx
-	iTxInfo legendTxTypes.TxInfo
+	iTxInfo txtypes.TxInfo
 
 	// Affected states.
 	dirtyAccountsAndAssetsMap map[int64]map[int64]bool
@@ -27,7 +27,7 @@ type BaseExecutor struct {
 	dirtyNftMap               map[int64]bool
 }
 
-func NewBaseExecutor(bc IBlockchain, tx *tx.Tx, txInfo legendTxTypes.TxInfo) BaseExecutor {
+func NewBaseExecutor(bc IBlockchain, tx *tx.Tx, txInfo txtypes.TxInfo) BaseExecutor {
 	return BaseExecutor{
 		bc:      bc,
 		tx:      tx,

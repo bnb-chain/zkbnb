@@ -18,7 +18,7 @@
 package prove
 
 import (
-	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/block"
+	"github.com/bnb-chain/zkbnb-crypto/circuit/bn254/block"
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"

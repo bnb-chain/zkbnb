@@ -22,8 +22,8 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 
-	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
-	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
+	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/bn254/types"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	"github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
@@ -48,13 +48,13 @@ func (w *WitnessHelper) constructWithdrawTxWitness(cryptoTx *TxWitness, oTx *tx.
 	return cryptoTx, nil
 }
 
-func toCryptoWithdrawTx(txInfo *legendTxTypes.WithdrawTxInfo) (info *std.WithdrawTx, err error) {
+func toCryptoWithdrawTx(txInfo *txtypes.WithdrawTxInfo) (info *cryptoTypes.WithdrawTx, err error) {
 	packedFee, err := common.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
 		return nil, err
 	}
-	addrBytes := legendTxTypes.PaddingAddressToBytes32(txInfo.ToAddress)
-	info = &std.WithdrawTx{
+	addrBytes := txtypes.PaddingAddressToBytes32(txInfo.ToAddress)
+	info = &cryptoTypes.WithdrawTx{
 		FromAccountIndex:  txInfo.FromAccountIndex,
 		AssetId:           txInfo.AssetId,
 		AssetAmount:       txInfo.AssetAmount,

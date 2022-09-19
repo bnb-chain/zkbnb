@@ -23,7 +23,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
+	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/bn254/types"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/chain"
@@ -179,7 +179,7 @@ func (w *WitnessHelper) constructAccountWitness(
 ) (
 	accountRootBefore []byte,
 	// account before info, size is 5
-	accountsInfoBefore [NbAccountsPerTx]*std.Account,
+	accountsInfoBefore [NbAccountsPerTx]*cryptoTypes.Account,
 	// before account asset merkle proof
 	merkleProofsAccountAssetsBefore [NbAccountsPerTx][NbAccountAssetsPerAccount][AssetMerkleLevels][]byte,
 	// before account merkle proof
@@ -192,7 +192,7 @@ func (w *WitnessHelper) constructAccountWitness(
 	)
 	for _, accountKey := range accountKeys {
 		var (
-			cryptoAccount = new(std.Account)
+			cryptoAccount = new(cryptoTypes.Account)
 			// get account asset before
 			assetCount = 0
 		)
@@ -212,7 +212,7 @@ func (w *WitnessHelper) constructAccountWitness(
 				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 			}
 			*w.assetTrees = append(*w.assetTrees, emptyAccountAssetTree)
-			cryptoAccount = std.EmptyAccount(accountKey, tree.NilAccountAssetRoot)
+			cryptoAccount = cryptoTypes.EmptyAccount(accountKey, tree.NilAccountAssetRoot)
 			// update account info
 			accountInfo, err := w.accountModel.GetConfirmedAccountByIndex(accountKey)
 			if err != nil {
@@ -238,7 +238,7 @@ func (w *WitnessHelper) constructAccountWitness(
 			if err != nil {
 				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 			}
-			cryptoAccount = &std.Account{
+			cryptoAccount = &cryptoTypes.Account{
 				AccountIndex:    accountKey,
 				AccountNameHash: common.FromHex(proverAccountInfo.AccountInfo.AccountNameHash),
 				AccountPk:       pk,
@@ -252,7 +252,7 @@ func (w *WitnessHelper) constructAccountWitness(
 					return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 				}
 				// set crypto account asset
-				cryptoAccount.AssetsInfo[assetCount] = &std.AccountAsset{
+				cryptoAccount.AssetsInfo[assetCount] = &cryptoTypes.AccountAsset{
 					AssetId:                  accountAsset.AssetId,
 					Balance:                  accountAsset.Balance,
 					LpAmount:                 accountAsset.LpAmount,
@@ -294,7 +294,7 @@ func (w *WitnessHelper) constructAccountWitness(
 		}
 		// padding empty account asset
 		for assetCount < NbAccountAssetsPerAccount {
-			cryptoAccount.AssetsInfo[assetCount] = std.EmptyAccountAsset(LastAccountAssetId)
+			cryptoAccount.AssetsInfo[assetCount] = cryptoTypes.EmptyAccountAsset(LastAccountAssetId)
 			assetMerkleProof, err := (*w.assetTrees)[accountKey].GetProof(LastAccountAssetId)
 			if err != nil {
 				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
@@ -347,7 +347,7 @@ func (w *WitnessHelper) constructAccountWitness(
 		return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 	}
 	for accountCount < NbAccountsPerTx {
-		accountsInfoBefore[accountCount] = std.EmptyAccount(LastAccountIndex, tree.NilAccountAssetRoot)
+		accountsInfoBefore[accountCount] = cryptoTypes.EmptyAccount(LastAccountIndex, tree.NilAccountAssetRoot)
 		// get account before
 		accountMerkleProofs, err := w.accountTree.GetProof(LastAccountIndex)
 		if err != nil {
@@ -380,7 +380,7 @@ func (w *WitnessHelper) constructLiquidityWitness(
 	// liquidity root before
 	LiquidityRootBefore []byte,
 	// liquidity before
-	LiquidityBefore *std.Liquidity,
+	LiquidityBefore *cryptoTypes.Liquidity,
 	// before liquidity merkle proof
 	MerkleProofsLiquidityBefore [LiquidityMerkleLevels][]byte,
 	err error,
@@ -395,7 +395,7 @@ func (w *WitnessHelper) constructLiquidityWitness(
 		if err != nil {
 			return LiquidityRootBefore, LiquidityBefore, MerkleProofsLiquidityBefore, err
 		}
-		LiquidityBefore = std.EmptyLiquidity(LastPairIndex)
+		LiquidityBefore = cryptoTypes.EmptyLiquidity(LastPairIndex)
 		return LiquidityRootBefore, LiquidityBefore, MerkleProofsLiquidityBefore, nil
 	}
 	liquidityMerkleProofs, err := w.liquidityTree.GetProof(uint64(proverLiquidityInfo.LiquidityInfo.PairIndex))
@@ -406,7 +406,7 @@ func (w *WitnessHelper) constructLiquidityWitness(
 	if err != nil {
 		return LiquidityRootBefore, LiquidityBefore, MerkleProofsLiquidityBefore, err
 	}
-	LiquidityBefore = &std.Liquidity{
+	LiquidityBefore = &cryptoTypes.Liquidity{
 		PairIndex:            proverLiquidityInfo.LiquidityInfo.PairIndex,
 		AssetAId:             proverLiquidityInfo.LiquidityInfo.AssetAId,
 		AssetA:               proverLiquidityInfo.LiquidityInfo.AssetA,
@@ -458,7 +458,7 @@ func (w *WitnessHelper) constructNftWitness(
 	// nft root before
 	nftRootBefore []byte,
 	// nft before
-	nftBefore *std.Nft,
+	nftBefore *cryptoTypes.Nft,
 	// before nft tree merkle proof
 	merkleProofsNftBefore [NftMerkleLevels][]byte,
 	err error,
@@ -473,7 +473,7 @@ func (w *WitnessHelper) constructNftWitness(
 		if err != nil {
 			return nftRootBefore, nftBefore, merkleProofsNftBefore, err
 		}
-		nftBefore = std.EmptyNft(LastNftIndex)
+		nftBefore = cryptoTypes.EmptyNft(LastNftIndex)
 		return nftRootBefore, nftBefore, merkleProofsNftBefore, nil
 	}
 	nftMerkleProofs, err := w.nftTree.GetProof(uint64(proverNftInfo.NftInfo.NftIndex))
@@ -488,7 +488,7 @@ func (w *WitnessHelper) constructNftWitness(
 	if !isValid {
 		return nftRootBefore, nftBefore, merkleProofsNftBefore, fmt.Errorf("unable to parse big int")
 	}
-	nftBefore = &std.Nft{
+	nftBefore = &cryptoTypes.Nft{
 		NftIndex:            proverNftInfo.NftInfo.NftIndex,
 		NftContentHash:      common.FromHex(proverNftInfo.NftInfo.NftContentHash),
 		CreatorAccountIndex: proverNftInfo.NftInfo.CreatorAccountIndex,
