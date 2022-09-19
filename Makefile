@@ -44,3 +44,5 @@ build-only:
 docker-image:
 	go mod vendor # temporary, should be removed after open source
 	docker build . -t ${IMAGE_NAME}
+
+.PHONY: api-server deploy integration-test test tools build lint build-only docker-image
