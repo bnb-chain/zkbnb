@@ -12,7 +12,6 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	bsmt "github.com/bnb-chain/zkbnb-smt"
-
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/dbcache"

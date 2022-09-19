@@ -21,11 +21,14 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/ethereum/go-ethereum/common"
 
+	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/bn254/types"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func (w *WitnessHelper) constructTransferTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
+func (w *WitnessHelper) constructTransferTxWitness(cryptoTx *TxWitness, oTx *tx.Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseTransferTxInfo(oTx.TxInfo)
 	if err != nil {
 		return nil, err
@@ -44,7 +47,7 @@ func (w *WitnessHelper) constructTransferTxWitness(cryptoTx *TxWitness, oTx *Tx)
 	return cryptoTx, nil
 }
 
-func toCryptoTransferTx(txInfo *types.TransferTxInfo) (info *CryptoTransferTx, err error) {
+func toCryptoTransferTx(txInfo *txtypes.TransferTxInfo) (info *cryptoTypes.TransferTx, err error) {
 	packedAmount, err := common2.ToPackedAmount(txInfo.AssetAmount)
 	if err != nil {
 		return nil, err
@@ -53,7 +56,7 @@ func toCryptoTransferTx(txInfo *types.TransferTxInfo) (info *CryptoTransferTx, e
 	if err != nil {
 		return nil, err
 	}
-	info = &CryptoTransferTx{
+	info = &cryptoTypes.TransferTx{
 		FromAccountIndex:  txInfo.FromAccountIndex,
 		ToAccountIndex:    txInfo.ToAccountIndex,
 		ToAccountNameHash: common.FromHex(txInfo.ToAccountNameHash),

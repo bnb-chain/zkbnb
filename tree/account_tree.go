@@ -36,8 +36,8 @@ func accountAssetNamespace(index int64) string {
 }
 
 func InitAccountTree(
-	accountModel AccountModel,
-	accountHistoryModel AccountHistoryModel,
+	accountModel account.AccountModel,
+	accountHistoryModel account.AccountHistoryModel,
 	blockHeight int64,
 	ctx *Context,
 ) (
@@ -127,8 +127,8 @@ func InitAccountTree(
 }
 
 func reloadAccountTreeFromRDB(
-	accountModel AccountModel,
-	accountHistoryModel AccountHistoryModel,
+	accountModel account.AccountModel,
+	accountHistoryModel account.AccountHistoryModel,
 	blockHeight int64,
 	offset, limit int,
 	accountTree bsmt.SparseMerkleTree,

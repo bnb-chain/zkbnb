@@ -3,7 +3,7 @@ package statedb
 import (
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
+	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/bn254/types"
 	"github.com/bnb-chain/zkbnb/dao/liquidity"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/tx"
@@ -59,7 +59,7 @@ func NewStateCache(stateRoot string) *StateCache {
 }
 
 func (c *StateCache) AlignPubData(blockSize int) {
-	emptyPubdata := make([]byte, (blockSize-len(c.Txs))*32*std.PubDataSizePerTx)
+	emptyPubdata := make([]byte, (blockSize-len(c.Txs))*32*cryptoTypes.PubDataSizePerTx)
 	c.PubData = append(c.PubData, emptyPubdata...)
 }
 

@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/tx"
@@ -19,7 +19,7 @@ import (
 type FullExitNftExecutor struct {
 	BaseExecutor
 
-	txInfo *legendTxTypes.FullExitNftTxInfo
+	txInfo *txtypes.FullExitNftTxInfo
 
 	exitNft *nft.L2Nft
 }

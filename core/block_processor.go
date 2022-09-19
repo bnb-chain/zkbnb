@@ -3,10 +3,11 @@ package core
 import (
 	"fmt"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbnb/core/executor"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type Processor interface {

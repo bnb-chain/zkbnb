@@ -12,8 +12,8 @@ import (
 	"github.com/consensys/gnark/frontend"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	cryptoBlock "github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/block"
-	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
+	cryptoBlock "github.com/bnb-chain/zkbnb-crypto/circuit/bn254/block"
+	"github.com/bnb-chain/zkbnb-crypto/circuit/bn254/types"
 )
 
 func LoadProvingKey(filepath string) (pk groth16.ProvingKey, err error) {
@@ -64,7 +64,7 @@ func GenerateProof(
 	if err != nil {
 		return proof, err
 	}
-	proof, err = groth16.Prove(r1cs, provingKey, witness, backend.WithHints(std.Keccak256, std.ComputeSLp))
+	proof, err = groth16.Prove(r1cs, provingKey, witness, backend.WithHints(types.Keccak256, types.ComputeSLp))
 	if err != nil {
 		return proof, err
 	}

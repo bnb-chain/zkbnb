@@ -3,6 +3,7 @@ module github.com/bnb-chain/zkbnb
 go 1.17
 
 require (
+	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/panjf2000/ants/v2 v2.5.0
 	github.com/zeromicro/go-zero v1.3.4
 	gorm.io/gorm v1.23.4
@@ -31,7 +32,6 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
-	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.12.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
@@ -86,7 +86,7 @@ require (
 )
 
 require (
-	github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20220909070525-d913bbbcbe90
+	github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20220919132703-8e052d005b0f
 	github.com/bnb-chain/zkbnb-eth-rpc v0.0.2-0.20220913131900-b3723fd9a82d
 	github.com/bnb-chain/zkbnb-smt v0.0.2-0.20220907130044-9c7cccbd19fa
 	github.com/consensys/gnark v0.7.0
@@ -103,8 +103,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
-	golang.org/x/sys v0.0.0-20220909162455-aba9fc2a8ff2 // indirect
-	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
+	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8 // indirect
 	google.golang.org/grpc v1.46.2 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gorm.io/driver/postgres v1.3.6

@@ -20,11 +20,14 @@ package prove
 import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 
+	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/bn254/types"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	"github.com/bnb-chain/zkbnb/common"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func (w *WitnessHelper) constructCreateCollectionTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
+func (w *WitnessHelper) constructCreateCollectionTxWitness(cryptoTx *TxWitness, oTx *tx.Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseCreateCollectionTxInfo(oTx.TxInfo)
 	if err != nil {
 		return nil, err
@@ -43,12 +46,12 @@ func (w *WitnessHelper) constructCreateCollectionTxWitness(cryptoTx *TxWitness, 
 	return cryptoTx, nil
 }
 
-func toCryptoCreateCollectionTx(txInfo *types.CreateCollectionTxInfo) (info *CryptoCreateCollectionTx, err error) {
+func toCryptoCreateCollectionTx(txInfo *txtypes.CreateCollectionTxInfo) (info *cryptoTypes.CreateCollectionTx, err error) {
 	packedFee, err := common.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
 		return nil, err
 	}
-	info = &CryptoCreateCollectionTx{
+	info = &cryptoTypes.CreateCollectionTx{
 		AccountIndex:      txInfo.AccountIndex,
 		CollectionId:      txInfo.CollectionId,
 		GasAccountIndex:   txInfo.GasAccountIndex,

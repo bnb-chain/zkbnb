@@ -22,11 +22,12 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	bsmt "github.com/bnb-chain/zkbnb-smt"
+	"github.com/bnb-chain/zkbnb/dao/liquidity"
 	"github.com/bnb-chain/zkbnb/types"
 )
 
 func InitLiquidityTree(
-	liquidityHistoryModel LiquidityHistoryModel,
+	liquidityHistoryModel liquidity.LiquidityHistoryModel,
 	blockHeight int64,
 	ctx *Context,
 ) (
@@ -78,7 +79,7 @@ func InitLiquidityTree(
 }
 
 func loadLiquidityTreeFromRDB(
-	liquidityHistoryModel LiquidityHistoryModel,
+	liquidityHistoryModel liquidity.LiquidityHistoryModel,
 	blockHeight int64,
 	offset, limit int,
 	liquidityTree bsmt.SparseMerkleTree,

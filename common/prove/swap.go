@@ -20,11 +20,14 @@ package prove
 import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 
+	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/bn254/types"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	"github.com/bnb-chain/zkbnb/common"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func (w *WitnessHelper) constructSwapTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
+func (w *WitnessHelper) constructSwapTxWitness(cryptoTx *TxWitness, oTx *tx.Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseSwapTxInfo(oTx.TxInfo)
 	if err != nil {
 		return nil, err
@@ -43,7 +46,7 @@ func (w *WitnessHelper) constructSwapTxWitness(cryptoTx *TxWitness, oTx *Tx) (*T
 	return cryptoTx, nil
 }
 
-func toCryptoSwapTx(txInfo *types.SwapTxInfo) (info *CryptoSwapTx, err error) {
+func toCryptoSwapTx(txInfo *txtypes.SwapTxInfo) (info *cryptoTypes.SwapTx, err error) {
 	packedAAmount, err := common.ToPackedAmount(txInfo.AssetAAmount)
 	if err != nil {
 		return nil, err
@@ -60,7 +63,7 @@ func toCryptoSwapTx(txInfo *types.SwapTxInfo) (info *CryptoSwapTx, err error) {
 	if err != nil {
 		return nil, err
 	}
-	info = &CryptoSwapTx{
+	info = &cryptoTypes.SwapTx{
 		FromAccountIndex:  txInfo.FromAccountIndex,
 		PairIndex:         txInfo.PairIndex,
 		AssetAId:          txInfo.AssetAId,

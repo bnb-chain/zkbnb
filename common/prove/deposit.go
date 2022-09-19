@@ -18,12 +18,13 @@
 package prove
 
 import (
-	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
-	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
+	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/bn254/types"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func (w *WitnessHelper) constructDepositTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
+func (w *WitnessHelper) constructDepositTxWitness(cryptoTx *TxWitness, oTx *tx.Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseDepositTxInfo(oTx.TxInfo)
 	if err != nil {
 		return nil, err
@@ -33,12 +34,12 @@ func (w *WitnessHelper) constructDepositTxWitness(cryptoTx *TxWitness, oTx *Tx) 
 		return nil, err
 	}
 	cryptoTx.DepositTxInfo = cryptoTxInfo
-	cryptoTx.Signature = std.EmptySignature()
+	cryptoTx.Signature = cryptoTypes.EmptySignature()
 	return cryptoTx, nil
 }
 
-func toCryptoDepositTx(txInfo *legendTxTypes.DepositTxInfo) (info *CryptoDepositTx, err error) {
-	info = &CryptoDepositTx{
+func toCryptoDepositTx(txInfo *txtypes.DepositTxInfo) (info *cryptoTypes.DepositTx, err error) {
+	info = &cryptoTypes.DepositTx{
 		AccountIndex:    txInfo.AccountIndex,
 		AccountNameHash: txInfo.AccountNameHash,
 		AssetId:         txInfo.AssetId,

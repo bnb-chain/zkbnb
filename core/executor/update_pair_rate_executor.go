@@ -8,7 +8,7 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	"github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
@@ -17,7 +17,7 @@ import (
 type UpdatePairRateExecutor struct {
 	BaseExecutor
 
-	txInfo *legendTxTypes.UpdatePairRateTxInfo
+	txInfo *txtypes.UpdatePairRateTxInfo
 }
 
 func NewUpdatePairRateExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
