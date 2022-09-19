@@ -103,8 +103,8 @@ func (w *Witness) initState() error {
 	}
 	w.treeCtx = treeCtx
 
-	// dbinitializer accountTree and accountStateTrees
-	// the dbinitializer block number use the latest sent block
+	// init accountTree and accountStateTrees
+	// the initial block number use the latest sent block
 	w.accountTree, w.assetTrees, err = tree.InitAccountTree(
 		w.accountModel,
 		w.accountHistoryModel,
@@ -157,15 +157,16 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 
 	// scan each block
 	for _, block := range blocks {
+		logx.Infof("construct witness for block %d", block.BlockHeight)
 		// Step1: construct witness
 		blockWitness, err := w.constructBlockWitness(block, latestVerifiedBlockNr)
 		if err != nil {
-			return fmt.Errorf("failed to construct block witness, err: %v", err)
+			return fmt.Errorf("failed to construct block witness, block:%d, err: %v", block.BlockHeight, err)
 		}
 		// Step2: commit trees for witness
 		err = tree.CommitTrees(w.taskPool, uint64(latestVerifiedBlockNr), w.accountTree, &w.assetTrees, w.liquidityTree, w.nftTree)
 		if err != nil {
-			return fmt.Errorf("unable to commit trees after txs is executed, error: %v", err)
+			return fmt.Errorf("unable to commit trees after txs is executed, block:%d, error: %v", block.BlockHeight, err)
 		}
 		// Step3: insert witness into database
 		err = w.blockWitnessModel.CreateBlockWitness(blockWitness)
@@ -175,7 +176,7 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 			if rollBackErr != nil {
 				logx.Errorf("unable to rollback trees %v", rollBackErr)
 			}
-			return fmt.Errorf("create unproved crypto block error, err: %v", err)
+			return fmt.Errorf("create unproved crypto block error, block:%d, err: %v", block.BlockHeight, err)
 		}
 	}
 	return nil
@@ -206,6 +207,7 @@ func (w *Witness) RescheduleBlockWitness() {
 
 	// update block status to Published if it's timeout
 	if time.Now().After(nextBlockWitness.UpdatedAt.Add(UnprovedBlockWitnessTimeout)) {
+		logx.Infof("reschedule block %d", nextBlockWitness.Height)
 		err := w.blockWitnessModel.UpdateBlockWitnessStatus(nextBlockWitness, blockwitness.StatusPublished)
 		if err != nil {
 			logx.Errorf("update unproved block status error, err: %s", err.Error())

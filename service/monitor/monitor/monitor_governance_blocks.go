@@ -92,9 +92,8 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 		return nil
 	}
 
+	logx.Infof("syncing governance l1 blocks from %d to %d", big.NewInt(startHeight), big.NewInt(endHeight))
 	contractAddress := common.HexToAddress(m.governanceContractAddress)
-	logx.Infof("fromBlock: %d, toBlock: %d", big.NewInt(startHeight), big.NewInt(endHeight))
-
 	query := ethereum.FilterQuery{
 		FromBlock: big.NewInt(startHeight),
 		ToBlock:   big.NewInt(endHeight),
