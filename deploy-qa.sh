@@ -29,10 +29,10 @@ git clone --branch $branch https://github.com/bnb-chain/zkbnb.git
 echo "new crypto env"
 echo '2. start generate zkbnb.vk and zkbnb.pk'
 cd ~/zkbnb-deploy
-cd zkbnb-crypto && go test ./legend/circuit/bn254/solidity -timeout 99999s -run TestExportSol
+cd zkbnb-crypto && go test ./circuit/solidity -timeout 99999s -run TestExportSol
 cd ~/zkbnb-deploy
 sudo mkdir /home/.zkbnb
-cp -r ./zkbnb-crypto/legend/circuit/bn254/solidity/* /home/.zkbnb
+cp -r ./zkbnb-crypto/circuit/solidity/* /home/.zkbnb
 
 
 echo '3. start verify_parse for ZkBNBVerifier'

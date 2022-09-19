@@ -12,7 +12,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	cryptoBlock "github.com/bnb-chain/zkbnb-crypto/circuit/bn254/block"
+	"github.com/bnb-chain/zkbnb-crypto/circuit"
 	smt "github.com/bnb-chain/zkbnb-smt"
 	utils "github.com/bnb-chain/zkbnb/common/prove"
 	"github.com/bnb-chain/zkbnb/dao/account"
@@ -267,13 +267,13 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 
 	emptyTxCount := int(block.BlockSize) - len(block.Txs)
 	for i := 0; i < emptyTxCount; i++ {
-		txsWitness = append(txsWitness, cryptoBlock.EmptyTx())
+		txsWitness = append(txsWitness, circuit.EmptyTx())
 	}
 	if common.Bytes2Hex(newStateRoot) != block.StateRoot {
 		return nil, errors.New("state root doesn't match")
 	}
 
-	b := &cryptoBlock.Block{
+	b := &circuit.Block{
 		BlockNumber:     block.BlockHeight,
 		CreatedAt:       block.CreatedAt.UnixMilli(),
 		OldStateRoot:    oldStateRoot,

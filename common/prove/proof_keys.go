@@ -12,8 +12,8 @@ import (
 	"github.com/consensys/gnark/frontend"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	cryptoBlock "github.com/bnb-chain/zkbnb-crypto/circuit/bn254/block"
-	"github.com/bnb-chain/zkbnb-crypto/circuit/bn254/types"
+	"github.com/bnb-chain/zkbnb-crypto/circuit"
+	"github.com/bnb-chain/zkbnb-crypto/circuit/types"
 )
 
 func LoadProvingKey(filepath string) (pk groth16.ProvingKey, err error) {
@@ -45,14 +45,14 @@ func GenerateProof(
 	r1cs frontend.CompiledConstraintSystem,
 	provingKey groth16.ProvingKey,
 	verifyingKey groth16.VerifyingKey,
-	cBlock *cryptoBlock.Block,
+	cBlock *circuit.Block,
 ) (proof groth16.Proof, err error) {
 	// verify CryptoBlock
-	blockWitness, err := cryptoBlock.SetBlockWitness(cBlock)
+	blockWitness, err := circuit.SetBlockWitness(cBlock)
 	if err != nil {
 		return proof, err
 	}
-	var verifyWitness cryptoBlock.BlockConstraints
+	var verifyWitness circuit.BlockConstraints
 	verifyWitness.OldStateRoot = cBlock.OldStateRoot
 	verifyWitness.NewStateRoot = cBlock.NewStateRoot
 	verifyWitness.BlockCommitment = cBlock.BlockCommitment

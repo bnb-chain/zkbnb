@@ -18,28 +18,30 @@
 package prove
 
 import (
-	"github.com/bnb-chain/zkbnb-crypto/circuit/bn254/block"
+	"github.com/bnb-chain/zkbnb-crypto/circuit"
+	ctypes "github.com/bnb-chain/zkbnb-crypto/circuit/types"
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
 
 type (
-	TxWitness = block.Tx
+	TxWitness = circuit.Tx
 )
 
 const (
-	NbAccountAssetsPerAccount = block.NbAccountAssetsPerAccount
-	NbAccountsPerTx           = block.NbAccountsPerTx
-	AssetMerkleLevels         = block.AssetMerkleLevels
-	LiquidityMerkleLevels     = block.LiquidityMerkleLevels
-	NftMerkleLevels           = block.NftMerkleLevels
-	AccountMerkleLevels       = block.AccountMerkleLevels
+	NbAccountAssetsPerAccount = ctypes.NbAccountAssetsPerAccount
+	NbAccountsPerTx           = ctypes.NbAccountsPerTx
 
-	LastAccountIndex   = 4294967295
-	LastAccountAssetId = 65535
-	LastPairIndex      = 65535
-	LastNftIndex       = 1099511627775
+	AssetMerkleLevels     = circuit.AssetMerkleLevels
+	LiquidityMerkleLevels = circuit.LiquidityMerkleLevels
+	NftMerkleLevels       = circuit.NftMerkleLevels
+	AccountMerkleLevels   = circuit.AccountMerkleLevels
+
+	LastAccountIndex   = circuit.LastAccountIndex
+	LastAccountAssetId = circuit.LastAccountAssetId
+	LastPairIndex      = circuit.LastPairIndex
+	LastNftIndex       = circuit.LastNftIndex
 )
 
 type AccountWitnessInfo struct {

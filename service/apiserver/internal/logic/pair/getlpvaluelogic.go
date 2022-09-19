@@ -42,7 +42,7 @@ func (l *GetLpValueLogic) GetLPValue(req *types.ReqGetLpValue) (resp *types.LpVa
 		return nil, types2.AppErrInternal
 	}
 	assetAAmount, assetBAmount := big.NewInt(0), big.NewInt(0)
-	if liquidity.LpAmount.Cmp(big.NewInt(0)) > 0 {
+	if liquidity.LpAmount.Cmp(types2.ZeroBigInt) > 0 {
 		assetAAmount, assetBAmount, err = chain.ComputeRemoveLiquidityAmount(liquidity, amount)
 		if err != nil {
 			logx.Errorf("fail to compute liquidity amount, err: %s", err.Error())
