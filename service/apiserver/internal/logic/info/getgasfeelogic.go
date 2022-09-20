@@ -2,11 +2,13 @@ package info
 
 import (
 	"context"
+	"encoding/json"
 	"math/big"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
+
 	"github.com/bnb-chain/zkbnb/common"
 	asset2 "github.com/bnb-chain/zkbnb/dao/asset"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
@@ -16,20 +18,35 @@ import (
 
 type GetGasFeeLogic struct {
 	logx.Logger
-	ctx    context.Context
-	svcCtx *svc.ServiceContext
+	ctx          context.Context
+	svcCtx       *svc.ServiceContext
+	gasFeeConfig map[int]int64
 }
 
 func NewGetGasFeeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetGasFeeLogic {
+	gasConfig, err := svcCtx.SysConfigModel.GetSysConfigByName(types2.SysGasFee)
+	if err != nil {
+		panic("fail to get gas fee config")
+	}
+	m := make(map[int]int64)
+	err = json.Unmarshal([]byte(gasConfig.Value), &m)
+	if err != nil {
+		panic("invalid sys config of gas fee")
+	}
+
 	return &GetGasFeeLogic{
-		Logger: logx.WithContext(ctx),
-		ctx:    ctx,
-		svcCtx: svcCtx,
+		Logger:       logx.WithContext(ctx),
+		ctx:          ctx,
+		svcCtx:       svcCtx,
+		gasFeeConfig: m,
 	}
 }
 
 func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.GasFee, error) {
-	resp := &types.GasFee{}
+	gas, ok := l.gasFeeConfig[int(req.TxType)]
+	if !ok {
+		return nil, types2.AppErrInvalidTxType
+	}
 
 	asset, err := l.svcCtx.MemCache.GetAssetByIdWithFallback(int64(req.AssetId), func() (interface{}, error) {
 		return l.svcCtx.AssetModel.GetAssetById(int64(req.AssetId))
@@ -45,18 +62,10 @@ func (l *GetGasFeeLogic) GetGasFee(req *types.ReqGetGasFee) (*types.GasFee, erro
 		logx.Errorf("not gas asset id: %d", asset.AssetId)
 		return nil, types2.AppErrInvalidGasAsset
 	}
-	sysGasFee, err := l.svcCtx.MemCache.GetSysConfigWithFallback(types2.SysGasFee, func() (interface{}, error) {
-		return l.svcCtx.SysConfigModel.GetSysConfigByName(types2.SysGasFee)
-	})
-	if err != nil {
-		return nil, types2.AppErrInternal
-	}
 
-	sysGasFeeBigInt, isValid := new(big.Int).SetString(sysGasFee.Value, 10)
-	if !isValid {
-		logx.Errorf("parse sys gas fee err: %s", err.Error())
-		return nil, types2.AppErrInternal
-	}
+	resp := &types.GasFee{}
+	sysGasFeeBigInt := big.NewInt(gas)
+
 	// if asset id == BNB, just return
 	if asset.AssetId == types2.BNBAssetId {
 		resp.GasFee = sysGasFeeBigInt.String()

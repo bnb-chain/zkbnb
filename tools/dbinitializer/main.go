@@ -122,10 +122,30 @@ func Initialize(
 }
 
 func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC string) []*sysconfig.SysConfig {
+
+	// to config gas for different transaction types, need to be evaluated and tune these values
+	gasFeeConfig := make(map[int]int64)
+	gasFeeConfig[types.TxTypeTransfer] = 10000000000000
+	gasFeeConfig[types.TxTypeSwap] = 12000000000000
+	gasFeeConfig[types.TxTypeAddLiquidity] = 12000000000000
+	gasFeeConfig[types.TxTypeRemoveLiquidity] = 12000000000000
+	gasFeeConfig[types.TxTypeWithdraw] = 20000000000000
+	gasFeeConfig[types.TxTypeCreateCollection] = 10000000000000
+	gasFeeConfig[types.TxTypeMintNft] = 10000000000000
+	gasFeeConfig[types.TxTypeTransferNft] = 12000000000000
+	gasFeeConfig[types.TxTypeAtomicMatch] = 18000000000000
+	gasFeeConfig[types.TxTypeCancelOffer] = 12000000000000
+	gasFeeConfig[types.TxTypeWithdrawNft] = 20000000000000
+
+	gas, err := json.Marshal(gasFeeConfig)
+	if err != nil {
+		panic("fail to marshal gas fee config")
+	}
+
 	return []*sysconfig.SysConfig{
 		{
 			Name:      types.SysGasFee,
-			Value:     "100000000000000",
+			Value:     string(gas),
 			ValueType: "string",
 			Comment:   "based on BNB",
 		},
