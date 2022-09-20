@@ -118,7 +118,7 @@ func CommitTrees(
 	pool *ants.Pool,
 	version uint64,
 	accountTree bsmt.SparseMerkleTree,
-	assetTrees *LazyTreeCache,
+	assetTrees *AssetTreeCache,
 	liquidityTree bsmt.SparseMerkleTree,
 	nftTree bsmt.SparseMerkleTree) error {
 
@@ -145,15 +145,14 @@ func CommitTrees(
 	for idx := int64(0); idx < assetTrees.Size(); idx++ {
 		err := func(i int64) error {
 			return pool.Submit(func() {
-				assetPrunedVersion := bsmt.Version(version)
-				asset := assetTrees.Get(i)
-				if asset.LatestVersion() < assetPrunedVersion {
-					assetPrunedVersion = asset.LatestVersion()
-				}
-				ver, err := asset.Commit(&assetPrunedVersion)
-				if err != nil {
-					errChan <- errors.Wrapf(err, "unable to commit asset tree [%d], tree ver: %d, prune ver: %d", i, ver, assetPrunedVersion)
-					return
+				if assetTrees.NeedsCommit(i) {
+					asset := assetTrees.Get(i)
+					version := asset.LatestVersion()
+					ver, err := asset.Commit(&version)
+					if err != nil {
+						errChan <- errors.Wrapf(err, "unable to commit asset tree [%d], tree ver: %d, prune ver: %d", i, ver, version)
+						return
+					}
 				}
 				errChan <- nil
 			})
@@ -209,7 +208,7 @@ func RollBackTrees(
 	pool *ants.Pool,
 	version uint64,
 	accountTree bsmt.SparseMerkleTree,
-	assetTrees *LazyTreeCache,
+	assetTrees *AssetTreeCache,
 	liquidityTree bsmt.SparseMerkleTree,
 	nftTree bsmt.SparseMerkleTree) error {
 
@@ -235,11 +234,12 @@ func RollBackTrees(
 	for idx := int64(0); idx < assetTrees.Size(); idx++ {
 		err := func(i int64) error {
 			return pool.Submit(func() {
-				asset := assetTrees.Get(i)
-				if asset.LatestVersion() > ver && !asset.IsEmpty() {
-					err := asset.Rollback(ver)
+				if assetTrees.NeedsCommit(i) {
+					asset := assetTrees.Get(i)
+					version := asset.RecentVersion()
+					err := asset.Rollback(version)
 					if err != nil {
-						errChan <- errors.Wrapf(err, "unable to rollback asset tree [%d], ver: %d", i, ver)
+						errChan <- errors.Wrapf(err, "unable to rollback asset tree [%d], ver: %d", i, version)
 						return
 					}
 				}

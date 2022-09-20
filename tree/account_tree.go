@@ -41,7 +41,7 @@ func InitAccountTree(
 	blockHeight int64,
 	ctx *Context,
 ) (
-	accountTree bsmt.SparseMerkleTree, accountAssetTrees *LazyTreeCache, err error,
+	accountTree bsmt.SparseMerkleTree, accountAssetTrees *AssetTreeCache, err error,
 ) {
 	accountNums, err := accountHistoryModel.GetValidAccountCount(blockHeight)
 	if err != nil {
@@ -136,7 +136,7 @@ func reloadAccountTreeFromRDB(
 	blockHeight int64,
 	offset, limit int,
 	accountTree bsmt.SparseMerkleTree,
-	accountAssetTrees *LazyTreeCache,
+	accountAssetTrees *AssetTreeCache,
 ) error {
 	_, accountHistories, err := accountHistoryModel.GetValidAccounts(blockHeight,
 		limit, offset)

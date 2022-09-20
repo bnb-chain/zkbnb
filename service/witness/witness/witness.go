@@ -43,7 +43,7 @@ type Witness struct {
 	// Trees
 	treeCtx       *tree.Context
 	accountTree   smt.SparseMerkleTree
-	assetTrees    *tree.LazyTreeCache
+	assetTrees    *tree.AssetTreeCache
 	liquidityTree smt.SparseMerkleTree
 	nftTree       smt.SparseMerkleTree
 	taskPool      *ants.Pool
