@@ -3,6 +3,7 @@ package committer
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -20,11 +21,11 @@ const (
 )
 
 var (
-	priorityOperationMetric = prometheus.NewHistogram(prometheus.HistogramOpts{
+	priorityOperationMetric = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
-		Name:      "prioriry_operation",
+		Name:      "prioriry_operation_process",
 		Help:      "Priority operation metrics.",
-	})
+	}, []string{"height"})
 )
 
 type Config struct {
@@ -122,8 +123,9 @@ func (c *Committer) Run() {
 			}
 
 			if types.IsPriorityOperationTx(poolTx.TxType) {
-				duration := time.Since(poolTx.CreatedAt)
-				priorityOperationMetric.Observe(duration.Seconds())
+				// TODO: Get requestID
+				requestID := 0
+				priorityOperationMetric.WithLabelValues(strconv.FormatInt(curBlock.BlockHeight, 10)).Set(float64(requestID))
 			}
 
 			// Write the proposed block into database when the first transaction executed.

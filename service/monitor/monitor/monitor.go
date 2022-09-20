@@ -19,6 +19,7 @@ package monitor
 import (
 	"fmt"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -34,6 +35,14 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/service/monitor/config"
 	"github.com/bnb-chain/zkbnb/types"
+)
+
+var (
+	priorityOperationMetric = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "prioriry_operation_insert",
+		Help:      "Priority operation metrics.",
+	}, []string{"height"})
 )
 
 type Monitor struct {
@@ -103,6 +112,11 @@ func NewMonitor(c config.Config) *Monitor {
 	monitor.zkbnbContractAddress = zkbnbAddressConfig.Value
 	monitor.governanceContractAddress = governanceAddressConfig.Value
 	monitor.cli = bscRpcCli
+
+	if err := prometheus.Register(priorityOperationMetric); err != nil {
+		logx.Severef("fatal error, cannot register NetworkRPC prometheus, err: %s", err.Error())
+		panic(err)
+	}
 
 	return monitor
 }

@@ -19,6 +19,7 @@ package monitor
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 	"gorm.io/gorm"
@@ -180,6 +181,12 @@ func (m *Monitor) MonitorPriorityRequests() error {
 		err := m.PriorityRequestModel.UpdateHandledPriorityRequestsInTransact(tx, pendingRequests)
 		if err != nil {
 			return err
+		}
+
+		for _, request := range pendingRequests {
+			// TODO: decide blockHeight
+			blockHeight := int64(0)
+			priorityOperationMetric.WithLabelValues(strconv.FormatInt(blockHeight, 10)).Set(float64(request.ID))
 		}
 
 		return nil
