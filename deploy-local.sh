@@ -272,7 +272,7 @@ MemCache:
   AssetExpiration:   600
   BlockExpiration:   400
   TxExpiration:      400
-  PriceExpiration:   1000
+  PriceExpiration:   3600000
   " > ${DEPLOY_PATH}/zkbnb/service/apiserver/etc/config.yaml
 
 echo -e "
