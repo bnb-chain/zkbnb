@@ -32,7 +32,7 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 		return nil, types2.AppErrInternal
 	}
 
-	if pendingTxCount >= int64(s.svcCtx.Config.MaxPendingTxCount) {
+	if s.svcCtx.Config.TxPool.MaxPendingTxCount > 0 && pendingTxCount >= int64(s.svcCtx.Config.TxPool.MaxPendingTxCount) {
 		return nil, types2.AppErrTooManyTxs
 	}
 

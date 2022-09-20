@@ -11,14 +11,16 @@ type Config struct {
 	Postgres struct {
 		DataSource string
 	}
+	TxPool struct {
+		MaxPendingTxCount int
+	}
 	CacheRedis    cache.CacheConf
 	LogConf       logx.LogConf
 	CoinMarketCap struct {
 		Url   string
 		Token string
 	}
-	MaxPendingTxCount int
-	MemCache          struct {
+	MemCache struct {
 		AccountExpiration int
 		AssetExpiration   int
 		BlockExpiration   int
