@@ -54,8 +54,8 @@ func (l *GetTxLogic) GetTx(req *types.ReqGetTx) (resp *types.EnrichedTx, err err
 			return nil, types2.AppErrInternal
 		}
 		resp.Tx = *utils.ConvertTx(poolTx)
-		resp.Tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
-		resp.Tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
+		resp.Tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(poolTx.AccountIndex)
+		resp.Tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(poolTx.AssetId)
 	}
 
 	return resp, nil
