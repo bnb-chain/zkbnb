@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/zeromicro/go-zero/core/logx"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb/dao/asset"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/cache"

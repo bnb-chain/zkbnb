@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb/common/chain"
@@ -46,9 +47,10 @@ func (m *Monitor) MonitorPriorityRequests() error {
 	}
 
 	for _, request := range pendingRequests {
+		logx.Infof("process pending priority request, requestId=%d", request.RequestId)
 		// request id must be in order
 		if request.RequestId != currentRequestId+1 {
-			return fmt.Errorf("invalid request id")
+			return fmt.Errorf("invalid request id, requestId=%d, expected=%d", request.RequestId, currentRequestId+1)
 		}
 		currentRequestId++
 
