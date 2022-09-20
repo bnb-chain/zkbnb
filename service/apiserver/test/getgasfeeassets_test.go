@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math"
 	"net/http"
 	"testing"
 
@@ -13,30 +12,25 @@ import (
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/types"
 )
 
-func (s *ApiServerSuite) TestGetGasFee() {
-	type testcase struct {
+func (s *ApiServerSuite) TestGetGasFeeAssets() {
+	tests := []struct {
 		name     string
-		args     int //asset id
 		httpCode int
-	}
-
-	tests := []testcase{
-		{"not found", math.MaxInt, 400},
-	}
-
-	statusCode, assets := GetGasFeeAssets(s)
-	if statusCode == http.StatusOK && len(assets.Assets) > 0 {
-		tests = append(tests, []testcase{
-			{"found by index", int(assets.Assets[0].Id), 200},
-		}...)
+	}{
+		{"found", 200},
 	}
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetGasFee(s, tt.args)
+			httpCode, result := GetGasFeeAssets(s)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
-				assert.NotNil(t, result.GasFee)
+				assert.NotNil(t, result.Assets)
+				assert.NotNil(t, result.Assets[0].Id)
+				assert.NotNil(t, result.Assets[0].Symbol)
+				assert.NotNil(t, result.Assets[0].Name)
+				assert.NotNil(t, result.Assets[0].Address)
+				assert.NotNil(t, result.Assets[0].IsGasAsset)
 				fmt.Printf("result: %+v \n", result)
 			}
 		})
@@ -44,8 +38,8 @@ func (s *ApiServerSuite) TestGetGasFee() {
 
 }
 
-func GetGasFee(s *ApiServerSuite, assetId int) (int, *types.GasFee) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/gasFee?asset_id=%d", s.url, assetId))
+func GetGasFeeAssets(s *ApiServerSuite) (int, *types.GasFeeAssets) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/gasFeeAssets", s.url))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
@@ -55,7 +49,7 @@ func GetGasFee(s *ApiServerSuite, assetId int) (int, *types.GasFee) {
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, nil
 	}
-	result := types.GasFee{}
+	result := types.GasFeeAssets{}
 	//nolint: errcheck
 	json.Unmarshal(body, &result)
 	return resp.StatusCode, &result
