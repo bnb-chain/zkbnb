@@ -72,7 +72,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		AssetModel:            assetModel,
 		SysConfigModel:        sysconfig.NewSysConfigModel(db),
 
-		PriceFetcher: price.NewFetcher(memCache, c.CoinMarketCap.Url, c.CoinMarketCap.Token),
+		PriceFetcher: price.NewFetcher(memCache, assetModel, c.CoinMarketCap.Url, c.CoinMarketCap.Token),
 		StateFetcher: state.NewFetcher(redisCache, accountModel, liquidityModel, nftModel),
 	}
 }
@@ -83,4 +83,5 @@ func (s *ServiceContext) Shutdown() {
 		_ = sqlDB.Close()
 	}
 	_ = s.RedisCache.Close()
+	s.PriceFetcher.Stop()
 }

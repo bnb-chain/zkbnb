@@ -20,11 +20,14 @@ package prove
 import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 
+	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/types"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	"github.com/bnb-chain/zkbnb/common"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func (w *WitnessHelper) constructWithdrawNftTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
+func (w *WitnessHelper) constructWithdrawNftTxWitness(cryptoTx *TxWitness, oTx *tx.Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseWithdrawNftTxInfo(oTx.TxInfo)
 	if err != nil {
 		return nil, err
@@ -43,12 +46,12 @@ func (w *WitnessHelper) constructWithdrawNftTxWitness(cryptoTx *TxWitness, oTx *
 	return cryptoTx, nil
 }
 
-func toCryptoWithdrawNftTx(txInfo *types.WithdrawNftTxInfo) (info *CryptoWithdrawNftTx, err error) {
+func toCryptoWithdrawNftTx(txInfo *txtypes.WithdrawNftTxInfo) (info *cryptoTypes.WithdrawNftTx, err error) {
 	packedFee, err := common.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
 		return nil, err
 	}
-	info = &CryptoWithdrawNftTx{
+	info = &cryptoTypes.WithdrawNftTx{
 		AccountIndex:           txInfo.AccountIndex,
 		CreatorAccountIndex:    txInfo.CreatorAccountIndex,
 		CreatorAccountNameHash: txInfo.CreatorAccountNameHash,

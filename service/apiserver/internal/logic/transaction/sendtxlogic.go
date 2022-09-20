@@ -27,6 +27,15 @@ func NewSendTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendTxLogi
 }
 
 func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err error) {
+	pendingTxCount, err := s.svcCtx.TxPoolModel.GetTxsTotalCount()
+	if err != nil {
+		return nil, types2.AppErrInternal
+	}
+
+	if s.svcCtx.Config.TxPool.MaxPendingTxCount > 0 && pendingTxCount >= int64(s.svcCtx.Config.TxPool.MaxPendingTxCount) {
+		return nil, types2.AppErrTooManyTxs
+	}
+
 	resp = &types.TxHash{}
 	bc, err := core.NewBlockChainForDryRun(s.svcCtx.AccountModel, s.svcCtx.LiquidityModel, s.svcCtx.NftModel, s.svcCtx.TxPoolModel,
 		s.svcCtx.AssetModel, s.svcCtx.SysConfigModel, s.svcCtx.RedisCache)

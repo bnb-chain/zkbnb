@@ -294,6 +294,11 @@ func (m *MemCache) GetPriceWithFallback(symbol string, f fallback) (float64, err
 	return price.(float64), nil
 }
 
+func (m *MemCache) SetPrice(symbol string, price float64) {
+	key := fmt.Sprintf("%s%s", PriceKeyPrefix, symbol)
+	m.goCache.Set(key, price, m.priceExpiration)
+}
+
 func (m *MemCache) GetSysConfigWithFallback(configName string, f fallback) (*sysconfig.SysConfig, error) {
 	key := fmt.Sprintf("%s%s", SysConfigKeyPrefix, configName)
 	c, err := m.getWithSet(key, gocache.DefaultExpiration, f)

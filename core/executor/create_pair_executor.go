@@ -9,7 +9,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 
-	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	"github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/liquidity"
 	"github.com/bnb-chain/zkbnb/dao/tx"
@@ -19,7 +19,7 @@ import (
 type CreatePairExecutor struct {
 	BaseExecutor
 
-	txInfo *legendTxTypes.CreatePairTxInfo
+	txInfo *txtypes.CreatePairTxInfo
 }
 
 func NewCreatePairExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {

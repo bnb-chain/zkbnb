@@ -25,7 +25,7 @@ import (
 
 	curve "github.com/bnb-chain/zkbnb-crypto/ecc/ztwistededwards/tebn254"
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
-	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/zkbnb/core/legend"
+	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/core"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/block"
 )

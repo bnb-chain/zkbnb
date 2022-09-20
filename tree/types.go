@@ -20,22 +20,7 @@ package tree
 import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 
-	"github.com/bnb-chain/zkbnb-crypto/accumulators/merkleTree"
-	"github.com/bnb-chain/zkbnb/dao/account"
-	"github.com/bnb-chain/zkbnb/dao/liquidity"
-	"github.com/bnb-chain/zkbnb/dao/nft"
-	"github.com/bnb-chain/zkbnb/dao/sysconfig"
-)
-
-type (
-	SysconfigModel        = sysconfig.SysConfigModel
-	AccountModel          = account.AccountModel
-	AccountHistoryModel   = account.AccountHistoryModel
-	L2NftHistoryModel     = nft.L2NftHistoryModel
-	LiquidityModel        = liquidity.LiquidityModel
-	LiquidityHistoryModel = liquidity.LiquidityHistoryModel
-	AccountHistory        = account.AccountHistory
-	AccountL2NftHistory   = nft.L2NftHistory
+	"github.com/bnb-chain/zkbnb-crypto/merkleTree"
 )
 
 const (

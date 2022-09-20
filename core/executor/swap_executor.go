@@ -9,7 +9,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
-	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/dao/liquidity"
@@ -20,7 +20,7 @@ import (
 type SwapExecutor struct {
 	BaseExecutor
 
-	txInfo *legendTxTypes.SwapTxInfo
+	txInfo *txtypes.SwapTxInfo
 
 	newPoolInfo *types.LiquidityInfo
 }
@@ -104,8 +104,8 @@ func (e *SwapExecutor) VerifyInputs() error {
 		(liquidityModel.AssetAId == txInfo.AssetBId && liquidityModel.AssetBId == txInfo.AssetAId)) {
 		return errors.New("invalid asset ids")
 	}
-	if liquidityInfo.AssetA == nil || liquidityInfo.AssetA.Cmp(big.NewInt(0)) == 0 ||
-		liquidityInfo.AssetB == nil || liquidityInfo.AssetB.Cmp(big.NewInt(0)) == 0 {
+	if liquidityInfo.AssetA == nil || liquidityInfo.AssetA.Cmp(types.ZeroBigInt) == 0 ||
+		liquidityInfo.AssetB == nil || liquidityInfo.AssetB.Cmp(types.ZeroBigInt) == 0 {
 		return errors.New("liquidity is empty")
 	}
 
@@ -327,7 +327,7 @@ func (e *SwapExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
 	fromAccount.AssetInfo[txInfo.AssetAId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.AssetAId].Balance, txInfo.AssetAAmount)
-	if fromAccount.AssetInfo[txInfo.AssetAId].Balance.Cmp(big.NewInt(0)) < 0 {
+	if fromAccount.AssetInfo[txInfo.AssetAId].Balance.Cmp(types.ZeroBigInt) < 0 {
 		return nil, errors.New("insufficient asset a balance")
 	}
 
@@ -372,7 +372,7 @@ func (e *SwapExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(big.NewInt(0)) < 0 {
+	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(types.ZeroBigInt) < 0 {
 		return nil, errors.New("insufficient gas fee balance")
 	}
 

@@ -24,7 +24,6 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
-
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/asset"
 	"github.com/bnb-chain/zkbnb/dao/block"

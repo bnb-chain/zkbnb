@@ -21,11 +21,14 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/ethereum/go-ethereum/common"
 
+	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/types"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func (w *WitnessHelper) constructTransferNftTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
+func (w *WitnessHelper) constructTransferNftTxWitness(cryptoTx *TxWitness, oTx *tx.Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseTransferNftTxInfo(oTx.TxInfo)
 	if err != nil {
 		return nil, err
@@ -44,12 +47,12 @@ func (w *WitnessHelper) constructTransferNftTxWitness(cryptoTx *TxWitness, oTx *
 	return cryptoTx, nil
 }
 
-func toCryptoTransferNftTx(txInfo *types.TransferNftTxInfo) (info *CryptoTransferNftTx, err error) {
+func toCryptoTransferNftTx(txInfo *txtypes.TransferNftTxInfo) (info *cryptoTypes.TransferNftTx, err error) {
 	packedFee, err := common2.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
 		return nil, err
 	}
-	info = &CryptoTransferNftTx{
+	info = &cryptoTypes.TransferNftTx{
 		FromAccountIndex:  txInfo.FromAccountIndex,
 		ToAccountIndex:    txInfo.ToAccountIndex,
 		ToAccountNameHash: common.FromHex(txInfo.ToAccountNameHash),

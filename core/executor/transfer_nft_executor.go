@@ -3,13 +3,12 @@ package executor
 import (
 	"bytes"
 	"encoding/json"
-	"math/big"
 
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
-	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
@@ -18,7 +17,7 @@ import (
 type TransferNftExecutor struct {
 	BaseExecutor
 
-	txInfo *legendTxTypes.TransferNftTxInfo
+	txInfo *txtypes.TransferNftTxInfo
 }
 
 func NewTransferNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
@@ -197,7 +196,7 @@ func (e *TransferNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(big.NewInt(0)) < 0 {
+	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(types.ZeroBigInt) < 0 {
 		return nil, errors.New("insufficient gas fee balance")
 	}
 

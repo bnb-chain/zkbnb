@@ -9,7 +9,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
-	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/dao/liquidity"
@@ -20,7 +20,7 @@ import (
 type AddLiquidityExecutor struct {
 	BaseExecutor
 
-	txInfo *legendTxTypes.AddLiquidityTxInfo
+	txInfo *txtypes.AddLiquidityTxInfo
 
 	newPoolInfo           *types.LiquidityInfo
 	lpDeltaForFromAccount *big.Int
@@ -194,7 +194,7 @@ func (e *AddLiquidityExecutor) fillTxInfo() error {
 		return err
 	}
 
-	if liquidityInfo.AssetA.Cmp(big.NewInt(0)) == 0 {
+	if liquidityInfo.AssetA.Cmp(types.ZeroBigInt) == 0 {
 		txInfo.LpAmount, err = chain.ComputeEmptyLpAmount(txInfo.AssetAAmount, txInfo.AssetBAmount)
 		if err != nil {
 			logx.Errorf("[ComputeEmptyLpAmount] : %v", err)
@@ -354,7 +354,7 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
 	fromAccount.AssetInfo[txInfo.AssetAId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.AssetAId].Balance, txInfo.AssetAAmount)
-	if fromAccount.AssetInfo[txInfo.AssetAId].Balance.Cmp(big.NewInt(0)) < 0 {
+	if fromAccount.AssetInfo[txInfo.AssetAId].Balance.Cmp(types.ZeroBigInt) < 0 {
 		return nil, errors.New("insufficient asset a balance")
 	}
 
@@ -379,7 +379,7 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	})
 
 	fromAccount.AssetInfo[txInfo.AssetBId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.AssetBId].Balance, txInfo.AssetBAmount)
-	if fromAccount.AssetInfo[txInfo.AssetBId].Balance.Cmp(big.NewInt(0)) < 0 {
+	if fromAccount.AssetInfo[txInfo.AssetBId].Balance.Cmp(types.ZeroBigInt) < 0 {
 		return nil, errors.New("insufficient asset b balance")
 	}
 
@@ -404,7 +404,7 @@ func (e *AddLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	})
 
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(big.NewInt(0)) < 0 {
+	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(types.ZeroBigInt) < 0 {
 		return nil, errors.New("insufficient gas fee balance")
 	}
 

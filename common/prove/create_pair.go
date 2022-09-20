@@ -18,12 +18,13 @@
 package prove
 
 import (
-	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
-	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
+	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/types"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func (w *WitnessHelper) constructCreatePairTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
+func (w *WitnessHelper) constructCreatePairTxWitness(cryptoTx *TxWitness, oTx *tx.Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseCreatePairTxInfo(oTx.TxInfo)
 	if err != nil {
 		return nil, err
@@ -33,12 +34,12 @@ func (w *WitnessHelper) constructCreatePairTxWitness(cryptoTx *TxWitness, oTx *T
 		return nil, err
 	}
 	cryptoTx.CreatePairTxInfo = cryptoTxInfo
-	cryptoTx.Signature = std.EmptySignature()
+	cryptoTx.Signature = cryptoTypes.EmptySignature()
 	return cryptoTx, nil
 }
 
-func toCryptoCreatePairTx(txInfo *legendTxTypes.CreatePairTxInfo) (info *CryptoCreatePairTx, err error) {
-	info = &CryptoCreatePairTx{
+func toCryptoCreatePairTx(txInfo *txtypes.CreatePairTxInfo) (info *cryptoTypes.CreatePairTx, err error) {
+	info = &cryptoTypes.CreatePairTx{
 		PairIndex:            txInfo.PairIndex,
 		AssetAId:             txInfo.AssetAId,
 		AssetBId:             txInfo.AssetBId,

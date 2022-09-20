@@ -140,6 +140,9 @@ Name: api-server
 Host: 0.0.0.0
 Port: 8888
 
+TxPool:
+  MaxPendingTxCount: 10000
+
 Prometheus:
   Host: 0.0.0.0
   Port: 9091
@@ -169,7 +172,7 @@ MemCache:
   AssetExpiration:   600
   BlockExpiration:   400
   TxExpiration:      400
-  PriceExpiration:   1000
+  PriceExpiration:   3600000
 
 " > ${CONFIG_PATH}/apiserver.yaml
 

@@ -18,12 +18,13 @@
 package prove
 
 import (
-	"github.com/bnb-chain/zkbnb-crypto/legend/circuit/bn254/std"
-	"github.com/bnb-chain/zkbnb-crypto/wasm/legend/legendTxTypes"
+	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/types"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-func (w *WitnessHelper) constructUpdatePairRateTxWitness(cryptoTx *TxWitness, oTx *Tx) (*TxWitness, error) {
+func (w *WitnessHelper) constructUpdatePairRateTxWitness(cryptoTx *TxWitness, oTx *tx.Tx) (*TxWitness, error) {
 	txInfo, err := types.ParseUpdatePairRateTxInfo(oTx.TxInfo)
 	if err != nil {
 		return nil, err
@@ -33,12 +34,12 @@ func (w *WitnessHelper) constructUpdatePairRateTxWitness(cryptoTx *TxWitness, oT
 		return nil, err
 	}
 	cryptoTx.UpdatePairRateTxInfo = cryptoTxInfo
-	cryptoTx.Signature = std.EmptySignature()
+	cryptoTx.Signature = cryptoTypes.EmptySignature()
 	return cryptoTx, nil
 }
 
-func toCryptoUpdatePairRateTx(txInfo *legendTxTypes.UpdatePairRateTxInfo) (info *CryptoUpdatePairRateTx, err error) {
-	info = &CryptoUpdatePairRateTx{
+func toCryptoUpdatePairRateTx(txInfo *txtypes.UpdatePairRateTxInfo) (info *cryptoTypes.UpdatePairRateTx, err error) {
+	info = &cryptoTypes.UpdatePairRateTx{
 		PairIndex:            txInfo.PairIndex,
 		FeeRate:              txInfo.FeeRate,
 		TreasuryAccountIndex: txInfo.TreasuryAccountIndex,
