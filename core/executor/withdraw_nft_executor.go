@@ -11,6 +11,7 @@ import (
 
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
+
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/tx"
@@ -76,10 +77,10 @@ func (e *WithdrawNftExecutor) Prepare() error {
 	return nil
 }
 
-func (e *WithdrawNftExecutor) VerifyInputs() error {
+func (e *WithdrawNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	txInfo := e.txInfo
 
-	err := e.BaseExecutor.VerifyInputs()
+	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk)
 	if err != nil {
 		return err
 	}

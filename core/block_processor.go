@@ -37,7 +37,7 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 	if err != nil {
 		return err
 	}
-	err = executor.VerifyInputs()
+	err = executor.VerifyInputs(true)
 	if err != nil {
 		return err
 	}
@@ -85,7 +85,7 @@ func (p *APIProcessor) Process(tx *tx.Tx) error {
 		logx.Error("fail to prepare:", err)
 		return types.AppErrInternal
 	}
-	err = executor.VerifyInputs()
+	err = executor.VerifyInputs(false)
 	if err != nil {
 		return types.AppErrInvalidTxField.RefineError(err.Error())
 	}

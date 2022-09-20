@@ -9,6 +9,7 @@ import (
 
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
+
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
@@ -42,10 +43,10 @@ func (e *WithdrawExecutor) Prepare() error {
 	return e.BaseExecutor.Prepare()
 }
 
-func (e *WithdrawExecutor) VerifyInputs() error {
+func (e *WithdrawExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	txInfo := e.txInfo
 
-	err := e.BaseExecutor.VerifyInputs()
+	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk)
 	if err != nil {
 		return err
 	}

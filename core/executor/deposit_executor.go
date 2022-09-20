@@ -11,6 +11,7 @@ import (
 
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
+
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
@@ -69,7 +70,7 @@ func (e *DepositExecutor) Prepare() error {
 	return e.BaseExecutor.Prepare()
 }
 
-func (e *DepositExecutor) VerifyInputs() error {
+func (e *DepositExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	txInfo := e.txInfo
 
 	if txInfo.AssetAmount.Cmp(types.ZeroBigInt) < 0 {

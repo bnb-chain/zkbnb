@@ -10,6 +10,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
+
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/tx"
@@ -85,7 +86,7 @@ func (e *DepositNftExecutor) Prepare() error {
 	return e.BaseExecutor.Prepare()
 }
 
-func (e *DepositNftExecutor) VerifyInputs() error {
+func (e *DepositNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	bc := e.bc
 	txInfo := e.txInfo
 

@@ -7,6 +7,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
+
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -62,7 +63,7 @@ func (e *BaseExecutor) Prepare() error {
 	return nil
 }
 
-func (e *BaseExecutor) VerifyInputs() error {
+func (e *BaseExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	txInfo := e.iTxInfo
 
 	err := txInfo.Validate()
@@ -81,8 +82,8 @@ func (e *BaseExecutor) VerifyInputs() error {
 			return err
 		}
 
-		gasAccountIndex, gasFeeAssetId, _ := txInfo.GetGas()
-		err = e.bc.VerifyGas(gasAccountIndex, gasFeeAssetId)
+		gasAccountIndex, gasFeeAssetId, gasFeeAmount := txInfo.GetGas()
+		err = e.bc.VerifyGas(gasAccountIndex, gasFeeAssetId, txInfo.GetTxType(), gasFeeAmount, skipGasAmtChk)
 		if err != nil {
 			return err
 		}

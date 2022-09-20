@@ -10,6 +10,7 @@ import (
 
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
+
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/dao/liquidity"
@@ -76,11 +77,11 @@ func (e *RemoveLiquidityExecutor) Prepare() error {
 	return nil
 }
 
-func (e *RemoveLiquidityExecutor) VerifyInputs() error {
+func (e *RemoveLiquidityExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	err := e.BaseExecutor.VerifyInputs()
+	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk)
 	if err != nil {
 		return err
 	}

@@ -10,6 +10,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
+
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/tx"
@@ -124,7 +125,7 @@ func (e *FullExitNftExecutor) Prepare() error {
 	return nil
 }
 
-func (e *FullExitNftExecutor) VerifyInputs() error {
+func (e *FullExitNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	bc := e.bc
 	txInfo := e.txInfo
 

@@ -9,6 +9,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
+
 	"github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
@@ -47,7 +48,7 @@ func (e *UpdatePairRateExecutor) Prepare() error {
 	return e.BaseExecutor.Prepare()
 }
 
-func (e *UpdatePairRateExecutor) VerifyInputs() error {
+func (e *UpdatePairRateExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	bc := e.bc
 	txInfo := e.txInfo
 	liquidity, err := bc.StateDB().GetLiquidity(txInfo.PairIndex)

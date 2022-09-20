@@ -10,6 +10,7 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
+
 	"github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/liquidity"
 	"github.com/bnb-chain/zkbnb/dao/tx"
@@ -41,7 +42,7 @@ func (e *CreatePairExecutor) Prepare() error {
 	return e.BaseExecutor.Prepare()
 }
 
-func (e *CreatePairExecutor) VerifyInputs() error {
+func (e *CreatePairExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	bc := e.bc
 	txInfo := e.txInfo
 

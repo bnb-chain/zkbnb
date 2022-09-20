@@ -10,6 +10,7 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
+
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/dao/account"
@@ -48,7 +49,7 @@ func (e *RegisterZnsExecutor) Prepare() error {
 	return nil
 }
 
-func (e *RegisterZnsExecutor) VerifyInputs() error {
+func (e *RegisterZnsExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	bc := e.bc
 	txInfo := e.txInfo
 
