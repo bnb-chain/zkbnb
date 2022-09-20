@@ -10,7 +10,6 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
-
 	"github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/liquidity"
 	"github.com/bnb-chain/zkbnb/dao/tx"

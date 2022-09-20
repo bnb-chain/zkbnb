@@ -11,7 +11,6 @@ import (
 
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
-
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"

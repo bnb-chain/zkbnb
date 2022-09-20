@@ -124,19 +124,21 @@ func Initialize(
 func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC string) []*sysconfig.SysConfig {
 
 	// to config gas for different transaction types, need to be evaluated and tune these values
+	bnbGasFee := make(map[int]int64)
+	bnbGasFee[types.TxTypeTransfer] = 10000000000000
+	bnbGasFee[types.TxTypeSwap] = 12000000000000
+	bnbGasFee[types.TxTypeAddLiquidity] = 12000000000000
+	bnbGasFee[types.TxTypeRemoveLiquidity] = 12000000000000
+	bnbGasFee[types.TxTypeWithdraw] = 20000000000000
+	bnbGasFee[types.TxTypeCreateCollection] = 10000000000000
+	bnbGasFee[types.TxTypeMintNft] = 10000000000000
+	bnbGasFee[types.TxTypeTransferNft] = 12000000000000
+	bnbGasFee[types.TxTypeAtomicMatch] = 18000000000000
+	bnbGasFee[types.TxTypeCancelOffer] = 12000000000000
+	bnbGasFee[types.TxTypeWithdrawNft] = 20000000000000
+
 	gasFeeConfig := make(map[uint32]map[int]int64) // asset id -> (tx type -> gas fee value)
-	gasFeeConfig[0] = make(map[int]int64)          // bnb asset
-	gasFeeConfig[0][types.TxTypeTransfer] = 10000000000000
-	gasFeeConfig[0][types.TxTypeSwap] = 12000000000000
-	gasFeeConfig[0][types.TxTypeAddLiquidity] = 12000000000000
-	gasFeeConfig[0][types.TxTypeRemoveLiquidity] = 12000000000000
-	gasFeeConfig[0][types.TxTypeWithdraw] = 20000000000000
-	gasFeeConfig[0][types.TxTypeCreateCollection] = 10000000000000
-	gasFeeConfig[0][types.TxTypeMintNft] = 10000000000000
-	gasFeeConfig[0][types.TxTypeTransferNft] = 12000000000000
-	gasFeeConfig[0][types.TxTypeAtomicMatch] = 18000000000000
-	gasFeeConfig[0][types.TxTypeCancelOffer] = 12000000000000
-	gasFeeConfig[0][types.TxTypeWithdrawNft] = 20000000000000
+	gasFeeConfig[types.BNBAssetId] = bnbGasFee     // bnb asset
 
 	gas, err := json.Marshal(gasFeeConfig)
 	if err != nil {
