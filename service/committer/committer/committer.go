@@ -5,16 +5,26 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb/core"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/tx"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 const (
 	MaxCommitterInterval = 60 * 1
+)
+
+var (
+	priorityOperationMetric = prometheus.NewHistogram(prometheus.HistogramOpts{
+		Namespace: "zkbnb",
+		Name:      "prioriry_operation",
+		Help:      "Priority operation metrics.",
+	})
 )
 
 type Config struct {
@@ -43,6 +53,10 @@ func NewCommitter(config *Config) (*Committer, error) {
 	bc, err := core.NewBlockChain(&config.ChainConfig, "committer")
 	if err != nil {
 		return nil, fmt.Errorf("new blockchain error: %v", err)
+	}
+
+	if err := prometheus.Register(priorityOperationMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register error: %v", err)
 	}
 
 	committer := &Committer{
@@ -105,6 +119,11 @@ func (c *Committer) Run() {
 				poolTx.TxStatus = tx.StatusFailed
 				pendingDeletePoolTxs = append(pendingDeletePoolTxs, poolTx)
 				continue
+			}
+
+			if types.IsPriorityOperationTx(poolTx.TxType) {
+				duration := time.Since(poolTx.CreatedAt)
+				priorityOperationMetric.Observe(duration.Seconds())
 			}
 
 			// Write the proposed block into database when the first transaction executed.

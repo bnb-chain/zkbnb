@@ -61,15 +61,15 @@ type (
 		gorm.Model
 
 		// Assigned when created in the tx pool.
-		TxHash       string `gorm:"uniqueIndex"`
-		TxType       int64
-		TxInfo       string
-		AccountIndex int64
-		Nonce        int64
-		ExpiredAt    int64
+		TxHash string `gorm:"uniqueIndex"`
+		TxType int64
+		TxInfo string
 
 		// Assigned after executed.
 		GasFee        string
+		AccountIndex  int64
+		Nonce         int64
+		ExpiredAt     int64
 		GasFeeAssetId int64
 		PairIndex     int64
 		NftIndex      int64

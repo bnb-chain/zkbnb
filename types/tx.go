@@ -63,6 +63,19 @@ func IsL2Tx(txType int64) bool {
 	return false
 }
 
+func IsPriorityOperationTx(txType int64) bool {
+	if txType == TxTypeRegisterZns ||
+		txType == TxTypeCreatePair ||
+		txType == TxTypeUpdatePairRate ||
+		txType == TxTypeDeposit ||
+		txType == TxTypeDepositNft ||
+		txType == TxTypeFullExit ||
+		txType == TxTypeFullExitNft {
+		return true
+	}
+	return false
+}
+
 const (
 	TxTypeBytesSize          = 1
 	IsNewNftSize             = 1
