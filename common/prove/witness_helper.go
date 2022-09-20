@@ -23,7 +23,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/bn254/types"
+	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/types"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/chain"

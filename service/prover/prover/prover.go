@@ -13,7 +13,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/bnb-chain/zkbnb-crypto/circuit/bn254/block"
+	"github.com/bnb-chain/zkbnb-crypto/circuit"
 	"github.com/bnb-chain/zkbnb/common/prove"
 	"github.com/bnb-chain/zkbnb/common/redislock"
 	"github.com/bnb-chain/zkbnb/dao/blockwitness"
@@ -76,19 +76,19 @@ func NewProver(c config.Config) *Prover {
 	prover.VerifyingKeys = make([]groth16.VerifyingKey, len(prover.OptionalBlockSizes))
 	prover.R1cs = make([]frontend.CompiledConstraintSystem, len(prover.OptionalBlockSizes))
 	for i := 0; i < len(prover.OptionalBlockSizes); i++ {
-		var circuit block.BlockConstraints
-		circuit.TxsCount = prover.OptionalBlockSizes[i]
-		circuit.Txs = make([]block.TxConstraints, circuit.TxsCount)
-		for i := 0; i < circuit.TxsCount; i++ {
-			circuit.Txs[i] = block.GetZeroTxConstraint()
+		var blockConstraints circuit.BlockConstraints
+		blockConstraints.TxsCount = prover.OptionalBlockSizes[i]
+		blockConstraints.Txs = make([]circuit.TxConstraints, blockConstraints.TxsCount)
+		for i := 0; i < blockConstraints.TxsCount; i++ {
+			blockConstraints.Txs[i] = circuit.GetZeroTxConstraint()
 		}
-		logx.Infof("start compile block size %d circuit", circuit.TxsCount)
-		prover.R1cs[i], err = frontend.Compile(ecc.BN254, r1cs.NewBuilder, &circuit, frontend.IgnoreUnconstrainedInputs())
+		logx.Infof("start compile block size %d blockConstraints", blockConstraints.TxsCount)
+		prover.R1cs[i], err = frontend.Compile(ecc.BN254, r1cs.NewBuilder, &blockConstraints, frontend.IgnoreUnconstrainedInputs())
 		if err != nil {
 			panic("r1cs init error")
 		}
-		logx.Infof("circuit constraints: %d", prover.R1cs[i].GetNbConstraints())
-		logx.Info("finish compile circuit")
+		logx.Infof("blockConstraints constraints: %d", prover.R1cs[i].GetNbConstraints())
+		logx.Info("finish compile blockConstraints")
 		// read proving and verifying keys
 		prover.ProvingKeys[i], err = prove.LoadProvingKey(c.KeyPath.ProvingKeyPath[i])
 		if err != nil {
@@ -144,7 +144,7 @@ func (p *Prover) ProveBlock() error {
 	}()
 
 	// Parse crypto block.
-	var cryptoBlock *block.Block
+	var cryptoBlock *circuit.Block
 	err = json.Unmarshal([]byte(blockWitness.WitnessData), &cryptoBlock)
 	if err != nil {
 		return err

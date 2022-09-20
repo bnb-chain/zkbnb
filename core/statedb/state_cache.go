@@ -3,7 +3,7 @@ package statedb
 import (
 	"github.com/ethereum/go-ethereum/common"
 
-	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/bn254/types"
+	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/types"
 	"github.com/bnb-chain/zkbnb/dao/liquidity"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/tx"

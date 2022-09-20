@@ -28,9 +28,9 @@ function prepare() {
         echo "new crypto env"
         echo 'start generate zkbnb.vk and zkbnb.pk ...'
         cd ${WORKDIR}/dependency/zkbnb-crypto
-        go test ./legend/circuit/bn254/solidity -timeout 99999s -run TestExportSol
+        go test ./circuit/solidity -timeout 99999s -run TestExportSol
         mkdir -p $KEY_PATH
-        cp -r ./legend/circuit/bn254/solidity/* $KEY_PATH/
+        cp -r ./circuit/solidity/* $KEY_PATH/
     fi
 
     echo 'start verify_parse for ZkBNBVerifier ...'

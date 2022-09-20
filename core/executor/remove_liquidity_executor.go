@@ -102,9 +102,9 @@ func (e *RemoveLiquidityExecutor) VerifyInputs() error {
 		logx.Errorf("construct liquidity info error, err: %v", err)
 		return err
 	}
-	if liquidityInfo.AssetA == nil || liquidityInfo.AssetA.Cmp(big.NewInt(0)) == 0 ||
-		liquidityInfo.AssetB == nil || liquidityInfo.AssetB.Cmp(big.NewInt(0)) == 0 ||
-		liquidityInfo.LpAmount == nil || liquidityInfo.LpAmount.Cmp(big.NewInt(0)) == 0 {
+	if liquidityInfo.AssetA == nil || liquidityInfo.AssetA.Cmp(types.ZeroBigInt) == 0 ||
+		liquidityInfo.AssetB == nil || liquidityInfo.AssetB.Cmp(types.ZeroBigInt) == 0 ||
+		liquidityInfo.LpAmount == nil || liquidityInfo.LpAmount.Cmp(types.ZeroBigInt) == 0 {
 		return errors.New("invalid pool liquidity")
 	}
 
@@ -362,7 +362,7 @@ func (e *RemoveLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
 	fromAccount.AssetInfo[txInfo.AssetBId].Balance = ffmath.Add(fromAccount.AssetInfo[txInfo.AssetBId].Balance, txInfo.AssetBAmountDelta)
-	if fromAccount.AssetInfo[txInfo.AssetBId].Balance.Cmp(big.NewInt(0)) < 0 {
+	if fromAccount.AssetInfo[txInfo.AssetBId].Balance.Cmp(types.ZeroBigInt) < 0 {
 		return nil, errors.New("insufficient asset b balance")
 	}
 
@@ -386,7 +386,7 @@ func (e *RemoveLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(big.NewInt(0)) < 0 {
+	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(types.ZeroBigInt) < 0 {
 		return nil, errors.New("insufficient gas asset balance")
 	}
 
@@ -410,7 +410,7 @@ func (e *RemoveLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
 	fromAccount.AssetInfo[txInfo.PairIndex].LpAmount = ffmath.Sub(fromAccount.AssetInfo[txInfo.PairIndex].LpAmount, txInfo.LpAmount)
-	if fromAccount.AssetInfo[txInfo.PairIndex].LpAmount.Cmp(big.NewInt(0)) < 0 {
+	if fromAccount.AssetInfo[txInfo.PairIndex].LpAmount.Cmp(types.ZeroBigInt) < 0 {
 		return nil, errors.New("insufficient lp amount")
 	}
 
@@ -478,10 +478,10 @@ func (e *RemoveLiquidityExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		return nil, err
 	}
 	e.newPoolInfo = newPoolInfo
-	if newPoolInfo.AssetA.Cmp(big.NewInt(0)) <= 0 ||
-		newPoolInfo.AssetB.Cmp(big.NewInt(0)) <= 0 ||
-		newPoolInfo.LpAmount.Cmp(big.NewInt(0)) < 0 ||
-		newPoolInfo.KLast.Cmp(big.NewInt(0)) <= 0 {
+	if newPoolInfo.AssetA.Cmp(types.ZeroBigInt) <= 0 ||
+		newPoolInfo.AssetB.Cmp(types.ZeroBigInt) <= 0 ||
+		newPoolInfo.LpAmount.Cmp(types.ZeroBigInt) < 0 ||
+		newPoolInfo.KLast.Cmp(types.ZeroBigInt) <= 0 {
 		return nil, errors.New("invalid new pool")
 	}
 

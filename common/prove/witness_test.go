@@ -28,7 +28,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	cryptoBlock "github.com/bnb-chain/zkbnb-crypto/circuit/bn254/block"
+	"github.com/bnb-chain/zkbnb-crypto/circuit"
 	"github.com/bnb-chain/zkbnb-smt/database/memory"
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/block"
@@ -59,7 +59,7 @@ func TestConstructTxWitness(t *testing.T) {
 		assert.NoError(t, err)
 		w, err := witnessModel.GetBlockWitnessByHeight(h)
 		assert.NoError(t, err)
-		var cBlock cryptoBlock.Block
+		var cBlock circuit.Block
 		err = json.Unmarshal([]byte(w.WitnessData), &cBlock)
 		assert.NoError(t, err)
 		for idx, tx := range b[0].Txs {
