@@ -52,7 +52,7 @@ func InitAccountTree(
 	opts := ctx.Options(blockHeight)
 
 	// init account state trees
-	accountAssetTrees = NewLazyTreeCache(100)
+	accountAssetTrees = NewLazyTreeCache(types.AssetTreeCacheSize)
 	for index := int64(0); index < accountNums; index++ {
 		// create account assets tree
 		accountAssetTrees.AddToIndex(index, func() bsmt.SparseMerkleTree {

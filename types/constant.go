@@ -48,6 +48,8 @@ const (
 
 	BNBAssetId  = 0
 	BNBDecimals = "1000000000000000000"
+
+	AssetTreeCacheSize = 256
 )
 
 var (

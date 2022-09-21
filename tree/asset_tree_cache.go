@@ -40,26 +40,18 @@ func (c *AssetTreeCache) Get(i int64) (tree bsmt.SparseMerkleTree) {
 	if tmpTree, ok := c.treeCache.Get(i); ok {
 		tree = tmpTree.(bsmt.SparseMerkleTree)
 	}
-	c.CommitLock.Lock()
-	c.commitMap[i] = (tree.LatestVersion()-tree.RecentVersion() > 1)
-	c.CommitLock.Unlock()
 	return
 }
 
-func (c *AssetTreeCache) NeedsCommit(i int64) (ret bool) {
+func (c *AssetTreeCache) NeedsCommit(i int64) bool {
 	if c.treeCache.Contains(i) {
 		if tree, ok := c.treeCache.Peek(i); ok {
-			c.CommitLock.Lock()
-			c.commitMap[i] = (tree.(bsmt.SparseMerkleTree).LatestVersion()-tree.(bsmt.SparseMerkleTree).RecentVersion() > 1)
-			ret = c.commitMap[i]
-			c.CommitLock.Unlock()
-			return
+			return (tree.(bsmt.SparseMerkleTree).LatestVersion()-tree.(bsmt.SparseMerkleTree).RecentVersion() > 1)
 		}
 	}
 	c.CommitLock.RLock()
-	ret = c.commitMap[i]
-	c.CommitLock.RUnlock()
-	return
+	defer c.funcLock.RUnlock()
+	return c.commitMap[i]
 }
 
 func (c *AssetTreeCache) OnDelete(k, v interface{}) {
