@@ -203,11 +203,11 @@ func (w *WitnessHelper) constructAccountWitness(
 		}
 		// it means this is a registerZNS tx
 		if proverAccounts == nil {
-			if accountKey != w.assetTrees.Size() {
+			if accountKey != w.assetTrees.GetNextAccountIndex() {
 				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore,
 					fmt.Errorf("invalid key")
 			}
-			w.assetTrees.Add(tree.NewEmptyAccountAssetTreeFunc(w.treeCtx, accountKey, finalityBlockNr))
+			w.assetTrees.UpdateCache(accountKey, tree.NewEmptyAccountAssetTreeFunc(w.treeCtx, finalityBlockNr))
 			cryptoAccount = cryptoTypes.EmptyAccount(accountKey, tree.NilAccountAssetRoot)
 			// update account info
 			accountInfo, err := w.accountModel.GetConfirmedAccountByIndex(accountKey)

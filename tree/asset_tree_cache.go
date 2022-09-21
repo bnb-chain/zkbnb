@@ -7,61 +7,80 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 )
 
+// Lazy init cache for asset trees
 type AssetTreeCache struct {
-	funcMap    map[int64]func() bsmt.SparseMerkleTree
-	funcLock   sync.RWMutex
-	commitMap  map[int64]bool
-	CommitLock sync.RWMutex
-	treeCache  *lru.Cache
+	initFunction      func(index int64) bsmt.SparseMerkleTree
+	nextAccountNumber int64
+	mainLock          sync.RWMutex
+	changes           map[int64]bool
+	changesLock       sync.RWMutex
+	treeCache         *lru.Cache
 }
 
-func NewLazyTreeCache(maxSize int) *AssetTreeCache {
-	cache := AssetTreeCache{funcMap: make(map[int64]func() bsmt.SparseMerkleTree), commitMap: make(map[int64]bool)}
-	cache.treeCache, _ = lru.NewWithEvict(maxSize, cache.OnDelete)
+// Creates new AssetTreeCache
+// maxSize defines the maximum size of currently initialized trees
+// accountNumber defines the number of accounts to create/or next index for new account
+func NewLazyTreeCache(maxSize int, accountNumber int64, f func(index int64) bsmt.SparseMerkleTree) *AssetTreeCache {
+	cache := AssetTreeCache{initFunction: f, nextAccountNumber: accountNumber, changes: make(map[int64]bool, maxSize*10)}
+	cache.treeCache, _ = lru.NewWithEvict(maxSize, cache.onDelete)
 	return &cache
 }
 
-func (c *AssetTreeCache) AddToIndex(i int64, f func() bsmt.SparseMerkleTree) {
-	c.funcLock.Lock()
-	c.funcMap[i] = f
-	c.funcLock.Unlock()
+// Updates current cache with new(updated) init function and with latest account index
+func (c *AssetTreeCache) UpdateCache(accountNumber int64, f func(index int64) bsmt.SparseMerkleTree) {
+	c.mainLock.Lock()
+	c.initFunction = f
+	if c.nextAccountNumber < accountNumber {
+		c.nextAccountNumber = accountNumber
+	}
+	c.mainLock.Unlock()
 }
 
-func (c *AssetTreeCache) Add(f func() bsmt.SparseMerkleTree) {
-	c.funcLock.Lock()
-	c.funcMap[int64(len(c.funcMap))] = f
-	c.funcLock.Unlock()
+// Returns index of next account
+func (c *AssetTreeCache) GetNextAccountIndex() int64 {
+	c.mainLock.RLock()
+	defer c.mainLock.RUnlock()
+	return c.nextAccountNumber + 1
 }
 
+// Returns asset tree based on account index
 func (c *AssetTreeCache) Get(i int64) (tree bsmt.SparseMerkleTree) {
-	c.funcLock.RLock()
-	c.treeCache.ContainsOrAdd(i, c.funcMap[i]())
-	c.funcLock.RUnlock()
+	c.mainLock.RLock()
+	c.treeCache.ContainsOrAdd(i, c.initFunction(i))
+	c.mainLock.RUnlock()
 	if tmpTree, ok := c.treeCache.Get(i); ok {
 		tree = tmpTree.(bsmt.SparseMerkleTree)
 	}
 	return
 }
 
-func (c *AssetTreeCache) NeedsCommit(i int64) bool {
-	if c.treeCache.Contains(i) {
-		if tree, ok := c.treeCache.Peek(i); ok {
-			return (tree.(bsmt.SparseMerkleTree).LatestVersion()-tree.(bsmt.SparseMerkleTree).RecentVersion() > 1)
+// Returns slice of indexes of asset trees that were changned
+// and resets cache of the marked changes of asset trees.
+func (c *AssetTreeCache) GetChanges() []int64 {
+	c.mainLock.Lock()
+	c.changesLock.Lock()
+	defer c.mainLock.Unlock()
+	defer c.changesLock.Unlock()
+	for _, key := range c.treeCache.Keys() {
+		tree, _ := c.treeCache.Peek(key)
+		if tree.(bsmt.SparseMerkleTree).LatestVersion()-tree.(bsmt.SparseMerkleTree).RecentVersion() > 1 {
+			c.changes[key.(int64)] = true
 		}
 	}
-	c.CommitLock.RLock()
-	defer c.funcLock.RUnlock()
-	return c.commitMap[i]
+	ret := make([]int64, 0, len(c.changes))
+	for key := range c.changes {
+		ret = append(ret, key)
+	}
+	// Cleans map
+	c.changes = make(map[int64]bool, len(c.changes))
+	return ret
 }
 
-func (c *AssetTreeCache) OnDelete(k, v interface{}) {
-	c.CommitLock.Lock()
-	c.commitMap[k.(int64)] = (v.(bsmt.SparseMerkleTree).LatestVersion()-v.(bsmt.SparseMerkleTree).RecentVersion() > 1)
-	c.CommitLock.Unlock()
-}
-
-func (c *AssetTreeCache) Size() int64 {
-	c.funcLock.RLock()
-	defer c.funcLock.RUnlock()
-	return int64(len(c.funcMap))
+// Internal method to that marks if changes happend to tree eviced from LRU
+func (c *AssetTreeCache) onDelete(k, v interface{}) {
+	c.changesLock.Lock()
+	if v.(bsmt.SparseMerkleTree).LatestVersion()-v.(bsmt.SparseMerkleTree).RecentVersion() > 1 {
+		c.changes[k.(int64)] = true
+	}
+	c.changesLock.Unlock()
 }

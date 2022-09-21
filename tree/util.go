@@ -122,7 +122,8 @@ func CommitTrees(
 	liquidityTree bsmt.SparseMerkleTree,
 	nftTree bsmt.SparseMerkleTree) error {
 
-	totalTask := assetTrees.Size() + 3
+	assetTreeChanges := assetTrees.GetChanges()
+	totalTask := len(assetTreeChanges) + 3
 	errChan := make(chan error, totalTask)
 	defer close(errChan)
 
@@ -142,17 +143,15 @@ func CommitTrees(
 		return err
 	}
 
-	for idx := int64(0); idx < assetTrees.Size(); idx++ {
+	for _, idx := range assetTreeChanges {
 		err := func(i int64) error {
 			return pool.Submit(func() {
-				if assetTrees.NeedsCommit(i) {
-					asset := assetTrees.Get(i)
-					version := asset.LatestVersion()
-					ver, err := asset.Commit(&version)
-					if err != nil {
-						errChan <- errors.Wrapf(err, "unable to commit asset tree [%d], tree ver: %d, prune ver: %d", i, ver, version)
-						return
-					}
+				asset := assetTrees.Get(i)
+				version := asset.LatestVersion()
+				ver, err := asset.Commit(&version)
+				if err != nil {
+					errChan <- errors.Wrapf(err, "unable to commit asset tree [%d], tree ver: %d, prune ver: %d", i, ver, version)
+					return
 				}
 				errChan <- nil
 			})
@@ -194,7 +193,7 @@ func CommitTrees(
 		return err
 	}
 
-	for i := int64(0); i < totalTask; i++ {
+	for i := 0; i < totalTask; i++ {
 		err := <-errChan
 		if err != nil {
 			return err
@@ -212,7 +211,8 @@ func RollBackTrees(
 	liquidityTree bsmt.SparseMerkleTree,
 	nftTree bsmt.SparseMerkleTree) error {
 
-	totalTask := assetTrees.Size() + 3
+	assetTreeChanges := assetTrees.GetChanges()
+	totalTask := len(assetTreeChanges) + 3
 	errChan := make(chan error, totalTask)
 	defer close(errChan)
 
@@ -231,17 +231,15 @@ func RollBackTrees(
 		return err
 	}
 
-	for idx := int64(0); idx < assetTrees.Size(); idx++ {
+	for _, idx := range assetTreeChanges {
 		err := func(i int64) error {
 			return pool.Submit(func() {
-				if assetTrees.NeedsCommit(i) {
-					asset := assetTrees.Get(i)
-					version := asset.RecentVersion()
-					err := asset.Rollback(version)
-					if err != nil {
-						errChan <- errors.Wrapf(err, "unable to rollback asset tree [%d], ver: %d", i, version)
-						return
-					}
+				asset := assetTrees.Get(i)
+				version := asset.RecentVersion()
+				err := asset.Rollback(version)
+				if err != nil {
+					errChan <- errors.Wrapf(err, "unable to rollback asset tree [%d], ver: %d", i, version)
+					return
 				}
 				errChan <- nil
 			})
@@ -279,7 +277,7 @@ func RollBackTrees(
 		return err
 	}
 
-	for i := int64(0); i < totalTask; i++ {
+	for i := 0; i < totalTask; i++ {
 		err := <-errChan
 		if err != nil {
 			return err

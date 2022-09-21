@@ -717,7 +717,7 @@ func (s *StateDB) GetPendingNonce(accountIndex int64) (int64, error) {
 }
 
 func (s *StateDB) GetNextAccountIndex() int64 {
-	return s.AccountAssetTrees.Size()
+	return s.AccountAssetTrees.GetNextAccountIndex()
 }
 
 func (s *StateDB) GetNextNftIndex() int64 {
