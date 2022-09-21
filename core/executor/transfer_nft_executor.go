@@ -50,10 +50,10 @@ func (e *TransferNftExecutor) Prepare() error {
 	return e.BaseExecutor.Prepare()
 }
 
-func (e *TransferNftExecutor) VerifyInputs() error {
+func (e *TransferNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	txInfo := e.txInfo
 
-	err := e.BaseExecutor.VerifyInputs()
+	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk)
 	if err != nil {
 		return err
 	}

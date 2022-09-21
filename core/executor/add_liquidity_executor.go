@@ -71,11 +71,11 @@ func (e *AddLiquidityExecutor) Prepare() error {
 	return nil
 }
 
-func (e *AddLiquidityExecutor) VerifyInputs() error {
+func (e *AddLiquidityExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	err := e.BaseExecutor.VerifyInputs()
+	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk)
 	if err != nil {
 		return err
 	}

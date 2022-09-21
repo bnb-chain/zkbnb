@@ -62,7 +62,7 @@ func (e *BaseExecutor) Prepare() error {
 	return nil
 }
 
-func (e *BaseExecutor) VerifyInputs() error {
+func (e *BaseExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	txInfo := e.iTxInfo
 
 	err := txInfo.Validate()
@@ -81,8 +81,8 @@ func (e *BaseExecutor) VerifyInputs() error {
 			return err
 		}
 
-		gasAccountIndex, gasFeeAssetId, _ := txInfo.GetGas()
-		err = e.bc.VerifyGas(gasAccountIndex, gasFeeAssetId)
+		gasAccountIndex, gasFeeAssetId, gasFeeAmount := txInfo.GetGas()
+		err = e.bc.VerifyGas(gasAccountIndex, gasFeeAssetId, txInfo.GetTxType(), gasFeeAmount, skipGasAmtChk)
 		if err != nil {
 			return err
 		}
