@@ -69,6 +69,7 @@ func (c *Fullnode) Run() {
 		l2Block, err := c.client.GetBlockByHeight(curHeight)
 		if err != nil {
 			logx.Errorf("get block failed, height: %d, err %v ", curHeight, err)
+			time.Sleep(100 * time.Millisecond)
 			continue
 		}
 
