@@ -72,7 +72,7 @@ type StateDB struct {
 }
 
 func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
-	redisCache dbcache.Cache, cacheConfig *CacheConfig,
+	redisCache dbcache.Cache, cacheConfig *CacheConfig, assetCacheSize int,
 	stateRoot string, curHeight int64) (*StateDB, error) {
 	err := tree.SetupTreeDB(treeCtx)
 	if err != nil {
@@ -84,6 +84,7 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 		chainDb.AccountHistoryModel,
 		curHeight,
 		treeCtx,
+		assetCacheSize,
 	)
 	if err != nil {
 		logx.Error("dbinitializer account tree failed:", err)

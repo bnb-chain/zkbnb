@@ -110,6 +110,7 @@ func (w *Witness) initState() error {
 		w.accountHistoryModel,
 		witnessHeight,
 		treeCtx,
+		w.config.TreeDB.AssetTreeCacheSize,
 	)
 	// the blockHeight depends on the proof start position
 	if err != nil {

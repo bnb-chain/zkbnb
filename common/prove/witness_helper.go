@@ -207,7 +207,7 @@ func (w *WitnessHelper) constructAccountWitness(
 				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore,
 					fmt.Errorf("invalid key")
 			}
-			w.assetTrees.UpdateCache(accountKey, tree.NewEmptyAccountAssetTreeFunc(w.treeCtx, finalityBlockNr))
+			w.assetTrees.UpdateCache(accountKey, int64(finalityBlockNr))
 			cryptoAccount = cryptoTypes.EmptyAccount(accountKey, tree.NilAccountAssetRoot)
 			// update account info
 			accountInfo, err := w.accountModel.GetConfirmedAccountByIndex(accountKey)

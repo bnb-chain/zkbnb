@@ -96,7 +96,7 @@ func (e *RegisterZnsExecutor) ApplyTransaction() error {
 		return err
 	}
 
-	bc.StateDB().AccountAssetTrees.UpdateCache(txInfo.AccountIndex, tree.NewEmptyAccountAssetTreeFunc(bc.StateDB().TreeCtx, uint64(bc.CurrentBlock().BlockHeight)))
+	bc.StateDB().AccountAssetTrees.UpdateCache(txInfo.AccountIndex, bc.CurrentBlock().BlockHeight)
 
 	stateCache := e.bc.StateDB()
 	stateCache.SetPendingNewAccount(txInfo.AccountIndex, formatAccount)

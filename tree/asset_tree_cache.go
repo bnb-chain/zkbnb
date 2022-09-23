@@ -9,8 +9,9 @@ import (
 
 // Lazy init cache for asset trees
 type AssetTreeCache struct {
-	initFunction      func(index int64) bsmt.SparseMerkleTree
+	initFunction      func(index, block int64) bsmt.SparseMerkleTree
 	nextAccountNumber int64
+	blockNumber       int64
 	mainLock          sync.RWMutex
 	changes           map[int64]bool
 	changesLock       sync.RWMutex
@@ -20,18 +21,20 @@ type AssetTreeCache struct {
 // Creates new AssetTreeCache
 // maxSize defines the maximum size of currently initialized trees
 // accountNumber defines the number of accounts to create/or next index for new account
-func NewLazyTreeCache(maxSize int, accountNumber int64, f func(index int64) bsmt.SparseMerkleTree) *AssetTreeCache {
-	cache := AssetTreeCache{initFunction: f, nextAccountNumber: accountNumber, changes: make(map[int64]bool, maxSize*10)}
+func NewLazyTreeCache(maxSize int, accountNumber int64, blockNumber int64, f func(index, block int64) bsmt.SparseMerkleTree) *AssetTreeCache {
+	cache := AssetTreeCache{initFunction: f, nextAccountNumber: accountNumber, blockNumber: blockNumber, changes: make(map[int64]bool, maxSize*10)}
 	cache.treeCache, _ = lru.NewWithEvict(maxSize, cache.onDelete)
 	return &cache
 }
 
-// Updates current cache with new(updated) init function and with latest account index
-func (c *AssetTreeCache) UpdateCache(accountNumber int64, f func(index int64) bsmt.SparseMerkleTree) {
+// Updates current cache with new block number and with latest account index
+func (c *AssetTreeCache) UpdateCache(accountNumber, latestBlock int64) {
 	c.mainLock.Lock()
-	c.initFunction = f
 	if c.nextAccountNumber < accountNumber {
 		c.nextAccountNumber = accountNumber
+	}
+	if c.blockNumber < latestBlock {
+		c.blockNumber = latestBlock
 	}
 	c.mainLock.Unlock()
 }
@@ -46,7 +49,7 @@ func (c *AssetTreeCache) GetNextAccountIndex() int64 {
 // Returns asset tree based on account index
 func (c *AssetTreeCache) Get(i int64) (tree bsmt.SparseMerkleTree) {
 	c.mainLock.RLock()
-	c.treeCache.ContainsOrAdd(i, c.initFunction(i))
+	c.treeCache.ContainsOrAdd(i, c.initFunction(i, c.blockNumber))
 	c.mainLock.RUnlock()
 	if tmpTree, ok := c.treeCache.Get(i); ok {
 		tree = tmpTree.(bsmt.SparseMerkleTree)
@@ -55,7 +58,6 @@ func (c *AssetTreeCache) Get(i int64) (tree bsmt.SparseMerkleTree) {
 }
 
 // Returns slice of indexes of asset trees that were changned
-// and resets cache of the marked changes of asset trees.
 func (c *AssetTreeCache) GetChanges() []int64 {
 	c.mainLock.Lock()
 	c.changesLock.Lock()
@@ -71,9 +73,14 @@ func (c *AssetTreeCache) GetChanges() []int64 {
 	for key := range c.changes {
 		ret = append(ret, key)
 	}
-	// Cleans map
-	c.changes = make(map[int64]bool, len(c.changes))
 	return ret
+}
+
+// Cleans all saved tree changes in the cache
+func (c *AssetTreeCache) CleanChanges() {
+	c.changesLock.Lock()
+	c.changes = make(map[int64]bool, len(c.changes))
+	c.changesLock.Unlock()
 }
 
 // Internal method to that marks if changes happend to tree eviced from LRU

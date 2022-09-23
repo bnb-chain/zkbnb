@@ -46,6 +46,7 @@ var (
 	accountHistoryModel   account.AccountHistoryModel
 	liquidityHistoryModel liquidity.LiquidityHistoryModel
 	nftHistoryModel       nft.L2NftHistoryModel
+	assetTreeCacheSize    = 512000
 )
 
 func TestConstructTxWitness(t *testing.T) {
@@ -77,7 +78,7 @@ func getWitnessHelper(blockHeight int64) (*WitnessHelper, error) {
 		Driver: tree.MemoryDB,
 		TreeDB: memory.NewMemoryDB(),
 	}
-	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, accountHistoryModel, blockHeight, ctx)
+	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, accountHistoryModel, blockHeight, ctx, assetTreeCacheSize)
 	if err != nil {
 		return nil, err
 	}
