@@ -247,11 +247,6 @@ Port: 8888
 TxPool:
   MaxPendingTxCount: 10000
 
-Prometheus:
-  Host: 0.0.0.0
-  Port: 9091
-  Path: /metrics
-
 Postgres:
   DataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
 
