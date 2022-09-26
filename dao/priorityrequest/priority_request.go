@@ -65,7 +65,7 @@ type (
 		// status
 		Status int
 		// L2TxHash for the relation to tx table
-		L2TxHash string
+		L2TxHash string `gorm:"index"`
 	}
 )
 
