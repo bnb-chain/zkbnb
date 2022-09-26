@@ -73,6 +73,9 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			BlockHeight: types.NilBlockHeight,
 			TxStatus:    tx.StatusPending,
 		}
+
+		request.L2TxHash = txHash
+
 		// handle request based on request type
 		var txInfoBytes []byte
 		switch request.TxType {
@@ -184,9 +187,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 		}
 
 		for _, request := range pendingRequests {
-			// TODO: decide blockHeight
-			blockHeight := int64(0)
-			priorityOperationMetric.WithLabelValues(strconv.FormatInt(blockHeight, 10)).Set(float64(request.ID))
+			priorityOperationMetric.WithLabelValues(strconv.FormatInt(request.L1BlockHeight, 10)).Set(float64(request.ID))
 		}
 
 		return nil

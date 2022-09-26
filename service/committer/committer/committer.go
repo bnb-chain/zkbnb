@@ -123,9 +123,12 @@ func (c *Committer) Run() {
 			}
 
 			if types.IsPriorityOperationTx(poolTx.TxType) {
-				// TODO: Get requestID
-				requestID := 0
-				priorityOperationMetric.WithLabelValues(strconv.FormatInt(curBlock.BlockHeight, 10)).Set(float64(requestID))
+				request, err := c.bc.PriorityRequestModel.GetPriorityRequestsByL2TxHash(poolTx.TxHash)
+				if err == nil {
+					priorityOperationMetric.WithLabelValues(strconv.FormatInt(request.L1BlockHeight, 10)).Set(float64(request.RequestId))
+				} else {
+					logx.Errorf("query txHash: %s in PriorityRequestTable failed, err %v ", poolTx.TxHash, err)
+				}
 			}
 
 			// Write the proposed block into database when the first transaction executed.
