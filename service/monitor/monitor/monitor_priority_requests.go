@@ -185,15 +185,15 @@ func (m *Monitor) MonitorPriorityRequests() error {
 		if err != nil {
 			return err
 		}
-
-		for _, request := range pendingRequests {
-			priorityOperationMetric.WithLabelValues(strconv.FormatInt(request.L1BlockHeight, 10)).Set(float64(request.ID))
-		}
-
 		return nil
 	})
 	if err != nil {
 		return fmt.Errorf("unable to create pool tx and update priority requests, error: %v", err)
 	}
+
+	for _, request := range pendingRequests {
+		priorityOperationMetric.WithLabelValues(strconv.FormatInt(request.L1BlockHeight, 10)).Set(float64(request.ID))
+	}
+
 	return nil
 }
