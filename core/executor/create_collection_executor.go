@@ -54,10 +54,10 @@ func (e *CreateCollectionExecutor) Prepare() error {
 	return nil
 }
 
-func (e *CreateCollectionExecutor) VerifyInputs() error {
+func (e *CreateCollectionExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	txInfo := e.txInfo
 
-	err := e.BaseExecutor.VerifyInputs()
+	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk)
 	if err != nil {
 		return err
 	}

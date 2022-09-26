@@ -52,9 +52,10 @@ var (
 	CmcNotListedErr = errors.New("cmc not listed")
 
 	AppErrInvalidParam    = New(20001, "invalid param: ")
-	AppErrInvalidTxField  = New(20004, "invalid tx field: ")
-	AppErrInvalidGasAsset = New(25005, "invalid gas asset")
+	AppErrInvalidTxField  = New(20002, "invalid tx field: ")
+	AppErrInvalidGasAsset = New(25003, "invalid gas asset")
+	AppErrInvalidTxType   = New(25004, "invalid tx type")
+	AppErrTooManyTxs      = New(25005, "too many pending txs")
 	AppErrNotFound        = New(29404, "not found")
 	AppErrInternal        = New(29500, "internal server error")
-	AppErrTooManyTxs      = New(29600, "too many pending txs")
 )

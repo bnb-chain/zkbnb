@@ -64,11 +64,11 @@ func (e *SwapExecutor) Prepare() error {
 	return nil
 }
 
-func (e *SwapExecutor) VerifyInputs() error {
+func (e *SwapExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	err := e.BaseExecutor.VerifyInputs()
+	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk)
 	if err != nil {
 		return err
 	}

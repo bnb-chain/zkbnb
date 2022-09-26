@@ -101,11 +101,7 @@ func (m *defaultTxPoolModel) GetTxsTotalCount() (count int64, err error) {
 func (m *defaultTxPoolModel) GetTxByTxHash(hash string) (tx *Tx, err error) {
 	dbTx := m.DB.Table(m.table).Where("tx_hash = ?", hash).Find(&tx)
 	if dbTx.Error != nil {
-		if dbTx.Error == types.DbErrNotFound {
-			return tx, dbTx.Error
-		} else {
-			return nil, types.DbErrSqlOperation
-		}
+		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
 	}

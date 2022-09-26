@@ -47,7 +47,7 @@ func (e *UpdatePairRateExecutor) Prepare() error {
 	return e.BaseExecutor.Prepare()
 }
 
-func (e *UpdatePairRateExecutor) VerifyInputs() error {
+func (e *UpdatePairRateExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	bc := e.bc
 	txInfo := e.txInfo
 	liquidity, err := bc.StateDB().GetLiquidity(txInfo.PairIndex)

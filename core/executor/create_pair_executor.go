@@ -41,7 +41,7 @@ func (e *CreatePairExecutor) Prepare() error {
 	return e.BaseExecutor.Prepare()
 }
 
-func (e *CreatePairExecutor) VerifyInputs() error {
+func (e *CreatePairExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	bc := e.bc
 	txInfo := e.txInfo
 

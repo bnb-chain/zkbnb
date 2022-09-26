@@ -264,9 +264,10 @@ Get gas fee amount for using a specific asset as gas asset
 
 ##### Parameters
 
-| Name | Located in | Description | Required | Schema |
-| ---- | ---------- | ----------- | -------- | ---- |
+| Name     | Located in | Description | Required | Schema |
+|----------| ---------- |-------------| -------- | ---- |
 | asset_id | query | id of asset | Yes | integer |
+| tx_type  | query | type of tx  | Yes | integer |
 
 ##### Responses
 
@@ -501,26 +502,6 @@ Get transactions
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [Txs](#txs) |
-
-### /api/v1/withdrawGasFee
-
-#### GET
-
-##### Summary
-
-Get withdraw gas fee amount for using a specific asset as gas asset
-
-##### Parameters
-
-| Name | Located in | Description | Required | Schema |
-| ---- | ---------- | ----------- | -------- | ---- |
-| asset_id | query | id of asset | Yes | integer |
-
-##### Responses
-
-| Code | Description | Schema |
-| ---- | ----------- | ------ |
-| 200 | A successful response. | [GasFee](#gasfee) |
 
 ### /api/v1/sendTx
 
@@ -800,9 +781,10 @@ Send raw transaction
 
 #### ReqGetGasFee
 
-| Name | Type | Description | Required |
-| ---- | ---- | ----------- | -------- |
+| Name     | Type | Description | Required |
+|----------| ---- | ----------- | -------- |
 | asset_id | integer |  | Yes |
+| tx_type       | integer |  | Yes |
 
 #### ReqGetLpValue
 
@@ -850,12 +832,6 @@ Send raw transaction
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | hash | string |  | Yes |
-
-#### ReqGetWithdrawGasFee
-
-| Name | Type | Description | Required |
-| ---- | ---- | ----------- | -------- |
-| asset_id | integer |  | Yes |
 
 #### ReqSearch
 
