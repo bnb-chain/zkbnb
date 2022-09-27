@@ -345,7 +345,25 @@ func (c *Committer) computeCurrentBlockSize() int {
 }
 
 func (c *Committer) getLatestExecutedRequestId() (int64, error) {
-	latestTx, err := c.bc.TxModel.GetLatestExecutedTx()
+
+	statuses := []int{
+		tx.StatusExecuted,
+		tx.StatusPacked,
+		tx.StatusCommitted,
+		tx.StatusVerified,
+	}
+
+	txTypes := []int64{
+		types.TxTypeRegisterZns,
+		types.TxTypeCreatePair,
+		types.TxTypeUpdatePairRate,
+		types.TxTypeDeposit,
+		types.TxTypeDepositNft,
+		types.TxTypeFullExit,
+		types.TxTypeFullExitNft,
+	}
+
+	latestTx, err := c.bc.TxModel.GetLatestTx(txTypes, statuses)
 	if err != nil && err != types.DbErrNotFound {
 		logx.Errorf("get latest executed tx failed: %v", err)
 		return -1, err

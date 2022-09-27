@@ -50,7 +50,7 @@ type (
 		GetTxsTotalCountBetween(from, to time.Time) (count int64, err error)
 		GetDistinctAccountsCountBetween(from, to time.Time) (count int64, err error)
 		UpdateTxsStatusInTransact(tx *gorm.DB, blockTxStatus map[int64]int) error
-		GetLatestExecutedTx() (tx *Tx, err error)
+		GetLatestTx(txTypes []int64, statuses []int) (tx *Tx, err error)
 	}
 
 	defaultTxModel struct {
@@ -193,24 +193,7 @@ func (m *defaultTxModel) UpdateTxsStatusInTransact(tx *gorm.DB, blockTxStatus ma
 	return nil
 }
 
-func (m *defaultTxModel) GetLatestExecutedTx() (tx *Tx, err error) {
-
-	statuses := []int{
-		StatusExecuted,
-		StatusPacked,
-		StatusCommitted,
-		StatusVerified,
-	}
-
-	txTypes := []int64{
-		types.TxTypeRegisterZns,
-		types.TxTypeCreatePair,
-		types.TxTypeUpdatePairRate,
-		types.TxTypeDeposit,
-		types.TxTypeDepositNft,
-		types.TxTypeFullExit,
-		types.TxTypeFullExitNft,
-	}
+func (m *defaultTxModel) GetLatestTx(txTypes []int64, statuses []int) (tx *Tx, err error) {
 
 	dbTx := m.DB.Table(m.table).Where("status IN ? AND txType IN ?", statuses, txTypes).Order("id DESC").Limit(1).Find(&tx)
 	if dbTx.Error != nil {
