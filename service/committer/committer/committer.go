@@ -345,8 +345,6 @@ func (c *Committer) computeCurrentBlockSize() int {
 }
 
 func (c *Committer) getLatestExecutedRequestId() (int64, error) {
-	latestRequestId := int64(-1)
-
 	latestTx, err := c.bc.TxModel.GetLatestExecutedTx()
 	if err != nil && err != types.DbErrNotFound {
 		logx.Errorf("get latest executed tx failed: %v", err)
@@ -356,12 +354,10 @@ func (c *Committer) getLatestExecutedRequestId() (int64, error) {
 	}
 
 	p, err := c.bc.PriorityRequestModel.GetPriorityRequestsByL2TxHash(latestTx.TxHash)
-	if err == nil {
-		latestRequestId = p.RequestId
-	} else {
+	if err != nil {
 		logx.Errorf("get priority request by txhash: %s failed: %v", latestTx.TxHash, err)
 		return -1, err
 	}
 
-	return latestRequestId, nil
+	return p.RequestId, nil
 }
