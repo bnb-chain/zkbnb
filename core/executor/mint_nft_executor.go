@@ -189,7 +189,6 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 			txInfo.GasFeeAssetId,
 			ffmath.Neg(txInfo.GasFeeAssetAmount),
 			types.ZeroBigInt,
-			types.ZeroBigInt,
 		).String(),
 		Order:           order,
 		Nonce:           creatorAccount.Nonce,
@@ -212,7 +211,6 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Balance:      toAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.GasFeeAssetId,
-			types.ZeroBigInt,
 			types.ZeroBigInt,
 			types.ZeroBigInt,
 		).String(),
@@ -260,7 +258,6 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.GasFeeAssetId,
 			txInfo.GasFeeAssetAmount,
-			types.ZeroBigInt,
 			types.ZeroBigInt,
 		).String(),
 		Order:           order,

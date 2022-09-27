@@ -9,7 +9,6 @@ import (
 	block "github.com/bnb-chain/zkbnb/service/apiserver/internal/handler/block"
 	info "github.com/bnb-chain/zkbnb/service/apiserver/internal/handler/info"
 	nft "github.com/bnb-chain/zkbnb/service/apiserver/internal/handler/nft"
-	pair "github.com/bnb-chain/zkbnb/service/apiserver/internal/handler/pair"
 	root "github.com/bnb-chain/zkbnb/service/apiserver/internal/handler/root"
 	transaction "github.com/bnb-chain/zkbnb/service/apiserver/internal/handler/transaction"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
@@ -104,31 +103,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/api/v1/search",
 				Handler: info.SearchHandler(serverCtx),
-			},
-		},
-	)
-
-	server.AddRoutes(
-		[]rest.Route{
-			{
-				Method:  http.MethodGet,
-				Path:    "/api/v1/swapAmount",
-				Handler: pair.GetSwapAmountHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodGet,
-				Path:    "/api/v1/pairs",
-				Handler: pair.GetPairsHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodGet,
-				Path:    "/api/v1/lpValue",
-				Handler: pair.GetLpValueHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodGet,
-				Path:    "/api/v1/pair",
-				Handler: pair.GetPairHandler(serverCtx),
 			},
 		},
 	)

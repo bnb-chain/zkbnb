@@ -34,7 +34,6 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/compressedblock"
 	"github.com/bnb-chain/zkbnb/dao/l1rolluptx"
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
-	"github.com/bnb-chain/zkbnb/dao/liquidity"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/priorityrequest"
 	"github.com/bnb-chain/zkbnb/dao/proof"
@@ -59,24 +58,22 @@ type contractAddr struct {
 }
 
 type dao struct {
-	sysConfigModel        sysconfig.SysConfigModel
-	accountModel          account.AccountModel
-	accountHistoryModel   account.AccountHistoryModel
-	assetModel            asset.AssetModel
-	txPoolModel           tx.TxPoolModel
-	txDetailModel         tx.TxDetailModel
-	txModel               tx.TxModel
-	blockModel            block.BlockModel
-	compressedBlockModel  compressedblock.CompressedBlockModel
-	blockWitnessModel     blockwitness.BlockWitnessModel
-	proofModel            proof.ProofModel
-	l1SyncedBlockModel    l1syncedblock.L1SyncedBlockModel
-	priorityRequestModel  priorityrequest.PriorityRequestModel
-	l1RollupTModel        l1rolluptx.L1RollupTxModel
-	liquidityModel        liquidity.LiquidityModel
-	liquidityHistoryModel liquidity.LiquidityHistoryModel
-	nftModel              nft.L2NftModel
-	nftHistoryModel       nft.L2NftHistoryModel
+	sysConfigModel       sysconfig.SysConfigModel
+	accountModel         account.AccountModel
+	accountHistoryModel  account.AccountHistoryModel
+	assetModel           asset.AssetModel
+	txPoolModel          tx.TxPoolModel
+	txDetailModel        tx.TxDetailModel
+	txModel              tx.TxModel
+	blockModel           block.BlockModel
+	compressedBlockModel compressedblock.CompressedBlockModel
+	blockWitnessModel    blockwitness.BlockWitnessModel
+	proofModel           proof.ProofModel
+	l1SyncedBlockModel   l1syncedblock.L1SyncedBlockModel
+	priorityRequestModel priorityrequest.PriorityRequestModel
+	l1RollupTModel       l1rolluptx.L1RollupTxModel
+	nftModel             nft.L2NftModel
+	nftHistoryModel      nft.L2NftHistoryModel
 }
 
 func Initialize(
@@ -95,24 +92,22 @@ func Initialize(
 	logx.Infof("init configs: %s", string(unmarshal))
 
 	dao := &dao{
-		sysConfigModel:        sysconfig.NewSysConfigModel(db),
-		accountModel:          account.NewAccountModel(db),
-		accountHistoryModel:   account.NewAccountHistoryModel(db),
-		assetModel:            asset.NewAssetModel(db),
-		txPoolModel:           tx.NewTxPoolModel(db),
-		txDetailModel:         tx.NewTxDetailModel(db),
-		txModel:               tx.NewTxModel(db),
-		blockModel:            block.NewBlockModel(db),
-		compressedBlockModel:  compressedblock.NewCompressedBlockModel(db),
-		blockWitnessModel:     blockwitness.NewBlockWitnessModel(db),
-		proofModel:            proof.NewProofModel(db),
-		l1SyncedBlockModel:    l1syncedblock.NewL1SyncedBlockModel(db),
-		priorityRequestModel:  priorityrequest.NewPriorityRequestModel(db),
-		l1RollupTModel:        l1rolluptx.NewL1RollupTxModel(db),
-		liquidityModel:        liquidity.NewLiquidityModel(db),
-		liquidityHistoryModel: liquidity.NewLiquidityHistoryModel(db),
-		nftModel:              nft.NewL2NftModel(db),
-		nftHistoryModel:       nft.NewL2NftHistoryModel(db),
+		sysConfigModel:       sysconfig.NewSysConfigModel(db),
+		accountModel:         account.NewAccountModel(db),
+		accountHistoryModel:  account.NewAccountHistoryModel(db),
+		assetModel:           asset.NewAssetModel(db),
+		txPoolModel:          tx.NewTxPoolModel(db),
+		txDetailModel:        tx.NewTxDetailModel(db),
+		txModel:              tx.NewTxModel(db),
+		blockModel:           block.NewBlockModel(db),
+		compressedBlockModel: compressedblock.NewCompressedBlockModel(db),
+		blockWitnessModel:    blockwitness.NewBlockWitnessModel(db),
+		proofModel:           proof.NewProofModel(db),
+		l1SyncedBlockModel:   l1syncedblock.NewL1SyncedBlockModel(db),
+		priorityRequestModel: priorityrequest.NewPriorityRequestModel(db),
+		l1RollupTModel:       l1rolluptx.NewL1RollupTxModel(db),
+		nftModel:             nft.NewL2NftModel(db),
+		nftHistoryModel:      nft.NewL2NftHistoryModel(db),
 	}
 
 	dropTables(dao)
@@ -126,9 +121,6 @@ func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC
 	// to config gas for different transaction types, need to be evaluated and tune these values
 	bnbGasFee := make(map[int]int64)
 	bnbGasFee[types.TxTypeTransfer] = 10000000000000
-	bnbGasFee[types.TxTypeSwap] = 12000000000000
-	bnbGasFee[types.TxTypeAddLiquidity] = 12000000000000
-	bnbGasFee[types.TxTypeRemoveLiquidity] = 12000000000000
 	bnbGasFee[types.TxTypeWithdraw] = 20000000000000
 	bnbGasFee[types.TxTypeCreateCollection] = 10000000000000
 	bnbGasFee[types.TxTypeMintNft] = 10000000000000
@@ -228,8 +220,6 @@ func dropTables(dao *dao) {
 	assert.Nil(nil, dao.l1SyncedBlockModel.DropL1SyncedBlockTable())
 	assert.Nil(nil, dao.priorityRequestModel.DropPriorityRequestTable())
 	assert.Nil(nil, dao.l1RollupTModel.DropL1RollupTxTable())
-	assert.Nil(nil, dao.liquidityModel.DropLiquidityTable())
-	assert.Nil(nil, dao.liquidityHistoryModel.DropLiquidityHistoryTable())
 	assert.Nil(nil, dao.nftModel.DropL2NftTable())
 	assert.Nil(nil, dao.nftHistoryModel.DropL2NftHistoryTable())
 }
@@ -249,8 +239,6 @@ func initTable(dao *dao, svrConf *contractAddr, bscTestNetworkRPC, localTestNetw
 	assert.Nil(nil, dao.l1SyncedBlockModel.CreateL1SyncedBlockTable())
 	assert.Nil(nil, dao.priorityRequestModel.CreatePriorityRequestTable())
 	assert.Nil(nil, dao.l1RollupTModel.CreateL1RollupTxTable())
-	assert.Nil(nil, dao.liquidityModel.CreateLiquidityTable())
-	assert.Nil(nil, dao.liquidityHistoryModel.CreateLiquidityHistoryTable())
 	assert.Nil(nil, dao.nftModel.CreateL2NftTable())
 	assert.Nil(nil, dao.nftHistoryModel.CreateL2NftHistoryTable())
 	rowsAffected, err := dao.assetModel.CreateAssets(initAssetsInfo())

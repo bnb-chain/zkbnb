@@ -58,7 +58,7 @@ jobs:
           export L2EndPoint=$L2_ENDPOINT
           
           cd /tmp && sudo rm -rf ./zkbnb-integration-test
-          git clone --branch main https://github.com/bnb-chain/zkbnb-integration-test.git
+          git clone --branch remove_amm https://github.com/bnb-chain/zkbnb-integration-test.git
           cd ./zkbnb-integration-test/tests
           
           echo '1. start TestSetupSuite'

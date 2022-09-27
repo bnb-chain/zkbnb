@@ -24,7 +24,6 @@ import (
 
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/compressedblock"
-	"github.com/bnb-chain/zkbnb/dao/liquidity"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
@@ -90,15 +89,12 @@ type (
 		Block           *Block
 		CompressedBlock *compressedblock.CompressedBlock
 
-		PendingNewAccount          []*account.Account
-		PendingUpdateAccount       []*account.Account
-		PendingNewAccountHistory   []*account.AccountHistory
-		PendingNewLiquidity        []*liquidity.Liquidity
-		PendingUpdateLiquidity     []*liquidity.Liquidity
-		PendingNewLiquidityHistory []*liquidity.LiquidityHistory
-		PendingNewNft              []*nft.L2Nft
-		PendingUpdateNft           []*nft.L2Nft
-		PendingNewNftHistory       []*nft.L2NftHistory
+		PendingNewAccount        []*account.Account
+		PendingUpdateAccount     []*account.Account
+		PendingNewAccountHistory []*account.AccountHistory
+		PendingNewNft            []*nft.L2Nft
+		PendingUpdateNft         []*nft.L2Nft
+		PendingNewNftHistory     []*nft.L2NftHistory
 	}
 )
 

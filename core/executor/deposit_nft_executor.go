@@ -185,7 +185,6 @@ func (e *DepositNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	deltaBalance := &types.AccountAsset{
 		AssetId:                  0,
 		Balance:                  big.NewInt(0),
-		LpAmount:                 big.NewInt(0),
 		OfferCanceledOrFinalized: big.NewInt(0),
 	}
 	txDetails = append(txDetails, &tx.TxDetail{

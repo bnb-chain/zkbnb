@@ -210,7 +210,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 		return err
 	}
 	syncedBlock := &l1syncedblock.L1SyncedBlock{
-		L1BlockHeight: int64(endHeight),
+		L1BlockHeight: endHeight,
 		BlockInfo:     string(eventInfosBytes),
 		Type:          l1syncedblock.TypeGovernance,
 	}

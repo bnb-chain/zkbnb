@@ -16,7 +16,6 @@ import (
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/dbcache"
-	"github.com/bnb-chain/zkbnb/dao/liquidity"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/tree"
 	"github.com/bnb-chain/zkbnb/types"
@@ -24,25 +23,19 @@ import (
 
 var (
 	DefaultCacheConfig = CacheConfig{
-		AccountCacheSize:   2048,
-		LiquidityCacheSize: 2048,
-		NftCacheSize:       2048,
+		AccountCacheSize: 2048,
+		NftCacheSize:     2048,
 	}
 )
 
 type CacheConfig struct {
-	AccountCacheSize   int
-	LiquidityCacheSize int
-	NftCacheSize       int
+	AccountCacheSize int
+	NftCacheSize     int
 }
 
 func (c *CacheConfig) sanitize() *CacheConfig {
 	if c.AccountCacheSize <= 0 {
 		c.AccountCacheSize = DefaultCacheConfig.AccountCacheSize
-	}
-
-	if c.LiquidityCacheSize <= 0 {
-		c.LiquidityCacheSize = DefaultCacheConfig.LiquidityCacheSize
 	}
 
 	if c.NftCacheSize <= 0 {
@@ -60,13 +53,11 @@ type StateDB struct {
 	redisCache dbcache.Cache
 
 	// Flat state
-	AccountCache   *lru.Cache
-	LiquidityCache *lru.Cache
-	NftCache       *lru.Cache
+	AccountCache *lru.Cache
+	NftCache     *lru.Cache
 
 	// Tree state
 	AccountTree       bsmt.SparseMerkleTree
-	LiquidityTree     bsmt.SparseMerkleTree
 	NftTree           bsmt.SparseMerkleTree
 	AccountAssetTrees *tree.AssetTreeCache
 	TreeCtx           *tree.Context
@@ -91,15 +82,6 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 		logx.Error("dbinitializer account tree failed:", err)
 		return nil, err
 	}
-	liquidityTree, err := tree.InitLiquidityTree(
-		chainDb.LiquidityHistoryModel,
-		curHeight,
-		treeCtx,
-	)
-	if err != nil {
-		logx.Error("dbinitializer liquidity tree failed:", err)
-		return nil, err
-	}
 	nftTree, err := tree.InitNftTree(
 		chainDb.L2NftHistoryModel,
 		curHeight,
@@ -116,11 +98,6 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 		logx.Error("init account cache failed:", err)
 		return nil, err
 	}
-	liquidityCache, err := lru.New(cacheConfig.LiquidityCacheSize)
-	if err != nil {
-		logx.Error("init liquidity cache failed:", err)
-		return nil, err
-	}
 	nftCache, err := lru.New(cacheConfig.NftCacheSize)
 	if err != nil {
 		logx.Error("init nft cache failed:", err)
@@ -128,15 +105,13 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 	}
 
 	return &StateDB{
-		StateCache:     NewStateCache(stateRoot),
-		chainDb:        chainDb,
-		redisCache:     redisCache,
-		AccountCache:   accountCache,
-		LiquidityCache: liquidityCache,
-		NftCache:       nftCache,
+		StateCache:   NewStateCache(stateRoot),
+		chainDb:      chainDb,
+		redisCache:   redisCache,
+		AccountCache: accountCache,
+		NftCache:     nftCache,
 
 		AccountTree:       accountTree,
-		LiquidityTree:     liquidityTree,
 		NftTree:           nftTree,
 		AccountAssetTrees: accountAssetTrees,
 		TreeCtx:           treeCtx,
@@ -149,24 +124,18 @@ func NewStateDBForDryRun(redisCache dbcache.Cache, cacheConfig *CacheConfig, cha
 		logx.Error("init account cache failed:", err)
 		return nil, err
 	}
-	liquidityCache, err := lru.New(cacheConfig.LiquidityCacheSize)
-	if err != nil {
-		logx.Error("init liquidity cache failed:", err)
-		return nil, err
-	}
 	nftCache, err := lru.New(cacheConfig.NftCacheSize)
 	if err != nil {
 		logx.Error("init nft cache failed:", err)
 		return nil, err
 	}
 	return &StateDB{
-		dryRun:         true,
-		redisCache:     redisCache,
-		chainDb:        chainDb,
-		AccountCache:   accountCache,
-		LiquidityCache: liquidityCache,
-		NftCache:       nftCache,
-		StateCache:     NewStateCache(""),
+		dryRun:       true,
+		redisCache:   redisCache,
+		chainDb:      chainDb,
+		AccountCache: accountCache,
+		NftCache:     nftCache,
+		StateCache:   NewStateCache(""),
 	}, nil
 }
 
@@ -224,23 +193,6 @@ func (s *StateDB) GetAccount(accountIndex int64) (*account.Account, error) {
 	return account, nil
 }
 
-func (s *StateDB) GetLiquidity(pairIndex int64) (*liquidity.Liquidity, error) {
-	pending, exist := s.StateCache.GetPendingLiquidity(pairIndex)
-	if exist {
-		return pending, nil
-	}
-	cached, exist := s.LiquidityCache.Get(pairIndex)
-	if exist {
-		return cached.(*liquidity.Liquidity), nil
-	}
-	liquidity, err := s.chainDb.LiquidityModel.GetLiquidityByIndex(pairIndex)
-	if err != nil {
-		return nil, err
-	}
-	s.LiquidityCache.Add(pairIndex, liquidity)
-	return liquidity, nil
-}
-
 func (s *StateDB) GetNft(nftIndex int64) (*nft.L2Nft, error) {
 	pending, exist := s.StateCache.GetPendingNft(nftIndex)
 	if exist {
@@ -274,17 +226,6 @@ func (s *StateDB) syncPendingAccount(pendingAccount map[int64]*types.AccountInfo
 	return nil
 }
 
-func (s *StateDB) syncPendingLiquidity(pendingLiquidity map[int64]*liquidity.Liquidity) error {
-	for index, liquidity := range pendingLiquidity {
-		err := s.redisCache.Set(context.Background(), dbcache.LiquidityKeyByIndex(index), liquidity)
-		if err != nil {
-			return fmt.Errorf("cache to redis failed: %v", err)
-		}
-		s.LiquidityCache.Add(index, liquidity)
-	}
-	return nil
-}
-
 func (s *StateDB) syncPendingNft(pendingNft map[int64]*nft.L2Nft) error {
 	for index, nft := range pendingNft {
 		err := s.redisCache.Set(context.Background(), dbcache.NftKeyByIndex(index), nft)
@@ -302,10 +243,6 @@ func (s *StateDB) SyncStateCacheToRedis() error {
 	if err != nil {
 		return err
 	}
-	err = s.syncPendingLiquidity(s.PendingNewLiquidityMap)
-	if err != nil {
-		return err
-	}
 	err = s.syncPendingNft(s.PendingNewNftMap)
 	if err != nil {
 		return err
@@ -313,10 +250,6 @@ func (s *StateDB) SyncStateCacheToRedis() error {
 
 	// Sync pending update to cache.
 	err = s.syncPendingAccount(s.PendingUpdateAccountMap)
-	if err != nil {
-		return err
-	}
-	err = s.syncPendingLiquidity(s.PendingUpdateLiquidityMap)
 	if err != nil {
 		return err
 	}
@@ -375,52 +308,6 @@ func (s *StateDB) GetPendingAccount(blockHeight int64) ([]*account.Account, []*a
 	}
 
 	return pendingNewAccount, pendingUpdateAccount, pendingNewAccountHistory, nil
-}
-
-func (s *StateDB) GetPendingLiquidity(blockHeight int64) ([]*liquidity.Liquidity, []*liquidity.Liquidity, []*liquidity.LiquidityHistory, error) {
-	pendingNewLiquidity := make([]*liquidity.Liquidity, 0)
-	pendingUpdateLiquidity := make([]*liquidity.Liquidity, 0)
-	pendingNewLiquidityHistory := make([]*liquidity.LiquidityHistory, 0)
-
-	for _, newLiquidity := range s.PendingNewLiquidityMap {
-		pendingNewLiquidity = append(pendingNewLiquidity, newLiquidity)
-		pendingNewLiquidityHistory = append(pendingNewLiquidityHistory, &liquidity.LiquidityHistory{
-			PairIndex:            newLiquidity.PairIndex,
-			AssetAId:             newLiquidity.AssetAId,
-			AssetA:               newLiquidity.AssetA,
-			AssetBId:             newLiquidity.AssetBId,
-			AssetB:               newLiquidity.AssetB,
-			LpAmount:             newLiquidity.LpAmount,
-			KLast:                newLiquidity.KLast,
-			FeeRate:              newLiquidity.FeeRate,
-			TreasuryAccountIndex: newLiquidity.TreasuryAccountIndex,
-			TreasuryRate:         newLiquidity.TreasuryRate,
-			L2BlockHeight:        blockHeight,
-		})
-	}
-
-	for index, newLiquidity := range s.PendingUpdateLiquidityMap {
-		if _, exist := s.PendingNewLiquidityMap[index]; exist {
-			continue
-		}
-
-		pendingUpdateLiquidity = append(pendingUpdateLiquidity, newLiquidity)
-		pendingNewLiquidityHistory = append(pendingNewLiquidityHistory, &liquidity.LiquidityHistory{
-			PairIndex:            newLiquidity.PairIndex,
-			AssetAId:             newLiquidity.AssetAId,
-			AssetA:               newLiquidity.AssetA,
-			AssetBId:             newLiquidity.AssetBId,
-			AssetB:               newLiquidity.AssetB,
-			LpAmount:             newLiquidity.LpAmount,
-			KLast:                newLiquidity.KLast,
-			FeeRate:              newLiquidity.FeeRate,
-			TreasuryAccountIndex: newLiquidity.TreasuryAccountIndex,
-			TreasuryRate:         newLiquidity.TreasuryRate,
-			L2BlockHeight:        blockHeight,
-		})
-	}
-
-	return pendingNewLiquidity, pendingUpdateLiquidity, pendingNewLiquidityHistory, nil
 }
 
 func (s *StateDB) GetPendingNft(blockHeight int64) ([]*nft.L2Nft, []*nft.L2Nft, []*nft.L2NftHistory, error) {
@@ -513,7 +400,6 @@ func (s *StateDB) PrepareAccountsAndAssets(accountAssetsMap map[int64]map[int64]
 				account.AssetInfo[assetId] = &types.AccountAsset{
 					AssetId:                  assetId,
 					Balance:                  types.ZeroBigInt,
-					LpAmount:                 types.ZeroBigInt,
 					OfferCanceledOrFinalized: types.ZeroBigInt,
 				}
 			}
@@ -521,22 +407,6 @@ func (s *StateDB) PrepareAccountsAndAssets(accountAssetsMap map[int64]map[int64]
 		s.AccountCache.Add(accountIndex, account)
 	}
 
-	return nil
-}
-
-func (s *StateDB) PrepareLiquidity(pairIndex int64) error {
-	if s.dryRun {
-		l := &liquidity.Liquidity{}
-		redisLiquidity, err := s.redisCache.Get(context.Background(), dbcache.LiquidityKeyByIndex(pairIndex), l)
-		if err == nil && redisLiquidity != nil {
-			s.LiquidityCache.Add(pairIndex, l)
-		}
-	}
-
-	_, err := s.GetLiquidity(pairIndex)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -568,16 +438,6 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool) error {
 		}
 	}
 
-	for pairIndex, isDirty := range s.dirtyLiquidityMap {
-		if !isDirty {
-			continue
-		}
-		err := s.updateLiquidityTree(pairIndex)
-		if err != nil {
-			return err
-		}
-	}
-
 	for nftIndex, isDirty := range s.dirtyNftMap {
 		if !isDirty {
 			continue
@@ -590,13 +450,11 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool) error {
 
 	if cleanDirty {
 		s.dirtyAccountsAndAssetsMap = make(map[int64]map[int64]bool, 0)
-		s.dirtyLiquidityMap = make(map[int64]bool, 0)
 		s.dirtyNftMap = make(map[int64]bool, 0)
 	}
 
 	hFunc := mimc.NewMiMC()
 	hFunc.Write(s.AccountTree.Root())
-	hFunc.Write(s.LiquidityTree.Root())
 	hFunc.Write(s.NftTree.Root())
 	s.StateRoot = common.Bytes2Hex(hFunc.Sum(nil))
 	return nil
@@ -610,7 +468,6 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64) error {
 	for _, assetId := range assets {
 		assetLeaf, err := tree.ComputeAccountAssetLeafHash(
 			account.AssetInfo[assetId].Balance.String(),
-			account.AssetInfo[assetId].LpAmount.String(),
 			account.AssetInfo[assetId].OfferCanceledOrFinalized.String(),
 		)
 		if err != nil {
@@ -636,33 +493,6 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64) error {
 	err = s.AccountTree.Set(uint64(accountIndex), nAccountLeafHash)
 	if err != nil {
 		return fmt.Errorf("unable to update account tree: %v", err)
-	}
-
-	return nil
-}
-
-func (s *StateDB) updateLiquidityTree(pairIndex int64) error {
-	liquidity, err := s.GetLiquidity(pairIndex)
-	if err != nil {
-		return err
-	}
-	nLiquidityAssetLeaf, err := tree.ComputeLiquidityAssetLeafHash(
-		liquidity.AssetAId,
-		liquidity.AssetA,
-		liquidity.AssetBId,
-		liquidity.AssetB,
-		liquidity.LpAmount,
-		liquidity.KLast,
-		liquidity.FeeRate,
-		liquidity.TreasuryAccountIndex,
-		liquidity.TreasuryRate,
-	)
-	if err != nil {
-		return fmt.Errorf("unable to compute liquidity leaf: %v", err)
-	}
-	err = s.LiquidityTree.Set(uint64(pairIndex), nLiquidityAssetLeaf)
-	if err != nil {
-		return fmt.Errorf("unable to update liquidity tree: %v", err)
 	}
 
 	return nil

@@ -45,15 +45,14 @@ type WitnessHelper struct {
 	nftTree       bsmt.SparseMerkleTree
 }
 
-func NewWitnessHelper(treeCtx *tree.Context, accountTree, liquidityTree, nftTree bsmt.SparseMerkleTree,
+func NewWitnessHelper(treeCtx *tree.Context, accountTree, nftTree bsmt.SparseMerkleTree,
 	assetTrees *tree.AssetTreeCache, accountModel account.AccountModel) *WitnessHelper {
 	return &WitnessHelper{
-		treeCtx:       treeCtx,
-		accountModel:  accountModel,
-		accountTree:   accountTree,
-		assetTrees:    assetTrees,
-		liquidityTree: liquidityTree,
-		nftTree:       nftTree,
+		treeCtx:      treeCtx,
+		accountModel: accountModel,
+		accountTree:  accountTree,
+		assetTrees:   assetTrees,
+		nftTree:      nftTree,
 	}
 }
 
@@ -72,7 +71,7 @@ func (w *WitnessHelper) ConstructTxWitness(oTx *tx.Tx, finalityBlockNr uint64,
 }
 
 func (w *WitnessHelper) constructTxWitness(oTx *tx.Tx, finalityBlockNr uint64) (witness *TxWitness, err error) {
-	if oTx == nil || w.accountTree == nil || w.assetTrees == nil || w.liquidityTree == nil || w.nftTree == nil {
+	if oTx == nil || w.accountTree == nil || w.assetTrees == nil || w.nftTree == nil {
 		return nil, fmt.Errorf("failed because of nil tx or tree")
 	}
 	witness, err = w.constructWitnessInfo(oTx, finalityBlockNr)
@@ -84,22 +83,12 @@ func (w *WitnessHelper) constructTxWitness(oTx *tx.Tx, finalityBlockNr uint64) (
 	switch oTx.TxType {
 	case types.TxTypeRegisterZns:
 		return w.constructRegisterZnsTxWitness(witness, oTx)
-	case types.TxTypeCreatePair:
-		return w.constructCreatePairTxWitness(witness, oTx)
-	case types.TxTypeUpdatePairRate:
-		return w.constructUpdatePairRateTxWitness(witness, oTx)
 	case types.TxTypeDeposit:
 		return w.constructDepositTxWitness(witness, oTx)
 	case types.TxTypeDepositNft:
 		return w.constructDepositNftTxWitness(witness, oTx)
 	case types.TxTypeTransfer:
 		return w.constructTransferTxWitness(witness, oTx)
-	case types.TxTypeSwap:
-		return w.constructSwapTxWitness(witness, oTx)
-	case types.TxTypeAddLiquidity:
-		return w.constructAddLiquidityTxWitness(witness, oTx)
-	case types.TxTypeRemoveLiquidity:
-		return w.constructRemoveLiquidityTxWitness(witness, oTx)
 	case types.TxTypeWithdraw:
 		return w.constructWithdrawTxWitness(witness, oTx)
 	case types.TxTypeCreateCollection:
@@ -130,7 +119,7 @@ func (w *WitnessHelper) constructWitnessInfo(
 	cryptoTx *TxWitness,
 	err error,
 ) {
-	accountKeys, proverAccounts, proverLiquidityInfo, proverNftInfo, err := w.constructSimpleWitnessInfo(oTx)
+	accountKeys, proverAccounts, proverNftInfo, err := w.constructSimpleWitnessInfo(oTx)
 	if err != nil {
 		return nil, err
 	}
@@ -140,31 +129,22 @@ func (w *WitnessHelper) constructWitnessInfo(
 	if err != nil {
 		return nil, err
 	}
-	// construct liquidity witness
-	liquidityRootBefore, liquidityBefore, merkleProofsLiquidityBefore, err :=
-		w.constructLiquidityWitness(proverLiquidityInfo)
-	if err != nil {
-		return nil, err
-	}
 	// construct nft witness
 	nftRootBefore, nftBefore, merkleProofsNftBefore, err :=
 		w.constructNftWitness(proverNftInfo)
 	if err != nil {
 		return nil, err
 	}
-	stateRootBefore := tree.ComputeStateRootHash(accountRootBefore, liquidityRootBefore, nftRootBefore)
-	stateRootAfter := tree.ComputeStateRootHash(w.accountTree.Root(), w.liquidityTree.Root(), w.nftTree.Root())
+	stateRootBefore := tree.ComputeStateRootHash(accountRootBefore, nftRootBefore)
+	stateRootAfter := tree.ComputeStateRootHash(w.accountTree.Root(), w.nftTree.Root())
 	cryptoTx = &TxWitness{
 		AccountRootBefore:               accountRootBefore,
 		AccountsInfoBefore:              accountsInfoBefore,
-		LiquidityRootBefore:             liquidityRootBefore,
-		LiquidityBefore:                 liquidityBefore,
 		NftRootBefore:                   nftRootBefore,
 		NftBefore:                       nftBefore,
 		StateRootBefore:                 stateRootBefore,
 		MerkleProofsAccountAssetsBefore: merkleProofsAccountAssetsBefore,
 		MerkleProofsAccountBefore:       merkleProofsAccountBefore,
-		MerkleProofsLiquidityBefore:     merkleProofsLiquidityBefore,
 		MerkleProofsNftBefore:           merkleProofsNftBefore,
 		StateRootAfter:                  stateRootAfter,
 	}
@@ -251,7 +231,6 @@ func (w *WitnessHelper) constructAccountWitness(
 				cryptoAccount.AssetsInfo[assetCount] = &cryptoTypes.AccountAsset{
 					AssetId:                  accountAsset.AssetId,
 					Balance:                  accountAsset.Balance,
-					LpAmount:                 accountAsset.LpAmount,
 					OfferCanceledOrFinalized: accountAsset.OfferCanceledOrFinalized,
 				}
 
@@ -273,7 +252,7 @@ func (w *WitnessHelper) constructAccountWitness(
 				if err != nil {
 					return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 				}
-				nAssetHash, err := tree.ComputeAccountAssetLeafHash(nAsset.Balance.String(), nAsset.LpAmount.String(), nAsset.OfferCanceledOrFinalized.String())
+				nAssetHash, err := tree.ComputeAccountAssetLeafHash(nAsset.Balance.String(), nAsset.OfferCanceledOrFinalized.String())
 				if err != nil {
 					return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 				}
@@ -370,84 +349,6 @@ func (w *WitnessHelper) constructAccountWitness(
 	return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, nil
 }
 
-func (w *WitnessHelper) constructLiquidityWitness(
-	proverLiquidityInfo *LiquidityWitnessInfo,
-) (
-	// liquidity root before
-	LiquidityRootBefore []byte,
-	// liquidity before
-	LiquidityBefore *cryptoTypes.Liquidity,
-	// before liquidity merkle proof
-	MerkleProofsLiquidityBefore [LiquidityMerkleLevels][]byte,
-	err error,
-) {
-	LiquidityRootBefore = w.liquidityTree.Root()
-	if proverLiquidityInfo == nil {
-		liquidityMerkleProofs, err := w.liquidityTree.GetProof(LastPairIndex)
-		if err != nil {
-			return LiquidityRootBefore, LiquidityBefore, MerkleProofsLiquidityBefore, err
-		}
-		MerkleProofsLiquidityBefore, err = SetFixedLiquidityArray(liquidityMerkleProofs)
-		if err != nil {
-			return LiquidityRootBefore, LiquidityBefore, MerkleProofsLiquidityBefore, err
-		}
-		LiquidityBefore = cryptoTypes.EmptyLiquidity(LastPairIndex)
-		return LiquidityRootBefore, LiquidityBefore, MerkleProofsLiquidityBefore, nil
-	}
-	liquidityMerkleProofs, err := w.liquidityTree.GetProof(uint64(proverLiquidityInfo.LiquidityInfo.PairIndex))
-	if err != nil {
-		return LiquidityRootBefore, LiquidityBefore, MerkleProofsLiquidityBefore, err
-	}
-	MerkleProofsLiquidityBefore, err = SetFixedLiquidityArray(liquidityMerkleProofs)
-	if err != nil {
-		return LiquidityRootBefore, LiquidityBefore, MerkleProofsLiquidityBefore, err
-	}
-	LiquidityBefore = &cryptoTypes.Liquidity{
-		PairIndex:            proverLiquidityInfo.LiquidityInfo.PairIndex,
-		AssetAId:             proverLiquidityInfo.LiquidityInfo.AssetAId,
-		AssetA:               proverLiquidityInfo.LiquidityInfo.AssetA,
-		AssetBId:             proverLiquidityInfo.LiquidityInfo.AssetBId,
-		AssetB:               proverLiquidityInfo.LiquidityInfo.AssetB,
-		LpAmount:             proverLiquidityInfo.LiquidityInfo.LpAmount,
-		KLast:                proverLiquidityInfo.LiquidityInfo.KLast,
-		FeeRate:              proverLiquidityInfo.LiquidityInfo.FeeRate,
-		TreasuryAccountIndex: proverLiquidityInfo.LiquidityInfo.TreasuryAccountIndex,
-		TreasuryRate:         proverLiquidityInfo.LiquidityInfo.TreasuryRate,
-	}
-	// update liquidity tree
-	nBalance, err := chain.ComputeNewBalance(
-		proverLiquidityInfo.LiquidityRelatedTxDetail.AssetType,
-		proverLiquidityInfo.LiquidityRelatedTxDetail.Balance,
-		proverLiquidityInfo.LiquidityRelatedTxDetail.BalanceDelta,
-	)
-	if err != nil {
-		return LiquidityRootBefore, LiquidityBefore, MerkleProofsLiquidityBefore, err
-	}
-	nPoolInfo, err := types.ParseLiquidityInfo(nBalance)
-	if err != nil {
-		return LiquidityRootBefore, LiquidityBefore, MerkleProofsLiquidityBefore, err
-	}
-	nLiquidityHash, err := tree.ComputeLiquidityAssetLeafHash(
-		nPoolInfo.AssetAId,
-		nPoolInfo.AssetA.String(),
-		nPoolInfo.AssetBId,
-		nPoolInfo.AssetB.String(),
-		nPoolInfo.LpAmount.String(),
-		nPoolInfo.KLast.String(),
-		nPoolInfo.FeeRate,
-		nPoolInfo.TreasuryAccountIndex,
-		nPoolInfo.TreasuryRate,
-	)
-	if err != nil {
-		return LiquidityRootBefore, LiquidityBefore, MerkleProofsLiquidityBefore, err
-	}
-	err = w.liquidityTree.Set(uint64(proverLiquidityInfo.LiquidityInfo.PairIndex), nLiquidityHash)
-	if err != nil {
-		return LiquidityRootBefore, LiquidityBefore, MerkleProofsLiquidityBefore, err
-	}
-	return LiquidityRootBefore, LiquidityBefore, MerkleProofsLiquidityBefore, nil
-}
-
 func (w *WitnessHelper) constructNftWitness(
 	proverNftInfo *NftWitnessInfo,
 ) (
@@ -461,11 +362,11 @@ func (w *WitnessHelper) constructNftWitness(
 ) {
 	nftRootBefore = w.nftTree.Root()
 	if proverNftInfo == nil {
-		liquidityMerkleProofs, err := w.nftTree.GetProof(LastNftIndex)
+		nftMerkleProofs, err := w.nftTree.GetProof(LastNftIndex)
 		if err != nil {
 			return nftRootBefore, nftBefore, merkleProofsNftBefore, err
 		}
-		merkleProofsNftBefore, err = SetFixedNftArray(liquidityMerkleProofs)
+		merkleProofsNftBefore, err = SetFixedNftArray(nftMerkleProofs)
 		if err != nil {
 			return nftRootBefore, nftBefore, merkleProofsNftBefore, err
 		}
@@ -494,7 +395,7 @@ func (w *WitnessHelper) constructNftWitness(
 		CreatorTreasuryRate: proverNftInfo.NftInfo.CreatorTreasuryRate,
 		CollectionId:        proverNftInfo.NftInfo.CollectionId,
 	}
-	// update liquidity tree
+
 	nBalance, err := chain.ComputeNewBalance(
 		proverNftInfo.NftRelatedTxDetail.AssetType,
 		proverNftInfo.NftRelatedTxDetail.Balance,
@@ -546,14 +447,6 @@ func SetFixedAccountAssetArray(proof [][]byte) (res [AssetMerkleLevels][]byte, e
 	return res, nil
 }
 
-func SetFixedLiquidityArray(proof [][]byte) (res [LiquidityMerkleLevels][]byte, err error) {
-	if len(proof) != LiquidityMerkleLevels {
-		return res, fmt.Errorf("invalid size")
-	}
-	copy(res[:], proof[:])
-	return res, nil
-}
-
 func SetFixedNftArray(proof [][]byte) (res [NftMerkleLevels][]byte, err error) {
 	if len(proof) != NftMerkleLevels {
 		return res, fmt.Errorf("invalid size")
@@ -565,7 +458,6 @@ func SetFixedNftArray(proof [][]byte) (res [NftMerkleLevels][]byte, err error) {
 func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 	accountKeys []int64,
 	accountWitnessInfo []*AccountWitnessInfo,
-	liquidityWitnessInfo *LiquidityWitnessInfo,
 	nftWitnessInfo *NftWitnessInfo,
 	err error,
 ) {
@@ -587,7 +479,7 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 			if accountMap[txDetail.AccountIndex] == nil {
 				accountInfo, err := w.accountModel.GetConfirmedAccountByIndex(txDetail.AccountIndex)
 				if err != nil {
-					return nil, nil, nil, nil, err
+					return nil, nil, nil, err
 				}
 				// get current nonce
 				accountInfo.Nonce = txDetail.Nonce
@@ -625,7 +517,7 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 				// set account before info
 				oAsset, err := types.ParseAccountAsset(txDetail.Balance)
 				if err != nil {
-					return nil, nil, nil, nil, err
+					return nil, nil, nil, err
 				}
 				accountWitnessInfo[accountCount].AccountAssets = append(
 					accountWitnessInfo[accountCount].AccountAssets,
@@ -638,7 +530,6 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 					&types.AccountAsset{
 						AssetId:                  accountAssetMap[txDetail.AccountIndex][txDetail.AssetId].AssetId,
 						Balance:                  accountAssetMap[txDetail.AccountIndex][txDetail.AssetId].Balance,
-						LpAmount:                 accountAssetMap[txDetail.AccountIndex][txDetail.AssetId].LpAmount,
 						OfferCanceledOrFinalized: accountAssetMap[txDetail.AccountIndex][txDetail.AssetId].OfferCanceledOrFinalized,
 					},
 				)
@@ -651,27 +542,19 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 			// update asset info
 			newBalance, err := chain.ComputeNewBalance(txDetail.AssetType, txDetail.Balance, txDetail.BalanceDelta)
 			if err != nil {
-				return nil, nil, nil, nil, err
+				return nil, nil, nil, err
 			}
 			nAsset, err := types.ParseAccountAsset(newBalance)
 			if err != nil {
-				return nil, nil, nil, nil, err
+				return nil, nil, nil, err
 			}
 			accountAssetMap[txDetail.AccountIndex][txDetail.AssetId] = nAsset
-		case types.LiquidityAssetType:
-			liquidityWitnessInfo = new(LiquidityWitnessInfo)
-			liquidityWitnessInfo.LiquidityRelatedTxDetail = txDetail
-			poolInfo, err := types.ParseLiquidityInfo(txDetail.Balance)
-			if err != nil {
-				return nil, nil, nil, nil, err
-			}
-			liquidityWitnessInfo.LiquidityInfo = poolInfo
 		case types.NftAssetType:
 			nftWitnessInfo = new(NftWitnessInfo)
 			nftWitnessInfo.NftRelatedTxDetail = txDetail
 			nftInfo, err := types.ParseNftInfo(txDetail.Balance)
 			if err != nil {
-				return nil, nil, nil, nil, err
+				return nil, nil, nil, err
 			}
 			nftWitnessInfo.NftInfo = nftInfo
 		case types.CollectionNonceAssetType:
@@ -679,7 +562,7 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 			if accountMap[txDetail.AccountIndex] == nil {
 				accountInfo, err := w.accountModel.GetConfirmedAccountByIndex(txDetail.AccountIndex)
 				if err != nil {
-					return nil, nil, nil, nil, err
+					return nil, nil, nil, err
 				}
 				// get current nonce
 				accountInfo.Nonce = txDetail.Nonce
@@ -709,9 +592,9 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 				accountMap[txDetail.AccountIndex].CollectionNonce = txDetail.CollectionNonce
 			}
 		default:
-			return nil, nil, nil, nil,
+			return nil, nil, nil,
 				fmt.Errorf("invalid asset type")
 		}
 	}
-	return accountKeys, accountWitnessInfo, liquidityWitnessInfo, nftWitnessInfo, nil
+	return accountKeys, accountWitnessInfo, nftWitnessInfo, nil
 }

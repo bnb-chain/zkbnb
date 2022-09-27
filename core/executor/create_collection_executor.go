@@ -184,7 +184,6 @@ func (e *CreateCollectionExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 			txInfo.GasFeeAssetId,
 			ffmath.Neg(txInfo.GasFeeAssetAmount),
 			types.ZeroBigInt,
-			types.ZeroBigInt,
 		).String(),
 		Order:           order,
 		Nonce:           fromAccount.Nonce,
@@ -208,7 +207,6 @@ func (e *CreateCollectionExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.GasFeeAssetId,
 			txInfo.GasFeeAssetAmount,
-			types.ZeroBigInt,
 			types.ZeroBigInt,
 		).String(),
 		Order:        order,

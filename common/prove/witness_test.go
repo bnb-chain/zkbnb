@@ -33,20 +33,18 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/blockwitness"
-	"github.com/bnb-chain/zkbnb/dao/liquidity"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/tree"
 )
 
 var (
-	dsn                   = "host=localhost user=postgres password=ZkBNB@123 dbname=zkbnb port=5434 sslmode=disable"
-	blockModel            block.BlockModel
-	witnessModel          blockwitness.BlockWitnessModel
-	accountModel          account.AccountModel
-	accountHistoryModel   account.AccountHistoryModel
-	liquidityHistoryModel liquidity.LiquidityHistoryModel
-	nftHistoryModel       nft.L2NftHistoryModel
-	assetTreeCacheSize    = 512000
+	dsn                 = "host=localhost user=postgres password=ZkBNB@123 dbname=zkbnb port=5434 sslmode=disable"
+	blockModel          block.BlockModel
+	witnessModel        blockwitness.BlockWitnessModel
+	accountModel        account.AccountModel
+	accountHistoryModel account.AccountHistoryModel
+	nftHistoryModel     nft.L2NftHistoryModel
+	assetTreeCacheSize  = 512000
 )
 
 func TestConstructTxWitness(t *testing.T) {
@@ -82,17 +80,12 @@ func getWitnessHelper(blockHeight int64) (*WitnessHelper, error) {
 	if err != nil {
 		return nil, err
 	}
-	liquidityTree, err := tree.InitLiquidityTree(liquidityHistoryModel, blockHeight, ctx)
-	if err != nil {
-		return nil, err
-	}
 	nftTree, err := tree.InitNftTree(nftHistoryModel, blockHeight, ctx)
 	if err != nil {
 		return nil, err
 	}
 	return NewWitnessHelper(ctx,
 		accountTree,
-		liquidityTree,
 		nftTree,
 		accountAssetTrees,
 		accountModel), nil
@@ -113,7 +106,6 @@ func testDBSetup() {
 	witnessModel = blockwitness.NewBlockWitnessModel(db)
 	accountModel = account.NewAccountModel(db)
 	accountHistoryModel = account.NewAccountHistoryModel(db)
-	liquidityHistoryModel = liquidity.NewLiquidityHistoryModel(db)
 	nftHistoryModel = nft.NewL2NftHistoryModel(db)
 }
 
