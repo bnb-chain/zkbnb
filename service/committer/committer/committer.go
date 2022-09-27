@@ -77,6 +77,11 @@ func (c *Committer) Run() {
 		panic("restore executed tx failed: " + err.Error())
 	}
 
+	latestRequestId, err := c.getLatestExecutedRequestId()
+	if err != nil {
+		panic("get latest request ID failed")
+	}
+
 	for {
 		if !c.running {
 			break
@@ -128,6 +133,11 @@ func (c *Committer) Run() {
 					priorityOperationMetric.WithLabelValues(strconv.FormatInt(request.L1BlockHeight, 10)).Set(float64(request.RequestId))
 				} else {
 					logx.Errorf("query txHash: %s in PriorityRequestTable failed, err %v ", poolTx.TxHash, err)
+				}
+
+				if request.RequestId != latestRequestId+1 {
+					logx.Errorf("invalid request ID: %d, txHash: %s", request.RequestId, poolTx.TxHash)
+					return
 				}
 			}
 
@@ -332,4 +342,26 @@ func (c *Committer) computeCurrentBlockSize() int {
 		}
 	}
 	return blockSize
+}
+
+func (c *Committer) getLatestExecutedRequestId() (int64, error) {
+	latestRequestId := int64(-1)
+
+	latestTx, err := c.bc.TxModel.GetLatestExecutedTx()
+	if err != nil && err != types.DbErrNotFound {
+		logx.Errorf("get latest executed tx failed: %v", err)
+		return -1, err
+	} else if err == types.DbErrNotFound {
+		return -1, nil
+	}
+
+	p, err := c.bc.PriorityRequestModel.GetPriorityRequestsByL2TxHash(latestTx.TxHash)
+	if err == nil {
+		latestRequestId = p.RequestId
+	} else {
+		logx.Errorf("get priority request by txhash: %s failed: %v", latestTx.TxHash, err)
+		return -1, err
+	}
+
+	return latestRequestId, nil
 }
