@@ -61,6 +61,7 @@ LogConf:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " > ${CONFIG_PATH}/witness.yaml
 
 echo -e "
@@ -104,6 +105,7 @@ BlockConfig:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " > ${CONFIG_PATH}/committer.yaml
 
 echo -e "

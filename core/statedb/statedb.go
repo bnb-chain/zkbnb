@@ -68,12 +68,12 @@ type StateDB struct {
 	AccountTree       bsmt.SparseMerkleTree
 	LiquidityTree     bsmt.SparseMerkleTree
 	NftTree           bsmt.SparseMerkleTree
-	AccountAssetTrees []bsmt.SparseMerkleTree
+	AccountAssetTrees *tree.AssetTreeCache
 	TreeCtx           *tree.Context
 }
 
 func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
-	redisCache dbcache.Cache, cacheConfig *CacheConfig,
+	redisCache dbcache.Cache, cacheConfig *CacheConfig, assetCacheSize int,
 	stateRoot string, curHeight int64) (*StateDB, error) {
 	err := tree.SetupTreeDB(treeCtx)
 	if err != nil {
@@ -85,6 +85,7 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 		chainDb.AccountHistoryModel,
 		curHeight,
 		treeCtx,
+		assetCacheSize,
 	)
 	if err != nil {
 		logx.Error("dbinitializer account tree failed:", err)
@@ -615,19 +616,19 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64) error {
 		if err != nil {
 			return fmt.Errorf("compute new account asset leaf failed: %v", err)
 		}
-		err = s.AccountAssetTrees[accountIndex].Set(uint64(assetId), assetLeaf)
+		err = s.AccountAssetTrees.Get(accountIndex).Set(uint64(assetId), assetLeaf)
 		if err != nil {
 			return fmt.Errorf("update asset tree failed: %v", err)
 		}
 	}
 
-	account.AssetRoot = common.Bytes2Hex(s.AccountAssetTrees[accountIndex].Root())
+	account.AssetRoot = common.Bytes2Hex(s.AccountAssetTrees.Get(accountIndex).Root())
 	nAccountLeafHash, err := tree.ComputeAccountLeafHash(
 		account.AccountNameHash,
 		account.PublicKey,
 		account.Nonce,
 		account.CollectionNonce,
-		s.AccountAssetTrees[accountIndex].Root(),
+		s.AccountAssetTrees.Get(accountIndex).Root(),
 	)
 	if err != nil {
 		return fmt.Errorf("unable to compute account leaf: %v", err)
@@ -718,7 +719,7 @@ func (s *StateDB) GetPendingNonce(accountIndex int64) (int64, error) {
 }
 
 func (s *StateDB) GetNextAccountIndex() int64 {
-	return int64(len(s.AccountAssetTrees))
+	return s.AccountAssetTrees.GetNextAccountIndex()
 }
 
 func (s *StateDB) GetNextNftIndex() int64 {

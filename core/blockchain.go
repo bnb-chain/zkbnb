@@ -45,7 +45,8 @@ type ChainConfig struct {
 		//nolint:staticcheck
 		LevelDBOption tree.LevelDBOption `json:",optional"`
 		//nolint:staticcheck
-		RedisDBOption tree.RedisDBOption `json:",optional"`
+		RedisDBOption      tree.RedisDBOption `json:",optional"`
+		AssetTreeCacheSize int
 	}
 }
 
@@ -93,7 +94,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		RedisDBOption: &config.TreeDB.RedisDBOption,
 	}
 
-	bc.Statedb, err = sdb.NewStateDB(treeCtx, bc.ChainDB, redisCache, &config.CacheConfig, bc.currentBlock.StateRoot, curHeight)
+	bc.Statedb, err = sdb.NewStateDB(treeCtx, bc.ChainDB, redisCache, &config.CacheConfig, config.TreeDB.AssetTreeCacheSize, bc.currentBlock.StateRoot, curHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +165,7 @@ func (bc *BlockChain) CommitNewBlock(blockSize int, createdAt int64) (*block.Blo
 	}
 
 	currentHeight := bc.currentBlock.BlockHeight
-	err = tree.CommitTrees(bc.taskPool, uint64(currentHeight), bc.Statedb.AccountTree, &bc.Statedb.AccountAssetTrees, bc.Statedb.LiquidityTree, bc.Statedb.NftTree)
+	err = tree.CommitTrees(bc.taskPool, uint64(currentHeight), bc.Statedb.AccountTree, bc.Statedb.AccountAssetTrees, bc.Statedb.LiquidityTree, bc.Statedb.NftTree)
 	if err != nil {
 		return nil, err
 	}

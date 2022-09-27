@@ -42,7 +42,7 @@ type Witness struct {
 	// Trees
 	treeCtx       *tree.Context
 	accountTree   smt.SparseMerkleTree
-	assetTrees    []smt.SparseMerkleTree
+	assetTrees    *tree.AssetTreeCache
 	liquidityTree smt.SparseMerkleTree
 	nftTree       smt.SparseMerkleTree
 	taskPool      *ants.Pool
@@ -110,6 +110,7 @@ func (w *Witness) initState() error {
 		w.accountHistoryModel,
 		witnessHeight,
 		treeCtx,
+		w.config.TreeDB.AssetTreeCacheSize,
 	)
 	// the blockHeight depends on the proof start position
 	if err != nil {
@@ -131,7 +132,7 @@ func (w *Witness) initState() error {
 		return err
 	}
 	w.taskPool = taskPool
-	w.helper = utils.NewWitnessHelper(w.treeCtx, w.accountTree, w.liquidityTree, w.nftTree, &w.assetTrees, w.accountModel)
+	w.helper = utils.NewWitnessHelper(w.treeCtx, w.accountTree, w.liquidityTree, w.nftTree, w.assetTrees, w.accountModel)
 	return nil
 }
 
@@ -164,7 +165,7 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 			return fmt.Errorf("failed to construct block witness, block:%d, err: %v", block.BlockHeight, err)
 		}
 		// Step2: commit trees for witness
-		err = tree.CommitTrees(w.taskPool, uint64(latestVerifiedBlockNr), w.accountTree, &w.assetTrees, w.liquidityTree, w.nftTree)
+		err = tree.CommitTrees(w.taskPool, uint64(latestVerifiedBlockNr), w.accountTree, w.assetTrees, w.liquidityTree, w.nftTree)
 		if err != nil {
 			return fmt.Errorf("unable to commit trees after txs is executed, block:%d, error: %v", block.BlockHeight, err)
 		}
@@ -172,7 +173,7 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 		err = w.blockWitnessModel.CreateBlockWitness(blockWitness)
 		if err != nil {
 			// rollback trees
-			rollBackErr := tree.RollBackTrees(w.taskPool, uint64(block.BlockHeight)-1, w.accountTree, &w.assetTrees, w.liquidityTree, w.nftTree)
+			rollBackErr := tree.RollBackTrees(w.taskPool, uint64(block.BlockHeight)-1, w.accountTree, w.assetTrees, w.liquidityTree, w.nftTree)
 			if rollBackErr != nil {
 				logx.Errorf("unable to rollback trees %v", rollBackErr)
 			}

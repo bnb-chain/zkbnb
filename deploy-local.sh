@@ -115,6 +115,7 @@ BlockConfig:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " > ${DEPLOY_PATH}/zkbnb/service/prover/etc/config.yaml
 
 echo -e "
@@ -140,6 +141,7 @@ CacheRedis:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " > ${DEPLOY_PATH}/zkbnb/service/witness/etc/config.yaml
 
 echo -e "
@@ -170,6 +172,7 @@ ChainConfig:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " > ${DEPLOY_PATH}/zkbnb/service/monitor/etc/config.yaml
 
 echo -e "
@@ -195,6 +198,7 @@ BlockConfig:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " > ${DEPLOY_PATH}/zkbnb/service/committer/etc/config.yaml
 
 echo -e "
@@ -226,6 +230,7 @@ ChainConfig:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " > ${DEPLOY_PATH}/zkbnb/service/sender/etc/config.yaml
 
 echo -e "

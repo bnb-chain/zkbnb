@@ -48,6 +48,7 @@ func RecoveryTreeDB(
 		ctx.AccountHistoryModel,
 		blockHeight,
 		treeCtx,
+		c.TreeDB.AssetTreeCacheSize,
 	)
 	if err != nil {
 		logx.Error("InitMerkleTree error:", err)
