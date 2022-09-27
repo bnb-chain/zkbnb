@@ -71,6 +71,30 @@ func TestConstructTxWitness(t *testing.T) {
 	}
 }
 
+func TestConstructGasWitness(t *testing.T) {
+	testDBSetup()
+	//defer testDBShutdown()
+	maxTestBlockHeight := int64(33)
+	for h := int64(3); h < maxTestBlockHeight; h++ {
+		witnessHelper, err := getWitnessHelper(h - 1)
+		assert.NoError(t, err)
+		b, err := blockModel.GetBlocksBetween(h, h)
+		assert.NoError(t, err)
+		w, err := witnessModel.GetBlockWitnessByHeight(h)
+		assert.NoError(t, err)
+		var cBlock circuit.Block
+		err = json.Unmarshal([]byte(w.WitnessData), &cBlock)
+		assert.NoError(t, err)
+
+		gasWitness, root, err := witnessHelper.ConstructGasWitness(b[0])
+		assert.NoError(t, err)
+
+		expectedBz, _ := json.Marshal(gasWitness)
+		fmt.Println("gasWitness: ", string(expectedBz))
+		fmt.Println("root: ", root)
+	}
+}
+
 func getWitnessHelper(blockHeight int64) (*WitnessHelper, error) {
 	ctx := &tree.Context{
 		Driver: tree.MemoryDB,
@@ -100,7 +124,7 @@ func testDBSetup() {
 	if err := cmd.Run(); err != nil {
 		panic(err)
 	}
-	time.Sleep(5 * time.Second)
+	time.Sleep(15 * time.Second)
 	db, _ := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	blockModel = block.NewBlockModel(db)
 	witnessModel = blockwitness.NewBlockWitnessModel(db)

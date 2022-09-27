@@ -267,13 +267,19 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 		return nil, errors.New("state root doesn't match")
 	}
 
+	gasWitness, stateRoot, err := w.helper.ConstructGasWitness(block)
+	if err != nil {
+		return nil, err
+	}
+
 	b := &circuit.Block{
 		BlockNumber:     block.BlockHeight,
 		CreatedAt:       block.CreatedAt.UnixMilli(),
 		OldStateRoot:    oldStateRoot,
-		NewStateRoot:    newStateRoot,
+		NewStateRoot:    stateRoot,
 		BlockCommitment: common.FromHex(block.BlockCommitment),
 		Txs:             txsWitness,
+		Gas:             gasWitness,
 	}
 	bz, err := json.Marshal(b)
 	if err != nil {
