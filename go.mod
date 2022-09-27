@@ -110,3 +110,7 @@ require (
 	gorm.io/driver/postgres v1.3.6
 	k8s.io/apimachinery v0.24.1 // indirect
 )
+
+replace (
+	github.com/bnb-chain/zkbnb-crypto => /Users/liguo/go/src/github.com/forcodedancing/zkbnb-crypto
+)

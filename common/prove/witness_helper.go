@@ -606,7 +606,16 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 
 func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasWitness, stateRoot []byte, err error) {
 	var gas *circuit.Gas
-	if len(*w.assetTrees) < (types.GasAccount + 1) { // gas account not created yet
+	needGas := false
+
+	for _, tx := range block.Txs {
+		if types.IsL2Tx(tx.TxType) {
+			needGas = true
+			break
+		}
+	}
+
+	if !needGas { // no need of gas for this block
 		accountInfoBefore := cryptoTypes.EmptyGasAccount(LastAccountIndex, tree.NilAccountAssetRoot)
 		accountMerkleProofs, err := w.accountTree.GetProof(LastAccountIndex)
 		if err != nil {
