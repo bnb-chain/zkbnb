@@ -61,6 +61,8 @@ func NewFullnode(config *Config) (*Fullnode, error) {
 }
 
 func (c *Fullnode) Run() {
+	// TODO: add BlockSize in zkbnb-go-sdk
+
 	curHeight, err := c.bc.BlockModel.GetCurrentBlockHeight()
 	if err != nil {
 		panic("get current block height failed: " + err.Error())
@@ -72,6 +74,7 @@ func (c *Fullnode) Run() {
 	for {
 		l2Block, err := c.client.GetBlockByHeight(curHeight)
 		if err != nil {
+			// TODO check error
 			logx.Errorf("get block failed, height: %d, err %v ", curHeight, err)
 			time.Sleep(100 * time.Millisecond)
 			continue
