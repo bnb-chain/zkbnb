@@ -170,11 +170,7 @@ CoinMarketCap:
   Token: $CMC_TOKEN
 
 MemCache:
-  AccountExpiration: 200
-  AssetExpiration:   600
-  BlockExpiration:   400
-  TxExpiration:      400
-  PriceExpiration:   3600000
+  CacheSize: 2048
 
 " > ${CONFIG_PATH}/apiserver.yaml
 

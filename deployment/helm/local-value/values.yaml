@@ -108,10 +108,6 @@ configs:
   cmcToken: cfce503f-fake-fake-fake-bbab5257dac8
   cmcURL: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=
   memCache:
-    AccountExpiration: 200
-    AssetExpiration:   600
-    BlockExpiration:   400
-    TxExpiration:      400
-    PriceExpiration:   3600000
+    CacheSize: 2048
   logLevel: error
 
