@@ -365,7 +365,7 @@ func (c *Committer) getLatestExecutedRequestId() (int64, error) {
 		types.TxTypeFullExitNft,
 	}
 
-	latestTx, err := c.bc.TxModel.GetLatestTx(txTypes, statuses)
+	latestTx, err := c.bc.TxPoolModel.GetLatestTx(txTypes, statuses)
 	if err != nil && err != types.DbErrNotFound {
 		logx.Errorf("get latest executed tx failed: %v", err)
 		return -1, err

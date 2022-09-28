@@ -41,6 +41,7 @@ type (
 		CreateTxsInTransact(tx *gorm.DB, txs []*Tx) error
 		UpdateTxsInTransact(tx *gorm.DB, txs []*Tx) error
 		DeleteTxsInTransact(tx *gorm.DB, txs []*Tx) error
+		GetLatestTx(txTypes []int64, statuses []int) (tx *Tx, err error)
 	}
 
 	defaultTxPoolModel struct {
@@ -183,4 +184,16 @@ func (m *defaultTxPoolModel) DeleteTxsInTransact(tx *gorm.DB, txs []*Tx) error {
 		}
 	}
 	return nil
+}
+
+func (m *defaultTxPoolModel) GetLatestTx(txTypes []int64, statuses []int) (tx *Tx, err error) {
+
+	dbTx := m.DB.Table(m.table).Where("status IN ? AND txType IN ?", statuses, txTypes).Order("id DESC").Limit(1).Find(&tx)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+
+	return tx, nil
 }
