@@ -96,7 +96,7 @@ func testDBSetup() {
 	time.Sleep(5 * time.Second)
 	cmd := exec.Command("docker", "run", "--name", "postgres-ut-witness", "-p", "5434:5432",
 		"-e", "POSTGRES_PASSWORD=ZkBNB@123", "-e", "POSTGRES_USER=postgres", "-e", "POSTGRES_DB=zkbnb",
-		"-e", "PGDATA=/var/lib/postgresql/pgdata", "-d", "ghcr.io/bnb-chain/zkbnb/zkbnb-ut-postgres:0.0.2")
+		"-e", "PGDATA=/var/lib/postgresql/pgdata", "-d", "ghcr.io/bnb-chain/zkbnb/zkbnb-ut-postgres:igor")
 	if err := cmd.Run(); err != nil {
 		panic(err)
 	}
