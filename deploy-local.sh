@@ -11,6 +11,7 @@ DEPLOY_PATH=~/zkbnb-deploy
 KEY_PATH=~/.zkbnb
 ZkBNB_REPO_PATH=$(cd `dirname $0`; pwd)
 CMC_TOKEN=cfce503f-fake-fake-fake-bbab5257dac8
+BSC_TESTNET_PRIVATE_KEY=acbaa26******************************a88367d9
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
 echo '0. stop old database/redis and docker run new database/redis'
@@ -59,7 +60,7 @@ echo 'latest block number = ' $blockNumber
 
 echo '4-2. deploy contracts, register and deposit on BSC Testnet'
 cd ${DEPLOY_PATH}
-cd ./zkbnb-contract &&  yarn install
+cd ./zkbnb-contract &&  echo "BSC_TESTNET_PRIVATE_KEY=${BSC_TESTNET_PRIVATE_KEY}" > .env && npm install
 npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deploy.js
 echo 'Recorded latest contract addresses into ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json'
 
@@ -226,7 +227,8 @@ ChainConfig:
   MaxWaitingTime: 120
   MaxBlockCount: 4
   Sk: "acbaa269bd7573ff12361be4b97201aef019776ea13384681d4e5ba6a88367d9"
-  GasLimit: 5000000
+  GasLimit: 20000000
+  GasPrice: 0
 
 TreeDB:
   Driver: memorydb
