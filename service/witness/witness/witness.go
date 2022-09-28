@@ -261,7 +261,7 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 
 	emptyTxCount := int(block.BlockSize) - len(block.Txs)
 	for i := 0; i < emptyTxCount; i++ {
-		txsWitness = append(txsWitness, circuit.EmptyTx())
+		txsWitness = append(txsWitness, circuit.EmptyTx(newStateRoot))
 	}
 	if common.Bytes2Hex(newStateRoot) != block.StateRoot {
 		return nil, errors.New("state root doesn't match")
