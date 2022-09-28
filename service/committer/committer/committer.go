@@ -79,7 +79,8 @@ func (c *Committer) Run() {
 
 	latestRequestId, err := c.getLatestExecutedRequestId()
 	if err != nil {
-		panic("get latest request ID failed")
+		logx.Error("get latest executed request ID failed:", err)
+		latestRequestId = -1
 	}
 
 	for {
@@ -132,7 +133,7 @@ func (c *Committer) Run() {
 				request, err := c.bc.PriorityRequestModel.GetPriorityRequestsByL2TxHash(poolTx.TxHash)
 				if err == nil {
 					priorityOperationMetric.WithLabelValues(strconv.FormatInt(request.L1BlockHeight, 10)).Set(float64(request.RequestId))
-					if request.RequestId != latestRequestId+1 {
+					if latestRequestId != -1 && request.RequestId != latestRequestId+1 {
 						logx.Errorf("invalid request ID: %d, txHash: %s", request.RequestId, poolTx.TxHash)
 						return
 					}
