@@ -151,9 +151,12 @@ func (m *defaultPriorityRequestModel) CreatePriorityRequestsInTransact(tx *gorm.
 }
 
 func (m *defaultPriorityRequestModel) GetPriorityRequestsByL2TxHash(txHash string) (tx *PriorityRequest, err error) {
-	dbTx := m.DB.Table(m.table).Where("l2_tx_hash = ?", txHash).Take(tx)
+	dbTx := m.DB.Table(m.table).Where("l2_tx_hash = ?", txHash).Limit(1).Find(&tx)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
+	}
+	if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
 	}
 
 	return tx, nil
