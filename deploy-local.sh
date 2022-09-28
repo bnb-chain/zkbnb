@@ -225,8 +225,8 @@ ChainConfig:
   #NetworkRPCSysConfigName: "LocalTestNetworkRpc"
   ConfirmBlocksCount: 0
   MaxWaitingTime: 120
-  MaxBlockCount: 4
-  Sk: "acbaa269bd7573ff12361be4b97201aef019776ea13384681d4e5ba6a88367d9"
+  MaxBlockCount: 3
+  Sk: "107f9d2a50ce2d8337e0c5220574e9fcf2bf60002da5acf07718f4d531ea3faa"
   GasLimit: 20000000
   GasPrice: 0
 
