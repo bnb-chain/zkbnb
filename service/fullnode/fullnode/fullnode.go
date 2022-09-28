@@ -67,22 +67,28 @@ func (c *Fullnode) Run() {
 	if err != nil {
 		panic("get current block height failed: " + err.Error())
 	}
-	curHeight++
 
-	var curBlock *block.Block
+	curBlock, err := c.bc.BlockModel.GetBlockByHeight(curHeight)
+	if err != nil {
+		panic("get current block failed: " + err.Error())
+	}
 
 	for {
+		if curBlock.BlockStatus > block.StatusProposing {
+			curBlock, err = c.bc.ProposeNewBlock()
+			if err != nil {
+				panic("propose new block failed: " + err.Error())
+			}
+
+			curHeight++
+		}
+
 		l2Block, err := c.client.GetBlockByHeight(curHeight)
 		if err != nil {
 			// TODO check error
 			logx.Errorf("get block failed, height: %d, err %v ", curHeight, err)
 			time.Sleep(100 * time.Millisecond)
 			continue
-		}
-
-		curBlock, err = c.bc.ProposeNewBlock()
-		if err != nil {
-			panic("propose new block failed: " + err.Error())
 		}
 
 		txs := make([]*tx.Tx, 0, len(l2Block.Txs))
@@ -112,7 +118,6 @@ func (c *Fullnode) Run() {
 			panic("commit new block failed: " + err.Error())
 		}
 
-		curHeight++
 		time.Sleep(100 * time.Millisecond)
 	}
 }
