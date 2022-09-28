@@ -240,7 +240,7 @@ func (w *Witness) getNextWitnessToCheck() (int64, error) {
 }
 
 func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockNr int64) (*blockwitness.BlockWitness, error) {
-	var oldStateRoot []byte
+	var oldStateRoot, newStateRoot []byte
 	txsWitness := make([]*utils.TxWitness, 0, block.BlockSize)
 	// scan each transaction
 	for idx, tx := range block.Txs {
@@ -253,6 +253,10 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 		if idx == 0 {
 			oldStateRoot = txWitness.StateRootBefore
 		}
+		// if it is the last tx of the block
+		if idx == len(block.Txs)-1 {
+			newStateRoot = txWitness.StateRootAfter
+		}
 	}
 
 	emptyTxCount := int(block.BlockSize) - len(block.Txs)
@@ -260,12 +264,13 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 		txsWitness = append(txsWitness, circuit.EmptyTx(newStateRoot))
 	}
 
-	gasWitness, stateRoot, err := w.helper.ConstructGasWitness(block)
+	gasWitness, accountRoot, err := w.helper.ConstructGasWitness(block)
 	if err != nil {
 		return nil, err
 	}
 
-	if common.Bytes2Hex(stateRoot) != block.StateRoot {
+	newStateRoot = tree.ComputeStateRootHash(accountRoot, w.nftTree.Root())
+	if common.Bytes2Hex(newStateRoot) != block.StateRoot {
 		return nil, errors.New("state root doesn't match")
 	}
 
@@ -273,7 +278,7 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 		BlockNumber:     block.BlockHeight,
 		CreatedAt:       block.CreatedAt.UnixMilli(),
 		OldStateRoot:    oldStateRoot,
-		NewStateRoot:    stateRoot,
+		NewStateRoot:    newStateRoot,
 		BlockCommitment: common.FromHex(block.BlockCommitment),
 		Txs:             txsWitness,
 		Gas:             gasWitness,

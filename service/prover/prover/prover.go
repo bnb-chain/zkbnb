@@ -83,7 +83,7 @@ func NewProver(c config.Config) *Prover {
 			blockConstraints.Txs[i] = circuit.GetZeroTxConstraint()
 		}
 		blockConstraints.GasAssetIds = types.GasAssets[:]
-		blockConstraints.Gas = circuit.GetZeroGasConstraints(len(types.GasAssets))
+		blockConstraints.Gas = circuit.GetZeroGasConstraints(types.GasAssets[:])
 
 		logx.Infof("start compile block size %d blockConstraints", blockConstraints.TxsCount)
 		prover.R1cs[i], err = frontend.Compile(ecc.BN254, r1cs.NewBuilder, &blockConstraints, frontend.IgnoreUnconstrainedInputs())

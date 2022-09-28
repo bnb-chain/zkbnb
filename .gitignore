@@ -35,5 +35,3 @@ deployment/dependency
 deployment/configs
 deployment/.zkbnb
 run_*.sh
-
-own*

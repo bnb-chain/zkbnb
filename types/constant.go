@@ -46,6 +46,7 @@ const (
 	NilAssetAmount     = "0"
 
 	GasAccount = 1
+	BNBAssetId = 0
 )
 
 var (
