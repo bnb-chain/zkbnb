@@ -39,10 +39,9 @@ type WitnessHelper struct {
 	accountModel account.AccountModel
 
 	// Trees
-	accountTree   bsmt.SparseMerkleTree
-	assetTrees    *tree.AssetTreeCache
-	liquidityTree bsmt.SparseMerkleTree
-	nftTree       bsmt.SparseMerkleTree
+	accountTree bsmt.SparseMerkleTree
+	assetTrees  *tree.AssetTreeCache
+	nftTree     bsmt.SparseMerkleTree
 }
 
 func NewWitnessHelper(treeCtx *tree.Context, accountTree, nftTree bsmt.SparseMerkleTree,
