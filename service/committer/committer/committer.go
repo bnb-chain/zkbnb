@@ -132,13 +132,13 @@ func (c *Committer) Run() {
 				request, err := c.bc.PriorityRequestModel.GetPriorityRequestsByL2TxHash(poolTx.TxHash)
 				if err == nil {
 					priorityOperationMetric.WithLabelValues(strconv.FormatInt(request.L1BlockHeight, 10)).Set(float64(request.RequestId))
+					if request.RequestId != latestRequestId+1 {
+						logx.Errorf("invalid request ID: %d, txHash: %s", request.RequestId, poolTx.TxHash)
+						return
+					}
+					latestRequestId = request.RequestId
 				} else {
 					logx.Errorf("query txHash: %s in PriorityRequestTable failed, err %v ", poolTx.TxHash, err)
-				}
-
-				if request.RequestId != latestRequestId+1 {
-					logx.Errorf("invalid request ID: %d, txHash: %s", request.RequestId, poolTx.TxHash)
-					return
 				}
 			}
 
