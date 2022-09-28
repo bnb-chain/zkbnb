@@ -21,7 +21,7 @@ function prepare() {
     mkdir -p ${WORKDIR}/dependency && cd ${WORKDIR}/dependency
 
     git clone --branch remove_amm ${ZkBNB_CONTRACT_REPO}
-    git clone --branch remove_amm ${ZkBNB_CRYPTO_REPO}
+    git clone --branch develop ${ZkBNB_CRYPTO_REPO}
     cd ${WORKDIR}/dependency/zkbnb-crypto && git checkout ${ZKBNB_CRYPTO_BRANCH}
 
     if [ ! -z $1 ] && [ "$1" = "new" ]; then
