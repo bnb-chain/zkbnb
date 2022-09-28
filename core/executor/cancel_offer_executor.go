@@ -230,6 +230,7 @@ func (e *CancelOfferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Nonce:           gasAccount.Nonce,
 		AccountOrder:    accountOrder,
 		CollectionNonce: gasAccount.CollectionNonce,
+		IsGas:           true,
 	})
 	return txDetails, nil
 }

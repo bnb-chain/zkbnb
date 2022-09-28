@@ -212,6 +212,7 @@ func (e *CreateCollectionExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Order:        order,
 		Nonce:        gasAccount.Nonce,
 		AccountOrder: accountOrder,
+		IsGas:        true,
 	})
 	return txDetails, nil
 }

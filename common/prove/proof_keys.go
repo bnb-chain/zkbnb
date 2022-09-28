@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"os"
 
+	types2 "github.com/bnb-chain/zkbnb/types"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/backend/groth16"
@@ -52,6 +53,7 @@ func GenerateProof(
 	if err != nil {
 		return proof, err
 	}
+	blockWitness.GasAssetIds = types2.GasAssets[:]
 	var verifyWitness circuit.BlockConstraints
 	verifyWitness.OldStateRoot = cBlock.OldStateRoot
 	verifyWitness.NewStateRoot = cBlock.NewStateRoot
