@@ -28,8 +28,8 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
+	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/core"
 	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
-	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/zkbnb/core/legend"
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/common/prove"
 	"github.com/bnb-chain/zkbnb/dao/block"
@@ -213,6 +213,7 @@ func (s *Sender) UpdateSentTxs() (err error) {
 			logx.Errorf("query transaction receipt %s failed, err: %v", txHash, err)
 			if time.Now().After(pendingTx.UpdatedAt.Add(time.Duration(s.config.ChainConfig.MaxWaitingTime) * time.Second)) {
 				// No need to check the response, do best effort.
+				logx.Infof("delete timeout l1 rollup tx, tx_hash=%s", pendingTx.L1TxHash)
 				//nolint:errcheck
 				s.l1RollupTxModel.DeleteL1RollupTx(pendingTx)
 			}

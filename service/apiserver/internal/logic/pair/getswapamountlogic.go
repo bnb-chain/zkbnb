@@ -51,7 +51,7 @@ func (l *GetSwapAmountLogic) GetSwapAmount(req *types.ReqGetSwapAmount) (*types.
 		return nil, types2.AppErrInvalidParam.RefineError("invalid AssetId")
 	}
 
-	if liquidity.AssetA.Cmp(big.NewInt(0)) == 0 || liquidity.AssetB.Cmp(big.NewInt(0)) == 0 {
+	if liquidity.AssetA.Cmp(types2.ZeroBigInt) == 0 || liquidity.AssetB.Cmp(types2.ZeroBigInt) == 0 {
 		logx.Errorf("invalid liquidity asset amount: %v", liquidity)
 		return nil, types2.AppErrInvalidParam.RefineError("invalid PairIndex, empty liquidity or invalid pair")
 	}

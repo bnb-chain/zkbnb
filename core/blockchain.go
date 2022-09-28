@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -44,7 +45,8 @@ type ChainConfig struct {
 		//nolint:staticcheck
 		LevelDBOption tree.LevelDBOption `json:",optional"`
 		//nolint:staticcheck
-		RedisDBOption tree.RedisDBOption `json:",optional"`
+		RedisDBOption      tree.RedisDBOption `json:",optional"`
+		AssetTreeCacheSize int
 	}
 }
 
@@ -92,7 +94,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		RedisDBOption: &config.TreeDB.RedisDBOption,
 	}
 
-	bc.Statedb, err = sdb.NewStateDB(treeCtx, bc.ChainDB, redisCache, &config.CacheConfig, bc.currentBlock.StateRoot, curHeight)
+	bc.Statedb, err = sdb.NewStateDB(treeCtx, bc.ChainDB, redisCache, &config.CacheConfig, config.TreeDB.AssetTreeCacheSize, bc.currentBlock.StateRoot, curHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +165,7 @@ func (bc *BlockChain) CommitNewBlock(blockSize int, createdAt int64) (*block.Blo
 	}
 
 	currentHeight := bc.currentBlock.BlockHeight
-	err = tree.CommitTrees(bc.taskPool, uint64(currentHeight), bc.Statedb.AccountTree, &bc.Statedb.AccountAssetTrees, bc.Statedb.LiquidityTree, bc.Statedb.NftTree)
+	err = tree.CommitTrees(bc.taskPool, uint64(currentHeight), bc.Statedb.AccountTree, bc.Statedb.AccountAssetTrees, bc.Statedb.LiquidityTree, bc.Statedb.NftTree)
 	if err != nil {
 		return nil, err
 	}
@@ -298,7 +300,7 @@ func (bc *BlockChain) VerifyNonce(accountIndex int64, nonce int64) error {
 	return nil
 }
 
-func (bc *BlockChain) VerifyGas(gasAccountIndex, gasFeeAssetId int64) error {
+func (bc *BlockChain) VerifyGas(gasAccountIndex, gasFeeAssetId int64, txType int, gasFeeAmount *big.Int, skipGasAmtChk bool) error {
 	cfgGasAccountIndex, err := bc.Statedb.GetGasAccountIndex()
 	if err != nil {
 		return err
@@ -307,16 +309,27 @@ func (bc *BlockChain) VerifyGas(gasAccountIndex, gasFeeAssetId int64) error {
 		return errors.New("invalid gas fee account")
 	}
 
-	cfgGasAssetIds, err := bc.Statedb.GetGasAssetIds()
+	cfgGasFee, err := bc.Statedb.GetGasConfig()
 	if err != nil {
 		return err
 	}
-	for _, id := range cfgGasAssetIds {
-		if gasFeeAssetId == int64(id) {
-			return nil
+
+	gasAsset, ok := cfgGasFee[uint32(gasFeeAssetId)]
+	if !ok {
+		logx.Errorf("cannot find gas config for asset id: %d", gasFeeAssetId)
+		return errors.New("invalid gas fee asset")
+	}
+
+	if !skipGasAmtChk {
+		gasFee, ok := gasAsset[txType]
+		if !ok {
+			return errors.New("invalid tx type")
+		}
+		if gasFeeAmount.Cmp(big.NewInt(gasFee)) < 0 {
+			return errors.New("invalid gas fee amount")
 		}
 	}
-	return errors.New("invalid gas fee asset")
+	return nil
 }
 
 func (bc *BlockChain) StateDB() *sdb.StateDB {

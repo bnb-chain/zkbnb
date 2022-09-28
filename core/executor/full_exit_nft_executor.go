@@ -124,7 +124,7 @@ func (e *FullExitNftExecutor) Prepare() error {
 	return nil
 }
 
-func (e *FullExitNftExecutor) VerifyInputs() error {
+func (e *FullExitNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	bc := e.bc
 	txInfo := e.txInfo
 

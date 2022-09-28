@@ -221,10 +221,7 @@ type (
 type (
 	ReqGetGasFee {
 		AssetId uint32 `form:"asset_id"`
-	}
-
-	ReqGetWithdrawGasFee {
-		AssetId uint32 `form:"asset_id"`
+		TxType  uint32 `form:"tx_type"`
 	}
 
 	ReqSearch {
@@ -244,10 +241,6 @@ service server-api {
 	@doc "Get gas fee amount for using a specific asset as gas asset"
 	@handler GetGasFee
 	get /api/v1/gasFee (ReqGetGasFee) returns (GasFee)
-	
-	@doc "Get withdraw gas fee amount for using a specific asset as gas asset"
-	@handler GetWithdrawGasFee
-	get /api/v1/withdrawGasFee (ReqGetWithdrawGasFee) returns (GasFee)
 	
 	@doc "Get supported gas fee assets"
 	@handler GetGasFeeAssets

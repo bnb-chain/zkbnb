@@ -8,3 +8,4 @@ CacheRedis:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000

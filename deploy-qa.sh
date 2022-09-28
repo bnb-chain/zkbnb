@@ -29,10 +29,10 @@ git clone --branch $branch https://github.com/bnb-chain/zkbnb.git
 echo "new crypto env"
 echo '2. start generate zkbnb.vk and zkbnb.pk'
 cd ~/zkbnb-deploy
-cd zkbnb-crypto && go test ./legend/circuit/bn254/solidity -timeout 99999s -run TestExportSol
+cd zkbnb-crypto && go test ./circuit/solidity -timeout 99999s -run TestExportSol
 cd ~/zkbnb-deploy
 sudo mkdir /home/.zkbnb
-cp -r ./zkbnb-crypto/legend/circuit/bn254/solidity/* /home/.zkbnb
+cp -r ./zkbnb-crypto/circuit/solidity/* /home/.zkbnb
 
 
 echo '3. start verify_parse for ZkBNBVerifier'
@@ -107,6 +107,7 @@ KeyPath:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " > ~/zkbnb-deploy/zkbnb/service/cronjob/prover/etc/prover.yaml
 
 cd ~/zkbnb-deploy/zkbnb/service/cronjob/prover/
@@ -129,6 +130,7 @@ CacheRedis:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " > ~/zkbnb-deploy/zkbnb/service/cronjob/witnessGenerator/etc/witnessGenerator.yaml
 
 cd ~/zkbnb-deploy/zkbnb/service/cronjob/witnessGenerator/
@@ -162,6 +164,7 @@ ChainConfig:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " > ~/zkbnb-deploy/zkbnb/service/cronjob/monitor/etc/monitor.yaml
 
 cd ~/zkbnb-deploy/zkbnb/service/cronjob/monitor/
@@ -186,6 +189,7 @@ KeyPath:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " >> ~/zkbnb-deploy/zkbnb/service/cronjob/committer/etc/committer.yaml
 
 cd ~/zkbnb-deploy/zkbnb/service/cronjob/committer/
@@ -217,6 +221,7 @@ ChainConfig:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " > ~/zkbnb-deploy/zkbnb/service/cronjob/sender/etc/sender.yaml
 
 cd ~/zkbnb-deploy/zkbnb/service/cronjob/sender/
@@ -247,6 +252,7 @@ LogConf:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " > ~/zkbnb-deploy/zkbnb/service/rpc/globalRPC/etc/config.yaml
 
 cd ~/zkbnb-deploy/zkbnb/service/rpc/globalRPC/
@@ -279,6 +285,7 @@ LogConf:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
   " > ~/zkbnb-deploy/zkbnb/service/api/app/etc/app.yaml
 
 cd ~/zkbnb-deploy/zkbnb/service/api/app

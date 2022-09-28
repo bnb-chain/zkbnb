@@ -2,7 +2,6 @@ package account
 
 import (
 	"context"
-	"math/big"
 	"sort"
 	"strconv"
 
@@ -82,11 +81,11 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 		if asset.AssetId > maxAssetId {
 			continue //it is used for offer related, or empty balance; max ip id should be less than max asset id
 		}
-		if (asset.Balance == nil || asset.Balance.Cmp(big.NewInt(0)) == 0) &&
-			(asset.LpAmount == nil || asset.LpAmount.Cmp(big.NewInt(0)) == 0) {
+		if (asset.Balance == nil || asset.Balance.Cmp(types2.ZeroBigInt) == 0) &&
+			(asset.LpAmount == nil || asset.LpAmount.Cmp(types2.ZeroBigInt) == 0) {
 			continue
 		}
-		if asset.Balance != nil && asset.Balance.Cmp(big.NewInt(0)) > 0 {
+		if asset.Balance != nil && asset.Balance.Cmp(types2.ZeroBigInt) > 0 {
 			var assetName, assetSymbol string
 			var assetPrice float64
 			assetName, err = l.svcCtx.MemCache.GetAssetNameById(asset.AssetId)
@@ -108,7 +107,7 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 				Price:   strconv.FormatFloat(assetPrice, 'E', -1, 64),
 			})
 		}
-		if asset.LpAmount != nil && asset.LpAmount.Cmp(big.NewInt(0)) > 0 {
+		if asset.LpAmount != nil && asset.LpAmount.Cmp(types2.ZeroBigInt) > 0 {
 			resp.Lps = append(resp.Lps, &types.AccountLp{
 				Index:  uint32(asset.AssetId),
 				Amount: asset.LpAmount.String(),

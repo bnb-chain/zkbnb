@@ -2,6 +2,7 @@ package statedb
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -67,12 +68,12 @@ type StateDB struct {
 	AccountTree       bsmt.SparseMerkleTree
 	LiquidityTree     bsmt.SparseMerkleTree
 	NftTree           bsmt.SparseMerkleTree
-	AccountAssetTrees []bsmt.SparseMerkleTree
+	AccountAssetTrees *tree.AssetTreeCache
 	TreeCtx           *tree.Context
 }
 
 func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
-	redisCache dbcache.Cache, cacheConfig *CacheConfig,
+	redisCache dbcache.Cache, cacheConfig *CacheConfig, assetCacheSize int,
 	stateRoot string, curHeight int64) (*StateDB, error) {
 	err := tree.SetupTreeDB(treeCtx)
 	if err != nil {
@@ -84,6 +85,7 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 		chainDb.AccountHistoryModel,
 		curHeight,
 		treeCtx,
+		assetCacheSize,
 	)
 	if err != nil {
 		logx.Error("dbinitializer account tree failed:", err)
@@ -614,19 +616,19 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64) error {
 		if err != nil {
 			return fmt.Errorf("compute new account asset leaf failed: %v", err)
 		}
-		err = s.AccountAssetTrees[accountIndex].Set(uint64(assetId), assetLeaf)
+		err = s.AccountAssetTrees.Get(accountIndex).Set(uint64(assetId), assetLeaf)
 		if err != nil {
 			return fmt.Errorf("update asset tree failed: %v", err)
 		}
 	}
 
-	account.AssetRoot = common.Bytes2Hex(s.AccountAssetTrees[accountIndex].Root())
+	account.AssetRoot = common.Bytes2Hex(s.AccountAssetTrees.Get(accountIndex).Root())
 	nAccountLeafHash, err := tree.ComputeAccountLeafHash(
 		account.AccountNameHash,
 		account.PublicKey,
 		account.Nonce,
 		account.CollectionNonce,
-		s.AccountAssetTrees[accountIndex].Root(),
+		s.AccountAssetTrees.Get(accountIndex).Root(),
 	)
 	if err != nil {
 		return fmt.Errorf("unable to compute account leaf: %v", err)
@@ -717,7 +719,7 @@ func (s *StateDB) GetPendingNonce(accountIndex int64) (int64, error) {
 }
 
 func (s *StateDB) GetNextAccountIndex() int64 {
-	return int64(len(s.AccountAssetTrees))
+	return s.AccountAssetTrees.GetNextAccountIndex()
 }
 
 func (s *StateDB) GetNextNftIndex() int64 {
@@ -760,26 +762,28 @@ func (s *StateDB) GetGasAccountIndex() (int64, error) {
 	return gasAccountIndex, nil
 }
 
-func (s *StateDB) GetGasAssetIds() ([]uint32, error) {
-	gasAssetIds := make([]uint32, 0)
-	_, err := s.redisCache.Get(context.Background(), dbcache.GasAssetsKey, &gasAssetIds)
-	if err == nil {
-		return gasAssetIds, nil
-	}
-	logx.Errorf("fail to get gas assets from cache, error: %s", err.Error())
-
-	cfgGasAssets, err := s.chainDb.L2AssetInfoModel.GetGasAssets()
+func (s *StateDB) GetGasConfig() (map[uint32]map[int]int64, error) {
+	gasFeeValue := ""
+	_, err := s.redisCache.Get(context.Background(), dbcache.GasConfigKey, &gasFeeValue)
 	if err != nil {
-		logx.Errorf("cannot find gas asset: %s", err.Error())
-		return nil, errors.New("invalid gas fee asset")
+		logx.Errorf("fail to get gas config from cache, error: %s", err.Error())
+
+		cfgGasFee, err := s.chainDb.SysConfigModel.GetSysConfigByName(types.SysGasFee)
+		if err != nil {
+			logx.Errorf("cannot find gas asset: %s", err.Error())
+			return nil, errors.New("invalid gas fee asset")
+		}
+		gasFeeValue = cfgGasFee.Value
 	}
 
-	gasAssetIds = make([]uint32, 0)
-	for _, gasAsset := range cfgGasAssets {
-		gasAssetIds = append(gasAssetIds, gasAsset.AssetId)
+	m := make(map[uint32]map[int]int64)
+	err = json.Unmarshal([]byte(gasFeeValue), &m)
+	if err != nil {
+		logx.Errorf("fail to unmarshal gas fee config, err: %s", err.Error())
+		return nil, errors.New("internal error")
 	}
-	_ = s.redisCache.Set(context.Background(), dbcache.GasAssetsKey, gasAssetIds)
-	return gasAssetIds, nil
+
+	return m, nil
 }
 
 func (s *StateDB) Close() {

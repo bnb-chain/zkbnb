@@ -29,8 +29,8 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 
+	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/core"
 	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
-	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/zkbnb/core/legend"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
 	"github.com/bnb-chain/zkbnb/dao/priorityrequest"
@@ -48,7 +48,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		return nil
 	}
 
-	logx.Infof("syncing l1 blocks from %d to %d", big.NewInt(startHeight), big.NewInt(endHeight))
+	logx.Infof("syncing generic l1 blocks from %d to %d", big.NewInt(startHeight), big.NewInt(endHeight))
 
 	priorityRequestCount, err := getPriorityRequestCount(m.cli, m.zkbnbContractAddress, uint64(startHeight), uint64(endHeight))
 	if err != nil {

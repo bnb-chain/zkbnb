@@ -92,11 +92,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/withdrawGasFee",
-				Handler: info.GetWithdrawGasFeeHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodGet,
 				Path:    "/api/v1/gasFeeAssets",
 				Handler: info.GetGasFeeAssetsHandler(serverCtx),
 			},

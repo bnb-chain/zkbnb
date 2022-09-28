@@ -80,7 +80,7 @@ func (e *FullExitExecutor) Prepare() error {
 	return nil
 }
 
-func (e *FullExitExecutor) VerifyInputs() error {
+func (e *FullExitExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	return nil
 }
 

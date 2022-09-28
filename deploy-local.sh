@@ -36,10 +36,10 @@ if [ $flag = "new" ]; then
   echo "new crypto env"
   echo '2. start generate zkbnb.vk and zkbnb.pk'
   cd ${DEPLOY_PATH}
-  cd zkbnb-crypto && go test ./legend/circuit/bn254/solidity -timeout 99999s -run TestExportSol
+  cd zkbnb-crypto && go test ./circuit/solidity -timeout 99999s -run TestExportSol
   cd ${DEPLOY_PATH}
   mkdir -p $KEY_PATH
-  cp -r ./zkbnb-crypto/legend/circuit/bn254/solidity/* $KEY_PATH
+  cp -r ./zkbnb-crypto/circuit/solidity/* $KEY_PATH
 fi
 
 
@@ -115,6 +115,7 @@ BlockConfig:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " > ${DEPLOY_PATH}/zkbnb/service/prover/etc/config.yaml
 
 echo -e "
@@ -140,6 +141,7 @@ CacheRedis:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " > ${DEPLOY_PATH}/zkbnb/service/witness/etc/config.yaml
 
 echo -e "
@@ -170,6 +172,7 @@ ChainConfig:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " > ${DEPLOY_PATH}/zkbnb/service/monitor/etc/config.yaml
 
 echo -e "
@@ -195,6 +198,7 @@ BlockConfig:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " > ${DEPLOY_PATH}/zkbnb/service/committer/etc/config.yaml
 
 echo -e "
@@ -226,6 +230,7 @@ ChainConfig:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " > ${DEPLOY_PATH}/zkbnb/service/sender/etc/config.yaml
 
 echo -e "
@@ -240,6 +245,9 @@ echo -e "
 Name: api-server
 Host: 0.0.0.0
 Port: 8888
+
+TxPool:
+  MaxPendingTxCount: 10000
 
 Prometheus:
   Host: 0.0.0.0
@@ -269,7 +277,7 @@ MemCache:
   AssetExpiration:   600
   BlockExpiration:   400
   TxExpiration:      400
-  PriceExpiration:   1000
+  PriceExpiration:   3600000
   " > ${DEPLOY_PATH}/zkbnb/service/apiserver/etc/config.yaml
 
 echo -e "

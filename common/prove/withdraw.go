@@ -22,7 +22,7 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 
-	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/bn254/types"
+	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/types"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	"github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/tx"

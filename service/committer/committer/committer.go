@@ -119,6 +119,7 @@ func (c *Committer) Run() {
 				break
 			}
 
+			logx.Infof("apply transaction, txHash=%s", poolTx.TxHash)
 			err = c.bc.ApplyTransaction(poolTx)
 			if err != nil {
 				logx.Errorf("apply pool tx ID: %d failed, err %v ", poolTx.ID, err)
@@ -169,6 +170,7 @@ func (c *Committer) Run() {
 		}
 
 		if c.shouldCommit(curBlock) {
+			logx.Infof("commit new block, height=%d, blockSize=%d", curBlock.BlockHeight, curBlock.BlockSize)
 			curBlock, err = c.commitNewBlock(curBlock)
 			if err != nil {
 				panic("commit new block failed: " + err.Error())

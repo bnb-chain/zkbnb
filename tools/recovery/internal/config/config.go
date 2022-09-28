@@ -17,7 +17,8 @@ type Config struct {
 		//nolint:staticcheck
 		LevelDBOption tree.LevelDBOption `json:",optional"`
 		//nolint:staticcheck
-		RedisDBOption tree.RedisDBOption `json:",optional"`
+		RedisDBOption      tree.RedisDBOption `json:",optional"`
+		AssetTreeCacheSize int
 	}
 	LogConf logx.LogConf
 }

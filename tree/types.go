@@ -20,7 +20,7 @@ package tree
 import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 
-	"github.com/bnb-chain/zkbnb-crypto/accumulators/merkleTree"
+	"github.com/bnb-chain/zkbnb-crypto/merkleTree"
 )
 
 const (
