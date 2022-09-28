@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	gocache "github.com/patrickmn/go-cache"
+	lru "github.com/hashicorp/golang-lru"
 
 	accdao "github.com/bnb-chain/zkbnb/dao/account"
 	assetdao "github.com/bnb-chain/zkbnb/dao/asset"
@@ -14,9 +14,6 @@ import (
 )
 
 const (
-	cacheDefaultExpiration    = time.Hour * 1   //gocache default expiration
-	cacheDefaultPurgeInterval = time.Minute * 5 // gocache purge interval
-
 	AccountIndexNameKeyPrefix  = "in:" //key for cache: accountIndex -> accountName
 	AccountIndexPkKeyPrefix    = "ip:" //key for cache: accountIndex -> accountPk
 	AccountNameKeyPrefix       = "n:"  //key for cache: accountName -> accountIndex
@@ -40,7 +37,7 @@ const (
 type fallback func() (interface{}, error)
 
 type MemCache struct {
-	goCache           *gocache.Cache
+	goCache           *lru.Cache
 	accountModel      accdao.AccountModel
 	assetModel        assetdao.AssetModel
 	accountExpiration time.Duration
@@ -51,22 +48,22 @@ type MemCache struct {
 }
 
 func NewMemCache(accountModel accdao.AccountModel, assetModel assetdao.AssetModel,
-	accountExpiration, blockExpiration, txExpiration,
-	assetExpiration, priceExpiration int) *MemCache {
+	cacheSize int) *MemCache {
+
+	cache, err := lru.New(cacheSize)
+	if err != nil {
+		panic(fmt.Sprintf("new memCache failed: %+v\n", err))
+	}
+
 	memCache := &MemCache{
-		goCache:           gocache.New(cacheDefaultExpiration, cacheDefaultPurgeInterval),
-		accountModel:      accountModel,
-		assetModel:        assetModel,
-		accountExpiration: time.Duration(accountExpiration) * time.Millisecond,
-		blockExpiration:   time.Duration(blockExpiration) * time.Millisecond,
-		txExpiration:      time.Duration(txExpiration) * time.Millisecond,
-		assetExpiration:   time.Duration(assetExpiration) * time.Millisecond,
-		priceExpiration:   time.Duration(priceExpiration) * time.Millisecond,
+		goCache:      cache,
+		accountModel: accountModel,
+		assetModel:   assetModel,
 	}
 	return memCache
 }
 
-func (m *MemCache) getWithSet(key string, duration time.Duration, f fallback) (interface{}, error) {
+func (m *MemCache) getWithSet(key string, f fallback) (interface{}, error) {
 	result, found := m.goCache.Get(key)
 	if found {
 		return result, nil
@@ -75,15 +72,15 @@ func (m *MemCache) getWithSet(key string, duration time.Duration, f fallback) (i
 	if err != nil {
 		return nil, err
 	}
-	m.goCache.Set(key, result, duration)
+	m.goCache.Add(key, result)
 	return result, nil
 }
 
 func (m *MemCache) setAccount(accountIndex int64, accountName, accountPk string) {
-	m.goCache.Set(fmt.Sprintf("%s%d", AccountIndexNameKeyPrefix, accountIndex), accountName, gocache.DefaultExpiration)
-	m.goCache.Set(fmt.Sprintf("%s%d", AccountIndexPkKeyPrefix, accountIndex), accountPk, gocache.DefaultExpiration)
-	m.goCache.Set(fmt.Sprintf("%s%s", AccountNameKeyPrefix, accountName), accountIndex, gocache.DefaultExpiration)
-	m.goCache.Set(fmt.Sprintf("%s%s", AccountPkKeyPrefix, accountPk), accountIndex, gocache.DefaultExpiration)
+	m.goCache.Add(fmt.Sprintf("%s%d", AccountIndexNameKeyPrefix, accountIndex), accountName)
+	m.goCache.Add(fmt.Sprintf("%s%d", AccountIndexPkKeyPrefix, accountIndex), accountPk)
+	m.goCache.Add(fmt.Sprintf("%s%s", AccountNameKeyPrefix, accountName), accountIndex)
+	m.goCache.Add(fmt.Sprintf("%s%s", AccountPkKeyPrefix, accountPk), accountIndex)
 }
 
 func (m *MemCache) GetAccountIndexByName(accountName string) (int64, error) {
@@ -140,7 +137,7 @@ func (m *MemCache) GetAccountPkByIndex(accountIndex int64) (string, error) {
 
 func (m *MemCache) GetAccountWithFallback(accountIndex int64, f fallback) (*accdao.Account, error) {
 	key := fmt.Sprintf("%s%d", AccountByIndexKeyPrefix, accountIndex)
-	a, err := m.getWithSet(key, m.accountExpiration, f)
+	a, err := m.getWithSet(key, f)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +148,7 @@ func (m *MemCache) GetAccountWithFallback(accountIndex int64, f fallback) (*accd
 }
 
 func (m *MemCache) GetAccountTotalCountWiltFallback(f fallback) (int64, error) {
-	count, err := m.getWithSet(AccountCountKeyPrefix, m.accountExpiration, f)
+	count, err := m.getWithSet(AccountCountKeyPrefix, f)
 	if err != nil {
 		return 0, err
 	}
@@ -160,32 +157,32 @@ func (m *MemCache) GetAccountTotalCountWiltFallback(f fallback) (int64, error) {
 
 func (m *MemCache) GetBlockByHeightWithFallback(blockHeight int64, f fallback) (*blockdao.Block, error) {
 	key := fmt.Sprintf("%s%d", BlockByHeightKeyPrefix, blockHeight)
-	b, err := m.getWithSet(key, m.blockExpiration, f)
+	b, err := m.getWithSet(key, f)
 	if err != nil {
 		return nil, err
 	}
 
 	block := b.(*blockdao.Block)
 	key = fmt.Sprintf("%s%s", BlockByCommitmentKeyPrefix, block.BlockCommitment)
-	m.goCache.Set(key, block, m.blockExpiration)
+	m.goCache.Add(key, block)
 	return block, nil
 }
 
 func (m *MemCache) GetBlockByCommitmentWithFallback(blockCommitment string, f fallback) (*blockdao.Block, error) {
 	key := fmt.Sprintf("%s%s", BlockByCommitmentKeyPrefix, blockCommitment)
-	b, err := m.getWithSet(key, m.blockExpiration, f)
+	b, err := m.getWithSet(key, f)
 	if err != nil {
 		return nil, err
 	}
 
 	block := b.(*blockdao.Block)
 	key = fmt.Sprintf("%s%d", BlockByHeightKeyPrefix, block.BlockHeight)
-	m.goCache.Set(key, block, m.blockExpiration)
+	m.goCache.Add(key, block)
 	return block, nil
 }
 
 func (m *MemCache) GetBlockTotalCountWithFallback(f fallback) (int64, error) {
-	count, err := m.getWithSet(BlockCountKeyPrefix, m.blockExpiration, f)
+	count, err := m.getWithSet(BlockCountKeyPrefix, f)
 	if err != nil {
 		return 0, err
 	}
@@ -194,7 +191,7 @@ func (m *MemCache) GetBlockTotalCountWithFallback(f fallback) (int64, error) {
 
 func (m *MemCache) GetTxByHashWithFallback(txHash string, f fallback) (*tx.Tx, error) {
 	key := fmt.Sprintf("%s%s", TxByHashKeyPrefix, txHash)
-	t, err := m.getWithSet(key, m.txExpiration, f)
+	t, err := m.getWithSet(key, f)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +199,7 @@ func (m *MemCache) GetTxByHashWithFallback(txHash string, f fallback) (*tx.Tx, e
 }
 
 func (m *MemCache) GetTxTotalCountWithFallback(f fallback) (int64, error) {
-	count, err := m.getWithSet(TxCountKeyPrefix, m.txExpiration, f)
+	count, err := m.getWithSet(TxCountKeyPrefix, f)
 	if err != nil {
 		return 0, err
 	}
@@ -210,7 +207,7 @@ func (m *MemCache) GetTxTotalCountWithFallback(f fallback) (int64, error) {
 }
 
 func (m *MemCache) GetAssetTotalCountWithFallback(f fallback) (int64, error) {
-	count, err := m.getWithSet(AssetCountKeyKeyPrefix, m.txExpiration, f)
+	count, err := m.getWithSet(AssetCountKeyKeyPrefix, f)
 	if err != nil {
 		return 0, err
 	}
@@ -219,33 +216,33 @@ func (m *MemCache) GetAssetTotalCountWithFallback(f fallback) (int64, error) {
 
 func (m *MemCache) GetAssetByIdWithFallback(assetId int64, f fallback) (*assetdao.Asset, error) {
 	key := fmt.Sprintf("%s%d", AssetByIdKeyPrefix, assetId)
-	a, err := m.getWithSet(key, m.assetExpiration, f)
+	a, err := m.getWithSet(key, f)
 	if err != nil {
 		return nil, err
 	}
 
 	asset := a.(*assetdao.Asset)
 	key = fmt.Sprintf("%s%s", AssetBySymbolKeyPrefix, asset.AssetSymbol)
-	m.goCache.Set(key, asset, m.assetExpiration)
+	m.goCache.Add(key, asset)
 
 	key = fmt.Sprintf("%s%d", AssetIdNameKeyPrefix, assetId)
-	m.goCache.Set(key, asset.AssetName, gocache.DefaultExpiration)
+	m.goCache.Add(key, asset.AssetName)
 	return asset, nil
 }
 
 func (m *MemCache) GetAssetBySymbolWithFallback(assetSymbol string, f fallback) (*assetdao.Asset, error) {
 	key := fmt.Sprintf("%s%s", AssetBySymbolKeyPrefix, assetSymbol)
-	a, err := m.getWithSet(key, m.assetExpiration, f)
+	a, err := m.getWithSet(key, f)
 	if err != nil {
 		return nil, err
 	}
 
 	asset := a.(*assetdao.Asset)
 	key = fmt.Sprintf("%s%d", AssetByIdKeyPrefix, asset.AssetId)
-	m.goCache.Set(key, asset, m.assetExpiration)
+	m.goCache.Add(key, asset)
 
 	key = fmt.Sprintf("%s%d", AssetIdNameKeyPrefix, asset.AssetId)
-	m.goCache.Set(key, asset.AssetName, gocache.DefaultExpiration)
+	m.goCache.Add(key, asset.AssetName)
 	return asset, nil
 }
 
@@ -260,9 +257,9 @@ func (m *MemCache) GetAssetNameById(assetId int64) (string, error) {
 		return "", err
 	}
 
-	m.goCache.Set(keyForName, asset.AssetName, gocache.DefaultExpiration)
+	m.goCache.Add(keyForName, asset.AssetName)
 	keyForSymbol := fmt.Sprintf("%s%d", AssetIdSymbolKeyPrefix, assetId)
-	m.goCache.Set(keyForSymbol, asset.AssetSymbol, gocache.DefaultExpiration)
+	m.goCache.Add(keyForSymbol, asset.AssetSymbol)
 
 	return asset.AssetName, nil
 }
@@ -278,16 +275,16 @@ func (m *MemCache) GetAssetSymbolById(assetId int64) (string, error) {
 		return "", err
 	}
 
-	m.goCache.Set(keyForSymbol, asset.AssetSymbol, gocache.DefaultExpiration)
+	m.goCache.Add(keyForSymbol, asset.AssetSymbol)
 	keyForName := fmt.Sprintf("%s%d", AssetIdNameKeyPrefix, assetId)
-	m.goCache.Set(keyForName, asset.AssetName, gocache.DefaultExpiration)
+	m.goCache.Add(keyForName, asset.AssetName)
 
 	return asset.AssetSymbol, nil
 }
 
 func (m *MemCache) GetPriceWithFallback(symbol string, f fallback) (float64, error) {
 	key := fmt.Sprintf("%s%s", PriceKeyPrefix, symbol)
-	price, err := m.getWithSet(key, m.priceExpiration, f)
+	price, err := m.getWithSet(key, f)
 	if err != nil {
 		return 0, err
 	}
@@ -296,12 +293,12 @@ func (m *MemCache) GetPriceWithFallback(symbol string, f fallback) (float64, err
 
 func (m *MemCache) SetPrice(symbol string, price float64) {
 	key := fmt.Sprintf("%s%s", PriceKeyPrefix, symbol)
-	m.goCache.Set(key, price, m.priceExpiration)
+	m.goCache.Add(key, price)
 }
 
 func (m *MemCache) GetSysConfigWithFallback(configName string, f fallback) (*sysconfig.SysConfig, error) {
 	key := fmt.Sprintf("%s%s", SysConfigKeyPrefix, configName)
-	c, err := m.getWithSet(key, gocache.DefaultExpiration, f)
+	c, err := m.getWithSet(key, f)
 	if err != nil {
 		return nil, err
 	}

@@ -21,10 +21,7 @@ type Config struct {
 		Token string
 	}
 	MemCache struct {
-		AccountExpiration int
-		AssetExpiration   int
-		BlockExpiration   int
-		TxExpiration      int
-		PriceExpiration   int
+		// Number of cache entry
+		CacheSize int
 	}
 }
