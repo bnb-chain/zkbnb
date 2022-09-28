@@ -1,4 +1,4 @@
-Name: committer
+Name: fullnode
 
 Postgres:
   DataSource: host=127.0.0.1 user=postgres password=pw dbname=zkbnb port=5432 sslmode=disable
