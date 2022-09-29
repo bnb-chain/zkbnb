@@ -79,8 +79,8 @@ func (s *ApiServerSuite) SetupSuite() {
 			TxExpiration      int
 			PriceExpiration   int
 			MaxCounterNum     int64
-			MaxSizeInByte     int64
-		}{AccountExpiration: 10000, AssetExpiration: 10000, BlockExpiration: 10000, TxExpiration: 10000, PriceExpiration: 3600000, MaxCounterNum: 10000, MaxSizeInByte: 1000000000},
+			MaxKeyNum         int64
+		}{AccountExpiration: 10000, AssetExpiration: 10000, BlockExpiration: 10000, TxExpiration: 10000, PriceExpiration: 3600000, MaxCounterNum: 10000, MaxKeyNum: 10000},
 	}
 	c.Postgres = struct{ DataSource string }{DataSource: "host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5433 sslmode=disable"}
 	c.CacheRedis = cache.CacheConf{}

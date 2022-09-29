@@ -51,16 +51,15 @@ type MemCache struct {
 
 func NewMemCache(accountModel accdao.AccountModel, assetModel assetdao.AssetModel,
 	accountExpiration, blockExpiration, txExpiration,
-	assetExpiration, priceExpiration int, maxCounterNum, maxSizeInByte int64) *MemCache {
+	assetExpiration, priceExpiration int, maxCounterNum, maxKeyNum int64) *MemCache {
 
 	cache, err := ristretto.NewCache(&ristretto.Config{
 		NumCounters: maxCounterNum,
-		MaxCost:     maxSizeInByte,
+		MaxCost:     maxKeyNum,
 		BufferItems: 64, // official recommended value
 
 		// Called when setting cost to 0 in `Set/SetWithTTL`
 		Cost: func(value interface{}) int64 {
-			// TODO: Implement cost calculation
 			return 1
 		},
 	})
