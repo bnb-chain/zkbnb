@@ -509,6 +509,7 @@ Send raw transaction
 | verified_at | long |  | Yes |
 | txs | [ [Tx](#tx) ] |  | Yes |
 | status | long |  | Yes |
+| size | long |  | Yes |
 
 #### Blocks
 
