@@ -476,15 +476,16 @@ Send raw transaction
 
 #### Asset
 
-| Name         | Type | Description | Required |
-|--------------| ---- | ----------- | -------- |
+| Name         | Type    | Description | Required |
+|--------------|---------| ----------- | -------- |
 | id           | integer |  | Yes |
-| name         | string |  | Yes |
+| name         | string  |  | Yes |
 | decimals     | integer |  | Yes |
-| symbol       | string |  | Yes |
-| address      | string |  | Yes |
-| price        | string |  | Yes |
+| symbol       | string  |  | Yes |
+| address      | string  |  | Yes |
+| price        | string  |  | Yes |
 | is_gas_asset | integer |  | Yes |
+| icon         | string  |  | Yes |
 
 #### Assets
 

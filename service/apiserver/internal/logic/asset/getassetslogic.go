@@ -2,7 +2,9 @@ package asset
 
 import (
 	"context"
+	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -60,6 +62,7 @@ func (l *GetAssetsLogic) GetAssets(req *types.ReqGetRange) (resp *types.Assets, 
 			Address:    asset.L1Address,
 			Price:      strconv.FormatFloat(assetPrice, 'E', -1, 64),
 			IsGasAsset: asset.IsGasAsset,
+			Icon:       fmt.Sprintf(iconBaseUrl, strings.ToLower(asset.AssetSymbol), strings.ToLower(asset.AssetSymbol)),
 		})
 	}
 	return resp, nil
