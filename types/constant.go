@@ -35,7 +35,6 @@ const (
 	EmptyCreatorTreasuryRate = 0
 
 	NilAccountName     = ""
-	NilPairIndex       = -1
 	NilNftIndex        = int64(-1)
 	NilAccountIndex    = int64(-1)
 	NilBlockHeight     = -1
@@ -46,8 +45,7 @@ const (
 	NilExpiredAt       = math.MaxInt64
 	NilAssetAmount     = "0"
 
-	BNBAssetId  = 0
-	BNBDecimals = "1000000000000000000"
+	BNBAssetId = 0
 )
 
 var (

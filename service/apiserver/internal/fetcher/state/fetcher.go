@@ -6,38 +6,33 @@ import (
 	"github.com/bnb-chain/zkbnb/common/chain"
 	accdao "github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/dbcache"
-	liqdao "github.com/bnb-chain/zkbnb/dao/liquidity"
 	nftdao "github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/types"
 )
 
 //go:generate mockgen -source api.go -destination api_mock.go -package state
 
-// Fetcher will fetch the latest states (account,nft,liquidity) from redis, which is written by committer;
+// Fetcher will fetch the latest states (account,nft) from redis, which is written by committer;
 // and if the required data cannot be found then database will be used.
 type Fetcher interface {
 	GetLatestAccount(accountIndex int64) (accountInfo *types.AccountInfo, err error)
-	GetLatestLiquidity(pairIndex int64) (liquidityInfo *types.LiquidityInfo, err error)
 	GetLatestNft(nftIndex int64) (*types.NftInfo, error)
 }
 
 func NewFetcher(redisCache dbcache.Cache,
 	accountModel accdao.AccountModel,
-	liquidityModel liqdao.LiquidityModel,
 	nftModel nftdao.L2NftModel) Fetcher {
 	return &fetcher{
-		redisCache:     redisCache,
-		accountModel:   accountModel,
-		liquidityModel: liquidityModel,
-		nftModel:       nftModel,
+		redisCache:   redisCache,
+		accountModel: accountModel,
+		nftModel:     nftModel,
 	}
 }
 
 type fetcher struct {
-	redisCache     dbcache.Cache
-	accountModel   accdao.AccountModel
-	liquidityModel liqdao.LiquidityModel
-	nftModel       nftdao.L2NftModel
+	redisCache   dbcache.Cache
+	accountModel accdao.AccountModel
+	nftModel     nftdao.L2NftModel
 }
 
 func (f *fetcher) GetLatestAccount(accountIndex int64) (*types.AccountInfo, error) {
@@ -61,32 +56,6 @@ func (f *fetcher) GetLatestAccount(accountIndex int64) (*types.AccountInfo, erro
 		}
 	}
 	return fa, nil
-}
-
-func (f *fetcher) GetLatestLiquidity(pairIndex int64) (liquidityInfo *types.LiquidityInfo, err error) {
-	l := &liqdao.Liquidity{}
-
-	redisLiquidity, err := f.redisCache.Get(context.Background(), dbcache.LiquidityKeyByIndex(pairIndex), l)
-	if err == nil && redisLiquidity != "" {
-	} else {
-		l, err = f.liquidityModel.GetLiquidityByIndex(pairIndex)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return types.ConstructLiquidityInfo(
-		pairIndex,
-		l.AssetAId,
-		l.AssetA,
-		l.AssetBId,
-		l.AssetB,
-		l.LpAmount,
-		l.KLast,
-		l.FeeRate,
-		l.TreasuryAccountIndex,
-		l.TreasuryRate,
-	)
 }
 
 func (f *fetcher) GetLatestNft(nftIndex int64) (*types.NftInfo, error) {

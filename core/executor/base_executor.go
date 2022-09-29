@@ -23,7 +23,6 @@ type BaseExecutor struct {
 
 	// Affected states.
 	dirtyAccountsAndAssetsMap map[int64]map[int64]bool
-	dirtyLiquidityMap         map[int64]bool
 	dirtyNftMap               map[int64]bool
 }
 
@@ -34,7 +33,6 @@ func NewBaseExecutor(bc IBlockchain, tx *tx.Tx, txInfo txtypes.TxInfo) BaseExecu
 		iTxInfo: txInfo,
 
 		dirtyAccountsAndAssetsMap: make(map[int64]map[int64]bool, 0),
-		dirtyLiquidityMap:         make(map[int64]bool, 0),
 		dirtyNftMap:               make(map[int64]bool, 0),
 	}
 }
@@ -139,10 +137,6 @@ func (e *BaseExecutor) MarkAccountAssetsDirty(accountIndex int64, assets []int64
 	}
 }
 
-func (e *BaseExecutor) MarkLiquidityDirty(pairIndex int64) {
-	e.dirtyLiquidityMap[pairIndex] = true
-}
-
 func (e *BaseExecutor) MarkNftDirty(nftIndex int64) {
 	e.dirtyNftMap[nftIndex] = true
 }
@@ -154,10 +148,6 @@ func (e *BaseExecutor) SyncDirtyToStateCache() {
 			assets = append(assets, assetIndex)
 		}
 		e.bc.StateDB().MarkAccountAssetsDirty(accountIndex, assets)
-	}
-
-	for pairIndex := range e.dirtyLiquidityMap {
-		e.bc.StateDB().MarkLiquidityDirty(pairIndex)
 	}
 
 	for nftIndex := range e.dirtyNftMap {

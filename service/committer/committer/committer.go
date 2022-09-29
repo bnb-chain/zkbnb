@@ -138,7 +138,10 @@ func (c *Committer) Run() {
 		if c.shouldCommit(curBlock) {
 			logx.Infof("commit new block, height=%d, blockSize=%d", curBlock.BlockHeight, curBlock.BlockSize)
 			curBlock, err = c.commitNewBlock(curBlock)
+			logx.Infof("commit new block success")
+
 			if err != nil {
+				logx.Errorf("commit new block error, err=%s", err.Error())
 				panic("commit new block failed: " + err.Error())
 			}
 		}
@@ -238,27 +241,6 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 		// create new account history
 		if len(blockStates.PendingNewAccountHistory) != 0 {
 			err = c.bc.DB().AccountHistoryModel.CreateAccountHistoriesInTransact(tx, blockStates.PendingNewAccountHistory)
-			if err != nil {
-				return err
-			}
-		}
-		// create new liquidity
-		if len(blockStates.PendingNewLiquidity) != 0 {
-			err = c.bc.DB().LiquidityModel.CreateLiquidityInTransact(tx, blockStates.PendingNewLiquidity)
-			if err != nil {
-				return err
-			}
-		}
-		// update liquidity
-		if len(blockStates.PendingUpdateLiquidity) != 0 {
-			err = c.bc.DB().LiquidityModel.UpdateLiquidityInTransact(tx, blockStates.PendingUpdateLiquidity)
-			if err != nil {
-				return err
-			}
-		}
-		// create new liquidity history
-		if len(blockStates.PendingNewLiquidityHistory) != 0 {
-			err = c.bc.DB().LiquidityHistoryModel.CreateLiquidityHistoriesInTransact(tx, blockStates.PendingNewLiquidityHistory)
 			if err != nil {
 				return err
 			}

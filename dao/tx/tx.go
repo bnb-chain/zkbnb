@@ -71,7 +71,6 @@ type (
 		// Assigned after executed.
 		GasFee        string
 		GasFeeAssetId int64
-		PairIndex     int64
 		NftIndex      int64
 		CollectionId  int64
 		AssetId       int64

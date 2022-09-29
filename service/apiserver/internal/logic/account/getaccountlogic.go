@@ -75,14 +75,12 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 		Pk:     account.PublicKey,
 		Nonce:  account.Nonce,
 		Assets: make([]*types.AccountAsset, 0, len(account.AssetInfo)),
-		Lps:    make([]*types.AccountLp, 0, len(account.AssetInfo)),
 	}
 	for _, asset := range account.AssetInfo {
 		if asset.AssetId > maxAssetId {
 			continue //it is used for offer related, or empty balance; max ip id should be less than max asset id
 		}
-		if (asset.Balance == nil || asset.Balance.Cmp(types2.ZeroBigInt) == 0) &&
-			(asset.LpAmount == nil || asset.LpAmount.Cmp(types2.ZeroBigInt) == 0) {
+		if asset.Balance == nil || asset.Balance.Cmp(types2.ZeroBigInt) == 0 {
 			continue
 		}
 		if asset.Balance != nil && asset.Balance.Cmp(types2.ZeroBigInt) > 0 {
@@ -105,12 +103,6 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 				Name:    assetName,
 				Balance: asset.Balance.String(),
 				Price:   strconv.FormatFloat(assetPrice, 'E', -1, 64),
-			})
-		}
-		if asset.LpAmount != nil && asset.LpAmount.Cmp(types2.ZeroBigInt) > 0 {
-			resp.Lps = append(resp.Lps, &types.AccountLp{
-				Index:  uint32(asset.AssetId),
-				Amount: asset.LpAmount.String(),
 			})
 		}
 	}

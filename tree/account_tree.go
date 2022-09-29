@@ -191,7 +191,6 @@ func reloadAccountTreeFromRDB(
 		for assetId, assetInfo := range accountInfo.AssetInfo {
 			hashVal, err := AssetToNode(
 				assetInfo.Balance.String(),
-				assetInfo.LpAmount.String(),
 				assetInfo.OfferCanceledOrFinalized.String(),
 			)
 			if err != nil {
@@ -225,8 +224,8 @@ func reloadAccountTreeFromRDB(
 	return nil
 }
 
-func AssetToNode(balance string, lpAmount string, offerCanceledOrFinalized string) (hashVal []byte, err error) {
-	hashVal, err = ComputeAccountAssetLeafHash(balance, lpAmount, offerCanceledOrFinalized)
+func AssetToNode(balance string, offerCanceledOrFinalized string) (hashVal []byte, err error) {
+	hashVal, err = ComputeAccountAssetLeafHash(balance, offerCanceledOrFinalized)
 	if err != nil {
 		logx.Errorf("unable to compute asset leaf hash: %s", err.Error())
 		return nil, err

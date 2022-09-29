@@ -38,6 +38,7 @@ func (s *ApiServerSuite) TestGetBlocks() {
 					assert.NotNil(t, result.Blocks[0].Height)
 					assert.NotNil(t, result.Blocks[0].Commitment)
 					assert.NotNil(t, result.Blocks[0].Status)
+					assert.NotNil(t, result.Blocks[0].Size)
 					assert.NotNil(t, result.Blocks[0].StateRoot)
 					//assert.NotNil(t, result.Blocks[0].Txs)
 				}

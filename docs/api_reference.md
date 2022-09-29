@@ -303,27 +303,6 @@ Get zkbnb general info, including contract address, and count of transactions an
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [Layer2BasicInfo](#layer2basicinfo) |
 
-### /api/v1/lpValue
-
-#### GET
-
-##### Summary
-
-Get liquidity pool amount for a specific liquidity pair
-
-##### Parameters
-
-| Name | Located in | Description | Required | Schema |
-| ---- | ---------- | ----------- | -------- | ---- |
-| pair_index | query | index of pair | Yes | integer |
-| lp_amount | query | lp amount | Yes | string |
-
-##### Responses
-
-| Code | Description | Schema |
-| ---- | ----------- | ------ |
-| 200 | A successful response. | [LpValue](#lpvalue) |
-
 ### /api/v1/maxOfferId
 
 #### GET
@@ -385,40 +364,6 @@ Get next nonce
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [NextNonce](#nextnonce) |
 
-### /api/v1/pair
-
-#### GET
-
-##### Summary
-
-Get liquidity pool info by its index
-
-##### Parameters
-
-| Name | Located in | Description | Required | Schema |
-| ---- | ---------- | ----------- | -------- | ---- |
-| index | query | index of pair | Yes | integer |
-
-##### Responses
-
-| Code | Description | Schema |
-| ---- | ----------- | ------ |
-| 200 | A successful response. | [Pair](#pair) |
-
-### /api/v1/pairs
-
-#### GET
-
-##### Summary
-
-Get liquidity pairs
-
-##### Responses
-
-| Code | Description | Schema |
-| ---- | ----------- | ------ |
-| 200 | A successful response. | [Pairs](#pairs) |
-
 ### /api/v1/search
 
 #### GET
@@ -438,29 +383,6 @@ Search with a specific keyword
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [Search](#search) |
-
-### /api/v1/swapAmount
-
-#### GET
-
-##### Summary
-
-Get swap amount for a specific liquidity pair and in asset amount
-
-##### Parameters
-
-| Name | Located in | Description | Required | Schema |
-| ---- | ---------- | ----------- | -------- | ---- |
-| pair_index | query | index of pair | Yes | integer |
-| asset_id | query | id of asset | Yes | integer |
-| asset_amount | query | amount of asset | Yes | string |
-| is_from | query | is from asset | Yes | boolean (boolean) |
-
-##### Responses
-
-| Code | Description | Schema |
-| ---- | ----------- | ------ |
-| 200 | A successful response. | [SwapAmount](#swapamount) |
 
 ### /api/v1/tx
 
@@ -535,7 +457,6 @@ Send raw transaction
 | pk     | string                            |  | Yes |
 | nonce  | long                              |  | Yes |
 | assets | [ [AccountAsset](#accountasset) ] |  | Yes |
-| lps    | [ [AccountLp](#accountlp) ]       |  | Yes |
 
 #### AccountAsset
 
@@ -545,13 +466,6 @@ Send raw transaction
 | name    | string |  | Yes |
 | balance | string |  | Yes |
 | price   | string |  | Yes |
-
-#### AccountLp
-
-| Name   | Type | Description | Required |
-|--------| ---- | ----------- | -------- |
-| index  | integer |  | Yes |
-| amount | string |  | Yes |
 
 #### Accounts
 
@@ -595,6 +509,7 @@ Send raw transaction
 | verified_at | long |  | Yes |
 | txs | [ [Tx](#tx) ] |  | Yes |
 | status | long |  | Yes |
+| size | long |  | Yes |
 
 #### Blocks
 
@@ -658,19 +573,6 @@ Send raw transaction
 | today_active_user_count | long |  | Yes |
 | contract_addresses | [ [ContractAddress](#contractaddress) ] |  | Yes |
 
-#### LpValue
-
-| Name           | Type | Description | Required |
-|----------------| ---- | ----------- | -------- |
-| asset_a_id     | integer |  | Yes |
-| asset_a_name   | string |  | Yes |
-| asset_a_amount | string |  | Yes |
-| asset_a_price  | string |  | Yes |
-| asset_b_id     | integer |  | Yes |
-| asset_b_name   | string |  | Yes |
-| asset_b_amount | string |  | Yes |
-| asset_b_price  | string |  | Yes |
-
 #### MaxOfferId
 
 | Name | Type | Description | Required |
@@ -702,29 +604,6 @@ Send raw transaction
 | ---- | ---- | ----------- | -------- |
 | total | long |  | Yes |
 | nfts | [ [Nft](#nft) ] |  | Yes |
-
-#### Pair
-
-| Name            | Type | Description | Required |
-|-----------------| ---- | ----------- | -------- |
-| index           | integer |  | Yes |
-| asset_a_id      | integer |  | Yes |
-| asset_a_name    | string |  | Yes |
-| asset_a_amount  | string |  | Yes |
-| asset_a_price   | string |  | Yes |
-| asset_b_id      | integer |  | Yes |
-| asset_b_name    | string |  | Yes |
-| asset_b_amount  | string |  | Yes |
-| asset_b_price   | string |  | Yes |
-| fee_rate        | long |  | Yes |
-| treasury_rate   | long |  | Yes |
-| total_lp_amount | string |  | Yes |
-
-#### Pairs
-
-| Name | Type | Description | Required |
-| ---- | ---- | ----------- | -------- |
-| pairs | [ [Pair](#pair) ] |  | Yes |
 
 #### ReqGetAccount
 
@@ -786,13 +665,6 @@ Send raw transaction
 | asset_id | integer |  | Yes |
 | tx_type       | integer |  | Yes |
 
-#### ReqGetLpValue
-
-| Name | Type | Description | Required |
-| ---- | ---- | ----------- | -------- |
-| pair_index | integer |  | Yes |
-| lp_amount | string |  | Yes |
-
 #### ReqGetMaxOfferId
 
 | Name | Type | Description | Required |
@@ -805,27 +677,12 @@ Send raw transaction
 | ---- | ---- | ----------- | -------- |
 | account_index | integer |  | Yes |
 
-#### ReqGetPair
-
-| Name | Type | Description | Required |
-| ---- | ---- | ----------- | -------- |
-| index | integer |  | Yes |
-
 #### ReqGetRange
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | offset | integer |  | Yes |
 | limit | integer |  | Yes |
-
-#### ReqGetSwapAmount
-
-| Name | Type | Description | Required |
-| ---- | ---- | ----------- | -------- |
-| pair_index | integer |  | Yes |
-| asset_id | integer |  | Yes |
-| asset_amount | string |  | Yes |
-| is_from | boolean (boolean) |  | Yes |
 
 #### ReqGetTx
 
@@ -867,14 +724,6 @@ Send raw transaction
 | status | integer |  | Yes |
 | network_id | integer |  | Yes |
 
-#### SwapAmount
-
-| Name | Type | Description | Required |
-| ---- | ---- | ----------- | -------- |
-| asset_id | integer |  | Yes |
-| asset_name | string |  | Yes |
-| asset_amount | string |  | Yes |
-
 #### Tx
 
 | Name | Type | Description | Required |
@@ -888,7 +737,6 @@ Send raw transaction
 | gas_fee_asset_id | long |  | Yes |
 | gas_fee | string |  | Yes |
 | nft_index | long |  | Yes |
-| pair_index | long |  | Yes |
 | asset_id | long |  | Yes |
 | asset_name | string |  | Yes |
 | native_adress | string |  | Yes |

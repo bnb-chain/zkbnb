@@ -180,52 +180,6 @@ Below is the typescript definition of transaction and EIP712Domain. These typed 
             { name: 'Nonce', type: 'uint256' },
             { name: 'ChainId', type: 'uint256' },
         ],
-```       
-##### AddLiquidity
-```typescript=
-        AddLiquidity: [
-            { name: 'FromAccountIndex', type: 'uint256' },
-            { name: 'PairIndex', type: 'uint256' },
-            { name: 'AssetAAmount', type: 'uint256' },
-            { name: 'AssetBAmount', type: 'uint256' },
-            { name: 'GasAccountIndex', type: 'uint256' },
-            { name: 'GasFeeAssetId', type: 'uint256' },
-            { name: 'GasFeeAssetAmount', type: 'uint256' },
-            { name: 'ExpiredAt', type: 'uint256' },
-            { name: 'Nonce', type: 'uint256' },
-            { name: 'ChainId', type: 'uint256' },
-        ],
-```        
-##### RemoveLiquidity
-```typescript=
-        RemoveLiquidity: [
-            { name: 'FromAccountIndex', type: 'uint256' },
-            { name: 'PairIndex', type: 'uint256' },
-            { name: 'AssetAMinAmount', type: 'uint256' },
-            { name: 'AssetBMinAmount', type: 'uint256' },
-            { name: 'LpAmount', type: 'uint256' },
-            { name: 'GasAccountIndex', type: 'uint256' },
-            { name: 'GasFeeAssetId', type: 'uint256' },
-            { name: 'GasFeeAssetAmount', type: 'uint256' },
-            { name: 'ExpiredAt', type: 'uint256' },
-            { name: 'Nonce', type: 'uint256' },
-            { name: 'ChainId', type: 'uint256' },
-        ],
-```        
-##### Swap
-```typescript=
-        Swap: [
-            { name: 'FromAccountIndex', type: 'uint256' },
-            { name: 'PairIndex', type: 'uint256' },
-            { name: 'AssetAAmount', type: 'uint256' },
-            { name: 'AssetBMinAmount', type: 'uint256' },
-            { name: 'GasAccountIndex', type: 'uint256' },
-            { name: 'GasFeeAssetId', type: 'uint256' },
-            { name: 'GasFeeAssetAmount', type: 'uint256' },
-            { name: 'ExpiredAt', type: 'uint256' },
-            { name: 'Nonce', type: 'uint256' },
-            { name: 'ChainId', type: 'uint256' },
-        ],
 ```        
 ##### CreateCollection
 ```typescript=

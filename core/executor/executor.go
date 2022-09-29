@@ -32,22 +32,12 @@ func NewTxExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	switch tx.TxType {
 	case types.TxTypeRegisterZns:
 		return NewRegisterZnsExecutor(bc, tx)
-	case types.TxTypeCreatePair:
-		return NewCreatePairExecutor(bc, tx)
-	case types.TxTypeUpdatePairRate:
-		return NewUpdatePairRateExecutor(bc, tx)
 	case types.TxTypeDeposit:
 		return NewDepositExecutor(bc, tx)
 	case types.TxTypeDepositNft:
 		return NewDepositNftExecutor(bc, tx)
 	case types.TxTypeTransfer:
 		return NewTransferExecutor(bc, tx)
-	case types.TxTypeSwap:
-		return NewSwapExecutor(bc, tx)
-	case types.TxTypeAddLiquidity:
-		return NewAddLiquidityExecutor(bc, tx)
-	case types.TxTypeRemoveLiquidity:
-		return NewRemoveLiquidityExecutor(bc, tx)
 	case types.TxTypeWithdraw:
 		return NewWithdrawExecutor(bc, tx)
 	case types.TxTypeCreateCollection:

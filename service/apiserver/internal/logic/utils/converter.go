@@ -15,7 +15,6 @@ func ConvertTx(tx *tx.Tx) *types.Tx {
 		Index:         tx.TxIndex,
 		BlockHeight:   tx.BlockHeight,
 		NftIndex:      tx.NftIndex,
-		PairIndex:     tx.PairIndex,
 		CollectionId:  tx.CollectionId,
 		AssetId:       tx.AssetId,
 		Amount:        tx.TxAmount,
