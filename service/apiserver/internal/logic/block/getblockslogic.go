@@ -62,6 +62,7 @@ func (l *GetBlocksLogic) GetBlocks(req *types.ReqGetRange) (*types.Blocks, error
 			VerifiedTxHash:                  b.VerifiedTxHash,
 			VerifiedAt:                      b.VerifiedAt,
 			Status:                          b.BlockStatus,
+			Size:                            b.BlockSize,
 		}
 		for _, dbTx := range b.Txs {
 			tx := utils.ConvertTx(dbTx)

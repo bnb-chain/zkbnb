@@ -24,8 +24,6 @@ ZkBNB implement the following features so far:
   cryptographic. Users do not have to trust any third parties or keep monitoring the Rollup blocks in order to
   prevent fraud.
 - **L1<>L2 Communication**. BNB, and BEP20/BEP721/BEP1155 created on BSC or ZkBNB can flow freely between BSC and ZkBNB.
-- **Built-in instant AMM swap**. It allows digital assets to be traded without permission and automatically by using
-  liquidity pools.
 - **Built-in NFT marketplace**. Developer can build marketplace for crypto collectibles and non-fungible tokens (NFTs)
   out of box on ZkBNB.
 - **Fast transaction speed and faster finality**.

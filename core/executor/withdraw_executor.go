@@ -169,7 +169,7 @@ func (e *WithdrawExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountName:  fromAccount.AccountName,
 		Balance:      fromAccount.AssetInfo[txInfo.AssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.AssetId, ffmath.Neg(txInfo.AssetAmount), types.ZeroBigInt, types.ZeroBigInt).String(),
+			txInfo.AssetId, ffmath.Neg(txInfo.AssetAmount), types.ZeroBigInt).String(),
 		Order:           order,
 		AccountOrder:    accountOrder,
 		Nonce:           fromAccount.Nonce,
@@ -189,7 +189,7 @@ func (e *WithdrawExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountName:  fromAccount.AccountName,
 		Balance:      fromAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), types.ZeroBigInt, types.ZeroBigInt).String(),
+			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), types.ZeroBigInt).String(),
 		Order:           order,
 		AccountOrder:    accountOrder,
 		Nonce:           fromAccount.Nonce,
@@ -210,7 +210,7 @@ func (e *WithdrawExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountName:  gasAccount.AccountName,
 		Balance:      gasAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, types.ZeroBigInt, types.ZeroBigInt).String(),
+			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, types.ZeroBigInt).String(),
 		Order:           order,
 		AccountOrder:    accountOrder,
 		Nonce:           gasAccount.Nonce,

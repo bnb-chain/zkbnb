@@ -71,6 +71,7 @@ func (l *GetBlockLogic) GetBlock(req *types.ReqGetBlock) (resp *types.Block, err
 		VerifiedTxHash:                  block.VerifiedTxHash,
 		VerifiedAt:                      block.VerifiedAt,
 		Status:                          block.BlockStatus,
+		Size:                            block.BlockSize,
 	}
 	for _, dbTx := range block.Txs {
 		tx := utils.ConvertTx(dbTx)

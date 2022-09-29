@@ -61,50 +61,6 @@ func ParseRegisterZnsPubData(pubData []byte) (tx *txtypes.RegisterZnsTxInfo, err
 	return tx, nil
 }
 
-func ParseCreatePairPubData(pubData []byte) (tx *txtypes.CreatePairTxInfo, err error) {
-	if len(pubData) != types.CreatePairPubDataSize {
-		return nil, errors.New("[ParseCreatePairPubData] invalid size")
-	}
-	offset := 0
-	offset, txType := common2.ReadUint8(pubData, offset)
-	offset, pairIndex := common2.ReadUint16(pubData, offset)
-	offset, assetAId := common2.ReadUint16(pubData, offset)
-	offset, assetBId := common2.ReadUint16(pubData, offset)
-	offset, feeRate := common2.ReadUint16(pubData, offset)
-	offset, treasuryAccountIndex := common2.ReadUint32(pubData, offset)
-	_, treasuryRate := common2.ReadUint16(pubData, offset)
-	tx = &txtypes.CreatePairTxInfo{
-		TxType:               txType,
-		PairIndex:            int64(pairIndex),
-		AssetAId:             int64(assetAId),
-		AssetBId:             int64(assetBId),
-		FeeRate:              int64(feeRate),
-		TreasuryAccountIndex: int64(treasuryAccountIndex),
-		TreasuryRate:         int64(treasuryRate),
-	}
-	return tx, nil
-}
-
-func ParseUpdatePairRatePubData(pubData []byte) (tx *txtypes.UpdatePairRateTxInfo, err error) {
-	if len(pubData) != types.UpdatePairRatePubdataSize {
-		return nil, errors.New("[ParseUpdatePairRatePubData] invalid size")
-	}
-	offset := 0
-	offset, txType := common2.ReadUint8(pubData, offset)
-	offset, pairIndex := common2.ReadUint16(pubData, offset)
-	offset, feeRate := common2.ReadUint16(pubData, offset)
-	offset, treasuryAccountIndex := common2.ReadUint32(pubData, offset)
-	_, treasuryRate := common2.ReadUint16(pubData, offset)
-	tx = &txtypes.UpdatePairRateTxInfo{
-		TxType:               txType,
-		PairIndex:            int64(pairIndex),
-		FeeRate:              int64(feeRate),
-		TreasuryAccountIndex: int64(treasuryAccountIndex),
-		TreasuryRate:         int64(treasuryRate),
-	}
-	return tx, nil
-}
-
 func ParseDepositPubData(pubData []byte) (tx *txtypes.DepositTxInfo, err error) {
 	/*
 		struct Deposit {

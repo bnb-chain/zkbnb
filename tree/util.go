@@ -57,36 +57,8 @@ func EmptyAccountAssetNodeHash() []byte {
 	zero := big.NewInt(0).FillBytes(make([]byte, 32))
 	/*
 		balance
-		lpAmount
 		offerCanceledOrFinalized
 	*/
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	return hFunc.Sum(nil)
-}
-
-func EmptyLiquidityNodeHash() []byte {
-	hFunc := mimc.NewMiMC()
-	zero := big.NewInt(0).FillBytes(make([]byte, 32))
-	/*
-		assetAId
-		assetA
-		assetBId
-		assetB
-		lpAmount
-		kLast
-		feeRate
-		treasuryAccountIndex
-		treasuryRate
-	*/
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	hFunc.Write(zero)
 	hFunc.Write(zero)
 	hFunc.Write(zero)
 	return hFunc.Sum(nil)
@@ -119,12 +91,12 @@ func CommitTrees(
 	version uint64,
 	accountTree bsmt.SparseMerkleTree,
 	assetTrees *AssetTreeCache,
-	liquidityTree bsmt.SparseMerkleTree,
 	nftTree bsmt.SparseMerkleTree) error {
 
 	assetTreeChanges := assetTrees.GetChanges()
 	defer assetTrees.CleanChanges()
-	totalTask := len(assetTreeChanges) + 3
+	totalTask := len(assetTreeChanges) + 2
+
 	errChan := make(chan error, totalTask)
 	defer close(errChan)
 
@@ -163,22 +135,6 @@ func CommitTrees(
 	}
 
 	err = pool.Submit(func() {
-		liquidityPrunedVersion := bsmt.Version(version)
-		if liquidityTree.LatestVersion() < liquidityPrunedVersion {
-			liquidityPrunedVersion = liquidityTree.LatestVersion()
-		}
-		ver, err := liquidityTree.Commit(&liquidityPrunedVersion)
-		if err != nil {
-			errChan <- errors.Wrapf(err, "unable to commit liquidity tree, tree ver: %d, prune ver: %d", ver, liquidityPrunedVersion)
-			return
-		}
-		errChan <- nil
-	})
-	if err != nil {
-		return err
-	}
-
-	err = pool.Submit(func() {
 		nftPrunedVersion := bsmt.Version(version)
 		if nftTree.LatestVersion() < nftPrunedVersion {
 			nftPrunedVersion = nftTree.LatestVersion()
@@ -209,7 +165,6 @@ func RollBackTrees(
 	version uint64,
 	accountTree bsmt.SparseMerkleTree,
 	assetTrees *AssetTreeCache,
-	liquidityTree bsmt.SparseMerkleTree,
 	nftTree bsmt.SparseMerkleTree) error {
 
 	assetTreeChanges := assetTrees.GetChanges()
@@ -249,20 +204,6 @@ func RollBackTrees(
 		if err != nil {
 			return err
 		}
-	}
-
-	err = pool.Submit(func() {
-		if liquidityTree.LatestVersion() > ver && !liquidityTree.IsEmpty() {
-			err := liquidityTree.Rollback(ver)
-			if err != nil {
-				errChan <- errors.Wrapf(err, "unable to rollback liquidity tree, ver: %d", ver)
-				return
-			}
-		}
-		errChan <- nil
-	})
-	if err != nil {
-		return err
 	}
 
 	err = pool.Submit(func() {
@@ -314,16 +255,11 @@ func ComputeAccountLeafHash(
 
 func ComputeAccountAssetLeafHash(
 	balance string,
-	lpAmount string,
 	offerCanceledOrFinalized string,
 ) (hashVal []byte, err error) {
 	hFunc := mimc.NewMiMC()
 	var buf bytes.Buffer
 	err = common2.PaddingStringBigIntIntoBuf(&buf, balance)
-	if err != nil {
-		return nil, err
-	}
-	err = common2.PaddingStringBigIntIntoBuf(&buf, lpAmount)
 	if err != nil {
 		return nil, err
 	}
@@ -333,45 +269,6 @@ func ComputeAccountAssetLeafHash(
 	}
 	hFunc.Write(buf.Bytes())
 	return hFunc.Sum(nil), nil
-}
-
-func ComputeLiquidityAssetLeafHash(
-	assetAId int64,
-	assetA string,
-	assetBId int64,
-	assetB string,
-	lpAmount string,
-	kLast string,
-	feeRate int64,
-	treasuryAccountIndex int64,
-	treasuryRate int64,
-) (hashVal []byte, err error) {
-	hFunc := mimc.NewMiMC()
-	var buf bytes.Buffer
-	common2.PaddingInt64IntoBuf(&buf, assetAId)
-	err = common2.PaddingStringBigIntIntoBuf(&buf, assetA)
-	if err != nil {
-		return nil, err
-	}
-	common2.PaddingInt64IntoBuf(&buf, assetBId)
-	err = common2.PaddingStringBigIntIntoBuf(&buf, assetB)
-	if err != nil {
-		return nil, err
-	}
-	err = common2.PaddingStringBigIntIntoBuf(&buf, lpAmount)
-	if err != nil {
-		return nil, err
-	}
-	err = common2.PaddingStringBigIntIntoBuf(&buf, kLast)
-	if err != nil {
-		return nil, err
-	}
-	common2.PaddingInt64IntoBuf(&buf, feeRate)
-	common2.PaddingInt64IntoBuf(&buf, treasuryAccountIndex)
-	common2.PaddingInt64IntoBuf(&buf, treasuryRate)
-	hFunc.Write(buf.Bytes())
-	hashVal = hFunc.Sum(nil)
-	return hashVal, nil
 }
 
 func ComputeNftAssetLeafHash(
@@ -405,12 +302,10 @@ func ComputeNftAssetLeafHash(
 
 func ComputeStateRootHash(
 	accountRoot []byte,
-	liquidityRoot []byte,
 	nftRoot []byte,
 ) []byte {
 	hFunc := mimc.NewMiMC()
 	hFunc.Write(accountRoot)
-	hFunc.Write(liquidityRoot)
 	hFunc.Write(nftRoot)
 	return hFunc.Sum(nil)
 }

@@ -171,7 +171,6 @@ func (e *CancelOfferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 			txInfo.GasFeeAssetId,
 			ffmath.Neg(txInfo.GasFeeAssetAmount),
 			types.ZeroBigInt,
-			types.ZeroBigInt,
 		).String(),
 		Order:           order,
 		Nonce:           fromAccount.Nonce,
@@ -204,7 +203,6 @@ func (e *CancelOfferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		BalanceDelta: types.ConstructAccountAsset(
 			offerAssetId,
 			types.ZeroBigInt,
-			types.ZeroBigInt,
 			nOffer,
 		).String(),
 		Order:           order,
@@ -226,7 +224,6 @@ func (e *CancelOfferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.GasFeeAssetId,
 			txInfo.GasFeeAssetAmount,
-			types.ZeroBigInt,
 			types.ZeroBigInt,
 		).String(),
 		Order:           order,

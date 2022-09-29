@@ -143,7 +143,6 @@ func (e *DepositExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	deltaBalance := &types.AccountAsset{
 		AssetId:                  txInfo.AssetId,
 		Balance:                  txInfo.AssetAmount,
-		LpAmount:                 big.NewInt(0),
 		OfferCanceledOrFinalized: big.NewInt(0),
 	}
 	txDetail := &tx.TxDetail{

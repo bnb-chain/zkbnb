@@ -36,6 +36,7 @@ func (s *ApiServerSuite) TestGetBlock() {
 				assert.NotNil(t, result.Height)
 				assert.NotNil(t, result.Commitment)
 				assert.NotNil(t, result.Status)
+				assert.NotNil(t, result.Size)
 				assert.NotNil(t, result.StateRoot)
 				fmt.Printf("result: %+v \n", result)
 			}
