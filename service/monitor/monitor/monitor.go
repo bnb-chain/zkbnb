@@ -123,7 +123,7 @@ func NewMonitor(c config.Config) *Monitor {
 		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
 		panic(err)
 	}
-	if err := prometheus.Register(priorityOperationMetric); err != nil {
+	if err := prometheus.Register(priorityOperationHeightMetric); err != nil {
 		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
 		panic(err)
 	}
