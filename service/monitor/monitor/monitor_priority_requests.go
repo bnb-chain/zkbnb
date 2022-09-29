@@ -64,7 +64,6 @@ func (m *Monitor) MonitorPriorityRequests() error {
 
 			GasFeeAssetId: types.NilAssetId,
 			GasFee:        types.NilAssetAmount,
-			PairIndex:     types.NilPairIndex,
 			NftIndex:      types.NilNftIndex,
 			CollectionId:  types.NilCollectionNonce,
 			AssetId:       types.NilAssetId,
@@ -88,30 +87,6 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			txInfoBytes, err = json.Marshal(txInfo)
 			if err != nil {
 				return err
-			}
-
-		case TxTypeCreatePair:
-			txInfo, err := chain.ParseCreatePairPubData(common.FromHex(request.Pubdata))
-			if err != nil {
-				return fmt.Errorf("unable to parse registerZNS pub data: %v", err)
-			}
-
-			poolTx.TxType = int64(txInfo.TxType)
-			txInfoBytes, err = json.Marshal(txInfo)
-			if err != nil {
-				return fmt.Errorf("unable to serialize request info : %v", err)
-			}
-
-		case TxTypeUpdatePairRate:
-			txInfo, err := chain.ParseUpdatePairRatePubData(common.FromHex(request.Pubdata))
-			if err != nil {
-				return fmt.Errorf("unable to parse update pair rate pub data: %v", err)
-			}
-
-			poolTx.TxType = int64(txInfo.TxType)
-			txInfoBytes, err = json.Marshal(txInfo)
-			if err != nil {
-				return fmt.Errorf("unable to serialize request info : %v", err)
 			}
 
 		case TxTypeDeposit:

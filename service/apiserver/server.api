@@ -40,11 +40,6 @@ type (
 		Price   string `json:"price"`
 	}
 
-	AccountLp {
-		Index  uint32 `json:"index"`
-		Amount string `json:"amount"`
-	}
-
 	Account {
 		Status uint32          `json:"status"`
 		Index  int64           `json:"index"`
@@ -52,7 +47,6 @@ type (
 		Pk     string          `json:"pk"`
 		Nonce  int64           `json:"nonce"`
 		Assets []*AccountAsset `json:"assets"`
-		Lps    []*AccountLp    `json:"lps"`
 	}
 
 	SimpleAccount {
@@ -255,85 +249,6 @@ service server-api {
 	get /api/v1/search (ReqSearch) returns (Search)
 }
 
-/* =========================== Pair ==========================*/
-
-type (
-	SwapAmount {
-		AssetId     uint32 `json:"asset_id"`
-		AssetName   string `json:"asset_name"`
-		AssetAmount string `json:"asset_amount"`
-	}
-
-	Pair {
-		Index         uint32 `json:"index"`
-		AssetAId      uint32 `json:"asset_a_id"`
-		AssetAName    string `json:"asset_a_name"`
-		AssetAAmount  string `json:"asset_a_amount"`
-		AssetAPrice   string `json:"asset_a_price"`
-		AssetBId      uint32 `json:"asset_b_id"`
-		AssetBName    string `json:"asset_b_name"`
-		AssetBPrice   string `json:"asset_b_price"`
-		AssetBAmount  string `json:"asset_b_amount"`
-		FeeRate       int64  `json:"fee_rate"`
-		TreasuryRate  int64  `json:"treasury_rate"`
-		TotalLpAmount string `json:"total_lp_amount"`
-	}
-	Pairs {
-		Pairs []*Pair `json:"pairs"`
-	}
-
-	LpValue {
-		AssetAId     uint32 `json:"asset_a_id"`
-		AssetAName   string `json:"asset_a_name"`
-		AssetAPrice  string `json:"asset_a_price"`
-		AssetAAmount string `json:"asset_a_amount"`
-		AssetBId     uint32 `json:"asset_b_id"`
-		AssetBName   string `json:"asset_b_name"`
-		AssetBPrice  string `json:"asset_b_price"`
-		AssetBAmount string `json:"asset_b_amount"`
-	}
-)
-
-type (
-	ReqGetSwapAmount {
-		PairIndex   uint32 `form:"pair_index"`
-		AssetId     uint32 `form:"asset_id"`
-		AssetAmount string `form:"asset_amount"`
-		IsFrom      bool   `form:"is_from"`
-	}
-
-	ReqGetLpValue {
-		PairIndex uint32 `form:"pair_index"`
-		LpAmount  string `form:"lp_amount"`
-	}
-
-	ReqGetPair {
-		Index uint32 `form:"index"`
-	}
-)
-
-@server(
-	group: pair
-)
-
-service server-api {
-	@doc "Get swap amount for a specific liquidity pair and in asset amount"
-	@handler GetSwapAmount
-	get /api/v1/swapAmount (ReqGetSwapAmount) returns (SwapAmount)
-	
-	@doc "Get liquidity pairs"
-	@handler GetPairs
-	get /api/v1/pairs returns (Pairs)
-	
-	@doc "Get liquidity pool amount for a specific liquidity pair"
-	@handler GetLpValue
-	get /api/v1/lpValue (ReqGetLpValue) returns (LpValue)
-	
-	@doc "Get liquidity pool info by its index"
-	@handler GetPair
-	get /api/v1/pair (ReqGetPair) returns (Pair)
-}
-
 /* ======================= Transaction =======================*/
 
 type (
@@ -348,7 +263,6 @@ type (
 		GasFee        string `json:"gas_fee"`
 		NftIndex      int64  `json:"nft_index"`
 		CollectionId  int64  `json:"collection_id"`
-		PairIndex     int64  `json:"pair_index"`
 		AssetId       int64  `json:"asset_id"`
 		AssetName     string `json:"asset_name"`
 		NativeAddress string `json:"native_address"`

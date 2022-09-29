@@ -321,7 +321,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountName:  fromAccount.AccountName,
 		Balance:      fromAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), types.ZeroBigInt, types.ZeroBigInt).String(),
+			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), types.ZeroBigInt).String(),
 		Order:           order,
 		AccountOrder:    accountOrder,
 		Nonce:           fromAccount.Nonce,
@@ -339,7 +339,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountName:  buyAccount.AccountName,
 		Balance:      buyAccount.AssetInfo[txInfo.BuyOffer.AssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.BuyOffer.AssetId, ffmath.Neg(txInfo.BuyOffer.AssetAmount), types.ZeroBigInt, types.ZeroBigInt,
+			txInfo.BuyOffer.AssetId, ffmath.Neg(txInfo.BuyOffer.AssetAmount), types.ZeroBigInt,
 		).String(),
 		Order:           order,
 		AccountOrder:    accountOrder,
@@ -359,7 +359,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountName:  buyAccount.AccountName,
 		Balance:      buyAccount.AssetInfo[e.buyOfferAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
-			e.buyOfferAssetId, types.ZeroBigInt, types.ZeroBigInt, buyOffer).String(),
+			e.buyOfferAssetId, types.ZeroBigInt, buyOffer).String(),
 		Order:           order,
 		AccountOrder:    accountOrder,
 		Nonce:           buyAccount.Nonce,
@@ -378,7 +378,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountName:  sellAccount.AccountName,
 		Balance:      sellAccount.AssetInfo[txInfo.SellOffer.AssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.SellOffer.AssetId, sellDeltaAmount, types.ZeroBigInt, types.ZeroBigInt,
+			txInfo.SellOffer.AssetId, sellDeltaAmount, types.ZeroBigInt,
 		).String(),
 		Order:           order,
 		AccountOrder:    accountOrder,
@@ -398,7 +398,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountName:  sellAccount.AccountName,
 		Balance:      sellAccount.AssetInfo[e.sellOfferAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
-			e.sellOfferAssetId, types.ZeroBigInt, types.ZeroBigInt, sellOffer).String(),
+			e.sellOfferAssetId, types.ZeroBigInt, sellOffer).String(),
 		Order:           order,
 		AccountOrder:    accountOrder,
 		Nonce:           sellAccount.Nonce,
@@ -416,7 +416,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountName:  creatorAccount.AccountName,
 		Balance:      creatorAccount.AssetInfo[txInfo.BuyOffer.AssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.BuyOffer.AssetId, txInfo.CreatorAmount, types.ZeroBigInt, types.ZeroBigInt,
+			txInfo.BuyOffer.AssetId, txInfo.CreatorAmount, types.ZeroBigInt,
 		).String(),
 		Order:           order,
 		AccountOrder:    accountOrder,
@@ -452,7 +452,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountName:  gasAccount.AccountName,
 		Balance:      gasAccount.AssetInfo[txInfo.BuyOffer.AssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.BuyOffer.AssetId, txInfo.TreasuryAmount, types.ZeroBigInt, types.ZeroBigInt).String(),
+			txInfo.BuyOffer.AssetId, txInfo.TreasuryAmount, types.ZeroBigInt).String(),
 		Order:           order,
 		AccountOrder:    accountOrder,
 		Nonce:           gasAccount.Nonce,
@@ -469,7 +469,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountName:  gasAccount.AccountName,
 		Balance:      gasAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, types.ZeroBigInt, types.ZeroBigInt).String(),
+			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, types.ZeroBigInt).String(),
 		Order:           order,
 		AccountOrder:    accountOrder,
 		Nonce:           gasAccount.Nonce,

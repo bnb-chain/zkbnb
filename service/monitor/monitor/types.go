@@ -51,13 +51,11 @@ const (
 
 	PendingStatus = priorityrequest.PendingStatus
 
-	TxTypeRegisterZns    = types.TxTypeRegisterZns
-	TxTypeCreatePair     = types.TxTypeCreatePair
-	TxTypeUpdatePairRate = types.TxTypeUpdatePairRate
-	TxTypeDeposit        = types.TxTypeDeposit
-	TxTypeDepositNft     = types.TxTypeDepositNft
-	TxTypeFullExit       = types.TxTypeFullExit
-	TxTypeFullExitNft    = types.TxTypeFullExitNft
+	TxTypeRegisterZns = types.TxTypeRegisterZns
+	TxTypeDeposit     = types.TxTypeDeposit
+	TxTypeDepositNft  = types.TxTypeDepositNft
+	TxTypeFullExit    = types.TxTypeFullExit
+	TxTypeFullExitNft = types.TxTypeFullExitNft
 )
 
 var (
