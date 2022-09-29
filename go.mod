@@ -87,7 +87,7 @@ require (
 )
 
 require (
-	github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20220928090246-9a20106a2347
+	github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20220929103048-f3b9eabc315a
 	github.com/bnb-chain/zkbnb-eth-rpc v0.0.2
 	github.com/bnb-chain/zkbnb-smt v0.0.2-0.20220919093003-13980385d38f
 	github.com/consensys/gnark v0.7.0
@@ -109,8 +109,4 @@ require (
 	google.golang.org/protobuf v1.28.0 // indirect
 	gorm.io/driver/postgres v1.3.6
 	k8s.io/apimachinery v0.24.1 // indirect
-)
-
-replace (
-	github.com/bnb-chain/zkbnb-crypto => /Users/liguo/go/src/github.com/forcodedancing/zkbnb-crypto
 )
