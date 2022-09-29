@@ -121,8 +121,6 @@ github.com/bnb-chain/zkbnb-crypto v0.0.6 h1:UbD9XzTNQXfcEfI35MHbMMZ5IgqQFidYtvam
 github.com/bnb-chain/zkbnb-crypto v0.0.6/go.mod h1:SrKwMMrqi1Bxco6IYGXmqo7PvKVn3T3TuMMc7jD4LOA=
 github.com/bnb-chain/zkbnb-eth-rpc v0.0.2 h1:1rMa8XpplDNZaxeM1ifXMjSSeH/ucJyLUjHHEw1z4AA=
 github.com/bnb-chain/zkbnb-eth-rpc v0.0.2/go.mod h1:T69T8enicQ5kSRPIzyPJv/jhuvRMz1UxsijPXmlis+I=
-github.com/bnb-chain/zkbnb-smt v0.0.2-0.20220907130044-9c7cccbd19fa h1:aVqkz6Ge3eW7SKmINYMprpxq2VNpKp4vKQ6dEue8uUE=
-github.com/bnb-chain/zkbnb-smt v0.0.2-0.20220907130044-9c7cccbd19fa/go.mod h1:mGIAve72dt/VOVQ2wu7UjcjnMspnKczi5QACE1NGVec=
 github.com/bnb-chain/zkbnb-smt v0.0.2-0.20220919093003-13980385d38f h1:zBVWOWlH4w18O6wp0gZML4U2n1rxsFLb7KB7DFE8zcQ=
 github.com/bnb-chain/zkbnb-smt v0.0.2-0.20220919093003-13980385d38f/go.mod h1:mGIAve72dt/VOVQ2wu7UjcjnMspnKczi5QACE1NGVec=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
@@ -199,6 +197,7 @@ github.com/dgraph-io/ristretto v0.1.0 h1:Jv3CGQHp9OjuMBSne1485aDpUkTKEcUqF+jm/Lu
 github.com/dgraph-io/ristretto v0.1.0/go.mod h1:fux0lOrBhrVCJd3lcTHsIJhq1T2rokOu6v9Vcb3Q9ug=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/dgryski/go-bitstream v0.0.0-20180413035011-3522498ce2c8/go.mod h1:VMaSuZ+SZcx/wljOQKvp5srsbCiKDEb6K2wC4+PiBmQ=
+github.com/dgryski/go-farm v0.0.0-20190423205320-6a90982ecee2 h1:tdlZCpZ/P9DhczCTSixgIKmwPv6+wP5DGjqLYw5SUiA=
 github.com/dgryski/go-farm v0.0.0-20190423205320-6a90982ecee2/go.mod h1:SqUrOPUnsFjfmXRMNPybcSiG0BgUW2AuFH8PAnS2iTw=
 github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f h1:lO4WD4F/rVNCu3HqELle0jiPLLBs70cWOduZpkS1E78=
 github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f/go.mod h1:cuUVRXasLTGF7a8hSLbxyZXjz+1KgoB3wDUb6vlszIc=
