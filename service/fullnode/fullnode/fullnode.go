@@ -1,7 +1,6 @@
 package fullnode
 
 import (
-	"errors"
 	"fmt"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"gorm.io/gorm"
@@ -22,12 +21,11 @@ const (
 type Config struct {
 	core.ChainConfig
 
-	BlockConfig struct {
-		OptionalBlockSizes []int
-	}
-
 	ApiServer struct {
 		L2EndPoint string
+	}
+	FullNode struct {
+		SyncBlockStatus int64
 	}
 }
 
@@ -38,10 +36,6 @@ type Fullnode struct {
 }
 
 func NewFullnode(config *Config) (*Fullnode, error) {
-	if len(config.BlockConfig.OptionalBlockSizes) == 0 {
-		return nil, errors.New("nil optional block sizes")
-	}
-
 	bc, err := core.NewBlockChain(&config.ChainConfig, "fullnode")
 	if err != nil {
 		return nil, fmt.Errorf("new blockchain error: %v", err)
@@ -50,6 +44,12 @@ func NewFullnode(config *Config) (*Fullnode, error) {
 	l2EndPoint := config.ApiServer.L2EndPoint
 	if len(l2EndPoint) == 0 {
 		l2EndPoint = DefaultL2EndPoint
+	}
+
+	if config.FullNode.SyncBlockStatus <= block.StatusProposing ||
+		config.FullNode.SyncBlockStatus > block.StatusVerifiedAndExecuted {
+
+		config.FullNode.SyncBlockStatus = block.StatusVerifiedAndExecuted
 	}
 
 	fullnode := &Fullnode{
@@ -91,6 +91,11 @@ func (c *Fullnode) Run() {
 			continue
 		}
 
+		if l2Block.Status <= c.config.FullNode.SyncBlockStatus {
+			continue
+		}
+
+		curBlock.BlockSize = l2Block.Size
 		txs := make([]*tx.Tx, 0, len(l2Block.Txs))
 
 		for _, blockTx := range l2Block.Txs {
@@ -113,18 +118,21 @@ func (c *Fullnode) Run() {
 		}
 
 		logx.Infof("commit new block on fullnode, height=%d, blockSize=%d", curBlock.BlockHeight, curBlock.BlockSize)
-		curBlock, err = c.commitNewBlock(curBlock)
+		curBlock, err = c.createNewBlock(curBlock)
 		if err != nil {
-			panic("commit new block failed: " + err.Error())
+			panic(fmt.Sprintf("new block failed, block height: %d, Error: %s", l2Block.Height, err.Error()))
 		}
 
 		time.Sleep(100 * time.Millisecond)
 	}
 }
 
-func (c *Fullnode) commitNewBlock(curBlock *block.Block) (*block.Block, error) {
+func (c *Fullnode) createNewBlock(curBlock *block.Block) (*block.Block, error) {
 	blockSize := curBlock.BlockSize
 	blockStates, err := c.bc.CommitNewBlock(int(blockSize), curBlock.CreatedAt.UnixMilli())
+
+	blockStates.Block.BlockStatus = c.config.FullNode.SyncBlockStatus
+
 	if err != nil {
 		return nil, err
 	}
@@ -201,14 +209,11 @@ func (c *Fullnode) commitNewBlock(curBlock *block.Block) (*block.Block, error) {
 				return err
 			}
 		}
-		// delete txs from tx pool
-		err := c.bc.DB().TxPoolModel.DeleteTxsInTransact(tx, blockStates.Block.Txs)
-		if err != nil {
-			return err
-		}
+
 		// update block
 		blockStates.Block.ClearTxsModel()
-		return c.bc.DB().BlockModel.UpdateBlockInTransact(tx, blockStates.Block)
+
+		return c.bc.DB().BlockModel.CreateBlockInTransact(tx, blockStates.Block)
 	})
 
 	if err != nil {
