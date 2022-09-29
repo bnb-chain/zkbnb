@@ -2,20 +2,21 @@ package fullnode
 
 import (
 	"fmt"
-	"github.com/bnb-chain/zkbnb/dao/block"
-	"gorm.io/gorm"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb-go-sdk/client"
 	"github.com/bnb-chain/zkbnb/core"
+	"github.com/bnb-chain/zkbnb/dao/block"
 	tx "github.com/bnb-chain/zkbnb/dao/tx"
 )
 
 const (
 	MaxFullnodeInterval = 60 * 1
 	DefaultL2EndPoint   = "http://localhost:8888"
+	SyncInterval        = 100 * time.Millisecond
 )
 
 type Config struct {
@@ -33,6 +34,8 @@ type Fullnode struct {
 	config *Config
 	client client.ZkBNBClient
 	bc     *core.BlockChain
+
+	quitCh chan struct{}
 }
 
 func NewFullnode(config *Config) (*Fullnode, error) {
@@ -56,6 +59,8 @@ func NewFullnode(config *Config) (*Fullnode, error) {
 		config: config,
 		client: client.NewZkBNBClient(l2EndPoint),
 		bc:     bc,
+
+		quitCh: make(chan struct{}),
 	}
 	return fullnode, nil
 }
@@ -73,57 +78,67 @@ func (c *Fullnode) Run() {
 		panic("get current block failed: " + err.Error())
 	}
 
+	ticker := time.NewTicker(SyncInterval)
+	defer ticker.Stop()
+
+	syncBlockStatus := c.config.FullNode.SyncBlockStatus
 	for {
-		if curBlock.BlockStatus > block.StatusProposing {
-			curBlock, err = c.bc.ProposeNewBlock()
-			if err != nil {
-				panic("propose new block failed: " + err.Error())
+		select {
+		case <-ticker.C:
+
+			// if the latest block have been created
+			if curBlock.BlockStatus > block.StatusProposing {
+				// init new block, set curBlock.status to block.StatusProposing
+				curBlock, err = c.bc.InitNewBlock()
+				if err != nil {
+					panic("propose new block failed: " + err.Error())
+				}
+
+				curHeight++
 			}
 
-			curHeight++
-		}
-
-		l2Block, err := c.client.GetBlockByHeight(curHeight)
-		if err != nil {
-			// TODO check error
-			logx.Errorf("get block failed, height: %d, err %v ", curHeight, err)
-			time.Sleep(100 * time.Millisecond)
-			continue
-		}
-
-		if l2Block.Status <= c.config.FullNode.SyncBlockStatus {
-			continue
-		}
-
-		curBlock.BlockSize = l2Block.Size
-		txs := make([]*tx.Tx, 0, len(l2Block.Txs))
-
-		for _, blockTx := range l2Block.Txs {
-			newTx := &tx.Tx{
-				TxHash: blockTx.Hash, // Would be computed in prepare method of executors.
-				TxType: blockTx.Type,
-				TxInfo: blockTx.Info,
-			}
-
-			txs = append(txs, newTx)
-			err = c.bc.ApplyTransaction(newTx)
+			l2Block, err := c.client.GetBlockByHeight(curHeight)
 			if err != nil {
-				logx.Errorf("apply block tx ID: %d failed, err %v ", newTx.ID, err)
+				logx.Errorf("get block failed, height: %d, err %v ", curHeight, err)
 				continue
 			}
-		}
 
-		if c.bc.Statedb.StateRoot != l2Block.StateRoot {
-			panic(fmt.Sprintf("state root not matched between statedb and l2block: %d", l2Block.Height))
-		}
+			if l2Block.Status <= syncBlockStatus {
+				continue
+			}
 
-		logx.Infof("commit new block on fullnode, height=%d, blockSize=%d", curBlock.BlockHeight, curBlock.BlockSize)
-		curBlock, err = c.createNewBlock(curBlock)
-		if err != nil {
-			panic(fmt.Sprintf("new block failed, block height: %d, Error: %s", l2Block.Height, err.Error()))
-		}
+			curBlock.BlockSize = l2Block.Size
 
-		time.Sleep(100 * time.Millisecond)
+			txs := make([]*tx.Tx, 0, len(l2Block.Txs))
+
+			for _, blockTx := range l2Block.Txs {
+				newTx := &tx.Tx{
+					TxHash: blockTx.Hash, // Would be computed in prepare method of executors.
+					TxType: blockTx.Type,
+					TxInfo: blockTx.Info,
+				}
+
+				txs = append(txs, newTx)
+				err = c.bc.ApplyTransaction(newTx)
+				if err != nil {
+					logx.Errorf("apply block tx ID: %d failed, err %v ", newTx.ID, err)
+					continue
+				}
+			}
+
+			if c.bc.Statedb.StateRoot != l2Block.StateRoot {
+				panic(fmt.Sprintf("state root not matched between statedb and l2block: %d", l2Block.Height))
+			}
+
+			logx.Infof("commit new block on fullnode, height=%d, blockSize=%d", curBlock.BlockHeight, curBlock.BlockSize)
+			curBlock, err = c.createNewBlock(curBlock)
+			if err != nil {
+				panic(fmt.Sprintf("new block failed, block height: %d, Error: %s", l2Block.Height, err.Error()))
+			}
+
+		case <-c.quitCh:
+			return
+		}
 	}
 }
 

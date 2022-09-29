@@ -137,7 +137,7 @@ func (bc *BlockChain) ApplyTransaction(tx *tx.Tx) error {
 	return bc.processor.Process(tx)
 }
 
-func (bc *BlockChain) ProposeNewBlock() (*block.Block, error) {
+func (bc *BlockChain) InitNewBlock() (*block.Block, error) {
 	newBlock := &block.Block{
 		Model: gorm.Model{
 			// The block timestamp will be set when the first transaction executed.

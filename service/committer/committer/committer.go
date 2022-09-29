@@ -95,7 +95,7 @@ func (c *Committer) Run() {
 			break
 		}
 		if curBlock.BlockStatus > block.StatusProposing {
-			curBlock, err = c.bc.ProposeNewBlock()
+			curBlock, err = c.bc.InitNewBlock()
 			if err != nil {
 				panic("propose new block failed: " + err.Error())
 			}
