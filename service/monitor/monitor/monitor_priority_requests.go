@@ -19,7 +19,6 @@ package monitor
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -194,7 +193,8 @@ func (m *Monitor) MonitorPriorityRequests() error {
 	}
 
 	for _, request := range pendingRequests {
-		priorityOperationMetric.WithLabelValues(strconv.FormatInt(request.L1BlockHeight, 10)).Set(float64(request.ID))
+		priorityOperationMetric.Set(float64(request.RequestId))
+		priorityOperationHeightMetric.Set(float64(request.L1BlockHeight))
 	}
 
 	return nil

@@ -38,11 +38,17 @@ import (
 )
 
 var (
-	priorityOperationMetric = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	priorityOperationMetric = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
 		Name:      "prioriry_operation_insert",
-		Help:      "Priority operation metrics.",
-	}, []string{"height"})
+		Help:      "Priority operation requestID metrics.",
+	})
+
+	priorityOperationHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "prioriry_operation_insert_height",
+		Help:      "Priority operation height metrics.",
+	})
 )
 
 type Monitor struct {
@@ -114,7 +120,11 @@ func NewMonitor(c config.Config) *Monitor {
 	monitor.cli = bscRpcCli
 
 	if err := prometheus.Register(priorityOperationMetric); err != nil {
-		logx.Severef("fatal error, cannot register NetworkRPC prometheus, err: %s", err.Error())
+		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
+		panic(err)
+	}
+	if err := prometheus.Register(priorityOperationMetric); err != nil {
+		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
 		panic(err)
 	}
 

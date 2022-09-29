@@ -3,7 +3,6 @@ package committer
 import (
 	"errors"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -21,11 +20,16 @@ const (
 )
 
 var (
-	priorityOperationMetric = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	priorityOperationMetric = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
 		Name:      "prioriry_operation_process",
-		Help:      "Priority operation metrics.",
-	}, []string{"height"})
+		Help:      "Priority operation requestID metrics.",
+	})
+	priorityOperationHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "prioriry_operation_process_height",
+		Help:      "Priority operation height metrics.",
+	})
 )
 
 type Config struct {
@@ -57,7 +61,10 @@ func NewCommitter(config *Config) (*Committer, error) {
 	}
 
 	if err := prometheus.Register(priorityOperationMetric); err != nil {
-		return nil, fmt.Errorf("prometheus.Register error: %v", err)
+		return nil, fmt.Errorf("prometheus.Register priorityOperationMetric error: %v", err)
+	}
+	if err := prometheus.Register(priorityOperationHeightMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register priorityOperationHeightMetric error: %v", err)
 	}
 
 	committer := &Committer{
@@ -132,7 +139,10 @@ func (c *Committer) Run() {
 			if types.IsPriorityOperationTx(poolTx.TxType) {
 				request, err := c.bc.PriorityRequestModel.GetPriorityRequestsByL2TxHash(poolTx.TxHash)
 				if err == nil {
-					priorityOperationMetric.WithLabelValues(strconv.FormatInt(request.L1BlockHeight, 10)).Set(float64(request.RequestId))
+
+					priorityOperationMetric.Set(float64(request.RequestId))
+					priorityOperationHeightMetric.Set(float64(request.L1BlockHeight))
+
 					if latestRequestId != -1 && request.RequestId != latestRequestId+1 {
 						logx.Errorf("invalid request ID: %d, txHash: %s", request.RequestId, poolTx.TxHash)
 						return
