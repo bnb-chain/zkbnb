@@ -11,6 +11,7 @@ import (
 	"github.com/bnb-chain/zkbnb/core"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	tx "github.com/bnb-chain/zkbnb/dao/tx"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 const (
@@ -28,6 +29,8 @@ type Config struct {
 	FullNode struct {
 		SyncBlockStatus int64
 	}
+
+	LogConf logx.LogConf
 }
 
 type Fullnode struct {
@@ -70,12 +73,12 @@ func (c *Fullnode) Run() {
 
 	curHeight, err := c.bc.BlockModel.GetCurrentBlockHeight()
 	if err != nil {
-		panic("get current block height failed: " + err.Error())
+		panic(fmt.Sprintf("get current block height failed, error: %v", err.Error()))
 	}
 
 	curBlock, err := c.bc.BlockModel.GetBlockByHeight(curHeight)
 	if err != nil {
-		panic("get current block failed: " + err.Error())
+		panic(fmt.Sprintf("get current block failed, height: %d, error: %v", curHeight, err.Error()))
 	}
 
 	ticker := time.NewTicker(SyncInterval)
@@ -91,25 +94,21 @@ func (c *Fullnode) Run() {
 				// init new block, set curBlock.status to block.StatusProposing
 				curBlock, err = c.bc.InitNewBlock()
 				if err != nil {
-					panic("propose new block failed: " + err.Error())
+					panic(fmt.Sprintf("init new block failed, block height: %d, error: %v", curHeight, err.Error()))
 				}
 
 				curHeight++
 			}
 
 			l2Block, err := c.client.GetBlockByHeight(curHeight)
-			if err != nil {
+			if err != nil && err != types.DbErrNotFound {
 				logx.Errorf("get block failed, height: %d, err %v ", curHeight, err)
 				continue
 			}
 
-			if l2Block.Status <= syncBlockStatus {
+			if l2Block.Status < syncBlockStatus {
 				continue
 			}
-
-			curBlock.BlockSize = l2Block.Size
-
-			txs := make([]*tx.Tx, 0, len(l2Block.Txs))
 
 			for _, blockTx := range l2Block.Txs {
 				newTx := &tx.Tx{
@@ -118,7 +117,6 @@ func (c *Fullnode) Run() {
 					TxInfo: blockTx.Info,
 				}
 
-				txs = append(txs, newTx)
 				err = c.bc.ApplyTransaction(newTx)
 				if err != nil {
 					logx.Errorf("apply block tx ID: %d failed, err %v ", newTx.ID, err)
@@ -126,12 +124,14 @@ func (c *Fullnode) Run() {
 				}
 			}
 
+			curBlock.BlockSize = l2Block.Size
+
 			if c.bc.Statedb.StateRoot != l2Block.StateRoot {
 				panic(fmt.Sprintf("state root not matched between statedb and l2block: %d", l2Block.Height))
 			}
 
-			logx.Infof("commit new block on fullnode, height=%d, blockSize=%d", curBlock.BlockHeight, curBlock.BlockSize)
-			curBlock, err = c.createNewBlock(curBlock)
+			logx.Infof("created new block on fullnode, height=%d, blockSize=%d", curBlock.BlockHeight, curBlock.BlockSize)
+			curBlock, err = c.processNewBlock(curBlock)
 			if err != nil {
 				panic(fmt.Sprintf("new block failed, block height: %d, Error: %s", l2Block.Height, err.Error()))
 			}
@@ -142,10 +142,14 @@ func (c *Fullnode) Run() {
 	}
 }
 
-func (c *Fullnode) createNewBlock(curBlock *block.Block) (*block.Block, error) {
-	blockSize := curBlock.BlockSize
-	blockStates, err := c.bc.CommitNewBlock(int(blockSize), curBlock.CreatedAt.UnixMilli())
+func (c *Fullnode) Shutdown() {
+	close(c.quitCh)
+	c.bc.Statedb.Close()
+	c.bc.ChainDB.Close()
+}
 
+func (c *Fullnode) processNewBlock(curBlock *block.Block) (*block.Block, error) {
+	blockStates, err := c.bc.CommitNewBlock(int(curBlock.BlockSize), curBlock.CreatedAt.UnixMilli())
 	blockStates.Block.BlockStatus = c.config.FullNode.SyncBlockStatus
 
 	if err != nil {
@@ -182,27 +186,6 @@ func (c *Fullnode) createNewBlock(curBlock *block.Block) (*block.Block, error) {
 				return err
 			}
 		}
-		// create new liquidity
-		if len(blockStates.PendingNewLiquidity) != 0 {
-			err = c.bc.DB().LiquidityModel.CreateLiquidityInTransact(tx, blockStates.PendingNewLiquidity)
-			if err != nil {
-				return err
-			}
-		}
-		// update liquidity
-		if len(blockStates.PendingUpdateLiquidity) != 0 {
-			err = c.bc.DB().LiquidityModel.UpdateLiquidityInTransact(tx, blockStates.PendingUpdateLiquidity)
-			if err != nil {
-				return err
-			}
-		}
-		// create new liquidity history
-		if len(blockStates.PendingNewLiquidityHistory) != 0 {
-			err = c.bc.DB().LiquidityHistoryModel.CreateLiquidityHistoriesInTransact(tx, blockStates.PendingNewLiquidityHistory)
-			if err != nil {
-				return err
-			}
-		}
 		// create new nft
 		if len(blockStates.PendingNewNft) != 0 {
 			err = c.bc.DB().L2NftModel.CreateNftsInTransact(tx, blockStates.PendingNewNft)
@@ -227,7 +210,6 @@ func (c *Fullnode) createNewBlock(curBlock *block.Block) (*block.Block, error) {
 
 		// update block
 		blockStates.Block.ClearTxsModel()
-
 		return c.bc.DB().BlockModel.CreateBlockInTransact(tx, blockStates.Block)
 	})
 
