@@ -30,4 +30,8 @@ CoinMarketCap:
   Token: cfce503f-fake-fake-fake-bbab5257dac8
 
 MemCache:
-  CacheSize: 2048
+  AccountExpiration: 200
+  AssetExpiration:   600
+  BlockExpiration:   400
+  TxExpiration:      400
+  PriceExpiration:   3600000
