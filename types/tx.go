@@ -57,8 +57,6 @@ func IsL2Tx(txType int64) bool {
 
 func IsPriorityOperationTx(txType int64) bool {
 	if txType == TxTypeRegisterZns ||
-		txType == TxTypeCreatePair ||
-		txType == TxTypeUpdatePairRate ||
 		txType == TxTypeDeposit ||
 		txType == TxTypeDepositNft ||
 		txType == TxTypeFullExit ||
