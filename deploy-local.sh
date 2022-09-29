@@ -273,7 +273,11 @@ CoinMarketCap:
   Token: ${CMC_TOKEN}
 
 MemCache:
-  CacheSize: 2048
+  AccountExpiration: 200
+  AssetExpiration:   600
+  BlockExpiration:   400
+  TxExpiration:      400
+  PriceExpiration:   3600000
   " > ${DEPLOY_PATH}/zkbnb/service/apiserver/etc/config.yaml
 
 echo -e "
