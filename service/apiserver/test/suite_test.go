@@ -73,8 +73,12 @@ func (s *ApiServerSuite) SetupSuite() {
 			Token: "1731a7cc-6e1b-458c-8780-ce8249d4fd3b", //personal token, free plan
 		},
 		MemCache: struct {
-			CacheSize int
-		}{CacheSize: 2048},
+			AccountExpiration int
+			AssetExpiration   int
+			BlockExpiration   int
+			TxExpiration      int
+			PriceExpiration   int
+		}{AccountExpiration: 10000, AssetExpiration: 10000, BlockExpiration: 10000, TxExpiration: 10000, PriceExpiration: 3600000},
 	}
 	c.Postgres = struct{ DataSource string }{DataSource: "host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5433 sslmode=disable"}
 	c.CacheRedis = cache.CacheConf{}

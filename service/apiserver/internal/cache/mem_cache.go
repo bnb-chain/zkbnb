@@ -2,6 +2,7 @@ package cache
 
 import (
 	"fmt"
+	"time"
 
 	lru "github.com/hashicorp/golang-lru"
 
@@ -36,9 +37,14 @@ const (
 type fallback func() (interface{}, error)
 
 type MemCache struct {
-	goCache      *lru.Cache
-	accountModel accdao.AccountModel
-	assetModel   assetdao.AssetModel
+	goCache           *lru.Cache
+	accountModel      accdao.AccountModel
+	assetModel        assetdao.AssetModel
+	accountExpiration time.Duration
+	blockExpiration   time.Duration
+	txExpiration      time.Duration
+	assetExpiration   time.Duration
+	priceExpiration   time.Duration
 }
 
 func NewMemCache(accountModel accdao.AccountModel, assetModel assetdao.AssetModel,
