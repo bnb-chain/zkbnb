@@ -117,8 +117,8 @@ github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kB
 github.com/bkaradzic/go-lz4 v1.0.0/go.mod h1:0YdlkowM3VswSROI7qDxhRvJ3sLhlFrRRwjwegp5jy4=
 github.com/bketelsen/crypt v0.0.4/go.mod h1:aI6NrJ0pMGgvZKL1iVgXLnfIFJtfV+bKCoqOes/6LfM=
 github.com/bmizerany/pat v0.0.0-20170815010413-6226ea591a40/go.mod h1:8rLXio+WjiTceGBHIoTvn60HIbs7Hm7bcHjyrSqYB9c=
-github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20220930055706-79dc04a07834 h1:tdRLDtnT366wJ7JfcW761srZTuWl0WO79qgWW8xLm68=
-github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20220930055706-79dc04a07834/go.mod h1:L1BEYSG945hwjJCtR5LUQ1pvRmydSsk9oU2d9YvoOrA=
+github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20220930094817-c69f57d0225b h1:LZds9MhqLIQde7VMN/Z8gocVZ+BOknV0TCy2TIqUnKE=
+github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20220930094817-c69f57d0225b/go.mod h1:L1BEYSG945hwjJCtR5LUQ1pvRmydSsk9oU2d9YvoOrA=
 github.com/bnb-chain/zkbnb-eth-rpc v0.0.2 h1:1rMa8XpplDNZaxeM1ifXMjSSeH/ucJyLUjHHEw1z4AA=
 github.com/bnb-chain/zkbnb-eth-rpc v0.0.2/go.mod h1:T69T8enicQ5kSRPIzyPJv/jhuvRMz1UxsijPXmlis+I=
 github.com/bnb-chain/zkbnb-smt v0.0.2-0.20220919093003-13980385d38f h1:zBVWOWlH4w18O6wp0gZML4U2n1rxsFLb7KB7DFE8zcQ=
