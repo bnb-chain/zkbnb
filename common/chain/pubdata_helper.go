@@ -96,7 +96,6 @@ func ParseDepositNftPubData(pubData []byte) (tx *txtypes.DepositNftTxInfo, err e
 	}
 	offset := 0
 	offset, txType := common2.ReadUint8(pubData, offset)
-	offset, isNewNft := common2.ReadUint8(pubData, offset)
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
 	offset, nftIndex := common2.ReadUint40(pubData, offset)
 	offset, nftL1Address := common2.ReadAddress(pubData, offset)
@@ -108,7 +107,6 @@ func ParseDepositNftPubData(pubData []byte) (tx *txtypes.DepositNftTxInfo, err e
 	_, collectionId := common2.ReadUint16(pubData, offset)
 	tx = &txtypes.DepositNftTxInfo{
 		TxType:              txType,
-		IsNewNft:            isNewNft,
 		AccountIndex:        int64(accountIndex),
 		NftIndex:            nftIndex,
 		NftL1Address:        nftL1Address,
