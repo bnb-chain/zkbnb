@@ -49,11 +49,8 @@ echo 'latest block number = ' $blockNumber
 
 
 echo '4-2. deploy contracts, register and deposit on BSC Testnet'
-cd ${DEPLOY_PATH}/zkbnb-contract
-cat <<EOF >.env
-BSC_TESTNET_PRIVATE_KEY=acbaa269bd7573ff12361be4b97201aef019776ea13384681d4e5ba6a88367d9
-EOF
-yarn install
+cd ~/zkbnb-deploy
+cd ./zkbnb-contract && sudo yarn install
 npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deploy.js
 echo 'Recorded latest contract addresses into ~/zkbnb-deploy/zkbnb-contract/info/addresses.json'
 

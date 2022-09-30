@@ -6,7 +6,6 @@ import (
 	"math/big"
 	"os"
 
-	types2 "github.com/bnb-chain/zkbnb/types"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/backend/groth16"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/bnb-chain/zkbnb-crypto/circuit"
 	"github.com/bnb-chain/zkbnb-crypto/circuit/types"
+	types2 "github.com/bnb-chain/zkbnb/types"
 )
 
 func LoadProvingKey(filepath string) (pk groth16.ProvingKey, err error) {

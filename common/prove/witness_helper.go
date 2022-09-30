@@ -21,17 +21,17 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/bnb-chain/zkbnb-crypto/circuit"
-	"github.com/bnb-chain/zkbnb-crypto/ffmath"
-	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbnb-crypto/circuit"
 	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/types"
+	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/dao/account"
+	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/tree"
 	"github.com/bnb-chain/zkbnb/types"
@@ -161,11 +161,11 @@ func (w *WitnessHelper) constructAccountWitness(
 	proverAccounts []*AccountWitnessInfo,
 ) (
 	accountRootBefore []byte,
-// account before info, size is 5
+	// account before info, size is 4
 	accountsInfoBefore [NbAccountsPerTx]*cryptoTypes.Account,
-// before account asset merkle proof
+	// before account asset merkle proof
 	merkleProofsAccountAssetsBefore [NbAccountsPerTx][NbAccountAssetsPerAccount][AssetMerkleLevels][]byte,
-// before account merkle proof
+	// before account merkle proof
 	merkleProofsAccountBefore [NbAccountsPerTx][AccountMerkleLevels][]byte,
 	err error,
 ) {
@@ -355,11 +355,11 @@ func (w *WitnessHelper) constructAccountWitness(
 func (w *WitnessHelper) constructNftWitness(
 	proverNftInfo *NftWitnessInfo,
 ) (
-// nft root before
+	// nft root before
 	nftRootBefore []byte,
-// nft before
+	// nft before
 	nftBefore *cryptoTypes.Nft,
-// before nft tree merkle proof
+	// before nft tree merkle proof
 	merkleProofsNftBefore [NftMerkleLevels][]byte,
 	err error,
 ) {
@@ -674,7 +674,6 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 		// gas account
 		gasAccountInfo, err := w.accountModel.GetConfirmedAccountByIndex(types.GasAccount)
 		if err != nil {
-
 			return nil, nil, err
 		}
 
