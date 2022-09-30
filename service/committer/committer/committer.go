@@ -5,16 +5,31 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb/core"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/tx"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 const (
 	MaxCommitterInterval = 60 * 1
+)
+
+var (
+	priorityOperationMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "prioriry_operation_process",
+		Help:      "Priority operation requestID metrics.",
+	})
+	priorityOperationHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "prioriry_operation_process_height",
+		Help:      "Priority operation height metrics.",
+	})
 )
 
 type Config struct {
@@ -45,6 +60,13 @@ func NewCommitter(config *Config) (*Committer, error) {
 		return nil, fmt.Errorf("new blockchain error: %v", err)
 	}
 
+	if err := prometheus.Register(priorityOperationMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register priorityOperationMetric error: %v", err)
+	}
+	if err := prometheus.Register(priorityOperationHeightMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register priorityOperationHeightMetric error: %v", err)
+	}
+
 	committer := &Committer{
 		running:            true,
 		config:             config,
@@ -60,6 +82,12 @@ func (c *Committer) Run() {
 	curBlock, err := c.restoreExecutedTxs()
 	if err != nil {
 		panic("restore executed tx failed: " + err.Error())
+	}
+
+	latestRequestId, err := c.getLatestExecutedRequestId()
+	if err != nil {
+		logx.Error("get latest executed request ID failed:", err)
+		latestRequestId = -1
 	}
 
 	for {
@@ -106,6 +134,23 @@ func (c *Committer) Run() {
 				poolTx.TxStatus = tx.StatusFailed
 				pendingDeletePoolTxs = append(pendingDeletePoolTxs, poolTx)
 				continue
+			}
+
+			if types.IsPriorityOperationTx(poolTx.TxType) {
+				request, err := c.bc.PriorityRequestModel.GetPriorityRequestsByL2TxHash(poolTx.TxHash)
+				if err == nil {
+
+					priorityOperationMetric.Set(float64(request.RequestId))
+					priorityOperationHeightMetric.Set(float64(request.L1BlockHeight))
+
+					if latestRequestId != -1 && request.RequestId != latestRequestId+1 {
+						logx.Errorf("invalid request ID: %d, txHash: %s", request.RequestId, poolTx.TxHash)
+						return
+					}
+					latestRequestId = request.RequestId
+				} else {
+					logx.Errorf("query txHash: %s in PriorityRequestTable failed, err %v ", poolTx.TxHash, err)
+				}
 			}
 
 			// Write the proposed block into database when the first transaction executed.
@@ -292,4 +337,38 @@ func (c *Committer) computeCurrentBlockSize() int {
 		}
 	}
 	return blockSize
+}
+
+func (c *Committer) getLatestExecutedRequestId() (int64, error) {
+
+	statuses := []int{
+		tx.StatusExecuted,
+		tx.StatusPacked,
+		tx.StatusCommitted,
+		tx.StatusVerified,
+	}
+
+	txTypes := []int64{
+		types.TxTypeRegisterZns,
+		types.TxTypeDeposit,
+		types.TxTypeDepositNft,
+		types.TxTypeFullExit,
+		types.TxTypeFullExitNft,
+	}
+
+	latestTx, err := c.bc.TxPoolModel.GetLatestTx(txTypes, statuses)
+	if err != nil && err != types.DbErrNotFound {
+		logx.Errorf("get latest executed tx failed: %v", err)
+		return -1, err
+	} else if err == types.DbErrNotFound {
+		return -1, nil
+	}
+
+	p, err := c.bc.PriorityRequestModel.GetPriorityRequestsByL2TxHash(latestTx.TxHash)
+	if err != nil {
+		logx.Errorf("get priority request by txhash: %s failed: %v", latestTx.TxHash, err)
+		return -1, err
+	}
+
+	return p.RequestId, nil
 }

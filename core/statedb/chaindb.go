@@ -9,6 +9,7 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/compressedblock"
 	"github.com/bnb-chain/zkbnb/dao/nft"
+	"github.com/bnb-chain/zkbnb/dao/priorityrequest"
 	"github.com/bnb-chain/zkbnb/dao/sysconfig"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 )
@@ -19,6 +20,7 @@ type ChainDB struct {
 	BlockModel           block.BlockModel
 	CompressedBlockModel compressedblock.CompressedBlockModel
 	TxModel              tx.TxModel
+	PriorityRequestModel priorityrequest.PriorityRequestModel
 
 	// State DB
 	AccountModel        account.AccountModel
@@ -38,6 +40,7 @@ func NewChainDB(db *gorm.DB) *ChainDB {
 		BlockModel:           block.NewBlockModel(db),
 		CompressedBlockModel: compressedblock.NewCompressedBlockModel(db),
 		TxModel:              tx.NewTxModel(db),
+		PriorityRequestModel: priorityrequest.NewPriorityRequestModel(db),
 
 		AccountModel:        account.NewAccountModel(db),
 		AccountHistoryModel: account.NewAccountHistoryModel(db),

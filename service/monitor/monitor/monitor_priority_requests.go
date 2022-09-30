@@ -73,6 +73,9 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			BlockHeight: types.NilBlockHeight,
 			TxStatus:    tx.StatusPending,
 		}
+
+		request.L2TxHash = txHash
+
 		// handle request based on request type
 		var txInfoBytes []byte
 		switch request.TxType {
@@ -158,11 +161,16 @@ func (m *Monitor) MonitorPriorityRequests() error {
 		if err != nil {
 			return err
 		}
-
 		return nil
 	})
 	if err != nil {
 		return fmt.Errorf("unable to create pool tx and update priority requests, error: %v", err)
 	}
+
+	for _, request := range pendingRequests {
+		priorityOperationMetric.Set(float64(request.RequestId))
+		priorityOperationHeightMetric.Set(float64(request.L1BlockHeight))
+	}
+
 	return nil
 }
