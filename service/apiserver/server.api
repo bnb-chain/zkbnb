@@ -41,12 +41,13 @@ type (
 	}
 
 	Account {
-		Status uint32          `json:"status"`
-		Index  int64           `json:"index"`
-		Name   string          `json:"name"`
-		Pk     string          `json:"pk"`
-		Nonce  int64           `json:"nonce"`
-		Assets []*AccountAsset `json:"assets"`
+		Status          uint32          `json:"status"`
+		Index           int64           `json:"index"`
+		Name            string          `json:"name"`
+		Pk              string          `json:"pk"`
+		Nonce           int64           `json:"nonce"`
+		Assets          []*AccountAsset `json:"assets"`
+		TotalAssetPrice string          `json:"total_asset_price"`
 	}
 
 	SimpleAccount {
