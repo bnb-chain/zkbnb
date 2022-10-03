@@ -49,7 +49,7 @@ type MemCache struct {
 	priceExpiration   time.Duration
 }
 
-func NewMemCache(accountModel accdao.AccountModel, assetModel assetdao.AssetModel,
+func MustNewMemCache(accountModel accdao.AccountModel, assetModel assetdao.AssetModel,
 	accountExpiration, blockExpiration, txExpiration,
 	assetExpiration, priceExpiration int, maxCounterNum, maxKeyNum int64) *MemCache {
 
