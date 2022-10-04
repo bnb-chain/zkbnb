@@ -36,7 +36,7 @@ func (l *GetAccountPendingTxsLogic) GetAccountPendingTxs(req *types.ReqGetAccoun
 	case queryByAccountIndex:
 		accountIndex, err = strconv.ParseInt(req.Value, 10, 64)
 		if err != nil || accountIndex < 0 {
-			return nil, types2.AppErrInvalidParam.RefineError("invalid value for account_index")
+			return nil, types2.AppErrInvalidAccountIndex
 		}
 	case queryByAccountName:
 		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByName(req.Value)

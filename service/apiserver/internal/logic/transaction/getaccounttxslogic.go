@@ -42,7 +42,7 @@ func (l *GetAccountTxsLogic) GetAccountTxs(req *types.ReqGetAccountTxs) (resp *t
 	case queryByAccountIndex:
 		accountIndex, err = strconv.ParseInt(req.Value, 10, 64)
 		if err != nil || accountIndex < 0 {
-			return nil, types2.AppErrInvalidParam.RefineError("invalid value for account_index")
+			return nil, types2.AppErrInvalidAccountIndex
 		}
 	case queryByAccountName:
 		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByName(req.Value)
@@ -61,9 +61,7 @@ func (l *GetAccountTxsLogic) GetAccountTxs(req *types.ReqGetAccountTxs) (resp *t
 
 	total, err := l.svcCtx.TxModel.GetTxsCountByAccountIndex(accountIndex)
 	if err != nil {
-		if err != types2.DbErrNotFound {
-			return nil, types2.AppErrInternal
-		}
+		return nil, types2.AppErrInternal
 	}
 
 	resp.Total = uint32(total)

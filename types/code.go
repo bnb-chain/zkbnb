@@ -48,8 +48,18 @@ var (
 
 	CmcNotListedErr = errors.New("cmc not listed")
 
-	AppErrInvalidParam    = New(20001, "invalid param: ")
-	AppErrInvalidTxField  = New(20002, "invalid tx field: ")
+	AppErrInvalidParam   = New(20001, "invalid param: ")
+	AppErrInvalidTxField = New(20002, "invalid tx field: ")
+
+	AppErrAccountNotFound      = New(21000, "account not found")
+	AppErrAccountNonceNotFound = New(21001, "account nonce not found")
+	AppErrInvalidAccountIndex  = New(21002, "invalid account index")
+	AppErrAssetNotFound        = New(21100, "asset not found")
+	AppErrInvalidAssetId       = New(21101, "invalid asset id")
+	AppErrBlockNotFound        = New(21200, "block not found")
+	AppErrInvalidBlockHeight   = New(21201, "invalid block height")
+	AppErrPoolTxNotFound       = New(21300, "pool tx not found")
+
 	AppErrInvalidGasAsset = New(25003, "invalid gas asset")
 	AppErrInvalidTxType   = New(25004, "invalid tx type")
 	AppErrTooManyTxs      = New(25005, "too many pending txs")
