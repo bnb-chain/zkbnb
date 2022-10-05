@@ -135,12 +135,12 @@ func (e *FullExitNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	if txInfo.AccountIndex != nft.OwnerAccountIndex {
 		// The check is not fully enough, just avoid explicit error.
 		if !bytes.Equal(txInfo.NftContentHash, common.FromHex(types.EmptyNftContentHash)) {
-			return errors.New("invalid nft content hash")
+			return types.AppErrTxInvalidNftContenthash
 		}
 	} else {
 		// The check is not fully enough, just avoid explicit error.
 		if !bytes.Equal(txInfo.NftContentHash, common.FromHex(nft.NftContentHash)) {
-			return errors.New("invalid nft content hash")
+			return types.AppErrTxInvalidNftContenthash
 		}
 	}
 

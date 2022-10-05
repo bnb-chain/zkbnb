@@ -79,24 +79,24 @@ func (e *AtomicMatchExecutor) VerifyInputs(skipGasAmtChk bool) error {
 
 	if txInfo.BuyOffer.Type != types.BuyOfferType ||
 		txInfo.SellOffer.Type != types.SellOfferType {
-		return errors.New("invalid offer type")
+		return types.AppErrTxInvalidOfferType
 	}
 	if txInfo.BuyOffer.AccountIndex == txInfo.SellOffer.AccountIndex {
-		return errors.New("same buyer and seller")
+		return types.AppErrTxSameBuyerAndSeller
 	}
 	if txInfo.SellOffer.NftIndex != txInfo.BuyOffer.NftIndex ||
 		txInfo.SellOffer.AssetId != txInfo.BuyOffer.AssetId ||
 		txInfo.SellOffer.AssetAmount.String() != txInfo.BuyOffer.AssetAmount.String() ||
 		txInfo.SellOffer.TreasuryRate != txInfo.BuyOffer.TreasuryRate {
-		return errors.New("buy offer mismatches sell offer")
+		return types.AppErrTxBuyOfferMismatchSellOffer
 	}
 
 	// Check offer expired time.
 	if err := e.bc.VerifyExpiredAt(txInfo.BuyOffer.ExpiredAt); err != nil {
-		return errors.New("invalid BuyOffer.ExpiredAt")
+		return types.AppErrTxInvalidBuyOfferExpireTime
 	}
 	if err := e.bc.VerifyExpiredAt(txInfo.SellOffer.ExpiredAt); err != nil {
-		return errors.New("invalid SellOffer.ExpiredAt")
+		return types.AppErrTxInvalidSellOfferExpireTime
 	}
 
 	fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
@@ -116,26 +116,26 @@ func (e *AtomicMatchExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	if txInfo.AccountIndex == txInfo.BuyOffer.AccountIndex && txInfo.GasFeeAssetId == txInfo.SellOffer.AssetId {
 		totalBalance := ffmath.Add(txInfo.GasFeeAssetAmount, txInfo.BuyOffer.AssetAmount)
 		if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(totalBalance) < 0 {
-			return errors.New("sender balance is not enough")
+			return types.AppErrTxSellerBalanceNotEnough
 		}
 	} else {
 		if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
-			return errors.New("sender balance is not enough")
+			return types.AppErrTxSellerBalanceNotEnough
 		}
 
 		if buyAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance.Cmp(txInfo.BuyOffer.AssetAmount) < 0 {
-			return errors.New("buy balance is not enough")
+			return types.AppErrTxBuyerBalanceNotEnough
 		}
 	}
 
 	// Check offer canceled or finalized.
 	sellOffer := sellAccount.AssetInfo[e.sellOfferAssetId].OfferCanceledOrFinalized
 	if sellOffer.Bit(int(e.sellOfferIndex)) == 1 {
-		return errors.New("sell offer canceled or finalized")
+		return types.AppErrTxInvalidSellOfferState
 	}
 	buyOffer := buyAccount.AssetInfo[e.buyOfferAssetId].OfferCanceledOrFinalized
 	if buyOffer.Bit(int(e.buyOfferIndex)) == 1 {
-		return errors.New("buy offer canceled or finalized")
+		return types.AppErrTxInvalidBuyOfferState
 	}
 
 	// Check the seller is the owner of the nft.
@@ -144,7 +144,7 @@ func (e *AtomicMatchExecutor) VerifyInputs(skipGasAmtChk bool) error {
 		return err
 	}
 	if nft.OwnerAccountIndex != txInfo.SellOffer.AccountIndex {
-		return errors.New("seller is not owner")
+		return types.AppErrTxSellerNotOwner
 	}
 
 	// Verify offer signature.

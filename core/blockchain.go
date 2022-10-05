@@ -26,6 +26,7 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/sysconfig"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/tree"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 const (
@@ -260,11 +261,11 @@ func (bc *BlockChain) commitNewBlock(blockSize int, createdAt int64) (*block.Blo
 func (bc *BlockChain) VerifyExpiredAt(expiredAt int64) error {
 	if !bc.dryRun {
 		if expiredAt < bc.currentBlock.CreatedAt.UnixMilli() {
-			return errors.New("invalid expired time")
+			return types.AppErrTxInvalidExpireTime
 		}
 	} else {
 		if expiredAt < time.Now().UnixMilli() {
-			return errors.New("invalid expired time")
+			return types.AppErrTxInvalidExpireTime
 		}
 	}
 	return nil
@@ -277,7 +278,7 @@ func (bc *BlockChain) VerifyNonce(accountIndex int64, nonce int64) error {
 			return err
 		}
 		if nonce != expectNonce {
-			return errors.New("invalid nonce")
+			return types.AppErrTxInvalidNonce
 		}
 	} else {
 		pendingNonce, err := bc.Statedb.GetPendingNonce(accountIndex)
@@ -285,7 +286,7 @@ func (bc *BlockChain) VerifyNonce(accountIndex int64, nonce int64) error {
 			return err
 		}
 		if pendingNonce != nonce {
-			return errors.New("invalid nonce")
+			return types.AppErrTxInvalidNonce
 		}
 	}
 	return nil
@@ -297,7 +298,7 @@ func (bc *BlockChain) VerifyGas(gasAccountIndex, gasFeeAssetId int64, txType int
 		return err
 	}
 	if gasAccountIndex != cfgGasAccountIndex {
-		return errors.New("invalid gas fee account")
+		return types.AppErrTxInvalidGasFeeAccount
 	}
 
 	cfgGasFee, err := bc.Statedb.GetGasConfig()
@@ -308,7 +309,7 @@ func (bc *BlockChain) VerifyGas(gasAccountIndex, gasFeeAssetId int64, txType int
 	gasAsset, ok := cfgGasFee[uint32(gasFeeAssetId)]
 	if !ok {
 		logx.Errorf("cannot find gas config for asset id: %d", gasFeeAssetId)
-		return errors.New("invalid gas fee asset")
+		return types.AppErrTxInvalidGasFeeAsset
 	}
 
 	if !skipGasAmtChk {
@@ -317,7 +318,7 @@ func (bc *BlockChain) VerifyGas(gasAccountIndex, gasFeeAssetId int64, txType int
 			return errors.New("invalid tx type")
 		}
 		if gasFeeAmount.Cmp(big.NewInt(gasFee)) < 0 {
-			return errors.New("invalid gas fee amount")
+			return types.AppErrTxInvalidGasFeeAmount
 		}
 	}
 	return nil

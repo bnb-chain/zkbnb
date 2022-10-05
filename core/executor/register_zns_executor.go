@@ -54,7 +54,7 @@ func (e *RegisterZnsExecutor) VerifyInputs(skipGasAmtChk bool) error {
 
 	_, err := bc.DB().AccountModel.GetAccountByName(txInfo.AccountName)
 	if err != sqlx.ErrNotFound {
-		return errors.New("invalid account name, already registered")
+		return types.AppErrTxAccountNameAlreadyRegistered
 	}
 
 	for index := range bc.StateDB().PendingNewAccountMap {
@@ -63,12 +63,12 @@ func (e *RegisterZnsExecutor) VerifyInputs(skipGasAmtChk bool) error {
 			continue
 		}
 		if txInfo.AccountName == account.AccountName {
-			return errors.New("invalid account name, already registered")
+			return types.AppErrTxAccountNameAlreadyRegistered
 		}
 	}
 
 	if txInfo.AccountIndex != bc.StateDB().GetNextAccountIndex() {
-		return errors.New("invalid account index")
+		return types.AppErrInvalidAccountIndex
 	}
 
 	return nil

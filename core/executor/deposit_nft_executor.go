@@ -97,7 +97,7 @@ func (e *DepositNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
 		return err
 	}
 	if nft.NftContentHash != types.EmptyNftContentHash {
-		return errors.New("invalid nft index, already exist")
+		return types.AppErrTxNftAlreadyExist
 	}
 
 	return nil

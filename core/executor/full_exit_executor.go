@@ -26,7 +26,7 @@ func NewFullExitExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	txInfo, err := types.ParseFullExitTxInfo(tx.TxInfo)
 	if err != nil {
 		logx.Errorf("parse full exit tx failed: %s", err.Error())
-		return nil, errors.New("invalid tx info")
+		return nil, types.AppErrTxInvalidTxInfo
 	}
 
 	return &FullExitExecutor{
