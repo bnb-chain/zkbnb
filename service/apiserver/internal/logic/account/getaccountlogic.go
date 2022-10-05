@@ -78,7 +78,7 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 		Assets: make([]*types.AccountAsset, 0, len(account.AssetInfo)),
 	}
 
-	totalAssetPrice := big.NewFloat(0)
+	totalAssetAmount := big.NewFloat(0)
 
 	for _, asset := range account.AssetInfo {
 		if asset.AssetId > maxAssetId {
@@ -90,14 +90,17 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 		if asset.Balance != nil && asset.Balance.Cmp(types2.ZeroBigInt) > 0 {
 			var assetName, assetSymbol string
 			var assetPrice float64
-			assetName, err = l.svcCtx.MemCache.GetAssetNameById(asset.AssetId)
+
+			assetInfo, err := l.svcCtx.MemCache.GetAssetByIdWithFallback(asset.AssetId, func() (interface{}, error) {
+
+				return l.svcCtx.AssetModel.GetAssetById(asset.AssetId)
+			})
 			if err != nil {
 				return nil, types2.AppErrInternal
 			}
-			assetSymbol, err = l.svcCtx.MemCache.GetAssetSymbolById(asset.AssetId)
-			if err != nil {
-				return nil, types2.AppErrInternal
-			}
+			assetName = assetInfo.AssetName
+			assetSymbol = assetInfo.AssetSymbol
+
 			assetPrice, err = l.svcCtx.PriceFetcher.GetCurrencyPrice(l.ctx, assetSymbol)
 			if err != nil {
 				return nil, types2.AppErrInternal
@@ -113,17 +116,17 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 			//   1. Convert unit of balance from wei to BNB
 			//   2. Calculate the result of (BNB balance * price per BNB)
 			balanceInFloat := new(big.Float).SetInt(asset.Balance)
-			unitConversion := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
+			unitConversion := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(assetInfo.Decimals)), nil)
 			assetTotalPrice := balanceInFloat.Mul(
 				new(big.Float).Quo(balanceInFloat, new(big.Float).SetInt(unitConversion)),
 				big.NewFloat(assetPrice),
 			)
 
-			totalAssetPrice = totalAssetPrice.Add(totalAssetPrice, assetTotalPrice)
+			totalAssetAmount = totalAssetAmount.Add(totalAssetAmount, assetTotalPrice)
 		}
 	}
 
-	resp.TotalAssetPrice = totalAssetPrice.Text('f', -1)
+	resp.TotalAssetAmount = totalAssetAmount.Text('f', -1)
 
 	sort.Slice(resp.Assets, func(i, j int) bool {
 		return resp.Assets[i].Id < resp.Assets[j].Id
