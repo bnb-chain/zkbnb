@@ -206,8 +206,6 @@ func (e *AtomicMatchExecutor) ApplyTransaction() error {
 	sellAccount.AssetInfo[txInfo.SellOffer.AssetId].Balance = ffmath.Add(sellAccount.AssetInfo[txInfo.SellOffer.AssetId].Balance, ffmath.Sub(
 		txInfo.BuyOffer.AssetAmount, ffmath.Add(txInfo.TreasuryAmount, txInfo.CreatorAmount)))
 	creatorAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance = ffmath.Add(creatorAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance, txInfo.CreatorAmount)
-	gasAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance, txInfo.TreasuryAmount)
-	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	fromAccount.Nonce++
 
 	sellOffer := sellAccount.AssetInfo[e.sellOfferAssetId].OfferCanceledOrFinalized
@@ -224,9 +222,10 @@ func (e *AtomicMatchExecutor) ApplyTransaction() error {
 	stateCache.SetPendingUpdateAccount(fromAccount.AccountIndex, fromAccount)
 	stateCache.SetPendingUpdateAccount(buyAccount.AccountIndex, buyAccount)
 	stateCache.SetPendingUpdateAccount(sellAccount.AccountIndex, sellAccount)
-	stateCache.SetPendingUpdateAccount(gasAccount.AccountIndex, gasAccount)
 	stateCache.SetPendingUpdateAccount(creatorAccount.AccountIndex, creatorAccount)
 	stateCache.SetPendingUpdateNft(matchNft.NftIndex, matchNft)
+	stateCache.SetPendingUpdateGasAccount(gasAccount, txInfo.BuyOffer.AssetId, txInfo.TreasuryAmount)
+	stateCache.SetPendingUpdateGasAccount(gasAccount, txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 

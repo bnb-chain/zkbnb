@@ -307,6 +307,22 @@ func (s *StateDB) GetPendingAccount(blockHeight int64) ([]*account.Account, []*a
 		})
 	}
 
+	if s.StateCache.PendingGasAccount != nil {
+		newAccount, err := chain.FromFormatAccountInfo(s.StateCache.PendingGasAccount)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		pendingUpdateAccount = append(pendingUpdateAccount, newAccount)
+		pendingNewAccountHistory = append(pendingNewAccountHistory, &account.AccountHistory{
+			AccountIndex:    newAccount.AccountIndex,
+			Nonce:           newAccount.Nonce,
+			CollectionNonce: newAccount.CollectionNonce,
+			AssetInfo:       newAccount.AssetInfo,
+			AssetRoot:       newAccount.AssetRoot,
+			L2BlockHeight:   blockHeight, // TODO: ensure this should be the new block's height.
+		})
+	}
+
 	return pendingNewAccount, pendingUpdateAccount, pendingNewAccountHistory, nil
 }
 
@@ -465,9 +481,23 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64) error {
 	if err != nil {
 		return err
 	}
+	isGasAccount := accountIndex == types.GasAccount
 	for _, assetId := range assets {
+		isGasAsset := false
+		if isGasAccount {
+			for _, gasAssetId := range types.GasAssets {
+				if assetId == gasAssetId {
+					isGasAsset = true
+					break
+				}
+			}
+		}
+		balance := account.AssetInfo[assetId].Balance.String()
+		if isGasAsset {
+			balance = s.StateCache.PendingGasAccount.AssetInfo[assetId].String()
+		}
 		assetLeaf, err := tree.ComputeAccountAssetLeafHash(
-			account.AssetInfo[assetId].Balance.String(),
+			balance,
 			account.AssetInfo[assetId].OfferCanceledOrFinalized.String(),
 		)
 		if err != nil {

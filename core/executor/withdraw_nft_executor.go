@@ -122,13 +122,11 @@ func (e *WithdrawNftExecutor) ApplyTransaction() error {
 
 	// apply changes
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	fromAccount.Nonce++
 
 	newNftInfo := types.EmptyNftInfo(txInfo.NftIndex)
 	stateCache := e.bc.StateDB()
 	stateCache.SetPendingUpdateAccount(txInfo.AccountIndex, fromAccount)
-	stateCache.SetPendingUpdateAccount(txInfo.GasAccountIndex, gasAccount)
 	stateCache.SetPendingUpdateNft(txInfo.NftIndex, &nft.L2Nft{
 		Model:               oldNft.Model,
 		NftIndex:            newNftInfo.NftIndex,
@@ -140,6 +138,7 @@ func (e *WithdrawNftExecutor) ApplyTransaction() error {
 		CreatorTreasuryRate: newNftInfo.CreatorTreasuryRate,
 		CollectionId:        newNftInfo.CollectionId,
 	})
+	stateCache.SetPendingUpdateGasAccount(gasAccount, txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 

@@ -1,6 +1,9 @@
 package statedb
 
 import (
+	"math/big"
+
+	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/ethereum/go-ethereum/common"
 
 	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/types"
@@ -24,6 +27,7 @@ type StateCache struct {
 	PendingNewNftMap        map[int64]*nft.L2Nft
 	PendingUpdateAccountMap map[int64]*types.AccountInfo
 	PendingUpdateNftMap     map[int64]*nft.L2Nft
+	PendingGasAccount       *types.AccountInfo //pending gas changes of a block
 
 	// Record the tree states that should be updated.
 	dirtyAccountsAndAssetsMap map[int64]map[int64]bool
@@ -108,6 +112,13 @@ func (c *StateCache) SetPendingNewAccount(accountIndex int64, account *types.Acc
 
 func (c *StateCache) SetPendingUpdateAccount(accountIndex int64, account *types.AccountInfo) {
 	c.PendingUpdateAccountMap[accountIndex] = account
+}
+
+func (c *StateCache) SetPendingUpdateGasAccount(account *types.AccountInfo, assetId int64, balanceDelta *big.Int) {
+	if c.PendingGasAccount == nil {
+		c.PendingGasAccount = account
+	}
+	c.PendingGasAccount.AssetInfo[assetId].Balance = ffmath.Add(c.PendingGasAccount.AssetInfo[assetId].Balance, balanceDelta)
 }
 
 func (c *StateCache) SetPendingNewNft(nftIndex int64, nft *nft.L2Nft) {
