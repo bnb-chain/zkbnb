@@ -116,7 +116,7 @@ func (c *StateCache) SetPendingUpdateAccount(accountIndex int64, account *types.
 
 func (c *StateCache) SetPendingUpdateGasAccount(account *types.AccountInfo, assetId int64, balanceDelta *big.Int) {
 	if c.PendingGasAccount == nil {
-		c.PendingGasAccount = account
+		c.PendingGasAccount = account.DeepCopy()
 	}
 	c.PendingGasAccount.AssetInfo[assetId].Balance = ffmath.Add(c.PendingGasAccount.AssetInfo[assetId].Balance, balanceDelta)
 }

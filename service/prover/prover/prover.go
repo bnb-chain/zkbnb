@@ -83,6 +83,7 @@ func NewProver(c config.Config) *Prover {
 			blockConstraints.Txs[i] = circuit.GetZeroTxConstraint()
 		}
 		blockConstraints.GasAssetIds = types.GasAssets[:]
+		blockConstraints.GasAccountIndex = types.GasAccount
 		blockConstraints.Gas = circuit.GetZeroGasConstraints(types.GasAssets[:])
 
 		logx.Infof("start compile block size %d blockConstraints", blockConstraints.TxsCount)

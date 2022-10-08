@@ -243,6 +243,7 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 	var oldStateRoot, newStateRoot []byte
 	txsWitness := make([]*utils.TxWitness, 0, block.BlockSize)
 	// scan each transaction
+	w.helper.ResetCache()
 	for idx, tx := range block.Txs {
 		txWitness, err := w.helper.ConstructTxWitness(tx, uint64(latestVerifiedBlockNr))
 		if err != nil {

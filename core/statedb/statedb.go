@@ -381,11 +381,7 @@ func (s *StateDB) DeepCopyAccounts(accountIds []int64) (map[int64]*types.Account
 		if err != nil {
 			return nil, err
 		}
-		accountCopy, err := account.DeepCopy()
-		if err != nil {
-			return nil, err
-		}
-		accounts[accountId] = accountCopy
+		accounts[accountId] = account.DeepCopy()
 	}
 
 	return accounts, nil

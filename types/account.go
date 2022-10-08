@@ -80,7 +80,7 @@ type AccountInfo struct {
 	Status          int
 }
 
-func (ai *AccountInfo) DeepCopy() (*AccountInfo, error) {
+func (ai *AccountInfo) DeepCopy() *AccountInfo {
 	assetInfo := make(map[int64]*AccountAsset)
 	for assetId, asset := range ai.AssetInfo {
 		assetInfo[assetId] = asset.DeepCopy()
@@ -99,5 +99,5 @@ func (ai *AccountInfo) DeepCopy() (*AccountInfo, error) {
 		AssetRoot:       ai.AssetRoot,
 		Status:          ai.Status,
 	}
-	return newAccountInfo, nil
+	return newAccountInfo
 }

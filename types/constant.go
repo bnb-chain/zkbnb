@@ -45,7 +45,7 @@ const (
 	NilExpiredAt       = math.MaxInt64
 	NilAssetAmount     = "0"
 
-	GasAccount = 1
+	GasAccount = int64(1)
 	BNBAssetId = 0
 )
 
