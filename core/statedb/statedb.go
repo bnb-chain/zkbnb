@@ -490,7 +490,7 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64) error {
 		}
 		balance := account.AssetInfo[assetId].Balance.String()
 		if isGasAsset {
-			balance = s.StateCache.PendingGasAccount.AssetInfo[assetId].String()
+			balance = s.StateCache.PendingGasAccount.AssetInfo[assetId].Balance.String()
 		}
 		assetLeaf, err := tree.ComputeAccountAssetLeafHash(
 			balance,

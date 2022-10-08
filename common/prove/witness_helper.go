@@ -42,7 +42,7 @@ type WitnessHelper struct {
 
 	accountModel account.AccountModel
 
-	gasAccount *cryptoTypes.Account //gas account cache
+	gasAccountInfo *cryptoTypes.Account //gas account cache
 
 	// Trees
 	accountTree bsmt.SparseMerkleTree
@@ -316,7 +316,7 @@ func (w *WitnessHelper) constructAccountWitness(
 
 		// cache gas account
 		if accountKey == types.GasAccount {
-			w.gasAccount = &cryptoTypes.Account{
+			w.gasAccountInfo = &cryptoTypes.Account{
 				AccountIndex:    types.GasAccount,
 				AccountNameHash: cryptoAccount.AccountNameHash,
 				AccountPk:       cryptoAccount.AccountPk,
@@ -326,7 +326,7 @@ func (w *WitnessHelper) constructAccountWitness(
 				AssetsInfo:      [NbAccountAssetsPerAccount]*cryptoTypes.AccountAsset{},
 			}
 			for i := 0; i < NbAccountAssetsPerAccount; i++ {
-				w.gasAccount.AssetsInfo[i] = &cryptoTypes.AccountAsset{
+				w.gasAccountInfo.AssetsInfo[i] = &cryptoTypes.AccountAsset{
 					AssetId:                  cryptoAccount.AssetsInfo[i].AssetId,
 					Balance:                  cryptoAccount.AssetsInfo[i].Balance,
 					OfferCanceledOrFinalized: cryptoAccount.AssetsInfo[i].OfferCanceledOrFinalized,
@@ -629,7 +629,7 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 	return accountKeys, accountWitnessInfo, nftWitnessInfo, nil
 }
 
-func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasWitness, stateRoot []byte, err error) {
+func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasWitness, err error) {
 	var gas *circuit.Gas
 
 	needGas := false
@@ -644,7 +644,7 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 				if txDetail.IsGas {
 					assetDelta, err := types.ParseAccountAsset(txDetail.BalanceDelta)
 					if err != nil {
-						return nil, nil, err
+						return nil, err
 					}
 					gasChanges[assetDelta.AssetId] = ffmath.Add(gasChanges[assetDelta.AssetId], assetDelta.Balance)
 				}
@@ -655,28 +655,28 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 	gasAccountIndex := types.GasAccount
 	emptyAssetTree, err := tree.NewMemAccountAssetTree()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	if !needGas { // no need of gas for this block
 		accountInfoBefore := cryptoTypes.EmptyGasAccount(gasAccountIndex, tree.NilAccountAssetRoot)
 		accountMerkleProofs, err := w.accountTree.GetProof(uint64(gasAccountIndex))
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		merkleProofsAccountBefore, err := SetFixedAccountArray(accountMerkleProofs)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		merkleProofsAccountAssetsBefore := make([][AssetMerkleLevels][]byte, 0)
 		for _, assetId := range types.GasAssets {
 			accountInfoBefore.AssetsInfo = append(accountInfoBefore.AssetsInfo, cryptoTypes.EmptyAccountAsset(assetId))
 			assetMerkleProof, err := emptyAssetTree.GetProof(uint64(assetId))
 			if err != nil {
-				return nil, nil, err
+				return nil, err
 			}
 			merkleProofsAccountAssetBefore, err := SetFixedAccountAssetArray(assetMerkleProof)
 			if err != nil {
-				return nil, nil, err
+				return nil, err
 			}
 			merkleProofsAccountAssetsBefore = append(merkleProofsAccountAssetsBefore, merkleProofsAccountAssetBefore)
 		}
@@ -690,18 +690,18 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 		// gas account
 		gasAccountInfo, err := w.accountModel.GetConfirmedAccountByIndex(types.GasAccount)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
 		formatGasAccountInfo, err := chain.ToFormatAccountInfo(gasAccountInfo)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
-		if w.gasAccount != nil {
-			formatGasAccountInfo.Nonce = w.gasAccount.Nonce
-			formatGasAccountInfo.CollectionNonce = w.gasAccount.CollectionNonce
-			for _, asset := range w.gasAccount.AssetsInfo {
+		if w.gasAccountInfo != nil {
+			formatGasAccountInfo.Nonce = w.gasAccountInfo.Nonce
+			formatGasAccountInfo.CollectionNonce = w.gasAccountInfo.CollectionNonce
+			for _, asset := range w.gasAccountInfo.AssetsInfo {
 				formatGasAccountInfo.AssetInfo[asset.AssetId] = &types.AccountAsset{
 					AssetId:                  asset.AssetId,
 					Balance:                  asset.Balance,
@@ -712,11 +712,11 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 
 		pk, err := common2.ParsePubKey(formatGasAccountInfo.PublicKey)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		accountInfoBefore := &cryptoTypes.GasAccount{
 			AccountIndex:    gasAccountIndex,
-			AccountNameHash: common.FromHex(gasAccountInfo.AccountNameHash),
+			AccountNameHash: common.FromHex(formatGasAccountInfo.AccountNameHash),
 			AccountPk:       pk,
 			Nonce:           formatGasAccountInfo.Nonce,
 			CollectionNonce: formatGasAccountInfo.CollectionNonce,
@@ -726,63 +726,62 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 
 		accountMerkleProofs, err := w.accountTree.GetProof(uint64(gasAccountIndex))
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		merkleProofsAccountBefore, err := SetFixedAccountArray(accountMerkleProofs)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		merkleProofsAccountAssetsBefore := make([][AssetMerkleLevels][]byte, 0)
 		for _, assetId := range types.GasAssets {
 			assetMerkleProof, err := w.assetTrees.Get(gasAccountIndex).GetProof(uint64(assetId))
 			if err != nil {
-				return nil, nil, err
+				return nil, err
 			}
-			balanceBefore := types.ZeroBigInt
+			balanceAfter := types.ZeroBigInt
 			offerCanceledOrFinalized := types.ZeroBigInt
 			if asset, ok := formatGasAccountInfo.AssetInfo[assetId]; ok {
-				balanceBefore = asset.Balance
+				balanceAfter = asset.Balance
 				offerCanceledOrFinalized = asset.OfferCanceledOrFinalized
 			}
 			accountInfoBefore.AssetsInfo = append(accountInfoBefore.AssetsInfo, &cryptoTypes.AccountAsset{
 				AssetId:                  assetId,
-				Balance:                  balanceBefore,
+				Balance:                  ffmath.Sub(balanceAfter, gasChanges[assetId]),
 				OfferCanceledOrFinalized: offerCanceledOrFinalized,
 			})
 
 			// set merkle proof
 			merkleProofsAccountAssetBefore, err := SetFixedAccountAssetArray(assetMerkleProof)
 			if err != nil {
-				return nil, nil, err
+				return nil, err
 			}
 			merkleProofsAccountAssetsBefore = append(merkleProofsAccountAssetsBefore, merkleProofsAccountAssetBefore)
 
-			balanceAfter := ffmath.Add(balanceBefore, gasChanges[assetId])
 			nAssetHash, err := tree.ComputeAccountAssetLeafHash(balanceAfter.String(), offerCanceledOrFinalized.String())
 			if err != nil {
-				return nil, nil, err
+				return nil, err
 			}
 			err = w.assetTrees.Get(gasAccountIndex).Set(uint64(assetId), nAssetHash)
 			if err != nil {
-				return nil, nil, err
+				return nil, err
 			}
 
 		}
-		logx.Infof("new gas account asset root: %s", common.Bytes2Hex(w.assetTrees.Get(gasAccountInfo.AccountIndex).Root()))
+		logx.Infof("new gas account asset root: %s", common.Bytes2Hex(w.assetTrees.Get(gasAccountIndex).Root()))
 
 		nAccountHash, err := tree.ComputeAccountLeafHash(
 			formatGasAccountInfo.AccountNameHash,
 			formatGasAccountInfo.PublicKey,
 			formatGasAccountInfo.Nonce,
 			formatGasAccountInfo.CollectionNonce,
-			w.assetTrees.Get(gasAccountInfo.AccountIndex).Root(),
+			w.assetTrees.Get(gasAccountIndex).Root(),
 		)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
-		err = w.accountTree.Set(uint64(gasAccountInfo.AccountIndex), nAccountHash)
+		err = w.accountTree.Set(uint64(gasAccountIndex), nAccountHash)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		gas = &circuit.Gas{
 			GasAssetCount:                   len(types.GasAssets),
@@ -792,9 +791,9 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 		}
 	}
 
-	return gas, w.accountTree.Root(), nil
+	return gas, nil
 }
 
 func (w *WitnessHelper) ResetCache() {
-	w.gasAccount = nil
+	w.gasAccountInfo = nil
 }

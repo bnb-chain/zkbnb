@@ -265,12 +265,12 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 		txsWitness = append(txsWitness, circuit.EmptyTx(newStateRoot))
 	}
 
-	gasWitness, accountRoot, err := w.helper.ConstructGasWitness(block)
+	gasWitness, err := w.helper.ConstructGasWitness(block)
 	if err != nil {
 		return nil, err
 	}
 
-	newStateRoot = tree.ComputeStateRootHash(accountRoot, w.nftTree.Root())
+	newStateRoot = tree.ComputeStateRootHash(w.accountTree.Root(), w.nftTree.Root())
 	if common.Bytes2Hex(newStateRoot) != block.StateRoot {
 		return nil, errors.New("state root doesn't match")
 	}
