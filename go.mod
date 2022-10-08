@@ -6,6 +6,7 @@ require (
 	github.com/dgraph-io/ristretto v0.1.0
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/panjf2000/ants/v2 v2.5.0
+	github.com/prometheus/client_golang v1.12.2
 	github.com/zeromicro/go-zero v1.3.4
 	gorm.io/gorm v1.23.4
 )
@@ -55,7 +56,6 @@ require (
 	github.com/pegasus-kv/thrift v0.13.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_golang v1.12.2 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.33.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
@@ -90,7 +90,7 @@ require (
 )
 
 require (
-	github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20220929142710-f30d7d0a9428
+	github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20220930094817-c69f57d0225b
 	github.com/bnb-chain/zkbnb-eth-rpc v0.0.2
 	github.com/bnb-chain/zkbnb-smt v0.0.2-0.20220919093003-13980385d38f
 	github.com/consensys/gnark v0.7.0
