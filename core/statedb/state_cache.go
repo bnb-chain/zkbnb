@@ -107,6 +107,11 @@ func (c *StateCache) SetPendingNewAccount(accountIndex int64, account *types.Acc
 }
 
 func (c *StateCache) SetPendingUpdateAccount(accountIndex int64, account *types.AccountInfo) {
+	// TO confirm: why need a separate PendingNewAccount Map
+	_, exist := c.PendingNewAccountMap[accountIndex]
+	if exist {
+		delete(c.PendingNewAccountMap, accountIndex)
+	}
 	c.PendingUpdateAccountMap[accountIndex] = account
 }
 
@@ -115,5 +120,10 @@ func (c *StateCache) SetPendingNewNft(nftIndex int64, nft *nft.L2Nft) {
 }
 
 func (c *StateCache) SetPendingUpdateNft(nftIndex int64, nft *nft.L2Nft) {
+	// TO confirm: why need a separate PendingNewAccount Map
+	_, exist := c.PendingNewNftMap[nftIndex]
+	if exist {
+		delete(c.PendingNewNftMap, nftIndex)
+	}
 	c.PendingUpdateNftMap[nftIndex] = nft
 }

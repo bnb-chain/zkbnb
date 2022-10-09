@@ -46,7 +46,14 @@ func (e *FullExitNftExecutor) Prepare() error {
 	account, err := bc.DB().AccountModel.GetAccountByNameHash(accountNameHash)
 	if err != nil {
 		exist := false
+		var newAccountIndexes []int64
 		for index := range bc.StateDB().PendingNewAccountMap {
+			newAccountIndexes = append(newAccountIndexes, index)
+		}
+		for index := range bc.StateDB().PendingUpdateAccountMap {
+			newAccountIndexes = append(newAccountIndexes, index)
+		}
+		for _, index := range newAccountIndexes {
 			tempAccount, err := bc.StateDB().GetAccount(index)
 			if err != nil {
 				continue

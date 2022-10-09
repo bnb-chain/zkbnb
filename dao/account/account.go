@@ -181,7 +181,11 @@ func (m *defaultAccountModel) UpdateAccountsInTransact(tx *gorm.DB, accounts []*
 			return dbTx.Error
 		}
 		if dbTx.RowsAffected == 0 {
-			return types.DbErrFailToUpdateAccount
+			// this account is new, we need create first
+			dbTx = tx.Table(m.table).Create(&account)
+			if dbTx.Error != nil {
+				return dbTx.Error
+			}
 		}
 	}
 	return nil

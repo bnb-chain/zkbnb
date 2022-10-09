@@ -138,7 +138,10 @@ func (m *defaultL2NftModel) UpdateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) err
 			return dbTx.Error
 		}
 		if dbTx.RowsAffected == 0 {
-			return types.DbErrFailToUpdateNft
+			dbTx = tx.Table(m.table).Create(&pendingNft)
+			if dbTx.Error != nil {
+				return dbTx.Error
+			}
 		}
 	}
 	return nil
