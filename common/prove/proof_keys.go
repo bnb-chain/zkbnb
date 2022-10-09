@@ -14,7 +14,6 @@ import (
 
 	"github.com/bnb-chain/zkbnb-crypto/circuit"
 	"github.com/bnb-chain/zkbnb-crypto/circuit/types"
-	types2 "github.com/bnb-chain/zkbnb/types"
 )
 
 func LoadProvingKey(filepath string) (pk groth16.ProvingKey, err error) {
@@ -53,7 +52,6 @@ func GenerateProof(
 	if err != nil {
 		return proof, err
 	}
-	blockWitness.GasAssetIds = types2.GasAssets[:]
 	var verifyWitness circuit.BlockConstraints
 	verifyWitness.OldStateRoot = cBlock.OldStateRoot
 	verifyWitness.NewStateRoot = cBlock.NewStateRoot

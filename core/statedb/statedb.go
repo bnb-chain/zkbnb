@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/dao/account"
@@ -313,28 +313,37 @@ func (s *StateDB) GetPendingAccount(blockHeight int64) ([]*account.Account, []*a
 		})
 	}
 
+	gasChanged := false
+	for _, delta := range s.StateCache.PendingGasMap {
+		if delta.Cmp(types.ZeroBigInt) > 0 {
+			gasChanged = true
+			break
+		}
+	}
+
+	handledGasAccount := false
 	for index, formatAccount := range s.PendingUpdateAccountMap {
 		if _, exist := s.PendingNewAccountMap[index]; exist {
 			continue
 		}
 
-		newAccount, err := chain.FromFormatAccountInfo(formatAccount)
-		if err != nil {
-			return nil, nil, nil, err
-		}
-
-		assetRoot := formatAccount.AssetRoot
-		if formatAccount.AccountIndex == types.GasAccount {
+		if formatAccount.AccountIndex == types.GasAccount && gasChanged {
+			handledGasAccount = true
 			for assetId, delta := range s.StateCache.PendingGasMap {
 				if asset, ok := formatAccount.AssetInfo[assetId]; ok {
 					formatAccount.AssetInfo[assetId].Balance = ffmath.Add(asset.Balance, delta)
 				} else {
 					formatAccount.AssetInfo[assetId] = &types.AccountAsset{
-						Balance: delta,
+						Balance:                  delta,
+						OfferCanceledOrFinalized: types.ZeroBigInt,
 					}
 				}
 			}
-			assetRoot = common.Bytes2Hex(s.AccountAssetTrees.Get(types.GasAccount).Root())
+		}
+
+		newAccount, err := chain.FromFormatAccountInfo(formatAccount)
+		if err != nil {
+			return nil, nil, nil, err
 		}
 
 		pendingUpdateAccount = append(pendingUpdateAccount, newAccount)
@@ -343,7 +352,42 @@ func (s *StateDB) GetPendingAccount(blockHeight int64) ([]*account.Account, []*a
 			Nonce:           newAccount.Nonce,
 			CollectionNonce: newAccount.CollectionNonce,
 			AssetInfo:       newAccount.AssetInfo,
-			AssetRoot:       assetRoot,
+			AssetRoot:       newAccount.AssetRoot,
+			L2BlockHeight:   blockHeight, // TODO: ensure this should be the new block's height.
+		})
+	}
+
+	if !handledGasAccount && gasChanged {
+		gasAccount, err := s.GetAccount(types.GasAccount)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		formatAccount, err := chain.ToFormatAccountInfo(gasAccount)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		for assetId, delta := range s.StateCache.PendingGasMap {
+			if asset, ok := formatAccount.AssetInfo[assetId]; ok {
+				formatAccount.AssetInfo[assetId].Balance = ffmath.Add(asset.Balance, delta)
+			} else {
+				formatAccount.AssetInfo[assetId] = &types.AccountAsset{
+					Balance:                  delta,
+					OfferCanceledOrFinalized: types.ZeroBigInt,
+				}
+			}
+		}
+		newAccount, err := chain.FromFormatAccountInfo(formatAccount)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+
+		pendingUpdateAccount = append(pendingUpdateAccount, newAccount)
+		pendingNewAccountHistory = append(pendingNewAccountHistory, &account.AccountHistory{
+			AccountIndex:    newAccount.AccountIndex,
+			Nonce:           newAccount.Nonce,
+			CollectionNonce: newAccount.CollectionNonce,
+			AssetInfo:       newAccount.AssetInfo,
+			AssetRoot:       newAccount.AssetRoot,
 			L2BlockHeight:   blockHeight, // TODO: ensure this should be the new block's height.
 		})
 	}

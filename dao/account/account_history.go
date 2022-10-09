@@ -33,6 +33,7 @@ type (
 		GetValidAccounts(height int64, limit int, offset int) (rowsAffected int64, accounts []*AccountHistory, err error)
 		GetValidAccountCount(height int64) (accounts int64, err error)
 		CreateAccountHistoriesInTransact(tx *gorm.DB, histories []*AccountHistory) error
+		GetLatestAccountHistory(accountIndex, height int64) (accountHistory *AccountHistory, err error)
 	}
 
 	defaultAccountHistoryModel struct {
@@ -47,7 +48,7 @@ type (
 		CollectionNonce int64
 		AssetInfo       string
 		AssetRoot       string
-		L2BlockHeight   int64
+		L2BlockHeight   int64 `gorm:"index"`
 	}
 )
 
@@ -119,4 +120,14 @@ func (m *defaultAccountHistoryModel) CreateAccountHistoriesInTransact(tx *gorm.D
 		return types.DbErrFailToCreateAccountHistory
 	}
 	return nil
+}
+
+func (m *defaultAccountHistoryModel) GetLatestAccountHistory(accountIndex, height int64) (accountHistory *AccountHistory, err error) {
+	dbTx := m.DB.Table(m.table).Where("account_index = ? and l2_block_height < ?", accountIndex, height).Order("l2_block_height desc").Limit(1).Find(&accountHistory)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return accountHistory, nil
 }
