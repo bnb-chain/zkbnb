@@ -115,10 +115,6 @@ func (e *WithdrawNftExecutor) ApplyTransaction() error {
 	if err != nil {
 		return err
 	}
-	gasAccount, err := bc.StateDB().GetFormatAccount(txInfo.GasAccountIndex)
-	if err != nil {
-		return err
-	}
 
 	// apply changes
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
@@ -138,7 +134,7 @@ func (e *WithdrawNftExecutor) ApplyTransaction() error {
 		CreatorTreasuryRate: newNftInfo.CreatorTreasuryRate,
 		CollectionId:        newNftInfo.CollectionId,
 	})
-	stateCache.SetPendingUpdateGasAccount(gasAccount, txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
+	stateCache.SetPendingUpdateGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 

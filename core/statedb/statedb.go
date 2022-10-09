@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 	lru "github.com/hashicorp/golang-lru"
@@ -237,6 +238,31 @@ func (s *StateDB) syncPendingNft(pendingNft map[int64]*nft.L2Nft) error {
 	return nil
 }
 
+func (s *StateDB) SyncPendingGas() error {
+	if cacheAccount, ok := s.AccountCache.Get(types.GasAccount); ok {
+		formatAccount := cacheAccount.(*types.AccountInfo)
+		for assetId, delta := range s.PendingGasMap {
+			if asset, ok := formatAccount.AssetInfo[assetId]; ok {
+				formatAccount.AssetInfo[assetId].Balance = ffmath.Add(asset.Balance, delta)
+			} else {
+				formatAccount.AssetInfo[assetId] = &types.AccountAsset{
+					Balance: delta,
+				}
+			}
+		}
+		account, err := chain.FromFormatAccountInfo(formatAccount)
+		if err != nil {
+			return err
+		}
+		err = s.redisCache.Set(context.Background(), dbcache.AccountKeyByIndex(account.AccountIndex), account)
+		if err != nil {
+			return fmt.Errorf("cache to redis failed: %v", err)
+		}
+		s.AccountCache.Add(account.AccountIndex, formatAccount)
+	}
+	return nil
+}
+
 func (s *StateDB) SyncStateCacheToRedis() error {
 	// Sync new create to cache.
 	err := s.syncPendingAccount(s.PendingNewAccountMap)
@@ -296,29 +322,28 @@ func (s *StateDB) GetPendingAccount(blockHeight int64) ([]*account.Account, []*a
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		pendingUpdateAccount = append(pendingUpdateAccount, newAccount)
-		pendingNewAccountHistory = append(pendingNewAccountHistory, &account.AccountHistory{
-			AccountIndex:    newAccount.AccountIndex,
-			Nonce:           newAccount.Nonce,
-			CollectionNonce: newAccount.CollectionNonce,
-			AssetInfo:       newAccount.AssetInfo,
-			AssetRoot:       newAccount.AssetRoot,
-			L2BlockHeight:   blockHeight, // TODO: ensure this should be the new block's height.
-		})
-	}
 
-	if s.StateCache.PendingGasAccount != nil {
-		newAccount, err := chain.FromFormatAccountInfo(s.StateCache.PendingGasAccount)
-		if err != nil {
-			return nil, nil, nil, err
+		assetRoot := formatAccount.AssetRoot
+		if formatAccount.AccountIndex == types.GasAccount {
+			for assetId, delta := range s.StateCache.PendingGasMap {
+				if asset, ok := formatAccount.AssetInfo[assetId]; ok {
+					formatAccount.AssetInfo[assetId].Balance = ffmath.Add(asset.Balance, delta)
+				} else {
+					formatAccount.AssetInfo[assetId] = &types.AccountAsset{
+						Balance: delta,
+					}
+				}
+			}
+			assetRoot = common.Bytes2Hex(s.AccountAssetTrees.Get(types.GasAccount).Root())
 		}
+
 		pendingUpdateAccount = append(pendingUpdateAccount, newAccount)
 		pendingNewAccountHistory = append(pendingNewAccountHistory, &account.AccountHistory{
 			AccountIndex:    newAccount.AccountIndex,
 			Nonce:           newAccount.Nonce,
 			CollectionNonce: newAccount.CollectionNonce,
 			AssetInfo:       newAccount.AssetInfo,
-			AssetRoot:       newAccount.AssetRoot,
+			AssetRoot:       assetRoot,
 			L2BlockHeight:   blockHeight, // TODO: ensure this should be the new block's height.
 		})
 	}
@@ -488,12 +513,12 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64) error {
 				}
 			}
 		}
-		balance := account.AssetInfo[assetId].Balance.String()
+		balance := account.AssetInfo[assetId].Balance
 		if isGasAsset {
-			balance = s.StateCache.PendingGasAccount.AssetInfo[assetId].Balance.String()
+			balance = ffmath.Add(balance, s.GetPendingUpdateGas(assetId))
 		}
 		assetLeaf, err := tree.ComputeAccountAssetLeafHash(
-			balance,
+			balance.String(),
 			account.AssetInfo[assetId].OfferCanceledOrFinalized.String(),
 		)
 		if err != nil {

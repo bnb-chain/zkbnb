@@ -89,10 +89,6 @@ func (e *MintNftExecutor) ApplyTransaction() error {
 	if err != nil {
 		return err
 	}
-	gasAccount, err := bc.StateDB().GetFormatAccount(txInfo.GasAccountIndex)
-	if err != nil {
-		return err
-	}
 
 	creatorAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(creatorAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	creatorAccount.Nonce++
@@ -109,7 +105,7 @@ func (e *MintNftExecutor) ApplyTransaction() error {
 		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
 		CollectionId:        txInfo.NftCollectionId,
 	})
-	stateCache.SetPendingUpdateGasAccount(gasAccount, txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
+	stateCache.SetPendingUpdateGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 

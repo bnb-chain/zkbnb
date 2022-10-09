@@ -92,10 +92,6 @@ func (e *TransferExecutor) ApplyTransaction() error {
 	if err != nil {
 		return err
 	}
-	gasAccount, err := bc.StateDB().GetFormatAccount(txInfo.GasAccountIndex)
-	if err != nil {
-		return err
-	}
 
 	fromAccount.AssetInfo[txInfo.AssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
@@ -105,7 +101,7 @@ func (e *TransferExecutor) ApplyTransaction() error {
 	stateCache := e.bc.StateDB()
 	stateCache.SetPendingUpdateAccount(txInfo.FromAccountIndex, fromAccount)
 	stateCache.SetPendingUpdateAccount(txInfo.ToAccountIndex, toAccount)
-	stateCache.SetPendingUpdateGasAccount(gasAccount, txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
+	stateCache.SetPendingUpdateGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 

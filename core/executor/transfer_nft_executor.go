@@ -89,15 +89,11 @@ func (e *TransferNftExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	fromAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.FromAccountIndex)
+	fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.FromAccountIndex)
 	if err != nil {
 		return err
 	}
-	gasAccount, err := bc.StateDB().GetFormatAccount(txInfo.GasAccountIndex)
-	if err != nil {
-		return err
-	}
-	nft, err := e.bc.StateDB().GetNft(txInfo.NftIndex)
+	nft, err := bc.StateDB().GetNft(txInfo.NftIndex)
 	if err != nil {
 		return err
 	}
@@ -109,7 +105,7 @@ func (e *TransferNftExecutor) ApplyTransaction() error {
 	stateCache := e.bc.StateDB()
 	stateCache.SetPendingUpdateAccount(txInfo.FromAccountIndex, fromAccount)
 	stateCache.SetPendingUpdateNft(txInfo.NftIndex, nft)
-	stateCache.SetPendingUpdateGasAccount(gasAccount, txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
+	stateCache.SetPendingUpdateGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 

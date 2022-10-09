@@ -27,7 +27,7 @@ type StateCache struct {
 	PendingNewNftMap        map[int64]*nft.L2Nft
 	PendingUpdateAccountMap map[int64]*types.AccountInfo
 	PendingUpdateNftMap     map[int64]*nft.L2Nft
-	PendingGasAccount       *types.AccountInfo //pending gas changes of a block
+	PendingGasMap           map[int64]*big.Int //pending gas changes of a block
 
 	// Record the tree states that should be updated.
 	dirtyAccountsAndAssetsMap map[int64]map[int64]bool
@@ -43,6 +43,7 @@ func NewStateCache(stateRoot string) *StateCache {
 		PendingNewNftMap:        make(map[int64]*nft.L2Nft, 0),
 		PendingUpdateAccountMap: make(map[int64]*types.AccountInfo, 0),
 		PendingUpdateNftMap:     make(map[int64]*nft.L2Nft, 0),
+		PendingGasMap:           make(map[int64]*big.Int, 0),
 
 		PubData:                         make([]byte, 0),
 		PriorityOperations:              0,
@@ -114,17 +115,24 @@ func (c *StateCache) SetPendingUpdateAccount(accountIndex int64, account *types.
 	c.PendingUpdateAccountMap[accountIndex] = account
 }
 
-func (c *StateCache) SetPendingUpdateGasAccount(account *types.AccountInfo, assetId int64, balanceDelta *big.Int) {
-	if c.PendingGasAccount == nil {
-		c.PendingGasAccount = account.DeepCopy()
-	}
-	c.PendingGasAccount.AssetInfo[assetId].Balance = ffmath.Add(c.PendingGasAccount.AssetInfo[assetId].Balance, balanceDelta)
-}
-
 func (c *StateCache) SetPendingNewNft(nftIndex int64, nft *nft.L2Nft) {
 	c.PendingNewNftMap[nftIndex] = nft
 }
 
 func (c *StateCache) SetPendingUpdateNft(nftIndex int64, nft *nft.L2Nft) {
 	c.PendingUpdateNftMap[nftIndex] = nft
+}
+
+func (c *StateCache) GetPendingUpdateGas(assetId int64) *big.Int {
+	if delta, ok := c.PendingGasMap[assetId]; ok {
+		return delta
+	}
+	return types.ZeroBigInt
+}
+
+func (c *StateCache) SetPendingUpdateGas(assetId int64, balanceDelta *big.Int) {
+	if _, ok := c.PendingGasMap[assetId]; !ok {
+		c.PendingGasMap[assetId] = types.ZeroBigInt
+	}
+	c.PendingGasMap[assetId] = ffmath.Add(c.PendingGasMap[assetId], balanceDelta)
 }

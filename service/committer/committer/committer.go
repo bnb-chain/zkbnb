@@ -22,12 +22,12 @@ const (
 var (
 	priorityOperationMetric = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
-		Name:      "prioriry_operation_process",
+		Name:      "priority_operation_process",
 		Help:      "Priority operation requestID metrics.",
 	})
 	priorityOperationHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
-		Name:      "prioriry_operation_process_height",
+		Name:      "priority_operation_process_height",
 		Help:      "Priority operation height metrics.",
 	})
 )
@@ -260,6 +260,11 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 		return nil, err
 	}
 
+	err = c.bc.Statedb.SyncPendingGas()
+	if err != nil {
+		return nil, err
+	}
+
 	// update db
 	err = c.bc.DB().DB.Transaction(func(tx *gorm.DB) error {
 		// create block for commit
@@ -320,7 +325,6 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 		blockStates.Block.ClearTxsModel()
 		return c.bc.DB().BlockModel.UpdateBlockInTransact(tx, blockStates.Block)
 	})
-
 	if err != nil {
 		return nil, err
 	}

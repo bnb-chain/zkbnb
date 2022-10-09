@@ -184,10 +184,6 @@ func (e *AtomicMatchExecutor) ApplyTransaction() error {
 	if err != nil {
 		return err
 	}
-	gasAccount, err := bc.StateDB().GetFormatAccount(txInfo.GasAccountIndex)
-	if err != nil {
-		return err
-	}
 	buyAccount, err := bc.StateDB().GetFormatAccount(txInfo.BuyOffer.AccountIndex)
 	if err != nil {
 		return err
@@ -224,8 +220,8 @@ func (e *AtomicMatchExecutor) ApplyTransaction() error {
 	stateCache.SetPendingUpdateAccount(sellAccount.AccountIndex, sellAccount)
 	stateCache.SetPendingUpdateAccount(creatorAccount.AccountIndex, creatorAccount)
 	stateCache.SetPendingUpdateNft(matchNft.NftIndex, matchNft)
-	stateCache.SetPendingUpdateGasAccount(gasAccount, txInfo.BuyOffer.AssetId, txInfo.TreasuryAmount)
-	stateCache.SetPendingUpdateGasAccount(gasAccount, txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
+	stateCache.SetPendingUpdateGas(txInfo.BuyOffer.AssetId, txInfo.TreasuryAmount)
+	stateCache.SetPendingUpdateGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 
