@@ -68,7 +68,6 @@ func IsPriorityOperationTx(txType int64) bool {
 
 const (
 	TxTypeBytesSize          = 1
-	IsNewNftSize             = 1
 	AddressBytesSize         = 20
 	AccountIndexBytesSize    = 4
 	AccountNameBytesSize     = 32
@@ -86,7 +85,7 @@ const (
 		AccountNameHashBytesSize + PubkeyBytesSize + PubkeyBytesSize
 	DepositPubDataSize = TxTypeBytesSize + AccountIndexBytesSize +
 		AccountNameHashBytesSize + AssetIdBytesSize + StateAmountBytesSize
-	DepositNftPubDataSize = TxTypeBytesSize + IsNewNftSize + AccountIndexBytesSize + NftIndexBytesSize + AddressBytesSize +
+	DepositNftPubDataSize = TxTypeBytesSize + AccountIndexBytesSize + NftIndexBytesSize + AddressBytesSize +
 		AccountIndexBytesSize + FeeRateBytesSize + NftContentHashBytesSize + NftTokenIdBytesSize +
 		AccountNameHashBytesSize + CollectionIdBytesSize
 	FullExitPubDataSize = TxTypeBytesSize + AccountIndexBytesSize +

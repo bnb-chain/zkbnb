@@ -20,8 +20,6 @@ type DepositNftExecutor struct {
 	BaseExecutor
 
 	txInfo *txtypes.DepositNftTxInfo
-
-	isNewNft bool
 }
 
 func NewDepositNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
@@ -66,17 +64,10 @@ func (e *DepositNftExecutor) Prepare() error {
 	// Set the right account index.
 	txInfo.AccountIndex = account.AccountIndex
 
-	// Check if it is a new nft, or it is a nft previously withdraw from layer2.
-	if txInfo.IsNewNft == 1 {
-		e.isNewNft = true
-		// Set new nft index for new nft.
-		txInfo.NftIndex = bc.StateDB().GetNextNftIndex()
-	} else {
-		_, err = e.bc.StateDB().PrepareNft(txInfo.NftIndex)
-		if err != nil {
-			logx.Errorf("prepare nft failed")
-			return err
-		}
+	_, err = e.bc.StateDB().PrepareNft(txInfo.NftIndex)
+	if err != nil {
+		logx.Errorf("prepare nft failed")
+		return err
 	}
 
 	// Mark the tree states that would be affected in this executor.
@@ -90,9 +81,6 @@ func (e *DepositNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	txInfo := e.txInfo
 
 	nft, err := bc.StateDB().GetNft(txInfo.NftIndex)
-	if e.isNewNft && nft == nil {
-		return nil
-	}
 	if err != nil {
 		return err
 	}
@@ -118,11 +106,7 @@ func (e *DepositNftExecutor) ApplyTransaction() error {
 	}
 
 	stateCache := e.bc.StateDB()
-	if e.isNewNft {
-		stateCache.SetPendingNewNft(txInfo.NftIndex, nft)
-	} else {
-		stateCache.SetPendingUpdateNft(txInfo.NftIndex, nft)
-	}
+	stateCache.SetPendingUpdateNft(txInfo.NftIndex, nft)
 	return e.BaseExecutor.ApplyTransaction()
 }
 
@@ -131,7 +115,6 @@ func (e *DepositNftExecutor) GeneratePubData() error {
 
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(types.TxTypeDepositNft))
-	buf.WriteByte(txInfo.IsNewNft)
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
 	buf.Write(common2.Uint40ToBytes(txInfo.NftIndex))
 	buf.Write(common2.AddressStrToBytes(txInfo.NftL1Address))
