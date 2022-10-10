@@ -117,12 +117,12 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 			//   2. Calculate the result of (BNB balance * price per BNB)
 			balanceInFloat := new(big.Float).SetInt(asset.Balance)
 			unitConversion := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(assetInfo.Decimals)), nil)
-			assetTotalPrice := balanceInFloat.Mul(
+			assetAmount := balanceInFloat.Mul(
 				new(big.Float).Quo(balanceInFloat, new(big.Float).SetInt(unitConversion)),
 				big.NewFloat(assetPrice),
 			)
 
-			totalAssetAmount = totalAssetAmount.Add(totalAssetAmount, assetTotalPrice)
+			totalAssetAmount = totalAssetAmount.Add(totalAssetAmount, assetAmount)
 		}
 	}
 
