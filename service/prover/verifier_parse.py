@@ -43,7 +43,7 @@ if __name__ == "__main__":
             lines = f.readlines()
             for nu in range(len(lines)):
                 if lines[nu].count("function verifyingKey()"):
-                    for i in range(8):
+                    for i in range(6):
                         tmp = lines[nu + 1 + i].split("uint256")
                         for j in range(len(tmp) - 1):
                             vks.append("".join([x for x in tmp[j+1] if x.isdigit()]))
@@ -78,8 +78,8 @@ if __name__ == "__main__":
                 new_lines.append("        if (block_size == " + src_block_sizes[i] + ") {\n")
             else:
                 new_lines.append("        } else if (block_size == " + src_block_sizes[i] + ") {\n")
-            new_lines.append("            gammaABC = new uint256[](8);\n")
-            for j in range(8):
+            new_lines.append("            gammaABC = new uint256[](4);\n")
+            for j in range(4):
                 new_lines.append("            gammaABC[" + str(j) + "] = " + all_vks[i][14 + j] + ";\n")
             new_lines.append("            return gammaABC;\n")
         new_lines.append("        } else {\n")
