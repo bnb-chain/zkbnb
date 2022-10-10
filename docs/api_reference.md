@@ -449,15 +449,15 @@ Send raw transaction
 
 #### Account
 
-| Name              | Type                              | Description | Required |
-|-------------------|-----------------------------------| ----------- | -------- |
-| status            | integer                           |  | Yes |
-| index             | long                              |  | Yes |
-| name              | string                            |  | Yes |
-| pk                | string                            |  | Yes |
-| nonce             | long                              |  | Yes |
-| assets            | [ [AccountAsset](#accountasset) ] |  | Yes |
-| total_asset_price | string                            |  | Yes |
+| Name               | Type                              | Description | Required |
+|--------------------|-----------------------------------| ----------- | -------- |
+| status             | integer                           |  | Yes |
+| index              | long                              |  | Yes |
+| name               | string                            |  | Yes |
+| pk                 | string                            |  | Yes |
+| nonce              | long                              |  | Yes |
+| assets             | [ [AccountAsset](#accountasset) ] |  | Yes |
+| total_asset_amount | string                            |  | Yes |
 
 #### AccountAsset
 
