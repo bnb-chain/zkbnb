@@ -215,6 +215,20 @@ func (w *WitnessHelper) constructAccountWitness(
 					Status:          accountInfo.Status,
 				},
 			})
+
+			// cache gas account
+			if accountKey == types.GasAccount {
+				w.gasAccountInfo = &types.AccountInfo{
+					AccountIndex:    accountInfo.AccountIndex,
+					AccountName:     accountInfo.AccountName,
+					PublicKey:       accountInfo.PublicKey,
+					AccountNameHash: accountInfo.AccountNameHash,
+					Nonce:           types.EmptyNonce,
+					CollectionNonce: types.EmptyCollectionNonce,
+					AssetRoot:       common.Bytes2Hex(tree.NilAccountAssetRoot),
+					AssetInfo:       make(map[int64]*types.AccountAsset, 0),
+				}
+			}
 		} else {
 			proverAccountInfo := proverAccounts[accountCount]
 			pk, err := common2.ParsePubKey(proverAccountInfo.AccountInfo.PublicKey)
@@ -770,30 +784,26 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 
 func (w *WitnessHelper) ResetCache(height int64) error {
 	w.gasAccountInfo = nil
-
-	gasAccount, err := w.accountModel.GetConfirmedAccountByIndex(types.GasAccount)
+	history, err := w.accountHistoryModel.GetLatestAccountHistory(types.GasAccount, height)
 	if err != nil && err != types.DbErrNotFound {
 		return err
 	}
 
-	if gasAccount != nil {
-		history, err := w.accountHistoryModel.GetLatestAccountHistory(types.GasAccount, height)
+	if history != nil {
+		gasAccount, err := w.accountModel.GetConfirmedAccountByIndex(types.GasAccount)
 		if err != nil && err != types.DbErrNotFound {
 			return err
 		}
-		if err == nil {
-			gasAccount.Nonce = history.Nonce
-			gasAccount.CollectionNonce = history.CollectionNonce
-			gasAccount.AssetInfo = history.AssetInfo
-			gasAccount.AssetRoot = history.AssetRoot
+		gasAccount.Nonce = history.Nonce
+		gasAccount.CollectionNonce = history.CollectionNonce
+		gasAccount.AssetInfo = history.AssetInfo
+		gasAccount.AssetRoot = history.AssetRoot
+		formatGasAccount, err := chain.ToFormatAccountInfo(gasAccount)
+		if err != nil {
+			return err
 		}
-	}
 
-	formatGasAccount, err := chain.ToFormatAccountInfo(gasAccount)
-	if err != nil {
-		return err
+		w.gasAccountInfo = formatGasAccount
 	}
-
-	w.gasAccountInfo = formatGasAccount
 	return nil
 }
