@@ -329,16 +329,7 @@ func (s *StateDB) GetPendingAccount(blockHeight int64) ([]*account.Account, []*a
 
 		if formatAccount.AccountIndex == types.GasAccount && gasChanged {
 			handledGasAccount = true
-			for assetId, delta := range s.StateCache.PendingGasMap {
-				if asset, ok := formatAccount.AssetInfo[assetId]; ok {
-					formatAccount.AssetInfo[assetId].Balance = ffmath.Add(asset.Balance, delta)
-				} else {
-					formatAccount.AssetInfo[assetId] = &types.AccountAsset{
-						Balance:                  delta,
-						OfferCanceledOrFinalized: types.ZeroBigInt,
-					}
-				}
-			}
+			s.applyGasUpdate(formatAccount)
 		}
 
 		newAccount, err := chain.FromFormatAccountInfo(formatAccount)
@@ -362,20 +353,13 @@ func (s *StateDB) GetPendingAccount(blockHeight int64) ([]*account.Account, []*a
 		if err != nil {
 			return nil, nil, nil, err
 		}
+
 		formatAccount, err := chain.ToFormatAccountInfo(gasAccount)
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		for assetId, delta := range s.StateCache.PendingGasMap {
-			if asset, ok := formatAccount.AssetInfo[assetId]; ok {
-				formatAccount.AssetInfo[assetId].Balance = ffmath.Add(asset.Balance, delta)
-			} else {
-				formatAccount.AssetInfo[assetId] = &types.AccountAsset{
-					Balance:                  delta,
-					OfferCanceledOrFinalized: types.ZeroBigInt,
-				}
-			}
-		}
+		s.applyGasUpdate(formatAccount)
+
 		newAccount, err := chain.FromFormatAccountInfo(formatAccount)
 		if err != nil {
 			return nil, nil, nil, err
@@ -393,6 +377,19 @@ func (s *StateDB) GetPendingAccount(blockHeight int64) ([]*account.Account, []*a
 	}
 
 	return pendingNewAccount, pendingUpdateAccount, pendingNewAccountHistory, nil
+}
+
+func (s *StateDB) applyGasUpdate(formatAccount *types.AccountInfo) {
+	for assetId, delta := range s.StateCache.PendingGasMap {
+		if asset, ok := formatAccount.AssetInfo[assetId]; ok {
+			formatAccount.AssetInfo[assetId].Balance = ffmath.Add(asset.Balance, delta)
+		} else {
+			formatAccount.AssetInfo[assetId] = &types.AccountAsset{
+				Balance:                  delta,
+				OfferCanceledOrFinalized: types.ZeroBigInt,
+			}
+		}
+	}
 }
 
 func (s *StateDB) GetPendingNft(blockHeight int64) ([]*nft.L2Nft, []*nft.L2Nft, []*nft.L2NftHistory, error) {
