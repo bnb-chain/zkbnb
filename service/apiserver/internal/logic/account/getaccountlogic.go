@@ -78,7 +78,7 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 		Assets: make([]*types.AccountAsset, 0, len(account.AssetInfo)),
 	}
 
-	totalAssetAmount := big.NewFloat(0)
+	totalAssetValue := big.NewFloat(0)
 
 	for _, asset := range account.AssetInfo {
 		if asset.AssetId > maxAssetId {
@@ -117,16 +117,16 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 			//   2. Calculate the result of (BNB balance * price per BNB)
 			balanceInFloat := new(big.Float).SetInt(asset.Balance)
 			unitConversion := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(assetInfo.Decimals)), nil)
-			assetAmount := balanceInFloat.Mul(
+			assetValue := balanceInFloat.Mul(
 				new(big.Float).Quo(balanceInFloat, new(big.Float).SetInt(unitConversion)),
 				big.NewFloat(assetPrice),
 			)
 
-			totalAssetAmount = totalAssetAmount.Add(totalAssetAmount, assetAmount)
+			totalAssetValue = totalAssetValue.Add(totalAssetValue, assetValue)
 		}
 	}
 
-	resp.TotalAssetAmount = totalAssetAmount.Text('f', -1)
+	resp.TotalAssetValue = totalAssetValue.Text('f', -1)
 
 	sort.Slice(resp.Assets, func(i, j int) bool {
 		return resp.Assets[i].Id < resp.Assets[j].Id

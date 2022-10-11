@@ -457,7 +457,7 @@ Send raw transaction
 | pk                 | string                            |  | Yes |
 | nonce              | long                              |  | Yes |
 | assets             | [ [AccountAsset](#accountasset) ] |  | Yes |
-| total_asset_amount | string                            |  | Yes |
+| total_asset_value  | string                            |  | Yes |
 
 #### AccountAsset
 
