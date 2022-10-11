@@ -5,10 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
-
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/chain"
@@ -16,6 +12,8 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/tree"
 	"github.com/bnb-chain/zkbnb/types"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type RegisterZnsExecutor struct {
@@ -52,19 +50,9 @@ func (e *RegisterZnsExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	_, err := bc.DB().AccountModel.GetAccountByName(txInfo.AccountName)
-	if err != sqlx.ErrNotFound {
+	_, err := bc.StateDB().GetAccountByName(txInfo.AccountName)
+	if err == nil {
 		return errors.New("invalid account name, already registered")
-	}
-
-	for index := range bc.StateDB().PendingNewAccountMap {
-		account, err := bc.StateDB().GetFormatAccount(index)
-		if err != nil {
-			continue
-		}
-		if txInfo.AccountName == account.AccountName {
-			return errors.New("invalid account name, already registered")
-		}
 	}
 
 	if txInfo.AccountIndex != bc.StateDB().GetNextAccountIndex() {
@@ -99,7 +87,7 @@ func (e *RegisterZnsExecutor) ApplyTransaction() error {
 	bc.StateDB().AccountAssetTrees.UpdateCache(txInfo.AccountIndex, bc.CurrentBlock().BlockHeight)
 
 	stateCache := e.bc.StateDB()
-	stateCache.SetPendingNewAccount(txInfo.AccountIndex, formatAccount)
+	stateCache.SetPendingAccount(txInfo.AccountIndex, formatAccount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 

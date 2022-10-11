@@ -94,8 +94,8 @@ func (e *MintNftExecutor) ApplyTransaction() error {
 	creatorAccount.Nonce++
 
 	stateCache := e.bc.StateDB()
-	stateCache.SetPendingUpdateAccount(txInfo.CreatorAccountIndex, creatorAccount)
-	stateCache.SetPendingNewNft(txInfo.NftIndex, &nft.L2Nft{
+	stateCache.SetPendingAccount(txInfo.CreatorAccountIndex, creatorAccount)
+	stateCache.SetPendingNft(txInfo.NftIndex, &nft.L2Nft{
 		NftIndex:            txInfo.NftIndex,
 		CreatorAccountIndex: txInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   txInfo.ToAccountIndex,

@@ -215,11 +215,11 @@ func (e *AtomicMatchExecutor) ApplyTransaction() error {
 	matchNft.OwnerAccountIndex = txInfo.BuyOffer.AccountIndex
 
 	stateCache := e.bc.StateDB()
-	stateCache.SetPendingUpdateAccount(fromAccount.AccountIndex, fromAccount)
-	stateCache.SetPendingUpdateAccount(buyAccount.AccountIndex, buyAccount)
-	stateCache.SetPendingUpdateAccount(sellAccount.AccountIndex, sellAccount)
-	stateCache.SetPendingUpdateAccount(creatorAccount.AccountIndex, creatorAccount)
-	stateCache.SetPendingUpdateNft(matchNft.NftIndex, matchNft)
+	stateCache.SetPendingAccount(fromAccount.AccountIndex, fromAccount)
+	stateCache.SetPendingAccount(buyAccount.AccountIndex, buyAccount)
+	stateCache.SetPendingAccount(sellAccount.AccountIndex, sellAccount)
+	stateCache.SetPendingAccount(creatorAccount.AccountIndex, creatorAccount)
+	stateCache.SetPendingNft(matchNft.NftIndex, matchNft)
 	stateCache.SetPendingUpdateGas(txInfo.BuyOffer.AssetId, txInfo.TreasuryAmount)
 	stateCache.SetPendingUpdateGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()

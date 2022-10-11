@@ -86,7 +86,7 @@ func (e *WithdrawExecutor) ApplyTransaction() error {
 	fromAccount.Nonce++
 
 	stateCache := e.bc.StateDB()
-	stateCache.SetPendingUpdateAccount(txInfo.FromAccountIndex, fromAccount)
+	stateCache.SetPendingAccount(txInfo.FromAccountIndex, fromAccount)
 	stateCache.SetPendingUpdateGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }
