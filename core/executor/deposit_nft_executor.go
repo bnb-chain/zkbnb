@@ -59,7 +59,7 @@ func (e *DepositNftExecutor) Prepare() error {
 		}
 
 		if !exist {
-			return errors.New("invalid account name hash")
+			return types.AppErrInvalidAccountNameHash
 		}
 	}
 

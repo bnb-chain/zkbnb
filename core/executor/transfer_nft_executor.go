@@ -39,7 +39,7 @@ func (e *TransferNftExecutor) Prepare() error {
 	_, err := e.bc.StateDB().PrepareNft(txInfo.NftIndex)
 	if err != nil {
 		logx.Errorf("prepare nft failed")
-		return errors.New("internal error")
+		return err
 	}
 
 	// Mark the tree states that would be affected in this executor.

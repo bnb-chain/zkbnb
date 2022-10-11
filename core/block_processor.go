@@ -85,75 +85,84 @@ func (p *APIProcessor) Process(tx *tx.Tx) error {
 	err = executor.Prepare()
 	if err != nil {
 		logx.Error("fail to prepare:", err)
-		return types.AppErrInternal
+		return mappingPrepareErrors(err)
 	}
 	err = executor.VerifyInputs(false)
 	if err != nil {
-		return mappingAPIErrors(err)
+		return mappingVerifyInputsErrors(err)
 	}
 
 	return nil
 }
 
-func mappingAPIErrors(err error) error {
+func mappingPrepareErrors(err error) error {
+	switch e := errors.Cause(err).(type) {
+	case types.Error:
+		return e
+	default:
+		return types.AppErrInternal
+	}
+}
+
+func mappingVerifyInputsErrors(err error) error {
 	e := errors.Cause(err)
 	switch e {
 	case txtypes.ErrAccountIndexTooLow, txtypes.ErrAccountIndexTooHigh,
 		txtypes.ErrCreatorAccountIndexTooLow, txtypes.ErrCreatorAccountIndexTooHigh,
 		txtypes.ErrFromAccountIndexTooLow, txtypes.ErrFromAccountIndexTooHigh,
 		txtypes.ErrToAccountIndexTooLow, txtypes.ErrToAccountIndexTooHigh:
-		return types.AppErrTxInvalidAccountIndex
+		return types.AppErrInvalidAccountIndex
 	case txtypes.ErrGasAccountIndexTooLow, txtypes.ErrGasAccountIndexTooHigh:
-		return types.AppErrTxInvalidGasFeeAccount
+		return types.AppErrInvalidGasFeeAccount
 	case txtypes.ErrGasFeeAssetIdTooLow, txtypes.ErrGasFeeAssetIdTooHigh:
-		return types.AppErrTxInvalidGasFeeAsset
+		return types.AppErrInvalidGasFeeAsset
 	case txtypes.ErrGasFeeAssetAmountTooLow, txtypes.ErrGasFeeAssetAmountTooHigh:
-		return types.AppErrTxInvalidGasFeeAmount
+		return types.AppErrInvalidGasFeeAmount
 	case txtypes.ErrNonceTooLow:
-		return types.AppErrTxInvalidNonce
+		return types.AppErrInvalidNonce
 	case txtypes.ErrOfferTypeInvalid:
-		return types.AppErrTxInvalidOfferType
+		return types.AppErrInvalidOfferType
 	case txtypes.ErrOfferIdTooLow:
-		return types.AppErrTxInvalidOfferId
+		return types.AppErrInvalidOfferId
 	case txtypes.ErrNftIndexTooLow:
-		return types.AppErrTxInvalidNftIndex
+		return types.AppErrInvalidNftIndex
 	case txtypes.ErrAssetIdTooLow, txtypes.ErrAssetIdTooHigh,
 		txtypes.ErrAssetAIdTooLow, txtypes.ErrAssetAIdTooHigh:
-		return types.AppErrTxInvalidAssetId
+		return types.AppErrInvalidAssetId
 	case txtypes.ErrAssetAmountTooLow, txtypes.ErrAssetAmountTooHigh,
 		txtypes.ErrAssetAAmountTooLow, txtypes.ErrAssetAAmountTooHigh,
 		txtypes.ErrAssetBAmountTooLow, txtypes.ErrAssetBAmountTooHigh:
-		return types.AppErrTxInvalidAssetAmount
+		return types.AppErrInvalidAssetAmount
 	case txtypes.ErrListedAtTooLow:
-		return types.AppErrTxInvalidListTime
+		return types.AppErrInvalidListTime
 	case txtypes.ErrTreasuryRateTooLow, txtypes.ErrTreasuryRateTooHigh,
 		txtypes.ErrCreatorTreasuryRateTooLow, txtypes.ErrCreatorTreasuryRateTooHigh:
-		return types.AppErrTxInvalidTreasuryRate
+		return types.AppErrInvalidTreasuryRate
 	case txtypes.ErrCollectionNameTooShort, txtypes.ErrCollectionNameTooLong:
-		return types.AppErrTxInvalidCollectionName
+		return types.AppErrInvalidCollectionName
 	case txtypes.ErrIntroductionTooLong:
-		return types.AppErrTxInvalidIntroduction
+		return types.AppErrInvalidIntroduction
 	case txtypes.ErrNftContentHashInvalid:
-		return types.AppErrTxInvalidNftContenthash
+		return types.AppErrInvalidNftContenthash
 	case txtypes.ErrNftCollectionIdTooLow, txtypes.ErrNftCollectionIdTooHigh:
-		return types.AppErrTxInvalidCollectionId
+		return types.AppErrInvalidCollectionId
 	case txtypes.ErrPairIndexTooLow, txtypes.ErrPairIndexTooHigh:
-		return types.AppErrTxInvalidPairIndex
+		return types.AppErrInvalidPairIndex
 	case txtypes.ErrLpAmountTooLow, txtypes.ErrLpAmountTooLow:
-		return types.AppErrTxInvalidLpAmount
+		return types.AppErrInvalidLpAmount
 	case txtypes.ErrCallDataHashInvalid:
-		return types.AppErrTxInvalidCallDataHash
+		return types.AppErrInvalidCallDataHash
 	case txtypes.ErrToAccountNameHashInvalid:
-		return types.AppErrTxInvalidToAccountNameHash
+		return types.AppErrInvalidToAccountNameHash
 	case txtypes.ErrAssetAMinAmountTooLow, txtypes.ErrAssetAMinAmountTooHigh,
 		txtypes.ErrAssetBMinAmountTooLow, txtypes.ErrAssetBMinAmountTooHigh:
-		return types.AppErrTxInvalidAssetMinAmount
+		return types.AppErrInvalidAssetMinAmount
 	case txtypes.ErrToAddressInvalid:
-		return types.AppErrTxInvalidToAddress
+		return types.AppErrInvalidToAddress
 	case txtypes.ErrBuyOfferInvalid:
-		return types.AppErrTxInvalidBuyOffer
+		return types.AppErrInvalidBuyOffer
 	case txtypes.ErrSellOfferInvalid:
-		return types.AppErrTxInvalidSellOffer
+		return types.AppErrInvalidSellOffer
 
 	default:
 		return types.AppErrInvalidTxField.RefineError(err.Error())

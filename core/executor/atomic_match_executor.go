@@ -51,7 +51,7 @@ func (e *AtomicMatchExecutor) Prepare() error {
 	matchNft, err := e.bc.StateDB().PrepareNft(txInfo.SellOffer.NftIndex)
 	if err != nil {
 		logx.Errorf("prepare nft failed")
-		return errors.New("internal error")
+		return err
 	}
 
 	// Set the right treasury and creator treasury amount.

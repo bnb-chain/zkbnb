@@ -57,7 +57,7 @@ func (e *DepositExecutor) Prepare() error {
 		}
 
 		if !exist {
-			return errors.New("invalid account name hash")
+			return types.AppErrInvalidAccountNameHash
 		}
 	}
 
