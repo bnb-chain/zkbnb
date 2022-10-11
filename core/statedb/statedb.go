@@ -194,17 +194,19 @@ func (s *StateDB) GetAccount(accountIndex int64) (*account.Account, error) {
 	return account, nil
 }
 
+// GetAccountByName get the account by its name.
+// Firstly, try to find the account in the current state cache, it iterates the pending
+// account map, not performance friendly, please take care when use this API.
+// Secondly, if not found in the current state cache, then try to find the account from database.
 func (s *StateDB) GetAccountByName(accountName string) (*account.Account, error) {
-	for accountIndex := range s.PendingAccountMap {
-		pending, exist := s.StateCache.GetPendingAccount(accountIndex)
-		if exist {
-			account, err := chain.FromFormatAccountInfo(pending)
+	for _, accountInfo := range s.PendingAccountMap {
+		if accountInfo.AccountName == accountName {
+			account, err := chain.FromFormatAccountInfo(accountInfo)
 			if err != nil {
 				return nil, err
 			}
-			if account.AccountName == accountName {
-				return account, nil
-			}
+
+			return account, nil
 		}
 	}
 
@@ -216,17 +218,19 @@ func (s *StateDB) GetAccountByName(accountName string) (*account.Account, error)
 	return account, nil
 }
 
+// GetAccountByNameHash get the account by its name hash.
+// Firstly, try to find the account in the current state cache, it iterates the pending
+// account map, not performance friendly, please take care when use this API.
+// Secondly, if not found in the current state cache, then try to find the account from database.
 func (s *StateDB) GetAccountByNameHash(accountNameHash string) (*account.Account, error) {
-	for accountIndex := range s.PendingAccountMap {
-		pending, exist := s.StateCache.GetPendingAccount(accountIndex)
-		if exist {
-			account, err := chain.FromFormatAccountInfo(pending)
+	for _, accountInfo := range s.PendingAccountMap {
+		if accountInfo.AccountNameHash == accountNameHash {
+			account, err := chain.FromFormatAccountInfo(accountInfo)
 			if err != nil {
 				return nil, err
 			}
-			if account.AccountNameHash == accountNameHash {
-				return account, nil
-			}
+
+			return account, nil
 		}
 	}
 

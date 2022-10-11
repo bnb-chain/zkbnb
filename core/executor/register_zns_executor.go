@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/chain"
@@ -12,8 +15,6 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/tree"
 	"github.com/bnb-chain/zkbnb/types"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type RegisterZnsExecutor struct {
