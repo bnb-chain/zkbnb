@@ -246,6 +246,10 @@ func (s *StateDB) SyncPendingGasAccount() error {
 		if err != nil {
 			return err
 		}
+		err = s.redisCache.Set(context.Background(), dbcache.AccountKeyByIndex(account.AccountIndex), account)
+		if err != nil {
+			return fmt.Errorf("cache to redis failed: %v", err)
+		}
 		s.AccountCache.Add(account.AccountIndex, formatAccount)
 	}
 	return nil
