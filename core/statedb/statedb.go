@@ -238,25 +238,13 @@ func (s *StateDB) syncPendingNft(pendingNft map[int64]*nft.L2Nft) error {
 	return nil
 }
 
-func (s *StateDB) SyncPendingGas() error {
+func (s *StateDB) SyncPendingGasAccount() error {
 	if cacheAccount, ok := s.AccountCache.Get(types.GasAccount); ok {
 		formatAccount := cacheAccount.(*types.AccountInfo)
-		for assetId, delta := range s.PendingGasMap {
-			if asset, ok := formatAccount.AssetInfo[assetId]; ok {
-				formatAccount.AssetInfo[assetId].Balance = ffmath.Add(asset.Balance, delta)
-			} else {
-				formatAccount.AssetInfo[assetId] = &types.AccountAsset{
-					Balance: delta,
-				}
-			}
-		}
+		s.applyGasUpdate(formatAccount)
 		account, err := chain.FromFormatAccountInfo(formatAccount)
 		if err != nil {
 			return err
-		}
-		err = s.redisCache.Set(context.Background(), dbcache.AccountKeyByIndex(account.AccountIndex), account)
-		if err != nil {
-			return fmt.Errorf("cache to redis failed: %v", err)
 		}
 		s.AccountCache.Add(account.AccountIndex, formatAccount)
 	}

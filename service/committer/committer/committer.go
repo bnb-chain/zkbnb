@@ -260,7 +260,7 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 		return nil, err
 	}
 
-	err = c.bc.Statedb.SyncPendingGas()
+	err = c.bc.Statedb.SyncPendingGasAccount()
 	if err != nil {
 		return nil, err
 	}
