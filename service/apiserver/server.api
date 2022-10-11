@@ -47,7 +47,7 @@ type (
 		Pk               string          `json:"pk"`
 		Nonce            int64           `json:"nonce"`
 		Assets           []*AccountAsset `json:"assets"`
-		TotalAssetAmount string          `json:"total_asset_amount"`
+		TotalAssetValue  string          `json:"total_asset_value"`
 	}
 
 	SimpleAccount {
