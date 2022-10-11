@@ -18,6 +18,7 @@ package monitor
 
 import (
 	"fmt"
+	"github.com/bnb-chain/zkbnb/dao/proof"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -65,6 +66,7 @@ type Monitor struct {
 	TxPoolModel          tx.TxPoolModel
 	SysConfigModel       sysconfig.SysConfigModel
 	L1RollupTxModel      l1rolluptx.L1RollupTxModel
+	ProofModel           proof.ProofModel
 	L2AssetModel         asset.AssetModel
 	PriorityRequestModel priorityrequest.PriorityRequestModel
 	L1SyncedBlockModel   l1syncedblock.L1SyncedBlockModel
@@ -83,6 +85,7 @@ func NewMonitor(c config.Config) *Monitor {
 		TxPoolModel:          tx.NewTxPoolModel(db),
 		BlockModel:           block.NewBlockModel(db),
 		L1RollupTxModel:      l1rolluptx.NewL1RollupTxModel(db),
+		ProofModel:           proof.NewProofModel(db),
 		L1SyncedBlockModel:   l1syncedblock.NewL1SyncedBlockModel(db),
 		L2AssetModel:         asset.NewAssetModel(db),
 		SysConfigModel:       sysconfig.NewSysConfigModel(db),

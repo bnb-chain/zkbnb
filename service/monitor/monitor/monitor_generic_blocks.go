@@ -20,6 +20,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/bnb-chain/zkbnb/dao/l1rolluptx"
+	"github.com/bnb-chain/zkbnb/dao/proof"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
@@ -35,6 +37,7 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
 	"github.com/bnb-chain/zkbnb/dao/priorityrequest"
 	"github.com/bnb-chain/zkbnb/dao/tx"
+	types2 "github.com/bnb-chain/zkbnb/types"
 )
 
 func (m *Monitor) MonitorGenericBlocks() (err error) {
@@ -153,8 +156,16 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 
 	// get pending update blocks
 	pendingUpdateBlocks := make([]*block.Block, 0, len(relatedBlocks))
+	pendingUpdateCommittedBlocks := make([]*block.Block, 0)
+	pendingUpdateVerifiedBlocks := make([]*block.Block, 0)
 	for _, pendingUpdateBlock := range relatedBlocks {
 		pendingUpdateBlocks = append(pendingUpdateBlocks, pendingUpdateBlock)
+		if pendingUpdateBlock.CommittedTxHash != "" {
+			pendingUpdateCommittedBlocks = append(pendingUpdateCommittedBlocks, pendingUpdateBlock)
+		}
+		if pendingUpdateBlock.VerifiedTxHash != "" {
+			pendingUpdateVerifiedBlocks = append(pendingUpdateVerifiedBlocks, pendingUpdateBlock)
+		}
 	}
 
 	//update db
@@ -174,6 +185,44 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		if err != nil {
 			return err
 		}
+		// update l1 rollup tx status
+		// maybe already updated by sender, or may be deleted by sender because of timeout
+		for _, val := range pendingUpdateCommittedBlocks {
+			_, err := m.L1RollupTxModel.GetL1RollupTxsByHash(val.CommittedTxHash)
+			if err == types2.DbErrNotFound {
+				// the rollup tx is deleted by sender
+				// so we insert it here
+				m.L1RollupTxModel.CreateL1RollupTx(&l1rolluptx.L1RollupTx{
+					L1TxHash:      val.CommittedTxHash,
+					TxStatus:      l1rolluptx.StatusHandled,
+					TxType:        l1rolluptx.TxTypeCommit,
+					L2BlockHeight: val.BlockHeight,
+				})
+			}
+		}
+		pendingUpdateProofStatus := make(map[int64]int)
+		for _, val := range pendingUpdateVerifiedBlocks {
+			_, err := m.L1RollupTxModel.GetL1RollupTxsByHash(val.VerifiedTxHash)
+			if err == types2.DbErrNotFound {
+				// the rollup tx is deleted by sender
+				// so we insert it here
+				m.L1RollupTxModel.CreateL1RollupTx(&l1rolluptx.L1RollupTx{
+					L1TxHash:      val.VerifiedTxHash,
+					TxStatus:      l1rolluptx.StatusHandled,
+					TxType:        l1rolluptx.TxTypeVerifyAndExecute,
+					L2BlockHeight: val.BlockHeight,
+				})
+			}
+			pendingUpdateProofStatus[val.BlockHeight] = proof.Confirmed
+		}
+		// update proof status
+		if len(pendingUpdateProofStatus) != 0 {
+			err = m.ProofModel.UpdateProofsInTransact(tx, pendingUpdateProofStatus)
+			if err != nil {
+				return err
+			}
+		}
+
 		//update tx status
 		err = m.TxModel.UpdateTxsStatusInTransact(tx, relatedBlockTxStatus)
 		return err

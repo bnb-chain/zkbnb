@@ -220,6 +220,10 @@ func (s *Sender) UpdateSentTxs() (err error) {
 			continue
 		}
 		if receipt.Status == 0 {
+			// Should direct mark tx deleted
+			logx.Infof("delete timeout l1 rollup tx, tx_hash=%s", pendingTx.L1TxHash)
+			//nolint:errcheck
+			s.l1RollupTxModel.DeleteL1RollupTx(pendingTx)
 			// It is critical to have any failed transactions
 			panic(fmt.Sprintf("unexpected failed tx: %v", txHash))
 		}
@@ -316,6 +320,12 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	}
 	if len(blockProofs) != len(blocks) {
 		return errors.New("related proofs not ready")
+	}
+	// add sanity check
+	for i, _ := range blockProofs {
+		if blockProofs[i].BlockNumber != blocks[i].BlockHeight {
+			return errors.New("proof number not match")
+		}
 	}
 	var proofs []*big.Int
 	for _, bProof := range blockProofs {
