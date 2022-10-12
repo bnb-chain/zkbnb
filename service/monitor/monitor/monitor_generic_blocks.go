@@ -20,8 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/bnb-chain/zkbnb/dao/l1rolluptx"
-	"github.com/bnb-chain/zkbnb/dao/proof"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
@@ -34,8 +32,10 @@ import (
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/core"
 	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
 	"github.com/bnb-chain/zkbnb/dao/block"
+	"github.com/bnb-chain/zkbnb/dao/l1rolluptx"
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
 	"github.com/bnb-chain/zkbnb/dao/priorityrequest"
+	"github.com/bnb-chain/zkbnb/dao/proof"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	types2 "github.com/bnb-chain/zkbnb/types"
 )
@@ -188,30 +188,40 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		// update l1 rollup tx status
 		// maybe already updated by sender, or may be deleted by sender because of timeout
 		for _, val := range pendingUpdateCommittedBlocks {
-			_, err := m.L1RollupTxModel.GetL1RollupTxsByHash(val.CommittedTxHash)
+			_, err = m.L1RollupTxModel.GetL1RollupTxsByHash(val.CommittedTxHash)
 			if err == types2.DbErrNotFound {
 				// the rollup tx is deleted by sender
 				// so we insert it here
-				m.L1RollupTxModel.CreateL1RollupTx(&l1rolluptx.L1RollupTx{
+				err = m.L1RollupTxModel.CreateL1RollupTx(&l1rolluptx.L1RollupTx{
 					L1TxHash:      val.CommittedTxHash,
 					TxStatus:      l1rolluptx.StatusHandled,
 					TxType:        l1rolluptx.TxTypeCommit,
 					L2BlockHeight: val.BlockHeight,
 				})
+				if err != nil {
+					return err
+				}
+			} else if err != nil {
+				return err
 			}
 		}
 		pendingUpdateProofStatus := make(map[int64]int)
 		for _, val := range pendingUpdateVerifiedBlocks {
-			_, err := m.L1RollupTxModel.GetL1RollupTxsByHash(val.VerifiedTxHash)
+			_, err = m.L1RollupTxModel.GetL1RollupTxsByHash(val.VerifiedTxHash)
 			if err == types2.DbErrNotFound {
 				// the rollup tx is deleted by sender
 				// so we insert it here
-				m.L1RollupTxModel.CreateL1RollupTx(&l1rolluptx.L1RollupTx{
+				err = m.L1RollupTxModel.CreateL1RollupTx(&l1rolluptx.L1RollupTx{
 					L1TxHash:      val.VerifiedTxHash,
 					TxStatus:      l1rolluptx.StatusHandled,
 					TxType:        l1rolluptx.TxTypeVerifyAndExecute,
 					L2BlockHeight: val.BlockHeight,
 				})
+				if err != nil {
+					return err
+				}
+			} else if err != nil {
+				return err
 			}
 			pendingUpdateProofStatus[val.BlockHeight] = proof.Confirmed
 		}

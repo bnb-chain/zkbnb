@@ -322,7 +322,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		return errors.New("related proofs not ready")
 	}
 	// add sanity check
-	for i, _ := range blockProofs {
+	for i := range blockProofs {
 		if blockProofs[i].BlockNumber != blocks[i].BlockHeight {
 			return errors.New("proof number not match")
 		}
