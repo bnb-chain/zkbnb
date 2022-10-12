@@ -156,15 +156,29 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 
 	// get pending update blocks
 	pendingUpdateBlocks := make([]*block.Block, 0, len(relatedBlocks))
-	pendingUpdateCommittedBlocks := make([]*block.Block, 0)
-	pendingUpdateVerifiedBlocks := make([]*block.Block, 0)
+	pendingUpdateCommittedBlocks := make(map[string]*block.Block, 0)
+	pendingUpdateVerifiedBlocks := make(map[string]*block.Block, 0)
 	for _, pendingUpdateBlock := range relatedBlocks {
 		pendingUpdateBlocks = append(pendingUpdateBlocks, pendingUpdateBlock)
 		if pendingUpdateBlock.CommittedTxHash != "" {
-			pendingUpdateCommittedBlocks = append(pendingUpdateCommittedBlocks, pendingUpdateBlock)
+			b, exist := pendingUpdateCommittedBlocks[pendingUpdateBlock.CommittedTxHash]
+			if exist {
+				if b.BlockHeight < pendingUpdateBlock.BlockHeight {
+					pendingUpdateCommittedBlocks[pendingUpdateBlock.CommittedTxHash] = pendingUpdateBlock
+				}
+			} else {
+				pendingUpdateCommittedBlocks[pendingUpdateBlock.CommittedTxHash] = pendingUpdateBlock
+			}
 		}
 		if pendingUpdateBlock.VerifiedTxHash != "" {
-			pendingUpdateVerifiedBlocks = append(pendingUpdateVerifiedBlocks, pendingUpdateBlock)
+			b, exist := pendingUpdateVerifiedBlocks[pendingUpdateBlock.VerifiedTxHash]
+			if exist {
+				if b.BlockHeight < pendingUpdateBlock.BlockHeight {
+					pendingUpdateVerifiedBlocks[pendingUpdateBlock.VerifiedTxHash] = pendingUpdateBlock
+				}
+			} else {
+				pendingUpdateVerifiedBlocks[pendingUpdateBlock.VerifiedTxHash] = pendingUpdateBlock
+			}
 		}
 	}
 

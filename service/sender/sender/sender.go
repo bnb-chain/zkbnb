@@ -172,7 +172,7 @@ func (s *Sender) CommitBlocks() (err error) {
 		gasPrice,
 		s.config.ChainConfig.GasLimit)
 	if err != nil {
-		return fmt.Errorf("failed to send commit tx, errL %v", err)
+		return fmt.Errorf("failed to send commit tx, errL %v:%s", err, txHash)
 	}
 	newRollupTx := &l1rolluptx.L1RollupTx{
 		L1TxHash:      txHash,
@@ -355,7 +355,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	txHash, err := zkbnb.VerifyAndExecuteBlocks(cli, authCli, zkbnbInstance,
 		pendingVerifyAndExecuteBlocks, proofs, gasPrice, s.config.ChainConfig.GasLimit)
 	if err != nil {
-		return fmt.Errorf("failed to send verify tx: %v", err)
+		return fmt.Errorf("failed to send verify tx: %v:%s", err, txHash)
 	}
 
 	newRollupTx := &l1rolluptx.L1RollupTx{
