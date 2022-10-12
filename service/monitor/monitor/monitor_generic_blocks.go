@@ -190,6 +190,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		for _, val := range pendingUpdateCommittedBlocks {
 			_, err = m.L1RollupTxModel.GetL1RollupTxsByHash(val.CommittedTxHash)
 			if err == types2.DbErrNotFound {
+				logx.Info("monitor create commit rollup tx ", val.CommittedTxHash, val.BlockHeight)
 				// the rollup tx is deleted by sender
 				// so we insert it here
 				err = m.L1RollupTxModel.CreateL1RollupTx(&l1rolluptx.L1RollupTx{
@@ -209,6 +210,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		for _, val := range pendingUpdateVerifiedBlocks {
 			_, err = m.L1RollupTxModel.GetL1RollupTxsByHash(val.VerifiedTxHash)
 			if err == types2.DbErrNotFound {
+				logx.Info("monitor create verify rollup tx ", val.VerifiedTxHash, val.BlockHeight)
 				// the rollup tx is deleted by sender
 				// so we insert it here
 				err = m.L1RollupTxModel.CreateL1RollupTx(&l1rolluptx.L1RollupTx{

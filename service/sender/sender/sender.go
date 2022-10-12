@@ -184,7 +184,7 @@ func (s *Sender) CommitBlocks() (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to create tx in database, err: %v", err)
 	}
-	logx.Infof("new blocks have been committed(height): %v", newRollupTx.L2BlockHeight)
+	logx.Infof("new blocks have been committed(height): %v:%s", newRollupTx.L2BlockHeight, newRollupTx.L1TxHash)
 	return nil
 }
 
@@ -368,7 +368,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	if err != nil {
 		return fmt.Errorf(fmt.Sprintf("failed to create rollup tx in db %v", err))
 	}
-	logx.Infof("new blocks have been verified and executed(height): %d", newRollupTx.L2BlockHeight)
+	logx.Infof("new blocks have been verified and executed(height): %d:%s", newRollupTx.L2BlockHeight, newRollupTx.L1TxHash)
 	return nil
 }
 
