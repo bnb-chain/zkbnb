@@ -90,11 +90,7 @@ require (
 )
 
 require (
-<<<<<<< HEAD
 	github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20221009123206-1971dadf3584
-=======
-	github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20221010100019-2640efb8a3a3
->>>>>>> 881ff258 (refactor: reduce public inputs of block contraints)
 	github.com/bnb-chain/zkbnb-eth-rpc v0.0.2
 	github.com/bnb-chain/zkbnb-smt v0.0.2-0.20220919093003-13980385d38f
 	github.com/consensys/gnark v0.7.0
