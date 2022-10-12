@@ -91,6 +91,17 @@ func (e *AtomicMatchExecutor) VerifyInputs(skipGasAmtChk bool) error {
 		return errors.New("buy offer mismatches sell offer")
 	}
 
+	// only gas assets are allowed for atomic match
+	found := false
+	for _, assetId := range types.GasAssets {
+		if assetId == txInfo.SellOffer.AssetId {
+			found = true
+		}
+	}
+	if !found {
+		return errors.New("invalid asset of offer")
+	}
+
 	// Check offer expired time.
 	if err := e.bc.VerifyExpiredAt(txInfo.BuyOffer.ExpiredAt); err != nil {
 		return errors.New("invalid BuyOffer.ExpiredAt")
@@ -173,10 +184,6 @@ func (e *AtomicMatchExecutor) ApplyTransaction() error {
 	if err != nil {
 		return err
 	}
-	gasAccount, err := bc.StateDB().GetFormatAccount(txInfo.GasAccountIndex)
-	if err != nil {
-		return err
-	}
 	buyAccount, err := bc.StateDB().GetFormatAccount(txInfo.BuyOffer.AccountIndex)
 	if err != nil {
 		return err
@@ -195,8 +202,6 @@ func (e *AtomicMatchExecutor) ApplyTransaction() error {
 	sellAccount.AssetInfo[txInfo.SellOffer.AssetId].Balance = ffmath.Add(sellAccount.AssetInfo[txInfo.SellOffer.AssetId].Balance, ffmath.Sub(
 		txInfo.BuyOffer.AssetAmount, ffmath.Add(txInfo.TreasuryAmount, txInfo.CreatorAmount)))
 	creatorAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance = ffmath.Add(creatorAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance, txInfo.CreatorAmount)
-	gasAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance, txInfo.TreasuryAmount)
-	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	fromAccount.Nonce++
 
 	sellOffer := sellAccount.AssetInfo[e.sellOfferAssetId].OfferCanceledOrFinalized
@@ -213,9 +218,10 @@ func (e *AtomicMatchExecutor) ApplyTransaction() error {
 	stateCache.SetPendingUpdateAccount(fromAccount.AccountIndex, fromAccount)
 	stateCache.SetPendingUpdateAccount(buyAccount.AccountIndex, buyAccount)
 	stateCache.SetPendingUpdateAccount(sellAccount.AccountIndex, sellAccount)
-	stateCache.SetPendingUpdateAccount(gasAccount.AccountIndex, gasAccount)
 	stateCache.SetPendingUpdateAccount(creatorAccount.AccountIndex, creatorAccount)
 	stateCache.SetPendingUpdateNft(matchNft.NftIndex, matchNft)
+	stateCache.SetPendingUpdateGas(txInfo.BuyOffer.AssetId, txInfo.TreasuryAmount)
+	stateCache.SetPendingUpdateGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 
@@ -457,6 +463,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountOrder:    accountOrder,
 		Nonce:           gasAccount.Nonce,
 		CollectionNonce: gasAccount.CollectionNonce,
+		IsGas:           true,
 	})
 	gasAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance, txInfo.TreasuryAmount)
 
@@ -474,6 +481,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountOrder:    accountOrder,
 		Nonce:           gasAccount.Nonce,
 		CollectionNonce: gasAccount.CollectionNonce,
+		IsGas:           true,
 	})
 	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 

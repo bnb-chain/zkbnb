@@ -82,13 +82,8 @@ func (e *CancelOfferExecutor) ApplyTransaction() error {
 	if err != nil {
 		return err
 	}
-	gasAccount, err := bc.StateDB().GetFormatAccount(txInfo.GasAccountIndex)
-	if err != nil {
-		return err
-	}
 
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	fromAccount.Nonce++
 
 	offerAssetId := txInfo.OfferId / OfferPerAsset
@@ -99,7 +94,7 @@ func (e *CancelOfferExecutor) ApplyTransaction() error {
 
 	stateCache := e.bc.StateDB()
 	stateCache.SetPendingUpdateAccount(fromAccount.AccountIndex, fromAccount)
-	stateCache.SetPendingUpdateAccount(gasAccount.AccountIndex, gasAccount)
+	stateCache.SetPendingUpdateGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 
@@ -230,6 +225,7 @@ func (e *CancelOfferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Nonce:           gasAccount.Nonce,
 		AccountOrder:    accountOrder,
 		CollectionNonce: gasAccount.CollectionNonce,
+		IsGas:           true,
 	})
 	return txDetails, nil
 }

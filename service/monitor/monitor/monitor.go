@@ -40,13 +40,13 @@ import (
 var (
 	priorityOperationMetric = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
-		Name:      "prioriry_operation_insert",
+		Name:      "priority_operation_insert",
 		Help:      "Priority operation requestID metrics.",
 	})
 
 	priorityOperationHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
-		Name:      "prioriry_operation_insert_height",
+		Name:      "priority_operation_insert_height",
 		Help:      "Priority operation height metrics.",
 	})
 )

@@ -1,9 +1,12 @@
 package statedb
 
 import (
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/common"
 
 	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/types"
+	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
@@ -24,6 +27,7 @@ type StateCache struct {
 	PendingNewNftMap        map[int64]*nft.L2Nft
 	PendingUpdateAccountMap map[int64]*types.AccountInfo
 	PendingUpdateNftMap     map[int64]*nft.L2Nft
+	PendingGasMap           map[int64]*big.Int //pending gas changes of a block
 
 	// Record the tree states that should be updated.
 	dirtyAccountsAndAssetsMap map[int64]map[int64]bool
@@ -39,6 +43,7 @@ func NewStateCache(stateRoot string) *StateCache {
 		PendingNewNftMap:        make(map[int64]*nft.L2Nft, 0),
 		PendingUpdateAccountMap: make(map[int64]*types.AccountInfo, 0),
 		PendingUpdateNftMap:     make(map[int64]*nft.L2Nft, 0),
+		PendingGasMap:           make(map[int64]*big.Int, 0),
 
 		PubData:                         make([]byte, 0),
 		PriorityOperations:              0,
@@ -126,4 +131,18 @@ func (c *StateCache) SetPendingUpdateNft(nftIndex int64, nft *nft.L2Nft) {
 		delete(c.PendingNewNftMap, nftIndex)
 	}
 	c.PendingUpdateNftMap[nftIndex] = nft
+}
+
+func (c *StateCache) GetPendingUpdateGas(assetId int64) *big.Int {
+	if delta, ok := c.PendingGasMap[assetId]; ok {
+		return delta
+	}
+	return types.ZeroBigInt
+}
+
+func (c *StateCache) SetPendingUpdateGas(assetId int64, balanceDelta *big.Int) {
+	if _, ok := c.PendingGasMap[assetId]; !ok {
+		c.PendingGasMap[assetId] = types.ZeroBigInt
+	}
+	c.PendingGasMap[assetId] = ffmath.Add(c.PendingGasMap[assetId], balanceDelta)
 }

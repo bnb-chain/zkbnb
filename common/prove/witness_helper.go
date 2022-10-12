@@ -22,12 +22,16 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbnb-crypto/circuit"
 	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/types"
+	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/dao/account"
+	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/tree"
 	"github.com/bnb-chain/zkbnb/types"
@@ -36,7 +40,10 @@ import (
 type WitnessHelper struct {
 	treeCtx *tree.Context
 
-	accountModel account.AccountModel
+	accountModel        account.AccountModel
+	accountHistoryModel account.AccountHistoryModel
+
+	gasAccountInfo *types.AccountInfo //gas account cache
 
 	// Trees
 	accountTree bsmt.SparseMerkleTree
@@ -45,13 +52,14 @@ type WitnessHelper struct {
 }
 
 func NewWitnessHelper(treeCtx *tree.Context, accountTree, nftTree bsmt.SparseMerkleTree,
-	assetTrees *tree.AssetTreeCache, accountModel account.AccountModel) *WitnessHelper {
+	assetTrees *tree.AssetTreeCache, accountModel account.AccountModel, accountHistoryModel account.AccountHistoryModel) *WitnessHelper {
 	return &WitnessHelper{
-		treeCtx:      treeCtx,
-		accountModel: accountModel,
-		accountTree:  accountTree,
-		assetTrees:   assetTrees,
-		nftTree:      nftTree,
+		treeCtx:             treeCtx,
+		accountModel:        accountModel,
+		accountHistoryModel: accountHistoryModel,
+		accountTree:         accountTree,
+		assetTrees:          assetTrees,
+		nftTree:             nftTree,
 	}
 }
 
@@ -157,7 +165,7 @@ func (w *WitnessHelper) constructAccountWitness(
 	proverAccounts []*AccountWitnessInfo,
 ) (
 	accountRootBefore []byte,
-	// account before info, size is 5
+	// account before info, size is 4
 	accountsInfoBefore [NbAccountsPerTx]*cryptoTypes.Account,
 	// before account asset merkle proof
 	merkleProofsAccountAssetsBefore [NbAccountsPerTx][NbAccountAssetsPerAccount][AssetMerkleLevels][]byte,
@@ -207,6 +215,20 @@ func (w *WitnessHelper) constructAccountWitness(
 					Status:          accountInfo.Status,
 				},
 			})
+
+			// cache gas account
+			if accountKey == types.GasAccount {
+				w.gasAccountInfo = &types.AccountInfo{
+					AccountIndex:    accountInfo.AccountIndex,
+					AccountName:     accountInfo.AccountName,
+					PublicKey:       accountInfo.PublicKey,
+					AccountNameHash: accountInfo.AccountNameHash,
+					Nonce:           types.EmptyNonce,
+					CollectionNonce: types.EmptyCollectionNonce,
+					AssetRoot:       common.Bytes2Hex(tree.NilAccountAssetRoot),
+					AssetInfo:       make(map[int64]*types.AccountAsset, 0),
+				}
+			}
 		} else {
 			proverAccountInfo := proverAccounts[accountCount]
 			pk, err := common2.ParsePubKey(proverAccountInfo.AccountInfo.PublicKey)
@@ -307,6 +329,21 @@ func (w *WitnessHelper) constructAccountWitness(
 		if err != nil {
 			return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 		}
+
+		// cache gas account
+		if accountKey == types.GasAccount {
+			w.gasAccountInfo.Nonce = nonce
+			w.gasAccountInfo.CollectionNonce = collectionNonce
+			w.gasAccountInfo.AssetRoot = common.Bytes2Hex(w.assetTrees.Get(accountKey).Root())
+			for i := 0; i < NbAccountAssetsPerAccount; i++ {
+				w.gasAccountInfo.AssetInfo[cryptoAccount.AssetsInfo[i].AssetId] = &types.AccountAsset{
+					AssetId:                  cryptoAccount.AssetsInfo[i].AssetId,
+					Balance:                  cryptoAccount.AssetsInfo[i].Balance,
+					OfferCanceledOrFinalized: cryptoAccount.AssetsInfo[i].OfferCanceledOrFinalized,
+				}
+			}
+		}
+
 		// set account info before
 		accountsInfoBefore[accountCount] = cryptoAccount
 		// add count
@@ -472,6 +509,10 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 		accountKeys = append(accountKeys, oTx.AccountIndex)
 	}
 	for _, txDetail := range oTx.TxDetails {
+		// if tx detail is from gas account
+		if txDetail.IsGas {
+			continue
+		}
 		switch txDetail.AssetType {
 		case types.FungibleAssetType:
 			// get account info
@@ -596,4 +637,173 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 		}
 	}
 	return accountKeys, accountWitnessInfo, nftWitnessInfo, nil
+}
+
+func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasWitness, err error) {
+	var gas *circuit.Gas
+
+	needGas := false
+	gasChanges := make(map[int64]*big.Int)
+	for _, assetId := range types.GasAssets {
+		gasChanges[assetId] = types.ZeroBigInt
+	}
+	for _, tx := range block.Txs {
+		if types.IsL2Tx(tx.TxType) {
+			needGas = true
+			for _, txDetail := range tx.TxDetails {
+				if txDetail.IsGas {
+					assetDelta, err := types.ParseAccountAsset(txDetail.BalanceDelta)
+					if err != nil {
+						return nil, err
+					}
+					gasChanges[assetDelta.AssetId] = ffmath.Add(gasChanges[assetDelta.AssetId], assetDelta.Balance)
+				}
+			}
+		}
+	}
+
+	gasAccountIndex := types.GasAccount
+	emptyAssetTree, err := tree.NewMemAccountAssetTree()
+	if err != nil {
+		return nil, err
+	}
+	if !needGas { // no need of gas for this block
+		accountInfoBefore := cryptoTypes.EmptyGasAccount(gasAccountIndex, tree.NilAccountAssetRoot)
+		accountMerkleProofs, err := w.accountTree.GetProof(uint64(gasAccountIndex))
+		if err != nil {
+			return nil, err
+		}
+		merkleProofsAccountBefore, err := SetFixedAccountArray(accountMerkleProofs)
+		if err != nil {
+			return nil, err
+		}
+		merkleProofsAccountAssetsBefore := make([][AssetMerkleLevels][]byte, 0)
+		for _, assetId := range types.GasAssets {
+			accountInfoBefore.AssetsInfo = append(accountInfoBefore.AssetsInfo, cryptoTypes.EmptyAccountAsset(assetId))
+			assetMerkleProof, err := emptyAssetTree.GetProof(uint64(assetId))
+			if err != nil {
+				return nil, err
+			}
+			merkleProofsAccountAssetBefore, err := SetFixedAccountAssetArray(assetMerkleProof)
+			if err != nil {
+				return nil, err
+			}
+			merkleProofsAccountAssetsBefore = append(merkleProofsAccountAssetsBefore, merkleProofsAccountAssetBefore)
+		}
+		gas = &circuit.Gas{
+			GasAssetCount:                   len(types.GasAssets),
+			AccountInfoBefore:               accountInfoBefore,
+			MerkleProofsAccountBefore:       merkleProofsAccountBefore,
+			MerkleProofsAccountAssetsBefore: merkleProofsAccountAssetsBefore,
+		}
+	} else {
+		pk, err := common2.ParsePubKey(w.gasAccountInfo.PublicKey)
+		if err != nil {
+			return nil, err
+		}
+		accountInfoBefore := &cryptoTypes.GasAccount{
+			AccountIndex:    gasAccountIndex,
+			AccountNameHash: common.FromHex(w.gasAccountInfo.AccountNameHash),
+			AccountPk:       pk,
+			Nonce:           w.gasAccountInfo.Nonce,
+			CollectionNonce: w.gasAccountInfo.CollectionNonce,
+			AssetRoot:       w.assetTrees.Get(gasAccountIndex).Root(),
+		}
+		logx.Infof("old gas account asset root: %s", common.Bytes2Hex(w.assetTrees.Get(gasAccountIndex).Root()))
+
+		accountMerkleProofs, err := w.accountTree.GetProof(uint64(gasAccountIndex))
+		if err != nil {
+			return nil, err
+		}
+		merkleProofsAccountBefore, err := SetFixedAccountArray(accountMerkleProofs)
+		if err != nil {
+			return nil, err
+		}
+		merkleProofsAccountAssetsBefore := make([][AssetMerkleLevels][]byte, 0)
+		for _, assetId := range types.GasAssets {
+			assetMerkleProof, err := w.assetTrees.Get(gasAccountIndex).GetProof(uint64(assetId))
+			if err != nil {
+				return nil, err
+			}
+			balanceBefore := types.ZeroBigInt
+			offerCanceledOrFinalized := types.ZeroBigInt
+			if asset, ok := w.gasAccountInfo.AssetInfo[assetId]; ok {
+				balanceBefore = asset.Balance
+				offerCanceledOrFinalized = asset.OfferCanceledOrFinalized
+			}
+			accountInfoBefore.AssetsInfo = append(accountInfoBefore.AssetsInfo, &cryptoTypes.AccountAsset{
+				AssetId:                  assetId,
+				Balance:                  balanceBefore,
+				OfferCanceledOrFinalized: offerCanceledOrFinalized,
+			})
+
+			// set merkle proof
+			merkleProofsAccountAssetBefore, err := SetFixedAccountAssetArray(assetMerkleProof)
+			if err != nil {
+				return nil, err
+			}
+			merkleProofsAccountAssetsBefore = append(merkleProofsAccountAssetsBefore, merkleProofsAccountAssetBefore)
+
+			balanceAfter := ffmath.Add(balanceBefore, gasChanges[assetId])
+			nAssetHash, err := tree.ComputeAccountAssetLeafHash(balanceAfter.String(), offerCanceledOrFinalized.String())
+			if err != nil {
+				return nil, err
+			}
+			err = w.assetTrees.Get(gasAccountIndex).Set(uint64(assetId), nAssetHash)
+			if err != nil {
+				return nil, err
+			}
+
+		}
+		logx.Infof("new gas account asset root: %s", common.Bytes2Hex(w.assetTrees.Get(gasAccountIndex).Root()))
+
+		nAccountHash, err := tree.ComputeAccountLeafHash(
+			w.gasAccountInfo.AccountNameHash,
+			w.gasAccountInfo.PublicKey,
+			w.gasAccountInfo.Nonce,
+			w.gasAccountInfo.CollectionNonce,
+			w.assetTrees.Get(gasAccountIndex).Root(),
+		)
+		if err != nil {
+			return nil, err
+		}
+		err = w.accountTree.Set(uint64(gasAccountIndex), nAccountHash)
+		if err != nil {
+			return nil, err
+		}
+		gas = &circuit.Gas{
+			GasAssetCount:                   len(types.GasAssets),
+			AccountInfoBefore:               accountInfoBefore,
+			MerkleProofsAccountBefore:       merkleProofsAccountBefore,
+			MerkleProofsAccountAssetsBefore: merkleProofsAccountAssetsBefore,
+		}
+	}
+
+	return gas, nil
+}
+
+func (w *WitnessHelper) ResetCache(height int64) error {
+	w.gasAccountInfo = nil
+	history, err := w.accountHistoryModel.GetLatestAccountHistory(types.GasAccount, height)
+	if err != nil && err != types.DbErrNotFound {
+		return err
+	}
+
+	if history != nil {
+		gasAccount, err := w.accountModel.GetConfirmedAccountByIndex(types.GasAccount)
+		if err != nil && err != types.DbErrNotFound {
+			return err
+		}
+		gasAccount.Nonce = history.Nonce
+		gasAccount.CollectionNonce = history.CollectionNonce
+		gasAccount.AssetInfo = history.AssetInfo
+		gasAccount.AssetRoot = history.AssetRoot
+		formatGasAccount, err := chain.ToFormatAccountInfo(gasAccount)
+		if err != nil {
+			return err
+		}
+
+		w.gasAccountInfo = formatGasAccount
+	}
+	return nil
 }

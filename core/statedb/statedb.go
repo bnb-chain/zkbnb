@@ -12,6 +12,7 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/dao/account"
@@ -237,6 +238,23 @@ func (s *StateDB) syncPendingNft(pendingNft map[int64]*nft.L2Nft) error {
 	return nil
 }
 
+func (s *StateDB) SyncPendingGasAccount() error {
+	if cacheAccount, ok := s.AccountCache.Get(types.GasAccount); ok {
+		formatAccount := cacheAccount.(*types.AccountInfo)
+		s.applyGasUpdate(formatAccount)
+		account, err := chain.FromFormatAccountInfo(formatAccount)
+		if err != nil {
+			return err
+		}
+		err = s.redisCache.Set(context.Background(), dbcache.AccountKeyByIndex(account.AccountIndex), account)
+		if err != nil {
+			return fmt.Errorf("cache to redis failed: %v", err)
+		}
+		s.AccountCache.Add(account.AccountIndex, formatAccount)
+	}
+	return nil
+}
+
 func (s *StateDB) SyncStateCacheToRedis() error {
 	// Sync new create to cache.
 	err := s.syncPendingAccount(s.PendingNewAccountMap)
@@ -287,15 +305,58 @@ func (s *StateDB) GetPendingAccount(blockHeight int64) ([]*account.Account, []*a
 		})
 	}
 
+	gasChanged := false
+	for _, delta := range s.StateCache.PendingGasMap {
+		if delta.Cmp(types.ZeroBigInt) > 0 {
+			gasChanged = true
+			break
+		}
+	}
+
+	handledGasAccount := false
 	for index, formatAccount := range s.PendingUpdateAccountMap {
 		if _, exist := s.PendingNewAccountMap[index]; exist {
 			continue
+		}
+
+		if formatAccount.AccountIndex == types.GasAccount && gasChanged {
+			handledGasAccount = true
+			s.applyGasUpdate(formatAccount)
 		}
 
 		newAccount, err := chain.FromFormatAccountInfo(formatAccount)
 		if err != nil {
 			return nil, nil, nil, err
 		}
+
+		pendingUpdateAccount = append(pendingUpdateAccount, newAccount)
+		pendingNewAccountHistory = append(pendingNewAccountHistory, &account.AccountHistory{
+			AccountIndex:    newAccount.AccountIndex,
+			Nonce:           newAccount.Nonce,
+			CollectionNonce: newAccount.CollectionNonce,
+			AssetInfo:       newAccount.AssetInfo,
+			AssetRoot:       newAccount.AssetRoot,
+			L2BlockHeight:   blockHeight, // TODO: ensure this should be the new block's height.
+		})
+	}
+
+	if !handledGasAccount && gasChanged {
+		gasAccount, err := s.GetAccount(types.GasAccount)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+
+		formatAccount, err := chain.ToFormatAccountInfo(gasAccount)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		s.applyGasUpdate(formatAccount)
+
+		newAccount, err := chain.FromFormatAccountInfo(formatAccount)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+
 		pendingUpdateAccount = append(pendingUpdateAccount, newAccount)
 		pendingNewAccountHistory = append(pendingNewAccountHistory, &account.AccountHistory{
 			AccountIndex:    newAccount.AccountIndex,
@@ -308,6 +369,19 @@ func (s *StateDB) GetPendingAccount(blockHeight int64) ([]*account.Account, []*a
 	}
 
 	return pendingNewAccount, pendingUpdateAccount, pendingNewAccountHistory, nil
+}
+
+func (s *StateDB) applyGasUpdate(formatAccount *types.AccountInfo) {
+	for assetId, delta := range s.StateCache.PendingGasMap {
+		if asset, ok := formatAccount.AssetInfo[assetId]; ok {
+			formatAccount.AssetInfo[assetId].Balance = ffmath.Add(asset.Balance, delta)
+		} else {
+			formatAccount.AssetInfo[assetId] = &types.AccountAsset{
+				Balance:                  delta,
+				OfferCanceledOrFinalized: types.ZeroBigInt,
+			}
+		}
+	}
 }
 
 func (s *StateDB) GetPendingNft(blockHeight int64) ([]*nft.L2Nft, []*nft.L2Nft, []*nft.L2NftHistory, error) {
@@ -365,11 +439,7 @@ func (s *StateDB) DeepCopyAccounts(accountIds []int64) (map[int64]*types.Account
 		if err != nil {
 			return nil, err
 		}
-		accountCopy, err := account.DeepCopy()
-		if err != nil {
-			return nil, err
-		}
-		accounts[accountId] = accountCopy
+		accounts[accountId] = account.DeepCopy()
 	}
 
 	return accounts, nil
@@ -465,9 +535,23 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64) error {
 	if err != nil {
 		return err
 	}
+	isGasAccount := accountIndex == types.GasAccount
 	for _, assetId := range assets {
+		isGasAsset := false
+		if isGasAccount {
+			for _, gasAssetId := range types.GasAssets {
+				if assetId == gasAssetId {
+					isGasAsset = true
+					break
+				}
+			}
+		}
+		balance := account.AssetInfo[assetId].Balance
+		if isGasAsset {
+			balance = ffmath.Add(balance, s.GetPendingUpdateGas(assetId))
+		}
 		assetLeaf, err := tree.ComputeAccountAssetLeafHash(
-			account.AssetInfo[assetId].Balance.String(),
+			balance.String(),
 			account.AssetInfo[assetId].OfferCanceledOrFinalized.String(),
 		)
 		if err != nil {
