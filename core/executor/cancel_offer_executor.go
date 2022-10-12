@@ -93,7 +93,7 @@ func (e *CancelOfferExecutor) ApplyTransaction() error {
 	fromAccount.AssetInfo[offerAssetId].OfferCanceledOrFinalized = nOffer
 
 	stateCache := e.bc.StateDB()
-	stateCache.SetPendingUpdateAccount(fromAccount.AccountIndex, fromAccount)
+	stateCache.SetPendingAccount(fromAccount.AccountIndex, fromAccount)
 	stateCache.SetPendingUpdateGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }

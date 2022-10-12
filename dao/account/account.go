@@ -43,7 +43,6 @@ type (
 		GetAccountByNameHash(nameHash string) (account *Account, err error)
 		GetAccounts(limit int, offset int64) (accounts []*Account, err error)
 		GetAccountsTotalCount() (count int64, err error)
-		CreateAccountsInTransact(tx *gorm.DB, accounts []*Account) error
 		UpdateAccountsInTransact(tx *gorm.DB, accounts []*Account) error
 	}
 
@@ -159,17 +158,6 @@ func (m *defaultAccountModel) GetConfirmedAccountByIndex(accountIndex int64) (ac
 		return nil, types.DbErrNotFound
 	}
 	return account, nil
-}
-
-func (m *defaultAccountModel) CreateAccountsInTransact(tx *gorm.DB, accounts []*Account) error {
-	dbTx := tx.Table(m.table).CreateInBatches(accounts, len(accounts))
-	if dbTx.Error != nil {
-		return dbTx.Error
-	}
-	if dbTx.RowsAffected != int64(len(accounts)) {
-		return types.DbErrFailToCreateAccount
-	}
-	return nil
 }
 
 func (m *defaultAccountModel) UpdateAccountsInTransact(tx *gorm.DB, accounts []*Account) error {

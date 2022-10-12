@@ -122,8 +122,8 @@ func (e *WithdrawNftExecutor) ApplyTransaction() error {
 
 	newNftInfo := types.EmptyNftInfo(txInfo.NftIndex)
 	stateCache := e.bc.StateDB()
-	stateCache.SetPendingUpdateAccount(txInfo.AccountIndex, fromAccount)
-	stateCache.SetPendingUpdateNft(txInfo.NftIndex, &nft.L2Nft{
+	stateCache.SetPendingAccount(txInfo.AccountIndex, fromAccount)
+	stateCache.SetPendingNft(txInfo.NftIndex, &nft.L2Nft{
 		Model:               oldNft.Model,
 		NftIndex:            newNftInfo.NftIndex,
 		CreatorAccountIndex: newNftInfo.CreatorAccountIndex,

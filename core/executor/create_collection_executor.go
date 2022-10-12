@@ -88,7 +88,7 @@ func (e *CreateCollectionExecutor) ApplyTransaction() error {
 	fromAccount.CollectionNonce++
 
 	stateCache := e.bc.StateDB()
-	stateCache.SetPendingUpdateAccount(fromAccount.AccountIndex, fromAccount)
+	stateCache.SetPendingAccount(fromAccount.AccountIndex, fromAccount)
 	stateCache.SetPendingUpdateGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }

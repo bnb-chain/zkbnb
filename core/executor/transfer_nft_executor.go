@@ -103,8 +103,8 @@ func (e *TransferNftExecutor) ApplyTransaction() error {
 	nft.OwnerAccountIndex = txInfo.ToAccountIndex
 
 	stateCache := e.bc.StateDB()
-	stateCache.SetPendingUpdateAccount(txInfo.FromAccountIndex, fromAccount)
-	stateCache.SetPendingUpdateNft(txInfo.NftIndex, nft)
+	stateCache.SetPendingAccount(txInfo.FromAccountIndex, fromAccount)
+	stateCache.SetPendingNft(txInfo.NftIndex, nft)
 	stateCache.SetPendingUpdateGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }

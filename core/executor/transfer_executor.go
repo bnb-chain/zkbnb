@@ -99,8 +99,8 @@ func (e *TransferExecutor) ApplyTransaction() error {
 	fromAccount.Nonce++
 
 	stateCache := e.bc.StateDB()
-	stateCache.SetPendingUpdateAccount(txInfo.FromAccountIndex, fromAccount)
-	stateCache.SetPendingUpdateAccount(txInfo.ToAccountIndex, toAccount)
+	stateCache.SetPendingAccount(txInfo.FromAccountIndex, fromAccount)
+	stateCache.SetPendingAccount(txInfo.ToAccountIndex, toAccount)
 	stateCache.SetPendingUpdateGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }
