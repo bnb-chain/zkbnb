@@ -117,13 +117,8 @@ github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kB
 github.com/bkaradzic/go-lz4 v1.0.0/go.mod h1:0YdlkowM3VswSROI7qDxhRvJ3sLhlFrRRwjwegp5jy4=
 github.com/bketelsen/crypt v0.0.4/go.mod h1:aI6NrJ0pMGgvZKL1iVgXLnfIFJtfV+bKCoqOes/6LfM=
 github.com/bmizerany/pat v0.0.0-20170815010413-6226ea591a40/go.mod h1:8rLXio+WjiTceGBHIoTvn60HIbs7Hm7bcHjyrSqYB9c=
-<<<<<<< HEAD
-github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20221009123206-1971dadf3584 h1:CnKNWgM6qJC3nlOeyw4ILLkbih83VkHnSdLbY5stK3M=
-github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20221009123206-1971dadf3584/go.mod h1:L1BEYSG945hwjJCtR5LUQ1pvRmydSsk9oU2d9YvoOrA=
-=======
-github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20221010100019-2640efb8a3a3 h1:Ch4Yqvz/bXpiuuckaY6vR5aWFq1LBhVwrVI6CvNFZME=
-github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20221010100019-2640efb8a3a3/go.mod h1:L1BEYSG945hwjJCtR5LUQ1pvRmydSsk9oU2d9YvoOrA=
->>>>>>> 881ff258 (refactor: reduce public inputs of block contraints)
+github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20221012064947-a395ff5a2614 h1:a+POfow+uc60upenBUrzo9XW/nk7H9llv45UVdF67xw=
+github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20221012064947-a395ff5a2614/go.mod h1:L1BEYSG945hwjJCtR5LUQ1pvRmydSsk9oU2d9YvoOrA=
 github.com/bnb-chain/zkbnb-eth-rpc v0.0.2 h1:1rMa8XpplDNZaxeM1ifXMjSSeH/ucJyLUjHHEw1z4AA=
 github.com/bnb-chain/zkbnb-eth-rpc v0.0.2/go.mod h1:T69T8enicQ5kSRPIzyPJv/jhuvRMz1UxsijPXmlis+I=
 github.com/bnb-chain/zkbnb-smt v0.0.2-0.20220919093003-13980385d38f h1:zBVWOWlH4w18O6wp0gZML4U2n1rxsFLb7KB7DFE8zcQ=
