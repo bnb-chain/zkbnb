@@ -31,6 +31,7 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/l1rolluptx"
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
 	"github.com/bnb-chain/zkbnb/dao/priorityrequest"
+	"github.com/bnb-chain/zkbnb/dao/proof"
 	"github.com/bnb-chain/zkbnb/dao/sysconfig"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/service/monitor/config"
@@ -65,6 +66,7 @@ type Monitor struct {
 	TxPoolModel          tx.TxPoolModel
 	SysConfigModel       sysconfig.SysConfigModel
 	L1RollupTxModel      l1rolluptx.L1RollupTxModel
+	ProofModel           proof.ProofModel
 	L2AssetModel         asset.AssetModel
 	PriorityRequestModel priorityrequest.PriorityRequestModel
 	L1SyncedBlockModel   l1syncedblock.L1SyncedBlockModel
@@ -83,6 +85,7 @@ func NewMonitor(c config.Config) *Monitor {
 		TxPoolModel:          tx.NewTxPoolModel(db),
 		BlockModel:           block.NewBlockModel(db),
 		L1RollupTxModel:      l1rolluptx.NewL1RollupTxModel(db),
+		ProofModel:           proof.NewProofModel(db),
 		L1SyncedBlockModel:   l1syncedblock.NewL1SyncedBlockModel(db),
 		L2AssetModel:         asset.NewAssetModel(db),
 		SysConfigModel:       sysconfig.NewSysConfigModel(db),
