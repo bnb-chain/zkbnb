@@ -41,24 +41,9 @@ func (e *FullExitExecutor) Prepare() error {
 
 	// The account index from txInfo isn't true, find account by account name hash.
 	accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
-	account, err := bc.DB().AccountModel.GetAccountByNameHash(accountNameHash)
+	account, err := bc.StateDB().GetAccountByNameHash(accountNameHash)
 	if err != nil {
-		exist := false
-		for index := range bc.StateDB().PendingNewAccountMap {
-			tempAccount, err := bc.StateDB().GetAccount(index)
-			if err != nil {
-				continue
-			}
-			if accountNameHash == tempAccount.AccountNameHash {
-				account = tempAccount
-				exist = true
-				break
-			}
-		}
-
-		if !exist {
-			return types.AppErrInvalidAccountNameHash
-		}
+		return err
 	}
 
 	// Set the right account index.
@@ -96,7 +81,7 @@ func (e *FullExitExecutor) ApplyTransaction() error {
 
 	if txInfo.AssetAmount.Cmp(types.ZeroBigInt) != 0 {
 		stateCache := e.bc.StateDB()
-		stateCache.SetPendingUpdateAccount(txInfo.AccountIndex, exitAccount)
+		stateCache.SetPendingAccount(txInfo.AccountIndex, exitAccount)
 	}
 	return e.BaseExecutor.ApplyTransaction()
 }

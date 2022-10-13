@@ -50,8 +50,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	accountModel := account.NewAccountModel(db)
 	nftModel := nft.NewL2NftModel(db)
 	assetModel := asset.NewAssetModel(db)
-	memCache := cache.NewMemCache(accountModel, assetModel, c.MemCache.AccountExpiration, c.MemCache.BlockExpiration,
-		c.MemCache.TxExpiration, c.MemCache.AssetExpiration, c.MemCache.PriceExpiration)
+	memCache := cache.MustNewMemCache(accountModel, assetModel, c.MemCache.AccountExpiration, c.MemCache.BlockExpiration,
+		c.MemCache.TxExpiration, c.MemCache.AssetExpiration, c.MemCache.PriceExpiration, c.MemCache.MaxCounterNum, c.MemCache.MaxKeyNum)
 	return &ServiceContext{
 		Config:              c,
 		RedisCache:          redisCache,

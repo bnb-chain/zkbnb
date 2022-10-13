@@ -47,6 +47,7 @@ type (
 		AccountOrder    int64
 		Nonce           int64
 		CollectionNonce int64
+		IsGas           bool `gorm:"default:false"`
 	}
 )
 

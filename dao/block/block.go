@@ -89,12 +89,10 @@ type (
 		Block           *Block
 		CompressedBlock *compressedblock.CompressedBlock
 
-		PendingNewAccount        []*account.Account
-		PendingUpdateAccount     []*account.Account
-		PendingNewAccountHistory []*account.AccountHistory
-		PendingNewNft            []*nft.L2Nft
-		PendingUpdateNft         []*nft.L2Nft
-		PendingNewNftHistory     []*nft.L2NftHistory
+		PendingAccount        []*account.Account
+		PendingAccountHistory []*account.AccountHistory
+		PendingNft            []*nft.L2Nft
+		PendingNftHistory     []*nft.L2NftHistory
 	}
 )
 

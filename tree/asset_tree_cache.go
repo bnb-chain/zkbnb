@@ -3,8 +3,9 @@ package tree
 import (
 	"sync"
 
-	bsmt "github.com/bnb-chain/zkbnb-smt"
 	lru "github.com/hashicorp/golang-lru"
+
+	bsmt "github.com/bnb-chain/zkbnb-smt"
 )
 
 // Lazy init cache for asset trees

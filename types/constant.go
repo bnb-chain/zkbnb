@@ -45,9 +45,11 @@ const (
 	NilExpiredAt       = math.MaxInt64
 	NilAssetAmount     = "0"
 
+	GasAccount = int64(1)
 	BNBAssetId = 0
 )
 
 var (
 	EmptyOfferCanceledOrFinalized = big.NewInt(0)
+	GasAssets                     = [2]int64{0, 1}
 )

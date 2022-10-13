@@ -3,8 +3,10 @@ module github.com/bnb-chain/zkbnb
 go 1.17
 
 require (
+	github.com/dgraph-io/ristretto v0.1.0
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/panjf2000/ants/v2 v2.5.0
+	github.com/prometheus/client_golang v1.12.2
 	github.com/zeromicro/go-zero v1.3.4
 	gorm.io/gorm v1.23.4
 )
@@ -21,6 +23,7 @@ require (
 	github.com/deckarep/golang-set v1.8.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.2.0 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
@@ -29,6 +32,7 @@ require (
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.1 // indirect
+	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
@@ -52,7 +56,6 @@ require (
 	github.com/pegasus-kv/thrift v0.13.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_golang v1.12.2 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.33.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
@@ -87,7 +90,7 @@ require (
 )
 
 require (
-	github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20220929142710-f30d7d0a9428
+	github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20221012064947-a395ff5a2614
 	github.com/bnb-chain/zkbnb-eth-rpc v0.0.2
 	github.com/bnb-chain/zkbnb-smt v0.0.2-0.20220919093003-13980385d38f
 	github.com/consensys/gnark v0.7.0
@@ -96,7 +99,6 @@ require (
 	github.com/ethereum/go-ethereum v1.10.23
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/stretchr/testify v1.7.2
@@ -104,7 +106,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
-	golang.org/x/sys v0.0.0-20220927170352-d9d178bc13c6 // indirect
+	golang.org/x/sys v0.0.0-20221006211917-84dc82d7e875 // indirect
 	google.golang.org/grpc v1.46.2 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gorm.io/driver/postgres v1.3.6

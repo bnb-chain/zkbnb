@@ -26,5 +26,9 @@ type Config struct {
 		BlockExpiration   int
 		TxExpiration      int
 		PriceExpiration   int
+		// Number of 4-bit access counters to keep for admission and eviction
+		// Setting this to 10x the number of items you expect to keep in the cache when full
+		MaxCounterNum int64
+		MaxKeyNum     int64
 	}
 }

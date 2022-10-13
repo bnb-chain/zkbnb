@@ -26,7 +26,8 @@ import (
 )
 
 type (
-	TxWitness = circuit.Tx
+	TxWitness  = circuit.Tx
+	GasWitness = circuit.Gas
 )
 
 const (

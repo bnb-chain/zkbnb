@@ -22,12 +22,12 @@ const (
 var (
 	priorityOperationMetric = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
-		Name:      "prioriry_operation_process",
+		Name:      "priority_operation_process",
 		Help:      "Priority operation requestID metrics.",
 	})
 	priorityOperationHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
-		Name:      "prioriry_operation_process_height",
+		Name:      "priority_operation_process_height",
 		Help:      "Priority operation height metrics.",
 	})
 )
@@ -260,6 +260,11 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 		return nil, err
 	}
 
+	err = c.bc.Statedb.SyncPendingGasAccount()
+	if err != nil {
+		return nil, err
+	}
+
 	// update db
 	err = c.bc.DB().DB.Transaction(func(tx *gorm.DB) error {
 		// create block for commit
@@ -269,44 +274,30 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 				return err
 			}
 		}
-		// create new account
-		if len(blockStates.PendingNewAccount) != 0 {
-			err = c.bc.DB().AccountModel.CreateAccountsInTransact(tx, blockStates.PendingNewAccount)
+		// create or update account
+		if len(blockStates.PendingAccount) != 0 {
+			err = c.bc.DB().AccountModel.UpdateAccountsInTransact(tx, blockStates.PendingAccount)
 			if err != nil {
 				return err
 			}
 		}
-		// update account
-		if len(blockStates.PendingUpdateAccount) != 0 {
-			err = c.bc.DB().AccountModel.UpdateAccountsInTransact(tx, blockStates.PendingUpdateAccount)
+		// create account history
+		if len(blockStates.PendingAccountHistory) != 0 {
+			err = c.bc.DB().AccountHistoryModel.CreateAccountHistoriesInTransact(tx, blockStates.PendingAccountHistory)
 			if err != nil {
 				return err
 			}
 		}
-		// create new account history
-		if len(blockStates.PendingNewAccountHistory) != 0 {
-			err = c.bc.DB().AccountHistoryModel.CreateAccountHistoriesInTransact(tx, blockStates.PendingNewAccountHistory)
+		// create or update nft
+		if len(blockStates.PendingNft) != 0 {
+			err = c.bc.DB().L2NftModel.UpdateNftsInTransact(tx, blockStates.PendingNft)
 			if err != nil {
 				return err
 			}
 		}
-		// create new nft
-		if len(blockStates.PendingNewNft) != 0 {
-			err = c.bc.DB().L2NftModel.CreateNftsInTransact(tx, blockStates.PendingNewNft)
-			if err != nil {
-				return err
-			}
-		}
-		// update nft
-		if len(blockStates.PendingUpdateNft) != 0 {
-			err = c.bc.DB().L2NftModel.UpdateNftsInTransact(tx, blockStates.PendingUpdateNft)
-			if err != nil {
-				return err
-			}
-		}
-		// new nft history
-		if len(blockStates.PendingNewNftHistory) != 0 {
-			err = c.bc.DB().L2NftHistoryModel.CreateNftHistoriesInTransact(tx, blockStates.PendingNewNftHistory)
+		// create nft history
+		if len(blockStates.PendingNftHistory) != 0 {
+			err = c.bc.DB().L2NftHistoryModel.CreateNftHistoriesInTransact(tx, blockStates.PendingNftHistory)
 			if err != nil {
 				return err
 			}
@@ -320,7 +311,6 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 		blockStates.Block.ClearTxsModel()
 		return c.bc.DB().BlockModel.UpdateBlockInTransact(tx, blockStates.Block)
 	})
-
 	if err != nil {
 		return nil, err
 	}

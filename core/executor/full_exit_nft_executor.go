@@ -21,7 +21,8 @@ type FullExitNftExecutor struct {
 
 	txInfo *txtypes.FullExitNftTxInfo
 
-	exitNft *nft.L2Nft
+	exitNft   *nft.L2Nft
+	exitEmpty bool
 }
 
 func NewFullExitNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
@@ -43,24 +44,9 @@ func (e *FullExitNftExecutor) Prepare() error {
 
 	// The account index from txInfo isn't true, find account by account name hash.
 	accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
-	account, err := bc.DB().AccountModel.GetAccountByNameHash(accountNameHash)
+	account, err := bc.StateDB().GetAccountByNameHash(accountNameHash)
 	if err != nil {
-		exist := false
-		for index := range bc.StateDB().PendingNewAccountMap {
-			tempAccount, err := bc.StateDB().GetAccount(index)
-			if err != nil {
-				continue
-			}
-			if accountNameHash == tempAccount.AccountNameHash {
-				account = tempAccount
-				exist = true
-				break
-			}
-		}
-
-		if !exist {
-			return types.AppErrInvalidAccountNameHash
-		}
+		return err
 	}
 
 	// Set the right account index.
@@ -83,11 +69,11 @@ func (e *FullExitNftExecutor) Prepare() error {
 
 	var isExitEmptyNft = true
 	nft, err := e.bc.StateDB().PrepareNft(txInfo.NftIndex)
-	if err != nil {
+	if err != nil && err != types.DbErrNotFound {
 		return err
 	}
 
-	if nft.OwnerAccountIndex == account.AccountIndex {
+	if err == nil && nft.OwnerAccountIndex == account.AccountIndex {
 		// Set the right nft if the owner is correct.
 		exitNft = nft
 		isExitEmptyNft = false
@@ -95,9 +81,6 @@ func (e *FullExitNftExecutor) Prepare() error {
 
 	// Mark the tree states that would be affected in this executor.
 	e.MarkNftDirty(txInfo.NftIndex)
-	if exitNft.CreatorAccountIndex != types.NilAccountIndex {
-		e.MarkAccountAssetsDirty(exitNft.CreatorAccountIndex, []int64{})
-	}
 	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{0}) // Prepare asset 0 for generate an empty tx detail.
 	err = e.BaseExecutor.Prepare()
 	if err != nil {
@@ -108,7 +91,7 @@ func (e *FullExitNftExecutor) Prepare() error {
 	txInfo.CreatorAccountIndex = exitNft.CreatorAccountIndex
 	txInfo.CreatorTreasuryRate = exitNft.CreatorTreasuryRate
 	txInfo.CreatorAccountNameHash = common.FromHex(types.EmptyAccountNameHash)
-	if isExitEmptyNft {
+	if !isExitEmptyNft {
 		creator, err := bc.StateDB().GetFormatAccount(exitNft.CreatorAccountIndex)
 		if err != nil {
 			return err
@@ -121,45 +104,21 @@ func (e *FullExitNftExecutor) Prepare() error {
 	txInfo.CollectionId = exitNft.CollectionId
 
 	e.exitNft = exitNft
+	e.exitEmpty = isExitEmptyNft
 	return nil
 }
 
 func (e *FullExitNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
-	bc := e.bc
-	txInfo := e.txInfo
-
-	nft, err := bc.StateDB().GetNft(txInfo.NftIndex)
-	if err != nil {
-		return err
-	}
-	if txInfo.AccountIndex != nft.OwnerAccountIndex {
-		// The check is not fully enough, just avoid explicit error.
-		if !bytes.Equal(txInfo.NftContentHash, common.FromHex(types.EmptyNftContentHash)) {
-			return types.AppErrTxInvalidNftContenthash
-		}
-	} else {
-		// The check is not fully enough, just avoid explicit error.
-		if !bytes.Equal(txInfo.NftContentHash, common.FromHex(nft.NftContentHash)) {
-			return types.AppErrTxInvalidNftContenthash
-		}
-	}
-
 	return nil
 }
 
 func (e *FullExitNftExecutor) ApplyTransaction() error {
-	bc := e.bc
-	txInfo := e.txInfo
-	oldNft, err := bc.StateDB().GetNft(txInfo.NftIndex)
-	if err != nil {
-		return err
-	}
-	if txInfo.AccountIndex != oldNft.OwnerAccountIndex {
-		// Do nothing.
+	if e.exitEmpty {
 		return nil
 	}
 
 	// Set nft to empty nft.
+	txInfo := e.txInfo
 	emptyNftInfo := types.EmptyNftInfo(txInfo.NftIndex)
 	emptyNft := &nft.L2Nft{
 		NftIndex:            emptyNftInfo.NftIndex,
@@ -173,7 +132,7 @@ func (e *FullExitNftExecutor) ApplyTransaction() error {
 	}
 
 	stateCache := e.bc.StateDB()
-	stateCache.SetPendingUpdateNft(txInfo.NftIndex, emptyNft)
+	stateCache.SetPendingNft(txInfo.NftIndex, emptyNft)
 	return e.BaseExecutor.ApplyTransaction()
 }
 
@@ -254,14 +213,10 @@ func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	})
 	// nft info
 	order++
-	oldNft, err := bc.StateDB().GetNft(txInfo.NftIndex)
-	if err != nil {
-		return nil, err
-	}
 	emptyNft := types.EmptyNftInfo(txInfo.NftIndex)
 	baseNft := emptyNft
 	newNft := emptyNft
-
+	oldNft, _ := bc.StateDB().GetNft(txInfo.NftIndex)
 	if oldNft != nil {
 		baseNft = types.ConstructNftInfo(
 			oldNft.NftIndex,

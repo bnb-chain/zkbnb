@@ -175,6 +175,8 @@ MemCache:
   BlockExpiration:   400
   TxExpiration:      400
   PriceExpiration:   3600000
+  MaxCounterNum:     100000
+  MaxKeyNum:         10000
 
 " > ${CONFIG_PATH}/apiserver.yaml
 

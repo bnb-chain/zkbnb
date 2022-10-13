@@ -41,24 +41,9 @@ func (e *DepositExecutor) Prepare() error {
 
 	// The account index from txInfo isn't true, find account by account name hash.
 	accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
-	account, err := bc.DB().AccountModel.GetAccountByNameHash(accountNameHash)
+	account, err := bc.StateDB().GetAccountByNameHash(accountNameHash)
 	if err != nil {
-		exist := false
-		for index := range bc.StateDB().PendingNewAccountMap {
-			tempAccount, err := bc.StateDB().GetAccount(index)
-			if err != nil {
-				continue
-			}
-			if accountNameHash == tempAccount.AccountNameHash {
-				account = tempAccount
-				exist = true
-				break
-			}
-		}
-
-		if !exist {
-			return types.AppErrInvalidAccountNameHash
-		}
+		return err
 	}
 
 	// Set the right account index.
@@ -90,7 +75,7 @@ func (e *DepositExecutor) ApplyTransaction() error {
 	depositAccount.AssetInfo[txInfo.AssetId].Balance = ffmath.Add(depositAccount.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
 
 	stateCache := e.bc.StateDB()
-	stateCache.SetPendingUpdateAccount(depositAccount.AccountIndex, depositAccount)
+	stateCache.SetPendingAccount(depositAccount.AccountIndex, depositAccount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 

@@ -280,6 +280,8 @@ MemCache:
   BlockExpiration:   400
   TxExpiration:      400
   PriceExpiration:   3600000
+  MaxCounterNum:     100000
+  MaxKeyNum:         10000
   " > ${DEPLOY_PATH}/zkbnb/service/apiserver/etc/config.yaml
 
 echo -e "
