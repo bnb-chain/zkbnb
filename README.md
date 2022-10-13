@@ -161,4 +161,3 @@ We believe that zk-Rollup Sooner or later L2 The best of the track — This is a
 L2 Expansion solutions. However, ZkBNB is application specific so far, this makes it difficult for developers to
 build custom dApp on that, we will introduce generic programability in the future... 
 
-
