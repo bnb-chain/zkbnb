@@ -15,22 +15,15 @@ import (
 )
 
 const (
-	MaxFullnodeInterval = 60 * 1
-	DefaultL2EndPoint   = "http://localhost:8888"
-	SyncInterval        = 100 * time.Millisecond
+	DefaultL2EndPoint = "http://localhost:8888"
+	SyncInterval      = 100 * time.Millisecond
 )
 
 type Config struct {
 	core.ChainConfig
-
-	ApiServer struct {
-		L2EndPoint string
-	}
-	FullNode struct {
-		SyncBlockStatus int64
-	}
-
-	LogConf logx.LogConf
+	L2EndPoint      string
+	SyncBlockStatus int64
+	LogConf         logx.LogConf
 }
 
 type Fullnode struct {
@@ -47,15 +40,14 @@ func NewFullnode(config *Config) (*Fullnode, error) {
 		return nil, fmt.Errorf("new blockchain error: %v", err)
 	}
 
-	l2EndPoint := config.ApiServer.L2EndPoint
+	l2EndPoint := config.L2EndPoint
 	if len(l2EndPoint) == 0 {
 		l2EndPoint = DefaultL2EndPoint
 	}
 
-	if config.FullNode.SyncBlockStatus <= block.StatusProposing ||
-		config.FullNode.SyncBlockStatus > block.StatusVerifiedAndExecuted {
-
-		config.FullNode.SyncBlockStatus = block.StatusVerifiedAndExecuted
+	if config.SyncBlockStatus <= block.StatusProposing ||
+		config.SyncBlockStatus > block.StatusVerifiedAndExecuted {
+		config.SyncBlockStatus = block.StatusVerifiedAndExecuted
 	}
 
 	fullnode := &Fullnode{
@@ -69,8 +61,6 @@ func NewFullnode(config *Config) (*Fullnode, error) {
 }
 
 func (c *Fullnode) Run() {
-	// TODO: add BlockSize in zkbnb-go-sdk
-
 	curHeight, err := c.bc.BlockModel.GetCurrentBlockHeight()
 	if err != nil {
 		panic(fmt.Sprintf("get current block height failed, error: %v", err.Error()))
@@ -84,7 +74,7 @@ func (c *Fullnode) Run() {
 	ticker := time.NewTicker(SyncInterval)
 	defer ticker.Stop()
 
-	syncBlockStatus := c.config.FullNode.SyncBlockStatus
+	syncBlockStatus := c.config.SyncBlockStatus
 	for {
 		select {
 		case <-ticker.C:
@@ -101,8 +91,10 @@ func (c *Fullnode) Run() {
 			}
 
 			l2Block, err := c.client.GetBlockByHeight(curHeight)
-			if err != nil && err != types.DbErrNotFound {
-				logx.Errorf("get block failed, height: %d, err %v ", curHeight, err)
+			if err != nil {
+				if err != types.DbErrNotFound {
+					logx.Errorf("get block failed, height: %d, err %v ", curHeight, err)
+				}
 				continue
 			}
 
@@ -124,17 +116,15 @@ func (c *Fullnode) Run() {
 				}
 			}
 
-			curBlock.BlockSize = l2Block.Size
-
 			if c.bc.Statedb.StateRoot != l2Block.StateRoot {
 				panic(fmt.Sprintf("state root not matched between statedb and l2block: %d", l2Block.Height))
 			}
 
-			logx.Infof("created new block on fullnode, height=%d, blockSize=%d", curBlock.BlockHeight, curBlock.BlockSize)
-			curBlock, err = c.processNewBlock(curBlock)
+			curBlock, err = c.processNewBlock(curBlock, int(l2Block.Size))
 			if err != nil {
 				panic(fmt.Sprintf("new block failed, block height: %d, Error: %s", l2Block.Height, err.Error()))
 			}
+			logx.Infof("created new block on fullnode, height=%d, blockSize=%d", curBlock.BlockHeight, l2Block.Size)
 
 		case <-c.quitCh:
 			return
@@ -148,13 +138,12 @@ func (c *Fullnode) Shutdown() {
 	c.bc.ChainDB.Close()
 }
 
-func (c *Fullnode) processNewBlock(curBlock *block.Block) (*block.Block, error) {
-	blockStates, err := c.bc.CommitNewBlock(int(curBlock.BlockSize), curBlock.CreatedAt.UnixMilli())
-	blockStates.Block.BlockStatus = c.config.FullNode.SyncBlockStatus
-
+func (c *Fullnode) processNewBlock(curBlock *block.Block, blockSize int) (*block.Block, error) {
+	blockStates, err := c.bc.CommitNewBlock(blockSize, curBlock.CreatedAt.UnixMilli())
 	if err != nil {
 		return nil, err
 	}
+	blockStates.Block.BlockStatus = c.config.SyncBlockStatus
 
 	// update db
 	err = c.bc.DB().DB.Transaction(func(tx *gorm.DB) error {
@@ -208,8 +197,6 @@ func (c *Fullnode) processNewBlock(curBlock *block.Block) (*block.Block, error) 
 			}
 		}
 
-		// update block
-		blockStates.Block.ClearTxsModel()
 		return c.bc.DB().BlockModel.CreateBlockInTransact(tx, blockStates.Block)
 	})
 

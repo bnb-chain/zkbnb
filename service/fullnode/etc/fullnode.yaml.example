@@ -7,12 +7,10 @@ CacheRedis:
   - Host: 127.0.0.1:6379
     Type: node
 
-ApiServer:
-  L2EndPoint: http://127.0.0.1:8888
+L2EndPoint: http://127.0.0.1:8888
 
-FullNode:
-  #  StatusPending: 1, StatusCommitted: 2, StatusVerifiedAndExecuted: 3
-  SyncBlockStatus: 3
+#  StatusPending: 1, StatusCommitted: 2, StatusVerifiedAndExecuted: 3
+SyncBlockStatus: 3
 
 TreeDB:
   Driver: memorydb
