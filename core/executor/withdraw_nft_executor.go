@@ -89,7 +89,7 @@ func (e *WithdrawNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
 		return err
 	}
 	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
-		return types.AppErrTxBalanceNotEnough
+		return types.AppErrBalanceNotEnough
 	}
 
 	nftInfo, err := e.bc.StateDB().GetNft(txInfo.NftIndex)
@@ -97,7 +97,7 @@ func (e *WithdrawNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
 		return err
 	}
 	if nftInfo.OwnerAccountIndex != txInfo.AccountIndex {
-		return types.AppErrTxNotNftOwner
+		return types.AppErrNotNftOwner
 	}
 
 	return nil

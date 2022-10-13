@@ -259,11 +259,11 @@ func (bc *BlockChain) commitNewBlock(blockSize int, createdAt int64) (*block.Blo
 func (bc *BlockChain) VerifyExpiredAt(expiredAt int64) error {
 	if !bc.dryRun {
 		if expiredAt < bc.currentBlock.CreatedAt.UnixMilli() {
-			return types.AppErrTxInvalidExpireTime
+			return types.AppErrInvalidExpireTime
 		}
 	} else {
 		if expiredAt < time.Now().UnixMilli() {
-			return types.AppErrTxInvalidExpireTime
+			return types.AppErrInvalidExpireTime
 		}
 	}
 	return nil
@@ -276,7 +276,7 @@ func (bc *BlockChain) VerifyNonce(accountIndex int64, nonce int64) error {
 			return err
 		}
 		if nonce != expectNonce {
-			return types.AppErrTxInvalidNonce
+			return types.AppErrInvalidNonce
 		}
 	} else {
 		pendingNonce, err := bc.Statedb.GetPendingNonce(accountIndex)
@@ -284,7 +284,7 @@ func (bc *BlockChain) VerifyNonce(accountIndex int64, nonce int64) error {
 			return err
 		}
 		if pendingNonce != nonce {
-			return types.AppErrTxInvalidNonce
+			return types.AppErrInvalidNonce
 		}
 	}
 	return nil
@@ -296,7 +296,7 @@ func (bc *BlockChain) VerifyGas(gasAccountIndex, gasFeeAssetId int64, txType int
 		return err
 	}
 	if gasAccountIndex != cfgGasAccountIndex {
-		return types.AppErrTxInvalidGasFeeAccount
+		return types.AppErrInvalidGasFeeAccount
 	}
 
 	cfgGasFee, err := bc.Statedb.GetGasConfig()
@@ -307,7 +307,7 @@ func (bc *BlockChain) VerifyGas(gasAccountIndex, gasFeeAssetId int64, txType int
 	gasAsset, ok := cfgGasFee[uint32(gasFeeAssetId)]
 	if !ok {
 		logx.Errorf("cannot find gas config for asset id: %d", gasFeeAssetId)
-		return types.AppErrTxInvalidGasFeeAsset
+		return types.AppErrInvalidGasFeeAsset
 	}
 
 	if !skipGasAmtChk {
@@ -316,7 +316,7 @@ func (bc *BlockChain) VerifyGas(gasAccountIndex, gasFeeAssetId int64, txType int
 			return errors.New("invalid tx type")
 		}
 		if gasFeeAmount.Cmp(big.NewInt(gasFee)) < 0 {
-			return types.AppErrTxInvalidGasFeeAmount
+			return types.AppErrInvalidGasFeeAmount
 		}
 	}
 	return nil

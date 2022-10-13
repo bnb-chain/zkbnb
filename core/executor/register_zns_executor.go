@@ -53,7 +53,7 @@ func (e *RegisterZnsExecutor) VerifyInputs(skipGasAmtChk bool) error {
 
 	_, err := bc.StateDB().GetAccountByName(txInfo.AccountName)
 	if err == nil {
-		return types.AppErrTxAccountNameAlreadyRegistered
+		return types.AppErrAccountNameAlreadyRegistered
 	}
 
 	if txInfo.AccountIndex != bc.StateDB().GetNextAccountIndex() {

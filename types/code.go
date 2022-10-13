@@ -65,8 +65,7 @@ var (
 	AppErrInvalidNonce                 = New(21103, "invalid nonce")
 	AppErrInvalidGasFeeAccount         = New(21104, "invalid gas fee account")
 	AppErrInvalidToAccountNameHash     = New(21105, "invalid ToAccountNameHash")
-	AppErrInvalidAccountNameHash       = New(21106, "invalid AccountNameHash")
-	AppErrAccountNameAlreadyRegistered = New(21107, "invalid account name, already registered")
+	AppErrAccountNameAlreadyRegistered = New(21106, "invalid account name, already registered")
 
 	// Asset
 	AppErrAssetNotFound      = New(21200, "asset not found")
@@ -110,11 +109,6 @@ var (
 	AppErrInvalidCollectionId   = New(21700, "invalid collection id")
 	AppErrInvalidCollectionName = New(21701, "invalid collection name")
 	AppErrInvalidIntroduction   = New(21702, "invalid introduction")
-
-	// Pair and liquidity
-	AppErrInvalidPairIndex      = New(21800, "invalid pair index")
-	AppErrInvalidLpAmount       = New(21801, "invalid lp amount")
-	AppErrInvalidAssetMinAmount = New(21802, "invalid asset min amount")
 
 	AppErrInvalidGasAsset = New(25003, "invalid gas asset")
 	AppErrInvalidTxType   = New(25004, "invalid tx type")

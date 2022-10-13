@@ -63,7 +63,7 @@ func (e *TransferNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
 		return err
 	}
 	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
-		return types.AppErrTxBalanceNotEnough
+		return types.AppErrBalanceNotEnough
 	}
 
 	toAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.ToAccountIndex)
@@ -71,7 +71,7 @@ func (e *TransferNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
 		return err
 	}
 	if txInfo.ToAccountNameHash != toAccount.AccountNameHash {
-		return types.AppErrTxInvalidToAccountNameHash
+		return types.AppErrInvalidToAccountNameHash
 	}
 
 	nft, err := e.bc.StateDB().GetNft(txInfo.NftIndex)

@@ -126,12 +126,9 @@ func mappingVerifyInputsErrors(err error) error {
 		return types.AppErrInvalidOfferId
 	case txtypes.ErrNftIndexTooLow:
 		return types.AppErrInvalidNftIndex
-	case txtypes.ErrAssetIdTooLow, txtypes.ErrAssetIdTooHigh,
-		txtypes.ErrAssetAIdTooLow, txtypes.ErrAssetAIdTooHigh:
+	case txtypes.ErrAssetIdTooLow, txtypes.ErrAssetIdTooHigh:
 		return types.AppErrInvalidAssetId
-	case txtypes.ErrAssetAmountTooLow, txtypes.ErrAssetAmountTooHigh,
-		txtypes.ErrAssetAAmountTooLow, txtypes.ErrAssetAAmountTooHigh,
-		txtypes.ErrAssetBAmountTooLow, txtypes.ErrAssetBAmountTooHigh:
+	case txtypes.ErrAssetAmountTooLow, txtypes.ErrAssetAmountTooHigh:
 		return types.AppErrInvalidAssetAmount
 	case txtypes.ErrListedAtTooLow:
 		return types.AppErrInvalidListTime
@@ -146,17 +143,10 @@ func mappingVerifyInputsErrors(err error) error {
 		return types.AppErrInvalidNftContenthash
 	case txtypes.ErrNftCollectionIdTooLow, txtypes.ErrNftCollectionIdTooHigh:
 		return types.AppErrInvalidCollectionId
-	case txtypes.ErrPairIndexTooLow, txtypes.ErrPairIndexTooHigh:
-		return types.AppErrInvalidPairIndex
-	case txtypes.ErrLpAmountTooLow, txtypes.ErrLpAmountTooLow:
-		return types.AppErrInvalidLpAmount
 	case txtypes.ErrCallDataHashInvalid:
 		return types.AppErrInvalidCallDataHash
 	case txtypes.ErrToAccountNameHashInvalid:
 		return types.AppErrInvalidToAccountNameHash
-	case txtypes.ErrAssetAMinAmountTooLow, txtypes.ErrAssetAMinAmountTooHigh,
-		txtypes.ErrAssetBMinAmountTooLow, txtypes.ErrAssetBMinAmountTooHigh:
-		return types.AppErrInvalidAssetMinAmount
 	case txtypes.ErrToAddressInvalid:
 		return types.AppErrInvalidToAddress
 	case txtypes.ErrBuyOfferInvalid:

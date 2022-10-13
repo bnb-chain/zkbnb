@@ -61,19 +61,19 @@ func (e *TransferExecutor) VerifyInputs(skipGasAmtChk bool) error {
 		return err
 	}
 	if txInfo.ToAccountNameHash != toAccount.AccountNameHash {
-		return types.AppErrTxInvalidToAccountNameHash
+		return types.AppErrInvalidToAccountNameHash
 	}
 	if txInfo.GasFeeAssetId != txInfo.AssetId {
 		if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
-			return types.AppErrTxInvalidGasFeeAmount
+			return types.AppErrInvalidGasFeeAmount
 		}
 		if fromAccount.AssetInfo[txInfo.AssetId].Balance.Cmp(txInfo.AssetAmount) < 0 {
-			return types.AppErrTxInvalidAssetAmount
+			return types.AppErrInvalidAssetAmount
 		}
 	} else {
 		deltaBalance := ffmath.Add(txInfo.AssetAmount, txInfo.GasFeeAssetAmount)
 		if fromAccount.AssetInfo[txInfo.AssetId].Balance.Cmp(deltaBalance) < 0 {
-			return types.AppErrTxInvalidAssetAmount
+			return types.AppErrInvalidAssetAmount
 		}
 	}
 

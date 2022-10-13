@@ -70,7 +70,7 @@ func (e *DepositNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
 		return err
 	}
 	if nft.NftContentHash != types.EmptyNftContentHash {
-		return types.AppErrTxNftAlreadyExist
+		return types.AppErrNftAlreadyExist
 	}
 
 	return nil
