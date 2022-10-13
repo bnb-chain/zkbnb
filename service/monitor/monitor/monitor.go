@@ -19,6 +19,7 @@ package monitor
 import (
 	"fmt"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -30,10 +31,25 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/l1rolluptx"
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
 	"github.com/bnb-chain/zkbnb/dao/priorityrequest"
+	"github.com/bnb-chain/zkbnb/dao/proof"
 	"github.com/bnb-chain/zkbnb/dao/sysconfig"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/service/monitor/config"
 	"github.com/bnb-chain/zkbnb/types"
+)
+
+var (
+	priorityOperationMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "priority_operation_insert",
+		Help:      "Priority operation requestID metrics.",
+	})
+
+	priorityOperationHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "priority_operation_insert_height",
+		Help:      "Priority operation height metrics.",
+	})
 )
 
 type Monitor struct {
@@ -50,6 +66,7 @@ type Monitor struct {
 	TxPoolModel          tx.TxPoolModel
 	SysConfigModel       sysconfig.SysConfigModel
 	L1RollupTxModel      l1rolluptx.L1RollupTxModel
+	ProofModel           proof.ProofModel
 	L2AssetModel         asset.AssetModel
 	PriorityRequestModel priorityrequest.PriorityRequestModel
 	L1SyncedBlockModel   l1syncedblock.L1SyncedBlockModel
@@ -68,6 +85,7 @@ func NewMonitor(c config.Config) *Monitor {
 		TxPoolModel:          tx.NewTxPoolModel(db),
 		BlockModel:           block.NewBlockModel(db),
 		L1RollupTxModel:      l1rolluptx.NewL1RollupTxModel(db),
+		ProofModel:           proof.NewProofModel(db),
 		L1SyncedBlockModel:   l1syncedblock.NewL1SyncedBlockModel(db),
 		L2AssetModel:         asset.NewAssetModel(db),
 		SysConfigModel:       sysconfig.NewSysConfigModel(db),
@@ -103,6 +121,15 @@ func NewMonitor(c config.Config) *Monitor {
 	monitor.zkbnbContractAddress = zkbnbAddressConfig.Value
 	monitor.governanceContractAddress = governanceAddressConfig.Value
 	monitor.cli = bscRpcCli
+
+	if err := prometheus.Register(priorityOperationMetric); err != nil {
+		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
+		panic(err)
+	}
+	if err := prometheus.Register(priorityOperationHeightMetric); err != nil {
+		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
+		panic(err)
+	}
 
 	return monitor
 }

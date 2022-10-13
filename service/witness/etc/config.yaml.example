@@ -5,6 +5,7 @@ Postgres:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 
 LogConf:
   ServiceName: witness

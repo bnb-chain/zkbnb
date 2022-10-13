@@ -40,7 +40,6 @@ func (w *WitnessHelper) constructDepositNftTxWitness(cryptoTx *TxWitness, oTx *t
 
 func toCryptoDepositNftTx(txInfo *txtypes.DepositNftTxInfo) (info *cryptoTypes.DepositNftTx, err error) {
 	info = &cryptoTypes.DepositNftTx{
-		IsNewNft:            txInfo.IsNewNft,
 		AccountIndex:        txInfo.AccountIndex,
 		NftIndex:            txInfo.NftIndex,
 		NftL1Address:        txInfo.NftL1Address,

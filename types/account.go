@@ -24,9 +24,8 @@ import (
 
 const (
 	FungibleAssetType        = 1
-	LiquidityAssetType       = 2
-	NftAssetType             = 3
-	CollectionNonceAssetType = 4
+	NftAssetType             = 2
+	CollectionNonceAssetType = 3
 
 	BuyOfferType  = 0
 	SellOfferType = 1
@@ -35,7 +34,6 @@ const (
 type AccountAsset struct {
 	AssetId                  int64
 	Balance                  *big.Int
-	LpAmount                 *big.Int
 	OfferCanceledOrFinalized *big.Int
 }
 
@@ -43,16 +41,14 @@ func (asset *AccountAsset) DeepCopy() *AccountAsset {
 	return &AccountAsset{
 		AssetId:                  asset.AssetId,
 		Balance:                  big.NewInt(0).Set(asset.Balance),
-		LpAmount:                 big.NewInt(0).Set(asset.LpAmount),
 		OfferCanceledOrFinalized: big.NewInt(0).Set(asset.OfferCanceledOrFinalized),
 	}
 }
 
-func ConstructAccountAsset(assetId int64, balance *big.Int, lpAmount *big.Int, offerCanceledOrFinalized *big.Int) *AccountAsset {
+func ConstructAccountAsset(assetId int64, balance *big.Int, offerCanceledOrFinalized *big.Int) *AccountAsset {
 	return &AccountAsset{
 		assetId,
 		balance,
-		lpAmount,
 		offerCanceledOrFinalized,
 	}
 }
@@ -79,13 +75,12 @@ type AccountInfo struct {
 	L1Address       string
 	Nonce           int64
 	CollectionNonce int64
-	// map[int64]*AccountAsset
-	AssetInfo map[int64]*AccountAsset // key: index, value: balance
-	AssetRoot string
-	Status    int
+	AssetInfo       map[int64]*AccountAsset // key: index, value: balance
+	AssetRoot       string
+	Status          int
 }
 
-func (ai *AccountInfo) DeepCopy() (*AccountInfo, error) {
+func (ai *AccountInfo) DeepCopy() *AccountInfo {
 	assetInfo := make(map[int64]*AccountAsset)
 	for assetId, asset := range ai.AssetInfo {
 		assetInfo[assetId] = asset.DeepCopy()
@@ -104,5 +99,5 @@ func (ai *AccountInfo) DeepCopy() (*AccountInfo, error) {
 		AssetRoot:       ai.AssetRoot,
 		Status:          ai.Status,
 	}
-	return newAccountInfo, nil
+	return newAccountInfo
 }

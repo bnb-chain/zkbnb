@@ -89,28 +89,23 @@ func (e *TransferNftExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	fromAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.FromAccountIndex)
+	fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.FromAccountIndex)
 	if err != nil {
 		return err
 	}
-	gasAccount, err := bc.StateDB().GetFormatAccount(txInfo.GasAccountIndex)
-	if err != nil {
-		return err
-	}
-	nft, err := e.bc.StateDB().GetNft(txInfo.NftIndex)
+	nft, err := bc.StateDB().GetNft(txInfo.NftIndex)
 	if err != nil {
 		return err
 	}
 
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	fromAccount.Nonce++
 	nft.OwnerAccountIndex = txInfo.ToAccountIndex
 
 	stateCache := e.bc.StateDB()
-	stateCache.SetPendingUpdateAccount(txInfo.FromAccountIndex, fromAccount)
-	stateCache.SetPendingUpdateAccount(txInfo.GasAccountIndex, gasAccount)
-	stateCache.SetPendingUpdateNft(txInfo.NftIndex, nft)
+	stateCache.SetPendingAccount(txInfo.FromAccountIndex, fromAccount)
+	stateCache.SetPendingNft(txInfo.NftIndex, nft)
+	stateCache.SetPendingUpdateGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 
@@ -188,7 +183,6 @@ func (e *TransferNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 			txInfo.GasFeeAssetId,
 			ffmath.Neg(txInfo.GasFeeAssetAmount),
 			types.ZeroBigInt,
-			types.ZeroBigInt,
 		).String(),
 		Order:           order,
 		Nonce:           fromAccount.Nonce,
@@ -211,7 +205,6 @@ func (e *TransferNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Balance:      toAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.GasFeeAssetId,
-			types.ZeroBigInt,
 			types.ZeroBigInt,
 			types.ZeroBigInt,
 		).String(),
@@ -269,12 +262,12 @@ func (e *TransferNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 			txInfo.GasFeeAssetId,
 			txInfo.GasFeeAssetAmount,
 			types.ZeroBigInt,
-			types.ZeroBigInt,
 		).String(),
 		Order:           order,
 		Nonce:           gasAccount.Nonce,
 		AccountOrder:    accountOrder,
 		CollectionNonce: gasAccount.CollectionNonce,
+		IsGas:           true,
 	})
 	return txDetails, nil
 }

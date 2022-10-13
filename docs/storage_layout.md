@@ -10,8 +10,6 @@
  - `L1 Synced Block`: record block information from L1
  - `Compressed Block`: record other information of L2 block
  - `Block`: record L2 block information
- - `Liquidity`: record Liquidity related information
- - `Liquidity History`: record the historical change information of Liquidity
  - `Pool Tx`: record pending and executed but not packed Tx messages
  - `L2 NFT`: record NFT related information
  - `L2 NFT History`: record the historical status change information of NFT
@@ -27,7 +25,6 @@
 There are 4 types of trees in the system.
  - Account Tree
  - Account Asset Tree
- - Liquidity Tree 
  - Nft Tree
 
 ## Account Tree
@@ -36,10 +33,6 @@ Used to record and save account status under each block height.
 
 ## Account Asset Tree
 Each Account will maintain an Asset tree, the `Balance`, `LpAmount`, and `OfferCanceledOrFinalized` of each Asset will be calculated as a hash and written into the tree corresponding to the `AssetID`.
-
-## Liquidity Tree
-The `AssetAId`, `AssetA`, `AssetBId`, `AssetB`, `LpAmount`, `KLast`, `FeeRate`, `TreasuryAccountIndex`, and `TreasuryRate` of each liquidity resource will be calculated as a hash and written into the tree corresponding to the `PairIndex`. 
-Used to record and save liquidity status under each block height.
 
 ## Nft Tree
 The `CreatorAccountIndex`, `OwnerAccountIndex`, `NftContentHash`, `NftL1Address`, `NftL1TokenId`, `CreatorTreasuryRate`, and `CollectionId` of each nft resource will be calculated as a hash and written into the tree corresponding to the `NftIndex`. 

@@ -37,7 +37,7 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 	}
 
 	resp = &types.TxHash{}
-	bc, err := core.NewBlockChainForDryRun(s.svcCtx.AccountModel, s.svcCtx.LiquidityModel, s.svcCtx.NftModel, s.svcCtx.TxPoolModel,
+	bc, err := core.NewBlockChainForDryRun(s.svcCtx.AccountModel, s.svcCtx.NftModel, s.svcCtx.TxPoolModel,
 		s.svcCtx.AssetModel, s.svcCtx.SysConfigModel, s.svcCtx.RedisCache)
 	if err != nil {
 		logx.Error("fail to init blockchain runner:", err)
@@ -50,7 +50,6 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 
 		GasFeeAssetId: types2.NilAssetId,
 		GasFee:        types2.NilAssetAmount,
-		PairIndex:     types2.NilPairIndex,
 		NftIndex:      types2.NilNftIndex,
 		CollectionId:  types2.NilCollectionNonce,
 		AssetId:       types2.NilAssetId,

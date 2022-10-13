@@ -172,7 +172,7 @@ func (s *Sender) CommitBlocks() (err error) {
 		gasPrice,
 		s.config.ChainConfig.GasLimit)
 	if err != nil {
-		return fmt.Errorf("failed to send commit tx, errL %v", err)
+		return fmt.Errorf("failed to send commit tx, errL %v:%s", err, txHash)
 	}
 	newRollupTx := &l1rolluptx.L1RollupTx{
 		L1TxHash:      txHash,
@@ -184,7 +184,7 @@ func (s *Sender) CommitBlocks() (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to create tx in database, err: %v", err)
 	}
-	logx.Infof("new blocks have been committed(height): %v", newRollupTx.L2BlockHeight)
+	logx.Infof("new blocks have been committed(height): %v:%s", newRollupTx.L2BlockHeight, newRollupTx.L1TxHash)
 	return nil
 }
 
@@ -220,6 +220,10 @@ func (s *Sender) UpdateSentTxs() (err error) {
 			continue
 		}
 		if receipt.Status == 0 {
+			// Should direct mark tx deleted
+			logx.Infof("delete timeout l1 rollup tx, tx_hash=%s", pendingTx.L1TxHash)
+			//nolint:errcheck
+			s.l1RollupTxModel.DeleteL1RollupTx(pendingTx)
 			// It is critical to have any failed transactions
 			panic(fmt.Sprintf("unexpected failed tx: %v", txHash))
 		}
@@ -317,6 +321,12 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	if len(blockProofs) != len(blocks) {
 		return errors.New("related proofs not ready")
 	}
+	// add sanity check
+	for i := range blockProofs {
+		if blockProofs[i].BlockNumber != blocks[i].BlockHeight {
+			return errors.New("proof number not match")
+		}
+	}
 	var proofs []*big.Int
 	for _, bProof := range blockProofs {
 		var proofInfo *prove.FormattedProof
@@ -345,7 +355,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	txHash, err := zkbnb.VerifyAndExecuteBlocks(cli, authCli, zkbnbInstance,
 		pendingVerifyAndExecuteBlocks, proofs, gasPrice, s.config.ChainConfig.GasLimit)
 	if err != nil {
-		return fmt.Errorf("failed to send verify tx: %v", err)
+		return fmt.Errorf("failed to send verify tx: %v:%s", err, txHash)
 	}
 
 	newRollupTx := &l1rolluptx.L1RollupTx{
@@ -358,7 +368,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	if err != nil {
 		return fmt.Errorf(fmt.Sprintf("failed to create rollup tx in db %v", err))
 	}
-	logx.Infof("new blocks have been verified and executed(height): %d", newRollupTx.L2BlockHeight)
+	logx.Infof("new blocks have been verified and executed(height): %d:%s", newRollupTx.L2BlockHeight, newRollupTx.L1TxHash)
 	return nil
 }
 

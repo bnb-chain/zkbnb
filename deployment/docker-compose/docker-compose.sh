@@ -61,6 +61,7 @@ LogConf:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " > ${CONFIG_PATH}/witness.yaml
 
 echo -e "
@@ -104,6 +105,7 @@ BlockConfig:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " > ${CONFIG_PATH}/committer.yaml
 
 echo -e "
@@ -173,6 +175,8 @@ MemCache:
   BlockExpiration:   400
   TxExpiration:      400
   PriceExpiration:   3600000
+  MaxCounterNum:     100000
+  MaxKeyNum:         10000
 
 " > ${CONFIG_PATH}/apiserver.yaml
 

@@ -12,11 +12,11 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/dbcache"
-	"github.com/bnb-chain/zkbnb/dao/liquidity"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/tree"
 	"github.com/bnb-chain/zkbnb/types"
@@ -24,25 +24,19 @@ import (
 
 var (
 	DefaultCacheConfig = CacheConfig{
-		AccountCacheSize:   2048,
-		LiquidityCacheSize: 2048,
-		NftCacheSize:       2048,
+		AccountCacheSize: 2048,
+		NftCacheSize:     2048,
 	}
 )
 
 type CacheConfig struct {
-	AccountCacheSize   int
-	LiquidityCacheSize int
-	NftCacheSize       int
+	AccountCacheSize int
+	NftCacheSize     int
 }
 
 func (c *CacheConfig) sanitize() *CacheConfig {
 	if c.AccountCacheSize <= 0 {
 		c.AccountCacheSize = DefaultCacheConfig.AccountCacheSize
-	}
-
-	if c.LiquidityCacheSize <= 0 {
-		c.LiquidityCacheSize = DefaultCacheConfig.LiquidityCacheSize
 	}
 
 	if c.NftCacheSize <= 0 {
@@ -60,20 +54,18 @@ type StateDB struct {
 	redisCache dbcache.Cache
 
 	// Flat state
-	AccountCache   *lru.Cache
-	LiquidityCache *lru.Cache
-	NftCache       *lru.Cache
+	AccountCache *lru.Cache
+	NftCache     *lru.Cache
 
 	// Tree state
 	AccountTree       bsmt.SparseMerkleTree
-	LiquidityTree     bsmt.SparseMerkleTree
 	NftTree           bsmt.SparseMerkleTree
-	AccountAssetTrees []bsmt.SparseMerkleTree
+	AccountAssetTrees *tree.AssetTreeCache
 	TreeCtx           *tree.Context
 }
 
 func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
-	redisCache dbcache.Cache, cacheConfig *CacheConfig,
+	redisCache dbcache.Cache, cacheConfig *CacheConfig, assetCacheSize int,
 	stateRoot string, curHeight int64) (*StateDB, error) {
 	err := tree.SetupTreeDB(treeCtx)
 	if err != nil {
@@ -85,18 +77,10 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 		chainDb.AccountHistoryModel,
 		curHeight,
 		treeCtx,
+		assetCacheSize,
 	)
 	if err != nil {
 		logx.Error("dbinitializer account tree failed:", err)
-		return nil, err
-	}
-	liquidityTree, err := tree.InitLiquidityTree(
-		chainDb.LiquidityHistoryModel,
-		curHeight,
-		treeCtx,
-	)
-	if err != nil {
-		logx.Error("dbinitializer liquidity tree failed:", err)
 		return nil, err
 	}
 	nftTree, err := tree.InitNftTree(
@@ -115,11 +99,6 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 		logx.Error("init account cache failed:", err)
 		return nil, err
 	}
-	liquidityCache, err := lru.New(cacheConfig.LiquidityCacheSize)
-	if err != nil {
-		logx.Error("init liquidity cache failed:", err)
-		return nil, err
-	}
 	nftCache, err := lru.New(cacheConfig.NftCacheSize)
 	if err != nil {
 		logx.Error("init nft cache failed:", err)
@@ -127,15 +106,13 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 	}
 
 	return &StateDB{
-		StateCache:     NewStateCache(stateRoot),
-		chainDb:        chainDb,
-		redisCache:     redisCache,
-		AccountCache:   accountCache,
-		LiquidityCache: liquidityCache,
-		NftCache:       nftCache,
+		StateCache:   NewStateCache(stateRoot),
+		chainDb:      chainDb,
+		redisCache:   redisCache,
+		AccountCache: accountCache,
+		NftCache:     nftCache,
 
 		AccountTree:       accountTree,
-		LiquidityTree:     liquidityTree,
 		NftTree:           nftTree,
 		AccountAssetTrees: accountAssetTrees,
 		TreeCtx:           treeCtx,
@@ -148,24 +125,18 @@ func NewStateDBForDryRun(redisCache dbcache.Cache, cacheConfig *CacheConfig, cha
 		logx.Error("init account cache failed:", err)
 		return nil, err
 	}
-	liquidityCache, err := lru.New(cacheConfig.LiquidityCacheSize)
-	if err != nil {
-		logx.Error("init liquidity cache failed:", err)
-		return nil, err
-	}
 	nftCache, err := lru.New(cacheConfig.NftCacheSize)
 	if err != nil {
 		logx.Error("init nft cache failed:", err)
 		return nil, err
 	}
 	return &StateDB{
-		dryRun:         true,
-		redisCache:     redisCache,
-		chainDb:        chainDb,
-		AccountCache:   accountCache,
-		LiquidityCache: liquidityCache,
-		NftCache:       nftCache,
-		StateCache:     NewStateCache(""),
+		dryRun:       true,
+		redisCache:   redisCache,
+		chainDb:      chainDb,
+		AccountCache: accountCache,
+		NftCache:     nftCache,
+		StateCache:   NewStateCache(""),
 	}, nil
 }
 
@@ -223,21 +194,52 @@ func (s *StateDB) GetAccount(accountIndex int64) (*account.Account, error) {
 	return account, nil
 }
 
-func (s *StateDB) GetLiquidity(pairIndex int64) (*liquidity.Liquidity, error) {
-	pending, exist := s.StateCache.GetPendingLiquidity(pairIndex)
-	if exist {
-		return pending, nil
+// GetAccountByName get the account by its name.
+// Firstly, try to find the account in the current state cache, it iterates the pending
+// account map, not performance friendly, please take care when use this API.
+// Secondly, if not found in the current state cache, then try to find the account from database.
+func (s *StateDB) GetAccountByName(accountName string) (*account.Account, error) {
+	for _, accountInfo := range s.PendingAccountMap {
+		if accountInfo.AccountName == accountName {
+			account, err := chain.FromFormatAccountInfo(accountInfo)
+			if err != nil {
+				return nil, err
+			}
+
+			return account, nil
+		}
 	}
-	cached, exist := s.LiquidityCache.Get(pairIndex)
-	if exist {
-		return cached.(*liquidity.Liquidity), nil
-	}
-	liquidity, err := s.chainDb.LiquidityModel.GetLiquidityByIndex(pairIndex)
+
+	account, err := s.chainDb.AccountModel.GetAccountByName(accountName)
 	if err != nil {
 		return nil, err
 	}
-	s.LiquidityCache.Add(pairIndex, liquidity)
-	return liquidity, nil
+
+	return account, nil
+}
+
+// GetAccountByNameHash get the account by its name hash.
+// Firstly, try to find the account in the current state cache, it iterates the pending
+// account map, not performance friendly, please take care when use this API.
+// Secondly, if not found in the current state cache, then try to find the account from database.
+func (s *StateDB) GetAccountByNameHash(accountNameHash string) (*account.Account, error) {
+	for _, accountInfo := range s.PendingAccountMap {
+		if accountInfo.AccountNameHash == accountNameHash {
+			account, err := chain.FromFormatAccountInfo(accountInfo)
+			if err != nil {
+				return nil, err
+			}
+
+			return account, nil
+		}
+	}
+
+	account, err := s.chainDb.AccountModel.GetAccountByNameHash(accountNameHash)
+	if err != nil {
+		return nil, err
+	}
+
+	return account, nil
 }
 
 func (s *StateDB) GetNft(nftIndex int64) (*nft.L2Nft, error) {
@@ -273,17 +275,6 @@ func (s *StateDB) syncPendingAccount(pendingAccount map[int64]*types.AccountInfo
 	return nil
 }
 
-func (s *StateDB) syncPendingLiquidity(pendingLiquidity map[int64]*liquidity.Liquidity) error {
-	for index, liquidity := range pendingLiquidity {
-		err := s.redisCache.Set(context.Background(), dbcache.LiquidityKeyByIndex(index), liquidity)
-		if err != nil {
-			return fmt.Errorf("cache to redis failed: %v", err)
-		}
-		s.LiquidityCache.Add(index, liquidity)
-	}
-	return nil
-}
-
 func (s *StateDB) syncPendingNft(pendingNft map[int64]*nft.L2Nft) error {
 	for index, nft := range pendingNft {
 		err := s.redisCache.Set(context.Background(), dbcache.NftKeyByIndex(index), nft)
@@ -295,31 +286,30 @@ func (s *StateDB) syncPendingNft(pendingNft map[int64]*nft.L2Nft) error {
 	return nil
 }
 
-func (s *StateDB) SyncStateCacheToRedis() error {
-	// Sync new create to cache.
-	err := s.syncPendingAccount(s.PendingNewAccountMap)
-	if err != nil {
-		return err
+func (s *StateDB) SyncPendingGasAccount() error {
+	if cacheAccount, ok := s.AccountCache.Get(types.GasAccount); ok {
+		formatAccount := cacheAccount.(*types.AccountInfo)
+		s.applyGasUpdate(formatAccount)
+		account, err := chain.FromFormatAccountInfo(formatAccount)
+		if err != nil {
+			return err
+		}
+		err = s.redisCache.Set(context.Background(), dbcache.AccountKeyByIndex(account.AccountIndex), account)
+		if err != nil {
+			return fmt.Errorf("cache to redis failed: %v", err)
+		}
+		s.AccountCache.Add(account.AccountIndex, formatAccount)
 	}
-	err = s.syncPendingLiquidity(s.PendingNewLiquidityMap)
-	if err != nil {
-		return err
-	}
-	err = s.syncPendingNft(s.PendingNewNftMap)
-	if err != nil {
-		return err
-	}
+	return nil
+}
 
-	// Sync pending update to cache.
-	err = s.syncPendingAccount(s.PendingUpdateAccountMap)
+func (s *StateDB) SyncStateCacheToRedis() error {
+	// Sync pending to cache.
+	err := s.syncPendingAccount(s.PendingAccountMap)
 	if err != nil {
 		return err
 	}
-	err = s.syncPendingLiquidity(s.PendingUpdateLiquidityMap)
-	if err != nil {
-		return err
-	}
-	err = s.syncPendingNft(s.PendingUpdateNftMap)
+	err = s.syncPendingNft(s.PendingNftMap)
 	if err != nil {
 		return err
 	}
@@ -331,19 +321,31 @@ func (s *StateDB) PurgeCache(stateRoot string) {
 	s.StateCache = NewStateCache(stateRoot)
 }
 
-func (s *StateDB) GetPendingAccount(blockHeight int64) ([]*account.Account, []*account.Account, []*account.AccountHistory, error) {
-	pendingNewAccount := make([]*account.Account, 0)
-	pendingUpdateAccount := make([]*account.Account, 0)
-	pendingNewAccountHistory := make([]*account.AccountHistory, 0)
+func (s *StateDB) GetPendingAccount(blockHeight int64) ([]*account.Account, []*account.AccountHistory, error) {
+	pendingAccount := make([]*account.Account, 0)
+	pendingAccountHistory := make([]*account.AccountHistory, 0)
 
-	for _, formatAccount := range s.PendingNewAccountMap {
-		newAccount, err := chain.FromFormatAccountInfo(formatAccount)
-		if err != nil {
-			return nil, nil, nil, err
+	gasChanged := false
+	for _, delta := range s.StateCache.PendingGasMap {
+		if delta.Cmp(types.ZeroBigInt) > 0 {
+			gasChanged = true
+			break
+		}
+	}
+
+	handledGasAccount := false
+	for _, formatAccount := range s.PendingAccountMap {
+		if formatAccount.AccountIndex == types.GasAccount && gasChanged {
+			handledGasAccount = true
+			s.applyGasUpdate(formatAccount)
 		}
 
-		pendingNewAccount = append(pendingNewAccount, newAccount)
-		pendingNewAccountHistory = append(pendingNewAccountHistory, &account.AccountHistory{
+		newAccount, err := chain.FromFormatAccountInfo(formatAccount)
+		if err != nil {
+			return nil, nil, err
+		}
+		pendingAccount = append(pendingAccount, newAccount)
+		pendingAccountHistory = append(pendingAccountHistory, &account.AccountHistory{
 			AccountIndex:    newAccount.AccountIndex,
 			Nonce:           newAccount.Nonce,
 			CollectionNonce: newAccount.CollectionNonce,
@@ -353,17 +355,25 @@ func (s *StateDB) GetPendingAccount(blockHeight int64) ([]*account.Account, []*a
 		})
 	}
 
-	for index, formatAccount := range s.PendingUpdateAccountMap {
-		if _, exist := s.PendingNewAccountMap[index]; exist {
-			continue
+	if !handledGasAccount && gasChanged {
+		gasAccount, err := s.GetAccount(types.GasAccount)
+		if err != nil {
+			return nil, nil, err
 		}
+
+		formatAccount, err := chain.ToFormatAccountInfo(gasAccount)
+		if err != nil {
+			return nil, nil, err
+		}
+		s.applyGasUpdate(formatAccount)
 
 		newAccount, err := chain.FromFormatAccountInfo(formatAccount)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, err
 		}
-		pendingUpdateAccount = append(pendingUpdateAccount, newAccount)
-		pendingNewAccountHistory = append(pendingNewAccountHistory, &account.AccountHistory{
+
+		pendingAccount = append(pendingAccount, newAccount)
+		pendingAccountHistory = append(pendingAccountHistory, &account.AccountHistory{
 			AccountIndex:    newAccount.AccountIndex,
 			Nonce:           newAccount.Nonce,
 			CollectionNonce: newAccount.CollectionNonce,
@@ -373,63 +383,29 @@ func (s *StateDB) GetPendingAccount(blockHeight int64) ([]*account.Account, []*a
 		})
 	}
 
-	return pendingNewAccount, pendingUpdateAccount, pendingNewAccountHistory, nil
+	return pendingAccount, pendingAccountHistory, nil
 }
 
-func (s *StateDB) GetPendingLiquidity(blockHeight int64) ([]*liquidity.Liquidity, []*liquidity.Liquidity, []*liquidity.LiquidityHistory, error) {
-	pendingNewLiquidity := make([]*liquidity.Liquidity, 0)
-	pendingUpdateLiquidity := make([]*liquidity.Liquidity, 0)
-	pendingNewLiquidityHistory := make([]*liquidity.LiquidityHistory, 0)
-
-	for _, newLiquidity := range s.PendingNewLiquidityMap {
-		pendingNewLiquidity = append(pendingNewLiquidity, newLiquidity)
-		pendingNewLiquidityHistory = append(pendingNewLiquidityHistory, &liquidity.LiquidityHistory{
-			PairIndex:            newLiquidity.PairIndex,
-			AssetAId:             newLiquidity.AssetAId,
-			AssetA:               newLiquidity.AssetA,
-			AssetBId:             newLiquidity.AssetBId,
-			AssetB:               newLiquidity.AssetB,
-			LpAmount:             newLiquidity.LpAmount,
-			KLast:                newLiquidity.KLast,
-			FeeRate:              newLiquidity.FeeRate,
-			TreasuryAccountIndex: newLiquidity.TreasuryAccountIndex,
-			TreasuryRate:         newLiquidity.TreasuryRate,
-			L2BlockHeight:        blockHeight,
-		})
-	}
-
-	for index, newLiquidity := range s.PendingUpdateLiquidityMap {
-		if _, exist := s.PendingNewLiquidityMap[index]; exist {
-			continue
+func (s *StateDB) applyGasUpdate(formatAccount *types.AccountInfo) {
+	for assetId, delta := range s.StateCache.PendingGasMap {
+		if asset, ok := formatAccount.AssetInfo[assetId]; ok {
+			formatAccount.AssetInfo[assetId].Balance = ffmath.Add(asset.Balance, delta)
+		} else {
+			formatAccount.AssetInfo[assetId] = &types.AccountAsset{
+				Balance:                  delta,
+				OfferCanceledOrFinalized: types.ZeroBigInt,
+			}
 		}
-
-		pendingUpdateLiquidity = append(pendingUpdateLiquidity, newLiquidity)
-		pendingNewLiquidityHistory = append(pendingNewLiquidityHistory, &liquidity.LiquidityHistory{
-			PairIndex:            newLiquidity.PairIndex,
-			AssetAId:             newLiquidity.AssetAId,
-			AssetA:               newLiquidity.AssetA,
-			AssetBId:             newLiquidity.AssetBId,
-			AssetB:               newLiquidity.AssetB,
-			LpAmount:             newLiquidity.LpAmount,
-			KLast:                newLiquidity.KLast,
-			FeeRate:              newLiquidity.FeeRate,
-			TreasuryAccountIndex: newLiquidity.TreasuryAccountIndex,
-			TreasuryRate:         newLiquidity.TreasuryRate,
-			L2BlockHeight:        blockHeight,
-		})
 	}
-
-	return pendingNewLiquidity, pendingUpdateLiquidity, pendingNewLiquidityHistory, nil
 }
 
-func (s *StateDB) GetPendingNft(blockHeight int64) ([]*nft.L2Nft, []*nft.L2Nft, []*nft.L2NftHistory, error) {
-	pendingNewNft := make([]*nft.L2Nft, 0)
-	pendingUpdateNft := make([]*nft.L2Nft, 0)
-	pendingNewNftHistory := make([]*nft.L2NftHistory, 0)
+func (s *StateDB) GetPendingNft(blockHeight int64) ([]*nft.L2Nft, []*nft.L2NftHistory, error) {
+	pendingNft := make([]*nft.L2Nft, 0)
+	pendingNftHistory := make([]*nft.L2NftHistory, 0)
 
-	for _, newNft := range s.PendingNewNftMap {
-		pendingNewNft = append(pendingNewNft, newNft)
-		pendingNewNftHistory = append(pendingNewNftHistory, &nft.L2NftHistory{
+	for _, newNft := range s.PendingNftMap {
+		pendingNft = append(pendingNft, newNft)
+		pendingNftHistory = append(pendingNftHistory, &nft.L2NftHistory{
 			NftIndex:            newNft.NftIndex,
 			CreatorAccountIndex: newNft.CreatorAccountIndex,
 			OwnerAccountIndex:   newNft.OwnerAccountIndex,
@@ -442,25 +418,7 @@ func (s *StateDB) GetPendingNft(blockHeight int64) ([]*nft.L2Nft, []*nft.L2Nft, 
 		})
 	}
 
-	for index, newNft := range s.PendingUpdateNftMap {
-		if _, exist := s.PendingNewNftMap[index]; exist {
-			continue
-		}
-		pendingUpdateNft = append(pendingUpdateNft, newNft)
-		pendingNewNftHistory = append(pendingNewNftHistory, &nft.L2NftHistory{
-			NftIndex:            newNft.NftIndex,
-			CreatorAccountIndex: newNft.CreatorAccountIndex,
-			OwnerAccountIndex:   newNft.OwnerAccountIndex,
-			NftContentHash:      newNft.NftContentHash,
-			NftL1Address:        newNft.NftL1Address,
-			NftL1TokenId:        newNft.NftL1TokenId,
-			CreatorTreasuryRate: newNft.CreatorTreasuryRate,
-			CollectionId:        newNft.CollectionId,
-			L2BlockHeight:       blockHeight,
-		})
-	}
-
-	return pendingNewNft, pendingUpdateNft, pendingNewNftHistory, nil
+	return pendingNft, pendingNftHistory, nil
 }
 
 func (s *StateDB) DeepCopyAccounts(accountIds []int64) (map[int64]*types.AccountInfo, error) {
@@ -477,11 +435,7 @@ func (s *StateDB) DeepCopyAccounts(accountIds []int64) (map[int64]*types.Account
 		if err != nil {
 			return nil, err
 		}
-		accountCopy, err := account.DeepCopy()
-		if err != nil {
-			return nil, err
-		}
-		accounts[accountId] = accountCopy
+		accounts[accountId] = account.DeepCopy()
 	}
 
 	return accounts, nil
@@ -512,7 +466,6 @@ func (s *StateDB) PrepareAccountsAndAssets(accountAssetsMap map[int64]map[int64]
 				account.AssetInfo[assetId] = &types.AccountAsset{
 					AssetId:                  assetId,
 					Balance:                  types.ZeroBigInt,
-					LpAmount:                 types.ZeroBigInt,
 					OfferCanceledOrFinalized: types.ZeroBigInt,
 				}
 			}
@@ -520,22 +473,6 @@ func (s *StateDB) PrepareAccountsAndAssets(accountAssetsMap map[int64]map[int64]
 		s.AccountCache.Add(accountIndex, account)
 	}
 
-	return nil
-}
-
-func (s *StateDB) PrepareLiquidity(pairIndex int64) error {
-	if s.dryRun {
-		l := &liquidity.Liquidity{}
-		redisLiquidity, err := s.redisCache.Get(context.Background(), dbcache.LiquidityKeyByIndex(pairIndex), l)
-		if err == nil && redisLiquidity != nil {
-			s.LiquidityCache.Add(pairIndex, l)
-		}
-	}
-
-	_, err := s.GetLiquidity(pairIndex)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -567,16 +504,6 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool) error {
 		}
 	}
 
-	for pairIndex, isDirty := range s.dirtyLiquidityMap {
-		if !isDirty {
-			continue
-		}
-		err := s.updateLiquidityTree(pairIndex)
-		if err != nil {
-			return err
-		}
-	}
-
 	for nftIndex, isDirty := range s.dirtyNftMap {
 		if !isDirty {
 			continue
@@ -589,13 +516,11 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool) error {
 
 	if cleanDirty {
 		s.dirtyAccountsAndAssetsMap = make(map[int64]map[int64]bool, 0)
-		s.dirtyLiquidityMap = make(map[int64]bool, 0)
 		s.dirtyNftMap = make(map[int64]bool, 0)
 	}
 
 	hFunc := mimc.NewMiMC()
 	hFunc.Write(s.AccountTree.Root())
-	hFunc.Write(s.LiquidityTree.Root())
 	hFunc.Write(s.NftTree.Root())
 	s.StateRoot = common.Bytes2Hex(hFunc.Sum(nil))
 	return nil
@@ -606,28 +531,41 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64) error {
 	if err != nil {
 		return err
 	}
+	isGasAccount := accountIndex == types.GasAccount
 	for _, assetId := range assets {
+		isGasAsset := false
+		if isGasAccount {
+			for _, gasAssetId := range types.GasAssets {
+				if assetId == gasAssetId {
+					isGasAsset = true
+					break
+				}
+			}
+		}
+		balance := account.AssetInfo[assetId].Balance
+		if isGasAsset {
+			balance = ffmath.Add(balance, s.GetPendingUpdateGas(assetId))
+		}
 		assetLeaf, err := tree.ComputeAccountAssetLeafHash(
-			account.AssetInfo[assetId].Balance.String(),
-			account.AssetInfo[assetId].LpAmount.String(),
+			balance.String(),
 			account.AssetInfo[assetId].OfferCanceledOrFinalized.String(),
 		)
 		if err != nil {
 			return fmt.Errorf("compute new account asset leaf failed: %v", err)
 		}
-		err = s.AccountAssetTrees[accountIndex].Set(uint64(assetId), assetLeaf)
+		err = s.AccountAssetTrees.Get(accountIndex).Set(uint64(assetId), assetLeaf)
 		if err != nil {
 			return fmt.Errorf("update asset tree failed: %v", err)
 		}
 	}
 
-	account.AssetRoot = common.Bytes2Hex(s.AccountAssetTrees[accountIndex].Root())
+	account.AssetRoot = common.Bytes2Hex(s.AccountAssetTrees.Get(accountIndex).Root())
 	nAccountLeafHash, err := tree.ComputeAccountLeafHash(
 		account.AccountNameHash,
 		account.PublicKey,
 		account.Nonce,
 		account.CollectionNonce,
-		s.AccountAssetTrees[accountIndex].Root(),
+		s.AccountAssetTrees.Get(accountIndex).Root(),
 	)
 	if err != nil {
 		return fmt.Errorf("unable to compute account leaf: %v", err)
@@ -635,33 +573,6 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64) error {
 	err = s.AccountTree.Set(uint64(accountIndex), nAccountLeafHash)
 	if err != nil {
 		return fmt.Errorf("unable to update account tree: %v", err)
-	}
-
-	return nil
-}
-
-func (s *StateDB) updateLiquidityTree(pairIndex int64) error {
-	liquidity, err := s.GetLiquidity(pairIndex)
-	if err != nil {
-		return err
-	}
-	nLiquidityAssetLeaf, err := tree.ComputeLiquidityAssetLeafHash(
-		liquidity.AssetAId,
-		liquidity.AssetA,
-		liquidity.AssetBId,
-		liquidity.AssetB,
-		liquidity.LpAmount,
-		liquidity.KLast,
-		liquidity.FeeRate,
-		liquidity.TreasuryAccountIndex,
-		liquidity.TreasuryRate,
-	)
-	if err != nil {
-		return fmt.Errorf("unable to compute liquidity leaf: %v", err)
-	}
-	err = s.LiquidityTree.Set(uint64(pairIndex), nLiquidityAssetLeaf)
-	if err != nil {
-		return fmt.Errorf("unable to update liquidity tree: %v", err)
 	}
 
 	return nil
@@ -718,20 +629,16 @@ func (s *StateDB) GetPendingNonce(accountIndex int64) (int64, error) {
 }
 
 func (s *StateDB) GetNextAccountIndex() int64 {
-	return int64(len(s.AccountAssetTrees))
+	return s.AccountAssetTrees.GetNextAccountIndex()
 }
 
 func (s *StateDB) GetNextNftIndex() int64 {
-	if len(s.PendingNewNftMap) == 0 {
-		maxNftIndex, err := s.chainDb.L2NftModel.GetLatestNftIndex()
-		if err != nil {
-			panic("get latest nft index error: " + err.Error())
-		}
-		return maxNftIndex + 1
+	maxNftIndex, err := s.chainDb.L2NftModel.GetLatestNftIndex()
+	if err != nil {
+		panic("get latest nft index error: " + err.Error())
 	}
 
-	maxNftIndex := int64(-1)
-	for index := range s.PendingNewNftMap {
+	for index := range s.PendingNftMap {
 		if index > maxNftIndex {
 			maxNftIndex = index
 		}

@@ -16,8 +16,6 @@ ZkBNB achieves the following goals:
   cryptographic. Users do not have to trust any third parties or keep monitoring the Rollup blocks in order to 
   prevent fraud.
 - **L1<>L2 Communication**. BNB, and BEP20/BEP721/BEP1155 created on BSC or ZkBNB can flow freely between BSC and ZkBNB.
-- **Built-in instant AMM swap**. It allows digital assets to be traded without permission and automatically by using 
-   liquidity pools.
 - **Built-in NFT marketplace**. Developer can build marketplace for crypto collectibles and non-fungible tokens (NFTs) 
   out of box on ZkBNB.
 - **Fast transaction speed and faster finality**.
@@ -35,7 +33,6 @@ ZkBNB starts its development based on [Zecrey](https://github.com/bnb-chain/zecr
 - [Key Features](#Key-Features)
   + [Digital Asset Management](#Digital-Asset-Management)
   + [NFT Management and Marketplace](#NFT-Management-and-Marketplace)
-  + [AMM Exchange](#AMM-Exchange)
   + [Native Name Service](#Native-Name-Service)
   + [Seamless L1 Wallet Management](#Seamless-L1-Wallet-Management)
 
@@ -59,7 +56,7 @@ ZkBNB starts its development based on [Zecrey](https://github.com/bnb-chain/zecr
 - **prover**. Prover generates cryptographic proof based on the witness materials.
 - **sender**. The sender rollups the compressed l2 blocks to L1, and submit proof to verify it.
 - **api server**. The api server is the access endpoints for most users, it provides rich data, including
-  digital assets, blocks, transactions, swap info, gas fees.
+  digital assets, blocks, transactions, gas fees.
 - **recovery**. A tool to recover the sparse merkle tree in kv-rocks based on the state world in postgresql.
 
 
@@ -104,16 +101,6 @@ can place buy/sell offer in the marketplace without paying any fees since the of
 being sent to the ZkBNB. Once the offer is matched, an **AtomicMatch** transaction that consist of buy and sell offer
 will be sent to ZkBNB to make the trade happen. Users can also cancel an offer manually by sending a cancel offer
 transaction to disable the backend cached offer.
-
-### AMM Exchange
-
-Automated market makers (AMM) are decentralized exchanges that pool liquidity from users and price the assets within 
-the pool using algorithms. 
-
-ZkBNB follows the similar mechanic as [UniSwap V2](https://docs.uniswap.org/protocol/V2/concepts/protocol-overview/how-uniswap-works).
-Anyone can become a liquidity provider (LP) for a pool by depositing an equivalent value of each underlying token in 
-return for pool tokens. The different from UniSwap is that the LP token on ZkBNB can not transfer or trade. Users can
-simply list a swap pair by calling the rollup contract on BSC.
 
 ### Native Name Service
 No more copying and pasting long addresses on ZkBNB. Every account on ZkBNB gets its short name, user can use that to

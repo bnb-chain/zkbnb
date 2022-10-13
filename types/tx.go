@@ -20,21 +20,15 @@ package types
 import (
 	"encoding/json"
 
-	"github.com/bnb-chain/zkbnb-crypto/circuit"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 )
 
 const (
 	TxTypeEmpty = iota
 	TxTypeRegisterZns
-	TxTypeCreatePair
-	TxTypeUpdatePairRate
 	TxTypeDeposit
 	TxTypeDepositNft
 	TxTypeTransfer
-	TxTypeSwap
-	TxTypeAddLiquidity
-	TxTypeRemoveLiquidity
 	TxTypeWithdraw
 	TxTypeCreateCollection
 	TxTypeMintNft
@@ -49,9 +43,6 @@ const (
 
 func IsL2Tx(txType int64) bool {
 	if txType == TxTypeTransfer ||
-		txType == TxTypeSwap ||
-		txType == TxTypeAddLiquidity ||
-		txType == TxTypeRemoveLiquidity ||
 		txType == TxTypeWithdraw ||
 		txType == TxTypeCreateCollection ||
 		txType == TxTypeMintNft ||
@@ -64,16 +55,25 @@ func IsL2Tx(txType int64) bool {
 	return false
 }
 
+func IsPriorityOperationTx(txType int64) bool {
+	if txType == TxTypeRegisterZns ||
+		txType == TxTypeDeposit ||
+		txType == TxTypeDepositNft ||
+		txType == TxTypeFullExit ||
+		txType == TxTypeFullExitNft {
+		return true
+	}
+	return false
+}
+
 const (
 	TxTypeBytesSize          = 1
-	IsNewNftSize             = 1
 	AddressBytesSize         = 20
 	AccountIndexBytesSize    = 4
 	AccountNameBytesSize     = 32
 	AccountNameHashBytesSize = 32
 	PubkeyBytesSize          = 32
 	AssetIdBytesSize         = 2
-	PairIndexBytesSize       = 2
 	StateAmountBytesSize     = 16
 	NftIndexBytesSize        = 5
 	NftTokenIdBytesSize      = 32
@@ -83,13 +83,9 @@ const (
 
 	RegisterZnsPubDataSize = TxTypeBytesSize + AccountIndexBytesSize + AccountNameBytesSize +
 		AccountNameHashBytesSize + PubkeyBytesSize + PubkeyBytesSize
-	CreatePairPubDataSize = TxTypeBytesSize + PairIndexBytesSize +
-		AssetIdBytesSize + AssetIdBytesSize + FeeRateBytesSize + AccountIndexBytesSize + FeeRateBytesSize
-	UpdatePairRatePubdataSize = TxTypeBytesSize + PairIndexBytesSize +
-		FeeRateBytesSize + AccountIndexBytesSize + FeeRateBytesSize
 	DepositPubDataSize = TxTypeBytesSize + AccountIndexBytesSize +
 		AccountNameHashBytesSize + AssetIdBytesSize + StateAmountBytesSize
-	DepositNftPubDataSize = TxTypeBytesSize + IsNewNftSize + AccountIndexBytesSize + NftIndexBytesSize + AddressBytesSize +
+	DepositNftPubDataSize = TxTypeBytesSize + AccountIndexBytesSize + NftIndexBytesSize + AddressBytesSize +
 		AccountIndexBytesSize + FeeRateBytesSize + NftContentHashBytesSize + NftTokenIdBytesSize +
 		AccountNameHashBytesSize + CollectionIdBytesSize
 	FullExitPubDataSize = TxTypeBytesSize + AccountIndexBytesSize +
@@ -106,14 +102,12 @@ const (
 	TypeAccountName
 	TypeAccountNameOmitSpace
 	TypeAccountPk
-	TypePairIndex
 	TypeLimit
 	TypeOffset
 	TypeHash
 	TypeBlockHeight
 	TypeTxType
 	TypeChainId
-	TypeLPAmount
 	TypeAssetAmount
 	TypeBoolean
 	TypeGasFee
@@ -121,27 +115,10 @@ const (
 
 const (
 	AddressSize       = 20
-	FeeRateBase       = circuit.RateBase
 	EmptyStringKeccak = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
 )
 
 func ParseRegisterZnsTxInfo(txInfoStr string) (txInfo *txtypes.RegisterZnsTxInfo, err error) {
-	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
-	if err != nil {
-		return nil, err
-	}
-	return txInfo, nil
-}
-
-func ParseCreatePairTxInfo(txInfoStr string) (txInfo *txtypes.CreatePairTxInfo, err error) {
-	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
-	if err != nil {
-		return nil, err
-	}
-	return txInfo, nil
-}
-
-func ParseUpdatePairRateTxInfo(txInfoStr string) (txInfo *txtypes.UpdatePairRateTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
 		return nil, err
@@ -190,30 +167,6 @@ func ParseCreateCollectionTxInfo(txInfoStr string) (txInfo *txtypes.CreateCollec
 }
 
 func ParseTransferTxInfo(txInfoStr string) (txInfo *txtypes.TransferTxInfo, err error) {
-	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
-	if err != nil {
-		return nil, err
-	}
-	return txInfo, nil
-}
-
-func ParseSwapTxInfo(txInfoStr string) (txInfo *txtypes.SwapTxInfo, err error) {
-	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
-	if err != nil {
-		return nil, err
-	}
-	return txInfo, nil
-}
-
-func ParseAddLiquidityTxInfo(txInfoStr string) (txInfo *txtypes.AddLiquidityTxInfo, err error) {
-	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
-	if err != nil {
-		return nil, err
-	}
-	return txInfo, nil
-}
-
-func ParseRemoveLiquidityTxInfo(txInfoStr string) (txInfo *txtypes.RemoveLiquidityTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
 		return nil, err

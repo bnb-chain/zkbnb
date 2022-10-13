@@ -107,6 +107,7 @@ KeyPath:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " > ~/zkbnb-deploy/zkbnb/service/cronjob/prover/etc/prover.yaml
 
 cd ~/zkbnb-deploy/zkbnb/service/cronjob/prover/
@@ -129,6 +130,7 @@ CacheRedis:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " > ~/zkbnb-deploy/zkbnb/service/cronjob/witnessGenerator/etc/witnessGenerator.yaml
 
 cd ~/zkbnb-deploy/zkbnb/service/cronjob/witnessGenerator/
@@ -162,6 +164,7 @@ ChainConfig:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " > ~/zkbnb-deploy/zkbnb/service/cronjob/monitor/etc/monitor.yaml
 
 cd ~/zkbnb-deploy/zkbnb/service/cronjob/monitor/
@@ -186,6 +189,7 @@ KeyPath:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " >> ~/zkbnb-deploy/zkbnb/service/cronjob/committer/etc/committer.yaml
 
 cd ~/zkbnb-deploy/zkbnb/service/cronjob/committer/
@@ -214,9 +218,11 @@ ChainConfig:
   MaxBlockCount: 4
   Sk: "acbaa269bd7573ff12361be4b97201aef019776ea13384681d4e5ba6a88367d9"
   GasLimit: 5000000
+  GasPrice: 0
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " > ~/zkbnb-deploy/zkbnb/service/cronjob/sender/etc/sender.yaml
 
 cd ~/zkbnb-deploy/zkbnb/service/cronjob/sender/
@@ -247,6 +253,7 @@ LogConf:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
 " > ~/zkbnb-deploy/zkbnb/service/rpc/globalRPC/etc/config.yaml
 
 cd ~/zkbnb-deploy/zkbnb/service/rpc/globalRPC/
@@ -279,6 +286,7 @@ LogConf:
 
 TreeDB:
   Driver: memorydb
+  AssetTreeCacheSize: 512000
   " > ~/zkbnb-deploy/zkbnb/service/api/app/etc/app.yaml
 
 cd ~/zkbnb-deploy/zkbnb/service/api/app

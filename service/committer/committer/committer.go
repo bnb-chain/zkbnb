@@ -5,16 +5,31 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb/core"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/tx"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
 const (
 	MaxCommitterInterval = 60 * 1
+)
+
+var (
+	priorityOperationMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "priority_operation_process",
+		Help:      "Priority operation requestID metrics.",
+	})
+	priorityOperationHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "priority_operation_process_height",
+		Help:      "Priority operation height metrics.",
+	})
 )
 
 type Config struct {
@@ -45,6 +60,13 @@ func NewCommitter(config *Config) (*Committer, error) {
 		return nil, fmt.Errorf("new blockchain error: %v", err)
 	}
 
+	if err := prometheus.Register(priorityOperationMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register priorityOperationMetric error: %v", err)
+	}
+	if err := prometheus.Register(priorityOperationHeightMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register priorityOperationHeightMetric error: %v", err)
+	}
+
 	committer := &Committer{
 		running:            true,
 		config:             config,
@@ -60,6 +82,12 @@ func (c *Committer) Run() {
 	curBlock, err := c.restoreExecutedTxs()
 	if err != nil {
 		panic("restore executed tx failed: " + err.Error())
+	}
+
+	latestRequestId, err := c.getLatestExecutedRequestId()
+	if err != nil {
+		logx.Error("get latest executed request ID failed:", err)
+		latestRequestId = -1
 	}
 
 	for {
@@ -108,6 +136,23 @@ func (c *Committer) Run() {
 				continue
 			}
 
+			if types.IsPriorityOperationTx(poolTx.TxType) {
+				request, err := c.bc.PriorityRequestModel.GetPriorityRequestsByL2TxHash(poolTx.TxHash)
+				if err == nil {
+
+					priorityOperationMetric.Set(float64(request.RequestId))
+					priorityOperationHeightMetric.Set(float64(request.L1BlockHeight))
+
+					if latestRequestId != -1 && request.RequestId != latestRequestId+1 {
+						logx.Errorf("invalid request ID: %d, txHash: %s", request.RequestId, poolTx.TxHash)
+						return
+					}
+					latestRequestId = request.RequestId
+				} else {
+					logx.Errorf("query txHash: %s in PriorityRequestTable failed, err %v ", poolTx.TxHash, err)
+				}
+			}
+
 			// Write the proposed block into database when the first transaction executed.
 			if len(c.bc.Statedb.Txs) == 1 {
 				err = c.createNewBlock(curBlock, poolTx)
@@ -138,7 +183,10 @@ func (c *Committer) Run() {
 		if c.shouldCommit(curBlock) {
 			logx.Infof("commit new block, height=%d, blockSize=%d", curBlock.BlockHeight, curBlock.BlockSize)
 			curBlock, err = c.commitNewBlock(curBlock)
+			logx.Infof("commit new block success")
+
 			if err != nil {
+				logx.Errorf("commit new block error, err=%s", err.Error())
 				panic("commit new block failed: " + err.Error())
 			}
 		}
@@ -212,6 +260,11 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 		return nil, err
 	}
 
+	err = c.bc.Statedb.SyncPendingGasAccount()
+	if err != nil {
+		return nil, err
+	}
+
 	// update db
 	err = c.bc.DB().DB.Transaction(func(tx *gorm.DB) error {
 		// create block for commit
@@ -221,65 +274,30 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 				return err
 			}
 		}
-		// create new account
-		if len(blockStates.PendingNewAccount) != 0 {
-			err = c.bc.DB().AccountModel.CreateAccountsInTransact(tx, blockStates.PendingNewAccount)
+		// create or update account
+		if len(blockStates.PendingAccount) != 0 {
+			err = c.bc.DB().AccountModel.UpdateAccountsInTransact(tx, blockStates.PendingAccount)
 			if err != nil {
 				return err
 			}
 		}
-		// update account
-		if len(blockStates.PendingUpdateAccount) != 0 {
-			err = c.bc.DB().AccountModel.UpdateAccountsInTransact(tx, blockStates.PendingUpdateAccount)
+		// create account history
+		if len(blockStates.PendingAccountHistory) != 0 {
+			err = c.bc.DB().AccountHistoryModel.CreateAccountHistoriesInTransact(tx, blockStates.PendingAccountHistory)
 			if err != nil {
 				return err
 			}
 		}
-		// create new account history
-		if len(blockStates.PendingNewAccountHistory) != 0 {
-			err = c.bc.DB().AccountHistoryModel.CreateAccountHistoriesInTransact(tx, blockStates.PendingNewAccountHistory)
+		// create or update nft
+		if len(blockStates.PendingNft) != 0 {
+			err = c.bc.DB().L2NftModel.UpdateNftsInTransact(tx, blockStates.PendingNft)
 			if err != nil {
 				return err
 			}
 		}
-		// create new liquidity
-		if len(blockStates.PendingNewLiquidity) != 0 {
-			err = c.bc.DB().LiquidityModel.CreateLiquidityInTransact(tx, blockStates.PendingNewLiquidity)
-			if err != nil {
-				return err
-			}
-		}
-		// update liquidity
-		if len(blockStates.PendingUpdateLiquidity) != 0 {
-			err = c.bc.DB().LiquidityModel.UpdateLiquidityInTransact(tx, blockStates.PendingUpdateLiquidity)
-			if err != nil {
-				return err
-			}
-		}
-		// create new liquidity history
-		if len(blockStates.PendingNewLiquidityHistory) != 0 {
-			err = c.bc.DB().LiquidityHistoryModel.CreateLiquidityHistoriesInTransact(tx, blockStates.PendingNewLiquidityHistory)
-			if err != nil {
-				return err
-			}
-		}
-		// create new nft
-		if len(blockStates.PendingNewNft) != 0 {
-			err = c.bc.DB().L2NftModel.CreateNftsInTransact(tx, blockStates.PendingNewNft)
-			if err != nil {
-				return err
-			}
-		}
-		// update nft
-		if len(blockStates.PendingUpdateNft) != 0 {
-			err = c.bc.DB().L2NftModel.UpdateNftsInTransact(tx, blockStates.PendingUpdateNft)
-			if err != nil {
-				return err
-			}
-		}
-		// new nft history
-		if len(blockStates.PendingNewNftHistory) != 0 {
-			err = c.bc.DB().L2NftHistoryModel.CreateNftHistoriesInTransact(tx, blockStates.PendingNewNftHistory)
+		// create nft history
+		if len(blockStates.PendingNftHistory) != 0 {
+			err = c.bc.DB().L2NftHistoryModel.CreateNftHistoriesInTransact(tx, blockStates.PendingNftHistory)
 			if err != nil {
 				return err
 			}
@@ -293,7 +311,6 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 		blockStates.Block.ClearTxsModel()
 		return c.bc.DB().BlockModel.UpdateBlockInTransact(tx, blockStates.Block)
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -310,4 +327,38 @@ func (c *Committer) computeCurrentBlockSize() int {
 		}
 	}
 	return blockSize
+}
+
+func (c *Committer) getLatestExecutedRequestId() (int64, error) {
+
+	statuses := []int{
+		tx.StatusExecuted,
+		tx.StatusPacked,
+		tx.StatusCommitted,
+		tx.StatusVerified,
+	}
+
+	txTypes := []int64{
+		types.TxTypeRegisterZns,
+		types.TxTypeDeposit,
+		types.TxTypeDepositNft,
+		types.TxTypeFullExit,
+		types.TxTypeFullExitNft,
+	}
+
+	latestTx, err := c.bc.TxPoolModel.GetLatestTx(txTypes, statuses)
+	if err != nil && err != types.DbErrNotFound {
+		logx.Errorf("get latest executed tx failed: %v", err)
+		return -1, err
+	} else if err == types.DbErrNotFound {
+		return -1, nil
+	}
+
+	p, err := c.bc.PriorityRequestModel.GetPriorityRequestsByL2TxHash(latestTx.TxHash)
+	if err != nil {
+		logx.Errorf("get priority request by txhash: %s failed: %v", latestTx.TxHash, err)
+		return -1, err
+	}
+
+	return p.RequestId, nil
 }

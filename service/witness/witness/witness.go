@@ -18,7 +18,6 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/blockwitness"
-	"github.com/bnb-chain/zkbnb/dao/liquidity"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/proof"
 	"github.com/bnb-chain/zkbnb/service/witness/config"
@@ -40,22 +39,20 @@ type Witness struct {
 	helper *utils.WitnessHelper
 
 	// Trees
-	treeCtx       *tree.Context
-	accountTree   smt.SparseMerkleTree
-	assetTrees    []smt.SparseMerkleTree
-	liquidityTree smt.SparseMerkleTree
-	nftTree       smt.SparseMerkleTree
-	taskPool      *ants.Pool
+	treeCtx     *tree.Context
+	accountTree smt.SparseMerkleTree
+	assetTrees  *tree.AssetTreeCache
+	nftTree     smt.SparseMerkleTree
+	taskPool    *ants.Pool
 
 	// The data access object
-	db                    *gorm.DB
-	blockModel            block.BlockModel
-	accountModel          account.AccountModel
-	accountHistoryModel   account.AccountHistoryModel
-	liquidityHistoryModel liquidity.LiquidityHistoryModel
-	nftHistoryModel       nft.L2NftHistoryModel
-	proofModel            proof.ProofModel
-	blockWitnessModel     blockwitness.BlockWitnessModel
+	db                  *gorm.DB
+	blockModel          block.BlockModel
+	accountModel        account.AccountModel
+	accountHistoryModel account.AccountHistoryModel
+	nftHistoryModel     nft.L2NftHistoryModel
+	proofModel          proof.ProofModel
+	blockWitnessModel   blockwitness.BlockWitnessModel
 }
 
 func NewWitness(c config.Config) (*Witness, error) {
@@ -66,15 +63,14 @@ func NewWitness(c config.Config) (*Witness, error) {
 	}
 
 	w := &Witness{
-		config:                c,
-		db:                    db,
-		blockModel:            block.NewBlockModel(db),
-		blockWitnessModel:     blockwitness.NewBlockWitnessModel(db),
-		accountModel:          account.NewAccountModel(db),
-		accountHistoryModel:   account.NewAccountHistoryModel(db),
-		liquidityHistoryModel: liquidity.NewLiquidityHistoryModel(db),
-		nftHistoryModel:       nft.NewL2NftHistoryModel(db),
-		proofModel:            proof.NewProofModel(db),
+		config:              c,
+		db:                  db,
+		blockModel:          block.NewBlockModel(db),
+		blockWitnessModel:   blockwitness.NewBlockWitnessModel(db),
+		accountModel:        account.NewAccountModel(db),
+		accountHistoryModel: account.NewAccountHistoryModel(db),
+		nftHistoryModel:     nft.NewL2NftHistoryModel(db),
+		proofModel:          proof.NewProofModel(db),
 	}
 	err = w.initState()
 	return w, err
@@ -110,17 +106,13 @@ func (w *Witness) initState() error {
 		w.accountHistoryModel,
 		witnessHeight,
 		treeCtx,
+		w.config.TreeDB.AssetTreeCacheSize,
 	)
 	// the blockHeight depends on the proof start position
 	if err != nil {
 		return fmt.Errorf("initMerkleTree error: %v", err)
 	}
 
-	w.liquidityTree, err = tree.InitLiquidityTree(w.liquidityHistoryModel, witnessHeight,
-		treeCtx)
-	if err != nil {
-		return fmt.Errorf("initLiquidityTree error: %v", err)
-	}
 	w.nftTree, err = tree.InitNftTree(w.nftHistoryModel, witnessHeight,
 		treeCtx)
 	if err != nil {
@@ -131,7 +123,7 @@ func (w *Witness) initState() error {
 		return err
 	}
 	w.taskPool = taskPool
-	w.helper = utils.NewWitnessHelper(w.treeCtx, w.accountTree, w.liquidityTree, w.nftTree, &w.assetTrees, w.accountModel)
+	w.helper = utils.NewWitnessHelper(w.treeCtx, w.accountTree, w.nftTree, w.assetTrees, w.accountModel, w.accountHistoryModel)
 	return nil
 }
 
@@ -164,7 +156,7 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 			return fmt.Errorf("failed to construct block witness, block:%d, err: %v", block.BlockHeight, err)
 		}
 		// Step2: commit trees for witness
-		err = tree.CommitTrees(w.taskPool, uint64(latestVerifiedBlockNr), w.accountTree, &w.assetTrees, w.liquidityTree, w.nftTree)
+		err = tree.CommitTrees(w.taskPool, uint64(latestVerifiedBlockNr), w.accountTree, w.assetTrees, w.nftTree)
 		if err != nil {
 			return fmt.Errorf("unable to commit trees after txs is executed, block:%d, error: %v", block.BlockHeight, err)
 		}
@@ -172,7 +164,7 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 		err = w.blockWitnessModel.CreateBlockWitness(blockWitness)
 		if err != nil {
 			// rollback trees
-			rollBackErr := tree.RollBackTrees(w.taskPool, uint64(block.BlockHeight)-1, w.accountTree, &w.assetTrees, w.liquidityTree, w.nftTree)
+			rollBackErr := tree.RollBackTrees(w.taskPool, uint64(block.BlockHeight)-1, w.accountTree, w.assetTrees, w.nftTree)
 			if rollBackErr != nil {
 				logx.Errorf("unable to rollback trees %v", rollBackErr)
 			}
@@ -251,6 +243,10 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 	var oldStateRoot, newStateRoot []byte
 	txsWitness := make([]*utils.TxWitness, 0, block.BlockSize)
 	// scan each transaction
+	err := w.helper.ResetCache(block.BlockHeight)
+	if err != nil {
+		return nil, err
+	}
 	for idx, tx := range block.Txs {
 		txWitness, err := w.helper.ConstructTxWitness(tx, uint64(latestVerifiedBlockNr))
 		if err != nil {
@@ -269,8 +265,15 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 
 	emptyTxCount := int(block.BlockSize) - len(block.Txs)
 	for i := 0; i < emptyTxCount; i++ {
-		txsWitness = append(txsWitness, circuit.EmptyTx())
+		txsWitness = append(txsWitness, circuit.EmptyTx(newStateRoot))
 	}
+
+	gasWitness, err := w.helper.ConstructGasWitness(block)
+	if err != nil {
+		return nil, err
+	}
+
+	newStateRoot = tree.ComputeStateRootHash(w.accountTree.Root(), w.nftTree.Root())
 	if common.Bytes2Hex(newStateRoot) != block.StateRoot {
 		return nil, errors.New("state root doesn't match")
 	}
@@ -282,6 +285,7 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 		NewStateRoot:    newStateRoot,
 		BlockCommitment: common.FromHex(block.BlockCommitment),
 		Txs:             txsWitness,
+		Gas:             gasWitness,
 	}
 	bz, err := json.Marshal(b)
 	if err != nil {

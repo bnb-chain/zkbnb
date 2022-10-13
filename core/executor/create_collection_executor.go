@@ -81,20 +81,15 @@ func (e *CreateCollectionExecutor) ApplyTransaction() error {
 	if err != nil {
 		return err
 	}
-	gasAccount, err := bc.StateDB().GetFormatAccount(txInfo.GasAccountIndex)
-	if err != nil {
-		return err
-	}
 
 	// apply changes
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	fromAccount.Nonce++
 	fromAccount.CollectionNonce++
 
 	stateCache := e.bc.StateDB()
-	stateCache.SetPendingUpdateAccount(fromAccount.AccountIndex, fromAccount)
-	stateCache.SetPendingUpdateAccount(gasAccount.AccountIndex, gasAccount)
+	stateCache.SetPendingAccount(fromAccount.AccountIndex, fromAccount)
+	stateCache.SetPendingUpdateGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 
@@ -184,7 +179,6 @@ func (e *CreateCollectionExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 			txInfo.GasFeeAssetId,
 			ffmath.Neg(txInfo.GasFeeAssetAmount),
 			types.ZeroBigInt,
-			types.ZeroBigInt,
 		).String(),
 		Order:           order,
 		Nonce:           fromAccount.Nonce,
@@ -209,11 +203,11 @@ func (e *CreateCollectionExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 			txInfo.GasFeeAssetId,
 			txInfo.GasFeeAssetAmount,
 			types.ZeroBigInt,
-			types.ZeroBigInt,
 		).String(),
 		Order:        order,
 		Nonce:        gasAccount.Nonce,
 		AccountOrder: accountOrder,
+		IsGas:        true,
 	})
 	return txDetails, nil
 }

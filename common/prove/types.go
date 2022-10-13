@@ -26,21 +26,20 @@ import (
 )
 
 type (
-	TxWitness = circuit.Tx
+	TxWitness  = circuit.Tx
+	GasWitness = circuit.Gas
 )
 
 const (
 	NbAccountAssetsPerAccount = ctypes.NbAccountAssetsPerAccount
 	NbAccountsPerTx           = ctypes.NbAccountsPerTx
 
-	AssetMerkleLevels     = circuit.AssetMerkleLevels
-	LiquidityMerkleLevels = circuit.LiquidityMerkleLevels
-	NftMerkleLevels       = circuit.NftMerkleLevels
-	AccountMerkleLevels   = circuit.AccountMerkleLevels
+	AssetMerkleLevels   = circuit.AssetMerkleLevels
+	NftMerkleLevels     = circuit.NftMerkleLevels
+	AccountMerkleLevels = circuit.AccountMerkleLevels
 
 	LastAccountIndex   = circuit.LastAccountIndex
 	LastAccountAssetId = circuit.LastAccountAssetId
-	LastPairIndex      = circuit.LastPairIndex
 	LastNftIndex       = circuit.LastNftIndex
 )
 
@@ -48,11 +47,6 @@ type AccountWitnessInfo struct {
 	AccountInfo            *account.Account
 	AccountAssets          []*types.AccountAsset
 	AssetsRelatedTxDetails []*tx.TxDetail
-}
-
-type LiquidityWitnessInfo struct {
-	LiquidityInfo            *types.LiquidityInfo
-	LiquidityRelatedTxDetail *tx.TxDetail
 }
 
 type NftWitnessInfo struct {

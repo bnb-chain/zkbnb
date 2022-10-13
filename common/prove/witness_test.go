@@ -33,25 +33,24 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/blockwitness"
-	"github.com/bnb-chain/zkbnb/dao/liquidity"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/tree"
 )
 
 var (
-	dsn                   = "host=localhost user=postgres password=ZkBNB@123 dbname=zkbnb port=5434 sslmode=disable"
-	blockModel            block.BlockModel
-	witnessModel          blockwitness.BlockWitnessModel
-	accountModel          account.AccountModel
-	accountHistoryModel   account.AccountHistoryModel
-	liquidityHistoryModel liquidity.LiquidityHistoryModel
-	nftHistoryModel       nft.L2NftHistoryModel
+	dsn                 = "host=localhost user=postgres password=ZkBNB@123 dbname=zkbnb port=5434 sslmode=disable"
+	blockModel          block.BlockModel
+	witnessModel        blockwitness.BlockWitnessModel
+	accountModel        account.AccountModel
+	accountHistoryModel account.AccountHistoryModel
+	nftHistoryModel     nft.L2NftHistoryModel
+	assetTreeCacheSize  = 512000
 )
 
-func TestConstructTxWitness(t *testing.T) {
+func TestConstructWitness(t *testing.T) {
 	testDBSetup()
 	defer testDBShutdown()
-	maxTestBlockHeight := int64(33)
+	maxTestBlockHeight := int64(49)
 	for h := int64(1); h < maxTestBlockHeight; h++ {
 		witnessHelper, err := getWitnessHelper(h - 1)
 		assert.NoError(t, err)
@@ -62,6 +61,8 @@ func TestConstructTxWitness(t *testing.T) {
 		var cBlock circuit.Block
 		err = json.Unmarshal([]byte(w.WitnessData), &cBlock)
 		assert.NoError(t, err)
+		err = witnessHelper.ResetCache(h)
+		assert.NoError(t, err)
 		for idx, tx := range b[0].Txs {
 			txWitness, err := witnessHelper.ConstructTxWitness(tx, uint64(0))
 			assert.NoError(t, err)
@@ -69,6 +70,11 @@ func TestConstructTxWitness(t *testing.T) {
 			actualBz, _ := json.Marshal(txWitness)
 			assert.Equal(t, string(actualBz), string(expectedBz), fmt.Sprintf("block %d, tx %d generate witness failed, tx type: %d", h, idx, tx.TxType))
 		}
+		gasWitness, err := witnessHelper.ConstructGasWitness(b[0])
+		assert.NoError(t, err)
+		expectedBz, _ := json.Marshal(cBlock.Gas)
+		actualBz, _ := json.Marshal(gasWitness)
+		assert.Equal(t, string(actualBz), string(expectedBz), fmt.Sprintf("block %d, gas generate witness failed", h))
 	}
 }
 
@@ -77,11 +83,7 @@ func getWitnessHelper(blockHeight int64) (*WitnessHelper, error) {
 		Driver: tree.MemoryDB,
 		TreeDB: memory.NewMemoryDB(),
 	}
-	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, accountHistoryModel, blockHeight, ctx)
-	if err != nil {
-		return nil, err
-	}
-	liquidityTree, err := tree.InitLiquidityTree(liquidityHistoryModel, blockHeight, ctx)
+	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, accountHistoryModel, blockHeight, ctx, assetTreeCacheSize)
 	if err != nil {
 		return nil, err
 	}
@@ -91,10 +93,10 @@ func getWitnessHelper(blockHeight int64) (*WitnessHelper, error) {
 	}
 	return NewWitnessHelper(ctx,
 		accountTree,
-		liquidityTree,
 		nftTree,
-		&accountAssetTrees,
-		accountModel), nil
+		accountAssetTrees,
+		accountModel,
+		accountHistoryModel), nil
 }
 
 func testDBSetup() {
@@ -102,17 +104,16 @@ func testDBSetup() {
 	time.Sleep(5 * time.Second)
 	cmd := exec.Command("docker", "run", "--name", "postgres-ut-witness", "-p", "5434:5432",
 		"-e", "POSTGRES_PASSWORD=ZkBNB@123", "-e", "POSTGRES_USER=postgres", "-e", "POSTGRES_DB=zkbnb",
-		"-e", "PGDATA=/var/lib/postgresql/pgdata", "-d", "ghcr.io/bnb-chain/zkbnb/zkbnb-ut-postgres:0.0.2")
+		"-e", "PGDATA=/var/lib/postgresql/pgdata", "-d", "ghcr.io/bnb-chain/zkbnb/zkbnb-ut-postgres:blockgas")
 	if err := cmd.Run(); err != nil {
 		panic(err)
 	}
-	time.Sleep(5 * time.Second)
+	time.Sleep(15 * time.Second)
 	db, _ := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	blockModel = block.NewBlockModel(db)
 	witnessModel = blockwitness.NewBlockWitnessModel(db)
 	accountModel = account.NewAccountModel(db)
 	accountHistoryModel = account.NewAccountHistoryModel(db)
-	liquidityHistoryModel = liquidity.NewLiquidityHistoryModel(db)
 	nftHistoryModel = nft.NewL2NftHistoryModel(db)
 }
 

@@ -38,6 +38,7 @@ type (
 		GetLatestHandledRequestId() (requestId int64, err error)
 		UpdateHandledPriorityRequestsInTransact(tx *gorm.DB, requests []*PriorityRequest) (err error)
 		CreatePriorityRequestsInTransact(tx *gorm.DB, requests []*PriorityRequest) (err error)
+		GetPriorityRequestsByL2TxHash(txHash string) (tx *PriorityRequest, err error)
 	}
 
 	defaultPriorityRequestModel struct {
@@ -63,6 +64,8 @@ type (
 		ExpirationBlock int64
 		// status
 		Status int
+		// L2TxHash for the relation to tx table
+		L2TxHash string `gorm:"index"`
 	}
 )
 
@@ -119,16 +122,19 @@ func (m *defaultPriorityRequestModel) GetLatestHandledRequestId() (requestId int
 }
 
 func (m *defaultPriorityRequestModel) UpdateHandledPriorityRequestsInTransact(tx *gorm.DB, requests []*PriorityRequest) (err error) {
-	ids := make([]uint, 0, len(requests))
 	for _, request := range requests {
-		ids = append(ids, request.ID)
-	}
-	dbTx := tx.Table(m.table).Where("id in ?", ids).Update("status", HandledStatus)
-	if dbTx.Error != nil {
-		return dbTx.Error
-	}
-	if dbTx.RowsAffected != int64(len(ids)) {
-		return types.DbErrFailToUpdatePriorityRequest
+		dbTx := tx.Table(m.table).Where("id = ?", request.ID).Updates(
+			map[string]interface{}{
+				"status":     HandledStatus,
+				"l2_tx_hash": request.L2TxHash,
+			},
+		)
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected != 1 {
+			return types.DbErrFailToUpdatePriorityRequest
+		}
 	}
 	return nil
 }
@@ -142,4 +148,16 @@ func (m *defaultPriorityRequestModel) CreatePriorityRequestsInTransact(tx *gorm.
 		return types.DbErrFailToCreatePriorityRequest
 	}
 	return nil
+}
+
+func (m *defaultPriorityRequestModel) GetPriorityRequestsByL2TxHash(txHash string) (tx *PriorityRequest, err error) {
+	dbTx := m.DB.Table(m.table).Where("l2_tx_hash = ?", txHash).Limit(1).Find(&tx)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	}
+	if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+
+	return tx, nil
 }

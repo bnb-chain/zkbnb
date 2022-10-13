@@ -8,7 +8,7 @@
 - **prover**. Prover generates cryptographic proof based on the witness materials.
 - **sender**. The sender rollups the compressed l2 blocks to L1, and submit proof to verify it.
 - **api server**. The api server is the access endpoints for most users, it provides rich data, including
-  digital assets, blocks, transactions, swap info, gas fees.
+  digital assets, blocks, transactions, gas fees.
 - **recovery**. A tool to recover the sparse merkle tree in kv-rocks based on the state world in postgresql.
 
 ## Maximum throughput

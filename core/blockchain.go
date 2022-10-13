@@ -22,7 +22,6 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/compressedblock"
 	"github.com/bnb-chain/zkbnb/dao/dbcache"
-	"github.com/bnb-chain/zkbnb/dao/liquidity"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/sysconfig"
 	"github.com/bnb-chain/zkbnb/dao/tx"
@@ -45,7 +44,8 @@ type ChainConfig struct {
 		//nolint:staticcheck
 		LevelDBOption tree.LevelDBOption `json:",optional"`
 		//nolint:staticcheck
-		RedisDBOption tree.RedisDBOption `json:",optional"`
+		RedisDBOption      tree.RedisDBOption `json:",optional"`
+		AssetTreeCacheSize int
 	}
 }
 
@@ -93,7 +93,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		RedisDBOption: &config.TreeDB.RedisDBOption,
 	}
 
-	bc.Statedb, err = sdb.NewStateDB(treeCtx, bc.ChainDB, redisCache, &config.CacheConfig, bc.currentBlock.StateRoot, curHeight)
+	bc.Statedb, err = sdb.NewStateDB(treeCtx, bc.ChainDB, redisCache, &config.CacheConfig, config.TreeDB.AssetTreeCacheSize, bc.currentBlock.StateRoot, curHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -109,12 +109,11 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 
 // NewBlockChainForDryRun - for dry run mode, we can reuse existing models for quick creation
 // , e.g., for sending tx, we can create blockchain for each request quickly
-func NewBlockChainForDryRun(accountModel account.AccountModel, liquidityModel liquidity.LiquidityModel,
+func NewBlockChainForDryRun(accountModel account.AccountModel,
 	nftModel nft.L2NftModel, txPoolModel tx.TxPoolModel, assetModel asset.AssetModel,
 	sysConfigModel sysconfig.SysConfigModel, redisCache dbcache.Cache) (*BlockChain, error) {
 	chainDb := &sdb.ChainDB{
 		AccountModel:     accountModel,
-		LiquidityModel:   liquidityModel,
 		L2NftModel:       nftModel,
 		TxPoolModel:      txPoolModel,
 		L2AssetInfoModel: assetModel,
@@ -164,38 +163,29 @@ func (bc *BlockChain) CommitNewBlock(blockSize int, createdAt int64) (*block.Blo
 	}
 
 	currentHeight := bc.currentBlock.BlockHeight
-	err = tree.CommitTrees(bc.taskPool, uint64(currentHeight), bc.Statedb.AccountTree, &bc.Statedb.AccountAssetTrees, bc.Statedb.LiquidityTree, bc.Statedb.NftTree)
+
+	err = tree.CommitTrees(bc.taskPool, uint64(currentHeight), bc.Statedb.AccountTree, bc.Statedb.AccountAssetTrees, bc.Statedb.NftTree)
 	if err != nil {
 		return nil, err
 	}
 
-	pendingNewAccount, pendingUpdateAccount, pendingNewAccountHistory, err := bc.Statedb.GetPendingAccount(currentHeight)
+	pendingAccount, pendingAccountHistory, err := bc.Statedb.GetPendingAccount(currentHeight)
 	if err != nil {
 		return nil, err
 	}
 
-	pendingNewLiquidity, pendingUpdateLiquidity, pendingNewLiquidityHistory, err := bc.Statedb.GetPendingLiquidity(currentHeight)
-	if err != nil {
-		return nil, err
-	}
-
-	pendingNewNft, pendingUpdateNft, pendingNewNftHistory, err := bc.Statedb.GetPendingNft(currentHeight)
+	pendingNft, pendingNftHistory, err := bc.Statedb.GetPendingNft(currentHeight)
 	if err != nil {
 		return nil, err
 	}
 
 	return &block.BlockStates{
-		Block:                      newBlock,
-		CompressedBlock:            compressedBlock,
-		PendingNewAccount:          pendingNewAccount,
-		PendingUpdateAccount:       pendingUpdateAccount,
-		PendingNewAccountHistory:   pendingNewAccountHistory,
-		PendingNewLiquidity:        pendingNewLiquidity,
-		PendingUpdateLiquidity:     pendingUpdateLiquidity,
-		PendingNewLiquidityHistory: pendingNewLiquidityHistory,
-		PendingNewNft:              pendingNewNft,
-		PendingUpdateNft:           pendingUpdateNft,
-		PendingNewNftHistory:       pendingNewNftHistory,
+		Block:                 newBlock,
+		CompressedBlock:       compressedBlock,
+		PendingAccount:        pendingAccount,
+		PendingAccountHistory: pendingAccountHistory,
+		PendingNft:            pendingNft,
+		PendingNftHistory:     pendingNftHistory,
 	}, nil
 }
 

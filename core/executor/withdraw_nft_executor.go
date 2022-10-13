@@ -115,21 +115,15 @@ func (e *WithdrawNftExecutor) ApplyTransaction() error {
 	if err != nil {
 		return err
 	}
-	gasAccount, err := bc.StateDB().GetFormatAccount(txInfo.GasAccountIndex)
-	if err != nil {
-		return err
-	}
 
 	// apply changes
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	fromAccount.Nonce++
 
 	newNftInfo := types.EmptyNftInfo(txInfo.NftIndex)
 	stateCache := e.bc.StateDB()
-	stateCache.SetPendingUpdateAccount(txInfo.AccountIndex, fromAccount)
-	stateCache.SetPendingUpdateAccount(txInfo.GasAccountIndex, gasAccount)
-	stateCache.SetPendingUpdateNft(txInfo.NftIndex, &nft.L2Nft{
+	stateCache.SetPendingAccount(txInfo.AccountIndex, fromAccount)
+	stateCache.SetPendingNft(txInfo.NftIndex, &nft.L2Nft{
 		Model:               oldNft.Model,
 		NftIndex:            newNftInfo.NftIndex,
 		CreatorAccountIndex: newNftInfo.CreatorAccountIndex,
@@ -140,6 +134,7 @@ func (e *WithdrawNftExecutor) ApplyTransaction() error {
 		CreatorTreasuryRate: newNftInfo.CreatorTreasuryRate,
 		CollectionId:        newNftInfo.CollectionId,
 	})
+	stateCache.SetPendingUpdateGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 
@@ -230,7 +225,6 @@ func (e *WithdrawNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 			txInfo.GasFeeAssetId,
 			ffmath.Neg(txInfo.GasFeeAssetAmount),
 			types.ZeroBigInt,
-			types.ZeroBigInt,
 		).String(),
 		Order:           order,
 		AccountOrder:    accountOrder,
@@ -279,7 +273,6 @@ func (e *WithdrawNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 			txInfo.GasFeeAssetId,
 			types.ZeroBigInt,
 			types.ZeroBigInt,
-			types.ZeroBigInt,
 		).String(),
 		Order:           order,
 		AccountOrder:    accountOrder,
@@ -300,12 +293,12 @@ func (e *WithdrawNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 			txInfo.GasFeeAssetId,
 			txInfo.GasFeeAssetAmount,
 			types.ZeroBigInt,
-			types.ZeroBigInt,
 		).String(),
 		Order:           order,
 		AccountOrder:    accountOrder,
 		Nonce:           gasAccount.Nonce,
 		CollectionNonce: gasAccount.CollectionNonce,
+		IsGas:           true,
 	})
 	return txDetails, nil
 }

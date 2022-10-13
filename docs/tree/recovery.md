@@ -17,6 +17,7 @@ CacheRedis:
 
 TreeDB:
   Driver: leveldb
+  AssetTreeCacheSize: 512000
   LevelDBOption:
     File: /tmp/test
 ```

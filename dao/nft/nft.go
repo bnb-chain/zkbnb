@@ -35,7 +35,6 @@ type (
 		GetLatestNftIndex() (nftIndex int64, err error)
 		GetNftsByAccountIndex(accountIndex, limit, offset int64) (nfts []*L2Nft, err error)
 		GetNftsCountByAccountIndex(accountIndex int64) (int64, error)
-		CreateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) error
 		UpdateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) error
 	}
 	defaultL2NftModel struct {
@@ -118,17 +117,6 @@ func (m *defaultL2NftModel) GetNftsCountByAccountIndex(accountIndex int64) (int6
 	return count, nil
 }
 
-func (m *defaultL2NftModel) CreateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) error {
-	dbTx := tx.Table(m.table).CreateInBatches(nfts, len(nfts))
-	if dbTx.Error != nil {
-		return dbTx.Error
-	}
-	if dbTx.RowsAffected != int64(len(nfts)) {
-		return types.DbErrFailToCreateNft
-	}
-	return nil
-}
-
 func (m *defaultL2NftModel) UpdateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) error {
 	for _, pendingNft := range nfts {
 		dbTx := tx.Table(m.table).Where("nft_index = ?", pendingNft.NftIndex).
@@ -138,7 +126,10 @@ func (m *defaultL2NftModel) UpdateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) err
 			return dbTx.Error
 		}
 		if dbTx.RowsAffected == 0 {
-			return types.DbErrFailToUpdateNft
+			dbTx = tx.Table(m.table).Create(&pendingNft)
+			if dbTx.Error != nil {
+				return dbTx.Error
+			}
 		}
 	}
 	return nil

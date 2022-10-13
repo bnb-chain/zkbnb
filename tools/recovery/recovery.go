@@ -48,18 +48,10 @@ func RecoveryTreeDB(
 		ctx.AccountHistoryModel,
 		blockHeight,
 		treeCtx,
+		c.TreeDB.AssetTreeCacheSize,
 	)
 	if err != nil {
 		logx.Error("InitMerkleTree error:", err)
-		return
-	}
-	// dbinitializer liquidityTree
-	_, err = tree.InitLiquidityTree(
-		ctx.LiquidityHistoryModel,
-		blockHeight,
-		treeCtx)
-	if err != nil {
-		logx.Errorf("InitLiquidityTree error: %s", err.Error())
 		return
 	}
 	// dbinitializer nftTree
