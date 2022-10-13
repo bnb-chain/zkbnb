@@ -71,7 +71,7 @@ func (m *defaultCompressedBlockModel) DropCompressedBlockTable() error {
 }
 
 func (m *defaultCompressedBlockModel) GetCompressedBlocksBetween(start, end int64) (blocksForCommit []*CompressedBlock, err error) {
-	dbTx := m.DB.Table(m.table).Where("block_height >= ? AND block_height <= ?", start, end).Find(&blocksForCommit)
+	dbTx := m.DB.Table(m.table).Where("block_height >= ? AND block_height <= ?", start, end).Order("block_height").Find(&blocksForCommit)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
