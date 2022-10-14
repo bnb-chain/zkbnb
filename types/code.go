@@ -97,6 +97,7 @@ var (
 	AppErrSellerNotOwner             = New(21510, "seller is not owner")
 	AppErrInvalidSellOfferState      = New(21511, "invalid sell offer state, already canceled or finalized")
 	AppErrInvalidBuyOfferState       = New(21512, "invalid buy offer state, already canceled or finalized")
+	AppErrInvalidAssetOfOffer        = New(21513, "invalid asset of offer")
 
 	// Nft
 	AppErrNftAlreadyExist       = New(21600, "invalid nft index, already exist")

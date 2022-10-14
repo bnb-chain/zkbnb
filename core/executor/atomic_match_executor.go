@@ -99,7 +99,7 @@ func (e *AtomicMatchExecutor) VerifyInputs(skipGasAmtChk bool) error {
 		}
 	}
 	if !found {
-		return errors.New("invalid asset of offer")
+		return types.AppErrInvalidAssetOfOffer
 	}
 
 	// Check offer expired time.
