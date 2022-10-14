@@ -88,12 +88,7 @@ cd ${DEPLOY_PATH}/zkbnb && go mod tidy
 echo "6. init tables on database"
 go run ./cmd/zkbnb/main.go db initialize --dsn "host=localhost user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable" --contractAddr ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
 
-
-cd ${DEPLOY_PATH}/zkbnb/
-make api-server
-
-
-sleep 30s
+sleep 10s
 
 
 echo "7. run prover"
