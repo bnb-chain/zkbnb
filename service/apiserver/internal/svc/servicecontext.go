@@ -44,6 +44,14 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	if err != nil {
 		logx.Must(err)
 	}
+
+	rawDB, err := db.DB()
+	if err != nil {
+		logx.Must(err)
+	}
+	rawDB.SetMaxOpenConns(c.Postgres.MaxConn)
+	rawDB.SetMaxIdleConns(c.Postgres.MaxIdle)
+
 	redisCache := dbcache.NewRedisCache(c.CacheRedis[0].Host, c.CacheRedis[0].Pass, 15*time.Minute)
 
 	txPoolModel := tx.NewTxPoolModel(db)
