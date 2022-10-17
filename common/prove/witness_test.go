@@ -83,7 +83,7 @@ func getWitnessHelper(blockHeight int64) (*WitnessHelper, error) {
 		Driver: tree.MemoryDB,
 		TreeDB: memory.NewMemoryDB(),
 	}
-	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, accountHistoryModel, blockHeight, ctx, assetTreeCacheSize)
+	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, blockHeight, ctx, assetTreeCacheSize)
 	if err != nil {
 		return nil, err
 	}
