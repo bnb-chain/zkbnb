@@ -30,6 +30,21 @@ var (
 		Name:      "priority_operation_process_height",
 		Help:      "Priority operation height metrics.",
 	})
+	commitOperationMetics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "db_commit_time",
+		Help:      "DB commit operation time",
+	})
+	executeTxOperationMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "exec_tx_time",
+		Help:      "execute txs operation time",
+	})
+	pendingTxNumMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "pending_tx",
+		Help:      "number of pending tx",
+	})
 )
 
 type Config struct {
@@ -120,13 +135,14 @@ func (c *Committer) Run() {
 			}
 		}
 
+		pendingTxNumMetrics.Set(float64(len(pendingTxs)))
 		pendingUpdatePoolTxs := make([]*tx.Tx, 0, len(pendingTxs))
 		pendingDeletePoolTxs := make([]*tx.Tx, 0, len(pendingTxs))
+		start := time.Now()
 		for _, poolTx := range pendingTxs {
 			if c.shouldCommit(curBlock) {
 				break
 			}
-
 			logx.Infof("apply transaction, txHash=%s", poolTx.TxHash)
 			err = c.bc.ApplyTransaction(poolTx)
 			if err != nil {
@@ -163,6 +179,7 @@ func (c *Committer) Run() {
 				pendingUpdatePoolTxs = append(pendingUpdatePoolTxs, poolTx)
 			}
 		}
+		executeTxOperationMetrics.Set(float64(time.Since(start).Milliseconds()))
 
 		err = c.bc.StateDB().SyncStateCacheToRedis()
 		if err != nil {
@@ -181,6 +198,7 @@ func (c *Committer) Run() {
 		}
 
 		if c.shouldCommit(curBlock) {
+			start := time.Now()
 			logx.Infof("commit new block, height=%d, blockSize=%d", curBlock.BlockHeight, curBlock.BlockSize)
 			curBlock, err = c.commitNewBlock(curBlock)
 			logx.Infof("commit new block success")
@@ -189,6 +207,7 @@ func (c *Committer) Run() {
 				logx.Errorf("commit new block error, err=%s", err.Error())
 				panic("commit new block failed: " + err.Error())
 			}
+			commitOperationMetics.Set(float64(time.Since(start).Milliseconds()))
 		}
 	}
 }
