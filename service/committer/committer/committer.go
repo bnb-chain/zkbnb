@@ -81,6 +81,15 @@ func NewCommitter(config *Config) (*Committer, error) {
 	if err := prometheus.Register(priorityOperationHeightMetric); err != nil {
 		return nil, fmt.Errorf("prometheus.Register priorityOperationHeightMetric error: %v", err)
 	}
+	if err := prometheus.Register(commitOperationMetics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register commitOperationMetics error: %v", err)
+	}
+	if err := prometheus.Register(pendingTxNumMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register pendingTxNumMetrics error: %v", err)
+	}
+	if err := prometheus.Register(executeTxOperationMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register executeTxOperationMetrics error: %v", err)
+	}
 
 	committer := &Committer{
 		running:            true,
