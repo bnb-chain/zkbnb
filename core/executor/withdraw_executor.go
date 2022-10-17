@@ -56,15 +56,15 @@ func (e *WithdrawExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	}
 	if txInfo.GasFeeAssetId != txInfo.AssetId {
 		if fromAccount.AssetInfo[txInfo.AssetId].Balance.Cmp(txInfo.AssetAmount) < 0 {
-			return errors.New("invalid asset amount")
+			return types.AppErrInvalidGasFeeAccount
 		}
 		if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
-			return errors.New("invalid gas asset amount")
+			return types.AppErrInvalidAssetAmount
 		}
 	} else {
 		deltaBalance := ffmath.Add(txInfo.AssetAmount, txInfo.GasFeeAssetAmount)
 		if fromAccount.AssetInfo[txInfo.AssetId].Balance.Cmp(deltaBalance) < 0 {
-			return errors.New("invalid asset amount")
+			return types.AppErrInvalidAssetAmount
 		}
 	}
 

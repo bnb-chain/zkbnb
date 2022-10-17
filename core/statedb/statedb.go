@@ -152,7 +152,9 @@ func (s *StateDB) GetFormatAccount(accountIndex int64) (*types.AccountInfo, erro
 	}
 
 	account, err := s.chainDb.AccountModel.GetAccountByIndex(accountIndex)
-	if err != nil {
+	if err == types.DbErrNotFound {
+		return nil, types.AppErrAccountNotFound
+	} else if err != nil {
 		return nil, err
 	}
 	formatAccount, err := chain.ToFormatAccountInfo(account)
@@ -252,7 +254,9 @@ func (s *StateDB) GetNft(nftIndex int64) (*nft.L2Nft, error) {
 		return cached.(*nft.L2Nft), nil
 	}
 	nft, err := s.chainDb.L2NftModel.GetNft(nftIndex)
-	if err != nil {
+	if err == types.DbErrNotFound {
+		return nil, types.AppErrNftNotFound
+	} else if err != nil {
 		return nil, err
 	}
 	s.NftCache.Add(nftIndex, nft)

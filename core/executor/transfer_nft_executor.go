@@ -39,7 +39,7 @@ func (e *TransferNftExecutor) Prepare() error {
 	_, err := e.bc.StateDB().PrepareNft(txInfo.NftIndex)
 	if err != nil {
 		logx.Errorf("prepare nft failed")
-		return errors.New("internal error")
+		return err
 	}
 
 	// Mark the tree states that would be affected in this executor.
@@ -63,7 +63,7 @@ func (e *TransferNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
 		return err
 	}
 	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
-		return errors.New("balance is not enough")
+		return types.AppErrBalanceNotEnough
 	}
 
 	toAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.ToAccountIndex)
@@ -71,7 +71,7 @@ func (e *TransferNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
 		return err
 	}
 	if txInfo.ToAccountNameHash != toAccount.AccountNameHash {
-		return errors.New("invalid ToAccountNameHash")
+		return types.AppErrInvalidToAccountNameHash
 	}
 
 	nft, err := e.bc.StateDB().GetNft(txInfo.NftIndex)

@@ -67,7 +67,7 @@ func (e *CreateCollectionExecutor) VerifyInputs(skipGasAmtChk bool) error {
 		return err
 	}
 	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
-		return errors.New("balance is not enough")
+		return types.AppErrBalanceNotEnough
 	}
 
 	return nil

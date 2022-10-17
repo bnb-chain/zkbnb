@@ -49,7 +49,7 @@ func (l *GetTxLogic) GetTx(req *types.ReqGetTx) (resp *types.EnrichedTx, err err
 		poolTx, err := l.svcCtx.TxPoolModel.GetTxByTxHash(req.Hash)
 		if err != nil {
 			if err == types2.DbErrNotFound {
-				return nil, types2.AppErrNotFound
+				return nil, types2.AppErrPoolTxNotFound
 			}
 			return nil, types2.AppErrInternal
 		}

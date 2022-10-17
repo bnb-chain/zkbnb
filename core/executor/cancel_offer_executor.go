@@ -57,7 +57,7 @@ func (e *CancelOfferExecutor) VerifyInputs(skipGasAmtChk bool) error {
 		return err
 	}
 	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
-		return errors.New("balance is not enough")
+		return types.AppErrBalanceNotEnough
 	}
 
 	offerAssetId := txInfo.OfferId / 128
@@ -66,7 +66,7 @@ func (e *CancelOfferExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	if offerAsset != nil && offerAsset.OfferCanceledOrFinalized != nil {
 		xBit := offerAsset.OfferCanceledOrFinalized.Bit(int(offerIndex))
 		if xBit == 1 {
-			return errors.New("invalid offer id, already confirmed or canceled")
+			return types.AppErrInvalidOfferState
 		}
 	}
 

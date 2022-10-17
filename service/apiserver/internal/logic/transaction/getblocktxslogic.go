@@ -43,7 +43,7 @@ func (l *GetBlockTxsLogic) GetBlockTxs(req *types.ReqGetBlockTxs) (resp *types.T
 		height := int64(0)
 		height, err = strconv.ParseInt(req.Value, 10, 64)
 		if err != nil || height < 0 {
-			return nil, types2.AppErrInvalidParam.RefineError("invalid value for block height")
+			return nil, types2.AppErrInvalidBlockHeight
 		}
 		block, err = l.svcCtx.MemCache.GetBlockByHeightWithFallback(height, func() (interface{}, error) {
 			return l.svcCtx.BlockModel.GetBlockByHeight(height)

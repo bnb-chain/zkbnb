@@ -29,7 +29,7 @@ func (l *GetMaxOfferIdLogic) GetMaxOfferId(req *types.ReqGetMaxOfferId) (resp *t
 	account, err := l.svcCtx.StateFetcher.GetLatestAccount(int64(req.AccountIndex))
 	if err != nil {
 		if err == types2.DbErrNotFound {
-			return nil, types2.AppErrNotFound
+			return nil, types2.AppErrAccountNotFound
 		}
 		return nil, types2.AppErrInternal
 	}
