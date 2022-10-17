@@ -28,7 +28,6 @@ import (
 	"github.com/bnb-chain/zkbnb-smt/database/memory"
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/dao/account"
-	"github.com/bnb-chain/zkbnb/types"
 )
 
 func accountAssetNamespace(index int64) string {
@@ -37,14 +36,13 @@ func accountAssetNamespace(index int64) string {
 
 func InitAccountTree(
 	accountModel account.AccountModel,
-	accountHistoryModel account.AccountHistoryModel,
 	blockHeight int64,
 	ctx *Context,
 	assetCacheSize int,
 ) (
 	accountTree bsmt.SparseMerkleTree, accountAssetTrees *AssetTreeCache, err error,
 ) {
-	accountNums, err := accountHistoryModel.GetValidAccountCount(blockHeight)
+	accountNums, err := accountModel.GetAccountsTotalCount()
 	if err != nil {
 		logx.Errorf("unable to get all accountNums")
 		return nil, nil, err
@@ -78,7 +76,7 @@ func InitAccountTree(
 	if ctx.IsLoad() {
 		for i := 0; i < int(accountNums); i += ctx.BatchReloadSize() {
 			err := reloadAccountTreeFromRDB(
-				accountModel, accountHistoryModel, blockHeight,
+				accountModel, blockHeight,
 				i, i+ctx.BatchReloadSize(),
 				accountTree, accountAssetTrees)
 			if err != nil {
@@ -129,16 +127,14 @@ func InitAccountTree(
 
 func reloadAccountTreeFromRDB(
 	accountModel account.AccountModel,
-	accountHistoryModel account.AccountHistoryModel,
 	blockHeight int64,
 	offset, limit int,
 	accountTree bsmt.SparseMerkleTree,
 	accountAssetTrees *AssetTreeCache,
 ) error {
-	_, accountHistories, err := accountHistoryModel.GetValidAccounts(blockHeight,
-		limit, offset)
+	accounts, err := accountModel.GetAccounts(limit, int64(offset))
 	if err != nil {
-		logx.Errorf("unable to get all accountHistories")
+		logx.Errorf("unable to get accounts")
 		return err
 	}
 
@@ -146,37 +142,20 @@ func reloadAccountTreeFromRDB(
 		accountInfoMap = make(map[int64]*account.Account)
 	)
 
-	for _, accountHistory := range accountHistories {
-		if accountInfoMap[accountHistory.AccountIndex] == nil {
-			accountInfo, err := accountModel.GetAccountByIndex(accountHistory.AccountIndex)
+	for _, accountInfo := range accounts {
+		if accountInfoMap[accountInfo.AccountIndex] == nil {
+			accountInfo, err := accountModel.GetAccountByIndex(accountInfo.AccountIndex)
 			if err != nil {
 				logx.Errorf("unable to get account by account index: %s", err.Error())
 				return err
 			}
-			accountInfoMap[accountHistory.AccountIndex] = &account.Account{
-				AccountIndex:    accountInfo.AccountIndex,
-				AccountName:     accountInfo.AccountName,
-				PublicKey:       accountInfo.PublicKey,
-				AccountNameHash: accountInfo.AccountNameHash,
-				L1Address:       accountInfo.L1Address,
-				Nonce:           types.EmptyNonce,
-				CollectionNonce: types.EmptyCollectionNonce,
-				Status:          account.AccountStatusConfirmed,
-			}
+			accountInfoMap[accountInfo.AccountIndex] = accountInfo
 		}
-		if accountHistory.Nonce != types.EmptyNonce {
-			accountInfoMap[accountHistory.AccountIndex].Nonce = accountHistory.Nonce
-		}
-		if accountHistory.CollectionNonce != types.EmptyCollectionNonce {
-			accountInfoMap[accountHistory.AccountIndex].CollectionNonce = accountHistory.CollectionNonce
-		}
-		accountInfoMap[accountHistory.AccountIndex].AssetInfo = accountHistory.AssetInfo
-		accountInfoMap[accountHistory.AccountIndex].AssetRoot = accountHistory.AssetRoot
 	}
 
 	// get related account info
-	for i := int64(0); i < int64(len(accountHistories)); i++ {
-		accountIndex := accountHistories[i].AccountIndex
+	for i := int64(0); i < int64(len(accounts)); i++ {
+		accountIndex := accounts[i].AccountIndex
 		if accountInfoMap[accountIndex] == nil {
 			logx.Errorf("invalid account index")
 			return errors.New("invalid account index")
