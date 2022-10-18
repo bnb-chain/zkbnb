@@ -38,14 +38,26 @@ const (
 	StatusVerified
 )
 
+type getTxOption struct {
+	Type *int64
+}
+
+type GetTxOptionFunc func(*getTxOption)
+
+func GetTxWithType(txType int64) GetTxOptionFunc {
+	return func(o *getTxOption) {
+		o.Type = &txType
+	}
+}
+
 type (
 	TxModel interface {
 		CreateTxTable() error
 		DropTxTable() error
 		GetTxsTotalCount() (count int64, err error)
 		GetTxs(limit int64, offset int64) (txList []*Tx, err error)
-		GetTxsByAccountIndex(accountIndex int64, limit int64, offset int64) (txList []*Tx, err error)
-		GetTxsCountByAccountIndex(accountIndex int64) (count int64, err error)
+		GetTxsByAccountIndex(accountIndex int64, limit int64, offset int64, options ...GetTxOptionFunc) (txList []*Tx, err error)
+		GetTxsCountByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (count int64, err error)
 		GetTxByHash(txHash string) (tx *Tx, err error)
 		GetTxsTotalCountBetween(from, to time.Time) (count int64, err error)
 		GetDistinctAccountsCountBetween(from, to time.Time) (count int64, err error)
@@ -127,8 +139,18 @@ func (m *defaultTxModel) GetTxs(limit int64, offset int64) (txList []*Tx, err er
 	return txList, nil
 }
 
-func (m *defaultTxModel) GetTxsByAccountIndex(accountIndex int64, limit int64, offset int64) (txList []*Tx, err error) {
-	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex).Limit(int(limit)).Offset(int(offset)).Order("created_at desc").Find(&txList)
+func (m *defaultTxModel) GetTxsByAccountIndex(accountIndex int64, limit int64, offset int64, options ...GetTxOptionFunc) (txList []*Tx, err error) {
+	opt := &getTxOption{}
+	for _, f := range options {
+		f(opt)
+	}
+
+	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex)
+	if opt.Type != nil {
+		dbTx = dbTx.Where("tx_type = ?", *opt.Type)
+	}
+
+	dbTx = dbTx.Limit(int(limit)).Offset(int(offset)).Order("created_at desc").Find(&txList)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
@@ -137,8 +159,18 @@ func (m *defaultTxModel) GetTxsByAccountIndex(accountIndex int64, limit int64, o
 	return txList, nil
 }
 
-func (m *defaultTxModel) GetTxsCountByAccountIndex(accountIndex int64) (count int64, err error) {
-	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex).Count(&count)
+func (m *defaultTxModel) GetTxsCountByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (count int64, err error) {
+	opt := &getTxOption{}
+	for _, f := range options {
+		f(opt)
+	}
+
+	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex)
+	if opt.Type != nil {
+		dbTx = dbTx.Where("tx_type = ?", *opt.Type)
+	}
+
+	dbTx = dbTx.Count(&count)
 	if dbTx.Error != nil {
 		return 0, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {

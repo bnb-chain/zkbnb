@@ -36,7 +36,7 @@ type (
 		GetTxByTxHash(hash string) (txs *Tx, err error)
 		GetTxsByStatus(status int) (txs []*Tx, err error)
 		CreateTxs(txs []*Tx) error
-		GetPendingTxsByAccountIndex(accountIndex int64) (txs []*Tx, err error)
+		GetPendingTxsByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (txs []*Tx, err error)
 		GetMaxNonceByAccountIndex(accountIndex int64) (nonce int64, err error)
 		CreateTxsInTransact(tx *gorm.DB, txs []*Tx) error
 		UpdateTxsInTransact(tx *gorm.DB, txs []*Tx) error
@@ -122,9 +122,18 @@ func (m *defaultTxPoolModel) CreateTxs(txs []*Tx) error {
 	})
 }
 
-func (m *defaultTxPoolModel) GetPendingTxsByAccountIndex(accountIndex int64) (txs []*Tx, err error) {
-	dbTx := m.DB.Table(m.table).Where("tx_status = ? AND account_index = ?", StatusPending, accountIndex).
-		Order("created_at, id").Find(&txs)
+func (m *defaultTxPoolModel) GetPendingTxsByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (txs []*Tx, err error) {
+	opt := &getTxOption{}
+	for _, f := range options {
+		f(opt)
+	}
+
+	dbTx := m.DB.Table(m.table).Where("tx_status = ? AND account_index = ?", StatusPending, accountIndex)
+	if opt.Type != nil {
+		dbTx = dbTx.Where("tx_type = ?", *opt.Type)
+	}
+
+	dbTx = dbTx.Order("created_at, id").Find(&txs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
