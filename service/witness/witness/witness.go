@@ -13,6 +13,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb-crypto/circuit"
+	bsmt "github.com/bnb-chain/zkbnb-smt"
 	smt "github.com/bnb-chain/zkbnb-smt"
 	utils "github.com/bnb-chain/zkbnb/common/prove"
 	"github.com/bnb-chain/zkbnb/dao/account"
@@ -93,6 +94,7 @@ func (w *Witness) initState() error {
 		LevelDBOption: &w.config.TreeDB.LevelDBOption,
 		RedisDBOption: &w.config.TreeDB.RedisDBOption,
 	}
+	treeCtx.SetOptions(bsmt.BatchSizeLimit(3 * 1024 * 1024))
 	err = tree.SetupTreeDB(treeCtx)
 	if err != nil {
 		return fmt.Errorf("init tree database failed %v", err)

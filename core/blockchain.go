@@ -14,6 +14,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
+	bsmt "github.com/bnb-chain/zkbnb-smt"
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/core/statedb"
 	sdb "github.com/bnb-chain/zkbnb/core/statedb"
@@ -93,7 +94,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		LevelDBOption: &config.TreeDB.LevelDBOption,
 		RedisDBOption: &config.TreeDB.RedisDBOption,
 	}
-
+	treeCtx.SetOptions(bsmt.BatchSizeLimit(3 * 1024 * 1024))
 	bc.Statedb, err = sdb.NewStateDB(treeCtx, bc.ChainDB, redisCache, &config.CacheConfig, config.TreeDB.AssetTreeCacheSize, bc.currentBlock.StateRoot, curHeight)
 	if err != nil {
 		return nil, err
