@@ -228,6 +228,7 @@ ChainConfig:
   MaxBlockCount: 4
   Sk: "acbaa269bd7573ff12361be4b97201aef019776ea13384681d4e5ba6a88367d9"
   GasLimit: 5000000
+  GasPrice: 0
 
 TreeDB:
   Driver: memorydb
