@@ -50,7 +50,7 @@ func (e *WithdrawNftExecutor) Prepare() error {
 	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{txInfo.GasFeeAssetId})
 	e.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
 	if nftInfo.CreatorAccountIndex != types.NilAccountIndex {
-		e.MarkAccountAssetsDirty(nftInfo.CreatorAccountIndex, []int64{})
+		e.MarkAccountAssetsDirty(nftInfo.CreatorAccountIndex, []int64{types.EmptyAccountAssetId})
 	}
 	err = e.BaseExecutor.Prepare()
 	if err != nil {
@@ -264,13 +264,13 @@ func (e *WithdrawNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	order++
 	accountOrder++
 	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      txInfo.GasFeeAssetId,
+		AssetId:      types.EmptyAccountAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.CreatorAccountIndex,
 		AccountName:  creatorAccount.AccountName,
-		Balance:      creatorAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
+		Balance:      creatorAccount.AssetInfo[types.EmptyAccountAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.GasFeeAssetId,
+			types.EmptyAccountAssetId,
 			types.ZeroBigInt,
 			types.ZeroBigInt,
 		).String(),

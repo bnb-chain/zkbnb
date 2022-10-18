@@ -45,7 +45,8 @@ func (e *TransferNftExecutor) Prepare() error {
 	// Mark the tree states that would be affected in this executor.
 	e.MarkNftDirty(txInfo.NftIndex)
 	e.MarkAccountAssetsDirty(txInfo.FromAccountIndex, []int64{txInfo.GasFeeAssetId})
-	e.MarkAccountAssetsDirty(txInfo.ToAccountIndex, []int64{})
+	// For empty tx details generation
+	e.MarkAccountAssetsDirty(txInfo.ToAccountIndex, []int64{types.EmptyAccountAssetId})
 	e.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
 	return e.BaseExecutor.Prepare()
 }
@@ -198,13 +199,13 @@ func (e *TransferNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	order++
 	accountOrder++
 	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      txInfo.GasFeeAssetId,
+		AssetId:      types.EmptyAccountAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.ToAccountIndex,
 		AccountName:  toAccount.AccountName,
-		Balance:      toAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
+		Balance:      toAccount.AssetInfo[types.EmptyAccountAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.GasFeeAssetId,
+			types.EmptyAccountAssetId,
 			types.ZeroBigInt,
 			types.ZeroBigInt,
 		).String(),
