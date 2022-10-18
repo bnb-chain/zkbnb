@@ -48,6 +48,9 @@ func (l *GetPendingTxsLogic) GetPendingTxs(req *types.ReqGetRange) (*types.Txs, 
 		tx := utils.ConvertTx(pendingTx)
 		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
 		tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
+		if tx.ToAccountIndex >= 0 {
+			tx.ToAccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.ToAccountIndex)
+		}
 		resp.Txs = append(resp.Txs, tx)
 	}
 	return resp, nil
