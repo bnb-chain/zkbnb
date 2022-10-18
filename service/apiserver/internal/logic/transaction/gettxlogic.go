@@ -34,6 +34,9 @@ func (l *GetTxLogic) GetTx(req *types.ReqGetTx) (resp *types.EnrichedTx, err err
 		resp.Tx = *utils.ConvertTx(tx)
 		resp.Tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
 		resp.Tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
+		if resp.Tx.ToAccountIndex >= 0 {
+			resp.Tx.ToAccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(resp.Tx.ToAccountIndex)
+		}
 		block, err := l.svcCtx.MemCache.GetBlockByHeightWithFallback(tx.BlockHeight, func() (interface{}, error) {
 			return l.svcCtx.BlockModel.GetBlockByHeight(resp.Tx.BlockHeight)
 		})
@@ -56,6 +59,9 @@ func (l *GetTxLogic) GetTx(req *types.ReqGetTx) (resp *types.EnrichedTx, err err
 		resp.Tx = *utils.ConvertTx(poolTx)
 		resp.Tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(poolTx.AccountIndex)
 		resp.Tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(poolTx.AssetId)
+		if resp.Tx.ToAccountIndex >= 0 {
+			resp.Tx.ToAccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(resp.Tx.ToAccountIndex)
+		}
 	}
 
 	return resp, nil
