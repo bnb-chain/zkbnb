@@ -3,10 +3,10 @@ package core
 import (
 	"fmt"
 
-	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	"github.com/bnb-chain/zkbnb/core/executor"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"

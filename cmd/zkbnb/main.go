@@ -10,6 +10,7 @@ import (
 	"github.com/bnb-chain/zkbnb/cmd/flags"
 	"github.com/bnb-chain/zkbnb/service/apiserver"
 	"github.com/bnb-chain/zkbnb/service/committer"
+	"github.com/bnb-chain/zkbnb/service/fullnode"
 	"github.com/bnb-chain/zkbnb/service/monitor"
 	"github.com/bnb-chain/zkbnb/service/prover"
 	"github.com/bnb-chain/zkbnb/service/sender"
@@ -96,6 +97,20 @@ func main() {
 					}
 
 					return committer.Run(cCtx.String(flags.ConfigFlag.Name))
+				},
+			},
+			{
+				Name: "fullnode",
+				Flags: []cli.Flag{
+					flags.ConfigFlag,
+				},
+				Usage: "Run fullnode service",
+				Action: func(cCtx *cli.Context) error {
+					if !cCtx.IsSet(flags.ConfigFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+
+					return fullnode.Run(cCtx.String(flags.ConfigFlag.Name))
 				},
 			},
 			{
