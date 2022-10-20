@@ -19,7 +19,7 @@ func (s *ApiServerSuite) TestGetAccountTxs() {
 		value   string
 		offset  int
 		limit   int
-		txTypes []int
+		txTypes []int64
 	}
 
 	type testcase struct {
@@ -35,15 +35,15 @@ func (s *ApiServerSuite) TestGetAccountTxs() {
 		{"invalid by", args{"invalidby", "fake8470d33c59a5cbf5e10df426eb97c2773ab890c3364f4162ba782a56ca998", 0, 10, nil}, 400},
 	}
 
-	txType := 7
 	statusCode, txs := GetTxs(s, 0, 100)
 	if statusCode == http.StatusOK && len(txs.Txs) > 0 {
-		_, account := GetAccount(s, "name", txs.Txs[len(txs.Txs)-1].AccountName)
+		tx := txs.Txs[len(txs.Txs)-1]
+		_, account := GetAccount(s, "name", tx.AccountName)
 		tests = append(tests, []testcase{
 			{"found by index", args{"account_index", strconv.Itoa(int(account.Index)), 0, 10, nil}, 200},
 			{"found by name", args{"account_name", account.Name, 0, 10, nil}, 200},
 			{"found by pk", args{"account_pk", account.Pk, 0, 10, nil}, 200},
-			{"found by index and type", args{"account_index", strconv.Itoa(int(account.Index)), 0, 10, []int{txType}}, 200},
+			{"found by index and type", args{"account_index", strconv.Itoa(int(account.Index)), 0, 10, []int64{tx.Type}}, 200},
 		}...)
 	}
 
@@ -68,7 +68,7 @@ func (s *ApiServerSuite) TestGetAccountTxs() {
 
 }
 
-func GetAccountTxs(s *ApiServerSuite, by, value string, offset, limit int, txTypes []int) (int, *types.Txs) {
+func GetAccountTxs(s *ApiServerSuite, by, value string, offset, limit int, txTypes []int64) (int, *types.Txs) {
 	url := fmt.Sprintf("%s/api/v1/accountTxs?by=%s&value=%s&offset=%d&limit=%d", s.url, by, value, offset, limit)
 	for _, t := range txTypes {
 		url += fmt.Sprintf("&types[]=%d", t)
