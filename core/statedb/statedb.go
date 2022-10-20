@@ -466,9 +466,22 @@ func (s *StateDB) PrepareNft(nftIndex int64) (*nft.L2Nft, error) {
 	return s.GetNft(nftIndex)
 }
 
+const (
+	accountTreeRole = "account"
+	nftTreeRole     = "nft"
+)
+
+type treeUpdateResp struct {
+	role  string
+	index int64
+	leaf  []byte
+	err   error
+}
+
 func (s *StateDB) IntermediateRoot(taskPool *ants.Pool, cleanDirty bool) error {
 	taskNum := 0
-	errorChan := make(chan error, 1)
+	resultChan := make(chan *treeUpdateResp, 1)
+
 	for accountIndex, assetsMap := range s.dirtyAccountsAndAssetsMap {
 		assets := make([]int64, 0, len(assetsMap))
 		for assetIndex, isDirty := range assetsMap {
@@ -479,7 +492,13 @@ func (s *StateDB) IntermediateRoot(taskPool *ants.Pool, cleanDirty bool) error {
 		}
 		taskNum++
 		taskPool.Submit(func() {
-			errorChan <- s.updateAccountTree(accountIndex, assets)
+			index, leaf, err := s.updateAccountTree(accountIndex, assets)
+			resultChan <- &treeUpdateResp{
+				role:  accountTreeRole,
+				index: index,
+				leaf:  leaf,
+				err:   err,
+			}
 		})
 	}
 
@@ -488,9 +507,13 @@ func (s *StateDB) IntermediateRoot(taskPool *ants.Pool, cleanDirty bool) error {
 			continue
 		}
 		taskNum++
-
 		taskPool.Submit(func() {
-			errorChan <- s.updateNftTree(nftIndex)
+			index, err := s.updateNftTree(nftIndex)
+			resultChan <- &treeUpdateResp{
+				role:  nftTreeRole,
+				index: index,
+				err:   err,
+			}
 		})
 	}
 
@@ -500,9 +523,17 @@ func (s *StateDB) IntermediateRoot(taskPool *ants.Pool, cleanDirty bool) error {
 	}
 
 	for i := 0; i < taskNum; i++ {
-		err := <-errorChan
-		if err != nil {
-			return err
+		result := <-resultChan
+		if result.err != nil {
+			return result.err
+		}
+
+		switch result.role {
+		case accountTreeRole:
+			err := s.AccountTree.Set(uint64(result.index), result.leaf)
+			if err != nil {
+				return fmt.Errorf("unable to update account tree: %v", err)
+			}
 		}
 	}
 
@@ -513,10 +544,10 @@ func (s *StateDB) IntermediateRoot(taskPool *ants.Pool, cleanDirty bool) error {
 	return nil
 }
 
-func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64) error {
+func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64) (int64, []byte, error) {
 	account, err := s.GetFormatAccount(accountIndex)
 	if err != nil {
-		return err
+		return accountIndex, nil, err
 	}
 	isGasAccount := accountIndex == types.GasAccount
 	for _, assetId := range assets {
@@ -538,11 +569,11 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64) error {
 			account.AssetInfo[assetId].OfferCanceledOrFinalized.String(),
 		)
 		if err != nil {
-			return fmt.Errorf("compute new account asset leaf failed: %v", err)
+			return accountIndex, nil, fmt.Errorf("compute new account asset leaf failed: %v", err)
 		}
 		err = s.AccountAssetTrees.Get(accountIndex).Set(uint64(assetId), assetLeaf)
 		if err != nil {
-			return fmt.Errorf("update asset tree failed: %v", err)
+			return accountIndex, nil, fmt.Errorf("update asset tree failed: %v", err)
 		}
 	}
 
@@ -555,20 +586,16 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64) error {
 		s.AccountAssetTrees.Get(accountIndex).Root(),
 	)
 	if err != nil {
-		return fmt.Errorf("unable to compute account leaf: %v", err)
-	}
-	err = s.AccountTree.Set(uint64(accountIndex), nAccountLeafHash)
-	if err != nil {
-		return fmt.Errorf("unable to update account tree: %v", err)
+		return accountIndex, nil, fmt.Errorf("unable to compute account leaf: %v", err)
 	}
 
-	return nil
+	return accountIndex, nAccountLeafHash, nil
 }
 
-func (s *StateDB) updateNftTree(nftIndex int64) error {
+func (s *StateDB) updateNftTree(nftIndex int64) (int64, error) {
 	nft, err := s.GetNft(nftIndex)
 	if err != nil {
-		return err
+		return nftIndex, err
 	}
 	nftAssetLeaf, err := tree.ComputeNftAssetLeafHash(
 		nft.CreatorAccountIndex,
@@ -580,14 +607,14 @@ func (s *StateDB) updateNftTree(nftIndex int64) error {
 		nft.CollectionId,
 	)
 	if err != nil {
-		return fmt.Errorf("unable to compute nft leaf: %v", err)
+		return nftIndex, fmt.Errorf("unable to compute nft leaf: %v", err)
 	}
 	err = s.NftTree.Set(uint64(nftIndex), nftAssetLeaf)
 	if err != nil {
-		return fmt.Errorf("unable to update nft tree: %v", err)
+		return nftIndex, fmt.Errorf("unable to update nft tree: %v", err)
 	}
 
-	return nil
+	return nftIndex, nil
 }
 
 func (s *StateDB) GetCommittedNonce(accountIndex int64) (int64, error) {
