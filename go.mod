@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/bnb-chain/zkbnb-go-sdk v1.0.4-0.20221012063144-3a6e84095b4d
 	github.com/dgraph-io/ristretto v0.1.0
-	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
+	github.com/hashicorp/golang-lru v0.5.5-0.20221011183528-d4900dc688bf
 	github.com/panjf2000/ants/v2 v2.5.0
 	github.com/prometheus/client_golang v1.13.0
 	github.com/zeromicro/go-zero v1.3.4
@@ -93,7 +93,7 @@ require (
 require (
 	github.com/bnb-chain/zkbnb-crypto v0.0.8-0.20221026031758-e17661beb2af
 	github.com/bnb-chain/zkbnb-eth-rpc v0.0.2
-	github.com/bnb-chain/zkbnb-smt v0.0.2-0.20220919093003-13980385d38f
+	github.com/bnb-chain/zkbnb-smt v0.0.2-0.20221020095328-966ce492e2b8
 	github.com/consensys/gnark v0.7.0
 	github.com/consensys/gnark-crypto v0.7.0
 	github.com/eko/gocache/v2 v2.3.1
