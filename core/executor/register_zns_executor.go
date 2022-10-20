@@ -98,9 +98,6 @@ func (e *RegisterZnsExecutor) GeneratePubData() error {
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(types.TxTypeRegisterZns))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
-	chunk := common2.SuffixPaddingBufToChunkSize(buf.Bytes())
-	buf.Reset()
-	buf.Write(chunk)
 	buf.Write(common2.PrefixPaddingBufToChunkSize(common2.AccountNameToBytes32(txInfo.AccountName)))
 	buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.AccountNameHash))
 	pk, err := common2.ParsePubKey(txInfo.PubKey)
@@ -111,8 +108,8 @@ func (e *RegisterZnsExecutor) GeneratePubData() error {
 	// because we can get Y from X, so we only need to store X is enough
 	buf.Write(common2.PrefixPaddingBufToChunkSize(pk.A.X.Marshal()))
 	buf.Write(common2.PrefixPaddingBufToChunkSize(pk.A.Y.Marshal()))
-	buf.Write(common2.PrefixPaddingBufToChunkSize([]byte{}))
-	pubData := buf.Bytes()
+
+	pubData := common2.SuffixPaddingBuToPubdataSize(buf.Bytes())
 
 	stateCache := e.bc.StateDB()
 	stateCache.PriorityOperations++

@@ -24,6 +24,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
+	types2 "github.com/bnb-chain/zkbnb-crypto/circuit/types"
 	"github.com/bnb-chain/zkbnb/types"
 )
 
@@ -70,6 +71,12 @@ func PrefixPaddingBufToChunkSize(buf []byte) []byte {
 
 func SuffixPaddingBufToChunkSize(buf []byte) []byte {
 	res := make([]byte, 32)
+	copy(res[:], buf[:])
+	return res
+}
+
+func SuffixPaddingBuToPubdataSize(buf []byte) []byte {
+	res := make([]byte, types2.PubDataBitsSizePerTx/8)
 	copy(res[:], buf[:])
 	return res
 }
