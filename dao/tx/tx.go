@@ -39,14 +39,14 @@ const (
 )
 
 type getTxOption struct {
-	Type *int64
+	Types []int64
 }
 
 type GetTxOptionFunc func(*getTxOption)
 
-func GetTxWithType(txType int64) GetTxOptionFunc {
+func GetTxWithTypes(txTypes []int64) GetTxOptionFunc {
 	return func(o *getTxOption) {
-		o.Type = &txType
+		o.Types = txTypes
 	}
 }
 
@@ -146,8 +146,8 @@ func (m *defaultTxModel) GetTxsByAccountIndex(accountIndex int64, limit int64, o
 	}
 
 	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex)
-	if opt.Type != nil {
-		dbTx = dbTx.Where("tx_type = ?", *opt.Type)
+	if len(opt.Types) > 0 {
+		dbTx = dbTx.Where("tx_type IN ?", opt.Types)
 	}
 
 	dbTx = dbTx.Limit(int(limit)).Offset(int(offset)).Order("created_at desc").Find(&txList)
@@ -166,8 +166,8 @@ func (m *defaultTxModel) GetTxsCountByAccountIndex(accountIndex int64, options .
 	}
 
 	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex)
-	if opt.Type != nil {
-		dbTx = dbTx.Where("tx_type = ?", *opt.Type)
+	if len(opt.Types) > 0 {
+		dbTx = dbTx.Where("tx_type IN ?", opt.Types)
 	}
 
 	dbTx = dbTx.Count(&count)

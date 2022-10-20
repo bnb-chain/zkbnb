@@ -129,8 +129,8 @@ func (m *defaultTxPoolModel) GetPendingTxsByAccountIndex(accountIndex int64, opt
 	}
 
 	dbTx := m.DB.Table(m.table).Where("tx_status = ? AND account_index = ?", StatusPending, accountIndex)
-	if opt.Type != nil {
-		dbTx = dbTx.Where("tx_type = ?", *opt.Type)
+	if len(opt.Types) > 0 {
+		dbTx = dbTx.Where("tx_type IN ?", opt.Types)
 	}
 
 	dbTx = dbTx.Order("created_at, id").Find(&txs)

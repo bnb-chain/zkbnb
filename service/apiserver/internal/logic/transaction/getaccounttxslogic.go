@@ -61,8 +61,8 @@ func (l *GetAccountTxsLogic) GetAccountTxs(req *types.ReqGetAccountTxs) (resp *t
 	}
 
 	options := []tx.GetTxOptionFunc{}
-	if req.Type != nil {
-		options = append(options, tx.GetTxWithType(int64(*req.Type)))
+	if len(req.Types) > 0 {
+		options = append(options, tx.GetTxWithTypes(req.Types))
 	}
 
 	total, err := l.svcCtx.TxModel.GetTxsCountByAccountIndex(accountIndex, options...)

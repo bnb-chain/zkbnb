@@ -55,8 +55,8 @@ func (l *GetAccountPendingTxsLogic) GetAccountPendingTxs(req *types.ReqGetAccoun
 	}
 
 	options := []tx.GetTxOptionFunc{}
-	if req.Type != nil {
-		options = append(options, tx.GetTxWithType(int64(*req.Type)))
+	if len(req.Types) > 0 {
+		options = append(options, tx.GetTxWithTypes(req.Types))
 	}
 
 	poolTxs, err := l.svcCtx.TxPoolModel.GetPendingTxsByAccountIndex(accountIndex, options...)

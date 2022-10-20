@@ -15,11 +15,11 @@ import (
 
 func (s *ApiServerSuite) TestGetAccountTxs() {
 	type args struct {
-		by     string
-		value  string
-		offset int
-		limit  int
-		txType *int
+		by      string
+		value   string
+		offset  int
+		limit   int
+		txTypes []int
 	}
 
 	type testcase struct {
@@ -43,13 +43,13 @@ func (s *ApiServerSuite) TestGetAccountTxs() {
 			{"found by index", args{"account_index", strconv.Itoa(int(account.Index)), 0, 10, nil}, 200},
 			{"found by name", args{"account_name", account.Name, 0, 10, nil}, 200},
 			{"found by pk", args{"account_pk", account.Pk, 0, 10, nil}, 200},
-			{"found by index and type", args{"account_index", strconv.Itoa(int(account.Index)), 0, 10, &txType}, 200},
+			{"found by index and type", args{"account_index", strconv.Itoa(int(account.Index)), 0, 10, []int{txType}}, 200},
 		}...)
 	}
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetAccountTxs(s, tt.args.by, tt.args.value, tt.args.offset, tt.args.limit, tt.args.txType)
+			httpCode, result := GetAccountTxs(s, tt.args.by, tt.args.value, tt.args.offset, tt.args.limit, tt.args.txTypes)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				if tt.args.offset < int(result.Total) {
@@ -68,10 +68,10 @@ func (s *ApiServerSuite) TestGetAccountTxs() {
 
 }
 
-func GetAccountTxs(s *ApiServerSuite, by, value string, offset, limit int, txType *int) (int, *types.Txs) {
+func GetAccountTxs(s *ApiServerSuite, by, value string, offset, limit int, txTypes []int) (int, *types.Txs) {
 	url := fmt.Sprintf("%s/api/v1/accountTxs?by=%s&value=%s&offset=%d&limit=%d", s.url, by, value, offset, limit)
-	if txType != nil {
-		url += fmt.Sprintf("&type=%d", *txType)
+	for _, t := range txTypes {
+		url += fmt.Sprintf("&types[]=%d", t)
 	}
 	resp, err := http.Get(url)
 	assert.NoError(s.T(), err)

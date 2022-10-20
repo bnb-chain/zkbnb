@@ -15,9 +15,9 @@ import (
 
 func (s *ApiServerSuite) TestGetAccountPoolTxs() {
 	type args struct {
-		by     string
-		value  string
-		txType *int
+		by      string
+		value   string
+		txTypes []int
 	}
 
 	type testcase struct {
@@ -41,13 +41,13 @@ func (s *ApiServerSuite) TestGetAccountPoolTxs() {
 			{"found by index", args{"account_index", strconv.Itoa(int(account.Index)), nil}, 200},
 			{"found by name", args{"account_name", account.Name, nil}, 200},
 			{"found by pk", args{"account_pk", account.Pk, nil}, 200},
-			{"found by index and type", args{"account_index", strconv.Itoa(int(account.Index)), &txType}, 200},
+			{"found by index and type", args{"account_index", strconv.Itoa(int(account.Index)), []int{txType}}, 200},
 		}...)
 	}
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetAccountPendingTxs(s, tt.args.by, tt.args.value, tt.args.txType)
+			httpCode, result := GetAccountPendingTxs(s, tt.args.by, tt.args.value, tt.args.txTypes)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				if result.Total > 0 {
@@ -66,10 +66,10 @@ func (s *ApiServerSuite) TestGetAccountPoolTxs() {
 
 }
 
-func GetAccountPendingTxs(s *ApiServerSuite, by, value string, txType *int) (int, *types.Txs) {
+func GetAccountPendingTxs(s *ApiServerSuite, by, value string, txTypes []int) (int, *types.Txs) {
 	url := fmt.Sprintf("%s/api/v1/accountPendingTxs?by=%s&value=%s", s.url, by, value)
-	if txType != nil {
-		url += fmt.Sprintf("&type=%d", *txType)
+	for _, t := range txTypes {
+		url += fmt.Sprintf("&types[]=%d", t)
 	}
 	resp, err := http.Get(url)
 	assert.NoError(s.T(), err)
