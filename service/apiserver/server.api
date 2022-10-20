@@ -310,10 +310,11 @@ type (
 	}
 
 	ReqGetAccountTxs {
-		By     string `form:"by,options=account_index|account_name|account_pk"`
-		Value  string `form:"value"`
-		Offset uint16 `form:"offset,range=[0:100000]"`
-		Limit  uint16 `form:"limit,range=[1:100]"`
+		By     string  `form:"by,options=account_index|account_name|account_pk"`
+		Value  string  `form:"value"`
+		Types  []int64 `form:"types,optional"`
+		Offset uint16  `form:"offset,range=[0:100000]"`
+		Limit  uint16  `form:"limit,range=[1:100]"`
 	}
 
 	ReqGetTx {
@@ -326,8 +327,9 @@ type (
 	}
 
 	ReqGetAccountPendingTxs {
-		By    string `form:"by,options=account_index|account_name|account_pk"`
-		Value string `form:"value"`
+		By    string  `form:"by,options=account_index|account_name|account_pk"`
+		Value string  `form:"value"`
+		Types []int64 `form:"types,optional"`
 	}
 
 	ReqGetNextNonce {
