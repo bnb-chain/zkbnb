@@ -10,6 +10,7 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/panjf2000/ants/v2"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
@@ -465,7 +466,9 @@ func (s *StateDB) PrepareNft(nftIndex int64) (*nft.L2Nft, error) {
 	return s.GetNft(nftIndex)
 }
 
-func (s *StateDB) IntermediateRoot(cleanDirty bool) error {
+func (s *StateDB) IntermediateRoot(taskPool *ants.Pool, cleanDirty bool) error {
+	tasks := make([]func(), 0, len(s.dirtyAccountsAndAssetsMap)+len(s.dirtyNftMap))
+	errorChan := make(chan error, 1)
 	for accountIndex, assetsMap := range s.dirtyAccountsAndAssetsMap {
 		assets := make([]int64, 0, len(assetsMap))
 		for assetIndex, isDirty := range assetsMap {
@@ -475,25 +478,30 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool) error {
 			assets = append(assets, assetIndex)
 		}
 
-		err := s.updateAccountTree(accountIndex, assets)
-		if err != nil {
-			return err
-		}
+		tasks = append(tasks, func() {
+			errorChan <- s.updateAccountTree(accountIndex, assets)
+		})
 	}
 
 	for nftIndex, isDirty := range s.dirtyNftMap {
 		if !isDirty {
 			continue
 		}
-		err := s.updateNftTree(nftIndex)
-		if err != nil {
-			return err
-		}
+		tasks = append(tasks, func() {
+			errorChan <- s.updateNftTree(nftIndex)
+		})
 	}
 
 	if cleanDirty {
 		s.dirtyAccountsAndAssetsMap = make(map[int64]map[int64]bool, 0)
 		s.dirtyNftMap = make(map[int64]bool, 0)
+	}
+
+	for range tasks {
+		err := <-errorChan
+		if err != nil {
+			return err
+		}
 	}
 
 	hFunc := mimc.NewMiMC()
