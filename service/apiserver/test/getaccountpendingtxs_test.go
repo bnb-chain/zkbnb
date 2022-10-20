@@ -42,6 +42,7 @@ func (s *ApiServerSuite) TestGetAccountPoolTxs() {
 			{"found by name", args{"account_name", account.Name, nil}, 200},
 			{"found by pk", args{"account_pk", account.Pk, nil}, 200},
 			{"found by index and type", args{"account_index", strconv.Itoa(int(account.Index)), []int64{tx.Type}}, 200},
+			{"not found by index and type", args{"account_index", strconv.Itoa(int(account.Index)), []int64{10000}}, 200},
 		}...)
 	}
 
@@ -68,8 +69,9 @@ func (s *ApiServerSuite) TestGetAccountPoolTxs() {
 
 func GetAccountPendingTxs(s *ApiServerSuite, by, value string, txTypes []int64) (int, *types.Txs) {
 	url := fmt.Sprintf("%s/api/v1/accountPendingTxs?by=%s&value=%s", s.url, by, value)
-	for _, t := range txTypes {
-		url += fmt.Sprintf("&types[]=%d", t)
+	if len(txTypes) > 0 {
+		data, _ := json.Marshal(txTypes)
+		url += fmt.Sprintf("&types=%s", string(data))
 	}
 	resp, err := http.Get(url)
 	assert.NoError(s.T(), err)
