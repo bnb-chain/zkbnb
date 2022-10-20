@@ -9,6 +9,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/panjf2000/ants/v2"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"gorm.io/driver/postgres"
@@ -28,6 +29,21 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/tree"
 	"github.com/bnb-chain/zkbnb/types"
+)
+
+// metrics
+var (
+	updateTreeMetics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "update_smt",
+		Help:      "update smt tree operation time",
+	})
+
+	commitTreeMetics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "commit_smt",
+		Help:      "commit smt tree operation time",
+	})
 )
 
 const (
@@ -106,6 +122,14 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	}
 	bc.taskPool = taskPool
 
+	// register metrics
+	if err := prometheus.Register(updateTreeMetics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register updateTreeMetics error: %v", err)
+	}
+	if err := prometheus.Register(commitTreeMetics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register commitTreeMetics error: %v", err)
+	}
+
 	return bc, nil
 }
 
@@ -167,10 +191,12 @@ func (bc *BlockChain) CommitNewBlock(blockSize int, createdAt int64) (*block.Blo
 
 	currentHeight := bc.currentBlock.BlockHeight
 
+	start := time.Now()
 	err = tree.CommitTrees(bc.taskPool, uint64(currentHeight), bc.Statedb.AccountTree, bc.Statedb.AccountAssetTrees, bc.Statedb.NftTree)
 	if err != nil {
 		return nil, err
 	}
+	commitTreeMetics.Set(float64(time.Since(start).Milliseconds()))
 
 	pendingAccount, pendingAccountHistory, err := bc.Statedb.GetPendingAccount(currentHeight)
 	if err != nil {
@@ -210,11 +236,13 @@ func (bc *BlockChain) commitNewBlock(blockSize int, createdAt int64) (*block.Blo
 		}
 	}
 
+	start := time.Now()
 	// Intermediate state root.
 	err := s.IntermediateRoot(false)
 	if err != nil {
 		return nil, nil, err
 	}
+	updateTreeMetics.Set(float64(time.Since(start).Milliseconds()))
 
 	// Align pub data.
 	s.AlignPubData(blockSize)
