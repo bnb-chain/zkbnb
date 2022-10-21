@@ -55,7 +55,7 @@ func InitAccountTree(
 	accountAssetTrees = NewLazyTreeCache(assetCacheSize, accountNums-1, blockHeight, func(index, block int64) bsmt.SparseMerkleTree {
 		tree, err := bsmt.NewBASSparseMerkleTree(bsmt.NewHasherPool(func() hash.Hash { return mimc.NewMiMC() }),
 			SetNamespace(ctx, accountAssetNamespace(index)), AssetTreeHeight, NilAccountAssetNodeHash,
-			ctx.Options(block)...)
+			append(ctx.Options(block), bsmt.GoRoutinePoolSize(100))...)
 		if err != nil {
 			logx.Errorf("unable to create new tree by assets: %s", err.Error())
 			panic(err.Error())
