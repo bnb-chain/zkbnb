@@ -104,12 +104,11 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		curHeight--
 	}
 	redisCache := dbcache.NewRedisCache(config.CacheRedis[0].Host, config.CacheRedis[0].Pass, 15*time.Minute)
-	treeCtx := &tree.Context{
-		Name:          moduleName,
-		Driver:        config.TreeDB.Driver,
-		LevelDBOption: &config.TreeDB.LevelDBOption,
-		RedisDBOption: &config.TreeDB.RedisDBOption,
+	treeCtx, err := tree.NewContext(moduleName, config.TreeDB.Driver, false, &config.TreeDB.LevelDBOption, &config.TreeDB.RedisDBOption)
+	if err != nil {
+		return nil, err
 	}
+
 	treeCtx.SetOptions(bsmt.BatchSizeLimit(3 * 1024 * 1024))
 	bc.Statedb, err = sdb.NewStateDB(treeCtx, bc.ChainDB, redisCache, &config.CacheConfig, config.TreeDB.AssetTreeCacheSize, bc.currentBlock.StateRoot, curHeight)
 	if err != nil {

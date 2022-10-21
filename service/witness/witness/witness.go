@@ -88,12 +88,11 @@ func (w *Witness) initState() error {
 	}
 
 	// dbinitializer tree database
-	treeCtx := &tree.Context{
-		Name:          "witness",
-		Driver:        w.config.TreeDB.Driver,
-		LevelDBOption: &w.config.TreeDB.LevelDBOption,
-		RedisDBOption: &w.config.TreeDB.RedisDBOption,
+	treeCtx, err := tree.NewContext("witness", w.config.TreeDB.Driver, false, &w.config.TreeDB.LevelDBOption, &w.config.TreeDB.RedisDBOption)
+	if err != nil {
+		return err
 	}
+
 	treeCtx.SetOptions(bsmt.BatchSizeLimit(3 * 1024 * 1024))
 	err = tree.SetupTreeDB(treeCtx)
 	if err != nil {
