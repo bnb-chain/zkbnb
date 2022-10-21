@@ -481,6 +481,7 @@ type treeUpdateResp struct {
 func (s *StateDB) IntermediateRoot(taskPool *ants.Pool, cleanDirty bool) error {
 	taskNum := 0
 	resultChan := make(chan *treeUpdateResp, 1)
+	defer close(resultChan)
 
 	for accountIndex, assetsMap := range s.dirtyAccountsAndAssetsMap {
 		assets := make([]int64, 0, len(assetsMap))
@@ -542,17 +543,22 @@ func (s *StateDB) IntermediateRoot(taskPool *ants.Pool, cleanDirty bool) error {
 			pendingNftItem = append(pendingNftItem, bsmt.Item{Key: uint64(result.index), Val: result.leaf})
 		}
 	}
-	errChan := make(chan error, 2)
 	taskPool.Submit(func() {
-		errChan <- s.AccountTree.MultiSet(pendingAccountItem...)
+		resultChan <- &treeUpdateResp{
+			role: accountTreeRole,
+			err:  s.AccountTree.MultiSet(pendingAccountItem...),
+		}
 	})
 	taskPool.Submit(func() {
-		errChan <- s.NftTree.MultiSet(pendingNftItem...)
+		resultChan <- &treeUpdateResp{
+			role: nftTreeRole,
+			err:  s.NftTree.MultiSet(pendingNftItem...),
+		}
 	})
 	for i := 0; i < 2; i++ {
-		err := <-errChan
-		if err != nil {
-			return fmt.Errorf("update tree failed, %v", err)
+		result := <-resultChan
+		if result.err != nil {
+			return fmt.Errorf("update %s tree failed, %v", result.role, result.err)
 		}
 	}
 
