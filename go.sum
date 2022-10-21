@@ -126,6 +126,8 @@ github.com/bnb-chain/zkbnb-go-sdk v1.0.4-0.20221012063144-3a6e84095b4d h1:2+S4/J
 github.com/bnb-chain/zkbnb-go-sdk v1.0.4-0.20221012063144-3a6e84095b4d/go.mod h1:G27Jpl0yB6T/NKXw31bD2B2M91my0PM6SUEpbEGWGL8=
 github.com/bnb-chain/zkbnb-smt v0.0.2-0.20221020095328-966ce492e2b8 h1:SzB9Z5Fk/Xuh4cUfJgGPKwEdVdWVwk8J+ln2z5qcn2o=
 github.com/bnb-chain/zkbnb-smt v0.0.2-0.20221020095328-966ce492e2b8/go.mod h1:dlc0pvP3MpljvmJBmOZqL4ju8tJqcAxth4IWQ6Vkgcc=
+github.com/bnb-chain/zkbnb-smt v0.0.2-0.20221021114322-1f5d1906fd7b h1:VG1ZrodDJn0Dvh75C3MYLL3OPRKjUXrvJMAHMUmC6P0=
+github.com/bnb-chain/zkbnb-smt v0.0.2-0.20221021114322-1f5d1906fd7b/go.mod h1:QmQTsv2fxBsobFLFZkaiNmr3P0M/mm3W1AiwSU3/cGY=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
 github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d h1:pVrfxiGfwelyab6n21ZBkbkmbevaf+WvMIiR7sr97hw=
 github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d/go.mod h1:H0wQNHz2YrLsuXOZozoeDmnHXkNCRmMW0gwFWDfEZDA=
