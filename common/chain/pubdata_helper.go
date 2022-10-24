@@ -32,7 +32,7 @@ func ParseRegisterZnsPubData(pubData []byte) (tx *txtypes.RegisterZnsTxInfo, err
 	/*
 		struct RegisterZNS {
 			uint8 txType;
-			bytes32 accountName;
+			bytes20 accountName;
 			bytes32 accountNameHash;
 			bytes32 pubKeyX;
 			bytes32 pubKeyY;
@@ -44,7 +44,7 @@ func ParseRegisterZnsPubData(pubData []byte) (tx *txtypes.RegisterZnsTxInfo, err
 	offset := 0
 	offset, txType := common2.ReadUint8(pubData, offset)
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
-	offset, accountName := common2.ReadBytes32(pubData, offset)
+	offset, accountName := common2.ReadBytes20(pubData, offset)
 	offset, accountNameHash := common2.ReadBytes32(pubData, offset)
 	offset, pubKeyX := common2.ReadBytes32(pubData, offset)
 	_, pubKeyY := common2.ReadBytes32(pubData, offset)

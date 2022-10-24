@@ -316,7 +316,7 @@ func ConvertTxToRegisterZNSPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	chunk := SuffixPaddingBufToChunkSize(buf.Bytes())
 	buf.Reset()
 	buf.Write(chunk)
-	buf.Write(PrefixPaddingBufToChunkSize(AccountNameToBytes32(txInfo.AccountName)))
+	buf.Write(PrefixPaddingBufToChunkSize(AccountNameToBytes20(txInfo.AccountName)))
 	buf.Write(PrefixPaddingBufToChunkSize(txInfo.AccountNameHash))
 	pk, err := ParsePubKey(txInfo.PubKey)
 	if err != nil {

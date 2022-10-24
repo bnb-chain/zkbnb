@@ -70,7 +70,7 @@ const (
 	TxTypeBytesSize          = 1
 	AddressBytesSize         = 20
 	AccountIndexBytesSize    = 4
-	AccountNameBytesSize     = 32
+	AccountNameBytesSize     = 20
 	AccountNameHashBytesSize = 32
 	PubkeyBytesSize          = 32
 	AssetIdBytesSize         = 2

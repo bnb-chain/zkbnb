@@ -98,7 +98,7 @@ func (e *RegisterZnsExecutor) GeneratePubData() error {
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(types.TxTypeRegisterZns))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
-	buf.Write(common2.PrefixPaddingBufToChunkSize(common2.AccountNameToBytes32(txInfo.AccountName)))
+	buf.Write(common2.AccountNameToBytes20(txInfo.AccountName))
 	buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.AccountNameHash))
 	pk, err := common2.ParsePubKey(txInfo.PubKey)
 	if err != nil {

@@ -60,6 +60,12 @@ func ReadBytes32(buf []byte, offset int) (newOffset int, res []byte) {
 	return offset + 32, res
 }
 
+func ReadBytes20(buf []byte, offset int) (newOffset int, res []byte) {
+	res = make([]byte, 20)
+	copy(res[:], buf[offset:offset+20])
+	return offset + 20, res
+}
+
 func ReadAddress(buf []byte, offset int) (newOffset int, res string) {
 	res = common.BytesToAddress(buf[offset : offset+20]).Hex()
 	return offset + 20, res
@@ -81,9 +87,9 @@ func SuffixPaddingBuToPubdataSize(buf []byte) []byte {
 	return res
 }
 
-func AccountNameToBytes32(accountName string) []byte {
+func AccountNameToBytes20(accountName string) []byte {
 	realName := strings.Split(accountName, types.AccountNameSuffix)[0]
-	buf := make([]byte, 32)
+	buf := make([]byte, 20)
 	copy(buf[:], realName)
 	return buf
 }

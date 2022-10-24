@@ -53,7 +53,7 @@ func NewStateCache(stateRoot string) *StateCache {
 }
 
 func (c *StateCache) AlignPubData(blockSize int) {
-	emptyPubdata := make([]byte, (blockSize-len(c.Txs))*32*cryptoTypes.PubDataSizePerTx)
+	emptyPubdata := make([]byte, (blockSize-len(c.Txs))*cryptoTypes.PubDataBitsSizePerTx/8)
 	c.PubData = append(c.PubData, emptyPubdata...)
 }
 
