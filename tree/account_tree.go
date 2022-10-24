@@ -53,7 +53,7 @@ func InitAccountTree(
 
 	// init account state trees
 	accountAssetTrees = NewLazyTreeCache(assetCacheSize, accountNums-1, blockHeight, func(index, block int64) bsmt.SparseMerkleTree {
-		tree, err := bsmt.NewBASSparseMerkleTree(bsmt.NewHasherPool(func() hash.Hash { return mimc.NewMiMC() }),
+		tree, err := bsmt.NewBASSparseMerkleTree(ctx.Hasher(),
 			SetNamespace(ctx, accountAssetNamespace(index)), AssetTreeHeight, NilAccountAssetNodeHash,
 			ctx.Options(block)...)
 		if err != nil {
@@ -62,7 +62,7 @@ func InitAccountTree(
 		}
 		return tree
 	})
-	accountTree, err = bsmt.NewBASSparseMerkleTree(bsmt.NewHasherPool(func() hash.Hash { return mimc.NewMiMC() }),
+	accountTree, err = bsmt.NewBASSparseMerkleTree(ctx.Hasher(),
 		SetNamespace(ctx, AccountPrefix), AccountTreeHeight, NilAccountNodeHash,
 		opts...)
 	if err != nil {

@@ -3,6 +3,7 @@ package tree
 import (
 	"encoding/json"
 	"errors"
+	"hash"
 	"strings"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/bnb-chain/zkbnb-smt/database/leveldb"
 	"github.com/bnb-chain/zkbnb-smt/database/memory"
 	"github.com/bnb-chain/zkbnb-smt/database/redis"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/panjf2000/ants/v2"
 )
 
@@ -202,6 +204,7 @@ func NewContext(name string, driver Driver, reload bool,
 		RedisDBOption:  redisDBOption,
 		reload:         reload,
 		routinePool:    pool,
+		hasher:         bsmt.NewHasherPool(func() hash.Hash { return mimc.NewMiMC() }),
 		defaultOptions: []bsmt.Option{bsmt.GoRoutinePool(pool)},
 	}, nil
 }
@@ -217,6 +220,7 @@ type Context struct {
 	reload          bool
 	batchReloadSize int
 	routinePool     *ants.Pool
+	hasher          *bsmt.Hasher
 }
 
 func (ctx *Context) IsLoad() bool {
@@ -255,4 +259,8 @@ func (ctx *Context) SetBatchReloadSize(size int) {
 
 func (ctx *Context) RoutinePool() *ants.Pool {
 	return ctx.routinePool
+}
+
+func (ctx *Context) Hasher() *bsmt.Hasher {
+	return ctx.hasher
 }
