@@ -249,6 +249,8 @@ TxPool:
 
 Postgres:
   DataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  MaxConn: 100
+  MaxIdle: 10
 
 CacheRedis:
   - Host: 127.0.0.1:6379
