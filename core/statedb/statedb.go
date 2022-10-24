@@ -492,8 +492,8 @@ func (s *StateDB) IntermediateRoot(taskPool *ants.Pool, cleanDirty bool) error {
 			assets = append(assets, assetIndex)
 		}
 		taskNum++
-		func(accountIndex int64, assets []int64) {
-			taskPool.Submit(func() {
+		err := func(accountIndex int64, assets []int64) error {
+			return taskPool.Submit(func() {
 				index, leaf, err := s.updateAccountTree(accountIndex, assets)
 				resultChan <- &treeUpdateResp{
 					role:  accountTreeRole,
@@ -503,6 +503,9 @@ func (s *StateDB) IntermediateRoot(taskPool *ants.Pool, cleanDirty bool) error {
 				}
 			})
 		}(accountIndex, assets)
+		if err != nil {
+			return err
+		}
 	}
 
 	for nftIndex, isDirty := range s.dirtyNftMap {
@@ -510,8 +513,8 @@ func (s *StateDB) IntermediateRoot(taskPool *ants.Pool, cleanDirty bool) error {
 			continue
 		}
 		taskNum++
-		func(nftIndex int64) {
-			taskPool.Submit(func() {
+		err := func(nftIndex int64) error {
+			return taskPool.Submit(func() {
 				index, leaf, err := s.updateNftTree(nftIndex)
 				resultChan <- &treeUpdateResp{
 					role:  nftTreeRole,
@@ -521,6 +524,9 @@ func (s *StateDB) IntermediateRoot(taskPool *ants.Pool, cleanDirty bool) error {
 				}
 			})
 		}(nftIndex)
+		if err != nil {
+			return err
+		}
 	}
 
 	if cleanDirty {
@@ -543,18 +549,24 @@ func (s *StateDB) IntermediateRoot(taskPool *ants.Pool, cleanDirty bool) error {
 			pendingNftItem = append(pendingNftItem, bsmt.Item{Key: uint64(result.index), Val: result.leaf})
 		}
 	}
-	taskPool.Submit(func() {
+	err := taskPool.Submit(func() {
 		resultChan <- &treeUpdateResp{
 			role: accountTreeRole,
 			err:  s.AccountTree.MultiSet(pendingAccountItem...),
 		}
 	})
-	taskPool.Submit(func() {
+	if err != nil {
+		return err
+	}
+	err = taskPool.Submit(func() {
 		resultChan <- &treeUpdateResp{
 			role: nftTreeRole,
 			err:  s.NftTree.MultiSet(pendingNftItem...),
 		}
 	})
+	if err != nil {
+		return err
+	}
 	for i := 0; i < 2; i++ {
 		result := <-resultChan
 		if result.err != nil {
