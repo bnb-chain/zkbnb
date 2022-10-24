@@ -29,7 +29,6 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb-crypto/circuit"
-	"github.com/bnb-chain/zkbnb-smt/database/memory"
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"github.com/bnb-chain/zkbnb/dao/blockwitness"
@@ -79,9 +78,9 @@ func TestConstructWitness(t *testing.T) {
 }
 
 func getWitnessHelper(blockHeight int64) (*WitnessHelper, error) {
-	ctx := &tree.Context{
-		Driver: tree.MemoryDB,
-		TreeDB: memory.NewMemoryDB(),
+	ctx, err := tree.NewContext("witness", tree.MemoryDB, false, nil, nil)
+	if err != nil {
+		return nil, err
 	}
 	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, blockHeight, ctx, assetTreeCacheSize)
 	if err != nil {
