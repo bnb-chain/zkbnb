@@ -81,12 +81,7 @@ data:
     Port: 8888
     
     TxPool:
-      MaxPendingTxCount: 10000    
-    
-    Prometheus:
-      Host: 0.0.0.0
-      Port: 9091
-      Path: /metrics
+      MaxPendingTxCount: 10000
 
     Postgres:
       {{- toYaml .Values.configs.postgres | nindent 6 }}

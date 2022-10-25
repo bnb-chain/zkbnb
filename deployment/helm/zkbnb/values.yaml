@@ -90,6 +90,8 @@ keyfileVolume:
 configs:
   postgres:
     DataSource: host=postgres user=postgres password=*** dbname=zkbnb port=5432 sslmode=disable
+    MaxConn: 100
+    MaxIdle: 10
   redisCache: 
     - Host: redis
       Type: node
@@ -103,6 +105,7 @@ configs:
   gasLimit: 5000000
   treedb:
     Driver: memorydb
+    AssetTreeCacheSize: 512000
   SK: ""
   cmcToken: ""
   cmcURL: ""
