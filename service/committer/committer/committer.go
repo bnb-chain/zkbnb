@@ -232,9 +232,9 @@ func (c *Committer) Run() {
 
 		if c.shouldCommit(curBlock) {
 			start := time.Now()
-			logx.Infof("commit new block, height=%d, blockSize=%d", curBlock.BlockHeight, curBlock.BlockSize)
+			logx.Infof("commit new block, height=%d", curBlock.BlockHeight)
 			curBlock, err = c.commitNewBlock(curBlock)
-			logx.Infof("commit new block success")
+			logx.Infof("commit new block success, blockSize=%d", curBlock.BlockSize)
 
 			if err != nil {
 				logx.Errorf("commit new block error, err=%s", err.Error())

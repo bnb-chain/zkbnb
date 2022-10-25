@@ -61,8 +61,6 @@ func (e *FullExitNftExecutor) Prepare() error {
 		CreatorAccountIndex: emptyNftInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   emptyNftInfo.OwnerAccountIndex,
 		NftContentHash:      emptyNftInfo.NftContentHash,
-		NftL1Address:        emptyNftInfo.NftL1Address,
-		NftL1TokenId:        emptyNftInfo.NftL1TokenId,
 		CreatorTreasuryRate: emptyNftInfo.CreatorTreasuryRate,
 		CollectionId:        emptyNftInfo.CollectionId,
 	}
@@ -98,8 +96,6 @@ func (e *FullExitNftExecutor) Prepare() error {
 		}
 		txInfo.CreatorAccountNameHash = common.FromHex(creator.AccountNameHash)
 	}
-	txInfo.NftL1Address = exitNft.NftL1Address
-	txInfo.NftL1TokenId, _ = new(big.Int).SetString(exitNft.NftL1TokenId, 10)
 	txInfo.NftContentHash = common.FromHex(exitNft.NftContentHash)
 	txInfo.CollectionId = exitNft.CollectionId
 
@@ -125,8 +121,6 @@ func (e *FullExitNftExecutor) ApplyTransaction() error {
 		CreatorAccountIndex: emptyNftInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   emptyNftInfo.OwnerAccountIndex,
 		NftContentHash:      emptyNftInfo.NftContentHash,
-		NftL1Address:        emptyNftInfo.NftL1Address,
-		NftL1TokenId:        emptyNftInfo.NftL1TokenId,
 		CreatorTreasuryRate: emptyNftInfo.CreatorTreasuryRate,
 		CollectionId:        emptyNftInfo.CollectionId,
 	}
@@ -215,8 +209,6 @@ func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 			oldNft.CreatorAccountIndex,
 			oldNft.OwnerAccountIndex,
 			oldNft.NftContentHash,
-			oldNft.NftL1TokenId,
-			oldNft.NftL1Address,
 			oldNft.CreatorTreasuryRate,
 			oldNft.CollectionId,
 		)

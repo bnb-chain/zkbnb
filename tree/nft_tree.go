@@ -107,8 +107,6 @@ func NftAssetToNode(nftAsset *nft.L2NftHistory) (hashVal []byte, err error) {
 		nftAsset.CreatorAccountIndex,
 		nftAsset.OwnerAccountIndex,
 		nftAsset.NftContentHash,
-		nftAsset.NftL1Address,
-		nftAsset.NftL1TokenId,
 		nftAsset.CreatorTreasuryRate,
 		nftAsset.CollectionId,
 	)

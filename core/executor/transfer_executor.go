@@ -123,7 +123,7 @@ func (e *TransferExecutor) GeneratePubData() error {
 		return err
 	}
 	buf.Write(packedFeeBytes)
-
+	buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.CallDataHash))
 	pubData := common2.SuffixPaddingBuToPubdataSize(buf.Bytes())
 
 	stateCache := e.bc.StateDB()

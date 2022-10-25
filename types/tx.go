@@ -85,15 +85,15 @@ const (
 		AccountNameHashBytesSize + PubkeyBytesSize + PubkeyBytesSize
 	DepositPubDataSize = TxTypeBytesSize + AccountIndexBytesSize +
 		AccountNameHashBytesSize + AssetIdBytesSize + StateAmountBytesSize
-	DepositNftPubDataSize = TxTypeBytesSize + AccountIndexBytesSize + NftIndexBytesSize + AddressBytesSize +
-		AccountIndexBytesSize + FeeRateBytesSize + NftContentHashBytesSize + NftTokenIdBytesSize +
+	DepositNftPubDataSize = TxTypeBytesSize + AccountIndexBytesSize + NftIndexBytesSize +
+		AccountIndexBytesSize + FeeRateBytesSize + NftContentHashBytesSize +
 		AccountNameHashBytesSize + CollectionIdBytesSize
 	FullExitPubDataSize = TxTypeBytesSize + AccountIndexBytesSize +
 		AccountNameHashBytesSize + AssetIdBytesSize + StateAmountBytesSize
 	FullExitNftPubDataSize = TxTypeBytesSize + AccountIndexBytesSize + AccountIndexBytesSize + FeeRateBytesSize +
-		NftIndexBytesSize + CollectionIdBytesSize + AddressBytesSize +
+		NftIndexBytesSize + CollectionIdBytesSize +
 		AccountNameHashBytesSize + AccountNameHashBytesSize +
-		NftContentHashBytesSize + NftTokenIdBytesSize
+		NftContentHashBytesSize
 )
 
 const (

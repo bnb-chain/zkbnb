@@ -35,7 +35,7 @@ Used to record and save account status under each block height.
 Each Account will maintain an Asset tree, the `Balance`, `LpAmount`, and `OfferCanceledOrFinalized` of each Asset will be calculated as a hash and written into the tree corresponding to the `AssetID`.
 
 ## Nft Tree
-The `CreatorAccountIndex`, `OwnerAccountIndex`, `NftContentHash`, `NftL1Address`, `NftL1TokenId`, `CreatorTreasuryRate`, and `CollectionId` of each nft resource will be calculated as a hash and written into the tree corresponding to the `NftIndex`. 
+The `CreatorAccountIndex`, `OwnerAccountIndex`, `NftContentHash`, `CreatorTreasuryRate`, and `CollectionId` of each nft resource will be calculated as a hash and written into the tree corresponding to the `NftIndex`. 
 Used to record and save nft status under each block height.
 
 ## Physical Storage

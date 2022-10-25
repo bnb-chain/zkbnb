@@ -72,13 +72,9 @@ func EmptyNftNodeHash() []byte {
 		creatorAccountIndex
 		ownerAccountIndex
 		nftContentHash
-		nftL1Address
-		nftL1TokenId
 		creatorTreasuryRate
 		collectionId
 	*/
-	hFunc.Write(zero)
-	hFunc.Write(zero)
 	hFunc.Write(zero)
 	hFunc.Write(zero)
 	hFunc.Write(zero)
@@ -274,8 +270,6 @@ func ComputeNftAssetLeafHash(
 	creatorAccountIndex int64,
 	ownerAccountIndex int64,
 	nftContentHash string,
-	nftL1Address string,
-	nftL1TokenId string,
 	creatorTreasuryRate int64,
 	collectionId int64,
 ) (hashVal []byte, err error) {
@@ -284,14 +278,6 @@ func ComputeNftAssetLeafHash(
 	common2.PaddingInt64IntoBuf(&buf, creatorAccountIndex)
 	common2.PaddingInt64IntoBuf(&buf, ownerAccountIndex)
 	buf.Write(ffmath.Mod(new(big.Int).SetBytes(common.FromHex(nftContentHash)), curve.Modulus).FillBytes(make([]byte, 32)))
-	err = common2.PaddingAddressIntoBuf(&buf, nftL1Address)
-	if err != nil {
-		return nil, err
-	}
-	err = common2.PaddingStringBigIntIntoBuf(&buf, nftL1TokenId)
-	if err != nil {
-		return nil, err
-	}
 	common2.PaddingInt64IntoBuf(&buf, creatorTreasuryRate)
 	common2.PaddingInt64IntoBuf(&buf, collectionId)
 	hFunc.Write(buf.Bytes())

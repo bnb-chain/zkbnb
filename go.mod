@@ -90,7 +90,7 @@ require (
 )
 
 require (
-	github.com/bnb-chain/zkbnb-crypto v0.0.8
+	github.com/bnb-chain/zkbnb-crypto v0.0.8-0.20221101074621-7b7562146117
 	github.com/bnb-chain/zkbnb-eth-rpc v0.0.2
 	github.com/bnb-chain/zkbnb-smt v0.0.2
 	github.com/consensys/gnark v0.7.0
@@ -113,6 +113,4 @@ require (
 	k8s.io/apimachinery v0.24.1 // indirect
 )
 
-replace (
-	"github.com/bnb-chain/zkbnb-crypto" => ../zkbnb-crypto
-)
+replace github.com/bnb-chain/zkbnb-crypto => ../zkbnb-crypto

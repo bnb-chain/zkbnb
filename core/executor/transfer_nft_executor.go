@@ -214,8 +214,6 @@ func (e *TransferNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		CreatorAccountIndex: nftModel.CreatorAccountIndex,
 		OwnerAccountIndex:   nftModel.OwnerAccountIndex,
 		NftContentHash:      nftModel.NftContentHash,
-		NftL1TokenId:        nftModel.NftL1TokenId,
-		NftL1Address:        nftModel.NftL1Address,
 		CreatorTreasuryRate: nftModel.CreatorTreasuryRate,
 		CollectionId:        nftModel.CollectionId,
 	}
@@ -224,8 +222,6 @@ func (e *TransferNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		CreatorAccountIndex: nftModel.CreatorAccountIndex,
 		OwnerAccountIndex:   txInfo.ToAccountIndex,
 		NftContentHash:      nftModel.NftContentHash,
-		NftL1TokenId:        nftModel.NftL1TokenId,
-		NftL1Address:        nftModel.NftL1Address,
 		CreatorTreasuryRate: nftModel.CreatorTreasuryRate,
 		CollectionId:        nftModel.CollectionId,
 	}

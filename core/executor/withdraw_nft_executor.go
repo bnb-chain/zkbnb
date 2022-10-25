@@ -3,7 +3,6 @@ package executor
 import (
 	"bytes"
 	"encoding/json"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
@@ -69,8 +68,6 @@ func (e *WithdrawNftExecutor) Prepare() error {
 	}
 	txInfo.CreatorTreasuryRate = nftInfo.CreatorTreasuryRate
 	txInfo.NftContentHash = common.FromHex(nftInfo.NftContentHash)
-	txInfo.NftL1Address = nftInfo.NftL1Address
-	txInfo.NftL1TokenId, _ = new(big.Int).SetString(nftInfo.NftL1TokenId, 10)
 	txInfo.CollectionId = nftInfo.CollectionId
 
 	return nil
@@ -129,8 +126,6 @@ func (e *WithdrawNftExecutor) ApplyTransaction() error {
 		CreatorAccountIndex: newNftInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   newNftInfo.OwnerAccountIndex,
 		NftContentHash:      newNftInfo.NftContentHash,
-		NftL1Address:        newNftInfo.NftL1Address,
-		NftL1TokenId:        newNftInfo.NftL1TokenId,
 		CreatorTreasuryRate: newNftInfo.CreatorTreasuryRate,
 		CollectionId:        newNftInfo.CollectionId,
 	})
@@ -236,8 +231,6 @@ func (e *WithdrawNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 			nftModel.CreatorAccountIndex,
 			nftModel.OwnerAccountIndex,
 			nftModel.NftContentHash,
-			nftModel.NftL1TokenId,
-			nftModel.NftL1Address,
 			nftModel.CreatorTreasuryRate,
 			nftModel.CollectionId,
 		).String(),

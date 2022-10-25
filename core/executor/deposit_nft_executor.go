@@ -84,8 +84,6 @@ func (e *DepositNftExecutor) ApplyTransaction() error {
 		CreatorAccountIndex: txInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   txInfo.AccountIndex,
 		NftContentHash:      common.Bytes2Hex(txInfo.NftContentHash),
-		NftL1Address:        txInfo.NftL1Address,
-		NftL1TokenId:        txInfo.NftL1TokenId.String(),
 		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
 		CollectionId:        txInfo.CollectionId,
 	}
@@ -167,8 +165,6 @@ func (e *DepositNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		txInfo.CreatorAccountIndex,
 		txInfo.AccountIndex,
 		common.Bytes2Hex(txInfo.NftContentHash),
-		txInfo.NftL1TokenId.String(),
-		txInfo.NftL1Address,
 		txInfo.CreatorTreasuryRate,
 		txInfo.CollectionId,
 	)

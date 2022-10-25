@@ -100,8 +100,6 @@ func (e *MintNftExecutor) ApplyTransaction() error {
 		CreatorAccountIndex: txInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   txInfo.ToAccountIndex,
 		NftContentHash:      txInfo.NftContentHash,
-		NftL1Address:        types.EmptyL1Address,
-		NftL1TokenId:        types.EmptyL1TokenId,
 		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
 		CollectionId:        txInfo.NftCollectionId,
 	})
@@ -214,8 +212,6 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		CreatorAccountIndex: txInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   txInfo.ToAccountIndex,
 		NftContentHash:      txInfo.NftContentHash,
-		NftL1TokenId:        types.EmptyL1TokenId,
-		NftL1Address:        types.EmptyL1Address,
 		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
 		CollectionId:        txInfo.NftCollectionId,
 	}
