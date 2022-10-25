@@ -44,6 +44,7 @@ func RecoveryTreeDB(
 	// dbinitializer accountTree and accountStateTrees
 	_, _, err = tree.InitAccountTree(
 		ctx.AccountModel,
+		ctx.AccountHistoryModel,
 		blockHeight,
 		treeCtx,
 		c.TreeDB.AssetTreeCacheSize,
