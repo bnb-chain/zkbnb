@@ -75,6 +75,7 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 	}
 	accountTree, accountAssetTrees, err := tree.InitAccountTree(
 		chainDb.AccountModel,
+		chainDb.AccountHistoryModel,
 		curHeight,
 		treeCtx,
 		assetCacheSize,

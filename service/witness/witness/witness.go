@@ -104,6 +104,7 @@ func (w *Witness) initState() error {
 	// the initial block number use the latest sent block
 	w.accountTree, w.assetTrees, err = tree.InitAccountTree(
 		w.accountModel,
+		w.accountHistoryModel,
 		witnessHeight,
 		treeCtx,
 		w.config.TreeDB.AssetTreeCacheSize,
