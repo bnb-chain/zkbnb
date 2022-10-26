@@ -59,7 +59,7 @@ func GetTxWithStatuses(statuses []int64) GetTxOptionFunc {
 	}
 }
 
-func GetTxWithStartId(id int64) GetTxOptionFunc {
+func GetTxWithFromId(id int64) GetTxOptionFunc {
 	return func(o *getTxOption) {
 		o.Id = id
 	}

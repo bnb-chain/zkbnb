@@ -26,14 +26,14 @@ func NewGetExecutedTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 	}
 }
 
-func (l *GetExecutedTxsLogic) GetExecutedTxs(req *types.ReqGetRangeWithStartId) (*types.Txs, error) {
+func (l *GetExecutedTxsLogic) GetExecutedTxs(req *types.ReqGetRangeWithFromId) (*types.Txs, error) {
 
 	options := []tx.GetTxOptionFunc{
 		tx.GetTxWithStatuses([]int64{tx.StatusExecuted}),
 		tx.GetTxWithDeleted(),
 	}
-	if req.StartId > 0 {
-		options = append(options, tx.GetTxWithStartId(req.StartId))
+	if req.FromId > 0 {
+		options = append(options, tx.GetTxWithFromId(req.FromId))
 	}
 
 	total, err := l.svcCtx.TxPoolModel.GetTxsTotalCount(options...)

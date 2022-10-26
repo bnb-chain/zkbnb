@@ -344,6 +344,29 @@ Get pending transactions
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [Txs](#txs) |
 
+### /api/v1/executedTxs
+
+#### GET
+
+##### Summary
+
+Get executed transactions
+
+##### Parameters
+
+| Name | Located in | Description | Required | Schema |
+| ---- | ---------- | ----------- | -------- | ---- |
+| offset | query | offset, min 0 and max 100000 | Yes | integer |
+| limit | query | limit, min 1 and max 100 | Yes | integer |
+| from_id | query | start from the id | No | integer |
+
+##### Responses
+
+| Code | Description | Schema |
+| ---- | ----------- | ------ |
+| 200 | A successful response. | [Txs](#txs) |
+
+
 ### /api/v1/nextNonce
 
 #### GET
