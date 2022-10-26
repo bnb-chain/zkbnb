@@ -83,8 +83,8 @@ sed -i -e "s/BUSDToken: .*/BUSDToken: ${BUSDContractAddr}/" ${DEPLOY_PATH}/zkbnb
 
 
 
-cd ${DEPLOY_PATH}/zkbnb/
-make api-server
+# cd ${DEPLOY_PATH}/zkbnb/
+# make api-server
 cd ${DEPLOY_PATH}/zkbnb && go mod tidy
 
 echo "6. init tables on database"
