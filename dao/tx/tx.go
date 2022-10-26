@@ -39,7 +39,8 @@ const (
 )
 
 type getTxOption struct {
-	Types []int64
+	Types    []int64
+	Statuses []int64
 }
 
 type GetTxOptionFunc func(*getTxOption)
@@ -50,12 +51,18 @@ func GetTxWithTypes(txTypes []int64) GetTxOptionFunc {
 	}
 }
 
+func GetTxWithStatuses(statuses []int64) GetTxOptionFunc {
+	return func(o *getTxOption) {
+		o.Statuses = statuses
+	}
+}
+
 type (
 	TxModel interface {
 		CreateTxTable() error
 		DropTxTable() error
-		GetTxsTotalCount() (count int64, err error)
-		GetTxs(limit int64, offset int64) (txList []*Tx, err error)
+		GetTxsTotalCount(options ...GetTxOptionFunc) (count int64, err error)
+		GetTxs(limit int64, offset int64, options ...GetTxOptionFunc) (txList []*Tx, err error)
 		GetTxsByAccountIndex(accountIndex int64, limit int64, offset int64, options ...GetTxOptionFunc) (txList []*Tx, err error)
 		GetTxsCountByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (count int64, err error)
 		GetTxByHash(txHash string) (tx *Tx, err error)
@@ -118,8 +125,18 @@ func (m *defaultTxModel) DropTxTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-func (m *defaultTxModel) GetTxsTotalCount() (count int64, err error) {
-	dbTx := m.DB.Table(m.table).Where("deleted_at is NULL").Count(&count)
+func (m *defaultTxModel) GetTxsTotalCount(options ...GetTxOptionFunc) (count int64, err error) {
+	opt := &getTxOption{}
+	for _, f := range options {
+		f(opt)
+	}
+
+	dbTx := m.DB.Table(m.table)
+	if len(opt.Statuses) > 0 {
+		dbTx = dbTx.Where("tx_status IN ?", opt.Statuses)
+	}
+
+	dbTx = dbTx.Where("deleted_at is NULL").Count(&count)
 	if dbTx.Error != nil {
 		if dbTx.Error == types.DbErrNotFound {
 			return 0, nil
@@ -129,8 +146,18 @@ func (m *defaultTxModel) GetTxsTotalCount() (count int64, err error) {
 	return count, nil
 }
 
-func (m *defaultTxModel) GetTxs(limit int64, offset int64) (txList []*Tx, err error) {
-	dbTx := m.DB.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("created_at desc").Find(&txList)
+func (m *defaultTxModel) GetTxs(limit int64, offset int64, options ...GetTxOptionFunc) (txList []*Tx, err error) {
+	opt := &getTxOption{}
+	for _, f := range options {
+		f(opt)
+	}
+
+	dbTx := m.DB.Table(m.table)
+	if len(opt.Statuses) > 0 {
+		dbTx = dbTx.Where("tx_status IN ?", opt.Statuses)
+	}
+
+	dbTx = dbTx.Limit(int(limit)).Offset(int(offset)).Order("created_at desc").Find(&txList)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {

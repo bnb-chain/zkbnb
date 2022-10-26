@@ -12,7 +12,7 @@ import (
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/types"
 )
 
-func (s *ApiServerSuite) TestGetPendingTxs() {
+func (s *ApiServerSuite) TestGetExecutedTxs() {
 
 	type args struct {
 		offset int
@@ -28,7 +28,7 @@ func (s *ApiServerSuite) TestGetPendingTxs() {
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetPendingTxs(s, tt.args.offset, tt.args.limit)
+			httpCode, result := GetExecutedTxs(s, tt.args.offset, tt.args.limit)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				if tt.args.offset < int(result.Total) {
@@ -47,8 +47,8 @@ func (s *ApiServerSuite) TestGetPendingTxs() {
 
 }
 
-func GetPendingTxs(s *ApiServerSuite, offset, limit int) (int, *types.Txs) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/pendingTxs?offset=%d&limit=%d", s.url, offset, limit))
+func GetExecutedTxs(s *ApiServerSuite, offset, limit int) (int, *types.Txs) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/executedTxs?offset=%d&limit=%d", s.url, offset, limit))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 

@@ -136,6 +136,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 			{
 				Method:  http.MethodGet,
+				Path:    "/api/v1/executedTxs",
+				Handler: transaction.GetExecutedTxsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
 				Path:    "/api/v1/accountPendingTxs",
 				Handler: transaction.GetAccountPendingTxsHandler(serverCtx),
 			},

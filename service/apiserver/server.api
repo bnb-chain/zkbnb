@@ -342,7 +342,7 @@ type (
 )
 
 service server-api {
-	@doc "Get transactions"
+	@doc "Get transactions which are already packed into blocks"
 	@handler GetTxs
 	get /api/v1/txs (ReqGetRange) returns (Txs)
 	
@@ -361,6 +361,10 @@ service server-api {
 	@doc "Get pending transactions"
 	@handler GetPendingTxs
 	get /api/v1/pendingTxs (ReqGetRange) returns (Txs)
+	
+	@doc "Get executed transactions which are not packed into blocks"
+	@handler GetExecutedTxs
+	get /api/v1/executedTxs (ReqGetRange) returns (Txs)
 	
 	@doc "Get pending transactions of a specific account"
 	@handler GetAccountPendingTxs
