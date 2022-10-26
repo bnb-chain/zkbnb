@@ -80,8 +80,15 @@ func (m *defaultTxPoolModel) GetTxs(limit int64, offset int64, options ...GetTxO
 	}
 
 	dbTx := m.DB.Table(m.table)
+
+	if opt.WithDeleted {
+		dbTx = dbTx.Unscoped()
+	}
 	if len(opt.Statuses) > 0 {
 		dbTx = dbTx.Where("tx_status IN ?", opt.Statuses)
+	}
+	if opt.Id > 0 {
+		dbTx = dbTx.Where("id >= ?", opt.Id)
 	}
 
 	dbTx = dbTx.Limit(int(limit)).Offset(int(offset)).Order("created_at desc, id desc").Find(&txs)

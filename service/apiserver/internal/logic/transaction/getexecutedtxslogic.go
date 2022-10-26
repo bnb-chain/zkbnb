@@ -26,10 +26,17 @@ func NewGetExecutedTxsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 	}
 }
 
-func (l *GetExecutedTxsLogic) GetExecutedTxs(req *types.ReqGetRange) (*types.Txs, error) {
-	txStatuses := []int64{tx.StatusExecuted}
+func (l *GetExecutedTxsLogic) GetExecutedTxs(req *types.ReqGetRangeWithStartId) (*types.Txs, error) {
 
-	total, err := l.svcCtx.TxPoolModel.GetTxsTotalCount(tx.GetTxWithStatuses(txStatuses))
+	options := []tx.GetTxOptionFunc{
+		tx.GetTxWithStatuses([]int64{tx.StatusExecuted}),
+		tx.GetTxWithDeleted(),
+	}
+	if req.StartId > 0 {
+		options = append(options, tx.GetTxWithStartId(req.StartId))
+	}
+
+	total, err := l.svcCtx.TxPoolModel.GetTxsTotalCount(options...)
 	if err != nil {
 		if err != types2.DbErrNotFound {
 			return nil, types2.AppErrInternal
@@ -44,7 +51,7 @@ func (l *GetExecutedTxsLogic) GetExecutedTxs(req *types.ReqGetRange) (*types.Txs
 		return resp, nil
 	}
 
-	pendingTxs, err := l.svcCtx.TxPoolModel.GetTxs(int64(req.Limit), int64(req.Offset), tx.GetTxWithStatuses(txStatuses))
+	pendingTxs, err := l.svcCtx.TxPoolModel.GetTxs(int64(req.Limit), int64(req.Offset), options...)
 	if err != nil {
 		return nil, types2.AppErrInternal
 	}

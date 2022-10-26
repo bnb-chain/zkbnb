@@ -30,6 +30,12 @@ type ReqGetRange {
 	Limit  uint32 `form:"limit,range=[1:100]"`
 }
 
+type ReqGetRangeWithStartId {
+	Offset  uint32 `form:"offset,range=[0:100000]"`
+	Limit   uint32 `form:"limit,range=[1:100]"`
+	StartId int64  `form:"start_id"`
+}
+
 /* ========================= Account =========================*/
 
 type (
@@ -364,7 +370,7 @@ service server-api {
 	
 	@doc "Get executed transactions which are not packed into blocks"
 	@handler GetExecutedTxs
-	get /api/v1/executedTxs (ReqGetRange) returns (Txs)
+	get /api/v1/executedTxs (ReqGetRangeWithStartId) returns (Txs)
 	
 	@doc "Get pending transactions of a specific account"
 	@handler GetAccountPendingTxs

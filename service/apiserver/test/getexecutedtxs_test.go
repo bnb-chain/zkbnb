@@ -15,20 +15,21 @@ import (
 func (s *ApiServerSuite) TestGetExecutedTxs() {
 
 	type args struct {
-		offset int
-		limit  int
+		offset  int
+		limit   int
+		startId int
 	}
 	tests := []struct {
 		name     string
 		args     args
 		httpCode int
 	}{
-		{"found", args{0, 10}, 200},
+		{"found", args{0, 10, 1}, 200},
 	}
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetExecutedTxs(s, tt.args.offset, tt.args.limit)
+			httpCode, result := GetExecutedTxs(s, tt.args.offset, tt.args.limit, tt.args.startId)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				if tt.args.offset < int(result.Total) {
@@ -47,8 +48,8 @@ func (s *ApiServerSuite) TestGetExecutedTxs() {
 
 }
 
-func GetExecutedTxs(s *ApiServerSuite, offset, limit int) (int, *types.Txs) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/executedTxs?offset=%d&limit=%d", s.url, offset, limit))
+func GetExecutedTxs(s *ApiServerSuite, offset, limit, startId int) (int, *types.Txs) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/v1/executedTxs?offset=%d&limit=%d&start_id=%d", s.url, offset, limit, startId))
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 

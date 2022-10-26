@@ -39,8 +39,10 @@ const (
 )
 
 type getTxOption struct {
-	Types    []int64
-	Statuses []int64
+	Types       []int64
+	Statuses    []int64
+	Id          int64
+	WithDeleted bool
 }
 
 type GetTxOptionFunc func(*getTxOption)
@@ -54,6 +56,18 @@ func GetTxWithTypes(txTypes []int64) GetTxOptionFunc {
 func GetTxWithStatuses(statuses []int64) GetTxOptionFunc {
 	return func(o *getTxOption) {
 		o.Statuses = statuses
+	}
+}
+
+func GetTxWithStartId(id int64) GetTxOptionFunc {
+	return func(o *getTxOption) {
+		o.Id = id
+	}
+}
+
+func GetTxWithDeleted() GetTxOptionFunc {
+	return func(o *getTxOption) {
+		o.WithDeleted = true
 	}
 }
 
