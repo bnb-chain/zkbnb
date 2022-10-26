@@ -368,7 +368,7 @@ service server-api {
 	@handler GetPendingTxs
 	get /api/v1/pendingTxs (ReqGetRange) returns (Txs)
 	
-	@doc "Get executed transactions which are not packed into blocks"
+	@doc "Get executed transactions which previously added to tx pool"
 	@handler GetExecutedTxs
 	get /api/v1/executedTxs (ReqGetRangeWithFromId) returns (Txs)
 	
