@@ -262,6 +262,7 @@ service server-api {
 
 type (
 	Tx {
+		Id             int64  `json:"id"`
 		Hash           string `json:"hash"`
 		Type           int64  `json:"type,range=[1:64]"`
 		Amount         string `json:"amount"`
