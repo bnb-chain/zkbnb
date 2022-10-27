@@ -30,8 +30,6 @@ const (
 	UnprovedBlockWitnessTimeout = 10 * time.Minute
 
 	BlockProcessDelta = 10
-
-	defaultTaskPoolSize = 1000
 )
 
 type Witness struct {
@@ -119,11 +117,6 @@ func (w *Witness) initState() error {
 	if err != nil {
 		return fmt.Errorf("initNftTree error: %v", err)
 	}
-	taskPool, err := ants.NewPool(defaultTaskPoolSize)
-	if err != nil {
-		return err
-	}
-	w.taskPool = taskPool
 	w.helper = utils.NewWitnessHelper(w.treeCtx, w.accountTree, w.nftTree, w.assetTrees, w.accountModel, w.accountHistoryModel)
 	return nil
 }
@@ -157,7 +150,7 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 			return fmt.Errorf("failed to construct block witness, block:%d, err: %v", block.BlockHeight, err)
 		}
 		// Step2: commit trees for witness
-		err = tree.CommitTrees(w.taskPool, uint64(latestVerifiedBlockNr), w.accountTree, w.assetTrees, w.nftTree)
+		err = tree.CommitTrees(uint64(latestVerifiedBlockNr), w.accountTree, w.assetTrees, w.nftTree)
 		if err != nil {
 			return fmt.Errorf("unable to commit trees after txs is executed, block:%d, error: %v", block.BlockHeight, err)
 		}
@@ -165,7 +158,7 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 		err = w.blockWitnessModel.CreateBlockWitness(blockWitness)
 		if err != nil {
 			// rollback trees
-			rollBackErr := tree.RollBackTrees(w.taskPool, uint64(block.BlockHeight)-1, w.accountTree, w.assetTrees, w.nftTree)
+			rollBackErr := tree.RollBackTrees(uint64(block.BlockHeight)-1, w.accountTree, w.assetTrees, w.nftTree)
 			if rollBackErr != nil {
 				logx.Errorf("unable to rollback trees %v", rollBackErr)
 			}

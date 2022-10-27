@@ -10,12 +10,12 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 	lru "github.com/hashicorp/golang-lru"
-	"github.com/panjf2000/ants/v2"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 	"github.com/bnb-chain/zkbnb/common/chain"
+	"github.com/bnb-chain/zkbnb/common/gopool"
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/dbcache"
 	"github.com/bnb-chain/zkbnb/dao/nft"
@@ -479,7 +479,7 @@ type treeUpdateResp struct {
 	err   error
 }
 
-func (s *StateDB) IntermediateRoot(taskPool *ants.Pool, cleanDirty bool) error {
+func (s *StateDB) IntermediateRoot(cleanDirty bool) error {
 	taskNum := 0
 	resultChan := make(chan *treeUpdateResp, 1)
 	defer close(resultChan)
@@ -494,7 +494,7 @@ func (s *StateDB) IntermediateRoot(taskPool *ants.Pool, cleanDirty bool) error {
 		}
 		taskNum++
 		err := func(accountIndex int64, assets []int64) error {
-			return taskPool.Submit(func() {
+			return gopool.Submit(func() {
 				index, leaf, err := s.updateAccountTree(accountIndex, assets)
 				resultChan <- &treeUpdateResp{
 					role:  accountTreeRole,
@@ -515,7 +515,7 @@ func (s *StateDB) IntermediateRoot(taskPool *ants.Pool, cleanDirty bool) error {
 		}
 		taskNum++
 		err := func(nftIndex int64) error {
-			return taskPool.Submit(func() {
+			return gopool.Submit(func() {
 				index, leaf, err := s.updateNftTree(nftIndex)
 				resultChan <- &treeUpdateResp{
 					role:  nftTreeRole,
@@ -550,7 +550,7 @@ func (s *StateDB) IntermediateRoot(taskPool *ants.Pool, cleanDirty bool) error {
 			pendingNftItem = append(pendingNftItem, bsmt.Item{Key: uint64(result.index), Val: result.leaf})
 		}
 	}
-	err := taskPool.Submit(func() {
+	err := gopool.Submit(func() {
 		resultChan <- &treeUpdateResp{
 			role: accountTreeRole,
 			err:  s.AccountTree.MultiSet(pendingAccountItem),
@@ -559,7 +559,7 @@ func (s *StateDB) IntermediateRoot(taskPool *ants.Pool, cleanDirty bool) error {
 	if err != nil {
 		return err
 	}
-	err = taskPool.Submit(func() {
+	err = gopool.Submit(func() {
 		resultChan <- &treeUpdateResp{
 			role: nftTreeRole,
 			err:  s.NftTree.MultiSet(pendingNftItem),

@@ -23,13 +23,14 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/panjf2000/ants/v2"
 	"github.com/pkg/errors"
 
 	curve "github.com/bnb-chain/zkbnb-crypto/ecc/ztwistededwards/tebn254"
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
+
 	common2 "github.com/bnb-chain/zkbnb/common"
+	"github.com/bnb-chain/zkbnb/common/gopool"
 )
 
 func EmptyAccountNodeHash() []byte {
@@ -87,7 +88,6 @@ func EmptyNftNodeHash() []byte {
 }
 
 func CommitTrees(
-	pool *ants.Pool,
 	version uint64,
 	accountTree bsmt.SparseMerkleTree,
 	assetTrees *AssetTreeCache,
@@ -100,7 +100,7 @@ func CommitTrees(
 	errChan := make(chan error, totalTask)
 	defer close(errChan)
 
-	err := pool.Submit(func() {
+	err := gopool.Submit(func() {
 		accPrunedVersion := bsmt.Version(version)
 		if accountTree.LatestVersion() < accPrunedVersion {
 			accPrunedVersion = accountTree.LatestVersion()
@@ -118,7 +118,7 @@ func CommitTrees(
 
 	for _, idx := range assetTreeChanges {
 		err := func(i int64) error {
-			return pool.Submit(func() {
+			return gopool.Submit(func() {
 				asset := assetTrees.Get(i)
 				version := asset.LatestVersion()
 				ver, err := asset.Commit(&version)
@@ -134,7 +134,7 @@ func CommitTrees(
 		}
 	}
 
-	err = pool.Submit(func() {
+	err = gopool.Submit(func() {
 		nftPrunedVersion := bsmt.Version(version)
 		if nftTree.LatestVersion() < nftPrunedVersion {
 			nftPrunedVersion = nftTree.LatestVersion()
@@ -161,7 +161,6 @@ func CommitTrees(
 }
 
 func RollBackTrees(
-	pool *ants.Pool,
 	version uint64,
 	accountTree bsmt.SparseMerkleTree,
 	assetTrees *AssetTreeCache,
@@ -174,7 +173,7 @@ func RollBackTrees(
 	defer close(errChan)
 
 	ver := bsmt.Version(version)
-	err := pool.Submit(func() {
+	err := gopool.Submit(func() {
 		if accountTree.LatestVersion() > ver && !accountTree.IsEmpty() {
 			err := accountTree.Rollback(ver)
 			if err != nil {
@@ -190,7 +189,7 @@ func RollBackTrees(
 
 	for _, idx := range assetTreeChanges {
 		err := func(i int64) error {
-			return pool.Submit(func() {
+			return gopool.Submit(func() {
 				asset := assetTrees.Get(i)
 				version := asset.RecentVersion()
 				err := asset.Rollback(version)
@@ -206,7 +205,7 @@ func RollBackTrees(
 		}
 	}
 
-	err = pool.Submit(func() {
+	err = gopool.Submit(func() {
 		if nftTree.LatestVersion() > ver && !nftTree.IsEmpty() {
 			err := nftTree.Rollback(ver)
 			if err != nil {

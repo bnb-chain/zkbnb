@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/panjf2000/ants/v2"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
@@ -46,10 +45,6 @@ var (
 	})
 )
 
-const (
-	defaultTaskPoolSize = 1000
-)
-
 type ChainConfig struct {
 	Postgres struct {
 		DataSource string
@@ -78,7 +73,6 @@ type BlockChain struct {
 
 	currentBlock *block.Block
 	processor    Processor
-	taskPool     *ants.Pool
 }
 
 func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) {
@@ -117,11 +111,6 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		return nil, err
 	}
 	bc.processor = NewCommitProcessor(bc)
-	taskPool, err := ants.NewPool(defaultTaskPoolSize)
-	if err != nil {
-		return nil, err
-	}
-	bc.taskPool = taskPool
 
 	// register metrics
 	if err := prometheus.Register(updateTreeMetics); err != nil {
@@ -193,7 +182,7 @@ func (bc *BlockChain) CommitNewBlock(blockSize int, createdAt int64) (*block.Blo
 	currentHeight := bc.currentBlock.BlockHeight
 
 	start := time.Now()
-	err = tree.CommitTrees(bc.taskPool, uint64(currentHeight), bc.Statedb.AccountTree, bc.Statedb.AccountAssetTrees, bc.Statedb.NftTree)
+	err = tree.CommitTrees(uint64(currentHeight), bc.Statedb.AccountTree, bc.Statedb.AccountAssetTrees, bc.Statedb.NftTree)
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +228,7 @@ func (bc *BlockChain) commitNewBlock(blockSize int, createdAt int64) (*block.Blo
 
 	start := time.Now()
 	// Intermediate state root.
-	err := s.IntermediateRoot(bc.taskPool, false)
+	err := s.IntermediateRoot(false)
 	if err != nil {
 		return nil, nil, err
 	}
