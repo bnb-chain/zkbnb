@@ -283,6 +283,15 @@ func (w *WitnessHelper) constructAccountWitness(
 				}
 
 				assetCount++
+
+				// cache gas account's assets
+				if accountKey == types.GasAccount {
+					w.gasAccountInfo.AssetInfo[nAsset.AssetId] = &types.AccountAsset{
+						AssetId:                  nAsset.AssetId,
+						Balance:                  nAsset.Balance,
+						OfferCanceledOrFinalized: nAsset.OfferCanceledOrFinalized,
+					}
+				}
 			}
 			if err != nil {
 				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
@@ -330,18 +339,11 @@ func (w *WitnessHelper) constructAccountWitness(
 			return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 		}
 
-		// cache gas account
+		// cache gas account's nonce
 		if accountKey == types.GasAccount {
 			w.gasAccountInfo.Nonce = nonce
 			w.gasAccountInfo.CollectionNonce = collectionNonce
 			w.gasAccountInfo.AssetRoot = common.Bytes2Hex(w.assetTrees.Get(accountKey).Root())
-			for i := 0; i < NbAccountAssetsPerAccount; i++ {
-				w.gasAccountInfo.AssetInfo[cryptoAccount.AssetsInfo[i].AssetId] = &types.AccountAsset{
-					AssetId:                  cryptoAccount.AssetsInfo[i].AssetId,
-					Balance:                  cryptoAccount.AssetsInfo[i].Balance,
-					OfferCanceledOrFinalized: cryptoAccount.AssetsInfo[i].OfferCanceledOrFinalized,
-				}
-			}
 		}
 
 		// set account info before

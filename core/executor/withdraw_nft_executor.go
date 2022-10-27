@@ -134,7 +134,7 @@ func (e *WithdrawNftExecutor) ApplyTransaction() error {
 		CreatorTreasuryRate: newNftInfo.CreatorTreasuryRate,
 		CollectionId:        newNftInfo.CollectionId,
 	})
-	stateCache.SetPendingUpdateGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
+	stateCache.SetPendingGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 

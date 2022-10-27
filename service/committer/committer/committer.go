@@ -260,7 +260,7 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 		return nil, err
 	}
 
-	err = c.bc.Statedb.SyncPendingGasAccount()
+	err = c.bc.Statedb.SyncGasAccountToCacheRedis()
 	if err != nil {
 		return nil, err
 	}

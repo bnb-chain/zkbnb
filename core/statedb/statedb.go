@@ -290,7 +290,7 @@ func (s *StateDB) syncPendingNft(pendingNft map[int64]*nft.L2Nft) error {
 	return nil
 }
 
-func (s *StateDB) SyncPendingGasAccount() error {
+func (s *StateDB) SyncGasAccountToCacheRedis() error {
 	if cacheAccount, ok := s.AccountCache.Get(types.GasAccount); ok {
 		formatAccount := cacheAccount.(*types.AccountInfo)
 		s.applyGasUpdate(formatAccount)
@@ -339,12 +339,13 @@ func (s *StateDB) GetPendingAccount(blockHeight int64) ([]*account.Account, []*a
 
 	handledGasAccount := false
 	for _, formatAccount := range s.PendingAccountMap {
-		if formatAccount.AccountIndex == types.GasAccount && gasChanged {
+		copyAccount := formatAccount.DeepCopy()
+		if copyAccount.AccountIndex == types.GasAccount && gasChanged {
 			handledGasAccount = true
-			s.applyGasUpdate(formatAccount)
+			s.applyGasUpdate(copyAccount)
 		}
 
-		newAccount, err := chain.FromFormatAccountInfo(formatAccount)
+		newAccount, err := chain.FromFormatAccountInfo(copyAccount)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -548,7 +549,7 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64) error {
 		}
 		balance := account.AssetInfo[assetId].Balance
 		if isGasAsset {
-			balance = ffmath.Add(balance, s.GetPendingUpdateGas(assetId))
+			balance = ffmath.Add(balance, s.GetPendingGas(assetId))
 		}
 		assetLeaf, err := tree.ComputeAccountAssetLeafHash(
 			balance.String(),
