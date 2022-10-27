@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/panjf2000/ants/v2"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -42,7 +41,6 @@ type Witness struct {
 	accountTree smt.SparseMerkleTree
 	assetTrees  *tree.AssetTreeCache
 	nftTree     smt.SparseMerkleTree
-	taskPool    *ants.Pool
 
 	// The data access object
 	db                  *gorm.DB
