@@ -91,7 +91,7 @@ func (m *defaultTxPoolModel) GetTxs(limit int64, offset int64, options ...GetTxO
 	}
 	if len(opt.FromHash) > 0 {
 		subTx = subTx.Select("id").Where("tx_hash = ?", opt.FromHash).Limit(1)
-		dbTx = dbTx.Where("id > ?", subTx)
+		dbTx = dbTx.Where("id > (?)", subTx)
 	}
 
 	dbTx = dbTx.Limit(int(limit)).Offset(int(offset)).Order("created_at desc, id desc").Find(&txs)
@@ -127,7 +127,7 @@ func (m *defaultTxPoolModel) GetTxsTotalCount(options ...GetTxOptionFunc) (count
 	}
 	if len(opt.FromHash) > 0 {
 		subTx = subTx.Select("id").Where("tx_hash = ?", opt.FromHash).Limit(1)
-		dbTx = dbTx.Where("id > ?", subTx)
+		dbTx = dbTx.Where("id > (?)", subTx)
 	}
 
 	dbTx = dbTx.Where("deleted_at is NULL").Count(&count)

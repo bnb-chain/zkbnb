@@ -25,7 +25,7 @@ func (s *ApiServerSuite) TestGetExecutedTxs() {
 		httpCode int
 	}{
 		{"found", args{0, 10, "hash"}, 200},
-		{"found", args{0, 10, ""}, 200},
+		{"found without hash", args{0, 10, ""}, 200},
 	}
 
 	for _, tt := range tests {
