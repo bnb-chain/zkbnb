@@ -35,7 +35,6 @@ func ConvertTx(tx *tx.Tx) *types.Tx {
 	}
 
 	return &types.Tx{
-		Id:             int64(tx.ID),
 		Hash:           tx.TxHash,
 		Type:           tx.TxType,
 		GasFee:         tx.GasFee,
