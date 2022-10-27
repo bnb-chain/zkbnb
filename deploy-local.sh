@@ -222,7 +222,7 @@ ChainConfig:
   ConfirmBlocksCount: 0
   MaxWaitingTime: 120
   MaxBlockCount: 4
-  Sk: ${BSC_TESTNET_PRIVATE_KEY}
+  Sk: "${BSC_TESTNET_PRIVATE_KEY}"
   GasLimit: 5000000
   GasPrice: 0
 
