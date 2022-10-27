@@ -339,16 +339,18 @@ func (s *StateDB) GetPendingAccount(blockHeight int64) ([]*account.Account, []*a
 
 	handledGasAccount := false
 	for _, formatAccount := range s.PendingAccountMap {
-		copyAccount := formatAccount.DeepCopy()
-		if copyAccount.AccountIndex == types.GasAccount && gasChanged {
+		if formatAccount.AccountIndex == types.GasAccount && gasChanged {
 			handledGasAccount = true
-			s.applyGasUpdate(copyAccount)
+			// to avoid change account in PendingAccountMap
+			formatAccount = formatAccount.DeepCopy()
+			s.applyGasUpdate(formatAccount)
 		}
 
-		newAccount, err := chain.FromFormatAccountInfo(copyAccount)
+		newAccount, err := chain.FromFormatAccountInfo(formatAccount)
 		if err != nil {
 			return nil, nil, err
 		}
+
 		pendingAccount = append(pendingAccount, newAccount)
 		pendingAccountHistory = append(pendingAccountHistory, &account.AccountHistory{
 			AccountIndex:    newAccount.AccountIndex,
