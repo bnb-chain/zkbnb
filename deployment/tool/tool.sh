@@ -11,7 +11,6 @@ KEY_PATH=${WORKDIR}/.zkbnb
 ZkBNB_CONTRACT_REPO=https://github.com/bnb-chain/zkbnb-contract.git
 ZkBNB_CRYPTO_REPO=https://github.com/bnb-chain/zkbnb-crypto.git
 BSC_TESTNET_ENDPOINT=https://data-seed-prebsc-1-s1.binance.org:8545
-BSC_TESTNET_PRIVATE_KEY=acbaa26******************************a88367d9
 ZKBNB_CRYPTO_BRANCH=$(cat $WORKDIR/../go.mod | grep github.com/bnb-chain/zkbnb-crypto | awk -F" " '{print $2}' | awk -F"-" '{if ($3 != "") print $3;else print $1;}')
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
