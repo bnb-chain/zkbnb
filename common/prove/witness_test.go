@@ -78,7 +78,7 @@ func TestConstructWitness(t *testing.T) {
 }
 
 func getWitnessHelper(blockHeight int64) (*WitnessHelper, error) {
-	ctx, err := tree.NewContext("witness", tree.MemoryDB, false, nil, nil)
+	ctx, err := tree.NewContext("witness", tree.MemoryDB, false, 128, nil, nil)
 	if err != nil {
 		return nil, err
 	}

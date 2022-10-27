@@ -88,7 +88,7 @@ func (w *Witness) initState() error {
 	}
 
 	// dbinitializer tree database
-	treeCtx, err := tree.NewContext("witness", w.config.TreeDB.Driver, false, &w.config.TreeDB.LevelDBOption, &w.config.TreeDB.RedisDBOption)
+	treeCtx, err := tree.NewContext("witness", w.config.TreeDB.Driver, false, w.config.TreeDB.RoutinePoolSize, &w.config.TreeDB.LevelDBOption, &w.config.TreeDB.RedisDBOption)
 	if err != nil {
 		return err
 	}

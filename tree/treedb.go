@@ -186,14 +186,19 @@ func SetNamespace(
 }
 
 const (
-	treeRoutinePoolSize = 10240
+	defaultTreeRoutinePoolSize = 10240
 )
 
-func NewContext(name string, driver Driver, reload bool,
+func NewContext(
+	name string, driver Driver,
+	reload bool, routineSize int,
 	levelDBOption *LevelDBOption,
 	redisDBOption *RedisDBOption) (*Context, error) {
 
-	pool, err := ants.NewPool(treeRoutinePoolSize)
+	if routineSize <= 0 {
+		routineSize = defaultTreeRoutinePoolSize
+	}
+	pool, err := ants.NewPool(routineSize)
 	if err != nil {
 		return nil, err
 	}

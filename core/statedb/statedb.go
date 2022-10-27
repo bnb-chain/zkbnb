@@ -553,7 +553,7 @@ func (s *StateDB) IntermediateRoot(taskPool *ants.Pool, cleanDirty bool) error {
 	err := taskPool.Submit(func() {
 		resultChan <- &treeUpdateResp{
 			role: accountTreeRole,
-			err:  s.AccountTree.MultiSet(pendingAccountItem...),
+			err:  s.AccountTree.MultiSet(pendingAccountItem),
 		}
 	})
 	if err != nil {
@@ -562,7 +562,7 @@ func (s *StateDB) IntermediateRoot(taskPool *ants.Pool, cleanDirty bool) error {
 	err = taskPool.Submit(func() {
 		resultChan <- &treeUpdateResp{
 			role: nftTreeRole,
-			err:  s.NftTree.MultiSet(pendingNftItem...),
+			err:  s.NftTree.MultiSet(pendingNftItem),
 		}
 	})
 	if err != nil {
@@ -613,7 +613,7 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64) (int64, 
 		pendingUpdateAssetItem = append(pendingUpdateAssetItem, bsmt.Item{Key: uint64(assetId), Val: assetLeaf})
 	}
 
-	err = s.AccountAssetTrees.Get(accountIndex).MultiSet(pendingUpdateAssetItem...)
+	err = s.AccountAssetTrees.Get(accountIndex).MultiSet(pendingUpdateAssetItem)
 	if err != nil {
 		return accountIndex, nil, fmt.Errorf("update asset tree failed: %v", err)
 	}

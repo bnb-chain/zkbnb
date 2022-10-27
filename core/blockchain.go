@@ -62,7 +62,9 @@ type ChainConfig struct {
 		//nolint:staticcheck
 		LevelDBOption tree.LevelDBOption `json:",optional"`
 		//nolint:staticcheck
-		RedisDBOption      tree.RedisDBOption `json:",optional"`
+		RedisDBOption tree.RedisDBOption `json:",optional"`
+		//nolint:staticcheck
+		RoutinePoolSize    int `json:",optional"`
 		AssetTreeCacheSize int
 	}
 }
@@ -104,7 +106,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		curHeight--
 	}
 	redisCache := dbcache.NewRedisCache(config.CacheRedis[0].Host, config.CacheRedis[0].Pass, 15*time.Minute)
-	treeCtx, err := tree.NewContext(moduleName, config.TreeDB.Driver, false, &config.TreeDB.LevelDBOption, &config.TreeDB.RedisDBOption)
+	treeCtx, err := tree.NewContext(moduleName, config.TreeDB.Driver, false, config.TreeDB.RoutinePoolSize, &config.TreeDB.LevelDBOption, &config.TreeDB.RedisDBOption)
 	if err != nil {
 		return nil, err
 	}
