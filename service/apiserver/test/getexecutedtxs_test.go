@@ -12,23 +12,25 @@ import (
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/types"
 )
 
-func (s *ApiServerSuite) TestGetPendingTxs() {
+func (s *ApiServerSuite) TestGetExecutedTxs() {
 
 	type args struct {
-		offset int
-		limit  int
+		offset   int
+		limit    int
+		fromHash string
 	}
 	tests := []struct {
 		name     string
 		args     args
 		httpCode int
 	}{
-		{"found", args{0, 10}, 200},
+		{"found", args{0, 10, "hash"}, 200},
+		{"found without hash", args{0, 10, ""}, 200},
 	}
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetPendingTxs(s, tt.args.offset, tt.args.limit)
+			httpCode, result := GetExecutedTxs(s, tt.args.offset, tt.args.limit, tt.args.fromHash)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				if tt.args.offset < int(result.Total) {
@@ -47,8 +49,12 @@ func (s *ApiServerSuite) TestGetPendingTxs() {
 
 }
 
-func GetPendingTxs(s *ApiServerSuite, offset, limit int) (int, *types.Txs) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/pendingTxs?offset=%d&limit=%d", s.url, offset, limit))
+func GetExecutedTxs(s *ApiServerSuite, offset, limit int, from_hash string) (int, *types.Txs) {
+	url := fmt.Sprintf("%s/api/v1/executedTxs?offset=%d&limit=%d", s.url, offset, limit)
+	if len(from_hash) > 0 {
+		url += fmt.Sprintf("&from_hash=%s", from_hash)
+	}
+	resp, err := http.Get(url)
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 
