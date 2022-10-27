@@ -116,8 +116,13 @@ func (c *Fullnode) Run() {
 				}
 			}
 
+			err = c.bc.StateDB().IntermediateRoot(false)
+			if err != nil {
+				panic("calculate state root failed")
+			}
+
 			if c.bc.Statedb.StateRoot != l2Block.StateRoot {
-				panic(fmt.Sprintf("state root not matched between statedb and l2block: %d", l2Block.Height))
+				panic(fmt.Sprintf("state root not matched between statedb and l2block: %d, local: %s, remote: %s", l2Block.Height, c.bc.Statedb.StateRoot, l2Block.StateRoot))
 			}
 
 			curBlock, err = c.processNewBlock(curBlock, int(l2Block.Size))
