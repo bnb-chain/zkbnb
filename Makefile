@@ -17,7 +17,7 @@ IMAGE_NAME=ghcr.io/bnb-chain/zkbnb
 API_SERVER = ./service/apiserver
 
 api-server:
-	cd $(API_SERVER) && ${GOBIN}/goctl api go -api server.api -dir .;
+	cd $(API_SERVER) && goctl api go -api server.api -dir .;
 	@echo "Done generate server api";
 
 deploy:

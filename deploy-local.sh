@@ -47,7 +47,7 @@ fi
 
 echo '3. start verify_parse for ZkBNBVerifier'
 cd ${DEPLOY_PATH}/zkbnb/service/prover/
-python3 verifier_parse.py ${KEY_PATH}/ZkBNBVerifier1.sol,${KEY_PATH}/ZkBNBVerifier10.sol 1,10 ${DEPLOY_PATH}/zkbnb-contract/contracts/ZkBNBVerifier.sol
+python3 verifier_parse.py ${KEY_PATH}/ZkBNBVerifier10.sol 10 ${DEPLOY_PATH}/zkbnb-contract/contracts/ZkBNBVerifier.sol
 
 
 
@@ -60,7 +60,7 @@ echo 'latest block number = ' $blockNumber
 
 echo '4-2. deploy contracts, register and deposit on BSC Testnet'
 cd ${DEPLOY_PATH}
-cd ./zkbnb-contract &&  echo "BSC_TESTNET_PRIVATE_KEY=${BSC_TESTNET_PRIVATE_KEY}" > .env && npm install
+cd ./zkbnb-contract &&  echo "BSC_TESTNET_PRIVATE_KEY=${BSC_TESTNET_PRIVATE_KEY}" > .env && yarn install
 npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deploy.js
 echo 'Recorded latest contract addresses into ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json'
 
@@ -78,23 +78,19 @@ sed -i -e "s/ZkBNBProxy: .*/ZkBNBProxy: ${ZkBNBContractAddr}/" ${DEPLOY_PATH}/zk
 GovernanceContractAddr=`cat ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json  | jq -r '.governance'`
 sed -i -e "s/Governance: .*/Governance: ${GovernanceContractAddr}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
 
+BUSDContractAddr=`cat ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json  | jq -r '.BUSDToken'`
+sed -i -e "s/BUSDToken: .*/BUSDToken: ${BUSDContractAddr}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
 
 
-cd ${DEPLOY_PATH}/zkbnb/
-make api-server
+
+# cd ${DEPLOY_PATH}/zkbnb/
+# make api-server
 cd ${DEPLOY_PATH}/zkbnb && go mod tidy
-
 
 echo "6. init tables on database"
 go run ./cmd/zkbnb/main.go db initialize --dsn "host=localhost user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable" --contractAddr ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
 
-
-cd ${DEPLOY_PATH}/zkbnb/
-make api-server
-
-
-sleep 30s
-
+sleep 10s
 
 echo "7. run prover"
 
@@ -108,11 +104,11 @@ CacheRedis:
     Type: node
 
 KeyPath:
-  ProvingKeyPath: [${KEY_PATH}/zkbnb1.pk, ${KEY_PATH}/zkbnb10.pk]
-  VerifyingKeyPath: [${KEY_PATH}/zkbnb1.vk, ${KEY_PATH}/zkbnb10.vk]
+  ProvingKeyPath: [${KEY_PATH}/zkbnb10.pk]
+  VerifyingKeyPath: [${KEY_PATH}/zkbnb10.vk]
 
 BlockConfig:
-  OptionalBlockSizes: [1, 10]
+  OptionalBlockSizes: [10]
 
 TreeDB:
   Driver: memorydb
@@ -195,7 +191,7 @@ CacheRedis:
     Type: node
 
 BlockConfig:
-  OptionalBlockSizes: [1, 10]
+  OptionalBlockSizes: [10]
 
 TreeDB:
   Driver: memorydb
@@ -226,7 +222,7 @@ ChainConfig:
   ConfirmBlocksCount: 0
   MaxWaitingTime: 120
   MaxBlockCount: 4
-  Sk: "acbaa269bd7573ff12361be4b97201aef019776ea13384681d4e5ba6a88367d9"
+  Sk: ${BSC_TESTNET_PRIVATE_KEY}
   GasLimit: 5000000
   GasPrice: 0
 

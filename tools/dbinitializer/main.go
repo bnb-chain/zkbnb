@@ -51,6 +51,7 @@ type contractAddr struct {
 	ZnsResolverProxy   string
 	ZkBNBProxy         string
 	UpgradeGateKeeper  string
+	BUSDToken          string
 	LEGToken           string
 	REYToken           string
 	ERC721             string
@@ -129,8 +130,19 @@ func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC
 	bnbGasFee[types.TxTypeCancelOffer] = 12000000000000
 	bnbGasFee[types.TxTypeWithdrawNft] = 20000000000000
 
+	busdGasFee := make(map[int]int64)
+	busdGasFee[types.TxTypeTransfer] = 10000000000000
+	busdGasFee[types.TxTypeWithdraw] = 20000000000000
+	busdGasFee[types.TxTypeCreateCollection] = 10000000000000
+	busdGasFee[types.TxTypeMintNft] = 10000000000000
+	busdGasFee[types.TxTypeTransferNft] = 12000000000000
+	busdGasFee[types.TxTypeAtomicMatch] = 18000000000000
+	busdGasFee[types.TxTypeCancelOffer] = 12000000000000
+	busdGasFee[types.TxTypeWithdrawNft] = 20000000000000
+
 	gasFeeConfig := make(map[uint32]map[int]int64) // asset id -> (tx type -> gas fee value)
 	gasFeeConfig[types.BNBAssetId] = bnbGasFee     // bnb asset
+	gasFeeConfig[types.BUSDAssetId] = busdGasFee   // busd asset
 
 	gas, err := json.Marshal(gasFeeConfig)
 	if err != nil {
@@ -191,13 +203,22 @@ func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC
 	}
 }
 
-func initAssetsInfo() []*asset.Asset {
+func initAssetsInfo(busdAddress string) []*asset.Asset {
 	return []*asset.Asset{
 		{
-			AssetId:     0,
+			AssetId:     types.BNBAssetId,
 			L1Address:   "0x00",
 			AssetName:   "BNB",
 			AssetSymbol: "BNB",
+			Decimals:    18,
+			Status:      0,
+			IsGasAsset:  asset.IsGasAsset,
+		},
+		{
+			AssetId:     types.BUSDAssetId,
+			L1Address:   busdAddress,
+			AssetName:   "BUSD",
+			AssetSymbol: "BUSD",
 			Decimals:    18,
 			Status:      0,
 			IsGasAsset:  asset.IsGasAsset,
@@ -241,7 +262,7 @@ func initTable(dao *dao, svrConf *contractAddr, bscTestNetworkRPC, localTestNetw
 	assert.Nil(nil, dao.l1RollupTModel.CreateL1RollupTxTable())
 	assert.Nil(nil, dao.nftModel.CreateL2NftTable())
 	assert.Nil(nil, dao.nftHistoryModel.CreateL2NftHistoryTable())
-	rowsAffected, err := dao.assetModel.CreateAssets(initAssetsInfo())
+	rowsAffected, err := dao.assetModel.CreateAssets(initAssetsInfo(svrConf.BUSDToken))
 	if err != nil {
 		panic(err)
 	}
