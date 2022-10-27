@@ -658,7 +658,7 @@ func (s *StateDB) GetGasConfig() (map[uint32]map[int]int64, error) {
 			return nil, errors.New("invalid gas fee asset")
 		}
 		gasFeeValue = cfgGasFee.Value
-		s.redisCache.Set(context.Background(), dbcache.GasConfigKey, gasFeeValue)
+		_ = s.redisCache.Set(context.Background(), dbcache.GasConfigKey, gasFeeValue)
 	}
 
 	m := make(map[uint32]map[int]int64)
