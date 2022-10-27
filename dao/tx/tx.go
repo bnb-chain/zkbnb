@@ -41,7 +41,7 @@ const (
 type getTxOption struct {
 	Types       []int64
 	Statuses    []int64
-	Id          int64
+	FromHash    string
 	WithDeleted bool
 }
 
@@ -59,9 +59,9 @@ func GetTxWithStatuses(statuses []int64) GetTxOptionFunc {
 	}
 }
 
-func GetTxWithFromId(id int64) GetTxOptionFunc {
+func GetTxWithFromHash(hash string) GetTxOptionFunc {
 	return func(o *getTxOption) {
-		o.Id = id
+		o.FromHash = hash
 	}
 }
 

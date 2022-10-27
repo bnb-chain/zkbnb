@@ -30,10 +30,10 @@ type ReqGetRange {
 	Limit  uint32 `form:"limit,range=[1:100]"`
 }
 
-type ReqGetRangeWithFromId {
-	Offset uint32 `form:"offset,range=[0:100000]"`
-	Limit  uint32 `form:"limit,range=[1:100]"`
-	FromId int64  `form:"from_id,optional"`
+type ReqGetRangeWithFromHash {
+	Offset   uint32 `form:"offset,range=[0:100000]"`
+	Limit    uint32 `form:"limit,range=[1:100]"`
+	FromHash string `form:"from_hash,optional"`
 }
 
 /* ========================= Account =========================*/
@@ -371,7 +371,7 @@ service server-api {
 	
 	@doc "Get executed transactions which previously added to tx pool"
 	@handler GetExecutedTxs
-	get /api/v1/executedTxs (ReqGetRangeWithFromId) returns (Txs)
+	get /api/v1/executedTxs (ReqGetRangeWithFromHash) returns (Txs)
 	
 	@doc "Get pending transactions of a specific account"
 	@handler GetAccountPendingTxs

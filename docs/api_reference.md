@@ -358,7 +358,7 @@ Get executed transactions
 | ---- | ---------- | ----------- | -------- | ---- |
 | offset | query | offset, min 0 and max 100000 | Yes | integer |
 | limit | query | limit, min 1 and max 100 | Yes | integer |
-| from_id | query | start from the id | No | integer |
+| from_hash | query | start from the hash tx | No | string |
 
 ##### Responses
 
