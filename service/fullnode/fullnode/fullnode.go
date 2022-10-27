@@ -102,6 +102,22 @@ func (c *Fullnode) Run() {
 				continue
 			}
 
+			// create time needs to be set, otherwise tx will fail if expire time is set
+			c.bc.CurrentBlock().CreatedAt = time.UnixMilli(l2Block.CommittedAt)
+			// set info
+			if l2Block.Status >= block.StatusCommitted {
+				c.bc.CurrentBlock().CommittedAt = l2Block.CommittedAt
+				c.bc.CurrentBlock().CommittedTxHash = l2Block.CommittedTxHash
+				c.bc.CurrentBlock().BlockCommitment = l2Block.Commitment
+			}
+			if l2Block.Status == block.StatusVerifiedAndExecuted {
+				c.bc.CurrentBlock().VerifiedAt = l2Block.VerifiedAt
+				c.bc.CurrentBlock().VerifiedTxHash = l2Block.VerifiedTxHash
+			}
+
+			// clean cache
+			c.bc.Statedb.PurgeCache(curBlock.StateRoot)
+
 			for _, blockTx := range l2Block.Txs {
 				newTx := &tx.Tx{
 					TxHash: blockTx.Hash, // Would be computed in prepare method of executors.
@@ -116,9 +132,9 @@ func (c *Fullnode) Run() {
 				}
 			}
 
-			err = c.bc.StateDB().IntermediateRoot(false)
+			err = c.bc.Statedb.IntermediateRoot(true)
 			if err != nil {
-				panic("calculate state root failed")
+				panic(fmt.Sprint("calculate state root failed, err", err))
 			}
 
 			if c.bc.Statedb.StateRoot != l2Block.StateRoot {
@@ -130,7 +146,6 @@ func (c *Fullnode) Run() {
 				panic(fmt.Sprintf("new block failed, block height: %d, Error: %s", l2Block.Height, err.Error()))
 			}
 			logx.Infof("created new block on fullnode, height=%d, blockSize=%d", curBlock.BlockHeight, l2Block.Size)
-
 		case <-c.quitCh:
 			return
 		}
@@ -149,6 +164,18 @@ func (c *Fullnode) processNewBlock(curBlock *block.Block, blockSize int) (*block
 		return nil, err
 	}
 	blockStates.Block.BlockStatus = c.config.SyncBlockStatus
+
+	// sync gas account
+	err = c.bc.Statedb.SyncPendingGasAccount()
+	if err != nil {
+		return nil, err
+	}
+
+	// sync pending value to caches
+	err = c.bc.Statedb.SyncStateCacheToRedis()
+	if err != nil {
+		panic("sync redis cache failed: " + err.Error())
+	}
 
 	// update db
 	err = c.bc.DB().DB.Transaction(func(tx *gorm.DB) error {
