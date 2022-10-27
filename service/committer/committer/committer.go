@@ -222,6 +222,9 @@ func (c *Committer) restoreExecutedTxs() (*block.Block, error) {
 		return curBlock, nil
 	}
 
+	if err := c.bc.StateDB().MarkGasAccountAsPending(); err != nil {
+		return nil, err
+	}
 	for _, executedTx := range executedTxs {
 		err = c.bc.ApplyTransaction(executedTx)
 		if err != nil {
@@ -260,7 +263,7 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 		return nil, err
 	}
 
-	err = c.bc.Statedb.SyncGasAccountToCacheRedis()
+	err = c.bc.Statedb.SyncGasAccountToRedis()
 	if err != nil {
 		return nil, err
 	}

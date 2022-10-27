@@ -22,7 +22,6 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb-crypto/circuit"
 	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/types"
@@ -711,7 +710,6 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 			CollectionNonce: w.gasAccountInfo.CollectionNonce,
 			AssetRoot:       w.assetTrees.Get(gasAccountIndex).Root(),
 		}
-		logx.Infof("old gas account asset root: %s", common.Bytes2Hex(w.assetTrees.Get(gasAccountIndex).Root()))
 
 		accountMerkleProofs, err := w.accountTree.GetProof(uint64(gasAccountIndex))
 		if err != nil {
@@ -755,9 +753,7 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 			if err != nil {
 				return nil, err
 			}
-
 		}
-		logx.Infof("new gas account asset root: %s", common.Bytes2Hex(w.assetTrees.Get(gasAccountIndex).Root()))
 
 		nAccountHash, err := tree.ComputeAccountLeafHash(
 			w.gasAccountInfo.AccountNameHash,

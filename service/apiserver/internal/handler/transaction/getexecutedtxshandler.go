@@ -3,10 +3,11 @@ package transaction
 import (
 	"net/http"
 
+	"github.com/zeromicro/go-zero/rest/httpx"
+
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/logic/transaction"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/types"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 func GetExecutedTxsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {

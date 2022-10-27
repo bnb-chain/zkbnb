@@ -263,6 +263,19 @@ func (s *StateDB) GetNft(nftIndex int64) (*nft.L2Nft, error) {
 	return nft, nil
 }
 
+// MarkGasAccountAsPending will mark gas account as pending account. Putting gas account is pending
+// account will unify many codes and remove some tricky logics.
+func (s *StateDB) MarkGasAccountAsPending() error {
+	gasAccount, err := s.GetFormatAccount(types.GasAccount)
+	if err != nil && err != types.AppErrAccountNotFound {
+		return err
+	}
+	if err == nil {
+		s.PendingAccountMap[types.GasAccount] = gasAccount
+	}
+	return nil
+}
+
 func (s *StateDB) syncPendingAccount(pendingAccount map[int64]*types.AccountInfo) error {
 	for index, formatAccount := range pendingAccount {
 		account, err := chain.FromFormatAccountInfo(formatAccount)
@@ -290,10 +303,9 @@ func (s *StateDB) syncPendingNft(pendingNft map[int64]*nft.L2Nft) error {
 	return nil
 }
 
-func (s *StateDB) SyncGasAccountToCacheRedis() error {
+func (s *StateDB) SyncGasAccountToRedis() error {
 	if cacheAccount, ok := s.AccountCache.Get(types.GasAccount); ok {
 		formatAccount := cacheAccount.(*types.AccountInfo)
-		s.applyGasUpdate(formatAccount)
 		account, err := chain.FromFormatAccountInfo(formatAccount)
 		if err != nil {
 			return err
@@ -302,7 +314,6 @@ func (s *StateDB) SyncGasAccountToCacheRedis() error {
 		if err != nil {
 			return fmt.Errorf("cache to redis failed: %v", err)
 		}
-		s.AccountCache.Add(account.AccountIndex, formatAccount)
 	}
 	return nil
 }
@@ -329,50 +340,10 @@ func (s *StateDB) GetPendingAccount(blockHeight int64) ([]*account.Account, []*a
 	pendingAccount := make([]*account.Account, 0)
 	pendingAccountHistory := make([]*account.AccountHistory, 0)
 
-	gasChanged := false
-	for _, delta := range s.StateCache.PendingGasMap {
-		if delta.Cmp(types.ZeroBigInt) > 0 {
-			gasChanged = true
-			break
-		}
-	}
-
-	handledGasAccount := false
 	for _, formatAccount := range s.PendingAccountMap {
-		if formatAccount.AccountIndex == types.GasAccount && gasChanged {
-			handledGasAccount = true
-			// to avoid change account in PendingAccountMap
-			formatAccount = formatAccount.DeepCopy()
+		if formatAccount.AccountIndex == types.GasAccount {
 			s.applyGasUpdate(formatAccount)
 		}
-
-		newAccount, err := chain.FromFormatAccountInfo(formatAccount)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		pendingAccount = append(pendingAccount, newAccount)
-		pendingAccountHistory = append(pendingAccountHistory, &account.AccountHistory{
-			AccountIndex:    newAccount.AccountIndex,
-			Nonce:           newAccount.Nonce,
-			CollectionNonce: newAccount.CollectionNonce,
-			AssetInfo:       newAccount.AssetInfo,
-			AssetRoot:       newAccount.AssetRoot,
-			L2BlockHeight:   blockHeight, // TODO: ensure this should be the new block's height.
-		})
-	}
-
-	if !handledGasAccount && gasChanged {
-		gasAccount, err := s.GetAccount(types.GasAccount)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		formatAccount, err := chain.ToFormatAccountInfo(gasAccount)
-		if err != nil {
-			return nil, nil, err
-		}
-		s.applyGasUpdate(formatAccount)
 
 		newAccount, err := chain.FromFormatAccountInfo(formatAccount)
 		if err != nil {
@@ -687,6 +658,7 @@ func (s *StateDB) GetGasConfig() (map[uint32]map[int]int64, error) {
 			return nil, errors.New("invalid gas fee asset")
 		}
 		gasFeeValue = cfgGasFee.Value
+		s.redisCache.Set(context.Background(), dbcache.GasConfigKey, gasFeeValue)
 	}
 
 	m := make(map[uint32]map[int]int64)
