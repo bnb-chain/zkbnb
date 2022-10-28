@@ -82,7 +82,6 @@ require (
 	golang.org/x/crypto v0.0.0-20220321153916-2c7772ba3064 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20220422154200-b37d22cd5731 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637 // indirect
@@ -91,7 +90,7 @@ require (
 )
 
 require (
-	github.com/bnb-chain/zkbnb-crypto v0.0.8-0.20221026031758-e17661beb2af
+	github.com/bnb-chain/zkbnb-crypto v0.0.8
 	github.com/bnb-chain/zkbnb-eth-rpc v0.0.2
 	github.com/bnb-chain/zkbnb-smt v0.0.2
 	github.com/consensys/gnark v0.7.0
@@ -108,8 +107,8 @@ require (
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
 	golang.org/x/sys v0.0.0-20220927170352-d9d178bc13c6 // indirect
-	google.golang.org/grpc v1.46.2
-	google.golang.org/protobuf v1.28.1
+	google.golang.org/grpc v1.46.2 // indirect
+	google.golang.org/protobuf v1.28.1 // indirect
 	gorm.io/driver/postgres v1.3.6
 	k8s.io/apimachinery v0.24.1 // indirect
 )
