@@ -130,7 +130,7 @@ func (m *defaultTxPoolModel) GetTxsTotalCount(options ...GetTxOptionFunc) (count
 		dbTx = dbTx.Where("id > (?)", subTx)
 	}
 
-	dbTx = dbTx.Where("deleted_at is NULL").Count(&count)
+	dbTx = dbTx.Count(&count)
 	if dbTx.Error != nil {
 		return 0, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
