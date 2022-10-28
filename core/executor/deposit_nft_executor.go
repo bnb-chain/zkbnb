@@ -57,7 +57,7 @@ func (e *DepositNftExecutor) Prepare() error {
 
 	// Mark the tree states that would be affected in this executor.
 	e.MarkNftDirty(txInfo.NftIndex)
-	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{0}) // Prepare asset 0 for generate an empty tx detail.
+	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{types.EmptyAccountAssetId}) // Prepare asset 0 for generate an empty tx detail.
 	return e.BaseExecutor.Prepare()
 }
 
@@ -70,7 +70,7 @@ func (e *DepositNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
 		return err
 	}
 	if nft.NftContentHash != types.EmptyNftContentHash {
-		return errors.New("invalid nft index, already exist")
+		return types.AppErrNftAlreadyExist
 	}
 
 	return nil
@@ -149,14 +149,14 @@ func (e *DepositNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	// user info
 	accountOrder := int64(0)
 	order := int64(0)
-	baseBalance := depositAccount.AssetInfo[0]
+	baseBalance := depositAccount.AssetInfo[types.EmptyAccountAssetId]
 	deltaBalance := &types.AccountAsset{
-		AssetId:                  0,
+		AssetId:                  types.EmptyAccountAssetId,
 		Balance:                  big.NewInt(0),
 		OfferCanceledOrFinalized: big.NewInt(0),
 	}
 	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:         0,
+		AssetId:         types.EmptyAccountAssetId,
 		AssetType:       types.FungibleAssetType,
 		AccountIndex:    txInfo.AccountIndex,
 		AccountName:     depositAccount.AccountName,

@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/panjf2000/ants/v2"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb-crypto/circuit"
+	bsmt "github.com/bnb-chain/zkbnb-smt"
 	smt "github.com/bnb-chain/zkbnb-smt"
 	utils "github.com/bnb-chain/zkbnb/common/prove"
 	"github.com/bnb-chain/zkbnb/dao/account"
@@ -29,8 +29,6 @@ const (
 	UnprovedBlockWitnessTimeout = 10 * time.Minute
 
 	BlockProcessDelta = 10
-
-	defaultTaskPoolSize = 1000
 )
 
 type Witness struct {
@@ -43,7 +41,6 @@ type Witness struct {
 	accountTree smt.SparseMerkleTree
 	assetTrees  *tree.AssetTreeCache
 	nftTree     smt.SparseMerkleTree
-	taskPool    *ants.Pool
 
 	// The data access object
 	db                  *gorm.DB
@@ -87,12 +84,12 @@ func (w *Witness) initState() error {
 	}
 
 	// dbinitializer tree database
-	treeCtx := &tree.Context{
-		Name:          "witness",
-		Driver:        w.config.TreeDB.Driver,
-		LevelDBOption: &w.config.TreeDB.LevelDBOption,
-		RedisDBOption: &w.config.TreeDB.RedisDBOption,
+	treeCtx, err := tree.NewContext("witness", w.config.TreeDB.Driver, false, w.config.TreeDB.RoutinePoolSize, &w.config.TreeDB.LevelDBOption, &w.config.TreeDB.RedisDBOption)
+	if err != nil {
+		return err
 	}
+
+	treeCtx.SetOptions(bsmt.BatchSizeLimit(3 * 1024 * 1024))
 	err = tree.SetupTreeDB(treeCtx)
 	if err != nil {
 		return fmt.Errorf("init tree database failed %v", err)
@@ -118,11 +115,6 @@ func (w *Witness) initState() error {
 	if err != nil {
 		return fmt.Errorf("initNftTree error: %v", err)
 	}
-	taskPool, err := ants.NewPool(defaultTaskPoolSize)
-	if err != nil {
-		return err
-	}
-	w.taskPool = taskPool
 	w.helper = utils.NewWitnessHelper(w.treeCtx, w.accountTree, w.nftTree, w.assetTrees, w.accountModel, w.accountHistoryModel)
 	return nil
 }
@@ -156,7 +148,7 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 			return fmt.Errorf("failed to construct block witness, block:%d, err: %v", block.BlockHeight, err)
 		}
 		// Step2: commit trees for witness
-		err = tree.CommitTrees(w.taskPool, uint64(latestVerifiedBlockNr), w.accountTree, w.assetTrees, w.nftTree)
+		err = tree.CommitTrees(uint64(latestVerifiedBlockNr), w.accountTree, w.assetTrees, w.nftTree)
 		if err != nil {
 			return fmt.Errorf("unable to commit trees after txs is executed, block:%d, error: %v", block.BlockHeight, err)
 		}
@@ -164,7 +156,7 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 		err = w.blockWitnessModel.CreateBlockWitness(blockWitness)
 		if err != nil {
 			// rollback trees
-			rollBackErr := tree.RollBackTrees(w.taskPool, uint64(block.BlockHeight)-1, w.accountTree, w.assetTrees, w.nftTree)
+			rollBackErr := tree.RollBackTrees(uint64(block.BlockHeight)-1, w.accountTree, w.assetTrees, w.nftTree)
 			if rollBackErr != nil {
 				logx.Errorf("unable to rollback trees %v", rollBackErr)
 			}

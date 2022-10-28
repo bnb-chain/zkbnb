@@ -39,7 +39,7 @@ func (l *GetBlockLogic) GetBlock(req *types.ReqGetBlock) (resp *types.Block, err
 		var height int64
 		height, err = strconv.ParseInt(req.Value, 10, 64)
 		if err != nil || height < 0 {
-			return nil, types2.AppErrInvalidParam.RefineError("invalid value for block height")
+			return nil, types2.AppErrInvalidBlockHeight
 		}
 		block, err = l.svcCtx.MemCache.GetBlockByHeightWithFallback(height, func() (interface{}, error) {
 			return l.svcCtx.BlockModel.GetBlockByHeight(height)
@@ -51,10 +51,9 @@ func (l *GetBlockLogic) GetBlock(req *types.ReqGetBlock) (resp *types.Block, err
 	default:
 		return nil, types2.AppErrInvalidParam.RefineError("param by should be height|commitment")
 	}
-
 	if err != nil {
 		if err == types2.DbErrNotFound {
-			return nil, types2.AppErrNotFound
+			return nil, types2.AppErrBlockNotFound
 		}
 		return nil, types2.AppErrInternal
 	}

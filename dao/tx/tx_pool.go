@@ -31,12 +31,12 @@ type (
 	TxPoolModel interface {
 		CreatePoolTxTable() error
 		DropPoolTxTable() error
-		GetTxs(limit int64, offset int64) (txs []*Tx, err error)
-		GetTxsTotalCount() (count int64, err error)
+		GetTxs(limit int64, offset int64, options ...GetTxOptionFunc) (txs []*Tx, err error)
+		GetTxsTotalCount(options ...GetTxOptionFunc) (count int64, err error)
 		GetTxByTxHash(hash string) (txs *Tx, err error)
 		GetTxsByStatus(status int) (txs []*Tx, err error)
 		CreateTxs(txs []*Tx) error
-		GetPendingTxsByAccountIndex(accountIndex int64) (txs []*Tx, err error)
+		GetPendingTxsByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (txs []*Tx, err error)
 		GetMaxNonceByAccountIndex(accountIndex int64) (nonce int64, err error)
 		CreateTxsInTransact(tx *gorm.DB, txs []*Tx) error
 		UpdateTxsInTransact(tx *gorm.DB, txs []*Tx) error
@@ -73,8 +73,28 @@ func (m *defaultTxPoolModel) DropPoolTxTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 
-func (m *defaultTxPoolModel) GetTxs(limit int64, offset int64) (txs []*Tx, err error) {
-	dbTx := m.DB.Table(m.table).Where("tx_status = ?", StatusPending).Limit(int(limit)).Offset(int(offset)).Order("created_at desc, id desc").Find(&txs)
+func (m *defaultTxPoolModel) GetTxs(limit int64, offset int64, options ...GetTxOptionFunc) (txs []*Tx, err error) {
+	opt := &getTxOption{}
+	for _, f := range options {
+		f(opt)
+	}
+
+	dbTx := m.DB.Table(m.table)
+	subTx := m.DB.Table(m.table)
+
+	if opt.WithDeleted {
+		dbTx = dbTx.Unscoped()
+		subTx = subTx.Unscoped()
+	}
+	if len(opt.Statuses) > 0 {
+		dbTx = dbTx.Where("tx_status IN ?", opt.Statuses)
+	}
+	if len(opt.FromHash) > 0 {
+		subTx = subTx.Select("id").Where("tx_hash = ?", opt.FromHash).Limit(1)
+		dbTx = dbTx.Where("id > (?)", subTx)
+	}
+
+	dbTx = dbTx.Limit(int(limit)).Offset(int(offset)).Order("created_at desc, id desc").Find(&txs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	}
@@ -89,8 +109,28 @@ func (m *defaultTxPoolModel) GetTxsByStatus(status int) (txs []*Tx, err error) {
 	return txs, nil
 }
 
-func (m *defaultTxPoolModel) GetTxsTotalCount() (count int64, err error) {
-	dbTx := m.DB.Table(m.table).Where("tx_status = ? and deleted_at is NULL", StatusPending).Count(&count)
+func (m *defaultTxPoolModel) GetTxsTotalCount(options ...GetTxOptionFunc) (count int64, err error) {
+	opt := &getTxOption{}
+	for _, f := range options {
+		f(opt)
+	}
+
+	dbTx := m.DB.Table(m.table)
+	subTx := m.DB.Table(m.table)
+
+	if opt.WithDeleted {
+		dbTx = dbTx.Unscoped()
+		subTx = subTx.Unscoped()
+	}
+	if len(opt.Statuses) > 0 {
+		dbTx = dbTx.Where("tx_status IN ?", opt.Statuses)
+	}
+	if len(opt.FromHash) > 0 {
+		subTx = subTx.Select("id").Where("tx_hash = ?", opt.FromHash).Limit(1)
+		dbTx = dbTx.Where("id > (?)", subTx)
+	}
+
+	dbTx = dbTx.Count(&count)
 	if dbTx.Error != nil {
 		return 0, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
@@ -122,9 +162,18 @@ func (m *defaultTxPoolModel) CreateTxs(txs []*Tx) error {
 	})
 }
 
-func (m *defaultTxPoolModel) GetPendingTxsByAccountIndex(accountIndex int64) (txs []*Tx, err error) {
-	dbTx := m.DB.Table(m.table).Where("tx_status = ? AND account_index = ?", StatusPending, accountIndex).
-		Order("created_at, id").Find(&txs)
+func (m *defaultTxPoolModel) GetPendingTxsByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (txs []*Tx, err error) {
+	opt := &getTxOption{}
+	for _, f := range options {
+		f(opt)
+	}
+
+	dbTx := m.DB.Table(m.table).Where("tx_status = ? AND account_index = ?", StatusPending, accountIndex)
+	if len(opt.Types) > 0 {
+		dbTx = dbTx.Where("tx_type IN ?", opt.Types)
+	}
+
+	dbTx = dbTx.Order("created_at, id").Find(&txs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {

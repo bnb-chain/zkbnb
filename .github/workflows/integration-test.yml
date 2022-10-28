@@ -38,8 +38,9 @@ jobs:
           make docker-image
           sudo mkdir -p ./deployment/.zkbnb
           sudo cp /server/test.keyfile/* ./deployment/.zkbnb
+          source <(sudo cat /server/.env)
           blockNr=$(sudo bash ./deployment/tool/tool.sh blockHeight)
-          sudo bash ./deployment/tool/tool.sh all
+          sudo BSC_TESTNET_PRIVATE_KEY=${BSC_TESTNET_PRIVATE_KEY} bash ./deployment/tool/tool.sh all
           sudo bash ./deployment/docker-compose/docker-compose.sh down
           sudo bash ./deployment/docker-compose/docker-compose.sh up $blockNr
           echo "Contract addresses"
@@ -68,7 +69,7 @@ jobs:
           go test -v -failfast -parallel 2 -run TestL.*Suite  -timeout 30m
 
       - name: notification via slack
-        if: always()
+        if: cancelled() == false
         run: |
           export SLACK_WEBHOOK_URL=`sudo cat /home/ec2-user/actions-runner/slack-config.json | jq -r '.slack'`
           export JOB_STATUS=${{ job.status }}

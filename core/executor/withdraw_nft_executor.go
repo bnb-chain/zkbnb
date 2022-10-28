@@ -50,7 +50,7 @@ func (e *WithdrawNftExecutor) Prepare() error {
 	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{txInfo.GasFeeAssetId})
 	e.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
 	if nftInfo.CreatorAccountIndex != types.NilAccountIndex {
-		e.MarkAccountAssetsDirty(nftInfo.CreatorAccountIndex, []int64{})
+		e.MarkAccountAssetsDirty(nftInfo.CreatorAccountIndex, []int64{types.EmptyAccountAssetId})
 	}
 	err = e.BaseExecutor.Prepare()
 	if err != nil {
@@ -89,7 +89,7 @@ func (e *WithdrawNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
 		return err
 	}
 	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
-		return errors.New("balance is not enough")
+		return types.AppErrBalanceNotEnough
 	}
 
 	nftInfo, err := e.bc.StateDB().GetNft(txInfo.NftIndex)
@@ -97,7 +97,7 @@ func (e *WithdrawNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
 		return err
 	}
 	if nftInfo.OwnerAccountIndex != txInfo.AccountIndex {
-		return errors.New("account is not owner of the nft")
+		return types.AppErrNotNftOwner
 	}
 
 	return nil
@@ -134,7 +134,7 @@ func (e *WithdrawNftExecutor) ApplyTransaction() error {
 		CreatorTreasuryRate: newNftInfo.CreatorTreasuryRate,
 		CollectionId:        newNftInfo.CollectionId,
 	})
-	stateCache.SetPendingUpdateGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
+	stateCache.SetPendingGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 
@@ -264,13 +264,13 @@ func (e *WithdrawNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	order++
 	accountOrder++
 	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:      txInfo.GasFeeAssetId,
+		AssetId:      types.EmptyAccountAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.CreatorAccountIndex,
 		AccountName:  creatorAccount.AccountName,
-		Balance:      creatorAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
+		Balance:      creatorAccount.AssetInfo[types.EmptyAccountAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.GasFeeAssetId,
+			types.EmptyAccountAssetId,
 			types.ZeroBigInt,
 			types.ZeroBigInt,
 		).String(),

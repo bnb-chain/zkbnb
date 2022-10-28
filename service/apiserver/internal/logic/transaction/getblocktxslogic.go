@@ -43,7 +43,7 @@ func (l *GetBlockTxsLogic) GetBlockTxs(req *types.ReqGetBlockTxs) (resp *types.T
 		height := int64(0)
 		height, err = strconv.ParseInt(req.Value, 10, 64)
 		if err != nil || height < 0 {
-			return nil, types2.AppErrInvalidParam.RefineError("invalid value for block height")
+			return nil, types2.AppErrInvalidBlockHeight
 		}
 		block, err = l.svcCtx.MemCache.GetBlockByHeightWithFallback(height, func() (interface{}, error) {
 			return l.svcCtx.BlockModel.GetBlockByHeight(height)
@@ -68,6 +68,9 @@ func (l *GetBlockTxsLogic) GetBlockTxs(req *types.ReqGetBlockTxs) (resp *types.T
 		tx := utils.ConvertTx(dbTx)
 		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
 		tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
+		if tx.ToAccountIndex >= 0 {
+			tx.ToAccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.ToAccountIndex)
+		}
 		resp.Txs = append(resp.Txs, tx)
 	}
 	return resp, nil

@@ -39,5 +39,6 @@ const (
 )
 
 var (
-	ZeroBigInt = big.NewInt(0)
+	ZeroBigInt          = big.NewInt(0)
+	EmptyAccountAssetId = int64(0)
 )

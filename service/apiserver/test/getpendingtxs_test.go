@@ -12,7 +12,7 @@ import (
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/types"
 )
 
-func (s *ApiServerSuite) TestGetPoolTxs() {
+func (s *ApiServerSuite) TestGetPendingTxs() {
 
 	type args struct {
 		offset int

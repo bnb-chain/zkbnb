@@ -103,14 +103,14 @@ func (c *StateCache) SetPendingNft(nftIndex int64, nft *nft.L2Nft) {
 	c.PendingNftMap[nftIndex] = nft
 }
 
-func (c *StateCache) GetPendingUpdateGas(assetId int64) *big.Int {
+func (c *StateCache) GetPendingGas(assetId int64) *big.Int {
 	if delta, ok := c.PendingGasMap[assetId]; ok {
 		return delta
 	}
 	return types.ZeroBigInt
 }
 
-func (c *StateCache) SetPendingUpdateGas(assetId int64, balanceDelta *big.Int) {
+func (c *StateCache) SetPendingGas(assetId int64, balanceDelta *big.Int) {
 	if _, ok := c.PendingGasMap[assetId]; !ok {
 		c.PendingGasMap[assetId] = types.ZeroBigInt
 	}

@@ -47,7 +47,7 @@ fi
 
 echo '3. start verify_parse for ZkBNBVerifier'
 cd ${DEPLOY_PATH}/zkbnb/service/prover/
-python3 verifier_parse.py ${KEY_PATH}/ZkBNBVerifier1.sol,${KEY_PATH}/ZkBNBVerifier10.sol 1,10 ${DEPLOY_PATH}/zkbnb-contract/contracts/ZkBNBVerifier.sol
+python3 verifier_parse.py ${KEY_PATH}/ZkBNBVerifier10.sol 10 ${DEPLOY_PATH}/zkbnb-contract/contracts/ZkBNBVerifier.sol
 
 
 
@@ -60,7 +60,7 @@ echo 'latest block number = ' $blockNumber
 
 echo '4-2. deploy contracts, register and deposit on BSC Testnet'
 cd ${DEPLOY_PATH}
-cd ./zkbnb-contract &&  echo "BSC_TESTNET_PRIVATE_KEY=${BSC_TESTNET_PRIVATE_KEY}" > .env && npm install
+cd ./zkbnb-contract &&  echo "BSC_TESTNET_PRIVATE_KEY=${BSC_TESTNET_PRIVATE_KEY}" > .env && yarn install
 npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deploy.js
 echo 'Recorded latest contract addresses into ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json'
 
@@ -78,23 +78,19 @@ sed -i -e "s/ZkBNBProxy: .*/ZkBNBProxy: ${ZkBNBContractAddr}/" ${DEPLOY_PATH}/zk
 GovernanceContractAddr=`cat ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json  | jq -r '.governance'`
 sed -i -e "s/Governance: .*/Governance: ${GovernanceContractAddr}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
 
+BUSDContractAddr=`cat ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json  | jq -r '.BUSDToken'`
+sed -i -e "s/BUSDToken: .*/BUSDToken: ${BUSDContractAddr}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
 
 
-cd ${DEPLOY_PATH}/zkbnb/
-make api-server
+
+# cd ${DEPLOY_PATH}/zkbnb/
+# make api-server
 cd ${DEPLOY_PATH}/zkbnb && go mod tidy
-
 
 echo "6. init tables on database"
 go run ./cmd/zkbnb/main.go db initialize --dsn "host=localhost user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable" --contractAddr ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
 
-
-cd ${DEPLOY_PATH}/zkbnb/
-make api-server
-
-
-sleep 30s
-
+sleep 10s
 
 echo "7. run prover"
 
@@ -108,11 +104,11 @@ CacheRedis:
     Type: node
 
 KeyPath:
-  ProvingKeyPath: [${KEY_PATH}/zkbnb1.pk, ${KEY_PATH}/zkbnb10.pk]
-  VerifyingKeyPath: [${KEY_PATH}/zkbnb1.vk, ${KEY_PATH}/zkbnb10.vk]
+  ProvingKeyPath: [${KEY_PATH}/zkbnb10.pk]
+  VerifyingKeyPath: [${KEY_PATH}/zkbnb10.vk]
 
 BlockConfig:
-  OptionalBlockSizes: [1, 10]
+  OptionalBlockSizes: [10]
 
 TreeDB:
   Driver: memorydb
@@ -120,7 +116,7 @@ TreeDB:
 " > ${DEPLOY_PATH}/zkbnb/service/prover/etc/config.yaml
 
 echo -e "
-go run ./cmd/zkbnb/main.go prover --config ${DEPLOY_PATH}/zkbnb/service/prover/etc/config.yaml
+go run ./cmd/zkbnb/main.go prover --config ${DEPLOY_PATH}/zkbnb/service/prover/etc/config.yaml --pprof --pprof.addr 0.0.0.0 --pprof.port 6060 --metrics --metrics.addr 0.0.0.0 --metrics.port 6060
 " > run_prover.sh
 pm2 start --name prover "./run_prover.sh"
 
@@ -146,7 +142,7 @@ TreeDB:
 " > ${DEPLOY_PATH}/zkbnb/service/witness/etc/config.yaml
 
 echo -e "
-go run ./cmd/zkbnb/main.go witness --config ${DEPLOY_PATH}/zkbnb/service/witness/etc/config.yaml
+go run ./cmd/zkbnb/main.go witness --config ${DEPLOY_PATH}/zkbnb/service/witness/etc/config.yaml --pprof --pprof.addr 0.0.0.0 --pprof.port 6061 --metrics --metrics.addr 0.0.0.0 --metrics.port 6061
 " > run_witness.sh
 pm2 start --name witness "./run_witness.sh"
 
@@ -177,7 +173,7 @@ TreeDB:
 " > ${DEPLOY_PATH}/zkbnb/service/monitor/etc/config.yaml
 
 echo -e "
-go run ./cmd/zkbnb/main.go monitor --config ${DEPLOY_PATH}/zkbnb/service/monitor/etc/config.yaml
+go run ./cmd/zkbnb/main.go monitor --config ${DEPLOY_PATH}/zkbnb/service/monitor/etc/config.yaml --pprof --pprof.addr 0.0.0.0 --pprof.port 6062 --metrics --metrics.addr 0.0.0.0 --metrics.port 6062
 " > run_monitor.sh
 pm2 start --name monitor "./run_monitor.sh"
 
@@ -195,7 +191,7 @@ CacheRedis:
     Type: node
 
 BlockConfig:
-  OptionalBlockSizes: [1, 10]
+  OptionalBlockSizes: [10]
 
 TreeDB:
   Driver: memorydb
@@ -203,7 +199,7 @@ TreeDB:
 " > ${DEPLOY_PATH}/zkbnb/service/committer/etc/config.yaml
 
 echo -e "
-go run ./cmd/zkbnb/main.go committer --config ${DEPLOY_PATH}/zkbnb/service/committer/etc/config.yaml
+go run ./cmd/zkbnb/main.go committer --config ${DEPLOY_PATH}/zkbnb/service/committer/etc/config.yaml --pprof --pprof.addr 0.0.0.0 --pprof.port 6063 --metrics --metrics.addr 0.0.0.0 --metrics.port 6063
 " > run_committer.sh
 pm2 start --name committer "./run_committer.sh"
 
@@ -225,9 +221,9 @@ ChainConfig:
   #NetworkRPCSysConfigName: "LocalTestNetworkRpc"
   ConfirmBlocksCount: 0
   MaxWaitingTime: 120
-  MaxBlockCount: 3
-  Sk: "107f9d2a50ce2d8337e0c5220574e9fcf2bf60002da5acf07718f4d531ea3faa"
-  GasLimit: 20000000
+  MaxBlockCount: 4
+  Sk: "${BSC_TESTNET_PRIVATE_KEY}"
+  GasLimit: 5000000
   GasPrice: 0
 
 TreeDB:
@@ -236,7 +232,7 @@ TreeDB:
 " > ${DEPLOY_PATH}/zkbnb/service/sender/etc/config.yaml
 
 echo -e "
-go run ./cmd/zkbnb/main.go sender --config ${DEPLOY_PATH}/zkbnb/service/sender/etc/config.yaml
+go run ./cmd/zkbnb/main.go sender --config ${DEPLOY_PATH}/zkbnb/service/sender/etc/config.yaml --pprof --pprof.addr 0.0.0.0 --pprof.port 6064 --metrics --metrics.addr 0.0.0.0 --metrics.port 6064
 " > run_sender.sh
 pm2 start --name sender "./run_sender.sh"
 
@@ -251,13 +247,10 @@ Port: 8888
 TxPool:
   MaxPendingTxCount: 10000
 
-Prometheus:
-  Host: 0.0.0.0
-  Port: 9091
-  Path: /metrics
-
 Postgres:
   DataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  MaxConn: 100
+  MaxIdle: 10
 
 CacheRedis:
   - Host: 127.0.0.1:6379
@@ -285,6 +278,6 @@ MemCache:
   " > ${DEPLOY_PATH}/zkbnb/service/apiserver/etc/config.yaml
 
 echo -e "
-go run ./cmd/zkbnb/main.go apiserver --config ${DEPLOY_PATH}/zkbnb/service/apiserver/etc/config.yaml
+go run ./cmd/zkbnb/main.go apiserver --config ${DEPLOY_PATH}/zkbnb/service/apiserver/etc/config.yaml --pprof --pprof.addr 0.0.0.0 --pprof.port 6065 --metrics --metrics.addr 0.0.0.0 --metrics.port 6065
 " > run_apiserver.sh
 pm2 start --name apiserver "./run_apiserver.sh"

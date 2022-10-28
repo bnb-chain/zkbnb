@@ -39,7 +39,7 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 	case queryByIndex:
 		index, err = strconv.ParseInt(req.Value, 10, 64)
 		if err != nil || index < 0 {
-			return nil, types2.AppErrInvalidParam.RefineError("invalid value for account index")
+			return nil, types2.AppErrInvalidAccountIndex
 		}
 	case queryByName:
 		index, err = l.svcCtx.MemCache.GetAccountIndexByName(req.Value)
@@ -51,7 +51,7 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 
 	if err != nil {
 		if err == types2.DbErrNotFound {
-			return nil, types2.AppErrNotFound
+			return nil, types2.AppErrAccountNotFound
 		}
 		return nil, types2.AppErrInternal
 	}
@@ -59,7 +59,7 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 	account, err := l.svcCtx.StateFetcher.GetLatestAccount(index)
 	if err != nil {
 		if err == types2.DbErrNotFound {
-			return nil, types2.AppErrNotFound
+			return nil, types2.AppErrAccountNotFound
 		}
 		return nil, types2.AppErrInternal
 	}

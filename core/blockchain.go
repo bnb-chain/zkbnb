@@ -8,12 +8,13 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/panjf2000/ants/v2"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
+	bsmt "github.com/bnb-chain/zkbnb-smt"
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/core/statedb"
 	sdb "github.com/bnb-chain/zkbnb/core/statedb"
@@ -26,10 +27,22 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/sysconfig"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/tree"
+	"github.com/bnb-chain/zkbnb/types"
 )
 
-const (
-	defaultTaskPoolSize = 1000
+// metrics
+var (
+	updateTreeMetics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "update_smt",
+		Help:      "update smt tree operation time",
+	})
+
+	commitTreeMetics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "commit_smt",
+		Help:      "commit smt tree operation time",
+	})
 )
 
 type ChainConfig struct {
@@ -44,7 +57,9 @@ type ChainConfig struct {
 		//nolint:staticcheck
 		LevelDBOption tree.LevelDBOption `json:",optional"`
 		//nolint:staticcheck
-		RedisDBOption      tree.RedisDBOption `json:",optional"`
+		RedisDBOption tree.RedisDBOption `json:",optional"`
+		//nolint:staticcheck
+		RoutinePoolSize    int `json:",optional"`
 		AssetTreeCacheSize int
 	}
 }
@@ -58,7 +73,6 @@ type BlockChain struct {
 
 	currentBlock *block.Block
 	processor    Processor
-	taskPool     *ants.Pool
 }
 
 func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) {
@@ -86,23 +100,25 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		curHeight--
 	}
 	redisCache := dbcache.NewRedisCache(config.CacheRedis[0].Host, config.CacheRedis[0].Pass, 15*time.Minute)
-	treeCtx := &tree.Context{
-		Name:          moduleName,
-		Driver:        config.TreeDB.Driver,
-		LevelDBOption: &config.TreeDB.LevelDBOption,
-		RedisDBOption: &config.TreeDB.RedisDBOption,
+	treeCtx, err := tree.NewContext(moduleName, config.TreeDB.Driver, false, config.TreeDB.RoutinePoolSize, &config.TreeDB.LevelDBOption, &config.TreeDB.RedisDBOption)
+	if err != nil {
+		return nil, err
 	}
 
+	treeCtx.SetOptions(bsmt.BatchSizeLimit(3 * 1024 * 1024))
 	bc.Statedb, err = sdb.NewStateDB(treeCtx, bc.ChainDB, redisCache, &config.CacheConfig, config.TreeDB.AssetTreeCacheSize, bc.currentBlock.StateRoot, curHeight)
 	if err != nil {
 		return nil, err
 	}
 	bc.processor = NewCommitProcessor(bc)
-	taskPool, err := ants.NewPool(defaultTaskPoolSize)
-	if err != nil {
-		return nil, err
+
+	// register metrics
+	if err := prometheus.Register(updateTreeMetics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register updateTreeMetics error: %v", err)
 	}
-	bc.taskPool = taskPool
+	if err := prometheus.Register(commitTreeMetics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register commitTreeMetics error: %v", err)
+	}
 
 	return bc, nil
 }
@@ -136,7 +152,7 @@ func (bc *BlockChain) ApplyTransaction(tx *tx.Tx) error {
 	return bc.processor.Process(tx)
 }
 
-func (bc *BlockChain) ProposeNewBlock() (*block.Block, error) {
+func (bc *BlockChain) InitNewBlock() (*block.Block, error) {
 	newBlock := &block.Block{
 		Model: gorm.Model{
 			// The block timestamp will be set when the first transaction executed.
@@ -149,7 +165,8 @@ func (bc *BlockChain) ProposeNewBlock() (*block.Block, error) {
 
 	bc.currentBlock = newBlock
 	bc.Statedb.PurgeCache(bc.currentBlock.StateRoot)
-	return newBlock, nil
+	err := bc.Statedb.MarkGasAccountAsPending()
+	return newBlock, err
 }
 
 func (bc *BlockChain) CurrentBlock() *block.Block {
@@ -164,10 +181,12 @@ func (bc *BlockChain) CommitNewBlock(blockSize int, createdAt int64) (*block.Blo
 
 	currentHeight := bc.currentBlock.BlockHeight
 
-	err = tree.CommitTrees(bc.taskPool, uint64(currentHeight), bc.Statedb.AccountTree, bc.Statedb.AccountAssetTrees, bc.Statedb.NftTree)
+	start := time.Now()
+	err = tree.CommitTrees(uint64(currentHeight), bc.Statedb.AccountTree, bc.Statedb.AccountAssetTrees, bc.Statedb.NftTree)
 	if err != nil {
 		return nil, err
 	}
+	commitTreeMetics.Set(float64(time.Since(start).Milliseconds()))
 
 	pendingAccount, pendingAccountHistory, err := bc.Statedb.GetPendingAccount(currentHeight)
 	if err != nil {
@@ -207,11 +226,13 @@ func (bc *BlockChain) commitNewBlock(blockSize int, createdAt int64) (*block.Blo
 		}
 	}
 
+	start := time.Now()
 	// Intermediate state root.
 	err := s.IntermediateRoot(false)
 	if err != nil {
 		return nil, nil, err
 	}
+	updateTreeMetics.Set(float64(time.Since(start).Milliseconds()))
 
 	// Align pub data.
 	s.AlignPubData(blockSize)
@@ -258,11 +279,11 @@ func (bc *BlockChain) commitNewBlock(blockSize int, createdAt int64) (*block.Blo
 func (bc *BlockChain) VerifyExpiredAt(expiredAt int64) error {
 	if !bc.dryRun {
 		if expiredAt < bc.currentBlock.CreatedAt.UnixMilli() {
-			return errors.New("invalid expired time")
+			return types.AppErrInvalidExpireTime
 		}
 	} else {
 		if expiredAt < time.Now().UnixMilli() {
-			return errors.New("invalid expired time")
+			return types.AppErrInvalidExpireTime
 		}
 	}
 	return nil
@@ -275,7 +296,7 @@ func (bc *BlockChain) VerifyNonce(accountIndex int64, nonce int64) error {
 			return err
 		}
 		if nonce != expectNonce {
-			return errors.New("invalid nonce")
+			return types.AppErrInvalidNonce
 		}
 	} else {
 		pendingNonce, err := bc.Statedb.GetPendingNonce(accountIndex)
@@ -283,7 +304,7 @@ func (bc *BlockChain) VerifyNonce(accountIndex int64, nonce int64) error {
 			return err
 		}
 		if pendingNonce != nonce {
-			return errors.New("invalid nonce")
+			return types.AppErrInvalidNonce
 		}
 	}
 	return nil
@@ -295,7 +316,7 @@ func (bc *BlockChain) VerifyGas(gasAccountIndex, gasFeeAssetId int64, txType int
 		return err
 	}
 	if gasAccountIndex != cfgGasAccountIndex {
-		return errors.New("invalid gas fee account")
+		return types.AppErrInvalidGasFeeAccount
 	}
 
 	cfgGasFee, err := bc.Statedb.GetGasConfig()
@@ -306,7 +327,7 @@ func (bc *BlockChain) VerifyGas(gasAccountIndex, gasFeeAssetId int64, txType int
 	gasAsset, ok := cfgGasFee[uint32(gasFeeAssetId)]
 	if !ok {
 		logx.Errorf("cannot find gas config for asset id: %d", gasFeeAssetId)
-		return errors.New("invalid gas fee asset")
+		return types.AppErrInvalidGasFeeAsset
 	}
 
 	if !skipGasAmtChk {
@@ -315,7 +336,7 @@ func (bc *BlockChain) VerifyGas(gasAccountIndex, gasFeeAssetId int64, txType int
 			return errors.New("invalid tx type")
 		}
 		if gasFeeAmount.Cmp(big.NewInt(gasFee)) < 0 {
-			return errors.New("invalid gas fee amount")
+			return types.AppErrInvalidGasFeeAmount
 		}
 	}
 	return nil

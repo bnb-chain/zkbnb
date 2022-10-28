@@ -58,7 +58,7 @@ func (e *DepositExecutor) VerifyInputs(skipGasAmtChk bool) error {
 	txInfo := e.txInfo
 
 	if txInfo.AssetAmount.Cmp(types.ZeroBigInt) < 0 {
-		return errors.New("invalid asset amount")
+		return types.AppErrInvalidAssetAmount
 	}
 
 	return nil

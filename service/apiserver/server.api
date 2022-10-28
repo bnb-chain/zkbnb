@@ -30,6 +30,12 @@ type ReqGetRange {
 	Limit  uint32 `form:"limit,range=[1:100]"`
 }
 
+type ReqGetRangeWithFromHash {
+	Offset   uint32 `form:"offset,range=[0:100000]"`
+	Limit    uint32 `form:"limit,range=[1:100]"`
+	FromHash string `form:"from_hash,optional"`
+}
+
 /* ========================= Account =========================*/
 
 type (
@@ -256,28 +262,30 @@ service server-api {
 
 type (
 	Tx {
-		Hash          string `json:"hash"`
-		Type          int64  `json:"type,range=[1:64]"`
-		Amount        string `json:"amount"`
-		Info          string `json:"info"`
-		Status        int64  `json:"status"`
-		Index         int64  `json:"index"`
-		GasFeeAssetId int64  `json:"gas_fee_asset_id"`
-		GasFee        string `json:"gas_fee"`
-		NftIndex      int64  `json:"nft_index"`
-		CollectionId  int64  `json:"collection_id"`
-		AssetId       int64  `json:"asset_id"`
-		AssetName     string `json:"asset_name"`
-		NativeAddress string `json:"native_address"`
-		ExtraInfo     string `json:"extra_info"`
-		Memo          string `json:"memo"`
-		AccountIndex  int64  `json:"account_index"`
-		AccountName   string `json:"account_name"`
-		Nonce         int64  `json:"nonce"`
-		ExpiredAt     int64  `json:"expire_at"`
-		BlockHeight   int64  `json:"block_height"`
-		CreatedAt     int64  `json:"created_at"`
-		StateRoot     string `json:"state_root"`
+		Hash           string `json:"hash"`
+		Type           int64  `json:"type,range=[1:64]"`
+		Amount         string `json:"amount"`
+		Info           string `json:"info"`
+		Status         int64  `json:"status"`
+		Index          int64  `json:"index"`
+		GasFeeAssetId  int64  `json:"gas_fee_asset_id"`
+		GasFee         string `json:"gas_fee"`
+		NftIndex       int64  `json:"nft_index"`
+		CollectionId   int64  `json:"collection_id"`
+		AssetId        int64  `json:"asset_id"`
+		AssetName      string `json:"asset_name"`
+		NativeAddress  string `json:"native_address"`
+		ExtraInfo      string `json:"extra_info"`
+		Memo           string `json:"memo"`
+		AccountIndex   int64  `json:"account_index"`
+		AccountName    string `json:"account_name"`
+		Nonce          int64  `json:"nonce"`
+		ExpiredAt      int64  `json:"expire_at"`
+		BlockHeight    int64  `json:"block_height"`
+		CreatedAt      int64  `json:"created_at"`
+		StateRoot      string `json:"state_root"`
+		ToAccountIndex int64  `json:"to_account_index"`
+		ToAccountName  string `json:"to_account_name"`
 	}
 
 	Txs {
@@ -308,10 +316,11 @@ type (
 	}
 
 	ReqGetAccountTxs {
-		By     string `form:"by,options=account_index|account_name|account_pk"`
-		Value  string `form:"value"`
-		Offset uint16 `form:"offset,range=[0:100000]"`
-		Limit  uint16 `form:"limit,range=[1:100]"`
+		By     string  `form:"by,options=account_index|account_name|account_pk"`
+		Value  string  `form:"value"`
+		Types  []int64 `form:"types,optional"`
+		Offset uint16  `form:"offset,range=[0:100000]"`
+		Limit  uint16  `form:"limit,range=[1:100]"`
 	}
 
 	ReqGetTx {
@@ -324,8 +333,9 @@ type (
 	}
 
 	ReqGetAccountPendingTxs {
-		By    string `form:"by,options=account_index|account_name|account_pk"`
-		Value string `form:"value"`
+		By    string  `form:"by,options=account_index|account_name|account_pk"`
+		Value string  `form:"value"`
+		Types []int64 `form:"types,optional"`
 	}
 
 	ReqGetNextNonce {
@@ -338,7 +348,7 @@ type (
 )
 
 service server-api {
-	@doc "Get transactions"
+	@doc "Get transactions which are already packed into blocks"
 	@handler GetTxs
 	get /api/v1/txs (ReqGetRange) returns (Txs)
 	
@@ -357,6 +367,10 @@ service server-api {
 	@doc "Get pending transactions"
 	@handler GetPendingTxs
 	get /api/v1/pendingTxs (ReqGetRange) returns (Txs)
+	
+	@doc "Get executed transactions which previously added to tx pool"
+	@handler GetExecutedTxs
+	get /api/v1/executedTxs (ReqGetRangeWithFromHash) returns (Txs)
 	
 	@doc "Get pending transactions of a specific account"
 	@handler GetAccountPendingTxs

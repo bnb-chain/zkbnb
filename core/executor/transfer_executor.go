@@ -61,19 +61,19 @@ func (e *TransferExecutor) VerifyInputs(skipGasAmtChk bool) error {
 		return err
 	}
 	if txInfo.ToAccountNameHash != toAccount.AccountNameHash {
-		return errors.New("invalid to account name hash")
+		return types.AppErrInvalidToAccountNameHash
 	}
 	if txInfo.GasFeeAssetId != txInfo.AssetId {
 		if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
-			return errors.New("invalid gas asset amount")
+			return types.AppErrInvalidGasFeeAmount
 		}
 		if fromAccount.AssetInfo[txInfo.AssetId].Balance.Cmp(txInfo.AssetAmount) < 0 {
-			return errors.New("invalid asset amount")
+			return types.AppErrInvalidAssetAmount
 		}
 	} else {
 		deltaBalance := ffmath.Add(txInfo.AssetAmount, txInfo.GasFeeAssetAmount)
 		if fromAccount.AssetInfo[txInfo.AssetId].Balance.Cmp(deltaBalance) < 0 {
-			return errors.New("invalid asset amount")
+			return types.AppErrInvalidAssetAmount
 		}
 	}
 
@@ -101,7 +101,7 @@ func (e *TransferExecutor) ApplyTransaction() error {
 	stateCache := e.bc.StateDB()
 	stateCache.SetPendingAccount(txInfo.FromAccountIndex, fromAccount)
 	stateCache.SetPendingAccount(txInfo.ToAccountIndex, toAccount)
-	stateCache.SetPendingUpdateGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
+	stateCache.SetPendingGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 

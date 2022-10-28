@@ -6,6 +6,7 @@ import (
 
 	"github.com/zeromicro/go-zero/core/logx"
 
+	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/logic/utils"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/types"
@@ -36,7 +37,7 @@ func (l *GetAccountPendingTxsLogic) GetAccountPendingTxs(req *types.ReqGetAccoun
 	case queryByAccountIndex:
 		accountIndex, err = strconv.ParseInt(req.Value, 10, 64)
 		if err != nil || accountIndex < 0 {
-			return nil, types2.AppErrInvalidParam.RefineError("invalid value for account_index")
+			return nil, types2.AppErrInvalidAccountIndex
 		}
 	case queryByAccountName:
 		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByName(req.Value)
@@ -53,7 +54,12 @@ func (l *GetAccountPendingTxsLogic) GetAccountPendingTxs(req *types.ReqGetAccoun
 		return nil, types2.AppErrInternal
 	}
 
-	poolTxs, err := l.svcCtx.TxPoolModel.GetPendingTxsByAccountIndex(accountIndex)
+	options := []tx.GetTxOptionFunc{}
+	if len(req.Types) > 0 {
+		options = append(options, tx.GetTxWithTypes(req.Types))
+	}
+
+	poolTxs, err := l.svcCtx.TxPoolModel.GetPendingTxsByAccountIndex(accountIndex, options...)
 	if err != nil {
 		if err != types2.DbErrNotFound {
 			return nil, types2.AppErrInternal
@@ -65,6 +71,9 @@ func (l *GetAccountPendingTxsLogic) GetAccountPendingTxs(req *types.ReqGetAccoun
 		tx := utils.ConvertTx(poolTx)
 		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
 		tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
+		if tx.ToAccountIndex >= 0 {
+			tx.ToAccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.ToAccountIndex)
+		}
 		resp.Txs = append(resp.Txs, tx)
 	}
 	return resp, nil

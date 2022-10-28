@@ -15,8 +15,9 @@ import (
 
 func (s *ApiServerSuite) TestGetAccountPoolTxs() {
 	type args struct {
-		by    string
-		value string
+		by      string
+		value   string
+		txTypes []int64
 	}
 
 	type testcase struct {
@@ -26,25 +27,28 @@ func (s *ApiServerSuite) TestGetAccountPoolTxs() {
 	}
 
 	tests := []testcase{
-		{"not found by index", args{"account_index", "9999999"}, 200},
-		{"not found by name", args{"account_name", "notexists.legend"}, 200},
-		{"not found by pk", args{"account_pk", "notexists"}, 200},
-		{"invalidby", args{"invalidby", ""}, 400},
+		{"not found by index", args{"account_index", "9999999", nil}, 200},
+		{"not found by name", args{"account_name", "notexists.legend", nil}, 200},
+		{"not found by pk", args{"account_pk", "notexists", nil}, 200},
+		{"invalidby", args{"invalidby", "", nil}, 400},
 	}
 
 	statusCode, txs := GetPendingTxs(s, 0, 100)
 	if statusCode == http.StatusOK && len(txs.Txs) > 0 {
-		_, account := GetAccount(s, "name", txs.Txs[len(txs.Txs)-1].AccountName)
+		tx := txs.Txs[len(txs.Txs)-1]
+		_, account := GetAccount(s, "name", tx.AccountName)
 		tests = append(tests, []testcase{
-			{"found by index", args{"account_index", strconv.Itoa(int(account.Index))}, 200},
-			{"found by name", args{"account_name", account.Name}, 200},
-			{"found by pk", args{"account_pk", account.Pk}, 200},
+			{"found by index", args{"account_index", strconv.Itoa(int(account.Index)), nil}, 200},
+			{"found by name", args{"account_name", account.Name, nil}, 200},
+			{"found by pk", args{"account_pk", account.Pk, nil}, 200},
+			{"found by index and type", args{"account_index", strconv.Itoa(int(account.Index)), []int64{tx.Type}}, 200},
+			{"not found by index and type", args{"account_index", strconv.Itoa(int(account.Index)), []int64{10000}}, 200},
 		}...)
 	}
 
 	for _, tt := range tests {
 		s.T().Run(tt.name, func(t *testing.T) {
-			httpCode, result := GetAccountPendingTxs(s, tt.args.by, tt.args.value)
+			httpCode, result := GetAccountPendingTxs(s, tt.args.by, tt.args.value, tt.args.txTypes)
 			assert.Equal(t, tt.httpCode, httpCode)
 			if httpCode == http.StatusOK {
 				if result.Total > 0 {
@@ -63,8 +67,13 @@ func (s *ApiServerSuite) TestGetAccountPoolTxs() {
 
 }
 
-func GetAccountPendingTxs(s *ApiServerSuite, by, value string) (int, *types.Txs) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/v1/accountPendingTxs?by=%s&value=%s", s.url, by, value))
+func GetAccountPendingTxs(s *ApiServerSuite, by, value string, txTypes []int64) (int, *types.Txs) {
+	url := fmt.Sprintf("%s/api/v1/accountPendingTxs?by=%s&value=%s", s.url, by, value)
+	if len(txTypes) > 0 {
+		data, _ := json.Marshal(txTypes)
+		url += fmt.Sprintf("&types=%s", string(data))
+	}
+	resp, err := http.Get(url)
 	assert.NoError(s.T(), err)
 	defer resp.Body.Close()
 

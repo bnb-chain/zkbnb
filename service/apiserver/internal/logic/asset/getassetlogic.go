@@ -41,12 +41,12 @@ func (l *GetAssetLogic) GetAsset(req *types.ReqGetAsset) (resp *types.Asset, err
 	case queryById:
 		id, err := strconv.ParseInt(req.Value, 10, 64)
 		if err != nil || id < 0 {
-			return nil, types2.AppErrInvalidParam.RefineError("invalid value for asset id")
+			return nil, types2.AppErrInvalidAssetId
 		}
 		symbol, err = l.svcCtx.MemCache.GetAssetSymbolById(id)
 		if err != nil {
 			if err == types2.DbErrNotFound {
-				return nil, types2.AppErrNotFound
+				return nil, types2.AppErrAssetNotFound
 			}
 			return nil, types2.AppErrInternal
 		}
@@ -61,7 +61,7 @@ func (l *GetAssetLogic) GetAsset(req *types.ReqGetAsset) (resp *types.Asset, err
 	})
 	if err != nil {
 		if err == types2.DbErrNotFound {
-			return nil, types2.AppErrNotFound
+			return nil, types2.AppErrAssetNotFound
 		}
 		return nil, types2.AppErrInternal
 	}

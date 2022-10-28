@@ -3,7 +3,6 @@ package executor
 import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
@@ -55,7 +54,7 @@ func (e *BaseExecutor) Prepare() error {
 	err := e.bc.StateDB().PrepareAccountsAndAssets(e.dirtyAccountsAndAssetsMap)
 	if err != nil {
 		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
-		return errors.New("internal error")
+		return err
 	}
 	return nil
 }

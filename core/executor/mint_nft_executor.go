@@ -63,10 +63,10 @@ func (e *MintNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
 		return err
 	}
 	if creatorAccount.CollectionNonce <= txInfo.NftCollectionId {
-		return errors.New("nft collection id is not less than account collection nonce")
+		return types.AppErrInvalidCollectionId
 	}
 	if creatorAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
-		return errors.New("balance is not enough")
+		return types.AppErrBalanceNotEnough
 	}
 
 	toAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.ToAccountIndex)
@@ -74,7 +74,7 @@ func (e *MintNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
 		return err
 	}
 	if txInfo.ToAccountNameHash != toAccount.AccountNameHash {
-		return errors.New("invalid ToAccountNameHash")
+		return types.AppErrInvalidToAccountNameHash
 	}
 
 	return nil
@@ -105,7 +105,7 @@ func (e *MintNftExecutor) ApplyTransaction() error {
 		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
 		CollectionId:        txInfo.NftCollectionId,
 	})
-	stateCache.SetPendingUpdateGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
+	stateCache.SetPendingGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 

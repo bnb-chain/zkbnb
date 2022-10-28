@@ -47,8 +47,8 @@ function getLatestBlockHeight() {
 
 function deployContracts() {
     echo 'deploy contracts, register and deposit on BSC Testnet'
-    cd ${WORKDIR}/dependency/zkbnb-contract && npm install
-    cp /server/.env ./
+    cd ${WORKDIR}/dependency/zkbnb-contract && echo "BSC_TESTNET_PRIVATE_KEY=${BSC_TESTNET_PRIVATE_KEY}" > .env && npm install
+
     npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deploy.js
     echo "Recorded latest contract addresses into ${WORKDIR}/dependency/zkbnb-contract/info/addresses.json"
     npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/register.js
@@ -63,6 +63,9 @@ function deployContracts() {
 
     GovernanceContractAddr=`cat ${WORKDIR}/dependency/zkbnb-contract/info/addresses.json  | jq -r '.governance'`
     sed -i -e "s/Governance: .*/Governance: ${GovernanceContractAddr}/" ${WORKDIR}/configs/contractaddr.yaml
+
+    BUSDContractAddr=`cat ${WORKDIR}/dependency/zkbnb-contract/info/addresses.json  | jq -r '.BUSDToken'`
+    sed -i -e "s/BUSDToken: .*/BUSDToken: ${BUSDContractAddr}/" ${WORKDIR}/configs/contractaddr.yaml
 }
 
 CMD=$1
