@@ -166,7 +166,7 @@ func (c *Fullnode) processNewBlock(curBlock *block.Block, blockSize int) (*block
 	blockStates.Block.BlockStatus = c.config.SyncBlockStatus
 
 	// sync gas account
-	err = c.bc.Statedb.SyncPendingGasAccount()
+	err = c.bc.Statedb.SyncGasAccountToRedis()
 	if err != nil {
 		return nil, err
 	}
