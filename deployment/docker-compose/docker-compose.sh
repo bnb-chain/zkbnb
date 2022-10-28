@@ -145,13 +145,10 @@ Port: 8888
 TxPool:
   MaxPendingTxCount: 10000
 
-Prometheus:
-  Host: 0.0.0.0
-  Port: 9091
-  Path: /metrics
-
 Postgres:
   DataSource: host=database user=$DATABASE_USER password=$DATABASE_PASS dbname=$DATABASE_NAME port=5432 sslmode=disable
+  MaxConn: 100
+  MaxIdle: 10
 
 CacheRedis:
   - Host: redis:6379

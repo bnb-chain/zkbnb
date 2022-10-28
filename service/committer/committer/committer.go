@@ -30,6 +30,36 @@ var (
 		Name:      "priority_operation_process_height",
 		Help:      "Priority operation height metrics.",
 	})
+	commitOperationMetics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "db_commit_time",
+		Help:      "DB commit operation time",
+	})
+	executeTxOperationMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "exec_tx_time",
+		Help:      "execute txs operation time",
+	})
+	pendingTxNumMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "pending_tx",
+		Help:      "number of pending tx",
+	})
+	stateDBOperationMetics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "state_db_time",
+		Help:      "stateDB commit operation time",
+	})
+	stateDBSyncOperationMetics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "state_sync_time",
+		Help:      "stateDB sync operation time",
+	})
+	sqlDBOperationMetics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "sql_db_time",
+		Help:      "sql DB commit operation time",
+	})
 )
 
 type Config struct {
@@ -65,6 +95,24 @@ func NewCommitter(config *Config) (*Committer, error) {
 	}
 	if err := prometheus.Register(priorityOperationHeightMetric); err != nil {
 		return nil, fmt.Errorf("prometheus.Register priorityOperationHeightMetric error: %v", err)
+	}
+	if err := prometheus.Register(commitOperationMetics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register commitOperationMetics error: %v", err)
+	}
+	if err := prometheus.Register(pendingTxNumMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register pendingTxNumMetrics error: %v", err)
+	}
+	if err := prometheus.Register(executeTxOperationMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register executeTxOperationMetrics error: %v", err)
+	}
+	if err := prometheus.Register(stateDBOperationMetics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register stateDBOperationMetics error: %v", err)
+	}
+	if err := prometheus.Register(stateDBSyncOperationMetics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register stateDBSyncOperationMetics error: %v", err)
+	}
+	if err := prometheus.Register(sqlDBOperationMetics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register sqlDBOperationMetics error: %v", err)
 	}
 
 	committer := &Committer{
@@ -120,13 +168,14 @@ func (c *Committer) Run() {
 			}
 		}
 
+		pendingTxNumMetrics.Set(float64(len(pendingTxs)))
 		pendingUpdatePoolTxs := make([]*tx.Tx, 0, len(pendingTxs))
 		pendingDeletePoolTxs := make([]*tx.Tx, 0, len(pendingTxs))
+		start := time.Now()
 		for _, poolTx := range pendingTxs {
 			if c.shouldCommit(curBlock) {
 				break
 			}
-
 			logx.Infof("apply transaction, txHash=%s", poolTx.TxHash)
 			err = c.bc.ApplyTransaction(poolTx)
 			if err != nil {
@@ -163,6 +212,7 @@ func (c *Committer) Run() {
 				pendingUpdatePoolTxs = append(pendingUpdatePoolTxs, poolTx)
 			}
 		}
+		executeTxOperationMetrics.Set(float64(time.Since(start).Milliseconds()))
 
 		err = c.bc.StateDB().SyncStateCacheToRedis()
 		if err != nil {
@@ -181,6 +231,7 @@ func (c *Committer) Run() {
 		}
 
 		if c.shouldCommit(curBlock) {
+			start := time.Now()
 			logx.Infof("commit new block, height=%d, blockSize=%d", curBlock.BlockHeight, curBlock.BlockSize)
 			curBlock, err = c.commitNewBlock(curBlock)
 			logx.Infof("commit new block success")
@@ -189,6 +240,7 @@ func (c *Committer) Run() {
 				logx.Errorf("commit new block error, err=%s", err.Error())
 				panic("commit new block failed: " + err.Error())
 			}
+			commitOperationMetics.Set(float64(time.Since(start).Milliseconds()))
 		}
 	}
 }
@@ -258,16 +310,21 @@ func (c *Committer) shouldCommit(curBlock *block.Block) bool {
 
 func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) {
 	blockSize := c.computeCurrentBlockSize()
+	start := time.Now()
 	blockStates, err := c.bc.CommitNewBlock(blockSize, curBlock.CreatedAt.UnixMilli())
 	if err != nil {
 		return nil, err
 	}
+	stateDBOperationMetics.Set(float64(time.Since(start).Milliseconds()))
 
+	start = time.Now()
 	err = c.bc.Statedb.SyncGasAccountToRedis()
 	if err != nil {
 		return nil, err
 	}
+	stateDBSyncOperationMetics.Set(float64(time.Since(start).Milliseconds()))
 
+	start = time.Now()
 	// update db
 	err = c.bc.DB().DB.Transaction(func(tx *gorm.DB) error {
 		// create block for commit
@@ -317,6 +374,7 @@ func (c *Committer) commitNewBlock(curBlock *block.Block) (*block.Block, error) 
 	if err != nil {
 		return nil, err
 	}
+	sqlDBOperationMetics.Set(float64(time.Since(start).Milliseconds()))
 
 	return blockStates.Block, nil
 }

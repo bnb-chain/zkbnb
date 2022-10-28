@@ -90,6 +90,8 @@ keyfileVolume:
 configs:
   postgres:
     DataSource: host=postgresql.postgres.svc.cluster.local user=postgres password=${POSTGRES_PASSWORD} dbname=zkbnb port=5432 sslmode=disable
+    MaxConn: 100
+    MaxIdle: 10
   redisCache: 
     - Host: redis-master.redis.svc.cluster.local
       Pass: ${REDIS_PASSWORD}
@@ -104,7 +106,8 @@ configs:
   gasLimit: 5000000
   treedb:
     Driver: memorydb
-  SK: acbaa269bd7573ff12361be4b97201aef019776ea13384681d4e5ba6a88367d9
+    AssetTreeCacheSize: 512000
+  SK: acbaa26******************************a88367d9
   cmcToken: cfce503f-fake-fake-fake-bbab5257dac8
   cmcURL: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=
   memCache:
