@@ -106,7 +106,7 @@ func (e *TransferNftExecutor) ApplyTransaction() error {
 	stateCache := e.bc.StateDB()
 	stateCache.SetPendingAccount(txInfo.FromAccountIndex, fromAccount)
 	stateCache.SetPendingNft(txInfo.NftIndex, nft)
-	stateCache.SetPendingUpdateGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
+	stateCache.SetPendingGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 

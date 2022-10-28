@@ -150,7 +150,8 @@ func (bc *BlockChain) InitNewBlock() (*block.Block, error) {
 
 	bc.currentBlock = newBlock
 	bc.Statedb.PurgeCache(bc.currentBlock.StateRoot)
-	return newBlock, nil
+	err := bc.Statedb.MarkGasAccountAsPending()
+	return newBlock, err
 }
 
 func (bc *BlockChain) CurrentBlock() *block.Block {

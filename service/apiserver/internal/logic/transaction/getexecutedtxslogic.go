@@ -3,13 +3,13 @@ package transaction
 import (
 	"context"
 
+	"github.com/zeromicro/go-zero/core/logx"
+
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/logic/utils"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/types"
 	types2 "github.com/bnb-chain/zkbnb/types"
-
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type GetExecutedTxsLogic struct {

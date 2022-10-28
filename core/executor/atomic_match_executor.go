@@ -220,8 +220,8 @@ func (e *AtomicMatchExecutor) ApplyTransaction() error {
 	stateCache.SetPendingAccount(sellAccount.AccountIndex, sellAccount)
 	stateCache.SetPendingAccount(creatorAccount.AccountIndex, creatorAccount)
 	stateCache.SetPendingNft(matchNft.NftIndex, matchNft)
-	stateCache.SetPendingUpdateGas(txInfo.BuyOffer.AssetId, txInfo.TreasuryAmount)
-	stateCache.SetPendingUpdateGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
+	stateCache.SetPendingGas(txInfo.BuyOffer.AssetId, txInfo.TreasuryAmount)
+	stateCache.SetPendingGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 
