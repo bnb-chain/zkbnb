@@ -389,8 +389,6 @@ func (s *StateDB) GetPendingNft(blockHeight int64) ([]*nft.L2Nft, []*nft.L2NftHi
 			CreatorAccountIndex: newNft.CreatorAccountIndex,
 			OwnerAccountIndex:   newNft.OwnerAccountIndex,
 			NftContentHash:      newNft.NftContentHash,
-			NftL1Address:        newNft.NftL1Address,
-			NftL1TokenId:        newNft.NftL1TokenId,
 			CreatorTreasuryRate: newNft.CreatorTreasuryRate,
 			CollectionId:        newNft.CollectionId,
 			L2BlockHeight:       blockHeight,
@@ -642,8 +640,6 @@ func (s *StateDB) updateNftTree(nftIndex int64) (int64, []byte, error) {
 		nft.CreatorAccountIndex,
 		nft.OwnerAccountIndex,
 		nft.NftContentHash,
-		nft.NftL1Address,
-		nft.NftL1TokenId,
 		nft.CreatorTreasuryRate,
 		nft.CollectionId,
 	)

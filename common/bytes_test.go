@@ -24,8 +24,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccountNameToBytes32(t *testing.T) {
+func TestAccountNameToBytes20(t *testing.T) {
 	accountName := "sher"
-	info := AccountNameToBytes32(accountName)
-	assert.Equal(t, common.Bytes2Hex(info[:]), "7368657200000000000000000000000000000000000000000000000000000000")
+	info := AccountNameToBytes20(accountName)
+	assert.Equal(t, common.Bytes2Hex(info[:]), "7368657200000000000000000000000000000000")
 }

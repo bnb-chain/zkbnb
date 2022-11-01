@@ -42,7 +42,7 @@ func (w *WitnessHelper) constructRegisterZnsTxWitness(cryptoTx *TxWitness, oTx *
 }
 
 func toCryptoRegisterZnsTx(txInfo *txtypes.RegisterZnsTxInfo) (info *cryptoTypes.RegisterZnsTx, err error) {
-	accountName := make([]byte, 32)
+	accountName := make([]byte, 20)
 	realName := strings.Split(txInfo.AccountName, types.AccountNameSuffix)[0]
 	copy(accountName[:], realName)
 	pk, err := common.ParsePubKey(txInfo.PubKey)

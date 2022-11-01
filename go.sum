@@ -118,8 +118,8 @@ github.com/bkaradzic/go-lz4 v1.0.0/go.mod h1:0YdlkowM3VswSROI7qDxhRvJ3sLhlFrRRwj
 github.com/bketelsen/crypt v0.0.4/go.mod h1:aI6NrJ0pMGgvZKL1iVgXLnfIFJtfV+bKCoqOes/6LfM=
 github.com/bmizerany/pat v0.0.0-20170815010413-6226ea591a40/go.mod h1:8rLXio+WjiTceGBHIoTvn60HIbs7Hm7bcHjyrSqYB9c=
 github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20220928090246-9a20106a2347/go.mod h1:L1BEYSG945hwjJCtR5LUQ1pvRmydSsk9oU2d9YvoOrA=
-github.com/bnb-chain/zkbnb-crypto v0.0.8 h1:DZfq/HtCA91vaKZQNRPKuvB9Xk00M8BFw1Nkpf3Q2V0=
-github.com/bnb-chain/zkbnb-crypto v0.0.8/go.mod h1:TSIDCYcRZCCFnx/VOXFd9jb9EDnn4xRxfERK1zGwrrU=
+github.com/bnb-chain/zkbnb-crypto v0.0.8-0.20221101074621-7b7562146117 h1:3QQDbelm/ln3l8m0buXPvWzCii8U/EOwdFj+zA7Fmn0=
+github.com/bnb-chain/zkbnb-crypto v0.0.8-0.20221101074621-7b7562146117/go.mod h1:TSIDCYcRZCCFnx/VOXFd9jb9EDnn4xRxfERK1zGwrrU=
 github.com/bnb-chain/zkbnb-eth-rpc v0.0.2 h1:1rMa8XpplDNZaxeM1ifXMjSSeH/ucJyLUjHHEw1z4AA=
 github.com/bnb-chain/zkbnb-eth-rpc v0.0.2/go.mod h1:T69T8enicQ5kSRPIzyPJv/jhuvRMz1UxsijPXmlis+I=
 github.com/bnb-chain/zkbnb-go-sdk v1.0.4-0.20221012063144-3a6e84095b4d h1:2+S4/JdKoSPSJr3D7Z5I/Qmv8TkgVYB73vRP0OOunRY=

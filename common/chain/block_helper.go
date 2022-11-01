@@ -43,12 +43,14 @@ func CreateBlockCommitment(
 	common2.PaddingInt64IntoBuf(&buf, createdAt)
 	buf.Write(CleanAndPaddingByteByModulus(oldStateRoot))
 	buf.Write(CleanAndPaddingByteByModulus(newStateRoot))
-	buf.Write(CleanAndPaddingByteByModulus(pubData))
+	// buf.Write(CleanAndPaddingByteByModulus(pubData))
+	buf.Write(pubData)
 	common2.PaddingInt64IntoBuf(&buf, onChainOpsCount)
 	// TODO Keccak256
 	//hFunc := mimc.NewMiMC()
 	//hFunc.Write(buf.Bytes())
 	//commitment := hFunc.Sum(nil)
+	// fmt.Printf("commitment is %x\n", buf.Bytes())
 	commitment := common2.KeccakHash(buf.Bytes())
 	return common.Bytes2Hex(commitment)
 }
