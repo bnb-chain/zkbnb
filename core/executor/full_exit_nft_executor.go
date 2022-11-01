@@ -188,7 +188,13 @@ func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	if err != nil {
 		return nil, err
 	}
-	txDetails := make([]*tx.TxDetail, 0, 2)
+
+	creatorAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.CreatorAccountIndex)
+	if err != nil {
+		return nil, err
+	}
+
+	txDetails := make([]*tx.TxDetail, 0, 3)
 
 	// user info
 	accountOrder := int64(0)
@@ -244,6 +250,26 @@ func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Order:           order,
 		Nonce:           exitAccount.Nonce,
 		CollectionNonce: exitAccount.CollectionNonce,
+	})
+
+	// create account empty delta
+	order++
+	accountOrder++
+	txDetails = append(txDetails, &tx.TxDetail{
+		AssetId:      types.EmptyAccountAssetId,
+		AssetType:    types.FungibleAssetType,
+		AccountIndex: txInfo.CreatorAccountIndex,
+		AccountName:  creatorAccount.AccountName,
+		Balance:      creatorAccount.AssetInfo[types.EmptyAccountAssetId].String(),
+		BalanceDelta: types.ConstructAccountAsset(
+			types.EmptyAccountAssetId,
+			types.ZeroBigInt,
+			types.ZeroBigInt,
+		).String(),
+		Order:           order,
+		AccountOrder:    accountOrder,
+		Nonce:           creatorAccount.Nonce,
+		CollectionNonce: creatorAccount.CollectionNonce,
 	})
 
 	return txDetails, nil
