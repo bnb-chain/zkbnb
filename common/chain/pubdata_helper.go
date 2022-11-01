@@ -149,7 +149,7 @@ func ParseFullExitNftPubData(pubData []byte) (tx *txtypes.FullExitNftTxInfo, err
 	offset, collectionId := common2.ReadUint16(pubData, offset)
 	offset, accountNameHash := common2.ReadBytes32(pubData, offset)
 	offset, creatorAccountNameHash := common2.ReadBytes32(pubData, offset)
-	offset, nftContentHash := common2.ReadBytes32(pubData, offset)
+	_, nftContentHash := common2.ReadBytes32(pubData, offset)
 	tx = &txtypes.FullExitNftTxInfo{
 		TxType:                 txType,
 		AccountIndex:           int64(accountIndex),
