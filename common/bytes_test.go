@@ -27,5 +27,5 @@ import (
 func TestAccountNameToBytes20(t *testing.T) {
 	accountName := "sher"
 	info := AccountNameToBytes20(accountName)
-	assert.Equal(t, common.Bytes2Hex(info[:]), "7368657200000000000000000000000000000000000000000000000000000000")
+	assert.Equal(t, common.Bytes2Hex(info[:]), "7368657200000000000000000000000000000000")
 }
