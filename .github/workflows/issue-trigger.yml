@@ -6,7 +6,7 @@ on:
 
 jobs:
   trigger:
-    runs-on: self-hosted
+    runs-on: [self-hosted,zkbas]
     permissions:
       issues: write
       pull-requests: write
