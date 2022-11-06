@@ -10,8 +10,8 @@
 DEPLOY_PATH=~/zkbnb-deploy
 KEY_PATH=~/.zkbnb
 ZkBNB_REPO_PATH=$(cd `dirname $0`; pwd)
-CMC_TOKEN=cfce503f-fake-fake-fake-bbab5257dac8
-BSC_TESTNET_PRIVATE_KEY=acbaa26******************************a88367d9
+CMC_TOKEN=40b9a3a6-3291-4d55-8a20-b6e321ae6418
+BSC_TESTNET_PRIVATE_KEY=ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
 echo '0. stop old database/redis and docker run new database/redis'
@@ -20,16 +20,6 @@ docker kill $(docker ps -q)
 docker rm $(docker ps -a -q)
 docker run -d --name zkbnbredis -p 6379:6379 redis
 docker run --name postgres -p 5432:5432 -e PGDATA=/var/lib/postgresql/pgdata  -e POSTGRES_PASSWORD=ZkBNB@123 -e POSTGRES_USER=postgres -e POSTGRES_DB=zkbnb -d postgres
-
-
-echo '1. basic config and git clone repos'
-export PATH=$PATH:/usr/local/go/bin/
-cd ~
-rm -rf ${DEPLOY_PATH}-bak && mv ${DEPLOY_PATH} ${DEPLOY_PATH}-bak
-mkdir -p ${DEPLOY_PATH} && cd ${DEPLOY_PATH}
-git clone --branch develop  https://github.com/bnb-chain/zkbnb-contract.git
-git clone --branch develop https://github.com/bnb-chain/zkbnb-crypto.git
-cp -r ${ZkBNB_REPO_PATH} ${DEPLOY_PATH}
 
 
 flag=$1
@@ -45,14 +35,8 @@ fi
 
 
 
-echo '3. start verify_parse for ZkBNBVerifier'
-cd ${DEPLOY_PATH}/zkbnb/service/prover/
-python3 verifier_parse.py ${KEY_PATH}/ZkBNBVerifier10.sol 10 ${DEPLOY_PATH}/zkbnb-contract/contracts/ZkBNBVerifier.sol
-
-
-
 echo '4-1. get latest block number'
-hexNumber=`curl -X POST 'https://data-seed-prebsc-1-s1.binance.org:8545' --header 'Content-Type: application/json' --data-raw '{"jsonrpc":"2.0", "method":"eth_blockNumber", "params": [], "id":1 }' | jq -r '.result'`
+hexNumber=`curl -X POST 'http://127.0.0.1:8545' --header 'Content-Type: application/json' --data-raw '{"jsonrpc":"2.0", "method":"eth_blockNumber", "params": [], "id":1 }' | jq -r '.result'`
 blockNumber=`echo $((${hexNumber}))`
 echo 'latest block number = ' $blockNumber
 
@@ -60,12 +44,12 @@ echo 'latest block number = ' $blockNumber
 
 echo '4-2. deploy contracts, register and deposit on BSC Testnet'
 cd ${DEPLOY_PATH}
-cd ./zkbnb-contract &&  echo "BSC_TESTNET_PRIVATE_KEY=${BSC_TESTNET_PRIVATE_KEY}" > .env && yarn install
-npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deploy.js
+cd ./zkbnb-contract &&  echo "BSC_TESTNET_PRIVATE_KEY=${BSC_TESTNET_PRIVATE_KEY}" > .env
+npx hardhat --network local  run ./scripts/deploy-keccak256/deploy.js
 echo 'Recorded latest contract addresses into ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json'
 
-npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/register.js
-npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deposit.js
+npx hardhat --network local run ./scripts/deploy-keccak256/register.js
+npx hardhat --network local run ./scripts/deploy-keccak256/deposit.js
 
 
 echo '5. modify deployed contracts into zkbnb config'
@@ -81,7 +65,32 @@ sed -i -e "s/Governance: .*/Governance: ${GovernanceContractAddr}/" ${DEPLOY_PAT
 BUSDContractAddr=`cat ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json  | jq -r '.BUSDToken'`
 sed -i -e "s/BUSDToken: .*/BUSDToken: ${BUSDContractAddr}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
 
+LEGToken=`cat ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json  | jq -r '.LEGToken'`
+sed -i -e "s/LEGToken: .*/LEGToken: ${LEGToken}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
 
+REYToken=`cat ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json  | jq -r '.REYToken'`
+sed -i -e "s/REYToken: .*/REYToken: ${REYToken}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
+
+ERC721=`cat ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json  | jq -r '.ERC721'`
+sed -i -e "s/ERC721: .*/ERC721: ${ERC721}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
+
+VerifierProxy=`cat ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json  | jq -r '.verifierProxy'`
+sed -i -e "s/VerifierProxy: .*/VerifierProxy: ${VerifierProxy}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
+
+ZnsControllerProxy=`cat ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json  | jq -r '.znsControllerProxy'`
+sed -i -e "s/ZnsControllerProxy: .*/ZnsControllerProxy: ${ZnsControllerProxy}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
+
+ZnsResolverProxy=`cat ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json  | jq -r '.znsResolverProxy'`
+sed -i -e "s/ZnsResolverProxy: .*/ZnsResolverProxy: ${ZnsResolverProxy}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
+
+ZkBNBProxy=`cat ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json  | jq -r '.zkbnbProxy'`
+sed -i -e "s/ZkBNBProxy: .*/ZkBNBProxy: ${ZkBNBProxy}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
+
+UpgradeGateKeeper=`cat ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json  | jq -r '.upgradeGateKeeper'`
+sed -i -e "s/UpgradeGateKeeper: .*/UpgradeGateKeeper: ${UpgradeGateKeeper}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
+
+ZnsPriceOracle=`cat ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json  | jq -r '.znsPriceOracle'`
+sed -i -e "s/ZnsPriceOracle: .*/ZnsPriceOracle: ${ZnsPriceOracle}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
 
 # cd ${DEPLOY_PATH}/zkbnb/
 # make api-server
@@ -160,8 +169,8 @@ CacheRedis:
     Type: node
 
 ChainConfig:
-  NetworkRPCSysConfigName: "BscTestNetworkRpc"
-  #NetworkRPCSysConfigName: "LocalTestNetworkRpc"
+  #NetworkRPCSysConfigName: "BscTestNetworkRpc"
+  NetworkRPCSysConfigName: "LocalTestNetworkRpc"
   StartL1BlockHeight: $blockNumber
   ConfirmBlocksCount: 0
   MaxHandledBlocksCount: 5000
@@ -217,8 +226,8 @@ CacheRedis:
     Type: node
 
 ChainConfig:
-  NetworkRPCSysConfigName: "BscTestNetworkRpc"
-  #NetworkRPCSysConfigName: "LocalTestNetworkRpc"
+  #NetworkRPCSysConfigName: "BscTestNetworkRpc"
+  NetworkRPCSysConfigName: "LocalTestNetworkRpc"
   ConfirmBlocksCount: 0
   MaxWaitingTime: 120
   MaxBlockCount: 4
