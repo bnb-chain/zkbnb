@@ -5,12 +5,14 @@
 # yum install jq -y
 # npm install pm2 -g
 # You should install nodejs above v14
+# sh deploy-local.sh new  // append the new parameter to generate pk and vk data when you first run this script.
 
 # Attention: Set the following variables to the right one before running!!!
 DEPLOY_PATH=~/zkbnb-deploy
 KEY_PATH=~/.zkbnb
 ZkBNB_REPO_PATH=$(cd `dirname $0`; pwd)
 CMC_TOKEN=cfce503f-fake-fake-fake-bbab5257dac8
+BSC_TESTNET_RPC=https://data-seed-prebsc-1-s1.binance.org:8545
 BSC_TESTNET_PRIVATE_KEY=acbaa26******************************a88367d9
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
@@ -52,7 +54,7 @@ python3 verifier_parse.py ${KEY_PATH}/ZkBNBVerifier10.sol 10 ${DEPLOY_PATH}/zkbn
 
 
 echo '4-1. get latest block number'
-hexNumber=`curl -X POST 'https://data-seed-prebsc-1-s1.binance.org:8545' --header 'Content-Type: application/json' --data-raw '{"jsonrpc":"2.0", "method":"eth_blockNumber", "params": [], "id":1 }' | jq -r '.result'`
+hexNumber=`curl -X POST ${BSC_TESTNET_RPC} --header 'Content-Type: application/json' --data-raw '{"jsonrpc":"2.0", "method":"eth_blockNumber", "params": [], "id":1 }' | jq -r '.result'`
 blockNumber=`echo $((${hexNumber}))`
 echo 'latest block number = ' $blockNumber
 
@@ -60,7 +62,11 @@ echo 'latest block number = ' $blockNumber
 
 echo '4-2. deploy contracts, register and deposit on BSC Testnet'
 cd ${DEPLOY_PATH}
-cd ./zkbnb-contract &&  echo "BSC_TESTNET_PRIVATE_KEY=${BSC_TESTNET_PRIVATE_KEY}" > .env && yarn install
+cd ./zkbnb-contract
+cp -r ./.env.example ./.env
+sed -i -e "s/BSC_TESTNET_RPC=.*/BSC_TESTNET_RPC=${BSC_TESTNET_RPC}/" .env
+sed -i -e "s/BSC_TESTNET_PRIVATE_KEY=.*/BSC_TESTNET_PRIVATE_KEY=${BSC_TESTNET_PRIVATE_KEY}/" .env
+yarn install
 npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deploy.js
 echo 'Recorded latest contract addresses into ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json'
 
@@ -83,8 +89,8 @@ sed -i -e "s/BUSDToken: .*/BUSDToken: ${BUSDContractAddr}/" ${DEPLOY_PATH}/zkbnb
 
 
 
-# cd ${DEPLOY_PATH}/zkbnb/
-# make api-server
+ cd ${DEPLOY_PATH}/zkbnb/
+ make api-server
 cd ${DEPLOY_PATH}/zkbnb && go mod tidy
 
 echo "6. init tables on database"
@@ -118,6 +124,9 @@ TreeDB:
 echo -e "
 go run ./cmd/zkbnb/main.go prover --config ${DEPLOY_PATH}/zkbnb/service/prover/etc/config.yaml --pprof --pprof.addr 0.0.0.0 --pprof.port 6060 --metrics --metrics.addr 0.0.0.0 --metrics.port 6060
 " > run_prover.sh
+# remove the fist line if it includes -e
+sed -i '' -e '/-e/,1d' ${DEPLOY_PATH}/zkbnb/service/prover/etc/config.yaml
+sed -i '' -e '/-e/,1d' run_prover.sh
 pm2 start --name prover "./run_prover.sh"
 
 
@@ -144,6 +153,9 @@ TreeDB:
 echo -e "
 go run ./cmd/zkbnb/main.go witness --config ${DEPLOY_PATH}/zkbnb/service/witness/etc/config.yaml --pprof --pprof.addr 0.0.0.0 --pprof.port 6061 --metrics --metrics.addr 0.0.0.0 --metrics.port 6061
 " > run_witness.sh
+# remove the fist line if it includes -e
+sed -i '' -e '/-e/,1d' ${DEPLOY_PATH}/zkbnb/service/witness/etc/config.yaml
+sed -i '' -e '/-e/,1d' run_witness.sh
 pm2 start --name witness "./run_witness.sh"
 
 
@@ -175,6 +187,9 @@ TreeDB:
 echo -e "
 go run ./cmd/zkbnb/main.go monitor --config ${DEPLOY_PATH}/zkbnb/service/monitor/etc/config.yaml --pprof --pprof.addr 0.0.0.0 --pprof.port 6062 --metrics --metrics.addr 0.0.0.0 --metrics.port 6062
 " > run_monitor.sh
+# remove the fist line if it includes -e
+sed -i '' -e '/-e/,1d' ${DEPLOY_PATH}/zkbnb/service/monitor/etc/config.yaml
+sed -i '' -e '/-e/,1d' run_monitor.sh
 pm2 start --name monitor "./run_monitor.sh"
 
 
@@ -201,6 +216,9 @@ TreeDB:
 echo -e "
 go run ./cmd/zkbnb/main.go committer --config ${DEPLOY_PATH}/zkbnb/service/committer/etc/config.yaml --pprof --pprof.addr 0.0.0.0 --pprof.port 6063 --metrics --metrics.addr 0.0.0.0 --metrics.port 6063
 " > run_committer.sh
+# remove the fist line if it includes -e
+sed -i '' -e '/-e/,1d' ${DEPLOY_PATH}/zkbnb/service/committer/etc/config.yaml
+sed -i '' -e '/-e/,1d' run_committer.sh
 pm2 start --name committer "./run_committer.sh"
 
 
@@ -234,6 +252,9 @@ TreeDB:
 echo -e "
 go run ./cmd/zkbnb/main.go sender --config ${DEPLOY_PATH}/zkbnb/service/sender/etc/config.yaml --pprof --pprof.addr 0.0.0.0 --pprof.port 6064 --metrics --metrics.addr 0.0.0.0 --metrics.port 6064
 " > run_sender.sh
+# remove the fist line if it includes -e
+sed -i '' -e '/-e/,1d' ${DEPLOY_PATH}/zkbnb/service/sender/etc/config.yaml
+sed -i '' -e '/-e/,1d' run_sender.sh
 pm2 start --name sender "./run_sender.sh"
 
 
@@ -280,4 +301,7 @@ MemCache:
 echo -e "
 go run ./cmd/zkbnb/main.go apiserver --config ${DEPLOY_PATH}/zkbnb/service/apiserver/etc/config.yaml --pprof --pprof.addr 0.0.0.0 --pprof.port 6065 --metrics --metrics.addr 0.0.0.0 --metrics.port 6065
 " > run_apiserver.sh
+# remove the fist line if it includes -e
+sed -i '' -e '/-e/,1d' ${DEPLOY_PATH}/zkbnb/service/apiserver/etc/config.yaml
+sed -i '' -e '/-e/,1d' run_apiserver.sh
 pm2 start --name apiserver "./run_apiserver.sh"
