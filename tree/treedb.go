@@ -3,6 +3,7 @@ package tree
 import (
 	"encoding/json"
 	"errors"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"hash"
 	"strings"
 	"time"
@@ -12,7 +13,6 @@ import (
 	"github.com/bnb-chain/zkbnb-smt/database/leveldb"
 	"github.com/bnb-chain/zkbnb-smt/database/memory"
 	"github.com/bnb-chain/zkbnb-smt/database/redis"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/panjf2000/ants/v2"
 )
 
@@ -209,7 +209,7 @@ func NewContext(
 		RedisDBOption:  redisDBOption,
 		reload:         reload,
 		routinePool:    pool,
-		hasher:         bsmt.NewHasherPool(func() hash.Hash { return mimc.NewMiMC() }),
+		hasher:         bsmt.NewHasherPool(func() hash.Hash { return poseidon.NewPoseidon() }),
 		defaultOptions: []bsmt.Option{bsmt.GoRoutinePool(pool)},
 	}, nil
 }
