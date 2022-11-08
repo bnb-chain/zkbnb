@@ -12,8 +12,11 @@ DEPLOY_PATH=~/zkbnb-deploy
 KEY_PATH=~/.zkbnb
 ZkBNB_REPO_PATH=$(cd `dirname $0`; pwd)
 CMC_TOKEN=cfce503f-fake-fake-fake-bbab5257dac8
-BSC_TESTNET_RPC=https://data-seed-prebsc-1-s1.binance.org:8545
-BSC_TESTNET_PRIVATE_KEY=acbaa26******************************a88367d9
+# RPC URL for the network you want to deploy. Supports Ganache, Hardhat, BSC Testnet, BSC Mainnet, etc.
+RPC=http://localhost:8545
+
+# Private key for the network. Make sure you have enough balance here
+PRIVATE_KEY=acbaa26******************************a88367d9
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
 echo '0. stop old database/redis and docker run new database/redis'
@@ -54,7 +57,7 @@ python3 verifier_parse.py ${KEY_PATH}/ZkBNBVerifier10.sol 10 ${DEPLOY_PATH}/zkbn
 
 
 echo '4-1. get latest block number'
-hexNumber=`curl -X POST ${BSC_TESTNET_RPC} --header 'Content-Type: application/json' --data-raw '{"jsonrpc":"2.0", "method":"eth_blockNumber", "params": [], "id":1 }' | jq -r '.result'`
+hexNumber=`curl -X POST ${RPC} --header 'Content-Type: application/json' --data-raw '{"jsonrpc":"2.0", "method":"eth_blockNumber", "params": [], "id":1 }' | jq -r '.result'`
 blockNumber=`echo $((${hexNumber}))`
 echo 'latest block number = ' $blockNumber
 
@@ -64,14 +67,14 @@ echo '4-2. deploy contracts, register and deposit on BSC Testnet'
 cd ${DEPLOY_PATH}
 cd ./zkbnb-contract
 cp -r .env.example .env
-sed -i e "s~BSC_TESTNET_RPC=.*~BSC_TESTNET_RPC=${BSC_TESTNET_RPC}~" .env
-sed -i e "s/BSC_TESTNET_PRIVATE_KEY=.*/BSC_TESTNET_PRIVATE_KEY=${BSC_TESTNET_PRIVATE_KEY}/" .env
+sed -i e "s~LOCAL_RPC=.*~LOCAL_RPC=${RPC}~" .env
+sed -i e "s/LOCAL_PRIVATE_KEY=.*/LOCAL_PRIVATE_KEY=${PRIVATE_KEY}/" .env
 yarn install
-npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deploy.js
+npx hardhat --network local run ./scripts/deploy-keccak256/deploy.js
 echo 'Recorded latest contract addresses into ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json'
 
-npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/register.js
-npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deposit.js
+npx hardhat --network local run ./scripts/deploy-keccak256/register.js
+npx hardhat --network local run ./scripts/deploy-keccak256/deposit.js
 
 
 echo '5. modify deployed contracts into zkbnb config'
@@ -89,12 +92,12 @@ sed -i -e "s/BUSDToken: .*/BUSDToken: ${BUSDContractAddr}/" ${DEPLOY_PATH}/zkbnb
 
 
 
- cd ${DEPLOY_PATH}/zkbnb/
- make api-server
+cd ${DEPLOY_PATH}/zkbnb/
+make api-server
 cd ${DEPLOY_PATH}/zkbnb && go mod tidy
 
 echo "6. init tables on database"
-go run ./cmd/zkbnb/main.go db initialize --testnet ${BSC_TESTNET_RPC} --dsn "host=localhost user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable" --contractAddr ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
+go run ./cmd/zkbnb/main.go db initialize --local ${RPC} --dsn "host=localhost user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable" --contractAddr ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
 
 sleep 10s
 
@@ -172,8 +175,8 @@ CacheRedis:
     Type: node
 
 ChainConfig:
-  NetworkRPCSysConfigName: "BscTestNetworkRpc"
-  #NetworkRPCSysConfigName: "LocalTestNetworkRpc"
+  #NetworkRPCSysConfigName: "BscTestNetworkRpc"
+  NetworkRPCSysConfigName: "LocalTestNetworkRpc"
   StartL1BlockHeight: $blockNumber
   ConfirmBlocksCount: 0
   MaxHandledBlocksCount: 5000
@@ -235,12 +238,12 @@ CacheRedis:
     Type: node
 
 ChainConfig:
-  NetworkRPCSysConfigName: "BscTestNetworkRpc"
-  #NetworkRPCSysConfigName: "LocalTestNetworkRpc"
+  #NetworkRPCSysConfigName: "BscTestNetworkRpc"
+  NetworkRPCSysConfigName: "LocalTestNetworkRpc"
   ConfirmBlocksCount: 0
   MaxWaitingTime: 120
   MaxBlockCount: 4
-  Sk: "${BSC_TESTNET_PRIVATE_KEY}"
+  Sk: "${PRIVATE_KEY}"
   GasLimit: 5000000
   GasPrice: 0
 
