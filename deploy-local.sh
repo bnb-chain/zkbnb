@@ -13,7 +13,7 @@ KEY_PATH=~/.zkbnb
 ZkBNB_REPO_PATH=$(cd `dirname $0`; pwd)
 CMC_TOKEN=cfce503f-fake-fake-fake-bbab5257dac8
 # RPC URL for the network you want to deploy. Supports Ganache, Hardhat, BSC Testnet, BSC Mainnet, etc.
-RPC=http://localhost:8545
+RPC=https://data-seed-prebsc-1-s1.binance.org:8545
 
 # Private key for the network. Make sure you have enough balance here
 PRIVATE_KEY=acbaa26******************************a88367d9
