@@ -239,12 +239,21 @@ func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	// create account empty delta
 	order++
 	accountOrder++
+	creatorAccountBalance := creatorAccount.AssetInfo[types.EmptyAccountAssetId]
+	if creatorAccountBalance == nil {
+		creatorAccountBalance = &types.AccountAsset{
+			AssetId:                  types.EmptyAccountAssetId,
+			Balance:                  big.NewInt(0),
+			OfferCanceledOrFinalized: big.NewInt(0),
+		}
+	}
+
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      types.EmptyAccountAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.CreatorAccountIndex,
 		AccountName:  creatorAccount.AccountName,
-		Balance:      creatorAccount.AssetInfo[types.EmptyAccountAssetId].String(),
+		Balance:      creatorAccountBalance.String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			types.EmptyAccountAssetId,
 			types.ZeroBigInt,
