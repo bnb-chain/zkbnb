@@ -84,8 +84,6 @@ func (e *DepositNftExecutor) ApplyTransaction() error {
 		CreatorAccountIndex: txInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   txInfo.AccountIndex,
 		NftContentHash:      common.Bytes2Hex(txInfo.NftContentHash),
-		NftL1Address:        txInfo.NftL1Address,
-		NftL1TokenId:        txInfo.NftL1TokenId.String(),
 		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
 		CollectionId:        txInfo.CollectionId,
 	}
@@ -102,21 +100,13 @@ func (e *DepositNftExecutor) GeneratePubData() error {
 	buf.WriteByte(uint8(types.TxTypeDepositNft))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
 	buf.Write(common2.Uint40ToBytes(txInfo.NftIndex))
-	buf.Write(common2.AddressStrToBytes(txInfo.NftL1Address))
-	chunk1 := common2.SuffixPaddingBufToChunkSize(buf.Bytes())
-	buf.Reset()
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.CollectionId)))
-	chunk2 := common2.PrefixPaddingBufToChunkSize(buf.Bytes())
-	buf.Reset()
-	buf.Write(chunk1)
-	buf.Write(chunk2)
 	buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.NftContentHash))
-	buf.Write(common2.Uint256ToBytes(txInfo.NftL1TokenId))
 	buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.AccountNameHash))
-	buf.Write(common2.PrefixPaddingBufToChunkSize([]byte{}))
-	pubData := buf.Bytes()
+
+	pubData := common2.SuffixPaddingBuToPubdataSize(buf.Bytes())
 
 	stateCache := e.bc.StateDB()
 	stateCache.PriorityOperations++
@@ -175,8 +165,6 @@ func (e *DepositNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		txInfo.CreatorAccountIndex,
 		txInfo.AccountIndex,
 		common.Bytes2Hex(txInfo.NftContentHash),
-		txInfo.NftL1TokenId.String(),
-		txInfo.NftL1Address,
 		txInfo.CreatorTreasuryRate,
 		txInfo.CollectionId,
 	)

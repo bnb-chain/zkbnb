@@ -42,10 +42,8 @@ func toCryptoDepositNftTx(txInfo *txtypes.DepositNftTxInfo) (info *cryptoTypes.D
 	info = &cryptoTypes.DepositNftTx{
 		AccountIndex:        txInfo.AccountIndex,
 		NftIndex:            txInfo.NftIndex,
-		NftL1Address:        txInfo.NftL1Address,
 		AccountNameHash:     txInfo.AccountNameHash,
 		NftContentHash:      txInfo.NftContentHash,
-		NftL1TokenId:        txInfo.NftL1TokenId,
 		CreatorAccountIndex: txInfo.CreatorAccountIndex,
 		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
 		CollectionId:        txInfo.CollectionId,

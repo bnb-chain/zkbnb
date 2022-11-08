@@ -32,7 +32,7 @@ func ParseRegisterZnsPubData(pubData []byte) (tx *txtypes.RegisterZnsTxInfo, err
 	/*
 		struct RegisterZNS {
 			uint8 txType;
-			bytes32 accountName;
+			bytes20 accountName;
 			bytes32 accountNameHash;
 			bytes32 pubKeyX;
 			bytes32 pubKeyY;
@@ -44,7 +44,7 @@ func ParseRegisterZnsPubData(pubData []byte) (tx *txtypes.RegisterZnsTxInfo, err
 	offset := 0
 	offset, txType := common2.ReadUint8(pubData, offset)
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
-	offset, accountName := common2.ReadBytes32(pubData, offset)
+	offset, accountName := common2.ReadBytes20(pubData, offset)
 	offset, accountNameHash := common2.ReadBytes32(pubData, offset)
 	offset, pubKeyX := common2.ReadBytes32(pubData, offset)
 	_, pubKeyY := common2.ReadBytes32(pubData, offset)
@@ -98,22 +98,18 @@ func ParseDepositNftPubData(pubData []byte) (tx *txtypes.DepositNftTxInfo, err e
 	offset, txType := common2.ReadUint8(pubData, offset)
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
 	offset, nftIndex := common2.ReadUint40(pubData, offset)
-	offset, nftL1Address := common2.ReadAddress(pubData, offset)
 	offset, creatorAccountIndex := common2.ReadUint32(pubData, offset)
 	offset, creatorTreasuryRate := common2.ReadUint16(pubData, offset)
 	offset, nftContentHash := common2.ReadBytes32(pubData, offset)
-	offset, nftL1TokenId := common2.ReadUint256(pubData, offset)
 	offset, accountNameHash := common2.ReadBytes32(pubData, offset)
 	_, collectionId := common2.ReadUint16(pubData, offset)
 	tx = &txtypes.DepositNftTxInfo{
 		TxType:              txType,
 		AccountIndex:        int64(accountIndex),
 		NftIndex:            nftIndex,
-		NftL1Address:        nftL1Address,
 		CreatorAccountIndex: int64(creatorAccountIndex),
 		CreatorTreasuryRate: int64(creatorTreasuryRate),
 		NftContentHash:      nftContentHash,
-		NftL1TokenId:        nftL1TokenId,
 		AccountNameHash:     accountNameHash,
 		CollectionId:        int64(collectionId),
 	}
@@ -151,11 +147,9 @@ func ParseFullExitNftPubData(pubData []byte) (tx *txtypes.FullExitNftTxInfo, err
 	offset, creatorTreasuryRate := common2.ReadUint16(pubData, offset)
 	offset, nftIndex := common2.ReadUint40(pubData, offset)
 	offset, collectionId := common2.ReadUint16(pubData, offset)
-	offset, nftL1Address := common2.ReadAddress(pubData, offset)
 	offset, accountNameHash := common2.ReadBytes32(pubData, offset)
 	offset, creatorAccountNameHash := common2.ReadBytes32(pubData, offset)
-	offset, nftContentHash := common2.ReadBytes32(pubData, offset)
-	_, nftL1TokenId := common2.ReadUint256(pubData, offset)
+	_, nftContentHash := common2.ReadBytes32(pubData, offset)
 	tx = &txtypes.FullExitNftTxInfo{
 		TxType:                 txType,
 		AccountIndex:           int64(accountIndex),
@@ -163,11 +157,9 @@ func ParseFullExitNftPubData(pubData []byte) (tx *txtypes.FullExitNftTxInfo, err
 		CreatorTreasuryRate:    int64(creatorTreasuryRate),
 		NftIndex:               nftIndex,
 		CollectionId:           int64(collectionId),
-		NftL1Address:           nftL1Address,
 		AccountNameHash:        accountNameHash,
 		CreatorAccountNameHash: creatorAccountNameHash,
 		NftContentHash:         nftContentHash,
-		NftL1TokenId:           nftL1TokenId,
 	}
 	return tx, nil
 }

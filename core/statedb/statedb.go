@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"strconv"
 
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -389,8 +389,6 @@ func (s *StateDB) GetPendingNft(blockHeight int64) ([]*nft.L2Nft, []*nft.L2NftHi
 			CreatorAccountIndex: newNft.CreatorAccountIndex,
 			OwnerAccountIndex:   newNft.OwnerAccountIndex,
 			NftContentHash:      newNft.NftContentHash,
-			NftL1Address:        newNft.NftL1Address,
-			NftL1TokenId:        newNft.NftL1TokenId,
 			CreatorTreasuryRate: newNft.CreatorTreasuryRate,
 			CollectionId:        newNft.CollectionId,
 			L2BlockHeight:       blockHeight,
@@ -575,7 +573,7 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool) error {
 		}
 	}
 
-	hFunc := mimc.NewMiMC()
+	hFunc := poseidon.NewPoseidon()
 	hFunc.Write(s.AccountTree.Root())
 	hFunc.Write(s.NftTree.Root())
 	s.StateRoot = common.Bytes2Hex(hFunc.Sum(nil))
@@ -642,8 +640,6 @@ func (s *StateDB) updateNftTree(nftIndex int64) (int64, []byte, error) {
 		nft.CreatorAccountIndex,
 		nft.OwnerAccountIndex,
 		nft.NftContentHash,
-		nft.NftL1Address,
-		nft.NftL1TokenId,
 		nft.CreatorTreasuryRate,
 		nft.CollectionId,
 	)

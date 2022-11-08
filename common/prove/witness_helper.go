@@ -418,17 +418,11 @@ func (w *WitnessHelper) constructNftWitness(
 	if err != nil {
 		return nftRootBefore, nftBefore, merkleProofsNftBefore, err
 	}
-	nftL1TokenId, isValid := new(big.Int).SetString(proverNftInfo.NftInfo.NftL1TokenId, 10)
-	if !isValid {
-		return nftRootBefore, nftBefore, merkleProofsNftBefore, fmt.Errorf("unable to parse big int")
-	}
 	nftBefore = &cryptoTypes.Nft{
 		NftIndex:            proverNftInfo.NftInfo.NftIndex,
 		NftContentHash:      common.FromHex(proverNftInfo.NftInfo.NftContentHash),
 		CreatorAccountIndex: proverNftInfo.NftInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   proverNftInfo.NftInfo.OwnerAccountIndex,
-		NftL1Address:        new(big.Int).SetBytes(common.FromHex(proverNftInfo.NftInfo.NftL1Address)),
-		NftL1TokenId:        nftL1TokenId,
 		CreatorTreasuryRate: proverNftInfo.NftInfo.CreatorTreasuryRate,
 		CollectionId:        proverNftInfo.NftInfo.CollectionId,
 	}
@@ -449,8 +443,6 @@ func (w *WitnessHelper) constructNftWitness(
 		nNftInfo.CreatorAccountIndex,
 		nNftInfo.OwnerAccountIndex,
 		nNftInfo.NftContentHash,
-		nNftInfo.NftL1Address,
-		nNftInfo.NftL1TokenId,
 		nNftInfo.CreatorTreasuryRate,
 		nNftInfo.CollectionId,
 	)

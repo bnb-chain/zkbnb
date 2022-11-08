@@ -156,8 +156,6 @@ type NftNode struct {
     CreatorAccountIndex int64
     OwnerAccountIndex   int64
     NftContentHash      string
-    NftL1Address        string
-    NftL1TokenId        string
     CreatorTreasuryRate int64
     CollectionId        int64 // 32 bit
 }
@@ -170,8 +168,6 @@ func ComputeNftAssetLeafHash(
 	creatorAccountIndex int64,
 	ownerAccountIndex int64,
 	nftContentHash string,
-	nftL1Address string,
-	nftL1TokenId string,
 	creatorTreasuryRate int64,
 	collectionId int64,
 ) (hashVal []byte, err error) {
@@ -180,16 +176,6 @@ func ComputeNftAssetLeafHash(
 	util.PaddingInt64IntoBuf(&buf, creatorAccountIndex)
 	util.PaddingInt64IntoBuf(&buf, ownerAccountIndex)
 	buf.Write(ffmath.Mod(new(big.Int).SetBytes(common.FromHex(nftContentHash)), curve.Modulus).FillBytes(make([]byte, 32)))
-	err = util.PaddingAddressIntoBuf(&buf, nftL1Address)
-	if err != nil {
-		logx.Errorf("[ComputeNftAssetLeafHash] unable to write address to buf: %s", err.Error())
-		return nil, err
-	}
-	err = util.PaddingStringBigIntIntoBuf(&buf, nftL1TokenId)
-	if err != nil {
-		logx.Errorf("[ComputeNftAssetLeafHash] unable to write big int to buf: %s", err.Error())
-		return nil, err
-	}
 	util.PaddingInt64IntoBuf(&buf, creatorTreasuryRate)
 	util.PaddingInt64IntoBuf(&buf, collectionId)
 	hFunc.Write(buf.Bytes())
@@ -316,7 +302,7 @@ func ConvertTxToRegisterZNSPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	chunk := SuffixPaddingBufToChunkSize(buf.Bytes())
 	buf.Reset()
 	buf.Write(chunk)
-	buf.Write(PrefixPaddingBufToChunkSize(AccountNameToBytes32(txInfo.AccountName)))
+	buf.Write(PrefixPaddingBufToChunkSize(AccountNameToBytes20(txInfo.AccountName)))
 	buf.Write(PrefixPaddingBufToChunkSize(txInfo.AccountNameHash))
 	pk, err := ParsePubKey(txInfo.PubKey)
 	if err != nil {
@@ -460,12 +446,10 @@ This is a layer-1 transaction and is used for depositing NFTs into the layer-2 a
 | TxType              | 1          | transaction type      |
 | AccountIndex        | 4          | account index         |
 | NftIndex            | 5          | unique index of a nft |
-| NftL1Address        | 20         | nft layer-1 address   |
 | CreatorAccountIndex | 4          | creator account index |
 | CreatorTreasuryRate | 2          | creator treasury rate |
 | CollectionId        | 2          | collection id         |
 | NftContentHash      | 32         | nft content hash      |
-| NftL1TokenId        | 32         | nft layer-1 token id  |
 | AccountNameHash     | 32         | account name hash     |
 
 ```go
@@ -484,7 +468,6 @@ func ConvertTxToDepositNftPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	buf.WriteByte(uint8(oTx.TxType))
 	buf.Write(Uint32ToBytes(uint32(txInfo.AccountIndex)))
 	buf.Write(Uint40ToBytes(txInfo.NftIndex))
-	buf.Write(AddressStrToBytes(txInfo.NftL1Address))
 	chunk1 := SuffixPaddingBufToChunkSize(buf.Bytes())
 	buf.Reset()
 	buf.Write(Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
@@ -495,7 +478,6 @@ func ConvertTxToDepositNftPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	buf.Write(chunk1)
 	buf.Write(chunk2)
 	buf.Write(PrefixPaddingBufToChunkSize(txInfo.NftContentHash))
-	buf.Write(Uint256ToBytes(txInfo.NftL1TokenId))
 	buf.Write(PrefixPaddingBufToChunkSize(txInfo.AccountNameHash))
 	buf.Write(PrefixPaddingBufToChunkSize([]byte{}))
 	return buf.Bytes(), nil
@@ -1461,13 +1443,11 @@ This is a layer-2 transaction and is used for withdrawing nft from the layer-2 t
 | CreatorTreasuryRate    | 2          | creator treasury rate     |
 | NftIndex               | 5          | unique nft index          |
 | CollectionId           | 2          | collection id             |
-| NftL1Address           | 20         | nft layer-1 address       |
 | ToAddress              | 20         | receiver address          |
 | GasFeeAccountIndex     | 4          | gas fee account index     |
 | GasFeeAssetId          | 2          | gas fee asset id          |
 | GasFeeAssetAmount      | 2          | packed fee amount         |
 | NftContentHash         | 32         | nft content hash          |
-| NftL1TokenId           | 32         | nft layer-1 token id      |
 | CreatorAccountNameHash | 32         | creator account name hash |
 
 ```go
@@ -1491,7 +1471,6 @@ func ConvertTxToWithdrawNftPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	buf.Write(Uint16ToBytes(uint16(txInfo.CollectionId)))
 	chunk1 := SuffixPaddingBufToChunkSize(buf.Bytes())
 	buf.Reset()
-	buf.Write(AddressStrToBytes(txInfo.NftL1Address))
 	chunk2 := PrefixPaddingBufToChunkSize(buf.Bytes())
 	buf.Reset()
 	buf.Write(AddressStrToBytes(txInfo.ToAddress))
@@ -1509,7 +1488,6 @@ func ConvertTxToWithdrawNftPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	buf.Write(chunk2)
 	buf.Write(chunk3)
 	buf.Write(PrefixPaddingBufToChunkSize(txInfo.NftContentHash))
-	buf.Write(Uint256ToBytes(txInfo.NftL1TokenId))
 	buf.Write(PrefixPaddingBufToChunkSize(txInfo.CreatorAccountNameHash))
 	return buf.Bytes(), nil
 }
@@ -1525,8 +1503,6 @@ type WithdrawNftTxInfo struct {
 	CreatorTreasuryRate    int64
 	NftIndex               int64
 	NftContentHash         []byte
-	NftL1Address           string
-	NftL1TokenId           *big.Int
 	CollectionId           int64
 	ToAddress              string
 	GasAccountIndex        int64
@@ -1567,8 +1543,6 @@ func VerifyWithdrawNftTx(
 	IsVariableEqual(api, flag, tx.CreatorTreasuryRate, nftBefore.CreatorTreasuryRate)
 	IsVariableEqual(api, flag, tx.AccountIndex, nftBefore.OwnerAccountIndex)
 	IsVariableEqual(api, flag, tx.NftContentHash, nftBefore.NftContentHash)
-	IsVariableEqual(api, flag, tx.NftL1TokenId, nftBefore.NftL1TokenId)
-	IsVariableEqual(api, flag, tx.NftL1Address, nftBefore.NftL1Address)
 	// have enough assets
 	tx.GasFeeAssetAmount = UnpackFee(api, tx.GasFeeAssetAmount)
 	IsVariableLessOrEqual(api, flag, tx.GasFeeAssetAmount, accountsBefore[0].AssetsInfo[0].Balance)
@@ -1678,11 +1652,9 @@ This is a layer-1 transaction and is used for full exit NFTs from the layer-2 to
 | CreatorTreasuryRate    | 2          | creator treasury rate     |
 | NftIndex               | 5          | unique nft index          |
 | CollectionId           | 2          | collection id             |
-| NftL1Address           | 20         | nft layer-1 address       |
 | AccountNameHash        | 32         | account name hash         |
 | CreatorAccountNameHash | 32         | creator account name hash |
 | NftContentHash         | 32         | nft content hash          |
-| NftL1TokenId           | 32         | nft layer-1 token id      |
 
 ```go
 func ConvertTxToFullExitNftPubData(oTx *tx.Tx) (pubData []byte, err error) {
@@ -1705,7 +1677,6 @@ func ConvertTxToFullExitNftPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	buf.Write(Uint16ToBytes(uint16(txInfo.CollectionId)))
 	chunk1 := SuffixPaddingBufToChunkSize(buf.Bytes())
 	buf.Reset()
-	buf.Write(AddressStrToBytes(txInfo.NftL1Address))
 	chunk2 := PrefixPaddingBufToChunkSize(buf.Bytes())
 	buf.Reset()
 	buf.Write(chunk1)
@@ -1713,7 +1684,6 @@ func ConvertTxToFullExitNftPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	buf.Write(PrefixPaddingBufToChunkSize(txInfo.AccountNameHash))
 	buf.Write(PrefixPaddingBufToChunkSize(txInfo.CreatorAccountNameHash))
 	buf.Write(PrefixPaddingBufToChunkSize(txInfo.NftContentHash))
-	buf.Write(Uint256ToBytes(txInfo.NftL1TokenId))
 	return buf.Bytes(), nil
 }
 ```
@@ -1746,11 +1716,7 @@ func VerifyFullExitNftTx(
 	IsVariableEqual(api, flag, tx.CreatorTreasuryRate, nftBefore.CreatorTreasuryRate)
 	isOwner := api.And(api.IsZero(api.Sub(tx.AccountIndex, nftBefore.OwnerAccountIndex)), flag)
 	IsVariableEqual(api, isOwner, tx.NftContentHash, nftBefore.NftContentHash)
-	IsVariableEqual(api, isOwner, tx.NftL1Address, nftBefore.NftL1Address)
-	IsVariableEqual(api, isOwner, tx.NftL1TokenId, nftBefore.NftL1TokenId)
 	tx.NftContentHash = api.Select(isOwner, tx.NftContentHash, 0)
-	tx.NftL1Address = api.Select(isOwner, tx.NftL1Address, 0)
-	tx.NftL1TokenId = api.Select(isOwner, tx.NftL1TokenId, 0)
 	return pubData
 }
 ```

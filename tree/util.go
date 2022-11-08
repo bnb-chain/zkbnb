@@ -18,15 +18,12 @@
 package tree
 
 import (
-	"bytes"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
+	"github.com/pkg/errors"
 	"math/big"
 
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/pkg/errors"
-
-	curve "github.com/bnb-chain/zkbnb-crypto/ecc/ztwistededwards/tebn254"
-	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 
 	common2 "github.com/bnb-chain/zkbnb/common"
@@ -34,8 +31,6 @@ import (
 )
 
 func EmptyAccountNodeHash() []byte {
-	hFunc := mimc.NewMiMC()
-	zero := big.NewInt(0).FillBytes(make([]byte, 32))
 	/*
 		AccountNameHash
 		PubKey
@@ -43,48 +38,33 @@ func EmptyAccountNodeHash() []byte {
 		CollectionNonce
 		AssetRoot
 	*/
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	// asset root
-	hFunc.Write(NilAccountAssetRoot)
-	return hFunc.Sum(nil)
+	zero := &fr.Element{0, 0, 0, 0}
+	NilAccountAssetRootElement := txtypes.FromBigIntToFr(new(big.Int).SetBytes(NilAccountAssetRoot))
+	hash := poseidon.Poseidon(zero, zero, zero, zero, zero, NilAccountAssetRootElement).Bytes()
+	return hash[:]
 }
 
 func EmptyAccountAssetNodeHash() []byte {
-	hFunc := mimc.NewMiMC()
-	zero := big.NewInt(0).FillBytes(make([]byte, 32))
 	/*
 		balance
 		offerCanceledOrFinalized
 	*/
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	return hFunc.Sum(nil)
+	zero := &fr.Element{0, 0, 0, 0}
+	hash := poseidon.Poseidon(zero, zero).Bytes()
+	return hash[:]
 }
 
 func EmptyNftNodeHash() []byte {
-	hFunc := mimc.NewMiMC()
-	zero := big.NewInt(0).FillBytes(make([]byte, 32))
 	/*
 		creatorAccountIndex
 		ownerAccountIndex
 		nftContentHash
-		nftL1Address
-		nftL1TokenId
 		creatorTreasuryRate
 		collectionId
 	*/
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	hFunc.Write(zero)
-	return hFunc.Sum(nil)
+	zero := &fr.Element{0, 0, 0, 0}
+	hash := poseidon.Poseidon(zero, zero, zero, zero, zero).Bytes()
+	return hash[:]
 }
 
 func CommitTrees(
@@ -236,75 +216,67 @@ func ComputeAccountLeafHash(
 	collectionNonce int64,
 	assetRoot []byte,
 ) (hashVal []byte, err error) {
-	hFunc := mimc.NewMiMC()
-	var buf bytes.Buffer
-	buf.Write(common.FromHex(accountNameHash))
-	err = common2.PaddingPkIntoBuf(&buf, pk)
+	e0, err := txtypes.FromHexStrToFr(accountNameHash)
 	if err != nil {
 		return nil, err
 	}
-	common2.PaddingInt64IntoBuf(&buf, nonce)
-	common2.PaddingInt64IntoBuf(&buf, collectionNonce)
-	buf.Write(assetRoot)
-	hFunc.Reset()
-	hFunc.Write(buf.Bytes())
-	hashVal = hFunc.Sum(nil)
-	return hashVal, nil
+	pubKey, err := common2.ParsePubKey(pk)
+	if err != nil {
+		return nil, err
+	}
+	e1 := &pubKey.A.X
+	e2 := &pubKey.A.Y
+	e3 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(nonce))
+	e4 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(collectionNonce))
+	e5 := txtypes.FromBigIntToFr(new(big.Int).SetBytes(assetRoot))
+	hash := poseidon.Poseidon(e0, e1, e2, e3, e4, e5).Bytes()
+	return hash[:], nil
 }
 
 func ComputeAccountAssetLeafHash(
 	balance string,
 	offerCanceledOrFinalized string,
 ) (hashVal []byte, err error) {
-	hFunc := mimc.NewMiMC()
-	var buf bytes.Buffer
-	err = common2.PaddingStringBigIntIntoBuf(&buf, balance)
-	if err != nil {
-		return nil, err
+	balanceBigInt, isValid := new(big.Int).SetString(balance, 10)
+	if !isValid {
+		return nil, errors.New("invalid balance string")
 	}
-	err = common2.PaddingStringBigIntIntoBuf(&buf, offerCanceledOrFinalized)
-	if err != nil {
-		return nil, err
+	e0 := txtypes.FromBigIntToFr(balanceBigInt)
+
+	offerCanceledOrFinalizedBigInt, isValid := new(big.Int).SetString(offerCanceledOrFinalized, 10)
+	if !isValid {
+		return nil, errors.New("invalid balance string")
 	}
-	hFunc.Write(buf.Bytes())
-	return hFunc.Sum(nil), nil
+	e1 := txtypes.FromBigIntToFr(offerCanceledOrFinalizedBigInt)
+	hash := poseidon.Poseidon(e0, e1).Bytes()
+	return hash[:], nil
 }
 
 func ComputeNftAssetLeafHash(
 	creatorAccountIndex int64,
 	ownerAccountIndex int64,
 	nftContentHash string,
-	nftL1Address string,
-	nftL1TokenId string,
 	creatorTreasuryRate int64,
 	collectionId int64,
 ) (hashVal []byte, err error) {
-	hFunc := mimc.NewMiMC()
-	var buf bytes.Buffer
-	common2.PaddingInt64IntoBuf(&buf, creatorAccountIndex)
-	common2.PaddingInt64IntoBuf(&buf, ownerAccountIndex)
-	buf.Write(ffmath.Mod(new(big.Int).SetBytes(common.FromHex(nftContentHash)), curve.Modulus).FillBytes(make([]byte, 32)))
-	err = common2.PaddingAddressIntoBuf(&buf, nftL1Address)
+	e0 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(creatorAccountIndex))
+	e1 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(ownerAccountIndex))
+	e2, err := txtypes.FromHexStrToFr(nftContentHash)
 	if err != nil {
 		return nil, err
 	}
-	err = common2.PaddingStringBigIntIntoBuf(&buf, nftL1TokenId)
-	if err != nil {
-		return nil, err
-	}
-	common2.PaddingInt64IntoBuf(&buf, creatorTreasuryRate)
-	common2.PaddingInt64IntoBuf(&buf, collectionId)
-	hFunc.Write(buf.Bytes())
-	hashVal = hFunc.Sum(nil)
-	return hashVal, nil
+	e3 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(creatorTreasuryRate))
+	e4 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(collectionId))
+	hash := poseidon.Poseidon(e0, e1, e2, e3, e4).Bytes()
+	return hash[:], nil
 }
 
 func ComputeStateRootHash(
 	accountRoot []byte,
 	nftRoot []byte,
 ) []byte {
-	hFunc := mimc.NewMiMC()
-	hFunc.Write(accountRoot)
-	hFunc.Write(nftRoot)
-	return hFunc.Sum(nil)
+	e0 := txtypes.FromBigIntToFr(new(big.Int).SetBytes(accountRoot))
+	e1 := txtypes.FromBigIntToFr(new(big.Int).SetBytes(nftRoot))
+	hash := poseidon.Poseidon(e0, e1).Bytes()
+	return hash[:]
 }

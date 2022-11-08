@@ -48,8 +48,6 @@ type (
 		CreatorAccountIndex int64
 		OwnerAccountIndex   int64
 		NftContentHash      string
-		NftL1Address        string
-		NftL1TokenId        string
 		CreatorTreasuryRate int64
 		CollectionId        int64
 	}
@@ -96,7 +94,7 @@ func (m *defaultL2NftModel) GetLatestNftIndex() (nftIndex int64, err error) {
 }
 
 func (m *defaultL2NftModel) GetNftsByAccountIndex(accountIndex, limit, offset int64) (nftList []*L2Nft, err error) {
-	dbTx := m.DB.Table(m.table).Where("owner_account_index = ? and deleted_at is NULL", accountIndex).
+	dbTx := m.DB.Table(m.table).Where("owner_account_index = ? and nft_content_hash != ?", accountIndex, "0").
 		Limit(int(limit)).Offset(int(offset)).Order("nft_index desc").Find(&nftList)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
@@ -108,7 +106,7 @@ func (m *defaultL2NftModel) GetNftsByAccountIndex(accountIndex, limit, offset in
 
 func (m *defaultL2NftModel) GetNftsCountByAccountIndex(accountIndex int64) (int64, error) {
 	var count int64
-	dbTx := m.DB.Table(m.table).Where("owner_account_index = ? and deleted_at is NULL", accountIndex).Count(&count)
+	dbTx := m.DB.Table(m.table).Where("owner_account_index = ? and nft_content_hash != ?", accountIndex, "0").Count(&count)
 	if dbTx.Error != nil {
 		return 0, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {

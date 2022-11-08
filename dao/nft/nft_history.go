@@ -48,8 +48,6 @@ type (
 		CreatorAccountIndex int64
 		OwnerAccountIndex   int64
 		NftContentHash      string
-		NftL1Address        string
-		NftL1TokenId        string
 		CreatorTreasuryRate int64
 		CollectionId        int64
 		Status              int
