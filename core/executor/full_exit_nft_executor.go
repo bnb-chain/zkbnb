@@ -79,7 +79,9 @@ func (e *FullExitNftExecutor) Prepare() error {
 
 	// Mark the tree states that would be affected in this executor.
 	e.MarkNftDirty(txInfo.NftIndex)
-	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{types.EmptyAccountAssetId}) // Prepare asset 0 for generate an empty tx detail.
+	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{types.EmptyAccountAssetId})        // Prepare asset 0 for generate an empty tx detail.
+	e.MarkAccountAssetsDirty(txInfo.CreatorAccountIndex, []int64{types.EmptyAccountAssetId}) // Prepare asset 0 for generate an empty tx detail.
+
 	err = e.BaseExecutor.Prepare()
 	if err != nil {
 		return err
@@ -174,7 +176,13 @@ func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	if err != nil {
 		return nil, err
 	}
-	txDetails := make([]*tx.TxDetail, 0, 2)
+
+	creatorAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.CreatorAccountIndex)
+	if err != nil {
+		return nil, err
+	}
+
+	txDetails := make([]*tx.TxDetail, 0, 3)
 
 	// user info
 	accountOrder := int64(0)
@@ -228,6 +236,27 @@ func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Order:           order,
 		Nonce:           exitAccount.Nonce,
 		CollectionNonce: exitAccount.CollectionNonce,
+	})
+
+	// create account empty delta
+	order++
+	accountOrder++
+	creatorAccountBalance := creatorAccount.AssetInfo[types.EmptyAccountAssetId]
+	txDetails = append(txDetails, &tx.TxDetail{
+		AssetId:      types.EmptyAccountAssetId,
+		AssetType:    types.FungibleAssetType,
+		AccountIndex: txInfo.CreatorAccountIndex,
+		AccountName:  creatorAccount.AccountName,
+		Balance:      creatorAccountBalance.String(),
+		BalanceDelta: types.ConstructAccountAsset(
+			types.EmptyAccountAssetId,
+			types.ZeroBigInt,
+			types.ZeroBigInt,
+		).String(),
+		Order:           order,
+		AccountOrder:    accountOrder,
+		Nonce:           creatorAccount.Nonce,
+		CollectionNonce: creatorAccount.CollectionNonce,
 	})
 
 	return txDetails, nil
