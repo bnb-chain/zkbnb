@@ -18,10 +18,14 @@ BSC_TESTNET_PRIVATE_KEY=acbaa26******************************a88367d9
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
 echo '0. stop old database/redis and docker run new database/redis'
 pm2 delete all
-docker kill $(docker ps -q)
-docker rm $(docker ps -a -q)
-docker run -d --name zkbnbredis -p 6379:6379 redis
-docker run --name postgres -p 5432:5432 -e PGDATA=/var/lib/postgresql/pgdata  -e POSTGRES_PASSWORD=ZkBNB@123 -e POSTGRES_USER=postgres -e POSTGRES_DB=zkbnb -d postgres
+docker kill $(docker ps -a |grep zkbnb|awk '{print $1}')
+docker rm $(docker ps -a |grep zkbnb|awk '{print $1}')
+docker run -d --name zkbnb-redis -p 6379:6379 redis
+docker run -d --name zkbnb-postgres -p 5432:5432 \
+  -e PGDATA=/var/lib/postgresql/pgdata  \
+  -e POSTGRES_PASSWORD=ZkBNB@123 \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_DB=zkbnb postgres
 
 
 echo '1. basic config and git clone repos'
