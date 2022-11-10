@@ -519,7 +519,7 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 				accountMap[txDetail.AccountIndex] = accountInfo
 			} else {
 				if lastAccountOrder != txDetail.AccountOrder {
-					if oTx.AccountIndex == txDetail.AccountIndex {
+					if oTx.AccountIndex == txDetail.AccountIndex && types.IsL2Tx(oTx.TxType) {
 						accountMap[txDetail.AccountIndex].Nonce = oTx.Nonce + 1
 					}
 				}
