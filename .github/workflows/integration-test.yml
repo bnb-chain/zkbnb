@@ -11,7 +11,7 @@ env:
 
 jobs:
   deploy:
-    runs-on: self-hosted
+    runs-on: [self-hosted,zkbas]
     permissions:
       issues: write
       pull-requests: write
