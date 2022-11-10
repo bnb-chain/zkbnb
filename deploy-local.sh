@@ -114,9 +114,7 @@ CacheRedis:
   - Host: 127.0.0.1:6379
     Type: node
 
-KeyPath:
-  ProvingKeyPath: [${KEY_PATH}/zkbnb10.pk]
-  VerifyingKeyPath: [${KEY_PATH}/zkbnb10.vk]
+KeyPath: [${KEY_PATH}/zkbnb10]
 
 BlockConfig:
   OptionalBlockSizes: [10]

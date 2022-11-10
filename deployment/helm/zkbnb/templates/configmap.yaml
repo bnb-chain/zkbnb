@@ -13,9 +13,7 @@ data:
     CacheRedis:
       {{- toYaml .Values.configs.redisCache | nindent 6 }}
 
-    KeyPath:
-      ProvingKeyPath: [/server/.zkbnb/zkbnb1.pk, /server/.zkbnb/zkbnb10.pk]
-      VerifyingKeyPath: [/server/.zkbnb/zkbnb1.vk, /server/.zkbnb/zkbnb10.vk]
+    KeyPath: [/server/.zkbnb/zkbnb1, /server/.zkbnb/zkbnb10]
 
     BlockConfig:
       OptionalBlockSizes: [1, 10]
