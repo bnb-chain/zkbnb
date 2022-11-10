@@ -60,6 +60,11 @@ var (
 		Name:      "sql_db_time",
 		Help:      "sql DB commit operation time",
 	})
+	executeTxApply1TxMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "exec_tx_apply_1_transaction_time",
+		Help:      "execute txs apply 1 transaction operation time",
+	})
 )
 
 type Config struct {
@@ -113,6 +118,9 @@ func NewCommitter(config *Config) (*Committer, error) {
 	}
 	if err := prometheus.Register(sqlDBOperationMetics); err != nil {
 		return nil, fmt.Errorf("prometheus.Register sqlDBOperationMetics error: %v", err)
+	}
+	if err := prometheus.Register(executeTxApply1TxMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register executeTxApply1TxMetrics error: %v", err)
 	}
 
 	committer := &Committer{
@@ -177,7 +185,9 @@ func (c *Committer) Run() {
 				break
 			}
 			logx.Infof("apply transaction, txHash=%s", poolTx.TxHash)
+			startApplyTx := time.Now()
 			err = c.bc.ApplyTransaction(poolTx)
+			executeTxApply1TxMetrics.Set(float64(time.Since(startApplyTx).Milliseconds()))
 			if err != nil {
 				logx.Errorf("apply pool tx ID: %d failed, err %v ", poolTx.ID, err)
 				poolTx.TxStatus = tx.StatusFailed
