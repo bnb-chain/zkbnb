@@ -18,10 +18,14 @@ BSC_TESTNET_PRIVATE_KEY=acbaa26******************************a88367d9
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
 echo '0. stop old database/redis and docker run new database/redis'
 pm2 delete all
-docker kill $(docker ps -q)
-docker rm $(docker ps -a -q)
-docker run -d --name zkbnbredis -p 6379:6379 redis
-docker run --name postgres -p 5432:5432 -e PGDATA=/var/lib/postgresql/pgdata  -e POSTGRES_PASSWORD=ZkBNB@123 -e POSTGRES_USER=postgres -e POSTGRES_DB=zkbnb -d postgres
+ZKBNB_CONTAINERS=$(docker ps -a |grep zkbnb|awk '{print $1}')
+[[ -z "${ZKBNB_CONTAINERS}" ]] || docker rm -f ${ZKBNB_CONTAINERS}
+docker run -d --name zkbnb-redis -p 6379:6379 redis
+docker run -d --name zkbnb-postgres -p 5432:5432 \
+  -e PGDATA=/var/lib/postgresql/pgdata  \
+  -e POSTGRES_PASSWORD=ZkBNB@123 \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_DB=zkbnb postgres
 
 
 echo '1. basic config and git clone repos'
@@ -64,8 +68,8 @@ echo '4-2. deploy contracts, register and deposit on BSC Testnet'
 cd ${DEPLOY_PATH}
 cd ./zkbnb-contract
 cp -r .env.example .env
-sed -i e "s~BSC_TESTNET_RPC=.*~BSC_TESTNET_RPC=${BSC_TESTNET_RPC}~" .env
-sed -i e "s/BSC_TESTNET_PRIVATE_KEY=.*/BSC_TESTNET_PRIVATE_KEY=${BSC_TESTNET_PRIVATE_KEY}/" .env
+sed -i -e "s~BSC_TESTNET_RPC=.*~BSC_TESTNET_RPC=${BSC_TESTNET_RPC}~" .env
+sed -i -e "s/BSC_TESTNET_PRIVATE_KEY=.*/BSC_TESTNET_PRIVATE_KEY=${BSC_TESTNET_PRIVATE_KEY}/" .env
 yarn install
 npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deploy.js
 echo 'Recorded latest contract addresses into ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json'
