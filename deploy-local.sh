@@ -12,6 +12,7 @@ DEPLOY_PATH=~/zkbnb-deploy
 KEY_PATH=~/.zkbnb
 ZkBNB_REPO_PATH=$(cd `dirname $0`; pwd)
 CMC_TOKEN=cfce503f-fake-fake-fake-bbab5257dac8
+NETWORK_RPC_SYS_CONFIG_NAME=BscTestNetworkRpc # BscTestNetworkRpc or LocalTestNetworkRpc
 BSC_TESTNET_RPC=https://data-seed-prebsc-1-s1.binance.org:8545
 BSC_TESTNET_PRIVATE_KEY=acbaa26******************************a88367d9
 
@@ -176,7 +177,7 @@ CacheRedis:
     Type: node
 
 ChainConfig:
-  NetworkRPCSysConfigName: "BscTestNetworkRpc"
+  NetworkRPCSysConfigName: "${NETWORK_RPC_SYS_CONFIG_NAME}"
   #NetworkRPCSysConfigName: "LocalTestNetworkRpc"
   StartL1BlockHeight: $blockNumber
   ConfirmBlocksCount: 0
@@ -239,7 +240,7 @@ CacheRedis:
     Type: node
 
 ChainConfig:
-  NetworkRPCSysConfigName: "BscTestNetworkRpc"
+  NetworkRPCSysConfigName: "${NETWORK_RPC_SYS_CONFIG_NAME}"
   #NetworkRPCSysConfigName: "LocalTestNetworkRpc"
   ConfirmBlocksCount: 0
   MaxWaitingTime: 120
