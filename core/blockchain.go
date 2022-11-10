@@ -16,6 +16,7 @@ import (
 
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 	"github.com/bnb-chain/zkbnb/common/chain"
+	"github.com/bnb-chain/zkbnb/common/zkbnbprometheus"
 	"github.com/bnb-chain/zkbnb/core/statedb"
 	sdb "github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/account"
@@ -42,6 +43,41 @@ var (
 		Namespace: "zkbnb",
 		Name:      "commit_smt",
 		Help:      "commit smt tree operation time",
+	})
+
+	executeTxPrepareMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "exec_tx_prepare_time",
+		Help:      "execute txs prepare operation time",
+	})
+
+	executeTxVerifyInputsMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "exec_tx_verify_inputs_time",
+		Help:      "execute txs verify inputs operation time",
+	})
+
+	executeGenerateTxDetailsMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "exec_tx_generate_tx_details_time",
+		Help:      "execute txs generate tx details operation time",
+	})
+
+	executeTxApplyTransactionMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "exec_tx_apply_transaction_time",
+		Help:      "execute txs apply transaction operation time",
+	})
+
+	executeTxGeneratePubDataMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "exec_tx_generate_pub_data_time",
+		Help:      "execute txs generate pub data operation time",
+	})
+	executeTxGetExecutedTxMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "exec_tx_get_executed_tx_time",
+		Help:      "execute txs get executed tx operation time",
 	})
 )
 
@@ -110,7 +146,39 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	if err != nil {
 		return nil, err
 	}
-	bc.processor = NewCommitProcessor(bc)
+	if err := prometheus.Register(executeTxPrepareMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register executeTxPrepareMetrics error: %v", err)
+	}
+
+	if err := prometheus.Register(executeTxVerifyInputsMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register executeTxVerifyInputsMetrics error: %v", err)
+	}
+
+	if err := prometheus.Register(executeGenerateTxDetailsMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register executeGenerateTxDetailsMetrics error: %v", err)
+	}
+
+	if err := prometheus.Register(executeTxApplyTransactionMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register executeTxApplyTransactionMetrics error: %v", err)
+	}
+
+	if err := prometheus.Register(executeTxGeneratePubDataMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register executeTxGeneratePubDataMetrics error: %v", err)
+	}
+
+	if err := prometheus.Register(executeTxGetExecutedTxMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register executeTxGetExecutedTxMetrics error: %v", err)
+	}
+
+	prometheusMetrics := &zkbnbprometheus.Metrics{
+		TxPrepareMetrics:           executeTxPrepareMetrics,
+		TxVerifyInputsMetrics:      executeTxVerifyInputsMetrics,
+		TxGenerateTxDetailsMetrics: executeGenerateTxDetailsMetrics,
+		TxApplyTransactionMetrics:  executeTxApplyTransactionMetrics,
+		TxGeneratePubDataMetrics:   executeTxGeneratePubDataMetrics,
+		TxGetExecutedTxMetrics:     executeTxGetExecutedTxMetrics,
+	}
+	bc.processor = NewCommitProcessor(bc, prometheusMetrics)
 
 	// register metrics
 	if err := prometheus.Register(updateTreeMetics); err != nil {

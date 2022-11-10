@@ -2,6 +2,8 @@ package core
 
 import (
 	"fmt"
+	"github.com/bnb-chain/zkbnb/common/zkbnbprometheus"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -17,16 +19,19 @@ type Processor interface {
 }
 
 type CommitProcessor struct {
-	bc *BlockChain
+	bc      *BlockChain
+	metrics *zkbnbprometheus.Metrics
 }
 
-func NewCommitProcessor(bc *BlockChain) Processor {
+func NewCommitProcessor(bc *BlockChain, prometheusMetrics *zkbnbprometheus.Metrics) Processor {
 	return &CommitProcessor{
-		bc: bc,
+		bc:      bc,
+		metrics: prometheusMetrics,
 	}
 }
 
 func (p *CommitProcessor) Process(tx *tx.Tx) error {
+	var start time.Time
 	p.bc.setCurrentBlockTimeStamp()
 	defer p.bc.resetCurrentBlockTimeStamp()
 
@@ -34,29 +39,42 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 	if err != nil {
 		return fmt.Errorf("new tx executor failed")
 	}
-
+	start = time.Now()
 	err = executor.Prepare()
+	p.metrics.TxPrepareMetrics.Set(float64(time.Since(start).Milliseconds()))
+
 	if err != nil {
 		return err
 	}
+	start = time.Now()
 	err = executor.VerifyInputs(true)
+	p.metrics.TxVerifyInputsMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
 		return err
 	}
+	start = time.Now()
 	txDetails, err := executor.GenerateTxDetails()
+	p.metrics.TxGenerateTxDetailsMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
 		return err
 	}
 	tx.TxDetails = txDetails
+	start = time.Now()
 	err = executor.ApplyTransaction()
+	p.metrics.TxApplyTransactionMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
 		panic(err)
 	}
+	start = time.Now()
 	err = executor.GeneratePubData()
+	p.metrics.TxGeneratePubDataMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
 		panic(err)
 	}
+	start = time.Now()
 	tx, err = executor.GetExecutedTx()
+	p.metrics.TxGetExecutedTxMetrics.Set(float64(time.Since(start).Milliseconds()))
+
 	if err != nil {
 		panic(err)
 	}
@@ -81,7 +99,6 @@ func (p *APIProcessor) Process(tx *tx.Tx) error {
 	if err != nil {
 		return fmt.Errorf("new tx executor failed")
 	}
-
 	err = executor.Prepare()
 	if err != nil {
 		logx.Error("fail to prepare:", err)
