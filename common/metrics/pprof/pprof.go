@@ -15,6 +15,7 @@ func NewPProfServer(srv *metrics.RunOnceHttpMux, addr string) metrics.MetricsSer
 	srv.Handle("/debug/pprof/allocs", pprof.Handler("allocs"))
 	srv.Handle("/debug/pprof/block", pprof.Handler("block"))
 	srv.Handle("/debug/pprof/mutex", pprof.Handler("mutex"))
+	srv.HandleFunc("/debug/pprof/profile", pprof.Profile)
 	return &PProfServer{
 		srv:  srv,
 		addr: addr,
