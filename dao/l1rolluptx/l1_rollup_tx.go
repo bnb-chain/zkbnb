@@ -56,11 +56,11 @@ type (
 	L1RollupTx struct {
 		gorm.Model
 		// txVerification hash
-		L1TxHash string
+		L1TxHash string `gorm:"index"`
 		// txVerification status, 1 - pending, 2 - handled
-		TxStatus int
+		TxStatus int `gorm:"index:idx_tx_status"`
 		// txVerification type: commit / verify
-		TxType uint8
+		TxType uint8 `gorm:"index:idx_tx_status"`
 		// layer-2 block height
 		L2BlockHeight int64
 	}

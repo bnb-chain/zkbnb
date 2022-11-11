@@ -55,7 +55,7 @@ type (
 		gorm.Model
 		Height      int64 `gorm:"index:idx_height,unique"`
 		WitnessData string
-		Status      int64
+		Status      int64 `gorm:"index"`
 	}
 )
 
