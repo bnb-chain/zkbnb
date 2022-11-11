@@ -44,7 +44,7 @@ type (
 
 	SysConfig struct {
 		gorm.Model
-		Name      string
+		Name      string `gorm:"index"`
 		Value     string
 		ValueType string
 		Comment   string
