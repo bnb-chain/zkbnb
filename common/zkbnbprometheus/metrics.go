@@ -10,3 +10,10 @@ type Metrics struct {
 	TxGeneratePubDataMetrics   prometheus.Gauge
 	TxGetExecutedTxMetrics     prometheus.Gauge
 }
+
+type StateDBMetrics struct {
+	GetAccountFromDbGauge   prometheus.Gauge
+	GetAccountGauge         prometheus.Gauge
+	GetAccountCounter       prometheus.Counter
+	GetAccountFromDbCounter prometheus.Counter
+}

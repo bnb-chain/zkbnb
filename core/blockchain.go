@@ -146,6 +146,40 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	if err != nil {
 		return nil, err
 	}
+
+	accountFromDbGauge := prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "account_from_db_time",
+		Help:      "account from db time",
+	})
+	if err := prometheus.Register(accountFromDbGauge); err != nil {
+		return nil, fmt.Errorf("prometheus.Register accountFromDbMetrics error: %v", err)
+	}
+	getAccountCounter := prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "zkbnb",
+		Name:      "get account counter",
+		Help:      "get account counter",
+	})
+	if err := prometheus.Register(getAccountCounter); err != nil {
+		return nil, fmt.Errorf("prometheus.Register getAccountCounter error: %v", err)
+	}
+
+	getAccountFromDbCounter := prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "zkbnb",
+		Name:      "get account from db counter",
+		Help:      "get account from db counter",
+	})
+	if err := prometheus.Register(getAccountFromDbCounter); err != nil {
+		return nil, fmt.Errorf("prometheus.Register getAccountFromDbCounter error: %v", err)
+	}
+	stateDBMetrics := &zkbnbprometheus.StateDBMetrics{
+		GetAccountFromDbGauge:   accountFromDbGauge,
+		GetAccountGauge:         accountFromDbGauge,
+		GetAccountCounter:       getAccountCounter,
+		GetAccountFromDbCounter: getAccountFromDbCounter,
+	}
+	bc.Statedb.Metrics = stateDBMetrics
+
 	if err := prometheus.Register(executeTxPrepareMetrics); err != nil {
 		return nil, fmt.Errorf("prometheus.Register executeTxPrepareMetrics error: %v", err)
 	}
@@ -169,7 +203,6 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	if err := prometheus.Register(executeTxGetExecutedTxMetrics); err != nil {
 		return nil, fmt.Errorf("prometheus.Register executeTxGetExecutedTxMetrics error: %v", err)
 	}
-
 	prometheusMetrics := &zkbnbprometheus.Metrics{
 		TxPrepareMetrics:           executeTxPrepareMetrics,
 		TxVerifyInputsMetrics:      executeTxVerifyInputsMetrics,

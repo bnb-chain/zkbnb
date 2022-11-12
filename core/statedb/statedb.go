@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/bnb-chain/zkbnb/common/zkbnbprometheus"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"strconv"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	lru "github.com/hashicorp/golang-lru"
@@ -63,6 +65,7 @@ type StateDB struct {
 	NftTree           bsmt.SparseMerkleTree
 	AccountAssetTrees *tree.AssetTreeCache
 	TreeCtx           *tree.Context
+	Metrics           *zkbnbprometheus.StateDBMetrics
 }
 
 func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
@@ -142,6 +145,9 @@ func NewStateDBForDryRun(redisCache dbcache.Cache, cacheConfig *CacheConfig, cha
 }
 
 func (s *StateDB) GetFormatAccount(accountIndex int64) (*types.AccountInfo, error) {
+	var start time.Time
+	start = time.Now()
+	s.Metrics.GetAccountCounter.Inc()
 	pending, exist := s.StateCache.GetPendingAccount(accountIndex)
 	if exist {
 		return pending, nil
@@ -152,7 +158,11 @@ func (s *StateDB) GetFormatAccount(accountIndex int64) (*types.AccountInfo, erro
 		return cached.(*types.AccountInfo), nil
 	}
 
+	startGauge := time.Now()
 	account, err := s.chainDb.AccountModel.GetAccountByIndex(accountIndex)
+	s.Metrics.GetAccountFromDbGauge.Set(float64(time.Since(startGauge).Milliseconds()))
+	s.Metrics.GetAccountFromDbCounter.Inc()
+
 	if err == types.DbErrNotFound {
 		return nil, types.AppErrAccountNotFound
 	} else if err != nil {
@@ -163,6 +173,8 @@ func (s *StateDB) GetFormatAccount(accountIndex int64) (*types.AccountInfo, erro
 		return nil, err
 	}
 	s.AccountCache.Add(accountIndex, formatAccount)
+	s.Metrics.GetAccountGauge.Set(float64(time.Since(start).Milliseconds()))
+
 	return formatAccount, nil
 }
 
