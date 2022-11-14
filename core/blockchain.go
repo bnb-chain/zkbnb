@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gorm.io/gorm/logger"
 	"math/big"
 	"time"
 
@@ -84,6 +85,7 @@ var (
 type ChainConfig struct {
 	Postgres struct {
 		DataSource string
+		LogLevel   logger.LogLevel `json:",optional"`
 	}
 	CacheRedis cache.CacheConf
 	//nolint:staticcheck
@@ -112,7 +114,9 @@ type BlockChain struct {
 }
 
 func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) {
-	db, err := gorm.Open(postgres.Open(config.Postgres.DataSource))
+	db, err := gorm.Open(postgres.Open(config.Postgres.DataSource), &gorm.Config{
+		Logger: logger.Default.LogMode(config.Postgres.LogLevel),
+	})
 	if err != nil {
 		logx.Error("gorm connect db failed: ", err)
 		return nil, err
@@ -152,12 +156,38 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		Name:      "account_from_db_time",
 		Help:      "account from db time",
 	})
+
+	accountGauge := prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "account_time",
+		Help:      "account time",
+	})
+
+	verifyGasGauge := prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "verifyGasGauge_time",
+		Help:      "verifyGas time",
+	})
+	verifySignature := prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "verifySignature_time",
+		Help:      "verifySignature time",
+	})
+
+	if err := prometheus.Register(verifyGasGauge); err != nil {
+		return nil, fmt.Errorf("prometheus.Register verifyGasGauge error: %v", err)
+	}
+
+	if err := prometheus.Register(verifySignature); err != nil {
+		return nil, fmt.Errorf("prometheus.Register verifySignature error: %v", err)
+	}
+
 	if err := prometheus.Register(accountFromDbGauge); err != nil {
 		return nil, fmt.Errorf("prometheus.Register accountFromDbMetrics error: %v", err)
 	}
 	getAccountCounter := prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace: "zkbnb",
-		Name:      "get account counter",
+		Name:      "get_account_counter",
 		Help:      "get account counter",
 	})
 	if err := prometheus.Register(getAccountCounter); err != nil {
@@ -166,7 +196,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 
 	getAccountFromDbCounter := prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace: "zkbnb",
-		Name:      "get account from db counter",
+		Name:      "get_account_from_db_counter",
 		Help:      "get account from db counter",
 	})
 	if err := prometheus.Register(getAccountFromDbCounter); err != nil {
@@ -174,9 +204,11 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	}
 	stateDBMetrics := &zkbnbprometheus.StateDBMetrics{
 		GetAccountFromDbGauge:   accountFromDbGauge,
-		GetAccountGauge:         accountFromDbGauge,
+		GetAccountGauge:         accountGauge,
 		GetAccountCounter:       getAccountCounter,
 		GetAccountFromDbCounter: getAccountFromDbCounter,
+		VerifyGasGauge:          verifyGasGauge,
+		VerifySignature:         verifySignature,
 	}
 	bc.Statedb.Metrics = stateDBMetrics
 

@@ -147,7 +147,9 @@ func NewStateDBForDryRun(redisCache dbcache.Cache, cacheConfig *CacheConfig, cha
 func (s *StateDB) GetFormatAccount(accountIndex int64) (*types.AccountInfo, error) {
 	var start time.Time
 	start = time.Now()
-	s.Metrics.GetAccountCounter.Inc()
+	if s.Metrics != nil && s.Metrics.GetAccountCounter != nil {
+		s.Metrics.GetAccountCounter.Inc()
+	}
 	pending, exist := s.StateCache.GetPendingAccount(accountIndex)
 	if exist {
 		return pending, nil
@@ -160,8 +162,12 @@ func (s *StateDB) GetFormatAccount(accountIndex int64) (*types.AccountInfo, erro
 
 	startGauge := time.Now()
 	account, err := s.chainDb.AccountModel.GetAccountByIndex(accountIndex)
-	s.Metrics.GetAccountFromDbGauge.Set(float64(time.Since(startGauge).Milliseconds()))
-	s.Metrics.GetAccountFromDbCounter.Inc()
+	if s.Metrics != nil && s.Metrics.GetAccountFromDbGauge != nil {
+		s.Metrics.GetAccountFromDbGauge.Set(float64(time.Since(startGauge).Milliseconds()))
+	}
+	if s.Metrics != nil && s.Metrics.GetAccountFromDbCounter != nil {
+		s.Metrics.GetAccountFromDbCounter.Inc()
+	}
 
 	if err == types.DbErrNotFound {
 		return nil, types.AppErrAccountNotFound
@@ -173,7 +179,9 @@ func (s *StateDB) GetFormatAccount(accountIndex int64) (*types.AccountInfo, erro
 		return nil, err
 	}
 	s.AccountCache.Add(accountIndex, formatAccount)
-	s.Metrics.GetAccountGauge.Set(float64(time.Since(start).Milliseconds()))
+	if s.Metrics != nil && s.Metrics.GetAccountGauge != nil {
+		s.Metrics.GetAccountGauge.Set(float64(time.Since(start).Milliseconds()))
+	}
 
 	return formatAccount, nil
 }
