@@ -161,8 +161,10 @@ func (m *defaultAccountModel) GetConfirmedAccountByIndex(accountIndex int64) (ac
 }
 
 func (m *defaultAccountModel) UpdateAccountsInTransact(tx *gorm.DB, accounts []*Account) error {
+	const CreatedAt = "CreatedAt"
 	for _, account := range accounts {
 		dbTx := tx.Table(m.table).Where("account_index = ?", account.AccountIndex).
+			Omit(CreatedAt).
 			Select("*").
 			Updates(&account)
 		if dbTx.Error != nil {
