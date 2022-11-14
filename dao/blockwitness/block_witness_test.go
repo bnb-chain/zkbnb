@@ -10,17 +10,17 @@ import (
 	"github.com/bnb-chain/zkbnb/common/test"
 )
 
-type blockWitnessSuite struct {
+type Suite struct {
 	suite.Suite
 	dao BlockWitnessModel
 	db  *test.Database
 }
 
-func TestBlockWitnessSuite(t *testing.T) {
-	suite.Run(t, new(blockWitnessSuite))
+func TestSuite(t *testing.T) {
+	suite.Run(t, new(Suite))
 }
 
-func (s *blockWitnessSuite) SetupSuite() {
+func (s *Suite) SetupSuite() {
 	dbName := "zkbnb"
 	db, err := test.RunDB(dbName)
 	s.Require().NoError(err)
@@ -28,24 +28,24 @@ func (s *blockWitnessSuite) SetupSuite() {
 	s.dao = NewBlockWitnessModel(db.DB)
 }
 
-func (s *blockWitnessSuite) TearDownSuite() {
+func (s *Suite) TearDownSuite() {
 	err := s.db.StopDB()
 	s.Require().NoError(err)
 }
 
-func (s *blockWitnessSuite) SetupTest() {
+func (s *Suite) SetupTest() {
 	err := s.db.ClearDB([]string{TableName})
 	s.Require().NoError(err)
 	err = s.db.InitDB()
 	s.Require().NoError(err)
 }
 
-func (s *blockWitnessSuite) TearDownTest() {
+func (s *Suite) TearDownTest() {
 	err := s.db.ClearDB([]string{TableName})
 	s.Require().NoError(err)
 }
 
-func (s *blockWitnessSuite) TestUpdateBlockWitnessStatus() {
+func (s *Suite) TestUpdateBlockWitnessStatus() {
 	witness := &BlockWitness{
 		Model: gorm.Model{
 			CreatedAt: time.Unix(10, 0),
