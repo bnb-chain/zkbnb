@@ -71,8 +71,8 @@ type (
 		gorm.Model
 		BlockSize uint16
 		// pubdata
-		BlockCommitment                 string
-		BlockHeight                     int64 `gorm:"uniqueIndex"`
+		BlockCommitment                 string `gorm:"index"`
+		BlockHeight                     int64  `gorm:"uniqueIndex"`
 		StateRoot                       string
 		PriorityOperations              int64
 		PendingOnChainOperationsHash    string
@@ -82,7 +82,7 @@ type (
 		VerifiedTxHash                  string
 		VerifiedAt                      int64
 		Txs                             []*tx.Tx `gorm:"foreignKey:BlockId"`
-		BlockStatus                     int64
+		BlockStatus                     int64    `gorm:"index"`
 	}
 
 	BlockStates struct {

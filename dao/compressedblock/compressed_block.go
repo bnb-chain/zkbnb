@@ -43,7 +43,7 @@ type (
 	CompressedBlock struct {
 		gorm.Model
 		BlockSize         uint16
-		BlockHeight       int64
+		BlockHeight       int64 `gorm:"index"`
 		StateRoot         string
 		PublicData        string
 		Timestamp         int64
