@@ -127,7 +127,7 @@ TreeDB:
 " > ${DEPLOY_PATH}/zkbnb/service/prover/etc/config.yaml
 
 echo -e "
-go run ./cmd/zkbnb/main.go prover --config ${DEPLOY_PATH}/zkbnb/service/prover/etc/config.yaml --pprof --pprof.addr 0.0.0.0 --pprof.port 6060 --metrics --metrics.addr 0.0.0.0 --metrics.port 6060
+go run ./cmd/zkbnb/main.go prover --config ${DEPLOY_PATH}/zkbnb/service/prover/etc/config.yaml --pprof --pprof.addr 127.0.0.1 --pprof.port 6060 --metrics --metrics.addr 127.0.0.1 --metrics.port 6060
 " > run_prover.sh
 # remove the fist line if it includes -e
 sed -i '' -e '/-e/,1d' ${DEPLOY_PATH}/zkbnb/service/prover/etc/config.yaml
@@ -156,7 +156,7 @@ TreeDB:
 " > ${DEPLOY_PATH}/zkbnb/service/witness/etc/config.yaml
 
 echo -e "
-go run ./cmd/zkbnb/main.go witness --config ${DEPLOY_PATH}/zkbnb/service/witness/etc/config.yaml --pprof --pprof.addr 0.0.0.0 --pprof.port 6061 --metrics --metrics.addr 0.0.0.0 --metrics.port 6061
+go run ./cmd/zkbnb/main.go witness --config ${DEPLOY_PATH}/zkbnb/service/witness/etc/config.yaml --pprof --pprof.addr 127.0.0.1 --pprof.port 6061 --metrics --metrics.addr 127.0.0.1 --metrics.port 6061
 " > run_witness.sh
 # remove the fist line if it includes -e
 sed -i '' -e '/-e/,1d' ${DEPLOY_PATH}/zkbnb/service/witness/etc/config.yaml
@@ -190,7 +190,7 @@ TreeDB:
 " > ${DEPLOY_PATH}/zkbnb/service/monitor/etc/config.yaml
 
 echo -e "
-go run ./cmd/zkbnb/main.go monitor --config ${DEPLOY_PATH}/zkbnb/service/monitor/etc/config.yaml --pprof --pprof.addr 0.0.0.0 --pprof.port 6062 --metrics --metrics.addr 0.0.0.0 --metrics.port 6062
+go run ./cmd/zkbnb/main.go monitor --config ${DEPLOY_PATH}/zkbnb/service/monitor/etc/config.yaml --pprof --pprof.addr 127.0.0.1 --pprof.port 6062 --metrics --metrics.addr 127.0.0.1 --metrics.port 6062
 " > run_monitor.sh
 # remove the fist line if it includes -e
 sed -i '' -e '/-e/,1d' ${DEPLOY_PATH}/zkbnb/service/monitor/etc/config.yaml
@@ -219,7 +219,7 @@ TreeDB:
 " > ${DEPLOY_PATH}/zkbnb/service/committer/etc/config.yaml
 
 echo -e "
-go run ./cmd/zkbnb/main.go committer --config ${DEPLOY_PATH}/zkbnb/service/committer/etc/config.yaml --pprof --pprof.addr 0.0.0.0 --pprof.port 6063 --metrics --metrics.addr 0.0.0.0 --metrics.port 6063
+go run ./cmd/zkbnb/main.go committer --config ${DEPLOY_PATH}/zkbnb/service/committer/etc/config.yaml --pprof --pprof.addr 127.0.0.1 --pprof.port 6063 --metrics --metrics.addr 127.0.0.1 --metrics.port 6063
 " > run_committer.sh
 # remove the fist line if it includes -e
 sed -i '' -e '/-e/,1d' ${DEPLOY_PATH}/zkbnb/service/committer/etc/config.yaml
@@ -255,7 +255,7 @@ TreeDB:
 " > ${DEPLOY_PATH}/zkbnb/service/sender/etc/config.yaml
 
 echo -e "
-go run ./cmd/zkbnb/main.go sender --config ${DEPLOY_PATH}/zkbnb/service/sender/etc/config.yaml --pprof --pprof.addr 0.0.0.0 --pprof.port 6064 --metrics --metrics.addr 0.0.0.0 --metrics.port 6064
+go run ./cmd/zkbnb/main.go sender --config ${DEPLOY_PATH}/zkbnb/service/sender/etc/config.yaml --pprof --pprof.addr 127.0.0.1 --pprof.port 6064 --metrics --metrics.addr 127.0.0.1 --metrics.port 6064
 " > run_sender.sh
 # remove the fist line if it includes -e
 sed -i '' -e '/-e/,1d' ${DEPLOY_PATH}/zkbnb/service/sender/etc/config.yaml
@@ -267,7 +267,7 @@ echo "12. run api-server"
 
 echo -e "
 Name: api-server
-Host: 0.0.0.0
+Host: 127.0.0.1
 Port: 8888
 
 TxPool:
@@ -304,7 +304,7 @@ MemCache:
   " > ${DEPLOY_PATH}/zkbnb/service/apiserver/etc/config.yaml
 
 echo -e "
-go run ./cmd/zkbnb/main.go apiserver --config ${DEPLOY_PATH}/zkbnb/service/apiserver/etc/config.yaml --pprof --pprof.addr 0.0.0.0 --pprof.port 6065 --metrics --metrics.addr 0.0.0.0 --metrics.port 6065
+go run ./cmd/zkbnb/main.go apiserver --config ${DEPLOY_PATH}/zkbnb/service/apiserver/etc/config.yaml --pprof --pprof.addr 127.0.0.1 --pprof.port 6065 --metrics --metrics.addr 127.0.0.1 --metrics.port 6065
 " > run_apiserver.sh
 # remove the fist line if it includes -e
 sed -i '' -e '/-e/,1d' ${DEPLOY_PATH}/zkbnb/service/apiserver/etc/config.yaml
