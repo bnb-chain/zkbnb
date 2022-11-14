@@ -164,7 +164,7 @@ func (d *Database) ClearDB(tables []string) error {
 	for _, table := range tables {
 		dbTx := d.DB.Exec(fmt.Sprintf("TRUNCATE %s;", table))
 		if dbTx.Error != nil {
-			panic(dbTx.Error)
+			return dbTx.Error
 		}
 	}
 
