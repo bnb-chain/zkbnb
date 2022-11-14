@@ -55,7 +55,7 @@ func RunDB(dbName string) (*Database, error) {
 	}
 
 	_, reuse := os.LookupEnv("REUSE_DOCKER")
-	if !reuse || len(allContainers) == 0 {
+	if !reuse && len(allContainers) == 0 {
 		resource, err = pool.RunWithOptions(
 			&dockertest.RunOptions{Repository: "ghcr.io/bnb-chain/zkbnb/zkbnb-ut-postgres", Tag: "latest", Env: []string{"POSTGRES_PASSWORD=ZkBNB@123", "POSTGRES_USER=postgres", "POSTGRES_DB=zkbnb"}, Name: "zkbnb_unittest_pg"},
 		)
