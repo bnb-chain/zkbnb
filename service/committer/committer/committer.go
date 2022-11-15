@@ -92,8 +92,8 @@ var (
 
 	deletePoolTxMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
-		Name:      "add_account_history_time",
-		Help:      "add account history time",
+		Name:      "delete_pool_tx_time",
+		Help:      "delete pool tx time",
 	})
 
 	updateBlockMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
