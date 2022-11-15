@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gorm.io/gorm/logger"
 	"math/big"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 	"github.com/bnb-chain/zkbnb/common/chain"
+	"github.com/bnb-chain/zkbnb/common/zkbnbprometheus"
 	"github.com/bnb-chain/zkbnb/core/statedb"
 	sdb "github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/account"
@@ -43,11 +45,47 @@ var (
 		Name:      "commit_smt",
 		Help:      "commit smt tree operation time",
 	})
+
+	executeTxPrepareMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "exec_tx_prepare_time",
+		Help:      "execute txs prepare operation time",
+	})
+
+	executeTxVerifyInputsMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "exec_tx_verify_inputs_time",
+		Help:      "execute txs verify inputs operation time",
+	})
+
+	executeGenerateTxDetailsMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "exec_tx_generate_tx_details_time",
+		Help:      "execute txs generate tx details operation time",
+	})
+
+	executeTxApplyTransactionMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "exec_tx_apply_transaction_time",
+		Help:      "execute txs apply transaction operation time",
+	})
+
+	executeTxGeneratePubDataMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "exec_tx_generate_pub_data_time",
+		Help:      "execute txs generate pub data operation time",
+	})
+	executeTxGetExecutedTxMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "exec_tx_get_executed_tx_time",
+		Help:      "execute txs get executed tx operation time",
+	})
 )
 
 type ChainConfig struct {
 	Postgres struct {
 		DataSource string
+		LogLevel   logger.LogLevel `json:",optional"`
 	}
 	CacheRedis cache.CacheConf
 	//nolint:staticcheck
@@ -76,7 +114,9 @@ type BlockChain struct {
 }
 
 func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) {
-	db, err := gorm.Open(postgres.Open(config.Postgres.DataSource))
+	db, err := gorm.Open(postgres.Open(config.Postgres.DataSource), &gorm.Config{
+		Logger: logger.Default.LogMode(config.Postgres.LogLevel),
+	})
 	if err != nil {
 		logx.Error("gorm connect db failed: ", err)
 		return nil, err
@@ -110,7 +150,100 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	if err != nil {
 		return nil, err
 	}
-	bc.processor = NewCommitProcessor(bc)
+
+	accountFromDbGauge := prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "account_from_db_time",
+		Help:      "account from db time",
+	})
+
+	accountGauge := prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "account_time",
+		Help:      "account time",
+	})
+
+	verifyGasGauge := prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "verifyGasGauge_time",
+		Help:      "verifyGas time",
+	})
+	verifySignature := prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "verifySignature_time",
+		Help:      "verifySignature time",
+	})
+
+	if err := prometheus.Register(verifyGasGauge); err != nil {
+		return nil, fmt.Errorf("prometheus.Register verifyGasGauge error: %v", err)
+	}
+
+	if err := prometheus.Register(verifySignature); err != nil {
+		return nil, fmt.Errorf("prometheus.Register verifySignature error: %v", err)
+	}
+
+	if err := prometheus.Register(accountFromDbGauge); err != nil {
+		return nil, fmt.Errorf("prometheus.Register accountFromDbMetrics error: %v", err)
+	}
+	getAccountCounter := prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "zkbnb",
+		Name:      "get_account_counter",
+		Help:      "get account counter",
+	})
+	if err := prometheus.Register(getAccountCounter); err != nil {
+		return nil, fmt.Errorf("prometheus.Register getAccountCounter error: %v", err)
+	}
+
+	getAccountFromDbCounter := prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "zkbnb",
+		Name:      "get_account_from_db_counter",
+		Help:      "get account from db counter",
+	})
+	if err := prometheus.Register(getAccountFromDbCounter); err != nil {
+		return nil, fmt.Errorf("prometheus.Register getAccountFromDbCounter error: %v", err)
+	}
+	stateDBMetrics := &zkbnbprometheus.StateDBMetrics{
+		GetAccountFromDbGauge:   accountFromDbGauge,
+		GetAccountGauge:         accountGauge,
+		GetAccountCounter:       getAccountCounter,
+		GetAccountFromDbCounter: getAccountFromDbCounter,
+		VerifyGasGauge:          verifyGasGauge,
+		VerifySignature:         verifySignature,
+	}
+	bc.Statedb.Metrics = stateDBMetrics
+
+	if err := prometheus.Register(executeTxPrepareMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register executeTxPrepareMetrics error: %v", err)
+	}
+
+	if err := prometheus.Register(executeTxVerifyInputsMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register executeTxVerifyInputsMetrics error: %v", err)
+	}
+
+	if err := prometheus.Register(executeGenerateTxDetailsMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register executeGenerateTxDetailsMetrics error: %v", err)
+	}
+
+	if err := prometheus.Register(executeTxApplyTransactionMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register executeTxApplyTransactionMetrics error: %v", err)
+	}
+
+	if err := prometheus.Register(executeTxGeneratePubDataMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register executeTxGeneratePubDataMetrics error: %v", err)
+	}
+
+	if err := prometheus.Register(executeTxGetExecutedTxMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register executeTxGetExecutedTxMetrics error: %v", err)
+	}
+	prometheusMetrics := &zkbnbprometheus.Metrics{
+		TxPrepareMetrics:           executeTxPrepareMetrics,
+		TxVerifyInputsMetrics:      executeTxVerifyInputsMetrics,
+		TxGenerateTxDetailsMetrics: executeGenerateTxDetailsMetrics,
+		TxApplyTransactionMetrics:  executeTxApplyTransactionMetrics,
+		TxGeneratePubDataMetrics:   executeTxGeneratePubDataMetrics,
+		TxGetExecutedTxMetrics:     executeTxGetExecutedTxMetrics,
+	}
+	bc.processor = NewCommitProcessor(bc, prometheusMetrics)
 
 	// register metrics
 	if err := prometheus.Register(updateTreeMetics); err != nil {
