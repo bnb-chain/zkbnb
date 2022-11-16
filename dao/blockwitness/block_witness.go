@@ -19,7 +19,6 @@ package blockwitness
 
 import (
 	"fmt"
-	"time"
 
 	"gorm.io/gorm"
 
@@ -125,9 +124,7 @@ func (m *defaultBlockWitnessModel) CreateBlockWitness(witness *BlockWitness) err
 }
 
 func (m *defaultBlockWitnessModel) UpdateBlockWitnessStatus(witness *BlockWitness, status int64) error {
-	witness.Status = status
-	witness.UpdatedAt = time.Now()
-	dbTx := m.DB.Table(m.table).Save(witness)
+	dbTx := m.DB.Model(&witness).Update("status", status)
 	if dbTx.Error != nil {
 		return types.DbErrSqlOperation
 	}
