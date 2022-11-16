@@ -47,7 +47,7 @@ func (e *RegisterZnsExecutor) Prepare() error {
 	return nil
 }
 
-func (e *RegisterZnsExecutor) VerifyInputs(skipGasAmtChk bool) error {
+func (e *RegisterZnsExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	bc := e.bc
 	txInfo := e.txInfo
 
