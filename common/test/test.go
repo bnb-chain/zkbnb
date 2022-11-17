@@ -125,7 +125,8 @@ func getConnection(pool *dockertest.Pool, host, port, dbName string) (*gorm.DB, 
 	if err != nil {
 		return nil, err
 	}
-	return db, nil
+	// NOTE: Debug() for printing query statements
+	return db.Debug(), nil
 }
 
 // StopDB stop and remove the docker of db for unit test

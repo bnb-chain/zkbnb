@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	AssetTableName = `asset`
+	TableName = `asset`
 
 	StatusActive   uint32 = 0
 	StatusInactive uint32 = 1
@@ -45,7 +45,7 @@ type (
 		GetGasAssets() (assets []*Asset, err error)
 		GetMaxAssetId() (max int64, err error)
 		CreateAssetsInTransact(tx *gorm.DB, assets []*Asset) error
-		UpdateAssetsInTransact(tx *gorm.DB, assets []*Asset) error
+		DeleteAssetsInTransact(tx *gorm.DB, assets []*Asset) error
 	}
 
 	defaultAssetModel struct {
@@ -66,12 +66,12 @@ type (
 )
 
 func (*Asset) TableName() string {
-	return AssetTableName
+	return TableName
 }
 
 func NewAssetModel(db *gorm.DB) AssetModel {
 	return &defaultAssetModel{
-		table: AssetTableName,
+		table: TableName,
 		DB:    db,
 	}
 }
@@ -179,15 +179,19 @@ func (m *defaultAssetModel) CreateAssetsInTransact(tx *gorm.DB, assets []*Asset)
 	return nil
 }
 
-func (m *defaultAssetModel) UpdateAssetsInTransact(tx *gorm.DB, assets []*Asset) error {
+func (m *defaultAssetModel) DeleteAssetsInTransact(tx *gorm.DB, assets []*Asset) error {
+	ids := []uint{}
 	for _, asset := range assets {
-		dbTx := tx.Table(m.table).Where("id = ?", asset.ID).Delete(&asset)
-		if dbTx.Error != nil {
-			return dbTx.Error
-		}
-		if dbTx.RowsAffected == 0 {
-			return types.DbErrFailToUpdateAsset
-		}
+		ids = append(ids, asset.ID)
 	}
+
+	dbTx := tx.Table(m.table).Where("id IN ?", ids).Delete(&Asset{})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected < int64(len(assets)) {
+		return types.DbErrFailToUpdateAsset
+	}
+
 	return nil
 }
