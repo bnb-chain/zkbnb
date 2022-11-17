@@ -180,18 +180,14 @@ func (m *defaultAssetModel) CreateAssetsInTransact(tx *gorm.DB, assets []*Asset)
 }
 
 func (m *defaultAssetModel) UpdateAssetsInTransact(tx *gorm.DB, assets []*Asset) error {
-	ids := []uint{}
 	for _, asset := range assets {
-		ids = append(ids, asset.ID)
+		dbTx := tx.Table(m.table).Where("id = ?", asset.ID).Delete(&asset)
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			return types.DbErrFailToUpdateAsset
+		}
 	}
-
-	dbTx := tx.Table(m.table).Where("id IN ?", ids).Delete(&Asset{})
-	if dbTx.Error != nil {
-		return dbTx.Error
-	}
-	if dbTx.RowsAffected < int64(len(assets)) {
-		return types.DbErrFailToUpdateAsset
-	}
-
 	return nil
 }
