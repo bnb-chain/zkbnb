@@ -54,7 +54,7 @@ func (e *DepositExecutor) Prepare() error {
 	return e.BaseExecutor.Prepare()
 }
 
-func (e *DepositExecutor) VerifyInputs(skipGasAmtChk bool) error {
+func (e *DepositExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	txInfo := e.txInfo
 
 	if txInfo.AssetAmount.Cmp(types.ZeroBigInt) < 0 {

@@ -76,7 +76,7 @@ func CommitTrees(
 	nftTree bsmt.SparseMerkleTree) error {
 	start := time.Now()
 	assetTreeChanges := assetTrees.GetChanges()
-	logx.Infof("GetChanges=%d", float64(time.Since(start).Milliseconds()))
+	logx.Infof("GetChanges=%v", time.Since(start))
 
 	defer assetTrees.CleanChanges()
 	totalTask := len(assetTreeChanges) + 2

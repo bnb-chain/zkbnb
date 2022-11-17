@@ -60,7 +60,7 @@ func (e *BaseExecutor) Prepare() error {
 	return nil
 }
 
-func (e *BaseExecutor) VerifyInputs(skipGasAmtChk bool) error {
+func (e *BaseExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	txInfo := e.iTxInfo
 
 	err := txInfo.Validate()
@@ -91,17 +91,19 @@ func (e *BaseExecutor) VerifyInputs(skipGasAmtChk bool) error {
 			return err
 		}
 
-		fromAccount, err := e.bc.StateDB().GetFormatAccount(from)
-		if err != nil {
-			return err
-		}
-		start = time.Now()
-		err = txInfo.VerifySignature(fromAccount.PublicKey)
-		if e.bc.StateDB().Metrics != nil && e.bc.StateDB().Metrics.VerifySignature != nil {
-			e.bc.StateDB().Metrics.VerifySignature.Set(float64(time.Since(start).Milliseconds()))
-		}
-		if err != nil {
-			return err
+		if !skipSigChk {
+			fromAccount, err := e.bc.StateDB().GetFormatAccount(from)
+			if err != nil {
+				return err
+			}
+			start = time.Now()
+			err = txInfo.VerifySignature(fromAccount.PublicKey)
+			if e.bc.StateDB().Metrics != nil && e.bc.StateDB().Metrics.VerifySignature != nil {
+				e.bc.StateDB().Metrics.VerifySignature.Set(float64(time.Since(start).Milliseconds()))
+			}
+			if err != nil {
+				return err
+			}
 		}
 	}
 

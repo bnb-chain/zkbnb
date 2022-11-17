@@ -42,10 +42,10 @@ func (e *WithdrawExecutor) Prepare() error {
 	return e.BaseExecutor.Prepare()
 }
 
-func (e *WithdrawExecutor) VerifyInputs(skipGasAmtChk bool) error {
+func (e *WithdrawExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	txInfo := e.txInfo
 
-	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk)
+	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk, skipSigChk)
 	if err != nil {
 		return err
 	}

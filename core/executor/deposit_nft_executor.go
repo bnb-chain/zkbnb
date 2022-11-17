@@ -61,7 +61,7 @@ func (e *DepositNftExecutor) Prepare() error {
 	return e.BaseExecutor.Prepare()
 }
 
-func (e *DepositNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
+func (e *DepositNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	bc := e.bc
 	txInfo := e.txInfo
 

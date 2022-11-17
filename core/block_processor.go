@@ -47,7 +47,7 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 		return err
 	}
 	start = time.Now()
-	err = executor.VerifyInputs(true)
+	err = executor.VerifyInputs(true, true)
 	p.metrics.TxVerifyInputsMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
 		return err
@@ -104,7 +104,7 @@ func (p *APIProcessor) Process(tx *tx.Tx) error {
 		logx.Error("fail to prepare:", err)
 		return mappingPrepareErrors(err)
 	}
-	err = executor.VerifyInputs(false)
+	err = executor.VerifyInputs(false, false)
 	if err != nil {
 		return mappingVerifyInputsErrors(err)
 	}
