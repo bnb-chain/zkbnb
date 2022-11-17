@@ -45,7 +45,7 @@ type (
 		GetGasAssets() (assets []*Asset, err error)
 		GetMaxAssetId() (max int64, err error)
 		CreateAssetsInTransact(tx *gorm.DB, assets []*Asset) error
-		DeleteAssetsInTransact(tx *gorm.DB, assets []*Asset) error
+		UpdateAssetsInTransact(tx *gorm.DB, assets []*Asset) error
 	}
 
 	defaultAssetModel struct {
@@ -179,7 +179,7 @@ func (m *defaultAssetModel) CreateAssetsInTransact(tx *gorm.DB, assets []*Asset)
 	return nil
 }
 
-func (m *defaultAssetModel) DeleteAssetsInTransact(tx *gorm.DB, assets []*Asset) error {
+func (m *defaultAssetModel) UpdateAssetsInTransact(tx *gorm.DB, assets []*Asset) error {
 	ids := []uint{}
 	for _, asset := range assets {
 		ids = append(ids, asset.ID)

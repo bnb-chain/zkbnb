@@ -62,12 +62,13 @@ func (s *Suite) TestDeleteAssetsInTransact() {
 
 	s.Require().NoError(s.dao.CreateAssetsInTransact(s.db.DB, []*Asset{a}))
 
-	err := s.dao.DeleteAssetsInTransact(s.db.DB, []*Asset{a})
+	err := s.dao.UpdateAssetsInTransact(s.db.DB, []*Asset{a})
 	s.Require().NoError(err)
 
 	res := []*Asset{}
 	dbtx := s.db.DB.Unscoped().Where("1=1").Find(&res)
 	s.Require().NoError(dbtx.Error)
 	s.Require().Len(res, 1)
+	s.Equal(uint32(StatusActive), res[0].Status)
 	s.Greater(res[0].DeletedAt.Time.Unix(), int64(0))
 }
