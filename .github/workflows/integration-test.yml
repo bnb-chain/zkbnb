@@ -42,7 +42,7 @@ jobs:
           blockNr=$(sudo bash ./deployment/tool/tool.sh blockHeight)
           sudo BSC_TESTNET_PRIVATE_KEY=${BSC_TESTNET_PRIVATE_KEY} bash ./deployment/tool/tool.sh all
           sudo bash ./deployment/docker-compose/docker-compose.sh down
-          sudo bash ./deployment/docker-compose/docker-compose.sh up $blockNr
+          sudo SK=${BSC_TESTNET_PRIVATE_KEY} bash ./deployment/docker-compose/docker-compose.sh up $blockNr
           echo "Contract addresses"
           cat ~/zkbnb/deployment/dependency/zkbnb-contract/info/addresses.json
           echo "Waiting 3m for the initialization tx to be verified"
