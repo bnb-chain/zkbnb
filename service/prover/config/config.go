@@ -9,12 +9,9 @@ type Config struct {
 	Postgres struct {
 		DataSource string
 	}
-	CacheRedis cache.CacheConf
-	LogConf    logx.LogConf
-	KeyPath    struct {
-		ProvingKeyPath   []string
-		VerifyingKeyPath []string
-	}
+	CacheRedis  cache.CacheConf
+	LogConf     logx.LogConf
+	KeyPath     []string
 	BlockConfig struct {
 		OptionalBlockSizes []int
 	}

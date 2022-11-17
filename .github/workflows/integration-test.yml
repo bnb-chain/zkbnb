@@ -42,7 +42,7 @@ jobs:
           blockNr=$(sudo bash ./deployment/tool/tool.sh blockHeight)
           sudo BSC_TESTNET_PRIVATE_KEY=${BSC_TESTNET_PRIVATE_KEY} bash ./deployment/tool/tool.sh all
           sudo bash ./deployment/docker-compose/docker-compose.sh down
-          sudo bash ./deployment/docker-compose/docker-compose.sh up $blockNr
+          sudo SK=${BSC_TESTNET_PRIVATE_KEY} bash ./deployment/docker-compose/docker-compose.sh up $blockNr
           echo "Contract addresses"
           cat ~/zkbnb/deployment/dependency/zkbnb-contract/info/addresses.json
           echo "Waiting 3m for the initialization tx to be verified"
@@ -51,12 +51,14 @@ jobs:
       - name: run integration test
         if: ${{ !contains(github.event.pull_request.body, '/skip-integration-test') }}
         run: |
+          source <(sudo cat /server/.env)
           export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
           export ZkBNB=$(sudo cat ~/zkbnb/deployment/dependency/zkbnb-contract/info/addresses.json  | jq -r '.zkbnbProxy')
           export AssetGov=$(sudo cat ~/zkbnb/deployment/dependency/zkbnb-contract/info/addresses.json  | jq -r '.assetGovernance')
           export TestLogLevel=2
           export L1EndPoint=$L1_ENDPOINT
           export L2EndPoint=$L2_ENDPOINT
+          export GovKey=${BSC_TESTNET_PRIVATE_KEY}
           
           cd /tmp && sudo rm -rf ./zkbnb-integration-test
           git clone --branch main https://github.com/bnb-chain/zkbnb-integration-test.git

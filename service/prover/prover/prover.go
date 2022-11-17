@@ -4,10 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/frontend/cs/r1cs"
+	"github.com/consensys/gnark/std"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"gorm.io/driver/postgres"
@@ -32,8 +31,9 @@ type Prover struct {
 	BlockWitnessModel blockwitness.BlockWitnessModel
 
 	VerifyingKeys      []groth16.VerifyingKey
-	ProvingKeys        []groth16.ProvingKey
+	ProvingKeys        [][]groth16.ProvingKey
 	OptionalBlockSizes []int
+	SessionNames       []string
 	R1cs               []frontend.CompiledConstraintSystem
 }
 
@@ -72,9 +72,10 @@ func NewProver(c config.Config) *Prover {
 	}
 
 	prover.OptionalBlockSizes = c.BlockConfig.OptionalBlockSizes
-	prover.ProvingKeys = make([]groth16.ProvingKey, len(prover.OptionalBlockSizes))
+	prover.ProvingKeys = make([][]groth16.ProvingKey, len(prover.OptionalBlockSizes))
 	prover.VerifyingKeys = make([]groth16.VerifyingKey, len(prover.OptionalBlockSizes))
 	prover.R1cs = make([]frontend.CompiledConstraintSystem, len(prover.OptionalBlockSizes))
+	prover.SessionNames = make([]string, len(prover.OptionalBlockSizes))
 	for i := 0; i < len(prover.OptionalBlockSizes); i++ {
 		var blockConstraints circuit.BlockConstraints
 		blockConstraints.TxsCount = prover.OptionalBlockSizes[i]
@@ -87,21 +88,25 @@ func NewProver(c config.Config) *Prover {
 		blockConstraints.Gas = circuit.GetZeroGasConstraints(types.GasAssets[:])
 
 		logx.Infof("start compile block size %d blockConstraints", blockConstraints.TxsCount)
-		prover.R1cs[i], err = frontend.Compile(ecc.BN254, r1cs.NewBuilder, &blockConstraints, frontend.IgnoreUnconstrainedInputs())
+		// prover.R1cs[i], err = frontend.Compile(ecc.BN254, r1cs.NewBuilder, &blockConstraints, frontend.IgnoreUnconstrainedInputs())
+		// groth16.LazifyR1cs(prover.R1cs[i])
+		std.RegisterHints()
+		prover.R1cs[i], err = groth16.LoadR1CSFromFile(c.KeyPath[i])
 		if err != nil {
 			panic("r1cs init error")
 		}
 		logx.Infof("blockConstraints constraints: %d", prover.R1cs[i].GetNbConstraints())
 		logx.Info("finish compile blockConstraints")
 		// read proving and verifying keys
-		prover.ProvingKeys[i], err = prove.LoadProvingKey(c.KeyPath.ProvingKeyPath[i])
+		prover.ProvingKeys[i], err = prove.LoadProvingKey(c.KeyPath[i])
 		if err != nil {
 			panic("provingKey loading error")
 		}
-		prover.VerifyingKeys[i], err = prove.LoadVerifyingKey(c.KeyPath.VerifyingKeyPath[i])
+		prover.VerifyingKeys[i], err = prove.LoadVerifyingKey(c.KeyPath[i])
 		if err != nil {
 			panic("verifyingKey loading error")
 		}
+		prover.SessionNames[i] = c.KeyPath[i]
 	}
 
 	return prover
@@ -165,7 +170,7 @@ func (p *Prover) ProveBlock() error {
 	}
 
 	// Generate proof.
-	blockProof, err := prove.GenerateProof(p.R1cs[keyIndex], p.ProvingKeys[keyIndex], p.VerifyingKeys[keyIndex], cryptoBlock)
+	blockProof, err := prove.GenerateProof(p.R1cs[keyIndex], p.ProvingKeys[keyIndex], p.VerifyingKeys[keyIndex], cryptoBlock, p.SessionNames[keyIndex])
 	if err != nil {
 		return fmt.Errorf("failed to generateProof, err: %v", err)
 	}

@@ -60,6 +60,7 @@ github.com/ClickHouse/clickhouse-go/v2 v2.0.14/go.mod h1:iq2DUGgpA4BBki2CVwrF8x4
 github.com/DATA-DOG/go-sqlmock v1.3.3/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
 github.com/DATA-DOG/go-sqlmock v1.5.0 h1:Shsta01QNfFxHCfpW6YH2STWB0MudeXXEWMr20OEh60=
 github.com/DATA-DOG/go-sqlmock v1.5.0/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
+github.com/DmitriyVTitov/size v1.5.0/go.mod h1:le6rNI4CoLQV1b9gzp1+3d7hMAD/uu2QcJ+aYbNgiU0=
 github.com/Masterminds/semver/v3 v3.1.1 h1:hLg3sBzpNErnxhQtUy/mmLR2I9foDujNK030IGemrRc=
 github.com/Masterminds/semver/v3 v3.1.1/go.mod h1:VPu/7SZ7ePZ3QOrcuXROw5FAcLl4a0cBrbBpGY/8hQs=
 github.com/NYTimes/gziphandler v0.0.0-20170623195520-56545f4a5d46/go.mod h1:3wb06e3pkSAbeQ52E9H9iFoQsEEwGN64994WTCIhntQ=
@@ -117,10 +118,10 @@ github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kB
 github.com/bkaradzic/go-lz4 v1.0.0/go.mod h1:0YdlkowM3VswSROI7qDxhRvJ3sLhlFrRRwjwegp5jy4=
 github.com/bketelsen/crypt v0.0.4/go.mod h1:aI6NrJ0pMGgvZKL1iVgXLnfIFJtfV+bKCoqOes/6LfM=
 github.com/bmizerany/pat v0.0.0-20170815010413-6226ea591a40/go.mod h1:8rLXio+WjiTceGBHIoTvn60HIbs7Hm7bcHjyrSqYB9c=
-github.com/bnb-chain/gnark v0.7.1-0.20221031143243-a94d59b60efe h1:aAMpjWQOPesVwr+By0QzxQgy+bjUns4T9RO/QACrTis=
-github.com/bnb-chain/gnark v0.7.1-0.20221031143243-a94d59b60efe/go.mod h1:oQnMurInsfe+9rG4l8qh8AFVihfuRCS5H3XPJH/6HPM=
-github.com/bnb-chain/gnark-crypto v0.7.1-0.20221101004736-92cbe59f55b4 h1:Ti3fuo4/1BvdumJX0eCB7vLSjrxP8tl8e2mXdQoeFP8=
-github.com/bnb-chain/gnark-crypto v0.7.1-0.20221101004736-92cbe59f55b4/go.mod h1:KPSuJzyxkJA8xZ/+CV47tyqkr9MmpZA3PXivK4VPrVg=
+github.com/bnb-chain/gnark v0.7.1-0.20221116101045-5d28e94a3e69 h1:opczrQy0kE8rDlLjhj4b56k8t8GrHZ/eV1OjmQalh74=
+github.com/bnb-chain/gnark v0.7.1-0.20221116101045-5d28e94a3e69/go.mod h1:J5is/1NQUxPfIDDG/x/+TBX2c0byx48KiLRLCheby1A=
+github.com/bnb-chain/gnark-crypto v0.7.1-0.20221116021202-8d6fc01ac262 h1:kYHgB6keVdBf07XcCFnpvG6rNI40hUWL0Z1JStn62g4=
+github.com/bnb-chain/gnark-crypto v0.7.1-0.20221116021202-8d6fc01ac262/go.mod h1:KPSuJzyxkJA8xZ/+CV47tyqkr9MmpZA3PXivK4VPrVg=
 github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20220928090246-9a20106a2347/go.mod h1:L1BEYSG945hwjJCtR5LUQ1pvRmydSsk9oU2d9YvoOrA=
 github.com/bnb-chain/zkbnb-crypto v0.0.8-0.20221104095956-e2b2f4d4ae4e h1:uZC86BGCno2OcPL52nmo8BGaIV1MdfTxUlsIuDF6K2c=
 github.com/bnb-chain/zkbnb-crypto v0.0.8-0.20221104095956-e2b2f4d4ae4e/go.mod h1:AlzTbvhQojUFpArKHiGHkEYDnapebUbFC/+mek1pZvU=
@@ -236,8 +237,9 @@ github.com/envoyproxy/go-control-plane v0.9.10-0.20210907150352-cf90f659a021/go.
 github.com/envoyproxy/go-control-plane v0.10.2-0.20220325020618-49ff273808a1/go.mod h1:KJwIaB5Mv44NWtYuAOFCVOjcI94vtpEz2JU/D2v6IjE=
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
 github.com/ethereum/go-ethereum v1.10.17/go.mod h1:Lt5WzjM07XlXc95YzrhosmR4J9Ahd6X2wyEV2SvGhk0=
-github.com/ethereum/go-ethereum v1.10.23 h1:Xk8XAT4/UuqcjMLIMF+7imjkg32kfVFKoeyQDaO2yWM=
 github.com/ethereum/go-ethereum v1.10.23/go.mod h1:EYFyF19u3ezGLD4RqOkLq+ZCXzYbLoNDdZlMt7kyKFg=
+github.com/ethereum/go-ethereum v1.10.26 h1:i/7d9RBBwiXCEuyduBQzJw/mKmnvzsN14jqBmytw72s=
+github.com/ethereum/go-ethereum v1.10.26/go.mod h1:EYFyF19u3ezGLD4RqOkLq+ZCXzYbLoNDdZlMt7kyKFg=
 github.com/evanphx/json-patch v4.2.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
 github.com/evanphx/json-patch v4.11.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
 github.com/evanphx/json-patch v4.12.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
@@ -258,8 +260,9 @@ github.com/frankban/quicktest v1.14.3/go.mod h1:mgiwOwqx65TmIk1wJ6Q7wvnVMocbUork
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/fsnotify/fsnotify v1.4.9 h1:hsms1Qyu0jgnwNXIxa+/V/PDsU6CfLf6CNO8H7IWoS4=
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
-github.com/fxamacker/cbor/v2 v2.2.0 h1:6eXqdDDe588rSYAi1HfZKbx6YYQO4mxQ9eC6xYpU/JQ=
 github.com/fxamacker/cbor/v2 v2.2.0/go.mod h1:TA1xS00nchWmaBnEIxPSE5oHLuJBAVvqrtAnWBwBCVo=
+github.com/fxamacker/cbor/v2 v2.4.0 h1:ri0ArlOR+5XunOP8CRUowT0pSJOwhW098ZCUyskZD88=
+github.com/fxamacker/cbor/v2 v2.4.0/go.mod h1:TA1xS00nchWmaBnEIxPSE5oHLuJBAVvqrtAnWBwBCVo=
 github.com/garslo/gogen v0.0.0-20170306192744-1d203ffc1f61/go.mod h1:Q0X6pkwTILDlzrGEckF6HKjXe48EgsY/l7K7vhY4MW8=
 github.com/gballet/go-libpcsclite v0.0.0-20190607065134-2772fd86a8ff h1:tY80oXqGNY4FhTFhk+o9oFHGINQ/+vhlm8HFzi6znCI=
 github.com/gballet/go-libpcsclite v0.0.0-20190607065134-2772fd86a8ff/go.mod h1:x7DCsMOv1taUwEWCzT4cmDeAkigA5/QCwUodaVOe8Ww=
