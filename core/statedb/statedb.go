@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"strconv"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
 	lru "github.com/hashicorp/golang-lru"
@@ -63,6 +64,8 @@ type StateDB struct {
 	NftTree           bsmt.SparseMerkleTree
 	AccountAssetTrees *tree.AssetTreeCache
 	TreeCtx           *tree.Context
+	mainLock          sync.RWMutex
+	prunedBlockHeight int64
 }
 
 func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
@@ -277,31 +280,41 @@ func (s *StateDB) MarkGasAccountAsPending() error {
 	return nil
 }
 
-func (s *StateDB) syncPendingAccount(pendingAccount map[int64]*types.AccountInfo) error {
+func (s *StateDB) SyncPendingAccountToRedis(pendingAccount map[int64]*types.AccountInfo) {
 	for index, formatAccount := range pendingAccount {
 		account, err := chain.FromFormatAccountInfo(formatAccount)
 		if err != nil {
-			return err
+			logx.Errorf("format accountInfo error, err=%v,formatAccount=%v", err, formatAccount)
+			continue
 		}
 		err = s.redisCache.Set(context.Background(), dbcache.AccountKeyByIndex(index), account)
 		if err != nil {
-			return fmt.Errorf("cache to redis failed: %v", err)
+			logx.Errorf("cache to redis failed: %v,formatAccount=%v", err, formatAccount)
+			continue
 		}
-		s.AccountCache.Add(index, formatAccount)
 	}
-
-	return nil
 }
 
-func (s *StateDB) syncPendingNft(pendingNft map[int64]*nft.L2Nft) error {
+func (s *StateDB) SyncPendingNftToRedis(pendingNft map[int64]*nft.L2Nft) {
 	for index, nft := range pendingNft {
 		err := s.redisCache.Set(context.Background(), dbcache.NftKeyByIndex(index), nft)
 		if err != nil {
-			return fmt.Errorf("cache to redis failed: %v", err)
+			logx.Errorf("cache to redis failed: %v,nft=%v", err, nft)
+			continue
 		}
+	}
+}
+
+func (s *StateDB) SyncPendingAccountToMemoryCache(pendingAccount map[int64]*types.AccountInfo) {
+	for index, formatAccount := range pendingAccount {
+		s.AccountCache.Add(index, formatAccount)
+	}
+}
+
+func (s *StateDB) SyncPendingNftToMemoryCache(pendingNft map[int64]*nft.L2Nft) {
+	for index, nft := range pendingNft {
 		s.NftCache.Add(index, nft)
 	}
-	return nil
 }
 
 func (s *StateDB) SyncGasAccountToRedis() error {
@@ -320,15 +333,16 @@ func (s *StateDB) SyncGasAccountToRedis() error {
 }
 
 func (s *StateDB) SyncStateCacheToRedis() error {
+	//todo
 	// Sync pending to cache.
-	err := s.syncPendingAccount(s.PendingAccountMap)
-	if err != nil {
-		return err
-	}
-	err = s.syncPendingNft(s.PendingNftMap)
-	if err != nil {
-		return err
-	}
+	//err := s.syncPendingAccount(s.PendingAccountMap)
+	//if err != nil {
+	//	return err
+	//}
+	//err = s.syncPendingNft(s.PendingNftMap)
+	//if err != nil {
+	//	return err
+	//}
 
 	return nil
 }
@@ -337,13 +351,13 @@ func (s *StateDB) PurgeCache(stateRoot string) {
 	s.StateCache = NewStateCache(stateRoot)
 }
 
-func (s *StateDB) GetPendingAccount(blockHeight int64) ([]*account.Account, []*account.AccountHistory, error) {
+func (s *StateDB) GetPendingAccount(blockHeight int64, stateDataCopy *StateDataCopy) ([]*account.Account, []*account.AccountHistory, error) {
 	pendingAccount := make([]*account.Account, 0)
 	pendingAccountHistory := make([]*account.AccountHistory, 0)
 
-	for _, formatAccount := range s.PendingAccountMap {
+	for _, formatAccount := range stateDataCopy.StateCache.PendingAccountMap {
 		if formatAccount.AccountIndex == types.GasAccount {
-			s.applyGasUpdate(formatAccount)
+			s.applyGasUpdate(formatAccount, stateDataCopy)
 		}
 
 		newAccount, err := chain.FromFormatAccountInfo(formatAccount)
@@ -365,8 +379,8 @@ func (s *StateDB) GetPendingAccount(blockHeight int64) ([]*account.Account, []*a
 	return pendingAccount, pendingAccountHistory, nil
 }
 
-func (s *StateDB) applyGasUpdate(formatAccount *types.AccountInfo) {
-	for assetId, delta := range s.StateCache.PendingGasMap {
+func (s *StateDB) applyGasUpdate(formatAccount *types.AccountInfo, stateDataCopy *StateDataCopy) {
+	for assetId, delta := range stateDataCopy.StateCache.PendingGasMap {
 		if asset, ok := formatAccount.AssetInfo[assetId]; ok {
 			formatAccount.AssetInfo[assetId].Balance = ffmath.Add(asset.Balance, delta)
 		} else {
@@ -378,11 +392,11 @@ func (s *StateDB) applyGasUpdate(formatAccount *types.AccountInfo) {
 	}
 }
 
-func (s *StateDB) GetPendingNft(blockHeight int64) ([]*nft.L2Nft, []*nft.L2NftHistory, error) {
+func (s *StateDB) GetPendingNft(blockHeight int64, stateDataCopy *StateDataCopy) ([]*nft.L2Nft, []*nft.L2NftHistory, error) {
 	pendingNft := make([]*nft.L2Nft, 0)
 	pendingNftHistory := make([]*nft.L2NftHistory, 0)
 
-	for _, newNft := range s.PendingNftMap {
+	for _, newNft := range stateDataCopy.StateCache.PendingNftMap {
 		pendingNft = append(pendingNft, newNft)
 		pendingNftHistory = append(pendingNftHistory, &nft.L2NftHistory{
 			NftIndex:            newNft.NftIndex,
@@ -477,12 +491,12 @@ type treeUpdateResp struct {
 	err   error
 }
 
-func (s *StateDB) IntermediateRoot(cleanDirty bool) error {
+func (s *StateDB) IntermediateRoot(cleanDirty bool, stateDataCopy *StateDataCopy) error {
 	taskNum := 0
 	resultChan := make(chan *treeUpdateResp, 1)
 	defer close(resultChan)
 
-	for accountIndex, assetsMap := range s.dirtyAccountsAndAssetsMap {
+	for accountIndex, assetsMap := range stateDataCopy.StateCache.dirtyAccountsAndAssetsMap {
 		assets := make([]int64, 0, len(assetsMap))
 		for assetIndex, isDirty := range assetsMap {
 			if !isDirty {
@@ -493,7 +507,7 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool) error {
 		taskNum++
 		err := func(accountIndex int64, assets []int64) error {
 			return gopool.Submit(func() {
-				index, leaf, err := s.updateAccountTree(accountIndex, assets)
+				index, leaf, err := s.updateAccountTree(accountIndex, assets, stateDataCopy)
 				resultChan <- &treeUpdateResp{
 					role:  accountTreeRole,
 					index: index,
@@ -507,14 +521,14 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool) error {
 		}
 	}
 
-	for nftIndex, isDirty := range s.dirtyNftMap {
+	for nftIndex, isDirty := range stateDataCopy.StateCache.dirtyNftMap {
 		if !isDirty {
 			continue
 		}
 		taskNum++
 		err := func(nftIndex int64) error {
 			return gopool.Submit(func() {
-				index, leaf, err := s.updateNftTree(nftIndex)
+				index, leaf, err := s.updateNftTree(nftIndex, stateDataCopy)
 				resultChan <- &treeUpdateResp{
 					role:  nftTreeRole,
 					index: index,
@@ -529,12 +543,12 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool) error {
 	}
 
 	if cleanDirty {
-		s.dirtyAccountsAndAssetsMap = make(map[int64]map[int64]bool, 0)
-		s.dirtyNftMap = make(map[int64]bool, 0)
+		stateDataCopy.StateCache.dirtyAccountsAndAssetsMap = make(map[int64]map[int64]bool, 0)
+		stateDataCopy.StateCache.dirtyNftMap = make(map[int64]bool, 0)
 	}
 
-	pendingAccountItem := make([]bsmt.Item, 0, len(s.dirtyAccountsAndAssetsMap))
-	pendingNftItem := make([]bsmt.Item, 0, len(s.dirtyNftMap))
+	pendingAccountItem := make([]bsmt.Item, 0, len(stateDataCopy.StateCache.dirtyAccountsAndAssetsMap))
+	pendingNftItem := make([]bsmt.Item, 0, len(stateDataCopy.StateCache.dirtyNftMap))
 	for i := 0; i < taskNum; i++ {
 		result := <-resultChan
 		if result.err != nil {
@@ -576,15 +590,16 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool) error {
 	hFunc := poseidon.NewPoseidon()
 	hFunc.Write(s.AccountTree.Root())
 	hFunc.Write(s.NftTree.Root())
-	s.StateRoot = common.Bytes2Hex(hFunc.Sum(nil))
+	stateDataCopy.StateCache.StateRoot = common.Bytes2Hex(hFunc.Sum(nil))
 	return nil
 }
 
-func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64) (int64, []byte, error) {
-	account, err := s.GetFormatAccount(accountIndex)
-	if err != nil {
-		return accountIndex, nil, err
+func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCopy *StateDataCopy) (int64, []byte, error) {
+	account, exist := stateCopy.StateCache.GetPendingAccount(accountIndex)
+	if !exist {
+		//todo
 	}
+
 	isGasAccount := accountIndex == types.GasAccount
 	pendingUpdateAssetItem := make([]bsmt.Item, 0, len(assets))
 	for _, assetId := range assets {
@@ -611,7 +626,7 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64) (int64, 
 		pendingUpdateAssetItem = append(pendingUpdateAssetItem, bsmt.Item{Key: uint64(assetId), Val: assetLeaf})
 	}
 
-	err = s.AccountAssetTrees.Get(accountIndex).MultiSet(pendingUpdateAssetItem)
+	err := s.AccountAssetTrees.Get(accountIndex).MultiSet(pendingUpdateAssetItem)
 	if err != nil {
 		return accountIndex, nil, fmt.Errorf("update asset tree failed: %v", err)
 	}
@@ -631,11 +646,12 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64) (int64, 
 	return accountIndex, nAccountLeafHash, nil
 }
 
-func (s *StateDB) updateNftTree(nftIndex int64) (int64, []byte, error) {
-	nft, err := s.GetNft(nftIndex)
-	if err != nil {
-		return nftIndex, nil, err
+func (s *StateDB) updateNftTree(nftIndex int64, stateCopy *StateDataCopy) (int64, []byte, error) {
+	nft, exist := stateCopy.StateCache.GetPendingNft(nftIndex)
+	if !exist {
+		//todo
 	}
+
 	nftAssetLeaf, err := tree.ComputeNftAssetLeafHash(
 		nft.CreatorAccountIndex,
 		nft.OwnerAccountIndex,
@@ -738,6 +754,20 @@ func (s *StateDB) GetGasConfig() (map[uint32]map[int]int64, error) {
 	}
 
 	return m, nil
+}
+
+func (c *StateDB) UpdatePrunedBlockHeight(latestBlock int64) {
+	c.mainLock.Lock()
+	if c.prunedBlockHeight < latestBlock {
+		c.prunedBlockHeight = latestBlock
+	}
+	c.mainLock.Unlock()
+}
+
+func (c *StateDB) GetPrunedBlockHeight() int64 {
+	c.mainLock.RLock()
+	defer c.mainLock.RUnlock()
+	return c.prunedBlockHeight
 }
 
 func (s *StateDB) Close() {

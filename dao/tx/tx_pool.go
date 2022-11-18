@@ -35,6 +35,7 @@ type (
 		GetTxsTotalCount(options ...GetTxOptionFunc) (count int64, err error)
 		GetTxByTxHash(hash string) (txs *Tx, err error)
 		GetTxsByStatus(status int) (txs []*Tx, err error)
+		GetTxsByStatusAndMaxId(status int, maxId uint, limit int64) (txs []*Tx, err error)
 		CreateTxs(txs []*Tx) error
 		GetPendingTxsByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (txs []*Tx, err error)
 		GetMaxNonceByAccountIndex(accountIndex int64) (nonce int64, err error)
@@ -42,6 +43,8 @@ type (
 		UpdateTxsInTransact(tx *gorm.DB, txs []*Tx) error
 		DeleteTxsInTransact(tx *gorm.DB, txs []*Tx) error
 		GetLatestTx(txTypes []int64, statuses []int) (tx *Tx, err error)
+		GetFirstTxByStatus(status int) (tx *Tx, err error)
+		UpdateTxsToPending() error
 	}
 
 	defaultTxPoolModel struct {
@@ -103,6 +106,14 @@ func (m *defaultTxPoolModel) GetTxs(limit int64, offset int64, options ...GetTxO
 
 func (m *defaultTxPoolModel) GetTxsByStatus(status int) (txs []*Tx, err error) {
 	dbTx := m.DB.Table(m.table).Where("tx_status = ?", status).Order("created_at, id").Find(&txs)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	}
+	return txs, nil
+}
+
+func (m *defaultTxPoolModel) GetTxsByStatusAndMaxId(status int, maxId uint, limit int64) (txs []*Tx, err error) {
+	dbTx := m.DB.Table(m.table).Limit(int(limit)).Where("tx_status = ? and id > ?", status, maxId).Order("id asc").Find(&txs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	}
@@ -222,6 +233,14 @@ func (m *defaultTxPoolModel) UpdateTxsInTransact(tx *gorm.DB, txs []*Tx) error {
 	return nil
 }
 
+func (m *defaultTxPoolModel) UpdateTxsToPending() error {
+	dbTx := m.DB.Model(&Tx{}).Where("tx_status = ? and deleted_at is null", StatusExecuted).Update("tx_status", StatusPending)
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	return nil
+}
+
 func (m *defaultTxPoolModel) DeleteTxsInTransact(tx *gorm.DB, txs []*Tx) error {
 	for _, poolTx := range txs {
 		dbTx := tx.Table(m.table).Where("id = ?", poolTx.ID).Delete(&poolTx)
@@ -245,4 +264,14 @@ func (m *defaultTxPoolModel) GetLatestTx(txTypes []int64, statuses []int) (tx *T
 	}
 
 	return tx, nil
+}
+
+func (m *defaultTxPoolModel) GetFirstTxByStatus(status int) (txs *Tx, err error) {
+	dbTx := m.DB.Table(m.table).Where("tx_status = ?", status).Order("id asc").Limit(1).Find(&txs)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, nil
+	}
+	return txs, nil
 }
