@@ -42,6 +42,7 @@ type (
 		CreateTxsInTransact(tx *gorm.DB, txs []*Tx) error
 		UpdateTxsInTransact(tx *gorm.DB, txs []*Tx) error
 		DeleteTxsInTransact(tx *gorm.DB, txs []*Tx) error
+		DeleteTxsBatchInTransact(tx *gorm.DB, txs []*Tx) error
 		GetLatestTx(txTypes []int64, statuses []int) (tx *Tx, err error)
 		GetFirstTxByStatus(status int) (tx *Tx, err error)
 		UpdateTxsToPending() error
@@ -234,7 +235,7 @@ func (m *defaultTxPoolModel) UpdateTxsInTransact(tx *gorm.DB, txs []*Tx) error {
 }
 
 func (m *defaultTxPoolModel) UpdateTxsToPending() error {
-	dbTx := m.DB.Model(&Tx{}).Where("tx_status = ? and deleted_at is null", StatusExecuted).Update("tx_status", StatusPending)
+	dbTx := m.DB.Model(&Tx{}).Where("tx_status = ?", StatusExecuted).Update("tx_status", StatusPending)
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}
@@ -250,6 +251,21 @@ func (m *defaultTxPoolModel) DeleteTxsInTransact(tx *gorm.DB, txs []*Tx) error {
 		if dbTx.RowsAffected == 0 {
 			return types.DbErrFailToDeletePoolTx
 		}
+	}
+	return nil
+}
+
+func (m *defaultTxPoolModel) DeleteTxsBatchInTransact(tx *gorm.DB, txs []*Tx) error {
+	ids := make([]uint, 0, len(txs))
+	for _, poolTx := range txs {
+		ids = append(ids, poolTx.ID)
+	}
+	dbTx := tx.Table(m.table).Where("id = ?", ids).Delete(&Tx{})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		return types.DbErrFailToDeletePoolTx
 	}
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gorm.io/gorm/logger"
 	"math/big"
 	"time"
 
@@ -48,6 +49,7 @@ var (
 type ChainConfig struct {
 	Postgres struct {
 		DataSource string
+		LogLevel   logger.LogLevel `json:",optional"`
 	}
 	CacheRedis cache.CacheConf
 	//nolint:staticcheck
@@ -76,7 +78,9 @@ type BlockChain struct {
 }
 
 func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) {
-	db, err := gorm.Open(postgres.Open(config.Postgres.DataSource))
+	db, err := gorm.Open(postgres.Open(config.Postgres.DataSource), &gorm.Config{
+		Logger: logger.Default.LogMode(config.Postgres.LogLevel),
+	})
 	if err != nil {
 		logx.Error("gorm connect db failed: ", err)
 		return nil, err

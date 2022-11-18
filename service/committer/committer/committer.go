@@ -307,6 +307,10 @@ func (c *Committer) executeTxFunc() {
 				CurrentBlock: curBlock,
 			}
 			c.treeWorker.Enqueue(stateDataCopy)
+			curBlock, err = c.bc.InitNewBlock()
+			if err != nil {
+				panic("propose new block failed: " + err.Error())
+			}
 			logx.Infof("commit new block success, blockSize=%d", curBlock.BlockSize)
 			if err != nil {
 				logx.Errorf("commit new block error, err=%s", err.Error())
@@ -331,7 +335,7 @@ func (c *Committer) updatePoolTxFunc(updatePoolTxMap *UpdatePoolTx) {
 		if err != nil {
 			logx.Error("update tx pool failed:", err)
 		}
-		return c.bc.TxPoolModel.DeleteTxsInTransact(dbTx, updatePoolTxMap.PendingDeletePoolTxs)
+		return c.bc.TxPoolModel.DeleteTxsBatchInTransact(dbTx, updatePoolTxMap.PendingDeletePoolTxs)
 	})
 	if err != nil {
 		logx.Error("update tx pool failed:", err)
@@ -423,7 +427,7 @@ func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
 			}
 		}
 		// delete txs from tx pool
-		err = c.bc.DB().TxPoolModel.DeleteTxsInTransact(tx, blockStates.Block.Txs)
+		err = c.bc.DB().TxPoolModel.DeleteTxsBatchInTransact(tx, blockStates.Block.Txs)
 		if err != nil {
 			return err
 		}
