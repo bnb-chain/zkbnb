@@ -458,7 +458,6 @@ func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
 	start := time.Now()
 	// update db
 	err := c.bc.DB().DB.Transaction(func(tx *gorm.DB) error {
-	err = c.bc.DB().DB.Transaction(func(tx *gorm.DB) error {
 		start := time.Now()
 		// create block for commit
 		var err error
