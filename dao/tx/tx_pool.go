@@ -260,7 +260,7 @@ func (m *defaultTxPoolModel) DeleteTxsBatchInTransact(tx *gorm.DB, txs []*Tx) er
 	for _, poolTx := range txs {
 		ids = append(ids, poolTx.ID)
 	}
-	dbTx := tx.Table(m.table).Where("id = ?", ids).Delete(&Tx{})
+	dbTx := tx.Table(m.table).Where("id in ?", ids).Delete(&Tx{})
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}

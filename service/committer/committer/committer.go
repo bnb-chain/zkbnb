@@ -275,13 +275,12 @@ func (c *Committer) getPoolTxsFromQueue() []*tx.Tx {
 		case i := <-c.txWorker.GetJobQueue():
 			pendingUpdatePoolTxs = append(pendingUpdatePoolTxs, i.(*tx.Tx))
 		default:
-			break
+			return pendingUpdatePoolTxs
 		}
 		if len(pendingUpdatePoolTxs) == 300 {
-			break
+			return pendingUpdatePoolTxs
 		}
 	}
-	return pendingUpdatePoolTxs
 }
 
 func (c *Committer) executeTxFunc() {
