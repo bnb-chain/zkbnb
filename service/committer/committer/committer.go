@@ -210,19 +210,19 @@ func NewCommitter(config *Config) (*Committer, error) {
 }
 
 func (c *Committer) Run() {
-	c.txWorker = core.ExecuteTxWorker(1500, func() {
+	c.txWorker = core.ExecuteTxWorker(6000, func() {
 		c.executeTxFunc()
 	})
-	c.syncStateToRedisWorker = core.SyncStateCacheToRedisWorker(3000, func(item interface{}) {
+	c.syncStateToRedisWorker = core.SyncStateCacheToRedisWorker(20000, func(item interface{}) {
 		c.syncStateCacheToRedisFunc(item.(*PendingMap))
 	})
-	c.updatePoolTxWorker = core.UpdatePoolTxWorker(3000, func(item interface{}) {
+	c.updatePoolTxWorker = core.UpdatePoolTxWorker(6000, func(item interface{}) {
 		c.updatePoolTxFunc(item.(*UpdatePoolTx))
 	})
-	c.treeWorker = core.ExecuteTreeWorker(5, func(item interface{}) {
+	c.treeWorker = core.ExecuteTreeWorker(10, func(item interface{}) {
 		c.executeTreeFunc(item.(*statedb.StateDataCopy))
 	})
-	c.saveBlockTxWorker = core.SaveBlockTransactionWorker(5, func(item interface{}) {
+	c.saveBlockTxWorker = core.SaveBlockTransactionWorker(10, func(item interface{}) {
 		c.saveBlockTransactionFunc(item.(*block.BlockStates))
 	})
 
