@@ -235,7 +235,7 @@ func (m *defaultTxPoolModel) UpdateTxsInTransact(tx *gorm.DB, txs []*Tx) error {
 }
 
 func (m *defaultTxPoolModel) UpdateTxsToPending() error {
-	dbTx := m.DB.Model(&Tx{}).Where("tx_status = ?", StatusExecuted).Update("tx_status", StatusPending)
+	dbTx := m.DB.Model(&PoolTx{}).Where("tx_status = ?", StatusExecuted).Update("tx_status", StatusPending)
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}
@@ -256,10 +256,10 @@ func (m *defaultTxPoolModel) DeleteTxsInTransact(tx *gorm.DB, txs []*Tx) error {
 }
 
 func (m *defaultTxPoolModel) DeleteTxsBatchInTransact(tx *gorm.DB, txs []*Tx) error {
-	ids := make([]uint, 0, len(txs))
-	if len(ids) == 0 {
+	if len(txs) == 0 {
 		return nil
 	}
+	ids := make([]uint, 0, len(txs))
 	for _, poolTx := range txs {
 		ids = append(ids, poolTx.ID)
 	}
