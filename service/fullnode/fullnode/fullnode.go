@@ -132,7 +132,7 @@ func (c *Fullnode) Run() {
 				}
 			}
 
-			err = c.bc.Statedb.IntermediateRoot(true)
+			err = c.bc.Statedb.IntermediateRoot(true, nil)
 			if err != nil {
 				panic(fmt.Sprint("calculate state root failed, err", err))
 			}
@@ -141,7 +141,7 @@ func (c *Fullnode) Run() {
 				panic(fmt.Sprintf("state root not matched between statedb and l2block: %d, local: %s, remote: %s", l2Block.Height, c.bc.Statedb.StateRoot, l2Block.StateRoot))
 			}
 
-			curBlock, err = c.processNewBlock(curBlock, int(l2Block.Size))
+			curBlock, err = c.processNewBlock(int(l2Block.Size))
 			if err != nil {
 				panic(fmt.Sprintf("new block failed, block height: %d, Error: %s", l2Block.Height, err.Error()))
 			}
@@ -158,8 +158,8 @@ func (c *Fullnode) Shutdown() {
 	c.bc.ChainDB.Close()
 }
 
-func (c *Fullnode) processNewBlock(curBlock *block.Block, blockSize int) (*block.Block, error) {
-	blockStates, err := c.bc.CommitNewBlock(blockSize, curBlock.CreatedAt.UnixMilli())
+func (c *Fullnode) processNewBlock(blockSize int) (*block.Block, error) {
+	blockStates, err := c.bc.CommitNewBlock(blockSize, nil)
 	if err != nil {
 		return nil, err
 	}

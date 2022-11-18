@@ -60,6 +60,7 @@ type (
 		CreateBlockInTransact(tx *gorm.DB, oBlock *Block) error
 		UpdateBlocksWithoutTxsInTransact(tx *gorm.DB, blocks []*Block) (err error)
 		UpdateBlockInTransact(tx *gorm.DB, block *Block) (err error)
+		DeleteProposingBlock() (err error)
 	}
 
 	defaultBlockModel struct {
@@ -368,6 +369,14 @@ func (m *defaultBlockModel) UpdateBlockInTransact(tx *gorm.DB, block *Block) (er
 			return err
 		}
 		return types.DbErrFailToUpdateBlock
+	}
+	return nil
+}
+
+func (m *defaultBlockModel) DeleteProposingBlock() error {
+	dbTx := m.DB.Table(m.table).Unscoped().Where("block_status = ?", StatusProposing).Delete(&Block{})
+	if dbTx.Error != nil {
+		return types.DbErrSqlOperation
 	}
 	return nil
 }

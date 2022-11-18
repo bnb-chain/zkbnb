@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gorm.io/gorm/logger"
 	"math/big"
 	"time"
 
@@ -48,6 +49,7 @@ var (
 type ChainConfig struct {
 	Postgres struct {
 		DataSource string
+		LogLevel   logger.LogLevel `json:",optional"`
 	}
 	CacheRedis cache.CacheConf
 	//nolint:staticcheck
@@ -76,7 +78,9 @@ type BlockChain struct {
 }
 
 func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) {
-	db, err := gorm.Open(postgres.Open(config.Postgres.DataSource))
+	db, err := gorm.Open(postgres.Open(config.Postgres.DataSource), &gorm.Config{
+		Logger: logger.Default.LogMode(config.Postgres.LogLevel),
+	})
 	if err != nil {
 		logx.Error("gorm connect db failed: ", err)
 		return nil, err
@@ -84,6 +88,15 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	bc := &BlockChain{
 		ChainDB:     sdb.NewChainDB(db),
 		chainConfig: config,
+	}
+
+	err = bc.TxPoolModel.UpdateTxsToPending()
+	if err != nil {
+		panic("update pool tx to pending failed: " + err.Error())
+	}
+	err = bc.BlockModel.DeleteProposingBlock()
+	if err != nil {
+		panic("delete block failed: " + err.Error())
 	}
 
 	curHeight, err := bc.BlockModel.GetCurrentBlockHeight()
@@ -96,9 +109,11 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	if err != nil {
 		return nil, err
 	}
-	if bc.currentBlock.BlockStatus == block.StatusProposing {
-		curHeight--
-	}
+	//if bc.currentBlock.BlockStatus == block.StatusProposing {
+	//	curHeight--
+	//}
+	//todo config
+
 	redisCache := dbcache.NewRedisCache(config.CacheRedis[0].Host, config.CacheRedis[0].Pass, 15*time.Minute)
 	treeCtx, err := tree.NewContext(moduleName, config.TreeDB.Driver, false, config.TreeDB.RoutinePoolSize, &config.TreeDB.LevelDBOption, &config.TreeDB.RedisDBOption)
 	if err != nil {
@@ -173,27 +188,27 @@ func (bc *BlockChain) CurrentBlock() *block.Block {
 	return bc.currentBlock
 }
 
-func (bc *BlockChain) CommitNewBlock(blockSize int, createdAt int64) (*block.BlockStates, error) {
-	newBlock, compressedBlock, err := bc.commitNewBlock(blockSize, createdAt)
+func (bc *BlockChain) CommitNewBlock(blockSize int, stateDataCopy *statedb.StateDataCopy) (*block.BlockStates, error) {
+	newBlock, compressedBlock, err := bc.commitNewBlock(blockSize, stateDataCopy)
 	if err != nil {
 		return nil, err
 	}
 
-	currentHeight := bc.currentBlock.BlockHeight
+	currentHeight := stateDataCopy.CurrentBlock.BlockHeight
 
 	start := time.Now()
-	err = tree.CommitTrees(uint64(currentHeight), bc.Statedb.AccountTree, bc.Statedb.AccountAssetTrees, bc.Statedb.NftTree)
+	err = tree.CommitTrees(uint64(bc.StateDB().GetPrunedBlockHeight()), bc.Statedb.AccountTree, bc.Statedb.AccountAssetTrees, bc.Statedb.NftTree)
 	if err != nil {
 		return nil, err
 	}
 	commitTreeMetics.Set(float64(time.Since(start).Milliseconds()))
 
-	pendingAccount, pendingAccountHistory, err := bc.Statedb.GetPendingAccount(currentHeight)
+	pendingAccount, pendingAccountHistory, err := bc.Statedb.GetPendingAccount(currentHeight, stateDataCopy)
 	if err != nil {
 		return nil, err
 	}
 
-	pendingNft, pendingNftHistory, err := bc.Statedb.GetPendingNft(currentHeight)
+	pendingNft, pendingNftHistory, err := bc.Statedb.GetPendingNft(currentHeight, stateDataCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -208,58 +223,57 @@ func (bc *BlockChain) CommitNewBlock(blockSize int, createdAt int64) (*block.Blo
 	}, nil
 }
 
-func (bc *BlockChain) commitNewBlock(blockSize int, createdAt int64) (*block.Block, *compressedblock.CompressedBlock, error) {
-	s := bc.Statedb
-	if blockSize < len(s.Txs) {
+func (bc *BlockChain) commitNewBlock(blockSize int, stateDataCopy *statedb.StateDataCopy) (*block.Block, *compressedblock.CompressedBlock, error) {
+	if blockSize < len(stateDataCopy.StateCache.Txs) {
 		return nil, nil, errors.New("block size too small")
 	}
 
-	newBlock := bc.currentBlock
+	newBlock := stateDataCopy.CurrentBlock
 	if newBlock.BlockStatus != block.StatusProposing {
 		newBlock = &block.Block{
 			Model: gorm.Model{
-				CreatedAt: time.UnixMilli(createdAt),
+				CreatedAt: time.UnixMilli(stateDataCopy.CurrentBlock.CreatedAt.UnixMilli()),
 			},
-			BlockHeight: bc.currentBlock.BlockHeight + 1,
-			StateRoot:   bc.currentBlock.StateRoot,
+			BlockHeight: stateDataCopy.CurrentBlock.BlockHeight + 1,
+			StateRoot:   stateDataCopy.CurrentBlock.StateRoot,
 			BlockStatus: block.StatusProposing,
 		}
 	}
 
 	start := time.Now()
 	// Intermediate state root.
-	err := s.IntermediateRoot(false)
+	err := bc.Statedb.IntermediateRoot(false, stateDataCopy)
 	if err != nil {
 		return nil, nil, err
 	}
 	updateTreeMetics.Set(float64(time.Since(start).Milliseconds()))
 
 	// Align pub data.
-	s.AlignPubData(blockSize)
+	bc.Statedb.AlignPubData(blockSize, stateDataCopy)
 
 	commitment := chain.CreateBlockCommitment(newBlock.BlockHeight, newBlock.CreatedAt.UnixMilli(),
-		common.FromHex(newBlock.StateRoot), common.FromHex(s.StateRoot),
-		s.PubData, int64(len(s.PubDataOffset)))
+		common.FromHex(newBlock.StateRoot), common.FromHex(stateDataCopy.StateCache.StateRoot),
+		stateDataCopy.StateCache.PubData, int64(len(stateDataCopy.StateCache.PubDataOffset)))
 
 	newBlock.BlockSize = uint16(blockSize)
 	newBlock.BlockCommitment = commitment
-	newBlock.StateRoot = s.StateRoot
-	newBlock.PriorityOperations = s.PriorityOperations
-	newBlock.PendingOnChainOperationsHash = common.Bytes2Hex(s.PendingOnChainOperationsHash)
-	newBlock.Txs = s.Txs
+	newBlock.StateRoot = stateDataCopy.StateCache.StateRoot
+	newBlock.PriorityOperations = stateDataCopy.StateCache.PriorityOperations
+	newBlock.PendingOnChainOperationsHash = common.Bytes2Hex(stateDataCopy.StateCache.PendingOnChainOperationsHash)
+	newBlock.Txs = stateDataCopy.StateCache.Txs
 	for _, executedTx := range newBlock.Txs {
 		executedTx.TxStatus = tx.StatusPacked
 	}
 	newBlock.BlockStatus = block.StatusPending
-	if len(s.PendingOnChainOperationsPubData) > 0 {
-		onChainOperationsPubDataBytes, err := json.Marshal(s.PendingOnChainOperationsPubData)
+	if len(stateDataCopy.StateCache.PendingOnChainOperationsPubData) > 0 {
+		onChainOperationsPubDataBytes, err := json.Marshal(stateDataCopy.StateCache.PendingOnChainOperationsPubData)
 		if err != nil {
 			return nil, nil, fmt.Errorf("marshal pending onChain operation pubData failed: %v", err)
 		}
 		newBlock.PendingOnChainOperationsPubData = string(onChainOperationsPubDataBytes)
 	}
 
-	offsetBytes, err := json.Marshal(s.PubDataOffset)
+	offsetBytes, err := json.Marshal(stateDataCopy.StateCache.PubDataOffset)
 	if err != nil {
 		return nil, nil, fmt.Errorf("marshal pubData offset failed: %v", err)
 	}
@@ -267,12 +281,13 @@ func (bc *BlockChain) commitNewBlock(blockSize int, createdAt int64) (*block.Blo
 		BlockSize:         uint16(blockSize),
 		BlockHeight:       newBlock.BlockHeight,
 		StateRoot:         newBlock.StateRoot,
-		PublicData:        common.Bytes2Hex(s.PubData),
+		PublicData:        common.Bytes2Hex(stateDataCopy.StateCache.PubData),
 		Timestamp:         newBlock.CreatedAt.UnixMilli(),
 		PublicDataOffsets: string(offsetBytes),
 	}
 
-	bc.currentBlock = newBlock
+	//bc.currentBlock = newBlock
+	//todo
 	return newBlock, newCompressedBlock, nil
 }
 
