@@ -251,7 +251,7 @@ func (c *Committer) pullPoolTxs() {
 			break
 		}
 		logx.Infof("get pool txs maxId=%d", maxId)
-		pendingTxs, err := c.bc.TxPoolModel.GetTxsByStatusAndMaxId(tx.StatusPending, maxId, 20)
+		pendingTxs, err := c.bc.TxPoolModel.GetTxsByStatusAndMaxId(tx.StatusPending, maxId, 50)
 		if err != nil {
 			logx.Errorf("get pending transactions from tx pool failed:%s", err.Error())
 			time.Sleep(100 * time.Millisecond)
