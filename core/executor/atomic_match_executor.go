@@ -68,11 +68,11 @@ func (e *AtomicMatchExecutor) Prepare() error {
 	return e.BaseExecutor.Prepare()
 }
 
-func (e *AtomicMatchExecutor) VerifyInputs(skipGasAmtChk bool) error {
+func (e *AtomicMatchExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk)
+	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk, skipSigChk)
 	if err != nil {
 		return err
 	}

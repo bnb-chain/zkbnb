@@ -106,7 +106,7 @@ func (e *FullExitNftExecutor) Prepare() error {
 	return nil
 }
 
-func (e *FullExitNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
+func (e *FullExitNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	return nil
 }
 

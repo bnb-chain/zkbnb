@@ -45,7 +45,7 @@ type (
 		GetL1RollupTxsByStatus(txStatus int) (txs []*L1RollupTx, err error)
 		GetL1RollupTxsByHash(hash string) (txs []*L1RollupTx, err error)
 		DeleteL1RollupTx(tx *L1RollupTx) error
-		UpdateL1RollupTxsInTransact(tx *gorm.DB, txs []*L1RollupTx) error
+		UpdateL1RollupTxsStatusInTransact(tx *gorm.DB, txs []*L1RollupTx) error
 	}
 
 	defaultL1RollupTxModel struct {
@@ -56,11 +56,11 @@ type (
 	L1RollupTx struct {
 		gorm.Model
 		// txVerification hash
-		L1TxHash string
+		L1TxHash string `gorm:"index"`
 		// txVerification status, 1 - pending, 2 - handled
-		TxStatus int
+		TxStatus int `gorm:"index:idx_tx_status"`
 		// txVerification type: commit / verify
-		TxType uint8
+		TxType uint8 `gorm:"index:idx_tx_status"`
 		// layer-2 block height
 		L2BlockHeight int64
 	}
@@ -152,17 +152,23 @@ func (m *defaultL1RollupTxModel) GetLatestPendingTx(txType int64) (tx *L1RollupT
 	return tx, nil
 }
 
-func (m *defaultL1RollupTxModel) UpdateL1RollupTxsInTransact(tx *gorm.DB, txs []*L1RollupTx) error {
+func (m *defaultL1RollupTxModel) UpdateL1RollupTxsStatusInTransact(tx *gorm.DB, txs []*L1RollupTx) error {
+	statusMap := map[int][]uint{}
+
 	for _, pendingUpdateTx := range txs {
-		dbTx := tx.Table(TableName).Where("id = ?", pendingUpdateTx.ID).
-			Select("*").
-			Updates(&pendingUpdateTx)
+		statusMap[pendingUpdateTx.TxStatus] = append(statusMap[pendingUpdateTx.TxStatus], pendingUpdateTx.ID)
+	}
+
+	for status, ids := range statusMap {
+		dbTx := tx.Table(TableName).Where("id IN ?", ids).
+			Update("tx_status", status)
 		if dbTx.Error != nil {
 			return dbTx.Error
 		}
-		if dbTx.RowsAffected == 0 {
-			return fmt.Errorf("invalid rollup tx: %d", pendingUpdateTx.ID)
+		if dbTx.RowsAffected != int64(len(ids)) {
+			return fmt.Errorf("invalid rollup tx")
 		}
 	}
+
 	return nil
 }

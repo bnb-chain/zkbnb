@@ -90,7 +90,7 @@ keyfileVolume:
 configs:
   postgres:
     DataSource: host=postgres user=postgres password=*** dbname=zkbnb port=5432 sslmode=disable
-    MaxConn: 100
+    MaxConn: 1000
     MaxIdle: 10
   redisCache: 
     - Host: redis

@@ -123,7 +123,7 @@ func (m *defaultPriorityRequestModel) GetLatestHandledRequestId() (requestId int
 
 func (m *defaultPriorityRequestModel) UpdateHandledPriorityRequestsInTransact(tx *gorm.DB, requests []*PriorityRequest) (err error) {
 	for _, request := range requests {
-		dbTx := tx.Table(m.table).Where("id = ?", request.ID).Updates(
+		dbTx := tx.Model(&PriorityRequest{}).Where("id = ?", request.ID).Updates(
 			map[string]interface{}{
 				"status":     HandledStatus,
 				"l2_tx_hash": request.L2TxHash,

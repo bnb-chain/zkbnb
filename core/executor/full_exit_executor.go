@@ -65,7 +65,7 @@ func (e *FullExitExecutor) Prepare() error {
 	return nil
 }
 
-func (e *FullExitExecutor) VerifyInputs(skipGasAmtChk bool) error {
+func (e *FullExitExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	return nil
 }
 
