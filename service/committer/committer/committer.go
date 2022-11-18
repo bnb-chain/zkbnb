@@ -238,6 +238,7 @@ func (c *Committer) Run() {
 func (c *Committer) pullPoolTxs() {
 	pendingTx, err := c.bc.TxPoolModel.GetFirstTxByStatus(tx.StatusPending)
 	if err != nil {
+		logx.Errorf("get pending transactions from tx pool failed:%s", err.Error())
 		panic("get pending transactions from tx pool failed: " + err.Error())
 	}
 	var maxId uint
@@ -250,9 +251,9 @@ func (c *Committer) pullPoolTxs() {
 			break
 		}
 		logx.Infof("get pool txs maxId=%d", maxId)
-		pendingTxs, err := c.bc.TxPoolModel.GetTxsByStatusAndMaxId(tx.StatusPending, maxId, 300)
+		pendingTxs, err := c.bc.TxPoolModel.GetTxsByStatusAndMaxId(tx.StatusPending, maxId, 50)
 		if err != nil {
-			logx.Error("get pending transactions from tx pool failed:", err)
+			logx.Errorf("get pending transactions from tx pool failed:%s", err.Error())
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
@@ -260,9 +261,13 @@ func (c *Committer) pullPoolTxs() {
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
+
 		for _, poolTx := range pendingTxs {
-			c.txWorker.Enqueue(poolTx)
+			if int(poolTx.ID)-int(maxId) != 1 {
+				logx.Errorf("not equal id=%s", poolTx.ID)
+			}
 			maxId = poolTx.ID
+			c.txWorker.Enqueue(poolTx)
 		}
 	}
 }
@@ -286,6 +291,7 @@ func (c *Committer) getPoolTxsFromQueue() []*tx.Tx {
 func (c *Committer) executeTxFunc() {
 	latestRequestId, err := c.getLatestExecutedRequestId()
 	if err != nil {
+		logx.Errorf("get latest executed request id failed:%s", err.Error())
 		panic("get latest executed request id failed: " + err.Error())
 	}
 	var subPendingTxs []*tx.Tx
@@ -295,6 +301,7 @@ func (c *Committer) executeTxFunc() {
 		if curBlock.BlockStatus > block.StatusProposing {
 			curBlock, err = c.bc.InitNewBlock()
 			if err != nil {
+				logx.Errorf("propose new block failed:%s", err)
 				panic("propose new block failed: " + err.Error())
 			}
 		}
@@ -316,6 +323,7 @@ func (c *Committer) executeTxFunc() {
 		pendingDeletePoolTxs := make([]*tx.Tx, 0, len(pendingTxs))
 		start := time.Now()
 		for _, poolTx := range pendingTxs {
+			logx.Error("pendingTxs----: ", poolTx.ID)
 			if c.shouldCommit(curBlock) {
 				subPendingTxs = append(subPendingTxs, poolTx)
 				continue
@@ -327,6 +335,7 @@ func (c *Committer) executeTxFunc() {
 			if err != nil {
 				logx.Errorf("apply pool tx ID: %d failed, err %v ", poolTx.ID, err)
 				if types.IsPriorityOperationTx(poolTx.TxType) {
+					logx.Errorf("apply priority pool tx failed,id=%s,error=%s", strconv.Itoa(int(poolTx.ID)), err.Error())
 					panic("apply priority pool tx failed,id=" + strconv.Itoa(int(poolTx.ID)) + ",error=" + err.Error())
 				}
 				poolTx.TxStatus = tx.StatusFailed
@@ -340,10 +349,12 @@ func (c *Committer) executeTxFunc() {
 					priorityOperationMetric.Set(float64(request.RequestId))
 					priorityOperationHeightMetric.Set(float64(request.L1BlockHeight))
 					if latestRequestId != -1 && request.RequestId != latestRequestId+1 {
+						logx.Errorf("invalid request id=%s,txHash=%s", strconv.Itoa(int(request.RequestId)), err.Error())
 						panic("invalid request id=" + strconv.Itoa(int(request.RequestId)) + ",txHash=" + poolTx.TxHash)
 					}
 					latestRequestId = request.RequestId
 				} else {
+					logx.Errorf("query txHash from priority request txHash=%s,error=%s", poolTx.TxHash, err.Error())
 					panic("query txHash from priority request txHash=" + poolTx.TxHash + ",error=" + err.Error())
 				}
 			}
@@ -352,6 +363,7 @@ func (c *Committer) executeTxFunc() {
 			if len(c.bc.Statedb.Txs) == 1 {
 				err = c.createNewBlock(curBlock, poolTx)
 				if err != nil {
+					logx.Errorf("create new block failed:%s", err.Error())
 					panic("create new block failed" + err.Error())
 				}
 			} else {
@@ -376,6 +388,7 @@ func (c *Committer) executeTxFunc() {
 			c.treeWorker.Enqueue(stateDataCopy)
 			curBlock, err = c.bc.InitNewBlock()
 			if err != nil {
+				logx.Errorf("propose new block failed:%s ", err.Error())
 				panic("propose new block failed: " + err.Error())
 			}
 			logx.Infof("commit new block success, blockSize=%d", curBlock.BlockSize)
@@ -397,6 +410,9 @@ func (c *Committer) enqueueUpdatePoolTx(pendingUpdatePoolTxs []*tx.Tx, pendingDe
 }
 
 func (c *Committer) updatePoolTxFunc(updatePoolTxMap *UpdatePoolTx) {
+	for _, pendingDeletePoolTx := range updatePoolTxMap.PendingDeletePoolTxs {
+		updatePoolTxMap.PendingUpdatePoolTxs = append(updatePoolTxMap.PendingUpdatePoolTxs, pendingDeletePoolTx)
+	}
 	err := c.bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
 		err := c.bc.TxPoolModel.UpdateTxsInTransact(dbTx, updatePoolTxMap.PendingUpdatePoolTxs)
 		if err != nil {
@@ -439,6 +455,7 @@ func (c *Committer) executeTreeFunc(stateDataCopy *statedb.StateDataCopy) {
 	blockSize := c.computeCurrentBlockSize(stateDataCopy)
 	blockStates, err := c.bc.CommitNewBlock(blockSize, stateDataCopy)
 	if err != nil {
+		logx.Errorf("propose new block failed:%s ", err)
 		panic("commit new block failed: " + err.Error())
 	}
 	stateDBOperationMetics.Set(float64(time.Since(start).Milliseconds()))
@@ -447,6 +464,7 @@ func (c *Committer) executeTreeFunc(stateDataCopy *statedb.StateDataCopy) {
 	//todo
 	err = c.bc.Statedb.SyncGasAccountToRedis()
 	if err != nil {
+		logx.Errorf("update pool tx to pending failed:%s", err.Error())
 		panic("update pool tx to pending failed: " + err.Error())
 	}
 	c.saveBlockTxWorker.Enqueue(blockStates)
@@ -516,6 +534,7 @@ func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
 
 	})
 	if err != nil {
+		logx.Errorf("save block transaction failed:%s", err.Error())
 		panic("save block transaction failed: " + err.Error())
 		//todo 重试优化
 	}
