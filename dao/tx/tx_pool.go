@@ -257,6 +257,9 @@ func (m *defaultTxPoolModel) DeleteTxsInTransact(tx *gorm.DB, txs []*Tx) error {
 
 func (m *defaultTxPoolModel) DeleteTxsBatchInTransact(tx *gorm.DB, txs []*Tx) error {
 	ids := make([]uint, 0, len(txs))
+	if len(ids) == 0 {
+		return nil
+	}
 	for _, poolTx := range txs {
 		ids = append(ids, poolTx.ID)
 	}
