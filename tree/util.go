@@ -22,7 +22,9 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"github.com/pkg/errors"
+	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
+	"time"
 
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 
@@ -72,8 +74,10 @@ func CommitTrees(
 	accountTree bsmt.SparseMerkleTree,
 	assetTrees *AssetTreeCache,
 	nftTree bsmt.SparseMerkleTree) error {
-
+	start := time.Now()
 	assetTreeChanges := assetTrees.GetChanges()
+	logx.Infof("GetChanges=%v", time.Since(start))
+
 	defer assetTrees.CleanChanges()
 	totalTask := len(assetTreeChanges) + 2
 

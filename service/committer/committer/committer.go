@@ -63,6 +63,47 @@ var (
 		Name:      "sql_db_time",
 		Help:      "sql DB commit operation time",
 	})
+	executeTxApply1TxMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "exec_tx_apply_1_transaction_time",
+		Help:      "execute txs apply 1 transaction operation time",
+	})
+
+	updatePoolTxsMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "update_pool_txs_time",
+		Help:      "update pool txs time",
+	})
+
+	addCompressedBlockMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "add_compressed_block_time",
+		Help:      "add compressed block time",
+	})
+
+	updateAccountMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "update_account_time",
+		Help:      "update account time",
+	})
+
+	addAccountHistoryMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "add_account_history_time",
+		Help:      "add account history time",
+	})
+
+	deletePoolTxMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "delete_pool_tx_time",
+		Help:      "delete pool tx time",
+	})
+
+	updateBlockMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "update_block_time",
+		Help:      "update block time time",
+	})
 )
 
 type Config struct {
@@ -130,6 +171,31 @@ func NewCommitter(config *Config) (*Committer, error) {
 	}
 	if err := prometheus.Register(sqlDBOperationMetics); err != nil {
 		return nil, fmt.Errorf("prometheus.Register sqlDBOperationMetics error: %v", err)
+	}
+	if err := prometheus.Register(executeTxApply1TxMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register executeTxApply1TxMetrics error: %v", err)
+	}
+	if err := prometheus.Register(updatePoolTxsMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register updatePoolTxsMetrics error: %v", err)
+	}
+	if err := prometheus.Register(addCompressedBlockMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register addCompressedBlockMetrics error: %v", err)
+	}
+
+	if err := prometheus.Register(updateAccountMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register updateAccountMetrics error: %v", err)
+	}
+
+	if err := prometheus.Register(addAccountHistoryMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register addAccountHistoryMetrics error: %v", err)
+	}
+
+	if err := prometheus.Register(deletePoolTxMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register deletePoolTxMetrics error: %v", err)
+	}
+
+	if err := prometheus.Register(updateBlockMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register updateBlockMetrics error: %v", err)
 	}
 
 	committer := &Committer{
@@ -256,7 +322,9 @@ func (c *Committer) executeTxFunc() {
 				continue
 			}
 			logx.Infof("apply transaction, txHash=%s", poolTx.TxHash)
+			startApplyTx := time.Now()
 			err = c.bc.ApplyTransaction(poolTx)
+			executeTxApply1TxMetrics.Set(float64(time.Since(startApplyTx).Milliseconds()))
 			if err != nil {
 				logx.Errorf("apply pool tx ID: %d failed, err %v ", poolTx.ID, err)
 				if types.IsPriorityOperationTx(poolTx.TxType) {
@@ -390,6 +458,8 @@ func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
 	start := time.Now()
 	// update db
 	err := c.bc.DB().DB.Transaction(func(tx *gorm.DB) error {
+	err = c.bc.DB().DB.Transaction(func(tx *gorm.DB) error {
+		start := time.Now()
 		// create block for commit
 		var err error
 		if blockStates.CompressedBlock != nil {
@@ -398,6 +468,8 @@ func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
 				return err
 			}
 		}
+		addCompressedBlockMetrics.Set(float64(time.Since(start).Milliseconds()))
+		start = time.Now()
 		// create or update account
 		if len(blockStates.PendingAccount) != 0 {
 			err = c.bc.DB().AccountModel.UpdateAccountsInTransact(tx, blockStates.PendingAccount)
@@ -405,6 +477,8 @@ func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
 				return err
 			}
 		}
+		updateAccountMetrics.Set(float64(time.Since(start).Milliseconds()))
+		start = time.Now()
 		// create account history
 		if len(blockStates.PendingAccountHistory) != 0 {
 			err = c.bc.DB().AccountHistoryModel.CreateAccountHistoriesInTransact(tx, blockStates.PendingAccountHistory)
@@ -412,6 +486,7 @@ func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
 				return err
 			}
 		}
+		addAccountHistoryMetrics.Set(float64(time.Since(start).Milliseconds()))
 		// create or update nft
 		if len(blockStates.PendingNft) != 0 {
 			err = c.bc.DB().L2NftModel.UpdateNftsInTransact(tx, blockStates.PendingNft)
@@ -426,14 +501,21 @@ func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
 				return err
 			}
 		}
+		start = time.Now()
 		// delete txs from tx pool
 		err = c.bc.DB().TxPoolModel.DeleteTxsBatchInTransact(tx, blockStates.Block.Txs)
 		if err != nil {
 			return err
 		}
+		deletePoolTxMetrics.Set(float64(time.Since(start).Milliseconds()))
+
 		// update block
 		blockStates.Block.ClearTxsModel()
-		return c.bc.DB().BlockModel.UpdateBlockInTransact(tx, blockStates.Block)
+		start = time.Now()
+		err = c.bc.DB().BlockModel.UpdateBlockInTransact(tx, blockStates.Block)
+		updateBlockMetrics.Set(float64(time.Since(start).Milliseconds()))
+		return err
+
 	})
 	if err != nil {
 		panic("save block transaction failed: " + err.Error())

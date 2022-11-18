@@ -44,10 +44,10 @@ func (e *CancelOfferExecutor) Prepare() error {
 	return e.BaseExecutor.Prepare()
 }
 
-func (e *CancelOfferExecutor) VerifyInputs(skipGasAmtChk bool) error {
+func (e *CancelOfferExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	txInfo := e.txInfo
 
-	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk)
+	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk, skipSigChk)
 	if err != nil {
 		return err
 	}

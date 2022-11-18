@@ -43,11 +43,11 @@ func (e *TransferExecutor) Prepare() error {
 	return e.BaseExecutor.Prepare()
 }
 
-func (e *TransferExecutor) VerifyInputs(skipGasAmtChk bool) error {
+func (e *TransferExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	bc := e.bc
 	txInfo := e.txInfo
 
-	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk)
+	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk, skipSigChk)
 	if err != nil {
 		return err
 	}

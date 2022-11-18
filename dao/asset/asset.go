@@ -57,11 +57,11 @@ type (
 		gorm.Model
 		AssetId     uint32 `gorm:"uniqueIndex"`
 		AssetName   string
-		AssetSymbol string
-		L1Address   string
+		AssetSymbol string `gorm:"index"`
+		L1Address   string `gorm:"index"`
 		Decimals    uint32
 		Status      uint32
-		IsGasAsset  uint32
+		IsGasAsset  uint32 `gorm:"index"`
 	}
 )
 
@@ -139,7 +139,7 @@ func (m *defaultAssetModel) GetAssetBySymbol(symbol string) (res *Asset, err err
 }
 
 func (m *defaultAssetModel) GetAssetByAddress(address string) (asset *Asset, err error) {
-	dbTx := m.DB.Table(m.table).Where("asset_address = ?", address).Find(&asset)
+	dbTx := m.DB.Table(m.table).Where("l1_address = ?", address).Find(&asset)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {

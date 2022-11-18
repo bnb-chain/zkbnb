@@ -320,7 +320,7 @@ func (s *Sender) UpdateSentTxs() (err error) {
 	//update db
 	err = s.db.Transaction(func(tx *gorm.DB) error {
 		//update l1 rollup txs
-		err := s.l1RollupTxModel.UpdateL1RollupTxsInTransact(tx, pendingUpdateRxs)
+		err := s.l1RollupTxModel.UpdateL1RollupTxsStatusInTransact(tx, pendingUpdateRxs)
 		if err != nil {
 			return err
 		}
