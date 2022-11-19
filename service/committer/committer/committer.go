@@ -363,6 +363,7 @@ func (c *Committer) executeTxFunc() {
 	for {
 		curBlock := c.bc.CurrentBlock()
 		l2BlockMemoryHeightMetric.Set(float64(curBlock.BlockHeight))
+		l2BlockMemoryHeightMetric.Set(float64(curBlock.BlockHeight))
 		if curBlock.BlockStatus > block.StatusProposing {
 			curBlock, err = c.bc.InitNewBlock()
 			if err != nil {
