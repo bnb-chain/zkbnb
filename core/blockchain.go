@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"gorm.io/gorm/logger"
 	"math/big"
+	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -156,9 +157,10 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	if err != nil {
 		return nil, err
 	}
-	//if bc.currentBlock.BlockStatus == block.StatusProposing {
-	//	curHeight--
-	//}
+	if bc.currentBlock.BlockStatus == block.StatusProposing {
+		logx.Errorf("current block status is StatusProposing,invalid block, height=%s", bc.currentBlock.BlockHeight)
+		panic("current block status is StatusProposing,invalid block, height=" + strconv.FormatInt(bc.currentBlock.BlockHeight, 10))
+	}
 	//todo config
 
 	redisCache := dbcache.NewRedisCache(config.CacheRedis[0].Host, config.CacheRedis[0].Pass, 15*time.Minute)
@@ -172,6 +174,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	if err != nil {
 		return nil, err
 	}
+	bc.Statedb.PreviousStateRoot = bc.currentBlock.StateRoot
 
 	accountFromDbGauge := prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
@@ -392,7 +395,7 @@ func (bc *BlockChain) commitNewBlock(blockSize int, stateDataCopy *statedb.State
 	bc.Statedb.AlignPubData(blockSize, stateDataCopy)
 
 	commitment := chain.CreateBlockCommitment(newBlock.BlockHeight, newBlock.CreatedAt.UnixMilli(),
-		common.FromHex(newBlock.StateRoot), common.FromHex(stateDataCopy.StateCache.StateRoot),
+		common.FromHex(bc.Statedb.PreviousStateRoot), common.FromHex(stateDataCopy.StateCache.StateRoot),
 		stateDataCopy.StateCache.PubData, int64(len(stateDataCopy.StateCache.PubDataOffset)))
 
 	newBlock.BlockSize = uint16(blockSize)
@@ -425,7 +428,7 @@ func (bc *BlockChain) commitNewBlock(blockSize int, stateDataCopy *statedb.State
 		Timestamp:         newBlock.CreatedAt.UnixMilli(),
 		PublicDataOffsets: string(offsetBytes),
 	}
-
+	bc.Statedb.PreviousStateRoot = stateDataCopy.StateCache.StateRoot
 	//bc.currentBlock = newBlock
 	//todo
 	return newBlock, newCompressedBlock, nil
