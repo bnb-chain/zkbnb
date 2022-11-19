@@ -303,10 +303,8 @@ func (c *Committer) Run() {
 
 func (c *Committer) PendingTxNum() {
 	txStatuses := []int64{tx.StatusPending}
-	pendingTxCount, err := c.bc.TxPoolModel.GetTxsTotalCount(tx.GetTxWithStatuses(txStatuses))
-	if err != nil {
-		pendingTxNumMetrics.Set(float64(pendingTxCount))
-	}
+	pendingTxCount, _ := c.bc.TxPoolModel.GetTxsTotalCount(tx.GetTxWithStatuses(txStatuses))
+	pendingTxNumMetrics.Set(float64(pendingTxCount))
 }
 
 func (c *Committer) pullPoolTxs() {
