@@ -482,8 +482,14 @@ func (c *Committer) executeTxFunc() {
 
 func (c *Committer) enqueueUpdatePoolTx(pendingUpdatePoolTxs []*tx.Tx, pendingDeletePoolTxs []*tx.Tx) {
 	updatePoolTxMap := &UpdatePoolTx{
-		PendingUpdatePoolTxs: pendingUpdatePoolTxs,
-		PendingDeletePoolTxs: pendingDeletePoolTxs,
+		PendingUpdatePoolTxs: make([]*tx.Tx, 0, len(pendingUpdatePoolTxs)),
+		PendingDeletePoolTxs: make([]*tx.Tx, 0, len(pendingDeletePoolTxs)),
+	}
+	for _, poolTx := range pendingUpdatePoolTxs {
+		updatePoolTxMap.PendingUpdatePoolTxs = append(updatePoolTxMap.PendingUpdatePoolTxs, poolTx.DeepCopy())
+	}
+	for _, poolTx := range pendingDeletePoolTxs {
+		updatePoolTxMap.PendingDeletePoolTxs = append(updatePoolTxMap.PendingDeletePoolTxs, poolTx.DeepCopy())
 	}
 	c.updatePoolTxWorker.Enqueue(updatePoolTxMap)
 }
@@ -505,21 +511,15 @@ func (c *Committer) updatePoolTxFunc(updatePoolTxMap *UpdatePoolTx) {
 }
 
 func (c *Committer) enqueueSyncStateCacheToRedis(originPendingAccountMap map[int64]*types.AccountInfo, originPendingNftMap map[int64]*nft.L2Nft) {
-	pendingAccountMap := make(map[int64]*types.AccountInfo, 0)
-	pendingNftMap := make(map[int64]*nft.L2Nft, 0)
-	if originPendingAccountMap != nil {
-		for _, accountInfo := range originPendingAccountMap {
-			pendingAccountMap[accountInfo.AccountIndex] = accountInfo.DeepCopy()
-		}
-	}
-	if originPendingNftMap != nil {
-		for _, nftInfo := range originPendingNftMap {
-			pendingNftMap[nftInfo.NftIndex] = nftInfo.DeepCopy()
-		}
-	}
 	pendingMap := &PendingMap{
-		PendingAccountMap: pendingAccountMap,
-		PendingNftMap:     pendingNftMap,
+		PendingAccountMap: make(map[int64]*types.AccountInfo, len(originPendingAccountMap)),
+		PendingNftMap:     make(map[int64]*nft.L2Nft, len(originPendingNftMap)),
+	}
+	for _, accountInfo := range originPendingAccountMap {
+		pendingMap.PendingAccountMap[accountInfo.AccountIndex] = accountInfo.DeepCopy()
+	}
+	for _, nftInfo := range originPendingNftMap {
+		pendingMap.PendingNftMap[nftInfo.NftIndex] = nftInfo.DeepCopy()
 	}
 	c.syncStateToRedisWorker.Enqueue(pendingMap)
 }
