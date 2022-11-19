@@ -189,10 +189,15 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		if err != nil {
 			return err
 		}
+		l1SyncedBlockHeightMetric.Set(float64(l1BlockMonitorInfo.L1BlockHeight))
 		//create priority requests
 		err = m.PriorityRequestModel.CreatePriorityRequestsInTransact(tx, priorityRequests)
 		if err != nil {
 			return err
+		}
+		for _, request := range priorityRequests {
+			priorityOperationCreateMetric.Set(float64(request.RequestId))
+			priorityOperationHeightCreateMetric.Set(float64(request.L1BlockHeight))
 		}
 		//update blocks
 		err = m.BlockModel.UpdateBlocksWithoutTxsInTransact(tx, pendingUpdateBlocks)

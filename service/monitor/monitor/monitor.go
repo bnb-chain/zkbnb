@@ -50,6 +50,24 @@ var (
 		Name:      "priority_operation_insert_height",
 		Help:      "Priority operation height metrics.",
 	})
+
+	priorityOperationCreateMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "priority_operation_create",
+		Help:      "Priority operation create requestID metrics.",
+	})
+
+	priorityOperationHeightCreateMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "priority_operation_create_height",
+		Help:      "Priority operation create height metrics.",
+	})
+
+	l1SyncedBlockHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "monitor_synced_block_insert_height",
+		Help:      "Synced block insert height metrics.",
+	})
 )
 
 type Monitor struct {
