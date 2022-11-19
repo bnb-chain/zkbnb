@@ -221,7 +221,7 @@ func (m *defaultTxPoolModel) UpdateTxsInTransact(tx *gorm.DB, txs []*Tx) error {
 		// Don't write tx details when update tx pool.
 		txDetails := poolTx.TxDetails
 		poolTx.TxDetails = nil
-		dbTx := tx.Table(m.table).Where("id = ?", poolTx.ID).
+		dbTx := tx.Scopes().Table(m.table).Where("id = ?", poolTx.ID).
 			Select("*").
 			Updates(&poolTx)
 		poolTx.TxDetails = txDetails
