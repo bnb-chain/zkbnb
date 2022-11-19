@@ -148,6 +148,18 @@ func NewMonitor(c config.Config) *Monitor {
 		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
 		panic(err)
 	}
+	if err := prometheus.Register(priorityOperationCreateMetric); err != nil {
+		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
+		panic(err)
+	}
+	if err := prometheus.Register(priorityOperationHeightCreateMetric); err != nil {
+		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
+		panic(err)
+	}
+	if err := prometheus.Register(l1SyncedBlockHeightMetric); err != nil {
+		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
+		panic(err)
+	}
 
 	return monitor
 }
