@@ -33,6 +33,61 @@ var (
 		Name:      "priority_operation_process_height",
 		Help:      "Priority operation height metrics.",
 	})
+
+	l2BlockMemoryHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2Block_memory_height",
+		Help:      "l2Block_memory_height metrics.",
+	})
+
+	l2BlockRedisHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2Block_redis_height",
+		Help:      "l2Block_memory_height metrics.",
+	})
+
+	l2BlockDbHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2Block_db_height",
+		Help:      "l2Block_memory_height metrics.",
+	})
+
+	l2BlockCommitToChainHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2Block_commit_to_chain_height",
+		Help:      "l2Block_memory_height metrics.",
+	})
+
+	l2BlockCommitConfirmByChainHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2Block_commit_confirm_by_chain_height",
+		Help:      "l2Block_memory_height metrics.",
+	})
+
+	l2BlockWitnessGenerateHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2Block_witness_generate_height",
+		Help:      "l2Block_memory_height metrics.",
+	})
+
+	l2BlockProverGenerateHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2Block_prover_generate_height",
+		Help:      "l2Block_memory_height metrics.",
+	})
+
+	l2BlockSubmitToVerifyHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2Block_submit_to_verify_height",
+		Help:      "l2Block_memory_height metrics.",
+	})
+
+	l2BlockVerifiedHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2Block_verified_height",
+		Help:      "l2Block_memory_height metrics.",
+	})
+
 	commitOperationMetics = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
 		Name:      "db_commit_time",
@@ -307,6 +362,7 @@ func (c *Committer) executeTxFunc() {
 	var pendingTxs []*tx.Tx
 	for {
 		curBlock := c.bc.CurrentBlock()
+		l2BlockMemoryHeightMetric.Set(float64(curBlock.BlockHeight))
 		if curBlock.BlockStatus > block.StatusProposing {
 			curBlock, err = c.bc.InitNewBlock()
 			if err != nil {
