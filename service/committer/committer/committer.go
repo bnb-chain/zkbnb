@@ -64,18 +64,6 @@ var (
 		Help:      "l2Block_memory_height metrics.",
 	})
 
-	l2BlockWitnessGenerateHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "zkbnb",
-		Name:      "l2Block_witness_generate_height",
-		Help:      "l2Block_memory_height metrics.",
-	})
-
-	l2BlockProverGenerateHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "zkbnb",
-		Name:      "l2Block_prover_generate_height",
-		Help:      "l2Block_memory_height metrics.",
-	})
-
 	l2BlockSubmitToVerifyHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
 		Name:      "l2Block_submit_to_verify_height",
@@ -214,6 +202,13 @@ func NewCommitter(config *Config) (*Committer, error) {
 		return nil, fmt.Errorf("prometheus.Register l2BlockMemoryHeightMetric error: %v", err)
 	}
 
+	if err := prometheus.Register(l2BlockRedisHeightMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register l2BlockMemoryHeightMetric error: %v", err)
+	}
+
+	if err := prometheus.Register(l2BlockDbHeightMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register l2BlockMemoryHeightMetric error: %v", err)
+	}
 	if err := prometheus.Register(commitOperationMetics); err != nil {
 		return nil, fmt.Errorf("prometheus.Register commitOperationMetics error: %v", err)
 	}
