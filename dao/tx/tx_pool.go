@@ -235,7 +235,7 @@ func (m *defaultTxPoolModel) UpdateTxsInTransact(tx *gorm.DB, txs []*Tx) error {
 }
 
 func (m *defaultTxPoolModel) UpdateTxsToPending() error {
-	dbTx := m.DB.Model(&PoolTx{}).Where("tx_status = ?", StatusExecuted).Update("tx_status", StatusPending)
+	dbTx := m.DB.Model(&PoolTx{}).Where("tx_status = ? and deleted_at is null", StatusExecuted).Update("tx_status", StatusPending)
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}
@@ -293,4 +293,12 @@ func (m *defaultTxPoolModel) GetFirstTxByStatus(status int) (txs *Tx, err error)
 		return nil, nil
 	}
 	return txs, nil
+}
+
+func (m *defaultTxPoolModel) GetProposingBlockHeight() (ids []int64, err error) {
+	dbTx := m.DB.Table(m.table).Where("tx_status = ? and deleted_at is null", StatusExecuted).Select("id").Order("id asc").Find(&ids)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	}
+	return ids, nil
 }

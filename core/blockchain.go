@@ -132,7 +132,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		panic("update pool tx to pending failed: " + err.Error())
 	}
 
-	blockHeights, err := bc.BlockModel.GetProposingBlockHeight()
+	blockHeights, err := bc.BlockModel.GetProposingBlockHeights()
 	if err != nil {
 		logx.Error("get proposing block height failed: ", err)
 		panic("delete block failed: " + err.Error())
