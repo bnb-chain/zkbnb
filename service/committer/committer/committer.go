@@ -315,22 +315,15 @@ func (c *Committer) pullPoolTxs() {
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
-		checkMaxId := executedTxMaxId
-		success := true
 		for _, poolTx := range pendingTxs {
-			if int(poolTx.ID)-int(checkMaxId) != 1 {
+			if int(poolTx.ID)-int(executedTxMaxId) != 1 {
 				logx.Errorf("not equal id=%s", poolTx.ID)
 				time.Sleep(50 * time.Millisecond)
-				success = false
 				break
 			}
-			checkMaxId = poolTx.ID
-		}
-		if success {
-			for _, poolTx := range pendingTxs {
-				executedTxMaxId = poolTx.ID
-				c.txWorker.Enqueue(poolTx)
-			}
+			//todo
+			executedTxMaxId = poolTx.ID
+			c.txWorker.Enqueue(poolTx)
 		}
 	}
 }
