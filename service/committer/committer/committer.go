@@ -291,22 +291,21 @@ func (c *Committer) Run() {
 }
 
 func (c *Committer) pullPoolTxs() {
-	pendingTx, err := c.bc.TxPoolModel.GetFirstTxByStatus(tx.StatusPending)
+	executedTx, err := c.bc.TxPoolModel.GetLatestExecutedTx()
 	if err != nil {
-		logx.Errorf("get pending transactions from tx pool failed:%s", err.Error())
-		panic("get pending transactions from tx pool failed: " + err.Error())
+		logx.Errorf("get executed tx from tx pool failed:%s", err.Error())
+		panic("get executed tx from tx pool failed: " + err.Error())
 	}
-	var maxId uint
-	maxId = 0
-	if pendingTx != nil {
-		maxId = pendingTx.ID - 1
+	var executedTxMaxId uint = 0
+	if executedTx != nil {
+		executedTxMaxId = executedTx.ID
 	}
 	for {
 		if !c.running {
 			break
 		}
-		logx.Infof("get pool txs maxId=%d", maxId)
-		pendingTxs, err := c.bc.TxPoolModel.GetTxsByStatusAndMaxId(tx.StatusPending, maxId, 50)
+		logx.Infof("get pool txs executedTxMaxId=%d", executedTxMaxId)
+		pendingTxs, err := c.bc.TxPoolModel.GetTxsByStatusAndMaxId(tx.StatusPending, executedTxMaxId, 50)
 		if err != nil {
 			logx.Errorf("get pending transactions from tx pool failed:%s", err.Error())
 			time.Sleep(100 * time.Millisecond)
@@ -316,7 +315,7 @@ func (c *Committer) pullPoolTxs() {
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
-		checkMaxId := maxId
+		checkMaxId := executedTxMaxId
 		success := true
 		for _, poolTx := range pendingTxs {
 			if int(poolTx.ID)-int(checkMaxId) != 1 {
@@ -329,7 +328,7 @@ func (c *Committer) pullPoolTxs() {
 		}
 		if success {
 			for _, poolTx := range pendingTxs {
-				maxId = poolTx.ID
+				executedTxMaxId = poolTx.ID
 				c.txWorker.Enqueue(poolTx)
 			}
 		}

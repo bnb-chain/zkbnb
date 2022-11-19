@@ -46,6 +46,7 @@ type (
 		GetLatestTx(txTypes []int64, statuses []int) (tx *Tx, err error)
 		GetFirstTxByStatus(status int) (tx *Tx, err error)
 		UpdateTxsToPending() error
+		GetLatestExecutedTx() (tx *Tx, err error)
 	}
 
 	defaultTxPoolModel struct {
@@ -301,4 +302,15 @@ func (m *defaultTxPoolModel) GetProposingBlockHeight() (ids []int64, err error) 
 		return nil, types.DbErrSqlOperation
 	}
 	return ids, nil
+}
+
+func (m *defaultTxPoolModel) GetLatestExecutedTx() (tx *Tx, err error) {
+	var statuses = []int{StatusFailed, StatusExecuted}
+	dbTx := m.DB.Table(m.table).Unscoped().Where("tx_status IN ?", statuses).Order("id DESC").Limit(1).Find(&tx)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, nil
+	}
+	return tx, nil
 }
