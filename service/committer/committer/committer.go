@@ -209,6 +209,11 @@ func NewCommitter(config *Config) (*Committer, error) {
 	if err := prometheus.Register(priorityOperationHeightMetric); err != nil {
 		return nil, fmt.Errorf("prometheus.Register priorityOperationHeightMetric error: %v", err)
 	}
+
+	if err := prometheus.Register(l2BlockMemoryHeightMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register l2BlockMemoryHeightMetric error: %v", err)
+	}
+
 	if err := prometheus.Register(commitOperationMetics); err != nil {
 		return nil, fmt.Errorf("prometheus.Register commitOperationMetics error: %v", err)
 	}
@@ -362,7 +367,6 @@ func (c *Committer) executeTxFunc() {
 	var pendingTxs []*tx.Tx
 	for {
 		curBlock := c.bc.CurrentBlock()
-		l2BlockMemoryHeightMetric.Set(float64(curBlock.BlockHeight))
 		l2BlockMemoryHeightMetric.Set(float64(curBlock.BlockHeight))
 		if curBlock.BlockStatus > block.StatusProposing {
 			curBlock, err = c.bc.InitNewBlock()
