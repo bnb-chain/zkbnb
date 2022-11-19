@@ -3,6 +3,7 @@ package prover
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend/groth16"
@@ -37,6 +38,14 @@ type Prover struct {
 	R1cs               []frontend.CompiledConstraintSystem
 }
 
+var (
+	l2BlockProverGenerateHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2Block_prover_generate_height",
+		Help:      "l2Block_prover_generate metrics.",
+	})
+)
+
 func WithRedis(redisType string, redisPass string) redis.Option {
 	return func(p *redis.Redis) {
 		p.Type = redisType
@@ -53,7 +62,12 @@ func IsBlockSizesSorted(blockSizes []int) bool {
 	return true
 }
 
-func NewProver(c config.Config) *Prover {
+func NewProver(c config.Config) (*Prover, error) {
+
+	if err := prometheus.Register(l2BlockProverGenerateHeightMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register l2BlockProverGenerateHeightMetric error: %v", err)
+	}
+
 	db, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
 	if err != nil {
 		logx.Errorf("gorm connect db error, err = %s", err.Error())
@@ -104,7 +118,7 @@ func NewProver(c config.Config) *Prover {
 		}
 	}
 
-	return prover
+	return prover, nil
 }
 
 func (p *Prover) ProveBlock() error {
