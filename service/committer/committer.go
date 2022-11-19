@@ -24,17 +24,6 @@ func Run(configFile string) error {
 		logx.Error("new committer failed:", err)
 		return err
 	}
-
-	proc.SetTimeToForceQuit(GracefulShutdownTimeout)
-	proc.AddShutdownListener(func() {
-		logx.Info("start to shutdown committer......")
-		committer.Shutdown()
-		_ = logx.Close()
-	})
-
-	logx.Info("committer is starting......")
-	committer.Run()
-
 	cronJob := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))
@@ -46,5 +35,15 @@ func Run(configFile string) error {
 		panic(err)
 	}
 	cronJob.Start()
+
+	proc.SetTimeToForceQuit(GracefulShutdownTimeout)
+	proc.AddShutdownListener(func() {
+		logx.Info("start to shutdown committer......")
+		committer.Shutdown()
+		_ = logx.Close()
+	})
+
+	logx.Info("committer is starting......")
+	committer.Run()
 	return nil
 }
