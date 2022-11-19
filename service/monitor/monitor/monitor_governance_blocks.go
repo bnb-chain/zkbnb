@@ -351,6 +351,7 @@ func (m *Monitor) storeChanges(
 		if err != nil {
 			return err
 		}
+		l1SyncedBlockHeightMetric.Set(float64(syncedBlock.L1BlockHeight))
 		//create assets
 		if len(pendingNewAssets) > 0 {
 			err = m.L2AssetModel.CreateAssetsInTransact(tx, pendingNewAssets)

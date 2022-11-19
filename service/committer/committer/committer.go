@@ -52,28 +52,25 @@ var (
 		Help:      "l2Block_memory_height metrics.",
 	})
 
-	l2BlockCommitToChainHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+	AccountLatestVersionTreeMetric = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
-		Name:      "l2Block_commit_to_chain_height",
-		Help:      "l2Block_memory_height metrics.",
+		Name:      "commit_account_latest_version",
+		Help:      "Account latest version metrics.",
 	})
-
-	l2BlockCommitConfirmByChainHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+	AccountRecentVersionTreeMetric = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
-		Name:      "l2Block_commit_confirm_by_chain_height",
-		Help:      "l2Block_memory_height metrics.",
+		Name:      "commit_account_recent_version",
+		Help:      "Account recent version metrics.",
 	})
-
-	l2BlockSubmitToVerifyHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+	NftTreeLatestVersionMetric = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
-		Name:      "l2Block_submit_to_verify_height",
-		Help:      "l2Block_memory_height metrics.",
+		Name:      "commit_nft_latest_version",
+		Help:      "Nft latest version metrics.",
 	})
-
-	l2BlockVerifiedHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+	NftTreeRecentVersionMetric = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
-		Name:      "l2Block_verified_height",
-		Help:      "l2Block_memory_height metrics.",
+		Name:      "commit_nft_recent_version",
+		Help:      "Nft recent version metrics.",
 	})
 
 	commitOperationMetics = prometheus.NewGauge(prometheus.GaugeOpts{
@@ -209,6 +206,20 @@ func NewCommitter(config *Config) (*Committer, error) {
 	if err := prometheus.Register(l2BlockDbHeightMetric); err != nil {
 		return nil, fmt.Errorf("prometheus.Register l2BlockMemoryHeightMetric error: %v", err)
 	}
+
+	if err := prometheus.Register(AccountLatestVersionTreeMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register AccountLatestVersionTreeMetric error: %v", err)
+	}
+	if err := prometheus.Register(AccountRecentVersionTreeMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register AccountRecentVersionTreeMetric error: %v", err)
+	}
+	if err := prometheus.Register(NftTreeLatestVersionMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register NftTreeLatestVersionMetric error: %v", err)
+	}
+	if err := prometheus.Register(NftTreeRecentVersionMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register NftTreeRecentVersionMetric error: %v", err)
+	}
+
 	if err := prometheus.Register(commitOperationMetics); err != nil {
 		return nil, fmt.Errorf("prometheus.Register commitOperationMetics error: %v", err)
 	}
@@ -288,6 +299,14 @@ func (c *Committer) Run() {
 	c.saveBlockTxWorker.Start()
 
 	c.pullPoolTxs()
+}
+
+func (c *Committer) PendingTxNum() {
+	txStatuses := []int64{tx.StatusPending}
+	pendingTxCount, err := c.bc.TxPoolModel.GetTxsTotalCount(tx.GetTxWithStatuses(txStatuses))
+	if err != nil {
+		pendingTxNumMetrics.Set(float64(pendingTxCount))
+	}
 }
 
 func (c *Committer) pullPoolTxs() {
@@ -374,7 +393,6 @@ func (c *Committer) executeTxFunc() {
 			time.Sleep(100 * time.Millisecond)
 			pendingTxs = c.getPoolTxsFromQueue()
 		}
-		pendingTxNumMetrics.Set(float64(len(pendingTxs)))
 		pendingUpdatePoolTxs := make([]*tx.Tx, 0, len(pendingTxs))
 		pendingDeletePoolTxs := make([]*tx.Tx, 0, len(pendingTxs))
 		start := time.Now()
@@ -529,6 +547,11 @@ func (c *Committer) executeTreeFunc(stateDataCopy *statedb.StateDataCopy) {
 	c.saveBlockTxWorker.Enqueue(blockStates)
 	stateDBSyncOperationMetics.Set(float64(time.Since(start).Milliseconds()))
 	l2BlockRedisHeightMetric.Set(float64(blockStates.Block.BlockHeight))
+	AccountLatestVersionTreeMetric.Set(float64(c.bc.StateDB().AccountTree.LatestVersion()))
+	AccountRecentVersionTreeMetric.Set(float64(c.bc.StateDB().AccountTree.RecentVersion()))
+	NftTreeLatestVersionMetric.Set(float64(c.bc.StateDB().NftTree.LatestVersion()))
+	NftTreeRecentVersionMetric.Set(float64(c.bc.StateDB().NftTree.RecentVersion()))
+
 }
 
 func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {

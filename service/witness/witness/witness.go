@@ -38,6 +38,26 @@ var (
 		Name:      "l2Block_witness_generate_height",
 		Help:      "l2Block_memory_height metrics.",
 	})
+	AccountLatestVersionTreeMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "witness_account_latest_version",
+		Help:      "Account latest version metrics.",
+	})
+	AccountRecentVersionTreeMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "witness_account_recent_version",
+		Help:      "Account recent version metrics.",
+	})
+	NftTreeLatestVersionMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "witness_nft_latest_version",
+		Help:      "Nft latest version metrics.",
+	})
+	NftTreeRecentVersionMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "witness_nft_recent_version",
+		Help:      "Nft recent version metrics.",
+	})
 )
 
 type Witness struct {
@@ -66,7 +86,18 @@ func NewWitness(c config.Config) (*Witness, error) {
 	if err := prometheus.Register(l2BlockWitnessGenerateHeightMetric); err != nil {
 		return nil, fmt.Errorf("prometheus.Register l2BlockWitnessGenerateHeightMetric error: %v", err)
 	}
-
+	if err := prometheus.Register(AccountLatestVersionTreeMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register AccountLatestVersionTreeMetric error: %v", err)
+	}
+	if err := prometheus.Register(AccountRecentVersionTreeMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register AccountRecentVersionTreeMetric error: %v", err)
+	}
+	if err := prometheus.Register(NftTreeLatestVersionMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register NftTreeLatestVersionMetric error: %v", err)
+	}
+	if err := prometheus.Register(NftTreeRecentVersionMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register NftTreeRecentVersionMetric error: %v", err)
+	}
 	datasource := c.Postgres.DataSource
 	db, err := gorm.Open(postgres.Open(datasource))
 	if err != nil {
@@ -169,6 +200,10 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 		// Step3: insert witness into database
 		err = w.blockWitnessModel.CreateBlockWitness(blockWitness)
 		l2BlockWitnessGenerateHeightMetric.Set(float64(latestVerifiedBlockNr))
+		AccountLatestVersionTreeMetric.Set(float64(w.accountTree.LatestVersion()))
+		AccountRecentVersionTreeMetric.Set(float64(w.accountTree.RecentVersion()))
+		NftTreeLatestVersionMetric.Set(float64(w.nftTree.LatestVersion()))
+		NftTreeRecentVersionMetric.Set(float64(w.nftTree.RecentVersion()))
 		if err != nil {
 			// rollback trees
 			rollBackErr := tree.RollBackTrees(uint64(block.BlockHeight)-1, w.accountTree, w.assetTrees, w.nftTree)

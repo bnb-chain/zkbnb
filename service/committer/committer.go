@@ -1,6 +1,7 @@
 package committer
 
 import (
+	"github.com/robfig/cron/v3"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/conf"
@@ -33,5 +34,17 @@ func Run(configFile string) error {
 
 	logx.Info("committer is starting......")
 	committer.Run()
+
+	cronJob := cron.New(cron.WithChain(
+		cron.SkipIfStillRunning(cron.DiscardLogger),
+	))
+	_, err = cronJob.AddFunc("@every 10s", func() {
+		logx.Info("========================= start pending_tx number =========================")
+		committer.PendingTxNum()
+	})
+	if err != nil {
+		panic(err)
+	}
+	cronJob.Start()
 	return nil
 }
