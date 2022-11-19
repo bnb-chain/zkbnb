@@ -161,7 +161,6 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		logx.Errorf("current block status is StatusProposing,invalid block, height=%s", bc.currentBlock.BlockHeight)
 		panic("current block status is StatusProposing,invalid block, height=" + strconv.FormatInt(bc.currentBlock.BlockHeight, 10))
 	}
-	bc.Statedb.PreviousStateRoot = bc.currentBlock.StateRoot
 	//todo config
 
 	redisCache := dbcache.NewRedisCache(config.CacheRedis[0].Host, config.CacheRedis[0].Pass, 15*time.Minute)
@@ -175,6 +174,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	if err != nil {
 		return nil, err
 	}
+	bc.Statedb.PreviousStateRoot = bc.currentBlock.StateRoot
 
 	accountFromDbGauge := prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
