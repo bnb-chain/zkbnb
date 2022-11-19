@@ -214,6 +214,14 @@ func NewCommitter(config *Config) (*Committer, error) {
 		return nil, fmt.Errorf("prometheus.Register l2BlockMemoryHeightMetric error: %v", err)
 	}
 
+	if err := prometheus.Register(l2BlockRedisHeightMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register l2BlockRedisHeightMetric error: %v", err)
+	}
+
+	if err := prometheus.Register(l2BlockDbHeightMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register l2BlockDbHeightMetric error: %v", err)
+	}
+
 	if err := prometheus.Register(commitOperationMetics); err != nil {
 		return nil, fmt.Errorf("prometheus.Register commitOperationMetics error: %v", err)
 	}
@@ -367,7 +375,6 @@ func (c *Committer) executeTxFunc() {
 	var pendingTxs []*tx.Tx
 	for {
 		curBlock := c.bc.CurrentBlock()
-		l2BlockMemoryHeightMetric.Set(float64(curBlock.BlockHeight))
 		if curBlock.BlockStatus > block.StatusProposing {
 			curBlock, err = c.bc.InitNewBlock()
 			if err != nil {
@@ -456,6 +463,7 @@ func (c *Committer) executeTxFunc() {
 				CurrentBlock: curBlock,
 			}
 			c.treeWorker.Enqueue(stateDataCopy)
+			l2BlockMemoryHeightMetric.Set(float64(stateDataCopy.CurrentBlock.BlockHeight))
 			previousHeight := stateDataCopy.CurrentBlock.BlockHeight
 			curBlock, err = c.bc.InitNewBlock()
 			logx.Infof("init new block, current height=%s,previous height=%d", curBlock.BlockHeight, previousHeight)
@@ -541,6 +549,7 @@ func (c *Committer) executeTreeFunc(stateDataCopy *statedb.StateDataCopy) {
 	}
 	c.saveBlockTxWorker.Enqueue(blockStates)
 	stateDBSyncOperationMetics.Set(float64(time.Since(start).Milliseconds()))
+	l2BlockRedisHeightMetric.Set(float64(blockStates.Block.BlockHeight))
 }
 
 func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
@@ -613,6 +622,8 @@ func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
 	}
 	c.bc.Statedb.UpdatePrunedBlockHeight(blockStates.Block.BlockHeight)
 	sqlDBOperationMetics.Set(float64(time.Since(start).Milliseconds()))
+	l2BlockDbHeightMetric.Set(float64(blockStates.Block.BlockHeight))
+
 }
 
 func (c *Committer) Shutdown() {
