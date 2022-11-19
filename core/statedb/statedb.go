@@ -8,8 +8,8 @@ import (
 	"github.com/bnb-chain/zkbnb/common/zkbnbprometheus"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"strconv"
-	"time"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	lru "github.com/hashicorp/golang-lru"
@@ -68,6 +68,7 @@ type StateDB struct {
 	TreeCtx           *tree.Context
 	mainLock          sync.RWMutex
 	prunedBlockHeight int64
+	PreviousStateRoot string
 	Metrics           *zkbnbprometheus.StateDBMetrics
 }
 
