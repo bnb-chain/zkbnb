@@ -266,14 +266,12 @@ func (m *defaultTxModel) UpdateTxsStatusInTransact(tx *gorm.DB, blockTxStatus ma
 
 func (ai *Tx) DeepCopy() *Tx {
 	tx := &Tx{
-		TxHash:       ai.TxHash,
-		TxType:       ai.TxType,
-		TxInfo:       ai.TxInfo,
-		AccountIndex: ai.AccountIndex,
-		Nonce:        ai.Nonce,
-		ExpiredAt:    ai.ExpiredAt,
-
-		// Assigned after executed.
+		TxHash:        ai.TxHash,
+		TxType:        ai.TxType,
+		TxInfo:        ai.TxInfo,
+		AccountIndex:  ai.AccountIndex,
+		Nonce:         ai.Nonce,
+		ExpiredAt:     ai.ExpiredAt,
 		GasFee:        ai.GasFee,
 		GasFeeAssetId: ai.GasFeeAssetId,
 		NftIndex:      ai.NftIndex,
@@ -284,11 +282,14 @@ func (ai *Tx) DeepCopy() *Tx {
 		ExtraInfo:     ai.ExtraInfo,
 		NativeAddress: ai.NativeAddress, // a. Priority tx, assigned when created b. Other tx, assigned after executed.
 		//TxDetails:     []*TxDetail `gorm:"foreignKey:TxId"`
-
 		TxIndex:     ai.TxIndex,
 		BlockHeight: ai.BlockHeight,
 		BlockId:     ai.BlockId,
 		TxStatus:    ai.TxStatus,
 	}
+	tx.ID = ai.ID
+	tx.CreatedAt = ai.CreatedAt
+	tx.UpdatedAt = ai.UpdatedAt
+	tx.DeletedAt = ai.DeletedAt
 	return tx
 }
