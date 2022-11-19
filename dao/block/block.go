@@ -61,6 +61,7 @@ type (
 		UpdateBlocksWithoutTxsInTransact(tx *gorm.DB, blocks []*Block) (err error)
 		UpdateBlockInTransact(tx *gorm.DB, block *Block) (err error)
 		DeleteProposingBlock() (err error)
+		GetProposingBlockHeights() (blockHeights []int64, err error)
 	}
 
 	defaultBlockModel struct {
@@ -379,4 +380,12 @@ func (m *defaultBlockModel) DeleteProposingBlock() error {
 		return types.DbErrSqlOperation
 	}
 	return nil
+}
+
+func (m *defaultBlockModel) GetProposingBlockHeights() (blockHeights []int64, err error) {
+	dbTx := m.DB.Table(m.table).Select("block_height").Order("block_height desc").Find(&blockHeights)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	}
+	return blockHeights, nil
 }
