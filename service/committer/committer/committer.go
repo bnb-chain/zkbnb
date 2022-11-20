@@ -533,8 +533,8 @@ func (c *Committer) executeTreeFunc(stateDataCopy *statedb.StateDataCopy) {
 		logx.Errorf("update pool tx to pending failed:%s", err.Error())
 		panic("update pool tx to pending failed: " + err.Error())
 	}
-	c.saveBlockTxWorker.Enqueue(blockStates)
 	stateDBSyncOperationMetics.Set(float64(time.Since(start).Milliseconds()))
+	c.saveBlockTxWorker.Enqueue(blockStates)
 	l2BlockRedisHeightMetric.Set(float64(blockStates.Block.BlockHeight))
 	AccountLatestVersionTreeMetric.Set(float64(c.bc.StateDB().AccountTree.LatestVersion()))
 	AccountRecentVersionTreeMetric.Set(float64(c.bc.StateDB().AccountTree.RecentVersion()))
