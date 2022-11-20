@@ -19,6 +19,33 @@ type AssetTreeCache struct {
 	treeCache         *lru.Cache
 }
 
+type SparseMerkleTreeAdapter struct {
+	sparseMerkleTree bsmt.SparseMerkleTree
+	changes          map[int64]bool
+	changesLock      sync.RWMutex
+}
+
+func NewSparseMerkleTreeAdapter(tree bsmt.SparseMerkleTree, changesLock sync.RWMutex, changes map[int64]bool) *SparseMerkleTreeAdapter {
+	sparseMerkleTreeAdapter := SparseMerkleTreeAdapter{sparseMerkleTree: tree, changesLock: changesLock, changes: changes}
+	return &sparseMerkleTreeAdapter
+}
+
+func (c *SparseMerkleTreeAdapter) Set(key uint64, val []byte) error {
+	c.changesLock.Lock()
+	c.changes[int64(key)] = true
+	c.changesLock.Unlock()
+	return c.sparseMerkleTree.Set(key, val)
+}
+
+func (c *SparseMerkleTreeAdapter) MultiSet(items []bsmt.Item) error {
+	c.changesLock.Lock()
+	for _, item := range items {
+		c.changes[int64(item.Key)] = true
+	}
+	c.changesLock.Unlock()
+	return c.sparseMerkleTree.MultiSet(items)
+}
+
 // Creates new AssetTreeCache
 // maxSize defines the maximum size of currently initialized trees
 // accountNumber defines the number of accounts to create/or next index for new account
@@ -58,24 +85,46 @@ func (c *AssetTreeCache) Get(i int64) (tree bsmt.SparseMerkleTree) {
 	return
 }
 
+func (c *AssetTreeCache) GetAdapter(i int64) (treeAdapter *SparseMerkleTreeAdapter) {
+	c.mainLock.RLock()
+	c.treeCache.ContainsOrAdd(i, c.initFunction(i, c.blockNumber))
+	c.mainLock.RUnlock()
+	if tmpTree, ok := c.treeCache.Get(i); ok {
+		treeAdapter = NewSparseMerkleTreeAdapter(tmpTree.(bsmt.SparseMerkleTree), c.changesLock, c.changes)
+	}
+	return
+}
+
 // Returns slice of indexes of asset trees that were changned
 func (c *AssetTreeCache) GetChanges() []int64 {
 	c.mainLock.Lock()
 	c.changesLock.Lock()
 	defer c.mainLock.Unlock()
 	defer c.changesLock.Unlock()
-	for _, key := range c.treeCache.Keys() {
-		tree, _ := c.treeCache.Peek(key)
-		if tree.(bsmt.SparseMerkleTree).LatestVersion()-tree.(bsmt.SparseMerkleTree).RecentVersion() > 1 {
-			c.changes[key.(int64)] = true
-		}
-	}
 	ret := make([]int64, 0, len(c.changes))
 	for key := range c.changes {
 		ret = append(ret, key)
 	}
 	return ret
 }
+
+//func (c *AssetTreeCache) GetChanges() []int64 {
+//	c.mainLock.Lock()
+//	c.changesLock.Lock()
+//	defer c.mainLock.Unlock()
+//	defer c.changesLock.Unlock()
+//	for _, key := range c.treeCache.Keys() {
+//		tree, _ := c.treeCache.Peek(key)
+//		if tree.(bsmt.SparseMerkleTree).LatestVersion()-tree.(bsmt.SparseMerkleTree).RecentVersion() > 1 {
+//			c.changes[key.(int64)] = true
+//		}
+//	}
+//	ret := make([]int64, 0, len(c.changes))
+//	for key := range c.changes {
+//		ret = append(ret, key)
+//	}
+//	return ret
+//}
 
 // Cleans all saved tree changes in the cache
 func (c *AssetTreeCache) CleanChanges() {

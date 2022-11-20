@@ -47,6 +47,8 @@ type (
 		GetFirstTxByStatus(status int) (tx *Tx, err error)
 		UpdateTxsToPending() error
 		GetLatestExecutedTx() (tx *Tx, err error)
+		GetTxsPageByStatus(status int, limit int64) (txs []*Tx, err error)
+		UpdateTxsStatusToProcessing(ids []uint) error
 	}
 
 	defaultTxPoolModel struct {
@@ -108,6 +110,14 @@ func (m *defaultTxPoolModel) GetTxs(limit int64, offset int64, options ...GetTxO
 
 func (m *defaultTxPoolModel) GetTxsByStatus(status int) (txs []*Tx, err error) {
 	dbTx := m.DB.Table(m.table).Where("tx_status = ?", status).Order("created_at, id").Find(&txs)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	}
+	return txs, nil
+}
+
+func (m *defaultTxPoolModel) GetTxsPageByStatus(status int, limit int64) (txs []*Tx, err error) {
+	dbTx := m.DB.Table(m.table).Limit(int(limit)).Where("tx_status = ?", status).Order("created_at, id").Find(&txs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	}
@@ -235,8 +245,17 @@ func (m *defaultTxPoolModel) UpdateTxsInTransact(tx *gorm.DB, txs []*Tx) error {
 	return nil
 }
 
+func (m *defaultTxPoolModel) UpdateTxsStatusToProcessing(ids []uint) error {
+	dbTx := m.DB.Model(&PoolTx{}).Where("id in ?", ids).Update("tx_status", StatusProcessing)
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	return nil
+}
+
 func (m *defaultTxPoolModel) UpdateTxsToPending() error {
-	dbTx := m.DB.Model(&PoolTx{}).Where("tx_status = ? and deleted_at is null", StatusExecuted).Update("tx_status", StatusPending)
+	var statuses = []int{StatusProcessing, StatusExecuted}
+	dbTx := m.DB.Model(&PoolTx{}).Where("tx_status in ? and deleted_at is null", statuses).Update("tx_status", StatusPending)
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}

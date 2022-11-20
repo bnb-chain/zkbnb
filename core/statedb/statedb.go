@@ -647,7 +647,7 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCop
 		pendingUpdateAssetItem = append(pendingUpdateAssetItem, bsmt.Item{Key: uint64(assetId), Val: assetLeaf})
 	}
 
-	err := s.AccountAssetTrees.Get(accountIndex).MultiSet(pendingUpdateAssetItem)
+	err := s.AccountAssetTrees.GetAdapter(accountIndex).MultiSet(pendingUpdateAssetItem)
 	if err != nil {
 		return accountIndex, nil, fmt.Errorf("update asset tree failed: %v", err)
 	}
