@@ -276,7 +276,7 @@ func (w *WitnessHelper) constructAccountWitness(
 				if err != nil {
 					return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 				}
-				err = w.assetTrees.GetAdapter(accountKey).Set(uint64(accountAsset.AssetId), nAssetHash)
+				err = w.assetTrees.Get(accountKey).Set(uint64(accountAsset.AssetId), nAssetHash)
 				if err != nil {
 					return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 				}
@@ -741,7 +741,7 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 			if err != nil {
 				return nil, err
 			}
-			err = w.assetTrees.GetAdapter(gasAccountIndex).Set(uint64(assetId), nAssetHash)
+			err = w.assetTrees.Get(gasAccountIndex).Set(uint64(assetId), nAssetHash)
 			if err != nil {
 				return nil, err
 			}
