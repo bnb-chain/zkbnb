@@ -33,7 +33,7 @@ func NewTransferExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}, nil
 }
 
-func (e *TransferExecutor) Prepare() error {
+func (e *TransferExecutor) aPrepare() error {
 	txInfo := e.txInfo
 
 	// Mark the tree states that would be affected in this executor.

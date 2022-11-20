@@ -198,7 +198,7 @@ func reloadAccountTreeFromRDB(
 				logx.Errorf("unable to convert asset to node: %s", err.Error())
 				return err
 			}
-			err = accountAssetTrees.Get(accountIndex).Set(uint64(assetId), hashVal)
+			err = accountAssetTrees.GetAdapter(accountIndex).Set(uint64(assetId), hashVal)
 			if err != nil {
 				logx.Errorf("unable to set asset to tree: %s", err.Error())
 				return err

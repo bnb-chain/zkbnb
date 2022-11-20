@@ -308,21 +308,11 @@ func (c *Committer) PendingTxNum() {
 }
 
 func (c *Committer) pullPoolTxs() {
-	executedTx, err := c.bc.TxPoolModel.GetLatestExecutedTx()
-	if err != nil {
-		logx.Errorf("get executed tx from tx pool failed:%s", err.Error())
-		panic("get executed tx from tx pool failed: " + err.Error())
-	}
-	var executedTxMaxId uint = 0
-	if executedTx != nil {
-		executedTxMaxId = executedTx.ID
-	}
 	for {
 		if !c.running {
 			break
 		}
-		logx.Infof("get pool txs executedTxMaxId=%d", executedTxMaxId)
-		pendingTxs, err := c.bc.TxPoolModel.GetTxsByStatusAndMaxId(tx.StatusPending, executedTxMaxId, 50)
+		pendingTxs, err := c.bc.TxPoolModel.GetTxsPageByStatus(tx.StatusPending, 1000)
 		if err != nil {
 			logx.Errorf("get pending transactions from tx pool failed:%s", err.Error())
 			time.Sleep(100 * time.Millisecond)
@@ -332,15 +322,15 @@ func (c *Committer) pullPoolTxs() {
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
+		ids := make([]uint, len(pendingTxs))
 		for _, poolTx := range pendingTxs {
-			if int(poolTx.ID)-int(executedTxMaxId) != 1 {
-				logx.Errorf("not equal id=%s", poolTx.ID)
-				time.Sleep(50 * time.Millisecond)
-				break
-			}
-			//todo
-			executedTxMaxId = poolTx.ID
+			ids = append(ids, poolTx.ID)
 			c.txWorker.Enqueue(poolTx)
+		}
+		err = c.bc.TxPoolModel.UpdateTxsStatusToProcessing(ids)
+		if err != nil {
+			logx.Errorf("update txs status to processing failed:%s", err.Error())
+			panic("update txs status to processing failed: " + err.Error())
 		}
 	}
 }
@@ -394,6 +384,7 @@ func (c *Committer) executeTxFunc() {
 		pendingUpdatePoolTxs := make([]*tx.Tx, 0, len(pendingTxs))
 		pendingDeletePoolTxs := make([]*tx.Tx, 0, len(pendingTxs))
 		start := time.Now()
+
 		for _, poolTx := range pendingTxs {
 			logx.Error("pendingTxs----: ", poolTx.ID)
 			if c.shouldCommit(curBlock) {
