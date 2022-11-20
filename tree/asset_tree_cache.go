@@ -85,46 +85,46 @@ func (c *AssetTreeCache) Get(i int64) (tree bsmt.SparseMerkleTree) {
 	return
 }
 
-func (c *AssetTreeCache) GetAdapter(i int64) (treeAdapter *SparseMerkleTreeAdapter) {
-	c.mainLock.RLock()
-	c.treeCache.ContainsOrAdd(i, c.initFunction(i, c.blockNumber))
-	c.mainLock.RUnlock()
-	if tmpTree, ok := c.treeCache.Get(i); ok {
-		treeAdapter = NewSparseMerkleTreeAdapter(tmpTree.(bsmt.SparseMerkleTree), c.changesLock, c.changes)
-	}
-	return
-}
+//func (c *AssetTreeCache) GetAdapter(i int64) (treeAdapter *SparseMerkleTreeAdapter) {
+//	c.mainLock.RLock()
+//	c.treeCache.ContainsOrAdd(i, c.initFunction(i, c.blockNumber))
+//	c.mainLock.RUnlock()
+//	if tmpTree, ok := c.treeCache.Get(i); ok {
+//		treeAdapter = NewSparseMerkleTreeAdapter(tmpTree.(bsmt.SparseMerkleTree), c.changesLock, c.changes)
+//	}
+//	return
+//}
 
 // Returns slice of indexes of asset trees that were changned
-func (c *AssetTreeCache) GetChanges() []int64 {
-	c.mainLock.Lock()
-	c.changesLock.Lock()
-	defer c.mainLock.Unlock()
-	defer c.changesLock.Unlock()
-	ret := make([]int64, 0, len(c.changes))
-	for key := range c.changes {
-		ret = append(ret, key)
-	}
-	return ret
-}
-
 //func (c *AssetTreeCache) GetChanges() []int64 {
 //	c.mainLock.Lock()
 //	c.changesLock.Lock()
 //	defer c.mainLock.Unlock()
 //	defer c.changesLock.Unlock()
-//	for _, key := range c.treeCache.Keys() {
-//		tree, _ := c.treeCache.Peek(key)
-//		if tree.(bsmt.SparseMerkleTree).LatestVersion()-tree.(bsmt.SparseMerkleTree).RecentVersion() > 1 {
-//			c.changes[key.(int64)] = true
-//		}
-//	}
 //	ret := make([]int64, 0, len(c.changes))
 //	for key := range c.changes {
 //		ret = append(ret, key)
 //	}
 //	return ret
 //}
+
+func (c *AssetTreeCache) GetChanges() []int64 {
+	c.mainLock.Lock()
+	c.changesLock.Lock()
+	defer c.mainLock.Unlock()
+	defer c.changesLock.Unlock()
+	for _, key := range c.treeCache.Keys() {
+		tree, _ := c.treeCache.Peek(key)
+		if tree.(bsmt.SparseMerkleTree).LatestVersion()-tree.(bsmt.SparseMerkleTree).RecentVersion() > 1 {
+			c.changes[key.(int64)] = true
+		}
+	}
+	ret := make([]int64, 0, len(c.changes))
+	for key := range c.changes {
+		ret = append(ret, key)
+	}
+	return ret
+}
 
 // Cleans all saved tree changes in the cache
 func (c *AssetTreeCache) CleanChanges() {
