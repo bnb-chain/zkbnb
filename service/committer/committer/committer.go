@@ -3,7 +3,9 @@ package committer
 import (
 	"errors"
 	"fmt"
+	"github.com/bnb-chain/zkbnb/common/gopool"
 	"github.com/bnb-chain/zkbnb/core/statedb"
+	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"strconv"
 	"time"
@@ -144,6 +146,12 @@ var (
 		Name:      "update_block_time",
 		Help:      "update block time time",
 	})
+
+	saveAccountsGoroutineMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "save_accounts_goroutine_time",
+		Help:      "save accounts goroutine time",
+	})
 )
 
 type Config struct {
@@ -262,6 +270,10 @@ func NewCommitter(config *Config) (*Committer, error) {
 
 	if err := prometheus.Register(updateBlockMetrics); err != nil {
 		return nil, fmt.Errorf("prometheus.Register updateBlockMetrics error: %v", err)
+	}
+
+	if err := prometheus.Register(saveAccountsGoroutineMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register saveAccountsGoroutineMetrics error: %v", err)
 	}
 
 	committer := &Committer{
@@ -543,9 +555,52 @@ func (c *Committer) executeTreeFunc(stateDataCopy *statedb.StateDataCopy) {
 
 }
 
+func (c *Committer) saveAccounts(blockStates *block.BlockStates) error {
+	logx.Infof("save accounts start, blockHeight:%s", blockStates.Block.BlockHeight)
+	start := time.Now()
+	totalTask := len(blockStates.PendingAccount)
+	if totalTask == 0 {
+		return nil
+	}
+	errChan := make(chan error, totalTask)
+	defer close(errChan)
+	for _, accountInfo := range blockStates.PendingAccount {
+		err := gopool.Submit(func() {
+			accountInfo.TransactionStatus = account.AccountTransactionStatusProcessing
+			err := c.bc.DB().AccountModel.UpdateAccountInTransact(accountInfo)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			errChan <- nil
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	for i := 0; i < totalTask; i++ {
+		err := <-errChan
+		if err != nil {
+			return err
+		}
+	}
+	saveAccountsGoroutineMetrics.Set(float64(time.Since(start).Milliseconds()))
+	return nil
+}
+
 func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
 	logx.Infof("save block transaction start, blockHeight:%s", blockStates.Block.BlockHeight)
 	start := time.Now()
+
+	if len(blockStates.PendingAccount) != 0 {
+		err := c.saveAccounts(blockStates)
+		if err != nil {
+			logx.Errorf("save accounts failed:%s,blockHeight:%s", err.Error(), blockStates.Block.BlockHeight)
+			panic("save accounts failed: " + err.Error())
+		}
+	}
+
 	// update db
 	err := c.bc.DB().DB.Transaction(func(tx *gorm.DB) error {
 		start := time.Now()
@@ -561,7 +616,7 @@ func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
 		start = time.Now()
 		// create or update account
 		if len(blockStates.PendingAccount) != 0 {
-			err = c.bc.DB().AccountModel.UpdateAccountsInTransact(tx, blockStates.PendingAccount)
+			err = c.bc.DB().AccountModel.UpdateAccountTransactionToCommitted(tx, blockStates.PendingAccount)
 			if err != nil {
 				return err
 			}

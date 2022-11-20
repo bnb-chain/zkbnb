@@ -18,7 +18,9 @@
 package account
 
 import (
+	"errors"
 	"gorm.io/gorm"
+	"strconv"
 
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -30,6 +32,11 @@ const (
 const (
 	AccountStatusPending = iota
 	AccountStatusConfirmed
+)
+
+const (
+	AccountTransactionStatusProcessing = iota
+	AccountTransactionStatusCommitted
 )
 
 type (
@@ -44,6 +51,8 @@ type (
 		GetAccounts(limit int, offset int64) (accounts []*Account, err error)
 		GetAccountsTotalCount() (count int64, err error)
 		UpdateAccountsInTransact(tx *gorm.DB, accounts []*Account) error
+		UpdateAccountInTransact(account *Account) error
+		UpdateAccountTransactionToCommitted(tx *gorm.DB, accounts []*Account) error
 	}
 
 	defaultAccountModel struct {
@@ -67,7 +76,8 @@ type (
 		AssetInfo string
 		AssetRoot string
 		// 0 - registered, not committer 1 - committer
-		Status int
+		Status            int
+		TransactionStatus int
 	}
 )
 
@@ -177,6 +187,44 @@ func (m *defaultAccountModel) UpdateAccountsInTransact(tx *gorm.DB, accounts []*
 				return dbTx.Error
 			}
 		}
+	}
+	return nil
+}
+
+func (m *defaultAccountModel) UpdateAccountInTransact(account *Account) error {
+	const CreatedAt = "CreatedAt"
+	dbTx := m.DB.Table(m.table).Where("account_index = ?", account.AccountIndex).
+		Omit(CreatedAt).
+		Select("*").
+		Updates(&account)
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		// this account is new, we need create first
+		dbTx = m.DB.Table(m.table).Create(&account)
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+	}
+	return nil
+}
+
+func (m *defaultAccountModel) UpdateAccountTransactionToCommitted(tx *gorm.DB, accounts []*Account) error {
+	length := len(accounts)
+	if length == 0 {
+		return nil
+	}
+	accountIndexes := make([]int64, 0, length)
+	for _, account := range accounts {
+		accountIndexes = append(accountIndexes, account.AccountIndex)
+	}
+	dbTx := tx.Model(&Account{}).Where("account_index in ? ", accountIndexes).Update("transaction_status", AccountTransactionStatusCommitted)
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected != int64(length) {
+		return errors.New("update accounts transaction status failed,rowsAffected =" + strconv.FormatInt(dbTx.RowsAffected, 10) + "not equal accounts length=" + strconv.Itoa(length))
 	}
 	return nil
 }
