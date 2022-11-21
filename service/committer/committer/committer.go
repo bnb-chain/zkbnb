@@ -179,7 +179,7 @@ type Config struct {
 
 	BlockConfig struct {
 		OptionalBlockSizes []int
-		BlockSaveDisabled  bool
+		BlockSaveDisabled  bool `json:",optional"`
 	}
 	LogConf logx.LogConf
 }
