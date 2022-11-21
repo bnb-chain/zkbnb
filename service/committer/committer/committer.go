@@ -179,6 +179,7 @@ type Config struct {
 
 	BlockConfig struct {
 		OptionalBlockSizes []int
+		BlockSaveDisabled  bool
 	}
 	LogConf logx.LogConf
 }
@@ -602,6 +603,9 @@ func (c *Committer) executeTreeFunc(stateDataCopy *statedb.StateDataCopy) {
 
 func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
 	logx.Infof("save block transaction start, blockHeight:%s", blockStates.Block.BlockHeight)
+	if c.config.BlockConfig.BlockSaveDisabled {
+		return
+	}
 	start := time.Now()
 	// update db
 	err := c.bc.DB().DB.Transaction(func(tx *gorm.DB) error {
