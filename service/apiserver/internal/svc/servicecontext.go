@@ -36,9 +36,10 @@ type ServiceContext struct {
 	AssetModel          asset.AssetModel
 	SysConfigModel      sysconfig.SysConfigModel
 
-	PriceFetcher  price.Fetcher
-	StateFetcher  state.Fetcher
-	SendTxMetrics prometheus.Counter
+	PriceFetcher       price.Fetcher
+	StateFetcher       state.Fetcher
+	SendTxMetrics      prometheus.Counter
+	SendTxTotalMetrics prometheus.Counter
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -68,7 +69,15 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		Name:      "sent_tx_count",
 		Help:      "sent tx count",
 	})
+
+	sendTxTotalMetrics := prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "zkbnb",
+		Name:      "sent_tx_total_count",
+		Help:      "sent tx total count",
+	})
+
 	prometheus.Register(sendTxMetrics)
+	prometheus.Register(sendTxTotalMetrics)
 
 	return &ServiceContext{
 		Config:              c,
@@ -84,9 +93,10 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		AssetModel:          assetModel,
 		SysConfigModel:      sysconfig.NewSysConfigModel(db),
 
-		PriceFetcher:  price.NewFetcher(memCache, assetModel, c.CoinMarketCap.Url, c.CoinMarketCap.Token),
-		StateFetcher:  state.NewFetcher(redisCache, accountModel, nftModel),
-		SendTxMetrics: sendTxMetrics,
+		PriceFetcher:       price.NewFetcher(memCache, assetModel, c.CoinMarketCap.Url, c.CoinMarketCap.Token),
+		StateFetcher:       state.NewFetcher(redisCache, accountModel, nftModel),
+		SendTxMetrics:      sendTxMetrics,
+		SendTxTotalMetrics: sendTxTotalMetrics,
 	}
 }
 
