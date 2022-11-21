@@ -161,6 +161,17 @@ var (
 		Name:      "sync_account_to_redis_time",
 		Help:      "sync account to redis time",
 	})
+	getPendingTxsToQueueMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "get_pending_txs_to_queue_count",
+		Help:      "get pending txs to queue count",
+	})
+
+	txWorkerQueueMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "tx_worker_queue_count",
+		Help:      "tx worker queue count",
+	})
 )
 
 type Config struct {
@@ -168,6 +179,7 @@ type Config struct {
 
 	BlockConfig struct {
 		OptionalBlockSizes []int
+		BlockSaveDisabled  bool
 	}
 	LogConf logx.LogConf
 }
@@ -289,6 +301,13 @@ func NewCommitter(config *Config) (*Committer, error) {
 		return nil, fmt.Errorf("prometheus.Register updatePoolTxsProcessingMetrics error: %v", err)
 	}
 
+	if err := prometheus.Register(getPendingTxsToQueueMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register getPendingTxsToQueueMetric error: %v", err)
+	}
+	if err := prometheus.Register(txWorkerQueueMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register txWorkerQueueMetric error: %v", err)
+	}
+
 	committer := &Committer{
 		running:            true,
 		config:             config,
@@ -340,12 +359,14 @@ func (c *Committer) pullPoolTxs() {
 		start := time.Now()
 		pendingTxs, err := c.bc.TxPoolModel.GetTxsPageByStatus(tx.StatusPending, 1000)
 		getPendingPoolTxMetrics.Set(float64(time.Since(start).Milliseconds()))
-
+		getPendingTxsToQueueMetric.Set(float64(len(pendingTxs)))
+		txWorkerQueueMetric.Set(float64(c.txWorker.GetQueueSize()))
 		if err != nil {
 			logx.Errorf("get pending transactions from tx pool failed:%s", err.Error())
 			time.Sleep(200 * time.Millisecond)
 			continue
 		}
+
 		if len(pendingTxs) == 0 {
 			time.Sleep(200 * time.Millisecond)
 			continue
@@ -570,8 +591,8 @@ func (c *Committer) executeTreeFunc(stateDataCopy *statedb.StateDataCopy) {
 		logx.Errorf("update pool tx to pending failed:%s", err.Error())
 		panic("update pool tx to pending failed: " + err.Error())
 	}
-	stateDBSyncOperationMetics.Set(float64(time.Since(start).Milliseconds()))
 	c.saveBlockTxWorker.Enqueue(blockStates)
+	stateDBSyncOperationMetics.Set(float64(time.Since(start).Milliseconds()))
 	l2BlockRedisHeightMetric.Set(float64(blockStates.Block.BlockHeight))
 	AccountLatestVersionTreeMetric.Set(float64(c.bc.StateDB().AccountTree.LatestVersion()))
 	AccountRecentVersionTreeMetric.Set(float64(c.bc.StateDB().AccountTree.RecentVersion()))
@@ -582,6 +603,9 @@ func (c *Committer) executeTreeFunc(stateDataCopy *statedb.StateDataCopy) {
 
 func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
 	logx.Infof("save block transaction start, blockHeight:%s", blockStates.Block.BlockHeight)
+	if c.config.BlockConfig.BlockSaveDisabled {
+		return
+	}
 	start := time.Now()
 	// update db
 	err := c.bc.DB().DB.Transaction(func(tx *gorm.DB) error {
