@@ -1,6 +1,7 @@
 package svc
 
 import (
+	"github.com/prometheus/client_golang/prometheus"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -35,8 +36,9 @@ type ServiceContext struct {
 	AssetModel          asset.AssetModel
 	SysConfigModel      sysconfig.SysConfigModel
 
-	PriceFetcher price.Fetcher
-	StateFetcher state.Fetcher
+	PriceFetcher  price.Fetcher
+	StateFetcher  state.Fetcher
+	SendTxMetrics prometheus.Counter
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -60,6 +62,14 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	assetModel := asset.NewAssetModel(db)
 	memCache := cache.MustNewMemCache(accountModel, assetModel, c.MemCache.AccountExpiration, c.MemCache.BlockExpiration,
 		c.MemCache.TxExpiration, c.MemCache.AssetExpiration, c.MemCache.PriceExpiration, c.MemCache.MaxCounterNum, c.MemCache.MaxKeyNum)
+
+	sendTxMetrics := prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "zkbnb",
+		Name:      "sent_tx_count",
+		Help:      "sent tx count",
+	})
+	prometheus.Register(sendTxMetrics)
+
 	return &ServiceContext{
 		Config:              c,
 		RedisCache:          redisCache,
@@ -74,8 +84,9 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		AssetModel:          assetModel,
 		SysConfigModel:      sysconfig.NewSysConfigModel(db),
 
-		PriceFetcher: price.NewFetcher(memCache, assetModel, c.CoinMarketCap.Url, c.CoinMarketCap.Token),
-		StateFetcher: state.NewFetcher(redisCache, accountModel, nftModel),
+		PriceFetcher:  price.NewFetcher(memCache, assetModel, c.CoinMarketCap.Url, c.CoinMarketCap.Token),
+		StateFetcher:  state.NewFetcher(redisCache, accountModel, nftModel),
+		SendTxMetrics: sendTxMetrics,
 	}
 }
 
