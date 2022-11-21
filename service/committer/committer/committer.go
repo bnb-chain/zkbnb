@@ -622,20 +622,21 @@ func (c *Committer) saveAccounts(blockStates *block.BlockStates) error {
 	errChan := make(chan error, totalTask)
 	defer close(errChan)
 	for _, accountInfo := range blockStates.PendingAccount {
-		err := gopool.Submit(func() {
-			accountInfo.TransactionStatus = account.AccountTransactionStatusProcessing
-			err := c.bc.DB().AccountModel.UpdateAccountInTransact(accountInfo)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			errChan <- nil
-		})
+		err := func(accountInfo *account.Account) error {
+			return gopool.Submit(func() {
+				accountInfo.TransactionStatus = account.AccountTransactionStatusProcessing
+				err := c.bc.DB().AccountModel.UpdateAccountInTransact(accountInfo)
+				if err != nil {
+					errChan <- err
+					return
+				}
+				errChan <- nil
+			})
+		}(accountInfo)
 		if err != nil {
 			return err
 		}
 	}
-
 	for i := 0; i < totalTask; i++ {
 		err := <-errChan
 		if err != nil {
