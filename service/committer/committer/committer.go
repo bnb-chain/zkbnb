@@ -156,6 +156,11 @@ var (
 		Name:      "update_pool_txs_processing_time",
 		Help:      "update pool txs processing time",
 	})
+	syncAccountToRedisMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "sync_account_to_redis_time",
+		Help:      "sync account to redis time",
+	})
 )
 
 type Config struct {
@@ -173,12 +178,12 @@ type Committer struct {
 	maxTxsPerBlock     int
 	optionalBlockSizes []int
 
-	bc                     *core.BlockChain
-	txWorker               *core.TxWorker
-	treeWorker             *core.Worker
-	saveBlockTxWorker      *core.Worker
-	updatePoolTxWorker     *core.Worker
-	syncStateToRedisWorker *core.Worker
+	bc                       *core.BlockChain
+	txWorker                 *core.TxWorker
+	treeWorker               *core.Worker
+	saveBlockTxWorker        *core.Worker
+	updatePoolTxWorker       *core.Worker
+	syncAccountToRedisWorker *core.Worker
 }
 
 type PendingMap struct {
@@ -299,8 +304,8 @@ func (c *Committer) Run() {
 	c.txWorker = core.ExecuteTxWorker(6000, func() {
 		c.executeTxFunc()
 	})
-	c.syncStateToRedisWorker = core.SyncStateCacheToRedisWorker(20000, func(item interface{}) {
-		c.syncStateCacheToRedisFunc(item.(*PendingMap))
+	c.syncAccountToRedisWorker = core.SyncAccountToRedisWorker(20000, func(item interface{}) {
+		c.syncAccountToRedisFunc(item.(*PendingMap))
 	})
 	c.updatePoolTxWorker = core.UpdatePoolTxWorker(6000, func(item interface{}) {
 		c.updatePoolTxFunc(item.(*UpdatePoolTx))
@@ -313,7 +318,7 @@ func (c *Committer) Run() {
 	})
 
 	c.txWorker.Start()
-	c.syncStateToRedisWorker.Start()
+	c.syncAccountToRedisWorker.Start()
 	c.updatePoolTxWorker.Start()
 	c.treeWorker.Start()
 	c.saveBlockTxWorker.Start()
@@ -415,7 +420,6 @@ func (c *Committer) executeTxFunc() {
 		start := time.Now()
 
 		for _, poolTx := range pendingTxs {
-			logx.Error("pendingTxs----: ", poolTx.ID)
 			if c.shouldCommit(curBlock) {
 				subPendingTxs = append(subPendingTxs, poolTx)
 				continue
@@ -467,7 +471,7 @@ func (c *Committer) executeTxFunc() {
 		c.bc.Statedb.SyncPendingAccountToMemoryCache(c.bc.Statedb.PendingAccountMap)
 		c.bc.Statedb.SyncPendingNftToMemoryCache(c.bc.Statedb.PendingNftMap)
 
-		c.enqueueSyncStateCacheToRedis(c.bc.Statedb.PendingAccountMap, c.bc.Statedb.PendingNftMap)
+		c.enqueueSyncAccountToRedis(c.bc.Statedb.PendingAccountMap, c.bc.Statedb.PendingNftMap)
 		c.enqueueUpdatePoolTx(pendingUpdatePoolTxs, pendingDeletePoolTxs)
 
 		if c.shouldCommit(curBlock) {
@@ -510,6 +514,7 @@ func (c *Committer) enqueueUpdatePoolTx(pendingUpdatePoolTxs []*tx.Tx, pendingDe
 }
 
 func (c *Committer) updatePoolTxFunc(updatePoolTxMap *UpdatePoolTx) {
+	start := time.Now()
 	for _, pendingDeletePoolTx := range updatePoolTxMap.PendingDeletePoolTxs {
 		updatePoolTxMap.PendingUpdatePoolTxs = append(updatePoolTxMap.PendingUpdatePoolTxs, pendingDeletePoolTx)
 	}
@@ -523,9 +528,10 @@ func (c *Committer) updatePoolTxFunc(updatePoolTxMap *UpdatePoolTx) {
 	if err != nil {
 		logx.Error("update tx pool failed:", err)
 	}
+	updatePoolTxsMetrics.Set(float64(time.Since(start).Milliseconds()))
 }
 
-func (c *Committer) enqueueSyncStateCacheToRedis(originPendingAccountMap map[int64]*types.AccountInfo, originPendingNftMap map[int64]*nft.L2Nft) {
+func (c *Committer) enqueueSyncAccountToRedis(originPendingAccountMap map[int64]*types.AccountInfo, originPendingNftMap map[int64]*nft.L2Nft) {
 	pendingMap := &PendingMap{
 		PendingAccountMap: make(map[int64]*types.AccountInfo, len(originPendingAccountMap)),
 		PendingNftMap:     make(map[int64]*nft.L2Nft, len(originPendingNftMap)),
@@ -536,12 +542,14 @@ func (c *Committer) enqueueSyncStateCacheToRedis(originPendingAccountMap map[int
 	for _, nftInfo := range originPendingNftMap {
 		pendingMap.PendingNftMap[nftInfo.NftIndex] = nftInfo.DeepCopy()
 	}
-	c.syncStateToRedisWorker.Enqueue(pendingMap)
+	c.syncAccountToRedisWorker.Enqueue(pendingMap)
 }
 
-func (c *Committer) syncStateCacheToRedisFunc(pendingMap *PendingMap) {
+func (c *Committer) syncAccountToRedisFunc(pendingMap *PendingMap) {
+	start := time.Now()
 	c.bc.Statedb.SyncPendingAccountToRedis(pendingMap.PendingAccountMap)
 	c.bc.Statedb.SyncPendingNftToRedis(pendingMap.PendingNftMap)
+	syncAccountToRedisMetrics.Set(float64(time.Since(start).Milliseconds()))
 }
 
 func (c *Committer) executeTreeFunc(stateDataCopy *statedb.StateDataCopy) {
@@ -650,7 +658,7 @@ func (c *Committer) Shutdown() {
 	c.running = false
 	c.txWorker.Stop()
 	c.treeWorker.Stop()
-	c.syncStateToRedisWorker.Stop()
+	c.syncAccountToRedisWorker.Stop()
 	c.saveBlockTxWorker.Stop()
 	c.updatePoolTxWorker.Stop()
 	c.bc.Statedb.Close()
