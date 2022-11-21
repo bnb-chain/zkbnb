@@ -38,7 +38,7 @@ func UpdatePoolTxWorker(queueSize int, workFunc func(interface{})) *Worker {
 	}
 }
 
-func SyncStateCacheToRedisWorker(queueSize int, workFunc func(interface{})) *Worker {
+func SyncAccountToRedisWorker(queueSize int, workFunc func(interface{})) *Worker {
 	return &Worker{
 		jobQueue: make(chan interface{}, queueSize),
 		jobFunc:  workFunc,
