@@ -23,6 +23,7 @@ func SendTxHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		if err != nil {
 			httpx.Error(w, err)
 		} else {
+			svcCtx.SendTxMetrics.Inc()
 			httpx.OkJson(w, resp)
 		}
 	}
