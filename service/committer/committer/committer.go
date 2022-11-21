@@ -144,6 +144,18 @@ var (
 		Name:      "update_block_time",
 		Help:      "update block time time",
 	})
+
+	getPendingPoolTxMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "get_pending_pool_tx_time",
+		Help:      "get pending pool tx time",
+	})
+
+	updatePoolTxsProcessingMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "update_pool_txs_processing_time",
+		Help:      "update pool txs processing time",
+	})
 )
 
 type Config struct {
@@ -264,6 +276,14 @@ func NewCommitter(config *Config) (*Committer, error) {
 		return nil, fmt.Errorf("prometheus.Register updateBlockMetrics error: %v", err)
 	}
 
+	if err := prometheus.Register(getPendingPoolTxMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register getPendingPoolTxMetrics error: %v", err)
+	}
+
+	if err := prometheus.Register(updatePoolTxsProcessingMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register updatePoolTxsProcessingMetrics error: %v", err)
+	}
+
 	committer := &Committer{
 		running:            true,
 		config:             config,
@@ -312,14 +332,17 @@ func (c *Committer) pullPoolTxs() {
 		if !c.running {
 			break
 		}
+		start := time.Now()
 		pendingTxs, err := c.bc.TxPoolModel.GetTxsPageByStatus(tx.StatusPending, 1000)
+		getPendingPoolTxMetrics.Set(float64(time.Since(start).Milliseconds()))
+
 		if err != nil {
 			logx.Errorf("get pending transactions from tx pool failed:%s", err.Error())
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(200 * time.Millisecond)
 			continue
 		}
 		if len(pendingTxs) == 0 {
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(200 * time.Millisecond)
 			continue
 		}
 		ids := make([]uint, len(pendingTxs))
@@ -327,10 +350,16 @@ func (c *Committer) pullPoolTxs() {
 			ids = append(ids, poolTx.ID)
 			c.txWorker.Enqueue(poolTx)
 		}
+		start = time.Now()
 		err = c.bc.TxPoolModel.UpdateTxsStatusToProcessing(ids)
+		updatePoolTxsProcessingMetrics.Set(float64(time.Since(start).Milliseconds()))
 		if err != nil {
 			logx.Errorf("update txs status to processing failed:%s", err.Error())
 			panic("update txs status to processing failed: " + err.Error())
+		}
+		time.Sleep(200 * time.Millisecond)
+		for c.txWorker.GetQueueSize() > 1000 {
+			time.Sleep(200 * time.Millisecond)
 		}
 	}
 }
