@@ -121,7 +121,7 @@ func (m *defaultL2NftModel) UpdateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) err
 	db, _ := tx.DB()
 	sqlStatement := `
 		UPDATE l2_nft SET creator_account_index=$1, owner_account_index=$2, nft_content_hash=$3,
-		creator_treasure_rate=$4, collection_id=$5,
+		creator_treasury_rate=$4, collection_id=$5,
 		updated_at=$6
 		WHERE nft_index=$7
 	`
@@ -145,9 +145,9 @@ func (m *defaultL2NftModel) UpdateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) err
 		}
 		if rowNum == 0 {
 			insertSQLStatement := `
-			INSERT INTO account (nft_index,
+			INSERT INTO l2_nft (nft_index,
 			creator_account_index, owner_account_index, nft_content_hash,
-			creator_treasure_rate, collection_id,
+			creator_treasury_rate, collection_id,
 			created_at, updated_at)
 			VALUES($1,
 			$2, $3, $4,
