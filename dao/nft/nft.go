@@ -120,11 +120,59 @@ func (m *defaultL2NftModel) GetNftsCountByAccountIndex(accountIndex int64) (int6
 func (m *defaultL2NftModel) UpdateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) error {
 	db, _ := tx.DB()
 	sqlStatement := `
-		UPDATE l2_nft SET creator_account_index=$1, owner_account_index=$2, nft_content_hash=$3,
-		creator_treasury_rate=$4, collection_id=$5,
-		updated_at=$6
-		WHERE nft_index=$7
+	CALL test($1, $2, $3, $4, $5, $6, $7, $8)
 	`
+
+	now := time.Now()
+
+	for _, nft := range nfts {
+		rowNum := 0
+		err := db.QueryRow(
+			sqlStatement,
+			nft.CreatorAccountIndex, nft.OwnerAccountIndex, nft.NftContentHash,
+			nft.CreatorTreasuryRate, nft.CollectionId,
+			now,
+			nft.NftIndex,
+			rowNum,
+		).Scan(&rowNum)
+		if err != nil {
+			return err
+		}
+		if rowNum == 0 {
+			insertSQLStatement := `
+			INSERT INTO l2_nft (nft_index,
+			creator_account_index, owner_account_index, nft_content_hash,
+			creator_treasury_rate, collection_id,
+			created_at, updated_at)
+			VALUES($1,
+			$2, $3, $4,
+			$5, $6,
+			$7, $8)
+			`
+			_, err := db.Exec(
+				insertSQLStatement,
+				nft.NftIndex,
+				nft.CreatorAccountIndex, nft.OwnerAccountIndex, nft.NftContentHash,
+				nft.CreatorTreasuryRate, nft.CollectionId,
+				now, now,
+			)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+/*
+func (m *defaultL2NftModel) UpdateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) error {
+	db, _ := tx.DB()
+	sqlStatement := `
+			UPDATE l2_nft SET creator_account_index=$1, owner_account_index=$2, nft_content_hash=$3,
+			creator_treasury_rate=$4, collection_id=$5,
+			updated_at=$6
+			WHERE nft_index=$7
+		`
 
 	now := time.Now()
 
@@ -168,3 +216,4 @@ func (m *defaultL2NftModel) UpdateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) err
 	}
 	return nil
 }
+*/
