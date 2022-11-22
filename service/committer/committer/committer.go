@@ -187,6 +187,7 @@ type Config struct {
 
 	BlockConfig struct {
 		OptionalBlockSizes []int
+		BlockSaveDisabled  bool `json:",optional"`
 	}
 	LogConf logx.LogConf
 }
@@ -388,7 +389,7 @@ func (c *Committer) pullPoolTxs() {
 			c.txWorker.Enqueue(poolTx)
 		}
 		start = time.Now()
-		err = c.bc.TxPoolModel.UpdateTxsStatusToProcessing(ids)
+		err = c.bc.TxPoolModel.UpdateTxsStatusByIds(ids, tx.StatusProcessing)
 		updatePoolTxsProcessingMetrics.Set(float64(time.Since(start).Milliseconds()))
 		if err != nil {
 			logx.Errorf("update txs status to processing failed:%s", err.Error())
@@ -547,18 +548,31 @@ func (c *Committer) enqueueUpdatePoolTx(pendingUpdatePoolTxs []*tx.Tx, pendingDe
 
 func (c *Committer) updatePoolTxFunc(updatePoolTxMap *UpdatePoolTx) {
 	start := time.Now()
-	for _, pendingDeletePoolTx := range updatePoolTxMap.PendingDeletePoolTxs {
-		updatePoolTxMap.PendingUpdatePoolTxs = append(updatePoolTxMap.PendingUpdatePoolTxs, pendingDeletePoolTx)
-	}
-	err := c.bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
-		err := c.bc.TxPoolModel.UpdateTxsInTransact(dbTx, updatePoolTxMap.PendingUpdatePoolTxs)
+	length := len(updatePoolTxMap.PendingUpdatePoolTxs)
+	if length > 0 {
+		ids := make([]uint, 0, length)
+		for _, pendingUpdatePoolTx := range updatePoolTxMap.PendingUpdatePoolTxs {
+			ids = append(ids, pendingUpdatePoolTx.ID)
+		}
+		err := c.bc.TxPoolModel.UpdateTxsStatusAndHeightByIds(ids, tx.StatusExecuted, updatePoolTxMap.PendingUpdatePoolTxs[0].BlockHeight)
 		if err != nil {
 			logx.Error("update tx pool failed:", err)
 		}
-		return c.bc.TxPoolModel.DeleteTxsBatchInTransact(dbTx, updatePoolTxMap.PendingDeletePoolTxs)
-	})
-	if err != nil {
-		logx.Error("update tx pool failed:", err)
+	}
+	length = len(updatePoolTxMap.PendingDeletePoolTxs)
+	if length > 0 {
+		ids := make([]uint, 0, length)
+		for _, pendingDeletePoolTx := range updatePoolTxMap.PendingDeletePoolTxs {
+			ids = append(ids, pendingDeletePoolTx.ID)
+		}
+		err := c.bc.TxPoolModel.UpdateTxsStatusByIds(ids, tx.StatusFailed)
+		if err != nil {
+			logx.Error("update tx pool failed:", err)
+		}
+		err = c.bc.TxPoolModel.DeleteTxsBatch(updatePoolTxMap.PendingDeletePoolTxs)
+		if err != nil {
+			logx.Error("update tx pool failed:", err)
+		}
 	}
 	updatePoolTxsMetrics.Set(float64(time.Since(start).Milliseconds()))
 }
@@ -602,8 +616,8 @@ func (c *Committer) executeTreeFunc(stateDataCopy *statedb.StateDataCopy) {
 		logx.Errorf("update pool tx to pending failed:%s", err.Error())
 		panic("update pool tx to pending failed: " + err.Error())
 	}
-	stateDBSyncOperationMetics.Set(float64(time.Since(start).Milliseconds()))
 	c.saveBlockTxWorker.Enqueue(blockStates)
+	stateDBSyncOperationMetics.Set(float64(time.Since(start).Milliseconds()))
 	l2BlockRedisHeightMetric.Set(float64(blockStates.Block.BlockHeight))
 	AccountLatestVersionTreeMetric.Set(float64(c.bc.StateDB().AccountTree.LatestVersion()))
 	AccountRecentVersionTreeMetric.Set(float64(c.bc.StateDB().AccountTree.RecentVersion()))
@@ -649,6 +663,9 @@ func (c *Committer) saveAccounts(blockStates *block.BlockStates) error {
 
 func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
 	logx.Infof("save block transaction start, blockHeight:%s", blockStates.Block.BlockHeight)
+	if c.config.BlockConfig.BlockSaveDisabled {
+		return
+	}
 	start := time.Now()
 
 	if len(blockStates.PendingAccount) != 0 {
