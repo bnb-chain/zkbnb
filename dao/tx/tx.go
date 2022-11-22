@@ -98,8 +98,8 @@ type (
 		TxHash       string `gorm:"uniqueIndex"`
 		TxType       int64
 		TxInfo       string
-		AccountIndex int64
-		Nonce        int64
+		AccountIndex int64 `gorm:"index:idx_pool_tx_account_index_nonce,priority:1"`
+		Nonce        int64 `gorm:"index:idx_pool_tx_account_index_nonce,priority:2"`
 		ExpiredAt    int64
 
 		// Assigned after executed.

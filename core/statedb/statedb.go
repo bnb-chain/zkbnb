@@ -712,6 +712,20 @@ func (s *StateDB) GetPendingNonce(accountIndex int64) (int64, error) {
 	return 0, err
 }
 
+func (s *StateDB) GetPendingNonceFromCache(accountIndex int64) (int64, error) {
+	accountNonce := int64(-2)
+	_, err := s.redisCache.Get(context.Background(), dbcache.AccountNonceKeyByIndex(accountIndex), &accountNonce)
+	if err == nil && accountNonce != -2 {
+		return accountNonce + 1, nil
+	}
+	pendingNonce, err := s.GetPendingNonce(accountIndex)
+	if err != nil {
+		_ = s.redisCache.Set(context.Background(), dbcache.AccountNonceKeyByIndex(accountIndex), pendingNonce-1)
+		return pendingNonce, err
+	}
+	return 0, err
+}
+
 func (s *StateDB) GetNextAccountIndex() int64 {
 	return s.AccountAssetTrees.GetNextAccountIndex()
 }

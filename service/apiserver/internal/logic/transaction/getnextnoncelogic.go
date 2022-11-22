@@ -31,7 +31,7 @@ func (l *GetNextNonceLogic) GetNextNonce(req *types.ReqGetNextNonce) (*types.Nex
 	if err != nil {
 		return nil, err
 	}
-	nonce, err := bc.StateDB().GetPendingNonce(int64(req.AccountIndex))
+	nonce, err := bc.StateDB().GetPendingNonceFromCache(int64(req.AccountIndex))
 	if err != nil {
 		if err == types2.DbErrNotFound {
 			return nil, types2.AppErrAccountNonceNotFound

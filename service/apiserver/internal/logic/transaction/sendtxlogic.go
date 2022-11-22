@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"context"
+	"github.com/bnb-chain/zkbnb/dao/dbcache"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -69,7 +70,7 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 		logx.Errorf("fail to create pool tx: %v, err: %s", newTx, err.Error())
 		return resp, types2.AppErrInternal
 	}
-
+	s.svcCtx.RedisCache.Set(context.Background(), dbcache.AccountNonceKeyByIndex(newTx.AccountIndex), newTx.Nonce)
 	resp.TxHash = newTx.TxHash
 	return resp, nil
 }
