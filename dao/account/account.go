@@ -18,6 +18,8 @@
 package account
 
 import (
+	"time"
+
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb/types"
@@ -161,18 +163,46 @@ func (m *defaultAccountModel) GetConfirmedAccountByIndex(accountIndex int64) (ac
 }
 
 func (m *defaultAccountModel) UpdateAccountsInTransact(tx *gorm.DB, accounts []*Account) error {
+	db, _ := tx.DB()
+	sqlStatement := `
+		UPDATE account SET l1_address=$1, nonce=$2, collection_nonce=$3, asset_info=$4, asset_root=$5, status=$6,
+		updated_at=$7
+		WHERE account_index=$8
+	`
+
+	now := time.Now()
+
 	for _, account := range accounts {
-		dbTx := tx.Table(m.table).Where("account_index = ?", account.AccountIndex).
-			Select("*").
-			Updates(&account)
-		if dbTx.Error != nil {
-			return dbTx.Error
+		result, err := db.Exec(
+			sqlStatement,
+			account.L1Address, account.Nonce, account.CollectionNonce, account.AssetInfo, account.AssetRoot, account.Status,
+			now,
+			account.AccountIndex,
+		)
+		if err != nil {
+			return err
 		}
-		if dbTx.RowsAffected == 0 {
-			// this account is new, we need create first
-			dbTx = tx.Table(m.table).Create(&account)
-			if dbTx.Error != nil {
-				return dbTx.Error
+		rowNum, err := result.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if rowNum == 0 {
+			insertSQLStatement := `
+			INSERT INTO account (account_index, account_name, public_key, account_name_hash,
+			l1_address, nonce, collection_nonce, asset_info, asset_root, status,
+			created_at, updated_at)
+			VALUES($1, $2, $3, $4,
+			$5, $6, $7, $8, $9, $10,
+			 $11, $12)
+			`
+			_, err := db.Exec(
+				insertSQLStatement,
+				account.AccountIndex, account.AccountName, account.PublicKey, account.AccountNameHash,
+				account.L1Address, account.Nonce, account.CollectionNonce, account.AssetInfo, account.AssetRoot, account.Status,
+				now, now,
+			)
+			if err != nil {
+				return err
 			}
 		}
 	}
