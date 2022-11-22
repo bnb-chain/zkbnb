@@ -1,6 +1,7 @@
 package committer
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/bnb-chain/zkbnb/core/statedb"
@@ -534,33 +535,51 @@ func (c *Committer) enqueueUpdatePoolTx(pendingUpdatePoolTxs []*tx.Tx, pendingDe
 	c.updatePoolTxWorker.Enqueue(updatePoolTxMap)
 }
 
+//func (c *Committer) updatePoolTxFunc(updatePoolTxMap *UpdatePoolTx) {
+//	start := time.Now()
+//	length := len(updatePoolTxMap.PendingUpdatePoolTxs)
+//	if length > 0 {
+//		ids := make([]uint, 0, length)
+//		for _, pendingUpdatePoolTx := range updatePoolTxMap.PendingUpdatePoolTxs {
+//			ids = append(ids, pendingUpdatePoolTx.ID)
+//		}
+//		err := c.bc.TxPoolModel.UpdateTxsStatusAndHeightByIds(ids, tx.StatusExecuted, updatePoolTxMap.PendingUpdatePoolTxs[0].BlockHeight)
+//		if err != nil {
+//			logx.Error("update tx pool failed:", err)
+//		}
+//	}
+//	length = len(updatePoolTxMap.PendingDeletePoolTxs)
+//	if length > 0 {
+//		ids := make([]uint, 0, length)
+//		for _, pendingDeletePoolTx := range updatePoolTxMap.PendingDeletePoolTxs {
+//			ids = append(ids, pendingDeletePoolTx.ID)
+//		}
+//		err := c.bc.TxPoolModel.UpdateTxsStatusByIds(ids, tx.StatusFailed)
+//		if err != nil {
+//			logx.Error("update tx pool failed:", err)
+//		}
+//		err = c.bc.TxPoolModel.DeleteTxsBatch(updatePoolTxMap.PendingDeletePoolTxs)
+//		if err != nil {
+//			logx.Error("update tx pool failed:", err)
+//		}
+//	}
+//	updatePoolTxsMetrics.Set(float64(time.Since(start).Milliseconds()))
+//}
+
 func (c *Committer) updatePoolTxFunc(updatePoolTxMap *UpdatePoolTx) {
 	start := time.Now()
-	length := len(updatePoolTxMap.PendingUpdatePoolTxs)
-	if length > 0 {
-		ids := make([]uint, 0, length)
-		for _, pendingUpdatePoolTx := range updatePoolTxMap.PendingUpdatePoolTxs {
-			ids = append(ids, pendingUpdatePoolTx.ID)
-		}
-		err := c.bc.TxPoolModel.UpdateTxsStatusAndHeightByIds(ids, tx.StatusExecuted, updatePoolTxMap.PendingUpdatePoolTxs[0].BlockHeight)
-		if err != nil {
-			logx.Error("update tx pool failed:", err)
-		}
+	for _, pendingDeletePoolTx := range updatePoolTxMap.PendingDeletePoolTxs {
+		updatePoolTxMap.PendingUpdatePoolTxs = append(updatePoolTxMap.PendingUpdatePoolTxs, pendingDeletePoolTx)
 	}
-	length = len(updatePoolTxMap.PendingDeletePoolTxs)
-	if length > 0 {
-		ids := make([]uint, 0, length)
-		for _, pendingDeletePoolTx := range updatePoolTxMap.PendingDeletePoolTxs {
-			ids = append(ids, pendingDeletePoolTx.ID)
-		}
-		err := c.bc.TxPoolModel.UpdateTxsStatusByIds(ids, tx.StatusFailed)
+	err := c.bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
+		err := c.bc.TxPoolModel.UpdateTxsInTransact(dbTx, updatePoolTxMap.PendingUpdatePoolTxs)
 		if err != nil {
 			logx.Error("update tx pool failed:", err)
 		}
-		err = c.bc.TxPoolModel.DeleteTxsBatch(updatePoolTxMap.PendingDeletePoolTxs)
-		if err != nil {
-			logx.Error("update tx pool failed:", err)
-		}
+		return c.bc.TxPoolModel.DeleteTxsBatchInTransact(dbTx, updatePoolTxMap.PendingDeletePoolTxs)
+	})
+	if err != nil {
+		logx.Error("update tx pool failed:", err)
 	}
 	updatePoolTxsMetrics.Set(float64(time.Since(start).Milliseconds()))
 }
@@ -675,6 +694,13 @@ func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
 		// update block
 		blockStates.Block.ClearTxsModel()
 		start = time.Now()
+
+		logx.Error("blockStates.Block.BlockHeight: ", blockStates.Block.BlockHeight)
+		logx.Error("blockStates.Block.ID: ", blockStates.Block.ID)
+
+		assetInfoBytes, err := json.Marshal(blockStates.Block)
+		logx.Error("blockStates.Block.Block.json: ", string(assetInfoBytes))
+
 		err = c.bc.DB().BlockModel.UpdateBlockInTransact(tx, blockStates.Block)
 		updateBlockMetrics.Set(float64(time.Since(start).Milliseconds()))
 		return err
