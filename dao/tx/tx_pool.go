@@ -256,7 +256,10 @@ func (m *defaultTxPoolModel) UpdateTxsStatusByIds(ids []uint, status int) error 
 }
 
 func (m *defaultTxPoolModel) UpdateTxsStatusAndHeightByIds(ids []uint, status int, blockHeight int64) error {
-	dbTx := m.DB.Model(&PoolTx{}).Where("id in ?", ids).Updates(Tx{TxStatus: status, BlockHeight: blockHeight})
+	dbTx := m.DB.Model(&PoolTx{}).Select("TxStatus", "BlockHeight").Where("id in ?", ids).Updates(map[string]interface{}{
+		"status":       status,
+		"block_height": blockHeight,
+	})
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}
@@ -266,7 +269,7 @@ func (m *defaultTxPoolModel) UpdateTxsStatusAndHeightByIds(ids []uint, status in
 
 func (m *defaultTxPoolModel) UpdateTxsToPending() error {
 	var statuses = []int{StatusProcessing, StatusExecuted}
-	dbTx := m.DB.Model(&PoolTx{}).Where("tx_status in ? and deleted_at is null", statuses).Update("tx_status", StatusPending)
+	dbTx := m.DB.Model(&PoolTx{}).Where("tx_status in ? ", statuses).Update("tx_status", StatusPending)
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}

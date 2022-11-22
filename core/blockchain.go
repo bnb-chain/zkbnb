@@ -457,7 +457,7 @@ func (bc *BlockChain) VerifyNonce(accountIndex int64, nonce int64) error {
 			return types.AppErrInvalidNonce
 		}
 	} else {
-		pendingNonce, err := bc.Statedb.GetPendingNonce(accountIndex)
+		pendingNonce, err := bc.Statedb.GetPendingNonceFromCache(accountIndex)
 		if err != nil {
 			return err
 		}
