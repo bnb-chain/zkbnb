@@ -48,7 +48,9 @@ type (
 		UpdateTxsToPending() error
 		GetLatestExecutedTx() (tx *Tx, err error)
 		GetTxsPageByStatus(status int, limit int64) (txs []*Tx, err error)
-		UpdateTxsStatusToProcessing(ids []uint) error
+		UpdateTxsStatusByIds(ids []uint, status int) error
+		UpdateTxsStatusAndHeightByIds(ids []uint, status int, blockHeight int64) error
+		DeleteTxsBatch(txs []*Tx) error
 	}
 
 	defaultTxPoolModel struct {
@@ -245,11 +247,20 @@ func (m *defaultTxPoolModel) UpdateTxsInTransact(tx *gorm.DB, txs []*Tx) error {
 	return nil
 }
 
-func (m *defaultTxPoolModel) UpdateTxsStatusToProcessing(ids []uint) error {
-	dbTx := m.DB.Model(&PoolTx{}).Where("id in ?", ids).Update("tx_status", StatusProcessing)
+func (m *defaultTxPoolModel) UpdateTxsStatusByIds(ids []uint, status int) error {
+	dbTx := m.DB.Model(&PoolTx{}).Where("id in ?", ids).Update("tx_status", status)
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}
+	return nil
+}
+
+func (m *defaultTxPoolModel) UpdateTxsStatusAndHeightByIds(ids []uint, status int, blockHeight int64) error {
+	dbTx := m.DB.Model(&PoolTx{}).Where("id in ?", ids).Updates(Tx{TxStatus: status, BlockHeight: blockHeight})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+
 	return nil
 }
 
@@ -284,6 +295,24 @@ func (m *defaultTxPoolModel) DeleteTxsBatchInTransact(tx *gorm.DB, txs []*Tx) er
 		ids = append(ids, poolTx.ID)
 	}
 	dbTx := tx.Table(m.table).Where("id in ?", ids).Delete(&Tx{})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		return types.DbErrFailToDeletePoolTx
+	}
+	return nil
+}
+
+func (m *defaultTxPoolModel) DeleteTxsBatch(txs []*Tx) error {
+	if len(txs) == 0 {
+		return nil
+	}
+	ids := make([]uint, 0, len(txs))
+	for _, poolTx := range txs {
+		ids = append(ids, poolTx.ID)
+	}
+	dbTx := m.DB.Table(m.table).Where("id in ?", ids).Delete(&Tx{})
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}
