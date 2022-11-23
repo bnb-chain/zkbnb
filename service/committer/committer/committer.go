@@ -689,13 +689,6 @@ func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
 				return err
 			}
 		}
-		start = time.Now()
-		// delete txs from tx pool
-		err = c.bc.DB().TxPoolModel.DeleteTxsBatchInTransact(tx, blockStates.Block.Txs)
-		if err != nil {
-			return err
-		}
-		deletePoolTxMetrics.Set(float64(time.Since(start).Milliseconds()))
 
 		// update block
 		blockStates.Block.ClearTxsModel()
@@ -708,7 +701,15 @@ func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
 		logx.Error("blockStates.Block.Block.json: ", string(assetInfoBytes))
 
 		err = c.bc.DB().BlockModel.UpdateBlockInTransact(tx, blockStates.Block)
+		if err != nil {
+			return err
+		}
 		updateBlockMetrics.Set(float64(time.Since(start).Milliseconds()))
+
+		start = time.Now()
+		// delete txs from tx pool
+		err = c.bc.DB().TxPoolModel.DeleteTxsBatchInTransact(tx, blockStates.Block.Txs)
+		deletePoolTxMetrics.Set(float64(time.Since(start).Milliseconds()))
 		return err
 
 	})
