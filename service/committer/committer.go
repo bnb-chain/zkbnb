@@ -28,7 +28,7 @@ func Run(configFile string) error {
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))
 	_, err = cronJob.AddFunc("@every 10s", func() {
-		logx.Info("========================= start pending_tx number =========================")
+		//logx.Info("========================= start pending_tx number =========================")
 		committer.PendingTxNum()
 	})
 	if err != nil {
