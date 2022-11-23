@@ -4,11 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gorm.io/gorm/logger"
 	"math/big"
 	"strconv"
 	"time"
-
-	"gorm.io/gorm/logger"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
@@ -140,7 +139,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		panic("delete block failed: " + err.Error())
 	}
 	if blockHeights != nil {
-		logx.Infof("get proposing block heights: %v", blockHeights)
+		logx.Infof("get proposing block heights: %s", blockHeights)
 		err = bc.BlockModel.DeleteProposingBlock()
 		if err != nil {
 			logx.Error("delete block failed: ", err)
@@ -152,14 +151,14 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		logx.Error("get current block failed: ", err)
 		return nil, err
 	}
-	logx.Infof("get current block height: %d", curHeight)
+	logx.Infof("get current block height: %s", curHeight)
 
 	bc.currentBlock, err = bc.BlockModel.GetBlockByHeight(curHeight)
 	if err != nil {
 		return nil, err
 	}
 	if bc.currentBlock.BlockStatus == block.StatusProposing {
-		logx.Errorf("current block status is StatusProposing,invalid block, height=%d", bc.currentBlock.BlockHeight)
+		logx.Errorf("current block status is StatusProposing,invalid block, height=%s", bc.currentBlock.BlockHeight)
 		panic("current block status is StatusProposing,invalid block, height=" + strconv.FormatInt(bc.currentBlock.BlockHeight, 10))
 	}
 	//todo config
@@ -455,7 +454,7 @@ func (bc *BlockChain) VerifyNonce(accountIndex int64, nonce int64) error {
 			return err
 		}
 		if nonce != expectNonce {
-			logx.Infof("committer verify nonce failed,accountIndex=%d,nonce=%d,expectNonce=%d", accountIndex, nonce, expectNonce)
+			logx.Infof("committer verify nonce failed,accountIndex=%s,nonce=%s,expectNonce=%s", accountIndex, nonce, expectNonce)
 			return types.AppErrInvalidNonce
 		}
 	} else {
@@ -464,7 +463,7 @@ func (bc *BlockChain) VerifyNonce(accountIndex int64, nonce int64) error {
 			return err
 		}
 		if pendingNonce != nonce {
-			logx.Infof("clear pending nonce from redis cache,accountIndex=%d,pendingNonce=%d,nonce=%d", accountIndex, pendingNonce, nonce)
+			logx.Infof("clear pending nonce from redis cache,accountIndex=%s,pendingNonce=%s,nonce=%s", accountIndex, pendingNonce, nonce)
 			bc.Statedb.ClearPendingNonceFromRedisCache(accountIndex)
 			return types.AppErrInvalidNonce
 		}
