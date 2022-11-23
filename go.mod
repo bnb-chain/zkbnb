@@ -6,6 +6,7 @@ require (
 	github.com/bnb-chain/zkbnb-go-sdk v1.0.4-0.20221012063144-3a6e84095b4d
 	github.com/dgraph-io/ristretto v0.1.0
 	github.com/hashicorp/golang-lru v0.5.5-0.20221011183528-d4900dc688bf
+	github.com/ory/dockertest v3.3.5+incompatible
 	github.com/panjf2000/ants/v2 v2.5.0
 	github.com/prometheus/client_golang v1.13.0
 	github.com/zeromicro/go-zero v1.3.4
@@ -44,6 +45,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
+	github.com/gotestyourself/gotestyourself v2.2.0+incompatible // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.12.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
@@ -63,7 +65,6 @@ require (
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.1.4 // indirect
 	github.com/openzipkin/zipkin-go v0.4.0 // indirect
-	github.com/ory/dockertest v3.3.5+incompatible // indirect
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58 // indirect
 	github.com/pegasus-kv/thrift v0.13.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.1 // indirect
@@ -105,7 +106,7 @@ require (
 require (
 	github.com/bnb-chain/zkbnb-crypto v0.0.8-0.20221104095956-e2b2f4d4ae4e
 	github.com/bnb-chain/zkbnb-eth-rpc v0.0.2
-	github.com/bnb-chain/zkbnb-smt v0.0.2
+	github.com/bnb-chain/zkbnb-smt v0.0.3-0.20221118180206-7685632073d8
 	github.com/consensys/gnark v0.7.0
 	github.com/consensys/gnark-crypto v0.7.0
 	github.com/eko/gocache/v2 v2.3.1
