@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	TableName = `asset`
+	AssetTableName = `asset`
 
 	StatusActive   uint32 = 0
 	StatusInactive uint32 = 1
@@ -70,12 +70,12 @@ type (
 )
 
 func (*Asset) TableName() string {
-	return TableName
+	return AssetTableName
 }
 
 func NewAssetModel(db *gorm.DB) AssetModel {
 	return &defaultAssetModel{
-		table: TableName,
+		table: AssetTableName,
 		DB:    db,
 	}
 }
