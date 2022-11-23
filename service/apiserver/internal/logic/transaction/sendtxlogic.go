@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"context"
+	"github.com/bnb-chain/zkbnb/dao/dbcache"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -27,15 +28,15 @@ func NewSendTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendTxLogi
 }
 
 func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err error) {
-	txStatuses := []int64{tx.StatusPending}
-	pendingTxCount, err := s.svcCtx.TxPoolModel.GetTxsTotalCount(tx.GetTxWithStatuses(txStatuses))
-	if err != nil {
-		return nil, types2.AppErrInternal
-	}
-
-	if s.svcCtx.Config.TxPool.MaxPendingTxCount > 0 && pendingTxCount >= int64(s.svcCtx.Config.TxPool.MaxPendingTxCount) {
-		return nil, types2.AppErrTooManyTxs
-	}
+	//txStatuses := []int64{tx.StatusPending}
+	//pendingTxCount, err := s.svcCtx.TxPoolModel.GetTxsTotalCount(tx.GetTxWithStatuses(txStatuses))
+	//if err != nil {
+	//	return nil, types2.AppErrInternal
+	//}
+	//
+	//if s.svcCtx.Config.TxPool.MaxPendingTxCount > 0 && pendingTxCount >= int64(s.svcCtx.Config.TxPool.MaxPendingTxCount) {
+	//	return nil, types2.AppErrTooManyTxs
+	//}
 
 	resp = &types.TxHash{}
 	bc, err := core.NewBlockChainForDryRun(s.svcCtx.AccountModel, s.svcCtx.NftModel, s.svcCtx.TxPoolModel,
@@ -69,7 +70,7 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 		logx.Errorf("fail to create pool tx: %v, err: %s", newTx, err.Error())
 		return resp, types2.AppErrInternal
 	}
-
+	s.svcCtx.RedisCache.Set(context.Background(), dbcache.AccountNonceKeyByIndex(newTx.AccountIndex), newTx.Nonce)
 	resp.TxHash = newTx.TxHash
 	return resp, nil
 }
