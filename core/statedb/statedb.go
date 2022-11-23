@@ -719,7 +719,7 @@ func (s *StateDB) GetPendingNonceFromCache(accountIndex int64) (int64, error) {
 		return accountNonce + 1, nil
 	}
 	pendingNonce, err := s.GetPendingNonce(accountIndex)
-	if err != nil {
+	if err == nil {
 		_ = s.redisCache.Set(context.Background(), dbcache.AccountNonceKeyByIndex(accountIndex), pendingNonce-1)
 		return pendingNonce, err
 	}
