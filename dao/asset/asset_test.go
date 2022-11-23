@@ -34,14 +34,14 @@ func (s *Suite) TearDownSuite() {
 }
 
 func (s *Suite) SetupTest() {
-	err := s.db.ClearDB([]string{TableName})
+	err := s.db.ClearDB([]string{AssetTableName})
 	s.Require().NoError(err)
 	err = s.db.InitDB()
 	s.Require().NoError(err)
 }
 
 func (s *Suite) TearDownTest() {
-	err := s.db.ClearDB([]string{TableName})
+	err := s.db.ClearDB([]string{AssetTableName})
 	s.Require().NoError(err)
 }
 
