@@ -17,8 +17,6 @@
 package proof
 
 import (
-	"fmt"
-
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb/types"
@@ -144,16 +142,9 @@ func (m *defaultProofModel) GetProofByBlockHeight(num int64) (p *Proof, err erro
 
 func (m *defaultProofModel) UpdateProofsInTransact(tx *gorm.DB, proofs map[int64]int) error {
 	for blockHeight, newStatus := range proofs {
-		var row *Proof
-		dbTx := tx.Table(m.table).Where("block_number = ?", blockHeight).Find(&row)
-		if dbTx.Error != nil {
-			return dbTx.Error
-		}
-		if dbTx.RowsAffected == 0 {
-			return fmt.Errorf("no such proof. height: %d", blockHeight)
-		}
-		dbTx = tx.Model(&row).
+		dbTx := tx.Model(&Proof{}).
 			Select("status").
+			Where("block_number = ?", blockHeight).
 			Updates(&Proof{Status: int64(newStatus)})
 		if dbTx.Error != nil {
 			return dbTx.Error
