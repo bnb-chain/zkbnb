@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/ory/dockertest"
 	"github.com/ory/dockertest/docker"
 	"gorm.io/driver/postgres"
@@ -24,13 +23,6 @@ type Database struct {
 	host     string
 	port     string
 	isGithub bool
-}
-
-// Redis is the struct for redis docker
-type Redis struct {
-	pool     *dockertest.Pool
-	resource *dockertest.Resource
-	Client   *redis.Client
 }
 
 // RunDB run docker of db for unit test
