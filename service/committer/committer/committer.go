@@ -178,6 +178,12 @@ var (
 		Name:      "execute_tx_count",
 		Help:      "execute tx count",
 	})
+
+	executeTreeTxMetrics = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "zkbnb",
+		Name:      "execute_tree_tx_count",
+		Help:      "execute tree tx count",
+	})
 )
 
 type Config struct {
@@ -316,6 +322,10 @@ func NewCommitter(config *Config) (*Committer, error) {
 
 	if err := prometheus.Register(executeTxMetrics); err != nil {
 		return nil, fmt.Errorf("prometheus.Register executeTxMetrics error: %v", err)
+	}
+
+	if err := prometheus.Register(executeTreeTxMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register executeTreeTxMetrics error: %v", err)
 	}
 
 	committer := &Committer{
@@ -634,6 +644,7 @@ func (c *Committer) syncAccountToRedisFunc(pendingMap *PendingMap) {
 }
 
 func (c *Committer) executeTreeFunc(stateDataCopy *statedb.StateDataCopy) {
+	executeTreeTxMetrics.Add(float64(len(stateDataCopy.CurrentBlock.Txs)))
 	logx.Infof("commit new block start blockHeight:%s,blockId:%s", stateDataCopy.CurrentBlock.BlockHeight, stateDataCopy.CurrentBlock.ID)
 	start := time.Now()
 	blockSize := c.computeCurrentBlockSize(stateDataCopy)
