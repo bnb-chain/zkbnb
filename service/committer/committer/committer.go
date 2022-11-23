@@ -690,6 +690,11 @@ func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
 			}
 		}
 
+		ids := make([]uint, 0, len(blockStates.Block.Txs))
+		for _, poolTx := range blockStates.Block.Txs {
+			ids = append(ids, poolTx.ID)
+		}
+
 		// update block
 		blockStates.Block.ClearTxsModel()
 		start = time.Now()
@@ -708,7 +713,7 @@ func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
 
 		start = time.Now()
 		// delete txs from tx pool
-		err = c.bc.DB().TxPoolModel.DeleteTxsBatchInTransact(tx, blockStates.Block.Txs)
+		err = c.bc.DB().TxPoolModel.DeleteTxIdsBatchInTransact(tx, ids)
 		deletePoolTxMetrics.Set(float64(time.Since(start).Milliseconds()))
 		return err
 

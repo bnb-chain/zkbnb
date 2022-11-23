@@ -51,6 +51,7 @@ type (
 		UpdateTxsStatusByIds(ids []uint, status int) error
 		UpdateTxsStatusAndHeightByIds(ids []uint, status int, blockHeight int64) error
 		DeleteTxsBatch(txs []*Tx) error
+		DeleteTxIdsBatchInTransact(tx *gorm.DB, ids []uint) error
 	}
 
 	defaultTxPoolModel struct {
@@ -296,6 +297,20 @@ func (m *defaultTxPoolModel) DeleteTxsBatchInTransact(tx *gorm.DB, txs []*Tx) er
 	ids := make([]uint, 0, len(txs))
 	for _, poolTx := range txs {
 		ids = append(ids, poolTx.ID)
+	}
+	dbTx := tx.Table(m.table).Where("id in ?", ids).Delete(&Tx{})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		return types.DbErrFailToDeletePoolTx
+	}
+	return nil
+}
+
+func (m *defaultTxPoolModel) DeleteTxIdsBatchInTransact(tx *gorm.DB, ids []uint) error {
+	if len(ids) == 0 {
+		return nil
 	}
 	dbTx := tx.Table(m.table).Where("id in ?", ids).Delete(&Tx{})
 	if dbTx.Error != nil {
