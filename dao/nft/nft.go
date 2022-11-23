@@ -18,6 +18,8 @@
 package nft
 
 import (
+	"time"
+
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb/types"
@@ -116,17 +118,51 @@ func (m *defaultL2NftModel) GetNftsCountByAccountIndex(accountIndex int64) (int6
 }
 
 func (m *defaultL2NftModel) UpdateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) error {
-	for _, pendingNft := range nfts {
-		dbTx := tx.Table(m.table).Where("nft_index = ?", pendingNft.NftIndex).
-			Select("*").
-			Updates(&pendingNft)
-		if dbTx.Error != nil {
-			return dbTx.Error
+	db, _ := tx.DB()
+	sqlStatement := `
+		UPDATE l2_nft SET creator_account_index=$1, owner_account_index=$2, nft_content_hash=$3,
+		creator_treasury_rate=$4, collection_id=$5,
+		updated_at=$6
+		WHERE nft_index=$7
+	`
+
+	now := time.Now()
+
+	for _, nft := range nfts {
+		result, err := db.Exec(
+			sqlStatement,
+			nft.CreatorAccountIndex, nft.OwnerAccountIndex, nft.NftContentHash,
+			nft.CreatorTreasuryRate, nft.CollectionId,
+			now,
+			nft.NftIndex,
+		)
+		if err != nil {
+			return err
 		}
-		if dbTx.RowsAffected == 0 {
-			dbTx = tx.Table(m.table).Create(&pendingNft)
-			if dbTx.Error != nil {
-				return dbTx.Error
+		rowNum, err := result.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if rowNum == 0 {
+			insertSQLStatement := `
+			INSERT INTO l2_nft (nft_index,
+			creator_account_index, owner_account_index, nft_content_hash,
+			creator_treasury_rate, collection_id,
+			created_at, updated_at)
+			VALUES($1,
+			$2, $3, $4,
+			$5, $6,
+			$7, $8)
+			`
+			_, err := db.Exec(
+				insertSQLStatement,
+				nft.NftIndex,
+				nft.CreatorAccountIndex, nft.OwnerAccountIndex, nft.NftContentHash,
+				nft.CreatorTreasuryRate, nft.CollectionId,
+				now, now,
+			)
+			if err != nil {
+				return err
 			}
 		}
 	}

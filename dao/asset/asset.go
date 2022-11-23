@@ -18,6 +18,10 @@
 package asset
 
 import (
+	"fmt"
+	"strings"
+	"time"
+
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb/types"
@@ -180,14 +184,35 @@ func (m *defaultAssetModel) CreateAssetsInTransact(tx *gorm.DB, assets []*Asset)
 }
 
 func (m *defaultAssetModel) UpdateAssetsInTransact(tx *gorm.DB, assets []*Asset) error {
+
+	db, _ := tx.DB()
+	sqlBasicStatement := `
+		UPDATE asset SET deleted_at=$1
+		WHERE id IN (%s)
+	`
+
+	now := time.Now()
+
+	args := []string{}
 	for _, asset := range assets {
-		dbTx := tx.Table(m.table).Where("id = ?", asset.ID).Delete(&asset)
-		if dbTx.Error != nil {
-			return dbTx.Error
-		}
-		if dbTx.RowsAffected == 0 {
-			return types.DbErrFailToUpdateAsset
-		}
+		args = append(args, fmt.Sprintf("%d", asset.ID))
 	}
+
+	sqlStatement := fmt.Sprintf(sqlBasicStatement, strings.Join(args, ","))
+	result, err := db.Exec(
+		sqlStatement,
+		now,
+	)
+	if err != nil {
+		return err
+	}
+	rowNum, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowNum == 0 {
+		return types.DbErrFailToUpdateAsset
+	}
+
 	return nil
 }
