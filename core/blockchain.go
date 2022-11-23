@@ -455,6 +455,7 @@ func (bc *BlockChain) VerifyNonce(accountIndex int64, nonce int64) error {
 		}
 		if nonce != expectNonce {
 			logx.Infof("committer verify nonce failed,accountIndex=%s,nonce=%s,expectNonce=%s", accountIndex, nonce, expectNonce)
+			bc.Statedb.ClearPendingNonceFromRedisCache(accountIndex)
 			return types.AppErrInvalidNonce
 		}
 	} else {
