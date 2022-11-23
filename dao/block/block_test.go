@@ -52,6 +52,8 @@ func (s *Suite) TestUpdateBlockInTransact() {
 			CreatedAt: time.Unix(10, 0),
 			UpdatedAt: time.Unix(10, 0),
 		},
+		BlockHeight: 100,
+		BlockStatus: StatusCommitted,
 	}
 
 	s.Require().NoError(s.dao.CreateBlockInTransact(s.db.DB, &item))
@@ -86,23 +88,23 @@ func (s *Suite) TestUpdateBlockInTransact() {
 	err := s.dao.UpdateBlockInTransact(s.db.DB, &item)
 	s.Require().NoError(err)
 
-	itemRes := &Block{}
-	dbtx := s.db.DB.Where("1=1").Take(itemRes)
-	s.Require().NoError(dbtx.Error)
+	items, err := s.dao.GetBlocksBetween(item.BlockHeight, item.BlockHeight)
+	s.Require().NoError(err)
+	itemRes := items[0]
 	s.Greater(itemRes.UpdatedAt.Unix(), int64(10))
-	s.Require().Len(item.Txs, 2)
+	s.Require().Len(itemRes.Txs, 2)
 	hashes := []string{}
-	for i := 0; i < len(item.Txs); i++ {
-		hashes = append(hashes, item.Txs[i].TxHash)
+	for i := 0; i < len(itemRes.Txs); i++ {
+		hashes = append(hashes, itemRes.Txs[i].TxHash)
 	}
 	s.ElementsMatch([]string{"hash1", "hash2"}, hashes)
 	accountIndexes := []int64{}
-	for _, d := range item.Txs[0].TxDetails {
+	for _, d := range itemRes.Txs[0].TxDetails {
 		accountIndexes = append(accountIndexes, d.AccountIndex)
 	}
 	s.ElementsMatch([]int64{1, 2}, accountIndexes)
 	accountIndexes = []int64{}
-	for _, d := range item.Txs[1].TxDetails {
+	for _, d := range itemRes.Txs[1].TxDetails {
 		accountIndexes = append(accountIndexes, d.AccountIndex)
 	}
 	s.ElementsMatch([]int64{3, 4}, accountIndexes)
