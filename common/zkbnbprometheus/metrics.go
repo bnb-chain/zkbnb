@@ -18,4 +18,6 @@ type StateDBMetrics struct {
 	GetAccountFromDbCounter prometheus.Counter
 	VerifyGasGauge          prometheus.Gauge
 	VerifySignature         prometheus.Gauge
+	AccountTreeGauge        *prometheus.GaugeVec
+	NftTreeGauge            *prometheus.GaugeVec
 }

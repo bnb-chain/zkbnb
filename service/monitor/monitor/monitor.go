@@ -65,7 +65,7 @@ var (
 
 	l1SyncedBlockHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
-		Name:      "monitor_synced_block_insert_height",
+		Name:      "synced_block_insert_height",
 		Help:      "Synced block insert height metrics.",
 	})
 )

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
+	"time"
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend/groth16"
@@ -44,6 +45,12 @@ var (
 		Name:      "l2Block_prover_generate_height",
 		Help:      "l2Block_prover_generate metrics.",
 	})
+
+	proofGenerateTimeMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "proof_generate_time",
+		Help:      "proof_generate_time metrics.",
+	})
 )
 
 func WithRedis(redisType string, redisPass string) redis.Option {
@@ -66,6 +73,9 @@ func NewProver(c config.Config) (*Prover, error) {
 
 	if err := prometheus.Register(l2BlockProverGenerateHeightMetric); err != nil {
 		return nil, fmt.Errorf("prometheus.Register l2BlockProverGenerateHeightMetric error: %v", err)
+	}
+	if err := prometheus.Register(proofGenerateTimeMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register proofGenerateTimeMetric error: %v", err)
 	}
 
 	db, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
@@ -178,6 +188,7 @@ func (p *Prover) ProveBlock() error {
 		return fmt.Errorf("can't find correct vk/pk")
 	}
 
+	start := time.Now()
 	// Generate proof.
 	blockProof, err := prove.GenerateProof(p.R1cs[keyIndex], p.ProvingKeys[keyIndex], p.VerifyingKeys[keyIndex], cryptoBlock)
 	if err != nil {
@@ -208,6 +219,7 @@ func (p *Prover) ProveBlock() error {
 		Status:      proof.NotSent,
 	}
 	err = p.ProofModel.CreateProof(row)
+	proofGenerateTimeMetric.Set(float64(time.Since(start).Milliseconds()))
 	l2BlockProverGenerateHeightMetric.Set(float64(blockWitness.Height))
 	return err
 }
