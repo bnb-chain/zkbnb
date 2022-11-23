@@ -162,7 +162,7 @@ func (d *Database) InitDB() error {
 // ClearDB truncate the tables in database
 func (d *Database) ClearDB(tables []string) error {
 	for _, table := range tables {
-		dbTx := d.DB.Exec(fmt.Sprintf("TRUNCATE %s;", table))
+		dbTx := d.DB.Exec(fmt.Sprintf("TRUNCATE %s CASCADE;", table))
 		if dbTx.Error != nil {
 			return dbTx.Error
 		}
