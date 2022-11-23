@@ -1,7 +1,6 @@
 package committer
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/bnb-chain/zkbnb/core/statedb"
@@ -504,6 +503,17 @@ func (c *Committer) executeTxFunc() {
 		if c.shouldCommit(curBlock) {
 			start := time.Now()
 			logx.Infof("commit new block, height=%d,blockSize=%s", curBlock.BlockHeight, curBlock.BlockSize)
+			pendingAccountMap := make(map[int64]*types.AccountInfo, len(c.bc.Statedb.StateCache.PendingAccountMap))
+			pendingNftMap := make(map[int64]*nft.L2Nft, len(c.bc.Statedb.StateCache.PendingNftMap))
+			for _, accountInfo := range c.bc.Statedb.StateCache.PendingAccountMap {
+				pendingAccountMap[accountInfo.AccountIndex] = accountInfo.DeepCopy()
+			}
+			for _, nftInfo := range c.bc.Statedb.StateCache.PendingNftMap {
+				pendingNftMap[nftInfo.NftIndex] = nftInfo.DeepCopy()
+			}
+			c.bc.Statedb.StateCache.PendingAccountMap = pendingAccountMap
+			c.bc.Statedb.StateCache.PendingNftMap = pendingNftMap
+
 			stateDataCopy := &statedb.StateDataCopy{
 				StateCache:   c.bc.Statedb.StateCache,
 				CurrentBlock: curBlock,
@@ -702,8 +712,8 @@ func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
 		logx.Error("blockStates.Block.BlockHeight: ", blockStates.Block.BlockHeight)
 		logx.Error("blockStates.Block.ID: ", blockStates.Block.ID)
 
-		assetInfoBytes, err := json.Marshal(blockStates.Block)
-		logx.Error("blockStates.Block.Block.json: ", string(assetInfoBytes))
+		//assetInfoBytes, err := json.Marshal(blockStates.Block)
+		//logx.Error("blockStates.Block.Block.json: ", string(assetInfoBytes))
 
 		err = c.bc.DB().BlockModel.UpdateBlockInTransact(tx, blockStates.Block)
 		if err != nil {
