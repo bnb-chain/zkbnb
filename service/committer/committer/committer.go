@@ -3,10 +3,11 @@ package committer
 import (
 	"errors"
 	"fmt"
-	"github.com/bnb-chain/zkbnb/core/statedb"
-	"github.com/bnb-chain/zkbnb/dao/nft"
 	"strconv"
 	"time"
+
+	"github.com/bnb-chain/zkbnb/core/statedb"
+	"github.com/bnb-chain/zkbnb/dao/nft"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -419,7 +420,7 @@ func (c *Committer) executeTxFunc() {
 		if curBlock.BlockStatus > block.StatusProposing {
 			previousHeight := curBlock.BlockHeight
 			curBlock, err = c.bc.InitNewBlock()
-			logx.Infof("1 init new block, current height=%s,previous height=%s,blockId=%s", curBlock.BlockHeight, previousHeight, curBlock.ID)
+			logx.Infof("1 init new block, current height=%d,previous height=%d,blockId=%d", curBlock.BlockHeight, previousHeight, curBlock.ID)
 			if err != nil {
 				logx.Errorf("propose new block failed:%s", err)
 				panic("propose new block failed: " + err.Error())
@@ -482,7 +483,7 @@ func (c *Committer) executeTxFunc() {
 			if len(c.bc.Statedb.Txs) == 1 {
 				previousHeight := curBlock.BlockHeight
 				err = c.createNewBlock(curBlock, poolTx)
-				logx.Infof("create new block, current height=%s,previous height=%d,blockId=%s", curBlock.BlockHeight, previousHeight, curBlock.ID)
+				logx.Infof("create new block, current height=%d,previous height=%d,blockId=%d", curBlock.BlockHeight, previousHeight, curBlock.ID)
 
 				if err != nil {
 					logx.Errorf("create new block failed:%s", err.Error())
@@ -502,7 +503,7 @@ func (c *Committer) executeTxFunc() {
 
 		if c.shouldCommit(curBlock) {
 			start := time.Now()
-			logx.Infof("commit new block, height=%d,blockSize=%s", curBlock.BlockHeight, curBlock.BlockSize)
+			logx.Infof("commit new block, height=%d,blockSize=%d", curBlock.BlockHeight, curBlock.BlockSize)
 			pendingAccountMap := make(map[int64]*types.AccountInfo, len(c.bc.Statedb.StateCache.PendingAccountMap))
 			pendingNftMap := make(map[int64]*nft.L2Nft, len(c.bc.Statedb.StateCache.PendingNftMap))
 			for _, accountInfo := range c.bc.Statedb.StateCache.PendingAccountMap {
@@ -523,7 +524,7 @@ func (c *Committer) executeTxFunc() {
 			previousHeight := stateDataCopy.CurrentBlock.BlockHeight
 			curBlock, err = c.bc.InitNewBlock()
 
-			logx.Infof("2 init new block, current height=%s,previous height=%d,blockId=%s", curBlock.BlockHeight, previousHeight, curBlock.ID)
+			logx.Infof("2 init new block, current height=%d,previous height=%d,blockId=%d", curBlock.BlockHeight, previousHeight, curBlock.ID)
 			if err != nil {
 				logx.Errorf("propose new block failed:%s ", err.Error())
 				panic("propose new block failed: " + err.Error())
@@ -622,12 +623,12 @@ func (c *Committer) syncAccountToRedisFunc(pendingMap *PendingMap) {
 }
 
 func (c *Committer) executeTreeFunc(stateDataCopy *statedb.StateDataCopy) {
-	logx.Infof("commit new block start blockHeight:%s,blockId:%s", stateDataCopy.CurrentBlock.BlockHeight, stateDataCopy.CurrentBlock.ID)
+	logx.Infof("commit new block start blockHeight:%d,blockId:%d", stateDataCopy.CurrentBlock.BlockHeight, stateDataCopy.CurrentBlock.ID)
 	start := time.Now()
 	blockSize := c.computeCurrentBlockSize(stateDataCopy)
 	blockStates, err := c.bc.CommitNewBlock(blockSize, stateDataCopy)
 	if err != nil {
-		logx.Errorf("commit new block failed:%s,blockHeight:%s", err, stateDataCopy.CurrentBlock.BlockHeight)
+		logx.Errorf("commit new block failed:%s,blockHeight:%d", err, stateDataCopy.CurrentBlock.BlockHeight)
 		panic("commit new block failed: " + err.Error())
 	}
 	stateDBOperationMetics.Set(float64(time.Since(start).Milliseconds()))
@@ -650,7 +651,7 @@ func (c *Committer) executeTreeFunc(stateDataCopy *statedb.StateDataCopy) {
 }
 
 func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
-	logx.Infof("save block transaction start, blockHeight:%s", blockStates.Block.BlockHeight)
+	logx.Infof("save block transaction start, blockHeight:%d", blockStates.Block.BlockHeight)
 	if c.config.BlockConfig.BlockSaveDisabled {
 		return
 	}
@@ -729,7 +730,7 @@ func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
 
 	})
 	if err != nil {
-		logx.Errorf("save block transaction failed:%s,blockHeight:%s", err.Error(), blockStates.Block.BlockHeight)
+		logx.Errorf("save block transaction failed:%s,blockHeight:%d", err.Error(), blockStates.Block.BlockHeight)
 		panic("save block transaction failed: " + err.Error())
 		//todo 重试优化
 	}
