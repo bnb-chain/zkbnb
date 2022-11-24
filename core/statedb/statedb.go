@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/zkbnbprometheus"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"sync"
 	"time"
 
@@ -582,38 +581,40 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool, stateDataCopy *StateDataCopy
 			pendingNftItem = append(pendingNftItem, bsmt.Item{Key: uint64(result.index), Val: result.leaf})
 		}
 	}
-	err := gopool.Submit(func() {
-		resultChan <- &treeUpdateResp{
-			role: accountTreeRole,
-			err:  s.AccountTree.MultiSet(pendingAccountItem),
-		}
-	})
-	if err != nil {
-		return err
-	}
-	err = gopool.Submit(func() {
-		resultChan <- &treeUpdateResp{
-			role: nftTreeRole,
-			err:  s.NftTree.MultiSet(pendingNftItem),
-		}
-	})
-	if err != nil {
-		return err
-	}
-
-	start := time.Now()
-	for i := 0; i < 2; i++ {
-		result := <-resultChan
-		if result.err != nil {
-			return fmt.Errorf("update %s tree failed, %v", result.role, result.err)
-		}
-	}
-	s.Metrics.AccountTreeMultiSetGauge.Set(float64(time.Since(start).Milliseconds()))
-
-	hFunc := poseidon.NewPoseidon()
-	hFunc.Write(s.AccountTree.Root())
-	hFunc.Write(s.NftTree.Root())
-	stateDataCopy.StateCache.StateRoot = common.Bytes2Hex(hFunc.Sum(nil))
+	//todo for tress
+	//err := gopool.Submit(func() {
+	//	resultChan <- &treeUpdateResp{
+	//		role: accountTreeRole,
+	//		err:  s.AccountTree.MultiSet(pendingAccountItem),
+	//	}
+	//})
+	//if err != nil {
+	//	return err
+	//}
+	//err = gopool.Submit(func() {
+	//	resultChan <- &treeUpdateResp{
+	//		role: nftTreeRole,
+	//		err:  s.NftTree.MultiSet(pendingNftItem),
+	//	}
+	//})
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//start := time.Now()
+	//for i := 0; i < 2; i++ {
+	//	result := <-resultChan
+	//	if result.err != nil {
+	//		return fmt.Errorf("update %s tree failed, %v", result.role, result.err)
+	//	}
+	//}
+	//s.Metrics.AccountTreeMultiSetGauge.Set(float64(time.Since(start).Milliseconds()))
+	//
+	//hFunc := poseidon.NewPoseidon()
+	//hFunc.Write(s.AccountTree.Root())
+	//hFunc.Write(s.NftTree.Root())
+	//stateDataCopy.StateCache.StateRoot = common.Bytes2Hex(hFunc.Sum(nil))
+	stateDataCopy.StateCache.StateRoot = "test"
 	return nil
 }
 
