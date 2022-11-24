@@ -806,6 +806,7 @@ func (c *Committer) Shutdown() {
 	c.syncAccountToRedisWorker.Stop()
 	c.saveBlockTxWorker.Stop()
 	c.updatePoolTxWorker.Stop()
+	c.updateAccountTreeAndNftTreeWorker.Stop()
 	c.bc.Statedb.Close()
 	c.bc.ChainDB.Close()
 }
