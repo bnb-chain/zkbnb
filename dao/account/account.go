@@ -18,6 +18,7 @@
 package account
 
 import (
+	"database/sql"
 	"time"
 
 	"gorm.io/gorm"
@@ -93,42 +94,56 @@ func (m *defaultAccountModel) DropAccountTable() error {
 }
 
 func (m *defaultAccountModel) GetAccountByIndex(accountIndex int64) (account *Account, err error) {
-	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex).Find(&account)
-	if dbTx.Error != nil {
-		return nil, types.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		return nil, types.DbErrNotFound
-	}
-	return account, nil
+
+	db, _ := m.DB.DB()
+	sqlStatement := `
+		SELECT * FROM account WHERE account_index=$1 AND deleted_at IS NULL
+	`
+
+	return m.getAccountByValue(db, sqlStatement, accountIndex)
 }
 
 func (m *defaultAccountModel) GetAccountByPk(pk string) (account *Account, err error) {
-	dbTx := m.DB.Table(m.table).Where("public_key = ?", pk).Find(&account)
-	if dbTx.Error != nil {
-		return nil, types.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		return nil, types.DbErrNotFound
-	}
-	return account, nil
+	db, _ := m.DB.DB()
+	sqlStatement := `
+		SELECT * FROM account WHERE public_key=$1 AND deleted_at IS NULL
+	`
+
+	return m.getAccountByValue(db, sqlStatement, pk)
 }
 
 func (m *defaultAccountModel) GetAccountByName(accountName string) (account *Account, err error) {
-	dbTx := m.DB.Table(m.table).Where("account_name = ?", accountName).Find(&account)
-	if dbTx.Error != nil {
-		return nil, types.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		return nil, types.DbErrNotFound
-	}
-	return account, nil
+	db, _ := m.DB.DB()
+	sqlStatement := `
+		SELECT * FROM account WHERE account_name=$1 AND deleted_at IS NULL
+	`
+
+	return m.getAccountByValue(db, sqlStatement, accountName)
 }
 
 func (m *defaultAccountModel) GetAccountByNameHash(accountNameHash string) (account *Account, err error) {
-	dbTx := m.DB.Table(m.table).Where("account_name_hash = ?", accountNameHash).Find(&account)
-	if dbTx.Error != nil {
+	db, _ := m.DB.DB()
+	sqlStatement := `
+		SELECT * FROM account WHERE account_name_hash=$1 AND deleted_at IS NULL
+	`
+
+	return m.getAccountByValue(db, sqlStatement, accountNameHash)
+}
+
+func (m *defaultAccountModel) getAccountByValue(db *sql.DB, sqlStatement string, value interface{}) (account *Account, err error) {
+	account = &Account{}
+	err = db.QueryRow(sqlStatement, value).Scan(
+		&account.ID, &account.CreatedAt, &account.UpdatedAt, &account.DeletedAt,
+		&account.AccountIndex, &account.AccountName, &account.PublicKey, &account.AccountNameHash,
+		&account.L1Address, &account.Nonce, &account.CollectionNonce, &account.AssetInfo, &account.AssetRoot, &account.Status,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, types.DbErrNotFound
+		}
 		return nil, types.DbErrSqlOperation
-	} else if dbTx.RowsAffected == 0 {
-		return nil, types.DbErrNotFound
 	}
+
 	return account, nil
 }
 
@@ -167,7 +182,7 @@ func (m *defaultAccountModel) UpdateAccountsInTransact(tx *gorm.DB, accounts []*
 	sqlStatement := `
 		UPDATE account SET l1_address=$1, nonce=$2, collection_nonce=$3, asset_info=$4, asset_root=$5, status=$6,
 		updated_at=$7
-		WHERE account_index=$8
+		WHERE account_index=$8 AND deleted_at IS NULL
 	`
 
 	now := time.Now()

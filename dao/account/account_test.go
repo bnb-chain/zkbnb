@@ -45,6 +45,36 @@ func (s *Suite) TearDownTest() {
 	s.Require().NoError(err)
 }
 
+func (s *Suite) TestGetAccount() {
+	item := Account{
+		Model: gorm.Model{
+			CreatedAt: time.Unix(10, 0),
+			UpdatedAt: time.Unix(10, 0),
+		},
+		AccountIndex:    1,
+		AccountName:     "name",
+		AccountNameHash: "hash",
+		PublicKey:       "key",
+	}
+	s.Require().NoError(s.dao.UpdateAccountsInTransact(s.db.DB, []*Account{&item}))
+
+	account, err := s.dao.GetAccountByIndex(item.AccountIndex)
+	s.Require().NoError(err)
+	s.Equal(int64(1), account.AccountIndex)
+
+	account, err = s.dao.GetAccountByPk(item.PublicKey)
+	s.Require().NoError(err)
+	s.Equal("key", account.PublicKey)
+
+	account, err = s.dao.GetAccountByName(item.AccountName)
+	s.Require().NoError(err)
+	s.Equal("name", account.AccountName)
+
+	account, err = s.dao.GetAccountByNameHash(item.AccountNameHash)
+	s.Require().NoError(err)
+	s.Equal("hash", account.AccountNameHash)
+}
+
 func (s *Suite) TestUpdateTxsInTransact() {
 	item := Account{
 		Model: gorm.Model{
