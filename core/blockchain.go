@@ -261,14 +261,15 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	}
 
 	stateDBMetrics := &zkbnbprometheus.StateDBMetrics{
-		GetAccountFromDbGauge:   accountFromDbGauge,
-		GetAccountGauge:         accountGauge,
-		GetAccountCounter:       getAccountCounter,
-		GetAccountFromDbCounter: getAccountFromDbCounter,
-		VerifyGasGauge:          verifyGasGauge,
-		VerifySignature:         verifySignature,
-		AccountTreeGauge:        accountTreeTimeGauge,
-		NftTreeGauge:            nftTreeTimeGauge,
+		GetAccountFromDbGauge:    accountFromDbGauge,
+		GetAccountGauge:          accountGauge,
+		GetAccountCounter:        getAccountCounter,
+		GetAccountFromDbCounter:  getAccountFromDbCounter,
+		VerifyGasGauge:           verifyGasGauge,
+		VerifySignature:          verifySignature,
+		AccountTreeGauge:         accountTreeTimeGauge,
+		NftTreeGauge:             nftTreeTimeGauge,
+		AccountTreeMultiSetGauge: accountTreeMultiSetGauge,
 	}
 	bc.Statedb.Metrics = stateDBMetrics
 
