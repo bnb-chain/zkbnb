@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/ory/dockertest"
 	"github.com/ory/dockertest/docker"
 	"gorm.io/driver/postgres"
@@ -24,13 +23,6 @@ type Database struct {
 	host     string
 	port     string
 	isGithub bool
-}
-
-// Redis is the struct for redis docker
-type Redis struct {
-	pool     *dockertest.Pool
-	resource *dockertest.Resource
-	Client   *redis.Client
 }
 
 // RunDB run docker of db for unit test
@@ -54,8 +46,7 @@ func RunDB(dbName string) (*Database, error) {
 		return nil, err
 	}
 
-	_, reuse := os.LookupEnv("REUSE_DOCKER")
-	if !reuse && len(allContainers) == 0 {
+	if len(allContainers) == 0 {
 		resource, err = pool.RunWithOptions(
 			&dockertest.RunOptions{Repository: "ghcr.io/bnb-chain/zkbnb/zkbnb-ut-postgres", Tag: "latest", Env: []string{"POSTGRES_PASSWORD=ZkBNB@123", "POSTGRES_USER=postgres", "POSTGRES_DB=zkbnb"}, Name: "zkbnb_unittest_pg"},
 		)
@@ -162,7 +153,7 @@ func (d *Database) InitDB() error {
 // ClearDB truncate the tables in database
 func (d *Database) ClearDB(tables []string) error {
 	for _, table := range tables {
-		dbTx := d.DB.Exec(fmt.Sprintf("TRUNCATE %s;", table))
+		dbTx := d.DB.Exec(fmt.Sprintf("TRUNCATE %s CASCADE;", table))
 		if dbTx.Error != nil {
 			return dbTx.Error
 		}

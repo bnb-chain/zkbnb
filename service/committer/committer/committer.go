@@ -3,9 +3,6 @@ package committer
 import (
 	"errors"
 	"fmt"
-	"github.com/bnb-chain/zkbnb/common/chain"
-	"github.com/bnb-chain/zkbnb/core/statedb"
-	"github.com/bnb-chain/zkbnb/dao/nft"
 	"strconv"
 	"time"
 
@@ -13,8 +10,11 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 
+	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/core"
+	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/block"
+	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -56,12 +56,12 @@ var (
 	AccountLatestVersionTreeMetric = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
 		Name:      "commit_account_latest_version",
-		Help:      "UpdateAccountTreeAndNftTree latest version metrics.",
+		Help:      "Account latest version metrics.",
 	})
 	AccountRecentVersionTreeMetric = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
 		Name:      "commit_account_recent_version",
-		Help:      "UpdateAccountTreeAndNftTree recent version metrics.",
+		Help:      "Account recent version metrics.",
 	})
 	NftTreeLatestVersionMetric = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
@@ -532,7 +532,7 @@ func (c *Committer) executeTxFunc() {
 
 		if c.shouldCommit(curBlock) {
 			start := time.Now()
-			logx.Infof("commit new block, height=%d,blockSize=%s", curBlock.BlockHeight, curBlock.BlockSize)
+			logx.Infof("commit new block, height=%d,blockSize=%d", curBlock.BlockHeight, curBlock.BlockSize)
 			pendingAccountMap := make(map[int64]*types.AccountInfo, len(c.bc.Statedb.StateCache.PendingAccountMap))
 			pendingNftMap := make(map[int64]*nft.L2Nft, len(c.bc.Statedb.StateCache.PendingNftMap))
 			for _, accountInfo := range c.bc.Statedb.StateCache.PendingAccountMap {
@@ -553,7 +553,7 @@ func (c *Committer) executeTxFunc() {
 			previousHeight := stateDataCopy.CurrentBlock.BlockHeight
 			curBlock, err = c.bc.InitNewBlock()
 
-			logx.Infof("2 init new block, current height=%s,previous height=%d,blockId=%s", curBlock.BlockHeight, previousHeight, curBlock.ID)
+			logx.Infof("2 init new block, current height=%d,previous height=%d,blockId=%d", curBlock.BlockHeight, previousHeight, curBlock.ID)
 			if err != nil {
 				logx.Errorf("propose new block failed:%s ", err.Error())
 				panic("propose new block failed: " + err.Error())
@@ -709,7 +709,7 @@ func (c *Committer) updateAccountTreeAndNftTreeFunc(stateDataCopy *statedb.State
 }
 
 func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
-	logx.Infof("save block transaction start, blockHeight:%s", blockStates.Block.BlockHeight)
+	logx.Infof("save block transaction start, blockHeight:%d", blockStates.Block.BlockHeight)
 	if c.config.BlockConfig.BlockSaveDisabled {
 		c.bc.Statedb.UpdatePrunedBlockHeight(blockStates.Block.BlockHeight)
 		return
@@ -789,7 +789,7 @@ func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
 
 	})
 	if err != nil {
-		logx.Errorf("save block transaction failed:%s,blockHeight:%s", err.Error(), blockStates.Block.BlockHeight)
+		logx.Errorf("save block transaction failed:%s,blockHeight:%d", err.Error(), blockStates.Block.BlockHeight)
 		panic("save block transaction failed: " + err.Error())
 		//todo 重试优化
 	}
@@ -982,7 +982,7 @@ func (c *Committer) getLatestExecutedRequestId() (int64, error) {
 	return p.RequestId, nil
 }
 
-//todo for stress
+// todo for stress
 func (c *Committer) loadAllAccounts() {
 	limit := int64(1000)
 	offset := int64(0)
