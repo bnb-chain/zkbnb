@@ -616,13 +616,16 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool, stateDataCopy *StateDataCopy
 }
 
 func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCopy *StateDataCopy) (int64, []byte, error) {
+	start := time.Now()
 	account, exist := stateCopy.StateCache.GetPendingAccount(accountIndex)
+	s.Metrics.AccountTreeGauge.WithLabelValues("cache_get_account").Set(float64(time.Since(start).Milliseconds()))
 	if !exist {
 		//todo
 	}
-	start := time.Now()
+	start = time.Now()
 	isGasAccount := accountIndex == types.GasAccount
 	pendingUpdateAssetItem := make([]bsmt.Item, 0, len(assets))
+	s.Metrics.AccountTreeGauge.WithLabelValues("assets_count").Set(float64(len(assets)))
 	for _, assetId := range assets {
 		isGasAsset := false
 		if isGasAccount {
@@ -637,23 +640,25 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCop
 		if isGasAsset {
 			balance = ffmath.Add(balance, s.GetPendingGas(assetId))
 		}
+		startItem := time.Now()
 		assetLeaf, err := tree.ComputeAccountAssetLeafHash(
 			balance.String(),
 			account.AssetInfo[assetId].OfferCanceledOrFinalized.String(),
 		)
+		s.Metrics.AccountTreeGauge.WithLabelValues("compute_poseidon").Set(float64(time.Since(startItem).Milliseconds()))
 		if err != nil {
 			return accountIndex, nil, fmt.Errorf("compute new account asset leaf failed: %v", err)
 		}
 		pendingUpdateAssetItem = append(pendingUpdateAssetItem, bsmt.Item{Key: uint64(assetId), Val: assetLeaf})
 	}
-	s.Metrics.AccountTreeGauge.WithLabelValues("item").Set(float64(time.Since(start).Milliseconds()))
+	s.Metrics.AccountTreeGauge.WithLabelValues("for_assets").Set(float64(time.Since(start).Milliseconds()))
 
 	start = time.Now()
 	err := s.AccountAssetTrees.Get(accountIndex).MultiSet(pendingUpdateAssetItem)
 	if err != nil {
 		return accountIndex, nil, fmt.Errorf("update asset tree failed: %v", err)
 	}
-	s.Metrics.AccountTreeGauge.WithLabelValues("set").Set(float64(time.Since(start).Milliseconds()))
+	s.Metrics.AccountTreeGauge.WithLabelValues("multiSet").Set(float64(time.Since(start).Milliseconds()))
 
 	account.AssetRoot = common.Bytes2Hex(s.AccountAssetTrees.Get(accountIndex).Root())
 	nAccountLeafHash, err := tree.ComputeAccountLeafHash(
