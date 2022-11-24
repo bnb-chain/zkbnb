@@ -12,10 +12,11 @@ type Metrics struct {
 }
 
 type StateDBMetrics struct {
-	GetAccountFromDbGauge   prometheus.Gauge
-	GetAccountGauge         prometheus.Gauge
-	GetAccountCounter       prometheus.Counter
-	GetAccountFromDbCounter prometheus.Counter
-	VerifyGasGauge          prometheus.Gauge
-	VerifySignature         prometheus.Gauge
+	GetAccountFromDbGauge    prometheus.Gauge
+	GetAccountGauge          prometheus.Gauge
+	GetAccountCounter        prometheus.Counter
+	GetAccountFromDbCounter  prometheus.Counter
+	VerifyGasGauge           prometheus.Gauge
+	VerifySignature          prometheus.Gauge
+	AccountTreeMultiSetGauge prometheus.Gauge
 }

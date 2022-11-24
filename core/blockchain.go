@@ -199,12 +199,22 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		Help:      "verifySignature time",
 	})
 
+	accountTreeMultiSetGauge := prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "accountTreeMultiSetGauge_time",
+		Help:      "accountTreeMultiSetGauge time",
+	})
+
 	if err := prometheus.Register(verifyGasGauge); err != nil {
 		return nil, fmt.Errorf("prometheus.Register verifyGasGauge error: %v", err)
 	}
 
 	if err := prometheus.Register(verifySignature); err != nil {
 		return nil, fmt.Errorf("prometheus.Register verifySignature error: %v", err)
+	}
+
+	if err := prometheus.Register(accountTreeMultiSetGauge); err != nil {
+		return nil, fmt.Errorf("prometheus.Register accountTreeMultiSetGauge error: %v", err)
 	}
 
 	if err := prometheus.Register(accountFromDbGauge); err != nil {
@@ -228,12 +238,13 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		return nil, fmt.Errorf("prometheus.Register getAccountFromDbCounter error: %v", err)
 	}
 	stateDBMetrics := &zkbnbprometheus.StateDBMetrics{
-		GetAccountFromDbGauge:   accountFromDbGauge,
-		GetAccountGauge:         accountGauge,
-		GetAccountCounter:       getAccountCounter,
-		GetAccountFromDbCounter: getAccountFromDbCounter,
-		VerifyGasGauge:          verifyGasGauge,
-		VerifySignature:         verifySignature,
+		GetAccountFromDbGauge:    accountFromDbGauge,
+		GetAccountGauge:          accountGauge,
+		GetAccountCounter:        getAccountCounter,
+		GetAccountFromDbCounter:  getAccountFromDbCounter,
+		VerifyGasGauge:           verifyGasGauge,
+		VerifySignature:          verifySignature,
+		AccountTreeMultiSetGauge: accountTreeMultiSetGauge,
 	}
 	bc.Statedb.Metrics = stateDBMetrics
 
