@@ -97,8 +97,8 @@ func (m *defaultAccountModel) GetAccountByIndex(accountIndex int64) (account *Ac
 
 	db, _ := m.DB.DB()
 	sqlStatement := `
-			SELECT * FROM account WHERE account_index=$1 AND deleted_at IS NULL
-		`
+		SELECT * FROM account WHERE account_index=$1 AND deleted_at IS NULL
+	`
 
 	return m.getAccountByValue(db, sqlStatement, accountIndex)
 }
@@ -106,8 +106,8 @@ func (m *defaultAccountModel) GetAccountByIndex(accountIndex int64) (account *Ac
 func (m *defaultAccountModel) GetAccountByPk(pk string) (account *Account, err error) {
 	db, _ := m.DB.DB()
 	sqlStatement := `
-			SELECT * FROM account WHERE public_key=$1 AND deleted_at IS NULL
-		`
+		SELECT * FROM account WHERE public_key=$1 AND deleted_at IS NULL
+	`
 
 	return m.getAccountByValue(db, sqlStatement, pk)
 }
@@ -115,8 +115,8 @@ func (m *defaultAccountModel) GetAccountByPk(pk string) (account *Account, err e
 func (m *defaultAccountModel) GetAccountByName(accountName string) (account *Account, err error) {
 	db, _ := m.DB.DB()
 	sqlStatement := `
-			SELECT * FROM account WHERE account_name=$1 AND deleted_at IS NULL
-		`
+		SELECT * FROM account WHERE account_name=$1 AND deleted_at IS NULL
+	`
 
 	return m.getAccountByValue(db, sqlStatement, accountName)
 }
@@ -124,8 +124,8 @@ func (m *defaultAccountModel) GetAccountByName(accountName string) (account *Acc
 func (m *defaultAccountModel) GetAccountByNameHash(accountNameHash string) (account *Account, err error) {
 	db, _ := m.DB.DB()
 	sqlStatement := `
-			SELECT * FROM account WHERE account_name_hash=$1 AND deleted_at IS NULL
-		`
+		SELECT * FROM account WHERE account_name_hash=$1 AND deleted_at IS NULL
+	`
 
 	return m.getAccountByValue(db, sqlStatement, accountNameHash)
 }
