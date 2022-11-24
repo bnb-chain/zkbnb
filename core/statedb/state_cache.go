@@ -1,6 +1,7 @@
 package statedb
 
 import (
+	bsmt "github.com/bnb-chain/zkbnb-smt"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	"math/big"
 
@@ -34,8 +35,10 @@ type StateCache struct {
 }
 
 type StateDataCopy struct {
-	StateCache   *StateCache
-	CurrentBlock *block.Block
+	StateCache            *StateCache
+	CurrentBlock          *block.Block
+	pendingAccountSmtItem []bsmt.Item
+	pendingNftSmtItem     []bsmt.Item
 }
 
 func NewStateCache(stateRoot string) *StateCache {
