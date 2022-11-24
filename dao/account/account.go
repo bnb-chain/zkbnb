@@ -18,9 +18,8 @@
 package account
 
 import (
-	"gorm.io/gorm"
-
 	"github.com/bnb-chain/zkbnb/types"
+	"gorm.io/gorm"
 )
 
 const (
@@ -44,6 +43,7 @@ type (
 		GetAccounts(limit int, offset int64) (accounts []*Account, err error)
 		GetAccountsTotalCount() (count int64, err error)
 		UpdateAccountsInTransact(tx *gorm.DB, accounts []*Account) error
+		GetUsers(limit int64, offset int64) (accounts []*Account, err error)
 	}
 
 	defaultAccountModel struct {
@@ -179,4 +179,14 @@ func (m *defaultAccountModel) UpdateAccountsInTransact(tx *gorm.DB, accounts []*
 		}
 	}
 	return nil
+}
+
+func (m *defaultAccountModel) GetUsers(limit int64, offset int64) (accounts []*Account, err error) {
+	dbTx := m.DB.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("id asc").Find(&accounts)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, nil
+	}
+	return accounts, nil
 }

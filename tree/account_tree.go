@@ -103,27 +103,28 @@ func InitAccountTree(
 		return accountTree, accountAssetTrees, nil
 	}
 
+	//todo only multithread
 	// It's not loading from RDB, need to check tree version
-	if accountTree.LatestVersion() > bsmt.Version(blockHeight) && !accountTree.IsEmpty() {
-		logx.Infof("account tree version [%d] is higher than block, rollback to %d", accountTree.LatestVersion(), blockHeight)
-		err := accountTree.Rollback(bsmt.Version(blockHeight))
-		if err != nil {
-			logx.Errorf("unable to rollback account tree: %s, version: %d", err.Error(), blockHeight)
-			return nil, nil, err
-		}
-	}
+	//if accountTree.LatestVersion() > bsmt.Version(blockHeight) && !accountTree.IsEmpty() {
+	//	logx.Infof("account tree version [%d] is higher than block, rollback to %d", accountTree.LatestVersion(), blockHeight)
+	//	err := accountTree.Rollback(bsmt.Version(blockHeight))
+	//	if err != nil {
+	//		logx.Errorf("unable to rollback account tree: %s, version: %d", err.Error(), blockHeight)
+	//		return nil, nil, err
+	//	}
+	//}
 
-	for i := int64(0); i < accountNums; i++ {
-		asset := accountAssetTrees.Get(i)
-		if asset.LatestVersion() > bsmt.Version(blockHeight) && !asset.IsEmpty() {
-			logx.Infof("asset tree %d version [%d] is higher than block, rollback to %d", i, asset.LatestVersion(), blockHeight)
-			err := asset.Rollback(bsmt.Version(blockHeight))
-			if err != nil {
-				logx.Errorf("unable to rollback asset [%d] tree: %s, version: %d", i, err.Error(), blockHeight)
-				return nil, nil, err
-			}
-		}
-	}
+	//for i := int64(0); i < accountNums; i++ {
+	//	asset := accountAssetTrees.Get(i)
+	//	if asset.LatestVersion() > bsmt.Version(blockHeight) && !asset.IsEmpty() {
+	//		logx.Infof("asset tree %d version [%d] is higher than block, rollback to %d", i, asset.LatestVersion(), blockHeight)
+	//		err := asset.Rollback(bsmt.Version(blockHeight))
+	//		if err != nil {
+	//			logx.Errorf("unable to rollback asset [%d] tree: %s, version: %d", i, err.Error(), blockHeight)
+	//			return nil, nil, err
+	//		}
+	//	}
+	//}
 
 	return accountTree, accountAssetTrees, nil
 }
