@@ -3,6 +3,7 @@ package committer
 import (
 	"errors"
 	"fmt"
+	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"strconv"
@@ -172,6 +173,18 @@ var (
 		Name:      "tx_worker_queue_count",
 		Help:      "tx worker queue count",
 	})
+
+	executeTxMetrics = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "zkbnb",
+		Name:      "execute_tx_count",
+		Help:      "execute tx count",
+	})
+
+	executeTreeTxMetrics = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "zkbnb",
+		Name:      "execute_tree_tx_count",
+		Help:      "execute tree tx count",
+	})
 )
 
 type Config struct {
@@ -308,6 +321,14 @@ func NewCommitter(config *Config) (*Committer, error) {
 		return nil, fmt.Errorf("prometheus.Register txWorkerQueueMetric error: %v", err)
 	}
 
+	if err := prometheus.Register(executeTxMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register executeTxMetrics error: %v", err)
+	}
+
+	if err := prometheus.Register(executeTreeTxMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register executeTreeTxMetrics error: %v", err)
+	}
+
 	committer := &Committer{
 		running:            true,
 		config:             config,
@@ -341,7 +362,8 @@ func (c *Committer) Run() {
 	c.updatePoolTxWorker.Start()
 	c.treeWorker.Start()
 	c.saveBlockTxWorker.Start()
-
+	//todo for tress
+	c.loadAllAccounts()
 	c.pullPoolTxs()
 }
 
@@ -447,6 +469,8 @@ func (c *Committer) executeTxFunc() {
 				subPendingTxs = append(subPendingTxs, poolTx)
 				continue
 			}
+			executeTxMetrics.Inc()
+
 			//logx.Infof("apply transaction, txHash=%s", poolTx.TxHash)
 			startApplyTx := time.Now()
 			err = c.bc.ApplyTransaction(poolTx)
@@ -497,8 +521,9 @@ func (c *Committer) executeTxFunc() {
 		c.bc.Statedb.SyncPendingAccountToMemoryCache(c.bc.Statedb.PendingAccountMap)
 		c.bc.Statedb.SyncPendingNftToMemoryCache(c.bc.Statedb.PendingNftMap)
 
-		c.enqueueSyncAccountToRedis(c.bc.Statedb.PendingAccountMap, c.bc.Statedb.PendingNftMap)
-		c.enqueueUpdatePoolTx(pendingUpdatePoolTxs, pendingDeletePoolTxs)
+		//todo for tress
+		//c.enqueueSyncAccountToRedis(c.bc.Statedb.PendingAccountMap, c.bc.Statedb.PendingNftMap)
+		//c.enqueueUpdatePoolTx(pendingUpdatePoolTxs, pendingDeletePoolTxs)
 
 		if c.shouldCommit(curBlock) {
 			start := time.Now()
@@ -622,6 +647,7 @@ func (c *Committer) syncAccountToRedisFunc(pendingMap *PendingMap) {
 }
 
 func (c *Committer) executeTreeFunc(stateDataCopy *statedb.StateDataCopy) {
+	executeTreeTxMetrics.Add(float64(len(stateDataCopy.StateCache.Txs)))
 	logx.Infof("commit new block start blockHeight:%s,blockId:%s", stateDataCopy.CurrentBlock.BlockHeight, stateDataCopy.CurrentBlock.ID)
 	start := time.Now()
 	blockSize := c.computeCurrentBlockSize(stateDataCopy)
@@ -634,11 +660,12 @@ func (c *Committer) executeTreeFunc(stateDataCopy *statedb.StateDataCopy) {
 
 	start = time.Now()
 	//todo
-	err = c.bc.Statedb.SyncGasAccountToRedis()
-	if err != nil {
-		logx.Errorf("update pool tx to pending failed:%s", err.Error())
-		panic("update pool tx to pending failed: " + err.Error())
-	}
+	//todo for tress
+	//err = c.bc.Statedb.SyncGasAccountToRedis()
+	//if err != nil {
+	//	logx.Errorf("update pool tx to pending failed:%s", err.Error())
+	//	panic("update pool tx to pending failed: " + err.Error())
+	//}
 	c.saveBlockTxWorker.Enqueue(blockStates)
 	stateDBSyncOperationMetics.Set(float64(time.Since(start).Milliseconds()))
 	l2BlockRedisHeightMetric.Set(float64(blockStates.Block.BlockHeight))
@@ -920,4 +947,28 @@ func (c *Committer) getLatestExecutedRequestId() (int64, error) {
 	}
 
 	return p.RequestId, nil
+}
+
+//todo for stress
+func (c *Committer) loadAllAccounts() {
+	limit := int64(1000)
+	offset := int64(0)
+	for {
+		accounts, err := c.bc.AccountModel.GetUsers(limit, offset)
+		if err != nil {
+			logx.Infof("loadAllAccounts")
+			continue
+		}
+		if accounts == nil {
+			return
+		}
+		for _, account := range accounts {
+			offset++
+			formatAccount, err := chain.ToFormatAccountInfo(account)
+			if err != nil {
+				continue
+			}
+			c.bc.Statedb.AccountCache.Add(account.AccountIndex, formatAccount)
+		}
+	}
 }
