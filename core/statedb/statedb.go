@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/zkbnbprometheus"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"sync"
 	"time"
 
@@ -581,7 +582,10 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool, stateDataCopy *StateDataCopy
 			pendingNftItem = append(pendingNftItem, bsmt.Item{Key: uint64(result.index), Val: result.leaf})
 		}
 	}
-	//todo for tress
+	//todo for stress
+	stateDataCopy.pendingAccountSmtItem = pendingAccountItem
+	stateDataCopy.pendingNftSmtItem = pendingNftItem
+
 	//err := gopool.Submit(func() {
 	//	resultChan <- &treeUpdateResp{
 	//		role: accountTreeRole,
@@ -614,7 +618,44 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool, stateDataCopy *StateDataCopy
 	//hFunc.Write(s.AccountTree.Root())
 	//hFunc.Write(s.NftTree.Root())
 	//stateDataCopy.StateCache.StateRoot = common.Bytes2Hex(hFunc.Sum(nil))
-	stateDataCopy.StateCache.StateRoot = "test"
+	return nil
+}
+
+func (s *StateDB) AccountTreeAndNftTreeMultiSet(stateDataCopy *StateDataCopy) error {
+	start := time.Now()
+	resultChan := make(chan *treeUpdateResp, 1)
+	defer close(resultChan)
+	err := gopool.Submit(func() {
+		resultChan <- &treeUpdateResp{
+			role: accountTreeRole,
+			err:  s.AccountTree.MultiSet(stateDataCopy.pendingAccountSmtItem),
+		}
+	})
+	if err != nil {
+		return err
+	}
+	err = gopool.Submit(func() {
+		resultChan <- &treeUpdateResp{
+			role: nftTreeRole,
+			err:  s.NftTree.MultiSet(stateDataCopy.pendingNftSmtItem),
+		}
+	})
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < 2; i++ {
+		result := <-resultChan
+		if result.err != nil {
+			return fmt.Errorf("update %s tree failed, %v", result.role, result.err)
+		}
+	}
+	s.Metrics.AccountTreeMultiSetGauge.Set(float64(time.Since(start).Milliseconds()))
+
+	hFunc := poseidon.NewPoseidon()
+	hFunc.Write(s.AccountTree.Root())
+	hFunc.Write(s.NftTree.Root())
+	stateDataCopy.StateCache.StateRoot = common.Bytes2Hex(hFunc.Sum(nil))
 	return nil
 }
 
@@ -669,7 +710,16 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCop
 	if err != nil {
 		return accountIndex, nil, fmt.Errorf("unable to compute account leaf: %v", err)
 	}
-
+	//todo for tress
+	asset := s.AccountAssetTrees.Get(accountIndex)
+	//version := asset.LatestVersion()
+	//todo recentVersion
+	//todo check
+	version := bsmt.Version(s.GetPrunedBlockHeight())
+	ver, err := asset.Commit(&version)
+	if err != nil {
+		return accountIndex, nil, fmt.Errorf("unable to commit asset tree [%d], tree ver: %d, prune ver: %d", accountIndex, ver, version)
+	}
 	return accountIndex, nAccountLeafHash, nil
 }
 

@@ -19,14 +19,11 @@ package tree
 
 import (
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
+	bsmt "github.com/bnb-chain/zkbnb-smt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"github.com/pkg/errors"
-	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
-	"time"
-
-	bsmt "github.com/bnb-chain/zkbnb-smt"
 
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/gopool"
@@ -69,17 +66,18 @@ func EmptyNftNodeHash() []byte {
 	return hash[:]
 }
 
-func CommitTrees(
+func CommitAccountTreeAndNftTree(
 	version uint64,
 	accountTree bsmt.SparseMerkleTree,
 	assetTrees *AssetTreeCache,
 	nftTree bsmt.SparseMerkleTree) error {
-	start := time.Now()
-	assetTreeChanges := assetTrees.GetChanges()
-	logx.Infof("GetChanges=%v", time.Since(start))
-
-	defer assetTrees.CleanChanges()
-	totalTask := len(assetTreeChanges) + 2
+	//start := time.Now()
+	//assetTreeChanges := assetTrees.GetChanges()
+	//logx.Infof("GetChanges=%v", time.Since(start))
+	//
+	//defer assetTrees.CleanChanges()
+	//totalTask := len(assetTreeChanges) + 2
+	totalTask := 2
 
 	errChan := make(chan error, totalTask)
 	defer close(errChan)
@@ -98,24 +96,6 @@ func CommitTrees(
 	})
 	if err != nil {
 		return err
-	}
-
-	for _, idx := range assetTreeChanges {
-		err := func(i int64) error {
-			return gopool.Submit(func() {
-				asset := assetTrees.Get(i)
-				version := asset.LatestVersion()
-				ver, err := asset.Commit(&version)
-				if err != nil {
-					errChan <- errors.Wrapf(err, "unable to commit asset tree [%d], tree ver: %d, prune ver: %d", i, ver, version)
-					return
-				}
-				errChan <- nil
-			})
-		}(idx)
-		if err != nil {
-			return err
-		}
 	}
 
 	err = gopool.Submit(func() {

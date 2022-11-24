@@ -4,14 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/zeromicro/go-zero/core/logx"
-	"gorm.io/gorm"
-
 	"github.com/bnb-chain/zkbnb-go-sdk/client"
 	"github.com/bnb-chain/zkbnb/core"
 	"github.com/bnb-chain/zkbnb/dao/block"
 	tx "github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 const (
@@ -159,68 +157,70 @@ func (c *Fullnode) Shutdown() {
 }
 
 func (c *Fullnode) processNewBlock(blockSize int) (*block.Block, error) {
-	blockStates, err := c.bc.CommitNewBlock(blockSize, nil)
-	if err != nil {
-		return nil, err
-	}
-	blockStates.Block.BlockStatus = c.config.SyncBlockStatus
+	//blockStates, err := c.bc.CommitNewBlock(blockSize, nil)
+	//if err != nil {
+	//	return nil, err
 
-	// sync gas account
-	err = c.bc.Statedb.SyncGasAccountToRedis()
-	if err != nil {
-		return nil, err
-	}
-
-	// sync pending value to caches
-	err = c.bc.Statedb.SyncStateCacheToRedis()
-	if err != nil {
-		panic("sync redis cache failed: " + err.Error())
-	}
-
-	// update db
-	err = c.bc.DB().DB.Transaction(func(tx *gorm.DB) error {
-		// create block for commit
-		if blockStates.CompressedBlock != nil {
-			err = c.bc.DB().CompressedBlockModel.CreateCompressedBlockInTransact(tx, blockStates.CompressedBlock)
-			if err != nil {
-				return err
-			}
-		}
-		// create or update account
-		if len(blockStates.PendingAccount) != 0 {
-			err = c.bc.DB().AccountModel.UpdateAccountsInTransact(tx, blockStates.PendingAccount)
-			if err != nil {
-				return err
-			}
-		}
-		// create account history
-		if len(blockStates.PendingAccountHistory) != 0 {
-			err = c.bc.DB().AccountHistoryModel.CreateAccountHistoriesInTransact(tx, blockStates.PendingAccountHistory)
-			if err != nil {
-				return err
-			}
-		}
-		// create or update nft
-		if len(blockStates.PendingNft) != 0 {
-			err = c.bc.DB().L2NftModel.UpdateNftsInTransact(tx, blockStates.PendingNft)
-			if err != nil {
-				return err
-			}
-		}
-		// create nft history
-		if len(blockStates.PendingNftHistory) != 0 {
-			err = c.bc.DB().L2NftHistoryModel.CreateNftHistoriesInTransact(tx, blockStates.PendingNftHistory)
-			if err != nil {
-				return err
-			}
-		}
-
-		return c.bc.DB().BlockModel.CreateBlockInTransact(tx, blockStates.Block)
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return blockStates.Block, nil
+	//}
+	//blockStates.Block.BlockStatus = c.config.SyncBlockStatus
+	//
+	//// sync gas account
+	//err = c.bc.Statedb.SyncGasAccountToRedis()
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//// sync pending value to caches
+	//err = c.bc.Statedb.SyncStateCacheToRedis()
+	//if err != nil {
+	//	panic("sync redis cache failed: " + err.Error())
+	//}
+	//
+	//// update db
+	//err = c.bc.DB().DB.Transaction(func(tx *gorm.DB) error {
+	//	// create block for commit
+	//	if blockStates.CompressedBlock != nil {
+	//		err = c.bc.DB().CompressedBlockModel.CreateCompressedBlockInTransact(tx, blockStates.CompressedBlock)
+	//		if err != nil {
+	//			return err
+	//		}
+	//	}
+	//	// create or update account
+	//	if len(blockStates.PendingAccount) != 0 {
+	//		err = c.bc.DB().AccountModel.UpdateAccountsInTransact(tx, blockStates.PendingAccount)
+	//		if err != nil {
+	//			return err
+	//		}
+	//	}
+	//	// create account history
+	//	if len(blockStates.PendingAccountHistory) != 0 {
+	//		err = c.bc.DB().AccountHistoryModel.CreateAccountHistoriesInTransact(tx, blockStates.PendingAccountHistory)
+	//		if err != nil {
+	//			return err
+	//		}
+	//	}
+	//	// create or update nft
+	//	if len(blockStates.PendingNft) != 0 {
+	//		err = c.bc.DB().L2NftModel.UpdateNftsInTransact(tx, blockStates.PendingNft)
+	//		if err != nil {
+	//			return err
+	//		}
+	//	}
+	//	// create nft history
+	//	if len(blockStates.PendingNftHistory) != 0 {
+	//		err = c.bc.DB().L2NftHistoryModel.CreateNftHistoriesInTransact(tx, blockStates.PendingNftHistory)
+	//		if err != nil {
+	//			return err
+	//		}
+	//	}
+	//
+	//	return c.bc.DB().BlockModel.CreateBlockInTransact(tx, blockStates.Block)
+	//})
+	//
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//return blockStates.Block, nil
+	return nil, nil
 }
