@@ -622,7 +622,7 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCop
 	if !exist {
 		//todo
 	}
-
+	start := time.Now()
 	isGasAccount := accountIndex == types.GasAccount
 	pendingUpdateAssetItem := make([]bsmt.Item, 0, len(assets))
 	for _, assetId := range assets {
@@ -648,11 +648,14 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCop
 		}
 		pendingUpdateAssetItem = append(pendingUpdateAssetItem, bsmt.Item{Key: uint64(assetId), Val: assetLeaf})
 	}
+	s.Metrics.AccountTreeGauge.WithLabelValues("item").Set(float64(time.Since(start).Milliseconds()))
 
+	start = time.Now()
 	err := s.AccountAssetTrees.Get(accountIndex).MultiSet(pendingUpdateAssetItem)
 	if err != nil {
 		return accountIndex, nil, fmt.Errorf("update asset tree failed: %v", err)
 	}
+	s.Metrics.AccountTreeGauge.WithLabelValues("set").Set(float64(time.Since(start).Milliseconds()))
 
 	account.AssetRoot = common.Bytes2Hex(s.AccountAssetTrees.Get(accountIndex).Root())
 	nAccountLeafHash, err := tree.ComputeAccountLeafHash(
@@ -670,6 +673,7 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCop
 }
 
 func (s *StateDB) updateNftTree(nftIndex int64, stateCopy *StateDataCopy) (int64, []byte, error) {
+	start := time.Now()
 	nft, exist := stateCopy.StateCache.GetPendingNft(nftIndex)
 	if !exist {
 		//todo
@@ -685,7 +689,7 @@ func (s *StateDB) updateNftTree(nftIndex int64, stateCopy *StateDataCopy) (int64
 	if err != nil {
 		return nftIndex, nil, fmt.Errorf("unable to compute nft leaf: %v", err)
 	}
-
+	s.Metrics.NftTreeGauge.WithLabelValues("nft").Set(float64(time.Since(start).Milliseconds()))
 	return nftIndex, nftAssetLeaf, nil
 }
 
