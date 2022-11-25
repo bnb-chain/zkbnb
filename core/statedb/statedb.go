@@ -723,7 +723,8 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCop
 	version := bsmt.Version(s.GetPrunedBlockHeight())
 	ver, err := asset.Commit(&version)
 	if err != nil {
-		return accountIndex, nil, fmt.Errorf("unable to commit asset tree [%d], tree ver: %d, prune ver: %d", accountIndex, ver, version)
+		logx.Error("asset.Commit failed:", err)
+		return accountIndex, nil, fmt.Errorf("unable to commit asset tree [%d], tree ver: %d, prune ver: %d,error:%s", accountIndex, ver, version, err.Error())
 	}
 	return accountIndex, nAccountLeafHash, nil
 }
