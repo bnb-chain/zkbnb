@@ -357,6 +357,12 @@ func NewCommitter(config *Config) (*Committer, error) {
 	if err := prometheus.Register(updateAccountTreeAndNftTreeMetrics); err != nil {
 		return nil, fmt.Errorf("prometheus.Register updateAccountTreeAndNftTreeMetrics error: %v", err)
 	}
+	if err := prometheus.Register(accountTreeAndNftTreeQueueMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register accountTreeAndNftTreeQueueMetric error: %v", err)
+	}
+	if err := prometheus.Register(accountAssetTreeQueueMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register accountAssetTreeQueueMetric error: %v", err)
+	}
 
 	committer := &Committer{
 		running:            true,
