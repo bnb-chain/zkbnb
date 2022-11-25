@@ -101,11 +101,37 @@ func (m *defaultTxPoolModel) GetTxs(limit int64, offset int64, options ...GetTxO
 	return txs, nil
 }
 
+func (m *defaultTxPoolModel) getTxSQLFields(tx *Tx) []interface{} {
+
+	return []interface{}{
+		&tx.ID, &tx.CreatedAt, &tx.UpdatedAt, &tx.DeletedAt,
+		&tx.TxHash, &tx.TxType, &tx.TxInfo, &tx.AccountIndex, &tx.Nonce, &tx.ExpiredAt,
+		&tx.GasFee, &tx.GasFeeAssetId, &tx.NftIndex, &tx.CollectionId, &tx.AssetId, &tx.TxAmount,
+		&tx.Memo, &tx.ExtraInfo, &tx.NativeAddress,
+		&tx.TxIndex, &tx.BlockHeight, &tx.BlockId, &tx.TxStatus,
+	}
+}
+
 func (m *defaultTxPoolModel) GetTxsByStatus(status int) (txs []*Tx, err error) {
-	dbTx := m.DB.Table(m.table).Where("tx_status = ?", status).Order("created_at, id").Find(&txs)
-	if dbTx.Error != nil {
+	db, _ := m.DB.DB()
+	sqlStatement := `
+		SELECT * FROM pool_tx WHERE tx_status=$1 ORDER BY id ASC
+		`
+
+	rows, err := db.Query(sqlStatement, status)
+	if err != nil {
 		return nil, types.DbErrSqlOperation
 	}
+	for rows.Next() {
+		var tx Tx
+		if err := rows.Scan(
+			m.getTxSQLFields(&tx)...,
+		); err != nil {
+			return nil, types.DbErrSqlOperation
+		}
+		txs = append(txs, &tx)
+	}
+
 	return txs, nil
 }
 
