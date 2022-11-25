@@ -94,6 +94,11 @@ var (
 		Name:      "update_account_asset_tree_time",
 		Help:      "updateAccountAssetTreeMetrics",
 	})
+	updateAccountTreeAndNftTreeMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "update_account_tree_and_nft_tree_time",
+		Help:      "updateAccountTreeAndNftTreeMetrics",
+	})
 	stateDBSyncOperationMetics = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
 		Name:      "state_sync_time",
@@ -184,6 +189,11 @@ var (
 		Namespace: "zkbnb",
 		Name:      "update_account_asset_tree_tx_count",
 		Help:      "update_account_asset_tree_tx_count",
+	})
+	updateAccountTreeAndNftTreeTxMetrics = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "zkbnb",
+		Name:      "update_account_tree_and_nft_tree_tx_count",
+		Help:      "update_account_tree_and_nft_tree_tx_count",
 	})
 )
 
@@ -328,6 +338,12 @@ func NewCommitter(config *Config) (*Committer, error) {
 
 	if err := prometheus.Register(updateAccountAssetTreeTxMetrics); err != nil {
 		return nil, fmt.Errorf("prometheus.Register updateAccountAssetTreeTxMetrics error: %v", err)
+	}
+	if err := prometheus.Register(updateAccountTreeAndNftTreeTxMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register updateAccountTreeAndNftTreeTxMetrics error: %v", err)
+	}
+	if err := prometheus.Register(updateAccountTreeAndNftTreeMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register updateAccountTreeAndNftTreeMetrics error: %v", err)
 	}
 
 	committer := &Committer{
@@ -680,7 +696,7 @@ func (c *Committer) updateAccountAssetTreeFunc(stateDataCopy *statedb.StateDataC
 }
 
 func (c *Committer) updateAccountTreeAndNftTreeFunc(stateDataCopy *statedb.StateDataCopy) {
-	updateAccountAssetTreeTxMetrics.Add(float64(len(stateDataCopy.StateCache.Txs)))
+	updateAccountTreeAndNftTreeTxMetrics.Add(float64(len(stateDataCopy.StateCache.Txs)))
 	logx.Infof("updateAccountTreeAndNftTreeFunc blockHeight:%s,blockId:%s", stateDataCopy.CurrentBlock.BlockHeight, stateDataCopy.CurrentBlock.ID)
 	start := time.Now()
 	blockSize := c.computeCurrentBlockSize(stateDataCopy)
@@ -689,7 +705,7 @@ func (c *Committer) updateAccountTreeAndNftTreeFunc(stateDataCopy *statedb.State
 		logx.Errorf("updateAccountTreeAndNftTreeFunc failed:%s,blockHeight:%s", err, stateDataCopy.CurrentBlock.BlockHeight)
 		panic("updateAccountTreeAndNftTreeFunc failed: " + err.Error())
 	}
-	updateAccountAssetTreeMetrics.Set(float64(time.Since(start).Milliseconds()))
+	updateAccountTreeAndNftTreeMetrics.Set(float64(time.Since(start).Milliseconds()))
 
 	start = time.Now()
 	//todo
