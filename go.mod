@@ -144,4 +144,4 @@ replace (
 	github.com/consensys/gnark-crypto => github.com/bnb-chain/gnark-crypto v0.7.1-0.20221101004736-92cbe59f55b4
 )
 
-replace github.com/bnb-chain/zkbnb-smt => github.com/qct/zkbnb-smt v0.0.0-20221124090632-627a6cf8b124
+replace github.com/bnb-chain/zkbnb-smt => github.com/qct/zkbnb-smt v0.0.0-20221124145042-7d389a641878
