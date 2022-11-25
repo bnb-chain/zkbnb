@@ -385,14 +385,14 @@ func (c *Committer) Run() {
 	c.updatePoolTxWorker = core.UpdatePoolTxWorker(100000, func(item interface{}) {
 		c.updatePoolTxFunc(item.(*UpdatePoolTx))
 	})
-	c.updateAccountAssetTreeWorker = core.UpdateAccountAssetTreeWorker(10, func(item interface{}) {
+	c.updateAccountAssetTreeWorker = core.UpdateAccountAssetTreeWorker(200, func(item interface{}) {
 		c.updateAccountAssetTreeFunc(item.(*statedb.StateDataCopy))
 	})
-	c.updateAccountTreeAndNftTreeWorker = core.UpdateAccountTreeAndNftTreeWorker(10, func(item interface{}) {
+	c.updateAccountTreeAndNftTreeWorker = core.UpdateAccountTreeAndNftTreeWorker(200, func(item interface{}) {
 		c.updateAccountTreeAndNftTreeFunc(item.(*statedb.StateDataCopy))
 	})
 
-	c.saveBlockTxWorker = core.SaveBlockTransactionWorker(10, func(item interface{}) {
+	c.saveBlockTxWorker = core.SaveBlockTransactionWorker(200, func(item interface{}) {
 		c.saveBlockTransactionFunc(item.(*block.BlockStates))
 	})
 
