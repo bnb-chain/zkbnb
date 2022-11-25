@@ -474,7 +474,9 @@ func (bc *BlockChain) UpdateAccountTreeAndNftTree(blockSize int, stateDataCopy *
 	currentHeight := stateDataCopy.CurrentBlock.BlockHeight
 
 	start := time.Now()
-	err = tree.CommitAccountTreeAndNftTree(uint64(bc.StateDB().GetPrunedBlockHeight()), bc.Statedb.AccountTree, bc.Statedb.AccountAssetTrees, bc.Statedb.NftTree)
+	//asset.LatestVersion()
+	//uint64(bc.StateDB().GetPrunedBlockHeight())
+	err = tree.CommitAccountTreeAndNftTree(uint64(bc.Statedb.AccountTree.LatestVersion()), bc.Statedb.AccountTree, bc.Statedb.AccountAssetTrees, bc.Statedb.NftTree)
 	if err != nil {
 		return nil, err
 	}
