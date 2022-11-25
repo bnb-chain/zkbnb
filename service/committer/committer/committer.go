@@ -366,6 +366,7 @@ func (c *Committer) Run() {
 	c.syncAccountToRedisWorker.Start()
 	c.updatePoolTxWorker.Start()
 	c.updateAccountAssetTreeWorker.Start()
+	c.updateAccountTreeAndNftTreeWorker.Start()
 	c.saveBlockTxWorker.Start()
 	//todo for tress
 	c.loadAllAccounts()
