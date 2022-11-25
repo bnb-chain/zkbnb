@@ -358,13 +358,13 @@ func NewCommitter(config *Config) (*Committer, error) {
 }
 
 func (c *Committer) Run() {
-	c.txWorker = core.ExecuteTxWorker(6000, func() {
+	c.txWorker = core.ExecuteTxWorker(10000, func() {
 		c.executeTxFunc()
 	})
 	c.syncAccountToRedisWorker = core.SyncAccountToRedisWorker(20000, func(item interface{}) {
 		c.syncAccountToRedisFunc(item.(*PendingMap))
 	})
-	c.updatePoolTxWorker = core.UpdatePoolTxWorker(6000, func(item interface{}) {
+	c.updatePoolTxWorker = core.UpdatePoolTxWorker(10000, func(item interface{}) {
 		c.updatePoolTxFunc(item.(*UpdatePoolTx))
 	})
 	c.updateAccountAssetTreeWorker = core.UpdateAccountAssetTreeWorker(10, func(item interface{}) {
@@ -429,7 +429,7 @@ func (c *Committer) pullPoolTxs() {
 		}
 		//time.Sleep(100 * time.Millisecond)
 		for c.txWorker.GetQueueSize() > 1000 {
-			time.Sleep(200 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 }
