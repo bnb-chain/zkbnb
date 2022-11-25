@@ -428,9 +428,9 @@ func (c *Committer) pullPoolTxs() {
 			panic("update txs status to processing failed: " + err.Error())
 		}
 		//time.Sleep(100 * time.Millisecond)
-		for c.txWorker.GetQueueSize() > 10000 {
-			time.Sleep(100 * time.Millisecond)
-		}
+		//for c.txWorker.GetQueueSize() > 10000 {
+		//	time.Sleep(100 * time.Millisecond)
+		//}
 	}
 }
 
