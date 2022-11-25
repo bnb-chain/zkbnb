@@ -195,6 +195,18 @@ var (
 		Name:      "update_account_tree_and_nft_tree_tx_count",
 		Help:      "update_account_tree_and_nft_tree_tx_count",
 	})
+
+	accountAssetTreeQueueMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "account_asset_tree_queue_count",
+		Help:      "account asset tree queue count",
+	})
+
+	accountTreeAndNftTreeQueueMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "account_tree_and_nft_tree_queue_count",
+		Help:      "account tree and nft tree queue count",
+	})
 )
 
 type Config struct {
@@ -526,14 +538,15 @@ func (c *Committer) executeTxFunc() {
 
 			// Write the proposed block into database when the first transaction executed.
 			if len(c.bc.Statedb.Txs) == 1 {
-				previousHeight := curBlock.BlockHeight
-				err = c.createNewBlock(curBlock, poolTx)
-				logx.Infof("create new block, current height=%s,previous height=%d,blockId=%s", curBlock.BlockHeight, previousHeight, curBlock.ID)
-
-				if err != nil {
-					logx.Errorf("create new block failed:%s", err.Error())
-					panic("create new block failed" + err.Error())
-				}
+				//previousHeight := curBlock.BlockHeight
+				//todo for tress
+				//err = c.createNewBlock(curBlock, poolTx)
+				//logx.Infof("create new block, current height=%s,previous height=%d,blockId=%s", curBlock.BlockHeight, previousHeight, curBlock.ID)
+				//
+				//if err != nil {
+				//	logx.Errorf("create new block failed:%s", err.Error())
+				//	panic("create new block failed" + err.Error())
+				//}
 			} else {
 				pendingUpdatePoolTxs = append(pendingUpdatePoolTxs, poolTx)
 			}
@@ -566,6 +579,8 @@ func (c *Committer) executeTxFunc() {
 				CurrentBlock: curBlock,
 			}
 			c.updateAccountAssetTreeWorker.Enqueue(stateDataCopy)
+			accountAssetTreeQueueMetric.Set(float64(c.updateAccountAssetTreeWorker.GetQueueSize()))
+
 			l2BlockMemoryHeightMetric.Set(float64(stateDataCopy.CurrentBlock.BlockHeight))
 			previousHeight := stateDataCopy.CurrentBlock.BlockHeight
 			curBlock, err = c.bc.InitNewBlock()
@@ -692,6 +707,8 @@ func (c *Committer) updateAccountAssetTreeFunc(stateDataCopy *statedb.StateDataC
 	//	panic("update pool tx to pending failed: " + err.Error())
 	//}
 	c.updateAccountTreeAndNftTreeWorker.Enqueue(stateDataCopy)
+	accountTreeAndNftTreeQueueMetric.Set(float64(c.updateAccountTreeAndNftTreeWorker.GetQueueSize()))
+
 	stateDBSyncOperationMetics.Set(float64(time.Since(start).Milliseconds()))
 }
 
