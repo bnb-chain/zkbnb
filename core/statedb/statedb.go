@@ -717,10 +717,12 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCop
 	}
 	//todo for tress
 	asset := s.AccountAssetTrees.Get(accountIndex)
-	version := asset.LatestVersion()
+	version := bsmt.Version(uint64(asset.LatestVersion()) - 20)
 	//todo recentVersion
 	//todo check
 	//version := bsmt.Version(s.GetPrunedBlockHeight())
+	//logx.Infof("asset.Commit: %d", curHeight)
+
 	ver, err := asset.Commit(&version)
 	if err != nil {
 		logx.Error("asset.Commit failed:", err)
