@@ -717,7 +717,12 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCop
 	}
 	//todo for tress
 	asset := s.AccountAssetTrees.Get(accountIndex)
-	version := bsmt.Version(uint64(asset.LatestVersion()) - 20)
+	prunedVersion := uint64(asset.LatestVersion()) - 20
+	if uint64(asset.LatestVersion()) < 20 {
+		prunedVersion = 0
+	}
+
+	version := bsmt.Version(prunedVersion)
 	//todo recentVersion
 	//todo check
 	//version := bsmt.Version(s.GetPrunedBlockHeight())

@@ -477,7 +477,11 @@ func (bc *BlockChain) UpdateAccountTreeAndNftTree(blockSize int, stateDataCopy *
 	//asset.LatestVersion()
 	//uint64(bc.StateDB().GetPrunedBlockHeight())
 	logx.Infof("CommitAccountTreeAndNftTree,latestVersion=%d,prunedBlockHeight=%d", uint64(bc.Statedb.AccountTree.LatestVersion()), uint64(bc.StateDB().GetPrunedBlockHeight()))
-	err = tree.CommitAccountTreeAndNftTree(uint64(bc.Statedb.AccountTree.LatestVersion())-10, bc.Statedb.AccountTree, bc.Statedb.AccountAssetTrees, bc.Statedb.NftTree)
+	prunedVersion := uint64(bc.Statedb.AccountTree.LatestVersion()) - 10
+	if uint64(bc.Statedb.AccountTree.LatestVersion()) < 10 {
+		prunedVersion = 0
+	}
+	err = tree.CommitAccountTreeAndNftTree(prunedVersion, bc.Statedb.AccountTree, bc.Statedb.AccountAssetTrees, bc.Statedb.NftTree)
 	if err != nil {
 		return nil, err
 	}
