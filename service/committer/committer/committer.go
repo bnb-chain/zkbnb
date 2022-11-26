@@ -7,7 +7,6 @@ import (
 	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/nft"
-	"github.com/bnb-chain/zkbnb/common/gopool"
 	"strconv"
 	"time"
 
@@ -17,9 +16,7 @@ import (
 
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/core"
-	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/block"
-	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -457,7 +454,7 @@ func (c *Committer) pullPoolTxs() {
 			time.Sleep(200 * time.Millisecond)
 			continue
 		}
-		ids := make([]uint, len(pendingTxs))
+		ids := make([]uint, 0, len(pendingTxs))
 		for _, poolTx := range pendingTxs {
 			ids = append(ids, poolTx.ID)
 			c.txWorker.Enqueue(poolTx)
@@ -469,10 +466,10 @@ func (c *Committer) pullPoolTxs() {
 			logx.Errorf("update txs status to processing failed:%s", err.Error())
 			panic("update txs status to processing failed: " + err.Error())
 		}
-		//time.Sleep(100 * time.Millisecond)
-		//for c.txWorker.GetQueueSize() > 10000 {
-		//	time.Sleep(100 * time.Millisecond)
-		//}
+		time.Sleep(200 * time.Millisecond)
+		for c.txWorker.GetQueueSize() > 1000 {
+			time.Sleep(100 * time.Millisecond)
+		}
 	}
 }
 
