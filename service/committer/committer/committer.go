@@ -443,7 +443,7 @@ func (c *Committer) pullPoolTxs() {
 			time.Sleep(200 * time.Millisecond)
 			continue
 		}
-		ids := make([]uint, len(pendingTxs))
+		ids := make([]uint, 0, len(pendingTxs))
 		for _, poolTx := range pendingTxs {
 			ids = append(ids, poolTx.ID)
 			c.txWorker.Enqueue(poolTx)
