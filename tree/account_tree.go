@@ -52,11 +52,12 @@ func InitAccountTree(
 	}
 
 	opts := ctx.Options(blockHeight)
+	nilAccountAssetNodeHashes := NilAccountAssetNodeHashes(AssetTreeHeight, NilAccountAssetNodeHash, ctx.Hasher())
 
 	// init account state trees
 	accountAssetTrees = NewLazyTreeCache(assetCacheSize, accountNums-1, blockHeight, func(index, block int64) bsmt.SparseMerkleTree {
-		tree, err := bsmt.NewBASSparseMerkleTree(ctx.Hasher(),
-			SetNamespace(ctx, accountAssetNamespace(index)), AssetTreeHeight, NilAccountAssetNodeHash,
+		tree, err := bsmt.NewSparseMerkleTree(ctx.Hasher(),
+			SetNamespace(ctx, accountAssetNamespace(index)), AssetTreeHeight, nilAccountAssetNodeHashes,
 			ctx.Options(block)...)
 		if err != nil {
 			logx.Errorf("unable to create new tree by assets: %s", err.Error())
@@ -103,27 +104,28 @@ func InitAccountTree(
 		return accountTree, accountAssetTrees, nil
 	}
 
+	//todo only multithread
 	// It's not loading from RDB, need to check tree version
-	if accountTree.LatestVersion() > bsmt.Version(blockHeight) && !accountTree.IsEmpty() {
-		logx.Infof("account tree version [%d] is higher than block, rollback to %d", accountTree.LatestVersion(), blockHeight)
-		err := accountTree.Rollback(bsmt.Version(blockHeight))
-		if err != nil {
-			logx.Errorf("unable to rollback account tree: %s, version: %d", err.Error(), blockHeight)
-			return nil, nil, err
-		}
-	}
+	//if accountTree.LatestVersion() > bsmt.Version(blockHeight) && !accountTree.IsEmpty() {
+	//	logx.Infof("account tree version [%d] is higher than block, rollback to %d", accountTree.LatestVersion(), blockHeight)
+	//	err := accountTree.Rollback(bsmt.Version(blockHeight))
+	//	if err != nil {
+	//		logx.Errorf("unable to rollback account tree: %s, version: %d", err.Error(), blockHeight)
+	//		return nil, nil, err
+	//	}
+	//}
 
-	for i := int64(0); i < accountNums; i++ {
-		asset := accountAssetTrees.Get(i)
-		if asset.LatestVersion() > bsmt.Version(blockHeight) && !asset.IsEmpty() {
-			logx.Infof("asset tree %d version [%d] is higher than block, rollback to %d", i, asset.LatestVersion(), blockHeight)
-			err := asset.Rollback(bsmt.Version(blockHeight))
-			if err != nil {
-				logx.Errorf("unable to rollback asset [%d] tree: %s, version: %d", i, err.Error(), blockHeight)
-				return nil, nil, err
-			}
-		}
-	}
+	//for i := int64(0); i < accountNums; i++ {
+	//	asset := accountAssetTrees.Get(i)
+	//	if asset.LatestVersion() > bsmt.Version(blockHeight) && !asset.IsEmpty() {
+	//		logx.Infof("asset tree %d version [%d] is higher than block, rollback to %d", i, asset.LatestVersion(), blockHeight)
+	//		err := asset.Rollback(bsmt.Version(blockHeight))
+	//		if err != nil {
+	//			logx.Errorf("unable to rollback asset [%d] tree: %s, version: %d", i, err.Error(), blockHeight)
+	//			return nil, nil, err
+	//		}
+	//	}
+	//}
 
 	return accountTree, accountAssetTrees, nil
 }
@@ -259,4 +261,15 @@ func AccountToNode(
 func NewMemAccountAssetTree() (tree bsmt.SparseMerkleTree, err error) {
 	return bsmt.NewBASSparseMerkleTree(bsmt.NewHasherPool(func() hash.Hash { return poseidon.NewPoseidon() }),
 		memory.NewMemoryDB(), AssetTreeHeight, NilAccountAssetNodeHash)
+}
+
+func NilAccountAssetNodeHashes(maxDepth uint8, nilHash []byte, hasher *bsmt.Hasher) [][]byte {
+	hashes := make([][]byte, maxDepth+1)
+	hashes[maxDepth] = nilHash
+	for i := 1; i <= int(maxDepth); i++ {
+		nHash := hasher.Hash(nilHash, nilHash)
+		hashes[maxDepth-uint8(i)] = nHash
+		nilHash = nHash
+	}
+	return hashes
 }

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/zkbnbprometheus"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
-	"strconv"
 	"sync"
 	"time"
 
@@ -583,10 +582,53 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool, stateDataCopy *StateDataCopy
 			pendingNftItem = append(pendingNftItem, bsmt.Item{Key: uint64(result.index), Val: result.leaf})
 		}
 	}
+	//todo for stress
+	stateDataCopy.pendingAccountSmtItem = pendingAccountItem
+	stateDataCopy.pendingNftSmtItem = pendingNftItem
+
+	//err := gopool.Submit(func() {
+	//	resultChan <- &treeUpdateResp{
+	//		role: accountTreeRole,
+	//		err:  s.AccountTree.MultiSet(pendingAccountItem),
+	//	}
+	//})
+	//if err != nil {
+	//	return err
+	//}
+	//err = gopool.Submit(func() {
+	//	resultChan <- &treeUpdateResp{
+	//		role: nftTreeRole,
+	//		err:  s.NftTree.MultiSet(pendingNftItem),
+	//	}
+	//})
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//start := time.Now()
+	//for i := 0; i < 2; i++ {
+	//	result := <-resultChan
+	//	if result.err != nil {
+	//		return fmt.Errorf("update %s tree failed, %v", result.role, result.err)
+	//	}
+	//}
+	//s.Metrics.AccountTreeMultiSetGauge.Set(float64(time.Since(start).Milliseconds()))
+	//
+	//hFunc := poseidon.NewPoseidon()
+	//hFunc.Write(s.AccountTree.Root())
+	//hFunc.Write(s.NftTree.Root())
+	//stateDataCopy.StateCache.StateRoot = common.Bytes2Hex(hFunc.Sum(nil))
+	return nil
+}
+
+func (s *StateDB) AccountTreeAndNftTreeMultiSet(stateDataCopy *StateDataCopy) error {
+	start := time.Now()
+	resultChan := make(chan *treeUpdateResp, 1)
+	defer close(resultChan)
 	err := gopool.Submit(func() {
 		resultChan <- &treeUpdateResp{
 			role: accountTreeRole,
-			err:  s.AccountTree.MultiSet(pendingAccountItem),
+			err:  s.AccountTree.MultiSet(stateDataCopy.pendingAccountSmtItem),
 		}
 	})
 	if err != nil {
@@ -595,18 +637,20 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool, stateDataCopy *StateDataCopy
 	err = gopool.Submit(func() {
 		resultChan <- &treeUpdateResp{
 			role: nftTreeRole,
-			err:  s.NftTree.MultiSet(pendingNftItem),
+			err:  s.NftTree.MultiSet(stateDataCopy.pendingNftSmtItem),
 		}
 	})
 	if err != nil {
 		return err
 	}
+
 	for i := 0; i < 2; i++ {
 		result := <-resultChan
 		if result.err != nil {
 			return fmt.Errorf("update %s tree failed, %v", result.role, result.err)
 		}
 	}
+	s.Metrics.AccountTreeMultiSetGauge.Set(float64(time.Since(start).Milliseconds()))
 
 	hFunc := poseidon.NewPoseidon()
 	hFunc.Write(s.AccountTree.Root())
@@ -616,13 +660,16 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool, stateDataCopy *StateDataCopy
 }
 
 func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCopy *StateDataCopy) (int64, []byte, error) {
+	start := time.Now()
 	account, exist := stateCopy.StateCache.GetPendingAccount(accountIndex)
+	s.Metrics.AccountTreeGauge.WithLabelValues("cache_get_account").Set(float64(time.Since(start).Milliseconds()))
 	if !exist {
 		//todo
 	}
-
+	start = time.Now()
 	isGasAccount := accountIndex == types.GasAccount
 	pendingUpdateAssetItem := make([]bsmt.Item, 0, len(assets))
+	s.Metrics.AccountTreeGauge.WithLabelValues("assets_count").Set(float64(len(assets)))
 	for _, assetId := range assets {
 		isGasAsset := false
 		if isGasAccount {
@@ -637,20 +684,25 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCop
 		if isGasAsset {
 			balance = ffmath.Add(balance, s.GetPendingGas(assetId))
 		}
+		startItem := time.Now()
 		assetLeaf, err := tree.ComputeAccountAssetLeafHash(
 			balance.String(),
 			account.AssetInfo[assetId].OfferCanceledOrFinalized.String(),
 		)
+		s.Metrics.AccountTreeGauge.WithLabelValues("compute_poseidon").Set(float64(time.Since(startItem).Milliseconds()))
 		if err != nil {
 			return accountIndex, nil, fmt.Errorf("compute new account asset leaf failed: %v", err)
 		}
 		pendingUpdateAssetItem = append(pendingUpdateAssetItem, bsmt.Item{Key: uint64(assetId), Val: assetLeaf})
 	}
+	s.Metrics.AccountTreeGauge.WithLabelValues("for_assets").Set(float64(time.Since(start).Milliseconds()))
 
+	start = time.Now()
 	err := s.AccountAssetTrees.Get(accountIndex).MultiSet(pendingUpdateAssetItem)
 	if err != nil {
 		return accountIndex, nil, fmt.Errorf("update asset tree failed: %v", err)
 	}
+	s.Metrics.AccountTreeGauge.WithLabelValues("multiSet").Set(float64(time.Since(start).Milliseconds()))
 
 	account.AssetRoot = common.Bytes2Hex(s.AccountAssetTrees.Get(accountIndex).Root())
 	nAccountLeafHash, err := tree.ComputeAccountLeafHash(
@@ -663,11 +715,29 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCop
 	if err != nil {
 		return accountIndex, nil, fmt.Errorf("unable to compute account leaf: %v", err)
 	}
+	//todo for tress
+	asset := s.AccountAssetTrees.Get(accountIndex)
+	prunedVersion := uint64(asset.LatestVersion()) - 20
+	if uint64(asset.LatestVersion()) < 20 {
+		prunedVersion = 0
+	}
 
+	version := bsmt.Version(prunedVersion)
+	//todo recentVersion
+	//todo check
+	//version := bsmt.Version(s.GetPrunedBlockHeight())
+	//logx.Infof("asset.Commit: %d", curHeight)
+
+	ver, err := asset.Commit(&version)
+	if err != nil {
+		logx.Error("asset.Commit failed:", err)
+		return accountIndex, nil, fmt.Errorf("unable to commit asset tree [%d], tree ver: %d, prune ver: %d,error:%s", accountIndex, ver, version, err.Error())
+	}
 	return accountIndex, nAccountLeafHash, nil
 }
 
 func (s *StateDB) updateNftTree(nftIndex int64, stateCopy *StateDataCopy) (int64, []byte, error) {
+	start := time.Now()
 	nft, exist := stateCopy.StateCache.GetPendingNft(nftIndex)
 	if !exist {
 		//todo
@@ -683,7 +753,7 @@ func (s *StateDB) updateNftTree(nftIndex int64, stateCopy *StateDataCopy) (int64
 	if err != nil {
 		return nftIndex, nil, fmt.Errorf("unable to compute nft leaf: %v", err)
 	}
-
+	s.Metrics.NftTreeGauge.WithLabelValues("nft").Set(float64(time.Since(start).Milliseconds()))
 	return nftIndex, nftAssetLeaf, nil
 }
 
@@ -719,11 +789,15 @@ func (s *StateDB) GetPendingNonceFromCache(accountIndex int64) (int64, error) {
 		return accountNonce + 1, nil
 	}
 	pendingNonce, err := s.GetPendingNonce(accountIndex)
-	if err != nil {
+	if err == nil {
 		_ = s.redisCache.Set(context.Background(), dbcache.AccountNonceKeyByIndex(accountIndex), pendingNonce-1)
 		return pendingNonce, err
 	}
 	return 0, err
+}
+
+func (s *StateDB) ClearPendingNonceFromRedisCache(accountIndex int64) {
+	_ = s.redisCache.Delete(context.Background(), dbcache.AccountNonceKeyByIndex(accountIndex))
 }
 
 func (s *StateDB) GetNextAccountIndex() int64 {
@@ -744,45 +818,64 @@ func (s *StateDB) GetNextNftIndex() int64 {
 	return maxNftIndex + 1
 }
 
-func (s *StateDB) GetGasAccountIndex() (int64, error) {
-	gasAccountIndex := int64(-1)
-	_, err := s.redisCache.Get(context.Background(), dbcache.GasAccountKey, &gasAccountIndex)
-	if err == nil {
-		return gasAccountIndex, nil
-	}
-	logx.Errorf("fail to get gas account from cache, error: %s", err.Error())
+//func (s *StateDB) GetGasAccountIndex() (int64, error) {
+//	gasAccountIndex := int64(-1)
+//	_, err := s.redisCache.Get(context.Background(), dbcache.GasAccountKey, &gasAccountIndex)
+//	if err == nil {
+//		return gasAccountIndex, nil
+//	}
+//	logx.Errorf("fail to get gas account from cache, error: %s", err.Error())
+//
+//	gasAccountConfig, err := s.chainDb.SysConfigModel.GetSysConfigByName(types.GasAccountIndex)
+//	if err != nil {
+//		logx.Errorf("cannot find config for: %s", types.GasAccountIndex)
+//		return -1, errors.New("internal error")
+//	}
+//	gasAccountIndex, err = strconv.ParseInt(gasAccountConfig.Value, 10, 64)
+//	if err != nil {
+//		logx.Errorf("invalid account index: %s", gasAccountConfig.Value)
+//		return -1, errors.New("internal error")
+//	}
+//	_ = s.redisCache.Set(context.Background(), dbcache.GasAccountKey, gasAccountIndex)
+//	return gasAccountIndex, nil
+//}
 
-	gasAccountConfig, err := s.chainDb.SysConfigModel.GetSysConfigByName(types.GasAccountIndex)
-	if err != nil {
-		logx.Errorf("cannot find config for: %s", types.GasAccountIndex)
-		return -1, errors.New("internal error")
-	}
-	gasAccountIndex, err = strconv.ParseInt(gasAccountConfig.Value, 10, 64)
-	if err != nil {
-		logx.Errorf("invalid account index: %s", gasAccountConfig.Value)
-		return -1, errors.New("internal error")
-	}
-	_ = s.redisCache.Set(context.Background(), dbcache.GasAccountKey, gasAccountIndex)
-	return gasAccountIndex, nil
+//todo for stress
+func (s *StateDB) GetGasAccountIndex() (int64, error) {
+	return int64(1), nil
 }
 
-func (s *StateDB) GetGasConfig() (map[uint32]map[int]int64, error) {
-	gasFeeValue := ""
-	_, err := s.redisCache.Get(context.Background(), dbcache.GasConfigKey, &gasFeeValue)
-	if err != nil {
-		logx.Errorf("fail to get gas config from cache, error: %s", err.Error())
+//func (s *StateDB) GetGasConfig() (map[uint32]map[int]int64, error) {
+//	gasFeeValue := ""
+//	_, err := s.redisCache.Get(context.Background(), dbcache.GasConfigKey, &gasFeeValue)
+//	if err != nil {
+//		logx.Errorf("fail to get gas config from cache, error: %s", err.Error())
+//
+//		cfgGasFee, err := s.chainDb.SysConfigModel.GetSysConfigByName(types.SysGasFee)
+//		if err != nil {
+//			logx.Errorf("cannot find gas asset: %s", err.Error())
+//			return nil, errors.New("invalid gas fee asset")
+//		}
+//		gasFeeValue = cfgGasFee.Value
+//		_ = s.redisCache.Set(context.Background(), dbcache.GasConfigKey, gasFeeValue)
+//	}
+//
+//	m := make(map[uint32]map[int]int64)
+//	err = json.Unmarshal([]byte(gasFeeValue), &m)
+//	if err != nil {
+//		logx.Errorf("fail to unmarshal gas fee config, err: %s", err.Error())
+//		return nil, errors.New("internal error")
+//	}
+//
+//	return m, nil
+//}
 
-		cfgGasFee, err := s.chainDb.SysConfigModel.GetSysConfigByName(types.SysGasFee)
-		if err != nil {
-			logx.Errorf("cannot find gas asset: %s", err.Error())
-			return nil, errors.New("invalid gas fee asset")
-		}
-		gasFeeValue = cfgGasFee.Value
-		_ = s.redisCache.Set(context.Background(), dbcache.GasConfigKey, gasFeeValue)
-	}
+//todo for stress
+func (s *StateDB) GetGasConfig() (map[uint32]map[int]int64, error) {
+	gasFeeValue := "{\"0\":{\"10\":12000000000000,\"11\":20000000000000,\"4\":10000000000000,\"5\":20000000000000,\"6\":10000000000000,\"7\":10000000000000,\"8\":12000000000000,\"9\":18000000000000},\"1\":{\"10\":12000000000000,\"11\":20000000000000,\"4\":10000000000000,\"5\":20000000000000,\"6\":10000000000000,\"7\":10000000000000,\"8\":12000000000000,\"9\":18000000000000}}"
 
 	m := make(map[uint32]map[int]int64)
-	err = json.Unmarshal([]byte(gasFeeValue), &m)
+	err := json.Unmarshal([]byte(gasFeeValue), &m)
 	if err != nil {
 		logx.Errorf("fail to unmarshal gas fee config, err: %s", err.Error())
 		return nil, errors.New("internal error")

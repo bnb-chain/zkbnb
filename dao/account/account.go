@@ -21,7 +21,6 @@ import (
 	"errors"
 	"gorm.io/gorm"
 	"strconv"
-
 	"github.com/bnb-chain/zkbnb/types"
 )
 
@@ -51,6 +50,7 @@ type (
 		GetAccounts(limit int, offset int64) (accounts []*Account, err error)
 		GetAccountsTotalCount() (count int64, err error)
 		UpdateAccountsInTransact(tx *gorm.DB, accounts []*Account) error
+		GetUsers(limit int64, offset int64) (accounts []*Account, err error)
 		UpdateAccountInTransact(account *Account) error
 		UpdateAccountTransactionToCommitted(tx *gorm.DB, accounts []*Account) error
 	}
@@ -227,4 +227,14 @@ func (m *defaultAccountModel) UpdateAccountTransactionToCommitted(tx *gorm.DB, a
 		return errors.New("update accounts transaction status failed,rowsAffected =" + strconv.FormatInt(dbTx.RowsAffected, 10) + "not equal accounts length=" + strconv.Itoa(length))
 	}
 	return nil
+}
+
+func (m *defaultAccountModel) GetUsers(limit int64, offset int64) (accounts []*Account, err error) {
+	dbTx := m.DB.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("id asc").Find(&accounts)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, nil
+	}
+	return accounts, nil
 }

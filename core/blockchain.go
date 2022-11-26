@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gorm.io/gorm/logger"
 	"math/big"
 	"strconv"
 	"time"
+
+	"gorm.io/gorm/logger"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
@@ -35,16 +36,16 @@ import (
 
 // metrics
 var (
-	updateTreeMetics = prometheus.NewGauge(prometheus.GaugeOpts{
+	updateAccountTreeMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
-		Name:      "update_smt",
-		Help:      "update smt tree operation time",
+		Name:      "update_asset_smt",
+		Help:      "update asset smt tree operation time",
 	})
 
-	commitTreeMetics = prometheus.NewGauge(prometheus.GaugeOpts{
+	commitAccountTreeMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
-		Name:      "commit_smt",
-		Help:      "commit smt tree operation time",
+		Name:      "commit_account_smt",
+		Help:      "commit account smt tree operation time",
 	})
 
 	executeTxPrepareMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
@@ -139,7 +140,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		panic("delete block failed: " + err.Error())
 	}
 	if blockHeights != nil {
-		logx.Infof("get proposing block heights: %s", blockHeights)
+		logx.Infof("get proposing block heights: %v", blockHeights)
 		err = bc.BlockModel.DeleteProposingBlock()
 		if err != nil {
 			logx.Error("delete block failed: ", err)
@@ -151,14 +152,14 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		logx.Error("get current block failed: ", err)
 		return nil, err
 	}
-	logx.Infof("get current block height: %s", curHeight)
+	logx.Infof("get current block height: %d", curHeight)
 
 	bc.currentBlock, err = bc.BlockModel.GetBlockByHeight(curHeight)
 	if err != nil {
 		return nil, err
 	}
 	if bc.currentBlock.BlockStatus == block.StatusProposing {
-		logx.Errorf("current block status is StatusProposing,invalid block, height=%s", bc.currentBlock.BlockHeight)
+		logx.Errorf("current block status is StatusProposing,invalid block, height=%d", bc.currentBlock.BlockHeight)
 		panic("current block status is StatusProposing,invalid block, height=" + strconv.FormatInt(bc.currentBlock.BlockHeight, 10))
 	}
 	//todo config
@@ -199,12 +200,22 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		Help:      "verifySignature time",
 	})
 
+	accountTreeMultiSetGauge := prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "accountTreeMultiSetGauge_time",
+		Help:      "accountTreeMultiSetGauge time",
+	})
+
 	if err := prometheus.Register(verifyGasGauge); err != nil {
 		return nil, fmt.Errorf("prometheus.Register verifyGasGauge error: %v", err)
 	}
 
 	if err := prometheus.Register(verifySignature); err != nil {
 		return nil, fmt.Errorf("prometheus.Register verifySignature error: %v", err)
+	}
+
+	if err := prometheus.Register(accountTreeMultiSetGauge); err != nil {
+		return nil, fmt.Errorf("prometheus.Register accountTreeMultiSetGauge error: %v", err)
 	}
 
 	if err := prometheus.Register(accountFromDbGauge); err != nil {
@@ -227,13 +238,39 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	if err := prometheus.Register(getAccountFromDbCounter); err != nil {
 		return nil, fmt.Errorf("prometheus.Register getAccountFromDbCounter error: %v", err)
 	}
+
+	accountTreeTimeGauge := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: "zkbnb",
+			Name:      "get_account_tree_time",
+			Help:      "get_account_tree_time.",
+		},
+		[]string{"type"})
+	if err := prometheus.Register(accountTreeTimeGauge); err != nil {
+		return nil, fmt.Errorf("prometheus.Register accountTreeTimeGauge error: %v", err)
+	}
+
+	nftTreeTimeGauge := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: "zkbnb",
+			Name:      "get_nft_tree_time",
+			Help:      "get_nft_tree_time.",
+		},
+		[]string{"type"})
+	if err := prometheus.Register(nftTreeTimeGauge); err != nil {
+		return nil, fmt.Errorf("prometheus.Register nftTreeTimeGauge error: %v", err)
+	}
+
 	stateDBMetrics := &zkbnbprometheus.StateDBMetrics{
-		GetAccountFromDbGauge:   accountFromDbGauge,
-		GetAccountGauge:         accountGauge,
-		GetAccountCounter:       getAccountCounter,
-		GetAccountFromDbCounter: getAccountFromDbCounter,
-		VerifyGasGauge:          verifyGasGauge,
-		VerifySignature:         verifySignature,
+		GetAccountFromDbGauge:    accountFromDbGauge,
+		GetAccountGauge:          accountGauge,
+		GetAccountCounter:        getAccountCounter,
+		GetAccountFromDbCounter:  getAccountFromDbCounter,
+		VerifyGasGauge:           verifyGasGauge,
+		VerifySignature:          verifySignature,
+		AccountTreeGauge:         accountTreeTimeGauge,
+		NftTreeGauge:             nftTreeTimeGauge,
+		AccountTreeMultiSetGauge: accountTreeMultiSetGauge,
 	}
 	bc.Statedb.Metrics = stateDBMetrics
 
@@ -271,11 +308,11 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	bc.processor = NewCommitProcessor(bc, prometheusMetrics)
 
 	// register metrics
-	if err := prometheus.Register(updateTreeMetics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register updateTreeMetics error: %v", err)
+	if err := prometheus.Register(updateAccountTreeMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register updateAccountTreeMetrics error: %v", err)
 	}
-	if err := prometheus.Register(commitTreeMetics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register commitTreeMetics error: %v", err)
+	if err := prometheus.Register(commitAccountTreeMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register commitAccountTreeMetrics error: %v", err)
 	}
 
 	return bc, nil
@@ -331,46 +368,53 @@ func (bc *BlockChain) CurrentBlock() *block.Block {
 	return bc.currentBlock
 }
 
-func (bc *BlockChain) CommitNewBlock(blockSize int, stateDataCopy *statedb.StateDataCopy) (*block.BlockStates, error) {
-	newBlock, compressedBlock, err := bc.commitNewBlock(blockSize, stateDataCopy)
-	if err != nil {
-		return nil, err
-	}
+//func (bc *BlockChain) CommitNewBlock(blockSize int, stateDataCopy *statedb.StateDataCopy) (*block.BlockStates, error) {
+//	newBlock, compressedBlock, err := bc.commitNewBlock(blockSize, stateDataCopy)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	currentHeight := stateDataCopy.CurrentBlock.BlockHeight
+//
+//	start := time.Now()
+//	err = tree.AccountTreeAndNftTreeMultiSet(uint64(bc.StateDB().GetPrunedBlockHeight()), bc.Statedb.AccountTree, bc.Statedb.AccountAssetTrees, bc.Statedb.NftTree)
+//	if err != nil {
+//		return nil, err
+//	}
+//	commitAccountTreeMetrics.Set(float64(time.Since(start).Milliseconds()))
+//
+//	pendingAccount, pendingAccountHistory, err := bc.Statedb.GetPendingAccount(currentHeight, stateDataCopy)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	pendingNft, pendingNftHistory, err := bc.Statedb.GetPendingNft(currentHeight, stateDataCopy)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	return &block.BlockStates{
+//		Block:                 newBlock,
+//		CompressedBlock:       compressedBlock,
+//		PendingAccount:        pendingAccount,
+//		PendingAccountHistory: pendingAccountHistory,
+//		PendingNft:            pendingNft,
+//		PendingNftHistory:     pendingNftHistory,
+//	}, nil
+//}
 
-	currentHeight := stateDataCopy.CurrentBlock.BlockHeight
-
+func (bc *BlockChain) UpdateAccountAssetTree(stateDataCopy *statedb.StateDataCopy) error {
 	start := time.Now()
-	err = tree.CommitTrees(uint64(bc.StateDB().GetPrunedBlockHeight()), bc.Statedb.AccountTree, bc.Statedb.AccountAssetTrees, bc.Statedb.NftTree)
+	// Intermediate state root.
+	err := bc.Statedb.IntermediateRoot(false, stateDataCopy)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	commitTreeMetics.Set(float64(time.Since(start).Milliseconds()))
-
-	pendingAccount, pendingAccountHistory, err := bc.Statedb.GetPendingAccount(currentHeight, stateDataCopy)
-	if err != nil {
-		return nil, err
-	}
-
-	pendingNft, pendingNftHistory, err := bc.Statedb.GetPendingNft(currentHeight, stateDataCopy)
-	if err != nil {
-		return nil, err
-	}
-
-	return &block.BlockStates{
-		Block:                 newBlock,
-		CompressedBlock:       compressedBlock,
-		PendingAccount:        pendingAccount,
-		PendingAccountHistory: pendingAccountHistory,
-		PendingNft:            pendingNft,
-		PendingNftHistory:     pendingNftHistory,
-	}, nil
+	updateAccountTreeMetrics.Set(float64(time.Since(start).Milliseconds()))
+	return nil
 }
 
-func (bc *BlockChain) commitNewBlock(blockSize int, stateDataCopy *statedb.StateDataCopy) (*block.Block, *compressedblock.CompressedBlock, error) {
-	if blockSize < len(stateDataCopy.StateCache.Txs) {
-		return nil, nil, errors.New("block size too small")
-	}
-
+func (bc *BlockChain) UpdateAccountTreeAndNftTree(blockSize int, stateDataCopy *statedb.StateDataCopy) (*block.BlockStates, error) {
 	newBlock := stateDataCopy.CurrentBlock
 	if newBlock.BlockStatus != block.StatusProposing {
 		newBlock = &block.Block{
@@ -382,15 +426,10 @@ func (bc *BlockChain) commitNewBlock(blockSize int, stateDataCopy *statedb.State
 			BlockStatus: block.StatusProposing,
 		}
 	}
-
-	start := time.Now()
-	// Intermediate state root.
-	err := bc.Statedb.IntermediateRoot(false, stateDataCopy)
+	err := bc.Statedb.AccountTreeAndNftTreeMultiSet(stateDataCopy)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	updateTreeMetics.Set(float64(time.Since(start).Milliseconds()))
-
 	// Align pub data.
 	bc.Statedb.AlignPubData(blockSize, stateDataCopy)
 
@@ -411,14 +450,14 @@ func (bc *BlockChain) commitNewBlock(blockSize int, stateDataCopy *statedb.State
 	if len(stateDataCopy.StateCache.PendingOnChainOperationsPubData) > 0 {
 		onChainOperationsPubDataBytes, err := json.Marshal(stateDataCopy.StateCache.PendingOnChainOperationsPubData)
 		if err != nil {
-			return nil, nil, fmt.Errorf("marshal pending onChain operation pubData failed: %v", err)
+			return nil, fmt.Errorf("marshal pending onChain operation pubData failed: %v", err)
 		}
 		newBlock.PendingOnChainOperationsPubData = string(onChainOperationsPubDataBytes)
 	}
 
 	offsetBytes, err := json.Marshal(stateDataCopy.StateCache.PubDataOffset)
 	if err != nil {
-		return nil, nil, fmt.Errorf("marshal pubData offset failed: %v", err)
+		return nil, fmt.Errorf("marshal pubData offset failed: %v", err)
 	}
 	newCompressedBlock := &compressedblock.CompressedBlock{
 		BlockSize:         uint16(blockSize),
@@ -431,7 +470,40 @@ func (bc *BlockChain) commitNewBlock(blockSize int, stateDataCopy *statedb.State
 	bc.Statedb.PreviousStateRoot = stateDataCopy.StateCache.StateRoot
 	//bc.currentBlock = newBlock
 	//todo
-	return newBlock, newCompressedBlock, nil
+
+	currentHeight := stateDataCopy.CurrentBlock.BlockHeight
+
+	start := time.Now()
+	//asset.LatestVersion()
+	//uint64(bc.StateDB().GetPrunedBlockHeight())
+	logx.Infof("CommitAccountTreeAndNftTree,latestVersion=%d,prunedBlockHeight=%d", uint64(bc.Statedb.AccountTree.LatestVersion()), uint64(bc.StateDB().GetPrunedBlockHeight()))
+	prunedVersion := uint64(bc.Statedb.AccountTree.LatestVersion()) - 10
+	if uint64(bc.Statedb.AccountTree.LatestVersion()) < 10 {
+		prunedVersion = 0
+	}
+	err = tree.CommitAccountTreeAndNftTree(prunedVersion, bc.Statedb.AccountTree, bc.Statedb.AccountAssetTrees, bc.Statedb.NftTree)
+	if err != nil {
+		return nil, err
+	}
+	commitAccountTreeMetrics.Set(float64(time.Since(start).Milliseconds()))
+
+	pendingAccount, pendingAccountHistory, err := bc.Statedb.GetPendingAccount(currentHeight, stateDataCopy)
+	if err != nil {
+		return nil, err
+	}
+
+	pendingNft, pendingNftHistory, err := bc.Statedb.GetPendingNft(currentHeight, stateDataCopy)
+	if err != nil {
+		return nil, err
+	}
+	return &block.BlockStates{
+		Block:                 newBlock,
+		CompressedBlock:       newCompressedBlock,
+		PendingAccount:        pendingAccount,
+		PendingAccountHistory: pendingAccountHistory,
+		PendingNft:            pendingNft,
+		PendingNftHistory:     pendingNftHistory,
+	}, nil
 }
 
 func (bc *BlockChain) VerifyExpiredAt(expiredAt int64) error {
@@ -454,6 +526,8 @@ func (bc *BlockChain) VerifyNonce(accountIndex int64, nonce int64) error {
 			return err
 		}
 		if nonce != expectNonce {
+			logx.Infof("committer verify nonce failed,accountIndex=%d,nonce=%d,expectNonce=%d", accountIndex, nonce, expectNonce)
+			bc.Statedb.ClearPendingNonceFromRedisCache(accountIndex)
 			return types.AppErrInvalidNonce
 		}
 	} else {
@@ -462,6 +536,8 @@ func (bc *BlockChain) VerifyNonce(accountIndex int64, nonce int64) error {
 			return err
 		}
 		if pendingNonce != nonce {
+			logx.Infof("clear pending nonce from redis cache,accountIndex=%d,pendingNonce=%d,nonce=%d", accountIndex, pendingNonce, nonce)
+			bc.Statedb.ClearPendingNonceFromRedisCache(accountIndex)
 			return types.AppErrInvalidNonce
 		}
 	}
