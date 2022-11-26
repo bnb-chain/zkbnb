@@ -554,15 +554,15 @@ func (c *Committer) executeTxFunc() {
 
 			// Write the proposed block into database when the first transaction executed.
 			if len(c.bc.Statedb.Txs) == 1 {
-				//previousHeight := curBlock.BlockHeight
+				previousHeight := curBlock.BlockHeight
 				//todo for tress
-				//err = c.createNewBlock(curBlock, poolTx)
-				//logx.Infof("create new block, current height=%s,previous height=%d,blockId=%s", curBlock.BlockHeight, previousHeight, curBlock.ID)
-				//
-				//if err != nil {
-				//	logx.Errorf("create new block failed:%s", err.Error())
-				//	panic("create new block failed" + err.Error())
-				//}
+				err = c.createNewBlock(curBlock, poolTx)
+				logx.Infof("create new block, current height=%s,previous height=%d,blockId=%s", curBlock.BlockHeight, previousHeight, curBlock.ID)
+
+				if err != nil {
+					logx.Errorf("create new block failed:%s", err.Error())
+					panic("create new block failed" + err.Error())
+				}
 			} else {
 				pendingUpdatePoolTxs = append(pendingUpdatePoolTxs, poolTx)
 			}
@@ -573,8 +573,8 @@ func (c *Committer) executeTxFunc() {
 		c.bc.Statedb.SyncPendingNftToMemoryCache(c.bc.Statedb.PendingNftMap)
 
 		//todo for tress
-		//c.enqueueSyncAccountToRedis(c.bc.Statedb.PendingAccountMap, c.bc.Statedb.PendingNftMap)
-		//c.enqueueUpdatePoolTx(pendingUpdatePoolTxs, pendingDeletePoolTxs)
+		c.enqueueSyncAccountToRedis(c.bc.Statedb.PendingAccountMap, c.bc.Statedb.PendingNftMap)
+		c.enqueueUpdatePoolTx(pendingUpdatePoolTxs, pendingDeletePoolTxs)
 
 		if c.shouldCommit(curBlock) {
 			start := time.Now()
@@ -638,54 +638,54 @@ func (c *Committer) enqueueUpdatePoolTx(pendingUpdatePoolTxs []*tx.Tx, pendingDe
 	c.updatePoolTxWorker.Enqueue(updatePoolTxMap)
 }
 
-//func (c *Committer) updatePoolTxFunc(updatePoolTxMap *UpdatePoolTx) {
-//	start := time.Now()
-//	length := len(updatePoolTxMap.PendingUpdatePoolTxs)
-//	if length > 0 {
-//		ids := make([]uint, 0, length)
-//		for _, pendingUpdatePoolTx := range updatePoolTxMap.PendingUpdatePoolTxs {
-//			ids = append(ids, pendingUpdatePoolTx.ID)
-//		}
-//		err := c.bc.TxPoolModel.UpdateTxsStatusAndHeightByIds(ids, tx.StatusExecuted, updatePoolTxMap.PendingUpdatePoolTxs[0].BlockHeight)
-//		if err != nil {
-//			logx.Error("update tx pool failed:", err)
-//		}
-//	}
-//	length = len(updatePoolTxMap.PendingDeletePoolTxs)
-//	if length > 0 {
-//		ids := make([]uint, 0, length)
-//		for _, pendingDeletePoolTx := range updatePoolTxMap.PendingDeletePoolTxs {
-//			ids = append(ids, pendingDeletePoolTx.ID)
-//		}
-//		err := c.bc.TxPoolModel.UpdateTxsStatusByIds(ids, tx.StatusFailed)
-//		if err != nil {
-//			logx.Error("update tx pool failed:", err)
-//		}
-//		err = c.bc.TxPoolModel.DeleteTxsBatch(updatePoolTxMap.PendingDeletePoolTxs)
-//		if err != nil {
-//			logx.Error("update tx pool failed:", err)
-//		}
-//	}
-//	updatePoolTxsMetrics.Set(float64(time.Since(start).Milliseconds()))
-//}
-
 func (c *Committer) updatePoolTxFunc(updatePoolTxMap *UpdatePoolTx) {
 	start := time.Now()
-	for _, pendingDeletePoolTx := range updatePoolTxMap.PendingDeletePoolTxs {
-		updatePoolTxMap.PendingUpdatePoolTxs = append(updatePoolTxMap.PendingUpdatePoolTxs, pendingDeletePoolTx)
-	}
-	err := c.bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
-		err := c.bc.TxPoolModel.UpdateTxsInTransact(dbTx, updatePoolTxMap.PendingUpdatePoolTxs)
+	length := len(updatePoolTxMap.PendingUpdatePoolTxs)
+	if length > 0 {
+		ids := make([]uint, 0, length)
+		for _, pendingUpdatePoolTx := range updatePoolTxMap.PendingUpdatePoolTxs {
+			ids = append(ids, pendingUpdatePoolTx.ID)
+		}
+		err := c.bc.TxPoolModel.UpdateTxsStatusAndHeightByIds(ids, tx.StatusExecuted, updatePoolTxMap.PendingUpdatePoolTxs[0].BlockHeight)
 		if err != nil {
 			logx.Error("update tx pool failed:", err)
 		}
-		return c.bc.TxPoolModel.DeleteTxsBatchInTransact(dbTx, updatePoolTxMap.PendingDeletePoolTxs)
-	})
-	if err != nil {
-		logx.Error("update tx pool failed:", err)
+	}
+	length = len(updatePoolTxMap.PendingDeletePoolTxs)
+	if length > 0 {
+		ids := make([]uint, 0, length)
+		for _, pendingDeletePoolTx := range updatePoolTxMap.PendingDeletePoolTxs {
+			ids = append(ids, pendingDeletePoolTx.ID)
+		}
+		err := c.bc.TxPoolModel.UpdateTxsStatusByIds(ids, tx.StatusFailed)
+		if err != nil {
+			logx.Error("update tx pool failed:", err)
+		}
+		err = c.bc.TxPoolModel.DeleteTxsBatch(updatePoolTxMap.PendingDeletePoolTxs)
+		if err != nil {
+			logx.Error("update tx pool failed:", err)
+		}
 	}
 	updatePoolTxsMetrics.Set(float64(time.Since(start).Milliseconds()))
 }
+
+//func (c *Committer) updatePoolTxFunc(updatePoolTxMap *UpdatePoolTx) {
+//	start := time.Now()
+//	for _, pendingDeletePoolTx := range updatePoolTxMap.PendingDeletePoolTxs {
+//		updatePoolTxMap.PendingUpdatePoolTxs = append(updatePoolTxMap.PendingUpdatePoolTxs, pendingDeletePoolTx)
+//	}
+//	err := c.bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
+//		err := c.bc.TxPoolModel.UpdateTxsInTransact(dbTx, updatePoolTxMap.PendingUpdatePoolTxs)
+//		if err != nil {
+//			logx.Error("update tx pool failed:", err)
+//		}
+//		return c.bc.TxPoolModel.DeleteTxsBatchInTransact(dbTx, updatePoolTxMap.PendingDeletePoolTxs)
+//	})
+//	if err != nil {
+//		logx.Error("update tx pool failed:", err)
+//	}
+//	updatePoolTxsMetrics.Set(float64(time.Since(start).Milliseconds()))
+//}
 
 func (c *Committer) enqueueSyncAccountToRedis(originPendingAccountMap map[int64]*types.AccountInfo, originPendingNftMap map[int64]*nft.L2Nft) {
 	pendingMap := &PendingMap{
