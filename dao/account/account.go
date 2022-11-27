@@ -19,9 +19,9 @@ package account
 
 import (
 	"errors"
+	"github.com/bnb-chain/zkbnb/types"
 	"gorm.io/gorm"
 	"strconv"
-	"github.com/bnb-chain/zkbnb/types"
 )
 
 const (
@@ -192,11 +192,13 @@ func (m *defaultAccountModel) UpdateAccountsInTransact(tx *gorm.DB, accounts []*
 }
 
 func (m *defaultAccountModel) UpdateAccountInTransact(account *Account) error {
-	const CreatedAt = "CreatedAt"
-	dbTx := m.DB.Table(m.table).Where("account_index = ?", account.AccountIndex).
-		Omit(CreatedAt).
-		Select("*").
-		Updates(&account)
+	dbTx := m.DB.Model(&Account{}).Select("Nonce", "CollectionNonce", "AssetInfo", "AssetRoot", "TransactionStatus").Where("id = ?", account.ID).Updates(map[string]interface{}{
+		"nonce":              account.Nonce,
+		"collection_nonce":   account.CollectionNonce,
+		"asset_info":         account.AssetInfo,
+		"asset_root":         account.AssetRoot,
+		"transaction_status": account.TransactionStatus,
+	})
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}
