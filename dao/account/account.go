@@ -192,7 +192,7 @@ func (m *defaultAccountModel) UpdateAccountsInTransact(tx *gorm.DB, accounts []*
 }
 
 func (m *defaultAccountModel) UpdateAccountInTransact(account *Account) error {
-	dbTx := m.DB.Model(&Account{}).Select("Nonce", "CollectionNonce", "AssetInfo", "AssetRoot", "TransactionStatus").Where("id = ?", account.ID).Updates(map[string]interface{}{
+	dbTx := m.DB.Model(&Account{}).Unscoped().Select("Nonce", "CollectionNonce", "AssetInfo", "AssetRoot", "TransactionStatus").Where("id = ?", account.ID).Updates(map[string]interface{}{
 		"nonce":              account.Nonce,
 		"collection_nonce":   account.CollectionNonce,
 		"asset_info":         account.AssetInfo,

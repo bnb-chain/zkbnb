@@ -785,6 +785,14 @@ func (c *Committer) saveAccounts(blockStates *block.BlockStates) error {
 	if totalTask == 0 {
 		return nil
 	}
+	gasChanges := make(map[uint]bool, 0)
+	for _, accountInfo := range blockStates.PendingAccount {
+		if gasChanges[accountInfo.ID] == true {
+			logx.Infof("save accounts repeat:%s", accountInfo.ID)
+		} else {
+			gasChanges[accountInfo.ID] = true
+		}
+	}
 	errChan := make(chan error, totalTask)
 	defer close(errChan)
 	for _, accountInfo := range blockStates.PendingAccount {
