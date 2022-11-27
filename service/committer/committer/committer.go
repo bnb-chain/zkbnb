@@ -7,6 +7,7 @@ import (
 	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/nft"
+	"github.com/panjf2000/ants/v2"
 	"strconv"
 	"time"
 
@@ -227,8 +228,9 @@ type Config struct {
 	core.ChainConfig
 
 	BlockConfig struct {
-		OptionalBlockSizes []int
-		BlockSaveDisabled  bool `json:",optional"`
+		OptionalBlockSizes    []int
+		BlockSaveDisabled     bool `json:",optional"`
+		AccountUpdatePoolSize int  `json:",optional"`
 	}
 	LogConf logx.LogConf
 }
@@ -246,6 +248,7 @@ type Committer struct {
 	updatePoolTxWorker                *core.Worker
 	syncAccountToRedisWorker          *core.Worker
 	updateAccountTreeAndNftTreeWorker *core.Worker
+	pool                              *ants.Pool
 }
 
 type PendingMap struct {
@@ -384,6 +387,11 @@ func NewCommitter(config *Config) (*Committer, error) {
 	if err := prometheus.Register(antsPoolGaugeMetric); err != nil {
 		return nil, fmt.Errorf("prometheus.Register antsPoolGaugeMetric error: %v", err)
 	}
+	accountUpdatePoolSize := config.BlockConfig.AccountUpdatePoolSize
+	if accountUpdatePoolSize == 0 {
+		accountUpdatePoolSize = 1
+	}
+	pool, err := ants.NewPool(accountUpdatePoolSize)
 
 	committer := &Committer{
 		running:            true,
@@ -391,6 +399,7 @@ func NewCommitter(config *Config) (*Committer, error) {
 		maxTxsPerBlock:     config.BlockConfig.OptionalBlockSizes[len(config.BlockConfig.OptionalBlockSizes)-1],
 		optionalBlockSizes: config.BlockConfig.OptionalBlockSizes,
 		bc:                 bc,
+		pool:               pool,
 	}
 
 	return committer, nil
@@ -797,7 +806,7 @@ func (c *Committer) saveAccounts(blockStates *block.BlockStates) error {
 	defer close(errChan)
 	for _, accountInfo := range blockStates.PendingAccount {
 		err := func(accountInfo *account.Account) error {
-			return gopool.Submit(func() {
+			return c.pool.Submit(func() {
 				accountInfo.TransactionStatus = account.AccountTransactionStatusProcessing
 				err := c.bc.DB().AccountModel.UpdateAccountInTransact(accountInfo)
 				if err != nil {
