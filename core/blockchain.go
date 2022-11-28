@@ -361,7 +361,9 @@ func (bc *BlockChain) commitNewBlock(blockSize int, createdAt int64) (*block.Blo
 
 	start := time.Now()
 	// Intermediate state root.
-	err := s.IntermediateRoot(false)
+	logx.Infof("BEFORE: blockHeight=%v, accountTreeRoot=%s", newBlock.BlockHeight, common.Bytes2Hex(s.AccountTree.Root()))
+	err := s.IntermediateRoot(false, newBlock.BlockHeight)
+	logx.Infof("AFTER: blockHeight=%v, accountTreeRoot=%s", newBlock.BlockHeight, common.Bytes2Hex(s.AccountTree.Root()))
 	if err != nil {
 		return nil, nil, err
 	}

@@ -18,10 +18,11 @@
 package prove
 
 import (
+	"encoding/json"
 	"fmt"
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/zeromicro/go-zero/core/logx"
+	"math/big"
 
 	"github.com/bnb-chain/zkbnb-crypto/circuit"
 	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/types"
@@ -176,6 +177,7 @@ func (w *WitnessHelper) constructAccountWitness(
 	var (
 		accountCount = 0
 	)
+	hexAccountTreeUpdateItems := make(map[int64][]byte)
 	for _, accountKey := range accountKeys {
 		var (
 			cryptoAccount = new(cryptoTypes.Account)
@@ -333,10 +335,11 @@ func (w *WitnessHelper) constructAccountWitness(
 		if err != nil {
 			return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 		}
-		err = w.accountTree.Set(uint64(accountKey), nAccountHash)
-		if err != nil {
-			return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
-		}
+		hexAccountTreeUpdateItems[accountKey] = nAccountHash
+		//err = w.accountTree.Set(uint64(accountKey), nAccountHash)
+		//if err != nil {
+		//	return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
+		//}
 
 		// cache gas account's nonce
 		if accountKey == types.GasAccount {
@@ -350,9 +353,19 @@ func (w *WitnessHelper) constructAccountWitness(
 		// add count
 		accountCount++
 	}
+	items := make([]bsmt.Item, 0, len(hexAccountTreeUpdateItems))
+	for k, v := range hexAccountTreeUpdateItems {
+		items = append(items, bsmt.Item{Key: uint64(k), Val: v})
+	}
+	accItem, _ := json.Marshal(hexAccountTreeUpdateItems)
+	logx.Infof("BEFORE: blockHeight=%v, treeVersion=%v, accountTreeRoot=%s, accountTreeUpdateItems=%s",
+		oTx.BlockHeight, w.accountTree.LatestVersion(), common.Bytes2Hex(w.accountTree.Root()), string(accItem))
+	err = w.accountTree.MultiSet(items)
 	if err != nil {
 		return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 	}
+	logx.Infof("AFTER: blockHeight=%v, treeVersion=%v, accountTreeRoot=%s",
+		oTx.BlockHeight, w.accountTree.LatestVersion(), common.Bytes2Hex(w.accountTree.Root()))
 	// padding empty account
 	emptyAssetTree, err := tree.NewMemAccountAssetTree()
 	if err != nil {
@@ -503,9 +516,9 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 	}
 	for _, txDetail := range oTx.TxDetails {
 		// if tx detail is from gas account
-		if txDetail.IsGas {
-			continue
-		}
+		//if txDetail.IsGas {
+		//	continue
+		//}
 		switch txDetail.AssetType {
 		case types.FungibleAssetType:
 			// get account info
@@ -747,17 +760,17 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 			}
 		}
 
-		nAccountHash, err := tree.ComputeAccountLeafHash(
-			w.gasAccountInfo.AccountNameHash,
-			w.gasAccountInfo.PublicKey,
-			w.gasAccountInfo.Nonce,
-			w.gasAccountInfo.CollectionNonce,
-			w.assetTrees.Get(gasAccountIndex).Root(),
-		)
+		//nAccountHash, err := tree.ComputeAccountLeafHash(
+		//	w.gasAccountInfo.AccountNameHash,
+		//	w.gasAccountInfo.PublicKey,
+		//	w.gasAccountInfo.Nonce,
+		//	w.gasAccountInfo.CollectionNonce,
+		//	w.assetTrees.Get(gasAccountIndex).Root(),
+		//)
 		if err != nil {
 			return nil, err
 		}
-		err = w.accountTree.Set(uint64(gasAccountIndex), nAccountHash)
+		//err = w.accountTree.Set(uint64(gasAccountIndex), nAccountHash)
 		if err != nil {
 			return nil, err
 		}

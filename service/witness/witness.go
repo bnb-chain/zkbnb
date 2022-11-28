@@ -1,6 +1,7 @@
 package witness
 
 import (
+	"github.com/prometheus/client_golang/prometheus"
 	"time"
 
 	"github.com/robfig/cron/v3"
@@ -13,6 +14,14 @@ import (
 )
 
 const GracefulShutdownTimeout = 5 * time.Second
+
+var (
+	generateBlockWitnessTimeMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "witness_generate_time",
+		Help:      "witness generate time",
+	})
+)
 
 func Run(configFile string) error {
 	var c config.Config
@@ -29,9 +38,12 @@ func Run(configFile string) error {
 	))
 	_, err = cronJob.AddFunc("@every 2s", func() {
 		logx.Info("==========start generate block witness==========")
+		start := time.Now()
 		err := w.GenerateBlockWitness()
 		if err != nil {
 			logx.Errorf("failed to generate block witness, %v", err)
+		} else {
+			generateBlockWitnessTimeMetric.Set(float64(time.Since(start).Milliseconds()))
 		}
 		w.RescheduleBlockWitness()
 	})

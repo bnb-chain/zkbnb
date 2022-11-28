@@ -132,7 +132,7 @@ func (c *Fullnode) Run() {
 				}
 			}
 
-			err = c.bc.Statedb.IntermediateRoot(true)
+			err = c.bc.Statedb.IntermediateRoot(true, l2Block.Height)
 			if err != nil {
 				panic(fmt.Sprint("calculate state root failed, err", err))
 			}

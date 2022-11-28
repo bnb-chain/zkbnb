@@ -12,9 +12,9 @@ DEPLOY_PATH=~/zkbnb-deploy
 KEY_PATH=~/.zkbnb
 ZkBNB_REPO_PATH=$(cd `dirname $0`; pwd)
 CMC_TOKEN=cfce503f-fake-fake-fake-bbab5257dac8
-NETWORK_RPC_SYS_CONFIG_NAME=BscTestNetworkRpc # BscTestNetworkRpc or LocalTestNetworkRpc
-BSC_TESTNET_RPC=https://data-seed-prebsc-1-s1.binance.org:8545
-BSC_TESTNET_PRIVATE_KEY=acbaa26******************************a88367d9
+NETWORK_RPC_SYS_CONFIG_NAME=LocalTestNetworkRpc #or LocalTestNetworkRpc
+BSC_TESTNET_RPC=http://127.0.0.1:8545 #or http://127.0.0.1:8545
+BSC_TESTNET_PRIVATE_KEY=bb7a4d97b99eb0cb2af53f4eca761eed823606181955e6f956927b8a15866c33
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
 echo '0. stop old database/redis and docker run new database/redis'
@@ -32,10 +32,10 @@ docker run -d --name zkbnb-postgres -p 5432:5432 \
 echo '1. basic config and git clone repos'
 export PATH=$PATH:/usr/local/go/bin/
 cd ~
-rm -rf ${DEPLOY_PATH}-bak && mv ${DEPLOY_PATH} ${DEPLOY_PATH}-bak
-mkdir -p ${DEPLOY_PATH} && cd ${DEPLOY_PATH}
-git clone --branch develop  https://github.com/bnb-chain/zkbnb-contract.git
-git clone --branch develop https://github.com/bnb-chain/zkbnb-crypto.git
+#rm -rf ${DEPLOY_PATH}-bak && mv ${DEPLOY_PATH} ${DEPLOY_PATH}-bak
+#mkdir -p ${DEPLOY_PATH} && cd ${DEPLOY_PATH}
+#git clone --branch develop  https://github.com/bnb-chain/zkbnb-contract.git
+#git clone --branch perf https://github.com/bnb-chain/zkbnb-crypto.git
 cp -r ${ZkBNB_REPO_PATH} ${DEPLOY_PATH}
 
 
@@ -94,8 +94,8 @@ sed -i -e "s/BUSDToken: .*/BUSDToken: ${BUSDContractAddr}/" ${DEPLOY_PATH}/zkbnb
 
 
 
- cd ${DEPLOY_PATH}/zkbnb/
- make api-server
+cd ${DEPLOY_PATH}/zkbnb/
+make api-server
 cd ${DEPLOY_PATH}/zkbnb && go mod tidy
 
 echo "6. init tables on database"
@@ -140,28 +140,28 @@ pm2 start --name prover "./run_prover.sh"
 
 echo "8. run witness"
 
-echo -e "
-Name: witness
-
-Postgres:
-  DataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
-
-CacheRedis:
-  - Host: 127.0.0.1:6379
-    Type: node
-
-TreeDB:
-  Driver: memorydb
-  AssetTreeCacheSize: 512000
-" > ${DEPLOY_PATH}/zkbnb/service/witness/etc/config.yaml
-
-echo -e "
-go run ./cmd/zkbnb/main.go witness --config ${DEPLOY_PATH}/zkbnb/service/witness/etc/config.yaml --pprof --pprof.addr 0.0.0.0 --pprof.port 6061 --metrics --metrics.addr 0.0.0.0 --metrics.port 6061
-" > run_witness.sh
-# remove the fist line if it includes -e
-sed -i '' -e '/-e/,1d' ${DEPLOY_PATH}/zkbnb/service/witness/etc/config.yaml
-sed -i '' -e '/-e/,1d' run_witness.sh
-pm2 start --name witness "./run_witness.sh"
+#echo -e "
+#Name: witness
+#
+#Postgres:
+#  DataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+#
+#CacheRedis:
+#  - Host: 127.0.0.1:6379
+#    Type: node
+#
+#TreeDB:
+#  Driver: memorydb
+#  AssetTreeCacheSize: 512000
+#" > ${DEPLOY_PATH}/zkbnb/service/witness/etc/config.yaml
+#
+#echo -e "
+#go run -gcflags=\""-N -l\"" ./cmd/zkbnb/main.go witness --config ${DEPLOY_PATH}/zkbnb/service/witness/etc/config.yaml --pprof --pprof.addr 0.0.0.0 --pprof.port 6061 --metrics --metrics.addr 0.0.0.0 --metrics.port 6061
+#" > run_witness.sh
+## remove the fist line if it includes -e
+#sed -i '' -e '/-e/,1d' ${DEPLOY_PATH}/zkbnb/service/witness/etc/config.yaml
+#sed -i '' -e '/-e/,1d' run_witness.sh
+#pm2 start --name witness "./run_witness.sh"
 
 
 echo "9. run monitor"
@@ -211,7 +211,7 @@ CacheRedis:
     Type: node
 
 BlockConfig:
-  OptionalBlockSizes: [10]
+  OptionalBlockSizes: [1]
 
 TreeDB:
   Driver: memorydb

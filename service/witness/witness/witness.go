@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -29,6 +30,24 @@ const (
 	UnprovedBlockWitnessTimeout = 10 * time.Minute
 
 	BlockProcessDelta = 10
+)
+
+var (
+	constructWitnessTimeMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "witness_construct_time",
+		Help:      "witness construct time",
+	})
+	commitTreesTimeMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "witness_commit_trees_time",
+		Help:      "witness commit trees time",
+	})
+	insertDbTimeMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "witness_insert_db_time",
+		Help:      "witness insert db time",
+	})
 )
 
 type Witness struct {
@@ -68,6 +87,15 @@ func NewWitness(c config.Config) (*Witness, error) {
 		accountHistoryModel: account.NewAccountHistoryModel(db),
 		nftHistoryModel:     nft.NewL2NftHistoryModel(db),
 		proofModel:          proof.NewProofModel(db),
+	}
+	if err := prometheus.Register(constructWitnessTimeMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register constructWitnessTimeMetric error: %v", err)
+	}
+	if err := prometheus.Register(commitTreesTimeMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register commitTreesTimeMetric error: %v", err)
+	}
+	if err := prometheus.Register(insertDbTimeMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register insertDbTimeMetric error: %v", err)
 	}
 	err = w.initState()
 	return w, err
@@ -142,16 +170,21 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 	// scan each block
 	for _, block := range blocks {
 		logx.Infof("construct witness for block %d", block.BlockHeight)
+		start := time.Now()
 		// Step1: construct witness
 		blockWitness, err := w.constructBlockWitness(block, latestVerifiedBlockNr)
 		if err != nil {
 			return fmt.Errorf("failed to construct block witness, block:%d, err: %v", block.BlockHeight, err)
 		}
+		endConstructWitnessTime := time.Now()
+		constructWitnessTimeMetric.Set(float64(endConstructWitnessTime.Sub(start).Milliseconds()))
 		// Step2: commit trees for witness
 		err = tree.CommitTrees(uint64(latestVerifiedBlockNr), w.accountTree, w.assetTrees, w.nftTree)
 		if err != nil {
 			return fmt.Errorf("unable to commit trees after txs is executed, block:%d, error: %v", block.BlockHeight, err)
 		}
+		endCommitTreesTime := time.Now()
+		commitTreesTimeMetric.Set(float64(endCommitTreesTime.Sub(endConstructWitnessTime).Milliseconds()))
 		// Step3: insert witness into database
 		err = w.blockWitnessModel.CreateBlockWitness(blockWitness)
 		if err != nil {
@@ -162,6 +195,8 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 			}
 			return fmt.Errorf("create unproved crypto block error, block:%d, err: %v", block.BlockHeight, err)
 		}
+		endInsertDbTime := time.Now()
+		insertDbTimeMetric.Set(float64(endInsertDbTime.Sub(endCommitTreesTime).Milliseconds()))
 	}
 	return nil
 }
@@ -239,6 +274,8 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 	if err != nil {
 		return nil, err
 	}
+	// block with 10 tx
+	// state root = ab
 	for idx, tx := range block.Txs {
 		txWitness, err := w.helper.ConstructTxWitness(tx, uint64(latestVerifiedBlockNr))
 		if err != nil {
@@ -254,6 +291,7 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 			newStateRoot = txWitness.StateRootAfter
 		}
 	}
+	// state root = abd
 
 	emptyTxCount := int(block.BlockSize) - len(block.Txs)
 	for i := 0; i < emptyTxCount; i++ {
@@ -266,7 +304,11 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 	}
 
 	newStateRoot = tree.ComputeStateRootHash(w.accountTree.Root(), w.nftTree.Root())
+	logx.Infof("blockHeight=%v, stateRoot=%s, wStateRoot=%s, wAccountTreeRoot=%s, wNftTreeRoot=%s",
+		block.BlockHeight, block.StateRoot, common.Bytes2Hex(newStateRoot), common.Bytes2Hex(w.accountTree.Root()), common.Bytes2Hex(w.nftTree.Root()))
 	if common.Bytes2Hex(newStateRoot) != block.StateRoot {
+		j, _ := json.Marshal(block)
+		logx.Infov(string(j))
 		return nil, errors.New("state root doesn't match")
 	}
 
