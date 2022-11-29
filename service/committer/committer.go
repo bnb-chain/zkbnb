@@ -18,7 +18,7 @@ func Run(configFile string) error {
 	conf.MustLoad(configFile, &c)
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
-	//runtime.GOMAXPROCS(64)
+	// runtime.GOMAXPROCS(64)
 	committer, err := committer.NewCommitter(&c)
 	if err != nil {
 		logx.Error("new committer failed:", err)
