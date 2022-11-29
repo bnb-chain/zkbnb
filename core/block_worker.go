@@ -31,7 +31,21 @@ func UpdateAccountTreeAndNftTreeWorker(queueSize int, workFunc func(interface{})
 	}
 }
 
-func SaveBlockTransactionWorker(queueSize int, workFunc func(interface{})) *Worker {
+func PreSaveBlockDataWorker(queueSize int, workFunc func(interface{})) *Worker {
+	return &Worker{
+		jobQueue: make(chan interface{}, queueSize),
+		jobFunc:  workFunc,
+	}
+}
+
+func SaveBlockDataWorker(queueSize int, workFunc func(interface{})) *Worker {
+	return &Worker{
+		jobQueue: make(chan interface{}, queueSize),
+		jobFunc:  workFunc,
+	}
+}
+
+func FinalSaveBlockDataWorker(queueSize int, workFunc func(interface{})) *Worker {
 	return &Worker{
 		jobQueue: make(chan interface{}, queueSize),
 		jobFunc:  workFunc,

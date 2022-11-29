@@ -32,6 +32,7 @@ import (
 const (
 	_ = iota
 	StatusProposing
+	StatusPacked
 	StatusPending
 	StatusCommitted
 	StatusVerifiedAndExecuted
@@ -62,6 +63,7 @@ type (
 		UpdateBlockInTransact(tx *gorm.DB, block *Block) (err error)
 		DeleteProposingBlock() (err error)
 		GetProposingBlockHeights() (blockHeights []int64, err error)
+		PreSaveBlockData(id uint, accountIndexes string, nftIndexes string) error
 	}
 
 	defaultBlockModel struct {
@@ -83,8 +85,10 @@ type (
 		CommittedAt                     int64
 		VerifiedTxHash                  string
 		VerifiedAt                      int64
-		Txs                             []*tx.Tx `gorm:"foreignKey:BlockId"`
+		Txs                             []*tx.Tx //`gorm:"foreignKey:BlockId"`
 		BlockStatus                     int64    `gorm:"index"`
+		AccountIndexes                  string
+		NftIndexes                      string
 	}
 
 	BlockStates struct {
@@ -388,4 +392,18 @@ func (m *defaultBlockModel) GetProposingBlockHeights() (blockHeights []int64, er
 		return nil, types.DbErrSqlOperation
 	}
 	return blockHeights, nil
+}
+
+func (m *defaultBlockModel) PreSaveBlockData(id uint, accountIndexes string, nftIndexes string) error {
+	dbTx := m.DB.Model(&Block{}).Select("block_status", "account_indexes", "nft_indexes").Where("id = ? and block_status", id, StatusProposing).Updates(map[string]interface{}{
+		"block_status":    StatusPacked,
+		"account_indexes": accountIndexes,
+		"nft_indexes":     nftIndexes,
+	})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return types.DbErrFailToUpdateBlock
+	}
+	return nil
 }

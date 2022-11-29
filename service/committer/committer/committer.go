@@ -1,6 +1,7 @@
 package committer
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/gopool"
@@ -242,12 +243,14 @@ type Committer struct {
 	optionalBlockSizes []int
 
 	bc                                *core.BlockChain
-	txWorker                          *core.TxWorker
-	updateAccountAssetTreeWorker      *core.Worker
-	saveBlockTxWorker                 *core.Worker
+	executeTxWorker                   *core.TxWorker
 	updatePoolTxWorker                *core.Worker
 	syncAccountToRedisWorker          *core.Worker
+	updateAccountAssetTreeWorker      *core.Worker
 	updateAccountTreeAndNftTreeWorker *core.Worker
+	preSaveBlockDataWorker            *core.Worker
+	saveBlockDataWorker               *core.Worker
+	finalSaveBlockDataWorker          *core.Worker
 	pool                              *ants.Pool
 }
 
@@ -406,14 +409,14 @@ func NewCommitter(config *Config) (*Committer, error) {
 }
 
 func (c *Committer) Run() {
-	c.txWorker = core.ExecuteTxWorker(100, func() {
+	c.executeTxWorker = core.ExecuteTxWorker(100, func() {
 		c.executeTxFunc()
-	})
-	c.syncAccountToRedisWorker = core.SyncAccountToRedisWorker(200000, func(item interface{}) {
-		c.syncAccountToRedisFunc(item.(*PendingMap))
 	})
 	c.updatePoolTxWorker = core.UpdatePoolTxWorker(10000, func(item interface{}) {
 		c.updatePoolTxFunc(item.(*UpdatePoolTx))
+	})
+	c.syncAccountToRedisWorker = core.SyncAccountToRedisWorker(200000, func(item interface{}) {
+		c.syncAccountToRedisFunc(item.(*PendingMap))
 	})
 	c.updateAccountAssetTreeWorker = core.UpdateAccountAssetTreeWorker(10, func(item interface{}) {
 		c.updateAccountAssetTreeFunc(item.(*statedb.StateDataCopy))
@@ -421,17 +424,22 @@ func (c *Committer) Run() {
 	c.updateAccountTreeAndNftTreeWorker = core.UpdateAccountTreeAndNftTreeWorker(10, func(item interface{}) {
 		c.updateAccountTreeAndNftTreeFunc(item.(*statedb.StateDataCopy))
 	})
-
-	c.saveBlockTxWorker = core.SaveBlockTransactionWorker(10, func(item interface{}) {
-		c.saveBlockTransactionFunc(item.(*block.BlockStates))
+	c.preSaveBlockDataWorker = core.PreSaveBlockDataWorker(10, func(item interface{}) {
+		c.preSaveBlockDataFunc(item.(*block.BlockStates))
+	})
+	c.saveBlockDataWorker = core.SaveBlockDataWorker(10, func(item interface{}) {
+		c.saveBlockDataFunc(item.(*block.BlockStates))
+	})
+	c.finalSaveBlockDataWorker = core.FinalSaveBlockDataWorker(10, func(item interface{}) {
+		c.finalSaveBlockDataFunc(item.(*block.BlockStates))
 	})
 
-	c.txWorker.Start()
+	c.executeTxWorker.Start()
 	c.syncAccountToRedisWorker.Start()
 	c.updatePoolTxWorker.Start()
 	c.updateAccountAssetTreeWorker.Start()
 	c.updateAccountTreeAndNftTreeWorker.Start()
-	c.saveBlockTxWorker.Start()
+	c.saveBlockDataWorker.Start()
 	//todo for tress
 	c.loadAllAccounts()
 	c.pullPoolTxs()
@@ -452,7 +460,7 @@ func (c *Committer) pullPoolTxs() {
 		pendingTxs, err := c.bc.TxPoolModel.GetTxsPageByStatus(tx.StatusPending, 1000)
 		getPendingPoolTxMetrics.Set(float64(time.Since(start).Milliseconds()))
 		getPendingTxsToQueueMetric.Set(float64(len(pendingTxs)))
-		txWorkerQueueMetric.Set(float64(c.txWorker.GetQueueSize()))
+		txWorkerQueueMetric.Set(float64(c.executeTxWorker.GetQueueSize()))
 		if err != nil {
 			logx.Errorf("get pending transactions from tx pool failed:%s", err.Error())
 			time.Sleep(200 * time.Millisecond)
@@ -466,7 +474,7 @@ func (c *Committer) pullPoolTxs() {
 		ids := make([]uint, 0, len(pendingTxs))
 		for _, poolTx := range pendingTxs {
 			ids = append(ids, poolTx.ID)
-			c.txWorker.Enqueue(poolTx)
+			c.executeTxWorker.Enqueue(poolTx)
 		}
 		start = time.Now()
 		err = c.bc.TxPoolModel.UpdateTxsStatusByIds(ids, tx.StatusProcessing)
@@ -476,7 +484,7 @@ func (c *Committer) pullPoolTxs() {
 			panic("update txs status to processing failed: " + err.Error())
 		}
 		time.Sleep(200 * time.Millisecond)
-		for c.txWorker.GetQueueSize() > 1000 {
+		for c.executeTxWorker.GetQueueSize() > 1000 {
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
@@ -487,7 +495,7 @@ func (c *Committer) getPoolTxsFromQueue() []*tx.Tx {
 	pendingUpdatePoolTxs := make([]*tx.Tx, 0, 300)
 	for {
 		select {
-		case i := <-c.txWorker.GetJobQueue():
+		case i := <-c.executeTxWorker.GetJobQueue():
 			pendingUpdatePoolTxs = append(pendingUpdatePoolTxs, i.(*tx.Tx))
 		default:
 			return pendingUpdatePoolTxs
@@ -777,7 +785,7 @@ func (c *Committer) updateAccountTreeAndNftTreeFunc(stateDataCopy *statedb.State
 	//	logx.Errorf("update pool tx to pending failed:%s", err.Error())
 	//	panic("update pool tx to pending failed: " + err.Error())
 	//}
-	c.saveBlockTxWorker.Enqueue(blockStates)
+	c.saveBlockDataWorker.Enqueue(blockStates)
 	//stateDBSyncOperationMetics.Set(float64(time.Since(start).Milliseconds()))
 	l2BlockRedisHeightMetric.Set(float64(blockStates.Block.BlockHeight))
 	AccountLatestVersionTreeMetric.Set(float64(c.bc.StateDB().AccountTree.LatestVersion()))
@@ -830,13 +838,40 @@ func (c *Committer) saveAccounts(blockStates *block.BlockStates) error {
 	return nil
 }
 
-func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
-	logx.Infof("save block transaction start, blockHeight:%d", blockStates.Block.BlockHeight)
+func (c *Committer) preSaveBlockDataFunc(blockStates *block.BlockStates) {
+	//start := time.Now()
+	logx.Infof("preSaveBlockDataFunc start, blockHeight:%d", blockStates.Block.BlockHeight)
 	if c.config.BlockConfig.BlockSaveDisabled {
 		c.bc.Statedb.UpdatePrunedBlockHeight(blockStates.Block.BlockHeight)
 		return
 	}
+	accountIndexes := make([]int64, 0, len(blockStates.PendingAccount))
+
+	for _, accountInfo := range blockStates.PendingAccount {
+		accountIndexes = append(accountIndexes, accountInfo.AccountIndex)
+	}
+	nftIndexes := make([]int64, 0, len(blockStates.PendingNft))
+	for _, nftInfo := range blockStates.PendingNft {
+		nftIndexes = append(nftIndexes, nftInfo.NftIndex)
+	}
+	accountIndexesJson, err := json.Marshal(accountIndexes)
+	if err != nil {
+		panic("marshal accountIndexes failed: " + err.Error())
+	}
+	nftIndexesJson, err := json.Marshal(nftIndexes)
+	if err != nil {
+		panic("marshal nftIndexesJson failed: " + err.Error())
+	}
+	err = c.bc.DB().BlockModel.PreSaveBlockData(blockStates.Block.ID, string(accountIndexesJson), string(nftIndexesJson))
+	if err != nil {
+		panic("PreSaveBlockData failed: " + err.Error())
+	}
+	c.preSaveBlockDataWorker.Enqueue(blockStates)
+}
+
+func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 	start := time.Now()
+	logx.Infof("saveBlockDataFunc start, blockHeight:%d", blockStates.Block.BlockHeight)
 
 	if len(blockStates.PendingAccount) != 0 {
 		err := c.saveAccounts(blockStates)
@@ -930,12 +965,16 @@ func (c *Committer) saveBlockTransactionFunc(blockStates *block.BlockStates) {
 
 }
 
+func (c *Committer) finalSaveBlockDataFunc(blockStates *block.BlockStates) {
+
+}
+
 func (c *Committer) Shutdown() {
 	c.running = false
-	c.txWorker.Stop()
+	c.executeTxWorker.Stop()
 	c.updateAccountAssetTreeWorker.Stop()
 	c.syncAccountToRedisWorker.Stop()
-	c.saveBlockTxWorker.Stop()
+	c.saveBlockDataWorker.Stop()
 	c.updatePoolTxWorker.Stop()
 	c.updateAccountTreeAndNftTreeWorker.Stop()
 	c.bc.Statedb.Close()

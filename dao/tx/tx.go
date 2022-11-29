@@ -112,7 +112,7 @@ type (
 		Memo          string
 		ExtraInfo     string
 		NativeAddress string      // a. Priority tx, assigned when created b. Other tx, assigned after executed.
-		TxDetails     []*TxDetail `gorm:"foreignKey:TxId"`
+		TxDetails     []*TxDetail //`gorm:"foreignKey:TxId"`
 
 		TxIndex     int64
 		BlockHeight int64 `gorm:"index"`
