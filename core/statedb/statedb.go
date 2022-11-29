@@ -800,6 +800,10 @@ func (s *StateDB) ClearPendingNonceFromRedisCache(accountIndex int64) {
 	_ = s.redisCache.Delete(context.Background(), dbcache.AccountNonceKeyByIndex(accountIndex))
 }
 
+func (s *StateDB) SetPendingNonceToRedisCache(accountIndex int64, nonce int64) {
+	_ = s.redisCache.Set(context.Background(), dbcache.AccountNonceKeyByIndex(accountIndex), nonce)
+}
+
 func (s *StateDB) GetNextAccountIndex() int64 {
 	return s.AccountAssetTrees.GetNextAccountIndex()
 }
