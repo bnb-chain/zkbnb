@@ -6,7 +6,7 @@
 # npm install pm2 -g
 # You should install nodejs above v14
 # sh deploy-local.sh new  // append the new parameter to generate pk and vk data when you first run this script.
-
+##
 # Attention: Set the following variables to the right one before running!!!
 DEPLOY_PATH=~/zkbnb-deploy
 KEY_PATH=~/.zkbnb
