@@ -14,7 +14,8 @@ ZkBNB_REPO_PATH=$(cd `dirname $0`; pwd)
 CMC_TOKEN=cfce503f-fake-fake-fake-bbab5257dac8
 NETWORK_RPC_SYS_CONFIG_NAME=BscTestNetworkRpc # BscTestNetworkRpc or LocalTestNetworkRpc
 BSC_TESTNET_RPC=https://data-seed-prebsc-1-s1.binance.org:8545
-BSC_TESTNET_PRIVATE_KEY=acbaa26******************************a88367d9
+BSC_TESTNET_PRIVATE_KEY=6a9bffc6689b38e4791a797200e0f8c6c6eb215687351e37daf7ae34fbba0b98
+
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
 echo '0. stop old database/redis and docker run new database/redis'
@@ -71,7 +72,7 @@ cd ./zkbnb-contract
 cp -r .env.example .env
 sed -i -e "s~BSC_TESTNET_RPC=.*~BSC_TESTNET_RPC=${BSC_TESTNET_RPC}~" .env
 sed -i -e "s/BSC_TESTNET_PRIVATE_KEY=.*/BSC_TESTNET_PRIVATE_KEY=${BSC_TESTNET_PRIVATE_KEY}/" .env
-yarn install
+npm install
 npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deploy.js
 echo 'Recorded latest contract addresses into ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json'
 
@@ -99,7 +100,7 @@ sed -i -e "s/BUSDToken: .*/BUSDToken: ${BUSDContractAddr}/" ${DEPLOY_PATH}/zkbnb
 cd ${DEPLOY_PATH}/zkbnb && go mod tidy
 
 echo "6. init tables on database"
-go run ./cmd/zkbnb/main.go db initialize --dsn "host=localhost user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable" --contractAddr ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
+go run ./cmd/zkbnb/main.go db initialize --dsn "host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable" --contractAddr ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
 
 sleep 10s
 
@@ -108,7 +109,8 @@ echo "7. run prover"
 echo -e "
 Name: prover
 Postgres:
-  DataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  MasterDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  SlaveDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
 
 CacheRedis:
   - Host: 127.0.0.1:6379
@@ -144,7 +146,8 @@ echo -e "
 Name: witness
 
 Postgres:
-  DataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  MasterDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  SlaveDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
 
 CacheRedis:
   - Host: 127.0.0.1:6379
@@ -170,7 +173,8 @@ echo -e "
 Name: monitor
 
 Postgres:
-  DataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  MasterDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  SlaveDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
 
 CacheRedis:
   - Host: 127.0.0.1:6379
@@ -204,7 +208,8 @@ echo -e "
 Name: committer
 
 Postgres:
-  DataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  MasterDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  SlaveDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
 
 CacheRedis:
   - Host: 127.0.0.1:6379
@@ -233,7 +238,8 @@ echo -e "
 Name: sender
 
 Postgres:
-  DataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  MasterDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  SlaveDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
 
 CacheRedis:
   - Host: 127.0.0.1:6379
@@ -274,7 +280,8 @@ TxPool:
   MaxPendingTxCount: 10000
 
 Postgres:
-  DataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  MasterDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  SlaveDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
   MaxConn: 1000
   MaxIdle: 10
 

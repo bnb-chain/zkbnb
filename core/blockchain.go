@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gorm.io/plugin/dbresolver"
 	"math/big"
 	"strconv"
 	"time"
@@ -86,8 +87,9 @@ var (
 
 type ChainConfig struct {
 	Postgres struct {
-		DataSource string
-		LogLevel   logger.LogLevel `json:",optional"`
+		MasterDataSource string
+		SlaveDataSource  string
+		LogLevel         logger.LogLevel `json:",optional"`
 	}
 	CacheRedis cache.CacheConf
 	//nolint:staticcheck
@@ -116,9 +118,18 @@ type BlockChain struct {
 }
 
 func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) {
-	db, err := gorm.Open(postgres.Open(config.Postgres.DataSource), &gorm.Config{
+
+	masterDataSource := config.Postgres.MasterDataSource
+	slaveDataSource := config.Postgres.SlaveDataSource
+	db, err := gorm.Open(postgres.Open(config.Postgres.MasterDataSource), &gorm.Config{
 		Logger: logger.Default.LogMode(config.Postgres.LogLevel),
 	})
+
+	db.Use(dbresolver.Register(dbresolver.Config{
+		Sources:  []gorm.Dialector{postgres.Open(masterDataSource)},
+		Replicas: []gorm.Dialector{postgres.Open(slaveDataSource)},
+	}))
+
 	if err != nil {
 		logx.Error("gorm connect db failed: ", err)
 		return nil, err
