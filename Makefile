@@ -16,6 +16,9 @@ REPO=github.com/bnb-chain/zkbnb
 IMAGE_NAME=ghcr.io/bnb-chain/zkbnb
 API_SERVER = ./service/apiserver
 
+gary:
+	sudo bash -x ./deploy-local-gary.sh
+
 api-server:
 	cd $(API_SERVER) && goctl api go -api server.api -dir .;
 	@echo "Done generate server api";
