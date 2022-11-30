@@ -36,7 +36,7 @@ type (
 		GetTxByTxHash(hash string) (txs *Tx, err error)
 		GetTxsByStatus(status int) (txs []*Tx, err error)
 		GetTxsByStatusAndMaxId(status int, maxId uint, limit int64) (txs []*Tx, err error)
-		CreateTxs(txs []*Tx) error
+		CreateTxs(txs []*PoolTx) error
 		GetPendingTxsByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (txs []*Tx, err error)
 		GetMaxNonceByAccountIndex(accountIndex int64) (nonce int64, err error)
 		CreateTxsInTransact(tx *gorm.DB, txs []*PoolTx) error
@@ -200,7 +200,7 @@ func (m *defaultTxPoolModel) GetTxByTxHash(hash string) (tx *Tx, err error) {
 	return tx, nil
 }
 
-func (m *defaultTxPoolModel) CreateTxs(txs []*Tx) error {
+func (m *defaultTxPoolModel) CreateTxs(txs []*PoolTx) error {
 	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
 		dbTx := tx.Table(m.table).Create(txs)
 		if dbTx.Error != nil {

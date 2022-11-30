@@ -72,7 +72,8 @@ func InitAccountTree(
 		logx.Errorf("unable to create new account tree: %s", err.Error())
 		return nil, nil, err
 	}
-
+	//todo
+	accountNums = 0
 	if accountNums == 0 {
 		return accountTree, accountAssetTrees, nil
 	}
@@ -151,6 +152,7 @@ func reloadAccountTreeFromRDB(
 
 	for _, accountHistory := range accountHistories {
 		if accountInfoMap[accountHistory.AccountIndex] == nil {
+			//todo
 			accountInfo, err := accountModel.GetAccountByIndex(accountHistory.AccountIndex)
 			if err != nil {
 				logx.Errorf("unable to get account by account index: %s", err.Error())

@@ -117,13 +117,13 @@ func (c *Fullnode) Run() {
 			c.bc.Statedb.PurgeCache(curBlock.StateRoot)
 
 			for _, blockTx := range l2Block.Txs {
-				newTx := &tx.Tx{
+				newTx := &tx.PoolTx{
 					TxHash: blockTx.Hash, // Would be computed in prepare method of executors.
 					TxType: blockTx.Type,
 					TxInfo: blockTx.Info,
 				}
 
-				err = c.bc.ApplyTransaction(newTx)
+				err = c.bc.ApplyTransaction(&tx.Tx{PoolTx: *newTx})
 				if err != nil {
 					logx.Errorf("apply block tx ID: %d failed, err %v ", newTx.ID, err)
 					continue

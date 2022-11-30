@@ -39,7 +39,7 @@ type (
 
 	TxDetail struct {
 		gorm.Model
-		PoolTxId        int64 `gorm:"index"`
+		PoolTxId        uint `gorm:"index"`
 		AssetId         int64
 		AssetType       int64
 		AccountIndex    int64 `gorm:"index"`

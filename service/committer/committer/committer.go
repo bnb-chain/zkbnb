@@ -258,7 +258,7 @@ type Config struct {
 	BlockConfig struct {
 		OptionalBlockSizes    []int
 		BlockSaveDisabled     bool `json:",optional"`
-		AccountUpdatePoolSize int  `json:",optional"`
+		SaveBlockDataPoolSize int  `json:",optional"`
 	}
 	LogConf logx.LogConf
 }
@@ -432,11 +432,11 @@ func NewCommitter(config *Config) (*Committer, error) {
 	if err := prometheus.Register(antsPoolGaugeMetric); err != nil {
 		return nil, fmt.Errorf("prometheus.Register antsPoolGaugeMetric error: %v", err)
 	}
-	accountUpdatePoolSize := config.BlockConfig.AccountUpdatePoolSize
-	if accountUpdatePoolSize == 0 {
-		accountUpdatePoolSize = 1
+	saveBlockDataPoolSize := config.BlockConfig.SaveBlockDataPoolSize
+	if saveBlockDataPoolSize == 0 {
+		saveBlockDataPoolSize = 100
 	}
-	pool, err := ants.NewPool(accountUpdatePoolSize)
+	pool, err := ants.NewPool(saveBlockDataPoolSize)
 
 	committer := &Committer{
 		running:            true,
