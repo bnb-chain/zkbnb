@@ -18,6 +18,7 @@ package monitor
 
 import (
 	"fmt"
+	"gorm.io/plugin/dbresolver"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -91,10 +92,19 @@ type Monitor struct {
 }
 
 func NewMonitor(c config.Config) *Monitor {
-	db, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
+
+	masterDataSource := c.Postgres.MasterDataSource
+	slaveDataSource := c.Postgres.SlaveDataSource
+	db, err := gorm.Open(postgres.Open(masterDataSource))
 	if err != nil {
 		logx.Errorf("gorm connect db error, err: %s", err.Error())
 	}
+
+	db.Use(dbresolver.Register(dbresolver.Config{
+		Sources:  []gorm.Dialector{postgres.Open(masterDataSource)},
+		Replicas: []gorm.Dialector{postgres.Open(slaveDataSource)},
+	}))
+
 	monitor := &Monitor{
 		Config:               c,
 		db:                   db,

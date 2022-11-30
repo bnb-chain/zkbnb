@@ -11,6 +11,7 @@ require (
 	github.com/panjf2000/ants/v2 v2.5.0
 	github.com/prometheus/client_golang v1.13.0
 	github.com/zeromicro/go-zero v1.3.4
+	gorm.io/plugin/dbresolver v1.3.0
 	gorm.io/gorm v1.23.4
 )
 

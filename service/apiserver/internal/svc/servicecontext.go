@@ -2,6 +2,7 @@ package svc
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+	"gorm.io/plugin/dbresolver"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -43,10 +44,18 @@ type ServiceContext struct {
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
-	db, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
+
+	masterDataSource := c.Postgres.MasterDataSource
+	slaveDataSource := c.Postgres.SlaveDataSource
+	db, err := gorm.Open(postgres.Open(masterDataSource))
 	if err != nil {
 		logx.Must(err)
 	}
+
+	db.Use(dbresolver.Register(dbresolver.Config{
+		Sources:  []gorm.Dialector{postgres.Open(masterDataSource)},
+		Replicas: []gorm.Dialector{postgres.Open(slaveDataSource)},
+	}))
 
 	rawDB, err := db.DB()
 	if err != nil {

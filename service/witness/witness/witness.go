@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
+	"gorm.io/plugin/dbresolver"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -98,11 +99,18 @@ func NewWitness(c config.Config) (*Witness, error) {
 	if err := prometheus.Register(NftTreeRecentVersionMetric); err != nil {
 		return nil, fmt.Errorf("prometheus.Register NftTreeRecentVersionMetric error: %v", err)
 	}
-	datasource := c.Postgres.DataSource
-	db, err := gorm.Open(postgres.Open(datasource))
+
+	masterDataSource := c.Postgres.MasterDataSource
+	slaveDataSource := c.Postgres.SlaveDataSource
+	db, err := gorm.Open(postgres.Open(masterDataSource))
 	if err != nil {
 		return nil, fmt.Errorf("gorm connect db error, err: %v", err)
 	}
+
+	db.Use(dbresolver.Register(dbresolver.Config{
+		Sources:  []gorm.Dialector{postgres.Open(masterDataSource)},
+		Replicas: []gorm.Dialector{postgres.Open(slaveDataSource)},
+	}))
 
 	w := &Witness{
 		config:              c,

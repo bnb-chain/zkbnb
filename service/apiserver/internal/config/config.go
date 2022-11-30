@@ -9,9 +9,10 @@ import (
 type Config struct {
 	rest.RestConf
 	Postgres struct {
-		DataSource string
-		MaxIdle    int
-		MaxConn    int
+		MasterDataSource string
+		SlaveDataSource  string
+		MaxIdle          int
+		MaxConn          int
 	}
 	TxPool struct {
 		MaxPendingTxCount int

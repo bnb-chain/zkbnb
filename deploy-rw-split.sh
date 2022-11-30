@@ -14,7 +14,7 @@ ZkBNB_REPO_PATH=$(cd `dirname $0`; pwd)
 CMC_TOKEN=cfce503f-fake-fake-fake-bbab5257dac8
 NETWORK_RPC_SYS_CONFIG_NAME=BscTestNetworkRpc # BscTestNetworkRpc or LocalTestNetworkRpc
 BSC_TESTNET_RPC=https://data-seed-prebsc-1-s1.binance.org:8545
-BSC_TESTNET_PRIVATE_KEY=6a9bffc6689b38e4791a797200e0f8c6c6eb215687351e37daf7ae34fbba0b98
+BSC_TESTNET_PRIVATE_KEY=0f894a1a1e00c45dbfb68d2f2d88ab0c375095004451bb198682e4f6f7aa00c3
 
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
@@ -51,20 +51,14 @@ if [ $flag = "new" ]; then
   cp -r ./zkbnb-crypto/circuit/solidity/* $KEY_PATH
 fi
 
-
-
 echo '3. start verify_parse for ZkBNBVerifier'
 cd ${DEPLOY_PATH}/zkbnb/service/prover/
 python3 verifier_parse.py ${KEY_PATH}/ZkBNBVerifier10.sol 10 ${DEPLOY_PATH}/zkbnb-contract/contracts/ZkBNBVerifier.sol
-
-
 
 echo '4-1. get latest block number'
 hexNumber=`curl -X POST ${BSC_TESTNET_RPC} --header 'Content-Type: application/json' --data-raw '{"jsonrpc":"2.0", "method":"eth_blockNumber", "params": [], "id":1 }' | jq -r '.result'`
 blockNumber=`echo $((${hexNumber}))`
 echo 'latest block number = ' $blockNumber
-
-
 
 echo '4-2. deploy contracts, register and deposit on BSC Testnet'
 cd ${DEPLOY_PATH}
@@ -79,7 +73,6 @@ echo 'Recorded latest contract addresses into ${DEPLOY_PATH}/zkbnb-contract/info
 npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/register.js
 npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deposit.js
 
-
 echo '5. modify deployed contracts into zkbnb config'
 cd ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/
 cp -r ./contractaddr.yaml.example ./contractaddr.yaml
@@ -92,8 +85,6 @@ sed -i -e "s/Governance: .*/Governance: ${GovernanceContractAddr}/" ${DEPLOY_PAT
 
 BUSDContractAddr=`cat ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json  | jq -r '.BUSDToken'`
 sed -i -e "s/BUSDToken: .*/BUSDToken: ${BUSDContractAddr}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
-
-
 
  cd ${DEPLOY_PATH}/zkbnb/
  make api-server
@@ -109,8 +100,8 @@ echo "7. run prover"
 echo -e "
 Name: prover
 Postgres:
-  MasterDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
-  SlaveDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  MasterDataSource: host=zkbnb-pgsql-0.cz4yv2hjgf8y.ap-northeast-1.rds.amazonaws.com user=cloud password=bnbcloud2022 dbname=zkbnb-test port=5432 sslmode=disable
+  SlaveDataSource: host=zkbnb-pgsql-0.cz4yv2hjgf8y.ap-northeast-1.rds.amazonaws.com user=cloud password=bnbcloud2022 dbname=zkbnb-test port=5432 sslmode=disable
 
 CacheRedis:
   - Host: 127.0.0.1:6379
@@ -136,18 +127,14 @@ sed -i '' -e '/-e/,1d' ${DEPLOY_PATH}/zkbnb/service/prover/etc/config.yaml
 sed -i '' -e '/-e/,1d' run_prover.sh
 pm2 start --name prover "./run_prover.sh"
 
-
-
-
-
 echo "8. run witness"
 
 echo -e "
 Name: witness
 
 Postgres:
-  MasterDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
-  SlaveDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  MasterDataSource: host=zkbnb-pgsql-0.cz4yv2hjgf8y.ap-northeast-1.rds.amazonaws.com user=cloud password=bnbcloud2022 dbname=zkbnb-test port=5432 sslmode=disable
+  SlaveDataSource: host=zkbnb-pgsql-0.cz4yv2hjgf8y.ap-northeast-1.rds.amazonaws.com user=cloud password=bnbcloud2022 dbname=zkbnb-test port=5432 sslmode=disable
 
 CacheRedis:
   - Host: 127.0.0.1:6379
@@ -166,15 +153,14 @@ sed -i '' -e '/-e/,1d' ${DEPLOY_PATH}/zkbnb/service/witness/etc/config.yaml
 sed -i '' -e '/-e/,1d' run_witness.sh
 pm2 start --name witness "./run_witness.sh"
 
-
 echo "9. run monitor"
 
 echo -e "
 Name: monitor
 
 Postgres:
-  MasterDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
-  SlaveDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  MasterDataSource: host=zkbnb-pgsql-0.cz4yv2hjgf8y.ap-northeast-1.rds.amazonaws.com user=cloud password=bnbcloud2022 dbname=zkbnb-test port=5432 sslmode=disable
+  SlaveDataSource: host=zkbnb-pgsql-0.cz4yv2hjgf8y.ap-northeast-1.rds.amazonaws.com user=cloud password=bnbcloud2022 dbname=zkbnb-test port=5432 sslmode=disable
 
 CacheRedis:
   - Host: 127.0.0.1:6379
@@ -201,15 +187,14 @@ sed -i '' -e '/-e/,1d' ${DEPLOY_PATH}/zkbnb/service/monitor/etc/config.yaml
 sed -i '' -e '/-e/,1d' run_monitor.sh
 pm2 start --name monitor "./run_monitor.sh"
 
-
 echo "10. run committer"
 
 echo -e "
 Name: committer
 
 Postgres:
-  MasterDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
-  SlaveDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  MasterDataSource: host=zkbnb-pgsql-0.cz4yv2hjgf8y.ap-northeast-1.rds.amazonaws.com user=cloud password=bnbcloud2022 dbname=zkbnb-test port=5432 sslmode=disable
+  SlaveDataSource: host=zkbnb-pgsql-0.cz4yv2hjgf8y.ap-northeast-1.rds.amazonaws.com user=cloud password=bnbcloud2022 dbname=zkbnb-test port=5432 sslmode=disable
 
 CacheRedis:
   - Host: 127.0.0.1:6379
@@ -231,15 +216,14 @@ sed -i '' -e '/-e/,1d' ${DEPLOY_PATH}/zkbnb/service/committer/etc/config.yaml
 sed -i '' -e '/-e/,1d' run_committer.sh
 pm2 start --name committer "./run_committer.sh"
 
-
 echo "11. run sender"
 
 echo -e "
 Name: sender
 
 Postgres:
-  MasterDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
-  SlaveDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  MasterDataSource: host=zkbnb-pgsql-0.cz4yv2hjgf8y.ap-northeast-1.rds.amazonaws.com user=cloud password=bnbcloud2022 dbname=zkbnb-test port=5432 sslmode=disable
+  SlaveDataSource: host=zkbnb-pgsql-0.cz4yv2hjgf8y.ap-northeast-1.rds.amazonaws.com user=cloud password=bnbcloud2022 dbname=zkbnb-test port=5432 sslmode=disable
 
 CacheRedis:
   - Host: 127.0.0.1:6379
@@ -280,8 +264,8 @@ TxPool:
   MaxPendingTxCount: 10000
 
 Postgres:
-  MasterDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
-  SlaveDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  MasterDataSource: host=zkbnb-pgsql-0.cz4yv2hjgf8y.ap-northeast-1.rds.amazonaws.com user=cloud password=bnbcloud2022 dbname=zkbnb-test port=5432 sslmode=disable
+  SlaveDataSource: host=zkbnb-pgsql-0.cz4yv2hjgf8y.ap-northeast-1.rds.amazonaws.com user=cloud password=bnbcloud2022 dbname=zkbnb-test port=5432 sslmode=disable
   MaxConn: 1000
   MaxIdle: 10
 

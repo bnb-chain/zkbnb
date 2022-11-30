@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
+	"gorm.io/plugin/dbresolver"
 	"math/big"
 	"time"
 
@@ -99,10 +100,18 @@ func NewSender(c sconfig.Config) *Sender {
 		logx.Errorf("prometheus.Register l2BlockVerifiedHeightMetric error: %v", err)
 	}
 
-	db, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
+	masterDataSource := c.Postgres.MasterDataSource
+	slaveDataSource := c.Postgres.SlaveDataSource
+	db, err := gorm.Open(postgres.Open(masterDataSource))
 	if err != nil {
 		logx.Errorf("gorm connect db error, err = %v", err)
 	}
+
+	db.Use(dbresolver.Register(dbresolver.Config{
+		Sources:  []gorm.Dialector{postgres.Open(masterDataSource)},
+		Replicas: []gorm.Dialector{postgres.Open(slaveDataSource)},
+	}))
+
 	s := &Sender{
 		config:               c,
 		db:                   db,

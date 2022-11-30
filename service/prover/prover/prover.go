@@ -14,6 +14,7 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/plugin/dbresolver"
 
 	"github.com/bnb-chain/zkbnb-crypto/circuit"
 	"github.com/bnb-chain/zkbnb/common/prove"
@@ -78,10 +79,17 @@ func NewProver(c config.Config) (*Prover, error) {
 		return nil, fmt.Errorf("prometheus.Register proofGenerateTimeMetric error: %v", err)
 	}
 
-	db, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
+	masterDataSource := c.Postgres.MasterDataSource
+	slaveDataSource := c.Postgres.SlaveDataSource
+	db, err := gorm.Open(postgres.Open(masterDataSource))
 	if err != nil {
 		logx.Errorf("gorm connect db error, err = %s", err.Error())
 	}
+
+	db.Use(dbresolver.Register(dbresolver.Config{
+		Sources:  []gorm.Dialector{postgres.Open(masterDataSource)},
+		Replicas: []gorm.Dialector{postgres.Open(slaveDataSource)},
+	}))
 	redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
 	prover := &Prover{
 		Config:            c,
