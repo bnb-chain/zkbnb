@@ -18,10 +18,10 @@
 package account
 
 import (
-	"errors"
 	"github.com/bnb-chain/zkbnb/types"
+	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
-	"strconv"
+	"gorm.io/gorm/clause"
 )
 
 const (
@@ -31,11 +31,6 @@ const (
 const (
 	AccountStatusPending = iota
 	AccountStatusConfirmed
-)
-
-const (
-	AccountTransactionStatusProcessing = iota
-	AccountTransactionStatusCommitted
 )
 
 type (
@@ -53,6 +48,7 @@ type (
 		GetUsers(limit int64, offset int64) (accounts []*Account, err error)
 		UpdateAccountInTransact(account *Account) error
 		UpdateAccountTransactionToCommitted(tx *gorm.DB, accounts []*Account) error
+		BatchInsertOrUpdate(accounts []*Account) (err error)
 	}
 
 	defaultAccountModel struct {
@@ -76,8 +72,7 @@ type (
 		AssetInfo string
 		AssetRoot string
 		// 0 - registered, not committer 1 - committer
-		Status            int
-		TransactionStatus int
+		Status int
 	}
 )
 
@@ -192,12 +187,11 @@ func (m *defaultAccountModel) UpdateAccountsInTransact(tx *gorm.DB, accounts []*
 }
 
 func (m *defaultAccountModel) UpdateAccountInTransact(account *Account) error {
-	dbTx := m.DB.Model(&Account{}).Unscoped().Select("Nonce", "CollectionNonce", "AssetInfo", "AssetRoot", "TransactionStatus").Where("id = ?", account.ID).Updates(map[string]interface{}{
-		"nonce":              account.Nonce,
-		"collection_nonce":   account.CollectionNonce,
-		"asset_info":         account.AssetInfo,
-		"asset_root":         account.AssetRoot,
-		"transaction_status": account.TransactionStatus,
+	dbTx := m.DB.Model(&Account{}).Unscoped().Select("Nonce", "CollectionNonce", "AssetInfo", "AssetRoot").Where("id = ?", account.ID).Updates(map[string]interface{}{
+		"nonce":            account.Nonce,
+		"collection_nonce": account.CollectionNonce,
+		"asset_info":       account.AssetInfo,
+		"asset_root":       account.AssetRoot,
 	})
 	if dbTx.Error != nil {
 		return dbTx.Error
@@ -213,21 +207,21 @@ func (m *defaultAccountModel) UpdateAccountInTransact(account *Account) error {
 }
 
 func (m *defaultAccountModel) UpdateAccountTransactionToCommitted(tx *gorm.DB, accounts []*Account) error {
-	length := len(accounts)
-	if length == 0 {
-		return nil
-	}
-	accountIndexes := make([]int64, 0, length)
-	for _, account := range accounts {
-		accountIndexes = append(accountIndexes, account.AccountIndex)
-	}
-	dbTx := tx.Model(&Account{}).Where("account_index in ? ", accountIndexes).Update("transaction_status", AccountTransactionStatusCommitted)
-	if dbTx.Error != nil {
-		return dbTx.Error
-	}
-	if dbTx.RowsAffected != int64(length) {
-		return errors.New("update accounts transaction status failed,rowsAffected =" + strconv.FormatInt(dbTx.RowsAffected, 10) + "not equal accounts length=" + strconv.Itoa(length))
-	}
+	//length := len(accounts)
+	//if length == 0 {
+	//	return nil
+	//}
+	//accountIndexes := make([]int64, 0, length)
+	//for _, account := range accounts {
+	//	accountIndexes = append(accountIndexes, account.AccountIndex)
+	//}
+	//dbTx := tx.Model(&Account{}).Where("account_index in ? ", accountIndexes).Update("transaction_status", AccountTransactionStatusCommitted)
+	//if dbTx.Error != nil {
+	//	return dbTx.Error
+	//}
+	//if dbTx.RowsAffected != int64(length) {
+	//	return errors.New("update accounts transaction status failed,rowsAffected =" + strconv.FormatInt(dbTx.RowsAffected, 10) + "not equal accounts length=" + strconv.Itoa(length))
+	//}
 	return nil
 }
 
@@ -239,4 +233,19 @@ func (m *defaultAccountModel) GetUsers(limit int64, offset int64) (accounts []*A
 		return nil, nil
 	}
 	return accounts, nil
+}
+
+func (m *defaultAccountModel) BatchInsertOrUpdate(accounts []*Account) (err error) {
+	dbTx := m.DB.Table(m.table).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "id"}},
+		DoUpdates: clause.AssignmentColumns([]string{"nonce", "collection_nonce", "asset_info", "asset_root"}),
+	}).Create(&accounts)
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if int(dbTx.RowsAffected) != len(accounts) {
+		logx.Errorf("BatchInsertOrUpdate failed,rows affected not equal accounts length,dbTx.RowsAffected:%s,len(accounts):%s", int(dbTx.RowsAffected), len(accounts))
+		return types.DbErrFailToUpdateAccount
+	}
+	return nil
 }

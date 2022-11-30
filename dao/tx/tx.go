@@ -18,6 +18,7 @@
 package tx
 
 import (
+	"github.com/zeromicro/go-zero/core/logx"
 	"time"
 
 	"gorm.io/gorm"
@@ -84,6 +85,7 @@ type (
 		GetTxsTotalCountBetween(from, to time.Time) (count int64, err error)
 		GetDistinctAccountsCountBetween(from, to time.Time) (count int64, err error)
 		UpdateTxsStatusInTransact(tx *gorm.DB, blockTxStatus map[int64]int) error
+		CreateTxs(txs []*Tx) error
 	}
 
 	defaultTxModel struct {
@@ -112,7 +114,8 @@ type (
 		Memo          string
 		ExtraInfo     string
 		NativeAddress string      // a. Priority tx, assigned when created b. Other tx, assigned after executed.
-		TxDetails     []*TxDetail //`gorm:"foreignKey:TxId"`
+		TxDetails     []*TxDetail `gorm:"-"`
+		PoolTxId      uint        `gorm:"uniqueIndex"`
 
 		TxIndex     int64
 		BlockHeight int64 `gorm:"index"`
@@ -261,6 +264,18 @@ func (m *defaultTxModel) UpdateTxsStatusInTransact(tx *gorm.DB, blockTxStatus ma
 		if dbTx.RowsAffected == 0 {
 			return types.DbErrFailToUpdateTx
 		}
+	}
+	return nil
+}
+
+func (m *defaultTxModel) CreateTxs(txs []*Tx) error {
+	dbTx := m.DB.Table(m.table).CreateInBatches(txs, len(txs))
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected != int64(len(txs)) {
+		logx.Errorf("CreateTxs failed,rows affected not equal txs length,dbTx.RowsAffected:%s,len(txs):%s", int(dbTx.RowsAffected), len(txs))
+		return types.DbErrFailToCreateTx
 	}
 	return nil
 }

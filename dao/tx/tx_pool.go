@@ -39,7 +39,7 @@ type (
 		CreateTxs(txs []*Tx) error
 		GetPendingTxsByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (txs []*Tx, err error)
 		GetMaxNonceByAccountIndex(accountIndex int64) (nonce int64, err error)
-		CreateTxsInTransact(tx *gorm.DB, txs []*Tx) error
+		CreateTxsInTransact(tx *gorm.DB, txs []*PoolTx) error
 		UpdateTxsInTransact(tx *gorm.DB, txs []*Tx) error
 		DeleteTxsInTransact(tx *gorm.DB, txs []*Tx) error
 		DeleteTxsBatchInTransact(tx *gorm.DB, txs []*Tx) error
@@ -60,7 +60,32 @@ type (
 	}
 
 	PoolTx struct {
-		Tx
+		gorm.Model
+
+		// Assigned when created in the tx pool.
+		TxHash       string `gorm:"uniqueIndex"`
+		TxType       int64
+		TxInfo       string
+		AccountIndex int64 `gorm:"index:idx_pool_tx_account_index_nonce,priority:1"`
+		Nonce        int64 `gorm:"index:idx_pool_tx_account_index_nonce,priority:2"`
+		ExpiredAt    int64
+
+		// Assigned after executed.
+		GasFee        string
+		GasFeeAssetId int64
+		NftIndex      int64
+		CollectionId  int64
+		AssetId       int64
+		TxAmount      string
+		Memo          string
+		ExtraInfo     string
+		NativeAddress string      // a. Priority tx, assigned when created b. Other tx, assigned after executed.
+		TxDetails     []*TxDetail `gorm:"-"`
+
+		TxIndex     int64
+		BlockHeight int64 `gorm:"index"`
+		BlockId     int64 `gorm:"index"`
+		TxStatus    int   `gorm:"index"`
 	}
 )
 
@@ -218,7 +243,7 @@ func (m *defaultTxPoolModel) GetMaxNonceByAccountIndex(accountIndex int64) (nonc
 	return nonce, nil
 }
 
-func (m *defaultTxPoolModel) CreateTxsInTransact(tx *gorm.DB, txs []*Tx) error {
+func (m *defaultTxPoolModel) CreateTxsInTransact(tx *gorm.DB, txs []*PoolTx) error {
 	dbTx := tx.Table(m.table).CreateInBatches(txs, len(txs))
 	if dbTx.Error != nil {
 		return dbTx.Error

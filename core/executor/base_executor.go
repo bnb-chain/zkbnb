@@ -123,6 +123,7 @@ func (e *BaseExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.TxIndex = int64(len(e.bc.StateDB().Txs))
 	e.tx.BlockHeight = e.bc.CurrentBlock().BlockHeight
 	e.tx.TxStatus = tx.StatusExecuted
+	e.tx.PoolTxId = e.tx.ID
 	return e.tx, nil
 }
 

@@ -20,6 +20,7 @@ type ChainDB struct {
 	BlockModel           block.BlockModel
 	CompressedBlockModel compressedblock.CompressedBlockModel
 	TxModel              tx.TxModel
+	TxDetailModel        tx.TxDetailModel
 	PriorityRequestModel priorityrequest.PriorityRequestModel
 
 	// State DB

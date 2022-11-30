@@ -18,6 +18,8 @@
 package tx
 
 import (
+	"github.com/bnb-chain/zkbnb/types"
+	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 )
 
@@ -27,6 +29,7 @@ type (
 	TxDetailModel interface {
 		CreateTxDetailTable() error
 		DropTxDetailTable() error
+		CreateTxDetails(txDetails []*TxDetail) error
 	}
 
 	defaultTxDetailModel struct {
@@ -36,7 +39,7 @@ type (
 
 	TxDetail struct {
 		gorm.Model
-		TxId            int64 `gorm:"index"`
+		PoolTxId        int64 `gorm:"index"`
 		AssetId         int64
 		AssetType       int64
 		AccountIndex    int64 `gorm:"index"`
@@ -68,4 +71,16 @@ func (m *defaultTxDetailModel) CreateTxDetailTable() error {
 
 func (m *defaultTxDetailModel) DropTxDetailTable() error {
 	return m.DB.Migrator().DropTable(m.table)
+}
+
+func (m *defaultTxDetailModel) CreateTxDetails(txDetails []*TxDetail) error {
+	dbTx := m.DB.Table(m.table).CreateInBatches(txDetails, len(txDetails))
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected != int64(len(txDetails)) {
+		logx.Errorf("CreateTxDetails failed,rows affected not equal txDetails length,dbTx.RowsAffected:%s,len(txDetails):%s", int(dbTx.RowsAffected), len(txDetails))
+		return types.DbErrFailToCreateTxDetail
+	}
+	return nil
 }
