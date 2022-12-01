@@ -279,11 +279,11 @@ func (bc *BlockChain) commitNewBlock(blockSize int, createdAt int64) (*block.Blo
 func (bc *BlockChain) VerifyExpiredAt(expiredAt int64) error {
 	if !bc.dryRun {
 		if expiredAt < bc.currentBlock.CreatedAt.UnixMilli() {
-			//return types.AppErrInvalidExpireTime
+			return types.AppErrInvalidExpireTime
 		}
 	} else {
 		if expiredAt < time.Now().UnixMilli() {
-			//return types.AppErrInvalidExpireTime
+			return types.AppErrInvalidExpireTime
 		}
 	}
 	return nil
