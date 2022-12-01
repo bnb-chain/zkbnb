@@ -72,8 +72,7 @@ func InitAccountTree(
 		logx.Errorf("unable to create new account tree: %s", err.Error())
 		return nil, nil, err
 	}
-	//todo
-	accountNums = 0
+
 	if accountNums == 0 {
 		return accountTree, accountAssetTrees, nil
 	}

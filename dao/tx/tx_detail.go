@@ -30,6 +30,7 @@ type (
 		CreateTxDetailTable() error
 		DropTxDetailTable() error
 		CreateTxDetails(txDetails []*TxDetail) error
+		DeleteByHeightInTransact(tx *gorm.DB, heights []int) error
 	}
 
 	defaultTxDetailModel struct {
@@ -50,7 +51,8 @@ type (
 		AccountOrder    int64
 		Nonce           int64
 		CollectionNonce int64
-		IsGas           bool `gorm:"default:false"`
+		IsGas           bool  `gorm:"default:false"`
+		BlockHeight     int64 `gorm:"index"`
 	}
 )
 
@@ -81,6 +83,14 @@ func (m *defaultTxDetailModel) CreateTxDetails(txDetails []*TxDetail) error {
 	if dbTx.RowsAffected != int64(len(txDetails)) {
 		logx.Errorf("CreateTxDetails failed,rows affected not equal txDetails length,dbTx.RowsAffected:%s,len(txDetails):%s", int(dbTx.RowsAffected), len(txDetails))
 		return types.DbErrFailToCreateTxDetail
+	}
+	return nil
+}
+
+func (m *defaultTxDetailModel) DeleteByHeightInTransact(tx *gorm.DB, heights []int) error {
+	dbTx := tx.Model(&TxDetail{}).Unscoped().Where("block_height in ?", heights).Delete(&TxDetail{})
+	if dbTx.Error != nil {
+		return dbTx.Error
 	}
 	return nil
 }

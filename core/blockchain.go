@@ -128,6 +128,55 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		chainConfig: config,
 	}
 
+	blocks, err := bc.BlockModel.GetBlockByStatus(block.StatusPacked)
+	if err != nil {
+		logx.Error("get block by status=StatusPacked failed: ", err)
+		panic("get block by status=StatusPacked failed: " + err.Error())
+	}
+	var accountIndexAll map[int64]bool
+	if blocks != nil {
+		for _, block := range blocks {
+			if block.AccountIndexes != "[]" && block.AccountIndexes != "" {
+				var accountIndexes []int64
+				err = json.Unmarshal([]byte(block.AccountIndexes), accountIndexes)
+				if err != nil {
+					return nil, types.JsonErrUnmarshal
+				}
+				for _, accountIndex := range accountIndexes {
+					accountIndexAll[accountIndex] = true
+				}
+			}
+		}
+	}
+	var accountIndexList []int64
+
+	for k := range accountIndexAll {
+		accountIndexList = append(accountIndexList, k)
+	}
+	height,err:=bc.BlockModel.GetLatestPendingHeight()
+	if err!=nil{
+		logx.Error("GetLatestPendingHeight failed: ", err)
+		panic("GetLatestPendingHeight failed: " + err.Error())
+	}
+
+	//todo limit offset
+	rowsAffected, accountHistories, err :=bc.AccountHistoryModel.GetLatestAccountHistories(accountIndexList，height)
+
+
+	bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
+		for  _,accountHistory := range accountHistories{
+			account :=&account.Account{
+				AccountIndex:accountHistory.AccountIndex,
+				Nonce:  accountHistory.Nonce,
+				CollectionNonce: accountHistory.CollectionNonce,
+				AssetInfo: accountHistory.AssetInfo,
+				AssetRoot: accountHistory.AssetRoot,
+			}
+			err:=bc.AccountModel.UpdateByIndexInTransact(dbTx,account)
+		}
+
+	})
+
 	err = bc.TxPoolModel.UpdateTxsToPending()
 	if err != nil {
 		logx.Error("update pool tx to pending failed: ", err)
@@ -141,7 +190,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	}
 	if blockHeights != nil {
 		logx.Infof("get proposing block heights: %v", blockHeights)
-		err = bc.BlockModel.DeleteProposingBlock()
+		err = bc.BlockModel.DeleteBlockInTransact()
 		if err != nil {
 			logx.Error("delete block failed: ", err)
 			panic("delete block failed: " + err.Error())

@@ -36,6 +36,7 @@ type (
 		CreateAccountHistoriesInTransact(tx *gorm.DB, histories []*AccountHistory) error
 		CreateAccountHistories(histories []*AccountHistory) error
 		GetLatestAccountHistory(accountIndex, height int64) (accountHistory *AccountHistory, err error)
+		GetLatestAccountHistories(accountIndexes []int64, height int64) (rowsAffected int64, accounts []*AccountHistory, err error)
 	}
 
 	defaultAccountHistoryModel struct {
@@ -142,4 +143,18 @@ func (m *defaultAccountHistoryModel) GetLatestAccountHistory(accountIndex, heigh
 		return nil, types.DbErrNotFound
 	}
 	return accountHistory, nil
+}
+
+func (m *defaultAccountHistoryModel) GetLatestAccountHistories(accountIndexes []int64, height int64) (rowsAffected int64, accounts []*AccountHistory, err error) {
+	subQuery := m.DB.Table(m.table).Select("*").
+		Where("account_index = a.account_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height AND l2_block_height != -1", height)
+
+	dbTx := m.DB.Table(m.table+" as a").Select("*").
+		Where("NOT EXISTS (?) AND l2_block_height <= ? AND l2_block_height != -1 and account_index in ?", subQuery, height, accountIndexes).
+		Order("account_index")
+
+	if dbTx.Find(&accounts).Error != nil {
+		return 0, nil, types.DbErrSqlOperation
+	}
+	return dbTx.RowsAffected, accounts, nil
 }

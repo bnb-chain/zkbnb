@@ -86,6 +86,7 @@ type (
 		GetDistinctAccountsCountBetween(from, to time.Time) (count int64, err error)
 		UpdateTxsStatusInTransact(tx *gorm.DB, blockTxStatus map[int64]int) error
 		CreateTxs(txs []*Tx) error
+		DeleteByHeightInTransact(tx *gorm.DB, heights []int) error
 	}
 
 	defaultTxModel struct {
@@ -251,6 +252,14 @@ func (m *defaultTxModel) CreateTxs(txs []*Tx) error {
 	if dbTx.RowsAffected != int64(len(txs)) {
 		logx.Errorf("CreateTxs failed,rows affected not equal txs length,dbTx.RowsAffected:%s,len(txs):%s", int(dbTx.RowsAffected), len(txs))
 		return types.DbErrFailToCreateTx
+	}
+	return nil
+}
+
+func (m *defaultTxModel) DeleteByHeightInTransact(tx *gorm.DB, heights []int) error {
+	dbTx := tx.Model(&Tx{}).Unscoped().Where("block_height in ?", heights).Delete(&Tx{})
+	if dbTx.Error != nil {
+		return dbTx.Error
 	}
 	return nil
 }

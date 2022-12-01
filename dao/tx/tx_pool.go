@@ -45,7 +45,7 @@ type (
 		DeleteTxsBatchInTransact(tx *gorm.DB, txs []*Tx) error
 		GetLatestTx(txTypes []int64, statuses []int) (tx *Tx, err error)
 		GetFirstTxByStatus(status int) (tx *Tx, err error)
-		UpdateTxsToPending() error
+		UpdateTxsToPending(tx *gorm.DB) error
 		GetLatestExecutedTx() (tx *Tx, err error)
 		GetTxsPageByStatus(status int, limit int64) (txs []*Tx, err error)
 		UpdateTxsStatusByIds(ids []uint, status int) error
@@ -84,7 +84,7 @@ type (
 
 		TxIndex     int64
 		BlockHeight int64 `gorm:"index"`
-		BlockId     int64 `gorm:"index"`
+		BlockId     uint  `gorm:"index"`
 		TxStatus    int   `gorm:"index"`
 	}
 )
@@ -293,9 +293,9 @@ func (m *defaultTxPoolModel) UpdateTxsStatusAndHeightByIds(ids []uint, status in
 	return nil
 }
 
-func (m *defaultTxPoolModel) UpdateTxsToPending() error {
+func (m *defaultTxPoolModel) UpdateTxsToPending(tx *gorm.DB) error {
 	var statuses = []int{StatusProcessing, StatusExecuted}
-	dbTx := m.DB.Model(&PoolTx{}).Where("tx_status in ? ", statuses).Update("tx_status", StatusPending)
+	dbTx := tx.Model(&PoolTx{}).Where("tx_status in ? ", statuses).Update("tx_status", StatusPending)
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}

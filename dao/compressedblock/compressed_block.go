@@ -33,6 +33,7 @@ type (
 		DropCompressedBlockTable() error
 		GetCompressedBlocksBetween(start, end int64) (blocksForCommit []*CompressedBlock, err error)
 		CreateCompressedBlock(block *CompressedBlock) error
+		DeleteByHeightInTransact(tx *gorm.DB, heights []int) error
 	}
 
 	defaultCompressedBlockModel struct {
@@ -87,6 +88,13 @@ func (m *defaultCompressedBlockModel) CreateCompressedBlock(block *CompressedBlo
 	}
 	if dbTx.RowsAffected == 0 {
 		return types.DbErrFailToCreateCompressedBlock
+	}
+	return nil
+}
+func (m *defaultCompressedBlockModel) DeleteByHeightInTransact(tx *gorm.DB, heights []int) error {
+	dbTx := tx.Model(&CompressedBlock{}).Unscoped().Where("block_height in ?", heights).Delete(&CompressedBlock{})
+	if dbTx.Error != nil {
+		return dbTx.Error
 	}
 	return nil
 }

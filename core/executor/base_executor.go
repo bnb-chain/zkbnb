@@ -124,6 +124,7 @@ func (e *BaseExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.BlockHeight = e.bc.CurrentBlock().BlockHeight
 	e.tx.TxStatus = tx.StatusExecuted
 	e.tx.PoolTxId = e.tx.ID
+	e.tx.BlockId = e.bc.CurrentBlock().ID
 	return e.tx, nil
 }
 

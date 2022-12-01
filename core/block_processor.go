@@ -61,6 +61,7 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 	}
 	for _, txDetail := range txDetails {
 		txDetail.PoolTxId = tx.ID
+		txDetail.BlockHeight = p.bc.currentBlock.BlockHeight
 	}
 	tx.TxDetails = txDetails
 	start = time.Now()
