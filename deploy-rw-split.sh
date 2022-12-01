@@ -91,7 +91,7 @@ sed -i -e "s/BUSDToken: .*/BUSDToken: ${BUSDContractAddr}/" ${DEPLOY_PATH}/zkbnb
 cd ${DEPLOY_PATH}/zkbnb && go mod tidy
 
 echo "6. init tables on database"
-go run ./cmd/zkbnb/main.go db initialize --dsn "host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable" --contractAddr ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
+go run ./cmd/zkbnb/main.go db initialize --dsn "host=zkbnb-pgsql-0.cz4yv2hjgf8y.ap-northeast-1.rds.amazonaws.com user=cloud password=bnbcloud2022 dbname=zkbnb-perf port=5432 sslmode=disable" --contractAddr ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
 
 sleep 10s
 
@@ -264,8 +264,8 @@ TxPool:
   MaxPendingTxCount: 10000
 
 Postgres:
-  MasterDataSource: host=zkbnb-pgsql-0.cz4yv2hjgf8y.ap-northeast-1.rds.amazonaws.com user=cloud password=bnbcloud2022 dbname=zkbnb-test port=5432 sslmode=disable
-  SlaveDataSource: host=zkbnb-pgsql-0.cz4yv2hjgf8y.ap-northeast-1.rds.amazonaws.com user=cloud password=bnbcloud2022 dbname=zkbnb-test port=5432 sslmode=disable
+  MasterDataSource: host=zkbnb-pgsql-0.cz4yv2hjgf8y.ap-northeast-1.rds.amazonaws.com user=cloud password=bnbcloud2022 dbname=zkbnb-perf port=5432 sslmode=disable
+  SlaveDataSource: host=zkbnb-pgsql-0.cz4yv2hjgf8y.ap-northeast-1.rds.amazonaws.com user=cloud password=bnbcloud2022 dbname=zkbnb-perf port=5432 sslmode=disable
   MaxConn: 1000
   MaxIdle: 10
 
