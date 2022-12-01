@@ -4,6 +4,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/plugin/dbresolver"
 
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/nft"
@@ -19,10 +20,19 @@ type ServiceContext struct {
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
-	db, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
+
+	masterDataSource := c.Postgres.MasterDataSource
+	slaveDataSource := c.Postgres.SlaveDataSource
+	db, err := gorm.Open(postgres.Open(masterDataSource))
 	if err != nil {
 		logx.Errorf("gorm connect db error, err = %s", err.Error())
 	}
+
+	db.Use(dbresolver.Register(dbresolver.Config{
+		Sources:  []gorm.Dialector{postgres.Open(masterDataSource)},
+		Replicas: []gorm.Dialector{postgres.Open(slaveDataSource)},
+	}))
+
 	return &ServiceContext{
 		Config:              c,
 		AccountModel:        account.NewAccountModel(db),
