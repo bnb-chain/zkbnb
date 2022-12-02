@@ -19,6 +19,7 @@ package tx
 
 import (
 	"gorm.io/gorm"
+	"time"
 
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -50,8 +51,9 @@ type (
 		GetTxsPageByStatus(status int, limit int64) (txs []*Tx, err error)
 		UpdateTxsStatusByIds(ids []uint, status int) error
 		UpdateTxsStatusAndHeightByIds(ids []uint, status int, blockHeight int64) error
-		DeleteTxsBatch(txs []*Tx) error
+		DeleteTxsBatch(poolTxIds []uint, status int, blockHeight int64) error
 		DeleteTxIdsBatchInTransact(tx *gorm.DB, ids []uint) error
+		UpdateTxsToPendingByHeight(tx *gorm.DB, blockHeight []int64) error
 	}
 
 	defaultTxPoolModel struct {
@@ -283,7 +285,7 @@ func (m *defaultTxPoolModel) UpdateTxsStatusByIds(ids []uint, status int) error 
 
 func (m *defaultTxPoolModel) UpdateTxsStatusAndHeightByIds(ids []uint, status int, blockHeight int64) error {
 	dbTx := m.DB.Model(&PoolTx{}).Select("TxStatus", "BlockHeight").Where("id in ?", ids).Updates(map[string]interface{}{
-		"status":       status,
+		"tx_status":    status,
 		"block_height": blockHeight,
 	})
 	if dbTx.Error != nil {
@@ -346,21 +348,31 @@ func (m *defaultTxPoolModel) DeleteTxIdsBatchInTransact(tx *gorm.DB, ids []uint)
 	}
 	return nil
 }
-
-func (m *defaultTxPoolModel) DeleteTxsBatch(txs []*Tx) error {
-	if len(txs) == 0 {
+func (m *defaultTxPoolModel) UpdateTxsToPendingByHeight(tx *gorm.DB, blockHeight []int64) error {
+	if len(blockHeight) == 0 {
 		return nil
 	}
-	ids := make([]uint, 0, len(txs))
-	for _, poolTx := range txs {
-		ids = append(ids, poolTx.ID)
-	}
-	dbTx := m.DB.Table(m.table).Where("id in ?", ids).Delete(&Tx{})
+	dbTx := tx.Model(&PoolTx{}).Unscoped().Select("DeletedAt", "TxStatus").Where("block_height in ? and tx_status= ? and deleted_at is not null", blockHeight, StatusExecuted).Updates(map[string]interface{}{
+		"deleted_at": nil,
+		"tx_status":  StatusPending,
+	})
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}
-	if dbTx.RowsAffected == 0 {
-		return types.DbErrFailToDeletePoolTx
+	return nil
+}
+
+func (m *defaultTxPoolModel) DeleteTxsBatch(poolTxIds []uint, status int, blockHeight int64) error {
+	if len(poolTxIds) == 0 {
+		return nil
+	}
+	dbTx := m.DB.Model(&PoolTx{}).Select("DeletedAt", "BlockHeight", "TxStatus").Where("id in ?", poolTxIds).Updates(map[string]interface{}{
+		"deleted_at":   time.Now(),
+		"block_height": blockHeight,
+		"tx_status":    status,
+	})
+	if dbTx.Error != nil {
+		return dbTx.Error
 	}
 	return nil
 }

@@ -153,6 +153,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		}
 		accountIndexAll := make(map[int64]bool, 0)
 		heights := make([]int64, 0)
+		packedHeights := make([]int64, 0)
 		if blocks != nil {
 			for _, blockInfo := range blocks {
 				if blockInfo.AccountIndexes != "[]" && blockInfo.AccountIndexes != "" {
@@ -166,6 +167,9 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 					}
 				}
 				heights = append(heights, blockInfo.BlockHeight)
+				if blockInfo.BlockStatus == block.StatusPacked {
+					packedHeights = append(packedHeights, blockInfo.BlockHeight)
+				}
 			}
 
 		}
@@ -221,6 +225,11 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 			if err != nil {
 				logx.Error("update pool tx to pending failed: ", err)
 				panic("update pool tx to pending failed: " + err.Error())
+			}
+			err = bc.TxPoolModel.UpdateTxsToPendingByHeight(dbTx, packedHeights)
+			if err != nil {
+				logx.Error("UpdateTxsToPendingByHeight failed: ", err)
+				panic("UpdateTxsToPendingByHeight failed: " + err.Error())
 			}
 			return nil
 		})

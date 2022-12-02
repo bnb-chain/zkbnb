@@ -9,6 +9,7 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/panjf2000/ants/v2"
+	"sort"
 	"strconv"
 	"time"
 
@@ -723,15 +724,11 @@ func (c *Committer) updatePoolTxFunc(updatePoolTxMap *UpdatePoolTx) {
 	}
 	length = len(updatePoolTxMap.PendingDeletePoolTxs)
 	if length > 0 {
-		ids := make([]uint, 0, length)
-		for _, pendingDeletePoolTx := range updatePoolTxMap.PendingDeletePoolTxs {
-			ids = append(ids, pendingDeletePoolTx.ID)
+		poolTxIds := make([]uint, 0, len(updatePoolTxMap.PendingDeletePoolTxs))
+		for _, poolTx := range updatePoolTxMap.PendingDeletePoolTxs {
+			poolTxIds = append(poolTxIds, poolTx.ID)
 		}
-		err := c.bc.TxPoolModel.UpdateTxsStatusByIds(ids, tx.StatusFailed)
-		if err != nil {
-			logx.Error("update tx pool failed:", err)
-		}
-		err = c.bc.TxPoolModel.DeleteTxsBatch(updatePoolTxMap.PendingDeletePoolTxs)
+		err := c.bc.TxPoolModel.DeleteTxsBatch(poolTxIds, tx.StatusFailed, -1)
 		if err != nil {
 			logx.Error("update tx pool failed:", err)
 		}
@@ -920,10 +917,36 @@ func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 	totalTask := 0
 	errChan := make(chan error, 1)
 	defer close(errChan)
-
 	var err error
+
+	poolTxIds := make([]uint, 0, len(blockStates.Block.Txs))
+	for _, poolTx := range blockStates.Block.Txs {
+		poolTxIds = append(poolTxIds, poolTx.ID)
+	}
+	blockStates.Block.ClearTxsModel()
+
+	totalTask++
+	err = func(poolTxIds []uint, blockHeight int64) error {
+		return c.pool.Submit(func() {
+			start := time.Now()
+			err = c.bc.DB().TxPoolModel.DeleteTxsBatch(poolTxIds, tx.StatusExecuted, blockHeight)
+			deletePoolTxMetrics.Set(float64(time.Since(start).Milliseconds()))
+			if err != nil {
+				errChan <- err
+				return
+			}
+			errChan <- nil
+		})
+	}(poolTxIds, blockStates.Block.BlockHeight)
+	if err != nil {
+		panic("DeleteTxsBatch failed: " + err.Error())
+	}
+
 	pendingAccountLen := len(blockStates.PendingAccount)
 	if pendingAccountLen > 0 {
+		sort.SliceStable(blockStates.PendingAccount, func(i, j int) bool {
+			return blockStates.PendingAccount[i].AccountIndex < blockStates.PendingAccount[j].AccountIndex
+		})
 		fromIndex := 0
 		limit := 100
 		toIndex := limit
@@ -1173,14 +1196,6 @@ func (c *Committer) finalSaveBlockDataFunc(blockStates *block.BlockStates) {
 			return err
 		}
 		finalSaveBlockDataMetrics.WithLabelValues("update_block_to_pending").Set(float64(time.Since(start).Milliseconds()))
-		start = time.Now()
-		// delete txs from tx pool
-		ids := make([]uint, 0, len(blockStates.Block.Txs))
-		for _, poolTx := range blockStates.Block.Txs {
-			ids = append(ids, poolTx.ID)
-		}
-		err = c.bc.DB().TxPoolModel.DeleteTxIdsBatchInTransact(tx, ids)
-		finalSaveBlockDataMetrics.WithLabelValues("delete_pool_txs").Set(float64(time.Since(start).Milliseconds()))
 		return err
 	})
 	if err != nil {
