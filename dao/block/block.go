@@ -67,7 +67,7 @@ type (
 		GetProposingBlockHeights() (blockHeights []int64, err error)
 		PreSaveBlockData(id uint, accountIndexes string, nftIndexes string) error
 		UpdateBlockToPendingInTransact(tx *gorm.DB, id uint) error
-		GetBlockByStatus(status int) (blocks []*Block, err error)
+		GetBlockByStatus(statuses []int) (blocks []*Block, err error)
 		GetLatestPendingHeight() (height int64, err error)
 	}
 
@@ -415,12 +415,12 @@ func (m *defaultBlockModel) GetProposingBlockHeights() (blockHeights []int64, er
 	return blockHeights, nil
 }
 
-func (m *defaultBlockModel) GetBlockByStatus(status int) (blocks []*Block, err error) {
-	dbTx := m.DB.Table(m.table).Where("block_status = ?", status).Order("block_height").Find(&blocks)
+func (m *defaultBlockModel) GetBlockByStatus(statuses []int) (blocks []*Block, err error) {
+	dbTx := m.DB.Table(m.table).Where("block_status in ?", statuses).Order("block_height").Find(&blocks)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, types.DbErrNotFound
+		return nil, nil
 	}
 	return blocks, nil
 }

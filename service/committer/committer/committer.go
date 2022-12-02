@@ -451,28 +451,28 @@ func NewCommitter(config *Config) (*Committer, error) {
 }
 
 func (c *Committer) Run() {
-	c.executeTxWorker = core.ExecuteTxWorker(100, func() {
+	c.executeTxWorker = core.ExecuteTxWorker(10000, func() {
 		c.executeTxFunc()
 	})
-	c.updatePoolTxWorker = core.UpdatePoolTxWorker(10000, func(item interface{}) {
+	c.updatePoolTxWorker = core.UpdatePoolTxWorker(100000, func(item interface{}) {
 		c.updatePoolTxFunc(item.(*UpdatePoolTx))
 	})
 	c.syncAccountToRedisWorker = core.SyncAccountToRedisWorker(200000, func(item interface{}) {
 		c.syncAccountToRedisFunc(item.(*PendingMap))
 	})
-	c.updateAccountAssetTreeWorker = core.UpdateAccountAssetTreeWorker(10, func(item interface{}) {
+	c.updateAccountAssetTreeWorker = core.UpdateAccountAssetTreeWorker(20, func(item interface{}) {
 		c.updateAccountAssetTreeFunc(item.(*statedb.StateDataCopy))
 	})
-	c.updateAccountTreeAndNftTreeWorker = core.UpdateAccountTreeAndNftTreeWorker(10, func(item interface{}) {
+	c.updateAccountTreeAndNftTreeWorker = core.UpdateAccountTreeAndNftTreeWorker(20, func(item interface{}) {
 		c.updateAccountTreeAndNftTreeFunc(item.(*statedb.StateDataCopy))
 	})
-	c.preSaveBlockDataWorker = core.PreSaveBlockDataWorker(10, func(item interface{}) {
+	c.preSaveBlockDataWorker = core.PreSaveBlockDataWorker(20, func(item interface{}) {
 		c.preSaveBlockDataFunc(item.(*block.BlockStates))
 	})
-	c.saveBlockDataWorker = core.SaveBlockDataWorker(10, func(item interface{}) {
+	c.saveBlockDataWorker = core.SaveBlockDataWorker(20, func(item interface{}) {
 		c.saveBlockDataFunc(item.(*block.BlockStates))
 	})
-	c.finalSaveBlockDataWorker = core.FinalSaveBlockDataWorker(10, func(item interface{}) {
+	c.finalSaveBlockDataWorker = core.FinalSaveBlockDataWorker(20, func(item interface{}) {
 		c.finalSaveBlockDataFunc(item.(*block.BlockStates))
 	})
 
