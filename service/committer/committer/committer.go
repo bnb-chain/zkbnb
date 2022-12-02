@@ -7,7 +7,6 @@ import (
 	"github.com/bnb-chain/zkbnb/common/gopool"
 	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/account"
-	"github.com/bnb-chain/zkbnb/dao/compressedblock"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/panjf2000/ants/v2"
 	"strconv"
@@ -923,24 +922,7 @@ func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 	defer close(errChan)
 
 	var err error
-	if blockStates.CompressedBlock != nil {
-		totalTask++
-		err := func(compressedBlock *compressedblock.CompressedBlock) error {
-			return c.pool.Submit(func() {
-				start := time.Now()
-				err = c.bc.DB().CompressedBlockModel.CreateCompressedBlock(compressedBlock)
-				addCompressedBlockMetrics.Set(float64(time.Since(start).Milliseconds()))
-				if err != nil {
-					errChan <- err
-					return
-				}
-				errChan <- nil
-			})
-		}(blockStates.CompressedBlock)
-		if err != nil {
-			panic("addCompressedBlock failed: " + err.Error())
-		}
-	}
+
 	if len(blockStates.PendingAccount) != 0 {
 		totalTask++
 		err := func(accounts []*account.Account) error {
@@ -998,25 +980,27 @@ func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 		}
 
 		txDetails := make([]*tx.TxDetail, 0)
-		for _, txInfo := range blockStates.Block.Txs {
+		length := len(blockStates.Block.Txs)
+		for index, txInfo := range blockStates.Block.Txs {
 			txDetails = append(txDetails, txInfo.TxDetails...)
-		}
-		if len(txDetails) != 0 {
-			totalTask++
-			err := func(txDetails []*tx.TxDetail) error {
-				return c.pool.Submit(func() {
-					start := time.Now()
-					err = c.bc.DB().TxDetailModel.CreateTxDetails(txDetails)
-					addTxDetailsMetrics.Set(float64(time.Since(start).Milliseconds()))
-					if err != nil {
-						errChan <- err
-						return
-					}
-					errChan <- nil
-				})
-			}(txDetails)
-			if err != nil {
-				panic("CreateTxDetails failed: " + err.Error())
+			if len(txDetails) >= 300 || index == length-1 {
+				totalTask++
+				err := func(txDetails []*tx.TxDetail) error {
+					return c.pool.Submit(func() {
+						start := time.Now()
+						err = c.bc.DB().TxDetailModel.CreateTxDetails(txDetails)
+						addTxDetailsMetrics.Set(float64(time.Since(start).Milliseconds()))
+						if err != nil {
+							errChan <- err
+							return
+						}
+						errChan <- nil
+					})
+				}(txDetails)
+				if err != nil {
+					panic("CreateTxDetails failed: " + err.Error())
+				}
+				txDetails = make([]*tx.TxDetail, 0)
 			}
 		}
 	}
@@ -1118,6 +1102,14 @@ func (c *Committer) finalSaveBlockDataFunc(blockStates *block.BlockStates) {
 	logx.Infof("finalSaveBlockDataFunc start, blockHeight:%d", blockStates.Block.BlockHeight)
 	// update db
 	err := c.bc.DB().DB.Transaction(func(tx *gorm.DB) error {
+		if blockStates.CompressedBlock != nil {
+			start := time.Now()
+			err := c.bc.DB().CompressedBlockModel.CreateCompressedBlock(blockStates.CompressedBlock)
+			finalSaveBlockDataMetrics.WithLabelValues("add_compressed_block").Set(float64(time.Since(start).Milliseconds()))
+			if err != nil {
+				return err
+			}
+		}
 		start := time.Now()
 		err := c.bc.DB().BlockModel.UpdateBlockToPendingInTransact(tx, blockStates.Block.ID)
 		if err != nil {
