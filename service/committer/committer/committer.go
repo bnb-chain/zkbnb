@@ -922,68 +922,126 @@ func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 	defer close(errChan)
 
 	var err error
+	pendingAccountLen := len(blockStates.PendingAccount)
+	if pendingAccountLen > 0 {
+		fromIndex := 0
+		limit := 100
+		toIndex := limit
+		for {
+			if fromIndex >= pendingAccountLen {
+				break
+			}
+			if toIndex > pendingAccountLen {
+				toIndex = pendingAccountLen
+			}
+			accounts := blockStates.PendingAccount[fromIndex:toIndex]
+			fromIndex = toIndex
+			toIndex += limit
 
-	if len(blockStates.PendingAccount) != 0 {
-		totalTask++
-		err := func(accounts []*account.Account) error {
-			return c.pool.Submit(func() {
-				start := time.Now()
-				err := c.bc.DB().AccountModel.BatchInsertOrUpdate(accounts)
-				saveAccountsGoroutineMetrics.Set(float64(time.Since(start).Milliseconds()))
-				if err != nil {
-					errChan <- err
-					return
-				}
-				errChan <- nil
-			})
-		}(blockStates.PendingAccount)
-		if err != nil {
-			panic("batchInsertOrUpdate accounts failed: " + err.Error())
+			totalTask++
+			err := func(accounts []*account.Account) error {
+				return c.pool.Submit(func() {
+					start := time.Now()
+					err := c.bc.DB().AccountModel.BatchInsertOrUpdate(accounts)
+					saveAccountsGoroutineMetrics.Set(float64(time.Since(start).Milliseconds()))
+					if err != nil {
+						errChan <- err
+						return
+					}
+					errChan <- nil
+				})
+			}(accounts)
+			if err != nil {
+				panic("batchInsertOrUpdate accounts failed: " + err.Error())
+			}
 		}
 	}
+	pendingAccountHistoryLen := len(blockStates.PendingAccountHistory)
+	if pendingAccountHistoryLen > 0 {
+		fromIndex := 0
+		limit := 100
+		toIndex := limit
+		for {
+			if fromIndex >= pendingAccountHistoryLen {
+				break
+			}
+			if toIndex > pendingAccountHistoryLen {
+				toIndex = pendingAccountHistoryLen
+			}
+			accountHistories := blockStates.PendingAccountHistory[fromIndex:toIndex]
+			fromIndex = toIndex
+			toIndex += limit
 
-	if len(blockStates.PendingAccountHistory) != 0 {
-		totalTask++
-		err := func(accountHistories []*account.AccountHistory) error {
-			return c.pool.Submit(func() {
-				start := time.Now()
-				err = c.bc.DB().AccountHistoryModel.CreateAccountHistories(accountHistories)
-				addAccountHistoryMetrics.Set(float64(time.Since(start).Milliseconds()))
-				if err != nil {
-					errChan <- err
-					return
-				}
-				errChan <- nil
-			})
-		}(blockStates.PendingAccountHistory)
-		if err != nil {
-			panic("createAccountHistories failed: " + err.Error())
+			totalTask++
+			err := func(accountHistories []*account.AccountHistory) error {
+				return c.pool.Submit(func() {
+					start := time.Now()
+					err = c.bc.DB().AccountHistoryModel.CreateAccountHistories(accountHistories)
+					addAccountHistoryMetrics.Set(float64(time.Since(start).Milliseconds()))
+					if err != nil {
+						errChan <- err
+						return
+					}
+					errChan <- nil
+				})
+			}(accountHistories)
+			if err != nil {
+				panic("createAccountHistories failed: " + err.Error())
+			}
 		}
 	}
-
-	if len(blockStates.Block.Txs) != 0 {
-		totalTask++
-		err := func(txs []*tx.Tx) error {
-			return c.pool.Submit(func() {
-				start := time.Now()
-				err = c.bc.DB().TxModel.CreateTxs(txs)
-				addTxsMetrics.Set(float64(time.Since(start).Milliseconds()))
-				if err != nil {
-					errChan <- err
-					return
-				}
-				errChan <- nil
-			})
-		}(blockStates.Block.Txs)
-		if err != nil {
-			panic("CreateTxs failed: " + err.Error())
+	txsLen := len(blockStates.Block.Txs)
+	if txsLen > 0 {
+		fromIndex := 0
+		limit := 100
+		toIndex := limit
+		for {
+			if fromIndex >= txsLen {
+				break
+			}
+			if toIndex > txsLen {
+				toIndex = txsLen
+			}
+			txs := blockStates.Block.Txs[fromIndex:toIndex]
+			fromIndex = toIndex
+			toIndex += limit
+			totalTask++
+			err := func(txs []*tx.Tx) error {
+				return c.pool.Submit(func() {
+					start := time.Now()
+					err = c.bc.DB().TxModel.CreateTxs(txs)
+					addTxsMetrics.Set(float64(time.Since(start).Milliseconds()))
+					if err != nil {
+						errChan <- err
+						return
+					}
+					errChan <- nil
+				})
+			}(txs)
+			if err != nil {
+				panic("CreateTxs failed: " + err.Error())
+			}
 		}
 
 		txDetails := make([]*tx.TxDetail, 0)
-		length := len(blockStates.Block.Txs)
-		for index, txInfo := range blockStates.Block.Txs {
+		for _, txInfo := range blockStates.Block.Txs {
 			txDetails = append(txDetails, txInfo.TxDetails...)
-			if len(txDetails) >= 300 || index == length-1 {
+		}
+		txDetailsLen := len(txDetails)
+		if txDetailsLen > 0 {
+			fromIndex := 0
+			limit := 100
+			toIndex := limit
+			for {
+				if fromIndex >= txDetailsLen {
+					break
+				}
+				if toIndex > txDetailsLen {
+					toIndex = txDetailsLen
+				}
+				txDetailsSlice := txDetails[fromIndex:toIndex]
+				fromIndex = toIndex
+				toIndex += limit
 				totalTask++
 				err := func(txDetails []*tx.TxDetail) error {
 					return c.pool.Submit(func() {
@@ -996,11 +1054,10 @@ func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 						}
 						errChan <- nil
 					})
-				}(txDetails)
+				}(txDetailsSlice)
 				if err != nil {
 					panic("CreateTxDetails failed: " + err.Error())
 				}
-				txDetails = make([]*tx.TxDetail, 0)
 			}
 		}
 	}
