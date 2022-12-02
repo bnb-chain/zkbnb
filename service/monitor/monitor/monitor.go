@@ -50,6 +50,38 @@ var (
 		Name:      "priority_operation_insert_height",
 		Help:      "Priority operation height metrics.",
 	})
+
+	l1GenericStartHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l1_generic_start_height",
+		Help:      "l1_generic_start_height metrics.",
+	})
+	l1GenericEndHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l1_generic_end_height",
+		Help:      "l1_generic_end_height metrics.",
+	})
+	l1GenericLenHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l1_generic_len_height",
+		Help:      "l1_generic_len_height metrics.",
+	})
+
+	l1GovernanceStartHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l1_governance_start_height",
+		Help:      "l1_governance_start_height metrics.",
+	})
+	l1GovernanceEndHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l1_governance_end_height",
+		Help:      "l1_governance_end_height metrics.",
+	})
+	l1GovernanceLenHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l1_governance_len_height",
+		Help:      "l1_governance_len_height metrics.",
+	})
 )
 
 type Monitor struct {
@@ -127,6 +159,36 @@ func NewMonitor(c config.Config) *Monitor {
 		panic(err)
 	}
 	if err := prometheus.Register(priorityOperationHeightMetric); err != nil {
+		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
+		panic(err)
+	}
+
+	if err := prometheus.Register(l1GenericStartHeightMetric); err != nil {
+		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
+		panic(err)
+	}
+
+	if err := prometheus.Register(l1GenericEndHeightMetric); err != nil {
+		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
+		panic(err)
+	}
+
+	if err := prometheus.Register(l1GenericLenHeightMetric); err != nil {
+		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
+		panic(err)
+	}
+
+	if err := prometheus.Register(l1GovernanceStartHeightMetric); err != nil {
+		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
+		panic(err)
+	}
+
+	if err := prometheus.Register(l1GovernanceEndHeightMetric); err != nil {
+		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
+		panic(err)
+	}
+
+	if err := prometheus.Register(l1GovernanceLenHeightMetric); err != nil {
 		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
 		panic(err)
 	}

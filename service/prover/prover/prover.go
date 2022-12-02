@@ -3,6 +3,7 @@ package prover
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend/groth16"
@@ -20,6 +21,19 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/proof"
 	"github.com/bnb-chain/zkbnb/service/prover/config"
 	"github.com/bnb-chain/zkbnb/types"
+)
+
+var (
+	l2ProofHeightMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2_proof_height",
+		Help:      "l2_proof_height metrics.",
+	})
+	l2ExceptionProofHeightMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2_exception_proof_height",
+		Help:      "l2_exception_proof_height metrics.",
+	})
 )
 
 type Prover struct {
@@ -53,7 +67,11 @@ func IsBlockSizesSorted(blockSizes []int) bool {
 	return true
 }
 
-func NewProver(c config.Config) *Prover {
+func NewProver(c config.Config) (*Prover, error) {
+	if err := prometheus.Register(l2ProofHeightMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register l2ProofHeightMetrics error: %v", err)
+	}
+
 	db, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
 	if err != nil {
 		logx.Errorf("gorm connect db error, err = %s", err.Error())
@@ -103,8 +121,7 @@ func NewProver(c config.Config) *Prover {
 			panic("verifyingKey loading error")
 		}
 	}
-
-	return prover
+	return prover, nil
 }
 
 func (p *Prover) ProveBlock() error {
@@ -145,6 +162,7 @@ func (p *Prover) ProveBlock() error {
 		if res != nil {
 			logx.Errorf("revert block witness status failed, err %v", res)
 		}
+		l2ExceptionProofHeightMetrics.Set(float64(blockWitness.Height))
 	}()
 
 	// Parse crypto block.
@@ -194,6 +212,7 @@ func (p *Prover) ProveBlock() error {
 		Status:      proof.NotSent,
 	}
 	err = p.ProofModel.CreateProof(row)
+	l2ProofHeightMetrics.Set(float64(row.BlockNumber))
 	return err
 }
 
