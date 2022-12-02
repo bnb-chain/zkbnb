@@ -64,10 +64,11 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 		return nil, types2.AppErrInternal
 	}
 
-	maxAssetId, err := l.svcCtx.AssetModel.GetMaxAssetId()
-	if err != nil {
-		return nil, types2.AppErrInternal
-	}
+	//todo check
+	//maxAssetId, err := l.svcCtx.AssetModel.GetMaxAssetId()
+	//if err != nil {
+	//	return nil, types2.AppErrInternal
+	//}
 
 	resp = &types.Account{
 		Index:  account.AccountIndex,
@@ -81,9 +82,9 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 	totalAssetValue := big.NewFloat(0)
 
 	for _, asset := range account.AssetInfo {
-		if asset.AssetId > maxAssetId {
-			continue //it is used for offer related, or empty balance; max ip id should be less than max asset id
-		}
+		//if asset.AssetId > maxAssetId {
+		//	continue //it is used for offer related, or empty balance; max ip id should be less than max asset id
+		//}
 		if asset.Balance == nil || asset.Balance.Cmp(types2.ZeroBigInt) == 0 {
 			continue
 		}
