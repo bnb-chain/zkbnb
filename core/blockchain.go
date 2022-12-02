@@ -139,32 +139,109 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		chainConfig: config,
 	}
 
-	err = bc.TxPoolModel.UpdateTxsToPending()
-	if err != nil {
-		logx.Error("update pool tx to pending failed: ", err)
-		panic("update pool tx to pending failed: " + err.Error())
-	}
-
-	blockHeights, err := bc.BlockModel.GetProposingBlockHeights()
-	if err != nil {
-		logx.Error("get proposing block height failed: ", err)
-		panic("delete block failed: " + err.Error())
-	}
-	if blockHeights != nil {
-		logx.Infof("get proposing block heights: %v", blockHeights)
-		err = bc.BlockModel.DeleteProposingBlock()
-		if err != nil {
-			logx.Error("delete block failed: ", err)
-			panic("delete block failed: " + err.Error())
-		}
-	}
 	curHeight, err := bc.BlockModel.GetCurrentBlockHeight()
 	if err != nil {
-		logx.Error("get current block failed: ", err)
-		return nil, err
+		logx.Error("GetCurrentBlockHeight failed: ", err)
+		panic("GetCurrentBlockHeight failed: " + err.Error())
 	}
 	logx.Infof("get current block height: %d", curHeight)
+	if curHeight != 0 {
+		blocks, err := bc.BlockModel.GetBlockByStatus([]int{block.StatusProposing, block.StatusPacked})
+		if err != nil {
+			logx.Error("get block by status=StatusPacked failed: ", err)
+			panic("get block by status=StatusPacked failed: " + err.Error())
+		}
+		accountIndexAll := make(map[int64]bool, 0)
+		heights := make([]int64, 0)
+		if blocks != nil {
+			for _, blockInfo := range blocks {
+				if blockInfo.AccountIndexes != "[]" && blockInfo.AccountIndexes != "" {
+					var accountIndexes []int64
+					err = json.Unmarshal([]byte(blockInfo.AccountIndexes), &accountIndexes)
+					if err != nil {
+						return nil, types.JsonErrUnmarshal
+					}
+					for _, accountIndex := range accountIndexes {
+						accountIndexAll[accountIndex] = true
+					}
+				}
+				heights = append(heights, blockInfo.BlockHeight)
+			}
 
+		}
+		accountIndexList := make([]int64, 0)
+
+		for k := range accountIndexAll {
+			accountIndexList = append(accountIndexList, k)
+		}
+		height, err := bc.BlockModel.GetLatestPendingHeight()
+		if err != nil {
+			logx.Error("GetLatestPendingHeight failed: ", err)
+			panic("GetLatestPendingHeight failed: " + err.Error())
+		}
+		//todo limit offset
+		_, accountHistories, err := bc.AccountHistoryModel.GetLatestAccountHistories(accountIndexList, height)
+
+		bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
+			//todo if add account, delete it
+			for _, accountHistory := range accountHistories {
+				accountInfo := &account.Account{
+					AccountIndex:    accountHistory.AccountIndex,
+					Nonce:           accountHistory.Nonce,
+					CollectionNonce: accountHistory.CollectionNonce,
+					AssetInfo:       accountHistory.AssetInfo,
+					AssetRoot:       accountHistory.AssetRoot,
+				}
+				err := bc.AccountModel.UpdateByIndexInTransact(dbTx, accountInfo)
+				if err != nil {
+					logx.Error("UpdateByIndexInTransact failed: ", err)
+					panic("UpdateByIndexInTransact failed: " + err.Error())
+				}
+			}
+
+			err = bc.TxDetailModel.DeleteByHeightInTransact(dbTx, heights)
+			if err != nil {
+				logx.Error("DeleteByHeightInTransact failed: ", err)
+				panic("DeleteByHeightInTransact failed: " + err.Error())
+			}
+
+			err = bc.TxModel.DeleteByHeightInTransact(dbTx, heights)
+			if err != nil {
+				logx.Error("DeleteByHeightInTransact failed: ", err)
+				panic("DeleteByHeightInTransact failed: " + err.Error())
+			}
+			var statuses = []int{block.StatusProposing, block.StatusPacked}
+			err = bc.BlockModel.DeleteBlockInTransact(dbTx, statuses)
+			if err != nil {
+				logx.Error("DeleteBlockInTransact failed: ", err)
+				panic("DeleteBlockInTransact failed: " + err.Error())
+			}
+
+			err = bc.TxPoolModel.UpdateTxsToPending(dbTx)
+			if err != nil {
+				logx.Error("update pool tx to pending failed: ", err)
+				panic("update pool tx to pending failed: " + err.Error())
+			}
+			return nil
+		})
+
+		blocks, err = bc.BlockModel.GetBlockByStatus([]int{block.StatusProposing, block.StatusPacked})
+		if err != nil {
+			logx.Error("get proposing block height failed: ", err)
+			panic("delete block failed: " + err.Error())
+		}
+		if blocks != nil {
+			logx.Infof("get proposing block heights: %v", blocks)
+			panic("delete block failed: " + err.Error())
+
+		}
+	}
+	curHeight, err = bc.BlockModel.GetCurrentBlockHeight()
+	if err != nil {
+		logx.Error("GetCurrentBlockHeight failed: ", err)
+		panic("GetCurrentBlockHeight failed: " + err.Error())
+	}
+	logx.Infof("get current block height: %d", curHeight)
 	bc.currentBlock, err = bc.BlockModel.GetBlockByHeight(curHeight)
 	if err != nil {
 		return nil, err

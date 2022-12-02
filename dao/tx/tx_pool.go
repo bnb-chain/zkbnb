@@ -36,16 +36,16 @@ type (
 		GetTxByTxHash(hash string) (txs *Tx, err error)
 		GetTxsByStatus(status int) (txs []*Tx, err error)
 		GetTxsByStatusAndMaxId(status int, maxId uint, limit int64) (txs []*Tx, err error)
-		CreateTxs(txs []*Tx) error
+		CreateTxs(txs []*PoolTx) error
 		GetPendingTxsByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (txs []*Tx, err error)
 		GetMaxNonceByAccountIndex(accountIndex int64) (nonce int64, err error)
-		CreateTxsInTransact(tx *gorm.DB, txs []*Tx) error
+		CreateTxsInTransact(tx *gorm.DB, txs []*PoolTx) error
 		UpdateTxsInTransact(tx *gorm.DB, txs []*Tx) error
 		DeleteTxsInTransact(tx *gorm.DB, txs []*Tx) error
 		DeleteTxsBatchInTransact(tx *gorm.DB, txs []*Tx) error
 		GetLatestTx(txTypes []int64, statuses []int) (tx *Tx, err error)
 		GetFirstTxByStatus(status int) (tx *Tx, err error)
-		UpdateTxsToPending() error
+		UpdateTxsToPending(tx *gorm.DB) error
 		GetLatestExecutedTx() (tx *Tx, err error)
 		GetTxsPageByStatus(status int, limit int64) (txs []*Tx, err error)
 		UpdateTxsStatusByIds(ids []uint, status int) error
@@ -60,7 +60,32 @@ type (
 	}
 
 	PoolTx struct {
-		Tx
+		gorm.Model
+
+		// Assigned when created in the tx pool.
+		TxHash       string `gorm:"uniqueIndex"`
+		TxType       int64
+		TxInfo       string
+		AccountIndex int64 `gorm:"index:idx_pool_tx_account_index_nonce,priority:1"`
+		Nonce        int64 `gorm:"index:idx_pool_tx_account_index_nonce,priority:2"`
+		ExpiredAt    int64
+
+		// Assigned after executed.
+		GasFee        string
+		GasFeeAssetId int64
+		NftIndex      int64
+		CollectionId  int64
+		AssetId       int64
+		TxAmount      string
+		Memo          string
+		ExtraInfo     string
+		NativeAddress string      // a. Priority tx, assigned when created b. Other tx, assigned after executed.
+		TxDetails     []*TxDetail `gorm:"-"`
+
+		TxIndex     int64
+		BlockHeight int64 `gorm:"index"`
+		BlockId     uint  `gorm:"index"`
+		TxStatus    int   `gorm:"index"`
 	}
 )
 
@@ -175,7 +200,7 @@ func (m *defaultTxPoolModel) GetTxByTxHash(hash string) (tx *Tx, err error) {
 	return tx, nil
 }
 
-func (m *defaultTxPoolModel) CreateTxs(txs []*Tx) error {
+func (m *defaultTxPoolModel) CreateTxs(txs []*PoolTx) error {
 	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
 		dbTx := tx.Table(m.table).Create(txs)
 		if dbTx.Error != nil {
@@ -218,7 +243,7 @@ func (m *defaultTxPoolModel) GetMaxNonceByAccountIndex(accountIndex int64) (nonc
 	return nonce, nil
 }
 
-func (m *defaultTxPoolModel) CreateTxsInTransact(tx *gorm.DB, txs []*Tx) error {
+func (m *defaultTxPoolModel) CreateTxsInTransact(tx *gorm.DB, txs []*PoolTx) error {
 	dbTx := tx.Table(m.table).CreateInBatches(txs, len(txs))
 	if dbTx.Error != nil {
 		return dbTx.Error
@@ -268,9 +293,9 @@ func (m *defaultTxPoolModel) UpdateTxsStatusAndHeightByIds(ids []uint, status in
 	return nil
 }
 
-func (m *defaultTxPoolModel) UpdateTxsToPending() error {
+func (m *defaultTxPoolModel) UpdateTxsToPending(tx *gorm.DB) error {
 	var statuses = []int{StatusProcessing, StatusExecuted}
-	dbTx := m.DB.Model(&PoolTx{}).Where("tx_status in ? ", statuses).Update("tx_status", StatusPending)
+	dbTx := tx.Model(&PoolTx{}).Where("tx_status in ? ", statuses).Update("tx_status", StatusPending)
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}

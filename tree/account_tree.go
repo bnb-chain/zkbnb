@@ -151,6 +151,7 @@ func reloadAccountTreeFromRDB(
 
 	for _, accountHistory := range accountHistories {
 		if accountInfoMap[accountHistory.AccountIndex] == nil {
+			//todo
 			accountInfo, err := accountModel.GetAccountByIndex(accountHistory.AccountIndex)
 			if err != nil {
 				logx.Errorf("unable to get account by account index: %s", err.Error())

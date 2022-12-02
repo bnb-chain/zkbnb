@@ -45,7 +45,7 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 		logx.Error("fail to init blockchain runner:", err)
 		return nil, types2.AppErrInternal
 	}
-	newTx := &tx.Tx{
+	newPoolTx := tx.PoolTx{
 		TxHash: types2.EmptyTxHash, // Would be computed in prepare method of executors.
 		TxType: int64(req.TxType),
 		TxInfo: req.TxInfo,
@@ -61,12 +61,12 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 		BlockHeight: types2.NilBlockHeight,
 		TxStatus:    tx.StatusPending,
 	}
-
+	newTx := &tx.Tx{PoolTx: newPoolTx}
 	err = bc.ApplyTransaction(newTx)
 	if err != nil {
 		return resp, err
 	}
-	if err := s.svcCtx.TxPoolModel.CreateTxs([]*tx.Tx{newTx}); err != nil {
+	if err := s.svcCtx.TxPoolModel.CreateTxs([]*tx.PoolTx{&newTx.PoolTx}); err != nil {
 		logx.Errorf("fail to create pool tx: %v, err: %s", newTx, err.Error())
 		return resp, types2.AppErrInternal
 	}

@@ -19,7 +19,9 @@ package account
 
 import (
 	"github.com/bnb-chain/zkbnb/types"
+	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 const (
@@ -44,6 +46,10 @@ type (
 		GetAccountsTotalCount() (count int64, err error)
 		UpdateAccountsInTransact(tx *gorm.DB, accounts []*Account) error
 		GetUsers(limit int64, offset int64) (accounts []*Account, err error)
+		UpdateAccountInTransact(account *Account) error
+		UpdateAccountTransactionToCommitted(tx *gorm.DB, accounts []*Account) error
+		BatchInsertOrUpdate(accounts []*Account) (err error)
+		UpdateByIndexInTransact(tx *gorm.DB, account *Account) error
 	}
 
 	defaultAccountModel struct {
@@ -181,6 +187,65 @@ func (m *defaultAccountModel) UpdateAccountsInTransact(tx *gorm.DB, accounts []*
 	return nil
 }
 
+func (m *defaultAccountModel) UpdateAccountInTransact(account *Account) error {
+	dbTx := m.DB.Model(&Account{}).Unscoped().Select("Nonce", "CollectionNonce", "AssetInfo", "AssetRoot").Where("id = ?", account.ID).Updates(map[string]interface{}{
+		"nonce":            account.Nonce,
+		"collection_nonce": account.CollectionNonce,
+		"asset_info":       account.AssetInfo,
+		"asset_root":       account.AssetRoot,
+	})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		// this account is new, we need create first
+		dbTx = m.DB.Table(m.table).Create(&account)
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+	}
+	return nil
+}
+
+func (m *defaultAccountModel) UpdateByIndexInTransact(tx *gorm.DB, account *Account) error {
+	dbTx := m.DB.Model(&Account{}).Unscoped().Select("Nonce", "CollectionNonce", "AssetInfo", "AssetRoot").Where("account_index = ?", account.AccountIndex).Updates(map[string]interface{}{
+		"nonce":            account.Nonce,
+		"collection_nonce": account.CollectionNonce,
+		"asset_info":       account.AssetInfo,
+		"asset_root":       account.AssetRoot,
+	})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		// this account is new, we need create first
+		dbTx = m.DB.Table(m.table).Create(&account)
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+	}
+	return nil
+}
+
+func (m *defaultAccountModel) UpdateAccountTransactionToCommitted(tx *gorm.DB, accounts []*Account) error {
+	//length := len(accounts)
+	//if length == 0 {
+	//	return nil
+	//}
+	//accountIndexes := make([]int64, 0, length)
+	//for _, account := range accounts {
+	//	accountIndexes = append(accountIndexes, account.AccountIndex)
+	//}
+	//dbTx := tx.Model(&Account{}).Where("account_index in ? ", accountIndexes).Update("transaction_status", AccountTransactionStatusCommitted)
+	//if dbTx.Error != nil {
+	//	return dbTx.Error
+	//}
+	//if dbTx.RowsAffected != int64(length) {
+	//	return errors.New("update accounts transaction status failed,rowsAffected =" + strconv.FormatInt(dbTx.RowsAffected, 10) + "not equal accounts length=" + strconv.Itoa(length))
+	//}
+	return nil
+}
+
 func (m *defaultAccountModel) GetUsers(limit int64, offset int64) (accounts []*Account, err error) {
 	dbTx := m.DB.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("id asc").Find(&accounts)
 	if dbTx.Error != nil {
@@ -189,4 +254,19 @@ func (m *defaultAccountModel) GetUsers(limit int64, offset int64) (accounts []*A
 		return nil, nil
 	}
 	return accounts, nil
+}
+
+func (m *defaultAccountModel) BatchInsertOrUpdate(accounts []*Account) (err error) {
+	dbTx := m.DB.Table(m.table).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "id"}},
+		DoUpdates: clause.AssignmentColumns([]string{"nonce", "collection_nonce", "asset_info", "asset_root"}),
+	}).Create(&accounts)
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if int(dbTx.RowsAffected) != len(accounts) {
+		logx.Errorf("BatchInsertOrUpdate failed,rows affected not equal accounts length,dbTx.RowsAffected:%s,len(accounts):%s", int(dbTx.RowsAffected), len(accounts))
+		return types.DbErrFailToUpdateAccount
+	}
+	return nil
 }

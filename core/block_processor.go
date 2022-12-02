@@ -54,9 +54,14 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 	}
 	start = time.Now()
 	txDetails, err := executor.GenerateTxDetails()
+
 	p.metrics.TxGenerateTxDetailsMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
 		return err
+	}
+	for _, txDetail := range txDetails {
+		txDetail.PoolTxId = tx.ID
+		txDetail.BlockHeight = p.bc.currentBlock.BlockHeight
 	}
 	tx.TxDetails = txDetails
 	start = time.Now()

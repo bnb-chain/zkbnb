@@ -18,6 +18,7 @@
 package tx
 
 import (
+	"github.com/zeromicro/go-zero/core/logx"
 	"time"
 
 	"gorm.io/gorm"
@@ -84,6 +85,8 @@ type (
 		GetTxsTotalCountBetween(from, to time.Time) (count int64, err error)
 		GetDistinctAccountsCountBetween(from, to time.Time) (count int64, err error)
 		UpdateTxsStatusInTransact(tx *gorm.DB, blockTxStatus map[int64]int) error
+		CreateTxs(txs []*Tx) error
+		DeleteByHeightInTransact(tx *gorm.DB, heights []int64) error
 	}
 
 	defaultTxModel struct {
@@ -92,32 +95,8 @@ type (
 	}
 
 	Tx struct {
-		gorm.Model
-
-		// Assigned when created in the tx pool.
-		TxHash       string `gorm:"uniqueIndex"`
-		TxType       int64
-		TxInfo       string
-		AccountIndex int64 `gorm:"index:idx_pool_tx_account_index_nonce,priority:1"`
-		Nonce        int64 `gorm:"index:idx_pool_tx_account_index_nonce,priority:2"`
-		ExpiredAt    int64
-
-		// Assigned after executed.
-		GasFee        string
-		GasFeeAssetId int64
-		NftIndex      int64
-		CollectionId  int64
-		AssetId       int64
-		TxAmount      string
-		Memo          string
-		ExtraInfo     string
-		NativeAddress string      // a. Priority tx, assigned when created b. Other tx, assigned after executed.
-		TxDetails     []*TxDetail `gorm:"foreignKey:TxId"`
-
-		TxIndex     int64
-		BlockHeight int64 `gorm:"index"`
-		BlockId     int64 `gorm:"index"`
-		TxStatus    int   `gorm:"index"`
+		PoolTx
+		PoolTxId uint `gorm:"uniqueIndex"`
 	}
 )
 
@@ -265,30 +244,50 @@ func (m *defaultTxModel) UpdateTxsStatusInTransact(tx *gorm.DB, blockTxStatus ma
 	return nil
 }
 
-func (ai *Tx) DeepCopy() *Tx {
-	tx := &Tx{
-		TxHash:        ai.TxHash,
-		TxType:        ai.TxType,
-		TxInfo:        ai.TxInfo,
-		AccountIndex:  ai.AccountIndex,
-		Nonce:         ai.Nonce,
-		ExpiredAt:     ai.ExpiredAt,
-		GasFee:        ai.GasFee,
-		GasFeeAssetId: ai.GasFeeAssetId,
-		NftIndex:      ai.NftIndex,
-		CollectionId:  ai.CollectionId,
-		AssetId:       ai.AssetId,
-		TxAmount:      ai.TxAmount,
-		Memo:          ai.Memo,
-		ExtraInfo:     ai.ExtraInfo,
-		NativeAddress: ai.NativeAddress, // a. Priority tx, assigned when created b. Other tx, assigned after executed.
-		//TxDetails:     []*TxDetail `gorm:"foreignKey:TxId"`
-		TxIndex:     ai.TxIndex,
-		BlockHeight: ai.BlockHeight,
-		BlockId:     ai.BlockId,
-		TxStatus:    ai.TxStatus,
+func (m *defaultTxModel) CreateTxs(txs []*Tx) error {
+	dbTx := m.DB.Table(m.table).CreateInBatches(txs, len(txs))
+	if dbTx.Error != nil {
+		return dbTx.Error
 	}
+	if dbTx.RowsAffected != int64(len(txs)) {
+		logx.Errorf("CreateTxs failed,rows affected not equal txs length,dbTx.RowsAffected:%s,len(txs):%s", int(dbTx.RowsAffected), len(txs))
+		return types.DbErrFailToCreateTx
+	}
+	return nil
+}
+
+func (m *defaultTxModel) DeleteByHeightInTransact(tx *gorm.DB, heights []int64) error {
+	dbTx := tx.Model(&Tx{}).Unscoped().Where("block_height in ?", heights).Delete(&Tx{})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	return nil
+}
+
+func (ai *Tx) DeepCopy() *Tx {
+	tx := &Tx{}
+	tx.TxHash = ai.TxHash
+	tx.TxType = ai.TxType
+	tx.TxInfo = ai.TxInfo
+	tx.AccountIndex = ai.AccountIndex
+	tx.Nonce = ai.Nonce
+	tx.ExpiredAt = ai.ExpiredAt
+	tx.GasFee = ai.GasFee
+	tx.GasFeeAssetId = ai.GasFeeAssetId
+	tx.NftIndex = ai.NftIndex
+	tx.CollectionId = ai.CollectionId
+	tx.AssetId = ai.AssetId
+	tx.TxAmount = ai.TxAmount
+	tx.Memo = ai.Memo
+	tx.ExtraInfo = ai.ExtraInfo
+	tx.NativeAddress = ai.NativeAddress // a. Priority tx, assigned when created b. Other tx, assigned after executed.
+	//TxDetails:     []*TxDetail `gorm:"foreignKey:TxId"`
+	tx.TxIndex = ai.TxIndex
+	tx.BlockHeight = ai.BlockHeight
+	tx.BlockId = ai.BlockId
+	tx.TxStatus = ai.TxStatus
 	tx.ID = ai.ID
+	tx.PoolTxId = ai.PoolTxId
 	tx.CreatedAt = ai.CreatedAt
 	tx.UpdatedAt = ai.UpdatedAt
 	tx.DeletedAt = ai.DeletedAt
