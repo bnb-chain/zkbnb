@@ -617,6 +617,7 @@ func (bc *BlockChain) VerifyNonce(accountIndex int64, nonce int64) error {
 		if nonce != expectNonce {
 			logx.Infof("committer verify nonce failed,accountIndex=%d,nonce=%d,expectNonce=%d", accountIndex, nonce, expectNonce)
 			bc.Statedb.SetPendingNonceToRedisCache(accountIndex, expectNonce-1)
+			//todo
 			//return types.AppErrInvalidNonce
 		} else {
 			logx.Infof("committer verify nonce success,accountIndex=%d,nonce=%d,expectNonce=%d", accountIndex, nonce, expectNonce)
@@ -629,7 +630,8 @@ func (bc *BlockChain) VerifyNonce(accountIndex int64, nonce int64) error {
 		if pendingNonce != nonce {
 			logx.Infof("clear pending nonce from redis cache,accountIndex=%d,pendingNonce=%d,nonce=%d", accountIndex, pendingNonce, nonce)
 			bc.Statedb.ClearPendingNonceFromRedisCache(accountIndex)
-			return types.AppErrInvalidNonce
+			//todo
+			//return types.AppErrInvalidNonce
 		}
 	}
 	return nil
