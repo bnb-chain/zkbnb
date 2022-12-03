@@ -47,7 +47,6 @@ var (
 	IoErrFailToRead = errors.New("ioutil.ReadAll err")
 
 	CmcNotListedErr = errors.New("cmc not listed")
-	BinanceOracleNotListedErr = errors.New("binance oracle not listed")
 
 	AppErrInvalidParam   = New(20001, "invalid param: ")
 	AppErrInvalidTxField = New(20002, "invalid tx field: ")

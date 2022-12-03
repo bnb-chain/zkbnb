@@ -74,7 +74,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		AssetModel:          assetModel,
 		SysConfigModel:      sysconfig.NewSysConfigModel(db),
 
-		PriceFetcher: price.NewFetcher(memCache, assetModel, c.BinanceOracle.Url, c.BinanceOracle.Apikey,c.BinanceOracle.ApiSecret),
+		PriceFetcher: price.NewFetcher(memCache, assetModel, c.CoinMarketCap.Url, c.CoinMarketCap.Token),
 		StateFetcher: state.NewFetcher(redisCache, accountModel, nftModel),
 	}
 }
