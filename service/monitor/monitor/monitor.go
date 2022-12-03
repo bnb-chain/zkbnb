@@ -82,6 +82,11 @@ var (
 		Name:      "l1_governance_len_height",
 		Help:      "l1_governance_len_height metrics.",
 	})
+	l1MonitorHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l1_monitor_len_height",
+		Help:      "l1_monitor_len_height metrics.",
+	})
 )
 
 type Monitor struct {
@@ -222,9 +227,10 @@ func (m *Monitor) getBlockRangeToSync(monitorType int) (int64, int64, error) {
 	// get latest l1 block height(latest height - pendingBlocksCount)
 	latestHeight, err := m.cli.GetHeight()
 	if err != nil {
+		l1MonitorHeightMetric.Set(float64(0))
 		return 0, 0, fmt.Errorf("failed to get l1 height, err: %v", err)
 	}
-
+	l1MonitorHeightMetric.Set(float64(latestHeight))
 	safeHeight := latestHeight - m.Config.ChainConfig.ConfirmBlocksCount
 	safeHeight = uint64(common2.MinInt64(int64(safeHeight), handledHeight+m.Config.ChainConfig.MaxHandledBlocksCount))
 
