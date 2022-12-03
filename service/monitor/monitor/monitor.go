@@ -198,6 +198,11 @@ func NewMonitor(c config.Config) *Monitor {
 		panic(err)
 	}
 
+	if err := prometheus.Register(l1MonitorHeightMetric); err != nil {
+		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
+		panic(err)
+	}
+
 	return monitor
 }
 
