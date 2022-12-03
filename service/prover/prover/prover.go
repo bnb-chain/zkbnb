@@ -71,6 +71,9 @@ func NewProver(c config.Config) (*Prover, error) {
 	if err := prometheus.Register(l2ProofHeightMetrics); err != nil {
 		return nil, fmt.Errorf("prometheus.Register l2ProofHeightMetrics error: %v", err)
 	}
+	if err := prometheus.Register(l2ExceptionProofHeightMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register l2ExceptionProofHeightMetrics error: %v", err)
+	}
 
 	db, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
 	if err != nil {
