@@ -128,8 +128,6 @@ github.com/bnb-chain/zkbnb-eth-rpc v0.0.2 h1:1rMa8XpplDNZaxeM1ifXMjSSeH/ucJyLUjH
 github.com/bnb-chain/zkbnb-eth-rpc v0.0.2/go.mod h1:T69T8enicQ5kSRPIzyPJv/jhuvRMz1UxsijPXmlis+I=
 github.com/bnb-chain/zkbnb-go-sdk v1.0.4-0.20221012063144-3a6e84095b4d h1:2+S4/JdKoSPSJr3D7Z5I/Qmv8TkgVYB73vRP0OOunRY=
 github.com/bnb-chain/zkbnb-go-sdk v1.0.4-0.20221012063144-3a6e84095b4d/go.mod h1:G27Jpl0yB6T/NKXw31bD2B2M91my0PM6SUEpbEGWGL8=
-github.com/bnb-chain/zkbnb-smt v0.0.2 h1:r/iKBTQAVWdpzHVcYEGAkjwpzUiXgaZpegnTjw70JVE=
-github.com/bnb-chain/zkbnb-smt v0.0.2/go.mod h1:QmQTsv2fxBsobFLFZkaiNmr3P0M/mm3W1AiwSU3/cGY=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
 github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d h1:pVrfxiGfwelyab6n21ZBkbkmbevaf+WvMIiR7sr97hw=
 github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d/go.mod h1:H0wQNHz2YrLsuXOZozoeDmnHXkNCRmMW0gwFWDfEZDA=
@@ -774,6 +772,8 @@ github.com/prometheus/procfs v0.8.0 h1:ODq8ZFEaYeCaZOJlZZdJA2AbQR98dSHSM1KW/You5
 github.com/prometheus/procfs v0.8.0/go.mod h1:z7EfXMXOkbkqb9IINtpCn86r/to3BnA0uaxHdg830/4=
 github.com/prometheus/tsdb v0.7.1 h1:YZcsG11NqnK4czYLrWd9mpEuAJIHVQLwdrleYfszMAA=
 github.com/prometheus/tsdb v0.7.1/go.mod h1:qhTCs0VvXwvX/y3TZrWD7rabWM+ijKTux40TwIPHuXU=
+github.com/qct/zkbnb-smt v0.0.0-20221203161605-59c0f417b4e8 h1:gWKEf/ywOoUoD4srnPbFblImlqGOyrIfvAnykHbEQoc=
+github.com/qct/zkbnb-smt v0.0.0-20221203161605-59c0f417b4e8/go.mod h1:QmQTsv2fxBsobFLFZkaiNmr3P0M/mm3W1AiwSU3/cGY=
 github.com/rabbitmq/amqp091-go v1.1.0/go.mod h1:ogQDLSOACsLPsIq0NpbtiifNZi2YOz0VTJ0kHRghqbM=
 github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/retailnext/hllpp v1.0.1-0.20180308014038-101a6d2f8b52/go.mod h1:RDpi1RftBQPUCDRw6SmxeaREsAaRKnOclghuzp/WRzc=
