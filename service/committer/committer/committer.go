@@ -558,6 +558,7 @@ func (c *Committer) executeTxFunc() {
 	}
 	var subPendingTxs []*tx.Tx
 	var pendingTxs []*tx.Tx
+	pendingUpdatePoolTxs := make([]*tx.Tx, 0, c.maxTxsPerBlock)
 	for {
 		curBlock := c.bc.CurrentBlock()
 		if curBlock.BlockStatus > block.StatusProposing {
@@ -579,10 +580,15 @@ func (c *Committer) executeTxFunc() {
 			if c.shouldCommit(curBlock) {
 				break
 			}
+			if len(pendingUpdatePoolTxs) > 0 {
+				c.enqueueUpdatePoolTx(pendingUpdatePoolTxs, nil)
+				pendingUpdatePoolTxs = make([]*tx.Tx, 0, c.maxTxsPerBlock)
+			}
+
 			time.Sleep(100 * time.Millisecond)
 			pendingTxs = c.getPoolTxsFromQueue()
 		}
-		pendingUpdatePoolTxs := make([]*tx.Tx, 0, len(pendingTxs))
+
 		pendingDeletePoolTxs := make([]*tx.Tx, 0, len(pendingTxs))
 		start := time.Now()
 
@@ -645,11 +651,12 @@ func (c *Committer) executeTxFunc() {
 
 		//todo for tress
 		c.enqueueSyncAccountToRedis(c.bc.Statedb.PendingAccountMap, c.bc.Statedb.PendingNftMap)
-		c.enqueueUpdatePoolTx(pendingUpdatePoolTxs, pendingDeletePoolTxs)
+		c.enqueueUpdatePoolTx(nil, pendingDeletePoolTxs)
 
 		if c.shouldCommit(curBlock) {
 			start := time.Now()
 			logx.Infof("commit new block, height=%d,blockSize=%d", curBlock.BlockHeight, curBlock.BlockSize)
+			pendingUpdatePoolTxs = make([]*tx.Tx, 0, c.maxTxsPerBlock)
 			pendingAccountMap := make(map[int64]*types.AccountInfo, len(c.bc.Statedb.StateCache.PendingAccountMap))
 			pendingNftMap := make(map[int64]*nft.L2Nft, len(c.bc.Statedb.StateCache.PendingNftMap))
 			for _, accountInfo := range c.bc.Statedb.StateCache.PendingAccountMap {
@@ -696,41 +703,48 @@ func (c *Committer) executeTxFunc() {
 }
 
 func (c *Committer) enqueueUpdatePoolTx(pendingUpdatePoolTxs []*tx.Tx, pendingDeletePoolTxs []*tx.Tx) {
-	updatePoolTxMap := &UpdatePoolTx{
-		PendingUpdatePoolTxs: make([]*tx.Tx, 0, len(pendingUpdatePoolTxs)),
-		PendingDeletePoolTxs: make([]*tx.Tx, 0, len(pendingDeletePoolTxs)),
+	updatePoolTxMap := &UpdatePoolTx{}
+	if pendingUpdatePoolTxs != nil {
+		updatePoolTxMap.PendingUpdatePoolTxs = make([]*tx.Tx, 0, len(pendingUpdatePoolTxs))
+		for _, poolTx := range pendingUpdatePoolTxs {
+			updatePoolTxMap.PendingUpdatePoolTxs = append(updatePoolTxMap.PendingUpdatePoolTxs, poolTx.DeepCopy())
+		}
 	}
-	for _, poolTx := range pendingUpdatePoolTxs {
-		updatePoolTxMap.PendingUpdatePoolTxs = append(updatePoolTxMap.PendingUpdatePoolTxs, poolTx.DeepCopy())
-	}
-	for _, poolTx := range pendingDeletePoolTxs {
-		updatePoolTxMap.PendingDeletePoolTxs = append(updatePoolTxMap.PendingDeletePoolTxs, poolTx.DeepCopy())
+	if pendingDeletePoolTxs != nil {
+		updatePoolTxMap.PendingDeletePoolTxs = make([]*tx.Tx, 0, len(pendingDeletePoolTxs))
+		for _, poolTx := range pendingDeletePoolTxs {
+			updatePoolTxMap.PendingDeletePoolTxs = append(updatePoolTxMap.PendingDeletePoolTxs, poolTx.DeepCopy())
+		}
 	}
 	c.updatePoolTxWorker.Enqueue(updatePoolTxMap)
 }
 
 func (c *Committer) updatePoolTxFunc(updatePoolTxMap *UpdatePoolTx) {
 	start := time.Now()
-	length := len(updatePoolTxMap.PendingUpdatePoolTxs)
-	if length > 0 {
-		ids := make([]uint, 0, length)
-		for _, pendingUpdatePoolTx := range updatePoolTxMap.PendingUpdatePoolTxs {
-			ids = append(ids, pendingUpdatePoolTx.ID)
-		}
-		err := c.bc.TxPoolModel.UpdateTxsStatusAndHeightByIds(ids, tx.StatusExecuted, updatePoolTxMap.PendingUpdatePoolTxs[0].BlockHeight)
-		if err != nil {
-			logx.Error("update tx pool failed:", err)
+	if updatePoolTxMap.PendingUpdatePoolTxs != nil {
+		length := len(updatePoolTxMap.PendingUpdatePoolTxs)
+		if length > 0 {
+			ids := make([]uint, 0, length)
+			for _, pendingUpdatePoolTx := range updatePoolTxMap.PendingUpdatePoolTxs {
+				ids = append(ids, pendingUpdatePoolTx.ID)
+			}
+			err := c.bc.TxPoolModel.UpdateTxsStatusAndHeightByIds(ids, tx.StatusExecuted, updatePoolTxMap.PendingUpdatePoolTxs[0].BlockHeight)
+			if err != nil {
+				logx.Error("update tx pool failed:", err)
+			}
 		}
 	}
-	length = len(updatePoolTxMap.PendingDeletePoolTxs)
-	if length > 0 {
-		poolTxIds := make([]uint, 0, len(updatePoolTxMap.PendingDeletePoolTxs))
-		for _, poolTx := range updatePoolTxMap.PendingDeletePoolTxs {
-			poolTxIds = append(poolTxIds, poolTx.ID)
-		}
-		err := c.bc.TxPoolModel.DeleteTxsBatch(poolTxIds, tx.StatusFailed, -1)
-		if err != nil {
-			logx.Error("update tx pool failed:", err)
+	if updatePoolTxMap.PendingDeletePoolTxs != nil {
+		length := len(updatePoolTxMap.PendingDeletePoolTxs)
+		if length > 0 {
+			poolTxIds := make([]uint, 0, len(updatePoolTxMap.PendingDeletePoolTxs))
+			for _, poolTx := range updatePoolTxMap.PendingDeletePoolTxs {
+				poolTxIds = append(poolTxIds, poolTx.ID)
+			}
+			err := c.bc.TxPoolModel.DeleteTxsBatch(poolTxIds, tx.StatusFailed, -1)
+			if err != nil {
+				logx.Error("update tx pool failed:", err)
+			}
 		}
 	}
 	updatePoolTxsMetrics.Set(float64(time.Since(start).Milliseconds()))
