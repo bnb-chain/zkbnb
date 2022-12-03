@@ -60,6 +60,11 @@ var (
 		Name:      "sql_db_time",
 		Help:      "sql DB commit operation time",
 	})
+	l2BlockHeightMetics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2_block_height",
+		Help:      "l2_Block_Height metrics.",
+	})
 )
 
 type Config struct {
@@ -113,6 +118,9 @@ func NewCommitter(config *Config) (*Committer, error) {
 	}
 	if err := prometheus.Register(sqlDBOperationMetics); err != nil {
 		return nil, fmt.Errorf("prometheus.Register sqlDBOperationMetics error: %v", err)
+	}
+	if err := prometheus.Register(l2BlockHeightMetics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register l2BlockHeightMetics error: %v", err)
 	}
 
 	committer := &Committer{
@@ -234,6 +242,7 @@ func (c *Committer) Run() {
 			start := time.Now()
 			logx.Infof("commit new block, height=%d", curBlock.BlockHeight)
 			curBlock, err = c.commitNewBlock(curBlock)
+			l2BlockHeightMetics.Set(float64(curBlock.BlockHeight))
 			logx.Infof("commit new block success, blockSize=%d", curBlock.BlockSize)
 
 			if err != nil {
