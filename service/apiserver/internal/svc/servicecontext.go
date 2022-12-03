@@ -1,6 +1,7 @@
 package svc
 
 import (
+	"github.com/prometheus/client_golang/prometheus"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -20,6 +21,20 @@ import (
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/fetcher/state"
 )
 
+var (
+	sendTxHandlerMetrics = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "zkbnb",
+		Name:      "sent_tx_handler_count",
+		Help:      "sent tx count",
+	})
+
+	sendTxTotalMetrics = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "zkbnb",
+		Name:      "sent_tx_total_count",
+		Help:      "sent tx count",
+	})
+)
+
 type ServiceContext struct {
 	Config     config.Config
 	RedisCache dbcache.Cache
@@ -37,6 +52,9 @@ type ServiceContext struct {
 
 	PriceFetcher price.Fetcher
 	StateFetcher state.Fetcher
+
+	SendTxHandlerMetrics prometheus.Counter
+	SendTxTotalMetrics   prometheus.Counter
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -60,6 +78,17 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	assetModel := asset.NewAssetModel(db)
 	memCache := cache.MustNewMemCache(accountModel, assetModel, c.MemCache.AccountExpiration, c.MemCache.BlockExpiration,
 		c.MemCache.TxExpiration, c.MemCache.AssetExpiration, c.MemCache.PriceExpiration, c.MemCache.MaxCounterNum, c.MemCache.MaxKeyNum)
+
+	if err := prometheus.Register(sendTxHandlerMetrics); err != nil {
+		logx.Error("prometheus.Register sendTxHandlerMetrics error: %v", err)
+		return nil
+	}
+
+	if err := prometheus.Register(sendTxTotalMetrics); err != nil {
+		logx.Error("prometheus.Register sendTxTotalMetrics error: %v", err)
+		return nil
+	}
+
 	return &ServiceContext{
 		Config:              c,
 		RedisCache:          redisCache,
@@ -76,6 +105,9 @@ func NewServiceContext(c config.Config) *ServiceContext {
 
 		PriceFetcher: price.NewFetcher(memCache, assetModel, c.CoinMarketCap.Url, c.CoinMarketCap.Token),
 		StateFetcher: state.NewFetcher(redisCache, accountModel, nftModel),
+
+		SendTxHandlerMetrics: sendTxHandlerMetrics,
+		SendTxTotalMetrics:   sendTxTotalMetrics,
 	}
 }
 
