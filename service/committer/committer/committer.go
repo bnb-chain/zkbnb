@@ -486,7 +486,7 @@ func (c *Committer) Run() {
 	c.finalSaveBlockDataWorker.Start()
 	//todo for tress
 	c.loadAllAccounts()
-	c.pullPoolTxs()
+	c.pullPoolTxs1()
 }
 
 func (c *Committer) PendingTxNum() {
@@ -527,6 +527,83 @@ func (c *Committer) pullPoolTxs() {
 			logx.Errorf("update txs status to processing failed:%s", err.Error())
 			panic("update txs status to processing failed: " + err.Error())
 		}
+		//time.Sleep(200 * time.Millisecond)
+		for c.executeTxWorker.GetQueueSize() > 1000 {
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
+}
+
+func (c *Committer) pullPoolTxs1() {
+	var createdAtFrom time.Time
+	limit := 1000
+	for {
+		if !c.running {
+			break
+		}
+		pendingTxs, err := c.bc.TxPoolModel.GetTxsPageByStatus(tx.StatusPending, 1)
+		if err != nil {
+			logx.Errorf("get pending transactions from tx pool failed:%s", err.Error())
+			time.Sleep(200 * time.Millisecond)
+			continue
+		}
+		if len(pendingTxs) == 1 {
+			createdAtFrom = pendingTxs[0].CreatedAt
+			break
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	processingIds := make(map[uint]bool, 0)
+	for {
+		if !c.running {
+			break
+		}
+		start := time.Now()
+		pendingTxs, err := c.bc.TxPoolModel.GetTxsPageByStatus1(createdAtFrom, tx.StatusPending, int64(limit))
+		pendingTxs2, err := c.bc.TxPoolModel.GetTxsPageByStatus2(createdAtFrom, tx.StatusPending, 1)
+		if len(pendingTxs2) > 0 {
+			logx.Errorf("GetTxsPageByStatus1 failed:%s,id=%s", err.Error(), pendingTxs2[0].PoolTxId)
+		}
+		getPendingPoolTxMetrics.Set(float64(time.Since(start).Milliseconds()))
+		getPendingTxsToQueueMetric.Set(float64(len(pendingTxs)))
+		txWorkerQueueMetric.Set(float64(c.executeTxWorker.GetQueueSize()))
+		if err != nil {
+			logx.Errorf("get pending transactions from tx pool failed:%s", err.Error())
+			time.Sleep(200 * time.Millisecond)
+			continue
+		}
+
+		if len(pendingTxs) == 0 {
+			time.Sleep(200 * time.Millisecond)
+			continue
+		}
+
+		length := len(processingIds)
+		ids := make([]uint, 0, len(pendingTxs)-length)
+		for _, poolTx := range pendingTxs {
+			if length > 0 && processingIds[poolTx.PoolTxId] {
+				continue
+			}
+			ids = append(ids, poolTx.ID)
+			c.executeTxWorker.Enqueue(poolTx)
+			if poolTx.CreatedAt.After(createdAtFrom) {
+				createdAtFrom = poolTx.CreatedAt
+			}
+		}
+		processingIds := make(map[uint]bool, limit)
+		for _, poolTx := range pendingTxs {
+			if createdAtFrom.Equal(poolTx.CreatedAt) {
+				processingIds[poolTx.PoolTxId] = true
+			}
+		}
+
+		//start = time.Now()
+		//err = c.bc.TxPoolModel.UpdateTxsStatusByIds(ids, tx.StatusProcessing)
+		//updatePoolTxsProcessingMetrics.Set(float64(time.Since(start).Milliseconds()))
+		//if err != nil {
+		//	logx.Errorf("update txs status to processing failed:%s", err.Error())
+		//	panic("update txs status to processing failed: " + err.Error())
+		//}
 		//time.Sleep(200 * time.Millisecond)
 		for c.executeTxWorker.GetQueueSize() > 1000 {
 			time.Sleep(10 * time.Millisecond)

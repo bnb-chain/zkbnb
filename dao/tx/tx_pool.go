@@ -49,6 +49,8 @@ type (
 		UpdateTxsToPending(tx *gorm.DB) error
 		GetLatestExecutedTx() (tx *Tx, err error)
 		GetTxsPageByStatus(status int, limit int64) (txs []*Tx, err error)
+		GetTxsPageByStatus1(createdAtFrom time.Time, status int, limit int64) (txs []*Tx, err error)
+		GetTxsPageByStatus2(createdAtFrom time.Time, status int, limit int64) (txs []*Tx, err error)
 		UpdateTxsStatusByIds(ids []uint, status int) error
 		UpdateTxsStatusAndHeightByIds(ids []uint, status int, blockHeight int64) error
 		DeleteTxsBatch(poolTxIds []uint, status int, blockHeight int64) error
@@ -148,6 +150,21 @@ func (m *defaultTxPoolModel) GetTxsByStatus(status int) (txs []*Tx, err error) {
 
 func (m *defaultTxPoolModel) GetTxsPageByStatus(status int, limit int64) (txs []*Tx, err error) {
 	dbTx := m.DB.Table(m.table).Limit(int(limit)).Where("tx_status = ?", status).Order("created_at, id").Find(&txs)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	}
+	return txs, nil
+}
+
+func (m *defaultTxPoolModel) GetTxsPageByStatus1(createdAtFrom time.Time, status int, limit int64) (txs []*Tx, err error) {
+	dbTx := m.DB.Table(m.table).Limit(int(limit)).Where("tx_status = ? and created_at >= ?", status, createdAtFrom).Order("created_at, id").Find(&txs)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	}
+	return txs, nil
+}
+func (m *defaultTxPoolModel) GetTxsPageByStatus2(createdAtFrom time.Time, status int, limit int64) (txs []*Tx, err error) {
+	dbTx := m.DB.Table(m.table).Limit(int(limit)).Where("tx_status = ? and created_at < ?", status, createdAtFrom).Order("created_at, id").Find(&txs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	}

@@ -86,6 +86,7 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 		treeCtx,
 		assetCacheSize,
 	)
+
 	if err != nil {
 		logx.Error("dbinitializer account tree failed:", err)
 		return nil, err

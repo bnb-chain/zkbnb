@@ -50,6 +50,7 @@ func InitAccountTree(
 		logx.Errorf("unable to get all accountNums")
 		return nil, nil, err
 	}
+	logx.Infof("getValidAccountCount end")
 
 	opts := ctx.Options(blockHeight)
 	nilAccountAssetNodeHashes := NilAccountAssetNodeHashes(AssetTreeHeight, NilAccountAssetNodeHash, ctx.Hasher())
@@ -72,6 +73,7 @@ func InitAccountTree(
 		logx.Errorf("unable to create new account tree: %s", err.Error())
 		return nil, nil, err
 	}
+	logx.Infof("newBASSparseMerkleTree end")
 
 	if accountNums == 0 {
 		return accountTree, accountAssetTrees, nil
