@@ -215,6 +215,7 @@ func (p *Prover) ProveBlock() error {
 		Status:      proof.NotSent,
 	}
 	err = p.ProofModel.CreateProof(row)
+	l2ExceptionProofHeightMetrics.Set(float64(0))
 	l2ProofHeightMetrics.Set(float64(row.BlockNumber))
 	return err
 }
