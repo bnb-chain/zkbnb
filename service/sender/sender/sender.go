@@ -294,6 +294,8 @@ func (s *Sender) UpdateSentTxs() (err error) {
 			// It is critical to have any failed transactions
 			panic(fmt.Sprintf("unexpected failed tx: %v", txHash))
 		}
+		l2MaxWaitingTimeMetric.Set(float64(0))
+		l1ExceptionSenderMetric.Set(float64(0))
 
 		// not finalized yet
 		if latestL1Height < receipt.BlockNumber.Uint64()+s.config.ChainConfig.ConfirmBlocksCount {

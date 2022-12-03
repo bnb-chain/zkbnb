@@ -65,6 +65,16 @@ var (
 		Name:      "l2_block_height",
 		Help:      "l2_Block_Height metrics.",
 	})
+	poolTxL1ErrorCountMetics = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "zkbnb",
+		Name:      "pool_tx_l1_error_count",
+		Help:      "pool_tx_l1_error_count metrics.",
+	})
+	poolTxL2ErrorCountMetics = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "zkbnb",
+		Name:      "pool_tx_l2_error_count",
+		Help:      "pool_tx_l2_error_count metrics.",
+	})
 )
 
 type Config struct {
@@ -121,6 +131,12 @@ func NewCommitter(config *Config) (*Committer, error) {
 	}
 	if err := prometheus.Register(l2BlockHeightMetics); err != nil {
 		return nil, fmt.Errorf("prometheus.Register l2BlockHeightMetics error: %v", err)
+	}
+	if err := prometheus.Register(poolTxL1ErrorCountMetics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register poolTxL1ErrorCountMetics error: %v", err)
+	}
+	if err := prometheus.Register(poolTxL2ErrorCountMetics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register poolTxL2ErrorCountMetics error: %v", err)
 	}
 
 	committer := &Committer{
@@ -190,6 +206,11 @@ func (c *Committer) Run() {
 				logx.Errorf("apply pool tx ID: %d failed, err %v ", poolTx.ID, err)
 				poolTx.TxStatus = tx.StatusFailed
 				pendingDeletePoolTxs = append(pendingDeletePoolTxs, poolTx)
+				if types.IsPriorityOperationTx(poolTx.TxType) {
+					poolTxL1ErrorCountMetics.Inc()
+				} else {
+					poolTxL2ErrorCountMetics.Inc()
+				}
 				continue
 			}
 
