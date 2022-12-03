@@ -191,6 +191,10 @@ func (w *Witness) RescheduleBlockWitness() {
 		return
 	}
 
+	if nextBlockWitness == nil {
+		return
+	}
+
 	// skip if next block is not processed
 	if nextBlockWitness.Status == blockwitness.StatusPublished {
 		return
