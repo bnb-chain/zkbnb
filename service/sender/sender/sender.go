@@ -81,6 +81,16 @@ var (
 		Name:      "l1_Exception_send",
 		Help:      "l1_Exception_send metrics.",
 	})
+	commitExceptionHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "commit_Exception_height",
+		Help:      "commit_Exception_height metrics.",
+	})
+	verifyExceptionHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "verify_Exception_height",
+		Help:      "verify_Exception_height metrics.",
+	})
 )
 
 type Sender struct {
@@ -121,6 +131,12 @@ func NewSender(c sconfig.Config) *Sender {
 	}
 	if err := prometheus.Register(l1ExceptionSenderMetric); err != nil {
 		logx.Errorf("prometheus.Register l1ExceptionSenderMetric error: %v", err)
+	}
+	if err := prometheus.Register(commitExceptionHeightMetric); err != nil {
+		logx.Errorf("prometheus.Register commitExceptionHeightMetric error: %v", err)
+	}
+	if err := prometheus.Register(verifyExceptionHeightMetric); err != nil {
+		logx.Errorf("prometheus.Register verifyExceptionHeightMetric error: %v", err)
 	}
 
 	db, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
@@ -236,8 +252,10 @@ func (s *Sender) CommitBlocks() (err error) {
 		gasPrice,
 		s.config.ChainConfig.GasLimit)
 	if err != nil {
+		commitExceptionHeightMetric.Set(float64(pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber))
 		return fmt.Errorf("failed to send commit tx, errL %v:%s", err, txHash)
 	}
+	commitExceptionHeightMetric.Set(float64(0))
 	newRollupTx := &l1rolluptx.L1RollupTx{
 		L1TxHash:      txHash,
 		TxStatus:      l1rolluptx.StatusPending,
@@ -429,9 +447,10 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	txHash, err := zkbnb.VerifyAndExecuteBlocks(cli, authCli, zkbnbInstance,
 		pendingVerifyAndExecuteBlocks, proofs, gasPrice, s.config.ChainConfig.GasLimit)
 	if err != nil {
+		verifyExceptionHeightMetric.Set(float64(pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber))
 		return fmt.Errorf("failed to send verify tx: %v:%s", err, txHash)
 	}
-
+	verifyExceptionHeightMetric.Set(float64(0))
 	newRollupTx := &l1rolluptx.L1RollupTx{
 		L1TxHash:      txHash,
 		TxStatus:      l1rolluptx.StatusPending,
