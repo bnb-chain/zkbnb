@@ -84,8 +84,8 @@ var (
 	})
 	l1MonitorHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
-		Name:      "l1_monitor_len_height",
-		Help:      "l1_monitor_len_height metrics.",
+		Name:      "l1_monitor_height",
+		Help:      "l1_monitor_height metrics.",
 	})
 )
 
