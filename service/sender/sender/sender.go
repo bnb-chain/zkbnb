@@ -168,18 +168,22 @@ func NewSender(c sconfig.Config) *Sender {
 
 	s.cli, err = rpc.NewClient(l1RPCEndpoint.Value)
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 	chainId, err := s.cli.ChainID(context.Background())
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 	s.authCli, err = rpc.NewAuthClient(c.ChainConfig.Sk, chainId)
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 	s.zkbnbInstance, err = zkbnb.LoadZkBNBInstance(s.cli, rollupAddress.Value)
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 	return s
@@ -310,6 +314,7 @@ func (s *Sender) UpdateSentTxs() (err error) {
 			s.l1RollupTxModel.DeleteL1RollupTx(pendingTx)
 			l1ExceptionSenderMetric.Set(float64(pendingTx.L2BlockHeight))
 			// It is critical to have any failed transactions
+			logx.Severef("unexpected failed tx: %v", txHash)
 			panic(fmt.Sprintf("unexpected failed tx: %v", txHash))
 		}
 		l2MaxWaitingTimeMetric.Set(float64(0))

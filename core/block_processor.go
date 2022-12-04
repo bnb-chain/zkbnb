@@ -50,14 +50,17 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 	tx.TxDetails = txDetails
 	err = executor.ApplyTransaction()
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 	err = executor.GeneratePubData()
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 	tx, err = executor.GetExecutedTx()
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 

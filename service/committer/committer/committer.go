@@ -153,6 +153,7 @@ func NewCommitter(config *Config) (*Committer, error) {
 func (c *Committer) Run() {
 	curBlock, err := c.restoreExecutedTxs()
 	if err != nil {
+		logx.Severef("restore executed tx failed: %s", err.Error())
 		panic("restore executed tx failed: " + err.Error())
 	}
 
@@ -169,6 +170,7 @@ func (c *Committer) Run() {
 		if curBlock.BlockStatus > block.StatusProposing {
 			curBlock, err = c.bc.InitNewBlock()
 			if err != nil {
+				logx.Severef("propose new block failed: %s", err.Error())
 				panic("propose new block failed: " + err.Error())
 			}
 		}
@@ -235,6 +237,7 @@ func (c *Committer) Run() {
 			if len(c.bc.Statedb.Txs) == 1 {
 				err = c.createNewBlock(curBlock, poolTx)
 				if err != nil {
+					logx.Severef("create new block failed:%s", err.Error())
 					panic("create new block failed" + err.Error())
 				}
 			} else {
@@ -245,6 +248,7 @@ func (c *Committer) Run() {
 
 		err = c.bc.StateDB().SyncStateCacheToRedis()
 		if err != nil {
+			logx.Severef("sync redis cache failed: %s", err.Error())
 			panic("sync redis cache failed: " + err.Error())
 		}
 
@@ -256,6 +260,7 @@ func (c *Committer) Run() {
 			return c.bc.TxPoolModel.DeleteTxsInTransact(dbTx, pendingDeletePoolTxs)
 		})
 		if err != nil {
+			logx.Severef("update tx pool failed: %s ", err.Error())
 			panic("update tx pool failed: " + err.Error())
 		}
 
@@ -267,7 +272,7 @@ func (c *Committer) Run() {
 			logx.Infof("commit new block success, blockSize=%d", curBlock.BlockSize)
 
 			if err != nil {
-				logx.Errorf("commit new block error, err=%s", err.Error())
+				logx.Severef("commit new block error, err: %s", err.Error())
 				panic("commit new block failed: " + err.Error())
 			}
 			commitOperationMetics.Set(float64(time.Since(start).Milliseconds()))

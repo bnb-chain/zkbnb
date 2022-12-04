@@ -20,7 +20,7 @@ func Run(configFile string) error {
 
 	committer, err := committer.NewCommitter(&c)
 	if err != nil {
-		logx.Error("new committer failed:", err)
+		logx.Severef("new committer failed: %v", err)
 		return err
 	}
 

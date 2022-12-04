@@ -152,6 +152,7 @@ func NewMonitor(c config.Config) *Monitor {
 
 	bscRpcCli, err := rpc.NewClient(networkRpc.Value)
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 

@@ -89,6 +89,7 @@ func NewProver(c config.Config) (*Prover, error) {
 	}
 
 	if !IsBlockSizesSorted(c.BlockConfig.OptionalBlockSizes) {
+		logx.Severe("invalid OptionalBlockSizes")
 		panic("invalid OptionalBlockSizes")
 	}
 
@@ -110,6 +111,7 @@ func NewProver(c config.Config) (*Prover, error) {
 		logx.Infof("start compile block size %d blockConstraints", blockConstraints.TxsCount)
 		prover.R1cs[i], err = frontend.Compile(ecc.BN254, r1cs.NewBuilder, &blockConstraints, frontend.IgnoreUnconstrainedInputs())
 		if err != nil {
+			logx.Severe("r1cs init error")
 			panic("r1cs init error")
 		}
 		logx.Infof("blockConstraints constraints: %d", prover.R1cs[i].GetNbConstraints())
@@ -117,10 +119,12 @@ func NewProver(c config.Config) (*Prover, error) {
 		// read proving and verifying keys
 		prover.ProvingKeys[i], err = prove.LoadProvingKey(c.KeyPath.ProvingKeyPath[i])
 		if err != nil {
+			logx.Severe("provingKey loading error")
 			panic("provingKey loading error")
 		}
 		prover.VerifyingKeys[i], err = prove.LoadVerifyingKey(c.KeyPath.VerifyingKeyPath[i])
 		if err != nil {
+			logx.Severe("verifyingKey loading error")
 			panic("verifyingKey loading error")
 		}
 	}

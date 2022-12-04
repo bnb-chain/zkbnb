@@ -674,6 +674,7 @@ func (s *StateDB) GetNextAccountIndex() int64 {
 func (s *StateDB) GetNextNftIndex() int64 {
 	maxNftIndex, err := s.chainDb.L2NftModel.GetLatestNftIndex()
 	if err != nil {
+		logx.Severef("get latest nft index error: %s", err.Error())
 		panic("get latest nft index error: " + err.Error())
 	}
 
