@@ -105,6 +105,7 @@ var (
 	AppErrNotNftOwner           = New(21602, "account is not owner of the nft")
 	AppErrInvalidNftIndex       = New(21603, "invalid nft index")
 	AppErrNftNotFound           = New(21604, "nft not found")
+	AppErrInvalidToAccount      = New(21702, "invalid ToAccount")
 
 	// Collection
 	AppErrInvalidCollectionId   = New(21700, "invalid collection id")
