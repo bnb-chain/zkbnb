@@ -45,7 +45,10 @@ func InitAccountTree(
 ) (
 	accountTree bsmt.SparseMerkleTree, accountAssetTrees *AssetTreeCache, err error,
 ) {
-	accountNums, err := accountHistoryModel.GetValidAccountCount(blockHeight)
+
+	//todo check
+	//accountNums, err := accountHistoryModel.GetValidAccountCount(blockHeight)
+	accountNums, err := accountModel.GetAccountsTotalCount()
 	if err != nil {
 		logx.Errorf("unable to get all accountNums")
 		return nil, nil, err
