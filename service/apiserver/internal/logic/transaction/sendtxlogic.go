@@ -27,7 +27,8 @@ func NewSendTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendTxLogi
 }
 
 func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err error) {
-	pendingTxCount, err := s.svcCtx.TxPoolModel.GetTxsTotalCount()
+	txStatuses := []int64{tx.StatusPending}
+	pendingTxCount, err := s.svcCtx.TxPoolModel.GetTxsTotalCount(tx.GetTxWithStatuses(txStatuses))
 	if err != nil {
 		return nil, types2.AppErrInternal
 	}
