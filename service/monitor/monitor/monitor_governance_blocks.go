@@ -108,8 +108,7 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 	l1GovernanceLenHeightMetric.Set(float64(len(logs)))
 	logx.Infof("type is typeGovernance blocks from %d to %d and vlog len: %v", startHeight, endHeight, len(logs))
 	for _, vlog := range logs {
-		v, _ := json.Marshal(vlog)
-		logx.Infof("type is typeGovernance blocks from %d to %d and vlog: %v", startHeight, endHeight, v)
+		logx.Infof("type is typeGovernance blocks from %d to %d and vlog: %v", startHeight, endHeight, vlog)
 	}
 
 	l1Events := make([]*L1Event, 0, len(logs))
