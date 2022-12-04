@@ -560,18 +560,14 @@ func (c *Committer) pullPoolTxs1() {
 		}
 		start := time.Now()
 		pendingTxs, err := c.bc.TxPoolModel.GetTxsPageByStatus1(createdAtFrom, tx.StatusPending, int64(limit))
-		pendingTxs2, err := c.bc.TxPoolModel.GetTxsPageByStatus2(createdAtFrom, tx.StatusPending, 1)
-		if len(pendingTxs2) > 0 {
-			logx.Errorf("GetTxsPageByStatus1 failed:%s,id=%s", err.Error(), pendingTxs2[0].PoolTxId)
-		}
-		getPendingPoolTxMetrics.Set(float64(time.Since(start).Milliseconds()))
-		getPendingTxsToQueueMetric.Set(float64(len(pendingTxs)))
-		txWorkerQueueMetric.Set(float64(c.executeTxWorker.GetQueueSize()))
 		if err != nil {
 			logx.Errorf("get pending transactions from tx pool failed:%s", err.Error())
 			time.Sleep(200 * time.Millisecond)
 			continue
 		}
+		getPendingPoolTxMetrics.Set(float64(time.Since(start).Milliseconds()))
+		getPendingTxsToQueueMetric.Set(float64(len(pendingTxs)))
+		txWorkerQueueMetric.Set(float64(c.executeTxWorker.GetQueueSize()))
 
 		if len(pendingTxs) == 0 {
 			time.Sleep(200 * time.Millisecond)
@@ -597,13 +593,17 @@ func (c *Committer) pullPoolTxs1() {
 			}
 		}
 
-		//start = time.Now()
-		//err = c.bc.TxPoolModel.UpdateTxsStatusByIds(ids, tx.StatusProcessing)
-		//updatePoolTxsProcessingMetrics.Set(float64(time.Since(start).Milliseconds()))
-		//if err != nil {
-		//	logx.Errorf("update txs status to processing failed:%s", err.Error())
-		//	panic("update txs status to processing failed: " + err.Error())
-		//}
+		start = time.Now()
+		err = c.bc.TxPoolModel.UpdateTxsStatusByIds(ids, tx.StatusProcessing)
+		updatePoolTxsProcessingMetrics.Set(float64(time.Since(start).Milliseconds()))
+		if err != nil {
+			logx.Errorf("update txs status to processing failed:%s", err.Error())
+			panic("update txs status to processing failed: " + err.Error())
+		}
+		pendingTxs2, err := c.bc.TxPoolModel.GetTxsPageByStatus2(createdAtFrom, tx.StatusPending, 1)
+		if len(pendingTxs2) > 0 {
+			logx.Errorf("GetTxsPageByStatus1 failed:%s,id=%s", err.Error(), pendingTxs2[0].PoolTxId)
+		}
 		//time.Sleep(200 * time.Millisecond)
 		for c.executeTxWorker.GetQueueSize() > 1000 {
 			time.Sleep(10 * time.Millisecond)
