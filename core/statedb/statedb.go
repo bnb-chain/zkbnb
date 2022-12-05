@@ -548,18 +548,28 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool) error {
 			pendingNftItem = append(pendingNftItem, bsmt.Item{Key: uint64(result.index), Val: result.leaf})
 		}
 	}
-	for _, accountItem := range pendingAccountItem {
-		err := s.AccountTree.Set(accountItem.Key, accountItem.Val)
-		if err != nil {
-			return err
+	err := gopool.Submit(func() {
+		resultChan <- &treeUpdateResp{
+			role: accountTreeRole,
+			err:  s.AccountTree.MultiSet(pendingAccountItem),
 		}
+	})
+	if err != nil {
+		return err
 	}
-
-	for _, ntfItem := range pendingNftItem {
-		err := s.NftTree.Set(ntfItem.Key, ntfItem.Val)
-		if err != nil {
-			fmt.Errorf("update %s tree failed, %v", ntfItem.Key, ntfItem.Val)
-			return err
+	err = gopool.Submit(func() {
+		resultChan <- &treeUpdateResp{
+			role: nftTreeRole,
+			err:  s.NftTree.MultiSet(pendingNftItem),
+		}
+	})
+	if err != nil {
+		return err
+	}
+	for i := 0; i < 2; i++ {
+		result := <-resultChan
+		if result.err != nil {
+			return fmt.Errorf("update %s tree failed, %v", result.role, result.err)
 		}
 	}
 
@@ -601,11 +611,9 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64) (int64, 
 		pendingUpdateAssetItem = append(pendingUpdateAssetItem, bsmt.Item{Key: uint64(assetId), Val: assetLeaf})
 	}
 
-	for _, item := range pendingUpdateAssetItem {
-		err := s.AccountAssetTrees.Get(accountIndex).Set(item.Key, item.Val)
-		if err != nil {
-			return accountIndex, nil, fmt.Errorf("update asset tree failed: %v", err)
-		}
+	err = s.AccountAssetTrees.Get(accountIndex).MultiSet(pendingUpdateAssetItem)
+	if err != nil {
+		return accountIndex, nil, fmt.Errorf("update asset tree failed: %v", err)
 	}
 
 	account.AssetRoot = common.Bytes2Hex(s.AccountAssetTrees.Get(accountIndex).Root())
