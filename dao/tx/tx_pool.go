@@ -220,14 +220,25 @@ func (m *defaultTxPoolModel) GetTxByTxHash(hash string) (tx *Tx, err error) {
 }
 
 func (m *defaultTxPoolModel) CreateTxs(txs []*PoolTx) error {
-	dbTx := m.DB.Table(m.table).Create(txs)
-	if dbTx.Error != nil {
-		return dbTx.Error
-	}
-	if dbTx.RowsAffected == 0 {
-		return types.DbErrFailToCreatePoolTx
-	}
-	return nil
+	//dbTx := m.DB.Table(m.table).Create(txs)
+	//if dbTx.Error != nil {
+	//	return dbTx.Error
+	//}
+	//if dbTx.RowsAffected == 0 {
+	//	return types.DbErrFailToCreatePoolTx
+	//}
+	//return nil
+
+	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
+		dbTx := tx.Table(m.table).Create(txs)
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+		if dbTx.RowsAffected == 0 {
+			return types.DbErrFailToCreatePoolTx
+		}
+		return nil
+	})
 }
 
 func (m *defaultTxPoolModel) GetPendingTxsByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (txs []*Tx, err error) {
