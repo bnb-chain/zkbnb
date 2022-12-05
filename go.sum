@@ -119,8 +119,8 @@ github.com/bketelsen/crypt v0.0.4/go.mod h1:aI6NrJ0pMGgvZKL1iVgXLnfIFJtfV+bKCoqO
 github.com/bmizerany/pat v0.0.0-20170815010413-6226ea591a40/go.mod h1:8rLXio+WjiTceGBHIoTvn60HIbs7Hm7bcHjyrSqYB9c=
 github.com/bnb-chain/gnark v0.7.1-0.20221031143243-a94d59b60efe h1:aAMpjWQOPesVwr+By0QzxQgy+bjUns4T9RO/QACrTis=
 github.com/bnb-chain/gnark v0.7.1-0.20221031143243-a94d59b60efe/go.mod h1:oQnMurInsfe+9rG4l8qh8AFVihfuRCS5H3XPJH/6HPM=
-github.com/bnb-chain/gnark-crypto v0.7.1-0.20221101004736-92cbe59f55b4 h1:Ti3fuo4/1BvdumJX0eCB7vLSjrxP8tl8e2mXdQoeFP8=
-github.com/bnb-chain/gnark-crypto v0.7.1-0.20221101004736-92cbe59f55b4/go.mod h1:KPSuJzyxkJA8xZ/+CV47tyqkr9MmpZA3PXivK4VPrVg=
+github.com/bnb-chain/gnark-crypto v0.7.1-0.20221115030433-6e0195f27b89 h1:z/OVbeX0WlqaD+Rj7OTzJWoyMfpBdT25sSkVL0M1tp0=
+github.com/bnb-chain/gnark-crypto v0.7.1-0.20221115030433-6e0195f27b89/go.mod h1:KPSuJzyxkJA8xZ/+CV47tyqkr9MmpZA3PXivK4VPrVg=
 github.com/bnb-chain/zkbnb-crypto v0.0.6-0.20220928090246-9a20106a2347/go.mod h1:L1BEYSG945hwjJCtR5LUQ1pvRmydSsk9oU2d9YvoOrA=
 github.com/bnb-chain/zkbnb-crypto v0.0.8-0.20221104095956-e2b2f4d4ae4e h1:uZC86BGCno2OcPL52nmo8BGaIV1MdfTxUlsIuDF6K2c=
 github.com/bnb-chain/zkbnb-crypto v0.0.8-0.20221104095956-e2b2f4d4ae4e/go.mod h1:AlzTbvhQojUFpArKHiGHkEYDnapebUbFC/+mek1pZvU=
