@@ -486,7 +486,7 @@ func (c *Committer) Run() {
 	c.finalSaveBlockDataWorker.Start()
 	//todo for tress
 	c.loadAllAccounts()
-	c.pullPoolTxs1()
+	c.pullPoolTxs()
 }
 
 func (c *Committer) PendingTxNum() {
@@ -501,7 +501,7 @@ func (c *Committer) pullPoolTxs() {
 			break
 		}
 		start := time.Now()
-		pendingTxs, err := c.bc.TxPoolModel.GetTxsPageByStatus(tx.StatusPending, 1000)
+		pendingTxs, err := c.bc.TxPoolModel.GetTxsPageByStatus(tx.StatusPending, 300)
 		getPendingPoolTxMetrics.Set(float64(time.Since(start).Milliseconds()))
 		getPendingTxsToQueueMetric.Set(float64(len(pendingTxs)))
 		txWorkerQueueMetric.Set(float64(c.executeTxWorker.GetQueueSize()))
@@ -528,7 +528,7 @@ func (c *Committer) pullPoolTxs() {
 			panic("update txs status to processing failed: " + err.Error())
 		}
 		//time.Sleep(200 * time.Millisecond)
-		for c.executeTxWorker.GetQueueSize() > 1000 {
+		for c.executeTxWorker.GetQueueSize() > 2000 {
 			time.Sleep(10 * time.Millisecond)
 		}
 	}
@@ -600,7 +600,7 @@ func (c *Committer) pullPoolTxs1() {
 			logx.Errorf("update txs status to processing failed:%s", err.Error())
 			panic("update txs status to processing failed: " + err.Error())
 		}
-		pendingTxs2, err := c.bc.TxPoolModel.GetTxsPageByStatus2(createdAtFrom, tx.StatusPending, 1)
+		pendingTxs2, err := c.bc.TxPoolModel.GetTxsPageByStatus2(createdAtFrom, tx.StatusPending, 100)
 		if len(pendingTxs2) > 0 {
 			logx.Errorf("GetTxsPageByStatus1 failed:%s,id=%s", err.Error(), pendingTxs2[0].PoolTxId)
 		}
