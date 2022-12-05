@@ -692,7 +692,7 @@ func (s *StateDB) GetGasAccountIndex() (int64, error) {
 	if err == nil {
 		return gasAccountIndex, nil
 	}
-	logx.Errorf("fail to get gas account from cache, error: %s", err.Error())
+	logx.Infof("fail to get gas account from cache, error: %s", err.Error())
 
 	gasAccountConfig, err := s.chainDb.SysConfigModel.GetSysConfigByName(types.GasAccountIndex)
 	if err != nil {
