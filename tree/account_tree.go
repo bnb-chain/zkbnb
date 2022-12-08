@@ -19,6 +19,7 @@ package tree
 
 import (
 	"errors"
+	"fmt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"hash"
 	"strconv"
