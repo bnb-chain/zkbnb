@@ -19,6 +19,7 @@ package tree
 
 import (
 	"errors"
+	"fmt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"hash"
 	"strconv"
@@ -55,6 +56,7 @@ func InitAccountTree(
 
 	// init account state trees
 	accountAssetTrees = NewLazyTreeCache(assetCacheSize, accountNums-1, blockHeight, func(index, block int64) bsmt.SparseMerkleTree {
+		fmt.Printf("NewBASSparseMerkleTree called, index: %d, block: %d\n", index, block)
 		tree, err := bsmt.NewBASSparseMerkleTree(ctx.Hasher(),
 			SetNamespace(ctx, accountAssetNamespace(index)), AssetTreeHeight, NilAccountAssetNodeHash,
 			ctx.Options(block)...)
