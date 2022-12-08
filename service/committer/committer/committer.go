@@ -644,13 +644,14 @@ func (c *Committer) pullPoolTxs2() {
 		for _, poolTx := range pendingTxs {
 			if int(poolTx.ID)-int(executedTxMaxId) != 1 {
 				logx.Errorf("not equal id=%s", poolTx.ID)
-				if time.Now().Sub(poolTx.CreatedAt).Seconds() > 60 {
-					logx.Errorf("not equal id=%s,but total seconds>60,continue", poolTx.ID)
-					continue
+				if time.Now().Sub(poolTx.CreatedAt).Seconds() < 60 {
+					limit = 100
+					time.Sleep(50 * time.Millisecond)
+					logx.Errorf("not equal id=%s,but delay seconds<60,break it", poolTx.ID)
+					break
+				} else {
+					logx.Errorf("not equal id=%s,but delay seconds>60,do it", poolTx.ID)
 				}
-				limit = 100
-				time.Sleep(50 * time.Millisecond)
-				break
 			}
 			//todo
 			executedTxMaxId = poolTx.ID
