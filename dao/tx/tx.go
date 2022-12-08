@@ -87,6 +87,7 @@ type (
 		UpdateTxsStatusInTransact(tx *gorm.DB, blockTxStatus map[int64]int) error
 		CreateTxs(txs []*Tx) error
 		DeleteByHeightInTransact(tx *gorm.DB, heights []int64) error
+		GetMaxPoolTxIdByHeightInTransact(tx *gorm.DB, height int64) (poolTxId uint, err error)
 	}
 
 	defaultTxModel struct {
@@ -209,6 +210,16 @@ func (m *defaultTxModel) GetTxByHash(txHash string) (tx *Tx, err error) {
 	}
 
 	return tx, nil
+}
+
+func (m *defaultTxModel) GetMaxPoolTxIdByHeightInTransact(tx *gorm.DB, blockHeight int64) (poolTxId uint, err error) {
+	dbTx := tx.Table(m.table).Select("pool_tx_id").Where("block_height = ?", blockHeight).Order("pool_tx_id desc").Limit(1).Find(&poolTxId)
+	if dbTx.Error != nil {
+		return 0, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return 0, types.DbErrNotFound
+	}
+	return poolTxId, nil
 }
 
 func (m *defaultTxModel) GetTxsTotalCountBetween(from, to time.Time) (count int64, err error) {

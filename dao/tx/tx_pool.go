@@ -56,6 +56,7 @@ type (
 		DeleteTxsBatch(poolTxIds []uint, status int, blockHeight int64) error
 		DeleteTxIdsBatchInTransact(tx *gorm.DB, ids []uint) error
 		UpdateTxsToPendingByHeight(tx *gorm.DB, blockHeight []int64) error
+		UpdateTxsToPendingByMaxId(tx *gorm.DB, maxPoolTxId uint) error
 	}
 
 	defaultTxPoolModel struct {
@@ -379,6 +380,20 @@ func (m *defaultTxPoolModel) UpdateTxsToPendingByHeight(tx *gorm.DB, blockHeight
 		return nil
 	}
 	dbTx := tx.Model(&PoolTx{}).Unscoped().Select("DeletedAt", "TxStatus").Where("block_height in ? and tx_status= ? and deleted_at is not null", blockHeight, StatusExecuted).Updates(map[string]interface{}{
+		"deleted_at": nil,
+		"tx_status":  StatusPending,
+	})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	return nil
+}
+
+func (m *defaultTxPoolModel) UpdateTxsToPendingByMaxId(tx *gorm.DB, maxId uint) error {
+	if maxId == 0 {
+		return nil
+	}
+	dbTx := tx.Model(&PoolTx{}).Unscoped().Select("DeletedAt", "TxStatus").Where("id > ? and tx_status= ? and deleted_at is not null", maxId, StatusFailed).Updates(map[string]interface{}{
 		"deleted_at": nil,
 		"tx_status":  StatusPending,
 	})

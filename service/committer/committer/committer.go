@@ -486,7 +486,7 @@ func (c *Committer) Run() {
 	c.finalSaveBlockDataWorker.Start()
 	//todo for tress
 	c.loadAllAccounts()
-	c.pullPoolTxs()
+	c.pullPoolTxs2()
 }
 
 func (c *Committer) PendingTxNum() {
@@ -608,6 +608,51 @@ func (c *Committer) pullPoolTxs1() {
 		for c.executeTxWorker.GetQueueSize() > 1000 {
 			time.Sleep(10 * time.Millisecond)
 		}
+	}
+}
+
+func (c *Committer) pullPoolTxs2() {
+	executedTx, err := c.bc.TxPoolModel.GetLatestExecutedTx()
+	if err != nil {
+		logx.Errorf("get executed tx from tx pool failed:%s", err.Error())
+		panic("get executed tx from tx pool failed: " + err.Error())
+	}
+	var executedTxMaxId uint = 0
+	if executedTx != nil {
+		executedTxMaxId = executedTx.ID
+	}
+	limit := 1000
+	for {
+		if !c.running {
+			break
+		}
+		start := time.Now()
+		logx.Infof("get pool txs executedTxMaxId=%d", executedTxMaxId)
+		pendingTxs, err := c.bc.TxPoolModel.GetTxsByStatusAndMaxId(tx.StatusPending, executedTxMaxId, int64(limit))
+		getPendingPoolTxMetrics.Set(float64(time.Since(start).Milliseconds()))
+		getPendingTxsToQueueMetric.Set(float64(len(pendingTxs)))
+		txWorkerQueueMetric.Set(float64(c.executeTxWorker.GetQueueSize()))
+		if err != nil {
+			logx.Errorf("get pending transactions from tx pool failed:%s", err.Error())
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+		if len(pendingTxs) == 0 {
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+		for _, poolTx := range pendingTxs {
+			if int(poolTx.ID)-int(executedTxMaxId) != 1 {
+				limit = 100
+				logx.Errorf("not equal id=%s", poolTx.ID)
+				time.Sleep(50 * time.Millisecond)
+				break
+			}
+			//todo
+			executedTxMaxId = poolTx.ID
+			c.executeTxWorker.Enqueue(poolTx)
+		}
+		limit = 1000
 	}
 }
 

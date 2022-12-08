@@ -231,6 +231,23 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 				logx.Error("UpdateTxsToPendingByHeight failed: ", err)
 				panic("UpdateTxsToPendingByHeight failed: " + err.Error())
 			}
+
+			curHeight, err := bc.BlockModel.GetCurrentBlockHeightInTransact(dbTx)
+			if err != nil {
+				logx.Error("GetCurrentBlockHeight failed: ", err)
+				panic("GetCurrentBlockHeight failed: " + err.Error())
+			}
+
+			poolTxId, err := bc.TxModel.GetMaxPoolTxIdByHeightInTransact(dbTx, curHeight)
+			if err != nil {
+				logx.Error("GetMaxPoolTxIdByHeight failed: ", err)
+				panic("GetMaxPoolTxIdByHeight failed: " + err.Error())
+			}
+			err = bc.TxPoolModel.UpdateTxsToPendingByMaxId(dbTx, poolTxId)
+			if err != nil {
+				logx.Error("UpdateTxsToPendingByMaxId failed: ", err)
+				panic("UpdateTxsToPendingByMaxId failed: " + err.Error())
+			}
 			return nil
 		})
 

@@ -60,6 +60,7 @@ type (
 		GetBlocksTotalCount() (count int64, err error)
 		CreateGenesisBlock(block *Block) error
 		GetCurrentBlockHeight() (blockHeight int64, err error)
+		GetCurrentBlockHeightInTransact(tx *gorm.DB) (blockHeight int64, err error)
 		CreateBlockInTransact(tx *gorm.DB, oBlock *Block) error
 		UpdateBlocksWithoutTxsInTransact(tx *gorm.DB, blocks []*Block) (err error)
 		UpdateBlockInTransact(tx *gorm.DB, block *Block) (err error)
@@ -287,6 +288,16 @@ func (m *defaultBlockModel) CreateGenesisBlock(block *Block) error {
 
 func (m *defaultBlockModel) GetCurrentBlockHeight() (blockHeight int64, err error) {
 	dbTx := m.DB.Table(m.table).Select("block_height").Order("block_height desc").Limit(1).Find(&blockHeight)
+	if dbTx.Error != nil {
+		return 0, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return 0, types.DbErrNotFound
+	}
+	return blockHeight, nil
+}
+
+func (m *defaultBlockModel) GetCurrentBlockHeightInTransact(tx *gorm.DB) (blockHeight int64, err error) {
+	dbTx := tx.Table(m.table).Select("block_height").Order("block_height desc").Limit(1).Find(&blockHeight)
 	if dbTx.Error != nil {
 		return 0, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
