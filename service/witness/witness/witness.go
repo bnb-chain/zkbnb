@@ -201,7 +201,7 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 			return fmt.Errorf("failed to construct block witness, block:%d, err: %v", block.BlockHeight, err)
 		}
 		// Step2: commit trees for witness
-		err = tree.CommitAccountTreeAndNftTree(uint64(latestVerifiedBlockNr), w.accountTree, w.assetTrees, w.nftTree)
+		err = tree.CommitTrees(uint64(latestVerifiedBlockNr), w.accountTree, w.assetTrees, w.nftTree)
 		if err != nil {
 			return fmt.Errorf("unable to commit trees after txs is executed, block:%d, error: %v", block.BlockHeight, err)
 		}

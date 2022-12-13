@@ -23,7 +23,9 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"github.com/pkg/errors"
+	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
+	"time"
 
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/gopool"
@@ -69,15 +71,64 @@ func EmptyNftNodeHash() []byte {
 func CommitAccountTreeAndNftTree(
 	version uint64,
 	accountTree bsmt.SparseMerkleTree,
+	nftTree bsmt.SparseMerkleTree) error {
+	totalTask := 2
+	errChan := make(chan error, totalTask)
+	defer close(errChan)
+
+	err := gopool.Submit(func() {
+		accPrunedVersion := bsmt.Version(version)
+		if accountTree.LatestVersion() < accPrunedVersion {
+			accPrunedVersion = accountTree.LatestVersion()
+		}
+		ver, err := accountTree.Commit(&accPrunedVersion)
+		if err != nil {
+			errChan <- errors.Wrapf(err, "unable to commit account tree, tree ver: %d, prune ver: %d", ver, accPrunedVersion)
+			return
+		}
+		errChan <- nil
+	})
+	if err != nil {
+		return err
+	}
+
+	err = gopool.Submit(func() {
+		nftPrunedVersion := bsmt.Version(version)
+		if nftTree.LatestVersion() < nftPrunedVersion {
+			nftPrunedVersion = nftTree.LatestVersion()
+		}
+		ver, err := nftTree.Commit(&nftPrunedVersion)
+		if err != nil {
+			errChan <- errors.Wrapf(err, "unable to commit nft tree, tree ver: %d, prune ver: %d", ver, nftPrunedVersion)
+			return
+		}
+		errChan <- nil
+	})
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < totalTask; i++ {
+		err := <-errChan
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func CommitTrees(
+	version uint64,
+	accountTree bsmt.SparseMerkleTree,
 	assetTrees *AssetTreeCache,
 	nftTree bsmt.SparseMerkleTree) error {
-	//start := time.Now()
-	//assetTreeChanges := assetTrees.GetChanges()
-	//logx.Infof("GetChanges=%v", time.Since(start))
-	//
-	//defer assetTrees.CleanChanges()
-	//totalTask := len(assetTreeChanges) + 2
-	totalTask := 2
+	start := time.Now()
+	assetTreeChanges := assetTrees.GetChanges()
+	logx.Infof("GetChanges=%v", time.Since(start))
+
+	defer assetTrees.CleanChanges()
+	totalTask := len(assetTreeChanges) + 2
 
 	errChan := make(chan error, totalTask)
 	defer close(errChan)
@@ -96,6 +147,24 @@ func CommitAccountTreeAndNftTree(
 	})
 	if err != nil {
 		return err
+	}
+
+	for _, idx := range assetTreeChanges {
+		err := func(i int64) error {
+			return gopool.Submit(func() {
+				asset := assetTrees.Get(i)
+				version := asset.LatestVersion()
+				ver, err := asset.Commit(&version)
+				if err != nil {
+					errChan <- errors.Wrapf(err, "unable to commit asset tree [%d], tree ver: %d, prune ver: %d", i, ver, version)
+					return
+				}
+				errChan <- nil
+			})
+		}(idx)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = gopool.Submit(func() {
