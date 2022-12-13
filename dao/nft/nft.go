@@ -18,7 +18,9 @@
 package nft
 
 import (
+	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -36,6 +38,9 @@ type (
 		GetNftsByAccountIndex(accountIndex, limit, offset int64) (nfts []*L2Nft, err error)
 		GetNftsCountByAccountIndex(accountIndex int64) (int64, error)
 		UpdateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) error
+		BatchInsertOrUpdate(nfts []*L2Nft) (err error)
+		DeleteByIndexInTransact(tx *gorm.DB, nftIndex int64) error
+		UpdateByIndexInTransact(tx *gorm.DB, l2nft *L2Nft) error
 	}
 	defaultL2NftModel struct {
 		table string
@@ -50,6 +55,7 @@ type (
 		NftContentHash      string `gorm:"index:idx_owner_account_index"`
 		CreatorTreasuryRate int64
 		CollectionId        int64
+		L2BlockHeight       int64 `gorm:"index:idx_nft_index"`
 	}
 )
 
@@ -128,6 +134,51 @@ func (m *defaultL2NftModel) UpdateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) err
 			if dbTx.Error != nil {
 				return dbTx.Error
 			}
+		}
+	}
+	return nil
+}
+
+func (m *defaultL2NftModel) BatchInsertOrUpdate(nfts []*L2Nft) (err error) {
+	dbTx := m.DB.Table(m.table).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "id"}},
+		DoUpdates: clause.AssignmentColumns([]string{"creator_account_index", "owner_account_index", "nft_content_hash", "creator_treasury_rate", "collection_id", "l2_block_height"}),
+	}).Create(&nfts)
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if int(dbTx.RowsAffected) != len(nfts) {
+		logx.Errorf("BatchInsertOrUpdate failed,rows affected not equal nfts length,dbTx.RowsAffected:%s,len(nfts):%s", int(dbTx.RowsAffected), len(nfts))
+		return types.DbErrFailToUpdateAccount
+	}
+	return nil
+}
+
+func (m *defaultL2NftModel) DeleteByIndexInTransact(tx *gorm.DB, nftIndex int64) error {
+	dbTx := tx.Model(&L2Nft{}).Unscoped().Where("nft_index = ?", nftIndex).Delete(&L2Nft{})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	return nil
+}
+
+func (m *defaultL2NftModel) UpdateByIndexInTransact(tx *gorm.DB, l2nft *L2Nft) error {
+	dbTx := tx.Model(&L2Nft{}).Select("creator_account_index", "owner_account_index", "nft_content_hash", "creator_treasury_rate", "collection_id", "l2_block_height").Where("nft_index = ?", l2nft.NftIndex).Updates(map[string]interface{}{
+		"creator_account_index": l2nft.CreatorAccountIndex,
+		"owner_account_index":   l2nft.OwnerAccountIndex,
+		"nft_content_hash":      l2nft.NftContentHash,
+		"creator_treasury_rate": l2nft.CreatorTreasuryRate,
+		"collection_id":         l2nft.CollectionId,
+		"l2_block_height":       l2nft.L2BlockHeight,
+	})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		// this l2nft is new, we need create first
+		dbTx = m.DB.Table(m.table).Create(&l2nft)
+		if dbTx.Error != nil {
+			return dbTx.Error
 		}
 	}
 	return nil

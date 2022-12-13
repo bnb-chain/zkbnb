@@ -14,7 +14,6 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/common/gopool"
@@ -377,15 +376,11 @@ func (s *StateDB) GetPendingAccount(blockHeight int64, stateDataCopy *StateDataC
 	pendingAccountHistory := make([]*account.AccountHistory, 0)
 
 	for _, formatAccount := range stateDataCopy.StateCache.PendingAccountMap {
-		if formatAccount.AccountIndex == types.GasAccount {
-			s.applyGasUpdate(formatAccount, stateDataCopy)
-		}
-
 		newAccount, err := chain.FromFormatAccountInfo(formatAccount)
 		if err != nil {
 			return nil, nil, err
 		}
-
+		newAccount.L2BlockHeight = blockHeight
 		pendingAccount = append(pendingAccount, newAccount)
 		pendingAccountHistory = append(pendingAccountHistory, &account.AccountHistory{
 			AccountIndex:    newAccount.AccountIndex,
@@ -398,19 +393,6 @@ func (s *StateDB) GetPendingAccount(blockHeight int64, stateDataCopy *StateDataC
 	}
 
 	return pendingAccount, pendingAccountHistory, nil
-}
-
-func (s *StateDB) applyGasUpdate(formatAccount *types.AccountInfo, stateDataCopy *StateDataCopy) {
-	for assetId, delta := range stateDataCopy.StateCache.PendingGasMap {
-		if asset, ok := formatAccount.AssetInfo[assetId]; ok {
-			formatAccount.AssetInfo[assetId].Balance = ffmath.Add(asset.Balance, delta)
-		} else {
-			formatAccount.AssetInfo[assetId] = &types.AccountAsset{
-				Balance:                  delta,
-				OfferCanceledOrFinalized: types.ZeroBigInt,
-			}
-		}
-	}
 }
 
 func (s *StateDB) GetPendingNft(blockHeight int64, stateDataCopy *StateDataCopy) ([]*nft.L2Nft, []*nft.L2NftHistory, error) {
@@ -583,7 +565,6 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool, stateDataCopy *StateDataCopy
 			pendingNftItem = append(pendingNftItem, bsmt.Item{Key: uint64(result.index), Val: result.leaf})
 		}
 	}
-	//todo for stress
 	stateDataCopy.pendingAccountSmtItem = pendingAccountItem
 	stateDataCopy.pendingNftSmtItem = pendingNftItem
 
@@ -668,23 +649,10 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCop
 		//todo
 	}
 	start = time.Now()
-	isGasAccount := accountIndex == types.GasAccount
 	pendingUpdateAssetItem := make([]bsmt.Item, 0, len(assets))
 	s.Metrics.AccountTreeGauge.WithLabelValues("assets_count").Set(float64(len(assets)))
 	for _, assetId := range assets {
-		isGasAsset := false
-		if isGasAccount {
-			for _, gasAssetId := range types.GasAssets {
-				if assetId == gasAssetId {
-					isGasAsset = true
-					break
-				}
-			}
-		}
 		balance := account.AssetInfo[assetId].Balance
-		if isGasAsset {
-			balance = ffmath.Add(balance, s.GetPendingGas(assetId))
-		}
 		startItem := time.Now()
 		assetLeaf, err := tree.ComputeAccountAssetLeafHash(
 			balance.String(),
@@ -718,21 +686,11 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCop
 	}
 	//todo for tress
 	asset := s.AccountAssetTrees.Get(accountIndex)
-	prunedVersion := uint64(asset.LatestVersion()) - 20
-	if uint64(asset.LatestVersion()) < 20 {
-		prunedVersion = 0
-	}
-
-	version := bsmt.Version(prunedVersion)
-	//todo recentVersion
-	//todo check
-	//version := bsmt.Version(s.GetPrunedBlockHeight())
-	//logx.Infof("asset.Commit: %d", curHeight)
-
-	ver, err := asset.Commit(&version)
+	prunedVersion := bsmt.Version(s.GetPrunedBlockHeight())
+	ver, err := asset.Commit(&prunedVersion)
 	if err != nil {
 		logx.Error("asset.Commit failed:", err)
-		return accountIndex, nil, fmt.Errorf("unable to commit asset tree [%d], tree ver: %d, prune ver: %d,error:%s", accountIndex, ver, version, err.Error())
+		return accountIndex, nil, fmt.Errorf("unable to commit asset tree [%d], tree ver: %d, prune ver: %d,error:%s", accountIndex, ver, prunedVersion, err.Error())
 	}
 	return accountIndex, nAccountLeafHash, nil
 }

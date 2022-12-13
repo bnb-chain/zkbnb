@@ -151,10 +151,12 @@ func (m *defaultAccountHistoryModel) GetLatestAccountHistories(accountIndexes []
 
 	dbTx := m.DB.Table(m.table+" as a").Select("*").
 		Where("NOT EXISTS (?) AND l2_block_height <= ? AND l2_block_height != -1 and account_index in ?", subQuery, height, accountIndexes).
-		Order("account_index")
+		Order("account_index").Find(&accounts)
 
-	if dbTx.Find(&accounts).Error != nil {
+	if dbTx.Error != nil {
 		return 0, nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil, nil
 	}
 	return dbTx.RowsAffected, accounts, nil
 }

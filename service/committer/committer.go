@@ -18,7 +18,6 @@ func Run(configFile string) error {
 	conf.MustLoad(configFile, &c)
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
-	// runtime.GOMAXPROCS(64)
 	committer, err := committer.NewCommitter(&c)
 	if err != nil {
 		logx.Error("new committer failed:", err)
@@ -28,7 +27,6 @@ func Run(configFile string) error {
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))
 	_, err = cronJob.AddFunc("@every 10s", func() {
-		//logx.Info("========================= start pending_tx number =========================")
 		committer.PendingTxNum()
 	})
 	if err != nil {
