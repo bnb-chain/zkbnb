@@ -220,6 +220,8 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 			}
 			return fmt.Errorf("create unproved crypto block error, block:%d, err: %v", block.BlockHeight, err)
 		}
+		w.assetTrees.CleanChanges()
+
 	}
 	return nil
 }

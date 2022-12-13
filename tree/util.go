@@ -126,10 +126,7 @@ func CommitTrees(
 	start := time.Now()
 	assetTreeChanges := assetTrees.GetChanges()
 	logx.Infof("GetChanges=%v", time.Since(start))
-
-	defer assetTrees.CleanChanges()
 	totalTask := len(assetTreeChanges) + 2
-
 	errChan := make(chan error, totalTask)
 	defer close(errChan)
 
@@ -200,7 +197,6 @@ func RollBackTrees(
 	nftTree bsmt.SparseMerkleTree) error {
 
 	assetTreeChanges := assetTrees.GetChanges()
-	defer assetTrees.CleanChanges()
 	totalTask := len(assetTreeChanges) + 3
 	errChan := make(chan error, totalTask)
 	defer close(errChan)
