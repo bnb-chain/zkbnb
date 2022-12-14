@@ -253,7 +253,12 @@ func (m *defaultTxModel) GetDistinctAccountsCountBetween(from, to time.Time) (co
 
 func (m *defaultTxModel) UpdateTxsStatusInTransact(tx *gorm.DB, blockTxStatus map[int64]int) error {
 	for height, status := range blockTxStatus {
-		dbTx := tx.Table(m.table).Where("block_height = ?", height).Update("tx_status", status)
+
+		conditions := make(map[string]interface{})
+		conditions["tx_status"] = status
+		conditions["updated_at"] = time.Now()
+
+		dbTx := tx.Table(m.table).Where("block_height = ?", height).Updates(conditions)
 		if dbTx.Error != nil {
 			return dbTx.Error
 		}
