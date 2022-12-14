@@ -1096,6 +1096,79 @@ func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 			}
 		}
 	}
+
+	pendingNftLen := len(blockStates.PendingNft)
+	if pendingNftLen > 0 {
+		sort.SliceStable(blockStates.PendingNft, func(i, j int) bool {
+			return blockStates.PendingNft[i].NftIndex < blockStates.PendingNft[j].NftIndex
+		})
+		fromIndex := 0
+		limit := 100
+		toIndex := limit
+		for {
+			if fromIndex >= pendingNftLen {
+				break
+			}
+			if toIndex > pendingNftLen {
+				toIndex = pendingNftLen
+			}
+			nfts := blockStates.PendingNft[fromIndex:toIndex]
+			fromIndex = toIndex
+			toIndex += limit
+
+			totalTask++
+			err := func(nfts []*nft.L2Nft) error {
+				return c.pool.Submit(func() {
+					start := time.Now()
+					err := c.bc.DB().L2NftModel.BatchInsertOrUpdate(nfts)
+					saveAccountsGoroutineMetrics.Set(float64(time.Since(start).Milliseconds()))
+					if err != nil {
+						errChan <- err
+						return
+					}
+					errChan <- nil
+				})
+			}(nfts)
+			if err != nil {
+				panic("batchInsertOrUpdate nfts failed: " + err.Error())
+			}
+		}
+	}
+	pendingNftHistoryLen := len(blockStates.PendingNftHistory)
+	if pendingNftHistoryLen > 0 {
+		fromIndex := 0
+		limit := 100
+		toIndex := limit
+		for {
+			if fromIndex >= pendingNftHistoryLen {
+				break
+			}
+			if toIndex > pendingNftHistoryLen {
+				toIndex = pendingNftHistoryLen
+			}
+			nftHistories := blockStates.PendingNftHistory[fromIndex:toIndex]
+			fromIndex = toIndex
+			toIndex += limit
+
+			totalTask++
+			err := func(nftHistories []*nft.L2NftHistory) error {
+				return c.pool.Submit(func() {
+					start := time.Now()
+					err = c.bc.DB().L2NftHistoryModel.CreateNftHistories(nftHistories)
+					addAccountHistoryMetrics.Set(float64(time.Since(start).Milliseconds()))
+					if err != nil {
+						errChan <- err
+						return
+					}
+					errChan <- nil
+				})
+			}(nftHistories)
+			if err != nil {
+				panic("createNftHistories failed: " + err.Error())
+			}
+		}
+	}
+
 	txsLen := len(blockStates.Block.Txs)
 	if txsLen > 0 {
 		fromIndex := 0
@@ -1179,85 +1252,6 @@ func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 
 	saveBlockDataMetrics.WithLabelValues("all").Set(float64(time.Since(start).Milliseconds()))
 	c.finalSaveBlockDataWorker.Enqueue(blockStates)
-	// update db
-	//err := c.bc.DB().DB.Transaction(func(tx *gorm.DB) error {
-	//	start := time.Now()
-	//	// create block for commit
-	//	var err error
-	//	if blockStates.CompressedBlock != nil {
-	//		err = c.bc.DB().CompressedBlockModel.CreateCompressedBlockInTransact(tx, blockStates.CompressedBlock)
-	//		if err != nil {
-	//			return err
-	//		}
-	//	}
-	//	addCompressedBlockMetrics.Set(float64(time.Since(start).Milliseconds()))
-	//	start = time.Now()
-	//	// create or update account
-	//	if len(blockStates.PendingAccount) != 0 {
-	//		err = c.bc.DB().AccountModel.UpdateAccountTransactionToCommitted(tx, blockStates.PendingAccount)
-	//		if err != nil {
-	//			return err
-	//		}
-	//	}
-	//	updateAccountMetrics.Set(float64(time.Since(start).Milliseconds()))
-	//	start = time.Now()
-	//	// create account history
-	//	if len(blockStates.PendingAccountHistory) != 0 {
-	//		err = c.bc.DB().AccountHistoryModel.CreateAccountHistoriesInTransact(tx, blockStates.PendingAccountHistory)
-	//		if err != nil {
-	//			return err
-	//		}
-	//	}
-	//	addAccountHistoryMetrics.Set(float64(time.Since(start).Milliseconds()))
-	//	// create or update nft
-	//	if len(blockStates.PendingNft) != 0 {
-	//		err = c.bc.DB().L2NftModel.UpdateNftsInTransact(tx, blockStates.PendingNft)
-	//		if err != nil {
-	//			return err
-	//		}
-	//	}
-	//	// create nft history
-	//	if len(blockStates.PendingNftHistory) != 0 {
-	//		err = c.bc.DB().L2NftHistoryModel.CreateNftHistoriesInTransact(tx, blockStates.PendingNftHistory)
-	//		if err != nil {
-	//			return err
-	//		}
-	//	}
-	//
-	//	ids := make([]uint, 0, len(blockStates.Block.Txs))
-	//	for _, poolTx := range blockStates.Block.Txs {
-	//		ids = append(ids, poolTx.ID)
-	//	}
-	//
-	//	// update block
-	//	blockStates.Block.ClearTxsModel()
-	//	start = time.Now()
-	//
-	//	logx.Error("blockStates.Block.BlockHeight: ", blockStates.Block.BlockHeight)
-	//	logx.Error("blockStates.Block.ID: ", blockStates.Block.ID)
-	//
-	//	//assetInfoBytes, err := json.Marshal(blockStates.Block)
-	//	//logx.Error("blockStates.Block.Block.json: ", string(assetInfoBytes))
-	//
-	//	err = c.bc.DB().BlockModel.UpdateBlockInTransact(tx, blockStates.Block)
-	//	if err != nil {
-	//		return err
-	//	}
-	//	updateBlockMetrics.Set(float64(time.Since(start).Milliseconds()))
-	//
-	//	start = time.Now()
-	//	// delete txs from tx pool
-	//	err = c.bc.DB().TxPoolModel.DeleteTxIdsBatchInTransact(tx, ids)
-	//	deletePoolTxMetrics.Set(float64(time.Since(start).Milliseconds()))
-	//	return err
-	//
-	//})
-	//if err != nil {
-	//	logx.Errorf("save block transaction failed:%s,blockHeight:%d", err.Error(), blockStates.Block.BlockHeight)
-	//	panic("save block transaction failed: " + err.Error())
-	//	//todo 重试优化
-	//}
-
 }
 
 func (c *Committer) finalSaveBlockDataFunc(blockStates *block.BlockStates) {
