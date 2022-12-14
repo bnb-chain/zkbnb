@@ -52,9 +52,10 @@ func (c *AssetTreeCache) Get(i int64) (tree bsmt.SparseMerkleTree) {
 	if tmpTree, ok := c.treeCache.Get(i); ok {
 		tree = tmpTree.(bsmt.SparseMerkleTree)
 	} else {
-		v := c.initFunction(i, c.blockNumber)
-		c.treeCache.ContainsOrAdd(i, v)
-		tree = v
+		c.treeCache.ContainsOrAdd(i, c.initFunction(i, c.blockNumber))
+		if tmpTree, ok := c.treeCache.Get(i); ok {
+			tree = tmpTree.(bsmt.SparseMerkleTree)
+		}
 	}
 	return
 }
