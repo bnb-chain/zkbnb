@@ -41,6 +41,7 @@ type (
 		BatchInsertOrUpdate(nfts []*L2Nft) (err error)
 		DeleteByIndexInTransact(tx *gorm.DB, nftIndex int64) error
 		UpdateByIndexInTransact(tx *gorm.DB, l2nft *L2Nft) error
+		GetNfts(limit int64, offset int64) (nfts []*L2Nft, err error)
 	}
 	defaultL2NftModel struct {
 		table string
@@ -182,6 +183,16 @@ func (m *defaultL2NftModel) UpdateByIndexInTransact(tx *gorm.DB, l2nft *L2Nft) e
 		}
 	}
 	return nil
+}
+
+func (m *defaultL2NftModel) GetNfts(limit int64, offset int64) (nfts []*L2Nft, err error) {
+	dbTx := m.DB.Table(m.table).Limit(int(limit)).Offset(int(offset)).Order("id asc").Find(&nfts)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, nil
+	}
+	return nfts, nil
 }
 
 func (ai *L2Nft) DeepCopy() *L2Nft {

@@ -126,7 +126,10 @@ func (e *FullExitNftExecutor) ApplyTransaction() error {
 		CreatorTreasuryRate: emptyNftInfo.CreatorTreasuryRate,
 		CollectionId:        emptyNftInfo.CollectionId,
 	}
-
+	cacheNft, err := e.bc.StateDB().GetNft(txInfo.NftIndex)
+	if err == nil {
+		emptyNft.ID = cacheNft.ID
+	}
 	stateCache := e.bc.StateDB()
 	stateCache.SetPendingNft(txInfo.NftIndex, emptyNft)
 	return e.BaseExecutor.ApplyTransaction()

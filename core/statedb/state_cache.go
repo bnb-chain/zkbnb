@@ -88,6 +88,14 @@ func (c *StateCache) MarkNftDirty(nftIndex int64) {
 	c.dirtyNftMap[nftIndex] = true
 }
 
+func (c *StateCache) GetDirtyAccountsAndAssetsMap() map[int64]map[int64]bool {
+	return c.dirtyAccountsAndAssetsMap
+}
+
+func (c *StateCache) GetDirtyNftMap() map[int64]bool {
+	return c.dirtyNftMap
+}
+
 func (c *StateCache) GetPendingAccount(accountIndex int64) (*types.AccountInfo, bool) {
 	account, exist := c.PendingAccountMap[accountIndex]
 	if exist {

@@ -95,14 +95,19 @@ func (e *MintNftExecutor) ApplyTransaction() error {
 
 	stateCache := e.bc.StateDB()
 	stateCache.SetPendingAccount(txInfo.CreatorAccountIndex, creatorAccount)
-	stateCache.SetPendingNft(txInfo.NftIndex, &nft.L2Nft{
+	nft := &nft.L2Nft{
 		NftIndex:            txInfo.NftIndex,
 		CreatorAccountIndex: txInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   txInfo.ToAccountIndex,
 		NftContentHash:      txInfo.NftContentHash,
 		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
 		CollectionId:        txInfo.NftCollectionId,
-	})
+	}
+	cacheNft, err := e.bc.StateDB().GetNft(txInfo.NftIndex)
+	if err == nil {
+		nft.ID = cacheNft.ID
+	}
+	stateCache.SetPendingNft(txInfo.NftIndex, nft)
 	stateCache.SetPendingGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }

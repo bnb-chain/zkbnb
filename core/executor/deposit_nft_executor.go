@@ -87,7 +87,10 @@ func (e *DepositNftExecutor) ApplyTransaction() error {
 		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
 		CollectionId:        txInfo.CollectionId,
 	}
-
+	cacheNft, err := e.bc.StateDB().GetNft(txInfo.NftIndex)
+	if err == nil {
+		nft.ID = cacheNft.ID
+	}
 	stateCache := e.bc.StateDB()
 	stateCache.SetPendingNft(txInfo.NftIndex, nft)
 	return e.BaseExecutor.ApplyTransaction()

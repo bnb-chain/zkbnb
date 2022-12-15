@@ -486,6 +486,7 @@ func (c *Committer) Run() {
 	c.saveBlockDataWorker.Start()
 	c.finalSaveBlockDataWorker.Start()
 	c.loadAllAccounts()
+	c.loadAllNfts()
 	c.pullPoolTxs2()
 }
 
@@ -790,17 +791,34 @@ func (c *Committer) executeTxFunc() {
 		c.bc.Statedb.SyncPendingAccountToMemoryCache(c.bc.Statedb.PendingAccountMap)
 		c.bc.Statedb.SyncPendingNftToMemoryCache(c.bc.Statedb.PendingNftMap)
 
-		//todo for tress
 		c.enqueueSyncAccountToRedis(c.bc.Statedb.PendingAccountMap, c.bc.Statedb.PendingNftMap)
 		c.enqueueUpdatePoolTx(nil, pendingDeletePoolTxs)
 
 		if c.shouldCommit(curBlock) {
 			start := time.Now()
 			logx.Infof("commit new block, height=%d,blockSize=%d", curBlock.BlockHeight, curBlock.BlockSize)
-
-			pendingUpdatePoolTxs = make([]*tx.Tx, 0, c.maxTxsPerBlock)
-			pendingAccountMap := make(map[int64]*types.AccountInfo, len(c.bc.Statedb.StateCache.PendingAccountMap))
-			pendingNftMap := make(map[int64]*nft.L2Nft, len(c.bc.Statedb.StateCache.PendingNftMap))
+			for accountIndex, _ := range c.bc.Statedb.GetDirtyAccountsAndAssetsMap() {
+				_, exist := c.bc.Statedb.StateCache.GetPendingAccount(accountIndex)
+				if !exist {
+					accountInfo, err := c.bc.Statedb.GetFormatAccount(accountIndex)
+					if err != nil {
+						logx.Errorf("get account info failed,accountIndex=%s,err=%s ", accountIndex, err.Error())
+						panic("get account info failed: " + err.Error())
+					}
+					c.bc.Statedb.PendingAccountMap[accountIndex] = accountInfo
+				}
+			}
+			for nftIndex, _ := range c.bc.Statedb.StateCache.GetDirtyNftMap() {
+				_, exist := c.bc.Statedb.StateCache.GetPendingNft(nftIndex)
+				if !exist {
+					nftInfo, err := c.bc.Statedb.GetNft(nftIndex)
+					if err != nil {
+						logx.Errorf("get nft info failed,nftIndex=%s,err=%s ", nftIndex, err.Error())
+						panic("get nft info failed: " + err.Error())
+					}
+					c.bc.Statedb.PendingNftMap[nftIndex] = nftInfo
+				}
+			}
 
 			addPendingAccounts := make([]*account.Account, 0)
 			for _, accountInfo := range c.bc.Statedb.StateCache.PendingAccountMap {
@@ -844,6 +862,24 @@ func (c *Committer) executeTxFunc() {
 					c.bc.Statedb.StateCache.PendingNftMap[nftInfo.NftIndex].ID = nftInfo.ID
 				}
 			}
+
+			if len(addPendingAccounts) > 0 || len(addPendingNfts) > 0 {
+				pendingAccountMap := make(map[int64]*types.AccountInfo, len(addPendingAccounts))
+				pendingNftMap := make(map[int64]*nft.L2Nft, len(addPendingNfts))
+				for _, accountInfo := range addPendingAccounts {
+					pendingAccountMap[accountInfo.AccountIndex] = c.bc.Statedb.StateCache.PendingAccountMap[accountInfo.AccountIndex]
+				}
+				for _, nftInfo := range addPendingNfts {
+					pendingNftMap[nftInfo.NftIndex] = c.bc.Statedb.StateCache.PendingNftMap[nftInfo.NftIndex]
+				}
+				c.bc.Statedb.SyncPendingAccountToMemoryCache(pendingAccountMap)
+				c.bc.Statedb.SyncPendingNftToMemoryCache(pendingNftMap)
+				c.enqueueSyncAccountToRedis(pendingAccountMap, pendingNftMap)
+			}
+
+			pendingUpdatePoolTxs = make([]*tx.Tx, 0, c.maxTxsPerBlock)
+			pendingAccountMap := make(map[int64]*types.AccountInfo, len(c.bc.Statedb.StateCache.PendingAccountMap))
+			pendingNftMap := make(map[int64]*nft.L2Nft, len(c.bc.Statedb.StateCache.PendingNftMap))
 			for _, accountInfo := range c.bc.Statedb.StateCache.PendingAccountMap {
 				pendingAccountMap[accountInfo.AccountIndex] = accountInfo.DeepCopy()
 			}
@@ -1461,6 +1497,25 @@ func (c *Committer) loadAllAccounts() {
 				panic("load all accounts failed: " + err.Error())
 			}
 			c.bc.Statedb.AccountCache.Add(accountInfo.AccountIndex, formatAccount)
+		}
+	}
+}
+
+func (c *Committer) loadAllNfts() {
+	limit := int64(1000)
+	offset := int64(0)
+	for {
+		nfts, err := c.bc.L2NftModel.GetNfts(limit, offset)
+		if err != nil {
+			logx.Errorf("load all nfts failed:%s", err.Error())
+			panic("load all nfts failed: " + err.Error())
+		}
+		if nfts == nil {
+			return
+		}
+		for _, nftInfo := range nfts {
+			offset++
+			c.bc.Statedb.NftCache.Add(nftInfo.NftIndex, nftInfo)
 		}
 	}
 }
