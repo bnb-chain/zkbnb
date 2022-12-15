@@ -107,7 +107,7 @@ func (e *FullExitExecutor) GeneratePubData() error {
 	return nil
 }
 
-func (e *FullExitExecutor) GetExecutedTx() (*tx.Tx, error) {
+func (e *FullExitExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	txInfoBytes, err := json.Marshal(e.txInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
@@ -118,7 +118,7 @@ func (e *FullExitExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.AssetId = e.txInfo.AssetId
 	e.tx.TxAmount = e.txInfo.AssetAmount.String()
 	e.tx.AccountIndex = e.txInfo.AccountIndex
-	return e.BaseExecutor.GetExecutedTx()
+	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *FullExitExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {

@@ -186,12 +186,14 @@ func (m *defaultL2NftModel) UpdateByIndexInTransact(tx *gorm.DB, l2nft *L2Nft) e
 
 func (ai *L2Nft) DeepCopy() *L2Nft {
 	l2Nft := &L2Nft{
+		Model:               gorm.Model{ID: ai.ID},
 		NftIndex:            ai.NftIndex,
 		CreatorAccountIndex: ai.CreatorAccountIndex,
 		OwnerAccountIndex:   ai.OwnerAccountIndex,
 		NftContentHash:      ai.NftContentHash,
 		CreatorTreasuryRate: ai.CreatorTreasuryRate,
 		CollectionId:        ai.CollectionId,
+		L2BlockHeight:       ai.L2BlockHeight,
 	}
 	return l2Nft
 }

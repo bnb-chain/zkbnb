@@ -156,7 +156,7 @@ func (e *FullExitNftExecutor) GeneratePubData() error {
 	return nil
 }
 
-func (e *FullExitNftExecutor) GetExecutedTx() (*tx.Tx, error) {
+func (e *FullExitNftExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	txInfoBytes, err := json.Marshal(e.txInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
@@ -166,7 +166,7 @@ func (e *FullExitNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.TxInfo = string(txInfoBytes)
 	e.tx.NftIndex = e.txInfo.NftIndex
 	e.tx.AccountIndex = e.txInfo.AccountIndex
-	return e.BaseExecutor.GetExecutedTx()
+	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {

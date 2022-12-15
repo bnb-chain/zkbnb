@@ -77,7 +77,7 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 		panic(err)
 	}
 	start = time.Now()
-	tx, err = executor.GetExecutedTx()
+	tx, err = executor.GetExecutedTx(false)
 	p.metrics.TxGetExecutedTxMetrics.Set(float64(time.Since(start).Milliseconds()))
 
 	if err != nil {
@@ -113,11 +113,23 @@ func (p *APIProcessor) Process(tx *tx.Tx) error {
 	if err != nil {
 		return mappingVerifyInputsErrors(err)
 	}
-
+	_, err = executor.GetExecutedTx(true)
+	if err != nil {
+		return mappingExecutedErrors(err)
+	}
 	return nil
 }
 
 func mappingPrepareErrors(err error) error {
+	switch e := errors.Cause(err).(type) {
+	case types.Error:
+		return e
+	default:
+		return types.AppErrInternal
+	}
+}
+
+func mappingExecutedErrors(err error) error {
 	switch e := errors.Cause(err).(type) {
 	case types.Error:
 		return e

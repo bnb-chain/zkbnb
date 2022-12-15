@@ -66,7 +66,7 @@ type (
 		DeleteBlockInTransact(tx *gorm.DB, statuses []int) error
 		GetProposingBlockHeights() (blockHeights []int64, err error)
 		PreSaveBlockData(block *Block) error
-		UpdateBlockToPendingInTransact(tx *gorm.DB, id uint) error
+		UpdateBlockToPendingInTransact(tx *gorm.DB, block *Block) error
 		GetBlockByStatus(statuses []int) (blocks []*Block, err error)
 		GetLatestPendingHeight() (height int64, err error)
 	}
@@ -428,11 +428,11 @@ func (m *defaultBlockModel) GetBlockByStatus(statuses []int) (blocks []*Block, e
 }
 
 func (m *defaultBlockModel) PreSaveBlockData(block *Block) (err error) {
-	const CreatedAt = "CreatedAt"
-	dbTx := m.DB.Table(m.table).Where("id = ? and block_status = ?", block.ID, StatusProposing).
-		Omit(CreatedAt).
-		Select("*").
-		Updates(&block)
+	dbTx := m.DB.Model(&Block{}).Select("BlockStatus", "AccountIndexes", "NftIndexes").Where("id = ? and  block_status = ?", block.ID, StatusProposing).Updates(map[string]interface{}{
+		"block_status":    StatusPacked,
+		"account_indexes": block.AccountIndexes,
+		"nft_indexes":     block.NftIndexes,
+	})
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}
@@ -445,8 +445,16 @@ func (m *defaultBlockModel) PreSaveBlockData(block *Block) (err error) {
 	return nil
 }
 
-func (m *defaultBlockModel) UpdateBlockToPendingInTransact(tx *gorm.DB, id uint) error {
-	dbTx := tx.Model(&Block{}).Where("id = ? and  block_status = ?", id, StatusPacked).Update("block_status", StatusPending)
+func (m *defaultBlockModel) UpdateBlockToPendingInTransact(tx *gorm.DB, block *Block) error {
+	dbTx := m.DB.Model(&Block{}).Select("BlockStatus", "BlockSize", "BlockCommitment", "StateRoot", "PriorityOperations", "PendingOnChainOperationsHash", "PendingOnChainOperationsPubData").Where("id = ? and  block_status = ?", block.ID, StatusPacked).Updates(map[string]interface{}{
+		"block_status":                         StatusPending,
+		"block_size":                           block.BlockSize,
+		"block_commitment":                     block.BlockCommitment,
+		"state_root":                           block.StateRoot,
+		"priority_operations":                  block.PriorityOperations,
+		"pending_on_chain_operations_hash":     block.PendingOnChainOperationsHash,
+		"pending_on_chain_operations_pub_data": block.PendingOnChainOperationsPubData,
+	})
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}

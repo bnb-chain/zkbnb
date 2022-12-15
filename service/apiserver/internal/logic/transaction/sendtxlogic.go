@@ -66,6 +66,10 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 	if err != nil {
 		return resp, err
 	}
+	newTx.PoolTx.TxType = int64(req.TxType)
+	newTx.PoolTx.TxInfo = req.TxInfo
+	newTx.PoolTx.BlockHeight = types2.NilBlockHeight
+	newTx.PoolTx.TxStatus = tx.StatusPending
 	if err := s.svcCtx.TxPoolModel.CreateTxs([]*tx.PoolTx{&newTx.PoolTx}); err != nil {
 		logx.Errorf("fail to create pool tx: %v, err: %s", newTx, err.Error())
 		return resp, types2.AppErrInternal

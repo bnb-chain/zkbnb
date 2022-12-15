@@ -163,7 +163,7 @@ func (e *WithdrawNftExecutor) GeneratePubData() error {
 	return nil
 }
 
-func (e *WithdrawNftExecutor) GetExecutedTx() (*tx.Tx, error) {
+func (e *WithdrawNftExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	txInfoBytes, err := json.Marshal(e.txInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
@@ -174,7 +174,7 @@ func (e *WithdrawNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.GasFeeAssetId = e.txInfo.GasFeeAssetId
 	e.tx.GasFee = e.txInfo.GasFeeAssetAmount.String()
 	e.tx.NftIndex = e.txInfo.NftIndex
-	return e.BaseExecutor.GetExecutedTx()
+	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *WithdrawNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {

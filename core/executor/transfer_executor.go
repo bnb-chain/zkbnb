@@ -131,7 +131,7 @@ func (e *TransferExecutor) GeneratePubData() error {
 	return nil
 }
 
-func (e *TransferExecutor) GetExecutedTx() (*tx.Tx, error) {
+func (e *TransferExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	txInfoBytes, err := json.Marshal(e.txInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
@@ -143,7 +143,7 @@ func (e *TransferExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.GasFee = e.txInfo.GasFeeAssetAmount.String()
 	e.tx.AssetId = e.txInfo.AssetId
 	e.tx.TxAmount = e.txInfo.AssetAmount.String()
-	return e.BaseExecutor.GetExecutedTx()
+	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *TransferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {

@@ -24,7 +24,7 @@ type TxExecutor interface {
 	VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 	ApplyTransaction() error
 	GeneratePubData() error
-	GetExecutedTx() (*tx.Tx, error)
+	GetExecutedTx(fromApi bool) (*tx.Tx, error)
 	GenerateTxDetails() ([]*tx.TxDetail, error)
 }
 

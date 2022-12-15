@@ -39,6 +39,7 @@ type (
 		CreateNftHistoriesInTransact(tx *gorm.DB, histories []*L2NftHistory) error
 		GetLatestNftHistories(nftIndexes []int64, height int64) (rowsAffected int64, nfts []*L2NftHistory, err error)
 		CreateNftHistories(histories []*L2NftHistory) error
+		DeleteByHeightInTransact(tx *gorm.DB, heights []int64) error
 	}
 	defaultL2NftHistoryModel struct {
 		table string
@@ -145,6 +146,14 @@ func (m *defaultL2NftHistoryModel) CreateNftHistories(histories []*L2NftHistory)
 	if dbTx.RowsAffected != int64(len(histories)) {
 		logx.Errorf("CreateNftHistories failed,rows affected not equal histories length,dbTx.RowsAffected:%s,len(histories):%s", int(dbTx.RowsAffected), len(histories))
 		return types.DbErrFailToCreateAccountHistory
+	}
+	return nil
+}
+
+func (m *defaultL2NftHistoryModel) DeleteByHeightInTransact(tx *gorm.DB, heights []int64) error {
+	dbTx := tx.Model(&L2NftHistory{}).Unscoped().Where("l2_block_height in ?", heights).Delete(&L2NftHistory{})
+	if dbTx.Error != nil {
+		return dbTx.Error
 	}
 	return nil
 }

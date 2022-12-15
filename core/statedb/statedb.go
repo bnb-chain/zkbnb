@@ -567,39 +567,6 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool, stateDataCopy *StateDataCopy
 	}
 	stateDataCopy.pendingAccountSmtItem = pendingAccountItem
 	stateDataCopy.pendingNftSmtItem = pendingNftItem
-
-	//err := gopool.Submit(func() {
-	//	resultChan <- &treeUpdateResp{
-	//		role: accountTreeRole,
-	//		err:  s.AccountTree.MultiSet(pendingAccountItem),
-	//	}
-	//})
-	//if err != nil {
-	//	return err
-	//}
-	//err = gopool.Submit(func() {
-	//	resultChan <- &treeUpdateResp{
-	//		role: nftTreeRole,
-	//		err:  s.NftTree.MultiSet(pendingNftItem),
-	//	}
-	//})
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//start := time.Now()
-	//for i := 0; i < 2; i++ {
-	//	result := <-resultChan
-	//	if result.err != nil {
-	//		return fmt.Errorf("update %s tree failed, %v", result.role, result.err)
-	//	}
-	//}
-	//s.Metrics.AccountTreeMultiSetGauge.Set(float64(time.Since(start).Milliseconds()))
-	//
-	//hFunc := poseidon.NewPoseidon()
-	//hFunc.Write(s.AccountTree.Root())
-	//hFunc.Write(s.NftTree.Root())
-	//stateDataCopy.StateCache.StateRoot = common.Bytes2Hex(hFunc.Sum(nil))
 	return nil
 }
 
@@ -646,7 +613,7 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCop
 	account, exist := stateCopy.StateCache.GetPendingAccount(accountIndex)
 	s.Metrics.AccountTreeGauge.WithLabelValues("cache_get_account").Set(float64(time.Since(start).Milliseconds()))
 	if !exist {
-		//todo
+		logx.Infof("update account tree failed,not exist accountIndex=%s", accountIndex)
 	}
 	start = time.Now()
 	pendingUpdateAssetItem := make([]bsmt.Item, 0, len(assets))

@@ -37,6 +37,7 @@ type (
 		CreateAccountHistories(histories []*AccountHistory) error
 		GetLatestAccountHistory(accountIndex, height int64) (accountHistory *AccountHistory, err error)
 		GetLatestAccountHistories(accountIndexes []int64, height int64) (rowsAffected int64, accounts []*AccountHistory, err error)
+		DeleteByHeightInTransact(tx *gorm.DB, heights []int64) error
 	}
 
 	defaultAccountHistoryModel struct {
@@ -159,4 +160,12 @@ func (m *defaultAccountHistoryModel) GetLatestAccountHistories(accountIndexes []
 		return 0, nil, nil
 	}
 	return dbTx.RowsAffected, accounts, nil
+}
+
+func (m *defaultAccountHistoryModel) DeleteByHeightInTransact(tx *gorm.DB, heights []int64) error {
+	dbTx := tx.Model(&AccountHistory{}).Unscoped().Where("l2_block_height in ?", heights).Delete(&AccountHistory{})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	return nil
 }

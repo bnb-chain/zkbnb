@@ -119,7 +119,10 @@ func (e *BaseExecutor) GeneratePubData() error {
 	return nil
 }
 
-func (e *BaseExecutor) GetExecutedTx() (*tx.Tx, error) {
+func (e *BaseExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
+	if fromApi {
+		return e.tx, nil
+	}
 	e.tx.TxIndex = int64(len(e.bc.StateDB().Txs))
 	e.tx.BlockHeight = e.bc.CurrentBlock().BlockHeight
 	e.tx.TxStatus = tx.StatusExecuted

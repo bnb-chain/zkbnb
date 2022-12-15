@@ -272,7 +272,7 @@ func (e *AtomicMatchExecutor) GeneratePubData() error {
 	return nil
 }
 
-func (e *AtomicMatchExecutor) GetExecutedTx() (*tx.Tx, error) {
+func (e *AtomicMatchExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	txInfoBytes, err := json.Marshal(e.txInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
@@ -285,7 +285,7 @@ func (e *AtomicMatchExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.NftIndex = e.txInfo.SellOffer.NftIndex
 	e.tx.AssetId = e.txInfo.BuyOffer.AssetId
 	e.tx.TxAmount = e.txInfo.BuyOffer.AssetAmount.String()
-	return e.BaseExecutor.GetExecutedTx()
+	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
