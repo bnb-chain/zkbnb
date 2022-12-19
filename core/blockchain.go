@@ -138,12 +138,209 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		chainConfig: config,
 	}
 
+	rollback(bc)
+
 	curHeight, err := bc.BlockModel.GetCurrentBlockHeight()
 	if err != nil {
 		logx.Error("get current block height failed: ", err)
 		panic("get current block height failed: " + err.Error())
 	}
-	//todo check
+	logx.Infof("get current block height: %d", curHeight)
+	bc.currentBlock, err = bc.BlockModel.GetBlockByHeight(curHeight)
+	if err != nil {
+		return nil, err
+	}
+	if bc.currentBlock.BlockStatus == block.StatusProposing || bc.currentBlock.BlockStatus == block.StatusPacked {
+		logx.Errorf("current block status is StatusProposing or StatusPacked,invalid block, height=%d", bc.currentBlock.BlockHeight)
+		panic("current block status is StatusProposing or StatusPacked,invalid block, height=" + strconv.FormatInt(bc.currentBlock.BlockHeight, 10))
+	}
+
+	redisCache := dbcache.NewRedisCache(config.CacheRedis[0].Host, config.CacheRedis[0].Pass, 15*time.Minute)
+	treeCtx, err := tree.NewContext(moduleName, config.TreeDB.Driver, false, config.TreeDB.RoutinePoolSize, &config.TreeDB.LevelDBOption, &config.TreeDB.RedisDBOption)
+	if err != nil {
+		return nil, err
+	}
+
+	treeCtx.SetOptions(bsmt.BatchSizeLimit(3 * 1024 * 1024))
+	bc.Statedb, err = sdb.NewStateDB(treeCtx, bc.ChainDB, redisCache, &config.CacheConfig, config.TreeDB.AssetTreeCacheSize, bc.currentBlock.StateRoot, curHeight)
+	if err != nil {
+		return nil, err
+	}
+	bc.Statedb.PreviousStateRoot = bc.currentBlock.StateRoot
+	bc.Statedb.UpdatePrunedBlockHeight(curHeight)
+
+	accountFromDbGauge := prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "account_from_db_time",
+		Help:      "account from db time",
+	})
+
+	accountGauge := prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "account_time",
+		Help:      "account time",
+	})
+
+	verifyGasGauge := prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "verifyGasGauge_time",
+		Help:      "verifyGas time",
+	})
+	verifySignature := prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "verifySignature_time",
+		Help:      "verifySignature time",
+	})
+
+	accountTreeMultiSetGauge := prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "accountTreeMultiSetGauge_time",
+		Help:      "accountTreeMultiSetGauge time",
+	})
+
+	if err := prometheus.Register(verifyGasGauge); err != nil {
+		return nil, fmt.Errorf("prometheus.Register verifyGasGauge error: %v", err)
+	}
+
+	if err := prometheus.Register(verifySignature); err != nil {
+		return nil, fmt.Errorf("prometheus.Register verifySignature error: %v", err)
+	}
+
+	if err := prometheus.Register(accountTreeMultiSetGauge); err != nil {
+		return nil, fmt.Errorf("prometheus.Register accountTreeMultiSetGauge error: %v", err)
+	}
+
+	if err := prometheus.Register(accountFromDbGauge); err != nil {
+		return nil, fmt.Errorf("prometheus.Register accountFromDbMetrics error: %v", err)
+	}
+	getAccountCounter := prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "zkbnb",
+		Name:      "get_account_counter",
+		Help:      "get account counter",
+	})
+	if err := prometheus.Register(getAccountCounter); err != nil {
+		return nil, fmt.Errorf("prometheus.Register getAccountCounter error: %v", err)
+	}
+
+	getAccountFromDbCounter := prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "zkbnb",
+		Name:      "get_account_from_db_counter",
+		Help:      "get account from db counter",
+	})
+	if err := prometheus.Register(getAccountFromDbCounter); err != nil {
+		return nil, fmt.Errorf("prometheus.Register getAccountFromDbCounter error: %v", err)
+	}
+
+	accountTreeTimeGauge := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: "zkbnb",
+			Name:      "get_account_tree_time",
+			Help:      "get_account_tree_time.",
+		},
+		[]string{"type"})
+	if err := prometheus.Register(accountTreeTimeGauge); err != nil {
+		return nil, fmt.Errorf("prometheus.Register accountTreeTimeGauge error: %v", err)
+	}
+
+	nftTreeTimeGauge := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: "zkbnb",
+			Name:      "get_nft_tree_time",
+			Help:      "get_nft_tree_time.",
+		},
+		[]string{"type"})
+	if err := prometheus.Register(nftTreeTimeGauge); err != nil {
+		return nil, fmt.Errorf("prometheus.Register nftTreeTimeGauge error: %v", err)
+	}
+
+	stateDBMetrics := &zkbnbprometheus.StateDBMetrics{
+		GetAccountFromDbGauge:    accountFromDbGauge,
+		GetAccountGauge:          accountGauge,
+		GetAccountCounter:        getAccountCounter,
+		GetAccountFromDbCounter:  getAccountFromDbCounter,
+		VerifyGasGauge:           verifyGasGauge,
+		VerifySignature:          verifySignature,
+		AccountTreeGauge:         accountTreeTimeGauge,
+		NftTreeGauge:             nftTreeTimeGauge,
+		AccountTreeMultiSetGauge: accountTreeMultiSetGauge,
+	}
+	bc.Statedb.Metrics = stateDBMetrics
+
+	if err := prometheus.Register(executeTxPrepareMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register executeTxPrepareMetrics error: %v", err)
+	}
+
+	if err := prometheus.Register(executeTxVerifyInputsMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register executeTxVerifyInputsMetrics error: %v", err)
+	}
+
+	if err := prometheus.Register(executeGenerateTxDetailsMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register executeGenerateTxDetailsMetrics error: %v", err)
+	}
+
+	if err := prometheus.Register(executeTxApplyTransactionMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register executeTxApplyTransactionMetrics error: %v", err)
+	}
+
+	if err := prometheus.Register(executeTxGeneratePubDataMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register executeTxGeneratePubDataMetrics error: %v", err)
+	}
+
+	if err := prometheus.Register(executeTxGetExecutedTxMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register executeTxGetExecutedTxMetrics error: %v", err)
+	}
+	prometheusMetrics := &zkbnbprometheus.Metrics{
+		TxPrepareMetrics:           executeTxPrepareMetrics,
+		TxVerifyInputsMetrics:      executeTxVerifyInputsMetrics,
+		TxGenerateTxDetailsMetrics: executeGenerateTxDetailsMetrics,
+		TxApplyTransactionMetrics:  executeTxApplyTransactionMetrics,
+		TxGeneratePubDataMetrics:   executeTxGeneratePubDataMetrics,
+		TxGetExecutedTxMetrics:     executeTxGetExecutedTxMetrics,
+	}
+	bc.processor = NewCommitProcessor(bc, prometheusMetrics)
+
+	// register metrics
+	if err := prometheus.Register(updateAccountTreeMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register updateAccountTreeMetrics error: %v", err)
+	}
+	if err := prometheus.Register(commitAccountTreeMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register commitAccountTreeMetrics error: %v", err)
+	}
+
+	return bc, nil
+}
+
+// NewBlockChainForDryRun - for dry run mode, we can reuse existing models for quick creation
+// , e.g., for sending tx, we can create blockchain for each request quickly
+func NewBlockChainForDryRun(accountModel account.AccountModel,
+	nftModel nft.L2NftModel, txPoolModel tx.TxPoolModel, assetModel asset.AssetModel,
+	sysConfigModel sysconfig.SysConfigModel, redisCache dbcache.Cache) (*BlockChain, error) {
+	chainDb := &sdb.ChainDB{
+		AccountModel:     accountModel,
+		L2NftModel:       nftModel,
+		TxPoolModel:      txPoolModel,
+		L2AssetInfoModel: assetModel,
+		SysConfigModel:   sysConfigModel,
+	}
+	statedb, err := sdb.NewStateDBForDryRun(redisCache, &statedb.DefaultCacheConfig, chainDb)
+	if err != nil {
+		return nil, err
+	}
+	bc := &BlockChain{
+		ChainDB: chainDb,
+		dryRun:  true,
+		Statedb: statedb,
+	}
+	bc.processor = NewAPIProcessor(bc)
+	return bc, nil
+}
+
+func rollback(bc *BlockChain) {
+	curHeight, err := bc.BlockModel.GetCurrentBlockHeight()
+	if err != nil {
+		logx.Error("get current block height failed: ", err)
+		panic("get current block height failed: " + err.Error())
+	}
 	logx.Infof("get current block height: %d", curHeight)
 	blocks, err := bc.BlockModel.GetBlockByStatus([]int{block.StatusProposing, block.StatusPacked})
 	if err != nil {
@@ -160,7 +357,8 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 				var accountIndexes []int64
 				err = json.Unmarshal([]byte(blockInfo.AccountIndexes), &accountIndexes)
 				if err != nil {
-					return nil, types.JsonErrUnmarshal
+					logx.Error("json err unmarshal failed")
+					panic("json err unmarshal failed: " + err.Error())
 				}
 				for _, accountIndex := range accountIndexes {
 					accountIndexMap[accountIndex] = true
@@ -170,7 +368,8 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 				var nftIndexes []int64
 				err = json.Unmarshal([]byte(blockInfo.NftIndexes), &nftIndexes)
 				if err != nil {
-					return nil, types.JsonErrUnmarshal
+					logx.Error("json err unmarshal failed")
+					panic("json err unmarshal failed: " + err.Error())
 				}
 				for _, nftIndex := range nftIndexes {
 					nftIndexMap[nftIndex] = true
@@ -399,200 +598,6 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 
 		}
 	}
-
-	curHeight, err = bc.BlockModel.GetCurrentBlockHeight()
-	if err != nil {
-		logx.Error("get current block height failed: ", err)
-		panic("get current block height failed: " + err.Error())
-	}
-	logx.Infof("get current block height: %d", curHeight)
-	bc.currentBlock, err = bc.BlockModel.GetBlockByHeight(curHeight)
-	if err != nil {
-		return nil, err
-	}
-	if bc.currentBlock.BlockStatus == block.StatusProposing || bc.currentBlock.BlockStatus == block.StatusPacked {
-		logx.Errorf("current block status is StatusProposing or StatusPacked,invalid block, height=%d", bc.currentBlock.BlockHeight)
-		panic("current block status is StatusProposing or StatusPacked,invalid block, height=" + strconv.FormatInt(bc.currentBlock.BlockHeight, 10))
-	}
-
-	redisCache := dbcache.NewRedisCache(config.CacheRedis[0].Host, config.CacheRedis[0].Pass, 15*time.Minute)
-	treeCtx, err := tree.NewContext(moduleName, config.TreeDB.Driver, false, config.TreeDB.RoutinePoolSize, &config.TreeDB.LevelDBOption, &config.TreeDB.RedisDBOption)
-	if err != nil {
-		return nil, err
-	}
-
-	treeCtx.SetOptions(bsmt.BatchSizeLimit(3 * 1024 * 1024))
-	bc.Statedb, err = sdb.NewStateDB(treeCtx, bc.ChainDB, redisCache, &config.CacheConfig, config.TreeDB.AssetTreeCacheSize, bc.currentBlock.StateRoot, curHeight)
-	if err != nil {
-		return nil, err
-	}
-	bc.Statedb.PreviousStateRoot = bc.currentBlock.StateRoot
-	bc.Statedb.UpdatePrunedBlockHeight(curHeight)
-
-	accountFromDbGauge := prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "zkbnb",
-		Name:      "account_from_db_time",
-		Help:      "account from db time",
-	})
-
-	accountGauge := prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "zkbnb",
-		Name:      "account_time",
-		Help:      "account time",
-	})
-
-	verifyGasGauge := prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "zkbnb",
-		Name:      "verifyGasGauge_time",
-		Help:      "verifyGas time",
-	})
-	verifySignature := prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "zkbnb",
-		Name:      "verifySignature_time",
-		Help:      "verifySignature time",
-	})
-
-	accountTreeMultiSetGauge := prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "zkbnb",
-		Name:      "accountTreeMultiSetGauge_time",
-		Help:      "accountTreeMultiSetGauge time",
-	})
-
-	if err := prometheus.Register(verifyGasGauge); err != nil {
-		return nil, fmt.Errorf("prometheus.Register verifyGasGauge error: %v", err)
-	}
-
-	if err := prometheus.Register(verifySignature); err != nil {
-		return nil, fmt.Errorf("prometheus.Register verifySignature error: %v", err)
-	}
-
-	if err := prometheus.Register(accountTreeMultiSetGauge); err != nil {
-		return nil, fmt.Errorf("prometheus.Register accountTreeMultiSetGauge error: %v", err)
-	}
-
-	if err := prometheus.Register(accountFromDbGauge); err != nil {
-		return nil, fmt.Errorf("prometheus.Register accountFromDbMetrics error: %v", err)
-	}
-	getAccountCounter := prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace: "zkbnb",
-		Name:      "get_account_counter",
-		Help:      "get account counter",
-	})
-	if err := prometheus.Register(getAccountCounter); err != nil {
-		return nil, fmt.Errorf("prometheus.Register getAccountCounter error: %v", err)
-	}
-
-	getAccountFromDbCounter := prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace: "zkbnb",
-		Name:      "get_account_from_db_counter",
-		Help:      "get account from db counter",
-	})
-	if err := prometheus.Register(getAccountFromDbCounter); err != nil {
-		return nil, fmt.Errorf("prometheus.Register getAccountFromDbCounter error: %v", err)
-	}
-
-	accountTreeTimeGauge := prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Namespace: "zkbnb",
-			Name:      "get_account_tree_time",
-			Help:      "get_account_tree_time.",
-		},
-		[]string{"type"})
-	if err := prometheus.Register(accountTreeTimeGauge); err != nil {
-		return nil, fmt.Errorf("prometheus.Register accountTreeTimeGauge error: %v", err)
-	}
-
-	nftTreeTimeGauge := prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Namespace: "zkbnb",
-			Name:      "get_nft_tree_time",
-			Help:      "get_nft_tree_time.",
-		},
-		[]string{"type"})
-	if err := prometheus.Register(nftTreeTimeGauge); err != nil {
-		return nil, fmt.Errorf("prometheus.Register nftTreeTimeGauge error: %v", err)
-	}
-
-	stateDBMetrics := &zkbnbprometheus.StateDBMetrics{
-		GetAccountFromDbGauge:    accountFromDbGauge,
-		GetAccountGauge:          accountGauge,
-		GetAccountCounter:        getAccountCounter,
-		GetAccountFromDbCounter:  getAccountFromDbCounter,
-		VerifyGasGauge:           verifyGasGauge,
-		VerifySignature:          verifySignature,
-		AccountTreeGauge:         accountTreeTimeGauge,
-		NftTreeGauge:             nftTreeTimeGauge,
-		AccountTreeMultiSetGauge: accountTreeMultiSetGauge,
-	}
-	bc.Statedb.Metrics = stateDBMetrics
-
-	if err := prometheus.Register(executeTxPrepareMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register executeTxPrepareMetrics error: %v", err)
-	}
-
-	if err := prometheus.Register(executeTxVerifyInputsMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register executeTxVerifyInputsMetrics error: %v", err)
-	}
-
-	if err := prometheus.Register(executeGenerateTxDetailsMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register executeGenerateTxDetailsMetrics error: %v", err)
-	}
-
-	if err := prometheus.Register(executeTxApplyTransactionMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register executeTxApplyTransactionMetrics error: %v", err)
-	}
-
-	if err := prometheus.Register(executeTxGeneratePubDataMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register executeTxGeneratePubDataMetrics error: %v", err)
-	}
-
-	if err := prometheus.Register(executeTxGetExecutedTxMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register executeTxGetExecutedTxMetrics error: %v", err)
-	}
-	prometheusMetrics := &zkbnbprometheus.Metrics{
-		TxPrepareMetrics:           executeTxPrepareMetrics,
-		TxVerifyInputsMetrics:      executeTxVerifyInputsMetrics,
-		TxGenerateTxDetailsMetrics: executeGenerateTxDetailsMetrics,
-		TxApplyTransactionMetrics:  executeTxApplyTransactionMetrics,
-		TxGeneratePubDataMetrics:   executeTxGeneratePubDataMetrics,
-		TxGetExecutedTxMetrics:     executeTxGetExecutedTxMetrics,
-	}
-	bc.processor = NewCommitProcessor(bc, prometheusMetrics)
-
-	// register metrics
-	if err := prometheus.Register(updateAccountTreeMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register updateAccountTreeMetrics error: %v", err)
-	}
-	if err := prometheus.Register(commitAccountTreeMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register commitAccountTreeMetrics error: %v", err)
-	}
-
-	return bc, nil
-}
-
-// NewBlockChainForDryRun - for dry run mode, we can reuse existing models for quick creation
-// , e.g., for sending tx, we can create blockchain for each request quickly
-func NewBlockChainForDryRun(accountModel account.AccountModel,
-	nftModel nft.L2NftModel, txPoolModel tx.TxPoolModel, assetModel asset.AssetModel,
-	sysConfigModel sysconfig.SysConfigModel, redisCache dbcache.Cache) (*BlockChain, error) {
-	chainDb := &sdb.ChainDB{
-		AccountModel:     accountModel,
-		L2NftModel:       nftModel,
-		TxPoolModel:      txPoolModel,
-		L2AssetInfoModel: assetModel,
-		SysConfigModel:   sysConfigModel,
-	}
-	statedb, err := sdb.NewStateDBForDryRun(redisCache, &statedb.DefaultCacheConfig, chainDb)
-	if err != nil {
-		return nil, err
-	}
-	bc := &BlockChain{
-		ChainDB: chainDb,
-		dryRun:  true,
-		Statedb: statedb,
-	}
-	bc.processor = NewAPIProcessor(bc)
-	return bc, nil
 }
 
 func (bc *BlockChain) ApplyTransaction(tx *tx.Tx) error {

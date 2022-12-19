@@ -28,15 +28,17 @@ func NewSendTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendTxLogi
 }
 
 func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err error) {
-	//txStatuses := []int64{tx.StatusPending}
-	//pendingTxCount, err := s.svcCtx.TxPoolModel.GetTxsTotalCount(tx.GetTxWithStatuses(txStatuses))
-	//if err != nil {
-	//	return nil, types2.AppErrInternal
-	//}
-	//
-	//if s.svcCtx.Config.TxPool.MaxPendingTxCount > 0 && pendingTxCount >= int64(s.svcCtx.Config.TxPool.MaxPendingTxCount) {
-	//	return nil, types2.AppErrTooManyTxs
-	//}
+	pendingTxCount, err := s.svcCtx.MemCache.GetTxPendingCountKeyPrefix(func() (interface{}, error) {
+		txStatuses := []int64{tx.StatusPending}
+		return s.svcCtx.TxPoolModel.GetTxsTotalCount(tx.GetTxWithStatuses(txStatuses))
+	})
+	if err != nil {
+		return nil, types2.AppErrInternal
+	}
+
+	if s.svcCtx.Config.TxPool.MaxPendingTxCount > 0 && pendingTxCount >= int64(s.svcCtx.Config.TxPool.MaxPendingTxCount) {
+		return nil, types2.AppErrTooManyTxs
+	}
 
 	resp = &types.TxHash{}
 	bc, err := core.NewBlockChainForDryRun(s.svcCtx.AccountModel, s.svcCtx.NftModel, s.svcCtx.TxPoolModel,

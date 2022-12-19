@@ -70,8 +70,11 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	accountModel := account.NewAccountModel(db)
 	nftModel := nft.NewL2NftModel(db)
 	assetModel := asset.NewAssetModel(db)
+	if c.MemCache.TxPendingExpiration == 0 {
+		c.MemCache.TxPendingExpiration = 60
+	}
 	memCache := cache.MustNewMemCache(accountModel, assetModel, c.MemCache.AccountExpiration, c.MemCache.BlockExpiration,
-		c.MemCache.TxExpiration, c.MemCache.AssetExpiration, c.MemCache.PriceExpiration, c.MemCache.MaxCounterNum, c.MemCache.MaxKeyNum)
+		c.MemCache.TxExpiration, c.MemCache.AssetExpiration, c.MemCache.TxPendingExpiration, c.MemCache.PriceExpiration, c.MemCache.MaxCounterNum, c.MemCache.MaxKeyNum)
 
 	sendTxMetrics := prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace: "zkbnb",
