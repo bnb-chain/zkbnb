@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/zkbnbprometheus"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
+	"github.com/dgraph-io/ristretto"
 	"strconv"
 	"sync"
 	"time"
@@ -29,12 +30,14 @@ var (
 	DefaultCacheConfig = CacheConfig{
 		AccountCacheSize: 2048,
 		NftCacheSize:     2048,
+		MemCacheSize:     2048,
 	}
 )
 
 type CacheConfig struct {
 	AccountCacheSize int
 	NftCacheSize     int
+	MemCacheSize     int `json:",optional"`
 }
 
 func (c *CacheConfig) sanitize() *CacheConfig {
@@ -44,6 +47,10 @@ func (c *CacheConfig) sanitize() *CacheConfig {
 
 	if c.NftCacheSize <= 0 {
 		c.NftCacheSize = DefaultCacheConfig.NftCacheSize
+	}
+
+	if c.MemCacheSize <= 0 {
+		c.MemCacheSize = DefaultCacheConfig.MemCacheSize
 	}
 
 	return c
@@ -59,6 +66,7 @@ type StateDB struct {
 	// Flat state
 	AccountCache *lru.Cache
 	NftCache     *lru.Cache
+	MemCache     *ristretto.Cache
 
 	// Tree state
 	AccountTree       bsmt.SparseMerkleTree
@@ -113,12 +121,27 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 		return nil, err
 	}
 
+	memCache, err := ristretto.NewCache(&ristretto.Config{
+		NumCounters: int64(cacheConfig.MemCacheSize) * 10,
+		MaxCost:     int64(cacheConfig.MemCacheSize),
+		BufferItems: 64, // official recommended value
+
+		// Called when setting cost to 0 in `Set/SetWithTTL`
+		Cost: func(value interface{}) int64 {
+			return 1
+		},
+	})
+	if err != nil {
+		panic("MemCache init failed")
+	}
+
 	return &StateDB{
 		StateCache:   NewStateCache(stateRoot),
 		chainDb:      chainDb,
 		redisCache:   redisCache,
 		AccountCache: accountCache,
 		NftCache:     nftCache,
+		MemCache:     memCache,
 
 		AccountTree:       accountTree,
 		NftTree:           nftTree,
@@ -138,11 +161,25 @@ func NewStateDBForDryRun(redisCache dbcache.Cache, cacheConfig *CacheConfig, cha
 		logx.Error("init nft cache failed:", err)
 		return nil, err
 	}
+	memCache, err := ristretto.NewCache(&ristretto.Config{
+		NumCounters: int64(cacheConfig.MemCacheSize) * 10,
+		MaxCost:     int64(cacheConfig.MemCacheSize),
+		BufferItems: 64, // official recommended value
+
+		// Called when setting cost to 0 in `Set/SetWithTTL`
+		Cost: func(value interface{}) int64 {
+			return 1
+		},
+	})
+	if err != nil {
+		panic("MemCache init failed")
+	}
 	return &StateDB{
 		dryRun:       true,
 		redisCache:   redisCache,
 		chainDb:      chainDb,
 		AccountCache: accountCache,
+		MemCache:     memCache,
 		NftCache:     nftCache,
 		StateCache:   NewStateCache(""),
 	}, nil
@@ -738,70 +775,47 @@ func (s *StateDB) GetNextNftIndex() int64 {
 }
 
 func (s *StateDB) GetGasAccountIndex() (int64, error) {
-	//todo optimize  There are slow sql to optimize
-	gasAccountIndex := int64(-1)
-	_, err := s.redisCache.Get(context.Background(), dbcache.GasAccountKey, &gasAccountIndex)
-	if err == nil {
-		return gasAccountIndex, nil
+	result, found := s.MemCache.Get(dbcache.GasAccountKey)
+	if found {
+		return result.(int64), nil
 	}
-	logx.Errorf("fail to get gas account from cache, error: %s", err.Error())
-
 	gasAccountConfig, err := s.chainDb.SysConfigModel.GetSysConfigByName(types.GasAccountIndex)
 	if err != nil {
 		logx.Errorf("cannot find config for: %s", types.GasAccountIndex)
 		return -1, errors.New("internal error")
 	}
-	gasAccountIndex, err = strconv.ParseInt(gasAccountConfig.Value, 10, 64)
+	gasAccountIndex, err := strconv.ParseInt(gasAccountConfig.Value, 10, 64)
 	if err != nil {
 		logx.Errorf("invalid account index: %s", gasAccountConfig.Value)
 		return -1, errors.New("internal error")
 	}
-	_ = s.redisCache.Set(context.Background(), dbcache.GasAccountKey, gasAccountIndex)
+	s.MemCache.SetWithTTL(dbcache.GasAccountKey, gasAccountIndex, 0, time.Duration(24)*time.Hour)
 	return gasAccountIndex, nil
 }
 
-//func (s *StateDB) GetGasAccountIndex() (int64, error) {
-//	return int64(1), nil
-//}
-
 func (s *StateDB) GetGasConfig() (map[uint32]map[int]int64, error) {
-	//todo optimize  There are slow sql to optimize
 	gasFeeValue := ""
-	_, err := s.redisCache.Get(context.Background(), dbcache.GasConfigKey, &gasFeeValue)
-	if err != nil {
-		logx.Errorf("fail to get gas config from cache, error: %s", err.Error())
-
+	result, found := s.MemCache.Get(dbcache.GasConfigKey)
+	if found {
+		gasFeeValue = result.(string)
+	} else {
+		logx.Infof("fail to get gas config from cache")
 		cfgGasFee, err := s.chainDb.SysConfigModel.GetSysConfigByName(types.SysGasFee)
 		if err != nil {
 			logx.Errorf("cannot find gas asset: %s", err.Error())
 			return nil, errors.New("invalid gas fee asset")
 		}
 		gasFeeValue = cfgGasFee.Value
-		_ = s.redisCache.Set(context.Background(), dbcache.GasConfigKey, gasFeeValue)
+		s.MemCache.SetWithTTL(dbcache.GasConfigKey, gasFeeValue, 0, time.Duration(15)*time.Minute)
 	}
-
 	m := make(map[uint32]map[int]int64)
-	err = json.Unmarshal([]byte(gasFeeValue), &m)
+	err := json.Unmarshal([]byte(gasFeeValue), &m)
 	if err != nil {
 		logx.Errorf("fail to unmarshal gas fee config, err: %s", err.Error())
 		return nil, errors.New("internal error")
 	}
-
 	return m, nil
 }
-
-//func (s *StateDB) GetGasConfig() (map[uint32]map[int]int64, error) {
-//	gasFeeValue := "{\"0\":{\"10\":12000000000000,\"11\":20000000000000,\"4\":10000000000000,\"5\":20000000000000,\"6\":10000000000000,\"7\":10000000000000,\"8\":12000000000000,\"9\":18000000000000},\"1\":{\"10\":12000000000000,\"11\":20000000000000,\"4\":10000000000000,\"5\":20000000000000,\"6\":10000000000000,\"7\":10000000000000,\"8\":12000000000000,\"9\":18000000000000}}"
-//
-//	m := make(map[uint32]map[int]int64)
-//	err := json.Unmarshal([]byte(gasFeeValue), &m)
-//	if err != nil {
-//		logx.Errorf("fail to unmarshal gas fee config, err: %s", err.Error())
-//		return nil, errors.New("internal error")
-//	}
-//
-//	return m, nil
-//}
 
 func (c *StateDB) UpdatePrunedBlockHeight(latestBlock int64) {
 	c.mainLock.Lock()
