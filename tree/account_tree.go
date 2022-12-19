@@ -46,7 +46,7 @@ func InitAccountTree(
 	accountTree bsmt.SparseMerkleTree, accountAssetTrees *AssetTreeCache, err error,
 ) {
 
-	//todo  check
+	//todo optimize if the history table has a lot of data, it will take a long time to load
 	accountNums, err := accountHistoryModel.GetValidAccountCount(blockHeight)
 	//accountNums, err := accountModel.GetAccountsTotalCount()
 	if err != nil {
@@ -155,7 +155,7 @@ func reloadAccountTreeFromRDB(
 
 	for _, accountHistory := range accountHistories {
 		if accountInfoMap[accountHistory.AccountIndex] == nil {
-			//todo
+			//todo optimize fetch all the data from account table,no need to fetch the data from the account table every time
 			accountInfo, err := accountModel.GetAccountByIndex(accountHistory.AccountIndex)
 			if err != nil {
 				logx.Errorf("unable to get account by account index: %s", err.Error())

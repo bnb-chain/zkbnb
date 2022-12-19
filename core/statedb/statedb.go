@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/zkbnbprometheus"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
+	"strconv"
 	"sync"
 	"time"
 
@@ -352,21 +353,6 @@ func (s *StateDB) SyncGasAccountToRedis() error {
 	return nil
 }
 
-func (s *StateDB) SyncStateCacheToRedis() error {
-	//todo
-	// Sync pending to cache.
-	//err := s.syncPendingAccount(s.PendingAccountMap)
-	//if err != nil {
-	//	return err
-	//}
-	//err = s.syncPendingNft(s.PendingNftMap)
-	//if err != nil {
-	//	return err
-	//}
-
-	return nil
-}
-
 func (s *StateDB) PurgeCache(stateRoot string) {
 	s.StateCache = NewStateCache(stateRoot)
 }
@@ -388,7 +374,7 @@ func (s *StateDB) GetPendingAccount(blockHeight int64, stateDataCopy *StateDataC
 			CollectionNonce: newAccount.CollectionNonce,
 			AssetInfo:       newAccount.AssetInfo,
 			AssetRoot:       newAccount.AssetRoot,
-			L2BlockHeight:   blockHeight, // TODO: ensure this should be the new block's height.
+			L2BlockHeight:   blockHeight,
 		})
 	}
 
@@ -651,7 +637,6 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCop
 	if err != nil {
 		return accountIndex, nil, fmt.Errorf("unable to compute account leaf: %v", err)
 	}
-	//todo for tress
 	asset := s.AccountAssetTrees.Get(accountIndex)
 	prunedVersion := bsmt.Version(s.GetPrunedBlockHeight())
 	latestVersion := asset.LatestVersion()
@@ -668,22 +653,22 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCop
 
 func (s *StateDB) updateNftTree(nftIndex int64, stateCopy *StateDataCopy) (int64, []byte, error) {
 	start := time.Now()
-	nft, exist := stateCopy.StateCache.GetPendingNft(nftIndex)
+	nftInfo, exist := stateCopy.StateCache.GetPendingNft(nftIndex)
 	if !exist {
-		//todo
+		logx.Error("updateNftTree failed,No NFT found in GetPendingNft nftIndex=%s", nftIndex)
+		return nftIndex, nil, fmt.Errorf("updateNftTree failed,No NFT found in GetPendingNft nftIndex=%v", nftIndex)
 	}
-
 	nftAssetLeaf, err := tree.ComputeNftAssetLeafHash(
-		nft.CreatorAccountIndex,
-		nft.OwnerAccountIndex,
-		nft.NftContentHash,
-		nft.CreatorTreasuryRate,
-		nft.CollectionId,
+		nftInfo.CreatorAccountIndex,
+		nftInfo.OwnerAccountIndex,
+		nftInfo.NftContentHash,
+		nftInfo.CreatorTreasuryRate,
+		nftInfo.CollectionId,
 	)
 	if err != nil {
-		return nftIndex, nil, fmt.Errorf("unable to compute nft leaf: %v", err)
+		return nftIndex, nil, fmt.Errorf("unable to compute nftInfo leaf: %v", err)
 	}
-	s.Metrics.NftTreeGauge.WithLabelValues("nft").Set(float64(time.Since(start).Milliseconds()))
+	s.Metrics.NftTreeGauge.WithLabelValues("nftInfo").Set(float64(time.Since(start).Milliseconds()))
 	return nftIndex, nftAssetLeaf, nil
 }
 
@@ -752,64 +737,51 @@ func (s *StateDB) GetNextNftIndex() int64 {
 	return maxNftIndex + 1
 }
 
-//func (s *StateDB) GetGasAccountIndex() (int64, error) {
-//	gasAccountIndex := int64(-1)
-//	_, err := s.redisCache.Get(context.Background(), dbcache.GasAccountKey, &gasAccountIndex)
-//	if err == nil {
-//		return gasAccountIndex, nil
-//	}
-//	logx.Errorf("fail to get gas account from cache, error: %s", err.Error())
-//
-//	gasAccountConfig, err := s.chainDb.SysConfigModel.GetSysConfigByName(types.GasAccountIndex)
-//	if err != nil {
-//		logx.Errorf("cannot find config for: %s", types.GasAccountIndex)
-//		return -1, errors.New("internal error")
-//	}
-//	gasAccountIndex, err = strconv.ParseInt(gasAccountConfig.Value, 10, 64)
-//	if err != nil {
-//		logx.Errorf("invalid account index: %s", gasAccountConfig.Value)
-//		return -1, errors.New("internal error")
-//	}
-//	_ = s.redisCache.Set(context.Background(), dbcache.GasAccountKey, gasAccountIndex)
-//	return gasAccountIndex, nil
-//}
-
-//todo for stress
 func (s *StateDB) GetGasAccountIndex() (int64, error) {
-	return int64(1), nil
+	//todo optimize  There are slow sql to optimize
+	gasAccountIndex := int64(-1)
+	_, err := s.redisCache.Get(context.Background(), dbcache.GasAccountKey, &gasAccountIndex)
+	if err == nil {
+		return gasAccountIndex, nil
+	}
+	logx.Errorf("fail to get gas account from cache, error: %s", err.Error())
+
+	gasAccountConfig, err := s.chainDb.SysConfigModel.GetSysConfigByName(types.GasAccountIndex)
+	if err != nil {
+		logx.Errorf("cannot find config for: %s", types.GasAccountIndex)
+		return -1, errors.New("internal error")
+	}
+	gasAccountIndex, err = strconv.ParseInt(gasAccountConfig.Value, 10, 64)
+	if err != nil {
+		logx.Errorf("invalid account index: %s", gasAccountConfig.Value)
+		return -1, errors.New("internal error")
+	}
+	_ = s.redisCache.Set(context.Background(), dbcache.GasAccountKey, gasAccountIndex)
+	return gasAccountIndex, nil
 }
 
-//func (s *StateDB) GetGasConfig() (map[uint32]map[int]int64, error) {
-//	gasFeeValue := ""
-//	_, err := s.redisCache.Get(context.Background(), dbcache.GasConfigKey, &gasFeeValue)
-//	if err != nil {
-//		logx.Errorf("fail to get gas config from cache, error: %s", err.Error())
-//
-//		cfgGasFee, err := s.chainDb.SysConfigModel.GetSysConfigByName(types.SysGasFee)
-//		if err != nil {
-//			logx.Errorf("cannot find gas asset: %s", err.Error())
-//			return nil, errors.New("invalid gas fee asset")
-//		}
-//		gasFeeValue = cfgGasFee.Value
-//		_ = s.redisCache.Set(context.Background(), dbcache.GasConfigKey, gasFeeValue)
-//	}
-//
-//	m := make(map[uint32]map[int]int64)
-//	err = json.Unmarshal([]byte(gasFeeValue), &m)
-//	if err != nil {
-//		logx.Errorf("fail to unmarshal gas fee config, err: %s", err.Error())
-//		return nil, errors.New("internal error")
-//	}
-//
-//	return m, nil
+//func (s *StateDB) GetGasAccountIndex() (int64, error) {
+//	return int64(1), nil
 //}
 
-//todo for stress
 func (s *StateDB) GetGasConfig() (map[uint32]map[int]int64, error) {
-	gasFeeValue := "{\"0\":{\"10\":12000000000000,\"11\":20000000000000,\"4\":10000000000000,\"5\":20000000000000,\"6\":10000000000000,\"7\":10000000000000,\"8\":12000000000000,\"9\":18000000000000},\"1\":{\"10\":12000000000000,\"11\":20000000000000,\"4\":10000000000000,\"5\":20000000000000,\"6\":10000000000000,\"7\":10000000000000,\"8\":12000000000000,\"9\":18000000000000}}"
+	//todo optimize  There are slow sql to optimize
+	gasFeeValue := ""
+	_, err := s.redisCache.Get(context.Background(), dbcache.GasConfigKey, &gasFeeValue)
+	if err != nil {
+		logx.Errorf("fail to get gas config from cache, error: %s", err.Error())
+
+		cfgGasFee, err := s.chainDb.SysConfigModel.GetSysConfigByName(types.SysGasFee)
+		if err != nil {
+			logx.Errorf("cannot find gas asset: %s", err.Error())
+			return nil, errors.New("invalid gas fee asset")
+		}
+		gasFeeValue = cfgGasFee.Value
+		_ = s.redisCache.Set(context.Background(), dbcache.GasConfigKey, gasFeeValue)
+	}
 
 	m := make(map[uint32]map[int]int64)
-	err := json.Unmarshal([]byte(gasFeeValue), &m)
+	err = json.Unmarshal([]byte(gasFeeValue), &m)
 	if err != nil {
 		logx.Errorf("fail to unmarshal gas fee config, err: %s", err.Error())
 		return nil, errors.New("internal error")
@@ -817,6 +789,19 @@ func (s *StateDB) GetGasConfig() (map[uint32]map[int]int64, error) {
 
 	return m, nil
 }
+
+//func (s *StateDB) GetGasConfig() (map[uint32]map[int]int64, error) {
+//	gasFeeValue := "{\"0\":{\"10\":12000000000000,\"11\":20000000000000,\"4\":10000000000000,\"5\":20000000000000,\"6\":10000000000000,\"7\":10000000000000,\"8\":12000000000000,\"9\":18000000000000},\"1\":{\"10\":12000000000000,\"11\":20000000000000,\"4\":10000000000000,\"5\":20000000000000,\"6\":10000000000000,\"7\":10000000000000,\"8\":12000000000000,\"9\":18000000000000}}"
+//
+//	m := make(map[uint32]map[int]int64)
+//	err := json.Unmarshal([]byte(gasFeeValue), &m)
+//	if err != nil {
+//		logx.Errorf("fail to unmarshal gas fee config, err: %s", err.Error())
+//		return nil, errors.New("internal error")
+//	}
+//
+//	return m, nil
+//}
 
 func (c *StateDB) UpdatePrunedBlockHeight(latestBlock int64) {
 	c.mainLock.Lock()

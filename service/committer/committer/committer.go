@@ -759,7 +759,6 @@ func (c *Committer) executeTxFunc() {
 			// Write the proposed block into database when the first transaction executed.
 			if len(c.bc.Statedb.Txs) == 1 {
 				previousHeight := curBlock.BlockHeight
-				//todo for tress
 				err = c.createNewBlock(curBlock)
 				logx.Infof("create new block, current height=%s,previous height=%d,blockId=%s", curBlock.BlockHeight, previousHeight, curBlock.ID)
 
@@ -1055,17 +1054,7 @@ func (c *Committer) updateAccountTreeAndNftTreeFunc(stateDataCopy *statedb.State
 		logx.Errorf("updateAccountTreeAndNftTreeFunc failed:%s,blockHeight:%s", err, stateDataCopy.CurrentBlock.BlockHeight)
 		panic("updateAccountTreeAndNftTreeFunc failed: " + err.Error())
 	}
-
-	//start = time.Now()
-	//todo
-	//todo for tress
-	//err = c.bc.Statedb.SyncGasAccountToRedis()
-	//if err != nil {
-	//	logx.Errorf("update pool tx to pending failed:%s", err.Error())
-	//	panic("update pool tx to pending failed: " + err.Error())
-	//}
 	c.saveBlockDataWorker.Enqueue(blockStates)
-	//stateDBSyncOperationMetics.Set(float64(time.Since(start).Milliseconds()))
 	l2BlockRedisHeightMetric.Set(float64(blockStates.Block.BlockHeight))
 	AccountLatestVersionTreeMetric.Set(float64(c.bc.StateDB().AccountTree.LatestVersion()))
 	AccountRecentVersionTreeMetric.Set(float64(c.bc.StateDB().AccountTree.RecentVersion()))
@@ -1359,7 +1348,6 @@ func (c *Committer) finalSaveBlockDataFunc(blockStates *block.BlockStates) {
 	if err != nil {
 		logx.Errorf("finalSaveBlockDataFunc failed:%s,blockHeight:%d", err.Error(), blockStates.Block.BlockHeight)
 		panic("finalSaveBlockDataFunc failed: " + err.Error())
-		//todo 重试优化
 	}
 	c.bc.Statedb.UpdatePrunedBlockHeight(blockStates.Block.BlockHeight)
 	l2BlockDbHeightMetric.Set(float64(blockStates.Block.BlockHeight))

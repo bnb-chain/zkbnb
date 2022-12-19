@@ -99,7 +99,6 @@ func (m *defaultPriorityRequestModel) GetL2TxEventMonitors() (txs []*PriorityReq
 }
 
 func (m *defaultPriorityRequestModel) GetPriorityRequestsByStatus(status int) (txs []*PriorityRequest, err error) {
-	// todo order id
 	dbTx := m.DB.Table(m.table).Where("status = ?", status).Order("request_id").Find(&txs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation

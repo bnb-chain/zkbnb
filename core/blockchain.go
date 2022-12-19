@@ -414,7 +414,6 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		logx.Errorf("current block status is StatusProposing or StatusPacked,invalid block, height=%d", bc.currentBlock.BlockHeight)
 		panic("current block status is StatusProposing or StatusPacked,invalid block, height=" + strconv.FormatInt(bc.currentBlock.BlockHeight, 10))
 	}
-	//todo config
 
 	redisCache := dbcache.NewRedisCache(config.CacheRedis[0].Host, config.CacheRedis[0].Pass, 15*time.Minute)
 	treeCtx, err := tree.NewContext(moduleName, config.TreeDB.Driver, false, config.TreeDB.RoutinePoolSize, &config.TreeDB.LevelDBOption, &config.TreeDB.RedisDBOption)
@@ -634,17 +633,6 @@ func (bc *BlockChain) UpdateAccountAssetTree(stateDataCopy *statedb.StateDataCop
 
 func (bc *BlockChain) UpdateAccountTreeAndNftTree(blockSize int, stateDataCopy *statedb.StateDataCopy) (*block.BlockStates, error) {
 	newBlock := stateDataCopy.CurrentBlock
-	//todo check
-	if newBlock.BlockStatus != block.StatusPacked {
-		newBlock = &block.Block{
-			Model: gorm.Model{
-				CreatedAt: time.UnixMilli(stateDataCopy.CurrentBlock.CreatedAt.UnixMilli()),
-			},
-			BlockHeight: stateDataCopy.CurrentBlock.BlockHeight + 1,
-			StateRoot:   stateDataCopy.CurrentBlock.StateRoot,
-			BlockStatus: block.StatusProposing,
-		}
-	}
 	err := bc.Statedb.AccountTreeAndNftTreeMultiSet(stateDataCopy)
 	if err != nil {
 		return nil, err
@@ -686,9 +674,6 @@ func (bc *BlockChain) UpdateAccountTreeAndNftTree(blockSize int, stateDataCopy *
 		PublicDataOffsets: string(offsetBytes),
 	}
 	bc.Statedb.PreviousStateRoot = stateDataCopy.StateCache.StateRoot
-	//bc.currentBlock = newBlock
-	//todo
-
 	currentHeight := stateDataCopy.CurrentBlock.BlockHeight
 
 	start := time.Now()
@@ -742,7 +727,6 @@ func (bc *BlockChain) VerifyNonce(accountIndex int64, nonce int64) error {
 		if nonce != expectNonce {
 			logx.Infof("committer verify nonce failed,accountIndex=%d,nonce=%d,expectNonce=%d", accountIndex, nonce, expectNonce)
 			bc.Statedb.SetPendingNonceToRedisCache(accountIndex, expectNonce-1)
-			//todo
 			return types.AppErrInvalidNonce
 		} else {
 			logx.Infof("committer verify nonce success,accountIndex=%d,nonce=%d,expectNonce=%d", accountIndex, nonce, expectNonce)
@@ -755,7 +739,6 @@ func (bc *BlockChain) VerifyNonce(accountIndex int64, nonce int64) error {
 		if pendingNonce != nonce {
 			logx.Infof("clear pending nonce from redis cache,accountIndex=%d,pendingNonce=%d,nonce=%d", accountIndex, pendingNonce, nonce)
 			bc.Statedb.ClearPendingNonceFromRedisCache(accountIndex)
-			//todo
 			return types.AppErrInvalidNonce
 		}
 	}

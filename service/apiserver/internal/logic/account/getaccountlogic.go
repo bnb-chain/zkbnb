@@ -64,7 +64,7 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 		return nil, types2.AppErrInternal
 	}
 
-	//todo check
+	//todo  need to confirm whether there is any impact on the function
 	//maxAssetId, err := l.svcCtx.AssetModel.GetMaxAssetId()
 	//if err != nil {
 	//	return nil, types2.AppErrInternal
@@ -82,6 +82,7 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 	totalAssetValue := big.NewFloat(0)
 
 	for _, asset := range account.AssetInfo {
+		//todo  need to confirm whether there is any impact on the function
 		//if asset.AssetId > maxAssetId {
 		//	continue //it is used for offer related, or empty balance; max ip id should be less than max asset id
 		//}
