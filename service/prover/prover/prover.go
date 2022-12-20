@@ -25,6 +25,19 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
+var (
+	l2ProofHeightMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2_proof_height",
+		Help:      "l2_proof_height metrics.",
+	})
+	l2ExceptionProofHeightMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2_exception_proof_height",
+		Help:      "l2_exception_proof_height metrics.",
+	})
+)
+
 type Prover struct {
 	Config config.Config
 
@@ -71,7 +84,12 @@ func IsBlockSizesSorted(blockSizes []int) bool {
 }
 
 func NewProver(c config.Config) (*Prover, error) {
-
+	if err := prometheus.Register(l2ProofHeightMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register l2ProofHeightMetrics error: %v", err)
+	}
+	if err := prometheus.Register(l2ExceptionProofHeightMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register l2ExceptionProofHeightMetrics error: %v", err)
+	}
 	if err := prometheus.Register(l2BlockProverGenerateHeightMetric); err != nil {
 		return nil, fmt.Errorf("prometheus.Register l2BlockProverGenerateHeightMetric error: %v", err)
 	}
@@ -100,6 +118,7 @@ func NewProver(c config.Config) (*Prover, error) {
 	}
 
 	if !IsBlockSizesSorted(c.BlockConfig.OptionalBlockSizes) {
+		logx.Severe("invalid OptionalBlockSizes")
 		panic("invalid OptionalBlockSizes")
 	}
 
@@ -121,6 +140,7 @@ func NewProver(c config.Config) (*Prover, error) {
 		logx.Infof("start compile block size %d blockConstraints", blockConstraints.TxsCount)
 		prover.R1cs[i], err = frontend.Compile(ecc.BN254, r1cs.NewBuilder, &blockConstraints, frontend.IgnoreUnconstrainedInputs())
 		if err != nil {
+			logx.Severe("r1cs init error")
 			panic("r1cs init error")
 		}
 		logx.Infof("blockConstraints constraints: %d", prover.R1cs[i].GetNbConstraints())
@@ -128,10 +148,12 @@ func NewProver(c config.Config) (*Prover, error) {
 		// read proving and verifying keys
 		prover.ProvingKeys[i], err = prove.LoadProvingKey(c.KeyPath.ProvingKeyPath[i])
 		if err != nil {
+			logx.Severe("provingKey loading error")
 			panic("provingKey loading error")
 		}
 		prover.VerifyingKeys[i], err = prove.LoadVerifyingKey(c.KeyPath.VerifyingKeyPath[i])
 		if err != nil {
+			logx.Severe("verifyingKey loading error")
 			panic("verifyingKey loading error")
 		}
 	}
@@ -177,6 +199,7 @@ func (p *Prover) ProveBlock() error {
 		if res != nil {
 			logx.Errorf("revert block witness status failed, err %v", res)
 		}
+		l2ExceptionProofHeightMetrics.Set(float64(blockWitness.Height))
 	}()
 
 	// Parse crypto block.
@@ -229,6 +252,8 @@ func (p *Prover) ProveBlock() error {
 	err = p.ProofModel.CreateProof(row)
 	proofGenerateTimeMetric.Set(float64(time.Since(start).Milliseconds()))
 	l2BlockProverGenerateHeightMetric.Set(float64(blockWitness.Height))
+	l2ExceptionProofHeightMetrics.Set(float64(0))
+	l2ProofHeightMetrics.Set(float64(row.BlockNumber))
 	return err
 }
 

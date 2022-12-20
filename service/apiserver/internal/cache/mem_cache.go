@@ -2,6 +2,7 @@ package cache
 
 import (
 	"fmt"
+	"github.com/zeromicro/go-zero/core/logx"
 	"time"
 
 	"github.com/dgraph-io/ristretto"
@@ -67,6 +68,7 @@ func MustNewMemCache(accountModel accdao.AccountModel, assetModel assetdao.Asset
 		},
 	})
 	if err != nil {
+		logx.Severe("MemCache init failed")
 		panic("MemCache init failed")
 	}
 

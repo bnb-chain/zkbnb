@@ -69,6 +69,57 @@ var (
 	})
 )
 
+var (
+	l2BlockCommitToChainHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2Block_commit_to_chain_height",
+		Help:      "l2Block_roll_up_height metrics.",
+	})
+
+	l2BlockCommitConfirmByChainHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2Block_commit_confirm_by_chain_height",
+		Help:      "l2Block_roll_up_height metrics.",
+	})
+
+	l2BlockSubmitToVerifyHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2Block_submit_to_verify_height",
+		Help:      "l2Block_roll_up_height metrics.",
+	})
+
+	l2BlockVerifiedHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2Block_verified_height",
+		Help:      "l2Block_roll_up_height metrics.",
+	})
+	l2MaxWaitingTimeMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2Block_max_waiting_time",
+		Help:      "l2Block_roll_up_time metrics.",
+	})
+	l1HeightSenderMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l1Block_block_height_send",
+		Help:      "l1Block_block_height_send metrics.",
+	})
+	l1ExceptionSenderMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l1_Exception_send",
+		Help:      "l1_Exception_send metrics.",
+	})
+	commitExceptionHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "commit_Exception_height",
+		Help:      "commit_Exception_height metrics.",
+	})
+	verifyExceptionHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "verify_Exception_height",
+		Help:      "verify_Exception_height metrics.",
+	})
+)
+
 type Sender struct {
 	config sconfig.Config
 
@@ -103,6 +154,35 @@ func NewSender(c sconfig.Config) *Sender {
 	masterDataSource := c.Postgres.MasterDataSource
 	slaveDataSource := c.Postgres.SlaveDataSource
 	db, err := gorm.Open(postgres.Open(masterDataSource))
+	if err := prometheus.Register(l2BlockCommitToChainHeightMetric); err != nil {
+		logx.Errorf("prometheus.Register l2BlockCommitToChainHeightMetric error: %v", err)
+	}
+	if err := prometheus.Register(l2BlockCommitConfirmByChainHeightMetric); err != nil {
+		logx.Errorf("prometheus.Register l2BlockCommitConfirmByChainHeightMetric error: %v", err)
+	}
+	if err := prometheus.Register(l2BlockSubmitToVerifyHeightMetric); err != nil {
+		logx.Errorf("prometheus.Register l2BlockSubmitToVerifyHeightMetric error: %v", err)
+	}
+	if err := prometheus.Register(l2BlockVerifiedHeightMetric); err != nil {
+		logx.Errorf("prometheus.Register l2BlockVerifiedHeightMetric error: %v", err)
+	}
+	if err := prometheus.Register(l2MaxWaitingTimeMetric); err != nil {
+		logx.Errorf("prometheus.Register l2MaxWaitingTimeMetric error: %v", err)
+	}
+	if err := prometheus.Register(l1HeightSenderMetric); err != nil {
+		logx.Errorf("prometheus.Register l1HeightSenderMetric error: %v", err)
+	}
+	if err := prometheus.Register(l1ExceptionSenderMetric); err != nil {
+		logx.Errorf("prometheus.Register l1ExceptionSenderMetric error: %v", err)
+	}
+	if err := prometheus.Register(commitExceptionHeightMetric); err != nil {
+		logx.Errorf("prometheus.Register commitExceptionHeightMetric error: %v", err)
+	}
+	if err := prometheus.Register(verifyExceptionHeightMetric); err != nil {
+		logx.Errorf("prometheus.Register verifyExceptionHeightMetric error: %v", err)
+	}
+
+	db, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
 	if err != nil {
 		logx.Errorf("gorm connect db error, err = %v", err)
 	}
@@ -137,18 +217,22 @@ func NewSender(c sconfig.Config) *Sender {
 
 	s.cli, err = rpc.NewClient(l1RPCEndpoint.Value)
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 	chainId, err := s.cli.ChainID(context.Background())
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 	s.authCli, err = rpc.NewAuthClient(c.ChainConfig.Sk, chainId)
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 	s.zkbnbInstance, err = zkbnb.LoadZkBNBInstance(s.cli, rollupAddress.Value)
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 	return s
@@ -221,8 +305,10 @@ func (s *Sender) CommitBlocks() (err error) {
 		gasPrice,
 		s.config.ChainConfig.GasLimit)
 	if err != nil {
+		commitExceptionHeightMetric.Set(float64(pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber))
 		return fmt.Errorf("failed to send commit tx, errL %v:%s", err, txHash)
 	}
+	commitExceptionHeightMetric.Set(float64(0))
 	for _, pendingCommitBlock := range pendingCommitBlocks {
 		l2BlockCommitToChainHeightMetric.Set(float64(pendingCommitBlock.BlockNumber))
 	}
@@ -236,6 +322,7 @@ func (s *Sender) CommitBlocks() (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to create tx in database, err: %v", err)
 	}
+	l2BlockCommitToChainHeightMetric.Set(float64(newRollupTx.L2BlockHeight))
 	logx.Infof("new blocks have been committed(height): %v:%s", newRollupTx.L2BlockHeight, newRollupTx.L1TxHash)
 	return nil
 }
@@ -252,7 +339,7 @@ func (s *Sender) UpdateSentTxs() (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to get l1 block height, err: %v", err)
 	}
-
+	l1HeightSenderMetric.Set(float64(latestL1Height))
 	var (
 		pendingUpdateRxs         []*l1rolluptx.L1RollupTx
 		pendingUpdateProofStatus = make(map[int64]int)
@@ -267,6 +354,7 @@ func (s *Sender) UpdateSentTxs() (err error) {
 				logx.Infof("delete timeout l1 rollup tx, tx_hash=%s", pendingTx.L1TxHash)
 				//nolint:errcheck
 				s.l1RollupTxModel.DeleteL1RollupTx(pendingTx)
+				l2MaxWaitingTimeMetric.Set(float64(pendingTx.L2BlockHeight))
 			}
 			continue
 		}
@@ -275,9 +363,13 @@ func (s *Sender) UpdateSentTxs() (err error) {
 			logx.Infof("delete timeout l1 rollup tx, tx_hash=%s", pendingTx.L1TxHash)
 			//nolint:errcheck
 			s.l1RollupTxModel.DeleteL1RollupTx(pendingTx)
+			l1ExceptionSenderMetric.Set(float64(pendingTx.L2BlockHeight))
 			// It is critical to have any failed transactions
+			logx.Severef("unexpected failed tx: %v", txHash)
 			panic(fmt.Sprintf("unexpected failed tx: %v", txHash))
 		}
+		l2MaxWaitingTimeMetric.Set(float64(0))
+		l1ExceptionSenderMetric.Set(float64(0))
 
 		// not finalized yet
 		if latestL1Height < receipt.BlockNumber.Uint64()+s.config.ChainConfig.ConfirmBlocksCount {
@@ -411,8 +503,10 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	txHash, err := zkbnb.VerifyAndExecuteBlocks(cli, authCli, zkbnbInstance,
 		pendingVerifyAndExecuteBlocks, proofs, gasPrice, s.config.ChainConfig.GasLimit)
 	if err != nil {
+		verifyExceptionHeightMetric.Set(float64(pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber))
 		return fmt.Errorf("failed to send verify tx: %v:%s", err, txHash)
 	}
+	verifyExceptionHeightMetric.Set(float64(0))
 	for _, pendingVerifyAndExecuteBlock := range pendingVerifyAndExecuteBlocks {
 		l2BlockSubmitToVerifyHeightMetric.Set(float64(pendingVerifyAndExecuteBlock.BlockHeader.BlockNumber))
 	}
@@ -426,6 +520,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	if err != nil {
 		return fmt.Errorf(fmt.Sprintf("failed to create rollup tx in db %v", err))
 	}
+	l2BlockSubmitToVerifyHeightMetric.Set(float64(newRollupTx.L2BlockHeight))
 	logx.Infof("new blocks have been verified and executed(height): %d:%s", newRollupTx.L2BlockHeight, newRollupTx.L1TxHash)
 	return nil
 }

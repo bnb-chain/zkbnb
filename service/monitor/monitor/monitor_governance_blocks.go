@@ -103,6 +103,13 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to query logs through rpc client: %v", err)
 	}
+	l1GovernanceStartHeightMetric.Set(float64(startHeight))
+	l1GovernanceEndHeightMetric.Set(float64(endHeight))
+	l1GovernanceLenHeightMetric.Set(float64(len(logs)))
+	logx.Infof("type is typeGovernance blocks from %d to %d and vlog len: %v", startHeight, endHeight, len(logs))
+	for _, vlog := range logs {
+		logx.Infof("type is typeGovernance blocks from %d to %d and vlog: %v", startHeight, endHeight, vlog)
+	}
 
 	l1Events := make([]*L1Event, 0, len(logs))
 	pendingChanges := NewGovernancePendingChanges()

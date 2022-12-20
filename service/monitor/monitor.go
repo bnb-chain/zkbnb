@@ -30,9 +30,10 @@ func Run(configFile string) error {
 	if _, err := cronJob.AddFunc("@every 10s", func() {
 		err := m.MonitorGenericBlocks()
 		if err != nil {
-			logx.Errorf("monitor blocks error, %v", err)
+			logx.Severef("monitor blocks error, %v", err)
 		}
 	}); err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 
@@ -40,9 +41,10 @@ func Run(configFile string) error {
 	if _, err := cronJob.AddFunc("@every 10s", func() {
 		err := m.MonitorPriorityRequests()
 		if err != nil {
-			logx.Errorf("monitor priority requests error, %v", err)
+			logx.Severef("monitor priority requests error, %v", err)
 		}
 	}); err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 
@@ -50,10 +52,11 @@ func Run(configFile string) error {
 	if _, err := cronJob.AddFunc("@every 10s", func() {
 		err := m.MonitorGovernanceBlocks()
 		if err != nil {
-			logx.Errorf("monitor governance blocks error, %v", err)
+			logx.Severef("monitor governance blocks error, %v", err)
 		}
 
 	}); err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 
@@ -61,9 +64,10 @@ func Run(configFile string) error {
 	if _, err := cronJob.AddFunc("@every 30s", func() {
 		err := m.CleanHistoryBlocks()
 		if err != nil {
-			logx.Errorf("clean history blocks error, %v", err)
+			logx.Severef("clean history blocks error, %v", err)
 		}
 	}); err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 

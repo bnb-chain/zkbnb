@@ -68,12 +68,14 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 	err = executor.ApplyTransaction()
 	p.metrics.TxApplyTransactionMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 	start = time.Now()
 	err = executor.GeneratePubData()
 	p.metrics.TxGeneratePubDataMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 	start = time.Now()
@@ -81,6 +83,7 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 	p.metrics.TxGetExecutedTxMetrics.Set(float64(time.Since(start).Milliseconds()))
 
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 

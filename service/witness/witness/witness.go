@@ -61,6 +61,14 @@ var (
 	})
 )
 
+var (
+	l2WitnessHeightMetrics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2_witness_height",
+		Help:      "l2_witness_height metrics.",
+	})
+)
+
 type Witness struct {
 	// config
 	config config.Config
@@ -103,8 +111,8 @@ func NewWitness(c config.Config) (*Witness, error) {
 	masterDataSource := c.Postgres.MasterDataSource
 	slaveDataSource := c.Postgres.SlaveDataSource
 	db, err := gorm.Open(postgres.Open(masterDataSource))
-	if err != nil {
-		return nil, fmt.Errorf("gorm connect db error, err: %v", err)
+	if err := prometheus.Register(l2WitnessHeightMetrics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register l2WitnessHeightMetrics error: %v", err)
 	}
 
 	db.Use(dbresolver.Register(dbresolver.Config{
@@ -212,6 +220,7 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 		AccountRecentVersionTreeMetric.Set(float64(w.accountTree.RecentVersion()))
 		NftTreeLatestVersionMetric.Set(float64(w.nftTree.LatestVersion()))
 		NftTreeRecentVersionMetric.Set(float64(w.nftTree.RecentVersion()))
+		l2WitnessHeightMetrics.Set(float64(blockWitness.Height))
 		if err != nil {
 			// rollback trees
 			rollBackErr := tree.RollBackTrees(uint64(block.BlockHeight)-1, w.accountTree, w.assetTrees, w.nftTree)
@@ -232,8 +241,12 @@ func (w *Witness) RescheduleBlockWitness() {
 		logx.Errorf("failed to get next witness to check, err: %s", err.Error())
 	}
 	nextBlockWitness, err := w.blockWitnessModel.GetBlockWitnessByHeight(nextBlockNumber)
-	if err != nil {
+	if err != nil && err != types.DbErrNotFound {
 		logx.Errorf("failed to get latest block witness, err: %s", err.Error())
+		return
+	}
+
+	if nextBlockWitness == nil {
 		return
 	}
 

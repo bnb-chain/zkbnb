@@ -11,6 +11,11 @@ import (
 	"github.com/zeromicro/go-zero/core/proc"
 	"github.com/zeromicro/go-zero/rest"
 
+	_ "github.com/bnb-chain/zkbnb/docs"
+	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	swagger "github.com/swaggo/gin-swagger"
+
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/config"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/handler"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
@@ -64,7 +69,22 @@ func Run(configFile string) error {
 
 	handler.RegisterHandlers(server, ctx)
 
+	// Start the swagger server in background
+	go startSwaggerServer()
+
 	logx.Infof("apiserver is starting at %s:%d...\n", c.Host, c.Port)
 	server.Start()
 	return nil
+}
+
+func startSwaggerServer() {
+
+	logx.Infof("swagger server is starting at port:%d", 8866)
+	engine := gin.Default()
+	engine.GET("/swagger/*any", swagger.WrapHandler(swaggerFiles.Handler))
+
+	err := engine.Run(":8866")
+	if err != nil {
+		logx.Errorf("swagger server fails to start! err:%s", err)
+	}
 }

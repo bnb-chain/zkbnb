@@ -29,10 +29,11 @@ func Run(configFile string) error {
 		// cron job for receiving cryptoBlock and handling
 		err := p.ProveBlock()
 		if err != nil {
-			logx.Errorf("failed to generate proof, %v", err)
+			logx.Severef("failed to generate proof, %v", err)
 		}
 	})
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 	cronJob.Start()

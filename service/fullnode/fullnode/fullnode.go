@@ -61,11 +61,13 @@ func NewFullnode(config *Config) (*Fullnode, error) {
 func (c *Fullnode) Run() {
 	curHeight, err := c.bc.BlockModel.GetCurrentBlockHeight()
 	if err != nil {
+		logx.Severef("get current block height failed, error: %s", err.Error())
 		panic(fmt.Sprintf("get current block height failed, error: %v", err.Error()))
 	}
 
 	curBlock, err := c.bc.BlockModel.GetBlockByHeight(curHeight)
 	if err != nil {
+		logx.Severef("get current block failed, height: %d, error: %s", curHeight, err.Error())
 		panic(fmt.Sprintf("get current block failed, height: %d, error: %v", curHeight, err.Error()))
 	}
 
@@ -82,6 +84,7 @@ func (c *Fullnode) Run() {
 				// init new block, set curBlock.status to block.StatusProposing
 				curBlock, err = c.bc.InitNewBlock()
 				if err != nil {
+					logx.Severef("init new block failed, block height: %d, error: %s", curHeight, err.Error())
 					panic(fmt.Sprintf("init new block failed, block height: %d, error: %v", curHeight, err.Error()))
 				}
 
@@ -132,15 +135,18 @@ func (c *Fullnode) Run() {
 
 			err = c.bc.Statedb.IntermediateRoot(true, nil)
 			if err != nil {
+				logx.Severef("calculate state root failed, err: %v", err)
 				panic(fmt.Sprint("calculate state root failed, err", err))
 			}
 
 			if c.bc.Statedb.StateRoot != l2Block.StateRoot {
+				logx.Severef("state root not matched between statedb and l2block: %d, local: %s, remote: %s", l2Block.Height, c.bc.Statedb.StateRoot, l2Block.StateRoot)
 				panic(fmt.Sprintf("state root not matched between statedb and l2block: %d, local: %s, remote: %s", l2Block.Height, c.bc.Statedb.StateRoot, l2Block.StateRoot))
 			}
 
 			curBlock, err = c.processNewBlock(int(l2Block.Size))
 			if err != nil {
+				logx.Severef("new block failed, block height: %d, Error: %s", l2Block.Height, err.Error())
 				panic(fmt.Sprintf("new block failed, block height: %d, Error: %s", l2Block.Height, err.Error()))
 			}
 			logx.Infof("created new block on fullnode, height=%d, blockSize=%d", curBlock.BlockHeight, l2Block.Size)

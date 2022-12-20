@@ -251,6 +251,22 @@ var (
 		Name:      "ants_pool_count",
 		Help:      "ants pool count",
 	}, []string{"type"})
+
+	l2BlockHeightMetics = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2_block_height",
+		Help:      "l2_Block_Height metrics.",
+	})
+	poolTxL1ErrorCountMetics = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "zkbnb",
+		Name:      "pool_tx_l1_error_count",
+		Help:      "pool_tx_l1_error_count metrics.",
+	})
+	poolTxL2ErrorCountMetics = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "zkbnb",
+		Name:      "pool_tx_l2_error_count",
+		Help:      "pool_tx_l2_error_count metrics.",
+	})
 )
 
 type Config struct {
@@ -432,6 +448,16 @@ func NewCommitter(config *Config) (*Committer, error) {
 	}
 	if err := prometheus.Register(antsPoolGaugeMetric); err != nil {
 		return nil, fmt.Errorf("prometheus.Register antsPoolGaugeMetric error: %v", err)
+	}
+
+	if err := prometheus.Register(l2BlockHeightMetics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register l2BlockHeightMetics error: %v", err)
+	}
+	if err := prometheus.Register(poolTxL1ErrorCountMetics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register poolTxL1ErrorCountMetics error: %v", err)
+	}
+	if err := prometheus.Register(poolTxL2ErrorCountMetics); err != nil {
+		return nil, fmt.Errorf("prometheus.Register poolTxL2ErrorCountMetics error: %v", err)
 	}
 	saveBlockDataPoolSize := config.BlockConfig.SaveBlockDataPoolSize
 	if saveBlockDataPoolSize == 0 {
@@ -731,8 +757,11 @@ func (c *Committer) executeTxFunc() {
 			if err != nil {
 				logx.Errorf("apply pool tx ID: %d failed, err %v ", poolTx.ID, err)
 				if types.IsPriorityOperationTx(poolTx.TxType) {
+					poolTxL1ErrorCountMetics.Inc()
 					logx.Errorf("apply priority pool tx failed,id=%s,error=%s", strconv.Itoa(int(poolTx.ID)), err.Error())
 					panic("apply priority pool tx failed,id=" + strconv.Itoa(int(poolTx.ID)) + ",error=" + err.Error())
+				}else{
+					poolTxL2ErrorCountMetics.Inc()
 				}
 				poolTx.TxStatus = tx.StatusFailed
 				pendingDeletePoolTxs = append(pendingDeletePoolTxs, poolTx)
@@ -763,7 +792,7 @@ func (c *Committer) executeTxFunc() {
 				logx.Infof("create new block, current height=%s,previous height=%d,blockId=%s", curBlock.BlockHeight, previousHeight, curBlock.ID)
 
 				if err != nil {
-					logx.Errorf("create new block failed:%s", err.Error())
+					logx.Severef("create new block failed:%s", err.Error())
 					panic("create new block failed" + err.Error())
 				}
 			}

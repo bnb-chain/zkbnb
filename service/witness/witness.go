@@ -22,6 +22,7 @@ func Run(configFile string) error {
 
 	w, err := witness.NewWitness(c)
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 	cronJob := cron.New(cron.WithChain(
@@ -33,10 +34,12 @@ func Run(configFile string) error {
 		if err != nil {
 			//todo throw catch
 			logx.Errorf("failed to generate block witness, %v", err)
+			logx.Severef("failed to generate block witness, %v", err)
 		}
 		w.RescheduleBlockWitness()
 	})
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 	cronJob.Start()

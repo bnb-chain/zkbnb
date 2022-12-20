@@ -148,6 +148,7 @@ func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC
 
 	gas, err := json.Marshal(gasFeeConfig)
 	if err != nil {
+		logx.Severe("fail to marshal gas fee config")
 		panic("fail to marshal gas fee config")
 	}
 
@@ -266,11 +267,13 @@ func initTable(dao *dao, svrConf *contractAddr, bscTestNetworkRPC, localTestNetw
 	assert.Nil(nil, dao.nftHistoryModel.CreateL2NftHistoryTable())
 	rowsAffected, err := dao.assetModel.CreateAssets(initAssetsInfo(svrConf.BUSDToken))
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 	logx.Infof("l2 assets info rows affected: %d", rowsAffected)
 	rowsAffected, err = dao.sysConfigModel.CreateSysConfigs(initSysConfig(svrConf, bscTestNetworkRPC, localTestNetworkRPC))
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 	logx.Infof("sys config rows affected: %d", rowsAffected)
@@ -287,6 +290,7 @@ func initTable(dao *dao, svrConf *contractAddr, bscTestNetworkRPC, localTestNetw
 		BlockStatus:                  block.StatusVerifiedAndExecuted,
 	})
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 }

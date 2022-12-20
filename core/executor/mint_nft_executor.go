@@ -53,6 +53,9 @@ func (e *MintNftExecutor) Prepare() error {
 func (e *MintNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	txInfo := e.txInfo
 
+	if txInfo.CreatorAccountIndex != txInfo.ToAccountIndex {
+		return types.AppErrInvalidToAccount
+	}
 	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk, skipSigChk)
 	if err != nil {
 		return err

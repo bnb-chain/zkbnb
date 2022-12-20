@@ -62,6 +62,14 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to get contract logs, err: %v", err)
 	}
+	l1GenericStartHeightMetric.Set(float64(startHeight))
+	l1GenericEndHeightMetric.Set(float64(endHeight))
+	l1GenericLenHeightMetric.Set(float64(len(logs)))
+
+	logx.Infof("type is typeGeneric blocks from %d to %d and vlog len: %v", startHeight, endHeight, len(logs))
+	for _, vlog := range logs {
+		logx.Infof("type is typeGeneric blocks from %d to %d and vlog: %v", startHeight, endHeight, vlog)
+	}
 	var (
 		l1Events         []*L1Event
 		priorityRequests []*priorityrequest.PriorityRequest
