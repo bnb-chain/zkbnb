@@ -23,16 +23,16 @@ import (
 )
 
 var (
-	sendTxHandlerMetrics = prometheus.NewCounter(prometheus.CounterOpts{
+	sendTxMetrics = prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace: "zkbnb",
-		Name:      "sent_tx_handler_count",
+		Name:      "sent_tx_count",
 		Help:      "sent tx count",
 	})
 
 	sendTxTotalMetrics = prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace: "zkbnb",
 		Name:      "sent_tx_total_count",
-		Help:      "sent tx count",
+		Help:      "sent tx total count",
 	})
 )
 
@@ -54,10 +54,8 @@ type ServiceContext struct {
 	PriceFetcher price.Fetcher
 	StateFetcher state.Fetcher
 
-	SendTxHandlerMetrics prometheus.Counter
-	SendTxTotalMetrics   prometheus.Counter
-	SendTxMetrics      prometheus.Counter
 	SendTxTotalMetrics prometheus.Counter
+	SendTxMetrics      prometheus.Counter
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -93,24 +91,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	memCache := cache.MustNewMemCache(accountModel, assetModel, c.MemCache.AccountExpiration, c.MemCache.BlockExpiration,
 		c.MemCache.TxExpiration, c.MemCache.AssetExpiration, c.MemCache.TxPendingExpiration, c.MemCache.PriceExpiration, c.MemCache.MaxCounterNum, c.MemCache.MaxKeyNum)
 
-	sendTxMetrics := prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace: "zkbnb",
-		Name:      "sent_tx_count",
-		Help:      "sent tx count",
-	})
-
-	sendTxTotalMetrics := prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace: "zkbnb",
-		Name:      "sent_tx_total_count",
-		Help:      "sent tx total count",
-	})
-
-	prometheus.Register(sendTxMetrics)
-	prometheus.Register(sendTxTotalMetrics)
-
-		c.MemCache.TxExpiration, c.MemCache.AssetExpiration, c.MemCache.PriceExpiration, c.MemCache.MaxCounterNum, c.MemCache.MaxKeyNum)
-
-	if err := prometheus.Register(sendTxHandlerMetrics); err != nil {
+	if err := prometheus.Register(sendTxMetrics); err != nil {
 		logx.Error("prometheus.Register sendTxHandlerMetrics error: %v", err)
 		return nil
 	}
@@ -137,12 +118,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		PriceFetcher: price.NewFetcher(memCache, assetModel, c.CoinMarketCap.Url, c.CoinMarketCap.Token),
 		StateFetcher: state.NewFetcher(redisCache, accountModel, nftModel),
 
-		SendTxHandlerMetrics: sendTxHandlerMetrics,
-		SendTxTotalMetrics:   sendTxTotalMetrics,
-		PriceFetcher:       price.NewFetcher(memCache, assetModel, c.CoinMarketCap.Url, c.CoinMarketCap.Token),
-		StateFetcher:       state.NewFetcher(redisCache, accountModel, nftModel),
-		SendTxMetrics:      sendTxMetrics,
 		SendTxTotalMetrics: sendTxTotalMetrics,
+		SendTxMetrics:      sendTxMetrics,
 	}
 }
 

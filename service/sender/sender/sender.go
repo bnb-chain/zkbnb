@@ -67,32 +67,6 @@ var (
 		Name:      "l2Block_verified_height",
 		Help:      "l2Block_roll_up_height metrics.",
 	})
-)
-
-var (
-	l2BlockCommitToChainHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "zkbnb",
-		Name:      "l2Block_commit_to_chain_height",
-		Help:      "l2Block_roll_up_height metrics.",
-	})
-
-	l2BlockCommitConfirmByChainHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "zkbnb",
-		Name:      "l2Block_commit_confirm_by_chain_height",
-		Help:      "l2Block_roll_up_height metrics.",
-	})
-
-	l2BlockSubmitToVerifyHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "zkbnb",
-		Name:      "l2Block_submit_to_verify_height",
-		Help:      "l2Block_roll_up_height metrics.",
-	})
-
-	l2BlockVerifiedHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "zkbnb",
-		Name:      "l2Block_verified_height",
-		Help:      "l2Block_roll_up_height metrics.",
-	})
 	l2MaxWaitingTimeMetric = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
 		Name:      "l2Block_max_waiting_time",
@@ -180,11 +154,6 @@ func NewSender(c sconfig.Config) *Sender {
 	}
 	if err := prometheus.Register(verifyExceptionHeightMetric); err != nil {
 		logx.Errorf("prometheus.Register verifyExceptionHeightMetric error: %v", err)
-	}
-
-	db, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
-	if err != nil {
-		logx.Errorf("gorm connect db error, err = %v", err)
 	}
 
 	db.Use(dbresolver.Register(dbresolver.Config{
