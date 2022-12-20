@@ -67,7 +67,7 @@ func (e *FullExitNftExecutor) Prepare() error {
 
 	var isExitEmptyNft = true
 	nft, err := e.bc.StateDB().PrepareNft(txInfo.NftIndex)
-	if err != nil && err != types.DbErrNotFound {
+	if err != nil && err != types.AppErrNftNotFound {
 		return err
 	}
 
@@ -78,7 +78,9 @@ func (e *FullExitNftExecutor) Prepare() error {
 	}
 
 	// Mark the tree states that would be affected in this executor.
-	e.MarkNftDirty(txInfo.NftIndex)
+	if !isExitEmptyNft {
+		e.MarkNftDirty(txInfo.NftIndex)
+	}
 	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{types.EmptyAccountAssetId})        // Prepare asset 0 for generate an empty tx detail.
 	e.MarkAccountAssetsDirty(txInfo.CreatorAccountIndex, []int64{types.EmptyAccountAssetId}) // Prepare asset 0 for generate an empty tx detail.
 

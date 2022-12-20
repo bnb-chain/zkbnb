@@ -312,153 +312,16 @@ func NewCommitter(config *Config) (*Committer, error) {
 		return nil, errors.New("nil optional block sizes")
 	}
 
+	err := initMetrics()
+	if err != nil {
+		return nil, err
+	}
+
 	bc, err := core.NewBlockChain(&config.ChainConfig, "committer")
 	if err != nil {
 		return nil, fmt.Errorf("new blockchain error: %v", err)
 	}
 
-	if err := prometheus.Register(priorityOperationMetric); err != nil {
-		return nil, fmt.Errorf("prometheus.Register priorityOperationMetric error: %v", err)
-	}
-	if err := prometheus.Register(priorityOperationHeightMetric); err != nil {
-		return nil, fmt.Errorf("prometheus.Register priorityOperationHeightMetric error: %v", err)
-	}
-
-	if err := prometheus.Register(l2BlockMemoryHeightMetric); err != nil {
-		return nil, fmt.Errorf("prometheus.Register l2BlockMemoryHeightMetric error: %v", err)
-	}
-
-	if err := prometheus.Register(l2BlockRedisHeightMetric); err != nil {
-		return nil, fmt.Errorf("prometheus.Register l2BlockMemoryHeightMetric error: %v", err)
-	}
-
-	if err := prometheus.Register(l2BlockDbHeightMetric); err != nil {
-		return nil, fmt.Errorf("prometheus.Register l2BlockMemoryHeightMetric error: %v", err)
-	}
-
-	if err := prometheus.Register(AccountLatestVersionTreeMetric); err != nil {
-		return nil, fmt.Errorf("prometheus.Register AccountLatestVersionTreeMetric error: %v", err)
-	}
-	if err := prometheus.Register(AccountRecentVersionTreeMetric); err != nil {
-		return nil, fmt.Errorf("prometheus.Register AccountRecentVersionTreeMetric error: %v", err)
-	}
-	if err := prometheus.Register(NftTreeLatestVersionMetric); err != nil {
-		return nil, fmt.Errorf("prometheus.Register NftTreeLatestVersionMetric error: %v", err)
-	}
-	if err := prometheus.Register(NftTreeRecentVersionMetric); err != nil {
-		return nil, fmt.Errorf("prometheus.Register NftTreeRecentVersionMetric error: %v", err)
-	}
-
-	if err := prometheus.Register(commitOperationMetics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register commitOperationMetics error: %v", err)
-	}
-	if err := prometheus.Register(pendingTxNumMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register pendingTxNumMetrics error: %v", err)
-	}
-	if err := prometheus.Register(executeTxOperationMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register executeTxOperationMetrics error: %v", err)
-	}
-	if err := prometheus.Register(updateAccountAssetTreeMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register updateAccountAssetTreeMetrics error: %v", err)
-	}
-	if err := prometheus.Register(stateDBSyncOperationMetics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register stateDBSyncOperationMetics error: %v", err)
-	}
-
-	if err := prometheus.Register(preSaveBlockDataMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register preSaveBlockDataMetrics error: %v", err)
-	}
-	if err := prometheus.Register(saveBlockDataMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register saveBlockDataMetrics error: %v", err)
-	}
-	if err := prometheus.Register(finalSaveBlockDataMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register finalSaveBlockDataMetrics error: %v", err)
-	}
-	if err := prometheus.Register(executeTxApply1TxMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register executeTxApply1TxMetrics error: %v", err)
-	}
-	if err := prometheus.Register(updatePoolTxsMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register updatePoolTxsMetrics error: %v", err)
-	}
-	if err := prometheus.Register(addCompressedBlockMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register addCompressedBlockMetrics error: %v", err)
-	}
-
-	if err := prometheus.Register(updateAccountMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register updateAccountMetrics error: %v", err)
-	}
-
-	if err := prometheus.Register(addAccountHistoryMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register addAccountHistoryMetrics error: %v", err)
-	}
-
-	if err := prometheus.Register(addTxDetailsMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register addTxDetailsMetrics error: %v", err)
-	}
-
-	if err := prometheus.Register(addTxsMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register addTxsMetrics error: %v", err)
-	}
-
-	if err := prometheus.Register(deletePoolTxMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register deletePoolTxMetrics error: %v", err)
-	}
-
-	if err := prometheus.Register(updateBlockMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register updateBlockMetrics error: %v", err)
-	}
-
-	if err := prometheus.Register(saveAccountsGoroutineMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register saveAccountsGoroutineMetrics error: %v", err)
-	}
-
-	if err := prometheus.Register(getPendingPoolTxMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register getPendingPoolTxMetrics error: %v", err)
-	}
-
-	if err := prometheus.Register(updatePoolTxsProcessingMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register updatePoolTxsProcessingMetrics error: %v", err)
-	}
-
-	if err := prometheus.Register(getPendingTxsToQueueMetric); err != nil {
-		return nil, fmt.Errorf("prometheus.Register getPendingTxsToQueueMetric error: %v", err)
-	}
-	if err := prometheus.Register(txWorkerQueueMetric); err != nil {
-		return nil, fmt.Errorf("prometheus.Register txWorkerQueueMetric error: %v", err)
-	}
-
-	if err := prometheus.Register(executeTxMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register executeTxMetrics error: %v", err)
-	}
-
-	if err := prometheus.Register(updateAccountAssetTreeTxMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register updateAccountAssetTreeTxMetrics error: %v", err)
-	}
-	if err := prometheus.Register(updateAccountTreeAndNftTreeTxMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register updateAccountTreeAndNftTreeTxMetrics error: %v", err)
-	}
-	if err := prometheus.Register(updateAccountTreeAndNftTreeMetrics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register updateAccountTreeAndNftTreeMetrics error: %v", err)
-	}
-	if err := prometheus.Register(accountTreeAndNftTreeQueueMetric); err != nil {
-		return nil, fmt.Errorf("prometheus.Register accountTreeAndNftTreeQueueMetric error: %v", err)
-	}
-	if err := prometheus.Register(accountAssetTreeQueueMetric); err != nil {
-		return nil, fmt.Errorf("prometheus.Register accountAssetTreeQueueMetric error: %v", err)
-	}
-	if err := prometheus.Register(antsPoolGaugeMetric); err != nil {
-		return nil, fmt.Errorf("prometheus.Register antsPoolGaugeMetric error: %v", err)
-	}
-
-	if err := prometheus.Register(l2BlockHeightMetics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register l2BlockHeightMetics error: %v", err)
-	}
-	if err := prometheus.Register(poolTxL1ErrorCountMetics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register poolTxL1ErrorCountMetics error: %v", err)
-	}
-	if err := prometheus.Register(poolTxL2ErrorCountMetics); err != nil {
-		return nil, fmt.Errorf("prometheus.Register poolTxL2ErrorCountMetics error: %v", err)
-	}
 	saveBlockDataPoolSize := config.BlockConfig.SaveBlockDataPoolSize
 	if saveBlockDataPoolSize == 0 {
 		saveBlockDataPoolSize = 100
@@ -475,6 +338,133 @@ func NewCommitter(config *Config) (*Committer, error) {
 	}
 
 	return committer, nil
+}
+
+func initMetrics() error {
+	if err := prometheus.Register(priorityOperationMetric); err != nil {
+		return fmt.Errorf("prometheus.Register priorityOperationMetric error: %v", err)
+	}
+	if err := prometheus.Register(priorityOperationHeightMetric); err != nil {
+		return fmt.Errorf("prometheus.Register priorityOperationHeightMetric error: %v", err)
+	}
+	if err := prometheus.Register(l2BlockMemoryHeightMetric); err != nil {
+		return fmt.Errorf("prometheus.Register l2BlockMemoryHeightMetric error: %v", err)
+	}
+	if err := prometheus.Register(l2BlockRedisHeightMetric); err != nil {
+		return fmt.Errorf("prometheus.Register l2BlockMemoryHeightMetric error: %v", err)
+	}
+	if err := prometheus.Register(l2BlockDbHeightMetric); err != nil {
+		return fmt.Errorf("prometheus.Register l2BlockMemoryHeightMetric error: %v", err)
+	}
+	if err := prometheus.Register(AccountLatestVersionTreeMetric); err != nil {
+		return fmt.Errorf("prometheus.Register AccountLatestVersionTreeMetric error: %v", err)
+	}
+	if err := prometheus.Register(AccountRecentVersionTreeMetric); err != nil {
+		return fmt.Errorf("prometheus.Register AccountRecentVersionTreeMetric error: %v", err)
+	}
+	if err := prometheus.Register(NftTreeLatestVersionMetric); err != nil {
+		return fmt.Errorf("prometheus.Register NftTreeLatestVersionMetric error: %v", err)
+	}
+	if err := prometheus.Register(NftTreeRecentVersionMetric); err != nil {
+		return fmt.Errorf("prometheus.Register NftTreeRecentVersionMetric error: %v", err)
+	}
+	if err := prometheus.Register(commitOperationMetics); err != nil {
+		return fmt.Errorf("prometheus.Register commitOperationMetics error: %v", err)
+	}
+	if err := prometheus.Register(pendingTxNumMetrics); err != nil {
+		return fmt.Errorf("prometheus.Register pendingTxNumMetrics error: %v", err)
+	}
+	if err := prometheus.Register(executeTxOperationMetrics); err != nil {
+		return fmt.Errorf("prometheus.Register executeTxOperationMetrics error: %v", err)
+	}
+	if err := prometheus.Register(updateAccountAssetTreeMetrics); err != nil {
+		return fmt.Errorf("prometheus.Register updateAccountAssetTreeMetrics error: %v", err)
+	}
+	if err := prometheus.Register(stateDBSyncOperationMetics); err != nil {
+		return fmt.Errorf("prometheus.Register stateDBSyncOperationMetics error: %v", err)
+	}
+	if err := prometheus.Register(preSaveBlockDataMetrics); err != nil {
+		return fmt.Errorf("prometheus.Register preSaveBlockDataMetrics error: %v", err)
+	}
+	if err := prometheus.Register(saveBlockDataMetrics); err != nil {
+		return fmt.Errorf("prometheus.Register saveBlockDataMetrics error: %v", err)
+	}
+	if err := prometheus.Register(finalSaveBlockDataMetrics); err != nil {
+		return fmt.Errorf("prometheus.Register finalSaveBlockDataMetrics error: %v", err)
+	}
+	if err := prometheus.Register(executeTxApply1TxMetrics); err != nil {
+		return fmt.Errorf("prometheus.Register executeTxApply1TxMetrics error: %v", err)
+	}
+	if err := prometheus.Register(updatePoolTxsMetrics); err != nil {
+		return fmt.Errorf("prometheus.Register updatePoolTxsMetrics error: %v", err)
+	}
+	if err := prometheus.Register(addCompressedBlockMetrics); err != nil {
+		return fmt.Errorf("prometheus.Register addCompressedBlockMetrics error: %v", err)
+	}
+	if err := prometheus.Register(updateAccountMetrics); err != nil {
+		return fmt.Errorf("prometheus.Register updateAccountMetrics error: %v", err)
+	}
+	if err := prometheus.Register(addAccountHistoryMetrics); err != nil {
+		return fmt.Errorf("prometheus.Register addAccountHistoryMetrics error: %v", err)
+	}
+	if err := prometheus.Register(addTxDetailsMetrics); err != nil {
+		return fmt.Errorf("prometheus.Register addTxDetailsMetrics error: %v", err)
+	}
+	if err := prometheus.Register(addTxsMetrics); err != nil {
+		return fmt.Errorf("prometheus.Register addTxsMetrics error: %v", err)
+	}
+	if err := prometheus.Register(deletePoolTxMetrics); err != nil {
+		return fmt.Errorf("prometheus.Register deletePoolTxMetrics error: %v", err)
+	}
+	if err := prometheus.Register(updateBlockMetrics); err != nil {
+		return fmt.Errorf("prometheus.Register updateBlockMetrics error: %v", err)
+	}
+	if err := prometheus.Register(saveAccountsGoroutineMetrics); err != nil {
+		return fmt.Errorf("prometheus.Register saveAccountsGoroutineMetrics error: %v", err)
+	}
+	if err := prometheus.Register(getPendingPoolTxMetrics); err != nil {
+		return fmt.Errorf("prometheus.Register getPendingPoolTxMetrics error: %v", err)
+	}
+	if err := prometheus.Register(updatePoolTxsProcessingMetrics); err != nil {
+		return fmt.Errorf("prometheus.Register updatePoolTxsProcessingMetrics error: %v", err)
+	}
+	if err := prometheus.Register(getPendingTxsToQueueMetric); err != nil {
+		return fmt.Errorf("prometheus.Register getPendingTxsToQueueMetric error: %v", err)
+	}
+	if err := prometheus.Register(txWorkerQueueMetric); err != nil {
+		return fmt.Errorf("prometheus.Register txWorkerQueueMetric error: %v", err)
+	}
+	if err := prometheus.Register(executeTxMetrics); err != nil {
+		return fmt.Errorf("prometheus.Register executeTxMetrics error: %v", err)
+	}
+	if err := prometheus.Register(updateAccountAssetTreeTxMetrics); err != nil {
+		return fmt.Errorf("prometheus.Register updateAccountAssetTreeTxMetrics error: %v", err)
+	}
+	if err := prometheus.Register(updateAccountTreeAndNftTreeTxMetrics); err != nil {
+		return fmt.Errorf("prometheus.Register updateAccountTreeAndNftTreeTxMetrics error: %v", err)
+	}
+	if err := prometheus.Register(updateAccountTreeAndNftTreeMetrics); err != nil {
+		return fmt.Errorf("prometheus.Register updateAccountTreeAndNftTreeMetrics error: %v", err)
+	}
+	if err := prometheus.Register(accountTreeAndNftTreeQueueMetric); err != nil {
+		return fmt.Errorf("prometheus.Register accountTreeAndNftTreeQueueMetric error: %v", err)
+	}
+	if err := prometheus.Register(accountAssetTreeQueueMetric); err != nil {
+		return fmt.Errorf("prometheus.Register accountAssetTreeQueueMetric error: %v", err)
+	}
+	if err := prometheus.Register(antsPoolGaugeMetric); err != nil {
+		return fmt.Errorf("prometheus.Register antsPoolGaugeMetric error: %v", err)
+	}
+	if err := prometheus.Register(l2BlockHeightMetics); err != nil {
+		return fmt.Errorf("prometheus.Register l2BlockHeightMetics error: %v", err)
+	}
+	if err := prometheus.Register(poolTxL1ErrorCountMetics); err != nil {
+		return fmt.Errorf("prometheus.Register poolTxL1ErrorCountMetics error: %v", err)
+	}
+	if err := prometheus.Register(poolTxL2ErrorCountMetics); err != nil {
+		return fmt.Errorf("prometheus.Register poolTxL2ErrorCountMetics error: %v", err)
+	}
+	return nil
 }
 
 func (c *Committer) Run() {
@@ -760,7 +750,7 @@ func (c *Committer) executeTxFunc() {
 					poolTxL1ErrorCountMetics.Inc()
 					logx.Errorf("apply priority pool tx failed,id=%s,error=%s", strconv.Itoa(int(poolTx.ID)), err.Error())
 					panic("apply priority pool tx failed,id=" + strconv.Itoa(int(poolTx.ID)) + ",error=" + err.Error())
-				}else{
+				} else {
 					poolTxL2ErrorCountMetics.Inc()
 				}
 				poolTx.TxStatus = tx.StatusFailed
@@ -1383,56 +1373,6 @@ func (c *Committer) finalSaveBlockDataFunc(blockStates *block.BlockStates) {
 	finalSaveBlockDataMetrics.WithLabelValues("all").Set(float64(time.Since(start).Milliseconds()))
 }
 
-func (c *Committer) Shutdown() {
-	c.running = false
-	c.executeTxWorker.Stop()
-	c.syncAccountToRedisWorker.Stop()
-	c.updatePoolTxWorker.Stop()
-	c.updateAccountAssetTreeWorker.Stop()
-	c.updateAccountTreeAndNftTreeWorker.Stop()
-	c.preSaveBlockDataWorker.Stop()
-	c.saveBlockDataWorker.Stop()
-	c.finalSaveBlockDataWorker.Stop()
-	c.bc.Statedb.Close()
-	c.bc.ChainDB.Close()
-}
-
-func (c *Committer) restoreExecutedTxs() (*block.Block, error) {
-	bc := c.bc
-	curHeight, err := bc.BlockModel.GetCurrentBlockHeight()
-	if err != nil {
-		return nil, err
-	}
-	curBlock, err := bc.BlockModel.GetBlockByHeight(curHeight)
-	if err != nil {
-		return nil, err
-	}
-
-	executedTxs, err := c.bc.TxPoolModel.GetTxsByStatus(tx.StatusExecuted)
-	if err != nil {
-		return nil, err
-	}
-
-	if curBlock.BlockStatus > block.StatusProposing {
-		if len(executedTxs) != 0 {
-			return nil, errors.New("no proposing block but exist executed txs")
-		}
-		return curBlock, nil
-	}
-
-	if err := c.bc.StateDB().MarkGasAccountAsPending(); err != nil {
-		return nil, err
-	}
-	for _, executedTx := range executedTxs {
-		err = c.bc.ApplyTransaction(executedTx)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return curBlock, nil
-}
-
 func (c *Committer) createNewBlock(curBlock *block.Block) error {
 	return c.bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
 		return c.bc.BlockModel.CreateBlockInTransact(dbTx, curBlock)
@@ -1535,4 +1475,18 @@ func (c *Committer) loadAllNfts() {
 			c.bc.Statedb.NftCache.Add(nftInfo.NftIndex, nftInfo)
 		}
 	}
+}
+
+func (c *Committer) Shutdown() {
+	c.running = false
+	c.executeTxWorker.Stop()
+	c.syncAccountToRedisWorker.Stop()
+	c.updatePoolTxWorker.Stop()
+	c.updateAccountAssetTreeWorker.Stop()
+	c.updateAccountTreeAndNftTreeWorker.Stop()
+	c.preSaveBlockDataWorker.Stop()
+	c.saveBlockDataWorker.Stop()
+	c.finalSaveBlockDataWorker.Stop()
+	c.bc.Statedb.Close()
+	c.bc.ChainDB.Close()
 }
