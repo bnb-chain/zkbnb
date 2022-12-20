@@ -42,7 +42,9 @@ type (
 		GetBlockWitnessByHeight(height int64) (witness *BlockWitness, err error)
 		UpdateBlockWitnessStatus(witness *BlockWitness, status int64) error
 		GetLatestBlockWitness() (witness *BlockWitness, err error)
+		GetLatestReceivedBlockWitness() (witness *BlockWitness, err error)
 		CreateBlockWitness(witness *BlockWitness) error
+		UpdateBlockWitnessStatusByHeight(height int64) error
 	}
 
 	defaultBlockWitnessModel struct {
@@ -98,6 +100,16 @@ func (m *defaultBlockWitnessModel) GetLatestBlockWitness() (witness *BlockWitnes
 	return witness, nil
 }
 
+func (m *defaultBlockWitnessModel) GetLatestReceivedBlockWitness() (witness *BlockWitness, err error) {
+	dbTx := m.DB.Table(m.table).Where("status = ?", StatusReceived).Order("height desc").Limit(1).Find(&witness)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return witness, nil
+}
+
 func (m *defaultBlockWitnessModel) GetBlockWitnessByHeight(height int64) (witness *BlockWitness, err error) {
 	dbTx := m.DB.Table(m.table).Where("height = ?", height).Limit(1).Find(&witness)
 	if dbTx.Error != nil {
@@ -127,6 +139,17 @@ func (m *defaultBlockWitnessModel) UpdateBlockWitnessStatus(witness *BlockWitnes
 	dbTx := m.DB.Model(&witness).Update("status", status)
 	if dbTx.Error != nil {
 		return types.DbErrSqlOperation
+	}
+	return nil
+}
+
+func (m *defaultBlockWitnessModel) UpdateBlockWitnessStatusByHeight(height int64) error {
+	dbTx := m.DB.Table(m.table).Where("height = ?", height).Update("status", StatusPublished)
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		return types.DbErrFailToUpdateTx
 	}
 	return nil
 }

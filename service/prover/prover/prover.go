@@ -158,6 +158,40 @@ func NewProver(c config.Config) (*Prover, error) {
 		}
 	}
 
+	w, err := prover.BlockWitnessModel.GetLatestReceivedBlockWitness()
+	var wHeight int64
+	if err != nil {
+		if err == types.DbErrNotFound {
+			wHeight = 0
+		} else {
+			logx.Severe("get latest receive block witness error")
+			panic("get latest receive block witness error")
+		}
+	} else {
+		wHeight = w.Height
+	}
+	var pHeight int64
+	p, err := prover.ProofModel.GetLatestProof()
+	if err != nil {
+		if err == types.DbErrNotFound {
+			pHeight = 0
+		} else {
+			logx.Severe("get latest proof error")
+			panic("get latest proof error")
+		}
+	} else {
+		pHeight = p.BlockNumber
+	}
+	if wHeight > pHeight {
+		for i := pHeight + 1; i <= wHeight; i++ {
+			err := prover.BlockWitnessModel.UpdateBlockWitnessStatusByHeight(i)
+			if err != nil {
+				logx.Severe("init witness status error")
+				panic("init witness status error")
+			}
+		}
+	}
+
 	return prover, nil
 }
 

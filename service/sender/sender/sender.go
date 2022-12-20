@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"gorm.io/plugin/dbresolver"
+	"math"
 	"math/big"
 	"time"
 
@@ -92,6 +93,11 @@ var (
 		Name:      "verify_Exception_height",
 		Help:      "verify_Exception_height metrics.",
 	})
+	contractBalanceMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "contract_balance",
+		Help:      "contract_balance metrics.",
+	})
 )
 
 type Sender struct {
@@ -155,6 +161,9 @@ func NewSender(c sconfig.Config) *Sender {
 	if err := prometheus.Register(verifyExceptionHeightMetric); err != nil {
 		logx.Errorf("prometheus.Register verifyExceptionHeightMetric error: %v", err)
 	}
+	if err := prometheus.Register(contractBalanceMetric); err != nil {
+		logx.Errorf("prometheus.Register contractBalanceMetric error: %v", err)
+	}
 
 	db.Use(dbresolver.Register(dbresolver.Config{
 		Sources:  []gorm.Dialector{postgres.Open(masterDataSource)},
@@ -208,6 +217,20 @@ func NewSender(c sconfig.Config) *Sender {
 }
 
 func (s *Sender) CommitBlocks() (err error) {
+	info, err := s.sysConfigModel.GetSysConfigByName("ZkBNBContract")
+	if err == nil {
+		balance, err := s.cli.GetBalance(info.Value)
+		fbalance := new(big.Float)
+		fbalance.SetString(balance.String())
+		ethValue := new(big.Float).Quo(fbalance, big.NewFloat(math.Pow10(18)))
+		if err != nil {
+			contractBalanceMetric.Set(float64(0))
+		} else {
+			f, _ := ethValue.Float64()
+			contractBalanceMetric.Set(f)
+		}
+	}
+
 	var (
 		cli           = s.cli
 		authCli       = s.authCli
