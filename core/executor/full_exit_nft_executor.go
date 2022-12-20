@@ -67,7 +67,7 @@ func (e *FullExitNftExecutor) Prepare() error {
 
 	var isExitEmptyNft = true
 	nft, err := e.bc.StateDB().PrepareNft(txInfo.NftIndex)
-	if err != nil && err != types.DbErrNotFound {
+	if err != nil && err != types.AppErrNftNotFound {
 		return err
 	}
 
