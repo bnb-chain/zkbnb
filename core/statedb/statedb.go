@@ -780,6 +780,7 @@ func (s *StateDB) GetGasAccountIndex() (int64, error) {
 	if found {
 		return result.(int64), nil
 	}
+	logx.Infof("GetGasAccountIndex mem cache expired")
 	gasAccountConfig, err := s.chainDb.SysConfigModel.GetSysConfigByName(types.GasAccountIndex)
 	if err != nil {
 		logx.Errorf("cannot find config for: %s", types.GasAccountIndex)
