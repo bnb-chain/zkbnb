@@ -88,6 +88,16 @@ func (c *AssetTreeCache) Get(i int64) (tree bsmt.SparseMerkleTree) {
 	return
 }
 
+func (c *AssetTreeCache) GetAdapter(i int64) (treeAdapter *SparseMerkleTreeAdapter) {
+	c.mainLock.RLock()
+	c.treeCache.ContainsOrAdd(i, c.initFunction(i, c.blockNumber))
+	c.mainLock.RUnlock()
+	if tmpTree, ok := c.treeCache.Get(i); ok {
+		treeAdapter = NewSparseMerkleTreeAdapter(tmpTree.(bsmt.SparseMerkleTree), c.changesLock, c.changes)
+	}
+	return
+}
+
 //Returns slice of indexes of asset trees that were changned
 func (c *AssetTreeCache) GetChanges() []int64 {
 	c.mainLock.Lock()
