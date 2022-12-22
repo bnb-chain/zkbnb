@@ -350,3 +350,7 @@ func (m *MemCache) GetSysConfigWithFallback(configName string, f fallback) (*sys
 	}
 	return c.(*sysconfig.SysConfig), nil
 }
+
+func (m *MemCache) GetCache() *ristretto.Cache {
+	return m.goCache
+}

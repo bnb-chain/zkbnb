@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dgraph-io/ristretto"
 	"gorm.io/plugin/dbresolver"
 	"math/big"
 	"strconv"
@@ -314,7 +315,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 // , e.g., for sending tx, we can create blockchain for each request quickly
 func NewBlockChainForDryRun(accountModel account.AccountModel,
 	nftModel nft.L2NftModel, txPoolModel tx.TxPoolModel, assetModel asset.AssetModel,
-	sysConfigModel sysconfig.SysConfigModel, redisCache dbcache.Cache) (*BlockChain, error) {
+	sysConfigModel sysconfig.SysConfigModel, redisCache dbcache.Cache, memCache *ristretto.Cache) (*BlockChain, error) {
 	chainDb := &sdb.ChainDB{
 		AccountModel:     accountModel,
 		L2NftModel:       nftModel,
@@ -322,7 +323,7 @@ func NewBlockChainForDryRun(accountModel account.AccountModel,
 		L2AssetInfoModel: assetModel,
 		SysConfigModel:   sysConfigModel,
 	}
-	statedb, err := sdb.NewStateDBForDryRun(redisCache, &statedb.DefaultCacheConfig, chainDb)
+	statedb, err := sdb.NewStateDBForDryRun(redisCache, &statedb.DefaultCacheConfig, chainDb, memCache)
 	if err != nil {
 		return nil, err
 	}
