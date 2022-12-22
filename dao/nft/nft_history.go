@@ -18,6 +18,7 @@
 package nft
 
 import (
+	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb/types"
@@ -36,6 +37,9 @@ type (
 			rowsAffected int64, nftAssets []*L2NftHistory, err error,
 		)
 		CreateNftHistoriesInTransact(tx *gorm.DB, histories []*L2NftHistory) error
+		GetLatestNftHistories(nftIndexes []int64, height int64) (rowsAffected int64, nfts []*L2NftHistory, err error)
+		CreateNftHistories(histories []*L2NftHistory) error
+		DeleteByHeightInTransact(tx *gorm.DB, heights []int64) error
 	}
 	defaultL2NftHistoryModel struct {
 		table string
@@ -44,14 +48,14 @@ type (
 
 	L2NftHistory struct {
 		gorm.Model
-		NftIndex            int64
+		NftIndex            int64 `gorm:"index:idx_nft_index"`
 		CreatorAccountIndex int64
 		OwnerAccountIndex   int64
 		NftContentHash      string
 		CreatorTreasuryRate int64
 		CollectionId        int64
 		Status              int
-		L2BlockHeight       int64
+		L2BlockHeight       int64 `gorm:"index:idx_nft_index"`
 	}
 )
 
@@ -114,6 +118,42 @@ func (m *defaultL2NftHistoryModel) CreateNftHistoriesInTransact(tx *gorm.DB, his
 	}
 	if dbTx.RowsAffected != int64(len(histories)) {
 		return types.DbErrFailToCreateNftHistory
+	}
+	return nil
+}
+
+func (m *defaultL2NftHistoryModel) GetLatestNftHistories(nftIndexes []int64, height int64) (rowsAffected int64, nfts []*L2NftHistory, err error) {
+	subQuery := m.DB.Table(m.table).Select("*").
+		Where("nft_index = a.nft_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height", height)
+
+	dbTx := m.DB.Table(m.table+" as a").Select("*").
+		Where("NOT EXISTS (?) AND l2_block_height <= ? and nft_index in ?", subQuery, height, nftIndexes).
+		Order("nft_index").Find(&nfts)
+
+	if dbTx.Error != nil {
+		return 0, nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil, nil
+	}
+	return dbTx.RowsAffected, nfts, nil
+}
+
+func (m *defaultL2NftHistoryModel) CreateNftHistories(histories []*L2NftHistory) error {
+	dbTx := m.DB.Table(m.table).CreateInBatches(histories, len(histories))
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected != int64(len(histories)) {
+		logx.Errorf("CreateNftHistories failed,rows affected not equal histories length,dbTx.RowsAffected:%s,len(histories):%s", int(dbTx.RowsAffected), len(histories))
+		return types.DbErrFailToCreateAccountHistory
+	}
+	return nil
+}
+
+func (m *defaultL2NftHistoryModel) DeleteByHeightInTransact(tx *gorm.DB, heights []int64) error {
+	dbTx := tx.Model(&L2NftHistory{}).Unscoped().Where("l2_block_height in ?", heights).Delete(&L2NftHistory{})
+	if dbTx.Error != nil {
+		return dbTx.Error
 	}
 	return nil
 }

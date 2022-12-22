@@ -32,6 +32,8 @@ func Run(configFile string) error {
 		logx.Info("==========start generate block witness==========")
 		err := w.GenerateBlockWitness()
 		if err != nil {
+			//todo throw catch
+			logx.Errorf("failed to generate block witness, %v", err)
 			logx.Severef("failed to generate block witness, %v", err)
 		}
 		w.RescheduleBlockWitness()

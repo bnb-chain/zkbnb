@@ -7,7 +7,8 @@ import (
 
 type Config struct {
 	Postgres struct {
-		DataSource string
+		MasterDataSource string
+		SlaveDataSource  string
 	}
 	CacheRedis cache.CacheConf
 	LogConf    logx.LogConf

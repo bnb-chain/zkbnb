@@ -54,7 +54,7 @@ func (e *DepositExecutor) Prepare() error {
 	return e.BaseExecutor.Prepare()
 }
 
-func (e *DepositExecutor) VerifyInputs(skipGasAmtChk bool) error {
+func (e *DepositExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	txInfo := e.txInfo
 
 	if txInfo.AssetAmount.Cmp(types.ZeroBigInt) < 0 {
@@ -98,7 +98,7 @@ func (e *DepositExecutor) GeneratePubData() error {
 	return nil
 }
 
-func (e *DepositExecutor) GetExecutedTx() (*tx.Tx, error) {
+func (e *DepositExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	txInfoBytes, err := json.Marshal(e.txInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
@@ -109,7 +109,7 @@ func (e *DepositExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.AssetId = e.txInfo.AssetId
 	e.tx.TxAmount = e.txInfo.AssetAmount.String()
 	e.tx.AccountIndex = e.txInfo.AccountIndex
-	return e.BaseExecutor.GetExecutedTx()
+	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *DepositExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {

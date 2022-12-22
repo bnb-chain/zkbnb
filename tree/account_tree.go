@@ -45,18 +45,23 @@ func InitAccountTree(
 ) (
 	accountTree bsmt.SparseMerkleTree, accountAssetTrees *AssetTreeCache, err error,
 ) {
+
+	//todo optimize if the history table has a lot of data, it will take a long time to load
 	accountNums, err := accountHistoryModel.GetValidAccountCount(blockHeight)
+	//accountNums, err := accountModel.GetAccountsTotalCount()
 	if err != nil {
 		logx.Errorf("unable to get all accountNums")
 		return nil, nil, err
 	}
+	logx.Infof("getValidAccountCount end")
 
 	opts := ctx.Options(blockHeight)
+	nilAccountAssetNodeHashes := NilAccountAssetNodeHashes(AssetTreeHeight, NilAccountAssetNodeHash, ctx.Hasher())
 
 	// init account state trees
 	accountAssetTrees = NewLazyTreeCache(assetCacheSize, accountNums-1, blockHeight, func(index, block int64) bsmt.SparseMerkleTree {
-		tree, err := bsmt.NewBASSparseMerkleTree(ctx.Hasher(),
-			SetNamespace(ctx, accountAssetNamespace(index)), AssetTreeHeight, NilAccountAssetNodeHash,
+		tree, err := bsmt.NewSparseMerkleTree(ctx.Hasher(),
+			SetNamespace(ctx, accountAssetNamespace(index)), AssetTreeHeight, nilAccountAssetNodeHashes,
 			ctx.Options(block)...)
 		if err != nil {
 			logx.Errorf("unable to create new tree by assets: %s", err.Error())
@@ -71,6 +76,7 @@ func InitAccountTree(
 		logx.Errorf("unable to create new account tree: %s", err.Error())
 		return nil, nil, err
 	}
+	logx.Infof("newBASSparseMerkleTree end")
 
 	if accountNums == 0 {
 		return accountTree, accountAssetTrees, nil
@@ -149,6 +155,7 @@ func reloadAccountTreeFromRDB(
 
 	for _, accountHistory := range accountHistories {
 		if accountInfoMap[accountHistory.AccountIndex] == nil {
+			//todo optimize fetch all the data from account table,no need to fetch the data from the account table every time
 			accountInfo, err := accountModel.GetAccountByIndex(accountHistory.AccountIndex)
 			if err != nil {
 				logx.Errorf("unable to get account by account index: %s", err.Error())
@@ -259,4 +266,15 @@ func AccountToNode(
 func NewMemAccountAssetTree() (tree bsmt.SparseMerkleTree, err error) {
 	return bsmt.NewBASSparseMerkleTree(bsmt.NewHasherPool(func() hash.Hash { return poseidon.NewPoseidon() }),
 		memory.NewMemoryDB(), AssetTreeHeight, NilAccountAssetNodeHash)
+}
+
+func NilAccountAssetNodeHashes(maxDepth uint8, nilHash []byte, hasher *bsmt.Hasher) [][]byte {
+	hashes := make([][]byte, maxDepth+1)
+	hashes[maxDepth] = nilHash
+	for i := 1; i <= int(maxDepth); i++ {
+		nHash := hasher.Hash(nilHash, nilHash)
+		hashes[maxDepth-uint8(i)] = nHash
+		nilHash = nHash
+	}
+	return hashes
 }

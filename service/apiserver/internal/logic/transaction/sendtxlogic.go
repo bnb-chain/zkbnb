@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"context"
+	"github.com/bnb-chain/zkbnb/dao/dbcache"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -27,8 +28,10 @@ func NewSendTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendTxLogi
 }
 
 func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err error) {
-	txStatuses := []int64{tx.StatusPending}
-	pendingTxCount, err := s.svcCtx.TxPoolModel.GetTxsTotalCount(tx.GetTxWithStatuses(txStatuses))
+	pendingTxCount, err := s.svcCtx.MemCache.GetTxPendingCountKeyPrefix(func() (interface{}, error) {
+		txStatuses := []int64{tx.StatusPending}
+		return s.svcCtx.TxPoolModel.GetTxsTotalCount(tx.GetTxWithStatuses(txStatuses))
+	})
 	if err != nil {
 		return nil, types2.AppErrInternal
 	}
@@ -44,7 +47,7 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 		logx.Error("fail to init blockchain runner:", err)
 		return nil, types2.AppErrInternal
 	}
-	newTx := &tx.Tx{
+	newPoolTx := tx.PoolTx{
 		TxHash: types2.EmptyTxHash, // Would be computed in prepare method of executors.
 		TxType: int64(req.TxType),
 		TxInfo: req.TxInfo,
@@ -60,16 +63,20 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 		BlockHeight: types2.NilBlockHeight,
 		TxStatus:    tx.StatusPending,
 	}
-
+	newTx := &tx.Tx{PoolTx: newPoolTx}
 	err = bc.ApplyTransaction(newTx)
 	if err != nil {
 		return resp, err
 	}
-	if err := s.svcCtx.TxPoolModel.CreateTxs([]*tx.Tx{newTx}); err != nil {
+	newTx.PoolTx.TxType = int64(req.TxType)
+	newTx.PoolTx.TxInfo = req.TxInfo
+	newTx.PoolTx.BlockHeight = types2.NilBlockHeight
+	newTx.PoolTx.TxStatus = tx.StatusPending
+	if err := s.svcCtx.TxPoolModel.CreateTxs([]*tx.PoolTx{&newTx.PoolTx}); err != nil {
 		logx.Errorf("fail to create pool tx: %v, err: %s", newTx, err.Error())
 		return resp, types2.AppErrInternal
 	}
-
+	s.svcCtx.RedisCache.Set(context.Background(), dbcache.AccountNonceKeyByIndex(newTx.AccountIndex), newTx.Nonce)
 	resp.TxHash = newTx.TxHash
 	return resp, nil
 }

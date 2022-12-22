@@ -2,6 +2,8 @@ package core
 
 import (
 	"fmt"
+	"github.com/bnb-chain/zkbnb/common/zkbnbprometheus"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -17,16 +19,19 @@ type Processor interface {
 }
 
 type CommitProcessor struct {
-	bc *BlockChain
+	bc      *BlockChain
+	metrics *zkbnbprometheus.Metrics
 }
 
-func NewCommitProcessor(bc *BlockChain) Processor {
+func NewCommitProcessor(bc *BlockChain, prometheusMetrics *zkbnbprometheus.Metrics) Processor {
 	return &CommitProcessor{
-		bc: bc,
+		bc:      bc,
+		metrics: prometheusMetrics,
 	}
 }
 
 func (p *CommitProcessor) Process(tx *tx.Tx) error {
+	var start time.Time
 	p.bc.setCurrentBlockTimeStamp()
 	defer p.bc.resetCurrentBlockTimeStamp()
 
@@ -34,31 +39,49 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 	if err != nil {
 		return fmt.Errorf("new tx executor failed")
 	}
-
+	start = time.Now()
 	err = executor.Prepare()
+	p.metrics.TxPrepareMetrics.Set(float64(time.Since(start).Milliseconds()))
+
 	if err != nil {
 		return err
 	}
-	err = executor.VerifyInputs(true)
+	start = time.Now()
+	err = executor.VerifyInputs(true, true)
+	p.metrics.TxVerifyInputsMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
 		return err
 	}
+	start = time.Now()
 	txDetails, err := executor.GenerateTxDetails()
+
+	p.metrics.TxGenerateTxDetailsMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
 		return err
+	}
+	for _, txDetail := range txDetails {
+		txDetail.PoolTxId = tx.ID
+		txDetail.BlockHeight = p.bc.currentBlock.BlockHeight
 	}
 	tx.TxDetails = txDetails
+	start = time.Now()
 	err = executor.ApplyTransaction()
+	p.metrics.TxApplyTransactionMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
 		logx.Severe(err)
 		panic(err)
 	}
+	start = time.Now()
 	err = executor.GeneratePubData()
+	p.metrics.TxGeneratePubDataMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
 		logx.Severe(err)
 		panic(err)
 	}
-	tx, err = executor.GetExecutedTx()
+	start = time.Now()
+	tx, err = executor.GetExecutedTx(false)
+	p.metrics.TxGetExecutedTxMetrics.Set(float64(time.Since(start).Milliseconds()))
+
 	if err != nil {
 		logx.Severe(err)
 		panic(err)
@@ -84,21 +107,32 @@ func (p *APIProcessor) Process(tx *tx.Tx) error {
 	if err != nil {
 		return fmt.Errorf("new tx executor failed")
 	}
-
 	err = executor.Prepare()
 	if err != nil {
 		logx.Error("fail to prepare:", err)
 		return mappingPrepareErrors(err)
 	}
-	err = executor.VerifyInputs(false)
+	err = executor.VerifyInputs(false, false)
 	if err != nil {
 		return mappingVerifyInputsErrors(err)
 	}
-
+	_, err = executor.GetExecutedTx(true)
+	if err != nil {
+		return mappingExecutedErrors(err)
+	}
 	return nil
 }
 
 func mappingPrepareErrors(err error) error {
+	switch e := errors.Cause(err).(type) {
+	case types.Error:
+		return e
+	default:
+		return types.AppErrInternal
+	}
+}
+
+func mappingExecutedErrors(err error) error {
 	switch e := errors.Cause(err).(type) {
 	case types.Error:
 		return e

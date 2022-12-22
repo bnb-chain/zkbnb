@@ -44,7 +44,7 @@ type (
 
 	SysConfig struct {
 		gorm.Model
-		Name      string
+		Name      string `gorm:"index"`
 		Value     string
 		ValueType string
 		Comment   string
@@ -104,7 +104,7 @@ func (m *defaultSysConfigModel) CreateSysConfigsInTransact(tx *gorm.DB, configs 
 
 func (m *defaultSysConfigModel) UpdateSysConfigsInTransact(tx *gorm.DB, configs []*SysConfig) error {
 	for _, sysConfig := range configs {
-		dbTx := tx.Table(m.table).Where("id = ?", sysConfig.ID).Select("*").Updates(&sysConfig)
+		dbTx := tx.Model(&sysConfig).Update("value", sysConfig.Value)
 		if dbTx.Error != nil {
 			return dbTx.Error
 		}

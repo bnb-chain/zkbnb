@@ -16,14 +16,19 @@ type Cache interface {
 }
 
 const (
-	AccountKeyPrefix = "cache:account_"
-	NftKeyPrefix     = "cache:nft_"
-	GasAccountKey    = "cache:gasAccount"
-	GasConfigKey     = "cache:gasConfig"
+	AccountKeyPrefix      = "cache:account_"
+	NftKeyPrefix          = "cache:nft_"
+	GasAccountKey         = "cache:gasAccount"
+	GasConfigKey          = "cache:gasConfig"
+	AccountNonceKeyPrefix = "cache:accountNonce_"
 )
 
 func AccountKeyByIndex(accountIndex int64) string {
 	return AccountKeyPrefix + fmt.Sprintf("%d", accountIndex)
+}
+
+func AccountNonceKeyByIndex(accountIndex int64) string {
+	return AccountNonceKeyPrefix + fmt.Sprintf("%d", accountIndex)
 }
 
 func NftKeyByIndex(nftIndex int64) string {

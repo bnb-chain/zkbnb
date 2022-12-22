@@ -20,6 +20,7 @@ type ChainDB struct {
 	BlockModel           block.BlockModel
 	CompressedBlockModel compressedblock.CompressedBlockModel
 	TxModel              tx.TxModel
+	TxDetailModel        tx.TxDetailModel
 	PriorityRequestModel priorityrequest.PriorityRequestModel
 
 	// State DB
@@ -40,6 +41,7 @@ func NewChainDB(db *gorm.DB) *ChainDB {
 		BlockModel:           block.NewBlockModel(db),
 		CompressedBlockModel: compressedblock.NewCompressedBlockModel(db),
 		TxModel:              tx.NewTxModel(db),
+		TxDetailModel:        tx.NewTxDetailModel(db),
 		PriorityRequestModel: priorityrequest.NewPriorityRequestModel(db),
 
 		AccountModel:        account.NewAccountModel(db),

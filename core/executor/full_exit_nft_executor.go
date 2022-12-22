@@ -78,7 +78,9 @@ func (e *FullExitNftExecutor) Prepare() error {
 	}
 
 	// Mark the tree states that would be affected in this executor.
-	e.MarkNftDirty(txInfo.NftIndex)
+	if !isExitEmptyNft {
+		e.MarkNftDirty(txInfo.NftIndex)
+	}
 	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{types.EmptyAccountAssetId})        // Prepare asset 0 for generate an empty tx detail.
 	e.MarkAccountAssetsDirty(txInfo.CreatorAccountIndex, []int64{types.EmptyAccountAssetId}) // Prepare asset 0 for generate an empty tx detail.
 
@@ -106,7 +108,7 @@ func (e *FullExitNftExecutor) Prepare() error {
 	return nil
 }
 
-func (e *FullExitNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
+func (e *FullExitNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	return nil
 }
 
@@ -126,7 +128,10 @@ func (e *FullExitNftExecutor) ApplyTransaction() error {
 		CreatorTreasuryRate: emptyNftInfo.CreatorTreasuryRate,
 		CollectionId:        emptyNftInfo.CollectionId,
 	}
-
+	cacheNft, err := e.bc.StateDB().GetNft(txInfo.NftIndex)
+	if err == nil {
+		emptyNft.ID = cacheNft.ID
+	}
 	stateCache := e.bc.StateDB()
 	stateCache.SetPendingNft(txInfo.NftIndex, emptyNft)
 	return e.BaseExecutor.ApplyTransaction()
@@ -156,7 +161,7 @@ func (e *FullExitNftExecutor) GeneratePubData() error {
 	return nil
 }
 
-func (e *FullExitNftExecutor) GetExecutedTx() (*tx.Tx, error) {
+func (e *FullExitNftExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	txInfoBytes, err := json.Marshal(e.txInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
@@ -166,7 +171,7 @@ func (e *FullExitNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.TxInfo = string(txInfoBytes)
 	e.tx.NftIndex = e.txInfo.NftIndex
 	e.tx.AccountIndex = e.txInfo.AccountIndex
-	return e.BaseExecutor.GetExecutedTx()
+	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {

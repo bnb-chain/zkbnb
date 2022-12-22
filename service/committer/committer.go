@@ -1,6 +1,7 @@
 package committer
 
 import (
+	"github.com/robfig/cron/v3"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/conf"
@@ -17,12 +18,21 @@ func Run(configFile string) error {
 	conf.MustLoad(configFile, &c)
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
-
 	committer, err := committer.NewCommitter(&c)
 	if err != nil {
 		logx.Severef("new committer failed: %v", err)
 		return err
 	}
+	cronJob := cron.New(cron.WithChain(
+		cron.SkipIfStillRunning(cron.DiscardLogger),
+	))
+	_, err = cronJob.AddFunc("@every 10s", func() {
+		committer.PendingTxNum()
+	})
+	if err != nil {
+		panic(err)
+	}
+	cronJob.Start()
 
 	proc.SetTimeToForceQuit(GracefulShutdownTimeout)
 	proc.AddShutdownListener(func() {

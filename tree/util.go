@@ -19,12 +19,13 @@ package tree
 
 import (
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
+	bsmt "github.com/bnb-chain/zkbnb-smt"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"github.com/pkg/errors"
+	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
-
-	bsmt "github.com/bnb-chain/zkbnb-smt"
+	"time"
 
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/gopool"
@@ -67,16 +68,65 @@ func EmptyNftNodeHash() []byte {
 	return hash[:]
 }
 
+func CommitAccountTreeAndNftTree(
+	version uint64,
+	accountTree bsmt.SparseMerkleTree,
+	nftTree bsmt.SparseMerkleTree) error {
+	totalTask := 2
+	errChan := make(chan error, totalTask)
+	defer close(errChan)
+
+	err := gopool.Submit(func() {
+		accPrunedVersion := bsmt.Version(version)
+		if accountTree.LatestVersion() < accPrunedVersion {
+			accPrunedVersion = accountTree.LatestVersion()
+		}
+		ver, err := accountTree.Commit(&accPrunedVersion)
+		if err != nil {
+			errChan <- errors.Wrapf(err, "unable to commit account tree, tree ver: %d, prune ver: %d", ver, accPrunedVersion)
+			return
+		}
+		errChan <- nil
+	})
+	if err != nil {
+		return err
+	}
+
+	err = gopool.Submit(func() {
+		nftPrunedVersion := bsmt.Version(version)
+		if nftTree.LatestVersion() < nftPrunedVersion {
+			nftPrunedVersion = nftTree.LatestVersion()
+		}
+		ver, err := nftTree.Commit(&nftPrunedVersion)
+		if err != nil {
+			errChan <- errors.Wrapf(err, "unable to commit nft tree, tree ver: %d, prune ver: %d", ver, nftPrunedVersion)
+			return
+		}
+		errChan <- nil
+	})
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < totalTask; i++ {
+		err := <-errChan
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func CommitTrees(
 	version uint64,
 	accountTree bsmt.SparseMerkleTree,
 	assetTrees *AssetTreeCache,
 	nftTree bsmt.SparseMerkleTree) error {
-
+	start := time.Now()
 	assetTreeChanges := assetTrees.GetChanges()
-	defer assetTrees.CleanChanges()
+	logx.Infof("GetChanges=%v", time.Since(start))
 	totalTask := len(assetTreeChanges) + 2
-
 	errChan := make(chan error, totalTask)
 	defer close(errChan)
 
@@ -147,7 +197,6 @@ func RollBackTrees(
 	nftTree bsmt.SparseMerkleTree) error {
 
 	assetTreeChanges := assetTrees.GetChanges()
-	defer assetTrees.CleanChanges()
 	totalTask := len(assetTreeChanges) + 3
 	errChan := make(chan error, totalTask)
 	defer close(errChan)

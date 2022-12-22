@@ -82,7 +82,9 @@ func Initialize(
 	contractAddrFile string,
 	bscTestNetworkRPC, localTestNetworkRPC string,
 ) error {
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		DisableForeignKeyConstraintWhenMigrating: true,
+	})
 	if err != nil {
 		return err
 	}

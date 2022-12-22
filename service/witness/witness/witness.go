@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
+	"gorm.io/plugin/dbresolver"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -30,6 +31,34 @@ const (
 	UnprovedBlockWitnessTimeout = 10 * time.Minute
 
 	BlockProcessDelta = 10
+)
+
+var (
+	l2BlockWitnessGenerateHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2Block_witness_generate_height",
+		Help:      "l2Block_memory_height metrics.",
+	})
+	AccountLatestVersionTreeMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "witness_account_latest_version",
+		Help:      "Account latest version metrics.",
+	})
+	AccountRecentVersionTreeMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "witness_account_recent_version",
+		Help:      "Account recent version metrics.",
+	})
+	NftTreeLatestVersionMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "witness_nft_latest_version",
+		Help:      "Nft latest version metrics.",
+	})
+	NftTreeRecentVersionMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "witness_nft_recent_version",
+		Help:      "Nft recent version metrics.",
+	})
 )
 
 var (
@@ -62,15 +91,34 @@ type Witness struct {
 }
 
 func NewWitness(c config.Config) (*Witness, error) {
+
+	if err := prometheus.Register(l2BlockWitnessGenerateHeightMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register l2BlockWitnessGenerateHeightMetric error: %v", err)
+	}
+	if err := prometheus.Register(AccountLatestVersionTreeMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register AccountLatestVersionTreeMetric error: %v", err)
+	}
+	if err := prometheus.Register(AccountRecentVersionTreeMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register AccountRecentVersionTreeMetric error: %v", err)
+	}
+	if err := prometheus.Register(NftTreeLatestVersionMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register NftTreeLatestVersionMetric error: %v", err)
+	}
+	if err := prometheus.Register(NftTreeRecentVersionMetric); err != nil {
+		return nil, fmt.Errorf("prometheus.Register NftTreeRecentVersionMetric error: %v", err)
+	}
+
+	masterDataSource := c.Postgres.MasterDataSource
+	slaveDataSource := c.Postgres.SlaveDataSource
+	db, err := gorm.Open(postgres.Open(masterDataSource))
 	if err := prometheus.Register(l2WitnessHeightMetrics); err != nil {
 		return nil, fmt.Errorf("prometheus.Register l2WitnessHeightMetrics error: %v", err)
 	}
 
-	datasource := c.Postgres.DataSource
-	db, err := gorm.Open(postgres.Open(datasource))
-	if err != nil {
-		return nil, fmt.Errorf("gorm connect db error, err: %v", err)
-	}
+	db.Use(dbresolver.Register(dbresolver.Config{
+		Sources:  []gorm.Dialector{postgres.Open(masterDataSource)},
+		Replicas: []gorm.Dialector{postgres.Open(slaveDataSource)},
+	}))
 
 	w := &Witness{
 		config:              c,
@@ -167,6 +215,11 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 		}
 		// Step3: insert witness into database
 		err = w.blockWitnessModel.CreateBlockWitness(blockWitness)
+		l2BlockWitnessGenerateHeightMetric.Set(float64(latestVerifiedBlockNr))
+		AccountLatestVersionTreeMetric.Set(float64(w.accountTree.LatestVersion()))
+		AccountRecentVersionTreeMetric.Set(float64(w.accountTree.RecentVersion()))
+		NftTreeLatestVersionMetric.Set(float64(w.nftTree.LatestVersion()))
+		NftTreeRecentVersionMetric.Set(float64(w.nftTree.RecentVersion()))
 		l2WitnessHeightMetrics.Set(float64(blockWitness.Height))
 		if err != nil {
 			// rollback trees
@@ -176,6 +229,8 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 			}
 			return fmt.Errorf("create unproved crypto block error, block:%d, err: %v", block.BlockHeight, err)
 		}
+		w.assetTrees.CleanChanges()
+
 	}
 	return nil
 }
