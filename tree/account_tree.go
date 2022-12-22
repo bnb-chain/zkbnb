@@ -69,7 +69,7 @@ func InitAccountTree(
 		}
 		return tree
 	})
-	accountTree, err = bsmt.NewBASSparseMerkleTree(ctx.Hasher(),
+	accountTree, err = bsmt.NewBNBSparseMerkleTree(ctx.Hasher(),
 		SetNamespace(ctx, AccountPrefix), AccountTreeHeight, NilAccountNodeHash,
 		opts...)
 	if err != nil {
@@ -264,7 +264,7 @@ func AccountToNode(
 }
 
 func NewMemAccountAssetTree() (tree bsmt.SparseMerkleTree, err error) {
-	return bsmt.NewBASSparseMerkleTree(bsmt.NewHasherPool(func() hash.Hash { return poseidon.NewPoseidon() }),
+	return bsmt.NewBNBSparseMerkleTree(bsmt.NewHasherPool(func() hash.Hash { return poseidon.NewPoseidon() }),
 		memory.NewMemoryDB(), AssetTreeHeight, NilAccountAssetNodeHash)
 }
 
