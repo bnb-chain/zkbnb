@@ -2,6 +2,7 @@ package svc
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+	"gorm.io/plugin/dbresolver"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -22,16 +23,16 @@ import (
 )
 
 var (
-	sendTxHandlerMetrics = prometheus.NewCounter(prometheus.CounterOpts{
+	sendTxMetrics = prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace: "zkbnb",
-		Name:      "sent_tx_handler_count",
+		Name:      "sent_tx_count",
 		Help:      "sent tx count",
 	})
 
 	sendTxTotalMetrics = prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace: "zkbnb",
 		Name:      "sent_tx_total_count",
-		Help:      "sent tx count",
+		Help:      "sent tx total count",
 	})
 )
 
@@ -53,15 +54,23 @@ type ServiceContext struct {
 	PriceFetcher price.Fetcher
 	StateFetcher state.Fetcher
 
-	SendTxHandlerMetrics prometheus.Counter
-	SendTxTotalMetrics   prometheus.Counter
+	SendTxTotalMetrics prometheus.Counter
+	SendTxMetrics      prometheus.Counter
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
-	db, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
+
+	masterDataSource := c.Postgres.MasterDataSource
+	slaveDataSource := c.Postgres.SlaveDataSource
+	db, err := gorm.Open(postgres.Open(masterDataSource))
 	if err != nil {
 		logx.Must(err)
 	}
+
+	db.Use(dbresolver.Register(dbresolver.Config{
+		Sources:  []gorm.Dialector{postgres.Open(masterDataSource)},
+		Replicas: []gorm.Dialector{postgres.Open(slaveDataSource)},
+	}))
 
 	rawDB, err := db.DB()
 	if err != nil {
@@ -76,10 +85,13 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	accountModel := account.NewAccountModel(db)
 	nftModel := nft.NewL2NftModel(db)
 	assetModel := asset.NewAssetModel(db)
+	if c.MemCache.TxPendingExpiration == 0 {
+		c.MemCache.TxPendingExpiration = 60000
+	}
 	memCache := cache.MustNewMemCache(accountModel, assetModel, c.MemCache.AccountExpiration, c.MemCache.BlockExpiration,
-		c.MemCache.TxExpiration, c.MemCache.AssetExpiration, c.MemCache.PriceExpiration, c.MemCache.MaxCounterNum, c.MemCache.MaxKeyNum)
+		c.MemCache.TxExpiration, c.MemCache.AssetExpiration, c.MemCache.TxPendingExpiration, c.MemCache.PriceExpiration, c.MemCache.MaxCounterNum, c.MemCache.MaxKeyNum)
 
-	if err := prometheus.Register(sendTxHandlerMetrics); err != nil {
+	if err := prometheus.Register(sendTxMetrics); err != nil {
 		logx.Error("prometheus.Register sendTxHandlerMetrics error: %v", err)
 		return nil
 	}
@@ -106,8 +118,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		PriceFetcher: price.NewFetcher(memCache, assetModel, c.CoinMarketCap.Url, c.CoinMarketCap.Token),
 		StateFetcher: state.NewFetcher(redisCache, accountModel, nftModel),
 
-		SendTxHandlerMetrics: sendTxHandlerMetrics,
-		SendTxTotalMetrics:   sendTxTotalMetrics,
+		SendTxTotalMetrics: sendTxTotalMetrics,
+		SendTxMetrics:      sendTxMetrics,
 	}
 }
 

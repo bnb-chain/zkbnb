@@ -9,9 +9,10 @@ import (
 type Config struct {
 	rest.RestConf
 	Postgres struct {
-		DataSource string
-		MaxIdle    int
-		MaxConn    int
+		MasterDataSource string
+		SlaveDataSource  string
+		MaxIdle          int
+		MaxConn          int
 	}
 	TxPool struct {
 		MaxPendingTxCount int
@@ -23,11 +24,12 @@ type Config struct {
 		Token string
 	}
 	MemCache struct {
-		AccountExpiration int
-		AssetExpiration   int
-		BlockExpiration   int
-		TxExpiration      int
-		PriceExpiration   int
+		AccountExpiration   int
+		AssetExpiration     int
+		BlockExpiration     int
+		TxExpiration        int
+		PriceExpiration     int
+		TxPendingExpiration int `json:",optional"`
 		// Number of 4-bit access counters to keep for admission and eviction
 		// Setting this to 10x the number of items you expect to keep in the cache when full
 		MaxCounterNum int64

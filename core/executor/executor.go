@@ -21,10 +21,10 @@ type IBlockchain interface {
 
 type TxExecutor interface {
 	Prepare() error
-	VerifyInputs(skipGasAmtChk bool) error
+	VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 	ApplyTransaction() error
 	GeneratePubData() error
-	GetExecutedTx() (*tx.Tx, error)
+	GetExecutedTx(fromApi bool) (*tx.Tx, error)
 	GenerateTxDetails() ([]*tx.TxDetail, error)
 }
 

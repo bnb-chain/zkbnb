@@ -1,6 +1,8 @@
 package statedb
 
 import (
+	bsmt "github.com/bnb-chain/zkbnb-smt"
+	"github.com/bnb-chain/zkbnb/dao/block"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -32,6 +34,13 @@ type StateCache struct {
 	dirtyNftMap               map[int64]bool
 }
 
+type StateDataCopy struct {
+	StateCache            *StateCache
+	CurrentBlock          *block.Block
+	pendingAccountSmtItem []bsmt.Item
+	pendingNftSmtItem     []bsmt.Item
+}
+
 func NewStateCache(stateRoot string) *StateCache {
 	return &StateCache{
 		StateRoot: stateRoot,
@@ -52,9 +61,9 @@ func NewStateCache(stateRoot string) *StateCache {
 	}
 }
 
-func (c *StateCache) AlignPubData(blockSize int) {
-	emptyPubdata := make([]byte, (blockSize-len(c.Txs))*cryptoTypes.PubDataBitsSizePerTx/8)
-	c.PubData = append(c.PubData, emptyPubdata...)
+func (c *StateCache) AlignPubData(blockSize int, stateCopy *StateDataCopy) {
+	emptyPubData := make([]byte, (blockSize-len(stateCopy.StateCache.Txs))*cryptoTypes.PubDataBitsSizePerTx/8)
+	stateCopy.StateCache.PubData = append(stateCopy.StateCache.PubData, emptyPubData...)
 }
 
 func (c *StateCache) MarkAccountAssetsDirty(accountIndex int64, assets []int64) {
@@ -77,6 +86,14 @@ func (c *StateCache) MarkAccountAssetsDirty(accountIndex int64, assets []int64) 
 
 func (c *StateCache) MarkNftDirty(nftIndex int64) {
 	c.dirtyNftMap[nftIndex] = true
+}
+
+func (c *StateCache) GetDirtyAccountsAndAssetsMap() map[int64]map[int64]bool {
+	return c.dirtyAccountsAndAssetsMap
+}
+
+func (c *StateCache) GetDirtyNftMap() map[int64]bool {
+	return c.dirtyNftMap
 }
 
 func (c *StateCache) GetPendingAccount(accountIndex int64) (*types.AccountInfo, bool) {

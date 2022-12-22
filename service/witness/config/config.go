@@ -8,7 +8,8 @@ import (
 
 type Config struct {
 	Postgres struct {
-		DataSource string
+		MasterDataSource string
+		SlaveDataSource  string
 	}
 	TreeDB struct {
 		Driver tree.Driver

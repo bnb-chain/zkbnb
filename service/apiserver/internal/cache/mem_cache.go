@@ -35,24 +35,27 @@ const (
 	AssetBySymbolKeyPrefix     = "S:"  //key for cache: assetSymbol -> asset
 	PriceKeyPrefix             = "p:"  //key for cache: symbol -> price
 	SysConfigKeyPrefix         = "s:"  //key for cache: configName -> sysconfig
+	TxPendingCountKeyPrefix    = "tpc" //key for cache: total tx pending count
+
 )
 
 type fallback func() (interface{}, error)
 
 type MemCache struct {
-	goCache           *ristretto.Cache
-	accountModel      accdao.AccountModel
-	assetModel        assetdao.AssetModel
-	accountExpiration time.Duration
-	blockExpiration   time.Duration
-	txExpiration      time.Duration
-	assetExpiration   time.Duration
-	priceExpiration   time.Duration
+	goCache             *ristretto.Cache
+	accountModel        accdao.AccountModel
+	assetModel          assetdao.AssetModel
+	accountExpiration   time.Duration
+	blockExpiration     time.Duration
+	txExpiration        time.Duration
+	assetExpiration     time.Duration
+	txPendingExpiration time.Duration
+	priceExpiration     time.Duration
 }
 
 func MustNewMemCache(accountModel accdao.AccountModel, assetModel assetdao.AssetModel,
 	accountExpiration, blockExpiration, txExpiration,
-	assetExpiration, priceExpiration int, maxCounterNum, maxKeyNum int64) *MemCache {
+	assetExpiration, txPendingExpiration, priceExpiration int, maxCounterNum, maxKeyNum int64) *MemCache {
 
 	cache, err := ristretto.NewCache(&ristretto.Config{
 		NumCounters: maxCounterNum,
@@ -63,6 +66,12 @@ func MustNewMemCache(accountModel accdao.AccountModel, assetModel assetdao.Asset
 		Cost: func(value interface{}) int64 {
 			return 1
 		},
+		OnEvict: func(item *ristretto.Item) {
+			logx.Infof("OnEvict %s,%s,%s,%s", item.Key, item.Cost, item.Value, item.Expiration)
+		},
+		OnExit: func(val interface{}) {
+			logx.Infof("OnExit %s", val)
+		},
 	})
 	if err != nil {
 		logx.Severe("MemCache init failed")
@@ -70,14 +79,15 @@ func MustNewMemCache(accountModel accdao.AccountModel, assetModel assetdao.Asset
 	}
 
 	memCache := &MemCache{
-		goCache:           cache,
-		accountModel:      accountModel,
-		assetModel:        assetModel,
-		accountExpiration: time.Duration(accountExpiration) * time.Millisecond,
-		blockExpiration:   time.Duration(blockExpiration) * time.Millisecond,
-		txExpiration:      time.Duration(txExpiration) * time.Millisecond,
-		assetExpiration:   time.Duration(assetExpiration) * time.Millisecond,
-		priceExpiration:   time.Duration(priceExpiration) * time.Millisecond,
+		goCache:             cache,
+		accountModel:        accountModel,
+		assetModel:          assetModel,
+		accountExpiration:   time.Duration(accountExpiration) * time.Millisecond,
+		blockExpiration:     time.Duration(blockExpiration) * time.Millisecond,
+		txExpiration:        time.Duration(txExpiration) * time.Millisecond,
+		assetExpiration:     time.Duration(assetExpiration) * time.Millisecond,
+		txPendingExpiration: time.Duration(txPendingExpiration) * time.Millisecond,
+		priceExpiration:     time.Duration(priceExpiration) * time.Millisecond,
 	}
 	return memCache
 }
@@ -223,6 +233,23 @@ func (m *MemCache) GetTxTotalCountWithFallback(f fallback) (int64, error) {
 		return 0, err
 	}
 	return count.(int64), nil
+}
+
+func (m *MemCache) GetTxPendingCountKeyPrefix(f fallback) (int64, error) {
+	count, err := m.getWithSet(TxPendingCountKeyPrefix, m.txPendingExpiration, f)
+	if err != nil {
+		return 0, err
+	}
+	return count.(int64), nil
+}
+
+func (m *MemCache) SetTxPendingCountKeyPrefix(f fallback) (int64, error) {
+	result, err := f()
+	if err != nil {
+		return 0, err
+	}
+	m.goCache.SetWithTTL(TxPendingCountKeyPrefix, result, 0, m.txPendingExpiration)
+	return result.(int64), nil
 }
 
 func (m *MemCache) GetAssetTotalCountWithFallback(f fallback) (int64, error) {

@@ -47,7 +47,7 @@ func (e *RegisterZnsExecutor) Prepare() error {
 	return nil
 }
 
-func (e *RegisterZnsExecutor) VerifyInputs(skipGasAmtChk bool) error {
+func (e *RegisterZnsExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	bc := e.bc
 	txInfo := e.txInfo
 
@@ -118,7 +118,7 @@ func (e *RegisterZnsExecutor) GeneratePubData() error {
 	return nil
 }
 
-func (e *RegisterZnsExecutor) GetExecutedTx() (*tx.Tx, error) {
+func (e *RegisterZnsExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	txInfoBytes, err := json.Marshal(e.txInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
@@ -127,7 +127,7 @@ func (e *RegisterZnsExecutor) GetExecutedTx() (*tx.Tx, error) {
 
 	e.tx.TxInfo = string(txInfoBytes)
 	e.tx.AccountIndex = e.txInfo.AccountIndex
-	return e.BaseExecutor.GetExecutedTx()
+	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *RegisterZnsExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {

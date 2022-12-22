@@ -51,10 +51,10 @@ func (e *TransferNftExecutor) Prepare() error {
 	return e.BaseExecutor.Prepare()
 }
 
-func (e *TransferNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
+func (e *TransferNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	txInfo := e.txInfo
 
-	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk)
+	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk, skipSigChk)
 	if err != nil {
 		return err
 	}
@@ -133,7 +133,7 @@ func (e *TransferNftExecutor) GeneratePubData() error {
 	return nil
 }
 
-func (e *TransferNftExecutor) GetExecutedTx() (*tx.Tx, error) {
+func (e *TransferNftExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	txInfoBytes, err := json.Marshal(e.txInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
@@ -144,7 +144,7 @@ func (e *TransferNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.GasFeeAssetId = e.txInfo.GasFeeAssetId
 	e.tx.GasFee = e.txInfo.GasFeeAssetAmount.String()
 	e.tx.NftIndex = e.txInfo.NftIndex
-	return e.BaseExecutor.GetExecutedTx()
+	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *TransferNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {

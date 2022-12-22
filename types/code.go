@@ -16,6 +16,8 @@ var (
 	DbErrFailToCreateBlock           = errors.New("fail to create block")
 	DbErrFailToUpdateBlock           = errors.New("fail to update block")
 	DbErrFailToUpdateTx              = errors.New("fail to update tx")
+	DbErrFailToCreateTx              = errors.New("fail to create tx")
+	DbErrFailToCreateTxDetail        = errors.New("fail to create tx detail")
 	DbErrFailToCreateCompressedBlock = errors.New("fail to create compressed block")
 	DbErrFailToCreateProof           = errors.New("fail to create proof")
 	DbErrFailToUpdateProof           = errors.New("fail to update proof")
