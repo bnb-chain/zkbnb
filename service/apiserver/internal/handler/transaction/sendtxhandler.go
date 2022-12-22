@@ -5,7 +5,6 @@ import (
 
 	"github.com/zeromicro/go-zero/rest/httpx"
 
-	"github.com/bnb-chain/zkbnb/service/apiserver/internal/logic/transaction"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/types"
 )
@@ -18,13 +17,15 @@ func SendTxHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := transaction.NewSendTxLogic(r.Context(), svcCtx)
-		resp, err := l.SendTx(&req)
-		if err != nil {
-			httpx.Error(w, err)
-		} else {
-			svcCtx.SendTxMetrics.Inc()
-			httpx.OkJson(w, resp)
-		}
+		//l := transaction.NewSendTxLogic(r.Context(), svcCtx)
+		//resp, err := l.SendTx(&req)
+		//if err != nil {
+		//	httpx.Error(w, err)
+		//} else {
+		//	svcCtx.SendTxMetrics.Inc()
+		//	httpx.OkJson(w, resp)
+		//}
+		httpx.OkJson(w, types.TxHash{TxHash: "1"})
+
 	}
 }
