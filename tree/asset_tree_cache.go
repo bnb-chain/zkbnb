@@ -23,10 +23,10 @@ type AssetTreeCache struct {
 type SparseMerkleTreeAdapter struct {
 	sparseMerkleTree bsmt.SparseMerkleTree
 	changes          map[int64]bool
-	changesLock      sync.RWMutex
+	changesLock      *sync.RWMutex
 }
 
-func NewSparseMerkleTreeAdapter(tree bsmt.SparseMerkleTree, changesLock sync.RWMutex, changes map[int64]bool) *SparseMerkleTreeAdapter {
+func NewSparseMerkleTreeAdapter(tree bsmt.SparseMerkleTree, changesLock *sync.RWMutex, changes map[int64]bool) *SparseMerkleTreeAdapter {
 	sparseMerkleTreeAdapter := SparseMerkleTreeAdapter{sparseMerkleTree: tree, changesLock: changesLock, changes: changes}
 	return &sparseMerkleTreeAdapter
 }
@@ -85,6 +85,11 @@ func (c *AssetTreeCache) Get(i int64) (tree bsmt.SparseMerkleTree) {
 			tree = tmpTree.(bsmt.SparseMerkleTree)
 		}
 	}
+	return
+}
+
+func (c *AssetTreeCache) GetAdapter(i int64) (treeAdapter *SparseMerkleTreeAdapter) {
+	treeAdapter = NewSparseMerkleTreeAdapter(c.Get(i), &c.changesLock, c.changes)
 	return
 }
 
