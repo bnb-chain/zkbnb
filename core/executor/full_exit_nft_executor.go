@@ -90,14 +90,11 @@ func (e *FullExitNftExecutor) Prepare() error {
 	// Set the right tx info.
 	txInfo.CreatorAccountIndex = exitNft.CreatorAccountIndex
 	txInfo.CreatorTreasuryRate = exitNft.CreatorTreasuryRate
-	txInfo.CreatorAccountNameHash = common.FromHex(types.EmptyAccountNameHash)
-	if !isExitEmptyNft {
-		creator, err := bc.StateDB().GetFormatAccount(exitNft.CreatorAccountIndex)
-		if err != nil {
-			return err
-		}
-		txInfo.CreatorAccountNameHash = common.FromHex(creator.AccountNameHash)
+	creator, err := bc.StateDB().GetFormatAccount(exitNft.CreatorAccountIndex)
+	if err != nil {
+		return err
 	}
+	txInfo.CreatorAccountNameHash = common.FromHex(creator.AccountNameHash)
 	txInfo.NftContentHash = common.FromHex(exitNft.NftContentHash)
 	txInfo.CollectionId = exitNft.CollectionId
 
