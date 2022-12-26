@@ -48,7 +48,7 @@ type (
 		GetUsers(limit int64, offset int64) (accounts []*Account, err error)
 		BatchInsertOrUpdate(accounts []*Account) (err error)
 		UpdateByIndexInTransact(tx *gorm.DB, account *Account) error
-		DeleteByIndexInTransact(tx *gorm.DB, accountIndex int64) error
+		DeleteByIndexesInTransact(tx *gorm.DB, accountIndexes []int64) error
 	}
 
 	defaultAccountModel struct {
@@ -199,17 +199,16 @@ func (m *defaultAccountModel) UpdateByIndexInTransact(tx *gorm.DB, account *Acco
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
-		// this account is new, we need create first
-		dbTx = m.DB.Table(m.table).Create(&account)
-		if dbTx.Error != nil {
-			return dbTx.Error
-		}
+		return types.DbErrFailToUpdateAccount
 	}
 	return nil
 }
 
-func (m *defaultAccountModel) DeleteByIndexInTransact(tx *gorm.DB, accountIndex int64) error {
-	dbTx := tx.Model(&Account{}).Unscoped().Where("account_index = ?", accountIndex).Delete(&Account{})
+func (m *defaultAccountModel) DeleteByIndexesInTransact(tx *gorm.DB, accountIndexes []int64) error {
+	if len(accountIndexes) == 0 {
+		return nil
+	}
+	dbTx := tx.Model(&Account{}).Unscoped().Where("account_index in ?", accountIndexes).Delete(&Account{})
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}

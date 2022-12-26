@@ -344,260 +344,259 @@ func rollback(bc *BlockChain) {
 	}
 	logx.Infof("get current block height: %d", curHeight)
 	blocks, err := bc.BlockModel.GetBlockByStatus([]int{block.StatusProposing, block.StatusPacked})
-	if err != nil {
+	if err != nil && err != types.DbErrNotFound {
 		logx.Error("get blocks by status (StatusProposing,StatusPacked) failed: ", err)
 		panic("get blocks by status (StatusProposing,StatusPacked) failed: " + err.Error())
+	}
+	if blocks == nil {
+		return
 	}
 	accountIndexMap := make(map[int64]bool, 0)
 	nftIndexMap := make(map[int64]bool, 0)
 	heights := make([]int64, 0)
 	packedHeights := make([]int64, 0)
-	if blocks != nil {
-		for _, blockInfo := range blocks {
-			if blockInfo.AccountIndexes != "[]" && blockInfo.AccountIndexes != "" {
-				var accountIndexes []int64
-				err = json.Unmarshal([]byte(blockInfo.AccountIndexes), &accountIndexes)
-				if err != nil {
-					logx.Error("json err unmarshal failed")
-					panic("json err unmarshal failed: " + err.Error())
-				}
-				for _, accountIndex := range accountIndexes {
-					accountIndexMap[accountIndex] = true
-				}
+
+	for _, blockInfo := range blocks {
+		if blockInfo.AccountIndexes != "[]" && blockInfo.AccountIndexes != "" {
+			var accountIndexes []int64
+			err = json.Unmarshal([]byte(blockInfo.AccountIndexes), &accountIndexes)
+			if err != nil {
+				logx.Error("json err unmarshal failed")
+				panic("json err unmarshal failed: " + err.Error())
 			}
-			if blockInfo.NftIndexes != "[]" && blockInfo.NftIndexes != "" {
-				var nftIndexes []int64
-				err = json.Unmarshal([]byte(blockInfo.NftIndexes), &nftIndexes)
-				if err != nil {
-					logx.Error("json err unmarshal failed")
-					panic("json err unmarshal failed: " + err.Error())
-				}
-				for _, nftIndex := range nftIndexes {
-					nftIndexMap[nftIndex] = true
-				}
+			for _, accountIndex := range accountIndexes {
+				accountIndexMap[accountIndex] = true
 			}
-			heights = append(heights, blockInfo.BlockHeight)
-			if blockInfo.BlockStatus == block.StatusPacked {
-				packedHeights = append(packedHeights, blockInfo.BlockHeight)
+		}
+		if blockInfo.NftIndexes != "[]" && blockInfo.NftIndexes != "" {
+			var nftIndexes []int64
+			err = json.Unmarshal([]byte(blockInfo.NftIndexes), &nftIndexes)
+			if err != nil {
+				logx.Error("json err unmarshal failed")
+				panic("json err unmarshal failed: " + err.Error())
 			}
+			for _, nftIndex := range nftIndexes {
+				nftIndexMap[nftIndex] = true
+			}
+		}
+		heights = append(heights, blockInfo.BlockHeight)
+		if blockInfo.BlockStatus == block.StatusPacked {
+			packedHeights = append(packedHeights, blockInfo.BlockHeight)
 		}
 	}
-	if len(heights) > 0 {
-		accountIndexList := make([]int64, 0)
-		for k := range accountIndexMap {
-			accountIndexList = append(accountIndexList, k)
+	if len(heights) == 0 {
+		return
+	}
+	accountIndexList := make([]int64, 0)
+	for k := range accountIndexMap {
+		accountIndexList = append(accountIndexList, k)
+	}
+
+	nftIndexList := make([]int64, 0)
+	for k := range nftIndexMap {
+		nftIndexList = append(nftIndexList, k)
+	}
+	var statuses = []int{block.StatusPending, block.StatusCommitted, block.StatusVerifiedAndExecuted}
+	height, err := bc.BlockModel.GetLatestHeight(statuses)
+	if err != nil {
+		logx.Error("get latest pending height failed: ", err)
+		panic("get latest pending height failed: " + err.Error())
+	}
+	accountIndexSlice := make([]int64, 0)
+	accountHistories := make([]*account.AccountHistory, 0)
+	accountIndexLen := len(accountIndexList)
+	for _, accountIndex := range accountIndexList {
+		accountIndexLen--
+		accountIndexSlice = append(accountIndexSlice, accountIndex)
+		if len(accountIndexSlice) == 100 || accountIndexLen == 0 {
+			_, accountHistoryList, err := bc.AccountHistoryModel.GetLatestAccountHistories(accountIndexSlice, height)
+			if err != nil && err != types.DbErrNotFound {
+				logx.Error("get latest account histories failed: ", err)
+				panic("get latest account histories failed: " + err.Error())
+			}
+			if accountHistoryList != nil {
+				accountHistories = append(accountHistories, accountHistoryList...)
+			}
+			accountIndexSlice = make([]int64, 0)
+		}
+	}
+	deleteAccountIndexes := make([]int64, 0)
+	for _, accountIndex := range accountIndexList {
+		findAccountIndex := false
+		for _, accountHistory := range accountHistories {
+			if accountIndex == accountHistory.AccountIndex {
+				findAccountIndex = true
+				break
+			}
+		}
+		if findAccountIndex == false {
+			deleteAccountIndexes = append(deleteAccountIndexes, accountIndex)
+		}
+	}
+
+	nftIndexSlice := make([]int64, 0)
+	nftHistories := make([]*nft.L2NftHistory, 0)
+	nftIndexLen := len(nftIndexList)
+	for _, nftIndex := range nftIndexList {
+		nftIndexLen--
+		nftIndexSlice = append(nftIndexSlice, nftIndex)
+		if len(nftIndexSlice) == 100 || nftIndexLen == 0 {
+			_, nftHistoryList, err := bc.L2NftHistoryModel.GetLatestNftHistories(nftIndexSlice, height)
+			if err != nil && err != types.DbErrNotFound {
+				logx.Error("get latest nft histories failed: ", err)
+				panic("get latest nft histories failed: " + err.Error())
+			}
+			if nftHistoryList != nil {
+				nftHistories = append(nftHistories, nftHistoryList...)
+			}
+			nftIndexSlice = make([]int64, 0)
+		}
+	}
+	deleteNftIndexes := make([]int64, 0)
+	for _, nftIndex := range nftIndexList {
+		findNftIndex := false
+		for _, nftHistory := range nftHistories {
+			if nftIndex == nftHistory.NftIndex {
+				findNftIndex = true
+				break
+			}
+		}
+		if findNftIndex == false {
+			deleteNftIndexes = append(deleteNftIndexes, nftIndex)
+		}
+	}
+	bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
+		logx.Info("roll back account start")
+		for _, accountHistory := range accountHistories {
+			accountInfo := &account.Account{
+				AccountIndex:    accountHistory.AccountIndex,
+				Nonce:           accountHistory.Nonce,
+				CollectionNonce: accountHistory.CollectionNonce,
+				AssetInfo:       accountHistory.AssetInfo,
+				AssetRoot:       accountHistory.AssetRoot,
+				L2BlockHeight:   accountHistory.L2BlockHeight,
+			}
+			err := bc.AccountModel.UpdateByIndexInTransact(dbTx, accountInfo)
+			if err != nil {
+				logx.Error("roll back account failed: ", err)
+				panic("roll back account failed: " + err.Error())
+			}
+		}
+		logx.Info("roll back account,delete account start")
+		if len(deleteAccountIndexes) > 0 {
+			err := bc.AccountModel.DeleteByIndexesInTransact(dbTx, deleteAccountIndexes)
+			if err != nil {
+				logx.Error("roll back account,delete account failed: ", err)
+				panic("roll back account,delete account failed: " + err.Error())
+			}
 		}
 
-		nftIndexList := make([]int64, 0)
-		for k := range nftIndexMap {
-			nftIndexList = append(nftIndexList, k)
-		}
-
-		height, err := bc.BlockModel.GetLatestPendingHeight()
-		if err != nil {
-			logx.Error("get latest pending height failed: ", err)
-			panic("get latest pending height failed: " + err.Error())
-		}
-		accountIndexSlice := make([]int64, 0)
-		accountHistories := make([]*account.AccountHistory, 0)
-		accountIndexLen := len(accountIndexList)
-		for _, accountIndex := range accountIndexList {
-			accountIndexLen--
-			accountIndexSlice = append(accountIndexSlice, accountIndex)
-			if len(accountIndexSlice) == 100 || accountIndexLen == 0 {
-				_, accountHistoryList, err := bc.AccountHistoryModel.GetLatestAccountHistories(accountIndexSlice, height)
-				if err != nil {
-					logx.Error("get latest account histories failed: ", err)
-					panic("get latest account histories failed: " + err.Error())
-				}
-				if accountHistoryList != nil {
-					accountHistories = append(accountHistories, accountHistoryList...)
-				}
-				accountIndexSlice = make([]int64, 0)
+		logx.Info("roll back nft start")
+		for _, nftHistory := range nftHistories {
+			nftInfo := &nft.L2Nft{
+				OwnerAccountIndex:   nftHistory.OwnerAccountIndex,
+				NftContentHash:      nftHistory.NftContentHash,
+				CollectionId:        nftHistory.CollectionId,
+				CreatorTreasuryRate: nftHistory.CreatorTreasuryRate,
+				CreatorAccountIndex: nftHistory.CreatorAccountIndex,
+				L2BlockHeight:       nftHistory.L2BlockHeight,
+			}
+			err := bc.L2NftModel.UpdateByIndexInTransact(dbTx, nftInfo)
+			if err != nil {
+				logx.Error("roll back nft failed: ", err)
+				panic("roll back nft failed: " + err.Error())
 			}
 		}
-		deleteAccountIndexes := make([]int64, 0)
-		for _, accountIndex := range accountIndexList {
-			findAccountIndex := false
-			for _, accountHistory := range accountHistories {
-				if accountIndex == accountHistory.AccountIndex {
-					findAccountIndex = true
-					break
-				}
-			}
-			if findAccountIndex == false {
-				deleteAccountIndexes = append(deleteAccountIndexes, accountIndex)
+		logx.Info("roll back nft,delete nft start")
+		if len(deleteNftIndexes) > 0 {
+			err := bc.L2NftModel.DeleteByIndexesInTransact(dbTx, deleteNftIndexes)
+			if err != nil {
+				logx.Error("roll back nft,delete nft failed: ", err)
+				panic("roll back nft,delete nft failed: " + err.Error())
 			}
 		}
-
-		nftIndexSlice := make([]int64, 0)
-		nftHistories := make([]*nft.L2NftHistory, 0)
-		nftIndexLen := len(nftIndexList)
-		for _, nftIndex := range nftIndexList {
-			nftIndexLen--
-			nftIndexSlice = append(nftIndexSlice, nftIndex)
-			if len(nftIndexSlice) == 100 || nftIndexLen == 0 {
-				_, nftHistoryList, err := bc.L2NftHistoryModel.GetLatestNftHistories(nftIndexSlice, height)
-				if err != nil {
-					logx.Error("get latest nft histories failed: ", err)
-					panic("get latest nft histories failed: " + err.Error())
-				}
-				if nftHistoryList != nil {
-					nftHistories = append(nftHistories, nftHistoryList...)
-				}
-				nftIndexSlice = make([]int64, 0)
-			}
-		}
-		deleteNftIndexes := make([]int64, 0)
-		for _, nftIndex := range nftIndexList {
-			findNftIndex := false
-			for _, nftHistory := range nftHistories {
-				if nftIndex == nftHistory.NftIndex {
-					findNftIndex = true
-					break
-				}
-			}
-			if findNftIndex == false {
-				deleteNftIndexes = append(deleteNftIndexes, nftIndex)
-			}
-		}
-		bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
-			logx.Info("roll back account start")
-			for _, accountHistory := range accountHistories {
-				accountInfo := &account.Account{
-					AccountIndex:    accountHistory.AccountIndex,
-					Nonce:           accountHistory.Nonce,
-					CollectionNonce: accountHistory.CollectionNonce,
-					AssetInfo:       accountHistory.AssetInfo,
-					AssetRoot:       accountHistory.AssetRoot,
-					L2BlockHeight:   accountHistory.L2BlockHeight,
-				}
-				err := bc.AccountModel.UpdateByIndexInTransact(dbTx, accountInfo)
-				if err != nil {
-					logx.Error("roll back account failed: ", err)
-					panic("roll back account failed: " + err.Error())
-				}
-			}
-			logx.Info("roll back account,delete account start")
-			for _, accountIndex := range deleteAccountIndexes {
-				err := bc.AccountModel.DeleteByIndexInTransact(dbTx, accountIndex)
-				if err != nil {
-					logx.Error("roll back account,delete account failed: ", err)
-					panic("roll back account,delete account failed: " + err.Error())
-				}
-			}
-
+		if len(heights) > 0 {
 			logx.Info("roll back account history,delete account start")
-			err := bc.AccountHistoryModel.DeleteByHeightInTransact(dbTx, heights)
+			err := bc.AccountHistoryModel.DeleteByHeightsInTransact(dbTx, heights)
 			if err != nil {
 				logx.Error("roll back account history,delete account history failed: ", err)
 				panic("roll back account history,delete account history failed: " + err.Error())
 			}
 
-			logx.Info("roll back nft start")
-			for _, nftHistory := range nftHistories {
-				nftInfo := &nft.L2Nft{
-					OwnerAccountIndex:   nftHistory.OwnerAccountIndex,
-					NftContentHash:      nftHistory.NftContentHash,
-					CollectionId:        nftHistory.CollectionId,
-					CreatorTreasuryRate: nftHistory.CreatorTreasuryRate,
-					CreatorAccountIndex: nftHistory.CreatorAccountIndex,
-					L2BlockHeight:       nftHistory.L2BlockHeight,
-				}
-				err := bc.L2NftModel.UpdateByIndexInTransact(dbTx, nftInfo)
-				if err != nil {
-					logx.Error("roll back nft failed: ", err)
-					panic("roll back nft failed: " + err.Error())
-				}
-			}
-			logx.Info("roll back nft,delete nft start")
-			for _, nftIndex := range deleteNftIndexes {
-				err := bc.L2NftModel.DeleteByIndexInTransact(dbTx, nftIndex)
-				if err != nil {
-					logx.Error("roll back nft,delete nft failed: ", err)
-					panic("roll back nft,delete nft failed: " + err.Error())
-				}
-			}
-
 			logx.Info("roll back l2nft history,delete l2nft history start")
-			err = bc.L2NftHistoryModel.DeleteByHeightInTransact(dbTx, heights)
+			err = bc.L2NftHistoryModel.DeleteByHeightsInTransact(dbTx, heights)
 			if err != nil {
 				logx.Error("roll back l2nft history,delete l2nft history failed: ", err)
 				panic("roll back account l2nft,delete l2nft history failed: " + err.Error())
 			}
 
 			logx.Info("roll back tx detail start")
-			err = bc.TxDetailModel.DeleteByHeightInTransact(dbTx, heights)
+			err = bc.TxDetailModel.DeleteByHeightsInTransact(dbTx, heights)
 			if err != nil {
 				logx.Error("roll back tx detail failed: ", err)
 				panic("roll back tx detail failed: " + err.Error())
 			}
 			logx.Info("roll back tx start")
-			err = bc.TxModel.DeleteByHeightInTransact(dbTx, heights)
+			err = bc.TxModel.DeleteByHeightsInTransact(dbTx, heights)
 			if err != nil {
 				logx.Error("roll back tx failed: ", err)
 				panic("roll back tx failed: " + err.Error())
 			}
-			logx.Info("roll back block start")
-			var statuses = []int{block.StatusProposing, block.StatusPacked}
-			err = bc.BlockModel.DeleteBlockInTransact(dbTx, statuses)
-			if err != nil {
-				logx.Error("roll back block failed: ", err)
-				panic("roll back block failed: " + err.Error())
-			}
+		}
 
-			logx.Info("roll back compressed block start")
-			err = bc.CompressedBlockModel.DeleteByHeightInTransact(dbTx, statuses)
-			if err != nil {
-				logx.Error("roll back compressed block failed: ", err)
-				panic("roll back compressed block failed: " + err.Error())
-			}
-
-			logx.Info("roll back pool tx step 1 start")
-			err = bc.TxPoolModel.UpdateTxsToPending(dbTx)
-			if err != nil {
-				logx.Error("roll back pool tx step 1 failed: ", err)
-				panic("roll back pool tx step 1 failed: " + err.Error())
-			}
-			logx.Info("roll back pool tx step 2 start")
-			err = bc.TxPoolModel.UpdateTxsToPendingByHeight(dbTx, packedHeights)
-			if err != nil {
-				logx.Error("roll back pool tx step 2 failed: ", err)
-				panic("roll back pool tx step 2 failed: " + err.Error())
-			}
-
-			curHeight, err := bc.BlockModel.GetCurrentBlockHeightInTransact(dbTx)
-			if err != nil {
-				logx.Error("get current block height in transact failed: ", err)
-				panic("get current block height in transact failed: " + err.Error())
-			}
-			poolTxId := uint(0)
-			if curHeight != 0 {
-				poolTxId, err = bc.TxModel.GetMaxPoolTxIdByHeightInTransact(dbTx, curHeight)
-				if err != nil {
-					logx.Error("get max pool tx id by height failed: ", err)
-					panic("get max pool tx id by height failed: " + err.Error())
-				}
-			}
-			logx.Info("roll back pool tx step 3 start")
-			err = bc.TxPoolModel.UpdateTxsToPendingByMaxId(dbTx, poolTxId)
-			if err != nil {
-				logx.Error("roll back pool tx step 3 failed: ", err)
-				panic("roll back pool tx step 3 failed: " + err.Error())
-			}
-			return nil
-		})
-
-		blocks, err = bc.BlockModel.GetBlockByStatus([]int{block.StatusProposing, block.StatusPacked})
+		logx.Info("roll back block start")
+		var statuses = []int{block.StatusProposing, block.StatusPacked}
+		err = bc.BlockModel.DeleteBlockInTransact(dbTx, statuses)
 		if err != nil {
-			logx.Error("get proposing block height failed: ", err)
-			panic("delete block failed: " + err.Error())
+			logx.Error("roll back block failed: ", err)
+			panic("roll back block failed: " + err.Error())
 		}
-		if blocks != nil {
-			logx.Infof("get proposing block heights: %v", blocks)
-			panic("delete block failed: " + err.Error())
 
+		logx.Info("roll back compressed block start")
+		err = bc.CompressedBlockModel.DeleteByHeightsInTransact(dbTx, heights)
+		if err != nil {
+			logx.Error("roll back compressed block failed: ", err)
+			panic("roll back compressed block failed: " + err.Error())
 		}
+
+		logx.Info("roll back pool tx step 2 start")
+		err = bc.TxPoolModel.UpdateTxsToPendingByHeight(dbTx, packedHeights)
+		if err != nil {
+			logx.Error("roll back pool tx step 2 failed: ", err)
+			panic("roll back pool tx step 2 failed: " + err.Error())
+		}
+
+		curHeight, err := bc.BlockModel.GetCurrentBlockHeightInTransact(dbTx)
+		if err != nil {
+			logx.Error("get current block height in transact failed: ", err)
+			panic("get current block height in transact failed: " + err.Error())
+		}
+		poolTxId := uint(0)
+		if curHeight != 0 {
+			poolTxId, err = bc.TxModel.GetMaxPoolTxIdByHeightInTransact(dbTx, curHeight)
+			if err != nil {
+				logx.Error("get max pool tx id by height failed: ", err)
+				panic("get max pool tx id by height failed: " + err.Error())
+			}
+		}
+		logx.Info("roll back pool tx step 3 start")
+		err = bc.TxPoolModel.UpdateTxsToPendingByMaxId(dbTx, poolTxId)
+		if err != nil {
+			logx.Error("roll back pool tx step 3 failed: ", err)
+			panic("roll back pool tx step 3 failed: " + err.Error())
+		}
+		return nil
+	})
+
+	blocks, err = bc.BlockModel.GetBlockByStatus([]int{block.StatusProposing, block.StatusPacked})
+	if err != nil && err != types.DbErrNotFound {
+		logx.Error("get proposing block height failed: ", err)
+		panic("delete block failed: " + err.Error())
+	}
+	if blocks != nil {
+		logx.Infof("get proposing block heights: %v", blocks)
+		panic("delete block failed: " + err.Error())
+
 	}
 }
 

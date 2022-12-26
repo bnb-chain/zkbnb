@@ -39,7 +39,7 @@ type (
 		GetNftsCountByAccountIndex(accountIndex int64) (int64, error)
 		UpdateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) error
 		BatchInsertOrUpdate(nfts []*L2Nft) (err error)
-		DeleteByIndexInTransact(tx *gorm.DB, nftIndex int64) error
+		DeleteByIndexesInTransact(tx *gorm.DB, nftIndexes []int64) error
 		UpdateByIndexInTransact(tx *gorm.DB, l2nft *L2Nft) error
 		GetNfts(limit int64, offset int64) (nfts []*L2Nft, err error)
 	}
@@ -155,8 +155,11 @@ func (m *defaultL2NftModel) BatchInsertOrUpdate(nfts []*L2Nft) (err error) {
 	return nil
 }
 
-func (m *defaultL2NftModel) DeleteByIndexInTransact(tx *gorm.DB, nftIndex int64) error {
-	dbTx := tx.Model(&L2Nft{}).Unscoped().Where("nft_index = ?", nftIndex).Delete(&L2Nft{})
+func (m *defaultL2NftModel) DeleteByIndexesInTransact(tx *gorm.DB, nftIndexes []int64) error {
+	if len(nftIndexes) == 0 {
+		return nil
+	}
+	dbTx := tx.Model(&L2Nft{}).Unscoped().Where("nft_index in ?", nftIndexes).Delete(&L2Nft{})
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}
@@ -176,11 +179,7 @@ func (m *defaultL2NftModel) UpdateByIndexInTransact(tx *gorm.DB, l2nft *L2Nft) e
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
-		// this l2nft is new, we need create first
-		dbTx = m.DB.Table(m.table).Create(&l2nft)
-		if dbTx.Error != nil {
-			return dbTx.Error
-		}
+		return types.DbErrFailToUpdateNft
 	}
 	return nil
 }

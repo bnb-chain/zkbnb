@@ -30,7 +30,7 @@ type (
 		CreateTxDetailTable() error
 		DropTxDetailTable() error
 		CreateTxDetails(txDetails []*TxDetail) error
-		DeleteByHeightInTransact(tx *gorm.DB, heights []int64) error
+		DeleteByHeightsInTransact(tx *gorm.DB, heights []int64) error
 	}
 
 	defaultTxDetailModel struct {
@@ -87,7 +87,10 @@ func (m *defaultTxDetailModel) CreateTxDetails(txDetails []*TxDetail) error {
 	return nil
 }
 
-func (m *defaultTxDetailModel) DeleteByHeightInTransact(tx *gorm.DB, heights []int64) error {
+func (m *defaultTxDetailModel) DeleteByHeightsInTransact(tx *gorm.DB, heights []int64) error {
+	if len(heights) == 0 {
+		return nil
+	}
 	dbTx := tx.Model(&TxDetail{}).Unscoped().Where("block_height in ?", heights).Delete(&TxDetail{})
 	if dbTx.Error != nil {
 		return dbTx.Error

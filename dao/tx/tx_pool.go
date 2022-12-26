@@ -324,7 +324,11 @@ func (m *defaultTxPoolModel) UpdateTxsStatusAndHeightByIds(ids []uint, status in
 
 func (m *defaultTxPoolModel) UpdateTxsToPending(tx *gorm.DB) error {
 	var statuses = []int{StatusProcessing, StatusExecuted}
-	dbTx := tx.Model(&PoolTx{}).Where("tx_status in ? ", statuses).Update("tx_status", StatusPending)
+	dbTx := tx.Model(&PoolTx{}).Select("DeletedAt", "ExpiredAt", "TxStatus").Where("tx_status in ? ", statuses).Updates(map[string]interface{}{
+		"deleted_at": nil,
+		"expired_at": time.Now().Unix(),
+		"tx_status":  StatusPending,
+	})
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}
@@ -375,12 +379,14 @@ func (m *defaultTxPoolModel) DeleteTxIdsBatchInTransact(tx *gorm.DB, ids []uint)
 	}
 	return nil
 }
-func (m *defaultTxPoolModel) UpdateTxsToPendingByHeight(tx *gorm.DB, blockHeight []int64) error {
-	if len(blockHeight) == 0 {
+func (m *defaultTxPoolModel) UpdateTxsToPendingByHeight(tx *gorm.DB, blockHeights []int64) error {
+	if len(blockHeights) == 0 {
 		return nil
 	}
-	dbTx := tx.Model(&PoolTx{}).Unscoped().Select("DeletedAt", "TxStatus").Where("block_height in ? and tx_status= ? and deleted_at is not null", blockHeight, StatusExecuted).Updates(map[string]interface{}{
+	var statuses = []int{StatusProcessing, StatusExecuted}
+	dbTx := tx.Model(&PoolTx{}).Select("DeletedAt", "ExpiredAt", "TxStatus").Where("block_height in ? and tx_status in ? ", blockHeights, statuses).Updates(map[string]interface{}{
 		"deleted_at": nil,
+		"expired_at": time.Now().Unix(),
 		"tx_status":  StatusPending,
 	})
 	if dbTx.Error != nil {
