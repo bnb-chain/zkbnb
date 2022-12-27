@@ -559,31 +559,11 @@ func rollback(bc *BlockChain) {
 			panic("roll back compressed block failed: " + err.Error())
 		}
 
-		logx.Info("roll back pool tx step 2 start")
-		err = bc.TxPoolModel.UpdateTxsToPendingByHeight(dbTx, packedHeights)
+		logx.Info("roll back pool tx start")
+		err = bc.TxPoolModel.UpdateTxsToPendingByHeights(dbTx, packedHeights)
 		if err != nil {
-			logx.Error("roll back pool tx step 2 failed: ", err)
+			logx.Error("roll back pool tx failed: ", err)
 			panic("roll back pool tx step 2 failed: " + err.Error())
-		}
-
-		curHeight, err := bc.BlockModel.GetCurrentBlockHeightInTransact(dbTx)
-		if err != nil {
-			logx.Error("get current block height in transact failed: ", err)
-			panic("get current block height in transact failed: " + err.Error())
-		}
-		poolTxId := uint(0)
-		if curHeight != 0 {
-			poolTxId, err = bc.TxModel.GetMaxPoolTxIdByHeightInTransact(dbTx, curHeight)
-			if err != nil {
-				logx.Error("get max pool tx id by height failed: ", err)
-				panic("get max pool tx id by height failed: " + err.Error())
-			}
-		}
-		logx.Info("roll back pool tx step 3 start")
-		err = bc.TxPoolModel.UpdateTxsToPendingByMaxId(dbTx, poolTxId)
-		if err != nil {
-			logx.Error("roll back pool tx step 3 failed: ", err)
-			panic("roll back pool tx step 3 failed: " + err.Error())
 		}
 		return nil
 	})
@@ -596,7 +576,6 @@ func rollback(bc *BlockChain) {
 	if blocks != nil {
 		logx.Infof("get proposing block heights: %v", blocks)
 		panic("delete block failed: " + err.Error())
-
 	}
 }
 

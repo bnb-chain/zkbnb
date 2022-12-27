@@ -55,7 +55,7 @@ type (
 		UpdateTxsStatusAndHeightByIds(ids []uint, status int, blockHeight int64) error
 		DeleteTxsBatch(poolTxIds []uint, status int, blockHeight int64) error
 		DeleteTxIdsBatchInTransact(tx *gorm.DB, ids []uint) error
-		UpdateTxsToPendingByHeight(tx *gorm.DB, blockHeight []int64) error
+		UpdateTxsToPendingByHeights(tx *gorm.DB, blockHeight []int64) error
 		UpdateTxsToPendingByMaxId(tx *gorm.DB, maxPoolTxId uint) error
 	}
 
@@ -379,13 +379,34 @@ func (m *defaultTxPoolModel) DeleteTxIdsBatchInTransact(tx *gorm.DB, ids []uint)
 	}
 	return nil
 }
-func (m *defaultTxPoolModel) UpdateTxsToPendingByHeight(tx *gorm.DB, blockHeights []int64) error {
-	if len(blockHeights) == 0 {
-		return nil
+func (m *defaultTxPoolModel) UpdateTxsToPendingByHeights(tx *gorm.DB, blockHeights []int64) error {
+	if len(blockHeights) > 0 {
+		dbTx := tx.Model(&PoolTx{}).Unscoped().Select("DeletedAt", "ExpiredAt", "TxStatus").Where("block_height in ? and tx_status = ? and tx_type in ?", blockHeights, StatusExecuted, types.GetL1TxTypes()).Updates(map[string]interface{}{
+			"deleted_at": nil,
+			"tx_status":  StatusPending,
+		})
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
+
+		dbTx = tx.Model(&PoolTx{}).Unscoped().Select("DeletedAt", "ExpiredAt", "TxStatus").Where("block_height in ? and tx_status = ? and tx_type in ?", blockHeights, StatusExecuted, types.GetL2TxTypes()).Updates(map[string]interface{}{
+			"deleted_at": nil,
+			"expired_at": time.Now().Unix(),
+			"tx_status":  StatusPending,
+		})
+		if dbTx.Error != nil {
+			return dbTx.Error
+		}
 	}
-	var statuses = []int{StatusProcessing, StatusExecuted}
-	dbTx := tx.Model(&PoolTx{}).Select("DeletedAt", "ExpiredAt", "TxStatus").Where("block_height in ? and tx_status in ? ", blockHeights, statuses).Updates(map[string]interface{}{
-		"deleted_at": nil,
+
+	dbTx := tx.Model(&PoolTx{}).Unscoped().Select("TxStatus").Where("tx_status = ? and tx_type in ?", StatusProcessing, types.GetL1TxTypes()).Updates(map[string]interface{}{
+		"tx_status": StatusPending,
+	})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+
+	dbTx = tx.Model(&PoolTx{}).Unscoped().Select("ExpiredAt", "TxStatus").Where("tx_status = ? and tx_type in ?", StatusProcessing, types.GetL2TxTypes()).Updates(map[string]interface{}{
 		"expired_at": time.Now().Unix(),
 		"tx_status":  StatusPending,
 	})
