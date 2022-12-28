@@ -114,9 +114,10 @@ type (
 		TxDetails     []*TxDetail `gorm:"foreignKey:TxId"`
 
 		TxIndex     int64
-		BlockHeight int64 `gorm:"index"`
-		BlockId     int64 `gorm:"index"`
-		TxStatus    int   `gorm:"index"`
+		BlockHeight int64     `gorm:"index"`
+		BlockId     int64     `gorm:"index"`
+		TxStatus    int       `gorm:"index"`
+		VerifyAt    time.Time // verify time when the transaction status changes to be StatusVerified
 	}
 )
 
@@ -254,13 +255,17 @@ func (m *defaultTxModel) GetDistinctAccountsCountBetween(from, to time.Time) (co
 func (m *defaultTxModel) UpdateTxsStatusInTransact(tx *gorm.DB, blockTxStatus map[int64]int) error {
 
 	//parameters to update the transaction status
-	conditions := make(map[string]interface{})
 	for height, status := range blockTxStatus {
+		data := &Tx{
+			BlockHeight: height,
+			TxStatus:    status,
+		}
+		// For status = StatusVerified case, the verifyAt field need to be updated meanwhile
+		if status == StatusVerified {
+			data.VerifyAt = time.Now()
+		}
 
-		conditions["tx_status"] = status
-		conditions["updated_at"] = time.Now()
-
-		dbTx := tx.Table(m.table).Where("block_height = ?", height).Updates(conditions)
+		dbTx := tx.Model(&Tx{}).Where("block_height = ?", height).Updates(data)
 		if dbTx.Error != nil {
 			return dbTx.Error
 		}
