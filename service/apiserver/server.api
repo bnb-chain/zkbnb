@@ -283,6 +283,7 @@ type (
 		ExpiredAt      int64  `json:"expire_at"`
 		BlockHeight    int64  `json:"block_height"`
 		CreatedAt      int64  `json:"created_at"`
+		VerifyAt	   int64  `json:"verify_at"`
 		StateRoot      string `json:"state_root"`
 		ToAccountIndex int64  `json:"to_account_index"`
 		ToAccountName  string `json:"to_account_name"`
