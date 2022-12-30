@@ -142,8 +142,8 @@ github.com/bnb-chain/zkbnb-eth-rpc v0.0.2 h1:1rMa8XpplDNZaxeM1ifXMjSSeH/ucJyLUjH
 github.com/bnb-chain/zkbnb-eth-rpc v0.0.2/go.mod h1:T69T8enicQ5kSRPIzyPJv/jhuvRMz1UxsijPXmlis+I=
 github.com/bnb-chain/zkbnb-go-sdk v1.0.4-0.20221012063144-3a6e84095b4d h1:2+S4/JdKoSPSJr3D7Z5I/Qmv8TkgVYB73vRP0OOunRY=
 github.com/bnb-chain/zkbnb-go-sdk v1.0.4-0.20221012063144-3a6e84095b4d/go.mod h1:G27Jpl0yB6T/NKXw31bD2B2M91my0PM6SUEpbEGWGL8=
-github.com/bnb-chain/zkbnb-smt v0.0.3-0.20221227064653-7422bfd51aa0 h1:ctmwkpucisve1QBpCIgAH9hjYZGxbtyaCSh5yVM+F1s=
-github.com/bnb-chain/zkbnb-smt v0.0.3-0.20221227064653-7422bfd51aa0/go.mod h1:QmQTsv2fxBsobFLFZkaiNmr3P0M/mm3W1AiwSU3/cGY=
+github.com/bnb-chain/zkbnb-smt v0.0.3-0.20221222022518-e7e30fb544c4 h1:P469S1O2f0eNLei1sf3+6Z5LCwR7kpbv1lWSG/CREj8=
+github.com/bnb-chain/zkbnb-smt v0.0.3-0.20221222022518-e7e30fb544c4/go.mod h1:QmQTsv2fxBsobFLFZkaiNmr3P0M/mm3W1AiwSU3/cGY=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
 github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d h1:pVrfxiGfwelyab6n21ZBkbkmbevaf+WvMIiR7sr97hw=
 github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d/go.mod h1:H0wQNHz2YrLsuXOZozoeDmnHXkNCRmMW0gwFWDfEZDA=
