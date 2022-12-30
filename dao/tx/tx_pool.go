@@ -476,12 +476,11 @@ func (m *defaultTxPoolModel) GetProposingBlockHeight() (ids []int64, err error) 
 }
 
 func (m *defaultTxPoolModel) GetLatestExecutedTx() (tx *Tx, err error) {
-	var statuses = []int{StatusFailed, StatusExecuted}
-	dbTx := m.DB.Table(m.table).Unscoped().Where("tx_status IN ?", statuses).Order("id DESC").Limit(1).Find(&tx)
+	dbTx := m.DB.Table(m.table).Unscoped().Where("tx_status = ?", StatusExecuted).Order("id DESC").Limit(1).Find(&tx)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, nil
+		return nil, types.DbErrNotFound
 	}
 	return tx, nil
 }

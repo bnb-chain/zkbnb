@@ -630,7 +630,7 @@ func (c *Committer) pullPoolTxs1() {
 
 func (c *Committer) pullPoolTxs2() {
 	executedTx, err := c.bc.TxPoolModel.GetLatestExecutedTx()
-	if err != nil {
+	if err != nil && err != types.DbErrNotFound {
 		logx.Errorf("get executed tx from tx pool failed:%s", err.Error())
 		panic("get executed tx from tx pool failed: " + err.Error())
 	}
@@ -852,6 +852,7 @@ func (c *Committer) executeTxFunc() {
 				addPendingAccounts = append(addPendingAccounts, newAccount)
 			}
 			if len(addPendingAccounts) != 0 {
+				//todo bug
 				err = c.bc.DB().AccountModel.BatchInsertOrUpdate(addPendingAccounts)
 				if err != nil {
 					logx.Errorf("account batch insert or update failed:%s ", err.Error())
@@ -871,6 +872,7 @@ func (c *Committer) executeTxFunc() {
 				addPendingNfts = append(addPendingNfts, nftInfo)
 			}
 			if len(addPendingNfts) != 0 {
+				//todo bug
 				err = c.bc.DB().L2NftModel.BatchInsertOrUpdate(addPendingNfts)
 				if err != nil {
 					logx.Errorf("l2nft batch insert or update failed:%s ", err.Error())
