@@ -97,7 +97,8 @@ type (
 
 	Tx struct {
 		PoolTx
-		PoolTxId uint `gorm:"uniqueIndex"`
+		PoolTxId uint      `gorm:"uniqueIndex"`
+		VerifyAt time.Time // verify time when the transaction status changes to be StatusVerified
 	}
 )
 
@@ -245,13 +246,18 @@ func (m *defaultTxModel) GetDistinctAccountsCountBetween(from, to time.Time) (co
 func (m *defaultTxModel) UpdateTxsStatusInTransact(tx *gorm.DB, blockTxStatus map[int64]int) error {
 
 	//parameters to update the transaction status
-	conditions := make(map[string]interface{})
 	for height, status := range blockTxStatus {
 
-		conditions["tx_status"] = status
-		conditions["updated_at"] = time.Now()
+		data := &Tx{}
+		data.BlockHeight = height
+		data.TxStatus = status
 
-		dbTx := tx.Table(m.table).Where("block_height = ?", height).Updates(conditions)
+		// For status = StatusVerified case, the verifyAt field need to be updated meanwhile
+		if status == StatusVerified {
+			data.VerifyAt = time.Now()
+		}
+
+		dbTx := tx.Model(&Tx{}).Where("block_height = ?", height).Updates(data)
 		if dbTx.Error != nil {
 			return dbTx.Error
 		}

@@ -115,16 +115,21 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 	pendingChanges := NewGovernancePendingChanges()
 
 	for _, vlog := range logs {
+		l1EventInfo := &L1Event{
+			TxHash: vlog.TxHash.Hex(),
+			Index:  vlog.Index,
+		}
+		if vlog.Removed {
+			logx.Errorf("Removed to get vlog,TxHash:%v,Index:%v", l1EventInfo.TxHash, l1EventInfo.Index)
+			continue
+		}
 		switch vlog.Topics[0].Hex() {
 		case governanceLogNewAssetSigHash.Hex():
 			var event zkbnb.GovernanceNewAsset
 			if err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameNewAsset, vlog.Data); err != nil {
 				return fmt.Errorf("unpackIntoInterface err: %v", err)
 			}
-			l1EventInfo := &L1Event{
-				EventType: EventTypeAddAsset,
-				TxHash:    vlog.TxHash.Hex(),
-			}
+			l1EventInfo.EventType = EventTypeAddAsset
 			newL2Asset, err := m.getNewL2Asset(event)
 			if err != nil {
 				logx.Infof("get new l2 asset error, err: %s", err.Error())
@@ -140,10 +145,8 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 				return fmt.Errorf("unpackIntoInterface err: %v", err)
 			}
 			// set up database info
-			l1EventInfo := &L1Event{
-				EventType: EventTypeNewGovernor,
-				TxHash:    vlog.TxHash.Hex(),
-			}
+			l1EventInfo.EventType = EventTypeNewGovernor
+
 			configInfo := &sysconfig.SysConfig{
 				Name:      types.Governor,
 				Value:     event.NewGovernor.Hex(),
@@ -160,10 +163,8 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 			if err != nil {
 				return fmt.Errorf("unpackIntoInterface err: %v", err)
 			}
-			l1EventInfo := &L1Event{
-				EventType: EventTypeNewAssetGovernance,
-				TxHash:    vlog.TxHash.Hex(),
-			}
+			l1EventInfo.EventType = EventTypeNewAssetGovernance
+
 			configInfo := &sysconfig.SysConfig{
 				Name:      types.AssetGovernanceContract,
 				Value:     event.NewAssetGovernance.Hex(),
@@ -180,10 +181,8 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 				return fmt.Errorf("unpack GovernanceValidatorStatusUpdate, err: %v", err)
 			}
 			// set up database info
-			l1EventInfo := &L1Event{
-				EventType: EventTypeValidatorStatusUpdate,
-				TxHash:    vlog.TxHash.Hex(),
-			}
+			l1EventInfo.EventType = EventTypeValidatorStatusUpdate
+
 			l1Events = append(l1Events, l1EventInfo)
 
 			err = m.processValidatorUpdate(event, pendingChanges)
@@ -198,10 +197,8 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 				return fmt.Errorf("unpack GovernanceAssetPausedUpdate failed, err: %v", err)
 			}
 			// set up database info
-			l1EventInfo := &L1Event{
-				EventType: EventTypeAssetPausedUpdate,
-				TxHash:    vlog.TxHash.Hex(),
-			}
+			l1EventInfo.EventType = EventTypeAssetPausedUpdate
+
 			l1Events = append(l1Events, l1EventInfo)
 
 			err = m.processAssetPausedUpdate(event, pendingChanges)

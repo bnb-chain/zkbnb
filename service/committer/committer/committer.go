@@ -962,8 +962,23 @@ func (c *Committer) updatePoolTxFunc(updatePoolTxMap *UpdatePoolTx) {
 		length := len(updatePoolTxMap.PendingUpdatePoolTxs)
 		if length > 0 {
 			ids := make([]uint, 0, length)
+			updateNftIndexOrCollectionIdList := make([]*tx.PoolTx, 0)
 			for _, pendingUpdatePoolTx := range updatePoolTxMap.PendingUpdatePoolTxs {
 				ids = append(ids, pendingUpdatePoolTx.ID)
+				if pendingUpdatePoolTx.TxType == types.TxTypeCreateCollection || pendingUpdatePoolTx.TxType == types.TxTypeMintNft {
+					updateNftIndexOrCollectionIdList = append(updateNftIndexOrCollectionIdList, &tx.PoolTx{
+						Model:        gorm.Model{ID: pendingUpdatePoolTx.ID},
+						NftIndex:     pendingUpdatePoolTx.NftIndex,
+						CollectionId: pendingUpdatePoolTx.CollectionId,
+					})
+				}
+			}
+			if len(updateNftIndexOrCollectionIdList) > 0 {
+				err := c.bc.TxPoolModel.BatchUpdateNftIndexOrCollectionId(updateNftIndexOrCollectionIdList)
+				if err != nil {
+					logx.Error("update tx pool failed:", err)
+					return
+				}
 			}
 			err := c.bc.TxPoolModel.UpdateTxsStatusAndHeightByIds(ids, tx.StatusExecuted, updatePoolTxMap.PendingUpdatePoolTxs[0].BlockHeight)
 			if err != nil {
@@ -1097,15 +1112,33 @@ func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 	var err error
 
 	poolTxIds := make([]uint, 0, len(blockStates.Block.Txs))
+	updateNftIndexOrCollectionIdList := make([]*tx.PoolTx, 0)
+
 	for _, poolTx := range blockStates.Block.Txs {
 		poolTxIds = append(poolTxIds, poolTx.ID)
+		if poolTx.TxType == types.TxTypeCreateCollection || poolTx.TxType == types.TxTypeMintNft {
+			updateNftIndexOrCollectionIdList = append(updateNftIndexOrCollectionIdList, &tx.PoolTx{
+				Model:        gorm.Model{ID: poolTx.ID},
+				NftIndex:     poolTx.NftIndex,
+				CollectionId: poolTx.CollectionId,
+			})
+		}
 	}
-	blockStates.Block.ClearTxsModel()
 
+	blockStates.Block.ClearTxsModel()
 	totalTask++
-	err = func(poolTxIds []uint, blockHeight int64) error {
+	err = func(poolTxIds []uint, blockHeight int64, updateNftIndexOrCollectionIdList []*tx.PoolTx) error {
 		return c.pool.Submit(func() {
 			start := time.Now()
+			if len(updateNftIndexOrCollectionIdList) > 0 {
+				err := c.bc.TxPoolModel.BatchUpdateNftIndexOrCollectionId(updateNftIndexOrCollectionIdList)
+				if err != nil {
+					logx.Error("update tx pool failed:", err)
+					errChan <- err
+					return
+				}
+			}
+
 			err = c.bc.DB().TxPoolModel.DeleteTxsBatch(poolTxIds, tx.StatusExecuted, blockHeight)
 			deletePoolTxMetrics.Set(float64(time.Since(start).Milliseconds()))
 			if err != nil {
@@ -1114,7 +1147,7 @@ func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 			}
 			errChan <- nil
 		})
-	}(poolTxIds, blockStates.Block.BlockHeight)
+	}(poolTxIds, blockStates.Block.BlockHeight, updateNftIndexOrCollectionIdList)
 	if err != nil {
 		panic("DeleteTxsBatch failed: " + err.Error())
 	}

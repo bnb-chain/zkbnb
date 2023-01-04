@@ -18,7 +18,9 @@
 package tx
 
 import (
+	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"time"
 
 	"github.com/bnb-chain/zkbnb/types"
@@ -57,6 +59,7 @@ type (
 		DeleteTxIdsBatchInTransact(tx *gorm.DB, ids []uint) error
 		UpdateTxsToPendingByHeights(tx *gorm.DB, blockHeight []int64) error
 		UpdateTxsToPendingByMaxId(tx *gorm.DB, maxPoolTxId uint) error
+		BatchUpdateNftIndexOrCollectionId(txs []*PoolTx) (err error)
 	}
 
 	defaultTxPoolModel struct {
@@ -483,4 +486,19 @@ func (m *defaultTxPoolModel) GetLatestExecutedTx() (tx *Tx, err error) {
 		return nil, types.DbErrNotFound
 	}
 	return tx, nil
+}
+
+func (m *defaultTxPoolModel) BatchUpdateNftIndexOrCollectionId(txs []*PoolTx) (err error) {
+	dbTx := m.DB.Table(m.table).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "id"}},
+		DoUpdates: clause.AssignmentColumns([]string{"nft_index", "collection_id"}),
+	}).Create(&txs)
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if int(dbTx.RowsAffected) != len(txs) {
+		logx.Errorf("BatchUpdateNftIndexOrCollectionId failed,rows affected not equal txs length,dbTx.RowsAffected:%s,len(txs):%s", int(dbTx.RowsAffected), len(txs))
+		return types.DbErrFailToUpdatePoolTx
+	}
+	return nil
 }
