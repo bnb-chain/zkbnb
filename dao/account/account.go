@@ -212,6 +212,9 @@ func (m *defaultAccountModel) DeleteByIndexesInTransact(tx *gorm.DB, accountInde
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}
+	if dbTx.RowsAffected == 0 {
+		return types.DbErrFailToUpdateAccount
+	}
 	return nil
 }
 

@@ -163,6 +163,9 @@ func (m *defaultL2NftModel) DeleteByIndexesInTransact(tx *gorm.DB, nftIndexes []
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}
+	if dbTx.RowsAffected == 0 {
+		return types.DbErrFailToUpdateNft
+	}
 	return nil
 }
 

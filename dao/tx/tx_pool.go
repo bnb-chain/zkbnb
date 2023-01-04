@@ -326,8 +326,7 @@ func (m *defaultTxPoolModel) UpdateTxsStatusAndHeightByIds(ids []uint, status in
 }
 
 func (m *defaultTxPoolModel) UpdateTxsToPending(tx *gorm.DB) error {
-	var statuses = []int{StatusProcessing, StatusExecuted}
-	dbTx := tx.Model(&PoolTx{}).Select("DeletedAt", "ExpiredAt", "TxStatus").Where("tx_status in ? ", statuses).Updates(map[string]interface{}{
+	dbTx := tx.Model(&PoolTx{}).Select("DeletedAt", "ExpiredAt", "TxStatus").Where("tx_status = ? ", StatusExecuted).Updates(map[string]interface{}{
 		"deleted_at": nil,
 		"expired_at": time.Now().Unix(),
 		"tx_status":  StatusPending,
@@ -383,34 +382,11 @@ func (m *defaultTxPoolModel) DeleteTxIdsBatchInTransact(tx *gorm.DB, ids []uint)
 	return nil
 }
 func (m *defaultTxPoolModel) UpdateTxsToPendingByHeights(tx *gorm.DB, blockHeights []int64) error {
-	if len(blockHeights) > 0 {
-		dbTx := tx.Model(&PoolTx{}).Unscoped().Select("DeletedAt", "ExpiredAt", "TxStatus").Where("block_height in ? and tx_status = ? and tx_type in ?", blockHeights, StatusExecuted, types.GetL1TxTypes()).Updates(map[string]interface{}{
-			"deleted_at": nil,
-			"tx_status":  StatusPending,
-		})
-		if dbTx.Error != nil {
-			return dbTx.Error
-		}
-
-		dbTx = tx.Model(&PoolTx{}).Unscoped().Select("DeletedAt", "ExpiredAt", "TxStatus").Where("block_height in ? and tx_status = ? and tx_type in ?", blockHeights, StatusExecuted, types.GetL2TxTypes()).Updates(map[string]interface{}{
-			"deleted_at": nil,
-			"expired_at": time.Now().Unix(),
-			"tx_status":  StatusPending,
-		})
-		if dbTx.Error != nil {
-			return dbTx.Error
-		}
+	if len(blockHeights) == 0 {
+		return nil
 	}
-
-	dbTx := tx.Model(&PoolTx{}).Unscoped().Select("TxStatus").Where("tx_status = ? and tx_type in ?", StatusProcessing, types.GetL1TxTypes()).Updates(map[string]interface{}{
-		"tx_status": StatusPending,
-	})
-	if dbTx.Error != nil {
-		return dbTx.Error
-	}
-
-	dbTx = tx.Model(&PoolTx{}).Unscoped().Select("ExpiredAt", "TxStatus").Where("tx_status = ? and tx_type in ?", StatusProcessing, types.GetL2TxTypes()).Updates(map[string]interface{}{
-		"expired_at": time.Now().Unix(),
+	dbTx := tx.Model(&PoolTx{}).Unscoped().Select("DeletedAt", "TxStatus").Where("block_height in ? and tx_status = ? ", blockHeights, StatusExecuted).Updates(map[string]interface{}{
+		"deleted_at": nil,
 		"tx_status":  StatusPending,
 	})
 	if dbTx.Error != nil {
