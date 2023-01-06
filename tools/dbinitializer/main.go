@@ -19,6 +19,7 @@ package dbinitializer
 
 import (
 	"encoding/json"
+	"github.com/bnb-chain/zkbnb/dao/rollback"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
@@ -75,6 +76,7 @@ type dao struct {
 	l1RollupTModel       l1rolluptx.L1RollupTxModel
 	nftModel             nft.L2NftModel
 	nftHistoryModel      nft.L2NftHistoryModel
+	rollbackModel        rollback.RollbackModel
 }
 
 func Initialize(
@@ -111,6 +113,7 @@ func Initialize(
 		l1RollupTModel:       l1rolluptx.NewL1RollupTxModel(db),
 		nftModel:             nft.NewL2NftModel(db),
 		nftHistoryModel:      nft.NewL2NftHistoryModel(db),
+		rollbackModel:        rollback.NewRollbackModel(db),
 	}
 
 	dropTables(dao)

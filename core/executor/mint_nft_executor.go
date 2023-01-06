@@ -37,13 +37,20 @@ func NewMintNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 
 func (e *MintNftExecutor) Prepare() error {
 	txInfo := e.txInfo
+	if !e.bc.StateDB().DryRun {
+		// Set the right nft index for tx info.
+		if e.tx.NftIndex == types.NilNftIndex {
+			nextNftIndex := e.bc.StateDB().GetNextNftIndex()
+			txInfo.NftIndex = nextNftIndex
+		} else {
+			nextNftIndex := e.tx.NftIndex
+			txInfo.NftIndex = nextNftIndex
+		}
 
-	// Set the right nft index for tx info.
-	nextNftIndex := e.bc.StateDB().GetNextNftIndex()
-	txInfo.NftIndex = nextNftIndex
+		// Mark the tree states that would be affected in this executor.
+		e.MarkNftDirty(txInfo.NftIndex)
+	}
 
-	// Mark the tree states that would be affected in this executor.
-	e.MarkNftDirty(txInfo.NftIndex)
 	e.MarkAccountAssetsDirty(txInfo.CreatorAccountIndex, []int64{txInfo.GasFeeAssetId})
 	e.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
 	e.MarkAccountAssetsDirty(txInfo.ToAccountIndex, []int64{})

@@ -69,7 +69,8 @@ func EmptyNftNodeHash() []byte {
 }
 
 func CommitAccountTreeAndNftTree(
-	version uint64,
+	prunedVersion uint64,
+	blockHeight int64,
 	accountTree bsmt.SparseMerkleTree,
 	nftTree bsmt.SparseMerkleTree) error {
 	totalTask := 2
@@ -77,11 +78,12 @@ func CommitAccountTreeAndNftTree(
 	defer close(errChan)
 
 	err := gopool.Submit(func() {
-		accPrunedVersion := bsmt.Version(version)
+		accPrunedVersion := bsmt.Version(prunedVersion)
+		newVersion := bsmt.Version(blockHeight)
 		if accountTree.LatestVersion() < accPrunedVersion {
 			accPrunedVersion = accountTree.LatestVersion()
 		}
-		ver, err := accountTree.Commit(&accPrunedVersion)
+		ver, err := accountTree.CommitWithNewVersion(&accPrunedVersion, &newVersion)
 		if err != nil {
 			errChan <- errors.Wrapf(err, "unable to commit account tree, tree ver: %d, prune ver: %d", ver, accPrunedVersion)
 			return
@@ -93,11 +95,12 @@ func CommitAccountTreeAndNftTree(
 	}
 
 	err = gopool.Submit(func() {
-		nftPrunedVersion := bsmt.Version(version)
+		nftPrunedVersion := bsmt.Version(prunedVersion)
+		newVersion := bsmt.Version(blockHeight)
 		if nftTree.LatestVersion() < nftPrunedVersion {
 			nftPrunedVersion = nftTree.LatestVersion()
 		}
-		ver, err := nftTree.Commit(&nftPrunedVersion)
+		ver, err := nftTree.CommitWithNewVersion(&nftPrunedVersion, &newVersion)
 		if err != nil {
 			errChan <- errors.Wrapf(err, "unable to commit nft tree, tree ver: %d, prune ver: %d", ver, nftPrunedVersion)
 			return
@@ -119,7 +122,8 @@ func CommitAccountTreeAndNftTree(
 }
 
 func CommitTrees(
-	version uint64,
+	prunedVersion uint64,
+	blockHeight int64,
 	accountTree bsmt.SparseMerkleTree,
 	assetTrees *AssetTreeCache,
 	nftTree bsmt.SparseMerkleTree) error {
@@ -131,11 +135,12 @@ func CommitTrees(
 	defer close(errChan)
 
 	err := gopool.Submit(func() {
-		accPrunedVersion := bsmt.Version(version)
+		accPrunedVersion := bsmt.Version(prunedVersion)
+		newVersion := bsmt.Version(blockHeight)
 		if accountTree.LatestVersion() < accPrunedVersion {
 			accPrunedVersion = accountTree.LatestVersion()
 		}
-		ver, err := accountTree.Commit(&accPrunedVersion)
+		ver, err := accountTree.CommitWithNewVersion(&accPrunedVersion, &newVersion)
 		if err != nil {
 			errChan <- errors.Wrapf(err, "unable to commit account tree, tree ver: %d, prune ver: %d", ver, accPrunedVersion)
 			return
@@ -151,7 +156,8 @@ func CommitTrees(
 			return gopool.Submit(func() {
 				asset := assetTrees.Get(i)
 				version := asset.LatestVersion()
-				ver, err := asset.Commit(&version)
+				newVersion := bsmt.Version(blockHeight)
+				ver, err := asset.CommitWithNewVersion(&version, &newVersion)
 				if err != nil {
 					errChan <- errors.Wrapf(err, "unable to commit asset tree [%d], tree ver: %d, prune ver: %d", i, ver, version)
 					return
@@ -165,11 +171,12 @@ func CommitTrees(
 	}
 
 	err = gopool.Submit(func() {
-		nftPrunedVersion := bsmt.Version(version)
+		nftPrunedVersion := bsmt.Version(prunedVersion)
+		newVersion := bsmt.Version(blockHeight)
 		if nftTree.LatestVersion() < nftPrunedVersion {
 			nftPrunedVersion = nftTree.LatestVersion()
 		}
-		ver, err := nftTree.Commit(&nftPrunedVersion)
+		ver, err := nftTree.CommitWithNewVersion(&nftPrunedVersion, &newVersion)
 		if err != nil {
 			errChan <- errors.Wrapf(err, "unable to commit nft tree, tree ver: %d, prune ver: %d", ver, nftPrunedVersion)
 			return

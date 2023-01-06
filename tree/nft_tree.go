@@ -40,6 +40,7 @@ func InitNftTree(
 	}
 
 	if ctx.IsLoad() {
+		newVersion := bsmt.Version(blockHeight)
 		nums, err := nftHistoryModel.GetLatestNftsCountByBlockHeight(blockHeight)
 		if err != nil {
 			logx.Errorf("unable to get latest nft assets: %s", err.Error())
@@ -53,7 +54,7 @@ func InitNftTree(
 				return nil, err
 			}
 		}
-		_, err = nftTree.Commit(nil)
+		_, err = nftTree.CommitWithNewVersion(nil, &newVersion)
 		if err != nil {
 			logx.Errorf("unable to commit nft tree: %s", err.Error())
 			return nil, err

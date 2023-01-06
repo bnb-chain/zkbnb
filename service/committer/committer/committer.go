@@ -662,12 +662,15 @@ func (c *Committer) executeTxFunc() {
 			// Write the proposed block into database when the first transaction executed.
 			if len(c.bc.Statedb.Txs) == 1 {
 				previousHeight := curBlock.BlockHeight
-				err = c.createNewBlock(curBlock)
-				logx.Infof("create new block, current height=%s,previous height=%d,blockId=%s", curBlock.BlockHeight, previousHeight, curBlock.ID)
-
-				if err != nil {
-					logx.Severef("create new block failed:%s", err.Error())
-					panic("create new block failed" + err.Error())
+				if curBlock.ID != 0 {
+					err = c.createNewBlock(curBlock)
+					logx.Infof("create new block, current height=%s,previous height=%d,blockId=%s", curBlock.BlockHeight, previousHeight, curBlock.ID)
+					if err != nil {
+						logx.Severef("create new block failed:%s", err.Error())
+						panic("create new block failed" + err.Error())
+					}
+				} else {
+					logx.Infof("not create new block,use old block data, current height=%s,previous height=%d,blockId=%s", curBlock.BlockHeight, previousHeight, curBlock.ID)
 				}
 			}
 			pendingUpdatePoolTxs = append(pendingUpdatePoolTxs, poolTx)

@@ -60,6 +60,8 @@ type (
 		UpdateTxsToPendingByHeights(tx *gorm.DB, blockHeight []int64) error
 		UpdateTxsToPendingByMaxId(tx *gorm.DB, maxPoolTxId uint) error
 		BatchUpdateNftIndexOrCollectionId(txs []*PoolTx) (err error)
+		GetLatestMintNft() (tx *Tx, err error)
+		GetTxsByHeights(blockHeights []int64) (txs []*Tx, err error)
 	}
 
 	defaultTxPoolModel struct {
@@ -148,6 +150,17 @@ func (m *defaultTxPoolModel) GetTxsByStatus(status int) (txs []*Tx, err error) {
 	dbTx := m.DB.Table(m.table).Where("tx_status = ?", status).Order("created_at, id").Find(&txs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
+	}
+	return txs, nil
+}
+
+func (m *defaultTxPoolModel) GetTxsByHeights(blockHeights []int64) (txs []*Tx, err error) {
+	dbTx := m.DB.Table(m.table).Select("id,tx_hash").Where("block_height in ?", blockHeights).Order("id asc").Find(&txs)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	}
+	if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
 	}
 	return txs, nil
 }
@@ -436,6 +449,18 @@ func (m *defaultTxPoolModel) GetLatestTx(txTypes []int64, statuses []int) (tx *T
 	return tx, nil
 }
 
+func (m *defaultTxPoolModel) GetLatestMintNft() (tx *Tx, err error) {
+
+	dbTx := m.DB.Table(m.table).Unscoped().Where("tx_type = ?", types.TxTypeMintNft).Order("nft_index DESC").Limit(1).Find(&tx)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+
+	return tx, nil
+}
+
 func (m *defaultTxPoolModel) GetFirstTxByStatus(status int) (txs *Tx, err error) {
 	dbTx := m.DB.Table(m.table).Where("tx_status = ?", status).Order("id asc").Limit(1).Find(&txs)
 	if dbTx.Error != nil {
@@ -444,14 +469,6 @@ func (m *defaultTxPoolModel) GetFirstTxByStatus(status int) (txs *Tx, err error)
 		return nil, nil
 	}
 	return txs, nil
-}
-
-func (m *defaultTxPoolModel) GetProposingBlockHeight() (ids []int64, err error) {
-	dbTx := m.DB.Table(m.table).Where("tx_status = ? and deleted_at is null", StatusExecuted).Select("id").Order("id asc").Find(&ids)
-	if dbTx.Error != nil {
-		return nil, types.DbErrSqlOperation
-	}
-	return ids, nil
 }
 
 func (m *defaultTxPoolModel) GetLatestExecutedTx() (tx *Tx, err error) {
