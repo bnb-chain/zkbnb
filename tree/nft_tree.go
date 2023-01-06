@@ -31,7 +31,7 @@ func InitNftTree(
 ) (
 	nftTree bsmt.SparseMerkleTree, err error,
 ) {
-	nftTree, err = bsmt.NewBASSparseMerkleTree(ctx.Hasher(),
+	nftTree, err = bsmt.NewBNBSparseMerkleTree(ctx.Hasher(),
 		SetNamespace(ctx, NFTPrefix), NftTreeHeight, NilNftNodeHash,
 		ctx.Options(blockHeight)...)
 	if err != nil {
