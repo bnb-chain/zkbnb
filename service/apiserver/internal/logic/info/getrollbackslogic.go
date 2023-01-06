@@ -35,6 +35,8 @@ func (l *GetRollbacksLogic) GetRollbacks(req *types.ReqGetRollbacks) (resp []*ty
 			resp = append(resp, &types.Rollbacks{
 				FromBlockHeight: a.FromBlockHeight,
 				FromTxHash:      a.FromTxHash,
+				CreatedAt:       a.CreatedAt.Unix(),
+				ID:              a.ID,
 			})
 		}
 	}

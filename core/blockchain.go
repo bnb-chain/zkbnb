@@ -181,7 +181,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		}
 	}
 	bc.Statedb.PreviousStateRoot = bc.currentBlock.StateRoot
-	bc.Statedb.UpdatePrunedBlockHeight(curHeight)
+
 	mintNft, err := bc.TxPoolModel.GetLatestMintNft()
 	if err != nil && err != types.DbErrNotFound {
 		logx.Error("get latest mint nft failed: ", err)

@@ -274,8 +274,7 @@ type Config struct {
 
 	BlockConfig struct {
 		OptionalBlockSizes    []int
-		BlockSaveDisabled     bool `json:",optional"`
-		SaveBlockDataPoolSize int  `json:",optional"`
+		SaveBlockDataPoolSize int `json:",optional"`
 	}
 	LogConf logx.LogConf
 }
@@ -913,10 +912,6 @@ func (c *Committer) syncAccountToRedisFunc(pendingMap *PendingMap) {
 func (c *Committer) preSaveBlockDataFunc(stateDataCopy *statedb.StateDataCopy) {
 	start := time.Now()
 	logx.Infof("preSaveBlockDataFunc start, blockHeight:%d", stateDataCopy.CurrentBlock.BlockHeight)
-	if c.config.BlockConfig.BlockSaveDisabled {
-		c.bc.Statedb.UpdatePrunedBlockHeight(stateDataCopy.CurrentBlock.BlockHeight)
-		return
-	}
 	accountIndexes := make([]int64, 0, len(stateDataCopy.StateCache.PendingAccountMap))
 
 	for _, accountInfo := range stateDataCopy.StateCache.PendingAccountMap {
@@ -944,6 +939,13 @@ func (c *Committer) preSaveBlockDataFunc(stateDataCopy *statedb.StateDataCopy) {
 		logx.Errorf("preSaveBlockDataFunc failed:%s,blockHeight:%s", err, stateDataCopy.CurrentBlock.BlockHeight)
 		panic("preSaveBlockDataFunc failed: " + err.Error())
 	}
+	latestVerifiedBlockNr, err := c.bc.BlockModel.GetLatestVerifiedHeight()
+	if err != nil {
+		logx.Error("get latest verified height failed: ", err)
+		panic("get latest verified height failed:" + err.Error())
+	}
+	c.bc.Statedb.UpdatePrunedBlockHeight(latestVerifiedBlockNr)
+
 	preSaveBlockDataMetrics.WithLabelValues("all").Set(float64(time.Since(start).Milliseconds()))
 	c.updateAccountAssetTreeWorker.Enqueue(stateDataCopy)
 }
@@ -988,10 +990,6 @@ func (c *Committer) updateAccountTreeAndNftTreeFunc(stateDataCopy *statedb.State
 
 func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 	start := time.Now()
-	if c.config.BlockConfig.BlockSaveDisabled {
-		c.bc.Statedb.UpdatePrunedBlockHeight(blockStates.Block.BlockHeight)
-		return
-	}
 	logx.Infof("saveBlockDataFunc start, blockHeight:%d", blockStates.Block.BlockHeight)
 	totalTask := 0
 	errChan := make(chan error, 1)
@@ -1290,7 +1288,6 @@ func (c *Committer) finalSaveBlockDataFunc(blockStates *block.BlockStates) {
 		logx.Errorf("finalSaveBlockDataFunc failed:%s,blockHeight:%d", err.Error(), blockStates.Block.BlockHeight)
 		panic("finalSaveBlockDataFunc failed: " + err.Error())
 	}
-	c.bc.Statedb.UpdatePrunedBlockHeight(blockStates.Block.BlockHeight)
 	l2BlockDbHeightMetric.Set(float64(blockStates.Block.BlockHeight))
 	finalSaveBlockDataMetrics.WithLabelValues("all").Set(float64(time.Since(start).Milliseconds()))
 }
