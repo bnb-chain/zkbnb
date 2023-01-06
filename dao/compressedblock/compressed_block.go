@@ -32,8 +32,8 @@ type (
 		CreateCompressedBlockTable() error
 		DropCompressedBlockTable() error
 		GetCompressedBlocksBetween(start, end int64) (blocksForCommit []*CompressedBlock, err error)
-		CreateCompressedBlock(block *CompressedBlock) error
-		DeleteByHeightInTransact(tx *gorm.DB, heights []int) error
+		CreateCompressedBlockInTransact(tx *gorm.DB, block *CompressedBlock) error
+		DeleteByHeightsInTransact(tx *gorm.DB, heights []int64) error
 	}
 
 	defaultCompressedBlockModel struct {
@@ -81,8 +81,8 @@ func (m *defaultCompressedBlockModel) GetCompressedBlocksBetween(start, end int6
 	return blocksForCommit, nil
 }
 
-func (m *defaultCompressedBlockModel) CreateCompressedBlock(block *CompressedBlock) error {
-	dbTx := m.DB.Table(m.table).Create(block)
+func (m *defaultCompressedBlockModel) CreateCompressedBlockInTransact(tx *gorm.DB, block *CompressedBlock) error {
+	dbTx := tx.Table(m.table).Create(block)
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}
@@ -91,7 +91,10 @@ func (m *defaultCompressedBlockModel) CreateCompressedBlock(block *CompressedBlo
 	}
 	return nil
 }
-func (m *defaultCompressedBlockModel) DeleteByHeightInTransact(tx *gorm.DB, heights []int) error {
+func (m *defaultCompressedBlockModel) DeleteByHeightsInTransact(tx *gorm.DB, heights []int64) error {
+	if len(heights) == 0 {
+		return nil
+	}
 	dbTx := tx.Model(&CompressedBlock{}).Unscoped().Where("block_height in ?", heights).Delete(&CompressedBlock{})
 	if dbTx.Error != nil {
 		return dbTx.Error

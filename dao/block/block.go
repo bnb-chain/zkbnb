@@ -68,7 +68,8 @@ type (
 		PreSaveBlockData(block *Block) error
 		UpdateBlockToPendingInTransact(tx *gorm.DB, block *Block) error
 		GetBlockByStatus(statuses []int) (blocks []*Block, err error)
-		GetLatestPendingHeight() (height int64, err error)
+		GetLatestHeight(statuses []int) (height int64, err error)
+		UpdateBlockToProposingInTransact(tx *gorm.DB, blockHeights []int64) error
 	}
 
 	defaultBlockModel struct {
@@ -337,8 +338,7 @@ func (m *defaultBlockModel) GetLatestVerifiedHeight() (height int64, err error) 
 	return block.BlockHeight, nil
 }
 
-func (m *defaultBlockModel) GetLatestPendingHeight() (height int64, err error) {
-	var statuses = []int{StatusPending, StatusCommitted, StatusVerifiedAndExecuted}
+func (m *defaultBlockModel) GetLatestHeight(statuses []int) (height int64, err error) {
 	block := &Block{}
 	dbTx := m.DB.Table(m.table).Where("block_status in ?", statuses).
 		Order("block_height DESC").
@@ -402,6 +402,9 @@ func (m *defaultBlockModel) UpdateBlockInTransact(tx *gorm.DB, block *Block) (er
 }
 
 func (m *defaultBlockModel) DeleteBlockInTransact(tx *gorm.DB, statuses []int) error {
+	if len(statuses) == 0 {
+		return nil
+	}
 	dbTx := tx.Table(m.table).Unscoped().Where("block_status in ?", statuses).Delete(&Block{})
 	if dbTx.Error != nil {
 		return types.DbErrSqlOperation
@@ -422,7 +425,7 @@ func (m *defaultBlockModel) GetBlockByStatus(statuses []int) (blocks []*Block, e
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, nil
+		return nil, types.DbErrNotFound
 	}
 	return blocks, nil
 }
@@ -446,7 +449,7 @@ func (m *defaultBlockModel) PreSaveBlockData(block *Block) (err error) {
 }
 
 func (m *defaultBlockModel) UpdateBlockToPendingInTransact(tx *gorm.DB, block *Block) error {
-	dbTx := m.DB.Model(&Block{}).Select("BlockStatus", "BlockSize", "BlockCommitment", "StateRoot", "PriorityOperations", "PendingOnChainOperationsHash", "PendingOnChainOperationsPubData").Where("id = ? and  block_status = ?", block.ID, StatusPacked).Updates(map[string]interface{}{
+	dbTx := tx.Model(&Block{}).Select("BlockStatus", "BlockSize", "BlockCommitment", "StateRoot", "PriorityOperations", "PendingOnChainOperationsHash", "PendingOnChainOperationsPubData").Where("id = ? and  block_status = ?", block.ID, StatusPacked).Updates(map[string]interface{}{
 		"block_status":                         StatusPending,
 		"block_size":                           block.BlockSize,
 		"block_commitment":                     block.BlockCommitment,
@@ -460,6 +463,24 @@ func (m *defaultBlockModel) UpdateBlockToPendingInTransact(tx *gorm.DB, block *B
 	}
 	if dbTx.RowsAffected != 1 {
 		return errors.New("update block status failed,rowsAffected =" + strconv.FormatInt(dbTx.RowsAffected, 10) + "not equal length=1")
+	}
+	return nil
+}
+
+func (m *defaultBlockModel) UpdateBlockToProposingInTransact(tx *gorm.DB, blockHeights []int64) error {
+	dbTx := tx.Model(&Block{}).Select("BlockStatus", "BlockSize", "BlockCommitment", "StateRoot", "PriorityOperations", "PendingOnChainOperationsHash", "PendingOnChainOperationsPubData", "AccountIndexes", "NftIndexes").Where("block_height in ?", blockHeights).Updates(map[string]interface{}{
+		"block_status":                         StatusProposing,
+		"block_size":                           0,
+		"block_commitment":                     "",
+		"state_root":                           "",
+		"priority_operations":                  0,
+		"pending_on_chain_operations_hash":     "",
+		"pending_on_chain_operations_pub_data": "",
+		"account_indexes":                      "[]",
+		"nft_indexes":                          "[]",
+	})
+	if dbTx.Error != nil {
+		return dbTx.Error
 	}
 	return nil
 }

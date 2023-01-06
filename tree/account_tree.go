@@ -39,6 +39,7 @@ func accountAssetNamespace(index int64) string {
 func InitAccountTree(
 	accountModel account.AccountModel,
 	accountHistoryModel account.AccountHistoryModel,
+	accountIndexList []int64,
 	blockHeight int64,
 	ctx *Context,
 	assetCacheSize int,
@@ -83,6 +84,7 @@ func InitAccountTree(
 	}
 
 	if ctx.IsLoad() {
+		newVersion := bsmt.Version(blockHeight)
 		for i := 0; i < int(accountNums); i += ctx.BatchReloadSize() {
 			err := reloadAccountTreeFromRDB(
 				accountModel, accountHistoryModel, blockHeight,
@@ -94,14 +96,14 @@ func InitAccountTree(
 		}
 
 		for i := int64(0); i < accountNums; i++ {
-			_, err := accountAssetTrees.Get(i).Commit(nil)
+			_, err := accountAssetTrees.Get(i).CommitWithNewVersion(nil, &newVersion)
 			if err != nil {
 				logx.Errorf("unable to set asset to tree: %s", err.Error())
 				return nil, nil, err
 			}
 		}
 
-		_, err = accountTree.Commit(nil)
+		_, err = accountTree.CommitWithNewVersion(nil, &newVersion)
 		if err != nil {
 			logx.Errorf("unable to commit account tree: %s", err.Error())
 			return nil, nil, err
@@ -119,13 +121,13 @@ func InitAccountTree(
 		}
 	}
 
-	for i := int64(0); i < accountNums; i++ {
-		asset := accountAssetTrees.Get(i)
+	for _, accountIndex := range accountIndexList {
+		asset := accountAssetTrees.Get(accountIndex)
 		if asset.LatestVersion() > bsmt.Version(blockHeight) && !asset.IsEmpty() {
-			logx.Infof("asset tree %d version [%d] is higher than block, rollback to %d", i, asset.LatestVersion(), blockHeight)
+			logx.Infof("asset tree %d version [%d] is higher than block, rollback to %d", accountIndex, asset.LatestVersion(), blockHeight)
 			err := asset.Rollback(bsmt.Version(blockHeight))
 			if err != nil {
-				logx.Errorf("unable to rollback asset [%d] tree: %s, version: %d", i, err.Error(), blockHeight)
+				logx.Errorf("unable to rollback asset [%d] tree: %s, version: %d", accountIndex, err.Error(), blockHeight)
 				return nil, nil, err
 			}
 		}

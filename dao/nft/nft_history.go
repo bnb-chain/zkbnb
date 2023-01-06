@@ -39,7 +39,7 @@ type (
 		CreateNftHistoriesInTransact(tx *gorm.DB, histories []*L2NftHistory) error
 		GetLatestNftHistories(nftIndexes []int64, height int64) (rowsAffected int64, nfts []*L2NftHistory, err error)
 		CreateNftHistories(histories []*L2NftHistory) error
-		DeleteByHeightInTransact(tx *gorm.DB, heights []int64) error
+		DeleteByHeightsInTransact(tx *gorm.DB, heights []int64) error
 	}
 	defaultL2NftHistoryModel struct {
 		table string
@@ -133,7 +133,7 @@ func (m *defaultL2NftHistoryModel) GetLatestNftHistories(nftIndexes []int64, hei
 	if dbTx.Error != nil {
 		return 0, nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return 0, nil, nil
+		return 0, nil, types.DbErrNotFound
 	}
 	return dbTx.RowsAffected, nfts, nil
 }
@@ -150,7 +150,10 @@ func (m *defaultL2NftHistoryModel) CreateNftHistories(histories []*L2NftHistory)
 	return nil
 }
 
-func (m *defaultL2NftHistoryModel) DeleteByHeightInTransact(tx *gorm.DB, heights []int64) error {
+func (m *defaultL2NftHistoryModel) DeleteByHeightsInTransact(tx *gorm.DB, heights []int64) error {
+	if len(heights) == 0 {
+		return nil
+	}
 	dbTx := tx.Model(&L2NftHistory{}).Unscoped().Where("l2_block_height in ?", heights).Delete(&L2NftHistory{})
 	if dbTx.Error != nil {
 		return dbTx.Error

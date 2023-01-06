@@ -18,7 +18,9 @@
 package tx
 
 import (
+	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"time"
 
 	"github.com/bnb-chain/zkbnb/types"
@@ -55,8 +57,11 @@ type (
 		UpdateTxsStatusAndHeightByIds(ids []uint, status int, blockHeight int64) error
 		DeleteTxsBatch(poolTxIds []uint, status int, blockHeight int64) error
 		DeleteTxIdsBatchInTransact(tx *gorm.DB, ids []uint) error
-		UpdateTxsToPendingByHeight(tx *gorm.DB, blockHeight []int64) error
+		UpdateTxsToPendingByHeights(tx *gorm.DB, blockHeight []int64) error
 		UpdateTxsToPendingByMaxId(tx *gorm.DB, maxPoolTxId uint) error
+		BatchUpdateNftIndexOrCollectionId(txs []*PoolTx) (err error)
+		GetLatestMintNft() (tx *Tx, err error)
+		GetTxsByHeights(blockHeights []int64) (txs []*Tx, err error)
 	}
 
 	defaultTxPoolModel struct {
@@ -145,6 +150,17 @@ func (m *defaultTxPoolModel) GetTxsByStatus(status int) (txs []*Tx, err error) {
 	dbTx := m.DB.Table(m.table).Where("tx_status = ?", status).Order("created_at, id").Find(&txs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
+	}
+	return txs, nil
+}
+
+func (m *defaultTxPoolModel) GetTxsByHeights(blockHeights []int64) (txs []*Tx, err error) {
+	dbTx := m.DB.Table(m.table).Select("id,tx_hash").Where("block_height in ?", blockHeights).Order("id asc").Find(&txs)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	}
+	if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
 	}
 	return txs, nil
 }
@@ -323,8 +339,11 @@ func (m *defaultTxPoolModel) UpdateTxsStatusAndHeightByIds(ids []uint, status in
 }
 
 func (m *defaultTxPoolModel) UpdateTxsToPending(tx *gorm.DB) error {
-	var statuses = []int{StatusProcessing, StatusExecuted}
-	dbTx := tx.Model(&PoolTx{}).Where("tx_status in ? ", statuses).Update("tx_status", StatusPending)
+	dbTx := tx.Model(&PoolTx{}).Select("DeletedAt", "ExpiredAt", "TxStatus").Where("tx_status = ? ", StatusExecuted).Updates(map[string]interface{}{
+		"deleted_at": nil,
+		"expired_at": time.Now().Unix(),
+		"tx_status":  StatusPending,
+	})
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}
@@ -375,11 +394,11 @@ func (m *defaultTxPoolModel) DeleteTxIdsBatchInTransact(tx *gorm.DB, ids []uint)
 	}
 	return nil
 }
-func (m *defaultTxPoolModel) UpdateTxsToPendingByHeight(tx *gorm.DB, blockHeight []int64) error {
-	if len(blockHeight) == 0 {
+func (m *defaultTxPoolModel) UpdateTxsToPendingByHeights(tx *gorm.DB, blockHeights []int64) error {
+	if len(blockHeights) == 0 {
 		return nil
 	}
-	dbTx := tx.Model(&PoolTx{}).Unscoped().Select("DeletedAt", "TxStatus").Where("block_height in ? and tx_status= ? and deleted_at is not null", blockHeight, StatusExecuted).Updates(map[string]interface{}{
+	dbTx := tx.Model(&PoolTx{}).Unscoped().Select("DeletedAt", "TxStatus").Where("block_height in ? and tx_status = ? ", blockHeights, StatusExecuted).Updates(map[string]interface{}{
 		"deleted_at": nil,
 		"tx_status":  StatusPending,
 	})
@@ -430,6 +449,18 @@ func (m *defaultTxPoolModel) GetLatestTx(txTypes []int64, statuses []int) (tx *T
 	return tx, nil
 }
 
+func (m *defaultTxPoolModel) GetLatestMintNft() (tx *Tx, err error) {
+
+	dbTx := m.DB.Table(m.table).Unscoped().Where("tx_type = ?", types.TxTypeMintNft).Order("nft_index DESC").Limit(1).Find(&tx)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+
+	return tx, nil
+}
+
 func (m *defaultTxPoolModel) GetFirstTxByStatus(status int) (txs *Tx, err error) {
 	dbTx := m.DB.Table(m.table).Where("tx_status = ?", status).Order("id asc").Limit(1).Find(&txs)
 	if dbTx.Error != nil {
@@ -440,21 +471,27 @@ func (m *defaultTxPoolModel) GetFirstTxByStatus(status int) (txs *Tx, err error)
 	return txs, nil
 }
 
-func (m *defaultTxPoolModel) GetProposingBlockHeight() (ids []int64, err error) {
-	dbTx := m.DB.Table(m.table).Where("tx_status = ? and deleted_at is null", StatusExecuted).Select("id").Order("id asc").Find(&ids)
-	if dbTx.Error != nil {
-		return nil, types.DbErrSqlOperation
-	}
-	return ids, nil
-}
-
 func (m *defaultTxPoolModel) GetLatestExecutedTx() (tx *Tx, err error) {
-	var statuses = []int{StatusFailed, StatusExecuted}
-	dbTx := m.DB.Table(m.table).Unscoped().Where("tx_status IN ?", statuses).Order("id DESC").Limit(1).Find(&tx)
+	dbTx := m.DB.Table(m.table).Unscoped().Where("tx_status = ?", StatusExecuted).Order("id DESC").Limit(1).Find(&tx)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, nil
+		return nil, types.DbErrNotFound
 	}
 	return tx, nil
+}
+
+func (m *defaultTxPoolModel) BatchUpdateNftIndexOrCollectionId(txs []*PoolTx) (err error) {
+	dbTx := m.DB.Table(m.table).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "id"}},
+		DoUpdates: clause.AssignmentColumns([]string{"nft_index", "collection_id"}),
+	}).Create(&txs)
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if int(dbTx.RowsAffected) != len(txs) {
+		logx.Errorf("BatchUpdateNftIndexOrCollectionId failed,rows affected not equal txs length,dbTx.RowsAffected:%s,len(txs):%s", int(dbTx.RowsAffected), len(txs))
+		return types.DbErrFailToUpdatePoolTx
+	}
+	return nil
 }

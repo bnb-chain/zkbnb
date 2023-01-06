@@ -82,8 +82,12 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 	for _, vlog := range logs {
 		l1EventInfo := &L1Event{
 			TxHash: vlog.TxHash.Hex(),
+			Index:  vlog.Index,
 		}
-
+		if vlog.Removed {
+			logx.Errorf("Removed to get vlog,TxHash:%v,Index:%v", l1EventInfo.TxHash, l1EventInfo.Index)
+			continue
+		}
 		logBlock, err := m.cli.GetBlockHeaderByNumber(big.NewInt(int64(vlog.BlockNumber)))
 		if err != nil {
 			return fmt.Errorf("failed to get block header, err: %v", err)

@@ -55,6 +55,17 @@ func IsL2Tx(txType int64) bool {
 	return false
 }
 
+func GetL2TxTypes() []int64 {
+	return []int64{TxTypeTransfer,
+		TxTypeWithdraw,
+		TxTypeCreateCollection,
+		TxTypeMintNft,
+		TxTypeTransferNft,
+		TxTypeAtomicMatch,
+		TxTypeCancelOffer,
+		TxTypeWithdrawNft}
+}
+
 func IsPriorityOperationTx(txType int64) bool {
 	if txType == TxTypeRegisterZns ||
 		txType == TxTypeDeposit ||
@@ -64,6 +75,14 @@ func IsPriorityOperationTx(txType int64) bool {
 		return true
 	}
 	return false
+}
+
+func GetL1TxTypes() []int64 {
+	return []int64{TxTypeRegisterZns,
+		TxTypeDeposit,
+		TxTypeDepositNft,
+		TxTypeFullExit,
+		TxTypeFullExitNft}
 }
 
 const (

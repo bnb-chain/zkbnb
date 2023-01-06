@@ -45,6 +45,7 @@ func RecoveryTreeDB(
 	_, _, err = tree.InitAccountTree(
 		ctx.AccountModel,
 		ctx.AccountHistoryModel,
+		make([]int64, 0),
 		blockHeight,
 		treeCtx,
 		c.TreeDB.AssetTreeCacheSize,

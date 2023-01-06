@@ -33,7 +33,6 @@ const (
 const (
 	StatusFailed = iota
 	StatusPending
-	StatusProcessing
 	StatusExecuted
 	StatusPacked
 	StatusCommitted
@@ -86,7 +85,7 @@ type (
 		GetDistinctAccountsCountBetween(from, to time.Time) (count int64, err error)
 		UpdateTxsStatusInTransact(tx *gorm.DB, blockTxStatus map[int64]int) error
 		CreateTxs(txs []*Tx) error
-		DeleteByHeightInTransact(tx *gorm.DB, heights []int64) error
+		DeleteByHeightsInTransact(tx *gorm.DB, heights []int64) error
 		GetMaxPoolTxIdByHeightInTransact(tx *gorm.DB, height int64) (poolTxId uint, err error)
 	}
 
@@ -97,7 +96,8 @@ type (
 
 	Tx struct {
 		PoolTx
-		PoolTxId uint `gorm:"uniqueIndex"`
+		PoolTxId uint      `gorm:"uniqueIndex"`
+		VerifyAt time.Time // verify time when the transaction status changes to be StatusVerified
 	}
 )
 
@@ -245,13 +245,18 @@ func (m *defaultTxModel) GetDistinctAccountsCountBetween(from, to time.Time) (co
 func (m *defaultTxModel) UpdateTxsStatusInTransact(tx *gorm.DB, blockTxStatus map[int64]int) error {
 
 	//parameters to update the transaction status
-	conditions := make(map[string]interface{})
 	for height, status := range blockTxStatus {
 
-		conditions["tx_status"] = status
-		conditions["updated_at"] = time.Now()
+		data := &Tx{}
+		data.BlockHeight = height
+		data.TxStatus = status
 
-		dbTx := tx.Table(m.table).Where("block_height = ?", height).Updates(conditions)
+		// For status = StatusVerified case, the verifyAt field need to be updated meanwhile
+		if status == StatusVerified {
+			data.VerifyAt = time.Now()
+		}
+
+		dbTx := tx.Model(&Tx{}).Where("block_height = ?", height).Updates(data)
 		if dbTx.Error != nil {
 			return dbTx.Error
 		}
@@ -274,7 +279,10 @@ func (m *defaultTxModel) CreateTxs(txs []*Tx) error {
 	return nil
 }
 
-func (m *defaultTxModel) DeleteByHeightInTransact(tx *gorm.DB, heights []int64) error {
+func (m *defaultTxModel) DeleteByHeightsInTransact(tx *gorm.DB, heights []int64) error {
+	if len(heights) == 0 {
+		return nil
+	}
 	dbTx := tx.Model(&Tx{}).Unscoped().Where("block_height in ?", heights).Delete(&Tx{})
 	if dbTx.Error != nil {
 		return dbTx.Error

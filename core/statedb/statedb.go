@@ -30,7 +30,7 @@ var (
 	DefaultCacheConfig = CacheConfig{
 		AccountCacheSize: 2048,
 		NftCacheSize:     2048,
-		MemCacheSize:     2048,
+		MemCacheSize:     204800,
 	}
 )
 
@@ -57,7 +57,7 @@ func (c *CacheConfig) sanitize() *CacheConfig {
 }
 
 type StateDB struct {
-	dryRun bool
+	DryRun bool
 	// State cache
 	*StateCache
 	chainDb    *ChainDB
@@ -76,12 +76,13 @@ type StateDB struct {
 	mainLock          sync.RWMutex
 	prunedBlockHeight int64
 	PreviousStateRoot string
+	MaxNftIndexUsed   int64
 	Metrics           *zkbnbprometheus.StateDBMetrics
 }
 
 func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 	redisCache dbcache.Cache, cacheConfig *CacheConfig, assetCacheSize int,
-	stateRoot string, curHeight int64) (*StateDB, error) {
+	stateRoot string, accountIndexList []int64, curHeight int64) (*StateDB, error) {
 	err := tree.SetupTreeDB(treeCtx)
 	if err != nil {
 		logx.Error("setup tree db failed: ", err)
@@ -90,6 +91,7 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 	accountTree, accountAssetTrees, err := tree.InitAccountTree(
 		chainDb.AccountModel,
 		chainDb.AccountHistoryModel,
+		accountIndexList,
 		curHeight,
 		treeCtx,
 		assetCacheSize,
@@ -163,7 +165,7 @@ func NewStateDBForDryRun(redisCache dbcache.Cache, cacheConfig *CacheConfig, cha
 	}
 
 	return &StateDB{
-		dryRun:       true,
+		DryRun:       true,
 		redisCache:   redisCache,
 		chainDb:      chainDb,
 		AccountCache: accountCache,
@@ -448,7 +450,7 @@ func (s *StateDB) DeepCopyAccounts(accountIds []int64) (map[int64]*types.Account
 
 func (s *StateDB) PrepareAccountsAndAssets(accountAssetsMap map[int64]map[int64]bool) error {
 	for accountIndex, assets := range accountAssetsMap {
-		if s.dryRun {
+		if s.DryRun {
 			account := &account.Account{}
 			redisAccount, err := s.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex), account)
 			if err == nil && redisAccount != nil {
@@ -482,7 +484,7 @@ func (s *StateDB) PrepareAccountsAndAssets(accountAssetsMap map[int64]map[int64]
 }
 
 func (s *StateDB) PrepareNft(nftIndex int64) (*nft.L2Nft, error) {
-	if s.dryRun {
+	if s.DryRun {
 		n := &nft.L2Nft{}
 		redisNft, err := s.redisCache.Get(context.Background(), dbcache.NftKeyByIndex(nftIndex), n)
 		if err == nil && redisNft != nil {
@@ -668,7 +670,8 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCop
 	if prunedVersion > latestVersion {
 		prunedVersion = latestVersion
 	}
-	ver, err := asset.Commit(&prunedVersion)
+	newVersion := bsmt.Version(stateCopy.CurrentBlock.BlockHeight)
+	ver, err := asset.CommitWithNewVersion(&prunedVersion, &newVersion)
 	if err != nil {
 		logx.Error("asset.Commit failed:", err)
 		return accountIndex, nil, fmt.Errorf("unable to commit asset tree [%d], tree ver: %d, prune ver: %d,error:%s", accountIndex, ver, prunedVersion, err.Error())
@@ -749,6 +752,7 @@ func (s *StateDB) GetNextAccountIndex() int64 {
 }
 
 func (s *StateDB) GetNextNftIndex() int64 {
+	//todo save nftindex to memcache
 	maxNftIndex, err := s.chainDb.L2NftModel.GetLatestNftIndex()
 	if err != nil {
 		logx.Severef("get latest nft index error: %s", err.Error())
@@ -759,6 +763,10 @@ func (s *StateDB) GetNextNftIndex() int64 {
 		if index > maxNftIndex {
 			maxNftIndex = index
 		}
+	}
+
+	if s.MaxNftIndexUsed > maxNftIndex {
+		maxNftIndex = s.MaxNftIndexUsed
 	}
 	return maxNftIndex + 1
 }
