@@ -661,7 +661,7 @@ func (c *Committer) executeTxFunc() {
 			// Write the proposed block into database when the first transaction executed.
 			if len(c.bc.Statedb.Txs) == 1 {
 				previousHeight := curBlock.BlockHeight
-				if curBlock.ID != 0 {
+				if curBlock.ID == 0 {
 					err = c.createNewBlock(curBlock)
 					logx.Infof("create new block, current height=%s,previous height=%d,blockId=%s", curBlock.BlockHeight, previousHeight, curBlock.ID)
 					if err != nil {
@@ -737,18 +737,6 @@ func (c *Committer) executeTxFunc() {
 				newAccount.L2BlockHeight = curBlock.BlockHeight
 				addPendingAccounts = append(addPendingAccounts, newAccount)
 			}
-			if len(addPendingAccounts) != 0 {
-				err = c.bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
-					return c.bc.DB().AccountModel.BatchInsertOrUpdateInTransact(dbTx, addPendingAccounts)
-				})
-				if err != nil {
-					logx.Errorf("account batch insert or update failed:%s ", err.Error())
-					panic("account batch insert or update failed: " + err.Error())
-				}
-				for _, accountInfo := range addPendingAccounts {
-					c.bc.Statedb.StateCache.PendingAccountMap[accountInfo.AccountIndex].AccountId = accountInfo.ID
-				}
-			}
 
 			addPendingNfts := make([]*nft.L2Nft, 0)
 			for _, nftInfo := range c.bc.Statedb.StateCache.PendingNftMap {
@@ -758,20 +746,60 @@ func (c *Committer) executeTxFunc() {
 				}
 				addPendingNfts = append(addPendingNfts, nftInfo)
 			}
-			if len(addPendingNfts) != 0 {
+
+			if len(addPendingAccounts) > 0 || len(addPendingNfts) > 0 {
 				err = c.bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
-					return c.bc.DB().L2NftModel.BatchInsertOrUpdateInTransact(dbTx, addPendingNfts)
+					if len(addPendingAccounts) != 0 {
+						err = c.bc.DB().AccountModel.BatchInsertOrUpdateInTransact(dbTx, addPendingAccounts)
+						if err != nil {
+							logx.Errorf("account batch insert or update failed:%s ", err.Error())
+							panic("account batch insert or update failed: " + err.Error())
+						}
+					}
+					if len(addPendingNfts) != 0 {
+						err = c.bc.DB().L2NftModel.BatchInsertOrUpdateInTransact(dbTx, addPendingNfts)
+						if err != nil {
+							logx.Errorf("l2nft batch insert or update failed:%s ", err.Error())
+							panic("l2nft batch insert or update failed: " + err.Error())
+						}
+					}
+					accountIndexes := make([]int64, 0, len(addPendingAccounts))
+
+					for _, accountInfo := range addPendingAccounts {
+						accountIndexes = append(accountIndexes, accountInfo.AccountIndex)
+					}
+					nftIndexes := make([]int64, 0, len(addPendingNfts))
+					for _, nftInfo := range addPendingNfts {
+						nftIndexes = append(nftIndexes, nftInfo.NftIndex)
+					}
+					accountIndexesJson, err := json.Marshal(accountIndexes)
+					if err != nil {
+						logx.Errorf("marshal accountIndexes failed:%s,blockHeight:%s", err, curBlock.BlockHeight)
+						panic("marshal accountIndexes failed: " + err.Error())
+					}
+					nftIndexesJson, err := json.Marshal(nftIndexes)
+					if err != nil {
+						logx.Errorf("marshal nftIndexesJson failed:%s,blockHeight:%s", err, curBlock.BlockHeight)
+						panic("marshal nftIndexesJson failed: " + err.Error())
+					}
+					curBlock.AccountIndexes = string(accountIndexesJson)
+					curBlock.NftIndexes = string(nftIndexesJson)
+					curBlock.BlockStatus = block.StatusPacked
+					err = c.bc.DB().BlockModel.PreSaveBlockDataInTransact(dbTx, curBlock)
+					if err != nil {
+						logx.Errorf("PreSaveBlockDataInTransact failed:%s,blockHeight:%s", err, curBlock.BlockHeight)
+						panic("PreSaveBlockDataInTransact failed: " + err.Error())
+					}
+					return nil
 				})
-				if err != nil {
-					logx.Errorf("l2nft batch insert or update failed:%s ", err.Error())
-					panic("l2nft batch insert or update failed: " + err.Error())
+
+				for _, accountInfo := range addPendingAccounts {
+					c.bc.Statedb.StateCache.PendingAccountMap[accountInfo.AccountIndex].AccountId = accountInfo.ID
 				}
 				for _, nftInfo := range addPendingNfts {
 					c.bc.Statedb.StateCache.PendingNftMap[nftInfo.NftIndex].ID = nftInfo.ID
 				}
-			}
 
-			if len(addPendingAccounts) > 0 || len(addPendingNfts) > 0 {
 				pendingAccountMap := make(map[int64]*types.AccountInfo, len(addPendingAccounts))
 				pendingNftMap := make(map[int64]*nft.L2Nft, len(addPendingNfts))
 				for _, accountInfo := range addPendingAccounts {
@@ -936,7 +964,9 @@ func (c *Committer) preSaveBlockDataFunc(stateDataCopy *statedb.StateDataCopy) {
 	stateDataCopy.CurrentBlock.AccountIndexes = string(accountIndexesJson)
 	stateDataCopy.CurrentBlock.NftIndexes = string(nftIndexesJson)
 	stateDataCopy.CurrentBlock.BlockStatus = block.StatusPacked
-	err = c.bc.DB().BlockModel.PreSaveBlockData(stateDataCopy.CurrentBlock)
+	err = c.bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
+		return c.bc.DB().BlockModel.PreSaveBlockDataInTransact(dbTx, stateDataCopy.CurrentBlock)
+	})
 	if err != nil {
 		logx.Errorf("preSaveBlockDataFunc failed:%s,blockHeight:%s", err, stateDataCopy.CurrentBlock.BlockHeight)
 		panic("preSaveBlockDataFunc failed: " + err.Error())

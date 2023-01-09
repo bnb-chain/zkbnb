@@ -65,7 +65,7 @@ type (
 		UpdateBlockInTransact(tx *gorm.DB, block *Block) (err error)
 		DeleteBlockInTransact(tx *gorm.DB, statuses []int) error
 		GetProposingBlockHeights() (blockHeights []int64, err error)
-		PreSaveBlockData(block *Block) error
+		PreSaveBlockDataInTransact(tx *gorm.DB, block *Block) error
 		UpdateBlockToPendingInTransact(tx *gorm.DB, block *Block) error
 		GetBlockByStatus(statuses []int) (blocks []*Block, err error)
 		GetLatestHeight(statuses []int) (height int64, err error)
@@ -230,10 +230,6 @@ func (m *defaultBlockModel) GetBlockByHeight(blockHeight int64) (block *Block, e
 	sort.Slice(block.Txs, func(i, j int) bool {
 		return block.Txs[i].TxIndex < block.Txs[j].TxIndex
 	})
-	if err != nil {
-		return nil, types.DbErrSqlOperation
-	}
-
 	return block, nil
 }
 
@@ -358,9 +354,6 @@ func (m *defaultBlockModel) CreateBlockInTransact(tx *gorm.DB, oBlock *Block) (e
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
-		if err != nil {
-			return err
-		}
 		return types.DbErrFailToCreateBlock
 	}
 
@@ -376,9 +369,6 @@ func (m *defaultBlockModel) UpdateBlocksWithoutTxsInTransact(tx *gorm.DB, blocks
 			return dbTx.Error
 		}
 		if dbTx.RowsAffected == 0 {
-			if err != nil {
-				return err
-			}
 			return types.DbErrFailToUpdateBlock
 		}
 	}
@@ -393,9 +383,6 @@ func (m *defaultBlockModel) UpdateBlockInTransact(tx *gorm.DB, block *Block) (er
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
-		if err != nil {
-			return err
-		}
 		return types.DbErrFailToUpdateBlock
 	}
 	return nil
@@ -430,8 +417,8 @@ func (m *defaultBlockModel) GetBlockByStatus(statuses []int) (blocks []*Block, e
 	return blocks, nil
 }
 
-func (m *defaultBlockModel) PreSaveBlockData(block *Block) (err error) {
-	dbTx := m.DB.Model(&Block{}).Select("BlockStatus", "AccountIndexes", "NftIndexes").Where("id = ? and  block_status = ?", block.ID, StatusProposing).Updates(map[string]interface{}{
+func (m *defaultBlockModel) PreSaveBlockDataInTransact(tx *gorm.DB, block *Block) (err error) {
+	dbTx := tx.Model(&Block{}).Select("BlockStatus", "AccountIndexes", "NftIndexes").Where("id = ? and  block_status in ?", block.ID, []int{StatusProposing, StatusPacked}).Updates(map[string]interface{}{
 		"block_status":    StatusPacked,
 		"account_indexes": block.AccountIndexes,
 		"nft_indexes":     block.NftIndexes,
@@ -440,9 +427,6 @@ func (m *defaultBlockModel) PreSaveBlockData(block *Block) (err error) {
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
-		if err != nil {
-			return err
-		}
 		return types.DbErrFailToUpdateBlock
 	}
 	return nil
