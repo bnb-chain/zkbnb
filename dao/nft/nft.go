@@ -38,7 +38,7 @@ type (
 		GetNftsByAccountIndex(accountIndex, limit, offset int64) (nfts []*L2Nft, err error)
 		GetNftsCountByAccountIndex(accountIndex int64) (int64, error)
 		UpdateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) error
-		BatchInsertOrUpdate(nfts []*L2Nft) (err error)
+		BatchInsertOrUpdateInTransact(tx *gorm.DB, nfts []*L2Nft) (err error)
 		DeleteByIndexesInTransact(tx *gorm.DB, nftIndexes []int64) error
 		UpdateByIndexInTransact(tx *gorm.DB, l2nft *L2Nft) error
 		GetNfts(limit int64, offset int64) (nfts []*L2Nft, err error)
@@ -140,16 +140,16 @@ func (m *defaultL2NftModel) UpdateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) err
 	return nil
 }
 
-func (m *defaultL2NftModel) BatchInsertOrUpdate(nfts []*L2Nft) (err error) {
-	dbTx := m.DB.Table(m.table).Clauses(clause.OnConflict{
+func (m *defaultL2NftModel) BatchInsertOrUpdateInTransact(tx *gorm.DB, nfts []*L2Nft) (err error) {
+	dbTx := tx.Table(m.table).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},
 		DoUpdates: clause.AssignmentColumns([]string{"creator_account_index", "owner_account_index", "nft_content_hash", "creator_treasury_rate", "collection_id", "l2_block_height"}),
-	}).Create(&nfts)
+	}).CreateInBatches(&nfts, len(nfts))
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}
 	if int(dbTx.RowsAffected) != len(nfts) {
-		logx.Errorf("BatchInsertOrUpdate failed,rows affected not equal nfts length,dbTx.RowsAffected:%s,len(nfts):%s", int(dbTx.RowsAffected), len(nfts))
+		logx.Errorf("BatchInsertOrUpdateInTransact failed,rows affected not equal nfts length,dbTx.RowsAffected:%s,len(nfts):%s", int(dbTx.RowsAffected), len(nfts))
 		return types.DbErrFailToUpdateAccount
 	}
 	return nil

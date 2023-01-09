@@ -38,7 +38,6 @@ type (
 		)
 		CreateNftHistoriesInTransact(tx *gorm.DB, histories []*L2NftHistory) error
 		GetLatestNftHistories(nftIndexes []int64, height int64) (rowsAffected int64, nfts []*L2NftHistory, err error)
-		CreateNftHistories(histories []*L2NftHistory) error
 		DeleteByHeightsInTransact(tx *gorm.DB, heights []int64) error
 	}
 	defaultL2NftHistoryModel struct {
@@ -117,6 +116,7 @@ func (m *defaultL2NftHistoryModel) CreateNftHistoriesInTransact(tx *gorm.DB, his
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected != int64(len(histories)) {
+		logx.Errorf("CreateNftHistoriesInTransact failed,rows affected not equal histories length,dbTx.RowsAffected:%s,len(histories):%s", int(dbTx.RowsAffected), len(histories))
 		return types.DbErrFailToCreateNftHistory
 	}
 	return nil
@@ -136,18 +136,6 @@ func (m *defaultL2NftHistoryModel) GetLatestNftHistories(nftIndexes []int64, hei
 		return 0, nil, types.DbErrNotFound
 	}
 	return dbTx.RowsAffected, nfts, nil
-}
-
-func (m *defaultL2NftHistoryModel) CreateNftHistories(histories []*L2NftHistory) error {
-	dbTx := m.DB.Table(m.table).CreateInBatches(histories, len(histories))
-	if dbTx.Error != nil {
-		return dbTx.Error
-	}
-	if dbTx.RowsAffected != int64(len(histories)) {
-		logx.Errorf("CreateNftHistories failed,rows affected not equal histories length,dbTx.RowsAffected:%s,len(histories):%s", int(dbTx.RowsAffected), len(histories))
-		return types.DbErrFailToCreateAccountHistory
-	}
-	return nil
 }
 
 func (m *defaultL2NftHistoryModel) DeleteByHeightsInTransact(tx *gorm.DB, heights []int64) error {

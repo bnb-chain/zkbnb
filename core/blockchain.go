@@ -148,6 +148,11 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	}
 	logx.Infof("get latest pending or committed or verified height: %d", curHeight)
 
+	bc.currentBlock, err = bc.BlockModel.GetBlockByHeight(curHeight)
+	if err != nil {
+		return nil, err
+	}
+
 	accountIndexList, nftIndexList, heights := preRollBackFunc(bc)
 
 	redisCache := dbcache.NewRedisCache(config.CacheRedis[0].Host, config.CacheRedis[0].Pass, 15*time.Minute)
@@ -161,25 +166,21 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	if err != nil {
 		return nil, err
 	}
-
-	rollbackFunc(bc, accountIndexList, nftIndexList, heights, curHeight)
-
-	bc.currentBlock, err = bc.BlockModel.GetBlockByHeight(curHeight)
-	if err != nil {
-		return nil, err
-	}
-
-	rollBackBlocks, err := bc.BlockModel.GetBlockByStatus([]int{block.StatusProposing})
-	if err != nil && err != types.DbErrNotFound {
-		logx.Error("get blocks by status (StatusProposing,StatusPacked) failed: ", err)
-		panic("get blocks by status (StatusProposing,StatusPacked) failed: " + err.Error())
-	}
 	bc.rollbackBlockMap = make(map[int64]*block.Block, 0)
-	if rollBackBlocks != nil {
-		for _, rollBackBlock := range rollBackBlocks {
-			bc.rollbackBlockMap[rollBackBlock.BlockHeight] = rollBackBlock
+	if len(heights) != 0 {
+		rollbackFunc(bc, accountIndexList, nftIndexList, heights, curHeight)
+		rollBackBlocks, err := bc.BlockModel.GetBlockByStatus([]int{block.StatusProposing})
+		if err != nil && err != types.DbErrNotFound {
+			logx.Error("get blocks by status (StatusProposing,StatusPacked) failed: ", err)
+			panic("get blocks by status (StatusProposing,StatusPacked) failed: " + err.Error())
+		}
+		if rollBackBlocks != nil {
+			for _, rollBackBlock := range rollBackBlocks {
+				bc.rollbackBlockMap[rollBackBlock.BlockHeight] = rollBackBlock
+			}
 		}
 	}
+
 	bc.Statedb.PreviousStateRoot = bc.currentBlock.StateRoot
 
 	mintNft, err := bc.TxPoolModel.GetLatestMintNft()
@@ -484,9 +485,9 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 		}
 	}
 	txs, err := bc.TxPoolModel.GetTxsByHeights(heights)
-	if err != nil {
-		logx.Error("get txs by heights failed: ", err)
-		panic("get txs by heights failed: " + err.Error())
+	if err != nil && err != types.DbErrNotFound {
+		logx.Error("get pool txs by heights failed: ", err)
+		panic("get pool txs by heights failed: " + err.Error())
 	}
 	bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
 		logx.Info("roll back account start")

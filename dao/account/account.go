@@ -46,7 +46,7 @@ type (
 		GetAccountsTotalCount() (count int64, err error)
 		UpdateAccountsInTransact(tx *gorm.DB, accounts []*Account) error
 		GetUsers(limit int64, offset int64) (accounts []*Account, err error)
-		BatchInsertOrUpdate(accounts []*Account) (err error)
+		BatchInsertOrUpdateInTransact(tx *gorm.DB, accounts []*Account) (err error)
 		UpdateByIndexInTransact(tx *gorm.DB, account *Account) error
 		DeleteByIndexesInTransact(tx *gorm.DB, accountIndexes []int64) error
 	}
@@ -228,16 +228,16 @@ func (m *defaultAccountModel) GetUsers(limit int64, offset int64) (accounts []*A
 	return accounts, nil
 }
 
-func (m *defaultAccountModel) BatchInsertOrUpdate(accounts []*Account) (err error) {
-	dbTx := m.DB.Table(m.table).Clauses(clause.OnConflict{
+func (m *defaultAccountModel) BatchInsertOrUpdateInTransact(tx *gorm.DB, accounts []*Account) (err error) {
+	dbTx := tx.Table(m.table).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},
 		DoUpdates: clause.AssignmentColumns([]string{"nonce", "collection_nonce", "asset_info", "asset_root", "l2_block_height"}),
-	}).Create(&accounts)
+	}).CreateInBatches(&accounts, len(accounts))
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}
 	if int(dbTx.RowsAffected) != len(accounts) {
-		logx.Errorf("BatchInsertOrUpdate failed,rows affected not equal accounts length,dbTx.RowsAffected:%s,len(accounts):%s", int(dbTx.RowsAffected), len(accounts))
+		logx.Errorf("BatchInsertOrUpdateInTransact failed,rows affected not equal accounts length,dbTx.RowsAffected:%s,len(accounts):%s", int(dbTx.RowsAffected), len(accounts))
 		return types.DbErrFailToUpdateAccount
 	}
 	return nil

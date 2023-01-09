@@ -665,7 +665,7 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCop
 		return accountIndex, nil, fmt.Errorf("unable to compute account leaf: %v", err)
 	}
 	asset := s.AccountAssetTrees.Get(accountIndex)
-	prunedVersion := bsmt.Version(s.GetPrunedBlockHeight())
+	prunedVersion := bsmt.Version(tree.GetAssetLatestVerifiedHeight(s.GetPrunedBlockHeight(), asset.Versions()))
 	latestVersion := asset.LatestVersion()
 	if prunedVersion > latestVersion {
 		prunedVersion = latestVersion

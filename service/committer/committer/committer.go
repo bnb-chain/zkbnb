@@ -738,8 +738,9 @@ func (c *Committer) executeTxFunc() {
 				addPendingAccounts = append(addPendingAccounts, newAccount)
 			}
 			if len(addPendingAccounts) != 0 {
-				//todo bug
-				err = c.bc.DB().AccountModel.BatchInsertOrUpdate(addPendingAccounts)
+				err = c.bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
+					return c.bc.DB().AccountModel.BatchInsertOrUpdateInTransact(dbTx, addPendingAccounts)
+				})
 				if err != nil {
 					logx.Errorf("account batch insert or update failed:%s ", err.Error())
 					panic("account batch insert or update failed: " + err.Error())
@@ -758,8 +759,9 @@ func (c *Committer) executeTxFunc() {
 				addPendingNfts = append(addPendingNfts, nftInfo)
 			}
 			if len(addPendingNfts) != 0 {
-				//todo bug
-				err = c.bc.DB().L2NftModel.BatchInsertOrUpdate(addPendingNfts)
+				err = c.bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
+					return c.bc.DB().L2NftModel.BatchInsertOrUpdateInTransact(dbTx, addPendingNfts)
+				})
 				if err != nil {
 					logx.Errorf("l2nft batch insert or update failed:%s ", err.Error())
 					panic("l2nft batch insert or update failed: " + err.Error())
@@ -1060,7 +1062,9 @@ func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 			err := func(accounts []*account.Account) error {
 				return c.pool.Submit(func() {
 					start := time.Now()
-					err := c.bc.DB().AccountModel.BatchInsertOrUpdate(accounts)
+					err = c.bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
+						return c.bc.DB().AccountModel.BatchInsertOrUpdateInTransact(dbTx, accounts)
+					})
 					saveAccountsGoroutineMetrics.Set(float64(time.Since(start).Milliseconds()))
 					if err != nil {
 						errChan <- err
@@ -1094,7 +1098,9 @@ func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 			err := func(accountHistories []*account.AccountHistory) error {
 				return c.pool.Submit(func() {
 					start := time.Now()
-					err = c.bc.DB().AccountHistoryModel.CreateAccountHistories(accountHistories)
+					err = c.bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
+						return c.bc.DB().AccountHistoryModel.CreateAccountHistoriesInTransact(dbTx, accountHistories)
+					})
 					addAccountHistoryMetrics.Set(float64(time.Since(start).Milliseconds()))
 					if err != nil {
 						errChan <- err
@@ -1132,7 +1138,9 @@ func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 			err := func(nfts []*nft.L2Nft) error {
 				return c.pool.Submit(func() {
 					start := time.Now()
-					err := c.bc.DB().L2NftModel.BatchInsertOrUpdate(nfts)
+					err = c.bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
+						return c.bc.DB().L2NftModel.BatchInsertOrUpdateInTransact(dbTx, nfts)
+					})
 					saveAccountsGoroutineMetrics.Set(float64(time.Since(start).Milliseconds()))
 					if err != nil {
 						errChan <- err
@@ -1166,7 +1174,9 @@ func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 			err := func(nftHistories []*nft.L2NftHistory) error {
 				return c.pool.Submit(func() {
 					start := time.Now()
-					err = c.bc.DB().L2NftHistoryModel.CreateNftHistories(nftHistories)
+					err = c.bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
+						return c.bc.DB().L2NftHistoryModel.CreateNftHistoriesInTransact(dbTx, nftHistories)
+					})
 					addAccountHistoryMetrics.Set(float64(time.Since(start).Milliseconds()))
 					if err != nil {
 						errChan <- err

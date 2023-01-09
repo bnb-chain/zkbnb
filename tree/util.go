@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
+	"sort"
 	"time"
 
 	common2 "github.com/bnb-chain/zkbnb/common"
@@ -155,11 +156,15 @@ func CommitTrees(
 		err := func(i int64) error {
 			return gopool.Submit(func() {
 				asset := assetTrees.Get(i)
-				version := asset.LatestVersion()
+				prunedVersion := bsmt.Version(GetAssetLatestVerifiedHeight(int64(prunedVersion), asset.Versions()))
+				latestVersion := asset.LatestVersion()
+				if prunedVersion > latestVersion {
+					prunedVersion = latestVersion
+				}
 				newVersion := bsmt.Version(blockHeight)
-				ver, err := asset.CommitWithNewVersion(&version, &newVersion)
+				ver, err := asset.CommitWithNewVersion(&prunedVersion, &newVersion)
 				if err != nil {
-					errChan <- errors.Wrapf(err, "unable to commit asset tree [%d], tree ver: %d, prune ver: %d", i, ver, version)
+					errChan <- errors.Wrapf(err, "unable to commit asset tree [%d], tree ver: %d, prune ver: %d", i, ver, prunedVersion)
 					return
 				}
 				errChan <- nil
@@ -335,4 +340,22 @@ func ComputeStateRootHash(
 	e1 := txtypes.FromBigIntToFr(new(big.Int).SetBytes(nftRoot))
 	hash := poseidon.Poseidon(e0, e1).Bytes()
 	return hash[:]
+}
+
+func GetAssetLatestVerifiedHeight(height int64, versions []bsmt.Version) int64 {
+	if versions == nil {
+		return height
+	}
+	sort.Slice(versions, func(i, j int) bool {
+		return versions[i] < versions[j]
+	})
+
+	latestVerifiedHeight := height
+	for _, version := range versions {
+		if int64(version) > height {
+			break
+		}
+		latestVerifiedHeight = int64(version)
+	}
+	return latestVerifiedHeight
 }

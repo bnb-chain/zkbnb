@@ -485,7 +485,7 @@ func (m *defaultTxPoolModel) BatchUpdateNftIndexOrCollectionId(txs []*PoolTx) (e
 	dbTx := m.DB.Table(m.table).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},
 		DoUpdates: clause.AssignmentColumns([]string{"nft_index", "collection_id"}),
-	}).Create(&txs)
+	}).CreateInBatches(&txs, len(txs))
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}
