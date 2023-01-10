@@ -116,6 +116,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		NftModel:            nftModel,
 		AssetModel:          assetModel,
 		SysConfigModel:      sysconfig.NewSysConfigModel(db),
+		RollbackModel:       rollback.NewRollbackModel(db),
 
 		PriceFetcher: price.NewFetcher(memCache, assetModel, c.CoinMarketCap.Url, c.CoinMarketCap.Token),
 		StateFetcher: state.NewFetcher(redisCache, accountModel, nftModel),

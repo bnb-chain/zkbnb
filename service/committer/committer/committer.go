@@ -550,6 +550,7 @@ func (c *Committer) pullPoolTxs() {
 					logx.Infof("not equal id=%s,but delay seconds<5,break it", poolTx.ID)
 					break
 				} else {
+					//todo add compensation function
 					logx.Infof("not equal id=%s,but delay seconds>5,do it", poolTx.ID)
 				}
 			}
@@ -626,6 +627,9 @@ func (c *Committer) executeTxFunc() {
 			//logx.Infof("apply transaction, txHash=%s", poolTx.TxHash)
 			startApplyTx := time.Now()
 			err = c.bc.ApplyTransaction(poolTx)
+			if c.bc.Statedb.NeedRestoreExecutedTxs && poolTx.ID >= c.bc.Statedb.MaxPollTxIdRollback {
+				c.bc.Statedb.NeedRestoreExecutedTxs = false
+			}
 			executeTxApply1TxMetrics.Set(float64(time.Since(startApplyTx).Milliseconds()))
 			if err != nil {
 				logx.Errorf("apply pool tx ID: %d failed, err %v ", poolTx.ID, err)
@@ -634,6 +638,12 @@ func (c *Committer) executeTxFunc() {
 					logx.Errorf("apply priority pool tx failed,id=%s,error=%s", strconv.Itoa(int(poolTx.ID)), err.Error())
 					panic("apply priority pool tx failed,id=" + strconv.Itoa(int(poolTx.ID)) + ",error=" + err.Error())
 				} else {
+					expectNonce, err := c.bc.Statedb.GetCommittedNonce(poolTx.AccountIndex)
+					if err != nil {
+						c.bc.Statedb.ClearPendingNonceFromRedisCache(poolTx.AccountIndex)
+					} else {
+						c.bc.Statedb.SetPendingNonceToRedisCache(poolTx.AccountIndex, expectNonce-1)
+					}
 					poolTxL2ErrorCountMetics.Inc()
 				}
 				poolTx.TxStatus = tx.StatusFailed
@@ -1339,6 +1349,12 @@ func (c *Committer) createNewBlock(curBlock *block.Block) error {
 }
 
 func (c *Committer) shouldCommit(curBlock *block.Block) bool {
+	if c.bc.Statedb.NeedRestoreExecutedTxs {
+		if len(c.bc.Statedb.Txs) >= c.maxTxsPerBlock {
+			return true
+		}
+		return false
+	}
 	var now = time.Now()
 	if (len(c.bc.Statedb.Txs) > 0 && now.Unix()-curBlock.CreatedAt.Unix() >= MaxCommitterInterval) ||
 		len(c.bc.Statedb.Txs) >= c.maxTxsPerBlock {

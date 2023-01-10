@@ -271,6 +271,11 @@ service server-api {
 	@doc "Search with a specific keyword"
 	@handler Search
 	get /api/v1/search (ReqSearch) returns (Search)
+	
+	@doc "Get rollbacks"
+	@handler GetRollbacks
+	get /api/v1/rollbacks (ReqGetRollbacks) returns (Rollbacks)
+	
 }
 
 /* ======================= Transaction =======================*/

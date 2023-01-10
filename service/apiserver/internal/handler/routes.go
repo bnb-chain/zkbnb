@@ -104,6 +104,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/api/v1/search",
 				Handler: info.SearchHandler(serverCtx),
 			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/rollbacks",
+				Handler: info.GetRollbacksHandler(serverCtx),
+			},
 		},
 	)
 

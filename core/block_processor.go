@@ -33,6 +33,20 @@ func NewCommitProcessor(bc *BlockChain, prometheusMetrics *zkbnbprometheus.Metri
 func (p *CommitProcessor) Process(tx *tx.Tx) error {
 	var start time.Time
 	p.bc.setCurrentBlockTimeStamp()
+	defer func() {
+		if err := recover(); err != nil {
+			if types.IsL2Tx(tx.TxType) {
+				expectNonce, err := p.bc.Statedb.GetCommittedNonce(tx.AccountIndex)
+				if err != nil {
+					p.bc.Statedb.ClearPendingNonceFromRedisCache(tx.AccountIndex)
+				} else {
+					p.bc.Statedb.SetPendingNonceToRedisCache(tx.AccountIndex, expectNonce-1)
+				}
+			}
+			logx.Severe(err)
+			panic(err)
+		}
+	}()
 	defer p.bc.resetCurrentBlockTimeStamp()
 
 	executor, err := executor.NewTxExecutor(p.bc, tx)

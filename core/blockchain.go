@@ -195,6 +195,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		bc.Statedb.MaxNftIndexUsed = mintNft.NftIndex
 	}
 	bc.Statedb.MaxPollTxIdRollback = maxPollTxIdRollback
+	bc.Statedb.NeedRestoreExecutedTxs = maxPollTxIdRollback > 0
 
 	accountFromDbGauge := prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
@@ -859,7 +860,7 @@ func (bc *BlockChain) setCurrentBlockTimeStamp() {
 }
 
 func (bc *BlockChain) resetCurrentBlockTimeStamp() {
-	if len(bc.Statedb.Txs) > 0 {
+	if len(bc.Statedb.Txs) > 0 || bc.Statedb.NeedRestoreExecutedTxs {
 		return
 	}
 
