@@ -167,8 +167,10 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		return nil, err
 	}
 	bc.rollbackBlockMap = make(map[int64]*block.Block, 0)
+
+	maxPollTxIdRollback := uint(0)
 	if len(heights) != 0 {
-		rollbackFunc(bc, accountIndexList, nftIndexList, heights, curHeight)
+		maxPollTxIdRollback, err = rollbackFunc(bc, accountIndexList, nftIndexList, heights, curHeight)
 		rollBackBlocks, err := bc.BlockModel.GetBlockByStatus([]int{block.StatusProposing})
 		if err != nil && err != types.DbErrNotFound {
 			logx.Error("get blocks by status (StatusProposing,StatusPacked) failed: ", err)
@@ -192,6 +194,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	if mintNft != nil {
 		bc.Statedb.MaxNftIndexUsed = mintNft.NftIndex
 	}
+	bc.Statedb.MaxPollTxIdRollback = maxPollTxIdRollback
 
 	accountFromDbGauge := prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
@@ -420,10 +423,12 @@ func preRollBackFunc(bc *BlockChain) ([]int64, []int64, []int64) {
 	return accountIndexList, nftIndexList, heights
 }
 
-func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64, heights []int64, curHeight int64) {
+func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64, heights []int64, curHeight int64) (maxPollTxIdRollback uint, err error) {
 	accountIndexSlice := make([]int64, 0)
 	accountHistories := make([]*account.AccountHistory, 0)
 	accountIndexLen := len(accountIndexList)
+	maxPollTxIdRollback = uint(0)
+
 	for _, accountIndex := range accountIndexList {
 		accountIndexLen--
 		accountIndexSlice = append(accountIndexSlice, accountIndex)
@@ -631,6 +636,7 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 		if len(txs) > 0 {
 			fromTxHash = txs[0].TxHash
 			fromPoolTxId = txs[0].ID
+			maxPollTxIdRollback = txs[len(txs)-1].ID
 		}
 		rollbackInfo := &rollback.Rollback{FromTxHash: fromTxHash, FromPoolTxId: fromPoolTxId, FromBlockHeight: heights[0], PoolTxIds: string(pollTxIdsJson), BlockHeights: string(heightsJson), AccountIndexes: string(accountIndexListJson), NftIndexes: string(nftIndexListJson)}
 		err = bc.RollbackModel.CreateInTransact(dbTx, rollbackInfo)
@@ -650,6 +656,7 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 		logx.Error("there are some block which status is statusPacked: %v", blocks)
 		panic("there are some block which status is statusPacked")
 	}
+	return maxPollTxIdRollback, nil
 }
 
 func (bc *BlockChain) ApplyTransaction(tx *tx.Tx) error {

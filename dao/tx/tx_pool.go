@@ -69,6 +69,11 @@ type (
 	}
 
 	PoolTx struct {
+		BaseTx
+		Rollback bool
+	}
+
+	BaseTx struct {
 		gorm.Model
 
 		// Assigned when created in the tx pool.
@@ -88,13 +93,14 @@ type (
 		TxAmount      string
 		Memo          string
 		ExtraInfo     string
-		NativeAddress string      // a. Priority tx, assigned when created b. Other tx, assigned after executed.
-		TxDetails     []*TxDetail `gorm:"-"`
+		NativeAddress string // a. Priority tx, assigned when created b. Other tx, assigned after executed.
 
 		TxIndex     int64
 		BlockHeight int64 `gorm:"index"`
 		BlockId     uint  `gorm:"index"`
 		TxStatus    int   `gorm:"index"`
+
+		TxDetails []*TxDetail `gorm:"-"`
 	}
 )
 
@@ -236,15 +242,6 @@ func (m *defaultTxPoolModel) GetTxByTxHash(hash string) (tx *Tx, err error) {
 }
 
 func (m *defaultTxPoolModel) CreateTxs(txs []*PoolTx) error {
-	//dbTx := m.DB.Table(m.table).Create(txs)
-	//if dbTx.Error != nil {
-	//	return dbTx.Error
-	//}
-	//if dbTx.RowsAffected == 0 {
-	//	return types.DbErrFailToCreatePoolTx
-	//}
-	//return nil
-
 	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
 		dbTx := tx.Table(m.table).Create(txs)
 		if dbTx.Error != nil {
@@ -381,6 +378,7 @@ func (m *defaultTxPoolModel) UpdateTxsToPendingByHeights(tx *gorm.DB, blockHeigh
 	dbTx := tx.Model(&PoolTx{}).Unscoped().Select("DeletedAt", "TxStatus").Where("block_height in ? and tx_status = ? ", blockHeights, StatusExecuted).Updates(map[string]interface{}{
 		"deleted_at": nil,
 		"tx_status":  StatusPending,
+		"rollback":   true,
 	})
 	if dbTx.Error != nil {
 		return dbTx.Error

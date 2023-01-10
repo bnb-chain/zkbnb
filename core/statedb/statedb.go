@@ -69,15 +69,16 @@ type StateDB struct {
 	MemCache     *ristretto.Cache
 
 	// Tree state
-	AccountTree       bsmt.SparseMerkleTree
-	NftTree           bsmt.SparseMerkleTree
-	AccountAssetTrees *tree.AssetTreeCache
-	TreeCtx           *tree.Context
-	mainLock          sync.RWMutex
-	prunedBlockHeight int64
-	PreviousStateRoot string
-	MaxNftIndexUsed   int64
-	Metrics           *zkbnbprometheus.StateDBMetrics
+	AccountTree         bsmt.SparseMerkleTree
+	NftTree             bsmt.SparseMerkleTree
+	AccountAssetTrees   *tree.AssetTreeCache
+	TreeCtx             *tree.Context
+	mainLock            sync.RWMutex
+	prunedBlockHeight   int64
+	PreviousStateRoot   string
+	MaxNftIndexUsed     int64
+	MaxPollTxIdRollback uint
+	Metrics             *zkbnbprometheus.StateDBMetrics
 }
 
 func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,

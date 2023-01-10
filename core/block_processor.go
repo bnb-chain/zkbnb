@@ -86,7 +86,6 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 		logx.Severe(err)
 		panic(err)
 	}
-
 	p.bc.Statedb.Txs = append(p.bc.Statedb.Txs, tx)
 
 	return nil

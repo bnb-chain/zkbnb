@@ -95,9 +95,11 @@ type (
 	}
 
 	Tx struct {
-		PoolTx
+		BaseTx
 		PoolTxId uint      `gorm:"uniqueIndex"`
 		VerifyAt time.Time // verify time when the transaction status changes to be StatusVerified
+
+		Rollback bool `gorm:"-"`
 	}
 )
 

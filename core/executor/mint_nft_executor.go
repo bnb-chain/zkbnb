@@ -39,10 +39,11 @@ func (e *MintNftExecutor) Prepare() error {
 	txInfo := e.txInfo
 	if !e.bc.StateDB().DryRun {
 		// Set the right nft index for tx info.
-		if e.tx.NftIndex == types.NilNftIndex {
+		if e.tx.Rollback == false {
 			nextNftIndex := e.bc.StateDB().GetNextNftIndex()
 			txInfo.NftIndex = nextNftIndex
 		} else {
+			//for rollback
 			nextNftIndex := e.tx.NftIndex
 			txInfo.NftIndex = nextNftIndex
 		}
