@@ -484,7 +484,7 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 			deleteNftIndexMap[nftIndex] = true
 		}
 	}
-	txs, err := bc.TxPoolModel.GetTxsByHeights(heights)
+	txs, err := bc.TxPoolModel.GetTxsUnscopedByHeights(heights)
 	if err != nil && err != types.DbErrNotFound {
 		logx.Error("get pool txs by heights failed: ", err)
 		panic("get pool txs by heights failed: " + err.Error())
@@ -625,7 +625,14 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 			panic("unmarshal pollTxIds failed: " + err.Error())
 
 		}
-		rollbackInfo := &rollback.Rollback{FromTxHash: txs[0].TxHash, FromPoolTxId: txs[0].ID, FromBlockHeight: heights[0], PoolTxIds: string(pollTxIdsJson), BlockHeights: string(heightsJson), AccountIndexes: string(accountIndexListJson), NftIndexes: string(nftIndexListJson)}
+
+		fromTxHash := ""
+		fromPoolTxId := uint(0)
+		if len(txs) > 0 {
+			fromTxHash = txs[0].TxHash
+			fromPoolTxId = txs[0].ID
+		}
+		rollbackInfo := &rollback.Rollback{FromTxHash: fromTxHash, FromPoolTxId: fromPoolTxId, FromBlockHeight: heights[0], PoolTxIds: string(pollTxIdsJson), BlockHeights: string(heightsJson), AccountIndexes: string(accountIndexListJson), NftIndexes: string(nftIndexListJson)}
 		err = bc.RollbackModel.CreateInTransact(dbTx, rollbackInfo)
 		if err != nil {
 			logx.Error("create rollback failed: ", err)

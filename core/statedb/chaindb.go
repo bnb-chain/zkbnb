@@ -52,8 +52,8 @@ func NewChainDB(db *gorm.DB) *ChainDB {
 		L2NftModel:          nft.NewL2NftModel(db),
 		L2NftHistoryModel:   nft.NewL2NftHistoryModel(db),
 		TxPoolModel:         tx.NewTxPoolModel(db),
-
-		SysConfigModel: sysconfig.NewSysConfigModel(db),
+		RollbackModel:       rollback.NewRollbackModel(db),
+		SysConfigModel:      sysconfig.NewSysConfigModel(db),
 	}
 }
 

@@ -249,6 +249,8 @@ func dropTables(dao *dao) {
 	assert.Nil(nil, dao.l1RollupTModel.DropL1RollupTxTable())
 	assert.Nil(nil, dao.nftModel.DropL2NftTable())
 	assert.Nil(nil, dao.nftHistoryModel.DropL2NftHistoryTable())
+	assert.Nil(nil, dao.rollbackModel.DropRollbackTable())
+
 }
 
 func initTable(dao *dao, svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC string) {
@@ -268,6 +270,7 @@ func initTable(dao *dao, svrConf *contractAddr, bscTestNetworkRPC, localTestNetw
 	assert.Nil(nil, dao.l1RollupTModel.CreateL1RollupTxTable())
 	assert.Nil(nil, dao.nftModel.CreateL2NftTable())
 	assert.Nil(nil, dao.nftHistoryModel.CreateL2NftHistoryTable())
+	assert.Nil(nil, dao.rollbackModel.CreateRollbackTable())
 	rowsAffected, err := dao.assetModel.CreateAssets(initAssetsInfo(svrConf.BUSDToken))
 	if err != nil {
 		logx.Severe(err)

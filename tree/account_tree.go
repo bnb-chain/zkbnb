@@ -79,10 +79,6 @@ func InitAccountTree(
 	}
 	logx.Infof("newBASSparseMerkleTree end")
 
-	if accountNums == 0 {
-		return accountTree, accountAssetTrees, nil
-	}
-
 	if ctx.IsLoad() {
 		newVersion := bsmt.Version(blockHeight)
 		for i := 0; i < int(accountNums); i += ctx.BatchReloadSize() {
@@ -111,7 +107,7 @@ func InitAccountTree(
 		return accountTree, accountAssetTrees, nil
 	}
 
-	// It's not loading from RDB, need to check tree version
+	// It's not loading from RDB, need to check tree versionblock
 	if accountTree.LatestVersion() > bsmt.Version(blockHeight) && !accountTree.IsEmpty() {
 		logx.Infof("account tree version [%d] is higher than block, rollback to %d", accountTree.LatestVersion(), blockHeight)
 		err := accountTree.Rollback(bsmt.Version(blockHeight))

@@ -43,7 +43,6 @@ type (
 		GetPendingTxsByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (txs []*Tx, err error)
 		GetMaxNonceByAccountIndex(accountIndex int64) (nonce int64, err error)
 		CreateTxsInTransact(tx *gorm.DB, txs []*PoolTx) error
-		UpdateTxsInTransact(tx *gorm.DB, txs []*Tx) error
 		DeleteTxsInTransact(tx *gorm.DB, txs []*Tx) error
 		DeleteTxsBatchInTransact(tx *gorm.DB, txs []*Tx) error
 		GetLatestTx(txTypes []int64, statuses []int) (tx *Tx, err error)
@@ -61,7 +60,7 @@ type (
 		UpdateTxsToPendingByMaxId(tx *gorm.DB, maxPoolTxId uint) error
 		BatchUpdateNftIndexOrCollectionId(txs []*PoolTx) (err error)
 		GetLatestMintNft() (tx *Tx, err error)
-		GetTxsByHeights(blockHeights []int64) (txs []*Tx, err error)
+		GetTxsUnscopedByHeights(blockHeights []int64) (txs []*Tx, err error)
 	}
 
 	defaultTxPoolModel struct {
@@ -154,8 +153,8 @@ func (m *defaultTxPoolModel) GetTxsByStatus(status int) (txs []*Tx, err error) {
 	return txs, nil
 }
 
-func (m *defaultTxPoolModel) GetTxsByHeights(blockHeights []int64) (txs []*Tx, err error) {
-	dbTx := m.DB.Table(m.table).Select("id,tx_hash").Where("block_height in ?", blockHeights).Order("id asc").Find(&txs)
+func (m *defaultTxPoolModel) GetTxsUnscopedByHeights(blockHeights []int64) (txs []*Tx, err error) {
+	dbTx := m.DB.Table(m.table).Unscoped().Select("id,tx_hash").Where("tx_status = ? and block_height in ?", StatusExecuted, blockHeights).Order("id asc").Find(&txs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	}
@@ -295,25 +294,6 @@ func (m *defaultTxPoolModel) CreateTxsInTransact(tx *gorm.DB, txs []*PoolTx) err
 	}
 	if dbTx.RowsAffected == 0 {
 		return types.DbErrFailToCreatePoolTx
-	}
-	return nil
-}
-
-func (m *defaultTxPoolModel) UpdateTxsInTransact(tx *gorm.DB, txs []*Tx) error {
-	for _, poolTx := range txs {
-		// Don't write tx details when update tx pool.
-		txDetails := poolTx.TxDetails
-		poolTx.TxDetails = nil
-		dbTx := tx.Scopes().Table(m.table).Where("id = ?", poolTx.ID).
-			Select("*").
-			Updates(&poolTx)
-		poolTx.TxDetails = txDetails
-		if dbTx.Error != nil {
-			return dbTx.Error
-		}
-		if dbTx.RowsAffected == 0 {
-			return types.DbErrFailToUpdatePoolTx
-		}
 	}
 	return nil
 }

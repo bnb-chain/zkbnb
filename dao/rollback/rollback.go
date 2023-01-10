@@ -71,7 +71,7 @@ func (m *defaultRollbackModel) DropRollbackTable() error {
 }
 
 func (m *defaultRollbackModel) Get(height int64, limit int, offset int64) (rollbacks []*Rollback, err error) {
-	dbTx := m.DB.Table(m.table).Select("FromBlockHeight,FromTxHash,ID,CreatedAt").Where("from_block_height >= ?", height).Limit(limit).Offset(int(offset)).Order("id asc").Find(&rollbacks)
+	dbTx := m.DB.Table(m.table).Select("FromBlockHeight,FromTxHash,ID,CreatedAt").Where("from_block_height >= ? and from_pool_tx_id!=0", height).Limit(limit).Offset(int(offset)).Order("id asc").Find(&rollbacks)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
