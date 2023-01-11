@@ -31,6 +31,7 @@ type (
 		CreateRollbackTable() error
 		DropRollbackTable() error
 		Get(height int64, limit int, offset int64) (rollbacks []*Rollback, err error)
+		GetCount(height int64, limit int, offset int64) (count int64, err error)
 		CreateInTransact(tx *gorm.DB, rollback *Rollback) (err error)
 	}
 
@@ -78,6 +79,16 @@ func (m *defaultRollbackModel) Get(height int64, limit int, offset int64) (rollb
 		return nil, types.DbErrNotFound
 	}
 	return rollbacks, nil
+}
+func (m *defaultRollbackModel) GetCount(height int64, limit int, offset int64) (count int64, err error) {
+	dbTx := m.DB.Table(m.table).Where("from_block_height >= ? and from_pool_tx_id!=0", height).Count(&count)
+	if dbTx.Error != nil {
+		if dbTx.Error == types.DbErrNotFound {
+			return 0, nil
+		}
+		return 0, types.DbErrSqlOperation
+	}
+	return count, nil
 }
 func (m *defaultRollbackModel) CreateInTransact(tx *gorm.DB, rollback *Rollback) (err error) {
 	dbTx := tx.Table(m.table).Create(rollback)
