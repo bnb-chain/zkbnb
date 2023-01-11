@@ -692,6 +692,10 @@ func (bc *BlockChain) InitNewBlock() (*block.Block, error) {
 			StateRoot:   bc.currentBlock.StateRoot,
 			BlockStatus: block.StatusProposing,
 		}
+	} else {
+		if !bc.Statedb.NeedRestoreExecutedTxs {
+			newBlock.CreatedAt = time.Time{}
+		}
 	}
 	bc.currentBlock = newBlock
 	bc.Statedb.PurgeCache(bc.currentBlock.StateRoot)

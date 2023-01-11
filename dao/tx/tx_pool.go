@@ -39,6 +39,7 @@ type (
 		GetTxByTxHash(hash string) (txs *Tx, err error)
 		GetTxsByStatus(status int) (txs []*Tx, err error)
 		GetTxsByStatusAndMaxId(status int, maxId uint, limit int64) (txs []*Tx, err error)
+		GetTxsByStatusBetween(status int, fromId uint, toId uint) (txs []*Tx, err error)
 		CreateTxs(txs []*PoolTx) error
 		GetPendingTxsByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (txs []*Tx, err error)
 		GetMaxNonceByAccountIndex(accountIndex int64) (nonce int64, err error)
@@ -195,6 +196,14 @@ func (m *defaultTxPoolModel) GetTxsPageByStatus2(createdAtFrom time.Time, status
 
 func (m *defaultTxPoolModel) GetTxsByStatusAndMaxId(status int, maxId uint, limit int64) (txs []*Tx, err error) {
 	dbTx := m.DB.Table(m.table).Limit(int(limit)).Where("tx_status = ? and id > ?", status, maxId).Order("id asc").Find(&txs)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	}
+	return txs, nil
+}
+
+func (m *defaultTxPoolModel) GetTxsByStatusBetween(status int, fromId uint, toId uint) (txs []*Tx, err error) {
+	dbTx := m.DB.Table(m.table).Where("tx_status = ? and fromId >= ? and toId <= ?", status, fromId, toId).Order("id asc").Find(&txs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	}

@@ -517,10 +517,33 @@ func (c *Committer) pullPoolTxs() {
 		logx.Errorf("get executed tx from tx pool failed:%s", err.Error())
 		panic("get executed tx from tx pool failed: " + err.Error())
 	}
+
 	var executedTxMaxId uint = 0
 	if executedTx != nil {
 		executedTxMaxId = executedTx.ID
 	}
+	pendingTxs := make([]*tx.Tx, 0)
+	if c.bc.Statedb.NeedRestoreExecutedTxs {
+		pendingTxs, err = c.bc.TxPoolModel.GetTxsByStatusBetween(tx.StatusPending, executedTxMaxId+1, c.bc.Statedb.MaxPollTxIdRollback)
+		if err != nil {
+			logx.Errorf("get rollback transactions from tx pool failed:%s", err.Error())
+			panic("get rollback transactions from tx pool failed: " + err.Error())
+		}
+		executedTxMaxId = c.bc.Statedb.MaxPollTxIdRollback
+		getPendingTxsToQueueMetric.Set(float64(len(pendingTxs)))
+		notRestoreTxs := make([]*tx.Tx, 0)
+		for _, poolTx := range pendingTxs {
+			if poolTx.Rollback == false {
+				notRestoreTxs = append(notRestoreTxs, poolTx)
+				continue
+			}
+			c.executeTxWorker.Enqueue(poolTx)
+		}
+		for _, poolTx := range notRestoreTxs {
+			c.executeTxWorker.Enqueue(poolTx)
+		}
+	}
+
 	limit := 1000
 	for {
 		if !c.running {
@@ -528,7 +551,7 @@ func (c *Committer) pullPoolTxs() {
 		}
 		start := time.Now()
 		//logx.Infof("get pool txs executedTxMaxId=%d", executedTxMaxId)
-		pendingTxs, err := c.bc.TxPoolModel.GetTxsByStatusAndMaxId(tx.StatusPending, executedTxMaxId, int64(limit))
+		pendingTxs, err = c.bc.TxPoolModel.GetTxsByStatusAndMaxId(tx.StatusPending, executedTxMaxId, int64(limit))
 		getPendingPoolTxMetrics.Set(float64(time.Since(start).Milliseconds()))
 		getPendingTxsToQueueMetric.Set(float64(len(pendingTxs)))
 		txWorkerQueueMetric.Set(float64(c.executeTxWorker.GetQueueSize()))
