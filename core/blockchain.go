@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -156,6 +157,21 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	accountIndexList, nftIndexList, heights := preRollBackFunc(bc)
 
 	redisCache := dbcache.NewRedisCache(config.CacheRedis[0].Host, config.CacheRedis[0].Pass, 15*time.Minute)
+
+	for _, accountIndex := range accountIndexList {
+		err := redisCache.Delete(context.Background(), dbcache.AccountKeyByIndex(accountIndex))
+		if err != nil {
+			logx.Errorf("cache to redis failed: %v,accountIndex=%v", err, accountIndex)
+			continue
+		}
+	}
+	for _, nftIndex := range nftIndexList {
+		err := redisCache.Delete(context.Background(), dbcache.NftKeyByIndex(nftIndex))
+		if err != nil {
+			logx.Errorf("cache to redis failed: %v,nftIndex=%v", err, nftIndex)
+			continue
+		}
+	}
 	treeCtx, err := tree.NewContext(moduleName, config.TreeDB.Driver, false, config.TreeDB.RoutinePoolSize, &config.TreeDB.LevelDBOption, &config.TreeDB.RedisDBOption)
 	if err != nil {
 		return nil, err
