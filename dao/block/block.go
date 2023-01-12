@@ -452,7 +452,7 @@ func (m *defaultBlockModel) UpdateBlockToPendingInTransact(tx *gorm.DB, block *B
 }
 
 func (m *defaultBlockModel) UpdateBlockToProposingInTransact(tx *gorm.DB, blockHeights []int64) error {
-	dbTx := tx.Model(&Block{}).Select("BlockStatus", "BlockSize", "BlockCommitment", "StateRoot", "PriorityOperations", "PendingOnChainOperationsHash", "PendingOnChainOperationsPubData", "AccountIndexes", "NftIndexes").Where("block_height in ?", blockHeights).Updates(map[string]interface{}{
+	dbTx := tx.Model(&Block{}).Select("BlockStatus", "BlockSize", "BlockCommitment", "StateRoot", "PriorityOperations", "PendingOnChainOperationsHash", "PendingOnChainOperationsPubData", "CommittedTxHash", "CommittedAt", "AccountIndexes", "NftIndexes").Where("block_height in ?", blockHeights).Updates(map[string]interface{}{
 		"block_status":                         StatusProposing,
 		"block_size":                           0,
 		"block_commitment":                     "",
@@ -460,6 +460,8 @@ func (m *defaultBlockModel) UpdateBlockToProposingInTransact(tx *gorm.DB, blockH
 		"priority_operations":                  0,
 		"pending_on_chain_operations_hash":     "",
 		"pending_on_chain_operations_pub_data": "",
+		"committed_tx_hash":                    "",
+		"committed_at":                         0,
 		"account_indexes":                      "[]",
 		"nft_indexes":                          "[]",
 	})
