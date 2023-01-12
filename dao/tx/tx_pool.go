@@ -384,7 +384,7 @@ func (m *defaultTxPoolModel) UpdateTxsToPendingByHeights(tx *gorm.DB, blockHeigh
 	if len(blockHeights) == 0 {
 		return nil
 	}
-	dbTx := tx.Model(&PoolTx{}).Unscoped().Select("DeletedAt", "TxStatus").Where("block_height in ? and tx_status = ? ", blockHeights, StatusExecuted).Updates(map[string]interface{}{
+	dbTx := tx.Model(&PoolTx{}).Unscoped().Select("DeletedAt", "TxStatus", "Rollback").Where("block_height in ? and tx_status = ? ", blockHeights, StatusExecuted).Updates(map[string]interface{}{
 		"deleted_at": nil,
 		"tx_status":  StatusPending,
 		"rollback":   true,

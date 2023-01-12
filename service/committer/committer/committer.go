@@ -274,7 +274,8 @@ type Config struct {
 
 	BlockConfig struct {
 		OptionalBlockSizes    []int
-		SaveBlockDataPoolSize int `json:",optional"`
+		SaveBlockDataPoolSize int  `json:",optional"`
+		RollbackOnly          bool `json:",optional"`
 	}
 	LogConf logx.LogConf
 }
@@ -467,6 +468,16 @@ func initMetrics() error {
 }
 
 func (c *Committer) Run() {
+	if c.config.BlockConfig.RollbackOnly {
+		for {
+			if !c.running {
+				break
+			}
+			logx.Info("do rollback only")
+			time.Sleep(1 * time.Minute)
+		}
+		return
+	}
 	c.executeTxWorker = core.ExecuteTxWorker(10000, func() {
 		c.executeTxFunc()
 	})
@@ -523,13 +534,13 @@ func (c *Committer) pullPoolTxs() {
 		executedTxMaxId = executedTx.ID
 	}
 	pendingTxs := make([]*tx.Tx, 0)
-	if c.bc.Statedb.NeedRestoreExecutedTxs {
-		pendingTxs, err = c.bc.TxPoolModel.GetTxsByStatusBetween(tx.StatusPending, executedTxMaxId+1, c.bc.Statedb.MaxPollTxIdRollback)
+	if c.bc.Statedb.GetNeedRestoreExecutedTxs() {
+		pendingTxs, err = c.bc.TxPoolModel.GetTxsByStatusBetween(tx.StatusPending, executedTxMaxId+1, c.bc.Statedb.MaxPollTxIdRollbackImmutable)
 		if err != nil {
 			logx.Errorf("get rollback transactions from tx pool failed:%s", err.Error())
 			panic("get rollback transactions from tx pool failed: " + err.Error())
 		}
-		executedTxMaxId = c.bc.Statedb.MaxPollTxIdRollback
+		executedTxMaxId = c.bc.Statedb.MaxPollTxIdRollbackImmutable
 		getPendingTxsToQueueMetric.Set(float64(len(pendingTxs)))
 		notRestoreTxs := make([]*tx.Tx, 0)
 		for _, poolTx := range pendingTxs {
@@ -550,7 +561,6 @@ func (c *Committer) pullPoolTxs() {
 			break
 		}
 		start := time.Now()
-		//logx.Infof("get pool txs executedTxMaxId=%d", executedTxMaxId)
 		pendingTxs, err = c.bc.TxPoolModel.GetTxsByStatusAndMaxId(tx.StatusPending, executedTxMaxId, int64(limit))
 		getPendingPoolTxMetrics.Set(float64(time.Since(start).Milliseconds()))
 		getPendingTxsToQueueMetric.Set(float64(len(pendingTxs)))
@@ -581,6 +591,10 @@ func (c *Committer) pullPoolTxs() {
 			c.executeTxWorker.Enqueue(poolTx)
 		}
 	}
+}
+
+func (c *Committer) Compensation() {
+
 }
 
 func (c *Committer) getPoolTxsFromQueue() []*tx.Tx {
@@ -650,8 +664,8 @@ func (c *Committer) executeTxFunc() {
 			//logx.Infof("apply transaction, txHash=%s", poolTx.TxHash)
 			startApplyTx := time.Now()
 			err = c.bc.ApplyTransaction(poolTx)
-			if c.bc.Statedb.NeedRestoreExecutedTxs && poolTx.ID >= c.bc.Statedb.MaxPollTxIdRollback {
-				c.bc.Statedb.NeedRestoreExecutedTxs = false
+			if c.bc.Statedb.GetNeedRestoreExecutedTxs() && poolTx.ID >= c.bc.Statedb.MaxPollTxIdRollbackImmutable {
+				c.bc.Statedb.UpdateNeedRestoreExecutedTxs(false)
 			}
 			executeTxApply1TxMetrics.Set(float64(time.Since(startApplyTx).Milliseconds()))
 			if err != nil {
@@ -1361,6 +1375,7 @@ func (c *Committer) finalSaveBlockDataFunc(blockStates *block.BlockStates) {
 		logx.Errorf("finalSaveBlockDataFunc failed:%s,blockHeight:%d", err.Error(), blockStates.Block.BlockHeight)
 		panic("finalSaveBlockDataFunc failed: " + err.Error())
 	}
+	c.bc.Statedb.UpdateMaxPoolTxIdFinished(blockStates.Block.Txs[len(blockStates.Block.Txs)-1].PoolTxId)
 	l2BlockDbHeightMetric.Set(float64(blockStates.Block.BlockHeight))
 	finalSaveBlockDataMetrics.WithLabelValues("all").Set(float64(time.Since(start).Milliseconds()))
 }
@@ -1372,7 +1387,7 @@ func (c *Committer) createNewBlock(curBlock *block.Block) error {
 }
 
 func (c *Committer) shouldCommit(curBlock *block.Block) bool {
-	if c.bc.Statedb.NeedRestoreExecutedTxs {
+	if c.bc.Statedb.GetNeedRestoreExecutedTxs() {
 		if len(c.bc.Statedb.Txs) >= c.maxTxsPerBlock {
 			return true
 		}

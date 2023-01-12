@@ -199,19 +199,19 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		}
 	}
 
-	bc.Statedb.PreviousStateRoot = bc.currentBlock.StateRoot
+	bc.Statedb.PreviousStateRootImmutable = bc.currentBlock.StateRoot
 
 	mintNft, err := bc.TxPoolModel.GetLatestMintNft()
 	if err != nil && err != types.DbErrNotFound {
 		logx.Error("get latest mint nft failed: ", err)
 		panic("get latest mint nft failed:" + err.Error())
 	}
-	bc.Statedb.MaxNftIndexUsed = types.NilNftIndex
+	bc.Statedb.MaxNftIndexUsedImmutable = types.NilNftIndex
 	if mintNft != nil {
-		bc.Statedb.MaxNftIndexUsed = mintNft.NftIndex
+		bc.Statedb.MaxNftIndexUsedImmutable = mintNft.NftIndex
 	}
-	bc.Statedb.MaxPollTxIdRollback = maxPollTxIdRollback
-	bc.Statedb.NeedRestoreExecutedTxs = maxPollTxIdRollback > 0
+	bc.Statedb.MaxPollTxIdRollbackImmutable = maxPollTxIdRollback
+	bc.Statedb.UpdateNeedRestoreExecutedTxs(maxPollTxIdRollback > 0)
 
 	accountFromDbGauge := prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
@@ -693,7 +693,7 @@ func (bc *BlockChain) InitNewBlock() (*block.Block, error) {
 			BlockStatus: block.StatusProposing,
 		}
 	} else {
-		if !bc.Statedb.NeedRestoreExecutedTxs {
+		if !bc.Statedb.GetNeedRestoreExecutedTxs() {
 			newBlock.CreatedAt = time.Time{}
 		}
 	}
@@ -728,7 +728,7 @@ func (bc *BlockChain) UpdateAccountTreeAndNftTree(blockSize int, stateDataCopy *
 	bc.Statedb.AlignPubData(blockSize, stateDataCopy)
 
 	commitment := chain.CreateBlockCommitment(newBlock.BlockHeight, newBlock.CreatedAt.UnixMilli(),
-		common.FromHex(bc.Statedb.PreviousStateRoot), common.FromHex(stateDataCopy.StateCache.StateRoot),
+		common.FromHex(bc.Statedb.PreviousStateRootImmutable), common.FromHex(stateDataCopy.StateCache.StateRoot),
 		stateDataCopy.StateCache.PubData, int64(len(stateDataCopy.StateCache.PubDataOffset)))
 
 	newBlock.BlockSize = uint16(blockSize)
@@ -760,7 +760,7 @@ func (bc *BlockChain) UpdateAccountTreeAndNftTree(blockSize int, stateDataCopy *
 		Timestamp:         newBlock.CreatedAt.UnixMilli(),
 		PublicDataOffsets: string(offsetBytes),
 	}
-	bc.Statedb.PreviousStateRoot = stateDataCopy.StateCache.StateRoot
+	bc.Statedb.PreviousStateRootImmutable = stateDataCopy.StateCache.StateRoot
 	currentHeight := stateDataCopy.CurrentBlock.BlockHeight
 
 	start := time.Now()
@@ -880,7 +880,7 @@ func (bc *BlockChain) setCurrentBlockTimeStamp() {
 }
 
 func (bc *BlockChain) resetCurrentBlockTimeStamp() {
-	if len(bc.Statedb.Txs) > 0 || bc.Statedb.NeedRestoreExecutedTxs {
+	if len(bc.Statedb.Txs) > 0 || bc.Statedb.GetNeedRestoreExecutedTxs() {
 		return
 	}
 

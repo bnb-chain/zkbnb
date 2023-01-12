@@ -69,16 +69,21 @@ type StateDB struct {
 	MemCache     *ristretto.Cache
 
 	// Tree state
-	AccountTree            bsmt.SparseMerkleTree
-	NftTree                bsmt.SparseMerkleTree
-	AccountAssetTrees      *tree.AssetTreeCache
-	TreeCtx                *tree.Context
-	mainLock               sync.RWMutex
-	prunedBlockHeight      int64
-	PreviousStateRoot      string
-	MaxNftIndexUsed        int64
-	MaxPollTxIdRollback    uint
-	NeedRestoreExecutedTxs bool
+	AccountTree                  bsmt.SparseMerkleTree
+	NftTree                      bsmt.SparseMerkleTree
+	AccountAssetTrees            *tree.AssetTreeCache
+	TreeCtx                      *tree.Context
+	prunedBlockHeight            int64
+	prunedBlockHeightLock        sync.RWMutex
+	PreviousStateRootImmutable   string
+	MaxNftIndexUsedImmutable     int64
+	MaxPollTxIdRollbackImmutable uint
+
+	needRestoreExecutedTxs     bool
+	needRestoreExecutedTxsLock sync.RWMutex
+
+	maxPoolTxIdFinished     uint
+	maxPoolTxIdFinishedLock sync.RWMutex
 
 	Metrics *zkbnbprometheus.StateDBMetrics
 }
@@ -768,8 +773,8 @@ func (s *StateDB) GetNextNftIndex() int64 {
 		}
 	}
 
-	if s.MaxNftIndexUsed > maxNftIndex {
-		maxNftIndex = s.MaxNftIndexUsed
+	if s.MaxNftIndexUsedImmutable > maxNftIndex {
+		maxNftIndex = s.MaxNftIndexUsedImmutable
 	}
 	return maxNftIndex + 1
 }
@@ -819,17 +824,43 @@ func (s *StateDB) GetGasConfig() (map[uint32]map[int]int64, error) {
 }
 
 func (c *StateDB) UpdatePrunedBlockHeight(latestBlock int64) {
-	c.mainLock.Lock()
+	c.prunedBlockHeightLock.Lock()
 	if c.prunedBlockHeight < latestBlock {
 		c.prunedBlockHeight = latestBlock
 	}
-	c.mainLock.Unlock()
+	c.prunedBlockHeightLock.Unlock()
 }
 
 func (c *StateDB) GetPrunedBlockHeight() int64 {
-	c.mainLock.RLock()
-	defer c.mainLock.RUnlock()
+	c.prunedBlockHeightLock.RLock()
+	defer c.prunedBlockHeightLock.RUnlock()
 	return c.prunedBlockHeight
+}
+
+func (c *StateDB) UpdateNeedRestoreExecutedTxs(need bool) {
+	c.needRestoreExecutedTxsLock.Lock()
+	c.needRestoreExecutedTxs = need
+	c.needRestoreExecutedTxsLock.Unlock()
+}
+
+func (c *StateDB) GetNeedRestoreExecutedTxs() bool {
+	c.needRestoreExecutedTxsLock.RLock()
+	defer c.needRestoreExecutedTxsLock.RUnlock()
+	return c.needRestoreExecutedTxs
+}
+
+func (c *StateDB) UpdateMaxPoolTxIdFinished(maxPoolTxId uint) {
+	c.maxPoolTxIdFinishedLock.Lock()
+	if maxPoolTxId > c.maxPoolTxIdFinished {
+		c.maxPoolTxIdFinished = maxPoolTxId
+	}
+	c.maxPoolTxIdFinishedLock.Unlock()
+}
+
+func (c *StateDB) GetMaxPoolTxIdFinished() uint {
+	c.maxPoolTxIdFinishedLock.RLock()
+	defer c.maxPoolTxIdFinishedLock.RUnlock()
+	return c.maxPoolTxIdFinished
 }
 
 func (s *StateDB) Close() {
