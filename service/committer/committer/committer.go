@@ -724,23 +724,6 @@ func (c *Committer) executeTxFunc() {
 		}
 		executeTxOperationMetrics.Set(float64(time.Since(start).Milliseconds()))
 
-		for _, formatAccount := range c.bc.Statedb.StateCache.PendingAccountMap {
-			if formatAccount.AccountIndex != types.GasAccount {
-				continue
-			}
-			for assetId, delta := range c.bc.Statedb.StateCache.PendingGasMap {
-				if asset, ok := formatAccount.AssetInfo[assetId]; ok {
-					formatAccount.AssetInfo[assetId].Balance = ffmath.Add(asset.Balance, delta)
-				} else {
-					formatAccount.AssetInfo[assetId] = &types.AccountAsset{
-						Balance:                  delta,
-						OfferCanceledOrFinalized: types.ZeroBigInt,
-					}
-				}
-				c.bc.Statedb.StateCache.PendingGasMap[assetId] = types.ZeroBigInt
-				c.bc.Statedb.MarkAccountAssetsDirty(formatAccount.AccountIndex, []int64{assetId})
-			}
-		}
 		c.bc.Statedb.SyncPendingAccountToMemoryCache(c.bc.Statedb.PendingAccountMap)
 		c.bc.Statedb.SyncPendingNftToMemoryCache(c.bc.Statedb.PendingNftMap)
 
@@ -750,6 +733,38 @@ func (c *Committer) executeTxFunc() {
 		if c.shouldCommit(curBlock) {
 			start := time.Now()
 			logx.Infof("commit new block, height=%d,blockSize=%d", curBlock.BlockHeight, curBlock.BlockSize)
+			deleteGasAccount := false
+			for _, formatAccount := range c.bc.Statedb.StateCache.PendingAccountMap {
+				if formatAccount.AccountIndex == types.GasAccount {
+					if len(c.bc.Statedb.StateCache.PendingGasMap) != 0 {
+						for assetId, delta := range c.bc.Statedb.StateCache.PendingGasMap {
+							if asset, ok := formatAccount.AssetInfo[assetId]; ok {
+								formatAccount.AssetInfo[assetId].Balance = ffmath.Add(asset.Balance, delta)
+							} else {
+								formatAccount.AssetInfo[assetId] = &types.AccountAsset{
+									Balance:                  delta,
+									OfferCanceledOrFinalized: types.ZeroBigInt,
+								}
+							}
+							c.bc.Statedb.MarkAccountAssetsDirty(formatAccount.AccountIndex, []int64{assetId})
+						}
+					} else {
+						assetsMap := c.bc.Statedb.GetDirtyAccountsAndAssetsMap()[formatAccount.AccountIndex]
+						if assetsMap == nil {
+							deleteGasAccount = true
+						}
+					}
+				} else {
+					assetsMap := c.bc.Statedb.GetDirtyAccountsAndAssetsMap()[formatAccount.AccountIndex]
+					if assetsMap == nil {
+						logx.Errorf("%s exists in PendingAccountMap but not in GetDirtyAccountsAndAssetsMap", formatAccount.AccountIndex)
+						panic(strconv.FormatInt(formatAccount.AccountIndex, 10) + " exists in PendingAccountMap but not in GetDirtyAccountsAndAssetsMap")
+					}
+				}
+			}
+			if deleteGasAccount {
+				delete(c.bc.Statedb.StateCache.PendingAccountMap, types.GasAccount)
+			}
 			for accountIndex, _ := range c.bc.Statedb.GetDirtyAccountsAndAssetsMap() {
 				_, exist := c.bc.Statedb.StateCache.GetPendingAccount(accountIndex)
 				if !exist {
@@ -758,7 +773,14 @@ func (c *Committer) executeTxFunc() {
 						logx.Errorf("get account info failed,accountIndex=%s,err=%s ", accountIndex, err.Error())
 						panic("get account info failed: " + err.Error())
 					}
-					c.bc.Statedb.PendingAccountMap[accountIndex] = accountInfo
+					c.bc.Statedb.SetPendingAccount(accountIndex, accountInfo)
+				}
+			}
+
+			for _, nftInfo := range c.bc.Statedb.StateCache.PendingNftMap {
+				if c.bc.Statedb.GetDirtyNftMap()[nftInfo.NftIndex] == false {
+					logx.Errorf("%s exists in PendingNftMap but not in DirtyNftMap", nftInfo.NftIndex)
+					panic(strconv.FormatInt(nftInfo.NftIndex, 10) + " exists in PendingNftMap but not in DirtyNftMap")
 				}
 			}
 			for nftIndex, _ := range c.bc.Statedb.StateCache.GetDirtyNftMap() {
@@ -769,7 +791,7 @@ func (c *Committer) executeTxFunc() {
 						logx.Errorf("get nft info failed,nftIndex=%s,err=%s ", nftIndex, err.Error())
 						panic("get nft info failed: " + err.Error())
 					}
-					c.bc.Statedb.PendingNftMap[nftIndex] = nftInfo
+					c.bc.Statedb.SetPendingNft(nftIndex, nftInfo)
 				}
 			}
 
@@ -795,7 +817,8 @@ func (c *Committer) executeTxFunc() {
 				}
 				addPendingNfts = append(addPendingNfts, nftInfo)
 			}
-
+			updateAccountMap := make(map[int64]*types.AccountInfo, 0)
+			updateNftMap := make(map[int64]*nft.L2Nft, 0)
 			if len(addPendingAccounts) > 0 || len(addPendingNfts) > 0 {
 				err = c.bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
 					if len(addPendingAccounts) != 0 {
@@ -849,18 +872,20 @@ func (c *Committer) executeTxFunc() {
 					c.bc.Statedb.StateCache.PendingNftMap[nftInfo.NftIndex].ID = nftInfo.ID
 				}
 
-				pendingAccountMap := make(map[int64]*types.AccountInfo, len(addPendingAccounts))
-				pendingNftMap := make(map[int64]*nft.L2Nft, len(addPendingNfts))
 				for _, accountInfo := range addPendingAccounts {
-					pendingAccountMap[accountInfo.AccountIndex] = c.bc.Statedb.StateCache.PendingAccountMap[accountInfo.AccountIndex]
+					updateAccountMap[accountInfo.AccountIndex] = c.bc.Statedb.StateCache.PendingAccountMap[accountInfo.AccountIndex]
 				}
 				for _, nftInfo := range addPendingNfts {
-					pendingNftMap[nftInfo.NftIndex] = c.bc.Statedb.StateCache.PendingNftMap[nftInfo.NftIndex]
+					updateNftMap[nftInfo.NftIndex] = c.bc.Statedb.StateCache.PendingNftMap[nftInfo.NftIndex]
 				}
-				c.bc.Statedb.SyncPendingAccountToMemoryCache(pendingAccountMap)
-				c.bc.Statedb.SyncPendingNftToMemoryCache(pendingNftMap)
-				c.enqueueSyncAccountToRedis(pendingAccountMap, pendingNftMap)
 			}
+			gasAccount := c.bc.Statedb.StateCache.PendingAccountMap[types.GasAccount]
+			if gasAccount != nil {
+				updateAccountMap[types.GasAccount] = gasAccount
+			}
+			c.bc.Statedb.SyncPendingAccountToMemoryCache(updateAccountMap)
+			c.bc.Statedb.SyncPendingNftToMemoryCache(updateNftMap)
+			c.enqueueSyncAccountToRedis(updateAccountMap, updateNftMap)
 
 			pendingUpdatePoolTxs = make([]*tx.Tx, 0, c.maxTxsPerBlock)
 			pendingAccountMap := make(map[int64]*types.AccountInfo, len(c.bc.Statedb.StateCache.PendingAccountMap))
@@ -968,6 +993,9 @@ func (c *Committer) updatePoolTxFunc(updatePoolTxMap *UpdatePoolTx) {
 }
 
 func (c *Committer) enqueueSyncAccountToRedis(originPendingAccountMap map[int64]*types.AccountInfo, originPendingNftMap map[int64]*nft.L2Nft) {
+	if len(originPendingAccountMap) == 0 && len(originPendingNftMap) == 0 {
+		return
+	}
 	pendingMap := &PendingMap{
 		PendingAccountMap: make(map[int64]*types.AccountInfo, len(originPendingAccountMap)),
 		PendingNftMap:     make(map[int64]*nft.L2Nft, len(originPendingNftMap)),
