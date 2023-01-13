@@ -203,7 +203,7 @@ func (m *defaultTxPoolModel) GetTxsByStatusAndMaxId(status int, maxId uint, limi
 }
 
 func (m *defaultTxPoolModel) GetTxsByStatusBetween(status int, fromId uint, toId uint) (txs []*Tx, err error) {
-	dbTx := m.DB.Table(m.table).Where("tx_status = ? and fromId >= ? and toId <= ?", status, fromId, toId).Order("id asc").Find(&txs)
+	dbTx := m.DB.Table(m.table).Where("tx_status = ? and id >= ? and id <= ?", status, fromId, toId).Order("id asc").Find(&txs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	}

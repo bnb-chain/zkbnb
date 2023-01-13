@@ -88,7 +88,7 @@ func (s *Suite) TestUpdateBlockInTransact() {
 	err := s.dao.UpdateBlockInTransact(s.db.DB, &item)
 	s.Require().NoError(err)
 
-	items, err := s.dao.GetBlocksBetween(item.BlockHeight, item.BlockHeight)
+	items, err := s.dao.GetPendingBlocksBetween(item.BlockHeight, item.BlockHeight)
 	s.Require().NoError(err)
 	itemRes := items[0]
 	s.Greater(itemRes.UpdatedAt.Unix(), int64(10))

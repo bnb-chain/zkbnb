@@ -53,7 +53,7 @@ func TestConstructWitness(t *testing.T) {
 	for h := int64(1); h < maxTestBlockHeight; h++ {
 		witnessHelper, err := getWitnessHelper(h - 1)
 		assert.NoError(t, err)
-		b, err := blockModel.GetBlocksBetween(h, h)
+		b, err := blockModel.GetPendingBlocksBetween(h, h)
 		assert.NoError(t, err)
 		w, err := witnessModel.GetBlockWitnessByHeight(h)
 		assert.NoError(t, err)

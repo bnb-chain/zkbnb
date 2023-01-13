@@ -48,7 +48,7 @@ type (
 		CreateBlockTable() error
 		DropBlockTable() error
 		GetBlocks(limit int64, offset int64) (blocks []*Block, err error)
-		GetBlocksBetween(start int64, end int64) (blocks []*Block, err error)
+		GetPendingBlocksBetween(start int64, end int64) (blocks []*Block, err error)
 		GetBlockByHeight(blockHeight int64) (block *Block, err error)
 		GetBlockByHeightWithoutTx(blockHeight int64) (block *Block, err error)
 		GetCommittedBlocksCount() (count int64, err error)
@@ -157,8 +157,8 @@ func (m *defaultBlockModel) GetBlocks(limit int64, offset int64) (blocks []*Bloc
 	return blocks, nil
 }
 
-func (m *defaultBlockModel) GetBlocksBetween(start int64, end int64) (blocks []*Block, err error) {
-	dbTx := m.DB.Table(m.table).Where("block_height >= ? AND block_height <= ?", start, end).
+func (m *defaultBlockModel) GetPendingBlocksBetween(start int64, end int64) (blocks []*Block, err error) {
+	dbTx := m.DB.Table(m.table).Where("block_height >= ? AND block_height <= ? and block_status = ?", start, end, StatusPending).
 		Order("block_height").
 		Find(&blocks)
 	if dbTx.Error != nil {
@@ -167,12 +167,7 @@ func (m *defaultBlockModel) GetBlocksBetween(start int64, end int64) (blocks []*
 		return nil, types.DbErrNotFound
 	}
 
-	for index, block := range blocks {
-		// If the last block is proposing, skip it.
-		if index == len(blocks)-1 && block.BlockStatus <= StatusPacked {
-			blocks = blocks[:len(blocks)-1]
-			break
-		}
+	for _, block := range blocks {
 		dbTx = m.DB.Table(tx.TxTableName).Where("block_height =? ", block.BlockHeight).Find(&block.Txs)
 		if dbTx.Error != nil {
 			return nil, types.DbErrSqlOperation

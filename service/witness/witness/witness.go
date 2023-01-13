@@ -201,7 +201,7 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 		return err
 	}
 	// get next batch of blocks
-	blocks, err := w.blockModel.GetBlocksBetween(latestWitnessHeight+1, latestWitnessHeight+BlockProcessDelta)
+	blocks, err := w.blockModel.GetPendingBlocksBetween(latestWitnessHeight+1, latestWitnessHeight+BlockProcessDelta)
 	if err != nil {
 		if err != types.DbErrNotFound {
 			return err

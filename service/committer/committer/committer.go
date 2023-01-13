@@ -503,6 +503,8 @@ func (c *Committer) Run() {
 		c.finalSaveBlockDataFunc(item.(*block.BlockStates))
 	})
 
+	c.loadAllAccounts()
+	c.loadAllNfts()
 	c.executeTxWorker.Start()
 	c.syncAccountToRedisWorker.Start()
 	c.updatePoolTxWorker.Start()
@@ -511,8 +513,7 @@ func (c *Committer) Run() {
 	c.updateAccountTreeAndNftTreeWorker.Start()
 	c.saveBlockDataWorker.Start()
 	c.finalSaveBlockDataWorker.Start()
-	c.loadAllAccounts()
-	c.loadAllNfts()
+
 	c.pullPoolTxs()
 }
 
@@ -737,6 +738,7 @@ func (c *Committer) executeTxFunc() {
 					}
 				}
 				c.bc.Statedb.StateCache.PendingGasMap[assetId] = types.ZeroBigInt
+				c.bc.Statedb.MarkAccountAssetsDirty(formatAccount.AccountIndex, []int64{assetId})
 			}
 		}
 		c.bc.Statedb.SyncPendingAccountToMemoryCache(c.bc.Statedb.PendingAccountMap)
