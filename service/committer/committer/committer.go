@@ -595,7 +595,15 @@ func (c *Committer) pullPoolTxs() {
 }
 
 func (c *Committer) Compensation() {
-
+	//pendingTxs, err := c.bc.TxPoolModel.GetTxsByStatusAndMaxId(tx.StatusPending, executedTxMaxId, c.bc.Statedb.GetMaxPoolTxIdFinished())
+	//getPendingPoolTxMetrics.Set(float64(time.Since(start).Milliseconds()))
+	//getPendingTxsToQueueMetric.Set(float64(len(pendingTxs)))
+	//txWorkerQueueMetric.Set(float64(c.executeTxWorker.GetQueueSize()))
+	//if err != nil {
+	//	logx.Errorf("get pending transactions from tx pool failed:%s", err.Error())
+	//	time.Sleep(100 * time.Millisecond)
+	//	continue
+	//}
 }
 
 func (c *Committer) getPoolTxsFromQueue() []*tx.Tx {

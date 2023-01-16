@@ -33,7 +33,7 @@ func InitNftTree(
 ) {
 	nftTree, err = bsmt.NewBNBSparseMerkleTree(ctx.Hasher(),
 		SetNamespace(ctx, NFTPrefix), NftTreeHeight, NilNftNodeHash,
-		ctx.Options(blockHeight)...)
+		ctx.Options(0)...)
 	if err != nil {
 		logx.Errorf("unable to create tree from db: %s", err.Error())
 		return nil, err
@@ -94,7 +94,7 @@ func loadNftTreeFromRDB(
 			return err
 		}
 
-		err = nftTree.Set(uint64(nftIndex), hashVal)
+		err = nftTree.SetWithVersion(uint64(nftIndex), hashVal, bsmt.Version(blockHeight))
 		if err != nil {
 			logx.Errorf("unable to write nft asset to tree: %s", err.Error())
 			return err
