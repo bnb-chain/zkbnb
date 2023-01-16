@@ -56,14 +56,14 @@ func InitAccountTree(
 	}
 	logx.Infof("getValidAccountCount end")
 
-	opts := ctx.Options(blockHeight)
+	opts := ctx.Options(0)
 	nilAccountAssetNodeHashes := NilAccountAssetNodeHashes(AssetTreeHeight, NilAccountAssetNodeHash, ctx.Hasher())
 
 	// init account state trees
 	accountAssetTrees = NewLazyTreeCache(assetCacheSize, accountNums-1, blockHeight, func(index, block int64) bsmt.SparseMerkleTree {
 		tree, err := bsmt.NewSparseMerkleTree(ctx.Hasher(),
 			SetNamespace(ctx, accountAssetNamespace(index)), AssetTreeHeight, nilAccountAssetNodeHashes,
-			ctx.Options(block)...)
+			ctx.Options(0)...)
 		if err != nil {
 			logx.Errorf("unable to create new tree by assets: %s", err.Error())
 			panic(err.Error())
@@ -90,19 +90,17 @@ func InitAccountTree(
 				return nil, nil, err
 			}
 		}
-
 		for i := int64(0); i < accountNums; i++ {
-
 			_, err := accountAssetTrees.Get(i).CommitWithNewVersion(nil, &newVersion)
 			if err != nil {
-				logx.Errorf("unable to set asset to tree: %s,newVersion:%s,tree.LatestVersion:%s", err.Error(), &newVersion, accountAssetTrees.Get(i).LatestVersion())
+				logx.Errorf("unable to set asset to tree: %s,newVersion:%s,tree.LatestVersion:%s", err.Error(), uint64(newVersion), uint64(accountAssetTrees.Get(i).LatestVersion()))
 				return nil, nil, err
 			}
 		}
 
 		_, err = accountTree.CommitWithNewVersion(nil, &newVersion)
 		if err != nil {
-			logx.Errorf("unable to commit account tree: %s,newVersion:%s,tree.LatestVersion:%s", err.Error(), &newVersion, accountTree.LatestVersion())
+			logx.Errorf("unable to commit account tree: %s,newVersion:%s,tree.LatestVersion:%s", err.Error(), uint64(newVersion), uint64(accountTree.LatestVersion()))
 			return nil, nil, err
 		}
 		return accountTree, accountAssetTrees, nil
@@ -204,7 +202,7 @@ func reloadAccountTreeFromRDB(
 				logx.Errorf("unable to convert asset to node: %s", err.Error())
 				return err
 			}
-			err = accountAssetTrees.Get(accountIndex).Set(uint64(assetId), hashVal)
+			err = accountAssetTrees.Get(accountIndex).SetWithVersion(uint64(assetId), hashVal, bsmt.Version(blockHeight))
 			if err != nil {
 				logx.Errorf("unable to set asset to tree: %s", err.Error())
 				return err
@@ -221,7 +219,7 @@ func reloadAccountTreeFromRDB(
 			logx.Errorf("unable to convert account to node: %s", err.Error())
 			return err
 		}
-		err = accountTree.Set(uint64(accountIndex), accountHashVal)
+		err = accountTree.SetWithVersion(uint64(accountIndex), accountHashVal, bsmt.Version(blockHeight))
 		if err != nil {
 			logx.Errorf("unable to set account to tree: %s", err.Error())
 			return err

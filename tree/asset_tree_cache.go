@@ -31,20 +31,20 @@ func NewSparseMerkleTreeAdapter(tree bsmt.SparseMerkleTree, changesLock *sync.RW
 	return &sparseMerkleTreeAdapter
 }
 
-func (c *SparseMerkleTreeAdapter) Set(key uint64, val []byte) error {
+func (c *SparseMerkleTreeAdapter) SetWithVersion(key uint64, val []byte, newVersion bsmt.Version) error {
 	c.changesLock.Lock()
 	c.changes[int64(key)] = true
 	c.changesLock.Unlock()
-	return c.sparseMerkleTree.Set(key, val)
+	return c.sparseMerkleTree.SetWithVersion(key, val, newVersion)
 }
 
-func (c *SparseMerkleTreeAdapter) MultiSet(items []bsmt.Item) error {
+func (c *SparseMerkleTreeAdapter) MultiSetWithVersion(items []bsmt.Item, newVersion bsmt.Version) error {
 	c.changesLock.Lock()
 	for _, item := range items {
 		c.changes[int64(item.Key)] = true
 	}
 	c.changesLock.Unlock()
-	return c.sparseMerkleTree.MultiSet(items)
+	return c.sparseMerkleTree.MultiSetWithVersion(items, newVersion)
 }
 
 // Creates new AssetTreeCache
@@ -80,7 +80,7 @@ func (c *AssetTreeCache) Get(i int64) (tree bsmt.SparseMerkleTree) {
 	if tmpTree, ok := c.treeCache.Get(i); ok {
 		tree = tmpTree.(bsmt.SparseMerkleTree)
 	} else {
-		c.treeCache.ContainsOrAdd(i, c.initFunction(i, c.blockNumber))
+		c.treeCache.ContainsOrAdd(i, c.initFunction(i, 0))
 		if tmpTree, ok := c.treeCache.Get(i); ok {
 			tree = tmpTree.(bsmt.SparseMerkleTree)
 		}

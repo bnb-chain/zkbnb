@@ -598,7 +598,7 @@ func (s *StateDB) AccountTreeAndNftTreeMultiSet(stateDataCopy *StateDataCopy) er
 	err := gopool.Submit(func() {
 		resultChan <- &treeUpdateResp{
 			role: accountTreeRole,
-			err:  s.AccountTree.MultiSet(stateDataCopy.pendingAccountSmtItem),
+			err:  s.AccountTree.MultiSetWithVersion(stateDataCopy.pendingAccountSmtItem, bsmt.Version(stateDataCopy.CurrentBlock.BlockHeight)),
 		}
 	})
 	if err != nil {
@@ -607,7 +607,7 @@ func (s *StateDB) AccountTreeAndNftTreeMultiSet(stateDataCopy *StateDataCopy) er
 	err = gopool.Submit(func() {
 		resultChan <- &treeUpdateResp{
 			role: nftTreeRole,
-			err:  s.NftTree.MultiSet(stateDataCopy.pendingNftSmtItem),
+			err:  s.NftTree.MultiSetWithVersion(stateDataCopy.pendingNftSmtItem, bsmt.Version(stateDataCopy.CurrentBlock.BlockHeight)),
 		}
 	})
 	if err != nil {
@@ -655,7 +655,7 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCop
 	s.Metrics.AccountTreeGauge.WithLabelValues("for_assets").Set(float64(time.Since(start).Milliseconds()))
 
 	start = time.Now()
-	err := s.AccountAssetTrees.Get(accountIndex).MultiSet(pendingUpdateAssetItem)
+	err := s.AccountAssetTrees.Get(accountIndex).MultiSetWithVersion(pendingUpdateAssetItem, bsmt.Version(stateCopy.CurrentBlock.BlockHeight))
 	if err != nil {
 		return accountIndex, nil, fmt.Errorf("update asset tree failed: %v", err)
 	}
