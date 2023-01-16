@@ -92,9 +92,10 @@ func InitAccountTree(
 		}
 
 		for i := int64(0); i < accountNums; i++ {
+
 			_, err := accountAssetTrees.Get(i).CommitWithNewVersion(nil, &newVersion)
 			if err != nil {
-				logx.Errorf("unable to set asset to tree: %s", err.Error())
+				logx.Errorf("unable to set asset to tree: %s,newVersion:%s,tree.version:%s", err.Error(), &newVersion, accountAssetTrees.Get(i).LatestVersion())
 				return nil, nil, err
 			}
 		}
