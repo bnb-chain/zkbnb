@@ -34,10 +34,9 @@ type (
 		GetValidAccounts(height int64, limit int, offset int) (rowsAffected int64, accounts []*AccountHistory, err error)
 		GetValidAccountCount(height int64) (accounts int64, err error)
 		CreateAccountHistoriesInTransact(tx *gorm.DB, histories []*AccountHistory) error
-		CreateAccountHistories(histories []*AccountHistory) error
 		GetLatestAccountHistory(accountIndex, height int64) (accountHistory *AccountHistory, err error)
 		GetLatestAccountHistories(accountIndexes []int64, height int64) (rowsAffected int64, accounts []*AccountHistory, err error)
-		DeleteByHeightInTransact(tx *gorm.DB, heights []int64) error
+		DeleteByHeightsInTransact(tx *gorm.DB, heights []int64) error
 	}
 
 	defaultAccountHistoryModel struct {
@@ -116,16 +115,6 @@ func (m *defaultAccountHistoryModel) GetValidAccountCount(height int64) (count i
 }
 
 func (m *defaultAccountHistoryModel) CreateAccountHistoriesInTransact(tx *gorm.DB, histories []*AccountHistory) error {
-	dbTx := tx.Table(m.table).CreateInBatches(histories, len(histories))
-	if dbTx.Error != nil {
-		return dbTx.Error
-	}
-	if dbTx.RowsAffected != int64(len(histories)) {
-		return types.DbErrFailToCreateAccountHistory
-	}
-	return nil
-}
-func (m *defaultAccountHistoryModel) CreateAccountHistories(histories []*AccountHistory) error {
 	dbTx := m.DB.Table(m.table).CreateInBatches(histories, len(histories))
 	if dbTx.Error != nil {
 		return dbTx.Error
@@ -136,6 +125,7 @@ func (m *defaultAccountHistoryModel) CreateAccountHistories(histories []*Account
 	}
 	return nil
 }
+
 func (m *defaultAccountHistoryModel) GetLatestAccountHistory(accountIndex, height int64) (accountHistory *AccountHistory, err error) {
 	dbTx := m.DB.Table(m.table).Where("account_index = ? and l2_block_height < ?", accountIndex, height).Order("l2_block_height desc").Limit(1).Find(&accountHistory)
 	if dbTx.Error != nil {
@@ -157,12 +147,15 @@ func (m *defaultAccountHistoryModel) GetLatestAccountHistories(accountIndexes []
 	if dbTx.Error != nil {
 		return 0, nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return 0, nil, nil
+		return 0, nil, types.DbErrNotFound
 	}
 	return dbTx.RowsAffected, accounts, nil
 }
 
-func (m *defaultAccountHistoryModel) DeleteByHeightInTransact(tx *gorm.DB, heights []int64) error {
+func (m *defaultAccountHistoryModel) DeleteByHeightsInTransact(tx *gorm.DB, heights []int64) error {
+	if len(heights) == 0 {
+		return nil
+	}
 	dbTx := tx.Model(&AccountHistory{}).Unscoped().Where("l2_block_height in ?", heights).Delete(&AccountHistory{})
 	if dbTx.Error != nil {
 		return dbTx.Error

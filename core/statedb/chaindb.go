@@ -1,6 +1,7 @@
 package statedb
 
 import (
+	"github.com/bnb-chain/zkbnb/dao/rollback"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 
@@ -30,6 +31,7 @@ type ChainDB struct {
 	L2NftModel          nft.L2NftModel
 	L2NftHistoryModel   nft.L2NftHistoryModel
 	TxPoolModel         tx.TxPoolModel
+	RollbackModel       rollback.RollbackModel
 
 	// Sys config
 	SysConfigModel sysconfig.SysConfigModel
@@ -50,8 +52,8 @@ func NewChainDB(db *gorm.DB) *ChainDB {
 		L2NftModel:          nft.NewL2NftModel(db),
 		L2NftHistoryModel:   nft.NewL2NftHistoryModel(db),
 		TxPoolModel:         tx.NewTxPoolModel(db),
-
-		SysConfigModel: sysconfig.NewSysConfigModel(db),
+		RollbackModel:       rollback.NewRollbackModel(db),
+		SysConfigModel:      sysconfig.NewSysConfigModel(db),
 	}
 }
 

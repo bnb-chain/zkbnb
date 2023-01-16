@@ -73,13 +73,14 @@ func (s *ApiServerSuite) SetupSuite() {
 			Token: "1731a7cc-6e1b-458c-8780-ce8249d4fd3b", //personal token, free plan
 		},
 		MemCache: struct {
-			AccountExpiration int
-			AssetExpiration   int
-			BlockExpiration   int
-			TxExpiration      int
-			PriceExpiration   int
-			MaxCounterNum     int64
-			MaxKeyNum         int64
+			AccountExpiration   int
+			AssetExpiration     int
+			BlockExpiration     int
+			TxExpiration        int
+			PriceExpiration     int
+			TxPendingExpiration int `json:",optional"`
+			MaxCounterNum       int64
+			MaxKeyNum           int64
 		}{AccountExpiration: 10000, AssetExpiration: 10000, BlockExpiration: 10000, TxExpiration: 10000, PriceExpiration: 3600000, MaxCounterNum: 10000, MaxKeyNum: 10000},
 	}
 	c.Postgres = struct {

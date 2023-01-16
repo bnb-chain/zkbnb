@@ -53,7 +53,7 @@ func TestConstructWitness(t *testing.T) {
 	for h := int64(1); h < maxTestBlockHeight; h++ {
 		witnessHelper, err := getWitnessHelper(h - 1)
 		assert.NoError(t, err)
-		b, err := blockModel.GetBlocksBetween(h, h)
+		b, err := blockModel.GetPendingBlocksBetween(h, h)
 		assert.NoError(t, err)
 		w, err := witnessModel.GetBlockWitnessByHeight(h)
 		assert.NoError(t, err)
@@ -82,7 +82,7 @@ func getWitnessHelper(blockHeight int64) (*WitnessHelper, error) {
 	if err != nil {
 		return nil, err
 	}
-	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, accountHistoryModel, blockHeight, ctx, assetTreeCacheSize)
+	accountTree, accountAssetTrees, err := tree.InitAccountTree(accountModel, accountHistoryModel, make([]int64, 0), blockHeight, ctx, assetTreeCacheSize)
 	if err != nil {
 		return nil, err
 	}

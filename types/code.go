@@ -39,6 +39,7 @@ var (
 	DbErrFailToCreateNftHistory      = errors.New("fail to create nft history")
 	DbErrFailToCreatePriorityRequest = errors.New("fail to create priority request")
 	DbErrFailToUpdatePriorityRequest = errors.New("fail to update priority request")
+	DbErrFailToCreateRollback        = errors.New("fail to create rollback")
 
 	JsonErrUnmarshal = errors.New("json.Unmarshal err")
 	JsonErrMarshal   = errors.New("json.Marshal err")

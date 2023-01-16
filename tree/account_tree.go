@@ -39,6 +39,7 @@ func accountAssetNamespace(index int64) string {
 func InitAccountTree(
 	accountModel account.AccountModel,
 	accountHistoryModel account.AccountHistoryModel,
+	accountIndexList []int64,
 	blockHeight int64,
 	ctx *Context,
 	assetCacheSize int,
@@ -69,7 +70,7 @@ func InitAccountTree(
 		}
 		return tree
 	})
-	accountTree, err = bsmt.NewBASSparseMerkleTree(ctx.Hasher(),
+	accountTree, err = bsmt.NewBNBSparseMerkleTree(ctx.Hasher(),
 		SetNamespace(ctx, AccountPrefix), AccountTreeHeight, NilAccountNodeHash,
 		opts...)
 	if err != nil {
@@ -78,11 +79,8 @@ func InitAccountTree(
 	}
 	logx.Infof("newBASSparseMerkleTree end")
 
-	if accountNums == 0 {
-		return accountTree, accountAssetTrees, nil
-	}
-
 	if ctx.IsLoad() {
+		newVersion := bsmt.Version(blockHeight)
 		for i := 0; i < int(accountNums); i += ctx.BatchReloadSize() {
 			err := reloadAccountTreeFromRDB(
 				accountModel, accountHistoryModel, blockHeight,
@@ -94,14 +92,14 @@ func InitAccountTree(
 		}
 
 		for i := int64(0); i < accountNums; i++ {
-			_, err := accountAssetTrees.Get(i).Commit(nil)
+			_, err := accountAssetTrees.Get(i).CommitWithNewVersion(nil, &newVersion)
 			if err != nil {
 				logx.Errorf("unable to set asset to tree: %s", err.Error())
 				return nil, nil, err
 			}
 		}
 
-		_, err = accountTree.Commit(nil)
+		_, err = accountTree.CommitWithNewVersion(nil, &newVersion)
 		if err != nil {
 			logx.Errorf("unable to commit account tree: %s", err.Error())
 			return nil, nil, err
@@ -109,7 +107,7 @@ func InitAccountTree(
 		return accountTree, accountAssetTrees, nil
 	}
 
-	// It's not loading from RDB, need to check tree version
+	// It's not loading from RDB, need to check tree versionblock
 	if accountTree.LatestVersion() > bsmt.Version(blockHeight) && !accountTree.IsEmpty() {
 		logx.Infof("account tree version [%d] is higher than block, rollback to %d", accountTree.LatestVersion(), blockHeight)
 		err := accountTree.Rollback(bsmt.Version(blockHeight))
@@ -119,13 +117,13 @@ func InitAccountTree(
 		}
 	}
 
-	for i := int64(0); i < accountNums; i++ {
-		asset := accountAssetTrees.Get(i)
+	for _, accountIndex := range accountIndexList {
+		asset := accountAssetTrees.Get(accountIndex)
 		if asset.LatestVersion() > bsmt.Version(blockHeight) && !asset.IsEmpty() {
-			logx.Infof("asset tree %d version [%d] is higher than block, rollback to %d", i, asset.LatestVersion(), blockHeight)
+			logx.Infof("asset tree %d version [%d] is higher than block, rollback to %d", accountIndex, asset.LatestVersion(), blockHeight)
 			err := asset.Rollback(bsmt.Version(blockHeight))
 			if err != nil {
-				logx.Errorf("unable to rollback asset [%d] tree: %s, version: %d", i, err.Error(), blockHeight)
+				logx.Errorf("unable to rollback asset [%d] tree: %s, version: %d", accountIndex, err.Error(), blockHeight)
 				return nil, nil, err
 			}
 		}
@@ -264,7 +262,7 @@ func AccountToNode(
 }
 
 func NewMemAccountAssetTree() (tree bsmt.SparseMerkleTree, err error) {
-	return bsmt.NewBASSparseMerkleTree(bsmt.NewHasherPool(func() hash.Hash { return poseidon.NewPoseidon() }),
+	return bsmt.NewBNBSparseMerkleTree(bsmt.NewHasherPool(func() hash.Hash { return poseidon.NewPoseidon() }),
 		memory.NewMemoryDB(), AssetTreeHeight, NilAccountAssetNodeHash)
 }
 

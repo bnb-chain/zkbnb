@@ -18,7 +18,7 @@ import (
 const (
 	fetchTimeout  = 3 * time.Second
 	fetchLimit    = 100
-	fetchInterval = 60 * time.Minute
+	fetchInterval = 5 * time.Minute
 )
 
 type Fetcher interface {

@@ -30,7 +30,7 @@ var (
 	DefaultCacheConfig = CacheConfig{
 		AccountCacheSize: 2048,
 		NftCacheSize:     2048,
-		MemCacheSize:     2048,
+		MemCacheSize:     204800,
 	}
 )
 
@@ -57,7 +57,7 @@ func (c *CacheConfig) sanitize() *CacheConfig {
 }
 
 type StateDB struct {
-	dryRun bool
+	DryRun bool
 	// State cache
 	*StateCache
 	chainDb    *ChainDB
@@ -69,19 +69,28 @@ type StateDB struct {
 	MemCache     *ristretto.Cache
 
 	// Tree state
-	AccountTree       bsmt.SparseMerkleTree
-	NftTree           bsmt.SparseMerkleTree
-	AccountAssetTrees *tree.AssetTreeCache
-	TreeCtx           *tree.Context
-	mainLock          sync.RWMutex
-	prunedBlockHeight int64
-	PreviousStateRoot string
-	Metrics           *zkbnbprometheus.StateDBMetrics
+	AccountTree                  bsmt.SparseMerkleTree
+	NftTree                      bsmt.SparseMerkleTree
+	AccountAssetTrees            *tree.AssetTreeCache
+	TreeCtx                      *tree.Context
+	prunedBlockHeight            int64
+	prunedBlockHeightLock        sync.RWMutex
+	PreviousStateRootImmutable   string
+	MaxNftIndexUsedImmutable     int64
+	MaxPollTxIdRollbackImmutable uint
+
+	needRestoreExecutedTxs     bool
+	needRestoreExecutedTxsLock sync.RWMutex
+
+	maxPoolTxIdFinished     uint
+	maxPoolTxIdFinishedLock sync.RWMutex
+
+	Metrics *zkbnbprometheus.StateDBMetrics
 }
 
 func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 	redisCache dbcache.Cache, cacheConfig *CacheConfig, assetCacheSize int,
-	stateRoot string, curHeight int64) (*StateDB, error) {
+	stateRoot string, accountIndexList []int64, curHeight int64) (*StateDB, error) {
 	err := tree.SetupTreeDB(treeCtx)
 	if err != nil {
 		logx.Error("setup tree db failed: ", err)
@@ -90,6 +99,7 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 	accountTree, accountAssetTrees, err := tree.InitAccountTree(
 		chainDb.AccountModel,
 		chainDb.AccountHistoryModel,
+		accountIndexList,
 		curHeight,
 		treeCtx,
 		assetCacheSize,
@@ -150,7 +160,7 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 	}, nil
 }
 
-func NewStateDBForDryRun(redisCache dbcache.Cache, cacheConfig *CacheConfig, chainDb *ChainDB) (*StateDB, error) {
+func NewStateDBForDryRun(redisCache dbcache.Cache, cacheConfig *CacheConfig, chainDb *ChainDB, memCache *ristretto.Cache) (*StateDB, error) {
 	accountCache, err := lru.New(cacheConfig.AccountCacheSize)
 	if err != nil {
 		logx.Error("init account cache failed:", err)
@@ -161,21 +171,9 @@ func NewStateDBForDryRun(redisCache dbcache.Cache, cacheConfig *CacheConfig, cha
 		logx.Error("init nft cache failed:", err)
 		return nil, err
 	}
-	memCache, err := ristretto.NewCache(&ristretto.Config{
-		NumCounters: int64(cacheConfig.MemCacheSize) * 10,
-		MaxCost:     int64(cacheConfig.MemCacheSize),
-		BufferItems: 64, // official recommended value
 
-		// Called when setting cost to 0 in `Set/SetWithTTL`
-		Cost: func(value interface{}) int64 {
-			return 1
-		},
-	})
-	if err != nil {
-		panic("MemCache init failed")
-	}
 	return &StateDB{
-		dryRun:       true,
+		DryRun:       true,
 		redisCache:   redisCache,
 		chainDb:      chainDb,
 		AccountCache: accountCache,
@@ -460,7 +458,7 @@ func (s *StateDB) DeepCopyAccounts(accountIds []int64) (map[int64]*types.Account
 
 func (s *StateDB) PrepareAccountsAndAssets(accountAssetsMap map[int64]map[int64]bool) error {
 	for accountIndex, assets := range accountAssetsMap {
-		if s.dryRun {
+		if s.DryRun {
 			account := &account.Account{}
 			redisAccount, err := s.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex), account)
 			if err == nil && redisAccount != nil {
@@ -494,7 +492,7 @@ func (s *StateDB) PrepareAccountsAndAssets(accountAssetsMap map[int64]map[int64]
 }
 
 func (s *StateDB) PrepareNft(nftIndex int64) (*nft.L2Nft, error) {
-	if s.dryRun {
+	if s.DryRun {
 		n := &nft.L2Nft{}
 		redisNft, err := s.redisCache.Get(context.Background(), dbcache.NftKeyByIndex(nftIndex), n)
 		if err == nil && redisNft != nil {
@@ -675,12 +673,13 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCop
 		return accountIndex, nil, fmt.Errorf("unable to compute account leaf: %v", err)
 	}
 	asset := s.AccountAssetTrees.Get(accountIndex)
-	prunedVersion := bsmt.Version(s.GetPrunedBlockHeight())
+	prunedVersion := bsmt.Version(tree.GetAssetLatestVerifiedHeight(s.GetPrunedBlockHeight(), asset.Versions()))
 	latestVersion := asset.LatestVersion()
 	if prunedVersion > latestVersion {
 		prunedVersion = latestVersion
 	}
-	ver, err := asset.Commit(&prunedVersion)
+	newVersion := bsmt.Version(stateCopy.CurrentBlock.BlockHeight)
+	ver, err := asset.CommitWithNewVersion(&prunedVersion, &newVersion)
 	if err != nil {
 		logx.Error("asset.Commit failed:", err)
 		return accountIndex, nil, fmt.Errorf("unable to commit asset tree [%d], tree ver: %d, prune ver: %d,error:%s", accountIndex, ver, prunedVersion, err.Error())
@@ -761,6 +760,7 @@ func (s *StateDB) GetNextAccountIndex() int64 {
 }
 
 func (s *StateDB) GetNextNftIndex() int64 {
+	//todo save nftindex to memcache
 	maxNftIndex, err := s.chainDb.L2NftModel.GetLatestNftIndex()
 	if err != nil {
 		logx.Severef("get latest nft index error: %s", err.Error())
@@ -771,6 +771,10 @@ func (s *StateDB) GetNextNftIndex() int64 {
 		if index > maxNftIndex {
 			maxNftIndex = index
 		}
+	}
+
+	if s.MaxNftIndexUsedImmutable > maxNftIndex {
+		maxNftIndex = s.MaxNftIndexUsedImmutable
 	}
 	return maxNftIndex + 1
 }
@@ -820,17 +824,43 @@ func (s *StateDB) GetGasConfig() (map[uint32]map[int]int64, error) {
 }
 
 func (c *StateDB) UpdatePrunedBlockHeight(latestBlock int64) {
-	c.mainLock.Lock()
+	c.prunedBlockHeightLock.Lock()
 	if c.prunedBlockHeight < latestBlock {
 		c.prunedBlockHeight = latestBlock
 	}
-	c.mainLock.Unlock()
+	c.prunedBlockHeightLock.Unlock()
 }
 
 func (c *StateDB) GetPrunedBlockHeight() int64 {
-	c.mainLock.RLock()
-	defer c.mainLock.RUnlock()
+	c.prunedBlockHeightLock.RLock()
+	defer c.prunedBlockHeightLock.RUnlock()
 	return c.prunedBlockHeight
+}
+
+func (c *StateDB) UpdateNeedRestoreExecutedTxs(need bool) {
+	c.needRestoreExecutedTxsLock.Lock()
+	c.needRestoreExecutedTxs = need
+	c.needRestoreExecutedTxsLock.Unlock()
+}
+
+func (c *StateDB) GetNeedRestoreExecutedTxs() bool {
+	c.needRestoreExecutedTxsLock.RLock()
+	defer c.needRestoreExecutedTxsLock.RUnlock()
+	return c.needRestoreExecutedTxs
+}
+
+func (c *StateDB) UpdateMaxPoolTxIdFinished(maxPoolTxId uint) {
+	c.maxPoolTxIdFinishedLock.Lock()
+	if maxPoolTxId > c.maxPoolTxIdFinished {
+		c.maxPoolTxIdFinished = maxPoolTxId
+	}
+	c.maxPoolTxIdFinishedLock.Unlock()
+}
+
+func (c *StateDB) GetMaxPoolTxIdFinished() uint {
+	c.maxPoolTxIdFinishedLock.RLock()
+	defer c.maxPoolTxIdFinishedLock.RUnlock()
+	return c.maxPoolTxIdFinished
 }
 
 func (s *StateDB) Close() {
