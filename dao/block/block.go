@@ -428,7 +428,7 @@ func (m *defaultBlockModel) PreSaveBlockDataInTransact(tx *gorm.DB, block *Block
 }
 
 func (m *defaultBlockModel) UpdateBlockToPendingInTransact(tx *gorm.DB, block *Block) error {
-	dbTx := tx.Model(&Block{}).Select("BlockStatus", "BlockSize", "BlockCommitment", "StateRoot", "PriorityOperations", "PendingOnChainOperationsHash", "PendingOnChainOperationsPubData").Where("id = ? and  block_status = ?", block.ID, StatusPacked).Updates(map[string]interface{}{
+	dbTx := tx.Model(&Block{}).Select("BlockStatus", "BlockSize", "BlockCommitment", "StateRoot", "PriorityOperations", "PendingOnChainOperationsHash", "PendingOnChainOperationsPubData", "CreatedAt").Where("id = ? and  block_status = ?", block.ID, StatusPacked).Updates(map[string]interface{}{
 		"block_status":                         StatusPending,
 		"block_size":                           block.BlockSize,
 		"block_commitment":                     block.BlockCommitment,
@@ -436,6 +436,7 @@ func (m *defaultBlockModel) UpdateBlockToPendingInTransact(tx *gorm.DB, block *B
 		"priority_operations":                  block.PriorityOperations,
 		"pending_on_chain_operations_hash":     block.PendingOnChainOperationsHash,
 		"pending_on_chain_operations_pub_data": block.PendingOnChainOperationsPubData,
+		"created_at":                           block.CreatedAt,
 	})
 	if dbTx.Error != nil {
 		return dbTx.Error

@@ -163,3 +163,7 @@ func ParseFullExitNftPubData(pubData []byte) (tx *txtypes.FullExitNftTxInfo, err
 	}
 	return tx, nil
 }
+
+func ParsePubData(pubData []byte) {
+
+}
