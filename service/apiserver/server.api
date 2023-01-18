@@ -359,7 +359,7 @@ type (
 	ReqSendTx {
 		TxType      uint32 `form:"tx_type"`
 		TxInfo      string `form:"tx_info"`
-		TxSignature string `form:"tx_signature"`
+		TxSignature string `form:"tx_signature,optional"`
 	}
 
 	ReqGetAccountPendingTxs {
@@ -409,7 +409,7 @@ service server-api {
 	@doc "Get next nonce"
 	@handler GetNextNonce
 	get /api/v1/nextNonce (ReqGetNextNonce) returns (NextNonce)
-
+	
 	@doc "Get transaction signature body"
 	@handler GetL2SignatureBody
 	post /api/v1/l2Signature (ReqSendTx) returns (SignBody)
