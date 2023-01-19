@@ -172,7 +172,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 			continue
 		}
 	}
-	treeCtx, err := tree.NewContext(moduleName, config.TreeDB.Driver, false, config.TreeDB.RoutinePoolSize, &config.TreeDB.LevelDBOption, &config.TreeDB.RedisDBOption)
+	treeCtx, err := tree.NewContext(moduleName, config.TreeDB.Driver, false, false, config.TreeDB.RoutinePoolSize, &config.TreeDB.LevelDBOption, &config.TreeDB.RedisDBOption)
 	if err != nil {
 		return nil, err
 	}
@@ -184,9 +184,8 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	}
 	bc.rollbackBlockMap = make(map[int64]*block.Block, 0)
 
-	maxPollTxIdRollback := uint(0)
 	if len(heights) != 0 {
-		maxPollTxIdRollback, err = rollbackFunc(bc, accountIndexList, nftIndexList, heights, curHeight)
+		err = rollbackFunc(bc, accountIndexList, nftIndexList, heights, curHeight)
 		rollBackBlocks, err := bc.BlockModel.GetBlockByStatus([]int{block.StatusProposing})
 		if err != nil && err != types.DbErrNotFound {
 			logx.Error("get blocks by status (StatusProposing,StatusPacked) failed: ", err)
@@ -209,6 +208,16 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 	bc.Statedb.MaxNftIndexUsedImmutable = types.NilNftIndex
 	if mintNft != nil {
 		bc.Statedb.MaxNftIndexUsedImmutable = mintNft.NftIndex
+	}
+
+	latestRollback, err := bc.TxPoolModel.GetLatestRollback(tx.StatusPending, true)
+	if err != nil && err != types.DbErrNotFound {
+		logx.Error("get latest pool tx rollback failed: ", err)
+		panic("get latest pool tx rollback failed:" + err.Error())
+	}
+	maxPollTxIdRollback := uint(0)
+	if latestRollback != nil {
+		maxPollTxIdRollback = latestRollback.ID
 	}
 	bc.Statedb.MaxPollTxIdRollbackImmutable = maxPollTxIdRollback
 	bc.Statedb.UpdateNeedRestoreExecutedTxs(maxPollTxIdRollback > 0)
@@ -440,11 +449,10 @@ func preRollBackFunc(bc *BlockChain) ([]int64, []int64, []int64) {
 	return accountIndexList, nftIndexList, heights
 }
 
-func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64, heights []int64, curHeight int64) (maxPollTxIdRollback uint, err error) {
+func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64, heights []int64, curHeight int64) (err error) {
 	accountIndexSlice := make([]int64, 0)
 	accountHistories := make([]*account.AccountHistory, 0)
 	accountIndexLen := len(accountIndexList)
-	maxPollTxIdRollback = uint(0)
 
 	for _, accountIndex := range accountIndexList {
 		accountIndexLen--
@@ -653,7 +661,6 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 		if len(txs) > 0 {
 			fromTxHash = txs[0].TxHash
 			fromPoolTxId = txs[0].ID
-			maxPollTxIdRollback = txs[len(txs)-1].ID
 		}
 		rollbackInfo := &rollback.Rollback{FromTxHash: fromTxHash, FromPoolTxId: fromPoolTxId, FromBlockHeight: heights[0], PoolTxIds: string(pollTxIdsJson), BlockHeights: string(heightsJson), AccountIndexes: string(accountIndexListJson), NftIndexes: string(nftIndexListJson)}
 		err = bc.RollbackModel.CreateInTransact(dbTx, rollbackInfo)
@@ -673,7 +680,7 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 		logx.Error("there are some block which status is statusPacked: %v", blocks)
 		panic("there are some block which status is statusPacked")
 	}
-	return maxPollTxIdRollback, nil
+	return nil
 }
 
 func (bc *BlockChain) ApplyTransaction(tx *tx.Tx) error {
@@ -726,6 +733,8 @@ func (bc *BlockChain) UpdateAccountTreeAndNftTree(blockSize int, stateDataCopy *
 	}
 	// Align pub data.
 	bc.Statedb.AlignPubData(blockSize, stateDataCopy)
+
+	//chain.ParsePubData(stateDataCopy.StateCache.PubData)
 
 	commitment := chain.CreateBlockCommitment(newBlock.BlockHeight, newBlock.CreatedAt.UnixMilli(),
 		common.FromHex(bc.Statedb.PreviousStateRootImmutable), common.FromHex(stateDataCopy.StateCache.StateRoot),

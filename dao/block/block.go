@@ -158,7 +158,7 @@ func (m *defaultBlockModel) GetBlocks(limit int64, offset int64) (blocks []*Bloc
 }
 
 func (m *defaultBlockModel) GetPendingBlocksBetween(start int64, end int64) (blocks []*Block, err error) {
-	dbTx := m.DB.Table(m.table).Where("block_height >= ? AND block_height <= ? and block_status = ?", start, end, StatusPending).
+	dbTx := m.DB.Table(m.table).Where("block_height >= ? AND block_height <= ? and block_status in ?", start, end, []int{StatusPending, StatusCommitted}).
 		Order("block_height").
 		Find(&blocks)
 	if dbTx.Error != nil {
@@ -428,7 +428,7 @@ func (m *defaultBlockModel) PreSaveBlockDataInTransact(tx *gorm.DB, block *Block
 }
 
 func (m *defaultBlockModel) UpdateBlockToPendingInTransact(tx *gorm.DB, block *Block) error {
-	dbTx := tx.Model(&Block{}).Select("BlockStatus", "BlockSize", "BlockCommitment", "StateRoot", "PriorityOperations", "PendingOnChainOperationsHash", "PendingOnChainOperationsPubData").Where("id = ? and  block_status = ?", block.ID, StatusPacked).Updates(map[string]interface{}{
+	dbTx := tx.Model(&Block{}).Select("BlockStatus", "BlockSize", "BlockCommitment", "StateRoot", "PriorityOperations", "PendingOnChainOperationsHash", "PendingOnChainOperationsPubData", "CreatedAt").Where("id = ? and  block_status = ?", block.ID, StatusPacked).Updates(map[string]interface{}{
 		"block_status":                         StatusPending,
 		"block_size":                           block.BlockSize,
 		"block_commitment":                     block.BlockCommitment,
@@ -436,6 +436,7 @@ func (m *defaultBlockModel) UpdateBlockToPendingInTransact(tx *gorm.DB, block *B
 		"priority_operations":                  block.PriorityOperations,
 		"pending_on_chain_operations_hash":     block.PendingOnChainOperationsHash,
 		"pending_on_chain_operations_pub_data": block.PendingOnChainOperationsPubData,
+		"created_at":                           block.CreatedAt,
 	})
 	if dbTx.Error != nil {
 		return dbTx.Error

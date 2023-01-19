@@ -106,6 +106,10 @@ func InitAccountTree(
 		return accountTree, accountAssetTrees, nil
 	}
 
+	if ctx.IsOnlyQuery() {
+		return accountTree, accountAssetTrees, nil
+	}
+
 	// It's not loading from RDB, need to check tree versionblock
 	if accountTree.LatestVersion() > bsmt.Version(blockHeight) && !accountTree.IsEmpty() {
 		logx.Infof("account tree version [%d] is higher than block, rollback to %d", accountTree.LatestVersion(), blockHeight)

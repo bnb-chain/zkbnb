@@ -536,7 +536,7 @@ func (c *Committer) pullPoolTxs() {
 	}
 	pendingTxs := make([]*tx.Tx, 0)
 	if c.bc.Statedb.GetNeedRestoreExecutedTxs() {
-		pendingTxs, err = c.bc.TxPoolModel.GetTxsByStatusBetween(tx.StatusPending, executedTxMaxId+1, c.bc.Statedb.MaxPollTxIdRollbackImmutable)
+		pendingTxs, err = c.bc.TxPoolModel.GetTxsByStatusAndIdRange(tx.StatusPending, executedTxMaxId+1, c.bc.Statedb.MaxPollTxIdRollbackImmutable)
 		if err != nil {
 			logx.Errorf("get rollback transactions from tx pool failed:%s", err.Error())
 			panic("get rollback transactions from tx pool failed: " + err.Error())
