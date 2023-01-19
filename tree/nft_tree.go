@@ -62,6 +62,10 @@ func InitNftTree(
 		return nftTree, nil
 	}
 
+	if ctx.IsOnlyQuery() {
+		return nftTree, nil
+	}
+
 	// It's not loading from RDB, need to check tree version
 	if nftTree.LatestVersion() > bsmt.Version(blockHeight) && !nftTree.IsEmpty() {
 		logx.Infof("nft tree version [%d] is higher than block, rollback to %d", nftTree.LatestVersion(), blockHeight)

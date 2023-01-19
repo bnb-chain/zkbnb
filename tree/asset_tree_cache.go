@@ -32,18 +32,10 @@ func NewSparseMerkleTreeAdapter(tree bsmt.SparseMerkleTree, changesLock *sync.RW
 }
 
 func (c *SparseMerkleTreeAdapter) SetWithVersion(key uint64, val []byte, newVersion bsmt.Version) error {
-	c.changesLock.Lock()
-	c.changes[int64(key)] = true
-	c.changesLock.Unlock()
 	return c.sparseMerkleTree.SetWithVersion(key, val, newVersion)
 }
 
 func (c *SparseMerkleTreeAdapter) MultiSetWithVersion(items []bsmt.Item, newVersion bsmt.Version) error {
-	c.changesLock.Lock()
-	for _, item := range items {
-		c.changes[int64(item.Key)] = true
-	}
-	c.changesLock.Unlock()
 	return c.sparseMerkleTree.MultiSetWithVersion(items, newVersion)
 }
 
@@ -89,17 +81,17 @@ func (c *AssetTreeCache) Get(i int64) (tree bsmt.SparseMerkleTree) {
 }
 
 func (c *AssetTreeCache) GetAdapter(i int64) (treeAdapter *SparseMerkleTreeAdapter) {
-	treeAdapter = NewSparseMerkleTreeAdapter(c.Get(i), &c.changesLock, c.changes)
-	return
+	c.changesLock.Lock()
+	c.changes[i] = true
+	c.changesLock.Unlock()
+	return NewSparseMerkleTreeAdapter(c.Get(i), &c.changesLock, c.changes)
 }
 
 //Returns slice of indexes of asset trees that were changned
 func (c *AssetTreeCache) GetChanges() []int64 {
-	c.mainLock.Lock()
 	c.changesLock.Lock()
-	defer c.mainLock.Unlock()
 	defer c.changesLock.Unlock()
-	ret := make([]int64, 0, len(c.changes))
+	ret := make([]int64, 0)
 	for key := range c.changes {
 		ret = append(ret, key)
 	}

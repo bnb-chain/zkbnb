@@ -158,7 +158,7 @@ func (m *defaultBlockModel) GetBlocks(limit int64, offset int64) (blocks []*Bloc
 }
 
 func (m *defaultBlockModel) GetPendingBlocksBetween(start int64, end int64) (blocks []*Block, err error) {
-	dbTx := m.DB.Table(m.table).Where("block_height >= ? AND block_height <= ? and block_status = ?", start, end, StatusPending).
+	dbTx := m.DB.Table(m.table).Where("block_height >= ? AND block_height <= ? and block_status in ?", start, end, []int{StatusPending, StatusCommitted}).
 		Order("block_height").
 		Find(&blocks)
 	if dbTx.Error != nil {

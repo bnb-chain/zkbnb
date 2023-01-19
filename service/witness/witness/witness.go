@@ -145,7 +145,7 @@ func (w *Witness) initState() error {
 	}
 
 	// dbinitializer tree database
-	treeCtx, err := tree.NewContext("witness", w.config.TreeDB.Driver, false, w.config.TreeDB.RoutinePoolSize, &w.config.TreeDB.LevelDBOption, &w.config.TreeDB.RedisDBOption)
+	treeCtx, err := tree.NewContext("witness", w.config.TreeDB.Driver, false, false, w.config.TreeDB.RoutinePoolSize, &w.config.TreeDB.LevelDBOption, &w.config.TreeDB.RedisDBOption)
 	if err != nil {
 		return err
 	}
@@ -156,7 +156,7 @@ func (w *Witness) initState() error {
 		return fmt.Errorf("init tree database failed %v", err)
 	}
 	w.treeCtx = treeCtx
-	blockInfo, err := w.blockModel.GetBlockByHeightWithoutTx(witnessHeight)
+	blockInfo, err := w.blockModel.GetBlockByHeightWithoutTx(witnessHeight + 1)
 	if err != nil {
 		logx.Error("get block failed: ", err)
 		panic("get block failed: " + err.Error())

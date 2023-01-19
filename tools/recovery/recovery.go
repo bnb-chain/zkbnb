@@ -27,13 +27,13 @@ func RecoveryTreeDB(
 	})
 
 	// dbinitializer tree database
-	treeCtx, err := tree.NewContext(serviceName, c.TreeDB.Driver, true, c.TreeDB.RoutinePoolSize, &c.TreeDB.LevelDBOption, &c.TreeDB.RedisDBOption)
+	treeCtx, err := tree.NewContext(serviceName, c.TreeDB.Driver, true, false, c.TreeDB.RoutinePoolSize, &c.TreeDB.LevelDBOption, &c.TreeDB.RedisDBOption)
 	if err != nil {
 		logx.Errorf("Init tree database failed: %s", err)
 		return
 	}
 
-	treeCtx.SetOptions(bsmt.InitializeVersion(bsmt.Version(blockHeight) - 1))
+	treeCtx.SetOptions(bsmt.InitializeVersion(0))
 	treeCtx.SetBatchReloadSize(batchSize)
 	err = tree.SetupTreeDB(treeCtx)
 	if err != nil {

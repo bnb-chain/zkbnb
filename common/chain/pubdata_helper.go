@@ -19,9 +19,12 @@ package chain
 
 import (
 	"errors"
-
+	types2 "github.com/bnb-chain/zkbnb-crypto/circuit/types"
+	"github.com/bnb-chain/zkbnb-crypto/util"
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/zeromicro/go-zero/core/logx"
+	"math/big"
 
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
@@ -165,5 +168,39 @@ func ParseFullExitNftPubData(pubData []byte) (tx *txtypes.FullExitNftTxInfo, err
 }
 
 func ParsePubData(pubData []byte) {
+	fromOffset := 0
+	toOffset := types2.PubDataBitsSizePerTx / 8
+	len := len(pubData)
+	for toOffset <= len {
+		res := make([]byte, types2.PubDataBitsSizePerTx/8)
+		copy(res[:], pubData[fromOffset:toOffset])
+		fromOffset = toOffset
+		toOffset += types2.PubDataBitsSizePerTx / 8
+		str := common.Bytes2Hex(pubData)
+		logx.Info(str)
 
+		ParseCreateCollectionPubData(res)
+	}
+
+}
+func ParseCreateCollectionPubData(pubData []byte) (tx *txtypes.CreateCollectionTxInfo, err error) {
+	offset := 0
+	offset, txType := common2.ReadUint8(pubData, offset)
+	if types.TxTypeCreateCollection == txType {
+		offset, accountIndex := common2.ReadUint32(pubData, offset)
+		offset, collectionId := common2.ReadUint16(pubData, offset)
+		offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
+		offset, gasFeeAssetAmount := common2.ReadUint16(pubData, offset)
+		gasFeeAssetAmountBigInt, _ := util.CleanPackedFee(big.NewInt(int64(gasFeeAssetAmount)))
+
+		tx = &txtypes.CreateCollectionTxInfo{
+			//TxType:                 txType,
+			AccountIndex:      int64(accountIndex),
+			GasFeeAssetId:     int64(gasFeeAssetId),
+			GasFeeAssetAmount: gasFeeAssetAmountBigInt,
+			CollectionId:      int64(collectionId),
+		}
+	}
+
+	return tx, nil
 }

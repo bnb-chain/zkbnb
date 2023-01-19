@@ -209,7 +209,7 @@ func RollBackTrees(
 	nftTree bsmt.SparseMerkleTree) error {
 
 	assetTreeChanges := assetTrees.GetChanges()
-	totalTask := len(assetTreeChanges) + 3
+	totalTask := len(assetTreeChanges) + 2
 	errChan := make(chan error, totalTask)
 	defer close(errChan)
 

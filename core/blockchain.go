@@ -172,7 +172,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 			continue
 		}
 	}
-	treeCtx, err := tree.NewContext(moduleName, config.TreeDB.Driver, false, config.TreeDB.RoutinePoolSize, &config.TreeDB.LevelDBOption, &config.TreeDB.RedisDBOption)
+	treeCtx, err := tree.NewContext(moduleName, config.TreeDB.Driver, false, false, config.TreeDB.RoutinePoolSize, &config.TreeDB.LevelDBOption, &config.TreeDB.RedisDBOption)
 	if err != nil {
 		return nil, err
 	}
@@ -733,6 +733,8 @@ func (bc *BlockChain) UpdateAccountTreeAndNftTree(blockSize int, stateDataCopy *
 	}
 	// Align pub data.
 	bc.Statedb.AlignPubData(blockSize, stateDataCopy)
+
+	//chain.ParsePubData(stateDataCopy.StateCache.PubData)
 
 	commitment := chain.CreateBlockCommitment(newBlock.BlockHeight, newBlock.CreatedAt.UnixMilli(),
 		common.FromHex(bc.Statedb.PreviousStateRootImmutable), common.FromHex(stateDataCopy.StateCache.StateRoot),
