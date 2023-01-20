@@ -17,14 +17,14 @@ func ExecuteTxWorker(queueSize int, workFunc func()) *TxWorker {
 	}
 }
 
-func UpdateAccountAssetTreeWorker(queueSize int, workFunc func(interface{})) *Worker {
+func UpdateAssetTreeWorker(queueSize int, workFunc func(interface{})) *Worker {
 	return &Worker{
 		jobQueue: make(chan interface{}, queueSize),
 		jobFunc:  workFunc,
 	}
 }
 
-func UpdateAccountTreeAndNftTreeWorker(queueSize int, workFunc func(interface{})) *Worker {
+func UpdateAccountAndNftTreeWorker(queueSize int, workFunc func(interface{})) *Worker {
 	return &Worker{
 		jobQueue: make(chan interface{}, queueSize),
 		jobFunc:  workFunc,

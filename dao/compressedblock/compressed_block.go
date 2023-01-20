@@ -34,6 +34,7 @@ type (
 		GetCompressedBlocksBetween(start, end int64) (blocksForCommit []*CompressedBlock, err error)
 		CreateCompressedBlockInTransact(tx *gorm.DB, block *CompressedBlock) error
 		DeleteByHeightsInTransact(tx *gorm.DB, heights []int64) error
+		GetCountByGreaterHeight(blockHeight int64) (count int64, err error)
 	}
 
 	defaultCompressedBlockModel struct {
@@ -100,4 +101,14 @@ func (m *defaultCompressedBlockModel) DeleteByHeightsInTransact(tx *gorm.DB, hei
 		return dbTx.Error
 	}
 	return nil
+}
+
+func (m *defaultCompressedBlockModel) GetCountByGreaterHeight(blockHeight int64) (count int64, err error) {
+	dbTx := m.DB.Table(m.table).Where("block_height > ?", blockHeight).Count(&count)
+	if dbTx.Error != nil {
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	return count, nil
 }

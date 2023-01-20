@@ -42,6 +42,7 @@ type (
 		DeleteByIndexesInTransact(tx *gorm.DB, nftIndexes []int64) error
 		UpdateByIndexInTransact(tx *gorm.DB, l2nft *L2Nft) error
 		GetNfts(limit int64, offset int64) (nfts []*L2Nft, err error)
+		GetCountByGreaterHeight(blockHeight int64) (count int64, err error)
 	}
 	defaultL2NftModel struct {
 		table string
@@ -195,6 +196,16 @@ func (m *defaultL2NftModel) GetNfts(limit int64, offset int64) (nfts []*L2Nft, e
 		return nil, nil
 	}
 	return nfts, nil
+}
+
+func (m *defaultL2NftModel) GetCountByGreaterHeight(blockHeight int64) (count int64, err error) {
+	dbTx := m.DB.Table(m.table).Where("l2_block_height > ?", blockHeight).Count(&count)
+	if dbTx.Error != nil {
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	return count, nil
 }
 
 func (ai *L2Nft) DeepCopy() *L2Nft {

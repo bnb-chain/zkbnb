@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"github.com/bnb-chain/zkbnb/common/metrics"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -83,8 +84,8 @@ func (e *BaseExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 		var start time.Time
 		start = time.Now()
 		err = e.bc.VerifyGas(gasAccountIndex, gasFeeAssetId, txInfo.GetTxType(), gasFeeAmount, skipGasAmtChk)
-		if e.bc.StateDB().Metrics != nil && e.bc.StateDB().Metrics.VerifyGasGauge != nil {
-			e.bc.StateDB().Metrics.VerifyGasGauge.Set(float64(time.Since(start).Milliseconds()))
+		if metrics.VerifyGasGauge != nil {
+			metrics.VerifyGasGauge.Set(float64(time.Since(start).Milliseconds()))
 		}
 
 		if err != nil {
@@ -98,8 +99,8 @@ func (e *BaseExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 			}
 			start = time.Now()
 			err = txInfo.VerifySignature(fromAccount.PublicKey)
-			if e.bc.StateDB().Metrics != nil && e.bc.StateDB().Metrics.VerifySignature != nil {
-				e.bc.StateDB().Metrics.VerifySignature.Set(float64(time.Since(start).Milliseconds()))
+			if metrics.VerifySignature != nil {
+				metrics.VerifySignature.Set(float64(time.Since(start).Milliseconds()))
 			}
 			if err != nil {
 				return err

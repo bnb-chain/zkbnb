@@ -31,6 +31,7 @@ type (
 		DropTxDetailTable() error
 		CreateTxDetails(txDetails []*TxDetail) error
 		DeleteByHeightsInTransact(tx *gorm.DB, heights []int64) error
+		GetCountByGreaterHeight(blockHeight int64) (count int64, err error)
 	}
 
 	defaultTxDetailModel struct {
@@ -96,4 +97,14 @@ func (m *defaultTxDetailModel) DeleteByHeightsInTransact(tx *gorm.DB, heights []
 		return dbTx.Error
 	}
 	return nil
+}
+
+func (m *defaultTxDetailModel) GetCountByGreaterHeight(blockHeight int64) (count int64, err error) {
+	dbTx := m.DB.Table(m.table).Where("block_height > ?", blockHeight).Count(&count)
+	if dbTx.Error != nil {
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	return count, nil
 }

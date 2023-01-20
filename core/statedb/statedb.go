@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/bnb-chain/zkbnb/common/zkbnbprometheus"
+	"github.com/bnb-chain/zkbnb/common/metrics"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"github.com/dgraph-io/ristretto"
 	"strconv"
@@ -84,8 +84,6 @@ type StateDB struct {
 
 	maxPoolTxIdFinished     uint
 	maxPoolTxIdFinishedLock sync.RWMutex
-
-	Metrics *zkbnbprometheus.StateDBMetrics
 }
 
 func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
@@ -142,7 +140,8 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 		},
 	})
 	if err != nil {
-		panic("MemCache init failed")
+		logx.Error("MemCache init failed:", err)
+		return nil, err
 	}
 
 	return &StateDB{
@@ -186,8 +185,8 @@ func NewStateDBForDryRun(redisCache dbcache.Cache, cacheConfig *CacheConfig, cha
 func (s *StateDB) GetFormatAccount(accountIndex int64) (*types.AccountInfo, error) {
 	var start time.Time
 	start = time.Now()
-	if s.Metrics != nil && s.Metrics.GetAccountCounter != nil {
-		s.Metrics.GetAccountCounter.Inc()
+	if metrics.GetAccountCounter != nil {
+		metrics.GetAccountCounter.Inc()
 	}
 	pending, exist := s.StateCache.GetPendingAccount(accountIndex)
 	if exist {
@@ -201,11 +200,11 @@ func (s *StateDB) GetFormatAccount(accountIndex int64) (*types.AccountInfo, erro
 
 	startGauge := time.Now()
 	account, err := s.chainDb.AccountModel.GetAccountByIndex(accountIndex)
-	if s.Metrics != nil && s.Metrics.GetAccountFromDbGauge != nil {
-		s.Metrics.GetAccountFromDbGauge.Set(float64(time.Since(startGauge).Milliseconds()))
+	if metrics.AccountFromDbGauge != nil {
+		metrics.AccountFromDbGauge.Set(float64(time.Since(startGauge).Milliseconds()))
 	}
-	if s.Metrics != nil && s.Metrics.GetAccountFromDbCounter != nil {
-		s.Metrics.GetAccountFromDbCounter.Inc()
+	if metrics.GetAccountFromDbCounter != nil {
+		metrics.GetAccountFromDbCounter.Inc()
 	}
 
 	if err == types.DbErrNotFound {
@@ -218,8 +217,8 @@ func (s *StateDB) GetFormatAccount(accountIndex int64) (*types.AccountInfo, erro
 		return nil, err
 	}
 	s.AccountCache.Add(accountIndex, formatAccount)
-	if s.Metrics != nil && s.Metrics.GetAccountGauge != nil {
-		s.Metrics.GetAccountGauge.Set(float64(time.Since(start).Milliseconds()))
+	if metrics.AccountGauge != nil {
+		metrics.AccountGauge.Set(float64(time.Since(start).Milliseconds()))
 	}
 
 	return formatAccount, nil
@@ -515,7 +514,7 @@ type treeUpdateResp struct {
 	err   error
 }
 
-func (s *StateDB) IntermediateRoot(cleanDirty bool, stateDataCopy *StateDataCopy) error {
+func (s *StateDB) UpdateAssetTree(cleanDirty bool, stateDataCopy *StateDataCopy) error {
 	taskNum := 0
 	resultChan := make(chan *treeUpdateResp, 1)
 	defer close(resultChan)
@@ -531,7 +530,7 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool, stateDataCopy *StateDataCopy
 		taskNum++
 		err := func(accountIndex int64, assets []int64) error {
 			return gopool.Submit(func() {
-				index, leaf, err := s.updateAccountTree(accountIndex, assets, stateDataCopy)
+				index, leaf, err := s.setAndCommitAssetTree(accountIndex, assets, stateDataCopy)
 				resultChan <- &treeUpdateResp{
 					role:  accountTreeRole,
 					index: index,
@@ -552,7 +551,7 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool, stateDataCopy *StateDataCopy
 		taskNum++
 		err := func(nftIndex int64) error {
 			return gopool.Submit(func() {
-				index, leaf, err := s.updateNftTree(nftIndex, stateDataCopy)
+				index, leaf, err := s.computeNftLeafHash(nftIndex, stateDataCopy)
 				resultChan <- &treeUpdateResp{
 					role:  nftTreeRole,
 					index: index,
@@ -591,7 +590,7 @@ func (s *StateDB) IntermediateRoot(cleanDirty bool, stateDataCopy *StateDataCopy
 	return nil
 }
 
-func (s *StateDB) AccountTreeAndNftTreeMultiSet(stateDataCopy *StateDataCopy) error {
+func (s *StateDB) SetAccountAndNftTree(stateDataCopy *StateDataCopy) error {
 	start := time.Now()
 	resultChan := make(chan *treeUpdateResp, 1)
 	defer close(resultChan)
@@ -620,7 +619,7 @@ func (s *StateDB) AccountTreeAndNftTreeMultiSet(stateDataCopy *StateDataCopy) er
 			return fmt.Errorf("update %s tree failed, %v", result.role, result.err)
 		}
 	}
-	s.Metrics.AccountTreeMultiSetGauge.Set(float64(time.Since(start).Milliseconds()))
+	metrics.AccountTreeMultiSetGauge.Set(float64(time.Since(start).Milliseconds()))
 
 	hFunc := poseidon.NewPoseidon()
 	hFunc.Write(s.AccountTree.Root())
@@ -629,16 +628,16 @@ func (s *StateDB) AccountTreeAndNftTreeMultiSet(stateDataCopy *StateDataCopy) er
 	return nil
 }
 
-func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCopy *StateDataCopy) (int64, []byte, error) {
+func (s *StateDB) setAndCommitAssetTree(accountIndex int64, assets []int64, stateCopy *StateDataCopy) (int64, []byte, error) {
 	start := time.Now()
 	account, exist := stateCopy.StateCache.GetPendingAccount(accountIndex)
-	s.Metrics.AccountTreeGauge.WithLabelValues("cache_get_account").Set(float64(time.Since(start).Milliseconds()))
+	metrics.AccountTreeTimeGauge.WithLabelValues("cache_get_account").Set(float64(time.Since(start).Milliseconds()))
 	if !exist {
 		logx.Infof("update account tree failed,not exist accountIndex=%s", accountIndex)
 	}
 	start = time.Now()
 	pendingUpdateAssetItem := make([]bsmt.Item, 0, len(assets))
-	s.Metrics.AccountTreeGauge.WithLabelValues("assets_count").Set(float64(len(assets)))
+	metrics.AccountTreeTimeGauge.WithLabelValues("assets_count").Set(float64(len(assets)))
 	for _, assetId := range assets {
 		balance := account.AssetInfo[assetId].Balance
 		startItem := time.Now()
@@ -646,20 +645,20 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCop
 			balance.String(),
 			account.AssetInfo[assetId].OfferCanceledOrFinalized.String(),
 		)
-		s.Metrics.AccountTreeGauge.WithLabelValues("compute_poseidon").Set(float64(time.Since(startItem).Milliseconds()))
+		metrics.AccountTreeTimeGauge.WithLabelValues("compute_poseidon").Set(float64(time.Since(startItem).Milliseconds()))
 		if err != nil {
 			return accountIndex, nil, fmt.Errorf("compute new account asset leaf failed: %v", err)
 		}
 		pendingUpdateAssetItem = append(pendingUpdateAssetItem, bsmt.Item{Key: uint64(assetId), Val: assetLeaf})
 	}
-	s.Metrics.AccountTreeGauge.WithLabelValues("for_assets").Set(float64(time.Since(start).Milliseconds()))
+	metrics.AccountTreeTimeGauge.WithLabelValues("for_assets").Set(float64(time.Since(start).Milliseconds()))
 
 	start = time.Now()
 	err := s.AccountAssetTrees.Get(accountIndex).MultiSetWithVersion(pendingUpdateAssetItem, bsmt.Version(stateCopy.CurrentBlock.BlockHeight))
 	if err != nil {
 		return accountIndex, nil, fmt.Errorf("update asset tree failed: %v", err)
 	}
-	s.Metrics.AccountTreeGauge.WithLabelValues("multiSet").Set(float64(time.Since(start).Milliseconds()))
+	metrics.AccountTreeTimeGauge.WithLabelValues("multiSet").Set(float64(time.Since(start).Milliseconds()))
 
 	account.AssetRoot = common.Bytes2Hex(s.AccountAssetTrees.Get(accountIndex).Root())
 	nAccountLeafHash, err := tree.ComputeAccountLeafHash(
@@ -687,12 +686,12 @@ func (s *StateDB) updateAccountTree(accountIndex int64, assets []int64, stateCop
 	return accountIndex, nAccountLeafHash, nil
 }
 
-func (s *StateDB) updateNftTree(nftIndex int64, stateCopy *StateDataCopy) (int64, []byte, error) {
+func (s *StateDB) computeNftLeafHash(nftIndex int64, stateCopy *StateDataCopy) (int64, []byte, error) {
 	start := time.Now()
 	nftInfo, exist := stateCopy.StateCache.GetPendingNft(nftIndex)
 	if !exist {
-		logx.Error("updateNftTree failed,No NFT found in GetPendingNft nftIndex=%s", nftIndex)
-		return nftIndex, nil, fmt.Errorf("updateNftTree failed,No NFT found in GetPendingNft nftIndex=%v", nftIndex)
+		logx.Error("computeNftLeafHash failed,No NFT found in GetPendingNft nftIndex=%s", nftIndex)
+		return nftIndex, nil, fmt.Errorf("computeNftLeafHash failed,No NFT found in GetPendingNft nftIndex=%v", nftIndex)
 	}
 	nftAssetLeaf, err := tree.ComputeNftAssetLeafHash(
 		nftInfo.CreatorAccountIndex,
@@ -704,7 +703,7 @@ func (s *StateDB) updateNftTree(nftIndex int64, stateCopy *StateDataCopy) (int64
 	if err != nil {
 		return nftIndex, nil, fmt.Errorf("unable to compute nftInfo leaf: %v", err)
 	}
-	s.Metrics.NftTreeGauge.WithLabelValues("nftInfo").Set(float64(time.Since(start).Milliseconds()))
+	metrics.NftTreeTimeGauge.WithLabelValues("nftInfo").Set(float64(time.Since(start).Milliseconds()))
 	return nftIndex, nftAssetLeaf, nil
 }
 
@@ -843,7 +842,7 @@ func (c *StateDB) UpdateNeedRestoreExecutedTxs(need bool) {
 	c.needRestoreExecutedTxsLock.Unlock()
 }
 
-func (c *StateDB) GetNeedRestoreExecutedTxs() bool {
+func (c *StateDB) NeedRestoreExecutedTxs() bool {
 	c.needRestoreExecutedTxsLock.RLock()
 	defer c.needRestoreExecutedTxsLock.RUnlock()
 	return c.needRestoreExecutedTxs
