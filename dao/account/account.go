@@ -49,6 +49,7 @@ type (
 		BatchInsertOrUpdateInTransact(tx *gorm.DB, accounts []*Account) (err error)
 		UpdateByIndexInTransact(tx *gorm.DB, account *Account) error
 		DeleteByIndexesInTransact(tx *gorm.DB, accountIndexes []int64) error
+		GetCountByGreaterHeight(blockHeight int64) (count int64, err error)
 	}
 
 	defaultAccountModel struct {
@@ -241,4 +242,14 @@ func (m *defaultAccountModel) BatchInsertOrUpdateInTransact(tx *gorm.DB, account
 		return types.DbErrFailToUpdateAccount
 	}
 	return nil
+}
+
+func (m *defaultAccountModel) GetCountByGreaterHeight(blockHeight int64) (count int64, err error) {
+	dbTx := m.DB.Table(m.table).Where("l2_block_height > ?", blockHeight).Count(&count)
+	if dbTx.Error != nil {
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	return count, nil
 }

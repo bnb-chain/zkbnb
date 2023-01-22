@@ -30,6 +30,14 @@ func Run(configFile string) error {
 		committer.PendingTxNum()
 	})
 	if err != nil {
+		logx.Severef("add PendingTxNum cron job failed: %v", err)
+		return err
+	}
+
+	if _, err := cronJob.AddFunc("@every 300s", func() {
+		committer.CompensatePoolTx()
+	}); err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 	cronJob.Start()

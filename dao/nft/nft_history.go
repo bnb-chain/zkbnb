@@ -39,6 +39,7 @@ type (
 		CreateNftHistoriesInTransact(tx *gorm.DB, histories []*L2NftHistory) error
 		GetLatestNftHistories(nftIndexes []int64, height int64) (rowsAffected int64, nfts []*L2NftHistory, err error)
 		DeleteByHeightsInTransact(tx *gorm.DB, heights []int64) error
+		GetCountByGreaterHeight(blockHeight int64) (count int64, err error)
 	}
 	defaultL2NftHistoryModel struct {
 		table string
@@ -147,4 +148,14 @@ func (m *defaultL2NftHistoryModel) DeleteByHeightsInTransact(tx *gorm.DB, height
 		return dbTx.Error
 	}
 	return nil
+}
+
+func (m *defaultL2NftHistoryModel) GetCountByGreaterHeight(blockHeight int64) (count int64, err error) {
+	dbTx := m.DB.Table(m.table).Where("l2_block_height > ?", blockHeight).Count(&count)
+	if dbTx.Error != nil {
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	return count, nil
 }

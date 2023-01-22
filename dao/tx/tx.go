@@ -87,6 +87,7 @@ type (
 		CreateTxs(txs []*Tx) error
 		DeleteByHeightsInTransact(tx *gorm.DB, heights []int64) error
 		GetMaxPoolTxIdByHeightInTransact(tx *gorm.DB, height int64) (poolTxId uint, err error)
+		GetCountByGreaterHeight(blockHeight int64) (count int64, err error)
 	}
 
 	defaultTxModel struct {
@@ -290,6 +291,16 @@ func (m *defaultTxModel) DeleteByHeightsInTransact(tx *gorm.DB, heights []int64)
 		return dbTx.Error
 	}
 	return nil
+}
+
+func (m *defaultTxModel) GetCountByGreaterHeight(blockHeight int64) (count int64, err error) {
+	dbTx := m.DB.Table(m.table).Where("block_height > ?", blockHeight).Count(&count)
+	if dbTx.Error != nil {
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	return count, nil
 }
 
 func (ai *Tx) DeepCopy() *Tx {

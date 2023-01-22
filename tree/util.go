@@ -69,7 +69,7 @@ func EmptyNftNodeHash() []byte {
 	return hash[:]
 }
 
-func CommitAccountTreeAndNftTree(
+func CommitAccountAndNftTree(
 	prunedVersion uint64,
 	blockHeight int64,
 	accountTree bsmt.SparseMerkleTree,
@@ -79,7 +79,7 @@ func CommitAccountTreeAndNftTree(
 	defer close(errChan)
 
 	err := gopool.Submit(func() {
-		accPrunedVersion := bsmt.Version(prunedVersion)
+		accPrunedVersion := bsmt.Version(GetAssetLatestVerifiedHeight(int64(prunedVersion), accountTree.Versions()))
 		newVersion := bsmt.Version(blockHeight)
 		if accountTree.LatestVersion() < accPrunedVersion {
 			accPrunedVersion = accountTree.LatestVersion()
@@ -96,7 +96,7 @@ func CommitAccountTreeAndNftTree(
 	}
 
 	err = gopool.Submit(func() {
-		nftPrunedVersion := bsmt.Version(prunedVersion)
+		nftPrunedVersion := bsmt.Version(GetAssetLatestVerifiedHeight(int64(prunedVersion), nftTree.Versions()))
 		newVersion := bsmt.Version(blockHeight)
 		if nftTree.LatestVersion() < nftPrunedVersion {
 			nftPrunedVersion = nftTree.LatestVersion()
@@ -136,7 +136,7 @@ func CommitTrees(
 	defer close(errChan)
 
 	err := gopool.Submit(func() {
-		accPrunedVersion := bsmt.Version(prunedVersion)
+		accPrunedVersion := bsmt.Version(GetAssetLatestVerifiedHeight(int64(prunedVersion), accountTree.Versions()))
 		newVersion := bsmt.Version(blockHeight)
 		if accountTree.LatestVersion() < accPrunedVersion {
 			accPrunedVersion = accountTree.LatestVersion()
@@ -176,7 +176,7 @@ func CommitTrees(
 	}
 
 	err = gopool.Submit(func() {
-		nftPrunedVersion := bsmt.Version(prunedVersion)
+		nftPrunedVersion := bsmt.Version(GetAssetLatestVerifiedHeight(int64(prunedVersion), nftTree.Versions()))
 		newVersion := bsmt.Version(blockHeight)
 		if nftTree.LatestVersion() < nftPrunedVersion {
 			nftPrunedVersion = nftTree.LatestVersion()
