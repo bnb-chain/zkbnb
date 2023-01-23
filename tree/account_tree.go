@@ -80,6 +80,9 @@ func InitAccountTree(
 	logx.Infof("newBASSparseMerkleTree end")
 
 	if ctx.IsLoad() {
+		if blockHeight == 0 {
+			return accountTree, accountAssetTrees, nil
+		}
 		newVersion := bsmt.Version(blockHeight)
 		for i := 0; i < int(accountNums); i += ctx.BatchReloadSize() {
 			err := reloadAccountTreeFromRDB(
