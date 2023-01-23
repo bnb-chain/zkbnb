@@ -40,6 +40,9 @@ func InitNftTree(
 	}
 
 	if ctx.IsLoad() {
+		if blockHeight == 0 {
+			return nftTree, nil
+		}
 		newVersion := bsmt.Version(blockHeight)
 		nums, err := nftHistoryModel.GetLatestNftsCountByBlockHeight(blockHeight)
 		if err != nil {
