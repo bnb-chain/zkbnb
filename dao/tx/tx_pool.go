@@ -487,7 +487,7 @@ func (m *defaultTxPoolModel) GetLatestRollback(status int, rollback bool) (tx *P
 }
 
 func (m *defaultTxPoolModel) GetCountByGreaterHeight(blockHeight int64) (count int64, err error) {
-	dbTx := m.DB.Table(m.table).Where("block_height > ?", blockHeight).Count(&count)
+	dbTx := m.DB.Table(m.table).Where("block_height > ? and tx_status= ?", blockHeight, StatusExecuted).Count(&count)
 	if dbTx.Error != nil {
 		return 0, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
