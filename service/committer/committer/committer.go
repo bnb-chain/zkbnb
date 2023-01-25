@@ -9,6 +9,7 @@ import (
 	"github.com/bnb-chain/zkbnb/common/metrics"
 	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/account"
+	"github.com/bnb-chain/zkbnb/dao/dbcache"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/panjf2000/ants/v2"
 	"sort"
@@ -1152,12 +1153,9 @@ func (c *Committer) PendingTxNum() {
 	metrics.PendingTxNumMetrics.Set(float64(pendingTxCount))
 }
 
-func (c *Committer) CompensatePoolTx() {
-	fromId := c.bc.Statedb.GetMaxPoolTxIdFinished() - 100000
-	if fromId < 0 {
-		fromId = 0
-	}
-	pendingTxs, err := c.bc.TxPoolModel.GetTxsByStatusAndIdRange(tx.StatusPending, fromId, c.bc.Statedb.GetMaxPoolTxIdFinished())
+func (c *Committer) CompensatePendingPoolTx() {
+	fromCreatAt := time.Now().Add(time.Duration(-10) * time.Minute).UnixMilli()
+	pendingTxs, err := c.bc.TxPoolModel.GetTxsByStatusAndCreateTime(tx.StatusPending, time.UnixMilli(fromCreatAt), c.bc.Statedb.GetMaxPoolTxIdFinished())
 	if err != nil {
 		logx.Errorf("get pending transactions from tx pool for compensation failed:%s", err.Error())
 		return
@@ -1165,6 +1163,12 @@ func (c *Committer) CompensatePoolTx() {
 	if pendingTxs != nil {
 		for _, poolTx := range pendingTxs {
 			logx.Severef("get pending transactions from tx pool for compensation id:%s", poolTx.ID)
+			_, found := c.bc.Statedb.MemCache.Get(dbcache.PendingPoolTxKeyByPoolTxId(poolTx.ID))
+			if found {
+				logx.Infof("add pool tx to the queue repeatedly in the compensation task id:%s", poolTx.ID)
+				continue
+			}
+			c.bc.Statedb.MemCache.SetWithTTL(dbcache.PendingPoolTxKeyByPoolTxId(poolTx.ID), poolTx.ID, 0, time.Duration(1)*time.Hour)
 			c.executeTxWorker.Enqueue(poolTx)
 		}
 	}
