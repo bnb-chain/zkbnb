@@ -35,7 +35,7 @@ func Run(configFile string) error {
 	}
 
 	if _, err := cronJob.AddFunc("@every 300s", func() {
-		committer.CompensatePoolTx()
+		committer.CompensatePendingPoolTx()
 	}); err != nil {
 		logx.Severe(err)
 		panic(err)

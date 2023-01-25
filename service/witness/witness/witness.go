@@ -157,12 +157,12 @@ func (w *Witness) initState() error {
 	}
 	w.treeCtx = treeCtx
 	blockInfo, err := w.blockModel.GetBlockByHeightWithoutTx(witnessHeight + 1)
-	if err != nil {
+	if err != nil && err != types.DbErrNotFound {
 		logx.Error("get block failed: ", err)
 		panic("get block failed: " + err.Error())
 	}
 	accountIndexes := make([]int64, 0)
-	if blockInfo.AccountIndexes != "[]" && blockInfo.AccountIndexes != "" {
+	if blockInfo != nil && blockInfo.AccountIndexes != "[]" && blockInfo.AccountIndexes != "" {
 		err = json.Unmarshal([]byte(blockInfo.AccountIndexes), &accountIndexes)
 		if err != nil {
 			logx.Error("json err unmarshal failed")

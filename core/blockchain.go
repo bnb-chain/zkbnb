@@ -135,7 +135,9 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		}
 	}
 
-	verifyRollbackFunc(bc, curHeight)
+	verifyRollbackTableDataFunc(bc, curHeight)
+
+	verifyRollbackTreesFunc(bc, curHeight)
 
 	bc.Statedb.PreviousStateRootImmutable = bc.currentBlock.StateRoot
 
@@ -493,7 +495,7 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 	return nil
 }
 
-func verifyRollbackFunc(bc *BlockChain, curHeight int64) {
+func verifyRollbackTableDataFunc(bc *BlockChain, curHeight int64) {
 	logx.Infof("verify rollback start,height:%s", curHeight)
 	blocks, err := bc.BlockModel.GetBlockByStatus([]int{block.StatusPacked})
 	if err != nil && err != types.DbErrNotFound {
@@ -584,6 +586,10 @@ func verifyRollbackFunc(bc *BlockChain, curHeight int64) {
 		logx.Severe("roll back for CompressedBlock failed")
 		panic("roll back for CompressedBlock failed")
 	}
+}
+
+func verifyRollbackTreesFunc(bc *BlockChain, curHeight int64) {
+
 }
 
 func (bc *BlockChain) ApplyTransaction(tx *tx.Tx) error {
