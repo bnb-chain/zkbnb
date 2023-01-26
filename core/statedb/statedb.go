@@ -758,6 +758,10 @@ func (s *StateDB) GetNextAccountIndex() int64 {
 	return s.AccountAssetTrees.GetNextAccountIndex()
 }
 
+func (s *StateDB) GetCurrentAccountIndex() int64 {
+	return s.AccountAssetTrees.GetCurrentAccountIndex()
+}
+
 func (s *StateDB) GetNextNftIndex() int64 {
 	//todo save nftindex to memcache
 	maxNftIndex, err := s.chainDb.L2NftModel.GetLatestNftIndex()

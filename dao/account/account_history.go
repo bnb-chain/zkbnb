@@ -31,13 +31,14 @@ type (
 	AccountHistoryModel interface {
 		CreateAccountHistoryTable() error
 		DropAccountHistoryTable() error
-		GetValidAccounts(height int64, limit int, offset int) (rowsAffected int64, accounts []*AccountHistory, err error)
+		GetValidAccounts(height int64, fromAccountIndex int64, toAccountIndex int64) (rowsAffected int64, accounts []*AccountHistory, err error)
 		GetValidAccountCount(height int64) (accounts int64, err error)
 		CreateAccountHistoriesInTransact(tx *gorm.DB, histories []*AccountHistory) error
 		GetLatestAccountHistory(accountIndex, height int64) (accountHistory *AccountHistory, err error)
 		GetLatestAccountHistories(accountIndexes []int64, height int64) (rowsAffected int64, accounts []*AccountHistory, err error)
 		DeleteByHeightsInTransact(tx *gorm.DB, heights []int64) error
 		GetCountByGreaterHeight(blockHeight int64) (count int64, err error)
+		GetMaxAccountIndex(height int64) (accountIndex int64, err error)
 	}
 
 	defaultAccountHistoryModel struct {
@@ -86,13 +87,12 @@ func (m *defaultAccountHistoryModel) CreateNewAccount(nAccount *AccountHistory) 
 	return nil
 }
 
-func (m *defaultAccountHistoryModel) GetValidAccounts(height int64, limit int, offset int) (rowsAffected int64, accounts []*AccountHistory, err error) {
+func (m *defaultAccountHistoryModel) GetValidAccounts(height int64, fromAccountIndex int64, toAccountIndex int64) (rowsAffected int64, accounts []*AccountHistory, err error) {
 	subQuery := m.DB.Table(m.table).Select("*").
 		Where("account_index = a.account_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height AND l2_block_height != -1", height)
 
 	dbTx := m.DB.Table(m.table+" as a").Select("*").
-		Where("NOT EXISTS (?) AND l2_block_height <= ? AND l2_block_height != -1", subQuery, height).
-		Limit(limit).Offset(offset).
+		Where("NOT EXISTS (?) AND l2_block_height <= ? AND l2_block_height != -1 and account_index >= ? and account_index <= ?", subQuery, height, fromAccountIndex, toAccountIndex).
 		Order("account_index")
 
 	if dbTx.Find(&accounts).Error != nil {
@@ -113,6 +113,16 @@ func (m *defaultAccountHistoryModel) GetValidAccountCount(height int64) (count i
 		return 0, types.DbErrSqlOperation
 	}
 	return count, nil
+}
+
+func (m *defaultAccountHistoryModel) GetMaxAccountIndex(height int64) (accountIndex int64, err error) {
+	dbTx := m.DB.Table(m.table).Select("max(account_index)").Where("l2_block_height <=?", height).Find(&accountIndex)
+	if dbTx.Error != nil {
+		return -1, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return -1, types.DbErrNotFound
+	}
+	return accountIndex, nil
 }
 
 func (m *defaultAccountHistoryModel) CreateAccountHistoriesInTransact(tx *gorm.DB, histories []*AccountHistory) error {

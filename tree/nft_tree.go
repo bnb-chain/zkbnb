@@ -18,6 +18,7 @@
 package tree
 
 import (
+	"github.com/bnb-chain/zkbnb/types"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	bsmt "github.com/bnb-chain/zkbnb-smt"
@@ -44,19 +45,24 @@ func InitNftTree(
 			return nftTree, nil
 		}
 		newVersion := bsmt.Version(blockHeight)
-		nums, err := nftHistoryModel.GetLatestNftsCountByBlockHeight(blockHeight)
-		if err != nil {
+		maxNftIndex, err := nftHistoryModel.GetMaxNftIndex(blockHeight)
+		if err != nil && err != types.DbErrNotFound {
 			logx.Errorf("unable to get latest nft assets: %s", err.Error())
 			return nil, err
 		}
-		for i := 0; i < int(nums); i += ctx.BatchReloadSize() {
+		for i := 0; int64(i) <= maxNftIndex; i += ctx.BatchReloadSize() {
+			toNftIndex := int64(i+ctx.BatchReloadSize()) - 1
+			if toNftIndex > maxNftIndex {
+				toNftIndex = maxNftIndex
+			}
 			err := loadNftTreeFromRDB(
 				nftHistoryModel, blockHeight,
-				i, i+ctx.BatchReloadSize(), nftTree)
+				int64(i), toNftIndex, nftTree)
 			if err != nil {
 				return nil, err
 			}
 		}
+
 		_, err = nftTree.CommitWithNewVersion(nil, &newVersion)
 		if err != nil {
 			logx.Errorf("unable to commit nft tree: %s", err.Error())
@@ -84,11 +90,11 @@ func InitNftTree(
 func loadNftTreeFromRDB(
 	nftHistoryModel nft.L2NftHistoryModel,
 	blockHeight int64,
-	offset, limit int,
+	fromNftIndex, toNftIndex int64,
 	nftTree bsmt.SparseMerkleTree,
 ) error {
 	_, nftAssets, err := nftHistoryModel.GetLatestNftsByBlockHeight(blockHeight,
-		limit, offset)
+		fromNftIndex, toNftIndex)
 	if err != nil {
 		logx.Errorf("unable to get latest nft assets: %s", err.Error())
 		return err

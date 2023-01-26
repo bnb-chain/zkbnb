@@ -1026,7 +1026,7 @@ func (c *Committer) finalSaveBlockDataFunc(blockStates *block.BlockStates) {
 			return err
 		}
 		metrics.FinalSaveBlockDataMetrics.WithLabelValues("update_block_to_pending").Set(float64(time.Since(start).Milliseconds()))
-		return err
+		return nil
 	})
 	if err != nil {
 		logx.Errorf("finalSaveBlockDataFunc failed:%s,blockHeight:%d", err.Error(), blockStates.Block.BlockHeight)

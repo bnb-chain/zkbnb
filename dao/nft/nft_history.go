@@ -33,13 +33,14 @@ type (
 		CreateL2NftHistoryTable() error
 		DropL2NftHistoryTable() error
 		GetLatestNftsCountByBlockHeight(height int64) (count int64, err error)
-		GetLatestNftsByBlockHeight(height int64, limit int, offset int) (
+		GetLatestNftsByBlockHeight(height int64, fromNftIndex int64, toNftIndex int64) (
 			rowsAffected int64, nftAssets []*L2NftHistory, err error,
 		)
 		CreateNftHistoriesInTransact(tx *gorm.DB, histories []*L2NftHistory) error
 		GetLatestNftHistories(nftIndexes []int64, height int64) (rowsAffected int64, nfts []*L2NftHistory, err error)
 		DeleteByHeightsInTransact(tx *gorm.DB, heights []int64) error
 		GetCountByGreaterHeight(blockHeight int64) (count int64, err error)
+		GetMaxNftIndex(height int64) (nftIndex int64, err error)
 	}
 	defaultL2NftHistoryModel struct {
 		table string
@@ -94,15 +95,24 @@ func (m *defaultL2NftHistoryModel) GetLatestNftsCountByBlockHeight(height int64)
 	return count, nil
 }
 
-func (m *defaultL2NftHistoryModel) GetLatestNftsByBlockHeight(height int64, limit int, offset int) (
+func (m *defaultL2NftHistoryModel) GetMaxNftIndex(height int64) (nftIndex int64, err error) {
+	dbTx := m.DB.Table(m.table).Select("max(nft_index)").Where("l2_block_height <=?", height).Find(&nftIndex)
+	if dbTx.Error != nil {
+		return -1, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return -1, types.DbErrNotFound
+	}
+	return nftIndex, nil
+}
+
+func (m *defaultL2NftHistoryModel) GetLatestNftsByBlockHeight(height int64, fromNftIndex int64, toNftIndex int64) (
 	rowsAffected int64, accountNftAssets []*L2NftHistory, err error,
 ) {
 	subQuery := m.DB.Table(m.table).Select("*").
 		Where("nft_index = a.nft_index AND l2_block_height <= ? AND l2_block_height > a.l2_block_height", height)
 
 	dbTx := m.DB.Table(m.table+" as a").Select("*").
-		Where("NOT EXISTS (?) AND l2_block_height <= ?", subQuery, height).
-		Limit(limit).Offset(offset).
+		Where("NOT EXISTS (?) AND l2_block_height <= ? and nft_index >= ? and nft_index <= ?", subQuery, height, fromNftIndex, toNftIndex).
 		Order("nft_index")
 
 	if dbTx.Find(&accountNftAssets).Error != nil {

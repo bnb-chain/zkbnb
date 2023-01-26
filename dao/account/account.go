@@ -38,6 +38,7 @@ type (
 		CreateAccountTable() error
 		DropAccountTable() error
 		GetAccountByIndex(accountIndex int64) (account *Account, err error)
+		GetAccountByIndexes(accountIndexes []int64) (accounts []*Account, err error)
 		GetConfirmedAccountByIndex(accountIndex int64) (account *Account, err error)
 		GetAccountByPk(pk string) (account *Account, err error)
 		GetAccountByName(name string) (account *Account, err error)
@@ -50,6 +51,7 @@ type (
 		UpdateByIndexInTransact(tx *gorm.DB, account *Account) error
 		DeleteByIndexesInTransact(tx *gorm.DB, accountIndexes []int64) error
 		GetCountByGreaterHeight(blockHeight int64) (count int64, err error)
+		GetMaxAccountIndex() (accountIndex int64, err error)
 	}
 
 	defaultAccountModel struct {
@@ -105,6 +107,16 @@ func (m *defaultAccountModel) GetAccountByIndex(accountIndex int64) (account *Ac
 		return nil, types.DbErrNotFound
 	}
 	return account, nil
+}
+
+func (m *defaultAccountModel) GetAccountByIndexes(accountIndexes []int64) (accounts []*Account, err error) {
+	dbTx := m.DB.Table(m.table).Where("account_index in ?", accountIndexes).Find(&accounts)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return accounts, nil
 }
 
 func (m *defaultAccountModel) GetAccountByPk(pk string) (account *Account, err error) {
@@ -252,4 +264,14 @@ func (m *defaultAccountModel) GetCountByGreaterHeight(blockHeight int64) (count 
 		return 0, nil
 	}
 	return count, nil
+}
+
+func (m *defaultAccountModel) GetMaxAccountIndex() (accountIndex int64, err error) {
+	dbTx := m.DB.Table(m.table).Select("max(account_index)").Find(&accountIndex)
+	if dbTx.Error != nil {
+		return -1, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return -1, types.DbErrNotFound
+	}
+	return accountIndex, nil
 }

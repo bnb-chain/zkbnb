@@ -47,20 +47,17 @@ func InitAccountTree(
 	accountTree bsmt.SparseMerkleTree, accountAssetTrees *AssetTreeCache, err error,
 ) {
 
-	//todo optimize if the history table has a lot of data, it will take a long time to load
-	accountNums, err := accountHistoryModel.GetValidAccountCount(blockHeight)
-	//accountNums, err := accountModel.GetAccountsTotalCount()
-	if err != nil {
-		logx.Errorf("unable to get all accountNums")
+	maxAccountIndex, err := accountHistoryModel.GetMaxAccountIndex(blockHeight)
+	if err != nil && err != types.DbErrNotFound {
+		logx.Errorf("unable to get maxAccountIndex")
 		return nil, nil, err
 	}
-	logx.Infof("getValidAccountCount end")
-
+	logx.Infof("get maxAccountIndex end")
 	opts := ctx.Options(0)
 	nilAccountAssetNodeHashes := NilAccountAssetNodeHashes(AssetTreeHeight, NilAccountAssetNodeHash, ctx.Hasher())
 
 	// init account state trees
-	accountAssetTrees = NewLazyTreeCache(assetCacheSize, accountNums-1, blockHeight, func(index, block int64) bsmt.SparseMerkleTree {
+	accountAssetTrees = NewLazyTreeCache(assetCacheSize, maxAccountIndex, blockHeight, func(index, block int64) bsmt.SparseMerkleTree {
 		tree, err := bsmt.NewSparseMerkleTree(ctx.Hasher(),
 			SetNamespace(ctx, accountAssetNamespace(index)), AssetTreeHeight, nilAccountAssetNodeHashes,
 			ctx.Options(0)...)
@@ -80,20 +77,24 @@ func InitAccountTree(
 	logx.Infof("newBASSparseMerkleTree end")
 
 	if ctx.IsLoad() {
-		if blockHeight == 0 {
+		if blockHeight == 0 || maxAccountIndex == -1 {
 			return accountTree, accountAssetTrees, nil
 		}
 		newVersion := bsmt.Version(blockHeight)
-		for i := 0; i < int(accountNums); i += ctx.BatchReloadSize() {
+		for i := 0; int64(i) <= maxAccountIndex; i += ctx.BatchReloadSize() {
+			toAccountIndex := int64(i+ctx.BatchReloadSize()) - 1
+			if toAccountIndex > maxAccountIndex {
+				toAccountIndex = maxAccountIndex
+			}
 			err := reloadAccountTreeFromRDB(
 				accountModel, accountHistoryModel, blockHeight,
-				i, i+ctx.BatchReloadSize(),
+				int64(i), toAccountIndex,
 				accountTree, accountAssetTrees)
 			if err != nil {
 				return nil, nil, err
 			}
 		}
-		for i := int64(0); i < accountNums; i++ {
+		for i := int64(0); i <= maxAccountIndex; i++ {
 			_, err := accountAssetTrees.Get(i).CommitWithNewVersion(nil, &newVersion)
 			if err != nil {
 				logx.Errorf("unable to set asset to tree: %s,newVersion:%s,tree.LatestVersion:%s", err.Error(), uint64(newVersion), uint64(accountAssetTrees.Get(i).LatestVersion()))
@@ -142,27 +143,41 @@ func reloadAccountTreeFromRDB(
 	accountModel account.AccountModel,
 	accountHistoryModel account.AccountHistoryModel,
 	blockHeight int64,
-	offset, limit int,
+	fromAccountIndex, toAccountIndex int64,
 	accountTree bsmt.SparseMerkleTree,
 	accountAssetTrees *AssetTreeCache,
 ) error {
 	_, accountHistories, err := accountHistoryModel.GetValidAccounts(blockHeight,
-		limit, offset)
+		fromAccountIndex, toAccountIndex)
 	if err != nil {
 		logx.Errorf("unable to get all accountHistories")
 		return err
 	}
-
+	if len(accountHistories) == 0 {
+		return nil
+	}
+	accountIndexList := make([]int64, 0, len(accountHistories))
+	for _, accountHistory := range accountHistories {
+		accountIndexList = append(accountIndexList, accountHistory.AccountIndex)
+	}
+	accountInfoList, err := accountModel.GetAccountByIndexes(accountIndexList)
+	if err != nil {
+		logx.Errorf("unable to get account by account index list: %s,accountIndexList:%s", err.Error(), accountIndexList)
+		return err
+	}
+	accountInfoDbMap := make(map[int64]*account.Account, 0)
+	for _, accountInfo := range accountInfoList {
+		accountInfoDbMap[accountInfo.AccountIndex] = accountInfo
+	}
 	var (
 		accountInfoMap = make(map[int64]*account.Account)
 	)
 
 	for _, accountHistory := range accountHistories {
 		if accountInfoMap[accountHistory.AccountIndex] == nil {
-			//todo optimize fetch all the data from account table,no need to fetch the data from the account table every time
-			accountInfo, err := accountModel.GetAccountByIndex(accountHistory.AccountIndex)
-			if err != nil {
-				logx.Errorf("unable to get account by account index: %s", err.Error())
+			accountInfo := accountInfoDbMap[accountHistory.AccountIndex]
+			if accountInfo == nil {
+				logx.Errorf("unable to get account by account index: %s,AccountIndex:%s", err.Error(), accountHistory.AccountIndex)
 				return err
 			}
 			accountInfoMap[accountHistory.AccountIndex] = &account.Account{

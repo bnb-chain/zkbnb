@@ -67,6 +67,12 @@ func (c *AssetTreeCache) GetNextAccountIndex() int64 {
 	return c.nextAccountNumber + 1
 }
 
+func (c *AssetTreeCache) GetCurrentAccountIndex() int64 {
+	c.mainLock.RLock()
+	defer c.mainLock.RUnlock()
+	return c.nextAccountNumber
+}
+
 // Get Returns asset tree based on account index
 func (c *AssetTreeCache) Get(i int64) (tree bsmt.SparseMerkleTree) {
 	if tmpTree, ok := c.treeCache.Get(i); ok {
