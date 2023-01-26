@@ -63,7 +63,7 @@ func GenerateProof(
 	//err = os.WriteFile("witness_full.save", witnessFullBytes, 0666)
 	//witnessPubBytes, _ := vWitness.MarshalJSON()
 	//err = os.WriteFile("witness_pub.save", witnessPubBytes, 0666)
-	proof, err = groth16.ProveRoll(r1cs, provingKey[0], provingKey[1], witness, session, backend.WithHints(types.Keccak256))
+	proof, err = groth16.ProveRoll(r1cs, provingKey[0], provingKey[1], witness, session, backend.WithHints(types.PubDataToBytes))
 	if err != nil {
 		return proof, err
 	}
