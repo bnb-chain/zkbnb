@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/metrics"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"github.com/dgraph-io/ristretto"
 	"gorm.io/plugin/dbresolver"
 	"math/big"
@@ -137,7 +138,7 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 
 	verifyRollbackTableDataFunc(bc, curHeight)
 
-	verifyRollbackTreesFunc(bc, curHeight)
+	verifyRollbackTreesFunc(bc, bc.currentBlock)
 
 	bc.Statedb.PreviousStateRootImmutable = bc.currentBlock.StateRoot
 
@@ -146,9 +147,9 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		logx.Severe("get latest mint nft failed: ", err)
 		panic("get latest mint nft failed:" + err.Error())
 	}
-	bc.Statedb.MaxNftIndexUsedImmutable = types.NilNftIndex
+	bc.Statedb.UpdateNftIndex(types.NilNftIndex)
 	if mintNft != nil {
-		bc.Statedb.MaxNftIndexUsedImmutable = mintNft.NftIndex
+		bc.Statedb.UpdateNftIndex(mintNft.NftIndex)
 	}
 
 	latestRollback, err := bc.TxPoolModel.GetLatestRollback(tx.StatusPending, true)
@@ -586,10 +587,48 @@ func verifyRollbackTableDataFunc(bc *BlockChain, curHeight int64) {
 		logx.Severe("roll back for CompressedBlock failed")
 		panic("roll back for CompressedBlock failed")
 	}
+
+	maxAccountIndex, err := bc.AccountModel.GetMaxAccountIndex()
+	if err != nil && err != types.DbErrNotFound {
+		logx.Severef("GetMaxAccountIndex from Account failed:%s", err.Error())
+		panic("GetMaxAccountIndex from Account failed: " + err.Error())
+	}
+
+	maxAccountHistoryIndex, err := bc.AccountHistoryModel.GetMaxAccountIndex(curHeight)
+	if err != nil && err != types.DbErrNotFound {
+		logx.Severef("GetMaxAccountIndex from AccountHistory failed:%s", err.Error())
+		panic("GetMaxAccountIndex from AccountHistory failed: " + err.Error())
+	}
+	if maxAccountIndex != maxAccountHistoryIndex {
+		logx.Severef("maxAccountIndex=%s not equal maxAccountHistoryIndex=%s failed:%s", maxAccountIndex, maxAccountHistoryIndex)
+		panic("maxAccountIndex not equal maxAccountHistoryIndex")
+	}
+	maxNftIndex, err := bc.L2NftModel.GetMaxNftIndex()
+	if err != nil && err != types.DbErrNotFound {
+		logx.Severef("GetMaxNftIndex from Nft failed:%s", err.Error())
+		panic("GetMaxNftIndex from Nft failed: " + err.Error())
+	}
+
+	maxNftHistoryIndex, err := bc.L2NftHistoryModel.GetMaxNftIndex(curHeight)
+	if err != nil && err != types.DbErrNotFound {
+		logx.Severef("GetMaxNftIndex from NftHistory failed:%s", err.Error())
+		panic("GetMaxNftIndex from NftHistory failed: " + err.Error())
+	}
+	if maxNftIndex != maxNftHistoryIndex {
+		logx.Severef("maxNftIndex=%s not equal maxNftHistoryIndex=%s failed:%s", maxNftIndex, maxNftHistoryIndex)
+		panic("maxNftIndex not equal maxAccountHistoryIndex")
+	}
 }
 
-func verifyRollbackTreesFunc(bc *BlockChain, curHeight int64) {
-
+func verifyRollbackTreesFunc(bc *BlockChain, currentBlock *block.Block) {
+	hFunc := poseidon.NewPoseidon()
+	hFunc.Write(bc.Statedb.AccountTree.Root())
+	hFunc.Write(bc.Statedb.NftTree.Root())
+	stateRoot := common.Bytes2Hex(hFunc.Sum(nil))
+	if stateRoot != currentBlock.StateRoot {
+		logx.Severef("smt tree stateRoot=%s not equal currentBlock.StateRoot=%s,height:%s", stateRoot, currentBlock.StateRoot, currentBlock.BlockHeight)
+		panic("smt tree stateRoot not equal currentBlock.StateRoot")
+	}
 }
 
 func (bc *BlockChain) ApplyTransaction(tx *tx.Tx) error {

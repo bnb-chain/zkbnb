@@ -116,13 +116,14 @@ func (m *defaultAccountHistoryModel) GetValidAccountCount(height int64) (count i
 }
 
 func (m *defaultAccountHistoryModel) GetMaxAccountIndex(height int64) (accountIndex int64, err error) {
-	dbTx := m.DB.Table(m.table).Select("max(account_index)").Where("l2_block_height <=?", height).Find(&accountIndex)
+	var accountHistory AccountHistory
+	dbTx := m.DB.Table(m.table).Select("account_index").Where("l2_block_height <=?", height).Order("account_index desc").Limit(1).Find(&accountHistory)
 	if dbTx.Error != nil {
 		return -1, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return -1, types.DbErrNotFound
 	}
-	return accountIndex, nil
+	return accountHistory.AccountIndex, nil
 }
 
 func (m *defaultAccountHistoryModel) CreateAccountHistoriesInTransact(tx *gorm.DB, histories []*AccountHistory) error {

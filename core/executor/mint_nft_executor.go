@@ -115,6 +115,9 @@ func (e *MintNftExecutor) ApplyTransaction() error {
 		CollectionId:        txInfo.NftCollectionId,
 	})
 	stateCache.SetPendingGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
+	if e.tx.Rollback == false {
+		e.bc.StateDB().UpdateNftIndex(txInfo.NftIndex)
+	}
 	return e.BaseExecutor.ApplyTransaction()
 }
 

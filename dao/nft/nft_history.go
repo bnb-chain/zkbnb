@@ -96,13 +96,14 @@ func (m *defaultL2NftHistoryModel) GetLatestNftsCountByBlockHeight(height int64)
 }
 
 func (m *defaultL2NftHistoryModel) GetMaxNftIndex(height int64) (nftIndex int64, err error) {
-	dbTx := m.DB.Table(m.table).Select("max(nft_index)").Where("l2_block_height <=?", height).Find(&nftIndex)
+	var l2NftHistory L2NftHistory
+	dbTx := m.DB.Table(m.table).Select("nft_index").Where("l2_block_height <=?", height).Order("nft_index desc").Limit(1).Find(&l2NftHistory)
 	if dbTx.Error != nil {
 		return -1, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return -1, types.DbErrNotFound
 	}
-	return nftIndex, nil
+	return l2NftHistory.NftIndex, nil
 }
 
 func (m *defaultL2NftHistoryModel) GetLatestNftsByBlockHeight(height int64, fromNftIndex int64, toNftIndex int64) (
