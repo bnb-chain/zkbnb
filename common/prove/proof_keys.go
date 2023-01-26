@@ -64,7 +64,7 @@ func GenerateProof(
 	if err != nil {
 		return proof, err
 	}
-	proof, err = groth16.Prove(r1cs, provingKey, witness, backend.WithHints(types.Keccak256))
+	proof, err = groth16.Prove(r1cs, provingKey, witness, backend.WithHints(types.PubDataToBytes))
 	if err != nil {
 		return proof, err
 	}
