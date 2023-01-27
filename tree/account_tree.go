@@ -34,6 +34,11 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
+type treeUpdateResp struct {
+	pendingAccountItem []bsmt.Item
+	err                error
+}
+
 func accountAssetNamespace(index int64) string {
 	return AccountAssetPrefix + strconv.Itoa(int(index)) + ":"
 }
@@ -86,8 +91,8 @@ func InitAccountTree(
 		start := time.Now()
 		logx.Infof("reloadAccountTree start")
 		totalTask := 0
-		errChan := make(chan error, 1)
-		defer close(errChan)
+		resultChan := make(chan *treeUpdateResp, 1)
+		defer close(resultChan)
 		pool, err := ants.NewPool(100)
 		for i := 0; int64(i) <= maxAccountIndex; i += ctx.BatchReloadSize() {
 			toAccountIndex := int64(i+ctx.BatchReloadSize()) - 1
@@ -97,18 +102,20 @@ func InitAccountTree(
 			totalTask++
 			err := func(fromAccountIndex int64, toAccountIndex int64) error {
 				return pool.Submit(func() {
-					start := time.Now()
-					err := reloadAccountTreeFromRDB(
+					pendingAccountItem, err := reloadAccountTreeFromRDB(
 						accountModel, accountHistoryModel, blockHeight,
-						fromAccountIndex, toAccountIndex,
-						accountTree, accountAssetTrees)
+						fromAccountIndex, toAccountIndex, accountAssetTrees)
 					if err != nil {
 						logx.Severef("reloadAccountTreeFromRDB failed:%s", err.Error())
-						errChan <- err
+						resultChan <- &treeUpdateResp{
+							err: err,
+						}
 						return
 					}
-					logx.Infof("reloadAccountTreeFromRDB cost time %s", float64(time.Since(start).Milliseconds()))
-					errChan <- nil
+					resultChan <- &treeUpdateResp{
+						pendingAccountItem: pendingAccountItem,
+						err:                err,
+					}
 				})
 			}(int64(i), toAccountIndex)
 			if err != nil {
@@ -116,21 +123,27 @@ func InitAccountTree(
 				panic("reloadAccountTreeFromRDB failed: " + err.Error())
 			}
 		}
+		pendingAccountItem := make([]bsmt.Item, 0)
 		for i := 0; i < totalTask; i++ {
-			err := <-errChan
-			if err != nil {
-				logx.Severef("reloadAccountTree failed:%s", err.Error())
-				panic("reloadAccountTree failed: " + err.Error())
+			result := <-resultChan
+			if result.err != nil {
+				logx.Severef("reloadAccountTree failed:%s", result.err.Error())
+				panic("reloadAccountTree failed: " + result.err.Error())
 			}
+			pendingAccountItem = append(pendingAccountItem, result.pendingAccountItem...)
 		}
-		logx.Infof("reloadAccountTree end. cost time %s", float64(time.Since(start).Milliseconds()))
-
 		newVersion := bsmt.Version(blockHeight)
+		err = accountTree.MultiSetWithVersion(pendingAccountItem, newVersion)
+		if err != nil {
+			logx.Errorf("unable to set account to tree: %s", err.Error())
+			return nil, nil, err
+		}
 		_, err = accountTree.CommitWithNewVersion(nil, &newVersion)
 		if err != nil {
 			logx.Errorf("unable to commit account tree: %s,newVersion:%s,tree.LatestVersion:%s", err.Error(), uint64(newVersion), uint64(accountTree.LatestVersion()))
 			return nil, nil, err
 		}
+		logx.Infof("reloadAccountTree end. cost time %s", float64(time.Since(start).Milliseconds()))
 		return accountTree, accountAssetTrees, nil
 	}
 
@@ -159,7 +172,6 @@ func InitAccountTree(
 			}
 		}
 	}
-
 	return accountTree, accountAssetTrees, nil
 }
 
@@ -168,17 +180,17 @@ func reloadAccountTreeFromRDB(
 	accountHistoryModel account.AccountHistoryModel,
 	blockHeight int64,
 	fromAccountIndex, toAccountIndex int64,
-	accountTree bsmt.SparseMerkleTree,
 	accountAssetTrees *AssetTreeCache,
-) error {
+) ([]bsmt.Item, error) {
 	_, accountHistories, err := accountHistoryModel.GetValidAccounts(blockHeight,
 		fromAccountIndex, toAccountIndex)
 	if err != nil {
 		logx.Errorf("unable to get all accountHistories")
-		return err
+		return nil, err
 	}
+	pendingAccountItem := make([]bsmt.Item, 0, len(accountHistories))
 	if len(accountHistories) == 0 {
-		return nil
+		return pendingAccountItem, nil
 	}
 	accountIndexList := make([]int64, 0, len(accountHistories))
 	for _, accountHistory := range accountHistories {
@@ -187,7 +199,7 @@ func reloadAccountTreeFromRDB(
 	accountInfoList, err := accountModel.GetAccountByIndexes(accountIndexList)
 	if err != nil {
 		logx.Errorf("unable to get account by account index list: %s,accountIndexList:%s", err.Error(), accountIndexList)
-		return err
+		return nil, err
 	}
 	accountInfoDbMap := make(map[int64]*account.Account, 0)
 	for _, accountInfo := range accountInfoList {
@@ -202,7 +214,7 @@ func reloadAccountTreeFromRDB(
 			accountInfo := accountInfoDbMap[accountHistory.AccountIndex]
 			if accountInfo == nil {
 				logx.Errorf("unable to get account by account index: %s,AccountIndex:%s", err.Error(), accountHistory.AccountIndex)
-				return err
+				return nil, err
 			}
 			accountInfoMap[accountHistory.AccountIndex] = &account.Account{
 				AccountIndex:    accountInfo.AccountIndex,
@@ -224,21 +236,21 @@ func reloadAccountTreeFromRDB(
 		accountInfoMap[accountHistory.AccountIndex].AssetInfo = accountHistory.AssetInfo
 		accountInfoMap[accountHistory.AccountIndex].AssetRoot = accountHistory.AssetRoot
 	}
-
 	// get related account info
 	for _, accountHistory := range accountHistories {
 		accountIndex := accountHistory.AccountIndex
 		if accountInfoMap[accountIndex] == nil {
 			logx.Errorf("invalid account index")
-			return errors.New("invalid account index")
+			return nil, errors.New("invalid account index")
 		}
 		oAccountInfo := accountInfoMap[accountIndex]
 		accountInfo, err := chain.ToFormatAccountInfo(oAccountInfo)
 		if err != nil {
 			logx.Errorf("unable to convert to format account info: %s", err.Error())
-			return err
+			return nil, err
 		}
 		// create account assets node
+		pendingUpdateAssetItem := make([]bsmt.Item, 0, len(accountInfo.AssetInfo))
 		for assetId, assetInfo := range accountInfo.AssetInfo {
 			hashVal, err := AssetToNode(
 				assetInfo.Balance.String(),
@@ -246,19 +258,20 @@ func reloadAccountTreeFromRDB(
 			)
 			if err != nil {
 				logx.Errorf("unable to convert asset to node: %s", err.Error())
-				return err
+				return nil, err
 			}
-			err = accountAssetTrees.Get(accountIndex).SetWithVersion(uint64(assetId), hashVal, bsmt.Version(blockHeight))
-			if err != nil {
-				logx.Errorf("unable to set asset to tree: %s", err.Error())
-				return err
-			}
+			pendingUpdateAssetItem = append(pendingUpdateAssetItem, bsmt.Item{Key: uint64(assetId), Val: hashVal})
 		}
 		newVersion := bsmt.Version(blockHeight)
+		err = accountAssetTrees.Get(accountIndex).MultiSetWithVersion(pendingUpdateAssetItem, newVersion)
+		if err != nil {
+			logx.Errorf("unable to set asset to tree: %s", err.Error())
+			return nil, err
+		}
 		_, err = accountAssetTrees.Get(accountIndex).CommitWithNewVersion(nil, &newVersion)
 		if err != nil {
 			logx.Errorf("unable to CommitWithNewVersion asset to tree: %s,newVersion:%s,tree.LatestVersion:%s", err.Error(), uint64(newVersion), uint64(accountAssetTrees.Get(accountIndex).LatestVersion()))
-			return err
+			return nil, err
 		}
 		accountHashVal, err := AccountToNode(
 			accountInfoMap[accountIndex].AccountNameHash,
@@ -269,16 +282,11 @@ func reloadAccountTreeFromRDB(
 		)
 		if err != nil {
 			logx.Errorf("unable to convert account to node: %s", err.Error())
-			return err
+			return nil, err
 		}
-		err = accountTree.SetWithVersion(uint64(accountIndex), accountHashVal, bsmt.Version(blockHeight))
-		if err != nil {
-			logx.Errorf("unable to set account to tree: %s", err.Error())
-			return err
-		}
+		pendingAccountItem = append(pendingAccountItem, bsmt.Item{Key: uint64(accountIndex), Val: accountHashVal})
 	}
-
-	return nil
+	return pendingAccountItem, nil
 }
 
 func AssetToNode(balance string, offerCanceledOrFinalized string) (hashVal []byte, err error) {

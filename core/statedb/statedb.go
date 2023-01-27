@@ -531,7 +531,7 @@ func (s *StateDB) UpdateAssetTree(cleanDirty bool, stateDataCopy *StateDataCopy)
 		taskNum++
 		err := func(accountIndex int64, assets []int64) error {
 			return gopool.Submit(func() {
-				index, leaf, err := s.setAndCommitAssetTree(accountIndex, assets, stateDataCopy)
+				index, leaf, err := s.SetAndCommitAssetTree(accountIndex, assets, stateDataCopy)
 				resultChan <- &treeUpdateResp{
 					role:  accountTreeRole,
 					index: index,
@@ -629,7 +629,7 @@ func (s *StateDB) SetAccountAndNftTree(stateDataCopy *StateDataCopy) error {
 	return nil
 }
 
-func (s *StateDB) setAndCommitAssetTree(accountIndex int64, assets []int64, stateCopy *StateDataCopy) (int64, []byte, error) {
+func (s *StateDB) SetAndCommitAssetTree(accountIndex int64, assets []int64, stateCopy *StateDataCopy) (int64, []byte, error) {
 	start := time.Now()
 	account, exist := stateCopy.StateCache.GetPendingAccount(accountIndex)
 	metrics.AccountTreeTimeGauge.WithLabelValues("cache_get_account").Set(float64(time.Since(start).Milliseconds()))

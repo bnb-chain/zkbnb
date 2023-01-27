@@ -625,8 +625,9 @@ func verifyRollbackTreesFunc(bc *BlockChain, currentBlock *block.Block) {
 	hFunc.Write(bc.Statedb.AccountTree.Root())
 	hFunc.Write(bc.Statedb.NftTree.Root())
 	stateRoot := common.Bytes2Hex(hFunc.Sum(nil))
+	logx.Infof("smt tree stateRoot=%s equal currentBlock.StateRoot=%s,height:%s,AccountTree.Root=%s,NftTree.Root=%s", stateRoot, currentBlock.StateRoot, currentBlock.BlockHeight, common.Bytes2Hex(bc.Statedb.AccountTree.Root()), common.Bytes2Hex(bc.Statedb.NftTree.Root()))
 	if stateRoot != currentBlock.StateRoot {
-		logx.Severef("smt tree stateRoot=%s not equal currentBlock.StateRoot=%s,height:%s", stateRoot, currentBlock.StateRoot, currentBlock.BlockHeight)
+		logx.Severef("smt tree stateRoot=%s not equal currentBlock.StateRoot=%s,height:%s,AccountTree.Root=%s,NftTree.Root=%s", stateRoot, currentBlock.StateRoot, currentBlock.BlockHeight, common.Bytes2Hex(bc.Statedb.AccountTree.Root()), common.Bytes2Hex(bc.Statedb.NftTree.Root()))
 		panic("smt tree stateRoot not equal currentBlock.StateRoot")
 	}
 }
