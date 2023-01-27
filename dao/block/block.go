@@ -121,7 +121,9 @@ func (*Block) TableName() string {
 
 func (b *Block) ClearTxsModel() {
 	for _, blockTx := range b.Txs {
+		createdAt := b.CreatedAt
 		blockTx.Model = gorm.Model{}
+		blockTx.CreatedAt = createdAt
 	}
 }
 
