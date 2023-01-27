@@ -59,9 +59,9 @@ func (s *Suite) TestUpdateBlockInTransact() {
 	s.Require().NoError(s.dao.CreateBlockInTransact(s.db.DB, &item))
 
 	item.Txs = []*tx.Tx{
-		{
+		{BaseTx: tx.BaseTx{
 			TxHash:  "hash1",
-			BlockId: int64(item.ID),
+			BlockId: item.ID,
 			TxDetails: []*tx.TxDetail{
 				{
 					AccountIndex: 1,
@@ -70,10 +70,10 @@ func (s *Suite) TestUpdateBlockInTransact() {
 					AccountIndex: 2,
 				},
 			},
-		},
-		{
+		}},
+		{BaseTx: tx.BaseTx{
 			TxHash:  "hash2",
-			BlockId: int64(item.ID),
+			BlockId: item.ID,
 			TxDetails: []*tx.TxDetail{
 				{
 					AccountIndex: 3,
@@ -82,7 +82,7 @@ func (s *Suite) TestUpdateBlockInTransact() {
 					AccountIndex: 4,
 				},
 			},
-		},
+		}},
 	}
 
 	err := s.dao.UpdateBlockInTransact(s.db.DB, &item)

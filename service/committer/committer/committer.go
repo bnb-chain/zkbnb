@@ -91,7 +91,6 @@ func NewCommitter(config *Config) (*Committer, error) {
 		saveBlockDataPoolSize = 100
 	}
 	pool, err := ants.NewPool(saveBlockDataPoolSize)
-
 	committer := &Committer{
 		running:            true,
 		config:             config,

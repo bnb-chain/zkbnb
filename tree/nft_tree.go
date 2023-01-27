@@ -19,7 +19,9 @@ package tree
 
 import (
 	"github.com/bnb-chain/zkbnb/types"
+	"github.com/panjf2000/ants/v2"
 	"github.com/zeromicro/go-zero/core/logx"
+	"time"
 
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 	"github.com/bnb-chain/zkbnb/dao/nft"
@@ -50,18 +52,47 @@ func InitNftTree(
 			logx.Errorf("unable to get latest nft assets: %s", err.Error())
 			return nil, err
 		}
+
+		start := time.Now()
+		logx.Infof("reloadNftTree start")
+		totalTask := 0
+		errChan := make(chan error, 1)
+		defer close(errChan)
+		pool, err := ants.NewPool(100)
 		for i := 0; int64(i) <= maxNftIndex; i += ctx.BatchReloadSize() {
 			toNftIndex := int64(i+ctx.BatchReloadSize()) - 1
 			if toNftIndex > maxNftIndex {
 				toNftIndex = maxNftIndex
 			}
-			err := loadNftTreeFromRDB(
-				nftHistoryModel, blockHeight,
-				int64(i), toNftIndex, nftTree)
+			totalTask++
+			err := func(fromNftIndex int64, toNftIndex int64) error {
+				return pool.Submit(func() {
+					start := time.Now()
+					err := loadNftTreeFromRDB(
+						nftHistoryModel, blockHeight,
+						fromNftIndex, toNftIndex, nftTree)
+					if err != nil {
+						logx.Severef("loadNftTreeFromRDB failed:%s", err.Error())
+						errChan <- err
+						return
+					}
+					logx.Infof("loadNftTreeFromRDB cost time %s", float64(time.Since(start).Milliseconds()))
+					errChan <- nil
+				})
+			}(int64(i), toNftIndex)
 			if err != nil {
-				return nil, err
+				logx.Severef("loadNftTreeFromRDB failed:%s", err.Error())
+				panic("loadNftTreeFromRDB failed: " + err.Error())
 			}
 		}
+		for i := 0; i < totalTask; i++ {
+			err := <-errChan
+			if err != nil {
+				logx.Severef("reloadNftTree failed:%s", err.Error())
+				panic("reloadNftTree failed: " + err.Error())
+			}
+		}
+		logx.Infof("reloadNftTree end. cost time %s", float64(time.Since(start).Milliseconds()))
 
 		_, err = nftTree.CommitWithNewVersion(nil, &newVersion)
 		if err != nil {
