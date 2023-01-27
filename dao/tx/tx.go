@@ -175,7 +175,7 @@ func (m *defaultTxModel) GetTxsByAccountIndex(accountIndex int64, limit int64, o
 		dbTx = dbTx.Where("tx_type IN ?", opt.Types)
 	}
 
-	dbTx = dbTx.Limit(int(limit)).Offset(int(offset)).Order("created_at desc").Find(&txList)
+	dbTx = dbTx.Limit(int(limit)).Offset(int(offset)).Order("id desc").Find(&txList)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {

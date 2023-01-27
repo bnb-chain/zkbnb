@@ -71,6 +71,9 @@ func (e *TransferNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 	if err != nil {
 		return err
 	}
+	if fromAccount.AccountIndex == toAccount.AccountIndex {
+		return types.AppErrAccountInvalidToAccount
+	}
 	if txInfo.ToAccountNameHash != toAccount.AccountNameHash {
 		return types.AppErrInvalidToAccountNameHash
 	}
