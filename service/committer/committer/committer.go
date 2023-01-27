@@ -215,7 +215,6 @@ func (c *Committer) pullPoolTxs() {
 					logx.Infof("not equal id=%s,but delay seconds<5,break it", poolTx.ID)
 					break
 				} else {
-					//todo add compensation function
 					logx.Infof("not equal id=%s,but delay seconds>5,do it", poolTx.ID)
 				}
 			}

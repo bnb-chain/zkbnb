@@ -169,9 +169,6 @@ func (w *Witness) initState() error {
 			panic("json err unmarshal failed: " + err.Error())
 		}
 	}
-	//todo there are a lot of heights to rollback,need to get some accounts
-	// init accountTree and accountStateTrees
-	// the initial block number use the latest sent block
 	w.accountTree, w.assetTrees, err = tree.InitAccountTree(
 		w.accountModel,
 		w.accountHistoryModel,
