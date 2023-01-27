@@ -27,9 +27,7 @@ CacheRedis:
   - Host: redis:6379
     Type: node
 
-KeyPath:
-  ProvingKeyPath: [/server/.zkbnb/zkbnb1.pk]
-  VerifyingKeyPath: [/server/.zkbnb/zkbnb1.vk]
+KeyPath: [/server/.zkbnb]
 
 LogConf:
   ServiceName: prover

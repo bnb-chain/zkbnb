@@ -7,9 +7,7 @@ CacheRedis:
   - Host: redis:6379
     Type: node
 
-KeyPath:
-  ProvingKeyPath: [/app/zkbnb1.pk]
-  VerifyingKeyPath: [/app/zkbnb1.vk]
+KeyPath: [/app/zkbnb1]
 
 BlockConfig:
   OptionalBlockSizes: [1]
