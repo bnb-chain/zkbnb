@@ -58,11 +58,12 @@ func QueryTreeDB(
 	if len(ctx.Config.AccountIndexes) > 0 {
 		for _, accountIndex := range ctx.Config.AccountIndexes {
 			assetRoot := common.Bytes2Hex(accountAssetTrees.Get(accountIndex).Root())
-			logx.Infof("asset tree accountIndex=%s,assetRoot=%s,versions=%s", strconv.FormatInt(accountIndex, 10), assetRoot, formatVersion(accountAssetTrees.Get(accountIndex).Versions()))
+			logx.Infof("asset tree accountIndex=%s,assetRoot=%s,versions=%s,latestVersion=%s", strconv.FormatInt(accountIndex, 10), assetRoot,
+				formatVersion(accountAssetTrees.Get(accountIndex).Versions()), strconv.FormatUint(uint64(accountAssetTrees.Get(accountIndex).LatestVersion()), 10))
 		}
 	}
 	stateRoot := common.Bytes2Hex(accountTree.Root())
-	logx.Infof("account tree accountRoot=%s,versions=%s", stateRoot, formatVersion(accountTree.Versions()))
+	logx.Infof("account tree accountRoot=%s,versions=%s,,latestVersion=%s", stateRoot, formatVersion(accountTree.Versions()), strconv.FormatUint(uint64(accountTree.LatestVersion()), 10))
 	// dbinitializer nftTree
 	nftTree, err := tree.InitNftTree(
 		ctx.NftHistoryModel,
@@ -73,7 +74,7 @@ func QueryTreeDB(
 		return
 	}
 	nftRoot := common.Bytes2Hex(nftTree.Root())
-	logx.Infof("nft tree nftRoot=%s,versions=%s", nftRoot, formatVersion(nftTree.Versions()))
+	logx.Infof("nft tree nftRoot=%s,versions=%s,,latestVersion=%s", nftRoot, formatVersion(nftTree.Versions()), strconv.FormatUint(uint64(nftTree.LatestVersion()), 10))
 }
 
 func formatVersion(versions []bsmt.Version) string {
