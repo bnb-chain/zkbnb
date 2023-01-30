@@ -69,6 +69,7 @@ var (
 	AppErrInvalidGasFeeAccount         = New(21104, "invalid gas fee account")
 	AppErrInvalidToAccountNameHash     = New(21105, "invalid ToAccountNameHash")
 	AppErrAccountNameAlreadyRegistered = New(21106, "invalid account name, already registered")
+	AppErrAccountInvalidToAccount      = New(21107, "invalid ToAccount")
 
 	// Asset
 	AppErrAssetNotFound      = New(21200, "asset not found")
