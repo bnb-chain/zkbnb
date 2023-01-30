@@ -127,7 +127,7 @@ func (m *defaultAccountHistoryModel) GetMaxAccountIndex(height int64) (accountIn
 }
 
 func (m *defaultAccountHistoryModel) CreateAccountHistoriesInTransact(tx *gorm.DB, histories []*AccountHistory) error {
-	dbTx := m.DB.Table(m.table).CreateInBatches(histories, len(histories))
+	dbTx := tx.Table(m.table).CreateInBatches(histories, len(histories))
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}
