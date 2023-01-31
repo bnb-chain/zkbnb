@@ -33,6 +33,7 @@ const (
 const (
 	StatusFailed = iota
 	StatusPending
+	StatusProcessing
 	StatusExecuted
 	StatusPacked
 	StatusCommitted
@@ -80,6 +81,7 @@ type (
 		GetTxs(limit int64, offset int64, options ...GetTxOptionFunc) (txList []*Tx, err error)
 		GetTxsByAccountIndex(accountIndex int64, limit int64, offset int64, options ...GetTxOptionFunc) (txList []*Tx, err error)
 		GetTxsCountByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (count int64, err error)
+		GetReplicateTxsCountByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (count int64, err error)
 		GetTxByHash(txHash string) (tx *Tx, err error)
 		GetTxsTotalCountBetween(from, to time.Time) (count int64, err error)
 		GetDistinctAccountsCountBetween(from, to time.Time) (count int64, err error)
@@ -201,6 +203,31 @@ func (m *defaultTxModel) GetTxsCountByAccountIndex(accountIndex int64, options .
 	} else if dbTx.RowsAffected == 0 {
 		return 0, nil
 	}
+	return count, nil
+}
+
+func (m *defaultTxModel) GetReplicateTxsCountByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (count int64, err error) {
+	opt := &getTxOption{}
+	for _, f := range options {
+		f(opt)
+	}
+
+	var dbTx *gorm.DB
+	if len(opt.Types) > 0 {
+		dbTx = m.DB.Raw("select count(distinct tx.tx_hash) from pool_tx, tx where pool_tx.account_index = ? "+
+			"and pool_tx.tx_type in (?) and pool_tx.deleted_at is null and tx.account_index = ? "+
+			"and tx.tx_type in (?) and tx.deleted_at is null and pool_tx.tx_hash = tx.tx_hash", accountIndex, opt.Types, accountIndex, opt.Types).Count(&count)
+	} else {
+		dbTx = m.DB.Raw("select count(distinct tx.tx_hash) from pool_tx, tx where pool_tx.account_index = ? "+
+			"and pool_tx.deleted_at is null and tx.account_index = ? "+
+			"and tx.deleted_at is null and pool_tx.tx_hash = tx.tx_hash", accountIndex, accountIndex).Count(&count)
+	}
+	if dbTx.Error != nil {
+		return 0, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+
 	return count, nil
 }
 

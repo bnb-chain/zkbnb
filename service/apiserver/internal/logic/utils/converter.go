@@ -8,26 +8,26 @@ import (
 	types2 "github.com/bnb-chain/zkbnb/types"
 )
 
-func ConvertTx(tx *tx.Tx) *types.Tx {
+func ConvertTx(transaction *tx.Tx) *types.Tx {
 	toAccountIndex := int64(-1)
 
-	switch tx.TxType {
+	switch transaction.TxType {
 	case types2.TxTypeMintNft:
-		txInfo, err := types2.ParseMintNftTxInfo(tx.TxInfo)
+		txInfo, err := types2.ParseMintNftTxInfo(transaction.TxInfo)
 		if err != nil {
 			logx.Errorf("parse mintNft tx failed: %s", err.Error())
 		} else {
 			toAccountIndex = txInfo.ToAccountIndex
 		}
 	case types2.TxTypeTransfer:
-		txInfo, err := types2.ParseTransferTxInfo(tx.TxInfo)
+		txInfo, err := types2.ParseTransferTxInfo(transaction.TxInfo)
 		if err != nil {
 			logx.Errorf("parse transfer tx failed: %s", err.Error())
 		} else {
 			toAccountIndex = txInfo.ToAccountIndex
 		}
 	case types2.TxTypeTransferNft:
-		txInfo, err := types2.ParseTransferNftTxInfo(tx.TxInfo)
+		txInfo, err := types2.ParseTransferNftTxInfo(transaction.TxInfo)
 		if err != nil {
 			logx.Errorf("parse transferNft tx failed: %s", err.Error())
 		} else {
@@ -38,30 +38,36 @@ func ConvertTx(tx *tx.Tx) *types.Tx {
 	// If tx.VerifyAt field has not been set yet,
 	// this field is set to zero by default for the front end
 	var verifyAt int64 = 0
-	if !tx.VerifyAt.IsZero() {
-		verifyAt = tx.VerifyAt.Unix()
+	if !transaction.VerifyAt.IsZero() {
+		verifyAt = transaction.VerifyAt.Unix()
+	}
+
+	var status int64 = 0
+	if transaction.TxStatus == tx.StatusPending || transaction.TxStatus == tx.StatusExecuted ||
+		transaction.TxStatus == tx.StatusPacked || transaction.TxStatus == tx.StatusCommitted {
+		status = tx.StatusProcessing
 	}
 
 	return &types.Tx{
-		Hash:           tx.TxHash,
-		Type:           tx.TxType,
-		GasFee:         tx.GasFee,
-		GasFeeAssetId:  tx.GasFeeAssetId,
-		Status:         int64(tx.TxStatus),
-		Index:          tx.TxIndex,
-		BlockHeight:    tx.BlockHeight,
-		NftIndex:       tx.NftIndex,
-		CollectionId:   tx.CollectionId,
-		AssetId:        tx.AssetId,
-		Amount:         tx.TxAmount,
-		NativeAddress:  tx.NativeAddress,
-		Info:           tx.TxInfo,
-		ExtraInfo:      tx.ExtraInfo,
-		Memo:           tx.Memo,
-		AccountIndex:   tx.AccountIndex,
-		Nonce:          tx.Nonce,
-		ExpiredAt:      tx.ExpiredAt,
-		CreatedAt:      tx.CreatedAt.Unix(),
+		Hash:           transaction.TxHash,
+		Type:           transaction.TxType,
+		GasFee:         transaction.GasFee,
+		GasFeeAssetId:  transaction.GasFeeAssetId,
+		Status:         status,
+		Index:          transaction.TxIndex,
+		BlockHeight:    transaction.BlockHeight,
+		NftIndex:       transaction.NftIndex,
+		CollectionId:   transaction.CollectionId,
+		AssetId:        transaction.AssetId,
+		Amount:         transaction.TxAmount,
+		NativeAddress:  transaction.NativeAddress,
+		Info:           transaction.TxInfo,
+		ExtraInfo:      transaction.ExtraInfo,
+		Memo:           transaction.Memo,
+		AccountIndex:   transaction.AccountIndex,
+		Nonce:          transaction.Nonce,
+		ExpiredAt:      transaction.ExpiredAt,
+		CreatedAt:      transaction.CreatedAt.Unix(),
 		VerifyAt:       verifyAt,
 		ToAccountIndex: toAccountIndex,
 	}

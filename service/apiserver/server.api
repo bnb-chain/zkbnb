@@ -390,6 +390,10 @@ service server-api {
 	@handler GetAccountTxs
 	get /api/v1/accountTxs (ReqGetAccountTxs) returns (Txs)
 	
+	@doc "Get merged transactions(including tx and pool_tx) of a specific account"
+	@handler GetMergedAccountTxs
+	get /api/v1/mergedAccountTxs (ReqGetAccountTxs) returns (Txs)
+	
 	@doc "Get transaction by hash"
 	@handler GetTx
 	get /api/v1/tx (ReqGetTx) returns (EnrichedTx)
