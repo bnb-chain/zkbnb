@@ -33,7 +33,6 @@ const (
 const (
 	StatusFailed = iota
 	StatusPending
-	StatusProcessing
 	StatusExecuted
 	StatusPacked
 	StatusCommitted
