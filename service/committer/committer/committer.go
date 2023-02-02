@@ -239,7 +239,7 @@ func (c *Committer) getPoolTxsFromQueue() []*tx.Tx {
 }
 
 func (c *Committer) executeTxFunc() {
-	latestRequestId, err := c.getLatestExecutedRequestId()
+	l1LatestRequestId, err := c.getLatestExecutedRequestId()
 	if err != nil {
 		logx.Errorf("get latest executed request id failed:%s", err.Error())
 		panic("get latest executed request id failed: " + err.Error())
@@ -313,20 +313,12 @@ func (c *Committer) executeTxFunc() {
 			}
 
 			if types.IsPriorityOperationTx(poolTx.TxType) {
-				request, err := c.bc.PriorityRequestModel.GetPriorityRequestsByL2TxHash(poolTx.TxHash)
-				if err == nil {
-					metrics.PriorityOperationMetric.Set(float64(request.RequestId))
-					metrics.PriorityOperationHeightMetric.Set(float64(request.L1BlockHeight))
-					//todo get requestId from pool tx
-					if latestRequestId != -1 && request.RequestId != latestRequestId+1 {
-						logx.Severef("invalid request id=%s,txHash=%s", strconv.Itoa(int(request.RequestId)), err.Error())
-						panic("invalid request id=" + strconv.Itoa(int(request.RequestId)) + ",txHash=" + poolTx.TxHash)
-					}
-					latestRequestId = request.RequestId
-				} else {
-					logx.Severef("query txHash from priority request txHash=%s,error=%s", poolTx.TxHash, err.Error())
-					panic("query txHash from priority request txHash=" + poolTx.TxHash + ",error=" + err.Error())
+				metrics.PriorityOperationMetric.Set(float64(poolTx.L1RequestId))
+				if l1LatestRequestId != -1 && poolTx.L1RequestId != l1LatestRequestId+1 {
+					logx.Severef("invalid request id=%s,txHash=%s", strconv.Itoa(int(poolTx.L1RequestId)), err.Error())
+					panic("invalid request id=" + strconv.Itoa(int(poolTx.L1RequestId)) + ",txHash=" + poolTx.TxHash)
 				}
+				l1LatestRequestId = poolTx.L1RequestId
 			}
 
 			// Write the proposed block into database when the first transaction executed.
@@ -1092,14 +1084,7 @@ func (c *Committer) getLatestExecutedRequestId() (int64, error) {
 	} else if err == types.DbErrNotFound {
 		return -1, nil
 	}
-
-	p, err := c.bc.PriorityRequestModel.GetPriorityRequestsByL2TxHash(latestTx.TxHash)
-	if err != nil {
-		logx.Errorf("get priority request by txhash: %s failed: %v", latestTx.TxHash, err)
-		return -1, err
-	}
-
-	return p.RequestId, nil
+	return latestTx.L1RequestId, nil
 }
 
 func (c *Committer) loadAllAccounts() {

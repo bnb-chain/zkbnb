@@ -73,6 +73,8 @@ type (
 	PoolTx struct {
 		BaseTx
 		Rollback bool
+		// l1 request id
+		L1RequestId int64
 	}
 
 	BaseTx struct {
@@ -187,7 +189,7 @@ func (m *defaultTxPoolModel) GetTxsByStatusAndMaxId(status int, maxId uint, limi
 		return nil, types.DbErrSqlOperation
 	}
 	for _, poolTx := range poolTxs {
-		txs = append(txs, &Tx{BaseTx: poolTx.BaseTx, Rollback: poolTx.Rollback})
+		txs = append(txs, &Tx{BaseTx: poolTx.BaseTx, Rollback: poolTx.Rollback, L1RequestId: poolTx.L1RequestId})
 	}
 	return txs, nil
 }
@@ -199,7 +201,7 @@ func (m *defaultTxPoolModel) GetTxsByStatusAndIdRange(status int, fromId uint, t
 		return nil, types.DbErrSqlOperation
 	}
 	for _, poolTx := range poolTxs {
-		txs = append(txs, &Tx{BaseTx: poolTx.BaseTx, Rollback: poolTx.Rollback})
+		txs = append(txs, &Tx{BaseTx: poolTx.BaseTx, Rollback: poolTx.Rollback, L1RequestId: poolTx.L1RequestId})
 	}
 	return txs, nil
 }
@@ -431,14 +433,14 @@ func (m *defaultTxPoolModel) DeleteTxsBatch(poolTxIds []uint, status int, blockH
 }
 
 func (m *defaultTxPoolModel) GetLatestTx(txTypes []int64, statuses []int) (tx *Tx, err error) {
-
-	dbTx := m.DB.Table(m.table).Where("tx_status IN ? AND tx_type IN ?", statuses, txTypes).Order("id DESC").Limit(1).Find(&tx)
+	var poolTx *PoolTx
+	dbTx := m.DB.Table(m.table).Where("tx_status IN ? AND tx_type IN ?", statuses, txTypes).Order("id DESC").Limit(1).Find(&poolTx)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, types.DbErrNotFound
 	}
-
+	tx = &Tx{BaseTx: poolTx.BaseTx, Rollback: poolTx.Rollback, L1RequestId: poolTx.L1RequestId}
 	return tx, nil
 }
 

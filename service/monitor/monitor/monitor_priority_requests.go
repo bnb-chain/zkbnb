@@ -145,6 +145,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 		}
 
 		poolTx.TxInfo = string(txInfoBytes)
+		poolTx.L1RequestId = request.RequestId
 		pendingNewPoolTxs = append(pendingNewPoolTxs, poolTx)
 	}
 
