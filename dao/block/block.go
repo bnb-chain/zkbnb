@@ -149,7 +149,7 @@ func (m *defaultBlockModel) GetBlocks(limit int64, offset int64) (blocks []*Bloc
 		if dbTx.Error != nil {
 			return nil, types.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
-			return nil, types.DbErrNotFound
+			continue
 		}
 		sort.Slice(block.Txs, func(i, j int) bool {
 			return block.Txs[i].TxIndex < block.Txs[j].TxIndex
@@ -174,7 +174,7 @@ func (m *defaultBlockModel) GetPendingBlocksBetween(start int64, end int64) (blo
 		if dbTx.Error != nil {
 			return nil, types.DbErrSqlOperation
 		} else if dbTx.RowsAffected == 0 {
-			return nil, types.DbErrNotFound
+			continue
 		}
 		sort.Slice(block.Txs, func(i, j int) bool {
 			return block.Txs[i].TxIndex < block.Txs[j].TxIndex
@@ -184,6 +184,8 @@ func (m *defaultBlockModel) GetPendingBlocksBetween(start int64, end int64) (blo
 			dbTx = m.DB.Table(tx.TxDetailTableName).Where("pool_tx_id=?", txInfo.PoolTxId).Find(&txInfo.TxDetails)
 			if dbTx.Error != nil {
 				return nil, types.DbErrSqlOperation
+			} else if dbTx.RowsAffected == 0 {
+				continue
 			}
 			sort.Slice(txInfo.TxDetails, func(i, j int) bool {
 				return txInfo.TxDetails[i].Order < txInfo.TxDetails[j].Order
@@ -204,7 +206,7 @@ func (m *defaultBlockModel) GetBlockByCommitment(blockCommitment string) (block 
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, types.DbErrNotFound
+		return block, nil
 	}
 	sort.Slice(block.Txs, func(i, j int) bool {
 		return block.Txs[i].TxIndex < block.Txs[j].TxIndex
@@ -223,6 +225,8 @@ func (m *defaultBlockModel) GetBlockByHeight(blockHeight int64) (block *Block, e
 	dbTx = m.DB.Table(tx.TxTableName).Where("block_height =? ", block.BlockHeight).Find(&block.Txs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return block, nil
 	}
 	sort.Slice(block.Txs, func(i, j int) bool {
 		return block.Txs[i].TxIndex < block.Txs[j].TxIndex
