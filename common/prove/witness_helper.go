@@ -137,7 +137,7 @@ func (w *WitnessHelper) constructWitnessInfo(
 	}
 	// construct nft witness
 	nftRootBefore, nftBefore, merkleProofsNftBefore, err :=
-		w.constructNftWitness(proverNftInfo)
+		w.constructNftWitness(oTx, proverNftInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +276,7 @@ func (w *WitnessHelper) constructAccountWitness(
 				if err != nil {
 					return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 				}
-				err = w.assetTrees.Get(accountKey).Set(uint64(accountAsset.AssetId), nAssetHash)
+				err = w.assetTrees.GetAdapter(accountKey).SetWithVersion(uint64(accountAsset.AssetId), nAssetHash, bsmt.Version(oTx.BlockHeight))
 				if err != nil {
 					return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 				}
@@ -333,7 +333,7 @@ func (w *WitnessHelper) constructAccountWitness(
 		if err != nil {
 			return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 		}
-		err = w.accountTree.Set(uint64(accountKey), nAccountHash)
+		err = w.accountTree.SetWithVersion(uint64(accountKey), nAccountHash, bsmt.Version(oTx.BlockHeight))
 		if err != nil {
 			return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 		}
@@ -387,7 +387,7 @@ func (w *WitnessHelper) constructAccountWitness(
 }
 
 func (w *WitnessHelper) constructNftWitness(
-	proverNftInfo *NftWitnessInfo,
+	oTx *tx.Tx, proverNftInfo *NftWitnessInfo,
 ) (
 	// nft root before
 	nftRootBefore []byte,
@@ -450,7 +450,7 @@ func (w *WitnessHelper) constructNftWitness(
 	if err != nil {
 		return nftRootBefore, nftBefore, merkleProofsNftBefore, err
 	}
-	err = w.nftTree.Set(uint64(proverNftInfo.NftInfo.NftIndex), nNftHash)
+	err = w.nftTree.SetWithVersion(uint64(proverNftInfo.NftInfo.NftIndex), nNftHash, bsmt.Version(oTx.BlockHeight))
 	if err != nil {
 		return nftRootBefore, nftBefore, merkleProofsNftBefore, err
 	}
@@ -741,7 +741,7 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 			if err != nil {
 				return nil, err
 			}
-			err = w.assetTrees.Get(gasAccountIndex).Set(uint64(assetId), nAssetHash)
+			err = w.assetTrees.GetAdapter(gasAccountIndex).SetWithVersion(uint64(assetId), nAssetHash, bsmt.Version(block.BlockHeight))
 			if err != nil {
 				return nil, err
 			}
@@ -757,7 +757,7 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 		if err != nil {
 			return nil, err
 		}
-		err = w.accountTree.Set(uint64(gasAccountIndex), nAccountHash)
+		err = w.accountTree.SetWithVersion(uint64(gasAccountIndex), nAccountHash, bsmt.Version(block.BlockHeight))
 		if err != nil {
 			return nil, err
 		}

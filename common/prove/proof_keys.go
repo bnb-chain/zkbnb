@@ -16,22 +16,14 @@ import (
 	"github.com/bnb-chain/zkbnb-crypto/circuit/types"
 )
 
-func LoadProvingKey(filepath string) (pk groth16.ProvingKey, err error) {
+func LoadProvingKey(filepath string) (pks []groth16.ProvingKey, err error) {
 	logx.Info("start reading proving key")
-	pk = groth16.NewProvingKey(ecc.BN254)
-	f, _ := os.Open(filepath)
-	_, err = pk.ReadFrom(f)
-	if err != nil {
-		return pk, fmt.Errorf("read file error")
-	}
-	f.Close()
-
-	return pk, nil
+	return groth16.ReadSegmentProveKey(filepath)
 }
 
 func LoadVerifyingKey(filepath string) (verifyingKey groth16.VerifyingKey, err error) {
 	verifyingKey = groth16.NewVerifyingKey(ecc.BN254)
-	f, _ := os.Open(filepath)
+	f, _ := os.Open(filepath + ".vk.save")
 	_, err = verifyingKey.ReadFrom(f)
 	if err != nil {
 		return verifyingKey, fmt.Errorf("read file error")
@@ -43,9 +35,10 @@ func LoadVerifyingKey(filepath string) (verifyingKey groth16.VerifyingKey, err e
 
 func GenerateProof(
 	r1cs frontend.CompiledConstraintSystem,
-	provingKey groth16.ProvingKey,
+	provingKey []groth16.ProvingKey,
 	verifyingKey groth16.VerifyingKey,
 	cBlock *circuit.Block,
+	session string,
 ) (proof groth16.Proof, err error) {
 	// verify CryptoBlock
 	blockWitness, err := circuit.SetBlockWitness(cBlock)
@@ -60,11 +53,17 @@ func GenerateProof(
 	if err != nil {
 		return proof, err
 	}
+
 	vWitness, err := frontend.NewWitness(&verifyWitness, ecc.BN254, frontend.PublicOnly())
 	if err != nil {
 		return proof, err
 	}
-	proof, err = groth16.Prove(r1cs, provingKey, witness, backend.WithHints(types.Keccak256))
+	// This is for test
+	//witnessFullBytes, _ := witness.MarshalJSON()
+	//err = os.WriteFile("witness_full.save", witnessFullBytes, 0666)
+	//witnessPubBytes, _ := vWitness.MarshalJSON()
+	//err = os.WriteFile("witness_pub.save", witnessPubBytes, 0666)
+	proof, err = groth16.ProveRoll(r1cs, provingKey[0], provingKey[1], witness, session, backend.WithHints(types.PubDataToBytes))
 	if err != nil {
 		return proof, err
 	}

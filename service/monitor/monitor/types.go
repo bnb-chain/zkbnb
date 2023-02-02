@@ -95,4 +95,6 @@ type L1Event struct {
 	EventType uint8
 	// tx hash
 	TxHash string
+	// index of the log in the block
+	Index uint
 }

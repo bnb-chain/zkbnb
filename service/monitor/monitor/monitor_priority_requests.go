@@ -38,7 +38,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 		return nil
 	}
 	var (
-		pendingNewPoolTxs []*tx.Tx
+		pendingNewPoolTxs []*tx.PoolTx
 	)
 	// get last handled request id
 	currentRequestId, err := m.PriorityRequestModel.GetLatestHandledRequestId()
@@ -56,7 +56,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 
 		txHash := ComputeL1TxTxHash(request.RequestId, request.L1TxHash)
 
-		poolTx := &tx.Tx{
+		poolTx := &tx.PoolTx{BaseTx: tx.BaseTx{
 			TxHash:       txHash,
 			AccountIndex: types.NilAccountIndex,
 			Nonce:        types.NilNonce,
@@ -72,7 +72,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 
 			BlockHeight: types.NilBlockHeight,
 			TxStatus:    tx.StatusPending,
-		}
+		}}
 
 		request.L2TxHash = txHash
 

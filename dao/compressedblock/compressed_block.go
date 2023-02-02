@@ -33,6 +33,8 @@ type (
 		DropCompressedBlockTable() error
 		GetCompressedBlocksBetween(start, end int64) (blocksForCommit []*CompressedBlock, err error)
 		CreateCompressedBlockInTransact(tx *gorm.DB, block *CompressedBlock) error
+		DeleteByHeightsInTransact(tx *gorm.DB, heights []int64) error
+		GetCountByGreaterHeight(blockHeight int64) (count int64, err error)
 	}
 
 	defaultCompressedBlockModel struct {
@@ -43,7 +45,7 @@ type (
 	CompressedBlock struct {
 		gorm.Model
 		BlockSize         uint16
-		BlockHeight       int64
+		BlockHeight       int64 `gorm:"index"`
 		StateRoot         string
 		PublicData        string
 		Timestamp         int64
@@ -89,4 +91,24 @@ func (m *defaultCompressedBlockModel) CreateCompressedBlockInTransact(tx *gorm.D
 		return types.DbErrFailToCreateCompressedBlock
 	}
 	return nil
+}
+func (m *defaultCompressedBlockModel) DeleteByHeightsInTransact(tx *gorm.DB, heights []int64) error {
+	if len(heights) == 0 {
+		return nil
+	}
+	dbTx := tx.Model(&CompressedBlock{}).Unscoped().Where("block_height in ?", heights).Delete(&CompressedBlock{})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	return nil
+}
+
+func (m *defaultCompressedBlockModel) GetCountByGreaterHeight(blockHeight int64) (count int64, err error) {
+	dbTx := m.DB.Table(m.table).Where("block_height > ?", blockHeight).Count(&count)
+	if dbTx.Error != nil {
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	return count, nil
 }

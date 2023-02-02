@@ -99,7 +99,6 @@ func (m *defaultPriorityRequestModel) GetL2TxEventMonitors() (txs []*PriorityReq
 }
 
 func (m *defaultPriorityRequestModel) GetPriorityRequestsByStatus(status int) (txs []*PriorityRequest, err error) {
-	// todo order id
 	dbTx := m.DB.Table(m.table).Where("status = ?", status).Order("request_id").Find(&txs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
@@ -123,7 +122,7 @@ func (m *defaultPriorityRequestModel) GetLatestHandledRequestId() (requestId int
 
 func (m *defaultPriorityRequestModel) UpdateHandledPriorityRequestsInTransact(tx *gorm.DB, requests []*PriorityRequest) (err error) {
 	for _, request := range requests {
-		dbTx := tx.Table(m.table).Where("id = ?", request.ID).Updates(
+		dbTx := tx.Model(&PriorityRequest{}).Where("id = ?", request.ID).Updates(
 			map[string]interface{}{
 				"status":     HandledStatus,
 				"l2_tx_hash": request.L2TxHash,

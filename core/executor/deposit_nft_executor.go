@@ -61,7 +61,7 @@ func (e *DepositNftExecutor) Prepare() error {
 	return e.BaseExecutor.Prepare()
 }
 
-func (e *DepositNftExecutor) VerifyInputs(skipGasAmtChk bool) error {
+func (e *DepositNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	bc := e.bc
 	txInfo := e.txInfo
 
@@ -87,7 +87,10 @@ func (e *DepositNftExecutor) ApplyTransaction() error {
 		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
 		CollectionId:        txInfo.CollectionId,
 	}
-
+	cacheNft, err := e.bc.StateDB().GetNft(txInfo.NftIndex)
+	if err == nil {
+		nft.ID = cacheNft.ID
+	}
 	stateCache := e.bc.StateDB()
 	stateCache.SetPendingNft(txInfo.NftIndex, nft)
 	return e.BaseExecutor.ApplyTransaction()
@@ -115,7 +118,7 @@ func (e *DepositNftExecutor) GeneratePubData() error {
 	return nil
 }
 
-func (e *DepositNftExecutor) GetExecutedTx() (*tx.Tx, error) {
+func (e *DepositNftExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	txInfoBytes, err := json.Marshal(e.txInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
@@ -125,7 +128,7 @@ func (e *DepositNftExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.TxInfo = string(txInfoBytes)
 	e.tx.NftIndex = e.txInfo.NftIndex
 	e.tx.AccountIndex = e.txInfo.AccountIndex
-	return e.BaseExecutor.GetExecutedTx()
+	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *DepositNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {

@@ -33,6 +33,7 @@ func Run(configFile string) error {
 		err := w.GenerateBlockWitness()
 		if err != nil {
 			logx.Severef("failed to generate block witness, %v", err)
+			panic(err)
 		}
 		w.RescheduleBlockWitness()
 	})

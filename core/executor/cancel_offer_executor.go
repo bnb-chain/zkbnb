@@ -44,10 +44,10 @@ func (e *CancelOfferExecutor) Prepare() error {
 	return e.BaseExecutor.Prepare()
 }
 
-func (e *CancelOfferExecutor) VerifyInputs(skipGasAmtChk bool) error {
+func (e *CancelOfferExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	txInfo := e.txInfo
 
-	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk)
+	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk, skipSigChk)
 	if err != nil {
 		return err
 	}
@@ -119,7 +119,7 @@ func (e *CancelOfferExecutor) GeneratePubData() error {
 	return nil
 }
 
-func (e *CancelOfferExecutor) GetExecutedTx() (*tx.Tx, error) {
+func (e *CancelOfferExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	txInfoBytes, err := json.Marshal(e.txInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
@@ -129,7 +129,7 @@ func (e *CancelOfferExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.TxInfo = string(txInfoBytes)
 	e.tx.GasFeeAssetId = e.txInfo.GasFeeAssetId
 	e.tx.GasFee = e.txInfo.GasFeeAssetAmount.String()
-	return e.BaseExecutor.GetExecutedTx()
+	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *CancelOfferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {

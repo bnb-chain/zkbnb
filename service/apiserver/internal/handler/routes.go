@@ -104,6 +104,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/api/v1/search",
 				Handler: info.SearchHandler(serverCtx),
 			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/rollbacks",
+				Handler: info.GetRollbacksHandler(serverCtx),
+			},
 		},
 	)
 
@@ -148,6 +153,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/api/v1/nextNonce",
 				Handler: transaction.GetNextNonceHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/api/v1/l2Signature",
+				Handler: transaction.GetL2SignatureBodyHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodPost,

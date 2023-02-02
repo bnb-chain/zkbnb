@@ -22,6 +22,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
+	"gorm.io/plugin/dbresolver"
+	"math"
 	"math/big"
 	"time"
 
@@ -91,6 +93,11 @@ var (
 		Name:      "verify_Exception_height",
 		Help:      "verify_Exception_height metrics.",
 	})
+	contractBalanceMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "contract_balance",
+		Help:      "contract_balance metrics.",
+	})
 )
 
 type Sender struct {
@@ -123,6 +130,22 @@ func NewSender(c sconfig.Config) *Sender {
 	if err := prometheus.Register(l2BlockVerifiedHeightMetric); err != nil {
 		logx.Errorf("prometheus.Register l2BlockVerifiedHeightMetric error: %v", err)
 	}
+
+	masterDataSource := c.Postgres.MasterDataSource
+	slaveDataSource := c.Postgres.SlaveDataSource
+	db, err := gorm.Open(postgres.Open(masterDataSource))
+	if err := prometheus.Register(l2BlockCommitToChainHeightMetric); err != nil {
+		logx.Errorf("prometheus.Register l2BlockCommitToChainHeightMetric error: %v", err)
+	}
+	if err := prometheus.Register(l2BlockCommitConfirmByChainHeightMetric); err != nil {
+		logx.Errorf("prometheus.Register l2BlockCommitConfirmByChainHeightMetric error: %v", err)
+	}
+	if err := prometheus.Register(l2BlockSubmitToVerifyHeightMetric); err != nil {
+		logx.Errorf("prometheus.Register l2BlockSubmitToVerifyHeightMetric error: %v", err)
+	}
+	if err := prometheus.Register(l2BlockVerifiedHeightMetric); err != nil {
+		logx.Errorf("prometheus.Register l2BlockVerifiedHeightMetric error: %v", err)
+	}
 	if err := prometheus.Register(l2MaxWaitingTimeMetric); err != nil {
 		logx.Errorf("prometheus.Register l2MaxWaitingTimeMetric error: %v", err)
 	}
@@ -138,11 +161,15 @@ func NewSender(c sconfig.Config) *Sender {
 	if err := prometheus.Register(verifyExceptionHeightMetric); err != nil {
 		logx.Errorf("prometheus.Register verifyExceptionHeightMetric error: %v", err)
 	}
-
-	db, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
-	if err != nil {
-		logx.Errorf("gorm connect db error, err = %v", err)
+	if err := prometheus.Register(contractBalanceMetric); err != nil {
+		logx.Errorf("prometheus.Register contractBalanceMetric error: %v", err)
 	}
+
+	db.Use(dbresolver.Register(dbresolver.Config{
+		Sources:  []gorm.Dialector{postgres.Open(masterDataSource)},
+		Replicas: []gorm.Dialector{postgres.Open(slaveDataSource)},
+	}))
+
 	s := &Sender{
 		config:               c,
 		db:                   db,
@@ -190,6 +217,20 @@ func NewSender(c sconfig.Config) *Sender {
 }
 
 func (s *Sender) CommitBlocks() (err error) {
+	info, err := s.sysConfigModel.GetSysConfigByName("ZkBNBContract")
+	if err == nil {
+		balance, err := s.cli.GetBalance(info.Value)
+		fbalance := new(big.Float)
+		fbalance.SetString(balance.String())
+		ethValue := new(big.Float).Quo(fbalance, big.NewFloat(math.Pow10(18)))
+		if err != nil {
+			contractBalanceMetric.Set(float64(0))
+		} else {
+			f, _ := ethValue.Float64()
+			contractBalanceMetric.Set(f)
+		}
+	}
+
 	var (
 		cli           = s.cli
 		authCli       = s.authCli
@@ -260,6 +301,9 @@ func (s *Sender) CommitBlocks() (err error) {
 		return fmt.Errorf("failed to send commit tx, errL %v:%s", err, txHash)
 	}
 	commitExceptionHeightMetric.Set(float64(0))
+	for _, pendingCommitBlock := range pendingCommitBlocks {
+		l2BlockCommitToChainHeightMetric.Set(float64(pendingCommitBlock.BlockNumber))
+	}
 	newRollupTx := &l1rolluptx.L1RollupTx{
 		L1TxHash:      txHash,
 		TxStatus:      l1rolluptx.StatusPending,
@@ -283,7 +327,6 @@ func (s *Sender) UpdateSentTxs() (err error) {
 		}
 		return fmt.Errorf("failed to get pending txs, err: %v", err)
 	}
-
 	latestL1Height, err := s.cli.GetHeight()
 	if err != nil {
 		return fmt.Errorf("failed to get l1 block height, err: %v", err)
@@ -360,7 +403,7 @@ func (s *Sender) UpdateSentTxs() (err error) {
 	//update db
 	err = s.db.Transaction(func(tx *gorm.DB) error {
 		//update l1 rollup txs
-		err := s.l1RollupTxModel.UpdateL1RollupTxsInTransact(tx, pendingUpdateRxs)
+		err := s.l1RollupTxModel.UpdateL1RollupTxsStatusInTransact(tx, pendingUpdateRxs)
 		if err != nil {
 			return err
 		}
@@ -456,6 +499,9 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		return fmt.Errorf("failed to send verify tx: %v:%s", err, txHash)
 	}
 	verifyExceptionHeightMetric.Set(float64(0))
+	for _, pendingVerifyAndExecuteBlock := range pendingVerifyAndExecuteBlocks {
+		l2BlockSubmitToVerifyHeightMetric.Set(float64(pendingVerifyAndExecuteBlock.BlockHeader.BlockNumber))
+	}
 	newRollupTx := &l1rolluptx.L1RollupTx{
 		L1TxHash:      txHash,
 		TxStatus:      l1rolluptx.StatusPending,

@@ -1,6 +1,8 @@
 package apiserver
 
 import (
+	"github.com/bnb-chain/zkbnb/dao/tx"
+	"github.com/robfig/cron/v3"
 	"net/http"
 	"time"
 
@@ -28,6 +30,24 @@ func Run(configFile string) error {
 	logx.DisableStat()
 
 	ctx := svc.NewServiceContext(c)
+
+	cronJob := cron.New(cron.WithChain(
+		cron.SkipIfStillRunning(cron.DiscardLogger),
+	))
+	_, err := cronJob.AddFunc("@every 1s", func() {
+		_, err := ctx.MemCache.SetTxPendingCountKeyPrefix(func() (interface{}, error) {
+			txStatuses := []int64{tx.StatusPending}
+			return ctx.TxPoolModel.GetTxsTotalCount(tx.GetTxWithStatuses(txStatuses))
+		})
+		if err != nil {
+			logx.Errorf("set tx pending count failed:%s", err.Error())
+		}
+	})
+	if err != nil {
+		panic(err)
+	}
+	cronJob.Start()
+
 	proc.SetTimeToForceQuit(GracefulShutdownTimeout)
 	proc.AddShutdownListener(func() {
 		if ctx != nil {

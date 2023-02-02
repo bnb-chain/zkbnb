@@ -16,6 +16,9 @@ REPO=github.com/bnb-chain/zkbnb
 IMAGE_NAME=ghcr.io/bnb-chain/zkbnb
 API_SERVER = ./service/apiserver
 
+gary:
+	sudo bash -x ./deploy-local-gary.sh
+
 api-server:
 	cd $(API_SERVER) && goctl api go -api server.api -dir .;
 	@echo "Done generate server api";
@@ -28,7 +31,8 @@ integration-test:
 
 test: api-server
 	@echo "--> Running go test"
-	@go test ./...
+	# `-p 1` for preventing race condition of some tests
+	@go test -p 1 ./...
 
 tools:
 	go install -u github.com/zeromicro/go-zero/tools/goctl@v1.4.0
