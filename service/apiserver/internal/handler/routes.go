@@ -131,6 +131,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 			{
 				Method:  http.MethodGet,
+				Path:    "/api/v1/mergedAccountTxs",
+				Handler: transaction.GetMergedAccountTxsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
 				Path:    "/api/v1/tx",
 				Handler: transaction.GetTxHandler(serverCtx),
 			},
