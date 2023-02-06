@@ -15,7 +15,12 @@ CMC_TOKEN=cfce503f-fake-fake-fake-bbab5257dac8
 NETWORK_RPC_SYS_CONFIG_NAME=LocalTestNetworkRpc # BscTestNetworkRpc or LocalTestNetworkRpc
 BSC_TESTNET_RPC=HTTP://127.0.0.1:8545
 BSC_TESTNET_PRIVATE_KEY=2d92239525b6632b963f49d28411596512fab69052a1738e530a59617e433b81
-
+# security Council Members for upgrade approve
+# FOR TEST
+# generage by Mnemonic (account #17 ~ #19): giggle federal note disorder will close traffic air melody artefact taxi tissue
+SECURITY_COUNCIL_MEMBERS_NUMBER_1=0x0000000000000000000000000000000000000000
+SECURITY_COUNCIL_MEMBERS_NUMBER_2=0x0000000000000000000000000000000000000000
+SECURITY_COUNCIL_MEMBERS_NUMBER_3=0x0000000000000000000000000000000000000000
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
 echo '0. stop old database/redis and docker run new database/redis'
@@ -72,6 +77,9 @@ cd ./zkbnb-contract
 cp -r .env.example .env
 sed -i -e "s~BSC_TESTNET_RPC=.*~BSC_TESTNET_RPC=${BSC_TESTNET_RPC}~" .env
 sed -i -e "s/BSC_TESTNET_PRIVATE_KEY=.*/BSC_TESTNET_PRIVATE_KEY=${BSC_TESTNET_PRIVATE_KEY}/" .env
+sed -i -e "s/SECURITY_COUNCIL_MEMBERS_NUMBER_1=.*/SECURITY_COUNCIL_MEMBERS_NUMBER_1=${SECURITY_COUNCIL_MEMBERS_NUMBER_1}/" .env
+sed -i -e "s/SECURITY_COUNCIL_MEMBERS_NUMBER_2=.*/SECURITY_COUNCIL_MEMBERS_NUMBER_2=${SECURITY_COUNCIL_MEMBERS_NUMBER_2}/" .env
+sed -i -e "s/SECURITY_COUNCIL_MEMBERS_NUMBER_3=.*/SECURITY_COUNCIL_MEMBERS_NUMBER_3=${SECURITY_COUNCIL_MEMBERS_NUMBER_3}/" .env
 npm install
 npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deploy.js
 echo 'Recorded latest contract addresses into ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json'
