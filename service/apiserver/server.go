@@ -2,6 +2,7 @@ package apiserver
 
 import (
 	"github.com/bnb-chain/zkbnb/dao/tx"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/ratelimiter"
 	"github.com/robfig/cron/v3"
 	"net/http"
 	"time"
@@ -57,7 +58,7 @@ func Run(configFile string) error {
 
 	server := rest.MustNewServer(c.RestConf, rest.WithCors())
 
-	// 全局中间件
+	// Add the metrics logic here
 	server.Use(func(next http.HandlerFunc) http.HandlerFunc {
 		return func(writer http.ResponseWriter, request *http.Request) {
 			if request.RequestURI == "/api/v1/sendTx" {
@@ -67,6 +68,14 @@ func Run(configFile string) error {
 		}
 	})
 
+	// Initiate the rate limit control
+	// configuration from the config file
+	ratelimiter.InitRateLimitControl(c.RateLimitConfigFilePath)
+
+	// Add the rate limit control handler
+	server.Use(ratelimiter.RateLimitHandler)
+
+	// Register the server and the context
 	handler.RegisterHandlers(server, ctx)
 
 	// Start the swagger server in background
