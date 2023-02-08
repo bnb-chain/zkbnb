@@ -173,15 +173,7 @@ func (c *Committer) pullPoolTxs() {
 		}
 		executedTxMaxId = c.bc.Statedb.MaxPollTxIdRollbackImmutable
 		metrics.GetPendingTxsToQueueMetric.Set(float64(len(pendingTxs)))
-		notRestoreTxs := make([]*tx.Tx, 0)
 		for _, poolTx := range pendingTxs {
-			if poolTx.Rollback == false {
-				notRestoreTxs = append(notRestoreTxs, poolTx)
-				continue
-			}
-			c.executeTxWorker.Enqueue(poolTx)
-		}
-		for _, poolTx := range notRestoreTxs {
 			c.executeTxWorker.Enqueue(poolTx)
 		}
 	}
