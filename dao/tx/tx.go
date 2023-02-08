@@ -102,6 +102,8 @@ type (
 		VerifyAt time.Time // verify time when the transaction status changes to be StatusVerified
 
 		Rollback bool `gorm:"-"`
+		// l1 request id
+		L1RequestId int64 `gorm:"-"`
 	}
 )
 
