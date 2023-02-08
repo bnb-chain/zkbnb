@@ -282,6 +282,11 @@ func (c *Committer) executeTxFunc() {
 			err = c.bc.ApplyTransaction(poolTx)
 			if c.bc.Statedb.NeedRestoreExecutedTxs() && poolTx.ID >= c.bc.Statedb.MaxPollTxIdRollbackImmutable {
 				c.bc.Statedb.UpdateNeedRestoreExecutedTxs(false)
+				err := c.bc.DB().BlockModel.DeleteBlockGreaterThanHeight(curBlock.BlockHeight, []int{block.StatusProposing, block.StatusPacked})
+				if err != nil {
+					logx.Errorf("DeleteBlockGreaterThanHeight failed:%s,blockHeight:%d", err.Error(), curBlock.BlockHeight)
+					panic("DeleteBlockGreaterThanHeight failed: " + err.Error())
+				}
 			}
 			metrics.ExecuteTxApply1TxMetrics.Set(float64(time.Since(startApplyTx).Milliseconds()))
 			if err != nil {
