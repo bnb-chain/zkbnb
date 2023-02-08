@@ -402,9 +402,6 @@ func (m *defaultBlockModel) DeleteBlockInTransact(tx *gorm.DB, statuses []int) e
 }
 
 func (m *defaultBlockModel) DeleteBlockGreaterThanHeight(blockHeight int64, statuses []int) error {
-	if len(statuses) == 0 || blockHeight == 0 {
-		return nil
-	}
 	dbTx := m.DB.Table(m.table).Unscoped().Where("block_status in ? and block_height > ?", statuses, blockHeight).Delete(&Block{})
 	if dbTx.Error != nil {
 		return types.DbErrSqlOperation
