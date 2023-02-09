@@ -3,6 +3,7 @@
     "Address": "127.0.0.1:6379"
   },
   "DefaultRateLimit": {
+    "RateLimitType": "LimitByBoth",
     "PeriodRateLimitItem": {
       "GlobalRateSecond": 1,
       "GlobalRateQuota": 10,

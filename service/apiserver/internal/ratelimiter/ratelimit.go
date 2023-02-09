@@ -78,7 +78,11 @@ func InitLocalhostConfiguration() string {
 }
 
 func InitRateLimitConfiguration(configFilePath string) *RateLimitConfig {
-	rateLimitConfig := LoadRateLimitConfig(configFilePath)
+	rateLimitConfig, err := LoadRateLimitConfig(configFilePath)
+	if err != nil {
+		logx.Severef("Initiate Rate Limit Configuration Failure, Reason:%s", err.Error())
+		panic("Fail to initiate Rate Limit Configuration!")
+	}
 	logx.Info("Initiate RateLimit Configuration Successfully!")
 	return rateLimitConfig
 }

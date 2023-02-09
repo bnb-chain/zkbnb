@@ -9,6 +9,7 @@ import (
 const (
 	LimitTypePeriod = "LimitByPeriod"
 	LimitTypeToken  = "LimitByToken"
+	LimitTypeBoth   = "LimitByBoth"
 )
 
 type RedisConfig struct {
@@ -46,7 +47,7 @@ type RateLimitConfig struct {
 	PathRateLimitMap map[string]RateLimitConfigItem
 }
 
-func LoadRateLimitConfig(configFilePath string) *RateLimitConfig {
+func LoadRateLimitConfig(configFilePath string) (*RateLimitConfig, error) {
 
 	jsonFile, err := os.Open(configFilePath)
 	if err != nil {
@@ -56,19 +57,24 @@ func LoadRateLimitConfig(configFilePath string) *RateLimitConfig {
 
 	rateLimitConfig := &RateLimitConfig{}
 	decoder := json.NewDecoder(jsonFile)
-	err = decoder.Decode(rateLimitConfig)
-	if err != nil {
+	if err = decoder.Decode(rateLimitConfig); err != nil {
 		logx.Severef("Decode Rate Limit Configuration Raise Error, configFilePath:%s!", configFilePath)
 		panic("Decode Rate Limit Configuration Raise Error:" + err.Error())
 	}
-	return rateLimitConfig
+
+	// Do the rate limit config validation after it is loaded
+	if err = rateLimitConfig.ValidateRateLimitConfig(); err != nil {
+		return nil, err
+	}
+
+	return rateLimitConfig, nil
 }
 
 func (c *RateLimitConfig) IsPeriodLimitType(requestPath string) bool {
 	// If the request path has been set in PathRateLimitMap
 	// distinguish whether the limit type is LimitTypePeriod
 	if configItem, ok := c.PathRateLimitMap[requestPath]; ok {
-		return configItem.RateLimitType == LimitTypePeriod
+		return configItem.RateLimitType == LimitTypePeriod || configItem.RateLimitType == LimitTypeBoth
 	}
 	//If the request path has not been set in PathRateLimitMap
 	//it is limited by default, so return true naturally
@@ -79,7 +85,7 @@ func (c *RateLimitConfig) IsTokenLimitType(requestPath string) bool {
 	// If the request path has been set in PathRateLimitMap
 	// distinguish whether the limit type is LimitTypeToken
 	if configItem, ok := c.PathRateLimitMap[requestPath]; ok {
-		return configItem.RateLimitType == LimitTypeToken
+		return configItem.RateLimitType == LimitTypeToken || configItem.RateLimitType == LimitTypeBoth
 	}
 	//If the request path has not been set in PathRateLimitMap
 	//it is limited by default, so return true naturally

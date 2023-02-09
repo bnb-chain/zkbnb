@@ -58,7 +58,7 @@ func InitPathRateLimitControlByToken(pathRateLimitMap map[string]RateLimitConfig
 
 		// Only if RateLimitType is set to LimitTypeToken,
 		// the rateLimitMap could be initiated correctly.
-		if item.RateLimitType == LimitTypeToken {
+		if item.RateLimitType == LimitTypeToken || item.RateLimitType == LimitTypeBoth {
 			globalRateLimitMap[path] = limit.NewTokenLimiter(tokenRateLimitItem.GlobalRate, tokenRateLimitItem.GlobalBurst,
 				redisInstance, "PathGlobalTokenLimiter-"+path)
 

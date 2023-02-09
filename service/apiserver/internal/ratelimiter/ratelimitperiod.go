@@ -69,7 +69,7 @@ func InitRateLimitControlPathMapByPeriod(pathRateLimitMap map[string]RateLimitCo
 
 		// Only if RateLimitType is set to LimitTypePeriod,
 		// the rateLimitMap could be initiated correctly.
-		if item.RateLimitType == LimitTypePeriod {
+		if item.RateLimitType == LimitTypePeriod || item.RateLimitType == LimitTypeBoth {
 			periodRateLimitItem := item.PeriodRateLimitItem
 			globalPeriodRateLimitMap[path] = limit.NewPeriodLimit(periodRateLimitItem.GlobalRateSecond,
 				periodRateLimitItem.GlobalRateQuota, redisInstance, "PathGlobalPeriodLimiter")
