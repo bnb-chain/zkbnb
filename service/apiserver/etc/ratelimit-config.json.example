@@ -46,8 +46,8 @@
       "TokenRateLimitItem": {
         "GlobalRate": 66,
         "GlobalBurst": 122,
-        "SingleRate": 0,
-        "SingleBurst": 0
+        "SingleRate": 22,
+        "SingleBurst": 48
       }
     }
   }

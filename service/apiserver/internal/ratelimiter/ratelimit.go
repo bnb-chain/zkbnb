@@ -7,12 +7,14 @@ import (
 	"net/http"
 )
 
+const AccountId = "accountId"
+
 var periodRateLimiter *PeriodRateLimiter
 var tokenRateLimiter *TokenRateLimiter
 
 type RateLimitParam struct {
-	RequestPath    string
-	UserIdentifier string
+	RequestPath string
+	AccountId   string
 }
 
 type RateLimitController func(*RateLimitParam, RateLimitController) error
@@ -21,13 +23,13 @@ func RateLimitHandler(next http.HandlerFunc) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 
 		requestPath := request.URL.Path
-		userId := request.Form.Get("userId")
+		accountId := request.Form.Get(AccountId)
 
 		// Construct the rate limit param for
 		// the next rate limit control
 		rateLimitParam := &RateLimitParam{
-			RequestPath:    requestPath,
-			UserIdentifier: userId,
+			RequestPath: requestPath,
+			AccountId:   accountId,
 		}
 
 		// Perform the Period Rate Limit Process
@@ -77,6 +79,6 @@ func InitLocalhostConfiguration() string {
 
 func InitRateLimitConfiguration(configFilePath string) *RateLimitConfig {
 	rateLimitConfig := LoadRateLimitConfig(configFilePath)
-	logx.Info("Initiate RateLimitConfiguration Successfully!")
+	logx.Info("Initiate RateLimit Configuration Successfully!")
 	return rateLimitConfig
 }

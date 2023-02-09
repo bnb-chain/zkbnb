@@ -56,11 +56,15 @@ func InitPathRateLimitControlByToken(pathRateLimitMap map[string]RateLimitConfig
 	for path, item := range pathRateLimitMap {
 		tokenRateLimitItem := item.TokenRateLimitItem
 
-		globalRateLimitMap[path] = limit.NewTokenLimiter(tokenRateLimitItem.GlobalRate, tokenRateLimitItem.GlobalBurst,
-			redisInstance, "PathGlobalTokenLimiter-"+path)
+		// Only if RateLimitType is set to LimitTypeToken,
+		// the rateLimitMap could be initiated correctly.
+		if item.RateLimitType == LimitTypeToken {
+			globalRateLimitMap[path] = limit.NewTokenLimiter(tokenRateLimitItem.GlobalRate, tokenRateLimitItem.GlobalBurst,
+				redisInstance, "PathGlobalTokenLimiter-"+path)
 
-		singleRateLimitMap[path] = limit.NewTokenLimiter(tokenRateLimitItem.SingleRate, tokenRateLimitItem.SingleBurst,
-			redisInstance, "PathSingleTokenLimiter-"+path)
+			singleRateLimitMap[path] = limit.NewTokenLimiter(tokenRateLimitItem.SingleRate, tokenRateLimitItem.SingleBurst,
+				redisInstance, "PathSingleTokenLimiter-"+path)
+		}
 	}
 
 	return globalRateLimitMap, singleRateLimitMap

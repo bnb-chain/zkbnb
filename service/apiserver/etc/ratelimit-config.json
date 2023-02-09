@@ -1,6 +1,6 @@
 {
   "RedisConfig": {
-    "Address": "10.1.2.188:6826"
+    "Address": "127.0.0.1:6379"
   },
   "DefaultRateLimit": {
     "PeriodRateLimitItem": {
@@ -19,15 +19,24 @@
     }
   },
   "PathRateLimitMap": {
+    "/": {
+      "RateLimitType": "LimitByToken",
+      "TokenRateLimitItem": {
+        "GlobalRate": 6,
+        "GlobalBurst": 12,
+        "SingleRate": 2,
+        "SingleBurst": 5
+      }
+    },
     "/api/v1/accountTxs": {
       "RateLimitType": "LimitByPeriod",
       "PeriodRateLimitItem": {
         "GlobalRateSecond": 1,
-        "GlobalRateQuota": 255,
+        "GlobalRateQuota": 8,
         "SingleRateSecond": 1,
-        "SingleRateQuota": 33,
+        "SingleRateQuota": 5,
         "UserRateSecond": 1,
-        "UserRateQuota": 12
+        "UserRateQuota": 3
       }
     },
     "/api/v1/blocks": {
@@ -46,8 +55,8 @@
       "TokenRateLimitItem": {
         "GlobalRate": 66,
         "GlobalBurst": 122,
-        "SingleRate": 0,
-        "SingleBurst": 0
+        "SingleRate": 22,
+        "SingleBurst": 48
       }
     }
   }

@@ -67,15 +67,19 @@ func InitRateLimitControlPathMapByPeriod(pathRateLimitMap map[string]RateLimitCo
 
 	for path, item := range pathRateLimitMap {
 
-		periodRateLimitItem := item.PeriodRateLimitItem
-		globalPeriodRateLimitMap[path] = limit.NewPeriodLimit(periodRateLimitItem.GlobalRateSecond,
-			periodRateLimitItem.GlobalRateQuota, redisInstance, "PathGlobalPeriodLimiter")
+		// Only if RateLimitType is set to LimitTypePeriod,
+		// the rateLimitMap could be initiated correctly.
+		if item.RateLimitType == LimitTypePeriod {
+			periodRateLimitItem := item.PeriodRateLimitItem
+			globalPeriodRateLimitMap[path] = limit.NewPeriodLimit(periodRateLimitItem.GlobalRateSecond,
+				periodRateLimitItem.GlobalRateQuota, redisInstance, "PathGlobalPeriodLimiter")
 
-		singlePeriodRateLimitMap[path] = limit.NewPeriodLimit(periodRateLimitItem.SingleRateSecond,
-			periodRateLimitItem.SingleRateQuota, redisInstance, "PathSinglePeriodLimiter")
+			singlePeriodRateLimitMap[path] = limit.NewPeriodLimit(periodRateLimitItem.SingleRateSecond,
+				periodRateLimitItem.SingleRateQuota, redisInstance, "PathSinglePeriodLimiter")
 
-		userPeriodRateLimitMap[path] = limit.NewPeriodLimit(periodRateLimitItem.UserRateSecond,
-			periodRateLimitItem.UserRateQuota, redisInstance, "PathUserPeriodLimiter")
+			userPeriodRateLimitMap[path] = limit.NewPeriodLimit(periodRateLimitItem.UserRateSecond,
+				periodRateLimitItem.UserRateQuota, redisInstance, "PathUserPeriodLimiter")
+		}
 	}
 
 	return globalPeriodRateLimitMap, singlePeriodRateLimitMap, userPeriodRateLimitMap
