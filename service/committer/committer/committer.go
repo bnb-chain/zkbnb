@@ -289,6 +289,7 @@ func (c *Committer) executeTxFunc() {
 					logx.Errorf("DeleteBlockGreaterThanHeight failed:%s,blockHeight:%d", err.Error(), curBlock.BlockHeight)
 					panic("DeleteBlockGreaterThanHeight failed: " + err.Error())
 				}
+				c.bc.ClearRollbackBlockMap()
 			}
 			metrics.ExecuteTxApply1TxMetrics.Set(float64(time.Since(startApplyTx).Milliseconds()))
 			if err != nil {
