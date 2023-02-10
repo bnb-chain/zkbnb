@@ -7,7 +7,7 @@ import (
 
 // RateLimitControlGlobal Rate Limit Control in global dimension
 func (r *TokenRateLimiter) RateLimitControlGlobal(param *RateLimitParam, controller RateLimitController) error {
-	tokenLimiter := r.GlobalRateLimitMap[param.RequestPath]
+	tokenLimiter := r.GetGlobalRateLimiter(param.RequestPath)
 	if tokenLimiter.Allow() {
 		return controller(param, nil)
 	} else {

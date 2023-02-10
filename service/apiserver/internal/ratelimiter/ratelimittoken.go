@@ -82,3 +82,17 @@ func (r *TokenRateLimiter) StartRateLimitControl(param *RateLimitParam) error {
 	}
 	return nil
 }
+
+func (r *TokenRateLimiter) GetGlobalRateLimiter(requestPath string) *limit.TokenLimiter {
+	if rateLimiter, ok := r.GlobalRateLimitMap[requestPath]; ok {
+		return rateLimiter
+	}
+	return r.GlobalRateLimitDefault
+}
+
+func (r *TokenRateLimiter) GetSingleRateLimiter(requestPath string) *limit.TokenLimiter {
+	if rateLimiter, ok := r.SingleRateLimitMap[requestPath]; ok {
+		return rateLimiter
+	}
+	return r.SingleRateLimitDefault
+}

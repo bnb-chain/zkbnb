@@ -114,9 +114,23 @@ func (r *PeriodRateLimiter) RateLimitControl(limitKey string, periodLimit *limit
 	return errors.New("Unknown Rate Limit Status Error!")
 }
 
-func (r *PeriodRateLimiter) GetGlobalPeriodRateLimiter(requestPath string) *limit.PeriodLimit {
+func (r *PeriodRateLimiter) GetGlobalRateLimiter(requestPath string) *limit.PeriodLimit {
 	if rateLimiter, ok := r.GlobalRateLimitMap[requestPath]; ok {
 		return rateLimiter
 	}
 	return r.GlobalRateLimitDefault
+}
+
+func (r *PeriodRateLimiter) GetSingleRateLimiter(requestPath string) *limit.PeriodLimit {
+	if rateLimiter, ok := r.SingleRateLimitMap[requestPath]; ok {
+		return rateLimiter
+	}
+	return r.SingleRateLimitDefault
+}
+
+func (r *PeriodRateLimiter) GetUserRateLimiter(requestPath string) *limit.PeriodLimit {
+	if rateLimiter, ok := r.UserRateLimitMap[requestPath]; ok {
+		return rateLimiter
+	}
+	return r.UserRateLimitDefault
 }
