@@ -6,17 +6,17 @@
     "RateLimitType": "LimitByBoth",
     "PeriodRateLimitItem": {
       "GlobalRateSecond": 1,
-      "GlobalRateQuota": 10,
+      "GlobalRateQuota": 200,
       "SingleRateSecond": 1,
-      "SingleRateQuota": 5,
+      "SingleRateQuota": 100,
       "UserRateSecond": 1,
-      "UserRateQuota": 2
+      "UserRateQuota": 50
     },
     "TokenRateLimitItem": {
-      "GlobalRate": 10,
-      "GlobalBurst": 20,
-      "SingleRate": 5,
-      "SingleBurst": 10
+      "GlobalRate": 3,
+      "GlobalBurst": 6,
+      "SingleRate": 1,
+      "SingleBurst": 3
     }
   },
   "PathRateLimitMap": {

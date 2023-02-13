@@ -12,7 +12,7 @@ func (r *PeriodRateLimiter) RateLimitControlSingle(param *RateLimitParam, contro
 	rateLimitKey := fmt.Sprintf(RateLimitSingleKeyFormat, param.RequestPath, r.LocalHostID)
 	periodLimit := r.GetSingleRateLimiter(param.RequestPath)
 	if err := r.RateLimitControl(rateLimitKey, periodLimit); err != nil {
-		logx.Error("RateLimitControlSingle hit Period Limit, path:%s, hostId:%s!", param.RequestPath, r.LocalHostID)
+		logx.Errorf("RateLimitControlSingle hit Period Limit, path:%s, hostId:%s!", param.RequestPath, r.LocalHostID)
 		return err
 	}
 	return controller(param, nil)

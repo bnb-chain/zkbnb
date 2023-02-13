@@ -12,7 +12,7 @@ func (r *PeriodRateLimiter) RateLimitControlGlobal(param *RateLimitParam, contro
 	rateLimitKey := fmt.Sprintf(RateLimitGlobalKeyFormat, param.RequestPath)
 	periodLimit := r.GetGlobalRateLimiter(param.RequestPath)
 	if err := r.RateLimitControl(rateLimitKey, periodLimit); err != nil {
-		logx.Error("RateLimitControlGlobal hit Period Limit, path:%s!", param.RequestPath)
+		logx.Errorf("RateLimitControlGlobal hit Period Limit, path:%s!", param.RequestPath)
 		return err
 	}
 	return controller(param, r.RateLimitControlByUserId)

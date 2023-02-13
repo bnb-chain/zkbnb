@@ -49,11 +49,11 @@ func InitDefaultRateLimitControlByPeriod(defalutRateLimitConfig PeriodRateLimitI
 	globalRateLimitDefault := limit.NewPeriodLimit(defalutRateLimitConfig.GlobalRateSecond,
 		defalutRateLimitConfig.GlobalRateQuota, redisInstance, "DefaultGlobalPeriodLimiter")
 
-	singleRateLimitDefault := limit.NewPeriodLimit(defalutRateLimitConfig.GlobalRateSecond,
-		defalutRateLimitConfig.GlobalRateQuota, redisInstance, "DefaultSinglePeriodLimiter")
+	singleRateLimitDefault := limit.NewPeriodLimit(defalutRateLimitConfig.SingleRateSecond,
+		defalutRateLimitConfig.SingleRateQuota, redisInstance, "DefaultSinglePeriodLimiter")
 
-	userRateLimitDefault := limit.NewPeriodLimit(defalutRateLimitConfig.GlobalRateSecond,
-		defalutRateLimitConfig.GlobalRateQuota, redisInstance, "DefaultUserPeriodLimiter")
+	userRateLimitDefault := limit.NewPeriodLimit(defalutRateLimitConfig.UserRateSecond,
+		defalutRateLimitConfig.UserRateQuota, redisInstance, "DefaultUserPeriodLimiter")
 
 	return globalRateLimitDefault, singleRateLimitDefault, userRateLimitDefault
 }

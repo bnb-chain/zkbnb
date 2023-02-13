@@ -17,7 +17,7 @@ func (r *PeriodRateLimiter) RateLimitControlByUserId(param *RateLimitParam, cont
 	rateLimitKey := fmt.Sprintf(RateLimitByAccountKeyFormat, param.RequestPath, param.AccountId)
 	periodLimit := r.GetUserRateLimiter(param.RequestPath)
 	if err := r.RateLimitControl(rateLimitKey, periodLimit); err != nil {
-		logx.Error("RateLimitControlByUserId hit Period Limit, path:%s, userId:%s!",
+		logx.Errorf("RateLimitControlByUserId hit Period Limit, path:%s, userId:%s!",
 			param.RequestPath, param.AccountId)
 		return err
 	}

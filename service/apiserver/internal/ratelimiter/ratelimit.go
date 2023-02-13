@@ -22,6 +22,8 @@ type RateLimitController func(*RateLimitParam, RateLimitController) error
 func RateLimitHandler(next http.HandlerFunc) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 
+		// Parse the form before reading the parameter
+		request.ParseForm()
 		requestPath := request.URL.Path
 		accountId := request.Form.Get(AccountId)
 

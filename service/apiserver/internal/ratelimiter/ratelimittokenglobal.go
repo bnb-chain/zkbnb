@@ -11,7 +11,7 @@ func (r *TokenRateLimiter) RateLimitControlGlobal(param *RateLimitParam, control
 	if tokenLimiter.Allow() {
 		return controller(param, nil)
 	} else {
-		logx.Infof("LimitControlGlobal hit Token Limit, path:%s!", param.RequestPath)
+		logx.Errorf("RateLimitControlGlobal hit Token Limit, path:%s!", param.RequestPath)
 		return errors.New("Too Many Request!")
 	}
 }
