@@ -46,6 +46,7 @@ type (
 		GetL1RollupTxsByHash(hash string) (txs []*L1RollupTx, err error)
 		DeleteL1RollupTx(tx *L1RollupTx) error
 		UpdateL1RollupTxsStatusInTransact(tx *gorm.DB, txs []*L1RollupTx) error
+		GetLatestByNonce(l1Nonce int64, txType int64) (tx *L1RollupTx, err error)
 	}
 
 	defaultL1RollupTxModel struct {
@@ -63,6 +64,10 @@ type (
 		TxType uint8 `gorm:"index:idx_tx_status"`
 		// layer-2 block height
 		L2BlockHeight int64
+		// gas price
+		GasPrice int64
+		//l1 nonce
+		L1Nonce int64 `gorm:"index:idx_l1_nonce"`
 	}
 )
 
@@ -171,4 +176,16 @@ func (m *defaultL1RollupTxModel) UpdateL1RollupTxsStatusInTransact(tx *gorm.DB, 
 	}
 
 	return nil
+}
+
+func (m *defaultL1RollupTxModel) GetLatestByNonce(l1Nonce int64, txType int64) (tx *L1RollupTx, err error) {
+	tx = &L1RollupTx{}
+
+	dbTx := m.DB.Table(m.table).Unscoped().Where("tx_type = ? AND l1_nonce = ?", txType, l1Nonce).Order("id desc").Limit(1).Find(&tx)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return tx, nil
 }

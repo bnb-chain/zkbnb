@@ -14,7 +14,8 @@ type Config struct {
 		MaxWaitingTime          int64
 		MaxBlockCount           int
 		ConfirmBlocksCount      uint64
-		Sk                      string
+		CommitBlockSk           string
+		VerifyBlockSk           string
 		GasLimit                uint64
 		GasPrice                uint64
 	}

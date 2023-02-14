@@ -104,9 +104,10 @@ type Sender struct {
 	config sconfig.Config
 
 	// Client
-	cli           *rpc.ProviderClient
-	authCli       *rpc.AuthClient
-	zkbnbInstance *zkbnb.ZkBNB
+	cli                *rpc.ProviderClient
+	authCliCommitBlock *rpc.AuthClient
+	authCliVerifyBlock *rpc.AuthClient
+	zkbnbInstance      *zkbnb.ZkBNB
 
 	// Data access objects
 	db                   *gorm.DB
@@ -203,7 +204,12 @@ func NewSender(c sconfig.Config) *Sender {
 		logx.Severe(err)
 		panic(err)
 	}
-	s.authCli, err = rpc.NewAuthClient(c.ChainConfig.Sk, chainId)
+	s.authCliCommitBlock, err = rpc.NewAuthClient(c.ChainConfig.CommitBlockSk, chainId)
+	if err != nil {
+		logx.Severe(err)
+		panic(err)
+	}
+	s.authCliVerifyBlock, err = rpc.NewAuthClient(c.ChainConfig.VerifyBlockSk, chainId)
 	if err != nil {
 		logx.Severe(err)
 		panic(err)
@@ -232,9 +238,9 @@ func (s *Sender) CommitBlocks() (err error) {
 	}
 
 	var (
-		cli           = s.cli
-		authCli       = s.authCli
-		zkbnbInstance = s.zkbnbInstance
+		cli                = s.cli
+		authCliCommitBlock = s.authCliCommitBlock
+		zkbnbInstance      = s.zkbnbInstance
 	)
 	pendingTx, err := s.l1RollupTxModel.GetLatestPendingTx(l1rolluptx.TxTypeCommit)
 	if err != nil && err != types.DbErrNotFound {
@@ -287,10 +293,31 @@ func (s *Sender) CommitBlocks() (err error) {
 			return err
 		}
 	}
+	nonce, err := cli.GetPendingNonce(authCliCommitBlock.Address.Hex())
+	if err != nil {
+		return fmt.Errorf("failed to get nonce for commit block, errL %v", err)
+	}
+
+	l1RollupTx, err := s.l1RollupTxModel.GetLatestByNonce(int64(nonce), l1rolluptx.TxTypeCommit)
+	if err != nil && err != types.DbErrNotFound {
+		return fmt.Errorf("failed to get latest l1 rollup tx by nonce %d, err: %v", nonce, err)
+	}
+	if l1RollupTx != nil {
+		if l1RollupTx.L1Nonce == int64(nonce) {
+			maxGasPrice := gasPrice.Int64() + gasPrice.Int64()/2
+			standByGasPrice := l1RollupTx.GasPrice + int64(float64(l1RollupTx.GasPrice)*0.1)
+			if standByGasPrice > maxGasPrice {
+				logx.Errorf("abandon commit block to l1, gasPrice>maxGasPrice,l1 nonce: %s,gasPrice: %s,maxGasPrice: %s", nonce, standByGasPrice, maxGasPrice)
+				return nil
+			}
+			gasPrice = big.NewInt(standByGasPrice)
+			logx.Infof("speed up commit block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
+		}
+	}
 
 	// commit blocks on-chain
 	txHash, err := zkbnb.CommitBlocks(
-		cli, authCli,
+		cli, authCliCommitBlock,
 		zkbnbInstance,
 		lastStoredBlockInfo,
 		pendingCommitBlocks,
@@ -309,6 +336,8 @@ func (s *Sender) CommitBlocks() (err error) {
 		TxStatus:      l1rolluptx.StatusPending,
 		TxType:        l1rolluptx.TxTypeCommit,
 		L2BlockHeight: int64(pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber),
+		L1Nonce:       int64(nonce),
+		GasPrice:      gasPrice.Int64(),
 	}
 	err = s.l1RollupTxModel.CreateL1RollupTx(newRollupTx)
 	if err != nil {
@@ -419,9 +448,9 @@ func (s *Sender) UpdateSentTxs() (err error) {
 
 func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	var (
-		cli           = s.cli
-		authCli       = s.authCli
-		zkbnbInstance = s.zkbnbInstance
+		cli                = s.cli
+		authCliVerifyBlock = s.authCliVerifyBlock
+		zkbnbInstance      = s.zkbnbInstance
 	)
 	pendingTx, err := s.l1RollupTxModel.GetLatestPendingTx(l1rolluptx.TxTypeVerifyAndExecute)
 	if err != nil && err != types.DbErrNotFound {
@@ -494,8 +523,30 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		}
 	}
 
+	nonce, err := cli.GetPendingNonce(authCliVerifyBlock.Address.Hex())
+	if err != nil {
+		return fmt.Errorf("failed to get nonce for commit block, errL %v", err)
+	}
+
+	l1RollupTx, err := s.l1RollupTxModel.GetLatestByNonce(int64(nonce), l1rolluptx.TxTypeVerifyAndExecute)
+	if err != nil && err != types.DbErrNotFound {
+		return fmt.Errorf("failed to get latest l1 rollup tx by nonce %d, err: %v", nonce, err)
+	}
+	if l1RollupTx != nil {
+		if l1RollupTx.L1Nonce == int64(nonce) {
+			maxGasPrice := gasPrice.Int64() + gasPrice.Int64()/2
+			standByGasPrice := l1RollupTx.GasPrice + int64(float64(l1RollupTx.GasPrice)*0.1)
+			if standByGasPrice > maxGasPrice {
+				logx.Errorf("abandon verify block to l1, gasPrice>maxGasPrice,l1 nonce: %s,gasPrice: %s,maxGasPrice: %s", nonce, standByGasPrice, maxGasPrice)
+				return nil
+			}
+			gasPrice = big.NewInt(standByGasPrice)
+			logx.Infof("speed up verify block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
+		}
+	}
+
 	// Verify blocks on-chain
-	txHash, err := zkbnb.VerifyAndExecuteBlocks(cli, authCli, zkbnbInstance,
+	txHash, err := zkbnb.VerifyAndExecuteBlocks(cli, authCliVerifyBlock, zkbnbInstance,
 		pendingVerifyAndExecuteBlocks, proofs, gasPrice, s.config.ChainConfig.GasLimit)
 	if err != nil {
 		verifyExceptionHeightMetric.Set(float64(pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber))
@@ -510,6 +561,8 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		TxStatus:      l1rolluptx.StatusPending,
 		TxType:        l1rolluptx.TxTypeVerifyAndExecute,
 		L2BlockHeight: int64(pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber),
+		L1Nonce:       int64(nonce),
+		GasPrice:      gasPrice.Int64(),
 	}
 	err = s.l1RollupTxModel.CreateL1RollupTx(newRollupTx)
 	if err != nil {
