@@ -2,6 +2,7 @@ package info
 
 import (
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/logic/info"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/response"
 	"net/http"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
@@ -20,10 +21,6 @@ func GetRollbacksHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 
 		l := info.NewGetRollbacksLogic(r.Context(), svcCtx)
 		resp, err := l.GetRollbacks(&req)
-		if err != nil {
-			httpx.Error(w, err)
-		} else {
-			httpx.OkJson(w, resp)
-		}
+		response.Handle(w, resp, err)
 	}
 }

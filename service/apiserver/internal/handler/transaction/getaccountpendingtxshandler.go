@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/response"
 	"net/http"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
@@ -20,10 +21,6 @@ func GetAccountPendingTxsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 
 		l := transaction.NewGetAccountPendingTxsLogic(r.Context(), svcCtx)
 		resp, err := l.GetAccountPendingTxs(&req)
-		if err != nil {
-			httpx.Error(w, err)
-		} else {
-			httpx.OkJson(w, resp)
-		}
+		response.Handle(w, resp, err)
 	}
 }
