@@ -10,21 +10,21 @@ import (
 const (
 
 	// SignatureTemplateWithdrawal Withdrawal ${amount} to: ${to.toLowerCase()}\nFee: ${fee} ${feeTokenAddress}\nNonce: ${nonce}
-	SignatureTemplateWithdrawal = "Withdrawal %d to: %s\\nFee: %d %d\\nNonce: %d"
+	SignatureTemplateWithdrawal = "Withdrawal %d to: %s\nFee: %d %d\nNonce: %d"
 	// SignatureTemplateTransfer /* Transfer ${amount} ${tokenAddress} to: ${to.toLowerCase()}\nFee: ${fee} ${feeTokenAddress}\nNonce: ${nonce} */
-	SignatureTemplateTransfer = "Transfer %d %d to: %d\\nFee: %d %d\\nNonce: %d"
+	SignatureTemplateTransfer = "Transfer %d %d to: %d\nFee: %d %d\nNonce: %d"
 	// SignatureTemplateCreateCollection CreateCollection ${collectionId} ${accountIndex} ${collectionName} \nFee: ${fee} ${feeTokenAddress}\nNonce: ${nonce}
-	SignatureTemplateCreateCollection = "CreateCollection %d %d %s \\nFee: %d %d\\nNonce: %d"
+	SignatureTemplateCreateCollection = "CreateCollection %d %d %s \nFee: %d %d\nNonce: %d"
 	// SignatureTemplateMintNft MintNFT ${contentHash} for: ${recipient.toLowerCase()}\nFee: ${fee} ${feeTokenAddress}\nNonce: ${nonce}
-	SignatureTemplateMintNft = "MintNFT %s for: %d\\nFee: %d %d\\nNonce: %d"
+	SignatureTemplateMintNft = "MintNFT %s for: %d\nFee: %d %d\nNonce: %d"
 	// SignatureTemplateTransferNft TransferNFT ${NftIndex} ${fromAccountIndex} to ${toAccountIndex} \nFee: ${fee} ${feeTokenAddress}\nNonce: ${nonce}
-	SignatureTemplateTransferNft = "TransferNFT %d %d to %d \\nFee: %d %d\\nNonce: %d"
+	SignatureTemplateTransferNft = "TransferNFT %d %d to %d \nFee: %d %d\nNonce: %d"
 	// SignatureTemplateWithdrawalNft Withdrawal ${tokenIndex} to: ${to.toLowerCase()}\nFee: ${fee} ${feeTokenAddress}\nNonce: ${nonce}
-	SignatureTemplateWithdrawalNft = "Withdrawal %d to: %s\\nFee: %d %d\\nNonce: %d"
+	SignatureTemplateWithdrawalNft = "Withdrawal %d to: %s\nFee: %d %d\nNonce: %d"
 	// SignatureTemplateCancelOffer CancelOffer ${offerId} by: ${accountIndex} \nFee: ${fee} ${feeTokenAddress}\nNonce: ${nonce}
-	SignatureTemplateCancelOffer = "CancelOffer %d by: %d \\nFee: %d %d\\nNonce: %d"
+	SignatureTemplateCancelOffer = "CancelOffer %d by: %d \nFee: %d %d\nNonce: %d"
 	// SignatureTemplateAtomicMatch AtomicMatch ${amount} ${offerId} ${nftIndex} ${accountIndex} \nFee: ${fee} ${feeTokenAddress}\nNonce: ${nonce}
-	SignatureTemplateAtomicMatch = "AtomicMatch %d %d %d %d \\nFee: %d %d\\nNonce: %d"
+	SignatureTemplateAtomicMatch = "AtomicMatch %d %d %d %d \nFee: %d %d\nNonce: %d"
 )
 
 var SignatureFunctionMap = make(map[uint32]func(txInfo string) (string, error), 0)
