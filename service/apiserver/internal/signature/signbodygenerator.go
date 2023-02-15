@@ -3,7 +3,6 @@ package signature
 import (
 	"fmt"
 	"github.com/bnb-chain/zkbnb/types"
-	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -36,7 +35,8 @@ func GenerateSignatureBody(txType uint32, txInfo string) (string, error) {
 
 	SignatureFunc := SignatureFunctionMap[txType]
 	if SignatureFunc == nil {
-		return "", errors.New(fmt.Sprintf("Can not find Signature Function for TxType:%d", txType))
+		logx.Errorf("Can not find Signature Function for TxType:%d", txType)
+		return "", types.AppErrNoSignFunctionForTxType
 	}
 
 	signatureBody, err := SignatureFunc(txInfo)
@@ -61,7 +61,7 @@ func SignatureForWithdrawal(txInfo string) (string, error) {
 	transaction, err := types.ParseWithdrawTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse withdrawal tx failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", types.AppErrInvalidTxInfo
 	}
 
 	signatureBody := fmt.Sprintf(SignatureTemplateWithdrawal, transaction.AssetAmount, transaction.ToAddress,
@@ -73,7 +73,7 @@ func SignatureForTransfer(txInfo string) (string, error) {
 	transaction, err := types.ParseTransferTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse transfer tx failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", types.AppErrInvalidTxInfo
 	}
 
 	signatureBody := fmt.Sprintf(SignatureTemplateTransfer, transaction.AssetAmount, transaction.FromAccountIndex,
@@ -85,7 +85,7 @@ func SignatureForCreateCollection(txInfo string) (string, error) {
 	transaction, err := types.ParseCreateCollectionTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse create collection tx failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", types.AppErrInvalidTxInfo
 	}
 
 	signatureBody := fmt.Sprintf(SignatureTemplateCreateCollection, transaction.CollectionId, transaction.AccountIndex,
@@ -97,7 +97,7 @@ func SignatureForMintNft(txInfo string) (string, error) {
 	transaction, err := types.ParseMintNftTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse mint nft tx failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", types.AppErrInvalidTxInfo
 	}
 
 	signatureBody := fmt.Sprintf(SignatureTemplateMintNft, transaction.ToAccountNameHash,
@@ -109,7 +109,7 @@ func SignatureForTransferNft(txInfo string) (string, error) {
 	transaction, err := types.ParseTransferNftTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse cancel offer tx failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", types.AppErrInvalidTxInfo
 	}
 
 	signatureBody := fmt.Sprintf(SignatureTemplateTransferNft, transaction.NftIndex, transaction.FromAccountIndex,
@@ -121,7 +121,7 @@ func SignatureForWithdrawalNft(txInfo string) (string, error) {
 	transaction, err := types.ParseWithdrawNftTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse withdrawal nft tx failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", types.AppErrInvalidTxInfo
 	}
 
 	signatureBody := fmt.Sprintf(SignatureTemplateWithdrawalNft, transaction.NftIndex,
@@ -133,7 +133,7 @@ func SignatureForCancelOffer(txInfo string) (string, error) {
 	transaction, err := types.ParseCancelOfferTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse cancel offer tx failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", types.AppErrInvalidTxInfo
 	}
 
 	signatureBody := fmt.Sprintf(SignatureTemplateCancelOffer, transaction.OfferId,
@@ -145,7 +145,7 @@ func SignatureForAtomicMatch(txInfo string) (string, error) {
 	transaction, err := types.ParseAtomicMatchTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse atomic match tx failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", types.AppErrInvalidTxInfo
 	}
 
 	offer := transaction.BuyOffer
@@ -153,7 +153,7 @@ func SignatureForAtomicMatch(txInfo string) (string, error) {
 		offer = transaction.SellOffer
 	}
 	if offer == nil {
-		return "", errors.New("both buyOffer and sellOffer does not exist")
+		return "", types.AppErrBothOfferNotExist
 	}
 
 	signatureBody := fmt.Sprintf(SignatureTemplateAtomicMatch, offer.AssetAmount, offer.OfferId, offer.NftIndex,

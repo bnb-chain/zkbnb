@@ -2,7 +2,6 @@ package witness
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"gorm.io/plugin/dbresolver"
@@ -351,7 +350,7 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 
 	newStateRoot = tree.ComputeStateRootHash(w.accountTree.Root(), w.nftTree.Root())
 	if common.Bytes2Hex(newStateRoot) != block.StateRoot {
-		return nil, errors.New("state root doesn't match")
+		return nil, types.AppErrStateRootNotMatch
 	}
 
 	b := &circuit.Block{

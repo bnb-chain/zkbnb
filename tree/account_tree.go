@@ -18,7 +18,6 @@
 package tree
 
 import (
-	"errors"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"github.com/panjf2000/ants/v2"
 	"hash"
@@ -241,7 +240,7 @@ func reloadAccountTreeFromRDB(
 		accountIndex := accountHistory.AccountIndex
 		if accountInfoMap[accountIndex] == nil {
 			logx.Errorf("invalid account index")
-			return nil, errors.New("invalid account index")
+			return nil, types.AppErrInvalidAccountIndex
 		}
 		oAccountInfo := accountInfoMap[accountIndex]
 		accountInfo, err := chain.ToFormatAccountInfo(oAccountInfo)

@@ -2,7 +2,6 @@ package committer
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/bnb-chain/zkbnb/common/gopool"
@@ -73,7 +72,7 @@ type UpdatePoolTx struct {
 
 func NewCommitter(config *Config) (*Committer, error) {
 	if len(config.BlockConfig.OptionalBlockSizes) == 0 {
-		return nil, errors.New("nil optional block sizes")
+		return nil, types.AppErrNilOptionalBlockSize
 	}
 
 	err := metrics.InitCommitterMetrics()

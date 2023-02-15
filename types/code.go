@@ -49,6 +49,8 @@ var (
 
 	CmcNotListedErr = NewSystemError(10034, "cmc not listed")
 
+	TreeErrUnsupportedDriver = NewSystemError(11001, "unsupported db driver")
+
 	AppErrInvalidParam   = NewBusinessError(20001, "invalid param: ")
 	AppErrInvalidTxField = NewBusinessError(20002, "invalid tx field: ")
 
@@ -70,18 +72,34 @@ var (
 	AppErrAccountInvalidToAccount      = NewBusinessError(21107, "invalid ToAccount")
 
 	// Asset
-	AppErrAssetNotFound      = NewBusinessError(21200, "asset not found")
-	AppErrInvalidAssetId     = NewBusinessError(21201, "invalid asset id")
-	AppErrInvalidGasFeeAsset = NewBusinessError(21202, "invalid gas fee asset")
-	AppErrInvalidAssetAmount = NewBusinessError(21203, "invalid asset amount")
+	AppErrAssetNotFound               = NewBusinessError(21200, "asset not found")
+	AppErrInvalidAssetId              = NewBusinessError(21201, "invalid asset id")
+	AppErrInvalidGasFeeAsset          = NewBusinessError(21202, "invalid gas fee asset")
+	AppErrInvalidAssetAmount          = NewBusinessError(21203, "invalid asset amount")
+	AppErrCompilationNotDeterministic = NewBusinessError(21204, "compilation is not deterministic")
+	AppErrInvalidWitnessSolvedCS      = NewBusinessError(21205, "invalid witness solved the constraint system")
+	AppErrInvalidWitnessVerified      = NewBusinessError(21206, "invalid witness resulted in a valid proof")
+	AppErrInvalidAssetType            = NewBusinessError(21207, "invalid asset type")
 
 	// Block
-	AppErrBlockNotFound      = NewBusinessError(21300, "block not found")
-	AppErrInvalidBlockHeight = NewBusinessError(21301, "invalid block height")
+	AppErrBlockNotFound         = NewBusinessError(21300, "block not found")
+	AppErrInvalidBlockHeight    = NewBusinessError(21301, "invalid block height")
+	AppErrFailUpdateBlockStatus = NewBusinessError(21302, "update block status failed")
 
 	// Tx
-	AppErrPoolTxNotFound = NewBusinessError(21400, "pool tx not found")
-	AppErrInvalidTxInfo  = NewBusinessError(21401, "invalid tx info")
+	AppErrPoolTxNotFound            = NewBusinessError(21400, "pool tx not found")
+	AppErrInvalidTxInfo             = NewBusinessError(21401, "invalid tx info")
+	AppErrMarshalTxFailed           = NewBusinessError(21402, "marshal tx failed")
+	AppErrInsufficientGasFeeBalance = NewBusinessError(21403, "insufficient gas fee balance")
+	AppErrInsufficientAssetBalance  = NewBusinessError(21404, "insufficient asset a balance")
+	AppErrOfferIndexAlreadyInUse    = NewBusinessError(21405, "account offer index is already in use")
+	AppErrBothOfferNotExist         = NewBusinessError(21406, "both buyOffer and sellOffer does not exist")
+	AppErrTxSignatureError          = NewBusinessError(21407, "tx Signature Error")
+	AppErrNoFetcherForTxType        = NewBusinessError(21408, "can not find fetcher function for tx type")
+	AppErrNoSignFunctionForTxType   = NewBusinessError(21409, "can not find signature function for tx type")
+	AppErrAccountNotNftOwner        = NewBusinessError(21410, "account is not owner of the nft")
+	AppErrUnsupportedTxType         = NewBusinessError(21411, "unsupported tx type")
+	AppErrPrepareNftFailed          = NewBusinessError(21412, "prepare nft failed")
 
 	// Offer
 	AppErrInvalidOfferType           = NewBusinessError(21500, "invalid offer type")
@@ -114,9 +132,29 @@ var (
 	AppErrInvalidCollectionName = NewBusinessError(21701, "invalid collection name")
 	AppErrInvalidIntroduction   = NewBusinessError(21702, "invalid introduction")
 
-	AppErrInvalidGasAsset = NewBusinessError(25003, "invalid gas asset")
-	AppErrInvalidTxType   = NewBusinessError(25004, "invalid tx type")
-	AppErrTooManyTxs      = NewBusinessError(25005, "too many pending txs")
-	AppErrNotFound        = NewBusinessError(29404, "not found")
-	AppErrInternal        = NewBusinessError(29500, "internal server error")
+	// Proof
+	AppErrRelatedProofsNotReady = NewBusinessError(21800, "related proofs not ready")
+	AppErrProofNumberNotMatch   = NewBusinessError(21801, "proof number not match")
+
+	// Committer
+	AppErrNilOptionalBlockSize = NewBusinessError(21802, "nil optional block sizes")
+
+	// Witness
+	AppErrInvalidBalanceString = NewBusinessError(21900, "invalid balance string")
+	AppErrStateRootNotMatch    = NewBusinessError(21901, "state root doesn't match")
+
+	// StateDB
+	AppErrNotFindGasAccountConfig   = NewBusinessError(22000, "cannot find config for gas account index")
+	AppErrInvalidGasAccountIndex    = NewBusinessError(22001, "invalid account index for gas account")
+	AppErrFailUnmarshalGasFeeConfig = NewBusinessError(22002, "fail to unmarshal gas fee config")
+
+	AppErrInvalidGasAsset     = NewBusinessError(25003, "invalid gas asset")
+	AppErrInvalidTxType       = NewBusinessError(25004, "invalid tx type")
+	AppErrInvalidAddress      = NewBusinessError(25005, "invalid address")
+	AppErrInvalidSize         = NewBusinessError(25006, "invalid size")
+	AppErrTooManyTxs          = NewBusinessError(25007, "too many pending txs")
+	AppErrLockUsed            = NewBusinessError(29508, "the lock has been used, re-try later")
+	AppErrCircuitMethodDefErr = NewBusinessError(29509, "frontend.Circuit methods must be defined on pointer receiver")
+	AppErrNotFound            = NewBusinessError(29404, "not found")
+	AppErrInternal            = NewBusinessError(29500, "internal server error")
 )

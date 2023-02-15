@@ -18,8 +18,8 @@
 package block
 
 import (
-	"errors"
 	"github.com/bnb-chain/zkbnb/dao/tx"
+	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 	"sort"
 	"strconv"
@@ -448,7 +448,8 @@ func (m *defaultBlockModel) UpdateBlockToPendingInTransact(tx *gorm.DB, block *B
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected != 1 {
-		return errors.New("update block status failed,rowsAffected =" + strconv.FormatInt(dbTx.RowsAffected, 10) + "not equal length=1")
+		logx.Errorf("update block status failed,rowsAffected = %d, not equal length = 1", strconv.FormatInt(dbTx.RowsAffected, 10))
+		return types.AppErrFailUpdateBlockStatus
 	}
 	return nil
 }

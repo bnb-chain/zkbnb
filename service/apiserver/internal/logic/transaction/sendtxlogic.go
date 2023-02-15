@@ -8,8 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/pkg/errors"
-
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb/core"
@@ -140,7 +138,7 @@ func (s *SendTxLogic) verifySignature(TxType uint32, TxInfo, Signature string) e
 
 	//Compare the original address and the public address to verify the identifier
 	if publicAddress != originAddress {
-		return errors.New("Tx Signature Error")
+		return types2.AppErrTxSignatureError
 	}
 	return nil
 }

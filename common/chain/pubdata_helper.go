@@ -18,7 +18,6 @@
 package chain
 
 import (
-	"errors"
 	types2 "github.com/bnb-chain/zkbnb-crypto/circuit/types"
 	"github.com/bnb-chain/zkbnb-crypto/util"
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
@@ -42,7 +41,8 @@ func ParseRegisterZnsPubData(pubData []byte) (tx *txtypes.RegisterZnsTxInfo, err
 		}
 	*/
 	if len(pubData) != types.RegisterZnsPubDataSize {
-		return nil, errors.New("[ParseRegisterZnsPubData] invalid size")
+		logx.Error("[ParseRegisterZnsPubData] invalid size")
+		return nil, types.AppErrInvalidSize
 	}
 	offset := 0
 	offset, txType := common2.ReadUint8(pubData, offset)
@@ -75,7 +75,8 @@ func ParseDepositPubData(pubData []byte) (tx *txtypes.DepositTxInfo, err error) 
 		}
 	*/
 	if len(pubData) != types.DepositPubDataSize {
-		return nil, errors.New("[ParseDepositPubData] invalid size")
+		logx.Error("[ParseDepositPubData] invalid size")
+		return nil, types.AppErrInvalidSize
 	}
 	offset := 0
 	offset, txType := common2.ReadUint8(pubData, offset)
@@ -95,7 +96,8 @@ func ParseDepositPubData(pubData []byte) (tx *txtypes.DepositTxInfo, err error) 
 
 func ParseDepositNftPubData(pubData []byte) (tx *txtypes.DepositNftTxInfo, err error) {
 	if len(pubData) != types.DepositNftPubDataSize {
-		return nil, errors.New("[ParseDepositNftPubData] invalid size")
+		logx.Error("[ParseDepositNftPubData] invalid size")
+		return nil, types.AppErrInvalidSize
 	}
 	offset := 0
 	offset, txType := common2.ReadUint8(pubData, offset)
@@ -121,7 +123,8 @@ func ParseDepositNftPubData(pubData []byte) (tx *txtypes.DepositNftTxInfo, err e
 
 func ParseFullExitPubData(pubData []byte) (tx *txtypes.FullExitTxInfo, err error) {
 	if len(pubData) != types.FullExitPubDataSize {
-		return nil, errors.New("[ParseFullExitPubData] invalid size")
+		logx.Error("[ParseFullExitPubData] invalid size")
+		return nil, types.AppErrInvalidSize
 	}
 	offset := 0
 	offset, txType := common2.ReadUint8(pubData, offset)
@@ -141,7 +144,8 @@ func ParseFullExitPubData(pubData []byte) (tx *txtypes.FullExitTxInfo, err error
 
 func ParseFullExitNftPubData(pubData []byte) (tx *txtypes.FullExitNftTxInfo, err error) {
 	if len(pubData) != types.FullExitNftPubDataSize {
-		return nil, errors.New("[ParseFullExitNftPubData] invalid size")
+		logx.Error("[ParseFullExitNftPubData] invalid size")
+		return nil, types.AppErrInvalidSize
 	}
 	offset := 0
 	offset, txType := common2.ReadUint8(pubData, offset)
@@ -181,7 +185,6 @@ func ParsePubData(pubData []byte) {
 
 		ParseCreateCollectionPubData(res)
 	}
-
 }
 func ParseCreateCollectionPubData(pubData []byte) (tx *txtypes.CreateCollectionTxInfo, err error) {
 	offset := 0

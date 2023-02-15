@@ -2,10 +2,8 @@ package signature
 
 import (
 	"context"
-	"fmt"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbnb/types"
-	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -45,7 +43,8 @@ func (f *L1AddressFetcher) GetL1AddressByTx(TxType uint32, TxInfo string) (strin
 	} else if types.TxTypeAtomicMatch == TxType {
 		l1Address, err = f.fetcherForAtomicMatch(TxInfo)
 	} else {
-		return "", errors.New(fmt.Sprintf("Can not find Fetcher Function for TxType:%d", TxType))
+		logx.Errorf("Can not find Fetcher Function for TxType:%d", TxType)
+		return "", types.AppErrNoFetcherForTxType
 	}
 
 	if err != nil {
@@ -58,7 +57,7 @@ func (f *L1AddressFetcher) fetcherForWithdrawal(txInfo string) (string, error) {
 	transaction, err := types.ParseWithdrawTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse withdrawal tx failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", types.AppErrInvalidTxInfo
 	}
 	return f.fetchL1AddressByAccountIndex(transaction.FromAccountIndex)
 }
@@ -67,7 +66,7 @@ func (f *L1AddressFetcher) fetcherForTransfer(txInfo string) (string, error) {
 	transaction, err := types.ParseTransferTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse transfer tx failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", types.AppErrInvalidTxInfo
 	}
 	return f.fetchL1AddressByAccountIndex(transaction.FromAccountIndex)
 }
@@ -76,7 +75,7 @@ func (f *L1AddressFetcher) fetcherForCreateCollection(txInfo string) (string, er
 	transaction, err := types.ParseCreateCollectionTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse create collection tx failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", types.AppErrInvalidTxInfo
 	}
 	return f.fetchL1AddressByAccountIndex(transaction.AccountIndex)
 }
@@ -85,7 +84,7 @@ func (f *L1AddressFetcher) fetcherForMintNft(txInfo string) (string, error) {
 	transaction, err := types.ParseMintNftTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse mint nft tx failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", types.AppErrInvalidTxInfo
 	}
 	return f.fetchL1AddressByAccountIndex(transaction.CreatorAccountIndex)
 }
@@ -94,7 +93,7 @@ func (f *L1AddressFetcher) fetcherForTransferNft(txInfo string) (string, error) 
 	transaction, err := types.ParseTransferNftTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse cancel offer tx failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", types.AppErrInvalidTxInfo
 	}
 	return f.fetchL1AddressByAccountIndex(transaction.FromAccountIndex)
 }
@@ -103,7 +102,7 @@ func (f *L1AddressFetcher) fetcherForWithdrawalNft(txInfo string) (string, error
 	transaction, err := types.ParseWithdrawNftTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse withdrawal nft tx failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", types.AppErrInvalidTxInfo
 	}
 	return f.fetchL1AddressByAccountIndex(transaction.AccountIndex)
 }
@@ -112,7 +111,7 @@ func (f *L1AddressFetcher) fetcherForCancelOffer(txInfo string) (string, error) 
 	transaction, err := types.ParseCancelOfferTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse cancel offer tx failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", types.AppErrInvalidTxInfo
 	}
 	return f.fetchL1AddressByAccountIndex(transaction.AccountIndex)
 }
@@ -121,7 +120,7 @@ func (f *L1AddressFetcher) fetcherForAtomicMatch(txInfo string) (string, error) 
 	transaction, err := types.ParseAtomicMatchTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse atomic match tx failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", types.AppErrInvalidTxInfo
 	}
 	return f.fetchL1AddressByAccountIndex(transaction.AccountIndex)
 }

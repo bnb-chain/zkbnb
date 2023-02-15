@@ -1,7 +1,6 @@
 package executor
 
 import (
-	"errors"
 	"math/big"
 
 	sdb "github.com/bnb-chain/zkbnb/core/statedb"
@@ -58,5 +57,5 @@ func NewTxExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 		return NewFullExitNftExecutor(bc, tx)
 	}
 
-	return nil, errors.New("unsupported tx type")
+	return nil, types.AppErrUnsupportedTxType
 }
