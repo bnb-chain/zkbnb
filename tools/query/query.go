@@ -67,7 +67,7 @@ func QueryTreeDB(
 				}
 				logx.Infof("asset tree accountIndex=%s,assetId=%s,assetRoot=%s", strconv.FormatInt(accountIndex, 10), strconv.FormatInt(int64(i), 10), common.Bytes2Hex(assetOne))
 			}
-			accountAssetTrees.Get(accountIndex).PrintLeaves()
+			//accountAssetTrees.Get(accountIndex).PrintLeaves()
 		}
 	}
 	stateRoot := common.Bytes2Hex(accountTree.Root())
