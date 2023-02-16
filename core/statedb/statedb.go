@@ -644,7 +644,7 @@ func (s *StateDB) SetAndCommitAssetTree(accountIndex int64, assets []int64, stat
 		startItem := time.Now()
 		assetLeaf, err := tree.ComputeAccountAssetLeafHash(
 			balance.String(),
-			account.AssetInfo[assetId].OfferCanceledOrFinalized.String(),
+			account.AssetInfo[assetId].OfferCanceledOrFinalized.String(), accountIndex, assetId, stateCopy.CurrentBlock.BlockHeight,
 		)
 		metrics.AccountTreeTimeGauge.WithLabelValues("compute_poseidon").Set(float64(time.Since(startItem).Milliseconds()))
 		if err != nil {
@@ -668,6 +668,8 @@ func (s *StateDB) SetAndCommitAssetTree(accountIndex int64, assets []int64, stat
 		account.Nonce,
 		account.CollectionNonce,
 		s.AccountAssetTrees.Get(accountIndex).Root(),
+		accountIndex,
+		stateCopy.CurrentBlock.BlockHeight,
 	)
 	if err != nil {
 		return accountIndex, nil, fmt.Errorf("unable to compute account leaf: %v", err)
@@ -700,6 +702,8 @@ func (s *StateDB) computeNftLeafHash(nftIndex int64, stateCopy *StateDataCopy) (
 		nftInfo.NftContentHash,
 		nftInfo.CreatorTreasuryRate,
 		nftInfo.CollectionId,
+		nftInfo.NftIndex,
+		stateCopy.CurrentBlock.BlockHeight,
 	)
 	if err != nil {
 		return nftIndex, nil, fmt.Errorf("unable to compute nftInfo leaf: %v", err)

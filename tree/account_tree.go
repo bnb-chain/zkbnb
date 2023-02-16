@@ -255,6 +255,9 @@ func reloadAccountTreeFromRDB(
 			hashVal, err := AssetToNode(
 				assetInfo.Balance.String(),
 				assetInfo.OfferCanceledOrFinalized.String(),
+				accountInfo.AccountIndex,
+				assetInfo.AssetId,
+				accountHistory.L2BlockHeight,
 			)
 			if err != nil {
 				logx.Errorf("unable to convert asset to node: %s", err.Error())
@@ -279,6 +282,8 @@ func reloadAccountTreeFromRDB(
 			accountInfoMap[accountIndex].Nonce,
 			accountInfoMap[accountIndex].CollectionNonce,
 			accountAssetTrees.Get(accountIndex).Root(),
+			accountIndex,
+			blockHeight,
 		)
 		if err != nil {
 			logx.Errorf("unable to convert account to node: %s", err.Error())
@@ -289,8 +294,10 @@ func reloadAccountTreeFromRDB(
 	return pendingAccountItem, nil
 }
 
-func AssetToNode(balance string, offerCanceledOrFinalized string) (hashVal []byte, err error) {
-	hashVal, err = ComputeAccountAssetLeafHash(balance, offerCanceledOrFinalized)
+func AssetToNode(balance string, offerCanceledOrFinalized string, accountIndex int64,
+	assetId int64,
+	blockHeight int64) (hashVal []byte, err error) {
+	hashVal, err = ComputeAccountAssetLeafHash(balance, offerCanceledOrFinalized, accountIndex, assetId, blockHeight)
 	if err != nil {
 		logx.Errorf("unable to compute asset leaf hash: %s", err.Error())
 		return nil, err
@@ -305,13 +312,18 @@ func AccountToNode(
 	nonce int64,
 	collectionNonce int64,
 	assetRoot []byte,
+	accountIndex int64,
+	blockHeight int64,
 ) (hashVal []byte, err error) {
 	hashVal, err = ComputeAccountLeafHash(
 		accountNameHash,
 		publicKey,
 		nonce,
 		collectionNonce,
-		assetRoot)
+		assetRoot,
+		accountIndex,
+		blockHeight,
+	)
 	if err != nil {
 		logx.Errorf("unable to compute account leaf hash: %s", err.Error())
 		return nil, err

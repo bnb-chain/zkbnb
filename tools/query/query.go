@@ -58,8 +58,16 @@ func QueryTreeDB(
 	if len(ctx.Config.AccountIndexes) > 0 {
 		for _, accountIndex := range ctx.Config.AccountIndexes {
 			assetRoot := common.Bytes2Hex(accountAssetTrees.Get(accountIndex).Root())
-			logx.Infof("asset tree accountIndex=%s,assetRoot=%s,versions=%s,latestVersion=%s", strconv.FormatInt(accountIndex, 10), assetRoot,
+			logx.Infof("asset tree root accountIndex=%s,assetRoot=%s,versions=%s,latestVersion=%s", strconv.FormatInt(accountIndex, 10), assetRoot,
 				formatVersion(accountAssetTrees.Get(accountIndex).Versions()), strconv.FormatUint(uint64(accountAssetTrees.Get(accountIndex).LatestVersion()), 10))
+			for i := 0; i < 20; i++ {
+				assetOne, err := accountAssetTrees.Get(accountIndex).Get(uint64(i), nil)
+				if err != nil {
+					continue
+				}
+				logx.Infof("asset tree accountIndex=%s,assetId=%s,assetRoot=%s", strconv.FormatInt(accountIndex, 10), strconv.FormatInt(int64(i), 10), common.Bytes2Hex(assetOne))
+			}
+			accountAssetTrees.Get(accountIndex).PrintLeaves()
 		}
 	}
 	stateRoot := common.Bytes2Hex(accountTree.Root())
