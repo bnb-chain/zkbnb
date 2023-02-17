@@ -5,6 +5,7 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
+	"strconv"
 )
 
 const (
@@ -25,6 +26,8 @@ const (
 	SignatureTemplateCancelOffer = "CancelOffer %d by: %d \\nFee: %d %d\\nNonce: %d"
 	// SignatureTemplateAtomicMatch AtomicMatch ${amount} ${offerId} ${nftIndex} ${accountIndex} \nFee: ${fee} ${feeTokenAddress}\nNonce: ${nonce}
 	SignatureTemplateAtomicMatch = "AtomicMatch %d %d %d %d \\nFee: %d %d\\nNonce: %d"
+	// SignatureTemplateAccount AtomicMatch %{account}
+	SignatureTemplateAccount = "TxTypeEmpty %d"
 )
 
 var SignatureFunctionMap = make(map[uint32]func(txInfo string) (string, error), 0)
@@ -55,6 +58,8 @@ func ConstructSignatureFunction() {
 	SignatureFunctionMap[types.TxTypeWithdrawNft] = SignatureForWithdrawalNft
 	SignatureFunctionMap[types.TxTypeCancelOffer] = SignatureForCancelOffer
 	SignatureFunctionMap[types.TxTypeAtomicMatch] = SignatureForAtomicMatch
+	SignatureFunctionMap[types.TxTypeEmpty] = SignatureForAccount
+
 }
 
 func SignatureForWithdrawal(txInfo string) (string, error) {
@@ -158,5 +163,15 @@ func SignatureForAtomicMatch(txInfo string) (string, error) {
 
 	signatureBody := fmt.Sprintf(SignatureTemplateAtomicMatch, offer.AssetAmount, offer.OfferId, offer.NftIndex,
 		transaction.AccountIndex, transaction.GasFeeAssetAmount, transaction.GasAccountIndex, transaction.Nonce)
+	return signatureBody, nil
+}
+
+func SignatureForAccount(txInfo string) (string, error) {
+	accountIndex, err := strconv.ParseInt(txInfo, 10, 64)
+	if err != nil {
+		logx.Errorf("parse atomic match int64 failed: %s", err.Error())
+		return "", errors.New("invalid tx info")
+	}
+	signatureBody := fmt.Sprintf(SignatureTemplateAccount, accountIndex)
 	return signatureBody, nil
 }
