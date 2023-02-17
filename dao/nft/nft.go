@@ -38,10 +38,13 @@ type (
 		GetNftsByAccountIndex(accountIndex, limit, offset int64) (nfts []*L2Nft, err error)
 		GetNftsCountByAccountIndex(accountIndex int64) (int64, error)
 		UpdateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) error
-		BatchInsertOrUpdate(nfts []*L2Nft) (err error)
-		DeleteByIndexInTransact(tx *gorm.DB, nftIndex int64) error
+		BatchInsertOrUpdateInTransact(tx *gorm.DB, nfts []*L2Nft) (err error)
+		DeleteByIndexesInTransact(tx *gorm.DB, nftIndexes []int64) error
 		UpdateByIndexInTransact(tx *gorm.DB, l2nft *L2Nft) error
 		GetNfts(limit int64, offset int64) (nfts []*L2Nft, err error)
+		GetCountByGreaterHeight(blockHeight int64) (count int64, err error)
+		GetMaxNftIndex() (nftIndex int64, err error)
+		GetByNftIndexRange(fromNftIndex int64, toNftIndex int64) (nfts []*L2Nft, err error)
 	}
 	defaultL2NftModel struct {
 		table string
@@ -140,25 +143,31 @@ func (m *defaultL2NftModel) UpdateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) err
 	return nil
 }
 
-func (m *defaultL2NftModel) BatchInsertOrUpdate(nfts []*L2Nft) (err error) {
-	dbTx := m.DB.Table(m.table).Clauses(clause.OnConflict{
+func (m *defaultL2NftModel) BatchInsertOrUpdateInTransact(tx *gorm.DB, nfts []*L2Nft) (err error) {
+	dbTx := tx.Table(m.table).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},
 		DoUpdates: clause.AssignmentColumns([]string{"creator_account_index", "owner_account_index", "nft_content_hash", "creator_treasury_rate", "collection_id", "l2_block_height"}),
-	}).Create(&nfts)
+	}).CreateInBatches(&nfts, len(nfts))
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}
 	if int(dbTx.RowsAffected) != len(nfts) {
-		logx.Errorf("BatchInsertOrUpdate failed,rows affected not equal nfts length,dbTx.RowsAffected:%s,len(nfts):%s", int(dbTx.RowsAffected), len(nfts))
+		logx.Errorf("BatchInsertOrUpdateInTransact failed,rows affected not equal nfts length,dbTx.RowsAffected:%s,len(nfts):%s", int(dbTx.RowsAffected), len(nfts))
 		return types.DbErrFailToUpdateAccount
 	}
 	return nil
 }
 
-func (m *defaultL2NftModel) DeleteByIndexInTransact(tx *gorm.DB, nftIndex int64) error {
-	dbTx := tx.Model(&L2Nft{}).Unscoped().Where("nft_index = ?", nftIndex).Delete(&L2Nft{})
+func (m *defaultL2NftModel) DeleteByIndexesInTransact(tx *gorm.DB, nftIndexes []int64) error {
+	if len(nftIndexes) == 0 {
+		return nil
+	}
+	dbTx := tx.Model(&L2Nft{}).Unscoped().Where("nft_index in ?", nftIndexes).Delete(&L2Nft{})
 	if dbTx.Error != nil {
 		return dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		return types.DbErrFailToUpdateNft
 	}
 	return nil
 }
@@ -176,11 +185,7 @@ func (m *defaultL2NftModel) UpdateByIndexInTransact(tx *gorm.DB, l2nft *L2Nft) e
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
-		// this l2nft is new, we need create first
-		dbTx = m.DB.Table(m.table).Create(&l2nft)
-		if dbTx.Error != nil {
-			return dbTx.Error
-		}
+		return types.DbErrFailToUpdateNft
 	}
 	return nil
 }
@@ -191,6 +196,37 @@ func (m *defaultL2NftModel) GetNfts(limit int64, offset int64) (nfts []*L2Nft, e
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
 		return nil, nil
+	}
+	return nfts, nil
+}
+
+func (m *defaultL2NftModel) GetCountByGreaterHeight(blockHeight int64) (count int64, err error) {
+	dbTx := m.DB.Table(m.table).Where("l2_block_height > ?", blockHeight).Count(&count)
+	if dbTx.Error != nil {
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	return count, nil
+}
+
+func (m *defaultL2NftModel) GetMaxNftIndex() (nftIndex int64, err error) {
+	var l2Nft L2Nft
+	dbTx := m.DB.Table(m.table).Select("nft_index").Order("nft_index desc").Limit(1).Find(&l2Nft)
+	if dbTx.Error != nil {
+		return -1, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return -1, types.DbErrNotFound
+	}
+	return l2Nft.NftIndex, nil
+}
+
+func (m *defaultL2NftModel) GetByNftIndexRange(fromNftIndex int64, toNftIndex int64) (nfts []*L2Nft, err error) {
+	dbTx := m.DB.Table(m.table).Where("nft_index >= ? and nft_index <= ?", fromNftIndex, toNftIndex).Find(&nfts)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
 	}
 	return nfts, nil
 }

@@ -38,12 +38,15 @@ type (
 		GetTxsTotalCount(options ...GetTxOptionFunc) (count int64, err error)
 		GetTxByTxHash(hash string) (txs *Tx, err error)
 		GetTxsByStatus(status int) (txs []*Tx, err error)
+		GetTxsByAccountIndex(accountIndex int64, limit int64, offset int64, options ...GetTxOptionFunc) (txs []*Tx, err error)
+		GetTxsCountByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (count int64, err error)
 		GetTxsByStatusAndMaxId(status int, maxId uint, limit int64) (txs []*Tx, err error)
+		GetTxsByStatusAndIdRange(status int, fromId uint, toId uint) (txs []*Tx, err error)
+		GetTxsByStatusAndCreateTime(status int, fromCreatedAt time.Time, toId uint) (txs []*Tx, err error)
 		CreateTxs(txs []*PoolTx) error
 		GetPendingTxsByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (txs []*Tx, err error)
 		GetMaxNonceByAccountIndex(accountIndex int64) (nonce int64, err error)
 		CreateTxsInTransact(tx *gorm.DB, txs []*PoolTx) error
-		UpdateTxsInTransact(tx *gorm.DB, txs []*Tx) error
 		DeleteTxsInTransact(tx *gorm.DB, txs []*Tx) error
 		DeleteTxsBatchInTransact(tx *gorm.DB, txs []*Tx) error
 		GetLatestTx(txTypes []int64, statuses []int) (tx *Tx, err error)
@@ -51,15 +54,17 @@ type (
 		UpdateTxsToPending(tx *gorm.DB) error
 		GetLatestExecutedTx() (tx *Tx, err error)
 		GetTxsPageByStatus(status int, limit int64) (txs []*Tx, err error)
-		GetTxsPageByStatus1(createdAtFrom time.Time, status int, limit int64) (txs []*Tx, err error)
-		GetTxsPageByStatus2(createdAtFrom time.Time, status int, limit int64) (txs []*Tx, err error)
 		UpdateTxsStatusByIds(ids []uint, status int) error
 		UpdateTxsStatusAndHeightByIds(ids []uint, status int, blockHeight int64) error
 		DeleteTxsBatch(poolTxIds []uint, status int, blockHeight int64) error
 		DeleteTxIdsBatchInTransact(tx *gorm.DB, ids []uint) error
-		UpdateTxsToPendingByHeight(tx *gorm.DB, blockHeight []int64) error
+		UpdateTxsToPendingByHeights(tx *gorm.DB, blockHeight []int64) error
 		UpdateTxsToPendingByMaxId(tx *gorm.DB, maxPoolTxId uint) error
 		BatchUpdateNftIndexOrCollectionId(txs []*PoolTx) (err error)
+		GetLatestMintNft() (tx *Tx, err error)
+		GetTxsUnscopedByHeights(blockHeights []int64) (txs []*Tx, err error)
+		GetLatestRollback(status int, rollback bool) (tx *PoolTx, err error)
+		GetCountByGreaterHeight(blockHeight int64) (count int64, err error)
 	}
 
 	defaultTxPoolModel struct {
@@ -68,6 +73,13 @@ type (
 	}
 
 	PoolTx struct {
+		BaseTx
+		Rollback bool
+		// l1 request id
+		L1RequestId int64
+	}
+
+	BaseTx struct {
 		gorm.Model
 
 		// Assigned when created in the tx pool.
@@ -87,13 +99,14 @@ type (
 		TxAmount      string
 		Memo          string
 		ExtraInfo     string
-		NativeAddress string      // a. Priority tx, assigned when created b. Other tx, assigned after executed.
-		TxDetails     []*TxDetail `gorm:"-"`
+		NativeAddress string // a. Priority tx, assigned when created b. Other tx, assigned after executed.
 
 		TxIndex     int64
 		BlockHeight int64 `gorm:"index"`
 		BlockId     uint  `gorm:"index"`
 		TxStatus    int   `gorm:"index"`
+
+		TxDetails []*TxDetail `gorm:"-"`
 	}
 )
 
@@ -152,6 +165,17 @@ func (m *defaultTxPoolModel) GetTxsByStatus(status int) (txs []*Tx, err error) {
 	return txs, nil
 }
 
+func (m *defaultTxPoolModel) GetTxsUnscopedByHeights(blockHeights []int64) (txs []*Tx, err error) {
+	dbTx := m.DB.Table(m.table).Unscoped().Select("id,tx_hash").Where("tx_status = ? and block_height in ?", StatusExecuted, blockHeights).Order("id asc").Find(&txs)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	}
+	if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return txs, nil
+}
+
 func (m *defaultTxPoolModel) GetTxsPageByStatus(status int, limit int64) (txs []*Tx, err error) {
 	dbTx := m.DB.Table(m.table).Limit(int(limit)).Where("tx_status = ?", status).Order("created_at, id").Find(&txs)
 	if dbTx.Error != nil {
@@ -160,25 +184,38 @@ func (m *defaultTxPoolModel) GetTxsPageByStatus(status int, limit int64) (txs []
 	return txs, nil
 }
 
-func (m *defaultTxPoolModel) GetTxsPageByStatus1(createdAtFrom time.Time, status int, limit int64) (txs []*Tx, err error) {
-	dbTx := m.DB.Table(m.table).Limit(int(limit)).Where("tx_status = ? and created_at >= ?", status, createdAtFrom).Order("created_at, id").Find(&txs)
+func (m *defaultTxPoolModel) GetTxsByStatusAndMaxId(status int, maxId uint, limit int64) (txs []*Tx, err error) {
+	var poolTxs []*PoolTx
+	dbTx := m.DB.Table(m.table).Limit(int(limit)).Where("tx_status = ? and id > ?", status, maxId).Order("id asc").Find(&poolTxs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	}
-	return txs, nil
-}
-func (m *defaultTxPoolModel) GetTxsPageByStatus2(createdAtFrom time.Time, status int, limit int64) (txs []*Tx, err error) {
-	dbTx := m.DB.Table(m.table).Limit(int(limit)).Where("tx_status = ? and created_at < ?", status, createdAtFrom).Order("created_at, id").Find(&txs)
-	if dbTx.Error != nil {
-		return nil, types.DbErrSqlOperation
+	for _, poolTx := range poolTxs {
+		txs = append(txs, &Tx{BaseTx: poolTx.BaseTx, Rollback: poolTx.Rollback, L1RequestId: poolTx.L1RequestId})
 	}
 	return txs, nil
 }
 
-func (m *defaultTxPoolModel) GetTxsByStatusAndMaxId(status int, maxId uint, limit int64) (txs []*Tx, err error) {
-	dbTx := m.DB.Table(m.table).Limit(int(limit)).Where("tx_status = ? and id > ?", status, maxId).Order("id asc").Find(&txs)
+func (m *defaultTxPoolModel) GetTxsByStatusAndIdRange(status int, fromId uint, toId uint) (txs []*Tx, err error) {
+	var poolTxs []*PoolTx
+	dbTx := m.DB.Table(m.table).Where("tx_status = ? and id >= ? and id <= ?", status, fromId, toId).Order("id asc").Find(&poolTxs)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
+	}
+	for _, poolTx := range poolTxs {
+		txs = append(txs, &Tx{BaseTx: poolTx.BaseTx, Rollback: poolTx.Rollback, L1RequestId: poolTx.L1RequestId})
+	}
+	return txs, nil
+}
+
+func (m *defaultTxPoolModel) GetTxsByStatusAndCreateTime(status int, fromCreatedAt time.Time, toId uint) (txs []*Tx, err error) {
+	var poolTxs []*PoolTx
+	dbTx := m.DB.Table(m.table).Where("tx_status = ? and created_at >= ? and id <= ?", status, fromCreatedAt, toId).Order("id asc").Find(&poolTxs)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	}
+	for _, poolTx := range poolTxs {
+		txs = append(txs, &Tx{BaseTx: poolTx.BaseTx, Rollback: poolTx.Rollback})
 	}
 	return txs, nil
 }
@@ -223,16 +260,47 @@ func (m *defaultTxPoolModel) GetTxByTxHash(hash string) (tx *Tx, err error) {
 	return tx, nil
 }
 
-func (m *defaultTxPoolModel) CreateTxs(txs []*PoolTx) error {
-	//dbTx := m.DB.Table(m.table).Create(txs)
-	//if dbTx.Error != nil {
-	//	return dbTx.Error
-	//}
-	//if dbTx.RowsAffected == 0 {
-	//	return types.DbErrFailToCreatePoolTx
-	//}
-	//return nil
+func (m *defaultTxPoolModel) GetTxsByAccountIndex(accountIndex int64, limit int64, offset int64, options ...GetTxOptionFunc) (txs []*Tx, err error) {
+	opt := &getTxOption{}
+	for _, f := range options {
+		f(opt)
+	}
 
+	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex)
+	if len(opt.Types) > 0 {
+		dbTx = dbTx.Where("tx_type IN ?", opt.Types)
+	}
+
+	dbTx = dbTx.Limit(int(limit)).Offset(int(offset)).Order("created_at desc").Find(&txs)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return txs, nil
+}
+
+func (m *defaultTxPoolModel) GetTxsCountByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (count int64, err error) {
+	opt := &getTxOption{}
+	for _, f := range options {
+		f(opt)
+	}
+
+	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex)
+	if len(opt.Types) > 0 {
+		dbTx = dbTx.Where("tx_type IN ?", opt.Types)
+	}
+
+	dbTx = dbTx.Count(&count)
+	if dbTx.Error != nil {
+		return 0, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	return count, nil
+}
+
+func (m *defaultTxPoolModel) CreateTxs(txs []*PoolTx) error {
 	return m.DB.Transaction(func(tx *gorm.DB) error { // transact
 		dbTx := tx.Table(m.table).Create(txs)
 		if dbTx.Error != nil {
@@ -286,25 +354,6 @@ func (m *defaultTxPoolModel) CreateTxsInTransact(tx *gorm.DB, txs []*PoolTx) err
 	return nil
 }
 
-func (m *defaultTxPoolModel) UpdateTxsInTransact(tx *gorm.DB, txs []*Tx) error {
-	for _, poolTx := range txs {
-		// Don't write tx details when update tx pool.
-		txDetails := poolTx.TxDetails
-		poolTx.TxDetails = nil
-		dbTx := tx.Scopes().Table(m.table).Where("id = ?", poolTx.ID).
-			Select("*").
-			Updates(&poolTx)
-		poolTx.TxDetails = txDetails
-		if dbTx.Error != nil {
-			return dbTx.Error
-		}
-		if dbTx.RowsAffected == 0 {
-			return types.DbErrFailToUpdatePoolTx
-		}
-	}
-	return nil
-}
-
 func (m *defaultTxPoolModel) UpdateTxsStatusByIds(ids []uint, status int) error {
 	dbTx := m.DB.Model(&PoolTx{}).Where("id in ?", ids).Update("tx_status", status)
 	if dbTx.Error != nil {
@@ -326,8 +375,11 @@ func (m *defaultTxPoolModel) UpdateTxsStatusAndHeightByIds(ids []uint, status in
 }
 
 func (m *defaultTxPoolModel) UpdateTxsToPending(tx *gorm.DB) error {
-	var statuses = []int{StatusProcessing, StatusExecuted}
-	dbTx := tx.Model(&PoolTx{}).Where("tx_status in ? ", statuses).Update("tx_status", StatusPending)
+	dbTx := tx.Model(&PoolTx{}).Select("DeletedAt", "ExpiredAt", "TxStatus").Where("tx_status = ? ", StatusExecuted).Updates(map[string]interface{}{
+		"deleted_at": nil,
+		"expired_at": time.Now().Unix(),
+		"tx_status":  StatusPending,
+	})
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}
@@ -378,13 +430,14 @@ func (m *defaultTxPoolModel) DeleteTxIdsBatchInTransact(tx *gorm.DB, ids []uint)
 	}
 	return nil
 }
-func (m *defaultTxPoolModel) UpdateTxsToPendingByHeight(tx *gorm.DB, blockHeight []int64) error {
-	if len(blockHeight) == 0 {
+func (m *defaultTxPoolModel) UpdateTxsToPendingByHeights(tx *gorm.DB, blockHeights []int64) error {
+	if len(blockHeights) == 0 {
 		return nil
 	}
-	dbTx := tx.Model(&PoolTx{}).Unscoped().Select("DeletedAt", "TxStatus").Where("block_height in ? and tx_status= ? and deleted_at is not null", blockHeight, StatusExecuted).Updates(map[string]interface{}{
+	dbTx := tx.Model(&PoolTx{}).Unscoped().Select("DeletedAt", "TxStatus", "Rollback").Where("block_height in ? and tx_status = ? ", blockHeights, StatusExecuted).Updates(map[string]interface{}{
 		"deleted_at": nil,
 		"tx_status":  StatusPending,
+		"rollback":   true,
 	})
 	if dbTx.Error != nil {
 		return dbTx.Error
@@ -422,8 +475,20 @@ func (m *defaultTxPoolModel) DeleteTxsBatch(poolTxIds []uint, status int, blockH
 }
 
 func (m *defaultTxPoolModel) GetLatestTx(txTypes []int64, statuses []int) (tx *Tx, err error) {
+	var poolTx *PoolTx
+	dbTx := m.DB.Table(m.table).Where("tx_status IN ? AND tx_type IN ?", statuses, txTypes).Order("id DESC").Limit(1).Find(&poolTx)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	tx = &Tx{BaseTx: poolTx.BaseTx, Rollback: poolTx.Rollback, L1RequestId: poolTx.L1RequestId}
+	return tx, nil
+}
 
-	dbTx := m.DB.Table(m.table).Where("tx_status IN ? AND tx_type IN ?", statuses, txTypes).Order("id DESC").Limit(1).Find(&tx)
+func (m *defaultTxPoolModel) GetLatestMintNft() (tx *Tx, err error) {
+
+	dbTx := m.DB.Table(m.table).Unscoped().Where("tx_type = ?", types.TxTypeMintNft).Order("nft_index DESC").Limit(1).Find(&tx)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
@@ -443,21 +508,12 @@ func (m *defaultTxPoolModel) GetFirstTxByStatus(status int) (txs *Tx, err error)
 	return txs, nil
 }
 
-func (m *defaultTxPoolModel) GetProposingBlockHeight() (ids []int64, err error) {
-	dbTx := m.DB.Table(m.table).Where("tx_status = ? and deleted_at is null", StatusExecuted).Select("id").Order("id asc").Find(&ids)
-	if dbTx.Error != nil {
-		return nil, types.DbErrSqlOperation
-	}
-	return ids, nil
-}
-
 func (m *defaultTxPoolModel) GetLatestExecutedTx() (tx *Tx, err error) {
-	var statuses = []int{StatusFailed, StatusExecuted}
-	dbTx := m.DB.Table(m.table).Unscoped().Where("tx_status IN ?", statuses).Order("id DESC").Limit(1).Find(&tx)
+	dbTx := m.DB.Table(m.table).Unscoped().Where("tx_status = ?", StatusExecuted).Order("id DESC").Limit(1).Find(&tx)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
-		return nil, nil
+		return nil, types.DbErrNotFound
 	}
 	return tx, nil
 }
@@ -466,7 +522,7 @@ func (m *defaultTxPoolModel) BatchUpdateNftIndexOrCollectionId(txs []*PoolTx) (e
 	dbTx := m.DB.Table(m.table).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},
 		DoUpdates: clause.AssignmentColumns([]string{"nft_index", "collection_id"}),
-	}).Create(&txs)
+	}).CreateInBatches(&txs, len(txs))
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}
@@ -475,4 +531,24 @@ func (m *defaultTxPoolModel) BatchUpdateNftIndexOrCollectionId(txs []*PoolTx) (e
 		return types.DbErrFailToUpdatePoolTx
 	}
 	return nil
+}
+
+func (m *defaultTxPoolModel) GetLatestRollback(status int, rollback bool) (tx *PoolTx, err error) {
+	dbTx := m.DB.Table(m.table).Where("tx_status = ? and rollback = ?", status, rollback).Order("id DESC").Limit(1).Find(&tx)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return tx, nil
+}
+
+func (m *defaultTxPoolModel) GetCountByGreaterHeight(blockHeight int64) (count int64, err error) {
+	dbTx := m.DB.Table(m.table).Where("block_height > ? and tx_status= ?", blockHeight, StatusExecuted).Count(&count)
+	if dbTx.Error != nil {
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	return count, nil
 }

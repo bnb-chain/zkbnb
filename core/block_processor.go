@@ -2,7 +2,7 @@ package core
 
 import (
 	"fmt"
-	"github.com/bnb-chain/zkbnb/common/zkbnbprometheus"
+	"github.com/bnb-chain/zkbnb/common/metrics"
 	"time"
 
 	"github.com/pkg/errors"
@@ -19,20 +19,32 @@ type Processor interface {
 }
 
 type CommitProcessor struct {
-	bc      *BlockChain
-	metrics *zkbnbprometheus.Metrics
+	bc *BlockChain
 }
 
-func NewCommitProcessor(bc *BlockChain, prometheusMetrics *zkbnbprometheus.Metrics) Processor {
+func NewCommitProcessor(bc *BlockChain) Processor {
 	return &CommitProcessor{
-		bc:      bc,
-		metrics: prometheusMetrics,
+		bc: bc,
 	}
 }
 
 func (p *CommitProcessor) Process(tx *tx.Tx) error {
 	var start time.Time
 	p.bc.setCurrentBlockTimeStamp()
+	defer func() {
+		if err := recover(); err != nil {
+			if types.IsL2Tx(tx.TxType) {
+				expectNonce, err := p.bc.Statedb.GetCommittedNonce(tx.AccountIndex)
+				if err != nil {
+					p.bc.Statedb.ClearPendingNonceFromRedisCache(tx.AccountIndex)
+				} else {
+					p.bc.Statedb.SetPendingNonceToRedisCache(tx.AccountIndex, expectNonce-1)
+				}
+			}
+			logx.Severe(err)
+			panic(err)
+		}
+	}()
 	defer p.bc.resetCurrentBlockTimeStamp()
 
 	executor, err := executor.NewTxExecutor(p.bc, tx)
@@ -41,21 +53,21 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 	}
 	start = time.Now()
 	err = executor.Prepare()
-	p.metrics.TxPrepareMetrics.Set(float64(time.Since(start).Milliseconds()))
+	metrics.ExecuteTxPrepareMetrics.Set(float64(time.Since(start).Milliseconds()))
 
 	if err != nil {
 		return err
 	}
 	start = time.Now()
 	err = executor.VerifyInputs(true, true)
-	p.metrics.TxVerifyInputsMetrics.Set(float64(time.Since(start).Milliseconds()))
+	metrics.ExecuteTxVerifyInputsMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
 		return err
 	}
 	start = time.Now()
 	txDetails, err := executor.GenerateTxDetails()
 
-	p.metrics.TxGenerateTxDetailsMetrics.Set(float64(time.Since(start).Milliseconds()))
+	metrics.ExecuteGenerateTxDetailsMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
 		return err
 	}
@@ -66,27 +78,27 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 	tx.TxDetails = txDetails
 	start = time.Now()
 	err = executor.ApplyTransaction()
-	p.metrics.TxApplyTransactionMetrics.Set(float64(time.Since(start).Milliseconds()))
+	metrics.ExecuteTxApplyTransactionMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
 		logx.Severe(err)
 		panic(err)
 	}
 	start = time.Now()
 	err = executor.GeneratePubData()
-	p.metrics.TxGeneratePubDataMetrics.Set(float64(time.Since(start).Milliseconds()))
+	metrics.ExecuteTxGeneratePubDataMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
 		logx.Severe(err)
 		panic(err)
 	}
 	start = time.Now()
 	tx, err = executor.GetExecutedTx(false)
-	p.metrics.TxGetExecutedTxMetrics.Set(float64(time.Since(start).Milliseconds()))
+	metrics.ExecuteTxGetExecutedTxMetrics.Set(float64(time.Since(start).Milliseconds()))
 
 	if err != nil {
 		logx.Severe(err)
 		panic(err)
 	}
-
+	tx.CreatedAt = time.Now()
 	p.bc.Statedb.Txs = append(p.bc.Statedb.Txs, tx)
 
 	return nil

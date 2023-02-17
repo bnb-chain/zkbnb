@@ -56,12 +56,12 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 
 	resp = &types.TxHash{}
 	bc, err := core.NewBlockChainForDryRun(s.svcCtx.AccountModel, s.svcCtx.NftModel, s.svcCtx.TxPoolModel,
-		s.svcCtx.AssetModel, s.svcCtx.SysConfigModel, s.svcCtx.RedisCache)
+		s.svcCtx.AssetModel, s.svcCtx.SysConfigModel, s.svcCtx.RedisCache, s.svcCtx.MemCache.GetCache())
 	if err != nil {
 		logx.Error("fail to init blockchain runner:", err)
 		return nil, types2.AppErrInternal
 	}
-	newPoolTx := tx.PoolTx{
+	newPoolTx := tx.BaseTx{
 		TxHash: types2.EmptyTxHash, // Would be computed in prepare method of executors.
 		TxType: int64(req.TxType),
 		TxInfo: req.TxInfo,
@@ -77,22 +77,22 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 		BlockHeight: types2.NilBlockHeight,
 		TxStatus:    tx.StatusPending,
 	}
-	newTx := &tx.Tx{PoolTx: newPoolTx}
+	newTx := &tx.Tx{BaseTx: newPoolTx}
 	err = bc.ApplyTransaction(newTx)
 	if err != nil {
 		return resp, err
 	}
-	newTx.PoolTx.TxType = int64(req.TxType)
-	newTx.PoolTx.TxInfo = req.TxInfo
-	newTx.PoolTx.BlockHeight = types2.NilBlockHeight
-	newTx.PoolTx.TxStatus = tx.StatusPending
-	if newTx.PoolTx.TxType == types2.TxTypeMintNft {
-		newTx.PoolTx.NftIndex = types2.NilNftIndex
+	newTx.BaseTx.TxType = int64(req.TxType)
+	newTx.BaseTx.TxInfo = req.TxInfo
+	newTx.BaseTx.BlockHeight = types2.NilBlockHeight
+	newTx.BaseTx.TxStatus = tx.StatusPending
+	if newTx.BaseTx.TxType == types2.TxTypeMintNft {
+		newTx.BaseTx.NftIndex = types2.NilNftIndex
 	}
-	if newTx.PoolTx.TxType == types2.TxTypeCreateCollection {
-		newTx.PoolTx.CollectionId = types2.NilCollectionNonce
+	if newTx.BaseTx.TxType == types2.TxTypeCreateCollection {
+		newTx.BaseTx.CollectionId = types2.NilCollectionNonce
 	}
-	if err := s.svcCtx.TxPoolModel.CreateTxs([]*tx.PoolTx{&newTx.PoolTx}); err != nil {
+	if err := s.svcCtx.TxPoolModel.CreateTxs([]*tx.PoolTx{{BaseTx: newTx.BaseTx}}); err != nil {
 		logx.Errorf("fail to create pool tx: %v, err: %s", newTx, err.Error())
 		return resp, types2.AppErrInternal
 	}

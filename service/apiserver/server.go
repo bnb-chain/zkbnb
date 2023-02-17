@@ -2,6 +2,7 @@ package apiserver
 
 import (
 	"github.com/bnb-chain/zkbnb/dao/tx"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/logic/info"
 	"github.com/robfig/cron/v3"
 	"net/http"
 	"time"
@@ -41,6 +42,17 @@ func Run(configFile string) error {
 		})
 		if err != nil {
 			logx.Errorf("set tx pending count failed:%s", err.Error())
+		}
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = cronJob.AddFunc("@every 1s", func() {
+		l := info.NewGetLayer2BasicInfoLogic(nil, ctx)
+		_, err := l.GetLayer2BasicInfo(false)
+		if err != nil {
+			logx.Errorf("get layer 2 basic info failed:%s", err.Error())
 		}
 	})
 	if err != nil {

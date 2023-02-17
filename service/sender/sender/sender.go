@@ -456,6 +456,9 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 
 	blockProofs, err := s.proofModel.GetProofsBetween(start, start+int64(len(blocks))-1)
 	if err != nil {
+		if err == types.DbErrNotFound {
+			return nil
+		}
 		return fmt.Errorf("unable to get proofs, err: %v", err)
 	}
 	if len(blockProofs) != len(blocks) {

@@ -42,7 +42,7 @@ require (
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
-	github.com/fxamacker/cbor/v2 v2.2.0 // indirect
+	github.com/fxamacker/cbor/v2 v2.4.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -144,13 +144,13 @@ require (
 )
 
 require (
-	github.com/bnb-chain/zkbnb-crypto v0.0.8-0.20221222075728-240d4c7279b7
+	github.com/bnb-chain/zkbnb-crypto v0.0.8-0.20230216144111-f4e3167b1a08
 	github.com/bnb-chain/zkbnb-eth-rpc v0.0.2
-	github.com/bnb-chain/zkbnb-smt v0.0.3-0.20221118180206-7685632073d8
+	github.com/bnb-chain/zkbnb-smt v0.0.3-0.20221222120958-28d12ade0ecb
 	github.com/consensys/gnark v0.7.0
 	github.com/consensys/gnark-crypto v0.7.0
 	github.com/eko/gocache/v2 v2.3.1
-	github.com/ethereum/go-ethereum v1.10.23
+	github.com/ethereum/go-ethereum v1.10.26
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/pkg/errors v0.9.1
 	github.com/robfig/cron/v3 v3.0.1
@@ -162,9 +162,7 @@ require (
 )
 
 replace (
-	github.com/consensys/gnark => github.com/bnb-chain/gnark v0.7.1-0.20221031143243-a94d59b60efe
-	github.com/consensys/gnark-crypto => github.com/bnb-chain/gnark-crypto v0.7.1-0.20221115030433-6e0195f27b89
-
+	github.com/bnb-chain/zkbnb-smt => github.com/qct/zkbnb-smt v0.0.0-20230116124655-bad4d92a74f1
+	github.com/consensys/gnark => github.com/bnb-chain/gnark v0.7.1-0.20230206150652-4e87ef37b4e7
+	github.com/consensys/gnark-crypto => github.com/bnb-chain/gnark-crypto v0.7.1-0.20230203031630-7c643ad11891
 )
-
-replace github.com/bnb-chain/zkbnb-smt => github.com/qct/zkbnb-smt v0.0.0-20221203161605-59c0f417b4e8

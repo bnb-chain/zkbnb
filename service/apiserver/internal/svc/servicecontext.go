@@ -1,6 +1,7 @@
 package svc
 
 import (
+	"github.com/bnb-chain/zkbnb/dao/rollback"
 	"github.com/prometheus/client_golang/prometheus"
 	"gorm.io/plugin/dbresolver"
 	"time"
@@ -50,6 +51,7 @@ type ServiceContext struct {
 	NftModel            nft.L2NftModel
 	AssetModel          asset.AssetModel
 	SysConfigModel      sysconfig.SysConfigModel
+	RollbackModel       rollback.RollbackModel
 
 	PriceFetcher price.Fetcher
 	StateFetcher state.Fetcher
@@ -114,6 +116,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		NftModel:            nftModel,
 		AssetModel:          assetModel,
 		SysConfigModel:      sysconfig.NewSysConfigModel(db),
+		RollbackModel:       rollback.NewRollbackModel(db),
 
 		PriceFetcher: price.NewFetcher(memCache, assetModel, c.CoinMarketCap.Url, c.CoinMarketCap.Token),
 		StateFetcher: state.NewFetcher(redisCache, accountModel, nftModel),

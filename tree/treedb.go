@@ -191,7 +191,7 @@ const (
 
 func NewContext(
 	name string, driver Driver,
-	reload bool, routineSize int,
+	reload bool, onlyQuery bool, routineSize int,
 	levelDBOption *LevelDBOption,
 	redisDBOption *RedisDBOption) (*Context, error) {
 
@@ -208,6 +208,7 @@ func NewContext(
 		LevelDBOption:  levelDBOption,
 		RedisDBOption:  redisDBOption,
 		reload:         reload,
+		onlyQuery:      onlyQuery,
 		routinePool:    pool,
 		hasher:         bsmt.NewHasherPool(func() hash.Hash { return poseidon.NewPoseidon() }),
 		defaultOptions: []bsmt.Option{bsmt.GoRoutinePool(pool)},
@@ -223,6 +224,7 @@ type Context struct {
 	TreeDB          database.TreeDB
 	defaultOptions  []bsmt.Option
 	reload          bool
+	onlyQuery       bool
 	batchReloadSize int
 	routinePool     *ants.Pool
 	hasher          *bsmt.Hasher
@@ -233,6 +235,10 @@ func (ctx *Context) IsLoad() bool {
 		return true
 	}
 	return ctx.Driver == MemoryDB
+}
+
+func (ctx *Context) IsOnlyQuery() bool {
+	return ctx.onlyQuery
 }
 
 func (ctx *Context) Options(blockHeight int64) []bsmt.Option {

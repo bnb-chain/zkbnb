@@ -33,7 +33,6 @@ const (
 const (
 	StatusFailed = iota
 	StatusPending
-	StatusProcessing
 	StatusExecuted
 	StatusPacked
 	StatusCommitted
@@ -81,13 +80,15 @@ type (
 		GetTxs(limit int64, offset int64, options ...GetTxOptionFunc) (txList []*Tx, err error)
 		GetTxsByAccountIndex(accountIndex int64, limit int64, offset int64, options ...GetTxOptionFunc) (txList []*Tx, err error)
 		GetTxsCountByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (count int64, err error)
+		GetReplicateTxsCountByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (count int64, err error)
 		GetTxByHash(txHash string) (tx *Tx, err error)
 		GetTxsTotalCountBetween(from, to time.Time) (count int64, err error)
 		GetDistinctAccountsCountBetween(from, to time.Time) (count int64, err error)
 		UpdateTxsStatusInTransact(tx *gorm.DB, blockTxStatus map[int64]int) error
 		CreateTxs(txs []*Tx) error
-		DeleteByHeightInTransact(tx *gorm.DB, heights []int64) error
+		DeleteByHeightsInTransact(tx *gorm.DB, heights []int64) error
 		GetMaxPoolTxIdByHeightInTransact(tx *gorm.DB, height int64) (poolTxId uint, err error)
+		GetCountByGreaterHeight(blockHeight int64) (count int64, err error)
 	}
 
 	defaultTxModel struct {
@@ -96,9 +97,13 @@ type (
 	}
 
 	Tx struct {
-		PoolTx
+		BaseTx
 		PoolTxId uint      `gorm:"uniqueIndex"`
 		VerifyAt time.Time // verify time when the transaction status changes to be StatusVerified
+
+		Rollback bool `gorm:"-"`
+		// l1 request id
+		L1RequestId int64 `gorm:"-"`
 	}
 )
 
@@ -173,7 +178,7 @@ func (m *defaultTxModel) GetTxsByAccountIndex(accountIndex int64, limit int64, o
 		dbTx = dbTx.Where("tx_type IN ?", opt.Types)
 	}
 
-	dbTx = dbTx.Limit(int(limit)).Offset(int(offset)).Order("created_at desc").Find(&txList)
+	dbTx = dbTx.Limit(int(limit)).Offset(int(offset)).Order("id desc").Find(&txList)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
@@ -199,6 +204,31 @@ func (m *defaultTxModel) GetTxsCountByAccountIndex(accountIndex int64, options .
 	} else if dbTx.RowsAffected == 0 {
 		return 0, nil
 	}
+	return count, nil
+}
+
+func (m *defaultTxModel) GetReplicateTxsCountByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (count int64, err error) {
+	opt := &getTxOption{}
+	for _, f := range options {
+		f(opt)
+	}
+
+	var dbTx *gorm.DB
+	if len(opt.Types) > 0 {
+		dbTx = m.DB.Raw("select count(distinct tx.tx_hash) from pool_tx, tx where pool_tx.account_index = ? "+
+			"and pool_tx.tx_type in (?) and pool_tx.deleted_at is null and tx.account_index = ? "+
+			"and tx.tx_type in (?) and tx.deleted_at is null and pool_tx.tx_hash = tx.tx_hash", accountIndex, opt.Types, accountIndex, opt.Types).Count(&count)
+	} else {
+		dbTx = m.DB.Raw("select count(distinct tx.tx_hash) from pool_tx, tx where pool_tx.account_index = ? "+
+			"and pool_tx.deleted_at is null and tx.account_index = ? "+
+			"and tx.deleted_at is null and pool_tx.tx_hash = tx.tx_hash", accountIndex, accountIndex).Count(&count)
+	}
+	if dbTx.Error != nil {
+		return 0, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+
 	return count, nil
 }
 
@@ -280,12 +310,25 @@ func (m *defaultTxModel) CreateTxs(txs []*Tx) error {
 	return nil
 }
 
-func (m *defaultTxModel) DeleteByHeightInTransact(tx *gorm.DB, heights []int64) error {
+func (m *defaultTxModel) DeleteByHeightsInTransact(tx *gorm.DB, heights []int64) error {
+	if len(heights) == 0 {
+		return nil
+	}
 	dbTx := tx.Model(&Tx{}).Unscoped().Where("block_height in ?", heights).Delete(&Tx{})
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}
 	return nil
+}
+
+func (m *defaultTxModel) GetCountByGreaterHeight(blockHeight int64) (count int64, err error) {
+	dbTx := m.DB.Table(m.table).Where("block_height > ?", blockHeight).Count(&count)
+	if dbTx.Error != nil {
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	return count, nil
 }
 
 func (ai *Tx) DeepCopy() *Tx {

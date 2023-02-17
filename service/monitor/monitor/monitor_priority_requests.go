@@ -56,7 +56,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 
 		txHash := ComputeL1TxTxHash(request.RequestId, request.L1TxHash)
 
-		poolTx := &tx.PoolTx{
+		poolTx := &tx.PoolTx{BaseTx: tx.BaseTx{
 			TxHash:       txHash,
 			AccountIndex: types.NilAccountIndex,
 			Nonce:        types.NilNonce,
@@ -72,7 +72,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 
 			BlockHeight: types.NilBlockHeight,
 			TxStatus:    tx.StatusPending,
-		}
+		}}
 
 		request.L2TxHash = txHash
 
@@ -145,6 +145,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 		}
 
 		poolTx.TxInfo = string(txInfoBytes)
+		poolTx.L1RequestId = request.RequestId
 		pendingNewPoolTxs = append(pendingNewPoolTxs, poolTx)
 	}
 

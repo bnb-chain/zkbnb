@@ -145,7 +145,7 @@ func (w *Witness) initState() error {
 	}
 
 	// dbinitializer tree database
-	treeCtx, err := tree.NewContext("witness", w.config.TreeDB.Driver, false, w.config.TreeDB.RoutinePoolSize, &w.config.TreeDB.LevelDBOption, &w.config.TreeDB.RedisDBOption)
+	treeCtx, err := tree.NewContext("witness", w.config.TreeDB.Driver, false, false, w.config.TreeDB.RoutinePoolSize, &w.config.TreeDB.LevelDBOption, &w.config.TreeDB.RedisDBOption)
 	if err != nil {
 		return err
 	}
@@ -156,12 +156,23 @@ func (w *Witness) initState() error {
 		return fmt.Errorf("init tree database failed %v", err)
 	}
 	w.treeCtx = treeCtx
-
-	// init accountTree and accountStateTrees
-	// the initial block number use the latest sent block
+	blockInfo, err := w.blockModel.GetBlockByHeightWithoutTx(witnessHeight + 1)
+	if err != nil && err != types.DbErrNotFound {
+		logx.Error("get block failed: ", err)
+		panic("get block failed: " + err.Error())
+	}
+	accountIndexes := make([]int64, 0)
+	if blockInfo != nil && blockInfo.AccountIndexes != "[]" && blockInfo.AccountIndexes != "" {
+		err = json.Unmarshal([]byte(blockInfo.AccountIndexes), &accountIndexes)
+		if err != nil {
+			logx.Error("json err unmarshal failed")
+			panic("json err unmarshal failed: " + err.Error())
+		}
+	}
 	w.accountTree, w.assetTrees, err = tree.InitAccountTree(
 		w.accountModel,
 		w.accountHistoryModel,
+		accountIndexes,
 		witnessHeight,
 		treeCtx,
 		w.config.TreeDB.AssetTreeCacheSize,
@@ -187,7 +198,7 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 		return err
 	}
 	// get next batch of blocks
-	blocks, err := w.blockModel.GetBlocksBetween(latestWitnessHeight+1, latestWitnessHeight+BlockProcessDelta)
+	blocks, err := w.blockModel.GetPendingBlocksBetween(latestWitnessHeight+1, latestWitnessHeight+BlockProcessDelta)
 	if err != nil {
 		if err != types.DbErrNotFound {
 			return err
@@ -209,7 +220,7 @@ func (w *Witness) GenerateBlockWitness() (err error) {
 			return fmt.Errorf("failed to construct block witness, block:%d, err: %v", block.BlockHeight, err)
 		}
 		// Step2: commit trees for witness
-		err = tree.CommitTrees(uint64(latestVerifiedBlockNr), w.accountTree, w.assetTrees, w.nftTree)
+		err = tree.CommitTrees(uint64(latestVerifiedBlockNr), block.BlockHeight, w.accountTree, w.assetTrees, w.nftTree)
 		if err != nil {
 			return fmt.Errorf("unable to commit trees after txs is executed, block:%d, error: %v", block.BlockHeight, err)
 		}

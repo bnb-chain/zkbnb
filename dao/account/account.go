@@ -38,6 +38,7 @@ type (
 		CreateAccountTable() error
 		DropAccountTable() error
 		GetAccountByIndex(accountIndex int64) (account *Account, err error)
+		GetAccountByIndexes(accountIndexes []int64) (accounts []*Account, err error)
 		GetConfirmedAccountByIndex(accountIndex int64) (account *Account, err error)
 		GetAccountByPk(pk string) (account *Account, err error)
 		GetAccountByName(name string) (account *Account, err error)
@@ -46,9 +47,12 @@ type (
 		GetAccountsTotalCount() (count int64, err error)
 		UpdateAccountsInTransact(tx *gorm.DB, accounts []*Account) error
 		GetUsers(limit int64, offset int64) (accounts []*Account, err error)
-		BatchInsertOrUpdate(accounts []*Account) (err error)
+		BatchInsertOrUpdateInTransact(tx *gorm.DB, accounts []*Account) (err error)
 		UpdateByIndexInTransact(tx *gorm.DB, account *Account) error
-		DeleteByIndexInTransact(tx *gorm.DB, accountIndex int64) error
+		DeleteByIndexesInTransact(tx *gorm.DB, accountIndexes []int64) error
+		GetCountByGreaterHeight(blockHeight int64) (count int64, err error)
+		GetMaxAccountIndex() (accountIndex int64, err error)
+		GetByAccountIndexRange(fromAccountIndex int64, toAccountIndex int64) (accounts []*Account, err error)
 	}
 
 	defaultAccountModel struct {
@@ -104,6 +108,16 @@ func (m *defaultAccountModel) GetAccountByIndex(accountIndex int64) (account *Ac
 		return nil, types.DbErrNotFound
 	}
 	return account, nil
+}
+
+func (m *defaultAccountModel) GetAccountByIndexes(accountIndexes []int64) (accounts []*Account, err error) {
+	dbTx := m.DB.Table(m.table).Where("account_index in ?", accountIndexes).Find(&accounts)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return accounts, nil
 }
 
 func (m *defaultAccountModel) GetAccountByPk(pk string) (account *Account, err error) {
@@ -199,19 +213,21 @@ func (m *defaultAccountModel) UpdateByIndexInTransact(tx *gorm.DB, account *Acco
 		return dbTx.Error
 	}
 	if dbTx.RowsAffected == 0 {
-		// this account is new, we need create first
-		dbTx = m.DB.Table(m.table).Create(&account)
-		if dbTx.Error != nil {
-			return dbTx.Error
-		}
+		return types.DbErrFailToUpdateAccount
 	}
 	return nil
 }
 
-func (m *defaultAccountModel) DeleteByIndexInTransact(tx *gorm.DB, accountIndex int64) error {
-	dbTx := tx.Model(&Account{}).Unscoped().Where("account_index = ?", accountIndex).Delete(&Account{})
+func (m *defaultAccountModel) DeleteByIndexesInTransact(tx *gorm.DB, accountIndexes []int64) error {
+	if len(accountIndexes) == 0 {
+		return nil
+	}
+	dbTx := tx.Model(&Account{}).Unscoped().Where("account_index in ?", accountIndexes).Delete(&Account{})
 	if dbTx.Error != nil {
 		return dbTx.Error
+	}
+	if dbTx.RowsAffected == 0 {
+		return types.DbErrFailToUpdateAccount
 	}
 	return nil
 }
@@ -226,17 +242,48 @@ func (m *defaultAccountModel) GetUsers(limit int64, offset int64) (accounts []*A
 	return accounts, nil
 }
 
-func (m *defaultAccountModel) BatchInsertOrUpdate(accounts []*Account) (err error) {
-	dbTx := m.DB.Table(m.table).Clauses(clause.OnConflict{
+func (m *defaultAccountModel) BatchInsertOrUpdateInTransact(tx *gorm.DB, accounts []*Account) (err error) {
+	dbTx := tx.Table(m.table).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},
 		DoUpdates: clause.AssignmentColumns([]string{"nonce", "collection_nonce", "asset_info", "asset_root", "l2_block_height"}),
-	}).Create(&accounts)
+	}).CreateInBatches(&accounts, len(accounts))
 	if dbTx.Error != nil {
 		return dbTx.Error
 	}
 	if int(dbTx.RowsAffected) != len(accounts) {
-		logx.Errorf("BatchInsertOrUpdate failed,rows affected not equal accounts length,dbTx.RowsAffected:%s,len(accounts):%s", int(dbTx.RowsAffected), len(accounts))
+		logx.Errorf("BatchInsertOrUpdateInTransact failed,rows affected not equal accounts length,dbTx.RowsAffected:%s,len(accounts):%s", int(dbTx.RowsAffected), len(accounts))
 		return types.DbErrFailToUpdateAccount
 	}
 	return nil
+}
+
+func (m *defaultAccountModel) GetCountByGreaterHeight(blockHeight int64) (count int64, err error) {
+	dbTx := m.DB.Table(m.table).Where("l2_block_height > ?", blockHeight).Count(&count)
+	if dbTx.Error != nil {
+		return 0, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return 0, nil
+	}
+	return count, nil
+}
+
+func (m *defaultAccountModel) GetMaxAccountIndex() (accountIndex int64, err error) {
+	var result Account
+	dbTx := m.DB.Table(m.table).Select("account_index").Order("account_index desc").Limit(1).Find(&result)
+	if dbTx.Error != nil {
+		return -1, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return -1, types.DbErrNotFound
+	}
+	return result.AccountIndex, nil
+}
+
+func (m *defaultAccountModel) GetByAccountIndexRange(fromAccountIndex int64, toAccountIndex int64) (accounts []*Account, err error) {
+	dbTx := m.DB.Table(m.table).Where("account_index >= ? and account_index <= ?", fromAccountIndex, toAccountIndex).Find(&accounts)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return accounts, nil
 }

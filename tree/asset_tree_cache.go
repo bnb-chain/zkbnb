@@ -31,20 +31,12 @@ func NewSparseMerkleTreeAdapter(tree bsmt.SparseMerkleTree, changesLock *sync.RW
 	return &sparseMerkleTreeAdapter
 }
 
-func (c *SparseMerkleTreeAdapter) Set(key uint64, val []byte) error {
-	c.changesLock.Lock()
-	c.changes[int64(key)] = true
-	c.changesLock.Unlock()
-	return c.sparseMerkleTree.Set(key, val)
+func (c *SparseMerkleTreeAdapter) SetWithVersion(key uint64, val []byte, newVersion bsmt.Version) error {
+	return c.sparseMerkleTree.SetWithVersion(key, val, newVersion)
 }
 
-func (c *SparseMerkleTreeAdapter) MultiSet(items []bsmt.Item) error {
-	c.changesLock.Lock()
-	for _, item := range items {
-		c.changes[int64(item.Key)] = true
-	}
-	c.changesLock.Unlock()
-	return c.sparseMerkleTree.MultiSet(items)
+func (c *SparseMerkleTreeAdapter) MultiSetWithVersion(items []bsmt.Item, newVersion bsmt.Version) error {
+	return c.sparseMerkleTree.MultiSetWithVersion(items, newVersion)
 }
 
 // Creates new AssetTreeCache
@@ -75,12 +67,18 @@ func (c *AssetTreeCache) GetNextAccountIndex() int64 {
 	return c.nextAccountNumber + 1
 }
 
+func (c *AssetTreeCache) GetCurrentAccountIndex() int64 {
+	c.mainLock.RLock()
+	defer c.mainLock.RUnlock()
+	return c.nextAccountNumber
+}
+
 // Get Returns asset tree based on account index
 func (c *AssetTreeCache) Get(i int64) (tree bsmt.SparseMerkleTree) {
 	if tmpTree, ok := c.treeCache.Get(i); ok {
 		tree = tmpTree.(bsmt.SparseMerkleTree)
 	} else {
-		c.treeCache.ContainsOrAdd(i, c.initFunction(i, c.blockNumber))
+		c.treeCache.ContainsOrAdd(i, c.initFunction(i, 0))
 		if tmpTree, ok := c.treeCache.Get(i); ok {
 			tree = tmpTree.(bsmt.SparseMerkleTree)
 		}
@@ -89,17 +87,17 @@ func (c *AssetTreeCache) Get(i int64) (tree bsmt.SparseMerkleTree) {
 }
 
 func (c *AssetTreeCache) GetAdapter(i int64) (treeAdapter *SparseMerkleTreeAdapter) {
-	treeAdapter = NewSparseMerkleTreeAdapter(c.Get(i), &c.changesLock, c.changes)
-	return
+	c.changesLock.Lock()
+	c.changes[i] = true
+	c.changesLock.Unlock()
+	return NewSparseMerkleTreeAdapter(c.Get(i), &c.changesLock, c.changes)
 }
 
 //Returns slice of indexes of asset trees that were changned
 func (c *AssetTreeCache) GetChanges() []int64 {
-	c.mainLock.Lock()
 	c.changesLock.Lock()
-	defer c.mainLock.Unlock()
 	defer c.changesLock.Unlock()
-	ret := make([]int64, 0, len(c.changes))
+	ret := make([]int64, 0)
 	for key := range c.changes {
 		ret = append(ret, key)
 	}
