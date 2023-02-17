@@ -12,21 +12,21 @@ import (
 const (
 
 	// SignatureTemplateWithdrawal Withdrawal ${amount} to: ${to.toLowerCase()}\nFee: ${fee} ${feeTokenAddress}\nNonce: ${nonce}
-	SignatureTemplateWithdrawal = "Withdrawal %v to: %s\nFee: %v %d\nNonce: %d"
+	SignatureTemplateWithdrawal = "Withdrawal %s to: %s\nFee: %s %d\nNonce: %d"
 	// SignatureTemplateTransfer /* Transfer ${amount} ${tokenAddress} to: ${to.toLowerCase()}\nFee: ${fee} ${feeTokenAddress}\nNonce: ${nonce} */
-	SignatureTemplateTransfer = "Transfer %v %d to: %d\nFee: %v %d\nNonce: %d"
+	SignatureTemplateTransfer = "Transfer %s %d to: %d\nFee: %s %d\nNonce: %d"
 	// SignatureTemplateCreateCollection CreateCollection ${accountIndex} ${collectionName} \nFee: ${fee} ${feeTokenAddress}\nNonce: ${nonce}
-	SignatureTemplateCreateCollection = "CreateCollection %d %s \nFee: %v %d\nNonce: %d"
+	SignatureTemplateCreateCollection = "CreateCollection %d %s \nFee: %s %d\nNonce: %d"
 	// SignatureTemplateMintNft MintNFT ${contentHash} for: ${recipient.toLowerCase()}\nFee: ${fee} ${feeTokenAddress}\nNonce: ${nonce}
-	SignatureTemplateMintNft = "MintNFT %s for: %d\nFee: %v %d\nNonce: %d"
+	SignatureTemplateMintNft = "MintNFT %s for: %d\nFee: %s %d\nNonce: %d"
 	// SignatureTemplateTransferNft TransferNFT ${NftIndex} ${fromAccountIndex} to ${toAccountIndex} \nFee: ${fee} ${feeTokenAddress}\nNonce: ${nonce}
-	SignatureTemplateTransferNft = "TransferNFT %d %d to %d \nFee: %v %d\nNonce: %d"
+	SignatureTemplateTransferNft = "TransferNFT %d %d to %d \nFee: %s %d\nNonce: %d"
 	// SignatureTemplateWithdrawalNft Withdrawal ${tokenIndex} to: ${to.toLowerCase()}\nFee: ${fee} ${feeTokenAddress}\nNonce: ${nonce}
-	SignatureTemplateWithdrawalNft = "Withdrawal %d to: %s\nFee: %v %d\nNonce: %d"
+	SignatureTemplateWithdrawalNft = "Withdrawal %d to: %s\nFee: %s %d\nNonce: %d"
 	// SignatureTemplateCancelOffer CancelOffer ${offerId} by: ${accountIndex} \nFee: ${fee} ${feeTokenAddress}\nNonce: ${nonce}
-	SignatureTemplateCancelOffer = "CancelOffer %d by: %d \nFee: %v %d\nNonce: %d"
+	SignatureTemplateCancelOffer = "CancelOffer %d by: %d \nFee: %s %d\nNonce: %d"
 	// SignatureTemplateAtomicMatch AtomicMatch ${amount} ${offerId} ${nftIndex} ${accountIndex} \nFee: ${fee} ${feeTokenAddress}\nNonce: ${nonce}
-	SignatureTemplateAtomicMatch = "AtomicMatch %v %d %d %d \nFee: %v %d\nNonce: %d"
+	SignatureTemplateAtomicMatch = "AtomicMatch %s %d %d %d \nFee: %s %d\nNonce: %d"
 
 	// SignatureTemplateAccount AtomicMatch %{account}
 	SignatureTemplateAccount = "TxTypeEmpty %d"
@@ -71,8 +71,8 @@ func SignatureForWithdrawal(txInfo string) (string, error) {
 		return "", errors.New("invalid tx info")
 	}
 
-	signatureBody := fmt.Sprintf(SignatureTemplateWithdrawal, utils.FormatWeiToEther(transaction.AssetAmount), transaction.ToAddress,
-		utils.FormatWeiToEther(transaction.GasFeeAssetAmount), transaction.GasAccountIndex, transaction.Nonce)
+	signatureBody := fmt.Sprintf(SignatureTemplateWithdrawal, utils.FormatWeiToEtherStr(transaction.AssetAmount), transaction.ToAddress,
+		utils.FormatWeiToEtherStr(transaction.GasFeeAssetAmount), transaction.GasAccountIndex, transaction.Nonce)
 	return signatureBody, nil
 }
 
@@ -83,8 +83,8 @@ func SignatureForTransfer(txInfo string) (string, error) {
 		return "", errors.New("invalid tx info")
 	}
 
-	signatureBody := fmt.Sprintf(SignatureTemplateTransfer, utils.FormatWeiToEther(transaction.AssetAmount), transaction.FromAccountIndex,
-		transaction.ToAccountIndex, utils.FormatWeiToEther(transaction.GasFeeAssetAmount), transaction.GasAccountIndex, transaction.Nonce)
+	signatureBody := fmt.Sprintf(SignatureTemplateTransfer, utils.FormatWeiToEtherStr(transaction.AssetAmount), transaction.FromAccountIndex,
+		transaction.ToAccountIndex, utils.FormatWeiToEtherStr(transaction.GasFeeAssetAmount), transaction.GasAccountIndex, transaction.Nonce)
 	return signatureBody, nil
 }
 
@@ -96,7 +96,7 @@ func SignatureForCreateCollection(txInfo string) (string, error) {
 	}
 
 	signatureBody := fmt.Sprintf(SignatureTemplateCreateCollection, transaction.AccountIndex,
-		transaction.Name, utils.FormatWeiToEther(transaction.GasFeeAssetAmount), transaction.GasAccountIndex, transaction.Nonce)
+		transaction.Name, utils.FormatWeiToEtherStr(transaction.GasFeeAssetAmount), transaction.GasAccountIndex, transaction.Nonce)
 	return signatureBody, nil
 }
 
@@ -108,7 +108,7 @@ func SignatureForMintNft(txInfo string) (string, error) {
 	}
 
 	signatureBody := fmt.Sprintf(SignatureTemplateMintNft, transaction.ToAccountNameHash,
-		transaction.ToAccountIndex, utils.FormatWeiToEther(transaction.GasFeeAssetAmount), transaction.GasAccountIndex, transaction.Nonce)
+		transaction.ToAccountIndex, utils.FormatWeiToEtherStr(transaction.GasFeeAssetAmount), transaction.GasAccountIndex, transaction.Nonce)
 	return signatureBody, nil
 }
 
@@ -120,7 +120,7 @@ func SignatureForTransferNft(txInfo string) (string, error) {
 	}
 
 	signatureBody := fmt.Sprintf(SignatureTemplateTransferNft, transaction.NftIndex, transaction.FromAccountIndex,
-		transaction.ToAccountIndex, utils.FormatWeiToEther(transaction.GasFeeAssetAmount), transaction.GasAccountIndex, transaction.Nonce)
+		transaction.ToAccountIndex, utils.FormatWeiToEtherStr(transaction.GasFeeAssetAmount), transaction.GasAccountIndex, transaction.Nonce)
 	return signatureBody, nil
 }
 
@@ -132,7 +132,7 @@ func SignatureForWithdrawalNft(txInfo string) (string, error) {
 	}
 
 	signatureBody := fmt.Sprintf(SignatureTemplateWithdrawalNft, transaction.NftIndex,
-		transaction.ToAddress, utils.FormatWeiToEther(transaction.GasFeeAssetAmount), transaction.GasAccountIndex, transaction.Nonce)
+		transaction.ToAddress, utils.FormatWeiToEtherStr(transaction.GasFeeAssetAmount), transaction.GasAccountIndex, transaction.Nonce)
 	return signatureBody, nil
 }
 
@@ -144,7 +144,7 @@ func SignatureForCancelOffer(txInfo string) (string, error) {
 	}
 
 	signatureBody := fmt.Sprintf(SignatureTemplateCancelOffer, transaction.OfferId,
-		transaction.AccountIndex, utils.FormatWeiToEther(transaction.GasFeeAssetAmount), transaction.GasAccountIndex, transaction.Nonce)
+		transaction.AccountIndex, utils.FormatWeiToEtherStr(transaction.GasFeeAssetAmount), transaction.GasAccountIndex, transaction.Nonce)
 	return signatureBody, nil
 }
 
@@ -163,8 +163,8 @@ func SignatureForAtomicMatch(txInfo string) (string, error) {
 		return "", errors.New("both buyOffer and sellOffer does not exist")
 	}
 
-	signatureBody := fmt.Sprintf(SignatureTemplateAtomicMatch, utils.FormatWeiToEther(offer.AssetAmount), offer.OfferId, offer.NftIndex,
-		transaction.AccountIndex, utils.FormatWeiToEther(transaction.GasFeeAssetAmount), transaction.GasAccountIndex, transaction.Nonce)
+	signatureBody := fmt.Sprintf(SignatureTemplateAtomicMatch, utils.FormatWeiToEtherStr(offer.AssetAmount), offer.OfferId, offer.NftIndex,
+		transaction.AccountIndex, utils.FormatWeiToEtherStr(transaction.GasFeeAssetAmount), transaction.GasAccountIndex, transaction.Nonce)
 	return signatureBody, nil
 }
 
