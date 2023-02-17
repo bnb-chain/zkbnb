@@ -277,7 +277,7 @@ func (m *defaultTxPoolModel) GetTxsByAccountIndex(accountIndex int64, limit int6
 		f(opt)
 	}
 
-	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex)
+	dbTx := m.DB.Table(m.table).Where("account_index = ? and deleted_at is null", accountIndex)
 	if len(opt.Types) > 0 {
 		dbTx = dbTx.Where("tx_type IN ?", opt.Types)
 	}
@@ -297,7 +297,7 @@ func (m *defaultTxPoolModel) GetTxsCountByAccountIndex(accountIndex int64, optio
 		f(opt)
 	}
 
-	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex)
+	dbTx := m.DB.Table(m.table).Where("account_index = ? and deleted_at is null", accountIndex)
 	if len(opt.Types) > 0 {
 		dbTx = dbTx.Where("tx_type IN ?", opt.Types)
 	}
