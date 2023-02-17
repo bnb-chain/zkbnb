@@ -94,7 +94,7 @@ func Run(configFile string) error {
 	// Start the swagger server in background
 	go startSwaggerServer()
 
-	logx.Infof("apiserver is starting at %s:%d...\n", c.Host, c.Port)
+	logx.Infof("apiserver is starting at %s:%d", c.Host, c.Port)
 	server.Start()
 	return nil
 }
