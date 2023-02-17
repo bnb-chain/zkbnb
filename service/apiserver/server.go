@@ -53,7 +53,7 @@ func Run(configFile string) error {
 		panic(err)
 	}
 
-	_, err = cronJob.AddFunc("@every 500s", func() {
+	_, err = cronJob.AddFunc("@every 300s", func() {
 		defer func() {
 			if err := recover(); err != nil {
 				logx.Severef("get layer 2 basic info failed:%v", err)
