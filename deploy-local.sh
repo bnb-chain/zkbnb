@@ -233,6 +233,9 @@ CacheRedis:
 BlockConfig:
   OptionalBlockSizes: [${ZKBNB_OPTIONAL_BLOCK_SIZES}]
 
+IpfsUrl:
+  10.23.23.40:5001
+
 TreeDB:
   Driver: memorydb
   AssetTreeCacheSize: 512000
@@ -311,6 +314,8 @@ LogConf:
   StackCooldownMillis: 500
   Level: error
 
+IpfsUrl:
+  10.23.23.40:5001
 CoinMarketCap:
   Url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=
   Token: ${CMC_TOKEN}
