@@ -15,8 +15,8 @@ const (
 	SignatureTemplateWithdrawal = "Withdrawal %v to: %s\nFee: %v %d\nNonce: %d"
 	// SignatureTemplateTransfer /* Transfer ${amount} ${tokenAddress} to: ${to.toLowerCase()}\nFee: ${fee} ${feeTokenAddress}\nNonce: ${nonce} */
 	SignatureTemplateTransfer = "Transfer %v %d to: %d\nFee: %v %d\nNonce: %d"
-	// SignatureTemplateCreateCollection CreateCollection ${collectionId} ${accountIndex} ${collectionName} \nFee: ${fee} ${feeTokenAddress}\nNonce: ${nonce}
-	SignatureTemplateCreateCollection = "CreateCollection %d %d %s \nFee: %v %d\nNonce: %d"
+	// SignatureTemplateCreateCollection CreateCollection ${accountIndex} ${collectionName} \nFee: ${fee} ${feeTokenAddress}\nNonce: ${nonce}
+	SignatureTemplateCreateCollection = "CreateCollection %d %s \nFee: %v %d\nNonce: %d"
 	// SignatureTemplateMintNft MintNFT ${contentHash} for: ${recipient.toLowerCase()}\nFee: ${fee} ${feeTokenAddress}\nNonce: ${nonce}
 	SignatureTemplateMintNft = "MintNFT %s for: %d\nFee: %v %d\nNonce: %d"
 	// SignatureTemplateTransferNft TransferNFT ${NftIndex} ${fromAccountIndex} to ${toAccountIndex} \nFee: ${fee} ${feeTokenAddress}\nNonce: ${nonce}
@@ -95,7 +95,7 @@ func SignatureForCreateCollection(txInfo string) (string, error) {
 		return "", errors.New("invalid tx info")
 	}
 
-	signatureBody := fmt.Sprintf(SignatureTemplateCreateCollection, transaction.CollectionId, transaction.AccountIndex,
+	signatureBody := fmt.Sprintf(SignatureTemplateCreateCollection, transaction.AccountIndex,
 		transaction.Name, utils.FormatWeiToEther(transaction.GasFeeAssetAmount), transaction.GasAccountIndex, transaction.Nonce)
 	return signatureBody, nil
 }
