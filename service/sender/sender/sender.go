@@ -372,7 +372,7 @@ func (s *Sender) UpdateSentTxs() (err error) {
 			logx.Errorf("query transaction receipt %s failed, err: %v", txHash, err)
 			if time.Now().After(pendingTx.UpdatedAt.Add(time.Duration(s.config.ChainConfig.MaxWaitingTime) * time.Second)) {
 				// No need to check the response, do best effort.
-				logx.Infof("delete timeout l1 rollup tx, tx_hash=%s", pendingTx.L1TxHash)
+				logx.Errorf("delete timeout l1 rollup tx, tx_hash=%s", pendingTx.L1TxHash)
 				//nolint:errcheck
 				s.l1RollupTxModel.DeleteL1RollupTx(pendingTx)
 				l2MaxWaitingTimeMetric.Set(float64(pendingTx.L2BlockHeight))
