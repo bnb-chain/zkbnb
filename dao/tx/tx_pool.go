@@ -37,6 +37,7 @@ type (
 		GetTxs(limit int64, offset int64, options ...GetTxOptionFunc) (txs []*Tx, err error)
 		GetTxsTotalCount(options ...GetTxOptionFunc) (count int64, err error)
 		GetTxByTxHash(hash string) (txs *Tx, err error)
+		GetTxUnscopedByTxHash(hash string) (txs *Tx, err error)
 		GetTxsByStatus(status int) (txs []*Tx, err error)
 		GetTxsByAccountIndex(accountIndex int64, limit int64, offset int64, options ...GetTxOptionFunc) (txs []*Tx, err error)
 		GetTxsCountByAccountIndex(accountIndex int64, options ...GetTxOptionFunc) (count int64, err error)
@@ -260,13 +261,23 @@ func (m *defaultTxPoolModel) GetTxByTxHash(hash string) (tx *Tx, err error) {
 	return tx, nil
 }
 
+func (m *defaultTxPoolModel) GetTxUnscopedByTxHash(hash string) (tx *Tx, err error) {
+	dbTx := m.DB.Unscoped().Table(m.table).Where("tx_hash = ?", hash).Find(&tx)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return tx, nil
+}
+
 func (m *defaultTxPoolModel) GetTxsByAccountIndex(accountIndex int64, limit int64, offset int64, options ...GetTxOptionFunc) (txs []*Tx, err error) {
 	opt := &getTxOption{}
 	for _, f := range options {
 		f(opt)
 	}
 
-	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex)
+	dbTx := m.DB.Table(m.table).Where("account_index = ? and deleted_at is null", accountIndex)
 	if len(opt.Types) > 0 {
 		dbTx = dbTx.Where("tx_type IN ?", opt.Types)
 	}
@@ -286,7 +297,7 @@ func (m *defaultTxPoolModel) GetTxsCountByAccountIndex(accountIndex int64, optio
 		f(opt)
 	}
 
-	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex)
+	dbTx := m.DB.Table(m.table).Where("account_index = ? and deleted_at is null", accountIndex)
 	if len(opt.Types) > 0 {
 		dbTx = dbTx.Where("tx_type IN ?", opt.Types)
 	}

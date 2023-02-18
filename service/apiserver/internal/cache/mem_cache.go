@@ -72,7 +72,7 @@ func MustNewMemCache(accountModel accdao.AccountModel, assetModel assetdao.Asset
 			return 1
 		},
 		OnEvict: func(item *ristretto.Item) {
-			logx.Infof("OnEvict %s,%s,%s,%s", item.Key, item.Cost, item.Value, item.Expiration)
+			logx.Infof("OnEvict %d, %d, %v, %v", item.Key, item.Cost, item.Value, item.Expiration)
 		},
 	})
 	if err != nil {

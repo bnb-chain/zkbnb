@@ -25,13 +25,14 @@ type ChainDB struct {
 	PriorityRequestModel priorityrequest.PriorityRequestModel
 
 	// State DB
-	AccountModel        account.AccountModel
-	AccountHistoryModel account.AccountHistoryModel
-	L2AssetInfoModel    asset.AssetModel
-	L2NftModel          nft.L2NftModel
-	L2NftHistoryModel   nft.L2NftHistoryModel
-	TxPoolModel         tx.TxPoolModel
-	RollbackModel       rollback.RollbackModel
+	AccountModel              account.AccountModel
+	AccountHistoryModel       account.AccountHistoryModel
+	L2AssetInfoModel          asset.AssetModel
+	L2NftModel                nft.L2NftModel
+	L2NftHistoryModel         nft.L2NftHistoryModel
+	TxPoolModel               tx.TxPoolModel
+	RollbackModel             rollback.RollbackModel
+	L2NftMetadataHistoryModel nft.L2NftMetadataHistoryModel
 
 	// Sys config
 	SysConfigModel sysconfig.SysConfigModel
@@ -46,14 +47,15 @@ func NewChainDB(db *gorm.DB) *ChainDB {
 		TxDetailModel:        tx.NewTxDetailModel(db),
 		PriorityRequestModel: priorityrequest.NewPriorityRequestModel(db),
 
-		AccountModel:        account.NewAccountModel(db),
-		AccountHistoryModel: account.NewAccountHistoryModel(db),
-		L2AssetInfoModel:    asset.NewAssetModel(db),
-		L2NftModel:          nft.NewL2NftModel(db),
-		L2NftHistoryModel:   nft.NewL2NftHistoryModel(db),
-		TxPoolModel:         tx.NewTxPoolModel(db),
-		RollbackModel:       rollback.NewRollbackModel(db),
-		SysConfigModel:      sysconfig.NewSysConfigModel(db),
+		AccountModel:              account.NewAccountModel(db),
+		AccountHistoryModel:       account.NewAccountHistoryModel(db),
+		L2AssetInfoModel:          asset.NewAssetModel(db),
+		L2NftModel:                nft.NewL2NftModel(db),
+		L2NftHistoryModel:         nft.NewL2NftHistoryModel(db),
+		TxPoolModel:               tx.NewTxPoolModel(db),
+		RollbackModel:             rollback.NewRollbackModel(db),
+		SysConfigModel:            sysconfig.NewSysConfigModel(db),
+		L2NftMetadataHistoryModel: nft.NewL2NftMetadataHistoryModel(db),
 	}
 }
 

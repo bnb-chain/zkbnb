@@ -308,7 +308,7 @@ func startMetricsServer(ctx *cli.Context) {
 
 	if ctx.Bool(flags.MetricsEnabledFlag.Name) {
 		go func() {
-			logx.Info("Starting pprof server", "addr", fmt.Sprintf("http://%s/debug/pprof", pprofAddress))
+			logx.Info("Starting pprof server addr", fmt.Sprintf("http://%s/debug/pprof", pprofAddress))
 			if err := pprofServer.Start(); err != nil {
 				logx.Error("Failure in running pprof server", "err", err)
 			}
@@ -317,7 +317,7 @@ func startMetricsServer(ctx *cli.Context) {
 
 	if ctx.Bool(flags.MetricsEnabledFlag.Name) {
 		go func() {
-			logx.Info("Starting metrics server", "addr", fmt.Sprintf("http://%s/debug/metrics", metricsAddress))
+			logx.Info("Starting metrics server addr", fmt.Sprintf("http://%s/debug/metrics", metricsAddress))
 			if err := prometheusServer.Start(); err != nil {
 				logx.Error("Failure in running metrics server", "err", err)
 			}

@@ -430,6 +430,9 @@ func (s *StateDB) GetPendingNft(blockHeight int64, stateDataCopy *StateDataCopy)
 			CreatorTreasuryRate: newNft.CreatorTreasuryRate,
 			CollectionId:        newNft.CollectionId,
 			L2BlockHeight:       blockHeight,
+			IpnsName:            newNft.IpnsName,
+			IpnsId:              newNft.IpnsId,
+			Metadata:            newNft.Metadata,
 		})
 	}
 

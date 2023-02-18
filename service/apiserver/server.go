@@ -53,7 +53,7 @@ func Run(configFile string) error {
 		panic(err)
 	}
 
-	_, err = cronJob.AddFunc("@every 500s", func() {
+	_, err = cronJob.AddFunc("@every 300s", func() {
 		defer func() {
 			if err := recover(); err != nil {
 				logx.Severef("get layer 2 basic info failed:%v", err)
@@ -94,7 +94,7 @@ func Run(configFile string) error {
 	// Start the swagger server in background
 	go startSwaggerServer()
 
-	logx.Infof("apiserver is starting at %s:%d...\n", c.Host, c.Port)
+	logx.Infof("apiserver is starting at %s:%d", c.Host, c.Port)
 	server.Start()
 	return nil
 }
