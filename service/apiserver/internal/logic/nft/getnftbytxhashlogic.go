@@ -43,6 +43,5 @@ func (l *GetNftByTxHashLogic) GetNftByTxHash(req *types.ReqGetNftIndex) (resp *t
 	return &types.NftIndex{
 		Index:  nft.NftIndex,
 		IpfsId: common.GenerateCid(nft.NftContentHash),
-		IpnsId: nft.IpnsId,
 	}, nil
 }

@@ -388,9 +388,6 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 				CreatorTreasuryRate: nftHistory.CreatorTreasuryRate,
 				CreatorAccountIndex: nftHistory.CreatorAccountIndex,
 				L2BlockHeight:       nftHistory.L2BlockHeight,
-				IpnsName:            nftHistory.IpnsName,
-				IpnsId:              nftHistory.IpnsId,
-				Metadata:            nftHistory.Metadata,
 			}
 			err := bc.L2NftModel.UpdateByIndexInTransact(dbTx, nftInfo)
 			if err != nil {

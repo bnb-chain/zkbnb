@@ -1247,58 +1247,57 @@ func (c *Committer) Shutdown() {
 	c.bc.ChainDB.Close()
 }
 
-func (c *Committer) SendIpfsServer() error {
-	historiesIpfs, err := c.bc.L2NftMetadataHistoryModel.GetL2NftMetadataHistory(nft.NotConfirmed)
+func (c *Committer) SyncNftIndexServer() error {
+	histories, err := c.bc.L2NftMetadataHistoryModel.GetL2NftMetadataHistoryList(nft.StatusNftIndex)
 	if err != nil {
 		if err == types.DbErrSqlOperation {
 			return err
 		}
+		return nil
 	}
-	if historiesIpfs != nil {
-		for _, history := range historiesIpfs {
-			if history.NftIndex == types.NilNftIndex {
-				poolTx, err := c.bc.TxPoolModel.GetTxUnscopedByTxHash(history.TxHash)
-				if err != nil {
-					return err
-				}
-				if poolTx.TxStatus == tx.StatusFailed {
-					err = c.bc.L2NftMetadataHistoryModel.DeleteInTransact(history.ID)
-					if err != nil {
-						return err
-					}
-					continue
-				} else if poolTx.TxStatus == tx.StatusExecuted {
-					tx, err := c.bc.TxModel.GetTxByHash(history.TxHash)
-					if err != nil {
-						return err
-					}
-					history.NftIndex = tx.NftIndex
-					err = saveIpfs(history)
-					if err != nil {
-						return err
-					}
-					err = c.bc.DB().DB.Transaction(func(tx *gorm.DB) error {
-						err = c.bc.L2NftMetadataHistoryModel.UpdateL2NftMetadataHistoryInTransact(tx, history)
-						if err != nil {
-							return err
-						}
-						err = c.bc.L2NftModel.UpdateIpfsStatusByNftIndexInTransact(tx, history.NftIndex)
-						return err
-					})
-					if err != nil {
-						return err
-					}
-				}
-			} else {
-				err = saveIpfs(history)
-				if err != nil {
-					return err
-				}
-				err = c.bc.L2NftMetadataHistoryModel.UpdateL2NftMetadataHistoryInTransact(c.bc.DB().DB, history)
-				if err != nil {
-					return err
-				}
+	for _, history := range histories {
+		poolTx, err := c.bc.TxPoolModel.GetTxUnscopedByTxHash(history.TxHash)
+		if err != nil {
+			return err
+		}
+		if poolTx.TxStatus == tx.StatusFailed {
+			err = c.bc.L2NftMetadataHistoryModel.DeleteInTransact(history.ID)
+			if err != nil {
+				return err
 			}
+			continue
+		} else if poolTx.TxStatus == tx.StatusExecuted {
+			tx, err := c.bc.TxModel.GetTxByHash(history.TxHash)
+			if err != nil {
+				return err
+			}
+			history.NftIndex = tx.NftIndex
+			history.Status = nft.NotConfirmed
+			err = c.bc.L2NftMetadataHistoryModel.UpdateL2NftMetadataHistoryInTransact(history)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (c *Committer) SendIpfsServer() error {
+	histories, err := c.bc.L2NftMetadataHistoryModel.GetL2NftMetadataHistoryList(nft.NotConfirmed)
+	if err != nil {
+		if err == types.DbErrSqlOperation {
+			return err
+		}
+		return nil
+	}
+	for _, history := range histories {
+		err = saveIpfs(history)
+		if err != nil {
+			return err
+		}
+		err = c.bc.L2NftMetadataHistoryModel.UpdateL2NftMetadataHistoryInTransact(history)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -1314,23 +1313,22 @@ func saveIpfs(history *nft.L2NftMetadataHistory) error {
 		return err
 	}
 	history.Status = nft.Confirmed
-	history.Cid = cid
+	history.IpnsCid = cid
 	return nil
 }
 
 func (c *Committer) RefreshServer() error {
-	historiesIpns, err := c.bc.L2NftMetadataHistoryModel.GetL2NftMetadataHistory(nft.Confirmed)
+	historiesIpns, err := c.bc.L2NftMetadataHistoryModel.GetL2NftMetadataHistoryList(nft.Confirmed)
 	if err != nil {
 		if err == types.DbErrSqlOperation {
 			return err
 		}
+		return nil
 	}
-	if historiesIpns != nil {
-		for _, hostory := range historiesIpns {
-			_, err = common.Ipfs.PublishWithDetails(hostory.Cid, hostory.IpnsName)
-			if err != nil {
-				return err
-			}
+	for _, hostory := range historiesIpns {
+		_, err = common.Ipfs.PublishWithDetails(hostory.IpnsCid, hostory.IpnsName)
+		if err != nil {
+			return err
 		}
 	}
 	return nil

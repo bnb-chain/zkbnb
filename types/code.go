@@ -110,9 +110,10 @@ var (
 	AppErrInvalidNftIndex          = New(21603, "invalid nft index")
 	AppErrNftNotFound              = New(21604, "nft not found")
 	AppErrInvalidToAccount         = New(21605, "invalid ToAccount")
-	AppErrInvalidNft               = New(21606, "please wait for data synchronization to complete")
-	AppErrInvalidMetaData          = New(21607, "MetaData should not be larger than ")
-	AppErrInvalidMutableAttributes = New(21608, "MutableAttributes should not be larger than ")
+	AppErrInvalidNft               = New(21606, "mutableAttributes is synchronizing")
+	AppErrInvalidMetaData          = New(21607, "metaData should not be larger than ")
+	AppErrInvalidMutableAttributes = New(21608, "mutableAttributes should not be larger than ")
+	AppErrInvalidNftNonce          = New(21609, "invalid nft nonce")
 
 	// Collection
 	AppErrInvalidCollectionId   = New(21700, "invalid collection id")

@@ -29,6 +29,7 @@ const (
 
 const (
 	StatusFailed = iota
+	StatusNftIndex
 	NotConfirmed
 	Confirmed
 )
@@ -38,10 +39,10 @@ type (
 		CreateL2NftMetadataHistoryTable() error
 		DropL2NftMetadataHistoryTable() error
 		CreateL2NftMetadataHistoryInTransact(tx *gorm.DB, metadata *L2NftMetadataHistory) error
-		DeleteL2NftMetadataHistoryInTransact(tx *gorm.DB, nftIndex int64) error
 		DeleteInTransact(id uint) error
-		GetL2NftMetadataHistory(status int) (history []*L2NftMetadataHistory, err error)
-		UpdateL2NftMetadataHistoryInTransact(tx *gorm.DB, history *L2NftMetadataHistory) error
+		GetL2NftMetadataHistoryList(status int) (history []*L2NftMetadataHistory, err error)
+		GetL2NftMetadataHistory(nftIndex int64) (history *L2NftMetadataHistory, err error)
+		UpdateL2NftMetadataHistoryInTransact(history *L2NftMetadataHistory) error
 	}
 
 	defaultL2NftMetadataHistoryModel struct {
@@ -51,9 +52,11 @@ type (
 
 	L2NftMetadataHistory struct {
 		gorm.Model
+		Nonce    int64
 		NftIndex int64  `gorm:"index"`
 		TxHash   string `gorm:"index"`
-		Cid      string
+		IpfsCid  string
+		IpnsCid  string
 		IpnsName string
 		IpnsId   string
 		Metadata string
@@ -91,7 +94,7 @@ func (m *defaultL2NftMetadataHistoryModel) CreateL2NftMetadataHistoryInTransact(
 	return nil
 }
 
-func (m *defaultL2NftMetadataHistoryModel) GetL2NftMetadataHistory(status int) (history []*L2NftMetadataHistory, err error) {
+func (m *defaultL2NftMetadataHistoryModel) GetL2NftMetadataHistoryList(status int) (history []*L2NftMetadataHistory, err error) {
 	dbTx := m.DB.Table(m.table).Where("status = ?", status).
 		Limit(500).Order("id asc").Find(&history)
 	if dbTx.Error != nil {
@@ -102,19 +105,19 @@ func (m *defaultL2NftMetadataHistoryModel) GetL2NftMetadataHistory(status int) (
 	return history, nil
 }
 
-func (m *defaultL2NftMetadataHistoryModel) UpdateL2NftMetadataHistoryInTransact(tx *gorm.DB, history *L2NftMetadataHistory) error {
-	dbTx := tx.Table(m.table).
-		Select("cid", "status", "NftIndex").Updates(history)
+func (m *defaultL2NftMetadataHistoryModel) GetL2NftMetadataHistory(nftIndex int64) (history *L2NftMetadataHistory, err error) {
+	dbTx := m.DB.Table(m.table).Where("nft_index = ?", nftIndex).Find(&history)
 	if dbTx.Error != nil {
-		return types.DbErrSqlOperation
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
 	}
-	return nil
+	return history, nil
 }
 
-func (m *defaultL2NftMetadataHistoryModel) DeleteL2NftMetadataHistoryInTransact(tx *gorm.DB, nftIndex int64) error {
-	dbTx := tx.Table(m.table).
-		Where("nft_index = ?", nftIndex).
-		Delete(&L2NftMetadataHistory{})
+func (m *defaultL2NftMetadataHistoryModel) UpdateL2NftMetadataHistoryInTransact(history *L2NftMetadataHistory) error {
+	dbTx := m.DB.Table(m.table).
+		Select("*").Updates(history)
 	if dbTx.Error != nil {
 		return types.DbErrSqlOperation
 	}

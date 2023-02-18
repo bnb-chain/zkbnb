@@ -11,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
-	"strconv"
 )
 
 type VerifySignature struct {
@@ -178,12 +177,11 @@ func (v *VerifySignature) fetcherForAtomicMatch(txInfo string) (string, error) {
 }
 
 func (v *VerifySignature) fetcherForAccount(txInfo string) (string, error) {
-	accountIndex, err := strconv.ParseInt(txInfo, 10, 64)
+	tx, err := types.ParseUpdateNftTxInfo(txInfo)
 	if err != nil {
-		logx.Errorf("parse atomic match int64 failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", err
 	}
-	return v.fetchL1AddressByAccountIndex(accountIndex)
+	return v.fetchL1AddressByAccountIndex(tx.AccountIndex)
 }
 
 func (v *VerifySignature) fetchL1AddressByAccountIndex(accountIndex int64) (string, error) {
@@ -191,6 +189,9 @@ func (v *VerifySignature) fetchL1AddressByAccountIndex(accountIndex int64) (stri
 		return v.svcCtx.AccountModel.GetAccountByIndex(accountIndex)
 	})
 	if err != nil {
+		if err == types.DbErrNotFound {
+			return "", types.AppErrAccountNotFound
+		}
 		return "", err
 	}
 	return account.L1Address, nil

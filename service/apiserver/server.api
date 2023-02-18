@@ -446,7 +446,6 @@ type (
 		CreatorTreasuryRate int64  `json:"creator_treasury_rate"`
 		CollectionId        int64  `json:"collection_id"`
 		IpfsId              string `json:"ipfs_id"`
-		IpnsId              string `json:"ipns_id"`
 	}
 
 	Nfts {
@@ -457,7 +456,6 @@ type (
 	NftIndex {
 		Index  int64  `json:"index"`
 		IpfsId string `json:"ipfs_id"`
-		IpnsId string `json:"ipns_id"`
 	}
 
 	History {
@@ -493,11 +491,15 @@ type (
 )
 
 type (
+	ReqGetNftNextNonce {
+		NftIndex int64 `form:"nft_index"`
+	}
+)
+
+type (
 	ReqUpdateNft {
-		NftIndex          int64  `form:"nft_index"`
-		MutableAttributes string `form:"mutable_attributes"`
-		AccountIndex      int64  `form:"account_index"`
-		TxSignature       string `form:"tx_signature"`
+		TxInfo      string `form:"tx_info"`
+		TxSignature string `form:"tx_signature"`
 	}
 )
 
@@ -525,4 +527,8 @@ service server-api {
 	@doc "update nft metadata by nft_index"
 	@handler UpdateNftByIndex
 	post /api/v1/updateNftByIndex (ReqUpdateNft) returns (History)
+	
+	@doc "Get nft next nonce"
+	@handler GetNftNextNonce
+	get /api/v1/nftNextNonce (ReqGetNftNextNonce) returns (NextNonce)
 }

@@ -96,18 +96,20 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 	}
 	if newTx.BaseTx.TxType == types2.TxTypeMintNft {
 		txInfo, _ := types2.ParseMintNftTxInfo(req.TxInfo)
-		_, err := sendToIpfs(txInfo, newTx.BaseTx.TxHash)
+		cid, err := sendToIpfs(txInfo, newTx.BaseTx.TxHash)
 		if err != nil {
 			return resp, err
 		}
 		history := &nft.L2NftMetadataHistory{
+			Nonce:    0,
 			TxHash:   newTx.BaseTx.TxHash,
 			NftIndex: newTx.BaseTx.NftIndex,
+			IpfsCid:  cid,
 			IpnsName: txInfo.IpnsName,
 			IpnsId:   txInfo.IpnsId,
 			Mutable:  txInfo.MutableAttributes,
 			Metadata: txInfo.MetaData,
-			Status:   nft.NotConfirmed,
+			Status:   nft.StatusNftIndex,
 		}
 		b, err := json.Marshal(txInfo)
 		if err != nil {
@@ -156,7 +158,7 @@ func sendToIpfs(txInfo *txtypes.MintNftTxInfo, txHash string) (string, error) {
 	txInfo.NftContentHash = hash
 	txInfo.IpnsName = txHash
 	txInfo.IpnsId = ipnsId.Id
-	return "", nil
+	return cid, nil
 }
 
 func uploadIpfs(data *nftModels.NftMetaData) (string, error) {
