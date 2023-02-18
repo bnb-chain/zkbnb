@@ -2,13 +2,15 @@ package transaction
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
+	common2 "github.com/bnb-chain/zkbnb/common"
+	nftModels "github.com/bnb-chain/zkbnb/core/model"
 	"github.com/bnb-chain/zkbnb/dao/dbcache"
+	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/signature"
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/pkg/errors"
+	"gorm.io/gorm"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -21,18 +23,18 @@ import (
 
 type SendTxLogic struct {
 	logx.Logger
-	ctx              context.Context
-	svcCtx           *svc.ServiceContext
-	l1AddressFetcher *signature.L1AddressFetcher
+	ctx             context.Context
+	svcCtx          *svc.ServiceContext
+	verifySignature *signature.VerifySignature
 }
 
 func NewSendTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendTxLogic {
-	l1AddressFetcher := signature.NewL1AddressFetcher(ctx, svcCtx)
+	verifySignature := signature.NewVerifySignature(ctx, svcCtx)
 	return &SendTxLogic{
-		Logger:           logx.WithContext(ctx),
-		ctx:              ctx,
-		svcCtx:           svcCtx,
-		l1AddressFetcher: l1AddressFetcher,
+		Logger:          logx.WithContext(ctx),
+		ctx:             ctx,
+		svcCtx:          svcCtx,
+		verifySignature: verifySignature,
 	}
 }
 
@@ -49,7 +51,7 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 		return nil, types2.AppErrTooManyTxs
 	}
 
-	err = s.verifySignature(req.TxType, req.TxInfo, req.TxSignature)
+	err = s.verifySignature.VerifySignatureInfo(req.TxType, req.TxInfo, req.TxSignature)
 	if err != nil {
 		return nil, err
 	}
@@ -92,55 +94,79 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 	if newTx.BaseTx.TxType == types2.TxTypeCreateCollection {
 		newTx.BaseTx.CollectionId = types2.NilCollectionNonce
 	}
-	if err := s.svcCtx.TxPoolModel.CreateTxs([]*tx.PoolTx{{BaseTx: newTx.BaseTx}}); err != nil {
-		logx.Errorf("fail to create pool tx: %v, err: %s", newTx, err.Error())
-		return resp, types2.AppErrInternal
+	if newTx.BaseTx.TxType == types2.TxTypeMintNft {
+		txInfo, _ := types2.ParseMintNftTxInfo(req.TxInfo)
+		_, err := sendToIpfs(txInfo, newTx.BaseTx.TxHash)
+		if err != nil {
+			return resp, err
+		}
+		history := &nft.L2NftMetadataHistory{
+			TxHash:   newTx.BaseTx.TxHash,
+			NftIndex: newTx.BaseTx.NftIndex,
+			IpnsName: txInfo.IpnsName,
+			IpnsId:   txInfo.IpnsId,
+			Mutable:  txInfo.MutableAttributes,
+			Metadata: txInfo.MetaData,
+			Status:   nft.NotConfirmed,
+		}
+		b, err := json.Marshal(txInfo)
+		if err != nil {
+			return resp, err
+		}
+		newTx.BaseTx.TxInfo = string(b)
+		err = s.svcCtx.DB.Transaction(func(db *gorm.DB) error {
+			err = s.svcCtx.NftMetadataHistoryModel.CreateL2NftMetadataHistoryInTransact(db, history)
+			if err != nil {
+				return err
+			}
+			err = s.svcCtx.TxPoolModel.CreateTxsInTransact(db, []*tx.PoolTx{{BaseTx: newTx.BaseTx}})
+			return err
+		})
+		if err != nil {
+			logx.Errorf("fail to create pool tx: %v, err: %s", newTx, err.Error())
+			return resp, types2.AppErrInternal
+		}
+	} else {
+		if err := s.svcCtx.TxPoolModel.CreateTxs([]*tx.PoolTx{{BaseTx: newTx.BaseTx}}); err != nil {
+			logx.Errorf("fail to create pool tx: %v, err: %s", newTx, err.Error())
+			return resp, types2.AppErrInternal
+		}
 	}
 	s.svcCtx.RedisCache.Set(context.Background(), dbcache.AccountNonceKeyByIndex(newTx.AccountIndex), newTx.Nonce)
 	resp.TxHash = newTx.TxHash
 	return resp, nil
 }
 
-func (s *SendTxLogic) verifySignature(TxType uint32, TxInfo, Signature string) error {
-
-	// For compatibility consideration, if signature string is empty, directly ignore the validation
-	if len(Signature) == 0 {
-		return nil
-	}
-
-	//Generate the signature body data from the transaction type and transaction info
-	signatureBody, err := signature.GenerateSignatureBody(TxType, TxInfo)
+func sendToIpfs(txInfo *txtypes.MintNftTxInfo, txHash string) (string, error) {
+	ipnsId, err := common2.Ipfs.GenerateIPNS(txHash)
 	if err != nil {
-		return err
+		return "", err
 	}
-	message := accounts.TextHash([]byte(signatureBody))
-
-	//Decode from signature string to get the signature byte array
-	signatureContent, err := hexutil.Decode(Signature)
+	cid, err := uploadIpfs(&nftModels.NftMetaData{
+		MetaData:          txInfo.MetaData,
+		MutableAttributes: fmt.Sprintf("%s%s", "ipns://", ipnsId.Id),
+	})
 	if err != nil {
-		return err
+		return "", err
 	}
-	signatureContent[64] -= 27 // Transform yellow paper V from 27/28 to 0/1
-
-	//Calculate the public key from the signature and source string
-	signaturePublicKey, err := crypto.SigToPub(message, signatureContent)
+	hash, err := common2.Ipfs.GenerateHash(cid)
 	if err != nil {
-		return err
+		return "", err
 	}
+	txInfo.NftContentHash = hash
+	txInfo.IpnsName = txHash
+	txInfo.IpnsId = ipnsId.Id
+	return "", nil
+}
 
-	//Calculate the address from the public key
-	publicAddress := crypto.PubkeyToAddress(*signaturePublicKey)
-
-	//Query the origin address from the database
-	originAddressStr, err := s.l1AddressFetcher.GetL1AddressByTx(TxType, TxInfo)
+func uploadIpfs(data *nftModels.NftMetaData) (string, error) {
+	b, err := json.Marshal(data)
 	if err != nil {
-		return err
+		return "", err
 	}
-	originAddress := common.HexToAddress(originAddressStr)
-
-	//Compare the original address and the public address to verify the identifier
-	if publicAddress != originAddress {
-		return errors.New("Tx Signature Error")
+	cid, err := common2.Ipfs.Upload(string(b))
+	if err != nil {
+		return "", err
 	}
-	return nil
+	return cid, nil
 }
