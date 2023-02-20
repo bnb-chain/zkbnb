@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/shopspring/decimal"
 	"gorm.io/plugin/dbresolver"
 	"math"
 	"math/big"
@@ -170,7 +171,10 @@ func NewSender(c sconfig.Config) *Sender {
 		Sources:  []gorm.Dialector{postgres.Open(masterDataSource)},
 		Replicas: []gorm.Dialector{postgres.Open(slaveDataSource)},
 	}))
-
+	if c.ChainConfig.MaxGasPriceIncreasePercentage == 0 {
+		//((MaxGasPrice-GasPrice)/GasPrice)*100
+		c.ChainConfig.MaxGasPriceIncreasePercentage = 50
+	}
 	s := &Sender{
 		config:               c,
 		db:                   db,
@@ -293,7 +297,11 @@ func (s *Sender) CommitBlocks() (err error) {
 			return err
 		}
 	}
-	nonce, err := cli.GetPendingNonce(authCliCommitBlock.Address.Hex())
+	var txHash string
+	var nonce uint64
+
+	maxGasPrice := (decimal.NewFromBigInt(gasPrice, 0).Mul(decimal.NewFromInt(int64(s.config.ChainConfig.MaxGasPriceIncreasePercentage))).Div(decimal.NewFromInt(100))).Add(decimal.NewFromBigInt(gasPrice, 0))
+	nonce, err = cli.GetPendingNonce(authCliCommitBlock.Address.Hex())
 	if err != nil {
 		return fmt.Errorf("failed to get nonce for commit block, errL %v", err)
 	}
@@ -302,31 +310,53 @@ func (s *Sender) CommitBlocks() (err error) {
 	if err != nil && err != types.DbErrNotFound {
 		return fmt.Errorf("failed to get latest l1 rollup tx by nonce %d, err: %v", nonce, err)
 	}
-	if l1RollupTx != nil {
-		if l1RollupTx.L1Nonce == int64(nonce) {
-			maxGasPrice := gasPrice.Int64() + gasPrice.Int64()/2
-			standByGasPrice := l1RollupTx.GasPrice + int64(float64(l1RollupTx.GasPrice)*0.1)
-			if standByGasPrice > maxGasPrice {
+	if l1RollupTx != nil && l1RollupTx.L1Nonce == int64(nonce) {
+		standByGasPrice := decimal.NewFromInt(l1RollupTx.GasPrice).Add(decimal.NewFromInt(l1RollupTx.GasPrice).Mul(decimal.NewFromFloat(0.1)))
+		if standByGasPrice.GreaterThan(maxGasPrice) {
+			logx.Errorf("abandon commit block to l1, gasPrice>maxGasPrice,l1 nonce: %s,gasPrice: %s,maxGasPrice: %s", nonce, standByGasPrice, maxGasPrice)
+			return nil
+		}
+		gasPrice = standByGasPrice.RoundUp(0).BigInt()
+		logx.Infof("speed up commit block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
+	}
+	retry := false
+	for {
+		if retry {
+			newNonce, err := cli.GetPendingNonce(authCliCommitBlock.Address.Hex())
+			if err != nil {
+				return fmt.Errorf("failed to get nonce for commit block, errL %v", err)
+			}
+			if nonce != newNonce {
+				return fmt.Errorf("failed to retry for commit block, nonce=%d,newNonce=%d", nonce, newNonce)
+			}
+			standByGasPrice := decimal.NewFromBigInt(gasPrice, 0).Add(decimal.NewFromBigInt(gasPrice, 0).Mul(decimal.NewFromFloat(0.1)))
+			if standByGasPrice.GreaterThan(maxGasPrice) {
 				logx.Errorf("abandon commit block to l1, gasPrice>maxGasPrice,l1 nonce: %s,gasPrice: %s,maxGasPrice: %s", nonce, standByGasPrice, maxGasPrice)
 				return nil
 			}
-			gasPrice = big.NewInt(standByGasPrice)
+			gasPrice = standByGasPrice.RoundUp(0).BigInt()
 			logx.Infof("speed up commit block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
 		}
+		// commit blocks on-chain
+		txHash, err = zkbnb.CommitBlocks(
+			cli, authCliCommitBlock,
+			zkbnbInstance,
+			lastStoredBlockInfo,
+			pendingCommitBlocks,
+			gasPrice,
+			s.config.ChainConfig.GasLimit)
+		if err != nil {
+			commitExceptionHeightMetric.Set(float64(pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber))
+			if err.Error() == "replacement transaction underpriced" || err.Error() == "transaction underpriced" {
+				logx.Errorf("failed to send commit tx,try again: errL %v:%s", err, txHash)
+				retry = true
+				continue
+			}
+			return fmt.Errorf("failed to send commit tx, errL %v:%s", err, txHash)
+		}
+		break
 	}
 
-	// commit blocks on-chain
-	txHash, err := zkbnb.CommitBlocks(
-		cli, authCliCommitBlock,
-		zkbnbInstance,
-		lastStoredBlockInfo,
-		pendingCommitBlocks,
-		gasPrice,
-		s.config.ChainConfig.GasLimit)
-	if err != nil {
-		commitExceptionHeightMetric.Set(float64(pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber))
-		return fmt.Errorf("failed to send commit tx, errL %v:%s", err, txHash)
-	}
 	commitExceptionHeightMetric.Set(float64(0))
 	for _, pendingCommitBlock := range pendingCommitBlocks {
 		l2BlockCommitToChainHeightMetric.Set(float64(pendingCommitBlock.BlockNumber))
@@ -523,7 +553,11 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		}
 	}
 
-	nonce, err := cli.GetPendingNonce(authCliVerifyBlock.Address.Hex())
+	var txHash string
+	var nonce uint64
+
+	maxGasPrice := (decimal.NewFromBigInt(gasPrice, 0).Mul(decimal.NewFromInt(int64(s.config.ChainConfig.MaxGasPriceIncreasePercentage))).Div(decimal.NewFromInt(100))).Add(decimal.NewFromBigInt(gasPrice, 0))
+	nonce, err = cli.GetPendingNonce(authCliVerifyBlock.Address.Hex())
 	if err != nil {
 		return fmt.Errorf("failed to get nonce for commit block, errL %v", err)
 	}
@@ -532,26 +566,48 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	if err != nil && err != types.DbErrNotFound {
 		return fmt.Errorf("failed to get latest l1 rollup tx by nonce %d, err: %v", nonce, err)
 	}
-	if l1RollupTx != nil {
-		if l1RollupTx.L1Nonce == int64(nonce) {
-			maxGasPrice := gasPrice.Int64() + gasPrice.Int64()/2
-			standByGasPrice := l1RollupTx.GasPrice + int64(float64(l1RollupTx.GasPrice)*0.1)
-			if standByGasPrice > maxGasPrice {
+	if l1RollupTx != nil && l1RollupTx.L1Nonce == int64(nonce) {
+		standByGasPrice := decimal.NewFromInt(l1RollupTx.GasPrice).Add(decimal.NewFromInt(l1RollupTx.GasPrice).Mul(decimal.NewFromFloat(0.1)))
+		if standByGasPrice.GreaterThan(maxGasPrice) {
+			logx.Errorf("abandon verify block to l1, gasPrice>maxGasPrice,l1 nonce: %s,gasPrice: %s,maxGasPrice: %s", nonce, standByGasPrice, maxGasPrice)
+			return nil
+		}
+		gasPrice = standByGasPrice.RoundUp(0).BigInt()
+		logx.Infof("speed up verify block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
+	}
+	retry := false
+	for {
+		if retry {
+			newNonce, err := cli.GetPendingNonce(authCliVerifyBlock.Address.Hex())
+			if err != nil {
+				return fmt.Errorf("failed to get nonce for verify block, errL %v", err)
+			}
+			if nonce != newNonce {
+				return fmt.Errorf("failed to retry for verify block, nonce=%d,newNonce=%d", nonce, newNonce)
+			}
+			standByGasPrice := decimal.NewFromBigInt(gasPrice, 0).Add(decimal.NewFromBigInt(gasPrice, 0).Mul(decimal.NewFromFloat(0.1)))
+			if standByGasPrice.GreaterThan(maxGasPrice) {
 				logx.Errorf("abandon verify block to l1, gasPrice>maxGasPrice,l1 nonce: %s,gasPrice: %s,maxGasPrice: %s", nonce, standByGasPrice, maxGasPrice)
 				return nil
 			}
-			gasPrice = big.NewInt(standByGasPrice)
+			gasPrice = standByGasPrice.RoundUp(0).BigInt()
 			logx.Infof("speed up verify block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
 		}
+		// Verify blocks on-chain
+		txHash, err := zkbnb.VerifyAndExecuteBlocks(cli, authCliVerifyBlock, zkbnbInstance,
+			pendingVerifyAndExecuteBlocks, proofs, gasPrice, s.config.ChainConfig.GasLimit)
+		if err != nil {
+			verifyExceptionHeightMetric.Set(float64(pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber))
+			if err.Error() == "replacement transaction underpriced" || err.Error() == "transaction underpriced" {
+				logx.Errorf("failed to send verify tx,try again: errL %v:%s", err, txHash)
+				retry = true
+				continue
+			}
+			return fmt.Errorf("failed to send verify tx: %v:%s", err, txHash)
+		}
+		break
 	}
 
-	// Verify blocks on-chain
-	txHash, err := zkbnb.VerifyAndExecuteBlocks(cli, authCliVerifyBlock, zkbnbInstance,
-		pendingVerifyAndExecuteBlocks, proofs, gasPrice, s.config.ChainConfig.GasLimit)
-	if err != nil {
-		verifyExceptionHeightMetric.Set(float64(pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber))
-		return fmt.Errorf("failed to send verify tx: %v:%s", err, txHash)
-	}
 	verifyExceptionHeightMetric.Set(float64(0))
 	for _, pendingVerifyAndExecuteBlock := range pendingVerifyAndExecuteBlocks {
 		l2BlockSubmitToVerifyHeightMetric.Set(float64(pendingVerifyAndExecuteBlock.BlockHeader.BlockNumber))
