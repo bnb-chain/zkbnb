@@ -65,7 +65,7 @@ func Run(configFile string) error {
 		panic(err)
 	}
 
-	_, err = cronJob.AddFunc("@every 1h", func() {
+	_, err = cronJob.AddFunc("@every 6h", func() {
 		logx.Info("========================= send message to refresh ipns =========================")
 		err = committer.RefreshServer()
 		if err != nil {
