@@ -15,13 +15,15 @@ CMC_TOKEN=cfce503f-fake-fake-fake-bbab5257dac8
 NETWORK_RPC_SYS_CONFIG_NAME=LocalTestNetworkRpc # BscTestNetworkRpc or LocalTestNetworkRpc
 BSC_TESTNET_RPC=HTTP://127.0.0.1:8545
 BSC_TESTNET_PRIVATE_KEY=2d92239525b6632b963f49d28411596512fab69052a1738e530a59617e433b81
+COMMIT_BLOCK_PRIVATE_KEY=
+VERIFY_BLOCK_PRIVATE_KEY=
 # security Council Members for upgrade approve
 # FOR TEST
 # generage by Mnemonic (account #17 ~ #19): giggle federal note disorder will close traffic air melody artefact taxi tissue
 SECURITY_COUNCIL_MEMBERS_NUMBER_1=0x0000000000000000000000000000000000000000
 SECURITY_COUNCIL_MEMBERS_NUMBER_2=0x0000000000000000000000000000000000000000
 SECURITY_COUNCIL_MEMBERS_NUMBER_3=0x0000000000000000000000000000000000000000
-# validator config, split by `,`
+# validator config, split by `,` commit block address  and verify block address
 VALIDATORS=
 ZKBNB_OPTIONAL_BLOCK_SIZES=1,10
 
@@ -272,7 +274,8 @@ ChainConfig:
   ConfirmBlocksCount: 0
   MaxWaitingTime: 120
   MaxBlockCount: 4
-  Sk: "${BSC_TESTNET_PRIVATE_KEY}"
+  CommitBlockSk: "${COMMIT_BLOCK_PRIVATE_KEY}"
+  VerifyBlockSk: "${VERIFY_BLOCK_PRIVATE_KEY}"
   GasLimit: 5000000
   GasPrice: 0
 
