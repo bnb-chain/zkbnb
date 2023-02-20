@@ -14,6 +14,7 @@ require (
 	github.com/ory/dockertest v3.3.5+incompatible
 	github.com/panjf2000/ants/v2 v2.5.0
 	github.com/prometheus/client_golang v1.13.0
+	github.com/shopspring/decimal v1.3.1
 	github.com/swaggo/files v0.0.0-20220728132757-551d4a08d97a
 	github.com/swaggo/gin-swagger v1.5.3
 	github.com/swaggo/swag v1.8.8

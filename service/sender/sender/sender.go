@@ -300,7 +300,7 @@ func (s *Sender) CommitBlocks() (err error) {
 	var txHash string
 	var nonce uint64
 
-	maxGasPrice := (decimal.NewFromBigInt(gasPrice, 0).Mul(decimal.NewFromInt(int64(s.config.ChainConfig.MaxGasPriceIncreasePercentage))).Div(decimal.NewFromInt(100))).Add(decimal.NewFromBigInt(gasPrice, 0))
+	maxGasPrice := (decimal.NewFromInt(gasPrice.Int64()).Mul(decimal.NewFromInt(int64(s.config.ChainConfig.MaxGasPriceIncreasePercentage))).Div(decimal.NewFromInt(100))).Add(decimal.NewFromInt(gasPrice.Int64()))
 	nonce, err = cli.GetPendingNonce(authCliCommitBlock.Address.Hex())
 	if err != nil {
 		return fmt.Errorf("failed to get nonce for commit block, errL %v", err)
@@ -329,7 +329,7 @@ func (s *Sender) CommitBlocks() (err error) {
 			if nonce != newNonce {
 				return fmt.Errorf("failed to retry for commit block, nonce=%d,newNonce=%d", nonce, newNonce)
 			}
-			standByGasPrice := decimal.NewFromBigInt(gasPrice, 0).Add(decimal.NewFromBigInt(gasPrice, 0).Mul(decimal.NewFromFloat(0.1)))
+			standByGasPrice := decimal.NewFromInt(gasPrice.Int64()).Add(decimal.NewFromInt(gasPrice.Int64()).Mul(decimal.NewFromFloat(0.1)))
 			if standByGasPrice.GreaterThan(maxGasPrice) {
 				logx.Errorf("abandon commit block to l1, gasPrice>maxGasPrice,l1 nonce: %s,gasPrice: %s,maxGasPrice: %s", nonce, standByGasPrice, maxGasPrice)
 				return nil
@@ -556,7 +556,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	var txHash string
 	var nonce uint64
 
-	maxGasPrice := (decimal.NewFromBigInt(gasPrice, 0).Mul(decimal.NewFromInt(int64(s.config.ChainConfig.MaxGasPriceIncreasePercentage))).Div(decimal.NewFromInt(100))).Add(decimal.NewFromBigInt(gasPrice, 0))
+	maxGasPrice := (decimal.NewFromInt(gasPrice.Int64()).Mul(decimal.NewFromInt(int64(s.config.ChainConfig.MaxGasPriceIncreasePercentage))).Div(decimal.NewFromInt(100))).Add(decimal.NewFromInt(gasPrice.Int64()))
 	nonce, err = cli.GetPendingNonce(authCliVerifyBlock.Address.Hex())
 	if err != nil {
 		return fmt.Errorf("failed to get nonce for commit block, errL %v", err)
@@ -585,7 +585,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 			if nonce != newNonce {
 				return fmt.Errorf("failed to retry for verify block, nonce=%d,newNonce=%d", nonce, newNonce)
 			}
-			standByGasPrice := decimal.NewFromBigInt(gasPrice, 0).Add(decimal.NewFromBigInt(gasPrice, 0).Mul(decimal.NewFromFloat(0.1)))
+			standByGasPrice := decimal.NewFromInt(gasPrice.Int64()).Add(decimal.NewFromInt(gasPrice.Int64()).Mul(decimal.NewFromFloat(0.1)))
 			if standByGasPrice.GreaterThan(maxGasPrice) {
 				logx.Errorf("abandon verify block to l1, gasPrice>maxGasPrice,l1 nonce: %s,gasPrice: %s,maxGasPrice: %s", nonce, standByGasPrice, maxGasPrice)
 				return nil
