@@ -338,13 +338,13 @@ func (s *Sender) CommitBlocks() (err error) {
 			logx.Infof("speed up commit block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
 		}
 		// commit blocks on-chain
-		txHash, err = zkbnb.CommitBlocks(
+		txHash, err = zkbnb.CommitBlocksWithNonce(
 			cli, authCliCommitBlock,
 			zkbnbInstance,
 			lastStoredBlockInfo,
 			pendingCommitBlocks,
 			gasPrice,
-			s.config.ChainConfig.GasLimit)
+			s.config.ChainConfig.GasLimit, nonce)
 		if err != nil {
 			commitExceptionHeightMetric.Set(float64(pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber))
 			if err.Error() == "replacement transaction underpriced" || err.Error() == "transaction underpriced" {
@@ -594,8 +594,8 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 			logx.Infof("speed up verify block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
 		}
 		// Verify blocks on-chain
-		txHash, err = zkbnb.VerifyAndExecuteBlocks(cli, authCliVerifyBlock, zkbnbInstance,
-			pendingVerifyAndExecuteBlocks, proofs, gasPrice, s.config.ChainConfig.GasLimit)
+		txHash, err = zkbnb.VerifyAndExecuteBlocksWithNonce(authCliVerifyBlock, zkbnbInstance,
+			pendingVerifyAndExecuteBlocks, proofs, gasPrice, s.config.ChainConfig.GasLimit, nonce)
 		if err != nil {
 			verifyExceptionHeightMetric.Set(float64(pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber))
 			if err.Error() == "replacement transaction underpriced" || err.Error() == "transaction underpriced" {
