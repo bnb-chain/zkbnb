@@ -594,7 +594,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 			logx.Infof("speed up verify block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
 		}
 		// Verify blocks on-chain
-		txHash, err := zkbnb.VerifyAndExecuteBlocks(cli, authCliVerifyBlock, zkbnbInstance,
+		txHash, err = zkbnb.VerifyAndExecuteBlocks(cli, authCliVerifyBlock, zkbnbInstance,
 			pendingVerifyAndExecuteBlocks, proofs, gasPrice, s.config.ChainConfig.GasLimit)
 		if err != nil {
 			verifyExceptionHeightMetric.Set(float64(pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber))
