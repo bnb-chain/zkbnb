@@ -2,6 +2,7 @@ package nft
 
 import (
 	"context"
+	"github.com/bnb-chain/zkbnb/common"
 	"strconv"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -87,6 +88,7 @@ func (l *GetAccountNftsLogic) GetAccountNfts(req *types.ReqGetAccountNfts) (resp
 			ContentHash:         nft.NftContentHash,
 			CreatorTreasuryRate: nft.CreatorTreasuryRate,
 			CollectionId:        nft.CollectionId,
+			IpfsId:              common.GenerateCid(nft.NftContentHash),
 		})
 	}
 	return resp, nil

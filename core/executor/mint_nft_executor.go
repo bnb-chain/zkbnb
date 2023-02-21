@@ -3,7 +3,6 @@ package executor
 import (
 	"bytes"
 	"encoding/json"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -60,7 +59,9 @@ func (e *MintNftExecutor) Prepare() error {
 
 func (e *MintNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	txInfo := e.txInfo
-
+	if err := e.Validate(); err != nil {
+		return err
+	}
 	if txInfo.CreatorAccountIndex != txInfo.ToAccountIndex {
 		return types.AppErrInvalidToAccount
 	}
@@ -103,7 +104,6 @@ func (e *MintNftExecutor) ApplyTransaction() error {
 
 	creatorAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(creatorAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	creatorAccount.Nonce++
-
 	stateCache := e.bc.StateDB()
 	stateCache.SetPendingAccount(txInfo.CreatorAccountIndex, creatorAccount)
 	stateCache.SetPendingNft(txInfo.NftIndex, &nft.L2Nft{
@@ -264,4 +264,14 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		IsGas:           true,
 	})
 	return txDetails, nil
+}
+
+func (e *MintNftExecutor) Validate() error {
+	if len(e.txInfo.MetaData) > 2000 {
+		return types.AppErrInvalidMetaData.RefineError(2000)
+	}
+	if len(e.txInfo.MutableAttributes) > 2000 {
+		return types.AppErrInvalidMutableAttributes.RefineError(2000)
+	}
+	return nil
 }

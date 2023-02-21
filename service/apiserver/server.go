@@ -36,23 +36,33 @@ func Run(configFile string) error {
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))
 	_, err := cronJob.AddFunc("@every 1s", func() {
+		defer func() {
+			if err := recover(); err != nil {
+				logx.Severef("set tx pending count failed:%v", err)
+			}
+		}()
 		_, err := ctx.MemCache.SetTxPendingCountKeyPrefix(func() (interface{}, error) {
 			txStatuses := []int64{tx.StatusPending}
 			return ctx.TxPoolModel.GetTxsTotalCount(tx.GetTxWithStatuses(txStatuses))
 		})
 		if err != nil {
-			logx.Errorf("set tx pending count failed:%s", err.Error())
+			logx.Severef("set tx pending count failed:%s", err.Error())
 		}
 	})
 	if err != nil {
 		panic(err)
 	}
 
-	_, err = cronJob.AddFunc("@every 1s", func() {
+	_, err = cronJob.AddFunc("@every 300s", func() {
+		defer func() {
+			if err := recover(); err != nil {
+				logx.Severef("get layer 2 basic info failed:%v", err)
+			}
+		}()
 		l := info.NewGetLayer2BasicInfoLogic(nil, ctx)
 		_, err := l.GetLayer2BasicInfo(false)
 		if err != nil {
-			logx.Errorf("get layer 2 basic info failed:%s", err.Error())
+			logx.Severef("get layer 2 basic info failed:%s", err.Error())
 		}
 	})
 	if err != nil {
@@ -84,7 +94,7 @@ func Run(configFile string) error {
 	// Start the swagger server in background
 	go startSwaggerServer()
 
-	logx.Infof("apiserver is starting at %s:%d...\n", c.Host, c.Port)
+	logx.Infof("apiserver is starting at %s:%d", c.Host, c.Port)
 	server.Start()
 	return nil
 }

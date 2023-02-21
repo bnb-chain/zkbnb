@@ -40,6 +40,43 @@ func Run(configFile string) error {
 		logx.Severe(err)
 		panic(err)
 	}
+
+	_, err = cronJob.AddFunc("@every 10s", func() {
+		logx.Info("========================= update NFT index =========================")
+		err = committer.SyncNftIndexServer()
+		if err != nil {
+			logx.Severef("failed to update NFT index, %v", err)
+		}
+	})
+	if err != nil {
+		logx.Severe(err)
+		panic(err)
+	}
+
+	_, err = cronJob.AddFunc("@every 10s", func() {
+		logx.Info("========================= send message to ipns =========================")
+		err = committer.SendIpfsServer()
+		if err != nil {
+			logx.Severef("failed to send message to ipns, %v", err)
+		}
+	})
+	if err != nil {
+		logx.Severe(err)
+		panic(err)
+	}
+
+	_, err = cronJob.AddFunc("@every 6h", func() {
+		logx.Info("========================= send message to refresh ipns =========================")
+		err = committer.RefreshServer()
+		if err != nil {
+			logx.Severef("failed to send message to refresh ipns, %v", err)
+		}
+	})
+	if err != nil {
+		logx.Severe(err)
+		panic(err)
+	}
+
 	cronJob.Start()
 
 	proc.SetTimeToForceQuit(GracefulShutdownTimeout)
