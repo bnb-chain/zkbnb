@@ -13,19 +13,14 @@ KEY_PATH=~/.zkbnb
 ZkBNB_REPO_PATH=$(cd `dirname $0`; pwd)
 CMC_TOKEN=cfce503f-fake-fake-fake-bbab5257dac8
 NETWORK_RPC_SYS_CONFIG_NAME=LocalTestNetworkRpc # BscTestNetworkRpc or LocalTestNetworkRpc
-BSC_TESTNET_RPC=HTTP://127.0.0.1:8545
-BSC_TESTNET_PRIVATE_KEY=2d92239525b6632b963f49d28411596512fab69052a1738e530a59617e433b81
-COMMIT_BLOCK_PRIVATE_KEY=
-VERIFY_BLOCK_PRIVATE_KEY=
+BSC_TESTNET_RPC=http://127.0.0.1:8545
+BSC_TESTNET_PRIVATE_KEY=9d71cd2db758816baec8643c0de78f6ce6c5d04be4c8d03a2c1423705ed9ede5
 # security Council Members for upgrade approve
 # FOR TEST
 # generage by Mnemonic (account #17 ~ #19): giggle federal note disorder will close traffic air melody artefact taxi tissue
 SECURITY_COUNCIL_MEMBERS_NUMBER_1=0x0000000000000000000000000000000000000000
 SECURITY_COUNCIL_MEMBERS_NUMBER_2=0x0000000000000000000000000000000000000000
 SECURITY_COUNCIL_MEMBERS_NUMBER_3=0x0000000000000000000000000000000000000000
-# validator config, split by `,` commit block address  and verify block address
-VALIDATORS=
-ZKBNB_OPTIONAL_BLOCK_SIZES=1,10
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
 echo '0. stop old database/redis and docker run new database/redis'
@@ -46,7 +41,7 @@ cd ~
 rm -rf ${DEPLOY_PATH}-bak && mv ${DEPLOY_PATH} ${DEPLOY_PATH}-bak
 mkdir -p ${DEPLOY_PATH} && cd ${DEPLOY_PATH}
 git clone --branch testnet  https://github.com/bnb-chain/zkbnb-contract.git
-git clone --branch testnet https://github.com/bnb-chain/zkbnb-crypto.git
+git clone --branch ipfs https://github.com/15000785133/zkbnb-crypto.git
 cp -r ${ZkBNB_REPO_PATH} ${DEPLOY_PATH}
 
 
@@ -55,7 +50,7 @@ if [ $flag = "new" ]; then
   echo "new crypto env"
   echo '2. start generate zkbnb.vk and zkbnb.pk'
   cd ${DEPLOY_PATH}
-  cd zkbnb-crypto && go test ./circuit/solidity -timeout 99999s -run TestExportSol -blocksizes=${ZKBNB_OPTIONAL_BLOCK_SIZES}
+  cd zkbnb-crypto && go test ./circuit/solidity -timeout 99999s -run TestExportSol
   cd ${DEPLOY_PATH}
   mkdir -p $KEY_PATH
   cp -r ./zkbnb-crypto/circuit/solidity/* $KEY_PATH
@@ -65,17 +60,9 @@ fi
 
 echo '3. start verify_parse for ZkBNBVerifier'
 cd ${DEPLOY_PATH}/zkbnb/service/prover/
-contracts=()
-keys=()
-i=0
-for size in $(echo $ZKBNB_OPTIONAL_BLOCK_SIZES | tr ',' ' '); do
-  contracts[$i]="${KEY_PATH}/ZkBNBVerifier${size}.sol"
-  keys[$i]="${KEY_PATH}/zkbnb${size}"
-  i=$((i+1))
-done
-VERIFIER_CONTRACTS=$(echo "${contracts[*]}" | tr ' ' ',')
-PROVING_KEYS=$(echo "${keys[*]}" | tr ' ' ',')
-python3 verifier_parse.py ${VERIFIER_CONTRACTS} ${ZKBNB_OPTIONAL_BLOCK_SIZES} ${DEPLOY_PATH}/zkbnb-contract/contracts/ZkBNBVerifier.sol
+python3 verifier_parse.py ${KEY_PATH}/ZkBNBVerifier10.sol 10 ${DEPLOY_PATH}/zkbnb-contract/contracts/ZkBNBVerifier.sol
+
+
 
 echo '4-1. get latest block number'
 hexNumber=`curl -X POST ${BSC_TESTNET_RPC} --header 'Content-Type: application/json' --data-raw '{"jsonrpc":"2.0", "method":"eth_blockNumber", "params": [], "id":1 }' | jq -r '.result'`
@@ -93,7 +80,6 @@ sed -i -e "s/BSC_TESTNET_PRIVATE_KEY=.*/BSC_TESTNET_PRIVATE_KEY=${BSC_TESTNET_PR
 sed -i -e "s/SECURITY_COUNCIL_MEMBERS_NUMBER_1=.*/SECURITY_COUNCIL_MEMBERS_NUMBER_1=${SECURITY_COUNCIL_MEMBERS_NUMBER_1}/" .env
 sed -i -e "s/SECURITY_COUNCIL_MEMBERS_NUMBER_2=.*/SECURITY_COUNCIL_MEMBERS_NUMBER_2=${SECURITY_COUNCIL_MEMBERS_NUMBER_2}/" .env
 sed -i -e "s/SECURITY_COUNCIL_MEMBERS_NUMBER_3=.*/SECURITY_COUNCIL_MEMBERS_NUMBER_3=${SECURITY_COUNCIL_MEMBERS_NUMBER_3}/" .env
-sed -i -e "s/VALIDATORS=.*/VALIDATORS=${VALIDATORS}/" .env
 yarn install
 npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deploy.js
 echo 'Recorded latest contract addresses into ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json'
@@ -138,10 +124,10 @@ CacheRedis:
   - Host: 127.0.0.1:6379
     Type: node
 
-KeyPath: [${PROVING_KEYS}]
+KeyPath: [${KEY_PATH}/zkbnb10]
 
 BlockConfig:
-  OptionalBlockSizes: [${ZKBNB_OPTIONAL_BLOCK_SIZES}]
+  OptionalBlockSizes: [10]
 
 TreeDB:
   Driver: memorydb
@@ -236,7 +222,7 @@ CacheRedis:
     Type: node
 
 BlockConfig:
-  OptionalBlockSizes: [${ZKBNB_OPTIONAL_BLOCK_SIZES}]
+  OptionalBlockSizes: [10]
 
 IpfsUrl:
   10.23.23.40:5001
@@ -274,8 +260,7 @@ ChainConfig:
   ConfirmBlocksCount: 0
   MaxWaitingTime: 120
   MaxBlockCount: 4
-  CommitBlockSk: "${COMMIT_BLOCK_PRIVATE_KEY}"
-  VerifyBlockSk: "${VERIFY_BLOCK_PRIVATE_KEY}"
+  Sk: "${BSC_TESTNET_PRIVATE_KEY}"
   GasLimit: 5000000
   GasPrice: 0
 
@@ -320,11 +305,12 @@ LogConf:
   StackCooldownMillis: 500
   Level: error
 
-IpfsUrl:
-  10.23.23.40:5001
 CoinMarketCap:
   Url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=
   Token: ${CMC_TOKEN}
+
+IpfsUrl:
+  10.23.23.40:5001
 
 MemCache:
   AccountExpiration: 200

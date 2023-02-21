@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
+	"github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/gopool"
 	"github.com/bnb-chain/zkbnb/common/metrics"
 	"github.com/bnb-chain/zkbnb/core/statedb"
@@ -39,6 +40,7 @@ type Config struct {
 		RollbackOnly          bool `json:",optional"`
 	}
 	LogConf logx.LogConf
+	IpfsUrl string
 }
 
 type Committer struct {
@@ -91,6 +93,7 @@ func NewCommitter(config *Config) (*Committer, error) {
 		saveBlockDataPoolSize = 100
 	}
 	pool, err := ants.NewPool(saveBlockDataPoolSize)
+	common.NewIPFS(config.IpfsUrl)
 	committer := &Committer{
 		running:            true,
 		config:             config,
@@ -173,15 +176,7 @@ func (c *Committer) pullPoolTxs() {
 		}
 		executedTxMaxId = c.bc.Statedb.MaxPollTxIdRollbackImmutable
 		metrics.GetPendingTxsToQueueMetric.Set(float64(len(pendingTxs)))
-		notRestoreTxs := make([]*tx.Tx, 0)
 		for _, poolTx := range pendingTxs {
-			if poolTx.Rollback == false {
-				notRestoreTxs = append(notRestoreTxs, poolTx)
-				continue
-			}
-			c.executeTxWorker.Enqueue(poolTx)
-		}
-		for _, poolTx := range notRestoreTxs {
 			c.executeTxWorker.Enqueue(poolTx)
 		}
 	}
@@ -239,7 +234,7 @@ func (c *Committer) getPoolTxsFromQueue() []*tx.Tx {
 }
 
 func (c *Committer) executeTxFunc() {
-	latestRequestId, err := c.getLatestExecutedRequestId()
+	l1LatestRequestId, err := c.getLatestExecutedRequestId()
 	if err != nil {
 		logx.Errorf("get latest executed request id failed:%s", err.Error())
 		panic("get latest executed request id failed: " + err.Error())
@@ -252,7 +247,7 @@ func (c *Committer) executeTxFunc() {
 		if curBlock.BlockStatus > block.StatusProposing {
 			previousHeight := curBlock.BlockHeight
 			curBlock, err = c.bc.InitNewBlock()
-			logx.Infof("1 init new block, current height=%s,previous height=%s,blockId=%s", curBlock.BlockHeight, previousHeight, curBlock.ID)
+			logx.Infof("1 init new block, current height=%d,previous height=%d,blockId=%d", curBlock.BlockHeight, previousHeight, curBlock.ID)
 			if err != nil {
 				logx.Errorf("propose new block failed:%s", err)
 				panic("propose new block failed: " + err.Error())
@@ -287,9 +282,17 @@ func (c *Committer) executeTxFunc() {
 			}
 			metrics.ExecuteTxMetrics.Inc()
 			startApplyTx := time.Now()
+			logx.Infof("start apply pool tx ID: %d", poolTx.ID)
 			err = c.bc.ApplyTransaction(poolTx)
 			if c.bc.Statedb.NeedRestoreExecutedTxs() && poolTx.ID >= c.bc.Statedb.MaxPollTxIdRollbackImmutable {
+				logx.Infof("update needRestoreExecutedTxs to false,blockHeight:%d", curBlock.BlockHeight)
 				c.bc.Statedb.UpdateNeedRestoreExecutedTxs(false)
+				err := c.bc.DB().BlockModel.DeleteBlockGreaterThanHeight(curBlock.BlockHeight, []int{block.StatusProposing, block.StatusPacked})
+				if err != nil {
+					logx.Errorf("DeleteBlockGreaterThanHeight failed:%s,blockHeight:%d", err.Error(), curBlock.BlockHeight)
+					panic("DeleteBlockGreaterThanHeight failed: " + err.Error())
+				}
+				c.bc.ClearRollbackBlockMap()
 			}
 			metrics.ExecuteTxApply1TxMetrics.Set(float64(time.Since(startApplyTx).Milliseconds()))
 			if err != nil {
@@ -313,20 +316,12 @@ func (c *Committer) executeTxFunc() {
 			}
 
 			if types.IsPriorityOperationTx(poolTx.TxType) {
-				request, err := c.bc.PriorityRequestModel.GetPriorityRequestsByL2TxHash(poolTx.TxHash)
-				if err == nil {
-					metrics.PriorityOperationMetric.Set(float64(request.RequestId))
-					metrics.PriorityOperationHeightMetric.Set(float64(request.L1BlockHeight))
-					//todo get requestId from pool tx
-					if latestRequestId != -1 && request.RequestId != latestRequestId+1 {
-						logx.Severef("invalid request id=%s,txHash=%s", strconv.Itoa(int(request.RequestId)), err.Error())
-						panic("invalid request id=" + strconv.Itoa(int(request.RequestId)) + ",txHash=" + poolTx.TxHash)
-					}
-					latestRequestId = request.RequestId
-				} else {
-					logx.Severef("query txHash from priority request txHash=%s,error=%s", poolTx.TxHash, err.Error())
-					panic("query txHash from priority request txHash=" + poolTx.TxHash + ",error=" + err.Error())
+				metrics.PriorityOperationMetric.Set(float64(poolTx.L1RequestId))
+				if l1LatestRequestId != -1 && poolTx.L1RequestId != l1LatestRequestId+1 {
+					logx.Severef("invalid request id=%s,txHash=%s", strconv.Itoa(int(poolTx.L1RequestId)), err.Error())
+					panic("invalid request id=" + strconv.Itoa(int(poolTx.L1RequestId)) + ",txHash=" + poolTx.TxHash)
 				}
+				l1LatestRequestId = poolTx.L1RequestId
 			}
 
 			// Write the proposed block into database when the first transaction executed.
@@ -1092,14 +1087,7 @@ func (c *Committer) getLatestExecutedRequestId() (int64, error) {
 	} else if err == types.DbErrNotFound {
 		return -1, nil
 	}
-
-	p, err := c.bc.PriorityRequestModel.GetPriorityRequestsByL2TxHash(latestTx.TxHash)
-	if err != nil {
-		logx.Errorf("get priority request by txhash: %s failed: %v", latestTx.TxHash, err)
-		return -1, err
-	}
-
-	return p.RequestId, nil
+	return latestTx.L1RequestId, nil
 }
 
 func (c *Committer) loadAllAccounts() {
@@ -1257,4 +1245,99 @@ func (c *Committer) Shutdown() {
 	c.finalSaveBlockDataWorker.Stop()
 	c.bc.Statedb.Close()
 	c.bc.ChainDB.Close()
+}
+
+func (c *Committer) SyncNftIndexServer() error {
+	histories, err := c.bc.L2NftMetadataHistoryModel.GetL2NftMetadataHistoryList(nft.StatusNftIndex)
+	if err != nil {
+		if err == types.DbErrSqlOperation {
+			return err
+		}
+		return nil
+	}
+	for _, history := range histories {
+		poolTx, err := c.bc.TxPoolModel.GetTxUnscopedByTxHash(history.TxHash)
+		if err != nil {
+			return err
+		}
+		if poolTx.TxStatus == tx.StatusFailed {
+			err = c.bc.L2NftMetadataHistoryModel.DeleteInTransact(history.ID)
+			if err != nil {
+				return err
+			}
+		} else if poolTx.TxStatus == tx.StatusExecuted {
+			tx, err := c.bc.TxModel.GetTxByHash(history.TxHash)
+			if err != nil {
+				return err
+			}
+			history.NftIndex = tx.NftIndex
+			history.Status = nft.NotConfirmed
+			err = c.bc.L2NftMetadataHistoryModel.UpdateL2NftMetadataHistoryInTransact(history)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (c *Committer) SendIpfsServer() error {
+	histories, err := c.bc.L2NftMetadataHistoryModel.GetL2NftMetadataHistoryList(nft.NotConfirmed)
+	if err != nil {
+		if err == types.DbErrSqlOperation {
+			return err
+		}
+		return nil
+	}
+	for _, history := range histories {
+		err = saveIpfs(history)
+		if err != nil {
+			return err
+		}
+		err = c.bc.L2NftMetadataHistoryModel.UpdateL2NftMetadataHistoryInTransact(history)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func saveIpfs(history *nft.L2NftMetadataHistory) error {
+	cid, err := common.Ipfs.Upload(history.Mutable)
+	if err != nil {
+		return err
+	}
+	_, err = common.Ipfs.PublishWithDetails(cid, history.IpnsName)
+	if err != nil {
+		return err
+	}
+	history.Status = nft.Confirmed
+	history.IpnsCid = cid
+	return nil
+}
+
+func (c *Committer) RefreshServer() error {
+	limit := 500
+	offset := 0
+	for {
+		histories, err := c.bc.L2NftMetadataHistoryModel.GetL2NftMetadataHistoryPage(nft.Confirmed, limit, offset)
+		if err != nil {
+			if err == types.DbErrSqlOperation {
+				return err
+			}
+			return nil
+		}
+		for _, hostory := range histories {
+			_, err = common.Ipfs.PublishWithDetails(hostory.IpnsCid, hostory.IpnsName)
+			if err != nil {
+				return err
+			}
+		}
+		if len(histories) < limit {
+			break
+		} else {
+			offset = offset + limit
+		}
+	}
+	return nil
 }

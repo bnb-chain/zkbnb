@@ -23,6 +23,7 @@ type Config struct {
 		Url   string
 		Token string
 	}
+	IpfsUrl  string
 	MemCache struct {
 		AccountExpiration   int
 		AssetExpiration     int
