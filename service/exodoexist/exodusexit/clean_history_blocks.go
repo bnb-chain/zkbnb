@@ -1,9 +1,8 @@
-package monitor
+package exodusexit
 
 import (
 	"github.com/zeromicro/go-zero/core/logx"
 
-	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
 )
 
@@ -12,12 +11,7 @@ func (m *Monitor) CleanHistoryBlocks() (err error) {
 	if err != nil {
 		return err
 	}
-	latestGovBlock, err := m.L1SyncedBlockModel.GetLatestL1SyncedBlockByType(l1syncedblock.TypeGovernance)
-	if err != nil {
-		return err
-	}
-
-	minHeight := common2.MinInt64(latestGenericBlock.L1BlockHeight, latestGovBlock.L1BlockHeight)
+	minHeight := latestGenericBlock.L1BlockHeight
 	keepHeight := minHeight - m.Config.ChainConfig.KeptHistoryBlocksCount
 	if keepHeight <= 0 {
 		return nil

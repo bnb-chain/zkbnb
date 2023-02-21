@@ -11,6 +11,14 @@ type Config struct {
 		MasterDataSource string
 		SlaveDataSource  string
 	}
+	ChainConfig struct {
+		NetworkRPCSysConfigName string
+		StartL1BlockHeight      int64
+		ConfirmBlocksCount      uint64
+		MaxHandledBlocksCount   int64
+		KeptHistoryBlocksCount  int64 // KeptHistoryBlocksCount define the count of blocks to keep in table, old blocks will be cleaned
+		BscTestNetRpc           string
+	}
 	TreeDB struct {
 		Driver tree.Driver
 		//nolint:staticcheck
