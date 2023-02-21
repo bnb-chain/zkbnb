@@ -69,8 +69,8 @@ func InitAccountTree(
 			SetNamespace(ctx, accountAssetNamespace(index)), AssetTreeHeight, nilAccountAssetNodeHashes,
 			ctx.Options(0)...)
 		if err != nil {
-			logx.Errorf("unable to create new tree by assets: %s", err.Error())
-			panic(err.Error())
+			logx.Severef("failed to create new tree by assets, %v", err)
+			panic("failed to create new tree by assets, err:" + err.Error())
 		}
 		return tree
 	})

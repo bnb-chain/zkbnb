@@ -182,36 +182,38 @@ func NewSender(c sconfig.Config) *Sender {
 
 	l1RPCEndpoint, err := s.sysConfigModel.GetSysConfigByName(c.ChainConfig.NetworkRPCSysConfigName)
 	if err != nil {
-		logx.Severef("fatal error, cannot fetch l1RPCEndpoint from sysconfig, err: %v, SysConfigName: %s",
+		logx.Severef("fatal error, failed to get network rpc configuration, err:%v, SysConfigName:%s",
 			err, c.ChainConfig.NetworkRPCSysConfigName)
-		panic(err)
+		panic("failed to get network rpc configuration, err:" + err.Error() + ", SysConfigName:" +
+			c.ChainConfig.NetworkRPCSysConfigName)
 	}
 	rollupAddress, err := s.sysConfigModel.GetSysConfigByName(types.ZkBNBContract)
 	if err != nil {
-		logx.Severef("fatal error, cannot fetch rollupAddress from sysconfig, err: %v, SysConfigName: %s",
+		logx.Severef("fatal error, failed to get zkBNB contract configuration, err:%v, SysConfigName:%s",
 			err, types.ZkBNBContract)
-		panic(err)
+		panic("fatal error, failed to get zkBNB contract configuration, err:" + err.Error() + "SysConfigName:" +
+			types.ZkBNBContract)
 	}
 
 	s.cli, err = rpc.NewClient(l1RPCEndpoint.Value)
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to create client instance, %v", err)
+		panic("failed to create client instance, err:" + err.Error())
 	}
 	chainId, err := s.cli.ChainID(context.Background())
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to get chainId, %v", err)
+		panic("failed to get chainId, err:" + err.Error())
 	}
 	s.authCli, err = rpc.NewAuthClient(c.ChainConfig.Sk, chainId)
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to create auth client instance, %v", err)
+		panic("failed to create auth client instance, err:" + err.Error())
 	}
 	s.zkbnbInstance, err = zkbnb.LoadZkBNBInstance(s.cli, rollupAddress.Value)
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to load ZkBNB instance, %v", err)
+		panic("failed to load ZkBNB instance, err:" + err.Error())
 	}
 	return s
 }

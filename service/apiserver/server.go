@@ -50,7 +50,8 @@ func Run(configFile string) error {
 		}
 	})
 	if err != nil {
-		panic(err)
+		logx.Severef("failed to start the set transaction pending count task, %v", err)
+		panic("failed to start the set transaction pending count task, err:" + err.Error())
 	}
 
 	_, err = cronJob.AddFunc("@every 300s", func() {
@@ -66,7 +67,8 @@ func Run(configFile string) error {
 		}
 	})
 	if err != nil {
-		panic(err)
+		logx.Severef("failed to start the apiserver recover task, %v", err)
+		panic("failed to start the apiserver recover task, err:" + err.Error())
 	}
 	cronJob.Start()
 
