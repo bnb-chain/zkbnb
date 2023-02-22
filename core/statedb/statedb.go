@@ -160,6 +160,44 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 	}, nil
 }
 
+func NewStateDBForExodusExit(redisCache dbcache.Cache, cacheConfig *CacheConfig, chainDb *ChainDB) (*StateDB, error) {
+	accountCache, err := lru.New(cacheConfig.AccountCacheSize)
+	if err != nil {
+		logx.Error("init account cache failed:", err)
+		return nil, err
+	}
+	nftCache, err := lru.New(cacheConfig.NftCacheSize)
+	if err != nil {
+		logx.Error("init nft cache failed:", err)
+		return nil, err
+	}
+
+	memCache, err := ristretto.NewCache(&ristretto.Config{
+		NumCounters: int64(cacheConfig.MemCacheSize) * 10,
+		MaxCost:     int64(cacheConfig.MemCacheSize),
+		BufferItems: 64, // official recommended value
+
+		// Called when setting cost to 0 in `Set/SetWithTTL`
+		Cost: func(value interface{}) int64 {
+			return 1
+		},
+	})
+	if err != nil {
+		logx.Error("MemCache init failed:", err)
+		return nil, err
+	}
+
+	return &StateDB{
+		DryRun:       false,
+		redisCache:   redisCache,
+		chainDb:      chainDb,
+		AccountCache: accountCache,
+		MemCache:     memCache,
+		NftCache:     nftCache,
+		StateCache:   NewStateCache(""),
+	}, nil
+}
+
 func NewStateDBForDryRun(redisCache dbcache.Cache, cacheConfig *CacheConfig, chainDb *ChainDB, memCache *ristretto.Cache) (*StateDB, error) {
 	accountCache, err := lru.New(cacheConfig.AccountCacheSize)
 	if err != nil {

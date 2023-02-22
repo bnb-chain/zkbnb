@@ -18,10 +18,12 @@
 package exodusexit
 
 import (
+	"errors"
 	"github.com/bnb-chain/zkbnb/types"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	"strconv"
 )
 
 const (
@@ -42,6 +44,9 @@ type (
 		GetBlockByHeight(blockHeight int64) (block *ExodusExitBlock, err error)
 		GetBlocksByHeights(blockHeights []int64) (blocks []*ExodusExitBlock, err error)
 		BatchInsertOrUpdateInTransact(tx *gorm.DB, exodusExitBlocks []*ExodusExitBlock) (err error)
+		GetBlocksByStatusAndMaxHeight(status int, maxHeight int64, limit int64) (exodusExitBlocks []*ExodusExitBlock, err error)
+		GetLatestExecutedBlock() (exodusExitBlock *ExodusExitBlock, err error)
+		UpdateBlockToExecutedInTransact(tx *gorm.DB, exodusExitBlock *ExodusExitBlock) error
 	}
 
 	defaultBlockModel struct {
@@ -111,6 +116,39 @@ func (m *defaultBlockModel) BatchInsertOrUpdateInTransact(tx *gorm.DB, exodusExi
 	if int(dbTx.RowsAffected) != len(exodusExitBlocks) {
 		logx.Errorf("BatchInsertOrUpdateInTransact failed,rows affected not equal exodusExitBlocks length,dbTx.RowsAffected:%s,len(exodusExitBlocks):%s", int(dbTx.RowsAffected), len(exodusExitBlocks))
 		return types.DbErrFailToUpdateAccount
+	}
+	return nil
+}
+
+func (m *defaultBlockModel) GetBlocksByStatusAndMaxHeight(status int, maxHeight int64, limit int64) (exodusExitBlocks []*ExodusExitBlock, err error) {
+	dbTx := m.DB.Table(m.table).Limit(int(limit)).Where("block_status = ? and block_height > ?", status, maxHeight).Order("block_height asc").Find(&exodusExitBlocks)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return exodusExitBlocks, nil
+}
+
+func (m *defaultBlockModel) GetLatestExecutedBlock() (exodusExitBlock *ExodusExitBlock, err error) {
+	dbTx := m.DB.Table(m.table).Where("block_status = ?", StatusExecuted).Order("block_height DESC").Limit(1).Find(&exodusExitBlock)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return exodusExitBlock, nil
+}
+
+func (m *defaultBlockModel) UpdateBlockToExecutedInTransact(tx *gorm.DB, exodusExitBlock *ExodusExitBlock) error {
+	dbTx := tx.Model(&ExodusExitBlock{}).Select("BlockStatus").Where("id = ? and  block_status = ?", exodusExitBlock.ID, StatusVerified).Updates(map[string]interface{}{
+		"block_status": StatusExecuted,
+	})
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected != 1 {
+		return errors.New("update exodusExitBlock status failed,rowsAffected =" + strconv.FormatInt(dbTx.RowsAffected, 10) + "not equal length=1")
 	}
 	return nil
 }

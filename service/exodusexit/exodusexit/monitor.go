@@ -28,7 +28,7 @@ import (
 	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
-	"github.com/bnb-chain/zkbnb/service/exodoexist/config"
+	"github.com/bnb-chain/zkbnb/service/exodusexit/config"
 	"github.com/bnb-chain/zkbnb/types"
 )
 

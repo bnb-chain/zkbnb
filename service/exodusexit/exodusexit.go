@@ -1,4 +1,4 @@
-package exodoexist
+package exodusexit
 
 import (
 	"github.com/bnb-chain/zkbnb/service/witness/witness"
@@ -9,7 +9,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
 
-	"github.com/bnb-chain/zkbnb/service/exodoexist/config"
+	"github.com/bnb-chain/zkbnb/service/exodusexit/config"
 )
 
 const GracefulShutdownTimeout = 5 * time.Second

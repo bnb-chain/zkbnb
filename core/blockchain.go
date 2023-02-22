@@ -197,6 +197,36 @@ func NewBlockChainForDryRun(accountModel account.AccountModel,
 	return bc, nil
 }
 
+func NewBlockChainForExodusExit(config *ChainConfig) (*BlockChain, error) {
+	masterDataSource := config.Postgres.MasterDataSource
+	slaveDataSource := config.Postgres.SlaveDataSource
+	db, err := gorm.Open(postgres.Open(config.Postgres.MasterDataSource), &gorm.Config{
+		Logger: logger.Default.LogMode(config.Postgres.LogLevel),
+	})
+	if err != nil {
+		logx.Severe("gorm connect db failed: ", err)
+		return nil, err
+	}
+	err = db.Use(dbresolver.Register(dbresolver.Config{
+		Sources:  []gorm.Dialector{postgres.Open(masterDataSource)},
+		Replicas: []gorm.Dialector{postgres.Open(slaveDataSource)},
+	}))
+	if err != nil {
+		logx.Severe("gorm connect db failed: ", err)
+		return nil, err
+	}
+	bc := &BlockChain{
+		ChainDB:     sdb.NewChainDB(db),
+		chainConfig: config,
+	}
+	redisCache := dbcache.NewRedisCache(config.CacheRedis[0].Host, config.CacheRedis[0].Pass, 15*time.Minute)
+	bc.Statedb, err = sdb.NewStateDBForExodusExit(redisCache, &config.CacheConfig, bc.ChainDB)
+	if err != nil {
+		return nil, err
+	}
+	return bc, nil
+}
+
 func preRollBackFunc(bc *BlockChain, redisCache dbcache.Cache) ([]int64, []int64, []int64) {
 	accountIndexList := make([]int64, 0)
 	nftIndexList := make([]int64, 0)

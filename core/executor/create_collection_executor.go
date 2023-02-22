@@ -18,7 +18,7 @@ import (
 type CreateCollectionExecutor struct {
 	BaseExecutor
 
-	txInfo *txtypes.CreateCollectionTxInfo
+	TxInfo *txtypes.CreateCollectionTxInfo
 }
 
 func NewCreateCollectionExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
@@ -30,12 +30,12 @@ func NewCreateCollectionExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) 
 
 	return &CreateCollectionExecutor{
 		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
-		txInfo:       txInfo,
+		TxInfo:       txInfo,
 	}, nil
 }
 
 func (e *CreateCollectionExecutor) Prepare() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	// Mark the tree states that would be affected in this executor.
 	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{txInfo.GasFeeAssetId})
@@ -55,7 +55,7 @@ func (e *CreateCollectionExecutor) Prepare() error {
 }
 
 func (e *CreateCollectionExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk, skipSigChk)
 	if err != nil {
 		return err
@@ -74,7 +74,7 @@ func (e *CreateCollectionExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) 
 
 func (e *CreateCollectionExecutor) ApplyTransaction() error {
 	bc := e.bc
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
 	if err != nil {
@@ -93,7 +93,7 @@ func (e *CreateCollectionExecutor) ApplyTransaction() error {
 }
 
 func (e *CreateCollectionExecutor) GeneratePubData() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(types.TxTypeCreateCollection))
@@ -114,21 +114,21 @@ func (e *CreateCollectionExecutor) GeneratePubData() error {
 }
 
 func (e *CreateCollectionExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
-	txInfoBytes, err := json.Marshal(e.txInfo)
+	txInfoBytes, err := json.Marshal(e.TxInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
 		return nil, errors.New("unmarshal tx failed")
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.GasFeeAssetId = e.txInfo.GasFeeAssetId
-	e.tx.GasFee = e.txInfo.GasFeeAssetAmount.String()
-	e.tx.CollectionId = e.txInfo.CollectionId
+	e.tx.GasFeeAssetId = e.TxInfo.GasFeeAssetId
+	e.tx.GasFee = e.TxInfo.GasFeeAssetAmount.String()
+	e.tx.CollectionId = e.TxInfo.CollectionId
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *CreateCollectionExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	copiedAccounts, err := e.bc.StateDB().DeepCopyAccounts([]int64{txInfo.AccountIndex, txInfo.GasAccountIndex})
 	if err != nil {
