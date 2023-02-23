@@ -19,7 +19,7 @@ import (
 type DepositNftExecutor struct {
 	BaseExecutor
 
-	txInfo *txtypes.DepositNftTxInfo
+	TxInfo *txtypes.DepositNftTxInfo
 }
 
 func NewDepositNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
@@ -31,13 +31,13 @@ func NewDepositNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 
 	return &DepositNftExecutor{
 		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
-		txInfo:       txInfo,
+		TxInfo:       txInfo,
 	}, nil
 }
 
 func (e *DepositNftExecutor) Prepare() error {
 	bc := e.bc
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	// The account index from txInfo isn't true, find account by account name hash.
 	accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
@@ -63,7 +63,7 @@ func (e *DepositNftExecutor) Prepare() error {
 
 func (e *DepositNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	bc := e.bc
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	nft, err := bc.StateDB().GetNft(txInfo.NftIndex)
 	if err != nil {
@@ -77,7 +77,7 @@ func (e *DepositNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error 
 }
 
 func (e *DepositNftExecutor) ApplyTransaction() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	nft := &nft.L2Nft{
 		NftIndex:            txInfo.NftIndex,
@@ -97,7 +97,7 @@ func (e *DepositNftExecutor) ApplyTransaction() error {
 }
 
 func (e *DepositNftExecutor) GeneratePubData() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(types.TxTypeDepositNft))
@@ -119,20 +119,20 @@ func (e *DepositNftExecutor) GeneratePubData() error {
 }
 
 func (e *DepositNftExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
-	txInfoBytes, err := json.Marshal(e.txInfo)
+	txInfoBytes, err := json.Marshal(e.TxInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
 		return nil, errors.New("unmarshal tx failed")
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.NftIndex = e.txInfo.NftIndex
-	e.tx.AccountIndex = e.txInfo.AccountIndex
+	e.tx.NftIndex = e.TxInfo.NftIndex
+	e.tx.AccountIndex = e.TxInfo.AccountIndex
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *DepositNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 	depositAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
 	if err != nil {
 		return nil, err

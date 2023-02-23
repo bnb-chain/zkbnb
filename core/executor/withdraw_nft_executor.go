@@ -19,7 +19,7 @@ import (
 type WithdrawNftExecutor struct {
 	BaseExecutor
 
-	txInfo *txtypes.WithdrawNftTxInfo
+	TxInfo *txtypes.WithdrawNftTxInfo
 }
 
 func NewWithdrawNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
@@ -31,12 +31,12 @@ func NewWithdrawNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 
 	return &WithdrawNftExecutor{
 		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
-		txInfo:       txInfo,
+		TxInfo:       txInfo,
 	}, nil
 }
 
 func (e *WithdrawNftExecutor) Prepare() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	nftInfo, err := e.bc.StateDB().PrepareNft(txInfo.NftIndex)
 	if err != nil {
@@ -74,7 +74,7 @@ func (e *WithdrawNftExecutor) Prepare() error {
 }
 
 func (e *WithdrawNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk, skipSigChk)
 	if err != nil {
@@ -102,7 +102,7 @@ func (e *WithdrawNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 
 func (e *WithdrawNftExecutor) ApplyTransaction() error {
 	bc := e.bc
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	oldNft, err := bc.StateDB().GetNft(txInfo.NftIndex)
 	if err != nil {
@@ -134,7 +134,7 @@ func (e *WithdrawNftExecutor) ApplyTransaction() error {
 }
 
 func (e *WithdrawNftExecutor) GeneratePubData() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(types.TxTypeWithdrawNft))
@@ -164,21 +164,21 @@ func (e *WithdrawNftExecutor) GeneratePubData() error {
 }
 
 func (e *WithdrawNftExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
-	txInfoBytes, err := json.Marshal(e.txInfo)
+	txInfoBytes, err := json.Marshal(e.TxInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
 		return nil, errors.New("unmarshal tx failed")
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.GasFeeAssetId = e.txInfo.GasFeeAssetId
-	e.tx.GasFee = e.txInfo.GasFeeAssetAmount.String()
-	e.tx.NftIndex = e.txInfo.NftIndex
+	e.tx.GasFeeAssetId = e.TxInfo.GasFeeAssetId
+	e.tx.GasFee = e.TxInfo.GasFeeAssetAmount.String()
+	e.tx.NftIndex = e.TxInfo.NftIndex
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *WithdrawNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 	nftModel, err := e.bc.StateDB().GetNft(txInfo.NftIndex)
 	if err != nil {
 		return nil, err

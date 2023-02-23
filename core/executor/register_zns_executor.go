@@ -20,7 +20,7 @@ import (
 type RegisterZnsExecutor struct {
 	BaseExecutor
 
-	txInfo *txtypes.RegisterZnsTxInfo
+	TxInfo *txtypes.RegisterZnsTxInfo
 }
 
 func NewRegisterZnsExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
@@ -32,7 +32,7 @@ func NewRegisterZnsExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 
 	return &RegisterZnsExecutor{
 		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
-		txInfo:       txInfo,
+		TxInfo:       txInfo,
 	}, nil
 }
 
@@ -43,13 +43,13 @@ func (e *RegisterZnsExecutor) Prepare() error {
 	}
 
 	// Mark the tree states that would be affected in this executor.
-	e.MarkAccountAssetsDirty(e.txInfo.AccountIndex, []int64{})
+	e.MarkAccountAssetsDirty(e.TxInfo.AccountIndex, []int64{})
 	return nil
 }
 
 func (e *RegisterZnsExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	bc := e.bc
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	_, err := bc.StateDB().GetAccountByName(txInfo.AccountName)
 	if err == nil {
@@ -65,7 +65,7 @@ func (e *RegisterZnsExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 
 func (e *RegisterZnsExecutor) ApplyTransaction() error {
 	bc := e.bc
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 	var err error
 
 	newAccount := &account.Account{
@@ -93,7 +93,7 @@ func (e *RegisterZnsExecutor) ApplyTransaction() error {
 }
 
 func (e *RegisterZnsExecutor) GeneratePubData() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(types.TxTypeRegisterZns))
@@ -119,14 +119,14 @@ func (e *RegisterZnsExecutor) GeneratePubData() error {
 }
 
 func (e *RegisterZnsExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
-	txInfoBytes, err := json.Marshal(e.txInfo)
+	txInfoBytes, err := json.Marshal(e.TxInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
 		return nil, errors.New("unmarshal tx failed")
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.AccountIndex = e.txInfo.AccountIndex
+	e.tx.AccountIndex = e.TxInfo.AccountIndex
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 

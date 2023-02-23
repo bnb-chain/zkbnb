@@ -9,7 +9,9 @@ import (
 	"github.com/bnb-chain/zkbnb/core/executor"
 	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/exodusexit"
+	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/panjf2000/ants/v2"
 	"math/big"
 	"time"
 
@@ -36,6 +38,7 @@ type ExodusExit struct {
 	running bool
 	config  *Config
 	bc      *core.BlockChain
+	pool    *ants.Pool
 }
 
 func NewExodusExit(config *Config) (*ExodusExit, error) {
@@ -95,6 +98,7 @@ func (c *ExodusExit) Run() error {
 			}
 		}
 	}
+	return nil
 }
 
 func (c *ExodusExit) executeBlockFunc(exodusExitBlock *exodusexit.ExodusExitBlock) error {
@@ -106,8 +110,83 @@ func (c *ExodusExit) executeBlockFunc(exodusExitBlock *exodusexit.ExodusExitBloc
 		offset := 0
 		offset, txType := common2.ReadUint8(subPubData, offset)
 		switch txType {
+		case types.TxTypeAtomicMatch:
+			err := c.executeAtomicMatch(subPubData)
+			if err != nil {
+				return err
+			}
+			break
+		case types.TxTypeCancelOffer:
+			err := c.executeCancelOffer(subPubData)
+			if err != nil {
+				return err
+			}
+			break
+		case types.TxTypeCreateCollection:
+			err := c.executeCollection(subPubData)
+			if err != nil {
+				return err
+			}
+			break
+		case types.TxTypeDeposit:
+			err := c.executeDeposit(subPubData)
+			if err != nil {
+				return err
+			}
+			break
+		case types.TxTypeDepositNft:
+			err := c.executeDepositNft(subPubData)
+			if err != nil {
+				return err
+			}
+			break
+		case types.TxTypeFullExit:
+			err := c.executeFullExit(subPubData)
+			if err != nil {
+				return err
+			}
+			break
+		case types.TxTypeFullExitNft:
+			err := c.executeFullExitNft(subPubData)
+			if err != nil {
+				return err
+			}
+			break
+		case types.TxTypeMintNft:
+			err := c.executeMintNft(subPubData)
+			if err != nil {
+				return err
+			}
+			break
+		case types.TxTypeRegisterZns:
+			err := c.executeRegisterZns(subPubData)
+			if err != nil {
+				return err
+			}
+			break
 		case types.TxTypeTransfer:
-			c.executeTransfer(subPubData)
+			err := c.executeTransfer(subPubData)
+			if err != nil {
+				return err
+			}
+			break
+		case types.TxTypeTransferNft:
+			err := c.executeTransferNft(subPubData)
+			if err != nil {
+				return err
+			}
+			break
+		case types.TxTypeWithdraw:
+			err := c.executeWithdraw(subPubData)
+			if err != nil {
+				return err
+			}
+			break
+		case types.TxTypeWithdrawNft:
+			err := c.executeWithdrawNft(subPubData)
+			if err != nil {
+				return err
+			}
 			break
 		}
 	}
@@ -274,6 +353,323 @@ func (c *ExodusExit) Shutdown() {
 	c.bc.ChainDB.Close()
 }
 
+func (c *ExodusExit) executeAtomicMatch(pubData []byte) error {
+	bc := c.bc
+	offset := 1
+	offset, accountIndex := common2.ReadUint32(pubData, offset)
+	offset, buyOfferAccountIndex := common2.ReadUint32(pubData, offset)
+	offset, buyOfferOfferId := common2.ReadUint24(pubData, offset)
+	offset, sellOfferAccountIndex := common2.ReadUint32(pubData, offset)
+	offset, sellOfferOfferId := common2.ReadUint24(pubData, offset)
+	offset, buyOfferNftIndex := common2.ReadUint40(pubData, offset)
+	offset, sellOfferAssetId := common2.ReadUint16(pubData, offset)
+	offset, buyOfferAssetPackedAmount := common2.ReadUint40(pubData, offset)
+	buyOfferAssetAmount, err := util.CleanPackedAmount(big.NewInt(buyOfferAssetPackedAmount))
+	if err != nil {
+		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
+		return err
+	}
+
+	offset, creatorPackedAmount := common2.ReadUint40(pubData, offset)
+	creatorAmount, err := util.CleanPackedAmount(big.NewInt(creatorPackedAmount))
+	if err != nil {
+		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
+		return err
+	}
+
+	offset, treasuryPackedAmount := common2.ReadUint40(pubData, offset)
+	treasuryAmount, err := util.CleanPackedAmount(big.NewInt(treasuryPackedAmount))
+	if err != nil {
+		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
+		return err
+	}
+
+	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
+
+	offset, gasFeeAssetPackedAmount := common2.ReadUint16(pubData, offset)
+	gasFeeAssetAmount, err := util.CleanPackedFee(big.NewInt(int64(gasFeeAssetPackedAmount)))
+	if err != nil {
+		return err
+	}
+
+	txInfo := &txtypes.AtomicMatchTxInfo{
+		AccountIndex: int64(accountIndex),
+		BuyOffer: &txtypes.OfferTxInfo{
+			AccountIndex: int64(buyOfferAccountIndex),
+			OfferId:      int64(buyOfferOfferId),
+			NftIndex:     buyOfferNftIndex,
+			AssetAmount:  buyOfferAssetAmount,
+		},
+		SellOffer: &txtypes.OfferTxInfo{
+			AccountIndex: int64(sellOfferAccountIndex),
+			OfferId:      int64(sellOfferOfferId),
+			AssetId:      int64(sellOfferAssetId),
+		},
+		CreatorAmount:     creatorAmount,
+		TreasuryAmount:    treasuryAmount,
+		GasFeeAssetAmount: gasFeeAssetAmount,
+		GasFeeAssetId:     int64(gasFeeAssetId),
+	}
+	executor := &executor.AtomicMatchExecutor{
+		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
+		TxInfo:       txInfo,
+	}
+	err = executor.ApplyTransaction()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *ExodusExit) executeCancelOffer(pubData []byte) error {
+	bc := c.bc
+	offset := 1
+	offset, accountIndex := common2.ReadUint32(pubData, offset)
+	offset, offerId := common2.ReadUint24(pubData, offset)
+	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
+	offset, gasFeeAssetPackedAmount := common2.ReadUint16(pubData, offset)
+	gasFeeAssetAmount, _ := util.CleanPackedFee(big.NewInt(int64(gasFeeAssetPackedAmount)))
+
+	txInfo := &txtypes.CancelOfferTxInfo{
+		AccountIndex:      int64(accountIndex),
+		GasFeeAssetId:     int64(gasFeeAssetId),
+		GasFeeAssetAmount: gasFeeAssetAmount,
+		OfferId:           int64(offerId),
+	}
+
+	executor := &executor.CancelOfferExecutor{
+		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
+		TxInfo:       txInfo,
+	}
+	err := executor.ApplyTransaction()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *ExodusExit) executeCollection(pubData []byte) error {
+	bc := c.bc
+	offset := 1
+	offset, accountIndex := common2.ReadUint32(pubData, offset)
+	offset, collectionId := common2.ReadUint16(pubData, offset)
+	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
+	offset, gasFeeAssetPackedAmount := common2.ReadUint16(pubData, offset)
+	gasFeeAssetAmount, _ := util.CleanPackedFee(big.NewInt(int64(gasFeeAssetPackedAmount)))
+
+	txInfo := &txtypes.CreateCollectionTxInfo{
+		AccountIndex:      int64(accountIndex),
+		GasFeeAssetId:     int64(gasFeeAssetId),
+		GasFeeAssetAmount: gasFeeAssetAmount,
+		CollectionId:      int64(collectionId),
+	}
+
+	executor := &executor.CreateCollectionExecutor{
+		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
+		TxInfo:       txInfo,
+	}
+	err := executor.ApplyTransaction()
+	if err != nil {
+		return err
+	}
+	//fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//// apply changes
+	//fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
+	//fromAccount.Nonce++
+	//fromAccount.CollectionNonce++
+	//
+	//stateCache := c.bc.StateDB()
+	//stateCache.SetPendingAccount(fromAccount.AccountIndex, fromAccount)
+	//stateCache.SetPendingGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
+	return nil
+}
+
+func (c *ExodusExit) executeDeposit(pubData []byte) error {
+	bc := c.bc
+	offset := 1
+	offset, accountIndex := common2.ReadUint32(pubData, offset)
+	offset, assetId := common2.ReadUint16(pubData, offset)
+	offset, assetPackedAmount := common2.ReadUint128(pubData, offset)
+	assetAmount, _ := util.CleanPackedFee(assetPackedAmount)
+	offset, accountNameHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
+
+	txInfo := &txtypes.DepositTxInfo{
+		AccountIndex:    int64(accountIndex),
+		AssetId:         int64(assetId),
+		AssetAmount:     assetAmount,
+		AccountNameHash: accountNameHash,
+	}
+
+	executor := &executor.DepositExecutor{
+		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
+		TxInfo:       txInfo,
+	}
+	err := executor.ApplyTransaction()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *ExodusExit) executeDepositNft(pubData []byte) error {
+	bc := c.bc
+	offset := 1
+	offset, accountIndex := common2.ReadUint32(pubData, offset)
+	offset, nftIndex := common2.ReadUint40(pubData, offset)
+	offset, creatorAccountIndex := common2.ReadUint32(pubData, offset)
+	offset, creatorTreasuryRate := common2.ReadUint16(pubData, offset)
+	offset, collectionId := common2.ReadUint16(pubData, offset)
+	offset, nftContentHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
+	offset, accountNameHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
+	txInfo := &txtypes.DepositNftTxInfo{
+		AccountIndex:        int64(accountIndex),
+		NftIndex:            nftIndex,
+		CreatorAccountIndex: int64(creatorAccountIndex),
+		CollectionId:        int64(collectionId),
+		CreatorTreasuryRate: int64(creatorTreasuryRate),
+		NftContentHash:      nftContentHash,
+		AccountNameHash:     accountNameHash,
+	}
+	executor := &executor.DepositNftExecutor{
+		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
+		TxInfo:       txInfo,
+	}
+	err := executor.ApplyTransaction()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *ExodusExit) executeFullExit(pubData []byte) error {
+	bc := c.bc
+	offset := 1
+	offset, accountIndex := common2.ReadUint32(pubData, offset)
+	offset, assetId := common2.ReadUint16(pubData, offset)
+	offset, assetAmount := common2.ReadUint128(pubData, offset)
+	offset, accountNameHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
+	var txInfo = &txtypes.FullExitTxInfo{
+		AccountIndex:    int64(accountIndex),
+		AssetId:         int64(assetId),
+		AssetAmount:     assetAmount,
+		AccountNameHash: accountNameHash,
+	}
+	executor := &executor.FullExitExecutor{
+		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
+		TxInfo:       txInfo,
+	}
+	err := executor.ApplyTransaction()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *ExodusExit) executeFullExitNft(pubData []byte) error {
+	bc := c.bc
+	offset := 1
+	offset, accountIndex := common2.ReadUint32(pubData, offset)
+	offset, creatorAccountIndex := common2.ReadUint32(pubData, offset)
+	offset, creatorTreasuryRate := common2.ReadUint16(pubData, offset)
+	offset, nftIndex := common2.ReadUint40(pubData, offset)
+	offset, collectionId := common2.ReadUint16(pubData, offset)
+	offset, accountNameHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
+	offset, creatorAccountNameHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
+	offset, nftContentHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
+
+	var txInfo = &txtypes.FullExitNftTxInfo{
+		AccountIndex:           int64(accountIndex),
+		CreatorAccountIndex:    int64(creatorAccountIndex),
+		CreatorTreasuryRate:    int64(creatorTreasuryRate),
+		NftIndex:               nftIndex,
+		CollectionId:           int64(collectionId),
+		AccountNameHash:        accountNameHash,
+		CreatorAccountNameHash: creatorAccountNameHash,
+		NftContentHash:         nftContentHash,
+	}
+	executor := &executor.FullExitNftExecutor{
+		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
+		TxInfo:       txInfo,
+	}
+	err := executor.ApplyTransaction()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *ExodusExit) executeMintNft(pubData []byte) error {
+	bc := c.bc
+	offset := 1
+	offset, creatorAccountIndex := common2.ReadUint32(pubData, offset)
+	offset, toAccountIndex := common2.ReadUint32(pubData, offset)
+	offset, nftIndex := common2.ReadUint40(pubData, offset)
+	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
+
+	offset, gasFeeAssetPackedAmount := common2.ReadUint16(pubData, offset)
+	gasFeeAssetAmount, err := util.CleanPackedFee(big.NewInt(int64(gasFeeAssetPackedAmount)))
+	if err != nil {
+		return err
+	}
+	offset, creatorTreasuryRate := common2.ReadUint16(pubData, offset)
+	offset, collectionId := common2.ReadUint16(pubData, offset)
+	offset, nftContentHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
+
+	var txInfo = &txtypes.MintNftTxInfo{
+		CreatorAccountIndex: int64(creatorAccountIndex),
+		ToAccountIndex:      int64(toAccountIndex),
+		NftIndex:            nftIndex,
+		GasFeeAssetId:       int64(gasFeeAssetId),
+		GasFeeAssetAmount:   gasFeeAssetAmount,
+		NftCollectionId:     int64(collectionId),
+		NftContentHash:      string(nftContentHash),
+		CreatorTreasuryRate: int64(creatorTreasuryRate),
+	}
+	executor := &executor.MintNftExecutor{
+		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
+		TxInfo:       txInfo,
+	}
+	err = executor.ApplyTransaction()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *ExodusExit) executeRegisterZns(pubData []byte) error {
+	bc := c.bc
+	offset := 1
+	offset, accountIndex := common2.ReadUint32(pubData, offset)
+	offset, accountName := common2.ReadAccountNameFromBytes20(pubData, offset)
+	offset, accountNameHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
+	offset, pubKeyX := common2.ReadBytes32(pubData, offset)
+	_, pubKeyY := common2.ReadBytes32(pubData, offset)
+	pk := new(eddsa.PublicKey)
+	pk.A.X.SetBytes(pubKeyX)
+	pk.A.Y.SetBytes(pubKeyY)
+
+	var txInfo = &txtypes.RegisterZnsTxInfo{
+		AccountIndex:    int64(accountIndex),
+		AccountName:     accountName,
+		AccountNameHash: accountNameHash,
+		PubKey:          common.Bytes2Hex(pk.Bytes()),
+	}
+	executor := &executor.RegisterZnsExecutor{
+		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
+		TxInfo:       txInfo,
+	}
+	err := executor.ApplyTransaction()
+	if err != nil {
+		return err
+	}
+	return nil
+
+}
+
 func (c *ExodusExit) executeTransfer(pubData []byte) error {
 	bc := c.bc
 	offset := 1
@@ -329,42 +725,106 @@ func (c *ExodusExit) executeTransfer(pubData []byte) error {
 	return nil
 }
 
-func (c *ExodusExit) executeCollection(pubData []byte) error {
+func (c *ExodusExit) executeTransferNft(pubData []byte) error {
 	bc := c.bc
 	offset := 1
-	offset, accountIndex := common2.ReadUint32(pubData, offset)
-	offset, collectionId := common2.ReadUint16(pubData, offset)
+	offset, fromAccountIndex := common2.ReadUint32(pubData, offset)
+	offset, toAccountIndex := common2.ReadUint32(pubData, offset)
+	offset, nftIndex := common2.ReadUint40(pubData, offset)
 	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
-	offset, gasFeeAssetAmount := common2.ReadUint16(pubData, offset)
-	gasFeeAssetAmountBigInt, _ := util.CleanPackedFee(big.NewInt(int64(gasFeeAssetAmount)))
-
-	txInfo := &txtypes.CreateCollectionTxInfo{
-		AccountIndex:      int64(accountIndex),
-		GasFeeAssetId:     int64(gasFeeAssetId),
-		GasFeeAssetAmount: gasFeeAssetAmountBigInt,
-		CollectionId:      int64(collectionId),
-	}
-
-	executor := &executor.CreateCollectionExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
-		TxInfo:       txInfo,
-	}
-	err := executor.ApplyTransaction()
+	offset, packedFee := common2.ReadUint16(pubData, offset)
+	gasFeeAssetAmount, err := util.CleanPackedFee(big.NewInt(int64(packedFee)))
 	if err != nil {
 		return err
 	}
-	//fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//// apply changes
-	//fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-	//fromAccount.Nonce++
-	//fromAccount.CollectionNonce++
-	//
-	//stateCache := c.bc.StateDB()
-	//stateCache.SetPendingAccount(fromAccount.AccountIndex, fromAccount)
-	//stateCache.SetPendingGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
+	offset, callDataHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
+	txInfo := &txtypes.TransferNftTxInfo{
+		FromAccountIndex:  int64(fromAccountIndex),
+		ToAccountIndex:    int64(toAccountIndex),
+		NftIndex:          int64(nftIndex),
+		GasFeeAssetId:     int64(gasFeeAssetId),
+		GasFeeAssetAmount: gasFeeAssetAmount,
+		CallDataHash:      callDataHash,
+	}
+	executor := &executor.TransferNftExecutor{
+		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
+		TxInfo:       txInfo,
+	}
+	err = executor.ApplyTransaction()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *ExodusExit) executeWithdraw(pubData []byte) error {
+	bc := c.bc
+	offset := 1
+	offset, fromAccountIndex := common2.ReadUint32(pubData, offset)
+	offset, toAddress := common2.ReadAddress(pubData, offset)
+	offset, assetId := common2.ReadUint16(pubData, offset)
+	offset, assetAmount := common2.ReadUint128(pubData, offset)
+	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
+	offset, gasFeeAssetPackedAmount := common2.ReadUint16(pubData, offset)
+	gasFeeAssetAmount, err := util.CleanPackedFee(big.NewInt(int64(gasFeeAssetPackedAmount)))
+	if err != nil {
+		return err
+	}
+	txInfo := &txtypes.WithdrawTxInfo{
+		FromAccountIndex:  int64(fromAccountIndex),
+		ToAddress:         toAddress,
+		AssetId:           int64(assetId),
+		AssetAmount:       assetAmount,
+		GasFeeAssetId:     int64(gasFeeAssetId),
+		GasFeeAssetAmount: gasFeeAssetAmount,
+	}
+	executor := &executor.WithdrawExecutor{
+		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
+		TxInfo:       txInfo,
+	}
+	err = executor.ApplyTransaction()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *ExodusExit) executeWithdrawNft(pubData []byte) error {
+	bc := c.bc
+	offset := 1
+	offset, fromAccountIndex := common2.ReadUint32(pubData, offset)
+	offset, creatorAccountIndex := common2.ReadUint32(pubData, offset)
+	offset, creatorTreasuryRate := common2.ReadUint16(pubData, offset)
+	offset, nftIndex := common2.ReadUint40(pubData, offset)
+	offset, collectionId := common2.ReadUint16(pubData, offset)
+	offset, toAddress := common2.ReadAddress(pubData, offset)
+	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
+	offset, gasFeeAssetPackedAmount := common2.ReadUint16(pubData, offset)
+	gasFeeAssetAmount, err := util.CleanPackedFee(big.NewInt(int64(gasFeeAssetPackedAmount)))
+	if err != nil {
+		return err
+	}
+	offset, nftContentHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
+	offset, creatorAccountNameHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
+	txInfo := &txtypes.WithdrawNftTxInfo{
+		AccountIndex:           int64(fromAccountIndex),
+		CreatorAccountIndex:    int64(creatorAccountIndex),
+		CreatorTreasuryRate:    int64(creatorTreasuryRate),
+		NftIndex:               nftIndex,
+		ToAddress:              toAddress,
+		CollectionId:           int64(collectionId),
+		NftContentHash:         nftContentHash,
+		CreatorAccountNameHash: creatorAccountNameHash,
+		GasFeeAssetId:          int64(gasFeeAssetId),
+		GasFeeAssetAmount:      gasFeeAssetAmount,
+	}
+	executor := &executor.WithdrawNftExecutor{
+		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
+		TxInfo:       txInfo,
+	}
+	err = executor.ApplyTransaction()
+	if err != nil {
+		return err
+	}
 	return nil
 }

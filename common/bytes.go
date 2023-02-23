@@ -37,6 +37,11 @@ func ReadUint16(buf []byte, offset int) (newOffset int, res uint16) {
 	return offset + 2, res
 }
 
+func ReadUint24(buf []byte, offset int) (newOffset int, res uint64) {
+	res = binary.BigEndian.Uint64(buf[offset : offset+3])
+	return offset + 3, res
+}
+
 func ReadUint32(buf []byte, offset int) (newOffset int, res uint32) {
 	res = binary.BigEndian.Uint32(buf[offset : offset+4])
 	return offset + 4, res
@@ -69,6 +74,16 @@ func ReadBytes20(buf []byte, offset int) (newOffset int, res []byte) {
 func ReadAddress(buf []byte, offset int) (newOffset int, res string) {
 	res = common.BytesToAddress(buf[offset : offset+20]).Hex()
 	return offset + 20, res
+}
+
+func ReadPrefixPaddingBufToChunkSize(buf []byte, offset int) (newOffset int, res []byte) {
+	return offset + 32, new(big.Int).SetBytes(buf[offset : offset+32]).Bytes()
+}
+
+func ReadAccountNameFromBytes20(buf []byte, offset int) (newOffset int, res string) {
+	result := make([]byte, 20)
+	copy(result[:], buf[offset:offset+20])
+	return offset + 20, string(result) + types.AccountNameSuffix
 }
 
 func PrefixPaddingBufToChunkSize(buf []byte) []byte {

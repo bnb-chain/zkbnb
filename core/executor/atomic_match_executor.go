@@ -18,7 +18,7 @@ import (
 type AtomicMatchExecutor struct {
 	BaseExecutor
 
-	txInfo *txtypes.AtomicMatchTxInfo
+	TxInfo *txtypes.AtomicMatchTxInfo
 
 	buyOfferAssetId  int64
 	buyOfferIndex    int64
@@ -35,12 +35,12 @@ func NewAtomicMatchExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 
 	return &AtomicMatchExecutor{
 		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
-		txInfo:       txInfo,
+		TxInfo:       txInfo,
 	}, nil
 }
 
 func (e *AtomicMatchExecutor) Prepare() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	e.buyOfferAssetId = txInfo.BuyOffer.OfferId / OfferPerAsset
 	e.buyOfferIndex = txInfo.BuyOffer.OfferId % OfferPerAsset
@@ -70,7 +70,7 @@ func (e *AtomicMatchExecutor) Prepare() error {
 
 func (e *AtomicMatchExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	bc := e.bc
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk, skipSigChk)
 	if err != nil {
@@ -173,7 +173,7 @@ func (e *AtomicMatchExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 
 func (e *AtomicMatchExecutor) ApplyTransaction() error {
 	bc := e.bc
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	// apply changes
 	matchNft, err := bc.StateDB().GetNft(txInfo.SellOffer.NftIndex)
@@ -226,7 +226,7 @@ func (e *AtomicMatchExecutor) ApplyTransaction() error {
 }
 
 func (e *AtomicMatchExecutor) GeneratePubData() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(types.TxTypeAtomicMatch))
@@ -273,24 +273,24 @@ func (e *AtomicMatchExecutor) GeneratePubData() error {
 }
 
 func (e *AtomicMatchExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
-	txInfoBytes, err := json.Marshal(e.txInfo)
+	txInfoBytes, err := json.Marshal(e.TxInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
 		return nil, errors.New("unmarshal tx failed")
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.GasFeeAssetId = e.txInfo.GasFeeAssetId
-	e.tx.GasFee = e.txInfo.GasFeeAssetAmount.String()
-	e.tx.NftIndex = e.txInfo.SellOffer.NftIndex
-	e.tx.AssetId = e.txInfo.BuyOffer.AssetId
-	e.tx.TxAmount = e.txInfo.BuyOffer.AssetAmount.String()
+	e.tx.GasFeeAssetId = e.TxInfo.GasFeeAssetId
+	e.tx.GasFee = e.TxInfo.GasFeeAssetAmount.String()
+	e.tx.NftIndex = e.TxInfo.SellOffer.NftIndex
+	e.tx.AssetId = e.TxInfo.BuyOffer.AssetId
+	e.tx.TxAmount = e.TxInfo.BuyOffer.AssetAmount.String()
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	bc := e.bc
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 	matchNft, err := bc.StateDB().GetNft(txInfo.SellOffer.NftIndex)
 	if err != nil {
 		return nil, err

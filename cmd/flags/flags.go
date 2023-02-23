@@ -71,4 +71,9 @@ var (
 		Usage: "Metrics HTTP server listening port",
 		Value: 6060,
 	}
+	CommandFlag = &cli.StringFlag{
+		Name:    "command",
+		Aliases: []string{"m"},
+		Usage:   "the config file",
+	}
 )

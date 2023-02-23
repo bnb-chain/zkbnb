@@ -19,7 +19,7 @@ import (
 type FullExitNftExecutor struct {
 	BaseExecutor
 
-	txInfo *txtypes.FullExitNftTxInfo
+	TxInfo *txtypes.FullExitNftTxInfo
 
 	exitNft   *nft.L2Nft
 	exitEmpty bool
@@ -34,13 +34,13 @@ func NewFullExitNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 
 	return &FullExitNftExecutor{
 		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
-		txInfo:       txInfo,
+		TxInfo:       txInfo,
 	}, nil
 }
 
 func (e *FullExitNftExecutor) Prepare() error {
 	bc := e.bc
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	// The account index from txInfo isn't true, find account by account name hash.
 	accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
@@ -115,7 +115,7 @@ func (e *FullExitNftExecutor) ApplyTransaction() error {
 	}
 
 	// Set nft to empty nft.
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 	emptyNftInfo := types.EmptyNftInfo(txInfo.NftIndex)
 	emptyNft := &nft.L2Nft{
 		NftIndex:            emptyNftInfo.NftIndex,
@@ -135,7 +135,7 @@ func (e *FullExitNftExecutor) ApplyTransaction() error {
 }
 
 func (e *FullExitNftExecutor) GeneratePubData() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(types.TxTypeFullExitNft))
@@ -159,21 +159,21 @@ func (e *FullExitNftExecutor) GeneratePubData() error {
 }
 
 func (e *FullExitNftExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
-	txInfoBytes, err := json.Marshal(e.txInfo)
+	txInfoBytes, err := json.Marshal(e.TxInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
 		return nil, errors.New("unmarshal tx failed")
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.NftIndex = e.txInfo.NftIndex
-	e.tx.AccountIndex = e.txInfo.AccountIndex
+	e.tx.NftIndex = e.TxInfo.NftIndex
+	e.tx.AccountIndex = e.TxInfo.AccountIndex
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	bc := e.bc
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 	exitAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
 	if err != nil {
 		return nil, err

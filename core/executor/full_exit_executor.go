@@ -19,7 +19,7 @@ import (
 type FullExitExecutor struct {
 	BaseExecutor
 
-	txInfo *txtypes.FullExitTxInfo
+	TxInfo *txtypes.FullExitTxInfo
 }
 
 func NewFullExitExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
@@ -31,13 +31,13 @@ func NewFullExitExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 
 	return &FullExitExecutor{
 		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
-		txInfo:       txInfo,
+		TxInfo:       txInfo,
 	}, nil
 }
 
 func (e *FullExitExecutor) Prepare() error {
 	bc := e.bc
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	// The account index from txInfo isn't true, find account by account name hash.
 	accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
@@ -71,7 +71,7 @@ func (e *FullExitExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 
 func (e *FullExitExecutor) ApplyTransaction() error {
 	bc := e.bc
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	exitAccount, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
 	if err != nil {
@@ -87,7 +87,7 @@ func (e *FullExitExecutor) ApplyTransaction() error {
 }
 
 func (e *FullExitExecutor) GeneratePubData() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(types.TxTypeFullExit))
@@ -108,21 +108,21 @@ func (e *FullExitExecutor) GeneratePubData() error {
 }
 
 func (e *FullExitExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
-	txInfoBytes, err := json.Marshal(e.txInfo)
+	txInfoBytes, err := json.Marshal(e.TxInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
 		return nil, errors.New("unmarshal tx failed")
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.AssetId = e.txInfo.AssetId
-	e.tx.TxAmount = e.txInfo.AssetAmount.String()
-	e.tx.AccountIndex = e.txInfo.AccountIndex
+	e.tx.AssetId = e.TxInfo.AssetId
+	e.tx.TxAmount = e.TxInfo.AssetAmount.String()
+	e.tx.AccountIndex = e.TxInfo.AccountIndex
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *FullExitExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 	exitAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
 	if err != nil {
 		return nil, err

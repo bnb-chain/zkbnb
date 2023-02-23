@@ -19,7 +19,7 @@ import (
 type DepositExecutor struct {
 	BaseExecutor
 
-	txInfo *txtypes.DepositTxInfo
+	TxInfo *txtypes.DepositTxInfo
 }
 
 func NewDepositExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
@@ -31,13 +31,13 @@ func NewDepositExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 
 	return &DepositExecutor{
 		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
-		txInfo:       txInfo,
+		TxInfo:       txInfo,
 	}, nil
 }
 
 func (e *DepositExecutor) Prepare() error {
 	bc := e.bc
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	// The account index from txInfo isn't true, find account by account name hash.
 	accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
@@ -55,7 +55,7 @@ func (e *DepositExecutor) Prepare() error {
 }
 
 func (e *DepositExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	if txInfo.AssetAmount.Cmp(types.ZeroBigInt) < 0 {
 		return types.AppErrInvalidAssetAmount
@@ -66,7 +66,7 @@ func (e *DepositExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 
 func (e *DepositExecutor) ApplyTransaction() error {
 	bc := e.bc
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	depositAccount, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
 	if err != nil {
@@ -80,7 +80,7 @@ func (e *DepositExecutor) ApplyTransaction() error {
 }
 
 func (e *DepositExecutor) GeneratePubData() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(types.TxTypeDeposit))
@@ -99,21 +99,21 @@ func (e *DepositExecutor) GeneratePubData() error {
 }
 
 func (e *DepositExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
-	txInfoBytes, err := json.Marshal(e.txInfo)
+	txInfoBytes, err := json.Marshal(e.TxInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
 		return nil, errors.New("unmarshal tx failed")
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.AssetId = e.txInfo.AssetId
-	e.tx.TxAmount = e.txInfo.AssetAmount.String()
-	e.tx.AccountIndex = e.txInfo.AccountIndex
+	e.tx.AssetId = e.TxInfo.AssetId
+	e.tx.TxAmount = e.TxInfo.AssetAmount.String()
+	e.tx.AccountIndex = e.TxInfo.AccountIndex
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *DepositExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 	depositAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
 	if err != nil {
 		return nil, err

@@ -18,7 +18,7 @@ import (
 type MintNftExecutor struct {
 	BaseExecutor
 
-	txInfo *txtypes.MintNftTxInfo
+	TxInfo *txtypes.MintNftTxInfo
 }
 
 func NewMintNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
@@ -30,12 +30,12 @@ func NewMintNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 
 	return &MintNftExecutor{
 		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
-		txInfo:       txInfo,
+		TxInfo:       txInfo,
 	}, nil
 }
 
 func (e *MintNftExecutor) Prepare() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 	if !e.bc.StateDB().DryRun {
 		// Set the right nft index for tx info.
 		if e.tx.Rollback == false {
@@ -58,7 +58,7 @@ func (e *MintNftExecutor) Prepare() error {
 }
 
 func (e *MintNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 	if err := e.Validate(); err != nil {
 		return err
 	}
@@ -94,7 +94,7 @@ func (e *MintNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 
 func (e *MintNftExecutor) ApplyTransaction() error {
 	bc := e.bc
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	// apply changes
 	creatorAccount, err := bc.StateDB().GetFormatAccount(txInfo.CreatorAccountIndex)
@@ -122,7 +122,7 @@ func (e *MintNftExecutor) ApplyTransaction() error {
 }
 
 func (e *MintNftExecutor) GeneratePubData() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(types.TxTypeMintNft))
@@ -148,21 +148,21 @@ func (e *MintNftExecutor) GeneratePubData() error {
 }
 
 func (e *MintNftExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
-	txInfoBytes, err := json.Marshal(e.txInfo)
+	txInfoBytes, err := json.Marshal(e.TxInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
 		return nil, errors.New("unmarshal tx failed")
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.GasFeeAssetId = e.txInfo.GasFeeAssetId
-	e.tx.GasFee = e.txInfo.GasFeeAssetAmount.String()
-	e.tx.NftIndex = e.txInfo.NftIndex
+	e.tx.GasFeeAssetId = e.TxInfo.GasFeeAssetId
+	e.tx.GasFee = e.TxInfo.GasFeeAssetAmount.String()
+	e.tx.NftIndex = e.TxInfo.NftIndex
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	copiedAccounts, err := e.bc.StateDB().DeepCopyAccounts([]int64{txInfo.CreatorAccountIndex, txInfo.ToAccountIndex, txInfo.GasAccountIndex})
 	if err != nil {
@@ -267,10 +267,10 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 }
 
 func (e *MintNftExecutor) Validate() error {
-	if len(e.txInfo.MetaData) > 2000 {
+	if len(e.TxInfo.MetaData) > 2000 {
 		return types.AppErrInvalidMetaData.RefineError(2000)
 	}
-	if len(e.txInfo.MutableAttributes) > 2000 {
+	if len(e.TxInfo.MutableAttributes) > 2000 {
 		return types.AppErrInvalidMutableAttributes.RefineError(2000)
 	}
 	return nil

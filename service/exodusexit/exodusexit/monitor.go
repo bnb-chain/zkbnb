@@ -35,40 +35,40 @@ import (
 type Monitor struct {
 	Config               config.Config
 	cli                  *rpc.ProviderClient
-	zkbnbContractAddress string
+	ZkBnbContractAddress string
 	db                   *gorm.DB
 	L1SyncedBlockModel   l1syncedblock.L1SyncedBlockModel
 	ExodusExitBlockModel exodusexit.ExodusExitBlockModel
 }
 
-func NewMonitor(c config.Config) *Monitor {
+func NewMonitor(c config.Config) (*Monitor, error) {
 	masterDataSource := c.Postgres.MasterDataSource
-	slaveDataSource := c.Postgres.SlaveDataSource
 	db, err := gorm.Open(postgres.Open(masterDataSource))
 	if err != nil {
-		logx.Errorf("gorm connect db error, err: %s", err.Error())
+		logx.Severef("gorm connect db error, err: %s", err.Error())
+		return nil, err
 	}
 
 	db.Use(dbresolver.Register(dbresolver.Config{
-		Sources:  []gorm.Dialector{postgres.Open(masterDataSource)},
-		Replicas: []gorm.Dialector{postgres.Open(slaveDataSource)},
+		Sources: []gorm.Dialector{postgres.Open(masterDataSource)},
 	}))
 
 	monitor := &Monitor{
-		Config:             c,
-		db:                 db,
-		L1SyncedBlockModel: l1syncedblock.NewL1SyncedBlockModel(db),
+		Config:               c,
+		db:                   db,
+		L1SyncedBlockModel:   l1syncedblock.NewL1SyncedBlockModel(db),
+		ExodusExitBlockModel: exodusexit.NewExodusExitBlockModel(db),
 	}
 
 	bscRpcCli, err := rpc.NewClient(c.ChainConfig.BscTestNetRpc)
 	if err != nil {
 		logx.Severe(err)
-		panic(err)
+		return nil, err
 	}
 
-	monitor.zkbnbContractAddress = c.ChainConfig.BscTestNetRpc
+	monitor.ZkBnbContractAddress = c.ChainConfig.ZkBnbContractAddress
 	monitor.cli = bscRpcCli
-	return monitor
+	return monitor, nil
 }
 
 func (m *Monitor) Shutdown() {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/bnb-chain/zkbnb/service/exodusexit"
 	"github.com/bnb-chain/zkbnb/tools/query"
 	"os"
 	"runtime"
@@ -182,6 +183,23 @@ func main() {
 					}
 					startMetricsServer(cCtx)
 					return apiserver.Run(cCtx.String(flags.ConfigFlag.Name))
+				},
+			},
+			{
+				Name:  "exodusexit",
+				Usage: "Run exodusexit service",
+				Flags: []cli.Flag{
+					flags.CommandFlag,
+					flags.ConfigFlag,
+				},
+				Action: func(cCtx *cli.Context) error {
+					if !cCtx.IsSet(flags.CommandFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					if !cCtx.IsSet(flags.ConfigFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					return exodusexit.Run(cCtx.String(flags.ConfigFlag.Name))
 				},
 			},
 			// tools

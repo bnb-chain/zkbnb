@@ -1,7 +1,7 @@
 package exodusexit
 
 import (
-	"github.com/bnb-chain/zkbnb/service/witness/witness"
+	"github.com/bnb-chain/zkbnb/service/exodusexit/exodusexit"
 	"time"
 
 	"github.com/robfig/cron/v3"
@@ -20,7 +20,7 @@ func Run(configFile string) error {
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 
-	w, err := witness.NewWitness(c)
+	m, err := exodusexit.NewMonitor(c)
 	if err != nil {
 		logx.Severe(err)
 		panic(err)
@@ -28,16 +28,13 @@ func Run(configFile string) error {
 	cronJob := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))
-	_, err = cronJob.AddFunc("@every 2s", func() {
-		logx.Info("==========start generate block witness==========")
-		err := w.GenerateBlockWitness()
+	// monitor generic blocks
+	if _, err := cronJob.AddFunc("@every 10s", func() {
+		err := m.MonitorGenericBlocks()
 		if err != nil {
-			logx.Severef("failed to generate block witness, %v", err)
-			panic(err)
+			logx.Severef("monitor blocks error, %v", err)
 		}
-		w.RescheduleBlockWitness()
-	})
-	if err != nil {
+	}); err != nil {
 		logx.Severe(err)
 		panic(err)
 	}
@@ -46,14 +43,14 @@ func Run(configFile string) error {
 	exit := make(chan struct{})
 	proc.SetTimeToForceQuit(GracefulShutdownTimeout)
 	proc.AddShutdownListener(func() {
-		logx.Info("start to shutdown witness......")
+		logx.Info("start to shutdown exodusexit......")
 		<-cronJob.Stop().Done()
-		w.Shutdown()
+		m.Shutdown()
 		_ = logx.Close()
 		exit <- struct{}{}
 	})
 
-	logx.Info("witness cronjob is starting......")
+	logx.Info("exodusexit cronjob is starting......")
 
 	<-exit
 	return nil

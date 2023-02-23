@@ -17,7 +17,7 @@ import (
 type WithdrawExecutor struct {
 	BaseExecutor
 
-	txInfo *txtypes.WithdrawTxInfo
+	TxInfo *txtypes.WithdrawTxInfo
 }
 
 func NewWithdrawExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
@@ -29,12 +29,12 @@ func NewWithdrawExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 
 	return &WithdrawExecutor{
 		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
-		txInfo:       txInfo,
+		TxInfo:       txInfo,
 	}, nil
 }
 
 func (e *WithdrawExecutor) Prepare() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	// Mark the tree states that would be affected in this executor.
 	e.MarkAccountAssetsDirty(txInfo.FromAccountIndex, []int64{txInfo.GasFeeAssetId, txInfo.AssetId})
@@ -43,7 +43,7 @@ func (e *WithdrawExecutor) Prepare() error {
 }
 
 func (e *WithdrawExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk, skipSigChk)
 	if err != nil {
@@ -73,7 +73,7 @@ func (e *WithdrawExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 
 func (e *WithdrawExecutor) ApplyTransaction() error {
 	bc := e.bc
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.FromAccountIndex)
 	if err != nil {
@@ -92,7 +92,7 @@ func (e *WithdrawExecutor) ApplyTransaction() error {
 }
 
 func (e *WithdrawExecutor) GeneratePubData() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(types.TxTypeWithdraw))
@@ -119,22 +119,22 @@ func (e *WithdrawExecutor) GeneratePubData() error {
 }
 
 func (e *WithdrawExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
-	txInfoBytes, err := json.Marshal(e.txInfo)
+	txInfoBytes, err := json.Marshal(e.TxInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
 		return nil, errors.New("unmarshal tx failed")
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.GasFeeAssetId = e.txInfo.GasFeeAssetId
-	e.tx.GasFee = e.txInfo.GasFeeAssetAmount.String()
-	e.tx.AssetId = e.txInfo.AssetId
-	e.tx.TxAmount = e.txInfo.AssetAmount.String()
+	e.tx.GasFeeAssetId = e.TxInfo.GasFeeAssetId
+	e.tx.GasFee = e.TxInfo.GasFeeAssetAmount.String()
+	e.tx.AssetId = e.TxInfo.AssetId
+	e.tx.TxAmount = e.TxInfo.AssetAmount.String()
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *WithdrawExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	copiedAccounts, err := e.bc.StateDB().DeepCopyAccounts([]int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex})
 	if err != nil {
