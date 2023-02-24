@@ -29,6 +29,7 @@ var (
 	contractNames = []string{
 		"ZkBNBContract",
 		"GovernanceContract",
+		"DefaultNftFactory",
 		"ZnsPriceOracle",
 		"AssetGovernanceContract",
 	}
