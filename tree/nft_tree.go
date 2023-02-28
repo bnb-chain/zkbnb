@@ -161,6 +161,8 @@ func NftAssetToNode(nftAsset *nft.L2NftHistory) (hashVal []byte, err error) {
 		nftAsset.NftContentHash,
 		nftAsset.CreatorTreasuryRate,
 		nftAsset.CollectionId,
+		nftAsset.NftIndex,
+		nftAsset.L2BlockHeight,
 	)
 	if err != nil {
 		logx.Errorf("unable to compute nft asset leaf hash: %s", err.Error())

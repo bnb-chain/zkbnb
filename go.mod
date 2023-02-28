@@ -1,6 +1,6 @@
 module github.com/bnb-chain/zkbnb
 
-go 1.17
+go 1.18
 
 require (
 	github.com/apolloconfig/agollo/v4 v4.2.1
@@ -8,9 +8,13 @@ require (
 	github.com/dgraph-io/ristretto v0.1.0
 	github.com/gin-gonic/gin v1.8.1
 	github.com/hashicorp/golang-lru v0.5.5-0.20221011183528-d4900dc688bf
+	github.com/ipfs/go-ipfs-api v0.3.0
+	github.com/ipfs/go-ipfs-files v0.0.9
+	github.com/mr-tron/base58 v1.2.0
 	github.com/ory/dockertest v3.3.5+incompatible
 	github.com/panjf2000/ants/v2 v2.5.0
 	github.com/prometheus/client_golang v1.13.0
+	github.com/shopspring/decimal v1.3.1
 	github.com/swaggo/files v0.0.0-20220728132757-551d4a08d97a
 	github.com/swaggo/gin-swagger v1.5.3
 	github.com/swaggo/swag v1.8.8
@@ -27,12 +31,14 @@ require (
 	github.com/XiaoMi/pegasus-go-client v0.0.0-20210427083443-f3b6b08bc4c2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d // indirect
+	github.com/btcsuite/btcd v0.20.1-beta // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.2.0 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/containerd/continuity v0.3.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
+	github.com/crackcomm/go-gitignore v0.0.0-20170627025303-887ab5e44cc3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/deckarep/golang-set v1.8.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
@@ -57,6 +63,7 @@ require (
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/goccy/go-json v0.9.7 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.1 // indirect
 	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
@@ -65,6 +72,7 @@ require (
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/gotestyourself/gotestyourself v2.2.0+incompatible // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
+	github.com/ipfs/go-cid v0.0.7 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.12.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
@@ -79,15 +87,28 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/justinas/alice v1.2.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
+	github.com/libp2p/go-buffer-pool v0.0.2 // indirect
+	github.com/libp2p/go-flow-metrics v0.0.3 // indirect
+	github.com/libp2p/go-libp2p-core v0.6.1 // indirect
+	github.com/libp2p/go-openssl v0.0.7 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.9 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
+	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1 // indirect
+	github.com/minio/sha256-simd v0.1.1 // indirect
+	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/mmcloughlin/addchain v0.4.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/multiformats/go-base32 v0.0.3 // indirect
+	github.com/multiformats/go-base36 v0.1.0 // indirect
+	github.com/multiformats/go-multiaddr v0.3.0 // indirect
+	github.com/multiformats/go-multibase v0.0.3 // indirect
+	github.com/multiformats/go-multihash v0.0.14 // indirect
+	github.com/multiformats/go-varint v0.0.6 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.1.4 // indirect
@@ -105,6 +126,7 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
+	github.com/spacemonkeygo/spacelog v0.0.0-20180420211403-2296661a0572 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
@@ -117,8 +139,10 @@ require (
 	github.com/tklauser/numcpus v0.4.0 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
+	github.com/whyrusleeping/tar-utils v0.0.0-20180509141711-8c6c8ba81d5c // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
+	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/otel v1.7.0 // indirect
 	go.opentelemetry.io/otel/exporters/jaeger v1.7.0 // indirect
 	go.opentelemetry.io/otel/exporters/zipkin v1.7.0 // indirect
@@ -144,7 +168,7 @@ require (
 )
 
 require (
-	github.com/bnb-chain/zkbnb-crypto v0.0.8-0.20230206151636-cab8892b0f37
+	github.com/bnb-chain/zkbnb-crypto v0.0.8-0.20230217071307-211b4b7e8923
 	github.com/bnb-chain/zkbnb-eth-rpc v0.0.2
 	github.com/bnb-chain/zkbnb-smt v0.0.3-0.20221222120958-28d12ade0ecb
 	github.com/consensys/gnark v0.7.0
@@ -162,6 +186,7 @@ require (
 )
 
 replace (
+	github.com/bnb-chain/zkbnb-eth-rpc => github.com/tengwei/zkbnb-eth-rpc v0.0.3-0.20230220151053-0d1227dac349
 	github.com/bnb-chain/zkbnb-smt => github.com/qct/zkbnb-smt v0.0.0-20230116124655-bad4d92a74f1
 	github.com/consensys/gnark => github.com/bnb-chain/gnark v0.7.1-0.20230206150652-4e87ef37b4e7
 	github.com/consensys/gnark-crypto => github.com/bnb-chain/gnark-crypto v0.7.1-0.20230203031630-7c643ad11891

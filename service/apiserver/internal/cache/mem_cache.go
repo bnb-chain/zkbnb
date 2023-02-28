@@ -17,26 +17,31 @@ import (
 const (
 	cacheDefaultExpiration = time.Hour * 1 //gocache default expiration
 
-	AccountIndexNameKeyPrefix  = "in:" //key for cache: accountIndex -> accountName
-	AccountIndexPkKeyPrefix    = "ip:" //key for cache: accountIndex -> accountPk
-	AccountNameKeyPrefix       = "n:"  //key for cache: accountName -> accountIndex
-	AccountPkKeyPrefix         = "k:"  //key for cache: accountPk -> accountIndex
-	AccountByIndexKeyPrefix    = "a:"  //key for cache: accountIndex -> account
-	AccountCountKeyPrefix      = "ac"  //key for cache: total account count
-	BlockByHeightKeyPrefix     = "h:"  //key for cache: blockHeight -> block
-	BlockByCommitmentKeyPrefix = "c:"  //key for cache: blockCommitment -> block
-	BlockCountKeyPrefix        = "bc"  //key for cache: total block count
-	TxByHashKeyPrefix          = "h:"  //key for cache: txHash -> tx
-	TxCountKeyPrefix           = "tc"  //key for cache: total tx count
-	AssetCountKeyKeyPrefix     = "AC"  //key for cache: total asset count
-	AssetIdNameKeyPrefix       = "IN:" //key for cache: assetId -> assetName
-	AssetIdSymbolKeyPrefix     = "IS:" //key for cache: assetId -> assetName
-	AssetByIdKeyPrefix         = "I:"  //key for cache: assetId -> asset
-	AssetBySymbolKeyPrefix     = "S:"  //key for cache: assetSymbol -> asset
-	PriceKeyPrefix             = "p:"  //key for cache: symbol -> price
-	SysConfigKeyPrefix         = "s:"  //key for cache: configName -> sysconfig
-	TxPendingCountKeyPrefix    = "tpc" //key for cache: total tx pending count
-
+	AccountIndexNameKeyPrefix     = "in:"                    //key for cache: accountIndex -> accountName
+	AccountIndexPkKeyPrefix       = "ip:"                    //key for cache: accountIndex -> accountPk
+	AccountNameKeyPrefix          = "n:"                     //key for cache: accountName -> accountIndex
+	AccountPkKeyPrefix            = "k:"                     //key for cache: accountPk -> accountIndex
+	AccountByIndexKeyPrefix       = "a:"                     //key for cache: accountIndex -> account
+	AccountCountKeyPrefix         = "ac"                     //key for cache: total account count
+	BlockByHeightKeyPrefix        = "h:"                     //key for cache: blockHeight -> block
+	BlockByCommitmentKeyPrefix    = "c:"                     //key for cache: blockCommitment -> block
+	BlockCountKeyPrefix           = "bc"                     //key for cache: total block count
+	TxByHashKeyPrefix             = "h:"                     //key for cache: txHash -> tx
+	TxCountKeyPrefix              = "tc"                     //key for cache: total tx count
+	AssetCountKeyKeyPrefix        = "AC"                     //key for cache: total asset count
+	AssetIdNameKeyPrefix          = "IN:"                    //key for cache: assetId -> assetName
+	AssetIdSymbolKeyPrefix        = "IS:"                    //key for cache: assetId -> assetName
+	AssetByIdKeyPrefix            = "I:"                     //key for cache: assetId -> asset
+	AssetBySymbolKeyPrefix        = "S:"                     //key for cache: assetSymbol -> asset
+	PriceKeyPrefix                = "p:"                     //key for cache: symbol -> price
+	SysConfigKeyPrefix            = "s:"                     //key for cache: configName -> sysconfig
+	TxPendingCountKeyPrefix       = "tpc"                    //key for cache: total tx pending count
+	GetCommittedBlocksCountPrefix = "CommittedBlocksCount"   // key for cache: GetCommittedBlocksCountPrefix
+	GetVerifiedBlocksCountPrefix  = "VerifiedBlocksCount"    // key for cache: GetVerifiedBlocksCountPrefix
+	TxsTotalCountYesterdayPrefix  = "TxsTotalCountYesterday" // key for cache: TxsTotalCountYesterday
+	TxsTotalCountTodayPrefix      = "TxsTotalCountToday"     // key for cache: TxsTotalCountToday
+	AccountsCountYesterdayPrefix  = "AccountsCountYesterday" // key for cache: AccountsCountYesterday
+	AccountsCountTodayPrefix      = "AccountsCountToday"     // key for cache: AccountsCountToday
 )
 
 type fallback func() (interface{}, error)
@@ -67,7 +72,7 @@ func MustNewMemCache(accountModel accdao.AccountModel, assetModel assetdao.Asset
 			return 1
 		},
 		OnEvict: func(item *ristretto.Item) {
-			logx.Infof("OnEvict %s,%s,%s,%s", item.Key, item.Cost, item.Value, item.Expiration)
+			logx.Infof("OnEvict %d, %d, %v, %v", item.Key, item.Cost, item.Value, item.Expiration)
 		},
 	})
 	if err != nil {
@@ -94,6 +99,22 @@ func (m *MemCache) getWithSet(key string, duration time.Duration, f fallback) (i
 	if found {
 		return result, nil
 	}
+	result, err := f()
+	if err != nil {
+		return nil, err
+	}
+	m.goCache.SetWithTTL(key, result, 0, duration)
+	return result, nil
+}
+
+func (m *MemCache) getWithSetFromCache(key string, fromCache bool, duration time.Duration, f fallback) (interface{}, error) {
+	if fromCache {
+		result, found := m.goCache.Get(key)
+		if found {
+			return result, nil
+		}
+	}
+
 	result, err := f()
 	if err != nil {
 		return nil, err
@@ -224,8 +245,56 @@ func (m *MemCache) GetTxByHashWithFallback(txHash string, f fallback) (*tx.Tx, e
 	return t.(*tx.Tx), nil
 }
 
-func (m *MemCache) GetTxTotalCountWithFallback(f fallback) (int64, error) {
-	count, err := m.getWithSet(TxCountKeyPrefix, m.txExpiration, f)
+func (m *MemCache) GetTxTotalCountWithFallback(fromCache bool, f fallback) (int64, error) {
+	count, err := m.getWithSetFromCache(TxCountKeyPrefix, fromCache, m.txExpiration, f)
+	if err != nil {
+		return 0, err
+	}
+	return count.(int64), nil
+}
+
+func (m *MemCache) GetTxsTotalCountYesterdayBetweenWithFallback(fromCache bool, f fallback) (int64, error) {
+	count, err := m.getWithSetFromCache(TxsTotalCountYesterdayPrefix, fromCache, time.Duration(30)*time.Minute, f)
+	if err != nil {
+		return 0, err
+	}
+	return count.(int64), nil
+}
+
+func (m *MemCache) GetTxsTotalCountTodayBetweenWithFallback(fromCache bool, f fallback) (int64, error) {
+	count, err := m.getWithSetFromCache(TxsTotalCountTodayPrefix, fromCache, time.Duration(30)*time.Minute, f)
+	if err != nil {
+		return 0, err
+	}
+	return count.(int64), nil
+}
+
+func (m *MemCache) GetDistinctAccountsCountYesterdayBetweenWithFallback(fromCache bool, f fallback) (int64, error) {
+	count, err := m.getWithSetFromCache(AccountsCountYesterdayPrefix, fromCache, time.Duration(30)*time.Minute, f)
+	if err != nil {
+		return 0, err
+	}
+	return count.(int64), nil
+}
+
+func (m *MemCache) GetDistinctAccountsCountTodayBetweenWithFallback(fromCache bool, f fallback) (int64, error) {
+	count, err := m.getWithSetFromCache(AccountsCountTodayPrefix, fromCache, time.Duration(30)*time.Minute, f)
+	if err != nil {
+		return 0, err
+	}
+	return count.(int64), nil
+}
+
+func (m *MemCache) GetVerifiedBlocksCountWithFallback(fromCache bool, f fallback) (int64, error) {
+	count, err := m.getWithSetFromCache(GetVerifiedBlocksCountPrefix, fromCache, time.Duration(30)*time.Minute, f)
+	if err != nil {
+		return 0, err
+	}
+	return count.(int64), nil
+}
+
+func (m *MemCache) GetCommittedBlocksCountWithFallback(fromCache bool, f fallback) (int64, error) {
+	count, err := m.getWithSetFromCache(GetCommittedBlocksCountPrefix, fromCache, time.Duration(30)*time.Minute, f)
 	if err != nil {
 		return 0, err
 	}
@@ -339,9 +408,9 @@ func (m *MemCache) SetPrice(symbol string, price float64) {
 	m.goCache.SetWithTTL(key, price, int64(len(key)), m.priceExpiration)
 }
 
-func (m *MemCache) GetSysConfigWithFallback(configName string, f fallback) (*sysconfig.SysConfig, error) {
+func (m *MemCache) GetSysConfigWithFallback(configName string, fromCache bool, f fallback) (*sysconfig.SysConfig, error) {
 	key := fmt.Sprintf("%s%s", SysConfigKeyPrefix, configName)
-	c, err := m.getWithSet(key, cacheDefaultExpiration, f)
+	c, err := m.getWithSetFromCache(key, fromCache, cacheDefaultExpiration, f)
 	if err != nil {
 		return nil, err
 	}
