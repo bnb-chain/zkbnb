@@ -199,7 +199,24 @@ func main() {
 					if !cCtx.IsSet(flags.ConfigFlag.Name) {
 						return cli.ShowSubcommandHelp(cCtx)
 					}
-					return exodusexit.Run(cCtx.String(flags.ConfigFlag.Name))
+					if cCtx.String(flags.CommandFlag.Name) == "init" {
+						return dbinitializer.InitializeExodusExit(
+							cCtx.String(flags.ConfigFlag.Name),
+						)
+					}
+					if cCtx.String(flags.CommandFlag.Name) == "run" {
+						err := dbinitializer.InitializeExodusExit(
+							cCtx.String(flags.ConfigFlag.Name),
+						)
+						if err != nil {
+							return err
+						}
+						return exodusexit.Run(cCtx.String(flags.ConfigFlag.Name))
+					}
+					if cCtx.String(flags.CommandFlag.Name) == "continue" {
+						return exodusexit.Run(cCtx.String(flags.ConfigFlag.Name))
+					}
+					return nil
 				},
 			},
 			// tools
@@ -244,6 +261,7 @@ func main() {
 							flags.BlockHeightFlag,
 							flags.ServiceNameFlag,
 							flags.BatchSizeFlag,
+							flags.RecoveryFromHistoryFlag,
 						},
 						Action: func(cCtx *cli.Context) error {
 							if !cCtx.IsSet(flags.ServiceNameFlag.Name) ||
@@ -256,6 +274,7 @@ func main() {
 								cCtx.Int64(flags.BlockHeightFlag.Name),
 								cCtx.String(flags.ServiceNameFlag.Name),
 								cCtx.Int(flags.BatchSizeFlag.Name),
+								cCtx.Bool(flags.RecoveryFromHistoryFlag.Name),
 							)
 							return nil
 						},
@@ -274,6 +293,7 @@ func main() {
 							flags.BlockHeightFlag,
 							flags.ServiceNameFlag,
 							flags.BatchSizeFlag,
+							flags.RecoveryFromHistoryFlag,
 						},
 						Action: func(cCtx *cli.Context) error {
 							if !cCtx.IsSet(flags.ServiceNameFlag.Name) ||
@@ -286,6 +306,7 @@ func main() {
 								cCtx.Int64(flags.BlockHeightFlag.Name),
 								cCtx.String(flags.ServiceNameFlag.Name),
 								cCtx.Int(flags.BatchSizeFlag.Name),
+								cCtx.Bool(flags.RecoveryFromHistoryFlag.Name),
 							)
 							return nil
 						},

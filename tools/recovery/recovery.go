@@ -16,6 +16,7 @@ func RecoveryTreeDB(
 	blockHeight int64,
 	serviceName string,
 	batchSize int,
+	fromHistory bool,
 ) {
 	var c config.Config
 	conf.MustLoad(configFile, &c)
@@ -49,6 +50,7 @@ func RecoveryTreeDB(
 		blockHeight,
 		treeCtx,
 		c.TreeDB.AssetTreeCacheSize,
+		fromHistory,
 	)
 	if err != nil {
 		logx.Error("InitMerkleTree error:", err)
@@ -56,9 +58,10 @@ func RecoveryTreeDB(
 	}
 	// dbinitializer nftTree
 	_, err = tree.InitNftTree(
+		ctx.NftModel,
 		ctx.NftHistoryModel,
 		blockHeight,
-		treeCtx)
+		treeCtx, fromHistory)
 	if err != nil {
 		logx.Errorf("InitNftTree error: %s", err.Error())
 		return

@@ -1,14 +1,19 @@
 package exodusexit
 
 import (
+	"encoding/json"
 	"fmt"
 	types2 "github.com/bnb-chain/zkbnb-crypto/circuit/types"
 	"github.com/bnb-chain/zkbnb-crypto/util"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
+	bsmt "github.com/bnb-chain/zkbnb-smt"
 	common2 "github.com/bnb-chain/zkbnb/common"
+	"github.com/bnb-chain/zkbnb/common/prove"
 	"github.com/bnb-chain/zkbnb/core/executor"
 	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/exodusexit"
+	"github.com/bnb-chain/zkbnb/service/exodusexit/config"
+	"github.com/bnb-chain/zkbnb/tree"
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/panjf2000/ants/v2"
@@ -23,26 +28,15 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-type Config struct {
-	core.ChainConfig
-
-	BlockConfig struct {
-		OptionalBlockSizes    []int
-		SaveBlockDataPoolSize int  `json:",optional"`
-		RollbackOnly          bool `json:",optional"`
-	}
-	LogConf logx.LogConf
-}
-
 type ExodusExit struct {
 	running bool
-	config  *Config
+	config  *config.Config
 	bc      *core.BlockChain
 	pool    *ants.Pool
 }
 
-func NewExodusExit(config *Config) (*ExodusExit, error) {
-	bc, err := core.NewBlockChainForExodusExit(&config.ChainConfig)
+func NewExodusExit(config *config.Config) (*ExodusExit, error) {
+	bc, err := core.NewBlockChainForExodusExit(config)
 	if err != nil {
 		return nil, fmt.Errorf("new blockchain error: %v", err)
 	}
@@ -72,6 +66,10 @@ func (c *ExodusExit) Run() error {
 		if !c.running {
 			break
 		}
+		if c.config.ChainConfig.EndL2BlockHeight == executedTxMaxHeight {
+			logx.Info("execute all the l2 blocks successfully")
+			break
+		}
 		pendingBlocks, err := c.bc.ExodusExitBlockModel.GetBlocksByStatusAndMaxHeight(exodusexit.StatusVerified, executedTxMaxHeight, int64(limit))
 		if err != nil {
 			logx.Errorf("get pending blocks from exodus exit block failed:%s", err.Error())
@@ -92,11 +90,21 @@ func (c *ExodusExit) Run() error {
 			if err != nil {
 				return err
 			}
-			err = c.SaveToDb(pendingBlock)
+			err = c.saveToDb(pendingBlock)
 			if err != nil {
 				return err
 			}
+			executedTxMaxHeight = pendingBlock.BlockHeight
 		}
+	}
+	if c.config.ChainConfig.EndL2BlockHeight == executedTxMaxHeight {
+		logx.Info("execute all the l2 blocks successfully")
+		account, err := c.bc.AccountModel.GetAccountByName(c.config.AccountName)
+		if err != nil {
+			logx.Errorf("get account by name error accountName=%s,%v,", c.config.AccountName, err)
+			return err
+		}
+		c.getMerkleProofs(executedTxMaxHeight, account.AccountIndex, c.config.NftIndex, c.config.AssetId)
 	}
 	return nil
 }
@@ -106,7 +114,7 @@ func (c *ExodusExit) executeBlockFunc(exodusExitBlock *exodusexit.ExodusExitBloc
 	sizePerTx := types2.PubDataBitsSizePerTx / 8
 	c.bc.Statedb.PurgeCache("")
 	for i := 0; i < int(exodusExitBlock.BlockSize); i++ {
-		subPubData := pubData[i*sizePerTx : sizePerTx]
+		subPubData := pubData[i*sizePerTx : (i+1)*sizePerTx]
 		offset := 0
 		offset, txType := common2.ReadUint8(subPubData, offset)
 		switch txType {
@@ -188,14 +196,16 @@ func (c *ExodusExit) executeBlockFunc(exodusExitBlock *exodusexit.ExodusExitBloc
 				return err
 			}
 			break
+		case types.TxTypeEmpty:
+			return nil
 		}
 	}
 	return nil
 
 }
 
-func (c *ExodusExit) SaveToDb(exodusExitBlock *exodusexit.ExodusExitBlock) error {
-	logx.Infof("SaveToDb start, blockHeight:%d", exodusExitBlock.BlockHeight)
+func (c *ExodusExit) saveToDb(exodusExitBlock *exodusexit.ExodusExitBlock) error {
+	logx.Infof("saveToDb start, blockHeight:%d", exodusExitBlock.BlockHeight)
 	stateDataCopy := &statedb.StateDataCopy{
 		StateCache:   c.bc.Statedb.StateCache,
 		CurrentBlock: nil,
@@ -226,7 +236,7 @@ func (c *ExodusExit) SaveToDb(exodusExitBlock *exodusexit.ExodusExitBlock) error
 		return nil
 	})
 	if err != nil {
-		logx.Errorf("SaveToDb failed:%s,blockHeight:%d", err.Error(), exodusExitBlock.BlockHeight)
+		logx.Errorf("saveToDb failed:%s,blockHeight:%d", err.Error(), exodusExitBlock.BlockHeight)
 	}
 	return nil
 }
@@ -414,6 +424,10 @@ func (c *ExodusExit) executeAtomicMatch(pubData []byte) error {
 		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
 		TxInfo:       txInfo,
 	}
+	err = executor.Prepare()
+	if err != nil {
+		return err
+	}
 	err = executor.ApplyTransaction()
 	if err != nil {
 		return err
@@ -441,7 +455,11 @@ func (c *ExodusExit) executeCancelOffer(pubData []byte) error {
 		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
 		TxInfo:       txInfo,
 	}
-	err := executor.ApplyTransaction()
+	err := executor.Prepare()
+	if err != nil {
+		return err
+	}
+	err = executor.ApplyTransaction()
 	if err != nil {
 		return err
 	}
@@ -468,23 +486,14 @@ func (c *ExodusExit) executeCollection(pubData []byte) error {
 		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
 		TxInfo:       txInfo,
 	}
-	err := executor.ApplyTransaction()
+	err := executor.Prepare()
 	if err != nil {
 		return err
 	}
-	//fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//// apply changes
-	//fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-	//fromAccount.Nonce++
-	//fromAccount.CollectionNonce++
-	//
-	//stateCache := c.bc.StateDB()
-	//stateCache.SetPendingAccount(fromAccount.AccountIndex, fromAccount)
-	//stateCache.SetPendingGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
+	err = executor.ApplyTransaction()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -508,7 +517,11 @@ func (c *ExodusExit) executeDeposit(pubData []byte) error {
 		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
 		TxInfo:       txInfo,
 	}
-	err := executor.ApplyTransaction()
+	err := executor.Prepare()
+	if err != nil {
+		return err
+	}
+	err = executor.ApplyTransaction()
 	if err != nil {
 		return err
 	}
@@ -538,7 +551,11 @@ func (c *ExodusExit) executeDepositNft(pubData []byte) error {
 		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
 		TxInfo:       txInfo,
 	}
-	err := executor.ApplyTransaction()
+	err := executor.Prepare()
+	if err != nil {
+		return err
+	}
+	err = executor.ApplyTransaction()
 	if err != nil {
 		return err
 	}
@@ -562,7 +579,11 @@ func (c *ExodusExit) executeFullExit(pubData []byte) error {
 		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
 		TxInfo:       txInfo,
 	}
-	err := executor.ApplyTransaction()
+	err := executor.Prepare()
+	if err != nil {
+		return err
+	}
+	err = executor.ApplyTransaction()
 	if err != nil {
 		return err
 	}
@@ -595,7 +616,11 @@ func (c *ExodusExit) executeFullExitNft(pubData []byte) error {
 		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
 		TxInfo:       txInfo,
 	}
-	err := executor.ApplyTransaction()
+	err := executor.Prepare()
+	if err != nil {
+		return err
+	}
+	err = executor.ApplyTransaction()
 	if err != nil {
 		return err
 	}
@@ -633,6 +658,10 @@ func (c *ExodusExit) executeMintNft(pubData []byte) error {
 		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
 		TxInfo:       txInfo,
 	}
+	err = executor.Prepare()
+	if err != nil {
+		return err
+	}
 	err = executor.ApplyTransaction()
 	if err != nil {
 		return err
@@ -654,7 +683,7 @@ func (c *ExodusExit) executeRegisterZns(pubData []byte) error {
 
 	var txInfo = &txtypes.RegisterZnsTxInfo{
 		AccountIndex:    int64(accountIndex),
-		AccountName:     accountName,
+		AccountName:     common2.CleanAccountName(common2.SerializeAccountName(accountName)),
 		AccountNameHash: accountNameHash,
 		PubKey:          common.Bytes2Hex(pk.Bytes()),
 	}
@@ -662,7 +691,11 @@ func (c *ExodusExit) executeRegisterZns(pubData []byte) error {
 		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
 		TxInfo:       txInfo,
 	}
-	err := executor.ApplyTransaction()
+	err := executor.Prepare()
+	if err != nil {
+		return err
+	}
+	err = executor.ApplyTransaction()
 	if err != nil {
 		return err
 	}
@@ -700,28 +733,14 @@ func (c *ExodusExit) executeTransfer(pubData []byte) error {
 		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
 		TxInfo:       txInfo,
 	}
+	err = executor.Prepare()
+	if err != nil {
+		return err
+	}
 	err = executor.ApplyTransaction()
 	if err != nil {
 		return err
 	}
-	//fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.FromAccountIndex)
-	//if err != nil {
-	//	return err
-	//}
-	//toAccount, err := bc.StateDB().GetFormatAccount(txInfo.ToAccountIndex)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//fromAccount.AssetInfo[txInfo.AssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
-	//fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-	//toAccount.AssetInfo[txInfo.AssetId].Balance = ffmath.Add(toAccount.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
-	//fromAccount.Nonce++
-	//
-	//stateCache := bc.StateDB()
-	//stateCache.SetPendingAccount(txInfo.FromAccountIndex, fromAccount)
-	//stateCache.SetPendingAccount(txInfo.ToAccountIndex, toAccount)
-	//stateCache.SetPendingGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return nil
 }
 
@@ -749,6 +768,10 @@ func (c *ExodusExit) executeTransferNft(pubData []byte) error {
 	executor := &executor.TransferNftExecutor{
 		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
 		TxInfo:       txInfo,
+	}
+	err = executor.Prepare()
+	if err != nil {
+		return err
 	}
 	err = executor.ApplyTransaction()
 	if err != nil {
@@ -781,6 +804,10 @@ func (c *ExodusExit) executeWithdraw(pubData []byte) error {
 	executor := &executor.WithdrawExecutor{
 		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
 		TxInfo:       txInfo,
+	}
+	err = executor.Prepare()
+	if err != nil {
+		return err
 	}
 	err = executor.ApplyTransaction()
 	if err != nil {
@@ -822,9 +849,109 @@ func (c *ExodusExit) executeWithdrawNft(pubData []byte) error {
 		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
 		TxInfo:       txInfo,
 	}
+	err = executor.Prepare()
+	if err != nil {
+		return err
+	}
 	err = executor.ApplyTransaction()
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftIndex int64, accountAssetId int64) error {
+	treeCtx, err := tree.NewContext("exodusexit", c.config.TreeDB.Driver, true, true, c.config.TreeDB.RoutinePoolSize, &c.config.TreeDB.LevelDBOption, &c.config.TreeDB.RedisDBOption)
+	if err != nil {
+		logx.Errorf("init tree database failed: %s", err)
+		return err
+	}
+
+	treeCtx.SetOptions(bsmt.InitializeVersion(0))
+	treeCtx.SetBatchReloadSize(1000)
+	err = tree.SetupTreeDB(treeCtx)
+	if err != nil {
+		logx.Errorf("init tree database failed: %s", err)
+		return err
+	}
+
+	// dbinitializer accountTree and accountStateTrees
+	accountTree, accountAssetTrees, err := tree.InitAccountTree(
+		c.bc.AccountModel,
+		c.bc.AccountHistoryModel,
+		make([]int64, 0),
+		blockHeight,
+		treeCtx,
+		c.config.TreeDB.AssetTreeCacheSize,
+		false,
+	)
+	if err != nil {
+		logx.Error("init merkle tree error:", err)
+		return err
+	}
+	accountStateRoot := common.Bytes2Hex(accountTree.Root())
+	logx.Infof("account tree accountStateRoot=%s", accountStateRoot)
+	// dbinitializer nftTree
+	nftTree, err := tree.InitNftTree(
+		c.bc.L2NftModel,
+		c.bc.L2NftHistoryModel,
+		blockHeight,
+		treeCtx, false)
+	if err != nil {
+		logx.Errorf("init nft tree error: %s", err.Error())
+		return err
+	}
+	nftStateRoot := common.Bytes2Hex(nftTree.Root())
+	logx.Infof("nft tree nftStateRoot=%s", nftStateRoot)
+	stateRoot := tree.ComputeStateRootHash(accountTree.Root(), nftTree.Root())
+	logx.Infof("nft tree nftStateRoot=%s", common.Bytes2Hex(stateRoot))
+	// get account before
+	accountMerkleProofs, err := accountTree.GetProof(uint64(accountIndex))
+	if err != nil {
+		return err
+	}
+	// set account merkle proof
+	merkleProofsAccount, err := prove.SetFixedAccountArray(accountMerkleProofs)
+	if err != nil {
+		return err
+	}
+	// Marshal formatted proof.
+	merkleProofsAccountBytes, err := json.Marshal(merkleProofsAccount)
+	if err != nil {
+		return err
+	}
+	logx.Infof("accountIndex=%d, merkleProofsAccount=%s", accountIndex, string(merkleProofsAccountBytes))
+
+	if accountAssetId != -1 {
+		assetMerkleProof, err := accountAssetTrees.Get(accountIndex).GetProof(uint64(accountAssetId))
+		if err != nil {
+			return err
+		}
+		merkleProofsAccountAsset, err := prove.SetFixedAccountAssetArray(assetMerkleProof)
+		if err != nil {
+			return err
+		}
+		merkleProofsAccountAssetBytes, err := json.Marshal(merkleProofsAccountAsset)
+		if err != nil {
+			return err
+		}
+		logx.Infof("accountIndex=%d,accountAssetId=%d, merkleProofsAccountAsset=%s", accountIndex, accountAssetId, string(merkleProofsAccountAssetBytes))
+	}
+
+	if nftIndex != -1 {
+		nftMerkleProofs, err := nftTree.GetProof(uint64(nftIndex))
+		if err != nil {
+			return err
+		}
+		merkleProofsNft, err := prove.SetFixedNftArray(nftMerkleProofs)
+		if err != nil {
+			return err
+		}
+		merkleProofsNftBytes, err := json.Marshal(merkleProofsNft)
+		if err != nil {
+			return err
+		}
+		logx.Infof("accountIndex=%d,nftIndex=%d, merkleProofsNft=%s", accountIndex, nftIndex, string(merkleProofsNftBytes))
 	}
 	return nil
 }

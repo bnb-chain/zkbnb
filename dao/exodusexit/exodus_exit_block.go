@@ -39,13 +39,14 @@ const (
 
 type (
 	ExodusExitBlockModel interface {
-		CreateBlockTable() error
-		DropBlockTable() error
+		CreateExodusExitBlockTable() error
+		DropExodusExitBlockTable() error
 		GetBlockByHeight(blockHeight int64) (block *ExodusExitBlock, err error)
 		GetBlocksByHeights(blockHeights []int64) (blocks []*ExodusExitBlock, err error)
 		BatchInsertOrUpdateInTransact(tx *gorm.DB, exodusExitBlocks []*ExodusExitBlock) (err error)
 		GetBlocksByStatusAndMaxHeight(status int, maxHeight int64, limit int64) (exodusExitBlocks []*ExodusExitBlock, err error)
 		GetLatestExecutedBlock() (exodusExitBlock *ExodusExitBlock, err error)
+		GetLatestBlock() (exodusExitBlock *ExodusExitBlock, err error)
 		UpdateBlockToExecutedInTransact(tx *gorm.DB, exodusExitBlock *ExodusExitBlock) error
 	}
 
@@ -78,11 +79,11 @@ func (*ExodusExitBlock) TableName() string {
 	return BlockTableName
 }
 
-func (m *defaultBlockModel) CreateBlockTable() error {
+func (m *defaultBlockModel) CreateExodusExitBlockTable() error {
 	return m.DB.AutoMigrate(ExodusExitBlock{})
 }
 
-func (m *defaultBlockModel) DropBlockTable() error {
+func (m *defaultBlockModel) DropExodusExitBlockTable() error {
 	return m.DB.Migrator().DropTable(m.table)
 }
 func (m *defaultBlockModel) GetBlockByHeight(blockHeight int64) (block *ExodusExitBlock, err error) {
@@ -132,6 +133,15 @@ func (m *defaultBlockModel) GetBlocksByStatusAndMaxHeight(status int, maxHeight 
 
 func (m *defaultBlockModel) GetLatestExecutedBlock() (exodusExitBlock *ExodusExitBlock, err error) {
 	dbTx := m.DB.Table(m.table).Where("block_status = ?", StatusExecuted).Order("block_height DESC").Limit(1).Find(&exodusExitBlock)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return exodusExitBlock, nil
+}
+func (m *defaultBlockModel) GetLatestBlock() (exodusExitBlock *ExodusExitBlock, err error) {
+	dbTx := m.DB.Table(m.table).Order("block_height DESC").Limit(1).Find(&exodusExitBlock)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {

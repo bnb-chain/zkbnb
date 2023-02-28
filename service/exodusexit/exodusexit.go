@@ -49,7 +49,14 @@ func Run(configFile string) error {
 		_ = logx.Close()
 		exit <- struct{}{}
 	})
-
+	exodusExit, err := exodusexit.NewExodusExit(&c)
+	if err != nil {
+		return err
+	}
+	err = exodusExit.Run()
+	if err != nil {
+		return err
+	}
 	logx.Info("exodusexit cronjob is starting......")
 
 	<-exit

@@ -76,4 +76,9 @@ var (
 		Aliases: []string{"m"},
 		Usage:   "the config file",
 	}
+	RecoveryFromHistoryFlag = &cli.BoolFlag{
+		Name:  "recoveryFromHistory",
+		Value: true,
+		Usage: "read account and nft history record from the database, or read account and nft from the database",
+	}
 )

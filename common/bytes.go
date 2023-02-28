@@ -80,10 +80,10 @@ func ReadPrefixPaddingBufToChunkSize(buf []byte, offset int) (newOffset int, res
 	return offset + 32, new(big.Int).SetBytes(buf[offset : offset+32]).Bytes()
 }
 
-func ReadAccountNameFromBytes20(buf []byte, offset int) (newOffset int, res string) {
-	result := make([]byte, 20)
-	copy(result[:], buf[offset:offset+20])
-	return offset + 20, string(result) + types.AccountNameSuffix
+func ReadAccountNameFromBytes20(buf []byte, offset int) (newOffset int, res []byte) {
+	res = make([]byte, 20)
+	copy(res[:], buf[offset:offset+20])
+	return offset + 20, res
 }
 
 func PrefixPaddingBufToChunkSize(buf []byte) []byte {

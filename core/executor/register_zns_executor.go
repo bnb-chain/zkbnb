@@ -64,7 +64,6 @@ func (e *RegisterZnsExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 }
 
 func (e *RegisterZnsExecutor) ApplyTransaction() error {
-	bc := e.bc
 	txInfo := e.TxInfo
 	var err error
 
@@ -73,7 +72,7 @@ func (e *RegisterZnsExecutor) ApplyTransaction() error {
 		AccountName:     txInfo.AccountName,
 		PublicKey:       txInfo.PubKey,
 		AccountNameHash: common.Bytes2Hex(txInfo.AccountNameHash),
-		L1Address:       e.tx.NativeAddress,
+		L1Address:       txInfo.NativeAddress,
 		Nonce:           types.EmptyNonce,
 		CollectionNonce: types.EmptyCollectionNonce,
 		AssetInfo:       types.EmptyAccountAssetInfo,
@@ -84,8 +83,6 @@ func (e *RegisterZnsExecutor) ApplyTransaction() error {
 	if err != nil {
 		return err
 	}
-
-	bc.StateDB().AccountAssetTrees.UpdateCache(txInfo.AccountIndex, bc.CurrentBlock().BlockHeight)
 
 	stateCache := e.bc.StateDB()
 	stateCache.SetPendingAccount(txInfo.AccountIndex, formatAccount)
@@ -132,4 +129,10 @@ func (e *RegisterZnsExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 
 func (e *RegisterZnsExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	return nil, nil
+}
+func (e *RegisterZnsExecutor) Finalize() error {
+	bc := e.bc
+	txInfo := e.TxInfo
+	bc.StateDB().AccountAssetTrees.UpdateCache(txInfo.AccountIndex, bc.CurrentBlock().BlockHeight)
+	return nil
 }

@@ -93,7 +93,11 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 	start = time.Now()
 	tx, err = executor.GetExecutedTx(false)
 	metrics.ExecuteTxGetExecutedTxMetrics.Set(float64(time.Since(start).Milliseconds()))
-
+	if err != nil {
+		logx.Severe(err)
+		panic(err)
+	}
+	err = executor.Finalize()
 	if err != nil {
 		logx.Severe(err)
 		panic(err)

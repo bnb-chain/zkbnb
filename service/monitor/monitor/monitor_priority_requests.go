@@ -85,7 +85,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			if err != nil {
 				return fmt.Errorf("unable to parse registerZNS pub data, err: %v", err)
 			}
-
+			txInfo.NativeAddress = request.SenderAddress
 			poolTx.TxType = int64(txInfo.TxType)
 			txInfoBytes, err = json.Marshal(txInfo)
 			if err != nil {

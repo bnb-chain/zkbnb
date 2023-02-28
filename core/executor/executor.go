@@ -28,6 +28,7 @@ type TxExecutor interface {
 	GetExecutedTx(fromApi bool) (*tx.Tx, error)
 	GenerateTxDetails() ([]*tx.TxDetail, error)
 	GetTxInfo() txtypes.TxInfo
+	Finalize() error
 }
 
 func NewTxExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {

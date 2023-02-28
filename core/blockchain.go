@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/metrics"
+	"github.com/bnb-chain/zkbnb/service/exodusexit/config"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"github.com/dgraph-io/ristretto"
 	"gorm.io/plugin/dbresolver"
@@ -197,9 +198,8 @@ func NewBlockChainForDryRun(accountModel account.AccountModel,
 	return bc, nil
 }
 
-func NewBlockChainForExodusExit(config *ChainConfig) (*BlockChain, error) {
+func NewBlockChainForExodusExit(config *config.Config) (*BlockChain, error) {
 	masterDataSource := config.Postgres.MasterDataSource
-	slaveDataSource := config.Postgres.SlaveDataSource
 	db, err := gorm.Open(postgres.Open(config.Postgres.MasterDataSource), &gorm.Config{
 		Logger: logger.Default.LogMode(config.Postgres.LogLevel),
 	})
@@ -208,19 +208,20 @@ func NewBlockChainForExodusExit(config *ChainConfig) (*BlockChain, error) {
 		return nil, err
 	}
 	err = db.Use(dbresolver.Register(dbresolver.Config{
-		Sources:  []gorm.Dialector{postgres.Open(masterDataSource)},
-		Replicas: []gorm.Dialector{postgres.Open(slaveDataSource)},
+		Sources: []gorm.Dialector{postgres.Open(masterDataSource)},
 	}))
 	if err != nil {
 		logx.Severe("gorm connect db failed: ", err)
 		return nil, err
 	}
+
 	bc := &BlockChain{
-		ChainDB:     sdb.NewChainDB(db),
-		chainConfig: config,
+		dryRun:       false,
+		ChainDB:      sdb.NewChainDB(db),
+		currentBlock: &block.Block{},
 	}
-	redisCache := dbcache.NewRedisCache(config.CacheRedis[0].Host, config.CacheRedis[0].Pass, 15*time.Minute)
-	bc.Statedb, err = sdb.NewStateDBForExodusExit(redisCache, &config.CacheConfig, bc.ChainDB)
+	//redisCache := dbcache.NewRedisCache(config.CacheRedis[0].Host, config.CacheRedis[0].Pass, 15*time.Minute)
+	bc.Statedb, err = sdb.NewStateDBForExodusExit(nil, &config.CacheConfig, bc.ChainDB)
 	if err != nil {
 		return nil, err
 	}

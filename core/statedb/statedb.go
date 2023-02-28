@@ -102,6 +102,7 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 		curHeight,
 		treeCtx,
 		assetCacheSize,
+		true,
 	)
 
 	if err != nil {
@@ -109,9 +110,11 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 		return nil, err
 	}
 	nftTree, err := tree.InitNftTree(
+		chainDb.L2NftModel,
 		chainDb.L2NftHistoryModel,
 		curHeight,
 		treeCtx,
+		true,
 	)
 	if err != nil {
 		logx.Error("dbinitializer nft tree failed:", err)

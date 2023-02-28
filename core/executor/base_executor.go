@@ -176,3 +176,7 @@ func (e *BaseExecutor) SyncDirtyToStateCache() {
 func (e *BaseExecutor) GetTxInfo() txtypes.TxInfo {
 	return e.iTxInfo
 }
+
+func (e *BaseExecutor) Finalize() error {
+	return nil
+}

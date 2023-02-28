@@ -19,7 +19,9 @@ package dbinitializer
 
 import (
 	"encoding/json"
+	"github.com/bnb-chain/zkbnb/dao/exodusexit"
 	"github.com/bnb-chain/zkbnb/dao/rollback"
+	"github.com/bnb-chain/zkbnb/service/exodusexit/config"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
@@ -78,6 +80,7 @@ type dao struct {
 	nftHistoryModel         nft.L2NftHistoryModel
 	rollbackModel           rollback.RollbackModel
 	nftMetadataHistoryModel nft.L2NftMetadataHistoryModel
+	exodusExitBlockModel    exodusexit.ExodusExitBlockModel
 }
 
 func Initialize(
@@ -120,6 +123,31 @@ func Initialize(
 
 	dropTables(dao)
 	initTable(dao, &svrConf, bscTestNetworkRPC, localTestNetworkRPC)
+
+	return nil
+}
+
+func InitializeExodusExit(
+	configFile string,
+) error {
+	var c config.Config
+	conf.MustLoad(configFile, &c)
+	db, err := gorm.Open(postgres.Open(c.Postgres.MasterDataSource), &gorm.Config{
+		DisableForeignKeyConstraintWhenMigrating: true,
+	})
+	if err != nil {
+		return err
+	}
+
+	dao := &dao{
+		accountModel:         account.NewAccountModel(db),
+		nftModel:             nft.NewL2NftModel(db),
+		l1SyncedBlockModel:   l1syncedblock.NewL1SyncedBlockModel(db),
+		exodusExitBlockModel: exodusexit.NewExodusExitBlockModel(db),
+	}
+
+	dropTablesExodusExit(dao)
+	initTableExodusExit(dao)
 
 	return nil
 }
@@ -256,6 +284,13 @@ func dropTables(dao *dao) {
 
 }
 
+func dropTablesExodusExit(dao *dao) {
+	assert.Nil(nil, dao.accountModel.DropAccountTable())
+	assert.Nil(nil, dao.nftModel.DropL2NftTable())
+	assert.Nil(nil, dao.l1SyncedBlockModel.DropL1SyncedBlockTable())
+	assert.Nil(nil, dao.exodusExitBlockModel.DropExodusExitBlockTable())
+}
+
 func initTable(dao *dao, svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC string) {
 	assert.Nil(nil, dao.sysConfigModel.CreateSysConfigTable())
 	assert.Nil(nil, dao.accountModel.CreateAccountTable())
@@ -303,4 +338,11 @@ func initTable(dao *dao, svrConf *contractAddr, bscTestNetworkRPC, localTestNetw
 		logx.Severe(err)
 		panic(err)
 	}
+}
+
+func initTableExodusExit(dao *dao) {
+	assert.Nil(nil, dao.accountModel.CreateAccountTable())
+	assert.Nil(nil, dao.nftModel.CreateL2NftTable())
+	assert.Nil(nil, dao.l1SyncedBlockModel.CreateL1SyncedBlockTable())
+	assert.Nil(nil, dao.exodusExitBlockModel.CreateExodusExitBlockTable())
 }
