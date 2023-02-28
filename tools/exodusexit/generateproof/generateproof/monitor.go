@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package exodusexit
+package generateproof
 
 import (
 	"fmt"
 	"github.com/bnb-chain/zkbnb/dao/exodusexit"
+	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof/config"
 	"gorm.io/plugin/dbresolver"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -28,7 +29,6 @@ import (
 	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
-	"github.com/bnb-chain/zkbnb/service/exodusexit/config"
 	"github.com/bnb-chain/zkbnb/types"
 )
 

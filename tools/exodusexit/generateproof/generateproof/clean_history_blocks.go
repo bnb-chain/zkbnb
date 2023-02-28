@@ -1,4 +1,4 @@
-package exodusexit
+package generateproof
 
 import (
 	"github.com/zeromicro/go-zero/core/logx"

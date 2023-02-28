@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/bnb-chain/zkbnb/service/exodusexit"
+	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof"
 	"github.com/bnb-chain/zkbnb/tools/query"
 	"os"
 	"runtime"
@@ -186,8 +186,8 @@ func main() {
 				},
 			},
 			{
-				Name:  "exodusexit",
-				Usage: "Run exodusexit service",
+				Name:  "generateproof",
+				Usage: "Run generateproof service",
 				Flags: []cli.Flag{
 					flags.CommandFlag,
 					flags.ConfigFlag,
@@ -211,10 +211,10 @@ func main() {
 						if err != nil {
 							return err
 						}
-						return exodusexit.Run(cCtx.String(flags.ConfigFlag.Name))
+						return generateproof.Run(cCtx.String(flags.ConfigFlag.Name))
 					}
 					if cCtx.String(flags.CommandFlag.Name) == "continue" {
-						return exodusexit.Run(cCtx.String(flags.ConfigFlag.Name))
+						return generateproof.Run(cCtx.String(flags.ConfigFlag.Name))
 					}
 					return nil
 				},

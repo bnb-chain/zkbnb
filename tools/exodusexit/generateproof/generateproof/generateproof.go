@@ -1,4 +1,4 @@
-package exodusexit
+package generateproof
 
 import (
 	"encoding/json"
@@ -12,7 +12,7 @@ import (
 	"github.com/bnb-chain/zkbnb/core/executor"
 	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/bnb-chain/zkbnb/dao/exodusexit"
-	"github.com/bnb-chain/zkbnb/service/exodusexit/config"
+	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof/config"
 	"github.com/bnb-chain/zkbnb/tree"
 	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/ethereum/go-ethereum/common"
@@ -861,7 +861,7 @@ func (c *ExodusExit) executeWithdrawNft(pubData []byte) error {
 }
 
 func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftIndex int64, accountAssetId int64) error {
-	treeCtx, err := tree.NewContext("exodusexit", c.config.TreeDB.Driver, true, true, c.config.TreeDB.RoutinePoolSize, &c.config.TreeDB.LevelDBOption, &c.config.TreeDB.RedisDBOption)
+	treeCtx, err := tree.NewContext("generateproof", c.config.TreeDB.Driver, true, true, c.config.TreeDB.RoutinePoolSize, &c.config.TreeDB.LevelDBOption, &c.config.TreeDB.RedisDBOption)
 	if err != nil {
 		logx.Errorf("init tree database failed: %s", err)
 		return err

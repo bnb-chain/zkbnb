@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/metrics"
-	"github.com/bnb-chain/zkbnb/service/exodusexit/config"
+	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof/config"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"github.com/dgraph-io/ristretto"
 	"gorm.io/plugin/dbresolver"

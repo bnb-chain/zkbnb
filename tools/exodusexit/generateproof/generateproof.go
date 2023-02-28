@@ -1,15 +1,14 @@
-package exodusexit
+package generateproof
 
 import (
-	"github.com/bnb-chain/zkbnb/service/exodusexit/exodusexit"
+	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof/config"
+	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof/generateproof"
 	"time"
 
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
-
-	"github.com/bnb-chain/zkbnb/service/exodusexit/config"
 )
 
 const GracefulShutdownTimeout = 5 * time.Second
@@ -20,7 +19,7 @@ func Run(configFile string) error {
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 
-	m, err := exodusexit.NewMonitor(c)
+	m, err := generateproof.NewMonitor(c)
 	if err != nil {
 		logx.Severe(err)
 		panic(err)
@@ -43,13 +42,13 @@ func Run(configFile string) error {
 	exit := make(chan struct{})
 	proc.SetTimeToForceQuit(GracefulShutdownTimeout)
 	proc.AddShutdownListener(func() {
-		logx.Info("start to shutdown exodusexit......")
+		logx.Info("start to shutdown generateproof......")
 		<-cronJob.Stop().Done()
 		m.Shutdown()
 		_ = logx.Close()
 		exit <- struct{}{}
 	})
-	exodusExit, err := exodusexit.NewExodusExit(&c)
+	exodusExit, err := generateproof.NewExodusExit(&c)
 	if err != nil {
 		return err
 	}
@@ -57,7 +56,7 @@ func Run(configFile string) error {
 	if err != nil {
 		return err
 	}
-	logx.Info("exodusexit cronjob is starting......")
+	logx.Info("generateproof cronjob is starting......")
 
 	<-exit
 	return nil

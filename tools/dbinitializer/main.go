@@ -21,7 +21,7 @@ import (
 	"encoding/json"
 	"github.com/bnb-chain/zkbnb/dao/exodusexit"
 	"github.com/bnb-chain/zkbnb/dao/rollback"
-	"github.com/bnb-chain/zkbnb/service/exodusexit/config"
+	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof/config"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
