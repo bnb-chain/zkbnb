@@ -19,6 +19,8 @@ package common
 
 import (
 	"bytes"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/mr-tron/base58/base58"
 	"strings"
 	"unicode"
 )
@@ -46,5 +48,12 @@ func CleanAccountName(name string) string {
 }
 
 func SerializeAccountName(a []byte) string {
-	return string(bytes.Trim(a[:], "\x00")) + ".legend"
+	return string(bytes.Trim(a[:], "\x00")) + ".zkbnb"
+}
+
+func GenerateCid(nftContentHash string) string {
+	var hash = "0x1220" + nftContentHash
+	b, _ := hexutil.Decode(hash)
+	cid := base58.Encode(b)
+	return cid
 }

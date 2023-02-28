@@ -18,7 +18,7 @@ const (
 	queryBySymbol = "symbol"
 
 	// iconBaseUrl is used for showing icons for assets, asset owners should upload png files to the github repo
-	iconBaseUrl = "https://raw.githubusercontent.com/binance-chain/tokens-info/master/tokens/%s/%s.png"
+	iconBaseUrl = "https://static.devfdg.net/cloud-dapp/shared/icon/coin/%s.svg"
 )
 
 type GetAssetLogic struct {
@@ -78,7 +78,7 @@ func (l *GetAssetLogic) GetAsset(req *types.ReqGetAsset) (resp *types.Asset, err
 		Address:    asset.L1Address,
 		Price:      strconv.FormatFloat(assetPrice, 'E', -1, 64),
 		IsGasAsset: asset.IsGasAsset,
-		Icon:       fmt.Sprintf(iconBaseUrl, strings.ToLower(asset.AssetSymbol), strings.ToLower(asset.AssetSymbol)),
+		Icon:       fmt.Sprintf(iconBaseUrl, strings.ToLower(asset.AssetSymbol)),
 	}
 	return resp, nil
 }

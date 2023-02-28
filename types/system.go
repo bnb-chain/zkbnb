@@ -35,7 +35,9 @@ const (
 	Governor       = "Governor"
 	ZnsPriceOracle = "ZnsPriceOracle"
 
-	AccountNameSuffix = ".legend"
+	DefaultNftFactory = "DefaultNftFactory"
+
+	AccountNameSuffix = ".zkbnb"
 )
 
 var (

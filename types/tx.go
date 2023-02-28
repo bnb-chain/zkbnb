@@ -19,7 +19,6 @@ package types
 
 import (
 	"encoding/json"
-
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 )
 
@@ -55,6 +54,17 @@ func IsL2Tx(txType int64) bool {
 	return false
 }
 
+func GetL2TxTypes() []int64 {
+	return []int64{TxTypeTransfer,
+		TxTypeWithdraw,
+		TxTypeCreateCollection,
+		TxTypeMintNft,
+		TxTypeTransferNft,
+		TxTypeAtomicMatch,
+		TxTypeCancelOffer,
+		TxTypeWithdrawNft}
+}
+
 func IsPriorityOperationTx(txType int64) bool {
 	if txType == TxTypeRegisterZns ||
 		txType == TxTypeDeposit ||
@@ -64,6 +74,14 @@ func IsPriorityOperationTx(txType int64) bool {
 		return true
 	}
 	return false
+}
+
+func GetL1TxTypes() []int64 {
+	return []int64{TxTypeRegisterZns,
+		TxTypeDeposit,
+		TxTypeDepositNft,
+		TxTypeFullExit,
+		TxTypeFullExitNft}
 }
 
 const (
@@ -117,6 +135,13 @@ const (
 	AddressSize       = 20
 	EmptyStringKeccak = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
 )
+
+type UpdateNftReq struct {
+	NftIndex          int64
+	MutableAttributes string
+	AccountIndex      int64
+	Nonce             int64
+}
 
 func ParseRegisterZnsTxInfo(txInfoStr string) (txInfo *txtypes.RegisterZnsTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
@@ -215,6 +240,14 @@ func ParseWithdrawTxInfo(txInfoStr string) (txInfo *txtypes.WithdrawTxInfo, err 
 }
 
 func ParseWithdrawNftTxInfo(txInfoStr string) (txInfo *txtypes.WithdrawNftTxInfo, err error) {
+	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
+	if err != nil {
+		return nil, err
+	}
+	return txInfo, nil
+}
+
+func ParseUpdateNftTxInfo(txInfoStr string) (txInfo *UpdateNftReq, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
 		return nil, err

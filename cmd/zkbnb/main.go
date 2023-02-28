@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/bnb-chain/zkbnb/tools/query"
 	"os"
 	"runtime"
 
@@ -243,6 +244,36 @@ func main() {
 					},
 				},
 			},
+			{
+				Name:  "treedb",
+				Usage: "TreeDB tools",
+				Subcommands: []*cli.Command{
+					{
+						Name:  "query",
+						Usage: "query treedb",
+						Flags: []cli.Flag{
+							flags.ConfigFlag,
+							flags.BlockHeightFlag,
+							flags.ServiceNameFlag,
+							flags.BatchSizeFlag,
+						},
+						Action: func(cCtx *cli.Context) error {
+							if !cCtx.IsSet(flags.ServiceNameFlag.Name) ||
+								!cCtx.IsSet(flags.BlockHeightFlag.Name) ||
+								!cCtx.IsSet(flags.ConfigFlag.Name) {
+								return cli.ShowSubcommandHelp(cCtx)
+							}
+							query.QueryTreeDB(
+								cCtx.String(flags.ConfigFlag.Name),
+								cCtx.Int64(flags.BlockHeightFlag.Name),
+								cCtx.String(flags.ServiceNameFlag.Name),
+								cCtx.Int(flags.BatchSizeFlag.Name),
+							)
+							return nil
+						},
+					},
+				},
+			},
 		},
 	}
 
@@ -277,7 +308,7 @@ func startMetricsServer(ctx *cli.Context) {
 
 	if ctx.Bool(flags.MetricsEnabledFlag.Name) {
 		go func() {
-			logx.Info("Starting pprof server", "addr", fmt.Sprintf("http://%s/debug/pprof", pprofAddress))
+			logx.Info("Starting pprof server addr", fmt.Sprintf("http://%s/debug/pprof", pprofAddress))
 			if err := pprofServer.Start(); err != nil {
 				logx.Error("Failure in running pprof server", "err", err)
 			}
@@ -286,7 +317,7 @@ func startMetricsServer(ctx *cli.Context) {
 
 	if ctx.Bool(flags.MetricsEnabledFlag.Name) {
 		go func() {
-			logx.Info("Starting metrics server", "addr", fmt.Sprintf("http://%s/debug/metrics", metricsAddress))
+			logx.Info("Starting metrics server addr", fmt.Sprintf("http://%s/debug/metrics", metricsAddress))
 			if err := prometheusServer.Start(); err != nil {
 				logx.Error("Failure in running metrics server", "err", err)
 			}

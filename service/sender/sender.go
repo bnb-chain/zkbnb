@@ -30,10 +30,11 @@ func Run(configFile string) error {
 		logx.Info("========================= start commit task =========================")
 		err := s.CommitBlocks()
 		if err != nil {
-			logx.Errorf("failed to rollup block, %v", err)
+			logx.Severef("failed to rollup block, %v", err)
 		}
 	})
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 
@@ -41,10 +42,11 @@ func Run(configFile string) error {
 		logx.Info("========================= start verify task =========================")
 		err = s.VerifyAndExecuteBlocks()
 		if err != nil {
-			logx.Errorf("failed to send verify transaction, %v", err)
+			logx.Error("failed to send verify transaction, %v", err)
 		}
 	})
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 
@@ -52,10 +54,11 @@ func Run(configFile string) error {
 		logx.Info("========================= start update txs task =========================")
 		err = s.UpdateSentTxs()
 		if err != nil {
-			logx.Errorf("failed to update update tx status, %v", err)
+			logx.Severef("failed to update update tx status, %v", err)
 		}
 	})
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 

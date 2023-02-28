@@ -21,6 +21,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/shopspring/decimal"
+	"gorm.io/plugin/dbresolver"
+	"math"
 	"math/big"
 	"time"
 
@@ -41,13 +45,70 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
+var (
+	l2BlockCommitToChainHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2Block_commit_to_chain_height",
+		Help:      "l2Block_roll_up_height metrics.",
+	})
+
+	l2BlockCommitConfirmByChainHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2Block_commit_confirm_by_chain_height",
+		Help:      "l2Block_roll_up_height metrics.",
+	})
+
+	l2BlockSubmitToVerifyHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2Block_submit_to_verify_height",
+		Help:      "l2Block_roll_up_height metrics.",
+	})
+
+	l2BlockVerifiedHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2Block_verified_height",
+		Help:      "l2Block_roll_up_height metrics.",
+	})
+	l2MaxWaitingTimeMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l2Block_max_waiting_time",
+		Help:      "l2Block_roll_up_time metrics.",
+	})
+	l1HeightSenderMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l1Block_block_height_send",
+		Help:      "l1Block_block_height_send metrics.",
+	})
+	l1ExceptionSenderMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l1_Exception_send",
+		Help:      "l1_Exception_send metrics.",
+	})
+	commitExceptionHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "commit_Exception_height",
+		Help:      "commit_Exception_height metrics.",
+	})
+	verifyExceptionHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "verify_Exception_height",
+		Help:      "verify_Exception_height metrics.",
+	})
+	contractBalanceMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "contract_balance",
+		Help:      "contract_balance metrics.",
+	})
+)
+
 type Sender struct {
 	config sconfig.Config
 
 	// Client
-	cli           *rpc.ProviderClient
-	authCli       *rpc.AuthClient
-	zkbnbInstance *zkbnb.ZkBNB
+	cli                *rpc.ProviderClient
+	authCliCommitBlock *rpc.AuthClient
+	authCliVerifyBlock *rpc.AuthClient
+	zkbnbInstance      *zkbnb.ZkBNB
 
 	// Data access objects
 	db                   *gorm.DB
@@ -59,9 +120,60 @@ type Sender struct {
 }
 
 func NewSender(c sconfig.Config) *Sender {
-	db, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
-	if err != nil {
-		logx.Errorf("gorm connect db error, err = %v", err)
+	if err := prometheus.Register(l2BlockCommitToChainHeightMetric); err != nil {
+		logx.Errorf("prometheus.Register l2BlockCommitToChainHeightMetric error: %v", err)
+	}
+	if err := prometheus.Register(l2BlockCommitConfirmByChainHeightMetric); err != nil {
+		logx.Errorf("prometheus.Register l2BlockCommitConfirmByChainHeightMetric error: %v", err)
+	}
+	if err := prometheus.Register(l2BlockSubmitToVerifyHeightMetric); err != nil {
+		logx.Errorf("prometheus.Register l2BlockSubmitToVerifyHeightMetric error: %v", err)
+	}
+	if err := prometheus.Register(l2BlockVerifiedHeightMetric); err != nil {
+		logx.Errorf("prometheus.Register l2BlockVerifiedHeightMetric error: %v", err)
+	}
+
+	masterDataSource := c.Postgres.MasterDataSource
+	slaveDataSource := c.Postgres.SlaveDataSource
+	db, err := gorm.Open(postgres.Open(masterDataSource))
+	if err := prometheus.Register(l2BlockCommitToChainHeightMetric); err != nil {
+		logx.Errorf("prometheus.Register l2BlockCommitToChainHeightMetric error: %v", err)
+	}
+	if err := prometheus.Register(l2BlockCommitConfirmByChainHeightMetric); err != nil {
+		logx.Errorf("prometheus.Register l2BlockCommitConfirmByChainHeightMetric error: %v", err)
+	}
+	if err := prometheus.Register(l2BlockSubmitToVerifyHeightMetric); err != nil {
+		logx.Errorf("prometheus.Register l2BlockSubmitToVerifyHeightMetric error: %v", err)
+	}
+	if err := prometheus.Register(l2BlockVerifiedHeightMetric); err != nil {
+		logx.Errorf("prometheus.Register l2BlockVerifiedHeightMetric error: %v", err)
+	}
+	if err := prometheus.Register(l2MaxWaitingTimeMetric); err != nil {
+		logx.Errorf("prometheus.Register l2MaxWaitingTimeMetric error: %v", err)
+	}
+	if err := prometheus.Register(l1HeightSenderMetric); err != nil {
+		logx.Errorf("prometheus.Register l1HeightSenderMetric error: %v", err)
+	}
+	if err := prometheus.Register(l1ExceptionSenderMetric); err != nil {
+		logx.Errorf("prometheus.Register l1ExceptionSenderMetric error: %v", err)
+	}
+	if err := prometheus.Register(commitExceptionHeightMetric); err != nil {
+		logx.Errorf("prometheus.Register commitExceptionHeightMetric error: %v", err)
+	}
+	if err := prometheus.Register(verifyExceptionHeightMetric); err != nil {
+		logx.Errorf("prometheus.Register verifyExceptionHeightMetric error: %v", err)
+	}
+	if err := prometheus.Register(contractBalanceMetric); err != nil {
+		logx.Errorf("prometheus.Register contractBalanceMetric error: %v", err)
+	}
+
+	db.Use(dbresolver.Register(dbresolver.Config{
+		Sources:  []gorm.Dialector{postgres.Open(masterDataSource)},
+		Replicas: []gorm.Dialector{postgres.Open(slaveDataSource)},
+	}))
+	if c.ChainConfig.MaxGasPriceIncreasePercentage == 0 {
+		//((MaxGasPrice-GasPrice)/GasPrice)*100
+		c.ChainConfig.MaxGasPriceIncreasePercentage = 50
 	}
 	s := &Sender{
 		config:               c,
@@ -88,28 +200,51 @@ func NewSender(c sconfig.Config) *Sender {
 
 	s.cli, err = rpc.NewClient(l1RPCEndpoint.Value)
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 	chainId, err := s.cli.ChainID(context.Background())
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
-	s.authCli, err = rpc.NewAuthClient(c.ChainConfig.Sk, chainId)
+	s.authCliCommitBlock, err = rpc.NewAuthClient(c.ChainConfig.CommitBlockSk, chainId)
 	if err != nil {
+		logx.Severe(err)
+		panic(err)
+	}
+	s.authCliVerifyBlock, err = rpc.NewAuthClient(c.ChainConfig.VerifyBlockSk, chainId)
+	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 	s.zkbnbInstance, err = zkbnb.LoadZkBNBInstance(s.cli, rollupAddress.Value)
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 	return s
 }
 
 func (s *Sender) CommitBlocks() (err error) {
+	info, err := s.sysConfigModel.GetSysConfigByName("ZkBNBContract")
+	if err == nil {
+		balance, err := s.cli.GetBalance(info.Value)
+		fbalance := new(big.Float)
+		fbalance.SetString(balance.String())
+		ethValue := new(big.Float).Quo(fbalance, big.NewFloat(math.Pow10(18)))
+		if err != nil {
+			contractBalanceMetric.Set(float64(0))
+		} else {
+			f, _ := ethValue.Float64()
+			contractBalanceMetric.Set(f)
+		}
+	}
+
 	var (
-		cli           = s.cli
-		authCli       = s.authCli
-		zkbnbInstance = s.zkbnbInstance
+		cli                = s.cli
+		authCliCommitBlock = s.authCliCommitBlock
+		zkbnbInstance      = s.zkbnbInstance
 	)
 	pendingTx, err := s.l1RollupTxModel.GetLatestPendingTx(l1rolluptx.TxTypeCommit)
 	if err != nil && err != types.DbErrNotFound {
@@ -162,28 +297,83 @@ func (s *Sender) CommitBlocks() (err error) {
 			return err
 		}
 	}
+	var txHash string
+	var nonce uint64
 
-	// commit blocks on-chain
-	txHash, err := zkbnb.CommitBlocks(
-		cli, authCli,
-		zkbnbInstance,
-		lastStoredBlockInfo,
-		pendingCommitBlocks,
-		gasPrice,
-		s.config.ChainConfig.GasLimit)
+	maxGasPrice := (decimal.NewFromInt(gasPrice.Int64()).Mul(decimal.NewFromInt(int64(s.config.ChainConfig.MaxGasPriceIncreasePercentage))).Div(decimal.NewFromInt(100))).Add(decimal.NewFromInt(gasPrice.Int64()))
+	nonce, err = cli.GetPendingNonce(authCliCommitBlock.Address.Hex())
 	if err != nil {
-		return fmt.Errorf("failed to send commit tx, errL %v:%s", err, txHash)
+		return fmt.Errorf("failed to get nonce for commit block, errL %v", err)
+	}
+
+	l1RollupTx, err := s.l1RollupTxModel.GetLatestByNonce(int64(nonce), l1rolluptx.TxTypeCommit)
+	if err != nil && err != types.DbErrNotFound {
+		return fmt.Errorf("failed to get latest l1 rollup tx by nonce %d, err: %v", nonce, err)
+	}
+	if l1RollupTx != nil && l1RollupTx.L1Nonce == int64(nonce) {
+		standByGasPrice := decimal.NewFromInt(l1RollupTx.GasPrice).Add(decimal.NewFromInt(l1RollupTx.GasPrice).Mul(decimal.NewFromFloat(0.1)))
+		if standByGasPrice.GreaterThan(maxGasPrice) {
+			logx.Errorf("abandon commit block to l1, gasPrice>maxGasPrice,l1 nonce: %s,gasPrice: %s,maxGasPrice: %s", nonce, standByGasPrice, maxGasPrice)
+			return nil
+		}
+		gasPrice = standByGasPrice.RoundUp(0).BigInt()
+		logx.Infof("speed up commit block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
+	}
+	retry := false
+	for {
+		if retry {
+			newNonce, err := cli.GetPendingNonce(authCliCommitBlock.Address.Hex())
+			if err != nil {
+				return fmt.Errorf("failed to get nonce for commit block, errL %v", err)
+			}
+			if nonce != newNonce {
+				return fmt.Errorf("failed to retry for commit block, nonce=%d,newNonce=%d", nonce, newNonce)
+			}
+			standByGasPrice := decimal.NewFromInt(gasPrice.Int64()).Add(decimal.NewFromInt(gasPrice.Int64()).Mul(decimal.NewFromFloat(0.1)))
+			if standByGasPrice.GreaterThan(maxGasPrice) {
+				logx.Errorf("abandon commit block to l1, gasPrice>maxGasPrice,l1 nonce: %s,gasPrice: %s,maxGasPrice: %s", nonce, standByGasPrice, maxGasPrice)
+				return nil
+			}
+			gasPrice = standByGasPrice.RoundUp(0).BigInt()
+			logx.Infof("speed up commit block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
+		}
+		// commit blocks on-chain
+		txHash, err = zkbnb.CommitBlocksWithNonce(
+			cli, authCliCommitBlock,
+			zkbnbInstance,
+			lastStoredBlockInfo,
+			pendingCommitBlocks,
+			gasPrice,
+			s.config.ChainConfig.GasLimit, nonce)
+		if err != nil {
+			commitExceptionHeightMetric.Set(float64(pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber))
+			if err.Error() == "replacement transaction underpriced" || err.Error() == "transaction underpriced" {
+				logx.Errorf("failed to send commit tx,try again: errL %v:%s", err, txHash)
+				retry = true
+				continue
+			}
+			return fmt.Errorf("failed to send commit tx, errL %v:%s", err, txHash)
+		}
+		break
+	}
+
+	commitExceptionHeightMetric.Set(float64(0))
+	for _, pendingCommitBlock := range pendingCommitBlocks {
+		l2BlockCommitToChainHeightMetric.Set(float64(pendingCommitBlock.BlockNumber))
 	}
 	newRollupTx := &l1rolluptx.L1RollupTx{
 		L1TxHash:      txHash,
 		TxStatus:      l1rolluptx.StatusPending,
 		TxType:        l1rolluptx.TxTypeCommit,
 		L2BlockHeight: int64(pendingCommitBlocks[len(pendingCommitBlocks)-1].BlockNumber),
+		L1Nonce:       int64(nonce),
+		GasPrice:      gasPrice.Int64(),
 	}
 	err = s.l1RollupTxModel.CreateL1RollupTx(newRollupTx)
 	if err != nil {
 		return fmt.Errorf("failed to create tx in database, err: %v", err)
 	}
+	l2BlockCommitToChainHeightMetric.Set(float64(newRollupTx.L2BlockHeight))
 	logx.Infof("new blocks have been committed(height): %v:%s", newRollupTx.L2BlockHeight, newRollupTx.L1TxHash)
 	return nil
 }
@@ -196,12 +386,11 @@ func (s *Sender) UpdateSentTxs() (err error) {
 		}
 		return fmt.Errorf("failed to get pending txs, err: %v", err)
 	}
-
 	latestL1Height, err := s.cli.GetHeight()
 	if err != nil {
 		return fmt.Errorf("failed to get l1 block height, err: %v", err)
 	}
-
+	l1HeightSenderMetric.Set(float64(latestL1Height))
 	var (
 		pendingUpdateRxs         []*l1rolluptx.L1RollupTx
 		pendingUpdateProofStatus = make(map[int64]int)
@@ -213,9 +402,10 @@ func (s *Sender) UpdateSentTxs() (err error) {
 			logx.Errorf("query transaction receipt %s failed, err: %v", txHash, err)
 			if time.Now().After(pendingTx.UpdatedAt.Add(time.Duration(s.config.ChainConfig.MaxWaitingTime) * time.Second)) {
 				// No need to check the response, do best effort.
-				logx.Infof("delete timeout l1 rollup tx, tx_hash=%s", pendingTx.L1TxHash)
+				logx.Errorf("delete timeout l1 rollup tx, tx_hash=%s", pendingTx.L1TxHash)
 				//nolint:errcheck
 				s.l1RollupTxModel.DeleteL1RollupTx(pendingTx)
+				l2MaxWaitingTimeMetric.Set(float64(pendingTx.L2BlockHeight))
 			}
 			continue
 		}
@@ -224,9 +414,13 @@ func (s *Sender) UpdateSentTxs() (err error) {
 			logx.Infof("delete timeout l1 rollup tx, tx_hash=%s", pendingTx.L1TxHash)
 			//nolint:errcheck
 			s.l1RollupTxModel.DeleteL1RollupTx(pendingTx)
+			l1ExceptionSenderMetric.Set(float64(pendingTx.L2BlockHeight))
 			// It is critical to have any failed transactions
+			logx.Severef("unexpected failed tx: %v", txHash)
 			panic(fmt.Sprintf("unexpected failed tx: %v", txHash))
 		}
+		l2MaxWaitingTimeMetric.Set(float64(0))
+		l1ExceptionSenderMetric.Set(float64(0))
 
 		// not finalized yet
 		if latestL1Height < receipt.BlockNumber.Uint64()+s.config.ChainConfig.ConfirmBlocksCount {
@@ -257,13 +451,18 @@ func (s *Sender) UpdateSentTxs() (err error) {
 		if validTx {
 			pendingTx.TxStatus = l1rolluptx.StatusHandled
 			pendingUpdateRxs = append(pendingUpdateRxs, pendingTx)
+			if pendingTx.TxType == l1rolluptx.TxTypeCommit {
+				l2BlockCommitConfirmByChainHeightMetric.Set(float64(pendingTx.L2BlockHeight))
+			} else if pendingTx.TxType == l1rolluptx.TxTypeVerifyAndExecute {
+				l2BlockVerifiedHeightMetric.Set(float64(pendingTx.L2BlockHeight))
+			}
 		}
 	}
 
 	//update db
 	err = s.db.Transaction(func(tx *gorm.DB) error {
 		//update l1 rollup txs
-		err := s.l1RollupTxModel.UpdateL1RollupTxsInTransact(tx, pendingUpdateRxs)
+		err := s.l1RollupTxModel.UpdateL1RollupTxsStatusInTransact(tx, pendingUpdateRxs)
 		if err != nil {
 			return err
 		}
@@ -279,9 +478,9 @@ func (s *Sender) UpdateSentTxs() (err error) {
 
 func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	var (
-		cli           = s.cli
-		authCli       = s.authCli
-		zkbnbInstance = s.zkbnbInstance
+		cli                = s.cli
+		authCliVerifyBlock = s.authCliVerifyBlock
+		zkbnbInstance      = s.zkbnbInstance
 	)
 	pendingTx, err := s.l1RollupTxModel.GetLatestPendingTx(l1rolluptx.TxTypeVerifyAndExecute)
 	if err != nil && err != types.DbErrNotFound {
@@ -316,6 +515,9 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 
 	blockProofs, err := s.proofModel.GetProofsBetween(start, start+int64(len(blocks))-1)
 	if err != nil {
+		if err == types.DbErrNotFound {
+			return nil
+		}
 		return fmt.Errorf("unable to get proofs, err: %v", err)
 	}
 	if len(blockProofs) != len(blocks) {
@@ -351,23 +553,78 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		}
 	}
 
-	// Verify blocks on-chain
-	txHash, err := zkbnb.VerifyAndExecuteBlocks(cli, authCli, zkbnbInstance,
-		pendingVerifyAndExecuteBlocks, proofs, gasPrice, s.config.ChainConfig.GasLimit)
+	var txHash string
+	var nonce uint64
+
+	maxGasPrice := (decimal.NewFromInt(gasPrice.Int64()).Mul(decimal.NewFromInt(int64(s.config.ChainConfig.MaxGasPriceIncreasePercentage))).Div(decimal.NewFromInt(100))).Add(decimal.NewFromInt(gasPrice.Int64()))
+	nonce, err = cli.GetPendingNonce(authCliVerifyBlock.Address.Hex())
 	if err != nil {
-		return fmt.Errorf("failed to send verify tx: %v:%s", err, txHash)
+		return fmt.Errorf("failed to get nonce for commit block, errL %v", err)
 	}
 
+	l1RollupTx, err := s.l1RollupTxModel.GetLatestByNonce(int64(nonce), l1rolluptx.TxTypeVerifyAndExecute)
+	if err != nil && err != types.DbErrNotFound {
+		return fmt.Errorf("failed to get latest l1 rollup tx by nonce %d, err: %v", nonce, err)
+	}
+	if l1RollupTx != nil && l1RollupTx.L1Nonce == int64(nonce) {
+		standByGasPrice := decimal.NewFromInt(l1RollupTx.GasPrice).Add(decimal.NewFromInt(l1RollupTx.GasPrice).Mul(decimal.NewFromFloat(0.1)))
+		if standByGasPrice.GreaterThan(maxGasPrice) {
+			logx.Errorf("abandon verify block to l1, gasPrice>maxGasPrice,l1 nonce: %s,gasPrice: %s,maxGasPrice: %s", nonce, standByGasPrice, maxGasPrice)
+			return nil
+		}
+		gasPrice = standByGasPrice.RoundUp(0).BigInt()
+		logx.Infof("speed up verify block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
+	}
+	retry := false
+	for {
+		if retry {
+			newNonce, err := cli.GetPendingNonce(authCliVerifyBlock.Address.Hex())
+			if err != nil {
+				return fmt.Errorf("failed to get nonce for verify block, errL %v", err)
+			}
+			if nonce != newNonce {
+				return fmt.Errorf("failed to retry for verify block, nonce=%d,newNonce=%d", nonce, newNonce)
+			}
+			standByGasPrice := decimal.NewFromInt(gasPrice.Int64()).Add(decimal.NewFromInt(gasPrice.Int64()).Mul(decimal.NewFromFloat(0.1)))
+			if standByGasPrice.GreaterThan(maxGasPrice) {
+				logx.Errorf("abandon verify block to l1, gasPrice>maxGasPrice,l1 nonce: %s,gasPrice: %s,maxGasPrice: %s", nonce, standByGasPrice, maxGasPrice)
+				return nil
+			}
+			gasPrice = standByGasPrice.RoundUp(0).BigInt()
+			logx.Infof("speed up verify block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
+		}
+		// Verify blocks on-chain
+		txHash, err = zkbnb.VerifyAndExecuteBlocksWithNonce(authCliVerifyBlock, zkbnbInstance,
+			pendingVerifyAndExecuteBlocks, proofs, gasPrice, s.config.ChainConfig.GasLimit, nonce)
+		if err != nil {
+			verifyExceptionHeightMetric.Set(float64(pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber))
+			if err.Error() == "replacement transaction underpriced" || err.Error() == "transaction underpriced" {
+				logx.Errorf("failed to send verify tx,try again: errL %v:%s", err, txHash)
+				retry = true
+				continue
+			}
+			return fmt.Errorf("failed to send verify tx: %v:%s", err, txHash)
+		}
+		break
+	}
+
+	verifyExceptionHeightMetric.Set(float64(0))
+	for _, pendingVerifyAndExecuteBlock := range pendingVerifyAndExecuteBlocks {
+		l2BlockSubmitToVerifyHeightMetric.Set(float64(pendingVerifyAndExecuteBlock.BlockHeader.BlockNumber))
+	}
 	newRollupTx := &l1rolluptx.L1RollupTx{
 		L1TxHash:      txHash,
 		TxStatus:      l1rolluptx.StatusPending,
 		TxType:        l1rolluptx.TxTypeVerifyAndExecute,
 		L2BlockHeight: int64(pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber),
+		L1Nonce:       int64(nonce),
+		GasPrice:      gasPrice.Int64(),
 	}
 	err = s.l1RollupTxModel.CreateL1RollupTx(newRollupTx)
 	if err != nil {
 		return fmt.Errorf(fmt.Sprintf("failed to create rollup tx in db %v", err))
 	}
+	l2BlockSubmitToVerifyHeightMetric.Set(float64(newRollupTx.L2BlockHeight))
 	logx.Infof("new blocks have been verified and executed(height): %d:%s", newRollupTx.L2BlockHeight, newRollupTx.L1TxHash)
 	return nil
 }

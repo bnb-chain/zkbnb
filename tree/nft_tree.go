@@ -18,7 +18,10 @@
 package tree
 
 import (
+	"github.com/bnb-chain/zkbnb/types"
+	"github.com/panjf2000/ants/v2"
 	"github.com/zeromicro/go-zero/core/logx"
+	"time"
 
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 	"github.com/bnb-chain/zkbnb/dao/nft"
@@ -31,33 +34,84 @@ func InitNftTree(
 ) (
 	nftTree bsmt.SparseMerkleTree, err error,
 ) {
-	nftTree, err = bsmt.NewBASSparseMerkleTree(ctx.Hasher(),
+	nftTree, err = bsmt.NewBNBSparseMerkleTree(ctx.Hasher(),
 		SetNamespace(ctx, NFTPrefix), NftTreeHeight, NilNftNodeHash,
-		ctx.Options(blockHeight)...)
+		ctx.Options(0)...)
 	if err != nil {
 		logx.Errorf("unable to create tree from db: %s", err.Error())
 		return nil, err
 	}
 
 	if ctx.IsLoad() {
-		nums, err := nftHistoryModel.GetLatestNftsCountByBlockHeight(blockHeight)
-		if err != nil {
+		if blockHeight == 0 {
+			return nftTree, nil
+		}
+		newVersion := bsmt.Version(blockHeight)
+		maxNftIndex, err := nftHistoryModel.GetMaxNftIndex(blockHeight)
+		if err != nil && err != types.DbErrNotFound {
 			logx.Errorf("unable to get latest nft assets: %s", err.Error())
 			return nil, err
 		}
-		for i := 0; i < int(nums); i += ctx.BatchReloadSize() {
-			err := loadNftTreeFromRDB(
-				nftHistoryModel, blockHeight,
-				i, i+ctx.BatchReloadSize(), nftTree)
+
+		start := time.Now()
+		logx.Infof("reloadNftTree start")
+		totalTask := 0
+		resultChan := make(chan *treeUpdateResp, 1)
+		defer close(resultChan)
+		pool, err := ants.NewPool(100)
+		for i := 0; int64(i) <= maxNftIndex; i += ctx.BatchReloadSize() {
+			toNftIndex := int64(i+ctx.BatchReloadSize()) - 1
+			if toNftIndex > maxNftIndex {
+				toNftIndex = maxNftIndex
+			}
+			totalTask++
+			err := func(fromNftIndex int64, toNftIndex int64) error {
+				return pool.Submit(func() {
+					pendingAccountItem, err := loadNftTreeFromRDB(
+						nftHistoryModel, blockHeight,
+						fromNftIndex, toNftIndex)
+					if err != nil {
+						logx.Severef("loadNftTreeFromRDB failed:%s", err.Error())
+						resultChan <- &treeUpdateResp{
+							err: err,
+						}
+						return
+					}
+					resultChan <- &treeUpdateResp{
+						pendingAccountItem: pendingAccountItem,
+						err:                err,
+					}
+				})
+			}(int64(i), toNftIndex)
 			if err != nil {
-				return nil, err
+				logx.Severef("loadNftTreeFromRDB failed:%s", err.Error())
+				panic("loadNftTreeFromRDB failed: " + err.Error())
 			}
 		}
-		_, err = nftTree.Commit(nil)
+		pendingAccountItem := make([]bsmt.Item, 0)
+		for i := 0; i < totalTask; i++ {
+			result := <-resultChan
+			if result.err != nil {
+				logx.Severef("reloadNftTree failed:%s", result.err.Error())
+				panic("reloadNftTree failed: " + result.err.Error())
+			}
+			pendingAccountItem = append(pendingAccountItem, result.pendingAccountItem...)
+		}
+		err = nftTree.MultiSetWithVersion(pendingAccountItem, bsmt.Version(blockHeight))
+		if err != nil {
+			logx.Errorf("unable to write nft asset to tree: %s", err.Error())
+			return nil, err
+		}
+		_, err = nftTree.CommitWithNewVersion(nil, &newVersion)
 		if err != nil {
 			logx.Errorf("unable to commit nft tree: %s", err.Error())
 			return nil, err
 		}
+		logx.Infof("reloadNftTree end. cost time %s", float64(time.Since(start).Milliseconds()))
+		return nftTree, nil
+	}
+
+	if ctx.IsOnlyQuery() {
 		return nftTree, nil
 	}
 
@@ -76,30 +130,28 @@ func InitNftTree(
 func loadNftTreeFromRDB(
 	nftHistoryModel nft.L2NftHistoryModel,
 	blockHeight int64,
-	offset, limit int,
-	nftTree bsmt.SparseMerkleTree,
-) error {
+	fromNftIndex, toNftIndex int64,
+) ([]bsmt.Item, error) {
 	_, nftAssets, err := nftHistoryModel.GetLatestNftsByBlockHeight(blockHeight,
-		limit, offset)
+		fromNftIndex, toNftIndex)
 	if err != nil {
 		logx.Errorf("unable to get latest nft assets: %s", err.Error())
-		return err
+		return nil, err
+	}
+	pendingAccountItem := make([]bsmt.Item, 0, len(nftAssets))
+	if len(nftAssets) == 0 {
+		return pendingAccountItem, nil
 	}
 	for _, nftAsset := range nftAssets {
 		nftIndex := nftAsset.NftIndex
 		hashVal, err := NftAssetToNode(nftAsset)
 		if err != nil {
 			logx.Errorf("unable to convert nft asset to node: %s", err.Error())
-			return err
+			return nil, err
 		}
-
-		err = nftTree.Set(uint64(nftIndex), hashVal)
-		if err != nil {
-			logx.Errorf("unable to write nft asset to tree: %s", err.Error())
-			return err
-		}
+		pendingAccountItem = append(pendingAccountItem, bsmt.Item{Key: uint64(nftIndex), Val: hashVal})
 	}
-	return nil
+	return pendingAccountItem, nil
 }
 
 func NftAssetToNode(nftAsset *nft.L2NftHistory) (hashVal []byte, err error) {
@@ -109,6 +161,8 @@ func NftAssetToNode(nftAsset *nft.L2NftHistory) (hashVal []byte, err error) {
 		nftAsset.NftContentHash,
 		nftAsset.CreatorTreasuryRate,
 		nftAsset.CollectionId,
+		nftAsset.NftIndex,
+		nftAsset.L2BlockHeight,
 	)
 	if err != nil {
 		logx.Errorf("unable to compute nft asset leaf hash: %s", err.Error())

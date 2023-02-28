@@ -1,9 +1,11 @@
 package executor
 
 import (
+	"github.com/bnb-chain/zkbnb/common/metrics"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
+	"time"
 
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	"github.com/bnb-chain/zkbnb/dao/tx"
@@ -59,7 +61,7 @@ func (e *BaseExecutor) Prepare() error {
 	return nil
 }
 
-func (e *BaseExecutor) VerifyInputs(skipGasAmtChk bool) error {
+func (e *BaseExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	txInfo := e.iTxInfo
 
 	err := txInfo.Validate()
@@ -79,18 +81,30 @@ func (e *BaseExecutor) VerifyInputs(skipGasAmtChk bool) error {
 		}
 
 		gasAccountIndex, gasFeeAssetId, gasFeeAmount := txInfo.GetGas()
+		var start time.Time
+		start = time.Now()
 		err = e.bc.VerifyGas(gasAccountIndex, gasFeeAssetId, txInfo.GetTxType(), gasFeeAmount, skipGasAmtChk)
+		if metrics.VerifyGasGauge != nil {
+			metrics.VerifyGasGauge.Set(float64(time.Since(start).Milliseconds()))
+		}
+
 		if err != nil {
 			return err
 		}
 
-		fromAccount, err := e.bc.StateDB().GetFormatAccount(from)
-		if err != nil {
-			return err
-		}
-		err = txInfo.VerifySignature(fromAccount.PublicKey)
-		if err != nil {
-			return err
+		if !skipSigChk {
+			fromAccount, err := e.bc.StateDB().GetFormatAccount(from)
+			if err != nil {
+				return err
+			}
+			start = time.Now()
+			err = txInfo.VerifySignature(fromAccount.PublicKey)
+			if metrics.VerifySignature != nil {
+				metrics.VerifySignature.Set(float64(time.Since(start).Milliseconds()))
+			}
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -106,10 +120,15 @@ func (e *BaseExecutor) GeneratePubData() error {
 	return nil
 }
 
-func (e *BaseExecutor) GetExecutedTx() (*tx.Tx, error) {
+func (e *BaseExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
+	if fromApi {
+		return e.tx, nil
+	}
 	e.tx.TxIndex = int64(len(e.bc.StateDB().Txs))
 	e.tx.BlockHeight = e.bc.CurrentBlock().BlockHeight
 	e.tx.TxStatus = tx.StatusExecuted
+	e.tx.PoolTxId = e.tx.ID
+	e.tx.BlockId = e.bc.CurrentBlock().ID
 	return e.tx, nil
 }
 

@@ -62,6 +62,14 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to get contract logs, err: %v", err)
 	}
+	l1GenericStartHeightMetric.Set(float64(startHeight))
+	l1GenericEndHeightMetric.Set(float64(endHeight))
+	l1GenericLenHeightMetric.Set(float64(len(logs)))
+
+	logx.Infof("type is typeGeneric blocks from %d to %d and vlog len: %v", startHeight, endHeight, len(logs))
+	for _, vlog := range logs {
+		logx.Infof("type is typeGeneric blocks from %d to %d and vlog: %v", startHeight, endHeight, vlog)
+	}
 	var (
 		l1Events         []*L1Event
 		priorityRequests []*priorityrequest.PriorityRequest
@@ -74,8 +82,12 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 	for _, vlog := range logs {
 		l1EventInfo := &L1Event{
 			TxHash: vlog.TxHash.Hex(),
+			Index:  vlog.Index,
 		}
-
+		if vlog.Removed {
+			logx.Errorf("Removed to get vlog,TxHash:%v,Index:%v", l1EventInfo.TxHash, l1EventInfo.Index)
+			continue
+		}
 		logBlock, err := m.cli.GetBlockHeaderByNumber(big.NewInt(int64(vlog.BlockNumber)))
 		if err != nil {
 			return fmt.Errorf("failed to get block header, err: %v", err)
@@ -189,10 +201,15 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		if err != nil {
 			return err
 		}
+		l1SyncedBlockHeightMetric.Set(float64(l1BlockMonitorInfo.L1BlockHeight))
 		//create priority requests
 		err = m.PriorityRequestModel.CreatePriorityRequestsInTransact(tx, priorityRequests)
 		if err != nil {
 			return err
+		}
+		for _, request := range priorityRequests {
+			priorityOperationCreateMetric.Set(float64(request.RequestId))
+			priorityOperationHeightCreateMetric.Set(float64(request.L1BlockHeight))
 		}
 		//update blocks
 		err = m.BlockModel.UpdateBlocksWithoutTxsInTransact(tx, pendingUpdateBlocks)

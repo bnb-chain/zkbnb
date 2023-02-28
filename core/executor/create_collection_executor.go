@@ -54,10 +54,9 @@ func (e *CreateCollectionExecutor) Prepare() error {
 	return nil
 }
 
-func (e *CreateCollectionExecutor) VerifyInputs(skipGasAmtChk bool) error {
+func (e *CreateCollectionExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	txInfo := e.txInfo
-
-	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk)
+	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk, skipSigChk)
 	if err != nil {
 		return err
 	}
@@ -114,7 +113,7 @@ func (e *CreateCollectionExecutor) GeneratePubData() error {
 	return nil
 }
 
-func (e *CreateCollectionExecutor) GetExecutedTx() (*tx.Tx, error) {
+func (e *CreateCollectionExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	txInfoBytes, err := json.Marshal(e.txInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
@@ -125,7 +124,7 @@ func (e *CreateCollectionExecutor) GetExecutedTx() (*tx.Tx, error) {
 	e.tx.GasFeeAssetId = e.txInfo.GasFeeAssetId
 	e.tx.GasFee = e.txInfo.GasFeeAssetAmount.String()
 	e.tx.CollectionId = e.txInfo.CollectionId
-	return e.BaseExecutor.GetExecutedTx()
+	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *CreateCollectionExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {

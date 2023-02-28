@@ -6,7 +6,8 @@ import (
 
 type Config struct {
 	Postgres struct {
-		DataSource string
+		MasterDataSource string
+		SlaveDataSource  string
 	}
 	ChainConfig struct {
 		NetworkRPCSysConfigName string
@@ -19,7 +20,8 @@ type Config struct {
 }
 
 func (c Config) Validate() {
-	if c.ChainConfig.StartL1BlockHeight <= 0 || c.ChainConfig.MaxHandledBlocksCount <= 0 || c.ChainConfig.KeptHistoryBlocksCount <= 0 {
+	if c.ChainConfig.StartL1BlockHeight < 0 || c.ChainConfig.MaxHandledBlocksCount <= 0 || c.ChainConfig.KeptHistoryBlocksCount <= 0 {
+		logx.Severe("invalid chain config")
 		panic("invalid chain config")
 	}
 }

@@ -20,7 +20,7 @@ var (
 	}
 	BSCTestNetworkRPCFlag = &cli.StringFlag{
 		Name:  "testnet",
-		Value: "https://data-seed-prebsc-1-s1.binance.org:8545/",
+		Value: "https://bsc-testnet.nodereal.io/v1/a1cee760ac744f449416a711f20d99dd",
 		Usage: "the rpc endpoint of bsc testnet",
 	}
 	LocalTestNetworkRPCFlag = &cli.StringFlag{

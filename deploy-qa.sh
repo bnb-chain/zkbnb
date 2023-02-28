@@ -100,10 +100,7 @@ CacheRedis:
   - Host: 127.0.0.1:6379
     Type: node
 
-KeyPath:
-  ProvingKeyPath: [/home/.zkbnb/zkbnb1.pk, /home/.zkbnb/zkbnb10.pk]
-  VerifyingKeyPath: [/home/.zkbnb/zkbnb1.vk, /home/.zkbnb/zkbnb10.vk]
-  KeyTxCounts:    [1, 10]
+KeyPath: [/home/.zkbnb/zkbnb1, /home/.zkbnb/zkbnb10]
 
 TreeDB:
   Driver: memorydb

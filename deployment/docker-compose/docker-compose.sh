@@ -27,9 +27,7 @@ CacheRedis:
   - Host: redis:6379
     Type: node
 
-KeyPath:
-  ProvingKeyPath: [/server/.zkbnb/zkbnb1.pk]
-  VerifyingKeyPath: [/server/.zkbnb/zkbnb1.vk]
+KeyPath: [/server/.zkbnb]
 
 LogConf:
   ServiceName: prover
@@ -147,7 +145,7 @@ TxPool:
 
 Postgres:
   DataSource: host=database user=$DATABASE_USER password=$DATABASE_PASS dbname=$DATABASE_NAME port=5432 sslmode=disable
-  MaxConn: 100
+  MaxConn: 1000
   MaxIdle: 10
 
 CacheRedis:

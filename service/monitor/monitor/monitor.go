@@ -18,6 +18,7 @@ package monitor
 
 import (
 	"fmt"
+	"gorm.io/plugin/dbresolver"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -41,14 +42,69 @@ import (
 var (
 	priorityOperationMetric = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
-		Name:      "priority_operation_insert",
+		Name:      "priority_operation_update",
 		Help:      "Priority operation requestID metrics.",
 	})
 
 	priorityOperationHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "zkbnb",
-		Name:      "priority_operation_insert_height",
+		Name:      "priority_operation_update_height",
 		Help:      "Priority operation height metrics.",
+	})
+
+	priorityOperationCreateMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "priority_operation_create",
+		Help:      "Priority operation create requestID metrics.",
+	})
+
+	priorityOperationHeightCreateMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "priority_operation_create_height",
+		Help:      "Priority operation create height metrics.",
+	})
+
+	l1SyncedBlockHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "synced_block_insert_height",
+		Help:      "Synced block insert height metrics.",
+	})
+
+	l1GenericStartHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l1_generic_start_height",
+		Help:      "l1_generic_start_height metrics.",
+	})
+	l1GenericEndHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l1_generic_end_height",
+		Help:      "l1_generic_end_height metrics.",
+	})
+	l1GenericLenHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l1_generic_len_height",
+		Help:      "l1_generic_len_height metrics.",
+	})
+
+	l1GovernanceStartHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l1_governance_start_height",
+		Help:      "l1_governance_start_height metrics.",
+	})
+	l1GovernanceEndHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l1_governance_end_height",
+		Help:      "l1_governance_end_height metrics.",
+	})
+	l1GovernanceLenHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l1_governance_len_height",
+		Help:      "l1_governance_len_height metrics.",
+	})
+	l1MonitorHeightMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "zkbnb",
+		Name:      "l1_monitor_height",
+		Help:      "l1_monitor_height metrics.",
 	})
 )
 
@@ -73,10 +129,19 @@ type Monitor struct {
 }
 
 func NewMonitor(c config.Config) *Monitor {
-	db, err := gorm.Open(postgres.Open(c.Postgres.DataSource))
+
+	masterDataSource := c.Postgres.MasterDataSource
+	slaveDataSource := c.Postgres.SlaveDataSource
+	db, err := gorm.Open(postgres.Open(masterDataSource))
 	if err != nil {
 		logx.Errorf("gorm connect db error, err: %s", err.Error())
 	}
+
+	db.Use(dbresolver.Register(dbresolver.Config{
+		Sources:  []gorm.Dialector{postgres.Open(masterDataSource)},
+		Replicas: []gorm.Dialector{postgres.Open(slaveDataSource)},
+	}))
+
 	monitor := &Monitor{
 		Config:               c,
 		db:                   db,
@@ -115,6 +180,7 @@ func NewMonitor(c config.Config) *Monitor {
 
 	bscRpcCli, err := rpc.NewClient(networkRpc.Value)
 	if err != nil {
+		logx.Severe(err)
 		panic(err)
 	}
 
@@ -127,6 +193,53 @@ func NewMonitor(c config.Config) *Monitor {
 		panic(err)
 	}
 	if err := prometheus.Register(priorityOperationHeightMetric); err != nil {
+		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
+		panic(err)
+	}
+	if err := prometheus.Register(priorityOperationCreateMetric); err != nil {
+		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
+		panic(err)
+	}
+	if err := prometheus.Register(priorityOperationHeightCreateMetric); err != nil {
+		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
+		panic(err)
+	}
+	if err := prometheus.Register(l1SyncedBlockHeightMetric); err != nil {
+		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
+		panic(err)
+	}
+
+	if err := prometheus.Register(l1GenericStartHeightMetric); err != nil {
+		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
+		panic(err)
+	}
+
+	if err := prometheus.Register(l1GenericEndHeightMetric); err != nil {
+		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
+		panic(err)
+	}
+
+	if err := prometheus.Register(l1GenericLenHeightMetric); err != nil {
+		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
+		panic(err)
+	}
+
+	if err := prometheus.Register(l1GovernanceStartHeightMetric); err != nil {
+		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
+		panic(err)
+	}
+
+	if err := prometheus.Register(l1GovernanceEndHeightMetric); err != nil {
+		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
+		panic(err)
+	}
+
+	if err := prometheus.Register(l1GovernanceLenHeightMetric); err != nil {
+		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
+		panic(err)
+	}
+
+	if err := prometheus.Register(l1MonitorHeightMetric); err != nil {
 		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
 		panic(err)
 	}
@@ -160,9 +273,10 @@ func (m *Monitor) getBlockRangeToSync(monitorType int) (int64, int64, error) {
 	// get latest l1 block height(latest height - pendingBlocksCount)
 	latestHeight, err := m.cli.GetHeight()
 	if err != nil {
+		l1MonitorHeightMetric.Set(float64(0))
 		return 0, 0, fmt.Errorf("failed to get l1 height, err: %v", err)
 	}
-
+	l1MonitorHeightMetric.Set(float64(latestHeight))
 	safeHeight := latestHeight - m.Config.ChainConfig.ConfirmBlocksCount
 	safeHeight = uint64(common2.MinInt64(int64(safeHeight), handledHeight+m.Config.ChainConfig.MaxHandledBlocksCount))
 
