@@ -1,38 +1,18 @@
 package config
 
 import (
-	"github.com/bnb-chain/zkbnb/core/statedb"
 	"github.com/zeromicro/go-zero/core/logx"
-	"gorm.io/gorm/logger"
-
-	"github.com/bnb-chain/zkbnb/tree"
 )
 
 type Config struct {
-	Postgres struct {
-		MasterDataSource string
-		LogLevel         logger.LogLevel `json:",optional"`
-	}
 	ChainConfig struct {
 		StartL1BlockHeight     int64
-		EndL2BlockHeight       int64
+		EndL1BlockHeight       int64
 		ConfirmBlocksCount     uint64
 		MaxHandledBlocksCount  int64
 		KeptHistoryBlocksCount int64 // KeptHistoryBlocksCount define the count of blocks to keep in table, old blocks will be cleaned
 		BscTestNetRpc          string
 		ZkBnbContractAddress   string
-	}
-	CacheConfig statedb.CacheConfig `json:",optional"`
-
-	TreeDB struct {
-		Driver tree.Driver
-		//nolint:staticcheck
-		LevelDBOption tree.LevelDBOption `json:",optional"`
-		//nolint:staticcheck
-		RedisDBOption tree.RedisDBOption `json:",optional"`
-		//nolint:staticcheck
-		RoutinePoolSize    int `json:",optional"`
-		AssetTreeCacheSize int
 	}
 	LogConf logx.LogConf
 

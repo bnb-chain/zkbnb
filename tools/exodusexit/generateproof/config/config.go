@@ -15,7 +15,6 @@ type Config struct {
 	}
 	ChainConfig struct {
 		StartL1BlockHeight     int64
-		EndL1BlockHeight       int64
 		EndL2BlockHeight       int64
 		ConfirmBlocksCount     uint64
 		MaxHandledBlocksCount  int64
