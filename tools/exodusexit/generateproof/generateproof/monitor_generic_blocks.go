@@ -24,10 +24,9 @@ import (
 	"github.com/bnb-chain/zkbnb/common/abicoder"
 	"github.com/bnb-chain/zkbnb/dao/exodusexit"
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
+	"github.com/bnb-chain/zkbnb/service/monitor/monitor"
 	types2 "github.com/bnb-chain/zkbnb/types"
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 	"math/big"
@@ -62,7 +61,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 
 		logx.Infof("syncing generic l1 blocks from %d to %d", big.NewInt(startHeight), big.NewInt(endHeight))
 
-		logs, err := getZkBNBContractLogs(m.cli, m.ZkBnbContractAddress, uint64(startHeight), uint64(endHeight))
+		logs, err := monitor.GetZkBNBContractLogs(m.cli, m.ZkBnbContractAddress, uint64(startHeight), uint64(endHeight))
 		if err != nil {
 			return fmt.Errorf("failed to get contract logs, err: %v", err)
 		}
@@ -223,19 +222,6 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			return nil
 		}
 	}
-}
-
-func getZkBNBContractLogs(cli *rpc.ProviderClient, zkbnbContract string, startHeight, endHeight uint64) ([]types.Log, error) {
-	query := ethereum.FilterQuery{
-		FromBlock: big.NewInt(int64(startHeight)),
-		ToBlock:   big.NewInt(int64(endHeight)),
-		Addresses: []common.Address{common.HexToAddress(zkbnbContract)},
-	}
-	logs, err := cli.FilterLogs(context.Background(), query)
-	if err != nil {
-		return nil, err
-	}
-	return logs, nil
 }
 
 func getCommitBlocksCallData(cli *rpc.ProviderClient, hash string) (*CommitBlocksCallData, error) {

@@ -17,6 +17,5 @@ type Config struct {
 	LogConf logx.LogConf
 
 	AccountName string `json:",optional"`
-	AssetId     int64  `json:",optional"`
-	NftIndex    int64  `json:",optional"`
+	PrivateKey  string `json:",optional"`
 }

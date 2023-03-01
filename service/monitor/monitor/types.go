@@ -68,7 +68,7 @@ var (
 	zkbnbLogBlockVerificationSig  = []byte("BlockVerification(uint32)")
 	zkbnbLogBlocksRevertSig       = []byte("BlocksRevert(uint32,uint32)")
 
-	zkbnbLogNewPriorityRequestSigHash = crypto.Keccak256Hash(zkbnbLogNewPriorityRequestSig)
+	ZkbnbLogNewPriorityRequestSigHash = crypto.Keccak256Hash(zkbnbLogNewPriorityRequestSig)
 	zkbnbLogWithdrawalSigHash         = crypto.Keccak256Hash(zkbnbLogWithdrawalSig)
 	zkbnbLogWithdrawalPendingSigHash  = crypto.Keccak256Hash(zkbnbLogWithdrawalPendingSig)
 	zkbnbLogBlockCommitSigHash        = crypto.Keccak256Hash(zkbnbLogBlockCommitSig)

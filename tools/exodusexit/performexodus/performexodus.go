@@ -1,17 +1,11 @@
 package performexodus
 
 import (
-	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof/generateproof"
 	"github.com/bnb-chain/zkbnb/tools/exodusexit/performexodus/config"
-	"time"
-
-	"github.com/robfig/cron/v3"
+	"github.com/bnb-chain/zkbnb/tools/exodusexit/performexodus/performexodus"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/proc"
 )
-
-const GracefulShutdownTimeout = 5 * time.Second
 
 func Run(configFile string) error {
 	var c config.Config
@@ -19,45 +13,26 @@ func Run(configFile string) error {
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 
-	m, err := generateproof.NewMonitor(c)
+	m, err := performexodus.NewPerformExodus(c)
 	if err != nil {
 		logx.Severe(err)
 		panic(err)
 	}
-	cronJob := cron.New(cron.WithChain(
-		cron.SkipIfStillRunning(cron.DiscardLogger),
-	))
-	// monitor generic blocks
-	if _, err := cronJob.AddFunc("@every 10s", func() {
-		err := m.MonitorGenericBlocks()
-		if err != nil {
-			logx.Severef("monitor blocks error, %v", err)
-		}
-	}); err != nil {
-		logx.Severe(err)
-		panic(err)
-	}
-	cronJob.Start()
 
-	exit := make(chan struct{})
-	proc.SetTimeToForceQuit(GracefulShutdownTimeout)
-	proc.AddShutdownListener(func() {
-		logx.Info("start to shutdown generateproof......")
-		<-cronJob.Stop().Done()
-		m.Shutdown()
-		_ = logx.Close()
-		exit <- struct{}{}
-	})
-	exodusExit, err := generateproof.NewExodusExit(&c)
+	err = m.SubmitProof()
 	if err != nil {
 		return err
 	}
-	err = exodusExit.Run()
+
+	err = m.CancelOutstandingDeposit()
 	if err != nil {
 		return err
 	}
-	logx.Info("generateproof cronjob is starting......")
 
-	<-exit
+	err = m.WithdrawPendingBalance()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

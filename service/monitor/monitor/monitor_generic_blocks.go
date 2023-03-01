@@ -58,7 +58,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		return fmt.Errorf("failed to get priority request count, err: %v", err)
 	}
 
-	logs, err := getZkBNBContractLogs(m.cli, m.zkbnbContractAddress, uint64(startHeight), uint64(endHeight))
+	logs, err := GetZkBNBContractLogs(m.cli, m.zkbnbContractAddress, uint64(startHeight), uint64(endHeight))
 	if err != nil {
 		return fmt.Errorf("failed to get contract logs, err: %v", err)
 	}
@@ -94,11 +94,11 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		}
 
 		switch vlog.Topics[0].Hex() {
-		case zkbnbLogNewPriorityRequestSigHash.Hex():
+		case ZkbnbLogNewPriorityRequestSigHash.Hex():
 			priorityRequestCountCheck++
 			l1EventInfo.EventType = EventTypeNewPriorityRequest
 
-			l2TxEventMonitorInfo, err := convertLogToNewPriorityRequestEvent(vlog)
+			l2TxEventMonitorInfo, err := ConvertLogToNewPriorityRequestEvent(vlog)
 			if err != nil {
 				return fmt.Errorf("failed to convert NewPriorityRequest log, err: %v", err)
 			}
@@ -277,7 +277,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 	return nil
 }
 
-func getZkBNBContractLogs(cli *rpc.ProviderClient, zkbnbContract string, startHeight, endHeight uint64) ([]types.Log, error) {
+func GetZkBNBContractLogs(cli *rpc.ProviderClient, zkbnbContract string, startHeight, endHeight uint64) ([]types.Log, error) {
 	query := ethereum.FilterQuery{
 		FromBlock: big.NewInt(int64(startHeight)),
 		ToBlock:   big.NewInt(int64(endHeight)),
@@ -307,7 +307,7 @@ func getPriorityRequestCount(cli *rpc.ProviderClient, zkbnbContract string, star
 	return priorityRequestCount, nil
 }
 
-func convertLogToNewPriorityRequestEvent(log types.Log) (*priorityrequest.PriorityRequest, error) {
+func ConvertLogToNewPriorityRequestEvent(log types.Log) (*priorityrequest.PriorityRequest, error) {
 	var event zkbnb.ZkBNBNewPriorityRequest
 	if err := ZkBNBContractAbi.UnpackIntoInterface(&event, EventNameNewPriorityRequest, log.Data); err != nil {
 		return nil, err
