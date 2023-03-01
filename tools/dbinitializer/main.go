@@ -57,6 +57,7 @@ type contractAddr struct {
 	REYToken           string
 	ERC721             string
 	ZnsPriceOracle     string
+	DefaultNftFactory  string
 }
 
 type dao struct {
@@ -207,6 +208,12 @@ func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC
 			Value:     svrConf.ZnsPriceOracle,
 			ValueType: "string",
 			Comment:   "Zns Price Oracle",
+		},
+		{
+			Name:      types.DefaultNftFactory,
+			Value:     svrConf.DefaultNftFactory,
+			ValueType: "string",
+			Comment:   "ZkBNB default nft factory contract on BSC",
 		},
 	}
 }

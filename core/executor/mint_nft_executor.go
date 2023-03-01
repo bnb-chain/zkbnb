@@ -62,9 +62,9 @@ func (e *MintNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	if err := e.Validate(); err != nil {
 		return err
 	}
-	if txInfo.CreatorAccountIndex != txInfo.ToAccountIndex {
-		return types.AppErrInvalidToAccount
-	}
+	//if txInfo.CreatorAccountIndex != txInfo.ToAccountIndex {
+	//	return types.AppErrInvalidToAccount
+	//}
 	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk, skipSigChk)
 	if err != nil {
 		return err

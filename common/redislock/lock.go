@@ -38,6 +38,14 @@ func GetRedisLockByKey(conn *redis.Redis, keyLock string) (redisLock *redis.Redi
 	return redisLock
 }
 
+func GetRedisLock(conn *redis.Redis, keyLock string, expireSeconds int) (redisLock *redis.RedisLock) {
+	// get lock
+	redisLock = redis.NewRedisLock(conn, keyLock)
+	// set expiry time
+	redisLock.SetExpire(expireSeconds)
+	return redisLock
+}
+
 func TryAcquireLock(redisLock *redis.RedisLock) (err error) {
 	// lock
 	ok, err := redisLock.Acquire()

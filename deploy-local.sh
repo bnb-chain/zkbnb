@@ -15,6 +15,8 @@ CMC_TOKEN=cfce503f-fake-fake-fake-bbab5257dac8
 NETWORK_RPC_SYS_CONFIG_NAME=LocalTestNetworkRpc # BscTestNetworkRpc or LocalTestNetworkRpc
 BSC_TESTNET_RPC=HTTP://127.0.0.1:8545
 BSC_TESTNET_PRIVATE_KEY=2d92239525b6632b963f49d28411596512fab69052a1738e530a59617e433b81
+#use COMMIT_BLOCK_PRIVATE_KEY for submitting commit_block to bnb contract in sender application
+#use VERIFY_BLOCK_PRIVATE_KEY for submitting verify_block to bnb contract in sender application
 COMMIT_BLOCK_PRIVATE_KEY=
 VERIFY_BLOCK_PRIVATE_KEY=
 # security Council Members for upgrade approve
@@ -23,7 +25,7 @@ VERIFY_BLOCK_PRIVATE_KEY=
 SECURITY_COUNCIL_MEMBERS_NUMBER_1=0x0000000000000000000000000000000000000000
 SECURITY_COUNCIL_MEMBERS_NUMBER_2=0x0000000000000000000000000000000000000000
 SECURITY_COUNCIL_MEMBERS_NUMBER_3=0x0000000000000000000000000000000000000000
-# validator config, split by `,` commit block address  and verify block address
+# validator config, split by `,` the address of COMMIT_BLOCK_PRIVATE_KEY  and the address of VERIFY_BLOCK_PRIVATE_KEY,
 VALIDATORS=
 ZKBNB_OPTIONAL_BLOCK_SIZES=1,10
 
@@ -115,7 +117,8 @@ sed -i -e "s/Governance: .*/Governance: ${GovernanceContractAddr}/" ${DEPLOY_PAT
 BUSDContractAddr=`cat ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json  | jq -r '.BUSDToken'`
 sed -i -e "s/BUSDToken: .*/BUSDToken: ${BUSDContractAddr}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
 
-
+DefaultNftFactoryAddr=`cat ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json  | jq -r '.DefaultNftFactory'`
+sed -i -e "s/DefaultNftFactory: .*/DefaultNftFactory: ${DefaultNftFactoryAddr}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
 
  cd ${DEPLOY_PATH}/zkbnb/
  make api-server
