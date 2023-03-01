@@ -18,6 +18,7 @@ package sender
 
 import (
 	"encoding/json"
+	types2 "github.com/bnb-chain/zkbnb-crypto/circuit/types"
 	"math/big"
 	"strings"
 
@@ -83,7 +84,7 @@ func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*compressedblock.Compres
 		}
 		commitBlock := zkbnb.OldZkBNBCommitBlockInfo{
 			NewStateRoot:      newStateRoot,
-			PublicData:        common.FromHex(oBlock.PublicData),
+			PublicData:        compressPublicData(oBlock.PublicData),
 			Timestamp:         big.NewInt(oBlock.Timestamp),
 			PublicDataOffsets: pubDataOffsets,
 			BlockNumber:       uint32(oBlock.BlockHeight),
@@ -111,4 +112,35 @@ func ConvertBlocksToVerifyAndExecuteBlockInfos(oBlocks []*block.Block) (verifyAn
 		verifyAndExecuteBlocks = append(verifyAndExecuteBlocks, verifyAndExecuteBlock)
 	}
 	return verifyAndExecuteBlocks, nil
+}
+
+func compressPublicData(originPubData string) []byte {
+
+	pubDataBytes := common.FromHex(originPubData)
+	pubDataTotalCount := len(pubDataBytes)
+	txBytesPerPubData := types2.PubDataBitsSizePerTx / 8
+	if pubDataTotalCount%txBytesPerPubData != 0 {
+		return pubDataBytes
+	}
+
+	txCountInPubData := pubDataTotalCount / txBytesPerPubData
+
+	resPubData := make([]byte, (types2.PubDataBitsSizePerTx/8)*2)
+	for i := 0; i <= txCountInPubData; i++ {
+		subPubData := pubDataBytes[i*txBytesPerPubData : (i+1)*txBytesPerPubData]
+		if isNotEmptyTx(subPubData) {
+			resPubData = append(resPubData, subPubData...)
+		}
+	}
+
+	return resPubData
+}
+
+func isNotEmptyTx(txPubData []byte) bool {
+	for i := 0; i < len(txPubData); i++ {
+		if txPubData[i] != 0 {
+			return true
+		}
+	}
+	return false
 }
