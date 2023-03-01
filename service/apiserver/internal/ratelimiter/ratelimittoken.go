@@ -2,7 +2,6 @@ package ratelimiter
 
 import (
 	"github.com/zeromicro/go-zero/core/limit"
-	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 )
 
@@ -75,9 +74,7 @@ func (r *TokenRateLimiter) StartRateLimitControl(param *RateLimitParam) error {
 	// Only if the request path rate limit has been set for the
 	// token rate limit control, we do the limit control process
 	if r.RateLimitConfig.IsTokenLimitType(param.RequestPath) {
-		logx.Infof("Start Token Rate Limit Control for path:%s!", param.RequestPath)
 		err := r.RateLimitControlGlobal(param, r.RateLimitControlSingle)
-		logx.Infof("End Token Rate Limit Control for path:%s!", param.RequestPath)
 		return err
 	}
 	return nil
