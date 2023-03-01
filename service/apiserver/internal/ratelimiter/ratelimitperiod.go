@@ -3,7 +3,6 @@ package ratelimiter
 import (
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/limit"
-	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 )
 
@@ -90,9 +89,7 @@ func (r *PeriodRateLimiter) StartRateLimitControl(param *RateLimitParam) error {
 	// Only if the request path rate limit has been set for the
 	// period rate limit control, we do the limit control process
 	if r.RateLimitConfig.IsPeriodLimitType(param.RequestPath) {
-		logx.Infof("Start Period Rate Limit Control for path:%s!", param.RequestPath)
 		err := r.RateLimitControlGlobal(param, r.RateLimitControlSingle)
-		logx.Infof("End Period Rate Limit Control for path:%s!", param.RequestPath)
 		return err
 	}
 	return nil
