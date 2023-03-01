@@ -1,0 +1,64 @@
+{
+  "RedisConfig": {
+    "Address": "127.0.0.1:6379"
+  },
+  "DefaultRateLimit": {
+    "RateLimitType": "LimitByBoth",
+    "PeriodRateLimitItem": {
+      "GlobalRateSecond": 1,
+      "GlobalRateQuota": 200,
+      "SingleRateSecond": 1,
+      "SingleRateQuota": 100,
+      "UserRateSecond": 1,
+      "UserRateQuota": 50
+    },
+    "TokenRateLimitItem": {
+      "GlobalRate": 3,
+      "GlobalBurst": 6,
+      "SingleRate": 1,
+      "SingleBurst": 3
+    }
+  },
+  "PathRateLimitMap": {
+    "/": {
+      "RateLimitType": "LimitByToken",
+      "TokenRateLimitItem": {
+        "GlobalRate": 6,
+        "GlobalBurst": 12,
+        "SingleRate": 2,
+        "SingleBurst": 5
+      }
+    },
+    "/api/v1/accountTxs": {
+      "RateLimitType": "LimitByPeriod",
+      "PeriodRateLimitItem": {
+        "GlobalRateSecond": 1,
+        "GlobalRateQuota": 8,
+        "SingleRateSecond": 1,
+        "SingleRateQuota": 5,
+        "UserRateSecond": 1,
+        "UserRateQuota": 3
+      }
+    },
+    "/api/v1/blocks": {
+      "RateLimitType": "LimitByPeriod",
+      "PeriodRateLimitItem": {
+        "GlobalRateSecond": 1,
+        "GlobalRateQuota": 88,
+        "SingleRateSecond": 1,
+        "SingleRateQuota": 22,
+        "UserRateSecond": 1,
+        "UserRateQuota": 8
+      }
+    },
+    "/api/v1/gasAccount": {
+      "RateLimitType": "LimitByToken",
+      "TokenRateLimitItem": {
+        "GlobalRate": 66,
+        "GlobalBurst": 122,
+        "SingleRate": 22,
+        "SingleBurst": 48
+      }
+    }
+  }
+}
