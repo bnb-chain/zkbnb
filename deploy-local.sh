@@ -27,7 +27,7 @@ SECURITY_COUNCIL_MEMBERS_NUMBER_2=0x0000000000000000000000000000000000000000
 SECURITY_COUNCIL_MEMBERS_NUMBER_3=0x0000000000000000000000000000000000000000
 # validator config, split by `,` the address of COMMIT_BLOCK_PRIVATE_KEY  and the address of VERIFY_BLOCK_PRIVATE_KEY,
 VALIDATORS=
-ZKBNB_OPTIONAL_BLOCK_SIZES=1,10
+ZKBNB_OPTIONAL_BLOCK_SIZES=64
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
 echo '0. stop old database/redis and docker run new database/redis'
@@ -47,21 +47,21 @@ export PATH=$PATH:/usr/local/go/bin/
 cd ~
 rm -rf ${DEPLOY_PATH}-bak && mv ${DEPLOY_PATH} ${DEPLOY_PATH}-bak
 mkdir -p ${DEPLOY_PATH} && cd ${DEPLOY_PATH}
-git clone --branch testnet  https://github.com/bnb-chain/zkbnb-contract.git
-git clone --branch testnet https://github.com/bnb-chain/zkbnb-crypto.git
+git clone --branch bugfix/gnark-crypto-version  https://github.com/ruslangm/zkbnb-contract.git
+git clone --branch feature/sha256-block-commitment https://github.com/ruslangm/zkbnb-crypto.git
 cp -r ${ZkBNB_REPO_PATH} ${DEPLOY_PATH}
 
 
-flag=$1
-if [ $flag = "new" ]; then
-  echo "new crypto env"
-  echo '2. start generate zkbnb.vk and zkbnb.pk'
-  cd ${DEPLOY_PATH}
-  cd zkbnb-crypto && go test ./circuit/solidity -timeout 99999s -run TestExportSol -blocksizes=${ZKBNB_OPTIONAL_BLOCK_SIZES}
-  cd ${DEPLOY_PATH}
-  mkdir -p $KEY_PATH
-  cp -r ./zkbnb-crypto/circuit/solidity/* $KEY_PATH
-fi
+#flag=$1
+#if [ $flag = "new" ]; then
+#  echo "new crypto env"
+#  echo '2. start generate zkbnb.vk and zkbnb.pk'
+#  cd ${DEPLOY_PATH}
+#  cd zkbnb-crypto && go test ./circuit/solidity -timeout 99999s -run TestExportSol -blocksizes=${ZKBNB_OPTIONAL_BLOCK_SIZES}
+#  cd ${DEPLOY_PATH}
+#  mkdir -p $KEY_PATH
+#  cp -r ./zkbnb-crypto/circuit/solidity/* $KEY_PATH
+#fi
 
 
 

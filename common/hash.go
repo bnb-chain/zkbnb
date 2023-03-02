@@ -18,6 +18,7 @@
 package common
 
 import (
+	"crypto/sha256"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -29,4 +30,11 @@ func ConcatKeccakHash(oldHash, paddingValue []byte) []byte {
 func KeccakHash(value []byte) []byte {
 	hashVal := crypto.Keccak256Hash(value)
 	return hashVal[:]
+}
+
+func SHA256Hash(value []byte) []byte {
+	h := sha256.New()
+	h.Reset()
+	h.Write(value)
+	return h.Sum(nil)
 }

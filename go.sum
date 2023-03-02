@@ -127,12 +127,8 @@ github.com/bkaradzic/go-lz4 v1.0.0/go.mod h1:0YdlkowM3VswSROI7qDxhRvJ3sLhlFrRRwj
 github.com/bketelsen/crypt v0.0.3-0.20200106085610-5cbc8cc4026c/go.mod h1:MKsuJmJgSg28kpZDP6UIiPt0e0Oz0kqKNGyRaWEPv84=
 github.com/bketelsen/crypt v0.0.4/go.mod h1:aI6NrJ0pMGgvZKL1iVgXLnfIFJtfV+bKCoqOes/6LfM=
 github.com/bmizerany/pat v0.0.0-20170815010413-6226ea591a40/go.mod h1:8rLXio+WjiTceGBHIoTvn60HIbs7Hm7bcHjyrSqYB9c=
-github.com/bnb-chain/gnark v0.7.1-0.20230206150652-4e87ef37b4e7 h1:SP9RLUhKtOZ6IYgwv5bP1AHFPi/KOyOdSsCtLDUKwSw=
-github.com/bnb-chain/gnark v0.7.1-0.20230206150652-4e87ef37b4e7/go.mod h1:eAIZGosVkrjiFRzAiYZw/0yB6ooa7Nh5rST3X6zWdjg=
 github.com/bnb-chain/gnark-crypto v0.7.1-0.20230203031630-7c643ad11891 h1:fmLpwLm71xMeB+45ngpXioTt78aL6YGxubbnobNdoWQ=
 github.com/bnb-chain/gnark-crypto v0.7.1-0.20230203031630-7c643ad11891/go.mod h1:KPSuJzyxkJA8xZ/+CV47tyqkr9MmpZA3PXivK4VPrVg=
-github.com/bnb-chain/zkbnb-crypto v0.0.8-0.20230217071307-211b4b7e8923 h1:zfHoum6GoBKrhQo4r1VSoE4H2LQ9sDCQGeRnIb8dlLI=
-github.com/bnb-chain/zkbnb-crypto v0.0.8-0.20230217071307-211b4b7e8923/go.mod h1:WJL/OlRL4+8sU+O85btdCC2DQlMfKJE9UxuBTf/8DlE=
 github.com/bnb-chain/zkbnb-go-sdk v1.0.4-0.20221012063144-3a6e84095b4d h1:2+S4/JdKoSPSJr3D7Z5I/Qmv8TkgVYB73vRP0OOunRY=
 github.com/bnb-chain/zkbnb-go-sdk v1.0.4-0.20221012063144-3a6e84095b4d/go.mod h1:G27Jpl0yB6T/NKXw31bD2B2M91my0PM6SUEpbEGWGL8=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
@@ -932,6 +928,10 @@ github.com/rs/zerolog v1.13.0/go.mod h1:YbFCdg8HfsridGWAh22vktObvhZbQsZXe4/zB0OK
 github.com/rs/zerolog v1.15.0/go.mod h1:xYTKnLHcpfU2225ny5qZjxnj9NvkumZYjJHlAThCjNc=
 github.com/rs/zerolog v1.26.1 h1:/ihwxqH+4z8UxyI70wM1z9yCvkWcfz/a3mj48k/Zngc=
 github.com/rs/zerolog v1.26.1/go.mod h1:/wSSJWX7lVrsOwlbyTRSOJvqRlc+WjWlfes+CiJ+tmc=
+github.com/ruslangm/gnark v0.7.1-0.20230301160822-536fa6f95f0e h1:LEL7YtalPT73rRzzP/cBVwEImIy0+Geww3MS/eFFS7U=
+github.com/ruslangm/gnark v0.7.1-0.20230301160822-536fa6f95f0e/go.mod h1:eAIZGosVkrjiFRzAiYZw/0yB6ooa7Nh5rST3X6zWdjg=
+github.com/ruslangm/zkbnb-crypto v0.0.0-20230302070022-85232f1ac10d h1:ols7cp+k8GmFbIN2QvpX80wFZjoIX/vjsP1Lw0mKUpA=
+github.com/ruslangm/zkbnb-crypto v0.0.0-20230302070022-85232f1ac10d/go.mod h1:yY3u0J7zSRVaBBpaLbCVhgYpeTkYK/pXEMKdEV2Awf8=
 github.com/russross/blackfriday/v2 v2.0.1/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/russross/blackfriday/v2 v2.1.0 h1:JIOH55/0cWyOuilr9/qlrm0BSXldqnqwMsf35Ld67mk=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
