@@ -1,13 +1,22 @@
 package ratelimiter
 
 import (
+	"encoding/json"
+	"github.com/apolloconfig/agollo/v4"
+	apollo "github.com/apolloconfig/agollo/v4/env/config"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/config"
 	"github.com/shirou/gopsutil/host"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"net/http"
 )
 
-const AccountId = "accountId"
+const (
+	AccountId          = "accountId"
+	RateLimitConfigKey = "RateLimitConfig"
+)
+
+var apolloClient *agollo.Client
 
 var periodRateLimiter *PeriodRateLimiter
 var tokenRateLimiter *TokenRateLimiter
@@ -52,10 +61,10 @@ func RateLimitHandler(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func InitRateLimitControl(configFilePath string) {
+func InitRateLimitControl(config config.Config) {
 
 	localhostID := InitLocalhostConfiguration()
-	rateLimitConfig := InitRateLimitConfiguration(configFilePath)
+	rateLimitConfig := InitRateLimitConfiguration(config)
 	redisInstance := InitRateLimitRedisInstance(rateLimitConfig.RedisConfig.Address)
 
 	periodRateLimiter = InitRateLimitControlByPeriod(localhostID, rateLimitConfig, redisInstance)
@@ -79,12 +88,49 @@ func InitLocalhostConfiguration() string {
 	return localHostID
 }
 
-func InitRateLimitConfiguration(configFilePath string) *RateLimitConfig {
-	rateLimitConfig, err := LoadRateLimitConfig(configFilePath)
-	if err != nil {
-		logx.Severef("Initiate Rate Limit Configuration Failure, Reason:%s", err.Error())
-		panic("Fail to initiate Rate Limit Configuration!")
+func InitRateLimitConfiguration(config config.Config) *RateLimitConfig {
+
+	apolloConfig := &apollo.AppConfig{
+		AppID:          config.Apollo.AppID,
+		Cluster:        config.Apollo.Cluster,
+		IP:             config.Apollo.ApolloIp,
+		NamespaceName:  config.Apollo.Namespace,
+		IsBackupConfig: config.Apollo.IsBackupConfig,
 	}
-	logx.Info("Initiate RateLimit Configuration Successfully!")
-	return rateLimitConfig
+
+	apolloClient, err := agollo.StartWithConfig(func() (*apollo.AppConfig, error) {
+		return apolloConfig, nil
+	})
+	if err != nil {
+		logx.Severef("Start Apollo Client In RateLimit Configuration Failure, Reason:%s", err.Error())
+		panic("Fail to start Apollo Client in RateLimit Configuration!")
+	}
+
+	apolloCache := apolloClient.GetConfigCache(apolloConfig.NamespaceName)
+	rateLimitConfigObject, err := apolloCache.Get(RateLimitConfigKey)
+	if err != nil {
+		logx.Severef("Fail to get RateLimitConfig from the apollo server, Reason:%s", err.Error())
+		panic("Fail to get RateLimitConfig from the apollo server!")
+	}
+
+	if rateLimitConfigString, ok := rateLimitConfigObject.(string); ok {
+		rateLimitConfig := &RateLimitConfig{}
+		err := json.Unmarshal([]byte(rateLimitConfigString), rateLimitConfig)
+		if err != nil {
+			logx.Severef("Fail to unmarshal RateLimitConfig from the apollo server, Reason:%s", err.Error())
+			panic("Fail to unmarshal RateLimitConfig from the apollo server!")
+		}
+
+		if err = rateLimitConfig.ValidateRateLimitConfig(); err != nil {
+			logx.Severef("Fail to validate RateLimitConfig from the apollo server, Reason:%s", err.Error())
+			panic("Fail to validate RateLimitConfig from the apollo server!")
+		}
+
+		logx.Info("Initiate RateLimit Configuration Successfully!")
+		return rateLimitConfig
+
+	} else {
+		logx.Severef("Fail to Initiate RateLimitConfig from the apollo server!")
+		panic("Fail to Initiate RateLimitConfig from the apollo server!")
+	}
 }
