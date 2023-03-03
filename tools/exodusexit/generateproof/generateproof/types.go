@@ -134,15 +134,15 @@ type VerifyAndExecuteBlocksCallData struct {
 }
 
 type PerformDesertData struct {
-	nftRoot            []byte
-	exitData           zkbnb.ExodusVerifierExitData
-	assetMerkleProof   [16][]byte
-	accountMerkleProof [32][]byte
+	NftRoot            [32]byte
+	ExitData           zkbnb.ExodusVerifierExitData
+	AssetMerkleProof   [16][32]byte
+	AccountMerkleProof [32][32]byte
 }
 
 type PerformDesertNftData struct {
-	ownerAccountIndex *big.Int
-	accountRoot       []byte
-	exitNfts          []zkbnb.ExodusVerifierExitNftData
-	nftMerkleProofs   [][40][]byte
+	OwnerAccountIndex *big.Int
+	AccountRoot       [32]byte
+	ExitNfts          []zkbnb.ExodusVerifierExitNftData
+	NftMerkleProofs   [][40][32]byte
 }

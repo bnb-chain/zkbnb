@@ -15,8 +15,6 @@ type Config struct {
 		ZkBnbContractAddress   string
 		GasLimit               uint64
 	}
-	LogConf logx.LogConf
-
-	//AccountName string `json:",optional"`
+	LogConf    logx.LogConf
 	PrivateKey string `json:",optional"`
 }

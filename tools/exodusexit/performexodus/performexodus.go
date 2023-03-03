@@ -1,6 +1,7 @@
 package performexodus
 
 import (
+	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof/generateproof"
 	"github.com/bnb-chain/zkbnb/tools/exodusexit/performexodus/config"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -17,5 +18,8 @@ func Run(configFile string) error {
 	//	logx.Severe(err)
 	//	panic(err)
 	//}
+	var performDesertAsset generateproof.PerformDesertData
+	conf.MustLoad("./tools/exodusexit/proofdata/performDesertAsset.json", &performDesertAsset)
+	//m.PerformDesert(performDesertAsset.NftRoot, performDesertAsset.ExitData, performDesertAsset.AssetMerkleProof, performDesertAsset.AccountMerkleProof)
 	return nil
 }
