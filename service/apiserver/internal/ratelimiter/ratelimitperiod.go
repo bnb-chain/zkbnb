@@ -3,6 +3,7 @@ package ratelimiter
 import (
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/limit"
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 )
 
@@ -40,6 +41,8 @@ func InitRateLimitControlByPeriod(localHostID string,
 		SingleRateLimitMap:     singleRateLimitMap,
 		UserRateLimitMap:       userRateLimitMap,
 	}
+
+	logx.Info("Construct Period RateLimit Facility Successfully!")
 	return periodRateLimiter
 }
 

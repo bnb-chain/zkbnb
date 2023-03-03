@@ -92,7 +92,7 @@ func Run(configFile string) error {
 
 	// Initiate the rate limit control
 	// configuration from the config file
-	ratelimiter.InitRateLimitControl(c.RateLimitConfigFilePath)
+	ratelimiter.InitRateLimitControl(c)
 
 	// Add the rate limit control handler
 	server.Use(ratelimiter.RateLimitHandler)
