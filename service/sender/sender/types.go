@@ -71,7 +71,7 @@ func defaultBlockHeader() zkbnb.StorageStoredBlockInfo {
 	}
 }
 
-func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*compressedblock.CompressedBlock) (commitBlocks []zkbnb.OldZkBNBCommitBlockInfo, err error) {
+func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*compressedblock.CompressedBlock) (commitBlocks []zkbnb.ZkBNBCommitBlockInfo, err error) {
 	for _, oBlock := range oBlocks {
 		var newStateRoot [32]byte
 		var pubDataOffsets []uint32
@@ -81,7 +81,7 @@ func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*compressedblock.Compres
 			logx.Errorf("[ConvertBlocksForCommitToCommitBlockInfos] unable to unmarshal: %s", err.Error())
 			return nil, err
 		}
-		commitBlock := zkbnb.OldZkBNBCommitBlockInfo{
+		commitBlock := zkbnb.ZkBNBCommitBlockInfo{
 			NewStateRoot:      newStateRoot,
 			PublicData:        common.FromHex(oBlock.PublicData),
 			Timestamp:         big.NewInt(oBlock.Timestamp),
@@ -94,7 +94,7 @@ func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*compressedblock.Compres
 	return commitBlocks, nil
 }
 
-func ConvertBlocksToVerifyAndExecuteBlockInfos(oBlocks []*block.Block) (verifyAndExecuteBlocks []zkbnb.OldZkBNBVerifyAndExecuteBlockInfo, err error) {
+func ConvertBlocksToVerifyAndExecuteBlockInfos(oBlocks []*block.Block) (verifyAndExecuteBlocks []zkbnb.ZkBNBVerifyAndExecuteBlockInfo, err error) {
 	for _, oBlock := range oBlocks {
 		var pendingOnChainOpsPubData [][]byte
 		if oBlock.PendingOnChainOperationsPubData != "" {
@@ -104,7 +104,7 @@ func ConvertBlocksToVerifyAndExecuteBlockInfos(oBlocks []*block.Block) (verifyAn
 				return nil, err
 			}
 		}
-		verifyAndExecuteBlock := zkbnb.OldZkBNBVerifyAndExecuteBlockInfo{
+		verifyAndExecuteBlock := zkbnb.ZkBNBVerifyAndExecuteBlockInfo{
 			BlockHeader:              chain.ConstructStoredBlockInfo(oBlock),
 			PendingOnchainOpsPubData: pendingOnChainOpsPubData,
 		}

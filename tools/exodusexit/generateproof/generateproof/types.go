@@ -132,3 +132,17 @@ type VerifyAndExecuteBlocksCallData struct {
 	Proofs                     []*big.Int                          `abi:"_proofs"`
 	VerifyAndExecuteBlocksInfo []OldZkBNBVerifyAndExecuteBlockInfo `abi:"_blocks"`
 }
+
+type PerformDesertData struct {
+	nftRoot            []byte
+	exitData           zkbnb.ExodusVerifierExitData
+	assetMerkleProof   [16][]byte
+	accountMerkleProof [32][]byte
+}
+
+type PerformDesertNftData struct {
+	ownerAccountIndex *big.Int
+	accountRoot       []byte
+	exitNfts          []zkbnb.ExodusVerifierExitNftData
+	nftMerkleProofs   [][40][]byte
+}

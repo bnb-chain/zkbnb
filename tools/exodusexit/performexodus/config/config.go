@@ -13,9 +13,10 @@ type Config struct {
 		KeptHistoryBlocksCount int64 // KeptHistoryBlocksCount define the count of blocks to keep in table, old blocks will be cleaned
 		BscTestNetRpc          string
 		ZkBnbContractAddress   string
+		GasLimit               uint64
 	}
 	LogConf logx.LogConf
 
-	AccountName string `json:",optional"`
-	PrivateKey  string `json:",optional"`
+	//AccountName string `json:",optional"`
+	PrivateKey string `json:",optional"`
 }

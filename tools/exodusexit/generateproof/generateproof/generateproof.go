@@ -6,6 +6,7 @@ import (
 	types2 "github.com/bnb-chain/zkbnb-crypto/circuit/types"
 	"github.com/bnb-chain/zkbnb-crypto/util"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
+	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/core"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/prove"
@@ -18,6 +19,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/panjf2000/ants/v2"
 	"math/big"
+	"os"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -104,7 +106,10 @@ func (c *ExodusExit) Run() error {
 			logx.Errorf("get account by name error accountName=%s,%v,", c.config.AccountName, err)
 			return err
 		}
-		c.getMerkleProofs(executedTxMaxHeight, account.AccountIndex, c.config.NftIndex, c.config.AssetId)
+		err = c.getMerkleProofs(executedTxMaxHeight, account.AccountIndex, c.config.NftIndexList, c.config.AssetId)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -860,7 +865,7 @@ func (c *ExodusExit) executeWithdrawNft(pubData []byte) error {
 	return nil
 }
 
-func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftIndex int64, accountAssetId int64) error {
+func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftIndexList []int64, accountAssetId int64) error {
 	treeCtx, err := tree.NewContext("generateproof", c.config.TreeDB.Driver, true, true, c.config.TreeDB.RoutinePoolSize, &c.config.TreeDB.LevelDBOption, &c.config.TreeDB.RedisDBOption)
 	if err != nil {
 		logx.Errorf("init tree database failed: %s", err)
@@ -874,7 +879,15 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 		logx.Errorf("init tree database failed: %s", err)
 		return err
 	}
-
+	accountInfo, err := c.bc.DB().AccountModel.GetAccountByIndex(accountIndex)
+	if err != nil {
+		logx.Errorf("get account failed: %s", err)
+		return err
+	}
+	formatAccountInfo, err := chain.ToFormatAccountInfo(accountInfo)
+	if err != nil {
+		return err
+	}
 	// dbinitializer accountTree and accountStateTrees
 	accountTree, accountAssetTrees, err := tree.InitAccountTree(
 		c.bc.AccountModel,
@@ -936,22 +949,96 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 			return err
 		}
 		logx.Infof("accountIndex=%d,accountAssetId=%d, merkleProofsAccountAsset=%s", accountIndex, accountAssetId, string(merkleProofsAccountAssetBytes))
+		performDesertData := &PerformDesertData{}
+		performDesertData.accountMerkleProof = merkleProofsAccount
+		performDesertData.assetMerkleProof = merkleProofsAccountAsset
+		performDesertData.nftRoot = nftTree.Root()
+		pk, err := common2.ParsePubKey(accountInfo.PublicKey)
+		if err != nil {
+			logx.Errorf("unable to parse pub key: %s", err.Error())
+			return err
+		}
+		var pubKeyX [32]byte
+		var pubKeyY [32]byte
+		var accountNameHash [32]byte
+		copy(pubKeyX[:], pk.A.X.Marshal()[:])
+		copy(pubKeyY[:], pk.A.Y.Marshal()[:])
+		copy(accountNameHash[:], common.FromHex(accountInfo.AccountNameHash)[:])
+		performDesertData.exitData = zkbnb.ExodusVerifierExitData{
+			AssetId:                  uint32(accountAssetId),
+			AccountId:                uint32(accountIndex),
+			Amount:                   formatAccountInfo.AssetInfo[accountAssetId].Balance,
+			OfferCanceledOrFinalized: formatAccountInfo.AssetInfo[accountAssetId].OfferCanceledOrFinalized,
+			AccountNameHash:          accountNameHash,
+			PubKeyX:                  pubKeyX,
+			PubKeyY:                  pubKeyY,
+			Nonce:                    new(big.Int).SetInt64(accountInfo.Nonce),
+			CollectionNonce:          new(big.Int).SetInt64(accountInfo.CollectionNonce),
+		}
+		err = createFile(performDesertData, "performDesertAsset.json")
+		if err != nil {
+			return err
+		}
 	}
 
-	if nftIndex != -1 {
-		nftMerkleProofs, err := nftTree.GetProof(uint64(nftIndex))
+	if len(nftIndexList) > 0 {
+		performDesertNftData := &PerformDesertNftData{}
+		var exitNfts []zkbnb.ExodusVerifierExitNftData
+		var nftMerkleProofsList [][40][]byte
+		for index, nftIndex := range nftIndexList {
+			nftInfo, err := c.bc.DB().L2NftModel.GetNft(nftIndex)
+			if err != nil {
+				logx.Errorf("get nft failed: %s", err)
+				return err
+			}
+			nftMerkleProofs, err := nftTree.GetProof(uint64(nftIndex))
+			if err != nil {
+				return err
+			}
+			merkleProofsNft, err := prove.SetFixedNftArray(nftMerkleProofs)
+			if err != nil {
+				return err
+			}
+			merkleProofsNftBytes, err := json.Marshal(merkleProofsNft)
+			if err != nil {
+				return err
+			}
+			logx.Infof("accountIndex=%d,nftIndex=%d, merkleProofsNft=%s", accountIndex, nftIndex, string(merkleProofsNftBytes))
+			exitNftData := zkbnb.ExodusVerifierExitNftData{}
+			var nftContentHash [32]byte
+
+			copy(nftContentHash[:], common.FromHex(nftInfo.NftContentHash)[:])
+			exitNftData.NftContentHash = nftContentHash
+			exitNftData.NftIndex = uint64(nftIndex)
+			exitNftData.CollectionId = new(big.Int).SetInt64(nftInfo.CollectionId)
+			exitNftData.CreatorAccountIndex = new(big.Int).SetInt64(nftInfo.CreatorAccountIndex)
+			exitNftData.CreatorTreasuryRate = new(big.Int).SetInt64(nftInfo.CreatorTreasuryRate)
+			exitNfts = append(exitNfts, exitNftData)
+			nftMerkleProofsList[index] = merkleProofsNft
+			performDesertNftData.ownerAccountIndex = new(big.Int).SetInt64(nftInfo.OwnerAccountIndex)
+		}
+
+		performDesertNftData.exitNfts = exitNfts
+		performDesertNftData.nftMerkleProofs = nftMerkleProofsList
+		performDesertNftData.accountRoot = accountTree.Root()
+		err := createFile(performDesertNftData, "performDesertNft.json")
 		if err != nil {
 			return err
 		}
-		merkleProofsNft, err := prove.SetFixedNftArray(nftMerkleProofs)
-		if err != nil {
-			return err
-		}
-		merkleProofsNftBytes, err := json.Marshal(merkleProofsNft)
-		if err != nil {
-			return err
-		}
-		logx.Infof("accountIndex=%d,nftIndex=%d, merkleProofsNft=%s", accountIndex, nftIndex, string(merkleProofsNftBytes))
+	}
+	return nil
+}
+
+func createFile(v any, name string) error {
+	filePtr, err := os.Create(name)
+	if err != nil {
+		return err
+	}
+	defer filePtr.Close()
+	encoder := json.NewEncoder(filePtr)
+	err = encoder.Encode(v)
+	if err != nil {
+		return err
 	}
 	return nil
 }
