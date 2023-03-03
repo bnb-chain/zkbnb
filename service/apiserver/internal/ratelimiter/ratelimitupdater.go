@@ -18,9 +18,14 @@ func (u *RateLimitUpdater) OnChange(event *storage.ChangeEvent) {
 		if err != nil {
 			logx.Errorf("Fail to update RateLimitConfig from the apollo server, Reason:%s", err.Error())
 		}
+
+		// Validate the rate limit configuration from the apollo server side
 		if err := newRateLimitConfig.validatePathRateLimitConfig(); err != nil {
 			logx.Errorf("Fail to validate RateLimitConfig from the apollo server, Reason:%s", err.Error())
 		}
+
+		// After get the newest rate limit configuration,
+		// directly refresh the rate limit control facility
 		RefreshRateLimitControl(newRateLimitConfig)
 		logx.Info("Update RateLimit Control Configuration Successfully!")
 	}

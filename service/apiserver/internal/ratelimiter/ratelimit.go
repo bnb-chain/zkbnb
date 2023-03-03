@@ -1,9 +1,6 @@
 package ratelimiter
 
 import (
-	"encoding/json"
-	"github.com/apolloconfig/agollo/v4"
-	apollo "github.com/apolloconfig/agollo/v4/env/config"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/config"
 	"github.com/shirou/gopsutil/host"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -15,8 +12,6 @@ const (
 	AccountId          = "accountId"
 	RateLimitConfigKey = "RateLimitConfig"
 )
-
-var apolloClient *agollo.Client
 
 var localhostID string
 
@@ -68,7 +63,7 @@ func RateLimitHandler(next http.HandlerFunc) http.HandlerFunc {
 func InitRateLimitControl(config config.Config) {
 
 	localhostID = InitLocalhostConfiguration()
-	rateLimitConfig := InitApolloRateLimitConfig(config)
+	rateLimitConfig := LoadApolloRateLimitConfig(config)
 
 	RefreshRateLimitControl(rateLimitConfig)
 
@@ -82,12 +77,6 @@ func RefreshRateLimitControl(rateLimitConfig *RateLimitConfig) {
 	tokenRateLimiter = InitRateLimitControlByToken(localhostID, rateLimitConfig, redisInstance)
 }
 
-func InitRateLimitRedisInstance(redisAddress string) *redis.Redis {
-	redisInstance := redis.New(redisAddress)
-	logx.Info("Construct RateLimit Redis Instance Successfully!")
-	return redisInstance
-}
-
 func InitLocalhostConfiguration() string {
 	localHostID, err := host.HostID()
 	if err != nil {
@@ -97,51 +86,8 @@ func InitLocalhostConfiguration() string {
 	return localHostID
 }
 
-func InitApolloRateLimitConfig(config config.Config) *RateLimitConfig {
-
-	apolloConfig := &apollo.AppConfig{
-		AppID:          config.Apollo.AppID,
-		Cluster:        config.Apollo.Cluster,
-		IP:             config.Apollo.ApolloIp,
-		NamespaceName:  config.Apollo.Namespace,
-		IsBackupConfig: config.Apollo.IsBackupConfig,
-	}
-
-	apolloClient, err := agollo.StartWithConfig(func() (*apollo.AppConfig, error) {
-		return apolloConfig, nil
-	})
-	if err != nil {
-		logx.Severef("Fail to start Apollo Client in RateLimit Configuration, Reason:%s", err.Error())
-		panic("Fail to start Apollo Client in RateLimit Configuration!")
-	}
-
-	rateLimitUpdater := &RateLimitUpdater{}
-	apolloClient.AddChangeListener(rateLimitUpdater)
-
-	apolloCache := apolloClient.GetConfigCache(apolloConfig.NamespaceName)
-	rateLimitConfigObject, err := apolloCache.Get(RateLimitConfigKey)
-	if err != nil {
-		logx.Severef("Fail to get RateLimitConfig from the apollo server, Reason:%s", err.Error())
-		panic("Fail to get RateLimitConfig from the apollo server!")
-	}
-
-	if rateLimitConfigString, ok := rateLimitConfigObject.(string); ok {
-		rateLimitConfig := &RateLimitConfig{}
-		err := json.Unmarshal([]byte(rateLimitConfigString), rateLimitConfig)
-		if err != nil {
-			logx.Severef("Fail to unmarshal RateLimitConfig from the apollo server, Reason:%s", err.Error())
-			panic("Fail to unmarshal RateLimitConfig from the apollo server!")
-		}
-
-		if err = rateLimitConfig.ValidateRateLimitConfig(); err != nil {
-			logx.Severef("Fail to validate RateLimitConfig from the apollo server, Reason:%s", err.Error())
-			panic("Fail to validate RateLimitConfig from the apollo server!")
-		}
-
-		logx.Info("Load RateLimit Configuration Successfully!")
-		return rateLimitConfig
-	} else {
-		logx.Severef("Fail to Initiate RateLimitConfig from the apollo server!")
-		panic("Fail to Initiate RateLimitConfig from the apollo server!")
-	}
+func InitRateLimitRedisInstance(redisAddress string) *redis.Redis {
+	redisInstance := redis.New(redisAddress)
+	logx.Info("Construct RateLimit Redis Instance Successfully!")
+	return redisInstance
 }
