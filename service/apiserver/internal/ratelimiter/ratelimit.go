@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	AccountId          = "accountId"
+	AccountIndex       = "account_index"
 	RateLimitConfigKey = "RateLimitConfig"
 )
 
@@ -33,7 +33,7 @@ func RateLimitHandler(next http.HandlerFunc) http.HandlerFunc {
 		// Parse the form before reading the parameter
 		request.ParseForm()
 		requestPath := request.URL.Path
-		accountId := request.Form.Get(AccountId)
+		accountId := request.Form.Get(AccountIndex)
 
 		// Construct the rate limit param for
 		// the next rate limit control
