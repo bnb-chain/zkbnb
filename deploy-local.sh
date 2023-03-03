@@ -323,6 +323,9 @@ LogConf:
   StackCooldownMillis: 500
   Level: error
 
+RateLimitConfigFilePath:
+  service/apiserver/etc/ratelimit-config.json
+
 IpfsUrl:
   10.23.23.40:5001
 CoinMarketCap:
