@@ -36,5 +36,11 @@ type Config struct {
 		MaxCounterNum int64
 		MaxKeyNum     int64
 	}
-	RateLimitConfigFilePath string
+	Apollo struct {
+		AppID          string
+		Cluster        string
+		ApolloIp       string
+		Namespace      string
+		IsBackupConfig bool
+	}
 }
