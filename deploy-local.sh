@@ -159,10 +159,6 @@ sed -i '' -e '/-e/,1d' ${DEPLOY_PATH}/zkbnb/service/prover/etc/config.yaml
 sed -i '' -e '/-e/,1d' run_prover.sh
 pm2 start --name prover "./run_prover.sh"
 
-
-
-
-
 echo "8. run witness"
 
 echo -e "
@@ -188,7 +184,6 @@ go run ./cmd/zkbnb/main.go witness --config ${DEPLOY_PATH}/zkbnb/service/witness
 sed -i '' -e '/-e/,1d' ${DEPLOY_PATH}/zkbnb/service/witness/etc/config.yaml
 sed -i '' -e '/-e/,1d' run_witness.sh
 pm2 start --name witness "./run_witness.sh"
-
 
 echo "9. run monitor"
 
@@ -323,8 +318,12 @@ LogConf:
   StackCooldownMillis: 500
   Level: error
 
-RateLimitConfigFilePath:
-  service/apiserver/etc/ratelimit-config.json
+Apollo:
+  AppID:             zkbnb-cloud
+  Cluster:           prod
+  ApolloIp:          http://internal-tf-cm-test-apollo-config-alb-2119591301.ap-northeast-1.elb.amazonaws.com:9028
+  Namespace:         application
+  IsBackupConfig:    true
 
 IpfsUrl:
   10.23.23.40:5001
