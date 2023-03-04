@@ -19,6 +19,7 @@ package monitor
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bnb-chain/zkbnb/common/monitor"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -30,7 +31,7 @@ import (
 )
 
 func (m *Monitor) MonitorPriorityRequests() error {
-	pendingRequests, err := m.PriorityRequestModel.GetPriorityRequestsByStatus(PendingStatus)
+	pendingRequests, err := m.PriorityRequestModel.GetPriorityRequestsByStatus(monitor.PendingStatus)
 	if err != nil {
 		if err != types.DbErrNotFound {
 			return err
@@ -79,7 +80,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 		// handle request based on request type
 		var txInfoBytes []byte
 		switch request.TxType {
-		case TxTypeRegisterZns:
+		case monitor.TxTypeRegisterZns:
 			// parse request info
 			txInfo, err := chain.ParseRegisterZnsPubData(common.FromHex(request.Pubdata))
 			if err != nil {
@@ -92,7 +93,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 				return err
 			}
 
-		case TxTypeDeposit:
+		case monitor.TxTypeDeposit:
 			txInfo, err := chain.ParseDepositPubData(common.FromHex(request.Pubdata))
 			if err != nil {
 				return fmt.Errorf("unable to parse deposit pub data: %v", err)
@@ -104,7 +105,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 				return fmt.Errorf("unable to serialize request info : %v", err)
 			}
 
-		case TxTypeDepositNft:
+		case monitor.TxTypeDepositNft:
 			txInfo, err := chain.ParseDepositNftPubData(common.FromHex(request.Pubdata))
 			if err != nil {
 				return fmt.Errorf("unable to parse deposit nft pub data: %v", err)
@@ -116,7 +117,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 				return fmt.Errorf("unable to serialize request info: %v", err)
 			}
 
-		case TxTypeFullExit:
+		case monitor.TxTypeFullExit:
 			txInfo, err := chain.ParseFullExitPubData(common.FromHex(request.Pubdata))
 			if err != nil {
 				return fmt.Errorf("unable to parse deposit pub data: %v", err)
@@ -128,7 +129,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 				return fmt.Errorf("unable to serialize request info : %v", err)
 			}
 
-		case TxTypeFullExitNft:
+		case monitor.TxTypeFullExitNft:
 			txInfo, err := chain.ParseFullExitNftPubData(common.FromHex(request.Pubdata))
 			if err != nil {
 				return fmt.Errorf("unable to parse deposit nft pub data: %v", err)

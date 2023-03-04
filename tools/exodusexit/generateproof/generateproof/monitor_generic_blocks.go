@@ -22,6 +22,7 @@ import (
 	"fmt"
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/core"
 	"github.com/bnb-chain/zkbnb/common/abicoder"
+	monitor2 "github.com/bnb-chain/zkbnb/common/monitor"
 	"github.com/bnb-chain/zkbnb/dao/exodusexit"
 	"github.com/bnb-chain/zkbnb/dao/l1syncedblock"
 	"github.com/bnb-chain/zkbnb/service/monitor/monitor"
@@ -71,12 +72,12 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			logx.Infof("type is typeGeneric blocks from %d to %d and vlog: %v", startHeight, endHeight, vlog)
 		}
 		var (
-			l1Events      []*L1Event
+			l1Events      []*monitor2.L1Event
 			relatedBlocks = make(map[int64]*exodusexit.ExodusExitBlock)
 		)
 		exit := false
 		for _, vlog := range logs {
-			l1EventInfo := &L1Event{
+			l1EventInfo := &monitor2.L1Event{
 				TxHash: vlog.TxHash.Hex(),
 				Index:  vlog.Index,
 			}
@@ -90,13 +91,13 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			}
 
 			switch vlog.Topics[0].Hex() {
-			case zkbnbLogWithdrawalSigHash.Hex():
-			case zkbnbLogWithdrawalPendingSigHash.Hex():
-			case zkbnbLogBlockCommitSigHash.Hex():
-				l1EventInfo.EventType = EventTypeCommittedBlock
+			case monitor2.ZkbnbLogWithdrawalSigHash.Hex():
+			case monitor2.ZkbnbLogWithdrawalPendingSigHash.Hex():
+			case monitor2.ZkbnbLogBlockCommitSigHash.Hex():
+				l1EventInfo.EventType = monitor2.EventTypeCommittedBlock
 
 				var event zkbnb.ZkBNBBlockCommit
-				if err := ZkBNBContractAbi.UnpackIntoInterface(&event, EventNameBlockCommit, vlog.Data); err != nil {
+				if err := monitor2.ZkBNBContractAbi.UnpackIntoInterface(&event, monitor2.EventNameBlockCommit, vlog.Data); err != nil {
 					return fmt.Errorf("failed to unpack ZkBNBBlockCommit event, err: %v", err)
 				}
 
@@ -109,11 +110,11 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 				relatedBlocks[blockHeight].CommittedAt = int64(logBlock.Time)
 				relatedBlocks[blockHeight].BlockStatus = exodusexit.StatusCommitted
 				relatedBlocks[blockHeight].BlockHeight = blockHeight
-			case zkbnbLogBlockVerificationSigHash.Hex():
-				l1EventInfo.EventType = EventTypeVerifiedBlock
+			case monitor2.ZkbnbLogBlockVerificationSigHash.Hex():
+				l1EventInfo.EventType = monitor2.EventTypeVerifiedBlock
 
 				var event zkbnb.ZkBNBBlockVerification
-				if err := ZkBNBContractAbi.UnpackIntoInterface(&event, EventNameBlockVerification, vlog.Data); err != nil {
+				if err := monitor2.ZkBNBContractAbi.UnpackIntoInterface(&event, monitor2.EventNameBlockVerification, vlog.Data); err != nil {
 					return fmt.Errorf("failed to unpack ZkBNBBlockVerification err: %v", err)
 				}
 
@@ -133,8 +134,8 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 				if m.Config.ChainConfig.EndL2BlockHeight == blockHeight {
 					exit = true
 				}
-			case zkbnbLogBlocksRevertSigHash.Hex():
-				l1EventInfo.EventType = EventTypeRevertedBlock
+			case monitor2.ZkbnbLogBlocksRevertSigHash.Hex():
+				l1EventInfo.EventType = monitor2.EventTypeRevertedBlock
 			default:
 			}
 
@@ -225,7 +226,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 }
 
 func getCommitBlocksCallData(cli *rpc.ProviderClient, hash string) (*CommitBlocksCallData, error) {
-	newABIDecoder := abicoder.NewABIDecoder(ZkBNBContractAbi)
+	newABIDecoder := abicoder.NewABIDecoder(monitor2.ZkBNBContractAbi)
 	transaction, _, err := cli.Client.TransactionByHash(context.Background(), common.HexToHash(hash))
 	if err != nil {
 		logx.Severe(err)
@@ -242,13 +243,13 @@ func getCommitBlocksCallData(cli *rpc.ProviderClient, hash string) (*CommitBlock
 }
 
 func getVerifyAndExecuteBlocksCallData(cli *rpc.ProviderClient, hash string) (*VerifyAndExecuteBlocksCallData, error) {
-	newABIDecoder := abicoder.NewABIDecoder(ZkBNBContractAbi)
+	newABIDecoder := abicoder.NewABIDecoder(monitor2.ZkBNBContractAbi)
 	transaction, _, err := cli.Client.TransactionByHash(context.Background(), common.HexToHash(hash))
 	if err != nil {
 		logx.Severe(err)
 		return nil, err
 	}
-	newBlocksData := make([]OldZkBNBVerifyAndExecuteBlockInfo, 0)
+	newBlocksData := make([]ZkBNBVerifyAndExecuteBlockInfo, 0)
 	proofs := make([]*big.Int, 0)
 	callData := VerifyAndExecuteBlocksCallData{Proofs: proofs, VerifyAndExecuteBlocksInfo: newBlocksData}
 	if err := newABIDecoder.UnpackIntoInterface(&callData, "verifyAndExecuteBlocks", transaction.Data()[4:]); err != nil {

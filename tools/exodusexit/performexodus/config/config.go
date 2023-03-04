@@ -14,7 +14,7 @@ type Config struct {
 		BscTestNetRpc          string
 		ZkBnbContractAddress   string
 		GasLimit               uint64
+		PrivateKey             string `json:",optional"`
 	}
-	LogConf    logx.LogConf
-	PrivateKey string `json:",optional"`
+	LogConf logx.LogConf
 }

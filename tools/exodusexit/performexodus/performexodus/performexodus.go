@@ -22,6 +22,7 @@ import (
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/core"
 	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
 	common2 "github.com/bnb-chain/zkbnb/common"
+	monitor2 "github.com/bnb-chain/zkbnb/common/monitor"
 	"github.com/bnb-chain/zkbnb/dao/priorityrequest"
 	"github.com/bnb-chain/zkbnb/service/monitor/monitor"
 	"github.com/bnb-chain/zkbnb/tools/exodusexit/performexodus/config"
@@ -55,7 +56,7 @@ func NewPerformExodus(c config.Config) (*PerformExodus, error) {
 		logx.Severe(err)
 		return nil, err
 	}
-	newPerformExodus.authCli, err = rpc.NewAuthClient(c.PrivateKey, chainId)
+	newPerformExodus.authCli, err = rpc.NewAuthClient(c.ChainConfig.PrivateKey, chainId)
 	if err != nil {
 		logx.Severe(err)
 		return nil, err
@@ -183,12 +184,12 @@ func (m *PerformExodus) getOutstandingDeposits() (priorityRequests []*priorityre
 				continue
 			}
 			switch vlog.Topics[0].Hex() {
-			case monitor.ZkbnbLogNewPriorityRequestSigHash.Hex():
+			case monitor2.ZkbnbLogNewPriorityRequestSigHash.Hex():
 				l2TxEventMonitorInfo, err := monitor.ConvertLogToNewPriorityRequestEvent(vlog)
 				if err != nil {
 					return nil, fmt.Errorf("failed to convert NewPriorityRequest log, err: %v", err)
 				}
-				if l2TxEventMonitorInfo.TxType == monitor.TxTypeDeposit || l2TxEventMonitorInfo.TxType == monitor.TxTypeDepositNft {
+				if l2TxEventMonitorInfo.TxType == monitor2.TxTypeDeposit || l2TxEventMonitorInfo.TxType == monitor2.TxTypeDepositNft {
 					priorityRequests = append(priorityRequests, l2TxEventMonitorInfo)
 				}
 			default:

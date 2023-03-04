@@ -17,88 +17,9 @@
 package generateproof
 
 import (
-	"math/big"
-	"strings"
-
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/crypto"
-
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/core"
-	"github.com/bnb-chain/zkbnb/dao/priorityrequest"
-	"github.com/bnb-chain/zkbnb/types"
+	"math/big"
 )
-
-const (
-	EventNameNewPriorityRequest = "NewPriorityRequest"
-	EventNameBlockCommit        = "BlockCommit"
-	EventNameBlockVerification  = "BlockVerification"
-
-	EventTypeNewPriorityRequest = 0
-	EventTypeCommittedBlock     = 1
-	EventTypeVerifiedBlock      = 2
-	EventTypeRevertedBlock      = 3
-
-	EventNameNewAsset              = "NewAsset"
-	EventNameNewGovernor           = "NewGovernor"
-	EventNameNewAssetGovernance    = "NewAssetGovernance"
-	EventNameValidatorStatusUpdate = "ValidatorStatusUpdate"
-	EventNameAssetPausedUpdate     = "AssetPausedUpdate"
-
-	EventTypeAddAsset              = 4
-	EventTypeNewGovernor           = 5
-	EventTypeNewAssetGovernance    = 6
-	EventTypeValidatorStatusUpdate = 7
-	EventTypeAssetPausedUpdate     = 8
-
-	PendingStatus = priorityrequest.PendingStatus
-
-	TxTypeRegisterZns = types.TxTypeRegisterZns
-	TxTypeDeposit     = types.TxTypeDeposit
-	TxTypeDepositNft  = types.TxTypeDepositNft
-	TxTypeFullExit    = types.TxTypeFullExit
-	TxTypeFullExitNft = types.TxTypeFullExitNft
-)
-
-var (
-	ZkBNBContractAbi, _ = abi.JSON(strings.NewReader(zkbnb.ZkBNBMetaData.ABI))
-	// ZkBNB contract logs sig
-	zkbnbLogNewPriorityRequestSig = []byte("NewPriorityRequest(address,uint64,uint8,bytes,uint256)")
-	zkbnbLogWithdrawalSig         = []byte("Withdrawal(uint16,uint128)")
-	zkbnbLogWithdrawalPendingSig  = []byte("WithdrawalPending(uint16,uint128)")
-	zkbnbLogBlockCommitSig        = []byte("BlockCommit(uint32)")
-	zkbnbLogBlockVerificationSig  = []byte("BlockVerification(uint32)")
-	zkbnbLogBlocksRevertSig       = []byte("BlocksRevert(uint32,uint32)")
-
-	zkbnbLogNewPriorityRequestSigHash = crypto.Keccak256Hash(zkbnbLogNewPriorityRequestSig)
-	zkbnbLogWithdrawalSigHash         = crypto.Keccak256Hash(zkbnbLogWithdrawalSig)
-	zkbnbLogWithdrawalPendingSigHash  = crypto.Keccak256Hash(zkbnbLogWithdrawalPendingSig)
-	zkbnbLogBlockCommitSigHash        = crypto.Keccak256Hash(zkbnbLogBlockCommitSig)
-	zkbnbLogBlockVerificationSigHash  = crypto.Keccak256Hash(zkbnbLogBlockVerificationSig)
-	zkbnbLogBlocksRevertSigHash       = crypto.Keccak256Hash(zkbnbLogBlocksRevertSig)
-
-	GovernanceContractAbi, _ = abi.JSON(strings.NewReader(zkbnb.GovernanceMetaData.ABI))
-
-	governanceLogNewAssetSig              = []byte("NewAsset(address,uint16)")
-	governanceLogNewGovernorSig           = []byte("NewGovernor(address)")
-	governanceLogNewAssetGovernanceSig    = []byte("NewAssetGovernance(address)")
-	governanceLogValidatorStatusUpdateSig = []byte("ValidatorStatusUpdate(address,bool)")
-	governanceLogAssetPausedUpdateSig     = []byte("AssetPausedUpdate(address,bool)")
-
-	governanceLogNewAssetSigHash              = crypto.Keccak256Hash(governanceLogNewAssetSig)
-	governanceLogNewGovernorSigHash           = crypto.Keccak256Hash(governanceLogNewGovernorSig)
-	governanceLogNewAssetGovernanceSigHash    = crypto.Keccak256Hash(governanceLogNewAssetGovernanceSig)
-	governanceLogValidatorStatusUpdateSigHash = crypto.Keccak256Hash(governanceLogValidatorStatusUpdateSig)
-	governanceLogAssetPausedUpdateSigHash     = crypto.Keccak256Hash(governanceLogAssetPausedUpdateSig)
-)
-
-type L1Event struct {
-	// deposit / lock / committed / verified / reverted
-	EventType uint8
-	// tx hash
-	TxHash string
-	// index of the log in the block
-	Index uint
-}
 
 type StorageStoredBlockInfo struct {
 	BlockSize                    uint16   `json:"blockSize"`
@@ -123,14 +44,14 @@ type CommitBlocksCallData struct {
 	NewBlocksData          []OldZkBNBCommitBlockInfo `abi:"_newBlocksData"`
 }
 
-type OldZkBNBVerifyAndExecuteBlockInfo struct {
+type ZkBNBVerifyAndExecuteBlockInfo struct {
 	BlockHeader              *StorageStoredBlockInfo `abi:"blockHeader"`
 	PendingOnchainOpsPubData [][]byte                `abi:"pendingOnchainOpsPubData"`
 }
 
 type VerifyAndExecuteBlocksCallData struct {
-	Proofs                     []*big.Int                          `abi:"_proofs"`
-	VerifyAndExecuteBlocksInfo []OldZkBNBVerifyAndExecuteBlockInfo `abi:"_blocks"`
+	Proofs                     []*big.Int                       `abi:"_proofs"`
+	VerifyAndExecuteBlocksInfo []ZkBNBVerifyAndExecuteBlockInfo `abi:"_blocks"`
 }
 
 type PerformDesertData struct {
