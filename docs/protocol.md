@@ -336,6 +336,8 @@ uint32 accountIndex;
 bytes20 pubKeyHash;
 address owner;
 uint32 nonce;
+uint16 gasFeeAssetId;
+uint16 gasFeeAssetAmount;
 }
 ```
 
@@ -418,15 +420,31 @@ This is a layer-1 transaction and is used for depositing assets into the layer-2
 | ------ | ----------------- |
 | 6      | 55                |
 
+
+
 ##### Structure
 
-| Name            | Size(byte) | Comment           |
-| --------------- | ---------- | ----------------- |
-| TxType          | 1          | transaction type  |
-| AccountIndex    | 4          | account index     |
-| AssetId         | 2          | asset index       |
-| AssetAmount     | 16         | state amount      |
-| AccountNameHash | 32         | account name hash |
+| Name            | Size(byte) | Comment           |     |
+| --------------- | ---------- | ----------------- |-----|
+| TxType          | 1          | transaction type  |     |
+| AccountIndex    | 4          | account index     |     |
+| AssetId         | 2          | asset index       |     |
+| AssetAmount     | 16         | state amount      |     |
+| AccountNameHash | 32         | account name hash |     |
+
+```go
+type DepositTxInfo struct {
+	TxType uint8
+
+	// Get from layer1 events.
+	AccountNameHash []byte  =>L1Address
+	AssetId         int64
+	AssetAmount     *big.Int
+
+	// Set by layer2.
+	AccountIndex int64
+}
+```
 
 ```go
 func ConvertTxToDepositPubData(oTx *tx.Tx) (pubData []byte, err error) {
@@ -505,6 +523,24 @@ This is a layer-1 transaction and is used for depositing NFTs into the layer-2 a
 | 6      | 134               |
 
 ##### Structure
+```go
+type DepositNftTxInfo struct {
+	TxType uint8
+
+	// Get from layer1 events.
+	AccountNameHash     []byte  =>L1Address
+	CreatorAccountIndex int64
+	CreatorTreasuryRate int64
+	NftContentHash      []byte
+	CollectionId        int64
+
+	// New nft set by layer2, otherwise get from layer1.
+	NftIndex int64
+
+	// Set by layer2.
+	AccountIndex int64
+}
+```
 
 | Name                | Size(byte) | Comment               |
 | ------------------- | ---------- | --------------------- |
@@ -655,20 +691,20 @@ func ConvertTxToTransferPubData(oTx *tx.Tx) (pubData []byte, err error) {
 
 ```go
 type TransferTxInfo struct {
-	FromAccountIndex  int64
-	ToAccountIndex    int64
-	ToAccountNameHash string
-	AssetId           int64
-	AssetAmount       *big.Int
-	GasAccountIndex   int64
-	GasFeeAssetId     int64
-	GasFeeAssetAmount *big.Int
-	Memo              string
-	CallData          string
-	CallDataHash      []byte
-	ExpiredAt         int64
-	Nonce             int64
-	Sig               []byte
+FromAccountIndex  int64
+ToAccountIndex    int64
+ToAccountNameHash string  =>ToL1Address
+AssetId           int64
+AssetAmount       *big.Int
+GasAccountIndex   int64
+GasFeeAssetId     int64
+GasFeeAssetAmount *big.Int
+Memo              string
+CallData          string
+CallDataHash      []byte
+ExpiredAt         int64
+Nonce             int64
+Sig               []byte
 }
 ```
 
@@ -992,7 +1028,7 @@ func ConvertTxToMintNftPubData(oTx *tx.Tx) (pubData []byte, err error) {
 type MintNftTxInfo struct {
 	CreatorAccountIndex int64
 	ToAccountIndex      int64
-	ToAccountNameHash   string
+	ToAccountNameHash   string =>ToL1Address
 	NftIndex            int64
 	NftContentHash      string
 	NftCollectionId     int64
@@ -1107,7 +1143,7 @@ func ConvertTxToTransferNftPubData(oTx *tx.Tx) (pubData []byte, err error) {
 type TransferNftTxInfo struct {
 	FromAccountIndex  int64
 	ToAccountIndex    int64
-	ToAccountNameHash string
+	ToAccountNameHash string =>ToL1Address
 	NftIndex          int64
 	GasAccountIndex   int64
 	GasFeeAssetId     int64
@@ -1564,7 +1600,7 @@ func ConvertTxToWithdrawNftPubData(oTx *tx.Tx) (pubData []byte, err error) {
 type WithdrawNftTxInfo struct {
 	AccountIndex           int64
 	CreatorAccountIndex    int64
-	CreatorAccountNameHash []byte
+	CreatorAccountNameHash []byte =>CreatorL1Address
 	CreatorTreasuryRate    int64
 	NftIndex               int64
 	NftContentHash         []byte
@@ -1638,7 +1674,19 @@ This is a layer-1 transaction and is used for full exit assets from the layer-2 
 | AssetId         | 2          | asset index        |
 | AssetAmount     | 16         | state amount       |
 | AccountNameHash | 32         | account name hash  |
+```go
+type FullExitTxInfo struct {
+	TxType uint8
 
+	// Get from layer1 events.
+	AccountNameHash []byte =>L1Address
+	AssetId         int64
+
+	// Set by layer2.
+	AccountIndex int64
+	AssetAmount  *big.Int
+}
+```
 ```go
 func ConvertTxToFullExitPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	if oTx.TxType != commonTx.TxTypeFullExit {
@@ -1721,6 +1769,24 @@ This is a layer-1 transaction and is used for full exit NFTs from the layer-2 to
 | CreatorAccountNameHash | 32         | creator account name hash |
 | NftContentHash         | 32         | nft content hash          |
 
+```go
+type FullExitNftTxInfo struct {
+	TxType uint8
+
+	// Get from layer1 events.
+	NftIndex        int64
+	AccountNameHash []byte  =>L1Address
+
+	// Set by layer2.
+	AccountIndex           int64
+	CreatorAccountIndex    int64
+	CreatorTreasuryRate    int64
+	CreatorAccountNameHash []byte  =>CreatorL1Address
+	NftContentHash         []byte
+	CollectionId           int64
+}
+
+```
 ```go
 func ConvertTxToFullExitNftPubData(oTx *tx.Tx) (pubData []byte, err error) {
 	if oTx.TxType != commonTx.TxTypeFullExitNft {
