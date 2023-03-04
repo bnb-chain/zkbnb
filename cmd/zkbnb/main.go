@@ -219,6 +219,25 @@ func main() {
 					return nil
 				},
 			},
+			{
+				Name:  "performexodus",
+				Usage: "Run performexodus service",
+				Flags: []cli.Flag{
+					flags.ConfigFlag,
+				},
+				Action: func(cCtx *cli.Context) error {
+					if !cCtx.IsSet(flags.CommandFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					if !cCtx.IsSet(flags.ConfigFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					if cCtx.String(flags.CommandFlag.Name) == "continue" {
+						return generateproof.Run(cCtx.String(flags.ConfigFlag.Name))
+					}
+					return nil
+				},
+			},
 			// tools
 			{
 				Name:  "db",
