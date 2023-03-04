@@ -283,8 +283,8 @@ This is a layer-2 transaction and a user needs to call this method first to regi
 ```go
 {
 "type": "ChangePubKey",
-"accountId": 2061,
-"account": "0x1f04204dba8e9e8bf90f5889fe4bdc0f37265dbb",
+"AccountIndex": 2061,
+"L1Address": "0x1f04204dba8e9e8bf90f5889fe4bdc0f37265dbb",
 "newPkHash": "sync:63aa2a0efb97064e0e52a6adb63a42018bd6e72b",
 "feeToken": 1023,
 "fee": "56700000000",
@@ -301,6 +301,23 @@ This is a layer-2 transaction and a user needs to call this method first to regi
 "validUntil": 18446744073709551615
 }
 ```
+
+```go
+tx_info: {"FromAccountIndex":42,"ToAccountIndex":2,"
+ToAccountNameHash":"2962aa640b161716550c2e79ce4912d29c8181c97fc50bca4f8be4b3c65626a1",
+"AssetId":0,"AssetAmount":10000000000000000,"GasAccountIndex":1,"GasFeeAssetId":0,
+"GasFeeAssetAmount":10000000000000,"Memo":"transfer memo","CallData":"500",
+"CallDataHash":"Brxfsi5siZXlX2IbP0oC2nWD3DqfGfCL1x7RooorZdc=","ExpiredAt":1677942105158,
+"Nonce":0,
+"Sig":"yqTgjh0zKAitQA7L3eeTZSYTTZOuwqyFH42Bz6pZmBEA5jfpGdIBlBAKlDJdN6UE6TbJ29nJn+MAOqMpYiww1A=="}
+tx_type: 4
+tx_signature: 0x849663848253e6969c72a8be87a886c6949f07d2f9bd904d70e64931835b8e2f079a89cc27ceddcfbf96f66cf77daaef9a40ffc7c6a805d99e778ea9f3f682471b
+```
+
+
+
+
+
 
 Signed transaction representation.
 ```go

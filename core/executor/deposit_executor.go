@@ -34,6 +34,9 @@ func NewDepositExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 		TxInfo:       txInfo,
 	}, nil
 }
+func (t *DepositExecutor) SetTxInfo(info *txtypes.DepositTxInfo) {
+	t.txInfo = info
+}
 
 func (e *DepositExecutor) Prepare() error {
 	bc := e.bc
