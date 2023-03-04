@@ -72,7 +72,7 @@ func (e *RegisterZnsExecutor) ApplyTransaction() error {
 		AccountName:     txInfo.AccountName,
 		PublicKey:       txInfo.PubKey,
 		AccountNameHash: common.Bytes2Hex(txInfo.AccountNameHash),
-		L1Address:       txInfo.NativeAddress,
+		L1Address:       txInfo.L1Address,
 		Nonce:           types.EmptyNonce,
 		CollectionNonce: types.EmptyCollectionNonce,
 		AssetInfo:       types.EmptyAccountAssetInfo,
