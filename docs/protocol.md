@@ -266,7 +266,7 @@ No user transaction
 
 This is a layer-2 transaction and a user needs to call this method first to register a layer-2 account.
 
-#### API Input
+#### 1: API Input
 
 | Name               | Size(byte) | Comment                        |
 |--------------------|------------|--------------------------------|
@@ -278,7 +278,48 @@ This is a layer-2 transaction and a user needs to call this method first to regi
 | PubKeyY            | 32         | layer-2 account's public key Y |
 | GasFeeAssetId      | 2          | gas fee asset id               |
 | GasFeeAssetAmount  | 2          | packed fee amount              |
+#### 1.1: API Input sign Json
 
+```go
+{
+"type": "ChangePubKey",
+"accountId": 2061,
+"account": "0x1f04204dba8e9e8bf90f5889fe4bdc0f37265dbb",
+"newPkHash": "sync:63aa2a0efb97064e0e52a6adb63a42018bd6e72b",
+"feeToken": 1023,
+"fee": "56700000000",
+"nonce": 155724003,
+"signature": {
+"pubKey": "0e1390d3e86881117979db2b37e40eaf46b6f8f38d2509ff3ecfaf229c717b9d",
+"signature": "a44999d6d7962b8216ebb2c53afc159f4bd85282844b1e443f82a1e50bfe1c2b70377ac0dbe1b8c14672fac3548df77f0b7bae0eb40c553191b9b0606ef86b04"
+},
+"ethSignature": null,
+"ethAuthData": {
+"type": "Onchain"
+},
+"validFrom": 0,
+"validUntil": 18446744073709551615
+}
+```
+
+Signed transaction representation.
+```go
+Signer:
+Private key: Fs(0x057afe7e950189b17eedfd749f5537a88eb3ed4981467636a115e5c3efcce0f4)
+Public key: x: Fr(0x0e63e65569365f7d2db43642f9cb15781120364f5e993cd6822cbab3f86be4d3), y: Fr(0x1d7b719c22afcf3eff09258df3f8b646af0ee4372bdb7979118168e8d390130e)
+
+Signed transaction fields:
+type: 0xf8
+version: 0x01
+accountId: 0x0000080d
+account: 0x1f04204dba8e9e8bf90f5889fe4bdc0f37265dbb
+new_pub_key_hash: 0x63aa2a0efb97064e0e52a6adb63a42018bd6e72b
+token: 0x000003ff
+fee: 0x46e8
+nonce: 0x094828e3
+time_range: 0x0000000000000000ffffffffffffffff
+Signed bytes: 0xf8010000080d1f04204dba8e9e8bf90f5889fe4bdc0f37265dbb63aa2a0efb97064e0e52a6adb63a42018bd6e72b000003ff46e8094828e30000000000000000ffffffffffffffff
+```
 
 ##### Size
 
