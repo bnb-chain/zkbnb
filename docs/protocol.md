@@ -76,7 +76,7 @@ belongs to `AccountTree(32)`. The empty leaf for all the trees is just set every
 
 ```go
 type AccountNode struct{
-    AccountNameHash string // bytes32
+    AccountNameHash string // bytes32   => L1Address
     PubKey string // bytes32
     Nonce int64
     CollectionNonce int64
