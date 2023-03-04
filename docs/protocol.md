@@ -88,7 +88,7 @@ Leaf hash computation:
 
 ```go
 func ComputeAccountLeafHash(
-	accountNameHash string,
+	accountNameHash string,  => L1Address
 	pk string,
 	nonce int64,
 	collectionNonce int64,
@@ -209,6 +209,7 @@ ZkBNB transactions are divided into Rollup transactions (initiated inside Rollup
 Rollup transactions:
 
 - EmptyTx
+- ChangePubKey
 - Transfer
 - Withdraw
 - CreateCollection
@@ -220,7 +221,7 @@ Rollup transactions:
 
 Priority operations:
 
-- RegisterZNS
+
 - Deposit
 - DepositNft
 - FullExit
@@ -259,13 +260,25 @@ No effects.
 
 No user transaction
 
-### RegisterZNS
+### ChangePubKey
 
 #### Description
 
-This is a layer-1 transaction and a user needs to call this method first to register a layer-2 account.
+This is a layer-2 transaction and a user needs to call this method first to register a layer-2 account.
 
-#### On-Chain operation
+#### API Input
+
+| Name               | Size(byte) | Comment                        |
+|--------------------|------------|--------------------------------|
+| TxType             | 1          | transaction type               |
+| AccountIndex       | 4          | unique account index           |
+| L1Address          | 20         | L1Address                      |
+| Nonce              | 4          | Nonce                          |
+| PubKeyX            | 32         | layer-2 account's public key X |
+| PubKeyY            | 32         | layer-2 account's public key Y |
+| GasFeeAssetId      | 2          | gas fee asset id               |
+| GasFeeAssetAmount  | 2          | packed fee amount              |
+
 
 ##### Size
 
@@ -273,7 +286,18 @@ This is a layer-1 transaction and a user needs to call this method first to regi
 | ------ | ----------------- |
 | 6      | 101               |
 
-##### Structure
+##### Pub Data Structure
+
+```go
+struct ChangePubKey {
+uint8 txType;
+uint32 accountIndex;
+bytes20 pubKeyHash;
+address owner;
+uint32 nonce;
+}
+```
+
 
 | Name            | Size(byte) | Comment                        |
 |-----------------|------------|--------------------------------|
