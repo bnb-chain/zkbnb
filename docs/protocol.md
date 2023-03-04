@@ -359,14 +359,15 @@ uint16 gasFeeAssetAmount;
 ```
 
 
-| Name            | Size(byte) | Comment                        |
-|-----------------|------------|--------------------------------|
-| TxType          | 1          | transaction type               |
-| AccountIndex    | 4          | unique account index           |
-| AccountName     | 32         | account name                   |
-| AccountNameHash | 32         | hash value of the account name |
-| PubKeyX         | 32         | layer-2 account's public key X |
-| PubKeyY         | 32         | layer-2 account's public key Y |
+| Name               | Size(byte) | Comment                        |
+|--------------------|------------|--------------------------------|
+| TxType             | 1          | transaction type               |
+| AccountIndex       | 4          | unique account index           |
+| pubKeyHash         | 32         | account name                   |
+| owner              | 20         | hash value of the account name |
+| nonce              | 4          | layer-2 account's public key X |
+| gasFeeAssetId      | 2          | layer-2 account's public key Y |
+| gasFeeAssetAmount  | 2          |                                |
 
 ```go
 func ConvertTxToRegisterZNSPubData(oTx *tx.Tx) (pubData []byte, err error) {
