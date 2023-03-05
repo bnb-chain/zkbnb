@@ -45,7 +45,7 @@ func (c *PermissionControl) Control(txType uint32, txInfo string) error {
 			return errors.New("the l1Address is not in the white list, can not do the transaction")
 		}
 	} else if permissionControlItem.PermissionControlType == ControlByBlacklist {
-		if ok := containElement(l1Address, permissionControlItem.ControlBlockList); ok {
+		if ok := containElement(l1Address, permissionControlItem.ControlBlackList); ok {
 			return errors.New("the l1Address is in the black list, can not do the transaction")
 		}
 	}
@@ -65,4 +65,5 @@ func InitPermissionControl(config config.Config) {
 
 	// Get the permission control configuration from the Apollo server
 	permissionControlConfig = LoadApolloPermissionControlConfig(config)
+	logx.Infof("Initiate Permission Control Facility Successfully!")
 }

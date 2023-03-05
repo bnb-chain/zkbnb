@@ -11,6 +11,9 @@ type PermControlUpdater struct {
 
 func (u *PermControlUpdater) OnChange(event *storage.ChangeEvent) {
 	configChange := event.Changes[PermissionControlConfigKey]
+	if configChange == nil {
+		return
+	}
 	newRateLimitConfigObject := configChange.NewValue
 	if newRateLimitConfigJson, ok := newRateLimitConfigObject.(string); ok {
 		newPermissionControlConfig := &PermissionControlConfig{}

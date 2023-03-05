@@ -22,13 +22,13 @@ var apolloClient agollo.Client
 type PermissionControlItem struct {
 	PermissionControlType string
 	ControlWhiteList      []string
-	ControlBlockList      []string
+	ControlBlackList      []string
 }
 
 type PermissionControlConfig struct {
-	SwitchPermissionControlConfig      bool
-	DefaultPermissionControlConfigItem PermissionControlItem
-	TxTypePermissionControlConfigItem  map[uint32]PermissionControlItem
+	SwitchPermissionControlConfig        bool
+	DefaultPermissionControlConfigItem   PermissionControlItem
+	TxTypePermissionControlConfigItemMap map[uint32]PermissionControlItem
 }
 
 func (c *PermissionControlConfig) ValidatePermissionControlConfig() error {
@@ -36,7 +36,7 @@ func (c *PermissionControlConfig) ValidatePermissionControlConfig() error {
 }
 
 func (c *PermissionControlConfig) GetPermissionControlConfigItem(txType uint32) PermissionControlItem {
-	if item, ok := c.TxTypePermissionControlConfigItem[txType]; ok {
+	if item, ok := c.TxTypePermissionControlConfigItemMap[txType]; ok {
 		return item
 	} else {
 		return c.DefaultPermissionControlConfigItem
