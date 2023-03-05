@@ -3,6 +3,7 @@ package apiserver
 import (
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/logic/info"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/permctrl"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/ratelimiter"
 	"github.com/robfig/cron/v3"
 	"net/http"
@@ -91,11 +92,15 @@ func Run(configFile string) error {
 	})
 
 	// Initiate the rate limit control
-	// configuration from the config file
+	// configuration from Apollo server side
 	ratelimiter.InitRateLimitControl(c)
 
 	// Add the rate limit control handler
 	server.Use(ratelimiter.RateLimitHandler)
+
+	// Initiate the permission control
+	// configuration from Apollo server side
+	permctrl.InitPermissionControl(c)
 
 	// Register the server and the context
 	handler.RegisterHandlers(server, ctx)
