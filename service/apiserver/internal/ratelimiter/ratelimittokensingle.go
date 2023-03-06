@@ -11,7 +11,7 @@ func (r *TokenRateLimiter) RateLimitControlSingle(param *RateLimitParam, control
 	if tokenLimiter.Allow() {
 		return nil
 	} else {
-		logx.Errorf("RateLimitControlSingle hit Token Limit, path:%s, hostId:%s!", param.RequestPath, r.LocalHostID)
+		logx.Errorf("RateLimitControlSingle hit Token Limit, path:%s, hostId:%s!", param.RequestPath, r.LocalhostID)
 		return errors.New("Too Many Request!")
 	}
 }
