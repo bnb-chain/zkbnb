@@ -18,11 +18,13 @@
 package tree
 
 import (
+	"github.com/bnb-chain/zkbnb-crypto/circuit/types"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 	"github.com/bnb-chain/zkbnb/types"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
@@ -277,6 +279,8 @@ func ComputeAccountLeafHash(
 	nonce int64,
 	collectionNonce int64,
 	assetRoot []byte,
+	accountIndex int64,
+	blockHeight int64,
 ) (hashVal []byte, err error) {
 	e0, err := txtypes.FromHexStrToFr(accountNameHash)
 	if err != nil {
@@ -292,12 +296,16 @@ func ComputeAccountLeafHash(
 	e4 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(collectionNonce))
 	e5 := txtypes.FromBigIntToFr(new(big.Int).SetBytes(assetRoot))
 	hash := poseidon.Poseidon(e0, e1, e2, e3, e4, e5).Bytes()
+	logx.Infof("compute account leaf hash,blockHeight=%s,accountIndex=%s,nonce=%s,collectionNonce=%s,assetRoot=%s,hash=%s", blockHeight, accountIndex, nonce, collectionNonce, common.Bytes2Hex(assetRoot), common.Bytes2Hex(hash[:]))
 	return hash[:], nil
 }
 
 func ComputeAccountAssetLeafHash(
 	balance string,
 	offerCanceledOrFinalized string,
+	accountIndex int64,
+	assetId int64,
+	blockHeight int64,
 ) (hashVal []byte, err error) {
 	balanceBigInt, isValid := new(big.Int).SetString(balance, 10)
 	if !isValid {
@@ -311,6 +319,7 @@ func ComputeAccountAssetLeafHash(
 	}
 	e1 := txtypes.FromBigIntToFr(offerCanceledOrFinalizedBigInt)
 	hash := poseidon.Poseidon(e0, e1).Bytes()
+	logx.Infof("compute account asset leaf hash,blockHeight=%s,accountIndex=%s,assetId=%s,balance=%s,offerCanceledOrFinalized=%s,hash=%s", blockHeight, accountIndex, assetId, balance, offerCanceledOrFinalized, common.Bytes2Hex(hash[:]))
 	return hash[:], nil
 }
 
@@ -320,16 +329,35 @@ func ComputeNftAssetLeafHash(
 	nftContentHash string,
 	creatorTreasuryRate int64,
 	collectionId int64,
+	nftIndex int64,
+	blockHeight int64,
 ) (hashVal []byte, err error) {
 	e0 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(creatorAccountIndex))
 	e1 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(ownerAccountIndex))
-	e2, err := txtypes.FromHexStrToFr(nftContentHash)
+
+	var e2 *fr.Element
+	var e3 *fr.Element
+	contentHash := common.Hex2Bytes(nftContentHash)
+	if len(contentHash) >= types.NftContentHashBytesSize {
+		e2, err = txtypes.FromBytesToFr(contentHash[:types.NftContentHashBytesSize])
+		e3, err = txtypes.FromBytesToFr(contentHash[types.NftContentHashBytesSize:])
+	} else {
+		e2, err = txtypes.FromBytesToFr(contentHash[:])
+	}
 	if err != nil {
 		return nil, err
 	}
-	e3 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(creatorTreasuryRate))
-	e4 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(collectionId))
-	hash := poseidon.Poseidon(e0, e1, e2, e3, e4).Bytes()
+
+	e4 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(creatorTreasuryRate))
+	e5 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(collectionId))
+	var hash [32]byte
+	if e3 != nil {
+		hash = poseidon.Poseidon(e0, e1, e2, e3, e4, e5).Bytes()
+	} else {
+		hash = poseidon.Poseidon(e0, e1, e2, e4, e5).Bytes()
+	}
+	logx.Infof("compute nft asset leaf hash,blockHeight=%s,nftIndex=%s,creatorAccountIndex=%s,ownerAccountIndex=%s,nftContentHash=%s,creatorTreasuryRate=%s,collectionId=%s,hash=%s", blockHeight, nftIndex, creatorAccountIndex, ownerAccountIndex, nftContentHash, creatorTreasuryRate, collectionId, common.Bytes2Hex(hash[:]))
+
 	return hash[:], nil
 }
 

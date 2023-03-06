@@ -11,7 +11,7 @@ import (
 func GetLayer2BasicInfoHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		l := info.NewGetLayer2BasicInfoLogic(r.Context(), svcCtx)
-		resp, err := l.GetLayer2BasicInfo()
+		resp, err := l.GetLayer2BasicInfo(true)
 		response.Handle(w, resp, err)
 	}
 }

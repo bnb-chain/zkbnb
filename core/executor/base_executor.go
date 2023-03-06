@@ -172,3 +172,7 @@ func (e *BaseExecutor) SyncDirtyToStateCache() {
 		e.bc.StateDB().MarkNftDirty(nftIndex)
 	}
 }
+
+func (e *BaseExecutor) GetTxInfo() txtypes.TxInfo {
+	return e.iTxInfo
+}

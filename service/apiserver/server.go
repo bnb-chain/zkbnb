@@ -2,6 +2,8 @@ package apiserver
 
 import (
 	"github.com/bnb-chain/zkbnb/dao/tx"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/logic/info"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/ratelimiter"
 	"github.com/robfig/cron/v3"
 	"net/http"
 	"time"
@@ -35,12 +37,33 @@ func Run(configFile string) error {
 		cron.SkipIfStillRunning(cron.DiscardLogger),
 	))
 	_, err := cronJob.AddFunc("@every 1s", func() {
+		defer func() {
+			if err := recover(); err != nil {
+				logx.Severef("set tx pending count failed:%v", err)
+			}
+		}()
 		_, err := ctx.MemCache.SetTxPendingCountKeyPrefix(func() (interface{}, error) {
 			txStatuses := []int64{tx.StatusPending}
 			return ctx.TxPoolModel.GetTxsTotalCount(tx.GetTxWithStatuses(txStatuses))
 		})
 		if err != nil {
-			logx.Errorf("set tx pending count failed:%s", err.Error())
+			logx.Severef("set tx pending count failed:%s", err.Error())
+		}
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = cronJob.AddFunc("@every 300s", func() {
+		defer func() {
+			if err := recover(); err != nil {
+				logx.Severef("get layer 2 basic info failed:%v", err)
+			}
+		}()
+		l := info.NewGetLayer2BasicInfoLogic(nil, ctx)
+		_, err := l.GetLayer2BasicInfo(false)
+		if err != nil {
+			logx.Severef("get layer 2 basic info failed:%s", err.Error())
 		}
 	})
 	if err != nil {
@@ -57,7 +80,7 @@ func Run(configFile string) error {
 
 	server := rest.MustNewServer(c.RestConf, rest.WithCors())
 
-	// 全局中间件
+	// Add the metrics logic here
 	server.Use(func(next http.HandlerFunc) http.HandlerFunc {
 		return func(writer http.ResponseWriter, request *http.Request) {
 			if request.RequestURI == "/api/v1/sendTx" {
@@ -67,12 +90,20 @@ func Run(configFile string) error {
 		}
 	})
 
+	// Initiate the rate limit control
+	// configuration from the config file
+	ratelimiter.InitRateLimitControl(c)
+
+	// Add the rate limit control handler
+	server.Use(ratelimiter.RateLimitHandler)
+
+	// Register the server and the context
 	handler.RegisterHandlers(server, ctx)
 
 	// Start the swagger server in background
 	go startSwaggerServer()
 
-	logx.Infof("apiserver is starting at %s:%d...\n", c.Host, c.Port)
+	logx.Infof("apiserver is starting at %s:%d", c.Host, c.Port)
 	server.Start()
 	return nil
 }

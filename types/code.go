@@ -120,17 +120,22 @@ var (
 	AppErrInvalidAssetOfOffer        = NewBusinessError(21513, "invalid asset of offer")
 
 	// Nft
-	AppErrNftAlreadyExist       = NewBusinessError(21600, "invalid nft index, already exist")
-	AppErrInvalidNftContenthash = NewBusinessError(21601, "invalid nft content hash")
-	AppErrNotNftOwner           = NewBusinessError(21602, "account is not owner of the nft")
-	AppErrInvalidNftIndex       = NewBusinessError(21603, "invalid nft index")
-	AppErrNftNotFound           = NewBusinessError(21604, "nft not found")
-	AppErrInvalidToAccount      = NewBusinessError(21605, "invalid ToAccount")
+	AppErrNftAlreadyExist          = NewBusinessError(21600, "invalid nft index, already exist")
+	AppErrInvalidNftContenthash    = NewBusinessError(21601, "invalid nft content hash")
+	AppErrNotNftOwner              = NewBusinessError(21602, "account is not owner of the nft")
+	AppErrInvalidNftIndex          = NewBusinessError(21603, "invalid nft index")
+	AppErrNftNotFound              = NewBusinessError(21604, "nft not found")
+	AppErrInvalidToAccount         = NewBusinessError(21605, "invalid ToAccount")
+	AppErrInvalidNft               = NewBusinessError(21606, "mutableAttributes is synchronizing")
+	AppErrInvalidMetaData          = NewBusinessError(21607, "metaData should not be larger than ")
+	AppErrInvalidMutableAttributes = NewBusinessError(21608, "mutableAttributes should not be larger than ")
+	AppErrInvalidNftNonce          = NewBusinessError(21609, "invalid nft nonce")
 
 	// Collection
 	AppErrInvalidCollectionId   = NewBusinessError(21700, "invalid collection id")
 	AppErrInvalidCollectionName = NewBusinessError(21701, "invalid collection name")
 	AppErrInvalidIntroduction   = NewBusinessError(21702, "invalid introduction")
+	AppErrNotExistCollectionId  = NewBusinessError(21703, "collection id not exist")
 
 	// Proof
 	AppErrRelatedProofsNotReady = NewBusinessError(21800, "related proofs not ready")

@@ -19,7 +19,6 @@ package types
 
 import (
 	"encoding/json"
-
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 )
 
@@ -137,6 +136,13 @@ const (
 	EmptyStringKeccak = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
 )
 
+type UpdateNftReq struct {
+	NftIndex          int64
+	MutableAttributes string
+	AccountIndex      int64
+	Nonce             int64
+}
+
 func ParseRegisterZnsTxInfo(txInfoStr string) (txInfo *txtypes.RegisterZnsTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
@@ -234,6 +240,14 @@ func ParseWithdrawTxInfo(txInfoStr string) (txInfo *txtypes.WithdrawTxInfo, err 
 }
 
 func ParseWithdrawNftTxInfo(txInfoStr string) (txInfo *txtypes.WithdrawNftTxInfo, err error) {
+	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
+	if err != nil {
+		return nil, err
+	}
+	return txInfo, nil
+}
+
+func ParseUpdateNftTxInfo(txInfoStr string) (txInfo *UpdateNftReq, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
 		return nil, err

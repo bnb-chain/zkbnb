@@ -23,6 +23,7 @@ type Config struct {
 		Url   string
 		Token string
 	}
+	IpfsUrl  string
 	MemCache struct {
 		AccountExpiration   int
 		AssetExpiration     int
@@ -34,5 +35,12 @@ type Config struct {
 		// Setting this to 10x the number of items you expect to keep in the cache when full
 		MaxCounterNum int64
 		MaxKeyNum     int64
+	}
+	Apollo struct {
+		AppID          string
+		Cluster        string
+		ApolloIp       string
+		Namespace      string
+		IsBackupConfig bool
 	}
 }

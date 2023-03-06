@@ -648,10 +648,6 @@ func (bc *BlockChain) InitNewBlock() (*block.Block, error) {
 			StateRoot:   bc.currentBlock.StateRoot,
 			BlockStatus: block.StatusProposing,
 		}
-	} else {
-		if !bc.Statedb.NeedRestoreExecutedTxs() {
-			newBlock.CreatedAt = time.Time{}
-		}
 	}
 	bc.currentBlock = newBlock
 	bc.Statedb.PurgeCache(bc.currentBlock.StateRoot)
@@ -661,6 +657,10 @@ func (bc *BlockChain) InitNewBlock() (*block.Block, error) {
 
 func (bc *BlockChain) CurrentBlock() *block.Block {
 	return bc.currentBlock
+}
+
+func (bc *BlockChain) ClearRollbackBlockMap() {
+	bc.rollbackBlockMap = make(map[int64]*block.Block, 0)
 }
 
 func (bc *BlockChain) UpdateAssetTree(stateDataCopy *statedb.StateDataCopy) error {

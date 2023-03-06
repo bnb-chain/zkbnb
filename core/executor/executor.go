@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	"math/big"
 
 	sdb "github.com/bnb-chain/zkbnb/core/statedb"
@@ -25,6 +26,7 @@ type TxExecutor interface {
 	GeneratePubData() error
 	GetExecutedTx(fromApi bool) (*tx.Tx, error)
 	GenerateTxDetails() ([]*tx.TxDetail, error)
+	GetTxInfo() txtypes.TxInfo
 }
 
 func NewTxExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {

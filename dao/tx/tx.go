@@ -102,6 +102,8 @@ type (
 		VerifyAt time.Time // verify time when the transaction status changes to be StatusVerified
 
 		Rollback bool `gorm:"-"`
+		// l1 request id
+		L1RequestId int64 `gorm:"-"`
 	}
 )
 
@@ -171,7 +173,7 @@ func (m *defaultTxModel) GetTxsByAccountIndex(accountIndex int64, limit int64, o
 		f(opt)
 	}
 
-	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex)
+	dbTx := m.DB.Table(m.table).Where("account_index = ? and deleted_at is null", accountIndex)
 	if len(opt.Types) > 0 {
 		dbTx = dbTx.Where("tx_type IN ?", opt.Types)
 	}
@@ -191,7 +193,7 @@ func (m *defaultTxModel) GetTxsCountByAccountIndex(accountIndex int64, options .
 		f(opt)
 	}
 
-	dbTx := m.DB.Table(m.table).Where("account_index = ?", accountIndex)
+	dbTx := m.DB.Table(m.table).Where("account_index = ? and deleted_at is null", accountIndex)
 	if len(opt.Types) > 0 {
 		dbTx = dbTx.Where("tx_type IN ?", opt.Types)
 	}

@@ -57,7 +57,7 @@ func toCryptoMintNftTx(txInfo *txtypes.MintNftTxInfo) (info *cryptoTypes.MintNft
 		ToAccountIndex:      txInfo.ToAccountIndex,
 		ToAccountNameHash:   common.FromHex(txInfo.ToAccountNameHash),
 		NftIndex:            txInfo.NftIndex,
-		NftContentHash:      common.FromHex(txInfo.NftContentHash),
+		NftContentHash:      common2.PrefixPaddingBufToChunkSize(common.FromHex(txInfo.NftContentHash)),
 		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
 		GasAccountIndex:     txInfo.GasAccountIndex,
 		GasFeeAssetId:       txInfo.GasFeeAssetId,

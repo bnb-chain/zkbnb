@@ -64,6 +64,7 @@ type (
 		UpdateBlocksWithoutTxsInTransact(tx *gorm.DB, blocks []*Block) (err error)
 		UpdateBlockInTransact(tx *gorm.DB, block *Block) (err error)
 		DeleteBlockInTransact(tx *gorm.DB, statuses []int) error
+		DeleteBlockGreaterThanHeight(blockHeight int64, statuses []int) error
 		GetProposingBlockHeights() (blockHeights []int64, err error)
 		PreSaveBlockDataInTransact(tx *gorm.DB, block *Block) error
 		UpdateBlockToPendingInTransact(tx *gorm.DB, block *Block) error
@@ -400,6 +401,14 @@ func (m *defaultBlockModel) DeleteBlockInTransact(tx *gorm.DB, statuses []int) e
 	return nil
 }
 
+func (m *defaultBlockModel) DeleteBlockGreaterThanHeight(blockHeight int64, statuses []int) error {
+	dbTx := m.DB.Table(m.table).Unscoped().Where("block_status in ? and block_height > ?", statuses, blockHeight).Delete(&Block{})
+	if dbTx.Error != nil {
+		return types.DbErrSqlOperation
+	}
+	return nil
+}
+
 func (m *defaultBlockModel) GetProposingBlockHeights() (blockHeights []int64, err error) {
 	dbTx := m.DB.Table(m.table).Select("block_height").Where("block_status = ?", StatusProposing).Order("block_height desc").Find(&blockHeights)
 	if dbTx.Error != nil {
@@ -419,10 +428,11 @@ func (m *defaultBlockModel) GetBlockByStatus(statuses []int) (blocks []*Block, e
 }
 
 func (m *defaultBlockModel) PreSaveBlockDataInTransact(tx *gorm.DB, block *Block) (err error) {
-	dbTx := tx.Model(&Block{}).Select("BlockStatus", "AccountIndexes", "NftIndexes").Where("id = ? and  block_status in ?", block.ID, []int{StatusProposing, StatusPacked}).Updates(map[string]interface{}{
+	dbTx := tx.Model(&Block{}).Select("BlockStatus", "AccountIndexes", "NftIndexes", "CreatedAt").Where("id = ? and  block_status in ?", block.ID, []int{StatusProposing, StatusPacked}).Updates(map[string]interface{}{
 		"block_status":    StatusPacked,
 		"account_indexes": block.AccountIndexes,
 		"nft_indexes":     block.NftIndexes,
+		"created_at":      block.CreatedAt,
 	})
 	if dbTx.Error != nil {
 		return dbTx.Error

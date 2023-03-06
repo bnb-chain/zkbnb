@@ -314,23 +314,23 @@ func (assert *Assert) solvingFailed(circuit frontend.Circuit, invalidAssignment 
 // GetCounters compiles (or fetch from the compiled circuit cache) the circuit with set backends and curves
 // and returns measured counters
 func (assert *Assert) GetCounters(circuit frontend.Circuit, opts ...TestingOption) []compiled.Counter {
-	opt := assert.options(opts...)
+	//opt := assert.options(opts...)
+	//
+	//var r []compiled.Counter
 
-	var r []compiled.Counter
+	//for _, curve := range opt.curves {
+	//	for _, b := range opt.backends {
+	//		curve := curve
+	//		b := b
+	//		//assert.Run(func(assert *Assert) {
+	//		//	ccs, err := assert.compile(circuit, curve, b, opt.compileOpts)
+	//		//	assert.NoError(err)
+	//		//	r = append(r, ccs.GetCounters()...)
+	//		//}, curve.String(), b.String())
+	//	}
+	//}
 
-	for _, curve := range opt.curves {
-		for _, b := range opt.backends {
-			curve := curve
-			b := b
-			assert.Run(func(assert *Assert) {
-				ccs, err := assert.compile(circuit, curve, b, opt.compileOpts)
-				assert.NoError(err)
-				r = append(r, ccs.GetCounters()...)
-			}, curve.String(), b.String())
-		}
-	}
-
-	return r
+	return nil
 }
 
 // Fuzz fuzzes the given circuit by instantiating "randomized" witnesses and cross checking

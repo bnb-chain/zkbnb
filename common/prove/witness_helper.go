@@ -272,7 +272,7 @@ func (w *WitnessHelper) constructAccountWitness(
 				if err != nil {
 					return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 				}
-				nAssetHash, err := tree.ComputeAccountAssetLeafHash(nAsset.Balance.String(), nAsset.OfferCanceledOrFinalized.String())
+				nAssetHash, err := tree.ComputeAccountAssetLeafHash(nAsset.Balance.String(), nAsset.OfferCanceledOrFinalized.String(), accountKey, accountAsset.AssetId, oTx.BlockHeight)
 				if err != nil {
 					return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 				}
@@ -329,6 +329,8 @@ func (w *WitnessHelper) constructAccountWitness(
 			nonce,
 			collectionNonce,
 			w.assetTrees.Get(accountKey).Root(),
+			accountKey,
+			oTx.BlockHeight,
 		)
 		if err != nil {
 			return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
@@ -445,6 +447,8 @@ func (w *WitnessHelper) constructNftWitness(
 		nNftInfo.NftContentHash,
 		nNftInfo.CreatorTreasuryRate,
 		nNftInfo.CollectionId,
+		nNftInfo.NftIndex,
+		oTx.BlockHeight,
 	)
 
 	if err != nil {
@@ -737,7 +741,7 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 			merkleProofsAccountAssetsBefore = append(merkleProofsAccountAssetsBefore, merkleProofsAccountAssetBefore)
 
 			balanceAfter := ffmath.Add(balanceBefore, gasChanges[assetId])
-			nAssetHash, err := tree.ComputeAccountAssetLeafHash(balanceAfter.String(), offerCanceledOrFinalized.String())
+			nAssetHash, err := tree.ComputeAccountAssetLeafHash(balanceAfter.String(), offerCanceledOrFinalized.String(), gasAccountIndex, assetId, block.BlockHeight)
 			if err != nil {
 				return nil, err
 			}
@@ -753,6 +757,8 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 			w.gasAccountInfo.Nonce,
 			w.gasAccountInfo.CollectionNonce,
 			w.assetTrees.Get(gasAccountIndex).Root(),
+			gasAccountIndex,
+			block.BlockHeight,
 		)
 		if err != nil {
 			return nil, err

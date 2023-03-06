@@ -5,17 +5,17 @@ package docs
 import "github.com/swaggo/swag"
 
 const docTemplate = `{
-    "schemes": {{ marshal .Schemes }},
-    "swagger": "2.0",
-    "info": {
-        "description": "{{escape .Description}}",
-        "title": "{{.Title}}",
-        "contact": {},
-        "version": "{{.Version}}"
-    },
-    "host": "{{.Host}}",
-    "basePath": "{{.BasePath}}",
-	"paths": {
+ "schemes": {{ marshal .Schemes }},
+	"swagger": "2.0",
+	"info": {
+		"description": "{{escape .Description}}",
+		"title": "{{.Title}}",
+		"contact": {},
+		"version": "{{.Version}}"
+	},
+	"host": "{{.Host}}",
+	"basePath": "{{.BasePath}}",
+  "paths": {
     "/": {
       "get": {
         "summary": "Get status of zkbnb",
@@ -529,6 +529,71 @@ const docTemplate = `{
         ]
       }
     },
+    "/api/v1/getNftByTxHash": {
+      "get": {
+        "summary": "Get nft_index of a nft by txHash",
+        "operationId": "GetNftByTxHash",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/NftIndex"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "tx_hash",
+            "in": "query",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "requestBody": {},
+        "tags": [
+          "nft"
+        ]
+      }
+    },
+    "/api/v1/l2Signature": {
+      "post": {
+        "summary": "Get transaction signature body",
+        "operationId": "GetL2SignatureBody",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/SignBody"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "tx_type",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "tx_info",
+            "in": "query",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "tx_signature",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "requestBody": {},
+        "tags": [
+          "transaction"
+        ]
+      }
+    },
     "/api/v1/layer2BasicInfo": {
       "get": {
         "summary": "Get zkbnb general info, including contract address, and count of transactions and active users",
@@ -544,6 +609,33 @@ const docTemplate = `{
         "requestBody": {},
         "tags": [
           "info"
+        ]
+      }
+    },
+    "/api/v1/maxCollectionId": {
+      "get": {
+        "summary": "Get max nft collection id for a specific account",
+        "operationId": "GetMaxCollectionId",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/MaxCollectionId"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "account_index",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "requestBody": {},
+        "tags": [
+          "nft"
         ]
       }
     },
@@ -571,6 +663,59 @@ const docTemplate = `{
         "requestBody": {},
         "tags": [
           "nft"
+        ]
+      }
+    },
+    "/api/v1/mergedAccountTxs": {
+      "get": {
+        "summary": "Get merged transactions(including tx and pool_tx) of a specific account",
+        "operationId": "GetMergedAccountTxs",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Txs"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "by",
+            "in": "query",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "value",
+            "in": "query",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": true,
+            "type": "invalid",
+            "format": "UNKNOWN"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "type": "invalid",
+            "format": "UNKNOWN"
+          }
+        ],
+        "requestBody": {},
+        "tags": [
+          "transaction"
         ]
       }
     },
@@ -635,6 +780,47 @@ const docTemplate = `{
         ]
       }
     },
+    "/api/v1/rollbacks": {
+      "get": {
+        "summary": "Get rollbacks",
+        "operationId": "GetRollbacks",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/Rollbacks"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "from_block_height",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": true,
+            "type": "invalid",
+            "format": "UNKNOWN"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "type": "invalid",
+            "format": "UNKNOWN"
+          }
+        ],
+        "requestBody": {},
+        "tags": [
+          "info"
+        ]
+      }
+    },
     "/api/v1/search": {
       "get": {
         "summary": "Search with a specific keyword",
@@ -675,12 +861,23 @@ const docTemplate = `{
         },
         "parameters": [
           {
-            "name": "body",
-            "in": "body",
+            "name": "tx_type",
+            "in": "query",
             "required": true,
-            "schema": {
-              "$ref": "#/definitions/ReqSendTx"
-            }
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "tx_info",
+            "in": "query",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "tx_signature",
+            "in": "query",
+            "required": false,
+            "type": "string"
           }
         ],
         "requestBody": {},
@@ -746,6 +943,52 @@ const docTemplate = `{
         "requestBody": {},
         "tags": [
           "transaction"
+        ]
+      }
+    },
+    "/api/v1/updateNftByIndex": {
+      "post": {
+        "summary": "update nft metadata by nft_index",
+        "operationId": "UpdateNftByIndex",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/History"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "nft_index",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "mutable_attributes",
+            "in": "query",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "account_index",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "tx_signature",
+            "in": "query",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "requestBody": {},
+        "tags": [
+          "nft"
         ]
       }
     }
@@ -1093,6 +1336,18 @@ const docTemplate = `{
         "assets"
       ]
     },
+    "History": {
+      "type": "object",
+      "properties": {
+        "ipns_id": {
+          "type": "string"
+        }
+      },
+      "title": "History",
+      "required": [
+        "ipns_id"
+      ]
+    },
     "Layer2BasicInfo": {
       "type": "object",
       "properties": {
@@ -1141,6 +1396,19 @@ const docTemplate = `{
         "yesterday_active_user_count",
         "today_active_user_count",
         "contract_addresses"
+      ]
+    },
+    "MaxCollectionId": {
+      "type": "object",
+      "properties": {
+        "collection_id": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "title": "MaxCollectionId",
+      "required": [
+        "collection_id"
       ]
     },
     "MaxOfferId": {
@@ -1206,6 +1474,12 @@ const docTemplate = `{
         "collection_id": {
           "type": "integer",
           "format": "int64"
+        },
+        "ipfs_id": {
+          "type": "string"
+        },
+        "ipns_id": {
+          "type": "string"
         }
       },
       "title": "Nft",
@@ -1219,7 +1493,30 @@ const docTemplate = `{
         "l1_address",
         "l1_token_id",
         "creator_treasury_rate",
-        "collection_id"
+        "collection_id",
+        "ipfs_id",
+        "ipns_id"
+      ]
+    },
+    "NftIndex": {
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "ipfs_id": {
+          "type": "string"
+        },
+        "ipns_id": {
+          "type": "string"
+        }
+      },
+      "title": "NftIndex",
+      "required": [
+        "index",
+        "ipfs_id",
+        "ipns_id"
       ]
     },
     "Nfts": {
@@ -1402,6 +1699,19 @@ const docTemplate = `{
         "tx_type"
       ]
     },
+    "ReqGetMaxCollectionId": {
+      "type": "object",
+      "properties": {
+        "account_index": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "title": "ReqGetMaxCollectionId",
+      "required": [
+        "account_index"
+      ]
+    },
     "ReqGetMaxOfferId": {
       "type": "object",
       "properties": {
@@ -1426,6 +1736,18 @@ const docTemplate = `{
       "title": "ReqGetNextNonce",
       "required": [
         "account_index"
+      ]
+    },
+    "ReqGetNftIndex": {
+      "type": "object",
+      "properties": {
+        "tx_hash": {
+          "type": "string"
+        }
+      },
+      "title": "ReqGetNftIndex",
+      "required": [
+        "tx_hash"
       ]
     },
     "ReqGetRange": {
@@ -1467,6 +1789,27 @@ const docTemplate = `{
         "limit"
       ]
     },
+    "ReqGetRollbacks": {
+      "type": "object",
+      "properties": {
+        "from_block_height": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "offset": {
+          "$ref": "#/definitions/uint16"
+        },
+        "limit": {
+          "$ref": "#/definitions/uint16"
+        }
+      },
+      "title": "ReqGetRollbacks",
+      "required": [
+        "from_block_height",
+        "offset",
+        "limit"
+      ]
+    },
     "ReqGetTx": {
       "type": "object",
       "properties": {
@@ -1500,12 +1843,87 @@ const docTemplate = `{
         },
         "tx_info": {
           "type": "string"
+        },
+        "tx_signature": {
+          "type": "string"
         }
       },
       "title": "ReqSendTx",
       "required": [
         "tx_type",
         "tx_info"
+      ]
+    },
+    "ReqUpdateNft": {
+      "type": "object",
+      "properties": {
+        "nft_index": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "mutable_attributes": {
+          "type": "string"
+        },
+        "account_index": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "tx_signature": {
+          "type": "string"
+        }
+      },
+      "title": "ReqUpdateNft",
+      "required": [
+        "nft_index",
+        "mutable_attributes",
+        "account_index",
+        "tx_signature"
+      ]
+    },
+    "Rollback": {
+      "type": "object",
+      "properties": {
+        "from_block_height": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "from_tx_hash": {
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/definitions/uint"
+        },
+        "created_at": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "title": "Rollback",
+      "required": [
+        "from_block_height",
+        "from_tx_hash",
+        "id",
+        "created_at"
+      ]
+    },
+    "Rollbacks": {
+      "type": "object",
+      "properties": {
+        "total": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "rollbacks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Rollback"
+          }
+        }
+      },
+      "title": "Rollbacks",
+      "required": [
+        "total",
+        "rollbacks"
       ]
     },
     "Search": {
@@ -1519,6 +1937,18 @@ const docTemplate = `{
       "title": "Search",
       "required": [
         "data_type"
+      ]
+    },
+    "SignBody": {
+      "type": "object",
+      "properties": {
+        "sign_body": {
+          "type": "string"
+        }
+      },
+      "title": "SignBody",
+      "required": [
+        "sign_body"
       ]
     },
     "SimpleAccount": {
@@ -1638,6 +2068,10 @@ const docTemplate = `{
           "type": "integer",
           "format": "int64"
         },
+        "verify_at": {
+          "type": "integer",
+          "format": "int64"
+        },
         "state_root": {
           "type": "string"
         },
@@ -1672,6 +2106,7 @@ const docTemplate = `{
         "expire_at",
         "block_height",
         "created_at",
+        "verify_at",
         "state_root",
         "to_account_index",
         "to_account_name"
@@ -1717,8 +2152,14 @@ const docTemplate = `{
       "name": "Authorization",
       "in": "header"
     }
-  }
-}`
+  },
+  "security": [
+    {
+      "apiKey": []
+    }
+  ]
+}
+`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{

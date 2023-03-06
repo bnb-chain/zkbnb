@@ -348,8 +348,12 @@ func (w *Witness) constructBlockWitness(block *block.Block, latestVerifiedBlockN
 		return nil, err
 	}
 
-	newStateRoot = tree.ComputeStateRootHash(w.accountTree.Root(), w.nftTree.Root())
-	if common.Bytes2Hex(newStateRoot) != block.StateRoot {
+	accountTreeRoot := w.accountTree.Root()
+	nftTreeRoot := w.nftTree.Root()
+	logx.Infof("witness account tree root=%s,nft tree root=%s", common.Bytes2Hex(accountTreeRoot), common.Bytes2Hex(nftTreeRoot))
+	newStateRoot = tree.ComputeStateRootHash(accountTreeRoot, nftTreeRoot)
+	newStateRootStr := common.Bytes2Hex(newStateRoot)
+	if newStateRootStr != block.StateRoot {
 		return nil, types.AppErrStateRootNotMatch
 	}
 

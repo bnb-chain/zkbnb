@@ -453,6 +453,10 @@ type (
 		OfferId uint64 `json:"offer_id"`
 	}
 
+	MaxCollectionId {
+		CollectionId int64 `json:"collection_id"`
+	}
+
 	Nft {
 		Index               int64  `json:"index"`
 		CreatorAccountIndex int64  `json:"creator_account_index"`
@@ -464,17 +468,34 @@ type (
 		L1TokenId           string `json:"l1_token_id"`
 		CreatorTreasuryRate int64  `json:"creator_treasury_rate"`
 		CollectionId        int64  `json:"collection_id"`
+		IpfsId              string `json:"ipfs_id"`
 	}
+
 	Nfts {
 		ResultCode
 		Total int64  `json:"total"`
 		Nfts  []*Nft `json:"nfts"`
+	}
+
+	NftIndex {
+		Index  int64  `json:"index"`
+		IpfsId string `json:"ipfs_id"`
+	}
+
+	History {
+		IpnsId string `json:"ipns_id"`
 	}
 )
 
 type (
 	ReqGetMaxOfferId {
 		AccountIndex uint32 `form:"account_index"`
+	}
+)
+
+type (
+	ReqGetMaxCollectionId {
+		AccountIndex int64 `form:"account_index"`
 	}
 )
 
@@ -487,6 +508,25 @@ type (
 	}
 )
 
+type (
+	ReqGetNftIndex {
+		TxHash string `form:"tx_hash"`
+	}
+)
+
+type (
+	ReqGetNftNextNonce {
+		NftIndex int64 `form:"nft_index"`
+	}
+)
+
+type (
+	ReqUpdateNft {
+		TxInfo      string `form:"tx_info"`
+		TxSignature string `form:"tx_signature"`
+	}
+)
+
 @server(
 	group: nft
 )
@@ -496,7 +536,23 @@ service server-api {
 	@handler GetMaxOfferId
 	get /api/v1/maxOfferId (ReqGetMaxOfferId) returns (MaxOfferId)
 	
+	@doc "Get max nft collection id for a specific account"
+	@handler GetMaxCollectionId
+	get /api/v1/maxCollectionId (ReqGetMaxCollectionId) returns (MaxCollectionId)
+	
 	@doc "Get nfts of a specific account"
 	@handler GetAccountNfts
 	get /api/v1/accountNfts (ReqGetAccountNfts) returns (Nfts)
+	
+	@doc "Get nft_index of a nft by txHash"
+	@handler GetNftByTxHash
+	get /api/v1/getNftByTxHash (ReqGetNftIndex) returns (NftIndex)
+	
+	@doc "update nft metadata by nft_index"
+	@handler UpdateNftByIndex
+	post /api/v1/updateNftByIndex (ReqUpdateNft) returns (History)
+	
+	@doc "Get nft next nonce"
+	@handler GetNftNextNonce
+	get /api/v1/nftNextNonce (ReqGetNftNextNonce) returns (NextNonce)
 }

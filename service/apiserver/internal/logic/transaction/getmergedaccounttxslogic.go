@@ -92,7 +92,7 @@ func (l *GetMergedAccountTxsLogic) GetMergedAccountTxs(req *types.ReqGetAccountT
 
 	resp = &types.Txs{
 		Txs:   txsList,
-		Total: uint32(len(txsList)),
+		Total: uint32(totalTxCount),
 	}
 	return resp, nil
 }

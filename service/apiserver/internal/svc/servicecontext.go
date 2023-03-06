@@ -1,8 +1,10 @@
 package svc
 
 import (
+	"github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/rollback"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/zeromicro/go-zero/core/stores/redis"
 	"gorm.io/plugin/dbresolver"
 	"time"
 
@@ -40,18 +42,20 @@ var (
 type ServiceContext struct {
 	Config     config.Config
 	RedisCache dbcache.Cache
+	RedisConn  *redis.Redis
 	MemCache   *cache.MemCache
 
-	DB                  *gorm.DB
-	TxPoolModel         tx.TxPoolModel
-	AccountModel        account.AccountModel
-	AccountHistoryModel account.AccountHistoryModel
-	TxModel             tx.TxModel
-	BlockModel          block.BlockModel
-	NftModel            nft.L2NftModel
-	AssetModel          asset.AssetModel
-	SysConfigModel      sysconfig.SysConfigModel
-	RollbackModel       rollback.RollbackModel
+	DB                      *gorm.DB
+	TxPoolModel             tx.TxPoolModel
+	AccountModel            account.AccountModel
+	AccountHistoryModel     account.AccountHistoryModel
+	TxModel                 tx.TxModel
+	BlockModel              block.BlockModel
+	NftModel                nft.L2NftModel
+	NftMetadataHistoryModel nft.L2NftMetadataHistoryModel
+	AssetModel              asset.AssetModel
+	SysConfigModel          sysconfig.SysConfigModel
+	RollbackModel           rollback.RollbackModel
 
 	PriceFetcher price.Fetcher
 	StateFetcher state.Fetcher
@@ -83,9 +87,12 @@ func NewServiceContext(c config.Config) *ServiceContext {
 
 	redisCache := dbcache.NewRedisCache(c.CacheRedis[0].Host, c.CacheRedis[0].Pass, 15*time.Minute)
 
+	redisConn := redis.New(c.CacheRedis[0].Host, WithRedis(c.CacheRedis[0].Type, c.CacheRedis[0].Pass))
+
 	txPoolModel := tx.NewTxPoolModel(db)
 	accountModel := account.NewAccountModel(db)
 	nftModel := nft.NewL2NftModel(db)
+	nftMetadataHistoryModel := nft.NewL2NftMetadataHistoryModel(db)
 	assetModel := asset.NewAssetModel(db)
 	if c.MemCache.TxPendingExpiration == 0 {
 		c.MemCache.TxPendingExpiration = 60000
@@ -102,27 +109,36 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		logx.Error("prometheus.Register sendTxTotalMetrics error: %v", err)
 		return nil
 	}
-
+	common.NewIPFS(c.IpfsUrl)
 	return &ServiceContext{
-		Config:              c,
-		RedisCache:          redisCache,
-		MemCache:            memCache,
-		DB:                  db,
-		TxPoolModel:         txPoolModel,
-		AccountModel:        accountModel,
-		AccountHistoryModel: account.NewAccountHistoryModel(db),
-		TxModel:             tx.NewTxModel(db),
-		BlockModel:          block.NewBlockModel(db),
-		NftModel:            nftModel,
-		AssetModel:          assetModel,
-		SysConfigModel:      sysconfig.NewSysConfigModel(db),
-		RollbackModel:       rollback.NewRollbackModel(db),
+		Config:                  c,
+		RedisCache:              redisCache,
+		RedisConn:               redisConn,
+		MemCache:                memCache,
+		DB:                      db,
+		TxPoolModel:             txPoolModel,
+		AccountModel:            accountModel,
+		AccountHistoryModel:     account.NewAccountHistoryModel(db),
+		TxModel:                 tx.NewTxModel(db),
+		BlockModel:              block.NewBlockModel(db),
+		NftModel:                nftModel,
+		NftMetadataHistoryModel: nftMetadataHistoryModel,
+		AssetModel:              assetModel,
+		SysConfigModel:          sysconfig.NewSysConfigModel(db),
+		RollbackModel:           rollback.NewRollbackModel(db),
 
 		PriceFetcher: price.NewFetcher(memCache, assetModel, c.CoinMarketCap.Url, c.CoinMarketCap.Token),
 		StateFetcher: state.NewFetcher(redisCache, accountModel, nftModel),
 
 		SendTxTotalMetrics: sendTxTotalMetrics,
 		SendTxMetrics:      sendTxMetrics,
+	}
+}
+
+func WithRedis(redisType string, redisPass string) redis.Option {
+	return func(p *redis.Redis) {
+		p.Type = redisType
+		p.Pass = redisPass
 	}
 }
 
