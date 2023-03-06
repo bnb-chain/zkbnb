@@ -16,7 +16,7 @@ const (
 
 // Apollo client to get the rate limit configuration
 // and update it from the apollo server side
-var apolloClient *agollo.Client
+var apolloClient agollo.Client
 
 type RedisConfig struct {
 	Address string
@@ -85,14 +85,14 @@ func LoadApolloRateLimitConfig(config config.Config) *RateLimitConfig {
 		IsBackupConfig: config.Apollo.IsBackupConfig,
 	}
 
-	apolloClient, err := agollo.StartWithConfig(func() (*apollo.AppConfig, error) {
+	client, err := agollo.StartWithConfig(func() (*apollo.AppConfig, error) {
 		return apolloConfig, nil
 	})
 	if err != nil {
 		logx.Severef("Fail to start Apollo Client in RateLimit Configuration, Reason:%s", err.Error())
 		panic("Fail to start Apollo Client in RateLimit Configuration!")
 	}
-
+	apolloClient = client
 	rateLimitUpdater := &RateLimitUpdater{}
 	apolloClient.AddChangeListener(rateLimitUpdater)
 

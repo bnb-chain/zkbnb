@@ -11,6 +11,11 @@ type RateLimitUpdater struct {
 
 func (u *RateLimitUpdater) OnChange(event *storage.ChangeEvent) {
 	configChange := event.Changes[RateLimitConfigKey]
+	// If Apollo server updates its some configuration, but not including
+	// this one, the configChange would be nil. To avoid crash, do the judgement here.
+	if configChange == nil {
+		return
+	}
 	newRateLimitConfigObject := configChange.NewValue
 	if newRateLimitConfigJson, ok := newRateLimitConfigObject.(string); ok {
 		newRateLimitConfig := &RateLimitConfig{}
