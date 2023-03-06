@@ -65,11 +65,11 @@ type (
 	*/
 	Account struct {
 		gorm.Model
-		AccountIndex    int64  `gorm:"uniqueIndex"`
-		AccountName     string `gorm:"uniqueIndex"`
-		PublicKey       string `gorm:"uniqueIndex"`
-		AccountNameHash string `gorm:"uniqueIndex"`
-		L1Address       string
+		AccountIndex int64 `gorm:"uniqueIndex"`
+		//AccountName     string `gorm:"uniqueIndex"`
+		PublicKey string `gorm:"uniqueIndex"`
+		//AccountNameHash string `gorm:"uniqueIndex"`
+		L1Address       string `gorm:"uniqueIndex"`
 		Nonce           int64
 		CollectionNonce int64
 		// map[int64]*AccountAsset

@@ -194,4 +194,4 @@ replace (
 
 )
 
-replace github.com/bnb-chain/zkbnb-crypto => github.com/ruslangm/zkbnb-crypto v0.0.8-0.20230227083823-0d26082a0267
+replace github.com/bnb-chain/zkbnb-crypto => /Users/user/Documents/work/source/bnb-chain/zkbnb-crypto
