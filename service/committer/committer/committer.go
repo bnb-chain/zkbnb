@@ -1265,7 +1265,6 @@ func (c *Committer) SyncNftIndexServer() error {
 			if err != nil {
 				return err
 			}
-			continue
 		} else if poolTx.TxStatus == tx.StatusExecuted {
 			tx, err := c.bc.TxModel.GetTxByHash(history.TxHash)
 			if err != nil {
@@ -1318,17 +1317,26 @@ func saveIpfs(history *nft.L2NftMetadataHistory) error {
 }
 
 func (c *Committer) RefreshServer() error {
-	historiesIpns, err := c.bc.L2NftMetadataHistoryModel.GetL2NftMetadataHistoryList(nft.Confirmed)
-	if err != nil {
-		if err == types.DbErrSqlOperation {
-			return err
-		}
-		return nil
-	}
-	for _, hostory := range historiesIpns {
-		_, err = common.Ipfs.PublishWithDetails(hostory.IpnsCid, hostory.IpnsName)
+	limit := 500
+	offset := 0
+	for {
+		histories, err := c.bc.L2NftMetadataHistoryModel.GetL2NftMetadataHistoryPage(nft.Confirmed, limit, offset)
 		if err != nil {
-			return err
+			if err == types.DbErrSqlOperation {
+				return err
+			}
+			return nil
+		}
+		for _, hostory := range histories {
+			_, err = common.Ipfs.PublishWithDetails(hostory.IpnsCid, hostory.IpnsName)
+			if err != nil {
+				return err
+			}
+		}
+		if len(histories) < limit {
+			break
+		} else {
+			offset = offset + limit
 		}
 	}
 	return nil

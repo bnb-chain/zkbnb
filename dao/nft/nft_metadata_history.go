@@ -41,6 +41,7 @@ type (
 		CreateL2NftMetadataHistoryInTransact(tx *gorm.DB, metadata *L2NftMetadataHistory) error
 		DeleteInTransact(id uint) error
 		GetL2NftMetadataHistoryList(status int) (history []*L2NftMetadataHistory, err error)
+		GetL2NftMetadataHistoryPage(status, limit, offset int) (history []*L2NftMetadataHistory, err error)
 		GetL2NftMetadataHistory(nftIndex int64) (history *L2NftMetadataHistory, err error)
 		UpdateL2NftMetadataHistoryInTransact(history *L2NftMetadataHistory) error
 	}
@@ -97,6 +98,17 @@ func (m *defaultL2NftMetadataHistoryModel) CreateL2NftMetadataHistoryInTransact(
 func (m *defaultL2NftMetadataHistoryModel) GetL2NftMetadataHistoryList(status int) (history []*L2NftMetadataHistory, err error) {
 	dbTx := m.DB.Table(m.table).Where("status = ?", status).
 		Limit(500).Order("id asc").Find(&history)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+	return history, nil
+}
+
+func (m *defaultL2NftMetadataHistoryModel) GetL2NftMetadataHistoryPage(status, limit, offset int) (history []*L2NftMetadataHistory, err error) {
+	dbTx := m.DB.Table(m.table).Where("status = ?", status).
+		Limit(limit).Offset(offset).Order("id asc").Find(&history)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {

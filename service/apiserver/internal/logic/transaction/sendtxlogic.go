@@ -6,11 +6,14 @@ import (
 	"fmt"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
+	"github.com/bnb-chain/zkbnb/common/redislock"
+	"github.com/bnb-chain/zkbnb/core/executor"
 	nftModels "github.com/bnb-chain/zkbnb/core/model"
 	"github.com/bnb-chain/zkbnb/dao/dbcache"
 	"github.com/bnb-chain/zkbnb/dao/nft"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/signature"
 	"gorm.io/gorm"
+	"strconv"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -80,6 +83,23 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 		TxStatus:    tx.StatusPending,
 	}
 	newTx := &tx.Tx{BaseTx: newPoolTx}
+	executor, err := executor.NewTxExecutor(bc, newTx)
+	if err != nil {
+		return resp, err
+	}
+	accountIndex := executor.GetTxInfo().GetFromAccountIndex()
+	nonce := executor.GetTxInfo().GetNonce()
+	lock := redislock.GetRedisLock(s.svcCtx.RedisConn, "apiserver:senttx:"+strconv.FormatInt(accountIndex, 10)+"_"+strconv.FormatInt(nonce, 10), 30)
+	ok, err := lock.Acquire()
+	if err != nil {
+		return resp, err
+	}
+	if !ok {
+		logx.Infof(" the apiserversenttx lock has been used, re-try later, accountIndex=%d,nonce=%d", accountIndex, nonce)
+		return resp, types2.AppErrInvalidNonce
+	}
+	defer lock.Release()
+
 	err = bc.ApplyTransaction(newTx)
 	if err != nil {
 		return resp, err

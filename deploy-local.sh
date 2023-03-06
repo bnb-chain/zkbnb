@@ -15,12 +15,18 @@ CMC_TOKEN=cfce503f-fake-fake-fake-bbab5257dac8
 NETWORK_RPC_SYS_CONFIG_NAME=LocalTestNetworkRpc # BscTestNetworkRpc or LocalTestNetworkRpc
 BSC_TESTNET_RPC=HTTP://127.0.0.1:8545
 BSC_TESTNET_PRIVATE_KEY=2d92239525b6632b963f49d28411596512fab69052a1738e530a59617e433b81
+#use COMMIT_BLOCK_PRIVATE_KEY for submitting commit_block to bnb contract in sender application
+#use VERIFY_BLOCK_PRIVATE_KEY for submitting verify_block to bnb contract in sender application
+COMMIT_BLOCK_PRIVATE_KEY=
+VERIFY_BLOCK_PRIVATE_KEY=
 # security Council Members for upgrade approve
 # FOR TEST
 # generage by Mnemonic (account #17 ~ #19): giggle federal note disorder will close traffic air melody artefact taxi tissue
 SECURITY_COUNCIL_MEMBERS_NUMBER_1=0x0000000000000000000000000000000000000000
 SECURITY_COUNCIL_MEMBERS_NUMBER_2=0x0000000000000000000000000000000000000000
 SECURITY_COUNCIL_MEMBERS_NUMBER_3=0x0000000000000000000000000000000000000000
+# validator config, split by `,` the address of COMMIT_BLOCK_PRIVATE_KEY  and the address of VERIFY_BLOCK_PRIVATE_KEY,
+VALIDATORS=
 ZKBNB_OPTIONAL_BLOCK_SIZES=1,10
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
@@ -89,6 +95,7 @@ sed -i -e "s/BSC_TESTNET_PRIVATE_KEY=.*/BSC_TESTNET_PRIVATE_KEY=${BSC_TESTNET_PR
 sed -i -e "s/SECURITY_COUNCIL_MEMBERS_NUMBER_1=.*/SECURITY_COUNCIL_MEMBERS_NUMBER_1=${SECURITY_COUNCIL_MEMBERS_NUMBER_1}/" .env
 sed -i -e "s/SECURITY_COUNCIL_MEMBERS_NUMBER_2=.*/SECURITY_COUNCIL_MEMBERS_NUMBER_2=${SECURITY_COUNCIL_MEMBERS_NUMBER_2}/" .env
 sed -i -e "s/SECURITY_COUNCIL_MEMBERS_NUMBER_3=.*/SECURITY_COUNCIL_MEMBERS_NUMBER_3=${SECURITY_COUNCIL_MEMBERS_NUMBER_3}/" .env
+sed -i -e "s/VALIDATORS=.*/VALIDATORS=${VALIDATORS}/" .env
 yarn install
 npx hardhat --network BSCTestnet run ./scripts/deploy-keccak256/deploy.js
 echo 'Recorded latest contract addresses into ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json'
@@ -110,7 +117,8 @@ sed -i -e "s/Governance: .*/Governance: ${GovernanceContractAddr}/" ${DEPLOY_PAT
 BUSDContractAddr=`cat ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json  | jq -r '.BUSDToken'`
 sed -i -e "s/BUSDToken: .*/BUSDToken: ${BUSDContractAddr}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
 
-
+DefaultNftFactoryAddr=`cat ${DEPLOY_PATH}/zkbnb-contract/info/addresses.json  | jq -r '.DefaultNftFactory'`
+sed -i -e "s/DefaultNftFactory: .*/DefaultNftFactory: ${DefaultNftFactoryAddr}/" ${DEPLOY_PATH}/zkbnb/tools/dbinitializer/contractaddr.yaml
 
  cd ${DEPLOY_PATH}/zkbnb/
  make api-server
@@ -151,10 +159,6 @@ sed -i '' -e '/-e/,1d' ${DEPLOY_PATH}/zkbnb/service/prover/etc/config.yaml
 sed -i '' -e '/-e/,1d' run_prover.sh
 pm2 start --name prover "./run_prover.sh"
 
-
-
-
-
 echo "8. run witness"
 
 echo -e "
@@ -180,7 +184,6 @@ go run ./cmd/zkbnb/main.go witness --config ${DEPLOY_PATH}/zkbnb/service/witness
 sed -i '' -e '/-e/,1d' ${DEPLOY_PATH}/zkbnb/service/witness/etc/config.yaml
 sed -i '' -e '/-e/,1d' run_witness.sh
 pm2 start --name witness "./run_witness.sh"
-
 
 echo "9. run monitor"
 
@@ -269,7 +272,8 @@ ChainConfig:
   ConfirmBlocksCount: 0
   MaxWaitingTime: 120
   MaxBlockCount: 4
-  Sk: "${BSC_TESTNET_PRIVATE_KEY}"
+  CommitBlockSk: "${COMMIT_BLOCK_PRIVATE_KEY}"
+  VerifyBlockSk: "${VERIFY_BLOCK_PRIVATE_KEY}"
   GasLimit: 5000000
   GasPrice: 0
 
@@ -313,6 +317,13 @@ LogConf:
   Path: ./log/api-server
   StackCooldownMillis: 500
   Level: error
+
+Apollo:
+  AppID:             zkbnb-cloud
+  Cluster:           prod
+  ApolloIp:          http://internal-tf-cm-test-apollo-config-alb-2119591301.ap-northeast-1.elb.amazonaws.com:9028
+  Namespace:         application
+  IsBackupConfig:    true
 
 IpfsUrl:
   10.23.23.40:5001

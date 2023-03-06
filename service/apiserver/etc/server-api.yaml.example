@@ -20,6 +20,9 @@ LogConf:
   StackCooldownMillis: 500
   Level: info
 
+RateLimitConfigFilePath:
+  service/apiserver/etc/ratelimit-config.json
+
 CoinMarketCap:
   Url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=
   Token: cfce503f-fake-fake-fake-bbab5257dac8
