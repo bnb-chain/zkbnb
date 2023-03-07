@@ -153,6 +153,10 @@ var (
 	AppErrInvalidGasAccountIndex    = NewBusinessError(22001, "invalid account index for gas account")
 	AppErrFailUnmarshalGasFeeConfig = NewBusinessError(22002, "fail to unmarshal gas fee config")
 
+	// RateLimit
+	AppErrTooManyRequest      = NewBusinessError(23000, "Too Many Request!")
+	AppUnknownRatelimitStatus = NewBusinessError(23001, "Unknown Rate Limit Status Error!")
+
 	AppErrInvalidGasAsset     = NewBusinessError(25003, "invalid gas asset")
 	AppErrInvalidTxType       = NewBusinessError(25004, "invalid tx type")
 	AppErrInvalidAddress      = NewBusinessError(25005, "invalid address")

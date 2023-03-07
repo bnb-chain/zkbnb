@@ -66,7 +66,7 @@ func (v *VerifySignature) VerifySignatureInfo(TxType uint32, TxInfo, Signature s
 
 	//Compare the original address and the public address to verify the identifier
 	if publicAddress != originAddress {
-		return errors.New("Tx Signature Error")
+		return types.AppErrTxSignatureError
 	}
 	return nil
 }
@@ -108,7 +108,7 @@ func (v *VerifySignature) fetcherForWithdrawal(txInfo string) (string, error) {
 	transaction, err := types.ParseWithdrawTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse withdrawal tx failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", types.AppErrInvalidTxInfo
 	}
 	return v.fetchL1AddressByAccountIndex(transaction.FromAccountIndex)
 }
@@ -117,7 +117,7 @@ func (v *VerifySignature) fetcherForTransfer(txInfo string) (string, error) {
 	transaction, err := types.ParseTransferTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse transfer tx failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", types.AppErrInvalidTxInfo
 	}
 	return v.fetchL1AddressByAccountIndex(transaction.FromAccountIndex)
 }
@@ -126,7 +126,7 @@ func (v *VerifySignature) fetcherForCreateCollection(txInfo string) (string, err
 	transaction, err := types.ParseCreateCollectionTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse create collection tx failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", types.AppErrInvalidTxInfo
 	}
 	return v.fetchL1AddressByAccountIndex(transaction.AccountIndex)
 }
@@ -135,7 +135,7 @@ func (v *VerifySignature) fetcherForMintNft(txInfo string) (string, error) {
 	transaction, err := types.ParseMintNftTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse mint nft tx failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", types.AppErrInvalidTxInfo
 	}
 	return v.fetchL1AddressByAccountIndex(transaction.CreatorAccountIndex)
 }
@@ -144,7 +144,7 @@ func (v *VerifySignature) fetcherForTransferNft(txInfo string) (string, error) {
 	transaction, err := types.ParseTransferNftTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse cancel offer tx failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", types.AppErrInvalidTxInfo
 	}
 	return v.fetchL1AddressByAccountIndex(transaction.FromAccountIndex)
 }
@@ -153,7 +153,7 @@ func (v *VerifySignature) fetcherForWithdrawalNft(txInfo string) (string, error)
 	transaction, err := types.ParseWithdrawNftTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse withdrawal nft tx failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", types.AppErrInvalidTxInfo
 	}
 	return v.fetchL1AddressByAccountIndex(transaction.AccountIndex)
 }
@@ -162,7 +162,7 @@ func (v *VerifySignature) fetcherForCancelOffer(txInfo string) (string, error) {
 	transaction, err := types.ParseCancelOfferTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse cancel offer tx failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", types.AppErrInvalidTxInfo
 	}
 	return v.fetchL1AddressByAccountIndex(transaction.AccountIndex)
 }
@@ -171,7 +171,7 @@ func (v *VerifySignature) fetcherForAtomicMatch(txInfo string) (string, error) {
 	transaction, err := types.ParseAtomicMatchTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse atomic match tx failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", types.AppErrInvalidTxInfo
 	}
 	return v.fetchL1AddressByAccountIndex(transaction.AccountIndex)
 }
