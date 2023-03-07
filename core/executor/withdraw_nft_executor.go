@@ -143,7 +143,6 @@ func (e *WithdrawNftExecutor) GeneratePubData() error {
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
 	buf.Write(common2.Uint40ToBytes(txInfo.NftIndex))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.CollectionId)))
-	buf.Write(common2.Uint32ToBytes(uint32(txInfo.GasAccountIndex)))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
 	packedFeeBytes, err := common2.FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
 	if err != nil {
