@@ -24,7 +24,7 @@ import (
 
 const (
 	TxTypeEmpty = iota
-	TxTypeRegisterZns
+	TxTypeChangePubKey
 	TxTypeDeposit
 	TxTypeDepositNft
 	TxTypeTransfer
@@ -41,7 +41,8 @@ const (
 )
 
 func IsL2Tx(txType int64) bool {
-	if txType == TxTypeTransfer ||
+	if txType == TxTypeChangePubKey ||
+		txType == TxTypeTransfer ||
 		txType == TxTypeWithdraw ||
 		txType == TxTypeCreateCollection ||
 		txType == TxTypeMintNft ||
@@ -55,7 +56,7 @@ func IsL2Tx(txType int64) bool {
 }
 
 func GetL2TxTypes() []int64 {
-	return []int64{TxTypeTransfer,
+	return []int64{TxTypeChangePubKey, TxTypeTransfer,
 		TxTypeWithdraw,
 		TxTypeCreateCollection,
 		TxTypeMintNft,
@@ -66,8 +67,7 @@ func GetL2TxTypes() []int64 {
 }
 
 func IsPriorityOperationTx(txType int64) bool {
-	if txType == TxTypeRegisterZns ||
-		txType == TxTypeDeposit ||
+	if txType == TxTypeDeposit ||
 		txType == TxTypeDepositNft ||
 		txType == TxTypeFullExit ||
 		txType == TxTypeFullExitNft {
@@ -77,7 +77,7 @@ func IsPriorityOperationTx(txType int64) bool {
 }
 
 func GetL1TxTypes() []int64 {
-	return []int64{TxTypeRegisterZns,
+	return []int64{
 		TxTypeDeposit,
 		TxTypeDepositNft,
 		TxTypeFullExit,
@@ -99,8 +99,6 @@ const (
 	FeeRateBytesSize         = 2
 	CollectionIdBytesSize    = 2
 
-	RegisterZnsPubDataSize = TxTypeBytesSize + AccountIndexBytesSize + AccountNameBytesSize +
-		AccountNameHashBytesSize + PubkeyBytesSize + PubkeyBytesSize
 	DepositPubDataSize = TxTypeBytesSize + AccountIndexBytesSize +
 		AccountNameHashBytesSize + AssetIdBytesSize + StateAmountBytesSize
 	DepositNftPubDataSize = TxTypeBytesSize + AccountIndexBytesSize + NftIndexBytesSize +
@@ -143,7 +141,7 @@ type UpdateNftReq struct {
 	Nonce             int64
 }
 
-func ParseRegisterZnsTxInfo(txInfoStr string) (txInfo *txtypes.RegisterZnsTxInfo, err error) {
+func ParseChangePubKeyTxInfo(txInfoStr string) (txInfo *txtypes.ChangePubKeyInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
 		return nil, err

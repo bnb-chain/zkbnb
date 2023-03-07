@@ -277,7 +277,7 @@ func reloadAccountTreeFromRDB(
 			return nil, err
 		}
 		accountHashVal, err := AccountToNode(
-			accountInfo.AccountNameHash,
+			accountInfo.L1Address,
 			accountInfo.PublicKey,
 			accountInfo.Nonce,
 			accountInfo.CollectionNonce,

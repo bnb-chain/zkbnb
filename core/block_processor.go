@@ -198,8 +198,6 @@ func mappingVerifyInputsErrors(err error) error {
 		return types.AppErrInvalidCollectionId
 	case txtypes.ErrCallDataHashInvalid:
 		return types.AppErrInvalidCallDataHash
-	case txtypes.ErrToAccountNameHashInvalid:
-		return types.AppErrInvalidToAccountNameHash
 	case txtypes.ErrToAddressInvalid:
 		return types.AppErrInvalidToAddress
 	case txtypes.ErrBuyOfferInvalid:

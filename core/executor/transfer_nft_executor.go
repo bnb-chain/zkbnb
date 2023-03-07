@@ -74,7 +74,7 @@ func (e *TransferNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 	if fromAccount.AccountIndex == toAccount.AccountIndex {
 		return types.AppErrAccountInvalidToAccount
 	}
-	if txInfo.ToAccountNameHash != toAccount.AccountNameHash {
+	if txInfo.ToL1Address != toAccount.L1Address {
 		return types.AppErrInvalidToAccountNameHash
 	}
 
@@ -174,7 +174,7 @@ func (e *TransferNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
-		AccountName:  fromAccount.AccountName,
+		L1Address:    fromAccount.L1Address,
 		Balance:      fromAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.GasFeeAssetId,
@@ -198,7 +198,7 @@ func (e *TransferNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      types.EmptyAccountAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.ToAccountIndex,
-		AccountName:  toAccount.AccountName,
+		L1Address:    toAccount.L1Address,
 		Balance:      toAccount.AssetInfo[types.EmptyAccountAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			types.EmptyAccountAssetId,
@@ -233,7 +233,7 @@ func (e *TransferNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:         txInfo.NftIndex,
 		AssetType:       types.NftAssetType,
 		AccountIndex:    txInfo.ToAccountIndex,
-		AccountName:     toAccount.AccountName,
+		L1Address:       toAccount.L1Address,
 		Balance:         oldNftInfo.String(),
 		BalanceDelta:    newNftInfo.String(),
 		Order:           order,
@@ -249,7 +249,7 @@ func (e *TransferNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.GasAccountIndex,
-		AccountName:  gasAccount.AccountName,
+		L1Address:    gasAccount.L1Address,
 		Balance:      gasAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.GasFeeAssetId,

@@ -85,7 +85,7 @@ func (e *MintNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	if err != nil {
 		return err
 	}
-	if txInfo.ToAccountNameHash != toAccount.AccountNameHash {
+	if txInfo.ToL1Address != toAccount.L1Address {
 		return types.AppErrInvalidToAccountNameHash
 	}
 
@@ -139,6 +139,7 @@ func (e *MintNftExecutor) GeneratePubData() error {
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.NftCollectionId)))
 	buf.Write(common2.PrefixPaddingBufToChunkSize(common.FromHex(txInfo.NftContentHash)))
+	buf.WriteByte(uint8(txInfo.NftContentType))
 
 	pubData := common2.SuffixPaddingBuToPubdataSize(buf.Bytes())
 
@@ -182,7 +183,7 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.CreatorAccountIndex,
-		AccountName:  creatorAccount.AccountName,
+		L1Address:    creatorAccount.L1Address,
 		Balance:      creatorAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.GasFeeAssetId,
@@ -206,7 +207,7 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.ToAccountIndex,
-		AccountName:  toAccount.AccountName,
+		L1Address:    toAccount.L1Address,
 		Balance:      toAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.GasFeeAssetId,
@@ -234,7 +235,7 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:         txInfo.NftIndex,
 		AssetType:       types.NftAssetType,
 		AccountIndex:    txInfo.ToAccountIndex,
-		AccountName:     toAccount.AccountName,
+		L1Address:       toAccount.L1Address,
 		Balance:         oldNftInfo.String(),
 		BalanceDelta:    newNftInfo.String(),
 		Order:           order,
@@ -250,7 +251,7 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.GasAccountIndex,
-		AccountName:  gasAccount.AccountName,
+		L1Address:    gasAccount.L1Address,
 		Balance:      gasAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.GasFeeAssetId,

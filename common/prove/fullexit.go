@@ -40,10 +40,10 @@ func (w *WitnessHelper) constructFullExitTxWitness(cryptoTx *TxWitness, oTx *tx.
 
 func toCryptoFullExitTx(txInfo *txtypes.FullExitTxInfo) (info *cryptoTypes.FullExitTx, err error) {
 	info = &cryptoTypes.FullExitTx{
-		AccountIndex:    txInfo.AccountIndex,
-		AssetId:         txInfo.AssetId,
-		AssetAmount:     txInfo.AssetAmount,
-		AccountNameHash: txInfo.AccountNameHash,
+		AccountIndex: txInfo.AccountIndex,
+		AssetId:      txInfo.AssetId,
+		AssetAmount:  txInfo.AssetAmount,
+		L1Address:    txInfo.L1Address,
 	}
 	return info, nil
 }

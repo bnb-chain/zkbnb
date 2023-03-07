@@ -3,117 +3,113 @@ package executor
 import (
 	"bytes"
 	"encoding/json"
-	"strconv"
-
-	"github.com/pkg/errors"
+	"errors"
+	"github.com/bnb-chain/zkbnb-crypto/ffmath"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
-	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
+	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 )
 
-type CreateCollectionExecutor struct {
+type ChangePubKeyExecutor struct {
 	BaseExecutor
 
-	TxInfo *txtypes.CreateCollectionTxInfo
+	TxInfo *txtypes.ChangePubKeyInfo
 }
 
-func NewCreateCollectionExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
-	txInfo, err := types.ParseCreateCollectionTxInfo(tx.TxInfo)
+func NewChangePubKeyExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
+	txInfo, err := types.ParseChangePubKeyTxInfo(tx.TxInfo)
 	if err != nil {
-		logx.Errorf("parse transfer tx failed: %s", err.Error())
+		logx.Errorf("parse register tx failed: %s", err.Error())
 		return nil, errors.New("invalid tx info")
 	}
 
-	return &CreateCollectionExecutor{
+	return &ChangePubKeyExecutor{
 		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
 		TxInfo:       txInfo,
 	}, nil
 }
 
-func (e *CreateCollectionExecutor) Prepare() error {
-	txInfo := e.TxInfo
-
-	// Mark the tree states that would be affected in this executor.
-	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{txInfo.GasFeeAssetId})
-	e.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
+func (e *ChangePubKeyExecutor) Prepare() error {
 	err := e.BaseExecutor.Prepare()
 	if err != nil {
 		return err
 	}
 
-	// Set the right collection nonce to tx info.
-	account, err := e.bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
-	if err != nil {
-		return err
-	}
-	txInfo.CollectionId = account.CollectionNonce
+	// Mark the tree states that would be affected in this executor.
+	e.MarkAccountAssetsDirty(e.TxInfo.AccountIndex, []int64{})
 	return nil
 }
 
-func (e *CreateCollectionExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
+func (e *ChangePubKeyExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
+	bc := e.bc
 	txInfo := e.TxInfo
-	err := e.BaseExecutor.VerifyInputs(skipGasAmtChk, skipSigChk)
+
+	fromAccount, err := bc.StateDB().GetAccountByL1Address(txInfo.L1Address)
 	if err != nil {
-		return err
+		return types.AppErrAccountNotFound
 	}
+
+	if txInfo.AccountIndex != fromAccount.AccountIndex {
+		return types.AppErrInvalidAccountIndex
+	}
+
+	return nil
+}
+
+func (e *ChangePubKeyExecutor) ApplyTransaction() error {
+	txInfo := e.TxInfo
+	var err error
 
 	fromAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
 	if err != nil {
 		return err
 	}
-	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
-		return types.AppErrBalanceNotEnough
-	}
-
-	return nil
-}
-
-func (e *CreateCollectionExecutor) ApplyTransaction() error {
-	bc := e.bc
-	txInfo := e.TxInfo
-
-	fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
-	if err != nil {
-		return err
-	}
-
-	// apply changes
+	pk := new(eddsa.PublicKey)
+	pk.A.X.SetBytes(txInfo.PubKeyX)
+	pk.A.Y.SetBytes(txInfo.PubKeyY)
+	fromAccount.PublicKey = common.Bytes2Hex(pk.Bytes())
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	fromAccount.Nonce++
-	fromAccount.CollectionNonce++
 
 	stateCache := e.bc.StateDB()
-	stateCache.SetPendingAccount(fromAccount.AccountIndex, fromAccount)
+	stateCache.SetPendingAccount(txInfo.AccountIndex, fromAccount)
 	stateCache.SetPendingGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 
-func (e *CreateCollectionExecutor) GeneratePubData() error {
+func (e *ChangePubKeyExecutor) GeneratePubData() error {
 	txInfo := e.TxInfo
 
 	var buf bytes.Buffer
-	buf.WriteByte(uint8(types.TxTypeCreateCollection))
+	buf.WriteByte(uint8(types.TxTypeChangePubKey))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
-	buf.Write(common2.Uint16ToBytes(uint16(txInfo.CollectionId)))
+	// because we can get Y from X, so we only need to store X is enough
+	buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.PubKeyX))
+	buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.PubKeyY))
+	buf.Write(common2.AddressStrToBytes(txInfo.L1Address))
+	buf.Write(common2.Uint32ToBytes(uint32(txInfo.Nonce)))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
 	packedFeeBytes, err := common2.FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
 	if err != nil {
-		logx.Errorf("unable to convert amount to packed fee amount: %s", err.Error())
 		return err
 	}
 	buf.Write(packedFeeBytes)
+	buf.WriteByte(uint8(0))
 
 	pubData := common2.SuffixPaddingBuToPubdataSize(buf.Bytes())
+
 	stateCache := e.bc.StateDB()
+	stateCache.PubDataOffset = append(stateCache.PubDataOffset, uint32(len(stateCache.PubData)))
 	stateCache.PubData = append(stateCache.PubData, pubData...)
 	return nil
 }
 
-func (e *CreateCollectionExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
+func (e *ChangePubKeyExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	txInfoBytes, err := json.Marshal(e.TxInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
@@ -121,41 +117,42 @@ func (e *CreateCollectionExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.GasFeeAssetId = e.TxInfo.GasFeeAssetId
-	e.tx.GasFee = e.TxInfo.GasFeeAssetAmount.String()
-	e.tx.CollectionId = e.TxInfo.CollectionId
+	e.tx.AccountIndex = e.TxInfo.AccountIndex
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
-func (e *CreateCollectionExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
+func (e *ChangePubKeyExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.TxInfo
 
 	copiedAccounts, err := e.bc.StateDB().DeepCopyAccounts([]int64{txInfo.AccountIndex, txInfo.GasAccountIndex})
 	if err != nil {
 		return nil, err
 	}
-
 	fromAccount := copiedAccounts[txInfo.AccountIndex]
 	gasAccount := copiedAccounts[txInfo.GasAccountIndex]
 
-	txDetails := make([]*tx.TxDetail, 0, 4)
+	txDetails := make([]*tx.TxDetail, 0, 3)
 
+	pk := new(eddsa.PublicKey)
+	pk.A.X.SetBytes(txInfo.PubKeyX)
+	pk.A.Y.SetBytes(txInfo.PubKeyY)
+	publicKey := common.Bytes2Hex(pk.Bytes())
 	// from account collection nonce
 	order := int64(0)
 	accountOrder := int64(0)
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:         types.NilAssetId,
-		AssetType:       types.CollectionNonceAssetType,
+		AssetType:       types.ChangePubKeyType,
 		AccountIndex:    txInfo.AccountIndex,
 		L1Address:       fromAccount.L1Address,
-		Balance:         strconv.FormatInt(fromAccount.CollectionNonce, 10),
-		BalanceDelta:    strconv.FormatInt(fromAccount.CollectionNonce+1, 10),
+		Balance:         fromAccount.PublicKey,
+		BalanceDelta:    publicKey,
 		Order:           order,
 		Nonce:           fromAccount.Nonce,
 		AccountOrder:    accountOrder,
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
-	fromAccount.CollectionNonce = fromAccount.CollectionNonce + 1
+	fromAccount.PublicKey = publicKey
 
 	// from account gas
 	order++

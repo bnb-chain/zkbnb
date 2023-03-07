@@ -40,10 +40,10 @@ func (w *WitnessHelper) constructDepositTxWitness(cryptoTx *TxWitness, oTx *tx.T
 
 func toCryptoDepositTx(txInfo *txtypes.DepositTxInfo) (info *cryptoTypes.DepositTx, err error) {
 	info = &cryptoTypes.DepositTx{
-		AccountIndex:    txInfo.AccountIndex,
-		AccountNameHash: txInfo.AccountNameHash,
-		AssetId:         txInfo.AssetId,
-		AssetAmount:     txInfo.AssetAmount,
+		AccountIndex: txInfo.AccountIndex,
+		L1Address:    txInfo.L1Address,
+		AssetId:      txInfo.AssetId,
+		AssetAmount:  txInfo.AssetAmount,
 	}
 	return info, nil
 }

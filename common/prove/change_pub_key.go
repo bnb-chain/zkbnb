@@ -18,42 +18,36 @@
 package prove
 
 import (
-	"strings"
-
 	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/types"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
-	"github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
+	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 )
 
-func (w *WitnessHelper) constructRegisterZnsTxWitness(cryptoTx *TxWitness, oTx *tx.Tx) (*TxWitness, error) {
-	txInfo, err := types.ParseRegisterZnsTxInfo(oTx.TxInfo)
+func (w *WitnessHelper) constructChangePubKeyTxWitness(cryptoTx *TxWitness, oTx *tx.Tx) (*TxWitness, error) {
+	txInfo, err := types.ParseChangePubKeyTxInfo(oTx.TxInfo)
 	if err != nil {
 		return nil, err
 	}
-	cryptoTxInfo, err := toCryptoRegisterZnsTx(txInfo)
+	cryptoTxInfo, err := toCryptoChangePubKeyTx(txInfo)
 	if err != nil {
 		return nil, err
 	}
 	cryptoTx.Signature = cryptoTypes.EmptySignature()
-	cryptoTx.RegisterZnsTxInfo = cryptoTxInfo
+	cryptoTx.ChangePubKeyTxInfo = cryptoTxInfo
 	return cryptoTx, nil
 }
 
-func toCryptoRegisterZnsTx(txInfo *txtypes.RegisterZnsTxInfo) (info *cryptoTypes.RegisterZnsTx, err error) {
-	accountName := make([]byte, 20)
-	realName := strings.Split(txInfo.AccountName, types.AccountNameSuffix)[0]
-	copy(accountName[:], realName)
-	pk, err := common.ParsePubKey(txInfo.PubKey)
-	if err != nil {
-		return nil, err
-	}
-	info = &cryptoTypes.RegisterZnsTx{
-		AccountIndex:    txInfo.AccountIndex,
-		AccountName:     accountName,
-		AccountNameHash: txInfo.AccountNameHash,
-		PubKey:          pk,
+func toCryptoChangePubKeyTx(txInfo *txtypes.ChangePubKeyInfo) (info *cryptoTypes.ChangePubKeyTx, err error) {
+	pk := new(eddsa.PublicKey)
+	pk.A.X.SetBytes(txInfo.PubKeyX)
+	pk.A.Y.SetBytes(txInfo.PubKeyY)
+
+	info = &cryptoTypes.ChangePubKeyTx{
+		AccountIndex: txInfo.AccountIndex,
+		L1Address:    txInfo.L1Address,
+		PubKey:       pk,
 	}
 	return info, nil
 }

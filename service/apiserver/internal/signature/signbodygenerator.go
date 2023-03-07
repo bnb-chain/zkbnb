@@ -106,7 +106,7 @@ func SignatureForMintNft(txInfo string) (string, error) {
 		return "", errors.New("invalid tx info")
 	}
 
-	signatureBody := fmt.Sprintf(SignatureTemplateMintNft, transaction.ToAccountNameHash,
+	signatureBody := fmt.Sprintf(SignatureTemplateMintNft, transaction.ToL1Address,
 		transaction.ToAccountIndex, utils.FormatWeiToEtherStr(transaction.GasFeeAssetAmount), transaction.GasAccountIndex, transaction.Nonce)
 	return signatureBody, nil
 }

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
@@ -39,9 +38,9 @@ func (e *FullExitExecutor) Prepare() error {
 	bc := e.bc
 	txInfo := e.TxInfo
 
-	// The account index from txInfo isn't true, find account by account name hash.
-	accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
-	account, err := bc.StateDB().GetAccountByNameHash(accountNameHash)
+	// The account index from txInfo isn't true, find account by l1Address.
+	l1Address := txInfo.L1Address
+	account, err := bc.StateDB().GetAccountByL1Address(l1Address)
 	if err != nil {
 		return err
 	}
@@ -94,7 +93,7 @@ func (e *FullExitExecutor) GeneratePubData() error {
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.AssetId)))
 	buf.Write(common2.Uint128ToBytes(txInfo.AssetAmount))
-	buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.AccountNameHash))
+	buf.Write(common2.AddressStrToBytes(txInfo.L1Address))
 
 	pubData := common2.SuffixPaddingBuToPubdataSize(buf.Bytes())
 
@@ -137,7 +136,7 @@ func (e *FullExitExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:         txInfo.AssetId,
 		AssetType:       types.FungibleAssetType,
 		AccountIndex:    txInfo.AccountIndex,
-		AccountName:     exitAccount.AccountName,
+		L1Address:       exitAccount.L1Address,
 		Balance:         baseBalance.String(),
 		BalanceDelta:    deltaBalance.String(),
 		Order:           0,

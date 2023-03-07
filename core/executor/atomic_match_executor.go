@@ -316,7 +316,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.AccountIndex,
-		AccountName:  fromAccount.AccountName,
+		L1Address:    fromAccount.L1Address,
 		Balance:      fromAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), types.ZeroBigInt).String(),
@@ -334,7 +334,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.BuyOffer.AssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.BuyOffer.AccountIndex,
-		AccountName:  buyAccount.AccountName,
+		L1Address:    buyAccount.L1Address,
 		Balance:      buyAccount.AssetInfo[txInfo.BuyOffer.AssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.BuyOffer.AssetId, ffmath.Neg(txInfo.BuyOffer.AssetAmount), types.ZeroBigInt,
@@ -354,7 +354,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      e.buyOfferAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.BuyOffer.AccountIndex,
-		AccountName:  buyAccount.AccountName,
+		L1Address:    buyAccount.L1Address,
 		Balance:      buyAccount.AssetInfo[e.buyOfferAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			e.buyOfferAssetId, types.ZeroBigInt, buyOffer).String(),
@@ -373,7 +373,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.SellOffer.AssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.SellOffer.AccountIndex,
-		AccountName:  sellAccount.AccountName,
+		L1Address:    sellAccount.L1Address,
 		Balance:      sellAccount.AssetInfo[txInfo.SellOffer.AssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.SellOffer.AssetId, sellDeltaAmount, types.ZeroBigInt,
@@ -393,7 +393,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      e.sellOfferAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.SellOffer.AccountIndex,
-		AccountName:  sellAccount.AccountName,
+		L1Address:    sellAccount.L1Address,
 		Balance:      sellAccount.AssetInfo[e.sellOfferAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			e.sellOfferAssetId, types.ZeroBigInt, sellOffer).String(),
@@ -411,7 +411,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.BuyOffer.AssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: matchNft.CreatorAccountIndex,
-		AccountName:  creatorAccount.AccountName,
+		L1Address:    creatorAccount.L1Address,
 		Balance:      creatorAccount.AssetInfo[txInfo.BuyOffer.AssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.BuyOffer.AssetId, txInfo.CreatorAmount, types.ZeroBigInt,
@@ -429,7 +429,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      matchNft.NftIndex,
 		AssetType:    types.NftAssetType,
 		AccountIndex: types.NilAccountIndex,
-		AccountName:  types.NilAccountName,
+		L1Address:    types.NilL1Address,
 		Balance: types.ConstructNftInfo(matchNft.NftIndex, matchNft.CreatorAccountIndex, matchNft.OwnerAccountIndex,
 			matchNft.NftContentHash, matchNft.CreatorTreasuryRate, matchNft.CollectionId).String(),
 		BalanceDelta: types.ConstructNftInfo(matchNft.NftIndex, matchNft.CreatorAccountIndex, txInfo.BuyOffer.AccountIndex,
@@ -447,7 +447,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.BuyOffer.AssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.GasAccountIndex,
-		AccountName:  gasAccount.AccountName,
+		L1Address:    gasAccount.L1Address,
 		Balance:      gasAccount.AssetInfo[txInfo.BuyOffer.AssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.BuyOffer.AssetId, txInfo.TreasuryAmount, types.ZeroBigInt).String(),
@@ -465,7 +465,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.GasAccountIndex,
-		AccountName:  gasAccount.AccountName,
+		L1Address:    gasAccount.L1Address,
 		Balance:      gasAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, types.ZeroBigInt).String(),

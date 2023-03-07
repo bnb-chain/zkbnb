@@ -1073,7 +1073,6 @@ func (c *Committer) getLatestExecutedRequestId() (int64, error) {
 	}
 
 	txTypes := []int64{
-		types.TxTypeRegisterZns,
 		types.TxTypeDeposit,
 		types.TxTypeDepositNft,
 		types.TxTypeFullExit,

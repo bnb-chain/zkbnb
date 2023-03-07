@@ -39,9 +39,9 @@ func (e *DepositNftExecutor) Prepare() error {
 	bc := e.bc
 	txInfo := e.TxInfo
 
-	// The account index from txInfo isn't true, find account by account name hash.
-	accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
-	account, err := bc.StateDB().GetAccountByNameHash(accountNameHash)
+	// The account index from txInfo isn't true, find account by l1Address.
+	l1Address := txInfo.L1Address
+	account, err := bc.StateDB().GetAccountByL1Address(l1Address)
 	if err != nil {
 		return err
 	}
@@ -102,12 +102,13 @@ func (e *DepositNftExecutor) GeneratePubData() error {
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(types.TxTypeDepositNft))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
-	buf.Write(common2.Uint40ToBytes(txInfo.NftIndex))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
+	buf.Write(common2.Uint40ToBytes(txInfo.NftIndex))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.CollectionId)))
+	buf.Write(common2.AddressStrToBytes(txInfo.L1Address))
 	buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.NftContentHash))
-	buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.AccountNameHash))
+	buf.WriteByte(uint8(txInfo.NftContentType))
 
 	pubData := common2.SuffixPaddingBuToPubdataSize(buf.Bytes())
 
@@ -152,7 +153,7 @@ func (e *DepositNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:         types.EmptyAccountAssetId,
 		AssetType:       types.FungibleAssetType,
 		AccountIndex:    txInfo.AccountIndex,
-		AccountName:     depositAccount.AccountName,
+		L1Address:       depositAccount.L1Address,
 		Balance:         baseBalance.String(),
 		BalanceDelta:    deltaBalance.String(),
 		AccountOrder:    accountOrder,
@@ -175,7 +176,7 @@ func (e *DepositNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:         txInfo.NftIndex,
 		AssetType:       types.NftAssetType,
 		AccountIndex:    txInfo.AccountIndex,
-		AccountName:     depositAccount.AccountName,
+		L1Address:       depositAccount.L1Address,
 		Balance:         baseNft.String(),
 		BalanceDelta:    newNft.String(),
 		AccountOrder:    types.NilAccountOrder,

@@ -80,19 +80,6 @@ func (m *Monitor) MonitorPriorityRequests() error {
 		// handle request based on request type
 		var txInfoBytes []byte
 		switch request.TxType {
-		case monitor.TxTypeRegisterZns:
-			// parse request info
-			txInfo, err := chain.ParseRegisterZnsPubData(common.FromHex(request.Pubdata))
-			if err != nil {
-				return fmt.Errorf("unable to parse registerZNS pub data, err: %v", err)
-			}
-			txInfo.L1Address = request.SenderAddress
-			poolTx.TxType = int64(txInfo.TxType)
-			txInfoBytes, err = json.Marshal(txInfo)
-			if err != nil {
-				return err
-			}
-
 		case monitor.TxTypeDeposit:
 			txInfo, err := chain.ParseDepositPubData(common.FromHex(request.Pubdata))
 			if err != nil {

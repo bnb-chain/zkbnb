@@ -63,7 +63,7 @@ func (e *TransferExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	if fromAccount.AccountIndex == toAccount.AccountIndex {
 		return types.AppErrAccountInvalidToAccount
 	}
-	if txInfo.ToAccountNameHash != toAccount.AccountNameHash {
+	if txInfo.ToL1Address != toAccount.L1Address {
 		return types.AppErrInvalidToAccountNameHash
 	}
 	if txInfo.GasFeeAssetId != txInfo.AssetId {
@@ -169,7 +169,7 @@ func (e *TransferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.AssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
-		AccountName:  fromAccount.AccountName,
+		L1Address:    fromAccount.L1Address,
 		Balance:      fromAccount.AssetInfo[txInfo.AssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.AssetId, ffmath.Neg(txInfo.AssetAmount), types.ZeroBigInt).String(),
@@ -186,7 +186,7 @@ func (e *TransferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.FromAccountIndex,
-		AccountName:  fromAccount.AccountName,
+		L1Address:    fromAccount.L1Address,
 		Balance:      fromAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, ffmath.Neg(txInfo.GasFeeAssetAmount), types.ZeroBigInt).String(),
@@ -204,7 +204,7 @@ func (e *TransferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.AssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.ToAccountIndex,
-		AccountName:  toAccount.AccountName,
+		L1Address:    toAccount.L1Address,
 		Balance:      toAccount.AssetInfo[txInfo.AssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.AssetId, txInfo.AssetAmount, types.ZeroBigInt).String(),
@@ -222,7 +222,7 @@ func (e *TransferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.GasAccountIndex,
-		AccountName:  gasAccount.AccountName,
+		L1Address:    gasAccount.L1Address,
 		Balance:      gasAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount, types.ZeroBigInt).String(),

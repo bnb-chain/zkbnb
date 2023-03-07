@@ -87,8 +87,8 @@ func (w *WitnessHelper) constructTxWitness(oTx *tx.Tx, finalityBlockNr uint64) (
 	witness.TxType = uint8(oTx.TxType)
 	witness.Nonce = oTx.Nonce
 	switch oTx.TxType {
-	case types.TxTypeRegisterZns:
-		return w.constructRegisterZnsTxWitness(witness, oTx)
+	case types.TxTypeChangePubKey:
+		return w.constructChangePubKeyTxWitness(witness, oTx)
 	case types.TxTypeDeposit:
 		return w.constructDepositTxWitness(witness, oTx)
 	case types.TxTypeDepositNft:
@@ -203,9 +203,7 @@ func (w *WitnessHelper) constructAccountWitness(
 			proverAccounts = append(proverAccounts, &AccountWitnessInfo{
 				AccountInfo: &account.Account{
 					AccountIndex:    accountInfo.AccountIndex,
-					AccountName:     accountInfo.AccountName,
 					PublicKey:       accountInfo.PublicKey,
-					AccountNameHash: accountInfo.AccountNameHash,
 					L1Address:       accountInfo.L1Address,
 					Nonce:           types.EmptyNonce,
 					CollectionNonce: types.EmptyCollectionNonce,
@@ -219,9 +217,8 @@ func (w *WitnessHelper) constructAccountWitness(
 			if accountKey == types.GasAccount {
 				w.gasAccountInfo = &types.AccountInfo{
 					AccountIndex:    accountInfo.AccountIndex,
-					AccountName:     accountInfo.AccountName,
+					L1Address:       accountInfo.L1Address,
 					PublicKey:       accountInfo.PublicKey,
-					AccountNameHash: accountInfo.AccountNameHash,
 					Nonce:           types.EmptyNonce,
 					CollectionNonce: types.EmptyCollectionNonce,
 					AssetRoot:       common.Bytes2Hex(tree.NilAccountAssetRoot),
@@ -236,7 +233,7 @@ func (w *WitnessHelper) constructAccountWitness(
 			}
 			cryptoAccount = &cryptoTypes.Account{
 				AccountIndex:    accountKey,
-				AccountNameHash: common.FromHex(proverAccountInfo.AccountInfo.AccountNameHash),
+				L1Address:       proverAccountInfo.AccountInfo.L1Address,
 				AccountPk:       pk,
 				Nonce:           proverAccountInfo.AccountInfo.Nonce,
 				CollectionNonce: proverAccountInfo.AccountInfo.CollectionNonce,
@@ -324,7 +321,7 @@ func (w *WitnessHelper) constructAccountWitness(
 			collectionNonce++
 		}
 		nAccountHash, err := tree.ComputeAccountLeafHash(
-			proverAccounts[accountCount].AccountInfo.AccountNameHash,
+			proverAccounts[accountCount].AccountInfo.L1Address,
 			proverAccounts[accountCount].AccountInfo.PublicKey,
 			nonce,
 			collectionNonce,
@@ -502,7 +499,7 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 		accountCount     = -1
 	)
 	// dbinitializer prover account map
-	if oTx.TxType == types.TxTypeRegisterZns {
+	if oTx.TxType == types.TxTypeChangePubKey {
 		accountKeys = append(accountKeys, oTx.AccountIndex)
 	}
 	for _, txDetail := range oTx.TxDetails {
@@ -534,9 +531,7 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 				accountWitnessInfo = append(accountWitnessInfo, &AccountWitnessInfo{
 					AccountInfo: &account.Account{
 						AccountIndex:    accountMap[txDetail.AccountIndex].AccountIndex,
-						AccountName:     accountMap[txDetail.AccountIndex].AccountName,
 						PublicKey:       accountMap[txDetail.AccountIndex].PublicKey,
-						AccountNameHash: accountMap[txDetail.AccountIndex].AccountNameHash,
 						L1Address:       accountMap[txDetail.AccountIndex].L1Address,
 						Nonce:           accountMap[txDetail.AccountIndex].Nonce,
 						CollectionNonce: txDetail.CollectionNonce,
@@ -611,9 +606,7 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 					accountWitnessInfo = append(accountWitnessInfo, &AccountWitnessInfo{
 						AccountInfo: &account.Account{
 							AccountIndex:    accountMap[txDetail.AccountIndex].AccountIndex,
-							AccountName:     accountMap[txDetail.AccountIndex].AccountName,
 							PublicKey:       accountMap[txDetail.AccountIndex].PublicKey,
-							AccountNameHash: accountMap[txDetail.AccountIndex].AccountNameHash,
 							L1Address:       accountMap[txDetail.AccountIndex].L1Address,
 							Nonce:           accountMap[txDetail.AccountIndex].Nonce,
 							CollectionNonce: txDetail.CollectionNonce,
@@ -700,7 +693,7 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 		}
 		accountInfoBefore := &cryptoTypes.GasAccount{
 			AccountIndex:    gasAccountIndex,
-			AccountNameHash: common.FromHex(w.gasAccountInfo.AccountNameHash),
+			L1Address:       w.gasAccountInfo.L1Address,
 			AccountPk:       pk,
 			Nonce:           w.gasAccountInfo.Nonce,
 			CollectionNonce: w.gasAccountInfo.CollectionNonce,
@@ -752,7 +745,7 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 		}
 
 		nAccountHash, err := tree.ComputeAccountLeafHash(
-			w.gasAccountInfo.AccountNameHash,
+			w.gasAccountInfo.L1Address,
 			w.gasAccountInfo.PublicKey,
 			w.gasAccountInfo.Nonce,
 			w.gasAccountInfo.CollectionNonce,

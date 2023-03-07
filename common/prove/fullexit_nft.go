@@ -40,14 +40,14 @@ func (w *WitnessHelper) constructFullExitNftTxWitness(cryptoTx *TxWitness, oTx *
 
 func toCryptoFullExitNftTx(txInfo *txtypes.FullExitNftTxInfo) (info *cryptoTypes.FullExitNftTx, err error) {
 	info = &cryptoTypes.FullExitNftTx{
-		AccountIndex:           txInfo.AccountIndex,
-		AccountNameHash:        txInfo.AccountNameHash,
-		CreatorAccountIndex:    txInfo.CreatorAccountIndex,
-		CreatorAccountNameHash: txInfo.CreatorAccountNameHash,
-		CreatorTreasuryRate:    txInfo.CreatorTreasuryRate,
-		NftIndex:               txInfo.NftIndex,
-		CollectionId:           txInfo.CollectionId,
-		NftContentHash:         txInfo.NftContentHash,
+		AccountIndex:        txInfo.AccountIndex,
+		L1Address:           txInfo.L1Address,
+		CreatorAccountIndex: txInfo.CreatorAccountIndex,
+		CreatorL1Address:    txInfo.CreatorL1Address,
+		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
+		NftIndex:            txInfo.NftIndex,
+		CollectionId:        txInfo.CollectionId,
+		NftContentHash:      txInfo.NftContentHash,
 	}
 	return info, nil
 }

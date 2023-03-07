@@ -6,7 +6,6 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
@@ -34,17 +33,17 @@ func NewDepositExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 		TxInfo:       txInfo,
 	}, nil
 }
-func (t *DepositExecutor) SetTxInfo(info *txtypes.DepositTxInfo) {
-	t.txInfo = info
+func (e *DepositExecutor) SetTxInfo(info *txtypes.DepositTxInfo) {
+	e.TxInfo = info
 }
 
 func (e *DepositExecutor) Prepare() error {
 	bc := e.bc
 	txInfo := e.TxInfo
 
-	// The account index from txInfo isn't true, find account by account name hash.
-	accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
-	account, err := bc.StateDB().GetAccountByNameHash(accountNameHash)
+	// The account index from txInfo isn't true, find account by l1Address.
+	l1Address := txInfo.L1Address
+	account, err := bc.StateDB().GetAccountByL1Address(l1Address)
 	if err != nil {
 		return err
 	}
@@ -88,9 +87,9 @@ func (e *DepositExecutor) GeneratePubData() error {
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(types.TxTypeDeposit))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
+	buf.Write(common2.AddressStrToBytes(txInfo.L1Address))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.AssetId)))
 	buf.Write(common2.Uint128ToBytes(txInfo.AssetAmount))
-	buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.AccountNameHash))
 
 	pubData := common2.SuffixPaddingBuToPubdataSize(buf.Bytes())
 
@@ -131,7 +130,7 @@ func (e *DepositExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:         txInfo.AssetId,
 		AssetType:       types.FungibleAssetType,
 		AccountIndex:    txInfo.AccountIndex,
-		AccountName:     depositAccount.AccountName,
+		L1Address:       depositAccount.L1Address,
 		Balance:         baseBalance.String(),
 		BalanceDelta:    deltaBalance.String(),
 		Order:           0,
@@ -140,4 +139,11 @@ func (e *DepositExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		CollectionNonce: depositAccount.CollectionNonce,
 	}
 	return []*tx.TxDetail{txDetail}, nil
+}
+
+func (e *ChangePubKeyExecutor) Finalize() error {
+	bc := e.bc
+	txInfo := e.TxInfo
+	bc.StateDB().AccountAssetTrees.UpdateCache(txInfo.AccountIndex, bc.CurrentBlock().BlockHeight)
+	return nil
 }

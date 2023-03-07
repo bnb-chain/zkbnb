@@ -34,6 +34,7 @@ const (
 	EmptyCreatorTreasuryRate = 0
 
 	NilAccountName     = ""
+	NilL1Address       = ""
 	NilNftIndex        = int64(-1)
 	NilAccountIndex    = int64(-1)
 	NilBlockHeight     = -1

@@ -70,7 +70,11 @@ func ReadBytes20(buf []byte, offset int) (newOffset int, res []byte) {
 	copy(res[:], buf[offset:offset+20])
 	return offset + 20, res
 }
-
+func ReadBytes65(buf []byte, offset int) (newOffset int, res []byte) {
+	res = make([]byte, 65)
+	copy(res[:], buf[offset:offset+65])
+	return offset + 65, res
+}
 func ReadAddress(buf []byte, offset int) (newOffset int, res string) {
 	res = common.BytesToAddress(buf[offset : offset+20]).Hex()
 	return offset + 20, res
@@ -111,6 +115,10 @@ func AccountNameToBytes20(accountName string) []byte {
 
 func AddressStrToBytes(addr string) []byte {
 	return new(big.Int).SetBytes(common.FromHex(addr)).FillBytes(make([]byte, 20))
+}
+
+func SignatureStrToBytes(signature []byte) []byte {
+	return new(big.Int).SetBytes(signature).FillBytes(make([]byte, 65))
 }
 
 func Uint16ToBytes(a uint16) []byte {

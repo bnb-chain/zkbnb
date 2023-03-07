@@ -51,7 +51,6 @@ const (
 
 	PendingStatus = priorityrequest.PendingStatus
 
-	TxTypeRegisterZns = types.TxTypeRegisterZns
 	TxTypeDeposit     = types.TxTypeDeposit
 	TxTypeDepositNft  = types.TxTypeDepositNft
 	TxTypeFullExit    = types.TxTypeFullExit

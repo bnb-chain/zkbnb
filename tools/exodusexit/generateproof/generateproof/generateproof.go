@@ -15,7 +15,6 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/exodusexit"
 	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof/config"
 	"github.com/bnb-chain/zkbnb/tree"
-	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/panjf2000/ants/v2"
 	"io/ioutil"
@@ -101,9 +100,9 @@ func (c *ExodusExit) Run() error {
 	}
 	if c.config.ChainConfig.EndL2BlockHeight == executedTxMaxHeight {
 		logx.Info("execute all the l2 blocks successfully")
-		account, err := c.bc.AccountModel.GetAccountByName(c.config.AccountName)
+		account, err := c.bc.AccountModel.GetAccountByL1Address(c.config.L1Address)
 		if err != nil {
-			logx.Errorf("get account by name error accountName=%s,%v,", c.config.AccountName, err)
+			logx.Errorf("get account by name error L1Address=%s,%v,", c.config.L1Address, err)
 			return err
 		}
 		err = c.getMerkleProofs(executedTxMaxHeight, account.AccountIndex, c.config.NftIndexList, c.config.AssetId)
@@ -171,8 +170,8 @@ func (c *ExodusExit) executeBlockFunc(exodusExitBlock *exodusexit.ExodusExitBloc
 				return err
 			}
 			break
-		case types.TxTypeRegisterZns:
-			err := c.executeRegisterZns(subPubData)
+		case types.TxTypeChangePubKey:
+			err := c.executeChangePubKey(subPubData)
 			if err != nil {
 				return err
 			}
@@ -506,16 +505,16 @@ func (c *ExodusExit) executeDeposit(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
+	offset, l1Address := common2.ReadAddress(pubData, offset)
 	offset, assetId := common2.ReadUint16(pubData, offset)
 	offset, assetPackedAmount := common2.ReadUint128(pubData, offset)
 	assetAmount, _ := util.CleanPackedFee(assetPackedAmount)
-	offset, accountNameHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
 
 	txInfo := &txtypes.DepositTxInfo{
-		AccountIndex:    int64(accountIndex),
-		AssetId:         int64(assetId),
-		AssetAmount:     assetAmount,
-		AccountNameHash: accountNameHash,
+		AccountIndex: int64(accountIndex),
+		AssetId:      int64(assetId),
+		AssetAmount:  assetAmount,
+		L1Address:    l1Address,
 	}
 
 	executor := &executor.DepositExecutor{
@@ -537,12 +536,14 @@ func (c *ExodusExit) executeDepositNft(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
-	offset, nftIndex := common2.ReadUint40(pubData, offset)
 	offset, creatorAccountIndex := common2.ReadUint32(pubData, offset)
 	offset, creatorTreasuryRate := common2.ReadUint16(pubData, offset)
+	offset, nftIndex := common2.ReadUint40(pubData, offset)
 	offset, collectionId := common2.ReadUint16(pubData, offset)
+	offset, l1Address := common2.ReadAddress(pubData, offset)
 	offset, nftContentHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
-	offset, accountNameHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
+	offset, nftContentType := common2.ReadUint8(pubData, offset)
+
 	txInfo := &txtypes.DepositNftTxInfo{
 		AccountIndex:        int64(accountIndex),
 		NftIndex:            nftIndex,
@@ -550,7 +551,8 @@ func (c *ExodusExit) executeDepositNft(pubData []byte) error {
 		CollectionId:        int64(collectionId),
 		CreatorTreasuryRate: int64(creatorTreasuryRate),
 		NftContentHash:      nftContentHash,
-		AccountNameHash:     accountNameHash,
+		L1Address:           l1Address,
+		NftContentType:      int8(nftContentType),
 	}
 	executor := &executor.DepositNftExecutor{
 		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
@@ -573,12 +575,12 @@ func (c *ExodusExit) executeFullExit(pubData []byte) error {
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
 	offset, assetId := common2.ReadUint16(pubData, offset)
 	offset, assetAmount := common2.ReadUint128(pubData, offset)
-	offset, accountNameHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
+	offset, l1Address := common2.ReadAddress(pubData, offset)
 	var txInfo = &txtypes.FullExitTxInfo{
-		AccountIndex:    int64(accountIndex),
-		AssetId:         int64(assetId),
-		AssetAmount:     assetAmount,
-		AccountNameHash: accountNameHash,
+		AccountIndex: int64(accountIndex),
+		AssetId:      int64(assetId),
+		AssetAmount:  assetAmount,
+		L1Address:    l1Address,
 	}
 	executor := &executor.FullExitExecutor{
 		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
@@ -603,19 +605,21 @@ func (c *ExodusExit) executeFullExitNft(pubData []byte) error {
 	offset, creatorTreasuryRate := common2.ReadUint16(pubData, offset)
 	offset, nftIndex := common2.ReadUint40(pubData, offset)
 	offset, collectionId := common2.ReadUint16(pubData, offset)
-	offset, accountNameHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
-	offset, creatorAccountNameHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
+	offset, l1Address := common2.ReadAddress(pubData, offset)
+	offset, creatorL1Address := common2.ReadAddress(pubData, offset)
 	offset, nftContentHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
+	offset, nftContentType := common2.ReadUint8(pubData, offset)
 
 	var txInfo = &txtypes.FullExitNftTxInfo{
-		AccountIndex:           int64(accountIndex),
-		CreatorAccountIndex:    int64(creatorAccountIndex),
-		CreatorTreasuryRate:    int64(creatorTreasuryRate),
-		NftIndex:               nftIndex,
-		CollectionId:           int64(collectionId),
-		AccountNameHash:        accountNameHash,
-		CreatorAccountNameHash: creatorAccountNameHash,
-		NftContentHash:         nftContentHash,
+		AccountIndex:        int64(accountIndex),
+		CreatorAccountIndex: int64(creatorAccountIndex),
+		CreatorTreasuryRate: int64(creatorTreasuryRate),
+		NftIndex:            nftIndex,
+		CollectionId:        int64(collectionId),
+		L1Address:           l1Address,
+		CreatorL1Address:    creatorL1Address,
+		NftContentHash:      nftContentHash,
+		NftContentType:      int8(nftContentType),
 	}
 	executor := &executor.FullExitNftExecutor{
 		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
@@ -674,25 +678,24 @@ func (c *ExodusExit) executeMintNft(pubData []byte) error {
 	return nil
 }
 
-func (c *ExodusExit) executeRegisterZns(pubData []byte) error {
+func (c *ExodusExit) executeChangePubKey(pubData []byte) error {
 	bc := c.bc
 	offset := 1
-	offset, accountIndex := common2.ReadUint32(pubData, offset)
-	offset, accountName := common2.ReadAccountNameFromBytes20(pubData, offset)
-	offset, accountNameHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
-	offset, pubKeyX := common2.ReadBytes32(pubData, offset)
-	_, pubKeyY := common2.ReadBytes32(pubData, offset)
-	pk := new(eddsa.PublicKey)
-	pk.A.X.SetBytes(pubKeyX)
-	pk.A.Y.SetBytes(pubKeyY)
 
-	var txInfo = &txtypes.RegisterZnsTxInfo{
-		AccountIndex:    int64(accountIndex),
-		AccountName:     common2.CleanAccountName(common2.SerializeAccountName(accountName)),
-		AccountNameHash: accountNameHash,
-		PubKey:          common.Bytes2Hex(pk.Bytes()),
+	offset, accountIndex := common2.ReadUint32(pubData, offset)
+	offset, pubKeyX := common2.ReadBytes32(pubData, offset)
+	offset, pubKeyY := common2.ReadBytes32(pubData, offset)
+	offset, l1Address := common2.ReadAddress(pubData, offset)
+	offset, nonce := common2.ReadUint32(pubData, offset)
+
+	var txInfo = &txtypes.ChangePubKeyInfo{
+		AccountIndex: int64(accountIndex),
+		PubKeyX:      pubKeyX,
+		PubKeyY:      pubKeyY,
+		L1Address:    l1Address,
+		Nonce:        int64(nonce),
 	}
-	executor := &executor.RegisterZnsExecutor{
+	executor := &executor.ChangePubKeyExecutor{
 		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
 		TxInfo:       txInfo,
 	}
@@ -829,26 +832,28 @@ func (c *ExodusExit) executeWithdrawNft(pubData []byte) error {
 	offset, creatorTreasuryRate := common2.ReadUint16(pubData, offset)
 	offset, nftIndex := common2.ReadUint40(pubData, offset)
 	offset, collectionId := common2.ReadUint16(pubData, offset)
-	offset, toAddress := common2.ReadAddress(pubData, offset)
 	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
 	offset, gasFeeAssetPackedAmount := common2.ReadUint16(pubData, offset)
 	gasFeeAssetAmount, err := util.CleanPackedFee(big.NewInt(int64(gasFeeAssetPackedAmount)))
 	if err != nil {
 		return err
 	}
+	offset, toAddress := common2.ReadAddress(pubData, offset)
+	offset, creatorL1Address := common2.ReadAddress(pubData, offset)
 	offset, nftContentHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
-	offset, creatorAccountNameHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
+	offset, nftContentType := common2.ReadUint8(pubData, offset)
 	txInfo := &txtypes.WithdrawNftTxInfo{
-		AccountIndex:           int64(fromAccountIndex),
-		CreatorAccountIndex:    int64(creatorAccountIndex),
-		CreatorTreasuryRate:    int64(creatorTreasuryRate),
-		NftIndex:               nftIndex,
-		ToAddress:              toAddress,
-		CollectionId:           int64(collectionId),
-		NftContentHash:         nftContentHash,
-		CreatorAccountNameHash: creatorAccountNameHash,
-		GasFeeAssetId:          int64(gasFeeAssetId),
-		GasFeeAssetAmount:      gasFeeAssetAmount,
+		AccountIndex:        int64(fromAccountIndex),
+		CreatorAccountIndex: int64(creatorAccountIndex),
+		CreatorTreasuryRate: int64(creatorTreasuryRate),
+		NftIndex:            nftIndex,
+		ToAddress:           toAddress,
+		CollectionId:        int64(collectionId),
+		NftContentHash:      nftContentHash,
+		CreatorL1Address:    creatorL1Address,
+		GasFeeAssetId:       int64(gasFeeAssetId),
+		GasFeeAssetAmount:   gasFeeAssetAmount,
+		NftContentType:      int8(nftContentType),
 	}
 	executor := &executor.WithdrawNftExecutor{
 		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
@@ -971,20 +976,20 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 		}
 		var pubKeyX [32]byte
 		var pubKeyY [32]byte
-		var accountNameHash [32]byte
+		var l1Address [20]byte
 		copy(pubKeyX[:], pk.A.X.Marshal()[:])
 		copy(pubKeyY[:], pk.A.Y.Marshal()[:])
-		copy(accountNameHash[:], common.FromHex(accountInfo.AccountNameHash)[:])
+		copy(l1Address[:], common.FromHex(accountInfo.L1Address)[:])
 		performDesertData.ExitData = zkbnb.ExodusVerifierExitData{
 			AssetId:                  uint32(accountAssetId),
 			AccountId:                uint32(accountIndex),
 			Amount:                   formatAccountInfo.AssetInfo[accountAssetId].Balance,
 			OfferCanceledOrFinalized: formatAccountInfo.AssetInfo[accountAssetId].OfferCanceledOrFinalized,
-			AccountNameHash:          accountNameHash,
-			PubKeyX:                  pubKeyX,
-			PubKeyY:                  pubKeyY,
-			Nonce:                    new(big.Int).SetInt64(accountInfo.Nonce),
-			CollectionNonce:          new(big.Int).SetInt64(accountInfo.CollectionNonce),
+			//L1Address:          l1Address,  todo
+			PubKeyX:         pubKeyX,
+			PubKeyY:         pubKeyY,
+			Nonce:           new(big.Int).SetInt64(accountInfo.Nonce),
+			CollectionNonce: new(big.Int).SetInt64(accountInfo.CollectionNonce),
 		}
 		data, err := json.Marshal(performDesertData)
 		if err != nil {

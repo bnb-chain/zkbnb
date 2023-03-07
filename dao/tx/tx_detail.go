@@ -45,7 +45,7 @@ type (
 		AssetId         int64
 		AssetType       int64
 		AccountIndex    int64 `gorm:"index"`
-		AccountName     string
+		L1Address       string
 		Balance         string
 		BalanceDelta    string
 		Order           int64

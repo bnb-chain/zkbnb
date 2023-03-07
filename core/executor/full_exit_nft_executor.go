@@ -42,9 +42,9 @@ func (e *FullExitNftExecutor) Prepare() error {
 	bc := e.bc
 	txInfo := e.TxInfo
 
-	// The account index from txInfo isn't true, find account by account name hash.
-	accountNameHash := common.Bytes2Hex(txInfo.AccountNameHash)
-	account, err := bc.StateDB().GetAccountByNameHash(accountNameHash)
+	// The account index from txInfo isn't true, find account by l1Address.
+	l1Address := txInfo.L1Address
+	account, err := bc.StateDB().GetAccountByL1Address(l1Address)
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func (e *FullExitNftExecutor) Prepare() error {
 	if err != nil {
 		return err
 	}
-	txInfo.CreatorAccountNameHash = common.FromHex(creator.AccountNameHash)
+	txInfo.CreatorL1Address = creator.L1Address
 	txInfo.NftContentHash = common.FromHex(exitNft.NftContentHash)
 	txInfo.CollectionId = exitNft.CollectionId
 
@@ -144,9 +144,10 @@ func (e *FullExitNftExecutor) GeneratePubData() error {
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
 	buf.Write(common2.Uint40ToBytes(txInfo.NftIndex))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.CollectionId)))
-	buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.AccountNameHash))
-	buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.CreatorAccountNameHash))
+	buf.Write(common2.AddressStrToBytes(txInfo.L1Address))
+	buf.Write(common2.AddressStrToBytes(txInfo.CreatorL1Address))
 	buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.NftContentHash))
+	buf.WriteByte(uint8(txInfo.NftContentType))
 	pubData := common2.SuffixPaddingBuToPubdataSize(buf.Bytes())
 
 	stateCache := e.bc.StateDB()
@@ -199,7 +200,7 @@ func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:         types.EmptyAccountAssetId,
 		AssetType:       types.FungibleAssetType,
 		AccountIndex:    txInfo.AccountIndex,
-		AccountName:     exitAccount.AccountName,
+		L1Address:       exitAccount.L1Address,
 		Balance:         baseBalance.String(),
 		BalanceDelta:    emptyDelta.String(),
 		AccountOrder:    accountOrder,
@@ -231,7 +232,7 @@ func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:         txInfo.NftIndex,
 		AssetType:       types.NftAssetType,
 		AccountIndex:    txInfo.AccountIndex,
-		AccountName:     exitAccount.AccountName,
+		L1Address:       exitAccount.L1Address,
 		Balance:         baseNft.String(),
 		BalanceDelta:    newNft.String(),
 		AccountOrder:    types.NilAccountOrder,
@@ -248,7 +249,7 @@ func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      types.EmptyAccountAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.CreatorAccountIndex,
-		AccountName:  creatorAccount.AccountName,
+		L1Address:    creatorAccount.L1Address,
 		Balance:      creatorAccountBalance.String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			types.EmptyAccountAssetId,

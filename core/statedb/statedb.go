@@ -297,37 +297,42 @@ func (s *StateDB) GetAccount(accountIndex int64) (*account.Account, error) {
 	return account, nil
 }
 
-// GetAccountByName get the account by its name.
+// GetAccountByL1Address get the account by its name hash.
 // Firstly, try to find the account in the current state cache, it iterates the pending
 // account map, not performance friendly, please take care when use this API.
 // Secondly, if not found in the current state cache, then try to find the account from database.
-func (s *StateDB) GetAccountByName(accountName string) (*account.Account, error) {
-	for _, accountInfo := range s.PendingAccountMap {
-		if accountInfo.AccountName == accountName {
-			account, err := chain.FromFormatAccountInfo(accountInfo)
-			if err != nil {
-				return nil, err
-			}
+func (s *StateDB) GetAccountByL1Address(l1Address string) (*account.Account, error) {
+	pending, exist := s.StateCache.GetPendingAccount(accountIndex)
+	if exist {
+		account, err := chain.FromFormatAccountInfo(pending)
+		if err != nil {
+			return nil, err
+		}
+		return account, nil
+	}
 
+	cached, exist := s.AccountCache.Get(accountIndex)
+	if exist {
+		// to save account to cache, we need to convert it
+		account, err := chain.FromFormatAccountInfo(cached.(*types.AccountInfo))
+		if err == nil {
 			return account, nil
 		}
 	}
 
-	account, err := s.chainDb.AccountModel.GetAccountByName(accountName)
+	account, err := s.chainDb.AccountModel.GetAccountByIndex(accountIndex)
 	if err != nil {
 		return nil, err
 	}
-
+	formatAccount, err := chain.ToFormatAccountInfo(account)
+	if err != nil {
+		return nil, err
+	}
+	s.AccountCache.Add(accountIndex, formatAccount)
 	return account, nil
-}
 
-// GetAccountByNameHash get the account by its name hash.
-// Firstly, try to find the account in the current state cache, it iterates the pending
-// account map, not performance friendly, please take care when use this API.
-// Secondly, if not found in the current state cache, then try to find the account from database.
-func (s *StateDB) GetAccountByNameHash(accountNameHash string) (*account.Account, error) {
 	for _, accountInfo := range s.PendingAccountMap {
-		if accountInfo.AccountNameHash == accountNameHash {
+		if accountInfo.L1Address == l1Address {
 			account, err := chain.FromFormatAccountInfo(accountInfo)
 			if err != nil {
 				return nil, err
@@ -337,7 +342,7 @@ func (s *StateDB) GetAccountByNameHash(accountNameHash string) (*account.Account
 		}
 	}
 
-	account, err := s.chainDb.AccountModel.GetAccountByNameHash(accountNameHash)
+	account, err := s.chainDb.AccountModel.GetAccountByL1Address(l1Address)
 	if err != nil {
 		return nil, err
 	}
@@ -393,7 +398,7 @@ func (s *StateDB) SyncPendingAccountToRedis(pendingAccount map[int64]*types.Acco
 			if err != nil {
 				logx.Errorf("cache to redis failed: %v,formatAccount=%v", err, formatAccount)
 			}
-			err = s.redisCache.Set(context.Background(), dbcache.AccountKeyByName(formatAccount.AccountName), account)
+			err = s.redisCache.Set(context.Background(), dbcache.AccountKeyByL1Address(formatAccount.L1Address), account)
 			if err != nil {
 				logx.Errorf("cache to redis failed: %v,formatAccount=%v", err, formatAccount)
 			}
@@ -713,7 +718,7 @@ func (s *StateDB) SetAndCommitAssetTree(accountIndex int64, assets []int64, stat
 
 	account.AssetRoot = common.Bytes2Hex(s.AccountAssetTrees.Get(accountIndex).Root())
 	nAccountLeafHash, err := tree.ComputeAccountLeafHash(
-		account.AccountNameHash,
+		account.L1Address,
 		account.PublicKey,
 		account.Nonce,
 		account.CollectionNonce,

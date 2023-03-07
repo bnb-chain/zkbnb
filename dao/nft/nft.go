@@ -57,6 +57,7 @@ type (
 		CreatorAccountIndex int64
 		OwnerAccountIndex   int64  `gorm:"index:idx_owner_account_index"`
 		NftContentHash      string `gorm:"index:idx_owner_account_index"`
+		NftContentType      int8
 		CreatorTreasuryRate int64
 		CollectionId        int64
 		L2BlockHeight       int64 `gorm:"index:idx_nft_index"`
@@ -146,7 +147,7 @@ func (m *defaultL2NftModel) UpdateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) err
 func (m *defaultL2NftModel) BatchInsertOrUpdateInTransact(tx *gorm.DB, nfts []*L2Nft) (err error) {
 	dbTx := tx.Table(m.table).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"creator_account_index", "owner_account_index", "nft_content_hash", "creator_treasury_rate", "collection_id", "l2_block_height"}),
+		DoUpdates: clause.AssignmentColumns([]string{"creator_account_index", "owner_account_index", "nft_content_hash", "nft_content_type", "creator_treasury_rate", "collection_id", "l2_block_height"}),
 	}).CreateInBatches(&nfts, len(nfts))
 	if dbTx.Error != nil {
 		return dbTx.Error
@@ -177,6 +178,7 @@ func (m *defaultL2NftModel) UpdateByIndexInTransact(tx *gorm.DB, l2nft *L2Nft) e
 		"creator_account_index": l2nft.CreatorAccountIndex,
 		"owner_account_index":   l2nft.OwnerAccountIndex,
 		"nft_content_hash":      l2nft.NftContentHash,
+		"nft_content_type":      l2nft.NftContentType,
 		"creator_treasury_rate": l2nft.CreatorTreasuryRate,
 		"collection_id":         l2nft.CollectionId,
 		"l2_block_height":       l2nft.L2BlockHeight,
@@ -238,6 +240,7 @@ func (ai *L2Nft) DeepCopy() *L2Nft {
 		CreatorAccountIndex: ai.CreatorAccountIndex,
 		OwnerAccountIndex:   ai.OwnerAccountIndex,
 		NftContentHash:      ai.NftContentHash,
+		NftContentType:      ai.NftContentType,
 		CreatorTreasuryRate: ai.CreatorTreasuryRate,
 		CollectionId:        ai.CollectionId,
 		L2BlockHeight:       ai.L2BlockHeight,
