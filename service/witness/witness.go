@@ -22,8 +22,8 @@ func Run(configFile string) error {
 
 	w, err := witness.NewWitness(c)
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to create witness instance, %v", err)
+		panic("failed to create witness instance, err:" + err.Error())
 	}
 	cronJob := cron.New(cron.WithChain(
 		cron.SkipIfStillRunning(cron.DiscardLogger),
@@ -33,13 +33,13 @@ func Run(configFile string) error {
 		err := w.GenerateBlockWitness()
 		if err != nil {
 			logx.Severef("failed to generate block witness, %v", err)
-			panic(err)
+			panic("failed to generate block witness, err:" + err.Error())
 		}
 		w.RescheduleBlockWitness()
 	})
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to start generate block witness task, %v", err)
+		panic("failed to start generate block witness task, err:" + err.Error())
 	}
 	cronJob.Start()
 
