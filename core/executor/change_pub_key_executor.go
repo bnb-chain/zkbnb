@@ -5,14 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
-	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 )
 
 type ChangePubKeyExecutor struct {
@@ -69,10 +67,8 @@ func (e *ChangePubKeyExecutor) ApplyTransaction() error {
 	if err != nil {
 		return err
 	}
-	pk := new(eddsa.PublicKey)
-	pk.A.X.SetBytes(txInfo.PubKeyX)
-	pk.A.Y.SetBytes(txInfo.PubKeyY)
-	fromAccount.PublicKey = common.Bytes2Hex(pk.Bytes())
+
+	fromAccount.PublicKey = txInfo.PubKey
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	fromAccount.Nonce++
 
@@ -88,9 +84,7 @@ func (e *ChangePubKeyExecutor) GeneratePubData() error {
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(types.TxTypeChangePubKey))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
-	// because we can get Y from X, so we only need to store X is enough
-	buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.PubKeyX))
-	buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.PubKeyY))
+	buf.Write(common2.PubKeyStrToBytes(txInfo.PubKey))
 	buf.Write(common2.AddressStrToBytes(txInfo.L1Address))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.Nonce)))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
@@ -132,10 +126,6 @@ func (e *ChangePubKeyExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 
 	txDetails := make([]*tx.TxDetail, 0, 3)
 
-	pk := new(eddsa.PublicKey)
-	pk.A.X.SetBytes(txInfo.PubKeyX)
-	pk.A.Y.SetBytes(txInfo.PubKeyY)
-	publicKey := common.Bytes2Hex(pk.Bytes())
 	// from account collection nonce
 	order := int64(0)
 	accountOrder := int64(0)
@@ -145,13 +135,13 @@ func (e *ChangePubKeyExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountIndex:    txInfo.AccountIndex,
 		L1Address:       fromAccount.L1Address,
 		Balance:         fromAccount.PublicKey,
-		BalanceDelta:    publicKey,
+		BalanceDelta:    txInfo.PubKey,
 		Order:           order,
 		Nonce:           fromAccount.Nonce,
 		AccountOrder:    accountOrder,
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
-	fromAccount.PublicKey = publicKey
+	fromAccount.PublicKey = txInfo.PubKey
 
 	// from account gas
 	order++
