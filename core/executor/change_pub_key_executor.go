@@ -99,7 +99,6 @@ func (e *ChangePubKeyExecutor) GeneratePubData() error {
 		return err
 	}
 	buf.Write(packedFeeBytes)
-	buf.WriteByte(uint8(0))
 
 	pubData := common2.SuffixPaddingBuToPubdataSize(buf.Bytes())
 

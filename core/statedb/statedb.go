@@ -64,9 +64,10 @@ type StateDB struct {
 	redisCache dbcache.Cache
 
 	// Flat state
-	AccountCache *lru.Cache
-	NftCache     *lru.Cache
-	MemCache     *ristretto.Cache
+	AccountCache   *lru.Cache
+	L1AddressCache *lru.Cache
+	NftCache       *lru.Cache
+	MemCache       *ristretto.Cache
 
 	// Tree state
 	AccountTree                  bsmt.SparseMerkleTree
@@ -127,6 +128,12 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 		logx.Error("init account cache failed:", err)
 		return nil, err
 	}
+	l1AddressCache, err := lru.New(cacheConfig.AccountCacheSize)
+	if err != nil {
+		logx.Error("init account cache failed:", err)
+		return nil, err
+	}
+
 	nftCache, err := lru.New(cacheConfig.NftCacheSize)
 	if err != nil {
 		logx.Error("init nft cache failed:", err)
@@ -149,12 +156,13 @@ func NewStateDB(treeCtx *tree.Context, chainDb *ChainDB,
 	}
 
 	return &StateDB{
-		StateCache:   NewStateCache(stateRoot),
-		chainDb:      chainDb,
-		redisCache:   redisCache,
-		AccountCache: accountCache,
-		NftCache:     nftCache,
-		MemCache:     memCache,
+		StateCache:     NewStateCache(stateRoot),
+		chainDb:        chainDb,
+		redisCache:     redisCache,
+		AccountCache:   accountCache,
+		L1AddressCache: l1AddressCache,
+		NftCache:       nftCache,
+		MemCache:       memCache,
 
 		AccountTree:       accountTree,
 		NftTree:           nftTree,
@@ -169,6 +177,12 @@ func NewStateDBForExodusExit(redisCache dbcache.Cache, cacheConfig *CacheConfig,
 		logx.Error("init account cache failed:", err)
 		return nil, err
 	}
+	l1AddressCache, err := lru.New(cacheConfig.AccountCacheSize)
+	if err != nil {
+		logx.Error("init account cache failed:", err)
+		return nil, err
+	}
+
 	nftCache, err := lru.New(cacheConfig.NftCacheSize)
 	if err != nil {
 		logx.Error("init nft cache failed:", err)
@@ -191,18 +205,24 @@ func NewStateDBForExodusExit(redisCache dbcache.Cache, cacheConfig *CacheConfig,
 	}
 
 	return &StateDB{
-		DryRun:       false,
-		redisCache:   redisCache,
-		chainDb:      chainDb,
-		AccountCache: accountCache,
-		MemCache:     memCache,
-		NftCache:     nftCache,
-		StateCache:   NewStateCache(""),
+		DryRun:         false,
+		redisCache:     redisCache,
+		chainDb:        chainDb,
+		AccountCache:   accountCache,
+		L1AddressCache: l1AddressCache,
+		MemCache:       memCache,
+		NftCache:       nftCache,
+		StateCache:     NewStateCache(""),
 	}, nil
 }
 
 func NewStateDBForDryRun(redisCache dbcache.Cache, cacheConfig *CacheConfig, chainDb *ChainDB, memCache *ristretto.Cache) (*StateDB, error) {
 	accountCache, err := lru.New(cacheConfig.AccountCacheSize)
+	if err != nil {
+		logx.Error("init account cache failed:", err)
+		return nil, err
+	}
+	l1AddressCache, err := lru.New(cacheConfig.AccountCacheSize)
 	if err != nil {
 		logx.Error("init account cache failed:", err)
 		return nil, err
@@ -214,13 +234,14 @@ func NewStateDBForDryRun(redisCache dbcache.Cache, cacheConfig *CacheConfig, cha
 	}
 
 	return &StateDB{
-		DryRun:       true,
-		redisCache:   redisCache,
-		chainDb:      chainDb,
-		AccountCache: accountCache,
-		MemCache:     memCache,
-		NftCache:     nftCache,
-		StateCache:   NewStateCache(""),
+		DryRun:         true,
+		redisCache:     redisCache,
+		chainDb:        chainDb,
+		AccountCache:   accountCache,
+		L1AddressCache: l1AddressCache,
+		MemCache:       memCache,
+		NftCache:       nftCache,
+		StateCache:     NewStateCache(""),
 	}, nil
 }
 
@@ -259,6 +280,8 @@ func (s *StateDB) GetFormatAccount(accountIndex int64) (*types.AccountInfo, erro
 		return nil, err
 	}
 	s.AccountCache.Add(accountIndex, formatAccount)
+	s.L1AddressCache.Add(formatAccount.L1Address, accountIndex)
+
 	if metrics.AccountGauge != nil {
 		metrics.AccountGauge.Set(float64(time.Since(start).Milliseconds()))
 	}
@@ -294,6 +317,7 @@ func (s *StateDB) GetAccount(accountIndex int64) (*account.Account, error) {
 		return nil, err
 	}
 	s.AccountCache.Add(accountIndex, formatAccount)
+	s.L1AddressCache.Add(formatAccount.L1Address, accountIndex)
 	return account, nil
 }
 
@@ -302,52 +326,22 @@ func (s *StateDB) GetAccount(accountIndex int64) (*account.Account, error) {
 // account map, not performance friendly, please take care when use this API.
 // Secondly, if not found in the current state cache, then try to find the account from database.
 func (s *StateDB) GetAccountByL1Address(l1Address string) (*account.Account, error) {
-	pending, exist := s.StateCache.GetPendingAccount(accountIndex)
+	cached, exist := s.StateCache.GetPendingAccountL1AddressMap(l1Address)
 	if exist {
-		account, err := chain.FromFormatAccountInfo(pending)
-		if err != nil {
-			return nil, err
-		}
-		return account, nil
+		return s.GetAccount(cached)
 	}
 
-	cached, exist := s.AccountCache.Get(accountIndex)
-	if exist {
-		// to save account to cache, we need to convert it
-		account, err := chain.FromFormatAccountInfo(cached.(*types.AccountInfo))
-		if err == nil {
-			return account, nil
-		}
-	}
-
-	account, err := s.chainDb.AccountModel.GetAccountByIndex(accountIndex)
+	accountInfo, err := s.chainDb.AccountModel.GetAccountByL1Address(l1Address)
 	if err != nil {
 		return nil, err
 	}
-	formatAccount, err := chain.ToFormatAccountInfo(account)
+	formatAccount, err := chain.ToFormatAccountInfo(accountInfo)
 	if err != nil {
 		return nil, err
 	}
-	s.AccountCache.Add(accountIndex, formatAccount)
-	return account, nil
-
-	for _, accountInfo := range s.PendingAccountMap {
-		if accountInfo.L1Address == l1Address {
-			account, err := chain.FromFormatAccountInfo(accountInfo)
-			if err != nil {
-				return nil, err
-			}
-
-			return account, nil
-		}
-	}
-
-	account, err := s.chainDb.AccountModel.GetAccountByL1Address(l1Address)
-	if err != nil {
-		return nil, err
-	}
-
-	return account, nil
+	s.AccountCache.Add(accountInfo.AccountIndex, formatAccount)
+	s.L1AddressCache.Add(formatAccount.L1Address, accountInfo.AccountIndex)
+	return accountInfo, nil
 }
 
 func (s *StateDB) GetNft(nftIndex int64) (*nft.L2Nft, error) {
@@ -419,6 +413,7 @@ func (s *StateDB) SyncPendingNftToRedis(pendingNft map[int64]*nft.L2Nft) {
 func (s *StateDB) SyncPendingAccountToMemoryCache(pendingAccount map[int64]*types.AccountInfo) {
 	for index, formatAccount := range pendingAccount {
 		s.AccountCache.Add(index, formatAccount)
+		s.L1AddressCache.Add(formatAccount.L1Address, formatAccount.AccountId)
 	}
 }
 
@@ -520,6 +515,7 @@ func (s *StateDB) PrepareAccountsAndAssets(accountAssetsMap map[int64]map[int64]
 				formatAccount, err := chain.ToFormatAccountInfo(account)
 				if err == nil {
 					s.AccountCache.Add(accountIndex, formatAccount)
+					s.L1AddressCache.Add(formatAccount.L1Address, accountIndex)
 				}
 			}
 		}
@@ -541,6 +537,7 @@ func (s *StateDB) PrepareAccountsAndAssets(accountAssetsMap map[int64]map[int64]
 			}
 		}
 		s.AccountCache.Add(accountIndex, account)
+		s.L1AddressCache.Add(account.L1Address, accountIndex)
 	}
 
 	return nil

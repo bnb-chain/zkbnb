@@ -25,9 +25,10 @@ type StateCache struct {
 	Txs                             []*tx.Tx
 
 	// Record the flat data that should be updated.
-	PendingAccountMap map[int64]*types.AccountInfo
-	PendingNftMap     map[int64]*nft.L2Nft
-	PendingGasMap     map[int64]*big.Int //pending gas changes of a block
+	PendingAccountMap          map[int64]*types.AccountInfo
+	PendingAccountL1AddressMap map[string]int64
+	PendingNftMap              map[int64]*nft.L2Nft
+	PendingGasMap              map[int64]*big.Int //pending gas changes of a block
 
 	// Record the tree states that should be updated.
 	dirtyAccountsAndAssetsMap map[int64]map[int64]bool
@@ -46,9 +47,10 @@ func NewStateCache(stateRoot string) *StateCache {
 		StateRoot: stateRoot,
 		Txs:       make([]*tx.Tx, 0),
 
-		PendingAccountMap: make(map[int64]*types.AccountInfo, 0),
-		PendingNftMap:     make(map[int64]*nft.L2Nft, 0),
-		PendingGasMap:     make(map[int64]*big.Int, 0),
+		PendingAccountMap:          make(map[int64]*types.AccountInfo, 0),
+		PendingAccountL1AddressMap: make(map[string]int64, 0),
+		PendingNftMap:              make(map[int64]*nft.L2Nft, 0),
+		PendingGasMap:              make(map[int64]*big.Int, 0),
 
 		PubData:                         make([]byte, 0),
 		PriorityOperations:              0,
@@ -104,6 +106,14 @@ func (c *StateCache) GetPendingAccount(accountIndex int64) (*types.AccountInfo, 
 	return nil, false
 }
 
+func (c *StateCache) GetPendingAccountL1AddressMap(l1Address string) (int64, bool) {
+	accountIndex, exist := c.PendingAccountL1AddressMap[l1Address]
+	if exist {
+		return accountIndex, exist
+	}
+	return -1, false
+}
+
 func (c *StateCache) GetPendingNft(nftIndex int64) (*nft.L2Nft, bool) {
 	nft, exist := c.PendingNftMap[nftIndex]
 	if exist {
@@ -114,6 +124,9 @@ func (c *StateCache) GetPendingNft(nftIndex int64) (*nft.L2Nft, bool) {
 
 func (c *StateCache) SetPendingAccount(accountIndex int64, account *types.AccountInfo) {
 	c.PendingAccountMap[accountIndex] = account
+}
+func (c *StateCache) SetPendingAccountL1AddressMap(l1Address string, accountIndex int64) {
+	c.PendingAccountL1AddressMap[l1Address] = accountIndex
 }
 
 func (c *StateCache) SetPendingNft(nftIndex int64, nft *nft.L2Nft) {
