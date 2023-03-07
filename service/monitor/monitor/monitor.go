@@ -158,30 +158,29 @@ func NewMonitor(c config.Config) *Monitor {
 
 	zkbnbAddressConfig, err := monitor.SysConfigModel.GetSysConfigByName(types.ZkBNBContract)
 	if err != nil {
-		logx.Errorf("GetSysConfigByName err: %s", err.Error())
-		panic(err)
+		logx.Severef("failed to get ZkBNB contract configuration: %v", err)
+		panic("failed to get ZkBNBContract configuration, err:" + err.Error())
 	}
 
 	governanceAddressConfig, err := monitor.SysConfigModel.GetSysConfigByName(types.GovernanceContract)
 	if err != nil {
-		logx.Severef("fatal error, cannot fetch governance contract from sysconfig, err: %s, SysConfigName: %s",
-			err.Error(), types.GovernanceContract)
-		panic(err)
+		logx.Severef("failed to get governance contract configuration, %v", err)
+		panic("failed to get governance contract configuration, err:" + err.Error())
 	}
 
 	networkRpc, err := monitor.SysConfigModel.GetSysConfigByName(c.ChainConfig.NetworkRPCSysConfigName)
 	if err != nil {
-		logx.Severef("fatal error, cannot fetch NetworkRPC from sysconfig, err: %s, SysConfigName: %s",
-			err.Error(), c.ChainConfig.NetworkRPCSysConfigName)
-		panic(err)
+		logx.Severef("failed to get network RPC configuration err:%v, SysConfigName:%s",
+			err, c.ChainConfig.NetworkRPCSysConfigName)
+		panic("failed to get network RPC configuration, err:" + err.Error())
 	}
 	logx.Infof("ChainName: %s, zkbnbContractAddress: %s, networkRpc: %s",
 		c.ChainConfig.NetworkRPCSysConfigName, zkbnbAddressConfig.Value, networkRpc.Value)
 
 	bscRpcCli, err := rpc.NewClient(networkRpc.Value)
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to create rpc client, %v", err)
+		panic("failed to create rpc client, err:" + err.Error())
 	}
 
 	monitor.zkbnbContractAddress = zkbnbAddressConfig.Value
@@ -189,59 +188,59 @@ func NewMonitor(c config.Config) *Monitor {
 	monitor.cli = bscRpcCli
 
 	if err := prometheus.Register(priorityOperationMetric); err != nil {
-		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
-		panic(err)
+		logx.Severef("fatal error, cannot register prometheus, err: %v", err)
+		panic("fatal error, cannot register prometheus, err:" + err.Error())
 	}
 	if err := prometheus.Register(priorityOperationHeightMetric); err != nil {
-		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
-		panic(err)
+		logx.Severef("fatal error, cannot register prometheus, err: %v", err)
+		panic("fatal error, cannot register prometheus, err:" + err.Error())
 	}
 	if err := prometheus.Register(priorityOperationCreateMetric); err != nil {
-		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
-		panic(err)
+		logx.Severef("fatal error, cannot register prometheus, err: %v", err)
+		panic("fatal error, cannot register prometheus, err:" + err.Error())
 	}
 	if err := prometheus.Register(priorityOperationHeightCreateMetric); err != nil {
-		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
-		panic(err)
+		logx.Severef("fatal error, cannot register prometheus, err: %v", err)
+		panic("fatal error, cannot register prometheus, err:" + err.Error())
 	}
 	if err := prometheus.Register(l1SyncedBlockHeightMetric); err != nil {
-		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
-		panic(err)
+		logx.Severef("fatal error, cannot register prometheus, err: %v", err)
+		panic("fatal error, cannot register prometheus, err:" + err.Error())
 	}
 
 	if err := prometheus.Register(l1GenericStartHeightMetric); err != nil {
-		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
-		panic(err)
+		logx.Severef("fatal error, cannot register prometheus, err: %v", err)
+		panic("fatal error, cannot register prometheus, err:" + err.Error())
 	}
 
 	if err := prometheus.Register(l1GenericEndHeightMetric); err != nil {
-		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
-		panic(err)
+		logx.Severef("fatal error, cannot register prometheus, err: %v", err)
+		panic("fatal error, cannot register prometheus, err:" + err.Error())
 	}
 
 	if err := prometheus.Register(l1GenericLenHeightMetric); err != nil {
-		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
-		panic(err)
+		logx.Severef("fatal error, cannot register prometheus, err: %v", err)
+		panic("fatal error, cannot register prometheus, err:" + err.Error())
 	}
 
 	if err := prometheus.Register(l1GovernanceStartHeightMetric); err != nil {
-		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
-		panic(err)
+		logx.Severef("fatal error, cannot register prometheus, err: %v", err)
+		panic("fatal error, cannot register prometheus, err:" + err.Error())
 	}
 
 	if err := prometheus.Register(l1GovernanceEndHeightMetric); err != nil {
-		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
-		panic(err)
+		logx.Severef("fatal error, cannot register prometheus, err: %v", err)
+		panic("fatal error, cannot register prometheus, err:" + err.Error())
 	}
 
 	if err := prometheus.Register(l1GovernanceLenHeightMetric); err != nil {
-		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
-		panic(err)
+		logx.Severef("fatal error, cannot register prometheus, err: %v", err)
+		panic("fatal error, cannot register prometheus, err:" + err.Error())
 	}
 
 	if err := prometheus.Register(l1MonitorHeightMetric); err != nil {
-		logx.Severef("fatal error, cannot register prometheus, err: %s", err.Error())
-		panic(err)
+		logx.Severef("fatal error, cannot register prometheus, err: %v", err)
+		panic("fatal error, cannot register prometheus, err:" + err.Error())
 	}
 
 	return monitor

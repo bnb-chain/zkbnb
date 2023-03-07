@@ -33,8 +33,8 @@ func Run(configFile string) error {
 		}
 	})
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severe("failed to start prove block task, %v", err)
+		panic("failed to start prove block task, err:" + err.Error())
 	}
 	cronJob.Start()
 
