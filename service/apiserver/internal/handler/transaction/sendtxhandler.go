@@ -21,6 +21,7 @@ func SendTxHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 
 		l := transaction.NewSendTxLogic(r.Context(), svcCtx)
 		resp, err := l.SendTx(&req)
+		svcCtx.SendTxMetrics.Inc()
 		response.Handle(w, resp, err)
 	}
 }

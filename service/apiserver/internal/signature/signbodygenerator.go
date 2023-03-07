@@ -171,7 +171,7 @@ func SignatureForAccount(txInfo string) (string, error) {
 	transaction, err := types.ParseUpdateNftTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse atomic match nft info failed: %s", err.Error())
-		return "", errors.New("invalid tx info")
+		return "", types.AppErrInvalidTxInfo
 	}
 	signatureBody := fmt.Sprintf(SignatureTemplateAccount, transaction.AccountIndex, transaction.NftIndex, transaction.Nonce)
 	return signatureBody, nil
