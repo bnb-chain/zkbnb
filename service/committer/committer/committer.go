@@ -92,7 +92,9 @@ func NewCommitter(config *Config) (*Committer, error) {
 	if saveBlockDataPoolSize == 0 {
 		saveBlockDataPoolSize = 100
 	}
-	pool, err := ants.NewPool(saveBlockDataPoolSize)
+	pool, err := ants.NewPool(saveBlockDataPoolSize, ants.WithPanicHandler(func(p interface{}) {
+		panic("worker exits from a panic")
+	}))
 	common.NewIPFS(config.IpfsUrl)
 	committer := &Committer{
 		running:            true,
