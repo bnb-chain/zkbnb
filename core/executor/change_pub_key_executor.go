@@ -68,8 +68,10 @@ func (e *ChangePubKeyExecutor) ApplyTransaction() error {
 	if err != nil {
 		return err
 	}
-
-	fromAccount.PublicKey = txInfo.PubKey
+	pk := new(eddsa.PublicKey)
+	pk.A.X.SetBytes(txInfo.PubKeyX)
+	pk.A.Y.SetBytes(txInfo.PubKeyY)
+	fromAccount.PublicKey = common.Bytes2Hex(pk.Bytes())
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	fromAccount.Nonce++
 	fromAccount.Status = account.AccountStatusConfirmed
@@ -86,7 +88,9 @@ func (e *ChangePubKeyExecutor) GeneratePubData() error {
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(types.TxTypeChangePubKey))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
-	buf.Write(common2.PubKeyStrToBytes(txInfo.PubKey))
+	// because we can get Y from X, so we only need to store X is enough
+	buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.PubKeyX))
+	buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.PubKeyY))
 	buf.Write(common2.AddressStrToBytes(txInfo.L1Address))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.Nonce)))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
@@ -128,6 +132,10 @@ func (e *ChangePubKeyExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 
 	txDetails := make([]*tx.TxDetail, 0, 3)
 
+	pk := new(eddsa.PublicKey)
+	pk.A.X.SetBytes(txInfo.PubKeyX)
+	pk.A.Y.SetBytes(txInfo.PubKeyY)
+	publicKey := common.Bytes2Hex(pk.Bytes())
 	// from account collection nonce
 	order := int64(0)
 	accountOrder := int64(0)
@@ -137,13 +145,13 @@ func (e *ChangePubKeyExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountIndex:    txInfo.AccountIndex,
 		L1Address:       fromAccount.L1Address,
 		Balance:         fromAccount.PublicKey,
-		BalanceDelta:    txInfo.PubKey,
+		BalanceDelta:    publicKey,
 		Order:           order,
 		Nonce:           fromAccount.Nonce,
 		AccountOrder:    accountOrder,
 		CollectionNonce: fromAccount.CollectionNonce,
 	})
-	fromAccount.PublicKey = txInfo.PubKey
+	fromAccount.PublicKey = publicKey
 
 	// from account gas
 	order++
