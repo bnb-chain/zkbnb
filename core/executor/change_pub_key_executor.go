@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
+	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
@@ -71,6 +72,7 @@ func (e *ChangePubKeyExecutor) ApplyTransaction() error {
 	fromAccount.PublicKey = txInfo.PubKey
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	fromAccount.Nonce++
+	fromAccount.Status = account.AccountStatusConfirmed
 
 	stateCache := e.bc.StateDB()
 	stateCache.SetPendingAccount(txInfo.AccountIndex, fromAccount)

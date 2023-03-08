@@ -444,6 +444,7 @@ func (w *WitnessHelper) constructNftWitness(
 		nNftInfo.NftContentHash,
 		nNftInfo.CreatorTreasuryRate,
 		nNftInfo.CollectionId,
+		nNftInfo.NftContentType,
 		nNftInfo.NftIndex,
 		oTx.BlockHeight,
 	)

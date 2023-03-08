@@ -4,6 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/bnb-chain/zkbnb/common/chain"
+	"github.com/bnb-chain/zkbnb/dao/account"
+	"github.com/bnb-chain/zkbnb/tree"
+	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -18,7 +22,8 @@ import (
 type DepositExecutor struct {
 	BaseExecutor
 
-	TxInfo *txtypes.DepositTxInfo
+	TxInfo          *txtypes.DepositTxInfo
+	IsCreateAccount bool
 }
 
 func NewDepositExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
@@ -44,12 +49,22 @@ func (e *DepositExecutor) Prepare() error {
 	// The account index from txInfo isn't true, find account by l1Address.
 	l1Address := txInfo.L1Address
 	account, err := bc.StateDB().GetAccountByL1Address(l1Address)
-	if err != nil {
+	if err != nil && err != types.DbErrNotFound {
 		return err
 	}
-
-	// Set the right account index.
-	txInfo.AccountIndex = account.AccountIndex
+	if err == types.DbErrNotFound {
+		if e.tx.Rollback == false {
+			nextAccountIndex := e.bc.StateDB().GetNextAccountIndex()
+			txInfo.AccountIndex = nextAccountIndex
+		} else {
+			//for rollback
+			txInfo.AccountIndex = e.tx.AccountIndex
+		}
+		e.IsCreateAccount = true
+	} else {
+		// Set the right account index.
+		txInfo.AccountIndex = account.AccountIndex
+	}
 
 	// Mark the tree states that would be affected in this executor.
 	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{txInfo.AssetId})
@@ -71,8 +86,24 @@ func (e *DepositExecutor) ApplyTransaction() error {
 	txInfo := e.TxInfo
 
 	depositAccount, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
-	if err != nil {
+	if err != nil && err != types.DbErrNotFound {
 		return err
+	}
+	if err == types.DbErrNotFound {
+		newAccount := &account.Account{
+			AccountIndex:    txInfo.AccountIndex,
+			PublicKey:       types.EmptyPk,
+			L1Address:       e.tx.NativeAddress,
+			Nonce:           types.EmptyNonce,
+			CollectionNonce: types.EmptyCollectionNonce,
+			AssetInfo:       types.EmptyAccountAssetInfo,
+			AssetRoot:       common.Bytes2Hex(tree.NilAccountAssetRoot),
+			Status:          account.AccountStatusPending,
+		}
+		depositAccount, err = chain.ToFormatAccountInfo(newAccount)
+		if err != nil {
+			return err
+		}
 	}
 	depositAccount.AssetInfo[txInfo.AssetId].Balance = ffmath.Add(depositAccount.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
 
@@ -141,9 +172,11 @@ func (e *DepositExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	return []*tx.TxDetail{txDetail}, nil
 }
 
-func (e *ChangePubKeyExecutor) Finalize() error {
-	bc := e.bc
-	txInfo := e.TxInfo
-	bc.StateDB().AccountAssetTrees.UpdateCache(txInfo.AccountIndex, bc.CurrentBlock().BlockHeight)
+func (e *DepositExecutor) Finalize() error {
+	if e.IsCreateAccount {
+		bc := e.bc
+		txInfo := e.TxInfo
+		bc.StateDB().AccountAssetTrees.UpdateCache(txInfo.AccountIndex, bc.CurrentBlock().BlockHeight)
+	}
 	return nil
 }

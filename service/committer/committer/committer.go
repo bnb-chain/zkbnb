@@ -576,11 +576,14 @@ func (c *Committer) updatePoolTxFunc(updatePoolTxMap *UpdatePoolTx) {
 			updateNftIndexOrCollectionIdList := make([]*tx.PoolTx, 0)
 			for _, pendingUpdatePoolTx := range updatePoolTxMap.PendingUpdatePoolTxs {
 				ids = append(ids, pendingUpdatePoolTx.ID)
-				if pendingUpdatePoolTx.TxType == types.TxTypeCreateCollection || pendingUpdatePoolTx.TxType == types.TxTypeMintNft {
+				if pendingUpdatePoolTx.TxType == types.TxTypeCreateCollection || pendingUpdatePoolTx.TxType == types.TxTypeMintNft ||
+					pendingUpdatePoolTx.TxType == types.TxTypeDeposit || pendingUpdatePoolTx.TxType == types.TxTypeTransfer {
 					updateNftIndexOrCollectionIdList = append(updateNftIndexOrCollectionIdList, &tx.PoolTx{
 						BaseTx: tx.BaseTx{Model: gorm.Model{ID: pendingUpdatePoolTx.ID},
 							NftIndex:     pendingUpdatePoolTx.NftIndex,
-							CollectionId: pendingUpdatePoolTx.CollectionId},
+							CollectionId: pendingUpdatePoolTx.CollectionId,
+							AccountIndex: pendingUpdatePoolTx.AccountIndex,
+						},
 					})
 				}
 			}
@@ -730,11 +733,13 @@ func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 
 	for _, poolTx := range blockStates.Block.Txs {
 		poolTxIds = append(poolTxIds, poolTx.ID)
-		if poolTx.TxType == types.TxTypeCreateCollection || poolTx.TxType == types.TxTypeMintNft {
+		if poolTx.TxType == types.TxTypeCreateCollection || poolTx.TxType == types.TxTypeMintNft ||
+			poolTx.TxType == types.TxTypeDeposit || poolTx.TxType == types.TxTypeTransfer {
 			updateNftIndexOrCollectionIdList = append(updateNftIndexOrCollectionIdList, &tx.PoolTx{BaseTx: tx.BaseTx{
 				Model:        gorm.Model{ID: poolTx.ID},
 				NftIndex:     poolTx.NftIndex,
 				CollectionId: poolTx.CollectionId,
+				AccountIndex: poolTx.AccountIndex,
 			}})
 		}
 	}

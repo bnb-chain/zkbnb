@@ -65,7 +65,7 @@ type (
 	Account struct {
 		gorm.Model
 		AccountIndex    int64  `gorm:"uniqueIndex"`
-		PublicKey       string `gorm:"uniqueIndex"`
+		PublicKey       string `gorm:"index"`
 		L1Address       string `gorm:"uniqueIndex"`
 		Nonce           int64
 		CollectionNonce int64
@@ -73,7 +73,7 @@ type (
 		AssetInfo     string
 		AssetRoot     string
 		L2BlockHeight int64 `gorm:"index"`
-		// 0 - registered, not committer 1 - committer
+		// 0 - registered, no pk; 1 - changed pk
 		Status int
 	}
 )
@@ -189,13 +189,14 @@ func (m *defaultAccountModel) UpdateAccountsInTransact(tx *gorm.DB, accounts []*
 }
 
 func (m *defaultAccountModel) UpdateByIndexInTransact(tx *gorm.DB, account *Account) error {
-	dbTx := tx.Model(&Account{}).Select("Nonce", "CollectionNonce", "PublicKey", "AssetInfo", "AssetRoot", "L2BlockHeight").Where("account_index = ?", account.AccountIndex).Updates(map[string]interface{}{
+	dbTx := tx.Model(&Account{}).Select("Nonce", "CollectionNonce", "PublicKey", "AssetInfo", "AssetRoot", "L2BlockHeight", "Status").Where("account_index = ?", account.AccountIndex).Updates(map[string]interface{}{
 		"nonce":            account.Nonce,
 		"collection_nonce": account.CollectionNonce,
 		"public_key":       account.PublicKey,
 		"asset_info":       account.AssetInfo,
 		"asset_root":       account.AssetRoot,
 		"l2_block_height":  account.L2BlockHeight,
+		"status":           account.Status,
 	})
 	if dbTx.Error != nil {
 		return dbTx.Error
@@ -233,7 +234,7 @@ func (m *defaultAccountModel) GetUsers(limit int64, offset int64) (accounts []*A
 func (m *defaultAccountModel) BatchInsertOrUpdateInTransact(tx *gorm.DB, accounts []*Account) (err error) {
 	dbTx := tx.Table(m.table).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"nonce", "collection_nonce", "public_key", "asset_info", "asset_root", "l2_block_height"}),
+		DoUpdates: clause.AssignmentColumns([]string{"nonce", "collection_nonce", "public_key", "asset_info", "asset_root", "l2_block_height", "status"}),
 	}).CreateInBatches(&accounts, len(accounts))
 	if dbTx.Error != nil {
 		return dbTx.Error

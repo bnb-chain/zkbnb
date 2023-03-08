@@ -153,6 +153,16 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		bc.Statedb.UpdateNftIndex(mintNft.NftIndex)
 	}
 
+	poolTx, err := bc.TxPoolModel.GetLatestAccountIndex()
+	if err != nil && err != types.DbErrNotFound {
+		logx.Severe("get latest account index failed: ", err)
+		panic("get latest account index failed:" + err.Error())
+	}
+	bc.Statedb.UpdateAccountIndex(types.NilAccountIndex)
+	if poolTx != nil {
+		bc.Statedb.UpdateAccountIndex(poolTx.AccountIndex)
+	}
+
 	latestRollback, err := bc.TxPoolModel.GetLatestRollback(tx.StatusPending, true)
 	if err != nil && err != types.DbErrNotFound {
 		logx.Severe("get latest pool tx rollback failed: ", err)
@@ -386,6 +396,7 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 				AssetInfo:       accountHistory.AssetInfo,
 				AssetRoot:       accountHistory.AssetRoot,
 				L2BlockHeight:   accountHistory.L2BlockHeight,
+				Status:          accountHistory.Status,
 			}
 			err := bc.AccountModel.UpdateByIndexInTransact(dbTx, accountInfo)
 			if err != nil {

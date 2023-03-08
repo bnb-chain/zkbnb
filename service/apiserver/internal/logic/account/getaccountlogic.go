@@ -67,7 +67,7 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 			if err == nil && redisAccount != nil {
 				return &types.Account{
 					Index:           accountInfo.AccountIndex,
-					Status:          account.AccountStatusPending,
+					Status:          uint32(accountInfo.Status),
 					L1Address:       accountInfo.L1Address,
 					Pk:              accountInfo.PublicKey,
 					Nonce:           accountInfo.Nonce,

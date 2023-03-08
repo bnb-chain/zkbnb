@@ -86,7 +86,7 @@ func (e *MintNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 		return err
 	}
 	if txInfo.ToL1Address != toAccount.L1Address {
-		return types.AppErrInvalidToAccountNameHash
+		return types.AppErrInvalidToAddress
 	}
 
 	return nil

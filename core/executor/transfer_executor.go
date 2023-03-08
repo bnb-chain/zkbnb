@@ -3,6 +3,10 @@ package executor
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/bnb-chain/zkbnb/common/chain"
+	"github.com/bnb-chain/zkbnb/dao/account"
+	"github.com/bnb-chain/zkbnb/tree"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -17,7 +21,8 @@ import (
 type TransferExecutor struct {
 	BaseExecutor
 
-	TxInfo *txtypes.TransferTxInfo
+	TxInfo          *txtypes.TransferTxInfo
+	IsCreateAccount bool
 }
 
 func NewTransferExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
@@ -34,7 +39,32 @@ func NewTransferExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 }
 
 func (e *TransferExecutor) Prepare() error {
+	bc := e.bc
 	txInfo := e.TxInfo
+	toL1Address := txInfo.ToL1Address
+	toAccount, err := bc.StateDB().GetAccountByL1Address(toL1Address)
+	if err != nil && err != types.DbErrNotFound {
+		return err
+	}
+	if err == types.DbErrNotFound {
+		if txInfo.ToAccountIndex != -1 {
+			return types.AppErrAccountInvalidToAccount
+		}
+		if !e.bc.StateDB().DryRun {
+			if e.tx.Rollback == false {
+				nextAccountIndex := e.bc.StateDB().GetNextAccountIndex()
+				txInfo.ToAccountIndex = nextAccountIndex
+			} else {
+				//for rollback
+				txInfo.ToAccountIndex = e.tx.AccountIndex
+			}
+		}
+		e.IsCreateAccount = true
+	} else {
+		if txInfo.ToAccountIndex != toAccount.AccountIndex {
+			return types.AppErrInvalidToAddress
+		}
+	}
 
 	// Mark the tree states that would be affected in this executor.
 	e.MarkAccountAssetsDirty(txInfo.FromAccountIndex, []int64{txInfo.GasFeeAssetId, txInfo.AssetId})
@@ -56,16 +86,19 @@ func (e *TransferExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	if err != nil {
 		return err
 	}
-	toAccount, err := bc.StateDB().GetFormatAccount(txInfo.ToAccountIndex)
-	if err != nil {
-		return err
+	if !e.IsCreateAccount {
+		toAccount, err := bc.StateDB().GetFormatAccount(txInfo.ToAccountIndex)
+		if err != nil {
+			return err
+		}
+		if fromAccount.AccountIndex == toAccount.AccountIndex {
+			return types.AppErrAccountInvalidToAccount
+		}
+		if txInfo.ToL1Address != toAccount.L1Address {
+			return types.AppErrInvalidToAddress
+		}
 	}
-	if fromAccount.AccountIndex == toAccount.AccountIndex {
-		return types.AppErrAccountInvalidToAccount
-	}
-	if txInfo.ToL1Address != toAccount.L1Address {
-		return types.AppErrInvalidToAccountNameHash
-	}
+
 	if txInfo.GasFeeAssetId != txInfo.AssetId {
 		if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
 			return types.AppErrInvalidGasFeeAmount
@@ -92,8 +125,24 @@ func (e *TransferExecutor) ApplyTransaction() error {
 		return err
 	}
 	toAccount, err := bc.StateDB().GetFormatAccount(txInfo.ToAccountIndex)
-	if err != nil {
+	if err != nil && err != types.DbErrNotFound {
 		return err
+	}
+	if err == types.DbErrNotFound {
+		newAccount := &account.Account{
+			AccountIndex:    txInfo.ToAccountIndex,
+			PublicKey:       types.EmptyPk,
+			L1Address:       e.TxInfo.ToL1Address,
+			Nonce:           types.EmptyNonce,
+			CollectionNonce: types.EmptyCollectionNonce,
+			AssetInfo:       types.EmptyAccountAssetInfo,
+			AssetRoot:       common.Bytes2Hex(tree.NilAccountAssetRoot),
+			Status:          account.AccountStatusPending,
+		}
+		toAccount, err = chain.ToFormatAccountInfo(newAccount)
+		if err != nil {
+			return err
+		}
 	}
 
 	fromAccount.AssetInfo[txInfo.AssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
@@ -236,3 +285,13 @@ func (e *TransferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 
 	return txDetails, nil
 }
+
+func (e *TransferExecutor) Finalize() error {
+	if e.IsCreateAccount {
+		bc := e.bc
+		txInfo := e.TxInfo
+		bc.StateDB().AccountAssetTrees.UpdateCache(txInfo.ToAccountIndex, bc.CurrentBlock().BlockHeight)
+	}
+	return nil
+}
+

@@ -460,6 +460,7 @@ func (s *StateDB) GetPendingAccount(blockHeight int64, stateDataCopy *StateDataC
 			AssetInfo:       newAccount.AssetInfo,
 			AssetRoot:       newAccount.AssetRoot,
 			L2BlockHeight:   blockHeight,
+			Status:          newAccount.Status,
 		})
 	}
 
@@ -759,6 +760,7 @@ func (s *StateDB) computeNftLeafHash(nftIndex int64, stateCopy *StateDataCopy) (
 		nftInfo.NftContentHash,
 		nftInfo.CreatorTreasuryRate,
 		nftInfo.CollectionId,
+		nftInfo.NftContentType,
 		nftInfo.NftIndex,
 		stateCopy.CurrentBlock.BlockHeight,
 	)
@@ -822,6 +824,9 @@ func (s *StateDB) GetNextAccountIndex() int64 {
 
 func (s *StateDB) GetCurrentAccountIndex() int64 {
 	return s.AccountAssetTrees.GetCurrentAccountIndex()
+}
+func (s *StateDB) UpdateAccountIndex(accountIndex int64) {
+	s.AccountAssetTrees.UpdateAccountIndex(accountIndex)
 }
 
 func (c *StateDB) UpdateNftIndex(nftIndex int64) {

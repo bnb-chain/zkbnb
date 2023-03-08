@@ -67,6 +67,14 @@ func (c *AssetTreeCache) GetNextAccountIndex() int64 {
 	return c.nextAccountNumber + 1
 }
 
+func (c *AssetTreeCache) UpdateAccountIndex(accountIndex int64) {
+	c.mainLock.Lock()
+	if c.nextAccountNumber < accountIndex {
+		c.nextAccountNumber = accountIndex
+	}
+	c.mainLock.Unlock()
+}
+
 func (c *AssetTreeCache) GetCurrentAccountIndex() int64 {
 	c.mainLock.RLock()
 	defer c.mainLock.RUnlock()

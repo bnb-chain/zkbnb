@@ -75,7 +75,7 @@ func (e *TransferNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 		return types.AppErrAccountInvalidToAccount
 	}
 	if txInfo.ToL1Address != toAccount.L1Address {
-		return types.AppErrInvalidToAccountNameHash
+		return types.AppErrInvalidToAddress
 	}
 
 	nft, err := e.bc.StateDB().GetNft(txInfo.NftIndex)

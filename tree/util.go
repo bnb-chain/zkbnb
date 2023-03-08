@@ -328,6 +328,7 @@ func ComputeNftAssetLeafHash(
 	nftContentHash string,
 	creatorTreasuryRate int64,
 	collectionId int64,
+	nftContentType int8,
 	nftIndex int64,
 	blockHeight int64,
 ) (hashVal []byte, err error) {
@@ -349,11 +350,12 @@ func ComputeNftAssetLeafHash(
 
 	e4 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(creatorTreasuryRate))
 	e5 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(collectionId))
+	e6 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(int64(nftContentType)))
 	var hash [32]byte
 	if e3 != nil {
-		hash = poseidon.Poseidon(e0, e1, e2, e3, e4, e5).Bytes()
+		hash = poseidon.Poseidon(e0, e1, e2, e3, e4, e5, e6).Bytes()
 	} else {
-		hash = poseidon.Poseidon(e0, e1, e2, e4, e5).Bytes()
+		hash = poseidon.Poseidon(e0, e1, e2, e4, e5, e6).Bytes()
 	}
 	logx.Infof("compute nft asset leaf hash,blockHeight=%s,nftIndex=%s,creatorAccountIndex=%s,ownerAccountIndex=%s,nftContentHash=%s,creatorTreasuryRate=%s,collectionId=%s,hash=%s", blockHeight, nftIndex, creatorAccountIndex, ownerAccountIndex, nftContentHash, creatorTreasuryRate, collectionId, common.Bytes2Hex(hash[:]))
 

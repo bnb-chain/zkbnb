@@ -28,12 +28,12 @@ const (
 	EmptyAccountAssetInfo    = "{}"
 	EmptyAccountIndex        = int64(0)
 	EmptyNftContentHash      = "0"
-	EmptyAccountNameHash     = "0"
 	EmptyTxHash              = "0"
 	EmptyL1Address           = "0"
 	EmptyCreatorTreasuryRate = 0
+	EmptyPk                  = ""
+	EmptyNftContentType      = 0
 
-	NilAccountName     = ""
 	NilL1Address       = ""
 	NilNftIndex        = int64(-1)
 	NilAccountIndex    = int64(-1)

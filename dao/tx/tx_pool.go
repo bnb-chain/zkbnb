@@ -63,6 +63,7 @@ type (
 		UpdateTxsToPendingByMaxId(tx *gorm.DB, maxPoolTxId uint) error
 		BatchUpdateNftIndexOrCollectionId(txs []*PoolTx) (err error)
 		GetLatestMintNft() (tx *Tx, err error)
+		GetLatestAccountIndex() (tx *Tx, err error)
 		GetTxsUnscopedByHeights(blockHeights []int64) (txs []*Tx, err error)
 		GetLatestRollback(status int, rollback bool) (tx *PoolTx, err error)
 		GetCountByGreaterHeight(blockHeight int64) (count int64, err error)
@@ -101,6 +102,7 @@ type (
 		Memo          string
 		ExtraInfo     string
 		NativeAddress string // a. Priority tx, assigned when created b. Other tx, assigned after executed.
+		CreateAccount bool
 
 		TxIndex     int64
 		BlockHeight int64 `gorm:"index"`
@@ -509,6 +511,17 @@ func (m *defaultTxPoolModel) GetLatestMintNft() (tx *Tx, err error) {
 	return tx, nil
 }
 
+func (m *defaultTxPoolModel) GetLatestAccountIndex() (tx *Tx, err error) {
+	dbTx := m.DB.Table(m.table).Unscoped().Where("tx_type in ?", []int{types.TxTypeDeposit, types.TxTypeTransfer}).Order("account_index DESC").Limit(1).Find(&tx)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+
+	return tx, nil
+}
+
 func (m *defaultTxPoolModel) GetFirstTxByStatus(status int) (txs *Tx, err error) {
 	dbTx := m.DB.Table(m.table).Where("tx_status = ?", status).Order("id asc").Limit(1).Find(&txs)
 	if dbTx.Error != nil {
@@ -532,7 +545,7 @@ func (m *defaultTxPoolModel) GetLatestExecutedTx() (tx *Tx, err error) {
 func (m *defaultTxPoolModel) BatchUpdateNftIndexOrCollectionId(txs []*PoolTx) (err error) {
 	dbTx := m.DB.Table(m.table).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"nft_index", "collection_id"}),
+		DoUpdates: clause.AssignmentColumns([]string{"nft_index", "collection_id", "account_index"}),
 	}).CreateInBatches(&txs, len(txs))
 	if dbTx.Error != nil {
 		return dbTx.Error

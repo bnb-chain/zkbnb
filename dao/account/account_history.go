@@ -56,6 +56,8 @@ type (
 		AssetInfo       string
 		AssetRoot       string
 		L2BlockHeight   int64 `gorm:"index"`
+		// 0 - registered, no pk; 1 - changed pk
+		Status int
 	}
 )
 

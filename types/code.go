@@ -62,14 +62,12 @@ var (
 	AppErrInvalidToAddress    = New(21005, "invalid toAddress")
 
 	// Account
-	AppErrAccountNotFound              = New(21100, "account not found")
-	AppErrAccountNonceNotFound         = New(21101, "account nonce not found")
-	AppErrInvalidAccountIndex          = New(21102, "invalid account index")
-	AppErrInvalidNonce                 = New(21103, "invalid nonce")
-	AppErrInvalidGasFeeAccount         = New(21104, "invalid gas fee account")
-	AppErrInvalidToAccountNameHash     = New(21105, "invalid ToAccountNameHash")
-	AppErrAccountNameAlreadyRegistered = New(21106, "invalid account name, already registered")
-	AppErrAccountInvalidToAccount      = New(21107, "invalid ToAccount")
+	AppErrAccountNotFound         = New(21100, "account not found")
+	AppErrAccountNonceNotFound    = New(21101, "account nonce not found")
+	AppErrInvalidAccountIndex     = New(21102, "invalid account index")
+	AppErrInvalidNonce            = New(21103, "invalid nonce")
+	AppErrInvalidGasFeeAccount    = New(21104, "invalid gas fee account")
+	AppErrAccountInvalidToAccount = New(21107, "invalid ToAccount")
 
 	// Asset
 	AppErrAssetNotFound      = New(21200, "asset not found")
