@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/utils"
 	"github.com/consensys/gnark/frontend/compiled"
+	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
 	"path/filepath"
 	"reflect"
@@ -460,7 +461,8 @@ func copyWitness(to, from frontend.Circuit) {
 		return nil
 	}
 	if _, err := schema.Parse(from, tVariable, collectHandler); err != nil {
-		panic(err)
+		logx.Severef("failed to parse circuit data, %v", err)
+		panic("failed to parse circuit data, err:" + err.Error())
 	}
 
 	i := 0

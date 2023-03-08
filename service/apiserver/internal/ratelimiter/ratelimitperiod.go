@@ -3,11 +3,12 @@ package ratelimiter
 import (
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/limit"
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 )
 
 type PeriodRateLimiter struct {
-	LocalHostID     string
+	LocalhostID     string
 	RateLimitConfig *RateLimitConfig
 
 	GlobalRateLimitDefault *limit.PeriodLimit
@@ -19,7 +20,7 @@ type PeriodRateLimiter struct {
 	UserRateLimitMap   map[string]*limit.PeriodLimit
 }
 
-func InitRateLimitControlByPeriod(localHostID string,
+func InitRateLimitControlByPeriod(localhostID string,
 	rateLimitConfig *RateLimitConfig, redisInstance *redis.Redis) *PeriodRateLimiter {
 
 	defaultRateLimitConfig := rateLimitConfig.DefaultRateLimit.PeriodRateLimitItem
@@ -31,7 +32,7 @@ func InitRateLimitControlByPeriod(localHostID string,
 		InitRateLimitControlPathMapByPeriod(pathRateLimitMap, redisInstance)
 
 	periodRateLimiter := &PeriodRateLimiter{
-		LocalHostID:            localHostID,
+		LocalhostID:            localhostID,
 		RateLimitConfig:        rateLimitConfig,
 		GlobalRateLimitDefault: globalRateLimitDefault,
 		SingleRateLimitDefault: singleRateLimitDefault,
@@ -40,6 +41,8 @@ func InitRateLimitControlByPeriod(localHostID string,
 		SingleRateLimitMap:     singleRateLimitMap,
 		UserRateLimitMap:       userRateLimitMap,
 	}
+
+	logx.Info("Construct Period RateLimit Facility Successfully!")
 	return periodRateLimiter
 }
 

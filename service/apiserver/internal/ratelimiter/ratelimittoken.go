@@ -1,12 +1,22 @@
 package ratelimiter
 
 import (
+	"fmt"
 	"github.com/zeromicro/go-zero/core/limit"
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 )
 
+const (
+	DefaultGlobalTokenLimiterKey = "DefaultGlobalTokenLimiter"
+	DefaultSingleTokenLimiterKey = "DefaultSingleTokenLimiter:%s"
+
+	PathGlobalTokenLimiterKey = "PathGlobalTokenLimiter:%s"
+	PathSingleTokenLimiterKey = "PathSingleTokenLimiter:%s:%s"
+)
+
 type TokenRateLimiter struct {
-	LocalHostID     string
+	LocalhostID     string
 	RateLimitConfig *RateLimitConfig
 
 	GlobalRateLimitDefault *limit.TokenLimiter
@@ -16,38 +26,39 @@ type TokenRateLimiter struct {
 	SingleRateLimitMap map[string]*limit.TokenLimiter
 }
 
-func InitRateLimitControlByToken(localHostID string,
+func InitRateLimitControlByToken(localhostID string,
 	rateLimitConfig *RateLimitConfig, redisInstance *redis.Redis) *TokenRateLimiter {
 
 	tokenRateLimitItem := rateLimitConfig.DefaultRateLimit.TokenRateLimitItem
-	globalRateLimitDefault, singleRateLimitDefault := InitDefaultRateLimitControlByToken(tokenRateLimitItem, redisInstance)
+	globalRateLimitDefault, singleRateLimitDefault := InitDefaultRateLimitControlByToken(localhostID, tokenRateLimitItem, redisInstance)
 
 	pathRateLimitMap := rateLimitConfig.PathRateLimitMap
-	globalPathRateLimitMap, singlePathRateLimitMap := InitPathRateLimitControlByToken(pathRateLimitMap, redisInstance)
+	globalPathRateLimitMap, singlePathRateLimitMap := InitPathRateLimitControlByToken(localhostID, pathRateLimitMap, redisInstance)
 
 	tokenRateLimiter := &TokenRateLimiter{
-		LocalHostID:            localHostID,
+		LocalhostID:            localhostID,
 		RateLimitConfig:        rateLimitConfig,
 		GlobalRateLimitDefault: globalRateLimitDefault,
 		SingleRateLimitDefault: singleRateLimitDefault,
 		GlobalRateLimitMap:     globalPathRateLimitMap,
 		SingleRateLimitMap:     singlePathRateLimitMap,
 	}
+	logx.Info("Construct Token RateLimit Facility Successfully!")
 	return tokenRateLimiter
 }
 
-func InitDefaultRateLimitControlByToken(tokenRateLimitItem TokenRateLimitItem,
+func InitDefaultRateLimitControlByToken(localhostId string, tokenRateLimitItem TokenRateLimitItem,
 	redisInstance *redis.Redis) (*limit.TokenLimiter, *limit.TokenLimiter) {
 	globalTokenLimiter := limit.NewTokenLimiter(tokenRateLimitItem.GlobalRate,
-		tokenRateLimitItem.GlobalBurst, redisInstance, "DefaultGlobalTokenLimiter")
+		tokenRateLimitItem.GlobalBurst, redisInstance, DefaultGlobalTokenLimiterKey)
 
 	singleTokenLimiter := limit.NewTokenLimiter(tokenRateLimitItem.SingleRate,
-		tokenRateLimitItem.SingleBurst, redisInstance, "DefaultSingleTokenLimiter")
+		tokenRateLimitItem.SingleBurst, redisInstance, fmt.Sprintf(DefaultSingleTokenLimiterKey, localhostId))
 
 	return globalTokenLimiter, singleTokenLimiter
 }
 
-func InitPathRateLimitControlByToken(pathRateLimitMap map[string]RateLimitConfigItem,
+func InitPathRateLimitControlByToken(localhostId string, pathRateLimitMap map[string]RateLimitConfigItem,
 	redisInstance *redis.Redis) (map[string]*limit.TokenLimiter, map[string]*limit.TokenLimiter) {
 	globalRateLimitMap := make(map[string]*limit.TokenLimiter)
 	singleRateLimitMap := make(map[string]*limit.TokenLimiter)
@@ -59,10 +70,10 @@ func InitPathRateLimitControlByToken(pathRateLimitMap map[string]RateLimitConfig
 		// the rateLimitMap could be initiated correctly.
 		if item.RateLimitType == LimitTypeToken || item.RateLimitType == LimitTypeBoth {
 			globalRateLimitMap[path] = limit.NewTokenLimiter(tokenRateLimitItem.GlobalRate, tokenRateLimitItem.GlobalBurst,
-				redisInstance, "PathGlobalTokenLimiter-"+path)
+				redisInstance, fmt.Sprintf(PathGlobalTokenLimiterKey, path))
 
 			singleRateLimitMap[path] = limit.NewTokenLimiter(tokenRateLimitItem.SingleRate, tokenRateLimitItem.SingleBurst,
-				redisInstance, "PathSingleTokenLimiter-"+path)
+				redisInstance, fmt.Sprintf(PathSingleTokenLimiterKey, path, localhostId))
 		}
 	}
 

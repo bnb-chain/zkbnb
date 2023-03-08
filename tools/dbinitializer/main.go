@@ -284,14 +284,14 @@ func initTable(dao *dao, svrConf *contractAddr, bscTestNetworkRPC, localTestNetw
 	assert.Nil(nil, dao.nftMetadataHistoryModel.CreateL2NftMetadataHistoryTable())
 	rowsAffected, err := dao.assetModel.CreateAssets(initAssetsInfo(svrConf.BUSDToken))
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to initialize assets data, %v", err)
+		panic("failed to initialize assets data, err:" + err.Error())
 	}
 	logx.Infof("l2 assets info rows affected: %d", rowsAffected)
 	rowsAffected, err = dao.sysConfigModel.CreateSysConfigs(initSysConfig(svrConf, bscTestNetworkRPC, localTestNetworkRPC))
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to initialize system configuration data, %v", err)
+		panic("failed to initialize system configuration data, err:" + err.Error())
 	}
 	logx.Infof("sys config rows affected: %d", rowsAffected)
 	err = dao.blockModel.CreateGenesisBlock(&block.Block{
@@ -307,7 +307,7 @@ func initTable(dao *dao, svrConf *contractAddr, bscTestNetworkRPC, localTestNetw
 		BlockStatus:                  block.StatusVerifiedAndExecuted,
 	})
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to create the genesis block data, %v", err)
+		panic("failed to create the genesis block data, err:" + err.Error())
 	}
 }
