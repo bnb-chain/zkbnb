@@ -48,6 +48,7 @@ func toCryptoFullExitNftTx(txInfo *txtypes.FullExitNftTxInfo) (info *cryptoTypes
 		NftIndex:            txInfo.NftIndex,
 		CollectionId:        txInfo.CollectionId,
 		NftContentHash:      txInfo.NftContentHash,
+		NftContentType:      txInfo.NftContentType,
 	}
 	return info, nil
 }

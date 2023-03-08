@@ -424,6 +424,7 @@ func (w *WitnessHelper) constructNftWitness(
 		OwnerAccountIndex:   proverNftInfo.NftInfo.OwnerAccountIndex,
 		CreatorTreasuryRate: proverNftInfo.NftInfo.CreatorTreasuryRate,
 		CollectionId:        proverNftInfo.NftInfo.CollectionId,
+		NftContentType:      proverNftInfo.NftInfo.NftContentType,
 	}
 
 	nBalance, err := chain.ComputeNewBalance(
@@ -500,9 +501,9 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 		accountCount     = -1
 	)
 	// dbinitializer prover account map
-	if oTx.TxType == types.TxTypeChangePubKey {
-		accountKeys = append(accountKeys, oTx.AccountIndex)
-	}
+	//if oTx.TxType == types.TxTypeChangePubKey {
+	//	accountKeys = append(accountKeys, oTx.AccountIndex)
+	//}
 	for _, txDetail := range oTx.TxDetails {
 		// if tx detail is from gas account
 		if txDetail.IsGas {
@@ -621,6 +622,37 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 			} else {
 				accountMap[txDetail.AccountIndex].Nonce = txDetail.Nonce
 				accountMap[txDetail.AccountIndex].CollectionNonce = txDetail.CollectionNonce
+			}
+		case types.ChangePubKeyType:
+			// get account info
+			if accountMap[txDetail.AccountIndex] == nil {
+				accountInfo, err := w.accountModel.GetConfirmedAccountByIndex(txDetail.AccountIndex)
+				if err != nil {
+					return nil, nil, nil, err
+				}
+				// get current nonce
+				accountInfo.Nonce = txDetail.Nonce
+				accountMap[txDetail.AccountIndex] = accountInfo
+				if lastAccountOrder != txDetail.AccountOrder {
+					accountKeys = append(accountKeys, txDetail.AccountIndex)
+					lastAccountOrder = txDetail.AccountOrder
+					accountWitnessInfo = append(accountWitnessInfo, &AccountWitnessInfo{
+						AccountInfo: &account.Account{
+							AccountIndex:    accountMap[txDetail.AccountIndex].AccountIndex,
+							PublicKey:       txDetail.BalanceDelta,
+							L1Address:       accountMap[txDetail.AccountIndex].L1Address,
+							Nonce:           accountMap[txDetail.AccountIndex].Nonce,
+							CollectionNonce: accountMap[txDetail.AccountIndex].CollectionNonce,
+							AssetInfo:       accountMap[txDetail.AccountIndex].AssetInfo,
+							AssetRoot:       accountMap[txDetail.AccountIndex].AssetRoot,
+							Status:          accountMap[txDetail.AccountIndex].Status,
+						},
+					})
+					accountCount++
+				}
+			} else {
+				accountMap[txDetail.AccountIndex].Nonce = txDetail.Nonce
+				accountMap[txDetail.AccountIndex].PublicKey = txDetail.BalanceDelta
 			}
 		default:
 			return nil, nil, nil,

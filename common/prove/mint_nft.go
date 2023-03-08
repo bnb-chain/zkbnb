@@ -64,6 +64,7 @@ func toCryptoMintNftTx(txInfo *txtypes.MintNftTxInfo) (info *cryptoTypes.MintNft
 		GasFeeAssetAmount:   packedFee,
 		CollectionId:        txInfo.NftCollectionId,
 		ExpiredAt:           txInfo.ExpiredAt,
+		NftContentType:      txInfo.NftContentType,
 	}
 	return info, nil
 }

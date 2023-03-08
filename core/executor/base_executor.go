@@ -40,7 +40,7 @@ func NewBaseExecutor(bc IBlockchain, tx *tx.Tx, txInfo txtypes.TxInfo) BaseExecu
 
 func (e *BaseExecutor) Prepare() error {
 	// Assign tx related fields for layer2 transaction from the API.
-	from := e.iTxInfo.GetFromAccountIndex()
+	from := e.iTxInfo.GetAccountIndex()
 	if from != types.NilAccountIndex && e.tx.TxHash == types.EmptyTxHash {
 		// Compute tx hash for layer2 transactions.
 		hash, err := e.iTxInfo.Hash(mimc.NewMiMC())
@@ -48,7 +48,7 @@ func (e *BaseExecutor) Prepare() error {
 			return err
 		}
 		e.tx.TxHash = common.Bytes2Hex(hash)
-		e.tx.AccountIndex = e.iTxInfo.GetFromAccountIndex()
+		e.tx.AccountIndex = e.iTxInfo.GetAccountIndex()
 		e.tx.Nonce = e.iTxInfo.GetNonce()
 		e.tx.ExpiredAt = e.iTxInfo.GetExpiredAt()
 	}
@@ -73,7 +73,7 @@ func (e *BaseExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 		return err
 	}
 
-	from := txInfo.GetFromAccountIndex()
+	from := txInfo.GetAccountIndex()
 	if from != types.NilAccountIndex {
 		err = e.bc.VerifyNonce(from, txInfo.GetNonce())
 		if err != nil {

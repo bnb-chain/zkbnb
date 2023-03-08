@@ -18,11 +18,13 @@
 package prove
 
 import (
+	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
+
 	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/types"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
+	"github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
-	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
 )
 
 func (w *WitnessHelper) constructChangePubKeyTxWitness(cryptoTx *TxWitness, oTx *tx.Tx) (*TxWitness, error) {
@@ -34,8 +36,13 @@ func (w *WitnessHelper) constructChangePubKeyTxWitness(cryptoTx *TxWitness, oTx 
 	if err != nil {
 		return nil, err
 	}
-	cryptoTx.Signature = cryptoTypes.EmptySignature()
 	cryptoTx.ChangePubKeyTxInfo = cryptoTxInfo
+	cryptoTx.ExpiredAt = oTx.ExpiredAt
+	cryptoTx.Signature = new(eddsa.Signature)
+	_, err = cryptoTx.Signature.SetBytes(txInfo.Sig)
+	if err != nil {
+		return nil, err
+	}
 	return cryptoTx, nil
 }
 
@@ -44,10 +51,17 @@ func toCryptoChangePubKeyTx(txInfo *txtypes.ChangePubKeyInfo) (info *cryptoTypes
 	pk.A.X.SetBytes(txInfo.PubKeyX)
 	pk.A.Y.SetBytes(txInfo.PubKeyY)
 
+	packedFee, err := common.ToPackedFee(txInfo.GasFeeAssetAmount)
+	if err != nil {
+		return nil, err
+	}
 	info = &cryptoTypes.ChangePubKeyTx{
-		AccountIndex: txInfo.AccountIndex,
-		L1Address:    txInfo.L1Address,
-		PubKey:       pk,
+		AccountIndex:      txInfo.AccountIndex,
+		L1Address:         txInfo.L1Address,
+		PubKey:            pk,
+		Nonce:             txInfo.Nonce,
+		GasFeeAssetId:     txInfo.GasFeeAssetId,
+		GasFeeAssetAmount: packedFee,
 	}
 	return info, nil
 }

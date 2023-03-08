@@ -87,7 +87,7 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 	if err != nil {
 		return resp, err
 	}
-	accountIndex := executor.GetTxInfo().GetFromAccountIndex()
+	accountIndex := executor.GetTxInfo().GetAccountIndex()
 	nonce := executor.GetTxInfo().GetNonce()
 	lock := redislock.GetRedisLock(s.svcCtx.RedisConn, "apiserver:senttx:"+strconv.FormatInt(accountIndex, 10)+"_"+strconv.FormatInt(nonce, 10), 30)
 	ok, err := lock.Acquire()
