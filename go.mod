@@ -194,4 +194,4 @@ replace (
 
 )
 
-replace github.com/bnb-chain/zkbnb-crypto => /Users/user/Documents/work/source/bnb-chain/zkbnb-crypto
+replace github.com/bnb-chain/zkbnb-crypto => /Users/user/zk/fork/ipfs/zkbnb-crypto

@@ -85,12 +85,14 @@ type (
 		gorm.Model
 
 		// Assigned when created in the tx pool.
-		TxHash       string `gorm:"uniqueIndex"`
-		TxType       int64
-		TxInfo       string
-		AccountIndex int64 `gorm:"index:idx_pool_tx_account_index_nonce,priority:1"`
-		Nonce        int64 `gorm:"index:idx_pool_tx_account_index_nonce,priority:2"`
-		ExpiredAt    int64
+		TxHash           string `gorm:"uniqueIndex"`
+		TxType           int64
+		TxInfo           string
+		AccountIndex     int64 `gorm:"index:idx_pool_tx_account_index_nonce,priority:1"`
+		Nonce            int64 `gorm:"index:idx_pool_tx_account_index_nonce,priority:2"`
+		FromAccountIndex int64 `gorm:"index"`
+		ToAccountIndex   int64 `gorm:"index"`
+		ExpiredAt        int64
 
 		// Assigned after executed.
 		GasFee        string

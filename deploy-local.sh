@@ -197,6 +197,7 @@ Postgres:
 CacheRedis:
   - Host: 127.0.0.1:6379
     Type: node
+AccountCacheSize: 100000
 
 ChainConfig:
   NetworkRPCSysConfigName: "${NETWORK_RPC_SYS_CONFIG_NAME}"
