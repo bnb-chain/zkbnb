@@ -193,5 +193,3 @@ replace (
 	github.com/consensys/gnark-crypto => github.com/bnb-chain/gnark-crypto v0.7.1-0.20230203031630-7c643ad11891
 
 )
-
-replace github.com/bnb-chain/zkbnb-crypto => /Users/user/zk/fork/ipfs/zkbnb-crypto
