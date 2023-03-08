@@ -6,6 +6,8 @@ import (
 	"errors"
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/bnb-chain/zkbnb/dao/account"
+	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
@@ -68,9 +70,10 @@ func (e *ChangePubKeyExecutor) ApplyTransaction() error {
 	if err != nil {
 		return err
 	}
+	pkXAndPkY := common.FromHex(txInfo.PubKey)
 	pk := new(eddsa.PublicKey)
-	pk.A.X.SetBytes(txInfo.PubKeyX)
-	pk.A.Y.SetBytes(txInfo.PubKeyY)
+	pk.A.X.SetBytes(pkXAndPkY[0:32])
+	pk.A.Y.SetBytes(pkXAndPkY[32:64])
 	fromAccount.PublicKey = common.Bytes2Hex(pk.Bytes())
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	fromAccount.Nonce++
@@ -89,8 +92,9 @@ func (e *ChangePubKeyExecutor) GeneratePubData() error {
 	buf.WriteByte(uint8(types.TxTypeChangePubKey))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
 	// because we can get Y from X, so we only need to store X is enough
-	buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.PubKeyX))
-	buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.PubKeyY))
+	pkXAndPkY := common.FromHex(txInfo.PubKey)
+	buf.Write(common2.PrefixPaddingBufToChunkSize(pkXAndPkY[0:32]))
+	buf.Write(common2.PrefixPaddingBufToChunkSize(pkXAndPkY[32:64]))
 	buf.Write(common2.AddressStrToBytes(txInfo.L1Address))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.Nonce)))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
@@ -132,9 +136,10 @@ func (e *ChangePubKeyExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 
 	txDetails := make([]*tx.TxDetail, 0, 3)
 
+	pkXAndPkY := common.FromHex(txInfo.PubKey)
 	pk := new(eddsa.PublicKey)
-	pk.A.X.SetBytes(txInfo.PubKeyX)
-	pk.A.Y.SetBytes(txInfo.PubKeyY)
+	pk.A.X.SetBytes(pkXAndPkY[0:32])
+	pk.A.Y.SetBytes(pkXAndPkY[32:64])
 	publicKey := common.Bytes2Hex(pk.Bytes())
 	// from account collection nonce
 	order := int64(0)
