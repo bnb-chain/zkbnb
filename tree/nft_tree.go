@@ -167,6 +167,7 @@ func loadNftTreeFromRDB(
 				CollectionId:        nftHistory.CollectionId,
 				NftIndex:            nftHistory.NftIndex,
 				L2BlockHeight:       nftHistory.L2BlockHeight,
+				NftContentType:      nftHistory.NftContentType,
 			}
 			nftAssets = append(nftAssets, nftAsset)
 		}

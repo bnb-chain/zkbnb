@@ -63,6 +63,7 @@ func (e *FullExitNftExecutor) Prepare() error {
 		NftContentHash:      emptyNftInfo.NftContentHash,
 		CreatorTreasuryRate: emptyNftInfo.CreatorTreasuryRate,
 		CollectionId:        emptyNftInfo.CollectionId,
+		NftContentType:      emptyNftInfo.NftContentType,
 	}
 
 	var isExitEmptyNft = true
@@ -124,6 +125,7 @@ func (e *FullExitNftExecutor) ApplyTransaction() error {
 		NftContentHash:      emptyNftInfo.NftContentHash,
 		CreatorTreasuryRate: emptyNftInfo.CreatorTreasuryRate,
 		CollectionId:        emptyNftInfo.CollectionId,
+		NftContentType:      emptyNftInfo.NftContentType,
 	}
 	cacheNft, err := e.bc.StateDB().GetNft(txInfo.NftIndex)
 	if err == nil {
@@ -222,6 +224,7 @@ func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 			oldNft.NftContentHash,
 			oldNft.CreatorTreasuryRate,
 			oldNft.CollectionId,
+			oldNft.NftContentType,
 		)
 		if txInfo.AccountIndex != oldNft.OwnerAccountIndex {
 			newNft = baseNft

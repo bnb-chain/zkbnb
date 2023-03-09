@@ -128,6 +128,7 @@ func (e *WithdrawNftExecutor) ApplyTransaction() error {
 		NftContentHash:      newNftInfo.NftContentHash,
 		CreatorTreasuryRate: newNftInfo.CreatorTreasuryRate,
 		CollectionId:        newNftInfo.CollectionId,
+		NftContentType:      newNftInfo.NftContentType,
 	})
 	stateCache.SetPendingGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
@@ -235,6 +236,7 @@ func (e *WithdrawNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 			nftModel.NftContentHash,
 			nftModel.CreatorTreasuryRate,
 			nftModel.CollectionId,
+			nftModel.NftContentType,
 		).String(),
 		BalanceDelta:    types.EmptyNftInfo(txInfo.NftIndex).String(),
 		Order:           order,

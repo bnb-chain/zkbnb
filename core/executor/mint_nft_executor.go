@@ -113,6 +113,7 @@ func (e *MintNftExecutor) ApplyTransaction() error {
 		NftContentHash:      txInfo.NftContentHash,
 		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
 		CollectionId:        txInfo.NftCollectionId,
+		NftContentType:      txInfo.NftContentType,
 	})
 	stateCache.SetPendingGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	if e.tx.Rollback == false {

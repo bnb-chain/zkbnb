@@ -86,6 +86,7 @@ func (e *DepositNftExecutor) ApplyTransaction() error {
 		NftContentHash:      common.Bytes2Hex(txInfo.NftContentHash),
 		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
 		CollectionId:        txInfo.CollectionId,
+		NftContentType:      txInfo.NftContentType,
 	}
 	cacheNft, err := e.bc.StateDB().GetNft(txInfo.NftIndex)
 	if err == nil {
@@ -171,6 +172,7 @@ func (e *DepositNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		common.Bytes2Hex(txInfo.NftContentHash),
 		txInfo.CreatorTreasuryRate,
 		txInfo.CollectionId,
+		txInfo.NftContentType,
 	)
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:         txInfo.NftIndex,
