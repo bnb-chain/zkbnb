@@ -195,6 +195,7 @@ func (e *TransferExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	e.tx.GasFee = e.TxInfo.GasFeeAssetAmount.String()
 	e.tx.AssetId = e.TxInfo.AssetId
 	e.tx.TxAmount = e.TxInfo.AssetAmount.String()
+	e.tx.IsCreateAccount = e.IsCreateAccount
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
@@ -294,4 +295,3 @@ func (e *TransferExecutor) Finalize() error {
 	}
 	return nil
 }
-

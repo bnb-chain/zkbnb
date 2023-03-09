@@ -95,16 +95,16 @@ type (
 		ExpiredAt        int64
 
 		// Assigned after executed.
-		GasFee        string
-		GasFeeAssetId int64
-		NftIndex      int64
-		CollectionId  int64
-		AssetId       int64
-		TxAmount      string
-		Memo          string
-		ExtraInfo     string
-		NativeAddress string // a. Priority tx, assigned when created b. Other tx, assigned after executed.
-		CreateAccount bool
+		GasFee          string
+		GasFeeAssetId   int64
+		NftIndex        int64
+		CollectionId    int64
+		AssetId         int64
+		TxAmount        string
+		Memo            string
+		ExtraInfo       string
+		NativeAddress   string // a. Priority tx, assigned when created b. Other tx, assigned after executed. Is
+		IsCreateAccount bool
 
 		TxIndex     int64
 		BlockHeight int64 `gorm:"index"`

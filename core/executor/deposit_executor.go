@@ -142,6 +142,7 @@ func (e *DepositExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	e.tx.AssetId = e.TxInfo.AssetId
 	e.tx.TxAmount = e.TxInfo.AssetAmount.String()
 	e.tx.AccountIndex = e.TxInfo.AccountIndex
+	e.tx.IsCreateAccount = e.IsCreateAccount
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 

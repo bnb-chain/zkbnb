@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/bnb-chain/zkbnb/common/chain"
+	"github.com/bnb-chain/zkbnb/dao/account"
+	"github.com/bnb-chain/zkbnb/tree"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -19,7 +22,8 @@ import (
 type DepositNftExecutor struct {
 	BaseExecutor
 
-	TxInfo *txtypes.DepositNftTxInfo
+	TxInfo          *txtypes.DepositNftTxInfo
+	IsCreateAccount bool
 }
 
 func NewDepositNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
@@ -42,12 +46,22 @@ func (e *DepositNftExecutor) Prepare() error {
 	// The account index from txInfo isn't true, find account by l1Address.
 	l1Address := txInfo.L1Address
 	account, err := bc.StateDB().GetAccountByL1Address(l1Address)
-	if err != nil {
+	if err != nil && err != types.DbErrNotFound {
 		return err
 	}
-
-	// Set the right account index.
-	txInfo.AccountIndex = account.AccountIndex
+	if err == types.DbErrNotFound {
+		if e.tx.Rollback == false {
+			nextAccountIndex := e.bc.StateDB().GetNextAccountIndex()
+			txInfo.AccountIndex = nextAccountIndex
+		} else {
+			//for rollback
+			txInfo.AccountIndex = e.tx.AccountIndex
+		}
+		e.IsCreateAccount = true
+	} else {
+		// Set the right account index.
+		txInfo.AccountIndex = account.AccountIndex
+	}
 
 	_, err = e.bc.StateDB().PrepareNft(txInfo.NftIndex)
 	if err != nil {
@@ -78,6 +92,28 @@ func (e *DepositNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error 
 
 func (e *DepositNftExecutor) ApplyTransaction() error {
 	txInfo := e.TxInfo
+	bc := e.bc
+
+	depositAccount, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
+	if err != nil && err != types.DbErrNotFound {
+		return err
+	}
+	if err == types.DbErrNotFound {
+		newAccount := &account.Account{
+			AccountIndex:    txInfo.AccountIndex,
+			PublicKey:       types.EmptyPk,
+			L1Address:       e.tx.NativeAddress,
+			Nonce:           types.EmptyNonce,
+			CollectionNonce: types.EmptyCollectionNonce,
+			AssetInfo:       types.EmptyAccountAssetInfo,
+			AssetRoot:       common.Bytes2Hex(tree.NilAccountAssetRoot),
+			Status:          account.AccountStatusPending,
+		}
+		depositAccount, err = chain.ToFormatAccountInfo(newAccount)
+		if err != nil {
+			return err
+		}
+	}
 
 	nft := &nft.L2Nft{
 		NftIndex:            txInfo.NftIndex,
@@ -94,6 +130,7 @@ func (e *DepositNftExecutor) ApplyTransaction() error {
 	}
 	stateCache := e.bc.StateDB()
 	stateCache.SetPendingNft(txInfo.NftIndex, nft)
+	stateCache.SetPendingAccount(depositAccount.AccountIndex, depositAccount)
 	return e.BaseExecutor.ApplyTransaction()
 }
 
@@ -130,6 +167,7 @@ func (e *DepositNftExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	e.tx.TxInfo = string(txInfoBytes)
 	e.tx.NftIndex = e.TxInfo.NftIndex
 	e.tx.AccountIndex = e.TxInfo.AccountIndex
+	e.tx.IsCreateAccount = e.IsCreateAccount
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
@@ -188,4 +226,13 @@ func (e *DepositNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	})
 
 	return txDetails, nil
+}
+
+func (e *DepositNftExecutor) Finalize() error {
+	if e.IsCreateAccount {
+		bc := e.bc
+		txInfo := e.TxInfo
+		bc.StateDB().AccountAssetTrees.UpdateCache(txInfo.AccountIndex, bc.CurrentBlock().BlockHeight)
+	}
+	return nil
 }
