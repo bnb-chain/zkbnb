@@ -4,6 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/bnb-chain/zkbnb/common/chain"
+	"github.com/bnb-chain/zkbnb/dao/account"
+	"github.com/bnb-chain/zkbnb/tree"
+	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -18,7 +22,8 @@ import (
 type FullExitExecutor struct {
 	BaseExecutor
 
-	TxInfo *txtypes.FullExitTxInfo
+	TxInfo          *txtypes.FullExitTxInfo
+	AccountNotExist bool
 }
 
 func NewFullExitExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
@@ -40,13 +45,27 @@ func (e *FullExitExecutor) Prepare() error {
 
 	// The account index from txInfo isn't true, find account by l1Address.
 	l1Address := txInfo.L1Address
-	account, err := bc.StateDB().GetAccountByL1Address(l1Address)
-	if err != nil {
+	accountByL1Address, err := bc.StateDB().GetAccountByL1Address(l1Address)
+	if err != nil && err != types.DbErrNotFound {
 		return err
 	}
+	formatAccountByIndex, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
+	if err != nil && (err != types.DbErrNotFound && err != types.AppErrAccountNotFound) {
+		return err
+	}
+	txInfo.AssetAmount = new(big.Int).SetInt64(0)
+	if formatAccountByIndex == nil {
+		e.AccountNotExist = true
+		return nil
+	}
 
-	// Set the right account index.
-	txInfo.AccountIndex = account.AccountIndex
+	if accountByL1Address != nil {
+		if formatAccountByIndex.L1Address == accountByL1Address.L1Address &&
+			formatAccountByIndex.AccountIndex == accountByL1Address.AccountIndex {
+			// Set the right asset amount.
+			txInfo.AssetAmount = formatAccountByIndex.AssetInfo[txInfo.AssetId].Balance
+		}
+	}
 
 	// Mark the tree states that would be affected in this executor.
 	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{txInfo.AssetId})
@@ -54,13 +73,6 @@ func (e *FullExitExecutor) Prepare() error {
 	if err != nil {
 		return err
 	}
-
-	// Set the right asset amount.
-	formatAccount, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
-	if err != nil {
-		return err
-	}
-	txInfo.AssetAmount = formatAccount.AssetInfo[txInfo.AssetId].Balance
 	return nil
 }
 
@@ -69,6 +81,9 @@ func (e *FullExitExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 }
 
 func (e *FullExitExecutor) ApplyTransaction() error {
+	if e.AccountNotExist {
+		return nil
+	}
 	bc := e.bc
 	txInfo := e.TxInfo
 
@@ -122,10 +137,35 @@ func (e *FullExitExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 
 func (e *FullExitExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.TxInfo
-	exitAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
-	if err != nil {
-		return nil, err
+	var exitAccount *types.AccountInfo
+	var err error
+	if e.AccountNotExist {
+		newAccount := &account.Account{
+			AccountIndex:    txInfo.AccountIndex,
+			PublicKey:       types.EmptyPk,
+			L1Address:       types.EmptyL1Address,
+			Nonce:           types.EmptyNonce,
+			CollectionNonce: types.EmptyCollectionNonce,
+			AssetInfo:       types.EmptyAccountAssetInfo,
+			AssetRoot:       common.Bytes2Hex(tree.NilAccountAssetRoot),
+			Status:          account.AccountStatusPending,
+		}
+		exitAccount, err = chain.ToFormatAccountInfo(newAccount)
+		if err != nil {
+			return nil, err
+		}
+		exitAccount.AssetInfo[txInfo.AssetId] = &types.AccountAsset{
+			AssetId:                  txInfo.AssetId,
+			Balance:                  ffmath.Neg(txInfo.AssetAmount),
+			OfferCanceledOrFinalized: big.NewInt(0),
+		}
+	} else {
+		exitAccount, err = e.bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	baseBalance := exitAccount.AssetInfo[txInfo.AssetId]
 	deltaBalance := &types.AccountAsset{
 		AssetId:                  txInfo.AssetId,
