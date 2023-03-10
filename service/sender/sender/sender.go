@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/shopspring/decimal"
 	"gorm.io/plugin/dbresolver"
@@ -117,6 +118,7 @@ type Sender struct {
 	l1RollupTxModel      l1rolluptx.L1RollupTxModel
 	sysConfigModel       sysconfig.SysConfigModel
 	proofModel           proof.ProofModel
+	txModel              tx.TxModel
 }
 
 func NewSender(c sconfig.Config) *Sender {
@@ -183,6 +185,7 @@ func NewSender(c sconfig.Config) *Sender {
 		l1RollupTxModel:      l1rolluptx.NewL1RollupTxModel(db),
 		sysConfigModel:       sysconfig.NewSysConfigModel(db),
 		proofModel:           proof.NewProofModel(db),
+		txModel:              tx.NewTxModel(db),
 	}
 
 	l1RPCEndpoint, err := s.sysConfigModel.GetSysConfigByName(c.ChainConfig.NetworkRPCSysConfigName)
@@ -272,7 +275,7 @@ func (s *Sender) CommitBlocks() (err error) {
 	if len(blocks) == 0 {
 		return nil
 	}
-	pendingCommitBlocks, err := ConvertBlocksForCommitToCommitBlockInfos(blocks)
+	pendingCommitBlocks, err := ConvertBlocksForCommitToCommitBlockInfos(blocks, s.txModel)
 	if err != nil {
 		return fmt.Errorf("failed to get commit block info, err: %v", err)
 	}

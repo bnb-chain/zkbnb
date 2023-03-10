@@ -84,6 +84,17 @@ func GetL1TxTypes() []int64 {
 		TxTypeFullExitNft}
 }
 
+func GetOnChainTypes() []int64 {
+	return []int64{TxTypeChangePubKey,
+		TxTypeWithdraw,
+		TxTypeWithdrawNft,
+		TxTypeDeposit,
+		TxTypeDepositNft,
+		TxTypeFullExit,
+		TxTypeFullExitNft,
+	}
+}
+
 const (
 	TxTypeBytesSize          = 1
 	AddressBytesSize         = 20
