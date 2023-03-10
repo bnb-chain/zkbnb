@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/bnb-chain/zkbnb/common/chain"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -21,8 +22,9 @@ type FullExitNftExecutor struct {
 
 	TxInfo *txtypes.FullExitNftTxInfo
 
-	exitNft   *nft.L2Nft
-	exitEmpty bool
+	exitNft         *nft.L2Nft
+	exitEmpty       bool
+	AccountNotExist bool
 }
 
 func NewFullExitNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
@@ -44,13 +46,20 @@ func (e *FullExitNftExecutor) Prepare() error {
 
 	// The account index from txInfo isn't true, find account by l1Address.
 	l1Address := txInfo.L1Address
-	account, err := bc.StateDB().GetAccountByL1Address(l1Address)
-	if err != nil {
+	accountByL1Address, err := bc.StateDB().GetAccountByL1Address(l1Address)
+	if err != nil && err != types.DbErrNotFound {
 		return err
 	}
+	formatAccountByIndex, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
+	if err != nil && (err != types.DbErrNotFound && err != types.AppErrAccountNotFound) {
+		return err
+	}
+	if formatAccountByIndex == nil {
+		e.AccountNotExist = true
+		return nil
+	}
 
-	// Set the right account index.
-	txInfo.AccountIndex = account.AccountIndex
+	var isExitEmptyNft = true
 
 	// Default withdraw an empty nft.
 	// Case1: the nft index isn't exist.
@@ -66,16 +75,19 @@ func (e *FullExitNftExecutor) Prepare() error {
 		NftContentType:      emptyNftInfo.NftContentType,
 	}
 
-	var isExitEmptyNft = true
-	nft, err := e.bc.StateDB().PrepareNft(txInfo.NftIndex)
-	if err != nil && err != types.AppErrNftNotFound {
-		return err
-	}
-
-	if err == nil && nft.OwnerAccountIndex == account.AccountIndex {
-		// Set the right nft if the owner is correct.
-		exitNft = nft
-		isExitEmptyNft = false
+	if accountByL1Address != nil {
+		if formatAccountByIndex.L1Address == accountByL1Address.L1Address &&
+			formatAccountByIndex.AccountIndex == accountByL1Address.AccountIndex {
+			nft, err := e.bc.StateDB().PrepareNft(txInfo.NftIndex)
+			if err != nil && err != types.AppErrNftNotFound {
+				return err
+			}
+			if err == nil && nft.OwnerAccountIndex == formatAccountByIndex.AccountIndex {
+				// Set the right nft if the owner is correct.
+				exitNft = nft
+				isExitEmptyNft = false
+			}
+		}
 	}
 
 	// Mark the tree states that would be affected in this executor.
@@ -111,7 +123,7 @@ func (e *FullExitNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 }
 
 func (e *FullExitNftExecutor) ApplyTransaction() error {
-	if e.exitEmpty {
+	if e.exitEmpty || e.AccountNotExist {
 		return nil
 	}
 
@@ -179,9 +191,19 @@ func (e *FullExitNftExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	bc := e.bc
 	txInfo := e.TxInfo
-	exitAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
-	if err != nil {
-		return nil, err
+	var exitAccount *types.AccountInfo
+	var err error
+	if e.AccountNotExist {
+		newAccount := types.EmptyAccountInfo(txInfo.AccountIndex)
+		exitAccount, err = chain.ToFormatAccountInfo(newAccount)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		exitAccount, err = e.bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	creatorAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.CreatorAccountIndex)

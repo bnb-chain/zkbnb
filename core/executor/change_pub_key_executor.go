@@ -156,7 +156,7 @@ func (e *ChangePubKeyExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	pk.A.X.SetBytes(txInfo.PubKeyX)
 	pk.A.Y.SetBytes(txInfo.PubKeyY)
 	publicKey := common.Bytes2Hex(pk.Bytes())
-	// from account collection nonce
+	// from account
 	order := int64(0)
 	accountOrder := int64(0)
 	txDetails = append(txDetails, &tx.TxDetail{

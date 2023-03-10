@@ -475,7 +475,14 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 			if accountMap[txDetail.AccountIndex] == nil {
 				accountInfo, err := w.accountModel.GetAccountByIndex(txDetail.AccountIndex)
 				if err != nil {
-					return nil, nil, nil, err
+					if oTx.TxType == types.TxTypeFullExit || oTx.TxType == types.TxTypeFullExitNft {
+						if err != types.DbErrNotFound {
+							return nil, nil, nil, err
+						}
+						accountInfo = types.EmptyAccountInfo(txDetail.AccountIndex)
+					} else {
+						return nil, nil, nil, err
+					}
 				}
 				// get current nonce
 				accountInfo.Nonce = txDetail.Nonce

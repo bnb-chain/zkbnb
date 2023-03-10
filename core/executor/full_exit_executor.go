@@ -5,9 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/bnb-chain/zkbnb/common/chain"
-	"github.com/bnb-chain/zkbnb/dao/account"
-	"github.com/bnb-chain/zkbnb/tree"
-	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -142,16 +139,7 @@ func (e *FullExitExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	var exitAccount *types.AccountInfo
 	var err error
 	if e.AccountNotExist {
-		newAccount := &account.Account{
-			AccountIndex:    txInfo.AccountIndex,
-			PublicKey:       types.EmptyPk,
-			L1Address:       types.EmptyL1Address,
-			Nonce:           types.EmptyNonce,
-			CollectionNonce: types.EmptyCollectionNonce,
-			AssetInfo:       types.EmptyAccountAssetInfo,
-			AssetRoot:       common.Bytes2Hex(tree.NilAccountAssetRoot),
-			Status:          account.AccountStatusPending,
-		}
+		newAccount := types.EmptyAccountInfo(txInfo.AccountIndex)
 		exitAccount, err = chain.ToFormatAccountInfo(newAccount)
 		if err != nil {
 			return nil, err

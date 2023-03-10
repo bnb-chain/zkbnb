@@ -19,6 +19,9 @@ package types
 
 import (
 	"encoding/json"
+	"github.com/bnb-chain/zkbnb/dao/account"
+	"github.com/bnb-chain/zkbnb/tree"
+	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 )
 
@@ -97,4 +100,17 @@ func (ai *AccountInfo) DeepCopy() *AccountInfo {
 		Status:          ai.Status,
 	}
 	return newAccountInfo
+}
+
+func EmptyAccountInfo(accountIndex int64) (info *account.Account) {
+	return &account.Account{
+		AccountIndex:    accountIndex,
+		PublicKey:       EmptyPk,
+		L1Address:       EmptyL1Address,
+		Nonce:           EmptyNonce,
+		CollectionNonce: EmptyCollectionNonce,
+		AssetInfo:       EmptyAccountAssetInfo,
+		AssetRoot:       common.Bytes2Hex(tree.NilAccountAssetRoot),
+		Status:          account.AccountStatusPending,
+	}
 }
