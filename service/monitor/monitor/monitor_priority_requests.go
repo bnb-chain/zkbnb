@@ -199,6 +199,9 @@ func (m *Monitor) GetAccountIndex(l1Address string) (int64, error) {
 		}
 		dbAccount, err := m.AccountModel.GetAccountByL1Address(l1Address)
 		if err != nil {
+			if err == types.DbErrNotFound {
+				return types.NilAccountIndex, nil
+			}
 			return 0, err
 		}
 		m.AccountCache.Add(l1Address, dbAccount.AccountIndex)
