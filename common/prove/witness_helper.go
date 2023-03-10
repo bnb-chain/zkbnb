@@ -187,111 +187,71 @@ func (w *WitnessHelper) constructAccountWitness(
 		if err != nil {
 			return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 		}
-		// it means this is a registerZNS tx
-		if proverAccounts == nil {
-			if accountKey != w.assetTrees.GetNextAccountIndex() {
-				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore,
-					fmt.Errorf("invalid key")
-			}
-			w.assetTrees.UpdateCache(accountKey, int64(finalityBlockNr))
-			cryptoAccount = cryptoTypes.EmptyAccount(accountKey, tree.NilAccountAssetRoot)
-			// update account info
-			accountInfo, err := w.accountModel.GetConfirmedAccountByIndex(accountKey)
+		proverAccountInfo := proverAccounts[accountCount]
+		pk, err := common2.ParsePubKey(proverAccountInfo.AccountInfo.PublicKey)
+		if err != nil {
+			return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
+		}
+		cryptoAccount = &cryptoTypes.Account{
+			AccountIndex:    accountKey,
+			L1Address:       proverAccountInfo.AccountInfo.L1Address,
+			AccountPk:       pk,
+			Nonce:           proverAccountInfo.AccountInfo.Nonce,
+			CollectionNonce: proverAccountInfo.AccountInfo.CollectionNonce,
+			AssetRoot:       w.assetTrees.Get(accountKey).Root(),
+		}
+		for i, accountAsset := range proverAccountInfo.AccountAssets {
+			assetMerkleProof, err := w.assetTrees.Get(accountKey).GetProof(uint64(accountAsset.AssetId))
 			if err != nil {
 				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 			}
-			proverAccounts = append(proverAccounts, &AccountWitnessInfo{
-				AccountInfo: &account.Account{
-					AccountIndex:    accountInfo.AccountIndex,
-					PublicKey:       accountInfo.PublicKey,
-					L1Address:       accountInfo.L1Address,
-					Nonce:           types.EmptyNonce,
-					CollectionNonce: types.EmptyCollectionNonce,
-					AssetInfo:       types.EmptyAccountAssetInfo,
-					AssetRoot:       common.Bytes2Hex(tree.NilAccountAssetRoot),
-					Status:          accountInfo.Status,
-				},
-			})
+			// set crypto account asset
+			cryptoAccount.AssetsInfo[assetCount] = &cryptoTypes.AccountAsset{
+				AssetId:                  accountAsset.AssetId,
+				Balance:                  accountAsset.Balance,
+				OfferCanceledOrFinalized: accountAsset.OfferCanceledOrFinalized,
+			}
 
-			// cache gas account
+			// set merkle proof
+			merkleProofsAccountAssetsBefore[accountCount][assetCount], err = SetFixedAccountAssetArray(assetMerkleProof)
+			if err != nil {
+				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
+			}
+			// update asset merkle tree
+			nBalance, err := chain.ComputeNewBalance(
+				proverAccountInfo.AssetsRelatedTxDetails[i].AssetType,
+				proverAccountInfo.AssetsRelatedTxDetails[i].Balance,
+				proverAccountInfo.AssetsRelatedTxDetails[i].BalanceDelta,
+			)
+			if err != nil {
+				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
+			}
+			nAsset, err := types.ParseAccountAsset(nBalance)
+			if err != nil {
+				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
+			}
+			nAssetHash, err := tree.ComputeAccountAssetLeafHash(nAsset.Balance.String(), nAsset.OfferCanceledOrFinalized.String(), accountKey, accountAsset.AssetId, oTx.BlockHeight)
+			if err != nil {
+				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
+			}
+			err = w.assetTrees.GetAdapter(accountKey).SetWithVersion(uint64(accountAsset.AssetId), nAssetHash, bsmt.Version(oTx.BlockHeight))
+			if err != nil {
+				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
+			}
+
+			assetCount++
+
+			// cache gas account's assets
 			if accountKey == types.GasAccount {
-				w.gasAccountInfo = &types.AccountInfo{
-					AccountIndex:    accountInfo.AccountIndex,
-					L1Address:       accountInfo.L1Address,
-					PublicKey:       accountInfo.PublicKey,
-					Nonce:           types.EmptyNonce,
-					CollectionNonce: types.EmptyCollectionNonce,
-					AssetRoot:       common.Bytes2Hex(tree.NilAccountAssetRoot),
-					AssetInfo:       make(map[int64]*types.AccountAsset, 0),
+				w.gasAccountInfo.AssetInfo[nAsset.AssetId] = &types.AccountAsset{
+					AssetId:                  nAsset.AssetId,
+					Balance:                  nAsset.Balance,
+					OfferCanceledOrFinalized: nAsset.OfferCanceledOrFinalized,
 				}
 			}
-		} else {
-			proverAccountInfo := proverAccounts[accountCount]
-			pk, err := common2.ParsePubKey(proverAccountInfo.AccountInfo.PublicKey)
-			if err != nil {
-				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
-			}
-			cryptoAccount = &cryptoTypes.Account{
-				AccountIndex:    accountKey,
-				L1Address:       proverAccountInfo.AccountInfo.L1Address,
-				AccountPk:       pk,
-				Nonce:           proverAccountInfo.AccountInfo.Nonce,
-				CollectionNonce: proverAccountInfo.AccountInfo.CollectionNonce,
-				AssetRoot:       w.assetTrees.Get(accountKey).Root(),
-			}
-			for i, accountAsset := range proverAccountInfo.AccountAssets {
-				assetMerkleProof, err := w.assetTrees.Get(accountKey).GetProof(uint64(accountAsset.AssetId))
-				if err != nil {
-					return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
-				}
-				// set crypto account asset
-				cryptoAccount.AssetsInfo[assetCount] = &cryptoTypes.AccountAsset{
-					AssetId:                  accountAsset.AssetId,
-					Balance:                  accountAsset.Balance,
-					OfferCanceledOrFinalized: accountAsset.OfferCanceledOrFinalized,
-				}
-
-				// set merkle proof
-				merkleProofsAccountAssetsBefore[accountCount][assetCount], err = SetFixedAccountAssetArray(assetMerkleProof)
-				if err != nil {
-					return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
-				}
-				// update asset merkle tree
-				nBalance, err := chain.ComputeNewBalance(
-					proverAccountInfo.AssetsRelatedTxDetails[i].AssetType,
-					proverAccountInfo.AssetsRelatedTxDetails[i].Balance,
-					proverAccountInfo.AssetsRelatedTxDetails[i].BalanceDelta,
-				)
-				if err != nil {
-					return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
-				}
-				nAsset, err := types.ParseAccountAsset(nBalance)
-				if err != nil {
-					return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
-				}
-				nAssetHash, err := tree.ComputeAccountAssetLeafHash(nAsset.Balance.String(), nAsset.OfferCanceledOrFinalized.String(), accountKey, accountAsset.AssetId, oTx.BlockHeight)
-				if err != nil {
-					return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
-				}
-				err = w.assetTrees.GetAdapter(accountKey).SetWithVersion(uint64(accountAsset.AssetId), nAssetHash, bsmt.Version(oTx.BlockHeight))
-				if err != nil {
-					return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
-				}
-
-				assetCount++
-
-				// cache gas account's assets
-				if accountKey == types.GasAccount {
-					w.gasAccountInfo.AssetInfo[nAsset.AssetId] = &types.AccountAsset{
-						AssetId:                  nAsset.AssetId,
-						Balance:                  nAsset.Balance,
-						OfferCanceledOrFinalized: nAsset.OfferCanceledOrFinalized,
-					}
-				}
-			}
-			if err != nil {
-				return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
-			}
+		}
+		if err != nil {
+			return accountRootBefore, accountsInfoBefore, merkleProofsAccountAssetsBefore, merkleProofsAccountBefore, err
 		}
 		// padding empty account asset
 		for assetCount < NbAccountAssetsPerAccount {
@@ -639,7 +599,7 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 					accountWitnessInfo = append(accountWitnessInfo, &AccountWitnessInfo{
 						AccountInfo: &account.Account{
 							AccountIndex:    accountMap[txDetail.AccountIndex].AccountIndex,
-							PublicKey:       txDetail.BalanceDelta,
+							PublicKey:       txDetail.Balance,
 							L1Address:       accountMap[txDetail.AccountIndex].L1Address,
 							Nonce:           accountMap[txDetail.AccountIndex].Nonce,
 							CollectionNonce: accountMap[txDetail.AccountIndex].CollectionNonce,
@@ -652,7 +612,7 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 				}
 			} else {
 				accountMap[txDetail.AccountIndex].Nonce = txDetail.Nonce
-				accountMap[txDetail.AccountIndex].PublicKey = txDetail.BalanceDelta
+				accountMap[txDetail.AccountIndex].PublicKey = txDetail.Balance
 			}
 		default:
 			return nil, nil, nil,
