@@ -25,7 +25,6 @@ import (
 	"github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
-	common2 "github.com/ethereum/go-ethereum/common"
 )
 
 func (w *WitnessHelper) constructChangePubKeyTxWitness(cryptoTx *TxWitness, oTx *tx.Tx) (*TxWitness, error) {
@@ -48,11 +47,9 @@ func (w *WitnessHelper) constructChangePubKeyTxWitness(cryptoTx *TxWitness, oTx 
 }
 
 func toCryptoChangePubKeyTx(txInfo *txtypes.ChangePubKeyInfo) (info *cryptoTypes.ChangePubKeyTx, err error) {
-	pkXAndPkY := common2.FromHex(txInfo.PubKey)
 	pk := new(eddsa.PublicKey)
-	pk.A.X.SetBytes(pkXAndPkY[0:32])
-	pk.A.Y.SetBytes(pkXAndPkY[32:64])
-	publicKey := common2.Bytes2Hex(pk.Bytes())
+	pk.A.X.SetBytes(txInfo.PubKeyX)
+	pk.A.Y.SetBytes(txInfo.PubKeyY)
 
 	packedFee, err := common.ToPackedFee(txInfo.GasFeeAssetAmount)
 	if err != nil {
@@ -61,7 +58,7 @@ func toCryptoChangePubKeyTx(txInfo *txtypes.ChangePubKeyInfo) (info *cryptoTypes
 	info = &cryptoTypes.ChangePubKeyTx{
 		AccountIndex:      txInfo.AccountIndex,
 		L1Address:         txInfo.L1Address,
-		PubKey:            publicKey,
+		PubKey:            pk,
 		Nonce:             txInfo.Nonce,
 		GasFeeAssetId:     txInfo.GasFeeAssetId,
 		GasFeeAssetAmount: packedFee,

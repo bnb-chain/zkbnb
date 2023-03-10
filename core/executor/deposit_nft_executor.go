@@ -168,6 +168,8 @@ func (e *DepositNftExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	e.tx.NftIndex = e.TxInfo.NftIndex
 	e.tx.AccountIndex = e.TxInfo.AccountIndex
 	e.tx.IsCreateAccount = e.IsCreateAccount
+	e.tx.FromAccountIndex = e.TxInfo.GetFromAccountIndex()
+	e.tx.ToAccountIndex = e.TxInfo.GetToAccountIndex()
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
@@ -199,6 +201,7 @@ func (e *DepositNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Order:           order,
 		Nonce:           depositAccount.Nonce,
 		CollectionNonce: depositAccount.CollectionNonce,
+		PublicKey:       depositAccount.PublicKey,
 	})
 	// nft info
 	order++
@@ -223,6 +226,7 @@ func (e *DepositNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Order:           order,
 		Nonce:           depositAccount.Nonce,
 		CollectionNonce: depositAccount.CollectionNonce,
+		PublicKey:       depositAccount.PublicKey,
 	})
 
 	return txDetails, nil

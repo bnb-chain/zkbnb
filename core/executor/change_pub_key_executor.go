@@ -25,7 +25,7 @@ type ChangePubKeyExecutor struct {
 func NewChangePubKeyExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	txInfo, err := types.ParseChangePubKeyTxInfo(tx.TxInfo)
 	if err != nil {
-		logx.Errorf("parse register tx failed: %s", err.Error())
+		logx.Errorf("parse change pub key tx failed: %s", err.Error())
 		return nil, errors.New("invalid tx info")
 	}
 
@@ -36,13 +36,17 @@ func NewChangePubKeyExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 }
 
 func (e *ChangePubKeyExecutor) Prepare() error {
+	txInfo := e.TxInfo
+
+	// Mark the tree states that would be affected in this executor.
+	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{})
+	e.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
+
 	err := e.BaseExecutor.Prepare()
 	if err != nil {
 		return err
 	}
 
-	// Mark the tree states that would be affected in this executor.
-	e.MarkAccountAssetsDirty(e.TxInfo.AccountIndex, []int64{})
 	return nil
 }
 
@@ -59,6 +63,18 @@ func (e *ChangePubKeyExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) erro
 		return types.AppErrInvalidAccountIndex
 	}
 
+	err = e.BaseExecutor.VerifyInputs(skipGasAmtChk, skipSigChk)
+	if err != nil {
+		return err
+	}
+
+	fromFormatAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
+	if err != nil {
+		return err
+	}
+	if fromFormatAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
+		return types.AppErrBalanceNotEnough
+	}
 	return nil
 }
 
@@ -70,10 +86,9 @@ func (e *ChangePubKeyExecutor) ApplyTransaction() error {
 	if err != nil {
 		return err
 	}
-	pkXAndPkY := common.FromHex(txInfo.PubKey)
 	pk := new(eddsa.PublicKey)
-	pk.A.X.SetBytes(pkXAndPkY[0:32])
-	pk.A.Y.SetBytes(pkXAndPkY[32:64])
+	pk.A.X.SetBytes(txInfo.PubKeyX)
+	pk.A.Y.SetBytes(txInfo.PubKeyY)
 	fromAccount.PublicKey = common.Bytes2Hex(pk.Bytes())
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	fromAccount.Nonce++
@@ -92,9 +107,8 @@ func (e *ChangePubKeyExecutor) GeneratePubData() error {
 	buf.WriteByte(uint8(types.TxTypeChangePubKey))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
 	// because we can get Y from X, so we only need to store X is enough
-	pkXAndPkY := common.FromHex(txInfo.PubKey)
-	buf.Write(common2.PrefixPaddingBufToChunkSize(pkXAndPkY[0:32]))
-	buf.Write(common2.PrefixPaddingBufToChunkSize(pkXAndPkY[32:64]))
+	buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.PubKeyX))
+	buf.Write(common2.PrefixPaddingBufToChunkSize(txInfo.PubKeyY))
 	buf.Write(common2.AddressStrToBytes(txInfo.L1Address))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.Nonce)))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
@@ -121,6 +135,8 @@ func (e *ChangePubKeyExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 
 	e.tx.TxInfo = string(txInfoBytes)
 	e.tx.AccountIndex = e.TxInfo.AccountIndex
+	e.tx.FromAccountIndex = e.TxInfo.GetFromAccountIndex()
+	e.tx.ToAccountIndex = e.TxInfo.GetToAccountIndex()
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
@@ -136,10 +152,9 @@ func (e *ChangePubKeyExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 
 	txDetails := make([]*tx.TxDetail, 0, 3)
 
-	pkXAndPkY := common.FromHex(txInfo.PubKey)
 	pk := new(eddsa.PublicKey)
-	pk.A.X.SetBytes(pkXAndPkY[0:32])
-	pk.A.Y.SetBytes(pkXAndPkY[32:64])
+	pk.A.X.SetBytes(txInfo.PubKeyX)
+	pk.A.Y.SetBytes(txInfo.PubKeyY)
 	publicKey := common.Bytes2Hex(pk.Bytes())
 	// from account collection nonce
 	order := int64(0)
@@ -155,6 +170,7 @@ func (e *ChangePubKeyExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Nonce:           fromAccount.Nonce,
 		AccountOrder:    accountOrder,
 		CollectionNonce: fromAccount.CollectionNonce,
+		PublicKey:       fromAccount.PublicKey,
 	})
 	fromAccount.PublicKey = publicKey
 
@@ -175,6 +191,7 @@ func (e *ChangePubKeyExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Nonce:           fromAccount.Nonce,
 		AccountOrder:    accountOrder,
 		CollectionNonce: fromAccount.CollectionNonce,
+		PublicKey:       fromAccount.PublicKey,
 	})
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(types.ZeroBigInt) < 0 {
@@ -199,6 +216,7 @@ func (e *ChangePubKeyExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Nonce:        gasAccount.Nonce,
 		AccountOrder: accountOrder,
 		IsGas:        true,
+		PublicKey:    gasAccount.PublicKey,
 	})
 	return txDetails, nil
 }

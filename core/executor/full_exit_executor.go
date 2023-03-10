@@ -132,6 +132,8 @@ func (e *FullExitExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	e.tx.AssetId = e.TxInfo.AssetId
 	e.tx.TxAmount = e.TxInfo.AssetAmount.String()
 	e.tx.AccountIndex = e.TxInfo.AccountIndex
+	e.tx.FromAccountIndex = e.TxInfo.GetFromAccountIndex()
+	e.tx.ToAccountIndex = e.TxInfo.GetToAccountIndex()
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
@@ -183,6 +185,7 @@ func (e *FullExitExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountOrder:    0,
 		Nonce:           exitAccount.Nonce,
 		CollectionNonce: exitAccount.CollectionNonce,
+		PublicKey:       exitAccount.PublicKey,
 	}
 	return []*tx.TxDetail{txDetail}, nil
 }

@@ -52,7 +52,8 @@ type (
 		AccountOrder    int64
 		Nonce           int64
 		CollectionNonce int64
-		IsGas           bool  `gorm:"default:false"`
+		IsGas           bool `gorm:"default:false"`
+		PublicKey       string
 		BlockHeight     int64 `gorm:"index"`
 	}
 )

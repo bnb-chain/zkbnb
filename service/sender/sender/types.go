@@ -105,8 +105,7 @@ func ConvertBlocksForCommitToCommitBlockInfos(oBlocks []*compressedblock.Compres
 						logx.Errorf("parse change pub key tx info tx failed: %s", err.Error())
 						return nil, err
 					}
-					//todo
-					onChainOperationData.EthWitness = txInfo.Sig
+					onChainOperationData.EthWitness = common.FromHex(txInfo.L1Sig)
 				}
 			}
 			onChainOperations = append(onChainOperations, onChainOperationData)

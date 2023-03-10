@@ -690,7 +690,8 @@ func (c *ExodusExit) executeChangePubKey(pubData []byte) error {
 
 	var txInfo = &txtypes.ChangePubKeyInfo{
 		AccountIndex: int64(accountIndex),
-		PubKey:       common.Bytes2Hex(append(pubKeyX, pubKeyY...)),
+		PubKeyX:      pubKeyX,
+		PubKeyY:      pubKeyY,
 		L1Address:    l1Address,
 		Nonce:        int64(nonce),
 	}

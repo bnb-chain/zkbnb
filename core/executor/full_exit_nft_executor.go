@@ -171,6 +171,8 @@ func (e *FullExitNftExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	e.tx.TxInfo = string(txInfoBytes)
 	e.tx.NftIndex = e.TxInfo.NftIndex
 	e.tx.AccountIndex = e.TxInfo.AccountIndex
+	e.tx.FromAccountIndex = e.TxInfo.GetFromAccountIndex()
+	e.tx.ToAccountIndex = e.TxInfo.GetToAccountIndex()
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
@@ -209,6 +211,7 @@ func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Order:           order,
 		Nonce:           exitAccount.Nonce,
 		CollectionNonce: exitAccount.CollectionNonce,
+		PublicKey:       exitAccount.PublicKey,
 	})
 	// nft info
 	order++
@@ -242,6 +245,7 @@ func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Order:           order,
 		Nonce:           exitAccount.Nonce,
 		CollectionNonce: exitAccount.CollectionNonce,
+		PublicKey:       exitAccount.PublicKey,
 	})
 
 	// create account empty delta
@@ -263,6 +267,7 @@ func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountOrder:    accountOrder,
 		Nonce:           creatorAccount.Nonce,
 		CollectionNonce: creatorAccount.CollectionNonce,
+		PublicKey:       creatorAccount.PublicKey,
 	})
 
 	return txDetails, nil

@@ -143,6 +143,9 @@ func (e *DepositExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	e.tx.TxAmount = e.TxInfo.AssetAmount.String()
 	e.tx.AccountIndex = e.TxInfo.AccountIndex
 	e.tx.IsCreateAccount = e.IsCreateAccount
+	e.tx.FromAccountIndex = e.TxInfo.GetFromAccountIndex()
+	e.tx.ToAccountIndex = e.TxInfo.GetToAccountIndex()
+
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
@@ -169,6 +172,7 @@ func (e *DepositExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountOrder:    0,
 		Nonce:           depositAccount.Nonce,
 		CollectionNonce: depositAccount.CollectionNonce,
+		PublicKey:       depositAccount.PublicKey,
 	}
 	return []*tx.TxDetail{txDetail}, nil
 }
