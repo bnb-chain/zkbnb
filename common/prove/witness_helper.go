@@ -473,7 +473,7 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 		case types.FungibleAssetType:
 			// get account info
 			if accountMap[txDetail.AccountIndex] == nil {
-				accountInfo, err := w.accountModel.GetConfirmedAccountByIndex(txDetail.AccountIndex)
+				accountInfo, err := w.accountModel.GetAccountByIndex(txDetail.AccountIndex)
 				if err != nil {
 					return nil, nil, nil, err
 				}
@@ -554,7 +554,7 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 		case types.CollectionNonceAssetType:
 			// get account info
 			if accountMap[txDetail.AccountIndex] == nil {
-				accountInfo, err := w.accountModel.GetConfirmedAccountByIndex(txDetail.AccountIndex)
+				accountInfo, err := w.accountModel.GetAccountByIndex(txDetail.AccountIndex)
 				if err != nil {
 					return nil, nil, nil, err
 				}
@@ -586,7 +586,7 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 		case types.ChangePubKeyType:
 			// get account info
 			if accountMap[txDetail.AccountIndex] == nil {
-				accountInfo, err := w.accountModel.GetConfirmedAccountByIndex(txDetail.AccountIndex)
+				accountInfo, err := w.accountModel.GetAccountByIndex(txDetail.AccountIndex)
 				if err != nil {
 					return nil, nil, nil, err
 				}
@@ -772,7 +772,7 @@ func (w *WitnessHelper) ResetCache(height int64) error {
 	}
 
 	if history != nil {
-		gasAccount, err := w.accountModel.GetConfirmedAccountByIndex(types.GasAccount)
+		gasAccount, err := w.accountModel.GetAccountByIndex(types.GasAccount)
 		if err != nil && err != types.DbErrNotFound {
 			return err
 		}
