@@ -492,7 +492,7 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 						if err != types.DbErrNotFound {
 							return nil, nil, nil, err
 						}
-						accountInfo = types.EmptyAccountInfo(txDetail.AccountIndex)
+						accountInfo = chain.EmptyAccount(txDetail.AccountIndex, tree.NilAccountAssetRoot)
 					} else {
 						return nil, nil, nil, err
 					}

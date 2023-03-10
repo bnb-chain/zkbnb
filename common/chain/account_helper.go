@@ -2,7 +2,7 @@ package chain
 
 import (
 	"encoding/json"
-
+	"github.com/ethereum/go-ethereum/common"
 	"gorm.io/gorm"
 
 	"github.com/bnb-chain/zkbnb/dao/account"
@@ -48,4 +48,17 @@ func ToFormatAccountInfo(accountInfo *account.Account) (formatAccountInfo *types
 		Status:          accountInfo.Status,
 	}
 	return formatAccountInfo, nil
+}
+
+func EmptyAccount(accountIndex int64, nilAccountAssetRoot []byte) (info *account.Account) {
+	return &account.Account{
+		AccountIndex:    accountIndex,
+		PublicKey:       types.EmptyPk,
+		L1Address:       types.EmptyL1Address,
+		Nonce:           types.EmptyNonce,
+		CollectionNonce: types.EmptyCollectionNonce,
+		AssetInfo:       types.EmptyAccountAssetInfo,
+		AssetRoot:       common.Bytes2Hex(nilAccountAssetRoot),
+		Status:          account.AccountStatusPending,
+	}
 }
