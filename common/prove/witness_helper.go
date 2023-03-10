@@ -280,9 +280,22 @@ func (w *WitnessHelper) constructAccountWitness(
 		if oTx.AccountIndex == accountKey && oTx.TxType == types.TxTypeCreateCollection {
 			collectionNonce++
 		}
+		// update account PublicKey
+		var nPubKey string
+		if oTx.AccountIndex == accountKey && oTx.TxType == types.TxTypeChangePubKey {
+			for _, txDetail := range oTx.TxDetails {
+				if txDetail.AssetType == types.ChangePubKeyType {
+					nPubKey = txDetail.BalanceDelta
+					break
+				}
+			}
+		} else {
+			nPubKey = proverAccounts[accountCount].AccountInfo.PublicKey
+		}
+
 		nAccountHash, err := tree.ComputeAccountLeafHash(
 			proverAccounts[accountCount].AccountInfo.L1Address,
-			proverAccounts[accountCount].AccountInfo.PublicKey,
+			nPubKey,
 			nonce,
 			collectionNonce,
 			w.assetTrees.Get(accountKey).Root(),
@@ -493,7 +506,7 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 				accountWitnessInfo = append(accountWitnessInfo, &AccountWitnessInfo{
 					AccountInfo: &account.Account{
 						AccountIndex:    accountMap[txDetail.AccountIndex].AccountIndex,
-						PublicKey:       accountMap[txDetail.AccountIndex].PublicKey,
+						PublicKey:       txDetail.PublicKey,
 						L1Address:       accountMap[txDetail.AccountIndex].L1Address,
 						Nonce:           accountMap[txDetail.AccountIndex].Nonce,
 						CollectionNonce: txDetail.CollectionNonce,
@@ -568,7 +581,7 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 					accountWitnessInfo = append(accountWitnessInfo, &AccountWitnessInfo{
 						AccountInfo: &account.Account{
 							AccountIndex:    accountMap[txDetail.AccountIndex].AccountIndex,
-							PublicKey:       accountMap[txDetail.AccountIndex].PublicKey,
+							PublicKey:       txDetail.PublicKey,
 							L1Address:       accountMap[txDetail.AccountIndex].L1Address,
 							Nonce:           accountMap[txDetail.AccountIndex].Nonce,
 							CollectionNonce: txDetail.CollectionNonce,
@@ -599,7 +612,7 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 					accountWitnessInfo = append(accountWitnessInfo, &AccountWitnessInfo{
 						AccountInfo: &account.Account{
 							AccountIndex:    accountMap[txDetail.AccountIndex].AccountIndex,
-							PublicKey:       txDetail.Balance,
+							PublicKey:       txDetail.PublicKey,
 							L1Address:       accountMap[txDetail.AccountIndex].L1Address,
 							Nonce:           accountMap[txDetail.AccountIndex].Nonce,
 							CollectionNonce: accountMap[txDetail.AccountIndex].CollectionNonce,
@@ -612,7 +625,7 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 				}
 			} else {
 				accountMap[txDetail.AccountIndex].Nonce = txDetail.Nonce
-				accountMap[txDetail.AccountIndex].PublicKey = txDetail.Balance
+				accountMap[txDetail.AccountIndex].PublicKey = txDetail.PublicKey
 			}
 		default:
 			return nil, nil, nil,
