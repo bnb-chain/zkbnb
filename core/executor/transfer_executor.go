@@ -3,11 +3,6 @@ package executor
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/bnb-chain/zkbnb/common/chain"
-	"github.com/bnb-chain/zkbnb/dao/account"
-	"github.com/bnb-chain/zkbnb/tree"
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -43,10 +38,10 @@ func (e *TransferExecutor) Prepare() error {
 	txInfo := e.TxInfo
 	toL1Address := txInfo.ToL1Address
 	toAccount, err := bc.StateDB().GetAccountByL1Address(toL1Address)
-	if err != nil && err != types.DbErrNotFound {
+	if err != nil && err != types.AppErrAccountNotFound {
 		return err
 	}
-	if err == types.DbErrNotFound {
+	if err == types.AppErrAccountNotFound {
 		if txInfo.ToAccountIndex != -1 {
 			return types.AppErrAccountInvalidToAccount
 		}
@@ -68,6 +63,13 @@ func (e *TransferExecutor) Prepare() error {
 
 	// Mark the tree states that would be affected in this executor.
 	e.MarkAccountAssetsDirty(txInfo.FromAccountIndex, []int64{txInfo.GasFeeAssetId, txInfo.AssetId})
+	if e.IsCreateAccount {
+		err := e.CreateEmptyAccount(txInfo.ToAccountIndex, txInfo.ToL1Address, []int64{txInfo.AssetId})
+		if err != nil {
+			return err
+		}
+	}
+	// Mark the tree states that would be affected in this executor.
 	e.MarkAccountAssetsDirty(txInfo.ToAccountIndex, []int64{txInfo.AssetId})
 	e.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
 	return e.BaseExecutor.Prepare()
@@ -119,27 +121,17 @@ func (e *TransferExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 func (e *TransferExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.TxInfo
+	var toAccount *types.AccountInfo
+	var err error
 
 	fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.FromAccountIndex)
 	if err != nil {
 		return err
 	}
-	toAccount, err := bc.StateDB().GetFormatAccount(txInfo.ToAccountIndex)
-	if err != nil && err != types.DbErrNotFound {
-		return err
-	}
-	if err == types.DbErrNotFound {
-		newAccount := &account.Account{
-			AccountIndex:    txInfo.ToAccountIndex,
-			PublicKey:       types.EmptyPk,
-			L1Address:       e.TxInfo.ToL1Address,
-			Nonce:           types.EmptyNonce,
-			CollectionNonce: types.EmptyCollectionNonce,
-			AssetInfo:       types.EmptyAccountAssetInfo,
-			AssetRoot:       common.Bytes2Hex(tree.NilAccountAssetRoot),
-			Status:          account.AccountStatusPending,
-		}
-		toAccount, err = chain.ToFormatAccountInfo(newAccount)
+	if e.IsCreateAccount {
+		toAccount = e.GetCreatingAccount()
+	} else {
+		toAccount, err = bc.StateDB().GetFormatAccount(txInfo.ToAccountIndex)
 		if err != nil {
 			return err
 		}
@@ -196,21 +188,30 @@ func (e *TransferExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	e.tx.AssetId = e.TxInfo.AssetId
 	e.tx.TxAmount = e.TxInfo.AssetAmount.String()
 	e.tx.IsCreateAccount = e.IsCreateAccount
-	e.tx.FromAccountIndex = e.TxInfo.GetFromAccountIndex()
-	e.tx.ToAccountIndex = e.TxInfo.GetToAccountIndex()
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *TransferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.TxInfo
-
-	copiedAccounts, err := e.bc.StateDB().DeepCopyAccounts([]int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex, txInfo.ToAccountIndex})
-	if err != nil {
-		return nil, err
+	var copiedAccounts map[int64]*types.AccountInfo
+	var err error
+	var toAccount *types.AccountInfo
+	if e.IsCreateAccount {
+		copiedAccounts, err = e.bc.StateDB().DeepCopyAccounts([]int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex})
+		if err != nil {
+			return nil, err
+		}
+		toAccount = e.GetCreatingAccount()
+	} else {
+		copiedAccounts, err = e.bc.StateDB().DeepCopyAccounts([]int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex, txInfo.ToAccountIndex})
+		if err != nil {
+			return nil, err
+		}
+		toAccount = copiedAccounts[txInfo.ToAccountIndex]
 	}
+
 	fromAccount := copiedAccounts[txInfo.FromAccountIndex]
 	gasAccount := copiedAccounts[txInfo.GasAccountIndex]
-	toAccount := copiedAccounts[txInfo.ToAccountIndex]
 
 	txDetails := make([]*tx.TxDetail, 0, 4)
 

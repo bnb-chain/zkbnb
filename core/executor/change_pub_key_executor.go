@@ -134,9 +134,6 @@ func (e *ChangePubKeyExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.AccountIndex = e.TxInfo.AccountIndex
-	e.tx.FromAccountIndex = e.TxInfo.GetFromAccountIndex()
-	e.tx.ToAccountIndex = e.TxInfo.GetToAccountIndex()
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 

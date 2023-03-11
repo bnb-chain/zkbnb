@@ -44,11 +44,11 @@ func (e *FullExitExecutor) Prepare() error {
 	// The account index from txInfo isn't true, find account by l1Address.
 	l1Address := txInfo.L1Address
 	accountByL1Address, err := bc.StateDB().GetAccountByL1Address(l1Address)
-	if err != nil && err != types.DbErrNotFound {
+	if err != nil && err != types.AppErrAccountNotFound {
 		return err
 	}
 	formatAccountByIndex, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
-	if err != nil && (err != types.DbErrNotFound && err != types.AppErrAccountNotFound) {
+	if err != nil && err != types.AppErrAccountNotFound {
 		return err
 	}
 	txInfo.AssetAmount = new(big.Int).SetInt64(0)
@@ -129,9 +129,6 @@ func (e *FullExitExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	e.tx.TxInfo = string(txInfoBytes)
 	e.tx.AssetId = e.TxInfo.AssetId
 	e.tx.TxAmount = e.TxInfo.AssetAmount.String()
-	e.tx.AccountIndex = e.TxInfo.AccountIndex
-	e.tx.FromAccountIndex = e.TxInfo.GetFromAccountIndex()
-	e.tx.ToAccountIndex = e.TxInfo.GetToAccountIndex()
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
@@ -140,7 +137,7 @@ func (e *FullExitExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	var exitAccount *types.AccountInfo
 	var err error
 	if e.AccountNotExist {
-		newAccount := chain.EmptyAccount(txInfo.AccountIndex, tree.NilAccountAssetRoot)
+		newAccount := chain.EmptyAccount(txInfo.AccountIndex, types.EmptyL1Address, tree.NilAccountAssetRoot)
 		exitAccount, err = chain.ToFormatAccountInfo(newAccount)
 		if err != nil {
 			return nil, err

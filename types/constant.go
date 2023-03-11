@@ -31,7 +31,7 @@ const (
 	EmptyTxHash              = "0"
 	EmptyL1Address           = "0"
 	EmptyCreatorTreasuryRate = 0
-	EmptyPk                  = ""
+	EmptyPk                  = "0"
 	EmptyNftContentType      = 0
 
 	NilL1Address       = ""

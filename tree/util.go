@@ -273,7 +273,7 @@ func RollBackTrees(
 }
 
 func ComputeAccountLeafHash(
-	accountNameHash string,
+	l1Address string,
 	pk string,
 	nonce int64,
 	collectionNonce int64,
@@ -281,7 +281,7 @@ func ComputeAccountLeafHash(
 	accountIndex int64,
 	blockHeight int64,
 ) (hashVal []byte, err error) {
-	e0, err := txtypes.FromHexStrToFr(accountNameHash)
+	e0, err := txtypes.FromBytesToFr(common.FromHex(l1Address))
 	if err != nil {
 		return nil, err
 	}

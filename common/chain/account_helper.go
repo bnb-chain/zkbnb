@@ -2,6 +2,7 @@ package chain
 
 import (
 	"encoding/json"
+	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/ethereum/go-ethereum/common"
 	"gorm.io/gorm"
 
@@ -50,11 +51,11 @@ func ToFormatAccountInfo(accountInfo *account.Account) (formatAccountInfo *types
 	return formatAccountInfo, nil
 }
 
-func EmptyAccount(accountIndex int64, nilAccountAssetRoot []byte) (info *account.Account) {
+func EmptyAccount(accountIndex int64, l1Address string, nilAccountAssetRoot []byte) (info *account.Account) {
 	return &account.Account{
 		AccountIndex:    accountIndex,
-		PublicKey:       types.EmptyPk,
-		L1Address:       types.EmptyL1Address,
+		PublicKey:       common2.EmptyPubKey(),
+		L1Address:       l1Address,
 		Nonce:           types.EmptyNonce,
 		CollectionNonce: types.EmptyCollectionNonce,
 		AssetInfo:       types.EmptyAccountAssetInfo,

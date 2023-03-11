@@ -332,7 +332,9 @@ func (s *StateDB) GetAccountByL1Address(l1Address string) (*account.Account, err
 	}
 
 	accountInfo, err := s.chainDb.AccountModel.GetAccountByL1Address(l1Address)
-	if err != nil {
+	if err == types.DbErrNotFound {
+		return nil, types.AppErrAccountNotFound
+	} else if err != nil {
 		return nil, err
 	}
 	formatAccount, err := chain.ToFormatAccountInfo(accountInfo)
@@ -461,6 +463,8 @@ func (s *StateDB) GetPendingAccount(blockHeight int64, stateDataCopy *StateDataC
 			AssetRoot:       newAccount.AssetRoot,
 			L2BlockHeight:   blockHeight,
 			Status:          newAccount.Status,
+			L1Address:       newAccount.L1Address,
+			PublicKey:       newAccount.PublicKey,
 		})
 	}
 
@@ -508,8 +512,11 @@ func (s *StateDB) DeepCopyAccounts(accountIds []int64) (map[int64]*types.Account
 	return accounts, nil
 }
 
-func (s *StateDB) PrepareAccountsAndAssets(accountAssetsMap map[int64]map[int64]bool) error {
+func (s *StateDB) PrepareAccountsAndAssets(accountAssetsMap map[int64]map[int64]bool, creatingAccountIndex int64) error {
 	for accountIndex, assets := range accountAssetsMap {
+		if creatingAccountIndex == accountIndex {
+			continue
+		}
 		if s.DryRun {
 			account := &account.Account{}
 			redisAccount, err := s.redisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex), account)

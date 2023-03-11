@@ -1,7 +1,9 @@
 package executor
 
 import (
+	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/common/metrics"
+	"github.com/bnb-chain/zkbnb/tree"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -25,6 +27,7 @@ type BaseExecutor struct {
 	// Affected states.
 	dirtyAccountsAndAssetsMap map[int64]map[int64]bool
 	dirtyNftMap               map[int64]bool
+	creatingAccountInfo       *types.AccountInfo
 }
 
 func NewBaseExecutor(bc IBlockchain, tx *tx.Tx, txInfo txtypes.TxInfo) BaseExecutor {
@@ -52,8 +55,12 @@ func (e *BaseExecutor) Prepare() error {
 		e.tx.Nonce = e.iTxInfo.GetNonce()
 		e.tx.ExpiredAt = e.iTxInfo.GetExpiredAt()
 	}
-
-	err := e.bc.StateDB().PrepareAccountsAndAssets(e.dirtyAccountsAndAssetsMap)
+	creatingAccountInfo := e.GetCreatingAccount()
+	creatingAccountIndex := int64(-1)
+	if creatingAccountInfo != nil {
+		creatingAccountIndex = creatingAccountInfo.AccountIndex
+	}
+	err := e.bc.StateDB().PrepareAccountsAndAssets(e.dirtyAccountsAndAssetsMap, creatingAccountIndex)
 	if err != nil {
 		logx.Errorf("prepare accounts and assets failed: %s", err.Error())
 		return err
@@ -129,6 +136,9 @@ func (e *BaseExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	e.tx.TxStatus = tx.StatusExecuted
 	e.tx.PoolTxId = e.tx.ID
 	e.tx.BlockId = e.bc.CurrentBlock().ID
+	e.tx.AccountIndex = e.iTxInfo.GetAccountIndex()
+	e.tx.FromAccountIndex = e.iTxInfo.GetFromAccountIndex()
+	e.tx.ToAccountIndex = e.iTxInfo.GetToAccountIndex()
 	return e.tx, nil
 }
 
@@ -157,6 +167,37 @@ func (e *BaseExecutor) MarkAccountAssetsDirty(accountIndex int64, assets []int64
 
 func (e *BaseExecutor) MarkNftDirty(nftIndex int64) {
 	e.dirtyNftMap[nftIndex] = true
+}
+
+func (e *BaseExecutor) CreateEmptyAccount(accountIndex int64, l1Address string, assets []int64) error {
+	newAccount := chain.EmptyAccount(accountIndex, l1Address, tree.NilAccountAssetRoot)
+	accountInfo, err := chain.ToFormatAccountInfo(newAccount)
+	if err != nil {
+		return err
+	}
+
+	if accountInfo.AssetInfo == nil {
+		accountInfo.AssetInfo = make(map[int64]*types.AccountAsset)
+	}
+	for _, assetIndex := range assets {
+		// Should never happen, but protect here.
+		if assetIndex < 0 {
+			continue
+		}
+		if accountInfo.AssetInfo[assetIndex] == nil {
+			accountInfo.AssetInfo[assetIndex] = &types.AccountAsset{
+				AssetId:                  assetIndex,
+				Balance:                  types.ZeroBigInt,
+				OfferCanceledOrFinalized: types.ZeroBigInt,
+			}
+		}
+	}
+	e.creatingAccountInfo = accountInfo
+	return nil
+}
+
+func (e *BaseExecutor) GetCreatingAccount() *types.AccountInfo {
+	return e.creatingAccountInfo
 }
 
 func (e *BaseExecutor) SyncDirtyToStateCache() {

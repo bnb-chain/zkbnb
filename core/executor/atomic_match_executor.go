@@ -285,8 +285,6 @@ func (e *AtomicMatchExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	e.tx.NftIndex = e.TxInfo.SellOffer.NftIndex
 	e.tx.AssetId = e.TxInfo.BuyOffer.AssetId
 	e.tx.TxAmount = e.TxInfo.BuyOffer.AssetAmount.String()
-	e.tx.FromAccountIndex = e.TxInfo.GetFromAccountIndex()
-	e.tx.ToAccountIndex = e.TxInfo.GetToAccountIndex()
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 

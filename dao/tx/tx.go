@@ -334,14 +334,14 @@ func (m *defaultTxModel) GetCountByGreaterHeight(blockHeight int64) (count int64
 
 func (m *defaultTxModel) GetOnChainTxsByHeight(blockHeight int64) (txList []*Tx, err error) {
 	var changePubKeyTxList []*Tx
-	dbTx := m.DB.Table(m.table).Select("TxIndex,ID,TxInfo").Where("block_height = ? and tx_type = ?", blockHeight, types.TxTypeChangePubKey).Find(&changePubKeyTxList)
+	dbTx := m.DB.Table(m.table).Select("tx_index,id,tx_info").Where("block_height = ? and tx_type = ?", blockHeight, types.TxTypeChangePubKey).Find(&changePubKeyTxList)
 	if dbTx.Error != nil {
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {
 		return nil, nil
 	}
 
-	dbTx = m.DB.Table(m.table).Select("TxType,TxIndex,ID").Where("block_height = ? and tx_type in ?", blockHeight, types.GetOnChainTypes()).Find(&txList)
+	dbTx = m.DB.Table(m.table).Select("tx_type,tx_index,iD").Where("block_height = ? and tx_type in ?", blockHeight, types.GetOnChainTypes()).Find(&txList)
 	if dbTx.Error != nil {
 		return nil, dbTx.Error
 	} else if dbTx.RowsAffected == 0 {

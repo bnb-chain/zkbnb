@@ -4,10 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"github.com/bnb-chain/zkbnb/common/chain"
-	"github.com/bnb-chain/zkbnb/dao/account"
-	"github.com/bnb-chain/zkbnb/tree"
-	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -49,10 +45,10 @@ func (e *DepositExecutor) Prepare() error {
 	// The account index from txInfo isn't true, find account by l1Address.
 	l1Address := txInfo.L1Address
 	account, err := bc.StateDB().GetAccountByL1Address(l1Address)
-	if err != nil && err != types.DbErrNotFound {
+	if err != nil && err != types.AppErrAccountNotFound {
 		return err
 	}
-	if err == types.DbErrNotFound {
+	if err == types.AppErrAccountNotFound {
 		if e.tx.Rollback == false {
 			nextAccountIndex := e.bc.StateDB().GetNextAccountIndex()
 			txInfo.AccountIndex = nextAccountIndex
@@ -66,6 +62,12 @@ func (e *DepositExecutor) Prepare() error {
 		txInfo.AccountIndex = account.AccountIndex
 	}
 
+	if e.IsCreateAccount {
+		err := e.CreateEmptyAccount(txInfo.AccountIndex, l1Address, []int64{txInfo.AssetId})
+		if err != nil {
+			return err
+		}
+	}
 	// Mark the tree states that would be affected in this executor.
 	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{txInfo.AssetId})
 	return e.BaseExecutor.Prepare()
@@ -84,23 +86,12 @@ func (e *DepositExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 func (e *DepositExecutor) ApplyTransaction() error {
 	bc := e.bc
 	txInfo := e.TxInfo
-
-	depositAccount, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
-	if err != nil && err != types.DbErrNotFound {
-		return err
-	}
-	if err == types.DbErrNotFound {
-		newAccount := &account.Account{
-			AccountIndex:    txInfo.AccountIndex,
-			PublicKey:       types.EmptyPk,
-			L1Address:       e.tx.NativeAddress,
-			Nonce:           types.EmptyNonce,
-			CollectionNonce: types.EmptyCollectionNonce,
-			AssetInfo:       types.EmptyAccountAssetInfo,
-			AssetRoot:       common.Bytes2Hex(tree.NilAccountAssetRoot),
-			Status:          account.AccountStatusPending,
-		}
-		depositAccount, err = chain.ToFormatAccountInfo(newAccount)
+	var depositAccount *types.AccountInfo
+	var err error
+	if e.IsCreateAccount {
+		depositAccount = e.GetCreatingAccount()
+	} else {
+		depositAccount, err = bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
 		if err != nil {
 			return err
 		}
@@ -141,20 +132,23 @@ func (e *DepositExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	e.tx.TxInfo = string(txInfoBytes)
 	e.tx.AssetId = e.TxInfo.AssetId
 	e.tx.TxAmount = e.TxInfo.AssetAmount.String()
-	e.tx.AccountIndex = e.TxInfo.AccountIndex
 	e.tx.IsCreateAccount = e.IsCreateAccount
-	e.tx.FromAccountIndex = e.TxInfo.GetFromAccountIndex()
-	e.tx.ToAccountIndex = e.TxInfo.GetToAccountIndex()
-
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *DepositExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	txInfo := e.TxInfo
-	depositAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
-	if err != nil {
-		return nil, err
+	var depositAccount *types.AccountInfo
+	var err error
+	if e.IsCreateAccount {
+		depositAccount = e.GetCreatingAccount()
+	} else {
+		depositAccount, err = e.bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	baseBalance := depositAccount.AssetInfo[txInfo.AssetId]
 	deltaBalance := &types.AccountAsset{
 		AssetId:                  txInfo.AssetId,

@@ -492,7 +492,7 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 						if err != types.DbErrNotFound {
 							return nil, nil, nil, err
 						}
-						accountInfo = chain.EmptyAccount(txDetail.AccountIndex, tree.NilAccountAssetRoot)
+						accountInfo = chain.EmptyAccount(txDetail.AccountIndex, types.EmptyL1Address, tree.NilAccountAssetRoot)
 					} else {
 						return nil, nil, nil, err
 					}
@@ -787,8 +787,21 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 func (w *WitnessHelper) ResetCache(height int64) error {
 	w.gasAccountInfo = nil
 	history, err := w.accountHistoryModel.GetLatestAccountHistory(types.GasAccount, height)
-	if err != nil && err != types.DbErrNotFound {
-		return err
+	if err != nil {
+		if err != types.DbErrNotFound {
+			return err
+		}
+		accountInfo, err := w.accountModel.GetAccountByIndex(types.GasAccount)
+		if err != nil {
+			return err
+		}
+		newAccount := chain.EmptyAccount(types.GasAccount, accountInfo.L1Address, tree.NilAccountAssetRoot)
+		formatGasAccount, err := chain.ToFormatAccountInfo(newAccount)
+		if err != nil {
+			return err
+		}
+		w.gasAccountInfo = formatGasAccount
+		return nil
 	}
 
 	if history != nil {

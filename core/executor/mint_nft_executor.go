@@ -160,8 +160,6 @@ func (e *MintNftExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	e.tx.GasFeeAssetId = e.TxInfo.GasFeeAssetId
 	e.tx.GasFee = e.TxInfo.GasFeeAssetAmount.String()
 	e.tx.NftIndex = e.TxInfo.NftIndex
-	e.tx.FromAccountIndex = e.TxInfo.GetFromAccountIndex()
-	e.tx.ToAccountIndex = e.TxInfo.GetToAccountIndex()
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
