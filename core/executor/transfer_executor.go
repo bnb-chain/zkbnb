@@ -299,6 +299,12 @@ func (e *TransferExecutor) Finalize() error {
 		bc := e.bc
 		txInfo := e.TxInfo
 		bc.StateDB().AccountAssetTrees.UpdateCache(txInfo.ToAccountIndex, bc.CurrentBlock().BlockHeight)
+		accountInfo := e.GetCreatingAccount()
+		bc.StateDB().SetPendingAccountL1AddressMap(accountInfo.L1Address, accountInfo.AccountIndex)
+	}
+	err := e.BaseExecutor.Finalize()
+	if err != nil {
+		return err
 	}
 	return nil
 }

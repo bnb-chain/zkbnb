@@ -330,6 +330,10 @@ func (s *StateDB) GetAccountByL1Address(l1Address string) (*account.Account, err
 	if exist {
 		return s.GetAccount(cached)
 	}
+	accountIndex, exist := s.L1AddressCache.Get(l1Address)
+	if exist {
+		return s.GetAccount(accountIndex.(int64))
+	}
 
 	accountInfo, err := s.chainDb.AccountModel.GetAccountByL1Address(l1Address)
 	if err == types.DbErrNotFound {
