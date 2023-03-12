@@ -167,7 +167,7 @@ func (e *DepositNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	var depositAccount *types.AccountInfo
 	var err error
 	if e.IsCreateAccount {
-		depositAccount = e.GetCreatingAccount()
+		depositAccount = e.GetEmptyAccount()
 	} else {
 		depositAccount, err = e.bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
 		if err != nil {

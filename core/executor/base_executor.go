@@ -28,6 +28,7 @@ type BaseExecutor struct {
 	dirtyAccountsAndAssetsMap map[int64]map[int64]bool
 	dirtyNftMap               map[int64]bool
 	creatingAccountInfo       *types.AccountInfo
+	emptyAccountInfo          *types.AccountInfo
 }
 
 func NewBaseExecutor(bc IBlockchain, tx *tx.Tx, txInfo txtypes.TxInfo) BaseExecutor {
@@ -170,34 +171,22 @@ func (e *BaseExecutor) MarkNftDirty(nftIndex int64) {
 }
 
 func (e *BaseExecutor) CreateEmptyAccount(accountIndex int64, l1Address string, assets []int64) error {
-	newAccount := chain.EmptyAccount(accountIndex, l1Address, tree.NilAccountAssetRoot)
-	accountInfo, err := chain.ToFormatAccountInfo(newAccount)
+	accountInfo, err := chain.EmptyAccountFormat(accountIndex, assets, l1Address, tree.NilAccountAssetRoot)
 	if err != nil {
 		return err
 	}
-
-	if accountInfo.AssetInfo == nil {
-		accountInfo.AssetInfo = make(map[int64]*types.AccountAsset)
-	}
-	for _, assetIndex := range assets {
-		// Should never happen, but protect here.
-		if assetIndex < 0 {
-			continue
-		}
-		if accountInfo.AssetInfo[assetIndex] == nil {
-			accountInfo.AssetInfo[assetIndex] = &types.AccountAsset{
-				AssetId:                  assetIndex,
-				Balance:                  types.ZeroBigInt,
-				OfferCanceledOrFinalized: types.ZeroBigInt,
-			}
-		}
-	}
 	e.creatingAccountInfo = accountInfo
+	e.emptyAccountInfo = accountInfo.DeepCopy()
+	e.emptyAccountInfo.L1Address = types.NilL1Address
 	return nil
 }
 
 func (e *BaseExecutor) GetCreatingAccount() *types.AccountInfo {
 	return e.creatingAccountInfo
+}
+
+func (e *BaseExecutor) GetEmptyAccount() *types.AccountInfo {
+	return e.emptyAccountInfo
 }
 
 func (e *BaseExecutor) SyncDirtyToStateCache() {

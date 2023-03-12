@@ -201,7 +201,7 @@ func (e *TransferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		if err != nil {
 			return nil, err
 		}
-		toAccount = e.GetCreatingAccount()
+		toAccount = e.GetEmptyAccount()
 	} else {
 		copiedAccounts, err = e.bc.StateDB().DeepCopyAccounts([]int64{txInfo.FromAccountIndex, txInfo.GasAccountIndex, txInfo.ToAccountIndex})
 		if err != nil {

@@ -63,3 +63,29 @@ func EmptyAccount(accountIndex int64, l1Address string, nilAccountAssetRoot []by
 		Status:          account.AccountStatusPending,
 	}
 }
+
+func EmptyAccountFormat(accountIndex int64, assets []int64, l1Address string, nilAccountAssetRoot []byte) (formatAccountInfo *types.AccountInfo, err error) {
+	newAccount := EmptyAccount(accountIndex, l1Address, nilAccountAssetRoot)
+	accountInfo, err := ToFormatAccountInfo(newAccount)
+	if err != nil {
+		return nil, err
+	}
+
+	if accountInfo.AssetInfo == nil {
+		accountInfo.AssetInfo = make(map[int64]*types.AccountAsset)
+	}
+	for _, assetIndex := range assets {
+		// Should never happen, but protect here.
+		if assetIndex < 0 {
+			continue
+		}
+		if accountInfo.AssetInfo[assetIndex] == nil {
+			accountInfo.AssetInfo[assetIndex] = &types.AccountAsset{
+				AssetId:                  assetIndex,
+				Balance:                  types.ZeroBigInt,
+				OfferCanceledOrFinalized: types.ZeroBigInt,
+			}
+		}
+	}
+	return accountInfo, nil
+}
