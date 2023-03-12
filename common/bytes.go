@@ -120,6 +120,9 @@ func AccountNameToBytes20(accountName string) []byte {
 }
 
 func AddressStrToBytes(addr string) []byte {
+	if addr == "" {
+		return []byte{}
+	}
 	return new(big.Int).SetBytes(common.FromHex(addr)).FillBytes(make([]byte, 20))
 }
 
