@@ -25,6 +25,15 @@ import (
 )
 
 func ParsePubKey(pkStr string) (pk *eddsa.PublicKey, err error) {
+	if pkStr == "0000000000000000000000000000000000000000000000000000000000000000" {
+		pk := &eddsa.PublicKey{
+			A: curve.Point{
+				X: fr.NewElement(0),
+				Y: fr.NewElement(0),
+			},
+		}
+		return pk, nil
+	}
 	pkBytes := common.FromHex(pkStr)
 	pk = new(eddsa.PublicKey)
 	_, err = pk.A.SetBytes(pkBytes)
