@@ -194,7 +194,7 @@ func (w *WitnessHelper) constructAccountWitness(
 		}
 		cryptoAccount = &cryptoTypes.Account{
 			AccountIndex:    accountKey,
-			L1Address:       proverAccountInfo.AccountInfo.L1Address,
+			L1Address:       common2.AddressStrToBytes(proverAccountInfo.AccountInfo.L1Address),
 			AccountPk:       pk,
 			Nonce:           proverAccountInfo.AccountInfo.Nonce,
 			CollectionNonce: proverAccountInfo.AccountInfo.CollectionNonce,
@@ -706,7 +706,7 @@ func (w *WitnessHelper) ConstructGasWitness(block *block.Block) (cryptoGas *GasW
 		}
 		accountInfoBefore := &cryptoTypes.GasAccount{
 			AccountIndex:    gasAccountIndex,
-			L1Address:       w.gasAccountInfo.L1Address,
+			L1Address:       common2.AddressStrToBytes(w.gasAccountInfo.L1Address),
 			AccountPk:       pk,
 			Nonce:           w.gasAccountInfo.Nonce,
 			CollectionNonce: w.gasAccountInfo.CollectionNonce,

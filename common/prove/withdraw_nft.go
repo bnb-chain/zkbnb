@@ -54,7 +54,7 @@ func toCryptoWithdrawNftTx(txInfo *txtypes.WithdrawNftTxInfo) (info *cryptoTypes
 	info = &cryptoTypes.WithdrawNftTx{
 		AccountIndex:        txInfo.AccountIndex,
 		CreatorAccountIndex: txInfo.CreatorAccountIndex,
-		CreatorL1Address:    txInfo.CreatorL1Address,
+		CreatorL1Address:    common.AddressStrToBytes(txInfo.CreatorL1Address),
 		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
 		NftIndex:            txInfo.NftIndex,
 		NftContentHash:      txInfo.NftContentHash,

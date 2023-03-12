@@ -20,6 +20,7 @@ package prove
 import (
 	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/types"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
+	"github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -41,9 +42,9 @@ func (w *WitnessHelper) constructFullExitNftTxWitness(cryptoTx *TxWitness, oTx *
 func toCryptoFullExitNftTx(txInfo *txtypes.FullExitNftTxInfo) (info *cryptoTypes.FullExitNftTx, err error) {
 	info = &cryptoTypes.FullExitNftTx{
 		AccountIndex:        txInfo.AccountIndex,
-		L1Address:           txInfo.L1Address,
+		L1Address:           common.AddressStrToBytes(txInfo.L1Address),
 		CreatorAccountIndex: txInfo.CreatorAccountIndex,
-		CreatorL1Address:    txInfo.CreatorL1Address,
+		CreatorL1Address:    common.AddressStrToBytes(txInfo.CreatorL1Address),
 		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
 		NftIndex:            txInfo.NftIndex,
 		CollectionId:        txInfo.CollectionId,

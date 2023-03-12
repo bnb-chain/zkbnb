@@ -57,7 +57,7 @@ func toCryptoTransferTx(txInfo *txtypes.TransferTxInfo) (info *cryptoTypes.Trans
 	info = &cryptoTypes.TransferTx{
 		FromAccountIndex:  txInfo.FromAccountIndex,
 		ToAccountIndex:    txInfo.ToAccountIndex,
-		ToL1Address:       txInfo.ToL1Address,
+		ToL1Address:       common2.AddressStrToBytes(txInfo.ToL1Address),
 		AssetId:           txInfo.AssetId,
 		AssetAmount:       packedAmount,
 		GasAccountIndex:   txInfo.GasAccountIndex,
