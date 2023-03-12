@@ -649,6 +649,7 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 				accountMap[txDetail.AccountIndex].Nonce = txDetail.Nonce
 				accountMap[txDetail.AccountIndex].PublicKey = txDetail.PublicKey
 			}
+		case types.CreateAccountType:
 		default:
 			return nil, nil, nil,
 				fmt.Errorf("invalid asset type")
