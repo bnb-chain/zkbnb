@@ -27,6 +27,7 @@ const (
 	NftAssetType             = 2
 	CollectionNonceAssetType = 3
 	ChangePubKeyType         = 4
+	CreateAccountType        = 5
 
 	BuyOfferType  = 0
 	SellOfferType = 1

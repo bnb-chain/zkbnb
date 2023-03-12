@@ -271,6 +271,21 @@ func (e *TransferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	})
 	toAccount.AssetInfo[txInfo.AssetId].Balance = ffmath.Add(toAccount.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
 
+	order++
+	txDetails = append(txDetails, &tx.TxDetail{
+		AssetId:         types.EmptyAccountAssetId,
+		AssetType:       types.CreateAccountType,
+		AccountIndex:    txInfo.ToAccountIndex,
+		L1Address:       toAccount.L1Address,
+		Balance:         toAccount.L1Address,
+		BalanceDelta:    toAccount.L1Address,
+		Order:           order,
+		AccountOrder:    accountOrder,
+		Nonce:           toAccount.Nonce,
+		CollectionNonce: toAccount.CollectionNonce,
+		PublicKey:       toAccount.PublicKey,
+	})
+
 	// gas account asset gas
 	order++
 	accountOrder++

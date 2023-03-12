@@ -155,20 +155,40 @@ func (e *DepositExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Balance:                  txInfo.AssetAmount,
 		OfferCanceledOrFinalized: big.NewInt(0),
 	}
-	txDetail := &tx.TxDetail{
+	txDetails := make([]*tx.TxDetail, 0, 2)
+	order := int64(0)
+	accountOrder := int64(0)
+
+	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:         txInfo.AssetId,
 		AssetType:       types.FungibleAssetType,
 		AccountIndex:    txInfo.AccountIndex,
 		L1Address:       depositAccount.L1Address,
 		Balance:         baseBalance.String(),
 		BalanceDelta:    deltaBalance.String(),
-		Order:           0,
+		Order:           order,
+		AccountOrder:    accountOrder,
+		Nonce:           depositAccount.Nonce,
+		CollectionNonce: depositAccount.CollectionNonce,
+		PublicKey:       depositAccount.PublicKey,
+	})
+
+	order++
+	txDetails = append(txDetails, &tx.TxDetail{
+		AssetId:         types.EmptyAccountAssetId,
+		AssetType:       types.CreateAccountType,
+		AccountIndex:    txInfo.AccountIndex,
+		L1Address:       depositAccount.L1Address,
+		Balance:         depositAccount.L1Address,
+		BalanceDelta:    txInfo.L1Address,
+		Order:           order,
 		AccountOrder:    0,
 		Nonce:           depositAccount.Nonce,
 		CollectionNonce: depositAccount.CollectionNonce,
 		PublicKey:       depositAccount.PublicKey,
-	}
-	return []*tx.TxDetail{txDetail}, nil
+	})
+
+	return txDetails, nil
 }
 
 func (e *DepositExecutor) Finalize() error {
