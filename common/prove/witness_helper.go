@@ -293,8 +293,23 @@ func (w *WitnessHelper) constructAccountWitness(
 			nPubKey = proverAccounts[accountCount].AccountInfo.PublicKey
 		}
 
+		// update account l1Address
+		var nL1Address string
+		if oTx.AccountIndex == accountKey && (oTx.TxType == types.TxTypeDeposit ||
+			oTx.TxType == types.TxTypeTransfer ||
+			oTx.TxType == types.TxTypeTransferNft) {
+			for _, txDetail := range oTx.TxDetails {
+				if txDetail.AssetType == types.CreateAccountType {
+					nL1Address = txDetail.BalanceDelta
+					break
+				}
+			}
+		} else {
+			nL1Address = proverAccounts[accountCount].AccountInfo.L1Address
+		}
+
 		nAccountHash, err := tree.ComputeAccountLeafHash(
-			proverAccounts[accountCount].AccountInfo.L1Address,
+			nL1Address,
 			nPubKey,
 			nonce,
 			collectionNonce,
@@ -514,7 +529,7 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 					AccountInfo: &account.Account{
 						AccountIndex:    accountMap[txDetail.AccountIndex].AccountIndex,
 						PublicKey:       txDetail.PublicKey,
-						L1Address:       accountMap[txDetail.AccountIndex].L1Address,
+						L1Address:       txDetail.L1Address,
 						Nonce:           accountMap[txDetail.AccountIndex].Nonce,
 						CollectionNonce: txDetail.CollectionNonce,
 						AssetInfo:       accountMap[txDetail.AccountIndex].AssetInfo,
@@ -589,7 +604,7 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 						AccountInfo: &account.Account{
 							AccountIndex:    accountMap[txDetail.AccountIndex].AccountIndex,
 							PublicKey:       txDetail.PublicKey,
-							L1Address:       accountMap[txDetail.AccountIndex].L1Address,
+							L1Address:       txDetail.L1Address,
 							Nonce:           accountMap[txDetail.AccountIndex].Nonce,
 							CollectionNonce: txDetail.CollectionNonce,
 							AssetInfo:       accountMap[txDetail.AccountIndex].AssetInfo,
@@ -620,7 +635,7 @@ func (w *WitnessHelper) constructSimpleWitnessInfo(oTx *tx.Tx) (
 						AccountInfo: &account.Account{
 							AccountIndex:    accountMap[txDetail.AccountIndex].AccountIndex,
 							PublicKey:       txDetail.PublicKey,
-							L1Address:       accountMap[txDetail.AccountIndex].L1Address,
+							L1Address:       txDetail.L1Address,
 							Nonce:           accountMap[txDetail.AccountIndex].Nonce,
 							CollectionNonce: txDetail.CollectionNonce,
 							AssetInfo:       accountMap[txDetail.AccountIndex].AssetInfo,
