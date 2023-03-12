@@ -296,8 +296,8 @@ func (w *WitnessHelper) constructAccountWitness(
 		// update account l1Address
 		var nL1Address string
 		if oTx.AccountIndex == accountKey && (oTx.TxType == types.TxTypeDeposit ||
-			oTx.TxType == types.TxTypeTransfer ||
-			oTx.TxType == types.TxTypeTransferNft) {
+			oTx.TxType == types.TxTypeDepositNft ||
+			oTx.TxType == types.TxTypeTransfer) {
 			for _, txDetail := range oTx.TxDetails {
 				if txDetail.AssetType == types.CreateAccountType {
 					nL1Address = txDetail.BalanceDelta
