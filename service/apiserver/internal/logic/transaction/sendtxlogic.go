@@ -11,7 +11,6 @@ import (
 	nftModels "github.com/bnb-chain/zkbnb/core/model"
 	"github.com/bnb-chain/zkbnb/dao/dbcache"
 	"github.com/bnb-chain/zkbnb/dao/nft"
-	"github.com/bnb-chain/zkbnb/service/apiserver/internal/signature"
 	"gorm.io/gorm"
 	"strconv"
 
@@ -26,18 +25,15 @@ import (
 
 type SendTxLogic struct {
 	logx.Logger
-	ctx             context.Context
-	svcCtx          *svc.ServiceContext
-	verifySignature *signature.VerifySignature
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
 }
 
 func NewSendTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendTxLogic {
-	verifySignature := signature.NewVerifySignature(ctx, svcCtx)
 	return &SendTxLogic{
-		Logger:          logx.WithContext(ctx),
-		ctx:             ctx,
-		svcCtx:          svcCtx,
-		verifySignature: verifySignature,
+		Logger: logx.WithContext(ctx),
+		ctx:    ctx,
+		svcCtx: svcCtx,
 	}
 }
 
@@ -53,12 +49,6 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 	if s.svcCtx.Config.TxPool.MaxPendingTxCount > 0 && pendingTxCount >= int64(s.svcCtx.Config.TxPool.MaxPendingTxCount) {
 		return nil, types2.AppErrTooManyTxs
 	}
-
-	err = s.verifySignature.VerifySignatureInfo(req.TxType, req.TxInfo, req.TxSignature)
-	if err != nil {
-		return nil, err
-	}
-
 	resp = &types.TxHash{}
 	bc, err := core.NewBlockChainForDryRun(s.svcCtx.AccountModel, s.svcCtx.NftModel, s.svcCtx.TxPoolModel,
 		s.svcCtx.AssetModel, s.svcCtx.SysConfigModel, s.svcCtx.RedisCache, s.svcCtx.MemCache.GetCache())

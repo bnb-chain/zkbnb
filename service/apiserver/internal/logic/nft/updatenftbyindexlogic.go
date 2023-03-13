@@ -3,39 +3,42 @@ package nft
 import (
 	"context"
 	"github.com/bnb-chain/zkbnb/dao/nft"
-	"github.com/bnb-chain/zkbnb/service/apiserver/internal/signature"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/types"
 	types2 "github.com/bnb-chain/zkbnb/types"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type UpdateNftByIndexLogic struct {
 	logx.Logger
-	ctx             context.Context
-	svcCtx          *svc.ServiceContext
-	verifySignature *signature.VerifySignature
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
 }
 
 func NewUpdateNftByIndexLogic(ctx context.Context, svcCtx *svc.ServiceContext) *UpdateNftByIndexLogic {
-	verifySignature := signature.NewVerifySignature(ctx, svcCtx)
 	return &UpdateNftByIndexLogic{
-		Logger:          logx.WithContext(ctx),
-		ctx:             ctx,
-		svcCtx:          svcCtx,
-		verifySignature: verifySignature,
+		Logger: logx.WithContext(ctx),
+		ctx:    ctx,
+		svcCtx: svcCtx,
 	}
 }
 
 func (l *UpdateNftByIndexLogic) UpdateNftByIndex(req *types.ReqUpdateNft) (resp *types.History, err error) {
-	err = l.verifySignature.VerifySignatureInfo(types2.TxTypeEmpty, req.TxInfo, req.TxSignature)
-	if err != nil {
-		return nil, err
-	}
 	tx, err := types2.ParseUpdateNftTxInfo(req.TxInfo)
 	if err != nil {
 		return nil, err
+	}
+	publicAddress := tx.GetL1AddressBySignatureInfo()
+	accountInfo, err := l.svcCtx.StateFetcher.GetLatestAccount(tx.AccountIndex)
+	if err != nil {
+		return nil, err
+	}
+	originAddress := common.HexToAddress(accountInfo.L1Address)
+	//Compare the original address and the public address to verify the identifier
+	if publicAddress != originAddress {
+		return nil, types2.DbErrFailToL1Signature
 	}
 	l2Nft, err := l.svcCtx.NftModel.GetNft(tx.NftIndex)
 	if err != nil {

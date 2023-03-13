@@ -3,6 +3,7 @@ package executor
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -87,6 +88,10 @@ func (e *TransferExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	fromAccount, err := bc.StateDB().GetFormatAccount(txInfo.FromAccountIndex)
 	if err != nil {
 		return err
+	}
+	// Verify l1 signature.
+	if txInfo.GetL1AddressBySignatureInfo() != common.HexToAddress(fromAccount.L1Address) {
+		return types.DbErrFailToL1Signature
 	}
 	if !e.IsCreateAccount {
 		toAccount, err := bc.StateDB().GetFormatAccount(txInfo.ToAccountIndex)

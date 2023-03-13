@@ -40,6 +40,7 @@ var (
 	DbErrFailToCreatePriorityRequest = errors.New("fail to create priority request")
 	DbErrFailToUpdatePriorityRequest = errors.New("fail to update priority request")
 	DbErrFailToCreateRollback        = errors.New("fail to create rollback")
+	DbErrFailToL1Signature           = errors.New("fail to l1 signature")
 
 	JsonErrUnmarshal = errors.New("json.Unmarshal err")
 	JsonErrMarshal   = errors.New("json.Marshal err")

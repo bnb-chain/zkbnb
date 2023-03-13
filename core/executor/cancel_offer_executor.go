@@ -3,6 +3,7 @@ package executor
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 
 	"github.com/pkg/errors"
@@ -55,6 +56,10 @@ func (e *CancelOfferExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 	fromAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
 	if err != nil {
 		return err
+	}
+	// Verify l1 signature.
+	if txInfo.GetL1AddressBySignatureInfo() != common.HexToAddress(fromAccount.L1Address) {
+		return types.DbErrFailToL1Signature
 	}
 	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
 		return types.AppErrBalanceNotEnough

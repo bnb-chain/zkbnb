@@ -38,6 +38,7 @@ const (
 	TxTypeFullExit
 	TxTypeFullExitNft
 	TxTypeOffer
+	TxTypeUpdateNFT
 )
 
 func IsL2Tx(txType int64) bool {
@@ -146,13 +147,6 @@ const (
 	EmptyStringKeccak = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
 )
 
-type UpdateNftReq struct {
-	NftIndex          int64
-	MutableAttributes string
-	AccountIndex      int64
-	Nonce             int64
-}
-
 func ParseChangePubKeyTxInfo(txInfoStr string) (txInfo *txtypes.ChangePubKeyInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
@@ -233,6 +227,14 @@ func ParseAtomicMatchTxInfo(txInfoStr string) (txInfo *txtypes.AtomicMatchTxInfo
 	return txInfo, nil
 }
 
+func ParseOfferTxInfo(txInfoStr string) (txInfo *txtypes.OfferTxInfo, err error) {
+	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
+	if err != nil {
+		return nil, err
+	}
+	return txInfo, nil
+}
+
 func ParseCancelOfferTxInfo(txInfoStr string) (txInfo *txtypes.CancelOfferTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
@@ -257,7 +259,7 @@ func ParseWithdrawNftTxInfo(txInfoStr string) (txInfo *txtypes.WithdrawNftTxInfo
 	return txInfo, nil
 }
 
-func ParseUpdateNftTxInfo(txInfoStr string) (txInfo *UpdateNftReq, err error) {
+func ParseUpdateNftTxInfo(txInfoStr string) (txInfo *txtypes.UpdateNFTTxInfo, err error) {
 	err = json.Unmarshal([]byte(txInfoStr), &txInfo)
 	if err != nil {
 		return nil, err

@@ -59,6 +59,11 @@ func (e *ChangePubKeyExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) erro
 		return types.AppErrAccountNotFound
 	}
 
+	// Verify l1 signature.
+	if txInfo.GetL1AddressBySignatureInfo() != common.HexToAddress(fromAccount.L1Address) {
+		return types.DbErrFailToL1Signature
+	}
+
 	if txInfo.AccountIndex != fromAccount.AccountIndex {
 		return types.AppErrInvalidAccountIndex
 	}
