@@ -60,14 +60,15 @@ func EmptyAccountAssetNodeHash() []byte {
 
 func EmptyNftNodeHash() []byte {
 	/*
-		creatorAccountIndex
-		ownerAccountIndex
-		nftContentHash
-		creatorTreasuryRate
-		collectionId
+			creatorAccountIndex
+			ownerAccountIndex
+			nftContentHash
+			creatorTreasuryRate
+			collectionId
+		    nftContentType
 	*/
 	zero := &fr.Element{0, 0, 0, 0}
-	hash := poseidon.Poseidon(zero, zero, zero, zero, zero).Bytes()
+	hash := poseidon.Poseidon(zero, zero, zero, zero, zero, zero).Bytes()
 	return hash[:]
 }
 
@@ -281,9 +282,15 @@ func ComputeAccountLeafHash(
 	accountIndex int64,
 	blockHeight int64,
 ) (hashVal []byte, err error) {
-	e0, err := txtypes.FromBytesToFr(common.FromHex(l1Address))
-	if err != nil {
-		return nil, err
+	var e0 *fr.Element
+	if l1Address == "" {
+		e0 = &fr.Element{0, 0, 0, 0}
+		e0.SetBytes([]byte{})
+	} else {
+		e0, err = txtypes.FromBytesToFr(common.FromHex(l1Address))
+		if err != nil {
+			return nil, err
+		}
 	}
 	pubKey, err := common2.ParsePubKey(pk)
 	if err != nil {
