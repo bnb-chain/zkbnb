@@ -60,14 +60,15 @@ func EmptyAccountAssetNodeHash() []byte {
 
 func EmptyNftNodeHash() []byte {
 	/*
-		creatorAccountIndex
-		ownerAccountIndex
-		nftContentHash
-		creatorTreasuryRate
-		collectionId
+			creatorAccountIndex
+			ownerAccountIndex
+			nftContentHash
+			creatorTreasuryRate
+			collectionId
+		    nftContentType
 	*/
 	zero := &fr.Element{0, 0, 0, 0}
-	hash := poseidon.Poseidon(zero, zero, zero, zero, zero).Bytes()
+	hash := poseidon.Poseidon(zero, zero, zero, zero, zero, zero).Bytes()
 	return hash[:]
 }
 
