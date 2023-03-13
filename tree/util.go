@@ -281,9 +281,15 @@ func ComputeAccountLeafHash(
 	accountIndex int64,
 	blockHeight int64,
 ) (hashVal []byte, err error) {
-	e0, err := txtypes.FromBytesToFr(common.FromHex(l1Address))
-	if err != nil {
-		return nil, err
+	var e0 *fr.Element
+	if l1Address == "" {
+		e0 = &fr.Element{0, 0, 0, 0}
+		e0.SetBytes([]byte{})
+	} else {
+		e0, err = txtypes.FromBytesToFr(common.FromHex(l1Address))
+		if err != nil {
+			return nil, err
+		}
 	}
 	pubKey, err := common2.ParsePubKey(pk)
 	if err != nil {
