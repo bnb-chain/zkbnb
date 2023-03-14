@@ -69,7 +69,7 @@ func (asset *AccountAsset) String() (info string) {
 }
 
 type AccountInfo struct {
-	AccountId       uint
+	AccountId       int64
 	AccountIndex    int64
 	PublicKey       string
 	L1Address       string

@@ -280,7 +280,7 @@ func (s *StateDB) GetFormatAccount(accountIndex int64) (*types.AccountInfo, erro
 		return nil, err
 	}
 	s.AccountCache.Add(accountIndex, formatAccount)
-	s.L1AddressCache.Add(formatAccount.L1Address, accountIndex)
+	s.L1AddressCache.Add(formatAccount.L1Address, int64(accountIndex))
 
 	if metrics.AccountGauge != nil {
 		metrics.AccountGauge.Set(float64(time.Since(start).Milliseconds()))
@@ -317,7 +317,7 @@ func (s *StateDB) GetAccount(accountIndex int64) (*account.Account, error) {
 		return nil, err
 	}
 	s.AccountCache.Add(accountIndex, formatAccount)
-	s.L1AddressCache.Add(formatAccount.L1Address, accountIndex)
+	s.L1AddressCache.Add(formatAccount.L1Address, int64(accountIndex))
 	return account, nil
 }
 
@@ -346,7 +346,7 @@ func (s *StateDB) GetAccountByL1Address(l1Address string) (*account.Account, err
 		return nil, err
 	}
 	s.AccountCache.Add(accountInfo.AccountIndex, formatAccount)
-	s.L1AddressCache.Add(formatAccount.L1Address, accountInfo.AccountIndex)
+	s.L1AddressCache.Add(formatAccount.L1Address, int64(accountInfo.AccountIndex))
 	return accountInfo, nil
 }
 
@@ -419,7 +419,7 @@ func (s *StateDB) SyncPendingNftToRedis(pendingNft map[int64]*nft.L2Nft) {
 func (s *StateDB) SyncPendingAccountToMemoryCache(pendingAccount map[int64]*types.AccountInfo) {
 	for index, formatAccount := range pendingAccount {
 		s.AccountCache.Add(index, formatAccount)
-		s.L1AddressCache.Add(formatAccount.L1Address, formatAccount.AccountId)
+		s.L1AddressCache.Add(formatAccount.L1Address, int64(formatAccount.AccountId))
 	}
 }
 
@@ -528,7 +528,7 @@ func (s *StateDB) PrepareAccountsAndAssets(accountAssetsMap map[int64]map[int64]
 				formatAccount, err := chain.ToFormatAccountInfo(account)
 				if err == nil {
 					s.AccountCache.Add(accountIndex, formatAccount)
-					s.L1AddressCache.Add(formatAccount.L1Address, accountIndex)
+					s.L1AddressCache.Add(formatAccount.L1Address, int64(accountIndex))
 				}
 			}
 		}
@@ -550,7 +550,7 @@ func (s *StateDB) PrepareAccountsAndAssets(accountAssetsMap map[int64]map[int64]
 			}
 		}
 		s.AccountCache.Add(accountIndex, account)
-		s.L1AddressCache.Add(account.L1Address, accountIndex)
+		s.L1AddressCache.Add(account.L1Address, int64(accountIndex))
 	}
 
 	return nil

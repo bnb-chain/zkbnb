@@ -516,7 +516,7 @@ func (c *Committer) buildStateDataCopy(curBlock *block.Block) *statedb.StateData
 		}
 
 		for _, accountInfo := range addPendingAccounts {
-			c.bc.Statedb.StateCache.PendingAccountMap[accountInfo.AccountIndex].AccountId = accountInfo.ID
+			c.bc.Statedb.StateCache.PendingAccountMap[accountInfo.AccountIndex].AccountId = int64(accountInfo.ID)
 			updateAccountMap[accountInfo.AccountIndex] = c.bc.Statedb.StateCache.PendingAccountMap[accountInfo.AccountIndex]
 		}
 		for _, nftInfo := range addPendingNfts {
