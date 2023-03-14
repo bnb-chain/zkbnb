@@ -30,7 +30,7 @@ func NewCancelOfferExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}
 
 	return &CancelOfferExecutor{
-		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
+		BaseExecutor: NewBaseExecutor(bc, tx, txInfo, false),
 		TxInfo:       txInfo,
 	}, nil
 }

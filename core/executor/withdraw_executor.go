@@ -29,7 +29,7 @@ func NewWithdrawExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}
 
 	return &WithdrawExecutor{
-		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
+		BaseExecutor: NewBaseExecutor(bc, tx, txInfo, false),
 		TxInfo:       txInfo,
 	}, nil
 }

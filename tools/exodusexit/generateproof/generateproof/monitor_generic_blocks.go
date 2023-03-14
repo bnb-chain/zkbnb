@@ -170,7 +170,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 				committedTxHashMap[pendingUpdateBlock.CommittedTxHash] = true
 			}
 		}
-		commitBlockInfoList := make([]OldZkBNBCommitBlockInfo, 0)
+		commitBlockInfoList := make([]ZkBNBCommitBlockInfo, 0)
 		for committedTx, _ := range committedTxHashMap {
 			commitBlocksCallData, err := getCommitBlocksCallData(m.cli, committedTx)
 			if err != nil {
@@ -233,7 +233,7 @@ func getCommitBlocksCallData(cli *rpc.ProviderClient, hash string) (*CommitBlock
 		return nil, err
 	}
 	storageStoredBlockInfo := StorageStoredBlockInfo{}
-	newBlocksData := make([]OldZkBNBCommitBlockInfo, 0)
+	newBlocksData := make([]ZkBNBCommitBlockInfo, 0)
 	callData := CommitBlocksCallData{LastCommittedBlockData: &storageStoredBlockInfo, NewBlocksData: newBlocksData}
 	if err := newABIDecoder.UnpackIntoInterface(&callData, "commitBlocks", transaction.Data()[4:]); err != nil {
 		logx.Severe(err)

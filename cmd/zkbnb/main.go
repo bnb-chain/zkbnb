@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof"
+	"github.com/bnb-chain/zkbnb/tools/exodusexit/performexodus"
 	"github.com/bnb-chain/zkbnb/tools/query"
 	"os"
 	"runtime"
@@ -223,6 +224,7 @@ func main() {
 				Name:  "performexodus",
 				Usage: "Run performexodus service",
 				Flags: []cli.Flag{
+					flags.CommandFlag,
 					flags.ConfigFlag,
 				},
 				Action: func(cCtx *cli.Context) error {
@@ -232,9 +234,8 @@ func main() {
 					if !cCtx.IsSet(flags.ConfigFlag.Name) {
 						return cli.ShowSubcommandHelp(cCtx)
 					}
-					if cCtx.String(flags.CommandFlag.Name) == "continue" {
-						return generateproof.Run(cCtx.String(flags.ConfigFlag.Name))
-					}
+					return performexodus.Run(cCtx.String(flags.ConfigFlag.Name))
+
 					return nil
 				},
 			},

@@ -31,7 +31,7 @@ func NewDepositNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}
 
 	return &DepositNftExecutor{
-		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
+		BaseExecutor: NewBaseExecutor(bc, tx, txInfo, false),
 		TxInfo:       txInfo,
 	}, nil
 }
@@ -47,12 +47,14 @@ func (e *DepositNftExecutor) Prepare() error {
 		return err
 	}
 	if err == types.AppErrAccountNotFound {
-		if e.tx.Rollback == false {
-			nextAccountIndex := e.bc.StateDB().GetNextAccountIndex()
-			txInfo.AccountIndex = nextAccountIndex
-		} else {
-			//for rollback
-			txInfo.AccountIndex = e.tx.AccountIndex
+		if !e.isExodusExit {
+			if e.tx.Rollback == false {
+				nextAccountIndex := e.bc.StateDB().GetNextAccountIndex()
+				txInfo.AccountIndex = nextAccountIndex
+			} else {
+				//for rollback
+				txInfo.AccountIndex = e.tx.AccountIndex
+			}
 		}
 		e.IsCreateAccount = true
 	} else {

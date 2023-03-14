@@ -29,7 +29,7 @@ func NewTransferExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}
 
 	return &TransferExecutor{
-		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
+		BaseExecutor: NewBaseExecutor(bc, tx, txInfo, false),
 		TxInfo:       txInfo,
 	}, nil
 }
@@ -46,13 +46,15 @@ func (e *TransferExecutor) Prepare() error {
 		if txInfo.ToAccountIndex != -1 {
 			return types.AppErrAccountInvalidToAccount
 		}
-		if !e.bc.StateDB().DryRun {
-			if e.tx.Rollback == false {
-				nextAccountIndex := e.bc.StateDB().GetNextAccountIndex()
-				txInfo.ToAccountIndex = nextAccountIndex
-			} else {
-				//for rollback
-				txInfo.ToAccountIndex = e.tx.AccountIndex
+		if !e.isExodusExit {
+			if !e.bc.StateDB().DryRun {
+				if e.tx.Rollback == false {
+					nextAccountIndex := e.bc.StateDB().GetNextAccountIndex()
+					txInfo.ToAccountIndex = nextAccountIndex
+				} else {
+					//for rollback
+					txInfo.ToAccountIndex = e.tx.AccountIndex
+				}
 			}
 		}
 		e.IsCreateAccount = true

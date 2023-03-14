@@ -69,32 +69,32 @@ func NewPerformExodus(c config.Config) (*PerformExodus, error) {
 	return newPerformExodus, nil
 }
 
-//func (m *PerformExodus) PerformDesert(nftRoot [32]byte,
-//	exitData zkbnb.ExodusVerifierExitData, assetMerkleProof [16][32]byte, accountMerkleProof [32][32]byte) error {
-//	gasPrice, err := m.cli.SuggestGasPrice(context.Background())
-//	if err != nil {
-//		logx.Errorf("failed to fetch gas price: %v", err)
-//		return err
-//	}
-//	txHash, err := zkbnb.PerformDesert(m.cli, m.authCli, m.zkbnbInstance, nftRoot, exitData, assetMerkleProof, accountMerkleProof, gasPrice, m.Config.ChainConfig.GasLimit)
-//	if err != nil {
-//		return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
-//	}
-//	return nil
-//}
+func (m *PerformExodus) PerformDesert(nftRoot *big.Int,
+	exitData zkbnb.ExodusVerifierExitData, assetMerkleProof [16]*big.Int, accountMerkleProof [32]*big.Int) error {
+	gasPrice, err := m.cli.SuggestGasPrice(context.Background())
+	if err != nil {
+		logx.Errorf("failed to fetch gas price: %v", err)
+		return err
+	}
+	txHash, err := zkbnb.PerformDesert(m.cli, m.authCli, m.zkbnbInstance, nftRoot, exitData, assetMerkleProof, accountMerkleProof, gasPrice, m.Config.ChainConfig.GasLimit)
+	if err != nil {
+		return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
+	}
+	return nil
+}
 
-//func (m *PerformExodus) PerformDesertNft(ownerAccountIndex *big.Int, accountRoot [32]byte, exitNfts []zkbnb.ExodusVerifierExitNftData, nftMerkleProofs [][40][32]byte) error {
-//	gasPrice, err := m.cli.SuggestGasPrice(context.Background())
-//	if err != nil {
-//		logx.Errorf("failed to fetch gas price: %v", err)
-//		return err
-//	}
-//	txHash, err := zkbnb.PerformDesertNft(m.cli, m.authCli, m.zkbnbInstance, ownerAccountIndex, accountRoot, exitNfts, nftMerkleProofs, gasPrice, m.Config.ChainConfig.GasLimit)
-//	if err != nil {
-//		return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
-//	}
-//	return nil
-//}
+func (m *PerformExodus) PerformDesertNft(ownerAccountIndex *big.Int, accountRoot *big.Int, exitNfts []zkbnb.ExodusVerifierExitNftData, nftMerkleProofs [][40]*big.Int) error {
+	gasPrice, err := m.cli.SuggestGasPrice(context.Background())
+	if err != nil {
+		logx.Errorf("failed to fetch gas price: %v", err)
+		return err
+	}
+	txHash, err := zkbnb.PerformDesertNft(m.cli, m.authCli, m.zkbnbInstance, ownerAccountIndex, accountRoot, exitNfts, nftMerkleProofs, gasPrice, m.Config.ChainConfig.GasLimit)
+	if err != nil {
+		return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
+	}
+	return nil
+}
 
 func (m *PerformExodus) WithdrawPendingBalance(owner common.Address, token common.Address, amount *big.Int) error {
 	gasPrice, err := m.cli.SuggestGasPrice(context.Background())

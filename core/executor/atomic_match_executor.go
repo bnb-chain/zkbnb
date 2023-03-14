@@ -35,7 +35,7 @@ func NewAtomicMatchExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}
 
 	return &AtomicMatchExecutor{
-		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
+		BaseExecutor: NewBaseExecutor(bc, tx, txInfo, false),
 		TxInfo:       txInfo,
 	}, nil
 }

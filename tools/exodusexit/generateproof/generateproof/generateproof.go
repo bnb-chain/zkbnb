@@ -425,7 +425,7 @@ func (c *ExodusExit) executeAtomicMatch(pubData []byte) error {
 		GasFeeAssetId:     int64(gasFeeAssetId),
 	}
 	executor := &executor.AtomicMatchExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
+		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
 		TxInfo:       txInfo,
 	}
 	err = executor.Prepare()
@@ -456,7 +456,7 @@ func (c *ExodusExit) executeCancelOffer(pubData []byte) error {
 	}
 
 	executor := &executor.CancelOfferExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
+		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
 		TxInfo:       txInfo,
 	}
 	err := executor.Prepare()
@@ -487,7 +487,7 @@ func (c *ExodusExit) executeCollection(pubData []byte) error {
 	}
 
 	executor := &executor.CreateCollectionExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
+		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
 		TxInfo:       txInfo,
 	}
 	err := executor.Prepare()
@@ -518,7 +518,7 @@ func (c *ExodusExit) executeDeposit(pubData []byte) error {
 	}
 
 	executor := &executor.DepositExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
+		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
 		TxInfo:       txInfo,
 	}
 	err := executor.Prepare()
@@ -555,7 +555,7 @@ func (c *ExodusExit) executeDepositNft(pubData []byte) error {
 		NftContentType:      int8(nftContentType),
 	}
 	executor := &executor.DepositNftExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
+		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
 		TxInfo:       txInfo,
 	}
 	err := executor.Prepare()
@@ -583,7 +583,7 @@ func (c *ExodusExit) executeFullExit(pubData []byte) error {
 		L1Address:    l1Address,
 	}
 	executor := &executor.FullExitExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
+		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
 		TxInfo:       txInfo,
 	}
 	err := executor.Prepare()
@@ -622,7 +622,7 @@ func (c *ExodusExit) executeFullExitNft(pubData []byte) error {
 		NftContentType:      int8(nftContentType),
 	}
 	executor := &executor.FullExitNftExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
+		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
 		TxInfo:       txInfo,
 	}
 	err := executor.Prepare()
@@ -664,7 +664,7 @@ func (c *ExodusExit) executeMintNft(pubData []byte) error {
 		CreatorTreasuryRate: int64(creatorTreasuryRate),
 	}
 	executor := &executor.MintNftExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
+		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
 		TxInfo:       txInfo,
 	}
 	err = executor.Prepare()
@@ -696,7 +696,7 @@ func (c *ExodusExit) executeChangePubKey(pubData []byte) error {
 		Nonce:        int64(nonce),
 	}
 	executor := &executor.ChangePubKeyExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
+		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
 		TxInfo:       txInfo,
 	}
 	err := executor.Prepare()
@@ -738,7 +738,7 @@ func (c *ExodusExit) executeTransfer(pubData []byte) error {
 		GasFeeAssetAmount: gasFeeAssetAmount,
 	}
 	executor := &executor.TransferExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
+		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
 		TxInfo:       txInfo,
 	}
 	err = executor.Prepare()
@@ -774,7 +774,7 @@ func (c *ExodusExit) executeTransferNft(pubData []byte) error {
 		CallDataHash:      callDataHash,
 	}
 	executor := &executor.TransferNftExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
+		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
 		TxInfo:       txInfo,
 	}
 	err = executor.Prepare()
@@ -810,7 +810,7 @@ func (c *ExodusExit) executeWithdraw(pubData []byte) error {
 		GasFeeAssetAmount: gasFeeAssetAmount,
 	}
 	executor := &executor.WithdrawExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
+		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
 		TxInfo:       txInfo,
 	}
 	err = executor.Prepare()
@@ -856,7 +856,7 @@ func (c *ExodusExit) executeWithdrawNft(pubData []byte) error {
 		NftContentType:      int8(nftContentType),
 	}
 	executor := &executor.WithdrawNftExecutor{
-		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo),
+		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
 		TxInfo:       txInfo,
 	}
 	err = executor.Prepare()
@@ -955,20 +955,18 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 		}
 		logx.Infof("accountIndex=%d,accountAssetId=%d, merkleProofsAccountAsset=%s", accountIndex, accountAssetId, string(merkleProofsAccountAssetBytes))
 		performDesertData := PerformDesertData{}
-		var accountMerkleProof [32][32]byte
+		var accountMerkleProof [32]*big.Int
 		for i, _ := range merkleProofsAccount {
-			copy(accountMerkleProof[i][:], merkleProofsAccount[i][:])
+			accountMerkleProof[i] = new(big.Int).SetBytes(merkleProofsAccount[i][:])
 		}
 		performDesertData.AccountMerkleProof = accountMerkleProof
 
-		var assetMerkleProofByte [16][32]byte
+		var assetMerkleProofByte [16]*big.Int
 		for i, _ := range merkleProofsAccountAsset {
-			copy(assetMerkleProofByte[i][:], merkleProofsAccountAsset[i][:])
+			assetMerkleProofByte[i] = new(big.Int).SetBytes(merkleProofsAccountAsset[i][:])
 		}
 		performDesertData.AssetMerkleProof = assetMerkleProofByte
-		var nftRoot [32]byte
-		copy(nftRoot[:], nftTree.Root()[:])
-		performDesertData.NftRoot = nftRoot
+		performDesertData.NftRoot = new(big.Int).SetBytes(nftTree.Root()[:])
 		pk, err := common2.ParsePubKey(accountInfo.PublicKey)
 		if err != nil {
 			logx.Errorf("unable to parse pub key: %s", err.Error())
@@ -985,11 +983,11 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 			AccountId:                uint32(accountIndex),
 			Amount:                   formatAccountInfo.AssetInfo[accountAssetId].Balance,
 			OfferCanceledOrFinalized: formatAccountInfo.AssetInfo[accountAssetId].OfferCanceledOrFinalized,
-			//L1Address:          l1Address,  todo
-			PubKeyX:         pubKeyX,
-			PubKeyY:         pubKeyY,
-			Nonce:           new(big.Int).SetInt64(accountInfo.Nonce),
-			CollectionNonce: new(big.Int).SetInt64(accountInfo.CollectionNonce),
+			L1Address:                l1Address,
+			PubKeyX:                  pubKeyX,
+			PubKeyY:                  pubKeyY,
+			Nonce:                    new(big.Int).SetInt64(accountInfo.Nonce),
+			CollectionNonce:          new(big.Int).SetInt64(accountInfo.CollectionNonce),
 		}
 		data, err := json.Marshal(performDesertData)
 		if err != nil {
@@ -1004,8 +1002,8 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 	if len(nftIndexList) > 0 {
 		performDesertNftData := &PerformDesertNftData{}
 		var exitNfts []zkbnb.ExodusVerifierExitNftData
-		var nftMerkleProofsList [][40][32]byte
-		for index, nftIndex := range nftIndexList {
+		var nftMerkleProofsList [][40]*big.Int
+		for _, nftIndex := range nftIndexList {
 			nftInfo, err := c.bc.DB().L2NftModel.GetNft(nftIndex)
 			if err != nil {
 				logx.Errorf("get nft failed: %s", err)
@@ -1033,11 +1031,10 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 			exitNftData.CreatorAccountIndex = new(big.Int).SetInt64(nftInfo.CreatorAccountIndex)
 			exitNftData.CreatorTreasuryRate = new(big.Int).SetInt64(nftInfo.CreatorTreasuryRate)
 			exitNfts = append(exitNfts, exitNftData)
-			var merkleProofsNftByte [40][32]byte
+			var merkleProofsNftByte [40]*big.Int
 			for i, _ := range merkleProofsNft {
-				copy(merkleProofsNftByte[i][:], merkleProofsNft[i][:])
+				merkleProofsNftByte[i] = new(big.Int).SetBytes(merkleProofsNft[i][:])
 			}
-			nftMerkleProofsList[index] = merkleProofsNftByte
 			performDesertNftData.OwnerAccountIndex = new(big.Int).SetInt64(nftInfo.OwnerAccountIndex)
 		}
 
@@ -1045,9 +1042,7 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 
 		performDesertNftData.NftMerkleProofs = nftMerkleProofsList
 
-		var accountRoot [32]byte
-		copy(accountRoot[:], accountTree.Root()[:])
-		performDesertNftData.AccountRoot = accountRoot
+		performDesertNftData.AccountRoot = new(big.Int).SetBytes(accountTree.Root()[:])
 
 		data, err := json.Marshal(performDesertNftData)
 		err = ioutil.WriteFile("./tools/exodusexit/proofdata/performDesertNft.json", data, 0777)

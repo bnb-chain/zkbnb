@@ -30,18 +30,23 @@ type StorageStoredBlockInfo struct {
 	StateRoot                    [32]byte `json:"stateRoot"`
 	Commitment                   [32]byte `json:"commitment"`
 }
-type OldZkBNBCommitBlockInfo struct {
-	NewStateRoot      [32]byte `json:"newStateRoot"`
-	PublicData        []byte   `json:"publicData"`
-	Timestamp         *big.Int `json:"timestamp"`
-	PublicDataOffsets []uint32 `json:"publicDataOffsets"`
-	BlockNumber       uint32   `json:"blockNumber"`
-	BlockSize         uint16   `json:"blockSize"`
+type ZkBNBCommitBlockInfo struct {
+	NewStateRoot      [32]byte                    `json:"newStateRoot"`
+	PublicData        []byte                      `json:"publicData"`
+	Timestamp         *big.Int                    `json:"timestamp"`
+	OnchainOperations []ZkBNBOnchainOperationData `json:"zkBNBOnchainOperationData"`
+	BlockNumber       uint32                      `json:"blockNumber"`
+	BlockSize         uint16                      `json:"blockSize"`
+}
+
+type ZkBNBOnchainOperationData struct {
+	EthWitness       []byte `json:"ethWitness"`
+	PublicDataOffset uint32 `json:"publicDataOffset"`
 }
 
 type CommitBlocksCallData struct {
-	LastCommittedBlockData *StorageStoredBlockInfo   `abi:"_lastCommittedBlockData"`
-	NewBlocksData          []OldZkBNBCommitBlockInfo `abi:"_newBlocksData"`
+	LastCommittedBlockData *StorageStoredBlockInfo `abi:"_lastCommittedBlockData"`
+	NewBlocksData          []ZkBNBCommitBlockInfo  `abi:"_newBlocksData"`
 }
 
 type ZkBNBVerifyAndExecuteBlockInfo struct {
@@ -55,15 +60,15 @@ type VerifyAndExecuteBlocksCallData struct {
 }
 
 type PerformDesertData struct {
-	NftRoot            [32]byte
+	NftRoot            *big.Int
 	ExitData           zkbnb.ExodusVerifierExitData
-	AssetMerkleProof   [16][32]byte
-	AccountMerkleProof [32][32]byte
+	AssetMerkleProof   [16]*big.Int
+	AccountMerkleProof [32]*big.Int
 }
 
 type PerformDesertNftData struct {
 	OwnerAccountIndex *big.Int
-	AccountRoot       [32]byte
+	AccountRoot       *big.Int
 	ExitNfts          []zkbnb.ExodusVerifierExitNftData
-	NftMerkleProofs   [][40][32]byte
+	NftMerkleProofs   [][40]*big.Int
 }
