@@ -106,7 +106,13 @@ func (e *BaseExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 				return err
 			}
 			start = time.Now()
-			err = txInfo.VerifySignature(fromAccount.PublicKey)
+			var pubKey string
+			if txInfo.GetTxType() == txtypes.TxTypeChangePubKey {
+				pubKey = txInfo.GetPubKey()
+			} else {
+				pubKey = fromAccount.PublicKey
+			}
+			err = txInfo.VerifySignature(pubKey)
 			if metrics.VerifySignature != nil {
 				metrics.VerifySignature.Set(float64(time.Since(start).Milliseconds()))
 			}
