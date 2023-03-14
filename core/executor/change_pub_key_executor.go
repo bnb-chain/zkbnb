@@ -39,7 +39,7 @@ func (e *ChangePubKeyExecutor) Prepare() error {
 	txInfo := e.TxInfo
 
 	// Mark the tree states that would be affected in this executor.
-	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{})
+	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{txInfo.GasFeeAssetId})
 	e.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.GasFeeAssetId})
 
 	err := e.BaseExecutor.Prepare()
