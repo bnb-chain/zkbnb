@@ -157,6 +157,7 @@ func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC
 
 	// to config gas for different transaction types, need to be evaluated and tune these values
 	bnbGasFee := make(map[int]int64)
+	bnbGasFee[types.TxTypeChangePubKey] = 10000000000000
 	bnbGasFee[types.TxTypeTransfer] = 10000000000000
 	bnbGasFee[types.TxTypeWithdraw] = 20000000000000
 	bnbGasFee[types.TxTypeCreateCollection] = 10000000000000
@@ -167,6 +168,7 @@ func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC
 	bnbGasFee[types.TxTypeWithdrawNft] = 20000000000000
 
 	busdGasFee := make(map[int]int64)
+	busdGasFee[types.TxTypeChangePubKey] = 10000000000000
 	busdGasFee[types.TxTypeTransfer] = 10000000000000
 	busdGasFee[types.TxTypeWithdraw] = 20000000000000
 	busdGasFee[types.TxTypeCreateCollection] = 10000000000000
