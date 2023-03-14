@@ -16,8 +16,9 @@ type Config struct {
 		ConfirmBlocksCount      uint64
 		CommitBlockSk           string
 		VerifyBlockSk           string
-		GasLimit                uint64
-		GasPrice                uint64
+
+		GasLimit uint64
+		GasPrice uint64
 		//((MaxGasPrice-GasPrice)/GasPrice)*100
 		MaxGasPriceIncreasePercentage uint64 `json:",optional"`
 	}

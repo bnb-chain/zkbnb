@@ -170,7 +170,7 @@ require (
 
 require (
 	github.com/bnb-chain/zkbnb-crypto v0.0.8-0.20230217071307-211b4b7e8923
-	github.com/bnb-chain/zkbnb-eth-rpc v0.0.2
+	github.com/bnb-chain/zkbnb-eth-rpc v0.0.3
 	github.com/bnb-chain/zkbnb-smt v0.0.3-0.20221222120958-28d12ade0ecb
 	github.com/consensys/gnark v0.7.0
 	github.com/consensys/gnark-crypto v0.7.0
@@ -187,7 +187,7 @@ require (
 )
 
 replace (
-	github.com/bnb-chain/zkbnb-eth-rpc => github.com/tengwei/zkbnb-eth-rpc v0.0.3-0.20230220151053-0d1227dac349
+	github.com/bnb-chain/zkbnb-eth-rpc => github.com/tengwei/zkbnb-eth-rpc v0.0.3-0.20230310122130-3fff8bc24fb4
 	github.com/bnb-chain/zkbnb-smt => github.com/qct/zkbnb-smt v0.0.0-20230116124655-bad4d92a74f1
 	github.com/consensys/gnark => github.com/bnb-chain/gnark v0.7.1-0.20230206150652-4e87ef37b4e7
 	github.com/consensys/gnark-crypto => github.com/bnb-chain/gnark-crypto v0.7.1-0.20230203031630-7c643ad11891

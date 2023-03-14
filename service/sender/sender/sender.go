@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/shopspring/decimal"
 	"gorm.io/plugin/dbresolver"
@@ -43,6 +44,7 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/sysconfig"
 	sconfig "github.com/bnb-chain/zkbnb/service/sender/config"
 	"github.com/bnb-chain/zkbnb/types"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 var (
@@ -339,9 +341,17 @@ func (s *Sender) CommitBlocks() (err error) {
 			gasPrice = standByGasPrice.RoundUp(0).BigInt()
 			logx.Infof("speed up commit block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
 		}
+
 		// commit blocks on-chain
-		txHash, err = zkbnb.CommitBlocksWithNonce(
-			cli, authCliCommitBlock,
+
+		var signer = func(common.Address, *ethtypes.Transaction) (*ethtypes.Transaction, error) {
+			return nil, nil
+		}
+
+		var address common.Address
+
+		txHash, err = zkbnb.CommitBlocksWithNonceAndSigner(
+			signer, address,
 			zkbnbInstance,
 			lastStoredBlockInfo,
 			pendingCommitBlocks,
