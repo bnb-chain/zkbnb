@@ -227,10 +227,12 @@ func reloadAccountTreeFromRDB(
 			}
 			accountInfo.Nonce = accountHistory.Nonce
 			accountInfo.CollectionNonce = accountHistory.CollectionNonce
-			accountInfo.Status = account.AccountStatusConfirmed
+			accountInfo.Status = accountHistory.Status
 			accountInfo.AssetInfo = accountHistory.AssetInfo
 			accountInfo.AssetRoot = accountHistory.AssetRoot
 			accountInfo.L2BlockHeight = accountHistory.L2BlockHeight
+			accountInfo.PublicKey = accountHistory.PublicKey
+			accountInfo.L1Address = accountHistory.L1Address
 			accountInfoList = append(accountInfoList, accountInfo)
 		}
 	} else {
