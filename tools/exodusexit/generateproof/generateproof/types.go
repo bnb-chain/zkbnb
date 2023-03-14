@@ -17,7 +17,6 @@
 package generateproof
 
 import (
-	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/core"
 	"math/big"
 )
 
@@ -60,15 +59,37 @@ type VerifyAndExecuteBlocksCallData struct {
 }
 
 type PerformDesertData struct {
-	NftRoot            *big.Int
-	ExitData           zkbnb.ExodusVerifierExitData
-	AssetMerkleProof   [16]*big.Int
-	AccountMerkleProof [32]*big.Int
+	NftRoot            string
+	ExitData           ExodusVerifierExitData
+	AssetMerkleProof   [16]string
+	AccountMerkleProof [32]string
+}
+
+type ExodusVerifierExitData struct {
+	AssetId                  uint32
+	AccountId                uint32
+	Amount                   int64
+	OfferCanceledOrFinalized int64
+	L1Address                string
+	PubKeyX                  string
+	PubKeyY                  string
+	Nonce                    int64
+	CollectionNonce          int64
 }
 
 type PerformDesertNftData struct {
-	OwnerAccountIndex *big.Int
-	AccountRoot       *big.Int
-	ExitNfts          []zkbnb.ExodusVerifierExitNftData
-	NftMerkleProofs   [][40]*big.Int
+	OwnerAccountIndex int64
+	AccountRoot       string
+	ExitNfts          []ExodusVerifierExitNftData
+	NftMerkleProofs   [][40]string
+}
+
+type ExodusVerifierExitNftData struct {
+	NftIndex            uint64
+	OwnerAccountIndex   int64
+	CreatorAccountIndex int64
+	NftContentHash      string
+	NftContentType      uint8
+	CreatorTreasuryRate int64
+	CollectionId        int64
 }

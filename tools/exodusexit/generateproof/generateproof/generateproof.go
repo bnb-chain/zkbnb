@@ -6,7 +6,6 @@ import (
 	types2 "github.com/bnb-chain/zkbnb-crypto/circuit/types"
 	"github.com/bnb-chain/zkbnb-crypto/util"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
-	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/core"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
 	common2 "github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/common/prove"
@@ -955,39 +954,33 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 		}
 		logx.Infof("accountIndex=%d,accountAssetId=%d, merkleProofsAccountAsset=%s", accountIndex, accountAssetId, string(merkleProofsAccountAssetBytes))
 		performDesertData := PerformDesertData{}
-		var accountMerkleProof [32]*big.Int
+		var accountMerkleProof [32]string
 		for i, _ := range merkleProofsAccount {
-			accountMerkleProof[i] = new(big.Int).SetBytes(merkleProofsAccount[i][:])
+			accountMerkleProof[i] = common.Bytes2Hex(merkleProofsAccount[i])
 		}
 		performDesertData.AccountMerkleProof = accountMerkleProof
 
-		var assetMerkleProofByte [16]*big.Int
+		var assetMerkleProofByte [16]string
 		for i, _ := range merkleProofsAccountAsset {
-			assetMerkleProofByte[i] = new(big.Int).SetBytes(merkleProofsAccountAsset[i][:])
+			assetMerkleProofByte[i] = common.Bytes2Hex(merkleProofsAccountAsset[i])
 		}
 		performDesertData.AssetMerkleProof = assetMerkleProofByte
-		performDesertData.NftRoot = new(big.Int).SetBytes(nftTree.Root()[:])
+		performDesertData.NftRoot = common.Bytes2Hex(nftTree.Root())
 		pk, err := common2.ParsePubKey(accountInfo.PublicKey)
 		if err != nil {
 			logx.Errorf("unable to parse pub key: %s", err.Error())
 			return err
 		}
-		var pubKeyX [32]byte
-		var pubKeyY [32]byte
-		var l1Address [20]byte
-		copy(pubKeyX[:], pk.A.X.Marshal()[:])
-		copy(pubKeyY[:], pk.A.Y.Marshal()[:])
-		copy(l1Address[:], common.FromHex(accountInfo.L1Address)[:])
-		performDesertData.ExitData = zkbnb.ExodusVerifierExitData{
+		performDesertData.ExitData = ExodusVerifierExitData{
 			AssetId:                  uint32(accountAssetId),
 			AccountId:                uint32(accountIndex),
-			Amount:                   formatAccountInfo.AssetInfo[accountAssetId].Balance,
-			OfferCanceledOrFinalized: formatAccountInfo.AssetInfo[accountAssetId].OfferCanceledOrFinalized,
-			L1Address:                l1Address,
-			PubKeyX:                  pubKeyX,
-			PubKeyY:                  pubKeyY,
-			Nonce:                    new(big.Int).SetInt64(accountInfo.Nonce),
-			CollectionNonce:          new(big.Int).SetInt64(accountInfo.CollectionNonce),
+			Amount:                   formatAccountInfo.AssetInfo[accountAssetId].Balance.Int64(),
+			OfferCanceledOrFinalized: formatAccountInfo.AssetInfo[accountAssetId].OfferCanceledOrFinalized.Int64(),
+			L1Address:                accountInfo.L1Address,
+			PubKeyX:                  common.Bytes2Hex(pk.A.X.Marshal()),
+			PubKeyY:                  common.Bytes2Hex(pk.A.Y.Marshal()),
+			Nonce:                    accountInfo.Nonce,
+			CollectionNonce:          accountInfo.CollectionNonce,
 		}
 		data, err := json.Marshal(performDesertData)
 		if err != nil {
@@ -1001,8 +994,8 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 
 	if len(nftIndexList) > 0 {
 		performDesertNftData := &PerformDesertNftData{}
-		var exitNfts []zkbnb.ExodusVerifierExitNftData
-		var nftMerkleProofsList [][40]*big.Int
+		var exitNfts []ExodusVerifierExitNftData
+		var nftMerkleProofsList [][40]string
 		for _, nftIndex := range nftIndexList {
 			nftInfo, err := c.bc.DB().L2NftModel.GetNft(nftIndex)
 			if err != nil {
@@ -1022,27 +1015,25 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 				return err
 			}
 			logx.Infof("accountIndex=%d,nftIndex=%d, merkleProofsNft=%s", accountIndex, nftIndex, string(merkleProofsNftBytes))
-			exitNftData := zkbnb.ExodusVerifierExitNftData{}
-			var nftContentHash [32]byte
-			copy(nftContentHash[:], common.FromHex(nftInfo.NftContentHash)[:])
-			exitNftData.NftContentHash = nftContentHash
+			exitNftData := ExodusVerifierExitNftData{}
+			exitNftData.NftContentHash = nftInfo.NftContentHash
 			exitNftData.NftIndex = uint64(nftIndex)
-			exitNftData.CollectionId = new(big.Int).SetInt64(nftInfo.CollectionId)
-			exitNftData.CreatorAccountIndex = new(big.Int).SetInt64(nftInfo.CreatorAccountIndex)
-			exitNftData.CreatorTreasuryRate = new(big.Int).SetInt64(nftInfo.CreatorTreasuryRate)
+			exitNftData.CollectionId = nftInfo.CollectionId
+			exitNftData.CreatorAccountIndex = nftInfo.CreatorAccountIndex
+			exitNftData.CreatorTreasuryRate = nftInfo.CreatorTreasuryRate
 			exitNfts = append(exitNfts, exitNftData)
-			var merkleProofsNftByte [40]*big.Int
+			var merkleProofsNftByte [40]string
 			for i, _ := range merkleProofsNft {
-				merkleProofsNftByte[i] = new(big.Int).SetBytes(merkleProofsNft[i][:])
+				merkleProofsNftByte[i] = common.Bytes2Hex(merkleProofsNft[i])
 			}
-			performDesertNftData.OwnerAccountIndex = new(big.Int).SetInt64(nftInfo.OwnerAccountIndex)
+			performDesertNftData.OwnerAccountIndex = nftInfo.OwnerAccountIndex
 		}
 
 		performDesertNftData.ExitNfts = exitNfts
 
 		performDesertNftData.NftMerkleProofs = nftMerkleProofsList
 
-		performDesertNftData.AccountRoot = new(big.Int).SetBytes(accountTree.Root()[:])
+		performDesertNftData.AccountRoot = common.Bytes2Hex(accountTree.Root())
 
 		data, err := json.Marshal(performDesertNftData)
 		err = ioutil.WriteFile("./tools/exodusexit/proofdata/performDesertNft.json", data, 0777)

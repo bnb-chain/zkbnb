@@ -21,7 +21,7 @@ func Run(configFile string) error {
 	}
 	var performDesertAsset generateproof.PerformDesertData
 	conf.MustLoad("./tools/exodusexit/proofdata/performDesertAsset.json", &performDesertAsset)
-	err = m.PerformDesert(performDesertAsset.NftRoot, performDesertAsset.ExitData, performDesertAsset.AssetMerkleProof, performDesertAsset.AccountMerkleProof)
+	err = m.PerformDesert(performDesertAsset)
 	if err != nil {
 		return err
 	}
