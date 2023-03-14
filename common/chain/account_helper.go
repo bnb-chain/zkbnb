@@ -17,7 +17,7 @@ func FromFormatAccountInfo(formatAccountInfo *types.AccountInfo) (accountInfo *a
 	}
 	accountInfo = &account.Account{
 		Model: gorm.Model{
-			ID: formatAccountInfo.AccountId,
+			ID: uint(formatAccountInfo.AccountId),
 		},
 		AccountIndex:    formatAccountInfo.AccountIndex,
 		PublicKey:       formatAccountInfo.PublicKey,
@@ -38,7 +38,7 @@ func ToFormatAccountInfo(accountInfo *account.Account) (formatAccountInfo *types
 		return nil, types.JsonErrUnmarshal
 	}
 	formatAccountInfo = &types.AccountInfo{
-		AccountId:       accountInfo.ID,
+		AccountId:       int64(accountInfo.ID),
 		AccountIndex:    accountInfo.AccountIndex,
 		PublicKey:       accountInfo.PublicKey,
 		L1Address:       accountInfo.L1Address,
