@@ -397,6 +397,7 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 				AssetRoot:       accountHistory.AssetRoot,
 				L2BlockHeight:   accountHistory.L2BlockHeight,
 				Status:          accountHistory.Status,
+				PublicKey:       accountHistory.PublicKey,
 			}
 			err := bc.AccountModel.UpdateByIndexInTransact(dbTx, accountInfo)
 			if err != nil {
