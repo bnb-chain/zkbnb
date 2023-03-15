@@ -66,7 +66,8 @@ func init() {
 		NilNftRoot = poseidon.PoseidonBytes(NilNftRoot, NilNftRoot)
 	}
 	// nil state root
-	NilStateRoot = poseidon.PoseidonBytes(NilAccountRoot, NilNftRoot)
+	//NilStateRoot = poseidon.PoseidonBytes(NilAccountRoot, NilNftRoot)
+	NilStateRoot = GMimcBytes(NilAccountRoot, NilNftRoot)
 
 	logx.Infof("genesis state root: %s asset %s", hex.EncodeToString(NilStateRoot), hex.EncodeToString(NilAccountAssetRoot))
 }
