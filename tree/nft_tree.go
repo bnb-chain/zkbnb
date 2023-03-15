@@ -107,7 +107,7 @@ func InitNftTree(
 			logx.Errorf("unable to commit nft tree: %s", err.Error())
 			return nil, err
 		}
-		logx.Infof("reloadNftTree end. cost time %s", float64(time.Since(start).Milliseconds()))
+		logx.Infof("reloadNftTree end. cost time %v", time.Since(start))
 		return nftTree, nil
 	}
 

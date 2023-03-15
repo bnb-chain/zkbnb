@@ -140,10 +140,10 @@ func InitAccountTree(
 		}
 		_, err = accountTree.CommitWithNewVersion(nil, &newVersion)
 		if err != nil {
-			logx.Errorf("unable to commit account tree: %s,newVersion:%s,tree.LatestVersion:%s", err.Error(), uint64(newVersion), uint64(accountTree.LatestVersion()))
+			logx.Errorf("unable to commit account tree: %s,newVersion:%d,tree.LatestVersion:%d", err.Error(), uint64(newVersion), uint64(accountTree.LatestVersion()))
 			return nil, nil, err
 		}
-		logx.Infof("reloadAccountTree end. cost time %s", float64(time.Since(start).Milliseconds()))
+		logx.Infof("reloadAccountTree end. cost time %v", time.Since(start))
 		return accountTree, accountAssetTrees, nil
 	}
 
@@ -198,7 +198,7 @@ func reloadAccountTreeFromRDB(
 	}
 	accountInfoList, err := accountModel.GetAccountByIndexes(accountIndexList)
 	if err != nil {
-		logx.Errorf("unable to get account by account index list: %s,accountIndexList:%s", err.Error(), accountIndexList)
+		logx.Errorf("unable to get account by account index list: %s,accountIndexList:%d", err.Error(), accountIndexList)
 		return nil, err
 	}
 	accountInfoDbMap := make(map[int64]*account.Account, 0)
@@ -213,7 +213,7 @@ func reloadAccountTreeFromRDB(
 		if accountInfoMap[accountHistory.AccountIndex] == nil {
 			accountInfo := accountInfoDbMap[accountHistory.AccountIndex]
 			if accountInfo == nil {
-				logx.Errorf("unable to get account by account index: %s,AccountIndex:%s", err.Error(), accountHistory.AccountIndex)
+				logx.Errorf("unable to get account by account index: %s,AccountIndex:%d", err.Error(), accountHistory.AccountIndex)
 				return nil, err
 			}
 			accountInfoMap[accountHistory.AccountIndex] = &account.Account{
@@ -273,7 +273,7 @@ func reloadAccountTreeFromRDB(
 		}
 		_, err = accountAssetTrees.Get(accountIndex).CommitWithNewVersion(nil, &newVersion)
 		if err != nil {
-			logx.Errorf("unable to CommitWithNewVersion asset to tree: %s,newVersion:%s,tree.LatestVersion:%s", err.Error(), uint64(newVersion), uint64(accountAssetTrees.Get(accountIndex).LatestVersion()))
+			logx.Errorf("unable to CommitWithNewVersion asset to tree: %s,newVersion:%d,tree.LatestVersion:%d", err.Error(), uint64(newVersion), uint64(accountAssetTrees.Get(accountIndex).LatestVersion()))
 			return nil, err
 		}
 		accountHashVal, err := AccountToNode(
