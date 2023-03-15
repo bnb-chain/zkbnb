@@ -56,7 +56,7 @@ func (e *WithdrawExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 		return err
 	}
 	// Verify l1 signature.
-	if txInfo.GetL1AddressBySignatureInfo() != common.HexToAddress(fromAccount.L1Address) {
+	if txInfo.GetL1AddressBySignature() != common.HexToAddress(fromAccount.L1Address) {
 		return types.DbErrFailToL1Signature
 	}
 	if txInfo.GasFeeAssetId != txInfo.AssetId {
