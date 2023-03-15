@@ -45,17 +45,11 @@ func (e *FullExitNftExecutor) Prepare() error {
 	bc := e.bc
 	txInfo := e.TxInfo
 
-	// The account index from txInfo isn't true, find account by l1Address.
-	l1Address := txInfo.L1Address
-	accountByL1Address, err := bc.StateDB().GetAccountByL1Address(l1Address)
-	if err != nil && err != types.AppErrAccountNotFound {
-		return err
-	}
 	formatAccountByIndex, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
 	if err != nil && err != types.AppErrAccountNotFound {
 		return err
 	}
-	if formatAccountByIndex == nil {
+	if err == types.AppErrAccountNotFound {
 		e.AccountNotExist = true
 		return nil
 	}
@@ -76,18 +70,15 @@ func (e *FullExitNftExecutor) Prepare() error {
 		NftContentType:      emptyNftInfo.NftContentType,
 	}
 
-	if accountByL1Address != nil {
-		if formatAccountByIndex.L1Address == accountByL1Address.L1Address &&
-			formatAccountByIndex.AccountIndex == accountByL1Address.AccountIndex {
-			nft, err := e.bc.StateDB().PrepareNft(txInfo.NftIndex)
-			if err != nil && err != types.AppErrNftNotFound {
-				return err
-			}
-			if err == nil && nft.OwnerAccountIndex == formatAccountByIndex.AccountIndex {
-				// Set the right nft if the owner is correct.
-				exitNft = nft
-				isExitEmptyNft = false
-			}
+	if formatAccountByIndex.L1Address == txInfo.L1Address {
+		nft, err := e.bc.StateDB().PrepareNft(txInfo.NftIndex)
+		if err != nil && err != types.AppErrNftNotFound {
+			return err
+		}
+		if err == nil && nft.OwnerAccountIndex == formatAccountByIndex.AccountIndex {
+			// Set the right nft if the owner is correct.
+			exitNft = nft
+			isExitEmptyNft = false
 		}
 	}
 
@@ -113,6 +104,7 @@ func (e *FullExitNftExecutor) Prepare() error {
 	txInfo.CreatorL1Address = creator.L1Address
 	txInfo.NftContentHash = common.FromHex(exitNft.NftContentHash)
 	txInfo.CollectionId = exitNft.CollectionId
+	txInfo.NftContentType = exitNft.NftContentType
 
 	e.exitNft = exitNft
 	e.exitEmpty = isExitEmptyNft
@@ -192,8 +184,7 @@ func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	var exitAccount *types.AccountInfo
 	var err error
 	if e.AccountNotExist {
-		newAccount := chain.EmptyAccount(txInfo.AccountIndex, types.EmptyL1Address, tree.NilAccountAssetRoot)
-		exitAccount, err = chain.ToFormatAccountInfo(newAccount)
+		exitAccount, err = chain.EmptyAccountFormat(txInfo.AccountIndex, []int64{}, types.EmptyL1Address, tree.NilAccountAssetRoot)
 		if err != nil {
 			return nil, err
 		}

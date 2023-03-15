@@ -40,29 +40,18 @@ func NewFullExitExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 func (e *FullExitExecutor) Prepare() error {
 	bc := e.bc
 	txInfo := e.TxInfo
-
-	// The account index from txInfo isn't true, find account by l1Address.
-	l1Address := txInfo.L1Address
-	accountByL1Address, err := bc.StateDB().GetAccountByL1Address(l1Address)
-	if err != nil && err != types.AppErrAccountNotFound {
-		return err
-	}
+	txInfo.AssetAmount = new(big.Int).SetInt64(0)
 	formatAccountByIndex, err := bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
 	if err != nil && err != types.AppErrAccountNotFound {
 		return err
 	}
-	txInfo.AssetAmount = new(big.Int).SetInt64(0)
-	if formatAccountByIndex == nil {
+	if err == types.AppErrAccountNotFound {
 		e.AccountNotExist = true
 		return nil
 	}
-
-	if accountByL1Address != nil {
-		if formatAccountByIndex.L1Address == accountByL1Address.L1Address &&
-			formatAccountByIndex.AccountIndex == accountByL1Address.AccountIndex {
-			// Set the right asset amount.
-			txInfo.AssetAmount = formatAccountByIndex.AssetInfo[txInfo.AssetId].Balance
-		}
+	if formatAccountByIndex.L1Address == txInfo.L1Address {
+		// Set the right asset amount.
+		txInfo.AssetAmount = formatAccountByIndex.AssetInfo[txInfo.AssetId].Balance
 	}
 
 	// Mark the tree states that would be affected in this executor.
@@ -137,15 +126,9 @@ func (e *FullExitExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	var exitAccount *types.AccountInfo
 	var err error
 	if e.AccountNotExist {
-		newAccount := chain.EmptyAccount(txInfo.AccountIndex, types.EmptyL1Address, tree.NilAccountAssetRoot)
-		exitAccount, err = chain.ToFormatAccountInfo(newAccount)
+		exitAccount, err = chain.EmptyAccountFormat(txInfo.AccountIndex, []int64{txInfo.AssetId}, types.EmptyL1Address, tree.NilAccountAssetRoot)
 		if err != nil {
 			return nil, err
-		}
-		exitAccount.AssetInfo[txInfo.AssetId] = &types.AccountAsset{
-			AssetId:                  txInfo.AssetId,
-			Balance:                  ffmath.Neg(txInfo.AssetAmount),
-			OfferCanceledOrFinalized: big.NewInt(0),
 		}
 	} else {
 		exitAccount, err = e.bc.StateDB().GetFormatAccount(txInfo.AccountIndex)
