@@ -19,7 +19,7 @@ func Run(configFile string) error {
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 
-	m, err := generateproof.NewMonitor(c)
+	m, err := generateproof.NewMonitor(&c)
 	if err != nil {
 		logx.Severe(err)
 		panic(err)

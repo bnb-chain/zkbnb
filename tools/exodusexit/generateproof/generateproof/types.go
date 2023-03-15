@@ -59,10 +59,21 @@ type VerifyAndExecuteBlocksCallData struct {
 }
 
 type PerformDesertData struct {
+	StoredBlockInfo    StoredBlockInfo
 	NftRoot            string
 	ExitData           ExodusVerifierExitData
 	AssetMerkleProof   [16]string
 	AccountMerkleProof [32]string
+}
+
+type StoredBlockInfo struct {
+	BlockSize                    uint16
+	BlockNumber                  uint32
+	PriorityOperations           uint64
+	PendingOnchainOperationsHash string
+	Timestamp                    int64
+	StateRoot                    string
+	Commitment                   string
 }
 
 type ExodusVerifierExitData struct {
@@ -78,6 +89,7 @@ type ExodusVerifierExitData struct {
 }
 
 type PerformDesertNftData struct {
+	StoredBlockInfo   StoredBlockInfo
 	OwnerAccountIndex int64
 	AccountRoot       string
 	ExitNfts          []ExodusVerifierExitNftData

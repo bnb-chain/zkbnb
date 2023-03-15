@@ -57,14 +57,16 @@ type (
 
 	ExodusExitBlock struct {
 		gorm.Model
-		BlockSize       uint16
-		BlockHeight     int64 `gorm:"uniqueIndex"`
-		PubData         string
-		CommittedTxHash string
-		CommittedAt     int64
-		VerifiedTxHash  string
-		VerifiedAt      int64
-		BlockStatus     int64 `gorm:"index"`
+		BlockSize         uint16
+		BlockHeight       int64 `gorm:"uniqueIndex"`
+		PubData           string
+		CommittedTxHash   string
+		CommittedAt       int64
+		L1CommittedHeight uint64 `gorm:"index"`
+		VerifiedTxHash    string
+		VerifiedAt        int64
+		L1VerifiedHeight  uint64 `gorm:"index"`
+		BlockStatus       int64  `gorm:"index"`
 	}
 )
 

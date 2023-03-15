@@ -108,6 +108,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 				}
 				relatedBlocks[blockHeight].CommittedTxHash = vlog.TxHash.Hex()
 				relatedBlocks[blockHeight].CommittedAt = int64(logBlock.Time)
+				relatedBlocks[blockHeight].L1CommittedHeight = vlog.BlockNumber
 				relatedBlocks[blockHeight].BlockStatus = exodusexit.StatusCommitted
 				relatedBlocks[blockHeight].BlockHeight = blockHeight
 			case monitor2.ZkbnbLogBlockVerificationSigHash.Hex():
@@ -125,6 +126,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 				}
 				relatedBlocks[blockHeight].VerifiedTxHash = vlog.TxHash.Hex()
 				relatedBlocks[blockHeight].VerifiedAt = int64(logBlock.Time)
+				relatedBlocks[blockHeight].L1VerifiedHeight = vlog.BlockNumber
 				relatedBlocks[blockHeight].BlockStatus = exodusexit.StatusVerified
 				relatedBlocks[blockHeight].BlockHeight = blockHeight
 				if blockHeight > m.Config.ChainConfig.EndL2BlockHeight {
@@ -172,7 +174,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		}
 		commitBlockInfoList := make([]ZkBNBCommitBlockInfo, 0)
 		for committedTx, _ := range committedTxHashMap {
-			commitBlocksCallData, err := getCommitBlocksCallData(m.cli, committedTx)
+			commitBlocksCallData, err := m.getCommitBlocksCallData(committedTx)
 			if err != nil {
 				return err
 			}
@@ -225,9 +227,9 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 	}
 }
 
-func getCommitBlocksCallData(cli *rpc.ProviderClient, hash string) (*CommitBlocksCallData, error) {
+func (m *Monitor) getCommitBlocksCallData(hash string) (*CommitBlocksCallData, error) {
 	newABIDecoder := abicoder.NewABIDecoder(monitor2.ZkBNBContractAbi)
-	transaction, _, err := cli.Client.TransactionByHash(context.Background(), common.HexToHash(hash))
+	transaction, _, err := m.cli.Client.TransactionByHash(context.Background(), common.HexToHash(hash))
 	if err != nil {
 		logx.Severe(err)
 		return nil, err
@@ -242,7 +244,15 @@ func getCommitBlocksCallData(cli *rpc.ProviderClient, hash string) (*CommitBlock
 	return &callData, nil
 }
 
-func getVerifyAndExecuteBlocksCallData(cli *rpc.ProviderClient, hash string) (*VerifyAndExecuteBlocksCallData, error) {
+func (m *Monitor) getLastStoredBlockInfo(committedTxHash string) (*StorageStoredBlockInfo, error) {
+	commitBlocksCallData, err := m.getCommitBlocksCallData(committedTxHash)
+	if err != nil {
+		return nil, err
+	}
+	return commitBlocksCallData.LastCommittedBlockData, err
+}
+
+func (m *Monitor) getVerifyAndExecuteBlocksCallData(cli *rpc.ProviderClient, hash string) (*VerifyAndExecuteBlocksCallData, error) {
 	newABIDecoder := abicoder.NewABIDecoder(monitor2.ZkBNBContractAbi)
 	transaction, _, err := cli.Client.TransactionByHash(context.Background(), common.HexToHash(hash))
 	if err != nil {

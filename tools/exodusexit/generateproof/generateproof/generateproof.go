@@ -939,6 +939,29 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 	}
 	logx.Infof("accountIndex=%d, merkleProofsAccount=%s", accountIndex, string(merkleProofsAccountBytes))
 
+	m, err := NewMonitor(c.config)
+	if err != nil {
+		return err
+	}
+	exodusExitBlock, err := c.bc.DB().ExodusExitBlockModel.GetLatestBlock()
+	if err != nil {
+		logx.Errorf("get exodus exit block failed: %s", err)
+		return err
+	}
+	lastStoredBlockInfo, err := m.getLastStoredBlockInfo(exodusExitBlock.CommittedTxHash)
+	if err != nil {
+		logx.Errorf("get last stored block info failed: %s", err)
+		return err
+	}
+	storedBlockInfo := StoredBlockInfo{
+		BlockSize:                    lastStoredBlockInfo.BlockSize,
+		BlockNumber:                  lastStoredBlockInfo.BlockNumber,
+		PriorityOperations:           lastStoredBlockInfo.PriorityOperations,
+		PendingOnchainOperationsHash: common.Bytes2Hex(lastStoredBlockInfo.PendingOnchainOperationsHash[:]),
+		Timestamp:                    lastStoredBlockInfo.Timestamp.Int64(),
+		StateRoot:                    common.Bytes2Hex(lastStoredBlockInfo.StateRoot[:]),
+		Commitment:                   common.Bytes2Hex(lastStoredBlockInfo.Commitment[:]),
+	}
 	if accountAssetId != -1 {
 		assetMerkleProof, err := accountAssetTrees.Get(accountIndex).GetProof(uint64(accountAssetId))
 		if err != nil {
@@ -982,6 +1005,7 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 			Nonce:                    accountInfo.Nonce,
 			CollectionNonce:          accountInfo.CollectionNonce,
 		}
+		performDesertData.StoredBlockInfo = storedBlockInfo
 		data, err := json.Marshal(performDesertData)
 		if err != nil {
 			return err
@@ -1034,6 +1058,8 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 		performDesertNftData.NftMerkleProofs = nftMerkleProofsList
 
 		performDesertNftData.AccountRoot = common.Bytes2Hex(accountTree.Root())
+
+		performDesertNftData.StoredBlockInfo = storedBlockInfo
 
 		data, err := json.Marshal(performDesertNftData)
 		err = ioutil.WriteFile("./tools/exodusexit/proofdata/performDesertNft.json", data, 0777)

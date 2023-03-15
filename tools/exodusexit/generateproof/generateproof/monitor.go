@@ -33,7 +33,7 @@ import (
 )
 
 type Monitor struct {
-	Config               config.Config
+	Config               *config.Config
 	cli                  *rpc.ProviderClient
 	ZkBnbContractAddress string
 	db                   *gorm.DB
@@ -41,7 +41,7 @@ type Monitor struct {
 	ExodusExitBlockModel exodusexit.ExodusExitBlockModel
 }
 
-func NewMonitor(c config.Config) (*Monitor, error) {
+func NewMonitor(c *config.Config) (*Monitor, error) {
 	masterDataSource := c.Postgres.MasterDataSource
 	db, err := gorm.Open(postgres.Open(masterDataSource))
 	if err != nil {
