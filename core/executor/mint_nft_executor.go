@@ -75,7 +75,7 @@ func (e *MintNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 		return err
 	}
 	// Verify l1 signature.
-	if txInfo.GetL1AddressBySignatureInfo() != common.HexToAddress(creatorAccount.L1Address) {
+	if txInfo.GetL1AddressBySignature() != common.HexToAddress(creatorAccount.L1Address) {
 		return types.DbErrFailToL1Signature
 	}
 	if creatorAccount.CollectionNonce <= txInfo.NftCollectionId {

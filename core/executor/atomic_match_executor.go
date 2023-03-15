@@ -160,10 +160,10 @@ func (e *AtomicMatchExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 	}
 
 	// Verify l1 signature.
-	if txInfo.SellOffer.GetL1AddressBySignatureInfo() != common.HexToAddress(sellAccount.L1Address) {
+	if txInfo.SellOffer.GetL1AddressBySignature() != common.HexToAddress(sellAccount.L1Address) {
 		return types.DbErrFailToL1Signature
 	}
-	if txInfo.BuyOffer.GetL1AddressBySignatureInfo() != common.HexToAddress(buyAccount.L1Address) {
+	if txInfo.BuyOffer.GetL1AddressBySignature() != common.HexToAddress(buyAccount.L1Address) {
 		return types.DbErrFailToL1Signature
 	}
 
