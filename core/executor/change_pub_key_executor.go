@@ -60,7 +60,7 @@ func (e *ChangePubKeyExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) erro
 	}
 
 	// Verify l1 signature.
-	if txInfo.GetL1AddressBySignatureInfo() != common.HexToAddress(fromAccount.L1Address) {
+	if txInfo.GetL1AddressBySignature() != common.HexToAddress(fromAccount.L1Address) {
 		return types.DbErrFailToL1Signature
 	}
 

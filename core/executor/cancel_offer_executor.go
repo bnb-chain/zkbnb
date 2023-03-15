@@ -58,7 +58,7 @@ func (e *CancelOfferExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 		return err
 	}
 	// Verify l1 signature.
-	if txInfo.GetL1AddressBySignatureInfo() != common.HexToAddress(fromAccount.L1Address) {
+	if txInfo.GetL1AddressBySignature() != common.HexToAddress(fromAccount.L1Address) {
 		return types.DbErrFailToL1Signature
 	}
 	if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(txInfo.GasFeeAssetAmount) < 0 {
