@@ -323,7 +323,7 @@ Apollo:
   AppID:             zkbnb-cloud
   Cluster:           prod
   ApolloIp:          http://internal-tf-cm-test-apollo-config-alb-2119591301.ap-northeast-1.elb.amazonaws.com:9028
-  Namespace:         application
+  Namespace:         applicationDev
   IsBackupConfig:    true
 
 IpfsUrl:
