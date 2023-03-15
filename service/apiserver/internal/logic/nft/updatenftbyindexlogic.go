@@ -30,7 +30,7 @@ func (l *UpdateNftByIndexLogic) UpdateNftByIndex(req *types.ReqUpdateNft) (resp 
 	if err != nil {
 		return nil, err
 	}
-	publicAddress := tx.GetL1AddressBySignatureInfo()
+	publicAddress := tx.GetL1AddressBySignature()
 	accountInfo, err := l.svcCtx.StateFetcher.GetLatestAccount(tx.AccountIndex)
 	if err != nil {
 		return nil, err
