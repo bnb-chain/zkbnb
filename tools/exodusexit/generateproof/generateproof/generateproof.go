@@ -551,7 +551,7 @@ func (c *ExodusExit) executeDepositNft(pubData []byte) error {
 		CreatorTreasuryRate: int64(creatorTreasuryRate),
 		NftContentHash:      nftContentHash,
 		L1Address:           l1Address,
-		NftContentType:      int8(nftContentType),
+		NftContentType:      int64(nftContentType),
 	}
 	executor := &executor.DepositNftExecutor{
 		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
@@ -618,7 +618,7 @@ func (c *ExodusExit) executeFullExitNft(pubData []byte) error {
 		L1Address:           l1Address,
 		CreatorL1Address:    creatorL1Address,
 		NftContentHash:      nftContentHash,
-		NftContentType:      int8(nftContentType),
+		NftContentType:      int64(nftContentType),
 	}
 	executor := &executor.FullExitNftExecutor{
 		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
@@ -852,7 +852,7 @@ func (c *ExodusExit) executeWithdrawNft(pubData []byte) error {
 		CreatorL1Address:    creatorL1Address,
 		GasFeeAssetId:       int64(gasFeeAssetId),
 		GasFeeAssetAmount:   gasFeeAssetAmount,
-		NftContentType:      int8(nftContentType),
+		NftContentType:      int64(nftContentType),
 	}
 	executor := &executor.WithdrawNftExecutor{
 		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),

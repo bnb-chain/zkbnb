@@ -57,7 +57,7 @@ type (
 		CreatorAccountIndex int64
 		OwnerAccountIndex   int64  `gorm:"index:idx_owner_account_index"`
 		NftContentHash      string `gorm:"index:idx_owner_account_index"`
-		NftContentType      int8
+		NftContentType      int64
 		CreatorTreasuryRate int64
 		CollectionId        int64
 		L2BlockHeight       int64 `gorm:"index:idx_nft_index"`

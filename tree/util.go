@@ -335,7 +335,7 @@ func ComputeNftAssetLeafHash(
 	nftContentHash string,
 	creatorTreasuryRate int64,
 	collectionId int64,
-	nftContentType int8,
+	nftContentType int64,
 	nftIndex int64,
 	blockHeight int64,
 ) (hashVal []byte, err error) {
