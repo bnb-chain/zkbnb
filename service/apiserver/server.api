@@ -166,6 +166,14 @@ type (
 	}
 )
 
+type (
+	ReqAccountParam {
+		By           string `form:"by,optional"`
+		Value        string `form:"value,optional"`
+		AccountIndex int64  `form:"account_index,optional"`
+	}
+)
+
 @server(
 	group: block
 )

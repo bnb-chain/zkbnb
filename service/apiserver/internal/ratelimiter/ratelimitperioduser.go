@@ -5,20 +5,20 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-const RateLimitByAccountKeyFormat = "limit:accountId:%s:%s"
+const RateLimitByL1AddressFormat = "limit:l1Address:%s:%s"
 
-// RateLimitControlByUserId Rate Limit Control by user dimension
-func (r *PeriodRateLimiter) RateLimitControlByUserId(param *RateLimitParam, controller RateLimitController) error {
-	// If the userId is blank or empty, that means the accountId field has not been passed,
+// RateLimitControlByL1Address Rate Limit Control by user dimension
+func (r *PeriodRateLimiter) RateLimitControlByL1Address(param *RateLimitParam, controller RateLimitController) error {
+	// If the l1Address is blank or empty, that means the l1Address field has not been passed,
 	// so we would not do the accountId dimension rate limit control
-	if len(param.AccountId) == 0 {
+	if len(param.L1Address) == 0 {
 		return nil
 	}
-	rateLimitKey := fmt.Sprintf(RateLimitByAccountKeyFormat, param.RequestPath, param.AccountId)
+	rateLimitKey := fmt.Sprintf(RateLimitByL1AddressFormat, param.RequestPath, param.L1Address)
 	periodLimit := r.GetUserRateLimiter(param.RequestPath)
 	if err := r.RateLimitControl(rateLimitKey, periodLimit); err != nil {
-		logx.Errorf("RateLimitControlByUserId hit Period Limit, path:%s, userId:%s!",
-			param.RequestPath, param.AccountId)
+		logx.Errorf("RateLimitControlByL1Address hit Period Limit, path:%s, l1Address:%s!",
+			param.RequestPath, param.L1Address)
 		return err
 	}
 	return nil

@@ -95,7 +95,7 @@ func Run(configFile string) error {
 
 	// Initiate the rate limit control
 	// configuration from Apollo server side
-	ratelimiter.InitRateLimitControl(c)
+	ratelimiter.InitRateLimitControl(ctx, c)
 
 	// Add the rate limit control handler
 	server.Use(ratelimiter.RateLimitHandler)
