@@ -83,7 +83,7 @@ func ParseDepositNftPubData(pubData []byte) (tx *txtypes.DepositNftTxInfo, err e
 		NftContentHash:      nftContentHash,
 		L1Address:           l1Address,
 		CollectionId:        int64(collectionId),
-		NftContentType:      int8(nftContentType),
+		NftContentType:      int64(nftContentType),
 	}
 	return tx, nil
 }
@@ -134,7 +134,7 @@ func ParseFullExitNftPubData(pubData []byte) (tx *txtypes.FullExitNftTxInfo, err
 		L1Address:           l1Address,
 		CreatorL1Address:    creatorL1Address,
 		NftContentHash:      nftContentHash,
-		NftContentType:      int8(nftContentType),
+		NftContentType:      int64(nftContentType),
 	}
 	return tx, nil
 }

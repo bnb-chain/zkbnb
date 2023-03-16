@@ -28,7 +28,7 @@ type NftInfo struct {
 	NftContentHash      string
 	CreatorTreasuryRate int64
 	CollectionId        int64
-	NftContentType      int8
+	NftContentType      int64
 }
 
 func (info *NftInfo) String() string {
@@ -75,7 +75,7 @@ func ConstructNftInfo(
 	NftContentHash string,
 	creatorTreasuryRate int64,
 	collectionId int64,
-	nftContentType int8,
+	nftContentType int64,
 ) (nftInfo *NftInfo) {
 	return &NftInfo{
 		NftIndex:            NftIndex,
