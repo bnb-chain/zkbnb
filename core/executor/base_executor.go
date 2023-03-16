@@ -110,10 +110,11 @@ func (e *BaseExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 			start = time.Now()
 
 			// Verify l1 signature.
-			if txInfo.GetL1AddressBySignature() != common.HexToAddress(fromAccount.L1Address) {
-				return types.DbErrFailToL1Signature
+			if txInfo.GetTxType() != txtypes.TxTypeAtomicMatch {
+				if txInfo.GetL1AddressBySignature() != common.HexToAddress(fromAccount.L1Address) {
+					return types.DbErrFailToL1Signature
+				}
 			}
-
 			var pubKey string
 			if txInfo.GetTxType() == txtypes.TxTypeChangePubKey {
 				pubKey = txInfo.GetPubKey()

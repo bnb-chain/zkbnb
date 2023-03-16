@@ -159,12 +159,14 @@ func (e *AtomicMatchExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 		return types.AppErrSellerNotOwner
 	}
 
-	// Verify l1 signature.
-	if txInfo.SellOffer.GetL1AddressBySignature() != common.HexToAddress(sellAccount.L1Address) {
-		return types.DbErrFailToL1Signature
-	}
-	if txInfo.BuyOffer.GetL1AddressBySignature() != common.HexToAddress(buyAccount.L1Address) {
-		return types.DbErrFailToL1Signature
+	if !skipSigChk {
+		// Verify l1 signature.
+		if txInfo.SellOffer.GetL1AddressBySignature() != common.HexToAddress(sellAccount.L1Address) {
+			return types.DbErrFailToL1Signature
+		}
+		if txInfo.BuyOffer.GetL1AddressBySignature() != common.HexToAddress(buyAccount.L1Address) {
+			return types.DbErrFailToL1Signature
+		}
 	}
 
 	// Verify offer signature.
