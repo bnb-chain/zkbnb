@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/response"
 	"net/http"
 
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/logic/transaction"
@@ -19,10 +20,6 @@ func GetL2SignatureBodyHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 
 		l := transaction.NewGetL2SignatureBodyLogic(r.Context(), svcCtx)
 		resp, err := l.GetL2SignatureBody(&req)
-		if err != nil {
-			httpx.Error(w, err)
-		} else {
-			httpx.OkJson(w, resp)
-		}
+		response.Handle(w, resp, err)
 	}
 }

@@ -4,11 +4,11 @@ import (
 	"context"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/fetcher/address"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
+	"github.com/bnb-chain/zkbnb/types"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/pkg/errors"
 )
 
 type VerifySignature struct {
@@ -61,7 +61,7 @@ func (v *VerifySignature) VerifySignatureInfo(TxType uint32, TxInfo, Signature s
 
 	//Compare the original address and the public address to verify the identifier
 	if publicAddress != originAddress {
-		return errors.New("Tx Signature Error")
+		return types.AppErrTxSignatureError
 	}
 	return nil
 }

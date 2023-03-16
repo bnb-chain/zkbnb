@@ -21,6 +21,7 @@ import (
 	"github.com/bnb-chain/zkbnb-crypto/circuit/types"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
+	"github.com/bnb-chain/zkbnb/types"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"github.com/ethereum/go-ethereum/common"
@@ -308,13 +309,13 @@ func ComputeAccountAssetLeafHash(
 ) (hashVal []byte, err error) {
 	balanceBigInt, isValid := new(big.Int).SetString(balance, 10)
 	if !isValid {
-		return nil, errors.New("invalid balance string")
+		return nil, types.AppErrInvalidBalanceString
 	}
 	e0 := txtypes.FromBigIntToFr(balanceBigInt)
 
 	offerCanceledOrFinalizedBigInt, isValid := new(big.Int).SetString(offerCanceledOrFinalized, 10)
 	if !isValid {
-		return nil, errors.New("invalid balance string")
+		return nil, types.AppErrInvalidBalanceString
 	}
 	e1 := txtypes.FromBigIntToFr(offerCanceledOrFinalizedBigInt)
 	hash := poseidon.Poseidon(e0, e1).Bytes()

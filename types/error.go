@@ -1,39 +1,59 @@
 package types
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
 type Error interface {
 	Error() string
-	Code() int32
 	RefineError(err ...interface{}) Error
 }
 
-func New(code int32, msg string) Error {
-	return newError(code, msg)
+type BizError struct {
+	Code    int32  `json:"code"`
+	Message string `json:"message"`
 }
 
-type commonError struct {
-	code    int32
-	message string
-}
-
-func (e *commonError) Error() string {
-	return fmt.Sprintf("%d: %s", e.code, e.message)
-}
-
-func (e *commonError) Code() int32 {
-	return e.code
-}
-
-func (e *commonError) RefineError(err ...interface{}) Error {
-	return newError(e.Code(), e.message+fmt.Sprint(err...))
-}
-
-func newError(code int32, msg string) Error {
-	return &commonError{
-		code:    code,
-		message: msg,
+func NewBusinessError(code int32, message string) *BizError {
+	return &BizError{
+		Code:    code,
+		Message: message,
 	}
+}
+
+func (e *BizError) Error() string {
+	data, err := json.Marshal(e)
+	if err != nil {
+		return err.Error()
+	}
+	return string(data)
+}
+
+func (e *BizError) RefineError(err ...interface{}) Error {
+	return NewBusinessError(e.Code, e.Message+fmt.Sprint(err...))
+}
+
+type SysError struct {
+	Code    int32  `json:"code"`
+	Message string `json:"message"`
+}
+
+func NewSystemError(code int32, message string) *SysError {
+	return &SysError{
+		Code:    code,
+		Message: message,
+	}
+}
+
+func (e *SysError) Error() string {
+	data, err := json.Marshal(e)
+	if err != nil {
+		return err.Error()
+	}
+	return string(data)
+}
+
+func (e *SysError) RefineError(err ...interface{}) Error {
+	return NewSystemError(e.Code, e.Message+fmt.Sprint(err...))
 }

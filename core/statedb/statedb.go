@@ -3,7 +3,6 @@ package statedb
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/metrics"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
@@ -810,12 +809,12 @@ func (s *StateDB) GetGasAccountIndex() (int64, error) {
 	gasAccountConfig, err := s.chainDb.SysConfigModel.GetSysConfigByName(types.GasAccountIndex)
 	if err != nil {
 		logx.Errorf("cannot find config for: %s", types.GasAccountIndex)
-		return -1, errors.New("internal error")
+		return -1, types.AppErrNotFindGasAccountConfig
 	}
 	gasAccountIndex, err := strconv.ParseInt(gasAccountConfig.Value, 10, 64)
 	if err != nil {
 		logx.Errorf("invalid account index: %s", gasAccountConfig.Value)
-		return -1, errors.New("internal error")
+		return -1, types.AppErrInvalidGasAccountIndex
 	}
 	s.MemCache.SetWithTTL(dbcache.GasAccountKey, gasAccountIndex, 0, time.Duration(24)*time.Hour)
 	return gasAccountIndex, nil
@@ -831,7 +830,7 @@ func (s *StateDB) GetGasConfig() (map[uint32]map[int]int64, error) {
 		cfgGasFee, err := s.chainDb.SysConfigModel.GetSysConfigByName(types.SysGasFee)
 		if err != nil {
 			logx.Errorf("cannot find gas asset: %s", err.Error())
-			return nil, errors.New("invalid gas fee asset")
+			return nil, types.AppErrInvalidGasFeeAsset
 		}
 		gasFeeValue = cfgGasFee.Value
 		s.MemCache.SetWithTTL(dbcache.GasConfigKey, gasFeeValue, 0, time.Duration(15)*time.Minute)
@@ -840,7 +839,7 @@ func (s *StateDB) GetGasConfig() (map[uint32]map[int]int64, error) {
 	err := json.Unmarshal([]byte(gasFeeValue), &m)
 	if err != nil {
 		logx.Errorf("fail to unmarshal gas fee config, err: %s", err.Error())
-		return nil, errors.New("internal error")
+		return nil, types.AppErrFailUnmarshalGasFeeConfig
 	}
 	return m, nil
 }
