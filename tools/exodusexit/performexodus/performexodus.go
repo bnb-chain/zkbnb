@@ -19,7 +19,7 @@ func Run(configFile string) error {
 		logx.Severe(err)
 		panic(err)
 	}
-	var performDesertAsset generateproof.PerformDesertData
+	var performDesertAsset generateproof.PerformDesertAssetData
 	conf.MustLoad("./tools/exodusexit/proofdata/performDesertAsset.json", &performDesertAsset)
 	err = m.PerformDesert(performDesertAsset)
 	if err != nil {

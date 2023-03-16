@@ -58,12 +58,47 @@ type VerifyAndExecuteBlocksCallData struct {
 	VerifyAndExecuteBlocksInfo []ZkBNBVerifyAndExecuteBlockInfo `abi:"_blocks"`
 }
 
-type PerformDesertData struct {
+type PerformDesertAssetData struct {
 	StoredBlockInfo    StoredBlockInfo
-	NftRoot            string
-	ExitData           ExodusVerifierExitData
+	AssetExitData      ExodusVerifierAssetExitData
+	AccountExitData    ExodusVerifierAccountExitData
 	AssetMerkleProof   [16]string
 	AccountMerkleProof [32]string
+	NftRoot            string
+}
+
+type PerformDesertNftData struct {
+	StoredBlockInfo    StoredBlockInfo
+	AccountExitData    ExodusVerifierAccountExitData
+	ExitNfts           []ExodusVerifierNftExitData
+	AssetRoot          string
+	NftMerkleProofs    [][40]string
+	AccountMerkleProof [32]string
+}
+
+type ExodusVerifierAssetExitData struct {
+	AssetId                  uint32
+	Amount                   int64
+	OfferCanceledOrFinalized int64
+}
+
+type ExodusVerifierAccountExitData struct {
+	AccountId       uint32
+	L1Address       string
+	PubKeyX         string
+	PubKeyY         string
+	Nonce           int64
+	CollectionNonce int64
+}
+
+type ExodusVerifierNftExitData struct {
+	NftIndex            uint64
+	OwnerAccountIndex   int64
+	CreatorAccountIndex int64
+	NftContentHash      string
+	NftContentType      uint8
+	CreatorTreasuryRate int64
+	CollectionId        int64
 }
 
 type StoredBlockInfo struct {
@@ -74,34 +109,4 @@ type StoredBlockInfo struct {
 	Timestamp                    int64
 	StateRoot                    string
 	Commitment                   string
-}
-
-type ExodusVerifierExitData struct {
-	AssetId                  uint32
-	AccountId                uint32
-	Amount                   int64
-	OfferCanceledOrFinalized int64
-	L1Address                string
-	PubKeyX                  string
-	PubKeyY                  string
-	Nonce                    int64
-	CollectionNonce          int64
-}
-
-type PerformDesertNftData struct {
-	StoredBlockInfo   StoredBlockInfo
-	OwnerAccountIndex int64
-	AccountRoot       string
-	ExitNfts          []ExodusVerifierExitNftData
-	NftMerkleProofs   [][40]string
-}
-
-type ExodusVerifierExitNftData struct {
-	NftIndex            uint64
-	OwnerAccountIndex   int64
-	CreatorAccountIndex int64
-	NftContentHash      string
-	NftContentType      uint8
-	CreatorTreasuryRate int64
-	CollectionId        int64
 }
