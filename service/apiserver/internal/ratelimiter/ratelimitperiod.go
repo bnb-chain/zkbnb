@@ -8,7 +8,7 @@ import (
 )
 
 type PeriodRateLimiter struct {
-	LocalHostID     string
+	LocalhostID     string
 	RateLimitConfig *RateLimitConfig
 
 	GlobalRateLimitDefault *limit.PeriodLimit
@@ -20,7 +20,7 @@ type PeriodRateLimiter struct {
 	UserRateLimitMap   map[string]*limit.PeriodLimit
 }
 
-func InitRateLimitControlByPeriod(localHostID string,
+func InitRateLimitControlByPeriod(localhostID string,
 	rateLimitConfig *RateLimitConfig, redisInstance *redis.Redis) *PeriodRateLimiter {
 
 	defaultRateLimitConfig := rateLimitConfig.DefaultRateLimit.PeriodRateLimitItem
@@ -32,7 +32,7 @@ func InitRateLimitControlByPeriod(localHostID string,
 		InitRateLimitControlPathMapByPeriod(pathRateLimitMap, redisInstance)
 
 	periodRateLimiter := &PeriodRateLimiter{
-		LocalHostID:            localHostID,
+		LocalhostID:            localhostID,
 		RateLimitConfig:        rateLimitConfig,
 		GlobalRateLimitDefault: globalRateLimitDefault,
 		SingleRateLimitDefault: singleRateLimitDefault,

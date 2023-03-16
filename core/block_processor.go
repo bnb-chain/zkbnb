@@ -41,8 +41,8 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 					p.bc.Statedb.SetPendingNonceToRedisCache(tx.AccountIndex, expectNonce-1)
 				}
 			}
-			logx.Severe(err)
-			panic(err)
+			logx.Severef("failed to recover commit processor, %v", err)
+			panic("failed to recover commit processor")
 		}
 	}()
 	defer p.bc.resetCurrentBlockTimeStamp()
@@ -80,23 +80,23 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 	err = executor.ApplyTransaction()
 	metrics.ExecuteTxApplyTransactionMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to apply transaction, %v", err)
+		panic("failed to apply transaction, err:" + err.Error())
 	}
 	start = time.Now()
 	err = executor.GeneratePubData()
 	metrics.ExecuteTxGeneratePubDataMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to generate PubData, %v", err)
+		panic("failed to generate PubData, err:" + err.Error())
 	}
 	start = time.Now()
 	tx, err = executor.GetExecutedTx(false)
 	metrics.ExecuteTxGetExecutedTxMetrics.Set(float64(time.Since(start).Milliseconds()))
 
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to get executed transaction, %v", err)
+		panic("failed to get executed transaction, err:" + err.Error())
 	}
 	tx.CreatedAt = time.Now()
 	p.bc.Statedb.Txs = append(p.bc.Statedb.Txs, tx)
