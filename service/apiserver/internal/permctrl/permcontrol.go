@@ -2,10 +2,10 @@ package permctrl
 
 import (
 	"context"
-	"errors"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/config"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/fetcher/address"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
+	"github.com/bnb-chain/zkbnb/types"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -42,11 +42,11 @@ func (c *PermissionControl) Control(txType uint32, txInfo string) error {
 	permissionControlItem := permissionControlConfig.GetPermissionControlConfigItem(txType)
 	if permissionControlItem.PermissionControlType == ControlByWhitelist {
 		if ok := containElement(l1Address, permissionControlItem.ControlWhiteList); !ok {
-			return errors.New("the l1Address is not in the white list, can not do the transaction")
+			return types.AppErrNotPermittedByWhiteList
 		}
 	} else if permissionControlItem.PermissionControlType == ControlByBlacklist {
 		if ok := containElement(l1Address, permissionControlItem.ControlBlackList); ok {
-			return errors.New("the l1Address is in the black list, can not do the transaction")
+			return types.AppErrForbiddenByBlackList
 		}
 	}
 	return nil
@@ -62,7 +62,6 @@ func containElement(element string, array []string) bool {
 }
 
 func InitPermissionControl(config config.Config) {
-
 	// Get the permission control configuration from the Apollo server
 	permissionControlConfig = LoadApolloPermissionControlConfig(config)
 	logx.Infof("Initiate Permission Control Facility Successfully!")
