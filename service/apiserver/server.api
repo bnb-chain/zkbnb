@@ -498,8 +498,7 @@ type (
 
 type (
 	ReqUpdateNft {
-		TxInfo      string `form:"tx_info"`
-		TxSignature string `form:"tx_signature"`
+		TxInfo string `form:"tx_info"`
 	}
 )
 
