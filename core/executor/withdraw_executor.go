@@ -3,8 +3,6 @@ package executor
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -55,10 +53,7 @@ func (e *WithdrawExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	if err != nil {
 		return err
 	}
-	// Verify l1 signature.
-	if txInfo.GetL1AddressBySignature() != common.HexToAddress(fromAccount.L1Address) {
-		return types.DbErrFailToL1Signature
-	}
+
 	if txInfo.GasFeeAssetId != txInfo.AssetId {
 		if fromAccount.AssetInfo[txInfo.AssetId].Balance.Cmp(txInfo.AssetAmount) < 0 {
 			return types.AppErrInvalidGasFeeAccount
