@@ -42,9 +42,6 @@ func (e *TransferExecutor) Prepare() error {
 		return err
 	}
 	if err == types.AppErrAccountNotFound {
-		if txInfo.ToAccountIndex != -1 {
-			return types.AppErrAccountInvalidToAccount
-		}
 		if !e.isExodusExit {
 			if !e.bc.StateDB().DryRun {
 				if e.tx.Rollback == false {
@@ -58,9 +55,7 @@ func (e *TransferExecutor) Prepare() error {
 		}
 		e.IsCreateAccount = true
 	} else {
-		if txInfo.ToAccountIndex != toAccount.AccountIndex {
-			return types.AppErrInvalidToAddress
-		}
+		txInfo.ToAccountIndex = toAccount.AccountIndex
 	}
 
 	// Mark the tree states that would be affected in this executor.
