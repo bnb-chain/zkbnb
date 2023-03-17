@@ -1,6 +1,8 @@
 package nft
 
 import (
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/response"
+	zkbnbtypes "github.com/bnb-chain/zkbnb/types"
 	"net/http"
 
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/logic/nft"
@@ -13,7 +15,8 @@ func GetNftNextNonceHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.ReqGetNftNextNonce
 		if err := httpx.Parse(r, &req); err != nil {
-			httpx.Error(w, err)
+			bizErr := zkbnbtypes.AppErrInvalidParam.RefineError(err)
+			response.Handle(w, nil, bizErr)
 			return
 		}
 
