@@ -686,10 +686,12 @@ func (s *StateDB) SetAccountAndNftTree(stateDataCopy *StateDataCopy) error {
 		}
 	}
 	metrics.AccountTreeMultiSetGauge.Set(float64(time.Since(start).Milliseconds()))
-
+	accountTreeRoot := s.AccountTree.Root()
+	nftTreeRoot := s.NftTree.Root()
 	hFunc := poseidon.NewPoseidon()
-	hFunc.Write(s.AccountTree.Root())
-	hFunc.Write(s.NftTree.Root())
+	hFunc.Write(accountTreeRoot)
+	hFunc.Write(nftTreeRoot)
+	logx.Infof("committer account tree root=%s,nft tree root=%s", common.Bytes2Hex(accountTreeRoot), common.Bytes2Hex(nftTreeRoot))
 	stateDataCopy.StateCache.StateRoot = common.Bytes2Hex(hFunc.Sum(nil))
 	return nil
 }
