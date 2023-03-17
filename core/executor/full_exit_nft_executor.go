@@ -51,7 +51,10 @@ func (e *FullExitNftExecutor) Prepare() error {
 	}
 	if err == types.AppErrAccountNotFound {
 		e.AccountNotExist = true
-		return nil
+		formatAccountByIndex, err = chain.EmptyAccountFormat(txInfo.AccountIndex, []int64{}, types.EmptyL1Address, tree.NilAccountAssetRoot)
+		if err != nil {
+			return err
+		}
 	}
 
 	var isExitEmptyNft = true
@@ -82,18 +85,6 @@ func (e *FullExitNftExecutor) Prepare() error {
 		}
 	}
 
-	// Mark the tree states that would be affected in this executor.
-	if !isExitEmptyNft {
-		e.MarkNftDirty(txInfo.NftIndex)
-	}
-	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{types.EmptyAccountAssetId})        // Prepare asset 0 for generate an empty tx detail.
-	e.MarkAccountAssetsDirty(txInfo.CreatorAccountIndex, []int64{types.EmptyAccountAssetId}) // Prepare asset 0 for generate an empty tx detail.
-
-	err = e.BaseExecutor.Prepare()
-	if err != nil {
-		return err
-	}
-
 	// Set the right tx info.
 	txInfo.CreatorAccountIndex = exitNft.CreatorAccountIndex
 	txInfo.CreatorTreasuryRate = exitNft.CreatorTreasuryRate
@@ -108,6 +99,20 @@ func (e *FullExitNftExecutor) Prepare() error {
 
 	e.exitNft = exitNft
 	e.exitEmpty = isExitEmptyNft
+
+	// Mark the tree states that would be affected in this executor.
+	if !isExitEmptyNft {
+		e.MarkNftDirty(txInfo.NftIndex)
+	}
+	e.MarkAccountAssetsDirty(txInfo.AccountIndex, []int64{types.EmptyAccountAssetId})        // Prepare asset 0 for generate an empty tx detail.
+	e.MarkAccountAssetsDirty(txInfo.CreatorAccountIndex, []int64{types.EmptyAccountAssetId}) // Prepare asset 0 for generate an empty tx detail.
+
+	if e.AccountNotExist == false {
+		err = e.BaseExecutor.Prepare()
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -240,7 +245,7 @@ func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 			oldNft.CollectionId,
 			oldNft.NftContentType,
 		)
-		if txInfo.AccountIndex != oldNft.OwnerAccountIndex {
+		if txInfo.AccountIndex != oldNft.OwnerAccountIndex || exitAccount.L1Address != txInfo.L1Address {
 			newNft = baseNft
 		}
 	}

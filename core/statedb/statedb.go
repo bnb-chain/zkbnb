@@ -550,7 +550,7 @@ func (s *StateDB) PrepareAccountsAndAssets(accountAssetsMap map[int64]map[int64]
 			}
 		}
 		s.AccountCache.Add(accountIndex, account)
-		s.L1AddressCache.Add(account.L1Address, int64(accountIndex))
+		s.L1AddressCache.Add(account.L1Address, accountIndex)
 	}
 
 	return nil
