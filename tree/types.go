@@ -19,7 +19,7 @@ package tree
 
 import (
 	"encoding/hex"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
+	"github.com/consensys/gnark/backend/hint"
 
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -53,21 +53,21 @@ func init() {
 	NilAccountAssetNodeHash = EmptyAccountAssetNodeHash()
 	NilAccountAssetRoot = NilAccountAssetNodeHash
 	for i := 0; i < AssetTreeHeight; i++ {
-		NilAccountAssetRoot = poseidon.PoseidonBytes(NilAccountAssetRoot, NilAccountAssetRoot)
+		NilAccountAssetRoot = hint.GMimcBytes(NilAccountAssetRoot, NilAccountAssetRoot)
 	}
 	NilAccountNodeHash = EmptyAccountNodeHash()
 	NilAccountRoot = NilAccountNodeHash
 	NilNftNodeHash = EmptyNftNodeHash()
 	for i := 0; i < AccountTreeHeight; i++ {
-		NilAccountRoot = poseidon.PoseidonBytes(NilAccountRoot, NilAccountRoot)
+		NilAccountRoot = hint.GMimcBytes(NilAccountRoot, NilAccountRoot)
 	}
 	NilNftRoot = NilNftNodeHash
 	for i := 0; i < NftTreeHeight; i++ {
-		NilNftRoot = poseidon.PoseidonBytes(NilNftRoot, NilNftRoot)
+		NilNftRoot = hint.GMimcBytes(NilNftRoot, NilNftRoot)
 	}
 	// nil state root
 	//NilStateRoot = poseidon.PoseidonBytes(NilAccountRoot, NilNftRoot)
-	NilStateRoot = GMimcBytes(NilAccountRoot, NilNftRoot)
+	NilStateRoot = hint.GMimcBytes(NilAccountRoot, NilNftRoot)
 
 	logx.Infof("genesis state root: %s asset %s", hex.EncodeToString(NilStateRoot), hex.EncodeToString(NilAccountAssetRoot))
 }

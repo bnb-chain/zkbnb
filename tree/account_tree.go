@@ -19,7 +19,6 @@ package tree
 
 import (
 	"errors"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"github.com/panjf2000/ants/v2"
 	"hash"
 	"strconv"
@@ -333,7 +332,7 @@ func AccountToNode(
 }
 
 func NewMemAccountAssetTree() (tree bsmt.SparseMerkleTree, err error) {
-	return bsmt.NewBNBSparseMerkleTree(bsmt.NewHasherPool(func() hash.Hash { return poseidon.NewPoseidon() }),
+	return bsmt.NewBNBSparseMerkleTree(bsmt.NewHasherPool(func() hash.Hash { return NewGMimc() }),
 		memory.NewMemoryDB(), AssetTreeHeight, NilAccountAssetNodeHash)
 }
 

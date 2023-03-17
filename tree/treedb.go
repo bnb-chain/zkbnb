@@ -3,7 +3,6 @@ package tree
 import (
 	"encoding/json"
 	"errors"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"hash"
 	"strings"
 	"time"
@@ -210,7 +209,7 @@ func NewContext(
 		reload:         reload,
 		onlyQuery:      onlyQuery,
 		routinePool:    pool,
-		hasher:         bsmt.NewHasherPool(func() hash.Hash { return poseidon.NewPoseidon() }),
+		hasher:         bsmt.NewHasherPool(func() hash.Hash { return NewGMimc() }),
 		defaultOptions: []bsmt.Option{bsmt.GoRoutinePool(pool)},
 	}, nil
 }

@@ -15,3 +15,10 @@ verifyRollbackTreesFunc
 
 /Users/damon/zkbnb-deploy/zkbnb/core/statedb/statedb.go
 SetAccountAndNftTree
+
+---
+/Users/damon/zkbnb-deploy/zkbnb/tree/treedb.go
+NewContext
+
+/Users/damon/zkbnb-deploy/zkbnb/tree/account_tree.go
+NewMemAccountAssetTree

@@ -50,6 +50,11 @@ type engine struct {
 	// mHintsFunctions map[hint.ID]hintFunction
 }
 
+func (e *engine) AddGKRInputsAndOutputsMarks(inputs []frontend.Variable, outputs []frontend.Variable) {
+	//TODO implement me
+	panic("implement me")
+}
+
 // IsSolved returns an error if the test execution engine failed to execute the given circuit
 // with provided witness as input.
 //
