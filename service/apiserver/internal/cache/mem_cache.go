@@ -20,6 +20,7 @@ const (
 	AccountIndexNameKeyPrefix      = "in:"                    //key for cache: accountIndex -> accountName
 	AccountIndexPkKeyPrefix        = "ip:"                    //key for cache: accountIndex -> accountPk
 	AccountNameKeyPrefix           = "n:"                     //key for cache: accountName -> accountIndex
+	AccountNameHashKeyPrefix       = "nh:"                    //key for cache: accountNameHash -> accountIndex
 	AccountPkKeyPrefix             = "k:"                     //key for cache: accountPk -> accountIndex
 	AccountIndexL1AddressKeyPrefix = "ia:"                    //key for cache: accountIndex -> l1Address
 	AccountByIndexKeyPrefix        = "a:"                     //key for cache: accountIndex -> account
@@ -124,11 +125,12 @@ func (m *MemCache) getWithSetFromCache(key string, fromCache bool, duration time
 	return result, nil
 }
 
-func (m *MemCache) setAccount(accountIndex int64, accountName, accountPk, l1Address string) {
+func (m *MemCache) setAccount(accountIndex int64, accountName, accountNameHash, accountPk, l1Address string) {
 	m.goCache.SetWithTTL(fmt.Sprintf("%s%d", AccountIndexNameKeyPrefix, accountIndex), accountName, 0, cacheDefaultExpiration)
 	m.goCache.SetWithTTL(fmt.Sprintf("%s%d", AccountIndexPkKeyPrefix, accountIndex), accountPk, 0, cacheDefaultExpiration)
 	m.goCache.SetWithTTL(fmt.Sprintf("%s%d", AccountIndexL1AddressKeyPrefix, accountIndex), l1Address, 0, cacheDefaultExpiration)
 	m.goCache.SetWithTTL(fmt.Sprintf("%s%s", AccountNameKeyPrefix, accountName), accountIndex, 0, cacheDefaultExpiration)
+	m.goCache.SetWithTTL(fmt.Sprintf("%s%s", AccountNameHashKeyPrefix, accountNameHash), accountIndex, 0, cacheDefaultExpiration)
 	m.goCache.SetWithTTL(fmt.Sprintf("%s%s", AccountPkKeyPrefix, accountPk), accountIndex, 0, cacheDefaultExpiration)
 }
 
@@ -141,7 +143,20 @@ func (m *MemCache) GetAccountIndexByName(accountName string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	m.setAccount(account.AccountIndex, account.AccountName, account.PublicKey, account.L1Address)
+	m.setAccount(account.AccountIndex, account.AccountName, account.AccountNameHash, account.PublicKey, account.L1Address)
+	return account.AccountIndex, nil
+}
+
+func (m *MemCache) GetAccountIndexByNameHash(accountNameHash string) (int64, error) {
+	index, found := m.goCache.Get(fmt.Sprintf("%s%s", AccountNameHashKeyPrefix, accountNameHash))
+	if found {
+		return index.(int64), nil
+	}
+	account, err := m.accountModel.GetAccountByNameHash(accountNameHash)
+	if err != nil {
+		return 0, err
+	}
+	m.setAccount(account.AccountIndex, account.AccountName, account.AccountNameHash, account.PublicKey, account.L1Address)
 	return account.AccountIndex, nil
 }
 
@@ -154,7 +169,7 @@ func (m *MemCache) GetAccountIndexByPk(accountPk string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	m.setAccount(account.AccountIndex, account.AccountName, account.PublicKey, account.L1Address)
+	m.setAccount(account.AccountIndex, account.AccountName, account.AccountNameHash, account.PublicKey, account.L1Address)
 	return account.AccountIndex, nil
 }
 
@@ -167,7 +182,7 @@ func (m *MemCache) GetAccountNameByIndex(accountIndex int64) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	m.setAccount(account.AccountIndex, account.AccountName, account.PublicKey, account.L1Address)
+	m.setAccount(account.AccountIndex, account.AccountName, account.AccountNameHash, account.PublicKey, account.L1Address)
 	return account.AccountName, nil
 }
 
@@ -180,7 +195,7 @@ func (m *MemCache) GetAccountPkByIndex(accountIndex int64) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	m.setAccount(account.AccountIndex, account.AccountName, account.PublicKey, account.L1Address)
+	m.setAccount(account.AccountIndex, account.AccountName, account.AccountNameHash, account.PublicKey, account.L1Address)
 	return account.PublicKey, nil
 }
 
@@ -193,7 +208,7 @@ func (m *MemCache) GetAccountL1AddressByIndex(accountIndex int64) (string, error
 	if err != nil {
 		return "", err
 	}
-	m.setAccount(account.AccountIndex, account.AccountName, account.PublicKey, account.L1Address)
+	m.setAccount(account.AccountIndex, account.AccountName, account.AccountNameHash, account.PublicKey, account.L1Address)
 	return account.L1Address, nil
 }
 
@@ -205,7 +220,7 @@ func (m *MemCache) GetAccountWithFallback(accountIndex int64, f fallback) (*accd
 	}
 
 	account := a.(*accdao.Account)
-	m.setAccount(account.AccountIndex, account.AccountName, account.PublicKey, account.L1Address)
+	m.setAccount(account.AccountIndex, account.AccountName, account.AccountNameHash, account.PublicKey, account.L1Address)
 	return account, nil
 }
 
