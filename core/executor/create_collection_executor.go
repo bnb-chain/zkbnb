@@ -124,6 +124,7 @@ func (e *CreateCollectionExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	e.tx.GasFeeAssetId = e.TxInfo.GasFeeAssetId
 	e.tx.GasFee = e.TxInfo.GasFeeAssetAmount.String()
 	e.tx.CollectionId = e.TxInfo.CollectionId
+	e.tx.IsPartialUpdate = true
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 

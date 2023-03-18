@@ -185,6 +185,9 @@ func (e *TransferExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	e.tx.AssetId = e.TxInfo.AssetId
 	e.tx.TxAmount = e.TxInfo.AssetAmount.String()
 	e.tx.IsCreateAccount = e.IsCreateAccount
+	if e.tx.ToAccountIndex != e.iTxInfo.GetToAccountIndex() || e.IsCreateAccount {
+		e.tx.IsPartialUpdate = true
+	}
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 

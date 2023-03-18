@@ -105,6 +105,8 @@ type (
 		Rollback bool `gorm:"-"`
 		// l1 request id
 		L1RequestId int64 `gorm:"-"`
+		// update pool tx account index
+		IsPartialUpdate bool `gorm:"-"`
 	}
 )
 
@@ -385,5 +387,6 @@ func (ai *Tx) DeepCopy() *Tx {
 	tx.UpdatedAt = ai.UpdatedAt
 	tx.DeletedAt = ai.DeletedAt
 	tx.IsCreateAccount = ai.IsCreateAccount
+	tx.IsPartialUpdate = ai.IsPartialUpdate
 	return tx
 }

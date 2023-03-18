@@ -16,7 +16,8 @@ import (
 type TransferNftExecutor struct {
 	BaseExecutor
 
-	TxInfo *txtypes.TransferNftTxInfo
+	TxInfo          *txtypes.TransferNftTxInfo
+	IsCreateAccount bool
 }
 
 func NewTransferNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
@@ -147,6 +148,9 @@ func (e *TransferNftExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	e.tx.GasFeeAssetId = e.TxInfo.GasFeeAssetId
 	e.tx.GasFee = e.TxInfo.GasFeeAssetAmount.String()
 	e.tx.NftIndex = e.TxInfo.NftIndex
+	if e.tx.ToAccountIndex != e.iTxInfo.GetToAccountIndex() || e.IsCreateAccount {
+		e.tx.IsPartialUpdate = true
+	}
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 

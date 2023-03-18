@@ -161,6 +161,9 @@ func (e *DepositNftExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	e.tx.TxInfo = string(txInfoBytes)
 	e.tx.NftIndex = e.TxInfo.NftIndex
 	e.tx.IsCreateAccount = e.IsCreateAccount
+	if e.tx.ToAccountIndex != e.iTxInfo.GetToAccountIndex() || e.IsCreateAccount {
+		e.tx.IsPartialUpdate = true
+	}
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
