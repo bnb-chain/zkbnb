@@ -194,8 +194,8 @@ replace (
 
 )
 
-replace github.com/bnb-chain/zkbnb-crypto => /Users/user/Documents/work/source/bnb-chain/zkbnb-crypto
+replace github.com/bnb-chain/zkbnb-crypto => github.com/15000785133/zkbnb-crypto v0.0.8-0.20230317153703-8346c05da535
 
-replace github.com/bnb-chain/zkbnb-eth-rpc => github.com/tengwei/zkbnb-eth-rpc v0.0.3-0.20230316071955-1daa03f8c984
+replace github.com/bnb-chain/zkbnb-eth-rpc => github.com/15000785133/zkbnb-eth-rpc v0.0.3-0.20230318075324-0e849df1da97
 
-replace github.com/bnb-chain/zkbnb-go-sdk => /Users/user/Documents/work/source/bnb-chain/zkbnb-go-sdk
+replace github.com/bnb-chain/zkbnb-go-sdk => github.com/15000785133/zkbnb-go-sdk v1.0.5-0.20230317071705-b89ee1c70041
