@@ -468,14 +468,14 @@ func (c *Committer) buildStateDataCopy(curBlock *block.Block) *statedb.StateData
 	if len(addPendingAccounts) > 0 || len(addPendingNfts) > 0 {
 		err := c.bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
 			if len(addPendingAccounts) != 0 {
-				err := c.bc.DB().AccountModel.BatchInsertOrUpdateInTransact(dbTx, addPendingAccounts)
+				err := c.bc.DB().AccountModel.BatchInsertInTransact(dbTx, addPendingAccounts)
 				if err != nil {
 					logx.Errorf("account batch insert or update failed:%s ", err.Error())
 					panic("account batch insert or update failed: " + err.Error())
 				}
 			}
 			if len(addPendingNfts) != 0 {
-				err := c.bc.DB().L2NftModel.BatchInsertOrUpdateInTransact(dbTx, addPendingNfts)
+				err := c.bc.DB().L2NftModel.BatchInsertInTransact(dbTx, addPendingNfts)
 				if err != nil {
 					logx.Errorf("l2nft batch insert or update failed:%s ", err.Error())
 					panic("l2nft batch insert or update failed: " + err.Error())

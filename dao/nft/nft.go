@@ -39,6 +39,7 @@ type (
 		GetNftsCountByAccountIndex(accountIndex int64) (int64, error)
 		UpdateNftsInTransact(tx *gorm.DB, nfts []*L2Nft) error
 		BatchInsertOrUpdateInTransact(tx *gorm.DB, nfts []*L2Nft) (err error)
+		BatchInsertInTransact(tx *gorm.DB, nfts []*L2Nft) (err error)
 		DeleteByIndexesInTransact(tx *gorm.DB, nftIndexes []int64) error
 		UpdateByIndexInTransact(tx *gorm.DB, l2nft *L2Nft) error
 		GetNfts(limit int64, offset int64) (nfts []*L2Nft, err error)
@@ -155,6 +156,18 @@ func (m *defaultL2NftModel) BatchInsertOrUpdateInTransact(tx *gorm.DB, nfts []*L
 	if int(dbTx.RowsAffected) != len(nfts) {
 		logx.Errorf("BatchInsertOrUpdateInTransact failed,rows affected not equal nfts length,dbTx.RowsAffected:%s,len(nfts):%s", int(dbTx.RowsAffected), len(nfts))
 		return types.DbErrFailToUpdateAccount
+	}
+	return nil
+}
+
+func (m *defaultL2NftModel) BatchInsertInTransact(tx *gorm.DB, nfts []*L2Nft) (err error) {
+	dbTx := tx.Table(m.table).CreateInBatches(nfts, len(nfts))
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected != int64(len(nfts)) {
+		logx.Errorf("BatchInsertInTransact failed,rows affected not equal nfts length,dbTx.RowsAffected:%s,len(txs):%s", int(dbTx.RowsAffected), len(nfts))
+		return types.DbErrFailToCreateAccount
 	}
 	return nil
 }

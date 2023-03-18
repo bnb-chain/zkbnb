@@ -47,6 +47,7 @@ type (
 		UpdateAccountsInTransact(tx *gorm.DB, accounts []*Account) error
 		GetUsers(limit int64, offset int64) (accounts []*Account, err error)
 		BatchInsertOrUpdateInTransact(tx *gorm.DB, accounts []*Account) (err error)
+		BatchInsertInTransact(tx *gorm.DB, accounts []*Account) (err error)
 		UpdateByIndexInTransact(tx *gorm.DB, account *Account) error
 		DeleteByIndexesInTransact(tx *gorm.DB, accountIndexes []int64) error
 		GetCountByGreaterHeight(blockHeight int64) (count int64, err error)
@@ -242,6 +243,18 @@ func (m *defaultAccountModel) BatchInsertOrUpdateInTransact(tx *gorm.DB, account
 	if int(dbTx.RowsAffected) != len(accounts) {
 		logx.Errorf("BatchInsertOrUpdateInTransact failed,rows affected not equal accounts length,dbTx.RowsAffected:%s,len(accounts):%s", int(dbTx.RowsAffected), len(accounts))
 		return types.DbErrFailToUpdateAccount
+	}
+	return nil
+}
+
+func (m *defaultAccountModel) BatchInsertInTransact(tx *gorm.DB, accounts []*Account) (err error) {
+	dbTx := tx.Table(m.table).CreateInBatches(accounts, len(accounts))
+	if dbTx.Error != nil {
+		return dbTx.Error
+	}
+	if dbTx.RowsAffected != int64(len(accounts)) {
+		logx.Errorf("BatchInsertInTransact failed,rows affected not equal accounts length,dbTx.RowsAffected:%s,len(txs):%s", int(dbTx.RowsAffected), len(accounts))
+		return types.DbErrFailToCreateAccount
 	}
 	return nil
 }
