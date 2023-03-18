@@ -95,10 +95,11 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			}
 			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
 			if err != nil {
-				poolTx.AccountIndex = accountIndex
-				poolTx.FromAccountIndex = accountIndex
-				poolTx.ToAccountIndex = accountIndex
+				return fmt.Errorf("unable to get account index : %v", err)
 			}
+			poolTx.AccountIndex = accountIndex
+			poolTx.FromAccountIndex = accountIndex
+			poolTx.ToAccountIndex = accountIndex
 		case monitor.TxTypeDepositNft:
 			txInfo, err := chain.ParseDepositNftPubData(common.FromHex(request.Pubdata))
 			if err != nil {
@@ -112,10 +113,11 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			}
 			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
 			if err != nil {
-				poolTx.AccountIndex = accountIndex
-				poolTx.FromAccountIndex = accountIndex
-				poolTx.ToAccountIndex = accountIndex
+				return fmt.Errorf("unable to get account index : %v", err)
 			}
+			poolTx.AccountIndex = accountIndex
+			poolTx.FromAccountIndex = accountIndex
+			poolTx.ToAccountIndex = accountIndex
 		case monitor.TxTypeFullExit:
 			txInfo, err := chain.ParseFullExitPubData(common.FromHex(request.Pubdata))
 			if err != nil {
@@ -129,10 +131,11 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			}
 			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
 			if err != nil {
-				poolTx.AccountIndex = accountIndex
-				poolTx.FromAccountIndex = accountIndex
-				poolTx.ToAccountIndex = accountIndex
+				return fmt.Errorf("unable to get account index : %v", err)
 			}
+			poolTx.AccountIndex = accountIndex
+			poolTx.FromAccountIndex = accountIndex
+			poolTx.ToAccountIndex = accountIndex
 		case monitor.TxTypeFullExitNft:
 			txInfo, err := chain.ParseFullExitNftPubData(common.FromHex(request.Pubdata))
 			if err != nil {
@@ -146,10 +149,11 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			}
 			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
 			if err != nil {
-				poolTx.AccountIndex = accountIndex
-				poolTx.FromAccountIndex = accountIndex
-				poolTx.ToAccountIndex = accountIndex
+				return fmt.Errorf("unable to get account index : %v", err)
 			}
+			poolTx.AccountIndex = accountIndex
+			poolTx.FromAccountIndex = accountIndex
+			poolTx.ToAccountIndex = accountIndex
 		default:
 			return fmt.Errorf("invalid request type")
 		}
