@@ -17,31 +17,33 @@ import (
 const (
 	cacheDefaultExpiration = time.Hour * 1 //gocache default expiration
 
-	AccountIndexNameKeyPrefix     = "in:"                    //key for cache: accountIndex -> accountName
-	AccountIndexPkKeyPrefix       = "ip:"                    //key for cache: accountIndex -> accountPk
-	AccountNameKeyPrefix          = "n:"                     //key for cache: accountName -> accountIndex
-	AccountPkKeyPrefix            = "k:"                     //key for cache: accountPk -> accountIndex
-	AccountByIndexKeyPrefix       = "a:"                     //key for cache: accountIndex -> account
-	AccountCountKeyPrefix         = "ac"                     //key for cache: total account count
-	BlockByHeightKeyPrefix        = "h:"                     //key for cache: blockHeight -> block
-	BlockByCommitmentKeyPrefix    = "c:"                     //key for cache: blockCommitment -> block
-	BlockCountKeyPrefix           = "bc"                     //key for cache: total block count
-	TxByHashKeyPrefix             = "h:"                     //key for cache: txHash -> tx
-	TxCountKeyPrefix              = "tc"                     //key for cache: total tx count
-	AssetCountKeyKeyPrefix        = "AC"                     //key for cache: total asset count
-	AssetIdNameKeyPrefix          = "IN:"                    //key for cache: assetId -> assetName
-	AssetIdSymbolKeyPrefix        = "IS:"                    //key for cache: assetId -> assetName
-	AssetByIdKeyPrefix            = "I:"                     //key for cache: assetId -> asset
-	AssetBySymbolKeyPrefix        = "S:"                     //key for cache: assetSymbol -> asset
-	PriceKeyPrefix                = "p:"                     //key for cache: symbol -> price
-	SysConfigKeyPrefix            = "s:"                     //key for cache: configName -> sysconfig
-	TxPendingCountKeyPrefix       = "tpc"                    //key for cache: total tx pending count
-	GetCommittedBlocksCountPrefix = "CommittedBlocksCount"   // key for cache: GetCommittedBlocksCountPrefix
-	GetVerifiedBlocksCountPrefix  = "VerifiedBlocksCount"    // key for cache: GetVerifiedBlocksCountPrefix
-	TxsTotalCountYesterdayPrefix  = "TxsTotalCountYesterday" // key for cache: TxsTotalCountYesterday
-	TxsTotalCountTodayPrefix      = "TxsTotalCountToday"     // key for cache: TxsTotalCountToday
-	AccountsCountYesterdayPrefix  = "AccountsCountYesterday" // key for cache: AccountsCountYesterday
-	AccountsCountTodayPrefix      = "AccountsCountToday"     // key for cache: AccountsCountToday
+	AccountIndexNameKeyPrefix      = "in:"                    //key for cache: accountIndex -> accountName
+	AccountIndexPkKeyPrefix        = "ip:"                    //key for cache: accountIndex -> accountPk
+	AccountNameKeyPrefix           = "n:"                     //key for cache: accountName -> accountIndex
+	AccountNameHashKeyPrefix       = "nh:"                    //key for cache: accountNameHash -> accountIndex
+	AccountPkKeyPrefix             = "k:"                     //key for cache: accountPk -> accountIndex
+	AccountIndexL1AddressKeyPrefix = "ia:"                    //key for cache: accountIndex -> l1Address
+	AccountByIndexKeyPrefix        = "a:"                     //key for cache: accountIndex -> account
+	AccountCountKeyPrefix          = "ac"                     //key for cache: total account count
+	BlockByHeightKeyPrefix         = "h:"                     //key for cache: blockHeight -> block
+	BlockByCommitmentKeyPrefix     = "c:"                     //key for cache: blockCommitment -> block
+	BlockCountKeyPrefix            = "bc"                     //key for cache: total block count
+	TxByHashKeyPrefix              = "h:"                     //key for cache: txHash -> tx
+	TxCountKeyPrefix               = "tc"                     //key for cache: total tx count
+	AssetCountKeyKeyPrefix         = "AC"                     //key for cache: total asset count
+	AssetIdNameKeyPrefix           = "IN:"                    //key for cache: assetId -> assetName
+	AssetIdSymbolKeyPrefix         = "IS:"                    //key for cache: assetId -> assetName
+	AssetByIdKeyPrefix             = "I:"                     //key for cache: assetId -> asset
+	AssetBySymbolKeyPrefix         = "S:"                     //key for cache: assetSymbol -> asset
+	PriceKeyPrefix                 = "p:"                     //key for cache: symbol -> price
+	SysConfigKeyPrefix             = "s:"                     //key for cache: configName -> sysconfig
+	TxPendingCountKeyPrefix        = "tpc"                    //key for cache: total tx pending count
+	GetCommittedBlocksCountPrefix  = "CommittedBlocksCount"   // key for cache: GetCommittedBlocksCountPrefix
+	GetVerifiedBlocksCountPrefix   = "VerifiedBlocksCount"    // key for cache: GetVerifiedBlocksCountPrefix
+	TxsTotalCountYesterdayPrefix   = "TxsTotalCountYesterday" // key for cache: TxsTotalCountYesterday
+	TxsTotalCountTodayPrefix       = "TxsTotalCountToday"     // key for cache: TxsTotalCountToday
+	AccountsCountYesterdayPrefix   = "AccountsCountYesterday" // key for cache: AccountsCountYesterday
+	AccountsCountTodayPrefix       = "AccountsCountToday"     // key for cache: AccountsCountToday
 )
 
 type fallback func() (interface{}, error)
@@ -123,10 +125,12 @@ func (m *MemCache) getWithSetFromCache(key string, fromCache bool, duration time
 	return result, nil
 }
 
-func (m *MemCache) setAccount(accountIndex int64, accountName, accountPk string) {
+func (m *MemCache) setAccount(accountIndex int64, accountName, accountNameHash, accountPk, l1Address string) {
 	m.goCache.SetWithTTL(fmt.Sprintf("%s%d", AccountIndexNameKeyPrefix, accountIndex), accountName, 0, cacheDefaultExpiration)
 	m.goCache.SetWithTTL(fmt.Sprintf("%s%d", AccountIndexPkKeyPrefix, accountIndex), accountPk, 0, cacheDefaultExpiration)
+	m.goCache.SetWithTTL(fmt.Sprintf("%s%d", AccountIndexL1AddressKeyPrefix, accountIndex), l1Address, 0, cacheDefaultExpiration)
 	m.goCache.SetWithTTL(fmt.Sprintf("%s%s", AccountNameKeyPrefix, accountName), accountIndex, 0, cacheDefaultExpiration)
+	m.goCache.SetWithTTL(fmt.Sprintf("%s%s", AccountNameHashKeyPrefix, accountNameHash), accountIndex, 0, cacheDefaultExpiration)
 	m.goCache.SetWithTTL(fmt.Sprintf("%s%s", AccountPkKeyPrefix, accountPk), accountIndex, 0, cacheDefaultExpiration)
 }
 
@@ -139,7 +143,20 @@ func (m *MemCache) GetAccountIndexByName(accountName string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	m.setAccount(account.AccountIndex, account.AccountName, account.PublicKey)
+	m.setAccount(account.AccountIndex, account.AccountName, account.AccountNameHash, account.PublicKey, account.L1Address)
+	return account.AccountIndex, nil
+}
+
+func (m *MemCache) GetAccountIndexByNameHash(accountNameHash string) (int64, error) {
+	index, found := m.goCache.Get(fmt.Sprintf("%s%s", AccountNameHashKeyPrefix, accountNameHash))
+	if found {
+		return index.(int64), nil
+	}
+	account, err := m.accountModel.GetAccountByNameHash(accountNameHash)
+	if err != nil {
+		return 0, err
+	}
+	m.setAccount(account.AccountIndex, account.AccountName, account.AccountNameHash, account.PublicKey, account.L1Address)
 	return account.AccountIndex, nil
 }
 
@@ -152,7 +169,7 @@ func (m *MemCache) GetAccountIndexByPk(accountPk string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	m.setAccount(account.AccountIndex, account.AccountName, account.PublicKey)
+	m.setAccount(account.AccountIndex, account.AccountName, account.AccountNameHash, account.PublicKey, account.L1Address)
 	return account.AccountIndex, nil
 }
 
@@ -165,7 +182,7 @@ func (m *MemCache) GetAccountNameByIndex(accountIndex int64) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	m.setAccount(account.AccountIndex, account.AccountName, account.PublicKey)
+	m.setAccount(account.AccountIndex, account.AccountName, account.AccountNameHash, account.PublicKey, account.L1Address)
 	return account.AccountName, nil
 }
 
@@ -178,8 +195,21 @@ func (m *MemCache) GetAccountPkByIndex(accountIndex int64) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	m.setAccount(account.AccountIndex, account.AccountName, account.PublicKey)
+	m.setAccount(account.AccountIndex, account.AccountName, account.AccountNameHash, account.PublicKey, account.L1Address)
 	return account.PublicKey, nil
+}
+
+func (m *MemCache) GetAccountL1AddressByIndex(accountIndex int64) (string, error) {
+	l1Address, found := m.goCache.Get(fmt.Sprintf("%s%d", AccountIndexL1AddressKeyPrefix, accountIndex))
+	if found {
+		return l1Address.(string), nil
+	}
+	account, err := m.accountModel.GetAccountByIndex(accountIndex)
+	if err != nil {
+		return "", err
+	}
+	m.setAccount(account.AccountIndex, account.AccountName, account.AccountNameHash, account.PublicKey, account.L1Address)
+	return account.L1Address, nil
 }
 
 func (m *MemCache) GetAccountWithFallback(accountIndex int64, f fallback) (*accdao.Account, error) {
@@ -190,7 +220,7 @@ func (m *MemCache) GetAccountWithFallback(accountIndex int64, f fallback) (*accd
 	}
 
 	account := a.(*accdao.Account)
-	m.setAccount(account.AccountIndex, account.AccountName, account.PublicKey)
+	m.setAccount(account.AccountIndex, account.AccountName, account.AccountNameHash, account.PublicKey, account.L1Address)
 	return account, nil
 }
 

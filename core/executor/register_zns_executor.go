@@ -3,8 +3,6 @@ package executor
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 
@@ -27,7 +25,7 @@ func NewRegisterZnsExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	txInfo, err := types.ParseRegisterZnsTxInfo(tx.TxInfo)
 	if err != nil {
 		logx.Errorf("parse register tx failed: %s", err.Error())
-		return nil, errors.New("invalid tx info")
+		return nil, types.AppErrInvalidTxInfo
 	}
 
 	return &RegisterZnsExecutor{
@@ -122,7 +120,7 @@ func (e *RegisterZnsExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	txInfoBytes, err := json.Marshal(e.txInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
-		return nil, errors.New("unmarshal tx failed")
+		return nil, types.AppErrMarshalTxFailed
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)

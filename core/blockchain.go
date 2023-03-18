@@ -3,7 +3,6 @@ package core
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/metrics"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
@@ -814,7 +813,7 @@ func (bc *BlockChain) VerifyGas(gasAccountIndex, gasFeeAssetId int64, txType int
 	if !skipGasAmtChk {
 		gasFee, ok := gasAsset[txType]
 		if !ok {
-			return errors.New("invalid tx type")
+			return types.AppErrInvalidTxType
 		}
 		if gasFeeAmount.Cmp(big.NewInt(gasFee)) < 0 {
 			return types.AppErrInvalidGasFeeAmount

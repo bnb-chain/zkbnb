@@ -1,28 +1,43 @@
 package ratelimiter
 
 import (
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/cache"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/config"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/types"
 	"github.com/shirou/gopsutil/host"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
+	"github.com/zeromicro/go-zero/rest/httpx"
 	"net/http"
+	"strconv"
 )
 
 const (
-	AccountIndex       = "account_index"
 	RateLimitConfigKey = "RateLimitConfig"
+)
+
+const (
+	queryByIndex = "index"
+	queryByName  = "name"
+	queryByPk    = "pk"
+
+	queryByAccountIndex = "account_index"
+	queryByAccountName  = "account_name"
+	queryByAccountPk    = "account_pk"
 )
 
 var localhostID string
 
 var redisInstance *redis.Redis
+var memCache *cache.MemCache
 
 var periodRateLimiter *PeriodRateLimiter
 var tokenRateLimiter *TokenRateLimiter
 
 type RateLimitParam struct {
 	RequestPath string
-	AccountId   string
+	L1Address   string
 }
 
 type RateLimitController func(*RateLimitParam, RateLimitController) error
@@ -33,13 +48,13 @@ func RateLimitHandler(next http.HandlerFunc) http.HandlerFunc {
 		// Parse the form before reading the parameter
 		request.ParseForm()
 		requestPath := request.URL.Path
-		accountId := request.Form.Get(AccountIndex)
+		l1Address := ParseAccountL1Address(request)
 
 		// Construct the rate limit param for
 		// the next rate limit control
 		rateLimitParam := &RateLimitParam{
 			RequestPath: requestPath,
-			AccountId:   accountId,
+			L1Address:   l1Address,
 		}
 
 		// Perform the Period Rate Limit Process
@@ -60,8 +75,9 @@ func RateLimitHandler(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func InitRateLimitControl(config config.Config) {
+func InitRateLimitControl(svcCtx *svc.ServiceContext, config config.Config) {
 
+	memCache = svcCtx.MemCache
 	localhostID = InitLocalhostConfiguration()
 	rateLimitConfig := LoadApolloRateLimitConfig(config)
 
@@ -90,4 +106,41 @@ func InitRateLimitRedisInstance(redisAddress string) *redis.Redis {
 	redisInstance := redis.New(redisAddress)
 	logx.Info("Construct RateLimit Redis Instance Successfully!")
 	return redisInstance
+}
+
+func ParseAccountL1Address(r *http.Request) string {
+	var req types.ReqAccountParam
+	if err := httpx.Parse(r, &req); err != nil {
+		return ""
+	}
+
+	if len(req.By) > 0 {
+		var accountIndex = int64(0)
+		var err error
+
+		if req.By == queryByAccountIndex || req.By == queryByIndex {
+			accountIndex, err = strconv.ParseInt(req.Value, 10, 64)
+			if err != nil || accountIndex < 0 {
+				return ""
+			}
+		} else if req.By == queryByAccountName || req.By == queryByName {
+			accountIndex, err = memCache.GetAccountIndexByName(req.Value)
+		} else if req.By == queryByAccountPk || req.By == queryByPk {
+			accountIndex, err = memCache.GetAccountIndexByPk(req.Value)
+		} else {
+			return ""
+		}
+
+		l1Address, err := memCache.GetAccountL1AddressByIndex(accountIndex)
+		if err != nil {
+			return ""
+		}
+		return l1Address
+	}
+
+	l1Address, err := memCache.GetAccountL1AddressByIndex(req.AccountIndex)
+	if err != nil {
+		return ""
+	}
+	return l1Address
 }

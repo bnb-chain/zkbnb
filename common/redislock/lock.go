@@ -18,7 +18,7 @@
 package redislock
 
 import (
-	"errors"
+	"github.com/bnb-chain/zkbnb/types"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/stores/redis"
@@ -59,7 +59,7 @@ func TryAcquireLock(redisLock *redis.RedisLock) (err error) {
 		count := 0
 		for {
 			if count > MaxRetryTimes {
-				return errors.New("the lock has been used, re-try later")
+				return types.AppErrLockUsed
 			}
 			ok, err = redisLock.Acquire()
 			if err != nil {
