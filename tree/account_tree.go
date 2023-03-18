@@ -233,7 +233,6 @@ func reloadAccountTreeFromRDB(
 			accountInfo.L2BlockHeight = accountHistory.L2BlockHeight
 			accountInfo.PublicKey = accountHistory.PublicKey
 			accountInfo.L1Address = accountHistory.L1Address
-			accountInfoList = append(accountInfoList, accountInfo)
 		}
 	} else {
 		accountInfoList, err = accountModel.GetByAccountIndexRange(fromAccountIndex, toAccountIndex)
