@@ -283,6 +283,8 @@ func (c *ExodusExit) loadAllAccounts() {
 							return
 						}
 						c.bc.Statedb.AccountCache.Add(accountInfo.AccountIndex, formatAccount)
+						c.bc.Statedb.L1AddressCache.Add(formatAccount.L1Address, formatAccount.AccountIndex)
+
 					}
 				}
 				logx.Infof("GetByNftIndexRange cost time %s", float64(time.Since(start).Milliseconds()))

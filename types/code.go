@@ -69,6 +69,7 @@ var (
 	AppErrInvalidNonce            = New(21103, "invalid nonce")
 	AppErrInvalidGasFeeAccount    = New(21104, "invalid gas fee account")
 	AppErrAccountInvalidToAccount = New(21107, "invalid ToAccount")
+	AppErrInvalidAccount          = New(21108, "invalid account")
 
 	// Asset
 	AppErrAssetNotFound      = New(21200, "asset not found")

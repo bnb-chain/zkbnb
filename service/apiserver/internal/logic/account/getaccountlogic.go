@@ -55,14 +55,21 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 		if err == types2.DbErrNotFound {
 			var redisAccount interface{}
 			accountInfo := &account.Account{}
+			var accountIndex interface{}
 			switch req.By {
 			case queryByIndex:
 				index, _ = strconv.ParseInt(req.Value, 10, 64)
 				redisAccount, err = l.svcCtx.RedisCache.Get(context.Background(), dbcache.AccountKeyByIndex(index), accountInfo)
 			case queryByL1Address:
-				redisAccount, err = l.svcCtx.RedisCache.Get(context.Background(), dbcache.AccountKeyByL1Address(req.Value), accountInfo)
+				redisAccount, err = l.svcCtx.RedisCache.Get(context.Background(), dbcache.AccountKeyByL1Address(req.Value), accountIndex)
+				if err == nil && redisAccount != nil {
+					redisAccount, err = l.svcCtx.RedisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex.(int64)), accountInfo)
+				}
 			case queryByPk:
-				redisAccount, err = l.svcCtx.RedisCache.Get(context.Background(), dbcache.AccountKeyByPK(req.Value), accountInfo)
+				redisAccount, err = l.svcCtx.RedisCache.Get(context.Background(), dbcache.AccountKeyByPK(req.Value), accountIndex)
+				if err == nil && redisAccount != nil {
+					redisAccount, err = l.svcCtx.RedisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex.(int64)), accountInfo)
+				}
 			}
 			if err == nil && redisAccount != nil {
 				return &types.Account{

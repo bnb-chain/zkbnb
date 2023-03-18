@@ -1137,6 +1137,8 @@ func (c *Committer) loadAllAccounts() {
 							return
 						}
 						c.bc.Statedb.AccountCache.Add(accountInfo.AccountIndex, formatAccount)
+						c.bc.Statedb.L1AddressCache.Add(formatAccount.L1Address, accountInfo.AccountIndex)
+
 					}
 				}
 				logx.Infof("GetByNftIndexRange cost time %s", float64(time.Since(start).Milliseconds()))

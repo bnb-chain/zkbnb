@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/monitor"
-	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/dbcache"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -188,14 +187,14 @@ func (m *Monitor) MonitorPriorityRequests() error {
 }
 
 func (m *Monitor) GetAccountIndex(l1Address string) (int64, error) {
-	cached, exist := m.AccountCache.Get(l1Address)
+	cached, exist := m.L1AddressCache.Get(l1Address)
 	if exist {
 		return cached.(int64), nil
 	} else {
-		accountInfo := &account.Account{}
-		redisAccount, err := m.RedisCache.Get(context.Background(), dbcache.AccountKeyByL1Address(l1Address), accountInfo)
+		var accountIndex interface{}
+		redisAccount, err := m.RedisCache.Get(context.Background(), dbcache.AccountKeyByL1Address(l1Address), accountIndex)
 		if err == nil && redisAccount != nil {
-			return accountInfo.AccountIndex, nil
+			return accountIndex.(int64), nil
 		}
 		dbAccount, err := m.AccountModel.GetAccountByL1Address(l1Address)
 		if err != nil {
@@ -204,7 +203,7 @@ func (m *Monitor) GetAccountIndex(l1Address string) (int64, error) {
 			}
 			return 0, err
 		}
-		m.AccountCache.Add(l1Address, dbAccount.AccountIndex)
+		m.L1AddressCache.Add(l1Address, dbAccount.AccountIndex)
 		return dbAccount.AccountIndex, nil
 	}
 }

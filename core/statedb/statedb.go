@@ -258,7 +258,11 @@ func (s *StateDB) GetFormatAccount(accountIndex int64) (*types.AccountInfo, erro
 
 	cached, exist := s.AccountCache.Get(accountIndex)
 	if exist {
-		return cached.(*types.AccountInfo), nil
+		accountInfo := cached.(*types.AccountInfo)
+		if accountInfo.AccountIndex != accountIndex {
+			return nil, types.AppErrInvalidAccount
+		}
+		return accountInfo, nil
 	}
 
 	startGauge := time.Now()
@@ -280,7 +284,7 @@ func (s *StateDB) GetFormatAccount(accountIndex int64) (*types.AccountInfo, erro
 		return nil, err
 	}
 	s.AccountCache.Add(accountIndex, formatAccount)
-	s.L1AddressCache.Add(formatAccount.L1Address, int64(accountIndex))
+	s.L1AddressCache.Add(formatAccount.L1Address, accountIndex)
 
 	if metrics.AccountGauge != nil {
 		metrics.AccountGauge.Set(float64(time.Since(start).Milliseconds()))
@@ -289,50 +293,34 @@ func (s *StateDB) GetFormatAccount(accountIndex int64) (*types.AccountInfo, erro
 	return formatAccount, nil
 }
 
-func (s *StateDB) GetAccount(accountIndex int64) (*account.Account, error) {
-	pending, exist := s.StateCache.GetPendingAccount(accountIndex)
-	if exist {
-		account, err := chain.FromFormatAccountInfo(pending)
-		if err != nil {
-			return nil, err
-		}
-		return account, nil
-	}
-
-	cached, exist := s.AccountCache.Get(accountIndex)
-	if exist {
-		// to save account to cache, we need to convert it
-		account, err := chain.FromFormatAccountInfo(cached.(*types.AccountInfo))
-		if err == nil {
-			return account, nil
-		}
-	}
-
-	account, err := s.chainDb.AccountModel.GetAccountByIndex(accountIndex)
-	if err != nil {
-		return nil, err
-	}
-	formatAccount, err := chain.ToFormatAccountInfo(account)
-	if err != nil {
-		return nil, err
-	}
-	s.AccountCache.Add(accountIndex, formatAccount)
-	s.L1AddressCache.Add(formatAccount.L1Address, int64(accountIndex))
-	return account, nil
-}
-
-// GetAccountByL1Address get the account by its name hash.
+// GetAccountByL1Address get the account by l1 address.
 // Firstly, try to find the account in the current state cache, it iterates the pending
 // account map, not performance friendly, please take care when use this API.
 // Secondly, if not found in the current state cache, then try to find the account from database.
-func (s *StateDB) GetAccountByL1Address(l1Address string) (*account.Account, error) {
+func (s *StateDB) GetAccountByL1Address(l1Address string) (*types.AccountInfo, error) {
 	cached, exist := s.StateCache.GetPendingAccountL1AddressMap(l1Address)
 	if exist {
-		return s.GetAccount(cached)
+		fromAccount, err := s.GetFormatAccount(cached)
+		if err != nil {
+			return nil, err
+		}
+		if fromAccount.AccountIndex == cached && fromAccount.L1Address == l1Address {
+			return fromAccount, err
+		} else {
+			return nil, types.AppErrInvalidAccount
+		}
 	}
 	accountIndex, exist := s.L1AddressCache.Get(l1Address)
 	if exist {
-		return s.GetAccount(accountIndex.(int64))
+		fromAccount, err := s.GetFormatAccount(accountIndex.(int64))
+		if err != nil {
+			return nil, err
+		}
+		if fromAccount.AccountIndex == cached && fromAccount.L1Address == l1Address {
+			return fromAccount, err
+		} else {
+			return nil, types.AppErrInvalidAccount
+		}
 	}
 
 	accountInfo, err := s.chainDb.AccountModel.GetAccountByL1Address(l1Address)
@@ -346,8 +334,8 @@ func (s *StateDB) GetAccountByL1Address(l1Address string) (*account.Account, err
 		return nil, err
 	}
 	s.AccountCache.Add(accountInfo.AccountIndex, formatAccount)
-	s.L1AddressCache.Add(formatAccount.L1Address, int64(accountInfo.AccountIndex))
-	return accountInfo, nil
+	s.L1AddressCache.Add(formatAccount.L1Address, accountInfo.AccountIndex)
+	return formatAccount, nil
 }
 
 func (s *StateDB) GetNft(nftIndex int64) (*nft.L2Nft, error) {
@@ -386,21 +374,21 @@ func (s *StateDB) SyncPendingAccountToRedis(pendingAccount map[int64]*types.Acco
 	for index, formatAccount := range pendingAccount {
 		account, err := chain.FromFormatAccountInfo(formatAccount)
 		if err != nil {
-			logx.Errorf("format accountInfo error, err=%v,formatAccount=%v", err, formatAccount)
+			logx.Errorf("format accountInfo error, err=%v,formatAccount=%v", err, formatAccount.AccountIndex)
 			continue
 		}
 		err = s.redisCache.Set(context.Background(), dbcache.AccountKeyByIndex(index), account)
 		if err != nil {
-			logx.Errorf("cache to redis failed: %v,formatAccount=%v", err, formatAccount)
+			logx.Errorf("cache to redis failed: %v,formatAccount=%v", err, formatAccount.AccountIndex)
 		}
 		if formatAccount.AccountId == 0 {
-			err = s.redisCache.Set(context.Background(), dbcache.AccountKeyByPK(formatAccount.PublicKey), account)
+			err = s.redisCache.Set(context.Background(), dbcache.AccountKeyByPK(formatAccount.PublicKey), account.AccountIndex)
 			if err != nil {
-				logx.Errorf("cache to redis failed: %v,formatAccount=%v", err, formatAccount)
+				logx.Errorf("cache to redis failed: %v,formatAccount=%v", err, formatAccount.AccountIndex)
 			}
-			err = s.redisCache.Set(context.Background(), dbcache.AccountKeyByL1Address(formatAccount.L1Address), account)
+			err = s.redisCache.Set(context.Background(), dbcache.AccountKeyByL1Address(formatAccount.L1Address), account.AccountIndex)
 			if err != nil {
-				logx.Errorf("cache to redis failed: %v,formatAccount=%v", err, formatAccount)
+				logx.Errorf("cache to redis failed: %v,formatAccount=%v", err, formatAccount.AccountIndex)
 			}
 		}
 	}
@@ -419,7 +407,7 @@ func (s *StateDB) SyncPendingNftToRedis(pendingNft map[int64]*nft.L2Nft) {
 func (s *StateDB) SyncPendingAccountToMemoryCache(pendingAccount map[int64]*types.AccountInfo) {
 	for index, formatAccount := range pendingAccount {
 		s.AccountCache.Add(index, formatAccount)
-		s.L1AddressCache.Add(formatAccount.L1Address, int64(formatAccount.AccountId))
+		s.L1AddressCache.Add(formatAccount.L1Address, index)
 	}
 }
 
@@ -528,7 +516,7 @@ func (s *StateDB) PrepareAccountsAndAssets(accountAssetsMap map[int64]map[int64]
 				formatAccount, err := chain.ToFormatAccountInfo(account)
 				if err == nil {
 					s.AccountCache.Add(accountIndex, formatAccount)
-					s.L1AddressCache.Add(formatAccount.L1Address, int64(accountIndex))
+					s.L1AddressCache.Add(formatAccount.L1Address, accountIndex)
 				}
 			}
 		}

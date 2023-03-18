@@ -121,7 +121,7 @@ type Monitor struct {
 	governanceContractAddress string
 
 	db                   *gorm.DB
-	AccountCache         *lru.Cache
+	L1AddressCache       *lru.Cache
 	RedisCache           dbcache.Cache
 	AccountModel         account.AccountModel
 	BlockModel           block.BlockModel
@@ -149,7 +149,7 @@ func NewMonitor(c config.Config) *Monitor {
 		Replicas: []gorm.Dialector{postgres.Open(slaveDataSource)},
 	}))
 
-	accountCache, err := lru.New(c.AccountCacheSize)
+	l1AddressCache, err := lru.New(c.AccountCacheSize)
 	if err != nil {
 		logx.Severef("init account cache failed:%v", err)
 		panic(err)
@@ -158,7 +158,7 @@ func NewMonitor(c config.Config) *Monitor {
 	monitor := &Monitor{
 		Config:               c,
 		db:                   db,
-		AccountCache:         accountCache,
+		L1AddressCache:       l1AddressCache,
 		RedisCache:           redisCache,
 		AccountModel:         account.NewAccountModel(db),
 		PriorityRequestModel: priorityrequest.NewPriorityRequestModel(db),
