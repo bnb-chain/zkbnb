@@ -316,7 +316,7 @@ func (s *StateDB) GetAccountByL1Address(l1Address string) (*types.AccountInfo, e
 		if err != nil {
 			return nil, err
 		}
-		if fromAccount.AccountIndex == cached && fromAccount.L1Address == l1Address {
+		if fromAccount.AccountIndex == accountIndex.(int64) && fromAccount.L1Address == l1Address {
 			return fromAccount, err
 		} else {
 			return nil, types.AppErrInvalidAccount
