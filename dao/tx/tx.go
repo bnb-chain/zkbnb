@@ -386,6 +386,8 @@ func (ai *Tx) DeepCopy() *Tx {
 	tx.CreatedAt = ai.CreatedAt
 	tx.UpdatedAt = ai.UpdatedAt
 	tx.DeletedAt = ai.DeletedAt
+	tx.FromAccountIndex = ai.FromAccountIndex
+	tx.ToAccountIndex = ai.ToAccountIndex
 	tx.IsCreateAccount = ai.IsCreateAccount
 	tx.IsPartialUpdate = ai.IsPartialUpdate
 	return tx
