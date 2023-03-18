@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbnb/types"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -66,7 +67,7 @@ func (f *Fetcher) fetcherForRegisterZNS(txInfo string) (string, error) {
 		logx.Errorf("parse register zns failed: %s", err.Error())
 		return "", types.AppErrInvalidTxInfo
 	}
-	return f.fetchL1AddressByAccountNameHash(string(transaction.AccountNameHash))
+	return f.fetchL1AddressByAccountNameHash(transaction.AccountNameHash)
 }
 
 func (f *Fetcher) fetcherForDeposit(txInfo string) (string, error) {
@@ -75,7 +76,7 @@ func (f *Fetcher) fetcherForDeposit(txInfo string) (string, error) {
 		logx.Errorf("parse deposit tx failed: %s", err.Error())
 		return "", types.AppErrInvalidTxInfo
 	}
-	return f.fetchL1AddressByAccountNameHash(string(transaction.AccountNameHash))
+	return f.fetchL1AddressByAccountNameHash(transaction.AccountNameHash)
 }
 
 func (f *Fetcher) fetcherForDepositNFT(txInfo string) (string, error) {
@@ -84,7 +85,7 @@ func (f *Fetcher) fetcherForDepositNFT(txInfo string) (string, error) {
 		logx.Errorf("parse deposit nft tx failed: %s", err.Error())
 		return "", types.AppErrInvalidTxInfo
 	}
-	return f.fetchL1AddressByAccountNameHash(string(transaction.AccountNameHash))
+	return f.fetchL1AddressByAccountNameHash(transaction.AccountNameHash)
 }
 
 func (f *Fetcher) fetcherForWithdrawal(txInfo string) (string, error) {
@@ -180,8 +181,9 @@ func (f *Fetcher) fetchL1AddressByAccountIndex(accountIndex int64) (string, erro
 	return account.L1Address, nil
 }
 
-func (f *Fetcher) fetchL1AddressByAccountNameHash(accountNameHash string) (string, error) {
-	accountIndex, err := f.svcCtx.MemCache.GetAccountIndexByNameHash(accountNameHash)
+func (f *Fetcher) fetchL1AddressByAccountNameHash(accountNameHash []byte) (string, error) {
+	accountNameHashStr := common.Bytes2Hex(accountNameHash)
+	accountIndex, err := f.svcCtx.MemCache.GetAccountIndexByNameHash(accountNameHashStr)
 	if err != nil {
 		if err == types.DbErrNotFound {
 			return "", types.AppErrAccountNotFound
