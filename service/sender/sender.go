@@ -20,6 +20,9 @@ func Run(configFile string) error {
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 
+	//Initiate the Prometheus Monitor Facility
+	sender.InitPrometheusFacility()
+
 	s := sender.NewSender(c)
 	// new cron
 	cronJob := cron.New(cron.WithChain(
