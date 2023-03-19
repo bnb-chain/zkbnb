@@ -688,10 +688,10 @@ func (c *Committer) preSaveBlockDataFunc(stateDataCopy *statedb.StateDataCopy) {
 func (c *Committer) updateAssetTreeFunc(stateDataCopy *statedb.StateDataCopy) {
 	start := time.Now()
 	metrics.UpdateAssetTreeTxMetrics.Add(float64(len(stateDataCopy.StateCache.Txs)))
-	logx.Infof("updateAssetTreeFunc blockHeight:%s,blockId:%s", stateDataCopy.CurrentBlock.BlockHeight, stateDataCopy.CurrentBlock.ID)
+	logx.Infof("updateAssetTreeFunc blockHeight:%d,blockId:%d", stateDataCopy.CurrentBlock.BlockHeight, stateDataCopy.CurrentBlock.ID)
 	err := c.bc.UpdateAssetTree(stateDataCopy)
 	if err != nil {
-		logx.Errorf("updateAssetTreeFunc failed:%s,blockHeight:%s", err, stateDataCopy.CurrentBlock.BlockHeight)
+		logx.Errorf("updateAssetTreeFunc failed:%s,blockHeight:%d", err, stateDataCopy.CurrentBlock.BlockHeight)
 		panic("updateAssetTreeFunc failed: " + err.Error())
 	}
 	c.updateAccountAndNftTreeWorker.Enqueue(stateDataCopy)
@@ -703,14 +703,14 @@ func (c *Committer) updateAssetTreeFunc(stateDataCopy *statedb.StateDataCopy) {
 func (c *Committer) updateAccountAndNftTreeFunc(stateDataCopy *statedb.StateDataCopy) {
 	start := time.Now()
 	metrics.UpdateAccountAndNftTreeTxMetrics.Add(float64(len(stateDataCopy.StateCache.Txs)))
-	logx.Infof("updateAccountAndNftTreeFunc blockHeight:%s,blockId:%s", stateDataCopy.CurrentBlock.BlockHeight, stateDataCopy.CurrentBlock.ID)
+	logx.Infof("updateAccountAndNftTreeFunc blockHeight:%d,blockId:%d", stateDataCopy.CurrentBlock.BlockHeight, stateDataCopy.CurrentBlock.ID)
 	blockSize := c.computeCurrentBlockSize(stateDataCopy)
 	if blockSize < len(stateDataCopy.StateCache.Txs) {
 		panic("block size too small")
 	}
 	blockStates, err := c.bc.UpdateAccountAndNftTree(blockSize, stateDataCopy)
 	if err != nil {
-		logx.Errorf("updateAccountAndNftTreeFunc failed:%s,blockHeight:%s", err, stateDataCopy.CurrentBlock.BlockHeight)
+		logx.Errorf("updateAccountAndNftTreeFunc failed:%s,blockHeight:%d", err, stateDataCopy.CurrentBlock.BlockHeight)
 		panic("updateAccountAndNftTreeFunc failed: " + err.Error())
 	}
 	c.saveBlockDataWorker.Enqueue(blockStates)

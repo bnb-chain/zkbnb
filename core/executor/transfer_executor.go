@@ -37,6 +37,7 @@ func (e *TransferExecutor) Prepare() error {
 	bc := e.bc
 	txInfo := e.TxInfo
 	toL1Address := txInfo.ToL1Address
+	txInfo.ToAccountIndex = types.NilAccountIndex
 	toAccount, err := bc.StateDB().GetAccountByL1Address(toL1Address)
 	if err != nil && err != types.AppErrAccountNotFound {
 		return err
@@ -49,7 +50,7 @@ func (e *TransferExecutor) Prepare() error {
 					txInfo.ToAccountIndex = nextAccountIndex
 				} else {
 					//for rollback
-					txInfo.ToAccountIndex = e.tx.AccountIndex
+					txInfo.ToAccountIndex = e.tx.ToAccountIndex
 				}
 			}
 		}
@@ -270,22 +271,22 @@ func (e *TransferExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		PublicKey:       toAccount.PublicKey,
 	})
 	toAccount.AssetInfo[txInfo.AssetId].Balance = ffmath.Add(toAccount.AssetInfo[txInfo.AssetId].Balance, txInfo.AssetAmount)
-
-	order++
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:         types.EmptyAccountAssetId,
-		AssetType:       types.CreateAccountType,
-		AccountIndex:    txInfo.ToAccountIndex,
-		L1Address:       toAccount.L1Address,
-		Balance:         toAccount.L1Address,
-		BalanceDelta:    toAccount.L1Address,
-		Order:           order,
-		AccountOrder:    accountOrder,
-		Nonce:           toAccount.Nonce,
-		CollectionNonce: toAccount.CollectionNonce,
-		PublicKey:       toAccount.PublicKey,
-	})
-
+	if e.IsCreateAccount {
+		order++
+		txDetails = append(txDetails, &tx.TxDetail{
+			AssetId:         types.EmptyAccountAssetId,
+			AssetType:       types.CreateAccountType,
+			AccountIndex:    txInfo.ToAccountIndex,
+			L1Address:       toAccount.L1Address,
+			Balance:         toAccount.L1Address,
+			BalanceDelta:    txInfo.ToL1Address,
+			Order:           order,
+			AccountOrder:    accountOrder,
+			Nonce:           toAccount.Nonce,
+			CollectionNonce: toAccount.CollectionNonce,
+			PublicKey:       toAccount.PublicKey,
+		})
+	}
 	// gas account asset gas
 	order++
 	accountOrder++

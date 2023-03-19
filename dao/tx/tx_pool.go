@@ -514,7 +514,7 @@ func (m *defaultTxPoolModel) GetLatestMintNft() (tx *Tx, err error) {
 }
 
 func (m *defaultTxPoolModel) GetLatestAccountIndex() (tx *Tx, err error) {
-	dbTx := m.DB.Table(m.table).Unscoped().Where("tx_type in ?", []int{types.TxTypeDeposit, types.TxTypeTransfer}).Order("account_index DESC").Limit(1).Find(&tx)
+	dbTx := m.DB.Table(m.table).Unscoped().Where("tx_type in ?", []int{types.TxTypeDeposit, types.TxTypeDepositNft, types.TxTypeTransfer, types.TxTypeTransferNft}).Order("to_account_index DESC").Limit(1).Find(&tx)
 	if dbTx.Error != nil {
 		return nil, types.DbErrSqlOperation
 	} else if dbTx.RowsAffected == 0 {
@@ -547,7 +547,7 @@ func (m *defaultTxPoolModel) GetLatestExecutedTx() (tx *Tx, err error) {
 func (m *defaultTxPoolModel) BatchUpdateNftIndexOrCollectionId(txs []*PoolTx) (err error) {
 	dbTx := m.DB.Table(m.table).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"nft_index", "collection_id", "account_index", "from_account_index", "to_account_index"}),
+		DoUpdates: clause.AssignmentColumns([]string{"nft_index", "collection_id", "account_index", "from_account_index", "to_account_index", "is_create_account"}),
 	}).CreateInBatches(&txs, len(txs))
 	if dbTx.Error != nil {
 		return dbTx.Error

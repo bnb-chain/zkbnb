@@ -177,22 +177,22 @@ func (e *DepositExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		CollectionNonce: depositAccount.CollectionNonce,
 		PublicKey:       depositAccount.PublicKey,
 	})
-
-	order++
-	txDetails = append(txDetails, &tx.TxDetail{
-		AssetId:         types.EmptyAccountAssetId,
-		AssetType:       types.CreateAccountType,
-		AccountIndex:    txInfo.AccountIndex,
-		L1Address:       depositAccount.L1Address,
-		Balance:         depositAccount.L1Address,
-		BalanceDelta:    txInfo.L1Address,
-		Order:           order,
-		AccountOrder:    0,
-		Nonce:           depositAccount.Nonce,
-		CollectionNonce: depositAccount.CollectionNonce,
-		PublicKey:       depositAccount.PublicKey,
-	})
-
+	if e.IsCreateAccount {
+		order++
+		txDetails = append(txDetails, &tx.TxDetail{
+			AssetId:         types.EmptyAccountAssetId,
+			AssetType:       types.CreateAccountType,
+			AccountIndex:    txInfo.AccountIndex,
+			L1Address:       depositAccount.L1Address,
+			Balance:         depositAccount.L1Address,
+			BalanceDelta:    txInfo.L1Address,
+			Order:           order,
+			AccountOrder:    0,
+			Nonce:           depositAccount.Nonce,
+			CollectionNonce: depositAccount.CollectionNonce,
+			PublicKey:       depositAccount.PublicKey,
+		})
+	}
 	return txDetails, nil
 }
 

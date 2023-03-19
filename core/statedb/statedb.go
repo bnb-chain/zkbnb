@@ -736,7 +736,7 @@ func (s *StateDB) SetAndCommitAssetTree(accountIndex int64, assets []int64, stat
 		prunedVersion = latestVersion
 	}
 	newVersion := bsmt.Version(stateCopy.CurrentBlock.BlockHeight)
-	logx.Infof("asset.CommitWithNewVersion:blockHeight=%s,accountIndex=%s,prunedVersion=%s:", stateCopy.CurrentBlock.BlockHeight, accountIndex, prunedVersion)
+	logx.Infof("asset.CommitWithNewVersion:blockHeight=%d,accountIndex=%d,prunedVersion=%d:", stateCopy.CurrentBlock.BlockHeight, accountIndex, prunedVersion)
 	ver, err := asset.CommitWithNewVersion(&prunedVersion, &newVersion)
 	if err != nil {
 		logx.Error("asset.Commit failed:", err)
@@ -744,7 +744,7 @@ func (s *StateDB) SetAndCommitAssetTree(accountIndex int64, assets []int64, stat
 	}
 	assetOne, err := asset.Get(0, nil)
 	if err == nil {
-		logx.Infof("asset.CommitWithNewVersion:blockHeight=%s,accountIndex=%s,assetId=0,hash=%s:", stateCopy.CurrentBlock.BlockHeight, accountIndex, common.Bytes2Hex(assetOne))
+		logx.Infof("asset.CommitWithNewVersion:blockHeight=%d,accountIndex=%d,assetId=0,hash=%s:", stateCopy.CurrentBlock.BlockHeight, accountIndex, common.Bytes2Hex(assetOne))
 	}
 	return accountIndex, nAccountLeafHash, nil
 }

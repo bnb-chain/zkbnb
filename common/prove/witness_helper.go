@@ -281,7 +281,7 @@ func (w *WitnessHelper) constructAccountWitness(
 			collectionNonce++
 		}
 		// update account PublicKey
-		var nPubKey string
+		nPubKey := proverAccounts[accountCount].AccountInfo.PublicKey
 		if oTx.AccountIndex == accountKey && oTx.TxType == types.TxTypeChangePubKey {
 			for _, txDetail := range oTx.TxDetails {
 				if txDetail.AssetType == types.ChangePubKeyType {
@@ -289,23 +289,19 @@ func (w *WitnessHelper) constructAccountWitness(
 					break
 				}
 			}
-		} else {
-			nPubKey = proverAccounts[accountCount].AccountInfo.PublicKey
 		}
 
 		// update account l1Address
-		var nL1Address string
-		if oTx.AccountIndex == accountKey && (oTx.TxType == types.TxTypeDeposit ||
+		nL1Address := proverAccounts[accountCount].AccountInfo.L1Address
+		if oTx.ToAccountIndex == accountKey && (oTx.TxType == types.TxTypeDeposit ||
 			oTx.TxType == types.TxTypeDepositNft ||
-			oTx.TxType == types.TxTypeTransfer) {
+			oTx.TxType == types.TxTypeTransfer || oTx.TxType == types.TxTypeTransferNft) {
 			for _, txDetail := range oTx.TxDetails {
 				if txDetail.AssetType == types.CreateAccountType {
 					nL1Address = txDetail.BalanceDelta
 					break
 				}
 			}
-		} else {
-			nL1Address = proverAccounts[accountCount].AccountInfo.L1Address
 		}
 
 		nAccountHash, err := tree.ComputeAccountLeafHash(

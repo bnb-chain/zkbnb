@@ -302,7 +302,7 @@ func ComputeAccountLeafHash(
 	e4 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(collectionNonce))
 	e5 := txtypes.FromBigIntToFr(new(big.Int).SetBytes(assetRoot))
 	hash := poseidon.Poseidon(e0, e1, e2, e3, e4, e5).Bytes()
-	logx.Infof("compute account leaf hash,blockHeight=%s,accountIndex=%s,nonce=%s,collectionNonce=%s,assetRoot=%s,hash=%s", blockHeight, accountIndex, nonce, collectionNonce, common.Bytes2Hex(assetRoot), common.Bytes2Hex(hash[:]))
+	logx.Infof("compute account leaf hash,blockHeight=%d,accountIndex=%d,l1Address=%s,pk=%s,nonce=%d,collectionNonce=%d,assetRoot=%s,hash=%s", blockHeight, accountIndex, l1Address, pk, nonce, collectionNonce, common.Bytes2Hex(assetRoot), common.Bytes2Hex(hash[:]))
 	return hash[:], nil
 }
 
@@ -325,7 +325,7 @@ func ComputeAccountAssetLeafHash(
 	}
 	e1 := txtypes.FromBigIntToFr(offerCanceledOrFinalizedBigInt)
 	hash := poseidon.Poseidon(e0, e1).Bytes()
-	logx.Infof("compute account asset leaf hash,blockHeight=%s,accountIndex=%s,assetId=%s,balance=%s,offerCanceledOrFinalized=%s,hash=%s", blockHeight, accountIndex, assetId, balance, offerCanceledOrFinalized, common.Bytes2Hex(hash[:]))
+	logx.Infof("compute account asset leaf hash,blockHeight=%d,accountIndex=%d,assetId=%d,balance=%s,offerCanceledOrFinalized=%s,hash=%s", blockHeight, accountIndex, assetId, balance, offerCanceledOrFinalized, common.Bytes2Hex(hash[:]))
 	return hash[:], nil
 }
 
@@ -364,7 +364,7 @@ func ComputeNftAssetLeafHash(
 	} else {
 		hash = poseidon.Poseidon(e0, e1, e2, e4, e5, e6).Bytes()
 	}
-	logx.Infof("compute nft asset leaf hash,blockHeight=%s,nftIndex=%s,creatorAccountIndex=%s,ownerAccountIndex=%s,nftContentHash=%s,creatorTreasuryRate=%s,collectionId=%s,hash=%s", blockHeight, nftIndex, creatorAccountIndex, ownerAccountIndex, nftContentHash, creatorTreasuryRate, collectionId, common.Bytes2Hex(hash[:]))
+	logx.Infof("compute nft asset leaf hash,blockHeight=%d,nftIndex=%d,creatorAccountIndex=%d,ownerAccountIndex=%d,nftContentHash=%s,creatorTreasuryRate=%d,collectionId=%d,hash=%s", blockHeight, nftIndex, creatorAccountIndex, ownerAccountIndex, nftContentHash, creatorTreasuryRate, collectionId, common.Bytes2Hex(hash[:]))
 
 	return hash[:], nil
 }
