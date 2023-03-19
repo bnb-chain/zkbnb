@@ -94,12 +94,13 @@ func (m *Monitor) MonitorPriorityRequests() error {
 				return fmt.Errorf("unable to serialize request info : %v", err)
 			}
 			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
-			if err != nil {
-				return fmt.Errorf("unable to get account index : %v", err)
+			if err == nil {
+				poolTx.AccountIndex = accountIndex
+				poolTx.FromAccountIndex = accountIndex
+				poolTx.ToAccountIndex = accountIndex
+			} else {
+				logx.Errorf("unable to get account index : %v", err)
 			}
-			poolTx.AccountIndex = accountIndex
-			poolTx.FromAccountIndex = accountIndex
-			poolTx.ToAccountIndex = accountIndex
 		case monitor.TxTypeDepositNft:
 			txInfo, err := chain.ParseDepositNftPubData(common.FromHex(request.Pubdata))
 			if err != nil {
@@ -112,12 +113,13 @@ func (m *Monitor) MonitorPriorityRequests() error {
 				return fmt.Errorf("unable to serialize request info: %v", err)
 			}
 			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
-			if err != nil {
-				return fmt.Errorf("unable to get account index : %v", err)
+			if err == nil {
+				poolTx.AccountIndex = accountIndex
+				poolTx.FromAccountIndex = accountIndex
+				poolTx.ToAccountIndex = accountIndex
+			} else {
+				logx.Errorf("unable to get account index : %v", err)
 			}
-			poolTx.AccountIndex = accountIndex
-			poolTx.FromAccountIndex = accountIndex
-			poolTx.ToAccountIndex = accountIndex
 		case monitor.TxTypeFullExit:
 			txInfo, err := chain.ParseFullExitPubData(common.FromHex(request.Pubdata))
 			if err != nil {
@@ -130,12 +132,13 @@ func (m *Monitor) MonitorPriorityRequests() error {
 				return fmt.Errorf("unable to serialize request info : %v", err)
 			}
 			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
-			if err != nil {
-				return fmt.Errorf("unable to get account index : %v", err)
+			if err == nil {
+				poolTx.AccountIndex = accountIndex
+				poolTx.FromAccountIndex = accountIndex
+				poolTx.ToAccountIndex = accountIndex
+			} else {
+				logx.Errorf("unable to get account index : %v", err)
 			}
-			poolTx.AccountIndex = accountIndex
-			poolTx.FromAccountIndex = accountIndex
-			poolTx.ToAccountIndex = accountIndex
 		case monitor.TxTypeFullExitNft:
 			txInfo, err := chain.ParseFullExitNftPubData(common.FromHex(request.Pubdata))
 			if err != nil {
@@ -148,16 +151,16 @@ func (m *Monitor) MonitorPriorityRequests() error {
 				return fmt.Errorf("unable to serialize request info : %v", err)
 			}
 			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
-			if err != nil {
-				return fmt.Errorf("unable to get account index : %v", err)
+			if err == nil {
+				poolTx.AccountIndex = accountIndex
+				poolTx.FromAccountIndex = accountIndex
+				poolTx.ToAccountIndex = accountIndex
+			} else {
+				logx.Errorf("unable to get account index : %v", err)
 			}
-			poolTx.AccountIndex = accountIndex
-			poolTx.FromAccountIndex = accountIndex
-			poolTx.ToAccountIndex = accountIndex
 		default:
 			return fmt.Errorf("invalid request type")
 		}
-
 		poolTx.TxInfo = string(txInfoBytes)
 		poolTx.L1RequestId = request.RequestId
 		pendingNewPoolTxs = append(pendingNewPoolTxs, poolTx)
