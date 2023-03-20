@@ -68,7 +68,9 @@ func InitNftTree(
 		totalTask := 0
 		resultChan := make(chan *treeUpdateResp, 1)
 		defer close(resultChan)
-		pool, err := ants.NewPool(100)
+		pool, err := ants.NewPool(100, ants.WithPanicHandler(func(p interface{}) {
+			panic("worker exits from a panic")
+		}))
 		for i := 0; int64(i) <= maxNftIndex; i += ctx.BatchReloadSize() {
 			toNftIndex := int64(i+ctx.BatchReloadSize()) - 1
 			if toNftIndex > maxNftIndex {

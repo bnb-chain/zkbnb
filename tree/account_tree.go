@@ -79,8 +79,8 @@ func InitAccountTree(
 			SetNamespace(ctx, accountAssetNamespace(index)), AssetTreeHeight, nilAccountAssetNodeHashes,
 			ctx.Options(0)...)
 		if err != nil {
-			logx.Errorf("unable to create new tree by assets: %s", err.Error())
-			panic(err.Error())
+			logx.Severef("failed to create new tree by assets, %v", err)
+			panic("failed to create new tree by assets, err:" + err.Error())
 		}
 		return tree
 	})
@@ -103,7 +103,9 @@ func InitAccountTree(
 		totalTask := 0
 		resultChan := make(chan *treeUpdateResp, 1)
 		defer close(resultChan)
-		pool, err := ants.NewPool(100)
+		pool, err := ants.NewPool(100, ants.WithPanicHandler(func(p interface{}) {
+			panic("worker exits from a panic")
+		}))
 		for i := 0; int64(i) <= maxAccountIndex; i += ctx.BatchReloadSize() {
 			toAccountIndex := int64(i+ctx.BatchReloadSize()) - 1
 			if toAccountIndex > maxAccountIndex {
