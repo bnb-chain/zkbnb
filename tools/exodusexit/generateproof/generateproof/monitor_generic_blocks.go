@@ -45,7 +45,6 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		if exodusExitBlock.BlockHeight == m.Config.ChainConfig.EndL2BlockHeight &&
 			(exodusExitBlock.BlockStatus == exodusexit.StatusVerified || exodusExitBlock.BlockStatus == exodusexit.StatusExecuted) {
 			logx.Info("get all the l2 blocks from l1 successfully")
-			panic("success")
 			return nil
 		}
 	}

@@ -37,16 +37,17 @@ func NewMintNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 func (e *MintNftExecutor) Prepare() error {
 	txInfo := e.TxInfo
 	if !e.bc.StateDB().DryRun {
-		// Set the right nft index for tx info.
-		if e.tx.Rollback == false {
-			nextNftIndex := e.bc.StateDB().GetNextNftIndex()
-			txInfo.NftIndex = nextNftIndex
-		} else {
-			//for rollback
-			nextNftIndex := e.tx.NftIndex
-			txInfo.NftIndex = nextNftIndex
+		if !e.isExodusExit {
+			// Set the right nft index for tx info.
+			if e.tx.Rollback == false {
+				nextNftIndex := e.bc.StateDB().GetNextNftIndex()
+				txInfo.NftIndex = nextNftIndex
+			} else {
+				//for rollback
+				nextNftIndex := e.tx.NftIndex
+				txInfo.NftIndex = nextNftIndex
+			}
 		}
-
 		// Mark the tree states that would be affected in this executor.
 		e.MarkNftDirty(txInfo.NftIndex)
 	}
@@ -116,8 +117,10 @@ func (e *MintNftExecutor) ApplyTransaction() error {
 		NftContentType:      txInfo.NftContentType,
 	})
 	stateCache.SetPendingGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
-	if e.tx.Rollback == false {
-		e.bc.StateDB().UpdateNftIndex(txInfo.NftIndex)
+	if !e.isExodusExit {
+		if e.tx.Rollback == false {
+			e.bc.StateDB().UpdateNftIndex(txInfo.NftIndex)
+		}
 	}
 	return e.BaseExecutor.ApplyTransaction()
 }

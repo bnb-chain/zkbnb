@@ -37,7 +37,9 @@ func (e *TransferExecutor) Prepare() error {
 	bc := e.bc
 	txInfo := e.TxInfo
 	toL1Address := txInfo.ToL1Address
-	txInfo.ToAccountIndex = types.NilAccountIndex
+	if !e.isExodusExit {
+		txInfo.ToAccountIndex = types.NilAccountIndex
+	}
 	toAccount, err := bc.StateDB().GetAccountByL1Address(toL1Address)
 	if err != nil && err != types.AppErrAccountNotFound {
 		return err
@@ -152,7 +154,7 @@ func (e *TransferExecutor) GeneratePubData() error {
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(types.TxTypeTransfer))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
-	buf.Write(common2.Uint32ToBytes(uint32(txInfo.ToAccountIndex)))
+	buf.Write(common2.AddressStrToBytes(txInfo.ToL1Address))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.AssetId)))
 	packedAmountBytes, err := common2.AmountToPackedAmountBytes(txInfo.AssetAmount)
 	if err != nil {

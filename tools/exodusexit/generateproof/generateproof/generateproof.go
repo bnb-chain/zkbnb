@@ -40,10 +40,14 @@ func NewExodusExit(config *config.Config) (*ExodusExit, error) {
 	if err != nil {
 		return nil, fmt.Errorf("new blockchain error: %v", err)
 	}
+	pool, err := ants.NewPool(50, ants.WithPanicHandler(func(p interface{}) {
+		panic("worker exits from a panic")
+	}))
 	committer := &ExodusExit{
 		running: true,
 		config:  config,
 		bc:      bc,
+		pool:    pool,
 	}
 	return committer, nil
 }
@@ -101,7 +105,7 @@ func (c *ExodusExit) Run() error {
 		logx.Info("execute all the l2 blocks successfully")
 		account, err := c.bc.AccountModel.GetAccountByL1Address(c.config.L1Address)
 		if err != nil {
-			logx.Errorf("get account by name error L1Address=%s,%v,", c.config.L1Address, err)
+			logx.Errorf("get account by address error L1Address=%s,%v,", c.config.L1Address, err)
 			return err
 		}
 		err = c.getMerkleProofs(executedTxMaxHeight, account.AccountIndex, c.config.NftIndexList, c.config.AssetId)
@@ -240,6 +244,7 @@ func (c *ExodusExit) saveToDb(exodusExitBlock *exodusexit.ExodusExitBlock) error
 	})
 	if err != nil {
 		logx.Errorf("saveToDb failed:%s,blockHeight:%d", err.Error(), exodusExitBlock.BlockHeight)
+		return err
 	}
 	return nil
 }
@@ -422,6 +427,7 @@ func (c *ExodusExit) executeAtomicMatch(pubData []byte) error {
 		},
 		CreatorAmount:     creatorAmount,
 		TreasuryAmount:    treasuryAmount,
+		GasAccountIndex:   types.GasAccount,
 		GasFeeAssetAmount: gasFeeAssetAmount,
 		GasFeeAssetId:     int64(gasFeeAssetId),
 	}
@@ -451,6 +457,7 @@ func (c *ExodusExit) executeCancelOffer(pubData []byte) error {
 
 	txInfo := &txtypes.CancelOfferTxInfo{
 		AccountIndex:      int64(accountIndex),
+		GasAccountIndex:   types.GasAccount,
 		GasFeeAssetId:     int64(gasFeeAssetId),
 		GasFeeAssetAmount: gasFeeAssetAmount,
 		OfferId:           int64(offerId),
@@ -482,6 +489,7 @@ func (c *ExodusExit) executeCollection(pubData []byte) error {
 
 	txInfo := &txtypes.CreateCollectionTxInfo{
 		AccountIndex:      int64(accountIndex),
+		GasAccountIndex:   types.GasAccount,
 		GasFeeAssetId:     int64(gasFeeAssetId),
 		GasFeeAssetAmount: gasFeeAssetAmount,
 		CollectionId:      int64(collectionId),
@@ -658,10 +666,11 @@ func (c *ExodusExit) executeMintNft(pubData []byte) error {
 		CreatorAccountIndex: int64(creatorAccountIndex),
 		ToAccountIndex:      int64(toAccountIndex),
 		NftIndex:            nftIndex,
+		GasAccountIndex:     types.GasAccount,
 		GasFeeAssetId:       int64(gasFeeAssetId),
 		GasFeeAssetAmount:   gasFeeAssetAmount,
 		NftCollectionId:     int64(collectionId),
-		NftContentHash:      string(nftContentHash),
+		NftContentHash:      common.Bytes2Hex(nftContentHash),
 		CreatorTreasuryRate: int64(creatorTreasuryRate),
 	}
 	executor := &executor.MintNftExecutor{
@@ -688,19 +697,28 @@ func (c *ExodusExit) executeChangePubKey(pubData []byte) error {
 	offset, pubKeyY := common2.ReadBytes32(pubData, offset)
 	offset, l1Address := common2.ReadAddress(pubData, offset)
 	offset, nonce := common2.ReadUint32(pubData, offset)
+	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
+	offset, packedFee := common2.ReadUint16(pubData, offset)
+	gasFeeAssetAmount, err := util.CleanPackedFee(big.NewInt(int64(packedFee)))
+	if err != nil {
+		return err
+	}
 
 	var txInfo = &txtypes.ChangePubKeyInfo{
-		AccountIndex: int64(accountIndex),
-		PubKeyX:      pubKeyX,
-		PubKeyY:      pubKeyY,
-		L1Address:    l1Address,
-		Nonce:        int64(nonce),
+		AccountIndex:      int64(accountIndex),
+		PubKeyX:           pubKeyX,
+		PubKeyY:           pubKeyY,
+		L1Address:         l1Address,
+		Nonce:             int64(nonce),
+		GasAccountIndex:   types.GasAccount,
+		GasFeeAssetId:     int64(gasFeeAssetId),
+		GasFeeAssetAmount: gasFeeAssetAmount,
 	}
 	executor := &executor.ChangePubKeyExecutor{
 		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
 		TxInfo:       txInfo,
 	}
-	err := executor.Prepare()
+	err = executor.Prepare()
 	if err != nil {
 		return err
 	}
@@ -716,7 +734,7 @@ func (c *ExodusExit) executeTransfer(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, fromAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, toAccountIndex := common2.ReadUint32(pubData, offset)
+	offset, toAddress := common2.ReadAddress(pubData, offset)
 	offset, assetId := common2.ReadUint16(pubData, offset)
 	offset, packedAmount := common2.ReadUint40(pubData, offset)
 	assetAmount, err := util.CleanPackedAmount(big.NewInt(packedAmount))
@@ -732,7 +750,8 @@ func (c *ExodusExit) executeTransfer(pubData []byte) error {
 
 	txInfo := &txtypes.TransferTxInfo{
 		FromAccountIndex:  int64(fromAccountIndex),
-		ToAccountIndex:    int64(toAccountIndex),
+		ToL1Address:       toAddress,
+		GasAccountIndex:   types.GasAccount,
 		AssetId:           int64(assetId),
 		AssetAmount:       assetAmount,
 		GasFeeAssetId:     int64(gasFeeAssetId),
@@ -757,7 +776,7 @@ func (c *ExodusExit) executeTransferNft(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, fromAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, toAccountIndex := common2.ReadUint32(pubData, offset)
+	offset, toAddress := common2.ReadAddress(pubData, offset)
 	offset, nftIndex := common2.ReadUint40(pubData, offset)
 	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
 	offset, packedFee := common2.ReadUint16(pubData, offset)
@@ -768,8 +787,9 @@ func (c *ExodusExit) executeTransferNft(pubData []byte) error {
 	offset, callDataHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
 	txInfo := &txtypes.TransferNftTxInfo{
 		FromAccountIndex:  int64(fromAccountIndex),
-		ToAccountIndex:    int64(toAccountIndex),
-		NftIndex:          int64(nftIndex),
+		ToL1Address:       toAddress,
+		NftIndex:          nftIndex,
+		GasAccountIndex:   types.GasAccount,
 		GasFeeAssetId:     int64(gasFeeAssetId),
 		GasFeeAssetAmount: gasFeeAssetAmount,
 		CallDataHash:      callDataHash,
@@ -805,6 +825,7 @@ func (c *ExodusExit) executeWithdraw(pubData []byte) error {
 	txInfo := &txtypes.WithdrawTxInfo{
 		FromAccountIndex:  int64(fromAccountIndex),
 		ToAddress:         toAddress,
+		GasAccountIndex:   types.GasAccount,
 		AssetId:           int64(assetId),
 		AssetAmount:       assetAmount,
 		GasFeeAssetId:     int64(gasFeeAssetId),
@@ -852,6 +873,7 @@ func (c *ExodusExit) executeWithdrawNft(pubData []byte) error {
 		CollectionId:        int64(collectionId),
 		NftContentHash:      nftContentHash,
 		CreatorL1Address:    creatorL1Address,
+		GasAccountIndex:     types.GasAccount,
 		GasFeeAssetId:       int64(gasFeeAssetId),
 		GasFeeAssetAmount:   gasFeeAssetAmount,
 		NftContentType:      int64(nftContentType),
