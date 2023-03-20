@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/svc"
 	"github.com/bnb-chain/zkbnb/types"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,70 +21,42 @@ func NewFetcher(ctx context.Context, svcCtx *svc.ServiceContext) *Fetcher {
 	}
 }
 
-func (f *Fetcher) GetL1AddressByTx(TxType uint32, TxInfo string) (string, error) {
+func (f *Fetcher) GetL1AddressByTx(TxType uint32, TxInfo string) ([]string, error) {
 
-	var l1Address string
+	var l1Address0 = ""
+	var l1Address1 = ""
 	var err error
-
-	if types.TxTypeRegisterZns == TxType {
-		l1Address, err = f.fetcherForRegisterZNS(TxInfo)
-	} else if types.TxTypeDeposit == TxType {
-		l1Address, err = f.fetcherForDeposit(TxInfo)
-	} else if types.TxTypeDepositNft == TxType {
-		l1Address, err = f.fetcherForDepositNFT(TxInfo)
-	} else if types.TxTypeWithdraw == TxType {
-		l1Address, err = f.fetcherForWithdrawal(TxInfo)
+	if types.TxTypeWithdraw == TxType {
+		l1Address0, err = f.fetcherForWithdrawal(TxInfo)
 	} else if types.TxTypeTransfer == TxType {
-		l1Address, err = f.fetcherForTransfer(TxInfo)
+		l1Address0, err = f.fetcherForTransfer(TxInfo)
 	} else if types.TxTypeCreateCollection == TxType {
-		l1Address, err = f.fetcherForCreateCollection(TxInfo)
+		l1Address0, err = f.fetcherForCreateCollection(TxInfo)
 	} else if types.TxTypeMintNft == TxType {
-		l1Address, err = f.fetcherForMintNft(TxInfo)
+		l1Address0, err = f.fetcherForMintNft(TxInfo)
 	} else if types.TxTypeTransferNft == TxType {
-		l1Address, err = f.fetcherForTransferNft(TxInfo)
+		l1Address0, err = f.fetcherForTransferNft(TxInfo)
 	} else if types.TxTypeWithdrawNft == TxType {
-		l1Address, err = f.fetcherForWithdrawalNft(TxInfo)
+		l1Address0, err = f.fetcherForWithdrawalNft(TxInfo)
 	} else if types.TxTypeCancelOffer == TxType {
-		l1Address, err = f.fetcherForCancelOffer(TxInfo)
+		l1Address0, err = f.fetcherForCancelOffer(TxInfo)
 	} else if types.TxTypeAtomicMatch == TxType {
-		l1Address, err = f.fetcherForAtomicMatch(TxInfo)
+		l1Address0, l1Address1, err = f.fetcherForAtomicMatch(TxInfo)
 	} else if types.TxTypeEmpty == TxType {
-		l1Address, err = f.fetcherForAccount(TxInfo)
+		l1Address0, err = f.fetcherForAccount(TxInfo)
 	} else {
-		return "", errors.New(fmt.Sprintf("Can not find Fetcher Function for TxType:%d", TxType))
+		return nil, errors.New(fmt.Sprintf("Can not find Fetcher Function for TxType:%d", TxType))
 	}
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return l1Address, nil
-}
 
-func (f *Fetcher) fetcherForRegisterZNS(txInfo string) (string, error) {
-	transaction, err := types.ParseRegisterZnsTxInfo(txInfo)
-	if err != nil {
-		logx.Errorf("parse register zns failed: %s", err.Error())
-		return "", types.AppErrInvalidTxInfo
+	if len(l1Address1) > 0 {
+		return []string{l1Address0, l1Address1}, nil
+	} else {
+		return []string{l1Address0}, nil
 	}
-	return f.fetchL1AddressByAccountNameHash(transaction.AccountNameHash)
-}
-
-func (f *Fetcher) fetcherForDeposit(txInfo string) (string, error) {
-	transaction, err := types.ParseDepositTxInfo(txInfo)
-	if err != nil {
-		logx.Errorf("parse deposit tx failed: %s", err.Error())
-		return "", types.AppErrInvalidTxInfo
-	}
-	return f.fetchL1AddressByAccountNameHash(transaction.AccountNameHash)
-}
-
-func (f *Fetcher) fetcherForDepositNFT(txInfo string) (string, error) {
-	transaction, err := types.ParseDepositNftTxInfo(txInfo)
-	if err != nil {
-		logx.Errorf("parse deposit nft tx failed: %s", err.Error())
-		return "", types.AppErrInvalidTxInfo
-	}
-	return f.fetchL1AddressByAccountNameHash(transaction.AccountNameHash)
 }
 
 func (f *Fetcher) fetcherForWithdrawal(txInfo string) (string, error) {
@@ -151,13 +122,21 @@ func (f *Fetcher) fetcherForCancelOffer(txInfo string) (string, error) {
 	return f.fetchL1AddressByAccountIndex(transaction.AccountIndex)
 }
 
-func (f *Fetcher) fetcherForAtomicMatch(txInfo string) (string, error) {
+func (f *Fetcher) fetcherForAtomicMatch(txInfo string) (string, string, error) {
 	transaction, err := types.ParseAtomicMatchTxInfo(txInfo)
 	if err != nil {
 		logx.Errorf("parse atomic match tx failed: %s", err.Error())
-		return "", types.AppErrInvalidTxInfo
+		return "", "", types.AppErrInvalidTxInfo
 	}
-	return f.fetchL1AddressByAccountIndex(transaction.AccountIndex)
+	sellL1Address1, err := f.fetchL1AddressByAccountIndex(transaction.SellOffer.AccountIndex)
+	if err != nil {
+		return "", "", err
+	}
+	buyL1Address2, err := f.fetchL1AddressByAccountIndex(transaction.BuyOffer.AccountIndex)
+	if err != nil {
+		return "", "", err
+	}
+	return sellL1Address1, buyL1Address2, nil
 }
 
 func (f *Fetcher) fetcherForAccount(txInfo string) (string, error) {
@@ -179,24 +158,4 @@ func (f *Fetcher) fetchL1AddressByAccountIndex(accountIndex int64) (string, erro
 		return "", err
 	}
 	return account.L1Address, nil
-}
-
-func (f *Fetcher) fetchL1AddressByAccountNameHash(accountNameHash []byte) (string, error) {
-	accountNameHashStr := common.Bytes2Hex(accountNameHash)
-	accountIndex, err := f.svcCtx.MemCache.GetAccountIndexByNameHash(accountNameHashStr)
-	if err != nil {
-		if err == types.DbErrNotFound {
-			return "", types.AppErrAccountNotFound
-		}
-		return "", err
-	}
-
-	l1Address, err := f.svcCtx.MemCache.GetAccountL1AddressByIndex(accountIndex)
-	if err != nil {
-		if err == types.DbErrNotFound {
-			return "", types.AppErrAccountNotFound
-		}
-		return "", err
-	}
-	return l1Address, nil
 }
