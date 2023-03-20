@@ -266,8 +266,6 @@ No user transaction
 
 This is a layer-2 transaction and a user needs to call this method first to register a layer-2 account.
 
-#### 1: API Input
-
 | Name              | Size(byte) | Comment                        |
 |-------------------|------------|--------------------------------|
 | TxType            | 1          | transaction type               |
@@ -282,50 +280,25 @@ This is a layer-2 transaction and a user needs to call this method first to regi
 | ExpiredAt         | 4          | expired at                     |
 | Sig               |            | l2 sig                         |
 | L1Sig             |            | l1 sig                         |
-#### 1.1: API Input sign Json
-Input form data
+
 ```go
-tx_type:1
-tx_info:{
-"AccountIndex": 2,
-"L1Address": "0xB64d00616958131824B472CC20C3d47Bb5d9926C",
-"Nonce": 7,
-"PubKeyX": "EG/uk14D7iEZVvdzQwnCY1ad25IbDa4fKBlZrOfZdc4=",
-"PubKeyY": "Kf/flLyPhKeDjoPvx8g1ceKGqow1WSKTjaFTv/EfXtc=",
-"GasAccountIndex": 1,
-"GasFeeAssetId": 0,
-"GasFeeAssetAmount": 10000000000000,
-"ExpiredAt": 1679310615292,
-"Sig": "r+V7gaMQU0+/WbAlGG76Hb7ilHjP9znR/KzO+4vUj5gEIFcdzjpJWVsRwS9WN1tB1kI7s2JJKoNcuiHs87cVwg==",
-"L1Sig": "0x8c9a4fa4901e7c15b56cdfceadd3493050a9b55f76faf1a1421db3a2aaf17bcc2118d84f32bcf1976176a84e129e8a232a08ec9948480aebb3c40240e841c1de1b"
+type ChangePubKeyInfo struct {
+	AccountIndex      int64
+	L1Address         string
+	Nonce             int64
+	PubKeyX           []byte
+	PubKeyY           []byte
+	GasAccountIndex   int64
+	GasFeeAssetId     int64
+	GasFeeAssetAmount *big.Int
+	ExpiredAt         int64
+	Sig               []byte
+	L1Sig             string
 }
 ```
 
-Signed transaction representation.
+#### 1.1: API Input sign Json
 
-L1 Signed transaction fields:
-
-```go
-signature.SignatureTemplateChangePubKey
-common.Bytes2Hex(txInfo.PubKeyX),
-common.Bytes2Hex(txInfo.PubKeyY), 
-signature.GetHex10FromInt64(txInfo.Nonce), 
-signature.GetHex10FromInt64(txInfo.AccountIndex)
-```
-
-L2 Signed transaction fields:
-```go
-ChainId
-txType
-txInfo.AccountIndex
-txInfo.Nonce
-txInfo.ExpiredAt
-txInfo.GasFeeAssetId
-packedFee
-txInfo.L1Address
-txInfo.PubKeyX
-txInfo.PubKeyY
-```
 ##### Size
 
 | Chunks | Significant bytes |
@@ -392,23 +365,54 @@ func ConvertTxToRegisterZNSPubData(oTx *tx.Tx) (pubData []byte, err error) {
 
 #### User transaction
 
-| Name        | Size(byte) | Comment                      |
-| ----------- | ---------- | ---------------------------- |
-| AccountName | 32         | account name                 |
-| Owner       | 20         | account layer-1 address      |
-| PubKey      | 32         | layer-2 account's public key |
+Input form data
+```go
+tx_type:1
+tx_info:{
+"AccountIndex": 2,
+"L1Address": "0xB64d00616958131824B472CC20C3d47Bb5d9926C",
+"Nonce": 7,
+"PubKeyX": "EG/uk14D7iEZVvdzQwnCY1ad25IbDa4fKBlZrOfZdc4=",
+"PubKeyY": "Kf/flLyPhKeDjoPvx8g1ceKGqow1WSKTjaFTv/EfXtc=",
+"GasAccountIndex": 1,
+"GasFeeAssetId": 0,
+"GasFeeAssetAmount": 10000000000000,
+"ExpiredAt": 1679310615292,
+"Sig": "r+V7gaMQU0+/WbAlGG76Hb7ilHjP9znR/KzO+4vUj5gEIFcdzjpJWVsRwS9WN1tB1kI7s2JJKoNcuiHs87cVwg==",
+"L1Sig": "0x8c9a4fa4901e7c15b56cdfceadd3493050a9b55f76faf1a1421db3a2aaf17bcc2118d84f32bcf1976176a84e129e8a232a08ec9948480aebb3c40240e841c1de1b"
+}
+```
+
+Signed transaction representation.
+
+L1 Signed transaction fields:
+
+```go
+signature.SignatureTemplateChangePubKey
+common.Bytes2Hex(txInfo.PubKeyX),
+common.Bytes2Hex(txInfo.PubKeyY), 
+signature.GetHex10FromInt64(txInfo.Nonce), 
+signature.GetHex10FromInt64(txInfo.AccountIndex)
+```
+
+L2 Signed transaction fields:
+```go
+ChainId
+txType
+txInfo.AccountIndex
+txInfo.Nonce
+txInfo.ExpiredAt
+txInfo.GasFeeAssetId
+packedFee
+txInfo.L1Address
+txInfo.PubKeyX
+txInfo.PubKeyY
+```
 
 #### Circuit
 
 ```go
-func VerifyRegisterZNSTx(
-	api API, flag Variable,
-	tx RegisterZnsTxConstraints,
-	accountsBefore [NbAccountsPerTx]AccountConstraints,
-) (pubData [PubDataSizePerTx]Variable) {
-	pubData = CollectPubDataFromRegisterZNS(api, tx)
-	CheckEmptyAccountNode(api, flag, accountsBefore[0])
-	return pubData
+
 }
 ```
 
@@ -698,8 +702,8 @@ func ConvertTxToTransferPubData(oTx *tx.Tx) (pubData []byte, err error) {
 ```go
 type TransferTxInfo struct {
 FromAccountIndex  int64
-ToAccountIndex    int64
-ToAccountNameHash string  =>ToL1Address
+ToAccountIndex    int64  =>Delete the field
+ToAccountNameHash string =>ToL1Address
 AssetId           int64
 AssetAmount       *big.Int
 GasAccountIndex   int64
@@ -711,6 +715,7 @@ CallDataHash      []byte
 ExpiredAt         int64
 Nonce             int64
 Sig               []byte
+L1Sig             string =>add new field
 }
 ```
 
@@ -828,6 +833,7 @@ type WithdrawTxInfo struct {
 	ExpiredAt         int64
 	Nonce             int64
 	Sig               []byte
+    L1Sig             string =>add new field
 }
 ```
 
@@ -931,6 +937,7 @@ type CreateCollectionTxInfo struct {
 	ExpiredAt         int64
 	Nonce             int64
 	Sig               []byte
+    L1Sig             string =>add new field
 }
 ```
 
@@ -1044,7 +1051,10 @@ type MintNftTxInfo struct {
 	GasFeeAssetAmount   *big.Int
 	ExpiredAt           int64
 	Nonce               int64
+    MetaData            string
+    MutableAttributes   string
 	Sig                 []byte
+    L1Sig               string =>add new field
 }
 ```
 
@@ -1148,7 +1158,7 @@ func ConvertTxToTransferNftPubData(oTx *tx.Tx) (pubData []byte, err error) {
 ```go
 type TransferNftTxInfo struct {
 	FromAccountIndex  int64
-	ToAccountIndex    int64
+	ToAccountIndex    int64  =>Delete the field
 	ToAccountNameHash string =>ToL1Address
 	NftIndex          int64
 	GasAccountIndex   int64
@@ -1159,6 +1169,7 @@ type TransferNftTxInfo struct {
 	ExpiredAt         int64
 	Nonce             int64
 	Sig               []byte
+    L1Sig             string =>add new field
 }
 ```
 
@@ -1315,6 +1326,7 @@ type OfferTxInfo struct {
 	ExpiredAt    int64
 	TreasuryRate int64
 	Sig          []byte
+    L1Sig        string =>add new field
 }
 
 type AtomicMatchTxInfo struct {
@@ -1499,6 +1511,7 @@ type CancelOfferTxInfo struct {
 	ExpiredAt         int64
 	Nonce             int64
 	Sig               []byte
+    L1Sig             string =>add new field
 }
 ```
 
@@ -1618,6 +1631,7 @@ type WithdrawNftTxInfo struct {
 	ExpiredAt              int64
 	Nonce                  int64
 	Sig                    []byte
+    L1Sig                  string =>add new field
 }
 ```
 
@@ -1687,9 +1701,10 @@ type FullExitTxInfo struct {
 	// Get from layer1 events.
 	AccountNameHash []byte =>L1Address
 	AssetId         int64
+    AccountIndex    int64  =>add new field
 
-	// Set by layer2.
-	AccountIndex int64
+
+    // Set by layer2.
 	AssetAmount  *big.Int
 }
 ```
@@ -1782,9 +1797,10 @@ type FullExitNftTxInfo struct {
 	// Get from layer1 events.
 	NftIndex        int64
 	AccountNameHash []byte  =>L1Address
+    AccountIndex    int64   =>add new field
 
-	// Set by layer2.
-	AccountIndex           int64
+
+// Set by layer2.
 	CreatorAccountIndex    int64
 	CreatorTreasuryRate    int64
 	CreatorAccountNameHash []byte  =>CreatorL1Address
@@ -1862,44 +1878,27 @@ func VerifyFullExitNftTx(
 
 ### Rollup contract
 
-#### RegisterZNS
-
-Register an ZNS account which is an ENS like domain for layer-1 and a short account name for your layer-2 account.
-
-```js
-function registerZNS(string calldata _name, address _owner, bytes32 _zkbnbPubKeyX, bytes32 _zkbnbPubKeyY) external payable nonReentrant
-```
-
-- `_name`: your favor account name
-- `_owner`: account name layer-1 owner address
-- `_zkbnbPubKeyX`: ZkBNB layer-2 public key X
-- `_zkbnbPubKeyY`: ZkBNB layer-2 public key Y
-
 #### Deposit BNB
 
 Deposit BNB to Rollup - transfer BNB from user L1 address into Rollup account
 
 ```js
-function depositBNB(bytes32 _accountNameHash) external payable
+function depositBNB(address _to) external payable onlyActive
 ```
 
-- `_accountNameHash`: The layer-2
+- `_to`: the receiver L1 address
 
 #### Deposit BEP20
 
 Deposit BEP20 assets to Rollup - transfer BEP20 assets from user L1 address into Rollup account
 
 ```js
-function depositBEP20(
-    IERC20 _token,
-    uint104 _amount,
-    bytes32 _accountNameHash
-) external nonReentrant
+  function depositBEP20(IERC20 _token, uint104 _amount, address _to) external onlyActive
 ```
 
 - `_token`: valid BEP20 address
 - `_amount`: deposit amount
-- `_accountNameHash`: ZNS account name hash
+- `_to`: the receiver L1 address
 
 #### Withdraw Pending BNB/BEP20
 
@@ -1932,19 +1931,19 @@ function withdrawPendingNFTBalance(uint40 _nftIndex) external
 Register full exit request to withdraw all token balance from the account. The user needs to call it if she believes that her transactions are censored by the validator.
 
 ```js
-function requestFullExit(bytes32 _accountNameHash, address _asset) public nonReentrant
+  function requestFullExit(uint32 _accountIndex, address _asset) public onlyActive
 ```
 
-- `_accountNameHash`: ZNS account name hash
+- `_accountIndex`: Numerical id of the account
 - `_asset`: BEP20 asset address, `0` for BNB
 
 Register full exit request to withdraw NFT tokens balance from the account. Users need to call it if they believe that their transactions are censored by the validator.
 
 ```js
-function requestFullExitNFT(bytes32 _accountNameHash, uint32 _nftIndex) public nonReentrant
+  function requestFullExitNft(uint32 _accountIndex, uint32 _nftIndex) public onlyActive
 ```
 
-- `_accountNameHash`: ZNS account name hash
+- `_accountIndex`: Numerical id of the account
 - `_nftIndex`: nft index
 
 #### Desert mode
