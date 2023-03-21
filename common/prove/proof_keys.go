@@ -59,17 +59,12 @@ func GenerateProof(
 		return proof, err
 	}
 	// This is for test
-	witnessFullBytes, _ := witness.MarshalJSON()
-	err = os.WriteFile("witness_full.save", witnessFullBytes, 0666)
-	witnessPubBytes, _ := vWitness.MarshalJSON()
-	err = os.WriteFile("witness_pub.save", witnessPubBytes, 0666)
-	err = r1cs.IsSolved(witness, backend.WithHints(types.PubDataToBytes))
-	if err != nil {
-		fmt.Println(err)
-	}
+	//witnessFullBytes, _ := witness.MarshalJSON()
+	//err = os.WriteFile("witness_full.save", witnessFullBytes, 0666)
+	//witnessPubBytes, _ := vWitness.MarshalJSON()
+	//err = os.WriteFile("witness_pub.save", witnessPubBytes, 0666)
 	proof, err = groth16.ProveRoll(r1cs, provingKey[0], provingKey[1], witness, session, backend.WithHints(types.PubDataToBytes))
 	if err != nil {
-		fmt.Println(err)
 		return proof, err
 	}
 	err = groth16.Verify(proof, verifyingKey, vWitness)
