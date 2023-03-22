@@ -49,8 +49,8 @@ type CommitBlocksCallData struct {
 }
 
 type ZkBNBVerifyAndExecuteBlockInfo struct {
-	BlockHeader              *StorageStoredBlockInfo `abi:"blockHeader"`
-	PendingOnchainOpsPubData [][]byte                `abi:"pendingOnchainOpsPubData"`
+	BlockHeader              StorageStoredBlockInfo `abi:"blockHeader"`
+	PendingOnchainOpsPubData [][]byte               `abi:"pendingOnchainOpsPubData"`
 }
 
 type VerifyAndExecuteBlocksCallData struct {
@@ -62,8 +62,8 @@ type PerformDesertAssetData struct {
 	StoredBlockInfo    StoredBlockInfo
 	AssetExitData      ExodusVerifierAssetExitData
 	AccountExitData    ExodusVerifierAccountExitData
-	AssetMerkleProof   [16]string
-	AccountMerkleProof [32]string
+	AssetMerkleProof   []string
+	AccountMerkleProof []string
 	NftRoot            string
 }
 
@@ -72,8 +72,8 @@ type PerformDesertNftData struct {
 	AccountExitData    ExodusVerifierAccountExitData
 	ExitNfts           []ExodusVerifierNftExitData
 	AssetRoot          string
-	NftMerkleProofs    [][40]string
-	AccountMerkleProof [32]string
+	NftMerkleProofs    [][]string
+	AccountMerkleProof []string
 }
 
 type ExodusVerifierAssetExitData struct {

@@ -154,6 +154,7 @@ func (e *TransferExecutor) GeneratePubData() error {
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(types.TxTypeTransfer))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.FromAccountIndex)))
+	buf.Write(common2.Uint32ToBytes(uint32(txInfo.ToAccountIndex)))
 	buf.Write(common2.AddressStrToBytes(txInfo.ToL1Address))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.AssetId)))
 	packedAmountBytes, err := common2.AmountToPackedAmountBytes(txInfo.AssetAmount)
@@ -316,7 +317,9 @@ func (e *TransferExecutor) Finalize() error {
 	if e.IsCreateAccount {
 		bc := e.bc
 		txInfo := e.TxInfo
-		bc.StateDB().AccountAssetTrees.UpdateCache(txInfo.ToAccountIndex, bc.CurrentBlock().BlockHeight)
+		if !e.isExodusExit {
+			bc.StateDB().AccountAssetTrees.UpdateCache(txInfo.ToAccountIndex, bc.CurrentBlock().BlockHeight)
+		}
 		accountInfo := e.GetCreatingAccount()
 		bc.StateDB().SetPendingAccountL1AddressMap(accountInfo.L1Address, accountInfo.AccountIndex)
 	}

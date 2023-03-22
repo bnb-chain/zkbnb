@@ -104,11 +104,11 @@ func (m *PerformExodus) PerformDesertNft(performDesertNftData generateproof.Perf
 	storedBlockInfo := getStoredBlockInfo(performDesertNftData.StoredBlockInfo)
 	assetRoot := new(big.Int).SetBytes(common.FromHex(performDesertNftData.AssetRoot))
 
-	var nftMerkleProofs [][40]*big.Int
+	nftMerkleProofs := make([][40]*big.Int, len(performDesertNftData.NftMerkleProofs))
 
 	for i, _ := range performDesertNftData.NftMerkleProofs {
-		for j, _ := range performDesertNftData.NftMerkleProofs[i] {
-			nftMerkleProofs[i][j] = new(big.Int).SetBytes(common.FromHex(performDesertNftData.NftMerkleProofs[i][j]))
+		for j, nftMerkleProof := range performDesertNftData.NftMerkleProofs[i] {
+			nftMerkleProofs[i][j] = new(big.Int).SetBytes(common.FromHex(nftMerkleProof))
 		}
 	}
 	exitNfts := make([]zkbnb.ExodusVerifierNftExitData, 0)
@@ -142,7 +142,7 @@ func (m *PerformExodus) doPerformDesertNft(storedBlockInfo zkbnb.StorageStoredBl
 	return nil
 }
 
-func getVerifierExitData(accountExitData generateproof.ExodusVerifierAccountExitData, accountMerkleProofStr [32]string) (exitData zkbnb.ExodusVerifierAccountExitData, accountMerkleProof [32]*big.Int) {
+func getVerifierExitData(accountExitData generateproof.ExodusVerifierAccountExitData, accountMerkleProofStr []string) (exitData zkbnb.ExodusVerifierAccountExitData, accountMerkleProof [32]*big.Int) {
 	var pubKeyX [32]byte
 	var pubKeyY [32]byte
 	var l1Address [20]byte
@@ -216,7 +216,7 @@ func (m *PerformExodus) CancelOutstandingDeposit() error {
 		return err
 	}
 	maxRequestId := int64(0)
-	depositsPubData := make([][]byte, 0)
+	depositsPubData := make([][]byte, len(priorityRequests))
 
 	for i, request := range priorityRequests {
 		logx.Infof("process pending priority request, requestId=%d", request.RequestId)
@@ -235,10 +235,24 @@ func (m *PerformExodus) CancelOutstandingDeposit() error {
 	return nil
 }
 
+func (m *PerformExodus) ActivateDesertMode() error {
+	gasPrice, err := m.cli.SuggestGasPrice(context.Background())
+	if err != nil {
+		logx.Errorf("failed to fetch gas price: %v", err)
+		return err
+	}
+	txHash, err := zkbnb.ActivateDesertMode(m.cli, m.authCli, m.zkbnbInstance, gasPrice, m.Config.ChainConfig.GasLimit)
+	if err != nil {
+		return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
+	}
+	return nil
+}
+
 func (m *PerformExodus) getOutstandingDeposits() (priorityRequests []*priorityrequest.PriorityRequest, err error) {
 	priorityRequests = make([]*priorityrequest.PriorityRequest, 0)
+	handledHeight := m.Config.ChainConfig.StartL1BlockHeight
 	for {
-		startHeight, endHeight, err := m.getBlockRangeToSync()
+		startHeight, endHeight, err := m.getBlockRangeToSync(handledHeight)
 		if err != nil {
 			logx.Errorf("get block range to sync error, err: %s", err.Error())
 			return nil, err
@@ -251,7 +265,7 @@ func (m *PerformExodus) getOutstandingDeposits() (priorityRequests []*priorityre
 			time.Sleep(30 * time.Second)
 			continue
 		}
-
+		handledHeight = endHeight
 		logx.Infof("syncing generic l1 blocks from %d to %d", big.NewInt(startHeight), big.NewInt(endHeight))
 
 		logs, err := monitor.GetZkBNBContractLogs(m.cli, m.ZkBnbContractAddress, uint64(startHeight), uint64(endHeight))
@@ -286,9 +300,7 @@ func (m *PerformExodus) getOutstandingDeposits() (priorityRequests []*priorityre
 	}
 }
 
-func (m *PerformExodus) getBlockRangeToSync() (int64, int64, error) {
-	handledHeight := m.Config.ChainConfig.StartL1BlockHeight
-
+func (m *PerformExodus) getBlockRangeToSync(handledHeight int64) (int64, int64, error) {
 	// get latest l1 block height(latest height - pendingBlocksCount)
 	latestHeight, err := m.cli.GetHeight()
 	if err != nil {

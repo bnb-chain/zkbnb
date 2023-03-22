@@ -200,7 +200,9 @@ func (e *DepositExecutor) Finalize() error {
 	if e.IsCreateAccount {
 		bc := e.bc
 		txInfo := e.TxInfo
-		bc.StateDB().AccountAssetTrees.UpdateCache(txInfo.AccountIndex, bc.CurrentBlock().BlockHeight)
+		if !e.isExodusExit {
+			bc.StateDB().AccountAssetTrees.UpdateCache(txInfo.AccountIndex, bc.CurrentBlock().BlockHeight)
+		}
 		accountInfo := e.GetCreatingAccount()
 		bc.StateDB().SetPendingAccountL1AddressMap(accountInfo.L1Address, accountInfo.AccountIndex)
 	}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	types2 "github.com/bnb-chain/zkbnb-crypto/circuit/types"
+	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/bnb-chain/zkbnb-crypto/util"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	bsmt "github.com/bnb-chain/zkbnb-smt"
@@ -18,6 +19,7 @@ import (
 	"github.com/panjf2000/ants/v2"
 	"io/ioutil"
 	"math/big"
+	"strconv"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -120,6 +122,10 @@ func (c *ExodusExit) executeBlockFunc(exodusExitBlock *exodusexit.ExodusExitBloc
 	pubData := common.FromHex(exodusExitBlock.PubData)
 	sizePerTx := types2.PubDataBitsSizePerTx / 8
 	c.bc.Statedb.PurgeCache("")
+	err := c.bc.Statedb.MarkGasAccountAsPending()
+	if err != nil {
+		return err
+	}
 	for i := 0; i < int(exodusExitBlock.BlockSize); i++ {
 		subPubData := pubData[i*sizePerTx : (i+1)*sizePerTx]
 		offset := 0
@@ -204,11 +210,72 @@ func (c *ExodusExit) executeBlockFunc(exodusExitBlock *exodusexit.ExodusExitBloc
 			}
 			break
 		case types.TxTypeEmpty:
-			return nil
+			break
+		}
+	}
+
+	deleteGasAccount := false
+	for _, formatAccount := range c.bc.Statedb.StateCache.PendingAccountMap {
+		if formatAccount.AccountIndex == types.GasAccount {
+			if len(c.bc.Statedb.StateCache.PendingGasMap) != 0 {
+				for assetId, delta := range c.bc.Statedb.StateCache.PendingGasMap {
+					if asset, ok := formatAccount.AssetInfo[assetId]; ok {
+						formatAccount.AssetInfo[assetId].Balance = ffmath.Add(asset.Balance, delta)
+					} else {
+						formatAccount.AssetInfo[assetId] = &types.AccountAsset{
+							Balance:                  delta,
+							OfferCanceledOrFinalized: types.ZeroBigInt,
+						}
+					}
+					c.bc.Statedb.MarkAccountAssetsDirty(formatAccount.AccountIndex, []int64{assetId})
+				}
+			} else {
+				assetsMap := c.bc.Statedb.GetDirtyAccountsAndAssetsMap()[formatAccount.AccountIndex]
+				if assetsMap == nil {
+					deleteGasAccount = true
+				}
+			}
+		} else {
+			assetsMap := c.bc.Statedb.GetDirtyAccountsAndAssetsMap()[formatAccount.AccountIndex]
+			if assetsMap == nil {
+				logx.Errorf("%s exists in PendingAccountMap but not in GetDirtyAccountsAndAssetsMap", formatAccount.AccountIndex)
+				panic(strconv.FormatInt(formatAccount.AccountIndex, 10) + " exists in PendingAccountMap but not in GetDirtyAccountsAndAssetsMap")
+			}
+		}
+	}
+	if deleteGasAccount {
+		delete(c.bc.Statedb.StateCache.PendingAccountMap, types.GasAccount)
+	}
+	for accountIndex, _ := range c.bc.Statedb.GetDirtyAccountsAndAssetsMap() {
+		_, exist := c.bc.Statedb.StateCache.GetPendingAccount(accountIndex)
+		if !exist {
+			accountInfo, err := c.bc.Statedb.GetFormatAccount(accountIndex)
+			if err != nil {
+				logx.Errorf("get account info failed,accountIndex=%s,err=%s ", accountIndex, err.Error())
+				panic("get account info failed: " + err.Error())
+			}
+			c.bc.Statedb.SetPendingAccount(accountIndex, accountInfo)
+		}
+	}
+
+	for _, nftInfo := range c.bc.Statedb.StateCache.PendingNftMap {
+		if c.bc.Statedb.GetDirtyNftMap()[nftInfo.NftIndex] == false {
+			logx.Errorf("%s exists in PendingNftMap but not in DirtyNftMap", nftInfo.NftIndex)
+			panic(strconv.FormatInt(nftInfo.NftIndex, 10) + " exists in PendingNftMap but not in DirtyNftMap")
+		}
+	}
+	for nftIndex, _ := range c.bc.Statedb.StateCache.GetDirtyNftMap() {
+		_, exist := c.bc.Statedb.StateCache.GetPendingNft(nftIndex)
+		if !exist {
+			nftInfo, err := c.bc.Statedb.GetNft(nftIndex)
+			if err != nil {
+				logx.Errorf("get nft info failed,nftIndex=%s,err=%s ", nftIndex, err.Error())
+				panic("get nft info failed: " + err.Error())
+			}
+			c.bc.Statedb.SetPendingNft(nftIndex, nftInfo)
 		}
 	}
 	return nil
-
 }
 
 func (c *ExodusExit) saveToDb(exodusExitBlock *exodusexit.ExodusExitBlock) error {
@@ -246,6 +313,14 @@ func (c *ExodusExit) saveToDb(exodusExitBlock *exodusexit.ExodusExitBlock) error
 		logx.Errorf("saveToDb failed:%s,blockHeight:%d", err.Error(), exodusExitBlock.BlockHeight)
 		return err
 	}
+	for _, accountInfo := range pendingAccounts {
+		c.bc.Statedb.PendingAccountMap[accountInfo.AccountIndex].AccountId = int64(accountInfo.ID)
+	}
+	for _, nftInfo := range pendingNfts {
+		c.bc.Statedb.PendingNftMap[nftInfo.NftIndex].ID = nftInfo.ID
+	}
+	c.bc.Statedb.SyncPendingAccountToMemoryCache(c.bc.Statedb.PendingAccountMap)
+	c.bc.Statedb.SyncPendingNftToMemoryCache(c.bc.Statedb.PendingNftMap)
 	return nil
 }
 
@@ -384,21 +459,21 @@ func (c *ExodusExit) executeAtomicMatch(pubData []byte) error {
 	offset, buyOfferNftIndex := common2.ReadUint40(pubData, offset)
 	offset, sellOfferAssetId := common2.ReadUint16(pubData, offset)
 	offset, buyOfferAssetPackedAmount := common2.ReadUint40(pubData, offset)
-	buyOfferAssetAmount, err := util.CleanPackedAmount(big.NewInt(buyOfferAssetPackedAmount))
+	buyOfferAssetAmount, err := util.UnpackAmount(big.NewInt(buyOfferAssetPackedAmount))
 	if err != nil {
 		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
 		return err
 	}
 
 	offset, creatorPackedAmount := common2.ReadUint40(pubData, offset)
-	creatorAmount, err := util.CleanPackedAmount(big.NewInt(creatorPackedAmount))
+	creatorAmount, err := util.UnpackAmount(big.NewInt(creatorPackedAmount))
 	if err != nil {
 		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
 		return err
 	}
 
 	offset, treasuryPackedAmount := common2.ReadUint40(pubData, offset)
-	treasuryAmount, err := util.CleanPackedAmount(big.NewInt(treasuryPackedAmount))
+	treasuryAmount, err := util.UnpackAmount(big.NewInt(treasuryPackedAmount))
 	if err != nil {
 		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
 		return err
@@ -407,7 +482,7 @@ func (c *ExodusExit) executeAtomicMatch(pubData []byte) error {
 	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
 
 	offset, gasFeeAssetPackedAmount := common2.ReadUint16(pubData, offset)
-	gasFeeAssetAmount, err := util.CleanPackedFee(big.NewInt(int64(gasFeeAssetPackedAmount)))
+	gasFeeAssetAmount, err := util.UnpackFee(big.NewInt(int64(gasFeeAssetPackedAmount)))
 	if err != nil {
 		return err
 	}
@@ -443,6 +518,10 @@ func (c *ExodusExit) executeAtomicMatch(pubData []byte) error {
 	if err != nil {
 		return err
 	}
+	err = executor.Finalize()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -453,7 +532,7 @@ func (c *ExodusExit) executeCancelOffer(pubData []byte) error {
 	offset, offerId := common2.ReadUint24(pubData, offset)
 	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
 	offset, gasFeeAssetPackedAmount := common2.ReadUint16(pubData, offset)
-	gasFeeAssetAmount, _ := util.CleanPackedFee(big.NewInt(int64(gasFeeAssetPackedAmount)))
+	gasFeeAssetAmount, _ := util.UnpackFee(big.NewInt(int64(gasFeeAssetPackedAmount)))
 
 	txInfo := &txtypes.CancelOfferTxInfo{
 		AccountIndex:      int64(accountIndex),
@@ -475,6 +554,10 @@ func (c *ExodusExit) executeCancelOffer(pubData []byte) error {
 	if err != nil {
 		return err
 	}
+	err = executor.Finalize()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -485,7 +568,7 @@ func (c *ExodusExit) executeCollection(pubData []byte) error {
 	offset, collectionId := common2.ReadUint16(pubData, offset)
 	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
 	offset, gasFeeAssetPackedAmount := common2.ReadUint16(pubData, offset)
-	gasFeeAssetAmount, _ := util.CleanPackedFee(big.NewInt(int64(gasFeeAssetPackedAmount)))
+	gasFeeAssetAmount, _ := util.UnpackFee(big.NewInt(int64(gasFeeAssetPackedAmount)))
 
 	txInfo := &txtypes.CreateCollectionTxInfo{
 		AccountIndex:      int64(accountIndex),
@@ -507,6 +590,10 @@ func (c *ExodusExit) executeCollection(pubData []byte) error {
 	if err != nil {
 		return err
 	}
+	err = executor.Finalize()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -516,8 +603,7 @@ func (c *ExodusExit) executeDeposit(pubData []byte) error {
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
 	offset, l1Address := common2.ReadAddress(pubData, offset)
 	offset, assetId := common2.ReadUint16(pubData, offset)
-	offset, assetPackedAmount := common2.ReadUint128(pubData, offset)
-	assetAmount, _ := util.CleanPackedFee(assetPackedAmount)
+	offset, assetAmount := common2.ReadUint128(pubData, offset)
 
 	txInfo := &txtypes.DepositTxInfo{
 		AccountIndex: int64(accountIndex),
@@ -535,6 +621,10 @@ func (c *ExodusExit) executeDeposit(pubData []byte) error {
 		return err
 	}
 	err = executor.ApplyTransaction()
+	if err != nil {
+		return err
+	}
+	err = executor.Finalize()
 	if err != nil {
 		return err
 	}
@@ -575,6 +665,10 @@ func (c *ExodusExit) executeDepositNft(pubData []byte) error {
 	if err != nil {
 		return err
 	}
+	err = executor.Finalize()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -600,6 +694,10 @@ func (c *ExodusExit) executeFullExit(pubData []byte) error {
 		return err
 	}
 	err = executor.ApplyTransaction()
+	if err != nil {
+		return err
+	}
+	err = executor.Finalize()
 	if err != nil {
 		return err
 	}
@@ -642,6 +740,10 @@ func (c *ExodusExit) executeFullExitNft(pubData []byte) error {
 	if err != nil {
 		return err
 	}
+	err = executor.Finalize()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -654,7 +756,7 @@ func (c *ExodusExit) executeMintNft(pubData []byte) error {
 	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
 
 	offset, gasFeeAssetPackedAmount := common2.ReadUint16(pubData, offset)
-	gasFeeAssetAmount, err := util.CleanPackedFee(big.NewInt(int64(gasFeeAssetPackedAmount)))
+	gasFeeAssetAmount, err := util.UnpackFee(big.NewInt(int64(gasFeeAssetPackedAmount)))
 	if err != nil {
 		return err
 	}
@@ -685,6 +787,10 @@ func (c *ExodusExit) executeMintNft(pubData []byte) error {
 	if err != nil {
 		return err
 	}
+	err = executor.Finalize()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -699,7 +805,11 @@ func (c *ExodusExit) executeChangePubKey(pubData []byte) error {
 	offset, nonce := common2.ReadUint32(pubData, offset)
 	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
 	offset, packedFee := common2.ReadUint16(pubData, offset)
-	gasFeeAssetAmount, err := util.CleanPackedFee(big.NewInt(int64(packedFee)))
+	packedFeeInt, success := new(big.Int).SetString(strconv.Itoa(int(packedFee)), 10)
+	if success != true {
+		//
+	}
+	gasFeeAssetAmount, err := util.UnpackFee(packedFeeInt)
 	if err != nil {
 		return err
 	}
@@ -726,6 +836,10 @@ func (c *ExodusExit) executeChangePubKey(pubData []byte) error {
 	if err != nil {
 		return err
 	}
+	err = executor.Finalize()
+	if err != nil {
+		return err
+	}
 	return nil
 
 }
@@ -734,16 +848,17 @@ func (c *ExodusExit) executeTransfer(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, fromAccountIndex := common2.ReadUint32(pubData, offset)
+	offset, toAccountIndex := common2.ReadUint32(pubData, offset)
 	offset, toAddress := common2.ReadAddress(pubData, offset)
 	offset, assetId := common2.ReadUint16(pubData, offset)
 	offset, packedAmount := common2.ReadUint40(pubData, offset)
-	assetAmount, err := util.CleanPackedAmount(big.NewInt(packedAmount))
+	assetAmount, err := util.UnpackAmount(big.NewInt(packedAmount))
 	if err != nil {
 		return err
 	}
 	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
 	offset, packedFee := common2.ReadUint16(pubData, offset)
-	gasFeeAssetAmount, err := util.CleanPackedFee(big.NewInt(int64(packedFee)))
+	gasFeeAssetAmount, err := util.UnpackFee(big.NewInt(int64(packedFee)))
 	if err != nil {
 		return err
 	}
@@ -751,6 +866,7 @@ func (c *ExodusExit) executeTransfer(pubData []byte) error {
 	txInfo := &txtypes.TransferTxInfo{
 		FromAccountIndex:  int64(fromAccountIndex),
 		ToL1Address:       toAddress,
+		ToAccountIndex:    int64(toAccountIndex),
 		GasAccountIndex:   types.GasAccount,
 		AssetId:           int64(assetId),
 		AssetAmount:       assetAmount,
@@ -769,6 +885,10 @@ func (c *ExodusExit) executeTransfer(pubData []byte) error {
 	if err != nil {
 		return err
 	}
+	err = executor.Finalize()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -776,17 +896,19 @@ func (c *ExodusExit) executeTransferNft(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, fromAccountIndex := common2.ReadUint32(pubData, offset)
+	offset, toAccountIndex := common2.ReadUint32(pubData, offset)
 	offset, toAddress := common2.ReadAddress(pubData, offset)
 	offset, nftIndex := common2.ReadUint40(pubData, offset)
 	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
 	offset, packedFee := common2.ReadUint16(pubData, offset)
-	gasFeeAssetAmount, err := util.CleanPackedFee(big.NewInt(int64(packedFee)))
+	gasFeeAssetAmount, err := util.UnpackFee(big.NewInt(int64(packedFee)))
 	if err != nil {
 		return err
 	}
 	offset, callDataHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
 	txInfo := &txtypes.TransferNftTxInfo{
 		FromAccountIndex:  int64(fromAccountIndex),
+		ToAccountIndex:    int64(toAccountIndex),
 		ToL1Address:       toAddress,
 		NftIndex:          nftIndex,
 		GasAccountIndex:   types.GasAccount,
@@ -806,6 +928,10 @@ func (c *ExodusExit) executeTransferNft(pubData []byte) error {
 	if err != nil {
 		return err
 	}
+	err = executor.Finalize()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -818,7 +944,7 @@ func (c *ExodusExit) executeWithdraw(pubData []byte) error {
 	offset, assetAmount := common2.ReadUint128(pubData, offset)
 	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
 	offset, gasFeeAssetPackedAmount := common2.ReadUint16(pubData, offset)
-	gasFeeAssetAmount, err := util.CleanPackedFee(big.NewInt(int64(gasFeeAssetPackedAmount)))
+	gasFeeAssetAmount, err := util.UnpackFee(big.NewInt(int64(gasFeeAssetPackedAmount)))
 	if err != nil {
 		return err
 	}
@@ -843,6 +969,10 @@ func (c *ExodusExit) executeWithdraw(pubData []byte) error {
 	if err != nil {
 		return err
 	}
+	err = executor.Finalize()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -856,7 +986,7 @@ func (c *ExodusExit) executeWithdrawNft(pubData []byte) error {
 	offset, collectionId := common2.ReadUint16(pubData, offset)
 	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
 	offset, gasFeeAssetPackedAmount := common2.ReadUint16(pubData, offset)
-	gasFeeAssetAmount, err := util.CleanPackedFee(big.NewInt(int64(gasFeeAssetPackedAmount)))
+	gasFeeAssetAmount, err := util.UnpackFee(big.NewInt(int64(gasFeeAssetPackedAmount)))
 	if err != nil {
 		return err
 	}
@@ -887,6 +1017,10 @@ func (c *ExodusExit) executeWithdrawNft(pubData []byte) error {
 		return err
 	}
 	err = executor.ApplyTransaction()
+	if err != nil {
+		return err
+	}
+	err = executor.Finalize()
 	if err != nil {
 		return err
 	}
@@ -945,7 +1079,7 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 	nftStateRoot := common.Bytes2Hex(nftTree.Root())
 	logx.Infof("nft tree nftStateRoot=%s", nftStateRoot)
 	stateRoot := tree.ComputeStateRootHash(accountTree.Root(), nftTree.Root())
-	logx.Infof("nft tree nftStateRoot=%s", common.Bytes2Hex(stateRoot))
+	logx.Infof("smt tree StateRoot=%s", common.Bytes2Hex(stateRoot))
 	// get account before
 	accountMerkleProofs, err := accountTree.GetProof(uint64(accountIndex))
 	if err != nil {
@@ -967,12 +1101,12 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 	if err != nil {
 		return err
 	}
-	exodusExitBlock, err := c.bc.DB().ExodusExitBlockModel.GetLatestBlock()
+	exodusExitBlock, err := c.bc.DB().ExodusExitBlockModel.GetLatestExecutedBlock()
 	if err != nil {
 		logx.Errorf("get exodus exit block failed: %s", err)
 		return err
 	}
-	lastStoredBlockInfo, err := m.getLastStoredBlockInfo(exodusExitBlock.CommittedTxHash)
+	lastStoredBlockInfo, err := m.getLastStoredBlockInfo(exodusExitBlock.VerifiedTxHash, exodusExitBlock.BlockHeight)
 	if err != nil {
 		logx.Errorf("get last stored block info failed: %s", err)
 		return err
@@ -999,7 +1133,7 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 		Nonce:           accountInfo.Nonce,
 		CollectionNonce: accountInfo.CollectionNonce,
 	}
-	var accountMerkleProof [32]string
+	accountMerkleProof := make([]string, len(merkleProofsAccount))
 	for i, _ := range merkleProofsAccount {
 		accountMerkleProof[i] = common.Bytes2Hex(merkleProofsAccount[i])
 	}
@@ -1021,7 +1155,7 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 
 		performDesertData.AccountMerkleProof = accountMerkleProof
 
-		var assetMerkleProofByte [16]string
+		assetMerkleProofByte := make([]string, len(merkleProofsAccountAsset))
 		for i, _ := range merkleProofsAccountAsset {
 			assetMerkleProofByte[i] = common.Bytes2Hex(merkleProofsAccountAsset[i])
 		}
@@ -1048,7 +1182,7 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 	if len(nftIndexList) > 0 {
 		performDesertNftData := &PerformDesertNftData{}
 		var exitNfts []ExodusVerifierNftExitData
-		var nftMerkleProofsList [][40]string
+		var nftMerkleProofsList [][]string
 		for _, nftIndex := range nftIndexList {
 			nftInfo, err := c.bc.DB().L2NftModel.GetNft(nftIndex)
 			if err != nil {
@@ -1077,7 +1211,7 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 			exitNftData.NftContentType = uint8(nftInfo.NftContentType)
 			exitNftData.OwnerAccountIndex = nftInfo.OwnerAccountIndex
 			exitNfts = append(exitNfts, exitNftData)
-			var merkleProofsNftByte [40]string
+			merkleProofsNftByte := make([]string, len(merkleProofsNft))
 			for i, _ := range merkleProofsNft {
 				merkleProofsNftByte[i] = common.Bytes2Hex(merkleProofsNft[i])
 			}
