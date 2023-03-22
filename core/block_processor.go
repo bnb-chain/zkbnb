@@ -185,7 +185,8 @@ func mappingVerifyInputsErrors(err error) error {
 		return types.AppErrInvalidAssetAmount
 	case txtypes.ErrListedAtTooLow:
 		return types.AppErrInvalidListTime
-	case txtypes.ErrTreasuryRateTooLow, txtypes.ErrTreasuryRateTooHigh,
+	case txtypes.ErrPlatformFeeRateTooLow, txtypes.ErrPlatformFeeRateTooHigh,
+		txtypes.ErrChanelRateTooLow, txtypes.ErrChanelRateTooHigh,
 		txtypes.ErrCreatorTreasuryRateTooLow, txtypes.ErrCreatorTreasuryRateTooHigh:
 		return types.AppErrInvalidTreasuryRate
 	case txtypes.ErrCollectionNameTooShort, txtypes.ErrCollectionNameTooLong:

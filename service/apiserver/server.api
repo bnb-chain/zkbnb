@@ -206,6 +206,10 @@ type (
 		GasFee string `json:"gas_fee"`
 	}
 
+	PlatformFeeRate {
+		PlatformFeeRate string `json:"platform_fee_rate"`
+	}
+
 	GasAccount {
 		Status    int64  `json:"status"`
 		Index     int64  `json:"index"`
@@ -259,6 +263,10 @@ service server-api {
 	@doc "Get zkbnb general info, including contract address, and count of transactions and active users"
 	@handler GetLayer2BasicInfo
 	get /api/v1/layer2BasicInfo returns (Layer2BasicInfo)
+	
+	@doc "Get zkbnb platform fee rate"
+	@handler GetPlatformFeeRate
+	get /api/v1/getPlatformFeeRate returns (PlatformFeeRate)
 	
 	@doc "Get gas fee amount for using a specific asset as gas asset"
 	@handler GetGasFee
