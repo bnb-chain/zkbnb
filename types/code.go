@@ -158,8 +158,8 @@ var (
 	AppErrUnknownRatelimitStatus = NewBusinessError(23001, "Unknown Rate Limit Status Error!")
 
 	// PermissionControl
-	AppErrForbiddenByBlackList    = NewBusinessError(23100, "Account forbidden by Blacklist!")
-	AppErrNotPermittedByWhiteList = NewBusinessError(23101, "Account not permitted by Whitelist!")
+	AppErrForbiddenByBlackList    = NewBusinessError(23100, "Your account is blacklisted and not authorized,please contact our customer service!")
+	AppErrNotPermittedByWhiteList = NewBusinessError(23101, "Your operation has been prohibited, please contact our customer service!")
 
 	AppErrInvalidGasAsset     = NewBusinessError(25003, "invalid gas asset")
 	AppErrInvalidTxType       = NewBusinessError(25004, "invalid tx type")

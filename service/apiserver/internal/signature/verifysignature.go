@@ -53,10 +53,11 @@ func (v *VerifySignature) VerifySignatureInfo(TxType uint32, TxInfo, Signature s
 	publicAddress := crypto.PubkeyToAddress(*signaturePublicKey)
 
 	//Query the origin address from the database
-	originAddressStr, err := v.fetcher.GetL1AddressByTx(TxType, TxInfo)
+	originAddressArray, err := v.fetcher.GetL1AddressByTx(TxType, TxInfo)
 	if err != nil {
 		return err
 	}
+	originAddressStr := originAddressArray[0]
 	originAddress := common.HexToAddress(originAddressStr)
 
 	//Compare the original address and the public address to verify the identifier
