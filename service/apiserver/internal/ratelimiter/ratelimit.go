@@ -18,12 +18,11 @@ const (
 )
 
 const (
-	queryByIndex = "index"
-	queryByName  = "name"
-	queryByPk    = "pk"
+	queryByIndex     = "index"
+	queryByL1Address = "l1_address"
+	queryByPk        = "pk"
 
 	queryByAccountIndex = "account_index"
-	queryByAccountName  = "account_name"
 	queryByAccountPk    = "account_pk"
 )
 
@@ -123,8 +122,8 @@ func ParseAccountL1Address(r *http.Request) string {
 			if err != nil || accountIndex < 0 {
 				return ""
 			}
-		} else if req.By == queryByAccountName || req.By == queryByName {
-			accountIndex, err = memCache.GetAccountIndexByName(req.Value)
+		} else if req.By == queryByL1Address {
+			return req.Value
 		} else if req.By == queryByAccountPk || req.By == queryByPk {
 			accountIndex, err = memCache.GetAccountIndexByPk(req.Value)
 		} else {

@@ -234,9 +234,9 @@ type (
 
 	GasAccount {
 		ResultCode
-		Status int64  `json:"status"`
-		Index  int64  `json:"index"`
-		Name   string `json:"name"`
+		Status    int64  `json:"status"`
+		Index     int64  `json:"index"`
+		L1Address string `json:"l1_address"`
 	}
 
 	GasFeeAssets {

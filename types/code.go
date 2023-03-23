@@ -75,6 +75,7 @@ var (
 	AppErrInvalidToAccountNameHash     = NewBusinessError(21105, "invalid ToAccountNameHash")
 	AppErrAccountNameAlreadyRegistered = NewBusinessError(21106, "invalid account name, already registered")
 	AppErrAccountInvalidToAccount      = NewBusinessError(21107, "invalid ToAccount")
+	AppErrInvalidAccount               = NewBusinessError(21108, "invalid account")
 
 	// Asset
 	AppErrAssetNotFound               = NewBusinessError(21200, "asset not found")
