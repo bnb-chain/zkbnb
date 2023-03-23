@@ -17,7 +17,6 @@ import (
 const (
 	cacheDefaultExpiration = time.Hour * 1 //gocache default expiration
 
-	AccountIndexNameKeyPrefix      = "in:"                    //key for cache: accountIndex -> accountName
 	AccountIndexL1AddressKeyPrefix = "in:"                    //key for cache: accountIndex -> l1Address
 	AccountIndexPkKeyPrefix        = "ip:"                    //key for cache: accountIndex -> accountPk
 	AccountL1AddressKeyPrefix      = "n:"                     //key for cache: l1Address -> accountIndex
