@@ -3,6 +3,7 @@ package generateproof
 import (
 	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof/config"
 	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof/generateproof"
+	"github.com/goccy/go-json"
 	"time"
 
 	"github.com/robfig/cron/v3"
@@ -13,11 +14,28 @@ import (
 
 const GracefulShutdownTimeout = 5 * time.Second
 
-func Run(configFile string) error {
+func Run(configFile string, address string, token string, nftIndexListStr string, proofFolder string) error {
 	var c config.Config
 	conf.MustLoad(configFile, &c)
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
+	if address != "" {
+		c.Address = address
+	}
+	if token != "" {
+		c.Token = token
+	}
+	if proofFolder != "" {
+		c.ProofFolder = proofFolder
+	}
+	if nftIndexListStr != "" {
+		var nftIndexList []int64
+		err := json.Unmarshal([]byte(nftIndexListStr), &nftIndexList)
+		if err != nil {
+			return nil
+		}
+		c.NftIndexList = nftIndexList
+	}
 
 	m, err := generateproof.NewMonitor(&c)
 	if err != nil {

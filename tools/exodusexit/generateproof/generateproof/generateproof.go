@@ -45,6 +45,9 @@ func NewExodusExit(config *config.Config) (*ExodusExit, error) {
 	pool, err := ants.NewPool(50, ants.WithPanicHandler(func(p interface{}) {
 		panic("worker exits from a panic")
 	}))
+	if config.ProofFolder == "" {
+		config.ProofFolder = "./tools/exodusexit/proofdata/"
+	}
 	committer := &ExodusExit{
 		running: true,
 		config:  config,
@@ -105,12 +108,12 @@ func (c *ExodusExit) Run() error {
 	}
 	if c.config.ChainConfig.EndL2BlockHeight == executedTxMaxHeight {
 		logx.Info("execute all the l2 blocks successfully")
-		account, err := c.bc.AccountModel.GetAccountByL1Address(c.config.L1Address)
+		account, err := c.bc.AccountModel.GetAccountByL1Address(c.config.Address)
 		if err != nil {
-			logx.Errorf("get account by address error L1Address=%s,%v,", c.config.L1Address, err)
+			logx.Errorf("get account by address error L1Address=%s,%v,", c.config.Address, err)
 			return err
 		}
-		err = c.getMerkleProofs(executedTxMaxHeight, account.AccountIndex, c.config.NftIndexList, c.config.AssetId)
+		err = c.getMerkleProofs(executedTxMaxHeight, account.AccountIndex, c.config.NftIndexList, c.config.Token)
 		if err != nil {
 			return err
 		}
@@ -1019,7 +1022,7 @@ func (c *ExodusExit) executeWithdrawNft(pubData []byte) error {
 	return nil
 }
 
-func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftIndexList []int64, accountAssetId int64) error {
+func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftIndexList []int64, assetTokenAddress string) error {
 	treeCtx, err := tree.NewContext("generateproof", c.config.TreeDB.Driver, true, true, c.config.TreeDB.RoutinePoolSize, &c.config.TreeDB.LevelDBOption, &c.config.TreeDB.RedisDBOption)
 	if err != nil {
 		logx.Errorf("init tree database failed: %s", err)
@@ -1129,8 +1132,24 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 	for i, _ := range merkleProofsAccount {
 		accountMerkleProof[i] = common.Bytes2Hex(merkleProofsAccount[i])
 	}
-	if accountAssetId != -1 {
-		assetMerkleProof, err := accountAssetTrees.Get(accountIndex).GetProof(uint64(accountAssetId))
+	if assetTokenAddress != "" {
+		monitor, err := NewMonitor(m.Config)
+		if err != nil {
+			logx.Severe(err)
+			return err
+		}
+
+		var assetId uint16
+		if assetTokenAddress == "0x00" {
+			assetId = 0
+		} else {
+			assetId, err = monitor.ValidateAssetAddress(common.HexToAddress(assetTokenAddress))
+			if err != nil {
+				logx.Severe(err)
+				return err
+			}
+		}
+		assetMerkleProof, err := accountAssetTrees.Get(accountIndex).GetProof(uint64(assetId))
 		if err != nil {
 			return err
 		}
@@ -1142,7 +1161,7 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 		if err != nil {
 			return err
 		}
-		logx.Infof("accountIndex=%d,accountAssetId=%d, merkleProofsAccountAsset=%s", accountIndex, accountAssetId, string(merkleProofsAccountAssetBytes))
+		logx.Infof("accountIndex=%d,assetId=%d, merkleProofsAccountAsset=%s", accountIndex, assetId, string(merkleProofsAccountAssetBytes))
 		performDesertData := PerformDesertAssetData{}
 
 		performDesertData.AccountMerkleProof = accountMerkleProof
@@ -1156,16 +1175,16 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 
 		performDesertData.AccountExitData = accountExitData
 		performDesertData.AssetExitData = ExodusVerifierAssetExitData{
-			AssetId:                  uint16(accountAssetId),
-			Amount:                   formatAccountInfo.AssetInfo[accountAssetId].Balance.Int64(),
-			OfferCanceledOrFinalized: formatAccountInfo.AssetInfo[accountAssetId].OfferCanceledOrFinalized.Int64(),
+			AssetId:                  assetId,
+			Amount:                   formatAccountInfo.AssetInfo[int64(assetId)].Balance.Int64(),
+			OfferCanceledOrFinalized: formatAccountInfo.AssetInfo[int64(assetId)].OfferCanceledOrFinalized.Int64(),
 		}
 		performDesertData.StoredBlockInfo = storedBlockInfo
 		data, err := json.Marshal(performDesertData)
 		if err != nil {
 			return err
 		}
-		err = ioutil.WriteFile("./tools/exodusexit/proofdata/performDesertAsset.json", data, 0777)
+		err = ioutil.WriteFile(m.Config.ProofFolder+"performDesertAsset.json", data, 0777)
 		if err != nil {
 			return err
 		}
@@ -1216,7 +1235,7 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 		performDesertNftData.AccountExitData = accountExitData
 		performDesertNftData.AccountMerkleProof = accountMerkleProof
 		data, err := json.Marshal(performDesertNftData)
-		err = ioutil.WriteFile("./tools/exodusexit/proofdata/performDesertNft.json", data, 0777)
+		err = ioutil.WriteFile(m.Config.ProofFolder+"performDesertNft.json", data, 0777)
 		if err != nil {
 			return err
 		}
