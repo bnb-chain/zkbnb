@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof"
+	"github.com/bnb-chain/zkbnb/tools/exodusexit/performexodus"
 	"github.com/bnb-chain/zkbnb/tools/query"
 	"os"
 	"runtime"
@@ -184,6 +186,59 @@ func main() {
 					return apiserver.Run(cCtx.String(flags.ConfigFlag.Name))
 				},
 			},
+			{
+				Name:  "generateproof",
+				Usage: "Run generateproof service",
+				Flags: []cli.Flag{
+					flags.CommandFlag,
+					flags.ConfigFlag,
+				},
+				Action: func(cCtx *cli.Context) error {
+					if !cCtx.IsSet(flags.CommandFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					if !cCtx.IsSet(flags.ConfigFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					if cCtx.String(flags.CommandFlag.Name) == "init" {
+						return dbinitializer.InitializeExodusExit(
+							cCtx.String(flags.ConfigFlag.Name),
+						)
+					}
+					if cCtx.String(flags.CommandFlag.Name) == "run" {
+						err := dbinitializer.InitializeExodusExit(
+							cCtx.String(flags.ConfigFlag.Name),
+						)
+						if err != nil {
+							return err
+						}
+						return generateproof.Run(cCtx.String(flags.ConfigFlag.Name))
+					}
+					if cCtx.String(flags.CommandFlag.Name) == "continue" {
+						return generateproof.Run(cCtx.String(flags.ConfigFlag.Name))
+					}
+					return nil
+				},
+			},
+			{
+				Name:  "performexodus",
+				Usage: "Run performexodus service",
+				Flags: []cli.Flag{
+					flags.CommandFlag,
+					flags.ConfigFlag,
+				},
+				Action: func(cCtx *cli.Context) error {
+					if !cCtx.IsSet(flags.CommandFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					if !cCtx.IsSet(flags.ConfigFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					return performexodus.Run(cCtx.String(flags.ConfigFlag.Name))
+
+					return nil
+				},
+			},
 			// tools
 			{
 				Name:  "db",
@@ -226,6 +281,7 @@ func main() {
 							flags.BlockHeightFlag,
 							flags.ServiceNameFlag,
 							flags.BatchSizeFlag,
+							flags.RecoveryFromHistoryFlag,
 						},
 						Action: func(cCtx *cli.Context) error {
 							if !cCtx.IsSet(flags.ServiceNameFlag.Name) ||
@@ -238,6 +294,7 @@ func main() {
 								cCtx.Int64(flags.BlockHeightFlag.Name),
 								cCtx.String(flags.ServiceNameFlag.Name),
 								cCtx.Int(flags.BatchSizeFlag.Name),
+								cCtx.Bool(flags.RecoveryFromHistoryFlag.Name),
 							)
 							return nil
 						},
@@ -256,6 +313,7 @@ func main() {
 							flags.BlockHeightFlag,
 							flags.ServiceNameFlag,
 							flags.BatchSizeFlag,
+							flags.RecoveryFromHistoryFlag,
 						},
 						Action: func(cCtx *cli.Context) error {
 							if !cCtx.IsSet(flags.ServiceNameFlag.Name) ||
@@ -268,6 +326,7 @@ func main() {
 								cCtx.Int64(flags.BlockHeightFlag.Name),
 								cCtx.String(flags.ServiceNameFlag.Name),
 								cCtx.Int(flags.BatchSizeFlag.Name),
+								cCtx.Bool(flags.RecoveryFromHistoryFlag.Name),
 							)
 							return nil
 						},

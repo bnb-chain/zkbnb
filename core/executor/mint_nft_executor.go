@@ -17,7 +17,7 @@ import (
 type MintNftExecutor struct {
 	BaseExecutor
 
-	txInfo *txtypes.MintNftTxInfo
+	TxInfo *txtypes.MintNftTxInfo
 }
 
 func NewMintNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
@@ -28,24 +28,25 @@ func NewMintNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	}
 
 	return &MintNftExecutor{
-		BaseExecutor: NewBaseExecutor(bc, tx, txInfo),
-		txInfo:       txInfo,
+		BaseExecutor: NewBaseExecutor(bc, tx, txInfo, false),
+		TxInfo:       txInfo,
 	}, nil
 }
 
 func (e *MintNftExecutor) Prepare() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 	if !e.bc.StateDB().DryRun {
-		// Set the right nft index for tx info.
-		if e.tx.Rollback == false {
-			nextNftIndex := e.bc.StateDB().GetNextNftIndex()
-			txInfo.NftIndex = nextNftIndex
-		} else {
-			//for rollback
-			nextNftIndex := e.tx.NftIndex
-			txInfo.NftIndex = nextNftIndex
+		if !e.isExodusExit {
+			// Set the right nft index for tx info.
+			if e.tx.Rollback == false {
+				nextNftIndex := e.bc.StateDB().GetNextNftIndex()
+				txInfo.NftIndex = nextNftIndex
+			} else {
+				//for rollback
+				nextNftIndex := e.tx.NftIndex
+				txInfo.NftIndex = nextNftIndex
+			}
 		}
-
 		// Mark the tree states that would be affected in this executor.
 		e.MarkNftDirty(txInfo.NftIndex)
 	}
@@ -57,7 +58,7 @@ func (e *MintNftExecutor) Prepare() error {
 }
 
 func (e *MintNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 	if err := e.Validate(); err != nil {
 		return err
 	}
@@ -84,8 +85,8 @@ func (e *MintNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 	if err != nil {
 		return err
 	}
-	if txInfo.ToAccountNameHash != toAccount.AccountNameHash {
-		return types.AppErrInvalidToAccountNameHash
+	if txInfo.ToL1Address != toAccount.L1Address {
+		return types.AppErrInvalidToAddress
 	}
 
 	return nil
@@ -93,7 +94,7 @@ func (e *MintNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 
 func (e *MintNftExecutor) ApplyTransaction() error {
 	bc := e.bc
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	// apply changes
 	creatorAccount, err := bc.StateDB().GetFormatAccount(txInfo.CreatorAccountIndex)
@@ -110,18 +111,21 @@ func (e *MintNftExecutor) ApplyTransaction() error {
 		CreatorAccountIndex: txInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   txInfo.ToAccountIndex,
 		NftContentHash:      txInfo.NftContentHash,
-		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
+		RoyaltyRate:         txInfo.RoyaltyRate,
 		CollectionId:        txInfo.NftCollectionId,
+		NftContentType:      txInfo.NftContentType,
 	})
 	stateCache.SetPendingGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
-	if e.tx.Rollback == false {
-		e.bc.StateDB().UpdateNftIndex(txInfo.NftIndex)
+	if !e.isExodusExit {
+		if e.tx.Rollback == false {
+			e.bc.StateDB().UpdateNftIndex(txInfo.NftIndex)
+		}
 	}
 	return e.BaseExecutor.ApplyTransaction()
 }
 
 func (e *MintNftExecutor) GeneratePubData() error {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	var buf bytes.Buffer
 	buf.WriteByte(uint8(types.TxTypeMintNft))
@@ -135,9 +139,10 @@ func (e *MintNftExecutor) GeneratePubData() error {
 		return err
 	}
 	buf.Write(packedFeeBytes)
-	buf.Write(common2.Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
+	buf.Write(common2.Uint16ToBytes(uint16(txInfo.RoyaltyRate)))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.NftCollectionId)))
 	buf.Write(common2.PrefixPaddingBufToChunkSize(common.FromHex(txInfo.NftContentHash)))
+	buf.WriteByte(uint8(txInfo.NftContentType))
 
 	pubData := common2.SuffixPaddingBuToPubdataSize(buf.Bytes())
 
@@ -147,21 +152,22 @@ func (e *MintNftExecutor) GeneratePubData() error {
 }
 
 func (e *MintNftExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
-	txInfoBytes, err := json.Marshal(e.txInfo)
+	txInfoBytes, err := json.Marshal(e.TxInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
 		return nil, types.AppErrMarshalTxFailed
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
-	e.tx.GasFeeAssetId = e.txInfo.GasFeeAssetId
-	e.tx.GasFee = e.txInfo.GasFeeAssetAmount.String()
-	e.tx.NftIndex = e.txInfo.NftIndex
+	e.tx.GasFeeAssetId = e.TxInfo.GasFeeAssetId
+	e.tx.GasFee = e.TxInfo.GasFeeAssetAmount.String()
+	e.tx.NftIndex = e.TxInfo.NftIndex
+	e.tx.IsPartialUpdate = true
 	return e.BaseExecutor.GetExecutedTx(fromApi)
 }
 
 func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
-	txInfo := e.txInfo
+	txInfo := e.TxInfo
 
 	copiedAccounts, err := e.bc.StateDB().DeepCopyAccounts([]int64{txInfo.CreatorAccountIndex, txInfo.ToAccountIndex, txInfo.GasAccountIndex})
 	if err != nil {
@@ -181,7 +187,7 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.CreatorAccountIndex,
-		AccountName:  creatorAccount.AccountName,
+		L1Address:    creatorAccount.L1Address,
 		Balance:      creatorAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.GasFeeAssetId,
@@ -192,6 +198,7 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Nonce:           creatorAccount.Nonce,
 		AccountOrder:    accountOrder,
 		CollectionNonce: creatorAccount.CollectionNonce,
+		PublicKey:       creatorAccount.PublicKey,
 	})
 	creatorAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(creatorAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	if creatorAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(types.ZeroBigInt) < 0 {
@@ -205,7 +212,7 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.ToAccountIndex,
-		AccountName:  toAccount.AccountName,
+		L1Address:    toAccount.L1Address,
 		Balance:      toAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.GasFeeAssetId,
@@ -216,6 +223,7 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		Nonce:           toAccount.Nonce,
 		AccountOrder:    accountOrder,
 		CollectionNonce: toAccount.CollectionNonce,
+		PublicKey:       toAccount.PublicKey,
 	})
 
 	// to account nft delta
@@ -225,7 +233,7 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		CreatorAccountIndex: txInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   txInfo.ToAccountIndex,
 		NftContentHash:      txInfo.NftContentHash,
-		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
+		RoyaltyRate:         txInfo.RoyaltyRate,
 		CollectionId:        txInfo.NftCollectionId,
 	}
 	order++
@@ -233,13 +241,14 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:         txInfo.NftIndex,
 		AssetType:       types.NftAssetType,
 		AccountIndex:    txInfo.ToAccountIndex,
-		AccountName:     toAccount.AccountName,
+		L1Address:       toAccount.L1Address,
 		Balance:         oldNftInfo.String(),
 		BalanceDelta:    newNftInfo.String(),
 		Order:           order,
 		Nonce:           toAccount.Nonce,
 		AccountOrder:    types.NilAccountOrder,
 		CollectionNonce: toAccount.CollectionNonce,
+		PublicKey:       toAccount.PublicKey,
 	})
 
 	// gas account gas asset
@@ -249,7 +258,7 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AssetId:      txInfo.GasFeeAssetId,
 		AssetType:    types.FungibleAssetType,
 		AccountIndex: txInfo.GasAccountIndex,
-		AccountName:  gasAccount.AccountName,
+		L1Address:    gasAccount.L1Address,
 		Balance:      gasAccount.AssetInfo[txInfo.GasFeeAssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
 			txInfo.GasFeeAssetId,
@@ -261,15 +270,16 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		AccountOrder:    accountOrder,
 		CollectionNonce: gasAccount.CollectionNonce,
 		IsGas:           true,
+		PublicKey:       gasAccount.PublicKey,
 	})
 	return txDetails, nil
 }
 
 func (e *MintNftExecutor) Validate() error {
-	if len(e.txInfo.MetaData) > 2000 {
+	if len(e.TxInfo.MetaData) > 2000 {
 		return types.AppErrInvalidMetaData.RefineError(2000)
 	}
-	if len(e.txInfo.MutableAttributes) > 2000 {
+	if len(e.TxInfo.MutableAttributes) > 2000 {
 		return types.AppErrInvalidMutableAttributes.RefineError(2000)
 	}
 	return nil

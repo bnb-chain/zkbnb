@@ -27,6 +27,7 @@ const (
 	BscTestNetworkRpc       = "BscTestNetworkRpc"
 	LocalTestNetworkRpc     = "LocalTestNetworkRpc"
 	SysGasFee               = "SysGasFee"
+	ProtocolRate            = "ProtocolRate"
 	ZkBNBContract           = "ZkBNBContract"
 	GovernanceContract      = "GovernanceContract"
 	AssetGovernanceContract = "AssetGovernanceContract"

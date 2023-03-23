@@ -61,14 +61,15 @@ func EmptyAccountAssetNodeHash() []byte {
 
 func EmptyNftNodeHash() []byte {
 	/*
-		creatorAccountIndex
-		ownerAccountIndex
-		nftContentHash
-		creatorTreasuryRate
-		collectionId
+			creatorAccountIndex
+			ownerAccountIndex
+			nftContentHash
+			creatorTreasuryRate
+			collectionId
+		    nftContentType
 	*/
 	zero := &fr.Element{0, 0, 0, 0}
-	hash := poseidon.Poseidon(zero, zero, zero, zero, zero).Bytes()
+	hash := poseidon.Poseidon(zero, zero, zero, zero, zero, zero).Bytes()
 	return hash[:]
 }
 
@@ -274,7 +275,7 @@ func RollBackTrees(
 }
 
 func ComputeAccountLeafHash(
-	accountNameHash string,
+	l1Address string,
 	pk string,
 	nonce int64,
 	collectionNonce int64,
@@ -282,9 +283,15 @@ func ComputeAccountLeafHash(
 	accountIndex int64,
 	blockHeight int64,
 ) (hashVal []byte, err error) {
-	e0, err := txtypes.FromHexStrToFr(accountNameHash)
-	if err != nil {
-		return nil, err
+	var e0 *fr.Element
+	if l1Address == "" {
+		e0 = &fr.Element{0, 0, 0, 0}
+		e0.SetBytes([]byte{})
+	} else {
+		e0, err = txtypes.FromBytesToFr(common.FromHex(l1Address))
+		if err != nil {
+			return nil, err
+		}
 	}
 	pubKey, err := common2.ParsePubKey(pk)
 	if err != nil {
@@ -296,7 +303,7 @@ func ComputeAccountLeafHash(
 	e4 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(collectionNonce))
 	e5 := txtypes.FromBigIntToFr(new(big.Int).SetBytes(assetRoot))
 	hash := poseidon.Poseidon(e0, e1, e2, e3, e4, e5).Bytes()
-	logx.Infof("compute account leaf hash,blockHeight=%s,accountIndex=%s,nonce=%s,collectionNonce=%s,assetRoot=%s,hash=%s", blockHeight, accountIndex, nonce, collectionNonce, common.Bytes2Hex(assetRoot), common.Bytes2Hex(hash[:]))
+	logx.Infof("compute account leaf hash,blockHeight=%d,accountIndex=%d,l1Address=%s,pk=%s,nonce=%d,collectionNonce=%d,assetRoot=%s,hash=%s", blockHeight, accountIndex, l1Address, pk, nonce, collectionNonce, common.Bytes2Hex(assetRoot), common.Bytes2Hex(hash[:]))
 	return hash[:], nil
 }
 
@@ -319,7 +326,7 @@ func ComputeAccountAssetLeafHash(
 	}
 	e1 := txtypes.FromBigIntToFr(offerCanceledOrFinalizedBigInt)
 	hash := poseidon.Poseidon(e0, e1).Bytes()
-	logx.Infof("compute account asset leaf hash,blockHeight=%s,accountIndex=%s,assetId=%s,balance=%s,offerCanceledOrFinalized=%s,hash=%s", blockHeight, accountIndex, assetId, balance, offerCanceledOrFinalized, common.Bytes2Hex(hash[:]))
+	logx.Infof("compute account asset leaf hash,blockHeight=%d,accountIndex=%d,assetId=%d,balance=%s,offerCanceledOrFinalized=%s,hash=%s", blockHeight, accountIndex, assetId, balance, offerCanceledOrFinalized, common.Bytes2Hex(hash[:]))
 	return hash[:], nil
 }
 
@@ -329,6 +336,7 @@ func ComputeNftAssetLeafHash(
 	nftContentHash string,
 	creatorTreasuryRate int64,
 	collectionId int64,
+	nftContentType int64,
 	nftIndex int64,
 	blockHeight int64,
 ) (hashVal []byte, err error) {
@@ -350,13 +358,14 @@ func ComputeNftAssetLeafHash(
 
 	e4 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(creatorTreasuryRate))
 	e5 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(collectionId))
+	e6 := txtypes.FromBigIntToFr(new(big.Int).SetInt64(int64(nftContentType)))
 	var hash [32]byte
 	if e3 != nil {
-		hash = poseidon.Poseidon(e0, e1, e2, e3, e4, e5).Bytes()
+		hash = poseidon.Poseidon(e0, e1, e2, e3, e4, e5, e6).Bytes()
 	} else {
-		hash = poseidon.Poseidon(e0, e1, e2, e4, e5).Bytes()
+		hash = poseidon.Poseidon(e0, e1, e2, e4, e5, e6).Bytes()
 	}
-	logx.Infof("compute nft asset leaf hash,blockHeight=%s,nftIndex=%s,creatorAccountIndex=%s,ownerAccountIndex=%s,nftContentHash=%s,creatorTreasuryRate=%s,collectionId=%s,hash=%s", blockHeight, nftIndex, creatorAccountIndex, ownerAccountIndex, nftContentHash, creatorTreasuryRate, collectionId, common.Bytes2Hex(hash[:]))
+	logx.Infof("compute nft asset leaf hash,blockHeight=%d,nftIndex=%d,creatorAccountIndex=%d,ownerAccountIndex=%d,nftContentHash=%s,creatorTreasuryRate=%d,collectionId=%d,hash=%s", blockHeight, nftIndex, creatorAccountIndex, ownerAccountIndex, nftContentHash, creatorTreasuryRate, collectionId, common.Bytes2Hex(hash[:]))
 
 	return hash[:], nil
 }

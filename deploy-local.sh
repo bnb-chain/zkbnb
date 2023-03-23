@@ -197,6 +197,7 @@ Postgres:
 CacheRedis:
   - Host: 127.0.0.1:6379
     Type: node
+AccountCacheSize: 100000
 
 ChainConfig:
   NetworkRPCSysConfigName: "${NETWORK_RPC_SYS_CONFIG_NAME}"
@@ -322,7 +323,7 @@ Apollo:
   AppID:             zkbnb-cloud
   Cluster:           prod
   ApolloIp:          http://internal-tf-cm-test-apollo-config-alb-2119591301.ap-northeast-1.elb.amazonaws.com:9028
-  Namespace:         application
+  Namespace:         applicationDev
   IsBackupConfig:    true
 
 IpfsUrl:

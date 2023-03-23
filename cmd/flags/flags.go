@@ -71,4 +71,14 @@ var (
 		Usage: "Metrics HTTP server listening port",
 		Value: 6060,
 	}
+	CommandFlag = &cli.StringFlag{
+		Name:    "command",
+		Aliases: []string{"m"},
+		Usage:   "the config file",
+	}
+	RecoveryFromHistoryFlag = &cli.BoolFlag{
+		Name:  "recoveryFromHistory",
+		Value: true,
+		Usage: "read account and nft history record from the database, or read account and nft from the database",
+	}
 )

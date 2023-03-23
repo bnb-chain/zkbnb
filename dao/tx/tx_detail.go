@@ -45,14 +45,15 @@ type (
 		AssetId         int64
 		AssetType       int64
 		AccountIndex    int64 `gorm:"index"`
-		AccountName     string
+		L1Address       string
 		Balance         string
 		BalanceDelta    string
 		Order           int64
 		AccountOrder    int64
 		Nonce           int64
 		CollectionNonce int64
-		IsGas           bool  `gorm:"default:false"`
+		IsGas           bool `gorm:"default:false"`
+		PublicKey       string
 		BlockHeight     int64 `gorm:"index"`
 	}
 )

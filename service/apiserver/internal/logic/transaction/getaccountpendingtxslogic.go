@@ -39,8 +39,8 @@ func (l *GetAccountPendingTxsLogic) GetAccountPendingTxs(req *types.ReqGetAccoun
 		if err != nil || accountIndex < 0 {
 			return nil, types2.AppErrInvalidAccountIndex
 		}
-	case queryByAccountName:
-		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByName(req.Value)
+	case queryByL1Address:
+		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByL1Address(req.Value)
 	case queryByAccountPk:
 		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByPk(req.Value)
 	default:
@@ -69,10 +69,10 @@ func (l *GetAccountPendingTxsLogic) GetAccountPendingTxs(req *types.ReqGetAccoun
 	resp.Total = uint32(len(poolTxs))
 	for _, poolTx := range poolTxs {
 		tx := utils.ConvertTx(poolTx)
-		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
+		tx.L1Address, _ = l.svcCtx.MemCache.GetL1AddressByIndex(tx.AccountIndex)
 		tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
 		if tx.ToAccountIndex >= 0 {
-			tx.ToAccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.ToAccountIndex)
+			tx.ToL1Address, _ = l.svcCtx.MemCache.GetL1AddressByIndex(tx.ToAccountIndex)
 		}
 		resp.Txs = append(resp.Txs, tx)
 	}

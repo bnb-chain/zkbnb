@@ -26,6 +26,8 @@ const (
 	FungibleAssetType        = 1
 	NftAssetType             = 2
 	CollectionNonceAssetType = 3
+	ChangePubKeyType         = 4
+	CreateAccountType        = 5
 
 	BuyOfferType  = 0
 	SellOfferType = 1
@@ -67,11 +69,9 @@ func (asset *AccountAsset) String() (info string) {
 }
 
 type AccountInfo struct {
-	AccountId       uint
+	AccountId       int64
 	AccountIndex    int64
-	AccountName     string
 	PublicKey       string
-	AccountNameHash string
 	L1Address       string
 	Nonce           int64
 	CollectionNonce int64
@@ -89,9 +89,7 @@ func (ai *AccountInfo) DeepCopy() *AccountInfo {
 	newAccountInfo := &AccountInfo{
 		AccountId:       ai.AccountId,
 		AccountIndex:    ai.AccountIndex,
-		AccountName:     ai.AccountName,
 		PublicKey:       ai.PublicKey,
-		AccountNameHash: ai.AccountNameHash,
 		L1Address:       ai.L1Address,
 		Nonce:           ai.Nonce,
 		CollectionNonce: ai.CollectionNonce,
