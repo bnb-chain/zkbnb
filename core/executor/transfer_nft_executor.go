@@ -24,7 +24,7 @@ func NewTransferNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	txInfo, err := types.ParseTransferNftTxInfo(tx.TxInfo)
 	if err != nil {
 		logx.Errorf("parse transfer tx failed: %s", err.Error())
-		return nil, errors.New("invalid tx info")
+		return nil, types.AppErrInvalidTxInfo
 	}
 
 	return &TransferNftExecutor{
@@ -117,7 +117,7 @@ func (e *TransferNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 		return err
 	}
 	if nft.OwnerAccountIndex != txInfo.FromAccountIndex {
-		return errors.New("account is not owner of the nft")
+		return types.AppErrAccountNotNftOwner
 	}
 
 	return nil
@@ -186,7 +186,7 @@ func (e *TransferNftExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	txInfoBytes, err := json.Marshal(e.TxInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
-		return nil, errors.New("unmarshal tx failed")
+		return nil, types.AppErrMarshalTxFailed
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)

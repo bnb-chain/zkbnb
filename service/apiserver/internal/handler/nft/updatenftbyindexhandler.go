@@ -22,10 +22,6 @@ func UpdateNftByIndexHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 
 		l := nft.NewUpdateNftByIndexLogic(r.Context(), svcCtx)
 		resp, err := l.UpdateNftByIndex(&req)
-		if err != nil {
-			httpx.Error(w, err)
-		} else {
-			httpx.OkJson(w, resp)
-		}
+		response.Handle(w, resp, err)
 	}
 }

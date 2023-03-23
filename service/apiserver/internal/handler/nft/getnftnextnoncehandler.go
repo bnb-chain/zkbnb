@@ -22,10 +22,6 @@ func GetNftNextNonceHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 
 		l := nft.NewGetNftNextNonceLogic(r.Context(), svcCtx)
 		resp, err := l.GetNftNextNonce(&req)
-		if err != nil {
-			httpx.Error(w, err)
-		} else {
-			httpx.OkJson(w, resp)
-		}
+		response.Handle(w, resp, err)
 	}
 }

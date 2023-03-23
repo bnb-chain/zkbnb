@@ -3,7 +3,6 @@ package executor
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"github.com/bnb-chain/zkbnb/common/chain"
 	"github.com/bnb-chain/zkbnb/tree"
 	"math/big"
@@ -32,7 +31,7 @@ func NewFullExitNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	txInfo, err := types.ParseFullExitNftTxInfo(tx.TxInfo)
 	if err != nil {
 		logx.Errorf("parse full exit nft tx failed: %s", err.Error())
-		return nil, errors.New("invalid tx info")
+		return nil, types.AppErrInvalidTxInfo
 	}
 
 	return &FullExitNftExecutor{
@@ -175,7 +174,7 @@ func (e *FullExitNftExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	txInfoBytes, err := json.Marshal(e.TxInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
-		return nil, errors.New("unmarshal tx failed")
+		return nil, types.AppErrMarshalTxFailed
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
