@@ -10,6 +10,13 @@ import (
 	"math/big"
 )
 
+const CommandActivateDesert = "activateDesert"
+const CommandPerformAsset = "performAsset"
+const CommandPerformNft = "performNft"
+const CommandCancelOutstandingDeposit = "cancelOutstandingDeposit"
+const CommandWithdrawNFT = "withdrawNFT"
+const CommandWithdrawAsset = "withdrawAsset"
+
 func Run(configFile string, command string, amount string, nftIndex string, owner string, privateKey string, proof string, token string) error {
 	var c config.Config
 	conf.MustLoad(configFile, &c)
@@ -23,36 +30,40 @@ func Run(configFile string, command string, amount string, nftIndex string, owne
 		logx.Severe(err)
 		return err
 	}
-
-	if command == "activateDesert" {
+	switch command {
+	case CommandActivateDesert:
 		err = m.ActivateDesertMode()
 		if err != nil {
+			logx.Severe(err)
 			return err
 		}
-	}
-	if command == "performAsset" {
+		break
+	case CommandPerformAsset:
 		var performDesertAsset generateproof.PerformDesertAssetData
 		conf.MustLoad(proof, &performDesertAsset)
 		err = m.PerformDesert(performDesertAsset)
 		if err != nil {
+			logx.Severe(err)
 			return err
 		}
-	}
-	if command == "performNft" {
+		break
+	case CommandPerformNft:
 		var performDesertNftData generateproof.PerformDesertNftData
 		conf.MustLoad(proof, &performDesertNftData)
 		err = m.PerformDesertNft(performDesertNftData)
 		if err != nil {
+			logx.Severe(err)
 			return err
 		}
-	}
-	if command == "cancelOutstandingDeposit" {
+		break
+	case CommandCancelOutstandingDeposit:
 		err = m.CancelOutstandingDeposit()
 		if err != nil {
+			logx.Severe(err)
 			return err
 		}
-	}
-	if command == "withdrawNFT" {
+		break
+	case CommandWithdrawNFT:
 		bigIntNftIndex, success := new(big.Int).SetString(nftIndex, 10)
 		if !success {
 			logx.Severe("failed to transfer big int")
@@ -60,10 +71,11 @@ func Run(configFile string, command string, amount string, nftIndex string, owne
 		}
 		err = m.WithdrawPendingNFTBalance(bigIntNftIndex)
 		if err != nil {
+			logx.Severe(err)
 			return err
 		}
-	}
-	if command == "withdrawAsset" {
+		break
+	case CommandWithdrawAsset:
 		bigIntAmount, success := new(big.Int).SetString(amount, 10)
 		if !success {
 			logx.Severe("failed to transfer big int")
@@ -71,8 +83,10 @@ func Run(configFile string, command string, amount string, nftIndex string, owne
 		}
 		err = m.WithdrawPendingBalance(common.HexToAddress(owner), common.HexToAddress(token), bigIntAmount)
 		if err != nil {
+			logx.Severe(err)
 			return err
 		}
+		break
 	}
 	return nil
 }

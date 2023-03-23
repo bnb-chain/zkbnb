@@ -204,7 +204,7 @@ func main() {
 					if !cCtx.IsSet(flags.ConfigFlag.Name) {
 						return cli.ShowSubcommandHelp(cCtx)
 					}
-					if cCtx.String(flags.CommandFlag.Name) == "run" {
+					if cCtx.String(flags.CommandFlag.Name) == generateproof.CommandRunGenerateProof {
 						err := dbinitializer.InitializeExodusExit(
 							cCtx.String(flags.ConfigFlag.Name),
 						)
@@ -213,7 +213,7 @@ func main() {
 						}
 						return generateproof.Run(cCtx.String(flags.ConfigFlag.Name), cCtx.String(flags.AddressFlag.Name), cCtx.String(flags.TokenFlag.Name), cCtx.String(flags.NftIndexListFlag.Name), cCtx.String(flags.ProofFolderFlag.Name))
 					}
-					if cCtx.String(flags.CommandFlag.Name) == "continue" {
+					if cCtx.String(flags.CommandFlag.Name) == generateproof.CommandContinueGenerateProof {
 						return generateproof.Run(cCtx.String(flags.ConfigFlag.Name), cCtx.String(flags.AddressFlag.Name), cCtx.String(flags.TokenFlag.Name), cCtx.String(flags.NftIndexListFlag.Name), cCtx.String(flags.ProofFolderFlag.Name))
 					}
 					return nil

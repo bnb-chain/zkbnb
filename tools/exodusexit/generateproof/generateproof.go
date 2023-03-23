@@ -4,15 +4,12 @@ import (
 	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof/config"
 	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof/generateproof"
 	"github.com/goccy/go-json"
-	"time"
-
-	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/proc"
 )
 
-const GracefulShutdownTimeout = 5 * time.Second
+const CommandRunGenerateProof = "run"
+const CommandContinueGenerateProof = "continue"
 
 func Run(configFile string, address string, token string, nftIndexListStr string, proofFolder string) error {
 	var c config.Config
@@ -42,30 +39,18 @@ func Run(configFile string, address string, token string, nftIndexListStr string
 		logx.Severe(err)
 		panic(err)
 	}
-	cronJob := cron.New(cron.WithChain(
-		cron.SkipIfStillRunning(cron.DiscardLogger),
-	))
-	// monitor generic blocks
-	if _, err := cronJob.AddFunc("@every 10s", func() {
-		err := m.MonitorGenericBlocks()
-		if err != nil {
-			logx.Severef("monitor blocks error, %v", err)
-		}
-	}); err != nil {
-		logx.Severe(err)
-		panic(err)
-	}
-	cronJob.Start()
 
-	exit := make(chan struct{})
-	proc.SetTimeToForceQuit(GracefulShutdownTimeout)
-	proc.AddShutdownListener(func() {
-		logx.Info("start to shutdown generateproof......")
-		<-cronJob.Stop().Done()
-		m.Shutdown()
-		_ = logx.Close()
-		exit <- struct{}{}
-	})
+	go func() {
+		for {
+			err := m.MonitorGenericBlocks()
+			if err != nil {
+				logx.Severef("monitor blocks error, %v", err)
+			} else {
+				break
+			}
+		}
+	}()
+
 	exodusExit, err := generateproof.NewExodusExit(&c)
 	if err != nil {
 		return err
@@ -74,8 +59,6 @@ func Run(configFile string, address string, token string, nftIndexListStr string
 	if err != nil {
 		return err
 	}
-	logx.Info("generateproof cronjob is starting......")
-
-	<-exit
+	logx.Info("generateproof is starting......")
 	return nil
 }
