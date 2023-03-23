@@ -51,7 +51,11 @@ func (e *FullExitExecutor) Prepare() error {
 	}
 	if formatAccountByIndex.L1Address == txInfo.L1Address {
 		// Set the right asset amount.
-		txInfo.AssetAmount = formatAccountByIndex.AssetInfo[txInfo.AssetId].Balance
+		if formatAccountByIndex.AssetInfo == nil || formatAccountByIndex.AssetInfo[txInfo.AssetId] == nil {
+			txInfo.AssetAmount = new(big.Int).SetInt64(0)
+		} else {
+			txInfo.AssetAmount = formatAccountByIndex.AssetInfo[txInfo.AssetId].Balance
+		}
 	}
 
 	// Mark the tree states that would be affected in this executor.

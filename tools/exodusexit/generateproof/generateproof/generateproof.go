@@ -1164,7 +1164,7 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 
 		performDesertData.AccountExitData = accountExitData
 		performDesertData.AssetExitData = ExodusVerifierAssetExitData{
-			AssetId:                  uint32(accountAssetId),
+			AssetId:                  uint16(accountAssetId),
 			Amount:                   formatAccountInfo.AssetInfo[accountAssetId].Balance.Int64(),
 			OfferCanceledOrFinalized: formatAccountInfo.AssetInfo[accountAssetId].OfferCanceledOrFinalized.Int64(),
 		}

@@ -77,7 +77,7 @@ type PerformDesertNftData struct {
 }
 
 type ExodusVerifierAssetExitData struct {
-	AssetId                  uint32
+	AssetId                  uint16
 	Amount                   int64
 	OfferCanceledOrFinalized int64
 }

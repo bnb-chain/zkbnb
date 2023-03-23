@@ -78,14 +78,14 @@ func (m *PerformExodus) PerformDesert(performDesertAsset generateproof.PerformDe
 	for i, _ := range performDesertAsset.AssetMerkleProof {
 		assetMerkleProof[i] = new(big.Int).SetBytes(common.FromHex(performDesertAsset.AssetMerkleProof[i]))
 	}
-	assetExitData := zkbnb.ExodusVerifierAssetExitData{}
+	assetExitData := zkbnb.DesertVerifierAssetExitData{}
 	assetExitData.OfferCanceledOrFinalized = new(big.Int).SetInt64(performDesertAsset.AssetExitData.OfferCanceledOrFinalized)
 	assetExitData.Amount = new(big.Int).SetInt64(performDesertAsset.AssetExitData.Amount)
 	assetExitData.AssetId = performDesertAsset.AssetExitData.AssetId
 	return m.doPerformDesert(storedBlockInfo, nftRoot, assetExitData, accountExitData, assetMerkleProof, accountMerkleProof)
 }
 
-func (m *PerformExodus) doPerformDesert(storedBlockInfo zkbnb.StorageStoredBlockInfo, nftRoot *big.Int, assetExitData zkbnb.ExodusVerifierAssetExitData, accountExitData zkbnb.ExodusVerifierAccountExitData,
+func (m *PerformExodus) doPerformDesert(storedBlockInfo zkbnb.StorageStoredBlockInfo, nftRoot *big.Int, assetExitData zkbnb.DesertVerifierAssetExitData, accountExitData zkbnb.DesertVerifierAccountExitData,
 	assetMerkleProof [16]*big.Int, accountMerkleProof [32]*big.Int) error {
 	gasPrice, err := m.cli.SuggestGasPrice(context.Background())
 	if err != nil {
@@ -111,13 +111,13 @@ func (m *PerformExodus) PerformDesertNft(performDesertNftData generateproof.Perf
 			nftMerkleProofs[i][j] = new(big.Int).SetBytes(common.FromHex(nftMerkleProof))
 		}
 	}
-	exitNfts := make([]zkbnb.ExodusVerifierNftExitData, 0)
+	exitNfts := make([]zkbnb.DesertVerifierNftExitData, 0)
 
 	for _, nftExitData := range performDesertNftData.ExitNfts {
 		var nftContentHash [32]byte
 		copy(nftContentHash[:], common.FromHex(nftExitData.NftContentHash)[:])
-		exitNfts = append(exitNfts, zkbnb.ExodusVerifierNftExitData{
-			NftIndex:            nftExitData.NftIndex,
+		exitNfts = append(exitNfts, zkbnb.DesertVerifierNftExitData{
+			NftIndex:            new(big.Int).SetInt64(int64(nftExitData.NftIndex)),
 			OwnerAccountIndex:   new(big.Int).SetInt64(nftExitData.OwnerAccountIndex),
 			CreatorAccountIndex: new(big.Int).SetInt64(nftExitData.CreatorAccountIndex),
 			NftContentHash:      nftContentHash,
@@ -129,7 +129,7 @@ func (m *PerformExodus) PerformDesertNft(performDesertNftData generateproof.Perf
 	return m.doPerformDesertNft(storedBlockInfo, assetRoot, accountExitData, exitNfts, accountMerkleProof, nftMerkleProofs)
 }
 
-func (m *PerformExodus) doPerformDesertNft(storedBlockInfo zkbnb.StorageStoredBlockInfo, assetRoot *big.Int, accountExitData zkbnb.ExodusVerifierAccountExitData, exitNfts []zkbnb.ExodusVerifierNftExitData, accountMerkleProof [32]*big.Int, nftMerkleProofs [][40]*big.Int) error {
+func (m *PerformExodus) doPerformDesertNft(storedBlockInfo zkbnb.StorageStoredBlockInfo, assetRoot *big.Int, accountExitData zkbnb.DesertVerifierAccountExitData, exitNfts []zkbnb.DesertVerifierNftExitData, accountMerkleProof [32]*big.Int, nftMerkleProofs [][40]*big.Int) error {
 	gasPrice, err := m.cli.SuggestGasPrice(context.Background())
 	if err != nil {
 		logx.Errorf("failed to fetch gas price: %v", err)
@@ -142,7 +142,7 @@ func (m *PerformExodus) doPerformDesertNft(storedBlockInfo zkbnb.StorageStoredBl
 	return nil
 }
 
-func getVerifierExitData(accountExitData generateproof.ExodusVerifierAccountExitData, accountMerkleProofStr []string) (exitData zkbnb.ExodusVerifierAccountExitData, accountMerkleProof [32]*big.Int) {
+func getVerifierExitData(accountExitData generateproof.ExodusVerifierAccountExitData, accountMerkleProofStr []string) (exitData zkbnb.DesertVerifierAccountExitData, accountMerkleProof [32]*big.Int) {
 	var pubKeyX [32]byte
 	var pubKeyY [32]byte
 	var l1Address [20]byte
