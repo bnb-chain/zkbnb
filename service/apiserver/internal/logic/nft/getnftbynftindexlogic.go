@@ -25,7 +25,8 @@ func NewGetNftByNftIndexLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 	}
 }
 
-func (l *GetNftByNftIndexLogic) GetNftByNftIndex(req *types.ReqGetNft) (resp *types.Nft, err error) {
+func (l *GetNftByNftIndexLogic) GetNftByNftIndex(req *types.ReqGetNft) (resp *types.NftEntity, err error) {
+	resp = &types.NftEntity{Nft: nil}
 	nft, err := l.svcCtx.NftModel.GetNft(req.NftIndex)
 	if err != nil {
 		if err != types2.DbErrNotFound {
@@ -34,7 +35,7 @@ func (l *GetNftByNftIndexLogic) GetNftByNftIndex(req *types.ReqGetNft) (resp *ty
 	}
 	creatorL1Address, _ := l.svcCtx.MemCache.GetL1AddressByIndex(nft.CreatorAccountIndex)
 	ownerL1Address, _ := l.svcCtx.MemCache.GetL1AddressByIndex(nft.OwnerAccountIndex)
-	return &types.Nft{
+	resp.Nft = &types.Nft{
 		Index:               nft.NftIndex,
 		CreatorAccountIndex: nft.CreatorAccountIndex,
 		CreatorL1Address:    creatorL1Address,
@@ -44,5 +45,6 @@ func (l *GetNftByNftIndexLogic) GetNftByNftIndex(req *types.ReqGetNft) (resp *ty
 		RoyaltyRate:         nft.RoyaltyRate,
 		CollectionId:        nft.CollectionId,
 		IpfsId:              common.GenerateCid(nft.NftContentHash),
-	}, nil
+	}
+	return resp, nil
 }

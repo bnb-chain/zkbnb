@@ -489,6 +489,11 @@ type (
 		IpfsId              string `json:"ipfs_id"`
 	}
 
+	NftEntity {
+		ResultCode
+		Nft *Nft `json:"nft"`
+	}
+
 	Nfts {
 		ResultCode
 		Total int64  `json:"total"`
@@ -571,7 +576,7 @@ service server-api {
 	
 	@doc "Get nft of nft index"
 	@handler GetNftByNftIndex
-	get /api/v1/GetNftByNftIndex (ReqGetNft) returns (Nft)
+	get /api/v1/GetNftByNftIndex (ReqGetNft) returns (NftEntity)
 	
 	@doc "Get nft_index of a nft by txHash"
 	@handler GetNftByTxHash
