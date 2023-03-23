@@ -15,5 +15,5 @@ func (r *PeriodRateLimiter) RateLimitControlGlobal(param *RateLimitParam, contro
 		logx.Errorf("RateLimitControlGlobal hit Period Limit, path:%s!", param.RequestPath)
 		return err
 	}
-	return controller(param, r.RateLimitControlByUserId)
+	return controller(param, r.RateLimitControlByL1Address)
 }

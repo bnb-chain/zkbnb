@@ -19,7 +19,6 @@ package sender
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/prometheus/client_golang/prometheus"
@@ -526,12 +525,12 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		return fmt.Errorf("unable to get proofs, err: %v", err)
 	}
 	if len(blockProofs) != len(blocks) {
-		return errors.New("related proofs not ready")
+		return types.AppErrRelatedProofsNotReady
 	}
 	// add sanity check
 	for i := range blockProofs {
 		if blockProofs[i].BlockNumber != blocks[i].BlockHeight {
-			return errors.New("proof number not match")
+			return types.AppErrProofNumberNotMatch
 		}
 	}
 	var proofs []*big.Int

@@ -1,7 +1,6 @@
 package executor
 
 import (
-	"errors"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	"math/big"
 
@@ -61,5 +60,5 @@ func NewTxExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 		return NewFullExitNftExecutor(bc, tx)
 	}
 
-	return nil, errors.New("unsupported tx type")
+	return nil, types.AppErrUnsupportedTxType
 }

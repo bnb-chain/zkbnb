@@ -17,8 +17,8 @@ limitations under the License.
 package test
 
 import (
-	"errors"
 	"fmt"
+	"github.com/bnb-chain/zkbnb/types"
 	"reflect"
 	"strings"
 	"testing"
@@ -34,12 +34,6 @@ import (
 	"github.com/consensys/gnark/frontend/cs/r1cs"
 	"github.com/consensys/gnark/frontend/cs/scs"
 	"github.com/stretchr/testify/require"
-)
-
-var (
-	ErrCompilationNotDeterministic = errors.New("compilation is not deterministic")
-	ErrInvalidWitnessSolvedCS      = errors.New("invalid witness solved the constraint system")
-	ErrInvalidWitnessVerified      = errors.New("invalid witness resulted in a valid proof")
 )
 
 // Assert is a helper to test circuits
@@ -399,7 +393,7 @@ func (assert *Assert) fuzzer(fuzzer filler, circuit, w frontend.Circuit, b backe
 func (assert *Assert) getCircuitAddr(circuit frontend.Circuit) (uintptr, error) {
 	vCircuit := reflect.ValueOf(circuit)
 	if vCircuit.Kind() != reflect.Ptr {
-		return 0, errors.New("frontend.Circuit methods must be defined on pointer receiver")
+		return 0, types.AppErrCircuitMethodDefErr
 	}
 	return vCircuit.Pointer(), nil
 }
@@ -437,11 +431,11 @@ func (assert *Assert) compile(circuit frontend.Circuit, curveID ecc.ID, backendI
 
 	_ccs, err := frontend.Compile(curveID, newBuilder, circuit, compileOpts...)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrCompilationNotDeterministic, err)
+		return nil, fmt.Errorf("%w: %v", types.AppErrCompilationNotDeterministic, err)
 	}
 
 	if !reflect.DeepEqual(ccs, _ccs) {
-		return nil, ErrCompilationNotDeterministic
+		return nil, types.AppErrCompilationNotDeterministic
 	}
 
 	// // add the compiled circuit to the cache

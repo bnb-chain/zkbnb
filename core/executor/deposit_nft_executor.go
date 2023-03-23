@@ -3,7 +3,6 @@ package executor
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -27,7 +26,7 @@ func NewDepositNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	txInfo, err := types.ParseDepositNftTxInfo(tx.TxInfo)
 	if err != nil {
 		logx.Errorf("parse deposit nft tx failed: %s", err.Error())
-		return nil, errors.New("invalid tx info")
+		return nil, types.AppErrInvalidTxInfo
 	}
 
 	return &DepositNftExecutor{
@@ -155,7 +154,7 @@ func (e *DepositNftExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	txInfoBytes, err := json.Marshal(e.TxInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
-		return nil, errors.New("unmarshal tx failed")
+		return nil, types.AppErrMarshalTxFailed
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)

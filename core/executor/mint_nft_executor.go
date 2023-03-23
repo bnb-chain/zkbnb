@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
@@ -25,7 +24,7 @@ func NewMintNftExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	txInfo, err := types.ParseMintNftTxInfo(tx.TxInfo)
 	if err != nil {
 		logx.Errorf("parse transfer tx failed: %s", err.Error())
-		return nil, errors.New("invalid tx info")
+		return nil, types.AppErrInvalidTxInfo
 	}
 
 	return &MintNftExecutor{
@@ -156,7 +155,7 @@ func (e *MintNftExecutor) GetExecutedTx(fromApi bool) (*tx.Tx, error) {
 	txInfoBytes, err := json.Marshal(e.TxInfo)
 	if err != nil {
 		logx.Errorf("unable to marshal tx, err: %s", err.Error())
-		return nil, errors.New("unmarshal tx failed")
+		return nil, types.AppErrMarshalTxFailed
 	}
 
 	e.tx.TxInfo = string(txInfoBytes)
@@ -203,7 +202,7 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	})
 	creatorAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(creatorAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
 	if creatorAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(types.ZeroBigInt) < 0 {
-		return nil, errors.New("insufficient gas fee balance")
+		return nil, types.AppErrInsufficientGasFeeBalance
 	}
 
 	// to account empty delta
