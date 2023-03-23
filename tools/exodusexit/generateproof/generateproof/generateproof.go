@@ -45,6 +45,9 @@ func NewExodusExit(config *config.Config) (*ExodusExit, error) {
 	pool, err := ants.NewPool(50, ants.WithPanicHandler(func(p interface{}) {
 		panic("worker exits from a panic")
 	}))
+	if config.ProofFolder == "" {
+		config.ProofFolder = "./tools/exodusexit/proofdata/"
+	}
 	committer := &ExodusExit{
 		running: true,
 		config:  config,
@@ -1135,10 +1138,16 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 			logx.Severe(err)
 			return err
 		}
-		assetId, err := monitor.ValidateAssetAddress(common.HexToAddress(assetTokenAddress))
-		if err != nil {
-			logx.Severe(err)
-			return err
+
+		var assetId uint16
+		if assetTokenAddress == "0x00" {
+			assetId = 0
+		} else {
+			assetId, err = monitor.ValidateAssetAddress(common.HexToAddress(assetTokenAddress))
+			if err != nil {
+				logx.Severe(err)
+				return err
+			}
 		}
 		assetMerkleProof, err := accountAssetTrees.Get(accountIndex).GetProof(uint64(assetId))
 		if err != nil {
@@ -1175,7 +1184,7 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 		if err != nil {
 			return err
 		}
-		err = ioutil.WriteFile("./tools/exodusexit/proofdata/performDesertAsset.json", data, 0777)
+		err = ioutil.WriteFile(m.Config.ProofFolder+"performDesertAsset.json", data, 0777)
 		if err != nil {
 			return err
 		}
@@ -1226,7 +1235,7 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 		performDesertNftData.AccountExitData = accountExitData
 		performDesertNftData.AccountMerkleProof = accountMerkleProof
 		data, err := json.Marshal(performDesertNftData)
-		err = ioutil.WriteFile("./tools/exodusexit/proofdata/performDesertNft.json", data, 0777)
+		err = ioutil.WriteFile(m.Config.ProofFolder+"performDesertNft.json", data, 0777)
 		if err != nil {
 			return err
 		}

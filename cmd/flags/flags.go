@@ -111,4 +111,19 @@ var (
 		Usage: "proof",
 		Value: "",
 	}
+	NftIndexListFlag = &cli.StringFlag{
+		Name:  "nftIndexList",
+		Usage: "nftIndexList",
+		Value: "",
+	}
+	AddressFlag = &cli.StringFlag{
+		Name:  "address",
+		Usage: "address",
+		Value: "",
+	}
+	ProofFolderFlag = &cli.StringFlag{
+		Name:  "proofFolder",
+		Usage: "proofFolder",
+		Value: "",
+	}
 )

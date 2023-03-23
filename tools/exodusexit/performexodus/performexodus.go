@@ -15,12 +15,15 @@ func Run(configFile string, command string, amount string, nftIndex string, owne
 	conf.MustLoad(configFile, &c)
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
-	c.ChainConfig.PrivateKey = privateKey
+	if privateKey != "" {
+		c.ChainConfig.PrivateKey = privateKey
+	}
 	m, err := performexodus.NewPerformExodus(c)
 	if err != nil {
 		logx.Severe(err)
 		return err
 	}
+
 	if command == "activateDesert" {
 		err = m.ActivateDesertMode()
 		if err != nil {

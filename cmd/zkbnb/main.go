@@ -192,6 +192,10 @@ func main() {
 				Flags: []cli.Flag{
 					flags.CommandFlag,
 					flags.ConfigFlag,
+					flags.TokenFlag,
+					flags.NftIndexListFlag,
+					flags.AddressFlag,
+					flags.ProofFolderFlag,
 				},
 				Action: func(cCtx *cli.Context) error {
 					if !cCtx.IsSet(flags.CommandFlag.Name) {
@@ -200,11 +204,6 @@ func main() {
 					if !cCtx.IsSet(flags.ConfigFlag.Name) {
 						return cli.ShowSubcommandHelp(cCtx)
 					}
-					if cCtx.String(flags.CommandFlag.Name) == "init" {
-						return dbinitializer.InitializeExodusExit(
-							cCtx.String(flags.ConfigFlag.Name),
-						)
-					}
 					if cCtx.String(flags.CommandFlag.Name) == "run" {
 						err := dbinitializer.InitializeExodusExit(
 							cCtx.String(flags.ConfigFlag.Name),
@@ -212,10 +211,10 @@ func main() {
 						if err != nil {
 							return err
 						}
-						return generateproof.Run(cCtx.String(flags.ConfigFlag.Name))
+						return generateproof.Run(cCtx.String(flags.ConfigFlag.Name), cCtx.String(flags.AddressFlag.Name), cCtx.String(flags.TokenFlag.Name), cCtx.String(flags.NftIndexListFlag.Name), cCtx.String(flags.ProofFolderFlag.Name))
 					}
 					if cCtx.String(flags.CommandFlag.Name) == "continue" {
-						return generateproof.Run(cCtx.String(flags.ConfigFlag.Name))
+						return generateproof.Run(cCtx.String(flags.ConfigFlag.Name), cCtx.String(flags.AddressFlag.Name), cCtx.String(flags.TokenFlag.Name), cCtx.String(flags.NftIndexListFlag.Name), cCtx.String(flags.ProofFolderFlag.Name))
 					}
 					return nil
 				},

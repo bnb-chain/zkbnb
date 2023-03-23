@@ -40,4 +40,5 @@ type Config struct {
 	Address      string  `json:",optional"`
 	Token        string  `json:",optional"`
 	NftIndexList []int64 `json:",optional"`
+	ProofFolder  string  `json:",optional"`
 }
