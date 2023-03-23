@@ -830,7 +830,7 @@ func (s *StateDB) GetProtocolRateFromRedisCache() (int64, error) {
 	if err == nil && rate != nil {
 		return protocolRate, nil
 	}
-	sysProtocolRate, err := s.chainDb.SysConfigModel.GetSysConfigByName("ProtocolRate")
+	sysProtocolRate, err := s.chainDb.SysConfigModel.GetSysConfigByName(types.ProtocolRate)
 	if err == nil {
 		feeRate, err := strconv.ParseInt(sysProtocolRate.Value, 10, 64)
 		if err != nil {

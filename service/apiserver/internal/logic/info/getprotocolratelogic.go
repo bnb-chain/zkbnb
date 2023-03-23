@@ -25,8 +25,8 @@ func NewGetProtocolRateLogic(ctx context.Context, svcCtx *svc.ServiceContext) *G
 }
 
 func (l *GetProtocolRateLogic) GetProtocolRate(fromCache bool) (resp *types.ProtocolRate, err error) {
-	protocolRate, err := l.svcCtx.MemCache.GetSysConfigWithFallback("PlatformFeeRate", fromCache, func() (interface{}, error) {
-		return l.svcCtx.SysConfigModel.GetSysConfigByName("PlatformFeeRate")
+	protocolRate, err := l.svcCtx.MemCache.GetSysConfigWithFallback(types2.ProtocolRate, fromCache, func() (interface{}, error) {
+		return l.svcCtx.SysConfigModel.GetSysConfigByName(types2.ProtocolRate)
 	})
 	if err != nil {
 		if err != types2.DbErrNotFound {
