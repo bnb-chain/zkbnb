@@ -53,15 +53,30 @@ func (v *VerifySignature) VerifySignatureInfo(TxType uint32, TxInfo, Signature s
 	publicAddress := crypto.PubkeyToAddress(*signaturePublicKey)
 
 	//Query the origin address from the database
-	originAddressStr, err := v.fetcher.GetL1AddressByTx(TxType, TxInfo)
+	originAddressArray, err := v.fetcher.GetL1AddressByTx(TxType, TxInfo)
 	if err != nil {
 		return err
 	}
-	originAddress := common.HexToAddress(originAddressStr)
+	// For normal transactions other than atomic match transaction
+	// There is only one signature address to be verified.
+	// While for the atomic match transaction, there should be two
+	// signature addresses to be verified, one is for the sell offer,
+	// and other is for the buy offer.
+	if len(originAddressArray) == 1 {
+		originAddress := common.HexToAddress(originAddressArray[0])
 
-	//Compare the original address and the public address to verify the identifier
-	if publicAddress != originAddress {
-		return types.AppErrTxSignatureError
+		//Compare the original address and the public address to verify the identifier
+		if publicAddress != originAddress {
+			return types.AppErrTxSignatureError
+		}
+	} else if len(originAddressArray) == 2 {
+		originAddress0 := common.HexToAddress(originAddressArray[0])
+		originAddress1 := common.HexToAddress(originAddressArray[1])
+
+		//Compare both the addresses for buy offer and sell offer to verify the identifier.
+		if publicAddress != originAddress0 && publicAddress != originAddress1 {
+			return types.AppErrTxSignatureError
+		}
 	}
 	return nil
 }
