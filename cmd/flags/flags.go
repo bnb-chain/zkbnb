@@ -74,11 +74,41 @@ var (
 	CommandFlag = &cli.StringFlag{
 		Name:    "command",
 		Aliases: []string{"m"},
-		Usage:   "the config file",
+		Usage:   "command",
 	}
 	RecoveryFromHistoryFlag = &cli.BoolFlag{
 		Name:  "recoveryFromHistory",
 		Value: true,
 		Usage: "read account and nft history record from the database, or read account and nft from the database",
+	}
+	PrivateKeyFlag = &cli.StringFlag{
+		Name:  "privateKey",
+		Usage: "private key",
+		Value: "",
+	}
+	OwnerFlag = &cli.StringFlag{
+		Name:  "owner",
+		Usage: "owner",
+		Value: "",
+	}
+	TokenFlag = &cli.StringFlag{
+		Name:  "token",
+		Usage: "token",
+		Value: "",
+	}
+	AmountFlag = &cli.StringFlag{
+		Name:  "amount",
+		Usage: "amount",
+		Value: "",
+	}
+	NftIndexFlag = &cli.StringFlag{
+		Name:  "nftIndex",
+		Usage: "nftIndex",
+		Value: "",
+	}
+	ProofFlag = &cli.StringFlag{
+		Name:  "proof",
+		Usage: "proof",
+		Value: "",
 	}
 )

@@ -226,6 +226,12 @@ func main() {
 				Flags: []cli.Flag{
 					flags.CommandFlag,
 					flags.ConfigFlag,
+					flags.AmountFlag,
+					flags.NftIndexFlag,
+					flags.OwnerFlag,
+					flags.PrivateKeyFlag,
+					flags.ProofFlag,
+					flags.TokenFlag,
 				},
 				Action: func(cCtx *cli.Context) error {
 					if !cCtx.IsSet(flags.CommandFlag.Name) {
@@ -234,9 +240,10 @@ func main() {
 					if !cCtx.IsSet(flags.ConfigFlag.Name) {
 						return cli.ShowSubcommandHelp(cCtx)
 					}
-					return performexodus.Run(cCtx.String(flags.ConfigFlag.Name))
-
-					return nil
+					return performexodus.Run(cCtx.String(flags.ConfigFlag.Name), cCtx.String(flags.CommandFlag.Name),
+						cCtx.String(flags.AmountFlag.Name), cCtx.String(flags.NftIndexFlag.Name),
+						cCtx.String(flags.OwnerFlag.Name), cCtx.String(flags.PrivateKeyFlag.Name),
+						cCtx.String(flags.ProofFlag.Name), cCtx.String(flags.TokenFlag.Name))
 				},
 			},
 			// tools

@@ -14,13 +14,14 @@ type Config struct {
 		LogLevel         logger.LogLevel `json:",optional"`
 	}
 	ChainConfig struct {
-		StartL1BlockHeight     int64
-		EndL2BlockHeight       int64
-		ConfirmBlocksCount     uint64
-		MaxHandledBlocksCount  int64
-		KeptHistoryBlocksCount int64 // KeptHistoryBlocksCount define the count of blocks to keep in table, old blocks will be cleaned
-		BscTestNetRpc          string
-		ZkBnbContractAddress   string
+		StartL1BlockHeight        int64
+		EndL2BlockHeight          int64
+		ConfirmBlocksCount        uint64
+		MaxHandledBlocksCount     int64
+		KeptHistoryBlocksCount    int64 // KeptHistoryBlocksCount define the count of blocks to keep in table, old blocks will be cleaned
+		BscTestNetRpc             string
+		ZkBnbContractAddress      string
+		GovernanceContractAddress string
 	}
 	CacheConfig statedb.CacheConfig `json:",optional"`
 
@@ -36,7 +37,7 @@ type Config struct {
 	}
 	LogConf logx.LogConf
 
-	L1Address    string  `json:",optional"`
-	AssetId      int64   `json:",optional"`
+	Address      string  `json:",optional"`
+	Token        string  `json:",optional"`
 	NftIndexList []int64 `json:",optional"`
 }
