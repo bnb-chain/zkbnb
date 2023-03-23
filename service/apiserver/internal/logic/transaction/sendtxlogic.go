@@ -11,6 +11,7 @@ import (
 	nftModels "github.com/bnb-chain/zkbnb/core/model"
 	"github.com/bnb-chain/zkbnb/dao/dbcache"
 	"github.com/bnb-chain/zkbnb/dao/nft"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/permctrl"
 	"gorm.io/gorm"
 	"strconv"
 
@@ -25,15 +26,18 @@ import (
 
 type SendTxLogic struct {
 	logx.Logger
-	ctx    context.Context
-	svcCtx *svc.ServiceContext
+	ctx               context.Context
+	svcCtx            *svc.ServiceContext
+	permissionControl *permctrl.PermissionControl
 }
 
 func NewSendTxLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendTxLogic {
+	permissionControl := permctrl.NewPermissionControl(ctx, svcCtx)
 	return &SendTxLogic{
-		Logger: logx.WithContext(ctx),
-		ctx:    ctx,
-		svcCtx: svcCtx,
+		Logger:            logx.WithContext(ctx),
+		ctx:               ctx,
+		svcCtx:            svcCtx,
+		permissionControl: permissionControl,
 	}
 }
 
@@ -49,6 +53,13 @@ func (s *SendTxLogic) SendTx(req *types.ReqSendTx) (resp *types.TxHash, err erro
 	if s.svcCtx.Config.TxPool.MaxPendingTxCount > 0 && pendingTxCount >= int64(s.svcCtx.Config.TxPool.MaxPendingTxCount) {
 		return nil, types2.AppErrTooManyTxs
 	}
+
+	// Control the permission list with the whitelist or blacklist
+	err = s.permissionControl.Control(req.TxType, req.TxInfo)
+	if err != nil {
+		return nil, err
+	}
+
 	resp = &types.TxHash{}
 	bc, err := core.NewBlockChainForDryRun(s.svcCtx.AccountModel, s.svcCtx.NftModel, s.svcCtx.TxPoolModel,
 		s.svcCtx.AssetModel, s.svcCtx.SysConfigModel, s.svcCtx.RedisCache, s.svcCtx.MemCache.GetCache())

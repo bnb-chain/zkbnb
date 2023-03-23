@@ -17,6 +17,7 @@ import (
 const (
 	cacheDefaultExpiration = time.Hour * 1 //gocache default expiration
 
+	AccountIndexNameKeyPrefix      = "in:"                    //key for cache: accountIndex -> accountName
 	AccountIndexL1AddressKeyPrefix = "in:"                    //key for cache: accountIndex -> l1Address
 	AccountIndexPkKeyPrefix        = "ip:"                    //key for cache: accountIndex -> accountPk
 	AccountL1AddressKeyPrefix      = "n:"                     //key for cache: l1Address -> accountIndex
@@ -180,6 +181,19 @@ func (m *MemCache) GetAccountPkByIndex(accountIndex int64) (string, error) {
 	}
 	m.setAccount(account.AccountIndex, account.L1Address, account.PublicKey)
 	return account.PublicKey, nil
+}
+
+func (m *MemCache) GetAccountL1AddressByIndex(accountIndex int64) (string, error) {
+	l1Address, found := m.goCache.Get(fmt.Sprintf("%s%d", AccountIndexL1AddressKeyPrefix, accountIndex))
+	if found {
+		return l1Address.(string), nil
+	}
+	account, err := m.accountModel.GetAccountByIndex(accountIndex)
+	if err != nil {
+		return "", err
+	}
+	m.setAccount(account.AccountIndex, account.L1Address, account.PublicKey)
+	return account.L1Address, nil
 }
 
 func (m *MemCache) GetAccountWithFallback(accountIndex int64, f fallback) (*accdao.Account, error) {

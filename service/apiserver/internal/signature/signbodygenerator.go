@@ -3,7 +3,6 @@ package signature
 import (
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	"github.com/bnb-chain/zkbnb/types"
-	"github.com/pkg/errors"
 )
 
 func GenerateSignatureBody(txType uint32, txInfo string) (txtypes.TxInfo, error) {
@@ -29,5 +28,5 @@ func GenerateSignatureBody(txType uint32, txInfo string) (txtypes.TxInfo, error)
 	case types.TxTypeUpdateNFT:
 		return types.ParseUpdateNftTxInfo(txInfo)
 	}
-	return nil, errors.New("unsupported tx type")
+	return nil, types.AppErrUnsupportedTxType
 }

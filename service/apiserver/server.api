@@ -8,6 +8,10 @@ info(
 
 /* ========================= root =========================*/
 
+type ResultCode {
+	Code int32 `json:"code"`
+}
+
 type (
 	Status {
 		Status    uint32 `json:"status"`
@@ -47,6 +51,7 @@ type (
 	}
 
 	Account {
+		ResultCode
 		Status          uint32          `json:"status"`
 		Index           int64           `json:"index"`
 		L1Address       string          `json:"l1_address"`
@@ -63,6 +68,7 @@ type (
 	}
 
 	Accounts {
+		ResultCode
 		Total    uint32           `json:"total"`
 		Accounts []*SimpleAccount `json:"accounts"`
 	}
@@ -93,6 +99,7 @@ service server-api {
 
 type (
 	Asset {
+		ResultCode
 		Id         uint32 `json:"id"`
 		Name       string `json:"name"`
 		Decimals   uint32 `json:"decimals"`
@@ -104,6 +111,7 @@ type (
 	}
 
 	Assets {
+		ResultCode
 		Total  uint32   `json:"total"`
 		Assets []*Asset `json:"assets"`
 	}
@@ -134,6 +142,7 @@ service server-api {
 
 type (
 	Block {
+		ResultCode
 		Commitment                      string `json:"commitment"`
 		Height                          int64  `json:"height"`
 		StateRoot                       string `json:"state_root"`
@@ -150,11 +159,13 @@ type (
 	}
 
 	Blocks {
+		ResultCode
 		Total  uint32   `json:"total"`
 		Blocks []*Block `json:"blocks"`
 	}
 
 	CurrentHeight {
+		ResultCode
 		Height int64 `json:"height"`
 	}
 )
@@ -163,6 +174,14 @@ type (
 	ReqGetBlock {
 		By    string `form:"by,options=commitment|height"`
 		Value string `form:"value"`
+	}
+)
+
+type (
+	ReqAccountParam {
+		By           string `form:"by,optional"`
+		Value        string `form:"value,optional"`
+		AccountIndex int64  `form:"account_index,optional"`
 	}
 )
 
@@ -192,6 +211,7 @@ type (
 	}
 
 	Layer2BasicInfo {
+		ResultCode
 		BlockCommitted            int64             `json:"block_committed"`
 		BlockVerified             int64             `json:"block_verified"`
 		TotalTransactionCount     int64             `json:"total_transaction_count"`
@@ -203,24 +223,29 @@ type (
 	}
 
 	GasFee {
+		ResultCode
 		GasFee string `json:"gas_fee"`
 	}
 
 	ProtocolRate {
+		ResultCode
 		ProtocolRate string `json:"platform_fee_rate"`
 	}
 
 	GasAccount {
+		ResultCode
 		Status    int64  `json:"status"`
 		Index     int64  `json:"index"`
 		L1Address string `json:"l1_address"`
 	}
 
 	GasFeeAssets {
+		ResultCode
 		Assets []Asset `json:"assets"`
 	}
 
 	Search {
+		ResultCode
 		DataType int32 `json:"data_type"`
 	}
 )
@@ -250,6 +275,7 @@ type (
 		Limit           uint16 `form:"limit,range=[1:100]"`
 	}
 	Rollbacks {
+		ResultCode
 		Total     uint32      `json:"total"`
 		Rollbacks []*Rollback `json:"rollbacks"`
 	}
@@ -322,19 +348,23 @@ type (
 	}
 
 	Txs {
+		ResultCode
 		Total uint32 `json:"total"`
 		Txs   []*Tx  `json:"txs"`
 	}
 
 	TxHash {
+		ResultCode
 		TxHash string `json:"tx_hash"`
 	}
 
 	NextNonce {
+		ResultCode
 		Nonce uint64 `json:"nonce"`
 	}
 
 	EnrichedTx {
+		ResultCode
 		Tx
 		CommittedAt int64 `json:"committed_at"`
 		VerifiedAt  int64 `json:"verified_at"`
@@ -342,6 +372,7 @@ type (
 	}
 
 	SignBody {
+		ResultCode
 		SignBody string `json:"sign_body"`
 	}
 )
@@ -435,10 +466,12 @@ service server-api {
 
 type (
 	MaxOfferId {
+		ResultCode
 		OfferId uint64 `json:"offer_id"`
 	}
 
 	MaxCollectionId {
+		ResultCode
 		CollectionId int64 `json:"collection_id"`
 	}
 
@@ -457,16 +490,19 @@ type (
 	}
 
 	Nfts {
+		ResultCode
 		Total int64  `json:"total"`
 		Nfts  []*Nft `json:"nfts"`
 	}
 
 	NftIndex {
+		ResultCode
 		Index  int64  `json:"index"`
 		IpfsId string `json:"ipfs_id"`
 	}
 
 	History {
+		ResultCode
 		IpnsId string `json:"ipns_id"`
 	}
 )

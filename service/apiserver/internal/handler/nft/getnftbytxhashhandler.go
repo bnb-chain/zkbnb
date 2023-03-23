@@ -22,10 +22,6 @@ func GetNftByTxHashHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 
 		l := nft.NewGetNftByTxHashLogic(r.Context(), svcCtx)
 		resp, err := l.GetNftByTxHash(&req)
-		if err != nil {
-			httpx.Error(w, err)
-		} else {
-			httpx.OkJson(w, resp)
-		}
+		response.Handle(w, resp, err)
 	}
 }
