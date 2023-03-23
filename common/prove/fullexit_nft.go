@@ -45,7 +45,7 @@ func toCryptoFullExitNftTx(txInfo *txtypes.FullExitNftTxInfo) (info *cryptoTypes
 		L1Address:           common.AddressStrToBytes(txInfo.L1Address),
 		CreatorAccountIndex: txInfo.CreatorAccountIndex,
 		CreatorL1Address:    common.AddressStrToBytes(txInfo.CreatorL1Address),
-		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
+		RoyaltyRate:         txInfo.RoyaltyRate,
 		NftIndex:            txInfo.NftIndex,
 		CollectionId:        txInfo.CollectionId,
 		NftContentHash:      txInfo.NftContentHash,

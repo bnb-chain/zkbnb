@@ -428,7 +428,7 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 				OwnerAccountIndex:   nftHistory.OwnerAccountIndex,
 				NftContentHash:      nftHistory.NftContentHash,
 				CollectionId:        nftHistory.CollectionId,
-				CreatorTreasuryRate: nftHistory.CreatorTreasuryRate,
+				RoyaltyRate:         nftHistory.RoyaltyRate,
 				CreatorAccountIndex: nftHistory.CreatorAccountIndex,
 				L2BlockHeight:       nftHistory.L2BlockHeight,
 				NftContentType:      nftHistory.NftContentType,

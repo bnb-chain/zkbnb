@@ -86,7 +86,7 @@ func (l *GetAccountNftsLogic) GetAccountNfts(req *types.ReqGetAccountNfts) (resp
 			OwnerAccountIndex:   nft.OwnerAccountIndex,
 			OwnerL1Address:      ownerL1Address,
 			ContentHash:         nft.NftContentHash,
-			CreatorTreasuryRate: nft.CreatorTreasuryRate,
+			RoyaltyRate:         nft.RoyaltyRate,
 			CollectionId:        nft.CollectionId,
 			IpfsId:              common.GenerateCid(nft.NftContentHash),
 		})

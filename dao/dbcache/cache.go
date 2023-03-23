@@ -23,7 +23,7 @@ const (
 	AccountNonceKeyPrefix    = "cache:accountNonce_"
 	RetryPendingPoolTxPrefix = "cache:retryPendingPoolTx_"
 	ChangePubKeyPKPrefix     = "cache:changePubKeyPK_"
-	PlatformFeeRate          = "cache:platformFeeRate"
+	ProtocolRate             = "cache:protocolRate"
 )
 
 func AccountKeyByIndex(accountIndex int64) string {

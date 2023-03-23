@@ -206,8 +206,8 @@ type (
 		GasFee string `json:"gas_fee"`
 	}
 
-	PlatformFeeRate {
-		PlatformFeeRate string `json:"platform_fee_rate"`
+	ProtocolRate {
+		ProtocolRate string `json:"platform_fee_rate"`
 	}
 
 	GasAccount {
@@ -265,8 +265,8 @@ service server-api {
 	get /api/v1/layer2BasicInfo returns (Layer2BasicInfo)
 	
 	@doc "Get zkbnb platform fee rate"
-	@handler GetPlatformFeeRate
-	get /api/v1/getPlatformFeeRate returns (PlatformFeeRate)
+	@handler getProtocolRate
+	get /api/v1/getProtocolRate returns (ProtocolRate)
 	
 	@doc "Get gas fee amount for using a specific asset as gas asset"
 	@handler GetGasFee
@@ -451,7 +451,7 @@ type (
 		ContentHash         string `json:"content_hash"`
 		L1Address           string `json:"l1_address"`
 		L1TokenId           string `json:"l1_token_id"`
-		CreatorTreasuryRate int64  `json:"creator_treasury_rate"`
+		RoyaltyRate         int64  `json:"royalty_rate"`
 		CollectionId        int64  `json:"collection_id"`
 		IpfsId              string `json:"ipfs_id"`
 	}
@@ -493,6 +493,12 @@ type (
 )
 
 type (
+	ReqGetNft {
+		NftIndex int64 `form:"nft_index"`
+	}
+)
+
+type (
 	ReqGetNftIndex {
 		TxHash string `form:"tx_hash"`
 	}
@@ -526,6 +532,10 @@ service server-api {
 	@doc "Get nfts of a specific account"
 	@handler GetAccountNfts
 	get /api/v1/accountNfts (ReqGetAccountNfts) returns (Nfts)
+	
+	@doc "Get nft of nft index"
+	@handler GetNftByNftIndex
+	get /api/v1/GetNftByNftIndex (ReqGetNft) returns (Nft)
 	
 	@doc "Get nft_index of a nft by txHash"
 	@handler GetNftByTxHash

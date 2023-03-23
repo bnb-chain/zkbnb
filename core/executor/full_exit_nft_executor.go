@@ -68,7 +68,7 @@ func (e *FullExitNftExecutor) Prepare() error {
 		CreatorAccountIndex: emptyNftInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   emptyNftInfo.OwnerAccountIndex,
 		NftContentHash:      emptyNftInfo.NftContentHash,
-		CreatorTreasuryRate: emptyNftInfo.CreatorTreasuryRate,
+		RoyaltyRate:         emptyNftInfo.RoyaltyRate,
 		CollectionId:        emptyNftInfo.CollectionId,
 		NftContentType:      emptyNftInfo.NftContentType,
 	}
@@ -87,7 +87,7 @@ func (e *FullExitNftExecutor) Prepare() error {
 
 	// Set the right tx info.
 	txInfo.CreatorAccountIndex = exitNft.CreatorAccountIndex
-	txInfo.CreatorTreasuryRate = exitNft.CreatorTreasuryRate
+	txInfo.RoyaltyRate = exitNft.RoyaltyRate
 	creator, err := bc.StateDB().GetFormatAccount(exitNft.CreatorAccountIndex)
 	if err != nil {
 		return err
@@ -133,7 +133,7 @@ func (e *FullExitNftExecutor) ApplyTransaction() error {
 		CreatorAccountIndex: emptyNftInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   emptyNftInfo.OwnerAccountIndex,
 		NftContentHash:      emptyNftInfo.NftContentHash,
-		CreatorTreasuryRate: emptyNftInfo.CreatorTreasuryRate,
+		RoyaltyRate:         emptyNftInfo.RoyaltyRate,
 		CollectionId:        emptyNftInfo.CollectionId,
 		NftContentType:      emptyNftInfo.NftContentType,
 	}
@@ -153,7 +153,7 @@ func (e *FullExitNftExecutor) GeneratePubData() error {
 	buf.WriteByte(uint8(types.TxTypeFullExitNft))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
-	buf.Write(common2.Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
+	buf.Write(common2.Uint16ToBytes(uint16(txInfo.RoyaltyRate)))
 	buf.Write(common2.Uint40ToBytes(txInfo.NftIndex))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.CollectionId)))
 	buf.Write(common2.AddressStrToBytes(txInfo.L1Address))
@@ -241,7 +241,7 @@ func (e *FullExitNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 			oldNft.CreatorAccountIndex,
 			oldNft.OwnerAccountIndex,
 			oldNft.NftContentHash,
-			oldNft.CreatorTreasuryRate,
+			oldNft.RoyaltyRate,
 			oldNft.CollectionId,
 			oldNft.NftContentType,
 		)

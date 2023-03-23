@@ -117,6 +117,7 @@ var (
 	AppErrInvalidMetaData          = New(21607, "metaData should not be larger than ")
 	AppErrInvalidMutableAttributes = New(21608, "mutableAttributes should not be larger than ")
 	AppErrInvalidNftNonce          = New(21609, "invalid nft nonce")
+	AppErrInvalidRoyaltyRate       = New(21610, "invalid royalty rate")
 
 	// Collection
 	AppErrInvalidCollectionId   = New(21700, "invalid collection id")

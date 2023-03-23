@@ -465,8 +465,8 @@ func (c *ExodusExit) executeAtomicMatch(pubData []byte) error {
 		return err
 	}
 
-	offset, creatorPackedAmount := common2.ReadUint40(pubData, offset)
-	creatorAmount, err := util.UnpackAmount(big.NewInt(creatorPackedAmount))
+	offset, royaltyPackedAmount := common2.ReadUint40(pubData, offset)
+	royaltyAmount, err := util.UnpackAmount(big.NewInt(royaltyPackedAmount))
 	if err != nil {
 		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
 		return err
@@ -493,7 +493,7 @@ func (c *ExodusExit) executeAtomicMatch(pubData []byte) error {
 			OfferId:      int64(sellOfferOfferId),
 			AssetId:      int64(sellOfferAssetId),
 		},
-		CreatorAmount:     creatorAmount,
+		RoyaltyAmount:     royaltyAmount,
 		GasAccountIndex:   types.GasAccount,
 		GasFeeAssetAmount: gasFeeAssetAmount,
 		GasFeeAssetId:     int64(gasFeeAssetId),
@@ -628,7 +628,7 @@ func (c *ExodusExit) executeDepositNft(pubData []byte) error {
 	offset := 1
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
 	offset, creatorAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, creatorTreasuryRate := common2.ReadUint16(pubData, offset)
+	offset, royaltyRate := common2.ReadUint16(pubData, offset)
 	offset, nftIndex := common2.ReadUint40(pubData, offset)
 	offset, collectionId := common2.ReadUint16(pubData, offset)
 	offset, l1Address := common2.ReadAddress(pubData, offset)
@@ -640,7 +640,7 @@ func (c *ExodusExit) executeDepositNft(pubData []byte) error {
 		NftIndex:            nftIndex,
 		CreatorAccountIndex: int64(creatorAccountIndex),
 		CollectionId:        int64(collectionId),
-		CreatorTreasuryRate: int64(creatorTreasuryRate),
+		RoyaltyRate:         int64(royaltyRate),
 		NftContentHash:      nftContentHash,
 		L1Address:           l1Address,
 		NftContentType:      int64(nftContentType),
@@ -701,7 +701,7 @@ func (c *ExodusExit) executeFullExitNft(pubData []byte) error {
 	offset := 1
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
 	offset, creatorAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, creatorTreasuryRate := common2.ReadUint16(pubData, offset)
+	offset, royaltyRate := common2.ReadUint16(pubData, offset)
 	offset, nftIndex := common2.ReadUint40(pubData, offset)
 	offset, collectionId := common2.ReadUint16(pubData, offset)
 	offset, l1Address := common2.ReadAddress(pubData, offset)
@@ -712,7 +712,7 @@ func (c *ExodusExit) executeFullExitNft(pubData []byte) error {
 	var txInfo = &txtypes.FullExitNftTxInfo{
 		AccountIndex:        int64(accountIndex),
 		CreatorAccountIndex: int64(creatorAccountIndex),
-		CreatorTreasuryRate: int64(creatorTreasuryRate),
+		RoyaltyRate:         int64(royaltyRate),
 		NftIndex:            nftIndex,
 		CollectionId:        int64(collectionId),
 		L1Address:           l1Address,
@@ -752,7 +752,7 @@ func (c *ExodusExit) executeMintNft(pubData []byte) error {
 	if err != nil {
 		return err
 	}
-	offset, creatorTreasuryRate := common2.ReadUint16(pubData, offset)
+	offset, royaltyRate := common2.ReadUint16(pubData, offset)
 	offset, collectionId := common2.ReadUint16(pubData, offset)
 	offset, nftContentHash := common2.ReadPrefixPaddingBufToChunkSize(pubData, offset)
 
@@ -765,7 +765,7 @@ func (c *ExodusExit) executeMintNft(pubData []byte) error {
 		GasFeeAssetAmount:   gasFeeAssetAmount,
 		NftCollectionId:     int64(collectionId),
 		NftContentHash:      common.Bytes2Hex(nftContentHash),
-		CreatorTreasuryRate: int64(creatorTreasuryRate),
+		RoyaltyRate:         int64(royaltyRate),
 	}
 	executor := &executor.MintNftExecutor{
 		BaseExecutor: executor.NewBaseExecutor(bc, nil, txInfo, true),
@@ -973,7 +973,7 @@ func (c *ExodusExit) executeWithdrawNft(pubData []byte) error {
 	offset := 1
 	offset, fromAccountIndex := common2.ReadUint32(pubData, offset)
 	offset, creatorAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, creatorTreasuryRate := common2.ReadUint16(pubData, offset)
+	offset, royaltyRate := common2.ReadUint16(pubData, offset)
 	offset, nftIndex := common2.ReadUint40(pubData, offset)
 	offset, collectionId := common2.ReadUint16(pubData, offset)
 	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
@@ -989,7 +989,7 @@ func (c *ExodusExit) executeWithdrawNft(pubData []byte) error {
 	txInfo := &txtypes.WithdrawNftTxInfo{
 		AccountIndex:        int64(fromAccountIndex),
 		CreatorAccountIndex: int64(creatorAccountIndex),
-		CreatorTreasuryRate: int64(creatorTreasuryRate),
+		RoyaltyRate:         int64(royaltyRate),
 		NftIndex:            nftIndex,
 		ToAddress:           toAddress,
 		CollectionId:        int64(collectionId),
@@ -1199,7 +1199,7 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 			exitNftData.NftIndex = uint64(nftIndex)
 			exitNftData.CollectionId = nftInfo.CollectionId
 			exitNftData.CreatorAccountIndex = nftInfo.CreatorAccountIndex
-			exitNftData.CreatorTreasuryRate = nftInfo.CreatorTreasuryRate
+			exitNftData.CreatorTreasuryRate = nftInfo.RoyaltyRate
 			exitNftData.NftContentType = uint8(nftInfo.NftContentType)
 			exitNftData.OwnerAccountIndex = nftInfo.OwnerAccountIndex
 			exitNfts = append(exitNfts, exitNftData)
