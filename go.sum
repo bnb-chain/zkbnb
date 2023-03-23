@@ -907,8 +907,8 @@ github.com/prometheus/procfs v0.8.0 h1:ODq8ZFEaYeCaZOJlZZdJA2AbQR98dSHSM1KW/You5
 github.com/prometheus/procfs v0.8.0/go.mod h1:z7EfXMXOkbkqb9IINtpCn86r/to3BnA0uaxHdg830/4=
 github.com/prometheus/tsdb v0.7.1 h1:YZcsG11NqnK4czYLrWd9mpEuAJIHVQLwdrleYfszMAA=
 github.com/prometheus/tsdb v0.7.1/go.mod h1:qhTCs0VvXwvX/y3TZrWD7rabWM+ijKTux40TwIPHuXU=
-github.com/qct/zkbnb-crypto v0.0.0-20230321175723-fcd72bffa837 h1:zPDXGiOMnnuvjA9CaeLSbFKIozMV+SOjdAnHTzBx1Cc=
-github.com/qct/zkbnb-crypto v0.0.0-20230321175723-fcd72bffa837/go.mod h1:8n8Sy6JyBmL8QRiv62l19LQyDhmwG6DTg0v+YujL0QY=
+github.com/qct/zkbnb-crypto v0.0.0-20230327105027-3e1dc6a2a6fd h1:U/JqTdn0urx/jZpParMmAFiHIcpPSQ7MxfUBct1uw2g=
+github.com/qct/zkbnb-crypto v0.0.0-20230327105027-3e1dc6a2a6fd/go.mod h1:8n8Sy6JyBmL8QRiv62l19LQyDhmwG6DTg0v+YujL0QY=
 github.com/qct/zkbnb-smt v0.0.0-20230116124655-bad4d92a74f1 h1:eOCPSifBBQiQD0aGLlAoWoYUdI9aOJLC0zzo8RWAgek=
 github.com/qct/zkbnb-smt v0.0.0-20230116124655-bad4d92a74f1/go.mod h1:CHVooyzRRzTqcSUcUKJZlJ5QsOyyS3JPVyML7xU9/uQ=
 github.com/rabbitmq/amqp091-go v1.1.0/go.mod h1:ogQDLSOACsLPsIq0NpbtiifNZi2YOz0VTJ0kHRghqbM=
