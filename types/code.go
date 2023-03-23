@@ -102,7 +102,10 @@ var (
 	AppErrInvalidSellOfferState      = New(21511, "invalid sell offer state, already canceled or finalized")
 	AppErrInvalidBuyOfferState       = New(21512, "invalid buy offer state, already canceled or finalized")
 	AppErrInvalidAssetOfOffer        = New(21513, "invalid asset of offer")
-
+	AppErrInvalidPlatformRate        = New(21514, "invalid platform rate")
+	AppErrInvalidPlatformAmount      = New(21515, "invalid platform amount")
+	AppErrInvalidSellPlatformAmount  = New(21516, "sell platform amount should be 0")
+	AppErrInvalidSellPlatformRate    = New(21517, "sell platform rate should be 0")
 	// Nft
 	AppErrNftAlreadyExist          = New(21600, "invalid nft index, already exist")
 	AppErrInvalidNftContenthash    = New(21601, "invalid nft content hash")

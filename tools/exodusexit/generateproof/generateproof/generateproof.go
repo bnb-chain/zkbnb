@@ -472,13 +472,6 @@ func (c *ExodusExit) executeAtomicMatch(pubData []byte) error {
 		return err
 	}
 
-	offset, treasuryPackedAmount := common2.ReadUint40(pubData, offset)
-	treasuryAmount, err := util.UnpackAmount(big.NewInt(treasuryPackedAmount))
-	if err != nil {
-		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
-		return err
-	}
-
 	offset, gasFeeAssetId := common2.ReadUint16(pubData, offset)
 
 	offset, gasFeeAssetPackedAmount := common2.ReadUint16(pubData, offset)
@@ -501,7 +494,6 @@ func (c *ExodusExit) executeAtomicMatch(pubData []byte) error {
 			AssetId:      int64(sellOfferAssetId),
 		},
 		CreatorAmount:     creatorAmount,
-		TreasuryAmount:    treasuryAmount,
 		GasAccountIndex:   types.GasAccount,
 		GasFeeAssetAmount: gasFeeAssetAmount,
 		GasFeeAssetId:     int64(gasFeeAssetId),

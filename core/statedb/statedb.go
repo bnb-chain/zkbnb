@@ -820,6 +820,28 @@ func (s *StateDB) SetPendingNonceToRedisCache(accountIndex int64, nonce int64) {
 	_ = s.redisCache.Set(context.Background(), dbcache.AccountNonceKeyByIndex(accountIndex), nonce)
 }
 
+func (s *StateDB) ClearPlatformFeeRateFromRedisCache() {
+	_ = s.redisCache.Delete(context.Background(), dbcache.PlatformFeeRate)
+}
+
+func (s *StateDB) GetPlatformFeeRateFromRedisCache() (int64, error) {
+	var platformFeeRate int64
+	rate, err := s.redisCache.Get(context.Background(), dbcache.PlatformFeeRate, &platformFeeRate)
+	if err == nil && rate != nil {
+		return platformFeeRate, nil
+	}
+	sysPlatformFeeRate, err := s.chainDb.SysConfigModel.GetSysConfigByName("PlatformFeeRate")
+	if err == nil {
+		feeRate, err := strconv.ParseInt(sysPlatformFeeRate.Value, 10, 64)
+		if err != nil {
+			return 0, err
+		}
+		_ = s.redisCache.Set(context.Background(), dbcache.PlatformFeeRate, feeRate)
+		return feeRate, err
+	}
+	return 0, err
+}
+
 func (s *StateDB) GetNextAccountIndex() int64 {
 	return s.AccountAssetTrees.GetNextAccountIndex()
 }

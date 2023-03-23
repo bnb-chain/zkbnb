@@ -55,9 +55,12 @@ func (e *AtomicMatchExecutor) Prepare() error {
 		return err
 	}
 
-	// Set the right treasury and creator treasury amount.
-	txInfo.TreasuryAmount = ffmath.Div(ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(txInfo.SellOffer.TreasuryRate)), big.NewInt(TenThousand))
+	// Set the right creator treasury amount.
 	txInfo.CreatorAmount = ffmath.Div(ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(matchNft.CreatorTreasuryRate)), big.NewInt(TenThousand))
+
+	// Set the right BuyChanel and SellChanel amount.
+	txInfo.BuyChanelAmount = ffmath.Div(ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(txInfo.BuyOffer.ChanelRate)), big.NewInt(TenThousand))
+	txInfo.SellChanelAmount = ffmath.Div(ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(txInfo.SellOffer.ChanelRate)), big.NewInt(TenThousand))
 
 	// Mark the tree states that would be affected in this executor.
 	e.MarkNftDirty(txInfo.SellOffer.NftIndex)
@@ -66,6 +69,8 @@ func (e *AtomicMatchExecutor) Prepare() error {
 	e.MarkAccountAssetsDirty(txInfo.SellOffer.AccountIndex, []int64{txInfo.SellOffer.AssetId, e.sellOfferAssetId})
 	e.MarkAccountAssetsDirty(matchNft.CreatorAccountIndex, []int64{txInfo.BuyOffer.AssetId})
 	e.MarkAccountAssetsDirty(txInfo.GasAccountIndex, []int64{txInfo.BuyOffer.AssetId, txInfo.GasFeeAssetId})
+	e.MarkAccountAssetsDirty(txInfo.BuyOffer.ChanelAccountIndex, []int64{txInfo.BuyOffer.AssetId})
+	e.MarkAccountAssetsDirty(txInfo.SellOffer.ChanelAccountIndex, []int64{txInfo.SellOffer.AssetId})
 	return e.BaseExecutor.Prepare()
 }
 
@@ -78,6 +83,19 @@ func (e *AtomicMatchExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 		return err
 	}
 
+	platformFeeRate, err := bc.StateDB().GetPlatformFeeRateFromRedisCache()
+	if err != nil {
+		return err
+	}
+
+	if platformFeeRate != txInfo.BuyOffer.PlatformRate {
+		return types.AppErrInvalidPlatformRate
+	}
+	platformFee := ffmath.Div(ffmath.Multiply(txInfo.SellOffer.AssetAmount, big.NewInt(txInfo.BuyOffer.PlatformRate)), big.NewInt(TenThousand))
+	if platformFee.Cmp(txInfo.BuyOffer.PlatformAmount) != 0 {
+		return types.AppErrInvalidPlatformAmount
+	}
+
 	if txInfo.BuyOffer.Type != types.BuyOfferType ||
 		txInfo.SellOffer.Type != types.SellOfferType {
 		return types.AppErrInvalidOfferType
@@ -87,8 +105,7 @@ func (e *AtomicMatchExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 	}
 	if txInfo.SellOffer.NftIndex != txInfo.BuyOffer.NftIndex ||
 		txInfo.SellOffer.AssetId != txInfo.BuyOffer.AssetId ||
-		txInfo.SellOffer.AssetAmount.String() != txInfo.BuyOffer.AssetAmount.String() ||
-		txInfo.SellOffer.TreasuryRate != txInfo.BuyOffer.TreasuryRate {
+		txInfo.SellOffer.AssetAmount.String() != txInfo.BuyOffer.AssetAmount.String() {
 		return types.AppErrBuyOfferMismatchSellOffer
 	}
 
@@ -123,10 +140,21 @@ func (e *AtomicMatchExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 	if err != nil {
 		return err
 	}
-
+	_, err = bc.StateDB().GetFormatAccount(txInfo.BuyOffer.ChanelAccountIndex)
+	if err != nil {
+		return err
+	}
+	_, err = bc.StateDB().GetFormatAccount(txInfo.SellOffer.ChanelAccountIndex)
+	if err != nil {
+		return err
+	}
 	// Check sender's gas balance and buyer's asset balance.
 	if txInfo.AccountIndex == txInfo.BuyOffer.AccountIndex && txInfo.GasFeeAssetId == txInfo.SellOffer.AssetId {
-		totalBalance := ffmath.Add(txInfo.GasFeeAssetAmount, txInfo.BuyOffer.AssetAmount)
+		totalBalance := ffmath.Add(ffmath.Add(ffmath.Add(ffmath.Add(
+			txInfo.BuyOffer.AssetAmount, txInfo.BuyOffer.PlatformAmount),
+			txInfo.CreatorAmount),
+			txInfo.BuyChanelAmount),
+			txInfo.GasFeeAssetAmount)
 		if fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance.Cmp(totalBalance) < 0 {
 			return types.AppErrSellerBalanceNotEnough
 		}
@@ -135,7 +163,12 @@ func (e *AtomicMatchExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 			return types.AppErrSellerBalanceNotEnough
 		}
 
-		if buyAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance.Cmp(txInfo.BuyOffer.AssetAmount) < 0 {
+		buyDeltaAmount := ffmath.Add(ffmath.Add(ffmath.Add(
+			txInfo.BuyOffer.AssetAmount, txInfo.BuyOffer.PlatformAmount),
+			txInfo.CreatorAmount),
+			txInfo.BuyChanelAmount)
+
+		if buyAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance.Cmp(buyDeltaAmount) < 0 {
 			return types.AppErrBuyerBalanceNotEnough
 		}
 	}
@@ -206,12 +239,28 @@ func (e *AtomicMatchExecutor) ApplyTransaction() error {
 	if err != nil {
 		return err
 	}
+	buyChanelAccount, err := bc.StateDB().GetFormatAccount(txInfo.BuyOffer.ChanelAccountIndex)
+	if err != nil {
+		return err
+	}
+	sellChanelAccount, err := bc.StateDB().GetFormatAccount(txInfo.SellOffer.ChanelAccountIndex)
+	if err != nil {
+		return err
+	}
 
 	fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Sub(fromAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
-	buyAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance = ffmath.Sub(buyAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance, txInfo.BuyOffer.AssetAmount)
-	sellAccount.AssetInfo[txInfo.SellOffer.AssetId].Balance = ffmath.Add(sellAccount.AssetInfo[txInfo.SellOffer.AssetId].Balance, ffmath.Sub(
-		txInfo.BuyOffer.AssetAmount, ffmath.Add(txInfo.TreasuryAmount, txInfo.CreatorAmount)))
+	buyAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance = ffmath.Sub(buyAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance,
+		ffmath.Add(ffmath.Add(ffmath.Add(
+			txInfo.BuyOffer.AssetAmount, txInfo.BuyOffer.PlatformAmount),
+			txInfo.CreatorAmount),
+			txInfo.BuyChanelAmount))
+	sellAccount.AssetInfo[txInfo.SellOffer.AssetId].Balance = ffmath.Add(sellAccount.AssetInfo[txInfo.SellOffer.AssetId].Balance,
+		ffmath.Sub(txInfo.BuyOffer.AssetAmount, txInfo.SellChanelAmount))
+
 	creatorAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance = ffmath.Add(creatorAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance, txInfo.CreatorAmount)
+	buyChanelAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance = ffmath.Add(buyChanelAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance, txInfo.BuyChanelAmount)
+	sellChanelAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance = ffmath.Add(sellChanelAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance, txInfo.SellChanelAmount)
+
 	fromAccount.Nonce++
 
 	sellOffer := sellAccount.AssetInfo[e.sellOfferAssetId].OfferCanceledOrFinalized
@@ -229,8 +278,10 @@ func (e *AtomicMatchExecutor) ApplyTransaction() error {
 	stateCache.SetPendingAccount(buyAccount.AccountIndex, buyAccount)
 	stateCache.SetPendingAccount(sellAccount.AccountIndex, sellAccount)
 	stateCache.SetPendingAccount(creatorAccount.AccountIndex, creatorAccount)
+	stateCache.SetPendingAccount(buyChanelAccount.AccountIndex, buyChanelAccount)
+	stateCache.SetPendingAccount(sellChanelAccount.AccountIndex, sellChanelAccount)
 	stateCache.SetPendingNft(matchNft.NftIndex, matchNft)
-	stateCache.SetPendingGas(txInfo.BuyOffer.AssetId, txInfo.TreasuryAmount)
+	stateCache.SetPendingGas(txInfo.BuyOffer.AssetId, txInfo.BuyOffer.PlatformAmount)
 	stateCache.SetPendingGas(txInfo.GasFeeAssetId, txInfo.GasFeeAssetAmount)
 	return e.BaseExecutor.ApplyTransaction()
 }
@@ -261,13 +312,6 @@ func (e *AtomicMatchExecutor) GeneratePubData() error {
 	}
 	buf.Write(creatorAmountBytes)
 
-	treasuryAmountBytes, err := common2.AmountToPackedAmountBytes(txInfo.TreasuryAmount)
-	if err != nil {
-		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
-		return err
-	}
-	buf.Write(treasuryAmountBytes)
-
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
 	packedFeeBytes, err := common2.FeeToPackedFeeBytes(txInfo.GasFeeAssetAmount)
 	if err != nil {
@@ -275,6 +319,30 @@ func (e *AtomicMatchExecutor) GeneratePubData() error {
 		return err
 	}
 	buf.Write(packedFeeBytes)
+
+	platformAmountBytes, err := common2.AmountToPackedAmountBytes(txInfo.BuyOffer.PlatformAmount)
+	if err != nil {
+		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
+		return err
+	}
+	buf.Write(platformAmountBytes)
+
+	buf.Write(common2.Uint32ToBytes(uint32(txInfo.BuyOffer.ChanelAccountIndex)))
+	buyChanelAmount, err := common2.AmountToPackedAmountBytes(txInfo.BuyChanelAmount)
+	if err != nil {
+		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
+		return err
+	}
+	buf.Write(buyChanelAmount)
+
+	buf.Write(common2.Uint32ToBytes(uint32(txInfo.SellOffer.ChanelAccountIndex)))
+	sellChanelAmount, err := common2.AmountToPackedAmountBytes(txInfo.SellChanelAmount)
+	if err != nil {
+		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
+		return err
+	}
+	buf.Write(sellChanelAmount)
+
 	pubData := common2.SuffixPaddingBuToPubdataSize(buf.Bytes())
 
 	stateCache := e.bc.StateDB()
@@ -307,7 +375,8 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	}
 
 	copiedAccounts, err := e.bc.StateDB().DeepCopyAccounts([]int64{txInfo.AccountIndex, txInfo.GasAccountIndex,
-		txInfo.SellOffer.AccountIndex, txInfo.BuyOffer.AccountIndex, matchNft.CreatorAccountIndex})
+		txInfo.SellOffer.AccountIndex, txInfo.BuyOffer.AccountIndex, matchNft.CreatorAccountIndex,
+		txInfo.BuyOffer.ChanelAccountIndex, txInfo.SellOffer.ChanelAccountIndex})
 	if err != nil {
 		return nil, err
 	}
@@ -315,9 +384,11 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	buyAccount := copiedAccounts[txInfo.BuyOffer.AccountIndex]
 	sellAccount := copiedAccounts[txInfo.SellOffer.AccountIndex]
 	creatorAccount := copiedAccounts[matchNft.CreatorAccountIndex]
+	buyChanelAccount := copiedAccounts[txInfo.BuyOffer.ChanelAccountIndex]
+	sellChanelAccount := copiedAccounts[txInfo.SellOffer.ChanelAccountIndex]
 	gasAccount := copiedAccounts[txInfo.GasAccountIndex]
 
-	txDetails := make([]*tx.TxDetail, 0, 9)
+	txDetails := make([]*tx.TxDetail, 0, 11)
 
 	// from account gas asset
 	order := int64(0)
@@ -341,6 +412,11 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	// buyer asset A
 	order++
 	accountOrder++
+	buyDeltaAmount := ffmath.Add(ffmath.Add(ffmath.Add(
+		txInfo.BuyOffer.AssetAmount, txInfo.BuyOffer.PlatformAmount),
+		txInfo.CreatorAmount),
+		txInfo.BuyChanelAmount)
+
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.BuyOffer.AssetId,
 		AssetType:    types.FungibleAssetType,
@@ -348,7 +424,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		L1Address:    buyAccount.L1Address,
 		Balance:      buyAccount.AssetInfo[txInfo.BuyOffer.AssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.BuyOffer.AssetId, ffmath.Neg(txInfo.BuyOffer.AssetAmount), types.ZeroBigInt,
+			txInfo.BuyOffer.AssetId, ffmath.Neg(buyDeltaAmount), types.ZeroBigInt,
 		).String(),
 		Order:           order,
 		AccountOrder:    accountOrder,
@@ -356,7 +432,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		CollectionNonce: buyAccount.CollectionNonce,
 		PublicKey:       buyAccount.PublicKey,
 	})
-	buyAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance = ffmath.Sub(buyAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance, txInfo.BuyOffer.AssetAmount)
+	buyAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance = ffmath.Sub(buyAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance, buyDeltaAmount)
 
 	// buy offer
 	order++
@@ -381,7 +457,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 	// seller asset A
 	order++
 	accountOrder++
-	sellDeltaAmount := ffmath.Sub(txInfo.SellOffer.AssetAmount, ffmath.Add(txInfo.TreasuryAmount, txInfo.CreatorAmount))
+	sellDeltaAmount := ffmath.Sub(txInfo.SellOffer.AssetAmount, txInfo.SellChanelAmount)
 	txDetails = append(txDetails, &tx.TxDetail{
 		AssetId:      txInfo.SellOffer.AssetId,
 		AssetType:    types.FungibleAssetType,
@@ -457,7 +533,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		PublicKey:       types.EmptyPk,
 	})
 
-	// gas account asset A - treasury fee
+	// gas account asset A - platform fee
 	order++
 	accountOrder++
 	txDetails = append(txDetails, &tx.TxDetail{
@@ -467,7 +543,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		L1Address:    gasAccount.L1Address,
 		Balance:      gasAccount.AssetInfo[txInfo.BuyOffer.AssetId].String(),
 		BalanceDelta: types.ConstructAccountAsset(
-			txInfo.BuyOffer.AssetId, txInfo.TreasuryAmount, types.ZeroBigInt).String(),
+			txInfo.BuyOffer.AssetId, txInfo.BuyOffer.PlatformAmount, types.ZeroBigInt).String(),
 		Order:           order,
 		AccountOrder:    accountOrder,
 		Nonce:           gasAccount.Nonce,
@@ -475,7 +551,7 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		IsGas:           true,
 		PublicKey:       gasAccount.PublicKey,
 	})
-	gasAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance, txInfo.TreasuryAmount)
+	gasAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance, txInfo.BuyOffer.PlatformAmount)
 
 	// gas account asset gas
 	order++
@@ -495,6 +571,46 @@ func (e *AtomicMatchExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		PublicKey:       gasAccount.PublicKey,
 	})
 	gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance = ffmath.Add(gasAccount.AssetInfo[txInfo.GasFeeAssetId].Balance, txInfo.GasFeeAssetAmount)
+
+	// buyChanelAccount
+	order++
+	accountOrder++
+	txDetails = append(txDetails, &tx.TxDetail{
+		AssetId:      txInfo.BuyOffer.AssetId,
+		AssetType:    types.FungibleAssetType,
+		AccountIndex: txInfo.BuyOffer.ChanelAccountIndex,
+		L1Address:    buyChanelAccount.L1Address,
+		Balance:      buyChanelAccount.AssetInfo[txInfo.BuyOffer.AssetId].String(),
+		BalanceDelta: types.ConstructAccountAsset(
+			txInfo.BuyOffer.AssetId, txInfo.BuyChanelAmount, types.ZeroBigInt,
+		).String(),
+		Order:           order,
+		AccountOrder:    accountOrder,
+		Nonce:           buyChanelAccount.Nonce,
+		CollectionNonce: buyChanelAccount.CollectionNonce,
+		PublicKey:       buyChanelAccount.PublicKey,
+	})
+	buyChanelAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance = ffmath.Add(buyChanelAccount.AssetInfo[txInfo.BuyOffer.AssetId].Balance, txInfo.BuyChanelAmount)
+
+	// sellChanelAccount
+	order++
+	accountOrder++
+	txDetails = append(txDetails, &tx.TxDetail{
+		AssetId:      txInfo.SellOffer.AssetId,
+		AssetType:    types.FungibleAssetType,
+		AccountIndex: txInfo.SellOffer.ChanelAccountIndex,
+		L1Address:    sellChanelAccount.L1Address,
+		Balance:      sellChanelAccount.AssetInfo[txInfo.SellOffer.AssetId].String(),
+		BalanceDelta: types.ConstructAccountAsset(
+			txInfo.SellOffer.AssetId, txInfo.SellChanelAmount, types.ZeroBigInt,
+		).String(),
+		Order:           order,
+		AccountOrder:    accountOrder,
+		Nonce:           sellChanelAccount.Nonce,
+		CollectionNonce: sellChanelAccount.CollectionNonce,
+		PublicKey:       sellChanelAccount.PublicKey,
+	})
+	sellChanelAccount.AssetInfo[txInfo.SellOffer.AssetId].Balance = ffmath.Add(sellChanelAccount.AssetInfo[txInfo.SellOffer.AssetId].Balance, txInfo.SellChanelAmount)
 
 	return txDetails, nil
 }
