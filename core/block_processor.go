@@ -130,10 +130,12 @@ func (p *APIProcessor) Process(tx *tx.Tx) error {
 	}
 	err = executor.VerifyInputs(false, false)
 	if err != nil {
+		logx.Error("fail to VerifyInput:", err)
 		return mappingVerifyInputsErrors(err)
 	}
 	_, err = executor.GetExecutedTx(true)
 	if err != nil {
+		logx.Error("fail to GetExecutedTx:", err)
 		return mappingExecutedErrors(err)
 	}
 	return nil
@@ -205,8 +207,14 @@ func mappingVerifyInputsErrors(err error) error {
 		return types.AppErrInvalidBuyOffer
 	case txtypes.ErrSellOfferInvalid:
 		return types.AppErrInvalidSellOffer
-
 	default:
-		return types.AppErrInvalidTxField.RefineError(err.Error())
+		return formatVerifyInputsErrors(err)
 	}
+}
+
+func formatVerifyInputsErrors(err error) error {
+	if _, ok := err.(types.Error); ok {
+		return err
+	}
+	return types.AppErrInvalidTxField.RefineError(err)
 }

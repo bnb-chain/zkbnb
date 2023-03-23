@@ -3,7 +3,6 @@ package core
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/metrics"
 	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof/config"
@@ -858,7 +857,7 @@ func (bc *BlockChain) VerifyGas(gasAccountIndex, gasFeeAssetId int64, txType int
 	if !skipGasAmtChk {
 		gasFee, ok := gasAsset[txType]
 		if !ok {
-			return errors.New("invalid tx type")
+			return types.AppErrInvalidTxType
 		}
 		if gasFeeAmount.Cmp(big.NewInt(gasFee)) < 0 {
 			return types.AppErrInvalidGasFeeAmount
