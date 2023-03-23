@@ -128,15 +128,15 @@ func (f *Fetcher) fetcherForAtomicMatch(txInfo string) (string, string, error) {
 		logx.Errorf("parse atomic match tx failed: %s", err.Error())
 		return "", "", types.AppErrInvalidTxInfo
 	}
-	sellL1Address1, err := f.fetchL1AddressByAccountIndex(transaction.SellOffer.AccountIndex)
+	sellOfferL1Address, err := f.fetchL1AddressByAccountIndex(transaction.SellOffer.AccountIndex)
 	if err != nil {
 		return "", "", err
 	}
-	buyL1Address2, err := f.fetchL1AddressByAccountIndex(transaction.BuyOffer.AccountIndex)
+	buyOfferL1Address, err := f.fetchL1AddressByAccountIndex(transaction.BuyOffer.AccountIndex)
 	if err != nil {
 		return "", "", err
 	}
-	return sellL1Address1, buyL1Address2, nil
+	return sellOfferL1Address, buyOfferL1Address, nil
 }
 
 func (f *Fetcher) fetcherForAccount(txInfo string) (string, error) {
