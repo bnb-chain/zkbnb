@@ -42,8 +42,10 @@ func (f *Fetcher) GetL1AddressByTx(TxType uint32, TxInfo string) ([]string, erro
 		l1Address0, err = f.fetcherForCancelOffer(TxInfo)
 	} else if types.TxTypeAtomicMatch == TxType {
 		l1Address0, l1Address1, err = f.fetcherForAtomicMatch(TxInfo)
-	} else if types.TxTypeEmpty == TxType {
-		l1Address0, err = f.fetcherForAccount(TxInfo)
+	} else if types.TxTypeUpdateNFT == TxType {
+		l1Address0, err = f.fetcherForUpdateNft(TxInfo)
+	} else if types.TxTypeChangePubKey == TxType {
+		l1Address0, err = f.fetcherForChangePubKey(TxInfo)
 	} else {
 		return nil, errors.New(fmt.Sprintf("Can not find Fetcher Function for TxType:%d", TxType))
 	}
@@ -139,12 +141,21 @@ func (f *Fetcher) fetcherForAtomicMatch(txInfo string) (string, string, error) {
 	return sellOfferL1Address, buyOfferL1Address, nil
 }
 
-func (f *Fetcher) fetcherForAccount(txInfo string) (string, error) {
+func (f *Fetcher) fetcherForUpdateNft(txInfo string) (string, error) {
 	tx, err := types.ParseUpdateNftTxInfo(txInfo)
 	if err != nil {
 		return "", err
 	}
 	return f.fetchL1AddressByAccountIndex(tx.AccountIndex)
+}
+
+func (f *Fetcher) fetcherForChangePubKey(txInfo string) (string, error) {
+	transaction, err := types.ParseChangePubKeyTxInfo(txInfo)
+	if err != nil {
+		logx.Errorf("parse ChangePubKey tx failed: %s", err.Error())
+		return "", types.AppErrInvalidTxInfo
+	}
+	return f.fetchL1AddressByAccountIndex(transaction.AccountIndex)
 }
 
 func (f *Fetcher) fetchL1AddressByAccountIndex(accountIndex int64) (string, error) {
