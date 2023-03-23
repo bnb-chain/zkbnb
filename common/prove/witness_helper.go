@@ -406,7 +406,7 @@ func (w *WitnessHelper) constructNftWitness(
 		NftContentHash:      common.FromHex(proverNftInfo.NftInfo.NftContentHash),
 		CreatorAccountIndex: proverNftInfo.NftInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   proverNftInfo.NftInfo.OwnerAccountIndex,
-		CreatorTreasuryRate: proverNftInfo.NftInfo.CreatorTreasuryRate,
+		RoyaltyRate:         proverNftInfo.NftInfo.RoyaltyRate,
 		CollectionId:        proverNftInfo.NftInfo.CollectionId,
 		NftContentType:      proverNftInfo.NftInfo.NftContentType,
 	}
@@ -427,7 +427,7 @@ func (w *WitnessHelper) constructNftWitness(
 		nNftInfo.CreatorAccountIndex,
 		nNftInfo.OwnerAccountIndex,
 		nNftInfo.NftContentHash,
-		nNftInfo.CreatorTreasuryRate,
+		nNftInfo.RoyaltyRate,
 		nNftInfo.CollectionId,
 		nNftInfo.NftContentType,
 		nNftInfo.NftIndex,

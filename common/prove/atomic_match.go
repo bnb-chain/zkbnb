@@ -55,11 +55,11 @@ func toCryptoAtomicMatchTx(txInfo *txtypes.AtomicMatchTxInfo) (info *cryptoTypes
 	if err != nil {
 		return nil, err
 	}
-	packedCreatorAmount, err := common.ToPackedAmount(txInfo.CreatorAmount)
+	packedRoyaltyAmount, err := common.ToPackedAmount(txInfo.RoyaltyAmount)
 	if err != nil {
 		return nil, err
 	}
-	packedPlatformAmount, err := common.ToPackedAmount(txInfo.BuyOffer.PlatformAmount)
+	packedProtocolAmount, err := common.ToPackedAmount(txInfo.BuyOffer.ProtocolAmount)
 	if err != nil {
 		return nil, err
 	}
@@ -93,10 +93,11 @@ func toCryptoAtomicMatchTx(txInfo *txtypes.AtomicMatchTxInfo) (info *cryptoTypes
 			AssetAmount:        packedAmount,
 			ListedAt:           txInfo.BuyOffer.ListedAt,
 			ExpiredAt:          txInfo.BuyOffer.ExpiredAt,
+			RoyaltyRate:        txInfo.BuyOffer.RoyaltyRate,
 			ChanelAccountIndex: txInfo.BuyOffer.ChanelAccountIndex,
 			ChanelRate:         txInfo.BuyOffer.ChanelRate,
-			PlatformRate:       txInfo.BuyOffer.PlatformRate,
-			PlatformAmount:     packedPlatformAmount,
+			ProtocolRate:       txInfo.BuyOffer.ProtocolRate,
+			ProtocolAmount:     packedProtocolAmount,
 			Sig:                buySig,
 		},
 		SellOffer: &cryptoTypes.OfferTx{
@@ -112,7 +113,7 @@ func toCryptoAtomicMatchTx(txInfo *txtypes.AtomicMatchTxInfo) (info *cryptoTypes
 			ChanelRate:         txInfo.SellOffer.ChanelRate,
 			Sig:                sellSig,
 		},
-		CreatorAmount:     packedCreatorAmount,
+		RoyaltyAmount:     packedRoyaltyAmount,
 		GasAccountIndex:   txInfo.GasAccountIndex,
 		GasFeeAssetId:     txInfo.GasFeeAssetId,
 		GasFeeAssetAmount: packedFee,

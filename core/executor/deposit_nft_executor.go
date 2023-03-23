@@ -114,7 +114,7 @@ func (e *DepositNftExecutor) ApplyTransaction() error {
 		CreatorAccountIndex: txInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   txInfo.AccountIndex,
 		NftContentHash:      common.Bytes2Hex(txInfo.NftContentHash),
-		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
+		RoyaltyRate:         txInfo.RoyaltyRate,
 		CollectionId:        txInfo.CollectionId,
 		NftContentType:      txInfo.NftContentType,
 	}
@@ -135,7 +135,7 @@ func (e *DepositNftExecutor) GeneratePubData() error {
 	buf.WriteByte(uint8(types.TxTypeDepositNft))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
-	buf.Write(common2.Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
+	buf.Write(common2.Uint16ToBytes(uint16(txInfo.RoyaltyRate)))
 	buf.Write(common2.Uint40ToBytes(txInfo.NftIndex))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.CollectionId)))
 	buf.Write(common2.AddressStrToBytes(txInfo.L1Address))
@@ -228,7 +228,7 @@ func (e *DepositNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		txInfo.CreatorAccountIndex,
 		txInfo.AccountIndex,
 		common.Bytes2Hex(txInfo.NftContentHash),
-		txInfo.CreatorTreasuryRate,
+		txInfo.RoyaltyRate,
 		txInfo.CollectionId,
 		txInfo.NftContentType,
 	)

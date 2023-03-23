@@ -86,8 +86,8 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 			{
 				Method:  http.MethodGet,
-				Path:    "/api/v1/getPlatformFeeRate",
-				Handler: info.GetPlatformFeeRateHandler(serverCtx),
+				Path:    "/api/v1/getProtocolRate",
+				Handler: info.GetProtocolRateHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,
@@ -193,6 +193,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/api/v1/accountNfts",
 				Handler: nft.GetAccountNftsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/api/v1/GetNftByNftIndex",
+				Handler: nft.GetNftByNftIndexHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodGet,

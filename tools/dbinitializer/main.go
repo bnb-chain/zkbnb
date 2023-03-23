@@ -196,10 +196,10 @@ func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC
 			Comment:   "based on BNB",
 		},
 		{
-			Name:      types.PlatformFeeRate,
+			Name:      types.ProtocolRate,
 			Value:     "200",
 			ValueType: "int",
-			Comment:   "platform fee rate",
+			Comment:   "protocol rate",
 		},
 		{
 			Name:      types.TreasuryAccountIndex,

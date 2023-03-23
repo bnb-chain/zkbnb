@@ -112,7 +112,7 @@ func (e *MintNftExecutor) ApplyTransaction() error {
 		CreatorAccountIndex: txInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   txInfo.ToAccountIndex,
 		NftContentHash:      txInfo.NftContentHash,
-		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
+		RoyaltyRate:         txInfo.RoyaltyRate,
 		CollectionId:        txInfo.NftCollectionId,
 		NftContentType:      txInfo.NftContentType,
 	})
@@ -140,7 +140,7 @@ func (e *MintNftExecutor) GeneratePubData() error {
 		return err
 	}
 	buf.Write(packedFeeBytes)
-	buf.Write(common2.Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
+	buf.Write(common2.Uint16ToBytes(uint16(txInfo.RoyaltyRate)))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.NftCollectionId)))
 	buf.Write(common2.PrefixPaddingBufToChunkSize(common.FromHex(txInfo.NftContentHash)))
 	buf.WriteByte(uint8(txInfo.NftContentType))
@@ -234,7 +234,7 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		CreatorAccountIndex: txInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   txInfo.ToAccountIndex,
 		NftContentHash:      txInfo.NftContentHash,
-		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
+		RoyaltyRate:         txInfo.RoyaltyRate,
 		CollectionId:        txInfo.NftCollectionId,
 	}
 	order++

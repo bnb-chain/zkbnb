@@ -67,7 +67,7 @@ func ParseDepositNftPubData(pubData []byte) (tx *txtypes.DepositNftTxInfo, err e
 	offset, txType := common2.ReadUint8(pubData, offset)
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
 	offset, creatorAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, creatorTreasuryRate := common2.ReadUint16(pubData, offset)
+	offset, royaltyRate := common2.ReadUint16(pubData, offset)
 	offset, nftIndex := common2.ReadUint40(pubData, offset)
 	offset, collectionId := common2.ReadUint16(pubData, offset)
 	offset, l1Address := common2.ReadAddress(pubData, offset)
@@ -79,7 +79,7 @@ func ParseDepositNftPubData(pubData []byte) (tx *txtypes.DepositNftTxInfo, err e
 		AccountIndex:        int64(accountIndex),
 		NftIndex:            nftIndex,
 		CreatorAccountIndex: int64(creatorAccountIndex),
-		CreatorTreasuryRate: int64(creatorTreasuryRate),
+		RoyaltyRate:         int64(royaltyRate),
 		NftContentHash:      nftContentHash,
 		L1Address:           l1Address,
 		CollectionId:        int64(collectionId),
@@ -116,7 +116,7 @@ func ParseFullExitNftPubData(pubData []byte) (tx *txtypes.FullExitNftTxInfo, err
 	offset, txType := common2.ReadUint8(pubData, offset)
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
 	offset, creatorAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, creatorTreasuryRate := common2.ReadUint16(pubData, offset)
+	offset, royaltyRate := common2.ReadUint16(pubData, offset)
 	offset, nftIndex := common2.ReadUint40(pubData, offset)
 	offset, collectionId := common2.ReadUint16(pubData, offset)
 	offset, l1Address := common2.ReadAddress(pubData, offset)
@@ -128,7 +128,7 @@ func ParseFullExitNftPubData(pubData []byte) (tx *txtypes.FullExitNftTxInfo, err
 		TxType:              txType,
 		AccountIndex:        int64(accountIndex),
 		CreatorAccountIndex: int64(creatorAccountIndex),
-		CreatorTreasuryRate: int64(creatorTreasuryRate),
+		RoyaltyRate:         int64(royaltyRate),
 		NftIndex:            nftIndex,
 		CollectionId:        int64(collectionId),
 		L1Address:           l1Address,

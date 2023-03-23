@@ -8,10 +8,10 @@ import (
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-func GetPlatformFeeRateHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func GetProtocolRateHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		l := info.NewGetPlatformFeeRateLogic(r.Context(), svcCtx)
-		resp, err := l.GetPlatformFeeRate(true)
+		l := info.NewGetProtocolRateLogic(r.Context(), svcCtx)
+		resp, err := l.GetProtocolRate(true)
 		if err != nil {
 			httpx.Error(w, err)
 		} else {

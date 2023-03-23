@@ -66,7 +66,7 @@ func (e *WithdrawNftExecutor) Prepare() error {
 		}
 		txInfo.CreatorL1Address = creatorAccount.L1Address
 	}
-	txInfo.CreatorTreasuryRate = nftInfo.CreatorTreasuryRate
+	txInfo.RoyaltyRate = nftInfo.RoyaltyRate
 	txInfo.NftContentHash = common.FromHex(nftInfo.NftContentHash)
 	txInfo.CollectionId = nftInfo.CollectionId
 
@@ -127,7 +127,7 @@ func (e *WithdrawNftExecutor) ApplyTransaction() error {
 		CreatorAccountIndex: newNftInfo.CreatorAccountIndex,
 		OwnerAccountIndex:   newNftInfo.OwnerAccountIndex,
 		NftContentHash:      newNftInfo.NftContentHash,
-		CreatorTreasuryRate: newNftInfo.CreatorTreasuryRate,
+		RoyaltyRate:         newNftInfo.RoyaltyRate,
 		CollectionId:        newNftInfo.CollectionId,
 		NftContentType:      newNftInfo.NftContentType,
 	})
@@ -142,7 +142,7 @@ func (e *WithdrawNftExecutor) GeneratePubData() error {
 	buf.WriteByte(uint8(types.TxTypeWithdrawNft))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.AccountIndex)))
 	buf.Write(common2.Uint32ToBytes(uint32(txInfo.CreatorAccountIndex)))
-	buf.Write(common2.Uint16ToBytes(uint16(txInfo.CreatorTreasuryRate)))
+	buf.Write(common2.Uint16ToBytes(uint16(txInfo.RoyaltyRate)))
 	buf.Write(common2.Uint40ToBytes(txInfo.NftIndex))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.CollectionId)))
 	buf.Write(common2.Uint16ToBytes(uint16(txInfo.GasFeeAssetId)))
@@ -236,7 +236,7 @@ func (e *WithdrawNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 			nftModel.CreatorAccountIndex,
 			nftModel.OwnerAccountIndex,
 			nftModel.NftContentHash,
-			nftModel.CreatorTreasuryRate,
+			nftModel.RoyaltyRate,
 			nftModel.CollectionId,
 			nftModel.NftContentType,
 		).String(),
