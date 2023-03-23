@@ -93,7 +93,11 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 	start = time.Now()
 	tx, err = executor.GetExecutedTx(false)
 	metrics.ExecuteTxGetExecutedTxMetrics.Set(float64(time.Since(start).Milliseconds()))
-
+	if err != nil {
+		logx.Severe(err)
+		panic(err)
+	}
+	err = executor.Finalize()
 	if err != nil {
 		logx.Severef("failed to get executed transaction, %v", err)
 		panic("failed to get executed transaction, err:" + err.Error())
@@ -183,8 +187,9 @@ func mappingVerifyInputsErrors(err error) error {
 		return types.AppErrInvalidAssetAmount
 	case txtypes.ErrListedAtTooLow:
 		return types.AppErrInvalidListTime
-	case txtypes.ErrTreasuryRateTooLow, txtypes.ErrTreasuryRateTooHigh,
-		txtypes.ErrCreatorTreasuryRateTooLow, txtypes.ErrCreatorTreasuryRateTooHigh:
+	case txtypes.ErrProtocolRateTooLow, txtypes.ErrProtocolRateTooHigh,
+		txtypes.ErrChanelRateTooLow, txtypes.ErrChanelRateTooHigh,
+		txtypes.ErrRoyaltyRateTooLow, txtypes.ErrRoyaltyRateTooHigh:
 		return types.AppErrInvalidTreasuryRate
 	case txtypes.ErrCollectionNameTooShort, txtypes.ErrCollectionNameTooLong:
 		return types.AppErrInvalidCollectionName
@@ -196,8 +201,6 @@ func mappingVerifyInputsErrors(err error) error {
 		return types.AppErrInvalidCollectionId
 	case txtypes.ErrCallDataHashInvalid:
 		return types.AppErrInvalidCallDataHash
-	case txtypes.ErrToAccountNameHashInvalid:
-		return types.AppErrInvalidToAccountNameHash
 	case txtypes.ErrToAddressInvalid:
 		return types.AppErrInvalidToAddress
 	case txtypes.ErrBuyOfferInvalid:

@@ -41,7 +41,7 @@ func (l *SearchLogic) Search(req *types.ReqSearch) (*types.Search, error) {
 	}
 
 	if strings.Contains(req.Keyword, ".") {
-		if _, err = l.svcCtx.MemCache.GetAccountIndexByName(req.Keyword); err != nil {
+		if _, err = l.svcCtx.MemCache.GetAccountIndexByL1Address(req.Keyword); err != nil {
 			if err == types2.DbErrNotFound {
 				return nil, types2.AppErrAccountNotFound
 			}

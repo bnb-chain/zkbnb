@@ -51,7 +51,6 @@ const (
 
 	PendingStatus = priorityrequest.PendingStatus
 
-	TxTypeRegisterZns = types.TxTypeRegisterZns
 	TxTypeDeposit     = types.TxTypeDeposit
 	TxTypeDepositNft  = types.TxTypeDepositNft
 	TxTypeFullExit    = types.TxTypeFullExit
@@ -68,12 +67,12 @@ var (
 	zkbnbLogBlockVerificationSig  = []byte("BlockVerification(uint32)")
 	zkbnbLogBlocksRevertSig       = []byte("BlocksRevert(uint32,uint32)")
 
-	zkbnbLogNewPriorityRequestSigHash = crypto.Keccak256Hash(zkbnbLogNewPriorityRequestSig)
-	zkbnbLogWithdrawalSigHash         = crypto.Keccak256Hash(zkbnbLogWithdrawalSig)
-	zkbnbLogWithdrawalPendingSigHash  = crypto.Keccak256Hash(zkbnbLogWithdrawalPendingSig)
-	zkbnbLogBlockCommitSigHash        = crypto.Keccak256Hash(zkbnbLogBlockCommitSig)
-	zkbnbLogBlockVerificationSigHash  = crypto.Keccak256Hash(zkbnbLogBlockVerificationSig)
-	zkbnbLogBlocksRevertSigHash       = crypto.Keccak256Hash(zkbnbLogBlocksRevertSig)
+	ZkbnbLogNewPriorityRequestSigHash = crypto.Keccak256Hash(zkbnbLogNewPriorityRequestSig)
+	ZkbnbLogWithdrawalSigHash         = crypto.Keccak256Hash(zkbnbLogWithdrawalSig)
+	ZkbnbLogWithdrawalPendingSigHash  = crypto.Keccak256Hash(zkbnbLogWithdrawalPendingSig)
+	ZkbnbLogBlockCommitSigHash        = crypto.Keccak256Hash(zkbnbLogBlockCommitSig)
+	ZkbnbLogBlockVerificationSigHash  = crypto.Keccak256Hash(zkbnbLogBlockVerificationSig)
+	ZkbnbLogBlocksRevertSigHash       = crypto.Keccak256Hash(zkbnbLogBlocksRevertSig)
 
 	GovernanceContractAbi, _ = abi.JSON(strings.NewReader(zkbnb.GovernanceMetaData.ABI))
 
@@ -83,11 +82,11 @@ var (
 	governanceLogValidatorStatusUpdateSig = []byte("ValidatorStatusUpdate(address,bool)")
 	governanceLogAssetPausedUpdateSig     = []byte("AssetPausedUpdate(address,bool)")
 
-	governanceLogNewAssetSigHash              = crypto.Keccak256Hash(governanceLogNewAssetSig)
-	governanceLogNewGovernorSigHash           = crypto.Keccak256Hash(governanceLogNewGovernorSig)
-	governanceLogNewAssetGovernanceSigHash    = crypto.Keccak256Hash(governanceLogNewAssetGovernanceSig)
-	governanceLogValidatorStatusUpdateSigHash = crypto.Keccak256Hash(governanceLogValidatorStatusUpdateSig)
-	governanceLogAssetPausedUpdateSigHash     = crypto.Keccak256Hash(governanceLogAssetPausedUpdateSig)
+	GovernanceLogNewAssetSigHash              = crypto.Keccak256Hash(governanceLogNewAssetSig)
+	GovernanceLogNewGovernorSigHash           = crypto.Keccak256Hash(governanceLogNewGovernorSig)
+	GovernanceLogNewAssetGovernanceSigHash    = crypto.Keccak256Hash(governanceLogNewAssetGovernanceSig)
+	GovernanceLogValidatorStatusUpdateSigHash = crypto.Keccak256Hash(governanceLogValidatorStatusUpdateSig)
+	GovernanceLogAssetPausedUpdateSigHash     = crypto.Keccak256Hash(governanceLogAssetPausedUpdateSig)
 )
 
 type L1Event struct {

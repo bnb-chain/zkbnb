@@ -85,6 +85,7 @@ type Witness struct {
 	accountModel        account.AccountModel
 	accountHistoryModel account.AccountHistoryModel
 	nftHistoryModel     nft.L2NftHistoryModel
+	nftModel            nft.L2NftModel
 	proofModel          proof.ProofModel
 	blockWitnessModel   blockwitness.BlockWitnessModel
 }
@@ -127,6 +128,7 @@ func NewWitness(c config.Config) (*Witness, error) {
 		accountModel:        account.NewAccountModel(db),
 		accountHistoryModel: account.NewAccountHistoryModel(db),
 		nftHistoryModel:     nft.NewL2NftHistoryModel(db),
+		nftModel:            nft.NewL2NftModel(db),
 		proofModel:          proof.NewProofModel(db),
 	}
 	err = w.initState()
@@ -175,14 +177,15 @@ func (w *Witness) initState() error {
 		witnessHeight,
 		treeCtx,
 		w.config.TreeDB.AssetTreeCacheSize,
+		true,
 	)
 	// the blockHeight depends on the proof start position
 	if err != nil {
 		return fmt.Errorf("initMerkleTree error: %v", err)
 	}
 
-	w.nftTree, err = tree.InitNftTree(w.nftHistoryModel, witnessHeight,
-		treeCtx)
+	w.nftTree, err = tree.InitNftTree(w.nftModel, w.nftHistoryModel, witnessHeight,
+		treeCtx, true)
 	if err != nil {
 		return fmt.Errorf("initNftTree error: %v", err)
 	}

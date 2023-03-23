@@ -17,6 +17,7 @@ type ServiceContext struct {
 	AccountModel        account.AccountModel
 	AccountHistoryModel account.AccountHistoryModel
 	NftHistoryModel     nft.L2NftHistoryModel
+	NftModel            nft.L2NftModel
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -38,5 +39,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		AccountModel:        account.NewAccountModel(db),
 		AccountHistoryModel: account.NewAccountHistoryModel(db),
 		NftHistoryModel:     nft.NewL2NftHistoryModel(db),
+		NftModel:            nft.NewL2NftModel(db),
 	}
 }

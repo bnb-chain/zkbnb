@@ -105,8 +105,8 @@ func (l *GetMergedAccountTxsLogic) fetchAccountIndexFromReq(req *types.ReqGetAcc
 			return accountIndex, types2.AppErrInvalidAccountIndex
 		}
 		return accountIndex, err
-	case queryByAccountName:
-		accountIndex, err := l.svcCtx.MemCache.GetAccountIndexByName(req.Value)
+	case queryByL1Address:
+		accountIndex, err := l.svcCtx.MemCache.GetAccountIndexByL1Address(req.Value)
 		return accountIndex, err
 	case queryByAccountPk:
 		accountIndex, err := l.svcCtx.MemCache.GetAccountIndexByPk(req.Value)
@@ -119,10 +119,10 @@ func (l *GetMergedAccountTxsLogic) appendTxsList(txsResultList []*types.Tx, txLi
 
 	for _, dbTx := range txList {
 		tx := utils.ConvertTx(dbTx)
-		tx.AccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.AccountIndex)
+		tx.L1Address, _ = l.svcCtx.MemCache.GetL1AddressByIndex(tx.AccountIndex)
 		tx.AssetName, _ = l.svcCtx.MemCache.GetAssetNameById(tx.AssetId)
 		if tx.ToAccountIndex >= 0 {
-			tx.ToAccountName, _ = l.svcCtx.MemCache.GetAccountNameByIndex(tx.ToAccountIndex)
+			tx.ToL1Address, _ = l.svcCtx.MemCache.GetL1AddressByIndex(tx.ToAccountIndex)
 		}
 		txsResultList = append(txsResultList, tx)
 	}

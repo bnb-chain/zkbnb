@@ -26,8 +26,9 @@ type NftInfo struct {
 	CreatorAccountIndex int64
 	OwnerAccountIndex   int64
 	NftContentHash      string
-	CreatorTreasuryRate int64
+	RoyaltyRate         int64
 	CollectionId        int64
+	NftContentType      int64
 }
 
 func (info *NftInfo) String() string {
@@ -39,8 +40,9 @@ func (info *NftInfo) IsEmptyNft() bool {
 	if info.CreatorAccountIndex == EmptyAccountIndex &&
 		info.OwnerAccountIndex == EmptyAccountIndex &&
 		info.NftContentHash == EmptyNftContentHash &&
-		info.CreatorTreasuryRate == EmptyCreatorTreasuryRate &&
-		info.CollectionId == EmptyCollectionNonce {
+		info.RoyaltyRate == EmptyRoyaltyRate &&
+		info.CollectionId == EmptyCollectionNonce &&
+		info.NftContentType == EmptyNftContentType {
 		return true
 	}
 	return false
@@ -60,8 +62,9 @@ func EmptyNftInfo(nftIndex int64) (info *NftInfo) {
 		CreatorAccountIndex: EmptyAccountIndex,
 		OwnerAccountIndex:   EmptyAccountIndex,
 		NftContentHash:      EmptyNftContentHash,
-		CreatorTreasuryRate: EmptyCreatorTreasuryRate,
+		RoyaltyRate:         EmptyRoyaltyRate,
 		CollectionId:        EmptyCollectionNonce,
+		NftContentType:      EmptyNftContentType,
 	}
 }
 
@@ -70,15 +73,17 @@ func ConstructNftInfo(
 	CreatorAccountIndex int64,
 	OwnerAccountIndex int64,
 	NftContentHash string,
-	creatorTreasuryRate int64,
+	royaltyRate int64,
 	collectionId int64,
+	nftContentType int64,
 ) (nftInfo *NftInfo) {
 	return &NftInfo{
 		NftIndex:            NftIndex,
 		CreatorAccountIndex: CreatorAccountIndex,
 		OwnerAccountIndex:   OwnerAccountIndex,
 		NftContentHash:      NftContentHash,
-		CreatorTreasuryRate: creatorTreasuryRate,
+		RoyaltyRate:         royaltyRate,
 		CollectionId:        collectionId,
+		NftContentType:      nftContentType,
 	}
 }
