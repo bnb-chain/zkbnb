@@ -38,6 +38,7 @@ var (
 	DbErrFailToCreatePriorityRequest = NewSystemError(10026, "fail to create priority request")
 	DbErrFailToUpdatePriorityRequest = NewSystemError(10027, "fail to update priority request")
 	DbErrFailToCreateRollback        = NewSystemError(10028, "fail to create rollback")
+	DbErrFailToL1Signature           = NewSystemError(10029, "fail to l1 signature")
 
 	JsonErrUnmarshal = NewSystemError(10029, "json.Unmarshal err")
 	JsonErrMarshal   = NewSystemError(10030, "json.Marshal err")
@@ -122,6 +123,10 @@ var (
 	AppErrInvalidSellOfferState      = NewBusinessError(21511, "invalid sell offer state, already canceled or finalized")
 	AppErrInvalidBuyOfferState       = NewBusinessError(21512, "invalid buy offer state, already canceled or finalized")
 	AppErrInvalidAssetOfOffer        = NewBusinessError(21513, "invalid asset of offer")
+	AppErrInvalidPlatformRate        = NewBusinessError(21514, "invalid platform rate")
+	AppErrInvalidPlatformAmount      = NewBusinessError(21515, "invalid platform amount")
+	AppErrInvalidSellPlatformAmount  = NewBusinessError(21516, "sell platform amount should be 0")
+	AppErrInvalidSellPlatformRate    = NewBusinessError(21517, "sell platform rate should be 0")
 
 	// Nft
 	AppErrNftAlreadyExist          = NewBusinessError(21600, "invalid nft index, already exist")
@@ -134,7 +139,7 @@ var (
 	AppErrInvalidMetaData          = NewBusinessError(21607, "metaData should not be larger than ")
 	AppErrInvalidMutableAttributes = NewBusinessError(21608, "mutableAttributes should not be larger than ")
 	AppErrInvalidNftNonce          = NewBusinessError(21609, "invalid nft nonce")
-
+	AppErrInvalidRoyaltyRate       = NewBusinessError(21610, "invalid royalty rate")
 	// Collection
 	AppErrInvalidCollectionId   = NewBusinessError(21700, "invalid collection id")
 	AppErrInvalidCollectionName = NewBusinessError(21701, "invalid collection name")
