@@ -18,8 +18,10 @@ package generateproof
 
 import (
 	"fmt"
+	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/core"
 	"github.com/bnb-chain/zkbnb/dao/exodusexit"
 	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof/config"
+	"github.com/ethereum/go-ethereum/common"
 	"gorm.io/plugin/dbresolver"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -33,12 +35,13 @@ import (
 )
 
 type Monitor struct {
-	Config               *config.Config
-	cli                  *rpc.ProviderClient
-	ZkBnbContractAddress string
-	db                   *gorm.DB
-	L1SyncedBlockModel   l1syncedblock.L1SyncedBlockModel
-	ExodusExitBlockModel exodusexit.ExodusExitBlockModel
+	Config                    *config.Config
+	cli                       *rpc.ProviderClient
+	ZkBnbContractAddress      string
+	GovernanceContractAddress string
+	db                        *gorm.DB
+	L1SyncedBlockModel        l1syncedblock.L1SyncedBlockModel
+	ExodusExitBlockModel      exodusexit.ExodusExitBlockModel
 }
 
 func NewMonitor(c *config.Config) (*Monitor, error) {
@@ -67,6 +70,7 @@ func NewMonitor(c *config.Config) (*Monitor, error) {
 	}
 
 	monitor.ZkBnbContractAddress = c.ChainConfig.ZkBnbContractAddress
+	monitor.GovernanceContractAddress = c.ChainConfig.GovernanceContractAddress
 	monitor.cli = bscRpcCli
 	return monitor, nil
 }
@@ -102,4 +106,13 @@ func (m *Monitor) getBlockRangeToSync(monitorType int) (int64, int64, error) {
 	safeHeight := latestHeight - m.Config.ChainConfig.ConfirmBlocksCount
 	safeHeight = uint64(common2.MinInt64(int64(safeHeight), handledHeight+m.Config.ChainConfig.MaxHandledBlocksCount))
 	return handledHeight + 1, int64(safeHeight), nil
+}
+
+func (m *Monitor) ValidateAssetAddress(assetAddr common.Address) (uint16, error) {
+	instance, err := zkbnb.LoadGovernanceInstance(m.cli, m.GovernanceContractAddress)
+	if err != nil {
+		logx.Severe(err)
+		return 0, err
+	}
+	return zkbnb.ValidateAssetAddress(instance, assetAddr)
 }

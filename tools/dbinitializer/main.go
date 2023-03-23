@@ -139,7 +139,6 @@ func InitializeExodusExit(
 	if err != nil {
 		return err
 	}
-
 	dao := &dao{
 		accountModel:         account.NewAccountModel(db),
 		nftModel:             nft.NewL2NftModel(db),
