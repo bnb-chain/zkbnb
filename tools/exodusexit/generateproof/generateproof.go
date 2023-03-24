@@ -30,7 +30,7 @@ func Run(configFile string, address string, token string, nftIndexListStr string
 		var nftIndexList []int64
 		err := json.Unmarshal([]byte(nftIndexListStr), &nftIndexList)
 		if err != nil {
-			return nil
+			return err
 		}
 		c.NftIndexList = nftIndexList
 	}

@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof"
 	"github.com/bnb-chain/zkbnb/tools/exodusexit/performexodus"
 	"github.com/bnb-chain/zkbnb/tools/query"
+	"github.com/bnb-chain/zkbnb/tools/revertblock"
 	"os"
 	"runtime"
 
@@ -243,6 +245,28 @@ func main() {
 						cCtx.String(flags.AmountFlag.Name), cCtx.String(flags.NftIndexFlag.Name),
 						cCtx.String(flags.OwnerFlag.Name), cCtx.String(flags.PrivateKeyFlag.Name),
 						cCtx.String(flags.ProofFlag.Name), cCtx.String(flags.TokenFlag.Name))
+				},
+			},
+			{
+				Name:  "revertblock",
+				Usage: "Run revertblock service",
+				Flags: []cli.Flag{
+					flags.ConfigFlag,
+					flags.RevertBlockHeightsFlag,
+				},
+				Action: func(cCtx *cli.Context) error {
+					if !cCtx.IsSet(flags.RevertBlockHeightsFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					if !cCtx.IsSet(flags.ConfigFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					var blockHeights []int64
+					err := json.Unmarshal([]byte(cCtx.String(flags.RevertBlockHeightsFlag.Name)), &blockHeights)
+					if err != nil {
+						return err
+					}
+					return revertblock.RevertCommittedBlocks(cCtx.String(flags.ConfigFlag.Name), blockHeights)
 				},
 			},
 			// tools
