@@ -57,8 +57,10 @@ type ServiceContext struct {
 	SysConfigModel          sysconfig.SysConfigModel
 	RollbackModel           rollback.RollbackModel
 
-	PriceFetcher price.Fetcher
-	StateFetcher state.Fetcher
+	CMCPriceFetcher price.Fetcher
+	BOPriceFetcher  price.Fetcher
+	PriceFetcher    price.Fetcher
+	StateFetcher    state.Fetcher
 
 	SendTxTotalMetrics prometheus.Counter
 	SendTxMetrics      prometheus.Counter
@@ -110,6 +112,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		return nil
 	}
 	common.NewIPFS(c.IpfsUrl)
+	CMCPriceFetcher := price.NewFetcher(memCache, assetModel, c.CoinMarketCap.Url, c.CoinMarketCap.Token)
+	BOPriceFetcher := price.NewBOFetcher(memCache, assetModel, c.BinanceOracle.Url, c.BinanceOracle.Apikey, c.BinanceOracle.ApiSecret)
 	return &ServiceContext{
 		Config:                  c,
 		RedisCache:              redisCache,
@@ -126,9 +130,10 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		AssetModel:              assetModel,
 		SysConfigModel:          sysconfig.NewSysConfigModel(db),
 		RollbackModel:           rollback.NewRollbackModel(db),
-
-		PriceFetcher: price.NewFetcher(memCache, assetModel, c.CoinMarketCap.Url, c.CoinMarketCap.Token),
-		StateFetcher: state.NewFetcher(redisCache, accountModel, nftModel),
+		CMCPriceFetcher:         CMCPriceFetcher,
+		BOPriceFetcher:          BOPriceFetcher,
+		PriceFetcher:            price.NewPriceFetcher(CMCPriceFetcher, BOPriceFetcher),
+		StateFetcher:            state.NewFetcher(redisCache, accountModel, nftModel),
 
 		SendTxTotalMetrics: sendTxTotalMetrics,
 		SendTxMetrics:      sendTxMetrics,
@@ -148,5 +153,6 @@ func (s *ServiceContext) Shutdown() {
 		_ = sqlDB.Close()
 	}
 	_ = s.RedisCache.Close()
-	s.PriceFetcher.Stop()
+	s.CMCPriceFetcher.Stop()
+	s.BOPriceFetcher.Stop()
 }
