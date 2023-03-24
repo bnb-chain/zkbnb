@@ -199,7 +199,7 @@ func (m *Monitor) GetAccountIndex(l1Address string) (int64, error) {
 		return cached.(int64), nil
 	} else {
 		var accountIndex interface{}
-		redisAccount, err := m.RedisCache.Get(context.Background(), dbcache.AccountKeyByL1Address(l1Address), accountIndex)
+		redisAccount, err := m.RedisCache.Get(context.Background(), dbcache.AccountKeyByL1Address(l1Address), &accountIndex)
 		if err == nil && redisAccount != nil {
 			return accountIndex.(int64), nil
 		}

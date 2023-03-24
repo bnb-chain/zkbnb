@@ -6,6 +6,7 @@ import (
 	"github.com/goccy/go-json"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
+	"time"
 )
 
 const CommandRunGenerateProof = "run"
@@ -51,6 +52,16 @@ func Run(configFile string, address string, token string, nftIndexListStr string
 		}
 	}()
 
+	go func() {
+		for {
+			err := m.CleanHistoryBlocks()
+			if err != nil {
+				logx.Severef("clear history blocks error, %v", err)
+			}
+			time.Sleep(1 * time.Minute)
+		}
+	}()
+
 	exodusExit, err := generateproof.NewExodusExit(&c)
 	if err != nil {
 		return err
@@ -59,6 +70,5 @@ func Run(configFile string, address string, token string, nftIndexListStr string
 	if err != nil {
 		return err
 	}
-	logx.Info("generateproof is starting......")
 	return nil
 }

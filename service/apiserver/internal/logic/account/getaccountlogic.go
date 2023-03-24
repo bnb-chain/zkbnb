@@ -53,9 +53,9 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 		if err == types2.DbErrNotFound {
 			switch req.By {
 			case queryByL1Address:
-				_, err = l.svcCtx.RedisCache.Get(context.Background(), dbcache.AccountKeyByL1Address(req.Value), index)
+				_, err = l.svcCtx.RedisCache.Get(context.Background(), dbcache.AccountKeyByL1Address(req.Value), &index)
 			case queryByPk:
-				_, err = l.svcCtx.RedisCache.Get(context.Background(), dbcache.AccountKeyByPK(req.Value), index)
+				_, err = l.svcCtx.RedisCache.Get(context.Background(), dbcache.AccountKeyByPK(req.Value), &index)
 			}
 		} else {
 			return nil, types2.AppErrAccountNotFound
