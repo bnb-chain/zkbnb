@@ -18,9 +18,7 @@ const (
 	cacheDefaultExpiration = time.Hour * 1 //gocache default expiration
 
 	AccountIndexL1AddressKeyPrefix = "in:"                    //key for cache: accountIndex -> l1Address
-	AccountIndexPkKeyPrefix        = "ip:"                    //key for cache: accountIndex -> accountPk
 	AccountL1AddressKeyPrefix      = "n:"                     //key for cache: l1Address -> accountIndex
-	AccountPkKeyPrefix             = "k:"                     //key for cache: accountPk -> accountIndex
 	AccountByIndexKeyPrefix        = "a:"                     //key for cache: accountIndex -> account
 	AccountCountKeyPrefix          = "ac"                     //key for cache: total account count
 	BlockByHeightKeyPrefix         = "h:"                     //key for cache: blockHeight -> block
@@ -125,9 +123,7 @@ func (m *MemCache) getWithSetFromCache(key string, fromCache bool, duration time
 
 func (m *MemCache) setAccount(accountIndex int64, l1Address, accountPk string) {
 	m.goCache.SetWithTTL(fmt.Sprintf("%s%d", AccountIndexL1AddressKeyPrefix, accountIndex), l1Address, 0, cacheDefaultExpiration)
-	m.goCache.SetWithTTL(fmt.Sprintf("%s%d", AccountIndexPkKeyPrefix, accountIndex), accountPk, 0, cacheDefaultExpiration)
 	m.goCache.SetWithTTL(fmt.Sprintf("%s%s", AccountL1AddressKeyPrefix, l1Address), accountIndex, 0, cacheDefaultExpiration)
-	m.goCache.SetWithTTL(fmt.Sprintf("%s%s", AccountPkKeyPrefix, accountPk), accountIndex, 0, cacheDefaultExpiration)
 }
 
 func (m *MemCache) GetAccountIndexByL1Address(l1Address string) (int64, error) {
@@ -136,19 +132,6 @@ func (m *MemCache) GetAccountIndexByL1Address(l1Address string) (int64, error) {
 		return index.(int64), nil
 	}
 	account, err := m.accountModel.GetAccountByL1Address(l1Address)
-	if err != nil {
-		return 0, err
-	}
-	m.setAccount(account.AccountIndex, account.L1Address, account.PublicKey)
-	return account.AccountIndex, nil
-}
-
-func (m *MemCache) GetAccountIndexByPk(accountPk string) (int64, error) {
-	index, found := m.goCache.Get(fmt.Sprintf("%s%s", AccountPkKeyPrefix, accountPk))
-	if found {
-		return index.(int64), nil
-	}
-	account, err := m.accountModel.GetAccountByPk(accountPk)
 	if err != nil {
 		return 0, err
 	}
@@ -167,19 +150,6 @@ func (m *MemCache) GetL1AddressByIndex(accountIndex int64) (string, error) {
 	}
 	m.setAccount(account.AccountIndex, account.L1Address, account.PublicKey)
 	return account.L1Address, nil
-}
-
-func (m *MemCache) GetAccountPkByIndex(accountIndex int64) (string, error) {
-	pk, found := m.goCache.Get(fmt.Sprintf("%s%d", AccountIndexPkKeyPrefix, accountIndex))
-	if found {
-		return pk.(string), nil
-	}
-	account, err := m.accountModel.GetAccountByIndex(accountIndex)
-	if err != nil {
-		return "", err
-	}
-	m.setAccount(account.AccountIndex, account.L1Address, account.PublicKey)
-	return account.PublicKey, nil
 }
 
 func (m *MemCache) GetAccountL1AddressByIndex(accountIndex int64) (string, error) {

@@ -51,11 +51,6 @@ func (l *SearchLogic) Search(req *types.ReqSearch) (*types.Search, error) {
 		return resp, nil
 	}
 
-	if _, err = l.svcCtx.MemCache.GetAccountIndexByPk(req.Keyword); err == nil {
-		resp.DataType = types2.TypeAccountPk
-		return resp, nil
-	}
-
 	if _, err = l.svcCtx.TxModel.GetTxByHash(req.Keyword); err == nil {
 		resp.DataType = types2.TypeTxType
 		return resp, nil

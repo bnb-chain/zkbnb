@@ -76,7 +76,7 @@ type (
 
 type (
 	ReqGetAccount {
-		By    string `form:"by,options=index|l1_address|pk"`
+		By    string `form:"by,options=index|l1_address"`
 		Value string `form:"value"`
 	}
 )
@@ -90,7 +90,7 @@ service server-api {
 	@handler GetAccounts
 	get /api/v1/accounts (ReqGetRange) returns (Accounts)
 	
-	@doc "Get account by account's l1_address, index or pk"
+	@doc "Get account by account's l1_address, index"
 	@handler GetAccount
 	get /api/v1/account (ReqGetAccount) returns (Account)
 }
@@ -384,7 +384,7 @@ type (
 	}
 
 	ReqGetAccountTxs {
-		By     string  `form:"by,options=account_index|l1_address|account_pk"`
+		By     string  `form:"by,options=account_index|l1_address"`
 		Value  string  `form:"value"`
 		Types  []int64 `form:"types,optional"`
 		Offset uint16  `form:"offset,range=[0:100000]"`
@@ -396,12 +396,12 @@ type (
 	}
 
 	ReqSendTx {
-		TxType      uint32 `form:"tx_type"`
-		TxInfo      string `form:"tx_info"`
+		TxType uint32 `form:"tx_type"`
+		TxInfo string `form:"tx_info"`
 	}
 
 	ReqGetAccountPendingTxs {
-		By    string  `form:"by,options=account_index|l1_address|account_pk"`
+		By    string  `form:"by,options=account_index|l1_address"`
 		Value string  `form:"value"`
 		Types []int64 `form:"types,optional"`
 	}
@@ -525,7 +525,7 @@ type (
 
 type (
 	ReqGetAccountNfts {
-		By     string `form:"by,options=account_index|l1_address|account_pk"`
+		By     string `form:"by,options=account_index|l1_address"`
 		Value  string `form:"value"`
 		Offset uint16 `form:"offset,range=[0:100000]"`
 		Limit  uint16 `form:"limit,range=[1:100]"`

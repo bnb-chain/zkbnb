@@ -15,7 +15,6 @@ import (
 const (
 	queryByAccountIndex = "account_index"
 	queryByL1Address    = "l1_address"
-	queryByAccountPk    = "account_pk"
 )
 
 type GetAccountNftsLogic struct {
@@ -46,10 +45,8 @@ func (l *GetAccountNftsLogic) GetAccountNfts(req *types.ReqGetAccountNfts) (resp
 		}
 	case queryByL1Address:
 		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByL1Address(req.Value)
-	case queryByAccountPk:
-		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByPk(req.Value)
 	default:
-		return nil, types2.AppErrInvalidParam.RefineError("param by should be account_index|account_name|account_pk")
+		return nil, types2.AppErrInvalidParam.RefineError("param by should be account_index|l1_address")
 	}
 
 	if err != nil {

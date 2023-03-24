@@ -381,10 +381,6 @@ func (s *StateDB) SyncPendingAccountToRedis(pendingAccount map[int64]*types.Acco
 			logx.Errorf("cache to redis failed: %v,formatAccount=%v", err, formatAccount.AccountIndex)
 		}
 		if formatAccount.AccountId == 0 {
-			err = s.redisCache.Set(context.Background(), dbcache.AccountKeyByPK(formatAccount.PublicKey), account.AccountIndex)
-			if err != nil {
-				logx.Errorf("cache to redis failed: %v,formatAccount=%v", err, formatAccount.AccountIndex)
-			}
 			err = s.redisCache.Set(context.Background(), dbcache.AccountKeyByL1Address(formatAccount.L1Address), account.AccountIndex)
 			if err != nil {
 				logx.Errorf("cache to redis failed: %v,formatAccount=%v", err, formatAccount.AccountIndex)
