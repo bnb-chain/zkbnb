@@ -48,7 +48,7 @@ var (
 
 	IoErrFailToRead = NewSystemError(10033, "ioutil.ReadAll err")
 
-	CmcNotListedErr = errors.New(10034,"cmc not listed")
+	CmcNotListedErr = NewSystemError(10034, "cmc not listed")
 
 	TreeErrUnsupportedDriver = NewSystemError(11001, "unsupported db driver")
 
