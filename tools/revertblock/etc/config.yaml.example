@@ -1,0 +1,12 @@
+Postgres:
+  MasterDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  LogLevel: 4
+
+ChainConfig:
+  NetworkRPCSysConfigName: LocalTestNetworkRpc
+  #  NetworkRPCSysConfigName: BscTestNetworkRpc
+  RevertBlockSk: 3f242374e0d7580e8c52a75790493539e514268ebc2e441e61cb5b86d5077698
+  GasLimit: 5000000
+  GasPrice: 0
+
+

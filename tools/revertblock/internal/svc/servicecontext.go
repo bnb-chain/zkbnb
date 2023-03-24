@@ -1,23 +1,20 @@
 package svc
 
 import (
+	"github.com/bnb-chain/zkbnb/dao/block"
+	"github.com/bnb-chain/zkbnb/dao/sysconfig"
+	"github.com/bnb-chain/zkbnb/tools/revertblock/internal/config"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/plugin/dbresolver"
-
-	"github.com/bnb-chain/zkbnb/dao/account"
-	"github.com/bnb-chain/zkbnb/dao/nft"
-	"github.com/bnb-chain/zkbnb/tools/recovery/internal/config"
 )
 
 type ServiceContext struct {
 	Config config.Config
 
-	AccountModel        account.AccountModel
-	AccountHistoryModel account.AccountHistoryModel
-	NftHistoryModel     nft.L2NftHistoryModel
-	NftModel            nft.L2NftModel
+	BlockModel     block.BlockModel
+	SysConfigModel sysconfig.SysConfigModel
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -32,10 +29,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	}))
 
 	return &ServiceContext{
-		Config:              c,
-		AccountModel:        account.NewAccountModel(db),
-		AccountHistoryModel: account.NewAccountHistoryModel(db),
-		NftHistoryModel:     nft.NewL2NftHistoryModel(db),
-		NftModel:            nft.NewL2NftModel(db),
+		Config:         c,
+		BlockModel:     block.NewBlockModel(db),
+		SysConfigModel: sysconfig.NewSysConfigModel(db),
 	}
 }
