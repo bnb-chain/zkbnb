@@ -229,7 +229,7 @@ type (
 
 	ProtocolRate {
 		ResultCode
-		ProtocolRate string `json:"platform_fee_rate"`
+		ProtocolRate string `json:"protocol_rate"`
 	}
 
 	GasAccount {
