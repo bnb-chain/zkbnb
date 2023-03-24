@@ -2,7 +2,6 @@ package account
 
 import (
 	"context"
-	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/dbcache"
 	"math/big"
 	"sort"
@@ -36,7 +35,7 @@ func NewGetAccountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAcc
 }
 
 func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Account, err error) {
-	index := int64(0)
+	index := int64(-1)
 	switch req.By {
 	case queryByIndex:
 		index, err = strconv.ParseInt(req.Value, 10, 64)
@@ -50,43 +49,21 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 	default:
 		return nil, types2.AppErrInvalidParam.RefineError("param by should be index|name|pk")
 	}
-
 	if err != nil {
 		if err == types2.DbErrNotFound {
-			var redisAccount interface{}
-			accountInfo := &account.Account{}
-			var accountIndex interface{}
 			switch req.By {
-			case queryByIndex:
-				index, _ = strconv.ParseInt(req.Value, 10, 64)
-				redisAccount, err = l.svcCtx.RedisCache.Get(context.Background(), dbcache.AccountKeyByIndex(index), accountInfo)
 			case queryByL1Address:
-				redisAccount, err = l.svcCtx.RedisCache.Get(context.Background(), dbcache.AccountKeyByL1Address(req.Value), accountIndex)
-				if err == nil && redisAccount != nil {
-					redisAccount, err = l.svcCtx.RedisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex.(int64)), accountInfo)
-				}
+				_, err = l.svcCtx.RedisCache.Get(context.Background(), dbcache.AccountKeyByL1Address(req.Value), index)
 			case queryByPk:
-				redisAccount, err = l.svcCtx.RedisCache.Get(context.Background(), dbcache.AccountKeyByPK(req.Value), accountIndex)
-				if err == nil && redisAccount != nil {
-					redisAccount, err = l.svcCtx.RedisCache.Get(context.Background(), dbcache.AccountKeyByIndex(accountIndex.(int64)), accountInfo)
-				}
+				_, err = l.svcCtx.RedisCache.Get(context.Background(), dbcache.AccountKeyByPK(req.Value), index)
 			}
-			if err == nil && redisAccount != nil {
-				return &types.Account{
-					Index:           accountInfo.AccountIndex,
-					Status:          uint32(accountInfo.Status),
-					L1Address:       accountInfo.L1Address,
-					Pk:              accountInfo.PublicKey,
-					Nonce:           accountInfo.Nonce,
-					Assets:          make([]*types.AccountAsset, 0),
-					TotalAssetValue: "0",
-				}, nil
-			}
+		} else {
 			return nil, types2.AppErrAccountNotFound
 		}
-		return nil, types2.AppErrInternal
 	}
-
+	if index < 0 {
+		return nil, types2.AppErrAccountNotFound
+	}
 	account, err := l.svcCtx.StateFetcher.GetLatestAccount(index)
 	if err != nil {
 		if err == types2.DbErrNotFound {
