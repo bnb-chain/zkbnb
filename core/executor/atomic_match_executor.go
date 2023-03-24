@@ -110,15 +110,15 @@ func (e *AtomicMatchExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error
 	}
 
 	// only gas assets are allowed for atomic match
-	found := false
-	for _, assetId := range types.GasAssets {
-		if assetId == txInfo.SellOffer.AssetId {
-			found = true
-		}
-	}
-	if !found {
-		return types.AppErrInvalidAssetOfOffer
-	}
+	//found := false
+	//for _, assetId := range types.GasAssets {
+	//	if assetId == txInfo.SellOffer.AssetId {
+	//		found = true
+	//	}
+	//}
+	//if !found {
+	//	return types.AppErrInvalidAssetOfOffer
+	//}
 
 	// Check offer expired time.
 	if err := e.bc.VerifyExpiredAt(txInfo.BuyOffer.ExpiredAt); err != nil {

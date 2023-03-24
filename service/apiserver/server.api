@@ -398,7 +398,6 @@ type (
 	ReqSendTx {
 		TxType      uint32 `form:"tx_type"`
 		TxInfo      string `form:"tx_info"`
-		TxSignature string `form:"tx_signature,optional"`
 	}
 
 	ReqGetAccountPendingTxs {

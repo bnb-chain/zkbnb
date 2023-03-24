@@ -42,11 +42,11 @@ func (c *PermissionControl) Control(txType uint32, txInfo string) error {
 	permissionControlItem := permissionControlConfig.GetPermissionControlConfigItem(txType)
 	if permissionControlItem.PermissionControlType == ControlByWhitelist {
 		if ok := containElement(l1AddressArray, permissionControlItem.ControlWhiteList); !ok {
-			return types.AppErrNotPermittedByWhiteList
+			return types.AppErrPermissionForbidden
 		}
 	} else if permissionControlItem.PermissionControlType == ControlByBlacklist {
 		if ok := containElement(l1AddressArray, permissionControlItem.ControlBlackList); ok {
-			return types.AppErrForbiddenByBlackList
+			return types.AppErrPermissionForbidden
 		}
 	}
 	return nil
