@@ -47,7 +47,7 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 	case queryByPk:
 		index, err = l.svcCtx.MemCache.GetAccountIndexByPk(req.Value)
 	default:
-		return nil, types2.AppErrInvalidParam.RefineError("param by should be index|name|pk")
+		return nil, types2.AppErrInvalidParam.RefineError("param by should be index|l1address|pk")
 	}
 	if err != nil {
 		if err == types2.DbErrNotFound {
