@@ -22,16 +22,11 @@ const (
 	GasConfigKey             = "cache:gasConfig"
 	AccountNonceKeyPrefix    = "cache:accountNonce_"
 	RetryPendingPoolTxPrefix = "cache:retryPendingPoolTx_"
-	ChangePubKeyPKPrefix     = "cache:changePubKeyPK_"
 	ProtocolRate             = "cache:protocolRate"
 )
 
 func AccountKeyByIndex(accountIndex int64) string {
 	return AccountKeyPrefix + fmt.Sprintf("%d", accountIndex)
-}
-
-func AccountKeyByPK(pk string) string {
-	return ChangePubKeyPKPrefix + fmt.Sprintf("%s", pk)
 }
 
 func AccountKeyByL1Address(l1Address string) string {

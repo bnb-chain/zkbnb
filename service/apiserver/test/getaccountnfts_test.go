@@ -30,7 +30,6 @@ func (s *ApiServerSuite) TestGetAccountNftList() {
 	tests := []testcase{
 		{"not found by index", args{"account_index", "9999999999", 0, 10}, 200},
 		{"not found by name", args{"account_name", "notexistname", 0, 10}, 200},
-		{"not found by pk", args{"account_pk", "notexistpk", 0, 10}, 200},
 		{"invalid by", args{"invalidby", "", 0, 10}, 400},
 	}
 
@@ -38,8 +37,7 @@ func (s *ApiServerSuite) TestGetAccountNftList() {
 	if statusCode == http.StatusOK && len(accounts.Accounts) > 0 {
 		tests = append(tests, []testcase{
 			{"found by index", args{"account_index", strconv.Itoa(int(accounts.Accounts[0].Index)), 0, 10}, 200},
-			{"found by name", args{"account_name", accounts.Accounts[0].Name, 0, 10}, 200},
-			{"found by pk", args{"account_pk", accounts.Accounts[0].Pk, 0, 10}, 200},
+			{"found by l1_address", args{"l1_address", accounts.Accounts[0].L1Address, 0, 10}, 200},
 		}...)
 	}
 
@@ -54,7 +52,7 @@ func (s *ApiServerSuite) TestGetAccountNftList() {
 					assert.NotNil(t, result.Nfts[0].ContentHash)
 					assert.NotNil(t, result.Nfts[0].OwnerAccountIndex)
 					assert.NotNil(t, result.Nfts[0].CollectionId)
-					assert.NotNil(t, result.Nfts[0].CreatorTreasuryRate)
+					assert.NotNil(t, result.Nfts[0].RoyaltyRate)
 				}
 				fmt.Printf("result: %+v \n", result)
 			}

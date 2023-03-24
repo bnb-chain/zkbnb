@@ -41,10 +41,8 @@ func (l *GetAccountPendingTxsLogic) GetAccountPendingTxs(req *types.ReqGetAccoun
 		}
 	case queryByL1Address:
 		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByL1Address(req.Value)
-	case queryByAccountPk:
-		accountIndex, err = l.svcCtx.MemCache.GetAccountIndexByPk(req.Value)
 	default:
-		return nil, types2.AppErrInvalidParam.RefineError("param by should be account_index|account_name|account_pk")
+		return nil, types2.AppErrInvalidParam.RefineError("param by should be account_index|l1_address")
 	}
 
 	if err != nil {

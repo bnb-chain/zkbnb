@@ -20,10 +20,8 @@ const (
 const (
 	queryByIndex     = "index"
 	queryByL1Address = "l1_address"
-	queryByPk        = "pk"
 
 	queryByAccountIndex = "account_index"
-	queryByAccountPk    = "account_pk"
 )
 
 var localhostID string
@@ -124,8 +122,6 @@ func ParseAccountL1Address(r *http.Request) string {
 			}
 		} else if req.By == queryByL1Address {
 			return req.Value
-		} else if req.By == queryByAccountPk || req.By == queryByPk {
-			accountIndex, err = memCache.GetAccountIndexByPk(req.Value)
 		} else {
 			return ""
 		}

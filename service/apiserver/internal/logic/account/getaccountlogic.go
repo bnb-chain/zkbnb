@@ -17,7 +17,6 @@ import (
 const (
 	queryByIndex     = "index"
 	queryByL1Address = "l1_address"
-	queryByPk        = "pk"
 )
 
 type GetAccountLogic struct {
@@ -44,10 +43,8 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 		}
 	case queryByL1Address:
 		index, err = l.svcCtx.MemCache.GetAccountIndexByL1Address(req.Value)
-	case queryByPk:
-		index, err = l.svcCtx.MemCache.GetAccountIndexByPk(req.Value)
 	default:
-		return nil, types2.AppErrInvalidParam.RefineError("param by should be index|l1address|pk")
+		return nil, types2.AppErrInvalidParam.RefineError("param by should be index|l1address")
 	}
 	if err != nil {
 		if err == types2.DbErrNotFound {
@@ -56,8 +53,6 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 			switch req.By {
 			case queryByL1Address:
 				redisAccount, err = l.svcCtx.RedisCache.Get(context.Background(), dbcache.AccountKeyByL1Address(req.Value), &accountIndex)
-			case queryByPk:
-				redisAccount, err = l.svcCtx.RedisCache.Get(context.Background(), dbcache.AccountKeyByPK(req.Value), &accountIndex)
 			}
 			if err == nil && redisAccount != nil {
 				index = accountIndex.(int64)

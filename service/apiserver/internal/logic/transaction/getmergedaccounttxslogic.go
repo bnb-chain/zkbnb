@@ -108,11 +108,8 @@ func (l *GetMergedAccountTxsLogic) fetchAccountIndexFromReq(req *types.ReqGetAcc
 	case queryByL1Address:
 		accountIndex, err := l.svcCtx.MemCache.GetAccountIndexByL1Address(req.Value)
 		return accountIndex, err
-	case queryByAccountPk:
-		accountIndex, err := l.svcCtx.MemCache.GetAccountIndexByPk(req.Value)
-		return accountIndex, err
 	}
-	return 0, types2.AppErrInvalidParam.RefineError("param by should be account_index|account_name|account_pk")
+	return 0, types2.AppErrInvalidParam.RefineError("param by should be account_index|l1_address")
 }
 
 func (l *GetMergedAccountTxsLogic) appendTxsList(txsResultList []*types.Tx, txList []*tx.Tx) []*types.Tx {
