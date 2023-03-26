@@ -34,7 +34,6 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/aws/aws-sdk-go-v2/service/kms"
-	kmstypes "github.com/aws/aws-sdk-go-v2/service/kms/types"
 	zkbnb "github.com/bnb-chain/zkbnb-eth-rpc/core"
 	"github.com/bnb-chain/zkbnb-eth-rpc/rpc"
 	"github.com/bnb-chain/zkbnb/common/chain"
@@ -46,7 +45,6 @@ import (
 	"github.com/bnb-chain/zkbnb/dao/sysconfig"
 	sconfig "github.com/bnb-chain/zkbnb/service/sender/config"
 	"github.com/bnb-chain/zkbnb/types"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 var (
@@ -342,26 +340,13 @@ func (s *Sender) CommitBlocks() (err error) {
 			logx.Infof("speed up commit block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
 		}
 
-		// AWS KMS based signature generator function
-		signer := func(addr common.Address, tx *ethtypes.Transaction) (*ethtypes.Transaction, error) {
-			txSigner := ethtypes.HomesteadSigner{}
-			kmsKeyId := &s.config.KMSConfig.KMSKeyId
-			signInput := &kms.SignInput{
-				KeyId:            kmsKeyId,
-				Message:          txSigner.Hash(tx).Bytes(),
-				SigningAlgorithm: kmstypes.SigningAlgorithmSpecEcdsaSha256,
-				MessageType:      kmstypes.MessageTypeDigest,
-			}
-			signOut, err := s.kmsClient.Sign(context.TODO(), signInput)
-			if err != nil {
-				return nil, err
-			}
-			return tx.WithSignature(txSigner, signOut.Signature)
-		}
+		// AWS KMS configuration
+		kmsKeyId := s.config.KMSConfig.KMSKeyId
+		chainId := new(big.Int).SetInt64(s.config.KMSConfig.ChainId)
 
 		// commit blocks on-chain
-		txHash, err = zkbnb.CommitBlocksWithNonceAndSigner(
-			signer, s.commitAddress,
+		txHash, err = zkbnb.CommitBlocksWithNonceAndKms(
+			context.TODO(), s.kmsClient, kmsKeyId, chainId, s.commitAddress,
 			zkbnbInstance,
 			lastStoredBlockInfo,
 			pendingCommitBlocks,
@@ -615,26 +600,13 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 			logx.Infof("speed up verify block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
 		}
 
-		// AWS KMS based signature generator function
-		signer := func(addr common.Address, tx *ethtypes.Transaction) (*ethtypes.Transaction, error) {
-			txSigner := ethtypes.HomesteadSigner{}
-			kmsKeyId := &s.config.KMSConfig.KMSKeyId
-			signInput := &kms.SignInput{
-				KeyId:            kmsKeyId,
-				Message:          txSigner.Hash(tx).Bytes(),
-				SigningAlgorithm: kmstypes.SigningAlgorithmSpecEcdsaSha256,
-				MessageType:      kmstypes.MessageTypeDigest,
-			}
-			signOut, err := s.kmsClient.Sign(context.TODO(), signInput)
-			if err != nil {
-				return nil, err
-			}
-			return tx.WithSignature(txSigner, signOut.Signature)
-		}
+		// AWS KMS configuration
+		kmsKeyId := s.config.KMSConfig.KMSKeyId
+		chainId := new(big.Int).SetInt64(s.config.KMSConfig.ChainId)
 
 		// Verify blocks on-chain
-		txHash, err = zkbnb.VerifyAndExecuteBlocksWithNonceAndSigner(
-			signer, s.verifyAddress, zkbnbInstance, pendingVerifyAndExecuteBlocks,
+		txHash, err = zkbnb.VerifyAndExecuteBlocksWithNonceAndKms(
+			context.TODO(), s.kmsClient, kmsKeyId, chainId, s.verifyAddress, zkbnbInstance, pendingVerifyAndExecuteBlocks,
 			proofs, gasPrice, s.config.ChainConfig.GasLimit, nonce)
 		if err != nil {
 			verifyExceptionHeightMetric.Set(float64(pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber))

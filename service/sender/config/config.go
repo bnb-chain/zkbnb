@@ -24,6 +24,7 @@ type Config struct {
 	}
 	KMSConfig struct {
 		KMSKeyId string
+		ChainId  int64
 	}
 	LogConf logx.LogConf
 }
