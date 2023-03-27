@@ -112,7 +112,7 @@ func (e *BaseExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 			// Verify l1 signature.
 			if txInfo.GetTxType() != txtypes.TxTypeAtomicMatch {
 				if txInfo.GetL1AddressBySignature() != common.HexToAddress(fromAccount.L1Address) {
-					return types.DbErrFailToL1Signature
+					return types.AppErrFailToL1Signature
 				}
 			}
 			var pubKey string

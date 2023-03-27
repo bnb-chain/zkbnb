@@ -38,7 +38,7 @@ func (l *UpdateNftByIndexLogic) UpdateNftByIndex(req *types.ReqUpdateNft) (resp 
 	originAddress := common.HexToAddress(accountInfo.L1Address)
 	//Compare the original address and the public address to verify the identifier
 	if publicAddress != originAddress {
-		return nil, types2.DbErrFailToL1Signature
+		return nil, types2.AppErrFailToL1Signature
 	}
 	l2Nft, err := l.svcCtx.NftModel.GetNft(tx.NftIndex)
 	if err != nil {

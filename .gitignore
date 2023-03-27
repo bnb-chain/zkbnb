@@ -5,6 +5,9 @@
 *.so
 *.dylib
 
+# the git ignore file itself
+.gitignore
+
 # Test binary, built with `go test -c`
 *.test
 
@@ -37,3 +40,5 @@ deployment/.zkbnb
 run_*.sh
 
 own*
+
+zkbnb-cloud-application.json
