@@ -38,7 +38,6 @@ var (
 	DbErrFailToCreatePriorityRequest = NewSystemError(10026, "fail to create priority request")
 	DbErrFailToUpdatePriorityRequest = NewSystemError(10027, "fail to update priority request")
 	DbErrFailToCreateRollback        = NewSystemError(10028, "fail to create rollback")
-	DbErrFailToL1Signature           = NewSystemError(10029, "fail to l1 signature")
 
 	JsonErrUnmarshal = NewSystemError(10029, "json.Unmarshal err")
 	JsonErrMarshal   = NewSystemError(10030, "json.Marshal err")
@@ -48,8 +47,8 @@ var (
 
 	IoErrFailToRead = NewSystemError(10033, "ioutil.ReadAll err")
 
-	CmcNotListedErr = NewSystemError(10034,"cmc not listed")
-	BinanceOracleNotListedErr = NewSystemError(10035,"cmc not listed")
+	CmcNotListedErr           = NewSystemError(10034, "cmc not listed")
+	BinanceOracleNotListedErr = NewSystemError(10035, "cmc not listed")
 
 	TreeErrUnsupportedDriver = NewSystemError(11001, "unsupported db driver")
 
@@ -102,11 +101,12 @@ var (
 	AppErrOfferIndexAlreadyInUse    = NewBusinessError(21405, "account offer index is already in use")
 	AppErrBothOfferNotExist         = NewBusinessError(21406, "both buyOffer and sellOffer does not exist")
 	AppErrTxSignatureError          = NewBusinessError(21407, "tx Signature Error")
-	AppErrNoFetcherForTxType        = NewBusinessError(21408, "can not find fetcher function for tx type")
-	AppErrNoSignFunctionForTxType   = NewBusinessError(21409, "can not find signature function for tx type")
-	AppErrAccountNotNftOwner        = NewBusinessError(21410, "account is not owner of the nft")
-	AppErrUnsupportedTxType         = NewBusinessError(21411, "unsupported tx type")
-	AppErrPrepareNftFailed          = NewBusinessError(21412, "prepare nft failed")
+	AppErrFailToL1Signature         = NewBusinessError(21408, "fail to l1 signature")
+	AppErrNoFetcherForTxType        = NewBusinessError(21409, "can not find fetcher function for tx type")
+	AppErrNoSignFunctionForTxType   = NewBusinessError(21410, "can not find signature function for tx type")
+	AppErrAccountNotNftOwner        = NewBusinessError(21411, "account is not owner of the nft")
+	AppErrUnsupportedTxType         = NewBusinessError(21412, "unsupported tx type")
+	AppErrPrepareNftFailed          = NewBusinessError(21413, "prepare nft failed")
 
 	// Offer
 	AppErrInvalidOfferType           = NewBusinessError(21500, "invalid offer type")
