@@ -113,12 +113,13 @@ func toCryptoAtomicMatchTx(txInfo *txtypes.AtomicMatchTxInfo) (info *cryptoTypes
 			ChanelRate:         txInfo.SellOffer.ChanelRate,
 			Sig:                sellSig,
 		},
-		RoyaltyAmount:     packedRoyaltyAmount,
-		GasAccountIndex:   txInfo.GasAccountIndex,
-		GasFeeAssetId:     txInfo.GasFeeAssetId,
-		GasFeeAssetAmount: packedFee,
-		BuyChanelAmount:   packedBuyChanelAmount,
-		SellChanelAmount:  packedSellChanelAmount,
+		RoyaltyAmount:        packedRoyaltyAmount,
+		GasAccountIndex:      txInfo.GasAccountIndex,
+		GasFeeAssetId:        txInfo.GasFeeAssetId,
+		GasFeeAssetAmount:    packedFee,
+		BuyChanelAmount:      packedBuyChanelAmount,
+		SellChanelAmount:     packedSellChanelAmount,
+		ProtocolAccountIndex: types.ProtocolAccount,
 	}
 	return info, nil
 }

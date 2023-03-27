@@ -201,10 +201,10 @@ func initSysConfig(svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC
 			Comment:   "protocol rate",
 		},
 		{
-			Name:      types.TreasuryAccountIndex,
+			Name:      types.ProtocolAccountIndex,
 			Value:     "0",
 			ValueType: "int",
-			Comment:   "treasury index",
+			Comment:   "protocol index",
 		},
 		{
 			Name:      types.GasAccountIndex,
