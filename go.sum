@@ -83,8 +83,8 @@ github.com/VictoriaMetrics/fastcache v1.6.0 h1:C/3Oi3EiBCqufydp1neRZkqcwmEiuRT9c
 github.com/VictoriaMetrics/fastcache v1.6.0/go.mod h1:0qHz5QP0GMX4pfmMA/zt5RgfNuXJrTP0zS7DqpHGGTw=
 github.com/XiaoMi/pegasus-go-client v0.0.0-20210427083443-f3b6b08bc4c2 h1:pami0oPhVosjOu/qRHepRmdjD6hGILF7DBr+qQZeP10=
 github.com/XiaoMi/pegasus-go-client v0.0.0-20210427083443-f3b6b08bc4c2/go.mod h1:jNIx5ykW1MroBuaTja9+VpglmaJOUzezumfhLlER3oY=
-github.com/ZhAnGeek/gnark v0.7.1-0.20230321124037-bd24cb7586e0 h1:Bfut1C9UZvn4JUkQaA5VCtJz6SPaOZJCtTmXasHw2ag=
-github.com/ZhAnGeek/gnark v0.7.1-0.20230321124037-bd24cb7586e0/go.mod h1:JcueZDwO9e/GiViQo3nsCYIqft2c/5fbI68NJPhVB9c=
+github.com/ZhAnGeek/gnark v0.7.1-0.20230328014928-6ceb34a939cf h1:5PSyOMT/tL1WwbS9E+DhK+F9g7OSk9ZdUgnNHqDKKHI=
+github.com/ZhAnGeek/gnark v0.7.1-0.20230328014928-6ceb34a939cf/go.mod h1:JcueZDwO9e/GiViQo3nsCYIqft2c/5fbI68NJPhVB9c=
 github.com/aead/siphash v1.0.1/go.mod h1:Nywa3cDsYNNK3gaciGTWPwHt0wlpNV15vwmswBAUSII=
 github.com/agiledragon/gomonkey/v2 v2.3.1/go.mod h1:ap1AmDzcVOAz1YpeJ3TCzIgstoaWLA6jbbgxfB4w2iY=
 github.com/ajstarks/svgo v0.0.0-20180226025133-644b8db467af/go.mod h1:K08gAheRH3/J6wwsYMMT4xOr94bZjxIelGM0+d/wbFw=
@@ -907,8 +907,8 @@ github.com/prometheus/procfs v0.8.0 h1:ODq8ZFEaYeCaZOJlZZdJA2AbQR98dSHSM1KW/You5
 github.com/prometheus/procfs v0.8.0/go.mod h1:z7EfXMXOkbkqb9IINtpCn86r/to3BnA0uaxHdg830/4=
 github.com/prometheus/tsdb v0.7.1 h1:YZcsG11NqnK4czYLrWd9mpEuAJIHVQLwdrleYfszMAA=
 github.com/prometheus/tsdb v0.7.1/go.mod h1:qhTCs0VvXwvX/y3TZrWD7rabWM+ijKTux40TwIPHuXU=
-github.com/qct/zkbnb-crypto v0.0.0-20230327105027-3e1dc6a2a6fd h1:U/JqTdn0urx/jZpParMmAFiHIcpPSQ7MxfUBct1uw2g=
-github.com/qct/zkbnb-crypto v0.0.0-20230327105027-3e1dc6a2a6fd/go.mod h1:8n8Sy6JyBmL8QRiv62l19LQyDhmwG6DTg0v+YujL0QY=
+github.com/qct/zkbnb-crypto v0.0.0-20230328064559-3909222c67a1 h1:Svm/rIutRS6ylRR+gVqmFnTu4Q5MoTBXzF7xkDB6xl8=
+github.com/qct/zkbnb-crypto v0.0.0-20230328064559-3909222c67a1/go.mod h1:AeaR2VBW3rgLHBZxgXd8tmcCS+y73Dz3Do47s4c41cA=
 github.com/qct/zkbnb-smt v0.0.0-20230116124655-bad4d92a74f1 h1:eOCPSifBBQiQD0aGLlAoWoYUdI9aOJLC0zzo8RWAgek=
 github.com/qct/zkbnb-smt v0.0.0-20230116124655-bad4d92a74f1/go.mod h1:CHVooyzRRzTqcSUcUKJZlJ5QsOyyS3JPVyML7xU9/uQ=
 github.com/rabbitmq/amqp091-go v1.1.0/go.mod h1:ogQDLSOACsLPsIq0NpbtiifNZi2YOz0VTJ0kHRghqbM=
