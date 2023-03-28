@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	TreasuryAccountIndex    = "TreasuryAccountIndex"
+	ProtocolAccountIndex    = "ProtocolAccountIndex"
 	GasAccountIndex         = "GasAccountIndex"
 	BscTestNetworkRpc       = "BscTestNetworkRpc"
 	LocalTestNetworkRpc     = "LocalTestNetworkRpc"

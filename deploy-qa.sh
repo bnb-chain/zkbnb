@@ -11,14 +11,15 @@
 DEPLOY_PATH=~
 KEY_PATH=~/.zkbnb
 ZkBNB_REPO_PATH=$(cd `dirname $0`; pwd)
-CMC_TOKEN=cfce503f-fake-fake-fake-bbab5257dac8
+CMC_TOKEN=ab04fbe9-8728-44eb-a778-d95a91a636a0
 NETWORK_RPC_SYS_CONFIG_NAME=BscTestNetworkRpc # BscTestNetworkRpc or LocalTestNetworkRpc
 BSC_TESTNET_RPC=https://bsc-testnet.nodereal.io/v1/a1cee760ac744f449416a711f20d99dd
-BSC_TESTNET_PRIVATE_KEY=
+BSC_TESTNET_PRIVATE_KEY=3721e672963d8fb16f6146f091e12fca4ee09a3b47235d45370b4671943d3fac
 #use COMMIT_BLOCK_PRIVATE_KEY for submitting commit_block to bnb contract in sender application
 #use VERIFY_BLOCK_PRIVATE_KEY for submitting verify_block to bnb contract in sender application
-COMMIT_BLOCK_PRIVATE_KEY=
-VERIFY_BLOCK_PRIVATE_KEY=
+COMMIT_BLOCK_PRIVATE_KEY=072bbe747ea1a75a3afc7e2f3ccd9e4f4b4e682c0ba499bfc75a257edf043c24
+VERIFY_BLOCK_PRIVATE_KEY=b7ea85434fde7cd06df4cebfc1708ade2a68db7f002ab36e71da77266442f7e1
+
 # security Council Members for upgrade approve
 # FOR TEST
 # generage by Mnemonic (account #17 ~ #19): giggle federal note disorder will close traffic air melody artefact taxi tissue
@@ -26,7 +27,7 @@ SECURITY_COUNCIL_MEMBERS_NUMBER_1=0x0000000000000000000000000000000000000000
 SECURITY_COUNCIL_MEMBERS_NUMBER_2=0x0000000000000000000000000000000000000000
 SECURITY_COUNCIL_MEMBERS_NUMBER_3=0x0000000000000000000000000000000000000000
 # validator config, split by `,` the address of COMMIT_BLOCK_PRIVATE_KEY  and the address of VERIFY_BLOCK_PRIVATE_KEY,
-VALIDATORS=
+VALIDATORS=0xA723Aec9c41CdaF8a10137d06bf12acDb783f2f5,0x50cfd73CA6feAe7B0aAb00FA25369C6DbDA21133
 ZKBNB_OPTIONAL_BLOCK_SIZES=1,10
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
