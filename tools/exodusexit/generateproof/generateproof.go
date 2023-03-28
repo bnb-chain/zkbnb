@@ -6,6 +6,7 @@ import (
 	"github.com/goccy/go-json"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/proc"
 	"time"
 )
 
@@ -17,6 +18,9 @@ func Run(configFile string, address string, token string, nftIndexListStr string
 	conf.MustLoad(configFile, &c)
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
+	proc.AddShutdownListener(func() {
+		logx.Close()
+	})
 	if address != "" {
 		c.Address = address
 	}
@@ -38,7 +42,7 @@ func Run(configFile string, address string, token string, nftIndexListStr string
 	m, err := generateproof.NewMonitor(&c)
 	if err != nil {
 		logx.Severe(err)
-		panic(err)
+		return err
 	}
 
 	go func() {
@@ -68,6 +72,7 @@ func Run(configFile string, address string, token string, nftIndexListStr string
 	}
 	err = exodusExit.Run()
 	if err != nil {
+		logx.Severe(err)
 		return err
 	}
 	return nil
