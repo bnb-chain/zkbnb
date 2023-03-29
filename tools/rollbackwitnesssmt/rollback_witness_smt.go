@@ -29,5 +29,6 @@ func RollbackWitnessSmt(
 	if err != nil {
 		return fmt.Errorf("failed to rollback smt, %v", err)
 	}
+	logx.Infof("rollback smt success,the new smt version is %d now", height-1)
 	return nil
 }

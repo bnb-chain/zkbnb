@@ -15,9 +15,10 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/proc"
 	"math/big"
+	"time"
 )
 
-func RevertCommittedBlocks(configFile string, toHeight int64) (err error) {
+func RevertCommittedBlocks(configFile string, height int64) (err error) {
 	var c config.Config
 	conf.MustLoad(configFile, &c)
 	ctx := svc.NewServiceContext(c)
@@ -26,9 +27,10 @@ func RevertCommittedBlocks(configFile string, toHeight int64) (err error) {
 	proc.AddShutdownListener(func() {
 		logx.Close()
 	})
-	if toHeight == 0 {
-		return fmt.Errorf("toHeight can not be 0")
+	if height == 0 {
+		return fmt.Errorf("height can not be 0")
 	}
+	startHeight := height
 	lastHandledTx, err := ctx.L1RollupTxModel.GetLatestHandledTx(l1rolluptx.TxTypeCommit)
 	if err != nil && err != types.DbErrNotFound {
 		return fmt.Errorf("lastHandledTx is nil %v", err)
@@ -65,17 +67,17 @@ func RevertCommittedBlocks(configFile string, toHeight int64) (err error) {
 	}
 
 	storedBlockInfoList := make([]zkbnb.StorageStoredBlockInfo, 0)
-	for toHeight <= endHeight {
-		blockInfo, err := ctx.BlockModel.GetBlockByHeight(toHeight)
+	for height <= endHeight {
+		blockInfo, err := ctx.BlockModel.GetBlockByHeight(height)
 		if err != nil {
 			return fmt.Errorf("failed to get block info, err: %v", err)
 		}
 		if blockInfo.BlockStatus != block.StatusCommitted {
-			return fmt.Errorf("invalid block status, blockHeight=%d,status=%d", toHeight, blockInfo.BlockStatus)
+			return fmt.Errorf("invalid block status, blockHeight=%d,status=%d", height, blockInfo.BlockStatus)
 		}
 		storedBlockInfo := chain.ConstructStoredBlockInfo(blockInfo)
 		storedBlockInfoList = append(storedBlockInfoList, storedBlockInfo)
-		toHeight++
+		height++
 	}
 
 	var gasPrice *big.Int
@@ -96,6 +98,38 @@ func RevertCommittedBlocks(configFile string, toHeight int64) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to send revertBlocks tx, errL %v:%s", err, txHash)
 	}
-	logx.Infof("revert block success")
+	logx.Infof("send revert block success,tx hash=%s,startHeight=%d ~ endHeight=%d", txHash, startHeight, endHeight)
+	err = checkRevertBlock(cli, c, txHash)
+	if err != nil {
+		logx.Severe(err)
+		return nil
+	}
+	logx.Infof("revert block success,tx hash=%s,startHeight=%d ~ endHeight=%d", txHash, startHeight, endHeight)
 	return nil
+}
+
+func checkRevertBlock(cli *rpc.ProviderClient, c config.Config, txHash string) error {
+	startDate := time.Now()
+	for {
+		receipt, err := cli.GetTransactionReceipt(txHash)
+		if err != nil {
+			logx.Errorf("query transaction receipt %s failed, err: %v", txHash, err)
+			if time.Now().After(startDate.Add(time.Duration(c.ChainConfig.MaxWaitingTime) * time.Second)) {
+				return fmt.Errorf("failed to revert block, tx_hash=%s,error=%s", txHash, err)
+			}
+			continue
+		}
+		if receipt.Status == 0 {
+			return fmt.Errorf("failed to revert block, tx_hash=%s,receipt.Status=0", txHash)
+		}
+		latestL1Height, err := cli.GetHeight()
+		if err != nil {
+			return fmt.Errorf("failed to get l1 block height, err: %v", err)
+		}
+		if latestL1Height < receipt.BlockNumber.Uint64()+c.ChainConfig.ConfirmBlocksCount {
+			continue
+		} else {
+			return nil
+		}
+	}
 }

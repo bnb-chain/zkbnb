@@ -13,6 +13,8 @@ type Config struct {
 		RevertBlockSk           string
 		GasLimit                uint64
 		GasPrice                uint64
+		MaxWaitingTime          int64
+		ConfirmBlocksCount      uint64
 	}
 	LogConf logx.LogConf
 }

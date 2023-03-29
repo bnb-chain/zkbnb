@@ -1,11 +1,19 @@
 Postgres:
-  DataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
-
-CacheRedis:
-  - Host: 127.0.0.1:6379
-    # Pass: myredis
-    Type: node
+  MasterDataSource: host=127.0.0.1 user=postgres password=ZkBNB@123 dbname=zkbnb port=5432 sslmode=disable
+  MaxConn: 100
+  MaxIdle: 10
 
 TreeDB:
-  Driver: memorydb
+  Driver: redis
+  RedisDBOption:
+    Addr: localhost:6666
+    DialTimeout: 10s
+    ReadTimeout: 10s
+    WriteTimeout: 10s
+    PoolTimeout: 15s
+    IdleTimeout: 5m
+    PoolSize: 500
+    MaxRetries: 3
+    MinRetryBackoff: 8ms
+    MaxRetryBackoff: 512ms
   AssetTreeCacheSize: 512000
