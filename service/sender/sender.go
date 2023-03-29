@@ -20,6 +20,8 @@ func Run(configFile string) error {
 	logx.MustSetup(c.LogConf)
 	logx.DisableStat()
 
+	config.InitApolloConfiguration(c)
+
 	s := sender.NewSender(c)
 	// new cron
 	cronJob := cron.New(cron.WithChain(

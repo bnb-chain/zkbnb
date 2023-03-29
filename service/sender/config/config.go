@@ -21,5 +21,12 @@ type Config struct {
 		//((MaxGasPrice-GasPrice)/GasPrice)*100
 		MaxGasPriceIncreasePercentage uint64 `json:",optional"`
 	}
+	Apollo struct {
+		AppID          string
+		Cluster        string
+		ApolloIp       string
+		Namespace      string
+		IsBackupConfig bool
+	}
 	LogConf logx.LogConf
 }

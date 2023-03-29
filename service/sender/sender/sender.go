@@ -19,8 +19,10 @@ package sender
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/bnb-chain/zkbnb/dao/tx"
+	"github.com/ethereum/go-ethereum"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/shopspring/decimal"
 	"gorm.io/plugin/dbresolver"
@@ -340,7 +342,14 @@ func (s *Sender) CommitBlocks() (err error) {
 			}
 			gasPrice = standByGasPrice.RoundUp(0).BigInt()
 			logx.Infof("speed up commit block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
+
+			maxCommitUnitGas := sconfig.GetSenderConfig().MaxCommitUnitGas
+			if err := s.ValidateTxUnitGasFee(blocks, maxCommitUnitGas); err != nil {
+				logx.Errorf("abandon commit block to l1, EstimateGas value is greater than MaxUnitGas!")
+				return nil
+			}
 		}
+
 		// commit blocks on-chain
 		txHash, err = zkbnb.CommitBlocksWithNonce(
 			cli, authCliCommitBlock,
@@ -596,6 +605,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 			}
 			gasPrice = standByGasPrice.RoundUp(0).BigInt()
 			logx.Infof("speed up verify block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
+
 		}
 		// Verify blocks on-chain
 		txHash, err = zkbnb.VerifyAndExecuteBlocksWithNonce(authCliVerifyBlock, zkbnbInstance,
@@ -630,6 +640,27 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	}
 	l2BlockSubmitToVerifyHeightMetric.Set(float64(newRollupTx.L2BlockHeight))
 	logx.Infof("new blocks have been verified and executed(height): %d:%s", newRollupTx.L2BlockHeight, newRollupTx.L1TxHash)
+	return nil
+}
+
+func (s *Sender) ValidateTxUnitGasFee(blocks []*compressedblock.CompressedBlock, maxUnitGas uint64) error {
+	estimatedGas, err := s.cli.EstimateGas(context.Background(), ethereum.CallMsg{
+		From: s.authCliCommitBlock.Address,
+	})
+	if err != nil {
+		logx.Errorf("abandon commit block to l1, EstimateGas operation get some error:%s", err.Error())
+		return nil
+	}
+
+	var totalTxCount uint16 = 0
+	for _, b := range blocks {
+		totalTxCount = totalTxCount + b.BlockSize
+	}
+
+	unitGas := estimatedGas / uint64(totalTxCount)
+	if unitGas > maxUnitGas {
+		return errors.New("abandon commit block to l1, EstimateGas value is greater than MaxUnitGas")
+	}
 	return nil
 }
 
