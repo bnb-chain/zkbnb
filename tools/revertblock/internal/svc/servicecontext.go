@@ -2,6 +2,7 @@ package svc
 
 import (
 	"github.com/bnb-chain/zkbnb/dao/block"
+	"github.com/bnb-chain/zkbnb/dao/l1rolluptx"
 	"github.com/bnb-chain/zkbnb/dao/sysconfig"
 	"github.com/bnb-chain/zkbnb/tools/revertblock/internal/config"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -13,8 +14,9 @@ import (
 type ServiceContext struct {
 	Config config.Config
 
-	BlockModel     block.BlockModel
-	SysConfigModel sysconfig.SysConfigModel
+	BlockModel      block.BlockModel
+	SysConfigModel  sysconfig.SysConfigModel
+	L1RollupTxModel l1rolluptx.L1RollupTxModel
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -29,8 +31,9 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	}))
 
 	return &ServiceContext{
-		Config:         c,
-		BlockModel:     block.NewBlockModel(db),
-		SysConfigModel: sysconfig.NewSysConfigModel(db),
+		Config:          c,
+		BlockModel:      block.NewBlockModel(db),
+		SysConfigModel:  sysconfig.NewSysConfigModel(db),
+		L1RollupTxModel: l1rolluptx.NewL1RollupTxModel(db),
 	}
 }

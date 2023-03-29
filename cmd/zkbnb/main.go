@@ -1,12 +1,12 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof"
 	"github.com/bnb-chain/zkbnb/tools/exodusexit/performexodus"
 	"github.com/bnb-chain/zkbnb/tools/query"
 	"github.com/bnb-chain/zkbnb/tools/revertblock"
+	"github.com/bnb-chain/zkbnb/tools/rollbackwitnesssmt"
 	"os"
 	"runtime"
 
@@ -252,21 +252,44 @@ func main() {
 				Usage: "Run revertblock service",
 				Flags: []cli.Flag{
 					flags.ConfigFlag,
-					flags.RevertBlockHeightsFlag,
+					flags.RevertBlockHeightFlag,
 				},
 				Action: func(cCtx *cli.Context) error {
-					if !cCtx.IsSet(flags.RevertBlockHeightsFlag.Name) {
+					if !cCtx.IsSet(flags.RevertBlockHeightFlag.Name) {
 						return cli.ShowSubcommandHelp(cCtx)
 					}
 					if !cCtx.IsSet(flags.ConfigFlag.Name) {
 						return cli.ShowSubcommandHelp(cCtx)
 					}
-					var blockHeights []int64
-					err := json.Unmarshal([]byte(cCtx.String(flags.RevertBlockHeightsFlag.Name)), &blockHeights)
+
+					err := revertblock.RevertCommittedBlocks(cCtx.String(flags.ConfigFlag.Name), cCtx.Int64(flags.RevertBlockHeightFlag.Name))
 					if err != nil {
+						logx.Severe(err)
 						return err
 					}
-					return revertblock.RevertCommittedBlocks(cCtx.String(flags.ConfigFlag.Name), blockHeights)
+					return nil
+				},
+			},
+			{
+				Name:  "rollbackwitnesssmt",
+				Usage: "Run rollbackwitnesssmt service",
+				Flags: []cli.Flag{
+					flags.ConfigFlag,
+					flags.RevertBlockHeightFlag,
+				},
+				Action: func(cCtx *cli.Context) error {
+					if !cCtx.IsSet(flags.RevertBlockHeightFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					if !cCtx.IsSet(flags.ConfigFlag.Name) {
+						return cli.ShowSubcommandHelp(cCtx)
+					}
+					err := rollbackwitnesssmt.RollbackWitnessSmt(cCtx.String(flags.ConfigFlag.Name), cCtx.Int64(flags.RevertBlockHeightFlag.Name))
+					if err != nil {
+						logx.Severe(err)
+						return err
+					}
+					return nil
 				},
 			},
 			// tools

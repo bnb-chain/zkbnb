@@ -58,13 +58,18 @@ func NewExodusExit(config *config.Config) (*ExodusExit, error) {
 }
 
 func (c *ExodusExit) Run() error {
-	c.loadAllAccounts()
-	c.loadAllNfts()
+	err := c.loadAllAccounts()
+	if err != nil {
+		return err
+	}
+	err = c.loadAllNfts()
+	if err != nil {
+		return err
+	}
 	limit := 1000
 	executedBlock, err := c.bc.ExodusExitBlockModel.GetLatestExecutedBlock()
 	if err != nil && err != types.DbErrNotFound {
-		logx.Errorf("get executed tx from exodus exit block failed:%s", err.Error())
-		panic("get executed tx from exodus exit block failed: " + err.Error())
+		return fmt.Errorf("get executed tx from exodus exit block failed:%s", err.Error())
 	}
 
 	var executedTxMaxHeight int64 = 0
@@ -241,8 +246,7 @@ func (c *ExodusExit) executeBlockFunc(exodusExitBlock *exodusexit.ExodusExitBloc
 		} else {
 			assetsMap := c.bc.Statedb.GetDirtyAccountsAndAssetsMap()[formatAccount.AccountIndex]
 			if assetsMap == nil {
-				logx.Errorf("%s exists in PendingAccountMap but not in GetDirtyAccountsAndAssetsMap", formatAccount.AccountIndex)
-				panic(strconv.FormatInt(formatAccount.AccountIndex, 10) + " exists in PendingAccountMap but not in GetDirtyAccountsAndAssetsMap")
+				return fmt.Errorf("%d exists in PendingAccountMap but not in GetDirtyAccountsAndAssetsMap", formatAccount.AccountIndex)
 			}
 		}
 	}
@@ -254,8 +258,7 @@ func (c *ExodusExit) executeBlockFunc(exodusExitBlock *exodusexit.ExodusExitBloc
 		if !exist {
 			accountInfo, err := c.bc.Statedb.GetFormatAccount(accountIndex)
 			if err != nil {
-				logx.Errorf("get account info failed,accountIndex=%s,err=%s ", accountIndex, err.Error())
-				panic("get account info failed: " + err.Error())
+				return fmt.Errorf("get account info failed,accountIndex=%s,err=%s ", accountIndex, err.Error())
 			}
 			c.bc.Statedb.SetPendingAccount(accountIndex, accountInfo)
 		}
@@ -263,8 +266,7 @@ func (c *ExodusExit) executeBlockFunc(exodusExitBlock *exodusexit.ExodusExitBloc
 
 	for _, nftInfo := range c.bc.Statedb.StateCache.PendingNftMap {
 		if c.bc.Statedb.GetDirtyNftMap()[nftInfo.NftIndex] == false {
-			logx.Errorf("%s exists in PendingNftMap but not in DirtyNftMap", nftInfo.NftIndex)
-			panic(strconv.FormatInt(nftInfo.NftIndex, 10) + " exists in PendingNftMap but not in DirtyNftMap")
+			return fmt.Errorf("%d exists in PendingNftMap but not in DirtyNftMap", nftInfo.NftIndex)
 		}
 	}
 	for nftIndex, _ := range c.bc.Statedb.StateCache.GetDirtyNftMap() {
@@ -272,8 +274,7 @@ func (c *ExodusExit) executeBlockFunc(exodusExitBlock *exodusexit.ExodusExitBloc
 		if !exist {
 			nftInfo, err := c.bc.Statedb.GetNft(nftIndex)
 			if err != nil {
-				logx.Errorf("get nft info failed,nftIndex=%s,err=%s ", nftIndex, err.Error())
-				panic("get nft info failed: " + err.Error())
+				return fmt.Errorf("get nft info failed,nftIndex=%d,err=%s ", nftIndex, err.Error())
 			}
 			c.bc.Statedb.SetPendingNft(nftIndex, nftInfo)
 		}
@@ -327,7 +328,7 @@ func (c *ExodusExit) saveToDb(exodusExitBlock *exodusexit.ExodusExitBlock) error
 	return nil
 }
 
-func (c *ExodusExit) loadAllAccounts() {
+func (c *ExodusExit) loadAllAccounts() error {
 	start := time.Now()
 	logx.Infof("load all accounts start")
 	totalTask := 0
@@ -336,11 +337,10 @@ func (c *ExodusExit) loadAllAccounts() {
 	batchReloadSize := 1000
 	maxAccountIndex, err := c.bc.AccountModel.GetMaxAccountIndex()
 	if err != nil && err != types.DbErrNotFound {
-		logx.Severef("load all accounts failed:%s", err.Error())
-		panic("load all accounts failed: " + err.Error())
+		return fmt.Errorf("load all accounts failed:%s", err.Error())
 	}
 	if maxAccountIndex == -1 {
-		return
+		return nil
 	}
 	for i := 0; int64(i) <= maxAccountIndex; i += batchReloadSize {
 		toAccountIndex := int64(i+batchReloadSize) - 1
@@ -375,22 +375,21 @@ func (c *ExodusExit) loadAllAccounts() {
 			})
 		}(int64(i), toAccountIndex)
 		if err != nil {
-			logx.Severef("load all accounts failed:%s", err.Error())
-			panic("load all accounts failed: " + err.Error())
+			return fmt.Errorf("load all accounts failed:%s", err.Error())
 		}
 	}
 
 	for i := 0; i < totalTask; i++ {
 		err := <-errChan
 		if err != nil {
-			logx.Severef("load all accounts failed:%s", err.Error())
-			panic("load all accounts failed: " + err.Error())
+			return fmt.Errorf("load all accounts failed:%s", err.Error())
 		}
 	}
 	logx.Infof("load all accounts end. cost time %s", float64(time.Since(start).Milliseconds()))
+	return nil
 }
 
-func (c *ExodusExit) loadAllNfts() {
+func (c *ExodusExit) loadAllNfts() error {
 	start := time.Now()
 	logx.Infof("load all nfts start")
 	totalTask := 0
@@ -399,11 +398,10 @@ func (c *ExodusExit) loadAllNfts() {
 	batchReloadSize := 1000
 	maxNftIndex, err := c.bc.L2NftModel.GetMaxNftIndex()
 	if err != nil && err != types.DbErrNotFound {
-		logx.Severef("load all nfts failed:%s", err.Error())
-		panic("load all nfts failed: " + err.Error())
+		return fmt.Errorf("load all nfts failed:%s", err.Error())
 	}
 	if maxNftIndex == -1 {
-		return
+		return nil
 	}
 	for i := 0; int64(i) <= maxNftIndex; i += batchReloadSize {
 		toNftIndex := int64(i+batchReloadSize) - 1
@@ -430,19 +428,18 @@ func (c *ExodusExit) loadAllNfts() {
 			})
 		}(int64(i), toNftIndex)
 		if err != nil {
-			logx.Severef("load all nfts failed:%s", err.Error())
-			panic("load all nfts failed: " + err.Error())
+			return fmt.Errorf("load all nfts failed:%s", err.Error())
 		}
 	}
 
 	for i := 0; i < totalTask; i++ {
 		err := <-errChan
 		if err != nil {
-			logx.Severef("load all nfts failed:%s", err.Error())
-			panic("load all nfts failed: " + err.Error())
+			return fmt.Errorf("load all nfts failed:%s", err.Error())
 		}
 	}
 	logx.Infof("load all nfts end. cost time %s", float64(time.Since(start).Milliseconds()))
+	return nil
 }
 
 func (c *ExodusExit) Shutdown() {
@@ -496,9 +493,9 @@ func (c *ExodusExit) executeAtomicMatch(pubData []byte) error {
 		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
 		return err
 	}
-	offset, sellChanelAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, sellChanelPackedAmount := common2.ReadUint40(pubData, offset)
-	sellChanelAmount, err := util.UnpackAmount(big.NewInt(sellChanelPackedAmount))
+	offset, sellChannelAccountIndex := common2.ReadUint32(pubData, offset)
+	offset, sellChannelPackedAmount := common2.ReadUint40(pubData, offset)
+	sellChanelAmount, err := util.UnpackAmount(big.NewInt(sellChannelPackedAmount))
 	if err != nil {
 		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
 		return err
@@ -507,21 +504,21 @@ func (c *ExodusExit) executeAtomicMatch(pubData []byte) error {
 	txInfo := &txtypes.AtomicMatchTxInfo{
 		AccountIndex: int64(accountIndex),
 		BuyOffer: &txtypes.OfferTxInfo{
-			AccountIndex:       int64(buyOfferAccountIndex),
-			OfferId:            int64(buyOfferOfferId),
-			NftIndex:           buyOfferNftIndex,
-			AssetAmount:        buyOfferAssetAmount,
-			ChanelAccountIndex: int64(buyChanelAccountIndex),
-			ProtocolAmount:     buyProtocolAmount,
+			AccountIndex:        int64(buyOfferAccountIndex),
+			OfferId:             int64(buyOfferOfferId),
+			NftIndex:            buyOfferNftIndex,
+			AssetAmount:         buyOfferAssetAmount,
+			ChannelAccountIndex: int64(buyChanelAccountIndex),
+			ProtocolAmount:      buyProtocolAmount,
 		},
 		SellOffer: &txtypes.OfferTxInfo{
-			AccountIndex:       int64(sellOfferAccountIndex),
-			OfferId:            int64(sellOfferOfferId),
-			AssetId:            int64(sellOfferAssetId),
-			ChanelAccountIndex: int64(sellChanelAccountIndex),
+			AccountIndex:        int64(sellOfferAccountIndex),
+			OfferId:             int64(sellOfferOfferId),
+			AssetId:             int64(sellOfferAssetId),
+			ChannelAccountIndex: int64(sellChannelAccountIndex),
 		},
-		SellChanelAmount:  sellChanelAmount,
-		BuyChanelAmount:   buyChanelAmount,
+		SellChannelAmount: sellChanelAmount,
+		BuyChannelAmount:  buyChanelAmount,
 		RoyaltyAmount:     royaltyAmount,
 		GasAccountIndex:   types.GasAccount,
 		GasFeeAssetAmount: gasFeeAssetAmount,
