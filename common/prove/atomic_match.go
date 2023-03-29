@@ -63,11 +63,11 @@ func toCryptoAtomicMatchTx(txInfo *txtypes.AtomicMatchTxInfo) (info *cryptoTypes
 	if err != nil {
 		return nil, err
 	}
-	packedBuyChanelAmount, err := common.ToPackedAmount(txInfo.BuyChanelAmount)
+	packedBuyChannelAmount, err := common.ToPackedAmount(txInfo.BuyChannelAmount)
 	if err != nil {
 		return nil, err
 	}
-	packedSellChanelAmount, err := common.ToPackedAmount(txInfo.SellChanelAmount)
+	packedSellChannelAmount, err := common.ToPackedAmount(txInfo.SellChannelAmount)
 	if err != nil {
 		return nil, err
 	}
@@ -85,40 +85,40 @@ func toCryptoAtomicMatchTx(txInfo *txtypes.AtomicMatchTxInfo) (info *cryptoTypes
 	info = &cryptoTypes.AtomicMatchTx{
 		AccountIndex: txInfo.AccountIndex,
 		BuyOffer: &cryptoTypes.OfferTx{
-			Type:               txInfo.BuyOffer.Type,
-			OfferId:            txInfo.BuyOffer.OfferId,
-			AccountIndex:       txInfo.BuyOffer.AccountIndex,
-			NftIndex:           txInfo.BuyOffer.NftIndex,
-			AssetId:            txInfo.BuyOffer.AssetId,
-			AssetAmount:        packedAmount,
-			ListedAt:           txInfo.BuyOffer.ListedAt,
-			ExpiredAt:          txInfo.BuyOffer.ExpiredAt,
-			RoyaltyRate:        txInfo.BuyOffer.RoyaltyRate,
-			ChanelAccountIndex: txInfo.BuyOffer.ChanelAccountIndex,
-			ChanelRate:         txInfo.BuyOffer.ChanelRate,
-			ProtocolRate:       txInfo.BuyOffer.ProtocolRate,
-			ProtocolAmount:     packedProtocolAmount,
-			Sig:                buySig,
+			Type:                txInfo.BuyOffer.Type,
+			OfferId:             txInfo.BuyOffer.OfferId,
+			AccountIndex:        txInfo.BuyOffer.AccountIndex,
+			NftIndex:            txInfo.BuyOffer.NftIndex,
+			AssetId:             txInfo.BuyOffer.AssetId,
+			AssetAmount:         packedAmount,
+			ListedAt:            txInfo.BuyOffer.ListedAt,
+			ExpiredAt:           txInfo.BuyOffer.ExpiredAt,
+			RoyaltyRate:         txInfo.BuyOffer.RoyaltyRate,
+			ChannelAccountIndex: txInfo.BuyOffer.ChannelAccountIndex,
+			ChannelRate:         txInfo.BuyOffer.ChannelRate,
+			ProtocolRate:        txInfo.BuyOffer.ProtocolRate,
+			ProtocolAmount:      packedProtocolAmount,
+			Sig:                 buySig,
 		},
 		SellOffer: &cryptoTypes.OfferTx{
-			Type:               txInfo.SellOffer.Type,
-			OfferId:            txInfo.SellOffer.OfferId,
-			AccountIndex:       txInfo.SellOffer.AccountIndex,
-			NftIndex:           txInfo.SellOffer.NftIndex,
-			AssetId:            txInfo.SellOffer.AssetId,
-			AssetAmount:        packedAmount,
-			ListedAt:           txInfo.SellOffer.ListedAt,
-			ExpiredAt:          txInfo.SellOffer.ExpiredAt,
-			ChanelAccountIndex: txInfo.SellOffer.ChanelAccountIndex,
-			ChanelRate:         txInfo.SellOffer.ChanelRate,
-			Sig:                sellSig,
+			Type:                txInfo.SellOffer.Type,
+			OfferId:             txInfo.SellOffer.OfferId,
+			AccountIndex:        txInfo.SellOffer.AccountIndex,
+			NftIndex:            txInfo.SellOffer.NftIndex,
+			AssetId:             txInfo.SellOffer.AssetId,
+			AssetAmount:         packedAmount,
+			ListedAt:            txInfo.SellOffer.ListedAt,
+			ExpiredAt:           txInfo.SellOffer.ExpiredAt,
+			ChannelAccountIndex: txInfo.SellOffer.ChannelAccountIndex,
+			ChannelRate:         txInfo.SellOffer.ChannelRate,
+			Sig:                 sellSig,
 		},
 		RoyaltyAmount:        packedRoyaltyAmount,
 		GasAccountIndex:      txInfo.GasAccountIndex,
 		GasFeeAssetId:        txInfo.GasFeeAssetId,
 		GasFeeAssetAmount:    packedFee,
-		BuyChanelAmount:      packedBuyChanelAmount,
-		SellChanelAmount:     packedSellChanelAmount,
+		BuyChannelAmount:     packedBuyChannelAmount,
+		SellChannelAmount:    packedSellChannelAmount,
 		ProtocolAccountIndex: types.ProtocolAccount,
 	}
 	return info, nil

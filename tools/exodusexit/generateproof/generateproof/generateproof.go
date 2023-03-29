@@ -496,9 +496,9 @@ func (c *ExodusExit) executeAtomicMatch(pubData []byte) error {
 		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
 		return err
 	}
-	offset, sellChanelAccountIndex := common2.ReadUint32(pubData, offset)
-	offset, sellChanelPackedAmount := common2.ReadUint40(pubData, offset)
-	sellChanelAmount, err := util.UnpackAmount(big.NewInt(sellChanelPackedAmount))
+	offset, sellChannelAccountIndex := common2.ReadUint32(pubData, offset)
+	offset, sellChannelPackedAmount := common2.ReadUint40(pubData, offset)
+	sellChanelAmount, err := util.UnpackAmount(big.NewInt(sellChannelPackedAmount))
 	if err != nil {
 		logx.Errorf("unable to convert amount to packed amount: %s", err.Error())
 		return err
@@ -507,21 +507,21 @@ func (c *ExodusExit) executeAtomicMatch(pubData []byte) error {
 	txInfo := &txtypes.AtomicMatchTxInfo{
 		AccountIndex: int64(accountIndex),
 		BuyOffer: &txtypes.OfferTxInfo{
-			AccountIndex:       int64(buyOfferAccountIndex),
-			OfferId:            int64(buyOfferOfferId),
-			NftIndex:           buyOfferNftIndex,
-			AssetAmount:        buyOfferAssetAmount,
-			ChanelAccountIndex: int64(buyChanelAccountIndex),
-			ProtocolAmount:     buyProtocolAmount,
+			AccountIndex:        int64(buyOfferAccountIndex),
+			OfferId:             int64(buyOfferOfferId),
+			NftIndex:            buyOfferNftIndex,
+			AssetAmount:         buyOfferAssetAmount,
+			ChannelAccountIndex: int64(buyChanelAccountIndex),
+			ProtocolAmount:      buyProtocolAmount,
 		},
 		SellOffer: &txtypes.OfferTxInfo{
-			AccountIndex:       int64(sellOfferAccountIndex),
-			OfferId:            int64(sellOfferOfferId),
-			AssetId:            int64(sellOfferAssetId),
-			ChanelAccountIndex: int64(sellChanelAccountIndex),
+			AccountIndex:        int64(sellOfferAccountIndex),
+			OfferId:             int64(sellOfferOfferId),
+			AssetId:             int64(sellOfferAssetId),
+			ChannelAccountIndex: int64(sellChannelAccountIndex),
 		},
-		SellChanelAmount:  sellChanelAmount,
-		BuyChanelAmount:   buyChanelAmount,
+		SellChannelAmount: sellChanelAmount,
+		BuyChannelAmount:  buyChanelAmount,
 		RoyaltyAmount:     royaltyAmount,
 		GasAccountIndex:   types.GasAccount,
 		GasFeeAssetAmount: gasFeeAssetAmount,
