@@ -23,8 +23,9 @@ type Config struct {
 		MaxGasPriceIncreasePercentage uint64 `json:",optional"`
 	}
 	KMSConfig struct {
-		KMSKeyId string
-		ChainId  int64
+		CommitKeyId string
+		VerifyKeyId string
+		ChainId     int64
 	}
 	LogConf logx.LogConf
 }

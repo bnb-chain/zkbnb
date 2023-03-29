@@ -177,7 +177,7 @@ func NewSender(c sconfig.Config) *Sender {
 		logx.Severef("failed to load ZkBNB instance, %v", err)
 		panic("failed to load ZkBNB instance, err:" + err.Error())
 	}
-	cfg, err := config.LoadDefaultConfig(context.TODO())
+	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
 		logx.Severef("failed to load KMS client config, %v", err)
 		panic("failed to load KMS client config, err:" + err.Error())
@@ -344,12 +344,12 @@ func (s *Sender) CommitBlocks() (err error) {
 		}
 
 		// AWS KMS configuration
-		kmsKeyId := s.config.KMSConfig.KMSKeyId
+		commitKeyId := s.config.KMSConfig.CommitKeyId
 		chainId := new(big.Int).SetInt64(s.config.KMSConfig.ChainId)
 
 		// commit blocks on-chain
 		txHash, err = zkbnb.CommitBlocksWithNonceAndKms(
-			context.TODO(), s.kmsClient, kmsKeyId, chainId, s.commitAddress,
+			context.Background(), s.kmsClient, commitKeyId, chainId, s.commitAddress,
 			zkbnbInstance,
 			lastStoredBlockInfo,
 			pendingCommitBlocks,
@@ -603,13 +603,13 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 			logx.Infof("speed up verify block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
 		}
 
-		// AWS KMS configuration
-		kmsKeyId := s.config.KMSConfig.KMSKeyId
+		// AWS KMS configuration for VerifyAndExecuteBlocks
+		verifyKeyId := s.config.KMSConfig.VerifyKeyId
 		chainId := new(big.Int).SetInt64(s.config.KMSConfig.ChainId)
 
 		// Verify blocks on-chain
 		txHash, err = zkbnb.VerifyAndExecuteBlocksWithNonceAndKms(
-			context.TODO(), s.kmsClient, kmsKeyId, chainId, s.verifyAddress, zkbnbInstance, pendingVerifyAndExecuteBlocks,
+			context.Background(), s.kmsClient, verifyKeyId, chainId, s.verifyAddress, zkbnbInstance, pendingVerifyAndExecuteBlocks,
 			proofs, gasPrice, s.config.ChainConfig.GasLimit, nonce)
 		if err != nil {
 			verifyExceptionHeightMetric.Set(float64(pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber))
