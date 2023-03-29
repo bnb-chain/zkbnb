@@ -48,6 +48,8 @@ const (
 	GasAccount  = int64(1)
 	BNBAssetId  = 0
 	BUSDAssetId = 1
+
+	ProtocolAccount = int64(0)
 )
 
 var (
