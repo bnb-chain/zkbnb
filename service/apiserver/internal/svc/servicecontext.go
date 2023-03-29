@@ -100,7 +100,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		c.MemCache.TxPendingExpiration = 60000
 	}
 	memCache := cache.MustNewMemCache(accountModel, assetModel, c.MemCache.AccountExpiration, c.MemCache.BlockExpiration,
-		c.MemCache.TxExpiration, c.MemCache.AssetExpiration, c.MemCache.TxPendingExpiration, c.MemCache.PriceExpiration, c.MemCache.MaxCounterNum, c.MemCache.MaxKeyNum)
+		c.MemCache.TxExpiration, c.MemCache.AssetExpiration, c.MemCache.TxPendingExpiration, c.MemCache.PriceExpiration, c.MemCache.MaxCounterNum, c.MemCache.MaxKeyNum, redisCache)
 
 	if err := prometheus.Register(sendTxMetrics); err != nil {
 		logx.Error("prometheus.Register sendTxHandlerMetrics error: %v", err)

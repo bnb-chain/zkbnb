@@ -135,13 +135,14 @@ type Monitor struct {
 	L1SyncedBlockModel   l1syncedblock.L1SyncedBlockModel
 }
 
-func NewMonitor(c config.Config) *Monitor {
+func NewMonitor(c config.Config) (monitor *Monitor, err error) {
 
 	masterDataSource := c.Postgres.MasterDataSource
 	slaveDataSource := c.Postgres.SlaveDataSource
 	db, err := gorm.Open(postgres.Open(masterDataSource))
 	if err != nil {
-		logx.Errorf("gorm connect db error, err: %s", err.Error())
+		logx.Severef("gorm connect db error, err: %s", err.Error())
+		return nil, err
 	}
 
 	db.Use(dbresolver.Register(dbresolver.Config{
@@ -152,10 +153,10 @@ func NewMonitor(c config.Config) *Monitor {
 	l1AddressCache, err := lru.New(c.AccountCacheSize)
 	if err != nil {
 		logx.Severef("init account cache failed:%v", err)
-		panic(err)
+		return nil, err
 	}
 	redisCache := dbcache.NewRedisCache(c.CacheRedis[0].Host, c.CacheRedis[0].Pass, 15*time.Minute)
-	monitor := &Monitor{
+	monitor = &Monitor{
 		Config:               c,
 		db:                   db,
 		L1AddressCache:       l1AddressCache,
@@ -175,20 +176,20 @@ func NewMonitor(c config.Config) *Monitor {
 	zkbnbAddressConfig, err := monitor.SysConfigModel.GetSysConfigByName(types.ZkBNBContract)
 	if err != nil {
 		logx.Severef("failed to get ZkBNB contract configuration: %v", err)
-		panic("failed to get ZkBNBContract configuration, err:" + err.Error())
+		return nil, err
 	}
 
 	governanceAddressConfig, err := monitor.SysConfigModel.GetSysConfigByName(types.GovernanceContract)
 	if err != nil {
 		logx.Severef("failed to get governance contract configuration, %v", err)
-		panic("failed to get governance contract configuration, err:" + err.Error())
+		return nil, err
 	}
 
 	networkRpc, err := monitor.SysConfigModel.GetSysConfigByName(c.ChainConfig.NetworkRPCSysConfigName)
 	if err != nil {
 		logx.Severef("failed to get network RPC configuration err:%v, SysConfigName:%s",
 			err, c.ChainConfig.NetworkRPCSysConfigName)
-		panic("failed to get network RPC configuration, err:" + err.Error())
+		return nil, err
 	}
 	logx.Infof("ChainName: %s, zkbnbContractAddress: %s, networkRpc: %s",
 		c.ChainConfig.NetworkRPCSysConfigName, zkbnbAddressConfig.Value, networkRpc.Value)
@@ -196,7 +197,7 @@ func NewMonitor(c config.Config) *Monitor {
 	bscRpcCli, err := rpc.NewClient(networkRpc.Value)
 	if err != nil {
 		logx.Severef("failed to create rpc client, %v", err)
-		panic("failed to create rpc client, err:" + err.Error())
+		return nil, err
 	}
 
 	monitor.zkbnbContractAddress = zkbnbAddressConfig.Value
@@ -205,61 +206,61 @@ func NewMonitor(c config.Config) *Monitor {
 
 	if err := prometheus.Register(priorityOperationMetric); err != nil {
 		logx.Severef("fatal error, cannot register prometheus, err: %v", err)
-		panic("fatal error, cannot register prometheus, err:" + err.Error())
+		return nil, err
 	}
 	if err := prometheus.Register(priorityOperationHeightMetric); err != nil {
 		logx.Severef("fatal error, cannot register prometheus, err: %v", err)
-		panic("fatal error, cannot register prometheus, err:" + err.Error())
+		return nil, err
 	}
 	if err := prometheus.Register(priorityOperationCreateMetric); err != nil {
 		logx.Severef("fatal error, cannot register prometheus, err: %v", err)
-		panic("fatal error, cannot register prometheus, err:" + err.Error())
+		return nil, err
 	}
 	if err := prometheus.Register(priorityOperationHeightCreateMetric); err != nil {
 		logx.Severef("fatal error, cannot register prometheus, err: %v", err)
-		panic("fatal error, cannot register prometheus, err:" + err.Error())
+		return nil, err
 	}
 	if err := prometheus.Register(l1SyncedBlockHeightMetric); err != nil {
 		logx.Severef("fatal error, cannot register prometheus, err: %v", err)
-		panic("fatal error, cannot register prometheus, err:" + err.Error())
+		return nil, err
 	}
 
 	if err := prometheus.Register(l1GenericStartHeightMetric); err != nil {
 		logx.Severef("fatal error, cannot register prometheus, err: %v", err)
-		panic("fatal error, cannot register prometheus, err:" + err.Error())
+		return nil, err
 	}
 
 	if err := prometheus.Register(l1GenericEndHeightMetric); err != nil {
 		logx.Severef("fatal error, cannot register prometheus, err: %v", err)
-		panic("fatal error, cannot register prometheus, err:" + err.Error())
+		return nil, err
 	}
 
 	if err := prometheus.Register(l1GenericLenHeightMetric); err != nil {
 		logx.Severef("fatal error, cannot register prometheus, err: %v", err)
-		panic("fatal error, cannot register prometheus, err:" + err.Error())
+		return nil, err
 	}
 
 	if err := prometheus.Register(l1GovernanceStartHeightMetric); err != nil {
 		logx.Severef("fatal error, cannot register prometheus, err: %v", err)
-		panic("fatal error, cannot register prometheus, err:" + err.Error())
+		return nil, err
 	}
 
 	if err := prometheus.Register(l1GovernanceEndHeightMetric); err != nil {
 		logx.Severef("fatal error, cannot register prometheus, err: %v", err)
-		panic("fatal error, cannot register prometheus, err:" + err.Error())
+		return nil, err
 	}
 
 	if err := prometheus.Register(l1GovernanceLenHeightMetric); err != nil {
 		logx.Severef("fatal error, cannot register prometheus, err: %v", err)
-		panic("fatal error, cannot register prometheus, err:" + err.Error())
+		return nil, err
 	}
 
 	if err := prometheus.Register(l1MonitorHeightMetric); err != nil {
 		logx.Severef("fatal error, cannot register prometheus, err: %v", err)
-		panic("fatal error, cannot register prometheus, err:" + err.Error())
+		return nil, err
 	}
 
-	return monitor
+	return monitor, nil
 }
 
 func (m *Monitor) Shutdown() {

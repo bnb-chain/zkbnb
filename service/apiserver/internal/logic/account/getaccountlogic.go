@@ -2,7 +2,6 @@ package account
 
 import (
 	"context"
-	"github.com/bnb-chain/zkbnb/dao/dbcache"
 	"math/big"
 	"sort"
 	"strconv"
@@ -43,25 +42,14 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 		}
 	case queryByL1Address:
 		index, err = l.svcCtx.MemCache.GetAccountIndexByL1Address(req.Value)
-	default:
-		return nil, types2.AppErrInvalidParam.RefineError("param by should be index|l1address")
-	}
-	if err != nil {
-		if err == types2.DbErrNotFound {
-			var accountIndex interface{}
-			var redisAccount interface{}
-			switch req.By {
-			case queryByL1Address:
-				redisAccount, err = l.svcCtx.RedisCache.Get(context.Background(), dbcache.AccountKeyByL1Address(req.Value), &accountIndex)
-			}
-			if err == nil && redisAccount != nil {
-				index = accountIndex.(int64)
-			} else {
+		if err != nil {
+			if err == types2.DbErrNotFound {
 				return nil, types2.AppErrAccountNotFound
 			}
-		} else {
-			return nil, types2.AppErrAccountNotFound
+			return nil, types2.AppErrInternal
 		}
+	default:
+		return nil, types2.AppErrInvalidParam.RefineError("param by should be index|l1address")
 	}
 
 	if index < 0 {
