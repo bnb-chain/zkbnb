@@ -23,7 +23,7 @@ func NewPermissionControl(ctx context.Context, svcCtx *svc.ServiceContext) *Perm
 }
 
 func (c *PermissionControl) Control(txType uint32, txInfo string) error {
-	l1Address, err := c.fetcher.GetL1AddressByTx(txType, txInfo)
+	l1AddressArray, err := c.fetcher.GetL1AddressByTx(txType, txInfo)
 	if err != nil {
 		logx.Errorf("Can not get l1 address, txType:%d, txInfo:%s", txType, txInfo)
 		return err
@@ -41,21 +41,23 @@ func (c *PermissionControl) Control(txType uint32, txInfo string) error {
 
 	permissionControlItem := permissionControlConfig.GetPermissionControlConfigItem(txType)
 	if permissionControlItem.PermissionControlType == ControlByWhitelist {
-		if ok := containElement(l1Address, permissionControlItem.ControlWhiteList); !ok {
-			return types.AppErrNotPermittedByWhiteList
+		if ok := containElement(l1AddressArray, permissionControlItem.ControlWhiteList); !ok {
+			return types.AppErrPermissionForbidden
 		}
 	} else if permissionControlItem.PermissionControlType == ControlByBlacklist {
-		if ok := containElement(l1Address, permissionControlItem.ControlBlackList); ok {
-			return types.AppErrForbiddenByBlackList
+		if ok := containElement(l1AddressArray, permissionControlItem.ControlBlackList); ok {
+			return types.AppErrPermissionForbidden
 		}
 	}
 	return nil
 }
 
-func containElement(element string, array []string) bool {
-	for _, value := range array {
-		if value == element {
-			return true
+func containElement(elementArray []string, array []string) bool {
+	for _, element := range elementArray {
+		for _, value := range array {
+			if value == element {
+				return true
+			}
 		}
 	}
 	return false

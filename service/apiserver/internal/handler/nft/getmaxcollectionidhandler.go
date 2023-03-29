@@ -22,10 +22,6 @@ func GetMaxCollectionIdHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 
 		l := nft.NewGetMaxCollectionIdLogic(r.Context(), svcCtx)
 		resp, err := l.GetMaxCollectionId(&req)
-		if err != nil {
-			httpx.Error(w, err)
-		} else {
-			httpx.OkJson(w, resp)
-		}
+		response.Handle(w, resp, err)
 	}
 }

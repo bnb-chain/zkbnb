@@ -197,6 +197,7 @@ Postgres:
 CacheRedis:
   - Host: 127.0.0.1:6379
     Type: node
+AccountCacheSize: 100000
 
 ChainConfig:
   NetworkRPCSysConfigName: "${NETWORK_RPC_SYS_CONFIG_NAME}"
@@ -322,14 +323,20 @@ Apollo:
   AppID:             zkbnb-cloud
   Cluster:           prod
   ApolloIp:          http://internal-tf-cm-test-apollo-config-alb-2119591301.ap-northeast-1.elb.amazonaws.com:9028
-  Namespace:         application
+  Namespace:         applicationDev
   IsBackupConfig:    true
 
 IpfsUrl:
   10.23.23.40:5001
+
 CoinMarketCap:
   Url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=
   Token: ${CMC_TOKEN}
+
+BinanceOracle:
+  Url: http://cloud-oracle-gateway.qa1fdg.net:9902
+  Apikey: b11f867a6b8fed571720fbb8155f65b5f589f291c35148c41c2f7b81b9177c47
+  ApiSecret: 7a1f315f47aea8f8a451d5f5a8bfa7dc7dea292fff7c8ed27a6294a03ec4f974
 
 MemCache:
   AccountExpiration: 200

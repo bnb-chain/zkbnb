@@ -27,12 +27,13 @@ type TxExecutor interface {
 	GetExecutedTx(fromApi bool) (*tx.Tx, error)
 	GenerateTxDetails() ([]*tx.TxDetail, error)
 	GetTxInfo() txtypes.TxInfo
+	Finalize() error
 }
 
 func NewTxExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	switch tx.TxType {
-	case types.TxTypeRegisterZns:
-		return NewRegisterZnsExecutor(bc, tx)
+	case types.TxTypeChangePubKey:
+		return NewChangePubKeyExecutor(bc, tx)
 	case types.TxTypeDeposit:
 		return NewDepositExecutor(bc, tx)
 	case types.TxTypeDepositNft:

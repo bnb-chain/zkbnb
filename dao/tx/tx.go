@@ -89,6 +89,7 @@ type (
 		DeleteByHeightsInTransact(tx *gorm.DB, heights []int64) error
 		GetMaxPoolTxIdByHeightInTransact(tx *gorm.DB, height int64) (poolTxId uint, err error)
 		GetCountByGreaterHeight(blockHeight int64) (count int64, err error)
+		GetOnChainTxsByHeight(blockHeight int64) (txList []*Tx, err error)
 	}
 
 	defaultTxModel struct {
@@ -104,6 +105,8 @@ type (
 		Rollback bool `gorm:"-"`
 		// l1 request id
 		L1RequestId int64 `gorm:"-"`
+		// update pool tx account index
+		IsPartialUpdate bool `gorm:"-"`
 	}
 )
 
@@ -331,6 +334,31 @@ func (m *defaultTxModel) GetCountByGreaterHeight(blockHeight int64) (count int64
 	return count, nil
 }
 
+func (m *defaultTxModel) GetOnChainTxsByHeight(blockHeight int64) (txList []*Tx, err error) {
+	var changePubKeyTxList []*Tx
+	dbTx := m.DB.Table(m.table).Select("tx_index,id,tx_info").Where("block_height = ? and tx_type = ?", blockHeight, types.TxTypeChangePubKey).Find(&changePubKeyTxList)
+	if dbTx.Error != nil {
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return nil, nil
+	}
+
+	dbTx = m.DB.Table(m.table).Select("tx_type,tx_index,iD").Where("block_height = ? and tx_type in ?", blockHeight, types.GetOnChainTypes()).Find(&txList)
+	if dbTx.Error != nil {
+		return nil, dbTx.Error
+	} else if dbTx.RowsAffected == 0 {
+		return nil, nil
+	}
+	for _, changePubKeyTx := range changePubKeyTxList {
+		for _, tx := range txList {
+			if changePubKeyTx.ID == tx.ID {
+				tx.TxInfo = changePubKeyTx.TxInfo
+			}
+		}
+	}
+	return txList, nil
+}
+
 func (ai *Tx) DeepCopy() *Tx {
 	tx := &Tx{}
 	tx.TxHash = ai.TxHash
@@ -358,5 +386,9 @@ func (ai *Tx) DeepCopy() *Tx {
 	tx.CreatedAt = ai.CreatedAt
 	tx.UpdatedAt = ai.UpdatedAt
 	tx.DeletedAt = ai.DeletedAt
+	tx.FromAccountIndex = ai.FromAccountIndex
+	tx.ToAccountIndex = ai.ToAccountIndex
+	tx.IsCreateAccount = ai.IsCreateAccount
+	tx.IsPartialUpdate = ai.IsPartialUpdate
 	return tx
 }

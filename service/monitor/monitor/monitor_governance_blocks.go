@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/bnb-chain/zkbnb/common/monitor"
 	"math/big"
 	"strings"
 
@@ -111,11 +112,11 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 		logx.Infof("type is typeGovernance blocks from %d to %d and vlog: %v", startHeight, endHeight, vlog)
 	}
 
-	l1Events := make([]*L1Event, 0, len(logs))
+	l1Events := make([]*monitor.L1Event, 0, len(logs))
 	pendingChanges := NewGovernancePendingChanges()
 
 	for _, vlog := range logs {
-		l1EventInfo := &L1Event{
+		l1EventInfo := &monitor.L1Event{
 			TxHash: vlog.TxHash.Hex(),
 			Index:  vlog.Index,
 		}
@@ -124,12 +125,12 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 			continue
 		}
 		switch vlog.Topics[0].Hex() {
-		case governanceLogNewAssetSigHash.Hex():
+		case monitor.GovernanceLogNewAssetSigHash.Hex():
 			var event zkbnb.GovernanceNewAsset
-			if err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameNewAsset, vlog.Data); err != nil {
+			if err = monitor.GovernanceContractAbi.UnpackIntoInterface(&event, monitor.EventNameNewAsset, vlog.Data); err != nil {
 				return fmt.Errorf("unpackIntoInterface err: %v", err)
 			}
-			l1EventInfo.EventType = EventTypeAddAsset
+			l1EventInfo.EventType = monitor.EventTypeAddAsset
 			newL2Asset, err := m.getNewL2Asset(event)
 			if err != nil {
 				logx.Infof("get new l2 asset error, err: %s", err.Error())
@@ -138,14 +139,14 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 
 			l1Events = append(l1Events, l1EventInfo)
 			pendingChanges.l2AssetMap[event.AssetAddress.Hex()] = newL2Asset
-		case governanceLogNewGovernorSigHash.Hex():
+		case monitor.GovernanceLogNewGovernorSigHash.Hex():
 			// parse event info
 			var event zkbnb.GovernanceNewGovernor
-			if err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameNewGovernor, vlog.Data); err != nil {
+			if err = monitor.GovernanceContractAbi.UnpackIntoInterface(&event, monitor.EventNameNewGovernor, vlog.Data); err != nil {
 				return fmt.Errorf("unpackIntoInterface err: %v", err)
 			}
 			// set up database info
-			l1EventInfo.EventType = EventTypeNewGovernor
+			l1EventInfo.EventType = monitor.EventTypeNewGovernor
 
 			configInfo := &sysconfig.SysConfig{
 				Name:      types.Governor,
@@ -156,14 +157,14 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 			// set into array
 			l1Events = append(l1Events, l1EventInfo)
 			pendingChanges.pendingNewSysConfigMap[configInfo.Name] = configInfo
-		case governanceLogNewAssetGovernanceSigHash.Hex():
+		case monitor.GovernanceLogNewAssetGovernanceSigHash.Hex():
 			// parse event info
 			var event zkbnb.GovernanceNewAssetGovernance
-			err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameNewAssetGovernance, vlog.Data)
+			err = monitor.GovernanceContractAbi.UnpackIntoInterface(&event, monitor.EventNameNewAssetGovernance, vlog.Data)
 			if err != nil {
 				return fmt.Errorf("unpackIntoInterface err: %v", err)
 			}
-			l1EventInfo.EventType = EventTypeNewAssetGovernance
+			l1EventInfo.EventType = monitor.EventTypeNewAssetGovernance
 
 			configInfo := &sysconfig.SysConfig{
 				Name:      types.AssetGovernanceContract,
@@ -174,14 +175,14 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 			// set into array
 			l1Events = append(l1Events, l1EventInfo)
 			pendingChanges.pendingNewSysConfigMap[configInfo.Name] = configInfo
-		case governanceLogValidatorStatusUpdateSigHash.Hex():
+		case monitor.GovernanceLogValidatorStatusUpdateSigHash.Hex():
 			// parse event info
 			var event zkbnb.GovernanceValidatorStatusUpdate
-			if err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameValidatorStatusUpdate, vlog.Data); err != nil {
+			if err = monitor.GovernanceContractAbi.UnpackIntoInterface(&event, monitor.EventNameValidatorStatusUpdate, vlog.Data); err != nil {
 				return fmt.Errorf("unpack GovernanceValidatorStatusUpdate, err: %v", err)
 			}
 			// set up database info
-			l1EventInfo.EventType = EventTypeValidatorStatusUpdate
+			l1EventInfo.EventType = monitor.EventTypeValidatorStatusUpdate
 
 			l1Events = append(l1Events, l1EventInfo)
 
@@ -189,15 +190,15 @@ func (m *Monitor) MonitorGovernanceBlocks() (err error) {
 			if err != nil {
 				return err
 			}
-		case governanceLogAssetPausedUpdateSigHash.Hex():
+		case monitor.GovernanceLogAssetPausedUpdateSigHash.Hex():
 			// parse event info
 			var event zkbnb.GovernanceAssetPausedUpdate
-			err = GovernanceContractAbi.UnpackIntoInterface(&event, EventNameAssetPausedUpdate, vlog.Data)
+			err = monitor.GovernanceContractAbi.UnpackIntoInterface(&event, monitor.EventNameAssetPausedUpdate, vlog.Data)
 			if err != nil {
 				return fmt.Errorf("unpack GovernanceAssetPausedUpdate failed, err: %v", err)
 			}
 			// set up database info
-			l1EventInfo.EventType = EventTypeAssetPausedUpdate
+			l1EventInfo.EventType = monitor.EventTypeAssetPausedUpdate
 
 			l1Events = append(l1Events, l1EventInfo)
 

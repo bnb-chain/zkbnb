@@ -31,18 +31,16 @@ func (s *ApiServerSuite) TestGetAccountTxs() {
 	tests := []testcase{
 		{"not found by index", args{"account_index", "99999999", 0, 10, nil}, 200},
 		{"not found by name", args{"account_name", "fakeaccount.legend", 0, 10, nil}, 200},
-		{"not found by pk", args{"account_pk", "fake8470d33c59a5cbf5e10df426eb97c2773ab890c3364f4162ba782a56ca998", 0, 10, nil}, 200},
 		{"invalid by", args{"invalidby", "fake8470d33c59a5cbf5e10df426eb97c2773ab890c3364f4162ba782a56ca998", 0, 10, nil}, 400},
 	}
 
 	statusCode, txs := GetTxs(s, 0, 100)
 	if statusCode == http.StatusOK && len(txs.Txs) > 0 {
 		tx := txs.Txs[len(txs.Txs)-1]
-		_, account := GetAccount(s, "name", tx.AccountName)
+		_, account := GetAccount(s, "l1_address", tx.L1Address)
 		tests = append(tests, []testcase{
 			{"found by index", args{"account_index", strconv.Itoa(int(account.Index)), 0, 10, nil}, 200},
-			{"found by name", args{"account_name", account.Name, 0, 10, nil}, 200},
-			{"found by pk", args{"account_pk", account.Pk, 0, 10, nil}, 200},
+			{"found by name", args{"l1_address", account.L1Address, 0, 10, nil}, 200},
 			{"found by index and type", args{"account_index", strconv.Itoa(int(account.Index)), 0, 10, []int64{tx.Type}}, 200},
 			{"not found by index and type", args{"account_index", strconv.Itoa(int(account.Index)), 0, 10, []int64{10000}}, 200},
 		}...)

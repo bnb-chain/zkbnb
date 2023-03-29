@@ -54,7 +54,7 @@ type (
 		ResultCode
 		Status          uint32          `json:"status"`
 		Index           int64           `json:"index"`
-		Name            string          `json:"name"`
+		L1Address       string          `json:"l1_address"`
 		Pk              string          `json:"pk"`
 		Nonce           int64           `json:"nonce"`
 		Assets          []*AccountAsset `json:"assets"`
@@ -62,9 +62,9 @@ type (
 	}
 
 	SimpleAccount {
-		Index int64  `json:"index"`
-		Name  string `json:"name"`
-		Pk    string `json:"pk"`
+		Index     int64  `json:"index"`
+		L1Address string `json:"l1_address"`
+		Pk        string `json:"pk"`
 	}
 
 	Accounts {
@@ -76,7 +76,7 @@ type (
 
 type (
 	ReqGetAccount {
-		By    string `form:"by,options=index|name|pk"`
+		By    string `form:"by,options=index|l1_address"`
 		Value string `form:"value"`
 	}
 )
@@ -90,7 +90,7 @@ service server-api {
 	@handler GetAccounts
 	get /api/v1/accounts (ReqGetRange) returns (Accounts)
 	
-	@doc "Get account by account's name, index or pk"
+	@doc "Get account by account's l1_address, index"
 	@handler GetAccount
 	get /api/v1/account (ReqGetAccount) returns (Account)
 }
@@ -227,11 +227,16 @@ type (
 		GasFee string `json:"gas_fee"`
 	}
 
+	ProtocolRate {
+		ResultCode
+		ProtocolRate string `json:"protocol_rate"`
+	}
+
 	GasAccount {
 		ResultCode
-		Status int64  `json:"status"`
-		Index  int64  `json:"index"`
-		Name   string `json:"name"`
+		Status    int64  `json:"status"`
+		Index     int64  `json:"index"`
+		L1Address string `json:"l1_address"`
 	}
 
 	GasFeeAssets {
@@ -285,6 +290,10 @@ service server-api {
 	@handler GetLayer2BasicInfo
 	get /api/v1/layer2BasicInfo returns (Layer2BasicInfo)
 	
+	@doc "Get zkbnb platform fee rate"
+	@handler getProtocolRate
+	get /api/v1/getProtocolRate returns (ProtocolRate)
+	
 	@doc "Get gas fee amount for using a specific asset as gas asset"
 	@handler GetGasFee
 	get /api/v1/gasFee (ReqGetGasFee) returns (GasFee)
@@ -327,7 +336,7 @@ type (
 		ExtraInfo      string `json:"extra_info"`
 		Memo           string `json:"memo"`
 		AccountIndex   int64  `json:"account_index"`
-		AccountName    string `json:"account_name"`
+		L1Address      string `json:"l1_address"`
 		Nonce          int64  `json:"nonce"`
 		ExpiredAt      int64  `json:"expire_at"`
 		BlockHeight    int64  `json:"block_height"`
@@ -335,7 +344,7 @@ type (
 		VerifyAt       int64  `json:"verify_at"`
 		StateRoot      string `json:"state_root"`
 		ToAccountIndex int64  `json:"to_account_index"`
-		ToAccountName  string `json:"to_account_name"`
+		ToL1Address    string `json:"to_l1_address"`
 	}
 
 	Txs {
@@ -375,7 +384,7 @@ type (
 	}
 
 	ReqGetAccountTxs {
-		By     string  `form:"by,options=account_index|account_name|account_pk"`
+		By     string  `form:"by,options=account_index|l1_address"`
 		Value  string  `form:"value"`
 		Types  []int64 `form:"types,optional"`
 		Offset uint16  `form:"offset,range=[0:100000]"`
@@ -387,13 +396,12 @@ type (
 	}
 
 	ReqSendTx {
-		TxType      uint32 `form:"tx_type"`
-		TxInfo      string `form:"tx_info"`
-		TxSignature string `form:"tx_signature,optional"`
+		TxType uint32 `form:"tx_type"`
+		TxInfo string `form:"tx_info"`
 	}
 
 	ReqGetAccountPendingTxs {
-		By    string  `form:"by,options=account_index|account_name|account_pk"`
+		By    string  `form:"by,options=account_index|l1_address"`
 		Value string  `form:"value"`
 		Types []int64 `form:"types,optional"`
 	}
@@ -462,21 +470,27 @@ type (
 	}
 
 	MaxCollectionId {
+		ResultCode
 		CollectionId int64 `json:"collection_id"`
 	}
 
 	Nft {
 		Index               int64  `json:"index"`
 		CreatorAccountIndex int64  `json:"creator_account_index"`
-		CreatorAccountName  string `json:"creator_account_name"`
+		CreatorL1Address    string `json:"creator_l1_address"`
 		OwnerAccountIndex   int64  `json:"owner_account_index"`
-		OwnerAccountName    string `json:"owner_account_name"`
+		OwnerL1Address      string `json:"owner_l1_address"`
 		ContentHash         string `json:"content_hash"`
 		L1Address           string `json:"l1_address"`
 		L1TokenId           string `json:"l1_token_id"`
-		CreatorTreasuryRate int64  `json:"creator_treasury_rate"`
+		RoyaltyRate         int64  `json:"royalty_rate"`
 		CollectionId        int64  `json:"collection_id"`
 		IpfsId              string `json:"ipfs_id"`
+	}
+
+	NftEntity {
+		ResultCode
+		Nft *Nft `json:"nft"`
 	}
 
 	Nfts {
@@ -486,11 +500,13 @@ type (
 	}
 
 	NftIndex {
+		ResultCode
 		Index  int64  `json:"index"`
 		IpfsId string `json:"ipfs_id"`
 	}
 
 	History {
+		ResultCode
 		IpnsId string `json:"ipns_id"`
 	}
 )
@@ -509,10 +525,16 @@ type (
 
 type (
 	ReqGetAccountNfts {
-		By     string `form:"by,options=account_index|account_name|account_pk"`
+		By     string `form:"by,options=account_index|l1_address"`
 		Value  string `form:"value"`
 		Offset uint16 `form:"offset,range=[0:100000]"`
 		Limit  uint16 `form:"limit,range=[1:100]"`
+	}
+)
+
+type (
+	ReqGetNft {
+		NftIndex int64 `form:"nft_index"`
 	}
 )
 
@@ -530,8 +552,7 @@ type (
 
 type (
 	ReqUpdateNft {
-		TxInfo      string `form:"tx_info"`
-		TxSignature string `form:"tx_signature"`
+		TxInfo string `form:"tx_info"`
 	}
 )
 
@@ -551,6 +572,10 @@ service server-api {
 	@doc "Get nfts of a specific account"
 	@handler GetAccountNfts
 	get /api/v1/accountNfts (ReqGetAccountNfts) returns (Nfts)
+	
+	@doc "Get nft of nft index"
+	@handler GetNftByNftIndex
+	get /api/v1/GetNftByNftIndex (ReqGetNft) returns (NftEntity)
 	
 	@doc "Get nft_index of a nft by txHash"
 	@handler GetNftByTxHash

@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/shopspring/decimal"
@@ -120,6 +121,7 @@ type Sender struct {
 	l1RollupTxModel      l1rolluptx.L1RollupTxModel
 	sysConfigModel       sysconfig.SysConfigModel
 	proofModel           proof.ProofModel
+	txModel              tx.TxModel
 }
 
 func NewSender(c sconfig.Config) *Sender {
@@ -144,6 +146,7 @@ func NewSender(c sconfig.Config) *Sender {
 		l1RollupTxModel:      l1rolluptx.NewL1RollupTxModel(db),
 		sysConfigModel:       sysconfig.NewSysConfigModel(db),
 		proofModel:           proof.NewProofModel(db),
+		txModel:              tx.NewTxModel(db),
 	}
 
 	s.commitAddress = common.HexToAddress(c.ChainConfig.CommitAddress)
@@ -274,7 +277,7 @@ func (s *Sender) CommitBlocks() (err error) {
 	if len(blocks) == 0 {
 		return nil
 	}
-	pendingCommitBlocks, err := ConvertBlocksForCommitToCommitBlockInfos(blocks)
+	pendingCommitBlocks, err := ConvertBlocksForCommitToCommitBlockInfos(blocks, s.txModel)
 	if err != nil {
 		return fmt.Errorf("failed to get commit block info, err: %v", err)
 	}

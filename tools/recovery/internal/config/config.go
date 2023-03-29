@@ -10,7 +10,6 @@ import (
 type Config struct {
 	Postgres struct {
 		MasterDataSource string
-		SlaveDataSource  string
 	}
 	CacheRedis cache.CacheConf
 	TreeDB     struct {

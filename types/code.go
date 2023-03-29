@@ -47,12 +47,17 @@ var (
 
 	IoErrFailToRead = NewSystemError(10033, "ioutil.ReadAll err")
 
-	CmcNotListedErr = NewSystemError(10034, "cmc not listed")
+	CmcNotListedErr           = NewSystemError(10034, "cmc not listed")
+	BinanceOracleNotListedErr = NewSystemError(10035, "cmc not listed")
 
 	TreeErrUnsupportedDriver = NewSystemError(11001, "unsupported db driver")
 
-	AppErrInvalidParam   = NewBusinessError(20001, "invalid param: ")
-	AppErrInvalidTxField = NewBusinessError(20002, "invalid tx field: ")
+	AppErrInvalidParam                  = NewBusinessError(20001, "invalid param: ")
+	AppErrInvalidTxField                = NewBusinessError(20002, "invalid tx field: ")
+	AppErrDepositPubDataInvalidSize     = NewBusinessError(20003, "[ParseDepositPubData] invalid size")
+	AppErrDepositNFTPubDataInvalidSize  = NewBusinessError(20004, "[ParseDepositNftPubData] invalid size")
+	AppErrFullExitPubDataInvalidSize    = NewBusinessError(20005, "[ParseFullExitPubData] invalid size")
+	AppErrFullExitNftPubDataInvalidSize = NewBusinessError(20006, "[ParseFullExitNftPubData] invalid size")
 
 	AppErrInvalidExpireTime   = NewBusinessError(21000, "invalid expired time")
 	AppErrInvalidGasFeeAmount = NewBusinessError(21001, "invalid gas fee amount")
@@ -70,6 +75,7 @@ var (
 	AppErrInvalidToAccountNameHash     = NewBusinessError(21105, "invalid ToAccountNameHash")
 	AppErrAccountNameAlreadyRegistered = NewBusinessError(21106, "invalid account name, already registered")
 	AppErrAccountInvalidToAccount      = NewBusinessError(21107, "invalid ToAccount")
+	AppErrInvalidAccount               = NewBusinessError(21108, "invalid account")
 
 	// Asset
 	AppErrAssetNotFound               = NewBusinessError(21200, "asset not found")
@@ -95,11 +101,12 @@ var (
 	AppErrOfferIndexAlreadyInUse    = NewBusinessError(21405, "account offer index is already in use")
 	AppErrBothOfferNotExist         = NewBusinessError(21406, "both buyOffer and sellOffer does not exist")
 	AppErrTxSignatureError          = NewBusinessError(21407, "tx Signature Error")
-	AppErrNoFetcherForTxType        = NewBusinessError(21408, "can not find fetcher function for tx type")
-	AppErrNoSignFunctionForTxType   = NewBusinessError(21409, "can not find signature function for tx type")
-	AppErrAccountNotNftOwner        = NewBusinessError(21410, "account is not owner of the nft")
-	AppErrUnsupportedTxType         = NewBusinessError(21411, "unsupported tx type")
-	AppErrPrepareNftFailed          = NewBusinessError(21412, "prepare nft failed")
+	AppErrFailToL1Signature         = NewBusinessError(21408, "fail to l1 signature")
+	AppErrNoFetcherForTxType        = NewBusinessError(21409, "can not find fetcher function for tx type")
+	AppErrNoSignFunctionForTxType   = NewBusinessError(21410, "can not find signature function for tx type")
+	AppErrAccountNotNftOwner        = NewBusinessError(21411, "account is not owner of the nft")
+	AppErrUnsupportedTxType         = NewBusinessError(21412, "unsupported tx type")
+	AppErrPrepareNftFailed          = NewBusinessError(21413, "prepare nft failed")
 
 	// Offer
 	AppErrInvalidOfferType           = NewBusinessError(21500, "invalid offer type")
@@ -118,6 +125,10 @@ var (
 	AppErrInvalidSellOfferState      = NewBusinessError(21511, "invalid sell offer state, already canceled or finalized")
 	AppErrInvalidBuyOfferState       = NewBusinessError(21512, "invalid buy offer state, already canceled or finalized")
 	AppErrInvalidAssetOfOffer        = NewBusinessError(21513, "invalid asset of offer")
+	AppErrInvalidPlatformRate        = NewBusinessError(21514, "invalid platform rate")
+	AppErrInvalidPlatformAmount      = NewBusinessError(21515, "invalid platform amount")
+	AppErrInvalidSellPlatformAmount  = NewBusinessError(21516, "sell platform amount should be 0")
+	AppErrInvalidSellPlatformRate    = NewBusinessError(21517, "sell platform rate should be 0")
 
 	// Nft
 	AppErrNftAlreadyExist          = NewBusinessError(21600, "invalid nft index, already exist")
@@ -130,7 +141,7 @@ var (
 	AppErrInvalidMetaData          = NewBusinessError(21607, "metaData should not be larger than ")
 	AppErrInvalidMutableAttributes = NewBusinessError(21608, "mutableAttributes should not be larger than ")
 	AppErrInvalidNftNonce          = NewBusinessError(21609, "invalid nft nonce")
-
+	AppErrInvalidRoyaltyRate       = NewBusinessError(21610, "invalid royalty rate")
 	// Collection
 	AppErrInvalidCollectionId   = NewBusinessError(21700, "invalid collection id")
 	AppErrInvalidCollectionName = NewBusinessError(21701, "invalid collection name")
@@ -158,9 +169,9 @@ var (
 	AppErrUnknownRatelimitStatus = NewBusinessError(23001, "Unknown Rate Limit Status Error!")
 
 	// PermissionControl
-	AppErrForbiddenByBlackList    = NewBusinessError(23100, "Account forbidden by Blacklist!")
-	AppErrNotPermittedByWhiteList = NewBusinessError(23101, "Account not permitted by Whitelist!")
+	AppErrPermissionForbidden = NewBusinessError(23100, "Something went wrong, please try a different account or counterparty account!")
 
+	// General System Error
 	AppErrInvalidGasAsset     = NewBusinessError(25003, "invalid gas asset")
 	AppErrInvalidTxType       = NewBusinessError(25004, "invalid tx type")
 	AppErrInvalidAddress      = NewBusinessError(25005, "invalid address")

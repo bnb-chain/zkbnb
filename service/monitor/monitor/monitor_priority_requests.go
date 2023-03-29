@@ -17,8 +17,11 @@
 package monitor
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/bnb-chain/zkbnb/common/monitor"
+	"github.com/bnb-chain/zkbnb/dao/dbcache"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -30,7 +33,7 @@ import (
 )
 
 func (m *Monitor) MonitorPriorityRequests() error {
-	pendingRequests, err := m.PriorityRequestModel.GetPriorityRequestsByStatus(PendingStatus)
+	pendingRequests, err := m.PriorityRequestModel.GetPriorityRequestsByStatus(monitor.PendingStatus)
 	if err != nil {
 		if err != types.DbErrNotFound {
 			return err
@@ -79,20 +82,7 @@ func (m *Monitor) MonitorPriorityRequests() error {
 		// handle request based on request type
 		var txInfoBytes []byte
 		switch request.TxType {
-		case TxTypeRegisterZns:
-			// parse request info
-			txInfo, err := chain.ParseRegisterZnsPubData(common.FromHex(request.Pubdata))
-			if err != nil {
-				return fmt.Errorf("unable to parse registerZNS pub data, err: %v", err)
-			}
-
-			poolTx.TxType = int64(txInfo.TxType)
-			txInfoBytes, err = json.Marshal(txInfo)
-			if err != nil {
-				return err
-			}
-
-		case TxTypeDeposit:
+		case monitor.TxTypeDeposit:
 			txInfo, err := chain.ParseDepositPubData(common.FromHex(request.Pubdata))
 			if err != nil {
 				return fmt.Errorf("unable to parse deposit pub data: %v", err)
@@ -103,8 +93,15 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info : %v", err)
 			}
-
-		case TxTypeDepositNft:
+			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
+			if err == nil {
+				poolTx.AccountIndex = accountIndex
+				poolTx.FromAccountIndex = accountIndex
+				poolTx.ToAccountIndex = accountIndex
+			} else {
+				logx.Errorf("unable to get account index : %v", err)
+			}
+		case monitor.TxTypeDepositNft:
 			txInfo, err := chain.ParseDepositNftPubData(common.FromHex(request.Pubdata))
 			if err != nil {
 				return fmt.Errorf("unable to parse deposit nft pub data: %v", err)
@@ -115,8 +112,15 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info: %v", err)
 			}
-
-		case TxTypeFullExit:
+			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
+			if err == nil {
+				poolTx.AccountIndex = accountIndex
+				poolTx.FromAccountIndex = accountIndex
+				poolTx.ToAccountIndex = accountIndex
+			} else {
+				logx.Errorf("unable to get account index : %v", err)
+			}
+		case monitor.TxTypeFullExit:
 			txInfo, err := chain.ParseFullExitPubData(common.FromHex(request.Pubdata))
 			if err != nil {
 				return fmt.Errorf("unable to parse deposit pub data: %v", err)
@@ -127,8 +131,15 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info : %v", err)
 			}
-
-		case TxTypeFullExitNft:
+			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
+			if err == nil {
+				poolTx.AccountIndex = accountIndex
+				poolTx.FromAccountIndex = accountIndex
+				poolTx.ToAccountIndex = accountIndex
+			} else {
+				logx.Errorf("unable to get account index : %v", err)
+			}
+		case monitor.TxTypeFullExitNft:
 			txInfo, err := chain.ParseFullExitNftPubData(common.FromHex(request.Pubdata))
 			if err != nil {
 				return fmt.Errorf("unable to parse deposit nft pub data: %v", err)
@@ -139,11 +150,17 @@ func (m *Monitor) MonitorPriorityRequests() error {
 			if err != nil {
 				return fmt.Errorf("unable to serialize request info : %v", err)
 			}
-
+			accountIndex, err := m.GetAccountIndex(txInfo.L1Address)
+			if err == nil {
+				poolTx.AccountIndex = accountIndex
+				poolTx.FromAccountIndex = accountIndex
+				poolTx.ToAccountIndex = accountIndex
+			} else {
+				logx.Errorf("unable to get account index : %v", err)
+			}
 		default:
 			return fmt.Errorf("invalid request type")
 		}
-
 		poolTx.TxInfo = string(txInfoBytes)
 		poolTx.L1RequestId = request.RequestId
 		pendingNewPoolTxs = append(pendingNewPoolTxs, poolTx)
@@ -174,4 +191,26 @@ func (m *Monitor) MonitorPriorityRequests() error {
 	}
 
 	return nil
+}
+
+func (m *Monitor) GetAccountIndex(l1Address string) (int64, error) {
+	cached, exist := m.L1AddressCache.Get(l1Address)
+	if exist {
+		return cached.(int64), nil
+	} else {
+		var accountIndex interface{}
+		redisAccount, err := m.RedisCache.Get(context.Background(), dbcache.AccountKeyByL1Address(l1Address), &accountIndex)
+		if err == nil && redisAccount != nil {
+			return accountIndex.(int64), nil
+		}
+		dbAccount, err := m.AccountModel.GetAccountByL1Address(l1Address)
+		if err != nil {
+			if err == types.DbErrNotFound {
+				return types.NilAccountIndex, nil
+			}
+			return 0, err
+		}
+		m.L1AddressCache.Add(l1Address, dbAccount.AccountIndex)
+		return dbAccount.AccountIndex, nil
+	}
 }

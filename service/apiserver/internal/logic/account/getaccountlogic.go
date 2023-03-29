@@ -2,7 +2,6 @@ package account
 
 import (
 	"context"
-	"github.com/bnb-chain/zkbnb/dao/account"
 	"github.com/bnb-chain/zkbnb/dao/dbcache"
 	"math/big"
 	"sort"
@@ -16,9 +15,8 @@ import (
 )
 
 const (
-	queryByIndex = "index"
-	queryByName  = "name"
-	queryByPk    = "pk"
+	queryByIndex     = "index"
+	queryByL1Address = "l1_address"
 )
 
 type GetAccountLogic struct {
@@ -36,50 +34,39 @@ func NewGetAccountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetAcc
 }
 
 func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Account, err error) {
-	index := int64(0)
+	index := int64(-1)
 	switch req.By {
 	case queryByIndex:
 		index, err = strconv.ParseInt(req.Value, 10, 64)
 		if err != nil || index < 0 {
 			return nil, types2.AppErrInvalidAccountIndex
 		}
-	case queryByName:
-		index, err = l.svcCtx.MemCache.GetAccountIndexByName(req.Value)
-	case queryByPk:
-		index, err = l.svcCtx.MemCache.GetAccountIndexByPk(req.Value)
+	case queryByL1Address:
+		index, err = l.svcCtx.MemCache.GetAccountIndexByL1Address(req.Value)
 	default:
-		return nil, types2.AppErrInvalidParam.RefineError("param by should be index|name|pk")
+		return nil, types2.AppErrInvalidParam.RefineError("param by should be index|l1address")
 	}
-
 	if err != nil {
 		if err == types2.DbErrNotFound {
+			var accountIndex interface{}
 			var redisAccount interface{}
-			accountInfo := &account.Account{}
 			switch req.By {
-			case queryByIndex:
-				index, _ = strconv.ParseInt(req.Value, 10, 64)
-				redisAccount, err = l.svcCtx.RedisCache.Get(context.Background(), dbcache.AccountKeyByIndex(index), accountInfo)
-			case queryByName:
-				redisAccount, err = l.svcCtx.RedisCache.Get(context.Background(), dbcache.AccountKeyByName(req.Value), accountInfo)
-			case queryByPk:
-				redisAccount, err = l.svcCtx.RedisCache.Get(context.Background(), dbcache.AccountKeyByPK(req.Value), accountInfo)
+			case queryByL1Address:
+				redisAccount, err = l.svcCtx.RedisCache.Get(context.Background(), dbcache.AccountKeyByL1Address(req.Value), &accountIndex)
 			}
 			if err == nil && redisAccount != nil {
-				return &types.Account{
-					Index:           accountInfo.AccountIndex,
-					Status:          account.AccountStatusPending,
-					Name:            accountInfo.AccountName,
-					Pk:              accountInfo.PublicKey,
-					Nonce:           accountInfo.Nonce,
-					Assets:          make([]*types.AccountAsset, 0),
-					TotalAssetValue: "0",
-				}, nil
+				index = accountIndex.(int64)
+			} else {
+				return nil, types2.AppErrAccountNotFound
 			}
+		} else {
 			return nil, types2.AppErrAccountNotFound
 		}
-		return nil, types2.AppErrInternal
 	}
 
+	if index < 0 {
+		return nil, types2.AppErrAccountNotFound
+	}
 	account, err := l.svcCtx.StateFetcher.GetLatestAccount(index)
 	if err != nil {
 		if err == types2.DbErrNotFound {
@@ -95,12 +82,12 @@ func (l *GetAccountLogic) GetAccount(req *types.ReqGetAccount) (resp *types.Acco
 	//}
 
 	resp = &types.Account{
-		Index:  account.AccountIndex,
-		Status: uint32(account.Status),
-		Name:   account.AccountName,
-		Pk:     account.PublicKey,
-		Nonce:  account.Nonce,
-		Assets: make([]*types.AccountAsset, 0, len(account.AssetInfo)),
+		Index:     account.AccountIndex,
+		Status:    uint32(account.Status),
+		L1Address: account.L1Address,
+		Pk:        account.PublicKey,
+		Nonce:     account.Nonce,
+		Assets:    make([]*types.AccountAsset, 0, len(account.AssetInfo)),
 	}
 
 	totalAssetValue := big.NewFloat(0)

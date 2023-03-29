@@ -33,7 +33,7 @@ func (l *GetL2SignatureBodyLogic) GetL2SignatureBody(req *types.ReqSendTx) (resp
 	}
 
 	resp = &types.SignBody{
-		SignBody: signatureBody,
+		SignBody: signatureBody.GetL1SignatureBody(),
 	}
 	return resp, nil
 }

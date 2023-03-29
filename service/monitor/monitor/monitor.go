@@ -18,7 +18,11 @@ package monitor
 
 import (
 	"fmt"
+	"github.com/bnb-chain/zkbnb/dao/account"
+	"github.com/bnb-chain/zkbnb/dao/dbcache"
+	lru "github.com/hashicorp/golang-lru"
 	"gorm.io/plugin/dbresolver"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -117,6 +121,9 @@ type Monitor struct {
 	governanceContractAddress string
 
 	db                   *gorm.DB
+	L1AddressCache       *lru.Cache
+	RedisCache           dbcache.Cache
+	AccountModel         account.AccountModel
 	BlockModel           block.BlockModel
 	TxModel              tx.TxModel
 	TxPoolModel          tx.TxPoolModel
@@ -142,9 +149,18 @@ func NewMonitor(c config.Config) *Monitor {
 		Replicas: []gorm.Dialector{postgres.Open(slaveDataSource)},
 	}))
 
+	l1AddressCache, err := lru.New(c.AccountCacheSize)
+	if err != nil {
+		logx.Severef("init account cache failed:%v", err)
+		panic(err)
+	}
+	redisCache := dbcache.NewRedisCache(c.CacheRedis[0].Host, c.CacheRedis[0].Pass, 15*time.Minute)
 	monitor := &Monitor{
 		Config:               c,
 		db:                   db,
+		L1AddressCache:       l1AddressCache,
+		RedisCache:           redisCache,
+		AccountModel:         account.NewAccountModel(db),
 		PriorityRequestModel: priorityrequest.NewPriorityRequestModel(db),
 		TxModel:              tx.NewTxModel(db),
 		TxPoolModel:          tx.NewTxPoolModel(db),

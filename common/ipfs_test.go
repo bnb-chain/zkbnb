@@ -104,14 +104,14 @@ func unmarshalStruct(str []byte) Transaction {
 
 func TestGet1Txs(t *testing.T) {
 	sh := shell.NewShell("10.23.23.40:5001")
-	var v = "{\"TxType\":2212222,\"NftIndex\":0,\"AccountNameHash\":\"IUGc18NfYlBnnB/OCsdC52AOnWDybw0EPf6CufmcoPM=\",\"AccountIndex\":0,\"CreatorAccountIndex\":0,\"CreatorTreasuryRate\":0,\"CreatorAccountNameHash\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"NftContentHash\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"CollectionId\":0}"
+	var v = "{\"TxType\":2212222,\"NftIndex\":0,\"AccountNameHash\":\"IUGc18NfYlBnnB/OCsdC52AOnWDybw0EPf6CufmcoPM=\",\"AccountIndex\":0,\"CreatorAccountIndex\":0,\"RoyaltyRate\":0,\"CreatorAccountNameHash\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"NftContentHash\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"CollectionId\":0}"
 	hash := UploadJson(sh, v, 1)
 	fmt.Println("文件hash是", hash)
 }
 
 func TestOnlyHash(t *testing.T) {
 	sh := shell.NewShell("10.23.23.40:5001")
-	var v = "{\"TxType\":2212221121112,\"NftIndex\":1230,\"AccountNameHash\":\"IUGc18NfYlBnnB/OCsdC52AOnWDybw0EPf6CufmcoPM=\",\"AccountIndex\":0,\"CreatorAccountIndex\":0,\"CreatorTreasuryRate\":0,\"CreatorAccountNameHash\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"NftContentHash\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"CollectionId\":0}"
+	var v = "{\"TxType\":2212221121112,\"NftIndex\":1230,\"AccountNameHash\":\"IUGc18NfYlBnnB/OCsdC52AOnWDybw0EPf6CufmcoPM=\",\"AccountIndex\":0,\"CreatorAccountIndex\":0,\"RoyaltyRate\":0,\"CreatorAccountNameHash\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"NftContentHash\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"CollectionId\":0}"
 	mhash, _ := sh.Add(bytes.NewBufferString(v))
 	fmt.Println("文件hash是", mhash)
 }

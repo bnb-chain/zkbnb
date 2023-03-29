@@ -52,17 +52,18 @@ func toCryptoWithdrawNftTx(txInfo *txtypes.WithdrawNftTxInfo) (info *cryptoTypes
 		return nil, err
 	}
 	info = &cryptoTypes.WithdrawNftTx{
-		AccountIndex:           txInfo.AccountIndex,
-		CreatorAccountIndex:    txInfo.CreatorAccountIndex,
-		CreatorAccountNameHash: txInfo.CreatorAccountNameHash,
-		CreatorTreasuryRate:    txInfo.CreatorTreasuryRate,
-		NftIndex:               txInfo.NftIndex,
-		NftContentHash:         txInfo.NftContentHash,
-		ToAddress:              txInfo.ToAddress,
-		GasAccountIndex:        txInfo.GasAccountIndex,
-		GasFeeAssetId:          txInfo.GasFeeAssetId,
-		GasFeeAssetAmount:      packedFee,
-		CollectionId:           txInfo.CollectionId,
+		AccountIndex:        txInfo.AccountIndex,
+		CreatorAccountIndex: txInfo.CreatorAccountIndex,
+		CreatorL1Address:    common.AddressStrToBytes(txInfo.CreatorL1Address),
+		RoyaltyRate:         txInfo.RoyaltyRate,
+		NftIndex:            txInfo.NftIndex,
+		NftContentHash:      txInfo.NftContentHash,
+		ToAddress:           txInfo.ToAddress,
+		GasAccountIndex:     txInfo.GasAccountIndex,
+		GasFeeAssetId:       txInfo.GasFeeAssetId,
+		GasFeeAssetAmount:   packedFee,
+		CollectionId:        txInfo.CollectionId,
+		NftContentType:      txInfo.NftContentType,
 	}
 	return info, nil
 }
