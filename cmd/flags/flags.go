@@ -126,9 +126,9 @@ var (
 		Usage: "proofFolder",
 		Value: "",
 	}
-	RevertBlockHeightsFlag = &cli.StringFlag{
-		Name:  "blockHeights",
-		Usage: "blockHeights",
-		Value: "",
+	RevertBlockHeightFlag = &cli.Int64Flag{
+		Name:  "height",
+		Usage: "height",
+		Value: 0,
 	}
 )
