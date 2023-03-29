@@ -20,6 +20,7 @@ package prove
 import (
 	cryptoTypes "github.com/bnb-chain/zkbnb-crypto/circuit/types"
 	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
+	"github.com/bnb-chain/zkbnb/common"
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/types"
 )
@@ -42,11 +43,12 @@ func toCryptoDepositNftTx(txInfo *txtypes.DepositNftTxInfo) (info *cryptoTypes.D
 	info = &cryptoTypes.DepositNftTx{
 		AccountIndex:        txInfo.AccountIndex,
 		NftIndex:            txInfo.NftIndex,
-		AccountNameHash:     txInfo.AccountNameHash,
+		L1Address:           common.AddressStrToBytes(txInfo.L1Address),
 		NftContentHash:      txInfo.NftContentHash,
 		CreatorAccountIndex: txInfo.CreatorAccountIndex,
-		CreatorTreasuryRate: txInfo.CreatorTreasuryRate,
+		RoyaltyRate:         txInfo.RoyaltyRate,
 		CollectionId:        txInfo.CollectionId,
+		NftContentType:      txInfo.NftContentType,
 	}
 	return info, nil
 }

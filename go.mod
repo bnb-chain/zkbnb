@@ -7,6 +7,7 @@ require (
 	github.com/bnb-chain/zkbnb-go-sdk v1.0.4-0.20221012063144-3a6e84095b4d
 	github.com/dgraph-io/ristretto v0.1.0
 	github.com/gin-gonic/gin v1.8.1
+	github.com/goccy/go-json v0.9.7
 	github.com/hashicorp/golang-lru v0.5.5-0.20221011183528-d4900dc688bf
 	github.com/ipfs/go-ipfs-api v0.3.0
 	github.com/ipfs/go-ipfs-files v0.0.9
@@ -14,6 +15,7 @@ require (
 	github.com/ory/dockertest v3.3.5+incompatible
 	github.com/panjf2000/ants/v2 v2.5.0
 	github.com/prometheus/client_golang v1.13.0
+	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/shopspring/decimal v1.3.1
 	github.com/swaggo/files v0.0.0-20220728132757-551d4a08d97a
 	github.com/swaggo/gin-swagger v1.5.3
@@ -62,7 +64,6 @@ require (
 	github.com/go-playground/validator/v10 v10.10.0 // indirect
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
-	github.com/goccy/go-json v0.9.7 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.1 // indirect
 	github.com/golang/glog v1.0.0 // indirect
@@ -124,7 +125,6 @@ require (
 	github.com/rjeczalik/notify v0.9.1 // indirect
 	github.com/rs/zerolog v1.26.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
-	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spacemonkeygo/spacelog v0.0.0-20180420211403-2296661a0572 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
@@ -155,6 +155,7 @@ require (
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/text v0.5.0 // indirect
+	golang.org/x/time v0.0.0-20220411224347-583f2d630306 // indirect
 	golang.org/x/tools v0.4.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/grpc v1.46.2 // indirect
@@ -186,8 +187,14 @@ require (
 )
 
 replace (
-	github.com/bnb-chain/zkbnb-eth-rpc => github.com/tengwei/zkbnb-eth-rpc v0.0.3-0.20230220151053-0d1227dac349
 	github.com/bnb-chain/zkbnb-smt => github.com/qct/zkbnb-smt v0.0.0-20230116124655-bad4d92a74f1
 	github.com/consensys/gnark => github.com/bnb-chain/gnark v0.7.1-0.20230206150652-4e87ef37b4e7
 	github.com/consensys/gnark-crypto => github.com/bnb-chain/gnark-crypto v0.7.1-0.20230203031630-7c643ad11891
+
 )
+
+replace github.com/bnb-chain/zkbnb-eth-rpc => github.com/15000785133/zkbnb-eth-rpc v0.0.3-0.20230323110416-88765330f373
+
+replace github.com/bnb-chain/zkbnb-crypto => github.com/15000785133/zkbnb-crypto v0.0.8-0.20230329071419-26bddc3a2634
+
+replace github.com/bnb-chain/zkbnb-go-sdk => github.com/15000785133/zkbnb-go-sdk v1.0.5-0.20230329071726-aee529e4cd51

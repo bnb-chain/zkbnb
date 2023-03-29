@@ -34,8 +34,8 @@ func Run(configFile string) error {
 		}
 	})
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to start the commit block task, %v", err)
+		panic("failed to start the commit block task, err:" + err.Error())
 	}
 
 	_, err = cronJob.AddFunc("@every 10s", func() {
@@ -46,8 +46,8 @@ func Run(configFile string) error {
 		}
 	})
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to start the verify and execute block task, %v", err)
+		panic("failed to start the verify and execute block task, err:" + err.Error())
 	}
 
 	_, err = cronJob.AddFunc("@every 10s", func() {
@@ -58,8 +58,8 @@ func Run(configFile string) error {
 		}
 	})
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to start the update send transaction task, %v", err)
+		panic("failed to start the update send transaction task, err:" + err.Error())
 	}
 
 	cronJob.Start()

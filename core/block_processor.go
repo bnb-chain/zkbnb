@@ -41,8 +41,8 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 					p.bc.Statedb.SetPendingNonceToRedisCache(tx.AccountIndex, expectNonce-1)
 				}
 			}
-			logx.Severe(err)
-			panic(err)
+			logx.Severef("failed to recover commit processor, %v", err)
+			panic("failed to recover commit processor")
 		}
 	}()
 	defer p.bc.resetCurrentBlockTimeStamp()
@@ -80,23 +80,27 @@ func (p *CommitProcessor) Process(tx *tx.Tx) error {
 	err = executor.ApplyTransaction()
 	metrics.ExecuteTxApplyTransactionMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to apply transaction, %v", err)
+		panic("failed to apply transaction, err:" + err.Error())
 	}
 	start = time.Now()
 	err = executor.GeneratePubData()
 	metrics.ExecuteTxGeneratePubDataMetrics.Set(float64(time.Since(start).Milliseconds()))
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to generate PubData, %v", err)
+		panic("failed to generate PubData, err:" + err.Error())
 	}
 	start = time.Now()
 	tx, err = executor.GetExecutedTx(false)
 	metrics.ExecuteTxGetExecutedTxMetrics.Set(float64(time.Since(start).Milliseconds()))
-
 	if err != nil {
 		logx.Severe(err)
 		panic(err)
+	}
+	err = executor.Finalize()
+	if err != nil {
+		logx.Severef("failed to get executed transaction, %v", err)
+		panic("failed to get executed transaction, err:" + err.Error())
 	}
 	tx.CreatedAt = time.Now()
 	p.bc.Statedb.Txs = append(p.bc.Statedb.Txs, tx)
@@ -126,10 +130,12 @@ func (p *APIProcessor) Process(tx *tx.Tx) error {
 	}
 	err = executor.VerifyInputs(false, false)
 	if err != nil {
+		logx.Error("fail to VerifyInput:", err)
 		return mappingVerifyInputsErrors(err)
 	}
 	_, err = executor.GetExecutedTx(true)
 	if err != nil {
+		logx.Error("fail to GetExecutedTx:", err)
 		return mappingExecutedErrors(err)
 	}
 	return nil
@@ -181,8 +187,9 @@ func mappingVerifyInputsErrors(err error) error {
 		return types.AppErrInvalidAssetAmount
 	case txtypes.ErrListedAtTooLow:
 		return types.AppErrInvalidListTime
-	case txtypes.ErrTreasuryRateTooLow, txtypes.ErrTreasuryRateTooHigh,
-		txtypes.ErrCreatorTreasuryRateTooLow, txtypes.ErrCreatorTreasuryRateTooHigh:
+	case txtypes.ErrProtocolRateTooLow, txtypes.ErrProtocolRateTooHigh,
+		txtypes.ErrChannelRateTooLow, txtypes.ErrChannelRateTooHigh,
+		txtypes.ErrRoyaltyRateTooLow, txtypes.ErrRoyaltyRateTooHigh:
 		return types.AppErrInvalidTreasuryRate
 	case txtypes.ErrCollectionNameTooShort, txtypes.ErrCollectionNameTooLong:
 		return types.AppErrInvalidCollectionName
@@ -194,16 +201,20 @@ func mappingVerifyInputsErrors(err error) error {
 		return types.AppErrInvalidCollectionId
 	case txtypes.ErrCallDataHashInvalid:
 		return types.AppErrInvalidCallDataHash
-	case txtypes.ErrToAccountNameHashInvalid:
-		return types.AppErrInvalidToAccountNameHash
 	case txtypes.ErrToAddressInvalid:
 		return types.AppErrInvalidToAddress
 	case txtypes.ErrBuyOfferInvalid:
 		return types.AppErrInvalidBuyOffer
 	case txtypes.ErrSellOfferInvalid:
 		return types.AppErrInvalidSellOffer
-
 	default:
-		return types.AppErrInvalidTxField.RefineError(err.Error())
+		return formatVerifyInputsErrors(err)
 	}
+}
+
+func formatVerifyInputsErrors(err error) error {
+	if _, ok := err.(types.Error); ok {
+		return err
+	}
+	return types.AppErrInvalidTxField.RefineError(err)
 }

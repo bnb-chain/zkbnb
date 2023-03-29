@@ -50,7 +50,7 @@ func NewFullnode(config *Config) (*Fullnode, error) {
 
 	fullnode := &Fullnode{
 		config: config,
-		client: client.NewZkBNBClient(l2EndPoint),
+		client: nil,
 		bc:     bc,
 
 		quitCh: make(chan struct{}),

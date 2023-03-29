@@ -22,11 +22,12 @@ import (
 )
 
 const (
-	TreasuryAccountIndex    = "TreasuryAccountIndex"
+	ProtocolAccountIndex    = "ProtocolAccountIndex"
 	GasAccountIndex         = "GasAccountIndex"
 	BscTestNetworkRpc       = "BscTestNetworkRpc"
 	LocalTestNetworkRpc     = "LocalTestNetworkRpc"
 	SysGasFee               = "SysGasFee"
+	ProtocolRate            = "ProtocolRate"
 	ZkBNBContract           = "ZkBNBContract"
 	GovernanceContract      = "GovernanceContract"
 	AssetGovernanceContract = "AssetGovernanceContract"

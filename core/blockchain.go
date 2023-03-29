@@ -3,9 +3,9 @@ package core
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/metrics"
+	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof/config"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"github.com/dgraph-io/ristretto"
 	"gorm.io/plugin/dbresolver"
@@ -152,6 +152,16 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		bc.Statedb.UpdateNftIndex(mintNft.NftIndex)
 	}
 
+	poolTx, err := bc.TxPoolModel.GetLatestAccountIndex()
+	if err != nil && err != types.DbErrNotFound {
+		logx.Severe("get latest account index failed: ", err)
+		panic("get latest account index failed:" + err.Error())
+	}
+	bc.Statedb.UpdateAccountIndex(types.NilAccountIndex)
+	if poolTx != nil {
+		bc.Statedb.UpdateAccountIndex(poolTx.AccountIndex)
+	}
+
 	latestRollback, err := bc.TxPoolModel.GetLatestRollback(tx.StatusPending, true)
 	if err != nil && err != types.DbErrNotFound {
 		logx.Severe("get latest pool tx rollback failed: ", err)
@@ -194,6 +204,36 @@ func NewBlockChainForDryRun(accountModel account.AccountModel,
 		Statedb: statedb,
 	}
 	bc.processor = NewAPIProcessor(bc)
+	return bc, nil
+}
+
+func NewBlockChainForExodusExit(config *config.Config) (*BlockChain, error) {
+	masterDataSource := config.Postgres.MasterDataSource
+	db, err := gorm.Open(postgres.Open(config.Postgres.MasterDataSource), &gorm.Config{
+		Logger: logger.Default.LogMode(config.Postgres.LogLevel),
+	})
+	if err != nil {
+		logx.Severe("gorm connect db failed: ", err)
+		return nil, err
+	}
+	err = db.Use(dbresolver.Register(dbresolver.Config{
+		Sources: []gorm.Dialector{postgres.Open(masterDataSource)},
+	}))
+	if err != nil {
+		logx.Severe("gorm connect db failed: ", err)
+		return nil, err
+	}
+
+	bc := &BlockChain{
+		dryRun:       false,
+		ChainDB:      sdb.NewChainDB(db),
+		currentBlock: &block.Block{},
+	}
+	//redisCache := dbcache.NewRedisCache(config.CacheRedis[0].Host, config.CacheRedis[0].Pass, 15*time.Minute)
+	bc.Statedb, err = sdb.NewStateDBForExodusExit(nil, &config.CacheConfig, bc.ChainDB)
+	if err != nil {
+		return nil, err
+	}
 	return bc, nil
 }
 
@@ -355,6 +395,8 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 				AssetInfo:       accountHistory.AssetInfo,
 				AssetRoot:       accountHistory.AssetRoot,
 				L2BlockHeight:   accountHistory.L2BlockHeight,
+				Status:          accountHistory.Status,
+				PublicKey:       accountHistory.PublicKey,
 			}
 			err := bc.AccountModel.UpdateByIndexInTransact(dbTx, accountInfo)
 			if err != nil {
@@ -385,9 +427,10 @@ func rollbackFunc(bc *BlockChain, accountIndexList []int64, nftIndexList []int64
 				OwnerAccountIndex:   nftHistory.OwnerAccountIndex,
 				NftContentHash:      nftHistory.NftContentHash,
 				CollectionId:        nftHistory.CollectionId,
-				CreatorTreasuryRate: nftHistory.CreatorTreasuryRate,
+				RoyaltyRate:         nftHistory.RoyaltyRate,
 				CreatorAccountIndex: nftHistory.CreatorAccountIndex,
 				L2BlockHeight:       nftHistory.L2BlockHeight,
+				NftContentType:      nftHistory.NftContentType,
 			}
 			err := bc.L2NftModel.UpdateByIndexInTransact(dbTx, nftInfo)
 			if err != nil {
@@ -814,7 +857,7 @@ func (bc *BlockChain) VerifyGas(gasAccountIndex, gasFeeAssetId int64, txType int
 	if !skipGasAmtChk {
 		gasFee, ok := gasAsset[txType]
 		if !ok {
-			return errors.New("invalid tx type")
+			return types.AppErrInvalidTxType
 		}
 		if gasFeeAmount.Cmp(big.NewInt(gasFee)) < 0 {
 			return types.AppErrInvalidGasFeeAmount

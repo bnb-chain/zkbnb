@@ -19,8 +19,8 @@ package sender
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/shopspring/decimal"
 	"gorm.io/plugin/dbresolver"
@@ -117,6 +117,7 @@ type Sender struct {
 	l1RollupTxModel      l1rolluptx.L1RollupTxModel
 	sysConfigModel       sysconfig.SysConfigModel
 	proofModel           proof.ProofModel
+	txModel              tx.TxModel
 }
 
 func NewSender(c sconfig.Config) *Sender {
@@ -183,30 +184,33 @@ func NewSender(c sconfig.Config) *Sender {
 		l1RollupTxModel:      l1rolluptx.NewL1RollupTxModel(db),
 		sysConfigModel:       sysconfig.NewSysConfigModel(db),
 		proofModel:           proof.NewProofModel(db),
+		txModel:              tx.NewTxModel(db),
 	}
 
 	l1RPCEndpoint, err := s.sysConfigModel.GetSysConfigByName(c.ChainConfig.NetworkRPCSysConfigName)
 	if err != nil {
-		logx.Severef("fatal error, cannot fetch l1RPCEndpoint from sysconfig, err: %v, SysConfigName: %s",
+		logx.Severef("fatal error, failed to get network rpc configuration, err:%v, SysConfigName:%s",
 			err, c.ChainConfig.NetworkRPCSysConfigName)
-		panic(err)
+		panic("failed to get network rpc configuration, err:" + err.Error() + ", SysConfigName:" +
+			c.ChainConfig.NetworkRPCSysConfigName)
 	}
 	rollupAddress, err := s.sysConfigModel.GetSysConfigByName(types.ZkBNBContract)
 	if err != nil {
-		logx.Severef("fatal error, cannot fetch rollupAddress from sysconfig, err: %v, SysConfigName: %s",
+		logx.Severef("fatal error, failed to get zkBNB contract configuration, err:%v, SysConfigName:%s",
 			err, types.ZkBNBContract)
-		panic(err)
+		panic("fatal error, failed to get zkBNB contract configuration, err:" + err.Error() + "SysConfigName:" +
+			types.ZkBNBContract)
 	}
 
 	s.cli, err = rpc.NewClient(l1RPCEndpoint.Value)
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to create client instance, %v", err)
+		panic("failed to create client instance, err:" + err.Error())
 	}
 	chainId, err := s.cli.ChainID(context.Background())
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to get chainId, %v", err)
+		panic("failed to get chainId, err:" + err.Error())
 	}
 	s.authCliCommitBlock, err = rpc.NewAuthClient(c.ChainConfig.CommitBlockSk, chainId)
 	if err != nil {
@@ -215,13 +219,13 @@ func NewSender(c sconfig.Config) *Sender {
 	}
 	s.authCliVerifyBlock, err = rpc.NewAuthClient(c.ChainConfig.VerifyBlockSk, chainId)
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to create auth client instance, %v", err)
+		panic("failed to create auth client instance, err:" + err.Error())
 	}
 	s.zkbnbInstance, err = zkbnb.LoadZkBNBInstance(s.cli, rollupAddress.Value)
 	if err != nil {
-		logx.Severe(err)
-		panic(err)
+		logx.Severef("failed to load ZkBNB instance, %v", err)
+		panic("failed to load ZkBNB instance, err:" + err.Error())
 	}
 	return s
 }
@@ -272,7 +276,7 @@ func (s *Sender) CommitBlocks() (err error) {
 	if len(blocks) == 0 {
 		return nil
 	}
-	pendingCommitBlocks, err := ConvertBlocksForCommitToCommitBlockInfos(blocks)
+	pendingCommitBlocks, err := ConvertBlocksForCommitToCommitBlockInfos(blocks, s.txModel)
 	if err != nil {
 		return fmt.Errorf("failed to get commit block info, err: %v", err)
 	}
@@ -521,12 +525,12 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 		return fmt.Errorf("unable to get proofs, err: %v", err)
 	}
 	if len(blockProofs) != len(blocks) {
-		return errors.New("related proofs not ready")
+		return types.AppErrRelatedProofsNotReady
 	}
 	// add sanity check
 	for i := range blockProofs {
 		if blockProofs[i].BlockNumber != blocks[i].BlockHeight {
-			return errors.New("proof number not match")
+			return types.AppErrProofNumberNotMatch
 		}
 	}
 	var proofs []*big.Int

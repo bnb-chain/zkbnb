@@ -3,6 +3,8 @@ package apiserver
 import (
 	"github.com/bnb-chain/zkbnb/dao/tx"
 	"github.com/bnb-chain/zkbnb/service/apiserver/internal/logic/info"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/permctrl"
+	"github.com/bnb-chain/zkbnb/service/apiserver/internal/ratelimiter"
 	"github.com/robfig/cron/v3"
 	"net/http"
 	"time"
@@ -50,7 +52,8 @@ func Run(configFile string) error {
 		}
 	})
 	if err != nil {
-		panic(err)
+		logx.Severef("failed to start the set transaction pending count task, %v", err)
+		panic("failed to start the set transaction pending count task, err:" + err.Error())
 	}
 
 	_, err = cronJob.AddFunc("@every 300s", func() {
@@ -66,7 +69,8 @@ func Run(configFile string) error {
 		}
 	})
 	if err != nil {
-		panic(err)
+		logx.Severef("failed to start the apiserver recover task, %v", err)
+		panic("failed to start the apiserver recover task, err:" + err.Error())
 	}
 	cronJob.Start()
 
@@ -79,7 +83,7 @@ func Run(configFile string) error {
 
 	server := rest.MustNewServer(c.RestConf, rest.WithCors())
 
-	// 全局中间件
+	// Add the metrics logic here
 	server.Use(func(next http.HandlerFunc) http.HandlerFunc {
 		return func(writer http.ResponseWriter, request *http.Request) {
 			if request.RequestURI == "/api/v1/sendTx" {
@@ -89,6 +93,18 @@ func Run(configFile string) error {
 		}
 	})
 
+	// Initiate the rate limit control
+	// configuration from Apollo server side
+	ratelimiter.InitRateLimitControl(ctx, c)
+
+	// Add the rate limit control handler
+	server.Use(ratelimiter.RateLimitHandler)
+
+	// Initiate the permission control
+	// configuration from Apollo server side
+	permctrl.InitPermissionControl(c)
+
+	// Register the server and the context
 	handler.RegisterHandlers(server, ctx)
 
 	// Start the swagger server in background

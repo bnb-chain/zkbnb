@@ -2,7 +2,6 @@ package committer
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/bnb-chain/zkbnb-crypto/ffmath"
 	"github.com/bnb-chain/zkbnb/common"
@@ -75,7 +74,7 @@ type UpdatePoolTx struct {
 
 func NewCommitter(config *Config) (*Committer, error) {
 	if len(config.BlockConfig.OptionalBlockSizes) == 0 {
-		return nil, errors.New("nil optional block sizes")
+		return nil, types.AppErrNilOptionalBlockSize
 	}
 
 	err := metrics.InitCommitterMetrics()
@@ -92,7 +91,9 @@ func NewCommitter(config *Config) (*Committer, error) {
 	if saveBlockDataPoolSize == 0 {
 		saveBlockDataPoolSize = 100
 	}
-	pool, err := ants.NewPool(saveBlockDataPoolSize)
+	pool, err := ants.NewPool(saveBlockDataPoolSize, ants.WithPanicHandler(func(p interface{}) {
+		panic("worker exits from a panic")
+	}))
 	common.NewIPFS(config.IpfsUrl)
 	committer := &Committer{
 		running:            true,
@@ -468,14 +469,14 @@ func (c *Committer) buildStateDataCopy(curBlock *block.Block) *statedb.StateData
 	if len(addPendingAccounts) > 0 || len(addPendingNfts) > 0 {
 		err := c.bc.DB().DB.Transaction(func(dbTx *gorm.DB) error {
 			if len(addPendingAccounts) != 0 {
-				err := c.bc.DB().AccountModel.BatchInsertOrUpdateInTransact(dbTx, addPendingAccounts)
+				err := c.bc.DB().AccountModel.BatchInsertInTransact(dbTx, addPendingAccounts)
 				if err != nil {
 					logx.Errorf("account batch insert or update failed:%s ", err.Error())
 					panic("account batch insert or update failed: " + err.Error())
 				}
 			}
 			if len(addPendingNfts) != 0 {
-				err := c.bc.DB().L2NftModel.BatchInsertOrUpdateInTransact(dbTx, addPendingNfts)
+				err := c.bc.DB().L2NftModel.BatchInsertInTransact(dbTx, addPendingNfts)
 				if err != nil {
 					logx.Errorf("l2nft batch insert or update failed:%s ", err.Error())
 					panic("l2nft batch insert or update failed: " + err.Error())
@@ -516,7 +517,7 @@ func (c *Committer) buildStateDataCopy(curBlock *block.Block) *statedb.StateData
 		}
 
 		for _, accountInfo := range addPendingAccounts {
-			c.bc.Statedb.StateCache.PendingAccountMap[accountInfo.AccountIndex].AccountId = accountInfo.ID
+			c.bc.Statedb.StateCache.PendingAccountMap[accountInfo.AccountIndex].AccountId = int64(accountInfo.ID)
 			updateAccountMap[accountInfo.AccountIndex] = c.bc.Statedb.StateCache.PendingAccountMap[accountInfo.AccountIndex]
 		}
 		for _, nftInfo := range addPendingNfts {
@@ -576,11 +577,16 @@ func (c *Committer) updatePoolTxFunc(updatePoolTxMap *UpdatePoolTx) {
 			updateNftIndexOrCollectionIdList := make([]*tx.PoolTx, 0)
 			for _, pendingUpdatePoolTx := range updatePoolTxMap.PendingUpdatePoolTxs {
 				ids = append(ids, pendingUpdatePoolTx.ID)
-				if pendingUpdatePoolTx.TxType == types.TxTypeCreateCollection || pendingUpdatePoolTx.TxType == types.TxTypeMintNft {
+				if pendingUpdatePoolTx.IsPartialUpdate {
 					updateNftIndexOrCollectionIdList = append(updateNftIndexOrCollectionIdList, &tx.PoolTx{
 						BaseTx: tx.BaseTx{Model: gorm.Model{ID: pendingUpdatePoolTx.ID},
-							NftIndex:     pendingUpdatePoolTx.NftIndex,
-							CollectionId: pendingUpdatePoolTx.CollectionId},
+							NftIndex:         pendingUpdatePoolTx.NftIndex,
+							CollectionId:     pendingUpdatePoolTx.CollectionId,
+							AccountIndex:     pendingUpdatePoolTx.AccountIndex,
+							IsCreateAccount:  pendingUpdatePoolTx.IsCreateAccount,
+							FromAccountIndex: pendingUpdatePoolTx.FromAccountIndex,
+							ToAccountIndex:   pendingUpdatePoolTx.ToAccountIndex,
+						},
 					})
 				}
 			}
@@ -683,10 +689,10 @@ func (c *Committer) preSaveBlockDataFunc(stateDataCopy *statedb.StateDataCopy) {
 func (c *Committer) updateAssetTreeFunc(stateDataCopy *statedb.StateDataCopy) {
 	start := time.Now()
 	metrics.UpdateAssetTreeTxMetrics.Add(float64(len(stateDataCopy.StateCache.Txs)))
-	logx.Infof("updateAssetTreeFunc blockHeight:%s,blockId:%s", stateDataCopy.CurrentBlock.BlockHeight, stateDataCopy.CurrentBlock.ID)
+	logx.Infof("updateAssetTreeFunc blockHeight:%d,blockId:%d", stateDataCopy.CurrentBlock.BlockHeight, stateDataCopy.CurrentBlock.ID)
 	err := c.bc.UpdateAssetTree(stateDataCopy)
 	if err != nil {
-		logx.Errorf("updateAssetTreeFunc failed:%s,blockHeight:%s", err, stateDataCopy.CurrentBlock.BlockHeight)
+		logx.Errorf("updateAssetTreeFunc failed:%s,blockHeight:%d", err, stateDataCopy.CurrentBlock.BlockHeight)
 		panic("updateAssetTreeFunc failed: " + err.Error())
 	}
 	c.updateAccountAndNftTreeWorker.Enqueue(stateDataCopy)
@@ -698,14 +704,14 @@ func (c *Committer) updateAssetTreeFunc(stateDataCopy *statedb.StateDataCopy) {
 func (c *Committer) updateAccountAndNftTreeFunc(stateDataCopy *statedb.StateDataCopy) {
 	start := time.Now()
 	metrics.UpdateAccountAndNftTreeTxMetrics.Add(float64(len(stateDataCopy.StateCache.Txs)))
-	logx.Infof("updateAccountAndNftTreeFunc blockHeight:%s,blockId:%s", stateDataCopy.CurrentBlock.BlockHeight, stateDataCopy.CurrentBlock.ID)
+	logx.Infof("updateAccountAndNftTreeFunc blockHeight:%d,blockId:%d", stateDataCopy.CurrentBlock.BlockHeight, stateDataCopy.CurrentBlock.ID)
 	blockSize := c.computeCurrentBlockSize(stateDataCopy)
 	if blockSize < len(stateDataCopy.StateCache.Txs) {
 		panic("block size too small")
 	}
 	blockStates, err := c.bc.UpdateAccountAndNftTree(blockSize, stateDataCopy)
 	if err != nil {
-		logx.Errorf("updateAccountAndNftTreeFunc failed:%s,blockHeight:%s", err, stateDataCopy.CurrentBlock.BlockHeight)
+		logx.Errorf("updateAccountAndNftTreeFunc failed:%s,blockHeight:%d", err, stateDataCopy.CurrentBlock.BlockHeight)
 		panic("updateAccountAndNftTreeFunc failed: " + err.Error())
 	}
 	c.saveBlockDataWorker.Enqueue(blockStates)
@@ -730,11 +736,15 @@ func (c *Committer) saveBlockDataFunc(blockStates *block.BlockStates) {
 
 	for _, poolTx := range blockStates.Block.Txs {
 		poolTxIds = append(poolTxIds, poolTx.ID)
-		if poolTx.TxType == types.TxTypeCreateCollection || poolTx.TxType == types.TxTypeMintNft {
+		if poolTx.IsPartialUpdate {
 			updateNftIndexOrCollectionIdList = append(updateNftIndexOrCollectionIdList, &tx.PoolTx{BaseTx: tx.BaseTx{
-				Model:        gorm.Model{ID: poolTx.ID},
-				NftIndex:     poolTx.NftIndex,
-				CollectionId: poolTx.CollectionId,
+				Model:            gorm.Model{ID: poolTx.ID},
+				NftIndex:         poolTx.NftIndex,
+				CollectionId:     poolTx.CollectionId,
+				AccountIndex:     poolTx.AccountIndex,
+				IsCreateAccount:  poolTx.IsCreateAccount,
+				FromAccountIndex: poolTx.FromAccountIndex,
+				ToAccountIndex:   poolTx.ToAccountIndex,
 			}})
 		}
 	}
@@ -1073,7 +1083,6 @@ func (c *Committer) getLatestExecutedRequestId() (int64, error) {
 	}
 
 	txTypes := []int64{
-		types.TxTypeRegisterZns,
 		types.TxTypeDeposit,
 		types.TxTypeDepositNft,
 		types.TxTypeFullExit,
@@ -1129,6 +1138,8 @@ func (c *Committer) loadAllAccounts() {
 							return
 						}
 						c.bc.Statedb.AccountCache.Add(accountInfo.AccountIndex, formatAccount)
+						c.bc.Statedb.L1AddressCache.Add(formatAccount.L1Address, accountInfo.AccountIndex)
+
 					}
 				}
 				logx.Infof("GetByNftIndexRange cost time %s", float64(time.Since(start).Milliseconds()))

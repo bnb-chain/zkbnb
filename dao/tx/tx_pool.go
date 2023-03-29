@@ -63,6 +63,7 @@ type (
 		UpdateTxsToPendingByMaxId(tx *gorm.DB, maxPoolTxId uint) error
 		BatchUpdateNftIndexOrCollectionId(txs []*PoolTx) (err error)
 		GetLatestMintNft() (tx *Tx, err error)
+		GetLatestAccountIndex() (tx *Tx, err error)
 		GetTxsUnscopedByHeights(blockHeights []int64) (txs []*Tx, err error)
 		GetLatestRollback(status int, rollback bool) (tx *PoolTx, err error)
 		GetCountByGreaterHeight(blockHeight int64) (count int64, err error)
@@ -84,23 +85,26 @@ type (
 		gorm.Model
 
 		// Assigned when created in the tx pool.
-		TxHash       string `gorm:"uniqueIndex"`
-		TxType       int64
-		TxInfo       string
-		AccountIndex int64 `gorm:"index:idx_pool_tx_account_index_nonce,priority:1"`
-		Nonce        int64 `gorm:"index:idx_pool_tx_account_index_nonce,priority:2"`
-		ExpiredAt    int64
+		TxHash           string `gorm:"uniqueIndex"`
+		TxType           int64
+		TxInfo           string
+		AccountIndex     int64 `gorm:"index:idx_pool_tx_account_index_nonce,priority:1"`
+		Nonce            int64 `gorm:"index:idx_pool_tx_account_index_nonce,priority:2"`
+		FromAccountIndex int64 `gorm:"index"`
+		ToAccountIndex   int64 `gorm:"index"`
+		ExpiredAt        int64
 
 		// Assigned after executed.
-		GasFee        string
-		GasFeeAssetId int64
-		NftIndex      int64
-		CollectionId  int64
-		AssetId       int64
-		TxAmount      string
-		Memo          string
-		ExtraInfo     string
-		NativeAddress string // a. Priority tx, assigned when created b. Other tx, assigned after executed.
+		GasFee          string
+		GasFeeAssetId   int64
+		NftIndex        int64
+		CollectionId    int64
+		AssetId         int64
+		TxAmount        string
+		Memo            string
+		ExtraInfo       string
+		NativeAddress   string // a. Priority tx, assigned when created b. Other tx, assigned after executed. Is
+		IsCreateAccount bool
 
 		TxIndex     int64
 		BlockHeight int64 `gorm:"index"`
@@ -509,6 +513,17 @@ func (m *defaultTxPoolModel) GetLatestMintNft() (tx *Tx, err error) {
 	return tx, nil
 }
 
+func (m *defaultTxPoolModel) GetLatestAccountIndex() (tx *Tx, err error) {
+	dbTx := m.DB.Table(m.table).Unscoped().Where("tx_type in ?", []int{types.TxTypeDeposit, types.TxTypeDepositNft, types.TxTypeTransfer, types.TxTypeTransferNft}).Order("to_account_index DESC").Limit(1).Find(&tx)
+	if dbTx.Error != nil {
+		return nil, types.DbErrSqlOperation
+	} else if dbTx.RowsAffected == 0 {
+		return nil, types.DbErrNotFound
+	}
+
+	return tx, nil
+}
+
 func (m *defaultTxPoolModel) GetFirstTxByStatus(status int) (txs *Tx, err error) {
 	dbTx := m.DB.Table(m.table).Where("tx_status = ?", status).Order("id asc").Limit(1).Find(&txs)
 	if dbTx.Error != nil {
@@ -532,7 +547,7 @@ func (m *defaultTxPoolModel) GetLatestExecutedTx() (tx *Tx, err error) {
 func (m *defaultTxPoolModel) BatchUpdateNftIndexOrCollectionId(txs []*PoolTx) (err error) {
 	dbTx := m.DB.Table(m.table).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"nft_index", "collection_id"}),
+		DoUpdates: clause.AssignmentColumns([]string{"nft_index", "collection_id", "account_index", "from_account_index", "to_account_index", "is_create_account"}),
 	}).CreateInBatches(&txs, len(txs))
 	if dbTx.Error != nil {
 		return dbTx.Error

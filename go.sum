@@ -41,6 +41,12 @@ cloud.google.com/go/storage v1.8.0/go.mod h1:Wv1Oy7z6Yz3DshWRJFhqM/UCfaWIRTdp0RX
 cloud.google.com/go/storage v1.10.0/go.mod h1:FLPqc6j+Ki4BU591ie1oL6qBQGu2Bl/tZ9ullr3+Kg0=
 collectd.org v0.3.0/go.mod h1:A/8DzQBkF6abtvrT2j/AU/4tiBgJWYyh0y/oB/4MlWE=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
+github.com/15000785133/zkbnb-crypto v0.0.8-0.20230329071419-26bddc3a2634 h1:fiChGFdn02oK1x2TmNRIsHY826jv8mlbMSNK5jYji6g=
+github.com/15000785133/zkbnb-crypto v0.0.8-0.20230329071419-26bddc3a2634/go.mod h1:WJL/OlRL4+8sU+O85btdCC2DQlMfKJE9UxuBTf/8DlE=
+github.com/15000785133/zkbnb-eth-rpc v0.0.3-0.20230323110416-88765330f373 h1:LTC89pDIr8WkzWh4mYIY+XUrqmWKZpFucc7/YKYA/fU=
+github.com/15000785133/zkbnb-eth-rpc v0.0.3-0.20230323110416-88765330f373/go.mod h1:T69T8enicQ5kSRPIzyPJv/jhuvRMz1UxsijPXmlis+I=
+github.com/15000785133/zkbnb-go-sdk v1.0.5-0.20230329071726-aee529e4cd51 h1:/PaHBvm30s39D5claZaqo0Sm+9SG9z9mT8W7FhAfwr0=
+github.com/15000785133/zkbnb-go-sdk v1.0.5-0.20230329071726-aee529e4cd51/go.mod h1:mTKrrR4baGL+nJ9ff/CVs3/K3TTVZs/mRVfkqxvrM0I=
 github.com/Azure/azure-sdk-for-go/sdk/azcore v0.21.1/go.mod h1:fBF9PQNqB8scdgpZ3ufzaLntG0AG7C1WjPMsiFOmfHM=
 github.com/Azure/azure-sdk-for-go/sdk/internal v0.8.3/go.mod h1:KLF4gFr6DcKFZwSuH8w8yEK6DpFl3LP5rhdvAb7Yz5I=
 github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.3.0/go.mod h1:tPaiy8S5bQ+S5sOiDlINkp7+Ef339+Nz5L5XO+cnOHo=
@@ -131,10 +137,6 @@ github.com/bnb-chain/gnark v0.7.1-0.20230206150652-4e87ef37b4e7 h1:SP9RLUhKtOZ6I
 github.com/bnb-chain/gnark v0.7.1-0.20230206150652-4e87ef37b4e7/go.mod h1:eAIZGosVkrjiFRzAiYZw/0yB6ooa7Nh5rST3X6zWdjg=
 github.com/bnb-chain/gnark-crypto v0.7.1-0.20230203031630-7c643ad11891 h1:fmLpwLm71xMeB+45ngpXioTt78aL6YGxubbnobNdoWQ=
 github.com/bnb-chain/gnark-crypto v0.7.1-0.20230203031630-7c643ad11891/go.mod h1:KPSuJzyxkJA8xZ/+CV47tyqkr9MmpZA3PXivK4VPrVg=
-github.com/bnb-chain/zkbnb-crypto v0.0.8-0.20230217071307-211b4b7e8923 h1:zfHoum6GoBKrhQo4r1VSoE4H2LQ9sDCQGeRnIb8dlLI=
-github.com/bnb-chain/zkbnb-crypto v0.0.8-0.20230217071307-211b4b7e8923/go.mod h1:WJL/OlRL4+8sU+O85btdCC2DQlMfKJE9UxuBTf/8DlE=
-github.com/bnb-chain/zkbnb-go-sdk v1.0.4-0.20221012063144-3a6e84095b4d h1:2+S4/JdKoSPSJr3D7Z5I/Qmv8TkgVYB73vRP0OOunRY=
-github.com/bnb-chain/zkbnb-go-sdk v1.0.4-0.20221012063144-3a6e84095b4d/go.mod h1:G27Jpl0yB6T/NKXw31bD2B2M91my0PM6SUEpbEGWGL8=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
 github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d h1:pVrfxiGfwelyab6n21ZBkbkmbevaf+WvMIiR7sr97hw=
 github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d/go.mod h1:H0wQNHz2YrLsuXOZozoeDmnHXkNCRmMW0gwFWDfEZDA=
@@ -1018,8 +1020,6 @@ github.com/swaggo/swag v1.8.8/go.mod h1:ezQVUUhly8dludpVk+/PuwJWvLLanB13ygV5Pr9e
 github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635/go.mod h1:hkRG7XYTFWNJGYcbNJQlaLq0fg1yr4J4t/NcTQtrfww=
 github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 h1:epCh84lMvA70Z7CTTCmYQn2CKbY8j86K7/FAIr141uY=
 github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7/go.mod h1:q4W45IWZaF22tdD+VEXcAWRA037jwmWEB5VWYORlTpc=
-github.com/tengwei/zkbnb-eth-rpc v0.0.3-0.20230220151053-0d1227dac349 h1:g5Yr1u9gpPJr/9kzjymwmp2AhEsPY0/Ts3fl7ao8sDQ=
-github.com/tengwei/zkbnb-eth-rpc v0.0.3-0.20230220151053-0d1227dac349/go.mod h1:T69T8enicQ5kSRPIzyPJv/jhuvRMz1UxsijPXmlis+I=
 github.com/tevid/gohamcrest v1.1.1 h1:ou+xSqlIw1xfGTg1uq1nif/htZ2S3EzRqLm2BP+tYU0=
 github.com/tevid/gohamcrest v1.1.1/go.mod h1:3UvtWlqm8j5JbwYZh80D/PVBt0mJ1eJiYgZMibh0H/k=
 github.com/tidwall/pretty v1.0.0/go.mod h1:XNkn88O1ChpSDQmQeStsy+sBenx6DDtFZJxhVysOjyk=

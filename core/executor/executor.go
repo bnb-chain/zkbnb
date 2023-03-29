@@ -1,7 +1,7 @@
 package executor
 
 import (
-	"errors"
+	"github.com/bnb-chain/zkbnb-crypto/wasm/txtypes"
 	"math/big"
 
 	sdb "github.com/bnb-chain/zkbnb/core/statedb"
@@ -26,12 +26,14 @@ type TxExecutor interface {
 	GeneratePubData() error
 	GetExecutedTx(fromApi bool) (*tx.Tx, error)
 	GenerateTxDetails() ([]*tx.TxDetail, error)
+	GetTxInfo() txtypes.TxInfo
+	Finalize() error
 }
 
 func NewTxExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 	switch tx.TxType {
-	case types.TxTypeRegisterZns:
-		return NewRegisterZnsExecutor(bc, tx)
+	case types.TxTypeChangePubKey:
+		return NewChangePubKeyExecutor(bc, tx)
 	case types.TxTypeDeposit:
 		return NewDepositExecutor(bc, tx)
 	case types.TxTypeDepositNft:
@@ -58,5 +60,5 @@ func NewTxExecutor(bc IBlockchain, tx *tx.Tx) (TxExecutor, error) {
 		return NewFullExitNftExecutor(bc, tx)
 	}
 
-	return nil, errors.New("unsupported tx type")
+	return nil, types.AppErrUnsupportedTxType
 }

@@ -20,7 +20,7 @@ package common
 import (
 	"bytes"
 	"encoding/hex"
-	"errors"
+	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
 
 	curve "github.com/bnb-chain/zkbnb-crypto/ecc/ztwistededwards/tebn254"
@@ -30,7 +30,8 @@ import (
 func PaddingStringBigIntIntoBuf(buf *bytes.Buffer, aStr string) error {
 	a, isValid := new(big.Int).SetString(aStr, 10)
 	if !isValid {
-		return errors.New("[PaddingStringBigIntIntoBuf] invalid string")
+		logx.Error("[PaddingStringBigIntIntoBuf] invalid string")
+		return types.AppErrInvalidSize
 	}
 	buf.Write(a.FillBytes(make([]byte, curve.PointSize)))
 	return nil
@@ -51,14 +52,16 @@ func PaddingAddressIntoBuf(buf *bytes.Buffer, address string) (err error) {
 
 func DecodeAddress(addr string) ([]byte, error) {
 	if len(addr) != 42 {
-		return nil, errors.New("[DecodeAddress] invalid address")
+		logx.Errorf("Invalid Address:%s", addr)
+		return nil, types.AppErrInvalidAddress
 	}
 	addrBytes, err := hex.DecodeString(addr[2:])
 	if err != nil {
 		return nil, err
 	}
 	if len(addrBytes) != types.AddressSize {
-		return nil, errors.New("[DecodeAddress] invalid address")
+		logx.Errorf("Invalid Address:%s", addr)
+		return nil, types.AppErrInvalidAddress
 	}
 	return addrBytes, nil
 }

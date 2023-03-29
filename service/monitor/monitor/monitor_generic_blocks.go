@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/bnb-chain/zkbnb/common/monitor"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
@@ -58,7 +59,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		return fmt.Errorf("failed to get priority request count, err: %v", err)
 	}
 
-	logs, err := getZkBNBContractLogs(m.cli, m.zkbnbContractAddress, uint64(startHeight), uint64(endHeight))
+	logs, err := GetZkBNBContractLogs(m.cli, m.zkbnbContractAddress, uint64(startHeight), uint64(endHeight))
 	if err != nil {
 		return fmt.Errorf("failed to get contract logs, err: %v", err)
 	}
@@ -71,7 +72,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		logx.Infof("type is typeGeneric blocks from %d to %d and vlog: %v", startHeight, endHeight, vlog)
 	}
 	var (
-		l1Events         []*L1Event
+		l1Events         []*monitor.L1Event
 		priorityRequests []*priorityrequest.PriorityRequest
 
 		priorityRequestCountCheck = 0
@@ -80,7 +81,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		relatedBlockTxStatus = make(map[int64]int)
 	)
 	for _, vlog := range logs {
-		l1EventInfo := &L1Event{
+		l1EventInfo := &monitor.L1Event{
 			TxHash: vlog.TxHash.Hex(),
 			Index:  vlog.Index,
 		}
@@ -94,22 +95,22 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		}
 
 		switch vlog.Topics[0].Hex() {
-		case zkbnbLogNewPriorityRequestSigHash.Hex():
+		case monitor.ZkbnbLogNewPriorityRequestSigHash.Hex():
 			priorityRequestCountCheck++
-			l1EventInfo.EventType = EventTypeNewPriorityRequest
+			l1EventInfo.EventType = monitor.EventTypeNewPriorityRequest
 
-			l2TxEventMonitorInfo, err := convertLogToNewPriorityRequestEvent(vlog)
+			l2TxEventMonitorInfo, err := ConvertLogToNewPriorityRequestEvent(vlog)
 			if err != nil {
 				return fmt.Errorf("failed to convert NewPriorityRequest log, err: %v", err)
 			}
 			priorityRequests = append(priorityRequests, l2TxEventMonitorInfo)
-		case zkbnbLogWithdrawalSigHash.Hex():
-		case zkbnbLogWithdrawalPendingSigHash.Hex():
-		case zkbnbLogBlockCommitSigHash.Hex():
-			l1EventInfo.EventType = EventTypeCommittedBlock
+		case monitor.ZkbnbLogWithdrawalSigHash.Hex():
+		case monitor.ZkbnbLogWithdrawalPendingSigHash.Hex():
+		case monitor.ZkbnbLogBlockCommitSigHash.Hex():
+			l1EventInfo.EventType = monitor.EventTypeCommittedBlock
 
 			var event zkbnb.ZkBNBBlockCommit
-			if err := ZkBNBContractAbi.UnpackIntoInterface(&event, EventNameBlockCommit, vlog.Data); err != nil {
+			if err := monitor.ZkBNBContractAbi.UnpackIntoInterface(&event, monitor.EventNameBlockCommit, vlog.Data); err != nil {
 				return fmt.Errorf("failed to unpack ZkBNBBlockCommit event, err: %v", err)
 			}
 
@@ -125,11 +126,11 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			relatedBlocks[blockHeight].CommittedAt = int64(logBlock.Time)
 			relatedBlocks[blockHeight].BlockStatus = block.StatusCommitted
 			relatedBlockTxStatus[blockHeight] = tx.StatusCommitted
-		case zkbnbLogBlockVerificationSigHash.Hex():
-			l1EventInfo.EventType = EventTypeVerifiedBlock
+		case monitor.ZkbnbLogBlockVerificationSigHash.Hex():
+			l1EventInfo.EventType = monitor.EventTypeVerifiedBlock
 
 			var event zkbnb.ZkBNBBlockVerification
-			if err := ZkBNBContractAbi.UnpackIntoInterface(&event, EventNameBlockVerification, vlog.Data); err != nil {
+			if err := monitor.ZkBNBContractAbi.UnpackIntoInterface(&event, monitor.EventNameBlockVerification, vlog.Data); err != nil {
 				return fmt.Errorf("failed to unpack ZkBNBBlockVerification err: %v", err)
 			}
 
@@ -145,8 +146,8 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 			relatedBlocks[blockHeight].VerifiedAt = int64(logBlock.Time)
 			relatedBlocks[blockHeight].BlockStatus = block.StatusVerifiedAndExecuted
 			relatedBlockTxStatus[blockHeight] = tx.StatusVerified
-		case zkbnbLogBlocksRevertSigHash.Hex():
-			l1EventInfo.EventType = EventTypeRevertedBlock
+		case monitor.ZkbnbLogBlocksRevertSigHash.Hex():
+			l1EventInfo.EventType = monitor.EventTypeRevertedBlock
 		default:
 		}
 
@@ -277,7 +278,7 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 	return nil
 }
 
-func getZkBNBContractLogs(cli *rpc.ProviderClient, zkbnbContract string, startHeight, endHeight uint64) ([]types.Log, error) {
+func GetZkBNBContractLogs(cli *rpc.ProviderClient, zkbnbContract string, startHeight, endHeight uint64) ([]types.Log, error) {
 	query := ethereum.FilterQuery{
 		FromBlock: big.NewInt(int64(startHeight)),
 		ToBlock:   big.NewInt(int64(endHeight)),
@@ -307,9 +308,9 @@ func getPriorityRequestCount(cli *rpc.ProviderClient, zkbnbContract string, star
 	return priorityRequestCount, nil
 }
 
-func convertLogToNewPriorityRequestEvent(log types.Log) (*priorityrequest.PriorityRequest, error) {
+func ConvertLogToNewPriorityRequestEvent(log types.Log) (*priorityrequest.PriorityRequest, error) {
 	var event zkbnb.ZkBNBNewPriorityRequest
-	if err := ZkBNBContractAbi.UnpackIntoInterface(&event, EventNameNewPriorityRequest, log.Data); err != nil {
+	if err := monitor.ZkBNBContractAbi.UnpackIntoInterface(&event, monitor.EventNameNewPriorityRequest, log.Data); err != nil {
 		return nil, err
 	}
 	request := &priorityrequest.PriorityRequest{

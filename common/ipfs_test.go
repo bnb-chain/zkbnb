@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/consensys/gnark-crypto/ecc/bn254/twistededwards/eddsa"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	shell "github.com/ipfs/go-ipfs-api"
 	file "github.com/ipfs/go-ipfs-files"
@@ -102,14 +104,14 @@ func unmarshalStruct(str []byte) Transaction {
 
 func TestGet1Txs(t *testing.T) {
 	sh := shell.NewShell("10.23.23.40:5001")
-	var v = "{\"TxType\":2212222,\"NftIndex\":0,\"AccountNameHash\":\"IUGc18NfYlBnnB/OCsdC52AOnWDybw0EPf6CufmcoPM=\",\"AccountIndex\":0,\"CreatorAccountIndex\":0,\"CreatorTreasuryRate\":0,\"CreatorAccountNameHash\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"NftContentHash\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"CollectionId\":0}"
+	var v = "{\"TxType\":2212222,\"NftIndex\":0,\"AccountNameHash\":\"IUGc18NfYlBnnB/OCsdC52AOnWDybw0EPf6CufmcoPM=\",\"AccountIndex\":0,\"CreatorAccountIndex\":0,\"RoyaltyRate\":0,\"CreatorAccountNameHash\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"NftContentHash\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"CollectionId\":0}"
 	hash := UploadJson(sh, v, 1)
 	fmt.Println("文件hash是", hash)
 }
 
 func TestOnlyHash(t *testing.T) {
 	sh := shell.NewShell("10.23.23.40:5001")
-	var v = "{\"TxType\":2212221121112,\"NftIndex\":1230,\"AccountNameHash\":\"IUGc18NfYlBnnB/OCsdC52AOnWDybw0EPf6CufmcoPM=\",\"AccountIndex\":0,\"CreatorAccountIndex\":0,\"CreatorTreasuryRate\":0,\"CreatorAccountNameHash\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"NftContentHash\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"CollectionId\":0}"
+	var v = "{\"TxType\":2212221121112,\"NftIndex\":1230,\"AccountNameHash\":\"IUGc18NfYlBnnB/OCsdC52AOnWDybw0EPf6CufmcoPM=\",\"AccountIndex\":0,\"CreatorAccountIndex\":0,\"RoyaltyRate\":0,\"CreatorAccountNameHash\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"NftContentHash\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"CollectionId\":0}"
 	mhash, _ := sh.Add(bytes.NewBufferString(v))
 	fmt.Println("文件hash是", mhash)
 }
@@ -145,4 +147,11 @@ func TestCid(t *testing.T) {
 	b, _ := hexutil.Decode(hash)
 	cid := base58.Encode(b)
 	fmt.Println(cid)
+}
+
+func TestPK(t *testing.T) {
+	pk := new(eddsa.PublicKey)
+	//pk.A.X.SetBytes(common.FromHex("0x0dfc378542f05a22fe8d4e08ddce9b5b63eb55d1d51826f6415a492baa77429e"))
+	pk.A.Y.SetBytes(common.FromHex("0x2706f1710710b1f3aa0f5e8dd6af532c1d784ebd0b9aa571c346a70bd4efa7d1"))
+	fmt.Println(common.Bytes2Hex(pk.Bytes()))
 }

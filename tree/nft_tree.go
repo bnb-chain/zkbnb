@@ -28,9 +28,11 @@ import (
 )
 
 func InitNftTree(
+	l2NftModel nft.L2NftModel,
 	nftHistoryModel nft.L2NftHistoryModel,
 	blockHeight int64,
 	ctx *Context,
+	fromHistory bool,
 ) (
 	nftTree bsmt.SparseMerkleTree, err error,
 ) {
@@ -46,19 +48,29 @@ func InitNftTree(
 		if blockHeight == 0 {
 			return nftTree, nil
 		}
-		newVersion := bsmt.Version(blockHeight)
-		maxNftIndex, err := nftHistoryModel.GetMaxNftIndex(blockHeight)
-		if err != nil && err != types.DbErrNotFound {
-			logx.Errorf("unable to get latest nft assets: %s", err.Error())
-			return nil, err
+		var maxNftIndex int64
+		if fromHistory {
+			maxNftIndex, err = nftHistoryModel.GetMaxNftIndex(blockHeight)
+			if err != nil && err != types.DbErrNotFound {
+				logx.Errorf("unable to get latest nft assets: %s", err.Error())
+				return nil, err
+			}
+		} else {
+			maxNftIndex, err = l2NftModel.GetMaxNftIndex()
+			if err != nil && err != types.DbErrNotFound {
+				logx.Errorf("unable to get latest nft assets: %s", err.Error())
+				return nil, err
+			}
 		}
-
+		newVersion := bsmt.Version(blockHeight)
 		start := time.Now()
 		logx.Infof("reloadNftTree start")
 		totalTask := 0
 		resultChan := make(chan *treeUpdateResp, 1)
 		defer close(resultChan)
-		pool, err := ants.NewPool(100)
+		pool, err := ants.NewPool(100, ants.WithPanicHandler(func(p interface{}) {
+			panic("worker exits from a panic")
+		}))
 		for i := 0; int64(i) <= maxNftIndex; i += ctx.BatchReloadSize() {
 			toNftIndex := int64(i+ctx.BatchReloadSize()) - 1
 			if toNftIndex > maxNftIndex {
@@ -67,9 +79,9 @@ func InitNftTree(
 			totalTask++
 			err := func(fromNftIndex int64, toNftIndex int64) error {
 				return pool.Submit(func() {
-					pendingAccountItem, err := loadNftTreeFromRDB(
+					pendingAccountItem, err := loadNftTreeFromRDB(l2NftModel,
 						nftHistoryModel, blockHeight,
-						fromNftIndex, toNftIndex)
+						fromNftIndex, toNftIndex, fromHistory)
 					if err != nil {
 						logx.Severef("loadNftTreeFromRDB failed:%s", err.Error())
 						resultChan <- &treeUpdateResp{
@@ -128,19 +140,45 @@ func InitNftTree(
 }
 
 func loadNftTreeFromRDB(
+	l2NftModel nft.L2NftModel,
 	nftHistoryModel nft.L2NftHistoryModel,
 	blockHeight int64,
 	fromNftIndex, toNftIndex int64,
+	fromHistory bool,
 ) ([]bsmt.Item, error) {
-	_, nftAssets, err := nftHistoryModel.GetLatestNftsByBlockHeight(blockHeight,
-		fromNftIndex, toNftIndex)
-	if err != nil {
-		logx.Errorf("unable to get latest nft assets: %s", err.Error())
-		return nil, err
-	}
-	pendingAccountItem := make([]bsmt.Item, 0, len(nftAssets))
-	if len(nftAssets) == 0 {
-		return pendingAccountItem, nil
+	pendingAccountItem := make([]bsmt.Item, 0)
+	var nftAssets []*nft.L2Nft
+	var err error
+	if fromHistory {
+		nftAssets = make([]*nft.L2Nft, 0)
+		_, nftHistories, err := nftHistoryModel.GetLatestNftsByBlockHeight(blockHeight,
+			fromNftIndex, toNftIndex)
+		if err != nil {
+			logx.Errorf("unable to get latest nft assets: %s", err.Error())
+			return nil, err
+		}
+		if len(nftHistories) == 0 {
+			return pendingAccountItem, nil
+		}
+		for _, nftHistory := range nftHistories {
+			nftAsset := &nft.L2Nft{
+				CreatorAccountIndex: nftHistory.CreatorAccountIndex,
+				OwnerAccountIndex:   nftHistory.OwnerAccountIndex,
+				NftContentHash:      nftHistory.NftContentHash,
+				RoyaltyRate:         nftHistory.RoyaltyRate,
+				CollectionId:        nftHistory.CollectionId,
+				NftIndex:            nftHistory.NftIndex,
+				L2BlockHeight:       nftHistory.L2BlockHeight,
+				NftContentType:      nftHistory.NftContentType,
+			}
+			nftAssets = append(nftAssets, nftAsset)
+		}
+	} else {
+		nftAssets, err = l2NftModel.GetByNftIndexRange(fromNftIndex, toNftIndex)
+		if err != nil {
+			logx.Errorf("unable to get latest nft assets: %s", err.Error())
+			return nil, err
+		}
 	}
 	for _, nftAsset := range nftAssets {
 		nftIndex := nftAsset.NftIndex
@@ -154,13 +192,14 @@ func loadNftTreeFromRDB(
 	return pendingAccountItem, nil
 }
 
-func NftAssetToNode(nftAsset *nft.L2NftHistory) (hashVal []byte, err error) {
+func NftAssetToNode(nftAsset *nft.L2Nft) (hashVal []byte, err error) {
 	hashVal, err = ComputeNftAssetLeafHash(
 		nftAsset.CreatorAccountIndex,
 		nftAsset.OwnerAccountIndex,
 		nftAsset.NftContentHash,
-		nftAsset.CreatorTreasuryRate,
+		nftAsset.RoyaltyRate,
 		nftAsset.CollectionId,
+		nftAsset.NftContentType,
 		nftAsset.NftIndex,
 		nftAsset.L2BlockHeight,
 	)
