@@ -103,9 +103,6 @@ func (e *engine) modulus() *big.Int {
 func (e *engine) RecordConstraintsForLazy(key string, finished bool, s *[]frontend.Variable) {
 }
 
-func (e *engine) AddGKRInputsAndOutputsMarks(inputs []frontend.Variable, outputs []frontend.Variable) {
-}
-
 func (e *engine) Add(i1, i2 frontend.Variable, in ...frontend.Variable) frontend.Variable {
 	b1, b2 := e.toBigInt(i1), e.toBigInt(i2)
 	b1.Add(&b1, &b2)
