@@ -195,34 +195,28 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 		if err != nil && err != types2.DbErrNotFound {
 			return fmt.Errorf("failed to get blocks by heights, err: %v", err)
 		}
-		committedTxHashMap := make(map[string]bool, 0)
-
-		for height, pendingUpdateBlock := range relatedBlocks {
-			for _, block := range blocks {
-				if block.BlockHeight == height {
-					pendingUpdateBlock.ID = block.ID
-					if pendingUpdateBlock.CommittedTxHash == "" {
-						pendingUpdateBlock.CommittedTxHash = block.CommittedTxHash
-					}
-					break
+		for _, block := range blocks {
+			pendingUpdateBlock := relatedBlocks[block.BlockHeight]
+			if pendingUpdateBlock != nil {
+				pendingUpdateBlock.ID = block.ID
+				if pendingUpdateBlock.CommittedTxHash == "" {
+					pendingUpdateBlock.CommittedTxHash = block.CommittedTxHash
 				}
 			}
+		}
+		commitBlockInfoHashMap := make(map[uint32]*ZkBNBCommitBlockInfo, 0)
+		for _, pendingUpdateBlock := range relatedBlocks {
 			if desertexit.StatusVerified == pendingUpdateBlock.BlockStatus {
 				if pendingUpdateBlock.CommittedTxHash == "" {
 					return fmt.Errorf("committed tx hash is blank, block height: %d", pendingUpdateBlock.BlockHeight)
 				}
-				committedTxHashMap[pendingUpdateBlock.CommittedTxHash] = true
-			}
-		}
-		commitBlockInfoHashMap := make(map[uint32]*ZkBNBCommitBlockInfo, 0)
-
-		for committedTx, _ := range committedTxHashMap {
-			commitBlocksCallData, err := m.getCommitBlocksCallData(committedTx)
-			if err != nil {
-				return err
-			}
-			for _, blocksData := range commitBlocksCallData.NewBlocksData {
-				commitBlockInfoHashMap[blocksData.BlockNumber] = &blocksData
+				commitBlocksCallData, err := m.getCommitBlocksCallData(pendingUpdateBlock.CommittedTxHash)
+				if err != nil {
+					return err
+				}
+				for _, blocksData := range commitBlocksCallData.NewBlocksData {
+					commitBlockInfoHashMap[blocksData.BlockNumber] = &blocksData
+				}
 			}
 		}
 
