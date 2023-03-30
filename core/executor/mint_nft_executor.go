@@ -70,6 +70,10 @@ func (e *MintNftExecutor) VerifyInputs(skipGasAmtChk, skipSigChk bool) error {
 		return err
 	}
 
+	if txInfo.NftContentType != 0 && txInfo.NftContentType != 1 {
+		return types.AppErrInvalidNftContentType
+	}
+
 	creatorAccount, err := e.bc.StateDB().GetFormatAccount(txInfo.CreatorAccountIndex)
 	if err != nil {
 		return err
