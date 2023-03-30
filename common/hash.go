@@ -32,7 +32,7 @@ func KeccakHash(value []byte) []byte {
 	return hashVal[:]
 }
 
-func SHA256Hash(value []byte) []byte {
+func Sha56Hash(value []byte) []byte {
 	h := sha256.New()
 	h.Reset()
 	h.Write(value)

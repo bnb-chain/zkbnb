@@ -10,7 +10,6 @@ import (
 	"github.com/consensys/gnark/std/math/bits"
 	"testing"
 
-	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/frontend"
 )
 
@@ -29,12 +28,12 @@ func (circuit *hintCircuit) Define(api frontend.API) error {
 		return fmt.Errorf("IthBit circuitA 25: %w", err)
 	}
 	a25b := res[0]
-	res, err = api.Compiler().NewHint(hint.IsZero, 1, circuit.A)
+	res, err = api.Compiler().NewHint(hint.InvZero, 1, circuit.A)
 	if err != nil {
 		return fmt.Errorf("IsZero CircuitA: %w", err)
 	}
 	aisZero := res[0]
-	res, err = api.Compiler().NewHint(hint.IsZero, 1, circuit.B)
+	res, err = api.Compiler().NewHint(hint.InvZero, 1, circuit.B)
 	if err != nil {
 		return fmt.Errorf("IsZero, CircuitB")
 	}
@@ -57,7 +56,7 @@ func TestBuiltinHints(t *testing.T) {
 	blockConstraints.GasAssetIds = types.GasAssets[:]
 	blockConstraints.GasAccountIndex = types.GasAccount
 
-	if err := IsSolved(&hintCircuit{}, &blockConstraints, ecc.BN254, backend.UNKNOWN); err != nil {
+	if err := IsSolved(&hintCircuit{}, &blockConstraints, ecc.BN254.ScalarField()); err != nil {
 		t.Fatal(err)
 	}
 }

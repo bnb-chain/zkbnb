@@ -51,7 +51,7 @@ func CreateBlockCommitment(
 	//hFunc.Write(buf.Bytes())
 	//commitment := hFunc.Sum(nil)
 	// fmt.Printf("commitment is %x\n", buf.Bytes())
-	commitment := common2.SHA256Hash(buf.Bytes())
+	commitment := common2.Sha56Hash(buf.Bytes())
 	return common.Bytes2Hex(commitment)
 }
 
