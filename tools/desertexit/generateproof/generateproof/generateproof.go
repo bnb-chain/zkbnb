@@ -12,8 +12,8 @@ import (
 	"github.com/bnb-chain/zkbnb/common/prove"
 	"github.com/bnb-chain/zkbnb/core/executor"
 	"github.com/bnb-chain/zkbnb/core/statedb"
-	"github.com/bnb-chain/zkbnb/dao/exodusexit"
-	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof/config"
+	"github.com/bnb-chain/zkbnb/dao/desertexit"
+	"github.com/bnb-chain/zkbnb/tools/desertexit/generateproof/config"
 	"github.com/bnb-chain/zkbnb/tree"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/panjf2000/ants/v2"
@@ -30,15 +30,15 @@ import (
 	"github.com/bnb-chain/zkbnb/types"
 )
 
-type ExodusExit struct {
+type DesertExit struct {
 	running bool
 	config  *config.Config
 	bc      *core.BlockChain
 	pool    *ants.Pool
 }
 
-func NewExodusExit(config *config.Config) (*ExodusExit, error) {
-	bc, err := core.NewBlockChainForExodusExit(config)
+func NewDesertExit(config *config.Config) (*DesertExit, error) {
+	bc, err := core.NewBlockChainForDesertExit(config)
 	if err != nil {
 		return nil, fmt.Errorf("new blockchain error: %v", err)
 	}
@@ -46,9 +46,9 @@ func NewExodusExit(config *config.Config) (*ExodusExit, error) {
 		panic("worker exits from a panic")
 	}))
 	if config.ProofFolder == "" {
-		config.ProofFolder = "./tools/exodusexit/proofdata/"
+		config.ProofFolder = "./tools/desertexit/proofdata/"
 	}
-	committer := &ExodusExit{
+	committer := &DesertExit{
 		running: true,
 		config:  config,
 		bc:      bc,
@@ -57,7 +57,7 @@ func NewExodusExit(config *config.Config) (*ExodusExit, error) {
 	return committer, nil
 }
 
-func (c *ExodusExit) Run() error {
+func (c *DesertExit) Run() error {
 	err := c.loadAllAccounts()
 	if err != nil {
 		return err
@@ -67,9 +67,9 @@ func (c *ExodusExit) Run() error {
 		return err
 	}
 	limit := 1000
-	executedBlock, err := c.bc.ExodusExitBlockModel.GetLatestExecutedBlock()
+	executedBlock, err := c.bc.DesertExitBlockModel.GetLatestExecutedBlock()
 	if err != nil && err != types.DbErrNotFound {
-		return fmt.Errorf("get executed tx from exodus exit block failed:%s", err.Error())
+		return fmt.Errorf("get executed tx from desert exit block failed:%s", err.Error())
 	}
 
 	var executedTxMaxHeight int64 = 0
@@ -84,9 +84,9 @@ func (c *ExodusExit) Run() error {
 			logx.Info("execute all the l2 blocks successfully")
 			break
 		}
-		pendingBlocks, err := c.bc.ExodusExitBlockModel.GetBlocksByStatusAndMaxHeight(exodusexit.StatusVerified, executedTxMaxHeight, int64(limit))
+		pendingBlocks, err := c.bc.DesertExitBlockModel.GetBlocksByStatusAndMaxHeight(desertexit.StatusVerified, executedTxMaxHeight, int64(limit))
 		if err != nil {
-			logx.Errorf("get pending blocks from exodus exit block failed:%s", err.Error())
+			logx.Errorf("get pending blocks from desert exit block failed:%s", err.Error())
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
@@ -126,15 +126,15 @@ func (c *ExodusExit) Run() error {
 	return nil
 }
 
-func (c *ExodusExit) executeBlockFunc(exodusExitBlock *exodusexit.ExodusExitBlock) error {
-	pubData := common.FromHex(exodusExitBlock.PubData)
+func (c *DesertExit) executeBlockFunc(desertExitBlock *desertexit.DesertExitBlock) error {
+	pubData := common.FromHex(desertExitBlock.PubData)
 	sizePerTx := types2.PubDataBitsSizePerTx / 8
 	c.bc.Statedb.PurgeCache("")
 	err := c.bc.Statedb.MarkGasAccountAsPending()
 	if err != nil {
 		return err
 	}
-	for i := 0; i < int(exodusExitBlock.BlockSize); i++ {
+	for i := 0; i < int(desertExitBlock.BlockSize); i++ {
 		subPubData := pubData[i*sizePerTx : (i+1)*sizePerTx]
 		offset := 0
 		offset, txType := common2.ReadUint8(subPubData, offset)
@@ -282,24 +282,24 @@ func (c *ExodusExit) executeBlockFunc(exodusExitBlock *exodusexit.ExodusExitBloc
 	return nil
 }
 
-func (c *ExodusExit) saveToDb(exodusExitBlock *exodusexit.ExodusExitBlock) error {
-	logx.Infof("saveToDb start, blockHeight:%d", exodusExitBlock.BlockHeight)
+func (c *DesertExit) saveToDb(desertExitBlock *desertexit.DesertExitBlock) error {
+	logx.Infof("saveToDb start, blockHeight:%d", desertExitBlock.BlockHeight)
 	stateDataCopy := &statedb.StateDataCopy{
 		StateCache:   c.bc.Statedb.StateCache,
 		CurrentBlock: nil,
 	}
-	pendingAccounts, _, err := c.bc.Statedb.GetPendingAccount(exodusExitBlock.BlockHeight, stateDataCopy)
+	pendingAccounts, _, err := c.bc.Statedb.GetPendingAccount(desertExitBlock.BlockHeight, stateDataCopy)
 	if err != nil {
 		return err
 	}
 
-	pendingNfts, _, err := c.bc.Statedb.GetPendingNft(exodusExitBlock.BlockHeight, stateDataCopy)
+	pendingNfts, _, err := c.bc.Statedb.GetPendingNft(desertExitBlock.BlockHeight, stateDataCopy)
 	if err != nil {
 		return err
 	}
 	// update db
 	err = c.bc.DB().DB.Transaction(func(tx *gorm.DB) error {
-		err := c.bc.DB().ExodusExitBlockModel.UpdateBlockToExecutedInTransact(tx, exodusExitBlock)
+		err := c.bc.DB().DesertExitBlockModel.UpdateBlockToExecutedInTransact(tx, desertExitBlock)
 		if err != nil {
 			return err
 		}
@@ -314,7 +314,7 @@ func (c *ExodusExit) saveToDb(exodusExitBlock *exodusexit.ExodusExitBlock) error
 		return nil
 	})
 	if err != nil {
-		logx.Errorf("saveToDb failed:%s,blockHeight:%d", err.Error(), exodusExitBlock.BlockHeight)
+		logx.Errorf("saveToDb failed:%s,blockHeight:%d", err.Error(), desertExitBlock.BlockHeight)
 		return err
 	}
 	for _, accountInfo := range pendingAccounts {
@@ -328,7 +328,7 @@ func (c *ExodusExit) saveToDb(exodusExitBlock *exodusexit.ExodusExitBlock) error
 	return nil
 }
 
-func (c *ExodusExit) loadAllAccounts() error {
+func (c *DesertExit) loadAllAccounts() error {
 	start := time.Now()
 	logx.Infof("load all accounts start")
 	totalTask := 0
@@ -389,7 +389,7 @@ func (c *ExodusExit) loadAllAccounts() error {
 	return nil
 }
 
-func (c *ExodusExit) loadAllNfts() error {
+func (c *DesertExit) loadAllNfts() error {
 	start := time.Now()
 	logx.Infof("load all nfts start")
 	totalTask := 0
@@ -442,13 +442,13 @@ func (c *ExodusExit) loadAllNfts() error {
 	return nil
 }
 
-func (c *ExodusExit) Shutdown() {
+func (c *DesertExit) Shutdown() {
 	c.running = false
 	c.bc.Statedb.Close()
 	c.bc.ChainDB.Close()
 }
 
-func (c *ExodusExit) executeAtomicMatch(pubData []byte) error {
+func (c *DesertExit) executeAtomicMatch(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
@@ -543,7 +543,7 @@ func (c *ExodusExit) executeAtomicMatch(pubData []byte) error {
 	return nil
 }
 
-func (c *ExodusExit) executeCancelOffer(pubData []byte) error {
+func (c *DesertExit) executeCancelOffer(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
@@ -579,7 +579,7 @@ func (c *ExodusExit) executeCancelOffer(pubData []byte) error {
 	return nil
 }
 
-func (c *ExodusExit) executeCollection(pubData []byte) error {
+func (c *DesertExit) executeCollection(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
@@ -615,7 +615,7 @@ func (c *ExodusExit) executeCollection(pubData []byte) error {
 	return nil
 }
 
-func (c *ExodusExit) executeDeposit(pubData []byte) error {
+func (c *DesertExit) executeDeposit(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
@@ -649,7 +649,7 @@ func (c *ExodusExit) executeDeposit(pubData []byte) error {
 	return nil
 }
 
-func (c *ExodusExit) executeDepositNft(pubData []byte) error {
+func (c *DesertExit) executeDepositNft(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
@@ -690,7 +690,7 @@ func (c *ExodusExit) executeDepositNft(pubData []byte) error {
 	return nil
 }
 
-func (c *ExodusExit) executeFullExit(pubData []byte) error {
+func (c *DesertExit) executeFullExit(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
@@ -722,7 +722,7 @@ func (c *ExodusExit) executeFullExit(pubData []byte) error {
 	return nil
 }
 
-func (c *ExodusExit) executeFullExitNft(pubData []byte) error {
+func (c *DesertExit) executeFullExitNft(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, accountIndex := common2.ReadUint32(pubData, offset)
@@ -765,7 +765,7 @@ func (c *ExodusExit) executeFullExitNft(pubData []byte) error {
 	return nil
 }
 
-func (c *ExodusExit) executeMintNft(pubData []byte) error {
+func (c *DesertExit) executeMintNft(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, creatorAccountIndex := common2.ReadUint32(pubData, offset)
@@ -812,7 +812,7 @@ func (c *ExodusExit) executeMintNft(pubData []byte) error {
 	return nil
 }
 
-func (c *ExodusExit) executeChangePubKey(pubData []byte) error {
+func (c *DesertExit) executeChangePubKey(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 
@@ -862,7 +862,7 @@ func (c *ExodusExit) executeChangePubKey(pubData []byte) error {
 
 }
 
-func (c *ExodusExit) executeTransfer(pubData []byte) error {
+func (c *DesertExit) executeTransfer(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, fromAccountIndex := common2.ReadUint32(pubData, offset)
@@ -910,7 +910,7 @@ func (c *ExodusExit) executeTransfer(pubData []byte) error {
 	return nil
 }
 
-func (c *ExodusExit) executeTransferNft(pubData []byte) error {
+func (c *DesertExit) executeTransferNft(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, fromAccountIndex := common2.ReadUint32(pubData, offset)
@@ -953,7 +953,7 @@ func (c *ExodusExit) executeTransferNft(pubData []byte) error {
 	return nil
 }
 
-func (c *ExodusExit) executeWithdraw(pubData []byte) error {
+func (c *DesertExit) executeWithdraw(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, fromAccountIndex := common2.ReadUint32(pubData, offset)
@@ -994,7 +994,7 @@ func (c *ExodusExit) executeWithdraw(pubData []byte) error {
 	return nil
 }
 
-func (c *ExodusExit) executeWithdrawNft(pubData []byte) error {
+func (c *DesertExit) executeWithdrawNft(pubData []byte) error {
 	bc := c.bc
 	offset := 1
 	offset, fromAccountIndex := common2.ReadUint32(pubData, offset)
@@ -1045,7 +1045,7 @@ func (c *ExodusExit) executeWithdrawNft(pubData []byte) error {
 	return nil
 }
 
-func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftIndexList []int64, assetTokenAddress string) error {
+func (c *DesertExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftIndexList []int64, assetTokenAddress string) error {
 	treeCtx, err := tree.NewContext("generateproof", c.config.TreeDB.Driver, true, true, c.config.TreeDB.RoutinePoolSize, &c.config.TreeDB.LevelDBOption, &c.config.TreeDB.RedisDBOption)
 	if err != nil {
 		logx.Errorf("init tree database failed: %s", err)
@@ -1119,12 +1119,12 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 	if err != nil {
 		return err
 	}
-	exodusExitBlock, err := c.bc.DB().ExodusExitBlockModel.GetLatestExecutedBlock()
+	desertExitBlock, err := c.bc.DB().DesertExitBlockModel.GetLatestExecutedBlock()
 	if err != nil {
-		logx.Errorf("get exodus exit block failed: %s", err)
+		logx.Errorf("get desert exit block failed: %s", err)
 		return err
 	}
-	lastStoredBlockInfo, err := m.getLastStoredBlockInfo(exodusExitBlock.VerifiedTxHash, exodusExitBlock.BlockHeight)
+	lastStoredBlockInfo, err := m.getLastStoredBlockInfo(desertExitBlock.VerifiedTxHash, desertExitBlock.BlockHeight)
 	if err != nil {
 		logx.Errorf("get last stored block info failed: %s", err)
 		return err
@@ -1143,7 +1143,7 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 		logx.Errorf("unable to parse pub key: %s", err.Error())
 		return err
 	}
-	accountExitData := ExodusVerifierAccountExitData{
+	accountExitData := DesertVerifierAccountExitData{
 		AccountId:       uint32(accountIndex),
 		L1Address:       accountInfo.L1Address,
 		PubKeyX:         common.Bytes2Hex(pk.A.X.Marshal()),
@@ -1197,7 +1197,7 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 		performDesertData.NftRoot = common.Bytes2Hex(nftTree.Root())
 
 		performDesertData.AccountExitData = accountExitData
-		performDesertData.AssetExitData = ExodusVerifierAssetExitData{
+		performDesertData.AssetExitData = DesertVerifierAssetExitData{
 			AssetId:                  assetId,
 			Amount:                   formatAccountInfo.AssetInfo[int64(assetId)].Balance.Int64(),
 			OfferCanceledOrFinalized: formatAccountInfo.AssetInfo[int64(assetId)].OfferCanceledOrFinalized.Int64(),
@@ -1215,7 +1215,7 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 
 	if len(nftIndexList) > 0 {
 		performDesertNftData := &PerformDesertNftData{}
-		var exitNfts []ExodusVerifierNftExitData
+		var exitNfts []DesertVerifierNftExitData
 		var nftMerkleProofsList [][]string
 		for _, nftIndex := range nftIndexList {
 			nftInfo, err := c.bc.DB().L2NftModel.GetNft(nftIndex)
@@ -1236,8 +1236,14 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 				return err
 			}
 			logx.Infof("accountIndex=%d,nftIndex=%d, merkleProofsNft=%s", accountIndex, nftIndex, string(merkleProofsNftBytes))
-			exitNftData := ExodusVerifierNftExitData{}
-			exitNftData.NftContentHash = nftInfo.NftContentHash
+			exitNftData := DesertVerifierNftExitData{}
+			contentHash := common.Hex2Bytes(nftInfo.NftContentHash)
+			if len(contentHash) >= types2.NftContentHashBytesSize {
+				exitNftData.NftContentHash1 = common.Bytes2Hex(contentHash[:types2.NftContentHashBytesSize])
+				exitNftData.NftContentHash2 = common.Bytes2Hex(contentHash[types2.NftContentHashBytesSize:])
+			} else {
+				exitNftData.NftContentHash1 = common.Bytes2Hex(contentHash[:])
+			}
 			exitNftData.NftIndex = uint64(nftIndex)
 			exitNftData.CollectionId = nftInfo.CollectionId
 			exitNftData.CreatorAccountIndex = nftInfo.CreatorAccountIndex

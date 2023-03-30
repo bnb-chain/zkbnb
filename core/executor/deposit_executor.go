@@ -48,7 +48,7 @@ func (e *DepositExecutor) Prepare() error {
 		return err
 	}
 	if err == types.AppErrAccountNotFound {
-		if !e.isExodusExit {
+		if !e.isDesertExit {
 			if e.tx.Rollback == false {
 				nextAccountIndex := e.bc.StateDB().GetNextAccountIndex()
 				txInfo.AccountIndex = nextAccountIndex
@@ -199,7 +199,7 @@ func (e *DepositExecutor) Finalize() error {
 	if e.IsCreateAccount {
 		bc := e.bc
 		txInfo := e.TxInfo
-		if !e.isExodusExit {
+		if !e.isDesertExit {
 			bc.StateDB().AccountAssetTrees.UpdateCache(txInfo.AccountIndex, bc.CurrentBlock().BlockHeight)
 		}
 		accountInfo := e.GetCreatingAccount()

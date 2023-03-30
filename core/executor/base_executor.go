@@ -29,10 +29,10 @@ type BaseExecutor struct {
 	dirtyNftMap               map[int64]bool
 	creatingAccountInfo       *types.AccountInfo
 	emptyAccountInfo          *types.AccountInfo
-	isExodusExit              bool
+	isDesertExit              bool
 }
 
-func NewBaseExecutor(bc IBlockchain, tx *tx.Tx, txInfo txtypes.TxInfo, isExodusExit bool) BaseExecutor {
+func NewBaseExecutor(bc IBlockchain, tx *tx.Tx, txInfo txtypes.TxInfo, isDesertExit bool) BaseExecutor {
 	return BaseExecutor{
 		bc:      bc,
 		tx:      tx,
@@ -40,14 +40,14 @@ func NewBaseExecutor(bc IBlockchain, tx *tx.Tx, txInfo txtypes.TxInfo, isExodusE
 
 		dirtyAccountsAndAssetsMap: make(map[int64]map[int64]bool, 0),
 		dirtyNftMap:               make(map[int64]bool, 0),
-		isExodusExit:              isExodusExit,
+		isDesertExit:              isDesertExit,
 	}
 }
 
 func (e *BaseExecutor) Prepare() error {
 	// Assign tx related fields for layer2 transaction from the API.
 	from := e.iTxInfo.GetAccountIndex()
-	if !e.isExodusExit && from != types.NilAccountIndex && e.tx.TxHash == types.EmptyTxHash {
+	if !e.isDesertExit && from != types.NilAccountIndex && e.tx.TxHash == types.EmptyTxHash {
 		// Compute tx hash for layer2 transactions.
 		hash, err := e.iTxInfo.Hash(mimc.NewMiMC())
 		if err != nil {

@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof"
-	"github.com/bnb-chain/zkbnb/tools/exodusexit/performexodus"
+	"github.com/bnb-chain/zkbnb/tools/desertexit/generateproof"
+	"github.com/bnb-chain/zkbnb/tools/desertexit/performdesert"
 	"github.com/bnb-chain/zkbnb/tools/query"
 	"github.com/bnb-chain/zkbnb/tools/revertblock"
 	"github.com/bnb-chain/zkbnb/tools/rollbackwitnesssmt"
@@ -207,7 +207,7 @@ func main() {
 						return cli.ShowSubcommandHelp(cCtx)
 					}
 					if cCtx.String(flags.CommandFlag.Name) == generateproof.CommandRunGenerateProof {
-						err := dbinitializer.InitializeExodusExit(
+						err := dbinitializer.InitializeDesertExit(
 							cCtx.String(flags.ConfigFlag.Name),
 						)
 						if err != nil {
@@ -222,8 +222,8 @@ func main() {
 				},
 			},
 			{
-				Name:  "performexodus",
-				Usage: "Run performexodus service",
+				Name:  "performdesert",
+				Usage: "Run performdesert service",
 				Flags: []cli.Flag{
 					flags.CommandFlag,
 					flags.ConfigFlag,
@@ -241,7 +241,7 @@ func main() {
 					if !cCtx.IsSet(flags.ConfigFlag.Name) {
 						return cli.ShowSubcommandHelp(cCtx)
 					}
-					return performexodus.Run(cCtx.String(flags.ConfigFlag.Name), cCtx.String(flags.CommandFlag.Name),
+					return performdesert.Run(cCtx.String(flags.ConfigFlag.Name), cCtx.String(flags.CommandFlag.Name),
 						cCtx.String(flags.AmountFlag.Name), cCtx.String(flags.NftIndexFlag.Name),
 						cCtx.String(flags.OwnerFlag.Name), cCtx.String(flags.PrivateKeyFlag.Name),
 						cCtx.String(flags.ProofFlag.Name), cCtx.String(flags.TokenFlag.Name))

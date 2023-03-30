@@ -199,7 +199,6 @@ func NftAssetToNode(nftAsset *nft.L2Nft) (hashVal []byte, err error) {
 		nftAsset.NftContentHash,
 		nftAsset.RoyaltyRate,
 		nftAsset.CollectionId,
-		nftAsset.NftContentType,
 		nftAsset.NftIndex,
 		nftAsset.L2BlockHeight,
 	)

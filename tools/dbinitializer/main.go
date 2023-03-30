@@ -19,9 +19,9 @@ package dbinitializer
 
 import (
 	"encoding/json"
-	"github.com/bnb-chain/zkbnb/dao/exodusexit"
+	"github.com/bnb-chain/zkbnb/dao/desertexit"
 	"github.com/bnb-chain/zkbnb/dao/rollback"
-	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof/config"
+	"github.com/bnb-chain/zkbnb/tools/desertexit/generateproof/config"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
@@ -81,7 +81,7 @@ type dao struct {
 	nftHistoryModel         nft.L2NftHistoryModel
 	rollbackModel           rollback.RollbackModel
 	nftMetadataHistoryModel nft.L2NftMetadataHistoryModel
-	exodusExitBlockModel    exodusexit.ExodusExitBlockModel
+	desertExitBlockModel    desertexit.DesertExitBlockModel
 }
 
 func Initialize(
@@ -128,7 +128,7 @@ func Initialize(
 	return nil
 }
 
-func InitializeExodusExit(
+func InitializeDesertExit(
 	configFile string,
 ) error {
 	var c config.Config
@@ -143,11 +143,11 @@ func InitializeExodusExit(
 		accountModel:         account.NewAccountModel(db),
 		nftModel:             nft.NewL2NftModel(db),
 		l1SyncedBlockModel:   l1syncedblock.NewL1SyncedBlockModel(db),
-		exodusExitBlockModel: exodusexit.NewExodusExitBlockModel(db),
+		desertExitBlockModel: desertexit.NewDesertExitBlockModel(db),
 	}
 
-	dropTablesExodusExit(dao)
-	initTableExodusExit(dao)
+	dropTablesDesertExit(dao)
+	initTableDesertExit(dao)
 
 	return nil
 }
@@ -298,11 +298,11 @@ func dropTables(dao *dao) {
 
 }
 
-func dropTablesExodusExit(dao *dao) {
+func dropTablesDesertExit(dao *dao) {
 	assert.Nil(nil, dao.accountModel.DropAccountTable())
 	assert.Nil(nil, dao.nftModel.DropL2NftTable())
 	assert.Nil(nil, dao.l1SyncedBlockModel.DropL1SyncedBlockTable())
-	assert.Nil(nil, dao.exodusExitBlockModel.DropExodusExitBlockTable())
+	assert.Nil(nil, dao.desertExitBlockModel.DropDesertExitBlockTable())
 }
 
 func initTable(dao *dao, svrConf *contractAddr, bscTestNetworkRPC, localTestNetworkRPC string) {
@@ -354,9 +354,9 @@ func initTable(dao *dao, svrConf *contractAddr, bscTestNetworkRPC, localTestNetw
 	}
 }
 
-func initTableExodusExit(dao *dao) {
+func initTableDesertExit(dao *dao) {
 	assert.Nil(nil, dao.accountModel.CreateAccountTable())
 	assert.Nil(nil, dao.nftModel.CreateL2NftTable())
 	assert.Nil(nil, dao.l1SyncedBlockModel.CreateL1SyncedBlockTable())
-	assert.Nil(nil, dao.exodusExitBlockModel.CreateExodusExitBlockTable())
+	assert.Nil(nil, dao.desertExitBlockModel.CreateDesertExitBlockTable())
 }

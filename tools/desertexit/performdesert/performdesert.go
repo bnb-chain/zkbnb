@@ -1,9 +1,9 @@
-package performexodus
+package performdesert
 
 import (
-	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof/generateproof"
-	"github.com/bnb-chain/zkbnb/tools/exodusexit/performexodus/config"
-	"github.com/bnb-chain/zkbnb/tools/exodusexit/performexodus/performexodus"
+	"github.com/bnb-chain/zkbnb/tools/desertexit/generateproof/generateproof"
+	"github.com/bnb-chain/zkbnb/tools/desertexit/performdesert/config"
+	"github.com/bnb-chain/zkbnb/tools/desertexit/performdesert/performdesert"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -31,7 +31,7 @@ func Run(configFile string, command string, amount string, nftIndex string, owne
 	if privateKey != "" {
 		c.ChainConfig.PrivateKey = privateKey
 	}
-	m, err := performexodus.NewPerformExodus(c)
+	m, err := performdesert.NewPerformDesert(c)
 	if err != nil {
 		logx.Severe(err)
 		return err

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/bnb-chain/zkbnb/common/metrics"
-	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof/config"
+	"github.com/bnb-chain/zkbnb/tools/desertexit/generateproof/config"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr/poseidon"
 	"github.com/dgraph-io/ristretto"
 	"gorm.io/plugin/dbresolver"
@@ -44,6 +44,8 @@ type ChainConfig struct {
 		LogLevel         logger.LogLevel `json:",optional"`
 	}
 	CacheRedis cache.CacheConf
+	//second
+	RedisExpiration int `json:",optional"`
 	//nolint:staticcheck
 	CacheConfig statedb.CacheConfig `json:",optional"`
 	TreeDB      struct {
@@ -93,7 +95,11 @@ func NewBlockChain(config *ChainConfig, moduleName string) (*BlockChain, error) 
 		ChainDB:     sdb.NewChainDB(db),
 		chainConfig: config,
 	}
-	redisCache := dbcache.NewRedisCache(config.CacheRedis[0].Host, config.CacheRedis[0].Pass, 15*time.Minute)
+	expiration := dbcache.RedisExpiration
+	if config.RedisExpiration != 0 {
+		expiration = time.Duration(config.RedisExpiration) * time.Second
+	}
+	redisCache := dbcache.NewRedisCache(config.CacheRedis[0].Host, config.CacheRedis[0].Pass, expiration)
 	treeCtx, err := tree.NewContext(moduleName, config.TreeDB.Driver, false, false, config.TreeDB.RoutinePoolSize, &config.TreeDB.LevelDBOption, &config.TreeDB.RedisDBOption)
 	if err != nil {
 		return nil, err
@@ -207,7 +213,7 @@ func NewBlockChainForDryRun(accountModel account.AccountModel,
 	return bc, nil
 }
 
-func NewBlockChainForExodusExit(config *config.Config) (*BlockChain, error) {
+func NewBlockChainForDesertExit(config *config.Config) (*BlockChain, error) {
 	masterDataSource := config.Postgres.MasterDataSource
 	db, err := gorm.Open(postgres.Open(config.Postgres.MasterDataSource), &gorm.Config{
 		Logger: logger.Default.LogMode(config.Postgres.LogLevel),
@@ -230,7 +236,7 @@ func NewBlockChainForExodusExit(config *config.Config) (*BlockChain, error) {
 		currentBlock: &block.Block{},
 	}
 	//redisCache := dbcache.NewRedisCache(config.CacheRedis[0].Host, config.CacheRedis[0].Pass, 15*time.Minute)
-	bc.Statedb, err = sdb.NewStateDBForExodusExit(nil, &config.CacheConfig, bc.ChainDB)
+	bc.Statedb, err = sdb.NewStateDBForDesertExit(nil, &config.CacheConfig, bc.ChainDB)
 	if err != nil {
 		return nil, err
 	}
@@ -761,6 +767,7 @@ func (bc *BlockChain) UpdateAccountAndNftTree(blockSize int, stateDataCopy *stat
 		PublicData:        common.Bytes2Hex(stateDataCopy.StateCache.PubData),
 		Timestamp:         newBlock.CreatedAt.UnixMilli(),
 		PublicDataOffsets: string(offsetBytes),
+		RealBlockSize:     uint16(len(stateDataCopy.StateCache.Txs)),
 	}
 	bc.Statedb.PreviousStateRootImmutable = stateDataCopy.StateCache.StateRoot
 	currentHeight := stateDataCopy.CurrentBlock.BlockHeight
