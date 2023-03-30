@@ -126,14 +126,14 @@ func ParseAccountL1Address(r *http.Request) string {
 			return ""
 		}
 
-		l1Address, err := memCache.GetAccountL1AddressByIndex(accountIndex)
+		l1Address, err := memCache.GetL1AddressByIndex(accountIndex)
 		if err != nil {
 			return ""
 		}
 		return l1Address
 	}
 
-	l1Address, err := memCache.GetAccountL1AddressByIndex(req.AccountIndex)
+	l1Address, err := memCache.GetL1AddressByIndex(req.AccountIndex)
 	if err != nil {
 		return ""
 	}
