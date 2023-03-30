@@ -344,7 +344,7 @@ func (s *Sender) CommitBlocks() (err error) {
 			logx.Infof("speed up commit block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
 
 			maxCommitUnitGas := sconfig.GetSenderConfig().MaxCommitUnitGas
-			if err := s.ValidateTxUnitGasFee(blocks, maxCommitUnitGas); err != nil {
+			if err := s.ShouldContinueProcess(blocks, maxCommitUnitGas); err != nil {
 				logx.Errorf("abandon commit block to l1, EstimateGas value is greater than MaxUnitGas!")
 				return nil
 			}
@@ -643,7 +643,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	return nil
 }
 
-func (s *Sender) ValidateTxUnitGasFee(blocks []*compressedblock.CompressedBlock, maxUnitGas uint64) error {
+func (s *Sender) ShouldSend2L1(blocks []*compressedblock.CompressedBlock, maxUnitGas uint64) bool {
 	estimatedGas, err := s.cli.EstimateGas(context.Background(), ethereum.CallMsg{
 		From: s.authCliCommitBlock.Address,
 	})
