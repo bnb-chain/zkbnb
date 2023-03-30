@@ -1163,7 +1163,7 @@ func (c *ExodusExit) getMerkleProofs(blockHeight int64, accountIndex int64, nftI
 		}
 
 		var assetId uint16
-		if assetTokenAddress == "0x00" {
+		if assetTokenAddress == types.BNBAddress {
 			assetId = 0
 		} else {
 			assetId, err = monitor.ValidateAssetAddress(common.HexToAddress(assetTokenAddress))

@@ -181,19 +181,6 @@ func (m *MemCache) GetL1AddressByIndex(accountIndex int64) (string, error) {
 	}
 }
 
-func (m *MemCache) GetAccountL1AddressByIndex(accountIndex int64) (string, error) {
-	l1Address, found := m.goCache.Get(fmt.Sprintf("%s%d", AccountIndexL1AddressKeyPrefix, accountIndex))
-	if found {
-		return l1Address.(string), nil
-	}
-	account, err := m.accountModel.GetAccountByIndex(accountIndex)
-	if err != nil {
-		return "", err
-	}
-	m.setAccount(account.AccountIndex, account.L1Address)
-	return account.L1Address, nil
-}
-
 func (m *MemCache) GetAccountWithFallback(accountIndex int64, f fallback) (*accdao.Account, error) {
 	key := fmt.Sprintf("%s%d", AccountByIndexKeyPrefix, accountIndex)
 	a, err := m.getWithSet(key, m.accountExpiration, f)

@@ -257,7 +257,7 @@ func initAssetsInfo(busdAddress string) []*asset.Asset {
 	return []*asset.Asset{
 		{
 			AssetId:     types.BNBAssetId,
-			L1Address:   "0x00",
+			L1Address:   types.BNBAddress,
 			AssetName:   "BNB",
 			AssetSymbol: "BNB",
 			Decimals:    18,

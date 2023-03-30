@@ -27,6 +27,7 @@ import (
 	"github.com/bnb-chain/zkbnb/service/monitor/monitor"
 	"github.com/bnb-chain/zkbnb/tools/exodusexit/generateproof/generateproof"
 	"github.com/bnb-chain/zkbnb/tools/exodusexit/performexodus/config"
+	"github.com/bnb-chain/zkbnb/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/zeromicro/go-zero/core/logx"
 	"math/big"
@@ -96,6 +97,7 @@ func (m *PerformExodus) doPerformDesert(storedBlockInfo zkbnb.StorageStoredBlock
 	if err != nil {
 		return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
 	}
+	logx.Infof("performDesert success,txHash=%s", txHash)
 	return nil
 }
 
@@ -139,6 +141,7 @@ func (m *PerformExodus) doPerformDesertNft(storedBlockInfo zkbnb.StorageStoredBl
 	if err != nil {
 		return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
 	}
+	logx.Infof("performDesertNft success,txHash=%s", txHash)
 	return nil
 }
 
@@ -185,6 +188,20 @@ func getStoredBlockInfo(storedBlockInfo generateproof.StoredBlockInfo) zkbnb.Sto
 }
 
 func (m *PerformExodus) WithdrawPendingBalance(owner common.Address, token common.Address, amount *big.Int) error {
+	pendingBalanceBefore, err := m.GetPendingBalance(owner, token)
+	if err != nil {
+		logx.Errorf("failed to get pending balance: %v", err)
+		return err
+	}
+	logx.Infof("get pending balance,pendingBalanceBefore=%d", pendingBalanceBefore.Int64())
+
+	balanceBefore, err := m.GetBalance(owner, token)
+	if err != nil {
+		logx.Errorf("failed to get balance: %v", err)
+		return err
+	}
+	logx.Infof("get balance,balanceBefore=%d", balanceBefore.Int64())
+
 	gasPrice, err := m.cli.SuggestGasPrice(context.Background())
 	if err != nil {
 		logx.Errorf("failed to fetch gas price: %v", err)
@@ -194,6 +211,21 @@ func (m *PerformExodus) WithdrawPendingBalance(owner common.Address, token commo
 	if err != nil {
 		return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
 	}
+	logx.Infof("withdrawPendingBalance success,txHash=%s", txHash)
+	pendingBalanceAfter, err := m.GetPendingBalance(owner, token)
+	if err != nil {
+		logx.Errorf("failed to get pending balance: %v", err)
+		return err
+	}
+	logx.Infof("get pending balance,pendingBalanceAfter=%d", pendingBalanceAfter.Int64())
+
+	//time.Sleep(30 * time.Second)
+	balanceAfter, err := m.GetBalance(owner, token)
+	if err != nil {
+		logx.Errorf("failed to get balance: %v", err)
+		return err
+	}
+	logx.Infof("get balance,balanceAfter=%d", balanceAfter.Int64())
 	return nil
 }
 
@@ -207,6 +239,7 @@ func (m *PerformExodus) WithdrawPendingNFTBalance(nftIndex *big.Int) error {
 	if err != nil {
 		return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
 	}
+	logx.Infof("withdrawPendingNFTBalance success,txHash=%s", txHash)
 	return nil
 }
 
@@ -220,7 +253,7 @@ func (m *PerformExodus) CancelOutstandingDeposit() error {
 
 	for i, request := range priorityRequests {
 		logx.Infof("process pending priority request, requestId=%d", request.RequestId)
-		depositsPubData[i] = []byte(request.Pubdata)
+		depositsPubData[i] = common.FromHex(request.Pubdata)
 		maxRequestId = common2.MaxInt64(request.RequestId, maxRequestId)
 	}
 	gasPrice, err := m.cli.SuggestGasPrice(context.Background())
@@ -232,6 +265,7 @@ func (m *PerformExodus) CancelOutstandingDeposit() error {
 	if err != nil {
 		return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
 	}
+	logx.Infof("cancelOutstandingDepositsForDesertMode success,txHash=%s", txHash)
 	return nil
 }
 
@@ -245,6 +279,7 @@ func (m *PerformExodus) ActivateDesertMode() error {
 	if err != nil {
 		return fmt.Errorf("failed to send tx: %v:%s", err, txHash)
 	}
+	logx.Infof("activateDesertMode success,txHash=%s", txHash)
 	return nil
 }
 
@@ -309,4 +344,36 @@ func (m *PerformExodus) getBlockRangeToSync(handledHeight int64) (int64, int64, 
 	safeHeight := latestHeight - m.Config.ChainConfig.ConfirmBlocksCount
 	safeHeight = uint64(common2.MinInt64(int64(safeHeight), handledHeight+m.Config.ChainConfig.MaxHandledBlocksCount))
 	return handledHeight + 1, int64(safeHeight), nil
+}
+
+func (m *PerformExodus) GetBalance(address common.Address, assetAddr common.Address) (*big.Int, error) {
+	if assetAddr == common.HexToAddress(types.BNBAddress) {
+		amount, err := m.cli.GetBalance(address.Hex())
+		if err != nil {
+			return nil, err
+		}
+		logx.Infof("get balance,balance=%d", amount.Int64())
+		return amount, nil
+	}
+	instance, err := zkbnb.LoadERC20(m.cli, assetAddr.Hex())
+	if err != nil {
+		logx.Severe(err)
+		return nil, err
+	}
+	amount, err := zkbnb.BalanceOf(instance, address, assetAddr)
+	if err != nil {
+		return nil, err
+	}
+	logx.Infof("get balance,balance=%d", amount.Int64())
+	return amount, nil
+}
+
+func (m *PerformExodus) GetPendingBalance(address common.Address, token common.Address) (*big.Int, error) {
+	amount, err := zkbnb.GetPendingBalance(m.zkbnbInstance, address, token)
+	if err != nil {
+		logx.Errorf("failed to get pending balance: %v", err)
+		return nil, err
+	}
+	logx.Infof("get pending balance,pendingBalance=%d", amount.Int64())
+	return amount, nil
 }

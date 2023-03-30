@@ -50,6 +50,8 @@ const (
 	BUSDAssetId = 1
 
 	ProtocolAccount = int64(0)
+
+	BNBAddress = "0x00"
 )
 
 var (
