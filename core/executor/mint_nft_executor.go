@@ -235,6 +235,7 @@ func (e *MintNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		NftContentHash:      txInfo.NftContentHash,
 		RoyaltyRate:         txInfo.RoyaltyRate,
 		CollectionId:        txInfo.NftCollectionId,
+		NftContentType:      txInfo.NftContentType,
 	}
 	order++
 	txDetails = append(txDetails, &tx.TxDetail{

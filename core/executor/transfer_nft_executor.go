@@ -296,6 +296,7 @@ func (e *TransferNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		NftContentHash:      nftModel.NftContentHash,
 		RoyaltyRate:         nftModel.RoyaltyRate,
 		CollectionId:        nftModel.CollectionId,
+		NftContentType:      nftModel.NftContentType,
 	}
 	newNftInfo := &types.NftInfo{
 		NftIndex:            nftModel.NftIndex,
@@ -304,6 +305,7 @@ func (e *TransferNftExecutor) GenerateTxDetails() ([]*tx.TxDetail, error) {
 		NftContentHash:      nftModel.NftContentHash,
 		RoyaltyRate:         nftModel.RoyaltyRate,
 		CollectionId:        nftModel.CollectionId,
+		NftContentType:      nftModel.NftContentType,
 	}
 	order++
 	txDetails = append(txDetails, &tx.TxDetail{
