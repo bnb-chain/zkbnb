@@ -214,24 +214,25 @@ func (m *Monitor) MonitorGenericBlocks() (err error) {
 				committedTxHashMap[pendingUpdateBlock.CommittedTxHash] = true
 			}
 		}
-		commitBlockInfoList := make([]ZkBNBCommitBlockInfo, 0)
+		commitBlockInfoHashMap := make(map[uint32]*ZkBNBCommitBlockInfo, 0)
+
 		for committedTx, _ := range committedTxHashMap {
 			commitBlocksCallData, err := m.getCommitBlocksCallData(committedTx)
 			if err != nil {
 				return err
 			}
-			commitBlockInfoList = append(commitBlockInfoList, commitBlocksCallData.NewBlocksData...)
+			for _, blocksData := range commitBlocksCallData.NewBlocksData {
+				commitBlockInfoHashMap[blocksData.BlockNumber] = &blocksData
+			}
 		}
 
 		updateBlocks := make([]*desertexit.DesertExitBlock, 0)
 
 		for height, pendingUpdateBlock := range relatedBlocks {
-			for _, commitBlockInfo := range commitBlockInfoList {
-				if commitBlockInfo.BlockNumber == uint32(height) {
-					pendingUpdateBlock.BlockSize = commitBlockInfo.BlockSize
-					pendingUpdateBlock.PubData = common.Bytes2Hex(commitBlockInfo.PublicData)
-					break
-				}
+			commitBlockInfo := commitBlockInfoHashMap[uint32(height)]
+			if commitBlockInfo != nil {
+				pendingUpdateBlock.BlockSize = commitBlockInfo.BlockSize
+				pendingUpdateBlock.PubData = common.Bytes2Hex(commitBlockInfo.PublicData)
 			}
 			updateBlocks = append(updateBlocks, pendingUpdateBlock)
 		}
