@@ -15,5 +15,6 @@ type Config struct {
 	KeyPath     []string
 	BlockConfig struct {
 		OptionalBlockSizes []int
+		R1CSBatchSize      int
 	}
 }

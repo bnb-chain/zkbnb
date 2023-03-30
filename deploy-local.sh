@@ -28,6 +28,7 @@ SECURITY_COUNCIL_MEMBERS_NUMBER_3=0x0000000000000000000000000000000000000000
 # validator config, split by `,` the address of COMMIT_BLOCK_PRIVATE_KEY  and the address of VERIFY_BLOCK_PRIVATE_KEY,
 VALIDATORS=
 ZKBNB_OPTIONAL_BLOCK_SIZES=1
+ZKBNB_R1CS_BATCH_SIZE=10000
 
 export PATH=$PATH:/usr/local/go/bin:/usr/local/go/bin:/root/go/bin
 echo '0. stop old database/redis and docker run new database/redis'
@@ -145,6 +146,7 @@ KeyPath: [${PROVING_KEYS}]
 
 BlockConfig:
   OptionalBlockSizes: [${ZKBNB_OPTIONAL_BLOCK_SIZES}]
+  R1CSBatchSize: [${ZKBNB_R1CS_BATCH_SIZE}]
 
 TreeDB:
   Driver: memorydb

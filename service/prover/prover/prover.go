@@ -152,7 +152,7 @@ func NewProver(c config.Config) (*Prover, error) {
 		}
 
 		r1cs := groth16.NewCS(ecc.BN254)
-		r1cs.LoadFromSplitBinaryConcurrent(c.KeyPath[i], nbConstraints, 1000, runtime.NumCPU())
+		r1cs.LoadFromSplitBinaryConcurrent(c.KeyPath[i], nbConstraints, c.BlockConfig.R1CSBatchSize, runtime.NumCPU())
 		prover.R1cs[i] = r1cs
 		if err != nil {
 			logx.Severe("r1cs init error")
