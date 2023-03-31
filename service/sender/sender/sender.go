@@ -108,11 +108,13 @@ type Sender struct {
 	config sconfig.Config
 
 	// Client
-	cli           *rpc.ProviderClient
-	zkbnbInstance *zkbnb.ZkBNB
-	kmsClient     *kms.Client
-	commitAddress common.Address
-	verifyAddress common.Address
+	cli                *rpc.ProviderClient
+	zkbnbInstance      *zkbnb.ZkBNB
+	kmsClient          *kms.Client
+	commitAuthClient   *rpc.AuthClient
+	verifyAuthClient   *rpc.AuthClient
+	commitKmsKeyClient *rpc.KMSKeyClient
+	verifyKmsKeyClient *rpc.KMSKeyClient
 
 	// Data access objects
 	db                   *gorm.DB
@@ -149,9 +151,6 @@ func NewSender(c sconfig.Config) *Sender {
 		txModel:              tx.NewTxModel(db),
 	}
 
-	s.commitAddress = common.HexToAddress(c.ChainConfig.CommitAddress)
-	s.verifyAddress = common.HexToAddress(c.ChainConfig.VerifyAddress)
-
 	l1RPCEndpoint, err := s.sysConfigModel.GetSysConfigByName(c.ChainConfig.NetworkRPCSysConfigName)
 	if err != nil {
 		logx.Severef("fatal error, failed to get network rpc configuration, err:%v, SysConfigName:%s",
@@ -184,6 +183,42 @@ func NewSender(c sconfig.Config) *Sender {
 	}
 	s.kmsClient = kms.NewFromConfig(cfg)
 
+	chainId, err := s.cli.ChainID(context.Background())
+	if err != nil {
+		logx.Severef("fatal error, failed to get the chainId from the l1 server, err:%v", err)
+		panic("fatal error, failed to get the chainId from the l1 server, err:" + err.Error())
+	}
+
+	sendSignatureMode := c.ChainConfig.SendSignatureMode
+	if len(sendSignatureMode) == 0 || sendSignatureMode == sconfig.PrivateKeySignMode {
+		commitAuthClient, err := rpc.NewAuthClient(c.AuthConfig.CommitBlockSk, chainId)
+		if err != nil {
+			logx.Severef("fatal error, failed to initiate commit authClient instance, err:%v", err)
+			panic("fatal error, failed to initiate commit authClient instance, err:" + err.Error())
+		}
+		s.commitAuthClient = commitAuthClient
+
+		verifyAuthClient, err := rpc.NewAuthClient(c.AuthConfig.VerifyBlockSk, chainId)
+		if err != nil {
+			logx.Severef("fatal error, failed to initiate verify authClient instance, err:%v", err)
+			panic("fatal error, failed to initiate verify authClient instance, err:" + err.Error())
+		}
+		s.verifyAuthClient = verifyAuthClient
+	} else if sendSignatureMode == sconfig.KeyManageSignMode {
+		commitKeyClient, err := rpc.NewKMSKeyClient(s.kmsClient, c.KMSConfig.CommitKeyId, chainId)
+		if err != nil {
+			logx.Severef("fatal error, failed to initiate commit kmsKeyClient instance, err:%v", err)
+			panic("fatal error, failed to initiate commit kmsKeyClient instance, err:" + err.Error())
+		}
+		s.commitKmsKeyClient = commitKeyClient
+
+		verifyKeyClient, err := rpc.NewKMSKeyClient(s.kmsClient, c.KMSConfig.VerifyKeyId, chainId)
+		if err != nil {
+			logx.Severef("fatal error, failed to initiate verify kmsKeyClient instance, err:%v", err)
+			panic("fatal error, failed to initiate verify kmsKeyClient instance, err:" + err.Error())
+		}
+		s.verifyKmsKeyClient = verifyKeyClient
+	}
 	return s
 }
 
@@ -306,7 +341,7 @@ func (s *Sender) CommitBlocks() (err error) {
 	var nonce uint64
 
 	maxGasPrice := (decimal.NewFromInt(gasPrice.Int64()).Mul(decimal.NewFromInt(int64(s.config.ChainConfig.MaxGasPriceIncreasePercentage))).Div(decimal.NewFromInt(100))).Add(decimal.NewFromInt(gasPrice.Int64()))
-	nonce, err = cli.GetPendingNonce(s.commitAddress.Hex())
+	nonce, err = cli.GetPendingNonce(s.GetCommitAddress().Hex())
 	if err != nil {
 		return fmt.Errorf("failed to get nonce for commit block, errL %v", err)
 	}
@@ -327,7 +362,7 @@ func (s *Sender) CommitBlocks() (err error) {
 	retry := false
 	for {
 		if retry {
-			newNonce, err := cli.GetPendingNonce(s.commitAddress.Hex())
+			newNonce, err := cli.GetPendingNonce(s.GetCommitAddress().Hex())
 			if err != nil {
 				return fmt.Errorf("failed to get nonce for commit block, errL %v", err)
 			}
@@ -343,13 +378,12 @@ func (s *Sender) CommitBlocks() (err error) {
 			logx.Infof("speed up commit block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
 		}
 
-		// AWS KMS configuration
-		commitKeyId := s.config.KMSConfig.CommitKeyId
-		chainId := new(big.Int).SetInt64(s.config.KMSConfig.ChainId)
+		// generate the transaction constructor for the commit block function
+		transactorConstructor := s.GenerateConstructorForCommit()
 
 		// commit blocks on-chain
-		txHash, err = zkbnb.CommitBlocksWithNonceAndKms(
-			context.Background(), s.kmsClient, commitKeyId, chainId, s.commitAddress,
+		txHash, err = zkbnb.CommitBlocksWithNonce(
+			transactorConstructor,
 			zkbnbInstance,
 			lastStoredBlockInfo,
 			pendingCommitBlocks,
@@ -566,7 +600,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	var nonce uint64
 
 	maxGasPrice := (decimal.NewFromInt(gasPrice.Int64()).Mul(decimal.NewFromInt(int64(s.config.ChainConfig.MaxGasPriceIncreasePercentage))).Div(decimal.NewFromInt(100))).Add(decimal.NewFromInt(gasPrice.Int64()))
-	nonce, err = cli.GetPendingNonce(s.verifyAddress.Hex())
+	nonce, err = cli.GetPendingNonce(s.GetVerifyAddress().Hex())
 	if err != nil {
 		return fmt.Errorf("failed to get nonce for commit block, errL %v", err)
 	}
@@ -587,7 +621,7 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	retry := false
 	for {
 		if retry {
-			newNonce, err := cli.GetPendingNonce(s.verifyAddress.Hex())
+			newNonce, err := cli.GetPendingNonce(s.GetVerifyAddress().Hex())
 			if err != nil {
 				return fmt.Errorf("failed to get nonce for verify block, errL %v", err)
 			}
@@ -603,13 +637,14 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 			logx.Infof("speed up verify block to l1,l1 nonce: %s,gasPrice: %s", nonce, gasPrice)
 		}
 
-		// AWS KMS configuration for VerifyAndExecuteBlocks
-		verifyKeyId := s.config.KMSConfig.VerifyKeyId
-		chainId := new(big.Int).SetInt64(s.config.KMSConfig.ChainId)
+		// generate the transaction constructor for verify and execute block function
+		transactorConstructor := s.GenerateConstructorForVerifyAndExecute()
 
 		// Verify blocks on-chain
-		txHash, err = zkbnb.VerifyAndExecuteBlocksWithNonceAndKms(
-			context.Background(), s.kmsClient, verifyKeyId, chainId, s.verifyAddress, zkbnbInstance, pendingVerifyAndExecuteBlocks,
+		txHash, err = zkbnb.VerifyAndExecuteBlocksWithNonce(
+			transactorConstructor,
+			zkbnbInstance,
+			pendingVerifyAndExecuteBlocks,
 			proofs, gasPrice, s.config.ChainConfig.GasLimit, nonce)
 		if err != nil {
 			verifyExceptionHeightMetric.Set(float64(pendingVerifyAndExecuteBlocks[len(pendingVerifyAndExecuteBlocks)-1].BlockHeader.BlockNumber))
@@ -642,6 +677,46 @@ func (s *Sender) VerifyAndExecuteBlocks() (err error) {
 	l2BlockSubmitToVerifyHeightMetric.Set(float64(newRollupTx.L2BlockHeight))
 	logx.Infof("new blocks have been verified and executed(height): %d:%s", newRollupTx.L2BlockHeight, newRollupTx.L1TxHash)
 	return nil
+}
+
+func (s *Sender) GenerateConstructorForCommit() zkbnb.TransactOptsConstructor {
+	sendSignatureMode := s.config.ChainConfig.SendSignatureMode
+	if len(sendSignatureMode) == 0 || sendSignatureMode == sconfig.PrivateKeySignMode {
+		return s.commitAuthClient
+	} else if sendSignatureMode == sconfig.KeyManageSignMode {
+		return s.commitKmsKeyClient
+	}
+	return nil
+}
+
+func (s *Sender) GenerateConstructorForVerifyAndExecute() zkbnb.TransactOptsConstructor {
+	sendSignatureMode := s.config.ChainConfig.SendSignatureMode
+	if len(sendSignatureMode) == 0 || sendSignatureMode == sconfig.PrivateKeySignMode {
+		return s.verifyAuthClient
+	} else if sendSignatureMode == sconfig.KeyManageSignMode {
+		return s.verifyKmsKeyClient
+	}
+	return nil
+}
+
+func (s *Sender) GetCommitAddress() common.Address {
+	sendSignatureMode := s.config.ChainConfig.SendSignatureMode
+	if len(sendSignatureMode) == 0 || sendSignatureMode == sconfig.PrivateKeySignMode {
+		return s.commitAuthClient.GetL1Address()
+	} else if sendSignatureMode == sconfig.KeyManageSignMode {
+		return s.commitKmsKeyClient.GetL1Address()
+	}
+	return [20]byte{}
+}
+
+func (s *Sender) GetVerifyAddress() common.Address {
+	sendSignatureMode := s.config.ChainConfig.SendSignatureMode
+	if len(sendSignatureMode) == 0 || sendSignatureMode == sconfig.PrivateKeySignMode {
+		return s.verifyAuthClient.GetL1Address()
+	} else if sendSignatureMode == sconfig.KeyManageSignMode {
+		return s.verifyKmsKeyClient.GetL1Address()
+	}
+	return [20]byte{}
 }
 
 func (s *Sender) Shutdown() {
